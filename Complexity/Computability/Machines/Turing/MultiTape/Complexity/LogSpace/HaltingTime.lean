@@ -196,29 +196,6 @@ theorem runsInTime_of_runsInSpace {s t : ℕ} (hs : ntm.RunsInSpace input s)
   have hstate := (hrep i (by omega)).state
   exact hrun ⟨i, by omega⟩ (hstate.symm.trans (hqrep.state.trans hhalt))
 
-/-- The polynomial clock of `exists_runsInTime_polynomial_of_runsInSpace_log`, with its exponent
-spelled out. -/
-private theorem runsInTime_polynomial_of_runsInSpace_log {c t : ℕ}
-    (hs : ntm.RunsInSpace input (c * (Nat.log2 input.length + 1)))
-    (ht : ntm.RunsInTime input t) :
-    ntm.RunsInTime input (2 * (2 * (input.length + 1)) ^
-      (2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1))) := by
-  refine (runsInTime_of_runsInSpace hs ht).mono ?_
-  set K := 8 + 2 * Nat.card (Option State) + 200 * k
-  set L := Nat.log2 input.length
-  have hlog : 2 ^ L ≤ input.length + 1 := by
-    rcases Nat.eq_zero_or_pos input.length with h | h
-    · simp [L, h]
-    · rw [show L = Nat.log 2 input.length from Nat.log2_eq_log_two]
-      exact (Nat.pow_log_le_self 2 h.ne').trans (Nat.le_succ _)
-  have hcore : coreLengthBound k State input.length (c * (L + 1)) = K * (c + 1) * (L + 1) := by
-    simp only [coreLengthBound, K, L]
-    ring
-  have hbase : 2 ^ (L + 1) ≤ 2 * (input.length + 1) := by rw [pow_succ]; omega
-  calc 2 ^ (2 * coreLengthBound k State input.length (c * (L + 1)) + 1)
-      = 2 * (2 ^ (L + 1)) ^ (2 * K * (c + 1)) := by rw [hcore, ← pow_mul, pow_succ]; ring_nf
-    _ ≤ 2 * (2 * (input.length + 1)) ^ (2 * K * (c + 1)) := by gcongr
-
 /-- **Logarithmic space gives a polynomial clock.** For every space constant `c` there is an
 exponent `d` such that on every input of length `n`, if every computation path stays within space
 `c * (log₂ n + 1)` and every computation path halts within some time, then every computation path
@@ -227,6 +204,7 @@ theorem exists_runsInTime_polynomial_of_runsInSpace_log (ntm : MultiTapeNTM k Bo
     (c : ℕ) : ∃ d, ∀ {input : List Bool} {t : ℕ},
       ntm.RunsInSpace input (c * (Nat.log2 input.length + 1)) → ntm.RunsInTime input t →
         ntm.RunsInTime input (2 * (2 * (input.length + 1)) ^ d) :=
-  ⟨_, fun hs ht => runsInTime_polynomial_of_runsInSpace_log hs ht⟩
+  ⟨_, fun hs ht =>
+    (runsInTime_of_runsInSpace hs ht).mono (two_pow_coreLengthBound_log_le k State c _)⟩
 
 end Turing.MultiTapeNTM

@@ -117,7 +117,7 @@ example (setup : ℕ → PMF schnorrGroups.Desc) (hDL : schnorrGroups.DiscreteLo
 /-- Regression witness (`openScheme`): a scheme with empty commitment string and opening equal to
 the message is perfectly hiding, and is rejected by `CommitmentScheme.Binding`. -/
 noncomputable def openScheme : CommitmentScheme Unit where
-  encodeKey _ := []
+  encodeKey := ⟨fun _ => [], fun _ _ _ => Subsingleton.elim _ _⟩
   ValidMessage _ _ := True
   commitDist _ m := PMF.pure ([], m)
   verify _ m c o := decide (c = [] ∧ o = m)
@@ -150,7 +150,7 @@ example : ¬ openScheme.Binding (fun _ => PMF.pure ()) := by
 commitment string equals the message word satisfies `StatisticalHiding` because `hidingForKey`
 commits to `m_bit` only when both challenge words satisfy `ValidMessage`. -/
 noncomputable def singletonScheme : CommitmentScheme Unit where
-  encodeKey _ := []
+  encodeKey := ⟨fun _ => [], fun _ _ _ => Subsingleton.elim _ _⟩
   ValidMessage _ m := m = []
   commitDist _ m := PMF.pure (m, [])
   verify _ m c _ := decide (m = [] ∧ c = [])

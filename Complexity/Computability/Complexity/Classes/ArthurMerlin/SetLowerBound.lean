@@ -93,15 +93,6 @@ def certifiedSet (enc : α ↪ List Bool) (N c : Polynomial ℕ) (R : α × List
 
 namespace SetLowerBound
 
-/-! ### Bit-string helpers -/
-
-/-- A string has no bit `true` exactly when it is zero. -/
-private theorem not_any_ofFn_eq_true_iff {k : ℕ} (v : BitString k) :
-    (!(List.ofFn v).any fun b => b) = true ↔ v = 0 := by
-  simp only [Bool.not_eq_eq_eq_not, Bool.not_true, List.any_eq_false, List.mem_ofFn,
-    forall_exists_index, forall_apply_eq_imp_iff, Bool.not_eq_true]
-  exact ⟨fun h => funext h, fun h i => by rw [h]; rfl⟩
-
 /-! ### Amplification and normalisation -/
 
 /-- Five elements of `S`, followed by `T` bits whose first `ℓ` bits are `false`. -/
@@ -207,7 +198,7 @@ private theorem verifier_ofFn_append {N c m T : Polynomial ℕ} {ℓ : α → �
     rw [BitString.LinearHash.wordHash_eq_ofFn, List.ofFn_add, BitString.ofList_ofFn_append]
     rfl
   rw [hdrop, hdrop', htake, List.take_left' List.length_ofFn, hhash, hoffset,
-    ← BitString.ofFn_add, not_any_ofFn_eq_true_iff, and_assoc]
+    ← BitString.ofFn_add, BitString.not_any_ofFn_eq_true_iff, and_assoc]
   refine and_congr ⟨fun h i => ?_, fun h i hi => ?_⟩ Iff.rfl
   · have := h i i.2
     rwa [BitString.listRow_eq_ofFn (count := 5) _ i, BitString.listRow_eq_ofFn (count := 5) _ i,

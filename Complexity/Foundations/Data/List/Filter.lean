@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Erik Demaine, Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Erik Demaine, Christian Reitwiessner, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Erik Demaine, Samuel Schlesinger
+Authors: Erik Demaine, Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Mathlib.Algebra.BigOperators.Group.List.Basic
 public import Mathlib.Data.Finset.Basic
+public import Mathlib.Data.List.Forall2
 import Mathlib.Data.List.GetD
 
 /-!
@@ -26,6 +27,8 @@ They are generalized from the canonical incidence-path occupancy proofs.
   `C.toFinset \ H.toFinset`.
 * `List.countP_le_sum_map`: if `1 ≤ f x` whenever `p x = true` on `l`, then
   `l.countP p ≤ (l.map f).sum`.
+* `List.any_id_le_of_forall₂`, `List.all_id_le_of_forall₂`: `List.any id` and `List.all id` are
+  monotone with respect to `List.Forall₂ (· ≤ ·)`.
 -/
 
 @[expose] public section
@@ -134,5 +137,23 @@ theorem countP_le_sum_map {α : Type*} {p : α → Bool} {f : α → ℕ} {l : L
       omega
     · simp only [hp, Bool.false_eq_true, ite_false]
       omega
+
+/-- `List.any id` is monotone with respect to `List.Forall₂ (· ≤ ·)`. -/
+theorem any_id_le_of_forall₂ {u v : List Bool} (h : List.Forall₂ (· ≤ ·) u v) :
+    u.any id ≤ v.any id := by
+  induction h with
+  | nil => exact le_rfl
+  | cons hab _ ih =>
+    simp only [List.any_cons, id]
+    exact max_le_max hab ih
+
+/-- `List.all id` is monotone with respect to `List.Forall₂ (· ≤ ·)`. -/
+theorem all_id_le_of_forall₂ {u v : List Bool} (h : List.Forall₂ (· ≤ ·) u v) :
+    u.all id ≤ v.all id := by
+  induction h with
+  | nil => exact le_rfl
+  | cons hab _ ih =>
+    simp only [List.all_cons, id]
+    exact min_le_min hab ih
 
 end List

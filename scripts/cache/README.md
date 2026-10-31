@@ -26,6 +26,20 @@ CI reads the cache too. After restoring `.lake` from the GitHub Actions cache, L
 input hash already matches a build trace in `.lake`. A fresh runner would otherwise download a
 complete set on every run, although `.lake` usually has most of it.
 
+Mathlib downloads are retried in the same checkout by `scripts/cache/get_mathlib.py`: at most
+three ordinary `lake exe cache get` attempts, each limited to three minutes, with two-second
+pauses. Completed archives remain in place, so the pinned Mathlib client retries only missing
+downloads. Exhausted attempts warn and leave the strict build/check commands to compile what is
+missing. Only the attempt's own process group is stopped on timeout on POSIX systems.
+
+Lean CI, API docs and Comparator disable only lean-action's built-in Mathlib fetch and call this helper
+with `--lean-action`, preserving that action's URL handling: unset `MATHLIB_CACHE_GET_URL` selects
+`https://cache.mathlib.org/mathlib4`, an empty value selects the Mathlib client's default, and an
+explicit URL is retained. Local `get.sh` and the Guide workflow use the same retries while retaining
+their existing client-default/environment behavior. API docs also use the existing missing-only
+Complexitylib restore before generation. Cache failures remain optional; installation and
+validation failures remain strict.
+
 The Lean workflows also restore elan and the toolchain named in `lean-toolchain` (`~/.elan`,
 about 600 MB) from the Actions cache before `leanprover/lean-action` runs, so that the action does
 not download the toolchain. On a miss, `.github/actions/install-lean` installs them with bounded
@@ -53,6 +67,12 @@ existing hard-linked cache objects. Merge groups do not publish to GCS: the norm
 `main` run remains the only public-cache writer. This makes its outputs available sooner to
 following builds while preserving the public cache's authorization boundary.
 
+- **Payload.** The archive keeps compiled outputs (including private/server OLeans, IR and native
+  code), hashes and traces. It omits only `ir/**/*.setup.json` and `ir/**/*.irsetup.json`: Lake's
+  transient compiler setup inputs. Lake writes these inside a compilation action and does not
+  require them to reuse completed modules. Other JSON files are retained. File-type/link checks
+  still cover omitted entries; the 100,000-file, 4 GiB unpacked and 1 GiB compressed payload limits
+  are unchanged. Packing reports retained and omitted counts/sizes, including on a limit miss.
 - **Kill switch.** Setting the repository variable `DISABLE_BUILD_HANDOFF` to `1` or `true`
   (`gh variable set DISABLE_BUILD_HANDOFF --body 1`) disables both merge-group staging and `main`
   restoration without a commit; `scripts/cache_handoff.py` also honors `DISABLE_BUILD_HANDOFF` in
@@ -71,6 +91,10 @@ following builds while preserving the public cache's authorization boundary.
   from source and the local artifact cache.
 
 ## Automatic restoration
+
+Temporary controlled measurement is specified in [MEASUREMENT.md](MEASUREMENT.md) (#1728).
+Its hooks are disabled without an explicit plan and expire on 2026-11-15. Installing them does
+not authorize study activation or complete #1197's net-benefit requirement.
 
 `scripts/build.sh` runs `scripts/cache/ensure.sh`, then forwards its arguments and exit status to
 `lake build`. `scripts/check.sh` uses the same bootstrap before full or quick validation; a quick
@@ -107,12 +131,30 @@ the explicit, unstamped fetch command. Cache misses and download failures are op
 compile what is missing, and the bootstrap never claims that all requested artifacts were
 available.
 
-`scripts/worktree.sh create` and `scripts/worktree.sh seed` run `scripts/cache/ensure.sh` in the
-worktree after seeding `.lake` caches. The helper never points a worktree at the primary checkout,
-refuses targets or destination cache symlinks that do, isolates dependency `.git` directories and
+By default, `scripts/worktree.sh create` and `scripts/worktree.sh seed` run
+`scripts/cache/ensure.sh` in the worktree after seeding `.lake` caches. The helper never points a
+worktree at the primary checkout, refuses targets or destination cache symlinks that do,
+isolates dependency `.git` directories and
 `gitdir:` pointer files so Git operations in a worktree cannot modify the primary checkout's `HEAD`
 or `index`, and dereferences any package symlink whose target is absolute or escapes the package
 directory. Pass `--copy-cslib` or `--copy-packages` when package sources must change.
+
+When the primary checkout's outputs are changing or use different pins, create a worktree without
+copying its initial `.lake` contents:
+
+```bash
+scripts/worktree.sh create feature/example example origin/main --source-only
+```
+
+`--source-only` skips initial root and dependency outputs, package sources and package Git controls.
+The same target and cache isolation checks still run before bootstrap. Both modes refuse existing
+symlinks anywhere in root cache trees or dependency `.lake` trees, including nested output paths;
+package source and Git-control trees are not traversed by this check. Bootstrap remains automatic
+unless `COMPLEXITYLIB_WORKTREE_SKIP_CACHE_BOOTSTRAP=1` or the usual cache opt-out is set; it may
+populate the new checkout with independently materialized dependencies and restored outputs.
+Lake can reuse its immutable artifact cache, but expect dependency downloads and disk use for
+independent package checkouts, and compilation when outputs are unavailable. This option cannot
+be combined with `--copy-cslib` or `--copy-packages`; the default seeded behavior is unchanged.
 
 ## Trust and privacy
 

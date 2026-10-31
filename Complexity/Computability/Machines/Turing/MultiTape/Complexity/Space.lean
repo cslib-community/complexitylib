@@ -108,7 +108,8 @@ theorem outputClass :
 theorem finiteCfg_summarizeOutput {k : ℕ} {State : Type} [Finite State] :
     ComputableInPolyTime (FiniteCfg.summarizeOutput (k := k) (State := State)) encFiniteCfg
       encFiniteCfg :=
-  ComputableTidilyInPolyTime.finiteCfg_summarizeOutput.computableInPolyTime
+  finiteCfg_mk finiteCfg_input finiteCfg_state finiteCfg_inputPos finiteCfg_workTapes
+    (outputClass.comp finiteCfg_output)
 
 end MultiTapeTM.ComputableInPolyTime
 

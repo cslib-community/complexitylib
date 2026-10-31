@@ -17,6 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fo
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List.Size
+import Complexity.Foundations.Data.List.Fold
 import Complexity.Foundations.Data.List.OfFn
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Algebra.Order.BigOperators.Group.List
@@ -451,14 +452,6 @@ theorem jetL1Norm_weightedProdJet_le (J ℓ : ℕ) (w : ℤ) (groups : List JetR
 
 section SharedHelpers
 
-theorem foldl_keep_fst {ι π α : Type*} (step : π → α → ι → α)
-    (par : π) (xs : List ι) (init : α) :
-    xs.foldl (fun pa i => (pa.1, step pa.1 pa.2 i)) (par, init) =
-      (par, xs.foldl (step par) init) := by
-  induction xs generalizing init with
-  | nil => rfl
-  | cons _ _ ih => exact ih _
-
 private def rangeAddJet (J ℓ j : ℕ) (f : ℕ → JetRows) : JetRows :=
   (List.range j).foldl (fun acc i => addJet J ℓ acc (f i)) (zeroJet J ℓ)
 private theorem isTableShape_rangeAddJet (J ℓ j : ℕ) (f : ℕ → JetRows) :
@@ -636,17 +629,20 @@ private theorem initJetStateCertificate_isPolynomial {J ℓ : ι → ℕ} {ctx :
       (NativeCertificate.prod_isPolynomial _ _ hcJ hcℓ))
 
 theorem prepareAccumEval_polyTime :
-    ComputableInPolyTime (fun p : ω × (((ℕ × ℕ) × α) × JetRows) => (p.2.1.2, p.1))
+    ComputableInPolyTime
+      (fun ((w, ((_, ctx), _)) : ω × (((ℕ × ℕ) × α) × JetRows)) => (ctx, w))
       (encPair encΩ (encAccum(encCtx))) (encPair encCtx encΩ) := by fun_prop
 /-- Polynomial-time combinator predicate for encoded accumulator updates. -/
 abbrev CombPoly (combine : (ℕ × ℕ) → JetRows → ρ → JetRows) (encΡ : ρ ↪ List Bool) : Prop :=
-  ComputableInPolyTime (fun r : ((ℕ × ℕ) × JetRows) × ρ => combine r.1.1 r.1.2 r.2)
+  ComputableInPolyTime
+    (fun (((dims, acc), y) : ((ℕ × ℕ) × JetRows) × ρ) => combine dims acc y)
     (encPair (encPair encDims encJet) encΡ) encJet
 
 theorem applyAccumCombine_polyTime (combine : (ℕ × ℕ) → JetRows → ρ → JetRows)
     (hcomb : CombPoly combine encΡ) :
     ComputableInPolyTime
-      (fun q : (ω × (((ℕ × ℕ) × α) × JetRows)) × ρ => combine q.1.2.1.1 q.1.2.2 q.2)
+      (fun (((_, ((dims, _), acc)), y) : (ω × (((ℕ × ℕ) × α) × JetRows)) × ρ) =>
+        combine dims acc y)
       (encPair (encPair encΩ (encAccum(encCtx))) encΡ) encJet := by
   have harg : ComputableInPolyTime (fun q : (ω × (((ℕ × ℕ) × α) × JetRows)) × ρ =>
       ((q.1.2.1.1, q.1.2.2), q.2)) (encPair (encPair encΩ (encAccum(encCtx))) encΡ)
@@ -657,8 +653,9 @@ theorem applyAccumCombine_polyTime (combine : (ℕ × ℕ) → JetRows → ρ �
 noncomputable def accumStepBodyCertificate (combine : (ℕ × ℕ) → JetRows → ρ → JetRows)
     (hcomb : CombPoly combine encΡ) {cb_eval : α × ω → ρ}
     (ceval : NativeCertificate cb_eval (encPair encCtx encΩ) encΡ) :
-    NativeCertificate (fun p : ω × (((ℕ × ℕ) × α) × JetRows) =>
-      (p.2.1, combine p.2.1.1 p.2.2 (cb_eval (p.2.1.2, p.1))))
+    NativeCertificate
+      (fun ((w, ((dims, ctx), acc)) : ω × (((ℕ × ℕ) × α) × JetRows)) =>
+        ((dims, ctx), combine dims acc (cb_eval (ctx, w))))
       (encPair encΩ (encAccum(encCtx))) (encAccum(encCtx)) :=
   (NativeCertificate.linear ((ComputableInO.fst (encPair encDims encCtx) encJet).comp_linear
     (ComputableInO.snd encΩ (encAccum(encCtx))))).prod
@@ -704,11 +701,11 @@ private theorem exists_accumStepBodyCertificate_time_le (combine : (ℕ × ℕ) 
     (((PolyBounded.const 2).mul .self).add hcPrep.1).add
       (hcComb.1.comp (polyBounded_length_of_hasPolySpace hcArg_sp))
   obtain ⟨c_b, d_b, hle⟩ := hover_pb.exists_le
-  refine ⟨c_b, d_b, fun st => ?_⟩
-  have h := hle st
+  refine ⟨c_b, d_b, fun (w, (dims, ctx), acc) => ?_⟩
+  have h := hle (w, (dims, ctx), acc)
   simp only [accumStepBodyCertificate, NativeCertificate.prod_time, NativeCertificate.comp_time,
     NativeCertificate.linear_time, Function.comp_apply]
-  dsimp only [cPrep, cComb] at h; omega
+  dsimp only [cPrep, cComb] at h ⊢; omega
 
 end AccumStep
 
@@ -726,23 +723,28 @@ variable (evalGroupProd : α × (ℕ × List Bool) → JetRows)
 /-- Single-assignment body for `streamGroupJetSum`: retains `((J, ℓ), ctx)` and adds
 `evalGroupProd (ctx, wd)` via `addJet`. -/
 def groupSumBody (p : (ℕ × List Bool) × (((ℕ × ℕ) × α) × JetRows)) : ((ℕ × ℕ) × α) × JetRows :=
-  (p.2.1, addJet p.2.1.1.1 p.2.1.1.2 p.2.2 (evalGroupProd (p.2.1.2, p.1)))
+  let (wd, (((J, ℓ), ctx), acc)) := p
+  (((J, ℓ), ctx), addJet J ℓ acc (evalGroupProd (ctx, wd)))
 
 /-- Live `(J × ℓ)` jet accumulator after visiting the first `j` local-Boolean assignments. -/
 def streamGroupJetSumPrefix (J ℓ d j : ℕ) (ctx : α) : JetRows :=
-  (BooleanFold.runPrefix (groupSumBody evalGroupProd) d j (((J, ℓ), ctx), zeroJet J ℓ)).2.2.2
+  let (_, _, _, acc) :=
+    BooleanFold.runPrefix (groupSumBody evalGroupProd) d j (((J, ℓ), ctx), zeroJet J ℓ)
+  acc
 
 /-- Streaming local-Boolean group sum over all `2 ^ d` assignments of unary dimension `d` via
 `BooleanFold.run` ([OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH], Lemma 3.2,
 Proposition 3.4, and Appendix B.2, p. 49). -/
 def streamGroupJetSum (J ℓ d : ℕ) (ctx : α) : JetRows :=
-  (BooleanFold.run (groupSumBody evalGroupProd) d (((J, ℓ), ctx), zeroJet J ℓ)).2.2.2
+  let (_, _, _, acc) :=
+    BooleanFold.run (groupSumBody evalGroupProd) d (((J, ℓ), ctx), zeroJet J ℓ)
+  acc
 
 private theorem streamGroupJetSumRunPrefix_snd_snd_foldl (J ℓ d j : ℕ) (ctx : α) :
     (BooleanFold.runPrefix (groupSumBody evalGroupProd) d j (((J, ℓ), ctx), zeroJet J ℓ)).2.2 =
       (((J, ℓ), ctx), rangeAddJet J ℓ j fun i => evalGroupProd (ctx, (d, lowBits d i))) :=
   (BooleanFold.prefix_accumulator (groupSumBody evalGroupProd) d j _).trans
-    (foldl_keep_fst (fun (par : (ℕ × ℕ) × α) acc i =>
+    (List.foldl_keep_fst (fun (par : (ℕ × ℕ) × α) acc i =>
       addJet par.1.1 par.1.2 acc (evalGroupProd (par.2, (d, lowBits d i))))
       ((J, ℓ), ctx) (List.range j) (zeroJet J ℓ))
 theorem streamGroupJetSumPrefix_eq_foldl (J ℓ d j : ℕ) (ctx : α) :
@@ -757,7 +759,7 @@ theorem toJetTable_streamGroupJetSum_eq_sum (J ℓ d : ℕ) (ctx : α) :
       (enumList d).foldl (fun acc w => addJet J ℓ acc (evalGroupProd (ctx, (d, w))))
         (zeroJet J ℓ) :=
     congrArg Prod.snd ((BooleanFold.run_accumulator (groupSumBody evalGroupProd) d _).trans
-      (foldl_keep_fst (fun (par : (ℕ × ℕ) × α) acc w =>
+      (List.foldl_keep_fst (fun (par : (ℕ × ℕ) × α) acc w =>
         addJet par.1.1 par.1.2 acc (evalGroupProd (par.2, (d, w))))
         ((J, ℓ), ctx) (enumList d) (zeroJet J ℓ)))
   rw [hfold, toJetTable_foldl_addJet, toJetTable_zeroJet, zero_add, enumList, List.map_map,
@@ -807,7 +809,7 @@ theorem toJetTable_prodJet_streamGroupJetSum {J ℓ r : ℕ} (d : Fin r → ℕ)
   exact Fintype.prod_sum fun g y => toJetTable J ℓ (evalGroup g (ctx, (d g, List.ofFn y)))
 
 theorem combineGroupAdd_polyTime : ComputableInPolyTime
-    (fun r : ((ℕ × ℕ) × JetRows) × JetRows => addJet r.1.1.1 r.1.1.2 r.1.2 r.2)
+    (fun ((((J, ℓ), acc), y) : ((ℕ × ℕ) × JetRows) × JetRows) => addJet J ℓ acc y)
     (encPair (encPair encDims encJet) encJet) encJet := by fun_prop
 
 /-- Single-step `BooleanFold` body certificate for `streamGroupJetSum`. -/
@@ -959,11 +961,13 @@ variable (evalRound : α × ℕ → ℤ × List JetRows)
 
 /-- Single-round body for `streamOuterJetAccum` (eq. (3.13) and Appendix B.2, p. 49). -/
 def outerAccumBody (p : ℕ × (((ℕ × ℕ) × α) × JetRows)) : ((ℕ × ℕ) × α) × JetRows :=
-  (p.2.1, combineOuterRound p.2.1.1.1 p.2.1.1.2 p.2.2 (evalRound (p.2.1.2, p.1)))
+  let (idx, (((J, ℓ), ctx), acc)) := p
+  (((J, ℓ), ctx), combineOuterRound J ℓ acc (evalRound (ctx, idx)))
 
 /-- Live `(J × ℓ)` jet accumulator after the first `j` outer rounds (`T_j(z, V)`). -/
 def streamOuterJetAccumPrefix (J ℓ j : ℕ) (ctx : α) : JetRows :=
-  (IndexFold.run (outerAccumBody evalRound) j (((J, ℓ), ctx), zeroJet J ℓ)).2.2
+  let (_, _, acc) := IndexFold.run (outerAccumBody evalRound) j (((J, ℓ), ctx), zeroJet J ℓ)
+  acc
 
 /-- Streaming outer round accumulator over `T_rounds` binary-indexed steps via `IndexFold.run`
 ([OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH], Proposition 3.4 eq. (3.13)
@@ -976,7 +980,7 @@ private theorem streamOuterJetAccumRunPrefix_snd_foldl (J ℓ j : ℕ) (ctx : α
       (((J, ℓ), ctx), rangeAddJet J ℓ j fun idx =>
         weightedProdJet J ℓ (evalRound (ctx, idx)).1 (evalRound (ctx, idx)).2) :=
   (IndexFold.run_accumulator (outerAccumBody evalRound) j _).trans
-    (foldl_keep_fst (fun (par : (ℕ × ℕ) × α) acc idx =>
+    (List.foldl_keep_fst (fun (par : (ℕ × ℕ) × α) acc idx =>
       combineOuterRound par.1.1 par.1.2 acc (evalRound (par.2, idx)))
       ((J, ℓ), ctx) (List.range j) (zeroJet J ℓ))
 theorem streamOuterJetAccumPrefix_eq_foldl (J ℓ j : ℕ) (ctx : α) :
@@ -1056,9 +1060,11 @@ theorem cast_streamOuterJetAccum_taylorOuterVJet {J ℓ r m T_rounds : ℕ} {K :
     (fun idx g => taylorOuterVJet J ℓ t (P_rat idx g)) H_int hround hm hP
 
 theorem combineOuterRound_polyTime :
-    ComputableInPolyTime (fun r : ((ℕ × ℕ) × JetRows) × (ℤ × List JetRows) =>
-      combineOuterRound r.1.1.1 r.1.1.2 r.1.2 r.2)
-      (encPair (encPair encDims encJet) encRoundOut) encJet := by unfold combineOuterRound; fun_prop
+    ComputableInPolyTime
+      (fun ((((J, ℓ), acc), wy) : ((ℕ × ℕ) × JetRows) × (ℤ × List JetRows)) =>
+        combineOuterRound J ℓ acc wy)
+      (encPair (encPair encDims encJet) encRoundOut) encJet := by
+  unfold combineOuterRound; fun_prop
 
 /-- Single-step `IndexFold` body certificate for `streamOuterJetAccum`. -/
 noncomputable abbrev outerAccumBodyCertificate {evalRound : α × ℕ → ℤ × List JetRows}

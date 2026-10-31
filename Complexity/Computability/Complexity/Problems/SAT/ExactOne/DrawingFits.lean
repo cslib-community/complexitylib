@@ -117,14 +117,6 @@ private theorem local_clause_bounds (p : ClauseProfile) (s : PortAssignment) (i 
   obtain ⟨a, ha, rfl⟩ := List.mem_map.mp hq
   exact collarPoint_bounds _ (prefix_clause_bounds p a ha)
 
-private theorem collarRoute_points_bounds (reflected : Bool) {r : Route}
-    (hr : ∀ q ∈ r, Rect 180000 180000 q) :
-    ∀ q ∈ collarRoute reflected r, Rect 540000 540000 q := by
-  intro q hq
-  rw [collarRoute_eq_map] at hq
-  obtain ⟨a, ha, rfl⟩ := List.mem_map.mp hq
-  exact collarPoint_bounds _ (hr a ha)
-
 private theorem local_route_bounds (p : ClauseProfile) (s : PortAssignment)
     {e : LocalIncidence}
     (he : e ∈ (collaredPrefixGeometry (profilePrefixGeometry p) s).incidenceRoutes) :

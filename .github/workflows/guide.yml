@@ -1,15 +1,17 @@
 name: Guide
 
-# Checks the Verso guide (guide/) in pull requests that change it and uploads the rendered pages
-# for review. Building the guide elaborates every chapter, which checks its Lean examples against
-# the library. The library's outputs come from the remote build cache, so a run compiles Verso and
-# links the guide's generator but does not build the library. The nightly API documentation
-# workflow builds the guide from `main` and publishes it, which also catches library changes that
-# break an example.
+# Checks the Verso guide's Lean examples when the guide, library or dependency pins change.
+# Library-only changes compile the chapter library without linking the generator or rendering
+# pages. Guide/tooling changes also upload rendered pages for review. The nightly documentation
+# workflow continues to publish the guide from `main`.
 on:
   pull_request:
     paths:
+      - "Complexity/**"
+      - "Complexity.lean"
       - "guide/**"
+      - "lakefile.toml"
+      - "lake-manifest.json"
       - "scripts/guide.sh"
       - "scripts/check_docs.py"
       - "lean-toolchain"
@@ -32,6 +34,21 @@ jobs:
         with:
           # scripts/cache/get.sh looks for the nearest ancestor whose outputs `main` CI uploaded.
           fetch-depth: 100
+      - name: Select rendered guide build
+        id: changes
+        env:
+          GUIDE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          render=true
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            guide_changes="$(git diff --name-only "$GUIDE_BASE_SHA" HEAD -- \
+              guide scripts/guide.sh scripts/check_docs.py lean-toolchain \
+              .github/actions/install-lean .github/workflows/guide.yml)"
+            if [[ -z "$guide_changes" ]]; then
+              render=false
+            fi
+          fi
+          echo "render=$render" >> "$GITHUB_OUTPUT"
       # Restores or installs the toolchain with retries (.github/actions/install-lean, #1426).
       - uses: ./.github/actions/install-lean
       # Only installs Lean; the guide does not use the `.lake` Actions cache, which Lean CI fills.
@@ -45,9 +62,15 @@ jobs:
           use-mathlib-cache: "false"
       - name: Download build outputs
         run: scripts/cache/get.sh
+      - name: Check documentation pins
+        run: python3 scripts/check_docs.py --config-only
+      - name: Compile guide examples
+        run: lake -q -d guide build --log-level=error ComplexityGuide
       - name: Build the guide
+        if: steps.changes.outputs.render == 'true'
         run: scripts/guide.sh
       - uses: actions/upload-artifact@v4
+        if: steps.changes.outputs.render == 'true'
         with:
           name: guide
           path: guide/.lake/build/site/html-multi

@@ -357,7 +357,7 @@ theorem accepts_complete (hsource : source < N) (hwidth : N ≤ 2 ^ width)
     exact h _ _ rfl (invariant_initial hsource) bounded_initial (honest_initial hsource)
   intro n
   induction n using Nat.strong_induction_on with
-  | h n ih =>
+  | ind n ih =>
     intro s hr hi hb hh
     by_cases hs : halted s = true
     · refine ⟨[], ?_⟩
@@ -400,7 +400,7 @@ theorem exists_replay_done_final (hsource : source < N) (hwidth : N ≤ 2 ^ widt
       (by simp [initial, hsource])
   intro n
   induction n using Nat.strong_induction_on with
-  | h n ih =>
+  | ind n ih =>
     intro s hr hi hb hh hna
     by_cases hdone : s.phase = .done ∧ s.finalScan = true
     · refine ⟨[], hdone.1, hdone.2, ?_⟩

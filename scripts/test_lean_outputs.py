@@ -7,6 +7,7 @@ import pathlib
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import lean_outputs as lo  # noqa: E402
@@ -58,6 +59,23 @@ class OutputCheckTests(unittest.TestCase):
     def test_stale_default_outputs_are_refused(self) -> None:
         with self.assertRaises(SystemExit):
             self.check(self.reference, current=False)
+
+    def test_missing_output_directory_is_refused_without_lake(self) -> None:
+        missing = self.reference.parent / "missing"
+        with mock.patch.object(lo.subprocess, "run", side_effect=AssertionError("Lake ran")) as run:
+            with self.assertRaises(SystemExit) as error:
+                lo.check_outputs(missing, False, reference=missing)
+        self.assertIn("build outputs are missing", str(error.exception.code))
+        run.assert_not_called()
+        self.assertFalse(missing.exists())
+
+    def test_unchecked_missing_directory_does_not_call_lake(self) -> None:
+        missing = self.reference.parent / "missing"
+        with mock.patch.object(lo.subprocess, "run", side_effect=AssertionError("Lake ran")) as run:
+            status = lo.check_outputs(missing, True, reference=missing)
+        self.assertIn("not checked", status)
+        run.assert_not_called()
+        self.assertFalse(missing.exists())
 
     def test_stale_root_output_is_refused(self) -> None:
         for directory in (self.reference, self.copy):

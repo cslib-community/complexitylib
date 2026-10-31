@@ -40,11 +40,12 @@ A data structure is packaged once as a `SubroutineCode B r_ds k_init` and certif
 
 ## Main definitions
 
-* `Cslib.WordRAM.SubroutineCode`, `Cslib.WordRAM.SubroutineDS`: uniform relocatable machine code and
-  unified standalone / inline specification and resource certificate for a Word-RAM data structure.
+* `Cslib.WordRAM.SubroutineCode`, `Cslib.WordRAM.SubroutineBase`, `Cslib.WordRAM.SubroutineDS`:
+  uniform relocatable machine code, step-independent initialization/framing bundle, and unified
+  standalone / inline specification and resource certificate for a Word-RAM data structure.
 * `Cslib.WordRAM.SubroutineCode.initFresh`, `Cslib.WordRAM.SubroutineCode.initClear`: `O(1)` fresh
   initialization on zeroed memory and generic `O(space)` dirty-memory re-initialization.
-* `Cslib.WordRAM.SubroutineDS.toDynamicProgram`, `Cslib.WordRAM.SubroutineDS.toCertificate`:
+* `Cslib.WordRAM.SubroutineCode.toDynamicProgram`, `Cslib.WordRAM.SubroutineDS.toCertificate`:
   standalone `.standard`-basis `DynamicProgram` and `DynamicCertificate` projections.
 
 ## Main results
@@ -53,8 +54,8 @@ A data structure is packaged once as a `SubroutineCode B r_ds k_init` and certif
 * `Cslib.WordRAM.SubroutineDS.toAmortized`, `Cslib.WordRAM.SubroutineDS.toBound`,
   `Cslib.WordRAM.SubroutineDS.run_client_amortized`, `Cslib.WordRAM.SubroutineDS.run_client_bound`:
   standalone amortized and worst-case instruction bounds over `Basis.standard`.
-* `Cslib.WordRAM.SubroutineDS.initFresh_rename`, `Cslib.WordRAM.SubroutineDS.initClear_rename`,
-  `Cslib.WordRAM.SubroutineDS.call_rename`, `Cslib.WordRAM.SubroutineDS.frame_caller`: relocated
+* `Cslib.WordRAM.SubroutineBase.initFresh_rename`, `Cslib.WordRAM.SubroutineBase.initClear_rename`,
+  `Cslib.WordRAM.SubroutineDS.call_rename`, `Cslib.WordRAM.SubroutineBase.frame_caller`: relocated
   inline initialization, inline operation calls, and bidirectional register/memory framing.
 
 ## References
@@ -205,14 +206,185 @@ def mapSimulates (φ : B.Simulates B') (P : SubroutineCode B r_ds k_init) :
 abbrev toStandard (P : SubroutineCode .exact r_ds k_init) : SubroutineCode .standard r_ds k_init :=
   P.mapSimulates .exactStandard
 
+/-- Project subroutine code and its calling convention to the same operation signature.
+The basis is retained, so this projection does not translate instructions or resource claims. -/
+def toDynamicProgram (P : SubroutineCode B r_ds k_init) {O : Type*} {Result : O → Type*}
+    (encode : O → Fin r_ds → ℕ) (decode : (o : O) → (Fin r_ds → ℕ) → Option (Result o)) :
+    DynamicProgram ⟨O, Result⟩ r_ds B where
+  code := P.code
+  output := P.output
+  input := P.input
+  encode := encode
+  decode := decode
+
+/-- Generic execution of `P.zeroFillCode` clearing `[base, base + space)` in `4 * space + 6`
+instructions over any basis `B`. -/
+theorem zeroFillCode_exec (P : SubroutineCode B r_ds k_init)
+    {w base space : ℕ} {params : Fin k_init → ℕ}
+    (hclear : [P.curReg, P.zeroReg, P.oneReg, P.baseReg, P.frontierReg].Nodup)
+    (hparams : ∀ j, P.initParams j ∉ [P.curReg, P.zeroReg, P.oneReg])
+    (hinc : ∀ {x : Data r_ds}, x.regs P.oneReg = 1 → Fits w (x.regs P.curReg + 1) →
+      P.incCur.eval w x = some (x.set P.curReg (x.regs P.curReg + 1)))
+    {x₁ : Data r_ds}
+    (hx₁ : x₁.Bounded w) (hb₁ : x₁.regs P.baseReg = base)
+    (hfr₁ : x₁.regs P.frontierReg = base + space)
+    (hpar₁ : ∀ j, x₁.regs (P.initParams j) = params j) :
+    ∃ x₂, ExecWithin w P.zeroFillCode x₁ x₂ (4 * space + 6) ∧
+      x₂.Bounded w ∧
+      x₂.regs P.baseReg = base ∧
+      x₂.regs P.frontierReg = base + space ∧
+      (∀ j, x₂.regs (P.initParams j) = params j) ∧
+      (∀ a ∈ (Block.mk base space).footprint, x₂.mem a = 0) ∧
+      Modifies (Block.mk base space).footprint x₁.mem x₂.mem := by
+  have hfit0 : Fits w 0 := (hx₁.1 P.baseReg).of_le (Nat.zero_le _)
+  have hfit_stop : Fits w (base + space) := hfr₁ ▸ hx₁.1 P.frontierReg
+  obtain ⟨hcur_not, hzero_not, hone_not, hbase_ne_fr, _⟩ :=
+    (List.nodup_cons.mp hclear).imp_right fun h =>
+      (List.nodup_cons.mp h).imp_right fun h =>
+        (List.nodup_cons.mp h).imp_right List.nodup_cons.mp
+  have hcur_ne_zero : P.curReg ≠ P.zeroReg := fun h => hcur_not (by simp [h])
+  have hcur_ne_one : P.curReg ≠ P.oneReg := fun h => hcur_not (by simp [h])
+  have hcur_ne_base : P.curReg ≠ P.baseReg := fun h => hcur_not (by simp [h])
+  have hcur_ne_fr : P.curReg ≠ P.frontierReg := fun h => hcur_not (by simp [h])
+  have hzero_ne_one : P.zeroReg ≠ P.oneReg := fun h => hzero_not (by simp [h])
+  have hzero_ne_base : P.zeroReg ≠ P.baseReg := fun h => hzero_not (by simp [h])
+  have hzero_ne_fr : P.zeroReg ≠ P.frontierReg := fun h => hzero_not (by simp [h])
+  have hone_ne_base : P.oneReg ≠ P.baseReg := fun h => hone_not (by simp [h])
+  have hone_ne_fr : P.oneReg ≠ P.frontierReg := fun h => hone_not (by simp [h])
+  by_cases hsp : 0 < space
+  · have hc_pos : (Cond.lt P.baseReg P.frontierReg).Holds x₁ := by
+      simp only [Cond.Holds, hb₁, hfr₁]
+      omega
+    have hfit1 : Fits w 1 := hfit_stop.of_le (by omega)
+    let x_z := x₁.set P.zeroReg 0
+    let x_o := x_z.set P.oneReg 1
+    let x_c := x_o.set P.curReg (x_o.regs P.baseReg)
+    have hxc_base : x_c.regs P.baseReg = base := by
+      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hcur_ne_base.symm,
+        Function.update_of_ne hone_ne_base.symm, Function.update_of_ne hzero_ne_base.symm, hb₁]
+    have hxc_fr : x_c.regs P.frontierReg = base + space := by
+      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hcur_ne_fr.symm,
+        Function.update_of_ne hone_ne_fr.symm, Function.update_of_ne hzero_ne_fr.symm, hfr₁]
+    have hxc_zero : x_c.regs P.zeroReg = 0 := by
+      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hcur_ne_zero.symm,
+        Function.update_of_ne hzero_ne_one]
+    have hxc_one : x_c.regs P.oneReg = 1 := by
+      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hcur_ne_one.symm]
+    have hxc_cur : x_c.regs P.curReg = base := by
+      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hone_ne_base.symm,
+        Function.update_of_ne hzero_ne_base.symm, hb₁]
+    let xs : ℕ → Data r_ds := fun i =>
+      ⟨Function.update x_c.regs P.curReg (base + i), clear x₁.mem base i⟩
+    have hxs0 : xs 0 = x_c := by
+      ext r
+      · by_cases hr : r = P.curReg
+        · subst hr
+          simp [xs, hxc_cur]
+        · simp [xs, Function.update_of_ne hr, x_c, x_o, x_z, Data.set]
+      · simp [xs, x_c, x_o, x_z, Data.set]
+    have hloop_cond : ∀ i < space, (Cond.lt P.curReg P.frontierReg).Holds (xs i) := by
+      intro i hi
+      simp only [Cond.Holds, xs, Function.update_self,
+        Function.update_of_ne hcur_ne_fr.symm, hxc_fr]
+      omega
+    have hloop_exit : ¬(Cond.lt P.curReg P.frontierReg).Holds (xs space) := by
+      simp only [Cond.Holds, xs, Function.update_self,
+        Function.update_of_ne hcur_ne_fr.symm, hxc_fr]
+      omega
+    have hloop_body : ∀ i < space,
+        ExecWithin w (.seq (.op (.store P.curReg P.zeroReg)) (.op P.incCur))
+          (xs i) (xs (i + 1)) 2 := by
+      intro i hi
+      have hsi_zero : (xs i).regs P.zeroReg = 0 := by
+        simp [xs, Function.update_of_ne hcur_ne_zero.symm, hxc_zero]
+      have hsi_one : (xs i).regs P.oneReg = 1 := by
+        simp [xs, Function.update_of_ne hcur_ne_one.symm, hxc_one]
+      have hsi_cur : (xs i).regs P.curReg = base + i := by simp [xs]
+      let x_st := (xs i).write ((xs i).regs P.curReg) ((xs i).regs P.zeroReg)
+      have hst_one : x_st.regs P.oneReg = 1 := hsi_one
+      have hst_fit : Fits w (x_st.regs P.curReg + 1) := by
+        change Fits w ((xs i).regs P.curReg + 1)
+        rw [hsi_cur]
+        exact hfit_stop.of_le (by omega)
+      have hinc : ExecWithin w (.op P.incCur) x_st (x_st.set P.curReg (x_st.regs P.curReg + 1)) 1 :=
+        (Exec.op (hinc hst_one hst_fit)).within
+      have htarget : x_st.set P.curReg (x_st.regs P.curReg + 1) = xs (i + 1) := by
+        ext r
+        · simp only [x_st, Data.set, Data.write, xs, hsi_cur]
+          by_cases hr : r = P.curReg
+          · subst hr
+            simp [Nat.add_assoc]
+          · simp [Function.update_of_ne hr]
+        · simp only [x_st, Data.set, Data.write, hsi_cur, hsi_zero]
+          simp [xs, clear_succ]
+      rw [htarget] at hinc
+      exact ExecWithin.store.seq hinc
+    have hloop : ExecWithin w
+        (.loop (.lt P.curReg P.frontierReg) (.seq (.op (.store P.curReg P.zeroReg)) (.op P.incCur)))
+        x_c (xs space) (space * (2 + 2) + 2) := by
+      simpa [hxs0] using ExecWithin.loop xs space 2 hloop_cond hloop_exit hloop_body
+    have hbranch : ExecWithin w P.zeroFillCode x₁ (xs space) (4 * space + 6) := by
+      have hseq : ExecWithin w
+          (.seq (.op (.const P.zeroReg 0)) <|
+           .seq (.op (.const P.oneReg 1)) <|
+           .seq (.op (.copy P.curReg P.baseReg)) <|
+           .loop (.lt P.curReg P.frontierReg)
+             (.seq (.op (.store P.curReg P.zeroReg)) (.op P.incCur)))
+          x₁ (xs space) (3 + (space * 4 + 2)) := by
+        obtain ⟨n₁, hn₁, he₁⟩ := (ExecWithin.const (x := x₁) (d := P.zeroReg) hfit0)
+        obtain ⟨n₂, hn₂, he₂⟩ := (ExecWithin.const (x := x_z) (d := P.oneReg) hfit1)
+        obtain ⟨n₃, hn₃, he₃⟩ := (ExecWithin.copy (B := B) (w := w) (x := x_o)
+          (d := P.curReg) (s := P.baseReg))
+        obtain ⟨n₄, hn₄, he₄⟩ := hloop
+        exact ⟨n₁ + (n₂ + (n₃ + n₄)), by omega, he₁.seq (he₂.seq (he₃.seq he₄))⟩
+      exact (ExecWithin.branch_pos hc_pos hseq).mono (by omega)
+    refine ⟨xs space, hbranch, hbranch.bounded hx₁, ?_, ?_, ?_, ?_, ?_⟩
+    · simp [xs, Function.update_of_ne hcur_ne_base.symm, hxc_base]
+    · simp [xs, Function.update_of_ne hcur_ne_fr.symm, hxc_fr]
+    · intro j
+      have hne := hparams j
+      have h1 : P.initParams j ≠ P.curReg := fun h => hne (by simp [h])
+      have h2 : P.initParams j ≠ P.zeroReg := fun h => hne (by simp [h])
+      have h3 : P.initParams j ≠ P.oneReg := fun h => hne (by simp [h])
+      simp [xs, x_c, x_o, x_z, Data.set, Function.update_of_ne h1, Function.update_of_ne h2,
+        Function.update_of_ne h3, hpar₁ j]
+    · intro a ha
+      exact clear_of_owns (Block.mem_footprint.mp ha)
+    · intro a ha
+      exact clear_of_not_owns (mt Block.mem_footprint.mpr ha)
+  · have hsp0 : space = 0 := by omega
+    have hc_neg : ¬(Cond.lt P.baseReg P.frontierReg).Holds x₁ := by
+      simp only [Cond.Holds, hb₁, hfr₁, hsp0]
+      omega
+    have hbranch : ExecWithin w P.zeroFillCode x₁ (x₁.set P.zeroReg 0) (4 * space + 6) :=
+      (ExecWithin.branch_neg hc_neg (ExecWithin.const hfit0)).mono (by omega)
+    refine ⟨x₁.set P.zeroReg 0, hbranch, hbranch.bounded hx₁, ?_, ?_, ?_, ?_, ?_⟩
+    · simp [Data.set, Function.update_of_ne hzero_ne_base.symm, hb₁]
+    · simp [Data.set, Function.update_of_ne hzero_ne_fr.symm, hfr₁]
+    · intro j
+      have hne := hparams j
+      have h2 : P.initParams j ≠ P.zeroReg := fun h => hne (by simp [h])
+      simp [Data.set, Function.update_of_ne h2, hpar₁ j]
+    · intro a ha
+      simp [hsp0, Block.footprint] at ha
+    · exact Modifies.refl _ _
+
 end SubroutineCode
 
 universe u v z
 
-/-- Unified standalone and subroutine specification/resource certificate for `P` realizing `D` at
-word width `w`, base address `base`, runtime parameters `params`, and initial state `s₀`. -/
-structure SubroutineDS {B : Basis} {r_ds k_init : ℕ} (P : SubroutineCode B r_ds k_init)
-    (D : Stateful.Spec.{u, v, z}) (w base : ℕ) (params : Fin k_init → ℕ) (s₀ : D.State) where
+/-- Step-independent specification, representation, calling-convention, and initialization bundle
+for `P : SubroutineCode B r_ds k_init` over a state type `State`, operation type `Op`, observation
+family `Result`, and admissibility predicate `valid` at word width `w`, base address `base`,
+runtime parameters `params`, and initial state `s₀`.
+
+Extended by `SubroutineDS` (for deterministic `Stateful.Spec`) and `RelSubroutineDS` (for
+relational `Stateful.RelSpec`) so that initialization (`initFresh`, `zeroFillCode`, `initClear`),
+register relocation, standalone `toDynamicProgram`, and bidirectional framing (`frame_caller`) are
+stated and proved once. -/
+structure SubroutineBase {B : Basis} {r_ds k_init : ℕ} (P : SubroutineCode B r_ds k_init)
+    {State : Type u} {O : Type v} (Result : O → Type z) (valid : State → O → Prop)
+    (w base : ℕ) (params : Fin k_init → ℕ) (s₀ : State) where
   /-- Contiguous memory footprint length `[base, base + space)`. -/
   space : ℕ
   /-- Instruction bound for `P.allocSpan`. -/
@@ -222,25 +394,23 @@ structure SubroutineDS {B : Basis} {r_ds k_init : ℕ} (P : SubroutineCode B r_d
   /-- Upper bound on initial concrete potential after initialization. -/
   initPotential : ℕ
   /-- Amortized instruction charge per operation (excluding trailing standalone `halt`). -/
-  charge : D.State → D.Op → ℕ
+  charge : State → O → ℕ
   /-- Representation invariant linking mathematical state `s` to concrete `Data r_ds`. -/
-  rep : D.State → Data r_ds → Prop
+  rep : State → Data r_ds → Prop
   /-- Concrete integer potential depending only on `Data r_ds`. -/
   potential : Data r_ds → ℕ
   /-- Standalone register encoding for `DynamicProgram.prepare`. -/
-  encode : D.Op → Fin r_ds → ℕ
+  encode : O → Fin r_ds → ℕ
   /-- Partial argument-matching predicate for inline callers (refined by `encode`). -/
-  argMatch : D.Op → (Fin r_ds → ℕ) → Prop
+  argMatch : O → (Fin r_ds → ℕ) → Prop
   /-- Output decoder reading typed operation observations from final registers. -/
-  decode : (o : D.Op) → (Fin r_ds → ℕ) → Option (D.Result o)
+  decode : (o : O) → (Fin r_ds → ℕ) → Option (Result o)
   /-- Represented configurations are word-bounded. -/
   bounded : ∀ {s x}, rep s x → x.Bounded w
-  /-- Concrete machine data determines at most one represented abstract state. -/
-  rep_unique : ∀ {s₁ s₂ x}, rep s₁ x → rep s₂ x → s₁ = s₂
   /-- Standalone encoded arguments fit in `w`-bit words on admissible calls. -/
-  arguments_fit : ∀ {s} (o), D.valid s o → ∀ i, P.input i = true → Fits w (encode o i)
+  arguments_fit : ∀ {s} (o), valid s o → ∀ i, P.input i = true → Fits w (encode o i)
   /-- Full standalone `prepare` delivery satisfies `argMatch`. -/
-  encode_matches : ∀ (o : D.Op) (regs : Fin r_ds → ℕ),
+  encode_matches : ∀ (o : O) (regs : Fin r_ds → ℕ),
     argMatch o (fun i => if P.input i then encode o i else regs i)
   /-- `rep` depends only on persistent registers (`P.input i = false`) and `[base, base + space)`.
   -/
@@ -274,6 +444,165 @@ structure SubroutineDS {B : Basis} {r_ds k_init : ℕ} (P : SubroutineCode B r_d
     ∃ y, ExecWithin w P.initSetup x₁ y setupTime ∧ y.regs P.frontierReg = base + space ∧
       rep s₀ y ∧ potential y ≤ initPotential ∧
       Modifies (Block.mk base space).footprint x₁.mem y.mem
+
+namespace SubroutineBase
+
+variable {B B' : Basis} {r_ds r_caller k_init w base : ℕ}
+  {P : SubroutineCode B r_ds k_init} {State : Type u} {O : Type v}
+  {Result : O → Type z} {valid : State → O → Prop} {params : Fin k_init → ℕ} {s₀ : State}
+
+/-- Total instruction bound for `P.initFresh`. -/
+def initTime (C : SubroutineBase P Result valid w base params s₀) : ℕ :=
+  C.spanTime + C.setupTime
+
+/-- Default register-preparation function overwriting `P.input` registers with `C.encode o`. -/
+def prepareRegs (C : SubroutineBase P Result valid w base params s₀) (o : O)
+    (regs : Fin r_ds → ℕ) : Fin r_ds → ℕ :=
+  fun i => if P.input i then C.encode o i else regs i
+
+/-- Lift a `SubroutineBase` bundle along any defined-evaluation basis simulation. -/
+def mapSimulates (φ : B.Simulates B') (C : SubroutineBase P Result valid w base params s₀) :
+    SubroutineBase (P.mapSimulates φ) Result valid w base params s₀ where
+  space := C.space
+  spanTime := C.spanTime
+  setupTime := C.setupTime
+  initPotential := C.initPotential
+  charge := C.charge
+  rep := C.rep
+  potential := C.potential
+  encode := C.encode
+  argMatch := C.argMatch
+  decode := C.decode
+  bounded := C.bounded
+  arguments_fit := C.arguments_fit
+  encode_matches := C.encode_matches
+  rep_supported := C.rep_supported
+  potential_supported := C.potential_supported
+  clear_nodup := C.clear_nodup
+  params_not_clear := C.params_not_clear
+  incCur_eval h1 hfit := Op.eval_mapSimulates_of_some φ (C.incCur_eval h1 hfit)
+  span_exec hx hf hp :=
+    let ⟨x₁, he, hm, hb, hfr, hpar⟩ := C.span_exec hx hf hp
+    ⟨x₁, he.mapSimulates φ, hm, hb, hfr, hpar⟩
+  setup_exec hx₁ hb hfr hpar hz :=
+    let ⟨y, he, hfr', hrep, hpot, hmod⟩ := C.setup_exec hx₁ hb hfr hpar hz
+    ⟨y, he.mapSimulates φ, hfr', hrep, hpot, hmod⟩
+
+/-- Project a subroutine bundle to its signature-level program, retaining the instruction basis. -/
+def toDynamicProgram (C : SubroutineBase P Result valid w base params s₀) :
+    DynamicProgram ⟨O, Result⟩ r_ds B :=
+  P.toDynamicProgram C.encode C.decode
+
+/-- Execute `P.initFresh` on zeroed `[base, base + C.space)` in `C.initTime` instructions. -/
+theorem initFresh_exec (C : SubroutineBase P Result valid w base params s₀) {x : Data r_ds}
+    (hx : x.Bounded w) (hfr : x.regs P.frontierReg = base)
+    (hpar : ∀ j, x.regs (P.initParams j) = params j)
+    (hz : ∀ a ∈ (Block.mk base C.space).footprint, x.mem a = 0) :
+    ∃ y, ExecWithin w P.initFresh x y C.initTime ∧
+      y.regs P.frontierReg = base + C.space ∧
+      C.rep s₀ y ∧
+      C.potential y ≤ C.initPotential ∧
+      Modifies (Block.mk base C.space).footprint x.mem y.mem := by
+  obtain ⟨x₁, he₁, hm₁, hb₁, hfr₁, hpar₁⟩ := C.span_exec hx hfr hpar
+  have hx₁ : x₁.Bounded w := he₁.bounded hx
+  have hz₁ : ∀ a ∈ (Block.mk base C.space).footprint, x₁.mem a = 0 := by
+    intro a ha
+    rw [hm₁]
+    exact hz a ha
+  obtain ⟨y, he₂, hfr₂, hrep, hpot, hmod⟩ := C.setup_exec hx₁ hb₁ hfr₁ hpar₁ hz₁
+  rw [hm₁] at hmod
+  exact ⟨y, he₁.seq he₂, hfr₂, hrep, hpot, hmod⟩
+
+/-- Relocated `O(1)` fresh initialization along any injective register embedding `f`. -/
+theorem initFresh_rename (C : SubroutineBase P Result valid w base params s₀)
+    {f : Fin r_ds → Fin r_caller} (hf : f.Injective) {x : Data r_caller}
+    (hx : (x.comap f).Bounded w) (hfr : x.regs (f P.frontierReg) = base)
+    (hpar : ∀ j, x.regs (f (P.initParams j)) = params j)
+    (hz : ∀ a ∈ (Block.mk base C.space).footprint, x.mem a = 0) :
+    ∃ z, ExecWithin w (P.initFresh.rename f) x z C.initTime ∧
+      z.regs (f P.frontierReg) = base + C.space ∧
+      C.rep s₀ (z.comap f) ∧
+      C.potential (z.comap f) ≤ C.initPotential ∧
+      Modifies (Block.mk base C.space).footprint x.mem z.mem ∧
+      (∀ j ∉ Set.range f, z.regs j = x.regs j) := by
+  obtain ⟨y, he, hfr', hrep, hpot, hmod⟩ := C.initFresh_exec hx hfr hpar hz
+  refine ⟨y.extend f x, he.rename hf, ?_, ?_, ?_, hmod,
+    fun j hj => Data.extend_regs_of_notMem y x hj⟩
+  · change ((y.extend f x).comap f).regs P.frontierReg = base + C.space
+    rw [Data.comap_extend hf]
+    exact hfr'
+  · rw [Data.comap_extend hf]
+    exact hrep
+  · rw [Data.comap_extend hf]
+    exact hpot
+
+/-- Execute `P.initClear` on **arbitrary dirty memory** in `C.initTime + 4 * C.space + 6`
+instructions. -/
+theorem initClear_exec (C : SubroutineBase P Result valid w base params s₀) {x : Data r_ds}
+    (hx : x.Bounded w) (hfr : x.regs P.frontierReg = base)
+    (hpar : ∀ j, x.regs (P.initParams j) = params j) :
+    ∃ y, ExecWithin w P.initClear x y (C.initTime + 4 * C.space + 6) ∧
+      y.regs P.frontierReg = base + C.space ∧
+      C.rep s₀ y ∧
+      C.potential y ≤ C.initPotential ∧
+      Modifies (Block.mk base C.space).footprint x.mem y.mem := by
+  obtain ⟨x₁, he₁, hm₁, hb₁, hfr₁, hpar₁⟩ := C.span_exec hx hfr hpar
+  obtain ⟨x₂, he₂, hx₂, hb₂, hfr₂, hpar₂, hz₂, hmod₂⟩ :=
+    P.zeroFillCode_exec C.clear_nodup C.params_not_clear C.incCur_eval
+      (he₁.bounded hx) hb₁ hfr₁ hpar₁
+  obtain ⟨y, he₃, hfr₃, hrep, hpot, hmod₃⟩ := C.setup_exec hx₂ hb₂ hfr₂ hpar₂ hz₂
+  rw [hm₁] at hmod₂
+  have hmod : Modifies (Block.mk base C.space).footprint x.mem y.mem := by
+    simpa only [Finset.union_idempotent] using hmod₂.trans hmod₃
+  exact ⟨y, (he₁.seq (he₂.seq he₃)).mono (by unfold initTime; omega), hfr₃, hrep, hpot, hmod⟩
+
+/-- Relocated `O(space)` dirty-memory initialization along any injective register embedding `f`. -/
+theorem initClear_rename (C : SubroutineBase P Result valid w base params s₀)
+    {f : Fin r_ds → Fin r_caller} (hf : f.Injective) {x : Data r_caller}
+    (hx : (x.comap f).Bounded w) (hfr : x.regs (f P.frontierReg) = base)
+    (hpar : ∀ j, x.regs (f (P.initParams j)) = params j) :
+    ∃ z, ExecWithin w (P.initClear.rename f) x z (C.initTime + 4 * C.space + 6) ∧
+      z.regs (f P.frontierReg) = base + C.space ∧
+      C.rep s₀ (z.comap f) ∧
+      C.potential (z.comap f) ≤ C.initPotential ∧
+      Modifies (Block.mk base C.space).footprint x.mem z.mem ∧
+      (∀ j ∉ Set.range f, z.regs j = x.regs j) := by
+  obtain ⟨y, he, hfr', hrep, hpot, hmod⟩ := C.initClear_exec hx hfr hpar
+  refine ⟨y.extend f x, he.rename hf, ?_, ?_, ?_, hmod,
+    fun j hj => Data.extend_regs_of_notMem y x hj⟩
+  · change ((y.extend f x).comap f).regs P.frontierReg = base + C.space
+    rw [Data.comap_extend hf]
+    exact hfr'
+  · rw [Data.comap_extend hf]
+    exact hrep
+  · rw [Data.comap_extend hf]
+    exact hpot
+
+/-- Any caller state transition that preserves `(x'.comap f).Bounded w`, leaves persistent DS
+registers (`P.input i = false`) unchanged, and writes only to a set `F` disjoint from
+`[base, base + C.space)` preserves both `C.rep s (x'.comap f)` and `C.potential (x'.comap f)`. -/
+theorem frame_caller (C : SubroutineBase P Result valid w base params s₀)
+    {f : Fin r_ds → Fin r_caller} {s : State} {x x' : Data r_caller} {F : Finset ℕ}
+    (hr : C.rep s (x.comap f))
+    (hb' : (x'.comap f).Bounded w)
+    (hreg : ∀ i, P.input i = false → x'.regs (f i) = x.regs (f i))
+    (hdisj : Disjoint (Block.mk base C.space).footprint F)
+    (hmem : Modifies F x.mem x'.mem) :
+    C.rep s (x'.comap f) ∧ C.potential (x'.comap f) = C.potential (x.comap f) := by
+  have hag : ∀ a ∈ (Block.mk base C.space).footprint, x'.mem a = x.mem a := fun a ha =>
+    hmem a (fun hf => Finset.disjoint_left.mp hdisj ha hf)
+  exact ⟨C.rep_supported (x := x.comap f) (x' := x'.comap f) hreg hag hb' hr,
+    C.potential_supported (x := x.comap f) (x' := x'.comap f) hreg hag hr⟩
+
+end SubroutineBase
+
+/-- Unified standalone and subroutine specification/resource certificate for `P` realizing `D` at
+word width `w`, base address `base`, runtime parameters `params`, and initial state `s₀`. -/
+structure SubroutineDS {B : Basis} {r_ds k_init : ℕ} (P : SubroutineCode B r_ds k_init)
+    (D : Stateful.Spec.{u, v, z}) (w base : ℕ) (params : Fin k_init → ℕ) (s₀ : D.State)
+    extends SubroutineBase P D.Result D.valid w base params s₀ where
+  /-- Concrete machine data determines at most one represented abstract state. -/
+  rep_unique : ∀ {s₁ s₂ x}, rep s₁ x → rep s₂ x → s₁ = s₂
   /-- Execution of `P.code` for any admissible operation `o` whose arguments match `x.regs`. -/
   step_exec : ∀ {s : D.State} {x : Data r_ds} (o : D.Op),
     rep s x → D.valid s o → argMatch o x.regs →
@@ -289,40 +618,13 @@ variable {B B' : Basis} {r_ds r_caller k_init w base : ℕ}
   {P : SubroutineCode B r_ds k_init} {D : Stateful.Spec.{u, v, z}}
   {params : Fin k_init → ℕ} {s₀ : D.State}
 
-/-- Total instruction bound for `P.initFresh`. -/
-def initTime (C : SubroutineDS P D w base params s₀) : ℕ :=
-  C.spanTime + C.setupTime
-
 /-! ### Projection 1: Basis lifting and standalone `DynamicProgram` / `Stateful` theorems -/
 
 /-- Lift a `SubroutineDS` certificate along any defined-evaluation basis simulation. -/
 def mapSimulates (φ : B.Simulates B') (C : SubroutineDS P D w base params s₀) :
     SubroutineDS (P.mapSimulates φ) D w base params s₀ where
-  space := C.space
-  spanTime := C.spanTime
-  setupTime := C.setupTime
-  initPotential := C.initPotential
-  charge := C.charge
-  rep := C.rep
-  potential := C.potential
-  encode := C.encode
-  argMatch := C.argMatch
-  decode := C.decode
-  bounded := C.bounded
+  toSubroutineBase := C.toSubroutineBase.mapSimulates φ
   rep_unique := C.rep_unique
-  arguments_fit := C.arguments_fit
-  encode_matches := C.encode_matches
-  rep_supported := C.rep_supported
-  potential_supported := C.potential_supported
-  clear_nodup := C.clear_nodup
-  params_not_clear := C.params_not_clear
-  incCur_eval h1 hfit := Op.eval_mapSimulates_of_some φ (C.incCur_eval h1 hfit)
-  span_exec hx hf hp :=
-    let ⟨x₁, he, hm, hb, hfr, hpar⟩ := C.span_exec hx hf hp
-    ⟨x₁, he.mapSimulates φ, hm, hb, hfr, hpar⟩
-  setup_exec hx₁ hb hfr hpar hz :=
-    let ⟨y, he, hfr', hrep, hpot, hmod⟩ := C.setup_exec hx₁ hb hfr hpar hz
-    ⟨y, he.mapSimulates φ, hfr', hrep, hpot, hmod⟩
   step_exec o hr hv harg :=
     let ⟨y, n, he, hdec, hrep, hmod, hpot⟩ := C.step_exec o hr hv harg
     ⟨y, n, he.mapSimulates φ, hdec, hrep, hmod, hpot⟩
@@ -337,14 +639,6 @@ section Standard
 
 variable {P_std : SubroutineCode .standard r_ds k_init}
   (C : SubroutineDS P_std D w base params s₀)
-
-/-- Project a `.standard`-basis `SubroutineDS` to a standalone `DynamicProgram`. -/
-def toDynamicProgram : DynamicProgram D r_ds where
-  code := P_std.code
-  output := P_std.output
-  input := P_std.input
-  encode := C.encode
-  decode := C.decode
 
 /-- Project a `.standard`-basis `SubroutineDS` to a standalone `DynamicCertificate`. -/
 def toCertificate : DynamicCertificate C.toDynamicProgram w where
@@ -423,241 +717,7 @@ theorem run_client_bound (hpot : ∀ x, C.potential x = 0) {α : Type*} (p : D.C
 
 end Standard
 
-/-! ### Projection 2: Fresh `O(1)` initialization and register relocation -/
-
-/-- Execute `P.initFresh` on zeroed `[base, base + C.space)` in `C.initTime` instructions. -/
-theorem initFresh_exec (C : SubroutineDS P D w base params s₀) {x : Data r_ds}
-    (hx : x.Bounded w) (hfr : x.regs P.frontierReg = base)
-    (hpar : ∀ j, x.regs (P.initParams j) = params j)
-    (hz : ∀ a ∈ (Block.mk base C.space).footprint, x.mem a = 0) :
-    ∃ y, ExecWithin w P.initFresh x y C.initTime ∧
-      y.regs P.frontierReg = base + C.space ∧
-      C.rep s₀ y ∧
-      C.potential y ≤ C.initPotential ∧
-      Modifies (Block.mk base C.space).footprint x.mem y.mem := by
-  obtain ⟨x₁, he₁, hm₁, hb₁, hfr₁, hpar₁⟩ := C.span_exec hx hfr hpar
-  have hx₁ : x₁.Bounded w := he₁.bounded hx
-  have hz₁ : ∀ a ∈ (Block.mk base C.space).footprint, x₁.mem a = 0 := by
-    intro a ha
-    rw [hm₁]
-    exact hz a ha
-  obtain ⟨y, he₂, hfr₂, hrep, hpot, hmod⟩ := C.setup_exec hx₁ hb₁ hfr₁ hpar₁ hz₁
-  rw [hm₁] at hmod
-  exact ⟨y, he₁.seq he₂, hfr₂, hrep, hpot, hmod⟩
-
-/-- Relocated `O(1)` fresh initialization along any injective register embedding `f`. -/
-theorem initFresh_rename (C : SubroutineDS P D w base params s₀)
-    {f : Fin r_ds → Fin r_caller} (hf : f.Injective) {x : Data r_caller}
-    (hx : (x.comap f).Bounded w) (hfr : x.regs (f P.frontierReg) = base)
-    (hpar : ∀ j, x.regs (f (P.initParams j)) = params j)
-    (hz : ∀ a ∈ (Block.mk base C.space).footprint, x.mem a = 0) :
-    ∃ z, ExecWithin w (P.initFresh.rename f) x z C.initTime ∧
-      z.regs (f P.frontierReg) = base + C.space ∧
-      C.rep s₀ (z.comap f) ∧
-      C.potential (z.comap f) ≤ C.initPotential ∧
-      Modifies (Block.mk base C.space).footprint x.mem z.mem ∧
-      (∀ j ∉ Set.range f, z.regs j = x.regs j) := by
-  obtain ⟨y, he, hfr', hrep, hpot, hmod⟩ := C.initFresh_exec hx hfr hpar hz
-  refine ⟨y.extend f x, he.rename hf, ?_, ?_, ?_, hmod,
-    fun j hj => Data.extend_regs_of_notMem y x hj⟩
-  · change ((y.extend f x).comap f).regs P.frontierReg = base + C.space
-    rw [Data.comap_extend hf]
-    exact hfr'
-  · rw [Data.comap_extend hf]
-    exact hrep
-  · rw [Data.comap_extend hf]
-    exact hpot
-
-/-! ### Projection 3: Generic `O(space)` dirty-memory initialization (`initClear`) -/
-
-/-- Generic execution of `P.zeroFillCode` clearing `[base, base + C.space)` in `4 * C.space + 6`
-instructions over any basis `B`. -/
-theorem zeroFillCode_exec (C : SubroutineDS P D w base params s₀) {x₁ : Data r_ds}
-    (hx₁ : x₁.Bounded w) (hb₁ : x₁.regs P.baseReg = base)
-    (hfr₁ : x₁.regs P.frontierReg = base + C.space)
-    (hpar₁ : ∀ j, x₁.regs (P.initParams j) = params j) :
-    ∃ x₂, ExecWithin w P.zeroFillCode x₁ x₂ (4 * C.space + 6) ∧
-      x₂.Bounded w ∧
-      x₂.regs P.baseReg = base ∧
-      x₂.regs P.frontierReg = base + C.space ∧
-      (∀ j, x₂.regs (P.initParams j) = params j) ∧
-      (∀ a ∈ (Block.mk base C.space).footprint, x₂.mem a = 0) ∧
-      Modifies (Block.mk base C.space).footprint x₁.mem x₂.mem := by
-  have hfit0 : Fits w 0 := (hx₁.1 P.baseReg).of_le (Nat.zero_le _)
-  have hfit_stop : Fits w (base + C.space) := hfr₁ ▸ hx₁.1 P.frontierReg
-  obtain ⟨hcur_not, hzero_not, hone_not, hbase_ne_fr, _⟩ :=
-    (List.nodup_cons.mp C.clear_nodup).imp_right fun h =>
-      (List.nodup_cons.mp h).imp_right fun h =>
-        (List.nodup_cons.mp h).imp_right List.nodup_cons.mp
-  have hcur_ne_zero : P.curReg ≠ P.zeroReg := fun h => hcur_not (by simp [h])
-  have hcur_ne_one : P.curReg ≠ P.oneReg := fun h => hcur_not (by simp [h])
-  have hcur_ne_base : P.curReg ≠ P.baseReg := fun h => hcur_not (by simp [h])
-  have hcur_ne_fr : P.curReg ≠ P.frontierReg := fun h => hcur_not (by simp [h])
-  have hzero_ne_one : P.zeroReg ≠ P.oneReg := fun h => hzero_not (by simp [h])
-  have hzero_ne_base : P.zeroReg ≠ P.baseReg := fun h => hzero_not (by simp [h])
-  have hzero_ne_fr : P.zeroReg ≠ P.frontierReg := fun h => hzero_not (by simp [h])
-  have hone_ne_base : P.oneReg ≠ P.baseReg := fun h => hone_not (by simp [h])
-  have hone_ne_fr : P.oneReg ≠ P.frontierReg := fun h => hone_not (by simp [h])
-  by_cases hsp : 0 < C.space
-  · have hc_pos : (Cond.lt P.baseReg P.frontierReg).Holds x₁ := by
-      simp only [Cond.Holds, hb₁, hfr₁]
-      omega
-    have hfit1 : Fits w 1 := hfit_stop.of_le (by omega)
-    let x_z := x₁.set P.zeroReg 0
-    let x_o := x_z.set P.oneReg 1
-    let x_c := x_o.set P.curReg (x_o.regs P.baseReg)
-    have hxc_base : x_c.regs P.baseReg = base := by
-      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hcur_ne_base.symm,
-        Function.update_of_ne hone_ne_base.symm, Function.update_of_ne hzero_ne_base.symm, hb₁]
-    have hxc_fr : x_c.regs P.frontierReg = base + C.space := by
-      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hcur_ne_fr.symm,
-        Function.update_of_ne hone_ne_fr.symm, Function.update_of_ne hzero_ne_fr.symm, hfr₁]
-    have hxc_zero : x_c.regs P.zeroReg = 0 := by
-      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hcur_ne_zero.symm,
-        Function.update_of_ne hzero_ne_one]
-    have hxc_one : x_c.regs P.oneReg = 1 := by
-      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hcur_ne_one.symm]
-    have hxc_cur : x_c.regs P.curReg = base := by
-      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hone_ne_base.symm,
-        Function.update_of_ne hzero_ne_base.symm, hb₁]
-    let xs : ℕ → Data r_ds := fun i =>
-      ⟨Function.update x_c.regs P.curReg (base + i), clear x₁.mem base i⟩
-    have hxs0 : xs 0 = x_c := by
-      ext r
-      · by_cases hr : r = P.curReg
-        · subst hr
-          simp [xs, hxc_cur]
-        · simp [xs, Function.update_of_ne hr, x_c, x_o, x_z, Data.set]
-      · simp [xs, x_c, x_o, x_z, Data.set]
-    have hloop_cond : ∀ i < C.space, (Cond.lt P.curReg P.frontierReg).Holds (xs i) := by
-      intro i hi
-      simp only [Cond.Holds, xs, Function.update_self,
-        Function.update_of_ne hcur_ne_fr.symm, hxc_fr]
-      omega
-    have hloop_exit : ¬(Cond.lt P.curReg P.frontierReg).Holds (xs C.space) := by
-      simp only [Cond.Holds, xs, Function.update_self,
-        Function.update_of_ne hcur_ne_fr.symm, hxc_fr]
-      omega
-    have hloop_body : ∀ i < C.space,
-        ExecWithin w (.seq (.op (.store P.curReg P.zeroReg)) (.op P.incCur))
-          (xs i) (xs (i + 1)) 2 := by
-      intro i hi
-      have hsi_zero : (xs i).regs P.zeroReg = 0 := by
-        simp [xs, Function.update_of_ne hcur_ne_zero.symm, hxc_zero]
-      have hsi_one : (xs i).regs P.oneReg = 1 := by
-        simp [xs, Function.update_of_ne hcur_ne_one.symm, hxc_one]
-      have hsi_cur : (xs i).regs P.curReg = base + i := by simp [xs]
-      let x_st := (xs i).write ((xs i).regs P.curReg) ((xs i).regs P.zeroReg)
-      have hst_one : x_st.regs P.oneReg = 1 := hsi_one
-      have hst_fit : Fits w (x_st.regs P.curReg + 1) := by
-        change Fits w ((xs i).regs P.curReg + 1)
-        rw [hsi_cur]
-        exact hfit_stop.of_le (by omega)
-      have hinc : ExecWithin w (.op P.incCur) x_st (x_st.set P.curReg (x_st.regs P.curReg + 1)) 1 :=
-        (Exec.op (C.incCur_eval hst_one hst_fit)).within
-      have htarget : x_st.set P.curReg (x_st.regs P.curReg + 1) = xs (i + 1) := by
-        ext r
-        · simp only [x_st, Data.set, Data.write, xs, hsi_cur]
-          by_cases hr : r = P.curReg
-          · subst hr
-            simp [Nat.add_assoc]
-          · simp [Function.update_of_ne hr]
-        · simp only [x_st, Data.set, Data.write, hsi_cur, hsi_zero]
-          simp [xs, clear_succ]
-      rw [htarget] at hinc
-      exact ExecWithin.store.seq hinc
-    have hloop : ExecWithin w
-        (.loop (.lt P.curReg P.frontierReg) (.seq (.op (.store P.curReg P.zeroReg)) (.op P.incCur)))
-        x_c (xs C.space) (C.space * (2 + 2) + 2) := by
-      simpa [hxs0] using ExecWithin.loop xs C.space 2 hloop_cond hloop_exit hloop_body
-    have hbranch : ExecWithin w P.zeroFillCode x₁ (xs C.space) (4 * C.space + 6) := by
-      have hseq : ExecWithin w
-          (.seq (.op (.const P.zeroReg 0)) <|
-           .seq (.op (.const P.oneReg 1)) <|
-           .seq (.op (.copy P.curReg P.baseReg)) <|
-           .loop (.lt P.curReg P.frontierReg)
-             (.seq (.op (.store P.curReg P.zeroReg)) (.op P.incCur)))
-          x₁ (xs C.space) (3 + (C.space * 4 + 2)) := by
-        obtain ⟨n₁, hn₁, he₁⟩ := (ExecWithin.const (x := x₁) (d := P.zeroReg) hfit0)
-        obtain ⟨n₂, hn₂, he₂⟩ := (ExecWithin.const (x := x_z) (d := P.oneReg) hfit1)
-        obtain ⟨n₃, hn₃, he₃⟩ := (ExecWithin.copy (B := B) (w := w) (x := x_o)
-          (d := P.curReg) (s := P.baseReg))
-        obtain ⟨n₄, hn₄, he₄⟩ := hloop
-        exact ⟨n₁ + (n₂ + (n₃ + n₄)), by omega, he₁.seq (he₂.seq (he₃.seq he₄))⟩
-      exact (ExecWithin.branch_pos hc_pos hseq).mono (by omega)
-    refine ⟨xs C.space, hbranch, hbranch.bounded hx₁, ?_, ?_, ?_, ?_, ?_⟩
-    · simp [xs, Function.update_of_ne hcur_ne_base.symm, hxc_base]
-    · simp [xs, Function.update_of_ne hcur_ne_fr.symm, hxc_fr]
-    · intro j
-      have hne := C.params_not_clear j
-      have h1 : P.initParams j ≠ P.curReg := fun h => hne (by simp [h])
-      have h2 : P.initParams j ≠ P.zeroReg := fun h => hne (by simp [h])
-      have h3 : P.initParams j ≠ P.oneReg := fun h => hne (by simp [h])
-      simp [xs, x_c, x_o, x_z, Data.set, Function.update_of_ne h1, Function.update_of_ne h2,
-        Function.update_of_ne h3, hpar₁ j]
-    · intro a ha
-      exact clear_of_owns (Block.mem_footprint.mp ha)
-    · intro a ha
-      exact clear_of_not_owns (mt Block.mem_footprint.mpr ha)
-  · have hsp0 : C.space = 0 := by omega
-    have hc_neg : ¬(Cond.lt P.baseReg P.frontierReg).Holds x₁ := by
-      simp only [Cond.Holds, hb₁, hfr₁, hsp0]
-      omega
-    have hbranch : ExecWithin w P.zeroFillCode x₁ (x₁.set P.zeroReg 0) (4 * C.space + 6) :=
-      (ExecWithin.branch_neg hc_neg (ExecWithin.const hfit0)).mono (by omega)
-    refine ⟨x₁.set P.zeroReg 0, hbranch, hbranch.bounded hx₁, ?_, ?_, ?_, ?_, ?_⟩
-    · simp [Data.set, Function.update_of_ne hzero_ne_base.symm, hb₁]
-    · simp [Data.set, Function.update_of_ne hzero_ne_fr.symm, hfr₁]
-    · intro j
-      have hne := C.params_not_clear j
-      have h2 : P.initParams j ≠ P.zeroReg := fun h => hne (by simp [h])
-      simp [Data.set, Function.update_of_ne h2, hpar₁ j]
-    · intro a ha
-      simp [hsp0, Block.footprint] at ha
-    · exact Modifies.refl _ _
-
-/-- Execute `P.initClear` on **arbitrary dirty memory** in `C.initTime + 4 * C.space + 6`
-instructions. -/
-theorem initClear_exec (C : SubroutineDS P D w base params s₀) {x : Data r_ds}
-    (hx : x.Bounded w) (hfr : x.regs P.frontierReg = base)
-    (hpar : ∀ j, x.regs (P.initParams j) = params j) :
-    ∃ y, ExecWithin w P.initClear x y (C.initTime + 4 * C.space + 6) ∧
-      y.regs P.frontierReg = base + C.space ∧
-      C.rep s₀ y ∧
-      C.potential y ≤ C.initPotential ∧
-      Modifies (Block.mk base C.space).footprint x.mem y.mem := by
-  obtain ⟨x₁, he₁, hm₁, hb₁, hfr₁, hpar₁⟩ := C.span_exec hx hfr hpar
-  obtain ⟨x₂, he₂, hx₂, hb₂, hfr₂, hpar₂, hz₂, hmod₂⟩ :=
-    C.zeroFillCode_exec (he₁.bounded hx) hb₁ hfr₁ hpar₁
-  obtain ⟨y, he₃, hfr₃, hrep, hpot, hmod₃⟩ := C.setup_exec hx₂ hb₂ hfr₂ hpar₂ hz₂
-  rw [hm₁] at hmod₂
-  have hmod : Modifies (Block.mk base C.space).footprint x.mem y.mem := by
-    simpa only [Finset.union_idempotent] using hmod₂.trans hmod₃
-  exact ⟨y, (he₁.seq (he₂.seq he₃)).mono (by unfold initTime; omega), hfr₃, hrep, hpot, hmod⟩
-
-/-- Relocated `O(space)` dirty-memory initialization along any injective register embedding `f`. -/
-theorem initClear_rename (C : SubroutineDS P D w base params s₀)
-    {f : Fin r_ds → Fin r_caller} (hf : f.Injective) {x : Data r_caller}
-    (hx : (x.comap f).Bounded w) (hfr : x.regs (f P.frontierReg) = base)
-    (hpar : ∀ j, x.regs (f (P.initParams j)) = params j) :
-    ∃ z, ExecWithin w (P.initClear.rename f) x z (C.initTime + 4 * C.space + 6) ∧
-      z.regs (f P.frontierReg) = base + C.space ∧
-      C.rep s₀ (z.comap f) ∧
-      C.potential (z.comap f) ≤ C.initPotential ∧
-      Modifies (Block.mk base C.space).footprint x.mem z.mem ∧
-      (∀ j ∉ Set.range f, z.regs j = x.regs j) := by
-  obtain ⟨y, he, hfr', hrep, hpot, hmod⟩ := C.initClear_exec hx hfr hpar
-  refine ⟨y.extend f x, he.rename hf, ?_, ?_, ?_, hmod,
-    fun j hj => Data.extend_regs_of_notMem y x hj⟩
-  · change ((y.extend f x).comap f).regs P.frontierReg = base + C.space
-    rw [Data.comap_extend hf]
-    exact hfr'
-  · rw [Data.comap_extend hf]
-    exact hrep
-  · rw [Data.comap_extend hf]
-    exact hpot
-
-/-! ### Projection 4: Relocated inline subroutine calls (`code_rename`, `call_rename`) -/
+/-! ### Projection 2: Relocated inline subroutine calls (`code_rename`, `call_rename`) -/
 
 /-- Execute `P.code.rename f` inline when arguments already match `(x.comap f).regs`. -/
 theorem code_rename (C : SubroutineDS P D w base params s₀)
@@ -705,24 +765,6 @@ theorem call_rename (C : SubroutineDS P D w base params s₀)
     C.code_rename hf o hr' hv harg
   exact ⟨z, t_prep + t_op, hprep.seq he_op, hdec, hrep_z, hmod_z, hregs_z,
     by rw [hp_eq] at hpot_z; omega⟩
-
-/-! ### Projection 5: Caller-to-DS bidirectional framing (`frame_caller`) -/
-
-/-- Any caller state transition that preserves `(x'.comap f).Bounded w`, leaves persistent DS
-registers (`P.input i = false`) unchanged, and writes only to a set `F` disjoint from
-`[base, base + C.space)` preserves both `C.rep s (x'.comap f)` and `C.potential (x'.comap f)`. -/
-theorem frame_caller (C : SubroutineDS P D w base params s₀)
-    {f : Fin r_ds → Fin r_caller} {s : D.State} {x x' : Data r_caller} {F : Finset ℕ}
-    (hr : C.rep s (x.comap f))
-    (hb' : (x'.comap f).Bounded w)
-    (hreg : ∀ i, P.input i = false → x'.regs (f i) = x.regs (f i))
-    (hdisj : Disjoint (Block.mk base C.space).footprint F)
-    (hmem : Modifies F x.mem x'.mem) :
-    C.rep s (x'.comap f) ∧ C.potential (x'.comap f) = C.potential (x.comap f) := by
-  have hag : ∀ a ∈ (Block.mk base C.space).footprint, x'.mem a = x.mem a := fun a ha =>
-    hmem a (fun hf => Finset.disjoint_left.mp hdisj ha hf)
-  exact ⟨C.rep_supported (x := x.comap f) (x' := x'.comap f) hreg hag hb' hr,
-    C.potential_supported (x := x.comap f) (x' := x'.comap f) hreg hag hr⟩
 
 end SubroutineDS
 

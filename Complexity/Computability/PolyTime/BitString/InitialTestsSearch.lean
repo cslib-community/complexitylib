@@ -17,6 +17,7 @@ import Complexity.Foundations.Data.BitString.Binary
 import Complexity.Foundations.Data.BitString.InitialTests
 import Complexity.Foundations.Data.BitString.Parity.DotProduct
 import Complexity.Foundations.Data.List.OfFn
+import Complexity.Foundations.Data.Nat.CeilDiv
 import Complexity.Probability.SmallBias.Random
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -64,10 +65,6 @@ open Finset Cslib.BitString Cslib.GenericRAM Cslib.Probability.PMF Turing.MultiT
 
 /-! ### Lemma 6.1 integer parameter schedule -/
 private abbrev mu (m : ℕ) : ℕ := Nat.log 2 m + 1
-private theorem le_ceilDiv_mul {a b : ℕ} (ha : 1 ≤ a) (hb : 0 < b) : a ≤ (a + b - 1) / b * b := by
-  have := Nat.div_add_mod (a + b - 1) b; have := Nat.mod_lt (a + b - 1) hb
-  have : a + b - 1 + 1 = a + b := by omega
-  nlinarith
 
 /-- Cayley degree `d_G = min(m, D₀)` (`D₀ = initialRowWeightBound B m`) of [OpenAI2026ETH],
 Lemma 6.1. -/
@@ -90,9 +87,11 @@ theorem dG_pos {m B : ℕ} (hm : 1 ≤ m) (hB : 1 ≤ B) : 0 < dG m B := by
   unfold dG initialRowWeightBound
   have : 0 < 320000 * B ^ 2 * (Nat.log 2 m + 1) ^ 3 := by positivity
   omega
-theorem le_qG_mul_dG {m B : ℕ} (hm : 1 ≤ m) (hB : 1 ≤ B) : m ≤ qG m B * dG m B :=
-  (le_ceilDiv_mul hm (dG_pos hm hB)).trans
-    (Nat.mul_le_mul_right _ (Nat.le_pow_clog (by decide : 1 < 2) _))
+theorem le_qG_mul_dG {m B : ℕ} (hm : 1 ≤ m) (hB : 1 ≤ B) : m ≤ qG m B * dG m B := by
+  have hd := dG_pos hm hB
+  exact (Nat.le_ceilDiv_mul hd).trans (by
+    rw [Nat.ceilDiv_eq_add_pred_div]
+    exact Nat.mul_le_mul_right _ (Nat.le_pow_clog (by decide : 1 < 2) _))
 theorem qG_mul_dG_lt_two_mul {m B : ℕ} (hm : 1 ≤ m) (hB : 1 ≤ B) : qG m B * dG m B < 2 * m := by
   have hd := dG_pos hm hB; set k := (m + dG m B - 1) / dG m B
   rcases le_or_gt k 1 with hk | hk
@@ -156,8 +155,9 @@ private theorem hDist_succ_eq {m B : ℕ} (hm : 1 ≤ m) (hB : 1 ≤ B) :
   have := (Nat.le_div_iff_mul_le hM).2 hle; unfold hDist; dsimp only [mu] at *; omega
 theorem dG_le_hDist_succ_mul {m B : ℕ} (hm : 1 ≤ m) (hB : 1 ≤ B) :
     dG m B ≤ (hDist m B + 1) * (100 * B * (Nat.log 2 m + 1)) := by
-  change dG m B ≤ (hDist m B + 1) * (100 * B * mu m); rw [hDist_succ_eq hm hB]
-  exact le_ceilDiv_mul (dG_pos hm hB) (by positivity)
+  change dG m B ≤ (hDist m B + 1) * (100 * B * mu m)
+  rw [hDist_succ_eq hm hB, ← Nat.ceilDiv_eq_add_pred_div]
+  exact Nat.le_ceilDiv_mul (by positivity)
 
 private abbrev encMB : ℕ × ℕ ↪ List Bool := encPair encUnary encUnary
 section
@@ -524,15 +524,16 @@ private abbrev encBiasQ : BiasQ ↪ List Bool := encPair encBiasHdr (encList enc
 `shifts` has `d` rows of length `ell` and `|d - 2 * odd(b)| * maxBiasDen ≤ maxBiasNum * d` on all
 nonzero masks `b ∈ {0, 1} ^ ell \ {0}`, returning `false` on any shape or bias violation. -/
 def checkSmallBiasShifts (ell d maxBiasNum maxBiasDen : ℕ) (shifts : List (List Bool)) : Bool :=
-  (IndexFold.run
-    (fun p : ℕ × (((ℕ × ℕ × ℕ × ℕ) × List (List Bool)) × Bool) =>
-      (p.2.1, p.2.2 && (decide (p.1 = 0) ||
-        let odd := p.2.1.2.countP fun row =>
-          (row.zipWith Bool.and (lowBits p.2.1.1.1 p.1)).foldl Bool.xor false
-        let diff := (p.2.1.1.2.1 - 2 * odd) + (2 * odd - p.2.1.1.2.1)
-        decide (diff * p.2.1.1.2.2.2 ≤ p.2.1.1.2.2.1 * p.2.1.1.2.1))))
+  let (_, _, ok) := IndexFold.run
+    (fun (idx, ((ell, d, maxBiasNum, maxBiasDen), shifts), ok) =>
+      (((ell, d, maxBiasNum, maxBiasDen), shifts), ok && (decide (idx = 0) ||
+        let odd := shifts.countP fun row =>
+          (row.zipWith Bool.and (lowBits ell idx)).foldl Bool.xor false
+        let diff := (d - 2 * odd) + (2 * odd - d)
+        decide (diff * maxBiasDen ≤ maxBiasNum * d))))
     (2 ^ ell) (((ell, d, maxBiasNum, maxBiasDen), shifts),
-      (shifts.length == d) && shifts.all (fun row => row.length == ell))).2.2
+      (shifts.length == d) && shifts.all (fun row => row.length == ell))
+  ok
 
 private theorem cast_nat_abs_sub (a b : ℕ) :
     (((a - b) + (b - a) : ℕ) : ℝ) = |(a : ℝ) - (b : ℝ)| := by
@@ -624,9 +625,10 @@ theorem checkSmallBiasShifts_computableInO :
     ∃ pT pS : ℕ → ℕ, Cslib.PolynomiallyBounded pT ∧ Cslib.PolynomiallyBounded pS ∧
       let encQ := encPair (encPair encUnary (encPair encUnary (encPair encNat encNat)))
         (encList encBits)
-      ComputableInO (fun q : (ℕ × ℕ × ℕ × ℕ) × List (List Bool) =>
-          checkSmallBiasShifts q.1.1 q.1.2.1 q.1.2.2.1 q.1.2.2.2 q.2) encQ encBool
-        (fun q => (2 ^ q.1.1 + 1) * pT (encQ q).length) (fun q => pS (encQ q).length) := by
+      ComputableInO (fun ((ell, d, maxBiasNum, maxBiasDen), shifts) =>
+          checkSmallBiasShifts ell d maxBiasNum maxBiasDen shifts) encQ encBool
+        (fun q => let ((ell, _), _) := q; (2 ^ ell + 1) * pT (encQ q).length)
+        (fun q => pS (encQ q).length) := by
   obtain ⟨cert, pT, pS, hpT, hpS, hT, hS⟩ := checkSmallBiasShifts_cert_aux
   exact ⟨pT, pS, hpT, hpS, cert.computes.mono_le hT hS⟩
 /-- Plain polynomial-time certificate for `checkSmallBiasShifts` when `2 ^ ell` is poly-bounded. -/
@@ -666,14 +668,15 @@ private abbrev encLocalQ : LocalQ ↪ List Bool := encPair encLocalHdr (encList 
 checks that `H0` has `c` rows of length `d` and every nonzero `w ∈ {0, 1} ^ d \ {0}` in its
 `GF(2)` kernel has Hamming weight at least `minDist`, returning `false` on any violation. -/
 def checkLocalCodeDistance (c d minDist : ℕ) (H0 : List (List Bool)) : Bool :=
-  (IndexFold.run
-    (fun p : ℕ × (((ℕ × ℕ × ℕ) × List (List Bool)) × Bool) =>
-      (p.2.1, p.2.2 && (decide (p.1 = 0) ||
-        let w := lowBits p.2.1.1.2.1 p.1
-        !(p.2.1.2.all fun row => !((row.zipWith Bool.and w).foldl Bool.xor false)) ||
-          decide (p.2.1.1.2.2 ≤ w.count true))))
+  let (_, _, ok) := IndexFold.run
+    (fun (idx, ((c, d, minDist), H0), ok) =>
+      (((c, d, minDist), H0), ok && (decide (idx = 0) ||
+        let w := lowBits d idx
+        !(H0.all fun row => !((row.zipWith Bool.and w).foldl Bool.xor false)) ||
+          decide (minDist ≤ w.count true))))
     (2 ^ d) (((c, d, minDist), H0),
-      (H0.length == c) && H0.all (fun row => row.length == d))).2.2
+      (H0.length == c) && H0.all (fun row => row.length == d))
+  ok
 /-- Exact characterization of `checkLocalCodeDistance`. -/
 theorem checkLocalCodeDistance_eq_true_iff (c d minDist : ℕ) (H0 : List (List Bool)) :
     checkLocalCodeDistance c d minDist H0 = true ↔
@@ -734,9 +737,10 @@ private theorem checkLocalCodeDistance_cert_aux :
 theorem checkLocalCodeDistance_computableInO :
     ∃ pT pS : ℕ → ℕ, Cslib.PolynomiallyBounded pT ∧ Cslib.PolynomiallyBounded pS ∧
       let encQ := encPair (encPair encUnary (encPair encUnary encUnary)) (encList encBits)
-      ComputableInO (fun q : (ℕ × ℕ × ℕ) × List (List Bool) =>
-          checkLocalCodeDistance q.1.1 q.1.2.1 q.1.2.2 q.2) encQ encBool
-        (fun q => (2 ^ q.1.2.1 + 1) * pT (encQ q).length) (fun q => pS (encQ q).length) := by
+      ComputableInO (fun ((c, d, minDist), H0) =>
+          checkLocalCodeDistance c d minDist H0) encQ encBool
+        (fun q => let ((_, d, _), _) := q; (2 ^ d + 1) * pT (encQ q).length)
+        (fun q => pS (encQ q).length) := by
   obtain ⟨cert, pT, pS, hpT, hpS, hT, hS⟩ := checkLocalCodeDistance_cert_aux
   exact ⟨pT, pS, hpT, hpS, cert.computes.mono_le hT hS⟩
 /-! ### Sequential `IndexFold` searchers -/
@@ -744,13 +748,14 @@ theorem checkLocalCodeDistance_computableInO :
 returning the first `d × ell` shift table passing `checkSmallBiasShifts`, or the total all-`false`
 fallback `listRows d ell []` when no candidate passes. -/
 def findSmallBiasShifts (ell d maxBiasNum maxBiasDen : ℕ) : List (List Bool) :=
-  (IndexFold.run
-    (fun p : ℕ × ((ℕ × ℕ × ℕ × ℕ) × (Bool × List (List Bool))) =>
-      let q := p.2.1
-      (q, if p.2.2.1 then p.2.2 else
-        let cand := listRows q.2.1 q.1 (lowBits (q.2.1 * q.1) p.1)
-        if checkSmallBiasShifts q.1 q.2.1 q.2.2.1 q.2.2.2 cand then (true, cand) else p.2.2))
-    (2 ^ (d * ell)) ((ell, d, maxBiasNum, maxBiasDen), (false, listRows d ell []))).2.2.2
+  let (_, _, _, rows) := IndexFold.run
+    (fun (idx, (ell, d, maxBiasNum, maxBiasDen), (found, best)) =>
+      ((ell, d, maxBiasNum, maxBiasDen), if found then (found, best) else
+        let cand := listRows d ell (lowBits (d * ell) idx)
+        if checkSmallBiasShifts ell d maxBiasNum maxBiasDen cand then (true, cand)
+        else (found, best)))
+    (2 ^ (d * ell)) ((ell, d, maxBiasNum, maxBiasDen), (false, listRows d ell []))
+  rows
 /-- Soundness of `findSmallBiasShifts` for `d ≥ 1` and `0 < maxBiasDen` when a witness exists. -/
 theorem isSmallBias_findSmallBiasShifts {ell d maxBiasNum maxBiasDen : ℕ} [NeZero d]
     (hden : 0 < maxBiasDen) (hex : ∃ s : Fin d → Fin ell → Bool,
@@ -785,9 +790,10 @@ private theorem findSmallBiasShifts_cert_aux {α : Type} {encIn : α ↪ List Bo
 theorem findSmallBiasShifts_computableInO :
     ∃ pT pS : ℕ → ℕ, Cslib.PolynomiallyBounded pT ∧ Cslib.PolynomiallyBounded pS ∧
       let encH := encPair encUnary (encPair encUnary (encPair encNat encNat))
-      ComputableInO (fun p : ℕ × ℕ × ℕ × ℕ => findSmallBiasShifts p.1 p.2.1 p.2.2.1 p.2.2.2)
+      ComputableInO
+        (fun (ell, d, maxBiasNum, maxBiasDen) => findSmallBiasShifts ell d maxBiasNum maxBiasDen)
         encH (encList encBits)
-        (fun p => (2 ^ (p.2.1 * p.1) + 1) * (2 ^ p.1 + 1) * pT (encH p).length)
+        (fun p => let (ell, d, _, _) := p; (2 ^ (d * ell) + 1) * (2 ^ ell + 1) * pT (encH p).length)
         (fun p => pS (encH p).length) := by
   obtain ⟨cert, pT, pS, hpT, hpS, hT, hS⟩ := findSmallBiasShifts_cert_aux (encIn := encBiasHdr)
     (fun p => p.1) (fun p => p.2.1) (fun p => p.2.2.1) (fun p => p.2.2.2)
@@ -798,13 +804,13 @@ theorem findSmallBiasShifts_computableInO :
 returning the first `c × d` check matrix passing `checkLocalCodeDistance`, or the total all-`false`
 fallback `listRows c d []` when no candidate passes. -/
 def findLocalCheckMatrix (c d minDist : ℕ) : List (List Bool) :=
-  (IndexFold.run
-    (fun p : ℕ × ((ℕ × ℕ × ℕ) × (Bool × List (List Bool))) =>
-      let q := p.2.1
-      (q, if p.2.2.1 then p.2.2 else
-        let cand := listRows q.1 q.2.1 (lowBits (q.1 * q.2.1) p.1)
-        if checkLocalCodeDistance q.1 q.2.1 q.2.2 cand then (true, cand) else p.2.2))
-    (2 ^ (c * d)) ((c, d, minDist), (false, listRows c d []))).2.2.2
+  let (_, _, _, rows) := IndexFold.run
+    (fun (idx, (c, d, minDist), (found, best)) =>
+      ((c, d, minDist), if found then (found, best) else
+        let cand := listRows c d (lowBits (c * d) idx)
+        if checkLocalCodeDistance c d minDist cand then (true, cand) else (found, best)))
+    (2 ^ (c * d)) ((c, d, minDist), (false, listRows c d []))
+  rows
 /-- Soundness of `findLocalCheckMatrix` when a check matrix of distance `minDist` exists. -/
 theorem weight_le_of_findLocalCheckMatrix {c d minDist : ℕ}
     (hex : ∃ A : Fin c → Fin d → Bool,
@@ -836,9 +842,9 @@ private theorem findLocalCheckMatrix_cert_aux {α : Type} {encIn : α ↪ List B
 theorem findLocalCheckMatrix_computableInO :
     ∃ pT pS : ℕ → ℕ, Cslib.PolynomiallyBounded pT ∧ Cslib.PolynomiallyBounded pS ∧
       let encH := encPair encUnary (encPair encUnary encUnary)
-      ComputableInO (fun p : ℕ × ℕ × ℕ => findLocalCheckMatrix p.1 p.2.1 p.2.2)
+      ComputableInO (fun (c, d, minDist) => findLocalCheckMatrix c d minDist)
         encH (encList encBits)
-        (fun p => (2 ^ (p.1 * p.2.1) + 1) * (2 ^ p.2.1 + 1) * pT (encH p).length)
+        (fun p => let (c, d, _) := p; (2 ^ (c * d) + 1) * (2 ^ d + 1) * pT (encH p).length)
         (fun p => pS (encH p).length) := by
   obtain ⟨cert, pT, pS, hpT, hpS, hT, hS⟩ := findLocalCheckMatrix_cert_aux (encIn := encLocalHdr)
     (fun p => p.1) (fun p => p.2.1) (fun p => p.2.2) (by dsimp only [encLocalHdr]; fun_prop)
@@ -1070,7 +1076,9 @@ private theorem exists_localMatrix_params {m B : ℕ} (hm : 1 ≤ m) (hB : 1 ≤
   have hd_lt : dG m B < 2 ^ mu m :=
     (Nat.min_le_left _ _).trans_lt (Nat.lt_pow_succ_log_self (by decide : 1 < 2) m)
   have hmu_h : mu m * hDist m B < cG m B := by
-    have hc_ge : dG m B ≤ cG m B * (8 * B) := le_ceilDiv_mul (dG_pos hm hB) (by omega)
+    have hc_ge : dG m B ≤ cG m B * (8 * B) := by
+      rw [cG, ← Nat.ceilDiv_eq_add_pred_div]
+      exact Nat.le_ceilDiv_mul (by omega)
     have hle := Nat.mul_div_le (dG m B + 100 * B * mu m - 1) (100 * B * mu m)
     rw [← hDist_succ_eq hm hB] at hle; have := dG_pos hm hB
     have : dG m B + 100 * B * mu m - 1 + 1 = dG m B + 100 * B * mu m := by omega
@@ -1230,10 +1238,10 @@ proving `n + 2 ^ q (B + Nat.log 2 (m + 2))` time (where `+ n` scans past the una
 the input tape) and `S (n + m + B)` space. -/
 theorem initialTestsRows_computableInO_nmb :
     ∃ q S : ℕ → ℕ, Cslib.PolynomiallyBounded q ∧ Cslib.PolynomiallyBounded S ∧
-      ComputableInO (fun p : ℕ × ℕ × ℕ => initialTestsRows p.2.1 p.2.2)
+      ComputableInO (fun ((_n, m, B) : ℕ × ℕ × ℕ) => initialTestsRows m B)
         (encPair encUnary (encPair encUnary encUnary)) (encList encBits)
-        (fun p => p.1 + 2 ^ q (p.2.2 + Nat.log 2 (p.2.1 + 2)))
-        (fun p => S (p.1 + p.2.1 + p.2.2)) := by
+        (fun (n, m, B) => n + 2 ^ q (B + Nat.log 2 (m + 2)))
+        (fun (n, m, B) => S (n + m + B)) := by
   obtain ⟨q, S, hq, hS, hcomp⟩ := initialTestsRows_computableInO
   let encNMB := encPair encUnary encMB
   let cRes := (NativeCertificate.mk _ _ hcomp).comp

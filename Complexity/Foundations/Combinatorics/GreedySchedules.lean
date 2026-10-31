@@ -15,10 +15,13 @@ import Mathlib.Tactic.Positivity
 # Deterministic construction of balanced label schedules
 
 The conditional-expectation construction in Lemma 4.5, printed p. 31 of [OpenAI2026ETH],
-fixes one whole variable or factor label at a time. This module completes the traversal using
-`bestVariableLabel` and `bestFactorLabel`. A slot that is already assigned is retained, so repeated
-slots do not invalidate the fresh-choice premise. Every incidence still reads the same label of
-its original variable and factor.
+fixes one whole variable or factor label at a time. The generic pass `greedyLabelPassBy` does
+this for any rational score whose average over the candidates for a fresh label does not exceed
+its current value (`greedyLabelPassBy_spec`). Lemma 4.5 uses the normalized score
+(`greedyLabelPass`, choosing by `bestVariableLabel` and `bestFactorLabel`); Lemma D.3 of the
+same paper uses the incidence potential alone (`Cslib.PacketPacking`). A slot that is already
+assigned is retained, so repeated slots do not invalidate the fresh-choice premise. Every
+incidence still reads the same label of its original variable and factor.
 
 The canonical construction uses the executable enumerations `FinEnum.toList` and `List.Pi.enum`.
 Its total schedules have joint normalized potential no greater than the initial finite average.
@@ -28,12 +31,18 @@ are separate obligations.
 
 ## Main definitions
 
+* `Cslib.BalancedSchedules.greedyLabelStepBy`, `Cslib.BalancedSchedules.greedyLabelPassBy`:
+  one greedy step and a traversal for an arbitrary score.
 * `Cslib.BalancedSchedules.greedyLabelStep`: fix one fresh variable or factor label.
 * `Cslib.BalancedSchedules.greedyLabelPass`: traverse an explicit list of slots.
 * `Cslib.BalancedSchedules.greedySchedules`: construct both complete schedule families.
 
 ## Main results
 
+* `Cslib.BalancedSchedules.greedyLabelPassBy_spec`: the method of conditional expectations:
+  completion, preservation and score monotonicity for an averaging score.
+* `Cslib.BalancedSchedules.greedyLabelPass_eq_greedyLabelPassBy`: the Lemma 4.5 pass is the
+  generic pass for the normalized score.
 * `Cslib.BalancedSchedules.greedyLabelPass_spec`: completion, preservation and score monotonicity.
 * `Cslib.BalancedSchedules.greedySchedules_candidates_length`: the exact `r ^ Q` candidate count.
 * `Cslib.BalancedSchedules.greedySchedules_slots_length`: the exact number of slots.
@@ -43,7 +52,8 @@ are separate obligations.
 
 ## References
 
-* [OpenAI2026ETH], §4.4, Lemma 4.5, printed pp. 30–31.
+* [OpenAI2026ETH], §4.4, Lemma 4.5, printed pp. 30–31; Appendix D.4.2, Lemma D.3,
+  pp. 58–59.
 -/
 
 public section
@@ -52,6 +62,142 @@ namespace Cslib.BalancedSchedules
 
 open Finset
 open scoped BigOperators
+
+section Generic
+
+variable {V F L : Type*} [DecidableEq V] [DecidableEq F]
+
+/-- Fix one fresh whole label using the first candidate that minimizes `score` after the update.
+Already fixed labels are retained. Empty candidate lists leave a fresh slot unassigned. -/
+@[expose] def greedyLabelStepBy (score : (V → Option L) → (F → Option L) → ℚ)
+    (values : List L) (assigned : (V → Option L) × (F → Option L)) (slot : V ⊕ F) :
+    (V → Option L) × (F → Option L) :=
+  match slot with
+  | .inl v =>
+    match assigned.1 v with
+    | some _ => assigned
+    | none => (Function.update assigned.1 v
+        (values.argmin fun word => score (Function.update assigned.1 v (some word)) assigned.2),
+        assigned.2)
+  | .inr f =>
+    match assigned.2 f with
+    | some _ => assigned
+    | none => (assigned.1, Function.update assigned.2 f
+        (values.argmin fun word => score assigned.1 (Function.update assigned.2 f (some word))))
+
+/-- Traverse slots in the supplied order with `greedyLabelStepBy`, retaining each selected whole
+label for all later score evaluations. Repeated slots never overwrite an earlier selection. -/
+@[expose] def greedyLabelPassBy (score : (V → Option L) → (F → Option L) → ℚ)
+    (values : List L) (slots : List (V ⊕ F)) (assigned : (V → Option L) × (F → Option L)) :
+    (V → Option L) × (F → Option L) :=
+  slots.foldl (greedyLabelStepBy score values) assigned
+
+private theorem greedyLabelStepBy_preserves (score : (V → Option L) → (F → Option L) → ℚ)
+    (values : List L) (assigned : (V → Option L) × (F → Option L)) (slot query : V ⊕ F)
+    (word : L) (h : Sum.elim assigned.1 assigned.2 query = some word) :
+    Sum.elim (greedyLabelStepBy score values assigned slot).1
+      (greedyLabelStepBy score values assigned slot).2 query = some word := by
+  cases slot with
+  | inl v =>
+    cases hv : assigned.1 v with
+    | some x => simpa only [greedyLabelStepBy, hv] using h
+    | none =>
+      cases query with
+      | inl w =>
+        have hne : w ≠ v := by intro heq; subst w; simp only [Sum.elim_inl, hv, reduceCtorEq] at h
+        simpa only [greedyLabelStepBy, hv, Sum.elim_inl, Function.update_of_ne hne] using h
+      | inr f => simpa only [greedyLabelStepBy, hv, Sum.elim_inr] using h
+  | inr f =>
+    cases hf : assigned.2 f with
+    | some x => simpa only [greedyLabelStepBy, hf] using h
+    | none =>
+      cases query with
+      | inl v => simpa only [greedyLabelStepBy, hf, Sum.elim_inl] using h
+      | inr g =>
+        have hne : g ≠ f := by intro heq; subst g; simp only [Sum.elim_inr, hf, reduceCtorEq] at h
+        simpa only [greedyLabelStepBy, hf, Sum.elim_inr, Function.update_of_ne hne] using h
+
+/-- The first minimizer from an exhaustive candidate list is at most the average of `score`. -/
+private theorem argmin_le_expect [Fintype L] [Nonempty L] (score : L → ℚ) (values : List L)
+    (hcover : ∀ word, word ∈ values) :
+    ∃ chosen, values.argmin score = some chosen ∧ score chosen ≤ 𝔼 word, score word := by
+  cases harg : values.argmin score with
+  | none =>
+    have hnil : values = [] := List.argmin_eq_none.mp harg
+    obtain ⟨word⟩ := (inferInstance : Nonempty L)
+    simpa only [hnil, List.not_mem_nil] using hcover word
+  | some chosen =>
+    refine ⟨chosen, rfl, Finset.le_expect Finset.univ_nonempty fun word _ => ?_⟩
+    exact List.le_of_mem_argmin (hcover word) (by simp only [harg, Option.mem_some])
+
+private theorem greedyLabelStepBy_spec [Fintype L] [Nonempty L]
+    (score : (V → Option L) → (F → Option L) → ℚ)
+    (hvar : ∀ a d v, a v = none → 𝔼 word, score (Function.update a v (some word)) d ≤ score a d)
+    (hfac : ∀ a d f, d f = none → 𝔼 word, score a (Function.update d f (some word)) ≤ score a d)
+    (values : List L) (hcover : ∀ word, word ∈ values)
+    (assigned : (V → Option L) × (F → Option L)) (slot : V ⊕ F) :
+    score (greedyLabelStepBy score values assigned slot).1
+        (greedyLabelStepBy score values assigned slot).2 ≤ score assigned.1 assigned.2 ∧
+    ∃ word, Sum.elim (greedyLabelStepBy score values assigned slot).1
+      (greedyLabelStepBy score values assigned slot).2 slot = some word := by
+  cases slot with
+  | inl v =>
+    cases hv : assigned.1 v with
+    | some word => exact ⟨by simp only [greedyLabelStepBy, hv, le_refl], word, by
+        simp only [greedyLabelStepBy, hv, Sum.elim_inl]⟩
+    | none =>
+      obtain ⟨word, hword, hscore⟩ := argmin_le_expect
+        (fun word => score (Function.update assigned.1 v (some word)) assigned.2) values hcover
+      simp only [greedyLabelStepBy, hv, hword, Sum.elim_inl, Function.update_self]
+      exact ⟨hscore.trans (hvar _ _ v hv), word, rfl⟩
+  | inr f =>
+    cases hf : assigned.2 f with
+    | some word => exact ⟨by simp only [greedyLabelStepBy, hf, le_refl], word, by
+        simp only [greedyLabelStepBy, hf, Sum.elim_inr]⟩
+    | none =>
+      obtain ⟨word, hword, hscore⟩ := argmin_le_expect
+        (fun word => score assigned.1 (Function.update assigned.2 f (some word))) values hcover
+      simp only [greedyLabelStepBy, hf, hword, Sum.elim_inr, Function.update_self]
+      exact ⟨hscore.trans (hfac _ _ f hf), word, rfl⟩
+
+/-- **Method of conditional expectations.** If fixing a fresh whole label does not increase
+`score` on average over the labels, the full pass never increases `score`, fills every visited
+slot and preserves all initially assigned labels. Candidate coverage concerns whole labels;
+duplicates are allowed. -/
+theorem greedyLabelPassBy_spec [Fintype L] [Nonempty L]
+    (score : (V → Option L) → (F → Option L) → ℚ)
+    (hvar : ∀ a d v, a v = none → 𝔼 word, score (Function.update a v (some word)) d ≤ score a d)
+    (hfac : ∀ a d f, d f = none → 𝔼 word, score a (Function.update d f (some word)) ≤ score a d)
+    (values : List L) (hcover : ∀ word, word ∈ values) (slots : List (V ⊕ F))
+    (assigned : (V → Option L) × (F → Option L)) :
+    score (greedyLabelPassBy score values slots assigned).1
+        (greedyLabelPassBy score values slots assigned).2 ≤ score assigned.1 assigned.2 ∧
+    (∀ slot ∈ slots, ∃ word,
+      Sum.elim (greedyLabelPassBy score values slots assigned).1
+        (greedyLabelPassBy score values slots assigned).2 slot = some word) ∧
+    (∀ slot word, Sum.elim assigned.1 assigned.2 slot = some word →
+      Sum.elim (greedyLabelPassBy score values slots assigned).1
+        (greedyLabelPassBy score values slots assigned).2 slot = some word) := by
+  induction slots generalizing assigned with
+  | nil => exact ⟨le_refl _, by simp, fun _ _ h => h⟩
+  | cons slot slots ih =>
+    change score
+        (greedyLabelPassBy score values slots (greedyLabelStepBy score values assigned slot)).1
+        (greedyLabelPassBy score values slots (greedyLabelStepBy score values assigned slot)).2 ≤
+        score assigned.1 assigned.2 ∧ _
+    obtain ⟨hstep, word, hword⟩ :=
+      greedyLabelStepBy_spec score hvar hfac values hcover assigned slot
+    obtain ⟨hscore, hfill, hkeep⟩ := ih (greedyLabelStepBy score values assigned slot)
+    refine ⟨hscore.trans hstep, ?_, ?_⟩
+    · intro query hquery
+      rcases List.mem_cons.mp hquery with rfl | hquery
+      · exact ⟨word, hkeep _ word hword⟩
+      · exact hfill query hquery
+    · intro query value hvalue
+      exact hkeep query value
+        (greedyLabelStepBy_preserves score values assigned slot query value hvalue)
+
+end Generic
 
 section ExplicitLists
 
@@ -83,60 +229,21 @@ score evaluations. This accepts repeated slots without overwriting an earlier se
     (V → Option (T → G)) × (F → Option (T → G)) :=
   slots.foldl (greedyLabelStep edge C values) assigned
 
-private theorem greedyLabelStep_preserves (edge : E → F × V) (C : ℕ)
-    (values : List (T → G))
-    (assigned : (V → Option (T → G)) × (F → Option (T → G)))
-    (slot query : V ⊕ F) (word : T → G)
-    (h : Sum.elim assigned.1 assigned.2 query = some word) :
-    Sum.elim (greedyLabelStep edge C values assigned slot).1
-      (greedyLabelStep edge C values assigned slot).2 query = some word := by
-  cases slot with
-  | inl v =>
-    cases hv : assigned.1 v with
-    | some x => simpa only [greedyLabelStep, hv] using h
-    | none =>
-      cases query with
-      | inl w =>
-        have hne : w ≠ v := by intro heq; subst w; simp only [Sum.elim_inl, hv, reduceCtorEq] at h
-        simpa only [greedyLabelStep, hv, Sum.elim_inl, Function.update_of_ne hne] using h
-      | inr f => simpa only [greedyLabelStep, hv, Sum.elim_inr] using h
-  | inr f =>
-    cases hf : assigned.2 f with
-    | some x => simpa only [greedyLabelStep, hf] using h
-    | none =>
-      cases query with
-      | inl v => simpa only [greedyLabelStep, hf, Sum.elim_inl] using h
-      | inr g =>
-        have hne : g ≠ f := by intro heq; subst g; simp only [Sum.elim_inr, hf, reduceCtorEq] at h
-        simpa only [greedyLabelStep, hf, Sum.elim_inr, Function.update_of_ne hne] using h
-
-private theorem greedyLabelStep_spec [Nonempty G] (edge : E → F × V) (C : ℕ)
-    (values : List (T → G)) (hcover : ∀ word, word ∈ values)
-    (assigned : (V → Option (T → G)) × (F → Option (T → G))) (slot : V ⊕ F) :
-    normalizedPartialScore edge (greedyLabelStep edge C values assigned slot).1
-        (greedyLabelStep edge C values assigned slot).2 C ≤
-      normalizedPartialScore edge assigned.1 assigned.2 C ∧
-    ∃ word, Sum.elim (greedyLabelStep edge C values assigned slot).1
-      (greedyLabelStep edge C values assigned slot).2 slot = some word := by
-  cases slot with
-  | inl v =>
-    cases hv : assigned.1 v with
-    | some word => exact ⟨by simp only [greedyLabelStep, hv, le_refl], word, by
-        simp only [greedyLabelStep, hv, Sum.elim_inl]⟩
-    | none =>
-      obtain ⟨word, hword, hscore⟩ :=
-        bestVariableLabel_spec edge assigned.1 assigned.2 C v hv values hcover
-      simp only [greedyLabelStep, hv, hword, Sum.elim_inl, Function.update_self]
-      exact ⟨hscore, word, rfl⟩
-  | inr f =>
-    cases hf : assigned.2 f with
-    | some word => exact ⟨by simp only [greedyLabelStep, hf, le_refl], word, by
-        simp only [greedyLabelStep, hf, Sum.elim_inr]⟩
-    | none =>
-      obtain ⟨word, hword, hscore⟩ :=
-        bestFactorLabel_spec edge assigned.1 assigned.2 C f hf values hcover
-      simp only [greedyLabelStep, hf, hword, Sum.elim_inr, Function.update_self]
-      exact ⟨hscore, word, rfl⟩
+/-- The Lemma 4.5 pass is the generic pass for the normalized score. -/
+theorem greedyLabelPass_eq_greedyLabelPassBy (edge : E → F × V) (C : ℕ)
+    (values : List (T → G)) (slots : List (V ⊕ F))
+    (assigned : (V → Option (T → G)) × (F → Option (T → G))) :
+    greedyLabelPass edge C values slots assigned =
+      greedyLabelPassBy (fun a d => normalizedPartialScore edge a d C) values slots assigned := by
+  have hstep : greedyLabelStep edge C values =
+      greedyLabelStepBy (fun a d => normalizedPartialScore edge a d C) values := by
+    funext assigned slot
+    rcases slot with v | f
+    · cases hv : assigned.1 v <;>
+        simp only [greedyLabelStep, greedyLabelStepBy, hv, bestVariableLabel]
+    · cases hf : assigned.2 f <;>
+        simp only [greedyLabelStep, greedyLabelStepBy, hf, bestFactorLabel]
+  rw [greedyLabelPass, greedyLabelPassBy, hstep]
 
 /-- The full pass never increases the joint score, fills every visited slot and preserves
 all initially assigned labels. Candidate coverage concerns whole words; duplicates are allowed. -/
@@ -152,23 +259,11 @@ theorem greedyLabelPass_spec [Nonempty G] (edge : E → F × V) (C : ℕ)
     (∀ slot word, Sum.elim assigned.1 assigned.2 slot = some word →
       Sum.elim (greedyLabelPass edge C values slots assigned).1
         (greedyLabelPass edge C values slots assigned).2 slot = some word) := by
-  induction slots generalizing assigned with
-  | nil => exact ⟨le_refl _, by simp, fun _ _ h => h⟩
-  | cons slot slots ih =>
-    change normalizedPartialScore edge
-        (greedyLabelPass edge C values slots (greedyLabelStep edge C values assigned slot)).1
-        (greedyLabelPass edge C values slots (greedyLabelStep edge C values assigned slot)).2 C ≤
-        normalizedPartialScore edge assigned.1 assigned.2 C ∧ _
-    obtain ⟨hstep, word, hword⟩ := greedyLabelStep_spec edge C values hcover assigned slot
-    obtain ⟨hscore, hfill, hkeep⟩ := ih (greedyLabelStep edge C values assigned slot)
-    refine ⟨hscore.trans hstep, ?_, ?_⟩
-    · intro query hquery
-      rcases List.mem_cons.mp hquery with rfl | hquery
-      · exact ⟨word, hkeep _ word hword⟩
-      · exact hfill query hquery
-    · intro query value hvalue
-      exact hkeep query value
-        (greedyLabelStep_preserves edge C values assigned slot query value hvalue)
+  rw [greedyLabelPass_eq_greedyLabelPassBy]
+  exact greedyLabelPassBy_spec (fun a d => normalizedPartialScore edge a d C)
+    (fun a d v hv => (expect_normalizedPartialScore_update_variable edge a d C v hv).le)
+    (fun a d f hf => (expect_normalizedPartialScore_update_factor edge a d C f hf).le)
+    values hcover slots assigned
 
 end ExplicitLists
 

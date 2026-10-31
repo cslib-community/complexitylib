@@ -927,16 +927,8 @@ private theorem eval_sampleNaorReingoldPair_eq_iid (F : PrimeOrderGroupFamily) (
 
 private theorem pi_uniformOfFintype {ι α : Type*} [Fintype ι] [DecidableEq ι] [Fintype α]
     [Nonempty α] :
-    PMF.pi (fun _ : ι => PMF.uniformOfFintype α) = PMF.uniformOfFintype (ι → α) := by
-  ext f
-  simp only [PMF.pi_apply, PMF.uniformOfFintype_apply, Finset.prod_const, Finset.card_univ,
-    Fintype.card_fun, Nat.cast_pow, ENNReal.inv_pow]
-
-/-- The `k`-fold independent product of `PMF.uniformOfFintype α` is
-`PMF.uniformOfFintype (Fin k → α)`. -/
-theorem iid_uniformOfFintype {α : Type*} [Fintype α] [Nonempty α] (k : ℕ) :
-    PMF.iid (PMF.uniformOfFintype α) k = PMF.uniformOfFintype (Fin k → α) := by
-  rw [PMF.iid_eq_pi, pi_uniformOfFintype]
+    PMF.pi (fun _ : ι => PMF.uniformOfFintype α) = PMF.uniformOfFintype (ι → α) :=
+  PMF.pi_uniformOfFintype (ι := ι) (α := fun _ => α)
 
 private theorem pi_ddhFixedURerandomizeLaw_eq_multi (F : PrimeOrderGroupFamily) (d : F.Desc)
     (ι : Type*) [Fintype ι] [DecidableEq ι] (u₀ v₀ w₀ : F.Carrier d) :

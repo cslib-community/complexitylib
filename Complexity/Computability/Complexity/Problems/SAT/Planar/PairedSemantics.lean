@@ -46,16 +46,6 @@ def wire (sites : List Point) (r : Route) : List (PairedWire.Cell Variable) :=
   r.dropLast.zipIdx.map fun (p, i) lane =>
     (signal sites p (r.getD (i - 1) p) lane, signal sites p (r.getD (i + 1) p) lane)
 
-/-- A point receives an ordinary ring exactly when a retained path uses it outside a crossing. -/
-theorem mem_ordinaryCells (φ : CNF ℕ) (p : Point) :
-    p ∈ ordinaryCells φ ↔
-      (∃ r ∈ paths φ, p ∈ r.dropLast) ∧ p ∉ crossingSites φ := by
-  simp [ordinaryCells, mem_selectDistinct_replicate, List.mem_flatMap]
-
-/-- No ordinary ring is emitted twice. -/
-theorem ordinaryCells_nodup (φ : CNF ℕ) : (ordinaryCells φ).Nodup :=
-  nodup_selectDistinct _ _
-
 /-- The two local clause tables retain their exact formulas under variable tagging. -/
 theorem map_fst_ordinaryClauses (p : Point) :
     (ordinaryClauses p).map Prod.fst =
@@ -123,13 +113,6 @@ theorem getElem_wire (sites : List Point) (r : Route) (i : ℕ) (hi : i < r.leng
         signal sites r[i] (r.getD (i + 1) r[i]) lane) := by
   simp only [wire, List.getElem_map, List.getElem_zipIdx, Nat.zero_add, List.getElem_dropLast]
 
-/-- An actual occurrence selects a member of the canonical path list. -/
-theorem occurrencePath_mem_paths {φ : CNF ℕ} {o : Occurrence ℕ}
-    (ho : o ∈ Cslib.Logic.PL.occurrences φ) : occurrencePath φ o ∈ paths φ := by
-  change PlanarCompile.occurrencePath φ o ∈ PlanarCompile.paths φ
-  rw [← PlanarCompile.occurrencePaths_eq_paths]
-  exact List.mem_map_of_mem ho
-
 /-- The side lookup recovers each cardinal neighbor's side. -/
 theorem side_neighbor (p : Point) (s : Fin 4) :
     side p (p + PairedPorts.neighbor s) = s := by
@@ -182,7 +165,7 @@ theorem wire_cells_agree {φ : CNF ℕ}
         rw [crossing_port_value h hp, crossing_port_value h hp, crossing_port_value h hp]
         simp
   · have hord : p ∈ ordinaryCells φ :=
-      (mem_ordinaryCells φ p).2 ⟨⟨_, occurrencePath_mem_paths ho, hpod⟩, hp⟩
+      (mem_ordinaryCells φ p).2 ⟨⟨_, PlanarCompile.occurrencePath_mem_paths ho, hpod⟩, hp⟩
     intro lane
     change σ (signal _ _ _ lane) = σ (signal _ _ _ 0) ∧
       σ (signal _ _ _ lane) = σ (signal _ _ _ 0)
@@ -256,7 +239,8 @@ theorem wire_first_value {φ : CNF ℕ} {σ : Variable → Bool}
     rw [← List.getElem_dropLast hdrop]
     exact List.getElem_mem _
   have hord := (mem_ordinaryCells φ _).2
-    ⟨⟨_, occurrencePath_mem_paths ho, hret⟩, PlanarCompile.source_center_not_crossing ho⟩
+    ⟨⟨_, PlanarCompile.occurrencePath_mem_paths ho, hret⟩,
+      PlanarCompile.source_center_not_crossing ho⟩
   rw [hhead, getElem_wire _ _ 0 (by omega)]
   simp only [Nat.zero_sub]
   rw [List.getD_eq_getElem _ _ (by omega), hp']

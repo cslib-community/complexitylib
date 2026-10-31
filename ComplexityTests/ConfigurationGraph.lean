@@ -62,9 +62,9 @@ example (b : Option Bool) : outputStep 2 b = 2 := by rcases b with _ | _ | _ <;>
 private abbrev encEdge : ℕ × ℕ × ℕ × ℕ × Option Bool ↪ List Bool :=
   encPair encNat (encPair encNat (encPair encNat (encPair encNat (encOption encBool))))
 
-open ComputableTidilyInSpace in
+open ComputableInSpace in
 /-- The edge routine on its exact encoded arguments, in linear workspace. -/
-example : ComputableTidilyInSpace
+example : ComputableInSpace
     (fun a : ℕ × ℕ × ℕ × ℕ × Option Bool =>
       edgeWithSymbol acceptMachine a.1 a.2.1 a.2.2.1 a.2.2.2.1 a.2.2.2.2)
     encEdge encBool (fun a => (encEdge a).length) := by

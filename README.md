@@ -23,9 +23,12 @@ examples. For setup or a particular task, start below.
 | --- | --- |
 | Use Complexitylib in another Lean project | [Add a pinned dependency](#use-from-another-lean-project) |
 | Build or edit this repository | [Build a checkout](#build-a-checkout) |
+| Compare selected proofs with independently stated contracts | [Comparator suites](comparator/README.md) |
 | Certify functional programs and loops | [PolyTime examples](ComplexityTests/PolyTimeTactic.lean) |
 | State P/NP membership or prove a problem NP-complete | [Checked plain examples](ComplexityTests/NPCompleteness.lean), then [Clique](Complexity/Computability/Complexity/Problems/Clique.lean) |
 | Construct circuits for polynomial-time function families | [Uniform circuit examples](ComplexityTests/UniformCircuits.lean) |
+| Define queries using least fixed points or tuple closure | [FO(LFP), FO(TC), and synthesis examples](ComplexityTests/FOOperators.lean) |
+| State deterministic function-time or exact path-counting bounds | [FTIME and SharpTIME examples](ComplexityTests/TimeClasses.lean) |
 | Write probabilistic programs or oracle reductions | [PPT examples](ComplexityTests/PPTTactic.lean), [oracle examples](ComplexityTests/OraclePPT.lean) |
 | Estimate frequencies in a stream | [Count-Min examples](ComplexityTests/CountMin.lean), then [fixed-query accuracy](Complexity/Algorithms/Streaming/CountMin/Probability.lean) |
 | Find a computational model or mathematical tool | [Search the API documentation](https://www.cslib.io/complexitylib/search.html), rebuilt nightly from `main`; [Complexity.lean](Complexity.lean) lists every module, and each documents its definitions, results, and references |
@@ -42,6 +45,10 @@ equivalences. The [Clique example](Complexity/Computability/Complexity/Problems/
 uses graph complementation; the [reduction index](Complexity/Computability/Complexity/Reduction.lean)
 points to the other proved problems and their reduction maps. The checked examples state these
 claims with plain `ComputableInPolyTime`.
+
+The [results and reference inventory](results/README.md) uses readable Lean commands to collect
+named results, checked theorem identifiers and cited sources, including results without formal
+abstracts. Coverage and source audits remain incomplete.
 
 The [selected formal abstracts](abstracts/README.md) present a small set of major results with
 inspectable definitions and checked Lean statements. The [combined PDF](https://www.cslib.io/complexitylib/abstracts/catalogue.pdf)
@@ -60,12 +67,17 @@ the selection is not an exhaustive API reference.
 * [Toda: a counting oracle decides the polynomial hierarchy](abstracts/ComplexityAbstracts/TodaAbstract.lean): Every problem in the polynomial hierarchy is decidable in polynomial time with an exact counting oracle.
 * [Barrington: five states capture NC¹](abstracts/ComplexityAbstracts/BarringtonAbstract.lean): Polynomial-length permutation programs on five states capture logarithmic-depth polynomial-size Boolean circuits.
 * [Håstad and Razborov–Smolensky: parity resists shallow circuits](abstracts/ComplexityAbstracts/ConstantDepthAbstract.lean): At fixed depth, parity requires more than polynomially many gates, including over an odd-prime modular basis.
+* [Braverman: polylogarithmic independence fools AC⁰](abstracts/ComplexityAbstracts/BravermanAbstract.lean): k-wise independence with k = (log(m/ε))^O(d²) fools every depth-d circuit of NOT and unbounded fan-in AND/OR gates with size and fan-in at most m, to within error ε.
 * [Formula lower bounds: parity and Andreev](abstracts/ComplexityAbstracts/FormulaBoundsAbstract.lean): Tree-shaped computation pays for repeated work: parity requires quadratic leaf size, and Andreev gives a stronger explicit bound.
+* [Limaye–Srinivasan–Tavenas over any field (after Forbes): constant-depth algebraic circuits for IMM need superpolynomial size](abstracts/ComplexityAbstracts/ConstantDepthArithmeticAbstract.lean): Over every field, constant product-depth simple algebraic circuits computing iterated matrix multiplication of ⌊log₂ ⌊log₂ n⌋⌋ generic n × n matrices need more than n^c gates for every c and all large n.
 * [One-way functions yield pseudorandom generators and adaptive functions](abstracts/ComplexityAbstracts/CryptographyAbstract.lean): One-wayness yields pseudorandomness, from an extra output bit to functions secure against adaptive oracle queries.
+* [Gentry and GSW: fully homomorphic encryption from LWE](abstracts/ComplexityAbstracts/GSWFHEAbstract.lean): Bootstrapping the GSW scheme gives leveled fully homomorphic encryption from decision LWE, and fully homomorphic encryption under an additional circular-security assumption.
 * [Haken: pigeonhole formulas require long resolution proofs](abstracts/ComplexityAbstracts/ResolutionAbstract.lean): The pigeonhole principle has short CNF statements but requires exponentially many resolution lines.
 * [Communication: disjointness and inner product resist randomness](abstracts/ComplexityAbstracts/CommunicationAbstract.lean): Both problems require linearly many communicated bits even with shared randomness and bounded error.
 * [Sipser–Gács–Lautemann: BPP lies in the second polynomial level](abstracts/ComplexityAbstracts/SipserLautemannAbstract.lean): Bounded-error polynomial time admits both existential–universal and universal–existential polynomial descriptions.
-* [Ilango: Partial MCSP is hard under the Exponential Time Hypothesis](abstracts/ComplexityAbstracts/PartialMCSPAbstract.lean): Under ETH, deciding circuit size for partial Boolean functions cannot be done in time 2^o(m log m) = N^o(log log N).
+* [Chor–Goldreich: the inner product extracts from two weak sources](abstracts/ComplexityAbstracts/ChorGoldreichAbstract.lean): Two independent weak random sources whose min-entropies add up to more than the string length give a nearly fair bit through the inner product modulo two.
+* [OpenAI: the Exponential Time Hypothesis is false](abstracts/ComplexityAbstracts/SubexponentialSATAbstract.lean): For each fixed clause width, one deterministic machine exactly counts satisfying assignments in subexponential time and polynomial space; every fixed-width SAT exponent is zero, and ETH and SETH are false.
+* [Ilango: Partial MCSP is hard under the Exponential Time Hypothesis](abstracts/ComplexityAbstracts/PartialMCSPAbstract.lean): Under ETH, deciding circuit size for partial Boolean functions cannot be done in time 2^o(m log m) = N^o(log log N). *Note (October 2026):* the native formalization now [proves ETH false](abstracts/ComplexityAbstracts/SubexponentialSATAbstract.lean). This conditional entry is retained and its theorem remains valid, but its premise is false.
 * [McKay–Murray–Williams: barely superlinear circuit lower bounds for MCSP separate P from NP](abstracts/ComplexityAbstracts/MagnificationAbstract.lean): If NP has polynomial-size circuits, then MCSP on 2^n-bit truth tables has circuits of size 2^n poly(n + s(n)); hence barely superlinear MCSP lower bounds separate NP from P/poly and P from NP.
 
 ## Build and use
@@ -97,6 +109,14 @@ Use `scripts/cache/ensure.sh --refresh` to retry immediately. See
 Import the specific modules you need. `import Complexity` imports the whole library. To contribute,
 follow [CONTRIBUTING.md](CONTRIBUTING.md) and the
 [validation sequence](AGENTS.md#validation-sequence).
+
+### Compare theorem statements and proofs
+
+The optional [comparator suites](comparator/README.md) compare selected library proofs with
+independently stated contracts using `lake comparator --paranoid`. They cover reduction and
+circuit facts, two `polytime` proofs, and the fixed-width SAT counting and ETH endpoints.
+The guide explains the Linux sandbox requirement, the trusted definitions, and how to run a
+negative control that submits a valid proof of the wrong statement.
 
 ### Use from another Lean project
 
@@ -152,6 +172,20 @@ Open `http://localhost:8000` to browse and search. The **API documentation** wor
 `main` to the [API documentation site](https://www.cslib.io/complexitylib/) nightly.
 A manual run on another branch produces an `api-docs` artifact instead; serve it by replacing
 the directory argument above with the extracted artifact directory.
+
+If removing a source module leaves `check_docs.py` reporting obsolete modules, rebuild the
+generated documentation after any documentation build has stopped:
+
+```bash
+lake -d docbuild clean docbuild
+lake -d docbuild build Complexity:docs
+python3 scripts/check_docs.py
+```
+
+The named clean removes only `docbuild/.lake/build`, including HTML, per-module data and the
+SQLite database; deleting HTML alone leaves stale data behind. Library and dependency build
+outputs, package checkouts and Lake's artifact cache are retained. Documentation for all imported
+modules is regenerated, which can take substantial time even with warm library build outputs.
 
 #### Checked guide
 

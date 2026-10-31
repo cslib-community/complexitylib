@@ -270,4 +270,123 @@ example :
   rw [hp₀, Nat.add_zero] at hcost
   exact ⟨y₀, y, traces, hr₀, hp₀, hex, hcost⟩
 
+/-! ### 5. Key–value Fibonacci heap with handles (`FibonacciHeap.MinPQ`) -/
+
+/-- Tabulate registers `0..rMinPQ - 1` (`48`) and memory `0..memCap - 1` into flat lists between
+interpreter calls for `FibonacciHeap.MinPQ`. -/
+def compactDataMinPQ (memCap : ℕ) (d : Data MinPQ.rMinPQ) : Option (Data MinPQ.rMinPQ) := do
+  let rs ← forceList ((List.finRange MinPQ.rMinPQ).map d.regs)
+  let ms ← forceList ((List.range memCap).map d.mem)
+  let tail ← forceNat (d.mem memCap)
+  pure
+    { regs := fun i => rs.getD i.val 0
+      mem := fun a => if a < memCap then ms.getD a 0 else tail }
+
+/-- Run a single `Cslib.Algorithms.Lean.MinPQ.Op` via `MinPQ.dispatchCode.eval`. -/
+def stepEvalMinPQ {n_max : ℕ} (w fuel : ℕ) (dt : Data MinPQ.rMinPQ × ℕ)
+    (o : Cslib.Algorithms.Lean.MinPQ.Op n_max) :
+    Option (Data MinPQ.rMinPQ × ℕ) := do
+  let (d', t) ← MinPQ.dispatchCode.eval w fuel ⟨MinPQ.prepareRegs o dt.1.regs, dt.1.mem⟩
+  let dc ← compactDataMinPQ 80 d'
+  pure (dc, dt.2 + t)
+
+/-- Concrete interpreter test for `FibonacciHeap.MinPQ`:
+* `insert 30 300` allocates handle `0`, `insert 20 200` allocates handle `1`;
+* `get 0` returns key `30` and satellite value `300`;
+* `decreaseKey 0 5` lowers handle `0`'s key to `5`;
+* `extractMin` returns `(u = 5, v = 300, h = 0)` and pushes handle `0` onto the free stack;
+* `insert 15 150` reuses handle `0` from the free stack;
+* two more `extractMin`s return `(15, 150, 0)` and `(20, 200, 1)`, followed by `none`. -/
+example :
+    (do
+      let d0 ← MinPQ.subroutineCode.initFresh.eval 12 16 ⟨MinPQ.initRegs 4 10, fun _ => 0⟩
+      let d1 ← stepEvalMinPQ (n_max := 4) 12 16 d0 (.insert 30 300)
+      let d2 ← stepEvalMinPQ (n_max := 4) 12 16 d1 (.insert 20 200)
+      let d3 ← stepEvalMinPQ (n_max := 4) 12 16 d2 (.get 0)
+      let d4 ← stepEvalMinPQ (n_max := 4) 12 16 d3 (.decreaseKey 0 5)
+      let d5 ← stepEvalMinPQ (n_max := 4) 12 16 d4 .extractMin
+      let d6 ← stepEvalMinPQ (n_max := 4) 12 16 d5 (.insert 15 150)
+      let d7 ← stepEvalMinPQ (n_max := 4) 12 16 d6 .extractMin
+      let d8 ← stepEvalMinPQ (n_max := 4) 12 16 d7 .extractMin
+      let d9 ← stepEvalMinPQ (n_max := 4) 12 16 d8 .extractMin
+      pure
+        [d1.1.regs MinPQ.outV, d2.1.regs MinPQ.outV,
+         d3.1.regs MinPQ.outFlag, d3.1.regs MinPQ.outK, d3.1.regs MinPQ.outValReg,
+         d5.1.regs MinPQ.outFlag, d5.1.regs MinPQ.outK, d5.1.regs MinPQ.outValReg,
+         d5.1.regs MinPQ.outV,
+         d6.1.regs MinPQ.outV,
+         d7.1.regs MinPQ.outK, d7.1.regs MinPQ.outValReg, d7.1.regs MinPQ.outV,
+         d8.1.regs MinPQ.outK, d8.1.regs MinPQ.outValReg, d8.1.regs MinPQ.outV,
+         d9.1.regs MinPQ.outFlag]) =
+    some [0, 1, 1, 30, 300, 1, 5, 300, 0, 0, 15, 150, 0, 20, 200, 1, 0] := by
+  decide +kernel
+
+/-- Non-vacuity of `FibonacciHeap.relAmortized` over `Basis.standard`. -/
+example :
+    let hS : Fits 10 (8 + MinPQ.space 4) := by unfold MinPQ.space Fits; decide
+    let hU : Fits 10 50 := by decide
+    let hV : Fits 10 500 := by decide
+    Stateful.RelAmortized (relCertificate hS hU hV).realization
+      DynamicProgram.OperationTrace.instructions
+      (fun _ x => MinPQ.potential x)
+      (fun s o => MinPQ.charge 4 s o + 1) :=
+  relAmortized _ _ _
+
+/-- Lift a single `Cslib.Algorithms.Lean.MinPQ.Op` into an adaptive `Client`. -/
+abbrev callMinPQOp (o : Cslib.Algorithms.Lean.MinPQ.Op 4) :
+    (Cslib.Algorithms.Lean.MinPQ.spec 4 50 500).Client
+      ((Cslib.Algorithms.Lean.MinPQ.spec 4 50 500).Result o) :=
+  PFunctor.FreeM.lift (P := (Cslib.Algorithms.Lean.MinPQ.spec 4 50 500).signature) o
+
+/-- Concrete adaptive client that inserts `(30, 300)`, receives the allocated handle `h`, lowers
+`h`'s key to `5`, and extracts the minimum entry. -/
+def sampleMinPQClient :
+    (Cslib.Algorithms.Lean.MinPQ.spec 4 50 500).Client (Option (ℕ × ℕ × Fin 4)) := do
+  let hOpt ← callMinPQOp (.insert 30 300)
+  match hOpt with
+  | some h =>
+    callMinPQOp (.decreaseKey h 5)
+    callMinPQOp .extractMin
+  | none =>
+    callMinPQOp .extractMin
+
+/-- Non-vacuity of `MinPQ.relSubroutineDS`, `MinPQ.Rep`, and `MinPQ.run_client_amortized` for an
+adaptive handle-passing client over `Basis.standard`. -/
+example :
+    let hS : Fits 10 (8 + MinPQ.space 4) := by unfold MinPQ.space Fits; decide
+    let hU : Fits 10 50 := by decide
+    let hV : Fits 10 500 := by decide
+    ∃ a y₀ y traces s' tr,
+      MinPQ.Rep 4 50 500 10 8 (Cslib.Algorithms.Lean.MinPQ.empty 4) y₀ ∧
+      MinPQ.potential y₀ = 0 ∧
+      Stateful.Executes ((relDynamicProgram hS hU hV).ExecOp 10) sampleMinPQClient y₀
+        a y traces ∧
+      (Cslib.Algorithms.Lean.MinPQ.spec 4 50 500).ClientRun
+        (Cslib.Algorithms.Lean.MinPQ.empty 4) sampleMinPQClient a s' tr ∧
+      Stateful.total DynamicProgram.OperationTrace.instructions traces + MinPQ.potential y ≤
+        (Cslib.Algorithms.Lean.MinPQ.spec 4 50 500).totalCost
+          (fun st o => MinPQ.charge 4 st o + 1)
+          (Cslib.Algorithms.Lean.MinPQ.empty 4) tr := by
+  intro hS hU hV
+  let x₀ : Data MinPQ.rMinPQ := ⟨MinPQ.initRegs 4 8, fun _ => 0⟩
+  have hx₀ : x₀.Bounded 10 :=
+    ⟨fun i => by fin_cases i <;> decide, fun _ => show Fits 10 0 by decide⟩
+  have hfr : x₀.regs MinPQ.outerFrontierReg = 8 := by decide
+  have hpar : ∀ j : Fin 1, x₀.regs (![MinPQ.nReg] j) = ![4] j := fun j => by fin_cases j; rfl
+  have hz : ∀ a ∈ (Block.mk 8 (MinPQ.space 4)).footprint, x₀.mem a = 0 := fun _ _ => rfl
+  obtain ⟨y₀, _, _, hr₀, hpot₀, _⟩ :=
+    (relSubroutineDS hS hU hV).initFresh_exec hx₀ hfr hpar hz
+  have hp₀ : MinPQ.potential y₀ = 0 := Nat.eq_zero_of_le_zero hpot₀
+  have hv : (Cslib.Algorithms.Lean.MinPQ.spec 4 50 500).DemonicValid
+      (Cslib.Algorithms.Lean.MinPQ.empty 4) sampleMinPQClient := by
+    refine .liftBind _ _ ⟨by decide, by decide, by decide⟩ ?_
+    rintro s₁ _ ⟨h, _, rfl, rfl⟩
+    refine .liftBind _ _ ⟨30, 300, by simp [Function.update], by decide⟩ ?_
+    rintro s₂ _ _
+    exact .liftBind _ _ trivial fun s₃ a _ => .pure s₃ a
+  obtain ⟨a, y, traces, s', tr, hex, hrun, _, _, hcost⟩ :=
+    MinPQ.run_client_amortized hS hU hV sampleMinPQClient hr₀ hv
+  rw [hp₀, Nat.add_zero] at hcost
+  exact ⟨a, y₀, y, traces, s', tr, hr₀, hp₀, hex, hrun, hcost⟩
+
 end WordRAMFibonacciHeapTests

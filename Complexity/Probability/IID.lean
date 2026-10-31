@@ -39,7 +39,8 @@ bounds.
 
 * `Cslib.Probability.PMF.iid_apply`, `Cslib.Probability.PMF.mem_support_iid_iff`: masses and
   support.
-* `Cslib.Probability.PMF.iid_map`, `Cslib.Probability.PMF.iid_eq_pi`: images and finite products.
+* `Cslib.Probability.PMF.iid_map`, `Cslib.Probability.PMF.iid_eq_pi`,
+  `Cslib.Probability.PMF.iid_uniformOfFintype`: images, finite products, and uniform tuples.
 * `Cslib.Probability.PMF.iid_card_ge_le`: the majority tail bound.
 
 ## References
@@ -109,6 +110,11 @@ theorem iid_map (μ : PMF α) (g : α → β) (k : ℕ) :
 theorem iid_eq_pi [Finite α] (μ : PMF α) (k : ℕ) : iid μ k = pi (fun _ : Fin k => μ) := by
   ext v
   rw [iid_apply, pi_apply]
+
+/-- Independent uniform draws on a nonempty finite type form the uniform distribution on tuples. -/
+theorem iid_uniformOfFintype [Fintype α] [Nonempty α] (k : ℕ) :
+    iid (PMF.uniformOfFintype α) k = PMF.uniformOfFintype (Fin k → α) := by
+  rw [iid_eq_pi, pi_uniformOfFintype]
 
 /-- If `0 ≤ a ≤ b`, `r ≤ t` and `t + u = 2 r`, then `a ^ t b ^ u ≤ (a b) ^ r`. -/
 private theorem pow_mul_pow_le {a b : ℝ} (ha : 0 ≤ a) (hab : a ≤ b) {r t u : ℕ} (ht : r ≤ t)

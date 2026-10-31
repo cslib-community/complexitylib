@@ -78,7 +78,7 @@ theorem two_mul_sum_add_one_mul_harmonic (m : ℕ) :
 theorem harmonic_le_log_add_one (n : ℕ) :
     harmonic n ≤ (Nat.log 2 n : ℚ) + 1 := by
   induction n using Nat.strong_induction_on with
-  | h n ih =>
+  | ind n ih =>
     rcases lt_or_ge n 2 with hn2 | hn2
     · interval_cases n <;> norm_num [harmonic]
     · set half := n / 2

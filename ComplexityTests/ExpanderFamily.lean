@@ -96,7 +96,6 @@ example {V W D : Type} (G : RotationMap V D) (e : V ≃ W)
         let next := (G.reindex e).rot p.1
         (next, !p.2))
       (encPair (encPair ew ed) encBool) (encPair (encPair ew ed) encBool) := by
-  dsimp only [RotationMap.reindex, RotationMap.reindexRot]
   fail_if_success (clear hf; fun_prop)
   fail_if_success (clear hb; fun_prop)
   fail_if_success (clear hg; fun_prop)
@@ -110,7 +109,7 @@ example (G : RotationMap (Bool × List Bool) Bool)
     ComputableInPolyTime (G.reindex (Equiv.prodComm Bool (List Bool))).rot
       (encPair (encPair encBits encBool) encBool)
       (encPair (encPair encBits encBool) encBool) := by
-  simp only [RotationMap.reindex, Equiv.prodComm, Equiv.coe_fn_mk, Equiv.coe_fn_symm_mk]
+  simp only [Equiv.prodComm, Equiv.coe_fn_mk, Equiv.coe_fn_symm_mk]
   fun_prop [Prod.swap]
 
 end ComplexityTests.ExpanderFamily

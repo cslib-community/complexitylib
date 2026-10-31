@@ -82,14 +82,8 @@ private theorem cellBound_path {φ : CNF ℕ} {r : Route} (hr : r ∈ paths φ)
 
 private theorem cellBound_occurrencePath {φ : CNF ℕ} {o : Occurrence ℕ}
     (ho : o ∈ Cslib.Logic.PL.occurrences φ) {p : Point} (hp : p ∈ occurrencePath φ o) :
-    CellBound φ p := by
-  have hi : (Cslib.Logic.PL.occurrences φ).idxOf o < (paths φ).length := by
-    rw [PlanarCompile.paths_length, ← Cslib.Logic.PL.length_occurrences]
-    exact List.idxOf_lt_length_of_mem ho
-  apply cellBound_path (r := occurrencePath φ o) _ hp
-  change (paths φ).getD ((Cslib.Logic.PL.occurrences φ).idxOf o) [] ∈ paths φ
-  rw [List.getD_eq_getElem _ _ hi]
-  exact List.getElem_mem hi
+    CellBound φ p :=
+  cellBound_path (PlanarCompile.occurrencePath_mem_paths ho) hp
 
 private theorem cellBound_crossing {φ : CNF ℕ} {p : Point} (hp : p ∈ crossingSites φ) :
     CellBound φ p := by
@@ -270,9 +264,7 @@ private theorem link_bounds {φ : CNF ℕ} (sites : List Point) (lane : Fin 2) {
 
 private theorem cellBound_ordinary {φ : CNF ℕ} {p : Point} (hp : p ∈ ordinaryCells φ) :
     CellBound φ p := by
-  have hmem : p ∈ (paths φ).flatMap List.dropLast ∧ p ∉ crossingSites φ := by
-    simpa [ordinaryCells, mem_selectDistinct_replicate] using hp
-  obtain ⟨r, hr, hp⟩ := List.mem_flatMap.mp hmem.1
+  obtain ⟨⟨r, hr, hp⟩, -⟩ := (mem_ordinaryCells φ p).1 hp
   exact cellBound_path hr ((List.dropLast_subset _) hp)
 
 private theorem placedClauses_bounds (φ : CNF ℕ) :
@@ -332,41 +324,6 @@ theorem positions_length_le (φ : CNF ℕ) :
   rw [length_positions]
   rw [length_vars_rawFormula, ← length_vars_formula] at hv
   omega
-
-private theorem cost_signal_position (sites : List Point) (p q : Point) (l : Fin 2) :
-    variablePosition (signal sites p q l) =
-      cellOrigin 120 p + PairedPorts.variablePosition (side p q) l := by
-  simp only [signal, port, variablePosition]
-  split_ifs <;> rfl
-
-/-- Actual accesses are translations of the fixed paired-port accesses. -/
-private theorem cost_access_eq_translate (sites : List Point) (p q : Point) (l : Fin 2) :
-    access sites p q l = translate (cellOrigin 120 p) (PairedPorts.accessRoute (side p q) l) := by
-  rw [access, cost_signal_position]
-  simp only [boundary, PairedPorts.accessRoute, translate, List.map_cons, List.map_nil]
-  simp only [add_comm]
-
-private def finalLocalRoute (s : Fin 4) : Route :=
-  [(120, 120), PairedPorts.spokeElbow s, PairedPorts.boundaryPort s (PairedPorts.spokeLane s),
-    cellOrigin 120 (PairedPorts.neighbor s) +
-      PairedPorts.variablePosition (PairedPorts.oppositeSide s) (PairedPorts.spokeLane s)]
-
-private theorem finalRoute_eq_translate (sites : List Point) {p q : Point}
-    (h : Orthogonal.length p q = 1) :
-    [center q, cellOrigin 120 q + PairedPorts.spokeElbow (side q p),
-      boundary q (side q p) (PairedPorts.spokeLane (side q p)),
-      variablePosition (signal sites p q (PairedPorts.spokeLane (side q p)))] =
-      translate (cellOrigin 120 q) (finalLocalRoute (side q p)) := by
-  rw [cost_signal_position]
-  have hrev : Orthogonal.length q p = 1 := by
-    simp only [Orthogonal.length] at h ⊢
-    omega
-  rcases q with ⟨x, y⟩
-  rcases PlanarCompile.unit_neighbor_cases hrev with rfl | rfl | rfl | rfl <;>
-    simp [translate, finalLocalRoute, side, PlanarCompile.side, center, PlanarCompile.center,
-      boundary, cellOrigin, PairedPorts.neighbor, PairedPorts.oppositeSide,
-      PairedPorts.variablePosition, PairedPorts.boundaryPort, PairedPorts.spokeLane,
-      PairedPorts.spokeElbow, PairedPorts.offset, Prod.ext_iff] <;> omega
 
 private theorem original_route_count (φ : CNF ℕ) (sites : List Point) :
     ((originalClauses φ sites).map fun c => c.2.2.length).sum = φ.vars.length := by
@@ -452,7 +409,7 @@ private theorem crossing_route_costs (p : Point) :
 
 private theorem access_wire_cost (sites : List Point) (p q : Point) (lane : Fin 2) :
     wireLength (access sites p q lane) = 20 := by
-  rw [cost_access_eq_translate, wireLength_translate]
+  rw [access_eq_translate, wireLength_translate]
   exact (PairedPorts.access_route_sizes _ _).2
 
 private theorem lastLiteral_wire_cost (sites : List Point) (r : Route) (b : Bool)

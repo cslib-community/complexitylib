@@ -46,6 +46,12 @@ example {k : ℕ} {State : Type} [Fintype State] [DecidableEq State] :
       (encPair (encPair (encPair encBits encUnary) encUnary) encUnary) encCNF := by
   fun_prop
 
+-- The full reducible tuple composes without a specialized `Prod.mk` search rule.
+example {α : Type} (enc : α ↪ List Bool) (p : Polynomial ℕ) (c d : ℕ) :
+    ComputableInPolyTime (parameters p c d enc)
+      enc (encPair encBits (encPair encUnary encUnary)) := by
+  fun_prop
+
 -- The input encoding, polynomial and machine are fixed parameters of the reduction.
 example {k : ℕ} {State α : Type} [Fintype State]
     (tm : Turing.MultiTapeTM k Bool State) (enc : α ↪ List Bool)
@@ -84,7 +90,7 @@ example :
   ⟨by polytime, by polytime, by fun_prop⟩
 
 -- Fixed parameter lists need no encoding or finiteness instance for their element type, whether
--- selected via `filter` or `flatMap`.
+-- selected via `filter` or `flatMap`; plain automation supplies both certificates directly.
 example {ι : Type} (parameters : List ι) (weight : ι → ℕ) :
     ComputableInPolyTime (fun n =>
       (parameters.filter (fun i => decide (weight i ≤ n))).map
@@ -93,7 +99,7 @@ example {ι : Type} (parameters : List ι) (weight : ι → ℕ) :
     ComputableInPolyTime (fun n => parameters.flatMap fun i =>
       if weight i ≤ n then [List.replicate (n + weight i) true] else [])
       encUnary (encList encBits) :=
-  ⟨.of_tidy (by fun_prop), .of_tidy (by fun_prop)⟩
+  ⟨by fun_prop, by fun_prop⟩
 
 -- Total input-head movement clips even an out-of-range starting position.
 example : Turing.moveInputPosNat 0 9 .neg = 1 ∧

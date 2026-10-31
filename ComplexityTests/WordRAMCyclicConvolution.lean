@@ -52,6 +52,12 @@ private def complete (a b out p : ℕ) : Code .standard 32 :=
   | some (y, _) => y.mem 5 == 0 && y.mem 6 == 0 && y.mem 7 == 123
   | none => false
 
+-- Both input pointers may alias: (1 - X)^2 modulo X² - 1 is 2 - 2X.
+#guard match (complete 1 1 3 2).eval 8 500 (.init [2, 3, 99, 88, 123]) with
+  | some (y, _) => y.mem 3 == encode 2 && y.mem 4 == encode (-2) &&
+      y.mem 1 == 2 && y.mem 2 == 3 && y.mem 5 == 123
+  | none => false
+
 -- A scalar cyclic product and the empty native loop exercise both recursion-leaf boundaries.
 #guard match (complete 1 2 3 1).eval 8 100 (.init [7, 4, 99, 123]) with
   | some (y, _) => y.mem 3 == encode (-6) && y.mem 4 == 123

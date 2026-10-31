@@ -24,8 +24,16 @@ bounds and correctness apply to encoded instances. The explicit foundational mod
 distinguishes finite-uniform requests in program syntax from their efficient fair-coin realization.
 
 The definitions and theorem statement below specify the claim. Lean checks the bridge, and the
-audit permits only the seven listed foundational program and machine modules, with no
-complexity-class or headline-result allowance.
+audit permits only the following eight foundational program and machine modules, with no
+complexity-class or headline-result allowance:
+* under `Computability.Machines.Turing.MultiTape`: `Machine` (machines whose oracle channels
+  have a write-only query buffer and a read-only reply tape), `Machine.Program` (a clocked run as
+  a typed program), `Probabilistic` (one fresh fair coin per live instruction) and
+  `Probabilistic.Oracle` (fair-coin runs with external oracle calls);
+* under `Languages.Probabilistic`: `Basic` (terminating programs with typed calls, whose only
+  randomness is uniform choice from a finite range), `Oracle` (private coins beside external
+  calls), `Sum` (sums of oracle interfaces) and `Oracle.Interaction` (runs against a stateful
+  randomized oracle).
 
 ## References
 
@@ -108,7 +116,7 @@ verifier's output and the final prover state for every initial state and respons
 
 /--
 info: abstract audit passed for `ComplexityTests.Abstracts.ShamirAbstract`:
-10 root declarations, 215 dependencies checked
+10 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.ShamirAbstract allowing [

@@ -16,6 +16,8 @@ public import Mathlib.Data.List.Basic
 ## Main results
 
 * `List.foldl_take_invariant`: an index-dependent invariant holds after every prefix of a fold.
+* `List.foldl_keep_fst`: folding a step that keeps the first component of a pair preserves that
+  component and folds over the second.
 * `List.foldr_ite_eq_of_mem`: a chain of equality tests selects the branch of a contained tag,
   regardless of duplicates or fallback. Used by finite-control certificates.
 
@@ -42,6 +44,16 @@ theorem List.foldl_take_invariant {α β : Type*} (l : List α) (step : β → �
     have hlt : i < l.length := Nat.lt_of_succ_le hi
     simpa only [List.take_succ_eq_append_getElem hlt, List.foldl_append,
       List.foldl_cons, List.foldl_nil] using hstep i hlt _ (ih (Nat.le_of_lt hlt))
+
+/-- Folding a step that keeps the first component of a pair preserves that component and folds
+over the second. -/
+theorem List.foldl_keep_fst {ι π α : Type*} (step : π → α → ι → α)
+    (par : π) (xs : List ι) (init : α) :
+    xs.foldl (fun pa i => (pa.1, step pa.1 pa.2 i)) (par, init) =
+      (par, xs.foldl (step par) init) := by
+  induction xs generalizing init with
+  | nil => rfl
+  | cons _ _ ih => exact ih _
 
 /-- A chain of equality tests selects a contained tag, regardless of duplicates or fallback. -/
 theorem List.foldr_ite_eq_of_mem {Tag Value : Type*} [DecidableEq Tag]

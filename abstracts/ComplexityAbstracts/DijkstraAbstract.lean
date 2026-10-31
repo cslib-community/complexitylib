@@ -309,7 +309,7 @@ theorem dijkstra_fibonacci :
 
 /--
 info: abstract audit passed for `ComplexityAbstracts.DijkstraAbstract`: 219 root
-declarations, 229 dependencies checked
+declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.DijkstraAbstract

@@ -24,7 +24,7 @@ abstract, so query machines are a convenient way to describe logarithmic-space a
 jump around in their input: counters, tuples of elements, indices into tables.
 
 Such a machine runs within logarithmic space when its states have logarithmic encodings and its
-parts are tidily computable within space linear in the encoded state
+parts are computable within space linear in the encoded state
 (`Turing.QueryMachine.computableInLogSpace`), and more generally within the space of its states,
 once that is at least logarithmic (`Turing.QueryMachine.computableInSpace`). The proof is a
 multi-pass fold over the input (`Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.multiPassFold`):
@@ -361,18 +361,18 @@ open MultiTapeTM Simulation
 /-- **Query machines run in the space of their states.** Let a query machine halt on every encoded
 input `enc a`, first after `time a` steps, with output `encOut (f a)`. If its states along these
 runs have encodings of length `O(S a)`, where `S a` is at least logarithmic in the length of the
-input, and its query, transition, emission, halting test and final word are tidily computable
+input, and its query, transition, emission, halting test and final word are computable
 within space linear in the encoded state, then `f` is computable within space `O(S a)`. The input
 is not charged, so `S` may be much smaller than the length of the input. -/
 theorem computableInSpace {α β : Type} {enc : α ↪ List Bool} {encOut : β ↪ List Bool}
     {σ : Type} {encS : σ ↪ List Bool} (M : QueryMachine σ)
-    (hquery : ComputableTidilyInSpace M.query encS encNat fun s => (encS s).length)
-    (hnext : ComputableTidilyInSpace M.next (encPair encS (encOption encBool)) encS
+    (hquery : ComputableInSpace M.query encS encNat fun s => (encS s).length)
+    (hnext : ComputableInSpace M.next (encPair encS (encOption encBool)) encS
       fun p => (encPair encS (encOption encBool) p).length)
-    (hemit : ComputableTidilyInSpace M.emit (encPair encS (encOption encBool)) encBits
+    (hemit : ComputableInSpace M.emit (encPair encS (encOption encBool)) encBits
       fun p => (encPair encS (encOption encBool) p).length)
-    (hhalted : ComputableTidilyInSpace M.halted encS encBool fun s => (encS s).length)
-    (hfinish : ComputableTidilyInSpace M.finish encS encBits fun s => (encS s).length)
+    (hhalted : ComputableInSpace M.halted encS encBool fun s => (encS s).length)
+    (hfinish : ComputableInSpace M.finish encS encBits fun s => (encS s).length)
     {f : α → β} (time : α → ℕ)
     (hhalt : ∀ a, M.halted (M.run (enc a) (time a)) = true)
     (hpre : ∀ a, ∀ t < time a, M.halted (M.run (enc a) t) = false)
@@ -381,6 +381,11 @@ theorem computableInSpace {α β : Type} {enc : α ↪ List Bool} {encOut : β �
     (hsize : ∃ c, ∀ a, ∀ t ≤ time a, (encS (M.run (enc a) t)).length ≤ c * S a) :
     ∃ t c, ComputableInTimeAndSpace f enc encOut t fun a => c * S a := by
   obtain ⟨cS, hS⟩ := hsize
+  replace hquery := hquery.tidy
+  replace hnext := hnext.tidy
+  replace hemit := hemit.tidy
+  replace hhalted := hhalted.tidy
+  replace hfinish := hfinish.tidy
   have hS1 (a : α) : 1 ≤ S a := (Nat.le_add_left _ _).trans (hlog a)
   have hS' (a : α) (t : ℕ) :
       (encS (M.run (enc a) t)).length ≤ cS * S a := by
@@ -545,17 +550,17 @@ theorem computableInSpace {α β : Type} {enc : α ↪ List Bool} {encOut : β �
 /-- **Query machines run in logarithmic space.** Let a query machine halt on every encoded input
 `enc a`, first after `time a` steps, with output `encOut (f a)`. If its states along these runs
 have encodings of logarithmic length in the length of the input, and its query, transition,
-emission, halting test and final word are tidily computable within space linear in the encoded
+emission, halting test and final word are computable within space linear in the encoded
 state, then `f` is computable in logarithmic space. -/
 theorem computableInLogSpace {α β : Type} {enc : α ↪ List Bool} {encOut : β ↪ List Bool}
     {σ : Type} {encS : σ ↪ List Bool} (M : QueryMachine σ)
-    (hquery : ComputableTidilyInSpace M.query encS encNat fun s => (encS s).length)
-    (hnext : ComputableTidilyInSpace M.next (encPair encS (encOption encBool)) encS
+    (hquery : ComputableInSpace M.query encS encNat fun s => (encS s).length)
+    (hnext : ComputableInSpace M.next (encPair encS (encOption encBool)) encS
       fun p => (encPair encS (encOption encBool) p).length)
-    (hemit : ComputableTidilyInSpace M.emit (encPair encS (encOption encBool)) encBits
+    (hemit : ComputableInSpace M.emit (encPair encS (encOption encBool)) encBits
       fun p => (encPair encS (encOption encBool) p).length)
-    (hhalted : ComputableTidilyInSpace M.halted encS encBool fun s => (encS s).length)
-    (hfinish : ComputableTidilyInSpace M.finish encS encBits fun s => (encS s).length)
+    (hhalted : ComputableInSpace M.halted encS encBool fun s => (encS s).length)
+    (hfinish : ComputableInSpace M.finish encS encBits fun s => (encS s).length)
     {f : α → β} (time : α → ℕ)
     (hhalt : ∀ a, M.halted (M.run (enc a) (time a)) = true)
     (hpre : ∀ a, ∀ t < time a, M.halted (M.run (enc a) t) = false)

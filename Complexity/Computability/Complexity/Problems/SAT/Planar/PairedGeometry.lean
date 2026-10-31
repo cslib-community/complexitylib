@@ -13,6 +13,7 @@ public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalDrawi
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.Paths.Occupancy
 public import Complexity.Foundations.Geometry.Orthogonal.PairedBoundary
 import Complexity.Computability.Complexity.Problems.SAT.Incidence.Compact
+import Complexity.Foundations.Data.List.Range
 import Mathlib.Data.List.GetD
 import Mathlib.Data.List.Nodup
 import Mathlib.Data.List.Flatten
@@ -62,20 +63,6 @@ theorem shared_boundary {p q : Point} (h : Orthogonal.length p q = 1) (l : Fin 2
     fin_cases l <;>
     ext <;> norm_num [boundary, side, PlanarCompile.side, cellOrigin, PairedPorts.boundaryPort,
       PairedPorts.offset] <;> omega
-
-/-- The compiler's presented signal always has the shared inner access position. -/
-theorem signal_position (sites : List Point) (p q : Point) (l : Fin 2) :
-    variablePosition (signal sites p q l) =
-      cellOrigin 120 p + PairedPorts.variablePosition (side p q) l := by
-  simp only [signal, port, variablePosition]
-  split_ifs <;> rfl
-
-/-- Actual accesses are translations of the fixed paired-port accesses. -/
-theorem access_eq_translate (sites : List Point) (p q : Point) (l : Fin 2) :
-    access sites p q l = translate (cellOrigin 120 p) (PairedPorts.accessRoute (side p q) l) := by
-  rw [access, signal_position]
-  simp only [boundary, PairedPorts.accessRoute, translate, List.map_cons, List.map_nil]
-  simp only [add_comm]
 
 /-- Every actual access is proper and orthogonal. -/
 theorem access_orthogonal (sites : List Point) (p q : Point) (l : Fin 2) :
@@ -222,29 +209,15 @@ theorem pathBoundaries_nodup {φ : CNF ℕ}
       exact hmid (boundary_step_midpoint_eq (path_step_unit he) (path_step_unit hf) hy).2
   simpa only [steps, List.flatMap_assoc] using hn'
 
-/-- The actual ordinary-cell list has no repetitions. -/
-private theorem ordinaryCells_nodup (φ : CNF ℕ) : (ordinaryCells φ).Nodup :=
-  nodup_selectDistinct _ _
-
-/-- Ordinary tiles are emitted exactly at retained occupied cells outside crossing sites. -/
-private theorem mem_ordinaryCells (φ : CNF ℕ) (p : Point) :
-    p ∈ ordinaryCells φ ↔ p ∈ (paths φ).flatMap List.dropLast ∧ p ∉ crossingSites φ := by
-  simp [ordinaryCells, mem_selectDistinct_replicate]
-
 /-- Every original clause cell is disjoint from all ordinary tiles. -/
 theorem clause_cell_not_ordinary {φ : CNF ℕ} {i : ℕ} (hi : i < φ.length) :
     Layout.center (φ.distinctVars.length + i) ∉ ordinaryCells φ := by
   intro hp
-  obtain ⟨r, hr, hp⟩ := List.mem_flatMap.mp ((mem_ordinaryCells φ _).1 hp).1
+  obtain ⟨⟨r, hr, hp⟩, -⟩ := (mem_ordinaryCells φ _).1 hp
   change r ∈ PlanarCompile.paths φ at hr
   rw [← PlanarCompile.occurrencePaths_eq_paths φ] at hr
   obtain ⟨o, ho, rfl⟩ := List.mem_map.mp hr
   exact PlanarCompile.clause_cell_not_mem_path_dropLast ho hi hp
-
-private def finalLocalRoute (s : Fin 4) : Route :=
-  [(120, 120), PairedPorts.spokeElbow s, PairedPorts.boundaryPort s (PairedPorts.spokeLane s),
-    cellOrigin 120 (PairedPorts.neighbor s) +
-      PairedPorts.variablePosition (PairedPorts.oppositeSide s) (PairedPorts.spokeLane s)]
 
 private theorem finalLocalRoute_orthogonal : ∀ s, IsOrthogonal (finalLocalRoute s) := by
   decide +kernel
@@ -269,23 +242,6 @@ private theorem finalLocalRoute_simple (s : Fin 4) : IsSimple (finalLocalRoute s
     subst q
     exact ⟨Or.inl hpq, Or.inr (hpq.trans (congrArg realPoint h'.symm))⟩
   · exact False.elim (List.not_mem_nil hq)
-
-private theorem finalRoute_eq_translate (sites : List Point) {p q : Point}
-    (h : Orthogonal.length p q = 1) :
-    [center q, cellOrigin 120 q + PairedPorts.spokeElbow (side q p),
-      boundary q (side q p) (PairedPorts.spokeLane (side q p)),
-      variablePosition (signal sites p q (PairedPorts.spokeLane (side q p)))] =
-      translate (cellOrigin 120 q) (finalLocalRoute (side q p)) := by
-  rw [signal_position]
-  have hrev : Orthogonal.length q p = 1 := by
-    simp only [Orthogonal.length] at h ⊢
-    omega
-  rcases q with ⟨x, y⟩
-  rcases PlanarCompile.unit_neighbor_cases hrev with rfl | rfl | rfl | rfl <;>
-    norm_num [translate, finalLocalRoute, side, PlanarCompile.side, center, PlanarCompile.center,
-      boundary, cellOrigin, PairedPorts.neighbor, PairedPorts.oppositeSide,
-      PairedPorts.variablePosition, PairedPorts.boundaryPort, PairedPorts.spokeLane,
-      PairedPorts.spokeElbow, PairedPorts.offset, Prod.ext_iff] <;> omega
 
 /-- Every actual final literal route is proper, orthogonal and continuously simple. -/
 theorem lastLiteral_route_regular (sites : List Point) (r : Route) (b : Bool)
@@ -677,15 +633,6 @@ theorem placedClause_endpoints (φ : CNF ℕ) {pc : PlacedClause} (hpc : pc ∈ 
     rcases hpc with rfl | rfl <;>
       exact link_endpoints _ (PlanarCompile.occurrencePath_unit ho he') _ hlr
 
-private theorem support_pair (a b : Point) : support [a, b] = segment a b := by
-  ext p
-  rw [support_cons_cons]
-  change (p ∈ segment a b ∨ p ∈ support [b]) ↔ _
-  have hright : realPoint b ∈ segment a b := _root_.right_mem_segment ℝ _ _
-  have hs : p ∈ support [b] ↔ p = realPoint b := by simp [support, List.consecutivePairs]
-  rw [hs]
-  exact ⟨fun h => h.elim id (fun h => h ▸ hright), Or.inl⟩
-
 private theorem support_four (a b c d : Point) :
     support [a, b, c, d] = support [a, b, c] ∪ support [c, d] := by
   have hl : support [a, b, c, d] = segment a b ∪ (segment b c ∪ segment c d) := by
@@ -753,12 +700,6 @@ theorem boundary_occurrence_step_unique {φ : CNF ℕ}
   subst j
   rfl
 
-private theorem idxOf_range_eq {i n : ℕ} (hi : i < n) : (List.range n).idxOf i = i := by
-  have h := (List.nodup_range : (List.range n).Nodup).idxOf_getElem i
-    (by simpa only [List.length_range] using hi)
-  rw [List.getElem_range] at h
-  exact h
-
 private theorem positions_getD_raw_variable (φ : CNF ℕ) {v : Variable}
     (hv : v ∈ (rawFormula φ).vars) :
     (positions φ).getD ((rawFormula φ).distinctVars.idxOf v) (0, 0) = variablePosition v := by
@@ -776,7 +717,7 @@ theorem drawingPosition_raw_variable (φ : CNF ℕ) {v : Variable}
   have hi := List.idxOf_lt_length_of_mem (CNF.mem_distinctVars.mpr hv)
   change (positions φ).getD ((List.range _).idxOf ((rawFormula φ).distinctVars.idxOf v))
     (0, 0) = _
-  rw [idxOf_range_eq (by omega)]
+  rw [List.idxOf_range_of_lt (by omega)]
   exact positions_getD_raw_variable φ hv
 
 /-- A raw clause's incidence-graph index resolves to its actual placed clause position. -/
@@ -787,7 +728,7 @@ theorem drawingPosition_raw_clause (φ : CNF ℕ) {i : ℕ} (hi : i < (placedCla
     (0, 0) = _
   have hlen : (rawFormula φ).length = (placedClauses φ).length := by
     simp only [rawFormula, List.length_map]
-  rw [idxOf_range_eq (by omega), positions,
+  rw [List.idxOf_range_of_lt (by omega), positions,
     List.getD_append_right _ _ _ _ (by simp only [List.length_map]; omega)]
   simp only [List.length_map, Nat.add_sub_cancel_left]
   rw [List.getD_eq_getElem _ _ (by simpa only [List.length_map] using hi), List.getElem_map]
@@ -873,12 +814,6 @@ theorem routes_endpoints (φ : CNF ℕ) {i : ℕ}
   have h := (raw_routes_endpoints φ).get hi hir
   simpa only [List.get_eq_getElem, List.getD_eq_getElem _ _ hir] using h
 
-private theorem occurrencePath_mem_paths {φ : CNF ℕ} {o : Occurrence ℕ}
-    (ho : o ∈ Cslib.Logic.PL.occurrences φ) : occurrencePath φ o ∈ paths φ := by
-  change occurrencePath φ o ∈ PlanarCompile.paths φ
-  rw [← PlanarCompile.occurrencePaths_eq_paths φ]
-  exact List.mem_map_of_mem ho
-
 private theorem penultimate_mem_dropLast {r : Route} (h : 2 ≤ r.length) :
     r.getD (r.length - 2) (0, 0) ∈ r.dropLast := by
   have hk : r.length - 2 < r.dropLast.length := by simp only [List.length_dropLast]; omega
@@ -902,14 +837,14 @@ theorem raw_variable_cell_membership (φ : CNF ℕ) {v : Variable}
     have heq' := congrArg Prod.fst heq
     dsimp only [lastLiteral] at heq'
     subst v
-    exact Or.inr ⟨_, occurrencePath_mem_paths ho,
+    exact Or.inr ⟨_, PlanarCompile.occurrencePath_mem_paths ho,
       penultimate_mem_dropLast (PlanarCompile.occurrencePath_length_ge_two ho)⟩
   · obtain ⟨ci, _, rfl⟩ := List.mem_map.mp hpc
     obtain ⟨l, _, heq⟩ := List.mem_map.mp hv
     have heq' := congrArg Prod.fst heq
     change (p, Sum.inl l.1) = v at heq'
     subst v
-    exact Or.inr (List.mem_flatMap.mp ((mem_ordinaryCells φ p).1 hp).1)
+    exact Or.inr ((mem_ordinaryCells φ p).1 hp).1
   · obtain ⟨ci, _, rfl⟩ := List.mem_map.mp hpc
     obtain ⟨l, _, heq⟩ := List.mem_map.mp hv
     have heq' := congrArg Prod.fst heq
@@ -923,7 +858,7 @@ theorem raw_variable_cell_membership (φ : CNF ℕ) {v : Variable}
       rcases link_literal_cases _ _ _ _ hv with heq | heq <;> dsimp only at heq <;> subst v
     all_goals
       apply Or.inr
-      refine ⟨_, occurrencePath_mem_paths ho, ?_⟩
+      refine ⟨_, PlanarCompile.occurrencePath_mem_paths ho, ?_⟩
       first | exact hpair.1 | exact List.mem_of_mem_tail hpair.2
 
 /-- No actual variable is placed in an original clause cell. -/
@@ -2113,7 +2048,7 @@ private theorem drawingPosition_eq_getD {φ : CNF ℕ} {v : ℕ}
   have hi : v < (formula φ).distinctVars.length + (formula φ).length := by
     simpa only [SAT.incidenceGraph, List.mem_range] using hv
   simp only [Graph.drawingPosition, SAT.incidenceGraph]
-  rw [idxOf_range_eq hi]
+  rw [List.idxOf_range_of_lt hi]
 
 private theorem declared_position_index_lt {φ : CNF ℕ} {v : ℕ}
     (hv : v ∈ (SAT.incidenceGraph (formula φ)).1) : v < (positions φ).length := by

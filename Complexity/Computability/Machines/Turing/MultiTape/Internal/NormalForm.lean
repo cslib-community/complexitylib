@@ -44,7 +44,7 @@ variable {α β γ : Type*} {encIn : α ↪ List Bool} {encMid : β ↪ List Boo
   {encOut : γ ↪ List Bool}
 
 /-- Absorb an additive constant into the factor of `n + 1`. -/
-private theorem le_mul_succ {u A B C n : ℕ} (h : u ≤ A * (n + 1) + B) (hC : A + B ≤ C) :
+theorem le_mul_succ {u A B C n : ℕ} (h : u ≤ A * (n + 1) + B) (hC : A + B ≤ C) :
     u ≤ C * (n + 1) := by
   have hB : B ≤ B * (n + 1) := Nat.le_mul_of_pos_right B (Nat.succ_pos n)
   have : A * (n + 1) + B ≤ (A + B) * (n + 1) := by rw [Nat.add_mul]; omega

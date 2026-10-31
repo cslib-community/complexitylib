@@ -23,7 +23,7 @@ overflows already represents every reachable view, whatever the space of the mac
 
 The local edge routine uses one supplied input symbol, forces blank at the native boundary cells,
 and otherwise performs deterministic arithmetic in linear workspace in the binary radix, length
-and vertex IDs. Its `ComputableTidilyInSpace` certificate is for an actual native tidy multi-tape
+and vertex IDs. Its `ComputableInSpace` certificate is for an actual native multi-tape
 machine. The graph-to-source correctness theorem applies without a source halting assumption.
 
 ## Main definitions

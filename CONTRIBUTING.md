@@ -64,6 +64,23 @@ Mathlib's standard linter set already enforces the mechanical part; reviews enfo
    Preserve existing guarantees when rewriting tests: exact bounds or probabilities must not
    become weaker inequalities, and regression cases must not become tautologies.
 
+**Named components instead of positional projections**
+([#1764](https://github.com/cslib-community/complexitylib/issues/1764)). Public statements and
+the bodies of public definitions do not reach into nested tuples with projection chains such as
+`c.1.2` or `s.1.1.2`. A reader should not have to reconstruct the tuple layout. In order of
+preference:
+
+1. Bind the components by name: `fun ((d, x), c) => step d x c`, not
+   `fun c => step c.1.1 c.1.2 c.2`.
+2. Use `Function.uncurry`, `Prod.map` or composed projections, as the plain calculus rules
+   already do.
+3. Turn a recurring tuple context into a small `structure` with named fields.
+4. If restructuring is too invasive, add named `abbrev` accessors such as `Ctx.desc`.
+
+The rewritten form should stay definitionally equal to the old one, so that clients and automation
+(`fun_prop`, `@[program_certificate]`) keep working. Single projections (`p.1`) and
+destructuring inside proofs (`obtain ⟨⟨d, x⟩, c⟩ := s`) are fine.
+
 Improving an interface never weakens the mathematics: keep the models, encodings, independent
 resource bounds and nonvacuity of the results it touches.
 
@@ -149,7 +166,9 @@ defaults to the number of logical processors and is not a hard process or memory
 observed concurrency and memory use. Keep mutable build outputs separate between worktrees
 (for example with `scripts/worktree.sh create <branch> [dir_name]`, which seeds `.lake/build` from
 the root checkout and, when `<branch>` exists only on `origin`, checks it out tracking
-`origin/<branch>`). Run `python3 scripts/check_hygiene.py` to audit `-- upstream:` markers,
+`origin/<branch>`). Pass `--source-only` to skip the initial copy; the
+[cache guide](scripts/cache/README.md#automatic-restoration) explains bootstrap and dependency costs.
+Run `python3 scripts/check_hygiene.py` to audit `-- upstream:` markers,
 forbidden proof tokens, `set_option` justifications, the key order of `references.bib` and that
 every docstring citation key has an entry there
 (pass `--check-simp` to also run the heuristic check for non-terminal bare `simp` calls in
@@ -220,6 +239,9 @@ models, encodings, hypotheses, bounds and limitations. The library contains many
 selection is an editorial decision, not an automatic consequence of adding a theorem. A headline
 must establish a substantial full endpoint with conventional semantics and nonvacuous premises.
 Keep incomplete endpoints in `ROADMAP.md` and credit mathematical and formalization sources.
+List every selected entry in the top-level README's selected results and in the table of
+[abstracts/README.md](abstracts/README.md); `scripts/check_hygiene.py` checks both lists against
+the catalogue.
 
 Follow [the abstract requirements](AGENTS.md#curated-formal-abstracts) for impact assessment,
 source layout, independent review and `#check_abstract` audits. These apply to affected claims

@@ -716,7 +716,7 @@ theorem Verifier.KnowledgeSound.append {V₁ : Verifier OracleSpec.empty s₁ S�
     congr 1
     ext r₂
     cases hout : V₁.outputOn x r₁.1 <;> simp [T₁, Spec.Transcript.split_append, hout]
-  · refine toOuterMeasure_bind_le _ _ _ fun r₁ => ?_
+  · refine Probability.PMF.toOuterMeasure_bind_le _ _ _ fun r₁ => ?_
     rw [PMF.toOuterMeasure_map_apply]
     cases hout : V₁.outputOn x r₁.1 with
     | none =>

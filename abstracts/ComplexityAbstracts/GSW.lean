@@ -84,7 +84,7 @@ end ComplexityTests.Abstracts.GSW
 
 /--
 info: abstract audit passed for `ComplexityTests.Abstracts.GSW`:
-11 root declarations, 86 dependencies checked
+11 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.GSW allowing [

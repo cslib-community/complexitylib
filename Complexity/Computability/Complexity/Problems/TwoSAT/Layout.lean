@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Problems.SAT
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.InPlace
+import Mathlib.Data.List.GetD
 
 /-!
 # The layout of encoded formulas
@@ -285,6 +286,11 @@ end ClausesAt
 /-- **The clauses of an encoded formula** occur from its start. -/
 theorem clausesAt_encCNF (φ : CNF ℕ) : ClausesAt (encCNF φ) 0 φ := fun q => by
   rw [Nat.zero_add, encCNF_eq_flatMap]
+
+/-- Overwriting a register with its own value changes nothing. -/
+theorem set_getD_self {regs : List ℕ} {i : ℕ} (hi : i < regs.length) :
+    regs.set i (regs.getD i 0) = regs := by
+  rw [List.getD_eq_getElem _ _ hi, List.set_getElem_self]
 
 end TwoSAT
 

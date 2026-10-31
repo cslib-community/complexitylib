@@ -11,6 +11,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Universal.PolyTime
 import Complexity.Foundations.Control.Monad.IsMonadHom.StateT
 import Complexity.Foundations.Data.BitString.Affine
 import Complexity.Foundations.Data.BitString.Parity
+import Complexity.Foundations.Data.BitString.WordCount
 import Complexity.Foundations.Data.Fin.Order
 import Complexity.Foundations.Data.Finset.Average
 import Complexity.Foundations.Data.List.Filter
@@ -20,6 +21,7 @@ import Complexity.Foundations.Data.Nat.Choose.Real
 import Complexity.Foundations.Data.Nat.Div
 import Complexity.Foundations.Data.Nat.Log
 import Complexity.Foundations.Data.Nat.PolynomialBound.Log
+import Complexity.Foundations.Geometry.Orthogonal
 import Complexity.Foundations.LinearAlgebra.CubeSum
 import Complexity.Foundations.LinearAlgebra.Matrix.SchurComplement
 import Complexity.Foundations.LinearAlgebra.Rank
@@ -252,5 +254,20 @@ example :
   List.countP_le_sum_map fun x hx hp => by
     simp only [decide_eq_true_eq] at hp
     exact hp
+
+/-- Monotonicity of `List.any` and `List.all` under `List.Forall₂ (· ≤ ·)`. -/
+example : [false, true].any id ≤ [true, true].any id ∧
+    [false, true].all id ≤ [true, true].all id :=
+  ⟨List.any_id_le_of_forall₂ (by decide), List.all_id_le_of_forall₂ (by decide)⟩
+
+/-- A bit string has no `true` bits in `List.ofFn` iff it is zero. -/
+example (w : Fin 3 → Bool) :
+    (!(List.ofFn w).any fun b => b) = true ↔ w = 0 :=
+  Cslib.BitString.not_any_ofFn_eq_true_iff w
+
+/-- The continuous support of a two-point route `[a, b]` equals `segment a b`. -/
+example (a b : Orthogonal.Point) :
+    Orthogonal.support [a, b] = Orthogonal.segment a b :=
+  Orthogonal.support_pair a b
 
 end ComplexityTests.Consolidation

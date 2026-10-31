@@ -254,9 +254,9 @@ arithmetic both the Lemma 4.8 regime conditions (`20 ≤ n`, `32 ≤ R`, `6 * R 
 `checkReplacementFeasible`, deciding whether to run the subexponential replacement branch or the
 small-`n` direct-evaluation fallback of Theorem 2.2 / §5.5 (`[OpenAI2026ETH]`, p. 39). -/
 def checkScheduleFeasible (n M b wmax β : ℕ) : Bool :=
-  let s := computeScheduleParams β n
-  decide (20 ≤ n) && decide (32 ≤ s.2.2.2.2.1) && decide (6 * s.2.2.2.2.1 ≤ s.2.2.2.1) &&
-    checkReplacementFeasible n M b wmax s.1 s.2.2.2.1 s.2.2.1 s.2.2.2.2.2 s.2.2.2.2.1
+  let (lam, _, r, Q, R, A₀) := computeScheduleParams β n
+  decide (20 ≤ n) && decide (32 ≤ R) && decide (6 * R ≤ Q) &&
+    checkReplacementFeasible n M b wmax lam Q r A₀ R
 
 /-! #### Bridges to `Finset` sums, real probabilities, and `ReplacementParams` -/
 
@@ -643,7 +643,7 @@ theorem computableInPolyTime_heavyIncidenceCutoff_apply {α : Type} {encIn : α 
 
 /-- `chooseBeta` is polynomial-time over binary triples `(lam, b, w)`. -/
 theorem computableInPolyTime_chooseBeta :
-    ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => chooseBeta p.1.1 p.1.2 p.2)
+    ComputableInPolyTime (fun (((lam, b), w) : (ℕ × ℕ) × ℕ) => chooseBeta lam b w)
       (encPair (encPair encNat encNat) encNat) encNat := by
   let encIn := encPair (encPair encNat encNat) encNat
   have hb_size : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.2.size) encIn encUnary :=
@@ -684,7 +684,7 @@ private theorem computableInPolyTime_binomTailTerm :
 /-- `binomTailNumerator` is polynomial-time with `Q` in `encUnary` and `(r, A₀, R)` in `encNat`. -/
 theorem computableInPolyTime_binomTailNumerator :
     ComputableInPolyTime
-      (fun p : ((ℕ × ℕ) × ℕ) × ℕ => binomTailNumerator p.1.1.1 p.1.1.2 p.1.2 p.2)
+      (fun ((((Q, r), A₀), R) : ((ℕ × ℕ) × ℕ) × ℕ) => binomTailNumerator Q r A₀ R)
       (encPair (encPair (encPair encUnary encNat) encNat) encNat) encNat := by
   let enc3 := encPair (encPair encUnary encNat) encNat; let encIn := encPair enc3 encNat
   have hlist : ComputableInPolyTime
@@ -705,7 +705,7 @@ theorem computableInPolyTime_binomTailNumerator :
 /-- `binomTailNumerator` is also polynomial-time when both `(Q, r)` are given in `encUnary`. -/
 theorem computableInPolyTime_binomTailNumerator_unary :
     ComputableInPolyTime
-      (fun p : ((ℕ × ℕ) × ℕ) × ℕ => binomTailNumerator p.1.1.1 p.1.1.2 p.1.2 p.2)
+      (fun ((((Q, r), A₀), R) : ((ℕ × ℕ) × ℕ) × ℕ) => binomTailNumerator Q r A₀ R)
       (encPair (encPair (encPair encUnary encUnary) encNat) encNat) encNat := by
   let enc3 := encPair (encPair encUnary encUnary) encNat
   have hp3 := fst enc3 encNat
@@ -725,8 +725,8 @@ theorem computableInPolyTime_binomTailNumerator_unary :
 `encNat`. -/
 theorem computableInPolyTime_checkBinomTail :
     ComputableInPolyTime
-      (fun p : ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ) × ℕ =>
-        checkBinomTail p.1.1.1.1.1 p.1.1.1.1.2 p.1.1.1.2 p.1.1.2 p.1.2 p.2)
+      (fun ((((((Q, r), A₀), R), b), lam) : ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) =>
+        checkBinomTail Q r A₀ R b lam)
       (encPair (encPair (encPair (encPair (encPair encUnary encNat) encNat) encNat) encNat) encNat)
       encBool := by
   let enc4 := encPair (encPair (encPair encUnary encNat) encNat) encNat
@@ -744,8 +744,8 @@ theorem computableInPolyTime_checkBinomTail :
 /-- `checkBinomTail` is also polynomial-time when both `(Q, r)` are given in `encUnary`. -/
 theorem computableInPolyTime_checkBinomTail_unary :
     ComputableInPolyTime
-      (fun p : ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ) × ℕ =>
-        checkBinomTail p.1.1.1.1.1 p.1.1.1.1.2 p.1.1.1.2 p.1.1.2 p.1.2 p.2)
+      (fun ((((((Q, r), A₀), R), b), lam) : ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) =>
+        checkBinomTail Q r A₀ R b lam)
       (encPair (encPair (encPair (encPair (encPair encUnary encUnary) encNat) encNat) encNat)
         encNat) encBool := by
   let enc4 := encPair (encPair (encPair encUnary encUnary) encNat) encNat
@@ -776,9 +776,9 @@ private abbrev encFeasibleTuple : FeasibleTuple ↪ List Bool := encPair encFeas
 `(n, M, b, wmax, lam, r, A₀, R)` in `encNat`. -/
 theorem computableInPolyTime_checkReplacementFeasible :
     ComputableInPolyTime
-      (fun p : (((((((ℕ × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ =>
-        checkReplacementFeasible p.1.1.1.1.1.1.1.1 p.1.1.1.1.1.1.1.2 p.1.1.1.1.1.1.2
-          p.1.1.1.1.1.2 p.1.1.1.1.2 p.1.1.1.2 p.1.1.2 p.1.2 p.2)
+      (fun (((((((((n, M), b), wmax), lam), Q), r), A₀), R) :
+          (((((((ℕ × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) =>
+        checkReplacementFeasible n M b wmax lam Q r A₀ R)
       (encPair (encPair (encPair (encPair (encPair (encPair (encPair (encPair encNat encNat)
         encNat) encNat) encNat) encUnary) encNat) encNat) encNat) encBool := by
   have h8 := fst encFeasible8 encNat
@@ -801,9 +801,9 @@ theorem computableInPolyTime_checkReplacementFeasible :
 `encUnary`. -/
 theorem computableInPolyTime_checkReplacementFeasible_unary :
     ComputableInPolyTime
-      (fun p : (((((((ℕ × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ =>
-        checkReplacementFeasible p.1.1.1.1.1.1.1.1 p.1.1.1.1.1.1.1.2 p.1.1.1.1.1.1.2
-          p.1.1.1.1.1.2 p.1.1.1.1.2 p.1.1.1.2 p.1.1.2 p.1.2 p.2)
+      (fun (((((((((n, M), b), wmax), lam), Q), r), A₀), R) :
+          (((((((ℕ × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) =>
+        checkReplacementFeasible n M b wmax lam Q r A₀ R)
       (encPair (encPair (encPair (encPair (encPair (encPair (encPair (encPair encNat encNat)
         encNat) encNat) encNat) encUnary) encUnary) encNat) encNat) encBool := by
   let enc8 := encPair (encPair (encPair (encPair (encPair (encPair (encPair encNat encNat) encNat)
@@ -882,9 +882,8 @@ theorem computableInPolyTime_checkScheduleFeasible_apply {α : Type} {encIn : α
 `|encNat n| + |encNat M| + |encNat b| + |encNat wmax| + |encNat β|`. -/
 theorem computableInPolyTime_scheduleAndCheck_binary :
     ComputableInPolyTime
-      (fun p : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ =>
-        (computeScheduleParams p.2 p.1.1.1.1,
-          checkScheduleFeasible p.1.1.1.1 p.1.1.1.2 p.1.1.2 p.1.2 p.2))
+      (fun (((((n, M), b), wmax), β) : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ) =>
+        (computeScheduleParams β n, checkScheduleFeasible n M b wmax β))
       (encPair (encPair (encPair (encPair encNat encNat) encNat) encNat) encNat)
       (encPair
         (encPair encNat (encPair encNat (encPair encNat (encPair encNat (encPair encNat encNat)))))
@@ -900,12 +899,12 @@ computing `(λ, ν, r, Q, R, A₀)` and running both `checkReplacementFeasible` 
 `checkScheduleFeasible` is polynomial-time. -/
 theorem computableInPolyTime_scheduleAndCheck_unary :
     ComputableInPolyTime
-      (fun p : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ =>
-        let s := computeScheduleParams p.2 p.1.1.1.1
+      (fun (((((n, M), b), wmax), β) : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ) =>
+        let s := computeScheduleParams β n
+        let (lam, _, r, Q, R, A₀) := s
         (s,
-          checkReplacementFeasible p.1.1.1.1 p.1.1.1.2 p.1.1.2 p.1.2 s.1 s.2.2.2.1 s.2.2.1
-            s.2.2.2.2.2 s.2.2.2.2.1,
-          checkScheduleFeasible p.1.1.1.1 p.1.1.1.2 p.1.1.2 p.1.2 p.2))
+          checkReplacementFeasible n M b wmax lam Q r A₀ R,
+          checkScheduleFeasible n M b wmax β))
       (encPair (encPair (encPair (encPair encUnary encNat) encNat) encNat) encNat)
       (encPair
         (encPair encNat (encPair encNat (encPair encNat (encPair encNat (encPair encNat encNat)))))

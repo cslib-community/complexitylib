@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Reduction.TruthTable
+import Complexity.Foundations.Data.List.Filter
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -396,30 +397,12 @@ theorem PolyTimePTTReducible.polyTimeTruthTableReducible (h : PolyTimePTTReducib
   let ⟨r, q, d, hr, hq, hd, _, hL⟩ := h
   ⟨r, q, d, hr, hq, hd, hL⟩
 
-/-- `List.any id` is monotone with respect to `List.Forall₂ (· ≤ ·)`. -/
-theorem any_id_le_of_forall₂ {u v : List Bool} (h : List.Forall₂ (· ≤ ·) u v) :
-    u.any id ≤ v.any id := by
-  induction h with
-  | nil => exact le_rfl
-  | cons hab _ ih =>
-    simp only [List.any_cons, id]
-    exact max_le_max hab ih
-
-/-- `List.all id` is monotone with respect to `List.Forall₂ (· ≤ ·)`. -/
-theorem all_id_le_of_forall₂ {u v : List Bool} (h : List.Forall₂ (· ≤ ·) u v) :
-    u.all id ≤ v.all id := by
-  induction h with
-  | nil => exact le_rfl
-  | cons hab _ ih =>
-    simp only [List.all_cons, id]
-    exact min_le_min hab ih
-
 /-- A disjunctive reduction is positive, with the disjunction of the answers as combiner. -/
 theorem PolyTimeDTTReducible.polyTimePTTReducible (h : PolyTimeDTTReducible encA encB L B) :
     PolyTimePTTReducible encA encB L B := by
   obtain ⟨r, q, hr, hq, hL⟩ := h
   refine ⟨r, q, fun x => x.2.any id, hr, hq, by fun_prop,
-    fun _ _ _ huv => any_id_le_of_forall₂ huv, fun a => ?_⟩
+    fun _ _ _ huv => List.any_id_le_of_forall₂ huv, fun a => ?_⟩
   rw [hL a]
   simp [truthTableAnswers, List.any_eq_true, List.mem_ofFn, Fin.exists_iff]
 
@@ -428,7 +411,7 @@ theorem PolyTimeCTTReducible.polyTimePTTReducible (h : PolyTimeCTTReducible encA
     PolyTimePTTReducible encA encB L B := by
   obtain ⟨r, q, hr, hq, hL⟩ := h
   refine ⟨r, q, fun x => x.2.all id, hr, hq, by fun_prop,
-    fun _ _ _ huv => all_id_le_of_forall₂ huv, fun a => ?_⟩
+    fun _ _ _ huv => List.all_id_le_of_forall₂ huv, fun a => ?_⟩
   rw [hL a]
   simp [truthTableAnswers, List.all_eq_true, List.mem_ofFn, Fin.forall_iff]
 

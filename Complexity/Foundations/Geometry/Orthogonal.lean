@@ -31,6 +31,8 @@ points. A singleton route has singleton support; an empty route has empty suppor
 
 * `Cslib.Orthogonal.mem_horizontal`, `Cslib.Orthogonal.mem_vertical`: real segment membership
   characterized by coordinate intervals.
+* `Cslib.Orthogonal.mem_support_pair`, `Cslib.Orthogonal.support_bounds_of_points`: continuous
+  support of a single segment and coordinate bounding-box preservation.
 
 ## References
 
@@ -71,6 +73,20 @@ theorem support_cons_cons (a b : Point) (r : Route) :
     List.zip_cons_cons, exists_eq_or_imp, Set.mem_union]
   have ha : realPoint a ∈ segment a b := left_mem_segment ℝ _ _
   aesop
+
+/-- The continuous support of a two-point route `[a, b]` is the segment `segment a b`. -/
+theorem mem_support_pair {a b : Point} {p : ℝ × ℝ} :
+    p ∈ support [a, b] ↔ p ∈ segment a b := by
+  rw [support_cons_cons]
+  change (p ∈ segment a b ∨ p ∈ support [b]) ↔ _
+  have hright : realPoint b ∈ segment a b := _root_.right_mem_segment ℝ _ _
+  have hs : p ∈ support [b] ↔ p = realPoint b := by simp [support, List.consecutivePairs]
+  rw [hs]
+  exact ⟨fun h => h.elim id (fun h => h ▸ hright), Or.inl⟩
+
+/-- The continuous support of a two-point route `[a, b]` equals `segment a b`. -/
+theorem support_pair (a b : Point) : support [a, b] = segment a b :=
+  Set.ext fun _ => mem_support_pair
 
 /-- A proper axis-aligned segment; zero-length segments are excluded. -/
 def AxisAligned (a b : Point) : Prop :=
@@ -144,6 +160,28 @@ theorem mem_segment_bounds {a b : Point} {p : ℝ × ℝ} (hp : p ∈ segment a 
     p.2 ∈ Set.uIcc (a.2 : ℝ) (b.2 : ℝ) := by
   obtain ⟨s, t, hs, ht, hst, rfl⟩ := hp
   constructor <;> rw [← segment_eq_uIcc] <;> exact ⟨s, t, hs, ht, hst, rfl⟩
+
+/-- If every listed point of a route lies in `[x₀, x₁] × [y₀, y₁]`, then every point of its
+continuous support lies in `[x₀, x₁] × [y₀, y₁]`. -/
+theorem support_bounds_of_points {r : Route} {x₀ x₁ y₀ y₁ : ℤ}
+    (h : ∀ q ∈ r, x₀ ≤ q.1 ∧ q.1 ≤ x₁ ∧ y₀ ≤ q.2 ∧ q.2 ≤ y₁)
+    {p : ℝ × ℝ} (hp : p ∈ support r) :
+    (x₀ : ℝ) ≤ p.1 ∧ p.1 ≤ x₁ ∧ (y₀ : ℝ) ≤ p.2 ∧ p.2 ≤ y₁ := by
+  have cast_bounds (q : Point) (hq : q ∈ r) :
+      (x₀ : ℝ) ≤ q.1 ∧ (q.1 : ℝ) ≤ x₁ ∧ (y₀ : ℝ) ≤ q.2 ∧ (q.2 : ℝ) ≤ y₁ := by
+    exact_mod_cast h q hq
+  rcases hp with ⟨q, hq, rfl⟩ | ⟨e, he, hp⟩
+  · exact cast_bounds q hq
+  · have he' := List.of_mem_zip he
+    have ha := cast_bounds e.1 he'.1
+    have hb := cast_bounds e.2 (List.mem_of_mem_tail he'.2)
+    obtain ⟨hx, hy⟩ := mem_segment_bounds hp
+    rw [Set.mem_uIcc] at hx hy
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · exact hx.elim (fun hx => ha.1.trans hx.1) (fun hx => hb.1.trans hx.1)
+    · exact hx.elim (fun hx => hx.2.trans hb.2.1) (fun hx => hx.2.trans ha.2.1)
+    · exact hy.elim (fun hy => ha.2.2.1.trans hy.1) (fun hy => hb.2.2.1.trans hy.1)
+    · exact hy.elim (fun hy => hy.2.trans hb.2.2.2) (fun hy => hy.2.trans ha.2.2.2)
 
 /-- Horizontal real segment membership is a one-dimensional interval test. -/
 theorem mem_horizontal {a b y : ℝ} {p : ℝ × ℝ} :
