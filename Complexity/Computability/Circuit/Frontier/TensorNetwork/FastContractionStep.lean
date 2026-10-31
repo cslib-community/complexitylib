@@ -32,6 +32,8 @@ differences: the values the call stores are the sums of (D.16) at each node
 
 * `Cslib.Circuits.Frontier.FastContraction.stepCorrect_nativeMk`: the step is correct, given the
   points.
+* `Cslib.Circuits.Frontier.FastContraction.wfChildren_nativeMk`: well-formedness passes to the
+  children.
 
 ## References
 
@@ -144,5 +146,37 @@ theorem stepCorrect_nativeMk
       rw [hgetD] at h
       exact h
     exact key _ _ hlev hprec
+
+/-- The nodes of positive multiplicity, as grid indices. -/
+theorem mem_nodes {k : ℕ} : k ∈ nodes x ↔
+    k < 2 ^ (slots x + 1) ∧ k ≠ 2 ^ slots x ∧ 0 < mult (slots x) (levels x) (step x) k := by
+  simp [nodes]
+
+/-- A child of the cursor lies at a node, a point and a group in range. -/
+theorem lt_of_mem_children {c : State} (hc : c ∈ children x) :
+    c.1 < (nodes x).length ∧ c.2.1 < numPoints x ∧ c.2.2.2 < 64 := by
+  simp only [children, cursorList, nodeBlock, pointBlock, groupBlock, List.mem_flatMap,
+    List.mem_range, List.mem_map] at hc
+  obtain ⟨j, hj, i, hi, β, -, g, hg, rfl⟩ := hc
+  exact ⟨hj, hi, hg⟩
+
+/-- **Well-formedness passes to the native children**: they keep the modulus, and they are
+rows-first (`NativeChild.isRowsFirstBipartite_nativeChild`). -/
+theorem wfChildren_nativeMk : WFChildren nativeMk WF := by
+  intro x hx ha c hc
+  obtain ⟨hirr, hD⟩ := hx
+  refine ⟨hirr, ?_⟩
+  obtain ⟨hj, -, hg⟩ := lt_of_mem_children hc
+  have ha' := ha
+  simp only [active, decide_eq_true_eq] at ha'
+  obtain ⟨-, -, -, hua, -, -, -⟩ := ha'
+  have hkmem : (nodes x).getD c.1 0 ∈ nodes x := by
+    rw [List.getD_eq_getElem _ _ hj]; exact List.getElem_mem hj
+  obtain ⟨hk, -, hq⟩ := mem_nodes.mp hkmem
+  have hia : level x ((nodes x).getD c.1 0) < slots x := by
+    rw [level_eq hk]
+    exact padicValInt_lt_of_taperMult_pos (by rwa [← mult_eq _ _ hk]) hua
+  exact isRowsFirstBipartite_nativeChild (fl := x.fl) hD (pow_slots_le_edges_of_active ha) hia
+    (nodePrec x c.1) _ ((points x).getD c.2.1 []) c.2.2.1 ⟨c.2.2.2, hg⟩
 
 end Cslib.Circuits.Frontier.FastContraction

@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Guarded
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Admissible
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionMachine
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionStep
 import Mathlib.Analysis.SpecificLimits.Normed
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -50,6 +51,12 @@ finish, and the machine falls back to direct summation, at a constant factor.
 
 The guard is polynomial-time (`CountingSimulation.fastGuard_polyTime`).
 
+For the native child builder (`FastContraction.nativeMk`), the step, the passage of
+well-formedness to the children and the well-formed roots are proved
+(`CountingSimulation.contractionAlgorithmOfNative`); there the remaining obligations are the
+components of the scheme in polynomial time, the unit differences of the interpolation points and
+the resource analysis.
+
 **Remaining obligations** (the hypotheses of `CountingSimulation.contractionAlgorithmOfFast`): the
 components of the scheme in polynomial time, the correctness of one active call
 (`FastContraction.StepCorrect`), the passage of well-formedness to the children
@@ -61,12 +68,15 @@ components of the scheme in polynomial time, the correctness of one active call
 * `Cslib.Complexity.CountingSimulation.FastAnalysis`: the resource analysis.
 * `Cslib.Complexity.CountingSimulation.contractionAlgorithmOfFast`: the contraction algorithm from
   the remaining obligations.
+* `Cslib.Complexity.CountingSimulation.contractionAlgorithmOfNative`: the same for the native child
+  builder, with fewer obligations.
 
 ## Main results
 
 * `Cslib.Complexity.CountingSimulation.exists_le_of_fastGuard_eq_false`: admissible networks
   failing the guard are small.
 * `Cslib.Complexity.CountingSimulation.fastGuard_polyTime`: the guard is polynomial-time.
+* `Cslib.Complexity.CountingSimulation.wf_root`: guarded inputs have well-formed roots.
 * `Cslib.Complexity.CountingSimulation.fuel_le`: the clock on admissible inputs.
 * `Cslib.Complexity.CountingSimulation.fastCertificate_le`: the fast machine within the
   interface's bounds.
@@ -622,6 +632,40 @@ noncomputable def contractionAlgorithmOfFast
     (fun P G hg => fastValue_eq mk hstep hwf (P, G) (hroot P G hg))
     (fun C D => fastCertificate_le hpoly hana C D) (fun _ _ _ hA => hA.2.1)
     exists_le_of_fastGuard_eq_false
+
+/-- **Guarded inputs have well-formed roots**: the modulus is irreducible modulo `2`, and the
+tables as descriptors keep the rows-first ports. -/
+theorem wf_root (P : ℕ) {G : ℕ × ExplicitTensorNetwork ℕ} (hg : fastGuard G = true) :
+    FastContraction.WF (root (ExplicitTensorNetwork.capPrecision (P, G))) := by
+  refine ⟨irreducible_modulus _, ?_⟩
+  have hrows : G.2.IsRowsFirstBipartite G.1 := by
+    simp only [fastGuard, decide_eq_true_eq] at hg
+    exact hg.1
+  obtain ⟨h1, h2⟩ := hrows
+  refine ⟨fun v hv i hi => ?_, fun i hi => ?_⟩
+  · simp only [root, ExplicitTensorNetwork.capPrecision, rootNet, List.mem_map] at hv
+    obtain ⟨w, hw, rfl⟩ := hv
+    exact h1 w hw i hi
+  · simp only [root, ExplicitTensorNetwork.capPrecision, rootNet, ← List.map_take,
+      ← List.map_drop, List.map_map, Function.comp_def] at hi ⊢
+    exact h2 i hi
+
+/-- **The contraction algorithm from the native recursion**, given its remaining obligations: the
+components of the scheme in polynomial time, the unit differences of the interpolation points, and
+the resource analysis. The step, the passage of well-formedness to the children and the
+well-formed roots are proved (`FastContraction.stepCorrect_nativeMk`,
+`FastContraction.wfChildren_nativeMk`, `CountingSimulation.wf_root`). -/
+noncomputable def contractionAlgorithmOfNative
+    (hpoly : (scheme nativeMk).PolyTime encCall encFrame encValue)
+    (hζ : ∀ x (hirr : Irreducible ((GaloisRingArith.monicOf x.fl).map
+        (Int.castRingHom (ZMod 2)))), active x = true →
+      Pairwise fun i j : Fin (points x).length => IsUnit (GaloisRingArith.liftO hirr
+        ((points x).getD i []) - GaloisRingArith.liftO hirr ((points x).getD j [])))
+    (hana : FastAnalysis nativeMk) :
+    ContractionAlgorithm (encPair encNat ExplicitTensorNetwork.encExplicitNetwork)
+      (fun G => G.2.contraction) ExplicitAdmissible :=
+  contractionAlgorithmOfFast hpoly (stepCorrect_nativeMk hζ) wfChildren_nativeMk
+    (fun P _ hg => wf_root P hg) hana
 
 end Resources
 
