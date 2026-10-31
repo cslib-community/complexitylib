@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.Computability.GenericRAM.Native.StackRecursion
 import Complexity.Foundations.Data.Nat.RecursionTree
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.SqrtLog
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives
@@ -253,5 +254,18 @@ example : Nat.recursionBound (fun _ => 2) 3 0 ≤ (3 + 1) * ∏ _j ∈ Finset.ra
 
 -- Halving excess exponents: `100 + 50 + 25 + 12 + 6 = 193 ≤ 200`.
 example : ∑ j ∈ Finset.range 5, 100 / 2 ^ j ≤ 2 * 100 := Nat.sum_div_two_pow_le 100 5
+
+/-! ### The clock -/
+
+-- The fuel `2 ^ (3 n / √⌊log₂ n⌋)` of a subexponential recursion, from `n` in unary.
+example : ComputableInPolyTime (fun n : ℕ => 2 ^ (3 * n / Nat.sqrt (Nat.log 2 n))) encUnary
+    encNat :=
+  ComputableInPolyTime.unary_two_pow_div_sqrt_log_two 3
+
+-- At `n = 16`: `⌊log₂ 16⌋ = 4`, `√4 = 2`, so the clock is `2 ^ 24`.
+example : 2 ^ (3 * 16 / Nat.sqrt (Nat.log 2 16)) = 2 ^ 24 := by
+  have h1 : Nat.log 2 16 = 4 := by rw [show (16 : ℕ) = 2 ^ 4 by rfl, Nat.log_pow one_lt_two]
+  have h2 : Nat.sqrt 4 = 2 := (Nat.eq_sqrt.2 ⟨by norm_num, by norm_num⟩).symm
+  rw [h1, h2]
 
 end ComplexityTests.StackRecursion
