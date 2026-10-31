@@ -142,10 +142,9 @@ private theorem mul_pow_le_mul_pow {c W d E : ℕ} (hW : 1 ≤ W) (hd : d ≤ E)
   Nat.mul_le_mul_left _ (Nat.pow_le_pow_right hW hd)
 
 /-- The reduced coefficient lists against `W`. -/
-private theorem rv_le {n W cf df cp dp ct dt : ℕ} (hnW : n + 1 ≤ W) :
-    n * (2 * n + 3) + cf * (n + 1) ^ df * (2 * (cp * (n + 1) ^ dp) + 3) +
-        ct * (3 * n + 2) ^ dt ≤
-      (5 + cf * (2 * cp + 3) + ct * 3 ^ dt) * W ^ (2 + df + dp + dt) := by
+private theorem rv_le {n W cf df cp dp : ℕ} (hnW : n + 1 ≤ W) :
+    n * (2 * n + 3) + cf * (n + 1) ^ df * (2 * (cp * (n + 1) ^ dp) + 3) ≤
+      (5 + cf * (2 * cp + 3)) * W ^ (2 + df + dp) := by
   have hW1 : 1 ≤ W := by omega
   have h1 : n * (2 * n + 3) ≤ 5 * W ^ 2 :=
     calc n * (2 * n + 3) ≤ W * (5 * W) := Nat.mul_le_mul (by omega) (by omega)
@@ -161,16 +160,10 @@ private theorem rv_le {n W cf df cp dp ct dt : ℕ} (hnW : n + 1 ≤ W) :
         ≤ cf * W ^ df * ((2 * cp + 3) * W ^ dp) :=
           Nat.mul_le_mul (Nat.mul_le_mul_left _ hb1) this
       _ = cf * (2 * cp + 3) * W ^ (df + dp) := by rw [pow_add]; ring
-  have h3 : ct * (3 * n + 2) ^ dt ≤ ct * 3 ^ dt * W ^ dt :=
-    calc ct * (3 * n + 2) ^ dt ≤ ct * (3 * W) ^ dt :=
-          Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
-      _ = ct * 3 ^ dt * W ^ dt := by rw [mul_pow]; ring
-  have l1 : 5 * W ^ 2 ≤ 5 * W ^ (2 + df + dp + dt) := mul_pow_le_mul_pow hW1 (by omega)
-  have l2 : cf * (2 * cp + 3) * W ^ (df + dp) ≤ cf * (2 * cp + 3) * W ^ (2 + df + dp + dt) :=
+  have l1 : 5 * W ^ 2 ≤ 5 * W ^ (2 + df + dp) := mul_pow_le_mul_pow hW1 (by omega)
+  have l2 : cf * (2 * cp + 3) * W ^ (df + dp) ≤ cf * (2 * cp + 3) * W ^ (2 + df + dp) :=
     mul_pow_le_mul_pow hW1 (by omega)
-  have l3 : ct * 3 ^ dt * W ^ dt ≤ ct * 3 ^ dt * W ^ (2 + df + dp + dt) :=
-    mul_pow_le_mul_pow hW1 (by omega)
-  rw [add_mul, add_mul]
+  rw [add_mul]
   omega
 
 /-- The input of direct summation against `W`. -/
@@ -318,8 +311,8 @@ theorem leafCertificate_le
   obtain ⟨cp, dp, hp⟩ := PacketCtx.p_polyTime.polyBounded_length.exists_le
   obtain ⟨cf, df, hf⟩ := PacketCtx.fl_polyTime.polyBounded_length.exists_le
   -- The constants.
-  obtain ⟨e, he⟩ : ∃ e, e = 2 + df + dp + 0 := ⟨_, rfl⟩
-  obtain ⟨cR, hcR⟩ : ∃ cR, cR = 5 + cf * (2 * cp + 3) + 0 * 3 ^ 0 + cE := ⟨_, rfl⟩
+  obtain ⟨e, he⟩ : ∃ e, e = 2 + df + dp := ⟨_, rfl⟩
+  obtain ⟨cR, hcR⟩ : ∃ cR, cR = 5 + cf * (2 * cp + 3) + cE := ⟨_, rfl⟩
   obtain ⟨E₀, hE₀⟩ : ∃ E₀, E₀ = dl + e := ⟨_, rfl⟩
   obtain ⟨c₁, hc₁⟩ : ∃ c₁, c₁ = cl + 2 * cR + 1 := ⟨_, rfl⟩
   obtain ⟨c₂, hc₂⟩ : ∃ c₂, c₂ = 3 + cR := ⟨_, rfl⟩
@@ -346,7 +339,7 @@ theorem leafCertificate_le
     omega
   -- The reduced coefficient lists, and the outputs of the roots.
   obtain ⟨Rv, hRv⟩ : ∃ Rv, Rv = n * (2 * n + 3) +
-      cf * (n + 1) ^ df * (2 * (cp * (n + 1) ^ dp) + 3) + 0 * (3 * n + 2) ^ 0 := ⟨_, rfl⟩
+      cf * (n + 1) ^ df * (2 * (cp * (n + 1) ^ dp) + 3) := ⟨_, rfl⟩
   obtain ⟨Ev, hEv⟩ : ∃ Ev, Ev = Rv + cE * (ES + 1) := ⟨_, rfl⟩
   have hred : ∀ y, SumOps.galois.Reduced (x.prec, x.fl) y → (encList encNat y).length ≤ Rv := by
     intro y hy
@@ -415,7 +408,7 @@ theorem leafCertificate_le
   -- Polynomial pieces against `W`.
   have hk : x.net.vertices.length + 1 ≤ W := by have := length_vertices_le encT x; omega
   have hRvW : Rv ≤ (cR - cE) * W ^ e := by
-    have h := rv_le (ct := 0) (dt := 0) (cf := cf) (df := df) (cp := cp) (dp := dp) hnW
+    have h := rv_le (cf := cf) (df := df) (cp := cp) (dp := dp) hnW
     rw [hRv, he]
     refine h.trans (Nat.mul_le_mul_right _ ?_)
     omega
