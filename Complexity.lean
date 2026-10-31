@@ -888,6 +888,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildNumbe
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildCursor
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildSize
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.CoeffScheme
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildSize
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Constraint
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Deformation
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DescribedContraction
@@ -902,6 +903,9 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.PacketEntr
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.PacketEvaluator
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.PacketTerms
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ReductionLift
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.LocalDeformation
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ModeExpansion
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.NativeRecovery
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Recursion
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Reindex
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Schedule
