@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Renfei Zhou, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Renfei Zhou, Samuel Schlesinger
 -/
 
 -- upstream: local-only (formal abstract library)
@@ -35,16 +35,19 @@ On a formula `φ` on the variables `0, …, n - 1`, given as the input `3 :: c :
 including jumps, branches, and `rand`, which draws a uniform integer in `{0, …, R[i]}` in one step.
 The program and its time bound are uniform in `n`, `c`, the formula, and the word size `w`. The
 word size must satisfy `L + 8 (n + 3) ^ 2 + 3 c < 2 ^ w`, so `O(log (n + L + c))`-bit words suffice:
-the trial count `R`, of about `0.415 n` bits, is kept in memory one binary digit per word. Both `n`
-and `L` appear because neither bounds the other: the clauses may mention few variables, and they may
-repeat literals.
+the trial count `R`, of `O(n + log (c + 1))` bits (the factor `(4 / 3) ^ n` contributes about
+`0.415 n`), is kept in memory one binary digit per word. Both `n` and `L` appear because neither
+bounds the other: the clauses may mention few variables, and they may repeat literals.
 
-**Source.** Schöning's paper shows that this algorithm solves 3-SAT in randomized time
-`O*((4 / 3) ^ n)` (locator not verified). Its analysis of one trial, which this formalization proves
-with the explicit success probability `(3 / 4) ^ n / (3 n + 1)`, is not needed to read the
+**Source.** Schöning's paper (Abstract and Section 2, pp. 410–411) describes this algorithm and
+shows that its complexity on k-CNF formulas is within a polynomial factor of `(2 (1 - 1 / k)) ^ n`,
+which is `(4 / 3) ^ n` for 3-SAT. Its local search flips a random literal of *some* falsified
+clause; this formalization takes the first one. Its analysis of one trial, which this formalization
+proves with the explicit success probability `(3 / 4) ^ n / (3 n + 1)`, is not needed to read the
 statements below: the exact failure probability is stated for the restated `trial`, and the
 `e ^ (-c)` bound follows from it. The polynomial factor, the trial count and the constant `900` are
-those of this formalization.
+those of this formalization. The model definitions below are restated from Renfei Zhou's
+`RandomizedWordRAMAbstract`.
 
 At word size `w`, a *word* is a natural number below `2 ^ w`. A machine has `r` registers
 `R[0], …, R[r - 1]` and memory `M[a]` for `a : ℕ`. Its instructions, sampling trees, clocked runs

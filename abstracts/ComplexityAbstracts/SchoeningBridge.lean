@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Renfei Zhou, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Renfei Zhou, Samuel Schlesinger
 -/
 
 -- upstream: local-only (formal abstract library)
@@ -25,8 +25,11 @@ three facts.
    correspondence `stepRand_matches`, `runRand_matches`, `evalRand_eq`, `haltsWithin_iff` and
    `randCallsBounded_iff` is proved here for `Basis.standard`, reusing the presentation signature
    `RandomizedWordRAMBridge.Presentation` and its translations `compOf`, `aluOpOf` and `cfgOf`.
+   This part adapts Renfei Zhou's Part 2 of `RandomizedWordRAMBridge`: `StdLaws`, the `compOf`
+   lemmas and the correspondence follow that file, with the operation laws and the `alu` case
+   changed.
 2. **Schöning's trial.** The abstract writes a flip with `Function.update` and the local search
-   as iterated steps. `trialSpec_eq` proves that this is `Cslib.Complexity.Schoening.trial`.
+   as iterated steps. `trial_eq` proves that this is `Cslib.Complexity.Schoening.trial`.
 3. **The transfer.** `schoening` instantiates `ampProgram_spec`, `ampProgram_failure_eq` and
    `ampProgram_failure_le_exp` at `k = 3`, replaces the trial count `schoeningTrials 3 n c` by
    `⌈(3 n + 1) (4 / 3) ^ n⌉ c`, the word-size condition by an explicit polynomial one
