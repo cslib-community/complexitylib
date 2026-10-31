@@ -34,9 +34,11 @@ algorithms and `bs(f) ≤ 16 T²` for error `1/3` (`Cslib.Quantum.blockSensitivi
 `Cslib.Quantum.blockSensitivity_le_sixteen_mul_sq`).
 With `D(f) ≤ bs(f)³` a deterministic decision tree of depth at most `4096 T⁶` computes `f`
 (`Cslib.Quantum.complexity_le_mul_pow_six`). Since `bs(OR_N) = N`, computing the disjunction of
-`N` bits with error `1/3` takes `T ≥ √N / 4` queries (`Cslib.Quantum.card_le_sixteen_mul_sq`): the
-decision form of the search lower bound, whose search form is the BBBV bound
-`Cslib.Quantum.card_sub_two_le`.
+`N` bits with error `1/3` takes `T ≥ √N / 4` queries
+(`Cslib.Quantum.card_le_sixteen_mul_sq_of_threshold_one_right`): the decision form of the search
+lower bound, whose search form is the BBBV bound `Cslib.Quantum.card_sub_two_le`. Since
+`deg(PARITY_N) = N`, computing the parity of `N` bits exactly takes `T ≥ N / 2` queries
+(`Cslib.Quantum.card_le_two_mul_of_parity`).
 
 **Source mapping** (numbering of arXiv:quant-ph/9802049v3). The source models a network as
 unitaries `U₀, O, U₁, …, O, U_T` on `m` qubits, where the query `O` maps `|i, b, z⟩` to
@@ -48,9 +50,9 @@ arbitrary set of outcomes. Theorem 4.3 (`Q_E(f) ≥ deg(f)/2`) is `degree_le_two
 Theorem 4.8 (`Q_2(f) ≥ adeg(f)/2`) is `approxDegree_le_two_mul`, for an arbitrary error `ε`.
 Theorem 4.13 (`Q_E(f) ≥ √(bs(f)/8)` and `Q_2(f) ≥ √(bs(f)/16)`) is
 `blockSensitivity_le_eight_mul_sq` and `blockSensitivity_le_sixteen_mul_sq`, and Theorem 5.4
-(`D(f) ≤ 4096 Q_2(f)⁶`) is `complexity_le_mul_pow_six`. The bound `√N / 4` for `OR_N` is
-stated in §6. Like the source, these bounds hold for each algorithm; there is no separate
-definition of quantum query complexity.
+(`D(f) ≤ 4096 Q_2(f)⁶`) is `complexity_le_mul_pow_six`. The bound `√N / 4` for `OR_N` and the
+bound `N / 2` for exact `PARITY_N` are stated in §6. Like the source, these bounds hold for each
+algorithm; there is no separate definition of quantum query complexity.
 
 ## Main results
 
@@ -64,7 +66,9 @@ definition of quantum query complexity.
   `Cslib.Quantum.blockSensitivity_le_sixteen_mul_sq`: `bs(f) ≤ 8 T²` for exact algorithms and
   `bs(f) ≤ 16 T²` for error `1/3`.
 * `Cslib.Quantum.complexity_le_mul_pow_six`: `D(f) ≤ 4096 T⁶` for error `1/3`.
-* `Cslib.Quantum.card_le_sixteen_mul_sq`: computing `OR_N` with error `1/3` needs `N ≤ 16 T²`.
+* `Cslib.Quantum.card_le_sixteen_mul_sq_of_threshold_one_right`: computing `OR_N` with error `1/3`
+  needs `N ≤ 16 T²`.
+* `Cslib.Quantum.card_le_two_mul_of_parity`: computing `PARITY_N` exactly needs `N ≤ 2T`.
 
 ## References
 
@@ -269,12 +273,21 @@ theorem complexity_le_mul_pow_six {f : BooleanFunction N}
 Wolf][BealsBuhrmanCleveMoscaDeWolf2001]: if a `T`-query algorithm with a unit initial state
 computes the disjunction `OR_N` of its `N` input bits with error at most `1/3`, accepting every
 input `x`, by an outcome in `S`, with probability within `1/3` of `OR_N(x)`, then `N ≤ 16 T²`. -/
-theorem card_le_sixteen_mul_sq (U : ℕ → State N W →ₗᵢ[ℂ] State N W) {ψ₀ : State N W}
-    (hψ₀ : ‖ψ₀‖ = 1) (T : ℕ) (S : Finset (Fin N × Bool × W))
+theorem card_le_sixteen_mul_sq_of_threshold_one_right (U : ℕ → State N W →ₗᵢ[ℂ] State N W)
+    {ψ₀ : State N W} (hψ₀ : ‖ψ₀‖ = 1) (T : ℕ) (S : Finset (Fin N × Bool × W))
     (h : ∀ x, |measureProb (run U ψ₀ x T) S - bitVal ℝ (threshold N 1 x)| ≤ 1 / 3) :
     N ≤ 16 * T ^ 2 :=
   blockSensitivity_threshold_one_right.symm.trans_le
     (blockSensitivity_le_sixteen_mul_sq U hψ₀ T S h)
+
+/-- **Exact parity takes `N / 2` queries** [Beals, Buhrman, Cleve, Mosca, de
+Wolf][BealsBuhrmanCleveMoscaDeWolf2001]: if a `T`-query algorithm accepts every input `x`, by an
+outcome in `S`, with probability exactly the parity of `x`, then `N ≤ 2T`. -/
+theorem card_le_two_mul_of_parity (U : ℕ → State N W →ₗᵢ[ℂ] State N W) (ψ₀ : State N W) (T : ℕ)
+    (S : Finset (Fin N × Bool × W))
+    (h : ∀ x, measureProb (run U ψ₀ x T) S = bitVal ℝ (parity N x)) :
+    N ≤ 2 * T :=
+  degree_parity.symm.trans_le (degree_le_two_mul U ψ₀ T S h)
 
 end Quantum
 

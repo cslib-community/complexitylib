@@ -71,9 +71,16 @@ example : blockSensitivity (threshold 1 1) ≤ 8 * 1 ^ 2 :=
   blockSensitivity_le_eight_mul_sq readBit ψ₀ 1 accept measureProb_readBit_threshold
 
 example : 1 ≤ 16 * 1 ^ 2 :=
-  card_le_sixteen_mul_sq readBit norm_ψ₀ 1 accept fun x => by
+  card_le_sixteen_mul_sq_of_threshold_one_right readBit norm_ψ₀ 1 accept fun x => by
     rw [measureProb_readBit_threshold]
     norm_num
+
+-- With one bit, parity is the bit itself, so the algorithm also computes parity exactly.
+example : 1 ≤ 2 * 1 :=
+  card_le_two_mul_of_parity readBit ψ₀ 1 accept fun x => by
+    rw [measureProb_readBit]
+    congr 1
+    cases hx : x 0 <;> simp [parity, hx]
 
 -- The acceptance probability of any algorithm is a polynomial of degree at most `2T`.
 example (W : Type) [Fintype W] (U : ℕ → State 3 W →ₗᵢ[ℂ] State 3 W) (ψ : State 3 W)

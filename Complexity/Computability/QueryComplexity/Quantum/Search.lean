@@ -48,8 +48,8 @@ outcome distributions of nearby states (total variation at most `4ε`); `regProb
 per-outcome bound used here. The source applies Corollary 3.4 to prove that relative to a random
 oracle `NP` is not contained in `BQTime(o(2^{n/2}))` (Theorem 3.5), which is not formalized here;
 `card_sub_two_le` is the search lower bound in its standard query-model form, with the constants
-of this proof. The decision form, for computing `OR_N`, is `Cslib.Quantum.card_le_sixteen_mul_sq`,
-by the polynomial method.
+of this proof. The decision form, for computing `OR_N`, is
+`Cslib.Quantum.card_le_sixteen_mul_sq_of_threshold_one_right`, by the polynomial method.
 
 ## Main definitions
 
