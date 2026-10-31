@@ -44,6 +44,20 @@ example : pow 3 [1, 1] [1, 1] 2 = [0, 1] := by decide
 example (c : List ℕ) (k : ℕ) : val 3 [1, 1] (pow 3 [1, 1] c k) = val 3 [1, 1] c ^ k :=
   val_pow c k
 
+-- Inversion of units: `U⁻¹ = U ^ 2 = 7 + 7 U`, and `(1 + 2 U)⁻¹`, `(3 + 5 U)⁻¹` are inverses.
+example : inv 3 [1, 1] [0, 1] = [7, 7] := by decide
+example : mul 3 [1, 1] [1, 2] (inv 3 [1, 1] [1, 2]) = [1, 0] := by decide
+example : mul 3 [1, 1] [3, 5] (inv 3 [1, 1] [3, 5]) = [1, 0] := by decide
+
+-- `2` is not a unit, and inversion does not invert it.
+example : mul 3 [1, 1] [2, 0] (inv 3 [1, 1] [2, 0]) ≠ [1, 0] := by decide
+
+/-- Inversion is correct when the seed inverts modulo `2`. -/
+example (x : List ℕ) {w : Ring 3 [1, 1]}
+    (h : val 3 [1, 1] x * val 3 [1, 1] x ^ (2 ^ 2 - 2) = 1 + 2 * w) :
+    val 3 [1, 1] x * val 3 [1, 1] (inv 3 [1, 1] x) = 1 :=
+  val_mul_inv x h
+
 /-- The defining polynomial is monic. -/
 example : (monicOf [1, 1]).Monic := monic_monicOf _
 
@@ -71,6 +85,12 @@ example : ComputableInPolyTime
     (fun q : (ℕ × List ℕ) × (List ℕ × ℕ) => pow q.1.1 q.1.2 q.2.1 q.2.2)
     (encPair (encPair encUnary (encList encNat)) (encPair (encList encNat) encUnary))
     (encList encNat) := by
+  fun_prop
+
+/-- **Inversion in polynomial time.** -/
+example : ComputableInPolyTime
+    (fun q : (ℕ × List ℕ) × List ℕ => inv q.1.1 q.1.2 q.2)
+    (encPair (encPair encUnary (encList encNat)) (encList encNat)) (encList encNat) := by
   fun_prop
 
 end ComplexityTests.GaloisRingArithmetic
