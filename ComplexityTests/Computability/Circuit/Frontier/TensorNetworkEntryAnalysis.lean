@@ -16,7 +16,8 @@ The guard of the entry machine on a network of two parallel edges between a row 
 column vertex, at the modulus of its number of edges and at another modulus; the guarded root is
 well-formed and has no packets; an admissible input passes the guard; and the contraction
 algorithm for entry procedures, instantiated at the entry procedure of tables, is correct with no
-remaining hypothesis.
+remaining hypothesis. That instance is an `EntryContractionAlgorithm` whose `bound` applies to an
+admissible input, the network of two parallel edges at size `2`, so the interface is not vacuous.
 -/
 
 @[expose] public section
@@ -89,5 +90,35 @@ example (C D : ℕ) : ∃ K : ℕ, ∀ (s P r : ℕ) (G : DescribedNetwork (List
           K * ((encInput (encList encNat) (P, FastContraction.modulus G.numEdges, r, G)).length +
             1) ^ K :=
   tableAlgorithm.bound C D
+
+/-! ### The interface is not vacuous -/
+
+/-- The network of two parallel edges is admissible at size `2` with the entry procedure of
+tables, for some constant. -/
+theorem exists_entryAdmissible_twoEdges :
+    ∃ C, EntryAdmissible tableEntryCertificate C 2 (1, twoEdges) := by
+  obtain ⟨C₀, hC₀⟩ := exists_entryAdmissible_of_isPolynomial
+    tableEntryCertificate_isPolynomial
+  have h2 : ceilNineTenths 2 = 2 :=
+    le_antisymm (ceilNineTenths_le (by norm_num)) ((le_ceilNineTenths_iff (by norm_num)).2
+      (by norm_num))
+  refine ⟨C₀ + 1, hC₀ (C₀ + 1) 2 1 twoEdges (by omega) (by decide) le_rfl (by simp) ?_⟩
+  intro v hv
+  rw [h2]
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at hv
+  rcases hv with rfl | rfl <;> rfl
+
+-- The bound of the instance applies to that admissible input: at size `2`, precision `1` and the
+-- modulus of its two edges, the time and space of the certificate are within the bound.
+example : ∃ C K : ℕ, EntryAdmissible tableEntryCertificate C 2 (1, twoEdges) ∧
+    tableAlgorithm.certificate.time (1, FastContraction.modulus 2, 1, twoEdges) ≤
+        K * ((encInput (encList encNat) (1, FastContraction.modulus 2, 1, twoEdges)).length +
+          1) ^ K * 2 ^ (K * 2 / Nat.sqrt (Nat.log 2 2)) ∧
+      tableAlgorithm.certificate.space (1, FastContraction.modulus 2, 1, twoEdges) ≤
+        K * ((encInput (encList encNat) (1, FastContraction.modulus 2, 1, twoEdges)).length +
+          1) ^ K := by
+  obtain ⟨C, hC⟩ := exists_entryAdmissible_twoEdges
+  obtain ⟨K, hK⟩ := tableAlgorithm.bound C 1
+  exact ⟨C, K, hC, hK 2 1 1 twoEdges le_rfl le_rfl (by norm_num) hC⟩
 
 end ComplexityTests.TensorNetworkEntryAnalysis
