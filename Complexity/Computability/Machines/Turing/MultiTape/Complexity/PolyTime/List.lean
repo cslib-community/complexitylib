@@ -50,6 +50,8 @@ counting folds a counter directly instead of constructing the matching sublist.
   `.anyConst`: traverse a fixed list without requiring an encoding of its elements.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.mapFilterConst`: select and map fixed parameters
   with computed guards and outputs, preserving list order and duplicates.
+* `Turing.MultiTapeTM.ComputableInPolyTime.mapConst`, `.flatMapConst`, `.mapFilterConst`:
+  plain certificates for fixed-list templates, without encoding the fixed parameters.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.filterWith`, `.findWith`: filtering or searching
   a polynomial-time list with a parameterized test.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.length`, `.range`, `.replicate`: unary lengths,
@@ -912,6 +914,36 @@ theorem mapConst {β γ : Type} {encB : β ↪ List Bool} {encIn : γ ↪ List B
   | cons a l ih =>
     exact cons' (hf a (List.mem_cons_self ..))
       (ih fun b hb => hf b (List.mem_cons_of_mem _ hb))
+
+/-- Concatenate input-dependent lists indexed by a fixed list of parameters.
+No encoding of the fixed parameters is required; only members of the list need certificates. -/
+@[fun_prop]
+theorem flatMapConst {β γ : Type} {encB : β ↪ List Bool} {encIn : γ ↪ List Bool}
+    {ι : Type*} (l : List ι) {f : γ → ι → List β}
+    (hf : ∀ i ∈ l, ComputableInPolyTime (fun x => f x i) encIn (encList encB)) :
+    ComputableInPolyTime (fun x => l.flatMap (f x)) encIn (encList encB) := by
+  induction l with
+  | nil => exact const []
+  | cons a l ih =>
+    exact listAppend' (hf a (List.mem_cons_self ..))
+      (ih fun b hb => hf b (List.mem_cons_of_mem _ hb))
+
+/-- Filter and map a fixed list using computed guards and outputs, preserving order and
+duplicates. No encoding of the fixed parameters is required; only members need certificates. -/
+@[fun_prop]
+theorem mapFilterConst {β γ : Type} {encB : β ↪ List Bool} {encIn : γ ↪ List Bool}
+    {ι : Type*} (list : List ι) {test : γ → ι → Bool} {f : γ → ι → β}
+    (htest : ∀ i ∈ list, ComputableInPolyTime (fun a => test a i) encIn encBool)
+    (hf : ∀ i ∈ list, ComputableInPolyTime (fun a => f a i) encIn encB) :
+    ComputableInPolyTime (fun a => (list.filter (test a)).map (f a))
+      encIn (encList encB) := by
+  induction list with
+  | nil => exact const []
+  | cons a list ih =>
+    have htail := ih (fun i hi => htest i (List.mem_cons_of_mem _ hi))
+      (fun i hi => hf i (List.mem_cons_of_mem _ hi))
+    simpa only [List.filter_cons, List.map_cons, apply_ite] using
+      (htest a (List.mem_cons_self ..)).ite ((hf a (List.mem_cons_self ..)).cons' htail) htail
 
 /-- Repeat a computed value a computed unary number of times, charging every copy and delimiter. -/
 @[fun_prop]

@@ -1094,74 +1094,7 @@ theorem step_survival_prob_ge {k : ℕ} (hk : 2 ≤ k) {W : Fin k → Fin k → 
   rw [ENNReal.le_div_iff_mul_le (Or.inl hS_ne_zero) (Or.inl hS_ne_top)]
   simpa [mul_comm] using henn
 
-/-! ### `ENNReal` probability composition, telescoping, and Bernoulli amplification -/
-
-/-- `ENNReal` multiplication rule for sequential success lower bounds across `PMF.bind`. -/
-theorem toOuterMeasure_bind_ge_mul_ennreal {α β : Type*} (p : PMF α) (kernel : α → PMF β)
-    (pre : Set α) (event : Set β) {s₁ s₂ : ℝ≥0∞}
-    (hp : s₁ ≤ p.toOuterMeasure pre)
-    (hstep : ∀ a ∈ p.support, a ∈ pre → s₂ ≤ (kernel a).toOuterMeasure event) :
-    s₁ * s₂ ≤ (p.bind kernel).toOuterMeasure event := by
-  classical
-  calc
-    s₁ * s₂ ≤ p.toOuterMeasure pre * s₂ := mul_le_mul_of_nonneg_right hp zero_le
-    _ ≤ (p.bind kernel).toOuterMeasure event := by
-      rw [PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_apply, ← ENNReal.tsum_mul_right]
-      refine tsum_le_tsum fun a => ?_
-      by_cases ha : a ∈ pre
-      · simp only [Set.indicator_of_mem ha]
-        by_cases hs : a ∈ p.support
-        · exact mul_le_mul_of_nonneg_left (hstep a hs ha) zero_le
-        · have hz : p a = 0 := by simpa only [PMF.mem_support_iff, not_not] using hs
-          simp [hz]
-      · simp [Set.indicator_of_notMem ha]
-
-/-- `ENNReal` multiplication rule for independent-trial failure upper bounds: if `p` stays in
-`stillFailing` with probability at most `q₁`, every supported `a ∈ stillFailing` fails under
-`kernel a` with probability at most `q₂`, and every supported `a ∉ stillFailing` has zero failure
-probability under `kernel a`, then `p.bind kernel` fails with probability at most `q₁ * q₂`. -/
-theorem toOuterMeasure_bind_le_mul_ennreal {α β : Type*} (p : PMF α) (kernel : α → PMF β)
-    (stillFailing : Set α) (failure : Set β) {q₁ q₂ : ℝ≥0∞}
-    (hp : p.toOuterMeasure stillFailing ≤ q₁)
-    (hfail : ∀ a ∈ p.support, a ∈ stillFailing → (kernel a).toOuterMeasure failure ≤ q₂)
-    (hsucc : ∀ a ∈ p.support, a ∉ stillFailing → (kernel a).toOuterMeasure failure = 0) :
-    (p.bind kernel).toOuterMeasure failure ≤ q₁ * q₂ := by
-  classical
-  calc
-    (p.bind kernel).toOuterMeasure failure
-      ≤ p.toOuterMeasure stillFailing * q₂ := by
-        rw [PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_apply, ← ENNReal.tsum_mul_right]
-        refine tsum_le_tsum fun a => ?_
-        by_cases hs : a ∈ p.support
-        · by_cases ha : a ∈ stillFailing
-          · simp only [Set.indicator_of_mem ha]
-            exact mul_le_mul_of_nonneg_left (hfail a hs ha) zero_le
-          · simp [Set.indicator_of_notMem ha, hsucc a hs ha]
-        · have hz : p a = 0 := by simpa only [PMF.mem_support_iff, not_not] using hs
-          simp [hz]
-    _ ≤ q₁ * q₂ := mul_le_mul_of_nonneg_right hp zero_le
-
-/-- Exact complementation law `p.toOuterMeasure s + p.toOuterMeasure sᶜ = 1` for discrete `PMF`s,
-valid on arbitrary types without measurability hypotheses. -/
-theorem toOuterMeasure_add_compl_ennreal {α : Type*} (p : PMF α) (s : Set α) :
-    p.toOuterMeasure s + p.toOuterMeasure sᶜ = 1 := by
-  classical
-  rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply, ← tsum_add]
-  have hpt : (fun x => s.indicator p x + sᶜ.indicator p x) = p := by
-    ext x
-    by_cases hx : x ∈ s <;> simp [hx]
-  rw [hpt, p.tsum_coe]
-
-theorem toOuterMeasure_compl_le_one_sub {α : Type*} (p : PMF α) (s : Set α) {q : ℝ≥0∞}
-    (hq : q ≤ p.toOuterMeasure s) :
-    p.toOuterMeasure sᶜ ≤ 1 - q := by
-  have hsum := toOuterMeasure_add_compl_ennreal p s
-  have hq_top : q ≠ ⊤ :=
-    ne_top_of_le_ne_top (Cslib.Probability.PMF.toOuterMeasure_ne_top p s) hq
-  refine ENNReal.le_sub_of_add_le_right hq_top ?_
-  calc
-    p.toOuterMeasure sᶜ + q ≤ p.toOuterMeasure sᶜ + p.toOuterMeasure s := by gcongr
-    _ = 1 := by rw [add_comm, hsum]
+/-! ### Telescoping and Bernoulli amplification -/
 
 /-- Power of a quotient in `ℝ≥0∞`: `(a / b) ^ m = a ^ m / b ^ m`. -/
 theorem ennreal_div_pow (a b : ℝ≥0∞) (m : ℕ) :
