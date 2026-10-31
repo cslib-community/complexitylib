@@ -49,7 +49,10 @@ acceptable answer, and define the other measures for relations "in a similar man
 with no acceptable answer makes the complexity `⊤`. Just before Definition 5.2 they note the
 alternative of extending a relation to allow every answer on its illegal pairs; their convention
 for `R` is this one for that extension, which is no harder than `R`
-(`Nondeterministic.ecomplexity_le_of_imp`).
+(`Nondeterministic.ecomplexity_le_of_imp`). After Definition 5.2 they remark that for relations,
+measures such as `N¹(R)` are less interesting, since the answer `1` has no special role. That is
+why the relations here have Boolean answers: such a relation is a partial Boolean function, and
+`N⁰` and `N¹` keep their meaning.
 
 ## Covers and protocols
 
