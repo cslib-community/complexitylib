@@ -65,6 +65,8 @@ call computes the contraction of its network in `A_p`.
 
 ## Main results
 
+* `Cslib.Circuits.Frontier.FastContraction.pow_slots_le_edges_of_active`: an active call has at
+  least `64 ^ a` edges.
 * `Cslib.Circuits.Frontier.FastContraction.exists_eval`: derivations of the values.
 * `Cslib.Circuits.Frontier.FastContraction.eq_value_of_run`: a tagged value returned by the run is
   the root's value.
@@ -285,6 +287,46 @@ theorem weights_pos (i : ℕ) : ∀ w ∈ weights x i, 0 < w := by
 /-- An active call has an edge. -/
 theorem one_le_edges_of_active (h : active x = true) : 1 ≤ x.edges := by
   simp only [active, decide_eq_true_eq] at h
+  omega
+
+/-- **An active call has at least `64 ^ a` edges**, the hypothesis `r ^ a ≤ M` of the native packing
+(`PacketPacking.nativePacking_eq`), which `active` implies: with `λ = ⌊log₂ s⌋`, `1 ≤ u` forces
+`λ ≥ 1`, `a ≤ λ / 32768` (`ContractionSchedule.slotBits_le`), and
+`M > leafSize s = ⌊s / ⌊√λ⌋⌋ ≥ 2 ^ (6 ⌊λ / 32768⌋)`, since `⌊√λ⌋ ≤ 2 ^ ((λ + 1) / 2)`. -/
+theorem pow_slots_le_edges_of_active (h : active x = true) : 64 ^ slots x ≤ x.edges := by
+  have h' := h
+  simp only [active, decide_eq_true_eq] at h'
+  obtain ⟨hleaf, hu, -, -, -, -, -⟩ := h'
+  set L := Nat.log 2 x.scale with hL
+  have hL1 : 1 ≤ L := by
+    have : levels x = L / 2 ^ (17 + x.depth) := rfl
+    rcases Nat.eq_zero_or_pos L with h0 | h0
+    · rw [this, h0, Nat.zero_div] at hu; omega
+    · exact h0
+  have hs0 : x.scale ≠ 0 := by
+    intro h0; rw [hL, h0, Nat.log_zero_right] at hL1; omega
+  have hsL : 2 ^ L ≤ x.scale := Nat.pow_log_le_self 2 hs0
+  have ha : slots x ≤ L / 32768 := slotBits_le _ _
+  -- `⌊√λ⌋ ≤ 2 ^ ((λ + 1) / 2)`.
+  have hsq : Nat.sqrt L ≤ 2 ^ ((L + 1) / 2) := by
+    have h1 : Nat.sqrt L ^ 2 ≤ (2 ^ ((L + 1) / 2)) ^ 2 := by
+      calc Nat.sqrt L ^ 2 ≤ L := Nat.sqrt_le' L
+        _ ≤ 2 ^ L := Nat.lt_two_pow_self.le
+        _ ≤ 2 ^ (2 * ((L + 1) / 2)) := Nat.pow_le_pow_right (by norm_num) (by omega)
+        _ = (2 ^ ((L + 1) / 2)) ^ 2 := by rw [mul_comm, pow_mul]
+    exact (Nat.pow_le_pow_iff_left (by norm_num)).mp h1
+  have hsqpos : 0 < Nat.sqrt L := Nat.sqrt_pos.mpr hL1
+  have h64 : 64 ^ slots x ≤ 2 ^ (6 * (L / 32768)) := by
+    calc 64 ^ slots x = 2 ^ (6 * slots x) := by rw [pow_mul]; norm_num
+      _ ≤ 2 ^ (6 * (L / 32768)) := Nat.pow_le_pow_right (by norm_num) (by omega)
+  have hprod : 64 ^ slots x * Nat.sqrt L ≤ x.scale := by
+    calc 64 ^ slots x * Nat.sqrt L ≤ 2 ^ (6 * (L / 32768)) * 2 ^ ((L + 1) / 2) :=
+          Nat.mul_le_mul h64 hsq
+      _ = 2 ^ (6 * (L / 32768) + (L + 1) / 2) := (pow_add _ _ _).symm
+      _ ≤ 2 ^ L := Nat.pow_le_pow_right (by norm_num) (by omega)
+      _ ≤ x.scale := hsL
+  have hle : 64 ^ slots x ≤ leafSize x.scale :=
+    (Nat.le_div_iff_mul_le hsqpos).mpr hprod
   omega
 
 /-- An active call has a node of positive multiplicity: the index `2 ^ a + 1`, of level `0`. -/
