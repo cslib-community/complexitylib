@@ -31,7 +31,8 @@ the contraction algorithm of [OpenAI2026ETH] (Appendix D.4.4, pp. 60–61).
   determined modulo `2 ^ p` (`GaloisRingArith.mod_eq_of_val_eq`), and every element is the value
   of a reduced coefficient list (`GaloisRingArith.exists_val_eq`).
 * **Precision.** Reduction `A_N → A_n` for `n ≤ N` (`GaloisRingArith.reduce`) keeps the
-  coordinates (`GaloisRingArith.reduce_val`). Dividing the coordinates of `2 ^ Δ y` by `2 ^ Δ`
+  coordinates (`GaloisRingArith.reduce_val`), and its kernel is `2 ^ n A_N`
+  (`GaloisRingArith.exists_eq_add_of_reduce_eq`). Dividing the coordinates of `2 ^ Δ y` by `2 ^ Δ`
   gives `y` modulo `2 ^ (N - Δ)` (`GaloisRingArith.val_shiftDown`): this is how a sum that is
   known to be divisible by `2 ^ Δ` loses its common power of two.
 * **Truncated products** (`GaloisRingArith.tmul`) of polynomials in `z` over `A_p`: the first
@@ -51,6 +52,8 @@ length and the shift in unary (`GaloisRingArith.computableInPolyTime_tmul`,
 
 * `Cslib.GaloisRingArith.mod_eq_of_val_eq`, `Cslib.GaloisRingArith.exists_val_eq`: coordinates.
 * `Cslib.GaloisRingArith.val_shiftDown`: cancelling a common power of two.
+* `Cslib.GaloisRingArith.exists_eq_add_of_reduce_eq`,
+  `Cslib.GaloisRingArith.exists_val_eq_add_of_val_eq`: the kernel of reduction is `2 ^ n A_N`.
 * `Cslib.GaloisRingArith.val_tmul`: truncated products are correct.
 * `Cslib.GaloisRingArith.computableInPolyTime_tmul`,
   `Cslib.GaloisRingArith.computableInPolyTime_shiftDown`: polynomial time.
@@ -177,6 +180,27 @@ noncomputable def reduce {n N : ℕ} (h : n ≤ N) (fl : List ℕ) : Ring N fl �
 theorem reduce_val {n N : ℕ} (h : n ≤ N) (c : List ℕ) :
     reduce h fl (val N fl c) = val n fl c := by
   simp only [reduce, val, map_sum, map_mul, map_pow, map_natCast, AdjoinRoot.map_root]
+
+/-- **Equal reductions differ by a multiple of `2 ^ n`**: the kernel of reduction
+`A_N → A_n` is `2 ^ n A_N`. -/
+theorem exists_eq_add_of_reduce_eq {n N : ℕ} (h : n ≤ N) {x y : Ring N fl}
+    (hxy : reduce h fl x = reduce h fl y) : ∃ c, x = y + 2 ^ n * c := by
+  obtain ⟨r, -, -, rfl⟩ := exists_val_eq x
+  obtain ⟨s, -, -, rfl⟩ := exists_val_eq y
+  rw [reduce_val, reduce_val] at hxy
+  choose! q hq using fun i (hi : i < fl.length) => Nat.modEq_iff_dvd.mp (mod_eq_of_val_eq hxy hi)
+  refine ⟨-∑ i ∈ range fl.length, ((q i : ℤ) : Ring N fl) * AdjoinRoot.root _ ^ i, ?_⟩
+  rw [val, val, mul_neg, mul_sum, ← sub_eq_add_neg, ← sum_sub_distrib]
+  refine sum_congr rfl fun i hi => ?_
+  have hi' := congrArg (Int.cast : ℤ → Ring N fl) (hq i (mem_range.mp hi))
+  push_cast at hi'
+  linear_combination (-(AdjoinRoot.root _ ^ i : Ring N fl)) * hi'
+
+/-- **A value at a lower precision lifts with an error divisible by `2 ^ n`**: a coefficient list
+whose value in `A_n` is the reduction of `y ∈ A_N` has value `y + 2 ^ n c` in `A_N`. -/
+theorem exists_val_eq_add_of_val_eq {n N : ℕ} (h : n ≤ N) {w : List ℕ} {y : Ring N fl}
+    (hw : val n fl w = reduce h fl y) : ∃ c, val N fl w = y + 2 ^ n * c :=
+  exists_eq_add_of_reduce_eq h (by rw [reduce_val, hw])
 
 /-- Division of each coordinate by `2 ^ Δ`. -/
 def shiftDown (Δ : ℕ) (c : List ℕ) : List ℕ := c.map (· / 2 ^ Δ)

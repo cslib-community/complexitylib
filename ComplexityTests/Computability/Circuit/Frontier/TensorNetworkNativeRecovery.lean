@@ -66,4 +66,9 @@ example : Turing.MultiTapeTM.ComputableInPolyTime (fun n : ℕ => twoVal n n)
   computableInPolyTime_twoVal Turing.MultiTapeTM.ComputableInPolyTime.id'
     Turing.MultiTapeTM.ComputableInPolyTime.id'
 
+/-- A value computed at precision `3` lifts to precision `5` with an error divisible by `2 ^ 3`. -/
+example (y : Ring 5 [1, 1]) (hw : val 3 [1, 1] [5, 0] = reduce (by norm_num) [1, 1] y) :
+    ∃ c, val 5 [1, 1] [5, 0] = y + 2 ^ 3 * c :=
+  exists_val_eq_add_of_val_eq _ hw
+
 end ComplexityTests.TensorNetworkNativeRecovery
