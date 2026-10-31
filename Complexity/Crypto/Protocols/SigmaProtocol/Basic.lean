@@ -191,7 +191,8 @@ variable {P}
 /-- Every honest conversation is accepting: the verifier always accepts the honest prover. -/
 theorem Complete.accepts_of_mem_support_conversation [Fintype C] [Nonempty C]
     (h : P.Complete R) {x : X} {y : Y} (hxy : R x y) {tcz : T × C × Z}
-    (htcz : tcz ∈ (P.conversation x y).support) : P.Accepts y tcz.1 tcz.2.1 tcz.2.2 := by
+    (htcz : tcz ∈ (P.conversation x y).support) :
+    P.Accepts y tcz.1 (Prod.fst tcz.2) (Prod.snd tcz.2) := by
   rw [conversation_eq_bind_transcript] at htcz
   simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff,
     PMF.mem_support_pure_iff] at htcz

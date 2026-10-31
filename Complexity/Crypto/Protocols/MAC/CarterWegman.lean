@@ -2885,13 +2885,13 @@ noncomputable def carterWegmanNonceMAC (msgLen : ℕ → ℕ)
     have hfamily_tidy := hfamily.tidy
     have hprf : ComputableTidilyInPolyTime
         (fun p : List Bool × List Bool × List Bool =>
-          prfOracle family (dropFrame p.1).length (dropFrame p.1) p.2.2)
+          prfOracle family (dropFrame p.1).length (dropFrame p.1) (Prod.snd p.2))
         (encPair encBits (encPair encBits encBits)) encBits := by
       have heq : (fun p : List Bool × List Bool × List Bool =>
-          prfOracle family (dropFrame p.1).length (dropFrame p.1) p.2.2) =
+          prfOracle family (dropFrame p.1).length (dropFrame p.1) (Prod.snd p.2)) =
           (fun p : List Bool × List Bool × List Bool =>
-            if p.2.2.length == (dropFrame p.1).length then
-              family (dropFrame p.1) p.2.2
+            if (Prod.snd p.2).length == (dropFrame p.1).length then
+              family (dropFrame p.1) (Prod.snd p.2)
             else
               []) := by
         funext p
@@ -2903,8 +2903,9 @@ noncomputable def carterWegmanNonceMAC (msgLen : ℕ → ℕ)
           let k := unframe p.1
           let prfKey := dropFrame p.1
           let n := prfKey.length
-          if (p.2.1.length == msgLen n) && (p.2.2.length == n) then
-            BitString.listXor n [hash n k p.2.1, (prfOracle family n prfKey p.2.2).take n]
+          if ((Prod.fst p.2).length == msgLen n) && ((Prod.snd p.2).length == n) then
+            BitString.listXor n
+              [hash n k (Prod.fst p.2), (prfOracle family n prfKey (Prod.snd p.2)).take n]
           else
             [])
         (encPair encBits (encPair encBits encBits)) encBits := by
@@ -2913,9 +2914,10 @@ noncomputable def carterWegmanNonceMAC (msgLen : ℕ → ℕ)
         let k := unframe p.1
         let prfKey := dropFrame p.1
         let n := prfKey.length
-        if (p.2.1.length == msgLen n) && (p.2.2.length == n) then
+        if ((Prod.fst p.2).length == msgLen n) && ((Prod.snd p.2).length == n) then
           (pure (BitString.listXor n
-            [hash n k p.2.1, (prfOracle family n prfKey p.2.2).take n]) : ProbComp (List Bool))
+            [hash n k (Prod.fst p.2),
+              (prfOracle family n prfKey (Prod.snd p.2)).take n]) : ProbComp (List Bool))
         else
           pure []) =
         (fun p : List Bool × List Bool × List Bool =>
@@ -2923,8 +2925,9 @@ noncomputable def carterWegmanNonceMAC (msgLen : ℕ → ℕ)
             let k := unframe p.1
             let prfKey := dropFrame p.1
             let n := prfKey.length
-            if (p.2.1.length == msgLen n) && (p.2.2.length == n) then
-              BitString.listXor n [hash n k p.2.1, (prfOracle family n prfKey p.2.2).take n]
+            if ((Prod.fst p.2).length == msgLen n) && ((Prod.snd p.2).length == n) then
+              BitString.listXor n
+                [hash n k (Prod.fst p.2), (prfOracle family n prfKey (Prod.snd p.2)).take n]
             else
               [])) := by
       funext p
@@ -2938,13 +2941,13 @@ noncomputable def carterWegmanNonceMAC (msgLen : ℕ → ℕ)
     have hfamily_tidy := hfamily.tidy
     have hprf : ComputableTidilyInPolyTime
         (fun p : List Bool × List Bool × List Bool × List Bool =>
-          prfOracle family (dropFrame p.1).length (dropFrame p.1) p.2.2.1)
+          prfOracle family (dropFrame p.1).length (dropFrame p.1) (Prod.fst (Prod.snd p.2)))
         (encPair encBits (encPair encBits (encPair encBits encBits))) encBits := by
       have heq : (fun p : List Bool × List Bool × List Bool × List Bool =>
-          prfOracle family (dropFrame p.1).length (dropFrame p.1) p.2.2.1) =
+          prfOracle family (dropFrame p.1).length (dropFrame p.1) (Prod.fst (Prod.snd p.2))) =
           (fun p : List Bool × List Bool × List Bool × List Bool =>
-            if p.2.2.1.length == (dropFrame p.1).length then
-              family (dropFrame p.1) p.2.2.1
+            if (Prod.fst (Prod.snd p.2)).length == (dropFrame p.1).length then
+              family (dropFrame p.1) (Prod.fst (Prod.snd p.2))
             else
               []) := by
         funext p
@@ -4716,13 +4719,13 @@ noncomputable def carterWegmanRandomMAC (msgLen : ℕ → ℕ)
     have hfamily_tidy := hfamily.tidy
     have hprf : ComputableTidilyInPolyTime
         (fun p : (List Bool × List Bool) × List Bool =>
-          prfOracle family (dropFrame p.1.1).length (dropFrame p.1.1) p.2)
+          prfOracle family (dropFrame (Prod.fst p.1)).length (dropFrame (Prod.fst p.1)) p.2)
         (encPair (encPair encBits encBits) encBits) encBits := by
       have heq : (fun p : (List Bool × List Bool) × List Bool =>
-          prfOracle family (dropFrame p.1.1).length (dropFrame p.1.1) p.2) =
+          prfOracle family (dropFrame (Prod.fst p.1)).length (dropFrame (Prod.fst p.1)) p.2) =
           (fun p : (List Bool × List Bool) × List Bool =>
-            if p.2.length == (dropFrame p.1.1).length then
-              family (dropFrame p.1.1) p.2
+            if p.2.length == (dropFrame (Prod.fst p.1)).length then
+              family (dropFrame (Prod.fst p.1)) p.2
             else
               []) := by
         funext p
@@ -4731,12 +4734,13 @@ noncomputable def carterWegmanRandomMAC (msgLen : ℕ → ℕ)
       polytime
     have hbody : ComputableTidilyInPolyTime
         (fun p : (List Bool × List Bool) × List Bool =>
-          let k := unframe p.1.1
-          let prfKey := dropFrame p.1.1
+          let k := unframe (Prod.fst p.1)
+          let prfKey := dropFrame (Prod.fst p.1)
           let n := prfKey.length
-          if p.1.2.length == msgLen n then
+          if (Prod.snd p.1).length == msgLen n then
             encPair encBits encBits
-              (p.2, BitString.listXor n [hash n k p.1.2, (prfOracle family n prfKey p.2).take n])
+              (p.2, BitString.listXor n
+                [hash n k (Prod.snd p.1), (prfOracle family n prfKey p.2).take n])
           else
             [])
         (encPair (encPair encBits encBits) encBits) encBits := by
@@ -4748,13 +4752,13 @@ noncomputable def carterWegmanRandomMAC (msgLen : ℕ → ℕ)
     have hfamily_tidy := hfamily.tidy
     have hprf : ComputableTidilyInPolyTime
         (fun p : List Bool × List Bool × List Bool =>
-          prfOracle family (dropFrame p.1).length (dropFrame p.1) (unframe p.2.2))
+          prfOracle family (dropFrame p.1).length (dropFrame p.1) (unframe (Prod.snd p.2)))
         (encPair encBits (encPair encBits encBits)) encBits := by
       have heq : (fun p : List Bool × List Bool × List Bool =>
-          prfOracle family (dropFrame p.1).length (dropFrame p.1) (unframe p.2.2)) =
+          prfOracle family (dropFrame p.1).length (dropFrame p.1) (unframe (Prod.snd p.2))) =
           (fun p : List Bool × List Bool × List Bool =>
-            if (unframe p.2.2).length == (dropFrame p.1).length then
-              family (dropFrame p.1) (unframe p.2.2)
+            if (unframe (Prod.snd p.2)).length == (dropFrame p.1).length then
+              family (dropFrame p.1) (unframe (Prod.snd p.2))
             else
               []) := by
         funext p
