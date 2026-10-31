@@ -399,6 +399,9 @@ public import Complexity.Algorithms.WordRAM.RadixSort.Deduplicate
 public import Complexity.Algorithms.WordRAM.RadixSort.Model
 public import Complexity.Algorithms.WordRAM.RadixSort.Program
 public import Complexity.Algorithms.WordRAM.RadixSort.Scan
+public import Complexity.Algorithms.WordRAM.Schoening.Amplify
+public import Complexity.Algorithms.WordRAM.Schoening.Scan
+public import Complexity.Algorithms.WordRAM.Schoening.Trial
 public import Complexity.Algorithms.WordRAM.Stack
 public import Complexity.Algorithms.WordRAM.Stack.Controller
 public import Complexity.Algorithms.WordRAM.ThreeSum.Cell
@@ -2180,6 +2183,7 @@ public import Complexity.Computability.WordRAM.RAM
 public import Complexity.Computability.WordRAM.RAMInput
 public import Complexity.Computability.WordRAM.Randomized.Defs
 public import Complexity.Computability.WordRAM.Randomized.Expected
+public import Complexity.Computability.WordRAM.Randomized.Law
 public import Complexity.Computability.WordRAM.Randomized.LoopSegment
 public import Complexity.Computability.WordRAM.Randomized.Structured
 public import Complexity.Computability.WordRAM.Randomized.Subroutine
