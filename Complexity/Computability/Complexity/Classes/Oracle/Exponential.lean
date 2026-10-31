@@ -9,11 +9,11 @@ module
 
 public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Complexity.Classes.Oracle
-public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.RunsWords
 import Complexity.Computability.Complexity.Classes.Oracle.Closure
 import Complexity.Computability.Complexity.Reduction
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.NormalForm
+import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.RunsWords
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Tidy
 import Complexity.Computability.Probabilistic.Oracle.Normalization
 
@@ -100,7 +100,7 @@ variable {Operation α β : Type} [DecidableEq Operation]
 
 /-- A machine computing the encoded program as a clean phase within time `c * 2 ^ (d * n)` is a
 certificate. -/
-theorem of_computesTidily [Finite Operation] {k : ℕ} {Control : Type} [Finite Control]
+private theorem of_computesTidily [Finite Operation] {k : ℕ} {Control : Type} [Finite Control]
     {program : α → WordOracleComp Operation β}
     (machine : Turing.MultiTapePTM k Bool Control Operation) (c d : ℕ) {time : α → ℕ}
     (htime : ∀ a, time a ≤ c * 2 ^ (d * (input a).length))
