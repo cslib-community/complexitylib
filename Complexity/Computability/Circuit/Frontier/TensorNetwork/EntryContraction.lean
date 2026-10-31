@@ -51,8 +51,9 @@ encoded length bounds it.
 `(P, fl, r, G)`, with the precision `P` in unary and the coefficients `fl` of a modulus, to a
 coefficient list whose value in `A_P` at the modulus `FastContraction.modulus m`, for `m` the
 number of edges, is the contraction of the entries' values, on every input. On admissible inputs
-at that modulus it runs in time `K (n + 1) ^ K 2 ^ (K s / √⌊log₂ s⌋)` and space `K (n + 1) ^ K`,
-the bound shape of `Cslib.Complexity.CountingSimulation.ContractionAlgorithm`. The input format is
+at that modulus and precision `P ≤ D s (⌊log₂ s⌋ + 1)`, for each fixed `D`, it runs in time
+`K (n + 1) ^ K 2 ^ (K s / √⌊log₂ s⌋)` and space `K (n + 1) ^ K`. The original linear-precision
+bound is a corollary (`EntryContractionAlgorithm.bound`). The input format is
 that of the truncation-order reduction's contractions of specialized networks.
 
 **Direct summation** (`EntryContraction.directCore`). Summing over all edge assignments with the
@@ -217,12 +218,13 @@ for `L` the encoded length of `G`. -/
         ce.space (v.2, bs) ≤ C * (s + (DescribedNetwork.encDescribed encT G.2).length + 1) ^ C
 
 variable (encT entry) in
-/-- **The contraction interface for entry procedures** (Theorem D.1 with `ℓ = 1`, entries in
-`A_P`). A native certificate maps `(P, fl, r, G)` to a coefficient list `core (P, fl, r, G)`. At
+/-- **The contraction interface for entry procedures**, extending Theorem D.1 at `ℓ = 1` to
+logarithmic root precision, with entries in `A_P`. A native certificate maps `(P, fl, r, G)` to a
+coefficient list `core (P, fl, r, G)`. At
 the modulus `fl = FastContraction.modulus m`, for `m` the number of edges of `G`, its value in
 `A_P` is the contraction of the values of the entries, on every input. For all constants `C` and
 `D` there is `K` such that on every network admissible at a size `s ≥ 2` with constant `C`, and
-every precision `1 ≤ P ≤ D s`, at that modulus the certificate takes time at most
+every precision `1 ≤ P ≤ D s (⌊log₂ s⌋ + 1)`, at that modulus the certificate takes time at most
 `K (n + 1) ^ K 2 ^ (K s / √⌊log₂ s⌋)` and space at most `K (n + 1) ^ K`, for `n` the encoded length
 of the input. -/
 structure EntryContractionAlgorithm (Admissible : ℕ → ℕ → ℕ × DescribedNetwork T → Prop) where
@@ -235,9 +237,10 @@ structure EntryContractionAlgorithm (Admissible : ℕ → ℕ → ℕ × Describ
     val P (FastContraction.modulus G.numEdges)
         (core (P, FastContraction.modulus G.numEdges, r, G)) =
       G.contraction fun t bs => val P (FastContraction.modulus G.numEdges) (entry t bs)
-  /-- Its time and space on admissible inputs at the modulus of the number of edges. -/
-  bound : ∀ C D : ℕ, ∃ K : ℕ, ∀ (s P r : ℕ) (G : DescribedNetwork T), 2 ≤ s → 1 ≤ P →
-    P ≤ D * s → Admissible C s (r, G) →
+  /-- The same machine and rate allow a logarithmic factor in the root precision. This extension
+  of Theorem D.1 follows from the inherited-precision estimate (D.11). -/
+  bound_logPrecision : ∀ C D : ℕ, ∃ K : ℕ, ∀ (s P r : ℕ) (G : DescribedNetwork T), 2 ≤ s →
+    1 ≤ P → P ≤ D * s * (Nat.log 2 s + 1) → Admissible C s (r, G) →
       certificate.time (P, FastContraction.modulus G.numEdges, r, G) ≤
           K * ((EntryContraction.encInput encT
               (P, FastContraction.modulus G.numEdges, r, G)).length + 1) ^ K *
@@ -245,6 +248,23 @@ structure EntryContractionAlgorithm (Admissible : ℕ → ℕ → ℕ × Describ
         certificate.space (P, FastContraction.modulus G.numEdges, r, G) ≤
           K * ((EntryContraction.encInput encT
               (P, FastContraction.modulus G.numEdges, r, G)).length + 1) ^ K
+
+/-- The original linear-precision bound follows from the logarithmic-precision bound of the
+same algorithm. -/
+theorem EntryContractionAlgorithm.bound {Admissible : ℕ → ℕ → ℕ × DescribedNetwork T → Prop}
+    (alg : EntryContractionAlgorithm encT entry Admissible) (C D : ℕ) :
+    ∃ K : ℕ, ∀ (s P r : ℕ) (G : DescribedNetwork T), 2 ≤ s → 1 ≤ P → P ≤ D * s →
+      Admissible C s (r, G) →
+      alg.certificate.time (P, FastContraction.modulus G.numEdges, r, G) ≤
+          K * ((EntryContraction.encInput encT
+              (P, FastContraction.modulus G.numEdges, r, G)).length + 1) ^ K *
+            2 ^ (K * s / Nat.sqrt (Nat.log 2 s)) ∧
+        alg.certificate.space (P, FastContraction.modulus G.numEdges, r, G) ≤
+          K * ((EntryContraction.encInput encT
+              (P, FastContraction.modulus G.numEdges, r, G)).length + 1) ^ K := by
+  obtain ⟨K, hK⟩ := alg.bound_logPrecision C D
+  exact ⟨K, fun s P r G hs hP hPD hA => hK s P r G hs hP
+    (hPD.trans (Nat.le_mul_of_pos_right _ (Nat.succ_pos _))) hA⟩
 
 /-! ### Direct summation -/
 

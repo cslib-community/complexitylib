@@ -674,8 +674,19 @@ and credited.
   `ContractionCounting.exists_modelCounter_fixedDensity` proves the fixed-density bound
   `2^{O_{k,D}(n / √log n)}` by tensor contraction (Theorem D.1 with `ℓ = 1`), and
   `DensityBranchCounting.exists_modelCounter` combines it with the interpolation-scale counter in
-  one machine. The arbitrary-density bound `2^{O_k(n log log n / √log n)}` still needs Theorem D.1
-  with truncation order `ℓ = n + 1` and Lemma D.2.
+  one machine. `CountingSimulation.truncEntryContractionAlgorithm` now supplies polynomial
+  truncation order and precision `O(s log s)`, with a linear vertex bound. The arbitrary-density
+  bound `2^{O_k(n log log n / √log n)}` still needs the Lemma D.2 construction and its native
+  application to this interface; #1538 remains open.
+- **Exact optimization and large weights:** `MaxSAT.exists_histogram_algorithm` and
+  `MaxSAT.exists_optimum_algorithm` compute the complete score distribution and optimum value in
+  contraction time measured by literal occurrences plus clauses. Their sparse fixed-width
+  specializations give `2^{O_{k,c}(n / √log n)}` time and polynomial space.
+  `BinaryWeights.certificate` contracts natural tensor tables exactly when their bit lengths are
+  polynomial in the structural size; `BinaryWeightedCounting.exists_partitionFunctionCounter`
+  supplies the native weighted-CSP application. Remaining extensions are native optimizing
+  assignment extraction and signed or rational weight interfaces. A variable-count rate for
+  dense exact MAX-SAT is not established by these results or by ordinary SAT sparsification.
 
 ## Documentation and repository
 
