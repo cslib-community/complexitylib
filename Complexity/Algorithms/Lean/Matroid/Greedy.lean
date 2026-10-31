@@ -59,7 +59,8 @@ The monadic formulation `greedySelectM` instantiates with `Id` to recover the pu
   commutative additive monoid (including unsigned `ℕ` weights for minimum-weight bases without
   negation).
 * `sum_le_greedySelect_of_indep`, `sum_le_greedyMaxBasis_of_indep`: maximum-weight independent
-  subset optimality for nonnegative weights ([CLRS2009], Section 16.4, Theorem 16.11).
+  subset optimality for nonnegative weights (generalizing [CLRS2009], Section 16.4, Theorem 16.11
+  from strictly positive to nonnegative weights).
 * `sum_le_greedyMaxIndep`: maximum-weight independent subset optimality for arbitrary signed
   weights via nonnegative pre-filtering ([Edmonds1971], Section 2).
 * `augment_of_forall_sum_le_greedyMaxBasis`, `exists_matroid_iff_forall_sum_le_greedyMaxBasis`,
@@ -176,6 +177,42 @@ private theorem foldlM_greedyStepM_pure {α : Type} [DecidableEq α]
     Id.run (greedySelectM indep xs) = greedySelect (fun S => Id.run (indep S)) xs :=
   greedySelectM_pure (m := Id) (fun S => Id.run (indep S)) xs
 
+@[simp] theorem greedyMaxBasisM_pure {α : Type} {β : Type*} [DecidableEq α] [LinearOrder β]
+    {m : Type → Type*} [Monad m] [LawfulMonad m]
+    (indep : Finset α → Bool) (w : α → β) (xs : List α) :
+    greedyMaxBasisM (fun S => (pure (indep S) : m Bool)) w xs =
+      pure (greedyMaxBasis indep w xs) :=
+  greedySelectM_pure indep _
+
+@[simp] theorem idRun_greedyMaxBasisM {α : Type} {β : Type*} [DecidableEq α] [LinearOrder β]
+    (indep : Finset α → Id Bool) (w : α → β) (xs : List α) :
+    Id.run (greedyMaxBasisM indep w xs) = greedyMaxBasis (fun S => Id.run (indep S)) w xs :=
+  greedyMaxBasisM_pure (m := Id) (fun S => Id.run (indep S)) w xs
+
+@[simp] theorem greedyMinBasisM_pure {α : Type} {β : Type*} [DecidableEq α] [LinearOrder β]
+    {m : Type → Type*} [Monad m] [LawfulMonad m]
+    (indep : Finset α → Bool) (w : α → β) (xs : List α) :
+    greedyMinBasisM (fun S => (pure (indep S) : m Bool)) w xs =
+      pure (greedyMinBasis indep w xs) :=
+  greedySelectM_pure indep _
+
+@[simp] theorem idRun_greedyMinBasisM {α : Type} {β : Type*} [DecidableEq α] [LinearOrder β]
+    (indep : Finset α → Id Bool) (w : α → β) (xs : List α) :
+    Id.run (greedyMinBasisM indep w xs) = greedyMinBasis (fun S => Id.run (indep S)) w xs :=
+  greedyMinBasisM_pure (m := Id) (fun S => Id.run (indep S)) w xs
+
+@[simp] theorem greedyMaxIndepM_pure {α : Type} {β : Type*} [DecidableEq α] [Zero β] [LinearOrder β]
+    {m : Type → Type*} [Monad m] [LawfulMonad m]
+    (indep : Finset α → Bool) (w : α → β) (xs : List α) :
+    greedyMaxIndepM (fun S => (pure (indep S) : m Bool)) w xs =
+      pure (greedyMaxIndep indep w xs) :=
+  greedyMaxBasisM_pure indep w _
+
+@[simp] theorem idRun_greedyMaxIndepM {α : Type} {β : Type*} [DecidableEq α] [Zero β]
+    [LinearOrder β] (indep : Finset α → Id Bool) (w : α → β) (xs : List α) :
+    Id.run (greedyMaxIndepM indep w xs) = greedyMaxIndep (fun S => Id.run (indep S)) w xs :=
+  greedyMaxIndepM_pure (m := Id) (fun S => Id.run (indep S)) w xs
+
 private theorem map_greedyStepM {α : Type} [DecidableEq α]
     {m n : Type → Type*} [Monad m] [Monad n]
     {f : {γ : Type} → m γ → n γ} (hf : IsMonadHom m n f)
@@ -200,6 +237,7 @@ private theorem map_foldlM_greedyStepM {α : Type} [DecidableEq α]
     funext acc'
     exact ih acc'
 
+@[grind .]
 theorem _root_.Cslib.IsMonadHom.map_greedySelectM {α : Type} [DecidableEq α]
     {m n : Type → Type*} [Monad m] [Monad n]
     {f : {γ : Type} → m γ → n γ} (hf : IsMonadHom m n f)
@@ -207,6 +245,7 @@ theorem _root_.Cslib.IsMonadHom.map_greedySelectM {α : Type} [DecidableEq α]
     f (greedySelectM indep xs) = greedySelectM (fun S => f (indep S)) xs :=
   map_foldlM_greedyStepM hf indep ∅ xs
 
+@[grind .]
 theorem _root_.Cslib.IsMonadHom.map_greedyMaxBasisM {α : Type} {β : Type*} [DecidableEq α]
     [LinearOrder β] {m n : Type → Type*} [Monad m] [Monad n]
     {f : {γ : Type} → m γ → n γ} (hf : IsMonadHom m n f)
@@ -214,6 +253,7 @@ theorem _root_.Cslib.IsMonadHom.map_greedyMaxBasisM {α : Type} {β : Type*} [De
     f (greedyMaxBasisM indep w xs) = greedyMaxBasisM (fun S => f (indep S)) w xs :=
   hf.map_greedySelectM indep (xs.mergeSort (fun a b => decide (w b ≤ w a)))
 
+@[grind .]
 theorem _root_.Cslib.IsMonadHom.map_greedyMinBasisM {α : Type} {β : Type*} [DecidableEq α]
     [LinearOrder β] {m n : Type → Type*} [Monad m] [Monad n]
     {f : {γ : Type} → m γ → n γ} (hf : IsMonadHom m n f)
@@ -221,6 +261,7 @@ theorem _root_.Cslib.IsMonadHom.map_greedyMinBasisM {α : Type} {β : Type*} [De
     f (greedyMinBasisM indep w xs) = greedyMinBasisM (fun S => f (indep S)) w xs :=
   hf.map_greedySelectM indep (xs.mergeSort (fun a b => decide (w a ≤ w b)))
 
+@[grind .]
 theorem _root_.Cslib.IsMonadHom.map_greedyMaxIndepM {α : Type} {β : Type*} [DecidableEq α]
     [Zero β] [LinearOrder β] {m n : Type → Type*} [Monad m] [Monad n]
     {f : {γ : Type} → m γ → n γ} (hf : IsMonadHom m n f)
@@ -346,6 +387,22 @@ theorem mem_and_nonneg_of_mem_greedyMaxIndep {β : Type*} [Zero β] [LinearOrder
     (hx : x ∈ greedyMaxIndep indep w xs) : x ∈ xs ∧ 0 ≤ w x := by
   have hmem := mem_of_mem_greedyMaxBasis hx
   simpa using List.mem_filter.mp hmem
+
+private theorem indep_foldl_greedyStep {indep : Finset α → Bool} {acc : Finset α}
+    (hacc : indep acc = true) (xs : List α) :
+    indep (xs.foldl (greedyStep indep) acc) = true := by
+  induction xs generalizing acc with
+  | nil => exact hacc
+  | cons x rest ih =>
+    refine ih ?_
+    simp only [greedyStep]
+    cases h : indep (insert x acc) <;> simp [h, hacc]
+
+/-- Whenever `indep ∅ = true`, `greedySelect indep xs` satisfies `indep` (even for arbitrary
+non-matroid predicates). -/
+theorem indep_greedySelect {indep : Finset α → Bool} (hempty : indep ∅ = true) (xs : List α) :
+    indep (greedySelect indep xs) = true :=
+  indep_foldl_greedyStep hempty xs
 
 /-! ## Matroid independence and basis theorems -/
 
@@ -758,10 +815,11 @@ theorem greedySelect_le_sum_of_isBasis' [AddCommMonoid β] [Preorder β] [IsOrde
     ∑ x ∈ greedySelect indep xs, w x ≤ ∑ x ∈ I, w x :=
   sum_le_greedySelect_of_isBasis' (β := βᵒᵈ) hM w hsorted hI
 
-/-- **Weighted Independent-Set Optimality** for pre-sorted nonnegative weights ([CLRS2009],
-Section 16.4, Theorem 16.11): if `xs` is ordered by nonincreasing weight `w b ≤ w a` and
-`0 ≤ w x` for every `x ∈ xs`, then `greedySelect indep xs` maximizes `∑ x ∈ I, w x` over **all**
-independent finite subsets `I` of `{x | x ∈ xs}`. -/
+/-- **Weighted Independent-Set Optimality** for pre-sorted nonnegative weights (generalizing
+[CLRS2009], Section 16.4, Theorem 16.11 from strictly positive to nonnegative weights): if `xs` is
+ordered by nonincreasing weight `w b ≤ w a` and `0 ≤ w x` for every `x ∈ xs`, then
+`greedySelect indep xs` maximizes `∑ x ∈ I, w x` over **all** independent finite subsets `I` of
+`{x | x ∈ xs}`. -/
 theorem sum_le_greedySelect_of_indep [AddCommMonoid β] [Preorder β] [IsOrderedAddMonoid β]
     {M : Matroid α} {indep : Finset α → Bool}
     (hM : ∀ S : Finset α, indep S = true ↔ M.Indep (S : Set α))
@@ -858,9 +916,10 @@ theorem greedyMinBasis_le_sum [AddCommMonoid β] [LinearOrder β] [IsOrderedAddM
     ext x; exact (List.mergeSort_perm xs _).mem_iff
   exact greedySelect_le_sum_of_isBasis' hM w (pairwise_mergeSort_le w xs) (hset.symm ▸ hI)
 
-/-- **Maximum-Weight Independent-Set Optimality** for nonnegative weights ([CLRS2009],
-Section 16.4, Theorem 16.11): when `0 ≤ w x` for all `x ∈ xs`, `greedyMaxBasis indep w xs`
-maximizes `∑ x ∈ I, w x` over all independent finite subsets `I` of `{x | x ∈ xs}`. -/
+/-- **Maximum-Weight Independent-Set Optimality** for nonnegative weights (generalizing [CLRS2009],
+Section 16.4, Theorem 16.11 from strictly positive to nonnegative weights): when `0 ≤ w x` for all
+`x ∈ xs`, `greedyMaxBasis indep w xs` maximizes `∑ x ∈ I, w x` over all independent finite subsets
+`I` of `{x | x ∈ xs}`. -/
 theorem sum_le_greedyMaxBasis_of_indep [AddCommMonoid β] [LinearOrder β] [IsOrderedAddMonoid β]
     {M : Matroid α} {indep : Finset α → Bool}
     (hM : ∀ S : Finset α, indep S = true ↔ M.Indep (S : Set α))

@@ -8,10 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.Lean.Query.Matroid.Greedy
-public import Cslib.Algorithms.Lean.Query.Bounds
 public import Mathlib.Combinatorics.Matroid.Constructions
-import Mathlib.Data.List.FinRange
-import Mathlib.Data.Fintype.Basic
 
 /-!
 # Independence-Oracle Query Lower Bound for Matroid Optimization

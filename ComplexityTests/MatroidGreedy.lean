@@ -206,4 +206,18 @@ theorem nat_greedyMaxIndep_unit_tight_bounds :
   ⟨matroidGreedyMaxIndep_upperBound _,
     matroidGreedyMaxIndep_unit_isMaxCardIndepAlg.lowerBound_infinite⟩
 
+-- Even on non-matroid predicates with `indep ∅ = true`, `greedyMaxBasis` returns a feasible set,
+-- and `Id.run` on the monadic wrappers recovers the pure counterparts.
+example : pathMatching (greedyMaxBasis pathMatching pathWeights [0, 1, 2]) = true :=
+  indep_greedySelect (by decide) _
+
+example (xs : List (Fin 4)) :
+    Id.run (greedyMaxBasisM (fun S => pure (u24Indep S)) u24Weights xs) =
+      greedyMaxBasis u24Indep u24Weights xs ∧
+    Id.run (greedyMinBasisM (fun S => pure (u24Indep S)) u24Weights xs) =
+      greedyMinBasis u24Indep u24Weights xs ∧
+    Id.run (greedyMaxIndepM (fun S => pure (u24Indep S)) u24Weights xs) =
+      greedyMaxIndep u24Indep u24Weights xs := by
+  simp
+
 end ComplexityTests.MatroidGreedy
