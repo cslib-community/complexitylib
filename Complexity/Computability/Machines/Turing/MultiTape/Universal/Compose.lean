@@ -382,7 +382,8 @@ lemma halted_inO {α : Type} {enc : α ↪ List Bool} {c : α → SCfg} {T S : �
   ((ComputableTidilyInDegree.of_finite (encIn := encBool) (encMid := encBool)
     fun b : Bool => !b).inO_one.comp_linear
       ((ComputableTidilyInDegree.isSome encUnary).inO_one.comp_linear
-        (state_inO.comp_linear h))).of_enc_eq fun a => by
+        -- bridge for #862: tidy client of the plain `state_inO`
+        (state_inO.tidy.comp_linear h))).of_enc_eq fun a => by
         simp only [Function.comp_apply]
         cases (c a).state <;> rfl
 
@@ -435,7 +436,8 @@ public lemma stepG_inO :
   have hc := fst eCtl (encPair encNat encUnary)
   have hg := hc.fst'.fst'
   have hsym := countSym_inO (inputPos_inO hg.snd') hc.snd'.fst' hc.snd'.snd'
-  refine (stepWith_inO.comp (hg.prod (hsym.of_enc_eq (g := fun s : CSt => gSym s.1)
+  -- bridge for #862: tidy client of the plain `stepWith_inO`
+  refine (stepWith_inO.tidy.comp (hg.prod (hsym.of_enc_eq (g := fun s : CSt => gSym s.1)
     fun _ => rfl))).mono 100 (fun s => ?_) fun s => ?_
   all_goals
     have hw := wTime_le' (s.1.1.1, gSym s.1)
@@ -464,7 +466,8 @@ public lemma stepF_inO : ComputableTidilyInO (fun s : CSt => stepWith s.1.1.2.1 
   have hn := snd eCtl (encPair encNat encUnary)
   have hg := hc.fst'.snd'
   have hsym := countSym_inO (inputPos_inO hg.snd') hn.fst' hn.snd'
-  refine (stepWith_inO.comp (hg.prod (hsym.of_enc_eq (g := xSym)
+  -- bridge for #862: tidy client of the plain `stepWith_inO`
+  refine (stepWith_inO.tidy.comp (hg.prod (hsym.of_enc_eq (g := xSym)
     fun _ => rfl))).mono 100 (fun s => ?_) fun s => ?_
   all_goals
     have hw := wTime_le' (s.1.1.2, xSym s)
@@ -619,7 +622,8 @@ public lemma cEmit_inO : ComputableTidilyInO (fun s : CSt => gEmit s.1) eCSt enc
 public lemma cCont_inO : ComputableTidilyInO (fun s : CSt => s.1.1.1.2.state.isSome) eCSt encBool
     (fun s => ((eCSt s).length + 1) ^ 3) fun s => (eCSt s).length + 1 :=
   (((ComputableTidilyInDegree.isSome encUnary).inO_one.comp_linear
-    (state_inO.comp_linear (fst eCtl (encPair encNat encUnary)).fst'.fst'.snd'))).mono 1
+    -- bridge for #862: tidy client of the plain `state_inO`
+    (state_inO.tidy.comp_linear (fst eCtl (encPair encNat encUnary)).fst'.fst'.snd'))).mono 1
     (fun s => by
       have hL : (eCSt s).length + 1 ≤ ((eCSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
       dsimp only [eCSt] at *

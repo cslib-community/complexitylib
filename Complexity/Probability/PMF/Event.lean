@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Renfei Zhou. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Josha Dekker, Devon Tuma, Kexing Ying, Samuel Schlesinger
+Authors: Josha Dekker, Devon Tuma, Kexing Ying, Samuel Schlesinger, Renfei Zhou
 -/
 
 module
@@ -16,15 +16,18 @@ import Complexity.Probability.PMF.Bind
 The probability `p.toOuterMeasure s` of an event under a discrete distribution is finite and at
 most one (`toOuterMeasure_ne_top`, `toOuterMeasure_le_one`); on a finite type its real value is the
 sum of the masses of the event's members (`toOuterMeasure_apply_toReal`), and an event and its
-complement have total probability one (`toOuterMeasure_toReal_add_compl`). Conditioning keeps the
-event's masses and divides them by its probability (`filter_apply_toReal`).
+complement have total probability one (`toOuterMeasure_add_compl_ennreal`,
+`toOuterMeasure_toReal_add_compl`). Conditioning keeps the event's masses and divides them by its
+probability (`filter_apply_toReal`).
 
 After a random first stage, an event's probability is the average of its conditional
 probabilities (`toOuterMeasure_bind_toReal`). Failure and success bounds compose without
 independence: a randomized continuation fails because its precondition already failed or because
 it fails from a valid input (`toOuterMeasure_bind_failure_le`), lower bounds on a first stage and
-on its continuation from supported members multiply (`toOuterMeasure_bind_ge_mul`), and average
-bias turns into the probability of good first stages (`toOuterMeasure_rate_ge`). The real-valued
+on its continuation from supported members multiply (`toOuterMeasure_bind_ge_mul_ennreal`,
+`toOuterMeasure_bind_ge_mul`), and failure bounds multiply when success is retained
+(`toOuterMeasure_bind_le_mul_ennreal`). Average bias turns into the probability of good first
+stages (`toOuterMeasure_rate_ge`). The real-valued
 masses of `true` and `false` under a Boolean distribution sum to one
 (`toReal_true_add_toReal_false`).
 
@@ -38,12 +41,16 @@ masses of `true` and `false` under a Boolean distribution sum to one
 * `Cslib.Probability.PMF.toOuterMeasure_apply_toReal`,
   `Cslib.Probability.PMF.toOuterMeasure_toReal_add_compl`,
   `Cslib.Probability.PMF.toOuterMeasure_toReal_pos_iff`: real-valued event probabilities.
+* `Cslib.Probability.PMF.toOuterMeasure_add_compl_ennreal`,
+  `Cslib.Probability.PMF.toOuterMeasure_compl_le_one_sub`: complementation and failure bounds.
 * `Cslib.Probability.PMF.filter_apply_toReal`: conditioned masses.
 * `Cslib.Probability.PMF.toOuterMeasure_bind_toReal`: averaging over a first stage.
 * `Cslib.Probability.PMF.toOuterMeasure_bind_le`,
   `Cslib.Probability.PMF.toOuterMeasure_bind_failure_le`,
   `Cslib.Probability.PMF.toOuterMeasure_bind_failure_toReal_le`,
-  `Cslib.Probability.PMF.toOuterMeasure_bind_ge_mul`: composing failure and success bounds.
+  `Cslib.Probability.PMF.toOuterMeasure_bind_ge_mul`,
+  `Cslib.Probability.PMF.toOuterMeasure_bind_ge_mul_ennreal`,
+  `Cslib.Probability.PMF.toOuterMeasure_bind_le_mul_ennreal`: composing failure and success bounds.
 * `Cslib.Probability.PMF.toOuterMeasure_rate_ge`: average bias as the probability of good inputs.
 * `Cslib.Probability.PMF.toReal_true_add_toReal_false`,
   `Cslib.Probability.PMF.toReal_false_eq_one_sub`,
@@ -56,7 +63,8 @@ masses of `true` and `false` under a Boolean distribution sum to one
 ## References
 
 Adapted in part from Probability/PMF.lean on the cslib `crypto` branch at
-`5ff69ca93402e7c947208dc56396d6d86203ccd8`.
+`5ff69ca93402e7c947208dc56396d6d86203ccd8`. The `ENNReal` event-composition and complement
+lemmas were extracted from Renfei Zhou's Karger algorithm development.
 -/
 
 @[expose] public section
@@ -109,17 +117,34 @@ theorem toOuterMeasure_apply_toReal [Fintype α] (p : PMF α) (event : Set α) :
   · intro a _
     by_cases ha : a ∈ event <;> simp [ha, PMF.apply_ne_top]
 
+/-- Exact complementation law `p.toOuterMeasure s + p.toOuterMeasure sᶜ = 1` for discrete `PMF`s,
+valid on arbitrary types without measurability hypotheses. -/
+theorem toOuterMeasure_add_compl_ennreal {α : Type*} (p : PMF α) (s : Set α) :
+    p.toOuterMeasure s + p.toOuterMeasure sᶜ = 1 := by
+  classical
+  rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply, ← tsum_add]
+  have hpt : (fun x => s.indicator p x + sᶜ.indicator p x) = p := by
+    ext x
+    by_cases hx : x ∈ s <;> simp [hx]
+  rw [hpt, p.tsum_coe]
+
+/-- A lower bound on success gives the complementary upper bound on failure. -/
+theorem toOuterMeasure_compl_le_one_sub {α : Type*} (p : PMF α) (s : Set α) {q : ℝ≥0∞}
+    (hq : q ≤ p.toOuterMeasure s) :
+    p.toOuterMeasure sᶜ ≤ 1 - q := by
+  have hsum := toOuterMeasure_add_compl_ennreal p s
+  have hq_top : q ≠ ⊤ :=
+    ne_top_of_le_ne_top (Cslib.Probability.PMF.toOuterMeasure_ne_top p s) hq
+  refine ENNReal.le_sub_of_add_le_right hq_top ?_
+  calc
+    p.toOuterMeasure sᶜ + q ≤ p.toOuterMeasure sᶜ + p.toOuterMeasure s := by gcongr
+    _ = 1 := by rw [add_comm, hsum]
+
 /-- An event and its complement have total probability one, in real-valued probability units. -/
 theorem toOuterMeasure_toReal_add_compl (p : PMF α) (event : Set α) :
     (p.toOuterMeasure event).toReal + (p.toOuterMeasure eventᶜ).toReal = 1 := by
-  have h : p.toOuterMeasure event + p.toOuterMeasure eventᶜ = 1 := by
-    rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply, ← tsum_add]
-    convert p.tsum_coe using 1
-    congr 1
-    funext a
-    by_cases ha : a ∈ event <;> simp [ha]
   simpa only [ENNReal.toReal_add (toOuterMeasure_ne_top p _) (toOuterMeasure_ne_top p _),
-    ENNReal.toReal_one] using congrArg ENNReal.toReal h
+    ENNReal.toReal_one] using congrArg ENNReal.toReal (toOuterMeasure_add_compl_ennreal p event)
 
 /-- An event has positive real probability exactly when it contains a possible outcome. -/
 theorem toOuterMeasure_toReal_pos_iff (p : PMF α) (event : Set α) :
@@ -192,6 +217,51 @@ theorem toOuterMeasure_bind_failure_toReal_le (p : PMF α) (kernel : α → PMF 
   simpa only [ENNReal.toReal_add (toOuterMeasure_ne_top p preᶜ) ENNReal.ofReal_ne_top,
     ENNReal.toReal_ofReal herror] using ENNReal.toReal_mono hfinite h
 
+/-- `ENNReal` multiplication rule for sequential success lower bounds across `PMF.bind`. -/
+theorem toOuterMeasure_bind_ge_mul_ennreal {α β : Type*} (p : PMF α) (kernel : α → PMF β)
+    (pre : Set α) (event : Set β) {s₁ s₂ : ℝ≥0∞}
+    (hp : s₁ ≤ p.toOuterMeasure pre)
+    (hstep : ∀ a ∈ p.support, a ∈ pre → s₂ ≤ (kernel a).toOuterMeasure event) :
+    s₁ * s₂ ≤ (p.bind kernel).toOuterMeasure event := by
+  classical
+  calc
+    s₁ * s₂ ≤ p.toOuterMeasure pre * s₂ := mul_le_mul_of_nonneg_right hp zero_le
+    _ ≤ (p.bind kernel).toOuterMeasure event := by
+      rw [PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_apply, ← ENNReal.tsum_mul_right]
+      refine tsum_le_tsum fun a => ?_
+      by_cases ha : a ∈ pre
+      · simp only [Set.indicator_of_mem ha]
+        by_cases hs : a ∈ p.support
+        · exact mul_le_mul_of_nonneg_left (hstep a hs ha) zero_le
+        · have hz : p a = 0 := by simpa only [PMF.mem_support_iff, not_not] using hs
+          simp [hz]
+      · simp [Set.indicator_of_notMem ha]
+
+/-- `ENNReal` multiplication rule for sequential failure upper bounds: if `p` stays in
+`stillFailing` with probability at most `q₁`, every supported `a ∈ stillFailing` fails under
+`kernel a` with probability at most `q₂`, and every supported `a ∉ stillFailing` has zero failure
+probability under `kernel a`, then `p.bind kernel` fails with probability at most `q₁ * q₂`. -/
+theorem toOuterMeasure_bind_le_mul_ennreal {α β : Type*} (p : PMF α) (kernel : α → PMF β)
+    (stillFailing : Set α) (failure : Set β) {q₁ q₂ : ℝ≥0∞}
+    (hp : p.toOuterMeasure stillFailing ≤ q₁)
+    (hfail : ∀ a ∈ p.support, a ∈ stillFailing → (kernel a).toOuterMeasure failure ≤ q₂)
+    (hsucc : ∀ a ∈ p.support, a ∉ stillFailing → (kernel a).toOuterMeasure failure = 0) :
+    (p.bind kernel).toOuterMeasure failure ≤ q₁ * q₂ := by
+  classical
+  calc
+    (p.bind kernel).toOuterMeasure failure
+      ≤ p.toOuterMeasure stillFailing * q₂ := by
+        rw [PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_apply, ← ENNReal.tsum_mul_right]
+        refine tsum_le_tsum fun a => ?_
+        by_cases hs : a ∈ p.support
+        · by_cases ha : a ∈ stillFailing
+          · simp only [Set.indicator_of_mem ha]
+            exact mul_le_mul_of_nonneg_left (hfail a hs ha) zero_le
+          · simp [Set.indicator_of_notMem ha, hsucc a hs ha]
+        · have hz : p a = 0 := by simpa only [PMF.mem_support_iff, not_not] using hs
+          simp [hz]
+    _ ≤ q₁ * q₂ := mul_le_mul_of_nonneg_right hp zero_le
+
 /-- If a first stage `p` lands in `pre` with probability at least `s₁` and for every supported
 `a ∈ pre` the continuation `kernel a` lands in `event` with probability at least `s₂`, then
 `p.bind kernel` lands in `event` with probability at least `s₁ * s₂`. -/
@@ -200,19 +270,9 @@ theorem toOuterMeasure_bind_ge_mul (p : PMF α) (kernel : α → PMF β)
     (hp : s₁ ≤ (p.toOuterMeasure pre).toReal)
     (hstep : ∀ a ∈ p.support, a ∈ pre → s₂ ≤ ((kernel a).toOuterMeasure event).toReal) :
     s₁ * s₂ ≤ ((p.bind kernel).toOuterMeasure event).toReal := by
-  classical
-  have hle : p.toOuterMeasure pre * ENNReal.ofReal s₂ ≤ (p.bind kernel).toOuterMeasure event := by
-    rw [PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_apply, ← ENNReal.tsum_mul_right]
-    refine tsum_le_tsum fun a => ?_
-    by_cases ha : a ∈ pre
-    · simp only [Set.indicator_of_mem ha]
-      by_cases hs : a ∈ p.support
-      · exact mul_le_mul_of_nonneg_left
-          ((ENNReal.ofReal_le_iff_le_toReal (toOuterMeasure_ne_top _ _)).mpr (hstep a hs ha))
-          zero_le
-      · have hz : p a = 0 := by simpa only [PMF.mem_support_iff, not_not] using hs
-        simp [hz]
-    · simp [Set.indicator_of_notMem ha]
+  have hle := toOuterMeasure_bind_ge_mul_ennreal p kernel pre event le_rfl
+    (fun a ha hpre =>
+      (ENNReal.ofReal_le_iff_le_toReal (toOuterMeasure_ne_top _ _)).mpr (hstep a ha hpre))
   have htoReal := ENNReal.toReal_mono (toOuterMeasure_ne_top _ _) hle
   rw [ENNReal.toReal_mul, ENNReal.toReal_ofReal hs₂] at htoReal
   exact (mul_le_mul_of_nonneg_right hp hs₂).trans htoReal
