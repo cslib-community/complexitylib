@@ -368,6 +368,9 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `TCⁱ` needs Muroga's threshold weight-bounding theorem.
 - Formula lower bounds beyond Andreev's, following Jukna; Raz–Wigderson's monotone depth bound for
   matching on general graphs.
+- **Monotone circuits versus P:** Razborov's `n ^ Ω(log n)` monotone bound for bipartite perfect
+  matching is proved ([#2063]); the separation also needs bipartite perfect matching in
+  `Complexity.P`.
 - **An explicit frontier extractor:** port v1's sumset-extractor construction with an explicit
   family in `Complexity.P encBits` that discharges the frontier lower bounds' hypotheses. It would
   exceed the library's unconditional `3.5 N - o(N)` bound in P, so it needs an independent
@@ -875,3 +878,4 @@ not planned, not as proved.
 [#1817]: https://github.com/cslib-community/complexitylib/issues/1817
 [#1824]: https://github.com/cslib-community/complexitylib/issues/1824
 [#2019]: https://github.com/cslib-community/complexitylib/issues/2019
+[#2063]: https://github.com/cslib-community/complexitylib/issues/2063
