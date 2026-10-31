@@ -9,6 +9,8 @@ module
 
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastAlgorithm
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionSchedule
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionSize
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 
 /-!
 # The resource analysis of the native recursion: the recursion tree
@@ -160,20 +162,20 @@ theorem numEdges_lt_length_encInput (P : ℕ) (G : ℕ × ExplicitTensorNetwork 
 
 /-! ### The analysis from the sizes and the leaves -/
 
-/-- **Polynomial sizes along the recursion**: for all constants `C` and `D` there is `K` such that
-on every guarded input admissible at size `s ≥ 2` with constant `C` and with precision
+/-- **Polynomial sizes along the recursion**: for all constants `C` and `D` there are `c` and `d`
+such that on every guarded input admissible at size `s ≥ 2` with constant `C` and with precision
 `1 ≤ P ≤ D s`, every call reached from the root, its frames and its value are at most
-`K (n + 1) ^ K` long, for the input length `n`. -/
+`c (n + 1) ^ d` long, for the input length `n`. -/
 @[expose] def FastSizes : Prop :=
-  ∀ C D : ℕ, ∃ K : ℕ, ∀ (s P : ℕ) (G : ℕ × ExplicitTensorNetwork ℕ), 2 ≤ s → 1 ≤ P →
+  ∀ C D : ℕ, ∃ c d : ℕ, ∀ (s P : ℕ) (G : ℕ × ExplicitTensorNetwork ℕ), 2 ≤ s → 1 ≤ P →
     P ≤ D * s → ExplicitAdmissible C s G → fastGuard G = true →
     ∀ x, Reach nativeMk (root (ExplicitTensorNetwork.capPrecision (P, G))) x →
-      (encCall x).length ≤ K * ((FastContraction.encInput (P, G)).length + 1) ^ K ∧
+      (encCall x).length ≤ c * ((FastContraction.encInput (P, G)).length + 1) ^ d ∧
       (∀ a, (reachInv nativeMk (root (ExplicitTensorNetwork.capPrecision (P, G)))).frame x a →
         (encPair encCall encFrame (x, a)).length ≤
-          K * ((FastContraction.encInput (P, G)).length + 1) ^ K) ∧
+          c * ((FastContraction.encInput (P, G)).length + 1) ^ d) ∧
       (encValue (x.depth, value nativeMk x)).length ≤
-        K * ((FastContraction.encInput (P, G)).length + 1) ^ K
+        c * ((FastContraction.encInput (P, G)).length + 1) ^ d
 
 /-- **The leaf bounds**: for all constants `C` and `D` there is `K` such that on every guarded
 input admissible at size `s ≥ 2` with constant `C` and with precision `1 ≤ P ≤ D s`, direct
@@ -199,10 +201,10 @@ and the leaf bounds. The derivation of the root over the reached calls has at mo
 levels, and, from some size on, its nodes fit in the clock. -/
 theorem fastAnalysis_nativeMk_of (hS : FastSizes) (hL : FastLeaves) : FastAnalysis nativeMk := by
   intro C D
-  obtain ⟨KS, hKS⟩ := hS C D
+  obtain ⟨cS, dS, hKS⟩ := hS C D
   obtain ⟨KL, hKL⟩ := hL C D
   obtain ⟨sA, hsA⟩ := exists_activeBounds_le D
-  refine ⟨KS + KL + 1, max sA (D + 2), fun s P G hs hP hPD hA hg => ?_⟩
+  refine ⟨cS + dS + KL + 1, max sA (D + 2), fun s P G hs hP hPD hA hg => ?_⟩
   set q := ExplicitTensorNetwork.capPrecision (P, G) with hq
   set x₀ := root q with hx₀
   set m := G.2.numEdges with hm
@@ -233,9 +235,9 @@ theorem fastAnalysis_nativeMk_of (hS : FastSizes) (hL : FastLeaves) : FastAnalys
   -- The bounds.
   obtain hKS' := hKS s P G hs hP hPD hA hg
   obtain hKL' := hKL s P G hs hP hPD hA hg
-  set K := KS + KL + 1
+  set K := cS + dS + KL + 1
   have hB1 : 1 ≤ n + 1 := by omega
-  refine ⟨reachInv nativeMk x₀, N, H, KS * (n + 1) ^ KS, KL * (n + 1) ^ KL * 2 ^ (KL * s /
+  refine ⟨reachInv nativeMk x₀, N, H, cS * (n + 1) ^ dS, KL * (n + 1) ^ KL * 2 ^ (KL * s /
     Nat.sqrt (Nat.log 2 s)), KL * (n + 1) ^ KL, he, hN, fun x hx => ⟨(hKS' x hx).1, fun hl => ?_⟩,
     fun x a ha => (hKS' x ha.1).2.1 a ha, fun v ⟨x, hx, hv⟩ => hv ▸ (hKS' x hx).2.2, ?_, ?_⟩
   · have hl' : active x = false := by simpa [scheme] using hl
@@ -243,11 +245,14 @@ theorem fastAnalysis_nativeMk_of (hS : FastSizes) (hL : FastLeaves) : FastAnalys
   · have h1 : H ≤ 1 * (n + 1) ^ K := by
       have : n + 1 ≤ (n + 1) ^ K := Nat.le_self_pow (by omega) _
       omega
-    have h2 := mul_pow_le_mul_pow (a := KS) hB1 (show KS ≤ K by omega)
+    have h2 : cS * (n + 1) ^ dS ≤ cS * (n + 1) ^ K :=
+      Nat.mul_le_mul_left _ (Nat.pow_le_pow_right hB1 (by omega))
     have h3 := mul_pow_le_mul_pow (a := KL) hB1 (show KL ≤ K by omega)
-    calc H + KS * (n + 1) ^ KS + KL * (n + 1) ^ KL
-        ≤ 1 * (n + 1) ^ K + KS * (n + 1) ^ K + KL * (n + 1) ^ K := by omega
-      _ = K * (n + 1) ^ K := by ring
+    calc H + cS * (n + 1) ^ dS + KL * (n + 1) ^ KL
+        ≤ 1 * (n + 1) ^ K + cS * (n + 1) ^ K + KL * (n + 1) ^ K := by omega
+      _ ≤ K * (n + 1) ^ K := by
+          rw [← add_mul, ← add_mul]
+          exact Nat.mul_le_mul_right _ (by omega)
   · refine Nat.mul_le_mul (mul_pow_le_mul_pow' hB1 (show KL ≤ K by omega))
       (Nat.pow_le_pow_right (by norm_num) (Nat.div_le_div_right (Nat.mul_le_mul_right _
         (by omega))))
@@ -255,5 +260,136 @@ where
   /-- `a B ^ a ≤ K B ^ K` for `1 ≤ B` and `a ≤ K`. -/
   mul_pow_le_mul_pow' {a B K : ℕ} (hB : 1 ≤ B) (ha : a ≤ K) : a * B ^ a ≤ K * B ^ K :=
     Nat.mul_le_mul ha (Nat.pow_le_pow_right hB ha)
+
+/-! ### The sizes -/
+
+/-- The modulus has at most `32 (m + 1) ^ 2` coefficients. -/
+theorem length_modulus_le (m : ℕ) : (modulus m).length ≤ 32 * (m + 1) ^ 2 := by
+  rw [length_modulus]
+  set t := modulusExp m
+  have h1 : 2 ^ t ≤ 4 * Nat.log 2 m + 2 := Nat.pow_log_le_self 2 (by omega)
+  have h2 : Nat.log 2 m ≤ m := by
+    rcases Nat.eq_zero_or_pos m with h | h
+    · simp [h]
+    · exact (Nat.log_lt_self 2 h.ne').le
+  have h3 : 3 ^ t ≤ (2 ^ t) ^ 2 := by
+    rw [← pow_mul, mul_comm, pow_mul]
+    exact Nat.pow_le_pow_left (by norm_num) t
+  have h4 : (2 ^ t) ^ 2 ≤ (4 * (m + 1)) ^ 2 := Nat.pow_le_pow_left (by omega) 2
+  nlinarith
+
+/-- The coefficients of the modulus are `0` or `1`. -/
+theorem le_one_of_mem_modulus {m z : ℕ} (hz : z ∈ modulus m) : z ≤ 1 := by
+  simp only [modulus, List.mem_map, List.mem_range] at hz
+  obtain ⟨i, -, rfl⟩ := hz
+  split_ifs <;> omega
+
+/-- The encoded network is at most the encoded input long. -/
+theorem length_encExplicitNetwork_le (P : ℕ) (G : ℕ × ExplicitTensorNetwork ℕ) :
+    (ExplicitTensorNetwork.encExplicitNetwork G.2).length ≤
+      (FastContraction.encInput (P, G)).length := by
+  simp only [FastContraction.encInput, length_encPair]
+  omega
+
+/-- The vertices of an explicit network, encoded, are at most the encoded network long. -/
+theorem length_vertices_le (G : ExplicitTensorNetwork ℕ) :
+    G.vertices.length ≤ (ExplicitTensorNetwork.encExplicitNetwork G).length ∧
+      ∀ v ∈ G.vertices, (encList encNat v.2).length + 1 ≤
+        (ExplicitTensorNetwork.encExplicitNetwork G).length := by
+  have hl : (ExplicitTensorNetwork.encExplicitNetwork G).length = 2 * G.numEdges + 1 +
+      (G.vertices.map fun v => 2 * (encPair (encList encNat) (encList encNat) v).length + 1).sum := by
+    simp only [ExplicitTensorNetwork.encExplicitNetwork, encOfEquiv, Function.Embedding.trans_apply,
+      Equiv.coe_toEmbedding, DescribedNetwork.equivProd, Equiv.coe_fn_mk, length_encPair,
+      encUnary_apply, List.length_replicate, length_encList]
+  refine ⟨?_, fun v hv => ?_⟩
+  · have := List.length_le_sum_of_one_le (G.vertices.map fun v =>
+      2 * (encPair (encList encNat) (encList encNat) v).length + 1) (fun i hi => by
+        obtain ⟨v, -, rfl⟩ := List.mem_map.mp hi
+        omega)
+    rw [List.length_map] at this
+    omega
+  · have := List.le_sum_of_mem (List.mem_map_of_mem (f := fun v =>
+      2 * (encPair (encList encNat) (encList encNat) v).length + 1) hv)
+    have h2 := length_encPair (enc₁ := encList encNat) (enc₂ := encList encNat) v
+    omega
+
+/-- **Polynomial sizes along the recursion**: every call reached from the root of a guarded input,
+its frames and its tagged value are at most `2 ^ 55 (n + 1) ^ 24` long. -/
+theorem fastSizes : FastSizes := by
+  intro C D
+  refine ⟨2 ^ 55, 24, fun s P G _ _ _ _ hg x hx => ?_⟩
+  set q := ExplicitTensorNetwork.capPrecision (P, G) with hq
+  set x₀ := root q with hx₀
+  set m := G.2.numEdges with hm
+  set n := (FastContraction.encInput (P, G)).length with hn
+  set Y := n + 1 with hY
+  have hmn : m < n := numEdges_lt_length_encInput P G
+  have hnet := length_encExplicitNetwork_le P G
+  obtain ⟨hV, hdesc⟩ := length_vertices_le G.2
+  have hp₀ : x₀.prec ≤ n := (min_le_left _ _).trans hnet
+  have hrows : (encNat x₀.rows).length ≤ n := by
+    change (encNat G.1).length ≤ n
+    simp only [hn, FastContraction.encInput, length_encPair]
+    omega
+  have hV₀ : x₀.net.vertices.length ≤ n := by
+    change (List.map _ G.2.vertices).length ≤ n
+    rw [List.length_map]; omega
+  have hsh := Reach.shape (x₀ := x₀) rfl rfl (wf_root P hg) hx
+  set Z := 2 ^ 14 * Y ^ 8 with hZ
+  have hY1 : 1 ≤ Y := by omega
+  have hmY : m + 1 ≤ Y := by omega
+  have hY3 : Y ≤ Y ^ 3 := Nat.le_self_pow (by norm_num) _
+  have hY8 : Y ^ 3 ≤ Y ^ 8 := Nat.pow_le_pow_right hY1 (by norm_num)
+  have hY2 : Y ^ 2 ≤ Y ^ 3 := Nat.pow_le_pow_right hY1 (by norm_num)
+  have hm2 : m ^ 2 ≤ Y ^ 2 := Nat.pow_le_pow_left (by omega) 2
+  have hm5 : (m + 1) ^ 5 ≤ Y ^ 5 := Nat.pow_le_pow_left hmY 5
+  have hPm : x₀.prec + (x₀.edges + 1) * (40 * x₀.edges ^ 2) + 1 ≤ 41 * Y ^ 3 := by
+    change x₀.prec + (m + 1) * (40 * m ^ 2) + 1 ≤ 41 * Y ^ 3
+    have : (m + 1) * (40 * m ^ 2) ≤ Y * (40 * Y ^ 2) := Nat.mul_le_mul hmY (by omega)
+    have : Y * (40 * Y ^ 2) = 40 * Y ^ 3 := by ring
+    omega
+  have hZ1 : 256 * (x₀.edges + 1) ^ 5 * (x₀.prec + (x₀.edges + 1) * (40 * x₀.edges ^ 2) + 1) +
+      x₀.fl.length ≤ Z := by
+    have h1 : 256 * (x₀.edges + 1) ^ 5 * (x₀.prec + (x₀.edges + 1) * (40 * x₀.edges ^ 2) + 1) ≤
+        256 * Y ^ 5 * (41 * Y ^ 3) := Nat.mul_le_mul (Nat.mul_le_mul_left _ hm5) hPm
+    have h2 : 256 * Y ^ 5 * (41 * Y ^ 3) = 10496 * Y ^ 8 := by ring
+    have h3 : x₀.fl.length ≤ 32 * Y ^ 8 := (length_modulus_le m).trans
+      (by have := Nat.pow_le_pow_left hmY 2; omega)
+    omega
+  have hZ2 : x₀.net.vertices.length + (x₀.edges + 1) * x₀.edges ^ 2 + (encNat x₀.rows).length ≤
+      Z := by
+    have : (x₀.edges + 1) * x₀.edges ^ 2 ≤ Y * Y ^ 2 := Nat.mul_le_mul hmY hm2
+    have : Y * Y ^ 2 = Y ^ 3 := by ring
+    omega
+  have hR₀ : ∀ w ∈ x₀.net.vertices, (VertexDesc.enc w.2).length ≤ 200 * (Z + 1) ^ 2 := by
+    intro w hw
+    change w ∈ List.map _ G.2.vertices at hw
+    obtain ⟨v, hv, rfl⟩ := List.mem_map.mp hw
+    rw [length_encSum]
+    simp only [Sum.elim_inl]
+    have := hdesc v hv
+    have : Z ≤ (Z + 1) ^ 2 := (Nat.le_succ Z).trans (Nat.le_self_pow (by norm_num) _)
+    omega
+  obtain ⟨hc, hv, hf⟩ := hsh.length_le rfl rfl rfl hZ1 hZ2
+    (fun z hz => le_one_of_mem_modulus hz) hR₀
+  -- `1000 (Z + 1) ^ 3 ≤ 2 ^ 55 (n + 1) ^ 24`.
+  have hfin : 1000 * (Z + 1) ^ 3 ≤ 2 ^ 55 * Y ^ 24 := by
+    have h1 : Z + 1 ≤ 2 ^ 15 * Y ^ 8 := by
+      have : 1 ≤ Y ^ 8 := Nat.one_le_pow _ _ hY1
+      omega
+    have h2 : (Z + 1) ^ 3 ≤ (2 ^ 15 * Y ^ 8) ^ 3 := Nat.pow_le_pow_left h1 3
+    have h3 : (2 ^ 15 * Y ^ 8) ^ 3 = 2 ^ 45 * Y ^ 24 := by ring
+    rw [h3] at h2
+    have h4 : 1000 * (2 ^ 45 * Y ^ 24) ≤ 2 ^ 55 * Y ^ 24 := by
+      rw [← Nat.mul_assoc]
+      exact Nat.mul_le_mul_right _ (by norm_num)
+    exact (Nat.mul_le_mul_left 1000 h2).trans h4
+  refine ⟨hc.trans hfin, fun a ⟨_, ha, c, _, hac⟩ => ?_, hv.trans hfin⟩
+  rw [hac]
+  exact (hf ha _ c).trans hfin
+
+/-- **The resource analysis of the native recursion**, given the leaf bounds. -/
+theorem fastAnalysis_nativeMk (hL : FastLeaves) : FastAnalysis nativeMk :=
+  fastAnalysis_nativeMk_of fastSizes hL
 
 end Cslib.Complexity.CountingSimulation
