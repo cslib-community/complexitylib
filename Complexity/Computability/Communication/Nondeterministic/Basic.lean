@@ -37,15 +37,23 @@ is not a rectangle is a relation that accepts every answer outside its domain.
 
 ## Covers and protocols
 
-A nondeterministic protocol of cost `c` gives a cover by at most `2 ^ c` rectangles, so lower bounds
-on `ecomplexity` hold for every protocol convention. Protocol definitions differ from this one by
-at most an additive constant, so an upper bound here is slightly weaker than an upper bound for
-protocols. Conversely, a cover by `2 ^ k` rectangles gives a protocol: guess `k` bits naming a
-rectangle, Alice sends one bit saying whether her input is in its first side, and Bob accepts when
-both inputs are in it, for cost `k + 1`, or `k + 2` if Bob's answer is counted as a sent bit. So a
-nondeterministic protocol of cost `c` proves `ecomplexity z R A B ≤ c` once it is converted to a
-cover by `2 ^ c` rectangles (`Nondeterministic.ecomplexity_le_iff`). Deterministic protocols give
-such covers directly: `Nondeterministic.ecomplexity_le_protocol`.
+Covers count rectangles; no bits are spent announcing the answer. Protocols must announce it, and
+conventions differ on who must learn it. In `Protocol` the answer is a function of the transcript,
+so both players know it; for instance, equality on `v`-bit strings has deterministic complexity
+`v + 1` for `v ≥ 1` (`Cslib.Communication.ecomplexityFun_equality`). For nondeterministic protocols
+in the same convention, where the guessed bits count towards the cost and at the end both players
+know whether to accept, the two notions differ by at most two bits:
+
+* a protocol of cost `c` gives a cover by at most `2 ^ c` rectangles, one for each accepting
+  transcript, so a lower bound on `ecomplexity` is a lower bound for protocols, whatever the
+  convention for announcing the answer;
+* a cover by `2 ^ k` rectangles gives a protocol of cost `k + 2`: the `k` guessed bits name a
+  rectangle, and Alice and Bob each send one bit saying whether their input lies in its side. If
+  only one player needs to learn the answer, Bob need not reply, and the cost is `k + 1`.
+
+So `ecomplexity z R A B ≤ k` gives a protocol of cost `k + 2`, and a protocol of cost `c`, once
+converted to a cover, gives `ecomplexity z R A B ≤ c` (`Nondeterministic.ecomplexity_le_iff`).
+Deterministic protocols give covers directly (`Nondeterministic.ecomplexity_le_protocol`).
 
 ## Main definitions
 
