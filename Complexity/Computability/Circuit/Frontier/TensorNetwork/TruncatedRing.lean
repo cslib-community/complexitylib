@@ -64,7 +64,7 @@ open Polynomial Finset GaloisRingArith
 
 @[simp] theorem length_truncFl (ℓ : ℕ) : (truncFl ℓ).length = ℓ := List.length_replicate
 
-@[simp] theorem getD_truncFl (ℓ i : ℕ) : (truncFl ℓ).getD i 0 = 0 := by
+theorem getD_truncFl (ℓ i : ℕ) : (truncFl ℓ).getD i 0 = 0 := by
   unfold truncFl
   by_cases h : i < ℓ
   · rw [List.getD_eq_getElem _ _ (by simpa using h)]

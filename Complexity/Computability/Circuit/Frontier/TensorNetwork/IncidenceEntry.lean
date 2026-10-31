@@ -233,7 +233,7 @@ theorem length_blockIndices (blocks : List Block) (bs : List Bool) :
     | nil => simp
     | cons b blocks ih =>
       rw [List.foldl_cons, ih]
-      simp [indexStep]
+      simp only [indexStep, List.length_append, List.length_cons, List.length_nil]
       omega
   simpa [blockIndices] using h (bs, [])
 
