@@ -11,6 +11,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork
 public import Complexity.Foundations.Data.BitString.Counter
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Data.List.GetD
+import Mathlib.Data.Set.Card
 
 /-!
 # Explicit Boolean tensor networks
@@ -30,12 +31,17 @@ reads `false`, and a position past the end of a table has entry zero.
 
 Its size measures are the number of edges, the number of vertices, the maximum number of ports of
 a vertex (`ExplicitTensorNetwork.maxDegree`) and the total length of the tables
-(`ExplicitTensorNetwork.tableLength`).
+(`ExplicitTensorNetwork.tableLength`). A network is *rows-first bipartite* with `r` rows
+(`ExplicitTensorNetwork.IsRowsFirstBipartite`) when every edge is a port of exactly one of its
+first `r` vertices and of exactly one of the others.
 
 **Writing a network out** (`TensorNetwork.toExplicit`). Given numberings of the vertices and the
 edges of a Boolean tensor network on finite types, list the edges at each vertex in increasing
 order and tabulate its tensor on them. The contraction is unchanged
-(`TensorNetwork.contraction_toExplicit`).
+(`TensorNetwork.contraction_toExplicit`). The ports of a vertex are its incident edges, so the
+degree bound carries over (`TensorNetwork.maxDegree_toExplicit_le`), and a numbering that puts
+one end of every edge below `r` and the other at or above it gives a rows-first bipartite network
+(`TensorNetwork.isRowsFirstBipartite_toExplicit`).
 
 ## Main definitions
 
@@ -46,6 +52,8 @@ order and tabulate its tensor on them. The contraction is unchanged
 * `Cslib.Circuits.Frontier.ExplicitTensorNetwork.contraction`: the contraction.
 * `Cslib.Circuits.Frontier.ExplicitTensorNetwork.maxDegree`,
   `Cslib.Circuits.Frontier.ExplicitTensorNetwork.tableLength`: size measures.
+* `Cslib.Circuits.Frontier.ExplicitTensorNetwork.IsRowsFirstBipartite`: the bipartition with the
+  first `r` vertices as rows.
 * `Cslib.Circuits.Frontier.TensorNetwork.explicitPorts`,
   `Cslib.Circuits.Frontier.TensorNetwork.explicitTable`,
   `Cslib.Circuits.Frontier.TensorNetwork.toExplicit`: writing a Boolean tensor network out.
@@ -57,6 +65,12 @@ order and tabulate its tensor on them. The contraction is unchanged
   tensor.
 * `Cslib.Circuits.Frontier.TensorNetwork.contraction_toExplicit`: writing a network out preserves
   its contraction.
+* `Cslib.Circuits.Frontier.TensorNetwork.length_explicitPorts`: a vertex has one port per incident
+  edge.
+* `Cslib.Circuits.Frontier.TensorNetwork.maxDegree_toExplicit_le`,
+  `Cslib.Circuits.Frontier.TensorNetwork.isRowsFirstBipartite_toExplicit`,
+  `Cslib.Circuits.Frontier.TensorNetwork.length_table_toExplicit`: degree, bipartition and table
+  lengths of a written-out network.
 
 ## References
 
@@ -123,6 +137,18 @@ theorem length_le_maxDegree {v : List ℕ × List R} (hv : v ∈ d.vertices) :
     v.1.length ≤ d.maxDegree :=
   d.maxDegree_le_iff.mp le_rfl v hv
 
+/-- **Rows-first bipartite**: the first `r` vertices are the *rows* and the others the *columns*,
+every port names an edge, and every edge is a port of the rows exactly once and of the columns
+exactly once. So every edge joins a row to a column. -/
+def IsRowsFirstBipartite (r : ℕ) : Prop :=
+  (∀ v ∈ d.vertices, ∀ i ∈ v.1, i < d.numEdges) ∧
+    ∀ i < d.numEdges, ((d.vertices.take r).map fun v => v.1.count i).sum = 1 ∧
+      ((d.vertices.drop r).map fun v => v.1.count i).sum = 1
+
+instance (r : ℕ) : Decidable (d.IsRowsFirstBipartite r) := by
+  unfold IsRowsFirstBipartite
+  infer_instance
+
 end ExplicitTensorNetwork
 
 /-! ### Writing a tensor network out -/
@@ -163,6 +189,40 @@ theorem entry_explicitTable [Zero R] (v : V) (x : Fin m → Bool) :
   rw [BitString.testBit_lsbValue, List.getD_eq_getElem _ _ (by simpa using hidx), List.getElem_map,
     List.getElem_idxOf hidx, Function.comp_apply]
 
+/-- An edge is a port of a vertex at most once. -/
+theorem nodup_explicitPorts (v : V) : (N.explicitPorts ee v).Nodup :=
+  (List.nodup_finRange m).filter _
+
+/-- **The ports of a vertex are its incident edges**: their number is its degree. -/
+theorem length_explicitPorts (v : V) :
+    (N.explicitPorts ee v).length = (N.incidenceSet v).ncard := by
+  classical
+  rw [← List.toFinset_card_of_nodup (N.nodup_explicitPorts ee v),
+    ← Set.ncard_image_of_injective _ ee.injective, ← Set.ncard_coe_finset]
+  congr 1
+  ext j
+  simp [Multigraph.mem_incidenceSet]
+
+/-- The number of times the edge numbered `j` is a port of `v`: once if it is incident to `v`, and
+never otherwise. -/
+theorem count_explicitPorts (v : V) (j : Fin m) :
+    ((N.explicitPorts ee v).map Fin.val).count j.val =
+      if N.src (ee.symm j) = v ∨ N.tgt (ee.symm j) = v then 1 else 0 := by
+  rw [List.Nodup.count ((N.nodup_explicitPorts ee v).map Fin.val_injective)]
+  simp only [List.mem_map, Fin.val_inj, exists_eq_right, mem_explicitPorts]
+
+/-- A table lists the values of the tensor at all `2 ^ (number of ports)` lists of bits on the
+ports. -/
+theorem length_explicitTable (v : V) :
+    (N.explicitTable ee v).length = 2 ^ (N.explicitPorts ee v).length := by
+  simp [explicitTable]
+
+/-- Every entry of a written-out table is a value of the tensor. -/
+theorem exists_tensor_of_mem_explicitTable {v : V} {a : R} (ha : a ∈ N.explicitTable ee v) :
+    ∃ y, a = N.tensor v y := by
+  obtain ⟨j, -, rfl⟩ := List.mem_map.mp ha
+  exact ⟨_, rfl⟩
+
 /-- A Boolean tensor network on finite types written out as an explicit network, numbering the
 vertices by `ev` and the edges by `ee`: vertex `i` is `ev.symm i`, with its ports in increasing
 order and its table. -/
@@ -170,6 +230,85 @@ def toExplicit : ExplicitTensorNetwork R where
   numEdges := m
   vertices := List.ofFn fun i =>
     ((N.explicitPorts ee (ev.symm i)).map Fin.val, N.explicitTable ee (ev.symm i))
+
+/-- The vertices of the written-out network are the ports and tables of the vertices. -/
+theorem mem_vertices_toExplicit {p : List ℕ × List R} :
+    p ∈ (N.toExplicit ev ee).vertices ↔
+      ∃ v, p = ((N.explicitPorts ee v).map Fin.val, N.explicitTable ee v) := by
+  simp only [toExplicit, List.mem_ofFn]
+  constructor
+  · rintro ⟨i, rfl⟩
+    exact ⟨_, rfl⟩
+  · rintro ⟨v, rfl⟩
+    exact ⟨ev v, by simp⟩
+
+/-- **The degree bound carries over**: a vertex of the written-out network has as many ports as
+the vertex has incident edges. -/
+theorem maxDegree_toExplicit_le [Finite E] {D : ℕ} (hD : N.MaxDegreeLE D) :
+    (N.toExplicit ev ee).maxDegree ≤ D := by
+  rw [ExplicitTensorNetwork.maxDegree_le_iff]
+  intro p hp
+  obtain ⟨v, rfl⟩ := (N.mem_vertices_toExplicit ev ee).mp hp
+  rw [List.length_map, length_explicitPorts]
+  exact hD v
+
+/-- Every table of the written-out network has an entry for every list of bits on its ports. -/
+theorem length_table_toExplicit {p : List ℕ × List R} (hp : p ∈ (N.toExplicit ev ee).vertices) :
+    p.2.length = 2 ^ p.1.length := by
+  obtain ⟨v, rfl⟩ := (N.mem_vertices_toExplicit ev ee).mp hp
+  simp [length_explicitTable]
+
+/-- Every table entry of the written-out network is a value of a tensor. -/
+theorem exists_tensor_of_mem_toExplicit {p : List ℕ × List R}
+    (hp : p ∈ (N.toExplicit ev ee).vertices) {a : R} (ha : a ∈ p.2) :
+    ∃ v y, a = N.tensor v y := by
+  obtain ⟨v, rfl⟩ := (N.mem_vertices_toExplicit ev ee).mp hp
+  exact ⟨v, N.exists_tensor_of_mem_explicitTable ee ha⟩
+
+private theorem sum_drop_ofFn (f : Fin n → ℕ) (r : ℕ) :
+    ((List.ofFn f).drop r).sum = ∑ a with ¬ a.val < r, f a := by
+  have h := List.sum_take_add_sum_drop (List.ofFn f) r
+  rw [List.sum_take_ofFn, List.sum_ofFn,
+    ← Finset.sum_filter_add_sum_filter_not Finset.univ (fun a : Fin n => a.val < r)] at h
+  omega
+
+/-- **Rows first.** If every edge joins a vertex numbered below `r` to one numbered at least `r`,
+the written-out network is bipartite with the first `r` vertices as rows. -/
+theorem isRowsFirstBipartite_toExplicit (r : ℕ)
+    (hside : ∀ e, (ev (N.src e) : ℕ) < r ↔ ¬ (ev (N.tgt e) : ℕ) < r) :
+    (N.toExplicit ev ee).IsRowsFirstBipartite r := by
+  refine ⟨fun p hp i hi => ?_, fun i hi => ?_⟩
+  · obtain ⟨v, rfl⟩ := (N.mem_vertices_toExplicit ev ee).mp hp
+    obtain ⟨j, -, rfl⟩ := List.mem_map.mp hi
+    exact j.isLt
+  · -- The edge numbered `i` is a port of its source and its target, which are distinct.
+    set j : Fin m := ⟨i, hi⟩
+    set e := ee.symm j
+    have hne : N.src e ≠ N.tgt e := fun h => by
+      have := hside e
+      rw [h] at this
+      tauto
+    have hcount : ∀ a : Fin n, ((N.explicitPorts ee (ev.symm a)).map Fin.val).count i =
+        (if ev (N.src e) = a then 1 else 0) + (if ev (N.tgt e) = a then 1 else 0) := by
+      intro a
+      rw [show i = j.val from rfl, count_explicitPorts]
+      simp only [Equiv.eq_symm_apply]
+      by_cases hs : ev (N.src e) = a <;> by_cases ht : ev (N.tgt e) = a
+      · exact absurd (ev.injective (hs.trans ht.symm)) hne
+      all_goals simp [e, hs, ht]
+    have hsum : ∀ s : Finset (Fin n),
+        ∑ a ∈ s, ((N.explicitPorts ee (ev.symm a)).map Fin.val).count i =
+          (if ev (N.src e) ∈ s then 1 else 0) + (if ev (N.tgt e) ∈ s then 1 else 0) := by
+      intro s
+      simp only [hcount, Finset.sum_add_distrib, Finset.sum_ite_eq]
+    have hv : (N.toExplicit ev ee).vertices = List.ofFn fun a =>
+        ((N.explicitPorts ee (ev.symm a)).map Fin.val, N.explicitTable ee (ev.symm a)) := rfl
+    rw [hv, List.map_take, List.map_drop, List.map_ofFn, List.sum_take_ofFn, sum_drop_ofFn]
+    simp only [Function.comp_def]
+    rw [hsum, hsum]
+    have := hside e
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+    by_cases h : (ev (N.src e) : ℕ) < r <;> simp_all
 
 /-- **Writing a network out preserves its contraction.** -/
 theorem contraction_toExplicit [CommSemiring R] [Fintype V] [Fintype E] [DecidableEq E] :

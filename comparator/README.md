@@ -102,9 +102,11 @@ committed checks:
 lake build ComplexityComparator
 ```
 
-The Comparator workflow runs all suites and the negative control when library Lean sources,
-the comparator files, the runner or its tests, or the dependency pins change. Results belong to
-the checked revision and should be read from that run.
+The Comparator workflow runs all suites and the negative control. It is manual-only: start it from
+the Actions tab or with `gh workflow run comparator.yml --ref <branch>`, for example after
+changing the comparator files, the runner or the dependency pins. It no longer runs on every pull
+request or push to `main`, because those runs cost far more CI time than the assurance they added.
+Results belong to the checked revision and should be read from that run.
 
 See Lean's [proof validation guide](https://lean-lang.org/doc/reference/latest/ValidatingProofs/)
 and [Lake comparator documentation](https://lean-lang.org/doc/reference/latest/Build-Tools-and-Distribution/Lake/#lake-comparator)
