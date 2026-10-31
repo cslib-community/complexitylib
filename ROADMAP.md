@@ -196,6 +196,10 @@ index links to canonical definitions rather than keeping a second set.
   `O(ℓ + H log(ℓ + 2))` parameter bound.
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
   bounds for sublinear space, distinct from polynomial-space simulation.
+- **Deeper consequences of a Boolean-hierarchy collapse:** Kadin's sparse `S` with
+  `coNP ⊆ NP^S`, and the collapse of `PH` into `P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`, which follows from
+  results of Wagner and of Chang and Kadin, not from Kadin's 1988 argument (see his erratum).
+  `BooleanHierarchy/Kadin.lean` proves only `PH = Σ₃ᴾ ∩ Π₃ᴾ`.
 
 ### Reducibilities and the structure of complete sets
 
@@ -345,9 +349,8 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 - Proof-space lower bounds, Frege, cutting planes, polynomial calculus and sum-of-squares, and
   certified DPLL solver runtimes.
-- **Feasible interpolation** ([#1817]): a polynomial-time builder for the monotone interpolant
-  (the De Morgan builder is done), and the transfer of communication lower bounds to proof-size
-  lower bounds.
+- **Feasible interpolation** ([#1817]): the transfer of communication lower bounds to proof-size
+  lower bounds ([#2019]).
 - **Proof search:** automatizability and weak automatizability with explicit encodings and
   runtime dependence on the shortest proof; proof-search reductions built on the Cook–Reckhow
   and p-simulation APIs; then reflection principles and bounded-arithmetic witnessing theorems.
@@ -761,13 +764,6 @@ reuse is demonstrated.
 
 - **One sensitivity API.** Define the sensitivity measures over any `Fintype` in CSLib and drop
   the separate measures of the sensitivity-separation development.
-- **Weighted multigraph cuts** ([#1336]): extract
-  `IsMultigraph` (renamed e.g. `IsSymmLoopless` or phrased via `Matrix.IsSymm` with zero diagonal),
-  `IsNonTrivialCut`,
-  `cutWeight`, `minCut`, `rowDeg`, `totalDoubledWeight`, `flattenMatrix`, and `IsContractionOf` from
-  `Complexity/Algorithms/WordRAM/Karger/Graph.lean` (shared by `KargerMinCut` and `KargerStein`) into
-  `Complexity/Foundations/Combinatorics/WeightedCut.lean` with a bridge lemma relating `cutWeight W C`
-  to `(Cslib.Multigraph.edgeCut ends C).card`.
 - **CNF evaluation certificates:** `fun_prop` certificates for evaluating literals, clauses and
   formulas under a polynomial-time assignment, so clients stop passing `CNF.eval`,
   `Clause.eval` and `Literal.eval` to `fun_prop` as unfolding hints.
@@ -867,7 +863,6 @@ not planned, not as proved.
 [#1104]: https://github.com/cslib-community/complexitylib/issues/1104
 [#1124]: https://github.com/cslib-community/complexitylib/issues/1124
 [#1155]: https://github.com/cslib-community/complexitylib/issues/1155
-[#1336]: https://github.com/cslib-community/complexitylib/issues/1336
 [#1351]: https://github.com/cslib-community/complexitylib/issues/1351
 [#1394]: https://github.com/cslib-community/complexitylib/issues/1394
 [#1435]: https://github.com/cslib-community/complexitylib/issues/1435
@@ -880,3 +875,4 @@ not planned, not as proved.
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
 [#1817]: https://github.com/cslib-community/complexitylib/issues/1817
 [#1824]: https://github.com/cslib-community/complexitylib/issues/1824
+[#2019]: https://github.com/cslib-community/complexitylib/issues/2019

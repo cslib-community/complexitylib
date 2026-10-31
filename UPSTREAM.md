@@ -112,9 +112,10 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   Cook–Reckhow and supporting both unit and logarithmic costs, remains a separate candidate.
 * **Generic RAM values.** `Computability/GenericRAM/*` supplies a shared finite-register RAM
   interpreter with configurable value, address, configuration and literal types, operation/test
-  signatures, and fault policies. `WordRAM/Generic` embeds every existing word-operation basis
+  signatures, and fault policies. `WordRAM/Defs` embeds every existing word-operation basis
   with exact step, fault, output and instruction-count preservation, including arbitrary initial
-  states; no existing public WordRAM definition changes. The signed instance follows the
+  states, and derives the word RAM's interpreter metatheory from the generic one; the WordRAM
+  definitions keep their own syntax and step function. The signed instance follows the
   lean-trominoes signed range and its address, move, halt and program-counter checks, retaining
   its source credit. The algebraic instances use tagged natural words and exact field values:
   only natural words can address memory. Real comparison is mathematical, noncomputable

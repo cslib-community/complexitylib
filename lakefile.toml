@@ -1,6 +1,6 @@
 name = "complexitylib"
 version = "0.2.0"
-defaultTargets = ["Complexity"]
+defaultTargets = ["Complexity", "ComplexityResults"]
 testDriver = "ComplexityTests"
 lintDriver = "batteries/runLinter"
 # Share build outputs between local checkouts (worktrees, agent sandboxes) through Lake's
@@ -41,6 +41,11 @@ name = "Complexity"
 [[lean_lib]]
 name = "ComplexityAbstracts"
 srcDir = "abstracts"
+leanOptions = {weak.linter.style.header = false}
+allowNonModules = true
+
+[[lean_lib]]
+name = "ComplexityResults"
 leanOptions = {weak.linter.style.header = false}
 allowNonModules = true
 
