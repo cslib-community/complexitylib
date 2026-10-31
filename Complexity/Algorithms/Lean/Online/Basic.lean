@@ -528,7 +528,7 @@ theorem amortized_bound {potential : P.State → A.Mem → Nat} {c : Nat}
     rw [hrun]
     exact P.validHistory_zip hv
   have hclient := Cert.client (s := s_off) hm hvh hexec
-  rw [hrun] at hclient
+  rw [Stateful.Spec.clientState, Stateful.Spec.clientHistory, hrun] at hclient
   dsimp only at hclient
   rw [htot, P.totalCost_zip c hv] at hclient
   exact hclient

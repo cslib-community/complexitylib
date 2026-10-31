@@ -829,7 +829,9 @@ and union by rank. -/
 def realization (n : ℕ) : Realization (spec n) (Exec n) :=
   Realization.ofFn
     (rep := Rep)
-    (total := fun o _ _ => ⟨(step _ o).2.1, (step _ o).1, (step _ o).2.2, rfl⟩)
+    (total := fun {_ s} o _ _ =>
+      match h : step s o with
+      | (s', a, steps) => ⟨a, s', steps, h⟩)
     (correct := by
       intro p s o a s' steps hr _ he
       have hc := step_correct o hr

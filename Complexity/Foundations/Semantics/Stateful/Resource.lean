@@ -117,9 +117,9 @@ specified history. -/
 theorem Bound.client {exec : Execution D C τ} {R : Realization D exec}
     {weight : τ → Nat} {charge : D.State → D.Op → Nat} (B : Bound R weight charge)
     {p : D.Client α} {s : D.State} {c c' : C} {a : α} {traces : List τ}
-    (hr : R.rep s c) (hv : D.ValidHistory s (D.runClient s p).2.2)
+    (hr : R.rep s c) (hv : D.ValidHistory s (D.clientHistory s p))
     (he : Executes exec p c a c' traces) :
-    total weight traces ≤ D.totalCost charge s (D.runClient s p).2.2 := by
+    total weight traces ≤ D.totalCost charge s (D.clientHistory s p) := by
   obtain ⟨s', tr, hrun, _, _, hb⟩ :=
     B.demonic hr ((D.demonicValid_iff_validHistory_runClient s p).mpr hv) he
   obtain ⟨_, _, _, rfl⟩ := (D.clientRun_iff_runClient s p a s' tr).mp hrun
@@ -129,10 +129,10 @@ theorem Bound.client {exec : Execution D C τ} {R : Realization D exec}
 theorem Bound.exists_executes {exec : Execution D C τ} {R : Realization D exec}
     {weight : τ → Nat} {charge : D.State → D.Op → Nat} (B : Bound R weight charge)
     (p : D.Client α) {s : D.State} {c : C} (hr : R.rep s c)
-    (hv : D.ValidHistory s (D.runClient s p).2.2) :
-    ∃ c' traces, Executes exec p c (D.runClient s p).1 c' traces ∧
-      R.rep (D.runClient s p).2.1 c' ∧
-      total weight traces ≤ D.totalCost charge s (D.runClient s p).2.2 := by
+    (hv : D.ValidHistory s (D.clientHistory s p)) :
+    ∃ c' traces, Executes exec p c (D.clientResult s p) c' traces ∧
+      R.rep (D.clientState s p) c' ∧
+      total weight traces ≤ D.totalCost charge s (D.clientHistory s p) := by
   obtain ⟨c', traces, he, hr'⟩ := R.exists_executes p hr hv
   exact ⟨c', traces, he, hr', B.client hr hv he⟩
 
@@ -140,19 +140,19 @@ theorem Bound.exists_executes {exec : Execution D C τ} {R : Realization D exec}
 theorem Bound.client_const {exec : Execution D C τ} {R : Realization D exec}
     {weight : τ → Nat} {K : Nat} (B : Bound R weight (fun _ _ => K))
     {p : D.Client α} {s : D.State} {c c' : C} {a : α} {traces : List τ}
-    (hr : R.rep s c) (hv : D.ValidHistory s (D.runClient s p).2.2)
+    (hr : R.rep s c) (hv : D.ValidHistory s (D.clientHistory s p))
     (he : Executes exec p c a c' traces) :
-    total weight traces ≤ (D.runClient s p).2.2.length * K := by
+    total weight traces ≤ (D.clientHistory s p).length * K := by
   simpa only [Spec.totalCost_const] using B.client hr hv he
 
 /-- Existence, correctness, and total cost for a uniform constant per-operation bound. -/
 theorem Bound.exists_executes_const {exec : Execution D C τ} {R : Realization D exec}
     {weight : τ → Nat} {K : Nat} (B : Bound R weight (fun _ _ => K))
     (p : D.Client α) {s : D.State} {c : C} (hr : R.rep s c)
-    (hv : D.ValidHistory s (D.runClient s p).2.2) :
-    ∃ c' traces, Executes exec p c (D.runClient s p).1 c' traces ∧
-      R.rep (D.runClient s p).2.1 c' ∧
-      total weight traces ≤ (D.runClient s p).2.2.length * K := by
+    (hv : D.ValidHistory s (D.clientHistory s p)) :
+    ∃ c' traces, Executes exec p c (D.clientResult s p) c' traces ∧
+      R.rep (D.clientState s p) c' ∧
+      total weight traces ≤ (D.clientHistory s p).length * K := by
   obtain ⟨c', traces, he, hr'⟩ := R.exists_executes p hr hv
   exact ⟨c', traces, he, hr', B.client_const hr hv he⟩
 
@@ -182,11 +182,11 @@ theorem bound
     {charge : E.State → E.Op → Nat} (B : Bound R weight charge)
     (budget : D.State → D.Op → Nat)
     (hbudget : ∀ {s e} o, M.rep s e → D.valid s o →
-      E.totalCost charge e (E.runClient e (M.methods o)).2.2 ≤ budget s o) :
+      E.totalCost charge e (E.clientHistory e (M.methods o)) ≤ budget s o) :
     Bound (M.realize R) (total weight) budget := by
   intro s c o a c' ts hr hv he
   obtain ⟨e, hM, hR⟩ := hr
-  have hv_hist : E.ValidHistory e (E.runClient e (M.methods o)).2.2 :=
+  have hv_hist : E.ValidHistory e (E.clientHistory e (M.methods o)) :=
     (E.demonicValid_iff_validHistory_runClient e (M.methods o)).mp (M.valid o hM hv)
   exact (B.client hR hv_hist he).trans (hbudget o hM hv)
 
@@ -231,28 +231,28 @@ theorem amortized_client
     {lowerCharge : E.State → E.Op → Nat} (B : Bound R weight lowerCharge)
     (potential : D.State → E.State → Nat) (charge : D.State → D.Op → Nat)
     (hstep : ∀ {s e} o, M.rep s e → D.valid s o →
-      E.totalCost lowerCharge e (E.runClient e (M.methods o)).2.2 +
-        potential (D.stepFn s o).1 (E.runClient e (M.methods o)).2.1 ≤
+      E.totalCost lowerCharge e (E.clientHistory e (M.methods o)) +
+        potential (D.stepFn s o).1 (E.clientState e (M.methods o)) ≤
           charge s o + potential s e)
     {p : D.Client α} {s : D.State} {e : E.State} {c c' : C} {a : α}
     {chunks : List (List τ)} (hM : M.rep s e) (hR : R.rep e c)
-    (hv : D.ValidHistory s (D.runClient s p).2.2)
+    (hv : D.ValidHistory s (D.clientHistory s p))
     (he : Executes (fun x o a y ts => Executes exec (M.methods o) x a y ts)
       p c a c' chunks) :
-    ∃ e', M.rep (D.runClient s p).2.1 e' ∧ R.rep e' c' ∧
-      total (total weight) chunks + potential (D.runClient s p).2.1 e' ≤
-        D.totalCost charge s (D.runClient s p).2.2 + potential s e := by
+    ∃ e', M.rep (D.clientState s p) e' ∧ R.rep e' c' ∧
+      total (total weight) chunks + potential (D.clientState s p) e' ≤
+        D.totalCost charge s (D.clientHistory s p) + potential s e := by
   induction he generalizing s e with
   | pure a c => exact ⟨e, hM, hR, Nat.le_refl _⟩
   | @call o k c res c₁ ts b c₂ chunks hm hk ih =>
-    have hv_E : E.ValidHistory e (E.runClient e (M.methods o)).2.2 :=
+    have hv_E : E.ValidHistory e (E.clientHistory e (M.methods o)) :=
       (E.demonicValid_iff_validHistory_runClient e (M.methods o)).mp (M.valid o hM hv.1)
     obtain ⟨ha, hR'⟩ := R.correct_client hR hv_E hm
     have hrun_E := E.clientRun_canonical e (M.methods o) hv_E
     obtain ⟨s₁, hstep₁, hM'⟩ := M.correct o hM hv.1 hrun_E
     have heq₁ := (D.step_iff_stepFn s o s₁ _).mp hstep₁
     have hs₁ : s₁ = (D.stepFn s o).1 := congrArg Prod.fst heq₁
-    have ha' : (E.runClient e (M.methods o)).1 = (D.stepFn s o).2 := congrArg Prod.snd heq₁
+    have ha' : E.clientResult e (M.methods o) = (D.stepFn s o).2 := congrArg Prod.snd heq₁
     subst hs₁
     have ht := B.client hR hv_E hm
     have hp := hstep o hM hv.1
@@ -260,7 +260,11 @@ theorem amortized_client
     subst heq
     obtain ⟨e', hMf, hRf, hbound⟩ := ih hM' hR' hv.2
     exact ⟨e', hMf, hRf, by
-      simp only [total_cons, Spec.runClient_liftBind, Spec.totalCost_cons]
+      simp only [total_cons, show D.clientHistory s (.liftBind o k) =
+        o :: D.clientHistory (D.stepFn s o).1 (k (D.stepFn s o).2) from rfl,
+        show D.clientState s (.liftBind o k) =
+          D.clientState (D.stepFn s o).1 (k (D.stepFn s o).2) from rfl,
+        Spec.totalCost_cons]
       omega⟩
 
 end Module

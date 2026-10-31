@@ -186,7 +186,7 @@ def pkg : PQPackage .exact rFib where
   decreaseTime := tDec
   extractTime := tExt
   cert hS hK := subroutineDS hS hK
-  rep_unique _ _ := fun h₁ h₂ => h₁.2.2.unique h₂.2.2
+  rep_unique _ _ := fun ⟨_, _, h₁⟩ ⟨_, _, h₂⟩ => h₁.unique h₂
   cert_space _ _ := rfl
   cert_initTime _ _ := le_rfl
   cert_initPotential _ _ := rfl

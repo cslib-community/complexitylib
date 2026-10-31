@@ -818,12 +818,12 @@ theorem run_client_demonic_bound (hpot : ∀ x, C.potential x = 0) {α : Type*} 
 theorem run_client_amortized
     {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
     {α : Type*} (p : D.Client α) {s : D.State} {x : Data r_ds}
-    (hr : C.rep s x) (hv : D.ValidHistory s (D.runClient s p).2.2) :
+    (hr : C.rep s x) (hv : D.ValidHistory s (D.clientHistory s p)) :
     ∃ y traces,
-      Stateful.Executes (C.toDynamicProgram.ExecOp w) p x (D.runClient s p).1 y traces ∧
-      C.rep (D.runClient s p).2.1 y ∧
+      Stateful.Executes (C.toDynamicProgram.ExecOp w) p x (D.clientResult s p) y traces ∧
+      C.rep (D.clientState s p) y ∧
       Stateful.total DynamicProgram.OperationTrace.instructions traces + C.potential y ≤
-        D.totalCost (fun s o => C.charge s o + 1) s (D.runClient s p).2.2 + C.potential x :=
+        D.totalCost (fun s o => C.charge s o + 1) s (D.clientHistory s p) + C.potential x :=
   C.toAmortized.exists_executes p hr hv
 
 /-- Standalone adaptive-client worst-case bound on a deterministic specification when
@@ -832,12 +832,12 @@ theorem run_client_bound
     {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
     (hpot : ∀ x, C.potential x = 0) {α : Type*} (p : D.Client α)
     {s : D.State} {x : Data r_ds} (hr : C.rep s x)
-    (hv : D.ValidHistory s (D.runClient s p).2.2) :
+    (hv : D.ValidHistory s (D.clientHistory s p)) :
     ∃ y traces,
-      Stateful.Executes (C.toDynamicProgram.ExecOp w) p x (D.runClient s p).1 y traces ∧
-      C.rep (D.runClient s p).2.1 y ∧
+      Stateful.Executes (C.toDynamicProgram.ExecOp w) p x (D.clientResult s p) y traces ∧
+      C.rep (D.clientState s p) y ∧
       Stateful.total DynamicProgram.OperationTrace.instructions traces ≤
-        D.totalCost (fun s o => C.charge s o + 1) s (D.runClient s p).2.2 :=
+        D.totalCost (fun s o => C.charge s o + 1) s (D.clientHistory s p) :=
   Stateful.Bound.exists_executes (C.toBound hpot) p hr hv
 
 end Standard

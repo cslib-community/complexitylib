@@ -49,12 +49,12 @@ def Hoare (pre : D.State → Prop) (p : D.Client α) (post : α → D.State → 
   ∀ s, pre s → D.DemonicValid s p ∧ ∀ v s' tr, D.ClientRun s p v s' tr → post v s'
 
 /-- On a deterministic specification (`[D.HasStepFn f]`), `D.Hoare` is equivalent to
-`D.ValidHistory s (D.runClient s p).2.2 ∧ post (D.runClient s p).1 (D.runClient s p).2.1`. -/
+`D.ValidHistory s (D.clientHistory s p) ∧ post (D.clientResult s p) (D.clientState s p)`. -/
 theorem hoare_iff_ofFn {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
     (pre : D.State → Prop) (p : D.Client α) (post : α → D.State → Prop) :
     D.Hoare pre p post ↔
-      ∀ s, pre s → D.ValidHistory s (D.runClient s p).2.2 ∧
-        post (D.runClient s p).1 (D.runClient s p).2.1 := by
+      ∀ s, pre s → D.ValidHistory s (D.clientHistory s p) ∧
+        post (D.clientResult s p) (D.clientState s p) := by
   refine forall_congr' fun s => imp_congr_right fun _ => ?_
   rw [demonicValid_iff_validHistory_runClient]
   constructor

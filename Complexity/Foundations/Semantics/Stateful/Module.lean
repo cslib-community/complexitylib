@@ -76,10 +76,10 @@ abbrev ofFn {fD : (s : D.State) → (o : D.Op) → D.State × D.Result o}
     (methods : Methods D E)
     (rep : D.State → E.State → Prop)
     (valid : ∀ {s e} o, rep s e → D.valid s o →
-      E.ValidHistory e (E.runClient e (methods o)).2.2)
+      E.ValidHistory e (E.clientHistory e (methods o)))
     (correct : ∀ {s e} o, rep s e → D.valid s o →
-      (E.runClient e (methods o)).1 = (D.stepFn s o).2 ∧
-        rep (D.stepFn s o).1 (E.runClient e (methods o)).2.1) :
+      E.clientResult e (methods o) = (D.stepFn s o).2 ∧
+        rep (D.stepFn s o).1 (E.clientState e (methods o))) :
     Module D E where
   methods := methods
   rep := rep

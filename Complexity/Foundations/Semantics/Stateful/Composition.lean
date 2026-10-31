@@ -77,14 +77,14 @@ theorem simulates_client
     {fE : (e : E.State) → (o : E.Op) → E.State × E.Result o}
     [D.HasStepFn fD] [E.HasStepFn fE]
     (M : Module D E) (p : D.Client α) {s : D.State} {e : E.State}
-    (hr : M.rep s e) (hv : D.ValidHistory s (D.runClient s p).2.2) :
-    E.ValidHistory e (E.runClient e (link M.methods p)).2.2 ∧
-      (E.runClient e (link M.methods p)).1 = (D.runClient s p).1 ∧
-      M.rep (D.runClient s p).2.1 (E.runClient e (link M.methods p)).2.1 := by
+    (hr : M.rep s e) (hv : D.ValidHistory s (D.clientHistory s p)) :
+    E.ValidHistory e (E.clientHistory e (link M.methods p)) ∧
+      E.clientResult e (link M.methods p) = D.clientResult s p ∧
+      M.rep (D.clientState s p) (E.clientState e (link M.methods p)) := by
   have hv_dem : D.DemonicValid s p :=
     (D.demonicValid_iff_validHistory_runClient s p).mpr hv
   obtain ⟨hv_E, hcorr⟩ := M.simulates_demonic p hr hv_dem
-  have hv_hist_E : E.ValidHistory e (E.runClient e (link M.methods p)).2.2 :=
+  have hv_hist_E : E.ValidHistory e (E.clientHistory e (link M.methods p)) :=
     (E.demonicValid_iff_validHistory_runClient e (link M.methods p)).mp hv_E
   have hrun_E := E.clientRun_canonical e (link M.methods p) hv_hist_E
   obtain ⟨s', tr_D, hrun_D, hr'⟩ := hcorr _ _ _ hrun_E

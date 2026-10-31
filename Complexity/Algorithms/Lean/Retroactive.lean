@@ -171,8 +171,8 @@ def implementation : Module (spec D initial) (backend D initial) :=
       subst timeline
       change (backend D initial).ValidHistory (s, state)
         (.edit o :: .reset ::
-          ((backend D initial).runClient (o.apply s, initial) (replay D initial (o.apply s))).2.2)
-      rw [replay_run]
+          (backend D initial).clientHistory (o.apply s, initial) (replay D initial (o.apply s)))
+      rw [Spec.clientHistory, replay_run]
       exact ⟨hv, trivial, replay_valid D initial _ _ _ hv.2⟩)
     (correct := by
       intro s e o hr _
@@ -180,7 +180,7 @@ def implementation : Module (spec D initial) (backend D initial) :=
       obtain ⟨ht, hs⟩ := hr
       dsimp only at ht hs
       subst timeline
-      simp only [methods, Spec.runClient_liftBind, backend]
+      simp only [methods, Spec.clientResult, Spec.clientState, Spec.runClient_liftBind, backend]
       rw [replay_run]
       exact ⟨trivial, rfl, rfl⟩)
 

@@ -295,11 +295,11 @@ theorem run_client_const
     {K : ℕ}
     (B : Stateful.Bound C.realization DynamicProgram.OperationTrace.instructions (fun _ _ => K))
     {α : Type*} (p : D.Client α) {s : D.State} {x : Data r}
-    (hr : C.rep s x) (hv : D.ValidHistory s (D.runClient s p).2.2) :
-    ∃ y traces, Stateful.Executes (P.ExecOp w) p x (D.runClient s p).1 y traces ∧
-      C.rep (D.runClient s p).2.1 y ∧
+    (hr : C.rep s x) (hv : D.ValidHistory s (D.clientHistory s p)) :
+    ∃ y traces, Stateful.Executes (P.ExecOp w) p x (D.clientResult s p) y traces ∧
+      C.rep (D.clientState s p) y ∧
       Stateful.total DynamicProgram.OperationTrace.instructions traces ≤
-        (D.runClient s p).2.2.length * K :=
+        (D.clientHistory s p).length * K :=
   B.exists_executes_const p hr hv
 
 /-- Lift a per-operation pointwise memory frame from `Exec` to `ExecOp`. -/
@@ -364,7 +364,7 @@ theorem executes_client_frame
       P.ExecOp w x o a y trace → y.mem j = x.mem j)
     {α : Type*} {p : D.Client α} {s : D.State} {x y : Data r} {val : α}
     {traces : List DynamicProgram.OperationTrace}
-    (hr : C.rep s x) (hv : D.ValidHistory s (D.runClient s p).2.2)
+    (hr : C.rep s x) (hv : D.ValidHistory s (D.clientHistory s p))
     (he : Stateful.Executes (P.ExecOp w) p x val y traces) :
     y.mem j = x.mem j :=
   C.executes_demonic_frame hframe hr
@@ -379,7 +379,7 @@ theorem executes_client_modifies
       P.ExecOp w x o a y trace → Modifies F x.mem y.mem)
     {α : Type*} {p : D.Client α} {s : D.State} {x y : Data r} {val : α}
     {traces : List DynamicProgram.OperationTrace}
-    (hr : C.rep s x) (hv : D.ValidHistory s (D.runClient s p).2.2)
+    (hr : C.rep s x) (hv : D.ValidHistory s (D.clientHistory s p))
     (he : Stateful.Executes (P.ExecOp w) p x val y traces) :
     Modifies F x.mem y.mem :=
   C.executes_demonic_modifies hmod hr

@@ -64,17 +64,17 @@ def Spec.CostHoare (charge : D.State → D.Op → Nat) (pre : D.State → Prop)
       D.totalCostTranscript charge s tr ≤ budget s
 
 /-- On a deterministic specification (`[D.HasStepFn f]`), `D.CostHoare` is equivalent to
-`D.Hoare pre p post ∧ ∀ s, pre s → D.totalCost charge s (D.runClient s p).2.2 ≤ budget s`. -/
+`D.Hoare pre p post ∧ ∀ s, pre s → D.totalCost charge s (D.clientHistory s p) ≤ budget s`. -/
 theorem Spec.costHoare_iff_ofFn
     {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
     (charge : D.State → D.Op → Nat) (pre : D.State → Prop)
     (p : D.Client α) (post : α → D.State → Prop) (budget : D.State → Nat) :
     D.CostHoare charge pre p post budget ↔
       D.Hoare pre p post ∧
-        ∀ s, pre s → D.totalCost charge s (D.runClient s p).2.2 ≤ budget s := by
+        ∀ s, pre s → D.totalCost charge s (D.clientHistory s p) ≤ budget s := by
   unfold Spec.CostHoare
   refine and_congr_right fun hhoare => forall_congr' fun s => imp_congr_right fun hs => ?_
-  have hv : D.ValidHistory s (D.runClient s p).2.2 :=
+  have hv : D.ValidHistory s (D.clientHistory s p) :=
     (D.demonicValid_iff_validHistory_runClient s p).mp (hhoare s hs).1
   constructor
   · intro h
@@ -196,12 +196,12 @@ def ChargeBound (M : Module D E) (lower : E.State → E.Op → Nat)
       E.totalCostTranscript lower e tr ≤ upper s o
 
 /-- Construct a `ChargeBound` on a deterministic lower specification (`[E.HasStepFn fE]`) from a
-functional `totalCost` inequality along `runClient`. -/
+functional `totalCost` inequality along `clientHistory`. -/
 theorem ChargeBound.ofFn
     {fE : (e : E.State) → (o : E.Op) → E.State × E.Result o} [E.HasStepFn fE]
     {M : Module D E} {lower : E.State → E.Op → Nat} {upper : D.State → D.Op → Nat}
     (h : ∀ {s e} o, M.rep s e → D.valid s o →
-      E.totalCost lower e (E.runClient e (M.methods o)).2.2 ≤ upper s o) :
+      E.totalCost lower e (E.clientHistory e (M.methods o)) ≤ upper s o) :
     M.ChargeBound lower upper := by
   intro s e o a e' tr hr hv hrun
   obtain ⟨_, _, _, rfl⟩ := (E.clientRun_iff_runClient e (M.methods o) a e' tr).mp hrun
@@ -244,12 +244,12 @@ theorem ChargeBound.client
     {M : Module D E} {lower : E.State → E.Op → Nat}
     {upper : D.State → D.Op → Nat} (B : M.ChargeBound lower upper)
     {α : Type w} (p : D.Client α) {s : D.State} {e : E.State}
-    (hr : M.rep s e) (hv : D.ValidHistory s (D.runClient s p).2.2) :
-    E.totalCost lower e (E.runClient e (link M.methods p)).2.2 ≤
-      D.totalCost upper s (D.runClient s p).2.2 := by
+    (hr : M.rep s e) (hv : D.ValidHistory s (D.clientHistory s p)) :
+    E.totalCost lower e (E.clientHistory e (link M.methods p)) ≤
+      D.totalCost upper s (D.clientHistory s p) := by
   have hv_dem : D.DemonicValid s p :=
     (D.demonicValid_iff_validHistory_runClient s p).mpr hv
-  have hv_E : E.ValidHistory e (E.runClient e (link M.methods p)).2.2 :=
+  have hv_E : E.ValidHistory e (E.clientHistory e (link M.methods p)) :=
     (M.simulates_client p hr hv).1
   have hrun_E := E.clientRun_canonical e (link M.methods p) hv_E
   obtain ⟨s', tr_D, hrun_D, _, hcost⟩ := B.demonic p hr hv_dem hrun_E

@@ -25,13 +25,15 @@ an execution certificate. Initialization is supplied as code using `Refines.prep
 
 ## Main definitions
 
-* `Refines`: client run semantics and bounded RAM execution with a relational postcondition.
+* `Refines`: demonic caller admissibility, angelic client run semantics, and bounded RAM execution
+  with a relational postcondition.
 
 ## Main results
 
 * `refines_iff_ofFn`: equivalence with the functional `runClient` formulation on deterministic
   specifications (`[D.HasStepFn f]`).
-* `Refines.bind`, `Refines.branch`: sequential and conditional controller certificates.
+* `Refines.bind`, `Refines.bind_ofFn`, `Refines.branch`: sequential and conditional controller
+  certificates.
 * `Refines.call`: inlining a dynamic operation after charged register preparation.
 * `Refines.executes_demonic`, `Refines.executes`: a complete flat-program run, including its final
   halt.
@@ -50,8 +52,9 @@ universe u v z a
 
 variable {D : Stateful.Spec.{u, v, z}} {α β : Type a} {B : Basis} {r w : ℕ}
 
-/-- A fixed machine fragment implements a valid `D.ClientRun` of the client `p` and its
-result/state representation, within a bound depending on the initial abstract and concrete states.
+/-- A fixed machine fragment certifies that the client `p` is demonically admissible
+(`D.DemonicValid`) and implements a permitted `D.ClientRun` and its result/state representation,
+within a bound depending on the initial abstract and concrete states.
 As for `ExecWithin`, word boundedness is an entry assertion obligation: include `Data.Bounded`
 in `pre` when reasoning about arbitrary machine data. Standard `Data.init` inputs are bounded
 whenever `InputFits` holds. -/
@@ -59,27 +62,29 @@ def Refines (w : ℕ) (pre : D.State → Data r → Prop) (p : D.Client α)
     (post : α → D.State → Data r → Prop) (budget : D.State → Data r → ℕ)
     (code : Code B r) : Prop :=
   ∀ s x, pre s x →
-    ∃ y a s' tr, D.ClientRun s p a s' tr ∧
-      ExecWithin w code x y (budget s x) ∧
-      post a s' y
+    D.DemonicValid s p ∧
+      ∃ y a s' tr, D.ClientRun s p a s' tr ∧
+        ExecWithin w code x y (budget s x) ∧
+        post a s' y
 
 /-- On a deterministic specification (`[D.HasStepFn f]`), `Refines` is equivalent to
-`D.ValidHistory s (D.runClient s p).2.2` and `post (D.runClient s p).1 (D.runClient s p).2.1 y`. -/
+`D.ValidHistory s (D.clientHistory s p)` and `post (D.clientResult s p) (D.clientState s p) y`. -/
 theorem refines_iff_ofFn {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
     (w : ℕ) (pre : D.State → Data r → Prop) (p : D.Client α)
     (post : α → D.State → Data r → Prop) (budget : D.State → Data r → ℕ)
     (code : Code B r) :
     Refines w pre p post budget code ↔
-      ∀ s x, pre s x → D.ValidHistory s (D.runClient s p).2.2 ∧
+      ∀ s x, pre s x → D.ValidHistory s (D.clientHistory s p) ∧
         ∃ y, ExecWithin w code x y (budget s x) ∧
-          post (D.runClient s p).1 (D.runClient s p).2.1 y := by
+          post (D.clientResult s p) (D.clientState s p) y := by
   refine forall_congr' fun s => forall_congr' fun x => imp_congr_right fun _ => ?_
   constructor
-  · rintro ⟨y, a, s', tr, hrun, he, hy⟩
+  · rintro ⟨_, y, a, s', tr, hrun, he, hy⟩
     obtain ⟨hv, rfl, rfl, _⟩ := (D.clientRun_iff_runClient s p a s' tr).mp hrun
     exact ⟨hv, y, he, hy⟩
   · rintro ⟨hv, y, he, hy⟩
-    exact ⟨y, _, _, _, D.clientRun_canonical s p hv, he, hy⟩
+    exact ⟨(D.demonicValid_iff_validHistory_runClient s p).mpr hv,
+      y, _, _, _, D.clientRun_canonical s p hv, he, hy⟩
 
 namespace Refines
 
@@ -87,21 +92,21 @@ variable {pre pre' : D.State → Data r → Prop} {post post' : α → D.State �
   {p : D.Client α} {code : Code B r} {budget budget' : D.State → Data r → ℕ}
 
 /-- Construct a `Refines` proof on a deterministic specification (`[D.HasStepFn f]`) from
-`D.ValidHistory` and `D.runClient`. -/
+`D.ValidHistory` and `D.clientResult` / `D.clientState` / `D.clientHistory`. -/
 theorem ofFn {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
-    (h : ∀ s x, pre s x → D.ValidHistory s (D.runClient s p).2.2 ∧
+    (h : ∀ s x, pre s x → D.ValidHistory s (D.clientHistory s p) ∧
       ∃ y, ExecWithin w code x y (budget s x) ∧
-        post (D.runClient s p).1 (D.runClient s p).2.1 y) :
+        post (D.clientResult s p) (D.clientState s p) y) :
     Refines w pre p post budget code :=
   (refines_iff_ofFn w pre p post budget code).mpr h
 
 /-- Unpack a `Refines` proof on a deterministic specification (`[D.HasStepFn f]`) into
-`D.ValidHistory` and `D.runClient`. -/
+`D.ValidHistory` and `D.clientResult` / `D.clientState` / `D.clientHistory`. -/
 theorem toOfFn {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
     (h : Refines w pre p post budget code) {s : D.State} {x : Data r} (hx : pre s x) :
-    D.ValidHistory s (D.runClient s p).2.2 ∧
+    D.ValidHistory s (D.clientHistory s p) ∧
       ∃ y, ExecWithin w code x y (budget s x) ∧
-        post (D.runClient s p).1 (D.runClient s p).2.1 y :=
+        post (D.clientResult s p) (D.clientState s p) y :=
   (refines_iff_ofFn w pre p post budget code).mp h s x hx
 
 /-- Strengthen an entry assertion, weaken the exit assertion, or increase the instruction bound. -/
@@ -111,8 +116,8 @@ theorem consequence (h : Refines w pre p post budget code)
     (ht : ∀ s x, pre' s x → budget s x ≤ budget' s x) :
     Refines w pre' p post' budget' code := by
   intro s x hx
-  obtain ⟨y, a, s', tr, hrun, he, hy⟩ := h s x (hp s x hx)
-  exact ⟨y, a, s', tr, hrun, he.mono (ht s x hx), hq a s' y hy⟩
+  obtain ⟨hvp, y, a, s', tr, hrun, he, hy⟩ := h s x (hp s x hx)
+  exact ⟨hvp, y, a, s', tr, hrun, he.mono (ht s x hx), hq a s' y hy⟩
 
 /-- Even a pure semantic computation needs actual code realizing its output assertion. -/
 theorem pure (a : α)
@@ -120,11 +125,31 @@ theorem pure (a : α)
     Refines w pre (.pure a) post budget code := by
   intro s x hx
   obtain ⟨y, he, hy⟩ := h s x hx
-  exact ⟨y, a, s, [], .pure s a, he, hy⟩
+  exact ⟨.pure s a, y, a, s, [], .pure s a, he, hy⟩
 
 /-- Compose with one fixed continuation fragment valid for every represented intermediate answer.
-The continuation budget is evaluated at the state actually reached by the first fragment. -/
+The continuation budget is evaluated at the state actually reached by the first fragment, while
+`hvalid` ensures demonic continuation admissibility across all permitted specification outcomes of
+`p`. -/
 theorem bind {mid : α → D.State → Data r → Prop} {post : β → D.State → Data r → Prop}
+    {k : α → D.Client β} {first : D.State → Data r → ℕ}
+    {next : α → D.State → Data r → ℕ} {c₁ c₂ : Code B r}
+    (hp : Refines w pre p mid first c₁)
+    (hk : ∀ a, Refines w (mid a) (k a) post (next a) c₂)
+    (ht : ∀ s x, pre s x → ∀ a s' y, mid a s' y →
+      first s x + next a s' y ≤ budget s x)
+    (hvalid : ∀ s x, pre s x → ∀ a s' tr, D.ClientRun s p a s' tr → D.DemonicValid s' (k a)) :
+    Refines w pre (p.bind k) post budget (.seq c₁ c₂) := by
+  intro s x hx
+  obtain ⟨hvp, y, a, s₁, tr₁, hrun₁, he₁, hy⟩ := hp s x hx
+  obtain ⟨_, z, b, s₂, tr₂, hrun₂, he₂, hz⟩ := hk a s₁ y hy
+  exact ⟨hvp.bind (hvalid s x hx), z, b, s₂, tr₁ ++ tr₂, hrun₁.bind hrun₂,
+    (he₁.seq he₂).mono (ht s x hx a s₁ y hy), hz⟩
+
+/-- On a deterministic specification (`[D.HasStepFn f]`), sequential composition automatically
+discharges demonic continuation admissibility from `hk` at the unique reached outcome. -/
+theorem bind_ofFn {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
+    {mid : α → D.State → Data r → Prop} {post : β → D.State → Data r → Prop}
     {k : α → D.Client β} {first : D.State → Data r → ℕ}
     {next : α → D.State → Data r → ℕ} {c₁ c₂ : Code B r}
     (hp : Refines w pre p mid first c₁)
@@ -132,11 +157,11 @@ theorem bind {mid : α → D.State → Data r → Prop} {post : β → D.State �
     (ht : ∀ s x, pre s x → ∀ a s' y, mid a s' y →
       first s x + next a s' y ≤ budget s x) :
     Refines w pre (p.bind k) post budget (.seq c₁ c₂) := by
-  intro s x hx
-  obtain ⟨y, a, s₁, tr₁, hrun₁, he₁, hy⟩ := hp s x hx
-  obtain ⟨z, b, s₂, tr₂, hrun₂, he₂, hz⟩ := hk a s₁ y hy
-  exact ⟨z, b, s₂, tr₁ ++ tr₂, hrun₁.bind hrun₂,
-    (he₁.seq he₂).mono (ht s x hx a s₁ y hy), hz⟩
+  refine bind hp hk ht fun s x hx a s' tr hrun => ?_
+  obtain ⟨_, y, a₁, s₁, tr₁, hrun₁, _, hy⟩ := hp s x hx
+  obtain ⟨_, rfl, rfl, _⟩ := (D.clientRun_iff_runClient s p a s' tr).mp hrun
+  obtain ⟨_, rfl, rfl, _⟩ := (D.clientRun_iff_runClient s p a₁ s₁ tr₁).mp hrun₁
+  exact (hk _ _ y hy).1
 
 /-- A machine branch must test the same proposition as the semantic client. Both paths include
 all their control instructions; the common bound allows the larger two-instruction overhead. -/
@@ -149,11 +174,13 @@ theorem branch (b : Prop) [Decidable b] {cond : Cond r} {yes no : D.Client α}
       (.branch cond pos neg) := by
   intro s x hx
   by_cases hb : b
-  · obtain ⟨y, a, s', tr, hrun, he, hy⟩ := hp s x ⟨hx, hb⟩
-    refine ⟨y, a, s', tr, by simpa only [ite_eq_left hb] using hrun,
+  · obtain ⟨hvp, y, a, s', tr, hrun, he, hy⟩ := hp s x ⟨hx, hb⟩
+    refine ⟨by simpa only [ite_eq_left hb] using hvp,
+      y, a, s', tr, by simpa only [ite_eq_left hb] using hrun,
       (he.branch_pos ((hc s x hx).mpr hb)).mono (by dsimp only; omega), hy⟩
-  · obtain ⟨y, a, s', tr, hrun, he, hy⟩ := hn s x ⟨hx, hb⟩
-    refine ⟨y, a, s', tr, by simpa only [ite_eq_right hb] using hrun,
+  · obtain ⟨hvn, y, a, s', tr, hrun, he, hy⟩ := hn s x ⟨hx, hb⟩
+    refine ⟨by simpa only [ite_eq_right hb] using hvn,
+      y, a, s', tr, by simpa only [ite_eq_right hb] using hrun,
       he.branch_neg (fun h => hb ((hc s x hx).mp h)), hy⟩
 
 /-- Charge initialization or argument computation preceding a certified client. The prefix
@@ -166,8 +193,8 @@ theorem prepend {entry : D.State → Data r → Prop} {init : Code B r}
     Refines w pre p post budget' (.seq init code) := by
   intro s x hx
   obtain ⟨y, hi, hy⟩ := hinit s x hx
-  obtain ⟨z, a, s', tr, hrun, he, hz⟩ := h s y hy
-  exact ⟨z, a, s', tr, hrun, (hi.seq he).mono (ht s x hx y hy), hz⟩
+  obtain ⟨hvp, z, a, s', tr, hrun, he, hz⟩ := h s y hy
+  exact ⟨hvp, z, a, s', tr, hrun, (hi.seq he).mono (ht s x hx y hy), hz⟩
 
 /-- Discharge a client's abstract postcondition using an independently proved semantic contract. -/
 theorem hoare {abstractPre : D.State → Prop} {abstractPost : α → D.State → Prop}
@@ -175,8 +202,8 @@ theorem hoare {abstractPre : D.State → Prop} {abstractPost : α → D.State �
     (hp : ∀ s x, pre s x → abstractPre s) :
     Refines w pre p (fun a s y => post a s y ∧ abstractPost a s) budget code := by
   intro s x hx
-  obtain ⟨y, a, s', tr, hrun, he, hy⟩ := h s x hx
-  exact ⟨y, a, s', tr, hrun, he, hy, (hspec s (hp s x hx)).2 a s' tr hrun⟩
+  obtain ⟨hvp, y, a, s', tr, hrun, he, hy⟩ := h s x hx
+  exact ⟨hvp, y, a, s', tr, hrun, he, hy, (hspec s (hp s x hx)).2 a s' tr hrun⟩
 
 /-- A certificate produces a real halting machine execution realizing a valid `D.ClientRun`. -/
 theorem executes_demonic (h : Refines w pre p post budget code) (out : Fin r) (encode : α → ℕ)
@@ -185,17 +212,17 @@ theorem executes_demonic (h : Refines w pre p post budget code) (out : Fin r) (e
     ∃ a s' tr n, D.ClientRun s p a s' tr ∧
       Executes w (code.program out) ⟨0, x⟩ (encode a) n ∧
       n ≤ budget s x + 1 := by
-  obtain ⟨y, a, s', tr, hrun, ⟨n, hn, he⟩, hy⟩ := h s x hx
+  obtain ⟨_, y, a, s', tr, hrun, ⟨n, hn, he⟩, hy⟩ := h s x hx
   refine ⟨a, s', tr, n + 1, hrun, ?_, Nat.add_le_add_right hn 1⟩
   simpa only [hout a s' y hy] using he.executes out
 
 /-- On a deterministic specification (`[D.HasStepFn f]`), a certificate produces a real halting
-machine execution returning `encode (D.runClient s p).1`. -/
+machine execution returning `encode (D.clientResult s p)`. -/
 theorem executes {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
     (h : Refines w pre p post budget code) (out : Fin r) (encode : α → ℕ)
     (hout : ∀ a s y, post a s y → y.regs out = encode a) {s : D.State} {x : Data r}
     (hx : pre s x) :
-    ∃ n, Executes w (code.program out) ⟨0, x⟩ (encode (D.runClient s p).1) n ∧
+    ∃ n, Executes w (code.program out) ⟨0, x⟩ (encode (D.clientResult s p)) n ∧
       n ≤ budget s x + 1 := by
   obtain ⟨a, s', tr, n, hrun, hexec, hn⟩ := h.executes_demonic out encode hout hx
   obtain ⟨_, rfl, _, _⟩ := (D.clientRun_iff_runClient s p a s' tr).mp hrun
@@ -215,7 +242,8 @@ theorem call {P : DynamicProgram D r} (C : DynamicCertificate P w) (o : D.Op)
   intro s x hx
   obtain ⟨hr, hv⟩ := hp s x hx
   obtain ⟨y, s', a, n, he, hstep, ha, hy⟩ := C.execute o hr hv
-  exact ⟨y, a, s', [⟨o, a, s'⟩],
+  exact ⟨.liftBind o (fun a => .pure a) hv (fun s'' a' _ => .pure s'' a'),
+    y, a, s', [⟨o, a, s'⟩],
     .liftBind o (fun a => .pure a) a hv hstep (.pure s' a),
     (hprep s x hx).seq ⟨n, hbody s x hx y n he, he⟩, hy, ha⟩
 

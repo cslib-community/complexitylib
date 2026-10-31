@@ -144,8 +144,8 @@ def implementation : Module (queue α) (stackPair α) :=
         cases front with
         | cons a front => exact ⟨rfl, rfl⟩
         | nil =>
-          simp only [methods, bind, Spec.runClient_liftBind, stackPair,
-            stack, List.tail_nil, List.head?_nil]
+          simp only [methods, bind, Spec.clientResult, Spec.clientState, Spec.runClient_liftBind,
+            stackPair, stack, List.tail_nil, List.head?_nil]
           rw [Spec.runClient_bind, transfer_run]
           simp)
 

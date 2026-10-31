@@ -73,7 +73,9 @@ theorem rep_empty : Rep (∅ : Finset α) .nil := ⟨trivial, rfl⟩
 def realization : Realization (spec α) Exec :=
   Realization.ofFn
     (rep := Rep)
-    (total := fun o _ _ => ⟨(step _ o).2.1, (step _ o).1, (step _ o).2.2, rfl⟩)
+    (total := fun {_ t} o _ _ =>
+      match h : step t o with
+      | (t', a, n) => ⟨a, t', n, h⟩)
     (correct := by
       intro s t o a t' n hr _ he
       obtain ⟨ht, rfl⟩ := hr

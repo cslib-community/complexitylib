@@ -122,10 +122,10 @@ include A in
 /-- Adaptive clients retain both initial and final representation credit on deterministic
 specifications. -/
 theorem client {p : D.Client α} {s : D.State} {c c' : C} {a : α} {traces : List Trace}
-    (hr : R.rep s c) (hv : D.ValidHistory s (D.runClient s p).2.2)
+    (hr : R.rep s c) (hv : D.ValidHistory s (D.clientHistory s p))
     (he : Executes exec p c a c' traces) :
-    total weight traces + potential (D.runClient s p).2.1 c' ≤
-      D.totalCost charge s (D.runClient s p).2.2 + potential s c := by
+    total weight traces + potential (D.clientState s p) c' ≤
+      D.totalCost charge s (D.clientHistory s p) + potential s c := by
   obtain ⟨s', tr, hrun, _, _, hpot⟩ :=
     A.demonic hr ((D.demonicValid_iff_validHistory_runClient s p).mpr hv) he
   obtain ⟨_, _, rfl, rfl⟩ := (D.clientRun_iff_runClient s p a s' tr).mp hrun
@@ -134,31 +134,31 @@ theorem client {p : D.Client α} {s : D.State} {c c' : C} {a : α} {traces : Lis
 include A in
 /-- Existence and semantic correctness are inherited independently from the realization. -/
 theorem exists_executes (p : D.Client α) {s : D.State} {c : C} (hr : R.rep s c)
-    (hv : D.ValidHistory s (D.runClient s p).2.2) :
-    ∃ c' traces, Executes exec p c (D.runClient s p).1 c' traces ∧
-      R.rep (D.runClient s p).2.1 c' ∧
-      total weight traces + potential (D.runClient s p).2.1 c' ≤
-        D.totalCost charge s (D.runClient s p).2.2 + potential s c := by
+    (hv : D.ValidHistory s (D.clientHistory s p)) :
+    ∃ c' traces, Executes exec p c (D.clientResult s p) c' traces ∧
+      R.rep (D.clientState s p) c' ∧
+      total weight traces + potential (D.clientState s p) c' ≤
+        D.totalCost charge s (D.clientHistory s p) + potential s c := by
   obtain ⟨c', traces, he, hr'⟩ := R.exists_executes p hr hv
   exact ⟨c', traces, he, hr', A.client hr hv he⟩
 
 /-- Adaptive client potential bound for a uniform constant per-operation amortized charge. -/
 theorem client_const {K : Nat} (A : Amortized R weight potential (fun _ _ => K))
     {p : D.Client α} {s : D.State} {c c' : C} {a : α} {traces : List Trace}
-    (hr : R.rep s c) (hv : D.ValidHistory s (D.runClient s p).2.2)
+    (hr : R.rep s c) (hv : D.ValidHistory s (D.clientHistory s p))
     (he : Executes exec p c a c' traces) :
-    total weight traces + potential (D.runClient s p).2.1 c' ≤
-      (D.runClient s p).2.2.length * K + potential s c := by
+    total weight traces + potential (D.clientState s p) c' ≤
+      (D.clientHistory s p).length * K + potential s c := by
   simpa only [Spec.totalCost_const] using A.client hr hv he
 
 /-- Existence, correctness, and potential bound for a uniform constant amortized charge. -/
 theorem exists_executes_const {K : Nat} (A : Amortized R weight potential (fun _ _ => K))
     (p : D.Client α) {s : D.State} {c : C} (hr : R.rep s c)
-    (hv : D.ValidHistory s (D.runClient s p).2.2) :
-    ∃ c' traces, Executes exec p c (D.runClient s p).1 c' traces ∧
-      R.rep (D.runClient s p).2.1 c' ∧
-      total weight traces + potential (D.runClient s p).2.1 c' ≤
-        (D.runClient s p).2.2.length * K + potential s c := by
+    (hv : D.ValidHistory s (D.clientHistory s p)) :
+    ∃ c' traces, Executes exec p c (D.clientResult s p) c' traces ∧
+      R.rep (D.clientState s p) c' ∧
+      total weight traces + potential (D.clientState s p) c' ≤
+        (D.clientHistory s p).length * K + potential s c := by
   obtain ⟨c', traces, he, hr'⟩ := R.exists_executes p hr hv
   exact ⟨c', traces, he, hr', A.client_const hr hv he⟩
 

@@ -149,9 +149,9 @@ theorem correct_ofFn {s : D.State} {c c' : C} {o : D.Op} {a : D.Result o} {trace
 /-- From related states, a client whose history is admissible has a native execution that returns
 the specified result and ends in a state related to the specified final state. -/
 theorem exists_executes (p : D.Client α) {s : D.State} {c : C} (hr : R.rep s c)
-    (hv : D.ValidHistory s (D.runClient s p).2.2) :
-    ∃ c' traces, Executes exec p c (D.runClient s p).1 c' traces ∧
-      R.rep (D.runClient s p).2.1 c' := by
+    (hv : D.ValidHistory s (D.clientHistory s p)) :
+    ∃ c' traces, Executes exec p c (D.clientResult s p) c' traces ∧
+      R.rep (D.clientState s p) c' := by
   obtain ⟨a, c', traces, s', tr, he, hrun, hr', _⟩ :=
     R.exists_demonic p hr ((D.demonicValid_iff_validHistory_runClient s p).mpr hv)
   obtain ⟨_, rfl, rfl, _⟩ := (D.clientRun_iff_runClient s p a s' tr).mp hrun
@@ -160,9 +160,9 @@ theorem exists_executes (p : D.Client α) {s : D.State} {c : C} (hr : R.rep s c)
 /-- From related states, every native execution of a client whose history is admissible returns
 the specified result and ends in a state related to the specified final state. -/
 theorem correct_client {p : D.Client α} {s : D.State} {c c' : C} {a : α}
-    {traces : List τ} (hr : R.rep s c) (hv : D.ValidHistory s (D.runClient s p).2.2)
+    {traces : List τ} (hr : R.rep s c) (hv : D.ValidHistory s (D.clientHistory s p))
     (he : Executes exec p c a c' traces) :
-    a = (D.runClient s p).1 ∧ R.rep (D.runClient s p).2.1 c' := by
+    a = D.clientResult s p ∧ R.rep (D.clientState s p) c' := by
   obtain ⟨s', tr, hrun, hr', _⟩ :=
     R.correct_demonic hr ((D.demonicValid_iff_validHistory_runClient s p).mpr hv) he
   obtain ⟨_, rfl, rfl, _⟩ := (D.clientRun_iff_runClient s p a s' tr).mp hrun

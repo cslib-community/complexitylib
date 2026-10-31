@@ -42,7 +42,8 @@ The relational semantics is **demonic** for callers and **angelic** for implemen
   clients, relational client runs, and demonic client admissibility.
 * `Spec.ofFn`, `Spec.HasStepFn`, `Spec.stepFn`: constructor and typeclass for deterministic
   specifications.
-* `Spec.toFLTS`, `Spec.run`, `Spec.ValidHistory`, `Spec.totalCost`, `Spec.runClient`, `eval`:
+* `Spec.toFLTS`, `Spec.run`, `Spec.ValidHistory`, `Spec.totalCost`, `Spec.runClient`,
+  `Spec.clientResult`, `Spec.clientState`, `Spec.clientHistory`, `eval`:
   functional execution and history interpretation for deterministic specifications.
 * `product`: independent abstract components; concrete independence is a realization obligation.
 
@@ -749,9 +750,23 @@ theorem totalCost_one (s : D.State) (os : List D.Op) :
 def runClient {α : Type y} (s : D.State) : D.Client α → α × D.State × List D.Op
   | .pure a => (a, s, [])
   | .liftBind o k =>
-    let next := D.stepFn s o
-    let rest := runClient next.1 (k next.2)
-    (rest.1, rest.2.1, o :: rest.2.2)
+    let (nextState, ans) := D.stepFn s o
+    let (v, s', os) := runClient nextState (k ans)
+    (v, s', o :: os)
+
+/-- Value returned by a deterministic client run `D.runClient s p`. -/
+abbrev clientResult {α : Type y} (s : D.State) (p : D.Client α) : α :=
+  (D.runClient s p).1
+
+/-- Final abstract state reached by a deterministic client run `D.runClient s p`. -/
+abbrev clientState {α : Type y} (s : D.State) (p : D.Client α) : D.State :=
+  let (_, s', _) := D.runClient s p
+  s'
+
+/-- Operation history selected by a deterministic client run `D.runClient s p`. -/
+abbrev clientHistory {α : Type y} (s : D.State) (p : D.Client α) : List D.Op :=
+  let (_, _, os) := D.runClient s p
+  os
 
 /-- Interpreting a pure client returns its value, preserves the state, and records no operations. -/
 @[simp, nolint simpNF] theorem runClient_pure {α : Type y} (s : D.State) (a : α) :
@@ -772,9 +787,8 @@ and answer. -/
 @[simp, nolint simpNF] theorem runClient_liftBind {α : Type y} (s : D.State) (o : D.Op)
     (k : D.Result o → D.Client α) :
     D.runClient s (@PFunctor.FreeM.liftBind (no_index D.signature) α o k) =
-      ((D.runClient (D.stepFn s o).1 (k (D.stepFn s o).2)).1,
-       (D.runClient (D.stepFn s o).1 (k (D.stepFn s o).2)).2.1,
-       o :: (D.runClient (D.stepFn s o).1 (k (D.stepFn s o).2)).2.2) := rfl
+      let (v, s', os) := D.runClient (D.stepFn s o).1 (k (D.stepFn s o).2)
+      (v, s', o :: os) := rfl
 
 /-- Interpreting a lifted operation bound to a continuation steps the specification and continues
 from the resulting state and answer. -/
@@ -783,9 +797,8 @@ from the resulting state and answer. -/
     D.runClient s
         (@PFunctor.FreeM.bind (no_index D.signature) (no_index (D.Result o)) α
           (@PFunctor.FreeM.lift (no_index D.signature) o) k) =
-      ((D.runClient (D.stepFn s o).1 (k (D.stepFn s o).2)).1,
-       (D.runClient (D.stepFn s o).1 (k (D.stepFn s o).2)).2.1,
-       o :: (D.runClient (D.stepFn s o).1 (k (D.stepFn s o).2)).2.2) := rfl
+      let (v, s', os) := D.runClient (D.stepFn s o).1 (k (D.stepFn s o).2)
+      (v, s', o :: os) := rfl
 
 /-- Interpreting a lifted operation monadically bound to a continuation steps the specification and
 continues from the resulting state and answer. -/
@@ -794,13 +807,12 @@ continues from the resulting state and answer. -/
     D.runClient s
         (@Bind.bind (no_index D.Client) _ (no_index (D.Result o)) α
           (@PFunctor.FreeM.lift (no_index D.signature) o) k) =
-      ((D.runClient (D.stepFn s o).1 (k (D.stepFn s o).2)).1,
-       (D.runClient (D.stepFn s o).1 (k (D.stepFn s o).2)).2.1,
-       o :: (D.runClient (D.stepFn s o).1 (k (D.stepFn s o).2)).2.2) := rfl
+      let (v, s', os) := D.runClient (D.stepFn s o).1 (k (D.stepFn s o).2)
+      (v, s', o :: os) := rfl
 
 /-- The actual history chosen by an adaptive client has its computed final state. -/
 theorem run_runClient {α : Type y} (p : D.Client α) (s : D.State) :
-    (D.run s (D.runClient s p).2.2).1 = (D.runClient s p).2.1 := by
+    (D.run s (D.clientHistory s p)).1 = D.clientState s p := by
   induction p generalizing s with
   | pure a => rfl
   | liftBind o k ih => exact ih (D.stepFn s o).2 (D.stepFn s o).1
@@ -823,9 +835,9 @@ theorem validHistory_append (s : D.State) (xs ys : List D.Op) :
 /-- Sequential interpretation concatenates the histories actually selected by the client. -/
 theorem runClient_bind (p : D.Client α) (k : α → D.Client β) (s : D.State) :
     D.runClient s (p.bind k) =
-      let first := D.runClient s p
-      let rest := D.runClient first.2.1 (k first.1)
-      (rest.1, rest.2.1, first.2.2 ++ rest.2.2) := by
+      let (v₁, s₁, os₁) := D.runClient s p
+      let (v₂, s₂, os₂) := D.runClient s₁ (k v₁)
+      (v₂, s₂, os₁ ++ os₂) := by
   induction p generalizing s with
   | pure a => rfl
   | liftBind o cont ih =>
@@ -932,14 +944,15 @@ theorem validTranscript_iff_run (s : D.State) (tr : D.Transcript) (s' : D.State)
       exact ⟨hv_o, Prod.mk.eta, (ih (D.stepFn s o).1).mpr ⟨hv_rest, rfl, htr_tail⟩⟩
 
 /-- On a deterministic specification (`[D.HasStepFn f]`), demonic client admissibility
-`DemonicValid s p` is equivalent to `D.ValidHistory s (D.runClient s p).2.2`. -/
+`DemonicValid s p` is equivalent to `D.ValidHistory s (D.clientHistory s p)`. -/
 theorem demonicValid_iff_validHistory_runClient (s : D.State) (p : D.Client α) :
-    D.DemonicValid s p ↔ D.ValidHistory s (D.runClient s p).2.2 := by
+    D.DemonicValid s p ↔ D.ValidHistory s (D.clientHistory s p) := by
   induction p generalizing s with
   | pure a =>
     exact ⟨fun _ => trivial, fun _ => .pure s a⟩
   | liftBind o k ih =>
-    rw [demonicValid_liftBind_iff, runClient_liftBind, validHistory_cons]
+    rw [demonicValid_liftBind_iff, show D.clientHistory s (.liftBind o k) =
+      o :: D.clientHistory (D.stepFn s o).1 (k (D.stepFn s o).2) from rfl, validHistory_cons]
     refine and_congr_right fun _ => ?_
     constructor
     · intro h
@@ -954,9 +967,9 @@ theorem demonicValid_iff_validHistory_runClient (s : D.State) (p : D.Client α) 
 
 /-- Every client with an admissible deterministic history executes canonically. -/
 theorem clientRun_canonical (s : D.State) (p : D.Client α)
-    (hv : D.ValidHistory s (D.runClient s p).2.2) :
-    D.ClientRun s p (D.runClient s p).1 (D.runClient s p).2.1
-      (D.canonicalTranscript s (D.runClient s p).2.2) := by
+    (hv : D.ValidHistory s (D.clientHistory s p)) :
+    D.ClientRun s p (D.clientResult s p) (D.clientState s p)
+      (D.canonicalTranscript s (D.clientHistory s p)) := by
   induction p generalizing s with
   | pure a =>
     exact .pure s a
@@ -967,10 +980,10 @@ theorem clientRun_canonical (s : D.State) (p : D.Client α)
 private theorem clientRun_imp_ofFn {s : D.State} {p : D.Client α}
     {v : α} {s' : D.State} {tr : D.Transcript}
     (h : D.ClientRun s p v s' tr) :
-    D.ValidHistory s (D.runClient s p).2.2 ∧
-    v = (D.runClient s p).1 ∧
-    s' = (D.runClient s p).2.1 ∧
-    tr = D.canonicalTranscript s (D.runClient s p).2.2 := by
+    D.ValidHistory s (D.clientHistory s p) ∧
+    v = D.clientResult s p ∧
+    s' = D.clientState s p ∧
+    tr = D.canonicalTranscript s (D.clientHistory s p) := by
   induction h with
   | pure s a =>
     exact ⟨trivial, rfl, rfl, rfl⟩
@@ -983,14 +996,14 @@ private theorem clientRun_imp_ofFn {s : D.State} {p : D.Client α}
     exact ⟨⟨hv, hv_rest⟩, rfl, rfl, rfl⟩
 
 /-- On a deterministic specification (`[D.HasStepFn f]`), `ClientRun` collapses uniquely to
-`D.runClient` and `D.ValidHistory`. -/
+`D.clientResult`, `D.clientState`, `D.clientHistory`, and `D.ValidHistory`. -/
 theorem clientRun_iff_runClient (s : D.State) (p : D.Client α) (v : α) (s' : D.State)
     (tr : D.Transcript) :
     D.ClientRun s p v s' tr ↔
-      D.ValidHistory s (D.runClient s p).2.2 ∧
-      v = (D.runClient s p).1 ∧
-      s' = (D.runClient s p).2.1 ∧
-      tr = D.canonicalTranscript s (D.runClient s p).2.2 :=
+      D.ValidHistory s (D.clientHistory s p) ∧
+      v = D.clientResult s p ∧
+      s' = D.clientState s p ∧
+      tr = D.canonicalTranscript s (D.clientHistory s p) :=
   ⟨D.clientRun_imp_ofFn, fun ⟨hv, h₁, h₂, h₃⟩ =>
     h₁ ▸ h₂ ▸ h₃ ▸ D.clientRun_canonical s p hv⟩
 
@@ -1002,7 +1015,7 @@ variable {D : Spec.{u, v, w}} {f : (s : D.State) → (o : D.Op) → D.State × D
 /-- Observe results and state without displaying the operation history. -/
 def eval (D : Spec.{u, v, w}) {f : (s : D.State) → (o : D.Op) → D.State × D.Result o}
     [D.HasStepFn f] (p : D.Client α) (s : D.State) : α × D.State :=
-  ((D.runClient s p).1, (D.runClient s p).2.1)
+  (D.clientResult s p, D.clientState s p)
 
 /-- Evaluating a pure client returns its value and leaves the state unchanged. -/
 @[simp, nolint simpNF] theorem eval_pure (s : D.State) (a : α) :
