@@ -5,9 +5,11 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.QueryComplexity.Quantum.UnknownSearch
+import Complexity.Computability.QueryComplexity.Quantum.Polynomial
 
-/-! Search with an unknown number of marked items: concrete instances with `N = 4` items, so
-`m = ⌊√4⌋ + 1 = 3` iteration counts and `⌊√4⌋ = 2` queries. -/
+/-! Search with an unknown number of marked items, and deciding `OR_N`: concrete instances with
+`N = 4` items. Search uses `m = ⌊√4⌋ + 1 = 3` iteration counts and `⌊√4⌋ = 2` queries; the
+decision algorithm uses the range `orRange 4 = 12` and `24` queries. -/
 
 namespace ComplexityTests.QuantumUnknownSearch
 
@@ -94,5 +96,49 @@ example :
     rw [show 2 * (π / 6) = π / 3 by ring, Real.sin_pi_div_three]
     positivity)
   exact_mod_cast this
+
+/-! ### Deciding `OR_4` -/
+
+theorem orRange_four : orRange 4 = 12 := by
+  rw [orRange, show 4 = 2 * 2 from rfl, Nat.sqrt_eq]
+
+-- The all-zero input is accepted with probability `0`.
+example : measureProb (run (orSearch 4) (orSearchInit 4) none4 (orRange 4 + orRange 4))
+    (orAccept 4) = 0 := by
+  rw [measureProb_run_orSearch (by norm_num), show weight none4 = 0 by decide, searchAngle_zero]
+  simp
+
+-- With one or two marked items, each stage succeeds with probability `1/2` by Lemma 2
+-- (`sin(4 · 12 θ) = 0` for `θ = π / 6` and `θ = π / 4`), so the input is accepted with
+-- probability `1 - (1/2)² = 3/4`.
+example : measureProb (run (orSearch 4) (orSearchInit 4) one4 (orRange 4 + orRange 4))
+    (orAccept 4) = 3 / 4 := by
+  have hP : (∑ j ∈ range (orRange 4), Real.sin ((2 * j + 1) * searchAngle 4 (weight one4)) ^ 2) /
+      (orRange 4 : ℝ) = 1 / 2 := by
+    rw [orRange_four, show weight one4 = 1 by decide, searchAngle_four_one,
+      sum_sin_sq_div _ (by norm_num) (by
+        rw [show 2 * (π / 6) = π / 3 by ring, Real.sin_pi_div_three]; positivity),
+      show 4 * ((12 : ℕ) : ℝ) * (π / 6) = (8 : ℕ) * π by push_cast; ring, Real.sin_nat_mul_pi]
+    ring
+  rw [measureProb_run_orSearch (by norm_num), hP]
+  norm_num
+
+example : measureProb (run (orSearch 4) (orSearchInit 4) two4 (orRange 4 + orRange 4))
+    (orAccept 4) = 3 / 4 := by
+  have hP : (∑ j ∈ range (orRange 4), Real.sin ((2 * j + 1) * searchAngle 4 (weight two4)) ^ 2) /
+      (orRange 4 : ℝ) = 1 / 2 := by
+    rw [orRange_four, show weight two4 = 2 by decide, searchAngle_four_two,
+      sum_sin_sq_div _ (by norm_num) (by
+        rw [show 2 * (π / 4) = π / 2 by ring, Real.sin_pi_div_two]; norm_num),
+      show 4 * ((12 : ℕ) : ℝ) * (π / 4) = (12 : ℕ) * π by push_cast; ring, Real.sin_nat_mul_pi]
+    ring
+  rw [measureProb_run_orSearch (by norm_num), hP]
+  norm_num
+
+-- `orSearch` satisfies the hypothesis of the polynomial-method lower bound, a non-vacuous
+-- instance of it: its `T = 2 · orRange N` queries satisfy `N ≤ 16 T²`.
+example (N : ℕ) (hN : 0 < N) : N ≤ 16 * (orRange N + orRange N) ^ 2 :=
+  card_le_sixteen_mul_sq_of_threshold_one_right (orSearch N) (norm_orSearchInit hN) _
+    (orAccept N) (abs_measureProb_run_orSearch_sub_le hN)
 
 end ComplexityTests.QuantumUnknownSearch

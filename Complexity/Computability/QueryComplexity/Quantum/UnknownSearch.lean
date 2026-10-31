@@ -8,8 +8,9 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.QueryComplexity.Quantum.Grover
-public import Complexity.Computability.QueryComplexity.Quantum.Controlled
-public import Complexity.Foundations.Data.BitString.Weight
+public import Complexity.Computability.QueryComplexity.Quantum.Composition
+public import Complexity.Foundations.Data.BitString.Sign
+public import Complexity.Foundations.Data.BitString.Threshold
 
 /-!
 # Quantum search with an unknown number of marked items
@@ -18,7 +19,8 @@ Grover's algorithm (`Cslib.Quantum.grover`) finds one of `t` marked items among 
 `O(√(N / t))` queries when `t` is known, but a fixed number of iterations can fail badly for an
 unknown `t`. Boyer, Brassard, Høyer and Tapp choose the number of iterations at random
 [Boyer, Brassard, Høyer, Tapp][BoyerBrassardHoyerTapp1998]. This file formalizes their analysis in
-the query model of `Cslib.Quantum.run` and the resulting fixed-budget search algorithm.
+the query model of `Cslib.Quantum.run`, the resulting fixed-budget search algorithm, and an
+algorithm computing `OR_N` with error `1/3` and `O(√N)` queries.
 
 **Grover's algorithm with `t` marked items.** Let `θ = searchAngle N t`, so `sin² θ = t / N`.
 After `k` queries every marked item has amplitude `sin((2k + 1) θ) / √t` and every other item
@@ -41,26 +43,41 @@ With `m = ⌊√N⌋ + 1` it makes `⌊√N⌋ ≤ √N` queries from a unit ini
 item with probability at least `1/4` on every input with at least one marked item
 (`Cslib.Quantum.randomGrover_search`), whatever their number.
 
+**Deciding `OR_N`.** With the larger range `m = 4 (⌊√N⌋ + 1)` (`Cslib.Quantum.orRange`), so that
+`m sin 2θ ≥ 4`, a marked item is found with probability at least `7/16`. A stage
+(`Cslib.Quantum.orStage`) runs `randomGrover` and then checks the measured index with one more
+query (`Cslib.Quantum.check`), so it accepts with exactly the success probability `P`, which is `0`
+on the all-zero input. Running the stage twice (`Cslib.Quantum.orSearch`, `Cslib.Quantum.twice`)
+and accepting when either check succeeds gives acceptance probability `1 - (1 - P)²`
+(`Cslib.Quantum.measureProb_run_orSearch`): `0` if `OR_N(x) = 0`, and at least
+`1 - (9/16)² > 2/3` if `OR_N(x) = 1`. So `8 (⌊√N⌋ + 1) ≤ 8√N + 8` queries compute `OR_N` with
+error at most `1/3` (`Cslib.Quantum.orSearch_spec`), matching the polynomial-method lower bound
+`N ≤ 16 T²` (`Cslib.Quantum.card_le_sixteen_mul_sq_of_threshold_one_right`) up to a constant.
+
 **Source mapping** (numbering of arXiv:quant-ph/9605034v1). The closed form is equation (3) of §3,
 where `k_j` and `ℓ_j` are the amplitudes of a marked and an unmarked item after `j` iterations and
-`sin² θ = t / N`; here it is proved for every `0 ≤ t ≤ N`. In §4, Lemma 1 is the sum
+`sin² θ = t / N`; here it is proved for every `0 ≤ t ≤ N`. Queries are counted as in
+`Cslib.Quantum.run`, one application of the phase oracle per Grover iteration, whereas BBHT count
+two table look-ups per iteration with a bit oracle (§3.1). In §4, Lemma 1 is the sum
 `∑_{j < m} cos(α + 2βj)`, of which `two_mul_sin_mul_sum_cos` is the special case `α = β` stated
-there, multiplied out by `2 sin α`. Lemma 2 is `sum_sin_sq_div` and, for its last sentence,
-`le_sum_sin_sq`. BBHT then search with a range `m` growing by a factor `λ = 6/5` after each failed
-round, observe and check the outcome, and prove an expected `O(√(N / t))` time for
-`1 ≤ t ≤ 3N/4` (Theorem 3); they dispose of `t > 3N/4` by classical sampling and of `t = 0` by a
-time-out. Here the range is fixed, which gives a single algorithm with a fixed query budget
-`⌊√N⌋`, and its success probability is bounded for every `t ≥ 1` at once, including `t > 3N/4`.
-This fixed-budget packaging, the bound for `1 ≤ t < N` from `N ≤ m²`, and the realization of the
-random `j` by a classical register in the workspace are not from the source. The success
-probability is the constant `1/4`; amplifying it to error `1/3`, and the decision version for
-`OR_N`, need a check query and repetition and are not done here.
+there, multiplied out by `2 sin α`. Lemma 2 is `sum_sin_sq_div`, and its bound `P_m ≥ 1/4` for
+`m ≥ 1 / sin 2θ` follows from `le_sum_sin_sq`. BBHT then search with a range `m` growing by a
+factor `λ = 6/5` after each failed round, observe and check the outcome, and prove an expected
+`O(√(N / t))` time for `1 ≤ t ≤ 3N/4` (Theorem 3); they dispose of `t > 3N/4` by classical
+sampling and of `t = 0` by a time-out. Here the range is fixed, which gives a single algorithm
+with a fixed query budget `⌊√N⌋`, and its success probability is bounded for every `t ≥ 1` at
+once, including `t > 3N/4`. This fixed-budget packaging, the bound for `1 ≤ t < N` from
+`c² N ≤ m²`, the realization of the random `j` by a classical register in the workspace, and the
+decision algorithm for `OR_N` (a check query and two independent stages, with its constants) are
+not from the source; they are original here.
 
 ## Main definitions
 
 * `Cslib.Quantum.searchAngle`: the angle `θ` with `sin² θ = t / N`.
 * `Cslib.Quantum.randomGrover`, `Cslib.Quantum.randomGroverInit`: search with a random number of
   Grover iterations below `m`.
+* `Cslib.Quantum.orSearch`, `Cslib.Quantum.orSearchInit`, `Cslib.Quantum.orAccept`: the decision
+  algorithm for `OR_N`.
 
 ## Main results
 
@@ -70,8 +87,11 @@ probability is the constant `1/4`; amplifying it to error `1/3`, and the decisio
   `Cslib.Quantum.le_sum_sin_sq`: Lemmas 1 and 2 of [Boyer, Brassard, Høyer,
   Tapp][BoyerBrassardHoyerTapp1998].
 * `Cslib.Quantum.sum_regProb_run_randomGrover`: the success probability of `randomGrover`.
+* `Cslib.Quantum.le_sum_regProb_run_randomGrover`: if `c² N ≤ m²`, a marked item is found with
+  probability at least `1/2 - 1/(4c)`.
 * `Cslib.Quantum.randomGrover_search`: `⌊√N⌋` queries find a marked item with probability at
   least `1/4`, for every number of marked items.
+* `Cslib.Quantum.orSearch_spec`: `8 (⌊√N⌋ + 1)` queries compute `OR_N` with error at most `1/3`.
 
 ## References
 
@@ -387,6 +407,28 @@ theorem norm_randomGroverInit (hN : 0 < N) {m : ℕ} (hm : 0 < m) : ‖randomGro
     field_simp
   nlinarith [norm_nonneg (randomGroverInit N m)]
 
+/-- After `T ≥ m - 1` queries, the slice of `randomGrover` where the register holds `j` is the
+state of Grover's algorithm after `j` queries, parked and scaled by `1 / √m`. -/
+theorem slice_run_randomGrover (hN : 0 < N) {m T : ℕ} (hT : m ≤ T + 1) (x : Fin N → Bool)
+    (j : Fin m) :
+    slice j (run (randomGrover N m) (randomGroverInit N m) x T) =
+      (((Real.sqrt m)⁻¹ : ℝ) : ℂ) • flipCtrl (run (grover N) (uniform N) x j) := by
+  have hctrl : ∀ i' w, (run (grover N) (uniform N) x j).ofLp (i', false, w) = 0 := by
+    intro i' w
+    simp [run_grover_of_weight hN]
+  rw [show run (randomGrover N m) = run (fun s => controlled fun (j : Fin m) =>
+      park (j : ℕ) (grover N) s) from rfl, slice_run, slice_randomGroverInit, run_smul,
+    run_park hctrl (by omega)]
+
+/-- After `T ≥ m - 1` queries every branch of `randomGrover` is parked: the control bit is `0`. -/
+theorem run_randomGrover_ctrl (hN : 0 < N) {m T : ℕ} (hT : m ≤ T + 1) (x : Fin N → Bool)
+    (i : Fin N) (w : Unit × Fin m) :
+    (run (randomGrover N m) (randomGroverInit N m) x T).ofLp (i, true, w) = 0 := by
+  have := congrArg (fun φ => φ.ofLp (i, true, w.1)) (slice_run_randomGrover hN hT x w.2)
+  simp only [slice_apply, PiLp.smul_apply, flipCtrl_apply, smul_eq_mul, Bool.not_true,
+    run_grover_of_weight hN, Bool.false_eq_true, ite_false, mul_zero] at this
+  exact this
+
 /-- **The success probability of a random number of iterations**: after `T ≥ m - 1` queries,
 `randomGrover` measures a marked item with probability
 `(1 / m) ∑_{j < m} sin²((2j + 1) θ)`, the average over `j < m` of the success probability of `j`
@@ -398,12 +440,7 @@ theorem sum_regProb_run_randomGrover (hN : 0 < N) {m T : ℕ} (hT : m ≤ T + 1)
       (run (randomGrover N m) (randomGroverInit N m) x T)) i =
         (m : ℝ)⁻¹ * regProb (run (grover N) (uniform N) x j) i := by
     intro j i
-    have hctrl : ∀ i' w, (run (grover N) (uniform N) x j).ofLp (i', false, w) = 0 := by
-      intro i' w
-      simp [run_grover_of_weight hN]
-    rw [show run (randomGrover N m) = run (fun s => controlled fun (j : Fin m) =>
-        park (j : ℕ) (grover N) s) from rfl, slice_run, slice_randomGroverInit,
-      run_smul, run_park hctrl (by omega), regProb_smul, regProb_flipCtrl, Complex.norm_real,
+    rw [slice_run_randomGrover hN hT, regProb_smul, regProb_flipCtrl, Complex.norm_real,
       Real.norm_eq_abs, sq_abs, inv_pow, Real.sq_sqrt (Nat.cast_nonneg m)]
   simp only [regProb_eq_sum_slice, hslice]
   rw [sum_comm, ← Fin.sum_univ_eq_sum_range (fun j => Real.sin ((2 * j + 1) *
@@ -412,32 +449,31 @@ theorem sum_regProb_run_randomGrover (hN : 0 < N) {m T : ℕ} (hT : m ≤ T + 1)
   rw [← mul_sum, sum_regProb_run_grover hN, inv_mul_eq_div]
 
 /-- **Quantum search with an unknown number of marked items** [Boyer, Brassard, Høyer,
-Tapp][BoyerBrassardHoyerTapp1998]: if `N ≤ m²`, then on every input with at least one marked
-item, `randomGrover` measures a marked item with probability at least `1/4` after `m - 1`
-queries. -/
-theorem one_div_four_le_sum_regProb_run_randomGrover (hN : 0 < N) {m : ℕ} (hm : N ≤ m ^ 2)
-    (x : Fin N → Bool) (hx : ∃ i, x i = true) :
-    1 / 4 ≤ ∑ i with x i = true,
+Tapp][BoyerBrassardHoyerTapp1998]: if `c² N ≤ m²` with `c > 0`, then on every input with at least
+one marked item, `randomGrover` measures a marked item with probability at least `1/2 - 1/(4c)`
+after `m - 1` queries. -/
+theorem le_sum_regProb_run_randomGrover (hN : 0 < N) {m : ℕ} {c : ℝ} (hc : 0 < c)
+    (hm : c ^ 2 * N ≤ m ^ 2) (x : Fin N → Bool) (hx : ∃ i, x i = true) :
+    1 / 2 - 1 / (4 * c) ≤ ∑ i with x i = true,
       regProb (run (randomGrover N m) (randomGroverInit N m) x (m - 1)) i := by
-  have hm0 : 0 < m := by
-    rcases Nat.eq_zero_or_pos m with rfl | h
-    · simp at hm; omega
-    · exact h
-  have hm' : (0 : ℝ) < m := by exact_mod_cast hm0
+  have hm' : (0 : ℝ) < m := by
+    have : (0 : ℝ) < c ^ 2 * N := by positivity
+    nlinarith [sq_nonneg (m : ℝ), Nat.cast_nonneg (α := ℝ) m]
+  have hm0 : 0 < m := by exact_mod_cast hm'
   rw [sum_regProb_run_randomGrover hN (by omega), le_div_iff₀ hm']
   obtain ⟨i, hi⟩ := hx
   have ht : 1 ≤ weight x := card_pos.mpr ⟨i, by simp [hi]⟩
   rcases (weight_le_length x).lt_or_eq with htN | htN
-  · -- `1 ≤ t < N`: Lemma 2 with `m sin 2θ ≥ 1`.
-    have hsin := le_mul_sin_two_mul_searchAngle ht htN zero_le_one
-      (by rw [one_pow, one_mul]; exact_mod_cast hm)
+  · -- `1 ≤ t < N`: Lemma 2 with `m sin 2θ ≥ c`.
+    have hsin := le_mul_sin_two_mul_searchAngle ht htN hc.le hm
     have hpos : 0 < Real.sin (2 * searchAngle N (weight x)) := by
       by_contra h
       nlinarith [not_lt.mp h]
     have := le_sum_sin_sq (searchAngle N (weight x)) m hpos
-    have h4 : 1 / (4 * Real.sin (2 * searchAngle N (weight x))) ≤ m / 4 := by
-      rw [div_le_div_iff₀ (by positivity) (by norm_num)]
+    have h4 : 1 / (4 * Real.sin (2 * searchAngle N (weight x))) ≤ m / (4 * c) := by
+      rw [div_le_div_iff₀ (by positivity) (by positivity)]
       linarith
+    have : (1 / 2 - 1 / (4 * c)) * m = m / 2 - m / (4 * c) := by ring
     linarith
   · -- `t = N`: every number of iterations succeeds.
     have hone : ∀ j : ℕ, Real.sin ((2 * j + 1) * searchAngle N (weight x)) ^ 2 = 1 := by
@@ -447,7 +483,8 @@ theorem one_div_four_le_sum_regProb_run_randomGrover (hN : 0 < N) {m : ℕ} (hm 
         Real.sin_nat_mul_pi]
       ring
     simp only [hone, sum_const, card_range, nsmul_eq_mul, mul_one]
-    linarith
+    have : 0 < 1 / (4 * c) := by positivity
+    nlinarith
 
 /-- **Quantum search with an unknown number of marked items in `⌊√N⌋` queries** [Boyer, Brassard,
 Høyer, Tapp][BoyerBrassardHoyerTapp1998]: with iteration counts below `⌊√N⌋ + 1`, `randomGrover`
@@ -458,7 +495,131 @@ theorem randomGrover_search (hN : 0 < N) :
       ∀ x : Fin N → Bool, (∃ i, x i = true) → 1 / 4 ≤ ∑ i with x i = true,
         regProb (run (randomGrover N (Nat.sqrt N + 1)) (randomGroverInit N (Nat.sqrt N + 1)) x
           (Nat.sqrt N)) i :=
-  ⟨norm_randomGroverInit hN (Nat.succ_pos _), Real.nat_sqrt_le_real_sqrt, fun x hx =>
-    one_div_four_le_sum_regProb_run_randomGrover hN (Nat.lt_succ_sqrt' N).le x hx⟩
+  ⟨norm_randomGroverInit hN (Nat.succ_pos _), Real.nat_sqrt_le_real_sqrt, fun x hx => by
+    have := le_sum_regProb_run_randomGrover hN (m := Nat.sqrt N + 1) one_pos
+      (by rw [one_pow, one_mul]; exact_mod_cast (Nat.lt_succ_sqrt' N).le) x hx
+    norm_num at this ⊢
+    exact this⟩
+
+/-! ### Deciding `OR_N` with error `1/3` -/
+
+/-- The range of iteration counts for deciding `OR_N`: `m = 4 (⌊√N⌋ + 1)`, so that `16 N ≤ m²`. -/
+def orRange (N : ℕ) : ℕ := 4 * (Nat.sqrt N + 1)
+
+/-- One stage for `OR_N`: `randomGrover` with range `orRange N` for `orRange N - 1` queries, then
+a check of the measured index, which writes its queried bit into the control bit. It makes
+`orRange N` queries. -/
+noncomputable def orStage (N : ℕ) :
+    ℕ → State N (Unit × Fin (orRange N)) →ₗᵢ[ℂ] State N (Unit × Fin (orRange N)) :=
+  check (orRange N - 1) (randomGrover N (orRange N))
+
+/-- The algorithm for `OR_N`: two independent stages (`Cslib.Quantum.twice`), making
+`2 orRange N` queries. -/
+noncomputable def orSearch (N : ℕ) :
+    ℕ → State N ((Unit × Fin (orRange N)) × (Fin N × Bool × (Unit × Fin (orRange N)))) →ₗᵢ[ℂ]
+      State N ((Unit × Fin (orRange N)) × (Fin N × Bool × (Unit × Fin (orRange N)))) :=
+  twice (orRange N) (orStage N)
+
+/-- The initial state of `orSearch`: two copies of the initial state of `randomGrover`. -/
+noncomputable def orSearchInit (N : ℕ) :
+    State N ((Unit × Fin (orRange N)) × (Fin N × Bool × (Unit × Fin (orRange N)))) :=
+  twiceInit (randomGroverInit N (orRange N))
+
+/-- The accepting outcomes of `orSearch`: the check bit of either stage is `1`. -/
+def orAccept (N : ℕ) : Finset (Fin N × Bool ×
+    ((Unit × Fin (orRange N)) × (Fin N × Bool × (Unit × Fin (orRange N))))) :=
+  univ.filter fun p => p.2.1 = true ∨ p.2.2.2.2.1 = true
+
+private theorem orRange_pos (N : ℕ) : 0 < orRange N := by
+  unfold orRange
+  omega
+
+/-- A stage accepts with the average success probability of `randomGrover`. -/
+theorem measureProb_run_orStage (hN : 0 < N) (x : Fin N → Bool) :
+    measureProb (run (orStage N) (randomGroverInit N (orRange N)) x (orRange N))
+        (univ.filter fun p => p.2.1 = true) =
+      ∑ i with x i = true,
+        regProb (run (randomGrover N (orRange N)) (randomGroverInit N (orRange N)) x
+          (orRange N - 1)) i := by
+  have h := measureProb_run_check (T := orRange N - 1) (U := randomGrover N (orRange N))
+    (ψ₀ := randomGroverInit N (orRange N)) (x := x)
+    (fun i w => run_randomGrover_ctrl hN (by omega) x i w)
+  rwa [Nat.sub_add_cancel (orRange_pos N)] at h
+
+/-- The initial state of `orSearch` is a unit vector. -/
+theorem norm_orSearchInit (hN : 0 < N) : ‖orSearchInit N‖ = 1 :=
+  norm_twiceInit (norm_randomGroverInit hN (orRange_pos N))
+
+/-- **The acceptance probability of `orSearch`**: `1 - (1 - P)²`, where `P` is the average success
+probability of `randomGrover` with range `orRange N`. -/
+theorem measureProb_run_orSearch (hN : 0 < N) (x : Fin N → Bool) :
+    measureProb (run (orSearch N) (orSearchInit N) x (orRange N + orRange N)) (orAccept N) =
+      1 - (1 - (∑ j ∈ range (orRange N),
+        Real.sin ((2 * j + 1) * searchAngle N (weight x)) ^ 2) / orRange N) ^ 2 := by
+  classical
+  have h := measureProb_run_twice (T := orRange N) (U := orStage N)
+    (norm_randomGroverInit hN (orRange_pos N)) x (univ.filter fun p => p.2.1 = true)
+  rw [measureProb_run_orStage hN, sum_regProb_run_randomGrover hN (by omega)] at h
+  rw [← h, orSearch, orSearchInit, orAccept]
+  congr 1
+  ext p
+  simp
+
+/-- **Deciding `OR_N` with `O(√N)` queries** after [Boyer, Brassard, Høyer,
+Tapp][BoyerBrassardHoyerTapp1998]: `orSearch` accepts every input `x` with probability within
+`1/3` of `OR_N(x)`. It accepts the all-zero input with probability `0`, and every other input with
+probability at least `1 - (9/16)²`. -/
+theorem abs_measureProb_run_orSearch_sub_le (hN : 0 < N) (x : Fin N → Bool) :
+    |measureProb (run (orSearch N) (orSearchInit N) x (orRange N + orRange N)) (orAccept N) -
+      bitVal ℝ (threshold N 1 x)| ≤ 1 / 3 := by
+  set a := ∑ i with x i = true, regProb (run (randomGrover N (orRange N))
+    (randomGroverInit N (orRange N)) x (orRange N - 1)) i with ha_def
+  have hacc : measureProb (run (orSearch N) (orSearchInit N) x (orRange N + orRange N))
+      (orAccept N) = 1 - (1 - a) ^ 2 := by
+    rw [measureProb_run_orSearch hN, ha_def, sum_regProb_run_randomGrover hN (by omega)]
+  -- `a` is a probability.
+  have ha0 : 0 ≤ a := sum_nonneg fun i _ => by rw [regProb]; exact measureProb_nonneg _ _
+  have ha1 : a ≤ 1 := by
+    have := measureProb_le_measureProb_univ
+      (run (orStage N) (randomGroverInit N (orRange N)) x (orRange N))
+      (univ.filter fun p => p.2.1 = true)
+    rw [measureProb_univ, norm_run, norm_randomGroverInit hN (orRange_pos N), one_pow,
+      measureProb_run_orStage hN] at this
+    exact this
+  rw [hacc, threshold_one_right]
+  by_cases hx : ∃ i, x i = true
+  · -- `OR_N(x) = 1`: each stage succeeds with probability at least `7/16`.
+    have h7 : 7 / 16 ≤ a := by
+      have := le_sum_regProb_run_randomGrover hN (m := orRange N) (c := 4) (by norm_num)
+        (by
+          have h := (Nat.lt_succ_sqrt' N).le
+          have h' : (N : ℝ) ≤ ((Nat.sqrt N + 1 : ℕ) : ℝ) ^ 2 := by exact_mod_cast h
+          simp only [orRange, Nat.cast_mul, Nat.cast_ofNat]
+          push_cast at h' ⊢
+          nlinarith) x hx
+      norm_num at this
+      linarith
+    simp only [hx, decide_true, bitVal_true]
+    rw [abs_le]
+    constructor <;> nlinarith
+  · -- `OR_N(x) = 0`: there is no marked item, so `a = 0`.
+    have h0 : a = 0 := by
+      rw [ha_def]
+      refine sum_eq_zero fun i hi => absurd ⟨i, (mem_filter.mp hi).2⟩ hx
+    simp [hx, h0]
+
+/-- **An `O(√N)`-query algorithm for `OR_N` with error `1/3`**, matching the polynomial-method
+lower bound `N ≤ 16 T²` up to a constant: `orSearch` starts from a unit state, makes
+`8 (⌊√N⌋ + 1) ≤ 8 √N + 8` queries, and accepts every input `x` with probability within `1/3` of
+`OR_N(x)`. -/
+theorem orSearch_spec (hN : 0 < N) :
+    ‖orSearchInit N‖ = 1 ∧ ((orRange N + orRange N : ℕ) : ℝ) ≤ 8 * Real.sqrt N + 8 ∧
+      ∀ x : Fin N → Bool, |measureProb (run (orSearch N) (orSearchInit N) x
+        (orRange N + orRange N)) (orAccept N) - bitVal ℝ (threshold N 1 x)| ≤ 1 / 3 := by
+  refine ⟨norm_orSearchInit hN, ?_, abs_measureProb_run_orSearch_sub_le hN⟩
+  have := Real.nat_sqrt_le_real_sqrt (a := N)
+  simp only [orRange]
+  push_cast
+  linarith
 
 end Cslib.Quantum
