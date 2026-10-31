@@ -869,6 +869,7 @@ public import Complexity.Computability.Circuit.Frontier.Rectangle
 public import Complexity.Computability.Circuit.Frontier.Reduction
 public import Complexity.Computability.Circuit.Frontier.Sweep
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Binarize
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.CauchyModes
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Constraint
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Deformation
@@ -877,11 +878,6 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IntegralCo
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.LocalDeformation
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ModeExpansion
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TaperedRecovery
-public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Binarize
-public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Constraint
-public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Deformation
-public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
-public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ModeExpansion
 public import Complexity.Computability.Circuit.Frontier.TwoSidedWitness
 public import Complexity.Computability.Circuit.Frontier.Unconditional
 public import Complexity.Computability.Circuit.Frontier.Witness
