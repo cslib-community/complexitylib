@@ -37,15 +37,14 @@ up to an integer, and for `n ≥ 1` a lower bound `n ≤ ecomplexityFun z f Set.
 The model here lies between the total Boolean functions of their Definition 2.1 and the relations
 with arbitrary answers of [Kushilevitz and Nisan, Chapter 5][KushilevitzNisan1997]: it covers
 partial Boolean functions, which are relations with Boolean answers. For these it is the model NP of
-[Göös, Pitassi and Watson, Definition 31][GoosPitassiWatson2018Landscape] (numbered as in ECCC
-TR15-049, revision 1): a collection of `2 ^ k` rectangles indexed by `k`-bit witnesses, whose output
-is `1` exactly on their union, correct on the domain of the function, of cost `k`; co-classes are
-defined by negating the function. A partial function is a function together with the sets `A` and
-`B`, or, when its domain is not a rectangle, a relation that accepts both answers outside its
-domain; its values there do not matter, and rectangles are not required to lie inside the domain.
-Kushilevitz and Nisan remark after Definition 5.2 that for relations, measures such as `N¹(R)` are
-less interesting, since the answer `1` has no special role; with Boolean answers, `N⁰` and `N¹` keep
-their meaning.
+[Göös, Pitassi and Watson, Definition B.1, p. 288][GoosPitassiWatson2018Landscape]: a collection of
+`2 ^ k` rectangles indexed by `k`-bit witnesses, whose output is `1` exactly on their union, correct
+on the domain of the function, of cost `k`; co-classes are defined by negating the function. A
+partial function is a function together with the sets `A` and `B`, or, when its domain is not a
+rectangle, a relation that accepts both answers outside its domain; its values there do not matter,
+and rectangles are not required to lie inside the domain. Kushilevitz and Nisan remark after
+Definition 5.2 that for relations, measures such as `N¹(R)` are less interesting, since the answer
+`1` has no special role; with Boolean answers, `N⁰` and `N¹` keep their meaning.
 
 A relation `R : X → Y → Bool → Prop` is their relation `R ⊆ X × Y × Z` with `Z = Bool`
 [Kushilevitz and Nisan, Definition 5.1, p. 71][KushilevitzNisan1997]: `R x y b` holds exactly when
