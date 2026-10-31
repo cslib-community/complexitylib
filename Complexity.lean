@@ -827,6 +827,10 @@ public import Complexity.Computability.Circuit.Boolean.Synthesis
 public import Complexity.Computability.Circuit.Boolean.TC0
 public import Complexity.Computability.Circuit.Boolean.Tableau.Basic
 public import Complexity.Computability.Circuit.Boolean.Tableau.Correct
+public import Complexity.Computability.Circuit.Boolean.Tableau.Decoder.Assembly
+public import Complexity.Computability.Circuit.Boolean.Tableau.Decoder.Circuit
+public import Complexity.Computability.Circuit.Boolean.Tableau.Decoder.Fields
+public import Complexity.Computability.Circuit.Boolean.Tableau.Decoder.Shape
 public import Complexity.Computability.Circuit.Boolean.Tableau.Layout
 public import Complexity.Computability.Circuit.Boolean.Tableau.Space
 public import Complexity.Computability.Circuit.Boolean.Tableau.Succinct
