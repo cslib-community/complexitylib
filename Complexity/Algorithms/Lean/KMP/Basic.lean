@@ -8,7 +8,6 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-import Mathlib.Data.List.Infix
 
 /-!
 # Word Borders, Periods, and the KMP Prefix Function
@@ -53,7 +52,8 @@ length `maxBorderLen w` and the KMP prefix function `borderLen p q = maxBorderLe
   order (`[CLRS2009]`, Lemma 32.5).
 * `Cslib.Algorithms.Lean.KMP.maxPrefixSuffixUpTo_append_singleton`: extending `t` by one character
   `c` updates `maxPrefixSuffixUpTo p t B` (`B < p.length`) via `nextLen p · c`, specializing both
-  to `borderLen_succ` and to the KMP text-scanning step.
+  to `borderLen_succ` (`[CLRS2009]`, Lemma 32.6 and Corollary 32.7) and to the KMP text-scanning
+  step.
 
 ## References
 
@@ -67,25 +67,11 @@ public section
 
 namespace Cslib.Algorithms.Lean.KMP
 
-/-! ## Suffix comparability and one-character suffix extension -/
-
-/-- If two lists are both suffixes of the same word `w`, the shorter one is a suffix of the
-longer one. -/
-theorem suffix_of_suffix_length_le {α : Type*} {u v w : List α}
-    (hu : u <:+ w) (hv : v <:+ w) (hlen : u.length ≤ v.length) : u <:+ v := by
-  obtain ⟨s, rfl⟩ := hv
-  obtain ⟨t, ht⟩ := hu
-  have hlen_eq : t.length + u.length = s.length + v.length := by
-    simpa only [List.length_append] using congrArg List.length ht
-  have hst : s.length ≤ t.length := by omega
-  refine ⟨t.drop s.length, ?_⟩
-  have hdrop := congrArg (List.drop s.length) ht
-  rw [List.drop_append_of_le_length hst, List.drop_left] at hdrop
-  exact hdrop
+/-! ## One-character suffix extension -/
 
 /-- Appending a single element preserves suffixes iff the base lists are suffixes and the
 appended elements agree. -/
-theorem append_singleton_isSuffix_iff {α : Type*} {u t : List α} {a c : α} :
+private theorem append_singleton_isSuffix_iff {α : Type*} {u t : List α} {a c : α} :
     u ++ [a] <:+ t ++ [c] ↔ u <:+ t ∧ a = c := by
   constructor
   · rintro ⟨s, hs⟩
@@ -101,7 +87,7 @@ theorem append_singleton_isSuffix_iff {α : Type*} {u t : List α} {a c : α} :
 
 /-- Extending a prefix `p.take j` (`j < p.length`) to `p.take (j + 1)` matches a suffix of
 `t ++ [c]` iff `p.take j <:+ t` and `p[j] = c`. -/
-theorem take_succ_isSuffix_append_iff {α : Type*} {p t : List α} {c : α} {j : ℕ}
+private theorem take_succ_isSuffix_append_iff {α : Type*} {p t : List α} {c : α} {j : ℕ}
     (hj : j < p.length) :
     p.take (j + 1) <:+ t ++ [c] ↔ p.take j <:+ t ∧ p[j] = c := by
   rw [List.take_add_one, getElem?_pos p j hj, Option.toList_some, append_singleton_isSuffix_iff]
@@ -200,7 +186,7 @@ theorem IsProperBorderLen.to_take {α : Type*} {w : List α} {j k : ℕ}
   rcases hkw with ⟨hk, hsufk⟩
   refine ⟨by simp only [List.length_take]; omega, ?_⟩
   rw [List.take_take, Nat.min_eq_left (Nat.le_of_lt hlt)]
-  exact suffix_of_suffix_length_le hsufj hsufk (by simp only [List.length_take]; omega)
+  exact List.suffix_of_suffix_length_le hsufj hsufk (by simp only [List.length_take]; omega)
 
 /-! ## Maximum prefix-suffix lengths, maximum borders, and minimum periods -/
 
@@ -328,16 +314,20 @@ theorem isPeriod_minPeriod {α : Type*} [DecidableEq α] {w : List α} (hw : 0 <
   (isProperBorderLen_iff_isPeriod.mp (isProperBorderLen_maxBorderLen hw)).2
 
 theorem minPeriod_le_of_isPeriod {α : Type*} [DecidableEq α] {w : List α} {d : ℕ}
-    (hd0 : 0 < d) (hdlen : d ≤ w.length) (hper : IsPeriod w d) :
+    (hd0 : 0 < d) (hper : IsPeriod w d) :
     minPeriod w ≤ d := by
-  have hborder : IsProperBorderLen w (w.length - d) := by
-    rw [isProperBorderLen_iff_isPeriod]
-    refine ⟨by omega, ?_⟩
-    have heq : w.length - (w.length - d) = d := by omega
-    simpa only [heq] using hper
-  have hle := le_maxBorderLen_of_isProperBorderLen hborder
-  unfold minPeriod
-  omega
+  by_cases hdlen : d ≤ w.length
+  · have hborder : IsProperBorderLen w (w.length - d) := by
+      rw [isProperBorderLen_iff_isPeriod]
+      refine ⟨by omega, ?_⟩
+      have heq : w.length - (w.length - d) = d := by omega
+      simpa only [heq] using hper
+    have hle := le_maxBorderLen_of_isProperBorderLen hborder
+    unfold minPeriod
+    omega
+  · have h := maxBorderLen_le_pred w
+    unfold minPeriod
+    omega
 
 @[simp]
 theorem borderLen_zero {α : Type*} [DecidableEq α] (p : List α) : borderLen p 0 = 0 := rfl
@@ -532,7 +522,7 @@ theorem maxPrefixSuffixUpTo_append_singleton {α : Type*} [DecidableEq α]
       · right
         refine ⟨by rw [List.length_take_of_le (Nat.le_of_lt hkp)]; exact hjlt, ?_⟩
         rw [List.take_take, Nat.min_eq_left (Nat.le_of_lt hjlt)]
-        exact suffix_of_suffix_length_le hjsuf hksuf (by simp only [List.length_take]; omega)
+        exact List.suffix_of_suffix_length_le hjsuf hksuf (by simp only [List.length_take]; omega)
     · rintro (rfl | hjprop)
       · exact ⟨hkB, hksuf⟩
       · have hjlt : j < k := by
@@ -629,15 +619,15 @@ theorem maxPrefixSuffixUpTo_append_singleton {α : Type*} [DecidableEq α]
           have hjb : j ≤ b :=
             hb_eq ▸ le_maxPrefixSuffixUpTo (B := m - 1) hj_le_m1 (by omega) hssuf.1
           have hjsuf_b : p.take j <:+ p.take b :=
-            suffix_of_suffix_length_le hssuf.1 hbsuf (by simp only [List.length_take]; omega)
+            List.suffix_of_suffix_length_le hssuf.1 hbsuf (by simp only [List.length_take]; omega)
           have hj1_suf_b : p.take (j + 1) <:+ p.take b ++ [c] :=
             (take_succ_isSuffix_append_iff (by omega)).mpr ⟨hjsuf_b, hssuf.2⟩
           have hle := le_maxPrefixSuffixUpTo (B := b + 1) (by omega) hsp hj1_suf_b
           change j + 1 ≤ u at hle
           omega
 
-/-- Recurrence for the KMP prefix function: for `1 ≤ q < p.length`,
-`borderLen p (q + 1) = nextLen p (borderLen p q) p[q]`. -/
+/-- Recurrence for the KMP prefix function (`[CLRS2009]`, Lemma 32.6 and Corollary 32.7): for
+`1 ≤ q < p.length`, `borderLen p (q + 1) = nextLen p (borderLen p q) p[q]`. -/
 theorem borderLen_succ {α : Type*} [DecidableEq α] {p : List α} {q : ℕ}
     (hq1 : 1 ≤ q) (hqp : q < p.length) :
     borderLen p (q + 1) = nextLen p (borderLen p q) (p[q]'hqp) := by
@@ -671,7 +661,7 @@ theorem maxPrefixSuffixUpTo_pred_of_eq_length {α : Type*} [DecidableEq α]
     (take_maxPrefixSuffixUpTo_isSuffix p p (p.length - 1)).trans hpsuf,
     fun k hlt hkB hkp hsuf => ?_⟩
   have hksuf_p : p.take k <:+ p :=
-    suffix_of_suffix_length_le hsuf hpsuf (by simp only [List.length_take]; omega)
+    List.suffix_of_suffix_length_le hsuf hpsuf (by simp only [List.length_take]; omega)
   have hle := le_maxPrefixSuffixUpTo (B := p.length - 1) hkB hkp hksuf_p
   change k ≤ b at hle
   omega

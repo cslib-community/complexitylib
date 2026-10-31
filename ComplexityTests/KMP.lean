@@ -23,18 +23,19 @@ open Cslib.Algorithms.Lean.KMP
 
 set_option linter.hashCommand false
 
-/-! ## Border, period, and `[CLRS2009]` Figure 32.11 failure-table checks -/
+/-! ## Border, period, and `[CLRS2009]` Figures 32.10–32.11 failure-table checks -/
 
 private def clrsPat : Array Char := "ababaca".toList.toArray
 
--- `[CLRS2009]`, Figure 32.11: π for "ababaca" is [0, 0, 1, 2, 3, 0, 1].
+-- `[CLRS2009]`, Figure 32.10(c): π for "ababaca" is [0, 0, 1, 2, 3, 0, 1].
 #guard computePrefix clrsPat = #[0, 0, 1, 2, 3, 0, 1]
 #guard (computePrefixM clrsPat).time ≤ 2 * (clrsPat.size - 1)
 
--- `[CLRS2009]`, Lemma 32.5 example: proper border chain of "ababa" (length 5) is [3, 1, 0].
+-- `[CLRS2009]`, Lemma 32.5 & Figure 32.11: proper border chains via π* iteration.
 #guard borderChain "ababaca".toList 5 = [3, 1, 0]
 #guard borderChain "ababaca".toList 7 = [1, 0]
 #guard borderChain "ababaca".toList 0 = []
+#guard borderChain "ababababca".toList 8 = [6, 4, 2, 0]
 
 -- Minimum period checks (`minPeriod w + maxBorderLen w = w.length`).
 #guard maxBorderLen "ababab".toList = 4
@@ -97,11 +98,19 @@ example : IsMatchAt advPat advTxt 6 ∧
     nodup_kmpMatches advPat advTxt,
     kmpSearchM_time_le advPat advTxt⟩
 
--- Concrete witness for border-period duality and `mem_borderChain_iff`.
+-- Concrete witness for border-period duality, `minPeriod_le_of_isPeriod`, and `borderChain`.
 example : IsPeriod "ababab".toList 2 ∧
+    minPeriod "ababab".toList ≤ 4 ∧
+    minPeriod "ababab".toList ≤ 10 ∧
     (3 ∈ borderChain "ababaca".toList 5 ↔
       IsProperBorderLen ("ababaca".toList.take 5) 3) :=
+  have hper4 : IsPeriod "ababab".toList 4 :=
+    ((isProperBorderLen_iff_isPeriod (w := "ababab".toList) (k := 2)).mp ⟨by decide, by decide⟩).2
+  have hper10 : IsPeriod "ababab".toList 10 :=
+    fun _ h => absurd (Nat.lt_of_add_left_lt h) (by decide)
   ⟨isPeriod_minPeriod (w := "ababab".toList) (by decide),
+    minPeriod_le_of_isPeriod (by decide) hper4,
+    minPeriod_le_of_isPeriod (by decide) hper10,
     mem_borderChain_iff (p := "ababaca".toList) (q := 5) (j := 3) (by decide) (by decide)⟩
 
 -- Universe-polymorphic instantiation (`Type 1` via `ULift.{1} Nat`).

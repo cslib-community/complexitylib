@@ -10,16 +10,29 @@ module
 public import Complexity.Init
 public import Complexity.Algorithms.Lean.KMP.Basic
 public import Cslib.Algorithms.Lean.TimeM
-import Mathlib.Data.List.Infix
 
 /-!
 # Knuth–Morris–Pratt Failure Table Construction and Exact String Matching
 
-This module implements the Knuth–Morris–Pratt (`[KnuthMorrisPratt1977]`; `[CLRS2009]`,
-Section 32.4) failure-table construction (`computePrefixM`, `computePrefix`) and linear-time exact
-string matcher (`kmpSearchWithPrefixM`, `kmpSearchM`, `kmpMatches`, `kmpMatchesList`) in
-`Cslib.Algorithms.Lean.TimeM`, proving soundness, completeness, strict output ordering, and
-amortized linear character-comparison bounds over arbitrary alphabets `[DecidableEq α]`.
+This module implements the Knuth–Morris–Pratt (`[KnuthMorrisPratt1977]`, Sections 1–2;
+`[CLRS2009]`, Section 32.4) failure-table construction (`computePrefixM`, `computePrefix`) and
+linear-time exact string matcher (`kmpSearchWithPrefixM`, `kmpSearchM`, `kmpMatches`,
+`kmpMatchesList`) in `Cslib.Algorithms.Lean.TimeM`, proving soundness, completeness, strict output
+ordering, and amortized linear character-comparison bounds over arbitrary alphabets
+`[DecidableEq α]`.
+
+## Source Conventions
+
+* **Indexing:** arrays are `0`-indexed, so `pi[j] = borderLen p.toList (j + 1)` (`0 ≤ j < p.size`)
+  stores `[CLRS2009]`'s `1`-indexed prefix table $\pi[1..m]$ at `j = q - 1`. Reported match shifts
+  `s` are `0`-based (`t.extract s (s + p.size) = p`), matching `[CLRS2009]`'s shift
+  $s \in \{0, \dots, n - m\}$.
+* **Alphabet and empty pattern:** all operations are universe-polymorphic over any
+  `[DecidableEq α]` in `Type*` (rather than a fixed finite alphabet $\Sigma$) and handle empty
+  patterns `p.size = 0` unconditionally by returning `List.range (t.size + 1)` with `0`
+  comparisons (whereas `[CLRS2009]` assumes $m \ge 1$).
+* **Resource bounds:** `TimeM ℕ` counts exact character comparisons `p[k] = c` rather than
+  asymptotic RAM step bounds $\Theta(m)$ and $\Theta(n)$.
 
 ## Cost Model
 
@@ -27,19 +40,21 @@ amortized linear character-comparison bounds over arbitrary alphabets `[Decidabl
   KMP automaton step `advanceM` (covering both matching extensions and mismatch fallback checks).
   Because each recursive fallback in `advanceM` follows a charged mismatch,
   `(advanceM p pi k c).time` also bounds the number of fallback steps.
-* **Uncharged (`0` `TimeM` ticks):** integer arithmetic, array reads (`p[k]`, `pi[k - 1]`, `t[i]`),
-  `Array.push` during failure-table construction, list consing when collecting match shifts, and
+* **Uncharged (`0` `TimeM` ticks):** integer arithmetic, loop/recursion control, array reads
+  (`p[k]`, `pi[k - 1]`, `t[i]`), `Array.push` during failure-table construction, list consing when
+  collecting match shifts (including `List.range (t.size + 1)` when `p.size = 0`), and
   `List.toArray` conversion in `kmpMatchesList`.
 
 Using the potential $\Phi = k$ (the current matched prefix length), every call to `advanceM`
 satisfies `(advanceM p pi k c).time + (advanceM p pi k c).ret ≤ k + 2`
 (`advanceM_time_add_ret_le`), telescoping to:
 
-* `(computePrefixM p).time ≤ 2 * (p.size - 1)` character comparisons (`[CLRS2009]`, Lemma 32.6);
+* `(computePrefixM p).time ≤ 2 * (p.size - 1)` character comparisons
+  (`[KnuthMorrisPratt1977]`, Section 2; `[CLRS2009]`, Section 32.4);
 * `(kmpSearchWithPrefixM p pi t).time ≤ 2 * t.size` character comparisons when `pi` satisfies
   `pi[j] ≤ j` (in particular for `pi = computePrefix p`);
 * `(kmpSearchM p t).time ≤ 2 * (p.size - 1) + 2 * t.size` character comparisons end-to-end
-  (`[CLRS2009]`, Theorem 32.7).
+  (`[KnuthMorrisPratt1977]`, Sections 1–2; `[CLRS2009]`, Section 32.4).
 
 ## Main definitions
 
@@ -295,7 +310,7 @@ private theorem computePrefixLoopM_time_le {α : Type*} [DecidableEq α]
     omega
 
 /-- `computePrefixM p` performs at most `2 * (p.size - 1)` character comparisons
-(`[CLRS2009]`, Lemma 32.6). -/
+(`[KnuthMorrisPratt1977]`, Section 2; `[CLRS2009]`, Section 32.4). -/
 theorem computePrefixM_time_le {α : Type*} [DecidableEq α] (p : Array α) :
     (computePrefixM p).time ≤ 2 * (p.size - 1) := by
   unfold computePrefixM
@@ -416,7 +431,8 @@ def kmpSearchWithPrefixM {α : Type*} [DecidableEq α] (p : Array α) (pi : Arra
     kmpSearchLoopM p pi t 0 0
 
 /-- End-to-end KMP string matching in `TimeM ℕ`: builds the failure table via `computePrefixM p`
-and scans `t` via `kmpSearchWithPrefixM` (`[CLRS2009]`, Theorem 32.7). -/
+and scans `t` via `kmpSearchWithPrefixM` (`[KnuthMorrisPratt1977]`, Sections 1–2;
+`[CLRS2009]`, Section 32.4). -/
 def kmpSearchM {α : Type*} [DecidableEq α] (p t : Array α) : TimeM ℕ (List ℕ) := do
   let pi ← computePrefixM p
   kmpSearchWithPrefixM p pi t
@@ -468,7 +484,8 @@ theorem kmpSearchWithPrefixM_time_le {α : Type*} [DecidableEq α]
     omega
   · simpa only [Nat.zero_add, Nat.sub_zero] using kmpSearchLoopM_time_le p hdec t 0 0
 
-/-- End-to-end KMP character-comparison bound (`[CLRS2009]`, Theorem 32.7):
+/-- End-to-end KMP character-comparison bound (`[KnuthMorrisPratt1977]`, Sections 1–2;
+`[CLRS2009]`, Section 32.4):
 `(kmpSearchM p t).time ≤ 2 * (p.size - 1) + 2 * t.size`. -/
 theorem kmpSearchM_time_le {α : Type*} [DecidableEq α] (p t : Array α) :
     (kmpSearchM p t).time ≤ 2 * (p.size - 1) + 2 * t.size := by
@@ -607,7 +624,8 @@ theorem kmpSearchWithPrefixM_spec {α : Type*} [DecidableEq α]
     rw [hmem]
     exact ⟨fun ⟨_, hm⟩ => hm, fun hm => ⟨by omega, hm⟩⟩
 
-/-- Unconditional soundness and completeness of `kmpMatches` (`[CLRS2009]`, Theorem 32.7):
+/-- Unconditional soundness and completeness of `kmpMatches` (`[KnuthMorrisPratt1977]`,
+Sections 1–2; `[CLRS2009]`, Section 32.4):
 `s ∈ kmpMatches p t` iff `p` occurs in `t` at shift `s`. -/
 theorem mem_kmpMatches_iff {α : Type*} [DecidableEq α] (p t : Array α) (s : ℕ) :
     s ∈ kmpMatches p t ↔ IsMatchAt p t s := by
