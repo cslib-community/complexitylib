@@ -978,6 +978,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ScheduledR
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TaperedRecovery
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Truncated
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TruncatedPolyTime
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TruncatedResources
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.VertexDesc
 public import Complexity.Computability.Circuit.Frontier.TwoSidedWitness
 public import Complexity.Computability.Circuit.Frontier.Unconditional
