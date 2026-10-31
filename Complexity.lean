@@ -1031,6 +1031,7 @@ public import Complexity.Computability.Circuit.Quantum.Classical
 public import Complexity.Computability.Circuit.Quantum.Code
 public import Complexity.Computability.Circuit.Quantum.Counter
 public import Complexity.Computability.Circuit.Quantum.Parallel
+public import Complexity.Computability.Circuit.Quantum.PathNetwork
 public import Complexity.Computability.Circuit.Quantum.PathSum
 public import Complexity.Computability.Circuit.Quantum.Reversible
 public import Complexity.Computability.Circuit.Quantum.Uniform
