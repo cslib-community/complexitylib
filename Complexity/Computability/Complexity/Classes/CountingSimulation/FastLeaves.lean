@@ -49,9 +49,11 @@ public section
 
 namespace Cslib.Circuits.Frontier.FastContraction
 
+variable {T : Type}
+
 /-- **The reached calls are well-formed and have the packet shape**, from a well-formed root with
 the packet shape. -/
-theorem Reach.wf_packetShape {x₀ x : Call (List ℕ)} (h : Reach nativeMk x₀ x) (hw : WF x₀)
+theorem Reach.wf_packetShape {x₀ x : Call T} (h : Reach nativeMk x₀ x) (hw : WF x₀)
     (hs : PacketShape x₀) : WF x ∧ PacketShape x := by
   induction h with
   | root => exact ⟨hw, hs⟩
@@ -61,7 +63,7 @@ theorem Reach.wf_packetShape {x₀ x : Call (List ℕ)} (h : Reach nativeMk x₀
 /-- **Reached calls have at most twice the scale in edges**, from a root at scale its number of
 edges with bound plus depth one more, for every input: a child has at most twice its parent's
 edges (`NativeChild.numEdges_nativeChild_le`), and an active parent has at most the root's. -/
-theorem Reach.edges_le_two_mul_scale {x₀ x : Call (List ℕ)} (h₀s : x₀.scale = x₀.edges)
+theorem Reach.edges_le_two_mul_scale {x₀ x : Call T} (h₀s : x₀.scale = x₀.edges)
     (h₀b : x₀.bound + x₀.depth = x₀.edges + 1) (h : Reach nativeMk x₀ x) :
     x.edges ≤ 2 * x.scale := by
   have key : x.edges ≤ 2 * x₀.edges := by
