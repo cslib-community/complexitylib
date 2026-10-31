@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Constraint
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
 public import Mathlib.Data.ZMod.Defs
+public import Mathlib.Logic.Equiv.Fin.Basic
 
 /-!
 # Tests for tensor networks
@@ -89,6 +90,34 @@ example : parallelNetwork.subdivide.contraction = 70 ∧ parallelNetwork.subdivi
       ← parallelNetwork.contraction_toExplicit (Equiv.refl _) (Equiv.refl _)]
     decide
   · exact (Set.ncard_le_card _).trans (by simp)
+
+/-! ### Rows-first bipartitions -/
+
+/-- In `parallel`, the first vertex is a row and the second a column. -/
+example : parallel.IsRowsFirstBipartite 1 := by decide
+
+/-- With both vertices as rows, no edge has a column port. -/
+example : ¬ parallel.IsRowsFirstBipartite 2 := by decide
+
+/-- In the four-cycle the rows `r₀, r₁` are vertices `0` and `2`, not the first two. -/
+example : ¬ (cycle eqTable).IsRowsFirstBipartite 2 := by decide
+
+/-- A port naming no edge is excluded. -/
+example : ¬ (⟨1, [([0], [1, 1]), ([0, 5], [1, 1, 1, 1])]⟩ :
+    ExplicitTensorNetwork ℕ).IsRowsFirstBipartite 1 := by decide
+
+/-- Written out with the old vertices first, the subdivision of `parallelNetwork` is rows-first
+bipartite with degree `2`, both by the general lemmas and by evaluation. -/
+example : (parallelNetwork.subdivide.toExplicit finSumFinEquiv finSumFinEquiv).IsRowsFirstBipartite
+      2 ∧ (parallelNetwork.subdivide.toExplicit finSumFinEquiv finSumFinEquiv).maxDegree ≤ 2 :=
+  ⟨parallelNetwork.subdivide.isRowsFirstBipartite_toExplicit _ _ 2 (by decide),
+    parallelNetwork.subdivide.maxDegree_toExplicit_le _ _
+      (parallelNetwork.maxDegreeLE_subdivide (fun e => by simp [parallelNetwork])
+        (fun v => (Set.ncard_le_card _).trans (by simp)) le_rfl)⟩
+
+example : (parallelNetwork.subdivide.toExplicit finSumFinEquiv finSumFinEquiv).IsRowsFirstBipartite
+      2 ∧ (parallelNetwork.subdivide.toExplicit finSumFinEquiv finSumFinEquiv).maxDegree = 2 := by
+  decide
 
 /-! ### Constraint networks -/
 

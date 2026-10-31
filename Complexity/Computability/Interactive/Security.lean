@@ -38,7 +38,9 @@ the prover, are a different notion. Knowledge soundness and zero knowledge are s
 model: in an oracle world the extractor would need the prover's queries and the simulator the
 oracle's view, which these definitions do not provide. Extractors and simulators are named
 arguments, so a property cannot hold vacuously through an unconstrained existential. Their
-efficiency is a separate layer.
+efficiency is a separate layer: `Verifier.EfficientKnowledgeSound` and `Reduction.EfficientHVZK`
+in `Complexity.Computability.Interactive.Efficient` add a polynomial-time extractor and a strict
+PPT simulator over an indexed family of reductions.
 
 ## Main definitions
 
@@ -108,7 +110,8 @@ def Verifier.Sound (W : World oP oV) (V : Verifier oV s StmtIn StmtOut)
 /-- Straight-line knowledge soundness with error `ε`, in the plain model: whenever a prover
 strategy, ending with an output witness, makes the verifier output a statement for which that
 witness is valid, the extractor `E` recovers a valid input witness from the statement, the
-transcript and the output witness, except with probability `ε`. -/
+transcript and the output witness, except with probability `ε`. The extractor is an arbitrary
+function; `Verifier.EfficientKnowledgeSound` adds the efficiency requirement. -/
 def Verifier.KnowledgeSound (V : Verifier OracleSpec.empty s StmtIn StmtOut)
     (relIn : StmtIn → WitIn → Prop) (relOut : StmtOut → WitOut → Prop)
     (E : StmtIn → Transcript s → WitOut → WitIn) (ε : ℝ≥0∞) : Prop :=
@@ -169,7 +172,8 @@ def Verifier.RbrSound (V : Verifier OracleSpec.empty s StmtIn StmtOut) (langIn :
 
 /-- Honest-verifier zero knowledge with statistical error `ε` (perfect for `ε = 0`), in the plain
 model: on every `(x, w)` in `relIn`, the simulator's transcript law is `ε`-close to the honest
-one. -/
+one. The simulator need not be efficient; `Reduction.EfficientHVZK` adds the efficiency
+requirement. -/
 def Reduction.HVZK (R : Reduction OracleSpec.empty OracleSpec.empty s StmtIn WitIn StmtOut WitOut)
     (relIn : StmtIn → WitIn → Prop) (Sim : StmtIn → ProbComp (Transcript s)) (ε : ℝ≥0∞) :
     Prop :=

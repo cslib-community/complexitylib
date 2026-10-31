@@ -211,28 +211,6 @@ private theorem bi_intBin_pow' {α : Type} {encIn : α ↪ List Bool} {a : α �
     ComputableInPolyTime (fun x => a x ^ b x) encIn encIntBin :=
   bi_intBin_pow.comp (ha.prod hb)
 
-private theorem bi_cons {α : Type} (enc : α ↪ List Bool) :
-    ComputableInPolyTime (fun p : α × List α => p.1 :: p.2)
-      (encPair enc (encList enc)) (encList enc) := by fun_prop
-
-private theorem bi_cons' {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
-    {head : γ → α} {tail : γ → List α}
-    (hhead : ComputableInPolyTime head encIn encA)
-    (htail : ComputableInPolyTime tail encIn (encList encA)) :
-    ComputableInPolyTime (fun x => head x :: tail x) encIn (encList encA) :=
-  (bi_cons encA).comp (hhead.prod htail)
-
-private theorem bi_listAppend {α : Type} (enc : α ↪ List Bool) :
-    ComputableInPolyTime (fun p : List α × List α => p.1 ++ p.2)
-      (encPair (encList enc) (encList enc)) (encList enc) := by fun_prop
-
-private theorem bi_listAppend' {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
-    {left right : γ → List α}
-    (hleft : ComputableInPolyTime left encIn (encList encA))
-    (hright : ComputableInPolyTime right encIn (encList encA)) :
-    ComputableInPolyTime (fun x => left x ++ right x) encIn (encList encA) :=
-  (bi_listAppend encA).comp (hleft.prod hright)
-
 private theorem bi_replicate_base {α : Type} (enc : α ↪ List Bool) :
     ComputableInPolyTime (fun p : ℕ × α => List.replicate p.1 p.2)
       (encPair encUnary enc) (encList enc) := by fun_prop
@@ -673,7 +651,7 @@ private theorem exists_computableInO_mapRange {ι γ δ : Type} {encIn : ι ↪ 
       (fun q : (ℕ × ((ℕ × γ) × List δ)) × δ => (q.1.2.1, q.1.2.2 ++ [q.2]))
       (encPair eSt encB) encAcc := by
     have hq1 := fst eSt encB; have hq2 := snd eSt encB
-    exact hq1.snd'.fst'.prod (bi_listAppend' hq1.snd'.snd' (bi_cons' hq2 (const [])))
+    exact hq1.snd'.fst'.prod (listAppend' hq1.snd'.snd' (cons' hq2 (const [])))
   let cCond := NativeCertificate.ofPolyTime hcond
   let cPrep := NativeCertificate.ofPolyTime hprep
   let cComb := NativeCertificate.ofPolyTime hcomb

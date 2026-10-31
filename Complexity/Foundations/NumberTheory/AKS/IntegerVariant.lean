@@ -22,8 +22,9 @@ Theorem 4.1 of the paper (`Cslib.AKS.prime_iff_passes`): `c² ≥ log₂² n`, s
 is stronger than the paper's, and every prime passes the congruence for every `a`, so testing more
 values of `a` loses nothing.
 
-`Cslib.AKS.PassesUpTo n r A` states the tests with the congruence checked for `1 ≤ a ≤ A`. For
-`n ≥ 2`, `ord_r(n) > c²` and `A ≥ ⌊√φ(r) log₂ n⌋`, it holds exactly when `n` is prime
+`Cslib.AKS.PassesUpTo n r A` states the tests with the congruence checked for `1 ≤ a ≤ A`; the
+paper's `Cslib.AKS.Passes n r` is its case `A = ⌊√φ(r) log₂ n⌋`. For `n ≥ 2`, `ord_r(n) > c²` and
+`A ≥ ⌊√φ(r) log₂ n⌋`, it holds exactly when `n` is prime
 (`Cslib.AKS.prime_iff_passesUpTo`). The order condition is decided by small powers: for `r ≥ 2`,
 `ord_r(n) > L` exactly when `n` is coprime to `r` and no `n^k` with `1 ≤ k ≤ L` is `1` modulo `r`
 (`Cslib.AKS.lt_orderOf_iff`).
@@ -31,7 +32,6 @@ values of `a` loses nothing.
 ## Main definitions
 
 * `Cslib.AKS.numTestsNat`: the integer bound `⌊√(φ(r) ⌈log₂ n⌉²)⌋` of step 5.
-* `Cslib.AKS.PassesUpTo`: the tests, with the congruence for `1 ≤ a ≤ A`.
 
 ## Main results
 
@@ -51,13 +51,6 @@ namespace Cslib.AKS
 
 /-- The integer bound `⌊√(φ(r) c²)⌋ = ⌊√φ(r) · c⌋` of step 5, with `c = ⌈log₂ n⌉`. -/
 def numTestsNat (n r : ℕ) : ℕ := Nat.sqrt (Nat.totient r * Nat.clog 2 n ^ 2)
-
-/-- **The tests with the congruence checked up to `A`**: `n` is not a perfect power (step 1), no
-`a ≤ r` has `1 < gcd(a, n) < n` (step 3), and either `n ≤ r` (step 4) or the congruence holds for
-every `1 ≤ a ≤ A` (step 5). -/
-def PassesUpTo (n r A : ℕ) : Prop :=
-  ¬ IsPerfectPower n ∧ (∀ a, 1 ≤ a → a ≤ r → a.gcd n = 1 ∨ a.gcd n = n) ∧
-    (n ≤ r ∨ ∀ a, 1 ≤ a → a ≤ A → Congruence n r a)
 
 /-- `log₂ n ≤ ⌈log₂ n⌉`. -/
 theorem logb_le_clog (n : ℕ) : Real.logb 2 n ≤ Nat.clog 2 n := by
@@ -99,11 +92,6 @@ theorem lt_orderOf_iff {n r L : ℕ} (hr : 2 ≤ r) :
       exact orderOf_pos _
     by_contra hle
     exact hsmall _ hpos (by omega) ((hpow _).mpr (pow_orderOf_eq_one _))
-
-/-- Every prime passes the tests, for every `r` and `A`. -/
-theorem passesUpTo_of_prime {p : ℕ} (hp : p.Prime) (r A : ℕ) : PassesUpTo p r A := by
-  obtain ⟨h1, h3, -⟩ := passes_of_prime hp r
-  exact ⟨h1, h3, Or.inr fun a _ _ => congruence_of_prime hp r a⟩
 
 /-- **The tests with integer thresholds characterize the primes**: for `n ≥ 2`, `r` such that the
 order of `n` modulo `r` exceeds `⌈log₂ n⌉²`, and `A ≥ ⌊√φ(r) log₂ n⌋`, `n` passes the tests up to

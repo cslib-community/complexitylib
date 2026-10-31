@@ -217,8 +217,9 @@ private theorem body_step {w N R : ℕ} (hfN : Fits w N) (hfR : Fits w (R + 1)) 
   · rw [hza, hA]; omega
 
 /-- **Step 3 and the totient.** For `r ≥ 2`, with the word size holding `n` and `r + 1`, within
-`time r` instructions the flag `ok` is `1` exactly when no `1 ≤ a ≤ r` has `1 < gcd(a, n) < n`,
-and `phi` is `φ(r)`. -/
+`time r` instructions the flag `ok` is `1` exactly when every `1 ≤ a ≤ r` has `gcd(a, n) = 1` or
+`gcd(a, n) = n`, and `phi` is `φ(r)`. For `n ≥ 1` the flag condition says that no `1 ≤ a ≤ r` has
+`1 < gcd(a, n) < n`; for `n = 0` it is stronger, since `gcd(a, 0) = a`. -/
 theorem exec {w : ℕ} (x : Data 11) {N R : ℕ} (hn : x.regs n = N) (hr : x.regs r = R)
     (hR : 2 ≤ R) (hfN : Fits w N) (hfR : Fits w (R + 1)) :
     ∃ y, ExecWithin w program x y (time R) ∧ y.regs ok ≤ 1 ∧
