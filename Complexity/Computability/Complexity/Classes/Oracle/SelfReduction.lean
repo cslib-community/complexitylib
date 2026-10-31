@@ -17,7 +17,6 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Probabilistic.Oracle.Composition
-import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.Simulation
 
 /-!
 # The self-reduction of `SAT` relative to an oracle
@@ -36,7 +35,7 @@ The oracle program (`Cslib.Complexity.SAT.searchProgram`) is a bounded adaptive 
 literal occurrence. Each step asks one request (`Cslib.Complexity.SAT.searchStepProgram`), and its
 state is the list of literals fixed so far, as in `Cslib.Complexity.SAT.selfReduce`; the loop is
 certified by `Cslib.Probability.IsOraclePPTOn.iterateWith_spec'`, with every reachable state
-bounded through `Cslib.Complexity.SAT.length_encNat_le_of_mem_vars`.
+bounded through `Cslib.Complexity.SAT.length_encList_le_of_mem_vars`.
 
 ## Main definitions
 
@@ -81,17 +80,6 @@ def searchStep (D : CNF ℕ → Bool) (φ : CNF ℕ) (answers : List (Literal �
     answers ++ [(φ.vars.getD answers.length 0, D (searchQuery φ answers))]
   else answers
 
-/-- Each step of the self-reduction fixes one more literal. -/
-private theorem length_foldl_selfReduceStep (D : CNF ℕ → Bool) (φ : CNF ℕ) (l : List ℕ)
-    (answers : List (Literal ℕ)) :
-    (l.foldl (selfReduceStep D φ) answers).length = answers.length + l.length := by
-  induction l generalizing answers with
-  | nil => rfl
-  | cons v l ih =>
-    simp only [List.foldl_cons, ih, selfReduceStep, List.length_append, List.length_cons,
-      List.length_nil]
-    omega
-
 /-- **Iterating the step is the self-reduction**, on every prefix of the literal occurrences. -/
 theorem iterate_searchStep (D : CNF ℕ → Bool) (φ : CNF ℕ) {i : ℕ} (hi : i ≤ φ.vars.length) :
     (searchStep D φ)^[i] [] = (φ.vars.take i).foldl (selfReduceStep D φ) [] := by
@@ -101,7 +89,8 @@ theorem iterate_searchStep (D : CNF ℕ → Bool) (φ : CNF ℕ) {i : ℕ} (hi :
     have hlt : i < φ.vars.length := by omega
     rw [Function.iterate_succ_apply', ih (by omega)]
     have hlen : ((φ.vars.take i).foldl (selfReduceStep D φ) []).length = i := by
-      rw [length_foldl_selfReduceStep, List.length_nil, List.length_take]
+      rw [← List.length_map (f := Prod.fst), map_fst_foldl_selfReduceStep, List.map_nil,
+        List.nil_append, List.length_take]
       omega
     rw [List.take_add_one, List.getElem?_eq_getElem hlt, Option.toList_some, List.foldl_append,
       List.foldl_cons, List.foldl_nil, searchStep, ite_eq_left (by omega : _ < _), selfReduceStep,
@@ -158,22 +147,6 @@ theorem interpret_searchProgram {A : Set (List Bool)}
   exact interpret_searchStepProgram hprog φ answers
 
 /-! ### Polynomial time -/
-
-/-- The literals fixed so far have short encodings: each is an occurrence of `φ`. -/
-private theorem length_encList_le {φ : CNF ℕ} {answers : List (Literal ℕ)}
-    (h : ∀ l ∈ answers, l.1 ∈ φ.vars) :
-    (encList (encPair encNat encBool) answers).length ≤
-      answers.length * (4 * (encCNF φ).length + 5) := by
-  induction answers with
-  | nil => simp [encList_nil]
-  | cons l answers ih =>
-    have hl := length_encNat_le_of_mem_vars (h l List.mem_cons_self)
-    have ih := ih fun l' hl' => h l' (List.mem_cons_of_mem _ hl')
-    simp only [encList_cons, List.length_append, length_frame, length_encPair, encBool_apply,
-      List.length_cons, List.length_nil]
-    rw [Nat.add_mul, Nat.one_mul]
-    generalize answers.length * (4 * (encCNF φ).length + 5) = X at ih ⊢
-    omega
 
 /-- The step is strict oracle PPT, for a polynomial-time single-request decision `prog`. -/
 private theorem isOraclePPTOn_searchStepProgram {prog : List Bool → WordQueryComp Unit Bool}
@@ -268,7 +241,7 @@ theorem computableInPolyTimeWithOracle_selfReduce (A : Set (List Bool)) :
         rw [← List.length_map (f := Prod.fst), hinv, List.length_take]
         omega
       simp only [encUnary_apply, List.length_replicate]
-      exact (length_encList_le hmem).trans (Nat.mul_le_mul_right _ hlen))
+      exact (length_encList_le_of_mem_vars hmem).trans (Nat.mul_le_mul_right _ hlen))
   refine ⟨searchProgram prog, ?_, fun φ => interpret_searchProgram hprog φ⟩
   simpa only [searchProgram, OracleComp.interpret_iterate] using hit.1
 
