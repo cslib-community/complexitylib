@@ -35,7 +35,8 @@ by arithmetic on natural numbers, the form in which a polynomial-time constructi
   `Turing.MultiTapePTM.explicitSrcNum` and `Turing.MultiTapePTM.explicitTgtNum`, and the ports of
   a vertex are the edge numbers with that vertex as an endpoint
   (`Turing.MultiTapePTM.explicitPortsNum`). They are the ports of the explicit network
-  (`Turing.MultiTapePTM.map_fst_vertices_explicitBlockNetwork`).
+  (`Turing.MultiTapePTM.map_val_explicitPorts`,
+  `Turing.MultiTapePTM.map_fst_vertices_explicitBlockNetwork`).
 
 ## Main definitions
 
@@ -54,7 +55,8 @@ by arithmetic on natural numbers, the form in which a polynomial-time constructi
 * `Turing.MultiTapePTM.edgeTargetNum_blockEdgeEquiv`: the edge targets on numbers.
 * `Turing.MultiTapePTM.explicitSrcNum_explicitEdgeEquiv`,
   `Turing.MultiTapePTM.explicitTgtNum_explicitEdgeEquiv`: the endpoints on numbers.
-* `Turing.MultiTapePTM.map_fst_vertices_explicitBlockNetwork`: the ports of the explicit network
+* `Turing.MultiTapePTM.map_val_explicitPorts`,
+  `Turing.MultiTapePTM.map_fst_vertices_explicitBlockNetwork`: the ports of the explicit network
   on numbers.
 -/
 
@@ -358,8 +360,29 @@ it, in increasing order. -/
   (List.range (2 * (q * (3 * k + 1) * m))).filter fun j =>
     decide (explicitSrcNum k q m σ j = v ∨ explicitTgtNum k q m j = v)
 
-variable {s : ℕ} {State : Type} (machine : MultiTapePTM k Bool State) (input : List Bool)
-  (b : ℕ) [NeZero b] (e : State ≃ Fin s)
+variable {State : Type} (machine : MultiTapePTM k Bool State) (input : List Bool) (b : ℕ)
+  [NeZero b]
+
+omit [NeZero b] in
+/-- **The ports of a vertex on numbers**: for any letter code, the ports of the vertex `w` of the
+binarized and subdivided network, numbered by `explicitEdgeEquiv`, are
+`explicitPortsNum` at the number of `w`. -/
+theorem map_val_explicitPorts {m : ℕ} (code : BlockLetter k State b → Fin m → Bool) (σ : ℕ)
+    (w : (Fin q ⊕ BlockEdge k q) ⊕ BlockEdge k q × Fin m) :
+    ((((machine.blockNetwork input b (scheduleOfNat k q σ)).binarize code).subdivide.explicitPorts
+        (explicitEdgeEquiv k q m) w).map Fin.val) =
+      explicitPortsNum k q m σ (explicitVertexEquiv k q m w) := by
+  rw [explicitPortsNum, ← List.map_coe_finRange_eq_range, List.filter_map,
+    TensorNetwork.explicitPorts]
+  congr 1
+  refine List.filter_congr fun j _ => ?_
+  have hj := (explicitEdgeEquiv k q m).apply_symm_apply j
+  simp only [Function.comp_apply, decide_eq_decide]
+  conv_rhs => rw [← hj, explicitSrcNum_explicitEdgeEquiv machine input b code σ,
+    explicitTgtNum_explicitEdgeEquiv machine input b code σ]
+  simp only [Fin.val_inj, Equiv.apply_eq_iff_eq]
+
+variable {s : ℕ} (e : State ≃ Fin s)
 
 /-- **The ports of the explicit network on numbers**: vertex `v` of the explicit network of the
 schedule of `σ` has the ports `explicitPortsNum k q (letterBits k s b) σ v`. -/
@@ -367,20 +390,10 @@ theorem map_fst_vertices_explicitBlockNetwork (σ : ℕ) :
     (machine.explicitBlockNetwork input b (scheduleOfNat k q σ) e).vertices.map Prod.fst =
       (List.range (q * (3 * k + 2) + q * (3 * k + 1) * letterBits k s b)).map
         (explicitPortsNum k q (letterBits k s b) σ) := by
-  set m := letterBits k s b
-  set N := ((machine.blockNetwork input b (scheduleOfNat k q σ)).binarize (letterCode e)).subdivide
   rw [explicitBlockNetwork, TensorNetwork.toExplicit, List.map_ofFn,
     ← List.map_coe_finRange_eq_range, List.map_map, List.ofFn_eq_map]
   refine List.map_congr_left fun v _ => ?_
   simp only [Function.comp_apply]
-  rw [explicitPortsNum, ← List.map_coe_finRange_eq_range, List.filter_map,
-    TensorNetwork.explicitPorts]
-  congr 1
-  refine List.filter_congr fun j _ => ?_
-  have hj := (explicitEdgeEquiv k q m).apply_symm_apply j
-  simp only [Function.comp_apply, decide_eq_decide]
-  conv_rhs => rw [← hj, explicitSrcNum_explicitEdgeEquiv machine input b (letterCode e) σ,
-    explicitTgtNum_explicitEdgeEquiv machine input b (letterCode e) σ]
-  rw [Fin.val_inj, Fin.val_inj, Equiv.eq_symm_apply, Equiv.eq_symm_apply]
+  rw [map_val_explicitPorts, Equiv.apply_symm_apply]
 
 end Turing.MultiTapePTM
