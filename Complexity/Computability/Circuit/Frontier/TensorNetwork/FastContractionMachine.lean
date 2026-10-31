@@ -28,8 +28,9 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFr
 The stack recursion of `Cslib.Circuits.Frontier.FastContraction.scheme` as one native machine for
 the contraction modulo `2 ^ P` of an explicit network `(r, G)`, with the precision `P` in binary:
 the root descriptors are tables (`T = List ℕ`), read by the entry procedure `tableEntry`. The
-encodings, the root network (`FastContraction.rootNet`) and its polynomial-time construction are
-stated for every type of root descriptors.
+encodings, the leaf certificate (`FastContraction.leafCertificate ce`, from a native certificate
+`ce` of any entry procedure), the root network (`FastContraction.rootNet`) and its polynomial-time
+construction are stated for every type of root descriptors.
 
 **The root.** The precision is first capped at the encoded length of the network
 (`ExplicitTensorNetwork.capPrecision`), which does not change the residue. The root call
@@ -122,35 +123,45 @@ theorem leafInput_polyTime :
       (DescribedNetwork.encInput (encPair encUnary (encList encNat)) (VertexDesc.enc encT)) := by
   unfold Call.prec Call.fl Call.net; fun_prop
 
-variable (mk : Call (List ℕ) → State → ℕ × DescribedNetwork (VertexDesc (List ℕ)))
+section Leaf
 
-/-- **The leaf certificate** over tables: direct summation over the coefficient lists of `A_p`,
-with the native evaluator of the vertex descriptors, tagged with the depth. -/
+variable {encT} {ev : T → List Bool → List ℕ}
+  (ce : NativeCertificate (fun q : T × List Bool => ev q.1 q.2) (encPair encT encBits)
+    (encList encNat))
+  (mk : Call T → State → ℕ × DescribedNetwork (VertexDesc T))
+
+/-- **The leaf certificate**: direct summation over the coefficient lists of `A_p`, with the native
+evaluator of the vertex descriptors built from a native certificate `ce` of the entry procedure of
+the roots, tagged with the depth. -/
 @[expose] noncomputable def leafCertificate :
-    NativeCertificate (scheme tableEntry mk).leaf (encCall (encList encNat)) encValue :=
-  ((NativeCertificate.ofPolyTime (depth_polyTime (encList encNat))).prod
-    ((DescribedNetwork.contractionCertificate (VertexDesc.entry tableEntry)
-      SumOps.galois_polyTime VertexDesc.entryCertificate).comp
-      (NativeCertificate.ofPolyTime (leafInput_polyTime (encList encNat))))).congr
+    NativeCertificate (scheme ev mk).leaf (encCall encT) encValue :=
+  ((NativeCertificate.ofPolyTime (depth_polyTime encT)).prod
+    ((DescribedNetwork.contractionCertificate (VertexDesc.entry ev) SumOps.galois_polyTime
+      (VertexDesc.entryCertificate ce)).comp
+      (NativeCertificate.ofPolyTime (leafInput_polyTime encT)))).congr
     fun _ => rfl
 
 /-- The time of a leaf: the depth, the input of direct summation, and direct summation. -/
-theorem leafCertificate_time (x : Call (List ℕ)) :
-    (leafCertificate mk).time x =
-      (NativeCertificate.ofPolyTime (depth_polyTime (encList encNat))).time x +
-        ((NativeCertificate.ofPolyTime (leafInput_polyTime (encList encNat))).time x +
-          (DescribedNetwork.contractionCertificate (VertexDesc.entry tableEntry)
-            SumOps.galois_polyTime VertexDesc.entryCertificate).time ((x.prec, x.fl), x.net)) :=
+theorem leafCertificate_time (x : Call T) :
+    (leafCertificate ce mk).time x =
+      (NativeCertificate.ofPolyTime (depth_polyTime encT)).time x +
+        ((NativeCertificate.ofPolyTime (leafInput_polyTime encT)).time x +
+          (DescribedNetwork.contractionCertificate (VertexDesc.entry ev)
+            SumOps.galois_polyTime (VertexDesc.entryCertificate ce)).time
+            ((x.prec, x.fl), x.net)) :=
   rfl
 
 /-- The space of a leaf. -/
-theorem leafCertificate_space (x : Call (List ℕ)) :
-    (leafCertificate mk).space x =
-      (NativeCertificate.ofPolyTime (depth_polyTime (encList encNat))).space x +
-        ((NativeCertificate.ofPolyTime (leafInput_polyTime (encList encNat))).space x +
-          (DescribedNetwork.contractionCertificate (VertexDesc.entry tableEntry)
-            SumOps.galois_polyTime VertexDesc.entryCertificate).space ((x.prec, x.fl), x.net)) :=
+theorem leafCertificate_space (x : Call T) :
+    (leafCertificate ce mk).space x =
+      (NativeCertificate.ofPolyTime (depth_polyTime encT)).space x +
+        ((NativeCertificate.ofPolyTime (leafInput_polyTime encT)).space x +
+          (DescribedNetwork.contractionCertificate (VertexDesc.entry ev)
+            SumOps.galois_polyTime (VertexDesc.entryCertificate ce)).space
+            ((x.prec, x.fl), x.net)) :=
   rfl
+
+end Leaf
 
 /-! ### The root -/
 
@@ -347,6 +358,8 @@ theorem fuel_polyTime : ComputableInPolyTime fuel ExplicitTensorNetwork.encContr
 
 /-! ### The result -/
 
+variable (mk : Call (List ℕ) → State → ℕ × DescribedNetwork (VertexDesc (List ℕ)))
+
 /-- **The result of the machine** on an input `(P, r, G)`: with the capped precision `p`, the
 constant coordinate of a returned root value modulo `2 ^ p` if the run returns a value tagged
 `0`, and direct summation otherwise. -/
@@ -400,7 +413,8 @@ components of the scheme. -/
     NativeCertificate ((scheme tableEntry mk).run fuel root)
       ExplicitTensorNetwork.encContractionInput
       (encOption encValue) :=
-  Scheme.certificate hpoly (leafCertificate mk) (NativeCertificate.ofPolyTime fuel_polyTime)
+  Scheme.certificate hpoly (leafCertificate tableEntryCertificate mk)
+    (NativeCertificate.ofPolyTime fuel_polyTime)
     (NativeCertificate.ofPolyTime root_polyTime)
 
 /-- The constant coordinate of a value modulo `2 ^ p`, for the capped precision `p`. -/
