@@ -135,6 +135,13 @@ noncomputable def taperedRecovery (a u h : ℕ) (G : ℤ → K[X]) : K :=
       (hermiteQuotient (recoveryNodes a) (fun q : ℤ => (q : K)) (taperMult u h) (2 ^ (a + 1)) t
         (G t)).eval (algebraMap ℚ K (-(t : ℚ) / 2 ^ (a + 1)))
 
+theorem taperedRecovery_def (a u h : ℕ) (G : ℤ → K[X]) :
+    taperedRecovery a u h G = ∑ t ∈ recoveryNodes a,
+      (hermiteBasis (recoveryNodes a) (fun q : ℤ => (q : K)) (taperMult u h) t).eval 0 *
+        (hermiteQuotient (recoveryNodes a) (fun q : ℤ => (q : K)) (taperMult u h) (2 ^ (a + 1)) t
+          (G t)).eval (algebraMap ℚ K (-(t : ℚ) / 2 ^ (a + 1))) := by
+  rw [taperedRecovery]
+
 /-- `2 ^ n` as a unit of a `ℚ`-algebra. -/
 private noncomputable def twoPowUnit (K : Type*) [CommRing K] [Algebra ℚ K] (n : ℕ) : Kˣ :=
   Units.map (algebraMap ℚ K : ℚ →* K) (Units.mk0 ((2 : ℚ) ^ n) (by positivity))
@@ -147,7 +154,7 @@ private theorem coe_twoPowUnit_inv (n : ℕ) :
   simp [twoPowUnit, Units.val_inv_eq_inv_val]
 
 /-- Distinct integers are units of a `ℚ`-algebra apart. -/
-private theorem pairwise_isUnit_sub (s : Finset ℤ) :
+theorem pairwise_isUnit_sub (s : Finset ℤ) :
     (s : Set ℤ).Pairwise fun i j => IsUnit ((i : K) - (j : K)) := by
   intro i _ j _ hij
   have h : ((i : ℚ) - j) ≠ 0 := sub_ne_zero.mpr (by exact_mod_cast hij)
@@ -170,7 +177,7 @@ theorem eval_zero_eq_taperedRecovery {a u h : ℕ} {F : K[X]}
 /-! ### Integrality of the Hermite basis in local coordinates -/
 
 /-- The rationals `α / (t - q)` with `t ≠ q` on the grid, `α = 2 ^ (a + 1)`, lie in `ℤ_(2)`. -/
-private theorem padicValuation_two_pow_div_le_one {a : ℕ} {t q : ℤ} (ht : t ∈ cauchyGrid (2 ^ a))
+theorem padicValuation_two_pow_div_le_one {a : ℕ} {t q : ℤ} (ht : t ∈ cauchyGrid (2 ^ a))
     (hq : q ∈ cauchyGrid (2 ^ a)) (hne : q ≠ t) :
     Rat.padicValuation 2 ((2 : ℚ) ^ (a + 1) / ((t : ℚ) - q)) ≤ 1 := by
   have hle := padicValuation_two_pow_le_sub ht hq hne
@@ -184,7 +191,7 @@ private theorem padicValuation_two_pow_div_le_one {a : ℕ} {t q : ℤ} (ht : t 
 
 /-- The Hermite basis over `ℚ` in local coordinates is a product of powers of
 `1 + α / (t - q) z`. -/
-private theorem hermiteBasis_comp_rat (a u h : ℕ) (t : ℤ) :
+theorem hermiteBasis_comp_rat (a u h : ℕ) (t : ℤ) :
     (hermiteBasis (recoveryNodes a) (fun q : ℤ => (q : ℚ)) (taperMult u h) t).comp
         (C (t : ℚ) + C (2 ^ (a + 1)) * X) =
       ∏ q ∈ (recoveryNodes a).erase t,
@@ -342,7 +349,7 @@ private theorem inTwoPow_coeff_hermiteQuotient {B : Subring K}
   · exact inTwoPow_zero B n
 
 /-- The value of `E_t(0)` in `K` is the image of the rational one. -/
-private theorem eval_zero_hermiteBasis_eq (a u h : ℕ) {t : ℤ} (ht : t ∈ recoveryNodes a) :
+theorem eval_zero_hermiteBasis_eq (a u h : ℕ) {t : ℤ} (ht : t ∈ recoveryNodes a) :
     (hermiteBasis (recoveryNodes a) (fun q : ℤ => (q : K)) (taperMult u h) t).eval 0 =
       algebraMap ℚ K
         ((hermiteBasis (recoveryNodes a) (fun q : ℤ => (q : ℚ)) (taperMult u h) t).eval 0) := by
@@ -352,7 +359,7 @@ private theorem eval_zero_hermiteBasis_eq (a u h : ℕ) {t : ℤ} (ht : t ∈ re
     ← map_zero (algebraMap ℚ K), eval₂_at_apply]
 
 /-- `E_t(0) ≠ 0`: its factors are `-q / (t - q)` with `q ≠ 0`. -/
-private theorem eval_zero_hermiteBasis_ne_zero (a u h : ℕ) {t : ℤ} :
+theorem eval_zero_hermiteBasis_ne_zero (a u h : ℕ) {t : ℤ} :
     (hermiteBasis (recoveryNodes a) (fun q : ℤ => (q : ℚ)) (taperMult u h) t).eval 0 ≠ 0 := by
   rw [eval_hermiteBasis, prod_ne_zero_iff]
   intro q hq

@@ -55,14 +55,14 @@ def packing : Cslib.PacketPacking.Packing net.src net.tgt 1 2 where
   labels_eq e i := by fin_cases e <;> fin_cases i <;> decide
 
 example (e : Fin 2) :
-    (packingGroup net side packing 0 (net.src e), packingGroup net side packing 0 (net.tgt e)) =
+    (packingGroup side packing 0 (net.src e), packingGroup side packing 0 (net.tgt e)) =
       if (packing.slot e : ℕ).testBit 0 then (packing.symbols (packing.packet e) 0).swap
       else packing.symbols (packing.packet e) 0 :=
-  packingGroup_src_tgt net side (fun e => by fin_cases e <;> decide)
+  packingGroup_src_tgt side (fun e => by fin_cases e <;> decide)
     (fun e => by fin_cases e <;> decide) packing 0 e
 
-example : Finset.card {e | packingGroup net side packing 0 (net.src e) = 1} = 1 := by
-  rw [card_packingGroup_src net side (fun e => by fin_cases e <;> decide)]
+example : Finset.card {e | packingGroup side packing 0 (net.src e) = 1} = 1 := by
+  rw [card_packingGroup_src side (fun e => by fin_cases e <;> decide)]
   decide
 
 /-- **Child invariants.** For any mode splitting of `net` along the packets of `packing`, a packet

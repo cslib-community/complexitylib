@@ -27,9 +27,17 @@ extension of valid bit answers to words outside the query encoding's image. The 
 is deterministic. Its resource bound is expressed by exact realization on a clocked fair-coin
 machine; the same interaction interface also supports randomized programs.
 
-The definitions and theorem statement below specify the claim. Lean checks the bridge, and the
-audit permits only the listed foundational program and machine modules, with no complexity-class
-or Toda-theorem allowance.
+The definitions and theorem statement below specify the claim. Lean checks the bridge, and
+besides the shared foundations the audit permits only the following eight foundational program and
+machine modules, with no complexity-class or Toda-theorem allowance:
+* under `Computability.Machines.Turing.MultiTape`: `Machine` (machines whose oracle channels
+  have a write-only query buffer and a read-only reply tape), `Machine.Program` (a clocked run as
+  a typed program), `Probabilistic` (one fresh fair coin per live instruction) and
+  `Probabilistic.Oracle` (fair-coin runs with external oracle calls);
+* under `Languages.Probabilistic`: `Basic` (terminating programs with typed calls, whose only
+  randomness is uniform choice from a finite range), `Oracle` (private coins beside external
+  calls), `Sum` (sums of oracle interfaces) and `Oracle.Interaction` (runs against a stateful
+  randomized oracle).
 
 ## References
 
