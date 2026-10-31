@@ -523,7 +523,7 @@ end PolyTime
 
 /-! ### The child of the native parent packing -/
 
-/-- A maximum of a list of numbers below `n` is at most `n`. -/
+/-- A left fold of `max` over numbers at most `n`, from at most `n`, is at most `n`. -/
 private theorem foldl_max_le {l : List ℕ} {m n : ℕ} (hm : m ≤ n) (hl : ∀ x ∈ l, x ≤ n) :
     l.foldl max m ≤ n := by
   induction l generalizing m with
@@ -721,10 +721,11 @@ theorem mem_vertices_nativeChild {v : List ℕ × VertexDesc}
     · rw [List.getD_eq_default _ _ h]
       exact Or.inl rfl
 
-/-- The slice of `β` at a packet has at most `2 ^ (i + 1) p_t` exponents, all from `β`. -/
+/-- The slice of `β` at a packet has at most `2 ^ (i + 1) p_t` exponents. -/
 theorem length_betaSlice_le (q : ℕ) : (betaSlice i pt β q).length ≤ 2 ^ (i + 1) * pt :=
   List.length_take_le _ _
 
+/-- The exponents in the slice of `β` at a packet are exponents of `β`. -/
 theorem mem_of_mem_betaSlice {q b : ℕ} (hb : b ∈ betaSlice i pt β q) : b ∈ β :=
   List.mem_of_mem_drop (List.mem_of_mem_take hb)
 
