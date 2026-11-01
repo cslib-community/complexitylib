@@ -292,7 +292,11 @@ variable {s cb X n T : ℕ}
 theorem Key.guard_ofFields (j tag p : ℕ) (g : Guard) :
     (Key.ofFields s cb X n T j tag p).guard g = g.test n T (colOf s cb p) := by
   cases g <;> simp only [Key.guard, Key.ofFields, Guard.test, numCols] <;>
-    rw [Bool.eq_iff_iff] <;> simp <;> omega
+    rw [Bool.eq_iff_iff] <;>
+    simp only [Bool.not_eq_eq_eq_not, Bool.not_true, decide_eq_false_iff_not, decide_eq_true_eq,
+      Order.lt_add_one_iff, Order.add_one_le_iff, Bool.and_eq_true, not_lt, Bool.decide_and,
+      and_congr_left_iff, Bool.not_and, Bool.not_not, Bool.or_eq_true, not_le, Order.lt_one_iff] <;>
+    omega
 
 omit [DecidableEq State] in
 theorem Key.colOK_ofFields (j tag p : ℕ) (l : Loc k State) :
@@ -305,7 +309,10 @@ theorem Key.initBit_ofFields (j tag p : ℕ) (l : Loc k State) :
   rcases l with l | l | ⟨f, (_ | _), j⟩ | ⟨f, (_ | _), j⟩ <;> try rfl
   rcases f with _ | i | ⟨i, s⟩ <;>
     simp only [Key.initBit, Tableau.initBit, Key.colInit, Tableau.colInit, Key.ofFields] <;>
-    congr 1 <;> rw [Bool.eq_iff_iff] <;> simp <;> omega
+    congr 1 <;> rw [Bool.eq_iff_iff] <;>
+    simp only [Bool.and_eq_true, Bool.not_eq_eq_eq_not, Bool.not_true, decide_eq_false_iff_not,
+      not_lt, decide_eq_true_eq] <;>
+    omega
 
 omit [DecidableEq State] in
 theorem colSrcOf_eval (l : Loc k State) (cs : ColSel) (c T : ℕ) :
@@ -325,11 +332,17 @@ theorem refSrc_eval {t : ℕ} (j tag p : ℕ) (r : Ref k State) :
     by_cases h : 1 ≤ colOf (slotBits k State) (colBits T) p ∧
         colOf (slotBits k State) (colBits T) p ≤ n
     · have h₁ : (!decide (colOf (slotBits k State) (colBits T) p = 0) &&
-          !decide (n < colOf (slotBits k State) (colBits T) p)) = true := by simp; omega
+          !decide (n < colOf (slotBits k State) (colBits T) p)) = true := by
+        simp only [Bool.and_eq_true, Bool.not_eq_eq_eq_not, Bool.not_true, decide_eq_false_iff_not,
+          not_lt]
+        omega
       simp only [h₁, h, ↓reduceIte]
       rfl
     · have h₁ : ¬ (!decide (colOf (slotBits k State) (colBits T) p = 0) &&
-          !decide (n < colOf (slotBits k State) (colBits T) p)) = true := by simp; omega
+          !decide (n < colOf (slotBits k State) (colBits T) p)) = true := by
+        simp only [Bool.and_eq_true, Bool.not_eq_eq_eq_not, Bool.not_true, decide_eq_false_iff_not,
+          not_lt, not_and, not_le]
+        omega
       simp only [h₁, h, ↓reduceIte, Bool.false_eq_true]
       rfl
   · simp only [Key.refSrc, Ref.label, Key.guard_ofFields]
@@ -359,12 +372,24 @@ theorem clauseOf_eq_map_shapeOf (x : List Bool) (n T j tag p : ℕ) :
     by_cases h0 : tag = 0
     · simp only [h0, ↓reduceIte]
       by_cases hp : p < 2
-      · have h₁ : (!κ.pGt1) = true := by simp [hκ, Key.ofFields]; omega
+      · have h₁ : (!κ.pGt1) = true := by
+          simp only [hκ, Key.ofFields, Nat.div_eq_zero_iff, Nat.pow_eq_zero, OfNat.ofNat_ne_zero,
+            ne_eq, false_and, false_or, Bool.not_eq_eq_eq_not, Bool.not_true,
+            decide_eq_false_iff_not, not_lt]
+          omega
         have h₂ : (!κ.p0) = decide (p = 1) := by
-          rw [Bool.eq_iff_iff]; simp [hκ, Key.ofFields]; omega
+          rw [Bool.eq_iff_iff]
+          simp only [hκ, Key.ofFields, Nat.div_eq_zero_iff, Nat.pow_eq_zero, OfNat.ofNat_ne_zero,
+            ne_eq, false_and, false_or, Bool.not_eq_eq_eq_not, Bool.not_true,
+            decide_eq_false_iff_not, decide_eq_true_eq]
+          omega
         simp only [hp, h₁, ↓reduceIte, h₂, map_eval_lift, relabel_tseitinClause]
         rfl
-      · have h₁ : ¬ (!κ.pGt1) = true := by simp [hκ, Key.ofFields]; omega
+      · have h₁ : ¬ (!κ.pGt1) = true := by
+          simp only [hκ, Key.ofFields, Nat.div_eq_zero_iff, Nat.pow_eq_zero, OfNat.ofNat_ne_zero,
+            ne_eq, false_and, false_or, Bool.not_eq_eq_eq_not, Bool.not_true,
+            decide_eq_false_iff_not, not_lt, not_le]
+          omega
         simp only [hp, h₁, ↓reduceIte]
         rfl
     · by_cases h1 : tag = 1
@@ -373,7 +398,10 @@ theorem clauseOf_eq_map_shapeOf (x : List Bool) (n T j tag p : ℕ) :
         · have h₁ : (j = 0 ∧ κ.pLtX = true) := ⟨hp.1, by simp [hκ, Key.ofFields, hp.2]⟩
           rw [dite_eq_left hp, ite_eq_left h₁]
           simp [unitClause, Shape.eval, LabelSrc.eval, SignSrc.eval, List.getElem?_eq_getElem hp.2]
-        · have h₁ : ¬ (j = 0 ∧ κ.pLtX = true) := by simp [hκ, Key.ofFields]; omega
+        · have h₁ : ¬ (j = 0 ∧ κ.pLtX = true) := by
+            simp only [hκ, Key.ofFields, Nat.div_eq_zero_iff, Nat.pow_eq_zero, OfNat.ofNat_ne_zero,
+              ne_eq, false_and, false_or, decide_eq_true_eq, not_and, not_lt]
+            omega
           rw [dite_eq_right hp, ite_eq_right h₁]
           rfl
       · by_cases h2 : tag = 2
@@ -412,7 +440,10 @@ theorem clauseOf_eq_map_shapeOf (x : List Bool) (n T j tag p : ℕ) :
             rw [ite_eq_left hp, ite_eq_left h₁]
             simp [unitClause, Shape.eval, LabelSrc.eval, SignSrc.eval, outLabel, outSrc, posLabel,
               ColSrc.eval, TimeSrc.eval]
-          · have h₁ : ¬ (j = 0 ∧ κ.p0 = true) := by simp [hκ, Key.ofFields]; omega
+          · have h₁ : ¬ (j = 0 ∧ κ.p0 = true) := by
+              simp only [hκ, Key.ofFields, Nat.div_eq_zero_iff, Nat.pow_eq_zero,
+                OfNat.ofNat_ne_zero, ne_eq, false_and, false_or, decide_eq_true_eq, not_and]
+              omega
             rw [ite_eq_right hp, ite_eq_right h₁]
             rfl
   · simp only [hj, ↓reduceDIte]
@@ -492,7 +523,10 @@ theorem testBit_sub_one {c : ℕ} (hc : 1 ≤ c) (q : ℕ) :
   induction q generalizing c with
   | zero =>
     simp only [Nat.testBit_zero, pow_zero, Nat.mod_one, decide_true, Bool.xor_true]
-    rw [Bool.eq_iff_iff]; simp; omega
+    rw [Bool.eq_iff_iff]
+    simp only [decide_eq_true_eq, Bool.not_eq_eq_eq_not, Bool.not_true, decide_eq_false_iff_not,
+      Nat.mod_two_not_eq_one]
+    omega
   | succ q ih =>
     rw [Nat.testBit_succ, Nat.testBit_succ, Nat.pow_succ', Nat.mod_mul]
     rcases Nat.even_or_odd c with ⟨d, rfl⟩ | ⟨d, rfl⟩
@@ -516,7 +550,10 @@ theorem testBit_add_one (c q : ℕ) :
   induction q generalizing c with
   | zero =>
     simp only [Nat.testBit_zero, pow_zero, Nat.mod_one, Nat.sub_self, decide_true, Bool.xor_true]
-    rw [Bool.eq_iff_iff]; simp; omega
+    rw [Bool.eq_iff_iff]
+    simp only [decide_eq_true_eq, Bool.not_eq_eq_eq_not, Bool.not_true, decide_eq_false_iff_not,
+      Nat.mod_two_not_eq_one]
+    omega
   | succ q ih =>
     rw [Nat.testBit_succ, Nat.testBit_succ, Nat.pow_succ', Nat.mod_mul]
     have hq := Nat.one_le_two_pow (n := q)

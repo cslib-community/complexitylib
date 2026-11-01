@@ -110,28 +110,12 @@ def litBits (w : ℕ) (l : Literal ℕ) : List Bool :=
 /-- The bit `i` of a bit string, or `false`. -/
 def bitAt {m : ℕ} (b : BitString m) (i : ℕ) : Bool := if h : i < m then b ⟨i, h⟩ else false
 
-/-- The number with the first `w` bits of `f`, least significant first. -/
-def bitsVal (f : ℕ → Bool) : ℕ → ℕ
-  | 0 => 0
-  | w + 1 => bitsVal f w + 2 ^ w * (f w).toNat
-
-theorem bitsVal_testBit (v w : ℕ) : bitsVal (fun i => v.testBit i) w = v % 2 ^ w := by
-  induction w with
-  | zero => simp [bitsVal, Nat.mod_one]
-  | succ w ih => rw [bitsVal, ih, mod_two_pow_succ]
-
-theorem bitsVal_congr {f g : ℕ → Bool} {w : ℕ} (h : ∀ i < w, f i = g i) :
-    bitsVal f w = bitsVal g w := by
-  induction w with
-  | zero => rfl
-  | succ w ih => rw [bitsVal, bitsVal, ih fun i hi => h i (by omega), h w (by omega)]
-
 /-- The key of the input bits of the constant stage: the clause and tag bits, `s` slot bits,
 and the fourteen comparison chains. -/
 def Key.ofBits (s : ℕ) {m : ℕ} (b : BitString m) : Key where
   j := (bitAt b 0).toNat + 2 * (bitAt b 1).toNat
   tag := (bitAt b 2).toNat + 2 * (bitAt b 3).toNat
-  slot := bitsVal (fun i => bitAt b (4 + i)) s
+  slot := Nat.ofBits fun i : Fin s => bitAt b (4 + i)
   c0 := bitAt b (4 + s)
   cGt1 := bitAt b (4 + s + 3)
   cGtN := bitAt b (4 + s + 4)
@@ -461,7 +445,7 @@ theorem fieldVal_carryC (idx : ℕ) {q : ℕ} (hq : q ≤ s + cb + tb) :
   rw [hK]
   have := Nat.mod_lt (colOf s cb (idx / 16)) (Nat.two_pow_pos q)
   rw [Bool.eq_iff_iff]
-  simp
+  simp only [Bool.and_true, Bool.or_eq_true, decide_eq_true_eq, or_iff_right_iff_imp]
   omega
 
 theorem fieldVal_borrowT (idx : ℕ) (hidx : idx < 2 ^ (4 + (s + cb + tb))) {q : ℕ}
@@ -543,8 +527,9 @@ theorem eval_outTemplate_wireNat {z : ℕ → Bool} {idx : ℕ} (hidx : idx < 2 
             decide_false, Bool.false_and]
     · simp [h2, hP, hN]
 
-private theorem bitsVal_two (f : ℕ → Bool) : bitsVal f 2 = (f 0).toNat + 2 * (f 1).toNat := by
-  simp only [bitsVal]; omega
+private theorem ofBits_two (f : Fin 2 → Bool) : Nat.ofBits f = (f 0).toNat + 2 * (f 1).toNat := by
+  simp only [Nat.ofBits, Fin.foldr_succ, Fin.foldr_zero, Fin.succ_zero_eq_one]
+  omega
 
 /-- The value of the last gate of chain `k`. -/
 theorem fieldVal_keyWire_chain (idx : ℕ) {k : ℕ} (hk : k < 14) (hP : 1 ≤ s + cb + tb) :
@@ -602,18 +587,16 @@ theorem ofBits_keyWire {idx : ℕ} (hidx : idx < 2 ^ (4 + (s + cb + tb))) (hs : 
     simpa using hch 0 (by omega)
   simp only [Key.ofBits, Key.ofFields, hc0,
     hin 0 (by omega), hin 1 (by omega), hin 2 (by omega), hin 3 (by omega)]
-  rw [bitsVal_congr (g := fun i => (idx / 16).testBit i) (fun i hi => by
-      rw [hin _ (by omega), show idx / 16 = idx / 2 ^ 4 from rfl, Nat.testBit_div_two_pow,
-        Nat.add_comm]), bitsVal_testBit]
+  rw [show (fun i : Fin s => bitAt (fun i : Fin (4 + s + 14) =>
+      fieldVal s cb tb x n T idx (keyWire s cb tb i)) (4 + i)) =
+      fun i : Fin s => (idx / 16).testBit i from funext fun i => by
+        rw [hin _ (by omega), show idx / 16 = idx / 2 ^ 4 from rfl, Nat.testBit_div_two_pow,
+          Nat.add_comm], Nat.ofBits_testBit]
   have hj : (idx.testBit 0).toNat + 2 * (idx.testBit 1).toNat = idx % 4 := by
-    have := bitsVal_testBit idx 2
-    rw [bitsVal_two] at this
-    exact this
+    simpa only [ofBits_two, Fin.val_zero, Fin.val_one, Nat.reducePow] using Nat.ofBits_testBit idx 2
   have htag : (idx.testBit 2).toNat + 2 * (idx.testBit 3).toNat = idx / 4 % 4 := by
-    have := bitsVal_testBit (idx / 4) 2
-    rw [bitsVal_two, show idx / 4 = idx / 2 ^ 2 from rfl, Nat.testBit_div_two_pow,
-      Nat.testBit_div_two_pow] at this
-    exact this
+    simpa only [ofBits_two, show idx / 4 = idx / 2 ^ 2 from rfl, Nat.testBit_div_two_pow,
+      Fin.val_zero, Fin.val_one, Nat.reduceAdd, Nat.reducePow] using Nat.ofBits_testBit (idx / 4) 2
   rw [hj, htag]
   simp only [hch 3 (by omega), hch 4 (by omega), hch 5 (by omega), hch 6 (by omega),
     hch 7 (by omega), hch 8 (by omega), hch 9 (by omega), hch 2 (by omega), hch 10 (by omega),

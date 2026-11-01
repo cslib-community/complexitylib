@@ -8,6 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Boolean.Tableau.Decoder.Circuit
+import Complexity.Foundations.Data.List.RowMajor
+import Complexity.Foundations.Data.Nat.Doubling
 import Mathlib.Data.Nat.Size
 
 /-!
@@ -96,25 +98,26 @@ noncomputable def decoder {x : List Bool} {n T : ℕ}
 /-- **The code of the decoder**, written with the code combinators `compCode`, `appendCode`,
 `appendCodes` and `formulaCode`: the field stage, the constant code of the constant stage, and one
 instance of `outTemplate` per output bit (`code_decoder`). -/
-noncomputable def decoderCode (a : List Bool × ℕ × ℕ) : List (Op × List ℕ) × List ℕ :=
-  compCode (4 + (slotBits k State + colBits a.2.2 + timeBits a.2.2))
-    (appendCodes (aWidth (slotBits k State) (colBits a.2.2) (timeBits a.2.2) a.1 a.2.1 a.2.2 +
-        3 * (13 + slotBits k State))
-      ((List.range (3 * (2 + (slotBits k State + colBits a.2.2 + timeBits a.2.2) + 1))).map
-        fun o => formulaCode (aWidth (slotBits k State) (colBits a.2.2) (timeBits a.2.2) a.1 a.2.1
-          a.2.2 + 3 * (13 + slotBits k State)) outTemplate
-          (fun j => wireNat (slotBits k State) (colBits a.2.2) (timeBits a.2.2) a.1 a.2.1 a.2.2 o
-            j)))
-    (compCode (4 + (slotBits k State + colBits a.2.2 + timeBits a.2.2))
-      (appendCode (aWidth (slotBits k State) (colBits a.2.2) (timeBits a.2.2) a.1 a.2.1 a.2.2)
-        ([], List.range
-          (aWidth (slotBits k State) (colBits a.2.2) (timeBits a.2.2) a.1 a.2.1 a.2.2))
-        (compCode (aWidth (slotBits k State) (colBits a.2.2) (timeBits a.2.2) a.1 a.2.1 a.2.2)
-          (tableCircuit tm).code
-          ([], (List.range (4 + slotBits k State + 14)).map
-            (keyWire (slotBits k State) (colBits a.2.2) (timeBits a.2.2)))))
-      (fieldGates (slotBits k State) (colBits a.2.2) (timeBits a.2.2) a.1 a.2.1 a.2.2,
-        List.range (aWidth (slotBits k State) (colBits a.2.2) (timeBits a.2.2) a.1 a.2.1 a.2.2)))
+noncomputable def decoderCode : List Bool × ℕ × ℕ → List (Op × List ℕ) × List ℕ
+  | (x, n, T) =>
+    compCode (4 + (slotBits k State + colBits T + timeBits T))
+      (appendCodes (aWidth (slotBits k State) (colBits T) (timeBits T) x n T +
+          3 * (13 + slotBits k State))
+        ((List.range (3 * (2 + (slotBits k State + colBits T + timeBits T) + 1))).map
+          fun o => formulaCode (aWidth (slotBits k State) (colBits T) (timeBits T) x n
+            T + 3 * (13 + slotBits k State)) outTemplate
+            (fun j => wireNat (slotBits k State) (colBits T) (timeBits T) x n T o
+              j)))
+      (compCode (4 + (slotBits k State + colBits T + timeBits T))
+        (appendCode (aWidth (slotBits k State) (colBits T) (timeBits T) x n T)
+          ([], List.range
+            (aWidth (slotBits k State) (colBits T) (timeBits T) x n T))
+          (compCode (aWidth (slotBits k State) (colBits T) (timeBits T) x n T)
+            (tableCircuit tm).code
+            ([], (List.range (4 + slotBits k State + 14)).map
+              (keyWire (slotBits k State) (colBits T) (timeBits T)))))
+        (fieldGates (slotBits k State) (colBits T) (timeBits T) x n T,
+          List.range (aWidth (slotBits k State) (colBits T) (timeBits T) x n T)))
 
 /-- **The code of the decoder circuit is `decoderCode`.** -/
 theorem code_decoder {x : List Bool} {n T : ℕ}
@@ -133,16 +136,6 @@ theorem code_decoder {x : List Bool} {n T : ℕ}
 
 /-! ### Size -/
 
-/-- `2 ^ Nat.size X ≤ 2 X + 1`. -/
-theorem two_pow_size_le (X : ℕ) : 2 ^ Nat.size X ≤ 2 * X + 1 := by
-  rcases Nat.eq_zero_or_pos X with rfl | hX
-  · simp
-  · obtain ⟨m, hm⟩ : ∃ m, Nat.size X = m + 1 := ⟨Nat.size X - 1, by
-      have := Nat.size_pos.2 hX; omega⟩
-    have : ¬ X < 2 ^ m := fun h => by have := Nat.size_le.2 h; omega
-    rw [hm, Nat.pow_succ]
-    omega
-
 theorem size_outputCircuit_le (s cb tb : ℕ) (x : List Bool) (n T : ℕ) :
     (outputCircuit s cb tb x n T).size ≤ 3 * (2 + (s + cb + tb) + 1) * 63 := by
   simp only [outputCircuit, Circuit.size_pi, Formula.size_toCircuit]
@@ -160,7 +153,7 @@ theorem size_decoder_le {x : List Bool} {n T : ℕ}
     (hm : Nat.size x.length ≤ slotBits k State + colBits T + timeBits T) :
     (decoder (n := n) tm hm).size ≤ (204 * slotBits k State + 600 + (tableCircuit tm).size) *
       (colBits T + timeBits T + x.length + 1) := by
-  have hX := two_pow_size_le x.length
+  have hX := Nat.two_pow_size_le x.length
   have hpow : 2 ^ (Nat.size x.length + 1) = 2 * 2 ^ Nat.size x.length := Nat.pow_succ'
   have hout := size_outputCircuit_le (slotBits k State) (colBits T) (timeBits T) x n T
   rw [decoder, Circuit.size_comp, Circuit.size_comp, middleCircuit, Circuit.size_append,
@@ -197,37 +190,6 @@ theorem outBit_congr {s cb tb : ℕ} {ts ts' sel sel' : ℕ → Bool}
     · simp [hq, hts (2 + (i - 2)) (by omega)]
     · simp [hq]
   · rfl
-
-/-- An entry of a concatenation of lists of a common length `m`. -/
-theorem getElem?_flatMap_of_length {α β : Type} {f : α → List β} {m : ℕ}
-    (hf : ∀ a, (f a).length = m) (L : List α) (o : ℕ) (ho : o < L.length * m) :
-    (L.flatMap f)[o]? = (f (L[o / m]'(Nat.div_lt_of_lt_mul (by rwa [Nat.mul_comm]))))[o % m]? := by
-  induction L generalizing o with
-  | nil => simp at ho
-  | cons a L ih =>
-    have hm : 0 < m := by
-      rcases Nat.eq_zero_or_pos m with rfl | hm
-      · simp at ho
-      · exact hm
-    simp only [List.flatMap_cons]
-    by_cases hlt : o < m
-    · rw [List.getElem?_append_left (by rwa [hf])]
-      have h₁ : o / m = 0 := Nat.div_eq_of_lt hlt
-      have h₂ : o % m = o := Nat.mod_eq_of_lt hlt
-      simp only [h₁, h₂, List.getElem_cons_zero]
-    · rw [List.getElem?_append_right (by rw [hf]; omega), hf,
-        ih (o - m) (by
-          simp only [List.length_cons, Nat.succ_mul] at ho
-          omega)]
-      have h₁ : (o - m) / m = o / m - 1 := by
-        have := Nat.sub_mul_div o m 1
-        simpa using this
-      have h₂ : (o - m) % m = o % m := (Nat.mod_eq_sub_mod (by omega)).symm
-      have h₃ : 1 ≤ o / m := (Nat.le_div_iff_mul_le hm).2 (by omega)
-      simp only [h₁, h₂]
-      congr 2
-      rw [List.getElem_cons]
-      simp [show o / m ≠ 0 by omega]
 
 /-- The values of the wires of the field and constant stages. -/
 theorem eval_middle_field {x : List Bool} {n T : ℕ}
@@ -288,12 +250,13 @@ theorem ofFn_eval_decoder {x : List Bool} {n T : ℕ} (hn : n < 2 * T) (hx : x.l
   intro o
   rw [List.getElem?_ofFn]
   by_cases ho : o < 3 * (2 + (slotBits k State + colBits T + timeBits T) + 1)
-  · rw [dite_eq_left ho, getElem?_flatMap_of_length (m := 2 + (slotBits k State + colBits T +
-      timeBits T) + 1) (fun _ => by simp [litBits]) _ o (by simp [hlen]; omega)]
-    have hr : o / (2 + (slotBits k State + colBits T + timeBits T) + 1) < 3 :=
+  · have hr : o / (2 + (slotBits k State + colBits T + timeBits T) + 1) < 3 :=
       Nat.div_lt_of_lt_mul (by rwa [Nat.mul_comm])
     have hi : o % (2 + (slotBits k State + colBits T + timeBits T) + 1) <
         2 + (slotBits k State + colBits T + timeBits T) + 1 := Nat.mod_lt _ (by omega)
+    rw [dite_eq_left ho]
+    conv_rhs => rw [← Nat.div_add_mod' o (2 + (slotBits k State + colBits T + timeBits T) + 1)]
+    rw [List.getElem?_flatMap_mul_add _ _ _ (fun _ _ => by simp [litBits]) (by simpa [hlen]) hi]
     rw [List.getElem_map, getElem?_litBits _ _ hi]
     congr 1
     -- the left side

@@ -13,7 +13,8 @@ The field stage is evaluated on concrete clause numbers with `decide`: one slot 
 bits, one block bit, `x = [true, false]`, `n = 1` and `T = 1`, so `8` inputs and `75` gates. The
 comparison chains, the borrows and carries, and the lookup of `x` give the expected values. The
 constant stage depends on the noncomputable numbering of positions (`Loc.slot`), so the whole
-decoder is checked through its correctness theorem instead.
+decoder is checked on a concrete machine through its correctness theorem: the clauses fixing the
+inputs and the output have explicit literals, which the decoder emits bit by bit.
 -/
 
 namespace ComplexityTests.TableauDecoder
@@ -46,6 +47,31 @@ example : (List.range 83).all (fun w => wire 100 w == fieldVal 1 2 1 [true, fals
   by decide
 example : (List.range 83).all (fun w => wire 211 w == fieldVal 1 2 1 [true, false] 1 1 211 w) :=
   by decide
+
+/-- A machine without work tapes that halts at once with output `[true]`. -/
+private def halt : Turing.MultiTapeTM 0 Bool Unit :=
+  Turing.MultiTapeTM.ofTr () fun _ _ _ =>
+    { inputTape := 0, workTapes := Fin.elim0, output := some true, state := none }
+
+-- The decoder of `halt` for `x = [true, false]`, `n = 2` and `T = 2`. Clause numbers `4` and `20`
+-- (tag `1`) fix the inputs `0` and `1` to `x[0] = true` and `x[1] = false`: each of their three
+-- literals is the label `inputLabel i = 1 + 4 i` in `labelBits` bits, then the sign `x[i]`. Clause
+-- number `12` (tag `3`) fixes the output wire to `true`.
+example : ∃ c : Circuit signature (clauseBits 0 Unit 2) (3 * (labelBits 0 Unit 2 + 1)),
+    List.ofFn (c.eval interpretation fun i => (4 : ℕ).testBit i) =
+      [(1, true), (1, true), (1, true)].flatMap (litBits (labelBits 0 Unit 2)) ∧
+    List.ofFn (c.eval interpretation fun i => (20 : ℕ).testBit i) =
+      [(5, false), (5, false), (5, false)].flatMap (litBits (labelBits 0 Unit 2)) ∧
+    List.ofFn (c.eval interpretation fun i => (12 : ℕ).testBit i) =
+      (unitClause (outLabel 0 Unit 2, true)).flatMap (litBits (labelBits 0 Unit 2)) := by
+  obtain ⟨c, -, -, hc⟩ := exists_decoder halt [true, false] (n := 2) (T := 2) (by norm_num)
+    (by norm_num)
+  have hbits : 2 ^ 5 ≤ 2 ^ clauseBits 0 Unit 2 := Nat.pow_le_pow_right (by norm_num) (by
+    have := one_le_slotBits (k := 0) (State := Unit)
+    simp only [clauseBits]
+    omega)
+  refine ⟨c, ?_, ?_, ?_⟩ <;> rw [hc _ (by omega)] <;>
+    simp [clauseAt, clauseOf, unitClause, inputLabel]
 
 variable {k : ℕ} {State : Type} [Fintype State] [DecidableEq State]
   (tm : Turing.MultiTapeTM k Bool State)
