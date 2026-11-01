@@ -485,6 +485,13 @@ each statement against the numbered result. Organize modules by subject, not cha
   [quantum adversary models](#concurrent-and-quantum-security) needed by cryptographic
   reductions.
 
+- **Shor's algorithm:** bounded-error polynomial-time integer factoring and discrete logarithms
+  in the native uniform quantum-circuit model, with explicit input/output encodings, success
+  probabilities and gate-approximation costs. Develop quantum period/order finding and phase
+  estimation, the quantum Fourier transform, reversible modular exponentiation, continued-fraction
+  recovery and the classical reductions; certify uniform circuit generation and polynomial gate
+  bounds alongside correctness.
+
 ### Differential privacy and adaptive data analysis
 
 - Dataset adjacency and `(ε, δ)`-differential privacy for probabilistic programs, with
