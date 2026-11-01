@@ -43,6 +43,10 @@ methods of each side leave the other side's abstraction, invariant and potential
 * `Refinement.Amortized`: per-method amortized cost refinement with a potential on lower states.
 * `productCharge`: componentwise charges of a product specification.
 
+The two transcript-cost lemmas `StateTransitionSpec.totalCostTranscript_mono` and
+`StateTransitionSpec.totalCostTranscript_mul_left` sit here, beside their only clients, rather
+than in the widely imported `StateTransition` module.
+
 ## Main results
 
 * `Refinement.simulates_demonic`, `Refinement.simulates_client`: whole adaptive clients run
@@ -54,6 +58,12 @@ methods of each side leave the other side's abstraction, invariant and potential
 * `Refinement.Amortized.prod`: potentials add across non-interfering products.
 * `Refinement.Amortized.realize`: an amortized certificate for the realized module.
 * `Refinement.Amortized.id`: the identity refinement passes charges through.
+* `Refinement.Amortized.mono`, `Refinement.Amortized.mul_left`: weaken charges, and exchange
+  both currencies at a constant rate.
+* `productCharge_const`: equal constant charges on a product.
+* `StateTransitionSpec.totalCostTranscript_mono`,
+  `StateTransitionSpec.totalCostTranscript_mul_left`: monotonicity and scaling of transcript
+  costs.
 * `Refinement.Amortized.chargeBound`, `Refinement.Amortized.of_chargeBound`: with zero
   potential, the existing worst-case `Module.ChargeBound`.
 
@@ -85,6 +95,25 @@ structure Refinement (D E : StateTransitionSpec.{u, v, w}) where
   /-- Each method run realizes the specified step through `abs` and preserves `inv`. -/
   correct : ∀ {e} o {a e' tr}, inv e → D.valid (abs e) o →
     E.ClientRun e (methods o) a e' tr → D.step (abs e) o (abs e') a ∧ inv e'
+
+/-- Smaller charges total less along any transcript. -/
+theorem StateTransitionSpec.totalCostTranscript_mono {c c' : D.State → D.Op → ℕ}
+    (h : ∀ s o, c s o ≤ c' s o) (s : D.State) (tr : D.Transcript) :
+    D.totalCostTranscript c s tr ≤ D.totalCostTranscript c' s tr := by
+  induction tr generalizing s with
+  | nil => simp
+  | cons st tr ih =>
+    simp only [StateTransitionSpec.totalCostTranscript_cons]
+    exact Nat.add_le_add (h _ _) (ih _)
+
+/-- Scaling every charge by `K` scales the total by `K`. -/
+theorem StateTransitionSpec.totalCostTranscript_mul_left (K : ℕ) (c : D.State → D.Op → ℕ)
+    (s : D.State) (tr : D.Transcript) :
+    D.totalCostTranscript (fun s o => K * c s o) s tr = K * D.totalCostTranscript c s tr := by
+  induction tr generalizing s with
+  | nil => simp
+  | cons st tr ih =>
+    simp only [StateTransitionSpec.totalCostTranscript_cons, ih, Nat.mul_add]
 
 namespace Refinement
 
@@ -244,6 +273,27 @@ theorem Amortized.ofFn {fE : (e : E.State) → (o : E.Op) → E.State × E.Resul
   rw [E.totalCostTranscript_canonicalTranscript]
   exact h o hi hv
 
+/-- Weaker charges: cheaper lower charges and dearer upper charges on admissible operations. -/
+theorem Amortized.mono (A : M.Amortized lower upper potential)
+    {lower' : E.State → E.Op → ℕ} {upper' : D.State → D.Op → ℕ}
+    (hlower : ∀ e o, lower' e o ≤ lower e o)
+    (hupper : ∀ s o, D.valid s o → upper s o ≤ upper' s o) :
+    M.Amortized lower' upper' potential := by
+  intro e o a e' tr hi hv hrun
+  have h := A o hi hv hrun
+  have hl := E.totalCostTranscript_mono hlower e tr
+  have hu := hupper _ o hv
+  omega
+
+/-- **Exchange at a constant rate.** Scaling both currencies and the potential by `K` preserves
+the amortized inequality. -/
+theorem Amortized.mul_left (A : M.Amortized lower upper potential) (K : ℕ) :
+    M.Amortized (fun e o => K * lower e o) (fun s o => K * upper s o)
+      (fun e => K * potential e) := by
+  intro e o a e' tr hi hv hrun
+  rw [E.totalCostTranscript_mul_left, ← Nat.mul_add, ← Nat.mul_add]
+  exact Nat.mul_le_mul_left K (A o hi hv hrun)
+
 /-- Potentials telescope along any run of a linked admissible client. -/
 theorem Amortized.demonic (A : M.Amortized lower upper potential) (p : D.Client α)
     {e e' : E.State} {a : α} {tr_E : E.Transcript} (he : M.inv e)
@@ -303,8 +353,14 @@ theorem Amortized.comp {N : Refinement E F} {lower : F.State → F.Op → ℕ}
 /-- Componentwise charges of a product specification. -/
 def productCharge (c₁ : D₁.State → D₁.Op → ℕ) (c₂ : D₂.State → D₂.Op → ℕ) :
     (product D₁ D₂).State → (product D₁ D₂).Op → ℕ
-  | (s₁, _), .inl o => c₁ s₁ o
-  | (_, s₂), .inr o => c₂ s₂ o
+  | s, .inl o => c₁ s.1 o
+  | s, .inr o => c₂ s.2 o
+
+/-- Equal constant charges on both components are that constant charge on the product. -/
+@[simp] theorem productCharge_const (K : ℕ) :
+    productCharge (D₁ := D₁) (D₂ := D₂) (fun _ _ => K) (fun _ _ => K) = fun _ _ => K := by
+  funext s o
+  cases o <;> rfl
 
 /-- **Potentials add across non-interfering products**, provided the methods of each side leave
 the other side's potential unchanged. -/
