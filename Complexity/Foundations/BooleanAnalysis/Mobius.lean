@@ -21,10 +21,24 @@ The proof uses the existing Boolean low-degree span; it introduces no multilinea
 representation. It follows Lemma 3.3, equation (3.10), p24 of
 [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH].
 
+The Möbius transform on the subsets of a set (`Cslib.BitString.subsetMobius`) inverts subset
+sums (`Cslib.BitString.sum_powerset_subsetMobius`). Applied to the values of a function on the
+indicators of subsets, it gives the function's coefficient at a monomial
+(`Cslib.BitString.subsetMobius_monomial`), so it vanishes above the degree
+(`Cslib.BitString.subsetMobius_eq_zero_of_mem_lowDegree`). This is the subset inversion in the
+proof of Lemma D.2, p. 56 of [OpenAI2026ETH].
+
+## Main definitions
+
+* `Cslib.BitString.subsetMobius`: `∑_{T ⊆ S} (-1) ^ (#S - #T) • f T`.
+
 ## Main results
 
 * `Cslib.BitString.lowDegree_reconstruction`: pointwise reconstruction in the existing span.
 * `Cslib.BitString.sum_eval_eq_restricted_subsets`: the assignment-dependent polynomial sum.
+* `Cslib.BitString.sum_powerset_subsetMobius`: Möbius inversion on the subsets of a set.
+* `Cslib.BitString.subsetMobius_eq_zero_of_mem_lowDegree`: the transform vanishes above the
+  degree.
 -/
 
 open scoped BigOperators
@@ -79,6 +93,112 @@ private theorem subset_kernel (S E : Finset ι) :
       exact hSE (Subset.refl _)
     simp only [ite_eq_right hne]
     exact sum_eq_zero fun U hU => by simp [hnone U hU]
+
+/-! ### The Möbius transform on the subsets of a set -/
+
+section SubsetMobius
+
+variable {M : Type*} [AddCommGroup M]
+
+/-- The **Möbius transform on the subsets of `S`** of a function `f` on finite sets,
+`∑_{T ⊆ S} (-1) ^ (#S - #T) • f T`. It inverts subset sums
+(`Cslib.BitString.sum_powerset_subsetMobius`). When `f T` is the value of a function on the cube
+at the indicator of `T`, it is the coefficient of that function at the monomial of `S`
+(`Cslib.BitString.subsetMobius_monomial`). -/
+@[expose] public def subsetMobius (f : Finset ι → M) (S : Finset ι) : M :=
+  ∑ T ∈ S.powerset, (-1 : ℤ) ^ (#S - #T) • f T
+
+/-- An additive map commutes with the subset Möbius transform. -/
+public theorem map_subsetMobius {N : Type*} [AddCommGroup N] (φ : M →+ N) (f : Finset ι → M)
+    (S : Finset ι) : φ (subsetMobius f S) = subsetMobius (fun T => φ (f T)) S := by
+  simp only [subsetMobius, map_sum, map_zsmul]
+
+/-- The subset Möbius transform is additive. -/
+public theorem subsetMobius_add (f g : Finset ι → M) (S : Finset ι) :
+    subsetMobius (fun T => f T + g T) S = subsetMobius f S + subsetMobius g S := by
+  simp only [subsetMobius, smul_add, sum_add_distrib]
+
+/-- The signed count of the sets between `U` and `T`. -/
+private theorem sum_neg_one_pow_superset [DecidableEq ι] {U T : Finset ι} (hUT : U ⊆ T) :
+    (∑ S ∈ T.powerset with U ⊆ S, (-1 : ℤ) ^ (#S - #U)) = if U = T then 1 else 0 := by
+  have hbij : (∑ S ∈ T.powerset with U ⊆ S, (-1 : ℤ) ^ (#S - #U)) =
+      ∑ Z ∈ (T \ U).powerset, (-1 : ℤ) ^ #Z := by
+    refine sum_nbij' (fun S => S \ U) (fun Z => Z ∪ U) ?_ ?_ ?_ ?_ ?_
+    · intro S hS
+      simp only [mem_filter, mem_powerset] at hS ⊢
+      exact sdiff_subset_sdiff hS.1 subset_rfl
+    · intro Z hZ
+      simp only [mem_filter, mem_powerset] at hZ ⊢
+      exact ⟨union_subset (hZ.trans sdiff_subset) hUT, subset_union_right⟩
+    · intro S hS
+      exact sdiff_union_of_subset (mem_filter.mp hS).2
+    · intro Z hZ
+      have hZ' : Disjoint Z U := disjoint_of_subset_left (mem_powerset.mp hZ) sdiff_disjoint
+      exact union_sdiff_cancel_right hZ'
+    · intro S hS
+      rw [card_sdiff_of_subset (mem_filter.mp hS).2]
+  rw [hbij, sum_powerset_neg_one_pow_card]
+  by_cases h : U = T
+  · simp [h]
+  · have hne : T \ U ≠ ∅ := fun he => h (hUT.antisymm (sdiff_eq_empty_iff_subset.mp he))
+    simp only [h, hne, ↓reduceIte]
+
+/-- **Möbius inversion on the subsets of a set**: summing the subset Möbius transform of `f` over
+the subsets of `T` gives back `f T`. -/
+public theorem sum_powerset_subsetMobius (f : Finset ι → M) (T : Finset ι) :
+    ∑ S ∈ T.powerset, subsetMobius f S = f T := by
+  classical
+  simp only [subsetMobius]
+  rw [sum_comm' (t' := T.powerset) (s' := fun U => T.powerset.filter (U ⊆ ·))]
+  · simp_rw [← sum_smul]
+    rw [sum_eq_single T]
+    · rw [sum_neg_one_pow_superset subset_rfl, ite_eq_left rfl, one_smul]
+    · intro U hU hUT
+      rw [sum_neg_one_pow_superset (mem_powerset.mp hU), ite_eq_right hUT, zero_smul]
+    · intro h
+      exact absurd (mem_powerset_self T) h
+  · intro S U
+    simp only [mem_powerset, mem_filter]
+    exact ⟨fun h => ⟨⟨h.1, h.2⟩, h.2.trans h.1⟩, fun h => h.1⟩
+
+/-- **The subset Möbius transform of a monomial**: at the indicators of subsets, the monomial of
+`U` has transform `1` at `U` and `0` at every other set. -/
+public theorem subsetMobius_monomial [DecidableEq ι] (U S : Finset ι) :
+    subsetMobius (fun T => monomial R U fun i => decide (i ∈ T)) S = if U = S then 1 else 0 := by
+  convert subset_kernel (R := R) U S using 1
+  · rw [subsetMobius]
+    refine sum_congr rfl fun T _ => ?_
+    rw [monomial_apply, zsmul_eq_mul, Int.cast_pow, Int.cast_neg, Int.cast_one]
+    congr 1
+    simp only [decide_eq_true_eq]
+    split_ifs with h₁ h₂ h₂
+    · rfl
+    · exact absurd (fun i hi => h₁ i hi) h₂
+    · exact absurd (fun i hi => h₂ hi) h₁
+    · rfl
+  · split_ifs <;> rfl
+
+/-- **The subset Möbius transform vanishes above the degree**: for a function of degree at most
+`D`, the transform of its values at the indicators of subsets vanishes at every set of more than
+`D` elements. -/
+public theorem subsetMobius_eq_zero_of_mem_lowDegree [DecidableEq ι] {D : ℕ}
+    {f : (ι → Bool) → R} (hf : f ∈ lowDegree R ι D) {S : Finset ι} (hS : D < #S) :
+    subsetMobius (fun T => f fun i => decide (i ∈ T)) S = 0 := by
+  induction hf using Submodule.span_induction with
+  | mem g hg =>
+    obtain ⟨U, hU, rfl⟩ := hg
+    have hU' : #U ≤ D := hU
+    rw [subsetMobius_monomial, ite_eq_right]
+    rintro rfl
+    omega
+  | zero => simp only [Pi.zero_apply, subsetMobius, smul_zero, sum_const_zero]
+  | add g h _ _ hg hh => simp only [Pi.add_apply, subsetMobius_add, hg, hh, add_zero]
+  | smul c g _ hg =>
+    have h := map_subsetMobius (AddMonoidHom.mulLeft c) (fun T => g fun i => decide (i ∈ T)) S
+    simp only [AddMonoidHom.coe_mulLeft, hg, mul_zero] at h
+    simpa only [Pi.smul_apply, smul_eq_mul] using h.symm
+
+end SubsetMobius
 
 open Classical in
 private noncomputable def reconstruction [Fintype ι] (q : ℕ) (x : ι → Bool) :

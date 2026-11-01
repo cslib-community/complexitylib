@@ -11,6 +11,7 @@ public import Complexity.Computability.Circuit.Boolean.Encoding
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 public import Complexity.Foundations.Data.BitString.List
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
+import Complexity.Computability.Circuit.Boolean.OpValue
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -199,17 +200,6 @@ open Turing.MultiTapeTM ComputableInPolyTime
 
 /-! ### Polynomial time -/
 
-/-- The value of a De Morgan gate from its operation and its first two arguments. -/
-private def gateValue : Op × Bool × Bool → Bool
-  | (.const b, _, _) => b
-  | (.not, a, _) => !a
-  | (.and, a, b) => a && b
-  | (.or, a, b) => a || b
-
-private theorem interpretation_eq_gateValue (op : Op) (f : ℕ → Bool) :
-    (interpretation op fun a => f a) = gateValue (op, f 0, f 1) := by
-  cases op <;> rfl
-
 /-- One evaluation step: append the value of a gate. -/
 private theorem computableInPolyTime_step :
     ComputableInPolyTime (fun p : List Bool × (Op × List ℕ) =>
@@ -217,20 +207,21 @@ private theorem computableInPolyTime_step :
       (encPair encBits encGate) encBits := by
   have heq : (fun p : List Bool × (Op × List ℕ) =>
       p.1 ++ [interpretation p.2.1 fun a => p.2.2[a.val]?.elim false (p.1.getD · false)]) =
-      fun p => p.1 ++ [gateValue (p.2.1, p.2.2[0]?.elim false (p.1.getD · false),
-        p.2.2[1]?.elim false (p.1.getD · false))] :=
+      fun p => p.1 ++ [p.2.1.value (p.2.2[0]?.elim false (p.1.getD · false))
+        (p.2.2[1]?.elim false (p.1.getD · false))] :=
     funext fun p => by
-      rw [interpretation_eq_gateValue p.2.1 fun i => p.2.2[i]?.elim false (p.1.getD · false)]
+      rw [Op.interpretation_eq_value p.2.1 fun i => p.2.2[i]?.elim false (p.1.getD · false)]
   rw [heq]
   have hargs (i : ℕ) : ComputableInPolyTime (fun p : List Bool × (Op × List ℕ) =>
       p.2.2[i]?.elim false (p.1.getD · false)) (encPair encBits encGate) encBool :=
     optionElimWithInput (getElem? (snd _ _).snd' (const i)) (const false)
       (listGetD_binary false (fst _ _).fst' (snd _ _))
   have hvalue : ComputableInPolyTime (fun p : List Bool × (Op × List ℕ) =>
-      gateValue (p.2.1, p.2.2[0]?.elim false (p.1.getD · false),
-        p.2.2[1]?.elim false (p.1.getD · false)))
+      p.2.1.value (p.2.2[0]?.elim false (p.1.getD · false))
+        (p.2.2[1]?.elim false (p.1.getD · false)))
       (encPair encBits encGate) encBool :=
-    (of_finite (encIn := encPair encOp (encPair encBool encBool)) gateValue).comp
+    (of_finite (encIn := encPair encOp (encPair encBool encBool))
+      fun p : Op × Bool × Bool => p.1.value p.2.1 p.2.2).comp
       ((snd _ _).fst'.prod ((hargs 0).prod (hargs 1)))
   exact bitsAppend (fst _ _) (bitsCons hvalue (const []))
 
