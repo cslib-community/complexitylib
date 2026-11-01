@@ -20,7 +20,8 @@ construction. A local hypothesis `∀ a, r a ≤ k` selects the constant bound i
 own certificates with the exact input and output encodings. In particular, this rule does not
 claim arbitrary polynomially long answer vectors are logspace computable.
 
-Local routine certificates are tried through recomputing logspace composition, including calls
+Named `program_certificate` proofs are tried before their implementations unfold. Local routine
+certificates use recomputing logspace composition, including calls
 on prepared tuple arguments. Search stays in `ComputableInLogSpace`: it never converts a goal
 to polynomial time or to a tidy predicate. Importing this module adds no `fun_prop` transition.
 
@@ -88,6 +89,11 @@ attribute [aesop unsafe 85% apply (rule_sets := [LogSpace])] ComputableInLogSpac
 @[aesop unsafe 100% tactic (rule_sets := [LogSpace])]
 private meta def knownCall : Aesop.RuleTac :=
   Cslib.Tactic.applyKnownCall ``ComputableInLogSpace 2 ``ComputableInLogSpace.comp `f `hg
+
+/-- Try named logspace certificates without unfolding their implementations. -/
+@[aesop unsafe 99% tactic (rule_sets := [LogSpace])]
+private meta def namedCertificate : Aesop.RuleTac :=
+  Cslib.Tactic.applyCertificates ``ComputableInLogSpace
 
 /-- Composition closes ordinary leaves; bounded construction is a separate alternative. -/
 @[aesop unsafe 95% tactic (rule_sets := [LogSpace])]
