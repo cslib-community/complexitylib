@@ -183,10 +183,9 @@ end CounterProgram
 registers.
 
 A program assembled from blocks of code writes its code as `List.flatten [b₀, b₁, …]`. Then
-`rfl` reads the instruction at a label (`Turing.CounterProgram.instr`) in time linear in the
-label, and `Turing.CounterProgram.codeAt_of_prefix` places a block. The same code written
-`b₀ ++ b₁ ++ ⋯` associates to the left, and reading a label through the nested appends takes far
-longer. -/
+`rfl` quickly reads off the instruction at a label (`Turing.CounterProgram.instr`), and
+`Turing.CounterProgram.codeAt_of_prefix` places a block. Written as `b₀ ++ b₁ ++ ⋯`, which
+associates to the left, the same code makes each such lookup far slower. -/
 structure CounterProgram : Type where
   /-- The instructions; the instruction at label `c` is the `c`-th one. -/
   code : List CounterProgram.Instr
