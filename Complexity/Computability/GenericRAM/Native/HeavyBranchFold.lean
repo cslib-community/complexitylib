@@ -975,9 +975,8 @@ noncomputable def branchCountCertificate {solver : ℕ → List (List (List ℕ)
   let encSys := encList (encList (encList encNat))
   let encInner := encPair encUnary (encOption encSys)
   let cpair : NativeCertificate
-      (fun r : (ℕ × Option (List (List (List ℕ)))) × List (List (List ℕ)) =>
-        let q := r.1
-        (q.1, r.2))
+      (fun (((n, _), sys) :
+          (ℕ × Option (List (List (List ℕ)))) × List (List (List ℕ))) => (n, sys))
       (encPair encInner encSys) (encPair encUnary encSys) :=
     ((NativeCertificate.linear (ComputableInO.fst encInner encSys)).fst).prod
       (NativeCertificate.payload encInner encSys)
