@@ -6,7 +6,7 @@ Authors: Samuel Schlesinger
 
 module
 
-public import Complexity.Computability.Complexity.Classes.Promise.Time
+public import Complexity.Computability.Complexity.Classes.Promise.Time.Verifier
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 
@@ -61,7 +61,7 @@ theorem mem_PromiseBPTIME_of_mem_DTIME {A : Set (List Bool)} {Q : PromiseProblem
 /-- Through the bridge with `BPTIME`, a problem in `DTIME n` is in `BPTIME n`. -/
 example {A : Set (List Bool)} (hA : A ∈ DTIME encBits fun n => n) :
     A ∈ BPTIME encBits fun n => n :=
-  ofSet_mem_PromiseBPTIME_iff.mp
+  ofSet_mem_PromiseBPTIME.mp
     (mem_PromiseBPTIME_of_mem_DTIME hA le_rfl fun _ h => h)
 
 /-- The promise problem with every word a yes-instance, solved by sampling no coins and
