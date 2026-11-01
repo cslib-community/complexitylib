@@ -366,8 +366,27 @@ BARE_SIMP_RE = re.compile(
 )
 
 
+# Finishing tactics that do not depend on the exact shape of a `simp` normal form; Mathlib's
+# flexible-tactic linter accepts them after `simp`, so a `simp` they close counts as terminal.
+FINISHING_RE = re.compile(r"^(?:omega|linarith|nlinarith|norm_num|ring|grind|tauto)\b")
+
+
+def closes_block(lines: list[str], j: int) -> bool:
+    """Whether line `j` is a finishing tactic and the last tactic of its block."""
+    if not FINISHING_RE.match(lines[j].strip()):
+        return False
+    indent = len(lines[j]) - len(lines[j].lstrip(" "))
+    k = j + 1
+    while k < len(lines) and not lines[k].strip():
+        k += 1
+    if k >= len(lines) or COMMAND.match(lines[k]):
+        return True
+    return len(lines[k]) - len(lines[k].lstrip(" ")) < indent
+
+
 def find_nonterminal_bare_simps(code: str) -> list[int]:
-    """Return 1-based line numbers of non-terminal bare `simp` tactics in masked code."""
+    """Return 1-based line numbers of non-terminal bare `simp` tactics in masked code. A `simp`
+    followed only by a finishing tactic (`FINISHING_RE`) that ends its block is terminal."""
     lines = code.split("\n")
     violations: list[int] = []
     for i, line in enumerate(lines):
@@ -398,10 +417,10 @@ def find_nonterminal_bare_simps(code: str) -> list[int]:
         next_has_bullet = next_stripped.startswith(("·", "•"))
         if has_bullet:
             # Inside a `· simp` line, a following tactic at indent > bullet indent is non-terminal.
-            if next_indent > indent and not next_has_bullet:
+            if next_indent > indent and not next_has_bullet and not closes_block(lines, j):
                 violations.append(i + 1)
         else:
-            if next_indent == indent and not next_has_bullet:
+            if next_indent == indent and not next_has_bullet and not closes_block(lines, j):
                 violations.append(i + 1)
     return violations
 

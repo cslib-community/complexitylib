@@ -254,6 +254,30 @@ class CheckHygieneTests(unittest.TestCase):
         self.assertTrue(any("non-terminal bare `simp`" in e for e in errors))
         self.assertTrue(any("forbidden `sorry`" in e for e in errors))
 
+    def test_simp_closed_by_finishing_tactic_is_terminal(self) -> None:
+        p = self.write(
+            "Complexity/FinishingSimp.lean",
+            "module\n"
+            "-- upstream: candidate\n\n"
+            "theorem t1 (n : Nat) (h : n < 3) : n < 4 := by\n"
+            "  simp [Nat.lt_succ_iff] at h\n"
+            "  omega\n"
+            "theorem t2 (n : Nat) : n < 4 ∨ True := by\n"
+            "  constructor\n"
+            "  · simp\n"
+            "    omega\n"
+            "  · trivial\n"
+            "theorem t3 (n : Nat) (h : n < 3) : n < 4 := by\n"
+            "  simp at h\n"
+            "  omega\n"
+            "  done\n"
+            "theorem t4 (n : Nat) (h : n < 3) : n < 4 := by\n"
+            "  simp at h\n"
+            "  rw [h]\n",
+        )
+        errors = check_hygiene.check_file(p, root=self.root, check_simp=True)
+        self.assertEqual(sorted(int(e.split(":")[1]) for e in errors), [13, 17])
+
     def test_quote_characters_do_not_hide_forbidden_theorem(self) -> None:
         for literal in ("'\"'", r"'\"'"):
             with self.subTest(literal=literal):
