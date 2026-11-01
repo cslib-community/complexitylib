@@ -36,6 +36,25 @@ polynomial key-universe exponent `c_exp = 4` (`U ≤ max n_max 4 ^ 4` where requ
    Section 2.3 "Analysis", manuscript pp. 6–10: Lemma 1 p. 7, Eq. (3) p. 9, rehash analysis
    pp. 9–10; `[Thorup2013]`, FOCS 2013, pp. 90–99, and `arXiv:1311.3121v2`, Sections 1.3 and 3,
    pp. 4–5, 11–13; `[CarterWegman1979]`; `[WegmanCarter1981]`).
+
+## Program parameterization and cost accounting
+
+- **Program dependence:** In each headline theorem, the existential over the initializer and
+  operation programs `∃ (p_init p_op : List (Instr r))` is placed outside the universal quantifiers
+  over `V`, `w`, and `base` (and outside `U` for uniform probing and cuckoo hashing):
+  - in `chainedHashing` and `linearProbing`, `p_init` and `p_op` depend on `(U, n_max)`;
+  - in `uniformProbing` and `cuckooHashing`, `p_init` and `p_op` depend only on `n_max` (at fixed
+    `c_exp = 4`; `cuckooHashing` also receives `n_max` and `U` in `reg₀ 3` and `reg₀ 4` at
+    initialization).
+  No theorem in this abstract bounds the static code length `p_init.length` or `p_op.length`; all
+  time bounds count **executed instructions** (`expectedTime w p s ≤ T + 1`), excluding caller
+  argument preparation (`prepareDictRegs`) and dispatch.
+- **Oblivious adversary:** Every headline theorem quantifies universally over a valid operation
+  history `ops : List (DictOp U)` fixed before the random choices of `p_init` and `p_op`.
+
+A reader only needs to inspect the definitions and theorem statements in this file to verify that
+the formalization proves the intended mathematical claims; Lean verifies the proofs through
+`ComplexityAbstracts.HashTablesBridge`, and `#check_abstract` audits the dependency boundary.
 -/
 
 namespace ComplexityAbstracts.HashTablesAbstract
@@ -354,18 +373,21 @@ theorem chainedSpace_le (n_max : ℕ) :
   ComplexityAbstracts.HashTablesBridge.chainedSpace_le n_max
 
 /-- **Chained Hashing with Multiply-Shift** (`ChainedHash.lean:1983` `seq_expected_amortized`):
-For every key universe `U`, value bound `V < 2 ^ w`, capacity `n_max`, word width
-`w ≥ 2 * chainedHashBits U n_max`, and base address `base` with `base + chainedSpace n_max < 2 ^ w`,
-there exist 22-register Word-RAM programs `p_init` and `p_op` such that from any word-bounded
-initial state `(reg₀, mem₀)` with `reg₀ 6 = base` and zeroed memory in
+For every key universe `U` and capacity `n_max`, there exist 22-register Word-RAM programs `p_init`
+and `p_op` (depending on `(U, n_max)` and independent of `V`, `w`, and `base`) such that for every
+value bound `V`, word width `w`, and base address `base` satisfying
+`2 * chainedHashBits U n_max ≤ w`, `base + chainedSpace n_max < 2 ^ w`, and `V < 2 ^ w`, from any
+word-bounded initial state `(reg₀, mem₀)` with `reg₀ 6 = base` and zeroed memory in
 `[base, base + chainedSpace n_max)`, for every oblivious operation history `ops : List (DictOp U)`
 valid for capacity `n_max` and value bound `V`:
-- `p_init` initializes the table in `16` expected body instructions (`≤ 17` including `halt`);
+- `p_init` initializes the table in `16` expected executed body instructions (`≤ 17` including
+  `halt`);
 - `p_op` executes `ops` sequentially with output register `10`, matching `stepDict` and
   `OpOutputCorrect` at every step;
-- the total expected body instruction count satisfies `16 + T_ops ≤ 16 + 73 * ops.length`
-  (`O(1)` initialization and `73 = O(1)` expected instructions per `get` or `insert`, excluding
-  caller argument preparation and dispatch).
+- the total expected executed body instruction count satisfies
+  `16 + T_ops ≤ 16 + 73 * ops.length` (`O(1)` initialization and `73 = O(1)` expected executed
+  instructions per `get` or `insert`, excluding caller argument preparation and dispatch; no bound
+  is stated on static code length).
 
 References: `[CLRS2009]` (3rd ed., Sections 11.2 and 11.3.3, Theorem 11.3 and Corollary 11.4,
 pp. 256–268); `[DietzfelbingerHagerupKatajainenPenttonen1997]` (Lemma 2.4). -/
@@ -512,20 +534,22 @@ theorem linearProbingCharge_le {U n_max : ℕ} (hU : U ≤ max n_max 4 ^ 4) :
 
 /-- **Linear Probing with `5`-Wise Independent Hashing** (`LinearProbing.lean:2263`
 `seq_expected_amortized`, specialized to `c_exp = 4`):
-For every capacity `n_max`, polynomial key universe `U ≤ max n_max 4 ^ 4`, value bound `V < 2 ^ w`,
-word width `w ≥ 2 * trinomialDeg U (lpTableLog n_max)`, and base address `base` with
-`base + lpSpace n_max < 2 ^ w`, there exist 24-register Word-RAM programs `p_init` and `p_op` such
-that from any word-bounded initial state `(reg₀, mem₀)` with `reg₀ 18 = base` and zeroed memory in
+For every key universe `U` and capacity `n_max`, there exist 24-register Word-RAM programs `p_init`
+and `p_op` (depending on `(U, n_max)` and independent of `V`, `w`, and `base`) such that for every
+value bound `V`, word width `w`, and base address `base` satisfying `U ≤ max n_max 4 ^ 4`,
+`2 * trinomialDeg U (lpTableLog n_max) ≤ w`, `base + lpSpace n_max < 2 ^ w`, and `V < 2 ^ w`, from
+any word-bounded initial state `(reg₀, mem₀)` with `reg₀ 18 = base` and zeroed memory in
 `[base, base + lpSpace n_max)`, for every oblivious operation history `ops : List (DictOp U)` valid
 for capacity `n_max` and value bound `V`:
-- `p_init` initializes the table in `lpInitSteps U n_max` expected body instructions;
+- `p_init` initializes the table in `lpInitSteps U n_max` expected executed body instructions;
 - `p_op` executes `ops` sequentially with output register `2`, matching `stepDict` and
   `OpOutputCorrect` at every step;
-- the total expected body instruction count satisfies both
+- the total expected executed body instruction count satisfies both
   `lpInitSteps U n_max + T_ops ≤ lpInitSteps U n_max + ops.length * lpOpCharge U n_max` and the
   uniform `O(1)` per-operation bound
   `lpInitSteps U n_max + T_ops ≤ lpInitSteps U n_max + ops.length * 559652`
-  (excluding caller argument preparation and dispatch).
+  (independent of `n_max` and `U`, excluding caller argument preparation and dispatch; no bound is
+  stated on static code length).
 
 References: `[PaghPaghRuzic2009]` (*SIAM J. Comput.* 39(3):1107–1120, 2009, Section 2.3 Lemma 2.1
 pp. 1110–1111 and Section 4 Lemma 4.1, Theorem 4.3, Theorem 4.5 pp. 1114–1118); `[CLRS2009]`
@@ -660,19 +684,21 @@ def upOpCharge : ℕ :=
 
 /-- **Uniform Probing via Odd-Stride Double Hashing** (`UniformProbing.lean:2362`
 `seq_expected_amortized`, specialized to `c_exp = 4`):
-For every capacity `n_max`, polynomial key universe `U ≤ max n_max 4 ^ 4`, value bound `V < 2 ^ w`,
-word width `w` with `∀ u : Fin U, u.val < 2 ^ w`, and base address `base` with
-`base + upSpace n_max < 2 ^ w`, there exist 16-register Word-RAM programs `p_init` and `p_op` such
-that from any word-bounded initial state `(reg₀, mem₀)` with `reg₀ 14 = base` and zeroed memory in
-`[base, base + upSpace n_max)`, for every oblivious operation history `ops : List (DictOp U)` valid
-for capacity `n_max` and value bound `V`:
-- `p_init` initializes the table in `upInitSteps n_max` expected body instructions;
+For every capacity `n_max`, there exist 16-register Word-RAM programs `p_init` and `p_op`
+(depending only on `n_max` at fixed `c_exp = 4` and independent of `U`, `V`, `w`, and `base`) such
+that for every key universe `U`, value bound `V`, word width `w`, and base address `base` satisfying
+`U ≤ max n_max 4 ^ 4`, `base + upSpace n_max < 2 ^ w`, `∀ u : Fin U, u.val < 2 ^ w`, and
+`V < 2 ^ w`, from any word-bounded initial state `(reg₀, mem₀)` with `reg₀ 14 = base` and zeroed
+memory in `[base, base + upSpace n_max)`, for every oblivious operation history
+`ops : List (DictOp U)` valid for capacity `n_max` and value bound `V`:
+- `p_init` initializes the table in `upInitSteps n_max` expected executed body instructions;
 - `p_op` executes `ops` sequentially with output register `12`, matching `stepDict` and
   `OpOutputCorrect` at every step;
-- the total expected body instruction count satisfies
+- the total expected executed body instruction count satisfies
   `upInitSteps n_max + T_ops ≤ upInitSteps n_max + ops.length * upOpCharge`
-  (`upOpCharge = 13 * 2 ^ 320000 + 13739 = O(1)` expected instructions per `get` or `insert`,
-  independent of `n_max` and `U`, excluding caller argument preparation and dispatch).
+  (`upOpCharge = 13 * 2 ^ 320000 + 13739 = O(1)` expected executed instructions per `get` or
+  `insert`, independent of `n_max` and `U`, excluding caller argument preparation and dispatch; no
+  bound is stated on static code length).
 
 References: `[CLRS2009]` (3rd ed., Section 11.4, pp. 269–277); `[SchmidtSiegel1990]` (STOC 1990,
 pp. 224–234; NYU Courant Technical Report `TR1995-687`, May 1995, pp. 1–2, 4–7, 37–39);
@@ -730,6 +756,246 @@ theorem uniformProbing :
       @ExecDictOps.nil, @ExecDictOps.cons⟩
     regimeThreshold upHashEvalSteps upOpCharge rfl rfl rfl
 
+/-! ## Table 4: Pagh–Rodler Cuckoo Hashing (`CuckooHashing.lean`) -/
+
+/-- Maximum number of two-table cuckoo displacement rounds `6 * (⌈log₂(max n_max 2)⌉ + 2)` before
+triggering a full-table rehash. -/
+def cuckooMaxEvictions (n_max : ℕ) : ℕ :=
+  6 * (Nat.clog 2 (max n_max 2) + 2)
+
+/-- Polynomial-hash independence degree `2 * cuckooMaxEvictions n_max + 2` required by the
+two-table cuckoo displacement analysis below `regimeThreshold`. -/
+def cuckooK (n_max : ℕ) : ℕ :=
+  2 * cuckooMaxEvictions n_max + 2
+
+/-- Uniform upper bound `24 * 160000 + 26 = 3840026` on `cuckooK n_max` across the small-`n_max`
+regime `n_max < regimeThreshold` at `c_exp = 4`. -/
+def cuckooKBound : ℕ :=
+  24 * 160000 + 26
+
+/-- Memory footprint (in machine words) of one regime-switched hash block (`h₁` or `h₂`) in cuckoo
+hashing at `c_exp = 4`: `kWiseSpace n_max (cuckooK n_max)` below `regimeThreshold`, and
+`doubleTabSpace 8 64 (charBits n_max)` at or above `regimeThreshold`. -/
+def cuckooSingleHashSpace (n_max : ℕ) : ℕ :=
+  if n_max < regimeThreshold then
+    kWiseSpace n_max (cuckooK n_max)
+  else
+    doubleTabSpace 8 64 (charBits n_max)
+
+/-- Memory footprint `2 * cuckooSingleHashSpace n_max` of the two-block cuckoo hash pair
+`(h₁, h₂)` at `c_exp = 4`. -/
+def cuckooHashPairSpace (n_max : ℕ) : ℕ :=
+  2 * cuckooSingleHashSpace n_max
+
+/-- Total memory footprint `20 + cuckooHashPairSpace n_max + 2 * tableSize32 n_max + 2 * n_max`
+(in machine words) of cuckoo hashing at `c_exp = 4`: `20`-word header, two-block hash pair, two
+cuckoo sub-tables `T₁` and `T₂` of size `tableSize32 n_max` each, and insertion-order key and value
+arrays `insKeys` and `insVals` of length `n_max` each. -/
+def cuckooSpace (n_max : ℕ) : ℕ :=
+  20 + cuckooHashPairSpace n_max + 2 * tableSize32 n_max + 2 * n_max
+
+/-- Linear-space factor `20 + 2 * (16 + cuckooKBound + 16 * (8 + 1) * 64) + 514 = 7699050` for
+cuckoo hashing at `c_exp = 4` (dominated by `2 * cuckooKBound = 7680052` from the small-regime
+independence bound `cuckooKBound = 3840026`). -/
+def cuckooSpaceFactor : ℕ :=
+  20 + 2 * (16 + cuckooKBound + 16 * (8 + 1) * 64) + 514
+
+/-- Across all capacities `n_max : ℕ`, cuckoo hashing at `c_exp = 4` uses at most
+`cuckooSpaceFactor * (n_max + 1) = 7699050 * (n_max + 1)` words of memory. -/
+theorem cuckooSpace_le (n_max : ℕ) :
+    cuckooSpace n_max ≤ cuckooSpaceFactor * (n_max + 1) :=
+  ComplexityAbstracts.HashTablesBridge.cuckooSpace_le
+    regimeThreshold charBits tableBits32 tableSize32 cuckooMaxEvictions cuckooK
+    kWiseSpace doubleTabSpace cuckooKBound
+    cuckooSingleHashSpace cuckooHashPairSpace cuckooSpace cuckooSpaceFactor
+    rfl (fun _ => rfl) (fun _ => rfl) (fun _ => rfl)
+    (fun _ _ => rfl) (fun _ _ _ => rfl)
+    (fun _ => rfl) (fun _ => rfl) rfl
+    (fun _ => rfl) (fun _ => rfl) (fun _ => rfl) rfl
+    n_max
+
+/-- Instruction count for resampling one regime-switched hash block (`h₁` or `h₂`) in cuckoo
+hashing at `c_exp = 4`. -/
+def cuckooResampleSingleSteps (n_max : ℕ) : ℕ :=
+  if n_max < regimeThreshold then
+    5 * cuckooK n_max + 10
+  else
+    doubleTabResampleSteps 8 64 (charBits n_max)
+
+/-- Expected instruction count for initializing cuckoo hashing from zeroed memory at `c_exp = 4`
+(`8` span-allocation steps plus header setup, hash-table lookup initialization, and initial seed
+pair sampling). -/
+def cuckooInitSteps (n_max U : ℕ) : ℕ :=
+  8 + (6 + 35 +
+    (kWiseInitTableSteps n_max U (tableBits32 n_max) + 6 * cuckooSingleHashSpace n_max + 8) +
+    (2 * cuckooResampleSingleSteps n_max + 4) + 5)
+
+/-- Uniform `O(1)` instruction bound `427126092003` for evaluating one regime-switched cuckoo hash
+function (`h₁` or `h₂`) at `c_exp = 4` under `U ≤ max n_max 4 ^ 4` (with `L ≤ 100` limbs and
+`cuckooK n_max ≤ cuckooKBound = 3840026`). -/
+def cuckooEvalHashBound : ℕ :=
+  max (((11 * 100 + 12) * 100 + 30) * cuckooKBound + 19) (doubleTabEvalSteps 8 64) + 4
+
+/-- Worst-case deterministic instruction bound `2 * (cuckooEvalHashBound + 36) + 31 = 854252184109`
+for the two-probe `get` subprogram at `c_exp = 4`. -/
+def cuckooGetStepsBound : ℕ :=
+  2 * (cuckooEvalHashBound + 36) + 31
+
+/-- Worst-case deterministic instruction bound `cuckooGetStepsBound + 2 = 854252184111` for a
+`get` operation via `p_op` at `c_exp = 4`. -/
+def cuckooGetCharge : ℕ :=
+  cuckooGetStepsBound + 2
+
+/-- Worst-case deterministic instruction bound `2 * (cuckooEvalHashBound + 54) + 59 = 854252184173`
+for a single two-table cuckoo displacement round at `c_exp = 4`. -/
+def cuckooEvictIterBound : ℕ :=
+  2 * (cuckooEvalHashBound + 54) + 59
+
+/-- Base instruction bound `2 * (cuckooEvalHashBound + 35) + 78 = 854252184154` for `insert`
+before displacement rounds at `c_exp = 4`. -/
+def cuckooInsertBaseBound : ℕ :=
+  2 * (cuckooEvalHashBound + 35) + 78
+
+/-- Amortized seed-resampling factor `max (10 * cuckooKBound + 35) (80 * ((8 + 1) * 64) + 63) =
+38400295` per unit of `max n_max 1 * max (cuckooMaxEvictions n_max) 1` during full-table rehashes
+at `c_exp = 4`. -/
+def cuckooResampleAtBaseFactor : ℕ :=
+  max (10 * cuckooKBound + 35) (80 * ((8 + 1) * 64) + 63)
+
+/-- Amortized full-table rehash instruction bound
+`3 * cuckooEvictIterBound + 2 * cuckooResampleAtBaseFactor + 4290 + 1 = 2562833357400` per
+insertion at `c_exp = 4`. -/
+def cuckooRehashAmortizedBound : ℕ :=
+  3 * cuckooEvictIterBound + 2 * cuckooResampleAtBaseFactor + 4290 + 1
+
+/-- Uniform `O(1)` expected-amortized instruction charge
+`2 * (cuckooInsertBaseBound + 3 + 3 * cuckooEvictIterBound + 4 * cuckooRehashAmortizedBound) =
+27337095620552` for an `insert` operation at `c_exp = 4` (with `C_walk = 3`, `C_reh = 4`, and
+conditional-uniform seed slack `2`). -/
+def cuckooInsertCharge : ℕ :=
+  2 * (cuckooInsertBaseBound + 3 + 3 * cuckooEvictIterBound + 4 * cuckooRehashAmortizedBound)
+
+/-- Per-operation expected instruction charge for cuckoo hashing at `c_exp = 4`:
+`cuckooGetCharge` (`854252184111`) for `get` and `cuckooInsertCharge` (`27337095620552`) for
+`insert`, both independent of `n_max` and `U`. -/
+def cuckooOpCharge {U : ℕ} : DictOp U → ℕ
+  | .get _ => cuckooGetCharge
+  | .insert _ _ => cuckooInsertCharge
+
+/-- For every dictionary operation `o : DictOp U`, `cuckooOpCharge o ≤ cuckooInsertCharge`. -/
+theorem cuckooOpCharge_le {U : ℕ} (o : DictOp U) :
+    cuckooOpCharge o ≤ cuckooInsertCharge :=
+  ComplexityAbstracts.HashTablesBridge.cuckooOpCharge_le
+    DictOp @DictOp.get @DictOp.insert @DictOp.rec
+    cuckooEvalHashBound cuckooGetStepsBound cuckooGetCharge
+    cuckooEvictIterBound cuckooInsertBaseBound cuckooRehashAmortizedBound
+    cuckooInsertCharge
+    rfl rfl rfl rfl
+    @cuckooOpCharge (fun _ => rfl) (fun _ _ => rfl) o
+
+/-- **Pagh–Rodler Cuckoo Hashing** (`CuckooHashing.lean:6372` `cuckoo_seq_expected_amortized`,
+specialized to `c_exp = 4`):
+For every capacity `n_max`, there exist 19-register Word-RAM programs `p_init` and `p_op`
+(depending only on `n_max` at fixed `c_exp = 4` and independent of `U`, `V`, `w`, and `base`) such
+that for every key universe `U`, value bound `V`, word width `w`, and base address `base` satisfying
+`U ≤ max n_max 4 ^ 4`, `2 * trinomialDeg U (tableBits32 n_max) ≤ w`,
+`base + cuckooSpace n_max < 2 ^ w`, `cuckooMaxEvictions n_max < 2 ^ w`, `max U 2 + 1 < 2 ^ w`, and
+`V < 2 ^ w`, from any word-bounded initial state `(reg₀, mem₀)` with `reg₀ 1 = base`,
+`reg₀ 3 = n_max`, `reg₀ 4 = U`, and zeroed memory in `[base, base + cuckooSpace n_max)`, for every
+oblivious operation history `ops : List (DictOp U)` valid for capacity `n_max` and value bound `V`:
+- `p_init` initializes the table in `cuckooInitSteps n_max U` expected executed body instructions;
+- `p_op` executes `ops` sequentially with output register `2`, matching `stepDict` and
+  `OpOutputCorrect` at every step;
+- the total expected executed body instruction count satisfies both the operation-sensitive bound
+  `cuckooInitSteps n_max U + T_ops ≤ cuckooInitSteps n_max U + (ops.map cuckooOpCharge).sum`
+  (`cuckooGetCharge = 854252184111` per `get`, `cuckooInsertCharge = 27337095620552` per `insert`)
+  and the uniform per-operation bound
+  `cuckooInitSteps n_max U + T_ops ≤ cuckooInitSteps n_max U + ops.length * cuckooInsertCharge`
+  (independent of `n_max` and `U`, excluding caller argument preparation and dispatch; no bound is
+  stated on static code length; constants reflect `cuckooKBound = 3840026` from the
+  double-tabulation threshold `regimeThreshold = 2 ^ 320000`).
+
+References: `[PaghRodler2004]` (8 Dec 2003 author manuscript / *J. Algorithms* 51(2):122–144, 2004,
+Section 2.3 "Analysis", manuscript pp. 6–10: Lemma 1 p. 7, Eq. (3) p. 9, rehash analysis pp. 9–10);
+`[Thorup2013]` (FOCS 2013, pp. 90–99; `arXiv:1311.3121v2`, Theorem 1(a) and Lemma 2 on pp. 4–5, and
+Section 3, Theorem 7(a) and Lemmas 8–9 on pp. 11–13); `[CarterWegman1979]`; `[WegmanCarter1981]`. -/
+theorem cuckooHashing :
+    ∀ (n_max : ℕ),
+      ∃ (p_init p_op : List (Instr 19)),
+        ∀ (U V w base : ℕ),
+          U ≤ max n_max 4 ^ 4 →
+          2 * trinomialDeg U (tableBits32 n_max) ≤ w →
+          base + cuckooSpace n_max < 2 ^ w →
+          cuckooMaxEvictions n_max < 2 ^ w →
+          max U 2 + 1 < 2 ^ w →
+          V < 2 ^ w →
+          ∀ (reg₀ : Fin 19 → ℕ) (mem₀ : ℕ → ℕ),
+            WordBounded w reg₀ mem₀ →
+            reg₀ ⟨1, by decide⟩ = base →
+            reg₀ ⟨3, by decide⟩ = n_max →
+            reg₀ ⟨4, by decide⟩ = U →
+            (∀ a, base ≤ a → a < base + cuckooSpace n_max → mem₀ a = 0) →
+            ∀ ops : List (DictOp U),
+              ValidDictHistory V n_max (emptyDict U) ops →
+              ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (CoupledState Seed 19)),
+                ExecProgramDist w p_init ⟨2, by decide⟩ reg₀ mem₀
+                  (μ_init.map CoupledState.toRegMem) (cuckooInitSteps n_max U) ∧
+                ExecDictOps w p_op true
+                  ⟨0, by decide⟩ ⟨2, by decide⟩ ⟨3, by decide⟩ ⟨4, by decide⟩ ⟨2, by decide⟩
+                  base (cuckooSpace n_max) (emptyDict U) ops
+                  μ_init μ_final T_ops ∧
+                (cuckooInitSteps n_max U : ℝ≥0∞) + T_ops ≤
+                  ((cuckooInitSteps n_max U + (ops.map cuckooOpCharge).sum : ℕ) : ℝ≥0∞) ∧
+                (cuckooInitSteps n_max U : ℝ≥0∞) + T_ops ≤
+                  ((cuckooInitSteps n_max U + ops.length * cuckooInsertCharge : ℕ) : ℝ≥0∞) :=
+  ComplexityAbstracts.HashTablesBridge.cuckooHashing
+    ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
+      @AluOp.rec, AluOp.eval,
+      Instr, .const, .copy, .alu, .width, .load, .store, .jump,
+      .branchEq, .branchLt, .halt, .rand, @Instr.rec,
+      Comp, @Comp.pure, @Comp.sample, @Comp.bind, @Comp.eval,
+      fun {α} (m : Comp α) =>
+        @Comp.rec α (fun _ => ℕ → Prop) (fun _ _ => True)
+          (fun _ _ ih R => Nat.casesOn R False (fun R' => ∀ k, ih k R')) m,
+      State, .mk, Cfg, .running, .halted, .faulted, @stepRand, @runRand⟩
+    (by refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+        ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+        ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
+      simp_all [AluOp.eval, Comp.bind, Comp.eval, stepRand, runRand])
+    ⟨DictOp, @DictOp.get, @DictOp.insert, @DictOp.rec,
+      @stepDict, @validDictOp, @ValidDictHistory,
+      RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
+      CoupledState, @CoupledState.mk, @CoupledState.seed, @CoupledState.reg, @CoupledState.mem,
+      @prepareDictRegs, @OpOutputCorrect, @ExecDictOps⟩
+    ⟨fun _ _ => rfl, fun _ _ _ => rfl,
+      fun _ _ _ _ => Iff.rfl, fun _ _ _ _ _ => Iff.rfl,
+      fun _ _ _ => Iff.rfl, fun _ _ _ _ _ => Iff.rfl,
+      fun _ _ => rfl, fun _ _ => rfl, fun _ => rfl,
+      fun _ _ _ => rfl, fun _ _ _ => rfl, fun _ _ _ => rfl, fun _ => rfl,
+      fun _ _ _ _ _ _ _ _ => rfl, fun _ _ _ _ _ _ _ _ _ => rfl,
+      fun _ _ _ _ => Iff.rfl, fun _ _ _ _ _ => Iff.rfl,
+      @ExecDictOps.nil, @ExecDictOps.cons⟩
+    regimeThreshold
+    charBits tableBits32 tableSize32
+    kWiseSpace kWiseInitTableSteps
+    doubleTabSpace doubleTabResampleSteps doubleTabEvalSteps
+    cuckooMaxEvictions cuckooK cuckooKBound
+    cuckooSingleHashSpace cuckooHashPairSpace cuckooSpace cuckooSpaceFactor
+    cuckooResampleSingleSteps cuckooInitSteps
+    cuckooEvalHashBound cuckooGetStepsBound cuckooGetCharge
+    cuckooEvictIterBound cuckooInsertBaseBound cuckooResampleAtBaseFactor
+    cuckooRehashAmortizedBound cuckooInsertCharge
+    rfl (fun _ => rfl) (fun _ => rfl) (fun _ => rfl)
+    (fun _ _ => rfl) (fun _ _ _ => rfl)
+    (fun _ _ _ => rfl) (fun _ _ _ => rfl) (fun _ _ => rfl)
+    (fun _ => rfl) (fun _ => rfl) rfl
+    (fun _ => rfl) (fun _ => rfl) (fun _ => rfl) rfl
+    (fun _ => rfl) (fun _ _ => rfl)
+    rfl rfl rfl rfl rfl rfl rfl rfl
+    @cuckooOpCharge (fun _ => rfl) (fun _ _ => rfl)
+
+/-- info: abstract audit passed for `ComplexityAbstracts.HashTablesAbstract`: 416 root declarations -/
+#guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.HashTablesAbstract
 
 end ComplexityAbstracts.HashTablesAbstract

@@ -8,6 +8,7 @@ Authors: Renfei Zhou
 
 import ComplexityAbstracts.HashFamiliesBridge
 import Complexity.Algorithms.WordRAM.Dictionary.ChainedHash
+import Complexity.Algorithms.WordRAM.Dictionary.CuckooHashing
 import Complexity.Algorithms.WordRAM.Dictionary.LinearProbing
 import Complexity.Algorithms.WordRAM.Dictionary.UniformProbing
 
@@ -982,5 +983,527 @@ theorem uniformProbing (S : Presentation) (hS : Laws S)
     rw [totalCost_const, ← hCharge_eq] at hbound
     rw [List.length_map, Nat.cast_add]
     exact hbound
+
+/-! ## Part 5: Pagh–Rodler Cuckoo Hashing (`CuckooHashing.lean`) -/
+
+/-- Polymorphic presentation of the space and time constants for Pagh–Rodler cuckoo hashing at
+`c_exp = 4` in `HashTablesAbstract.lean`. Passing these definitions explicitly allows the abstract
+to discharge each definitional equality in one step (`rfl`) without kernel `Nat` reduction on the
+double-tabulation threshold `2 ^ 320000`. -/
+structure CuckooPresentation where
+  regimeThreshold : ℕ
+  charBits : ℕ → ℕ
+  tableBits32 : ℕ → ℕ
+  tableSize32 : ℕ → ℕ
+  kWiseSpace : ℕ → ℕ → ℕ
+  kWiseInitTableSteps : ℕ → ℕ → ℕ → ℕ
+  doubleTabSpace : ℕ → ℕ → ℕ → ℕ
+  doubleTabResampleSteps : ℕ → ℕ → ℕ → ℕ
+  doubleTabEvalSteps : ℕ → ℕ → ℕ
+  cuckooMaxEvictions : ℕ → ℕ
+  cuckooK : ℕ → ℕ
+  cuckooKBound : ℕ
+  cuckooSingleHashSpace : ℕ → ℕ
+  cuckooHashPairSpace : ℕ → ℕ
+  cuckooSpace : ℕ → ℕ
+  cuckooSpaceFactor : ℕ
+  cuckooResampleSingleSteps : ℕ → ℕ
+  cuckooInitSteps : ℕ → ℕ → ℕ
+  cuckooEvalHashBound : ℕ
+  cuckooGetStepsBound : ℕ
+  cuckooGetCharge : ℕ
+  cuckooEvictIterBound : ℕ
+  cuckooInsertBaseBound : ℕ
+  cuckooResampleAtBaseFactor : ℕ
+  cuckooRehashAmortizedBound : ℕ
+  cuckooInsertCharge : ℕ
+
+/-- Definitional laws for `CuckooPresentation`, each proved by one-step `rfl` in
+`HashTablesAbstract.lean`. -/
+structure CuckooLaws (K : CuckooPresentation) : Prop where
+  regimeThreshold_def : K.regimeThreshold = 2 ^ 320000
+  charBits_def : ∀ n_max, K.charBits n_max = (1 + Nat.clog 2 (max n_max 4)) / 2
+  tableBits32_def : ∀ n_max, K.tableBits32 n_max = Nat.clog 2 (32 * max n_max 4)
+  tableSize32_def : ∀ n_max, K.tableSize32 n_max = 2 ^ K.tableBits32 n_max
+  kWiseSpace_def : ∀ n_max k, K.kWiseSpace n_max k = kWiseSpace n_max k
+  kWiseInitTableSteps_def : ∀ n_max U M,
+    K.kWiseInitTableSteps n_max U M = kWiseInitTableSteps n_max U M
+  doubleTabSpace_def : ∀ c d b, K.doubleTabSpace c d b = (c + 1) * d * 2 ^ b
+  doubleTabResampleSteps_def : ∀ c d b,
+    K.doubleTabResampleSteps c d b = 5 * K.doubleTabSpace c d b + 13
+  doubleTabEvalSteps_def : ∀ c d, K.doubleTabEvalSteps c d = (12 * c + 11) * d + 10
+  cuckooMaxEvictions_def : ∀ n_max,
+    K.cuckooMaxEvictions n_max = 6 * (Nat.clog 2 (max n_max 2) + 2)
+  cuckooK_def : ∀ n_max, K.cuckooK n_max = 2 * K.cuckooMaxEvictions n_max + 2
+  cuckooKBound_def : K.cuckooKBound = 24 * 160000 + 26
+  cuckooSingleHashSpace_def : ∀ n_max,
+    K.cuckooSingleHashSpace n_max =
+      if n_max < K.regimeThreshold then K.kWiseSpace n_max (K.cuckooK n_max)
+      else K.doubleTabSpace 8 64 (K.charBits n_max)
+  cuckooHashPairSpace_def : ∀ n_max,
+    K.cuckooHashPairSpace n_max = 2 * K.cuckooSingleHashSpace n_max
+  cuckooSpace_def : ∀ n_max,
+    K.cuckooSpace n_max =
+      20 + K.cuckooHashPairSpace n_max + 2 * K.tableSize32 n_max + 2 * n_max
+  cuckooSpaceFactor_def :
+    K.cuckooSpaceFactor = 20 + 2 * (16 + K.cuckooKBound + 16 * (8 + 1) * 64) + 514
+  cuckooResampleSingleSteps_def : ∀ n_max,
+    K.cuckooResampleSingleSteps n_max =
+      if n_max < K.regimeThreshold then 5 * K.cuckooK n_max + 10
+      else K.doubleTabResampleSteps 8 64 (K.charBits n_max)
+  cuckooInitSteps_def : ∀ n_max U,
+    K.cuckooInitSteps n_max U =
+      8 + (6 + 35 +
+        (K.kWiseInitTableSteps n_max U (K.tableBits32 n_max) +
+          6 * K.cuckooSingleHashSpace n_max + 8) +
+        (2 * K.cuckooResampleSingleSteps n_max + 4) + 5)
+  cuckooEvalHashBound_def :
+    K.cuckooEvalHashBound =
+      max (((11 * 100 + 12) * 100 + 30) * K.cuckooKBound + 19)
+        (K.doubleTabEvalSteps 8 64) + 4
+  cuckooGetStepsBound_def :
+    K.cuckooGetStepsBound = 2 * (K.cuckooEvalHashBound + 36) + 31
+  cuckooGetCharge_def :
+    K.cuckooGetCharge = K.cuckooGetStepsBound + 2
+  cuckooEvictIterBound_def :
+    K.cuckooEvictIterBound = 2 * (K.cuckooEvalHashBound + 54) + 59
+  cuckooInsertBaseBound_def :
+    K.cuckooInsertBaseBound = 2 * (K.cuckooEvalHashBound + 35) + 78
+  cuckooResampleAtBaseFactor_def :
+    K.cuckooResampleAtBaseFactor = max (10 * K.cuckooKBound + 35) (80 * ((8 + 1) * 64) + 63)
+  cuckooRehashAmortizedBound_def :
+    K.cuckooRehashAmortizedBound =
+      3 * K.cuckooEvictIterBound + 2 * K.cuckooResampleAtBaseFactor + 4290 + 1
+  cuckooInsertCharge_def :
+    K.cuckooInsertCharge =
+      2 * (K.cuckooInsertBaseBound + 3 + 3 * K.cuckooEvictIterBound +
+        4 * K.cuckooRehashAmortizedBound)
+
+namespace CuckooPresentation
+
+variable (K : CuckooPresentation) (hK : CuckooLaws K)
+include hK
+
+theorem cuckooMaxEvictions_eq (n_max : ℕ) :
+    K.cuckooMaxEvictions n_max = CuckooHashing.maxEvictions n_max :=
+  hK.cuckooMaxEvictions_def n_max
+
+theorem cuckooK_eq (n_max : ℕ) :
+    K.cuckooK n_max = CuckooHashing.cuckooK n_max := by
+  rw [hK.cuckooK_def, K.cuckooMaxEvictions_eq hK]
+  rfl
+
+theorem cuckooKBound_eq :
+    K.cuckooKBound = CuckooHashing.cuckooKBound 4 :=
+  hK.cuckooKBound_def
+
+theorem tableBits32_eq_cuckoo (n_max : ℕ) :
+    K.tableBits32 n_max = CuckooHashing.tableBits n_max :=
+  hK.tableBits32_def n_max
+
+theorem tableSize32_eq_cuckoo (n_max : ℕ) :
+    K.tableSize32 n_max = CuckooHashing.tableSize n_max := by
+  rw [hK.tableSize32_def, K.tableBits32_eq_cuckoo hK]
+  rfl
+
+theorem cuckooSingleHashSpace_eq (n_max : ℕ) :
+    K.cuckooSingleHashSpace n_max = CuckooHashing.singleHashSpace 4 n_max := by
+  have hReg := hK.regimeThreshold_def.trans regimeThreshold_eq
+  unfold CuckooHashing.singleHashSpace
+    Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.provableSpace
+  rw [hK.cuckooSingleHashSpace_def, hReg,
+    hK.kWiseSpace_def, kWiseSpace_eq, K.cuckooK_eq hK,
+    hK.doubleTabSpace_def, ← doubleTabSpace_eq, doubleTabSpace_eq,
+    hK.charBits_def, ← charBits_eq, charBits_eq]
+  rfl
+
+theorem cuckooHashPairSpace_eq (n_max : ℕ) :
+    K.cuckooHashPairSpace n_max = CuckooHashing.hashPairSpace 4 n_max := by
+  rw [hK.cuckooHashPairSpace_def, K.cuckooSingleHashSpace_eq hK]
+  rfl
+
+theorem cuckooSpace_eq (n_max : ℕ) :
+    K.cuckooSpace n_max = CuckooHashing.space 4 n_max := by
+  rw [hK.cuckooSpace_def, K.cuckooHashPairSpace_eq hK, K.tableSize32_eq_cuckoo hK]
+  rfl
+
+theorem cuckooSpaceFactor_eq :
+    K.cuckooSpaceFactor = CuckooHashing.spaceFactor 4 := by
+  rw [hK.cuckooSpaceFactor_def, K.cuckooKBound_eq hK]
+  rfl
+
+theorem cuckooResampleSingleSteps_eq (n_max : ℕ) :
+    K.cuckooResampleSingleSteps n_max = CuckooHashing.resampleSingleSteps 4 n_max := by
+  have hReg := hK.regimeThreshold_def.trans regimeThreshold_eq
+  unfold CuckooHashing.resampleSingleSteps
+  rw [hK.cuckooResampleSingleSteps_def, hReg,
+    K.cuckooK_eq hK, hK.doubleTabResampleSteps_def, hK.doubleTabSpace_def, hK.charBits_def]
+  rfl
+
+theorem cuckooInitSteps_eq (n_max U : ℕ) :
+    K.cuckooInitSteps n_max U = CuckooHashing.spanSteps + CuckooHashing.setupSteps 4 n_max U := by
+  rw [hK.cuckooInitSteps_def, hK.kWiseInitTableSteps_def, kWiseInitTableSteps_eq,
+    K.tableBits32_eq_cuckoo hK, K.cuckooSingleHashSpace_eq hK,
+    K.cuckooResampleSingleSteps_eq hK]
+  rfl
+
+theorem cuckooEvalHashBound_eq :
+    K.cuckooEvalHashBound = CuckooHashing.evalHashBound 4 := by
+  rw [hK.cuckooEvalHashBound_def, K.cuckooKBound_eq hK, hK.doubleTabEvalSteps_def]
+  rfl
+
+theorem cuckooGetStepsBound_eq :
+    K.cuckooGetStepsBound = CuckooHashing.getStepsBound 4 := by
+  rw [hK.cuckooGetStepsBound_def, K.cuckooEvalHashBound_eq hK]
+  rfl
+
+theorem cuckooGetCharge_eq :
+    K.cuckooGetCharge = CuckooHashing.getChargeBound 4 := by
+  rw [hK.cuckooGetCharge_def, K.cuckooGetStepsBound_eq hK]
+  rfl
+
+theorem cuckooEvictIterBound_eq :
+    K.cuckooEvictIterBound = CuckooHashing.evictIterBound 4 := by
+  rw [hK.cuckooEvictIterBound_def, K.cuckooEvalHashBound_eq hK]
+  rfl
+
+theorem cuckooInsertBaseBound_eq :
+    K.cuckooInsertBaseBound = CuckooHashing.insertBaseBound 4 := by
+  rw [hK.cuckooInsertBaseBound_def, K.cuckooEvalHashBound_eq hK]
+  rfl
+
+theorem cuckooResampleAtBaseFactor_eq :
+    K.cuckooResampleAtBaseFactor = CuckooHashing.resampleAtBaseFactor 4 := by
+  rw [hK.cuckooResampleAtBaseFactor_def, K.cuckooKBound_eq hK]
+  rfl
+
+theorem cuckooRehashAmortizedBound_eq :
+    K.cuckooRehashAmortizedBound = CuckooHashing.rehashAmortizedBound 4 := by
+  rw [hK.cuckooRehashAmortizedBound_def, K.cuckooEvictIterBound_eq hK,
+    K.cuckooResampleAtBaseFactor_eq hK]
+  rfl
+
+theorem cuckooInsertCharge_eq :
+    K.cuckooInsertCharge = CuckooHashing.insertChargeBound 4 := by
+  rw [hK.cuckooInsertCharge_def, K.cuckooInsertBaseBound_eq hK,
+    K.cuckooEvictIterBound_eq hK, K.cuckooRehashAmortizedBound_eq hK]
+  rfl
+
+theorem cuckooGetCharge_le_cuckooInsertCharge :
+    K.cuckooGetCharge ≤ K.cuckooInsertCharge := by
+  have h1 := hK.cuckooGetCharge_def
+  have h2 := hK.cuckooGetStepsBound_def
+  have h3 := hK.cuckooInsertCharge_def
+  have h4 := hK.cuckooInsertBaseBound_def
+  omega
+
+end CuckooPresentation
+
+/-- Across all capacities `n_max : ℕ`, cuckoo hashing at `c_exp = 4` uses at most
+`cuckooSpaceFactor * (n_max + 1)` words of memory. -/
+theorem cuckooSpace_le
+    (regimeThreshold' : ℕ)
+    (charBits' tableBits32' tableSize32' cuckooMaxEvictions' cuckooK' : ℕ → ℕ)
+    (kWiseSpace' : ℕ → ℕ → ℕ)
+    (doubleTabSpace' : ℕ → ℕ → ℕ → ℕ)
+    (cuckooKBound' : ℕ)
+    (cuckooSingleHashSpace' cuckooHashPairSpace' cuckooSpace' : ℕ → ℕ)
+    (cuckooSpaceFactor' : ℕ)
+    (hRegime : regimeThreshold' = 2 ^ 320000)
+    (hChar : ∀ n_max, charBits' n_max = (1 + Nat.clog 2 (max n_max 4)) / 2)
+    (hBits : ∀ n_max, tableBits32' n_max = Nat.clog 2 (32 * max n_max 4))
+    (hSize : ∀ n_max, tableSize32' n_max = 2 ^ tableBits32' n_max)
+    (hKW : ∀ n_max k, kWiseSpace' n_max k = kWiseSpace n_max k)
+    (hDT : ∀ c d b, doubleTabSpace' c d b = (c + 1) * d * 2 ^ b)
+    (hEv : ∀ n_max, cuckooMaxEvictions' n_max = 6 * (Nat.clog 2 (max n_max 2) + 2))
+    (hK : ∀ n_max, cuckooK' n_max = 2 * cuckooMaxEvictions' n_max + 2)
+    (hKB : cuckooKBound' = 24 * 160000 + 26)
+    (hSingle : ∀ n_max, cuckooSingleHashSpace' n_max =
+      if n_max < regimeThreshold' then kWiseSpace' n_max (cuckooK' n_max)
+      else doubleTabSpace' 8 64 (charBits' n_max))
+    (hPair : ∀ n_max, cuckooHashPairSpace' n_max = 2 * cuckooSingleHashSpace' n_max)
+    (hSpace : ∀ n_max, cuckooSpace' n_max =
+      20 + cuckooHashPairSpace' n_max + 2 * tableSize32' n_max + 2 * n_max)
+    (hFactor : cuckooSpaceFactor' = 20 + 2 * (16 + cuckooKBound' + 16 * (8 + 1) * 64) + 514)
+    (n_max : ℕ) :
+    cuckooSpace' n_max ≤ cuckooSpaceFactor' * (n_max + 1) := by
+  have hSingle_eq (n : ℕ) :
+      cuckooSingleHashSpace' n = CuckooHashing.singleHashSpace 4 n := by
+    have hReg := hRegime.trans regimeThreshold_eq
+    unfold CuckooHashing.singleHashSpace
+      Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.provableSpace
+    rw [hSingle, hReg, hKW, kWiseSpace_eq, hK, hEv, hDT, hChar]
+    rfl
+  have hSpace_eq : cuckooSpace' n_max = CuckooHashing.space 4 n_max := by
+    rw [hSpace, hPair, hSingle_eq, hSize, hBits]
+    rfl
+  have hFactor_eq : cuckooSpaceFactor' = CuckooHashing.spaceFactor 4 := by
+    rw [hFactor, hKB]
+    rfl
+  rw [hSpace_eq, hFactor_eq]
+  exact CuckooHashing.space_le 4 n_max
+
+/-- For every dictionary operation `o`, the per-operation expected instruction charge of cuckoo
+hashing is at most `cuckooInsertCharge`. -/
+theorem cuckooOpCharge_le
+    (DictOp : ℕ → Type)
+    (get : ∀ {U : ℕ}, Fin U → DictOp U)
+    (insert : ∀ {U : ℕ}, Fin U → ℕ → DictOp U)
+    (dictOp_induction : ∀ {U : ℕ} {motive : DictOp U → Prop},
+      (∀ u, motive (get u)) → (∀ u v, motive (insert u v)) → ∀ o, motive o)
+    (cuckooEvalHashBound' cuckooGetStepsBound' cuckooGetCharge'
+      cuckooEvictIterBound' cuckooInsertBaseBound' cuckooRehashAmortizedBound'
+      cuckooInsertCharge' : ℕ)
+    (hGetSteps : cuckooGetStepsBound' = 2 * (cuckooEvalHashBound' + 36) + 31)
+    (hGetCharge : cuckooGetCharge' = cuckooGetStepsBound' + 2)
+    (hInsBase : cuckooInsertBaseBound' = 2 * (cuckooEvalHashBound' + 35) + 78)
+    (hInsCharge : cuckooInsertCharge' =
+      2 * (cuckooInsertBaseBound' + 3 + 3 * cuckooEvictIterBound' +
+        4 * cuckooRehashAmortizedBound'))
+    (cuckooOpCharge : ∀ {U : ℕ}, DictOp U → ℕ)
+    (hGet : ∀ {U : ℕ} (u : Fin U), cuckooOpCharge (get u) = cuckooGetCharge')
+    (hIns : ∀ {U : ℕ} (u : Fin U) (v : ℕ), cuckooOpCharge (insert u v) = cuckooInsertCharge')
+    {U : ℕ} (o : DictOp U) :
+    cuckooOpCharge o ≤ cuckooInsertCharge' :=
+  @dictOp_induction U (fun o => cuckooOpCharge o ≤ cuckooInsertCharge')
+    (fun u => by
+      rw [hGet]
+      omega)
+    (fun u v => by
+      rw [hIns])
+    o
+
+private theorem totalCost_cuckoo {S : Presentation} (P : DictPresentation S)
+    (K : CuckooPresentation) (hK : CuckooLaws K)
+    (cuckooOpCharge : ∀ {U : ℕ}, P.DictOp U → ℕ)
+    (hGet : ∀ {U : ℕ} (u : Fin U), cuckooOpCharge (P.get u) = K.cuckooGetCharge)
+    (hIns : ∀ {U : ℕ} (u : Fin U) (v : ℕ), cuckooOpCharge (P.insert u v) = K.cuckooInsertCharge)
+    {U V n_max : ℕ} (s : Dictionary.State U) (ops : List (Dictionary.Op U)) :
+    (Dictionary.spec U V n_max).totalCost (CuckooHashing.expectedOpCharge 4) s ops =
+      ((ops.map P.dictOpOf).map cuckooOpCharge).sum := by
+  induction ops generalizing s with
+  | nil => rfl
+  | cons o os ih =>
+    change CuckooHashing.expectedOpCharge 4 s o +
+      (Dictionary.spec U V n_max).totalCost (CuckooHashing.expectedOpCharge 4)
+        ((Dictionary.spec U V n_max).stepFn s o).1 os =
+      cuckooOpCharge (P.dictOpOf o) + ((os.map P.dictOpOf).map cuckooOpCharge).sum
+    rw [ih]
+    congr 1
+    cases o with
+    | get u =>
+      dsimp only [CuckooHashing.expectedOpCharge, DictPresentation.dictOpOf]
+      rw [hGet, K.cuckooGetCharge_eq hK]
+    | insert u v =>
+      dsimp only [CuckooHashing.expectedOpCharge, DictPresentation.dictOpOf]
+      rw [hIns, K.cuckooInsertCharge_eq hK]
+
+private theorem sum_map_cuckooOpCharge_le {S : Presentation} (P : DictPresentation S)
+    (K : CuckooPresentation) (hK : CuckooLaws K)
+    (cuckooOpCharge : ∀ {U : ℕ}, P.DictOp U → ℕ)
+    (hGet : ∀ {U : ℕ} (u : Fin U), cuckooOpCharge (P.get u) = K.cuckooGetCharge)
+    (hIns : ∀ {U : ℕ} (u : Fin U) (v : ℕ), cuckooOpCharge (P.insert u v) = K.cuckooInsertCharge)
+    {U : ℕ} (ops : List (P.DictOp U)) :
+    (ops.map cuckooOpCharge).sum ≤ ops.length * K.cuckooInsertCharge := by
+  induction ops with
+  | nil => simp
+  | cons o os ih =>
+    have hle : cuckooOpCharge o ≤ K.cuckooInsertCharge :=
+      cuckooOpCharge_le P.DictOp P.get P.insert P.dictOp_induction
+        K.cuckooEvalHashBound K.cuckooGetStepsBound K.cuckooGetCharge
+        K.cuckooEvictIterBound K.cuckooInsertBaseBound K.cuckooRehashAmortizedBound
+        K.cuckooInsertCharge
+        hK.cuckooGetStepsBound_def hK.cuckooGetCharge_def
+        hK.cuckooInsertBaseBound_def hK.cuckooInsertCharge_def
+        cuckooOpCharge hGet hIns o
+    simp only [List.map_cons, List.sum_cons, List.length_cons]
+    calc cuckooOpCharge o + (os.map cuckooOpCharge).sum
+      _ ≤ K.cuckooInsertCharge + os.length * K.cuckooInsertCharge := Nat.add_le_add hle ih
+      _ = (os.length + 1) * K.cuckooInsertCharge := by ring
+
+private theorem decodeOptionNat_eq_ite (n : ℕ) :
+    CuckooHashing.decodeOptionNat n = if n = 0 then none else some (n - 1) := by
+  cases n <;> rfl
+
+/-- Headline bridge theorem for Pagh–Rodler cuckoo hashing
+(`CuckooHashing.cuckoo_seq_expected_amortized`) at `c_exp = 4`. -/
+theorem cuckooHashing (S : Presentation) (hS : Laws S)
+    (P : DictPresentation S) (hP : DictLaws S P)
+    (regimeThreshold' : ℕ)
+    (charBits' tableBits32' tableSize32' : ℕ → ℕ)
+    (kWiseSpace' : ℕ → ℕ → ℕ)
+    (kWiseInitTableSteps' : ℕ → ℕ → ℕ → ℕ)
+    (doubleTabSpace' doubleTabResampleSteps' : ℕ → ℕ → ℕ → ℕ)
+    (doubleTabEvalSteps' : ℕ → ℕ → ℕ)
+    (cuckooMaxEvictions' cuckooK' : ℕ → ℕ)
+    (cuckooKBound' : ℕ)
+    (cuckooSingleHashSpace' cuckooHashPairSpace' cuckooSpace' : ℕ → ℕ)
+    (cuckooSpaceFactor' : ℕ)
+    (cuckooResampleSingleSteps' : ℕ → ℕ)
+    (cuckooInitSteps' : ℕ → ℕ → ℕ)
+    (cuckooEvalHashBound' cuckooGetStepsBound' cuckooGetCharge'
+      cuckooEvictIterBound' cuckooInsertBaseBound' cuckooResampleAtBaseFactor'
+      cuckooRehashAmortizedBound' cuckooInsertCharge' : ℕ)
+    (hRegime : regimeThreshold' = 2 ^ 320000)
+    (hChar : ∀ n_max, charBits' n_max = (1 + Nat.clog 2 (max n_max 4)) / 2)
+    (hBits : ∀ n_max, tableBits32' n_max = Nat.clog 2 (32 * max n_max 4))
+    (hSize : ∀ n_max, tableSize32' n_max = 2 ^ tableBits32' n_max)
+    (hKW : ∀ n_max k, kWiseSpace' n_max k = kWiseSpace n_max k)
+    (hKWInit : ∀ n_max U M, kWiseInitTableSteps' n_max U M = kWiseInitTableSteps n_max U M)
+    (hDT : ∀ c d b, doubleTabSpace' c d b = (c + 1) * d * 2 ^ b)
+    (hDTRes : ∀ c d b, doubleTabResampleSteps' c d b = 5 * doubleTabSpace' c d b + 13)
+    (hDTEval : ∀ c d, doubleTabEvalSteps' c d = (12 * c + 11) * d + 10)
+    (hEv : ∀ n_max, cuckooMaxEvictions' n_max = 6 * (Nat.clog 2 (max n_max 2) + 2))
+    (hCk : ∀ n_max, cuckooK' n_max = 2 * cuckooMaxEvictions' n_max + 2)
+    (hKB : cuckooKBound' = 24 * 160000 + 26)
+    (hSingle : ∀ n_max, cuckooSingleHashSpace' n_max =
+      if n_max < regimeThreshold' then kWiseSpace' n_max (cuckooK' n_max)
+      else doubleTabSpace' 8 64 (charBits' n_max))
+    (hPair : ∀ n_max, cuckooHashPairSpace' n_max = 2 * cuckooSingleHashSpace' n_max)
+    (hSpace : ∀ n_max, cuckooSpace' n_max =
+      20 + cuckooHashPairSpace' n_max + 2 * tableSize32' n_max + 2 * n_max)
+    (hFactor : cuckooSpaceFactor' = 20 + 2 * (16 + cuckooKBound' + 16 * (8 + 1) * 64) + 514)
+    (hResSingle : ∀ n_max, cuckooResampleSingleSteps' n_max =
+      if n_max < regimeThreshold' then 5 * cuckooK' n_max + 10
+      else doubleTabResampleSteps' 8 64 (charBits' n_max))
+    (hInit : ∀ n_max U, cuckooInitSteps' n_max U =
+      8 + (6 + 35 +
+        (kWiseInitTableSteps' n_max U (tableBits32' n_max) +
+          6 * cuckooSingleHashSpace' n_max + 8) +
+        (2 * cuckooResampleSingleSteps' n_max + 4) + 5))
+    (hEvalBound : cuckooEvalHashBound' =
+      max (((11 * 100 + 12) * 100 + 30) * cuckooKBound' + 19)
+        (doubleTabEvalSteps' 8 64) + 4)
+    (hGetSteps : cuckooGetStepsBound' = 2 * (cuckooEvalHashBound' + 36) + 31)
+    (hGetCharge : cuckooGetCharge' = cuckooGetStepsBound' + 2)
+    (hEvictIter : cuckooEvictIterBound' = 2 * (cuckooEvalHashBound' + 54) + 59)
+    (hInsBase : cuckooInsertBaseBound' = 2 * (cuckooEvalHashBound' + 35) + 78)
+    (hResFactor : cuckooResampleAtBaseFactor' =
+      max (10 * cuckooKBound' + 35) (80 * ((8 + 1) * 64) + 63))
+    (hRehashBound : cuckooRehashAmortizedBound' =
+      3 * cuckooEvictIterBound' + 2 * cuckooResampleAtBaseFactor' + 4290 + 1)
+    (hInsCharge : cuckooInsertCharge' =
+      2 * (cuckooInsertBaseBound' + 3 + 3 * cuckooEvictIterBound' +
+        4 * cuckooRehashAmortizedBound'))
+    (cuckooOpCharge : ∀ {U : ℕ}, P.DictOp U → ℕ)
+    (hGet : ∀ {U : ℕ} (u : Fin U), cuckooOpCharge (P.get u) = cuckooGetCharge')
+    (hIns : ∀ {U : ℕ} (u : Fin U) (v : ℕ), cuckooOpCharge (P.insert u v) = cuckooInsertCharge') :
+    ∀ (n_max : ℕ),
+      ∃ (p_init p_op : List (S.Instr 19)),
+        ∀ (U V w base : ℕ),
+          U ≤ max n_max 4 ^ 4 →
+          2 * trinomialDeg U (tableBits32' n_max) ≤ w →
+          base + cuckooSpace' n_max < 2 ^ w →
+          cuckooMaxEvictions' n_max < 2 ^ w →
+          max U 2 + 1 < 2 ^ w →
+          V < 2 ^ w →
+          ∀ (reg₀ : Fin 19 → ℕ) (mem₀ : ℕ → ℕ),
+            DictPresentation.WordBounded w reg₀ mem₀ →
+            reg₀ ⟨1, by decide⟩ = base →
+            reg₀ ⟨3, by decide⟩ = n_max →
+            reg₀ ⟨4, by decide⟩ = U →
+            (∀ a, base ≤ a → a < base + cuckooSpace' n_max → mem₀ a = 0) →
+            ∀ ops : List (P.DictOp U),
+              P.ValidDictHistory V n_max (DictPresentation.emptyDict U) ops →
+              ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (P.CoupledState Seed 19)),
+                P.ExecProgramDist w p_init ⟨2, by decide⟩ reg₀ mem₀
+                  (μ_init.map P.toRegMem) (cuckooInitSteps' n_max U) ∧
+                P.ExecDictOps w p_op true
+                  ⟨0, by decide⟩ ⟨2, by decide⟩ ⟨3, by decide⟩ ⟨4, by decide⟩ ⟨2, by decide⟩
+                  base (cuckooSpace' n_max) (DictPresentation.emptyDict U) ops
+                  μ_init μ_final T_ops ∧
+                (cuckooInitSteps' n_max U : ℝ≥0∞) + T_ops ≤
+                  ((cuckooInitSteps' n_max U + (ops.map cuckooOpCharge).sum : ℕ) : ℝ≥0∞) ∧
+                (cuckooInitSteps' n_max U : ℝ≥0∞) + T_ops ≤
+                  ((cuckooInitSteps' n_max U + ops.length * cuckooInsertCharge' : ℕ) : ℝ≥0∞) := by
+  let K : CuckooPresentation :=
+    ⟨regimeThreshold', charBits', tableBits32', tableSize32', kWiseSpace', kWiseInitTableSteps',
+      doubleTabSpace', doubleTabResampleSteps', doubleTabEvalSteps', cuckooMaxEvictions',
+      cuckooK', cuckooKBound', cuckooSingleHashSpace', cuckooHashPairSpace', cuckooSpace',
+      cuckooSpaceFactor', cuckooResampleSingleSteps', cuckooInitSteps', cuckooEvalHashBound',
+      cuckooGetStepsBound', cuckooGetCharge', cuckooEvictIterBound', cuckooInsertBaseBound',
+      cuckooResampleAtBaseFactor', cuckooRehashAmortizedBound', cuckooInsertCharge'⟩
+  have hK : CuckooLaws K :=
+    ⟨hRegime, hChar, hBits, hSize, hKW, hKWInit, hDT, hDTRes, hDTEval, hEv, hCk, hKB,
+      hSingle, hPair, hSpace, hFactor, hResSingle, hInit, hEvalBound, hGetSteps, hGetCharge,
+      hEvictIter, hInsBase, hResFactor, hRehashBound, hInsCharge⟩
+  intro n_max
+  let Sub := CuckooHashing.cuckooCode 4 n_max
+  refine ⟨S.programOf (Sub.initFresh.program ⟨2, by decide⟩),
+    S.programOf (Sub.code.program ⟨2, by decide⟩), ?_⟩
+  intro U V w base hU hw hfit_end hfit_ev hfit_U hfit_V reg₀ mem₀ hbdd₀ hfr₀ h3₀ h4₀ hz₀ ops hv_abs
+  have hw_lib : 2 * Cslib.Probability.trinomialDeg U (CuckooHashing.tableBits n_max) ≤ w := by
+    rwa [← trinomialDeg_eq, ← K.tableBits32_eq_cuckoo hK]
+  have hfit_end_lib : Fits w (base + CuckooHashing.space 4 n_max) := by
+    rwa [← K.cuckooSpace_eq hK]
+  have hfit_ev_lib : Fits w (CuckooHashing.maxEvictions n_max) := by
+    rwa [← K.cuckooMaxEvictions_eq hK]
+  let C := CuckooHashing.subroutineDS w base 4 n_max U V
+    hU hw_lib hfit_end_lib hfit_ev_lib hfit_U hfit_V
+  obtain ⟨ops_lib, rfl⟩ := ops_surjective P ops
+  have hv_lib : (Dictionary.spec U V n_max).ValidHistory (Dictionary.empty U) ops_lib :=
+    (validDictHistory_map_dictOpOf hP (DictPresentation.emptyDict U) ops_lib).mp hv_abs
+  have hz_lib : ∀ a ∈ (Block.mk base (CuckooHashing.space 4 n_max)).footprint, mem₀ a = 0 := by
+    intro a ha
+    rw [Block.mem_footprint, Block.Owns, ← K.cuckooSpace_eq hK] at ha
+    exact hz₀ a ha.1 ha.2
+  obtain ⟨ν₀, ν_final, T_ops, he_init, hex_steps, -, -, hbound⟩ :=
+    CuckooHashing.cuckoo_seq_expected_amortized w base 4 n_max U V
+      hU hw_lib hfit_end_lib hfit_ev_lib hfit_U hfit_V
+      (x := ⟨reg₀, mem₀⟩) ops_lib hbdd₀ hfr₀ h3₀ h4₀ hz_lib hv_lib
+  have hinit_time : (CuckooHashing.spanSteps : ℝ≥0∞) +
+      (CuckooHashing.setupSteps 4 n_max U : ℝ≥0∞) = (K.cuckooInitSteps n_max U : ℝ≥0∞) := by
+    rw [K.cuckooInitSteps_eq hK, Nat.cast_add]
+  have hinit_c : C.initTime = (K.cuckooInitSteps n_max U : ℝ≥0∞) := hinit_time
+  rw [hinit_c] at he_init hbound
+  refine ⟨CuckooHashing.Seed 4 n_max U (CuckooHashing.tableBits n_max), T_ops,
+    ν₀.map (P.coupledStateOf (r := 19)), ν_final.map (P.coupledStateOf (r := 19)),
+    ?_, ?_, ?_, ?_⟩
+  · rw [map_coupledStateOf_toRegMem hP (r := 19)]
+    exact compile_execCodeDist hS hP ⟨2, by decide⟩ he_init
+  · have hSpace_eq : cuckooSpace' n_max = CuckooHashing.space 4 n_max :=
+      K.cuckooSpace_eq hK n_max
+    rw [hSpace_eq]
+    exact compile_execStepsOfFn hS hP C true
+      ⟨0, by decide⟩ ⟨2, by decide⟩ ⟨3, by decide⟩ ⟨4, by decide⟩ ⟨2, by decide⟩
+      (fun o d => by
+        funext i
+        cases o with
+        | get u =>
+          dsimp only [DictPresentation.dictOpOf]
+          rw [hP.prepareDictRegs_get]
+          change (if decide (0 < i.val) then
+            if i = ⟨2, by decide⟩ then 0 else if i = ⟨3, by decide⟩ then u.val else 0
+          else d.regs i) = _
+          fin_cases i <;> rfl
+        | insert u v =>
+          dsimp only [DictPresentation.dictOpOf]
+          rw [hP.prepareDictRegs_insert]
+          change (if decide (0 < i.val) then
+            if i = ⟨2, by decide⟩ then 1
+            else if i = ⟨3, by decide⟩ then u.val
+            else if i = ⟨4, by decide⟩ then v else 0
+          else d.regs i) = _
+          fin_cases i <;> rfl)
+      (fun s o regs hdec => by
+        cases o with
+        | get u =>
+          dsimp only [DictPresentation.dictOpOf]
+          rw [hP.opOutputCorrect_get, ← decodeOptionNat_eq_ite]
+          change some (CuckooHashing.decodeOptionNat (regs ⟨2, by decide⟩)) = some (s u) at hdec
+          exact Option.some.inj hdec
+        | insert u v =>
+          dsimp only [DictPresentation.dictOpOf]
+          rw [hP.opOutputCorrect_insert]
+          trivial)
+      hex_steps
+  · rw [totalCost_cuckoo P K hK cuckooOpCharge hGet hIns] at hbound
+    rw [← Nat.cast_add] at hbound
+    exact hbound
+  · rw [totalCost_cuckoo P K hK cuckooOpCharge hGet hIns] at hbound
+    rw [← Nat.cast_add] at hbound
+    refine hbound.trans ?_
+    exact Nat.cast_le.mpr (Nat.add_le_add_left
+      (sum_map_cuckooOpCharge_le P K hK cuckooOpCharge hGet hIns _) _)
 
 end ComplexityAbstracts.HashTablesBridge
