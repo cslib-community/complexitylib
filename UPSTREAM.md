@@ -513,9 +513,12 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   The bounded `WordRAM/Realization` foundation (#2213, under #2205) reuses the memory
   oracle and the same native `Code`/`ExecWithin` semantics. Its explicit faithful register
   encodings support all four memory queries, certified word glue, branches and uniform
-  reply-dependent bind, charging local work as well as memory operations. Query arguments are
-  already in live registers; whole-input installation, final halt, bounded-loop and local-ADT
-  adapter endpoints remain separate work. This adds no abstract-catalogue headline.
+  reply-dependent bind, charging local work as well as memory operations. Bounded native loops
+  charge iterations even without a query. The initialized flat-program projection installs
+  live inputs in `2*k+5` instructions and includes the final halt; Unit observation additionally
+  writes a real zero word. Input layout, bounded words and safe domains remain explicit.
+  Generic memory and local-ADT adapter endpoints remain separate work. This adds no
+  abstract-catalogue headline.
   `DataStructure/OrderedSet` and `DataStructure/OrderedSet/*` provide neutral
   optional-minimum contracts, a typed finite-set interface including deletion, and adaptive
   minimum extraction, with no tree or cost dependency. Bounded-key implementations may specialize
