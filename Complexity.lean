@@ -1739,8 +1739,6 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplay
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayAccess
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayBounds
-public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplay
-public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayAccess
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySpace
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputationTree
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockTrace
