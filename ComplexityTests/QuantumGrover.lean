@@ -33,4 +33,17 @@ example (z : Fin 4) :
     regProb (run (grover 4) (uniform 4) (marked z) 0) z = Real.sin (groverAngle 4) ^ 2 := by
   simpa using regProb_run_grover (by norm_num) z 0
 
+-- With `N = 4` the Grover angle is `arcsin(1/2) = π / 6`, so `(2 · 1 + 1) θ = π / 2`: a single
+-- query finds the marked item with certainty.
+theorem groverAngle_four : groverAngle 4 = Real.pi / 6 := by
+  have h : (Real.sqrt ((4 : ℕ) : ℝ))⁻¹ = Real.sin (Real.pi / 6) := by
+    rw [Real.sin_pi_div_six, show ((4 : ℕ) : ℝ) = 2 ^ 2 by norm_num, Real.sqrt_sq (by norm_num)]
+    norm_num
+  rw [groverAngle, h, Real.arcsin_sin] <;> linarith [Real.pi_pos]
+
+example (z : Fin 4) : regProb (run (grover 4) (uniform 4) (marked z) 1) z = 1 := by
+  rw [regProb_run_grover (by norm_num), groverAngle_four,
+    show (2 * ((1 : ℕ) : ℝ) + 1) * (Real.pi / 6) = Real.pi / 2 by push_cast; ring,
+    Real.sin_pi_div_two, one_pow]
+
 end ComplexityTests.QuantumGrover

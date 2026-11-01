@@ -7,6 +7,8 @@ Authors: Christian Reitwiessner
 module
 -- upstream: vendored crei:crei/tidy-universal @9cce4cc7 (unsubmitted)
 -- vendored: `spaceUsed` is the space of a run path since cslib #1133 and #1122
+-- vendored: the body of `whileCond` is exposed for the run law on arbitrary configurations in
+-- `Plumbing/RunsBetween`
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.WhileInput
 
@@ -35,7 +37,7 @@ variable {k : ℕ} {Symbol State : Type*} {input : List Symbol}
 /-- From `check`, the machine halts unless `c` holds of the symbols under the input head and the
 work-tape heads, and otherwise starts `tm`, moving no head. Each round of `tm` returns to
 `check`. -/
-public noncomputable def whileCond (c : Option Symbol → (Fin k → Option Symbol) → Bool)
+@[expose] public noncomputable def whileCond (c : Option Symbol → (Fin k → Option Symbol) → Bool)
     (tm : MultiTapeTM k Symbol State) : MultiTapeTM k Symbol (RepeatUntilBlankState State) :=
   ofTr .check fun q inp work =>
     match q with

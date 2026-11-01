@@ -34,6 +34,9 @@ their candidates in this way, storing only the current one.
 * `Cslib.BitString.lsbValue_injective`: words of the same length are determined by their values.
 * `Cslib.BitString.iterate_increment`, `Cslib.BitString.iterate_increment_lsbValue`: counting from
   zero enumerates the words of a length.
+* `Cslib.BitString.lsbValue_append`, `Cslib.BitString.lsbValue_singleton`,
+  `Cslib.BitString.lsbValue_bits`: the value of a concatenation, of one bit, and of the binary
+  digits `Nat.bits n` of a number.
 * `Cslib.BitString.lsbValue_eq_foldr_bit`: `lsbValue` is a right fold of `Nat.bit`.
 * `Cslib.BitString.testBit_lsbValue`: binary digit `i` of `lsbValue w` is the bit `w[i]`.
 -/
@@ -148,6 +151,24 @@ theorem iterate_increment_lsbValue (u : List Bool) :
     increment^[lsbValue u] (List.replicate u.length false) = u :=
   let h := iterate_increment u.length (lsbValue u) (lsbValue_lt u)
   lsbValue_injective h.2 h.1
+
+/-- The value of a concatenation: the second word is shifted past the first. -/
+theorem lsbValue_append : ∀ u v : List Bool,
+    lsbValue (u ++ v) = lsbValue u + 2 ^ u.length * lsbValue v
+  | [], v => by simp [lsbValue]
+  | b :: u, v => by
+    simp only [List.cons_append, lsbValue, List.length_cons, lsbValue_append u v, Nat.pow_succ',
+      Nat.mul_assoc]
+    lia
+
+/-- A one-bit word has the value of its bit. -/
+@[simp] theorem lsbValue_singleton (b : Bool) : lsbValue [b] = b.toNat := by simp [lsbValue]
+
+/-- The binary digits of a number, least significant first, have the number as value. -/
+@[simp] theorem lsbValue_bits (n : ℕ) : lsbValue n.bits = n := by
+  induction n using Nat.binaryRec' with
+  | zero => rw [Nat.zero_bits]; rfl
+  | bit b n h ih => rw [Nat.bits_append_bit n b h, lsbValue, ih, Nat.bit_val]; lia
 
 /-- `lsbValue` is a right fold of `Nat.bit`. -/
 theorem lsbValue_eq_foldr_bit (w : List Bool) : lsbValue w = w.foldr Nat.bit 0 := by

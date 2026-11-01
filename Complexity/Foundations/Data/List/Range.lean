@@ -21,6 +21,7 @@ Range index and duplicate-free natural-list length bounds shared across certific
 ## Main results
 
 * `List.idxOf_range_of_lt`, `List.length_filter_lt_le`, `List.length_le_of_nodup_lt`.
+* `List.length_filter_range_eq_one_iff`: exactly one number below `n` passes a test.
 -/
 
 @[expose] public section
@@ -48,5 +49,23 @@ theorem length_le_of_nodup_lt {n : ℕ} {S : List ℕ} (hS : S.Nodup) (hSn : ∀
     S.length ≤ n := by
   have h := length_filter_lt_le hS n
   rwa [List.filter_eq_self.mpr fun s hs => decide_eq_true (hSn s hs)] at h
+
+/-- Filtering `range n` leaves one entry exactly when one number below `n` passes the test. -/
+theorem length_filter_range_eq_one_iff {n : ℕ} {p : ℕ → Bool} :
+    ((List.range n).filter p).length = 1 ↔ ∃! j, j < n ∧ p j = true := by
+  have hmem : ∀ j, j ∈ (List.range n).filter p ↔ j < n ∧ p j = true := fun j => by
+    simp only [List.mem_filter, List.mem_range]
+  constructor
+  · intro h
+    obtain ⟨a, ha⟩ := List.length_eq_one_iff.mp h
+    refine ⟨a, (hmem a).mp (by simp [ha]), fun j hj => ?_⟩
+    simpa [ha] using (hmem j).mpr hj
+  · rintro ⟨a, ha, huniq⟩
+    have hperm : ((List.range n).filter p).Perm [a] :=
+      (List.perm_ext_iff_of_nodup (List.nodup_range.filter _) (List.nodup_singleton a)).mpr
+        fun j => by
+          rw [hmem, List.mem_singleton]
+          exact ⟨fun hj => huniq j hj, fun h => h ▸ ha⟩
+    simpa using hperm.length_eq
 
 end List

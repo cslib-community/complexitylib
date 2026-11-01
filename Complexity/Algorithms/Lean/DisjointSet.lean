@@ -8,14 +8,14 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Foundations.Semantics.Stateful.Basic
+public import Complexity.DataStructure.StateTransition
 public import Mathlib.Data.Fintype.Card
 
 /-!
 # Representation-independent disjoint-set specification
 
 This module specifies a dynamic partition (disjoint-set / union-find abstract state machine) over
-a finite universe `Fin n` in the `Cslib.Stateful` framework.
+a finite universe `Fin n` in the `Cslib.DataStructure` framework.
 
 Mathematical states are equivalence relations `Partition n` with decidable Boolean membership,
 starting from the discrete partition `Partition.discrete n` of `n` singleton classes. The
@@ -42,7 +42,7 @@ issued operation sequence itself adapts to the current partition.
   `Partition.numComponents`, `Partition.merge`: setoid view, singleton partition, equivalence
   classes, quotient component set, component count, and binary class merge.
 * `Cslib.Algorithms.Lean.DisjointSet.Op`, `Cslib.Algorithms.Lean.DisjointSet.spec`: typed
-  disjoint-set operations and `Cslib.Stateful.Spec`.
+  disjoint-set operations and `Cslib.DataStructure.StateTransitionSpec`.
 * `same`, `union`, `getNumComponents`, `connectIfNew`, `spanningForestEdges`: primitive client
   operations, history-adaptive conditional union, and the single-pass spanning-forest edge filter.
 
@@ -70,7 +70,7 @@ public section
 
 namespace Cslib.Algorithms.Lean.DisjointSet
 
-open Cslib.Stateful
+open Cslib.DataStructure
 
 /-- A decidable partition (equivalence relation) on `Fin n`. -/
 structure Partition (n : ℕ) where
@@ -419,18 +419,19 @@ inductive Op (n : ℕ) where
   | numComponents
   deriving DecidableEq, Repr
 
+/-- Operation return types for `Op n`. -/
+abbrev Op.Result {n : ℕ} : Op n → Type
+  | .same _ _ => Bool
+  | .union _ _ => Bool
+  | .numComponents => ℕ
+
 /-- Total stateful specification of a disjoint-set structure on `Fin n`. -/
-abbrev spec (n : ℕ) : Spec where
-  State := Partition n
-  Op := Op n
-  Result
-    | .same _ _ => Bool
-    | .union _ _ => Bool
-    | .numComponents => ℕ
-  step p
-    | .same x y => (p, p.rel x y)
-    | .union x y => (p.merge x y, !p.rel x y)
-    | .numComponents => (p, p.numComponents)
+abbrev spec (n : ℕ) : StateTransitionSpec :=
+  StateTransitionSpec.ofFn (State := Partition n) (Op := Op n) (Result := Op.Result)
+    fun p => fun
+      | .same x y => (p, p.rel x y)
+      | .union x y => (p.merge x y, !p.rel x y)
+      | .numComponents => (p, p.numComponents)
 
 /-- Client helper: query whether `x` and `y` are in the same equivalence class. -/
 @[expose] def same {n : ℕ} (x y : Fin n) : (spec n).Client Bool :=
@@ -464,84 +465,91 @@ theorem runClient_connectIfNew {n : ℕ} (x y : Fin n) (p : Partition n) :
         (true, p.merge x y, [.same x y, .union x y]) := by
   unfold connectIfNew same union
   cases h : p.rel x y
-  · simp [Spec.runClient_lift_bind', Spec.runClient_lift, spec, h]
-  · simp [Spec.runClient_lift_bind', spec, h]
+  · simp [StateTransitionSpec.runClient_lift_bind', StateTransitionSpec.runClient_lift, spec, h]
+  · simp [StateTransitionSpec.runClient_lift_bind', spec, h]
 
-/-- Single-pass spanning-forest client (the unweighted Kruskal / cycle-filtering loop): scan edges
-in order, retaining an edge iff `union` reports that its endpoints lay in distinct components. -/
-@[expose] def spanningForestEdges {n : ℕ} :
-    List (Fin n × Fin n) → (spec n).Client (List (Fin n × Fin n))
+/-- Single-pass spanning-forest client (the cycle-filtering loop shared with Kruskal's algorithm)
+parameterized over an arbitrary edge type `E` with endpoint map `endpts : E → Fin n × Fin n`: scan
+edges in order, retaining an edge `e` iff `union (endpts e).1 (endpts e).2` reports that its
+endpoints lay in distinct components. -/
+@[expose] def spanningForestEdges {n : ℕ} {E : Type} (endpts : E → Fin n × Fin n) :
+    List E → (spec n).Client (List E)
   | [] => pure []
   | e :: es => do
-      let merged ← union e.1 e.2
-      let rest ← spanningForestEdges es
+      let merged ← union (endpts e).1 (endpts e).2
+      let rest ← spanningForestEdges endpts es
       pure (if merged then e :: rest else rest)
 
 @[simp]
-theorem eval_spanningForestEdges_nil {n : ℕ} (p : Partition n) :
-    eval (spec n) (spanningForestEdges []) p = ([], p) := rfl
+theorem eval_spanningForestEdges_nil {n : ℕ} {E : Type} (endpts : E → Fin n × Fin n)
+    (p : Partition n) :
+    eval (spec n) (spanningForestEdges endpts []) p = ([], p) := rfl
 
 @[simp]
-theorem eval_spanningForestEdges_cons {n : ℕ} (e : Fin n × Fin n) (es : List (Fin n × Fin n))
-    (p : Partition n) :
-    eval (spec n) (spanningForestEdges (e :: es)) p =
-      let rest := eval (spec n) (spanningForestEdges es) (p.merge e.1 e.2)
-      (if !p.rel e.1 e.2 then e :: rest.1 else rest.1, rest.2) := by
+theorem eval_spanningForestEdges_cons {n : ℕ} {E : Type} (endpts : E → Fin n × Fin n)
+    (e : E) (es : List E) (p : Partition n) :
+    eval (spec n) (spanningForestEdges endpts (e :: es)) p =
+      let rest := eval (spec n) (spanningForestEdges endpts es) (p.merge (endpts e).1 (endpts e).2)
+      (if !p.rel (endpts e).1 (endpts e).2 then e :: rest.1 else rest.1, rest.2) := by
   simp only [spanningForestEdges, union, eval_lift_bind', spec]
   change eval (spec n)
-      ((spanningForestEdges es).bind fun rest =>
-        pure (if !p.rel e.1 e.2 then e :: rest else rest))
-      (p.merge e.1 e.2) = _
+      ((spanningForestEdges endpts es).bind fun rest =>
+        pure (if !p.rel (endpts e).1 (endpts e).2 then e :: rest else rest))
+      (p.merge (endpts e).1 (endpts e).2) = _
   rw [eval_bind, eval_pure']
 
-/-- Exact operation history issued by `spanningForestEdges es`: one `Op.union` call per input edge
-in order. -/
-theorem runClient_spanningForestEdges_history {n : ℕ} (es : List (Fin n × Fin n))
-    (p : Partition n) :
-    ((spec n).runClient p (spanningForestEdges es)).2.2 = es.map fun e => Op.union e.1 e.2 := by
+/-- Exact operation history issued by `spanningForestEdges endpts es`: one `Op.union` call per input
+edge in order. -/
+theorem runClient_spanningForestEdges_history {n : ℕ} {E : Type} (endpts : E → Fin n × Fin n)
+    (es : List E) (p : Partition n) :
+    ((spec n).runClient p (spanningForestEdges endpts es)).2.2 =
+      es.map fun e => Op.union (endpts e).1 (endpts e).2 := by
   induction es generalizing p with
   | nil => rfl
   | cons e es ih =>
-    simp only [spanningForestEdges, union, Spec.runClient_lift_bind', spec, List.map_cons]
-    change Op.union e.1 e.2 ::
-        ((spec n).runClient (p.merge e.1 e.2)
-          ((spanningForestEdges es).bind fun rest =>
-            pure (if !p.rel e.1 e.2 then e :: rest else rest))).2.2 =
-      Op.union e.1 e.2 :: List.map (fun e => Op.union e.1 e.2) es
-    rw [Spec.runClient_bind]
-    simp [ih (p.merge e.1 e.2)]
+    simp only [spanningForestEdges, union, StateTransitionSpec.runClient_lift_bind', spec,
+      List.map_cons]
+    change Op.union (endpts e).1 (endpts e).2 ::
+        ((spec n).runClient (p.merge (endpts e).1 (endpts e).2)
+          ((spanningForestEdges endpts es).bind fun rest =>
+            pure (if !p.rel (endpts e).1 (endpts e).2 then e :: rest else rest))).2.2 =
+      Op.union (endpts e).1 (endpts e).2 ::
+        List.map (fun e => Op.union (endpts e).1 (endpts e).2) es
+    rw [StateTransitionSpec.runClient_bind]
+    simp [ih (p.merge (endpts e).1 (endpts e).2)]
 
-/-- `spanningForestEdges es` issues `es.length` operations. -/
-theorem runClient_spanningForestEdges_length {n : ℕ} (es : List (Fin n × Fin n))
-    (p : Partition n) :
-    ((spec n).runClient p (spanningForestEdges es)).2.2.length = es.length := by
+/-- `spanningForestEdges endpts es` issues `es.length` operations. -/
+theorem runClient_spanningForestEdges_length {n : ℕ} {E : Type} (endpts : E → Fin n × Fin n)
+    (es : List E) (p : Partition n) :
+    ((spec n).runClient p (spanningForestEdges endpts es)).2.2.length = es.length := by
   rw [runClient_spanningForestEdges_history, List.length_map]
 
 /-- Every retained edge belongs to the input edge list in order. -/
-theorem spanningForestEdges_sublist {n : ℕ} (es : List (Fin n × Fin n)) (p : Partition n) :
-    (eval (spec n) (spanningForestEdges es) p).1.Sublist es := by
+theorem spanningForestEdges_sublist {n : ℕ} {E : Type} (endpts : E → Fin n × Fin n)
+    (es : List E) (p : Partition n) :
+    (eval (spec n) (spanningForestEdges endpts es) p).1.Sublist es := by
   induction es generalizing p with
   | nil => simp
   | cons e es ih =>
     rw [eval_spanningForestEdges_cons]
     dsimp only
     split
-    · exact List.Sublist.cons_cons e (ih (p.merge e.1 e.2))
-    · exact List.Sublist.cons e (ih (p.merge e.1 e.2))
+    · exact List.Sublist.cons_cons e (ih (p.merge (endpts e).1 (endpts e).2))
+    · exact List.Sublist.cons e (ih (p.merge (endpts e).1 (endpts e).2))
 
 /-- Exact conservation law: the final component count plus the number of accepted forest edges
 equals the initial component count. -/
-theorem spanningForestEdges_numComponents_add_length {n : ℕ} (es : List (Fin n × Fin n))
-    (p : Partition n) :
-    (eval (spec n) (spanningForestEdges es) p).2.numComponents +
-      (eval (spec n) (spanningForestEdges es) p).1.length = p.numComponents := by
+theorem spanningForestEdges_numComponents_add_length {n : ℕ} {E : Type}
+    (endpts : E → Fin n × Fin n) (es : List E) (p : Partition n) :
+    (eval (spec n) (spanningForestEdges endpts es) p).2.numComponents +
+      (eval (spec n) (spanningForestEdges endpts es) p).1.length = p.numComponents := by
   induction es generalizing p with
   | nil => simp
   | cons e es ih =>
     rw [eval_spanningForestEdges_cons]
     dsimp only
-    have hrec := ih (p.merge e.1 e.2)
-    cases hrel : p.rel e.1 e.2
+    have hrec := ih (p.merge (endpts e).1 (endpts e).2)
+    cases hrel : p.rel (endpts e).1 (endpts e).2
     · simp only [Bool.not_false, ↓reduceIte, List.length_cons]
       have hmerge := Partition.numComponents_merge_of_not_rel hrel
       omega
@@ -549,15 +557,16 @@ theorem spanningForestEdges_numComponents_add_length {n : ℕ} (es : List (Fin n
       have hmerge := Partition.numComponents_merge_of_rel hrel
       omega
 
-/-- The final partition after `spanningForestEdges es` is the exact equivalence closure of `p`
-together with all edges in `es`. -/
-theorem spanningForestEdges_rel_iff_eqvGen {n : ℕ} (es : List (Fin n × Fin n))
-    (p : Partition n) (a b : Fin n) :
-    (eval (spec n) (spanningForestEdges es) p).2.rel a b = true ↔
-      Relation.EqvGen (fun u v => p.rel u v = true ∨ (u, v) ∈ es) a b := by
+/-- The final partition after `spanningForestEdges endpts es` is the exact equivalence closure of
+`p` together with all endpoint pairs in `es`. -/
+theorem spanningForestEdges_rel_iff_eqvGen {n : ℕ} {E : Type} (endpts : E → Fin n × Fin n)
+    (es : List E) (p : Partition n) (a b : Fin n) :
+    (eval (spec n) (spanningForestEdges endpts es) p).2.rel a b = true ↔
+      Relation.EqvGen
+        (fun u v => p.rel u v = true ∨ ∃ e ∈ es, u = (endpts e).1 ∧ v = (endpts e).2) a b := by
   induction es generalizing p with
   | nil =>
-    simp only [eval_spanningForestEdges_nil, List.not_mem_nil, or_false]
+    simp only [eval_spanningForestEdges_nil, List.not_mem_nil, false_and, exists_false, or_false]
     constructor
     · exact fun h => .rel _ _ h
     · intro h
@@ -567,46 +576,47 @@ theorem spanningForestEdges_rel_iff_eqvGen {n : ℕ} (es : List (Fin n × Fin n)
       | symm _ _ _ ih => exact p.symm ih
       | trans _ _ _ _ _ ih₁ ih₂ => exact p.trans ih₁ ih₂
   | cons e es ih =>
-    rw [eval_spanningForestEdges_cons, ih (p.merge e.1 e.2)]
+    rw [eval_spanningForestEdges_cons, ih (p.merge (endpts e).1 (endpts e).2)]
     clear ih
     constructor
     · intro h
       induction h with
       | rel u v huv =>
-        rcases huv with huv | huv
+        rcases huv with huv | ⟨f, hf, rfl, rfl⟩
         · exact (Partition.rel_merge_iff_eqvGen.mp huv).mono fun w z hwz =>
-            hwz.elim .inl fun ⟨hw, hz⟩ => .inr (List.mem_cons.mpr (.inl (Prod.ext hw hz)))
-        · exact .rel _ _ (.inr (List.mem_cons_of_mem e huv))
+            hwz.elim .inl fun ⟨hw, hz⟩ => .inr ⟨e, List.mem_cons_self, hw, hz⟩
+        · exact .rel _ _ (.inr ⟨f, List.mem_cons_of_mem e hf, rfl, rfl⟩)
       | refl u => exact .refl u
       | symm _ _ _ ih' => exact .symm _ _ ih'
       | trans _ _ _ _ _ ih₁ ih₂ => exact .trans _ _ _ ih₁ ih₂
     · intro h
       induction h with
       | rel u v huv =>
-        rcases huv with huv | huv
+        rcases huv with huv | ⟨f, hf, rfl, rfl⟩
         · exact .rel _ _ (.inl (Partition.rel_merge_eq_true.mpr (.inl huv)))
-        · rcases List.mem_cons.mp huv with rfl | hmem
+        · rcases List.mem_cons.mp hf with rfl | hmem
           · exact .rel _ _ (.inl (Partition.rel_merge_eq_true.mpr
-              (.inr (.inl ⟨p.refl u, p.refl v⟩))))
-          · exact .rel _ _ (.inr hmem)
+              (.inr (.inl ⟨p.refl (endpts f).1, p.refl (endpts f).2⟩))))
+          · exact .rel _ _ (.inr ⟨f, hmem, rfl, rfl⟩)
       | refl u => exact .refl u
       | symm _ _ _ ih' => exact .symm _ _ ih'
       | trans _ _ _ _ _ ih₁ ih₂ => exact .trans _ _ _ ih₁ ih₂
 
 /-- Discarding cycle edges preserves connectivity: running `spanningForestEdges` on the retained
 forest edges reaches the exact same partition as running it on `es`. -/
-theorem spanningForestEdges_idempotent_partition {n : ℕ} (es : List (Fin n × Fin n))
-    (p : Partition n) :
-    (eval (spec n) (spanningForestEdges (eval (spec n) (spanningForestEdges es) p).1) p).2 =
-      (eval (spec n) (spanningForestEdges es) p).2 := by
+theorem spanningForestEdges_idempotent_partition {n : ℕ} {E : Type} (endpts : E → Fin n × Fin n)
+    (es : List E) (p : Partition n) :
+    (eval (spec n) (spanningForestEdges endpts
+      (eval (spec n) (spanningForestEdges endpts es) p).1) p).2 =
+      (eval (spec n) (spanningForestEdges endpts es) p).2 := by
   induction es generalizing p with
   | nil => rfl
   | cons e es ih =>
     rw [eval_spanningForestEdges_cons]
     dsimp only
-    cases hrel : p.rel e.1 e.2
+    cases hrel : p.rel (endpts e).1 (endpts e).2
     · simp only [Bool.not_false, ↓reduceIte, eval_spanningForestEdges_cons]
-      exact ih (p.merge e.1 e.2)
+      exact ih (p.merge (endpts e).1 (endpts e).2)
     · simp only [Bool.not_true, Bool.false_eq_true, ↓reduceIte]
       rw [Partition.merge_of_rel hrel]
       exact ih p

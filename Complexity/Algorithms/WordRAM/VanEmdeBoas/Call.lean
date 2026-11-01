@@ -23,7 +23,8 @@ All three operations — `insert` (`tag = 0`), `member` (`tag = 1`), and strict 
 (`tag = 2`) — execute on the same fixed 32-register dispatcher `program`, charging constant
 setup, dispatch branches, every loop instruction, and the final `halt`.
 
-In addition, this module connects `program` to the shared `Stateful.Spec` / `DynamicProgram` /
+In addition, this module connects `program` to the shared
+`DataStructure.StateTransitionSpec` / `DynamicProgram` /
 `DynamicCertificate` interface on finite sets (`Finset ℕ`) and combines the uniform native
 initializer `initProgram` with arbitrary adaptive client histories (`run_initialized`).
 
@@ -348,7 +349,7 @@ theorem successor_executes_log {d w base stackBase₀ query : ℕ} {tree : Tree 
   simpa only [log_log_universeSize] using
     successor_executes hs ht hr hstk_lo hstk_fit hroot hstk harg htag
 
-/-! ## Finite-set `Stateful.Spec` and `DynamicCertificate` realization -/
+/-! ## Finite-set `DataStructure.StateTransitionSpec` and `DynamicCertificate` realization -/
 
 /-- `Tree.successor` on a valid tree computes the mathematical `OrderedSet.least` of the stored
 elements strictly greater than the query. -/
@@ -378,24 +379,23 @@ inductive Operation where
   deriving DecidableEq, Repr
 
 /-- Typed observation returned by each van Emde Boas operation. -/
-def Operation.Result : Operation → Type
+abbrev Operation.Result : Operation → Type
   | .insert _ => PUnit
   | .member _ => Bool
   | .successor _ => Option ℕ
 
 /-- Abstract finite-set specification on the universe `[0, universeSize d)`. -/
-def spec (d w : ℕ) : Stateful.Spec where
-  State := Finset ℕ
-  Op := Operation
-  Result := Operation.Result
-  step s
-    | .insert k => (Insert.insert k s, PUnit.unit)
-    | .member q => (s, decide (q ∈ s))
-    | .successor q => (s, OrderedSet.least (s.filter (q < ·)))
-  valid _
-    | .insert k => k < universeSize d
-    | .member q => Fits w q
-    | .successor q => Fits w q
+abbrev spec (d w : ℕ) : DataStructure.StateTransitionSpec :=
+  DataStructure.StateTransitionSpec.ofFn (State := Finset ℕ) (Op := Operation)
+    (Result := Operation.Result)
+    (fun s => fun
+      | .insert k => (Insert.insert k s, PUnit.unit)
+      | .member q => (s, decide (q ∈ s))
+      | .successor q => (s, OrderedSet.least (s.filter (q < ·))))
+    (fun _ => fun
+      | .insert k => k < universeSize d
+      | .member q => Fits w q
+      | .successor q => Fits w q)
 
 /-- The single fixed dispatcher `program` packaged as a `DynamicProgram` with a register-only
 calling convention (`tag` and `arg`). -/
@@ -456,8 +456,8 @@ theorem dispatch_spec {d w base stackBase₀ : ℕ} {s : Finset ℕ} {x : Data 3
     (hstk_lo : base + span d ≤ stackBase₀) (hstk_fit : Fits w (stackBase₀ + 4 * d))
     (o : Operation) (hx : SetRep d base stackBase₀ w s x) (ho : (spec d w).valid s o) :
     ∃ y, ExecWithin w program ((dynamicProgram d w).prepare o x) y (65 * (d + 1) + 21) ∧
-      (dynamicProgram d w).decode o y.regs = some ((spec d w).step s o).2 ∧
-      SetRep d base stackBase₀ w ((spec d w).step s o).1 y ∧
+      (dynamicProgram d w).decode o y.regs = some ((spec d w).stepFn s o).2 ∧
+      SetRep d base stackBase₀ w ((spec d w).stepFn s o).1 y ∧
       (∀ a, (a < base ∨ base + span d ≤ a) →
         (a < stackBase₀ ∨ stackBase₀ + 4 * d ≤ a) → y.mem a = x.mem a) := by
   obtain ⟨t, hvalid, helem, hrep⟩ := hx.tree
@@ -486,7 +486,7 @@ theorem dispatch_spec {d w base stackBase₀ : ℕ} {s : Finset ℕ} {x : Data 3
     refine ⟨y, hrun, rfl,
       ⟨hrun.bounded hprep_bounded, hy_root, hy_stk,
         t.insert k, Tree.valid_insert hvalid ho, ?_, hy_rep⟩, ?_⟩
-    · rw [Tree.elements_insert hvalid ho, helem]; rfl
+    · rw [Tree.elements_insert hvalid ho, helem]
     · intro a ha_tree _
       exact hy_frame a ha_tree
   | member q =>
@@ -506,7 +506,7 @@ theorem dispatch_spec {d w base stackBase₀ : ℕ} {s : Finset ℕ} {x : Data 3
     · simp only [dynamicProgram, spec, hy_out, ← helem]
       congr 1
       have hiff := (Tree.mem_elements_iff hvalid q).trans (Tree.member_iff_contains hvalid q).symm
-      cases hmem : t.member q <;> simp_all <;> rfl
+      cases hmem : t.member q <;> simp_all
     · simpa only [hy_mem] using hprep_rep
     · intro a _ _
       exact congrFun hy_mem a
@@ -534,20 +534,21 @@ theorem dispatch_spec {d w base stackBase₀ : ℕ} {s : Finset ℕ} {x : Data 3
 implementation. -/
 def certificate {d w base stackBase₀ : ℕ}
     (hstk_lo : base + span d ≤ stackBase₀) (hstk_fit : Fits w (stackBase₀ + 4 * d)) :
-    DynamicCertificate (dynamicProgram d w) w where
-  rep := SetRep d base stackBase₀ w
-  bounded := SetRep.bounded
-  arguments_fit o ho j _ := arguments_fit hstk_lo hstk_fit o ho j
-  execute o hx ho := by
-    obtain ⟨y, ⟨n, _, he⟩, hans, hy, _⟩ := dispatch_spec hstk_lo hstk_fit o hx ho
-    exact ⟨y, n, he, hans, hy⟩
+    DynamicCertificate (dynamicProgram d w) w :=
+  DynamicCertificate.ofFn
+    (rep := SetRep d base stackBase₀ w)
+    (bounded := SetRep.bounded)
+    (arguments_fit := fun o ho j _ => arguments_fit hstk_lo hstk_fit o ho j)
+    (execute := fun o hx ho => by
+      obtain ⟨y, ⟨n, _, he⟩, hans, hy, _⟩ := dispatch_spec hstk_lo hstk_fit o hx ho
+      exact ⟨y, n, he, hans, hy⟩)
 
 /-- Separate worst-case per-operation instruction certificate, counting the final halt:
 every admissible `insert`, `member`, or `successor` call executes in at most `65 * (d + 1) + 22`
 instructions. -/
 theorem instruction_bound {d w base stackBase₀ : ℕ}
     (hstk_lo : base + span d ≤ stackBase₀) (hstk_fit : Fits w (stackBase₀ + 4 * d)) :
-    Stateful.Bound (certificate hstk_lo hstk_fit).realization
+    DataStructure.Bound (certificate hstk_lo hstk_fit).impl
       DynamicProgram.OperationTrace.instructions (fun _ _ => 65 * (d + 1) + 22) := by
   apply (certificate hstk_lo hstk_fit).instruction_bound_const
   intro s x o hx ho
@@ -557,7 +558,7 @@ theorem instruction_bound {d w base stackBase₀ : ℕ}
 /-- The per-operation instruction certificate written in terms of the universe size. -/
 theorem instruction_bound_log {d w base stackBase₀ : ℕ}
     (hstk_lo : base + span d ≤ stackBase₀) (hstk_fit : Fits w (stackBase₀ + 4 * d)) :
-    Stateful.Bound (certificate hstk_lo hstk_fit).realization
+    DataStructure.Bound (certificate hstk_lo hstk_fit).impl
       DynamicProgram.OperationTrace.instructions
       (fun _ _ => 65 * (Nat.log 2 (Nat.log 2 (universeSize d)) + 1) + 22) := by
   rw [log_log_universeSize]
@@ -584,7 +585,7 @@ theorem executes_client_frame {d w base stackBase₀ : ℕ}
     {traces : List DynamicProgram.OperationTrace}
     (hx : SetRep d base stackBase₀ w s x)
     (hv : (spec d w).ValidHistory s ((spec d w).runClient s p).2.2)
-    (he : Stateful.Executes ((dynamicProgram d w).ExecOp w) p x val y traces) {j : ℕ}
+    (he : DataStructure.Executes ((dynamicProgram d w).ExecOp w) p x val y traces) {j : ℕ}
     (hj_tree : j < base ∨ base + span d ≤ j)
     (hj_stk : j < stackBase₀ ∨ stackBase₀ + 4 * d ≤ j) : y.mem j = x.mem j :=
   (certificate hstk_lo hstk_fit).executes_client_frame
@@ -598,10 +599,10 @@ theorem client_spec {d w base stackBase₀ : ℕ}
     {α : Type} (p : (spec d w).Client α) {s : Finset ℕ} {x : Data 32}
     (hx : SetRep d base stackBase₀ w s x)
     (hv : (spec d w).ValidHistory s ((spec d w).runClient s p).2.2) :
-    ∃ y traces, Stateful.Executes ((dynamicProgram d w).ExecOp w) p x
+    ∃ y traces, DataStructure.Executes ((dynamicProgram d w).ExecOp w) p x
         ((spec d w).runClient s p).1 y traces ∧
       SetRep d base stackBase₀ w ((spec d w).runClient s p).2.1 y ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces ≤
+      DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤
         ((spec d w).runClient s p).2.2.length * (65 * (d + 1) + 22) ∧
       (∀ j, (j < base ∨ base + span d ≤ j) →
         (j < stackBase₀ ∨ stackBase₀ + 4 * d ≤ j) → y.mem j = x.mem j) := by
@@ -626,10 +627,10 @@ theorem run_initialized {d w base : ℕ} {s₀ : Data 32}
       n_init + 1 ≤ 8 * span d + 20 * d + 25 ∧
       Exec w initProgram s₀ x₀ n_init ∧
       SetRep d base (base + span d) w (∅ : Finset ℕ) x₀ ∧
-      Stateful.Executes ((dynamicProgram d w).ExecOp w) p x₀
+      DataStructure.Executes ((dynamicProgram d w).ExecOp w) p x₀
         ((spec d w).runClient (∅ : Finset ℕ) p).1 y traces ∧
       SetRep d base (base + span d) w ((spec d w).runClient (∅ : Finset ℕ) p).2.1 y ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces ≤
+      DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤
         ((spec d w).runClient (∅ : Finset ℕ) p).2.2.length * (65 * (d + 1) + 22) ∧
       (∀ j, j < base ∨ base + span d + 4 * (d + 1) ≤ j → y.mem j = s₀.mem j) := by
   obtain ⟨x₀, n_init, hn_init, he_init, hbounded₀, hrep₀, hroot₀, hstk₀, _, hframe₀⟩ :=

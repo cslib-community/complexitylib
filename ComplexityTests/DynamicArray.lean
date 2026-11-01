@@ -134,10 +134,10 @@ theorem adaptiveClient_valid :
 /-- End-to-end adaptive execution from `initProgram` satisfies the linear instruction bound
 `15 + 5 * 52 = 275` and space bound `frontier < 4 * 3 = 12`. -/
 example : ∃ ready y traces, Exec 8 DynamicArray.initProgram blank ready 15 ∧
-    Stateful.Executes ((DynamicArray.implementation 8).ExecOp 8) adaptiveClient ready
+    DataStructure.Executes ((DynamicArray.implementation 8).ExecOp 8) adaptiveClient ready
       (11, 44) y traces ∧
     DynamicArray.BoundedRep 8 [11, 22, 44] y ∧
-    15 + Stateful.total DynamicProgram.OperationTrace.instructions traces +
+    15 + DataStructure.total DynamicProgram.OperationTrace.instructions traces +
       DynamicArray.potential [11, 22, 44] y ≤ 275 ∧
     y.regs DynamicArray.frontier < 12 := by
   obtain ⟨ready, y, traces, hi, he, hy, hb, hspace⟩ :=
@@ -148,10 +148,10 @@ example : ∃ ready y traces, Exec 8 DynamicArray.initProgram blank ready 15 ∧
 /-- `run_appendAll` across five elements (`1 → 2 → 4 → 8` doublings) guarantees total charged
 instructions `≤ 15 + 5 * 52 = 275` and `frontier < 20`. -/
 example : ∃ ready y traces, Exec 8 DynamicArray.initProgram blank ready 15 ∧
-    Stateful.Executes ((DynamicArray.implementation 8).ExecOp 8)
+    DataStructure.Executes ((DynamicArray.implementation 8).ExecOp 8)
       (DynamicArray.appendAll [10, 20, 30, 40, 50]) ready () y traces ∧
     DynamicArray.BoundedRep 8 [10, 20, 30, 40, 50] y ∧
-    15 + Stateful.total DynamicProgram.OperationTrace.instructions traces +
+    15 + DataStructure.total DynamicProgram.OperationTrace.instructions traces +
       DynamicArray.potential [10, 20, 30, 40, 50] y ≤ 275 ∧
     y.regs DynamicArray.frontier < 20 := by
   obtain ⟨ready, y, traces, hi, he, hy, hb, hspace⟩ :=

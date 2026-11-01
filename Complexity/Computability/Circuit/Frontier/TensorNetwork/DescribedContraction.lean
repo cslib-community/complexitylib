@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
-public import Complexity.Computability.GenericRAM.Native.StackRecursion
+public import Complexity.Computability.GenericRAM.Native.StackRecursionTree
 public import Complexity.Computability.PolyTime.GaloisRingArithmetic
 public import Complexity.Foundations.Data.BitString.List.Binary
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Words
@@ -83,8 +83,6 @@ contraction algorithm, with implicit packet tensors as descriptors.
 
 ## Main results
 
-* `Cslib.GenericRAM.StackRecursion.Scheme.Loop.counted`: a call whose children are indexed by
-  a counter.
 * `Cslib.Circuits.Frontier.DescribedNetwork.eval_sumRoot`: direct summation evaluates to
   `sumValue`, with `2 ^ m (k + 1) + 1` nodes and two open calls.
 * `Cslib.Circuits.Frontier.SumOps.IsHom.map_sumValue`: under a homomorphism, the value is the
@@ -99,43 +97,6 @@ contraction algorithm, with implicit packet tensors as descriptors.
 -/
 
 @[expose] public section
-
-namespace Cslib.GenericRAM.StackRecursion.Scheme
-
-open Finset
-
-variable {X A Y : Type} {R : Scheme X A Y} {I : Invariant X A Y}
-
-/-- **A call with counted children.** If, from the accumulators `acc c`, the call `x` asks for the
-children `child c` for `c < bound` and then stops, and the children evaluate to `val c`, then its
-loop from `acc 0` ends at `acc bound`, with the children's nodes and at most `H` levels. -/
-theorem Loop.counted {x : X} {acc : ℕ → A} {child : ℕ → X} {val : ℕ → Y} {nodes height : ℕ → ℕ}
-    (bound H : ℕ) (hnext : ∀ c < bound, R.next x (acc c) = some (child c))
-    (hdone : R.next x (acc bound) = none)
-    (habsorb : ∀ c < bound, R.absorb x (acc c) (val c) = acc (c + 1))
-    (heval : ∀ c < bound, R.Eval I (child c) (val c) (nodes c) (height c))
-    (hframe : ∀ c < bound, I.frame x (acc c)) (hH : ∀ c < bound, height c ≤ H) :
-    ∃ h ≤ H, R.Loop I x (acc 0) (acc bound) (∑ c ∈ range bound, nodes c) h := by
-  -- From any start `s ≤ bound`.
-  have key : ∀ k s, s + k = bound →
-      ∃ h ≤ H, R.Loop I x (acc s) (acc bound) (∑ c ∈ Ico s bound, nodes c) h := by
-    intro k
-    induction k with
-    | zero =>
-      intro s hs
-      subst hs
-      exact ⟨0, Nat.zero_le _, by simpa using Loop.done hdone⟩
-    | succ k ih =>
-      intro s hs
-      obtain ⟨h, hh, hl⟩ := ih (s + 1) (by omega)
-      have hs' : s < bound := by omega
-      have hl' := Loop.child (hframe s hs') (hnext s hs') (heval s hs')
-        (by rw [habsorb s hs']; exact hl)
-      refine ⟨max (height s) h, max_le (hH s hs') hh, ?_⟩
-      rwa [sum_eq_sum_Ico_succ_bot hs']
-  simpa using key bound 0 (by omega)
-
-end Cslib.GenericRAM.StackRecursion.Scheme
 
 namespace Cslib.Circuits.Frontier
 

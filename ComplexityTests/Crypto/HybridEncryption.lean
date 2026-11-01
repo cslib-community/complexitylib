@@ -372,7 +372,7 @@ example :
       1 := by
   have h : [false, true, true] =
       BitString.listXor 3 [[true, false, true], [true, true, false]] := by decide
-  rw [otpWordEncrypt, ProbComp.eval_pure, h, PMF.pure_apply_self]
+  rw [otpWordEncrypt, otpKeyWordEncrypt, ProbComp.eval_pure, h, PMF.pure_apply_self]
 
 /-- Instantiation of the word-message security reduction `KEMINDCPA.hybrid_otpWordEncrypt_indcpa`
 on `idealEncaps` and `otpWordEncrypt`. -/

@@ -30,7 +30,7 @@ example (routine : ℕ × ℕ → ℕ)
 
 namespace PlainDriverTests
 
--- Keep this body opaque to compositional search: the named certificate carries the contract.
+/-- An opaque bounded routine whose named certificate supplies the computation contract. -/
 @[irreducible] def checkedNamedConstant (B : Cslib.WordRAM.Basis) (limit c w : ℕ) : Option ℕ :=
   if c ≤ limit then B.genericModel.checkedConstant c w else none
 
