@@ -36,6 +36,10 @@ lower bound on circuit size.
   `Cslib.Circuits.Circuit.FanInAtMost.append`: fan-in bounds of composed programs and circuits.
 * `Cslib.Circuits.Circuit.fanInAtMost_pi`: single-output circuits side by side keep a common
   fan-in bound.
+* `Cslib.Circuits.Program.fanInAtMost_of_arity_le`,
+  `Cslib.Circuits.Circuit.fanInAtMost_of_arity_le`: a bound on the arities is a fan-in bound.
+* `Cslib.Circuits.Circuit.exists_fanInAtMost`: over a signature with finitely many operations,
+  every circuit has fan-in at most a constant.
 -/
 
 @[expose] public section
@@ -371,5 +375,24 @@ theorem Circuit.fanInAtMost_pi {m r : ℕ} {cs : Fin m → Circuit σ n 1}
   | succ m ih =>
     rw [Circuit.pi]
     exact (ih fun j => h _).append (h _)
+
+/-! ### Bounded arity -/
+
+/-- If every operation has arity at most `r`, every program has fan-in at most `r`. -/
+theorem Program.fanInAtMost_of_arity_le {r : ℕ} (h : ∀ op, σ.Arity op ≤ r)
+    (p : Program σ n g) : p.FanInAtMost r :=
+  Program.fanInAtMost_iff.2 fun _ => h _
+
+/-- If every operation has arity at most `r`, every circuit has fan-in at most `r`. -/
+theorem Circuit.fanInAtMost_of_arity_le {r : ℕ} (h : ∀ op, σ.Arity op ≤ r)
+    (c : Circuit σ n m) : c.FanInAtMost r :=
+  Program.fanInAtMost_of_arity_le h c.program
+
+/-- Over a signature with finitely many operations, every circuit has fan-in at most the largest
+arity. -/
+theorem Circuit.exists_fanInAtMost (σ : Signature) [Finite σ.Op] :
+    ∃ r, ∀ {n m : ℕ} (c : Circuit σ n m), c.FanInAtMost r := by
+  obtain ⟨r, hr⟩ := (Set.finite_range σ.Arity).bddAbove
+  exact ⟨r, fun c => Circuit.fanInAtMost_of_arity_le (fun op => hr ⟨op, rfl⟩) c⟩
 
 end Cslib.Circuits

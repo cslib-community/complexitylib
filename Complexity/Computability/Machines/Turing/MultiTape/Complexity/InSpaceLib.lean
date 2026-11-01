@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Plain
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lists
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeOptionPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 
@@ -151,7 +152,7 @@ theorem natIsZero :
 theorem natEq :
     ComputableInSpace (fun p : ℕ × ℕ => decide (p.1 = p.2)) (encPair encNat encNat) encBool
       fun p => (encPair encNat encNat p).length :=
-  of_inO (ComputableInO.eq encNat)
+  of_inO (.of_linear ComputableInLinearTimeAndSpace.natEq)
 
 theorem natLt :
     ComputableInSpace (fun p : ℕ × ℕ => decide (p.1 < p.2)) (encPair encNat encNat) encBool
@@ -285,44 +286,11 @@ theorem natMod :
       fun p => 16 * ((encPair encNat encNat p).length + 1) :=
   snd' natDivMod
 
-/-- Adding the first component to the second. -/
-def addStep (q : ℕ × ℕ) : ℕ × ℕ := (q.1, q.2 + q.1)
-
-theorem iterate_addStep (k x a : ℕ) : addStep^[k] (x, a) = (x, a + k * x) := by
-  induction k generalizing a with
-  | zero => simp
-  | succ k ih => rw [Function.iterate_succ_apply, addStep, ih]; congr 1; ring
-
 /-- **Multiplication in binary.** -/
 theorem natMul :
     ComputableInSpace (fun p : ℕ × ℕ => p.1 * p.2) (encPair encNat encNat) encNat
-      fun p => 32 * ((encPair encNat encNat p).length + 1) := by
-  have hstep : ComputableInSpace addStep (encPair encNat encNat) (encPair encNat encNat)
-      fun q => 4 * ((encPair encNat encNat q).length + 1) := by
-    have hl : (fun q => (encPair encNat encNat q).length) ≼
-        fun q => 4 * ((encPair encNat encNat q).length + 1) := .of_le fun _ => by omega
-    have h := budget_prod ((fst encNat encNat).weaken hl)
-      (budget_binop natAdd linear_succ ((snd encNat encNat).weaken hl)
-        ((fst encNat encNat).weaken hl))
-    exact h.of_enc_eq fun _ => rfl
-  have hinit : ComputableInSpace (fun p : ℕ × ℕ => (p.1, 0)) (encPair encNat encNat)
-      (encPair encNat encNat) fun p => 2 * ((encPair encNat encNat p).length + 1) :=
-    (budget_prod (fst _ _) (budget_const 0 (.refl _))).weaken (.of_le fun p => by omega)
-  have hlen (p : ℕ × ℕ) (k : ℕ) (hk : k ≤ p.2) :
-      (encPair encNat encNat (addStep^[k] (p.1, 0))).length ≤
-        3 * ((encPair encNat encNat p).length + 1) := by
-    rw [iterate_addStep, zero_add]
-    have := (Turing.MultiTapeTM.length_encNat_mono (Nat.mul_le_mul_right p.1 hk)).trans
-      (length_encNat_mul_le p.2 p.1)
-    simp only [length_encPair] at this ⊢
-    omega
-  have h := iterate (n := fun p : ℕ × ℕ => p.2) (snd _ _) hinit hstep
-    (Q := fun p => 4 * (3 * ((encPair encNat encNat p).length + 1) + 1))
-    (B := fun p => 3 * ((encPair encNat encNat p).length + 1))
-    (fun p k hk => by have := hlen p k hk; omega) hlen
-  refine (snd' h).mono_le (fun p => ?_) |>.of_enc_eq fun p => ?_
-  · simp only [length_encPair]; omega
-  · rw [iterate_addStep, zero_add, Nat.mul_comm]
+      fun p => 32 * ((encPair encNat encNat p).length + 1) :=
+  (of_inO ComputableInO.natMul).weaken (.of_le fun _ => by omega)
 
 /-! ### Lists of naturals -/
 
@@ -544,43 +512,10 @@ theorem mapWith {π κ : Type} {encP : π ↪ List Bool} {encK : κ ↪ List Boo
         (encList enc (list x)).length +
         (encList encK ((list x).map fun a => f (par x, a))).length +
         listMax (fun a => Sf (par x, a)) (list x) := by
-  have hfold_eq (p : π) (l : List ε) (acc : List κ) :
-      l.foldl (fun acc a => acc ++ [f (p, a)]) acc = acc ++ l.map (fun a => f (p, a)) := by
-    induction l generalizing acc with
-    | nil => simp
-    | cons a l ih => simp [ih, List.append_assoc]
-  have hq := fst (encPair encP (encList encK)) enc
-  have hel := snd (encPair encP (encList encK)) enc
-  obtain ⟨c, hc⟩ := hf.length_le
-  have hstep : ComputableInSpace (fun q : (π × List κ) × ε => q.1.2 ++ [f (q.1.1, q.2)])
-      (encPair (encPair encP (encList encK)) enc) (encList encK)
-      fun q => (encPair (encPair encP (encList encK)) enc q).length + Sf (q.1.1, q.2) :=
-    ((snoc encK).comp ((snd' hq).prod (hf.comp ((fst' hq).prod hel)))).weaken
-      ⟨2 * c + 6, fun q => by
-        have := hc (q.1.1, q.2)
-        simp only [length_encPair] at this ⊢
-        nlinarith⟩
-  have hst (x : α) (i : ℕ) :
-      (encList encK (((list x).take i).foldl (fun acc a => acc ++ [f (par x, a)]) [])).length ≤
-        (encList encK ((list x).map fun a => f (par x, a))).length := by
-    rw [hfold_eq, List.nil_append, List.map_take]
-    exact length_encList_take_le encK _ _
-  have hfold := foldlWith (encL := encList enc) (encB := encList encK)
-    (step := fun p acc a => acc ++ [f (p, a)]) hpar hlist (const []) hstep
-    (Q := fun x => 4 * (encP (par x)).length +
-      3 * (encList enc (list x)).length +
-      3 * (encList encK ((list x).map fun a => f (par x, a))).length + 5 +
-      listMax (fun a => Sf (par x, a)) (list x))
-    (B := fun x => (encList encK ((list x).map fun a => f (par x, a))).length)
-    (fun x i hi => by
-      have h₁ := length_le_encList_of_mem enc (List.getElem_mem hi)
-      have h₂ := le_listMax (f := fun a => Sf (par x, a)) (List.getElem_mem hi)
-      have h₃ := hst x i
-      simp only [length_encPair] at h₂ ⊢
-      omega)
-    (fun x i _ => hst x i)
-  refine (hfold.weaken ⟨6, fun x => by dsimp only; omega⟩).of_enc_eq fun x => ?_
-  rw [hfold_eq, List.nil_append]
+  obtain ⟨_, hf⟩ := hf.exists_inO
+  obtain ⟨_, hpar⟩ := hpar.exists_inO
+  obtain ⟨_, hlist⟩ := hlist.exists_inO
+  exact of_inO (ComputableInO.mapWith hf hpar hlist)
 
 end Generic
 
@@ -844,12 +779,6 @@ theorem natMod :
       fun p => 16 * ((encPair encNat encNat p).length + 1) :=
   snd' natDivMod
 
-/-- Adding the first component to the second, retained in the tidy namespace. -/
-abbrev addStep : ℕ × ℕ → ℕ × ℕ := ComputableInSpace.addStep
-
-theorem iterate_addStep (k x a : ℕ) : addStep^[k] (x, a) = (x, a + k * x) :=
-  ComputableInSpace.iterate_addStep k x a
-
 theorem natMul :
     ComputableTidilyInSpace (fun p : ℕ × ℕ => p.1 * p.2) (encPair encNat encNat) encNat
       fun p => 32 * ((encPair encNat encNat p).length + 1) :=
@@ -910,21 +839,6 @@ theorem length :
     ComputableTidilyInSpace (fun l : List ε => l.length) (encList enc) encNat
       fun l => 8 * ((encList enc l).length + 1) :=
   ComputableInSpace.length.tidy
-
-theorem mapWith {π κ : Type} {encP : π ↪ List Bool} {encK : κ ↪ List Bool} {f : π × ε → κ}
-    {Sf : π × ε → ℕ} {par : α → π} {list : α → List ε} {Sp Sl : α → ℕ}
-    (hf : ComputableTidilyInSpace f (encPair encP enc) encK Sf)
-    (hpar : ComputableTidilyInSpace par encIn encP Sp)
-    (hlist : ComputableTidilyInSpace list encIn (encList enc) Sl) :
-    ComputableTidilyInSpace (fun x => (list x).map fun a => f (par x, a)) encIn (encList encK)
-      fun x => (encIn x).length + Sp x + Sl x + (encP (par x)).length +
-        (encList enc (list x)).length +
-        (encList encK ((list x).map fun a => f (par x, a))).length +
-        listMax (fun a => Sf (par x, a)) (list x) :=
-  let ⟨_, hf⟩ := hf
-  let ⟨_, hpar⟩ := hpar
-  let ⟨_, hlist⟩ := hlist
-  ⟨_, ComputableTidilyInO.mapWith hf hpar hlist⟩
 
 end Generic
 

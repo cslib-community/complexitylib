@@ -798,8 +798,8 @@ private theorem bi_insertSorted : PolyT (fun p : List ℕ × ℕ => insertSorted
   have hv := snd (encList encNat) encNat
   have hp := fst (encPair (encList encNat) encNat) encNat
   have hu := snd (encPair (encList encNat) encNat) encNat
-  exact bi_listAppend'
-    (bi_listAppend' (bi_filterWithId (binary_lt' hu (hv.comp hp)) hm) (bi_cons' hv (const [])))
+  exact listAppend'
+    (listAppend' (bi_filterWithId (binary_lt' hu (hv.comp hp)) hm) (cons' hv (const [])))
     (bi_filterWithId (binary_lt' (hv.comp hp) hu) hm)
 
 private theorem bi_sortDedup : PolyT sortDedup (encList encNat) (encList encNat) :=

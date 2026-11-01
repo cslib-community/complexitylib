@@ -229,6 +229,29 @@ coefficients `(c j).val < 2 ^ (trinomialDeg U M)` at `base + 8 + j.val`. -/
     Fin k → Fin (2 ^ trinomialDeg U M) :=
   extractSlice (base + 8) (trinomialDeg U M) k mem
 
+theorem extractSeeds_eq_of_seedRep {base U M k : ℕ}
+    {c : Fin k → Fin (2 ^ trinomialDeg U M)} {mem : ℕ → ℕ}
+    (hseed : SeedRep base U M k c mem) :
+    extractSeeds base U M k mem = c := by
+  funext j
+  ext
+  dsimp only [extractSeeds, extractSlice]
+  rw [hseed j, extractWord_val_of_lt (c j).isLt]
+
+theorem SeedRep.congr_of_footprint {base U M k : ℕ}
+    {c : Fin k → Fin (2 ^ trinomialDeg U M)} {mem mem' : ℕ → ℕ}
+    (hseed : SeedRep base U M k c mem)
+    (hm : ∀ a, base ≤ a → a < base + 8 + k → mem' a = mem a) :
+    SeedRep base U M k c mem' :=
+  fun j => (hm (base + 8 + j.val) (by omega) (by have := j.isLt; omega)).trans (hseed j)
+
+theorem extractSeeds_congr_of_footprint {base U M k : ℕ} {mem mem' : ℕ → ℕ}
+    (hm : ∀ a, base ≤ a → a < base + 8 + k → mem' a = mem a) :
+    extractSeeds base U M k mem' = extractSeeds base U M k mem := by
+  funext j
+  dsimp only [extractSeeds, extractSlice]
+  rw [hm (base + 8 + j.val) (by omega) (by have := j.isLt; omega)]
+
 /-! ## Section 2: Helper loops for `initTableCode` -/
 
 /-- Final remainder reached by `trinomialStepAux` when repeatedly mapping `B ↦ (B + 2) / 3` until

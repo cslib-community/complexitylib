@@ -519,7 +519,8 @@ def base_declarations(root: Path, base: str, words: set[str]) -> Declarations:
     decls = Declarations()
     if not words:
         return decls
-    listed = git(root, "grep", "-l", "-w", "-F", *[a for w in sorted(words) for a in ("-e", w)],
+    listed = git(root, "grep", "--no-color", "-l", "-w", "-F",
+                 *[a for w in sorted(words) for a in ("-e", w)],
                  base, "--", *[f"{d}/*.lean" for d in LOCAL_DIRS])
     objects = listed.stdout.splitlines()  # `base:path`, which `git cat-file` reads as an object
     if not objects:

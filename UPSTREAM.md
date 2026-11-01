@@ -47,6 +47,11 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   without repeatedly copying list tails. Retain these local improvements when synchronizing
   `Universal/Complexity`, `Bound` and their resource consumers with `crei/tidy-universal`.
   This is an extension of the existing interpreter, not a buffered Hennie–Stearns backend.
+  `Universal/Windowed*` adds a divide-and-conquer windowed simulation on top of the vendored
+  description format and `stepWith`; with the native `Combinators/StackLoop` and
+  `Combinators/DivConq` combinators it proves the `O(t log t)` bound
+  `computableInO_universal_nlogn`. It is a new local construction layered beside the vendored
+  files, not a revision of them; keep it out of the copied modules when synchronizing.
 * **Polynomial bounds.** The tidy calculus's size-parameterized `PolyBounded` adapts CSLib's
   `PolynomiallyBounded` and shares its closure API. Coordinate this adaptation with the tidy
   branch; preserve it when resynchronizing the vendored files.
@@ -112,9 +117,10 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   Cook–Reckhow and supporting both unit and logarithmic costs, remains a separate candidate.
 * **Generic RAM values.** `Computability/GenericRAM/*` supplies a shared finite-register RAM
   interpreter with configurable value, address, configuration and literal types, operation/test
-  signatures, and fault policies. `WordRAM/Generic` embeds every existing word-operation basis
+  signatures, and fault policies. `WordRAM/Defs` embeds every existing word-operation basis
   with exact step, fault, output and instruction-count preservation, including arbitrary initial
-  states; no existing public WordRAM definition changes. The signed instance follows the
+  states, and derives the word RAM's interpreter metatheory from the generic one; the WordRAM
+  definitions keep their own syntax and step function. The signed instance follows the
   lean-trominoes signed range and its address, move, halt and program-counter checks, retaining
   its source credit. The algebraic instances use tagged natural words and exact field values:
   only natural words can address memory. Real comparison is mathematical, noncomputable
@@ -167,14 +173,18 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `w+2`. The two extra bits and actual arithmetic-block costs come from the existing native
   signed kernels, without a copied source machine or a whole-program simulation hypothesis.
   The existing array-copy interface is retained, with a narrow generalization for disjoint
-  blocks in either address order or identical blocks.
+  blocks in either address order or identical blocks. `Encoding.setup` and `Encoding.powerBody`
+  retain their simultaneous `7^L`/`10^L` loop sharing the `stage` counter (`5*L+18` setup
+  instructions) rather than running two sequential `WordRAM.Power.program` loops.
   This is the encoder component only; band/tile preparation and full native composition remain
   in [#1394](https://github.com/cslib-community/complexitylib/issues/1394).
 * **Native shared-band preparation.** The native shared-band preparation component
   ([#1523](https://github.com/cslib-community/complexitylib/issues/1523)) computes a deterministic
   `Layout` and both subset tables by native mask/popcount scans, computes the square-root block
-  count by a charged loop, and decodes each band-array index into the original row/column and
-  thin-dimension coordinates. Real matrix bounds are checked before row-major multiplication.
+  count and its square by renaming `NatSqrt.program` (`BandPreparation.rootRegisters`) followed by
+  one multiplication (`5*sqrt(k)+8` steps), and decodes each band-array index into the original
+  row/column and thin-dimension coordinates. Real matrix bounds are checked before row-major
+  multiplication.
   Each shared row/column band calls the unchanged encoder once; tiles refer to its catalogue
   block in the existing leaf order. The fixed 96-register standard code starts from actual
   `State.init` scalar/matrix input, charges snapshot and restoration of the complete original
@@ -451,11 +461,14 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   callers use the flat initialized runs, width theorem or pointer/epoch kernel. The narrow
   `WordRAM.ArrayAppend` and `WordRAM.InputArray` topic modules keep append/input dependencies
   and interface changes away from the widely imported `Allocation` core.
-  Post-integration [#1553](https://github.com/cslib-community/complexitylib/issues/1553) includes
-  replacing pruned `powers` with sibling #1536's generic `Power.program`, preserving the
-  `4L+10` budget via five retained constant initializations plus its `4L+5` run. Its exact
-  register map, affected execution/width/cost clients and sibling integration order are
-  recorded there. This documentation/test repair does not change either sibling's program.
+  Post-integration [#1553](https://github.com/cslib-community/complexitylib/issues/1553) replaces
+  pruned `powers` with five retained constant initializations (`powerSetup`) followed by
+  `Power.program.rename powerRegisters`, preserving the `4L+10` step bound and `PowersLocal`
+  frame, and replaces `BandPreparation.rootCode` with `NatSqrt.program.rename rootRegisters`
+  followed by `square ← root * root` (`5*sqrt(k)+8` steps). `ChanHe.Parameters.power` retains
+  its compile-time fixed-exponent unrolling (`κ+1` straight-line instructions over `magnitude`
+  and `base` without a runtime exponent/counter register or `Fits w (κ+1)` premise at `n=0`),
+  and `Encoding.setup`/`powerBody` retains its simultaneous `7^L`/`10^L` loop sharing `stage`.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes
   `Cslib/Computability/Machines/RAM/Basic.lean`, in namespace `Cslib.RAM.Typed`.
@@ -481,13 +494,15 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   representation from the standard input. `WordRAM/Function` gives separate nonuniform and
   uniform RAM function-time predicates, with named-certificate reuse by `polytime`. Arbitrary continuation
   synthesis, iterative clients and a Turing-machine simulation remain open.
-  `Foundations/Data/OrderedSet` and `Foundations/Semantics/Stateful/OrderedSet` provide neutral
-  optional-minimum contracts, a typed finite-set interface and adaptive clients, with no tree or
-  cost dependency. Bounded-key implementations may specialize insertion admissibility.
+  `Foundations/Data/OrderedSet` and `Foundations/Data/OrderedSet/*` provide neutral
+  optional-minimum contracts, a typed finite-set interface including deletion, and adaptive
+  minimum extraction, with no tree or cost dependency. Bounded-key implementations may specialize
+  insertion admissibility.
   `Algorithms/Lean/SearchTree/*` reuses Mathlib's `BinaryTree`, height and node count for an
   unbalanced ordered-set realization. Finite-set behavior, strict invariants and height-bounded
-  node visits are proved, including for the pure deletion operation `erase`; allocation,
-  comparison implementation and client computation are excluded from that cost model. It is not
+  node visits are proved, including deletion through the shared interface and adaptive clients;
+  allocation, comparison implementation and client computation are excluded from that cost model.
+  It is not
   a balanced tree or machine-time certificate.
   `WordRAM/Dynamic` separately connects
   fixed bounded-word operation programs and faithful memory transcripts to those contracts.

@@ -47,10 +47,14 @@ polynomial time, the space is polynomial (`Cslib.Reachability.exists_polyBounded
   `Cslib.Reachability.Savitch.encState`: the encoded states of the machine.
 * `Cslib.Reachability.Savitch.roundStep`, `Cslib.Reachability.Savitch.encRound`: a step carrying
   the parameter of the edge test and the width, and its encoding.
+* `Cslib.Reachability.Savitch.Invariant`: the states of a run from a call at a given level.
 
 ## Main results
 
 * `Cslib.Reachability.Savitch.computableInO_roundStep`: the time and space of a round.
+* `Cslib.Reachability.Savitch.invariant_iterate`, `Cslib.Reachability.Savitch.length_encState_le`:
+  the states of a run hold at most `d` frames, so their encodings have length
+  `O((d + 1) * (d + w + 1))`.
 * `Cslib.Reachability.computableInO_savitch`: the time and space of Savitch's algorithm.
 * `Cslib.Reachability.exists_polyBounded_space_savitch`: Savitch's algorithm in polynomial space.
 
@@ -145,7 +149,7 @@ private theorem next_eq (u : List Bool) :
 
 /-- The transducer testing whether all bits are ones. -/
 @[simps q₀ step final]
-private def allT : Transducer Bool Bool where
+def allT : Transducer Bool Bool where
   q₀ := true
   step a b := (a && b, [])
   final a := [a]
@@ -153,7 +157,7 @@ private def allT : Transducer Bool Bool where
   length_final_le _ := by simp
 
 /-- The transducer `allT` tests whether all bits are ones. -/
-private theorem allT_run (a : Bool) (u : List Bool) : allT.run a u = [a && u.all id] := by
+theorem allT_run (a : Bool) (u : List Bool) : allT.run a u = [a && u.all id] := by
   induction u generalizing a with
   | nil => simp [allT_final]
   | cons b u ih => simp [allT_step, ih, Bool.and_assoc]
@@ -484,13 +488,13 @@ theorem roundStep_iterate (edge : π → List Bool → List Bool → Bool) (p : 
 
 /-- The frames of a run from a call at level `d` with words of width `w`: a frame with `n` frames
 below it is at a level below `d - n`, and its words have width `w`. -/
-private def StackOk (w d : ℕ) : List Frame → Prop
+def StackOk (w d : ℕ) : List Frame → Prop
   | [] => True
   | f :: stack => f.level + 1 + stack.length ≤ d ∧ f.src.length = w ∧ f.dst.length = w ∧
       f.mid.length = w ∧ StackOk w d stack
 
 /-- The states of a run from a call at level `d` with words of width `w`. -/
-private def Invariant (w d : ℕ) (s : State) : Prop :=
+def Invariant (w d : ℕ) (s : State) : Prop :=
   StackOk w d s.stack ∧
     ∀ i u v, s.reg = .call i u v → i + s.stack.length ≤ d ∧ u.length = w ∧ v.length = w
 
@@ -502,7 +506,7 @@ private theorem length_of_next {u m : List Bool} (h : next u = some m) : m.lengt
   exact length_increment u
 
 /-- The step keeps the invariant of a run. -/
-private theorem invariant_step (edge : List Bool → List Bool → Bool) {w d : ℕ} {s : State}
+theorem invariant_step (edge : List Bool → List Bool → Bool) {w d : ℕ} {s : State}
     (h : Invariant w d s) : Invariant w d (step edge w s) := by
   obtain ⟨hst, hreg⟩ := h
   obtain ⟨stack, (⟨_ | i, u, v⟩ | b)⟩ := s
@@ -535,21 +539,21 @@ private theorem invariant_step (edge : List Bool → List Bool → Bool) {w d : 
           exact ⟨hst, fun _ _ _ h => by cases h⟩
 
 /-- Every state of a run keeps the invariant. -/
-private theorem invariant_iterate (edge : List Bool → List Bool → Bool) {w d : ℕ} {s : State}
+theorem invariant_iterate (edge : List Bool → List Bool → Bool) {w d : ℕ} {s : State}
     (h : Invariant w d s) (k : ℕ) : Invariant w d ((step edge w)^[k] s) := by
   induction k with
   | zero => exact h
   | succ k ih => rw [Function.iterate_succ_apply']; exact invariant_step edge ih
 
 /-- A run from a call at level `d` holds at most `d` frames. -/
-private theorem StackOk.length_le {w d : ℕ} :
+theorem StackOk.length_le {w d : ℕ} :
     ∀ {stack : List Frame}, StackOk w d stack → stack.length ≤ d
   | [], _ => Nat.zero_le _
   | _ :: _, h => by have := h.1; simp only [List.length_cons]; omega
 
 /-- The frames of a run from a call at level `d` are below level `d`, with words of width
 `w`. -/
-private theorem StackOk.mem {w d : ℕ} :
+theorem StackOk.mem {w d : ℕ} :
     ∀ {stack : List Frame}, StackOk w d stack → ∀ f ∈ stack,
       f.level < d ∧ f.src.length = w ∧ f.dst.length = w ∧ f.mid.length = w
   | [], _, _, hf => by simp at hf
@@ -561,7 +565,7 @@ private theorem StackOk.mem {w d : ℕ} :
 /-- The states of a run from a call at level `d`, with words of width `w`, are of size
 `O((d + 1) * (d + w + 1))`: at most `d` frames of size `O(d + w)`, and a call of size
 `O(d + w)`. -/
-private theorem length_encState_le {w d : ℕ} {s : State} (h : Invariant w d s) :
+theorem length_encState_le {w d : ℕ} {s : State} (h : Invariant w d s) :
     (encState s).length ≤ 24 * (d + 1) * (d + w + 1) := by
   obtain ⟨hst, hreg⟩ := h
   have hlist : (encList encFrame s.stack).length ≤ d * (2 * (2 * d + 6 * w + 5) + 1) := by
