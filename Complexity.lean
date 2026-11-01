@@ -1731,6 +1731,11 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Alternating
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Game
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.GuessVerify
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ConcreteEvaluator
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ConcreteEvaluatorCorrect
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ConcreteSupplier
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ConcreteSupplierCorrect
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ConcreteSupplierSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.EncodedTree
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding.NativeChecked
@@ -1739,6 +1744,9 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateInterpolation
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateInterpolationBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateInterpolationCorrect
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateReply
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateReplyBounds
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateReplyCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateVector
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateVectorBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateVectorCorrect
@@ -1752,6 +1760,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.InitialChunkCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.InitialVector
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.InitialVectorCorrect
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.InitialVectorGate
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.NodeReply
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.NodeReplyCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.NormalizePoint
@@ -2434,6 +2443,7 @@ public import Complexity.Computability.TreeEval.Ary.Packed
 public import Complexity.Computability.TreeEval.Ary.Packed.AssignmentLabels
 public import Complexity.Computability.TreeEval.Ary.Packed.AssignmentLabelsCorrect
 public import Complexity.Computability.TreeEval.Ary.Packed.AssignmentLabelsSpace
+public import Complexity.Computability.TreeEval.Ary.Packed.Constant
 public import Complexity.Computability.TreeEval.Ary.Packed.Executable
 public import Complexity.Computability.TreeEval.Ary.Packed.GateInterpolation
 public import Complexity.Computability.TreeEval.Ary.Packed.GateInterpolationSpace
@@ -2448,6 +2458,7 @@ public import Complexity.Computability.TreeEval.Ary.Packed.RawControllerCorrect
 public import Complexity.Computability.TreeEval.Ary.Packed.RawControllerEncoding
 public import Complexity.Computability.TreeEval.Ary.Packed.RawControllerNative
 public import Complexity.Computability.TreeEval.Ary.Packed.RawControllerOutput
+public import Complexity.Computability.TreeEval.Ary.Packed.RawControllerPoint
 public import Complexity.Computability.TreeEval.Ary.Packed.RawControllerQuery
 public import Complexity.Computability.TreeEval.Ary.Packed.RawControllerSpace
 public import Complexity.Computability.TreeEval.Ary.PackingParameters
@@ -3036,6 +3047,7 @@ public import Complexity.Foundations.Data.Code.ListDecoding
 public import Complexity.Foundations.Data.Code.LocalDecoding
 public import Complexity.Foundations.Data.Code.LocalListDecoding
 public import Complexity.Foundations.Data.Code.LowDegreeExtension
+public import Complexity.Foundations.Data.Code.LowDegreeExtension.Constant
 public import Complexity.Foundations.Data.Code.LowDegreeExtension.UnitSum
 public import Complexity.Foundations.Data.Code.Multilinearity
 public import Complexity.Foundations.Data.Code.MultilinearitySoundness
@@ -3263,6 +3275,7 @@ public import Complexity.Foundations.Probability.Gaussian.Real
 public import Complexity.Foundations.Probability.Gaussian.Sheppard
 public import Complexity.Foundations.Probability.HeavyCount
 public import Complexity.Foundations.Probability.HeavyCountRarity
+public import Complexity.Foundations.Probability.HeavyCountTail
 public import Complexity.Foundations.Probability.HierarchyParams
 public import Complexity.Foundations.Probability.PolynomialAtomCompression
 public import Complexity.Foundations.Probability.PolynomialAtomCutoffs
@@ -3279,6 +3292,7 @@ public import Complexity.Foundations.Probability.RootMetric
 public import Complexity.Foundations.Probability.RootMetric.Conditioning
 public import Complexity.Foundations.Probability.RootMetric.Minkowski
 public import Complexity.Foundations.Probability.SamplerPrefix
+public import Complexity.Foundations.Probability.RootMetric.Slices
 public import Complexity.Foundations.Probability.SecondMoment
 public import Complexity.Foundations.Probability.SourceRelease
 public import Complexity.Foundations.Probability.StochasticAtom
