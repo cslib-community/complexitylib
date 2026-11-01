@@ -2874,6 +2874,7 @@ public import Complexity.DataStructure.HashFamily.WordRAM.KWise
 public import Complexity.DataStructure.HashFamily.WordRAM.MultiplyShift
 public import Complexity.DataStructure.HashFamily.WordRAM.Tabulation
 public import Complexity.DataStructure.Memory.Field
+public import Complexity.DataStructure.Memory.Frame
 public import Complexity.DataStructure.Memory.Spec
 public import Complexity.DataStructure.ObliviousSequence
 public import Complexity.DataStructure.Online.Basic
@@ -2925,6 +2926,7 @@ public import Complexity.DataStructure.StateTransition.CostHoare
 public import Complexity.DataStructure.StateTransition.Hoare
 public import Complexity.DataStructure.StateTransition.Impl
 public import Complexity.DataStructure.StateTransition.Module
+public import Complexity.DataStructure.StateTransition.Oracle
 public import Complexity.DataStructure.StateTransition.Refinement
 public import Complexity.DataStructure.StateTransition.Resource
 public import Complexity.DataStructure.VanEmdeBoas.Basic

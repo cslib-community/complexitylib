@@ -48,6 +48,7 @@ separate step that exchanges it into instructions. Allocation never reuses addre
 * `Memory.WellFormed.step`, `Memory.WellFormed.run`: admissible operations preserve
   well-formedness.
 * `Memory.WellFormed.fits_of_lt_frontier`: allocated addresses fit a word.
+* `Memory.one_le_charge`: every operation costs at least one unit.
 * `Memory.frontier_le_step`, `Memory.frontier_le_run`: the frontier never decreases.
 * `Memory.mem_step_of_lt_frontier`: an operation changes an allocated cell only by writing it.
 * `Memory.wellFormed_init`: the input convention is well formed.
@@ -161,6 +162,11 @@ abbrev allocDirty (k : ℕ) : Prog ℕ :=
 @[simp] theorem charge_alloc (s : State) (k : ℕ) : charge s (.alloc k) = k + 1 := rfl
 
 @[simp] theorem charge_allocDirty (s : State) (k : ℕ) : charge s (.allocDirty k) = 1 := rfl
+
+/-- Every memory operation costs at least one unit, so the number of operations, hence the
+glue run after them, is paid for by their charges. -/
+theorem one_le_charge (s : State) (o : Op) : 1 ≤ charge s o := by
+  cases o <;> simp
 
 /-- Admissibility of a concrete history is decidable. -/
 instance decidableValidHistory (w : ℕ) (s : State) (os : List Op) :
