@@ -14,6 +14,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Poly
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Tactic.OptionMatch
 
 /-!
 # The s-m-n theorem in polynomial time
@@ -149,11 +150,9 @@ theorem computableInPolyTime_option_map {α β : Type} {encA : α ↪ List Bool}
     (hvalue : ComputableInPolyTime value encIn (encOption encA))
     (hf : ComputableInPolyTime (fun p : γ × α => f p.1 p.2) (encPair encIn encA) encB) :
     ComputableInPolyTime (fun x => (value x).map (f x)) encIn (encOption encB) := by
-  have hb : ComputableInPolyTime (fun p : γ × α => some (f p.1 p.2)) (encPair encIn encA)
-      (encOption encB) := (optionSome encB).comp hf
-  convert optionElimWithInput (body := fun x a => some (f x a)) hvalue (const none) hb using 1
-  funext x
-  cases value x <;> rfl
+  unfold Option.map
+  option_match_to_elim
+  fun_prop
 
 namespace Hardwire
 
