@@ -605,8 +605,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Direct 3SUM adaptation** ([#1394]): the improved Section 4 route and tuned source exponent
   1.9992 remain open. The finite cube/box prerequisite ([#2160](https://github.com/cslib-community/complexitylib/issues/2160))
   supplies canonical boxes, their disjoint high-order leaf partition, explicit low-order terms,
-  exact cardinalities and a signed value recurrence. Native computed box preprocessing and
-  query code, its charged bounds and Corollary 26 integration remain to be implemented.
+  exact cardinalities and a signed value recurrence. The native box-table milestone
+  ([#2176](https://github.com/cslib-community/complexitylib/issues/2176)) computes one shared
+  directory/catalogue and compact signed per-tile values, with actual lookup and charged
+  initialized execution. Its shared geometry cost remains explicit; global all-tile
+  amortization, wanted-query construction and Corollary 26/ET integration remain open.
   Conservative native ordinary integer 3SUM is proved in
   `WordRAM/ThreeSum/Decision/Subquadratic.lean`: for each fixed polynomial magnitude exponent,
   one fixed 848-register program has charged time `Oκ(n^(2−1/5184))`, logarithmic physical
