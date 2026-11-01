@@ -142,7 +142,7 @@ theorem toFinset_mem_searchLevels (l : List ι) : l.toFinset ∈ searchLevels l 
   | cons i l => simp [searchLevels]
 
 /-- **The bucket search** of Goldreich–Levin and Kushilevitz–Mansour over the list `l` of
-coordinates, given estimates `est J S` of the bucket weights `W^{S | J}` and a threshold `τ`.
+coordinates, given estimates `est J S` of the bucket weights `W^{S | J̄}` and a threshold `τ`.
 Starting from the bucket of all sets, it adds the coordinates of `l` from the last to the first,
 splits each surviving bucket `S` of `J` into the buckets `S` and `insert i S` of `insert i J`, and
 keeps the buckets whose estimated weight is at least `τ`. -/
@@ -232,13 +232,15 @@ variable (ι) in
 def decisionTreeClass (L : ℕ) : ConceptClass (ι → Bool) Bool :=
   {f | ∃ t : DecisionTree ι Bool, t.Computes f ∧ t.leafCount ≤ L}
 
-/-- The empirical estimate of the bucket weight `W^{S | J}` of `g`, read as signs, from the
+/-- The empirical estimate of the bucket weight `W^{S | J̄}` of `g`, read as signs, from the
 samples `ω j = (x, y, z)`: the average of `g (x, z) χ_S(x) g (y, z) χ_S(y)`, where `(x, z)` takes
 the coordinates in `J` from `x` and the others from `z`. -/
 noncomputable def bucketEstimate (g : (ι → Bool) → Bool)
     (ω : Fin m → (ι → Bool) × (ι → Bool) × (ι → Bool)) (J S : Finset ι) : ℝ :=
-  (∑ j, signVal (g (J.piecewise (ω j).1 (ω j).2.2)) * chi ℝ S (ω j).1 *
-    (signVal (g (J.piecewise (ω j).2.1 (ω j).2.2)) * chi ℝ S (ω j).2.1)) / m
+  (∑ j,
+    let (x, y, z) := ω j
+    signVal (g (J.piecewise x z)) * chi ℝ S x *
+      (signVal (g (J.piecewise y z)) * chi ℝ S y)) / m
 
 /-- The empirical Fourier coefficient of `g` on `S` from the first points of the samples. -/
 noncomputable def sampleCoeff (g : (ι → Bool) → Bool)
@@ -265,14 +267,20 @@ noncomputable def kmQueries (ω : Fin m → (ι → Bool) × (ι → Bool) × (�
   (List.finRange m).map (fun j => (ω j).1) ++
     (searchLevels (univ : Finset ι).toList).flatMap fun J =>
       (List.finRange m).flatMap fun j =>
-        [J.piecewise (ω j).1 (ω j).2.2, J.piecewise (ω j).2.1 (ω j).2.2]
+        let (x, y, z) := ω j
+        [J.piecewise x z, J.piecewise y z]
 
 /-- The algorithm queries `m (2 n + 3)` points for `n` coordinates. -/
 theorem length_kmQueries (ω : Fin m → (ι → Bool) × (ι → Bool) × (ι → Bool)) :
     (kmQueries ω).length = m * (2 * Fintype.card ι + 3) := by
+  have hlen (J : Finset ι) :
+      ((List.finRange m).map fun j =>
+        (let (x, y, z) := ω j; [J.piecewise x z, J.piecewise y z]).length) =
+      (List.finRange m).map fun _ => 2 :=
+    List.map_congr_left fun j _ => by rcases ω j with ⟨x, y, z⟩; rfl
   simp only [kmQueries, List.length_append, List.length_map, List.length_finRange,
-    List.length_flatMap, List.length_cons, List.length_nil, List.map_const', List.sum_replicate,
-    smul_eq_mul, length_searchLevels, length_toList, card_univ]
+    List.length_flatMap, hlen, List.map_const', List.sum_replicate, smul_eq_mul,
+    length_searchLevels, length_toList, card_univ]
   ring
 
 /-- The hypothesis depends only on the answers at the queried points. -/
@@ -285,19 +293,22 @@ theorem kmHypothesis_congr (θ : ℝ) (ω : Fin m → (ι → Bool) × (ι → B
     funext S
     simp only [sampleCoeff, empiricalCoeff, examples_apply, hx]
   have hmem (J : Finset ι) (hJ : J ∈ searchLevels (univ : Finset ι).toList) (j : Fin m)
-      (x : ι → Bool)
-      (hx : x ∈ [J.piecewise (ω j).1 (ω j).2.2, J.piecewise (ω j).2.1 (ω j).2.2]) :
-      g x = g' x :=
-    h x (List.mem_append_right _ (List.mem_flatMap.2
-      ⟨J, hJ, List.mem_flatMap.2 ⟨j, List.mem_finRange j, hx⟩⟩))
+      (p : ι → Bool)
+      (hp : p ∈ (let (x, y, z) := ω j; [J.piecewise x z, J.piecewise y z])) :
+      g p = g' p :=
+    h p (List.mem_append_right _ (List.mem_flatMap.2
+      ⟨J, hJ, List.mem_flatMap.2 ⟨j, List.mem_finRange j, hp⟩⟩))
   have hcand : kmCandidates g θ ω = kmCandidates g' θ ω := by
     refine bucketSearch_congr fun J hJ S => ?_
-    have h₁ (j : Fin m) : g (J.piecewise (ω j).1 (ω j).2.2) = g' (J.piecewise (ω j).1 (ω j).2.2) :=
-      hmem J hJ j _ (by simp)
-    have h₂ (j : Fin m) :
-        g (J.piecewise (ω j).2.1 (ω j).2.2) = g' (J.piecewise (ω j).2.1 (ω j).2.2) :=
-      hmem J hJ j _ (by simp)
-    simp only [bucketEstimate, h₁, h₂]
+    simp only [bucketEstimate]
+    congr 1
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rcases hωj : ω j with ⟨x, y, z⟩
+    have h₁ : g (J.piecewise x z) = g' (J.piecewise x z) :=
+      hmem J hJ j _ (by simp [hωj])
+    have h₂ : g (J.piecewise y z) = g' (J.piecewise y z) :=
+      hmem J hJ j _ (by simp [hωj])
+    simp only [h₁, h₂]
   simp only [kmHypothesis, hcoeff, hcand]
 
 variable (ι m) in
@@ -418,10 +429,14 @@ theorem uniform_not_accurate_le (f : (ι → Bool) → Bool) (θ : ℝ) (m : ℕ
   have hbucket (J S : Finset ι) :
       μ {ω | θ ^ 2 / 4 ≤ |bucketEstimate f ω J S - bucketWeight F J S|} ≤ ENNReal.ofReal c := by
     have h := PMF.uniform_abs_sum_div_sub_expect_ge_le
-      (fun p : (ι → Bool) × (ι → Bool) × (ι → Bool) =>
-        F (J.piecewise p.1 p.2.2) * chi ℝ S p.1 * (F (J.piecewise p.2.1 p.2.2) * chi ℝ S p.2.1))
-      (fun p => abs_signVal_mul_chi_mul_le_one _ _ S _ _) hm hγ
-    rw [← bucketWeight_eq_expect_sample, hexp] at h
+      (fun ((x, y, z) : (ι → Bool) × (ι → Bool) × (ι → Bool)) =>
+        F (J.piecewise x z) * chi ℝ S x * (F (J.piecewise y z) * chi ℝ S y))
+      (fun (x, y, z) => abs_signVal_mul_chi_mul_le_one _ _ S _ _) hm hγ
+    rw [show (𝔼 p : (ι → Bool) × (ι → Bool) × (ι → Bool),
+        let (x, y, z) := p
+        F (J.piecewise x z) * chi ℝ S x * (F (J.piecewise y z) * chi ℝ S y)) =
+        bucketWeight F J S by
+      rw [bucketWeight_eq_expect_sample], hexp] at h
     exact h
   -- one sample coefficient
   have hcoeff (S : Finset ι) :
