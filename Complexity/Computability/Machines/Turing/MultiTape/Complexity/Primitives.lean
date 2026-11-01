@@ -11,6 +11,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.Degree
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.WordEquality
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Unary
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Fold
+import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Transducer.Copy
 import Mathlib.Tactic.FinCases
 
 /-!
@@ -118,12 +119,6 @@ def predT : Transducer Bool (Fin 3) where
   length_step_le q b := by fin_cases q <;> cases b <;> simp
   length_final_le q := by split_ifs <;> simp
 
-lemma run_copy (T : Transducer Bool (Fin 3)) (hT : ∀ b, T.step 2 b = (2, [b]))
-    (hf : T.final 2 = []) (w : List Bool) : T.run 2 w = w := by
-  induction w with
-  | nil => simp [hf]
-  | cons b w ih => simp [hT, ih]
-
 end EncInt
 
 namespace ComputableTidilyInDegree
@@ -131,7 +126,7 @@ namespace ComputableTidilyInDegree
 open EncInt in
 public theorem int_succ : ComputableTidilyInDegree (· + 1) encInt encInt 1 1 := by
   refine .of_linear (succT.computableTidilyInLinearTimeAndSpace fun z => ?_)
-  have hc := run_copy succT (fun b => by cases b <;> rfl) rfl
+  have hc := Transducer.run_eq_self succT 2 (fun b => by cases b <;> rfl) rfl
   rcases z with n | _ | n
   · simp [hc]
   · rfl
@@ -141,7 +136,7 @@ public theorem int_succ : ComputableTidilyInDegree (· + 1) encInt encInt 1 1 :=
 open EncInt in
 public theorem int_pred : ComputableTidilyInDegree (· - 1) encInt encInt 1 1 := by
   refine .of_linear (predT.computableTidilyInLinearTimeAndSpace fun z => ?_)
-  have hc := run_copy predT (fun b => by cases b <;> rfl) rfl
+  have hc := Transducer.run_eq_self predT 2 (fun b => by cases b <;> rfl) rfl
   rcases z with (_ | n) | n
   · rfl
   · simp [hc]
