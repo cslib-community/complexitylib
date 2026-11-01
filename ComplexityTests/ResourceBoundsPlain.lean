@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Christian Reitwiessner. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Christian Reitwiessner
 -/
 
 import Complexity.Computability.Complexity.Classes.Space.Closure
@@ -29,6 +29,44 @@ namespace ComplexityTests.ResourceBoundsPlain
 universe u v
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
+
+/-! ### Output growth is independent of transducer workspace -/
+
+/-- The copy machine streams arbitrarily long words with zero workspace. -/
+private theorem copy_uncharged :
+    ComputableInBigO (id : List Bool → List Bool) encBits encBits (·.length) (fun _ => 0) :=
+  ⟨1, computableInTimeAndSpace_id.mono (fun w => by simp [encBits])
+    (fun _ => Nat.zero_le _)⟩
+
+/-- Unbounded streamed output does not satisfy a constant output-growth bound. -/
+private theorem copy_output_not_constant :
+    ¬BigOLe (fun w : List Bool => (encBits (id w)).length) (fun _ => 0) := by
+  rintro ⟨c, hc⟩
+  have h := hc (List.replicate (c + 1) true)
+  simp [encBits] at h
+
+/-- Forgetting output growth admits streaming; it cannot reconstruct a constant charged bound.
+Materializing the intermediate word explicitly pays its length in workspace. -/
+example :
+    ComputableInBigO (id : List Bool → List Bool) encBits encBits (·.length) (fun _ => 0) ∧
+    ¬ComputableInO (id : List Bool → List Bool) encBits encBits (·.length) (fun _ => 0) ∧
+    ComputableInBigO (id ∘ id : List Bool → List Bool) encBits encBits
+      (fun w => w.length + (id w).length) (fun w => (encBits (id w)).length) := by
+  refine ⟨copy_uncharged, fun h => copy_output_not_constant h.length_le, ?_⟩
+  simpa only [Nat.zero_add] using copy_uncharged.comp copy_uncharged
+
+/-- A separate linear output bound reconstructs the charged certificate, with independently
+chosen constants and the original same-machine time/workspace realization. -/
+example : ComputableInO (id : List Bool → List Bool) encBits encBits (·.length) (·.length) :=
+  (copy_uncharged.weaken (.refl _) (.of_le fun _ => Nat.zero_le _)).with_output_bound
+    (BigOLe.of_le fun _ => le_rfl)
+
+/-- The factorization remains available at unrelated input and output universes. -/
+example {α : Type u} {β : Type v} (f : α → β) (encIn : α ↪ List Bool)
+    (encOut : β ↪ List Bool) (T S : α → ℕ) :
+    ComputableInO f encIn encOut T S ↔ ComputableInBigO f encIn encOut T S ∧
+      BigOLe (fun a => (encOut (f a)).length) S :=
+  computableInO_iff_computableInBigO_and_length_le
 
 /-! ### Independent plain polynomial degrees -/
 
