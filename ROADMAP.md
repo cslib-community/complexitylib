@@ -604,7 +604,7 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   of cell-probe lower bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
 - **Direct 3SUM adaptation** ([#1394]): global parameter/asymptotic composition, using the concrete
   native cyclic-Strassen counter ([#1701]), minimum-count selector ([#2098]) and conservative
-  computed dyadic parameters ([#2127]); unrestricted small geometry; the aggregate
+  computed dyadic parameters ([#2127]); the aggregate
   subcubic Exact Triangle bound and source exponent; and the unconditional ordinary-3SUM
   input/time/width/asymptotic composition, including the improved Section 4 route to exponent
   1.9992. These build on the native Chan–He preprocessing, queried thin products, fixed-prime
@@ -614,9 +614,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   width-independent prefix bounds are proved. The selector computes the actual attained window
   minimum with native trial division and real counter calls, preserving the explicit window
   cost factor. The dyadic parameter kernel computes geometry-compatible values and explicitly
-  classifies the small regime; it does not prove the tuned aggregate exponent or dispatch a solver.
-  Remaining are native fast/small solver assembly ([#2146]), global asymptotic composition
-  using the component-cost bridge ([#2145]), outer-host execution and the full endpoint.
+  classifies the small regime. The assembled solver ([#2146]) executes actual parameter
+  preparation, selection and the complete fixed-prime solver, or the real exhaustive small
+  branch, restoring the original host arguments. It supplies the concrete host callee and
+  initialized correctness, logarithmic admission and polynomial prefix/support guarantees.
+  Remaining are global asymptotic composition using the component-cost bridge ([#2145]),
+  outer-host execution, the tuned source exponent and the full endpoint.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and

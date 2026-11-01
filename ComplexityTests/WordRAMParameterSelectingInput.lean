@@ -6,7 +6,7 @@ Authors: Erik Demaine
 
 -- upstream: local-only (tests)
 
-import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.SourceBounds
+import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting
 
 /-!
 # Admitted complete initialized small and large executions
@@ -54,8 +54,8 @@ example :
       Executes W (entryProgram.program Reg.result)
         (State.init (CountPrime.inputWords 1 2 values)) 1 (t + 1) ∧
       y.regs Reg.result = 1 := by
-  obtain ⟨hi, p, mem, y, t, ht, hr, he, hb, hf, hiff, hp, hz, rest⟩ :=
-    runs_input (n := 1) (F := 2) [-1, -1, 2] (by decide) (by decide) le_rfl
+  obtain ⟨hi, p, y, t, ht, hr, he, hb, hf, hiff, hp, hz, rest⟩ :=
+    runs_input_uniform (n := 1) (F := 2) [-1, -1, 2] (by decide) (by decide) le_rfl
   have solution : HasZeroTriangle
       (fun i j : Fin 1 => ([-1, -1, 2] : List ℤ).getD (pairIndex (i, j)) 0)
       (fun i j => ([-1, -1, 2] : List ℤ).getD (1 * 1 + pairIndex (i, j)) 0)
@@ -63,9 +63,9 @@ example :
     exact ⟨0, 0, 0, by norm_num [pairIndex]⟩
   have result := hiff.mpr solution
   refine ⟨y, t, ?_, hr, ?_, result⟩
-  · simpa only [timeBound, stageBudget, DyadicParameters.timeBound, ParameterChoice.blocks,
+  · simpa only [callerTime, DyadicParameters.timeBound, ParameterChoice.blocks,
       ParameterChoice.level, Nat.log_one_right, Nat.zero_div, Nat.mul_zero, Nat.add_zero,
-      Nat.zero_mul, lt_self_iff_false, dite_false, Nat.reduceAdd, Nat.reduceMul] using ht
+      Nat.zero_mul, lt_self_iff_false, ite_false, Nat.reduceAdd, Nat.reduceMul] using ht
   · simpa only [result] using he
 
 example :
@@ -99,6 +99,7 @@ example (n : ℕ) (z : ℤ) (hn : 2 ^ 1296 ≤ n) :
     let values : List ℤ := List.replicate (3 * (n * n)) z
     let W := inputWidth n z.natAbs values
     ∃ (p : ℕ) (y : Data 640) (t : ℕ),
+      t + 1 ≤ callerTime n z.natAbs ∧
       Runs W (entryProgram.program Reg.result)
         (State.init (CountPrime.inputWords n z.natAbs values))
         ⟨entryProgram.size, y⟩ t ∧
@@ -114,8 +115,8 @@ example (n : ℕ) (z : ℤ) (hn : 2 ^ 1296 ≤ n) :
     rw [ParameterChoice.blocks_pos_iff]
     exact hn
   have hpos : 0 < n := (Nat.two_pow_pos 1296).trans_le hn
-  obtain ⟨hi, p, mem, y, t, ht, hr, he, hb, hf, hiff, hp, rest⟩ :=
-    runs_input (n := n) (F := z.natAbs) (List.replicate (3 * (n * n)) z) (by simp)
+  obtain ⟨hi, p, y, t, ht, hr, he, hb, hf, hiff, hp, rest⟩ :=
+    runs_input_uniform (n := n) (F := z.natAbs) (List.replicate (3 * (n * n)) z) (by simp)
       (by simp) le_rfl
   have cell (i j : Fin n) : pairIndex (i, j) < n * n := by
     simpa only [pairIndex, Fin.coe_mkDivMod, Nat.mul_comm] using (Fin.mkDivMod i j).isLt
@@ -136,6 +137,6 @@ example (n : ℕ) (z : ℤ) (hn : 2 ^ 1296 ≤ n) :
     · intro hz
       refine ⟨⟨0, hpos⟩, ⟨0, hpos⟩, ⟨0, hpos⟩, ?_⟩
       simp [hz, List.getD_eq_getElem?_getD]
-  exact ⟨p, y, t, hr, he, hiff.trans triangle, hp hfast⟩
+  exact ⟨p, y, t, ht, hr, he, hiff.trans triangle, hp hfast⟩
 
 end ComplexityTests.WordRAMParameterSelectingInput
