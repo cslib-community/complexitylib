@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.WordRAM.Structured
+public import Complexity.Computability.WordRAM.SymbolicExec.Init
 
 /-!
 # Symbolic execution of structured word-RAM code
@@ -25,16 +26,25 @@ sample and at a program given by name, leaving the goal `WP w c y Q` with the da
 `Cslib.WordRAM.WP.of_execWithin` then continues from a specification of `c`, and `wram_exec`
 resumes on the remaining program.
 
-The registers and memory cells an instruction reads are simplified as it executes. Reads after
-`Cslib.WordRAM.Data.set` and `Cslib.WordRAM.Data.write` reduce when the register names are
-literals and when the discharger decides whether two addresses are equal; the given simp lemmas
-rewrite the values, so facts such as `x.regs zeroP = 0` replace the registers of the initial
-data. A conditional takes the branch its simplified condition decides, by `simp` or by the
-discharger, and otherwise splits into both alternatives with the hypothesis `hc`;
-`wram_exec -split` stops there instead, so that `Cslib.WordRAM.WP.cut` can join the alternatives
-before the rest of the program. Side conditions of instructions (`Fits w v`, a subtrahend at most
-its minuend, a nonzero divisor) are proved by `simp` or the discharger; the others remain as
-goals, after the main goals, tagged `hfit`, `hle` or `hb`.
+The registers and memory cells an instruction reads are simplified as it executes, with the simp
+set `wram_simps`. Reads after `Cslib.WordRAM.Data.set` and `Cslib.WordRAM.Data.write` reduce by
+the simplification procedures `Cslib.WordRAM.Data.reduceRegs`, which compares register names that
+evaluate to literals, and `Cslib.WordRAM.Data.reduceMem`, which asks the discharger whether two
+addresses are equal; the given simp lemmas rewrite the values, so facts such as
+`x.regs zeroP = 0` replace the registers of the initial data. A conditional takes the branch its
+simplified condition decides, by `simp` or by the discharger, and otherwise splits into both
+alternatives with the hypothesis `hc`; `wram_exec -split` stops there instead, so that
+`Cslib.WordRAM.WP.cut` can join the alternatives before the rest of the program. Side conditions
+of instructions (`Fits w v`, a subtrahend at most its minuend, a nonzero divisor) are proved by
+`simp` or the discharger; the others remain as goals, after the main goals, tagged `hfit`, `hle`
+or `hb`.
+
+Every side condition goes through the same steps (`Cslib.WordRAM.WP.Exec.discharge`): a
+proposition without free variables, such as a comparison of register names, is decided by
+evaluation and is never passed on when it is false; a hypothesis of the same statement proves it;
+only then does the discharger run, `omega` by default. The search for a hypothesis compares
+statements syntactically, because unifying arithmetic with every hypothesis of a long proof costs
+more than the discharger.
 
 `wram_simp` simplifies the reads in the postcondition left at the end, and `wram_bounded` proves
 that the data reached is word-sized; `Cslib.WordRAM.WP.bounded` assumes this instead at the end of
@@ -46,6 +56,8 @@ a program.
 * `wram_exec`: symbolic execution of the straight-line parts of structured code.
 * `wram_simp`: reads of registers and memory after writes, with the simp set of `wram_exec`.
 * `wram_bounded`: word-sizedness of data built by writes.
+* `Cslib.WordRAM.Data.reduceRegs`, `Cslib.WordRAM.Data.reduceMem`: simplification procedures
+  reading registers and memory after writes.
 
 ## Main results
 
@@ -77,6 +89,17 @@ theorem set_regs_self (x : Data r) (i : Fin r) (v : ℕ) : (x.set i v).regs i = 
 theorem set_regs_of_ne {x : Data r} {i j : Fin r} (h : j ≠ i) (v : ℕ) :
     (x.set i v).regs j = x.regs j := by
   rw [set_regs, Function.update_of_ne h]
+
+/-- Reading the register just set, under a name equal to it. -/
+theorem set_regs_of_eq {x : Data r} {i j : Fin r} (h : j = i) (v : ℕ) : (x.set i v).regs j = v :=
+  h ▸ set_regs_self x i v
+
+/-- Reading a register after a write to memory. -/
+theorem write_regs_apply (x : Data r) (a v : ℕ) (j : Fin r) : (x.write a v).regs j = x.regs j :=
+  rfl
+
+/-- Reading memory after setting a register. -/
+theorem set_mem_apply (x : Data r) (i : Fin r) (v b : ℕ) : (x.set i v).mem b = x.mem b := rfl
 
 /-- Reading the memory cell just written. -/
 theorem write_mem_self (x : Data r) (a v : ℕ) : (x.write a v).mem a = v := by
@@ -133,11 +156,14 @@ theorem execWithin (h : WP w c x fun y' t => t ≤ T ∧ y' = y) : ExecWithin w 
   let ⟨_, _, he, ht, hy⟩ := h
   hy ▸ he.mono ht
 
-/-- Run `c₁`, then `c₂` from the data it reaches, adding the instruction counts. -/
-theorem seq (h : WP w c₁ x fun y T₁ => WP w c₂ y fun z T₂ => Q z (T₁ + T₂)) :
+/-- Run `c₁`, then `c₂` from the data it reaches, adding the instruction counts. The count of
+`c₁` is added last, so that the counts of a sequence accumulate as `(T + 1) + 1`, with the numerals
+on the right, rather than `1 + (1 + T)`: deciding whether such a sum is a given variable takes
+time exponential in its length. -/
+theorem seq (h : WP w c₁ x fun y T₁ => WP w c₂ y fun z T₂ => Q z (T₂ + T₁)) :
     WP w (.seq c₁ c₂) x Q :=
   let ⟨_, T₁, he₁, _, T₂, he₂, hz⟩ := h
-  ⟨_, T₁ + T₂, he₁.seq he₂, hz⟩
+  ⟨_, T₁ + T₂, he₁.seq he₂, Nat.add_comm T₁ T₂ ▸ hz⟩
 
 /-- Run `c` to data satisfying an intermediate assertion `R`, and continue from any such data:
 the join point of the alternatives of a conditional before the rest of a program. -/
@@ -236,11 +262,97 @@ end Ops
 
 end WP
 
-/-! ## The tactic -/
+/-! ## The tactic
+
+### Reads and side conditions -/
 
 namespace WP.Exec
 
 open Lean Meta Elab Tactic
+
+/-- The value of the register name `i : Fin r` when it has no free variables and evaluates to a
+literal, as `(3 : Fin 4)` and abbreviations for `⟨3, _⟩` do. -/
+meta def regValue? (r i : Expr) : MetaM (Option ℕ) := do
+  let i ← instantiateMVars i
+  if i.hasFVar || i.hasMVar then return none
+  match ← whnfD (mkApp2 (mkConst ``Fin.val) r i) with
+  | .lit (.natVal k) => return some k
+  | v => getNatValue? v
+
+/-- A proof of the proposition `p`, which has no free variables, by evaluating its `Decidable`
+instance: `some (some h)` if it evaluates to `true`, `some none` if it evaluates to `false`, and
+`none` if `p` has free variables or metavariables, has no instance, or does not evaluate. -/
+meta def decideClosed? (p : Expr) : MetaM (Option (Option Expr)) := do
+  if p.hasFVar || p.hasMVar then return none
+  let some inst ← synthInstance? (mkApp (mkConst ``Decidable) p) | return none
+  let v ← withAtLeastTransparency .default <| whnf (mkApp2 (mkConst ``Decidable.decide) p inst)
+  if v.isConstOf ``Bool.true then
+    return some (some (mkApp3 (mkConst ``of_decide_eq_true) p inst
+      (mkApp2 (mkConst ``Eq.refl [Level.one]) (mkConst ``Bool) (mkConst ``Bool.true))))
+  if v.isConstOf ``Bool.false then return some none
+  return none
+
+/-- A hypothesis of type `p`, compared syntactically, so that the search costs no unification. -/
+meta def assumption? (p : Expr) : MetaM (Option Expr) := do
+  let p := p.cleanupAnnotations
+  (← getLCtx).findDeclRevM? fun d => do
+    if d.isImplementationDetail then return none
+    if (← instantiateMVars d.type).cleanupAnnotations == p then return some d.toExpr
+    return none
+
+/-- The discharger of `wram_exec` and `wram_simp`. A proposition without free variables, such as a
+comparison of register names, is decided by evaluation and is not passed on if it is false;
+otherwise a hypothesis of the same type proves it, or else the discharger `tac` of the call. -/
+meta def discharge (tac : Simp.Discharge) (p : Expr) : SimpM (Option Expr) := do
+  let p ← instantiateMVars p
+  if let some r ← decideClosed? p then return r
+  if let some h ← assumption? p then return some h
+  tac p
+
+/-- Read a register after `Data.set` and `Data.write`, one layer at a time. Register names are
+compared by evaluation, so a name with free variables is left to the simp lemmas. -/
+meta def reduceRegsStep (e : Expr) : SimpM Simp.Step := do
+  let_expr Data.regs r d j := e | return .continue
+  let read x := mkApp3 (mkConst ``Data.regs) r x j
+  match_expr d with
+  | Data.write _ x a v =>
+    return .visit
+      { expr := read x, proof? := mkAppN (mkConst ``Data.write_regs_apply) #[r, x, a, v, j] }
+  | Data.set _ x i v =>
+    let some iv ← regValue? r i | return .continue
+    let some jv ← regValue? r j | return .continue
+    if iv = jv then
+      let h ← mkDecideProof (← mkEq j i)
+      return .visit
+        { expr := v, proof? := mkAppN (mkConst ``Data.set_regs_of_eq) #[r, x, i, j, h, v] }
+    let h ← mkDecideProof (mkNot (← mkEq j i))
+    return .visit
+      { expr := read x, proof? := mkAppN (mkConst ``Data.set_regs_of_ne) #[r, x, i, j, h, v] }
+  | _ => return .continue
+
+/-- Read memory after `Data.set` and `Data.write`, one layer at a time. Two addresses are equal
+when they are the same term; otherwise the discharger decides them, first unequal, then equal. -/
+meta def reduceMemStep (e : Expr) : SimpM Simp.Step := do
+  let_expr Data.mem r d b := e | return .continue
+  let read x := mkApp3 (mkConst ``Data.mem) r x b
+  match_expr d with
+  | Data.set _ x i v =>
+    return .visit
+      { expr := read x, proof? := mkAppN (mkConst ``Data.set_mem_apply) #[r, x, i, v, b] }
+  | Data.write _ x a v =>
+    let a ← instantiateMVars a
+    let b ← instantiateMVars b
+    if a == b then
+      return .visit { expr := v, proof? := mkAppN (mkConst ``Data.write_mem_self) #[r, x, a, v] }
+    let disch := (← Simp.getMethods).discharge?
+    if let some h ← Simp.withPreservedCache <| disch (mkNot (← mkEq b a)) then
+      return .visit
+        { expr := read x, proof? := mkAppN (mkConst ``Data.write_mem_of_ne) #[r, x, a, b, h, v] }
+    if let some h ← Simp.withPreservedCache <| disch (← mkEq b a) then
+      return .visit
+        { expr := v, proof? := mkAppN (mkConst ``Data.write_mem_of_eq) #[r, x, a, b, h, v] }
+    return .continue
+  | _ => return .continue
 
 /-- Close the goal `g` with the tactic `tac`, or restore the state and report failure. -/
 meta def closesWith (tac : TSyntax `tactic) (g : MVarId) : TacticM Bool := do
@@ -252,6 +364,30 @@ meta def closesWith (tac : TSyntax `tactic) (g : MVarId) : TacticM Bool := do
   catch _ =>
     s.restore
     return false
+
+end WP.Exec
+
+namespace Data
+
+/-- `simp` procedure reading a register after `Data.set` with a register name that evaluates to a
+literal, and after `Data.write`. It is a pre-procedure (`↓`), so that the data is not simplified
+first. -/
+simproc ↓ [wram_simps] reduceRegs (Data.regs _ _) := WP.Exec.reduceRegsStep
+
+/-- `simp` procedure reading memory after `Data.set` and `Data.write`, deciding whether two
+addresses are equal with the discharger. -/
+simproc [wram_simps] reduceMem (Data.mem _ _) := WP.Exec.reduceMemStep
+
+end Data
+
+attribute [wram_simps] Data.set_regs_self Data.set_regs_of_ne Data.set_mem Data.write_regs
+  BinOp.eval BinOp.evalExact fits_zero Nat.add_zero Nat.zero_add Nat.add_sub_cancel
+  Nat.add_sub_cancel_left Nat.sub_zero Nat.sub_self Nat.lt_irrefl Nat.not_lt_zero Nat.zero_lt_succ
+  Nat.add_one_ne_zero not_true_eq_false not_false_eq_true and_self and_true true_and
+
+namespace WP.Exec
+
+open Lean Meta Elab Tactic
 
 /-- Beta-reduce the head of `e` until it is no longer a λ-abstraction applied to arguments. -/
 meta partial def headBetaAll (e : Expr) : Expr :=
@@ -265,7 +401,7 @@ meta structure Config where
   /-- The simprocs. -/
   simprocs : Simp.SimprocsArray
   /-- The discharger of conditional simp lemmas. -/
-  simpDischarge : Option Simp.Discharge
+  simpDischarge : Simp.Discharge
   /-- The discharger of side conditions and branch conditions. -/
   disch : TSyntax `tactic
   /-- The side conditions left as goals. -/
@@ -277,18 +413,25 @@ meta structure Config where
 
 /-- Simplify `e` with the simp set of the call. -/
 meta def simpExpr (cfg : Config) (e : Expr) : MetaM Simp.Result :=
-  return (← Lean.Meta.simp e cfg.ctx cfg.simprocs cfg.simpDischarge).1
+  return (← Lean.Meta.simp e cfg.ctx cfg.simprocs (some cfg.simpDischarge)).1
 
-/-- Prove the proposition `p` by simplification to `True` or by `disch`. Returns the proof, or the
-simplification of `p`. -/
-meta def tryProve (cfg : Config) (disch : TSyntax `tactic) (p : Expr) :
+/-- Prove the proposition `p` by simplification to `True`, by evaluation if it has no free
+variables, by a hypothesis of its type, or by `prove`. Returns the proof, or the simplification of
+`p`. -/
+meta def tryProve (cfg : Config) (prove : MVarId → TacticM Bool) (p : Expr) :
     TacticM (Option Expr × Simp.Result) := do
   let res ← simpExpr cfg p
   if res.expr.isTrue then return (some (← mkOfEqTrue (← res.getProof)), res)
   if res.expr.isFalse then return (none, res)
+  let close (h : Expr) : TacticM (Option Expr × Simp.Result) := do
+    return (some (← mkEqMPR (← res.getProof) h), res)
+  match ← decideClosed? res.expr with
+  | some (some h) => return ← close h
+  | some none => return (none, res)
+  | none => pure ()
+  if let some h ← assumption? res.expr then return ← close h
   let g ← mkFreshExprSyntheticOpaqueMVar res.expr
-  if ← closesWith disch g.mvarId! then
-    return (some (← mkEqMPR (← res.getProof) g), res)
+  if ← prove g.mvarId! then return ← close g
   return (none, res)
 
 /-- Apply `rule` to the goal `g`, returning its arguments with the names of their binders. -/
@@ -315,7 +458,7 @@ meta def evalPremise (cfg : Config) (arg lhs rhs : Expr) : MetaM Unit := do
 /-- Prove the side condition `arg`, or leave its simplification as a goal tagged `tag`. -/
 meta def sidePremise (cfg : Config) (tag : Name) (arg : Expr) : TacticM Unit := do
   let ty ← instantiateMVars (← inferType arg)
-  let (prf?, res) ← tryProve cfg cfg.disch ty
+  let (prf?, res) ← tryProve cfg (closesWith cfg.disch) ty
   match prf? with
   | some prf => arg.mvarId!.assign prf
   | none =>
@@ -419,10 +562,10 @@ meta partial def branch (cfg : Config) (g : MVarId) (rule : Name) : TacticM (Arr
     let k ← mkFreshExprSyntheticOpaqueMVar (headBetaAll body) tag
     keep.mvarId!.assign (.lam `hc dom k .default)
     walk cfg k.mvarId!
-  match (← tryProve cfg cfg.disch cond).1 with
+  match (← tryProve cfg (closesWith cfg.disch) cond).1 with
   | some p => take hpos hneg fun hc => mkApp hc p
   | none =>
-    match (← tryProve cfg cfg.disch (mkNot cond)).1 with
+    match (← tryProve cfg (closesWith cfg.disch) (mkNot cond)).1 with
     | some np => take hneg hpos fun hc => mkApp np hc
     | none =>
       unless cfg.split do
@@ -463,7 +606,7 @@ meta def closeBound (cfg : Config) (eq : Bool) (g : MVarId) : TacticM (Option MV
   let tgt := (← instantiateMVars (← g.getType)).consumeMData
   let some (A, B) := tgt.and? | return some g
   unless A.isAppOfArity ``LE.le 4 do return some g
-  let some prf := (← tryProve cfg (← `(tactic| omega)) A).1 | return some g
+  let some prf := (← tryProve cfg (closesWith (← `(tactic| omega))) A).1 | return some g
   let g' ← mkFreshExprSyntheticOpaqueMVar B (← g.getTag)
   g.assign (← mkAppM ``And.intro #[prf, g'])
   if eq then
@@ -473,27 +616,83 @@ meta def closeBound (cfg : Config) (eq : Bool) (g : MVarId) : TacticM (Option MV
     catch _ => pure ()
   return some g'.mvarId!
 
+/-- The hypotheses `x.Bounded w`, with the data `x` of each. -/
+meta def boundedHyps (w : Expr) : MetaM (Array (Expr × Expr)) := do
+  (← getLCtx).foldlM (init := #[]) fun acc d => do
+    if d.isImplementationDetail then return acc
+    let_expr Data.Bounded _ w' x := (← instantiateMVars d.type).cleanupAnnotations | return acc
+    return if w' == w then acc.push (d.toExpr, x) else acc
+
+/-- Prove `Fits w v` from a hypothesis `x.Bounded w` when `v` is a register or memory cell of `x`:
+syntactically, or else up to unfolding, as for a field of a state read from `x`. -/
+meta def fitsOfBounded? (w v : Expr) : MetaM (Option Expr) := do
+  let hyps ← boundedHyps w
+  let read? (x : Expr) (field : Name) (arg : Expr) : MetaM (Option Expr) := do
+    let some (hx, _) := hyps.find? (·.2 == x) | return none
+    return some (mkApp (← mkAppM field #[hx]) arg)
+  let found? ← match_expr v with
+    | Data.regs _ x i => read? x ``And.left i
+    | Data.mem _ x a => read? x ``And.right a
+    | _ => pure none
+  if found?.isSome then return found?
+  let p ← mkAppM ``Fits #[w, v]
+  for (hx, _) in hyps do
+    for field in [``And.right, ``And.left] do
+      let f ← mkAppM field #[hx]
+      let .forallE _ dom _ _ ← whnf (← inferType f) | continue
+      let arg ← mkFreshExprMVar dom
+      let h := mkApp f arg
+      if ← isDefEq (← inferType h) p then return some (← instantiateMVars h)
+  return none
+
+/-- The goals `wram_bounded` leaves from the goal `g`. Word-sizedness of data built by `Data.set`
+and `Data.write` reduces to that of the data written to, and to the fitting conditions of the values
+written; a goal that is a hypothesis is closed by it, and a value read from data with a hypothesis
+`x.Bounded w` fits by that hypothesis. -/
+meta partial def boundedGoals (g : MVarId) : MetaM (List MVarId) := g.withContext do
+  let tgt := (← instantiateMVars (← g.getType)).cleanupAnnotations
+  if let some h ← assumption? tgt then
+    g.assign h
+    return []
+  let sub (rule : Name) : MetaM (List MVarId) := do
+    let gs ← g.apply (← mkConstWithFreshMVarLevels rule)
+    return (← gs.mapM boundedGoals).flatten
+  match_expr tgt with
+  | Data.Bounded _ _ d =>
+    match_expr d with
+    | Data.set _ _ _ _ => sub ``Data.Bounded.set
+    | Data.write _ _ _ _ => sub ``Data.Bounded.write
+    | _ => return [g]
+  | Fits w v =>
+    let some h ← fitsOfBounded? w v | return [g]
+    g.assign h
+    return []
+  | _ => return [g]
+
 end WP.Exec
 
 open Lean Meta Elab Tactic in
-/-- The simp call of `wram_exec` and `wram_simp`: the lemmas reading registers and memory after
-`Data.set` and `Data.write`, arithmetic on numerals, and the given lemmas `args`, with register
-names compared by `decide` and other side conditions of the lemmas proved by `disch`. -/
-meta def WP.Exec.simpCall (disch : TSyntax ``Lean.Parser.Tactic.tacticSeq) (args : Array Syntax)
-    (loc? : Option (TSyntax ``Lean.Parser.Tactic.location)) : MacroM (TSyntax `tactic) := do
+/-- The simp call of `wram_exec` and `wram_simp`: the simp set `wram_simps`, the simplification
+procedures of arithmetic on numerals, and the given lemmas `args`, with the side conditions of
+lemmas proved by `disch`. -/
+meta def WP.Exec.simpCall (disch : TSyntax ``Lean.Parser.Tactic.tacticSeq) (args : Array Syntax) :
+    MacroM (TSyntax `tactic) := do
   let args : Syntax.TSepArray [``Lean.Parser.Tactic.simpStar, ``Lean.Parser.Tactic.simpErase,
     ``Lean.Parser.Tactic.simpLemma] "," := ⟨(Syntax.mkSep args (mkAtom ",")).getArgs⟩
-  `(tactic| simp (disch := first | decide | assumption | $disch) only [
-    Cslib.WordRAM.Data.set_regs_self, Cslib.WordRAM.Data.set_regs_of_ne,
-    Cslib.WordRAM.Data.set_mem, Cslib.WordRAM.Data.write_regs,
-    Cslib.WordRAM.Data.write_mem_self, Cslib.WordRAM.Data.write_mem_of_ne,
-    Cslib.WordRAM.Data.write_mem_of_eq, Cslib.WordRAM.BinOp.eval, Cslib.WordRAM.BinOp.evalExact,
-    Cslib.WordRAM.fits_zero, Nat.add_zero, Nat.zero_add, Nat.add_sub_cancel,
-    Nat.add_sub_cancel_left, Nat.sub_zero, Nat.sub_self, Nat.lt_irrefl, Nat.not_lt_zero,
-    Nat.zero_lt_succ, Nat.add_one_ne_zero, not_true_eq_false, not_false_eq_true, and_self,
-    and_true, true_and, ↓reduceIte, Nat.reduceAdd,
-    Nat.reduceSub, Nat.reduceMul, Nat.reduceDiv, Nat.reduceMod, Nat.reduceLT, Nat.reduceGT,
-    Nat.reduceLeDiff, Nat.reduceEqDiff, $args,*] $[$loc?]?)
+  `(tactic| simp (disch := $disch) only [wram_simps, ↓reduceIte, Nat.reduceAdd, Nat.reduceSub,
+    Nat.reduceMul, Nat.reduceDiv, Nat.reduceMod, Nat.reduceLT, Nat.reduceGT, Nat.reduceLeDiff,
+    Nat.reduceEqDiff, $args,*])
+
+open Lean Meta Elab Tactic in
+/-- Run `k` with the simp context of a `wram_exec` or `wram_simp` call, whose discharger is
+`WP.Exec.discharge` around the tactic `disch`. -/
+meta def WP.Exec.withSimpContext {α : Type} (disch : TSyntax ``Lean.Parser.Tactic.tacticSeq)
+    (args : Array Syntax) (k : Simp.Context → Simp.SimprocsArray → Simp.Discharge → TacticM α) :
+    TacticM α := do
+  let stx ← liftMacroM <| WP.Exec.simpCall disch args
+  let { ctx, simprocs, dischargeWrapper, .. } ← mkSimpContext stx (eraseLocal := false)
+  dischargeWrapper.with fun tac? =>
+    k ctx simprocs (WP.Exec.discharge (tac?.getD fun _ => pure none))
 
 /-- `wram_exec` symbolically executes structured word-RAM code (`Cslib.WordRAM.Code`) on a goal
 `∃ y, ExecWithin w c x y T ∧ P y`, `ExecWithin w c x y T` or `Cslib.WordRAM.WP w c x Q`. It runs
@@ -509,7 +708,9 @@ again. Unfold programs given by name to execute them instead.
 * `wram_exec (disch := tac)` sets the discharger, `omega` by default. It proves side conditions
   (`Fits w v`, `b ≤ a` for an exact subtraction, a nonzero divisor), decides conditions of
   branches, and decides whether two memory addresses are equal. Register names, and side
-  conditions on numerals, are decided by `decide`.
+  conditions without free variables, are decided by evaluation, and a side condition that is a
+  hypothesis is proved by it, before `tac` runs. A lemma such as
+  `hfit : ∀ v, v ≤ b → Fits w v` among the given lemmas proves fitting conditions with `tac`.
 
 A conditional neither `simp` nor the discharger decides splits into both alternatives, tagged
 `pos` and `neg`, with the hypothesis `hc` on the compared values; `wram_exec -split` stops at it
@@ -529,17 +730,13 @@ syntax (name := wramSimp) "wram_simp" (Lean.Parser.Tactic.discharger)?
     Lean.Parser.Tactic.simpLemma),* "]")? (Lean.Parser.Tactic.location)? : tactic
 
 /-- `wram_bounded` proves `y.Bounded w` for data `y` built by `Data.set` and `Data.write` from data
-`x` with a hypothesis `x.Bounded w`. It proves the fitting conditions of values read from `x`, and
-leaves those of the other written values as goals. -/
+`x` with a hypothesis `x.Bounded w`. It proves the fitting conditions of values read from `x` and
+of those stated by a hypothesis, and leaves those of the other written values as goals. -/
 syntax (name := wramBounded) "wram_bounded" : tactic
 
-macro_rules
-  | `(tactic| wram_bounded) => `(tactic| repeat' (first
-      | assumption
-      | apply Cslib.WordRAM.Data.Bounded.set
-      | apply Cslib.WordRAM.Data.Bounded.write
-      | exact (by assumption : Cslib.WordRAM.Data.Bounded _ _).1 _
-      | exact (by assumption : Cslib.WordRAM.Data.Bounded _ _).2 _))
+open Lean Elab Tactic in
+elab_rules : tactic
+  | `(tactic| wram_bounded) => liftMetaTactic WP.Exec.boundedGoals
 
 open Lean in
 /-- The discharger of a `wram_exec` or `wram_simp` call. -/
@@ -549,9 +746,12 @@ meta def WP.Exec.dischOf (d? : Option (TSyntax ``Lean.Parser.Tactic.discharger))
   | some d => pure ⟨d.raw[3]⟩
   | none => `(Lean.Parser.Tactic.tacticSeq| omega)
 
-macro_rules
+open Lean Meta Elab Tactic in
+elab_rules : tactic
   | `(tactic| wram_simp $[$d?:discharger]? $[[$args,*]]? $[$loc?:location]?) => do
-    WP.Exec.simpCall (← WP.Exec.dischOf d?) (args.map (·.getElems.map (·.raw)) |>.getD #[]) loc?
+    let args := args.map (·.getElems.map (·.raw)) |>.getD #[]
+    WP.Exec.withSimpContext (← liftMacroM <| WP.Exec.dischOf d?) args fun ctx simprocs disch =>
+      discard <| simpLocation ctx simprocs disch (expandOptLocation (mkOptionalNode loc?))
 
 open Lean Meta Elab Tactic in
 elab_rules : tactic
@@ -563,15 +763,12 @@ elab_rules : tactic
       | `(Lean.Parser.Tactic.posConfigItem| +split) => split := true
       | _ => throwErrorAt item "wram_exec: unknown option; the only option is `-split`"
     let userDisch ← liftMacroM <| WP.Exec.dischOf d?
-    let sideDisch ← `(tactic| first | decide | assumption | $userDisch)
-    let stx ← liftMacroM <|
-      WP.Exec.simpCall userDisch (args.map (·.getElems.map (·.raw)) |>.getD #[]) none
-    let { ctx, simprocs, dischargeWrapper, .. } ← mkSimpContext stx (eraseLocal := false)
-    dischargeWrapper.with fun discharge? => do
+    let disch ← `(tactic| ($userDisch))
+    let args := args.map (·.getElems.map (·.raw)) |>.getD #[]
+    WP.Exec.withSimpContext userDisch args fun ctx simprocs simpDischarge => do
       let sideGoals ← IO.mkRef #[]
       let steps ← IO.mkRef 0
-      let cfg : WP.Exec.Config :=
-        { ctx, simprocs, simpDischarge := discharge?, disch := sideDisch, sideGoals, steps, split }
+      let cfg : WP.Exec.Config := { ctx, simprocs, simpDischarge, disch, sideGoals, steps, split }
       let (g, eq) ← WP.Exec.toWP (← getMainGoal)
       let mains ← WP.Exec.walk cfg g
       if (← cfg.steps.get) == 0 then
