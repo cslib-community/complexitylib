@@ -45,8 +45,9 @@ announces the value (`Protocol.ecomplexityFun_le_succ`).
 
 ## Main results
 
-* `Cslib.Communication.Protocol.leafCount_le_two_pow_depth`: a protocol has at most `2 ^ depth`
-  leaves.
+* `Cslib.Communication.Protocol.leafCount_pos`,
+  `Cslib.Communication.Protocol.leafCount_le_two_pow_depth`: a protocol has at least one and at
+  most `2 ^ depth` leaves.
 * `Cslib.Communication.Protocol.ecomplexity_le_iff`,
   `Cslib.Communication.Protocol.le_ecomplexity_iff`: upper and lower bounds on communication
   complexity.
@@ -159,6 +160,14 @@ theorem leafCount_le_two_pow_depth (p : Protocol X Y Z) : p.leafCount ≤ 2 ^ p.
     have h₀ := ih₀.trans (Nat.pow_le_pow_right (by decide) (le_max_left p₀.depth p₁.depth))
     have h₁ := ih₁.trans (Nat.pow_le_pow_right (by decide) (le_max_right p₀.depth p₁.depth))
     simp only [leafCount_alice, leafCount_bob, depth_alice, depth_bob, pow_succ]
+    omega
+
+/-- Every protocol has a leaf. -/
+theorem leafCount_pos (p : Protocol X Y Z) : 0 < p.leafCount := by
+  induction p with
+  | output z => simp
+  | alice send p₀ p₁ ih₀ ih₁ | bob send p₀ p₁ ih₀ ih₁ =>
+    simp only [leafCount_alice, leafCount_bob]
     omega
 
 /-- A protocol solves the relation `R` on `A × B` when its output does: its output on every pair

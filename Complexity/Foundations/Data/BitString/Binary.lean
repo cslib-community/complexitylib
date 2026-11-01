@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Renfei Zhou. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Renfei Zhou
 -/
 
 module
@@ -29,12 +29,16 @@ significant bit first), as well as `Nat.ofBits` and `Nat.testBit`, without addin
 * `Cslib.BitString.val_equivFin_eq_ofBits`: `equivFin` agrees with `Nat.ofBits`.
 * `Cslib.BitString.equivFin_symm_apply`: the `i`-th bit of `(equivFin n).symm k` is
   `(k : ℕ).testBit i`.
+* `Cslib.BitString.lsbValue_eq_binaryValue_reverse`: little-endian digits are the reversed
+  big-endian ones.
 * `Cslib.BitString.lsbValue_ofFn`: reading the bits of an `n`-bit word in order gives its number in
   `equivFin n`.
 * `Cslib.BitString.binaryValue_reverse_ofFn`: reading the reversed list of bits of an `n`-bit word
   gives its number in `equivFin n`.
 * `Cslib.BitString.lsbValue_lowBits`: reading `lowBits n x` with `lsbValue` recovers `x < 2 ^ n`.
 * `Cslib.BitString.lowBits_lsbValue`: re-encoding `lsbValue w` with `lowBits` recovers `w`.
+* `Cslib.BitString.val_equivFin_add`: addition in `BitString n` is bitwise XOR (`^^^`) on
+  `equivFin n` coordinates.
 -/
 
 @[expose] public section
@@ -84,6 +88,15 @@ theorem binaryValue_reverse_ofFn {n : ℕ} (y : BitString n) :
     rw [h, Nat.add_comm]
     rfl
 
+/-- Reading little-endian digits (`lsbValue`) is reading the reversed digits most significant
+first (`binaryValue`). -/
+theorem lsbValue_eq_binaryValue_reverse (w : List Bool) : lsbValue w = binaryValue w.reverse := by
+  induction w with
+  | nil => rfl
+  | cons b w ih =>
+    rw [lsbValue, List.reverse_cons, binaryValue_snoc, ih]
+    omega
+
 /-- The fixed-width word `lowBits n k` equals the bits of `(equivFin n).symm k`. -/
 theorem lowBits_eq_ofFn_equivFin_symm (n : ℕ) (k : Fin (2 ^ n)) :
     lowBits n (k : ℕ) = List.ofFn ((equivFin n).symm k) := by
@@ -106,5 +119,21 @@ length recovers the original word. -/
 theorem lowBits_lsbValue (w : List Bool) : lowBits w.length (lsbValue w) = w := by
   refine lsbValue_injective (by simp) ?_
   exact lsbValue_lowBits (lsbValue_lt w)
+
+/-- Addition in `BitString n` is bitwise XOR (`^^^`) on `equivFin n` coordinates. -/
+theorem val_equivFin_add {n : ℕ} (a b : BitString n) :
+    (equivFin n (a + b)).val = (equivFin n a).val ^^^ (equivFin n b).val := by
+  let ka := equivFin n a
+  let kb := equivFin n b
+  let k : Fin (2 ^ n) := ⟨ka.val ^^^ kb.val, Nat.xor_lt_two_pow ka.isLt kb.isLt⟩
+  have hsymm : (equivFin n).symm k = a + b := by
+    ext i
+    rw [equivFin_symm_apply, show (k : ℕ) = ka.val ^^^ kb.val from rfl,
+      Nat.testBit_xor, ← equivFin_symm_apply ka i,
+      ← equivFin_symm_apply kb i, Equiv.symm_apply_apply, Equiv.symm_apply_apply]
+    rfl
+  have hk : equivFin n (a + b) = k := by
+    rw [← hsymm, Equiv.apply_symm_apply]
+  exact congrArg Fin.val hk
 
 end Cslib.BitString

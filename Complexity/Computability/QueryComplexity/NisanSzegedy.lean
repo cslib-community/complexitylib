@@ -33,7 +33,12 @@ function `g(y) = p(x ⊕ ⋃_{yⱼ = 1} Bⱼ)` on `{0,1}ᵇ` still has degree at
 most `D` with the same bounds at the integers `0, …, b`, and the mean value theorem gives a point
 of `[0, 1]` where `q' ≥ 1 - 2ε`. The Nisan–Szegedy lemma, a consequence of Markov's inequality
 (`Polynomial.mul_le_sq_mul_of_le_abs_eval_derivative`), then gives
-`(1 - 2ε) b ≤ D² (1 - 2ε + 1 + 2ε) = 2 D²`.
+`(1 - 2ε) b ≤ D² (1 - 2ε + 1 + 2ε) = 2 D²`. If `p` takes values in `[-δ, 1 + δ]`, the same
+argument gives `(1 - 2ε) b ≤ (2 - 2ε + 2δ) D²`
+(`QueryComplexity.one_sub_two_mul_mul_blockSensitivity_le_of_mem_Icc`). The case `δ = 0`, of a
+polynomial that is a probability, is the step in the proof of Theorem 4.13 of
+[BealsBuhrmanCleveMoscaDeWolf2001] (arXiv:quant-ph/9802049v3) that gives `bs(f) ≤ 16 T²` for
+`T`-query quantum algorithms (`Cslib.Quantum.blockSensitivity_le_sixteen_mul_sq`).
 
 With Huang's theorem `deg(f) ≤ s(f)²` this gives `bs(f) ≤ 2 s(f)⁴`, and with
 `D(f) ≤ bs(f)³` [BealsBuhrmanCleveMoscaDeWolf2001] it gives `D(f) ≤ 216 adeg(f)⁶`.
@@ -44,6 +49,8 @@ The sharper exact-degree bound `D(f) ≤ 2 deg(f)³` is proved in
 
 * `Cslib.QueryComplexity.one_sub_two_mul_mul_blockSensitivity_le_of_mem_lowDegree`: a real
   function of degree at most `D` within `ε` of `f` gives `(1 - 2ε) bs(f) ≤ 2 D²`.
+* `Cslib.QueryComplexity.one_sub_two_mul_mul_blockSensitivity_le_of_mem_Icc`: if it also takes
+  values in `[-δ, 1 + δ]` and `ε < 1/2`, then `(1 - 2ε) bs(f) ≤ (2 - 2ε + 2δ) D²`.
 * `Cslib.QueryComplexity.blockSensitivity_le_two_mul_degree_sq`: `bs(f) ≤ 2 deg(f)²`.
 * `Cslib.QueryComplexity.one_sub_two_mul_mul_blockSensitivity_le`:
   `(1 - 2ε) bs(f) ≤ 2 adeg_ε(f)²`.
@@ -117,13 +124,18 @@ private theorem bitVal_flipBlocks_mem_lowDegree {m : ℕ} {B : Fin m → Block n
 private theorem bitVal_mem_Icc (b : Bool) : bitVal ℝ b ∈ Set.Icc (0 : ℝ) 1 := by
   cases b <;> simp
 
-/-- **The Nisan–Szegedy argument**: if a real function of degree at most `D` is within `ε` of `f`
-at every input, then `(1 - 2ε) bs(f) ≤ 2 D²`. -/
-theorem one_sub_two_mul_mul_blockSensitivity_le_of_mem_lowDegree {p : BitString n → ℝ} {D : ℕ}
-    (hp : p ∈ lowDegree ℝ (Fin n) D) {ε : ℝ} (hpf : ∀ x, |p x - bitVal ℝ (f x)| ≤ ε) :
-    (1 - 2 * ε) * blockSensitivity f ≤ 2 * D ^ 2 := by
-  rcases le_or_gt (1 - 2 * ε) 0 with hε | hε
-  · exact (mul_nonpos_of_nonpos_of_nonneg hε (Nat.cast_nonneg _)).trans (by positivity)
+/-- **The Nisan–Szegedy argument with a range**: if a real function of degree at most `D` is within
+`ε < 1/2` of `f` at every input and takes values in `[-δ, 1 + δ]`, then
+`(1 - 2ε) bs(f) ≤ (2 - 2ε + 2δ) D²`. A function within `ε` of `f` takes values in `[-ε, 1 + ε]`,
+which gives `2 D²`; a probability, with values in `[0, 1]`, gives `(2 - 2ε) D²`. -/
+theorem one_sub_two_mul_mul_blockSensitivity_le_of_mem_Icc {p : BitString n → ℝ} {D : ℕ}
+    (hp : p ∈ lowDegree ℝ (Fin n) D) {ε δ : ℝ} (hpf : ∀ x, |p x - bitVal ℝ (f x)| ≤ ε)
+    (hpI : ∀ x, p x ∈ Set.Icc (-δ) (1 + δ)) (hε2 : 2 * ε < 1) :
+    (1 - 2 * ε) * blockSensitivity f ≤ (2 - 2 * ε + 2 * δ) * D ^ 2 := by
+  have hε : 0 < 1 - 2 * ε := by linarith
+  have hδ : 0 ≤ 2 - 2 * ε + 2 * δ := by
+    have := hpI fun _ => false
+    linarith [this.1, this.2]
   -- an input and a family of pairwise disjoint sensitive blocks attaining `bs(f)`
   obtain ⟨x, -, hx⟩ := exists_mem_eq_sup univ univ_nonempty (blockSensitivityAt f)
   obtain ⟨F, hF, hFcard⟩ := exists_mem_eq_sup (sensitiveFamilies f x)
@@ -133,7 +145,7 @@ theorem one_sub_two_mul_mul_blockSensitivity_le_of_mem_lowDegree {p : BitString 
   set m := #F
   rcases Nat.eq_zero_or_pos m with hm | hm
   · rw [hm, Nat.cast_zero, mul_zero]
-    positivity
+    exact mul_nonneg hδ (by positivity)
   set B : Fin m → Block n := fun j => (F.equivFin.symm j : Block n)
   have hBF (j : Fin m) : B j ∈ F := (F.equivFin.symm j).2
   have hBinj : Function.Injective B := fun j j' h =>
@@ -160,10 +172,12 @@ theorem one_sub_two_mul_mul_blockSensitivity_le_of_mem_lowDegree {p : BitString 
   set g : BitString m → ℝ := fun y => h (flipBlocks B x y)
   have hg : g ∈ lowDegree ℝ (Fin m) D :=
     comp_mem_lowDegree (bitVal_flipBlocks_mem_lowDegree hB x) hh
-  have hgI (y : BitString m) : g y ∈ Set.Icc (-ε) (1 + ε) := by
-    have h₁ := abs_le.1 (hhf (flipBlocks B x y))
-    have h₂ := bitVal_mem_Icc (f (flipBlocks B x y) ^^ f x)
-    exact ⟨by linarith [h₁.1, h₂.1], by linarith [h₁.2, h₂.2]⟩
+  have hgI (y : BitString m) : g y ∈ Set.Icc (-δ) (1 + δ) := by
+    have h₁ := hpI (flipBlocks B x y)
+    simp only [g, h]
+    split_ifs
+    · exact ⟨by linarith [h₁.2], by linarith [h₁.1]⟩
+    · exact h₁
   have hg₀ (y : BitString m) (hy : weight y = 0) : g y ≤ ε := by
     have hy' : ({j | y j = true} : Finset (Fin m)) = ∅ := card_eq_zero.1 hy
     have := (abs_le.1 (hhf (flipBlocks B x y))).2
@@ -187,7 +201,7 @@ theorem one_sub_two_mul_mul_blockSensitivity_le_of_mem_lowDegree {p : BitString 
   have hlayer {k : ℕ} (hk : k ≤ m) :
       ({x : BitString m | weight x = k} : Finset (BitString m)).Nonempty :=
     weightLayer_nonempty hk
-  have hqI (k : ℕ) (hk : k ≤ m) : q.eval (k : ℝ) ∈ Set.Icc (-ε) (1 + ε) := by
+  have hqI (k : ℕ) (hk : k ≤ m) : q.eval (k : ℝ) ∈ Set.Icc (-δ) (1 + δ) := by
     rw [hq k (by rw [Fintype.card_fin]; exact hk), layerAverage]
     exact ⟨le_expect (hlayer hk) fun y _ => (hgI y).1,
       expect_le (hlayer hk) fun y _ => (hgI y).2⟩
@@ -211,6 +225,20 @@ theorem one_sub_two_mul_mul_blockSensitivity_le_of_mem_lowDegree {p : BitString 
     (ξ := ξ) (c := 1 - 2 * ε) ⟨hξ.1.le, hξ.2.le.trans hm1⟩ hε.le
     (by rw [hξq]; exact (by linarith : 1 - 2 * ε ≤ q.eval 1 - q.eval 0).trans (le_abs_self _))
   linarith
+
+/-- **The Nisan–Szegedy argument**: if a real function of degree at most `D` is within `ε` of `f`
+at every input, then `(1 - 2ε) bs(f) ≤ 2 D²`. -/
+theorem one_sub_two_mul_mul_blockSensitivity_le_of_mem_lowDegree {p : BitString n → ℝ} {D : ℕ}
+    (hp : p ∈ lowDegree ℝ (Fin n) D) {ε : ℝ} (hpf : ∀ x, |p x - bitVal ℝ (f x)| ≤ ε) :
+    (1 - 2 * ε) * blockSensitivity f ≤ 2 * D ^ 2 := by
+  rcases le_or_gt (1 - 2 * ε) 0 with hε | hε
+  · exact (mul_nonpos_of_nonpos_of_nonneg hε (Nat.cast_nonneg _)).trans (by positivity)
+  have := one_sub_two_mul_mul_blockSensitivity_le_of_mem_Icc hp hpf (δ := ε) (fun x => ?_)
+    (by linarith)
+  · linarith
+  · have h₁ := abs_le.1 (hpf x)
+    have h₂ := bitVal_mem_Icc (f x)
+    exact ⟨by linarith [h₁.1, h₂.1], by linarith [h₁.2, h₂.2]⟩
 
 /-- **Nisan–Szegedy**: `bs(f) ≤ 2 deg(f)²`. -/
 theorem blockSensitivity_le_two_mul_degree_sq (f : BooleanFunction n) :

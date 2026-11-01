@@ -53,13 +53,13 @@ namespace Cslib.Logic.FO.LFP.ModelChecker
 
 variable {L : Language.{u, v}} [L.IsRelational] (v : Vocabulary L)
 
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 
 private theorem termValue_poly {α : Type w} (t : (Ordered.language L).Term α)
     {γ : Type} {enc : γ ↪ List Bool} {n : γ → ℕ} {σ : γ → α → ℕ}
-    (hn : ComputableTidilyInPolyTime n enc encUnary)
-    (hσ : ∀ x, ComputableTidilyInPolyTime (fun a => σ a x) enc encUnary) :
-    ComputableTidilyInPolyTime (fun a => termValue (n a) (σ a) t) enc encUnary := by
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hσ : ∀ x, ComputableInPolyTime (fun a => σ a x) enc encUnary) :
+    ComputableInPolyTime (fun a => termValue (n a) (σ a) t) enc encUnary := by
   cases t with
   | var x => exact hσ x
   | func f ts =>
@@ -73,9 +73,9 @@ private theorem termValue_poly {α : Type w} (t : (Ordered.language L).Term α)
 
 private theorem valuesIndex_poly {k : ℕ} {γ : Type} {enc : γ ↪ List Bool}
     {n : γ → ℕ} {xs : γ → Fin k → ℕ}
-    (hn : ComputableTidilyInPolyTime n enc encUnary)
-    (hxs : ∀ j, ComputableTidilyInPolyTime (fun a => xs a j) enc encUnary) :
-    ComputableTidilyInPolyTime (fun a => valuesIndex (n a) (xs a)) enc encUnary := by
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hxs : ∀ j, ComputableInPolyTime (fun a => xs a j) enc encUnary) :
+    ComputableInPolyTime (fun a => valuesIndex (n a) (xs a)) enc encUnary := by
   induction k with
   | zero => exact const 0
   | succ k ih =>
@@ -85,13 +85,13 @@ private theorem valuesIndex_poly {k : ℕ} {γ : Type} {enc : γ ↪ List Bool}
 omit [L.IsRelational] in
 private theorem relBit_poly {k : ℕ} (r : (Ordered.language L).Relations k)
     {γ : Type} {enc : γ ↪ List Bool} {a : γ → EncodedStructure} {xs : γ → Fin k → ℕ}
-    (ha : ComputableTidilyInPolyTime a enc encStructure)
-    (hxs : ∀ j, ComputableTidilyInPolyTime (fun x => xs x j) enc encUnary) :
-    ComputableTidilyInPolyTime (fun x => relBit v (a x) r (xs x)) enc encBool := by
+    (ha : ComputableInPolyTime a enc encStructure)
+    (hxs : ∀ j, ComputableInPolyTime (fun x => xs x j) enc encUnary) :
+    ComputableInPolyTime (fun x => relBit v (a x) r (xs x)) enc encBool := by
   cases r with
   | inl r =>
     exact bitsGetDWithInput
-      (v.computableInPolyTime_table ⟨_, r⟩ ha.computableInPolyTime).tidy
+      (v.computableInPolyTime_table ⟨_, r⟩ ha)
       (valuesIndex_poly ha.fst' hxs) false
   | inr r =>
     cases r with
@@ -102,20 +102,20 @@ private theorem foEval_poly {α : Type w} {k : ℕ}
     (φ : (Ordered.language L).BoundedFormula α k) :
     ∀ {γ : Type} {enc : γ ↪ List Bool} {a : γ → EncodedStructure} {σ : γ → α → ℕ}
       {xs : γ → Fin k → ℕ},
-      ComputableTidilyInPolyTime a enc encStructure →
-      (∀ x, ComputableTidilyInPolyTime (fun y => σ y x) enc encUnary) →
-      (∀ j, ComputableTidilyInPolyTime (fun y => xs y j) enc encUnary) →
-      ComputableTidilyInPolyTime (fun y => foEval v (a y) (σ y) φ (xs y)) enc encBool := by
+      ComputableInPolyTime a enc encStructure →
+      (∀ x, ComputableInPolyTime (fun y => σ y x) enc encUnary) →
+      (∀ j, ComputableInPolyTime (fun y => xs y j) enc encUnary) →
+      ComputableInPolyTime (fun y => foEval v (a y) (σ y) φ (xs y)) enc encBool := by
   induction φ with
   | falsum => intros; exact const false
   | equal s t =>
     intro γ enc a σ xs ha hσ hxs
-    have hv (z) : ComputableTidilyInPolyTime
+    have hv (z) : ComputableInPolyTime
         (fun y => Sum.elim (σ y) (xs y) z) enc encUnary := by
       cases z with
       | inl x => exact hσ x
       | inr j => exact hxs j
-    exact unary_beq (termValue_poly s ha.fst' hv) (termValue_poly t ha.fst' hv)
+    exact beq (termValue_poly s ha.fst' hv) (termValue_poly t ha.fst' hv)
   | rel r ts =>
     intro γ enc a σ xs ha hσ hxs
     apply relBit_poly v r ha
@@ -142,10 +142,10 @@ private theorem eval_poly {Γ : List ℕ} {α : Type w}
     (φ : RawFormula (Ordered.language L) Γ α) :
     ∀ {γ : Type} {enc : γ ↪ List Bool} {a : γ → EncodedStructure}
       {tables : γ → List (List Bool)} {σ : γ → α → ℕ},
-      ComputableTidilyInPolyTime a enc encStructure →
-      ComputableTidilyInPolyTime tables enc (encList encBits) →
-      (∀ x, ComputableTidilyInPolyTime (fun y => σ y x) enc encUnary) →
-      ComputableTidilyInPolyTime (fun y => eval v φ (a y) (tables y) (σ y)) enc encBool := by
+      ComputableInPolyTime a enc encStructure →
+      ComputableInPolyTime tables enc (encList encBits) →
+      (∀ x, ComputableInPolyTime (fun y => σ y x) enc encUnary) →
+      ComputableInPolyTime (fun y => eval v φ (a y) (tables y) (σ y)) enc encBool := by
   induction φ with
   | ofFO φ =>
     intro γ enc a tables σ ha ht hσ
@@ -172,9 +172,9 @@ private theorem eval_poly {Γ : List ℕ} {α : Type w}
     intro γ enc a tables σ ha ht hσ
     let tableStep (x : γ) (table : List Bool) :=
       tableOf (a x).1 k (fun xs => eval v (body 0) (a x) (table :: tables x) (Sum.elim (σ x) xs))
-    have hcount : ComputableTidilyInPolyTime (fun x => (a x).1 ^ k) enc encUnary :=
+    have hcount : ComputableInPolyTime (fun x => (a x).1 ^ k) enc encUnary :=
       (unary_pow k).comp ha.fst'
-    have hstep : ComputableTidilyInPolyTime
+    have hstep : ComputableInPolyTime
         (fun p : γ × List Bool => tableStep p.1 p.2) (encPair enc encBits) encBits := by
       apply mapToBitsWithInput (range.comp (hcount.comp (fst enc encBits)))
       have hpar := fst (encPair enc encBits) encUnary
@@ -188,7 +188,7 @@ private theorem eval_poly {Γ : List ℕ} {α : Type w}
       | inr j =>
         exact unary_mod.comp ((unary_div.comp
           ((snd (encPair enc encBits) encUnary).prod ((unary_pow j.val).comp hn))).prod hn)
-    have hiter : ComputableTidilyInPolyTime
+    have hiter : ComputableInPolyTime
         (fun x => (tableStep x)^[(a x).1 ^ k] []) enc encBits := by
       apply iterateWithInput_of_bounded_growth hcount (const []) hstep
       refine ⟨hcount.polyBounded, ?_⟩
@@ -208,7 +208,7 @@ theorem computableInPolyTime_eval {Γ : List ℕ} {α : Type w}
     (ht : ComputableInPolyTime tables enc (encList encBits))
     (hσ : ∀ x, ComputableInPolyTime (fun y => σ y x) enc encUnary) :
     ComputableInPolyTime (fun y => eval v φ (a y) (tables y) (σ y)) enc encBool :=
-  .of_tidy (eval_poly v φ ha.tidy ht.tidy (fun x => (hσ x).tidy))
+  eval_poly v φ ha ht hσ
 
 /-- Decide a fixed sentence, rejecting malformed relation tables and universes smaller than two. -/
 @[expose] def modelChecker (φ : RawFormula (Ordered.language L) [] Empty)
@@ -221,7 +221,7 @@ theorem computableInPolyTime_eval {Γ : List ℕ} {α : Type w}
     ComputableInPolyTime (modelChecker v φ) encStructure encBool := by
   apply ComputableInPolyTime.bool_and' v.computableInPolyTime_checkShape
   apply ComputableInPolyTime.bool_and'
-  · exact .of_tidy (unary_le' (const 2) (fst encUnary (encList encBits)))
+  · exact unary_le' (const 2) (fst encUnary (encList encBits))
   · exact computableInPolyTime_eval v φ .id' (.const []) (fun x => x.elim)
 
 end Cslib.Logic.FO.LFP.ModelChecker
