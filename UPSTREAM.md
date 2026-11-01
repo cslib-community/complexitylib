@@ -327,7 +327,17 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   charge and width-independent polynomial prefixes. `Power/Rename.lean` exposes the existing
   power execution on an arbitrary injective bank, reused by both calls without repeated
   comap/extend proofs. These coarse parameters are not attributed to Anthropic's tuned choice.
-  Aggregate asymptotics, small-case solver dispatch, outer host and #1394 remain open.
+  The original arithmetic bridge in `ParameterChoice/CostGeometry.lean` and native
+  `ExactTriangle/DyadicCost.lean` (#2145) simplifies actual preparation/product/query charges
+  to `n³/g`, absorbs the actual counter-based selector cost using `g^648≤n`, and applies the
+  existing selected-prime failed-scan estimate once globally. Its combined component allowance
+  has an explicit logarithmic factor and a `3-1/648` real-power scale.
+  `DyadicCost/Asymptotics.lean` absorbs that factor via Mathlib's existing logarithm-growth
+  theorem: beyond a threshold depending only on the weight exponent, all actual component
+  allowances are at most `4*n^(3-1/1296)`, uniformly over matrices, selected primes and memories.
+  This existential asymptotic threshold is not an algorithm input. Neither result asserts
+  a composed execution theorem or the source's tuned exponent.
+  Callable adaptation, small-case solver dispatch (#2146), outer host and #1394 remain open.
   `Algorithms/ExactTriangle/{Splitting,Witnesses}.lean` adapts the complete finite splitting and
   witness recovery component ([#1447](https://github.com/cslib-community/complexitylib/issues/1447)),
   using the existing matrices, lopsided graph and `Set.EqOn` answer API. Computable integer parameters
