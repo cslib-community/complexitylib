@@ -469,8 +469,8 @@ theorem eventually_regularity_gap {g : List Bool → List Bool} (hg : OneWay g)
   have hpow_le : (2 : ℝ) ^ ((r k).val + D * Nat.log 2 k) ≤ (2 : ℝ) ^ k := by
     have hpos : (0 : ℝ) < k + 1 := by positivity
     have h1 : (2 : ℝ) ^ (r k).val * (k + 1 : ℝ) ^ D ≤ (2 : ℝ) ^ k := by
-      rw [hpow_D] at hcross
-      nlinarith
+      rw [hpow_D, mul_left_comm] at hcross
+      exact le_of_mul_le_mul_left hcross hpos
     calc
       (2 : ℝ) ^ ((r k).val + D * Nat.log 2 k)
         = (2 : ℝ) ^ (r k).val * ((2 : ℝ) ^ (Nat.log 2 k)) ^ D := by
@@ -837,7 +837,9 @@ private theorem ofFn_packSeedEmb {imgLen : ℕ → ℕ} {d γ_core k n r : ℕ}
     (hr : r ≤ k) (hfits : coreSeedLen imgLen d γ_core k ≤ n)
     (t : SeedTuple imgLen d γ_core k n) :
     List.ofFn (packSeedEmb hr hfits t) = packSeedWords r t :=
-  ofFn_ofList (length_packSeedWords hr hfits t)
+  -- Unfold the embedding first: unifying it with `ofList` directly takes seconds.
+  (congrArg List.ofFn (congrFun (Function.Embedding.coeFn_mk _ _) t)).trans
+    (ofFn_ofList (length_packSeedWords hr hfits t))
 
 /-- Evaluating `rawGen` on a packed seed recovers the exact concatenation of `pad`, `h1`,
 `wordHash l1 h1 (g x)`, `h2`, and `wordHash (l2 + mActual) h2 x`. -/
@@ -994,7 +996,7 @@ private theorem dist_seededHash_regularityBucket_fiber_le {k m2 c2 : ℕ} {Image
   intro side source seed2 hash2
   split_ifs with hm2_zero
   · subst m2
-    have hsub : Subsingleton (BitString 0) := inferInstanceAs (Subsingleton (Fin 0 → Bool))
+    have hsub : Subsingleton (BitString 0) := ⟨fun _ _ => funext fun i => i.elim0⟩
     have heq : (side.bind fun x₀ => (seededHash seed2 (source x₀) hash2).map (x₀, ·)) =
         (side.bind fun x₀ =>
           (seed2.bind fun h2 => (PMF.uniformOfFintype (BitString 0)).map (h2, ·)).map (x₀, ·)) := by
@@ -1523,8 +1525,17 @@ private theorem computableTidilyInPolyTime_wordStepPredictor {α : Type} {encode
       (fun a => wordStepPredictor evaluate (n a) (k a) (m1 a) (idx a) (pad a) (h1 a)
         (image a) (h2 a) (digest a) (r_word a) (pol_word a) (z_tail a) (coins a) (query a))
       encode encBool := by
-  unfold wordStepPredictor
-  fun_prop
+  -- `fun_prop` takes seconds to find this composition through the case split.
+  have heval : ComputableTidilyInPolyTime
+      (fun a => evaluate (n a, wordChallenge (k a) (m1 a) (idx a) (pad a) (h1 a) (image a) (h2 a)
+        (digest a) (r_word a) (z_tail a) (query a)) (coins a)) encode encBool :=
+    hevaluate.comp' ((hn.prod (computableTidilyInPolyTime_wordChallenge hk hm1 hidx hpad hh1
+      himage hh2 hdigest hr_word hz_tail hquery)).prod hcoins)
+  have hr_bit : ComputableTidilyInPolyTime (fun a => (r_word a).headD false) encode encBool :=
+    (ComputableTidilyInPolyTime.headD false).comp' hr_word
+  exact ComputableTidilyInPolyTime.bool_xor.comp'
+    ((heval.ite' hr_bit (ComputableTidilyInPolyTime.bool_not.comp' hr_bit)).prod
+      ((ComputableTidilyInPolyTime.headD (encA := encBool) false).comp' hpol_word))
 
 /-- Coin budget for the PRG distinguisher on an output of length `n + γ * Nat.log 2 n` at
 security parameter `n`. -/
@@ -1959,10 +1970,9 @@ private theorem fiber_step_diff_le {k imgLen_k : ℕ}
     · refine Finset.sum_congr rfl fun rows _ => ?_
       rw [PMF.bind_apply_toReal, PMF.bind_apply_toReal]
       rw [← mul_sub, ← Finset.sum_sub_distrib, ← mul_assoc, mul_comm 2, mul_assoc, Finset.mul_sum]
-      congr 1
-      refine Finset.sum_congr rfl fun x _ => ?_
+      refine congrArg (_ * ·) (Finset.sum_congr rfl fun x _ => ?_)
       rw [← mul_sub, ← mul_assoc, mul_comm 2, mul_assoc]
-      congr 1
+      refine congrArg (_ * ·) ?_
       simp_rw [← hpred_eq _ rows x.val]
       exact (sum_bool_agreement_eq (evalBit rows x.val) x.val).symm
     · exact sum_mul_sum_mul_sum_comm _ _ _ _
@@ -2135,7 +2145,8 @@ private theorem fiberHybrid_step_le (g : List Bool → List Bool) (imgLen : ℕ 
       (PMF.uniformOfFintype Aux).bind p_succ := by
     unfold fiberHybridAcceptDist
     rw [uniformList_four_bind_eq]
-    congr 1; funext a; congr 1; funext rows; congr 1; funext x
+    refine congrArg (PMF.bind _) (funext fun a => ?_)
+    congr 1; funext rows; congr 1; funext x
     simp only [h2Word, digestWord, m1, m2, idx, ofFn_hash_castLE_succ rows x.val hlen hidx_lt,
       List.append_assoc]
   have hcurr_eq :
@@ -2157,7 +2168,8 @@ private theorem fiberHybrid_step_le (g : List Bool → List Bool) (imgLen : ℕ 
       arg 2; ext pad; arg 2; ext h1
       rw [bind_map_comm_four]
     rw [uniformList_four_bind_eq]
-    congr 1; funext a; congr 1; funext rows; congr 1; funext x; congr 1; funext b
+    refine congrArg (PMF.bind _) (funext fun a => ?_)
+    congr 1; funext rows; congr 1; funext x; congr 1; funext b
     simp only [h2Word, digestWord, m1, List.append_assoc, Function.comp_def]
   let invProb (a : Aux) (r_bit p : Bool) : PMF Bool :=
     (Pseudoentropy.guessInverter f
@@ -3140,7 +3152,7 @@ private theorem eventually_coreSeedLen_succ_le_pow {imgLen : ℕ → ℕ} {c_i d
   have hh2 : h2Rows d γ_core (k + 1) ≤ 2 * k ^ 2 := by
     have hm : mMax d γ_core (k + 1) ≤ (2 * d + γ_core + 2) * (k + 1) := by
       unfold mMax
-      nlinarith
+      linarith [Nat.mul_le_mul_left d hlog, Nat.mul_le_mul_left γ_core hlog]
     have hh : h2Rows d γ_core (k + 1) ≤ (2 * d + γ_core + 3) * (k + 1) := by
       unfold h2Rows
       linarith
@@ -3158,8 +3170,10 @@ private theorem eventually_coreSeedLen_succ_le_pow {imgLen : ℕ → ℕ} {c_i d
   have hpow_le3 : k ^ 3 ≤ k ^ (d_i + 3) :=
     Nat.pow_le_pow_right (by omega) (by omega)
   have hreg : regWidth (k + 1) + (k + 1) ≤ 2 * k ^ (d_i + 3) := by
+    have hk_sq : 8 * k ≤ k ^ 2 := by rw [sq]; exact Nat.mul_le_mul_right k hk8
+    have hpow_le_sq : k ^ 2 ≤ k ^ (d_i + 3) := Nat.pow_le_pow_right (by omega) (by omega)
     unfold regWidth
-    nlinarith
+    omega
   calc
     coreSeedLen imgLen d γ_core (k + 1)
       = (regWidth (k + 1) + (k + 1)) + (k + 1) * imgLen (k + 1) +
@@ -3178,8 +3192,9 @@ private theorem sqrt_lhl_err_le {E δ k n : ℕ} (hk : 8 ≤ k) (hn_pos : 1 ≤ 
   set B := E * (2 * δ + 4) + 4
   have hpow2 : k ^ B ≤ 2 ^ (d * Nat.log 2 k) := by
     simpa [d, mul_assoc] using pow_le_two_pow_two_mul_log B (by omega : 2 ≤ k)
-  have hk1 : 2 * (k + 1) ≤ k ^ 2 := by nlinarith
-  have hk16 : 16 ≤ k ^ 2 := by nlinarith
+  have hk_sq : 8 * k ≤ k ^ 2 := by rw [sq]; exact Nat.mul_le_mul_right k hk
+  have hk1 : 2 * (k + 1) ≤ k ^ 2 := by omega
+  have hk16 : 16 ≤ k ^ 2 := by omega
   have hn_pow : n ^ (2 * δ + 4) ≤ k ^ (E * (2 * δ + 4)) :=
     (Nat.pow_le_pow_left hn (2 * δ + 4)).trans_eq (pow_mul k E (2 * δ + 4)).symm
   have hnat : 2 * (k + 1) * (16 * n ^ (2 * δ + 4)) ≤ 2 ^ (d * Nat.log 2 k) := by
@@ -3211,7 +3226,7 @@ private theorem gl_err_le {E δ k n m : ℕ} (hk : 8 ≤ k) (hn_pos : 1 ≤ n) (
     (m : ℝ) / (2 * (GoldreichLevin.precision deg k : ℝ)) ≤ 1 / (4 * (n : ℝ) ^ δ) := by
   intro deg
   have hn_rpos : (0 : ℝ) < n := Nat.cast_pos.mpr hn_pos
-  have h4 : 4 ≤ k ^ 2 := by nlinarith
+  have h4 : 4 ≤ k ^ 2 := (by omega : 4 ≤ k).trans (Nat.le_self_pow two_ne_zero k)
   have hn_pow : n ^ (δ + 2) ≤ k ^ (E * (δ + 2)) :=
     (Nat.pow_le_pow_left hn (δ + 2)).trans_eq (pow_mul k E (δ + 2)).symm
   have hnat : 4 * n ^ δ * m ≤ 2 * GoldreichLevin.precision deg k := by
@@ -3258,11 +3273,12 @@ private theorem inv_term_le {E δ d γ_core k n m cs_succ : ℕ} {succProb : ℝ
       _ = k ^ (2 * d + γ_core + 2) := (pow_succ' k (2 * d + γ_core + 1)).symm
   have h2 : dyadicSize m ≤ k ^ 3 := by
     have hm_k2 : m + 1 ≤ 2 * k ^ 2 := by
-      have hm_le_k : m + 1 ≤ (2 * d + γ_core + 2) * k := by nlinarith
+      have hm_le_k : m + 1 ≤ (2 * d + γ_core + 2) * k := by
+        linarith [Nat.mul_le_mul_left (2 * d + γ_core + 1) hlog_k]
       calc
         m + 1 ≤ (2 * d + γ_core + 2) * k := hm_le_k
         _ ≤ k * k := Nat.mul_le_mul_right k (by omega)
-        _ ≤ 2 * k ^ 2 := by nlinarith
+        _ ≤ 2 * k ^ 2 := by rw [sq]; omega
     calc
       dyadicSize m ≤ 2 * (m + 1) := dyadicSize_le m
       _ ≤ 4 * k ^ 2 := by omega
@@ -3275,10 +3291,11 @@ private theorem inv_term_le {E δ d γ_core k n m cs_succ : ℕ} {succProb : ℝ
       _ ≤ 4 * k ^ E := by omega
       _ ≤ k * k ^ E := Nat.mul_le_mul_right _ (by omega)
       _ = k ^ (E + 1) := (pow_succ' k E).symm
+  have hk_sq : 8 * k ≤ k ^ 2 := by rw [sq]; exact Nat.mul_le_mul_right k hk8
   have h4 : dyadicSize (k + 1) ≤ k ^ 2 := by
     have := dyadicSize_le (k + 1)
-    nlinarith
-  have h5 : 4 * (k + 1) ≤ k ^ 2 := by nlinarith
+    omega
+  have h5 : 4 * (k + 1) ≤ k ^ 2 := by omega
   have h6 : n ^ δ ≤ k ^ (E * δ) :=
     (Nat.pow_le_pow_left hn δ).trans_eq (pow_mul k E δ).symm
   have hprod_nat :
@@ -3388,10 +3405,8 @@ theorem OneWay.exists_condEPPRG {f : List Bool → List Bool} (hf : OneWay f) (�
     have hn_pos : 1 ≤ n := by omega
     have hlog_le : Nat.log 2 n ≤ 2 * E * Nat.log 2 k :=
       log_le_two_mul_log_of_le_pow (by omega : 2 ≤ k) hn_le_pow
-    have hm_le_mMax : mActual d γ k n ≤ mMax d γ_core k := by
-      apply mActual_le_mMax
-      dsimp [γ_core]
-      nlinarith
+    have hm_le_mMax : mActual d γ k n ≤ mMax d γ_core k :=
+      mActual_le_mMax ((Nat.mul_le_mul_left γ hlog_le).trans_eq (Nat.mul_assoc _ _ _).symm)
     have hm_le : l2Val d k (r k).val + mActual d γ k n ≤ h2Rows d γ_core k := by
       have := l2Val_le d k (r k).val
       unfold h2Rows
@@ -3403,7 +3418,7 @@ theorem OneWay.exists_condEPPRG {f : List Bool → List Bool} (hf : OneWay f) (�
       have h2 : Nat.log 2 n ≤ n := Nat.log_le_self 2 n
       have h3 : mActual d γ k n ≤ (γ + 1) * n := by
         unfold mActual
-        nlinarith
+        linarith [Nat.mul_le_mul_left γ h2]
       have h4 : (γ + 1) * n ≤ n * n := Nat.mul_le_mul_right n (by omega)
       calc
         mActual d γ k n ≤ (γ + 1) * n := h3
@@ -3478,7 +3493,7 @@ theorem OneWay.exists_condEPPRG {f : List Bool → List Bool} (hf : OneWay f) (�
     have hn_pos : 1 ≤ n := by omega
     have hcs_def : coreSeedLen imgLen d γ_core k =
         (Nat.log 2 k + 1) + k + k * imgLen k + h2Rows d γ_core k * k := rfl
-    have hh2_pos : 1 ≤ h2Rows d γ_core k * k := by unfold h2Rows; nlinarith
+    have hh2_pos : 1 ≤ h2Rows d γ_core k * k := Nat.mul_pos (by unfold h2Rows; omega) (by omega)
     have hlhl_pos : 1 ≤ lhlPrefixLen d k n := by
       unfold lhlPrefixLen
       omega
@@ -3520,7 +3535,7 @@ theorem OneWay.exists_condEPPRG {f : List Bool → List Bool} (hf : OneWay f) (�
       have hlog_n1_r : (1 : ℝ) ≤ (Nat.log 2 n : ℝ) := by exact_mod_cast hlog_n1
       have hα_def : (α : ℝ) = 2 * (d : ℝ) + 4 := by dsimp [α]; push_cast; ring
       rw [hα_def]
-      nlinarith
+      linarith [mul_le_mul_of_nonneg_left hlog_kn_r (Nat.cast_nonneg (α := ℝ) d)]
     exact hloss_le.trans hent
 
 end Cslib.Crypto
