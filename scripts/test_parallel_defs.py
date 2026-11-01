@@ -472,6 +472,12 @@ theorem my_add_zero (n : Nat) : n + 0 = n := rfl
 
 theorem bump_eq (n : Nat) : bump n = n + 1 := rfl
 
+@[expose] def suppliedDefault : Nat := 3
+
+theorem refl_default (n : Nat := suppliedDefault) : n = n := rfl
+
+theorem refl_plain (n : Nat) : n = n := rfl
+
 end
 """
 
@@ -503,8 +509,8 @@ class CompiledStatementFixtureTests(unittest.TestCase):
 
     def test_statistics(self) -> None:
         # All theorems but the deprecated one and the equation lemma of `bump`.
-        self.assertEqual(self.rows[-1]["examined"], 12)
-        self.assertEqual(self.rows[-1]["theorems"], 12)
+        self.assertEqual(self.rows[-1]["examined"], 14)
+        self.assertEqual(self.rows[-1]["theorems"], 14)
         self.assertGreater(self.rows[-1]["external"], 100)
 
     def test_private_copy_and_core_theorem(self) -> None:
@@ -521,6 +527,16 @@ class CompiledStatementFixtureTests(unittest.TestCase):
             self.assertFalse(self.groups[frozenset(names)]["exact"], names)
         self.assertIn("Nat.le_trans",
                       [x["n"] for x in self.groups[frozenset({"hyp_ab", "hyp_ba"})]["ext"]])
+
+    def test_default_argument_dropped(self) -> None:
+        # The key drops the default `suppliedDefault`, so the fingerprint must not count it: the
+        # theorem without the default finds the one with it, and conversely.
+        self.assertIn(frozenset({"refl_default", "refl_plain"}), self.groups)
+        for name, other in (("refl_plain", "refl_default"), ("refl_default", "refl_plain")):
+            line = self.line(name)
+            rows = p.run_reader(self.build, f"theorems\nlines StatementFixture {line}-{line}\n",
+                                0, 0)
+            self.assertIn({name, other}, [{t["n"] for t in r["thms"]} for r in rows if "thms" in r])
 
     def test_different_statements_stay_apart(self) -> None:
         for names in self.groups:

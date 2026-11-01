@@ -502,14 +502,22 @@ unsafe def exactKey (type : Expr) : Expr := (erase false type).run' {}
 /-- The statement key (see the module documentation). -/
 unsafe def key (type : Expr) : Expr := (erase true (canonicalBinders type)).run' {}
 
-/-- A hash of the constants of a statement, with `≥`, `>` and `≠` counted as what they unfold to:
-equal for statements with equal keys, and cheap to compute. -/
+/-- `e` with every `optParam` and `autoParam` replaced by its type, dropping the default value as
+`unfold` does. -/
+partial def dropDefaults (e : Expr) : Expr :=
+  e.replace fun e =>
+    if e.isAppOfArity ``optParam 2 || e.isAppOfArity ``autoParam 2 then
+      some (dropDefaults e.appFn!.appArg!)
+    else none
+
+/-- A hash of the constants of a statement, with `≥`, `>` and `≠` counted as what they unfold to
+and the default values of arguments left out: equal for statements with equal keys, and cheap to
+compute. -/
 def fingerprint (type : Expr) : UInt64 :=
-  let s : NameSet := type.getUsedConstants.foldl (init := {}) fun s c =>
+  let s : NameSet := (dropDefaults type).getUsedConstants.foldl (init := {}) fun s c =>
     if c == ``GE.ge then s.insert ``LE.le
     else if c == ``GT.gt then s.insert ``LT.lt
     else if c == ``Ne then (s.insert ``Not).insert ``Eq
-    else if c == ``optParam || c == ``autoParam then s
     else s.insert c
   s.foldl (fun h c => mixHash h (hash c)) 7
 
