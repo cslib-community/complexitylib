@@ -277,16 +277,22 @@ private meta def polytimeKnownFacts : TacticM Unit := withMainContext do
     else (``ComputableInPolyTime, ``ComputableInPolyTime.tidy)
   restateKnownFacts source conversion
 
+open Lean in
+/-- Whether a constant name is in the raw family: its component after `Turing.MultiTapeTM` starts
+with `ComputableTidily` or `ComputesTidily`. -/
+private meta def isRawFamilyName : Name → Bool
+  | .str (.str (.str .anonymous "Turing") "MultiTapeTM") head =>
+    head.startsWith "ComputableTidily" || head.startsWith "ComputesTidily"
+  | .str parent _ | .num parent _ => isRawFamilyName parent
+  | .anonymous => false
+
 open Lean Meta in
 /-- Inspect proposition aliases with the same reducible transparency used by `fun_prop`.
 `Meta.transform` maintains binder context, including dependent and quantified premises; data and
 proof implementations are not unfolded merely to classify a transition's proposition. -/
 private meta def rawTransitionPremise (type : Expr) : MetaM Bool := do
-  let rawName := fun n : Name =>
-    n.toString.startsWith "Turing.MultiTapeTM.ComputableTidily" ||
-      n.toString.startsWith "Turing.MultiTapeTM.ComputesTidily"
   if (type.find? fun e => match e with
-      | .const n _ => rawName n
+      | .const n _ => isRawFamilyName n
       | _ => false).isSome then
     return true
   let inspect : StateRefT Bool MetaM Unit := do
@@ -294,7 +300,7 @@ private meta def rawTransitionPremise (type : Expr) : MetaM Bool := do
       if ← get then return .done e
       let reduced ← if ← isProp e then whnfR e else pure e
       if let .const name _ := reduced.getAppFn then
-        if rawName name then
+        if isRawFamilyName name then
           set true
           return .done reduced
       return .continue (some reduced))
@@ -445,28 +451,24 @@ private meta def rawImportClosure (header : EnvironmentHeader) : Std.HashMap Nam
   for i in [:header.moduleNames.size] do
     let moduleName := header.moduleNames[i]!
     let data := header.moduleData[i]!
-    let ownsRaw := data.constNames.any fun name =>
-      name.toString.startsWith "Turing.MultiTapeTM.ComputableTidily" ||
-        name.toString.startsWith "Turing.MultiTapeTM.ComputesTidily"
+    let ownsRaw := data.constNames.any isRawFamilyName
     let importsRaw := data.imports.any fun imported => rawModules.getD imported.module true
     rawModules := rawModules.insert moduleName (ownsRaw || importsRaw)
   return rawModules
 
 open Lean in
-/-- The latest import list with its `rawImportClosure`. Scanning every imported constant name
-takes about half a second, and the import header is fixed while a file is elaborated. -/
-private meta initialize rawImportClosureCache : IO.Ref (Array Name × Std.HashMap Name Bool) ←
-  IO.mkRef (#[], {})
-
-open Lean in
-/-- `rawImportClosure`, computed once per import list rather than once per invocation. -/
-private meta def cachedRawImportClosure (header : EnvironmentHeader) :
-    BaseIO (Std.HashMap Name Bool) := do
-  let (moduleNames, rawModules) ← rawImportClosureCache.get
-  if moduleNames == header.moduleNames then return rawModules
-  let rawModules := rawImportClosure header
-  rawImportClosureCache.set (header.moduleNames, rawModules)
-  return rawModules
+/-- `rawImportClosure` of the imports, which are fixed for the whole file. Importing only creates
+the thunk: the first tactic invocation scans the imported constants, and every later one,
+including proofs elaborated in parallel, reuses the result. The extension stores no entries. -/
+private meta initialize rawImportClosureExt :
+    PersistentEnvExtension Empty Empty (Thunk (Std.HashMap Name Bool)) ←
+  registerPersistentEnvExtension {
+    mkInitial := pure (.pure {})
+    addImportedFn := fun _ => do
+      let header := (← read).env.header
+      return .mk fun _ => rawImportClosure header
+    addEntryFn := fun rawModules _ => rawModules
+    exportEntriesFn := fun _ => #[] }
 
 open Lean Meta Mathlib.Meta.FunProp in
 /-- Prepare only immutable global declaration classifications, never proofs or local evidence. -/
@@ -486,7 +488,7 @@ private meta def preparePlainRuleMemo : MetaM PlainRuleCache := do
       for rule in node.values do names := names.insert rule.thmName
       for (_, rule) in node.pending do names := names.insert rule.thmName
   -- Unknown module metadata remains conservative, and current-module rules are always checked.
-  let rawModules ← cachedRawImportClosure env.header
+  let rawModules := (rawImportClosureExt.getState env).get
   let mut cache : Std.HashMap Name Bool := {}
   for name in names do
     let mayUseRaw := match env.getModuleIdxFor? name with
