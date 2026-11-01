@@ -49,7 +49,7 @@ theorem timeBound_le_callerTime {n F p : ℕ} (values : List ℤ)
       CallableFixedPrime.timeBound_le_dyadicTime hf values hlen hv (hp hf) mem
   · rw [timeBound_slow values mem hf, callerTime, ite_eq_right hf]
 
-/-- Actual original-ABI solver, with633 scratch registers beyond the seven host protocol
+/-- Actual original-ABI solver, with 633 scratch registers beyond the seven host protocol
 registers. It restores arguments0–5 and returns raw Boolean6. The host receives the proved
 code/time/width/frame contract, not an assumed solver implementation. -/
 noncomputable def callee : ThreeSum.Host.Callee 633 where
