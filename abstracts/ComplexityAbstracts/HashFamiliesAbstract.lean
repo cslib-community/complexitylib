@@ -47,8 +47,9 @@ Given a target independence parameter `k : ℕ`, a capacity parameter `n_max : �
    (`(c + 1) * d * |Σ|`).
    Each `.eval u` performs `c + d` table lookups in `evalTimeBound k` instructions (`O_k(1)`), and
    `.resample` refreshes all `576 * 2 ^ b` table entries in `2880 * 2 ^ b + 16` instructions
-   (`O(n_max)`). Whereas `[Thorup2013]` Theorem 1(a) states failure probability
-   `o(|Φ| ^ 2 / |Ψ| ^ (d / (2 * c)))` for `k = |Ψ| ^ (1 / (5 * c))`, the library's fixed-`k` proof
+   (`O(n_max)`). Whereas `[Thorup2013]` Theorem 1(a), with input and intermediate alphabets both
+   `Σ`, states failure probability `o(|Σ| ^ 2 / |Σ| ^ (d / (2 * c)))` for
+   `k = |Σ| ^ (1 / (5 * c))`, the library's fixed-`k` proof
    adaptation bounds each resampling epoch's failure probability by `failureProbBound k n_max`:
    whenever `2 * codeBound k ≤ 2 ^ (3 * b)` (where `codeBound k = 8 * ((8 * k) ^ 16 * 64) ^ 4 =
    2 ^ 219 * k ^ 64` from Section 2, Eqs. (6)–(7), p. 11 at `c = 8, d = 64, q = 4`),
