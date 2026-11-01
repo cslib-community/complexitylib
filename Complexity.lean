@@ -35,6 +35,9 @@ public import Complexity.Algorithms.Lean.KMP.Search
 public import Complexity.Algorithms.Lean.Kruskal.Basic
 public import Complexity.Algorithms.Lean.Kruskal.SimpleGraph
 public import Complexity.Algorithms.Lean.Matroid.Greedy
+public import Complexity.Algorithms.Lean.MaxFlow.Basic
+public import Complexity.Algorithms.Lean.MaxFlow.BipartiteMatching
+public import Complexity.Algorithms.Lean.MaxFlow.EdmondsKarp
 public import Complexity.Algorithms.Lean.MergeSort.Comparator
 public import Complexity.Algorithms.Lean.Online.Basic
 public import Complexity.Algorithms.Lean.Paging.Basic
