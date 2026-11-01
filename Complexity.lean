@@ -1741,6 +1741,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding.NativeChecked
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding.NativeDecode
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding.NativeEncode
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding.WidthSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateInterpolation
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateInterpolationBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateInterpolationCorrect
@@ -1761,6 +1762,11 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.InitialVector
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.InitialVectorCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.InitialVectorGate
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.InitializedEvaluator
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.InitializedEvaluatorCorrect
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Initializer
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.InitializerBounds
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.InitializerCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.NodeReply
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.NodeReplyCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.NormalizePoint
@@ -2461,6 +2467,7 @@ public import Complexity.Computability.TreeEval.Ary.Packed.RawControllerOutput
 public import Complexity.Computability.TreeEval.Ary.Packed.RawControllerPoint
 public import Complexity.Computability.TreeEval.Ary.Packed.RawControllerQuery
 public import Complexity.Computability.TreeEval.Ary.Packed.RawControllerSpace
+public import Complexity.Computability.TreeEval.Ary.Packed.RawControllerZero
 public import Complexity.Computability.TreeEval.Ary.PackingParameters
 public import Complexity.Computability.TreeEval.Basic
 public import Complexity.Computability.TreeEval.CookMertz
