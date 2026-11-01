@@ -12,6 +12,7 @@ public import Complexity.Languages.Probabilistic.RandomOracle
 public import Complexity.Probability.PMF.Expect
 public import Complexity.Probability.PMF.Uniform
 public import Complexity.Probability.Product
+import Complexity.Probability.PMF.UniformBound
 import Mathlib.Data.Fintype.Perm
 import Mathlib.Topology.Instances.ENNReal.Lemmas
 
@@ -107,6 +108,13 @@ In [CLRS2009], third edition, Section 11.4:
 * `Cslib.Algorithms.Lean.UniformProbing.uniform_interpret_eq_lazy_perm`: eager sampling of the
   independent permutation family `Fin U → Equiv.Perm (Fin m)` agrees in distribution with lazy
   on-demand oracle evaluation (`RandomOracle.uniform_interpret_eq_lazy`).
+* `Cslib.Algorithms.Lean.UniformProbing.missedProbes_le_card`,
+  `Cslib.Algorithms.Lean.UniformProbing.probeCount_le_card_otherOccupied_add_one`,
+  `Cslib.Algorithms.Lean.UniformProbing.probeCount_le_dom_card_add_one`,
+  `Cslib.Algorithms.Lean.UniformProbing.probeCount_le_add_one`,
+  `Cslib.Algorithms.Lean.UniformProbing.expect_probeCount_le_add_one`: deterministic and
+  expected pigeonhole probe-count bounds (`probeCount T u (π u) ≤ n_max + 1`) for any full-cycle
+  probe permutation family `π`.
 
 ## Representation space note
 
@@ -1135,7 +1143,7 @@ theorem tableRep_runTableFrom {U V n_max m : ℕ} (hm : 0 < m) (hcap : n_max ≤
   induction ops generalizing s T with
   | nil => exact hrep
   | cons o os ih =>
-    have hs' : (Dictionary.dom ((Dictionary.spec U V n_max).step s o).1).card ≤ n_max :=
+    have hs' : (Dictionary.dom ((Dictionary.spec U V n_max).stepFn s o).1).card ≤ n_max :=
       Dictionary.card_dom_step_le_of_valid hs hvh.1
     cases o with
     | get u =>
@@ -1165,7 +1173,7 @@ theorem probeCount_runTableFrom_of_isSome {U V n_max m : ℕ} (hm : 0 < m) (hcap
   induction ops generalizing s T with
   | nil => rfl
   | cons o os ih =>
-    have hs' : (Dictionary.dom ((Dictionary.spec U V n_max).step s o).1).card ≤ n_max :=
+    have hs' : (Dictionary.dom ((Dictionary.spec U V n_max).stepFn s o).1).card ≤ n_max :=
       Dictionary.card_dom_step_le_of_valid hs hvh.1
     cases o with
     | get u =>
@@ -1192,7 +1200,7 @@ theorem validHistory_and_runTableFrom_append {U V n_max m : ℕ} (hm : 0 < m)
   | o :: l₁, l₂, s, T, h => by
     obtain ⟨h₁, h₂, hrun⟩ :=
       validHistory_and_runTableFrom_append hm π
-        (s := ((Dictionary.spec U V n_max).step s o).1) (tableStep hm π T o).1 h.2
+        (s := ((Dictionary.spec U V n_max).stepFn s o).1) (tableStep hm π T o).1 h.2
     exact ⟨⟨h.1, h₁⟩, h₂, hrun⟩
 
 /-- **Pathwise insertion-cost identity from the proof of Theorem 11.8 of [CLRS2009], third edition,
@@ -1258,8 +1266,8 @@ private theorem isSome_run_of_isSome {U V n_max : ℕ} {u : Fin U} :
   | [], _, h => h
   | .get _ :: l, _, h => isSome_run_of_isSome l h
   | .insert w _ :: l, s₀, h => by
-    apply isSome_run_of_isSome l (s₀ := ((Dictionary.spec U V n_max).step s₀ (.insert w _)).1)
-    dsimp only [Dictionary.spec]
+    apply isSome_run_of_isSome l (s₀ := ((Dictionary.spec U V n_max).stepFn s₀ (.insert w _)).1)
+    dsimp only [Dictionary.spec, Dictionary.step, Cslib.Stateful.Spec.stepFn]
     by_cases hwu : u = w
     · subst hwu; simp
     · simpa [Function.update_of_ne hwu] using h
@@ -1276,16 +1284,18 @@ theorem not_mem_insert_of_run_eq_none {U V n_max : ℕ} {u : Fin U} :
     rcases List.mem_cons.mp hmem with rfl | htail
     · have his :
           (((Dictionary.spec U V n_max).run
-            (((Dictionary.spec U V n_max).step s (.insert u v)).1) os).1 u).isSome :=
+            (((Dictionary.spec U V n_max).stepFn s (.insert u v)).1) os).1 u).isSome :=
         isSome_run_of_isSome (V := V) (n_max := n_max) os
-          (by dsimp [Dictionary.spec]; rw [Function.update_self]; rfl)
+          (by
+            dsimp [Dictionary.spec, Dictionary.step, Cslib.Stateful.Spec.stepFn]
+            rw [Function.update_self]; rfl)
       have hnone' :
           (((Dictionary.spec U V n_max).run
-            (((Dictionary.spec U V n_max).step s (.insert u v)).1) os).1 u) = none := hnone
+            (((Dictionary.spec U V n_max).stepFn s (.insert u v)).1) os).1 u) = none := hnone
       rw [hnone'] at his
       cases his
     · exact not_mem_insert_of_run_eq_none
-        (s := ((Dictionary.spec U V n_max).step s o).1) hnone v htail
+        (s := ((Dictionary.spec U V n_max).stepFn s o).1) hnone v htail
 
 /-- **Theorem 11.6 (pp. 274–275) & Corollary 11.7 (p. 275) of [CLRS2009], third edition, over
 `PMF.uniformOfFintype`**:
@@ -1432,5 +1442,69 @@ theorem uniform_interpret_eq_lazy_perm {U m : ℕ} {α : Type}
           (Cslib.RandomOracle.answer (fun _ : Fin U => PMF.uniformOfFintype (Equiv.Perm (Fin m))))
           program).run (fun _ => none)).map Prod.fst :=
   Cslib.RandomOracle.uniform_interpret_eq_lazy program
+
+/-! ## Section 5: Deterministic Pigeonhole Probe-Count Bounds -/
+
+/-- For any occupied slot set `O : Finset (Fin m)` and permutation `σ : Equiv.Perm (Fin m)`, the
+number of consecutive missed probes `missedProbes O σ` is at most `O.card` by injectivity of `σ`. -/
+theorem missedProbes_le_card {m : ℕ} (O : Finset (Fin m)) (σ : Equiv.Perm (Fin m)) :
+    missedProbes O σ ≤ O.card := by
+  have hle_m : missedProbes O σ ≤ m := missedProbes_le O σ
+  have hall : allOccupied O (missedProbes O σ) σ :=
+    (le_missedProbes_iff_allOccupied hle_m σ).mp le_rfl
+  let f : Fin (missedProbes O σ) → Fin m := fun i => σ ⟨i.val, lt_of_lt_of_le i.isLt hle_m⟩
+  have hmaps : ∀ i ∈ (Finset.univ : Finset (Fin (missedProbes O σ))), f i ∈ O :=
+    fun i _ => hall ⟨i.val, lt_of_lt_of_le i.isLt hle_m⟩ i.isLt
+  have hinj : Set.InjOn f (Finset.univ : Finset (Fin (missedProbes O σ))) := by
+    intro i _ j _ hij
+    have hfin := σ.injective hij
+    exact Fin.ext (Fin.mk.inj hfin)
+  simpa using Finset.card_le_card_of_injOn f hmaps hinj
+
+/-- **Deterministic Pigeonhole Probe Bound**: for any table `T : Table U m`, key `u : Fin U`, and
+probe permutation `σ : Equiv.Perm (Fin m)`, `probeCount T u σ ≤ (otherOccupiedSlots T u).card + 1`.
+-/
+theorem probeCount_le_card_otherOccupied_add_one {U m : ℕ} (T : Table U m) (u : Fin U)
+    (σ : Equiv.Perm (Fin m)) :
+    probeCount T u σ ≤ (otherOccupiedSlots T u).card + 1 := by
+  rw [probeCount, unsuccessfulProbes, Nat.add_comm]
+  exact Nat.add_le_add_right (missedProbes_le_card (otherOccupiedSlots T u) σ) 1
+
+/-- Under `TableRep π s T`, `probeCount T u (π u) ≤ (Dictionary.dom s).card + 1` holds
+deterministically for every key `u : Fin U`. -/
+theorem probeCount_le_dom_card_add_one {U m : ℕ} {π : Fin U → Equiv.Perm (Fin m)}
+    {s : Dictionary.State U} {T : Table U m} (hrep : TableRep π s T) (u : Fin U) :
+    probeCount T u (π u) ≤ (Dictionary.dom s).card + 1 :=
+  (probeCount_le_card_otherOccupied_add_one T u (π u)).trans
+    (Nat.add_le_add_right (hrep.card_otherOccupiedSlots_le u) 1)
+
+/-- Under `TableRep π s T` and `(Dictionary.dom s).card ≤ n_max`,
+`probeCount T u (π u) ≤ n_max + 1` holds deterministically for every key `u : Fin U`. -/
+theorem probeCount_le_add_one {U m n_max : ℕ} {π : Fin U → Equiv.Perm (Fin m)}
+    {s : Dictionary.State U} {T : Table U m} (hrep : TableRep π s T)
+    (hdom : (Dictionary.dom s).card ≤ n_max) (u : Fin U) :
+    probeCount T u (π u) ≤ n_max + 1 :=
+  (probeCount_le_dom_card_add_one hrep u).trans (Nat.add_le_add_right hdom 1)
+
+/-- **Deterministic Expected Probe-Count Bound (`≤ n_max + 1`) for Any Full-Cycle Permutation
+Family**: for any nonempty finite seed space `Θ` and any permutation family
+`π : Θ → Fin U → Equiv.Perm (Fin m)` representing `s` in `T θ` with
+`(Dictionary.dom s).card ≤ n_max`, the expected probe count of `u` under `PMF.uniformOfFintype Θ`
+is at most `n_max + 1`. -/
+theorem expect_probeCount_le_add_one
+    {Θ : Type*} [Fintype Θ] [Nonempty Θ] {U m n_max : ℕ}
+    {π : Θ → Fin U → Equiv.Perm (Fin m)}
+    {s : Dictionary.State U} {T : Θ → Table U m}
+    (hrep : ∀ θ, TableRep (π θ) s (T θ))
+    (hdom : (Dictionary.dom s).card ≤ n_max) (u : Fin U) :
+    (∑' θ : Θ, PMF.uniformOfFintype Θ θ * (probeCount (T θ) u (π θ u) : ℝ≥0∞)) ≤
+      (n_max + 1 : ℝ≥0∞) := by
+  have hsum : (∑ θ : Θ, probeCount (T θ) u (π θ u)) ≤ (n_max + 1) * Fintype.card Θ := by
+    calc
+      (∑ θ : Θ, probeCount (T θ) u (π θ u))
+        ≤ ∑ _θ : Θ, (n_max + 1) :=
+          Finset.sum_le_sum fun θ _ => probeCount_le_add_one (hrep θ) hdom u
+      _ = (n_max + 1) * Fintype.card Θ := by simp [Nat.mul_comm]
+  exact mod_cast Cslib.Probability.PMF.tsum_uniformOfFintype_le_of_sum_le hsum
 
 end Cslib.Algorithms.Lean.UniformProbing
