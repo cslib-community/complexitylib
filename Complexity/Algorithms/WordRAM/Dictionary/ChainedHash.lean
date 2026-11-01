@@ -1672,8 +1672,8 @@ theorem opCode_spec {U V n_max w base : ℕ}
     (hv : (Dictionary.spec U V n_max).valid s o)
     (harg : argMatch o x.regs) :
     ∃ z, ExecWithin w (opCode U n_max) x z (55 + 9 * collCount n_max s (opKey o) b) ∧
-      @decode U V n_max o z.regs = some ((Dictionary.spec U V n_max).step s o).2 ∧
-      Rep U V n_max w base b ((Dictionary.spec U V n_max).step s o).1 z ∧
+      @decode U V n_max o z.regs = some ((Dictionary.spec U V n_max).stepFn s o).2 ∧
+      Rep U V n_max w base b ((Dictionary.spec U V n_max).stepFn s o).1 z ∧
       Modifies (Block.mk base (space n_max)).footprint x.mem z.mem := by
   let u := opKey o
   have hu_reg : x.regs argU = u.val := by
@@ -1835,131 +1835,131 @@ noncomputable def subroutineDS (U V n_max w base : ℕ)
     (hS : Fits w (base + space n_max))
     (hV : Fits w V) :
     Randomized.SubroutineDS (subroutineCode U n_max) (Dictionary.spec U V n_max)
-      w base Fin.elim0 (Dictionary.empty U) where
-  Seed := Fin (2 ^ (hashBits U n_max - 1))
-  seedLaw := PMF.uniformOfFintype (Fin (2 ^ (hashBits U n_max - 1)))
-  seedSlack := 1
-  space := space n_max
-  spanTime := 3
-  setupTime := 13
-  initPotential := 0
-  charge := charge U V n_max
-  rep := Rep U V n_max w base
-  potential := fun _ _ => 0
-  encode := encode
-  argMatch := argMatch
-  decode := decode
-  bounded hr := hr.bounded
-  rep_unique hr₁ hr₂ := hr₁.unique hr₂
-  arguments_fit o hv i _ := arguments_fit hw hS hV o hv i
-  encode_matches := encode_matches
-  rep_supported hreg hmem hbx hr := hr.supported hreg hmem hbx
-  potential_supported _ _ _ := rfl
-  clear_nodup := by dsimp [subroutineCode]; decide
-  params_not_clear j := Fin.elim0 j
-  incCur_eval {x} hone hfit := by
-    change Data.put w x regT1 (x.regs regT1 + x.regs one) =
-      some (x.set (subroutineCode U n_max).curReg (x.regs (subroutineCode U n_max).curReg + 1))
-    change x.regs one = 1 at hone
-    rw [hone]
-    exact Data.put_of_fits hfit
-  span_exec {x} _ hfr _ := by
-    obtain ⟨x₁, he, hm, hb, hf⟩ := allocSpan_spec hS hfr
-    exact ⟨x₁, he, hm, hb, hf, fun j => Fin.elim0 j⟩
-  setup_exec {x₁} hx₁ hbase hfr _ hz := by
-    obtain ⟨ν₀, he, hseed, hsupp⟩ := initSetup_spec (V := V) hw hS hx₁ hbase hfr hz
-    exact ⟨ν₀, he, hseed, fun p hp =>
-      ⟨(hsupp p hp).1, (hsupp p hp).2.1, le_rfl, (hsupp p hp).2.2⟩⟩
-  step_exec {s} o ν hv hseed hsupp := by
-    classical
-    let Seed := Fin (2 ^ (hashBits U n_max - 1))
-    let seedLaw := PMF.uniformOfFintype Seed
-    have hstep_ex : ∀ p : Seed × Data rHash,
-        ∃ z : Data rHash,
-          (p ∈ ν.support →
-            ExecWithin w (opCode U n_max) p.2 z (55 + 9 * collCount n_max s (opKey o) p.1) ∧
-            @decode U V n_max o z.regs = some ((Dictionary.spec U V n_max).step s o).2 ∧
-            Rep U V n_max w base p.1 ((Dictionary.spec U V n_max).step s o).1 z ∧
-            Modifies (Block.mk base (space n_max)).footprint p.2.mem z.mem) := by
-      intro p
-      by_cases hp : p ∈ ν.support
-      · obtain ⟨hr, harg⟩ := hsupp p hp
-        obtain ⟨z, he, hdec, hrep, hmod⟩ := opCode_spec hw hS hV hr o hv harg
-        exact ⟨z, fun _ => ⟨he, hdec, hrep, hmod⟩⟩
-      · exact ⟨p.2, fun h => absurd h hp⟩
-    let z_of : Seed × Data rHash → Data rHash := fun p => Classical.choose (hstep_ex p)
-    have hz_spec : ∀ p ∈ ν.support,
-        ExecWithin w (opCode U n_max) p.2 (z_of p) (55 + 9 * collCount n_max s (opKey o) p.1) ∧
-        @decode U V n_max o (z_of p).regs = some ((Dictionary.spec U V n_max).step s o).2 ∧
-        Rep U V n_max w base p.1 ((Dictionary.spec U V n_max).step s o).1 (z_of p) ∧
-        Modifies (Block.mk base (space n_max)).footprint p.2.mem (z_of p).mem :=
-      fun p hp => (Classical.choose_spec (hstep_ex p)) hp
-    let μ_step : Seed × Data rHash → PMF (Seed × Data rHash) :=
-      fun p => PMF.pure (p.1, z_of p)
-    let T_step : Seed × Data rHash → ℝ≥0∞ :=
-      fun p => ((55 + 9 * collCount n_max s (opKey o) p.1 : ℕ) : ℝ≥0∞)
-    refine ⟨μ_step, T_step, ?_, ?_, ?_⟩
-    · intro p hp
-      obtain ⟨he, hdec, hrep, hmod⟩ := hz_spec p hp
-      refine ⟨?_, ?_⟩
-      · dsimp only [μ_step, T_step]
-        rw [PMF.pure_map]
-        exact ExecCodeDist.of_execWithin he
-      · intro q hq
-        rw [PMF.support_pure, Set.mem_singleton_iff] at hq
-        subst hq
-        exact ⟨hdec, hrep, hmod⟩
-    · intro θ'
-      have hmap : (ν.bind μ_step).map Prod.fst = ν.map Prod.fst := by
-        rw [PMF.map_bind]
-        simp only [μ_step, PMF.pure_map]
-        rfl
-      rw [hmap]
-      exact hseed θ'
-    · simp only [Nat.cast_zero, mul_zero, tsum_zero, add_zero]
-      by_cases hsupp_nonempty : ∃ p₀, p₀ ∈ ν.support
-      · obtain ⟨p₀, hp₀⟩ := hsupp_nonempty
-        have hcard_le : (Dictionary.dom s).card ≤ n_max := (hsupp p₀ hp₀).1.card_le
-        have hfactor : ∀ p : Seed × Data rHash,
-            ν p * T_step p =
-              ν p * 55 + 9 * (ν p * (collCount n_max s (opKey o) p.1 : ℝ≥0∞)) := by
-          intro p
-          dsimp only [T_step]
-          push_cast
-          ring
-        have hsum_split :
-            (∑' p, ν p * T_step p) =
-              55 + 9 * ∑' p, ν p * (collCount n_max s (opKey o) p.1 : ℝ≥0∞) := by
-          simp_rw [hfactor]
-          rw [tsum_add, ENNReal.tsum_mul_right, ν.tsum_coe, one_mul,
-            ENNReal.tsum_mul_left]
-        have hcoll_fst :
-            (∑' p : Seed × Data rHash, ν p * (collCount n_max s (opKey o) p.1 : ℝ≥0∞)) =
-              ∑' b : Seed, (ν.map Prod.fst) b * (collCount n_max s (opKey o) b : ℝ≥0∞) :=
-          (Cslib.Probability.PMF.tsum_map_mul ν Prod.fst
-            (fun b => (collCount n_max s (opKey o) b : ℝ≥0∞))).symm
-        have hcoll_le :
-            (∑' b : Seed, (ν.map Prod.fst) b * (collCount n_max s (opKey o) b : ℝ≥0∞)) ≤
-              ∑' b : Seed, seedLaw b * (collCount n_max s (opKey o) b : ℝ≥0∞) := by
-          refine tsum_le_tsum fun b => ?_
-          have hb := hseed b
-          rw [one_mul] at hb
-          gcongr
-        have hexp_two :
-            (∑' b : Seed, seedLaw b * (collCount n_max s (opKey o) b : ℝ≥0∞)) ≤ 2 :=
-          expect_collCount_le_two hcard_le (opKey o)
-        calc
-          (∑' p, ν p * T_step p)
-            = 55 + 9 * ∑' p, ν p * (collCount n_max s (opKey o) p.1 : ℝ≥0∞) := hsum_split
-          _ ≤ 55 + 9 * (2 : ℝ≥0∞) := by
-              rw [hcoll_fst]
-              gcongr
-              exact hcoll_le.trans hexp_two
-          _ = (charge U V n_max s o : ℝ≥0∞) := by
-              dsimp [charge, chargeVal]
-              norm_num
-      · obtain ⟨p₀, hp₀⟩ := ν.support_nonempty
-        exact absurd ⟨p₀, hp₀⟩ hsupp_nonempty
+      w base Fin.elim0 (Dictionary.empty U) :=
+  Randomized.SubroutineDS.ofFn
+    (Seed := Fin (2 ^ (hashBits U n_max - 1)))
+    (seedLaw := PMF.uniformOfFintype (Fin (2 ^ (hashBits U n_max - 1))))
+    (seedSlack := 1)
+    (space := space n_max)
+    (spanTime := 3)
+    (setupTime := 13)
+    (initPotential := 0)
+    (charge := charge U V n_max)
+    (rep := Rep U V n_max w base)
+    (potential := fun _ _ => 0)
+    (encode := encode)
+    (argMatch := argMatch)
+    (decode := decode)
+    (bounded := fun hr => hr.bounded)
+    (arguments_fit := fun o hv i _ => arguments_fit hw hS hV o hv i)
+    (encode_matches := encode_matches)
+    (rep_supported := fun hreg hmem hbx hr => hr.supported hreg hmem hbx)
+    (potential_supported := fun _ _ _ => rfl)
+    (clear_nodup := by dsimp [subroutineCode]; decide)
+    (params_not_clear := fun j => Fin.elim0 j)
+    (incCur_eval := fun {x} hone hfit => by
+      change Data.put w x regT1 (x.regs regT1 + x.regs one) =
+        some (x.set (subroutineCode U n_max).curReg (x.regs (subroutineCode U n_max).curReg + 1))
+      change x.regs one = 1 at hone
+      rw [hone]
+      exact Data.put_of_fits hfit)
+    (span_exec := fun {x} _ hfr _ => by
+      obtain ⟨x₁, he, hm, hb, hf⟩ := allocSpan_spec hS hfr
+      exact ⟨x₁, he, hm, hb, hf, fun j => Fin.elim0 j⟩)
+    (setup_exec := fun {x₁} hx₁ hbase hfr _ hz => by
+      obtain ⟨ν₀, he, hseed, hsupp⟩ := initSetup_spec (V := V) hw hS hx₁ hbase hfr hz
+      exact ⟨ν₀, he, hseed, fun p hp =>
+        ⟨(hsupp p hp).1, (hsupp p hp).2.1, le_rfl, (hsupp p hp).2.2⟩⟩)
+    (step_exec := fun {s} o ν hv hseed hsupp => by
+      classical
+      let Seed := Fin (2 ^ (hashBits U n_max - 1))
+      let seedLaw := PMF.uniformOfFintype Seed
+      have hstep_ex : ∀ p : Seed × Data rHash,
+          ∃ z : Data rHash,
+            (p ∈ ν.support →
+              ExecWithin w (opCode U n_max) p.2 z (55 + 9 * collCount n_max s (opKey o) p.1) ∧
+              @decode U V n_max o z.regs = some ((Dictionary.spec U V n_max).stepFn s o).2 ∧
+              Rep U V n_max w base p.1 ((Dictionary.spec U V n_max).stepFn s o).1 z ∧
+              Modifies (Block.mk base (space n_max)).footprint p.2.mem z.mem) := by
+        intro p
+        by_cases hp : p ∈ ν.support
+        · obtain ⟨hr, harg⟩ := hsupp p hp
+          obtain ⟨z, he, hdec, hrep, hmod⟩ := opCode_spec hw hS hV hr o hv harg
+          exact ⟨z, fun _ => ⟨he, hdec, hrep, hmod⟩⟩
+        · exact ⟨p.2, fun h => absurd h hp⟩
+      let z_of : Seed × Data rHash → Data rHash := fun p => Classical.choose (hstep_ex p)
+      have hz_spec : ∀ p ∈ ν.support,
+          ExecWithin w (opCode U n_max) p.2 (z_of p) (55 + 9 * collCount n_max s (opKey o) p.1) ∧
+          @decode U V n_max o (z_of p).regs = some ((Dictionary.spec U V n_max).stepFn s o).2 ∧
+          Rep U V n_max w base p.1 ((Dictionary.spec U V n_max).stepFn s o).1 (z_of p) ∧
+          Modifies (Block.mk base (space n_max)).footprint p.2.mem (z_of p).mem :=
+        fun p hp => (Classical.choose_spec (hstep_ex p)) hp
+      let μ_step : Seed × Data rHash → PMF (Seed × Data rHash) :=
+        fun p => PMF.pure (p.1, z_of p)
+      let T_step : Seed × Data rHash → ℝ≥0∞ :=
+        fun p => ((55 + 9 * collCount n_max s (opKey o) p.1 : ℕ) : ℝ≥0∞)
+      refine ⟨μ_step, T_step, ?_, ?_, ?_⟩
+      · intro p hp
+        obtain ⟨he, hdec, hrep, hmod⟩ := hz_spec p hp
+        refine ⟨?_, ?_⟩
+        · dsimp only [μ_step, T_step]
+          rw [PMF.pure_map]
+          exact ExecCodeDist.of_execWithin he
+        · intro q hq
+          rw [PMF.support_pure, Set.mem_singleton_iff] at hq
+          subst hq
+          exact ⟨hdec, hrep, hmod⟩
+      · intro θ'
+        have hmap : (ν.bind μ_step).map Prod.fst = ν.map Prod.fst := by
+          rw [PMF.map_bind]
+          simp only [μ_step, PMF.pure_map]
+          rfl
+        rw [hmap]
+        exact hseed θ'
+      · simp only [Nat.cast_zero, mul_zero, tsum_zero, add_zero]
+        by_cases hsupp_nonempty : ∃ p₀, p₀ ∈ ν.support
+        · obtain ⟨p₀, hp₀⟩ := hsupp_nonempty
+          have hcard_le : (Dictionary.dom s).card ≤ n_max := (hsupp p₀ hp₀).1.card_le
+          have hfactor : ∀ p : Seed × Data rHash,
+              ν p * T_step p =
+                ν p * 55 + 9 * (ν p * (collCount n_max s (opKey o) p.1 : ℝ≥0∞)) := by
+            intro p
+            dsimp only [T_step]
+            push_cast
+            ring
+          have hsum_split :
+              (∑' p, ν p * T_step p) =
+                55 + 9 * ∑' p, ν p * (collCount n_max s (opKey o) p.1 : ℝ≥0∞) := by
+            simp_rw [hfactor]
+            rw [tsum_add, ENNReal.tsum_mul_right, ν.tsum_coe, one_mul,
+              ENNReal.tsum_mul_left]
+          have hcoll_fst :
+              (∑' p : Seed × Data rHash, ν p * (collCount n_max s (opKey o) p.1 : ℝ≥0∞)) =
+                ∑' b : Seed, (ν.map Prod.fst) b * (collCount n_max s (opKey o) b : ℝ≥0∞) :=
+            (Cslib.Probability.PMF.tsum_map_mul ν Prod.fst
+              (fun b => (collCount n_max s (opKey o) b : ℝ≥0∞))).symm
+          have hcoll_le :
+              (∑' b : Seed, (ν.map Prod.fst) b * (collCount n_max s (opKey o) b : ℝ≥0∞)) ≤
+                ∑' b : Seed, seedLaw b * (collCount n_max s (opKey o) b : ℝ≥0∞) := by
+            refine tsum_le_tsum fun b => ?_
+            have hb := hseed b
+            rw [one_mul] at hb
+            gcongr
+          have hexp_two :
+              (∑' b : Seed, seedLaw b * (collCount n_max s (opKey o) b : ℝ≥0∞)) ≤ 2 :=
+            expect_collCount_le_two hcard_le (opKey o)
+          calc
+            (∑' p, ν p * T_step p)
+              = 55 + 9 * ∑' p, ν p * (collCount n_max s (opKey o) p.1 : ℝ≥0∞) := hsum_split
+            _ ≤ 55 + 9 * (2 : ℝ≥0∞) := by
+                rw [hcoll_fst]
+                gcongr
+                exact hcoll_le.trans hexp_two
+            _ = (charge U V n_max s o : ℝ≥0∞) := by
+                dsimp [charge, chargeVal]
+                norm_num
+        · obtain ⟨p₀, hp₀⟩ := ν.support_nonempty
+          exact absurd ⟨p₀, hp₀⟩ hsupp_nonempty)
 
 /-- **Chained hash table `SubroutineDS` certificate over `Basis.standard`.**
 Obtained from `subroutineDS` by basis transport (`SubroutineDS.toStandard`). -/
@@ -1991,14 +1991,14 @@ theorem seq_expected_amortized (U V n_max w base : ℕ)
     let C := subroutineDS U V n_max w base hw hS hV
     ∃ (ν₀ ν_final : PMF (C.Seed × Data rHash)) (T_ops : ℝ≥0∞),
       ExecCodeDist w (subroutineCode U n_max).initFresh x (ν₀.map Prod.snd) C.initTime ∧
-      C.ExecSteps (Dictionary.empty U) ops ν₀ ν_final T_ops ∧
+      C.ExecStepsOfFn (Dictionary.empty U) ops ν₀ ν_final T_ops ∧
       (∀ θ, (ν_final.map Prod.fst) θ ≤ C.seedSlack * C.seedLaw θ) ∧
       (∀ p ∈ ν_final.support,
         C.rep p.1 ((Dictionary.spec U V n_max).run (Dictionary.empty U) ops).1 p.2) ∧
       C.initTime + T_ops ≤ 16 + (chargeVal * ops.length : ℕ) := by
   intro C
   obtain ⟨ν₀, ν_final, T_ops, he_init, hex_steps, hseed_final, hrep_final, hbound⟩ :=
-    C.seq_expected_amortized ops hx hfr (fun j => Fin.elim0 j) hz hv
+    C.seq_expected_amortized_ofFn ops hx hfr (fun j => Fin.elim0 j) hz hv
   have htotal : (Dictionary.spec U V n_max).totalCost C.charge (Dictionary.empty U) ops =
       chargeVal * ops.length := by
     have hconst : ∀ s (os : List (Dictionary.Op U)),
@@ -2009,7 +2009,7 @@ theorem seq_expected_amortized (U V n_max w base : ℕ)
       | cons o rest ih =>
         change chargeVal +
           (Dictionary.spec U V n_max).totalCost (charge U V n_max)
-            ((Dictionary.spec U V n_max).step s o).1 rest = chargeVal * (rest.length + 1)
+            ((Dictionary.spec U V n_max).stepFn s o).1 rest = chargeVal * (rest.length + 1)
         rw [ih]
         ring
     exact hconst (Dictionary.empty U) ops

@@ -261,7 +261,7 @@ example :
   have hv : (IndexedMinPQ.spec 4 50).ValidHistory (IndexedMinPQ.empty 4)
       ((IndexedMinPQ.spec 4 50).runClient (IndexedMinPQ.empty 4) sampleClient).2.2 := by
     rw [hhist]
-    simp [Stateful.Spec.ValidHistory, IndexedMinPQ.spec, IndexedMinPQ.empty]
+    simp [IndexedMinPQ.valid, IndexedMinPQ.step, IndexedMinPQ.empty]
   have hres : ((IndexedMinPQ.spec 4 50).runClient (IndexedMinPQ.empty 4) sampleClient).1 =
       some (2, 0) := by
     decide
@@ -321,16 +321,16 @@ example :
     some [0, 1, 1, 30, 300, 1, 5, 300, 0, 0, 15, 150, 0, 20, 200, 1, 0] := by
   decide +kernel
 
-/-- Non-vacuity of `FibonacciHeap.relAmortized` over `Basis.standard`. -/
+/-- Non-vacuity of `FibonacciHeap.MinPQ.amortized` over `Basis.standard`. -/
 example :
     let hS : Fits 10 (8 + MinPQ.space 4) := by unfold MinPQ.space Fits; decide
     let hU : Fits 10 50 := by decide
     let hV : Fits 10 500 := by decide
-    Stateful.RelAmortized (relCertificate hS hU hV).realization
+    Stateful.Amortized (MinPQ.certificate hS hU hV).realization
       DynamicProgram.OperationTrace.instructions
       (fun _ x => MinPQ.potential x)
       (fun s o => MinPQ.charge 4 s o + 1) :=
-  relAmortized _ _ _
+  MinPQ.amortized _ _ _
 
 /-- Lift a single `Cslib.Algorithms.Lean.MinPQ.Op` into an adaptive `Client`. -/
 abbrev callMinPQOp (o : Cslib.Algorithms.Lean.MinPQ.Op 4) :
@@ -350,7 +350,7 @@ def sampleMinPQClient :
   | none =>
     callMinPQOp .extractMin
 
-/-- Non-vacuity of `MinPQ.relSubroutineDS`, `MinPQ.Rep`, and `MinPQ.run_client_amortized` for an
+/-- Non-vacuity of `MinPQ.subroutineDS`, `MinPQ.Rep`, and `MinPQ.run_client_amortized` for an
 adaptive handle-passing client over `Basis.standard`. -/
 example :
     let hS : Fits 10 (8 + MinPQ.space 4) := by unfold MinPQ.space Fits; decide
@@ -359,12 +359,12 @@ example :
     ∃ a y₀ y traces s' tr,
       MinPQ.Rep 4 50 500 10 8 (Cslib.Algorithms.Lean.MinPQ.empty 4) y₀ ∧
       MinPQ.potential y₀ = 0 ∧
-      Stateful.Executes ((relDynamicProgram hS hU hV).ExecOp 10) sampleMinPQClient y₀
+      Stateful.Executes ((MinPQ.dynamicProgram hS hU hV).ExecOp 10) sampleMinPQClient y₀
         a y traces ∧
       (Cslib.Algorithms.Lean.MinPQ.spec 4 50 500).ClientRun
         (Cslib.Algorithms.Lean.MinPQ.empty 4) sampleMinPQClient a s' tr ∧
       Stateful.total DynamicProgram.OperationTrace.instructions traces + MinPQ.potential y ≤
-        (Cslib.Algorithms.Lean.MinPQ.spec 4 50 500).totalCost
+        (Cslib.Algorithms.Lean.MinPQ.spec 4 50 500).totalCostTranscript
           (fun st o => MinPQ.charge 4 st o + 1)
           (Cslib.Algorithms.Lean.MinPQ.empty 4) tr := by
   intro hS hU hV
@@ -375,7 +375,7 @@ example :
   have hpar : ∀ j : Fin 1, x₀.regs (![MinPQ.nReg] j) = ![4] j := fun j => by fin_cases j; rfl
   have hz : ∀ a ∈ (Block.mk 8 (MinPQ.space 4)).footprint, x₀.mem a = 0 := fun _ _ => rfl
   obtain ⟨y₀, _, _, hr₀, hpot₀, _⟩ :=
-    (relSubroutineDS hS hU hV).initFresh_exec hx₀ hfr hpar hz
+    (MinPQ.subroutineDS hS hU hV).initFresh_exec hx₀ hfr hpar hz
   have hp₀ : MinPQ.potential y₀ = 0 := Nat.eq_zero_of_le_zero hpot₀
   have hv : (Cslib.Algorithms.Lean.MinPQ.spec 4 50 500).DemonicValid
       (Cslib.Algorithms.Lean.MinPQ.empty 4) sampleMinPQClient := by
