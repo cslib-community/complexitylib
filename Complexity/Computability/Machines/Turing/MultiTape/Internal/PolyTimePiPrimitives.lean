@@ -73,16 +73,12 @@ theorem pi [Fintype Index] {values : α → Index → Value}
 
 private theorem listTail :
     ComputableInPolyTime (List.tail : List Value → List Value) (encList enc) (encList enc) := by
-  obtain ⟨c, k, Q, hfin, tm, htm⟩ := ListEncoding.tail (enc₁ := enc) (enc := encList enc)
-  exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-    k, Q, hfin, tm, fun l => htm l⟩
+  exact (ListEncoding.tail (enc₁ := enc) (enc := encList enc)).computableInPolyTime
 
 private theorem listHeadD (fallback : Value) :
     ComputableInPolyTime (fun l : List Value => l.headD fallback) (encList enc) enc := by
-  obtain ⟨c, k, Q, hfin, tm, htm⟩ := ListEncoding.headD
-    (enc₁ := enc) (enc := encList enc) fallback
-  exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-    k, Q, hfin, tm, fun l => htm l⟩
+  exact (ListEncoding.headD
+    (enc₁ := enc) (enc := encList enc) fallback).computableInPolyTime
 
 private theorem fixedDrop (count : ℕ) :
     ComputableInPolyTime (fun l : List Value => l.drop count) (encList enc) (encList enc) := by

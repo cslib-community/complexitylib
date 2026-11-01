@@ -2085,7 +2085,6 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.Kernel
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelZeroSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelZipTransducer
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.LinearCodecPrimitives
-public import Complexity.Computability.Machines.Turing.MultiTape.Internal.LinearPairPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.LinearPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.NormalForm
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
