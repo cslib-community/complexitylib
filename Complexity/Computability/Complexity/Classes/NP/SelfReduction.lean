@@ -46,8 +46,10 @@ satisfying assignments can be found in polynomial time (`Cslib.Complexity.SAT.ex
 
 * `Cslib.Complexity.SAT.eval_units`, `Cslib.Complexity.SAT.vars_units`: unit clauses hold when
   their literals do, and have the variables of their literals.
-* `Cslib.Complexity.SAT.length_encCNF_units_le`: the unit clauses fixing variables of `φ` are
-  short.
+* `Cslib.Complexity.SAT.map_fst_foldl_selfReduceStep`: the steps fix the variables in order.
+* `Cslib.Complexity.SAT.length_encList_le_of_mem_vars`,
+  `Cslib.Complexity.SAT.length_encCNF_units_le`: the literals and the unit clauses fixing
+  variables of `φ` are short.
 * `Cslib.Complexity.SAT.verifier_search`: with answers correct up to `queryBound`, the
   self-reduction finds a satisfying assignment of every satisfiable formula.
 * `Cslib.Complexity.SAT.computableInPolyTime_search`: the self-reduction is polynomial-time
@@ -94,7 +96,9 @@ theorem queryBound_mono : Monotone queryBound := fun _ _ h => by
 
 /-! ### Correctness -/
 
-private theorem map_fst_foldl_selfReduceStep (D : CNF ℕ → Bool) (φ : CNF ℕ) (l : List ℕ)
+/-- Each step of the self-reduction fixes the next variable: folding the steps over `l` appends
+`l` to the variables fixed so far. -/
+theorem map_fst_foldl_selfReduceStep (D : CNF ℕ → Bool) (φ : CNF ℕ) (l : List ℕ)
     (answers : List (Literal ℕ)) :
     (l.foldl (selfReduceStep D φ) answers).map Prod.fst = answers.map Prod.fst ++ l := by
   induction l generalizing answers with
@@ -138,6 +142,20 @@ theorem length_encNat_le_of_mem_vars {φ : CNF ℕ} {v : ℕ} (hv : v ∈ φ.var
   calc (encNat l.1).length ≤ (encPair encNat encBool l).length := length_le_encPair_left _ _ _
     _ ≤ (encList (encPair encNat encBool) c).length := length_le_encList_of_mem _ hl
     _ ≤ (encCNF φ).length := length_le_encList_of_mem _ hc
+
+/-- Literals fixing variables of `φ` have short encodings: each takes at most `4 L + 5` bits,
+where `L` is the length of `φ`. -/
+theorem length_encList_le_of_mem_vars {φ : CNF ℕ} {answers : List (Literal ℕ)}
+    (hanswers : ∀ l ∈ answers, l.1 ∈ φ.vars) :
+    (encList (encPair encNat encBool) answers).length ≤
+      answers.length * (4 * (encCNF φ).length + 5) := by
+  have h := length_encList_le (encPair encNat encBool) answers (b := 2 * (encCNF φ).length + 2)
+    fun l hl => by
+      have := length_encNat_le_of_mem_vars (hanswers l hl)
+      rw [length_encPair, encBool_apply, List.length_singleton]
+      omega
+  calc _ ≤ answers.length * (2 * (2 * (encCNF φ).length + 2) + 1) := h
+    _ = answers.length * (4 * (encCNF φ).length + 5) := by ring
 
 /-- The unit clause of a literal on `v` takes `8 b + 11` bits, where `b` is the length of the
 binary digits of `v`. -/

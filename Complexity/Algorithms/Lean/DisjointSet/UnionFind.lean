@@ -745,8 +745,8 @@ theorem rep_init (n : ℕ) : Rep (Partition.discrete n) (init n) := by
 
 private theorem step_correct {n : ℕ} {p : Partition n} {s : State n} (o : Op n)
     (hr : Rep p s) :
-    (step s o).2.1 = ((spec n).step p o).2 ∧
-      Rep ((spec n).step p o).1 (step s o).1 := by
+    (step s o).2.1 = ((spec n).stepFn p o).2 ∧
+      Rep ((spec n).stepFn p o).1 (step s o).1 := by
   obtain ⟨hrank, hrel, hcomp⟩ := hr
   cases o with
   | numComponents =>
@@ -826,15 +826,19 @@ private theorem step_correct {n : ℕ} {p : Partition n} {s : State n} (o : Op n
 
 /-- Semantic realization of `DisjointSet.spec n` by `Batteries.UnionFind` with path compression
 and union by rank. -/
-def realization (n : ℕ) : Realization (spec n) (Exec n) where
-  rep := Rep
-  total o _ _ := ⟨(step _ o).2.1, (step _ o).1, (step _ o).2.2, rfl⟩
-  correct {p s o a s' steps} hr _ he := by
-    have hc := step_correct o hr
-    have hs : s' = (step s o).1 := (Prod.ext_iff.mp he).1.symm
-    have ha : a = (step s o).2.1 := (Prod.ext_iff.mp (Prod.ext_iff.mp he).2).1.symm
-    rw [ha, hs]
-    exact hc
+def realization (n : ℕ) : Realization (spec n) (Exec n) :=
+  Realization.ofFn
+    (rep := Rep)
+    (total := fun {_ s} o _ _ =>
+      match h : step s o with
+      | (s', a, steps) => ⟨a, s', steps, h⟩)
+    (correct := by
+      intro p s o a s' steps hr _ he
+      have hc := step_correct o hr
+      have hs : s' = (step s o).1 := (Prod.ext_iff.mp he).1.symm
+      have ha : a = (step s o).2.1 := (Prod.ext_iff.mp (Prod.ext_iff.mp he).2).1.symm
+      rw [ha, hs]
+      exact hc)
 
 /-- Worst-case per-operation step budget on `Fin n`: at most `Nat.log 2 n + 1` nodes inspected per
 `find`, plus `1` link step in `Op.union` and `1` counter read in `Op.numComponents`. -/

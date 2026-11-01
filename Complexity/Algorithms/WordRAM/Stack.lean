@@ -59,10 +59,9 @@ open Cslib.Algorithms.Lean.Queue
 
 /-- A fixed-capacity restriction of the same mathematical stack interface. -/
 abbrev spec (w capacity : ℕ) : Stateful.Spec :=
-  { stack ℕ with
-    valid := fun vs o => match o with
-      | .push v => vs.length < capacity ∧ Fits w v
-      | .pop | .size => True }
+  Stateful.Spec.ofFn (stack ℕ).stepFn fun vs o => match o with
+    | .push v => vs.length < capacity ∧ Fits w v
+    | .pop | .size => True
 
 /-- Encoded operation tag: push = 0, pop = 1, size = 2. -/
 abbrev tag : Fin 9 := 0
@@ -260,8 +259,8 @@ theorem execute {w base capacity : ℕ} (h2 : Fits w 2) (hcap : Fits w (base + c
     {vs : List ℕ} {x : Data 9} (hr : Rep w base capacity vs x) (o : StackOp ℕ)
     (hv : (spec w capacity).valid vs o) :
     ∃ y, Exec w program ((implementation w capacity).prepare o x) y (bodyCost vs o) ∧
-      (implementation w capacity).decode o y.regs = some ((spec w capacity).step vs o).2 ∧
-      Rep w base capacity ((spec w capacity).step vs o).1 y ∧
+      (implementation w capacity).decode o y.regs = some ((spec w capacity).stepFn vs o).2 ∧
+      Rep w base capacity ((spec w capacity).stepFn vs o).1 y ∧
       Modifies (footprint base capacity) x.mem y.mem := by
   cases o with
   | push v =>
@@ -271,19 +270,20 @@ theorem execute {w base capacity : ℕ} (h2 : Fits w 2) (hcap : Fits w (base + c
     cases vs with
     | nil => exact execute_pop_nil h2 hr
     | cons v vs =>
-      simpa only [bodyCost, List.cons_ne_nil, ↓reduceIte, List.head?_cons, List.tail_cons] using
-        execute_pop_cons h2 hcap hr
+      simpa only [bodyCost, List.cons_ne_nil, ↓reduceIte, List.head?_cons,
+        List.tail_cons] using execute_pop_cons h2 hcap hr
   | size => exact execute_size h2 hr
 
 /-- Semantic realization of the bounded stack, independently of its performance theorem. -/
 def certificate {w base capacity : ℕ} (h2 : Fits w 2) (hcap : Fits w (base + capacity)) :
-    DynamicCertificate (implementation w capacity) w where
-  rep := Rep w base capacity
-  bounded h := h.bounded
-  arguments_fit o hv i _ := arguments_fit h2 o hv i
-  execute o hr hv := by
-    obtain ⟨y, he, ha, hr, _⟩ := Stack.execute h2 hcap hr o hv
-    exact ⟨y, _, he, ha, hr⟩
+    DynamicCertificate (implementation w capacity) w :=
+  DynamicCertificate.ofFn
+    (rep := Rep w base capacity)
+    (bounded := fun h => h.bounded)
+    (arguments_fit := fun o hv i _ => arguments_fit h2 o hv i)
+    (execute := fun o hr hv => by
+      obtain ⟨y, he, ha, hr, _⟩ := Stack.execute h2 hcap hr o hv
+      exact ⟨y, _, he, ha, hr⟩)
 
 /-- Actual instruction count, including dispatch and the final halt, for every native call. -/
 theorem instructions_eq {w base capacity : ℕ} (h2 : Fits w 2)

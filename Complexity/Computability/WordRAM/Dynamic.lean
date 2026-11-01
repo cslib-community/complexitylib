@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Renfei Zhou. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Renfei Zhou
 -/
 
 module
@@ -205,8 +205,9 @@ theorem ExecOp.frame {w : ℕ} {x y : Data r} {o : S.A} {a : S.B o}
 
 end DynamicProgram
 
-/-- Per-operation semantic proof obligations tied to fixed bounded-word code.
-Performance claims are supplied separately, as `Stateful.Bound` certificates. -/
+/-- Per-operation relational semantic proof obligations tied to fixed bounded-word code.
+Performance claims are supplied separately, as `Stateful.Bound` or `Stateful.Amortized`
+certificates. -/
 structure DynamicCertificate (P : DynamicProgram D r) (w : ℕ) where
   /-- Abstract state represented by the persistent machine data. -/
   rep : D.State → Data r → Prop
@@ -214,14 +215,32 @@ structure DynamicCertificate (P : DynamicProgram D r) (w : ℕ) where
   bounded : ∀ {s x}, rep s x → x.Bounded w
   /-- Admissible arguments fit the machine's word size. -/
   arguments_fit : ∀ {s} (o), D.valid s o → ∀ i, P.input i = true → Fits w (P.encode o i)
-  /-- A machine execution implements an admissible operation. -/
+  /-- A machine execution implements some permitted outcome `(s', a)` of an admissible
+  operation. -/
   execute : ∀ {s x} (o), rep s x → D.valid s o →
-    ∃ y n, Exec w P.code (P.prepare o x) y n ∧
-      P.decode o y.regs = some (D.step s o).2 ∧ rep (D.step s o).1 y
+    ∃ y s' a n, Exec w P.code (P.prepare o x) y n ∧
+      D.step s o s' a ∧ P.decode o y.regs = some a ∧ rep s' y
 
 namespace DynamicCertificate
 
 variable {P : DynamicProgram D r} {w : ℕ} (C : DynamicCertificate P w)
+
+/-- Construct a `DynamicCertificate` for a deterministic specification (`[D.HasStepFn f]`) from a
+functional `execute` obligation at `(D.stepFn s o)`. -/
+def ofFn {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
+    (rep : D.State → Data r → Prop)
+    (bounded : ∀ {s x}, rep s x → x.Bounded w)
+    (arguments_fit : ∀ {s} (o), D.valid s o → ∀ i, P.input i = true → Fits w (P.encode o i))
+    (execute : ∀ {s x} (o), rep s x → D.valid s o →
+      ∃ y n, Exec w P.code (P.prepare o x) y n ∧
+        P.decode o y.regs = some (D.stepFn s o).2 ∧ rep (D.stepFn s o).1 y) :
+    DynamicCertificate P w where
+  rep := rep
+  bounded := bounded
+  arguments_fit := arguments_fit
+  execute {s _} o hr hv := by
+    obtain ⟨y, n, he, ha, hr'⟩ := execute o hr hv
+    exact ⟨y, (D.stepFn s o).1, (D.stepFn s o).2, n, he, D.step_stepFn s o, ha, hr'⟩
 
 /-- A represented state and an admissible operation supply the word bounds needed to turn
 typed evaluation into a certified call, including its final halt charge. -/
@@ -231,19 +250,22 @@ theorem execOp_of_eval {s : D.State} {x y : Data r} {o : D.Op} {a : D.Result o} 
   DynamicProgram.ExecOp.of_eval P
     (P.prepare_bounded (C.bounded hr) (C.arguments_fit o hv)) h
 
-/-- Fixed-program certificates realize the common dynamic specification, without choosing a cost. -/
+/-- Fixed-program certificates realize the relational dynamic specification, without choosing a
+cost. -/
 def realization : Stateful.Realization D (P.ExecOp w) where
   rep := C.rep
   total o hr hv := by
-    obtain ⟨y, n, he, ha, _⟩ := C.execute o hr hv
+    obtain ⟨y, _, a, n, he, _, ha, _⟩ := C.execute o hr hv
     obtain ⟨ts, hts⟩ := he.exists_trace
-    exact ⟨_, y, ⟨n + 1, ts⟩,
+    exact ⟨a, y, ⟨n + 1, ts⟩,
       P.prepare_bounded (C.bounded hr) (C.arguments_fit o hv), n, hts, ha, rfl⟩
-  correct hr hv he := by
-    obtain ⟨y, n, he', ha, hr'⟩ := C.execute _ hr hv
-    obtain ⟨_, k, ht, ha', _⟩ := he
+  correct {s x o a y trace} hr hv he := by
+    obtain ⟨y', s', a', n', he', hstep, ha', hr'⟩ := C.execute o hr hv
+    obtain ⟨_, n, ht, ha, _⟩ := he
     obtain ⟨rfl, rfl⟩ := ht.exec.unique he'
-    exact ⟨Option.some.inj (ha'.symm.trans ha), hr'⟩
+    have ha_eq : a = a' := Option.some.inj (ha.symm.trans ha')
+    subst ha_eq
+    exact ⟨s', hstep, hr'⟩
 
 /-- A separate per-operation instruction estimate supplies a reusable resource certificate. -/
 theorem instruction_bound (charge : D.State → D.Op → ℕ)
@@ -267,15 +289,17 @@ theorem instruction_bound_const (K : ℕ)
   exact hn
 
 /-- Adaptive client execution, final representation, and linear total instruction bound for a
-uniform constant per-operation instruction certificate. -/
-theorem run_client_const {K : ℕ}
+uniform constant per-operation instruction certificate on a deterministic specification. -/
+theorem run_client_const
+    {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
+    {K : ℕ}
     (B : Stateful.Bound C.realization DynamicProgram.OperationTrace.instructions (fun _ _ => K))
     {α : Type*} (p : D.Client α) {s : D.State} {x : Data r}
-    (hr : C.rep s x) (hv : D.ValidHistory s (D.runClient s p).2.2) :
-    ∃ y traces, Stateful.Executes (P.ExecOp w) p x (D.runClient s p).1 y traces ∧
-      C.rep (D.runClient s p).2.1 y ∧
+    (hr : C.rep s x) (hv : D.ValidHistory s (D.clientHistory s p)) :
+    ∃ y traces, Stateful.Executes (P.ExecOp w) p x (D.clientResult s p) y traces ∧
+      C.rep (D.clientState s p) y ∧
       Stateful.total DynamicProgram.OperationTrace.instructions traces ≤
-        (D.runClient s p).2.2.length * K :=
+        (D.clientHistory s p).length * K :=
   B.exists_executes_const p hr hv
 
 /-- Lift a per-operation pointwise memory frame from `Exec` to `ExecOp`. -/
@@ -301,33 +325,65 @@ theorem modifies_of_execute {F : Finset ℕ}
     (fun o hr' hv' => let ⟨z, n, hz, hf⟩ := hmod o hr' hv'; ⟨z, n, hz, hf j hj⟩)
     hr hv he
 
-/-- Lift a per-operation pointwise memory frame across an adaptive client execution. -/
-theorem executes_client_frame {j : ℕ}
+/-- Lift a per-operation pointwise memory frame across a demonically admissible adaptive client
+execution. -/
+theorem executes_demonic_frame {j : ℕ}
     (hframe : ∀ {s x y o a trace}, C.rep s x → D.valid s o →
       P.ExecOp w x o a y trace → y.mem j = x.mem j)
     {α : Type*} {p : D.Client α} {s : D.State} {x y : Data r} {val : α}
     {traces : List DynamicProgram.OperationTrace}
-    (hr : C.rep s x) (hv : D.ValidHistory s (D.runClient s p).2.2)
+    (hr : C.rep s x) (hv : D.DemonicValid s p)
     (he : Stateful.Executes (P.ExecOp w) p x val y traces) :
     y.mem j = x.mem j := by
   induction he generalizing s with
   | pure _ _ => rfl
-  | call hstep _ ih =>
-    obtain ⟨ha, hr'⟩ := C.realization.correct hr hv.1 hstep
-    subst ha
-    exact (ih hr' hv.2).trans (hframe hr hv.1 hstep)
+  | @call o k x res x₁ trace _ _ _ hstep _ ih =>
+    obtain ⟨hv_o, hv_k⟩ := (D.demonicValid_liftBind_iff s o k).mp hv
+    obtain ⟨s₁, hstep_s, hr₁⟩ := C.realization.correct hr hv_o hstep
+    exact (ih hr₁ (hv_k s₁ res hstep_s)).trans (hframe hr hv_o hstep)
 
-/-- Lift a per-operation `Modifies` bound across an adaptive client execution. -/
-theorem executes_client_modifies {F : Finset ℕ}
+/-- Lift a per-operation `Modifies` bound across a demonically admissible adaptive client
+execution. -/
+theorem executes_demonic_modifies {F : Finset ℕ}
     (hmod : ∀ {s x y o a trace}, C.rep s x → D.valid s o →
       P.ExecOp w x o a y trace → Modifies F x.mem y.mem)
     {α : Type*} {p : D.Client α} {s : D.State} {x y : Data r} {val : α}
     {traces : List DynamicProgram.OperationTrace}
-    (hr : C.rep s x) (hv : D.ValidHistory s (D.runClient s p).2.2)
+    (hr : C.rep s x) (hv : D.DemonicValid s p)
     (he : Stateful.Executes (P.ExecOp w) p x val y traces) :
     Modifies F x.mem y.mem :=
-  fun j hj => C.executes_client_frame
+  fun j hj => C.executes_demonic_frame
     (fun hr' hv' he' => hmod hr' hv' he' j hj) hr hv he
+
+/-- Lift a per-operation pointwise memory frame across an adaptive client execution on a
+deterministic specification. -/
+theorem executes_client_frame
+    {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
+    {j : ℕ}
+    (hframe : ∀ {s x y o a trace}, C.rep s x → D.valid s o →
+      P.ExecOp w x o a y trace → y.mem j = x.mem j)
+    {α : Type*} {p : D.Client α} {s : D.State} {x y : Data r} {val : α}
+    {traces : List DynamicProgram.OperationTrace}
+    (hr : C.rep s x) (hv : D.ValidHistory s (D.clientHistory s p))
+    (he : Stateful.Executes (P.ExecOp w) p x val y traces) :
+    y.mem j = x.mem j :=
+  C.executes_demonic_frame hframe hr
+    ((D.demonicValid_iff_validHistory_runClient s p).mpr hv) he
+
+/-- Lift a per-operation `Modifies` bound across an adaptive client execution on a deterministic
+specification. -/
+theorem executes_client_modifies
+    {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
+    {F : Finset ℕ}
+    (hmod : ∀ {s x y o a trace}, C.rep s x → D.valid s o →
+      P.ExecOp w x o a y trace → Modifies F x.mem y.mem)
+    {α : Type*} {p : D.Client α} {s : D.State} {x y : Data r} {val : α}
+    {traces : List DynamicProgram.OperationTrace}
+    (hr : C.rep s x) (hv : D.ValidHistory s (D.clientHistory s p))
+    (he : Stateful.Executes (P.ExecOp w) p x val y traces) :
+    Modifies F x.mem y.mem :=
+  C.executes_demonic_modifies hmod hr
+    ((D.demonicValid_iff_validHistory_runClient s p).mpr hv) he
 
 /-- The same native evidence separately bounds memory probes by the instruction charge. -/
 theorem probe_bound (charge : D.State → D.Op → ℕ)

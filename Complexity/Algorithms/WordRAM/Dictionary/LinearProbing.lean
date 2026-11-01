@@ -1929,7 +1929,6 @@ theorem getFinishCode_execWithin {U V w base n_max : ℕ} {θ : Seed U n_max}
     refine ⟨s1, ⟨3, by decide, ebr⟩, rfl, by simp +decide [s1, h0], ?_⟩
     have hs1_2 : s1.regs 2 = 0 := by simp +decide [s1]
     simp only [decodeOp, hs1_2, ↓reduceIte, hnone]
-    rfl
   · have hc : (Cond.eq (9 : Fin 24) 10).Holds x := by
       simp [Cond.Holds, h9, p, hp1, h10]
     have hv_lt : valAt base n_max x.mem p < V := hinv.values_bounded u _ hsome
@@ -1948,7 +1947,6 @@ theorem getFinishCode_execWithin {U V w base n_max : ℕ} {θ : Seed U n_max}
     refine ⟨s3, ⟨4, le_rfl, ebr⟩, rfl, by simp +decide [s3, s2, s1, h0], ?_⟩
     have hs3_2 : s3.regs 2 = valAt base n_max x.mem p + 1 := by simp +decide [s3]
     simp only [decodeOp, hs3_2, Nat.add_one_ne_zero, ↓reduceIte, Nat.add_sub_cancel, hsome, p]
-    rfl
 
 /-- The key queried or updated by dictionary operation `o`. -/
 @[expose] def opKey {U : ℕ} : Dictionary.Op U → Fin U
@@ -1978,8 +1976,8 @@ theorem opCode_execWithin {U V w base n_max : ℕ} {θ : Seed U n_max}
       ExecWithin w (opCode n_max) x y
         (KWise.evalSteps n_max U (tableLog n_max) 5 + 12 * t + 27) ∧
       decodeOp (V := V) (n_max := n_max) o y.regs =
-        some ((Dictionary.spec U V n_max).step s o).2 ∧
-      Rep U V n_max w base θ ((Dictionary.spec U V n_max).step s o).1 y ∧
+        some ((Dictionary.spec U V n_max).stepFn s o).2 ∧
+      Rep U V n_max w base θ ((Dictionary.spec U V n_max).stepFn s o).1 y ∧
       Modifies (Block.mk base (space n_max)).footprint x.mem y.mem := by
   set u := opKey o
   set b := hashFn U n_max θ u
@@ -2112,138 +2110,138 @@ over `Cslib.WordRAM.Basis.exact`:
     (hfit_space : Fits w (base + space n_max))
     (hfit_V : Fits w V) :
     Cslib.WordRAM.Randomized.SubroutineDS (subroutineCode U n_max)
-      (Dictionary.spec U V n_max) w base Fin.elim0 (Dictionary.empty U) where
-  Seed := Seed U n_max
-  seedLaw := seedLaw U n_max
-  seedSlack := 1
-  space := space n_max
-  spanTime := 3
-  setupTime := setupTime U n_max
-  initPotential := 0
-  charge _ _ := charge U n_max
-  rep θ s x := Rep U V n_max w base θ s x
-  potential _ _ := 0
-  encode := encodeOp
-  argMatch := argMatchOp
-  decode := decodeOp
-  bounded h := h.bounded
-  rep_unique h₁ h₂ := h₁.unique h₂
-  arguments_fit {s} o hvalid i hi := by
-    have hfit_U : Fits w U := fits_U_of_hw hw
-    have hfit_1 : Fits w 1 :=
-      hfit_space.of_le (by dsimp only [space]; have := tableSize_pos n_max; omega)
-    have hfit_0 : Fits w 0 := hfit_space.of_le (Nat.zero_le _)
-    cases o with
-    | get u =>
-      dsimp only [encodeOp]
-      split_ifs
-      · exact hfit_U.of_le (le_of_lt u.isLt)
-      · exact hfit_0
-    | insert u v =>
-      dsimp only [encodeOp]
-      split_ifs
-      · exact hfit_U.of_le (le_of_lt u.isLt)
-      · exact hfit_1
-      · exact hfit_V.of_le (le_of_lt hvalid.2)
-      · exact hfit_0
-  encode_matches o regs := by
-    cases o with
-    | get u =>
-      exact ⟨rfl, rfl⟩
-    | insert u v =>
-      exact ⟨rfl, rfl, rfl⟩
-  rep_supported hregs hmem hbdd hrep := hrep.supported hregs hmem hbdd
-  potential_supported _ _ _ := rfl
-  clear_nodup := by
-    change ([21, 19, 20, 0, 18] : List (Fin 24)).Nodup
-    decide
-  params_not_clear j := j.elim0
-  incCur_eval {x} h20 hfit := by
-    have h20' : x.regs 20 = 1 := h20
-    have hev : BinOp.add.evalExact (x.regs 21) (x.regs 20) = some (x.regs 21 + 1) := by
-      simp [BinOp.evalExact, h20']
-    change (Op.exactBin .add 21 21 20).eval w x = some (x.set 21 (x.regs 21 + 1))
-    rw [Op.eval_exactBin, hev]
-    exact Data.put_of_fits hfit
-  span_exec _ hfr _ := by
-    obtain ⟨x₁, hex, hmem, hb, hfr'⟩ := allocSpan_execWithin hfr hfit_space
-    exact ⟨x₁, hex, hmem, hb, hfr', fun j => j.elim0⟩
-  setup_exec hx₁ hb hfr _ hz :=
-    initSetup_exec hw hfit_space hx₁ hb hfr hz
-  step_exec {s} o ν hvalid hseed hsupp := by
-    classical
-    let u := opKey o
-    let hasInv : Seed U n_max × Data rLP → Prop := fun p =>
-      Rep U V n_max w base p.1 s p.2 ∧ argMatchOp o p.2.regs
-    let y : Seed U n_max × Data rLP → Data rLP := fun p =>
-      if hp : hasInv p then
-        Classical.choose (opCode_execWithin hw hfit_space hfit_V hp.1 o hvalid hp.2)
-      else p.2
-    let T_probe : Seed U n_max × Data rLP → ℕ := fun p =>
-      if hp : hasInv p then
-        hp.1.table_inv.probeLen u (hashFn U n_max p.1 u)
-      else 0
-    let T_step : Seed U n_max × Data rLP → ℝ≥0∞ := fun p =>
-      (KWise.evalSteps n_max U (tableLog n_max) 5 + 12 * T_probe p + 27 : ℕ)
-    refine ⟨fun p => PMF.pure (p.1, y p), T_step, ?_, ?_, ?_⟩
-    · intro p hp_mem
-      have hp : hasInv p := hsupp p hp_mem
-      have hspec := Classical.choose_spec
-        (opCode_execWithin hw hfit_space hfit_V hp.1 o hvalid hp.2)
-      rcases hspec with ⟨hex, hdec, hrep', hmod⟩
-      have hy_eq : y p =
-          Classical.choose (opCode_execWithin hw hfit_space hfit_V hp.1 o hvalid hp.2) := by
-        simp only [y, hp, ↓reduceDIte]
-      have hT_eq : T_probe p = hp.1.table_inv.probeLen u (hashFn U n_max p.1 u) := by
-        simp only [T_probe, hp, ↓reduceDIte]
-      refine ⟨?_, ?_⟩
-      · have hdist := ExecCodeDist.of_execWithin hex
-        refine hdist.congr_dist ?_ ?_
-        · simp [hy_eq]
-        · dsimp only [T_step]
-          rw [hT_eq]
-      · intro q hq
-        rw [PMF.support_pure, Set.mem_singleton_iff] at hq
-        subst hq
-        exact ⟨by simpa only [hy_eq] using hdec,
-          by simpa only [hy_eq] using hrep',
-          by simpa only [hy_eq] using hmod⟩
-    · intro θ'
-      have hmap_eq : (ν.bind fun p => PMF.pure (p.1, y p)).map Prod.fst = ν.map Prod.fst := by
-        rw [PMF.map_bind]
-        simp only [PMF.pure_map]
-        rfl
-      rw [hmap_eq]
-      exact hseed θ'
-    · simp only [Nat.cast_zero, mul_zero, tsum_zero, add_zero]
-      have htsum_probe : (∑' p, ν p * (T_probe p : ℝ≥0∞)) ≤ 288 := by
-        apply tsum_probeLen_le (V := V) (base := base) (s := s) u ν
-        · intro θ
-          simpa only [one_mul] using hseed θ
-        · intro p hp_mem
-          have hp : hasInv p := hsupp p hp_mem
-          exact ⟨p.2.mem, hp.1.table_inv, by simp only [T_probe, hp, ↓reduceDIte, le_rfl]⟩
-      calc (∑' p, ν p * T_step p)
-          = ∑' p, ν p *
-              ((KWise.evalSteps n_max U (tableLog n_max) 5 + 27 : ℝ≥0∞) +
-                12 * (T_probe p : ℝ≥0∞)) := by
-            refine tsum_congr fun p => ?_
-            dsimp only [T_step]
-            simp only [Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat]
-            ring_nf
-        _ = (∑' p, ν p * (KWise.evalSteps n_max U (tableLog n_max) 5 + 27 : ℝ≥0∞)) +
-              12 * (∑' p, ν p * (T_probe p : ℝ≥0∞)) := by
-            simp_rw [mul_add, tsum_add, ← mul_assoc, mul_comm (ν _) 12, mul_assoc,
-              ENNReal.tsum_mul_left]
-        _ = (KWise.evalSteps n_max U (tableLog n_max) 5 + 27 : ℝ≥0∞) +
-              12 * (∑' p, ν p * (T_probe p : ℝ≥0∞)) := by
-            rw [ENNReal.tsum_mul_right, ν.tsum_coe, one_mul]
-        _ ≤ (KWise.evalSteps n_max U (tableLog n_max) 5 + 27 : ℝ≥0∞) + 12 * 288 := by
-            gcongr
-        _ = (charge U n_max : ℝ≥0∞) := by
-            dsimp only [charge]
-            simp only [Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat]
-            ring_nf
+      (Dictionary.spec U V n_max) w base Fin.elim0 (Dictionary.empty U) :=
+  Cslib.WordRAM.Randomized.SubroutineDS.ofFn
+    (Seed := Seed U n_max)
+    (seedLaw := seedLaw U n_max)
+    (seedSlack := 1)
+    (space := space n_max)
+    (spanTime := 3)
+    (setupTime := setupTime U n_max)
+    (initPotential := 0)
+    (charge := fun _ _ => charge U n_max)
+    (rep := fun θ s x => Rep U V n_max w base θ s x)
+    (potential := fun _ _ => 0)
+    (encode := encodeOp)
+    (argMatch := argMatchOp)
+    (decode := decodeOp)
+    (bounded := fun h => h.bounded)
+    (arguments_fit := fun {s} o hvalid i hi => by
+      have hfit_U : Fits w U := fits_U_of_hw hw
+      have hfit_1 : Fits w 1 :=
+        hfit_space.of_le (by dsimp only [space]; have := tableSize_pos n_max; omega)
+      have hfit_0 : Fits w 0 := hfit_space.of_le (Nat.zero_le _)
+      cases o with
+      | get u =>
+        dsimp only [encodeOp]
+        split_ifs
+        · exact hfit_U.of_le (le_of_lt u.isLt)
+        · exact hfit_0
+      | insert u v =>
+        dsimp only [encodeOp]
+        split_ifs
+        · exact hfit_U.of_le (le_of_lt u.isLt)
+        · exact hfit_1
+        · exact hfit_V.of_le (le_of_lt hvalid.2)
+        · exact hfit_0)
+    (encode_matches := fun o regs => by
+      cases o with
+      | get u =>
+        exact ⟨rfl, rfl⟩
+      | insert u v =>
+        exact ⟨rfl, rfl, rfl⟩)
+    (rep_supported := fun hregs hmem hbdd hrep => hrep.supported hregs hmem hbdd)
+    (potential_supported := fun _ _ _ => rfl)
+    (clear_nodup := by
+      change ([21, 19, 20, 0, 18] : List (Fin 24)).Nodup
+      decide)
+    (params_not_clear := fun j => j.elim0)
+    (incCur_eval := fun {x} h20 hfit => by
+      have h20' : x.regs 20 = 1 := h20
+      have hev : BinOp.add.evalExact (x.regs 21) (x.regs 20) = some (x.regs 21 + 1) := by
+        simp [BinOp.evalExact, h20']
+      change (Op.exactBin .add 21 21 20).eval w x = some (x.set 21 (x.regs 21 + 1))
+      rw [Op.eval_exactBin, hev]
+      exact Data.put_of_fits hfit)
+    (span_exec := fun _ hfr _ => by
+      obtain ⟨x₁, hex, hmem, hb, hfr'⟩ := allocSpan_execWithin hfr hfit_space
+      exact ⟨x₁, hex, hmem, hb, hfr', fun j => j.elim0⟩)
+    (setup_exec := fun hx₁ hb hfr _ hz =>
+      initSetup_exec hw hfit_space hx₁ hb hfr hz)
+    (step_exec := fun {s} o ν hvalid hseed hsupp => by
+      classical
+      let u := opKey o
+      let hasInv : Seed U n_max × Data rLP → Prop := fun p =>
+        Rep U V n_max w base p.1 s p.2 ∧ argMatchOp o p.2.regs
+      let y : Seed U n_max × Data rLP → Data rLP := fun p =>
+        if hp : hasInv p then
+          Classical.choose (opCode_execWithin hw hfit_space hfit_V hp.1 o hvalid hp.2)
+        else p.2
+      let T_probe : Seed U n_max × Data rLP → ℕ := fun p =>
+        if hp : hasInv p then
+          hp.1.table_inv.probeLen u (hashFn U n_max p.1 u)
+        else 0
+      let T_step : Seed U n_max × Data rLP → ℝ≥0∞ := fun p =>
+        (KWise.evalSteps n_max U (tableLog n_max) 5 + 12 * T_probe p + 27 : ℕ)
+      refine ⟨fun p => PMF.pure (p.1, y p), T_step, ?_, ?_, ?_⟩
+      · intro p hp_mem
+        have hp : hasInv p := hsupp p hp_mem
+        have hspec := Classical.choose_spec
+          (opCode_execWithin hw hfit_space hfit_V hp.1 o hvalid hp.2)
+        rcases hspec with ⟨hex, hdec, hrep', hmod⟩
+        have hy_eq : y p =
+            Classical.choose (opCode_execWithin hw hfit_space hfit_V hp.1 o hvalid hp.2) := by
+          simp only [y, hp, ↓reduceDIte]
+        have hT_eq : T_probe p = hp.1.table_inv.probeLen u (hashFn U n_max p.1 u) := by
+          simp only [T_probe, hp, ↓reduceDIte]
+        refine ⟨?_, ?_⟩
+        · have hdist := ExecCodeDist.of_execWithin hex
+          refine hdist.congr_dist ?_ ?_
+          · simp [hy_eq]
+          · dsimp only [T_step]
+            rw [hT_eq]
+        · intro q hq
+          rw [PMF.support_pure, Set.mem_singleton_iff] at hq
+          subst hq
+          exact ⟨by simpa only [hy_eq] using hdec,
+            by simpa only [hy_eq] using hrep',
+            by simpa only [hy_eq] using hmod⟩
+      · intro θ'
+        have hmap_eq : (ν.bind fun p => PMF.pure (p.1, y p)).map Prod.fst = ν.map Prod.fst := by
+          rw [PMF.map_bind]
+          simp only [PMF.pure_map]
+          rfl
+        rw [hmap_eq]
+        exact hseed θ'
+      · simp only [Nat.cast_zero, mul_zero, tsum_zero, add_zero]
+        have htsum_probe : (∑' p, ν p * (T_probe p : ℝ≥0∞)) ≤ 288 := by
+          apply tsum_probeLen_le (V := V) (base := base) (s := s) u ν
+          · intro θ
+            simpa only [one_mul] using hseed θ
+          · intro p hp_mem
+            have hp : hasInv p := hsupp p hp_mem
+            exact ⟨p.2.mem, hp.1.table_inv, by simp only [T_probe, hp, ↓reduceDIte, le_rfl]⟩
+        calc (∑' p, ν p * T_step p)
+            = ∑' p, ν p *
+                ((KWise.evalSteps n_max U (tableLog n_max) 5 + 27 : ℝ≥0∞) +
+                  12 * (T_probe p : ℝ≥0∞)) := by
+              refine tsum_congr fun p => ?_
+              dsimp only [T_step]
+              simp only [Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat]
+              ring_nf
+          _ = (∑' p, ν p * (KWise.evalSteps n_max U (tableLog n_max) 5 + 27 : ℝ≥0∞)) +
+                12 * (∑' p, ν p * (T_probe p : ℝ≥0∞)) := by
+              simp_rw [mul_add, tsum_add, ← mul_assoc, mul_comm (ν _) 12, mul_assoc,
+                ENNReal.tsum_mul_left]
+          _ = (KWise.evalSteps n_max U (tableLog n_max) 5 + 27 : ℝ≥0∞) +
+                12 * (∑' p, ν p * (T_probe p : ℝ≥0∞)) := by
+              rw [ENNReal.tsum_mul_right, ν.tsum_coe, one_mul]
+          _ ≤ (KWise.evalSteps n_max U (tableLog n_max) 5 + 27 : ℝ≥0∞) + 12 * 288 := by
+              gcongr
+          _ = (charge U n_max : ℝ≥0∞) := by
+              dsimp only [charge]
+              simp only [Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat]
+              ring_nf)
 
 /-- Standard-basis (`Basis.standard`) `SubroutineDS` certificate for linear probing, transported
 from `subroutineDS` via `SubroutineDS.toStandard`. -/
@@ -2276,13 +2274,13 @@ theorem seq_expected_amortized (U V n_max w base : ℕ)
       (T_ops : ℝ≥0∞),
       ExecCodeDist w (subroutineCode U n_max).initFresh x₀
         (ν₀.map Prod.snd) (3 + setupTime U n_max : ℕ) ∧
-      (subroutineDS U V n_max w base hw hfit_space hfit_V).ExecSteps
+      (subroutineDS U V n_max w base hw hfit_space hfit_V).ExecStepsOfFn
         (Dictionary.empty U) ops ν₀ ν_f T_ops ∧
       (3 + setupTime U n_max : ℕ) + T_ops ≤
         (3 + setupTime U n_max + ops.length * charge U n_max : ℕ) := by
   let C := subroutineDS U V n_max w base hw hfit_space hfit_V
   obtain ⟨ν₀, ν_f, T_ops, hinit, hsteps, _, _, hbound⟩ :=
-    C.seq_expected_amortized ops hx₀ hfr (fun j => Fin.elim0 j) hz hvalid
+    C.seq_expected_amortized_ofFn ops hx₀ hfr (fun j => Fin.elim0 j) hz hvalid
   have htotal : (Dictionary.spec U V n_max).totalCost C.charge (Dictionary.empty U) ops =
       ops.length * charge U n_max := by
     have hconst : ∀ s (l : List (Dictionary.Op U)),
@@ -2296,12 +2294,13 @@ theorem seq_expected_amortized (U V n_max w base : ℕ)
         ring
     exact hconst (Dictionary.empty U) ops
   have hinitTime : C.initTime = ((3 + setupTime U n_max : ℕ) : ℝ≥0∞) := by
-    dsimp only [Cslib.WordRAM.Randomized.SubroutineDS.initTime, C, subroutineDS]
+    dsimp only [Cslib.WordRAM.Randomized.SubroutineDS.initTime,
+      Cslib.WordRAM.Randomized.SubroutineDS.ofFn, C, subroutineDS]
     push_cast
     rfl
   rw [hinitTime] at hinit hbound
   have hpot0 : (∑' q, ν_f q * (C.potential q.1 q.2 : ℝ≥0∞)) = 0 := by
-    simp [C, subroutineDS]
+    simp [C, subroutineDS, Cslib.WordRAM.Randomized.SubroutineDS.ofFn]
   have hinitPot0 : (C.initPotential : ℝ≥0∞) = 0 := Nat.cast_zero
   rw [htotal, hpot0, hinitPot0, add_zero, add_zero] at hbound
   have hbound' : ((3 + setupTime U n_max : ℕ) : ℝ≥0∞) + T_ops ≤
