@@ -242,12 +242,10 @@ private theorem passState_foldS (t i : ℕ) :
     have hP := length_budgetStep_iterate_le d x b (min i t)
     rcases Nat.lt_or_ge i t with h | h
     · rw [show min (i + 1) t = min i t + 1 by omega, Function.iterate_succ_apply']
-      generalize (budgetStep d x b)^[min i t] (init d, []) = P at hP ⊢
       rw [foldEndS, stepAt_scan', budgetStep]
       simp only [show t - i ≠ 0 by omega, ↓reduceIte, foldEnd, stepAt_scan']
       split_ifs <;> simp only [Prod.mk.injEq, true_and, and_true] <;> omega
     · rw [show min (i + 1) t = min i t by omega]
-      generalize (budgetStep d x b)^[min i t] (init d, []) = P at hP ⊢
       rw [foldEndS, stepAt_scan']
       simp only [show t - i = 0 by omega, ↓reduceIte, foldEnd, stepAt_scan', Option.toList_none,
         List.append_nil, List.take_of_length_le hP]
@@ -605,7 +603,6 @@ private lemma foldEndS_inO : ComputableTidilyInO foldEndS eSSt eSSt
       generalize (eSt s.1).length = A at *
       have hX : L + 1 ≤ (L + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
       have hA : (A + 1) ^ 3 ≤ (L + 1) ^ 3 := Nat.pow_le_pow_left (by omega) 3
-      generalize (L + 1) ^ 3 = Y at *
       omega
   -- the configuration stays
   have hpos := (h₁.fst'.snd'.of_enc_eq (encOut := eCfgFields)
@@ -629,8 +626,6 @@ private lemma foldEndS_inO : ComputableTidilyInO foldEndS eSSt eSSt
       have hX : (eSSt s).length + 1 ≤ ((eSSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
       have hX2 : ((eSSt s).length + 1) ^ 2 ≤ ((eSSt s).length + 1) ^ 3 :=
         Nat.pow_le_pow_right (by omega) (by omega)
-      generalize (eSSt s).length = L at *
-      generalize (L + 1) ^ 3 = Y at *
       omega
   refine ((budgetTest_inO.ite htaken hstay).of_enc_eq (g := foldEndS) fun s => ?_).mono 2
     (fun s => ?_) fun s => ?_
@@ -762,7 +757,6 @@ public theorem computableTidilyInTimeAndSpace_budgetedUniversal : ∃ c,
       omega
     have := length_eSSt_le' d x b t (t - 1 + 1) 0
     simp only [streamState_zero] at this
-    generalize budgetSpace (d, x, t, b) = B at *
     nlinarith
 
 /-- The initial configuration is encoded within `11 * descLen d + 6` bits: the initial state, the
