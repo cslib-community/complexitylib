@@ -806,70 +806,46 @@ theorem contractionCertificate_le [Inhabited Y] (hops : ops.PolyTime encQ encY)
     omega
   have hnode (x : Node Q T) (hx : (sumInvariant ops eval (P, d)).node x) :
       (encNode encQ encT x).length ≤ 5 * z + 7 := (length_encNode_le hx).trans (by omega)
-  have hleafT (x : Node Q T) (hx : (sumInvariant ops eval (P, d)).node x) :
+  -- The leaf step: the vertex lookup, and the zero or the query and the evaluator.
+  have hleaf (x : Node Q T) (hx : (sumInvariant ops eval (P, d)).node x) :
       (leafCertificate eval hops ev).time x ≤ 2 * cv * (5 * z + 8) ^ dv + (5 * z + 7) +
-        cz * (5 * z + 8) ^ dz + cq * (11 * z + 16) ^ dq + E := by
-    have h1 := hnode x hx
-    rw [leafCertificate_time]
-    have h2 : (vertexCertificate (encQ := encQ) (encT := encT)).time x ≤
-        cv * (5 * z + 8) ^ dv :=
-      (hvt x).trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _))
-    have h2' : 2 * (vertexCertificate (encQ := encQ) (encT := encT)).time x ≤
-        2 * cv * (5 * z + 8) ^ dv := by
-      rw [Nat.mul_assoc]; exact Nat.mul_le_mul_left 2 h2
-    cases hvx : x.2.1.2.vertices[x.2.2.2]? with
-    | none =>
-      simp only [Option.elim]
-      have h3 : (zeroCertificate (encT := encT) hops).time x ≤ cz * (5 * z + 8) ^ dz :=
-        (hzt x).trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _))
-      omega
-    | some v =>
-      simp only [Option.elim]
-      have hmem : v ∈ x.2.1.2.vertices := List.mem_of_getElem? hvx
-      obtain ⟨hq, -, -, -⟩ := hx
-      rw [hq] at hmem
-      have h3 := hvlen v hmem
-      have h4 : (queryCertificate (encQ := encQ) (encT := encT)).time (x, v) ≤
-          cq * (11 * z + 16) ^ dq := by
-        refine (hqt (x, v)).trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left ?_ _))
-        have := length_encPair (enc₁ := encNode encQ encT)
-          (enc₂ := encPair (encList encNat) encT) (x, v)
-        dsimp only at this
-        omega
-      have h5 := (hE v hmem (wordBits x.2.2.1 v.1) (by simp [wordBits])).1
-      omega
-  have hleafS (x : Node Q T) (hx : (sumInvariant ops eval (P, d)).node x) :
+        cz * (5 * z + 8) ^ dz + cq * (11 * z + 16) ^ dq + E ∧
       (leafCertificate eval hops ev).space x ≤ 2 * cv' * (5 * z + 8) ^ dv' + (5 * z + 7) +
         cz' * (5 * z + 8) ^ dz' + cq' * (11 * z + 16) ^ dq' + ES := by
     have h1 := hnode x hx
-    rw [leafCertificate_space]
-    have h2 : (vertexCertificate (encQ := encQ) (encT := encT)).space x ≤
-        cv' * (5 * z + 8) ^ dv' :=
-      (hvs x).trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _))
+    have hx8 {c e : ℕ} : c * ((encNode encQ encT x).length + 1) ^ e ≤ c * (5 * z + 8) ^ e :=
+      Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
+    have h2 : 2 * (vertexCertificate (encQ := encQ) (encT := encT)).time x ≤
+        2 * cv * (5 * z + 8) ^ dv := by
+      rw [Nat.mul_assoc]; exact Nat.mul_le_mul_left 2 ((hvt x).trans hx8)
     have h2' : 2 * (vertexCertificate (encQ := encQ) (encT := encT)).space x ≤
         2 * cv' * (5 * z + 8) ^ dv' := by
-      rw [Nat.mul_assoc]; exact Nat.mul_le_mul_left 2 h2
+      rw [Nat.mul_assoc]; exact Nat.mul_le_mul_left 2 ((hvs x).trans hx8)
+    rw [leafCertificate_time, leafCertificate_space]
     cases hvx : x.2.1.2.vertices[x.2.2.2]? with
     | none =>
+      have h3 := (hzt x).trans hx8
+      have h3' := (hzs x).trans hx8
       simp only [Option.elim]
-      have h3 : (zeroCertificate (encT := encT) hops).space x ≤ cz' * (5 * z + 8) ^ dz' :=
-        (hzs x).trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _))
-      omega
+      constructor <;> omega
     | some v =>
-      simp only [Option.elim]
       have hmem : v ∈ x.2.1.2.vertices := List.mem_of_getElem? hvx
       obtain ⟨hq, -, -, -⟩ := hx
       rw [hq] at hmem
       have h3 := hvlen v hmem
-      have h4 : (queryCertificate (encQ := encQ) (encT := encT)).space (x, v) ≤
-          cq' * (11 * z + 16) ^ dq' := by
-        refine (hqs (x, v)).trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left ?_ _))
+      have hxv {c e : ℕ} :
+          c * ((encPair (encNode encQ encT) (encPair (encList encNat) encT) (x, v)).length + 1) ^ e ≤
+            c * (11 * z + 16) ^ e := by
+        refine Nat.mul_le_mul_left _ (Nat.pow_le_pow_left ?_ _)
         have := length_encPair (enc₁ := encNode encQ encT)
           (enc₂ := encPair (encList encNat) encT) (x, v)
         dsimp only at this
         omega
-      have h5 := (hE v hmem (wordBits x.2.2.1 v.1) (by simp [wordBits])).2.1
-      omega
+      have h4 := (hqt (x, v)).trans hxv
+      have h4' := (hqs (x, v)).trans hxv
+      obtain ⟨h5, h5', -⟩ := hE v hmem (wordBits x.2.2.1 v.1) (by simp [wordBits])
+      simp only [Option.elim]
+      constructor <;> omega
   obtain ⟨h, hh, he⟩ := eval_sumRoot (ops := ops) (eval := eval) P d
   have hres := hK₀ (NativeCertificate.ofPolyTime fuel_polyTime)
     (NativeCertificate.ofPolyTime sumRoot_polyTime) (sumInvariant ops eval (P, d)) (13 * z + 18)
@@ -877,7 +853,7 @@ theorem contractionCertificate_le [Inhabited Y] (hops : ops.PolyTime encQ encY)
       cq * (11 * z + 16) ^ dq + E)
     (2 * cv' * (5 * z + 8) ^ dv' + (5 * z + 7) + cz' * (5 * z + 8) ^ dz' +
       cq' * (11 * z + 16) ^ dq' + ES)
-    (fun x hx => ⟨(hnode x hx).trans (by omega), fun _ => ⟨hleafT x hx, hleafS x hx⟩⟩)
+    (fun x hx => ⟨(hnode x hx).trans (by omega), fun _ => hleaf x hx⟩)
     (fun x a ha => by
       obtain ⟨hx, ha1, ha2⟩ := ha
       have h1 := hnode x hx
@@ -932,26 +908,21 @@ theorem contractionCertificate_le [Inhabited Y] (hops : ops.PolyTime encQ encY)
     have h3 : (h + 1) * (13 * z + 18 + 1) ≤ 39 * z + 57 := by
       have := Nat.mul_le_mul_right (13 * z + 18 + 1) (show h + 1 ≤ 3 by omega); omega
     exact (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left h3 _)).trans (hterm (by omega))
-  have hTL : 2 * cv * (5 * z + 8) ^ dv + (5 * z + 7) + cz * (5 * z + 8) ^ dz +
-      cq * (11 * z + 16) ^ dq ≤ (2 * cv * 13 ^ dv + 12 + cz * 13 ^ dz + cq * 27 ^ dq) * W := by
-    have a1 := hterm (c := 2 * cv) (a := 5) (b := 8) (show dv ≤ D by omega)
-    have a2 := hterm (c := cz) (a := 5) (b := 8) (show dz ≤ D by omega)
-    have a3 := hterm (c := cq) (a := 11) (b := 16) (show dq ≤ D by omega)
-    have e : (2 * cv * 13 ^ dv + 12 + cz * 13 ^ dz + cq * 27 ^ dq) * W =
-        2 * cv * (5 + 8) ^ dv * W + 12 * W + cz * (5 + 8) ^ dz * W + cq * (11 + 16) ^ dq * W := by
+  -- The leaf bound, for time and for space.
+  have hleafW {a b c e f g : ℕ} (hb : b ≤ D) (he : e ≤ D) (hg : g ≤ D) :
+      2 * a * (5 * z + 8) ^ b + (5 * z + 7) + c * (5 * z + 8) ^ e + f * (11 * z + 16) ^ g ≤
+        (2 * a * 13 ^ b + 12 + c * 13 ^ e + f * 27 ^ g) * W := by
+    have a1 := hterm (c := 2 * a) (a := 5) (b := 8) hb
+    have a2 := hterm (c := c) (a := 5) (b := 8) he
+    have a3 := hterm (c := f) (a := 11) (b := 16) hg
+    have e : (2 * a * 13 ^ b + 12 + c * 13 ^ e + f * 27 ^ g) * W =
+        2 * a * (5 + 8) ^ b * W + 12 * W + c * (5 + 8) ^ e * W + f * (11 + 16) ^ g * W := by
       ring
     omega
-  have hSL : 2 * cv' * (5 * z + 8) ^ dv' + (5 * z + 7) + cz' * (5 * z + 8) ^ dz' +
-      cq' * (11 * z + 16) ^ dq' ≤
-        (2 * cv' * 13 ^ dv' + 12 + cz' * 13 ^ dz' + cq' * 27 ^ dq') * W := by
-    have a1 := hterm (c := 2 * cv') (a := 5) (b := 8) (show dv' ≤ D by omega)
-    have a2 := hterm (c := cz') (a := 5) (b := 8) (show dz' ≤ D by omega)
-    have a3 := hterm (c := cq') (a := 11) (b := 16) (show dq' ≤ D by omega)
-    have e : (2 * cv' * 13 ^ dv' + 12 + cz' * 13 ^ dz' + cq' * 27 ^ dq') * W =
-        2 * cv' * (5 + 8) ^ dv' * W + 12 * W + cz' * (5 + 8) ^ dz' * W +
-          cq' * (11 + 16) ^ dq' * W := by
-      ring
-    omega
+  have hTL := hleafW (a := cv) (c := cz) (f := cq) (show dv ≤ D by omega) (show dz ≤ D by omega)
+    (show dq ≤ D by omega)
+  have hSL := hleafW (a := cv') (c := cz') (f := cq') (show dv' ≤ D by omega)
+    (show dz' ≤ D by omega) (show dq' ≤ D by omega)
   have hclock : ((encNat (fuel (P, d))).length + 1) ^ 2 ≤ 16 * W := by
     have h3 : (encNat (fuel (P, d))).length + 1 ≤ 4 * (z + 1) := by omega
     calc ((encNat (fuel (P, d))).length + 1) ^ 2 ≤ (4 * (z + 1)) ^ 2 := Nat.pow_le_pow_left h3 2
