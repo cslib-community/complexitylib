@@ -12,6 +12,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatSize
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryNormalization
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Pi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Pi
 import Mathlib.Data.List.Induction
 
@@ -67,6 +68,28 @@ input storage, even when their declared binary width is malformed. -/
 @[expose] noncomputable def parse (e : Q ≃ Fin s) (p : ℕ × List Bool) : Option (RawResult k Q) :=
   if p.1 = 0 ∨ p.2.length ≠ width k s p.1 then none
   else if p.2.headD false then some (payload e p.1 p.2) else none
+
+/-- Successful parsing exposes the exact input shape and the decoded payload. -/
+theorem parse_eq_some_iff (e : Q ≃ Fin s) (b : ℕ) (word : List Bool) (raw : RawResult k Q) :
+    parse e (b, word) = some raw ↔ b ≠ 0 ∧ word.length = width k s b ∧
+      word.headD false = true ∧ raw = payload e b word := by
+  constructor
+  · intro hp
+    unfold parse at hp
+    split at hp
+    · contradiction
+    · rename_i hbad
+      have hb : b ≠ 0 := fun h => hbad (Or.inl h)
+      have hw : word.length = width k s b := by
+        by_contra h
+        exact hbad (Or.inr h)
+      split at hp
+      · rename_i ht
+        exact ⟨hb, hw, ht, (Option.some.inj hp).symm⟩
+      · contradiction
+  · rintro ⟨hb, hw, ht, rfl⟩
+    simp only [parse, hb, hw, ne_eq, not_true_eq_false, or_self, ↓reduceIte, ht]
+
 
 private theorem wordDrop_inSpace : ComputableInSpace
     (fun p : List Bool × ℕ => p.1.drop p.2) (encPair encBits encNat) encBits
@@ -242,6 +265,18 @@ theorem length_cells (word : List Bool) : (cells word).length = word.length / 2 
     simp only [cells, List.length_cons, ih]
     omega
 
+/-- Every streamed cell is one of the three canonical replay codes. -/
+theorem mem_cells_le (word : List Bool) : ∀ n ∈ cells word, n ≤ 2 := by
+  induction word using List.twoStepInduction with
+  | nil => simp [cells]
+  | singleton bit => simp [cells]
+  | cons_cons first second word ih _ =>
+    intro n hn
+    simp only [cells, List.mem_cons] at hn
+    rcases hn with rfl | hn
+    · cases first <;> cases second <;> decide
+    · exact ih n hn
+
 /-- A correctly sized full label yields exactly three blocks of cells on every work tape,
 including unused bit words and labels whose outer tag is FAIL. -/
 theorem length_payload_cells_of_length (e : Q ≃ Fin s) (b : ℕ) (word : List Bool)
@@ -262,16 +297,6 @@ theorem length_payload_cells_of_length (e : Q ≃ Fin s) (b : ℕ) (word : List 
 theorem length_payload_cells (e : Q ≃ Fin s) (b : ℕ) (bits : BitString (width k s b))
     (h : Fin k) : ((payload e b (List.ofFn bits)).2.2.2 h).length = 3 * b :=
   length_payload_cells_of_length e b (List.ofFn bits) (List.length_ofFn) h
-
-private theorem piLinear {α Index Value : Type} [Fintype Index]
-    {input : α ↪ List Bool} {enc : Value ↪ List Bool} {values : α → Index → Value}
-    (hvalues : ∀ i, ComputableInSpace (fun a => values a i) input enc
-      (fun a => (input a).length)) :
-    ComputableInSpace values input (encPi enc) (fun a => (input a).length) := by
-  classical
-  choose T hT using fun i => (hvalues i).exists_inO
-  refine (of_inO (ComputableInO.pi hT)).weaken ?_
-  exact ⟨Fintype.card Index + 1, fun a => by simp; nlinarith⟩
 
 variable [Finite Q]
 
@@ -313,7 +338,7 @@ private theorem payload_inSpace (e : Q ≃ Fin s) : ComputableInSpace
     (budget_prod hw (budget_prod (budget_const 1 (.refl _))
       (budget_const (s + 1).size (.refl _))))
   have hstate := budget_comp_linear (state_inSpace e) hstateRead
-  have hheads := piLinear (Index := Option (Fin k)) fun i =>
+  have hheads := pi_linear (Index := Option (Fin k)) fun i =>
     budget_natMod (budget_comp_linear readNat_inSpace
       (budget_prod hw (budget_prod
         (budget_natAdd (budget_const (1 + (s + 1).size) (.refl _))
@@ -327,7 +352,7 @@ private theorem payload_inSpace (e : Q ≃ Fin s) : ComputableInSpace
     (fun q : Bool × Bool => if q.2 then .other else if q.1 then .accept else .empty)
     (budget_prod htrack0 htrack1)
   have hwindowSize := budget_natMul (budget_const (encB := encNat) 6 (.refl _)) hb
-  have hcells := piLinear (Index := Fin k) fun i =>
+  have hcells := pi_linear (Index := Fin k) fun i =>
     budget_comp_linear cells_inSpace (budget_comp_linear slice_inSpace
       (budget_prod hw (budget_prod
         (budget_natAdd (budget_natAdd (trackOffset_inSpace (k := k) (s := s))

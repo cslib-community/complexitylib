@@ -14,6 +14,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSp
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatSize
 import Complexity.Foundations.Data.BitString.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Pi
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Pi
 
 /-!
 # Native serialization of runtime-width block results
@@ -221,14 +222,6 @@ theorem windowWord_inSpace : ComputableInSpace windowWord (encList encNat) (encL
   intro cells
   simp only [foldl_cells, List.nil_append]
 
-private theorem finitePi {α I V : Type} [Fintype I] {enc : α ↪ List Bool}
-    {encV : V ↪ List Bool} {f : α → I → V}
-    (hf : ∀ i, ComputableInSpace (fun a => f a i) enc encV (fun a => (enc a).length)) :
-    ComputableInSpace f enc (encPi encV) (fun a => (enc a).length) := by
-  choose T hT using fun i => (hf i).exists_inO
-  exact (of_inO (ComputableInO.pi hT)).weaken
-    ⟨Fintype.card I + 1, fun a => by simp; nlinarith⟩
-
 private theorem valid_inSpace : ComputableInSpace (valid (k := k) (Q := Q))
     encArgs encBool (fun a => (encArgs a).length) := by
   classical
@@ -238,7 +231,7 @@ private theorem valid_inSpace : ComputableInSpace (valid (k := k) (Q := Q))
   have hbits (i : Fin k) := budget_natEq
     (budget_length (budget_comp_linear (of_inO (ComputableInO.pi_apply (encList encNat) i)) hcells))
     (budget_natMul (budget_const (encB := encNat) 3 (.refl _)) hb)
-  have htuple := finitePi hbits
+  have htuple := pi_linear hbits
   refine (budget_finite (encC := encBool)
     (fun checks : Fin k → Bool => (List.ofFn checks).all id) htuple).of_enc_eq fun _ => rfl
 
