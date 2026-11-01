@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ClauseNetwork
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ExplicitTablesPolyTime
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DirectContraction
 public import Complexity.Computability.Complexity.Problems.SAT
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
@@ -52,7 +53,7 @@ namespace Cslib.Circuits.Frontier.ClauseNetwork
 
 open Turing.MultiTapeTM ComputableInPolyTime Cslib.Logic.PL
 open Cslib.Complexity (encCNF)
-open ExplicitTensorNetwork (boundedTable)
+open ExplicitTensorNetwork (computableInPolyTime_boundedTable ports_unary_to_binary)
 
 variable {α : Type} {inp : α ↪ List Bool}
 
@@ -132,20 +133,6 @@ theorem computableInPolyTime_falsifier {os : α → List (Occurrence ℕ)}
   have hnum := (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.bitsToNat).comp hbits
   simpa only [falsifier, lsbValue_eq_ofBits, Function.comp_def] using hnum
 
-/-- A bounded table whose entries are polynomial-time at every fixed position. -/
-theorem computableInPolyTime_boundedTable (B : ℕ) {w : α → ℕ} {f : α → ℕ → ℕ}
-    (hw : ComputableInPolyTime w inp encUnary)
-    (hf : ∀ idx, ComputableInPolyTime (fun a => f a idx) inp encNat) :
-    ComputableInPolyTime (fun a => boundedTable B (w a) (f a)) inp (encList encNat) := by
-  unfold boundedTable
-  exact mapFilterConst _ (fun idx _ => binary_lt' (const idx) (binary_pow' (const 2) hw))
-    fun idx _ => hf idx
-
-private theorem binaryPorts {ps : α → List ℕ}
-    (hps : ComputableInPolyTime ps inp (encList encUnary)) :
-    ComputableInPolyTime ps inp (encList encNat) := by
-  simpa only [Function.comp_def, List.map_id'] using (map unary_to_binary).comp hps
-
 /-- **Row vertices are polynomial-time** when every entry of the row tables, at a fixed word
 value, is polynomial-time in the input and the unary row number. -/
 theorem computableInPolyTime_rowVertex (B : ℕ) {os : α → List (Occurrence ℕ)}
@@ -157,8 +144,9 @@ theorem computableInPolyTime_rowVertex (B : ℕ) {os : α → List (Occurrence �
       (encPair (encList encNat) (encList encNat)) := by
   have hps := computableInPolyTime_clausePorts hos hi
   unfold rowVertex
-  exact (binaryPorts hps).prod (computableInPolyTime_boundedTable B ((length_list _).comp hps)
-    fun idx => (hrow idx).comp (id'.prod hi))
+  exact (ports_unary_to_binary hps).prod
+    (computableInPolyTime_boundedTable B ((length_list _).comp hps)
+      fun idx => (hrow idx).comp (id'.prod hi))
 
 /-- The entries of the clause tables are polynomial-time at every fixed word value. -/
 theorem computableInPolyTime_clauseRow {os : α → List (Occurrence ℕ)}
@@ -179,7 +167,7 @@ theorem computableInPolyTime_qVertex (B : ℕ) {os : α → List (Occurrence ℕ
   have hps := computableInPolyTime_qPorts hos hw
   have hlen := (length_list _).comp hps
   unfold qVertex
-  refine (binaryPorts hps).prod (computableInPolyTime_boundedTable B hlen fun idx => ?_)
+  refine (ports_unary_to_binary hps).prod (computableInPolyTime_boundedTable B hlen fun idx => ?_)
   unfold eqEntry
   exact ite_decide (decide_or (decide_eq' (const (encOut := encNat) idx) (const 0))
     (decide_eq' (const (idx + 1)) (binary_pow' (const 2) hlen))) (const 1) (const 0)
@@ -189,7 +177,7 @@ theorem computableInPolyTime_linkVertex {u : α → ℕ} (hu : ComputableInPolyT
     ComputableInPolyTime (fun a => linkVertex (u a)) inp
       (encPair (encList encNat) (encList encNat)) := by
   unfold linkVertex
-  refine (binaryPorts (cons' (unary_add' (unary_mul' (const 3) hu) (const 1))
+  refine (ports_unary_to_binary (cons' (unary_add' (unary_mul' (const 3) hu) (const 1))
     (cons' (unary_add' (unary_mul' (const 3) hu) (const 2)) (const [])))).prod (const _)
 
 /-- **The network of an occurrence list is polynomial-time**, with its number of rows in binary,

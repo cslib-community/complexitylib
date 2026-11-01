@@ -17,7 +17,7 @@ functions and active recursive-call counts; they do not measure or certify RAM r
 -/
 
 open Cslib.Algorithms.Lean.VanEmdeBoas
-open Cslib.OrderedSet Cslib.Stateful
+open Cslib.OrderedSet Cslib.DataStructure
 
 @[expose] public section
 

@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Semantics.Stateful.Resource
+public import Complexity.DataStructure.StateTransition.Resource
 
 /-!
 # A modular queue implemented with two stacks
@@ -47,7 +47,7 @@ backend implementations must justify their primitive weights and state independe
 
 namespace Cslib.Algorithms.Lean.Queue
 
-open Cslib.Stateful
+open Cslib.DataStructure
 
 variable {α : Type}
 
@@ -61,20 +61,18 @@ inductive StackOp (α : Type) where
   deriving DecidableEq
 
 /-- A total stack specification; popping an empty stack returns `none`. -/
-abbrev stack (α : Type) : Spec where
-  State := List α
-  Op := StackOp α
-  Result
+abbrev stack (α : Type) : StateTransitionSpec :=
+  StateTransitionSpec.ofFn (State := List α) (Op := StackOp α) (Result := fun
     | .push _ => Unit
     | .pop => Option α
-    | .size => Nat
-  step s
-    | .push n => (n :: s, ())
-    | .pop => (s.tail, s.head?)
-    | .size => (s, s.length)
+    | .size => Nat)
+    fun s o => match o with
+      | .push n => (n :: s, ())
+      | .pop => (s.tail, s.head?)
+      | .size => (s, s.length)
 
 /-- Two independently addressable stacks. -/
-abbrev stackPair (α : Type) : Spec := product (stack α) (stack α)
+abbrev stackPair (α : Type) : StateTransitionSpec := product (stack α) (stack α)
 
 /-- FIFO queue operations with typed answers. -/
 inductive QueueOp (α : Type) where
@@ -83,15 +81,13 @@ inductive QueueOp (α : Type) where
   deriving DecidableEq
 
 /-- A total FIFO queue specification. -/
-abbrev queue (α : Type) : Spec where
-  State := List α
-  Op := QueueOp α
-  Result
+abbrev queue (α : Type) : StateTransitionSpec :=
+  StateTransitionSpec.ofFn (State := List α) (Op := QueueOp α) (Result := fun
     | .enqueue _ => Unit
-    | .dequeue => Option α
-  step s
-    | .enqueue n => (s ++ [n], ())
-    | .dequeue => (s.tail, s.head?)
+    | .dequeue => Option α)
+    fun s o => match o with
+      | .enqueue n => (s ++ [n], ())
+      | .dequeue => (s.tail, s.head?)
 
 /-- Move at most `n` items from the rear stack to the front stack.
 The fuel is obtained through an explicit `size` call, rather than inspecting hidden state. -/
@@ -128,28 +124,31 @@ theorem transfer_run (front back : List α) :
           (r.1, r.2.1, .inr .pop :: .inl (.push a) :: r.2.2)) (ih (a :: front))
 
 /-- Representation and behavior are proved once, before selecting a backend or cost model. -/
-def implementation : Module (queue α) (stackPair α) where
-  methods := methods
-  rep q s := q = s.1 ++ s.2.reverse
-  valid _ _ _ :=
-    (stackPair α).validHistory_of_forall_valid (by intro s o; cases o <;> trivial) _ _
-  correct {q s} o hr _ := by
-    subst q
-    obtain ⟨front, back⟩ := s
-    cases o with
-    | enqueue n =>
-      constructor
-      · rfl
-      · change (front ++ back.reverse) ++ [n] = front ++ (n :: back).reverse
-        simp [List.reverse_cons, List.append_assoc]
-    | dequeue =>
-      cases front with
-      | cons a front => exact ⟨rfl, rfl⟩
-      | nil =>
-        simp only [methods, bind, Spec.runClient_liftBind, stackPair,
-          stack, List.tail_nil, List.head?_nil]
-        rw [Spec.runClient_bind, transfer_run]
-        simp
+def implementation : Module (queue α) (stackPair α) :=
+  Module.ofFn
+    (methods := methods)
+    (rep := fun q s => q = s.1 ++ s.2.reverse)
+    (valid := fun _ _ _ =>
+      (stackPair α).validHistory_of_forall_valid (by intro s o; cases o <;> trivial) _ _)
+    (correct := by
+      intro q s o hr _
+      subst q
+      obtain ⟨front, back⟩ := s
+      cases o with
+      | enqueue n =>
+        constructor
+        · rfl
+        · change (front ++ back.reverse) ++ [n] = front ++ (n :: back).reverse
+          simp [List.reverse_cons, List.append_assoc]
+      | dequeue =>
+        cases front with
+        | cons a front => exact ⟨rfl, rfl⟩
+        | nil =>
+          simp only [methods, bind, StateTransitionSpec.clientResult,
+            StateTransitionSpec.clientState, StateTransitionSpec.runClient_liftBind,
+            stackPair, stack, List.tail_nil, List.head?_nil]
+          rw [StateTransitionSpec.runClient_bind, transfer_run]
+          simp)
 
 /-- Each transferred element incurs one pop and one push. -/
 theorem transferTrace_length (back : List α) : (transferTrace back).length = 2 * back.length := by
@@ -174,10 +173,10 @@ theorem potential_step (s : (stackPair α).State) (o : QueueOp α) :
       change 1 + 2 * back.length ≤ 3 + 2 * back.length
       omega
     | nil =>
-      simp only [methods, bind, Spec.runClient_liftBind, stackPair,
+      simp only [methods, bind, StateTransitionSpec.runClient_liftBind, stackPair,
         stack, List.tail_nil, List.head?_nil]
-      rw [Spec.runClient_bind, transfer_run]
-      simp only [Spec.runClient_liftBind, Spec.runClient_pure]
+      rw [StateTransitionSpec.runClient_bind, transfer_run]
+      simp only [StateTransitionSpec.runClient_liftBind, StateTransitionSpec.runClient_pure]
       change (transferTrace back ++ [Sum.inl StackOp.pop]).length + 2 ≤ 3 + 2 * back.length
       rw [List.length_append, transferTrace_length]
       simp only [List.length_singleton]
@@ -188,14 +187,14 @@ private theorem weighted_potential_step (K : Nat) {q : (queue α).State} {s : (s
     (stackPair α).totalCost (fun _ _ => K) s ((stackPair α).runClient s (methods o)).2.2 +
         K * (2 * ((stackPair α).runClient s (methods o)).2.1.2.length) ≤
       3 * K + K * (2 * s.2.length) := by
-  rw [Spec.totalCost_const]
+  rw [StateTransitionSpec.totalCost_const]
   simpa only [Nat.mul_add, Nat.add_mul, Nat.mul_comm K] using
     Nat.mul_le_mul_left K (potential_step s o)
 
 /-- Uniform primitive bounds can be chosen after proving queue correctness. The same theorem
 applies to any additive measure on any backend's native traces. It also retains leftover credit. -/
 theorem realized_client {C Trace β : Type} {exec : Execution (stackPair α) C Trace}
-    (R : Realization (stackPair α) exec) (weight : Trace → Nat) (K : Nat)
+    (R : StateTransitionImpl (stackPair α) exec) (weight : Trace → Nat) (K : Nat)
     (B : Bound R weight (fun _ _ => K)) (p : (queue α).Client β)
     {q : List α} {s : (stackPair α).State} {c : C}
     (hrep : implementation.rep q s) (hbackend : R.rep s c) :
@@ -211,11 +210,11 @@ theorem realized_client {C Trace β : Type} {exec : Execution (stackPair α) C T
     (fun _ s => K * (2 * s.2.length)) (fun _ _ => 3 * K)
     (weighted_potential_step K) hrep hbackend hv he
   refine ⟨c', chunks.flatten, s', link_exec methods exec he, hrep', hr', ?_⟩
-  simpa only [total_flatten, Spec.totalCost_const] using ht
+  simpa only [total_flatten, StateTransitionSpec.totalCost_const] using ht
 
 /-- Correctness and the same resource bound hold for every supplied flattened execution. -/
 theorem realized_client_bound {C Trace β : Type} {exec : Execution (stackPair α) C Trace}
-    (R : Realization (stackPair α) exec) (weight : Trace → Nat) (K : Nat)
+    (R : StateTransitionImpl (stackPair α) exec) (weight : Trace → Nat) (K : Nat)
     (B : Bound R weight (fun _ _ => K)) (p : (queue α).Client β)
     {q : List α} {s : (stackPair α).State} {c c' : C} {a : β} {traces : List Trace}
     (hrep : implementation.rep q s) (hbackend : R.rep s c)
@@ -232,6 +231,6 @@ theorem realized_client_bound {C Trace β : Type} {exec : Execution (stackPair �
     (fun _ s => K * (2 * s.2.length)) (fun _ _ => 3 * K)
     (weighted_potential_step K) hrep hbackend hv hc
   refine ⟨ha, s', hrep', hr', ?_⟩
-  simpa only [ht, total_flatten, Spec.totalCost_const] using hb
+  simpa only [ht, total_flatten, StateTransitionSpec.totalCost_const] using hb
 
 end Cslib.Algorithms.Lean.Queue

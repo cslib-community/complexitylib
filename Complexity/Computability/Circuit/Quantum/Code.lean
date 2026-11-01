@@ -29,7 +29,9 @@ definition of uniform circuit families.
 A run starts in the basis state `|x 0^{m - n}⟩` holding the input word `x` of length `n` on the
 first qubits (`Cslib.Quantum.inputState`), and accepts when the final measurement finds qubit `0`
 in state `1` (`Cslib.Quantum.accepting`, `Cslib.Quantum.acceptProb`), as in
-[Arora, Barak][AroraBarak09], Chapter 10.
+[Arora, Barak][AroraBarak09], Chapter 10. More generally, `Cslib.Quantum.onesProb` is the
+probability that the final measurement finds every qubit of a list `S` in state `1`, the events on
+which postselected classes condition.
 
 Classical reversible gates permute basis states, updating the bit of their target
 (`Cslib.Quantum.GateCode.eval_toPlacedGate_ket`). Appending a NOT gate on qubit `0` exchanges
@@ -42,6 +44,8 @@ acceptance and rejection (`Cslib.Quantum.acceptProb_append_not`).
 * `Cslib.Quantum.Circuit.ofCodes`: the circuit denoted by a list of gate codes.
 * `Cslib.Quantum.inputState`, `Cslib.Quantum.accepting`, `Cslib.Quantum.acceptProb`: the input
   basis state, the accepting outcomes and the acceptance probability.
+* `Cslib.Quantum.onesAt`, `Cslib.Quantum.onesProb`: the outcomes in which every qubit of a list
+  reads `1`, and their probability; acceptance is the case of qubit `0`.
 
 ## Main results
 
@@ -249,28 +253,55 @@ theorem Circuit.ofCodes_append (gs hs : List GateCode) :
 first qubits (truncated when `x` is longer than `m`). -/
 def inputState (m : ℕ) (x : List Bool) : Fin m → Bool := fun i => x.getD i false
 
+/-- The outcomes in which every qubit of `S` reads `1`. -/
+def onesAt (m : ℕ) (S : List ℕ) : Finset (Fin m → Bool) :=
+  univ.filter fun y => ∀ j ∈ S, ∃ h : j < m, y ⟨j, h⟩ = true
+
+/-- The probability that the final measurement of the circuit with gate codes `gs` on `m` qubits,
+started in `|x 0^{m - n}⟩`, finds every qubit of `S` in state `1`. The acceptance probability is the
+case `S = [0]` (`Cslib.Quantum.acceptProb_eq_onesProb`). -/
+noncomputable def onesProb (m : ℕ) (gs : List GateCode) (S : List ℕ) (x : List Bool) : ℝ :=
+  measureProb (Circuit.run (Circuit.ofCodes m gs) (inputState m x)) (onesAt m S)
+
+theorem onesProb_nonneg (m : ℕ) (gs : List GateCode) (S : List ℕ) (x : List Bool) :
+    0 ≤ onesProb m gs S x :=
+  measureProb_nonneg _ _
+
+theorem onesProb_le_one (m : ℕ) (gs : List GateCode) (S : List ℕ) (x : List Bool) :
+    onesProb m gs S x ≤ 1 := by
+  have h := measureProb_le_measureProb_univ
+    (Circuit.run (Circuit.ofCodes m gs) (inputState m x)) (onesAt m S)
+  rwa [measureProb_univ, Circuit.norm_run, one_pow] at h
+
+/-- The event of no condition is certain. -/
+@[simp] theorem onesProb_nil (m : ℕ) (gs : List GateCode) (x : List Bool) :
+    onesProb m gs [] x = 1 := by
+  rw [onesProb, show onesAt m [] = univ by simp [onesAt], measureProb_univ, Circuit.norm_run,
+    one_pow]
+
 /-- The accepting outcomes: qubit `0` reads `1`. -/
-def accepting (m : ℕ) : Finset (Fin m → Bool) :=
-  univ.filter fun y => ∃ h : 0 < m, y ⟨0, h⟩ = true
+def accepting (m : ℕ) : Finset (Fin m → Bool) := onesAt m [0]
 
 /-- The **acceptance probability** of the circuit with gate codes `gs` on `m` qubits on input `x`:
 started in `|x 0^{m - n}⟩`, the final measurement finds qubit `0` in state `1`. -/
 noncomputable def acceptProb (m : ℕ) (gs : List GateCode) (x : List Bool) : ℝ :=
   measureProb (Circuit.run (Circuit.ofCodes m gs) (inputState m x)) (accepting m)
 
+theorem acceptProb_eq_onesProb (m : ℕ) (gs : List GateCode) (x : List Bool) :
+    acceptProb m gs x = onesProb m gs [0] x :=
+  rfl
+
 theorem acceptProb_nonneg (m : ℕ) (gs : List GateCode) (x : List Bool) :
     0 ≤ acceptProb m gs x :=
-  measureProb_nonneg _ _
+  onesProb_nonneg m gs [0] x
 
 theorem acceptProb_le_one (m : ℕ) (gs : List GateCode) (x : List Bool) :
-    acceptProb m gs x ≤ 1 := by
-  have h := measureProb_le_measureProb_univ
-    (Circuit.run (Circuit.ofCodes m gs) (inputState m x)) (accepting m)
-  rwa [measureProb_univ, Circuit.norm_run, one_pow] at h
+    acceptProb m gs x ≤ 1 :=
+  onesProb_le_one m gs [0] x
 
 theorem mem_accepting (hm : 0 < m) {y : Fin m → Bool} :
     y ∈ accepting m ↔ y ⟨0, hm⟩ = true := by
-  simp [accepting, hm]
+  simp [accepting, onesAt, hm]
 
 /-- The probability of the rejecting outcomes is one minus the acceptance probability. -/
 private theorem measureProb_compl_accepting (ψ : Qubits m) (hψ : ‖ψ‖ = 1) :
