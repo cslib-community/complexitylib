@@ -1731,6 +1731,9 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Alternating
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Game
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.GuessVerify
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.EncodedTree
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputationTree
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockTrace
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Append
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Comp
@@ -2358,6 +2361,7 @@ public import Complexity.Computability.RAM.Squaring
 public import Complexity.Computability.Reduction.ManyOne
 public import Complexity.Computability.TreeEval.Ary.Basic
 public import Complexity.Computability.TreeEval.Ary.CookMertz
+public import Complexity.Computability.TreeEval.Ary.Descending
 public import Complexity.Computability.TreeEval.Ary.Iterative
 public import Complexity.Computability.TreeEval.Ary.IterativeBounds
 public import Complexity.Computability.TreeEval.Ary.IterativeCorrect
