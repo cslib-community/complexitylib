@@ -109,7 +109,7 @@ theorem isPolyTime_cnfEdge :
   have hliteral := ComputableInPolyTime.getElem? (encA := encPair encUnary encBool)
     hclause (hindex.comp ((snd _ _).snd'))
   unfold cnfEdge
-  refine Edge.isPolyTime_mk (by fun_prop) (by fun_prop) ?_
+  refine Edge.encoding_mk_polyTime (by fun_prop) (by fun_prop) ?_
   refine pi fun a => pi fun b => ?_
   have ha : ComputableInPolyTime a (encFinEnum (Fin 3)) encBool := .of_finite _
   fun_prop

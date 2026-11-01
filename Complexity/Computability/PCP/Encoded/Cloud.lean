@@ -73,7 +73,7 @@ theorem isPolyTime_halfEdges {graph : Input → Graph C}
   have hrange : ComputableInPolyTime (fun x => List.range (graph x).edges.length)
       input (encList encUnary) :=
     ComputableInPolyTime.range.comp
-      ((ComputableInPolyTime.length_list (Edge.encoding enc)).comp (isPolyTime_edges hgraph))
+      ((ComputableInPolyTime.length_list (Edge.encoding enc)).comp (encoding_edges_polyTime hgraph))
   unfold halfEdges List.product
   exact ComputableInPolyTime.flatMapWithInput hrange
     (ComputableInPolyTime.mapWithInput
@@ -92,7 +92,7 @@ theorem isPolyTime_endpoint {graph : Input → Graph C} {halfEdge : Input → �
       input encUnary := by
   have hedge := isPolyTime_edgeAt hgraph hhalfEdge.fst' fallback
   unfold endpoint
-  exact hhalfEdge.snd'.ite (Edge.isPolyTime_dst hedge) (Edge.isPolyTime_src hedge)
+  exact hhalfEdge.snd'.ite (Edge.encoding_dst_polyTime hedge) (Edge.encoding_src_polyTime hedge)
 
 /-- Cloud enumeration charges each endpoint lookup and the entire filtered output. -/
 @[fun_prop]

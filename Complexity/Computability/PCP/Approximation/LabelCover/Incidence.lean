@@ -273,10 +273,10 @@ private theorem isPolyTime_block (pairs : List (α × α)) (fallback : α × α)
       (encPair (Edge.encoding (encPi (encPi encBool))) encUnary)
       (encList (Edge.encoding (encPi encA))) := by
     unfold block
-    exact (Edge.isPolyTime_mk hidx (Edge.isPolyTime_src hleft)
-      (hproj₁.comp (Edge.isPolyTime_constraint hleft))).cons'
-        ((Edge.isPolyTime_mk hidx (Edge.isPolyTime_dst hleft)
-          (hproj₂.comp (Edge.isPolyTime_constraint hleft))).cons' (.const []))
+    exact (Edge.encoding_mk_polyTime hidx (Edge.encoding_src_polyTime hleft)
+      (hproj₁.comp (Edge.encoding_constraint_polyTime hleft))).cons'
+        ((Edge.encoding_mk_polyTime hidx (Edge.encoding_dst_polyTime hleft)
+          (hproj₂.comp (Edge.encoding_constraint_polyTime hleft))).cons' (.const []))
   exact hb
 
 omit [DecidableEq α] [Fintype α] in
@@ -305,7 +305,7 @@ private theorem isPolyTime_incidence (pairs : List (α × α)) (fallback : α ×
       (fun g : Graph (α → α → Bool) => g.edges.length)
       (Graph.encoding (encPi (encPi encBool))) encUnary :=
     (ComputableInPolyTime.length_list (Edge.encoding (encPi (encPi encBool)))).comp
-      (Graph.isPolyTime_edges ComputableInPolyTime.id')
+      (Graph.encoding_edges_polyTime ComputableInPolyTime.id')
   have hrange := ComputableInPolyTime.range.comp hlen
   have hindex : ComputableInPolyTime
       (fun p : Graph (α → α → Bool) × ℕ => p.2)
@@ -324,11 +324,11 @@ private theorem isPolyTime_incidence (pairs : List (α × α)) (fallback : α ×
       (fun g : Graph (α → α → Bool) => g.vertices + g.edges.length)
       (Graph.encoding (encPi (encPi encBool))) encUnary :=
     ComputableInPolyTime.unary_add'
-      (Graph.isPolyTime_vertices (ComputableInPolyTime.id'
+      (Graph.encoding_vertices_polyTime (ComputableInPolyTime.id'
         (encIn := Graph.encoding (encPi (encPi encBool))))) hlen
   unfold incidence
   simp_rw [zipIdx_edges_eq, List.flatMap_map]
-  exact Graph.isPolyTime_mk hvertices hedges
+  exact Graph.encoding_mk_polyTime hvertices hedges
 
 omit [DecidableEq α] in
 /-- The incidence reduction is polynomial-time for every fixed finite alphabet and fixed pair

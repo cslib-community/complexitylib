@@ -155,14 +155,14 @@ theorem isPolyTime_composeEdge [Fintype α] [Finite I] [Finite P] [Finite R] [Fi
       (encPair (encPi (encPi encBool)) (encPair coinsEncoding queryEncoding))
       (encFinite ((Fin 2 × I) ⊕ P)) := .of_finite _
   have hposition' := hposition.comp
-    ((Edge.isPolyTime_constraint hedge).prod (hcoins.prod hquery))
-  have hdst' := isPolyTime_composePosition number hindex (Edge.isPolyTime_src hedge)
-    (Edge.isPolyTime_dst hedge) hposition'
-  exact Edge.isPolyTime_mk
+    ((Edge.encoding_constraint_polyTime hedge).prod (hcoins.prod hquery))
+  have hdst' := isPolyTime_composePosition number hindex (Edge.encoding_src_polyTime hedge)
+    (Edge.encoding_dst_polyTime hedge) hposition'
+  exact Edge.encoding_mk_polyTime
     (ComputableInPolyTime.unary_add.comp
       ((ComputableInPolyTime.unary_mul.comp (hindex.prod (.const width))).prod
         (hnumber.comp hcoins))) hdst'
-    ((Edge.isPolyTime_constraint hedge).prod (hcoins.prod hquery))
+    ((Edge.encoding_constraint_polyTime hedge).prod (hcoins.prod hquery))
 
 /-- The verifier's edge predicate charges all supplied finite tables and query answers. -/
 @[fun_prop]

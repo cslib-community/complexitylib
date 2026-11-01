@@ -7,6 +7,7 @@ Authors: Bolton Bailey, Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import Complexity.Algorithms.Reachability.Savitch
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -94,20 +95,9 @@ namespace Savitch
 
 /-! ### Encodings -/
 
-/-- The fields of a frame. -/
-def Frame.fields (f : Frame) : ℕ × List Bool × List Bool × List Bool × Bool :=
-  (f.level, f.src, f.dst, f.mid, f.phase)
-
-/-- The encoding of the fields of a frame: the level in unary, the words as themselves. -/
-abbrev encFrameFields : ℕ × List Bool × List Bool × List Bool × Bool ↪ List Bool :=
-  encPair encUnary (encPair encBits (encPair encBits (encPair encBits encBool)))
-
-/-- Frames encoded by their fields. -/
-def encFrame : Frame ↪ List Bool :=
-  ⟨fun f => encFrameFields f.fields, fun f g h => by
-    obtain ⟨⟩ := f
-    obtain ⟨⟩ := g
-    simpa [Frame.fields] using encFrameFields.injective h⟩
+/-- Frames encoded by their fields: the level in unary, the words as themselves. -/
+enc_structure encFrame : Frame where
+  level : encUnary, src : encBits, dst : encBits, mid : encBits, phase : encBool
 
 /-- The register as a pending call, if any, and the returned value, `false` during a call. -/
 def Reg.toPair : Reg → Option (ℕ × List Bool × List Bool) × Bool
@@ -124,11 +114,7 @@ def encReg : Reg ↪ List Bool :=
     cases r <;> cases r' <;> simp_all [Reg.toPair]⟩
 
 /-- States encoded as the list of their frames followed by their register. -/
-def encState : State ↪ List Bool :=
-  ⟨fun s => encPair (encList encFrame) encReg (s.stack, s.reg), fun s s' h => by
-    obtain ⟨⟩ := s
-    obtain ⟨⟩ := s'
-    simpa using (encPair (encList encFrame) encReg).injective h⟩
+enc_structure encState : State where stack : (encList encFrame), reg : encReg
 
 /-! ### The step in linear time, apart from the edge test -/
 
@@ -220,11 +206,11 @@ attribute [local fun_prop] ComputableTidilyInDegree.increment
 /-- The stack of a state. -/
 @[local fun_prop] private lemma stack_deg :
     ComputableTidilyInDegree State.stack encState (encList encFrame) 1 1 :=
-  of_linear (.of_unframe fun s => by simp [encState])
+  of_linear (.of_unframe fun s => by simp [encState_apply])
 
 /-- The register of a state. -/
 @[local fun_prop] private lemma reg_deg : ComputableTidilyInDegree State.reg encState encReg 1 1 :=
-  of_linear (.of_dropFrame fun s => by simp [encState])
+  of_linear (.of_dropFrame fun s => by simp [encState_apply])
 
 /-- The register as a pair, the identity on encoded values. -/
 @[local fun_prop] private lemma toPair_deg :
@@ -232,7 +218,8 @@ attribute [local fun_prop] ComputableTidilyInDegree.increment
   of_eq fun _ => rfl
 
 /-- The fields of a frame, the identity on encoded values. -/
-private lemma fields_deg : ComputableTidilyInDegree Frame.fields encFrame encFrameFields 1 1 :=
+private lemma fields_deg : ComputableTidilyInDegree
+    (fun f : Frame => (f.level, f.src, f.dst, f.mid, f.phase)) encFrame encFrameFields 1 1 :=
   of_eq fun _ => rfl
 
 /-- The level of a frame. -/
@@ -355,8 +342,7 @@ private theorem step_eq (edge : List Bool → List Bool → Bool) (w : ℕ) (s :
 theorem length_encFrame (f : Frame) :
     (encFrame f).length =
       2 * f.level + 2 * f.src.length + 2 * f.dst.length + 2 * f.mid.length + 5 := by
-  change (encFrameFields f.fields).length = _
-  simp only [Frame.fields, length_encPair, encUnary_apply, encBits_apply, encBool_apply,
+  simp only [encFrame_apply, length_encPair, encUnary_apply, encBits_apply, encBool_apply,
     List.length_replicate, List.length_singleton]
   omega
 
@@ -374,7 +360,7 @@ theorem length_encReg_ret (b : Bool) : (encReg (.ret b)).length = 2 := rfl
 /-- The length of an encoded state. -/
 theorem length_encState (s : State) :
     (encState s).length = 2 * (encList encFrame s.stack).length + 1 + (encReg s.reg).length := by
-  simp [encState]
+  simp [encState_apply]
 
 /-! ### A step carrying the parameter of the edge test -/
 

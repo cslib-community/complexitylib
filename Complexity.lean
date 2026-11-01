@@ -2066,6 +2066,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pi
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.StepMachine
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.StepMachineComp
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.StreamFold
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Sum
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Tape
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Unary

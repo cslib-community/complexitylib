@@ -9,6 +9,7 @@ module
 
 public import Complexity.Crypto.Computational.Hybrid.Sequence
 public import Complexity.Crypto.Computational.Prediction
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import Complexity.Computability.Probabilistic.CoinTape
 import Complexity.Tactic.PPT
 
@@ -70,16 +71,8 @@ structure Description where
 namespace Description
 
 /-- Encode a description using the shared pair representation. -/
-def encoding : Description ↪ List Bool :=
-  ⟨fun desc => encPair encBool
-    (encPair encBool (encPair encBits (encPair encBits encBits)))
-      (desc.active, desc.trial, desc.front, desc.back, desc.coins), by
-    intro left right h
-    have hfields := (encPair encBool
-      (encPair encBool (encPair encBits (encPair encBits encBits)))).injective h
-    cases left
-    cases right
-    simpa using hfields⟩
+enc_structure encoding : Description where
+  active : encBool, trial : encBool, front : encBits, back : encBits, coins : encBits
 
 /-- Decode any word. Missing or malformed fields use the total pair projections. -/
 def decode (code : List Bool) : Description where
@@ -91,15 +84,14 @@ def decode (code : List Bool) : Description where
 
 @[simp] theorem decode_encoding (desc : Description) : decode (encoding desc) = desc := by
   cases desc
-  simp only [decode, encoding, Function.Embedding.coeFn_mk, encPair_apply,
-    unframe_frame_append, dropFrame_frame_append, encBool_apply, List.headD_cons,
-    encBits, Function.Embedding.refl_apply]
+  simp only [decode, encoding_apply, encPair_apply, unframe_frame_append, dropFrame_frame_append,
+    encBool_apply, List.headD_cons, encBits, Function.Embedding.refl_apply]
 
 @[simp] theorem length_encoding (desc : Description) :
     (encoding desc).length =
       2 * (desc.front.length + desc.back.length) + desc.coins.length + 8 := by
-  simp only [encoding, Function.Embedding.coeFn_mk, length_encPair, encBool_apply,
-    List.length_singleton, encBits, Function.Embedding.refl_apply]
+  simp only [encoding_apply, length_encPair, encBool_apply, List.length_singleton, encBits,
+    Function.Embedding.refl_apply]
   lia
 
 /-- Insert a labeled example directly into the saved encoded input. -/
@@ -150,7 +142,7 @@ theorem isPPTOn_save {Param : Type} {input : Param ↪ List Bool}
     (hwidth : ComputableInPolyTime width input encUnary)
     (htrial : ComputableInPolyTime trial input encBool) :
     IsPPTOn input encBits (fun a => save c d (width a) (trial a) (front a) (back a)) := by
-  simp only [save, coinBudget, Description.encoding, Function.Embedding.coeFn_mk]
+  simp only [save, coinBudget, Description.encoding_apply]
   ppt
 
 attribute [program_certificate] isPPTOn_save
@@ -428,7 +420,8 @@ theorem isPPTOn_sample {Param : Type} {input : Param ↪ List Bool} {output : α
   have hbase := hbase.tidy
   have hcount := hcount.tidy
   have hwidth := hwidth.tidy
-  unfold sample Description.encoding
+  unfold sample
+  simp only [Description.encoding_apply]
   ppt
 
 attribute [program_certificate hreplacement] isPPTOn_sample

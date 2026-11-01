@@ -142,7 +142,7 @@ theorem polyTime_repeatedEdgeVerifier (width repeats : ℕ) (decode : (Fin width
   have hclog : ComputableInPolyTime (fun g : Graph C => (edgeVerifier width decode eval).coins g)
       (encoding enc) encUnary :=
     (ComputableInPolyTime.unary_clog_const 2).comp
-      ((ComputableInPolyTime.length_list (Edge.encoding enc)).comp (isPolyTime_edges .id'))
+      ((ComputableInPolyTime.length_list (Edge.encoding enc)).comp (encoding_edges_polyTime .id'))
   refine ⟨?_, ?_, ?_⟩
   · exact ComputableInPolyTime.unary_to_binary.comp
       (ComputableInPolyTime.unary_mul.comp ((ComputableInPolyTime.const repeats).prod hclog))

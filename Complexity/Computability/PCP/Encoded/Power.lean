@@ -230,7 +230,7 @@ private theorem polytime_powerPreprocessEdge (eval : C → α → α → Bool) (
   have hrel := RegularConstraintGraph.isPolyTime_powerRelationWithInput
     hr he T q (encFinEnum (Fin q))
   unfold powerPreprocessEdge
-  refine Edge.isPolyTime_mk ?_ ?_ ?_
+  refine Edge.encoding_mk_polyTime ?_ ?_ ?_
   · fun_prop
   · exact isPolyTime_halfEdgeNumber.comp hwalk.fst'
   · apply pi
@@ -259,7 +259,7 @@ private theorem polytime_powerPreprocess (eval : C → α → α → Bool) (fall
     unfold List.product
     fun_prop
   unfold powerPreprocess
-  refine isPolyTime_mk ?_ ?_
+  refine encoding_mk_polyTime ?_ ?_
   · fun_prop
   · exact mapWithInput hdarts hedge
 
