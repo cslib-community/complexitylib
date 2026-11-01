@@ -19,14 +19,20 @@ all-capacity, high-independence Word-RAM hash family in Complexitylib (`provable
 `provableObliviousSequenceImpl` in
 `Complexity/DataStructure/HashFamily/WordRAM/DoubleTabulation.lean`),
 specialized to the polynomial key-universe exponent `c_exp = 4` (`U ≤ max n_max 4 ^ 4`).
+To verify that the formalization establishes the intended mathematical claims, a reader only needs
+to inspect the definitions and theorem statements in this file; Lean verifies the proofs through
+`ComplexityAbstracts.HashFamiliesBridge`, and `#check_abstract` audits that every public declaration
+and theorem statement depends only on this file and upstream background libraries.
 
 ## Regime-Switched Construction and Resource Bounds
 
 Given a target independence parameter `k : ℕ`, a capacity parameter `n_max : ℕ`, a key universe
 `Fin U` with `U ≤ max n_max 4 ^ 4`, and an output bit-width `M ≤ 4 * Nat.clog 2 (max n_max 4) + 5`
-(hash codomain `Fin (2 ^ M)`), the construction switches at the explicit capacity threshold
-`regimeThreshold = 2 ^ 320000` (`doubleTabThreshold 4`, derived from `b ≥ 4 * (8 + 48 * 4) ^ 2 =
-160000`):
+(hash codomain `Fin (2 ^ M)`), the construction selects 23-register Word-RAM programs per instance
+`(k, n_max, U, M)` (independently of the word width `w` and runtime base address `base`, with no
+bound stated on static program length `List.length`; all time bounds below count executed
+instructions only), switching at the explicit capacity threshold `regimeThreshold = 2 ^ 320000`
+(`doubleTabThreshold 4`, derived from `b ≥ 4 * (8 + 48 * 4) ^ 2 = 160000`):
 
 1. **Small-capacity regime (`n_max < 2 ^ 320000`)**:
    Evaluates a degree-`(k - 1)` polynomial over a binary trinomial extension field `GF(2 ^ D)` of
@@ -36,52 +42,61 @@ Given a target independence parameter `k : ℕ`, a capacity parameter `n_max : �
    accelerated by a precomputed four-Russians multiplication lookup table of size
    `2 ^ (2 * chunkBits n_max)` words (`chunkBits n_max = max 1 (Nat.log 2 (max n_max 2) / 3)`).
    Every seed is **exact** `k`-wise independent (`failureProbBound k n_max = 0`), `.eval u` runs in
-   `evalTimeBound k = max (111230 * k + 19) 6858 + 4` instructions (`O_k(1)`), and `.resample` draws
-   `k` random words in `5 * k + 13` instructions (`O_k(1)`).
+   `evalTimeBound k = max (111230 * k + 19) 6858 + 4` executed instructions (`O_k(1)`), and
+   `.resample` draws `k` random words in `5 * k + 13` executed instructions (`O_k(1)`).
 2. **Large-capacity regime (`n_max ≥ 2 ^ 320000`)**:
    Uses Thorup's double-tabulation construction `[Thorup2013]` (FOCS 2013, pp. 90–99;
    `arXiv:1311.3121v2`, Theorem 1(a) p. 4, Lemma 2 p. 5, and Section 2 Eqs. (6)–(7) p. 11) with
    character bit-width `b = charBits n_max = (1 + Nat.clog 2 (max n_max 4)) / 2`, input alphabet
-   `Σ = Fin (2 ^ b)`, top position count `c = 8`, intermediate position count `d = 64`, counting
-   parameter `q = 4` (`d = 2 * q * c`), and `576 * 2 ^ b` words of table storage
-   (`(c + 1) * d * |Σ|`).
-   Each `.eval u` performs `c + d` table lookups in `evalTimeBound k` instructions (`O_k(1)`), and
-   `.resample` refreshes all `576 * 2 ^ b` table entries in `2880 * 2 ^ b + 16` instructions
-   (`O(n_max)`). Whereas `[Thorup2013]` Theorem 1(a), with input and intermediate alphabets both
-   `Σ`, states failure probability `o(|Σ| ^ 2 / |Σ| ^ (d / (2 * c)))` for
-   `k = |Σ| ^ (1 / (5 * c))`, the library's fixed-`k` proof
-   adaptation bounds each resampling epoch's failure probability by `failureProbBound k n_max`:
-   whenever `2 * codeBound k ≤ 2 ^ (3 * b)` (where `codeBound k = 8 * ((8 * k) ^ 16 * 64) ^ 4 =
-   2 ^ 219 * k ^ 64` from Section 2, Eqs. (6)–(7), p. 11 at `c = 8, d = 64, q = 4`),
-   `failureProbBound k n_max = 2 * (codeBound k) ^ 2 / 2 ^ (6 * b) ≤
-   2 * (codeBound k) ^ 2 / max n_max 4 ^ 3`.
+   `Σ = Fin (2 ^ b)` of size `O(n_max ^ (1 / 2))`, top position count `c = 8`, intermediate position
+   count `d = 64`, counting parameter `q = 4` (`d = 2 * q * c`), and `576 * 2 ^ b` words of table
+   storage (`(c + 1) * d * |Σ|`, which is `O(n_max ^ (1 / 2))` words).
+   Each `.eval u` performs `c + d` table lookups in `evalTimeBound k` executed instructions
+   (`O_k(1)`), and `.resample` refreshes all `576 * 2 ^ b` table entries in `2880 * 2 ^ b + 16`
+   executed instructions (`O(n_max ^ (1 / 2))`). Whereas `[Thorup2013]` Theorem 1(a), with input and
+   intermediate alphabets both `Σ`, states failure probability `o(|Σ| ^ 2 / |Σ| ^ (d / (2 * c)))`
+   for `k = |Σ| ^ (1 / (5 * c))`, the library's fixed-`k` proof adaptation bounds each resampling
+   epoch's failure probability by `failureProbBound k n_max`: whenever the non-triviality condition
+   `2 * codeBound k ≤ 2 ^ (3 * b)` holds (where `codeBound k = 8 * ((8 * k) ^ 16 * 64) ^ 4 =
+   2 ^ 219 * k ^ 64` from Section 2, Eqs. (6)–(7), p. 11 at `c = 8, d = 64, q = 4`, satisfied for
+   `k` up to roughly `n_max ^ (3 / 128)`), `failureProbBound k n_max =
+   2 * (codeBound k) ^ 2 / 2 ^ (6 * b) ≤ 2 * (codeBound k) ^ 2 / max n_max 4 ^ 3`. When
+   `2 * codeBound k > 2 ^ (3 * b)`, `failureProbBound k n_max = 1`, so the coupling bound in
+   `WhpKWiseContract` is vacuous and only transcript matching (`TranscriptMatches`) holds.
 
 Across all `n_max : ℕ`, the memory footprint satisfies `space k n_max ≤ (k + 9232) * (n_max + 1)`
-words (`space_le`), `.eval u` halts within `evalTimeBound k ≤ 111230 * k + 6862` instructions
-(`evalTimeBound_le`), and `.resample` halts within
-`resampleTime k n_max ≤ (5 * k + 46096) * (n_max + 1)` instructions (`resampleTime_le`).
+words (`space_le`), `.eval u` halts within `evalTimeBound k ≤ 111230 * k + 6862` executed
+instructions (`evalTimeBound_le`), and `.resample` halts within
+`resampleTime k n_max ≤ (5 * k + 46096) * (n_max + 1)` executed instructions (`resampleTime_le`).
 
 ## Multi-Operation Execution and High-Probability `k`-Wise Independence Contract
 
 The headline theorems `highIndependenceHashFamily_fresh` (for fresh zeroed memory in
 `[base, base + space k n_max)`) and `highIndependenceHashFamily_clear` (for arbitrary initial
-memory, including an explicit zero-fill pass) package:
+memory, including an explicit zero-fill pass) quantify `∀ k n_max U M, … → ∃ p_init p_op,
+∀ w base, …`: the programs `p_init` (resp. `p_initClear`) and `p_op` are chosen per instance
+`(k, n_max, U, M)` (independently of `w` and `base`), no bound on static program size
+(`List.length`) is stated, and all time bounds count executed instructions only. They package:
 
 - **Initialization (`p_init` / `p_initClear`)**: halts within `initFreshTime k n_max U M` (resp.
-  `initClearTime k n_max U M`) instructions on every execution branch (`HaltsWithin` and bounded
-  `expectedTime`), modifies memory only inside `[base, base + space k n_max)`, sets register `0` to
-  `base` and register `22` to `base + space k n_max`, and produces an initial state distribution
-  `ν₀` with empty transcript `[]`.
+  `initClearTime k n_max U M`) executed instructions on every execution branch (`HaltsWithin` and
+  bounded `expectedTime`), modifies memory only inside `[base, base + space k n_max)`, sets register
+  `0` to `base` and register `22` to `base + space k n_max`, and produces an initial state
+  distribution `ν₀` with empty transcript `[]`.
 - **Sequential multi-operation execution (`RunsOps`)**: for every oblivious operation sequence
   `ops : List (Op U)` of `.resample` and `.eval u` calls, running `p_op` sequentially from `ν₀`
-  halts within `evalTimeBound k` steps on each `.eval u` (deterministically and without modifying
-  memory) and within `resampleTime k n_max` steps on each `.resample` (modifying memory only inside
-  `[base, base + space k n_max)`), producing a final state distribution `ν_final`.
+  halts within `evalTimeBound k` executed steps on each `.eval u` (deterministically and without
+  modifying memory) and within `resampleTime k n_max` executed steps on each `.resample` (modifying
+  memory only inside `[base, base + space k n_max)`), producing a final state distribution
+  `ν_final`.
 - **High-probability `k`-wise independence (`WhpKWiseContract`)**: whenever every resampling epoch
   in `ops` queries at most `k` distinct keys (`BoundedEpochKeys k ops`), the transcript marginal
-  `ν_final.map SeqState.transcript` matches `ops` and is coupled (`CoupledWithin`) to the ideal
-  random-oracle transcript distribution `idealTranscriptPMF ops` within total variation / coupling
-  disagreement at most `epochCount ops * failureProbBound k n_max`.
+  `ν_final.map SeqState.transcript` matches `ops` (`TranscriptMatches`) and is coupled
+  (`CoupledWithin`) to the ideal random-oracle transcript distribution `idealTranscriptPMF ops`
+  within disagreement probability at most `epochCount ops * failureProbBound k n_max` (which is `0`
+  for `n_max < 2 ^ 320000`, at most `epochCount ops * (2 * (codeBound k) ^ 2 / max n_max 4 ^ 3)` for
+  `n_max ≥ 2 ^ 320000` with `2 * codeBound k ≤ 2 ^ (3 * charBits n_max)`, and vacuous when
+  `n_max ≥ 2 ^ 320000` and `2 * codeBound k > 2 ^ (3 * charBits n_max)`).
 -/
 
 namespace ComplexityAbstracts.HashFamiliesAbstract
@@ -141,12 +156,6 @@ noncomputable def Comp.eval {α : Type} : Comp α → PMF α
   | .sample n next =>
     (Cslib.Probability.PMF.uniformOfFintype (Fin (n + 1))).bind fun k =>
       (next k).eval
-
-/-- Every branch of `m` performs at most `R` random draws. -/
-def Comp.CallsAtMost {α : Type} : Comp α → ℕ → Prop
-  | .pure _, _ => True
-  | .sample _ _, 0 => False
-  | .sample _ next, R + 1 => ∀ k, (next k).CallsAtMost R
 
 /-- Machine state: instruction index `pc`, registers `reg`, and memory `mem`. -/
 structure State (r : ℕ) where
@@ -411,7 +420,7 @@ def chunkBits (n_max : ℕ) : ℕ :=
   max 1 (Nat.log 2 (max n_max 2) / 3)
 
 /-- Double-tabulation character bit-width `⌊(1 + ⌈log₂(max n_max 4)⌉) / 2⌋` in the large-capacity
-regime, so the character alphabet `Σ = Fin (2 ^ charBits n_max)` has size `O(n_max)`. -/
+regime, so the character alphabet `Σ = Fin (2 ^ charBits n_max)` has size `O(n_max ^ (1 / 2))`. -/
 def charBits (n_max : ℕ) : ℕ :=
   (1 + Nat.clog 2 (max n_max 4)) / 2
 
@@ -453,7 +462,7 @@ def evalTimeBound (k : ℕ) : ℕ :=
 /-- Worst-case instruction budget for `.resample` (including subroutine dispatch and the final
 `halt` instruction):
 - `5 * k + 13` instructions (`O_k(1)`) when `n_max < 2 ^ 320000`;
-- `2880 * 2 ^ charBits n_max + 16` instructions (`O(n_max)`) when `2 ^ 320000 ≤ n_max`. -/
+- `2880 * 2 ^ charBits n_max + 16` instructions (`O(n_max ^ (1 / 2))`) when `2 ^ 320000 ≤ n_max`. -/
 def resampleTime (k n_max : ℕ) : ℕ :=
   if n_max < regimeThreshold then
     5 * k + 13
@@ -558,72 +567,80 @@ theorem failureProbBound_le_inv_cube_of_ge {k n_max : ℕ} (hge : regimeThreshol
 /-! ## Headline Theorems -/
 
 /-- **All-Capacity High-Independence Word-RAM Hash Family (`c_exp = 4`, Fresh Zeroed Memory)**:
-For every independence parameter `k`, capacity `n_max`, key universe `U ≤ max n_max 4 ^ 4`, output
-bit-width `M ≤ 4 * Nat.clog 2 (max n_max 4) + 5`, word width `w ≥ 2 * trinomialDeg U M`, and base
-address `base` whose `space k n_max`-word region fits in `w`-bit machine words, there exist
-23-register Word-RAM programs `p_init` and `p_op` such that from any word-bounded initial state
-`(reg₀, mem₀)` with `reg₀ 22 = base`, `reg₀ 1 = n_max`, `reg₀ 2 = U`, `reg₀ 3 = M`, and
+For every instance `(k, n_max, U, M)` with `U ≤ max n_max 4 ^ 4` and
+`M ≤ 4 * Nat.clog 2 (max n_max 4) + 5`, there exist 23-register Word-RAM programs `p_init` and
+`p_op` (chosen per `(k, n_max, U, M)` and independent of `w` and `base`, with no bound stated on
+static program length `List.length`; all step bounds below count executed instructions only) such
+that for every word width `w ≥ 2 * trinomialDeg U M` and base address `base` whose
+`space k n_max`-word region and parameters fit in `w`-bit words, and from any word-bounded initial
+state `(reg₀, mem₀)` with `reg₀ 22 = base`, `reg₀ 1 = n_max`, `reg₀ 2 = U`, `reg₀ 3 = M`, and
 `mem₀ a = 0` on `[base, base + space k n_max)`:
 
-1. **Initialization**: `p_init` halts within `initFreshTime k n_max U M` steps on every random
-   branch (and in expected time), modifies memory only inside `[base, base + space k n_max)`, sets
-   `reg 0 = base` and `reg 22 = base + space k n_max`, and produces an initial state distribution
-   `ν₀` with empty transcript `[]`.
+1. **Initialization**: `p_init` halts within `initFreshTime k n_max U M` executed instructions on
+   every random branch (and in expected time), modifies memory only inside
+   `[base, base + space k n_max)`, sets `reg 0 = base` and `reg 22 = base + space k n_max`, and
+   produces an initial state distribution `ν₀` with empty transcript `[]`.
 2. **Multi-operation execution and `k`-wise independence**: for every oblivious operation sequence
    `ops : List (Op U)`, `p_op` executes `ops` sequentially from `ν₀` (`RunsOps`) within
-   `evalTimeBound k = O_k(1)` steps per `.eval u` (deterministically and without modifying memory)
-   and `resampleTime k n_max` steps per `.resample`, and whenever every resampling epoch in `ops`
-   queries at most `k` distinct keys (`BoundedEpochKeys k ops`), the resulting transcript
-   distribution satisfies `WhpKWiseContract (failureProbBound k n_max) ops`. -/
+   `evalTimeBound k = O_k(1)` executed instructions per `.eval u` (deterministically and without
+   modifying memory) and `resampleTime k n_max` executed instructions per `.resample`, and whenever
+   every resampling epoch in `ops` queries at most `k` distinct keys (`BoundedEpochKeys k ops`), the
+   resulting transcript distribution satisfies `WhpKWiseContract (failureProbBound k n_max) ops`.
+   In the large-capacity regime (`n_max ≥ 2 ^ 320000`), non-vacuous `k`-wise independence requires
+   `2 * codeBound k ≤ 2 ^ (3 * charBits n_max)` (which holds for `k` up to roughly
+   `n_max ^ (3 / 128)`); when `2 * codeBound k > 2 ^ (3 * charBits n_max)`,
+   `failureProbBound k n_max = 1`, so the coupling clause in `WhpKWiseContract` is vacuous and only
+   transcript matching (`TranscriptMatches`) holds. -/
 theorem highIndependenceHashFamily_fresh :
-    ∀ (k n_max U M w base : ℕ),
+    ∀ (k n_max U M : ℕ),
       U ≤ max n_max 4 ^ 4 →
       M ≤ 4 * Nat.clog 2 (max n_max 4) + 5 →
-      2 * trinomialDeg U M ≤ w →
-      base + space k n_max < 2 ^ w →
-      max n_max 2 < 2 ^ w →
-      max U 2 + 1 < 2 ^ w →
       ∃ (p_init p_op : List (Instr 23)),
-        ∀ (reg₀ : Fin 23 → ℕ) (mem₀ : ℕ → ℕ),
-          WordBounded w reg₀ mem₀ →
-          reg₀ ⟨22, by decide⟩ = base →
-          reg₀ ⟨1, by decide⟩ = n_max →
-          reg₀ ⟨2, by decide⟩ = U →
-          reg₀ ⟨3, by decide⟩ = M →
-          (∀ a, base ≤ a → a < base + space k n_max → mem₀ a = 0) →
-          ∃ ν₀ : PMF (SeqState U (2 ^ M)),
-            let s₀ : State 23 := ⟨0, reg₀, mem₀⟩
-            let T_init := initFreshTime k n_max U M
-            HaltsWithin w p_init s₀ T_init ∧
-            expectedTime w p_init s₀ ≤ (T_init : ℝ≥0∞) ∧
-            evalRand w p_init T_init s₀ =
-              ν₀.map (fun t => .halted (t.reg ⟨2, by decide⟩) t.reg t.mem) ∧
-            (∀ t ∈ ν₀.support,
-              t.transcript = [] ∧
-              WordBounded w t.reg t.mem ∧
-              t.reg ⟨0, by decide⟩ = base ∧
-              t.reg ⟨22, by decide⟩ = base + space k n_max ∧
-              UnchangedOutside base (space k n_max) mem₀ t.mem) ∧
-            ∀ ops : List (Op U),
-              ∃ ν_final : PMF (SeqState U (2 ^ M)),
-                RunsOps w p_op base (space k n_max) (evalTimeBound k) (resampleTime k n_max)
-                  ops ν₀ ν_final ∧
-                (BoundedEpochKeys k ops →
-                  WhpKWiseContract (failureProbBound k n_max) ops
-                    (ν_final.map SeqState.transcript)) :=
+        ∀ (w base : ℕ),
+          2 * trinomialDeg U M ≤ w →
+          base + space k n_max < 2 ^ w →
+          max n_max 2 < 2 ^ w →
+          max U 2 + 1 < 2 ^ w →
+          ∀ (reg₀ : Fin 23 → ℕ) (mem₀ : ℕ → ℕ),
+            WordBounded w reg₀ mem₀ →
+            reg₀ ⟨22, by decide⟩ = base →
+            reg₀ ⟨1, by decide⟩ = n_max →
+            reg₀ ⟨2, by decide⟩ = U →
+            reg₀ ⟨3, by decide⟩ = M →
+            (∀ a, base ≤ a → a < base + space k n_max → mem₀ a = 0) →
+            ∃ ν₀ : PMF (SeqState U (2 ^ M)),
+              let s₀ : State 23 := ⟨0, reg₀, mem₀⟩
+              let T_init := initFreshTime k n_max U M
+              HaltsWithin w p_init s₀ T_init ∧
+              expectedTime w p_init s₀ ≤ (T_init : ℝ≥0∞) ∧
+              evalRand w p_init T_init s₀ =
+                ν₀.map (fun t => .halted (t.reg ⟨2, by decide⟩) t.reg t.mem) ∧
+              (∀ t ∈ ν₀.support,
+                t.transcript = [] ∧
+                WordBounded w t.reg t.mem ∧
+                t.reg ⟨0, by decide⟩ = base ∧
+                t.reg ⟨22, by decide⟩ = base + space k n_max ∧
+                UnchangedOutside base (space k n_max) mem₀ t.mem) ∧
+              ∀ ops : List (Op U),
+                ∃ ν_final : PMF (SeqState U (2 ^ M)),
+                  RunsOps w p_op base (space k n_max) (evalTimeBound k) (resampleTime k n_max)
+                    ops ν₀ ν_final ∧
+                  (BoundedEpochKeys k ops →
+                    WhpKWiseContract (failureProbBound k n_max) ops
+                      (ν_final.map SeqState.transcript)) :=
   ComplexityAbstracts.HashFamiliesBridge.highIndependenceHashFamily_fresh
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,
       Instr, .const, .copy, .alu, .width, .load, .store, .jump,
       .branchEq, .branchLt, .halt, .rand, @Instr.rec,
       Comp, @Comp.pure, @Comp.sample, @Comp.bind, @Comp.eval,
-      @Comp.CallsAtMost,
+      ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
       State, .mk, Cfg, .running, .halted, .faulted, @stepRand, @runRand⟩
     (by refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
-      simp_all [AluOp.eval, Comp.bind, Comp.eval, Comp.CallsAtMost,
-        stepRand, runRand])
+      simp_all [AluOp.eval, Comp.bind, Comp.eval,
+        ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
     ⟨Op, @Op.resample, @Op.eval, @Op.rec,
       Label, @Label.resample, @Label.eval, @Label.op,
       @epochKeys, @epochCount, @idealTranscriptFrom,
@@ -643,56 +660,62 @@ theorem highIndependenceHashFamily_fresh :
 
 /-- **All-Capacity High-Independence Word-RAM Hash Family (`c_exp = 4`, Arbitrary Initial Memory)**:
 Counterpart of `highIndependenceHashFamily_fresh` using the self-clearing initializer `p_initClear`,
-which first zeroes `[base, base + space k n_max)` in `4 * space k n_max + 6` steps (`initClearTime`)
-and therefore requires no zeroed-memory precondition on `mem₀`. -/
+which first zeroes `[base, base + space k n_max)` in `4 * space k n_max + 6` executed instructions
+(`initClearTime`) and therefore requires no zeroed-memory precondition on `mem₀`. As in
+`highIndependenceHashFamily_fresh`, `p_initClear` and `p_op` are chosen per instance
+`(k, n_max, U, M)` (independently of `w` and `base`) with no static code-size bound, all time
+bounds count executed instructions only, and for `n_max ≥ 2 ^ 320000` non-vacuous `k`-wise
+independence requires `2 * codeBound k ≤ 2 ^ (3 * charBits n_max)` (otherwise
+`failureProbBound k n_max = 1` and only `TranscriptMatches` holds). -/
 theorem highIndependenceHashFamily_clear :
-    ∀ (k n_max U M w base : ℕ),
+    ∀ (k n_max U M : ℕ),
       U ≤ max n_max 4 ^ 4 →
       M ≤ 4 * Nat.clog 2 (max n_max 4) + 5 →
-      2 * trinomialDeg U M ≤ w →
-      base + space k n_max < 2 ^ w →
-      max n_max 2 < 2 ^ w →
-      max U 2 + 1 < 2 ^ w →
       ∃ (p_initClear p_op : List (Instr 23)),
-        ∀ (reg₀ : Fin 23 → ℕ) (mem₀ : ℕ → ℕ),
-          WordBounded w reg₀ mem₀ →
-          reg₀ ⟨22, by decide⟩ = base →
-          reg₀ ⟨1, by decide⟩ = n_max →
-          reg₀ ⟨2, by decide⟩ = U →
-          reg₀ ⟨3, by decide⟩ = M →
-          ∃ ν₀ : PMF (SeqState U (2 ^ M)),
-            let s₀ : State 23 := ⟨0, reg₀, mem₀⟩
-            let T_init := initClearTime k n_max U M
-            HaltsWithin w p_initClear s₀ T_init ∧
-            expectedTime w p_initClear s₀ ≤ (T_init : ℝ≥0∞) ∧
-            evalRand w p_initClear T_init s₀ =
-              ν₀.map (fun t => .halted (t.reg ⟨2, by decide⟩) t.reg t.mem) ∧
-            (∀ t ∈ ν₀.support,
-              t.transcript = [] ∧
-              WordBounded w t.reg t.mem ∧
-              t.reg ⟨0, by decide⟩ = base ∧
-              t.reg ⟨22, by decide⟩ = base + space k n_max ∧
-              UnchangedOutside base (space k n_max) mem₀ t.mem) ∧
-            ∀ ops : List (Op U),
-              ∃ ν_final : PMF (SeqState U (2 ^ M)),
-                RunsOps w p_op base (space k n_max) (evalTimeBound k) (resampleTime k n_max)
-                  ops ν₀ ν_final ∧
-                (BoundedEpochKeys k ops →
-                  WhpKWiseContract (failureProbBound k n_max) ops
-                    (ν_final.map SeqState.transcript)) :=
+        ∀ (w base : ℕ),
+          2 * trinomialDeg U M ≤ w →
+          base + space k n_max < 2 ^ w →
+          max n_max 2 < 2 ^ w →
+          max U 2 + 1 < 2 ^ w →
+          ∀ (reg₀ : Fin 23 → ℕ) (mem₀ : ℕ → ℕ),
+            WordBounded w reg₀ mem₀ →
+            reg₀ ⟨22, by decide⟩ = base →
+            reg₀ ⟨1, by decide⟩ = n_max →
+            reg₀ ⟨2, by decide⟩ = U →
+            reg₀ ⟨3, by decide⟩ = M →
+            ∃ ν₀ : PMF (SeqState U (2 ^ M)),
+              let s₀ : State 23 := ⟨0, reg₀, mem₀⟩
+              let T_init := initClearTime k n_max U M
+              HaltsWithin w p_initClear s₀ T_init ∧
+              expectedTime w p_initClear s₀ ≤ (T_init : ℝ≥0∞) ∧
+              evalRand w p_initClear T_init s₀ =
+                ν₀.map (fun t => .halted (t.reg ⟨2, by decide⟩) t.reg t.mem) ∧
+              (∀ t ∈ ν₀.support,
+                t.transcript = [] ∧
+                WordBounded w t.reg t.mem ∧
+                t.reg ⟨0, by decide⟩ = base ∧
+                t.reg ⟨22, by decide⟩ = base + space k n_max ∧
+                UnchangedOutside base (space k n_max) mem₀ t.mem) ∧
+              ∀ ops : List (Op U),
+                ∃ ν_final : PMF (SeqState U (2 ^ M)),
+                  RunsOps w p_op base (space k n_max) (evalTimeBound k) (resampleTime k n_max)
+                    ops ν₀ ν_final ∧
+                  (BoundedEpochKeys k ops →
+                    WhpKWiseContract (failureProbBound k n_max) ops
+                      (ν_final.map SeqState.transcript)) :=
   ComplexityAbstracts.HashFamiliesBridge.highIndependenceHashFamily_clear
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,
       Instr, .const, .copy, .alu, .width, .load, .store, .jump,
       .branchEq, .branchLt, .halt, .rand, @Instr.rec,
       Comp, @Comp.pure, @Comp.sample, @Comp.bind, @Comp.eval,
-      @Comp.CallsAtMost,
+      ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
       State, .mk, Cfg, .running, .halted, .faulted, @stepRand, @runRand⟩
     (by refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
-      simp_all [AluOp.eval, Comp.bind, Comp.eval, Comp.CallsAtMost,
-        stepRand, runRand])
+      simp_all [AluOp.eval, Comp.bind, Comp.eval,
+        ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
     ⟨Op, @Op.resample, @Op.eval, @Op.rec,
       Label, @Label.resample, @Label.eval, @Label.op,
       @epochKeys, @epochCount, @idealTranscriptFrom,
@@ -711,7 +734,7 @@ theorem highIndependenceHashFamily_clear :
       @RunsOps.nil, @RunsOps.cons⟩
 
 /--
-info: abstract audit passed for `ComplexityAbstracts.HashFamiliesAbstract`: 421 root
+info: abstract audit passed for `ComplexityAbstracts.HashFamiliesAbstract`: 413 root
 declarations
 -/
 #guard_msgs (whitespace := lax) in

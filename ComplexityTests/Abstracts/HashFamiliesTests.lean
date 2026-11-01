@@ -110,9 +110,10 @@ theorem nonvacuous_small_fresh :
   have hn : max 16 2 < 2 ^ 64 := by decide
   have hUfit : max 16 2 + 1 < 2 ^ 64 := by decide
   obtain ⟨p_init, p_op, hexec⟩ :=
-    highIndependenceHashFamily_fresh 4 16 16 4 64 100 hU hM hw hsp hn hUfit
+    highIndependenceHashFamily_fresh 4 16 16 4 hU hM
   obtain ⟨ν₀, hhalts, hexp, _, _, hops⟩ :=
-    hexec testRegSmall (fun _ => 0) wordBounded_testRegSmall rfl rfl rfl rfl (fun _ _ _ => rfl)
+    hexec 64 100 hw hsp hn hUfit testRegSmall (fun _ => 0)
+      wordBounded_testRegSmall rfl rfl rfl rfl (fun _ _ _ => rfl)
   obtain ⟨ν_final, hruns, hcontract⟩ := hops sampleOps
   have hcontract0 := hcontract boundedEpochKeys_sampleOps
   have hfp : failureProbBound 4 16 = 0 := failureProbBound_eq_zero_of_lt lt_regimeThreshold_16
@@ -141,9 +142,9 @@ theorem nonvacuous_small_clear :
     refine ⟨wordBounded_testRegSmall.1, fun a => ?_⟩
     exact (Nat.mod_lt a (by decide)).trans (by decide)
   obtain ⟨p_initClear, p_op, hexec⟩ :=
-    highIndependenceHashFamily_clear 4 16 16 4 64 100 hU hM hw hsp hn hUfit
+    highIndependenceHashFamily_clear 4 16 16 4 hU hM
   obtain ⟨ν₀, hhalts, hexp, _, _, hops⟩ :=
-    hexec testRegSmall (fun a => a % 7) hbdd rfl rfl rfl rfl
+    hexec 64 100 hw hsp hn hUfit testRegSmall (fun a => a % 7) hbdd rfl rfl rfl rfl
   obtain ⟨ν_final, hruns, hcontract⟩ := hops sampleOps
   have hcontract0 := hcontract boundedEpochKeys_sampleOps
   have hfp : failureProbBound 4 16 = 0 := failureProbBound_eq_zero_of_lt lt_regimeThreshold_16

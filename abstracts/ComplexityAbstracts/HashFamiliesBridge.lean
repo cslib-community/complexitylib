@@ -1842,52 +1842,102 @@ private theorem provableImpl_runsOps_from_initInv {S : Presentation} {P : HFPres
 /-! ## Part 5: Exported headline bridge theorems (`highIndependenceHashFamily_fresh` and
 `highIndependenceHashFamily_clear`) -/
 
-/-- General `c_exp`-parameterized fresh-memory bridge theorem. -/
-private theorem provableImpl_fresh_general (S : Presentation) (hS : Laws S)
-    (P : HFPresentation S) (hP : HFLaws S P)
-    (c_exp k n_max U M w base : ℕ) {δ : ℝ≥0∞}
-    (hU : U ≤ max n_max 4 ^ c_exp)
-    (hM : M ≤ max c_exp 1 * Nat.clog 2 (max n_max 4) + 5)
+/-- Canonical `CallsAtMost` recursion from `@Comp.rec`, used to instantiate
+`RandomizedWordRAMBridge.Presentation` without exposing an unused `Comp.CallsAtMost` declaration in
+`HashFamiliesAbstract.lean`. -/
+def compCallsAtMost {Comp : Type → Type}
+    {compPure : ∀ {α : Type}, α → Comp α}
+    {compSample : ∀ {α : Type} (n : ℕ), (Fin (n + 1) → Comp α) → Comp α}
+    (comp_rec : ∀ {α : Type} {motive : Comp α → Type},
+      (∀ a, motive (compPure a)) →
+      (∀ n next, (∀ k, motive (next k)) → motive (compSample n next)) →
+      ∀ m, motive m)
+    {α : Type} (m : Comp α) (R : ℕ) : Prop :=
+  comp_rec (motive := fun _ => ℕ → Prop)
+    (fun _ _ => True)
+    (fun _ _ ih R => Nat.rec False (fun R' _ => ∀ k, ih k R') R)
+    m R
+
+/-- Canonical `SubroutineCode .exact 23 3` for `provableImpl c_exp k n_max U M`, defined
+independently of `w` and `base` by instantiating `provableImpl` at a sufficiently large word width
+`w₀` and `base₀ = 0`. -/
+private noncomputable def provableSubroutineCode (c_exp k n_max U M : ℕ) :
+    SubroutineCode .exact 23 3 :=
+  let w₀ := 2 * Cslib.Probability.trinomialDeg U M +
+    provableSpace c_exp k n_max + max n_max 2 + max U 2 + 2
+  have hw₀ : 2 * Cslib.Probability.trinomialDeg U M ≤ w₀ := by omega
+  have hlt : w₀ < 2 ^ w₀ := Nat.lt_two_pow_self
+  have hsp₀ : Fits w₀ (0 + provableSpace c_exp k n_max) :=
+    Nat.lt_of_le_of_lt (by omega) hlt
+  have hn₀ : Fits w₀ (max n_max 2) :=
+    Nat.lt_of_le_of_lt (by omega) hlt
+  have hU₀ : Fits w₀ (max U 2 + 1) :=
+    Nat.lt_of_le_of_lt (by omega) hlt
+  (provableImpl c_exp k n_max U M hw₀ hsp₀ hn₀ hU₀).subroutineCode
+
+private theorem provableImpl_subroutineCode_eq (c_exp k n_max U M : ℕ) {w base : ℕ}
     (hw : 2 * Cslib.Probability.trinomialDeg U M ≤ w)
     (hfit_space : Fits w (base + provableSpace c_exp k n_max))
     (hfit_n : Fits w (max n_max 2))
-    (hfit_U : Fits w (max U 2 + 1))
+    (hfit_U : Fits w (max U 2 + 1)) :
+    (provableImpl c_exp k n_max U M hw hfit_space hfit_n hfit_U).subroutineCode =
+      provableSubroutineCode c_exp k n_max U M := by
+  dsimp only [provableImpl, provableSubroutineCode]
+  split_ifs <;> rfl
+
+/-- General `c_exp`-parameterized fresh-memory bridge theorem. -/
+private theorem provableImpl_fresh_general (S : Presentation) (hS : Laws S)
+    (P : HFPresentation S) (hP : HFLaws S P)
+    (c_exp k n_max U M : ℕ) {δ : ℝ≥0∞}
+    (hU : U ≤ max n_max 4 ^ c_exp)
+    (hM : M ≤ max c_exp 1 * Nat.clog 2 (max n_max 4) + 5)
     (hδ : provableFailureProb c_exp k n_max ≤ δ) :
     ∃ (p_init p_op : List (S.Instr 23)),
-      ∀ (reg₀ : Fin 23 → ℕ) (mem₀ : ℕ → ℕ),
-        HFPresentation.WordBounded w reg₀ mem₀ →
-        reg₀ ⟨22, by decide⟩ = base →
-        reg₀ ⟨1, by decide⟩ = n_max →
-        reg₀ ⟨2, by decide⟩ = U →
-        reg₀ ⟨3, by decide⟩ = M →
-        (∀ a, base ≤ a → a < base + provableSpace c_exp k n_max → mem₀ a = 0) →
-        ∃ ν₀ : PMF (P.SeqState U (2 ^ M)),
-          let s₀ := S.state 0 reg₀ mem₀
-          let T_init := initFreshTimeOf c_exp k n_max U M
-          S.HaltsWithin w p_init s₀ T_init ∧
-          S.expectedTime w p_init s₀ ≤ (T_init : ℝ≥0∞) ∧
-          S.evalRand w p_init T_init s₀ =
-            ν₀.map (fun t =>
-              S.halted (P.seqReg t ⟨2, by decide⟩) (P.seqReg t) (P.seqMem t)) ∧
-          (∀ t ∈ ν₀.support,
-            P.seqTranscript t = [] ∧
-            HFPresentation.WordBounded w (P.seqReg t) (P.seqMem t) ∧
-            P.seqReg t ⟨0, by decide⟩ = base ∧
-            P.seqReg t ⟨22, by decide⟩ = base + provableSpace c_exp k n_max ∧
-            HFPresentation.UnchangedOutside base (provableSpace c_exp k n_max) mem₀ (P.seqMem t)) ∧
-          ∀ ops : List (P.Op U),
-            ∃ ν_final : PMF (P.SeqState U (2 ^ M)),
-              P.RunsOps w p_op base (provableSpace c_exp k n_max)
-                (provableEvalBound c_exp k + 4) (resampleTimeOf c_exp k n_max)
-                ops ν₀ ν_final ∧
-              (P.BoundedEpochKeys k ops →
-                P.WhpKWiseContract δ ops
-                  (ν_final.map P.seqTranscript)) := by
+      ∀ (w base : ℕ),
+        2 * Cslib.Probability.trinomialDeg U M ≤ w →
+        Fits w (base + provableSpace c_exp k n_max) →
+        Fits w (max n_max 2) →
+        Fits w (max U 2 + 1) →
+        ∀ (reg₀ : Fin 23 → ℕ) (mem₀ : ℕ → ℕ),
+          HFPresentation.WordBounded w reg₀ mem₀ →
+          reg₀ ⟨22, by decide⟩ = base →
+          reg₀ ⟨1, by decide⟩ = n_max →
+          reg₀ ⟨2, by decide⟩ = U →
+          reg₀ ⟨3, by decide⟩ = M →
+          (∀ a, base ≤ a → a < base + provableSpace c_exp k n_max → mem₀ a = 0) →
+          ∃ ν₀ : PMF (P.SeqState U (2 ^ M)),
+            let s₀ := S.state 0 reg₀ mem₀
+            let T_init := initFreshTimeOf c_exp k n_max U M
+            S.HaltsWithin w p_init s₀ T_init ∧
+            S.expectedTime w p_init s₀ ≤ (T_init : ℝ≥0∞) ∧
+            S.evalRand w p_init T_init s₀ =
+              ν₀.map (fun t =>
+                S.halted (P.seqReg t ⟨2, by decide⟩) (P.seqReg t) (P.seqMem t)) ∧
+            (∀ t ∈ ν₀.support,
+              P.seqTranscript t = [] ∧
+              HFPresentation.WordBounded w (P.seqReg t) (P.seqMem t) ∧
+              P.seqReg t ⟨0, by decide⟩ = base ∧
+              P.seqReg t ⟨22, by decide⟩ = base + provableSpace c_exp k n_max ∧
+              HFPresentation.UnchangedOutside base (provableSpace c_exp k n_max) mem₀
+                (P.seqMem t)) ∧
+            ∀ ops : List (P.Op U),
+              ∃ ν_final : PMF (P.SeqState U (2 ^ M)),
+                P.RunsOps w p_op base (provableSpace c_exp k n_max)
+                  (provableEvalBound c_exp k + 4) (resampleTimeOf c_exp k n_max)
+                  ops ν₀ ν_final ∧
+                (P.BoundedEpochKeys k ops →
+                  P.WhpKWiseContract δ ops
+                    (ν_final.map P.seqTranscript)) := by
+  let Sub₀ := provableSubroutineCode c_exp k n_max U M
+  refine ⟨S.programOf (Sub₀.initFresh.program (coreReg 2)),
+    S.programOf (Sub₀.code.program (coreReg 2)), ?_⟩
+  intro w base hw hfit_space hfit_n hfit_U reg₀ mem₀ hbdd₀ hfr₀ hpar1 hpar2 hpar3 hzero₀
   let H := provableImpl c_exp k n_max U M hw hfit_space hfit_n hfit_U
   let Sub := H.subroutineCode
-  refine ⟨S.programOf (Sub.initFresh.program (coreReg 2)),
-    S.programOf (Sub.code.program (coreReg 2)), ?_⟩
-  intro reg₀ mem₀ hbdd₀ hfr₀ hpar1 hpar2 hpar3 hzero₀
+  have hSub_eq : Sub₀ = Sub :=
+    (provableImpl_subroutineCode_eq c_exp k n_max U M hw hfit_space hfit_n hfit_U).symm
+  dsimp only
+  rw [hSub_eq]
   let x₀ : Data 23 := ⟨reg₀, mem₀⟩
   have hx₀_bdd : x₀.Bounded w := hbdd₀
   have hfr_sub : x₀.regs Sub.frontierReg = base := hfr₀
@@ -1977,94 +2027,100 @@ private theorem provableImpl_fresh_general (S : Presentation) (hS : Laws S)
 /-- Headline bridge theorem for fresh zeroed memory `[base, base + space k n_max)`. -/
 theorem highIndependenceHashFamily_fresh (S : Presentation) (hS : Laws S)
     (P : HFPresentation S) (hP : HFLaws S P) :
-    ∀ (k n_max U M w base : ℕ),
+    ∀ (k n_max U M : ℕ),
       U ≤ max n_max 4 ^ 4 →
       M ≤ 4 * Nat.clog 2 (max n_max 4) + 5 →
-      2 * trinomialDeg U M ≤ w →
-      base + space k n_max < 2 ^ w →
-      max n_max 2 < 2 ^ w →
-      max U 2 + 1 < 2 ^ w →
       ∃ (p_init p_op : List (S.Instr 23)),
+        ∀ (w base : ℕ),
+          2 * trinomialDeg U M ≤ w →
+          base + space k n_max < 2 ^ w →
+          max n_max 2 < 2 ^ w →
+          max U 2 + 1 < 2 ^ w →
+          ∀ (reg₀ : Fin 23 → ℕ) (mem₀ : ℕ → ℕ),
+            HFPresentation.WordBounded w reg₀ mem₀ →
+            reg₀ ⟨22, by decide⟩ = base →
+            reg₀ ⟨1, by decide⟩ = n_max →
+            reg₀ ⟨2, by decide⟩ = U →
+            reg₀ ⟨3, by decide⟩ = M →
+            (∀ a, base ≤ a → a < base + space k n_max → mem₀ a = 0) →
+            ∃ ν₀ : PMF (P.SeqState U (2 ^ M)),
+              let s₀ := S.state 0 reg₀ mem₀
+              let T_init := initFreshTime k n_max U M
+              S.HaltsWithin w p_init s₀ T_init ∧
+              S.expectedTime w p_init s₀ ≤ (T_init : ℝ≥0∞) ∧
+              S.evalRand w p_init T_init s₀ =
+                ν₀.map (fun t =>
+                  S.halted (P.seqReg t ⟨2, by decide⟩) (P.seqReg t) (P.seqMem t)) ∧
+              (∀ t ∈ ν₀.support,
+                P.seqTranscript t = [] ∧
+                HFPresentation.WordBounded w (P.seqReg t) (P.seqMem t) ∧
+                P.seqReg t ⟨0, by decide⟩ = base ∧
+                P.seqReg t ⟨22, by decide⟩ = base + space k n_max ∧
+                HFPresentation.UnchangedOutside base (space k n_max) mem₀ (P.seqMem t)) ∧
+              ∀ ops : List (P.Op U),
+                ∃ ν_final : PMF (P.SeqState U (2 ^ M)),
+                  P.RunsOps w p_op base (space k n_max) (evalTimeBound k) (resampleTime k n_max)
+                    ops ν₀ ν_final ∧
+                  (P.BoundedEpochKeys k ops →
+                    P.WhpKWiseContract (failureProbBound k n_max) ops
+                      (ν_final.map P.seqTranscript)) := by
+  intro k n_max U M hU hM
+  rw [trinomialDeg_eq, space_eq, initFreshTime_eq, evalTimeBound_eq, resampleTime_eq]
+  exact provableImpl_fresh_general S hS P hP 4 k n_max U M hU hM
+    (provableFailureProb_le_failureProbBound k n_max)
+
+/-- General `c_exp`-parameterized dirty-memory bridge theorem. -/
+private theorem provableImpl_clear_general (S : Presentation) (hS : Laws S)
+    (P : HFPresentation S) (hP : HFLaws S P)
+    (c_exp k n_max U M : ℕ) {δ : ℝ≥0∞}
+    (hU : U ≤ max n_max 4 ^ c_exp)
+    (hM : M ≤ max c_exp 1 * Nat.clog 2 (max n_max 4) + 5)
+    (hδ : provableFailureProb c_exp k n_max ≤ δ) :
+    ∃ (p_initClear p_op : List (S.Instr 23)),
+      ∀ (w base : ℕ),
+        2 * Cslib.Probability.trinomialDeg U M ≤ w →
+        Fits w (base + provableSpace c_exp k n_max) →
+        Fits w (max n_max 2) →
+        Fits w (max U 2 + 1) →
         ∀ (reg₀ : Fin 23 → ℕ) (mem₀ : ℕ → ℕ),
           HFPresentation.WordBounded w reg₀ mem₀ →
           reg₀ ⟨22, by decide⟩ = base →
           reg₀ ⟨1, by decide⟩ = n_max →
           reg₀ ⟨2, by decide⟩ = U →
           reg₀ ⟨3, by decide⟩ = M →
-          (∀ a, base ≤ a → a < base + space k n_max → mem₀ a = 0) →
           ∃ ν₀ : PMF (P.SeqState U (2 ^ M)),
             let s₀ := S.state 0 reg₀ mem₀
-            let T_init := initFreshTime k n_max U M
-            S.HaltsWithin w p_init s₀ T_init ∧
-            S.expectedTime w p_init s₀ ≤ (T_init : ℝ≥0∞) ∧
-            S.evalRand w p_init T_init s₀ =
+            let T_init := initClearTimeOf c_exp k n_max U M
+            S.HaltsWithin w p_initClear s₀ T_init ∧
+            S.expectedTime w p_initClear s₀ ≤ (T_init : ℝ≥0∞) ∧
+            S.evalRand w p_initClear T_init s₀ =
               ν₀.map (fun t =>
                 S.halted (P.seqReg t ⟨2, by decide⟩) (P.seqReg t) (P.seqMem t)) ∧
             (∀ t ∈ ν₀.support,
               P.seqTranscript t = [] ∧
               HFPresentation.WordBounded w (P.seqReg t) (P.seqMem t) ∧
               P.seqReg t ⟨0, by decide⟩ = base ∧
-              P.seqReg t ⟨22, by decide⟩ = base + space k n_max ∧
-              HFPresentation.UnchangedOutside base (space k n_max) mem₀ (P.seqMem t)) ∧
+              P.seqReg t ⟨22, by decide⟩ = base + provableSpace c_exp k n_max ∧
+              HFPresentation.UnchangedOutside base (provableSpace c_exp k n_max) mem₀
+                (P.seqMem t)) ∧
             ∀ ops : List (P.Op U),
               ∃ ν_final : PMF (P.SeqState U (2 ^ M)),
-                P.RunsOps w p_op base (space k n_max) (evalTimeBound k) (resampleTime k n_max)
+                P.RunsOps w p_op base (provableSpace c_exp k n_max)
+                  (provableEvalBound c_exp k + 4) (resampleTimeOf c_exp k n_max)
                   ops ν₀ ν_final ∧
                 (P.BoundedEpochKeys k ops →
-                  P.WhpKWiseContract (failureProbBound k n_max) ops
+                  P.WhpKWiseContract δ ops
                     (ν_final.map P.seqTranscript)) := by
-  intro k n_max U M w base hU hM hw hfit_space hfit_n hfit_U
-  rw [trinomialDeg_eq] at hw
-  rw [space_eq] at hfit_space ⊢
-  rw [initFreshTime_eq, evalTimeBound_eq, resampleTime_eq]
-  exact provableImpl_fresh_general S hS P hP 4 k n_max U M w base hU hM hw hfit_space
-    hfit_n hfit_U (provableFailureProb_le_failureProbBound k n_max)
-
-/-- General `c_exp`-parameterized dirty-memory bridge theorem. -/
-private theorem provableImpl_clear_general (S : Presentation) (hS : Laws S)
-    (P : HFPresentation S) (hP : HFLaws S P)
-    (c_exp k n_max U M w base : ℕ) {δ : ℝ≥0∞}
-    (hU : U ≤ max n_max 4 ^ c_exp)
-    (hM : M ≤ max c_exp 1 * Nat.clog 2 (max n_max 4) + 5)
-    (hw : 2 * Cslib.Probability.trinomialDeg U M ≤ w)
-    (hfit_space : Fits w (base + provableSpace c_exp k n_max))
-    (hfit_n : Fits w (max n_max 2))
-    (hfit_U : Fits w (max U 2 + 1))
-    (hδ : provableFailureProb c_exp k n_max ≤ δ) :
-    ∃ (p_initClear p_op : List (S.Instr 23)),
-      ∀ (reg₀ : Fin 23 → ℕ) (mem₀ : ℕ → ℕ),
-        HFPresentation.WordBounded w reg₀ mem₀ →
-        reg₀ ⟨22, by decide⟩ = base →
-        reg₀ ⟨1, by decide⟩ = n_max →
-        reg₀ ⟨2, by decide⟩ = U →
-        reg₀ ⟨3, by decide⟩ = M →
-        ∃ ν₀ : PMF (P.SeqState U (2 ^ M)),
-          let s₀ := S.state 0 reg₀ mem₀
-          let T_init := initClearTimeOf c_exp k n_max U M
-          S.HaltsWithin w p_initClear s₀ T_init ∧
-          S.expectedTime w p_initClear s₀ ≤ (T_init : ℝ≥0∞) ∧
-          S.evalRand w p_initClear T_init s₀ =
-            ν₀.map (fun t =>
-              S.halted (P.seqReg t ⟨2, by decide⟩) (P.seqReg t) (P.seqMem t)) ∧
-          (∀ t ∈ ν₀.support,
-            P.seqTranscript t = [] ∧
-            HFPresentation.WordBounded w (P.seqReg t) (P.seqMem t) ∧
-            P.seqReg t ⟨0, by decide⟩ = base ∧
-            P.seqReg t ⟨22, by decide⟩ = base + provableSpace c_exp k n_max ∧
-            HFPresentation.UnchangedOutside base (provableSpace c_exp k n_max) mem₀ (P.seqMem t)) ∧
-          ∀ ops : List (P.Op U),
-            ∃ ν_final : PMF (P.SeqState U (2 ^ M)),
-              P.RunsOps w p_op base (provableSpace c_exp k n_max)
-                (provableEvalBound c_exp k + 4) (resampleTimeOf c_exp k n_max)
-                ops ν₀ ν_final ∧
-              (P.BoundedEpochKeys k ops →
-                P.WhpKWiseContract δ ops
-                  (ν_final.map P.seqTranscript)) := by
+  let Sub₀ := provableSubroutineCode c_exp k n_max U M
+  refine ⟨S.programOf (Sub₀.initClear.program (coreReg 2)),
+    S.programOf (Sub₀.code.program (coreReg 2)), ?_⟩
+  intro w base hw hfit_space hfit_n hfit_U reg₀ mem₀ hbdd₀ hfr₀ hpar1 hpar2 hpar3
   let H := provableImpl c_exp k n_max U M hw hfit_space hfit_n hfit_U
   let Sub := H.subroutineCode
-  refine ⟨S.programOf (Sub.initClear.program (coreReg 2)),
-    S.programOf (Sub.code.program (coreReg 2)), ?_⟩
-  intro reg₀ mem₀ hbdd₀ hfr₀ hpar1 hpar2 hpar3
+  have hSub_eq : Sub₀ = Sub :=
+    (provableImpl_subroutineCode_eq c_exp k n_max U M hw hfit_space hfit_n hfit_U).symm
+  dsimp only
+  rw [hSub_eq]
   let x₀ : Data 23 := ⟨reg₀, mem₀⟩
   have hx₀_bdd : x₀.Bounded w := hbdd₀
   have hfr_sub : x₀.regs Sub.frontierReg = base := hfr₀
@@ -2160,46 +2216,45 @@ private theorem provableImpl_clear_general (S : Presentation) (hS : Laws S)
 /-- Headline bridge theorem for arbitrary dirty memory (`p_initClear`). -/
 theorem highIndependenceHashFamily_clear (S : Presentation) (hS : Laws S)
     (P : HFPresentation S) (hP : HFLaws S P) :
-    ∀ (k n_max U M w base : ℕ),
+    ∀ (k n_max U M : ℕ),
       U ≤ max n_max 4 ^ 4 →
       M ≤ 4 * Nat.clog 2 (max n_max 4) + 5 →
-      2 * trinomialDeg U M ≤ w →
-      base + space k n_max < 2 ^ w →
-      max n_max 2 < 2 ^ w →
-      max U 2 + 1 < 2 ^ w →
       ∃ (p_initClear p_op : List (S.Instr 23)),
-        ∀ (reg₀ : Fin 23 → ℕ) (mem₀ : ℕ → ℕ),
-          HFPresentation.WordBounded w reg₀ mem₀ →
-          reg₀ ⟨22, by decide⟩ = base →
-          reg₀ ⟨1, by decide⟩ = n_max →
-          reg₀ ⟨2, by decide⟩ = U →
-          reg₀ ⟨3, by decide⟩ = M →
-          ∃ ν₀ : PMF (P.SeqState U (2 ^ M)),
-            let s₀ := S.state 0 reg₀ mem₀
-            let T_init := initClearTime k n_max U M
-            S.HaltsWithin w p_initClear s₀ T_init ∧
-            S.expectedTime w p_initClear s₀ ≤ (T_init : ℝ≥0∞) ∧
-            S.evalRand w p_initClear T_init s₀ =
-              ν₀.map (fun t =>
-                S.halted (P.seqReg t ⟨2, by decide⟩) (P.seqReg t) (P.seqMem t)) ∧
-            (∀ t ∈ ν₀.support,
-              P.seqTranscript t = [] ∧
-              HFPresentation.WordBounded w (P.seqReg t) (P.seqMem t) ∧
-              P.seqReg t ⟨0, by decide⟩ = base ∧
-              P.seqReg t ⟨22, by decide⟩ = base + space k n_max ∧
-              HFPresentation.UnchangedOutside base (space k n_max) mem₀ (P.seqMem t)) ∧
-            ∀ ops : List (P.Op U),
-              ∃ ν_final : PMF (P.SeqState U (2 ^ M)),
-                P.RunsOps w p_op base (space k n_max) (evalTimeBound k) (resampleTime k n_max)
-                  ops ν₀ ν_final ∧
-                (P.BoundedEpochKeys k ops →
-                  P.WhpKWiseContract (failureProbBound k n_max) ops
-                    (ν_final.map P.seqTranscript)) := by
-  intro k n_max U M w base hU hM hw hfit_space hfit_n hfit_U
-  rw [trinomialDeg_eq] at hw
-  rw [space_eq] at hfit_space ⊢
-  rw [initClearTime_eq, evalTimeBound_eq, resampleTime_eq]
-  exact provableImpl_clear_general S hS P hP 4 k n_max U M w base hU hM hw hfit_space
-    hfit_n hfit_U (provableFailureProb_le_failureProbBound k n_max)
+        ∀ (w base : ℕ),
+          2 * trinomialDeg U M ≤ w →
+          base + space k n_max < 2 ^ w →
+          max n_max 2 < 2 ^ w →
+          max U 2 + 1 < 2 ^ w →
+          ∀ (reg₀ : Fin 23 → ℕ) (mem₀ : ℕ → ℕ),
+            HFPresentation.WordBounded w reg₀ mem₀ →
+            reg₀ ⟨22, by decide⟩ = base →
+            reg₀ ⟨1, by decide⟩ = n_max →
+            reg₀ ⟨2, by decide⟩ = U →
+            reg₀ ⟨3, by decide⟩ = M →
+            ∃ ν₀ : PMF (P.SeqState U (2 ^ M)),
+              let s₀ := S.state 0 reg₀ mem₀
+              let T_init := initClearTime k n_max U M
+              S.HaltsWithin w p_initClear s₀ T_init ∧
+              S.expectedTime w p_initClear s₀ ≤ (T_init : ℝ≥0∞) ∧
+              S.evalRand w p_initClear T_init s₀ =
+                ν₀.map (fun t =>
+                  S.halted (P.seqReg t ⟨2, by decide⟩) (P.seqReg t) (P.seqMem t)) ∧
+              (∀ t ∈ ν₀.support,
+                P.seqTranscript t = [] ∧
+                HFPresentation.WordBounded w (P.seqReg t) (P.seqMem t) ∧
+                P.seqReg t ⟨0, by decide⟩ = base ∧
+                P.seqReg t ⟨22, by decide⟩ = base + space k n_max ∧
+                HFPresentation.UnchangedOutside base (space k n_max) mem₀ (P.seqMem t)) ∧
+              ∀ ops : List (P.Op U),
+                ∃ ν_final : PMF (P.SeqState U (2 ^ M)),
+                  P.RunsOps w p_op base (space k n_max) (evalTimeBound k) (resampleTime k n_max)
+                    ops ν₀ ν_final ∧
+                  (P.BoundedEpochKeys k ops →
+                    P.WhpKWiseContract (failureProbBound k n_max) ops
+                      (ν_final.map P.seqTranscript)) := by
+  intro k n_max U M hU hM
+  rw [trinomialDeg_eq, space_eq, initClearTime_eq, evalTimeBound_eq, resampleTime_eq]
+  exact provableImpl_clear_general S hS P hP 4 k n_max U M hU hM
+    (provableFailureProb_le_failureProbBound k n_max)
 
 end ComplexityAbstracts.HashFamiliesBridge
