@@ -3303,6 +3303,7 @@ public import Complexity.Foundations.Probability.PolynomialAtomRows.RootError
 public import Complexity.Foundations.Probability.PolynomialAtomRows.Saturation
 public import Complexity.Foundations.Probability.ProductError
 public import Complexity.Foundations.Probability.RootMetric
+public import Complexity.Foundations.Probability.RootMetric.ConditionalWalk
 public import Complexity.Foundations.Probability.RootMetric.Conditioning
 public import Complexity.Foundations.Probability.RootMetric.Minkowski
 public import Complexity.Foundations.Probability.RootMetric.Slices
@@ -3617,6 +3618,7 @@ public import Complexity.Probability.PairwiseIndependentHash.HeavyCount
 public import Complexity.Probability.PairwiseIndependentHash.HierarchyChannels
 public import Complexity.Probability.PairwiseIndependentHash.Retention
 public import Complexity.Probability.PairwiseIndependentHash.RetentionChannel
+public import Complexity.Probability.PairwiseIndependentHash.RowFourthMoment
 public import Complexity.Probability.PairwiseIndependentHash.Shift
 public import Complexity.Probability.PairwiseIndependentHash.SliceFourthMoment
 public import Complexity.Probability.PairwiseIndependentHash.SliceGap
