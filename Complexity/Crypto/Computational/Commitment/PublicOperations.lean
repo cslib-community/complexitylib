@@ -57,12 +57,11 @@ structure PublicOperations {Key : Type} (S : CommitmentScheme Key) where
   map_commit : ∀ k m, (randomness k).map (commit k m) = S.commitDist k m
   /-- Deterministic evaluation is polynomial-time in the public key, message and randomness word. -/
   commit_polyTime : ComputableInPolyTime
-    (fun p : Key × List Bool × List Bool => commit p.1 (Prod.fst p.2) (Prod.snd p.2))
+    (fun ((k, msg, r) : Key × List Bool × List Bool) => commit k msg r)
     (encPair S.encodeKey (encPair encBits encBits)) (encPair encBits encBits)
   /-- Verification is polynomial-time in the public key, message, commitment and opening words. -/
   verify_polyTime : ComputableInPolyTime
-    (fun p : Key × List Bool × List Bool × List Bool =>
-      S.verify p.1 (Prod.fst p.2) (Prod.fst (Prod.snd p.2)) (Prod.snd (Prod.snd p.2)))
+    (fun ((k, msg, c, o) : Key × List Bool × List Bool × List Bool) => S.verify k msg c o)
     (encPair S.encodeKey (encPair encBits (encPair encBits encBits))) encBool
 
 namespace PublicOperations

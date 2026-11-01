@@ -182,11 +182,8 @@ theorem pedersenCommit_smul_generator_eq_iff (d : F.Desc) (α m₀ r₀ m₁ r�
 /-- Pedersen commitment on encoded group elements: given `(d, encode h, m, r)`, compute
 `encode (m • g + r • h)`. -/
 def encodePedersenCommit (input : F.Desc × List Bool × ℕ × ℕ) : List Bool :=
-  let hmr := input.2
-  let mr := hmr.2
-  F.add (input.1,
-    F.smul (input.1, mr.1, F.encode input.1 (F.generator input.1)),
-    F.smul (input.1, mr.2, hmr.1))
+  let (d, h, m, r) := input
+  F.add (d, F.smul (d, m, F.encode d (F.generator d)), F.smul (d, r, h))
 
 /-- `encodePedersenCommit` computes `F.encode d (F.pedersenCommit d h m r)` on encoded group
 elements. -/

@@ -152,8 +152,7 @@ theorem isPPTOn_run_counterSigningOracle {adversary : Forger}
       (fun caller : ℕ × (List Bool × List Bool) =>
         (OracleComp.interpret
           (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
-            (S.counterSigningOracle caller.1 (Prod.snd caller.2)))
-          (adversary caller.1 (Prod.fst caller.2))).run
+            (S.counterSigningOracle caller.1 caller.2.2)) (adversary caller.1 caller.2.1)).run
           (0, [])) := by
   obtain ⟨c, d, hlen⟩ := S.sign_ppt.length_le
   have hcap := S.capacity_polyTime

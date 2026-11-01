@@ -52,13 +52,9 @@ opening words. The public element is already encoded; no discrete logarithm or s
 value is supplied to this algorithm. -/
 def encodePedersenVerify
     (input : (F.Desc × List Bool) × List Bool × List Bool × List Bool) : Bool :=
-  let dh := input.1
-  let mco := input.2
-  let co := mco.2
-  decide (ofBits mco.1 < F.order dh.1) &&
-    decide ((ofBits mco.1).bits = mco.1) &&
-    decide (F.encodePedersenCommit
-      (dh.1, dh.2, ofBits mco.1, ofBits co.2) = co.1)
+  let ((d, h), m, c, o) := input
+  decide (ofBits m < F.order d) && decide ((ofBits m).bits = m) &&
+    decide (F.encodePedersenCommit (d, h, ofBits m, ofBits o) = c)
 
 /-- The encoded verifier computes exactly the verifier used by `pedersenScheme`. -/
 @[simp]

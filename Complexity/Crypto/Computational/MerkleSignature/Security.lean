@@ -103,16 +103,13 @@ keys `keys`: a collision in the tree if the forged verification key is not the o
 and otherwise the forged message with a message signed at leaf `u` with the same digest. -/
 def collisionOf (k : List Bool) (keys : List (List Bool × List Bool))
     (out : (ℕ × List Bool × List Bool) × List (ℕ × List Bool)) : List Bool × List Bool :=
-  let u_msig := out.1
-  let u := u_msig.1
-  let msig := u_msig.2
-  let forged := signatureDecoder.decode msig.2
-  let otsPath := forged.2
+  let ((u, msg, sig), signed) := out
+  let (vk, _, path) := signatureDecoder.decode sig
   let vks := keys.map Prod.fst
-  if forged.1 == vks.getD u [] then
-    (msig.1, (out.2.find? fun e => e.1 == u && H k e.2 == H k msig.1).elim [] Prod.snd)
+  if vk == vks.getD u [] then
+    (msg, (signed.find? fun e => e.1 == u && H k e.2 == H k msg).elim [] Prod.snd)
   else
-    extractMerkleCollision H k forged.1 (vks.getD u []) u otsPath.2 (merklePath H k vks u)
+    extractMerkleCollision H k vk (vks.getD u []) u path (merklePath H k vks u)
 
 /-- The collision finder: given the hash key `k`, generate the one-time keys, answer the forger's
 signing queries honestly, and return `collisionOf` its forgery. -/
@@ -169,11 +166,9 @@ noncomputable def oneTimeForgerAt (bound : ℕ → ℕ) (adversary : IndexedForg
     (ProbOracleComp.handler (fun j => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin j)))
       (plantedHandler S H depth n setup.1 setup.2 i (bound n)))
     (adversary n (publicKey H setup.1 setup.2))).run []
-  let u_msig := out.1
-  let msig := u_msig.2
-  let forged := signatureDecoder.decode msig.2
-  let otsPath := forged.2
-  return (H setup.1 msig.1, otsPath.1)
+  let ((_, msg, sig), _) := out
+  let (_, ots, _) := signatureDecoder.decode sig
+  return (H setup.1 msg, ots)
 
 /-- The one-time forger: plant the challenge at a uniform leaf. -/
 noncomputable def oneTimeForger (bound : ℕ → ℕ) (adversary : IndexedForger) : Forger :=

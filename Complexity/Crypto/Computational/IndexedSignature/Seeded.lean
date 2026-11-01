@@ -69,11 +69,11 @@ structure Seeded (S : IndexedSignatureScheme) where
   eval_keyGen : ∀ n length, keyGenBudget n ≤ length →
     ProbComp.eval (S.keyGen n) = (BitString.uniformList length).map (keyGenWith n)
   signWith_polyTime : ComputableInPolyTime
-    (fun p : (List Bool × ℕ × List Bool) × List Bool =>
-      signWith (Prod.fst p.1) (Prod.fst (Prod.snd p.1)) (Prod.snd (Prod.snd p.1)) p.2)
+    (fun (((sk, u, msg), coins) : (List Bool × ℕ × List Bool) × List Bool) =>
+      signWith sk u msg coins)
     (encPair (encPair encBits (encPair encUnary encBits)) encBits) encBits
   signBudget_polyTime : ComputableInPolyTime
-    (fun p : List Bool × ℕ × List Bool => signBudget p.1 (Prod.fst p.2) (Prod.snd p.2))
+    (fun ((sk, u, msg) : List Bool × ℕ × List Bool) => signBudget sk u msg)
     (encPair encBits (encPair encUnary encBits)) encUnary
   signWith_mem_support : ∀ sk u msg coins,
     signWith sk u msg coins ∈ (ProbComp.eval (S.sign sk u msg)).support
@@ -114,11 +114,11 @@ theorem exists_signWith (S : IndexedSignatureScheme) :
         (encPair (encPair encBits (encPair encUnary encBits)) encBits) encBits ∧
       ComputableInPolyTime budget (encPair encBits (encPair encUnary encBits)) encUnary ∧
       (∀ a coins,
-        let um := a.2
-        signWith a coins ∈ (ProbComp.eval (S.sign a.1 um.1 um.2)).support) ∧
+        let (sk, u, msg) := a
+        signWith a coins ∈ (ProbComp.eval (S.sign sk u msg)).support) ∧
       ∀ a length, budget a ≤ length →
-        let um := a.2
-        ProbComp.eval (S.sign a.1 um.1 um.2) =
+        let (sk, u, msg) := a
+        ProbComp.eval (S.sign sk u msg) =
           (BitString.uniformList length).map (signWith a) := by
   obtain ⟨c, d, evaluate, hpoly, hsupport, hlaw⟩ :=
     IsPPTOn.exists_total_seeded_evaluator S.sign_ppt
