@@ -124,6 +124,20 @@
       ]
     },
     {
+      "id": "bqp-pp",
+      "title": "Adleman–DeMarrais–Huang: BQP is contained in PP",
+      "module": "ComplexityAbstracts.BQPAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.BQPAbstract.BQP_subset_PP"
+      ],
+      "summary": "Every problem decided with bounded error by a polynomial-time uniform family of quantum circuits is decided by a polynomial-time strict-majority vote over random strings.",
+      "scope": "Explicit amplitude semantics for the fixed gate set {Hadamard, NOT, CNOT, Toffoli}, acceptance by measuring qubit 0 from the zero-padded input, uniformity in polynomial time from n in unary, and native multi-tape PP; equivalence to textbook BQP over arbitrary elementary gates (universality and Solovay–Kitaev) is a cited, unformalized remark.",
+      "foundations": [
+        "ComplexityAbstracts.Encoding",
+        "ComplexityAbstracts.Computation"
+      ]
+    },
+    {
       "id": "barrington",
       "title": "Barrington: five states capture NC¹",
       "module": "ComplexityAbstracts.BarringtonAbstract",

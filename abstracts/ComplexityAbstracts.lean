@@ -1,3 +1,5 @@
+import ComplexityAbstracts.BQPAbstract
+import ComplexityAbstracts.BQPBridge
 import ComplexityAbstracts.BarringtonAbstract
 import ComplexityAbstracts.BarringtonBridge
 import ComplexityAbstracts.BravermanAbstract
