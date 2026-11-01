@@ -120,10 +120,40 @@ theorem transfer_run (front back : List α) :
   induction back generalizing front with
   | nil => rfl
   | cons a back ih =>
-    simpa [transfer, stackPair, stack, transferTrace,
-      List.reverse_cons, List.append_assoc] using congrArg
-        (fun r : Unit × (stackPair α).State × List (stackPair α).Op =>
-          (r.1, r.2.1, .inr .pop :: .inl (.push a) :: r.2.2)) (ih (a :: front))
+    change (let (v, s, os) := (stackPair α).runClient (a :: front, back) (transfer back.length)
+      (v, s, (Sum.inr StackOp.pop : (stackPair α).Op) :: Sum.inl (StackOp.push a) :: os)) = _
+    rw [ih]
+    simp [transferTrace, List.reverse_cons, List.append_assoc]
+
+/-- A dequeue from an empty front stack asks for the rear size, transfers the rear, and pops the
+front again. -/
+theorem runClient_dequeue_nil (back : List α) :
+    (stackPair α).runClient ([], back) (methods .dequeue) =
+      (back.reverse.head?, (back.reverse.tail, []),
+        .inl .pop :: .inr .size :: (transferTrace back ++ [.inl .pop])) := by
+  simp only [methods, bind, StateTransitionSpec.runClient_liftBind, stackPair, stack,
+    List.tail_nil, List.head?_nil]
+  rw [StateTransitionSpec.runClient_bind, transfer_run, List.append_nil]
+  rfl
+
+/-- Each method returns the FIFO answer, and the stacks then represent the FIFO successor of the
+represented list. -/
+theorem stepFn_methods (front back : List α) (o : QueueOp α) :
+    (queue α).stepFn (front ++ back.reverse) o =
+      (((stackPair α).clientState (front, back) (methods o)).1 ++
+          ((stackPair α).clientState (front, back) (methods o)).2.reverse,
+        (stackPair α).clientResult (front, back) (methods o)) := by
+  cases o with
+  | enqueue n =>
+    change ((front ++ back.reverse) ++ [n], ()) = (front ++ (n :: back).reverse, ())
+    simp [List.reverse_cons, List.append_assoc]
+  | dequeue =>
+    cases front with
+    | cons a front => rfl
+    | nil =>
+      simp only [StateTransitionSpec.clientState, StateTransitionSpec.clientResult]
+      rw [runClient_dequeue_nil]
+      simp
 
 /-- A dequeue from an empty front stack asks for the rear size, transfers the rear, and pops the
 front again. -/
