@@ -31,7 +31,8 @@ Section 4, p. 665).
 
 * **Set-idempotent updates**: Sleator and Tarjan ([SleatorTarjan1985b], Section 3, p. 661) specify
   `insert(i, t)` under the precondition `i ∉ t` and `delete(i, t)` under `i ∈ t`. To realize
-  `Cslib.DataStructure.OrderedSet.spec α` directly, `insert` and `erase` are total and set-idempotent: inserting
+  `Cslib.DataStructure.OrderedSet.spec α` directly, `insert` and `erase` are total and
+  set-idempotent: inserting
   a present key splays that key to the root without duplicating it, and erasing an absent key
   splays the last visited node along the failed search path while leaving `elements` unchanged.
 * **Rotation counts vs. node visits**: Each `SplayResult`, `SplitResult`, and `QueryResult`

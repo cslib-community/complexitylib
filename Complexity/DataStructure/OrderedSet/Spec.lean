@@ -22,7 +22,8 @@ choose a representation or charge a computational cost.
 
 ## Main definitions
 
-* `Cslib.DataStructure.OrderedSet.Op`, `Cslib.DataStructure.OrderedSet.spec`: shared typed ordered-set interface and semantics.
+* `Cslib.DataStructure.OrderedSet.Op`, `Cslib.DataStructure.OrderedSet.spec`: shared typed
+  ordered-set interface and semantics.
 
 ## References
 

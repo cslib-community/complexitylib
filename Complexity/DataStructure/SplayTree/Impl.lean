@@ -14,8 +14,9 @@ public import Complexity.DataStructure.SplayTree.AccessLemma
 /-!
 # Self-Adjusting Stateful Ordered-Set Implementation by Splay Trees
 
-This module realizes the shared `Cslib.DataStructure.OrderedSet.spec α` interface (`contains`, `insert`, `erase`,
-`minimum`, `successor`) using annotation-free bottom-up splay trees ([SleatorTarjan1985b],
+This module realizes the shared `Cslib.DataStructure.OrderedSet.spec α` interface (`contains`,
+`insert`, `erase`, `minimum`, `successor`) using annotation-free bottom-up splay trees
+([SleatorTarjan1985b],
 Section 3, pp. 660–665), reusing the shared `Cslib.DataStructure.SearchTree.Rep` representation
 relation (`Ordered t ∧ elements t = s`) and `SearchTree.rep_empty` directly on `BinaryTree α`.
 
@@ -57,8 +58,8 @@ charged as RAM or Turing-machine instructions.
 ## Main definitions
 
 * `StepResult`, `step`, `Exec`: self-adjusting single-operation execution and native trace relation.
-* `impl`: `Cslib.DataStructure.StateTransitionImpl` of `Cslib.DataStructure.OrderedSet.spec α` reusing
-  `Cslib.DataStructure.SearchTree.Rep`.
+* `impl`: `Cslib.DataStructure.StateTransitionImpl` of
+  `Cslib.DataStructure.OrderedSet.spec α` reusing `Cslib.DataStructure.SearchTree.Rep`.
 * `realOpCharge`, `realHistoryCost`, `amortizedCharge`: continuous (`Real.logb 2`) and discrete
   (`Nat.log 2`) per-operation amortized rotation budgets.
 * `ClientRun`, `run`: executable adaptive client runner with named output fields.

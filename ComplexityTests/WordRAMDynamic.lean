@@ -10,14 +10,14 @@ module
 public import Complexity.Computability.WordRAM.Dynamic
 public import Complexity.Computability.WordRAM.Subroutine
 public import Complexity.DataStructure.WordRAM.StateTransition
-public import Complexity.Algorithms.WordRAM.Stack
+public import Complexity.DataStructure.Stack.WordRAM.Basic
 
 /-! Nonvacuous fixed-program clients: a persistent exchange cell and a read-only array.
 Both obtain arbitrary-history theorems from the same certificate interface. -/
 
 @[expose] public section
 
-open Cslib Cslib.WordRAM Cslib.DataStructure.WordRAM
+open Cslib Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.WordRAM
 
 namespace WordRAMDynamicTests
 
@@ -111,7 +111,7 @@ example (w : ℕ) (x : Data 2) (h0 : x.regs 0 = 0) (h1 : x.mem 1 = 7) :
   exact he.frame h1 (by simp [HeapAssertion.pointsto, Probe.writes])
 
 /-- An adaptive client chooses whether to pop from the observed size. -/
-def stackClient : (Stack.spec 4 2).Client (Option ℕ × ℕ) :=
+def stackClient : (Stack.WordRAM.spec 4 2).Client (Option ℕ × ℕ) :=
   .liftBind (.push 7) fun _ =>
     .liftBind .size fun (n : ℕ) =>
       if n = 1 then
@@ -119,30 +119,31 @@ def stackClient : (Stack.spec 4 2).Client (Option ℕ × ℕ) :=
       else .pure (none, n)
 
 /-- The test client is admissible from the concrete empty representation. -/
-example : (Stack.spec 4 2).ValidHistory [] ((Stack.spec 4 2).runClient [] stackClient).2.2 :=
+example : (Stack.WordRAM.spec 4 2).ValidHistory []
+    ((Stack.WordRAM.spec 4 2).runClient [] stackClient).2.2 :=
   by
     change (0 < 2 ∧ Fits 4 7) ∧ True ∧ True ∧ True ∧ True
     decide
 
 /-- The concrete stack realizes an adaptive observation with a cumulative native cost bound. -/
 example : ∃ y ts,
-    DataStructure.Executes ((Stack.implementation 4 2).ExecOp 4) stackClient
-        (Stack.initial 3) (some 7, 0) y ts ∧ Stack.Rep 4 3 2 [] y ∧
+    DataStructure.Executes ((Stack.WordRAM.implementation 4 2).ExecOp 4) stackClient
+        (Stack.WordRAM.initial 3) (some 7, 0) y ts ∧ Stack.WordRAM.Rep 4 3 2 [] y ∧
       DataStructure.total DynamicProgram.OperationTrace.instructions ts ≤ 48 := by
-  exact Stack.run_client (base := 3) (by decide : Fits 4 2) (by decide : Fits 4 (3 + 2))
-      stackClient (Stack.initial_rep (by decide : Fits 4 (3 + 2))) (by
+  exact Stack.WordRAM.run_client (base := 3) (by decide : Fits 4 2) (by decide : Fits 4 (3 + 2))
+      stackClient (Stack.WordRAM.initial_rep (by decide : Fits 4 (3 + 2))) (by
         change (0 < 2 ∧ Fits 4 7) ∧ True ∧ True ∧ True ∧ True
         decide)
 
-/-- Typed push, empty pop, and size queries on `Stack.implementation 4 2`, plus decoder rejection
-and loop-fuel exhaustion on `exchangeProgram 4`. -/
+/-- Typed push, empty pop, and size queries on `Stack.WordRAM.implementation 4 2`, plus decoder
+rejection and loop-fuel exhaustion on `exchangeProgram 4`. -/
 example :
-    ((Stack.implementation 4 2).eval 4 0 (.push 7) (Stack.initial 3)).map
-      (fun (y, answer, cost) => (y.mem 3, y.regs Stack.len, answer, cost)) =
+    ((Stack.WordRAM.implementation 4 2).eval 4 0 (.push 7) (Stack.WordRAM.initial 3)).map
+      (fun (y, answer, cost) => (y.mem 3, y.regs Stack.WordRAM.len, answer, cost)) =
         some (7, 1, (), 8) ∧
-    ((Stack.implementation 4 2).eval 4 0 .pop (Stack.initial 3)).map
+    ((Stack.WordRAM.implementation 4 2).eval 4 0 .pop (Stack.WordRAM.initial 3)).map
       (fun (_, answer, _) => answer) = some none ∧
-    ((Stack.implementation 4 2).eval 4 0 .size (Stack.initial 3)).map
+    ((Stack.WordRAM.implementation 4 2).eval 4 0 .size (Stack.WordRAM.initial 3)).map
       (fun (_, answer, _) => answer) = some 0 ∧
     ({ exchangeProgram 4 with decode := fun _ _ => none } :
       DynamicProgram (exchangeSpec 4) 3 .standard).eval 4 0 7
@@ -154,16 +155,17 @@ example :
 
 /-- Successful evaluation of a represented, admissible call supplies native execution evidence. -/
 example {y : Data 9} {cost : ℕ}
-    (he : (Stack.implementation 4 2).eval 4 0 (.push 7) (Stack.initial 3) =
+    (he : (Stack.WordRAM.implementation 4 2).eval 4 0 (.push 7) (Stack.WordRAM.initial 3) =
       some (y, (), cost)) :
-    ∃ probes, (Stack.implementation 4 2).ExecOp 4 (Stack.initial 3) (.push 7) () y
+    ∃ probes, (Stack.WordRAM.implementation 4 2).ExecOp 4 (Stack.WordRAM.initial 3) (.push 7) () y
       ⟨cost, probes⟩ :=
-  (Stack.certificate (w := 4) (capacity := 2) (base := 3) (by decide) (by decide)).execOp_of_eval
-    (Stack.initial_rep (by decide)) (by decide) he
+  (Stack.WordRAM.certificate (w := 4) (capacity := 2) (base := 3) (by decide)
+    (by decide)).execOp_of_eval
+    (Stack.WordRAM.initial_rep (by decide)) (by decide) he
 
 /-- A full stack rejects another push, while the largest fitting word remains a valid value. -/
-example : ¬(Stack.spec 4 2).valid [4, 7] (.push 2) ∧
-    (Stack.spec 4 2).valid [] (.push 15) := by decide
+example : ¬(Stack.WordRAM.spec 4 2).valid [4, 7] (.push 2) ∧
+    (Stack.WordRAM.spec 4 2).valid [] (.push 15) := by decide
 
 /--
 info: 'Cslib.WordRAM.DynamicCertificate.impl' depends on axioms:

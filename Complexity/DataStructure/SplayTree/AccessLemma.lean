@@ -56,8 +56,8 @@ charges one unit when no rotations occur and the exact rotation count otherwise.
   and `erase`.
 * `minimum_unitPotential_amortized_le`, `successor_unitPotential_amortized_le`: companion
   unit-weight rotation bounds derived from the Access Lemma ([SleatorTarjan1985b], Section 2,
-  Lemma 1, p. 658) for `Cslib.DataStructure.OrderedSet.spec` (`minimum` and `successor` are not part of
-  Lemma 2).
+  Lemma 1, p. 658) for `Cslib.DataStructure.OrderedSet.spec` (`minimum` and `successor` are not
+  part of Lemma 2).
 
 ## References
 

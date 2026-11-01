@@ -158,7 +158,7 @@ theorem insert_executes {d w base key : ℕ} {tree : Tree d} {s : Data 32}
     (hx : key < universeSize d) (ha : Fits w (base + span d))
     (hroot : s.regs root = base) (harg : s.regs arg = key) (htag : s.regs tag = 0) :
     ∃ n ≤ 39 * (d + 1) + 16,
-      Executes w (program.program out) ⟨0, s⟩ 0 n := by
+      Cslib.WordRAM.Executes w (program.program out) ⟨0, s⟩ 0 n := by
   obtain ⟨z, n, hn, he, _, _, _, _, hout, _⟩ :=
     insert_call hs ht hr hx ha hroot harg htag
   exact ⟨n + 1, hn, hout ▸ he.executes out⟩
@@ -180,7 +180,7 @@ theorem insert_executes_log {d w base key : ℕ} {tree : Tree d} {s : Data 32}
     (hx : key < universeSize d) (ha : Fits w (base + span d))
     (hroot : s.regs root = base) (harg : s.regs arg = key) (htag : s.regs tag = 0) :
     ∃ n ≤ 39 * (Nat.log 2 (Nat.log 2 (universeSize d)) + 1) + 16,
-      Executes w (program.program out) ⟨0, s⟩ 0 n := by
+      Cslib.WordRAM.Executes w (program.program out) ⟨0, s⟩ 0 n := by
   simpa only [log_log_universeSize] using insert_executes hs ht hr hx ha hroot harg htag
 
 /-! ## Complete native membership calls -/
@@ -226,7 +226,8 @@ theorem member_executes {d w base query : ℕ} {tree : Tree d} {s : Data 32}
     (ha : Fits w (base + span d)) (hroot : s.regs root = base)
     (harg : s.regs arg = query) (htag : s.regs tag = 1) :
     ∃ n ≤ 28 * (d + 1) + 18,
-      Executes w (program.program out) ⟨0, s⟩ (if tree.member query then 1 else 0) n := by
+      Cslib.WordRAM.Executes w (program.program out) ⟨0, s⟩
+        (if tree.member query then 1 else 0) n := by
   obtain ⟨z, n, hn, he, _, _, _, hout, _⟩ := member_call hs ht hr ha hroot harg htag
   exact ⟨n + 1, hn, hout ▸ he.executes out⟩
 
@@ -248,7 +249,8 @@ theorem member_executes_log {d w base query : ℕ} {tree : Tree d} {s : Data 32}
     (ha : Fits w (base + span d)) (hroot : s.regs root = base)
     (harg : s.regs arg = query) (htag : s.regs tag = 1) :
     ∃ n ≤ 28 * (Nat.log 2 (Nat.log 2 (universeSize d)) + 1) + 18,
-      Executes w (program.program out) ⟨0, s⟩ (if tree.member query then 1 else 0) n := by
+      Cslib.WordRAM.Executes w (program.program out) ⟨0, s⟩
+        (if tree.member query then 1 else 0) n := by
   simpa only [log_log_universeSize] using member_executes hs ht hr ha hroot harg htag
 
 /-! ## Complete native strict-successor calls -/
@@ -311,7 +313,7 @@ theorem successor_executes {d w base stackBase₀ query : ℕ} {tree : Tree d} {
     (hroot : s.regs root = base) (hstk : s.regs stackBase = stackBase₀)
     (harg : s.regs arg = query) (htag : s.regs tag = 2) :
     ∃ (z : Data 32) (n : ℕ), n ≤ 65 * (d + 1) + 22 ∧
-      Executes w (program.program out) ⟨0, s⟩ (z.regs out) n ∧
+      Cslib.WordRAM.Executes w (program.program out) ⟨0, s⟩ (z.regs out) n ∧
       (if z.regs found = 0 then none else some (z.regs out)) = tree.successor query ∧
       Rep tree base z.mem ∧
       (∀ a, a < stackBase₀ ∨ stackBase₀ + 4 * d ≤ a → z.mem a = s.mem a) := by
@@ -342,7 +344,7 @@ theorem successor_executes_log {d w base stackBase₀ query : ℕ} {tree : Tree 
     (hroot : s.regs root = base) (hstk : s.regs stackBase = stackBase₀)
     (harg : s.regs arg = query) (htag : s.regs tag = 2) :
     ∃ (z : Data 32) (n : ℕ), n ≤ 65 * (Nat.log 2 (Nat.log 2 (universeSize d)) + 1) + 22 ∧
-      Executes w (program.program out) ⟨0, s⟩ (z.regs out) n ∧
+      Cslib.WordRAM.Executes w (program.program out) ⟨0, s⟩ (z.regs out) n ∧
       (if z.regs found = 0 then none else some (z.regs out)) = tree.successor query ∧
       Rep tree base z.mem ∧
       (∀ a, a < stackBase₀ ∨ stackBase₀ + 4 * d ≤ a → z.mem a = s.mem a) := by

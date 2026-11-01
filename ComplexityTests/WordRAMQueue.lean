@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (test driver)
 
-public import Complexity.Algorithms.WordRAM.Queue.Dynamic
+public import Complexity.DataStructure.Queue.WordRAM.Dynamic
 
 /-!
 # A worked adaptive FIFO example
@@ -21,13 +21,13 @@ a nonempty-front dequeue, and an enqueue while both stack regions contain live v
 @[expose] public section
 
 open Cslib Cslib.WordRAM
-open Cslib.Algorithms.Lean.Queue
+open Cslib.DataStructure Cslib.DataStructure.Queue
 
 namespace WordRAMQueueTest
 
 /-- An adaptive FIFO client, with no access to either stack representation. -/
 def cycle {w capacity : ℕ} (a b : ℕ) :
-    (WordRAM.Queue.spec w capacity).Client (Option ℕ × Option ℕ) :=
+    (Queue.WordRAM.spec w capacity).Client (Option ℕ × Option ℕ) :=
   .liftBind (.enqueue a) fun _ =>
   .liftBind (.enqueue b) fun _ =>
   .liftBind .dequeue fun first =>
@@ -35,12 +35,12 @@ def cycle {w capacity : ℕ} (a b : ℕ) :
   .liftBind .dequeue fun second => .pure (first, second)
 
 example {w capacity a b : ℕ} :
-    (WordRAM.Queue.spec w capacity).runClient [] (cycle a b) =
+    (Queue.WordRAM.spec w capacity).runClient [] (cycle a b) =
       ((some a, some b), [a], [.enqueue a, .enqueue b, .dequeue, .enqueue a, .dequeue]) := rfl
 
 theorem cycle_valid {w capacity a b : ℕ} (hc : 2 ≤ capacity) (ha : Fits w a) (hb : Fits w b) :
-    (WordRAM.Queue.spec w capacity).ValidHistory []
-      ((WordRAM.Queue.spec w capacity).runClient [] (cycle a b)).2.2 := by
+    (Queue.WordRAM.spec w capacity).ValidHistory []
+      ((Queue.WordRAM.spec w capacity).runClient [] (cycle a b)).2.2 := by
   exact ⟨⟨by simpa using (show 0 < capacity by omega), ha⟩,
     ⟨⟨by simpa using (show 1 < capacity by omega), hb⟩,
     trivial, ⟨by simpa using (show 1 < capacity by omega), ha⟩, trivial, trivial⟩⟩
@@ -49,24 +49,24 @@ theorem cycle_valid {w capacity a b : ℕ} (hc : 2 ≤ capacity) (ha : Fits w a)
 example {w base capacity a b : ℕ} (h1 : Fits w 1)
     (hc : Fits w (base + 2 * capacity)) (hsize : 2 ≤ capacity)
     (ha : Fits w a) (hb : Fits w b) {x : Data 11}
-    (hr : WordRAM.Queue.QueueRep w base capacity [] x) :
+    (hr : Queue.WordRAM.QueueRep w base capacity [] x) :
     ∃ y traces,
-      DataStructure.Executes ((WordRAM.Queue.implementation w capacity).ExecOp w)
+      DataStructure.Executes ((Queue.WordRAM.implementation w capacity).ExecOp w)
         (cycle a b) x (some a, some b) y traces ∧
-      WordRAM.Queue.QueueRep w base capacity [a] y ∧
+      Queue.WordRAM.QueueRep w base capacity [a] y ∧
       DataStructure.total DynamicProgram.OperationTrace.instructions traces +
-        WordRAM.Queue.potential y ≤ 70 + WordRAM.Queue.potential x := by
-  have hv : (WordRAM.Queue.spec w capacity).ValidHistory []
-      ((WordRAM.Queue.spec w capacity).runClient [] (cycle a b)).2.2 :=
+        Queue.WordRAM.potential y ≤ 70 + Queue.WordRAM.potential x := by
+  have hv : (Queue.WordRAM.spec w capacity).ValidHistory []
+      ((Queue.WordRAM.spec w capacity).runClient [] (cycle a b)).2.2 :=
     ⟨⟨by simpa using (show 0 < capacity by omega), ha⟩,
       ⟨⟨by simpa using (show 1 < capacity by omega), hb⟩,
       trivial, ⟨by simpa using (show 1 < capacity by omega), ha⟩, trivial, trivial⟩⟩
   simpa only [cycle, DataStructure.StateTransitionSpec.runClient_liftBind,
     DataStructure.StateTransitionSpec.runClient_pure,
-    WordRAM.Queue.spec, queue,
+    Queue.WordRAM.spec, queue,
     List.nil_append, List.cons_append, List.tail_cons, List.head?_cons,
     Option.getD_some, List.length_cons, List.length_nil] using
-    WordRAM.Queue.run_client h1 hc (cycle a b) hr hv
+    Queue.WordRAM.run_client h1 hc (cycle a b) hr hv
 
 -- Nonzero unused memory is legitimate: only live prefixes carry queue contents.
 private def stale : Data 11 := ⟨fun _ => 15, fun _ => 15⟩
@@ -74,43 +74,43 @@ private def stale : Data 11 := ⟨fun _ => 15, fun _ => 15⟩
 private theorem stale_bounded : stale.Bounded 4 :=
   ⟨fun _ => (by decide : Fits 4 15), fun _ => (by decide : Fits 4 15)⟩
 
-example : ∃ ready, Exec 4 (WordRAM.Queue.initializeCode 3 2) stale ready 6 ∧
-    WordRAM.Queue.Rep 4 3 2 [] [] ready ∧ ready.mem = stale.mem :=
-  WordRAM.Queue.initialize_exec stale_bounded (by decide) (by decide)
+example : ∃ ready, Exec 4 (Queue.WordRAM.initializeCode 3 2) stale ready 6 ∧
+    Queue.WordRAM.Rep 4 3 2 [] [] ready ∧ ready.mem = stale.mem :=
+  Queue.WordRAM.initialize_exec stale_bounded (by decide) (by decide)
 
 -- All five adaptive calls work from an initialized representation, including a zero word.
-example : ∃ ready y traces, Exec 4 (WordRAM.Queue.initializeCode 3 2) stale ready 6 ∧
-    DataStructure.Executes ((WordRAM.Queue.implementation 4 2).ExecOp 4)
+example : ∃ ready y traces, Exec 4 (Queue.WordRAM.initializeCode 3 2) stale ready 6 ∧
+    DataStructure.Executes ((Queue.WordRAM.implementation 4 2).ExecOp 4)
       (cycle 0 15) ready (some 0, some 15) y traces ∧
-    WordRAM.Queue.QueueRep 4 3 2 [0] y ∧
+    Queue.WordRAM.QueueRep 4 3 2 [0] y ∧
     6 + DataStructure.total DynamicProgram.OperationTrace.instructions traces +
-      WordRAM.Queue.potential y ≤ 76 := by
-  exact WordRAM.Queue.run_initialized (by decide) (by decide) (cycle 0 15)
+      Queue.WordRAM.potential y ≤ 76 := by
+  exact Queue.WordRAM.run_initialized (by decide) (by decide) (cycle 0 15)
     stale_bounded (cycle_valid (by decide) (by decide) (by decide))
 
 -- Capacity zero allows an empty dequeue, but no enqueue (even of zero), and capacity/width bounds
 -- are enforced.
 example :
-    ¬(WordRAM.Queue.spec 4 0).valid [] (.enqueue 0) ∧
-    (WordRAM.Queue.spec 4 0).valid [] .dequeue ∧
-    ¬(WordRAM.Queue.spec 4 2).valid [0, 15] (.enqueue 1) ∧
-    ¬(WordRAM.Queue.spec 4 2).valid [] (.enqueue 16) :=
+    ¬(Queue.WordRAM.spec 4 0).valid [] (.enqueue 0) ∧
+    (Queue.WordRAM.spec 4 0).valid [] .dequeue ∧
+    ¬(Queue.WordRAM.spec 4 2).valid [0, 15] (.enqueue 1) ∧
+    ¬(Queue.WordRAM.spec 4 2).valid [] (.enqueue 16) :=
   ⟨by decide, trivial, by decide, by decide⟩
 
 -- A refill of two rear words costs 28 including halt: a false 27 bound is rejected.
 example {x y : Data 11} {a : Option ℕ} {trace : DynamicProgram.OperationTrace}
-    (hr : WordRAM.Queue.Rep 4 3 2 [] [15, 0] x)
-    (he : (WordRAM.Queue.implementation 4 2).ExecOp 4 x .dequeue a y trace) :
+    (hr : Queue.WordRAM.Rep 4 3 2 [] [15, 0] x)
+    (he : (Queue.WordRAM.implementation 4 2).ExecOp 4 x .dequeue a y trace) :
     trace.instructions = 28 ∧ ¬trace.instructions ≤ 27 := by
-  have h := WordRAM.Queue.instructions_eq (by decide) hr trivial he
+  have h := Queue.WordRAM.instructions_eq (by decide) hr trivial he
   change trace.instructions = 28 at h
   omega
 
 -- Empty and zero-valued observations are semantically distinct, and the footprint size is `2 * c`.
 example :
-    (WordRAM.Queue.pairStep ([], []) .dequeue).2 = none ∧
-    (WordRAM.Queue.pairStep ([], [0]) .dequeue).2 = some 0 ∧
-    (WordRAM.Queue.footprint 3 2).card = 4 :=
-  ⟨rfl, rfl, WordRAM.Queue.footprint_card _ _⟩
+    (Queue.WordRAM.pairStep ([], []) .dequeue).2 = none ∧
+    (Queue.WordRAM.pairStep ([], [0]) .dequeue).2 = some 0 ∧
+    (Queue.WordRAM.footprint 3 2).card = 4 :=
+  ⟨rfl, rfl, Queue.WordRAM.footprint_card _ _⟩
 
 end WordRAMQueueTest

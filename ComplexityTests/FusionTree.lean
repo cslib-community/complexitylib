@@ -4,10 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Erik Demaine
 -/
 
-import Complexity.Algorithms.Lean.FusionTree.Compression
-import Complexity.Algorithms.Lean.FusionTree.Correction
-import Complexity.Algorithms.Lean.FusionTree.Tree
-import Complexity.Algorithms.WordRAM.FusionTree.Packed
+import Complexity.DataStructure.FusionTree.Compression
+import Complexity.DataStructure.FusionTree.Correction
+import Complexity.DataStructure.FusionTree.Tree
+import Complexity.DataStructure.FusionTree.WordRAM.Packed
 import Complexity.Computability.WordRAM.PackedCount
 import Complexity.Computability.WordRAM.Multiword
 
@@ -15,7 +15,7 @@ import Complexity.Computability.WordRAM.Multiword
 The complete fusion-node RAM implementation and predecessor-time endpoint are separate. -/
 
 open Cslib.BitString
-open Cslib.Algorithms.Lean.FusionTree
+open Cslib.DataStructure.FusionTree
 open Cslib.WordRAM
 
 namespace FusionTreeTests

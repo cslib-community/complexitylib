@@ -21,7 +21,8 @@ uses the existing successor-splicing operation, including unsuccessful and repea
 
 ## Main definitions
 
-* `Cslib.DataStructure.OrderedSet.spec`: the shared representation-independent finite-set specification.
+* `Cslib.DataStructure.OrderedSet.spec`: the shared representation-independent finite-set
+  specification.
 * `step`, `Exec`, `run`: concrete tree operations and client interpreter with their exact
   node-visit charge.
 * `Rep`, `impl`: the search tree representation relation and its realization of the

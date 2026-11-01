@@ -20,8 +20,8 @@ ancestor along the root-to-detached-node path.
 
 Unlike [Cormen et al., Problem 13-3][CLRS2009], which covers the AVL invariant, Fibonacci height
 bound, `balance`, and `insert`, this module extends the same `balance` combinator to
-successor-splice deletion so that `AVLTree` supports the full `Cslib.DataStructure.OrderedSet.spec` interface
-including `Op.erase` and `extractMin`.
+successor-splice deletion so that `AVLTree` supports the full
+`Cslib.DataStructure.OrderedSet.spec` interface including `Op.erase` and `extractMin`.
 
 ## Main definitions
 

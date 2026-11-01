@@ -181,19 +181,20 @@ theorem refines {w n : ℕ} (h3 : Fits w 3) (hn : InputFits w [n]) :
 
 /-- A single flat program computes the positive replacement, including its final halt. -/
 theorem executes {w n : ℕ} (h3 : Fits w 3) (hn : InputFits w [n]) :
-    Executes w (code.program out) (State.init [n]) (max n 1)
+    Cslib.WordRAM.Executes w (code.program out) (Cslib.WordRAM.State.init [n]) (max n 1)
       ((if n = 0 then 48 else 28) + 1) := by
   obtain ⟨y, he, _, ha⟩ := execute h3 hn
-  simpa only [ha, State.init] using he.executes out
+  simpa only [ha, Cslib.WordRAM.State.init] using he.executes out
 
 /-- The shared refinement API produces a uniform forty-nine-instruction certificate. -/
 theorem executes_le {w n : ℕ} (h3 : Fits w 3) (hn : InputFits w [n]) :
-    ∃ t ≤ 49, Executes w (code.program out) (State.init [n]) (max n 1) t := by
+    ∃ t ≤ 49, Cslib.WordRAM.Executes w (code.program out) (Cslib.WordRAM.State.init [n])
+      (max n 1) t := by
   obtain ⟨t, ht, hb⟩ := (refines h3 hn).executes out id
     (fun _ _ _ h => h.2) ⟨rfl, rfl⟩
   refine ⟨t, ?_, ?_⟩
   · split at hb <;> omega
-  · simpa only [id_eq, (runClient_client w n).1, State.init] using ht
+  · simpa only [id_eq, (runClient_client w n).1, Cslib.WordRAM.State.init] using ht
 
 /-- The word-valued function computed by the adaptive stack controller. -/
 def positive (n : ℕ) : ℕ := max n 1

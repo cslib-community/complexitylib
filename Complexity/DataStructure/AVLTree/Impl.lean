@@ -14,8 +14,9 @@ public import Complexity.DataStructure.StateTransition.Resource
 /-!
 # Stateful ordered-set realization by height-balanced AVL trees
 
-This module realizes the shared `Cslib.DataStructure.OrderedSet.spec α` interface (`contains`, `insert`, `erase`,
-`minimum`, `successor`) using height-cached AVL trees in the same internal-node-visit cost model as
+This module realizes the shared `Cslib.DataStructure.OrderedSet.spec α` interface (`contains`,
+`insert`, `erase`, `minimum`, `successor`) using height-cached AVL trees in the same
+internal-node-visit cost model as
 `Cslib.DataStructure.SearchTree`, upgrading `SearchTree.nodeVisitBound`'s worst-case linear
 `s.card` bound to the representation-independent logarithmic bound
 `2 * Nat.log 2 (s.card + 1)`.

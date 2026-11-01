@@ -54,7 +54,7 @@ Only equality with the actual stored parameter words is required. -/
 theorem rep_of_tree {w a m : ℕ} {cs : List FusionTree.Tree}
     {parameters : Parameters} {mem : ℕ → ℕ}
     (p : NodeParameters w (fun i : Fin cs.length => cs[i].minimum))
-    (hr : FusionTree.Rep parameters (.node m cs) a mem)
+    (hr : WordRAM.Rep parameters (.node m cs) a mem)
     (hp : parameters (.node m cs) = p.words) : Rep p a mem := by
   have hh := hr.node_header
   refine ⟨hh.2.1, fun j => (hh.2.2.2 j).trans (congrFun hp j), ?_⟩
