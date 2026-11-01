@@ -9,7 +9,11 @@ module
 
 public import Complexity.Algorithms.WordRAM.Dictionary.CuckooHashing.HashFamily
 public import Complexity.Languages.Probabilistic.RandomOracle
+public import Complexity.Probability.KWiseIndependent.DoubleTabulation
 public import Complexity.Probability.PMF.Uniform
+import Complexity.Foundations.Data.Nat.Power
+import Complexity.Probability.KWiseIndependent.Restriction
+import Complexity.Probability.PMF.UniformBound
 
 /-!
 # Pagh–Rodler Cuckoo Graph Dichotomy and Walk Tail Bounds for Highly Independent Hash Pairs
@@ -115,6 +119,13 @@ In Pagh and Rodler [PaghRodler2004] (8 December 2003 manuscript,
   a subset `K ⊆ insert u S` containing `u` with `3 ≤ K.card ≤ maxCard` and
   `|(K.image h₁)| + |(K.image h₂)| + 1 ≤ K.card`.
 
+* `Cslib.Algorithms.Lean.CuckooHashing.ProvableHashSeed`,
+  `Cslib.Algorithms.Lean.CuckooHashing.provableHash1`,
+  `Cslib.Algorithms.Lean.CuckooHashing.provableHash2`: regime-switched hash family parameterized by
+  the polynomial universe exponent `c_exp : ℕ` (`U ≤ max n_max 4 ^ c_exp`), using
+  `trinomialPolyHash` below `Cslib.Probability.doubleTabThreshold c_exp` and Thorup's
+  `doubleTabHash` [Thorup2013] at or above `Cslib.Probability.doubleTabThreshold c_exp`.
+
 ## Main results
 
 * `Cslib.Algorithms.Lean.CuckooHashing.hasAltPath_iff`,
@@ -135,6 +146,15 @@ In Pagh and Rodler [PaghRodler2004] (8 December 2003 manuscript,
   analysis, manuscript p. 10) — any independent pair of `(2 * MaxLoop + 2)`-wise independent
   hash families satisfies `IsCuckooHashPair` (`C_walk = 2`, `C_reh = 3`) under
   `32 * max n_max 4 ≤ m` and `maxEvictions n_max ≤ MaxLoop ≤ m`.
+* `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_of_whp_kWiseIndependent`: black-box
+  conditioning bridge showing that any two-level hash family whose top-level seed yields a
+  `(2 * MaxLoop + 2)`-wise independent bottom-level family with failure probability at most
+  `1 / (2 * max n_max 1 * max MaxLoop 1)` satisfies `IsCuckooHashPair` (`C_walk = 3`, `C_reh = 4`).
+* `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_doubleTabHash`,
+  `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_provableFamily`: `IsCuckooHashPair` for
+  Mikkel Thorup's double tabulation hash family [Thorup2013] and for the unconditional
+  regime-switched family (`provableHash1`/`provableHash2`) across all `n_max : ℕ` and
+  `U ≤ max n_max 4 ^ c_exp`.
 * `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_trinomialPolyHash`,
   `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_uniform`,
   `Cslib.Algorithms.Lean.CuckooHashing.uniform_interpret_eq_lazy_hashPair`: specializations to
@@ -146,6 +166,8 @@ In Pagh and Rodler [PaghRodler2004] (8 December 2003 manuscript,
 * [R. Pagh and F. F. Rodler, "Cuckoo hashing"][PaghRodler2004] (8 December 2003 author manuscript,
   <https://www.rasmuspagh.net/papers/cuckoo-jour.pdf>, Section 2.3, "Analysis", pp. 6–10: Lemma 1,
   p. 7; Eqs. (1)–(3), p. 9; rehash analysis, p. 10).
+* [M. Thorup, *Simple Tabulation, Fast Expanders, Double Tabulation,
+  and High Independence*][Thorup2013]
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing*, 2nd ed.][MitzenmacherUpfal2017]
 * [M. N. Wegman and J. L. Carter, *New hash functions and their use in authentication and set
   equality*][WegmanCarter1981]
@@ -205,23 +227,6 @@ private theorem equationChain_congr_of_eqOn {U m : ℕ} {f₁ f₂ : Fin U → F
     rcases hsub with ⟨hw, hv, hrest⟩
     simp only [EquationChain, heq w hw, heq v hv, ih hrest]
 
-/-- Exact `ℕ` fiber cardinality of `T.restrict (h θ) = y` under a `k`-wise independent hash family
-`h : Θ → Fin U → Fin m`. -/
-private theorem card_filter_restrict_eq {Θ : Type*} [Fintype Θ] {U m k : ℕ} (hm : 0 < m)
-    {h : Θ → Fin U → Fin m} (hh : IsKWiseIndependentHash k h)
-    {T : Finset (Fin U)} (hT : #T ≤ k) (y : T → Fin m) :
-    m ^ #T * #{θ : Θ | T.restrict (h θ) = y} = Fintype.card Θ := by
-  have : Nonempty Θ := hh.nonempty
-  have hdens := hh.dens_filter_restrict_eq hT y
-  rw [Finset.dens_eq_card_div_card, Fintype.card_fin] at hdens
-  have hΘ_ne : (Fintype.card Θ : ℚ≥0) ≠ 0 := Nat.cast_ne_zero.mpr Fintype.card_ne_zero
-  have hm_ne : ((m : ℚ≥0) ^ #T) ≠ 0 := pow_ne_zero _ (Nat.cast_ne_zero.mpr (by omega))
-  have hq : ((m ^ #T * #{θ : Θ | T.restrict (h θ) = y} : ℕ) : ℚ≥0) = (Fintype.card Θ : ℚ≥0) := by
-    push_cast
-    rw [div_eq_iff hΘ_ne] at hdens
-    rw [hdens, ← mul_assoc, mul_inv_cancel₀ hm_ne, one_mul]
-  exact Nat.cast_inj.mp hq
-
 /-- Extending `y : T → Fin m` to `insert w T` by assigning `w` the value `y ⟨v, hv⟩`. -/
 private def extendRestrict {U m : ℕ} {T : Finset (Fin U)} (w : Fin U) {v : Fin U} (hv : v ∈ T)
     (y : T → Fin m) (x : ↥(insert w T)) : Fin m :=
@@ -260,9 +265,11 @@ private theorem card_filter_eq_and_restrict_eq {Θ : Type*} [Fintype Θ] {U m k 
     (hcard : #T + 1 ≤ k) (y : T → Fin m) :
     m * #{θ : Θ | h θ w = h θ v ∧ T.restrict (h θ) = y} =
       #{θ : Θ | T.restrict (h θ) = y} := by
+  have : Nonempty (Fin m) := ⟨⟨0, hm⟩⟩
   have hcard_ins : #(insert w T) = #T + 1 := Finset.card_insert_of_notMem hw
-  have h1 := card_filter_restrict_eq hm hh (hcard_ins.le.trans hcard) (extendRestrict w hv y)
-  have h2 := card_filter_restrict_eq hm hh (by omega : #T ≤ k) y
+  have h1 := hh.card_filter_restrict_eq (hcard_ins.le.trans hcard) (extendRestrict w hv y)
+  have h2 := hh.card_filter_restrict_eq (by omega : #T ≤ k) y
+  simp only [Fintype.card_fin] at h1 h2
   have hfilter : Finset.filter (fun θ : Θ => (insert w T).restrict (h θ) = extendRestrict w hv y)
         Finset.univ =
       Finset.filter (fun θ : Θ => h θ w = h θ v ∧ T.restrict (h θ) = y) Finset.univ := by
@@ -2395,50 +2402,6 @@ private theorem two_mul_card_not_goodForSet_le {Θ₁ Θ₂ : Type*} [Fintype Θ
         _ = Fintype.card (Θ₁ × Θ₂) * S.card := Nat.mul_comm _ _
     exact Nat.le_of_mul_le_mul_right hmul hcard_pos
 
-/-- Convert a natural-number sum bound over a finite type `α` into an `ℝ≥0∞` expectation bound
-under `PMF.uniformOfFintype α`. -/
-private theorem tsum_uniformOfFintype_le_nat {α : Type*} [Fintype α] [Nonempty α]
-    {f : α → ℕ} {C : ℕ} (hle : ∑ x : α, f x ≤ C * Fintype.card α) :
-    (∑' x : α, (PMF.uniformOfFintype α) x * (f x : ℝ≥0∞)) ≤ (C : ℝ≥0∞) := by
-  rw [tsum_fintype]
-  have hsum :
-      (∑ x : α, (PMF.uniformOfFintype α) x * (f x : ℝ≥0∞)) =
-        (Fintype.card α : ℝ≥0∞)⁻¹ * ((∑ x : α, f x : ℕ) : ℝ≥0∞) := by
-    simp only [PMF.uniformOfFintype_apply, ← Finset.mul_sum, Nat.cast_sum]
-  rw [hsum]
-  have hcast : ((∑ x : α, f x : ℕ) : ℝ≥0∞) ≤ (C : ℝ≥0∞) * (Fintype.card α : ℝ≥0∞) := by
-    exact_mod_cast hle
-  have hne_zero : (Fintype.card α : ℝ≥0∞) ≠ 0 := Nat.cast_ne_zero.mpr Fintype.card_ne_zero
-  have hne_top : (Fintype.card α : ℝ≥0∞) ≠ ⊤ := ENNReal.natCast_ne_top _
-  calc (Fintype.card α : ℝ≥0∞)⁻¹ * ((∑ x : α, f x : ℕ) : ℝ≥0∞)
-      ≤ (Fintype.card α : ℝ≥0∞)⁻¹ * ((C : ℝ≥0∞) * (Fintype.card α : ℝ≥0∞)) := by gcongr
-    _ = (C : ℝ≥0∞) * ((Fintype.card α : ℝ≥0∞)⁻¹ * (Fintype.card α : ℝ≥0∞)) := by ring
-    _ = (C : ℝ≥0∞) := by rw [ENNReal.inv_mul_cancel hne_zero hne_top, mul_one]
-
-/-- Convert a natural-number filter-cardinality bound `B * #{x | P x} ≤ A * Fintype.card α` into an
-`ℝ≥0∞` outer-measure bound `(PMF.uniformOfFintype α).toOuterMeasure {x | P x} ≤ A / B`. -/
-private theorem toOuterMeasure_uniformOfFintype_le_div {α : Type*} [Fintype α] [Nonempty α]
-    {P : α → Prop} [DecidablePred P] {A B : ℕ} (hB : 0 < B)
-    (hle : B * (Finset.univ.filter P).card ≤ A * Fintype.card α) :
-    (PMF.uniformOfFintype α).toOuterMeasure {x : α | P x} ≤ (A : ℝ≥0∞) / (B : ℝ≥0∞) := by
-  have h1 := PMF.toOuterMeasure_uniformOfFintype (α := α) {x : α | P x}
-  simp only [Set.mem_ofPred_eq] at h1
-  rw [h1]
-  have hcast :
-      (B : ℝ≥0∞) * ((Finset.univ.filter P).card : ℝ≥0∞) ≤
-        (A : ℝ≥0∞) * (Fintype.card α : ℝ≥0∞) := by
-    exact_mod_cast hle
-  have hcard_ne_zero : (Fintype.card α : ℝ≥0∞) ≠ 0 := Nat.cast_ne_zero.mpr Fintype.card_ne_zero
-  have hcard_ne_top : (Fintype.card α : ℝ≥0∞) ≠ ⊤ := ENNReal.natCast_ne_top _
-  have hB_ne_zero : (B : ℝ≥0∞) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
-  have hB_ne_top : (B : ℝ≥0∞) ≠ ⊤ := ENNReal.natCast_ne_top _
-  rw [ENNReal.le_div_iff_mul_le (Or.inl hB_ne_zero) (Or.inl hB_ne_top)]
-  calc ((Finset.univ.filter P).card : ℝ≥0∞) * (Fintype.card α : ℝ≥0∞)⁻¹ * (B : ℝ≥0∞)
-      = ((B : ℝ≥0∞) * ((Finset.univ.filter P).card : ℝ≥0∞)) * (Fintype.card α : ℝ≥0∞)⁻¹ := by ring
-    _ ≤ ((A : ℝ≥0∞) * (Fintype.card α : ℝ≥0∞)) * (Fintype.card α : ℝ≥0∞)⁻¹ := by gcongr
-    _ = (A : ℝ≥0∞) * ((Fintype.card α : ℝ≥0∞) * (Fintype.card α : ℝ≥0∞)⁻¹) := by ring
-    _ = (A : ℝ≥0∞) := by rw [ENNReal.mul_inv_cancel hcard_ne_zero hcard_ne_top, mul_one]
-
 /-! ## Section 4: `IsCuckooHashPair` instances and lazy random-oracle equivalence -/
 
 /-- **Pagh & Rodler (2004), Section 2.3 (`IsCuckooHashPair` for `(2 * MaxLoop + 2)`-wise
@@ -2462,7 +2425,7 @@ theorem isCuckooHashPair_of_kWiseIndependent {Θ₁ Θ₂ : Type*}
       n_max MaxLoop 2 3 where
   expected_walk_le S u hS hu := by
     have hsum := sum_cuckooWalkRounds_le hk₁ hk₂ hm hloop_le hS hu
-    exact mod_cast tsum_uniformOfFintype_le_nat hsum
+    exact mod_cast PMF.tsum_uniformOfFintype_le_of_sum_le hsum
   rehash_prob_le_half S hS := by
     classical
     have hcard := two_mul_card_not_goodForSet_le hk₁ hk₂ hm hloop_ge hloop_le hS
@@ -2471,7 +2434,7 @@ theorem isCuckooHashPair_of_kWiseIndependent {Θ₁ Θ₂ : Type*}
           ¬ GoodForSet (h₁ θ.1) (h₂ θ.2) MaxLoop S)).card ≤
         1 * Fintype.card (Θ₁ × Θ₂) := by
       simpa only [one_mul] using hcard
-    have hmeas := toOuterMeasure_uniformOfFintype_le_div (by decide : 0 < 2) hcard'
+    have hmeas := PMF.toOuterMeasure_uniformOfFintype_le_div (by decide : 0 < 2) hcard'
     exact mod_cast hmeas
   step_rehash_prob_le ks u hnodup hlen hu := by
     classical
@@ -2509,7 +2472,7 @@ theorem isCuckooHashPair_of_kWiseIndependent {Θ₁ Θ₂ : Type*}
           _ ≤ 2 * B * #{θ : Θ₁ × Θ₂ | WalkBadAt (h₁ θ.1) (h₂ θ.2) ks.toFinset u MaxLoop} := by
               nlinarith
       exact le_trans h1 (le_trans hwalk (by omega))
-    have hmeas := toOuterMeasure_uniformOfFintype_le_div hB_pos hbound
+    have hmeas := PMF.toOuterMeasure_uniformOfFintype_le_div hB_pos hbound
     have hmax (a : ℕ) : ((max a 1 : ℕ) : ℝ≥0∞) = max (a : ℝ≥0∞) 1 := by
       rcases le_total a 1 with h | h
       · rw [max_eq_right h, max_eq_right (by exact_mod_cast h), Nat.cast_one]
@@ -2592,5 +2555,539 @@ theorem uniform_interpret_eq_lazy_hashPair {U m : ℕ} [NeZero m] {α : Type}
       PMF.monad_bind_eq_bind, PMF.bind_map]
     rfl
   exact heq.trans (RandomOracle.uniform_interpret_eq_lazy program)
+
+/-! ## Section 5: High-probability `k`-wise independence bridge and Double Tabulation -/
+
+open Classical in
+/-- Quarter-failure bound for `GoodForSet` under `(2 * MaxLoop + 2)`-wise independence:
+`4 * #{θ | ¬ GoodForSet (h₁ θ.1) (h₂ θ.2) MaxLoop S} ≤ |Θ₁ × Θ₂|`. -/
+private theorem four_mul_card_not_goodForSet_le {Θ₁ Θ₂ : Type*} [Fintype Θ₁] [Fintype Θ₂]
+    {U m n_max MaxLoop : ℕ}
+    {h₁ : Θ₁ → Fin U → Fin m} {h₂ : Θ₂ → Fin U → Fin m}
+    (hk₁ : IsKWiseIndependentHash (2 * MaxLoop + 2) h₁)
+    (hk₂ : IsKWiseIndependentHash (2 * MaxLoop + 2) h₂)
+    (hm : 32 * max n_max 4 ≤ m)
+    (hloop_ge : maxEvictions n_max ≤ MaxLoop) (hloop_le : MaxLoop ≤ m)
+    {S : Finset (Fin U)} (hS : S.card ≤ n_max) :
+    4 * (Finset.univ.filter (fun θ : Θ₁ × Θ₂ =>
+      ¬ GoodForSet (h₁ θ.1) (h₂ θ.2) MaxLoop S)).card ≤
+      Fintype.card (Θ₁ × Θ₂) := by
+  classical
+  rcases S.eq_empty_or_nonempty with rfl | hne
+  · have hemp :
+        Finset.univ.filter (fun θ : Θ₁ × Θ₂ => ¬ GoodForSet (h₁ θ.1) (h₂ θ.2) MaxLoop ∅) = ∅ := by
+      rw [Finset.filter_eq_empty_iff]
+      intro θ _
+      exact not_not.mpr (goodForSet_empty (h₁ θ.1) (h₂ θ.2) MaxLoop)
+    rw [hemp]
+    simp
+  · have hcard_pos : 0 < S.card := Finset.Nonempty.card_pos hne
+    have h18 : 18 ≤ MaxLoop := le_trans (eighteen_le_maxEvictions n_max) hloop_ge
+    let E (u : Fin U) : Finset (Θ₁ × Θ₂) :=
+      Finset.univ.filter (fun θ : Θ₁ × Θ₂ =>
+        WalkBadAt (h₁ θ.1) (h₂ θ.2) (S.erase u) u MaxLoop)
+    have hsub :
+        Finset.univ.filter (fun θ : Θ₁ × Θ₂ => ¬ GoodForSet (h₁ θ.1) (h₂ θ.2) MaxLoop S) ⊆
+          S.biUnion E := by
+      intro θ hθ
+      rw [Finset.mem_filter] at hθ
+      obtain ⟨u, huS, hbad⟩ := not_goodForSet_imp_exists_walkBadAt (by omega) hθ.2
+      exact Finset.mem_biUnion.mpr ⟨u, huS, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hbad⟩⟩
+    have hbi := le_trans (Finset.card_le_card hsub) Finset.card_biUnion_le
+    have hmul :
+        (4 * #{θ : Θ₁ × Θ₂ | ¬ GoodForSet (h₁ θ.1) (h₂ θ.2) MaxLoop S}) * S.card ≤
+          Fintype.card (Θ₁ × Θ₂) * S.card := by
+      calc (4 * #{θ : Θ₁ × Θ₂ | ¬ GoodForSet (h₁ θ.1) (h₂ θ.2) MaxLoop S}) * S.card
+          = 4 * S.card * #{θ : Θ₁ × Θ₂ | ¬ GoodForSet (h₁ θ.1) (h₂ θ.2) MaxLoop S} := by ring
+        _ ≤ 4 * S.card * ∑ u ∈ S, (E u).card := Nat.mul_le_mul_left _ hbi
+        _ = ∑ u ∈ S, 4 * S.card * (E u).card := by rw [Finset.mul_sum]
+        _ ≤ ∑ _u ∈ S, Fintype.card (Θ₁ × Θ₂) := by
+            refine Finset.sum_le_sum fun u hu => ?_
+            have herase : (S.erase u).card ≤ max n_max 4 := by
+              have := Finset.card_erase_lt_of_mem hu
+              omega
+            have hstep := two_mul_walkBadAt_maxLoop_le hk₁ hk₂ hm hloop_ge hloop_le herase u
+            have hscard_le : 4 * S.card ≤ 2 * (max n_max 1 * max MaxLoop 1) := by
+              have h1 : S.card ≤ max n_max 1 := by omega
+              have h2 : 2 ≤ max MaxLoop 1 := by omega
+              nlinarith
+            exact le_trans (Nat.mul_le_mul_right _ hscard_le) hstep
+        _ = S.card * Fintype.card (Θ₁ × Θ₂) := by rw [Finset.sum_const, smul_eq_mul]
+        _ = Fintype.card (Θ₁ × Θ₂) * S.card := Nat.mul_comm _ _
+    exact Nat.le_of_mul_le_mul_right hmul hcard_pos
+
+private theorem card_badTopPair_le {Θ_top : Type*} [Fintype Θ_top] [DecidableEq Θ_top]
+    (GoodTop : Finset Θ_top) :
+    (Finset.univ \ (GoodTop ×ˢ GoodTop)).card ≤
+      2 * (Fintype.card Θ_top - GoodTop.card) * Fintype.card Θ_top := by
+  let Bad := Finset.univ \ GoodTop
+  have hBad_card : Bad.card = Fintype.card Θ_top - GoodTop.card := by
+    rw [Finset.card_sdiff_of_subset (Finset.subset_univ GoodTop), Finset.card_univ]
+  have hsub : Finset.univ \ (GoodTop ×ˢ GoodTop) ⊆
+      (Bad ×ˢ Finset.univ) ∪ (Finset.univ ×ˢ Bad) := by
+    intro ⟨α₁, α₂⟩ h
+    simp only [Bad, Finset.mem_sdiff, Finset.mem_univ, Finset.mem_product, Finset.mem_union,
+      true_and, and_true] at h ⊢
+    tauto
+  calc (Finset.univ \ (GoodTop ×ˢ GoodTop)).card
+      ≤ ((Bad ×ˢ Finset.univ) ∪ (Finset.univ ×ˢ Bad)).card := Finset.card_le_card hsub
+    _ ≤ (Bad ×ˢ Finset.univ).card + (Finset.univ ×ˢ Bad).card := Finset.card_union_le _ _
+    _ = 2 * (Fintype.card Θ_top - GoodTop.card) * Fintype.card Θ_top := by
+      rw [Finset.card_product, Finset.card_product, Finset.card_univ, hBad_card]
+      ring
+
+private theorem sum_prodProd_le_of_goodTop {Θ_top Θ_bot : Type*}
+    [Fintype Θ_top] [DecidableEq Θ_top] [Fintype Θ_bot]
+    (GoodTop : Finset Θ_top)
+    (f : (Θ_top × Θ_bot) × (Θ_top × Θ_bot) → ℕ)
+    {C_good C_bad : ℕ}
+    (hgood : ∀ α₁ ∈ GoodTop, ∀ α₂ ∈ GoodTop,
+      ∑ β : Θ_bot × Θ_bot, f ((α₁, β.1), (α₂, β.2)) ≤ C_good * Fintype.card (Θ_bot × Θ_bot))
+    (hbad : ∀ θ, f θ ≤ C_bad) :
+    ∑ θ : (Θ_top × Θ_bot) × (Θ_top × Θ_bot), f θ ≤
+      (C_good * Fintype.card (Θ_top × Θ_top) +
+        (Finset.univ \ (GoodTop ×ˢ GoodTop)).card * C_bad) *
+      Fintype.card (Θ_bot × Θ_bot) := by
+  let e := Equiv.prodProdProdComm Θ_top Θ_bot Θ_top Θ_bot
+  have hreindex : ∑ θ : (Θ_top × Θ_bot) × (Θ_top × Θ_bot), f θ =
+      ∑ α : Θ_top × Θ_top, ∑ β : Θ_bot × Θ_bot, f ((α.1, β.1), (α.2, β.2)) := by
+    rw [← Equiv.sum_comp e.symm f, Fintype.sum_prod_type]
+    rfl
+  rw [hreindex, ← Finset.sum_sdiff (Finset.subset_univ (GoodTop ×ˢ GoodTop))]
+  have h₁ : ∑ α ∈ GoodTop ×ˢ GoodTop, ∑ β : Θ_bot × Θ_bot, f ((α.1, β.1), (α.2, β.2)) ≤
+      C_good * Fintype.card (Θ_top × Θ_top) * Fintype.card (Θ_bot × Θ_bot) := by
+    calc ∑ α ∈ GoodTop ×ˢ GoodTop, ∑ β : Θ_bot × Θ_bot, f ((α.1, β.1), (α.2, β.2))
+        ≤ ∑ _α ∈ GoodTop ×ˢ GoodTop, C_good * Fintype.card (Θ_bot × Θ_bot) :=
+          Finset.sum_le_sum fun α hα =>
+            hgood α.1 (Finset.mem_product.mp hα).1 α.2 (Finset.mem_product.mp hα).2
+      _ = (GoodTop ×ˢ GoodTop).card * (C_good * Fintype.card (Θ_bot × Θ_bot)) := by
+          rw [Finset.sum_const, smul_eq_mul]
+      _ ≤ Fintype.card (Θ_top × Θ_top) * (C_good * Fintype.card (Θ_bot × Θ_bot)) :=
+          Nat.mul_le_mul_right _ (Finset.card_le_univ _)
+      _ = C_good * Fintype.card (Θ_top × Θ_top) * Fintype.card (Θ_bot × Θ_bot) := by ring
+  have h₂ : ∑ α ∈ Finset.univ \ (GoodTop ×ˢ GoodTop),
+        ∑ β : Θ_bot × Θ_bot, f ((α.1, β.1), (α.2, β.2)) ≤
+      (Finset.univ \ (GoodTop ×ˢ GoodTop)).card * C_bad * Fintype.card (Θ_bot × Θ_bot) := by
+    calc ∑ α ∈ Finset.univ \ (GoodTop ×ˢ GoodTop),
+          ∑ β : Θ_bot × Θ_bot, f ((α.1, β.1), (α.2, β.2))
+        ≤ ∑ _α ∈ Finset.univ \ (GoodTop ×ˢ GoodTop), ∑ _β : Θ_bot × Θ_bot, C_bad :=
+          Finset.sum_le_sum fun α _ => Finset.sum_le_sum fun β _ => hbad _
+      _ = (Finset.univ \ (GoodTop ×ˢ GoodTop)).card * C_bad * Fintype.card (Θ_bot × Θ_bot) := by
+          simp only [Finset.sum_const, Finset.card_univ, smul_eq_mul]
+          ring
+  calc ∑ α ∈ Finset.univ \ (GoodTop ×ˢ GoodTop), ∑ β : Θ_bot × Θ_bot, f ((α.1, β.1), (α.2, β.2)) +
+        ∑ α ∈ GoodTop ×ˢ GoodTop, ∑ β : Θ_bot × Θ_bot, f ((α.1, β.1), (α.2, β.2))
+      ≤ (Finset.univ \ (GoodTop ×ˢ GoodTop)).card * C_bad * Fintype.card (Θ_bot × Θ_bot) +
+          C_good * Fintype.card (Θ_top × Θ_top) * Fintype.card (Θ_bot × Θ_bot) :=
+        Nat.add_le_add h₂ h₁
+    _ = (C_good * Fintype.card (Θ_top × Θ_top) +
+          (Finset.univ \ (GoodTop ×ˢ GoodTop)).card * C_bad) *
+        Fintype.card (Θ_bot × Θ_bot) := by ring
+
+private theorem sum_ite_eq_mul_card_filter {γ : Type*} [Fintype γ]
+    (Q : γ → Prop) [DecidablePred Q] (K : ℕ) :
+    (∑ x : γ, if Q x then K else 0) = K * (Finset.univ.filter Q).card := by
+  rw [Finset.sum_ite, Finset.sum_const_zero, add_zero, Finset.sum_const, smul_eq_mul,
+    Nat.mul_comm]
+
+private theorem card_filter_prodProd_le_of_goodTop {Θ_top Θ_bot : Type*}
+    [Fintype Θ_top] [DecidableEq Θ_top] [Fintype Θ_bot]
+    (GoodTop : Finset Θ_top)
+    (P : (Θ_top × Θ_bot) × (Θ_top × Θ_bot) → Prop) [DecidablePred P]
+    {K A_good : ℕ}
+    (hgood : ∀ α₁ ∈ GoodTop, ∀ α₂ ∈ GoodTop,
+      K * (Finset.univ.filter fun β : Θ_bot × Θ_bot => P ((α₁, β.1), (α₂, β.2))).card ≤
+        A_good * Fintype.card (Θ_bot × Θ_bot)) :
+    K * (Finset.univ.filter P).card ≤
+      (A_good * Fintype.card (Θ_top × Θ_top) +
+        (Finset.univ \ (GoodTop ×ˢ GoodTop)).card * K) *
+      Fintype.card (Θ_bot × Θ_bot) := by
+  rw [← sum_ite_eq_mul_card_filter P K]
+  refine sum_prodProd_le_of_goodTop GoodTop (fun θ => if P θ then K else 0)
+    (fun α₁ hα₁ α₂ hα₂ => ?_) (fun θ => ?_)
+  · rw [sum_ite_eq_mul_card_filter]
+    exact hgood α₁ hα₁ α₂ hα₂
+  · split_ifs <;> omega
+
+/-- **Black-box high-probability `k`-wise independence conditioning bridge into
+`IsCuckooHashPair`**:
+Given a two-level hash family `H : Θ_top → Θ_bot → Fin U → Fin m` and a good top-seed set
+`GoodTop : Finset Θ_top` such that:
+1. `H α` is `(2 * MaxLoop + 2)`-wise independent for every `α ∈ GoodTop`, and
+2. `2 * (|Θ_top| - |GoodTop|) * (max n_max 1 * max MaxLoop 1) ≤ |Θ_top|`,
+under `32 * max n_max 4 ≤ m` and `maxEvictions n_max ≤ MaxLoop ≤ m`, two independent draws from
+`Θ_top × Θ_bot` satisfy `IsCuckooHashPair` with constants `C_walk = 3` and `C_reh = 4`. -/
+theorem isCuckooHashPair_of_whp_kWiseIndependent {Θ_top Θ_bot : Type*}
+    [Fintype Θ_top] [Nonempty Θ_top]
+    [Fintype Θ_bot] [Nonempty Θ_bot]
+    {U m : ℕ} (n_max MaxLoop : ℕ)
+    {H : Θ_top → Θ_bot → Fin U → Fin m}
+    (GoodTop : Finset Θ_top)
+    (hk : ∀ α ∈ GoodTop, IsKWiseIndependentHash (2 * MaxLoop + 2) (H α))
+    (hwhp : 2 * (Fintype.card Θ_top - GoodTop.card) * (max n_max 1 * max MaxLoop 1) ≤
+      Fintype.card Θ_top)
+    (hm : 32 * max n_max 4 ≤ m)
+    (hloop_ge : maxEvictions n_max ≤ MaxLoop) (hloop_le : MaxLoop ≤ m) :
+    IsCuckooHashPair
+      (PMF.uniformOfFintype ((Θ_top × Θ_bot) × (Θ_top × Θ_bot)))
+      (fun ((top₁, bottom₁), _) => H top₁ bottom₁)
+      (fun (_, (top₂, bottom₂)) => H top₂ bottom₂)
+      n_max MaxLoop 3 4 := by
+  classical
+  let B := max n_max 1 * max MaxLoop 1
+  let BadPair := Finset.univ \ (GoodTop ×ˢ GoodTop)
+  have h18 : 18 ≤ MaxLoop := le_trans (eighteen_le_maxEvictions n_max) hloop_ge
+  have hBad_B : BadPair.card * B ≤ Fintype.card (Θ_top × Θ_top) := by
+    calc BadPair.card * B
+        ≤ (2 * (Fintype.card Θ_top - GoodTop.card) * Fintype.card Θ_top) * B :=
+          Nat.mul_le_mul_right B (card_badTopPair_le GoodTop)
+      _ = (2 * (Fintype.card Θ_top - GoodTop.card) * B) * Fintype.card Θ_top := by ring
+      _ ≤ Fintype.card Θ_top * Fintype.card Θ_top := Nat.mul_le_mul_right _ hwhp
+      _ = Fintype.card (Θ_top × Θ_top) := (Fintype.card_prod Θ_top Θ_top).symm
+  have hcard_all :
+      Fintype.card (Θ_top × Θ_top) * Fintype.card (Θ_bot × Θ_bot) =
+        Fintype.card ((Θ_top × Θ_bot) × (Θ_top × Θ_bot)) := by
+    simp only [Fintype.card_prod]
+    ring
+  refine ⟨fun S u hS hu => ?_, fun S hS => ?_, fun ks u hnodup hlen hu => ?_⟩
+  · have hloop_le_B : MaxLoop ≤ B :=
+      calc MaxLoop = 1 * MaxLoop := (one_mul MaxLoop).symm
+        _ ≤ max n_max 1 * max MaxLoop 1 := Nat.mul_le_mul (by omega) (by omega)
+    have hBad_loop : BadPair.card * MaxLoop ≤ Fintype.card (Θ_top × Θ_top) :=
+      le_trans (Nat.mul_le_mul_left _ hloop_le_B) hBad_B
+    have hsum := sum_prodProd_le_of_goodTop GoodTop
+      (fun θ => cuckooWalkRounds (H θ.1.1 θ.1.2) (H θ.2.1 θ.2.2) MaxLoop S u)
+      (fun α₁ hα₁ α₂ hα₂ => sum_cuckooWalkRounds_le (hk α₁ hα₁) (hk α₂ hα₂) hm hloop_le hS hu)
+      (fun θ => cuckooWalkRounds_le_maxLoop (H θ.1.1 θ.1.2) (H θ.2.1 θ.2.2) MaxLoop S u)
+    have hsum3 :
+        ∑ θ : (Θ_top × Θ_bot) × (Θ_top × Θ_bot),
+          cuckooWalkRounds (H θ.1.1 θ.1.2) (H θ.2.1 θ.2.2) MaxLoop S u ≤
+        3 * Fintype.card ((Θ_top × Θ_bot) × (Θ_top × Θ_bot)) := by
+      calc _ ≤ (2 * Fintype.card (Θ_top × Θ_top) + BadPair.card * MaxLoop) *
+            Fintype.card (Θ_bot × Θ_bot) := hsum
+        _ ≤ (2 * Fintype.card (Θ_top × Θ_top) + Fintype.card (Θ_top × Θ_top)) *
+            Fintype.card (Θ_bot × Θ_bot) :=
+          Nat.mul_le_mul_right _ (Nat.add_le_add_left hBad_loop _)
+        _ = 3 * Fintype.card ((Θ_top × Θ_bot) × (Θ_top × Θ_bot)) := by
+          rw [← hcard_all]
+          ring
+    exact mod_cast PMF.tsum_uniformOfFintype_le_of_sum_le hsum3
+  · have h4_le_B : 4 ≤ B :=
+      calc 4 ≤ 1 * 18 := by decide
+        _ ≤ max n_max 1 * max MaxLoop 1 := Nat.mul_le_mul (by omega) (by omega)
+    have hBad_4 : BadPair.card * 4 ≤ Fintype.card (Θ_top × Θ_top) :=
+      le_trans (Nat.mul_le_mul_left _ h4_le_B) hBad_B
+    have hfilt := card_filter_prodProd_le_of_goodTop GoodTop
+      (fun θ => ¬ GoodForSet (H θ.1.1 θ.1.2) (H θ.2.1 θ.2.2) MaxLoop S)
+      (K := 4) (A_good := 1)
+      (fun α₁ hα₁ α₂ hα₂ => by
+        simpa only [one_mul] using
+          four_mul_card_not_goodForSet_le (hk α₁ hα₁) (hk α₂ hα₂) hm hloop_ge hloop_le hS)
+    have hfilt2 :
+        2 * (Finset.univ.filter fun θ : (Θ_top × Θ_bot) × (Θ_top × Θ_bot) =>
+          ¬ GoodForSet (H θ.1.1 θ.1.2) (H θ.2.1 θ.2.2) MaxLoop S).card ≤
+        1 * Fintype.card ((Θ_top × Θ_bot) × (Θ_top × Θ_bot)) := by
+      have hfilt4 :
+          2 * (2 * (Finset.univ.filter fun θ : (Θ_top × Θ_bot) × (Θ_top × Θ_bot) =>
+            ¬ GoodForSet (H θ.1.1 θ.1.2) (H θ.2.1 θ.2.2) MaxLoop S).card) ≤
+          2 * (1 * Fintype.card ((Θ_top × Θ_bot) × (Θ_top × Θ_bot))) := by
+        calc 2 * (2 * _) = 4 * _ := by ring
+          _ ≤ (1 * Fintype.card (Θ_top × Θ_top) + BadPair.card * 4) *
+                Fintype.card (Θ_bot × Θ_bot) := hfilt
+          _ ≤ (1 * Fintype.card (Θ_top × Θ_top) + Fintype.card (Θ_top × Θ_top)) *
+                Fintype.card (Θ_bot × Θ_bot) :=
+            Nat.mul_le_mul_right _ (Nat.add_le_add_left hBad_4 _)
+          _ = 2 * (1 * Fintype.card ((Θ_top × Θ_bot) × (Θ_top × Θ_bot))) := by
+            rw [← hcard_all]
+            ring
+      exact Nat.le_of_mul_le_mul_left hfilt4 (by decide)
+    exact mod_cast PMF.toOuterMeasure_uniformOfFintype_le_div (by decide : 0 < 2) hfilt2
+  · have hB_pos : 0 < B := Nat.mul_pos (by omega) (by omega)
+    have hks_card : ks.toFinset.card ≤ max n_max 4 := by
+      have := List.toFinset_card_le ks
+      omega
+    have hfilt := card_filter_prodProd_le_of_goodTop GoodTop
+      (fun θ => (pureReplay (H θ.1.1 θ.1.2) (H θ.2.1 θ.2.2) MaxLoop ks).isSome ∧
+        (pureReplay (H θ.1.1 θ.1.2) (H θ.2.1 θ.2.2) MaxLoop (ks ++ [u])).isNone)
+      (K := B) (A_good := 3)
+      (fun α₁ hα₁ α₂ hα₂ => by
+        have hsub :
+            Finset.univ.filter (fun β : Θ_bot × Θ_bot =>
+              (pureReplay (H α₁ β.1) (H α₂ β.2) MaxLoop ks).isSome ∧
+                (pureReplay (H α₁ β.1) (H α₂ β.2) MaxLoop (ks ++ [u])).isNone) ⊆
+            Finset.univ.filter (fun β : Θ_bot × Θ_bot =>
+              WalkBadAt (H α₁ β.1) (H α₂ β.2) ks.toFinset u MaxLoop) := by
+          intro β hβ
+          rw [Finset.mem_filter] at hβ ⊢
+          exact ⟨Finset.mem_univ _, step_rehash_imp_walkBadAt (by omega) hnodup hu hβ.2⟩
+        have hcard_le := Finset.card_le_card hsub
+        have hwalk := two_mul_walkBadAt_maxLoop_le (hk α₁ hα₁) (hk α₂ hα₂)
+          hm hloop_ge hloop_le hks_card u
+        calc B * _ ≤ 2 * B * #{β : Θ_bot × Θ_bot |
+              WalkBadAt (H α₁ β.1) (H α₂ β.2) ks.toFinset u MaxLoop} := by
+              have := Nat.mul_le_mul_left B hcard_le
+              nlinarith
+          _ ≤ 3 * Fintype.card (Θ_bot × Θ_bot) := le_trans hwalk (by omega))
+    have hfilt4 :
+        B * (Finset.univ.filter fun θ : (Θ_top × Θ_bot) × (Θ_top × Θ_bot) =>
+          (pureReplay (H θ.1.1 θ.1.2) (H θ.2.1 θ.2.2) MaxLoop ks).isSome ∧
+            (pureReplay (H θ.1.1 θ.1.2) (H θ.2.1 θ.2.2) MaxLoop (ks ++ [u])).isNone).card ≤
+        4 * Fintype.card ((Θ_top × Θ_bot) × (Θ_top × Θ_bot)) := by
+      calc _ ≤ (3 * Fintype.card (Θ_top × Θ_top) + BadPair.card * B) *
+            Fintype.card (Θ_bot × Θ_bot) := hfilt
+        _ ≤ (3 * Fintype.card (Θ_top × Θ_top) + Fintype.card (Θ_top × Θ_top)) *
+            Fintype.card (Θ_bot × Θ_bot) :=
+          Nat.mul_le_mul_right _ (Nat.add_le_add_left hBad_B _)
+        _ = 4 * Fintype.card ((Θ_top × Θ_bot) × (Θ_top × Θ_bot)) := by
+          rw [← hcard_all]
+          ring
+    have hmeas := PMF.toOuterMeasure_uniformOfFintype_le_div hB_pos hfilt4
+    have hmax (a : ℕ) : ((max a 1 : ℕ) : ℝ≥0∞) = max (a : ℝ≥0∞) 1 := by
+      rcases le_total a 1 with h | h
+      · rw [max_eq_right h, max_eq_right (by exact_mod_cast h), Nat.cast_one]
+      · rw [max_eq_left h, max_eq_left (by exact_mod_cast h)]
+    have hB_cast : (B : ℝ≥0∞) = max (n_max : ℝ≥0∞) 1 * max (MaxLoop : ℝ≥0∞) 1 := by
+      dsimp only [B]
+      rw [Nat.cast_mul, hmax, hmax]
+    rw [hB_cast] at hmeas
+    exact mod_cast hmeas
+
+/-- **`IsCuckooHashPair` for Mikkel Thorup's Double Tabulation (`[Thorup2013]`, Theorem 1(a),
+p. 4)**:
+When `1 ≤ c`, `U ≤ 2 ^ (c * b)`, `32 * max n_max 4 ≤ 2 ^ M`,
+`maxEvictions n_max ≤ MaxLoop ≤ 2 ^ M`, and
+`2 * (max n_max 1 * max MaxLoop 1) * doubleTabCodeBound c (8 * c) 4 (2 * MaxLoop + 2) ≤`
+`2 ^ (3 * b)`,
+two independent draws from `DoubleTabTopSeed c (8 * c) b × DoubleTabBotSeed (8 * c) b M` satisfy
+`IsCuckooHashPair` with constants `C_walk = 3` and `C_reh = 4`. -/
+theorem isCuckooHashPair_doubleTabHash {c b U M : ℕ}
+    (hc : 1 ≤ c) (hU : U ≤ 2 ^ (c * b))
+    (n_max MaxLoop : ℕ)
+    (hm : 32 * max n_max 4 ≤ 2 ^ M)
+    (hloop_ge : maxEvictions n_max ≤ MaxLoop) (hloop_le : MaxLoop ≤ 2 ^ M)
+    (hbound : 2 * (max n_max 1 * max MaxLoop 1) *
+      doubleTabCodeBound c (8 * c) 4 (2 * MaxLoop + 2) ≤ 2 ^ (3 * b)) :
+    IsCuckooHashPair
+      (PMF.uniformOfFintype
+        ((DoubleTabTopSeed c (8 * c) b × DoubleTabBotSeed (8 * c) b M) ×
+         (DoubleTabTopSeed c (8 * c) b × DoubleTabBotSeed (8 * c) b M)))
+      (fun ((top₁, bottom₁), _) => doubleTabHash c (8 * c) b U M top₁ bottom₁)
+      (fun (_, (top₂, bottom₂)) => doubleTabHash c (8 * c) b U M top₂ bottom₂)
+      n_max MaxLoop 3 4 := by
+  classical
+  let k := 2 * MaxLoop + 2
+  let GoodTop := Finset.univ.filter fun T₁ : DoubleTabTopSeed c (8 * c) b =>
+    IsKUnique k (simpleTabTuple T₁)
+  let BadTop := Finset.univ.filter fun T₁ : DoubleTabTopSeed c (8 * c) b =>
+    ¬ IsKUnique k (simpleTabTuple T₁)
+  let B := max n_max 1 * max MaxLoop 1
+  let Code := doubleTabCodeBound c (8 * c) 4 k
+  let N_top := Fintype.card (DoubleTabTopSeed c (8 * c) b)
+  have hB_ge : 1 ≤ B := Nat.mul_pos (by omega) (by omega)
+  have hbound_code : 2 * Code ≤ 2 ^ (3 * b) := by
+    calc 2 * Code = 2 * 1 * Code := by ring
+      _ ≤ 2 * B * Code := Nat.mul_le_mul_right Code (Nat.mul_le_mul_left 2 hB_ge)
+      _ ≤ 2 ^ (3 * b) := hbound
+  have hbad_le := card_not_isKUnique_eight_mul_le (b := b) hc hbound_code
+  have hsub_card : N_top - GoodTop.card = BadTop.card := by
+    have hdisj : Disjoint GoodTop BadTop :=
+      Finset.disjoint_filter.mpr fun _ _ h₁ h₂ => h₂ h₁
+    have hunion : GoodTop ∪ BadTop = Finset.univ := by
+      ext T₁
+      simp only [GoodTop, BadTop, Finset.mem_union, Finset.mem_filter, Finset.mem_univ, true_and,
+        iff_true]
+      exact em _
+    have hadd : GoodTop.card + BadTop.card = N_top := by
+      rw [← Finset.card_union_of_disjoint hdisj, hunion, Finset.card_univ]
+    omega
+  have hwhp : 2 * (N_top - GoodTop.card) * B ≤ N_top := by
+    rw [hsub_card]
+    have hmul : 2 ^ (6 * b) * (2 * BadTop.card * B) ≤ 2 ^ (6 * b) * N_top := by
+      calc 2 ^ (6 * b) * (2 * BadTop.card * B)
+          = (2 * B) * (2 ^ (6 * b) * BadTop.card) := by ring
+        _ ≤ (2 * B) * (2 * Code ^ 2 * N_top) := Nat.mul_le_mul_left _ hbad_le
+        _ = (2 * B * (2 * Code ^ 2)) * N_top := by ring
+        _ ≤ (2 * B * Code) ^ 2 * N_top := by
+          refine Nat.mul_le_mul_right N_top ?_
+          have hB_sq : B ≤ B * B := Nat.le_mul_of_pos_left B hB_ge
+          nlinarith
+        _ ≤ (2 ^ (3 * b)) ^ 2 * N_top :=
+          Nat.mul_le_mul_right N_top (Nat.pow_le_pow_left hbound 2)
+        _ = 2 ^ (6 * b) * N_top := by
+          rw [← Nat.pow_mul]
+          congr 2
+          ring
+    exact Nat.le_of_mul_le_mul_left hmul (Nat.two_pow_pos (6 * b))
+  exact isCuckooHashPair_of_whp_kWiseIndependent n_max MaxLoop GoodTop
+    (fun T₁ hT₁ => isKWiseIndependentHash_doubleTabHash_of_isKUnique hU
+      (Finset.mem_filter.mp hT₁).2)
+    hwhp hm hloop_ge hloop_le
+
+/-- Regime-indexed seed space for `ProvableHashSeed`. -/
+@[expose] def ProvableHashSeedAux (reg : Bool) (c_exp n_max U M : ℕ) : Type :=
+  match reg with
+  | true =>
+    let k := 2 * maxEvictions n_max + 2
+    (Fin k → Fin (2 ^ (2 * 3 ^ trinomialStep U M))) ×
+      (Fin k → Fin (2 ^ (2 * 3 ^ trinomialStep U M)))
+  | false =>
+    let c := 2 * max c_exp 1
+    let b := (1 + Nat.clog 2 (max n_max 4)) / 2
+    (DoubleTabTopSeed c (8 * c) b × DoubleTabBotSeed (8 * c) b M) ×
+      (DoubleTabTopSeed c (8 * c) b × DoubleTabBotSeed (8 * c) b M)
+
+instance (reg : Bool) (c_exp n_max U M : ℕ) :
+    Fintype (ProvableHashSeedAux reg c_exp n_max U M) := by
+  cases reg <;> dsimp [ProvableHashSeedAux] <;> infer_instance
+
+instance (reg : Bool) (c_exp n_max U M : ℕ) :
+    Nonempty (ProvableHashSeedAux reg c_exp n_max U M) := by
+  cases reg <;> dsimp [ProvableHashSeedAux] <;> infer_instance
+
+/-- Regime-indexed first hash function for `provableHash1`. -/
+@[expose] noncomputable def provableHash1Aux (reg : Bool) (c_exp n_max U M : ℕ) :
+    ProvableHashSeedAux reg c_exp n_max U M → Fin U → Fin (2 ^ M) :=
+  match reg with
+  | true => fun (seed₁, _) =>
+    trinomialPolyHash (trinomialStep U M) (2 * maxEvictions n_max + 2) U M seed₁
+  | false => fun ((top₁, bottom₁), _) =>
+    let c := 2 * max c_exp 1
+    let b := (1 + Nat.clog 2 (max n_max 4)) / 2
+    doubleTabHash c (8 * c) b U M top₁ bottom₁
+
+/-- Regime-indexed second hash function for `provableHash2`. -/
+@[expose] noncomputable def provableHash2Aux (reg : Bool) (c_exp n_max U M : ℕ) :
+    ProvableHashSeedAux reg c_exp n_max U M → Fin U → Fin (2 ^ M) :=
+  match reg with
+  | true => fun (_, seed₂) =>
+    trinomialPolyHash (trinomialStep U M) (2 * maxEvictions n_max + 2) U M seed₂
+  | false => fun (_, (top₂, bottom₂)) =>
+    let c := 2 * max c_exp 1
+    let b := (1 + Nat.clog 2 (max n_max 4)) / 2
+    doubleTabHash c (8 * c) b U M top₂ bottom₂
+
+/-- Seed space for the unconditional regime-switched cuckoo hash family (`trinomialPolyHash` below
+`doubleTabThreshold c_exp`, `doubleTabHash` at or above `doubleTabThreshold c_exp`). -/
+abbrev ProvableHashSeed (c_exp n_max U M : ℕ) : Type :=
+  ProvableHashSeedAux (decide (n_max < doubleTabThreshold c_exp)) c_exp n_max U M
+
+/-- First hash function of the unconditional regime-switched cuckoo hash family. -/
+@[expose] noncomputable def provableHash1 (c_exp n_max U M : ℕ) :
+    ProvableHashSeed c_exp n_max U M → Fin U → Fin (2 ^ M) :=
+  provableHash1Aux (decide (n_max < doubleTabThreshold c_exp)) c_exp n_max U M
+
+/-- Second hash function of the unconditional regime-switched cuckoo hash family. -/
+@[expose] noncomputable def provableHash2 (c_exp n_max U M : ℕ) :
+    ProvableHashSeed c_exp n_max U M → Fin U → Fin (2 ^ M) :=
+  provableHash2Aux (decide (n_max < doubleTabThreshold c_exp)) c_exp n_max U M
+
+private theorem maxEvictions_le_thirtyTwo_mul_max (n_max : ℕ) :
+    maxEvictions n_max ≤ 32 * max n_max 4 := by
+  have hclog : Nat.clog 2 (max n_max 2) ≤ max n_max 2 :=
+    (Nat.clog_le_iff_le_pow (by decide)).mpr (Nat.le_of_lt (max n_max 2).lt_two_pow_self)
+  unfold maxEvictions
+  omega
+
+/-- **Unconditional `IsCuckooHashPair` for the regime-switched hash family (`trinomialPolyHash` +
+`doubleTabHash`) across all capacities `n_max : ℕ` and polynomial universes
+`U ≤ max n_max 4 ^ c_exp`**:
+Whenever `U ≤ max n_max 4 ^ c_exp` and `32 * max n_max 4 ≤ 2 ^ M`, the uniform distribution on
+`ProvableHashSeed c_exp n_max U M` with `(provableHash1, provableHash2)` satisfies
+`IsCuckooHashPair ... n_max (maxEvictions n_max) 3 4`. -/
+theorem isCuckooHashPair_provableFamily {c_exp n_max U M : ℕ}
+    (hU : U ≤ max n_max 4 ^ c_exp) (hm : 32 * max n_max 4 ≤ 2 ^ M) :
+    IsCuckooHashPair
+      (PMF.uniformOfFintype (ProvableHashSeed c_exp n_max U M))
+      (provableHash1 c_exp n_max U M)
+      (provableHash2 c_exp n_max U M)
+      n_max (maxEvictions n_max) 3 4 := by
+  have hloop_le : maxEvictions n_max ≤ 2 ^ M :=
+    (maxEvictions_le_thirtyTwo_mul_max n_max).trans hm
+  unfold ProvableHashSeed provableHash1 provableHash2
+  cases hreg : decide (n_max < doubleTabThreshold c_exp)
+  · dsimp only [ProvableHashSeedAux, provableHash1Aux, provableHash2Aux]
+    have hge : doubleTabThreshold c_exp ≤ n_max :=
+      not_lt.mp (of_decide_eq_false hreg)
+    let c := 2 * max c_exp 1
+    let b := (1 + Nat.clog 2 (max n_max 4)) / 2
+    have hc2 : 2 ≤ c := by omega
+    have hclog_le : Nat.clog 2 (max n_max 4) ≤ 2 * b := by omega
+    have hmax_le_2b : max n_max 4 ≤ 2 ^ (2 * b) :=
+      (Nat.le_pow_clog (by decide) (max n_max 4)).trans
+        (Nat.pow_le_pow_right (by decide) hclog_le)
+    have hU_cb : U ≤ 2 ^ (c * b) := by
+      calc U ≤ max n_max 4 ^ c_exp := hU
+        _ ≤ max n_max 4 ^ max c_exp 1 :=
+          Nat.pow_le_pow_right (by omega) (le_max_left c_exp 1)
+        _ ≤ (2 ^ (2 * b)) ^ max c_exp 1 :=
+          Nat.pow_le_pow_left hmax_le_2b (max c_exp 1)
+        _ = 2 ^ (c * b) := by
+          rw [← Nat.pow_mul]
+          congr 1
+          dsimp only [c]
+          ring
+    have hb_ge : doubleTabMinB c_exp ≤ b := by
+      have hpow_le : 2 ^ (2 * doubleTabMinB c_exp) ≤ 2 ^ Nat.clog 2 (max n_max 4) := by
+        rw [← doubleTabThreshold_eq]
+        exact (hge.trans (le_max_left n_max 4)).trans (Nat.le_pow_clog (by decide) (max n_max 4))
+      have hclog_ge : 2 * doubleTabMinB c_exp ≤ Nat.clog 2 (max n_max 4) :=
+        (Nat.pow_le_pow_iff_right (by decide)).mp hpow_le
+      omega
+    have hb_min_def : doubleTabMinB c_exp = 4 * (24 * c + 8) ^ 2 := doubleTabMinB_eq c_exp
+    have hb_8c : 8 * c ≤ b := by nlinarith
+    have hb_64 : 64 ≤ b := by nlinarith
+    have hclog2_le : Nat.clog 2 (max n_max 2) ≤ 2 * b :=
+      (Nat.clog_le_iff_le_pow (by decide)).mpr
+        ((by omega : max n_max 2 ≤ max n_max 4).trans hmax_le_2b)
+    have hev_le : maxEvictions n_max ≤ 12 * b + 12 := by
+      unfold maxEvictions
+      omega
+    have h18_ev : 18 ≤ maxEvictions n_max := eighteen_le_maxEvictions n_max
+    have h2ev_sq : 2 * max (maxEvictions n_max) 1 ≤ b ^ 2 := by
+      have : max (maxEvictions n_max) 1 = maxEvictions n_max := by omega
+      nlinarith
+    have hck_cube : c * (2 * maxEvictions n_max + 2) ≤ b ^ 3 := by
+      have h2ev2 : 2 * maxEvictions n_max + 2 ≤ b ^ 2 := by nlinarith
+      calc c * (2 * maxEvictions n_max + 2)
+          ≤ b * (b ^ 2) := Nat.mul_le_mul (by omega) h2ev2
+        _ = b ^ 3 := by ring
+    have hcode_pow : doubleTabCodeBound c (8 * c) 4 (2 * maxEvictions n_max + 2) ≤
+        b ^ (24 * c + 5) := by
+      unfold doubleTabCodeBound
+      calc c * ((c * (2 * maxEvictions n_max + 2)) ^ (2 * c) * (8 * c)) ^ 4
+          ≤ b * (((b ^ 3) ^ (2 * c) * b) ^ 4) :=
+            Nat.mul_le_mul (by omega) (Nat.pow_le_pow_left
+              (Nat.mul_le_mul (Nat.pow_le_pow_left hck_cube (2 * c)) hb_8c) 4)
+        _ = b ^ (24 * c + 5) := by
+          rw [← Nat.pow_mul, ← pow_succ, ← Nat.pow_mul, ← pow_succ']
+          congr 1
+          ring
+    have hprod_le : 2 * (max n_max 1 * max (maxEvictions n_max) 1) *
+        doubleTabCodeBound c (8 * c) 4 (2 * maxEvictions n_max + 2) ≤ 2 ^ (3 * b) := by
+      have hmax1_le : max n_max 1 ≤ 2 ^ (2 * b) :=
+        (by omega : max n_max 1 ≤ max n_max 4).trans hmax_le_2b
+      calc 2 * (max n_max 1 * max (maxEvictions n_max) 1) *
+            doubleTabCodeBound c (8 * c) 4 (2 * maxEvictions n_max + 2)
+          = max n_max 1 * (2 * max (maxEvictions n_max) 1) *
+              doubleTabCodeBound c (8 * c) 4 (2 * maxEvictions n_max + 2) := by ring
+        _ ≤ (2 ^ (2 * b) * b ^ 2) * b ^ (24 * c + 5) :=
+            Nat.mul_le_mul (Nat.mul_le_mul hmax1_le h2ev_sq) hcode_pow
+        _ = 2 ^ (2 * b) * b ^ (24 * c + 7) := by
+            rw [Nat.mul_assoc, ← Nat.pow_add]
+            congr 2
+            ring
+        _ ≤ 2 ^ (2 * b) * b ^ (24 * c + 8) :=
+            Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by omega) (by omega))
+        _ ≤ 2 ^ (2 * b) * 2 ^ b :=
+            Nat.mul_le_mul_left _ (Nat.pow_le_two_pow (by omega) (hb_min_def ▸ hb_ge))
+        _ = 2 ^ (3 * b) := by
+            rw [← Nat.pow_add]
+            congr 1
+            ring
+    exact isCuckooHashPair_doubleTabHash (by omega) hU_cb n_max (maxEvictions n_max)
+      hm le_rfl hloop_le hprod_le
+  · dsimp only [ProvableHashSeedAux, provableHash1Aux, provableHash2Aux]
+    exact (isCuckooHashPair_trinomialPolyHash (le_two_pow_trinomialDeg U M) (le_trinomialDeg U M)
+      n_max (maxEvictions n_max) le_rfl hm le_rfl hloop_le).mono_consts (by decide) (by decide)
 
 end Cslib.Algorithms.Lean.CuckooHashing

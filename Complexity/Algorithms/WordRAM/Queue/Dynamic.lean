@@ -59,17 +59,18 @@ def QueueRep (w base capacity : ℕ) (q : List ℕ) (x : Data 11) : Prop :=
 /-- The fixed dispatcher implements the bounded FIFO specification. -/
 def certificate {w base capacity : ℕ} (h1 : Fits w 1)
     (hc : Fits w (base + 2 * capacity)) :
-    DynamicCertificate (implementation w capacity) w where
-  rep := QueueRep w base capacity
-  bounded h := by obtain ⟨_, _, _, hr⟩ := h; exact hr.bounded
-  arguments_fit o hv i _ := arguments_fit h1 o hv i
-  execute o hr hv := by
-    obtain ⟨front, back, rfl, hr⟩ := hr
-    obtain ⟨y, he, ha, hy, _⟩ := execute hc hr o hv
-    have hs := pairStep_correct (front, back) o
-    refine ⟨y, _, he, ?_, ?_⟩
-    · exact ha.trans (congrArg some (congrArg Prod.snd hs))
-    · exact ⟨_, _, (congrArg Prod.fst hs).symm, hy⟩
+    DynamicCertificate (implementation w capacity) w :=
+  DynamicCertificate.ofFn
+    (rep := QueueRep w base capacity)
+    (bounded := fun h => by obtain ⟨_, _, _, hr⟩ := h; exact hr.bounded)
+    (arguments_fit := fun o hv i _ => arguments_fit h1 o hv i)
+    (execute := fun o hr hv => by
+      obtain ⟨front, back, rfl, hr⟩ := hr
+      obtain ⟨y, he, ha, hy, _⟩ := execute hc hr o hv
+      have hs := pairStep_correct (front, back) o
+      refine ⟨y, _, he, ?_, ?_⟩
+      · exact ha.trans (congrArg some (congrArg Prod.snd hs))
+      · exact ⟨_, _, (congrArg Prod.fst hs).symm, hy⟩)
 
 /-- The expensive transfer consumes eight credits per rear element, including loop control.
 The final halt contributes the extra one in the left side. -/
@@ -100,8 +101,8 @@ def potential (x : Data 11) : ℕ := 8 * x.regs backLen
 theorem amortized {w base capacity : ℕ} (h1 : Fits w 1)
     (hc : Fits w (base + 2 * capacity)) :
     Stateful.Amortized (certificate h1 hc).realization
-      DynamicProgram.OperationTrace.instructions (fun _ x => potential x) (fun _ _ => 14) where
-  step hr hv he := by
+      DynamicProgram.OperationTrace.instructions (fun _ x => potential x) (fun _ _ => 14) :=
+  Stateful.Amortized.ofFn fun hr hv he => by
     obtain ⟨front, back, rfl, hr⟩ := hr
     obtain ⟨z, hz, _, hrz, _⟩ := execute hc hr _ hv
     obtain ⟨rfl, hn⟩ := he.eq_of_exec hz

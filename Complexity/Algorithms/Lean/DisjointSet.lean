@@ -419,18 +419,19 @@ inductive Op (n : ℕ) where
   | numComponents
   deriving DecidableEq, Repr
 
+/-- Operation return types for `Op n`. -/
+abbrev Op.Result {n : ℕ} : Op n → Type
+  | .same _ _ => Bool
+  | .union _ _ => Bool
+  | .numComponents => ℕ
+
 /-- Total stateful specification of a disjoint-set structure on `Fin n`. -/
-abbrev spec (n : ℕ) : Spec where
-  State := Partition n
-  Op := Op n
-  Result
-    | .same _ _ => Bool
-    | .union _ _ => Bool
-    | .numComponents => ℕ
-  step p
-    | .same x y => (p, p.rel x y)
-    | .union x y => (p.merge x y, !p.rel x y)
-    | .numComponents => (p, p.numComponents)
+abbrev spec (n : ℕ) : Spec :=
+  Spec.ofFn (State := Partition n) (Op := Op n) (Result := Op.Result)
+    fun p => fun
+      | .same x y => (p, p.rel x y)
+      | .union x y => (p.merge x y, !p.rel x y)
+      | .numComponents => (p, p.numComponents)
 
 /-- Client helper: query whether `x` and `y` are in the same equivalence class. -/
 @[expose] def same {n : ℕ} (x y : Fin n) : (spec n).Client Bool :=

@@ -1769,7 +1769,7 @@ def opOutWord {U : ℕ} (s : Dictionary.State U) : Dictionary.Op U → ℕ
 state `s`, machine state `x` satisfying `Rep w base U V n_max θ s x`, and admissible operation
 `op`, `opCode U n_max` halts deterministically in at most
 `opPathSteps U n_max θ (extractSlots base U n_max x.mem) (opKey op) ≤ opSteps U n_max` instructions,
-preserving `Rep` for `((Dictionary.spec U V n_max).step s op).1`, writing `opOutWord s op` into
+preserving `Rep` for `((Dictionary.spec U V n_max).stepFn s op).1`, writing `opOutWord s op` into
 `regOp`, and modifying memory only within `[base, base + space U n_max)`. -/
 theorem opCode_execWithin {w base U V n_max : ℕ} {θ : Seed U n_max}
     {s : Dictionary.State U} {x : Data 12}
@@ -1782,7 +1782,7 @@ theorem opCode_execWithin {w base U V n_max : ℕ} {θ : Seed U n_max}
     ∃ y : Data 12,
       ExecWithin w (opCode U n_max) x y
         (opPathSteps U n_max θ (extractSlots base U n_max x.mem) (opKey op)) ∧
-      Rep w base U V n_max θ ((Dictionary.spec U V n_max).step s op).1 y ∧
+      Rep w base U V n_max θ ((Dictionary.spec U V n_max).stepFn s op).1 y ∧
       y.regs regOp = opOutWord s op ∧
       Modifies (Block.mk base (space U n_max)).footprint x.mem y.mem := by
   have hO :
@@ -1964,10 +1964,10 @@ theorem decodeOp_eq_step {U V n_max : ℕ} {s : Dictionary.State U}
     (op : Dictionary.Op U) (regs : Fin 12 → ℕ)
     (h : regs regOp = opOutWord s op) :
     decodeOp (V := V) (n_max := n_max) op regs =
-      some ((Dictionary.spec U V n_max).step s op).2 := by
+      some ((Dictionary.spec U V n_max).stepFn s op).2 := by
   cases op with
   | get u =>
-    dsimp only [decodeOp, Dictionary.spec, opOutWord] at h ⊢
+    dsimp only [decodeOp, Dictionary.spec, Dictionary.step, Stateful.Spec.stepFn, opOutWord] at h ⊢
     rw [h]
     cases s u with
     | none => simp
@@ -1988,8 +1988,8 @@ theorem step_exec_spec {w base U V n_max : ℕ}
         ExecCodeDist w (opCode U n_max) p.2 ((μ_step p).map Prod.snd) (T_step p) ∧
         ∀ q ∈ (μ_step p).support,
           decodeOp (V := V) (n_max := n_max) o q.2.regs =
-            some ((Dictionary.spec U V n_max).step s o).2 ∧
-          Rep w base U V n_max q.1 ((Dictionary.spec U V n_max).step s o).1 q.2 ∧
+            some ((Dictionary.spec U V n_max).stepFn s o).2 ∧
+          Rep w base U V n_max q.1 ((Dictionary.spec U V n_max).stepFn s o).1 q.2 ∧
           Modifies (Block.mk base (space U n_max)).footprint p.2.mem q.2.mem) ∧
       (∀ θ', ((ν.bind μ_step).map Prod.fst) θ' ≤ 1 * seedLaw U n_max θ') ∧
       (∑' p, ν p * (T_step p + ∑' q, μ_step p q * ((0 : ℕ) : ℝ≥0∞))) ≤
@@ -1998,7 +1998,7 @@ theorem step_exec_spec {w base U V n_max : ℕ}
   have hEx : ∀ p : Seed U n_max × Data 12, ∃ y : Data 12,
       p ∈ ν.support →
         ExecWithin w (opCode U n_max) p.2 y (opSteps U n_max) ∧
-        Rep w base U V n_max p.1 ((Dictionary.spec U V n_max).step s o).1 y ∧
+        Rep w base U V n_max p.1 ((Dictionary.spec U V n_max).stepFn s o).1 y ∧
         y.regs regOp = opOutWord s o ∧
         Modifies (Block.mk base (space U n_max)).footprint p.2.mem y.mem := by
     intro p
@@ -2034,45 +2034,45 @@ theorem step_exec_spec {w base U V n_max : ℕ}
 
 /-- **Composable randomized Word-RAM `SubroutineDS` certificate over `Basis.exact`** for the
 open-addressed permutation-probing dictionary realizing `Dictionary.spec U V n_max`. -/
-noncomputable def subroutineDS {w base U V n_max : ℕ}
+noncomputable abbrev subroutineDS {w base U V n_max : ℕ}
     (hS : Fits w (base + space U n_max)) (hw : 2 * hashBits U n_max ≤ w) (hV : Fits w V) :
     Randomized.SubroutineDS (subroutineCode U n_max)
-      (Dictionary.spec U V n_max) w base Fin.elim0 (Dictionary.empty U) where
-  Seed := Seed U n_max
-  seedLaw := seedLaw U n_max
-  seedSlack := 1
-  space := space U n_max
-  spanTime := 3
-  setupTime := (setupSteps U n_max : ℝ≥0∞)
-  initPotential := 0
-  charge _ _ := opSteps U n_max
-  rep := Rep w base U V n_max
-  potential _ _ := 0
-  encode := encodeOp
-  argMatch := argMatch
-  decode := decodeOp
-  bounded hrep := hrep.bounded
-  rep_unique h1 h2 := h1.unique h2
-  arguments_fit o hv i _ := arguments_fit hw hV o hv i
-  encode_matches := encode_matches
-  rep_supported {θ s x x'} hregs hmem hbdd hrep := by
-    have hbase : x'.regs regBase = x.regs regBase := hregs regBase rfl
-    exact hrep.congr hbdd hbase hmem
-  potential_supported _ _ _ := rfl
-  clear_nodup := by
-    dsimp only [subroutineCode]
-    decide
-  params_not_clear j := Fin.elim0 j
-  incCur_eval {x} h1 hfit := by
-    dsimp only [subroutineCode] at h1 hfit ⊢
-    simp [Op.exactBin, Op.eval, StandardOp.evalExact, Data.put, h1, hfit]
-  span_exec {x} _ hfr _ := by
-    obtain ⟨x₁, he, hm, hb, hfr'⟩ := allocSpan_execWithin hS hfr
-    exact ⟨x₁, he, hm, hb, hfr', fun j => Fin.elim0 j⟩
-  setup_exec {x₁} hx₁ hb hfr _ hz :=
-    setup_exec_spec hS hw hx₁ hb hfr hz
-  step_exec {s} o ν hv hseed hsupp :=
-    step_exec_spec hS hw hV o ν hv hseed hsupp
+      (Dictionary.spec U V n_max) w base Fin.elim0 (Dictionary.empty U) :=
+  Randomized.SubroutineDS.ofFn
+    (Seed := Seed U n_max)
+    (seedLaw := seedLaw U n_max)
+    (seedSlack := 1)
+    (space := space U n_max)
+    (spanTime := 3)
+    (setupTime := (setupSteps U n_max : ℝ≥0∞))
+    (initPotential := 0)
+    (charge := fun _ _ => opSteps U n_max)
+    (rep := Rep w base U V n_max)
+    (potential := fun _ _ => 0)
+    (encode := encodeOp)
+    (argMatch := argMatch)
+    (decode := decodeOp)
+    (bounded := fun hrep => hrep.bounded)
+    (arguments_fit := fun o hv i _ => arguments_fit hw hV o hv i)
+    (encode_matches := encode_matches)
+    (rep_supported := fun {θ s x x'} hregs hmem hbdd hrep => by
+      have hbase : x'.regs regBase = x.regs regBase := hregs regBase rfl
+      exact hrep.congr hbdd hbase hmem)
+    (potential_supported := fun _ _ _ => rfl)
+    (clear_nodup := by
+      dsimp only [subroutineCode]
+      decide)
+    (params_not_clear := fun j => Fin.elim0 j)
+    (incCur_eval := fun {x} h1 hfit => by
+      dsimp only [subroutineCode] at h1 hfit ⊢
+      simp [Op.exactBin, Op.eval, StandardOp.evalExact, Data.put, h1, hfit])
+    (span_exec := fun {x} _ hfr _ => by
+      obtain ⟨x₁, he, hm, hb, hfr'⟩ := allocSpan_execWithin hS hfr
+      exact ⟨x₁, he, hm, hb, hfr', fun j => Fin.elim0 j⟩)
+    (setup_exec := fun {x₁} hx₁ hb hfr _ hz =>
+      setup_exec_spec hS hw hx₁ hb hfr hz)
+    (step_exec := fun {s} o ν hv hseed hsupp =>
+      step_exec_spec hS hw hV o ν hv hseed hsupp)
 
 /-- Standard-basis (`Basis.standard`) randomized `SubroutineDS` certificate for the open-addressed
 permutation-probing dictionary. -/
@@ -2084,7 +2084,7 @@ noncomputable abbrev subroutineDSStandard {w base U V n_max : ℕ}
 
 /-- **End-to-end multi-operation expected-time theorem (`seq_expected_amortized`)**:
 from fresh zeroed memory `[base, base + space U n_max)`, initializing the permutation-probing
-dictionary (`initFresh`) and executing the subroutine operation bodies (`ExecSteps`) across any
+dictionary (`initFresh`) and executing the subroutine operation bodies (`ExecStepsOfFn`) across any
 admissible operation history `ops : List (Dictionary.Op U)` fixed independently of the sampled seed
 (oblivious adversary) takes at most `3 + setupSteps U n_max + ops.length * opSteps U n_max` expected
 Word-RAM instructions (charging the deterministic full-cycle body bound `opSteps U n_max` per
@@ -2099,7 +2099,7 @@ theorem seq_expected_amortized {w base U V n_max : ℕ}
     ∃ (ν₀ ν_final : PMF (Seed U n_max × Data 12)) (T_ops : ℝ≥0∞),
       ExecCodeDist w (subroutineCode U n_max).initFresh x (ν₀.map Prod.snd)
         (subroutineDS (V := V) hS hw hV).initTime ∧
-      (subroutineDS (V := V) hS hw hV).ExecSteps (Dictionary.empty U) ops ν₀ ν_final T_ops ∧
+      (subroutineDS (V := V) hS hw hV).ExecStepsOfFn (Dictionary.empty U) ops ν₀ ν_final T_ops ∧
       (∀ θ, (ν_final.map Prod.fst) θ ≤ seedLaw U n_max θ) ∧
       (∀ p ∈ ν_final.support,
         Rep w base U V n_max p.1
@@ -2109,7 +2109,8 @@ theorem seq_expected_amortized {w base U V n_max : ℕ}
           ((Dictionary.spec U V n_max).totalCost (fun _ _ => opSteps U n_max)
             (Dictionary.empty U) ops : ℝ≥0∞) := by
   obtain ⟨ν₀, ν_final, T_ops, he_init, hex_steps, hseed_final, hrep_final, hbound⟩ :=
-    (subroutineDS (V := V) hS hw hV).seq_expected_amortized ops hx hfr (fun j => Fin.elim0 j) hz hv
+    (subroutineDS (V := V) hS hw hV).seq_expected_amortized_ofFn ops hx hfr (fun j => Fin.elim0 j)
+      hz hv
   refine ⟨ν₀, ν_final, T_ops, he_init, hex_steps, ?_, hrep_final, ?_⟩
   · intro θ
     have h1 : (ν_final.map Prod.fst) θ ≤ 1 * seedLaw U n_max θ := hseed_final θ
