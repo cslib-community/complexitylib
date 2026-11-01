@@ -10,7 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Foundations.BooleanAnalysis.SparseReplacementDesign
 public import Complexity.Foundations.Combinatorics.ReplacementDesignBridge
-public import Complexity.Foundations.Data.MvPolynomial.AffineTaylor
+public import Complexity.Foundations.Combinatorics.ReplacementCounting.AffineTaylor
 public import Complexity.Foundations.Data.Polynomial.StagedJetArithmetic
 
 /-!
@@ -107,16 +107,6 @@ open scoped BigOperators
 /-! ### 1. §3.4 Affine-Taylor to measurement-fiber jet bridge (equations (3.9)–(3.13)) -/
 
 namespace Cslib.ReplacementCounting
-
-/-- `ReplacementCounting.targetPolynomial` coincides with `AffineTaylor.replacedSum`
-([OpenAI2026ETH], equation (3.3), pp. 21, 24). -/
-theorem targetPolynomial_eq_replacedSum {ι F A : Type*} [Fintype ι] [DecidableEq ι]
-    [CommRing A] {κ : F → Type*} (s : Finset F) (Φ : ∀ f, MvPolynomial (κ f) A)
-    (P : ∀ f, κ f → ι → Polynomial A) :
-    targetPolynomial s Φ P = Cslib.AffineTaylor.replacedSum s Φ P := by
-  unfold targetPolynomial Cslib.AffineTaylor.replacedSum replacementEval
-  exact sum_congr (Finset.ext fun _ => by simp only [mem_univ]) fun x _ =>
-    prod_congr rfl fun f _ => rfl
 
 namespace Design
 

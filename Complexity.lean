@@ -553,6 +553,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Slow
 public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Width
 public import Complexity.Algorithms.WordRAM.ThreeSum.Memory
 public import Complexity.Algorithms.WordRAM.ThreeSum.Weight
+public import Complexity.Computability.Arithmetic.BinomialMod
 public import Complexity.Computability.BranchingProgram.MonoidProgram
 public import Complexity.Computability.BranchingProgram.PolyLength
 public import Complexity.Computability.Catalytic.Comparison
@@ -3063,6 +3064,7 @@ public import Complexity.Foundations.BooleanAnalysis.SparseEquations.Degree
 public import Complexity.Foundations.BooleanAnalysis.SparseHermiteRecovery
 public import Complexity.Foundations.BooleanAnalysis.SparseIncidence
 public import Complexity.Foundations.BooleanAnalysis.SparseReplacementDesign
+public import Complexity.Foundations.BooleanAnalysis.StreamingCounting
 public import Complexity.Foundations.BooleanAnalysis.Symmetrization
 public import Complexity.Foundations.BooleanAnalysis.Tribes
 public import Complexity.Foundations.BooleanAnalysis.Variance
@@ -3163,6 +3165,7 @@ public import Complexity.Foundations.Combinatorics.PacketPacking
 public import Complexity.Foundations.Combinatorics.PartialLabelScores
 public import Complexity.Foundations.Combinatorics.PowersetTail
 public import Complexity.Foundations.Combinatorics.ReplacementCounting
+public import Complexity.Foundations.Combinatorics.ReplacementCounting.AffineTaylor
 public import Complexity.Foundations.Combinatorics.ReplacementDesignBridge
 public import Complexity.Foundations.Combinatorics.SharedSummaries
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
@@ -3201,6 +3204,7 @@ public import Complexity.Foundations.Data.BitString.List
 public import Complexity.Foundations.Data.BitString.List.Binary
 public import Complexity.Foundations.Data.BitString.List.Operations
 public import Complexity.Foundations.Data.BitString.List.Positions
+public import Complexity.Foundations.Data.BitString.List.Segmented
 public import Complexity.Foundations.Data.BitString.List.Vote
 public import Complexity.Foundations.Data.BitString.Parity
 public import Complexity.Foundations.Data.BitString.Parity.DotProduct
@@ -3364,6 +3368,7 @@ public import Complexity.Foundations.Data.Polynomial.ParityAmplifierDegree
 public import Complexity.Foundations.Data.Polynomial.RingLagrange
 public import Complexity.Foundations.Data.Polynomial.SignQueries
 public import Complexity.Foundations.Data.Polynomial.StagedJetArithmetic
+public import Complexity.Foundations.Data.Polynomial.StreamingHermite
 public import Complexity.Foundations.Data.Polynomial.TaperedHermite
 public import Complexity.Foundations.Data.Rat.Basic
 public import Complexity.Foundations.Data.Seq.Computation

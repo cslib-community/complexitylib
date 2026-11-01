@@ -204,6 +204,15 @@ index links to canonical definitions rather than keeping a second set.
   and the refined `O(ℓ + H log(ℓ + 2))` parameter bound.
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
   bounds for sublinear space, distinct from polynomial-space simulation.
+- **Sublinear-space nondeterministic-time simulation**
+  ([#2226](https://github.com/cslib-community/complexitylib/issues/2226)): formalize
+  `NTIME(T) ⊆ DSPACE(T (log log T)² / √log T)` for `T(n) ≥ n`, and consequently
+  `NTIME(n) ⊊ DSPACE(n)`. Credit Charlie Cruz for finding and communicating the argument.
+  The self-contained development begins with finite-field recovery from untruncated local
+  polynomials, marked-support cancellation, compact support encodings and native modular
+  binomial computation. The full result still requires a certified streaming modular counter,
+  space-bounded coefficient and design
+  access, and an implicit block-constraint interface on the native machine model.
 - **Deeper consequences of a Boolean-hierarchy collapse:** Kadin's sparse `S` with
   `coNP ⊆ NP^S`, and the collapse of `PH` into `P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`, which follows from
   results of Wagner and of Chang and Kadin, not from Kadin's 1988 argument (see his erratum).
