@@ -104,6 +104,7 @@ UNICODE_TO_TEX_TEXT = {
     "á": r"\'{a}",
     "é": r"\'{e}",
     "É": r"\'{E}",
+    "ö": r"\"{o}",
     "ő": r"\H{o}",
     "å": r"\r{a}",
     **{k: f"${v}$" for k, v in UNICODE_TO_TEX_MATH.items()},

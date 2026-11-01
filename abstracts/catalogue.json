@@ -269,6 +269,16 @@
       "scope": "Arbitrary sources with real min-entropy bounds, the exact bias bound 2^((n - k1 - k2)/2)/2 and its strong form, and sharpness at k1 + k2 = n; information-theoretic, with no running time asserted."
     },
     {
+      "id": "schoening",
+      "title": "Schöning: 3-SAT in time (4/3)^n on the randomized word RAM",
+      "module": "ComplexityAbstracts.SchoeningAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.SchoeningAbstract.schoening3SAT"
+      ],
+      "summary": "One fixed randomized word-RAM program runs R = ⌈(3n + 1)(4/3)^n⌉·c independent trials of Schöning's local search on a CNF formula with n variables. It never errs on unsatisfiable formulas, fails with probability exactly (1 - p)^R for the success probability p of one restated trial, and fails on satisfiable 3-CNFs with probability at most e^(-c).",
+      "scope": "Unit-cost randomized word RAM over the standard basis (truncated subtraction, x / 0 = 0, x % 0 = x; unit-cost uniform rand), restated in the abstract, with words of O(log(n + L + c)) bits for input length L. Worst-case time ⌊900 (n + L + 4)^3 (4/3)^n (c + 1)⌋ = O((n + L)^3 (4/3)^n (c + 1)) on every random path. Explicit word encoding of CNF formulas; exact output law; one-sided error. The source's O*((4/3)^n) bound with an explicit polynomial factor, not the PPSZ improvement."
+    },
+    {
       "id": "subexponential-sat",
       "title": "OpenAI: the Exponential Time Hypothesis is false",
       "module": "ComplexityAbstracts.SubexponentialSATAbstract",
