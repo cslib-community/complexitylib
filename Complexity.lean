@@ -1741,6 +1741,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSp
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Cases
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatPow
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatPrime
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatSize
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Plain
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
@@ -2335,6 +2336,7 @@ public import Complexity.Computability.TreeEval.Ary.Packed.RawController
 public import Complexity.Computability.TreeEval.Ary.Packed.RawControllerCorrect
 public import Complexity.Computability.TreeEval.Ary.Packed.RawControllerEncoding
 public import Complexity.Computability.TreeEval.Ary.Packed.RawControllerNative
+public import Complexity.Computability.TreeEval.Ary.Packed.RawControllerOutput
 public import Complexity.Computability.TreeEval.Ary.Packed.RawControllerQuery
 public import Complexity.Computability.TreeEval.Ary.Packed.RawControllerSpace
 public import Complexity.Computability.TreeEval.Ary.PackingParameters
