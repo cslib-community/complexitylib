@@ -3144,6 +3144,7 @@ public import Complexity.Foundations.Control.Monad.IsMonadHom.StateT
 public import Complexity.Foundations.Control.Monad.Memoize
 public import Complexity.Foundations.Data.BiTape
 public import Complexity.Foundations.Data.BiTape.OfCells
+public import Complexity.Foundations.Data.BinaryBranching
 public import Complexity.Foundations.Data.BitString.Affine
 public import Complexity.Foundations.Data.BitString.AffineSubspace
 public import Complexity.Foundations.Data.BitString.Agree
@@ -3645,7 +3646,6 @@ public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingU
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.List
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Path
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.PolyTime
-public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Search
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Step
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Tree
 public import Complexity.Logics.Propositional.ClauseSet.SubcubeFree
