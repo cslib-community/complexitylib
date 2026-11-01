@@ -1693,8 +1693,12 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Gue
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.EncodedTree
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding.NativeChecked
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding.NativeDecode
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding.NativeEncode
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplay
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayAccess
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySpace
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputationTree
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockTrace
@@ -1738,6 +1742,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degr
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Fold
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Bit
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.BitList
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Cases
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatPow
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatPrime
