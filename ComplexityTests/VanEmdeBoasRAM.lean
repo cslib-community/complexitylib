@@ -246,16 +246,17 @@ theorem sampleAdaptiveClient_run_initialized :
       n_init + 1 ≤ 205 ∧
       Exec 8 initProgram initStart x₀ n_init ∧
       SetRep 1 8 28 8 (∅ : Finset ℕ) x₀ ∧
-      Stateful.Executes ((dynamicProgram 1 8).ExecOp 8) sampleAdaptiveClient x₀
+      DataStructure.Executes ((dynamicProgram 1 8).ExecOp 8) sampleAdaptiveClient x₀
         ((spec 1 8).runClient (∅ : Finset ℕ) sampleAdaptiveClient).1 y traces ∧
       SetRep 1 8 28 8 ((spec 1 8).runClient (∅ : Finset ℕ) sampleAdaptiveClient).2.1 y ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces ≤
+      DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤
         ((spec 1 8).runClient (∅ : Finset ℕ) sampleAdaptiveClient).2.2.length * 152 ∧
       (∀ j, j < 8 ∨ 36 ≤ j → y.mem j = initStart.mem j) :=
   run_initialized (d := 1) (w := 8) (base := 8)
     initStart_bounded (by decide) rfl rfl sampleAdaptiveClient
     (by
-      dsimp only [spec, Stateful.Spec.runClient, Stateful.Spec.ValidHistory,
+      dsimp only [spec, DataStructure.StateTransitionSpec.runClient,
+        DataStructure.StateTransitionSpec.ValidHistory,
         sampleAdaptiveClient, OrderedSet.least]
       refine ⟨by decide, by decide, ?_, by decide, ?_, trivial⟩
       · change 0 < 2 ^ 8; decide

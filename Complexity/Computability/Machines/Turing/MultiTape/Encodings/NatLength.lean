@@ -15,12 +15,15 @@ import Mathlib.Tactic.NormNum
 /-!
 # Binary lengths of natural numbers
 
-The binary encoding `encNat` of a number has `Nat.size` digits. Numbers at most `N` have at most
-`log₂ N + 1` digits, and numbers at most `(N + 1) ^ d` at most `(d + 1) * (log₂ N + 1)`: counters
-bounded by a polynomial in the length of the input are stored in logarithmic space.
+The binary encoding `encNat` of a number has `Nat.size` digits, so numbers below `2 ^ p` have at
+most `p` digits. Numbers at most `N` have at most `log₂ N + 1` digits, and numbers at most
+`(N + 1) ^ d` at most `(d + 1) * (log₂ N + 1)`: counters bounded by a polynomial in the length of
+the input are stored in logarithmic space.
 
 ## Main results
 
+* `Turing.MultiTapeTM.length_encNat_le_of_lt_two_pow`: numbers below `2 ^ p` have at most `p`
+  digits.
 * `Turing.MultiTapeTM.length_encNat_le_log2`: numbers at most `N` have at most `log₂ N + 1`
   digits.
 * `Turing.MultiTapeTM.length_encNat_le_log2_add_two`: numbers at most `N + 1` have at most
@@ -39,6 +42,11 @@ bounded by a polynomial in the length of the input are stored in logarithmic spa
 @[expose] public section
 
 namespace Turing.MultiTapeTM
+
+/-- A number below `2 ^ p` has at most `p` binary digits. -/
+theorem length_encNat_le_of_lt_two_pow {a p : ℕ} (h : a < 2 ^ p) : (encNat a).length ≤ p := by
+  rw [encNat_apply, Nat.size_eq_bits_len]
+  exact Nat.size_le.mpr h
 
 /-- The binary length of a number at most `N` is at most `log₂ N + 1`. -/
 theorem length_encNat_le_log2 {j N : ℕ} (h : j ≤ N) : (encNat j).length ≤ Nat.log2 N + 1 := by

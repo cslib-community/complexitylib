@@ -66,8 +66,10 @@ theorem prod_map_range {M : Type*} [CommMonoid M] (F : ℕ → M) (n : ℕ) :
   rw [← List.map_coe_finRange_eq_range, List.map_map, ← List.ofFn_eq_map, List.prod_ofFn]
   rfl
 
-variable {fl : List ℕ} (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (ZMod 2))))
-  {D : DescribedNetwork VertexDesc} {r : ℕ} (hD : D.IsRowsFirstBipartite r)
+variable {T : Type} {fl : List ℕ}
+  (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (ZMod 2))))
+  {D : DescribedNetwork (VertexDesc T)} {r : ℕ} (hD : D.IsRowsFirstBipartite r)
+  (ev : T → List Bool → List ℕ)
 
 include hD in
 /-- **One native active call is correct when its stored values are** ([OpenAI2026ETH],
@@ -98,9 +100,9 @@ theorem val_recover_eq_contraction {a u h p Δ : ℕ} (hu : 1 ≤ u) (huM : u �
                 (nodePrecision p h a D.numEdges (padicValInt 2 (node a k))) (node a k)
                 (ζl.getD i []) r D (nativeParentPacking r a D) β g).contraction
               fun d bs => val (nodePrecision p h a D.numEdges (padicValInt 2 (node a k))) fl
-                (d.entry bs)).prod).sum) :
+                (d.entry ev bs)).prod).sum) :
     val p fl (recover p Δ fl a u h ζl W) =
-      D.contraction fun d bs => val p fl (d.entry bs) := by
+      D.contraction fun d bs => val p fl (d.entry ev bs) := by
   have hB := AdjoinRoot.algebraMap_mem_integer_padicValuation (monic_monicOf fl) hirr
   have hcard : Fintype.card (Fin D.numEdges) = D.numEdges := Fintype.card_fin _
   have hpk1 : (nativeParentPacking r a D).2.1 = (parentPacking hD a).numPackets := by
@@ -117,7 +119,7 @@ theorem val_recover_eq_contraction {a u h p Δ : ℕ} (hu : 1 ≤ u) (huM : u �
             Fin (nodePrecision p h a (Fintype.card (Fin D.numEdges)) (padicValInt 2 t)) =>
               (Z.2.2 : ℕ) + 1)
             (nodePrecision p h a (Fintype.card (Fin D.numEdges)) (padicValInt 2 t)),
-          ∏ g, ((parentSplitting hirr hD a p u h hua ht hq (ζl.getD k [])).child β
+          ∏ g, ((parentSplitting hirr hD ev a p u h hua ht hq (ζl.getD k [])).child β
             g).contraction := by
     intro t ht hq k
     obtain ⟨kk, hkk, hkt⟩ : ∃ kk, (kk < 2 ^ (a + 1) ∧ kk ≠ 2 ^ a) ∧ node a kk = t := by
@@ -138,9 +140,9 @@ theorem val_recover_eq_contraction {a u h p Δ : ℕ} (hu : 1 ≤ u) (huM : u �
     refine Fintype.prod_congr _ _ fun g => ?_
     simp only [Function.comp_apply]
     rw [DescribedNetwork.map_contraction]
-    exact contraction_nativeChild hirr hD hK hua ht hq (ζl.getD k []) β g
+    exact contraction_nativeChild hirr hD ev hK hua ht hq (ζl.getD k []) β g
   obtain ⟨b, hb, hx⟩ := TensorNetwork.exists_recoverFromValues_eq_add_of_children (RingO hirr) hB
-    (parentNetwork hirr hD) (parentSide r) (parentSide_src hD) (parentSide_tgt hD)
+    (parentNetwork hirr hD ev) (parentSide r) (parentSide_src hD) (parentSide_tgt hD)
     (parentPacking hD a) (p := p) hu (by rwa [hcard]) hua (by rwa [hcard]) (by rwa [hcard]) ζ hζ
     (by rwa [hcard]) v hv
   -- Native recovery computes the reduction of the recovered value.
@@ -161,8 +163,9 @@ theorem val_recover_eq_contraction {a u h p Δ : ℕ} (hu : 1 ≤ u) (huM : u �
     (fun t => nodePrecision p h a D.numEdges (padicValInt 2 t)) hpt ζ hζ ζl rfl
     (fun i => (reduction_liftO hirr _ _).symm) v W
     (fun k _ _ _ i => ⟨0, by simp only [v, toNat_node_add, reduction_liftO, mul_zero, add_zero]⟩)
-    (parentNetwork hirr hD).contraction hb hx
-  rw [hrec, ← DescribedNetwork.reduction_contraction_toNetwork hD hirr (fun d bs => d.entry bs) p]
+    (parentNetwork hirr hD ev).contraction hb hx
+  rw [hrec, ← DescribedNetwork.reduction_contraction_toNetwork hD hirr
+    (fun d bs => d.entry ev bs) p]
   exact RingHom.congr_fun (AdjoinRoot.castHom_comp_reduction (monic_monicOf fl) hirr
     (Nat.le_add_right p Δ)) _
 

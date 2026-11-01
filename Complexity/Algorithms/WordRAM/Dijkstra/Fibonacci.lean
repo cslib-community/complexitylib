@@ -9,7 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.Dijkstra.FibonacciStatement
 public import Complexity.Algorithms.WordRAM.Dijkstra.GenericPQ
-public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap
 
 /-!
 # Dijkstra's Algorithm with a Fibonacci Heap in `O(m + n (⌊log₂ n⌋ + 1))` Time
@@ -17,7 +17,8 @@ public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
 This file instantiates the black-box outer Dijkstra algorithm
 (`Cslib.Algorithms.WordRAM.Dijkstra.dijkstraCode_exec` and
 `Cslib.Algorithms.WordRAM.Dijkstra.dijkstra_of_pq_spec`) with the standalone static-array
-Fibonacci heap package (`Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.pkg`) to obtain both
+Fibonacci heap package (`Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.pkg`) to obtain
+both
 the sharper reachable-vertex bound `Cslib.Algorithms.WordRAM.Dijkstra.FibonacciSpec`
 (`O(m + min(n, m + 1) (⌊log₂ n⌋ + 1))`) and the textbook Fredman–Tarjan bound
 `Cslib.Algorithms.WordRAM.Dijkstra.FibonacciStatement` (`O(m + n (⌊log₂ n⌋ + 1))`).
@@ -25,7 +26,7 @@ the sharper reachable-vertex bound `Cslib.Algorithms.WordRAM.Dijkstra.FibonacciS
 ## Main definitions
 
 * `Cslib.Algorithms.WordRAM.Dijkstra.fibDijkstra`: structured exact-basis Dijkstra program
-  instantiated with `PriorityQueue.FibonacciHeap.code`.
+  instantiated with `PriorityQueue.WordRAM.FibonacciHeap.code`.
 
 ## Main results
 
@@ -51,31 +52,31 @@ the sharper reachable-vertex bound `Cslib.Algorithms.WordRAM.Dijkstra.FibonacciS
 
 namespace Cslib.Algorithms.WordRAM.Dijkstra
 
-open Cslib.WordRAM
+open Cslib.WordRAM Cslib.DataStructure
 
 /-- Structured exact-basis Dijkstra program instantiated with the standalone Fibonacci heap. -/
-abbrev fibDijkstra : Code .exact (15 + PriorityQueue.FibonacciHeap.rFib) :=
-  dijkstraCode PriorityQueue.FibonacciHeap.code
+abbrev fibDijkstra : Code .exact (15 + PriorityQueue.WordRAM.FibonacciHeap.rFib) :=
+  dijkstraCode PriorityQueue.WordRAM.FibonacciHeap.code
 
 private theorem fits_fib_space {G : ListInstance} {w : ℕ}
     (hw : Fits w (8 * (G.n + G.m + 2) * (G.maxWeight + 2))) :
-    Fits w (G.dbase + G.n + PriorityQueue.FibonacciHeap.pkg.space G.n) := by
+    Fits w (G.dbase + G.n + PriorityQueue.WordRAM.FibonacciHeap.pkg.space G.n) := by
   apply hw.of_le
-  dsimp only [ListInstance.dbase, PriorityQueue.FibonacciHeap.pkg,
-    PriorityQueue.FibonacciHeap.space]
+  dsimp only [ListInstance.dbase, PriorityQueue.WordRAM.FibonacciHeap.pkg,
+    PriorityQueue.WordRAM.FibonacciHeap.space]
   nlinarith [Nat.zero_le G.maxWeight]
 
 private theorem fibonacciHeap_dijkstra_bound (G : ListInstance) :
-    PriorityQueue.FibonacciHeap.pkg.initTime G.n +
-      PriorityQueue.FibonacciHeap.pkg.insertTime G.n + 28 +
-      min G.n (G.m + 1) * (PriorityQueue.FibonacciHeap.pkg.extractTime G.n +
-        PriorityQueue.FibonacciHeap.pkg.emptyTime G.n + 20) +
-      min G.n G.m * (PriorityQueue.FibonacciHeap.pkg.insertTime G.n + 20) +
-      G.m * (PriorityQueue.FibonacciHeap.pkg.decreaseTime G.n + 20) + 1 ≤
+    PriorityQueue.WordRAM.FibonacciHeap.pkg.initTime G.n +
+      PriorityQueue.WordRAM.FibonacciHeap.pkg.insertTime G.n + 28 +
+      min G.n (G.m + 1) * (PriorityQueue.WordRAM.FibonacciHeap.pkg.extractTime G.n +
+        PriorityQueue.WordRAM.FibonacciHeap.pkg.emptyTime G.n + 20) +
+      min G.n G.m * (PriorityQueue.WordRAM.FibonacciHeap.pkg.insertTime G.n + 20) +
+      G.m * (PriorityQueue.WordRAM.FibonacciHeap.pkg.decreaseTime G.n + 20) + 1 ≤
       640 * (G.m + min G.n (G.m + 1) * (Nat.log 2 G.n + 1)) := by
-  dsimp only [PriorityQueue.FibonacciHeap.pkg, PriorityQueue.FibonacciHeap.tInit,
-    PriorityQueue.FibonacciHeap.tEmpty, PriorityQueue.FibonacciHeap.tIns,
-    PriorityQueue.FibonacciHeap.tDec, PriorityQueue.FibonacciHeap.tExt]
+  dsimp only [PriorityQueue.WordRAM.FibonacciHeap.pkg, PriorityQueue.WordRAM.FibonacciHeap.tInit,
+    PriorityQueue.WordRAM.FibonacciHeap.tEmpty, PriorityQueue.WordRAM.FibonacciHeap.tIns,
+    PriorityQueue.WordRAM.FibonacciHeap.tDec, PriorityQueue.WordRAM.FibonacciHeap.tExt]
   let k := min G.n (G.m + 1)
   let L := Nat.log 2 G.n + 1
   have hn : 1 ≤ G.n := by have := G.source.isLt; omega
@@ -101,7 +102,7 @@ theorem fibDijkstra_spec {G : ListInstance} {w : ℕ}
         (640 * (G.m + min G.n (G.m + 1) * (Nat.log 2 G.n + 1))) ∧
       ∀ v : Fin G.n, y.mem (G.outAddr v) = encodeDist (G.dist G.source v) := by
   obtain ⟨y, he, hd⟩ :=
-    dijkstraCode_exec PriorityQueue.FibonacciHeap.pkg G w hw (fits_fib_space hw)
+    dijkstraCode_exec PriorityQueue.WordRAM.FibonacciHeap.pkg G w hw (fits_fib_space hw)
   exact ⟨y, he.mono (Nat.le_of_succ_le (fibonacciHeap_dijkstra_bound G)), hd⟩
 
 /-- **Dijkstra's algorithm with a Fibonacci heap in `O(m + min(n, m + 1) (⌊log₂ n⌋ + 1))` time.**
@@ -109,7 +110,7 @@ The compiled flat program meets `Cslib.Algorithms.WordRAM.Dijkstra.FibonacciSpec
 theorem fibonacciSpec : FibonacciSpec (fibDijkstra.program OuterReg.zero) 640 := by
   intro G w hw
   obtain ⟨t, steps, hr, hh, hsteps, hd⟩ :=
-    dijkstra_of_pq_spec PriorityQueue.FibonacciHeap.pkg G w hw (fits_fib_space hw)
+    dijkstra_of_pq_spec PriorityQueue.WordRAM.FibonacciHeap.pkg G w hw (fits_fib_space hw)
   exact ⟨t, steps, hr, hh,
     (Nat.add_le_add_right hsteps 1).trans (fibonacciHeap_dijkstra_bound G), hd⟩
 
@@ -120,13 +121,14 @@ theorem fibonacciLinearSpec : FibonacciLinearSpec (fibDijkstra.program OuterReg.
 
 /-- **Reachable-vertex Fibonacci-heap Dijkstra theorem.** -/
 theorem fibonacciSpecStatement : FibonacciSpecStatement :=
-  ⟨15 + PriorityQueue.FibonacciHeap.rFib, fibDijkstra.program OuterReg.zero, 640, fibonacciSpec⟩
+  ⟨15 + PriorityQueue.WordRAM.FibonacciHeap.rFib, fibDijkstra.program OuterReg.zero, 640,
+    fibonacciSpec⟩
 
 /-- **Fibonacci-heap Dijkstra main theorem.** Some word-RAM program over the exact basis computes
 all shortest-path distances from the source of a weighted directed graph with `n` vertices and `m`
 edges, given by adjacency lists, within `O(m + n (⌊log₂ n⌋ + 1))` instructions. -/
 theorem fibonacciStatement : FibonacciStatement :=
-  ⟨15 + PriorityQueue.FibonacciHeap.rFib, fibDijkstra.program OuterReg.zero, 640,
+  ⟨15 + PriorityQueue.WordRAM.FibonacciHeap.rFib, fibDijkstra.program OuterReg.zero, 640,
     fibonacciLinearSpec⟩
 
 end Cslib.Algorithms.WordRAM.Dijkstra
