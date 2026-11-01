@@ -72,7 +72,7 @@ theorem runClient_width (w : ℕ) (p : Memory.Prog α) (s : Memory.State) :
 
 /-- A semantic return issues no memory operation. Its native glue is charged separately. -/
 @[simp] theorem memoryCost_pure (a : α) (s : Memory.State) :
-    memoryCost (.pure a) s = 0 := rfl
+    memoryCost (pure a) s = 0 := rfl
 
 /-- Memory charges add at the actual intermediate state; the local bind charge is separate. -/
 theorem memoryCost_bind {β : Type} (p : Memory.Prog α) (q : α → Memory.Prog β)
