@@ -80,7 +80,9 @@ number of links and number of bit encryptions in each link are retained. -/
 def encryptZeroKeyLinks (n : ℕ) (keys : List (List Bool × List Bool)) :
     ProbComp (List (List (List Bool))) :=
   (keys.zip keys.tail).mapM (fun adjacent =>
-    E.encryptBits n adjacent.2.1 (List.replicate adjacent.1.2.length false))
+    let prev := adjacent.1
+    let next := adjacent.2
+    E.encryptBits n next.1 (List.replicate prev.2.length false))
 
 /-- Encrypt real secrets in the first `cut` links, and zero words in the remaining links.
 The two key segments overlap at their boundary key; each link is sampled exactly once. -/
