@@ -39,15 +39,19 @@ Given a target independence parameter `k : ℕ`, a capacity parameter `n_max : �
    `evalTimeBound k = max (111230 * k + 19) 6858 + 4` instructions (`O_k(1)`), and `.resample` draws
    `k` random words in `5 * k + 13` instructions (`O_k(1)`).
 2. **Large-capacity regime (`n_max ≥ 2 ^ 320000`)**:
-   Uses Thorup's double-tabulation construction `[Thorup2013]` (FOCS 2013, Theorem 1(a) p. 4 and
-   Lemma 2 p. 5) with character bit-width `b = charBits n_max = (1 + Nat.clog 2 (max n_max 4)) / 2`,
-   input alphabet `Σ = Fin (2 ^ b)`, top position count `c = 8`, intermediate position count
-   `d = 64`, and `576 * 2 ^ b` words of table storage (`(c + 1) * d * |Σ|`).
-   Each `.eval u` performs `c + d` table lookups in `evalTimeBound k` instructions (`O_k(1)`),
+   Uses Thorup's double-tabulation construction `[Thorup2013]` (FOCS 2013, pp. 90–99;
+   `arXiv:1311.3121v2`, Theorem 1(a) p. 4, Lemma 2 p. 5, and Section 2 Eqs. (6)–(7) p. 11) with
+   character bit-width `b = charBits n_max = (1 + Nat.clog 2 (max n_max 4)) / 2`, input alphabet
+   `Σ = Fin (2 ^ b)`, top position count `c = 8`, intermediate position count `d = 64`, counting
+   parameter `q = 4` (`d = 2 * q * c`), and `576 * 2 ^ b` words of table storage
+   (`(c + 1) * d * |Σ|`).
+   Each `.eval u` performs `c + d` table lookups in `evalTimeBound k` instructions (`O_k(1)`), and
    `.resample` refreshes all `576 * 2 ^ b` table entries in `2880 * 2 ^ b + 16` instructions
-   (`O(n_max)`), and each resampling epoch is `k`-wise independent except with probability at most
-   `failureProbBound k n_max`: whenever `2 * codeBound k ≤ 2 ^ (3 * b)` (where
-   `codeBound k = 8 * ((8 * k) ^ 16 * 64) ^ 4 = 2 ^ 219 * k ^ 64`),
+   (`O(n_max)`). Whereas `[Thorup2013]` Theorem 1(a) states failure probability
+   `o(|Φ| ^ 2 / |Ψ| ^ (d / (2 * c)))` for `k = |Ψ| ^ (1 / (5 * c))`, the library's fixed-`k` proof
+   adaptation bounds each resampling epoch's failure probability by `failureProbBound k n_max`:
+   whenever `2 * codeBound k ≤ 2 ^ (3 * b)` (where `codeBound k = 8 * ((8 * k) ^ 16 * 64) ^ 4 =
+   2 ^ 219 * k ^ 64` from Section 2, Eqs. (6)–(7), p. 11 at `c = 8, d = 64, q = 4`),
    `failureProbBound k n_max = 2 * (codeBound k) ^ 2 / 2 ^ (6 * b) ≤
    2 * (codeBound k) ^ 2 / max n_max 4 ^ 3`.
 
@@ -475,9 +479,10 @@ def initFreshTime (k n_max U M : ℕ) : ℕ :=
 def initClearTime (k n_max U M : ℕ) : ℕ :=
   initFreshTime k n_max U M + (4 * space k n_max + 6)
 
-/-- Code-counting numerator factor `8 * ((8 * k) ^ 16 * 64) ^ 4` (`doubleTabCodeBound 8 64 4 k =
-2 ^ 219 * k ^ 64`) in Thorup's double-tabulation `k`-unique failure bound `[Thorup2013]`
-(Lemma 2, p. 5) specialized to `c = 8`, `d = 64`, and `t = 4`. -/
+/-- Per-step efficient-code counting factor `8 * ((8 * k) ^ 16 * 64) ^ 4`
+(`doubleTabCodeBound 8 64 4 k = 2 ^ 219 * k ^ 64`) from `[Thorup2013]` (FOCS 2013, pp. 90–99;
+`arXiv:1311.3121v2`, Section 2, Eqs. (6)–(7), p. 11) specialized to `c = 8`, `d = 64`, and
+`q = 4`. -/
 def codeBound (k : ℕ) : ℕ :=
   8 * ((8 * k) ^ 16 * 64) ^ 4
 
@@ -487,7 +492,8 @@ regime-switched hash family at `c_exp = 4`:
   exact `k`-wise independent);
 - **Large capacities (`n_max ≥ 2 ^ 320000`) with `2 * codeBound k ≤ 2 ^ (3 * charBits n_max)`**:
   `2 * (codeBound k) ^ 2 / 2 ^ (6 * charBits n_max) ≤ 2 * (codeBound k) ^ 2 / max n_max 4 ^ 3`
-  (via `[Thorup2013]`, Theorem 1(a) p. 4 and Lemma 2 p. 5);
+  (fixed-`k` proof adaptation of `[Thorup2013]`, FOCS 2013, pp. 90–99; `arXiv:1311.3121v2`,
+  Theorem 1(a) p. 4, Lemma 2 p. 5, and Section 2 Eqs. (6)–(7) p. 11);
 - **Large capacities when `k` exceeds the non-triviality condition
   `2 * codeBound k ≤ 2 ^ (3 * charBits n_max)`**:
   falls back to the trivial probability bound `1`. -/
