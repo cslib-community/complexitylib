@@ -58,8 +58,6 @@ def DisjunctionHolds (p q r u v w t x : Bool) : Prop :=
 instance (p q r u v w t x : Bool) : Decidable (DisjunctionHolds p q r u v w t x) :=
   inferInstanceAs (Decidable (One p u v ∧ One (!q) u w ∧ One v w t ∧ One (!r) v x))
 
-private theorem beq_true (b : Bool) : (b == true) = b := by cases b <;> rfl
-
 /-- The first auxiliary value of the disjunction gadget. -/
 def firstAux (p q : Bool) : Bool := !p && q
 

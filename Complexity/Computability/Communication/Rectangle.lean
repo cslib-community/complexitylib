@@ -14,6 +14,7 @@ public import Mathlib.Data.Fin.Tuple.Basic
 public import Mathlib.Data.Fintype.Prod
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Data.Fintype.BigOperators
+import Cslib.Foundations.Data.Fin.Tuple
 
 /-!
 # Protocols partition the inputs into rectangles
@@ -187,11 +188,6 @@ variable (z : Z) (send : X → Bool) (send' : Y → Bool) (p₀ p₁ : Protocol 
 
 end Simp
 
-private theorem castAdd_ne_natAdd {m n : ℕ} (i : Fin m) (j : Fin n) :
-    Fin.castAdd n i ≠ Fin.natAdd m j := by
-  rw [Ne, Fin.ext_iff, Fin.val_castAdd, Fin.val_natAdd]
-  omega
-
 /-- **The inputs reaching a leaf form a rectangle**: the protocol reaches leaf `i` on `x` and `y`
 exactly when `x` is on Alice's side and `y` on Bob's side of its rectangle. -/
 theorem leaf_eq_iff {p : Protocol X Y Z} {x : X} {y : Y} {i : Fin p.leafCount} :
@@ -204,18 +200,18 @@ theorem leaf_eq_iff {p : Protocol X Y Z} {x : X} {y : Y} {i : Fin p.leafCount} :
     induction i using Fin.addCases with
     | left i =>
       cases h : send x <;>
-        simp [leaf, leafAlice, leafBob, h, ih₀, Fin.castAdd_inj, (castAdd_ne_natAdd _ _).symm]
+        simp [leaf, leafAlice, leafBob, h, ih₀, Fin.castAdd_inj, (Fin.castAdd_ne_natAdd _ _).symm]
     | right i =>
       cases h : send x <;>
-        simp [leaf, leafAlice, leafBob, h, ih₁, Fin.natAdd_inj, castAdd_ne_natAdd]
+        simp [leaf, leafAlice, leafBob, h, ih₁, Fin.natAdd_inj, Fin.castAdd_ne_natAdd]
   | bob send p₀ p₁ ih₀ ih₁ =>
     induction i using Fin.addCases with
     | left i =>
       cases h : send y <;>
-        simp [leaf, leafAlice, leafBob, h, ih₀, Fin.castAdd_inj, (castAdd_ne_natAdd _ _).symm]
+        simp [leaf, leafAlice, leafBob, h, ih₀, Fin.castAdd_inj, (Fin.castAdd_ne_natAdd _ _).symm]
     | right i =>
       cases h : send y <;>
-        simp [leaf, leafAlice, leafBob, h, ih₁, Fin.natAdd_inj, castAdd_ne_natAdd]
+        simp [leaf, leafAlice, leafBob, h, ih₁, Fin.natAdd_inj, Fin.castAdd_ne_natAdd]
 
 variable {p : Protocol X Y Z} {x : X} {y : Y}
 

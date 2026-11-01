@@ -617,19 +617,6 @@ theorem BucketInv.eq_of_mem_eq {U n_max base : ℕ} {b : Fin (2 ^ (hashBits U n_
   subst hbk
   exact ⟨rfl, hb₁.chain.unique hb₂.chain⟩
 
-private theorem idx_eq_of_nodup_map {α β : Type*} {f : α → β} {L : List α}
-    (hnd : (L.map f).Nodup) {x y : α} (hx : x ∈ L) (hy : y ∈ L) (hxy : f x = f y) :
-    x = y := by
-  induction L with
-  | nil => cases hx
-  | cons a rest ih =>
-    obtain ⟨hna, hnd'⟩ := List.nodup_cons.mp hnd
-    rcases List.mem_cons.mp hx with rfl | hx' <;> rcases List.mem_cons.mp hy with rfl | hy'
-    · rfl
-    · exact absurd (hxy ▸ List.mem_map_of_mem hy') hna
-    · exact absurd (hxy.symm ▸ List.mem_map_of_mem hx') hna
-    · exact ih hnd' hx' hy'
-
 /-- Within a single bucket `bk`, two slots `idx₁, idx₂ ∈ L` have the same stored key if and only if
 `idx₁ = idx₂`. -/
 theorem BucketInv.idx_eq_of_key_eq {U n_max base : ℕ} {b : Fin (2 ^ (hashBits U n_max - 1))}
@@ -638,7 +625,7 @@ theorem BucketInv.idx_eq_of_key_eq {U n_max base : ℕ} {b : Fin (2 ^ (hashBits 
     (h₁ : idx₁ ∈ L) (h₂ : idx₂ ∈ L)
     (hk : mem (keyBase base n_max + idx₁) = mem (keyBase base n_max + idx₂)) :
     idx₁ = idx₂ :=
-  idx_eq_of_nodup_map hb.nodup h₁ h₂ hk
+  List.inj_on_of_nodup_map hb.nodup h₁ h₂ hk
 
 /-- **Chain length bound**: for any query key `u : Fin U`, the length of the chain `L` in bucket
 `bk = multiplyShift w₀ M b (encodeKey u)` is at most `1` plus the number of other keys
