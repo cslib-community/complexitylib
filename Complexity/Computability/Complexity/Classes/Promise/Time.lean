@@ -15,6 +15,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimi
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayInput
+import Complexity.Foundations.Analysis.ENNRealFraction
 
 /-!
 # Bounded-error probabilistic time for promise problems
@@ -185,25 +186,6 @@ section Verifier
 
 variable {α : Type} {enc : α ↪ List Bool}
 
-/-- A probability of at least `2 / 3` is a fraction of at least two thirds. -/
-private theorem two_thirds_le_div_iff {c n : ℕ} :
-    (2 / 3 : ℝ≥0∞) ≤ c / 2 ^ n ↔ 2 * 2 ^ n ≤ 3 * c := by
-  rw [ENNReal.le_div_iff_mul_le (Or.inl (pow_ne_zero _ two_ne_zero))
-    (Or.inl (ENNReal.pow_ne_top ENNReal.ofNat_ne_top)), div_eq_mul_inv, mul_right_comm,
-    ← div_eq_mul_inv, ENNReal.div_le_iff (by norm_num) (by norm_num)]
-  constructor
-  · intro h
-    have : ((2 * 2 ^ n : ℕ) : ℝ≥0∞) ≤ ((3 * c : ℕ) : ℝ≥0∞) := by
-      push_cast
-      rw [mul_comm (3 : ℝ≥0∞)]
-      exact h
-    exact_mod_cast this
-  · intro h
-    have : ((2 * 2 ^ n : ℕ) : ℝ≥0∞) ≤ ((3 * c : ℕ) : ℝ≥0∞) := by exact_mod_cast h
-    push_cast at this
-    rw [mul_comm (c : ℝ≥0∞)]
-    exact this
-
 /-- The probability that the verdict on a uniformly random string of length `n` is `b` is the
 fraction of the strings with that verdict. -/
 private theorem uniformList_map_verdict_apply (V : α × List Bool → Bool) (a : α) (n : ℕ)
@@ -228,9 +210,11 @@ theorem mem_PromiseBPTIME_of_verifier {Q : PromiseProblem α} {V : α × List Bo
     Q ∈ PromiseBPTIME enc t := by
   obtain ⟨c₁, c₂, k, State, hfinite, machine, hmachine⟩ := exists_machine_sampleVerify hℓ hV ht
   refine ⟨c₁, c₂, k, State, hfinite, machine, fun a => ⟨(hmachine a).1, fun ha => ?_, fun ha => ?_⟩⟩
-  · rw [(hmachine a).2, uniformList_map_verdict_apply, two_thirds_le_div_iff]
+  · rw [(hmachine a).2, uniformList_map_verdict_apply,
+      ENNReal.two_div_three_le_natCast_div_two_pow_iff]
     simpa only [beq_true] using hyes a ha
-  · rw [(hmachine a).2, uniformList_map_verdict_apply, two_thirds_le_div_iff]
+  · rw [(hmachine a).2, uniformList_map_verdict_apply,
+      ENNReal.two_div_three_le_natCast_div_two_pow_iff]
     simpa only [beq_false] using hno a ha
 
 /-- **A linear-time verifier for promise-problem probabilistic time.** A promise problem in
@@ -307,7 +291,7 @@ theorem exists_verifier_of_mem_PromiseBPTIME {Q : PromiseProblem α} {t : ℕ �
         (BitString.uniformList L).map fun w => machine.runClosedCoins w (enc a) := by
       rw [MultiTapePTM.eval_runClosed_eq_map_coins]
     rw [← machine.eval_runClosed_eq_of_halted _ hT hhalt, heval,
-      BitString.uniformList_map_apply, two_thirds_le_div_iff] at hyes hno
+      BitString.uniformList_map_apply, ENNReal.two_div_three_le_natCast_div_two_pow_iff] at hyes hno
     refine ⟨fun ha => ?_, fun ha => ?_⟩
     · simpa only [acceptCount, V, decide_eq_true_eq] using hyes ha
     · refine (hno ha).trans (Nat.mul_le_mul_left 3 (Finset.card_le_card fun w hw => ?_))
