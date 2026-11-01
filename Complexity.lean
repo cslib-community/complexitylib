@@ -1738,6 +1738,8 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding.NativeEncode
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplay
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayAccess
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayAssignments
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayAssignmentsCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayGate
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayGateCorrect
@@ -2397,6 +2399,9 @@ public import Complexity.Computability.TreeEval.Ary.IterativeCorrect
 public import Complexity.Computability.TreeEval.Ary.IterativeEncoding
 public import Complexity.Computability.TreeEval.Ary.IterativePacked
 public import Complexity.Computability.TreeEval.Ary.Packed
+public import Complexity.Computability.TreeEval.Ary.Packed.AssignmentLabels
+public import Complexity.Computability.TreeEval.Ary.Packed.AssignmentLabelsCorrect
+public import Complexity.Computability.TreeEval.Ary.Packed.AssignmentLabelsSpace
 public import Complexity.Computability.TreeEval.Ary.Packed.Executable
 public import Complexity.Computability.TreeEval.Ary.Packed.GateInterpolation
 public import Complexity.Computability.TreeEval.Ary.Packed.GateInterpolationSpace
