@@ -254,26 +254,29 @@ def ExecProgramDist {r : ℕ} (w : ℕ) (p : Program r) (outReg : Fin r)
     μ q ≤ ⨆ T_hor : ℕ, evalRand w p T_hor s (.halted (q.reg outReg) q.reg q.mem)
 
 /-- Calling-convention register assignment for a dictionary operation `o : DictOp U` on an
-`r`-register Word-RAM with base-address register `baseReg`, operation-tag register `tagReg`,
-key register `keyReg`, and value register `valReg`:
-- `baseReg` is preserved (`reg baseReg`);
+`r`-register Word-RAM with scratch-clearing flag `clearScratch`, base-address register `baseReg`,
+operation-tag register `tagReg`, key register `keyReg`, and value register `valReg`:
 - `tagReg` receives `0` for `get u` and `1` for `insert u v`;
 - `keyReg` receives `u.val`;
 - `valReg` receives `v` for `insert u v` (and `0` for `get u`);
-- all other registers are zeroed. -/
-def prepareDictRegs {r U : ℕ} (baseReg tagReg keyReg valReg : Fin r)
+- every other register `i` is zeroed when `clearScratch && decide (i ≠ baseReg)` and preserved
+  (`reg i`) otherwise. -/
+def prepareDictRegs {r U : ℕ} (clearScratch : Bool) (baseReg tagReg keyReg valReg : Fin r)
     (o : DictOp U) (reg : Fin r → ℕ) (i : Fin r) : ℕ :=
-  if decide (i ≠ baseReg) then
+  if i = tagReg then
     match o with
-    | .get u =>
-        if i = tagReg then 0
-        else if i = keyReg then u.val
-        else 0
-    | .insert u v =>
-        if i = tagReg then 1
-        else if i = keyReg then u.val
-        else if i = valReg then v
-        else 0
+    | .get _ => 0
+    | .insert _ _ => 1
+  else if i = keyReg then
+    match o with
+    | .get u => u.val
+    | .insert u _ => u.val
+  else if i = valReg then
+    match o with
+    | .get _ => 0
+    | .insert _ v => v
+  else if clearScratch && decide (i ≠ baseReg) then
+    0
   else
     reg i
 
@@ -293,40 +296,41 @@ def OpOutputCorrect {r U : ℕ} (outReg : Fin r) (s : DictState U)
   | .insert _ _ => True
 
 /-- Sequential multi-operation execution of a history `ops : List (DictOp U)` by the Word-RAM
-operation program `p_op : Program r` at word width `w`, with calling-convention registers
-`(baseReg, tagReg, keyReg, valReg, outReg)` and allocated memory region `[base, base + sp)`:
+operation program `p_op : Program r` at word width `w`, with calling-convention parameters
+`(clearScratch, baseReg, tagReg, keyReg, valReg, outReg)` and allocated memory region
+`[base, base + sp)`:
 - `nil`: the empty operation history leaves the coupled state distribution `μ` unchanged with `0`
   expected operation steps;
 - `cons`: from every supported coupled state `p ∈ μ.support`, running `p_op` after loading the
-  encoded arguments of `o` via `prepareDictRegs baseReg tagReg keyReg valReg o` executes with
-  distribution `(μ_step p).map CoupledState.toRegMem` and expected step budget `T_step p`
-  (`ExecProgramDist`), every resulting state `q ∈ (μ_step p).support` has `w`-bit bounded
-  registers and memory, satisfies `OpOutputCorrect outReg s o q.reg` (matching the dictionary
-  specification), and leaves memory outside `[base, base + sp)` unchanged, and the remaining
-  operations `ops` execute from `μ.bind μ_step` to `μ_final` with expected step budget `T_rest`,
-  yielding total expected operation cost `(∑' p, μ p * T_step p) + T_rest`. -/
+  encoded arguments of `o` via `prepareDictRegs clearScratch baseReg tagReg keyReg valReg o`
+  executes with distribution `(μ_step p).map CoupledState.toRegMem` and expected step budget
+  `T_step p` (`ExecProgramDist`), every resulting state `q ∈ (μ_step p).support` has `w`-bit
+  bounded registers and memory, satisfies `OpOutputCorrect outReg s o q.reg` (matching the
+  dictionary specification), and leaves memory outside `[base, base + sp)` unchanged, and the
+  remaining operations `ops` execute from `μ.bind μ_step` to `μ_final` with expected step budget
+  `T_rest`, yielding total expected operation cost `(∑' p, μ p * T_step p) + T_rest`. -/
 inductive ExecDictOps {Seed : Type} {r U : ℕ}
-    (w : ℕ) (p_op : Program r)
+    (w : ℕ) (p_op : Program r) (clearScratch : Bool)
     (baseReg tagReg keyReg valReg outReg : Fin r) (base sp : ℕ) :
     DictState U → List (DictOp U) →
     PMF (CoupledState Seed r) → PMF (CoupledState Seed r) → ℝ≥0∞ → Prop where
   | nil (s : DictState U) (μ : PMF (CoupledState Seed r)) :
-      ExecDictOps w p_op baseReg tagReg keyReg valReg outReg base sp s [] μ μ 0
+      ExecDictOps w p_op clearScratch baseReg tagReg keyReg valReg outReg base sp s [] μ μ 0
   | cons {s : DictState U} {o : DictOp U} {ops : List (DictOp U)}
       {μ μ_final : PMF (CoupledState Seed r)} {T_rest : ℝ≥0∞}
       (T_step : CoupledState Seed r → ℝ≥0∞)
       (μ_step : CoupledState Seed r → PMF (CoupledState Seed r))
       (hstep : ∀ p ∈ μ.support,
         ExecProgramDist w p_op outReg
-          (prepareDictRegs baseReg tagReg keyReg valReg o p.reg) p.mem
+          (prepareDictRegs clearScratch baseReg tagReg keyReg valReg o p.reg) p.mem
           ((μ_step p).map CoupledState.toRegMem) (T_step p) ∧
         ∀ q ∈ (μ_step p).support,
           WordBounded w q.reg q.mem ∧
           OpOutputCorrect outReg s o q.reg ∧
           UnchangedOutside base sp p.mem q.mem)
-      (hrest : ExecDictOps w p_op baseReg tagReg keyReg valReg outReg base sp
+      (hrest : ExecDictOps w p_op clearScratch baseReg tagReg keyReg valReg outReg base sp
         (stepDict s o) ops (μ.bind μ_step) μ_final T_rest) :
-      ExecDictOps w p_op baseReg tagReg keyReg valReg outReg base sp
+      ExecDictOps w p_op clearScratch baseReg tagReg keyReg valReg outReg base sp
         s (o :: ops) μ μ_final ((∑' p, μ p * T_step p) + T_rest)
 
 /-! ## Table 1: Chained Hashing with Multiply-Shift (`ChainedHash.lean`) -/
@@ -386,7 +390,7 @@ theorem chainedHashing :
             ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (CoupledState Seed 22)),
               ExecProgramDist w p_init ⟨10, by decide⟩ reg₀ mem₀
                 (μ_init.map CoupledState.toRegMem) 16 ∧
-              ExecDictOps w p_op
+              ExecDictOps w p_op true
                 ⟨5, by decide⟩ ⟨7, by decide⟩ ⟨8, by decide⟩ ⟨9, by decide⟩ ⟨10, by decide⟩
                 base (chainedSpace n_max) (emptyDict U) ops
                 μ_init μ_final T_ops ∧
@@ -414,7 +418,171 @@ theorem chainedHashing :
       fun _ _ _ => Iff.rfl, fun _ _ _ _ _ => Iff.rfl,
       fun _ _ => rfl, fun _ _ => rfl, fun _ => rfl,
       fun _ _ _ => rfl, fun _ _ _ => rfl, fun _ _ _ => rfl, fun _ => rfl,
-      fun _ _ _ _ _ _ _ => rfl, fun _ _ _ _ _ _ _ _ => rfl,
+      fun _ _ _ _ _ _ _ _ => rfl, fun _ _ _ _ _ _ _ _ _ => rfl,
+      fun _ _ _ _ => Iff.rfl, fun _ _ _ _ _ => Iff.rfl,
+      @ExecDictOps.nil, @ExecDictOps.cons⟩
+
+/-! ## Table 2: Linear Probing with `5`-Wise Independent Hashing (`LinearProbing.lean`) -/
+
+/-- Four-Russians chunk bit-width `max 1 (⌊log₂(max n_max 2)⌋ / 3)` for table-accelerated binary
+trinomial field multiplication. -/
+def chunkBits (n_max : ℕ) : ℕ :=
+  max 1 (Nat.log 2 (max n_max 2) / 3)
+
+/-- Structural recursion helper computing the smallest `t : ℕ` with `2 * 3 ^ t ≥ B`. -/
+def trinomialStepLoop (fuel : ℕ) : ℕ → ℕ :=
+  Nat.rec (fun _ => 0)
+    (fun _ ih B => if B ≤ 2 then 0 else ih ((B + 2) / 3) + 1)
+    fuel
+
+/-- Selected trinomial step parameter `t` such that `2 * 3 ^ t ≥ max ⌈log₂(max U 2)⌉ (max M 1)`. -/
+def trinomialStep (U M : ℕ) : ℕ :=
+  let B := max (Nat.clog 2 (max U 2)) (max M 1)
+  trinomialStepLoop B B
+
+/-- Degree `D = 2 * 3 ^ trinomialStep U M` of the binary trinomial field
+`GF(2)[X] / (X ^ D + X ^ (D / 2) + 1)`. -/
+def trinomialDeg (U M : ℕ) : ℕ :=
+  2 * 3 ^ trinomialStep U M
+
+/-- Number of `chunkBits n_max`-bit limbs `⌈trinomialDeg U M / chunkBits n_max⌉` in a field
+element of `GF(2 ^ (trinomialDeg U M))`. -/
+def limbCount (n_max U M : ℕ) : ℕ :=
+  (trinomialDeg U M + chunkBits n_max - 1) / chunkBits n_max
+
+/-- Memory footprint `8 + k + 2 ^ (2 * chunkBits n_max)` (in machine words) of the `k`-wise
+independent polynomial hash family (`8`-word header, `k` coefficients, and the
+`2 ^ (2 * chunkBits n_max)`-entry chunk-multiplication lookup table). -/
+def kWiseSpace (n_max k : ℕ) : ℕ :=
+  8 + k + 2 ^ (2 * chunkBits n_max)
+
+/-- Deterministic lookup-table setup step count for `k`-wise polynomial hashing before seed
+sampling. -/
+def kWiseInitTableSteps (n_max U M : ℕ) : ℕ :=
+  19 * 2 ^ (2 * chunkBits n_max) +
+    4 * Nat.log 2 (max n_max 2) +
+    5 * Nat.clog 2 (max U 2) +
+    5 * trinomialStep U M + 69
+
+/-- Deterministic instruction budget `((11 * L + 12) * L + 30) * k + 19` (where
+`L = limbCount n_max U M`) for evaluating a degree-`(k - 1)` polynomial over
+`GF(2 ^ (trinomialDeg U M))`. -/
+def kWiseEvalSteps (n_max U M k : ℕ) : ℕ :=
+  ((11 * limbCount n_max U M + 12) * limbCount n_max U M + 30) * k + 19
+
+/-- Power-of-2 table bit-width `⌈log₂(max (8 * n_max) 8)⌉` for linear probing
+(`M = 2 ^ m ≥ 8 * n_max` with load factor `α ≤ 1 / 8`). -/
+def lpTableLog (n_max : ℕ) : ℕ :=
+  Nat.clog 2 (max (8 * n_max) 8)
+
+/-- Power-of-2 table size `2 ^ lpTableLog n_max` for linear probing. -/
+def lpTableSize (n_max : ℕ) : ℕ :=
+  2 ^ lpTableLog n_max
+
+/-- Memory footprint `kWiseSpace n_max 5 + 3 * lpTableSize n_max` (in machine words) of linear
+probing: the `5`-wise hash block plus three parallel arrays (`status`, `key`, `val`) of length
+`lpTableSize n_max`. -/
+def lpSpace (n_max : ℕ) : ℕ :=
+  kWiseSpace n_max 5 + 3 * lpTableSize n_max
+
+/-- Across all capacities `n_max : ℕ`, linear probing uses at most `209 * (n_max + 1)` words of
+memory. -/
+theorem linearProbingSpace_le (n_max : ℕ) :
+    lpSpace n_max ≤ 209 * (n_max + 1) :=
+  ComplexityAbstracts.HashTablesBridge.linearProbingSpace_le n_max
+
+/-- Expected instruction count `3 + (kWiseInitTableSteps n_max U (lpTableLog n_max) + 38)` for
+linear-probing initialization from zeroed memory. -/
+def lpInitSteps (U n_max : ℕ) : ℕ :=
+  3 + (kWiseInitTableSteps n_max U (lpTableLog n_max) + 38)
+
+/-- Exact expected per-operation instruction charge
+`kWiseEvalSteps n_max U (lpTableLog n_max) 5 + 12 * 288 + 27` for linear probing. -/
+def lpOpCharge (U n_max : ℕ) : ℕ :=
+  kWiseEvalSteps n_max U (lpTableLog n_max) 5 + 12 * 288 + 27
+
+/-- Uniform `O(1)` per-operation expected instruction bound `559652` (`556169` for `5`-wise
+polynomial evaluation with `L ≤ 100` limbs plus `12 * 288 + 27 = 3483` for probing) for linear
+probing under a polynomial key universe `U ≤ max n_max 4 ^ 4`. -/
+def lpOpChargeBound : ℕ :=
+  559652
+
+/-- Whenever `U ≤ max n_max 4 ^ 4`, the per-operation expected instruction charge
+`lpOpCharge U n_max` of linear probing is at most `lpOpChargeBound = 559652`, independently of
+`n_max` and `U`. -/
+theorem linearProbingCharge_le {U n_max : ℕ} (hU : U ≤ max n_max 4 ^ 4) :
+    lpOpCharge U n_max ≤ lpOpChargeBound :=
+  ComplexityAbstracts.HashTablesBridge.linearProbingCharge_le hU
+
+/-- **Linear Probing with `5`-Wise Independent Hashing** (`LinearProbing.lean:2263`
+`seq_expected_amortized`, specialized to `c_exp = 4`):
+For every capacity `n_max`, polynomial key universe `U ≤ max n_max 4 ^ 4`, value bound `V < 2 ^ w`,
+word width `w ≥ 2 * trinomialDeg U (lpTableLog n_max)`, and base address `base` with
+`base + lpSpace n_max < 2 ^ w`, there exist 24-register Word-RAM programs `p_init` and `p_op` such
+that from any word-bounded initial state `(reg₀, mem₀)` with `reg₀ 18 = base` and zeroed memory in
+`[base, base + lpSpace n_max)`, for every oblivious operation history `ops : List (DictOp U)` valid
+for capacity `n_max` and value bound `V`:
+- `p_init` initializes the table in `lpInitSteps U n_max` expected body instructions;
+- `p_op` executes `ops` sequentially with output register `2`, matching `stepDict` and
+  `OpOutputCorrect` at every step;
+- the total expected body instruction count satisfies both
+  `lpInitSteps U n_max + T_ops ≤ lpInitSteps U n_max + ops.length * lpOpCharge U n_max` and the
+  uniform `O(1)` per-operation bound
+  `lpInitSteps U n_max + T_ops ≤ lpInitSteps U n_max + ops.length * 559652`
+  (excluding caller argument preparation and dispatch).
+
+References: `[PaghPaghRuzic2009]` (*SIAM J. Comput.* 39(3):1107–1120, 2009, Section 2.3 Lemma 2.1
+pp. 1110–1111 and Section 4 Lemma 4.1, Theorem 4.3, Theorem 4.5 pp. 1114–1118); `[CLRS2009]`
+(3rd ed., Section 11.4); `[Vadhan2012]` (Section 3.5.5); `[CarterWegman1979]`;
+`[WegmanCarter1981]`; `[LidlNiederreiter1997]`. -/
+theorem linearProbing :
+    ∀ (U V n_max w base : ℕ),
+      U ≤ max n_max 4 ^ 4 →
+      2 * trinomialDeg U (lpTableLog n_max) ≤ w →
+      base + lpSpace n_max < 2 ^ w →
+      V < 2 ^ w →
+      ∃ (p_init p_op : List (Instr 24)),
+        ∀ (reg₀ : Fin 24 → ℕ) (mem₀ : ℕ → ℕ),
+          WordBounded w reg₀ mem₀ →
+          reg₀ ⟨18, by decide⟩ = base →
+          (∀ a, base ≤ a → a < base + lpSpace n_max → mem₀ a = 0) →
+          ∀ ops : List (DictOp U),
+            ValidDictHistory V n_max (emptyDict U) ops →
+            ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (CoupledState Seed 24)),
+              ExecProgramDist w p_init ⟨2, by decide⟩ reg₀ mem₀
+                (μ_init.map CoupledState.toRegMem) (lpInitSteps U n_max) ∧
+              ExecDictOps w p_op false
+                ⟨0, by decide⟩ ⟨22, by decide⟩ ⟨1, by decide⟩ ⟨23, by decide⟩ ⟨2, by decide⟩
+                base (lpSpace n_max) (emptyDict U) ops
+                μ_init μ_final T_ops ∧
+              (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
+                ((lpInitSteps U n_max + ops.length * lpOpCharge U n_max : ℕ) : ℝ≥0∞) ∧
+              (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
+                ((lpInitSteps U n_max + ops.length * lpOpChargeBound : ℕ) : ℝ≥0∞) :=
+  ComplexityAbstracts.HashTablesBridge.linearProbing
+    ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
+      @AluOp.rec, AluOp.eval,
+      Instr, .const, .copy, .alu, .width, .load, .store, .jump,
+      .branchEq, .branchLt, .halt, .rand, @Instr.rec,
+      Comp, @Comp.pure, @Comp.sample, @Comp.bind, @Comp.eval,
+      @Comp.CallsAtMost,
+      State, .mk, Cfg, .running, .halted, .faulted, @stepRand, @runRand⟩
+    (by refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+        ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+        ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
+      simp_all [AluOp.eval, Comp.bind, Comp.eval, Comp.CallsAtMost,
+        stepRand, runRand])
+    ⟨DictOp, @DictOp.get, @DictOp.insert, @DictOp.rec,
+      @stepDict, @validDictOp, @ValidDictHistory,
+      RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
+      CoupledState, @CoupledState.mk, @CoupledState.seed, @CoupledState.reg, @CoupledState.mem,
+      @prepareDictRegs, @OpOutputCorrect, @ExecDictOps⟩
+    ⟨fun _ _ => rfl, fun _ _ _ => rfl,
+      fun _ _ _ _ => Iff.rfl, fun _ _ _ _ _ => Iff.rfl,
+      fun _ _ _ => Iff.rfl, fun _ _ _ _ _ => Iff.rfl,
+      fun _ _ => rfl, fun _ _ => rfl, fun _ => rfl,
+      fun _ _ _ => rfl, fun _ _ _ => rfl, fun _ _ _ => rfl, fun _ => rfl,
+      fun _ _ _ _ _ _ _ _ => rfl, fun _ _ _ _ _ _ _ _ _ => rfl,
       fun _ _ _ _ => Iff.rfl, fun _ _ _ _ _ => Iff.rfl,
       @ExecDictOps.nil, @ExecDictOps.cons⟩
 

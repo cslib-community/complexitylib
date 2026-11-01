@@ -8,6 +8,7 @@ Authors: Renfei Zhou
 
 import ComplexityAbstracts.HashFamiliesBridge
 import Complexity.Algorithms.WordRAM.Dictionary.ChainedHash
+import Complexity.Algorithms.WordRAM.Dictionary.LinearProbing
 
 /-!
 # Bridge for the Word-RAM Hash Tables Formal Abstract
@@ -31,7 +32,6 @@ open scoped ENNReal BigOperators
 open Cslib
 open Cslib.WordRAM
 open Cslib.WordRAM.Randomized
-open Cslib.Probability
 open Cslib.Algorithms.Lean
 open Cslib.Algorithms.WordRAM.Dictionary
 open ComplexityAbstracts.RandomizedWordRAMBridge
@@ -59,10 +59,10 @@ structure DictPresentation (S : Presentation) where
   csReg {Seed : Type} {r : ℕ} : CoupledState Seed r → Fin r → ℕ
   csMem {Seed : Type} {r : ℕ} : CoupledState Seed r → ℕ → ℕ
   prepareDictRegs {r U : ℕ} :
-    Fin r → Fin r → Fin r → Fin r → DictOp U → (Fin r → ℕ) → Fin r → ℕ
+    Bool → Fin r → Fin r → Fin r → Fin r → DictOp U → (Fin r → ℕ) → Fin r → ℕ
   OpOutputCorrect {r U : ℕ} : Fin r → (Fin U → Option ℕ) → DictOp U → (Fin r → ℕ) → Prop
   ExecDictOps {Seed : Type} {r U : ℕ} :
-    ℕ → List (S.Instr r) → Fin r → Fin r → Fin r → Fin r → Fin r → ℕ → ℕ →
+    ℕ → List (S.Instr r) → Bool → Fin r → Fin r → Fin r → Fin r → Fin r → ℕ → ℕ →
     (Fin U → Option ℕ) → List (DictOp U) →
     PMF (CoupledState Seed r) → PMF (CoupledState Seed r) → ℝ≥0∞ → Prop
 
@@ -155,17 +155,21 @@ structure DictLaws (S : Presentation) (P : DictPresentation S) : Prop where
     P.csMem (P.coupledState θ reg mem) = mem
   coupledState_eta : ∀ {Seed : Type} {r : ℕ} (p : P.CoupledState Seed r),
     P.coupledState (P.csSeed p) (P.csReg p) (P.csMem p) = p
-  prepareDictRegs_get : ∀ {r U : ℕ} (baseReg tagReg keyReg valReg : Fin r)
+  prepareDictRegs_get : ∀ {r U : ℕ} (clearScratch : Bool) (baseReg tagReg keyReg valReg : Fin r)
     (u : Fin U) (reg : Fin r → ℕ) (i : Fin r),
-    P.prepareDictRegs baseReg tagReg keyReg valReg (P.get u) reg i =
-      if decide (i ≠ baseReg) then
-        if i = tagReg then 0 else if i = keyReg then u.val else 0
+    P.prepareDictRegs clearScratch baseReg tagReg keyReg valReg (P.get u) reg i =
+      if i = tagReg then 0
+      else if i = keyReg then u.val
+      else if i = valReg then 0
+      else if clearScratch && decide (i ≠ baseReg) then 0
       else reg i
-  prepareDictRegs_insert : ∀ {r U : ℕ} (baseReg tagReg keyReg valReg : Fin r)
+  prepareDictRegs_insert : ∀ {r U : ℕ} (clearScratch : Bool) (baseReg tagReg keyReg valReg : Fin r)
     (u : Fin U) (v : ℕ) (reg : Fin r → ℕ) (i : Fin r),
-    P.prepareDictRegs baseReg tagReg keyReg valReg (P.insert u v) reg i =
-      if decide (i ≠ baseReg) then
-        if i = tagReg then 1 else if i = keyReg then u.val else if i = valReg then v else 0
+    P.prepareDictRegs clearScratch baseReg tagReg keyReg valReg (P.insert u v) reg i =
+      if i = tagReg then 1
+      else if i = keyReg then u.val
+      else if i = valReg then v
+      else if clearScratch && decide (i ≠ baseReg) then 0
       else reg i
   opOutputCorrect_get : ∀ {r U : ℕ} (outReg : Fin r) (s : Fin U → Option ℕ)
     (u : Fin U) (reg : Fin r → ℕ),
@@ -175,26 +179,26 @@ structure DictLaws (S : Presentation) (P : DictPresentation S) : Prop where
     (u : Fin U) (v : ℕ) (reg : Fin r → ℕ),
     P.OpOutputCorrect outReg s (P.insert u v) reg ↔ True
   execDictOps_nil : ∀ {Seed : Type} {r U : ℕ} (w : ℕ) (p_op : List (S.Instr r))
-    (baseReg tagReg keyReg valReg outReg : Fin r) (base sp : ℕ) (s : Fin U → Option ℕ)
-    (μ : PMF (P.CoupledState Seed r)),
-    P.ExecDictOps w p_op baseReg tagReg keyReg valReg outReg base sp s [] μ μ 0
+    (clearScratch : Bool) (baseReg tagReg keyReg valReg outReg : Fin r) (base sp : ℕ)
+    (s : Fin U → Option ℕ) (μ : PMF (P.CoupledState Seed r)),
+    P.ExecDictOps w p_op clearScratch baseReg tagReg keyReg valReg outReg base sp s [] μ μ 0
   execDictOps_cons : ∀ {Seed : Type} {r U : ℕ} {w : ℕ} {p_op : List (S.Instr r)}
-    {baseReg tagReg keyReg valReg outReg : Fin r} {base sp : ℕ}
+    {clearScratch : Bool} {baseReg tagReg keyReg valReg outReg : Fin r} {base sp : ℕ}
     {s : Fin U → Option ℕ} {o : P.DictOp U} {ops : List (P.DictOp U)}
     {μ μ_final : PMF (P.CoupledState Seed r)} {T_rest : ℝ≥0∞}
     (T_step : P.CoupledState Seed r → ℝ≥0∞)
     (μ_step : P.CoupledState Seed r → PMF (P.CoupledState Seed r)),
     (∀ p ∈ μ.support,
       P.ExecProgramDist w p_op outReg
-        (P.prepareDictRegs baseReg tagReg keyReg valReg o (P.csReg p)) (P.csMem p)
+        (P.prepareDictRegs clearScratch baseReg tagReg keyReg valReg o (P.csReg p)) (P.csMem p)
         ((μ_step p).map P.toRegMem) (T_step p) ∧
       ∀ q ∈ (μ_step p).support,
         DictPresentation.WordBounded w (P.csReg q) (P.csMem q) ∧
         P.OpOutputCorrect outReg s o (P.csReg q) ∧
         DictPresentation.UnchangedOutside base sp (P.csMem p) (P.csMem q)) →
-    P.ExecDictOps w p_op baseReg tagReg keyReg valReg outReg base sp
+    P.ExecDictOps w p_op clearScratch baseReg tagReg keyReg valReg outReg base sp
       (P.stepDict s o) ops (μ.bind μ_step) μ_final T_rest →
-    P.ExecDictOps w p_op baseReg tagReg keyReg valReg outReg base sp
+    P.ExecDictOps w p_op clearScratch baseReg tagReg keyReg valReg outReg base sp
       s (o :: ops) μ μ_final ((∑' p, μ p * T_step p) + T_rest)
 
 /-! ### Correspondence Lemmas for `DictPresentation` -/
@@ -325,27 +329,27 @@ theorem compile_execStepsOfFn {S : Presentation} (hS : Laws S)
     {params : Fin k_init → ℕ}
     {s₀ : (Dictionary.spec U V n_max).State}
     (C : Randomized.SubroutineDS Sub (Dictionary.spec U V n_max) w base params s₀)
-    (baseReg tagReg keyReg valReg outReg : Fin r_ds)
+    (clearScratch : Bool) (baseReg tagReg keyReg valReg outReg : Fin r_ds)
     (hprep : ∀ (o : Dictionary.Op U) (d : Data r_ds),
       (C.toDynamicProgram.prepare o d).regs =
-        P.prepareDictRegs baseReg tagReg keyReg valReg (P.dictOpOf o) d.regs)
+        P.prepareDictRegs clearScratch baseReg tagReg keyReg valReg (P.dictOpOf o) d.regs)
     (hdec : ∀ (s : Dictionary.State U) (o : Dictionary.Op U) (regs : Fin r_ds → ℕ),
       C.decode o regs = some ((Dictionary.spec U V n_max).stepFn s o).2 →
         P.OpOutputCorrect outReg s (P.dictOpOf o) regs)
     {s : (Dictionary.spec U V n_max).State} {ops : List (Dictionary.spec U V n_max).Op}
     {ν ν_final : PMF (C.Seed × Data r_ds)} {T_ops : ℝ≥0∞}
     (hex : C.ExecStepsOfFn s ops ν ν_final T_ops) :
-    P.ExecDictOps w (S.programOf (Sub.code.program outReg))
+    P.ExecDictOps w (S.programOf (Sub.code.program outReg)) clearScratch
       baseReg tagReg keyReg valReg outReg base C.space s (ops.map P.dictOpOf)
       (ν.map P.coupledStateOf) (ν_final.map P.coupledStateOf) T_ops := by
   refine @Randomized.SubroutineDS.ExecStepsOfFn.rec .exact r_ds k_init w base Sub
     (Dictionary.spec U V n_max) params s₀ C (Dictionary.spec U V n_max).stepFn inferInstance
     (fun s ops ν ν_final T_ops _ =>
-      P.ExecDictOps w (S.programOf (Sub.code.program outReg))
+      P.ExecDictOps w (S.programOf (Sub.code.program outReg)) clearScratch
         baseReg tagReg keyReg valReg outReg base C.space s (ops.map P.dictOpOf)
         (ν.map P.coupledStateOf) (ν_final.map P.coupledStateOf) T_ops)
     (fun s ν =>
-      hP.execDictOps_nil w _ baseReg tagReg keyReg valReg outReg base C.space s
+      hP.execDictOps_nil w _ clearScratch baseReg tagReg keyReg valReg outReg base C.space s
         (ν.map P.coupledStateOf))
     (fun {s o ops ν ν_final μ_step T_step T_rest} hstep _ ih => ?_)
     s ops ν ν_final T_ops hex
@@ -386,7 +390,7 @@ theorem compile_execStepsOfFn {S : Presentation} (hS : Laws S)
         hP.csMem_mk p.1 p.2.regs p.2.mem
       have hprep_data :
           C.toDynamicProgram.prepare o p.2 =
-            ⟨P.prepareDictRegs baseReg tagReg keyReg valReg (P.dictOpOf o)
+            ⟨P.prepareDictRegs clearScratch baseReg tagReg keyReg valReg (P.dictOpOf o)
               (P.csReg (P.coupledStateOf p)), P.csMem (P.coupledStateOf p)⟩ := by
         ext : 1
         · rw [hreg_p]
@@ -462,7 +466,7 @@ theorem chainedHashing (S : Presentation) (hS : Laws S)
             ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (P.CoupledState Seed 22)),
               P.ExecProgramDist w p_init ⟨10, by decide⟩ reg₀ mem₀
                 (μ_init.map P.toRegMem) 16 ∧
-              P.ExecDictOps w p_op
+              P.ExecDictOps w p_op true
                 ⟨5, by decide⟩ ⟨7, by decide⟩ ⟨8, by decide⟩ ⟨9, by decide⟩ ⟨10, by decide⟩
                 base (chainedSpace n_max) (DictPresentation.emptyDict U) ops
                 μ_init μ_final T_ops ∧
@@ -490,7 +494,7 @@ theorem chainedHashing (S : Presentation) (hS : Laws S)
   refine ⟨C.Seed, T_ops, ν₀.map P.coupledStateOf, ν_final.map P.coupledStateOf, ?_, ?_, ?_⟩
   · rw [map_coupledStateOf_toRegMem hP]
     exact compile_execCodeDist hS hP ⟨10, by decide⟩ he_init
-  · refine compile_execStepsOfFn hS hP C
+  · refine compile_execStepsOfFn hS hP C true
       ⟨5, by decide⟩ ⟨7, by decide⟩ ⟨8, by decide⟩ ⟨9, by decide⟩ ⟨10, by decide⟩
       (fun o d => ?_) (fun s o regs hdec => ?_) hex_steps
     · funext i
@@ -498,11 +502,19 @@ theorem chainedHashing (S : Presentation) (hS : Laws S)
       | get u =>
         dsimp only [DictPresentation.dictOpOf]
         rw [hP.prepareDictRegs_get]
-        rfl
+        change (if decide (i ≠ ⟨5, by decide⟩) then
+          if i = ⟨7, by decide⟩ then 0 else if i = ⟨8, by decide⟩ then u.val else 0
+        else d.regs i) = _
+        fin_cases i <;> rfl
       | insert u v =>
         dsimp only [DictPresentation.dictOpOf]
         rw [hP.prepareDictRegs_insert]
-        rfl
+        change (if decide (i ≠ ⟨5, by decide⟩) then
+          if i = ⟨7, by decide⟩ then 1
+          else if i = ⟨8, by decide⟩ then u.val
+          else if i = ⟨9, by decide⟩ then v else 0
+        else d.regs i) = _
+        fin_cases i <;> rfl
     · cases o with
       | get u =>
         dsimp only [DictPresentation.dictOpOf]
@@ -516,5 +528,238 @@ theorem chainedHashing (S : Presentation) (hS : Laws S)
         trivial
   · rw [List.length_map]
     simpa only [ChainedHash.chargeVal, Nat.cast_add, Nat.cast_ofNat] using hbound
+
+/-! ## Part 3: Linear Probing with `5`-Wise Independent Hashing (`LinearProbing.lean`) -/
+
+open ComplexityAbstracts.HashFamiliesBridge
+  (chunkBits chunkBits_eq trinomialStepLoop trinomialStep trinomialStep_eq
+   trinomialDeg trinomialDeg_eq)
+
+/-- Number of `chunkBits n_max`-bit limbs `⌈trinomialDeg U M / chunkBits n_max⌉`. -/
+def limbCount (n_max U M : ℕ) : ℕ :=
+  (trinomialDeg U M + chunkBits n_max - 1) / chunkBits n_max
+
+theorem limbCount_eq (n_max U M : ℕ) :
+    limbCount n_max U M = Cslib.Algorithms.WordRAM.Hashing.KWise.limbCount n_max U M := by
+  unfold limbCount Cslib.Algorithms.WordRAM.Hashing.KWise.limbCount
+    Cslib.Algorithms.WordRAM.Hashing.KWise.limbCountFromB
+  rw [trinomialDeg_eq, chunkBits_eq]
+
+/-- Memory footprint `8 + k + 2 ^ (2 * chunkBits n_max)` of the `k`-wise polynomial hash table. -/
+def kWiseSpace (n_max k : ℕ) : ℕ :=
+  8 + k + 2 ^ (2 * chunkBits n_max)
+
+theorem kWiseSpace_eq (n_max k : ℕ) :
+    kWiseSpace n_max k = Cslib.Algorithms.WordRAM.Hashing.KWise.space n_max k := by
+  unfold kWiseSpace Cslib.Algorithms.WordRAM.Hashing.KWise.space
+    Cslib.Algorithms.WordRAM.Hashing.KWise.spaceFromB
+  rw [chunkBits_eq]
+
+/-- Deterministic lookup-table setup step count for `KWise.initTableCode`. -/
+def kWiseInitTableSteps (n_max U M : ℕ) : ℕ :=
+  19 * 2 ^ (2 * chunkBits n_max) +
+    4 * Nat.log 2 (max n_max 2) +
+    5 * Nat.clog 2 (max U 2) +
+    5 * trinomialStep U M + 69
+
+theorem kWiseInitTableSteps_eq (n_max U M : ℕ) :
+    kWiseInitTableSteps n_max U M =
+      Cslib.Algorithms.WordRAM.Hashing.KWise.initTableSteps n_max U M := by
+  unfold kWiseInitTableSteps Cslib.Algorithms.WordRAM.Hashing.KWise.initTableSteps
+  rw [chunkBits_eq, trinomialStep_eq]
+
+/-- Deterministic instruction budget for `KWise.evalCode k`. -/
+def kWiseEvalSteps (n_max U M k : ℕ) : ℕ :=
+  ((11 * limbCount n_max U M + 12) * limbCount n_max U M + 30) * k + 19
+
+theorem kWiseEvalSteps_eq (n_max U M k : ℕ) :
+    kWiseEvalSteps n_max U M k =
+      Cslib.Algorithms.WordRAM.Hashing.KWise.evalSteps n_max U M k := by
+  unfold kWiseEvalSteps Cslib.Algorithms.WordRAM.Hashing.KWise.evalSteps
+    Cslib.Algorithms.WordRAM.Hashing.KWise.evalStepsFromB
+  rw [limbCount_eq]
+  rfl
+
+/-- Power-of-2 table bit-width `⌈log₂(max (8 * n_max) 8)⌉` for linear probing. -/
+def lpTableLog (n_max : ℕ) : ℕ :=
+  Nat.clog 2 (max (8 * n_max) 8)
+
+theorem lpTableLog_eq (n_max : ℕ) : lpTableLog n_max = LinearProbing.tableLog n_max := rfl
+
+/-- Power-of-2 table size `2 ^ lpTableLog n_max` for linear probing. -/
+def lpTableSize (n_max : ℕ) : ℕ :=
+  2 ^ lpTableLog n_max
+
+theorem lpTableSize_eq (n_max : ℕ) : lpTableSize n_max = LinearProbing.tableSize n_max := rfl
+
+/-- Memory footprint `kWiseSpace n_max 5 + 3 * lpTableSize n_max` of linear probing. -/
+def lpSpace (n_max : ℕ) : ℕ :=
+  kWiseSpace n_max 5 + 3 * lpTableSize n_max
+
+theorem lpSpace_eq (n_max : ℕ) : lpSpace n_max = LinearProbing.space n_max := by
+  unfold lpSpace LinearProbing.space
+  rw [kWiseSpace_eq, lpTableSize_eq]
+
+/-- Linear space bound `lpSpace n_max ≤ 209 * (n_max + 1)` across all capacities `n_max`. -/
+theorem linearProbingSpace_le (n_max : ℕ) : lpSpace n_max ≤ 209 * (n_max + 1) := by
+  rw [lpSpace_eq]
+  have hle := LinearProbing.space_le n_max
+  have hmax : max n_max 4 ≤ 4 * (n_max + 1) := by omega
+  omega
+
+/-- Expected instruction count `3 + (kWiseInitTableSteps n_max U (lpTableLog n_max) + 38)` for
+linear-probing fresh initialization. -/
+def lpInitSteps (U n_max : ℕ) : ℕ :=
+  3 + (kWiseInitTableSteps n_max U (lpTableLog n_max) + 38)
+
+theorem lpInitSteps_eq (U n_max : ℕ) :
+    lpInitSteps U n_max = 3 + LinearProbing.setupTime U n_max := by
+  unfold lpInitSteps LinearProbing.setupTime
+  rw [kWiseInitTableSteps_eq, lpTableLog_eq]
+
+/-- Expected per-operation instruction charge `kWiseEvalSteps n_max U (lpTableLog n_max) 5 + 3483`
+for linear probing. -/
+def lpOpCharge (U n_max : ℕ) : ℕ :=
+  kWiseEvalSteps n_max U (lpTableLog n_max) 5 + 12 * 288 + 27
+
+theorem lpOpCharge_eq (U n_max : ℕ) : lpOpCharge U n_max = LinearProbing.charge U n_max := by
+  unfold lpOpCharge LinearProbing.charge
+  rw [kWiseEvalSteps_eq, lpTableLog_eq]
+
+/-- Uniform `O(1)` per-operation instruction bound `559652` for linear probing at `c_exp = 4`. -/
+def lpOpChargeBound : ℕ :=
+  559652
+
+private theorem lpTableLog_le_clog (n_max : ℕ) :
+    LinearProbing.tableLog n_max ≤ max 4 1 * Nat.clog 2 (max n_max 4) + 5 := by
+  have h1 : LinearProbing.tableLog n_max ≤ Nat.clog 2 (max n_max 4) + 3 := by
+    unfold LinearProbing.tableLog
+    refine Nat.clog_le_of_le_pow ?_
+    calc max (8 * n_max) 8
+        ≤ 8 * max n_max 4 := by omega
+      _ ≤ 8 * 2 ^ Nat.clog 2 (max n_max 4) :=
+          Nat.mul_le_mul_left 8 (Nat.le_pow_clog (by decide) _)
+      _ = 2 ^ (Nat.clog 2 (max n_max 4) + 3) := by ring
+  change LinearProbing.tableLog n_max ≤ 4 * Nat.clog 2 (max n_max 4) + 5
+  omega
+
+/-- Whenever `U ≤ max n_max 4 ^ 4`, the per-operation expected instruction charge
+`lpOpCharge U n_max` of linear probing is bounded by `lpOpChargeBound = 559652`, independently of
+`n_max` and `U`. -/
+theorem linearProbingCharge_le {U n_max : ℕ} (hU : U ≤ max n_max 4 ^ 4) :
+    lpOpCharge U n_max ≤ lpOpChargeBound := by
+  rw [lpOpCharge_eq]
+  have hL :
+      Cslib.Algorithms.WordRAM.Hashing.KWise.limbCount n_max U (LinearProbing.tableLog n_max) ≤
+        Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.provableLimbBound 4 :=
+    Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.limbCount_le_provableLimbBound
+      hU (lpTableLog_le_clog n_max)
+  have hL100 :
+      Cslib.Algorithms.WordRAM.Hashing.KWise.limbCount n_max U (LinearProbing.tableLog n_max) ≤
+        100 := by
+    simpa [Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.provableLimbBound] using hL
+  unfold LinearProbing.charge Cslib.Algorithms.WordRAM.Hashing.KWise.evalSteps
+    Cslib.Algorithms.WordRAM.Hashing.KWise.evalStepsFromB lpOpChargeBound
+  change ((11 * Cslib.Algorithms.WordRAM.Hashing.KWise.limbCount n_max U
+        (LinearProbing.tableLog n_max) + 12) *
+      Cslib.Algorithms.WordRAM.Hashing.KWise.limbCount n_max U (LinearProbing.tableLog n_max) +
+        30) * 5 + 19 + 12 * 288 + 27 ≤ 559652
+  nlinarith
+
+/-- Headline bridge theorem for linear probing (`LinearProbing.seq_expected_amortized`) at
+`c_exp = 4`. -/
+theorem linearProbing (S : Presentation) (hS : Laws S)
+    (P : DictPresentation S) (hP : DictLaws S P) :
+    ∀ (U V n_max w base : ℕ),
+      U ≤ max n_max 4 ^ 4 →
+      2 * trinomialDeg U (lpTableLog n_max) ≤ w →
+      base + lpSpace n_max < 2 ^ w →
+      V < 2 ^ w →
+      ∃ (p_init p_op : List (S.Instr 24)),
+        ∀ (reg₀ : Fin 24 → ℕ) (mem₀ : ℕ → ℕ),
+          DictPresentation.WordBounded w reg₀ mem₀ →
+          reg₀ ⟨18, by decide⟩ = base →
+          (∀ a, base ≤ a → a < base + lpSpace n_max → mem₀ a = 0) →
+          ∀ ops : List (P.DictOp U),
+            P.ValidDictHistory V n_max (DictPresentation.emptyDict U) ops →
+            ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (P.CoupledState Seed 24)),
+              P.ExecProgramDist w p_init ⟨2, by decide⟩ reg₀ mem₀
+                (μ_init.map P.toRegMem) (lpInitSteps U n_max) ∧
+              P.ExecDictOps w p_op false
+                ⟨0, by decide⟩ ⟨22, by decide⟩ ⟨1, by decide⟩ ⟨23, by decide⟩ ⟨2, by decide⟩
+                base (lpSpace n_max) (DictPresentation.emptyDict U) ops
+                μ_init μ_final T_ops ∧
+              (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
+                ((lpInitSteps U n_max + ops.length * lpOpCharge U n_max : ℕ) : ℝ≥0∞) ∧
+              (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
+                ((lpInitSteps U n_max + ops.length * lpOpChargeBound : ℕ) : ℝ≥0∞) := by
+  intro U V n_max w base hU hw hfit_space hfit_V
+  have hw_lib : 2 * Cslib.Probability.trinomialDeg U (LinearProbing.tableLog n_max) ≤ w := by
+    rwa [← trinomialDeg_eq, ← lpTableLog_eq]
+  have hfit_space_lib : Fits w (base + LinearProbing.space n_max) := by
+    rwa [← lpSpace_eq]
+  let Sub := LinearProbing.subroutineCode U n_max
+  let C := LinearProbing.subroutineDS U V n_max w base hw_lib hfit_space_lib hfit_V
+  refine ⟨S.programOf (Sub.initFresh.program ⟨2, by decide⟩),
+    S.programOf (Sub.code.program ⟨2, by decide⟩), ?_⟩
+  intro reg₀ mem₀ hbdd₀ hfr₀ hz₀ ops hv_abs
+  obtain ⟨ops_lib, rfl⟩ := ops_surjective P ops
+  have hv_lib : (Dictionary.spec U V n_max).ValidHistory (Dictionary.empty U) ops_lib :=
+    (validDictHistory_map_dictOpOf hP (DictPresentation.emptyDict U) ops_lib).mp hv_abs
+  have hz_lib : ∀ a ∈ (Block.mk base (LinearProbing.space n_max)).footprint, mem₀ a = 0 := by
+    intro a ha
+    rw [Block.mem_footprint, Block.Owns, ← lpSpace_eq] at ha
+    exact hz₀ a ha.1 ha.2
+  obtain ⟨ν₀, ν_final, T_ops, he_init, hex_steps, hbound⟩ :=
+    LinearProbing.seq_expected_amortized U V n_max w base hw_lib hfit_space_lib hfit_V
+      (x₀ := ⟨reg₀, mem₀⟩) hbdd₀ hfr₀ hz_lib ops_lib hv_lib
+  rw [← lpInitSteps_eq] at he_init hbound
+  refine ⟨LinearProbing.Seed U n_max, T_ops,
+    ν₀.map (P.coupledStateOf (r := 24)), ν_final.map (P.coupledStateOf (r := 24)),
+    ?_, ?_, ?_, ?_⟩
+  · rw [map_coupledStateOf_toRegMem hP (r := 24)]
+    exact compile_execCodeDist hS hP ⟨2, by decide⟩ he_init
+  · rw [lpSpace_eq]
+    exact compile_execStepsOfFn hS hP C false
+      ⟨0, by decide⟩ ⟨22, by decide⟩ ⟨1, by decide⟩ ⟨23, by decide⟩ ⟨2, by decide⟩
+      (fun o d => by
+        funext i
+        cases o with
+        | get u =>
+          dsimp only [DictPresentation.dictOpOf]
+          rw [hP.prepareDictRegs_get]
+          change (if decide (i = ⟨1, by decide⟩ ∨ i = ⟨22, by decide⟩ ∨ i = ⟨23, by decide⟩) then
+            if i = ⟨1, by decide⟩ then u.val else 0
+          else d.regs i) = _
+          fin_cases i <;> rfl
+        | insert u v =>
+          dsimp only [DictPresentation.dictOpOf]
+          rw [hP.prepareDictRegs_insert]
+          change (if decide (i = ⟨1, by decide⟩ ∨ i = ⟨22, by decide⟩ ∨ i = ⟨23, by decide⟩) then
+            if i = ⟨1, by decide⟩ then u.val
+            else if i = ⟨22, by decide⟩ then 1
+            else if i = ⟨23, by decide⟩ then v else 0
+          else d.regs i) = _
+          fin_cases i <;> rfl)
+      (fun s o regs hdec => by
+        cases o with
+        | get u =>
+          dsimp only [DictPresentation.dictOpOf]
+          rw [hP.opOutputCorrect_get]
+          change some (if regs ⟨2, by decide⟩ = 0 then none
+            else some (regs ⟨2, by decide⟩ - 1)) = some (s u) at hdec
+          exact Option.some.inj hdec
+        | insert u v =>
+          dsimp only [DictPresentation.dictOpOf]
+          rw [hP.opOutputCorrect_insert]
+          trivial)
+      hex_steps
+  · rw [List.length_map, lpOpCharge_eq]
+    exact hbound
+  · rw [List.length_map]
+    refine hbound.trans ?_
+    rw [← lpOpCharge_eq]
+    exact Nat.cast_le.mpr (Nat.add_le_add_left
+      (Nat.mul_le_mul_left _ (linearProbingCharge_le hU)) _)
 
 end ComplexityAbstracts.HashTablesBridge
