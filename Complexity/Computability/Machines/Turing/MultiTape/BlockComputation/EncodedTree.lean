@@ -24,7 +24,8 @@ complete simulator resource certificate remain separate obligations.
 ## References
 
 * [R. Williams, *Simulating Time With Square-Root Space*][Williams2025], arXiv v1, §3.2,
-  “Finishing”: unfold the decreasing computation into a tree. Here `q` intervals of `b` steps
+  “Construct a Tree Evaluation Instance”: unfold the decreasing computation into a tree.
+  Here `q` intervals of `b` steps
   give height `q`, fan-in `3*k+1`, and the explicit `Encoding.width k s b` Boolean value width.
   The aligned three-window model and source padding are library adaptations; this wrapper
   does not claim the paper's native time-space simulation theorem.
