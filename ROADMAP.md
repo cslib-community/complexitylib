@@ -119,10 +119,6 @@ families and full-input native runtime.
 - **Sigma protocols and Fiat–Shamir** ([#581]): computational Schnorr signatures under discrete
   log against strict PPT forgers; eavesdropping security in the strict-PPT model, with the
   statistical-distance term from sampling `ZMod q`.
-- **Diffie–Hellman and ElGamal:** arbitrary-key-length standalone symmetric-cipher bridge for
-  general-cipher Hashed ElGamal (Boneh–Shoup Theorem 11.5; the general-cipher construction,
-  Game 0/1/2 hybrids, Equation `(11.14)` reductions, and normalized `n`-bit-key `DEMOneTimeINDCPAOn`
-  / `linearHashKDF` endpoints have landed) ([#1047]).
 - **Chosen-ciphertext security** ([#1885]): multi-challenge CCA from the single-challenge
   Cramer–Shoup theorem.
 - **Lattices**: Fiat–Shamir with aborts and signatures from SIS (Lyubashevsky 2009,
@@ -379,9 +375,14 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Circuit lower bounds from refuting ETH** ([#1539]): `E^NP ⊄ SIZE(O(n))`, and a language in
   `E^NP` whose fan-in-two circuits need more than `c n √log n` gates infinitely often, by
   Williams's witness-circuit argument with the library's #CircuitSAT counters. `E^NP` is defined,
-  and the witness bits of formulas prepared in time `2^O(n)` are in `E^NP`; still open are an
-  exponential nondeterministic time separation, a succinct tableau reduction with a linear-size
-  decoder, and the core theorem.
+  and the witness bits of formulas prepared in time `2^O(n)` are in `E^NP`.
+  `FineGrained.CircuitLowerBoundBudget` proves the counter's quantitative budget for three
+  circuits of size `n √⌊log₂(n+2)⌋ / (12(A+1))` plus linear overhead; the integer arithmetic,
+  polynomial-time computation of this size cap, and rescaling to coefficient
+  `1 / (24(A+1)d)` at framed lengths `d n` are checked. The exponential nondeterministic time
+  hierarchy has landed. Still open are connecting its separating language to the framed witness
+  preparation, uniformly constructing the linear-size decoder and checker, and completing the
+  nondeterministic simulation for the full separation theorem.
 - Uniform and nonuniform NC, AC and TC, circuit-to-machine bridges, algorithm-to-lower-bound
   arguments, and barriers such as natural proofs and algebrization. NC simulation of unrestricted
   `TCⁱ` needs Muroga's threshold weight-bounding theorem.
@@ -620,12 +621,16 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   expected-time rules for unbounded almost-surely terminating structured loops; random-tape
   equivalence and BPP/RP/ZPP simulation bridges for the randomized word RAM ([#1124]); transfer
   of cell-probe lower bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
-- **Direct 3SUM adaptation** ([#1394]): global parameter and prime selection, including the
-  native cyclic-Strassen modular counter ([#1701]); unrestricted small geometry; the aggregate
+- **Direct 3SUM adaptation** ([#1394]): global parameter and prime selection, using the
+  concrete native cyclic-Strassen modular counter ([#1701]); unrestricted small geometry; the aggregate
   subcubic Exact Triangle bound and source exponent; and the unconditional ordinary-3SUM
   input/time/width/asymptotic composition, including the improved Section 4 route to exponent
   1.9992. These build on the native Chan–He preprocessing, queried thin products, fixed-prime
-  Exact Triangle solving and the conditional Convolution-3SUM host.
+  Exact Triangle solving and the conditional Convolution-3SUM host. The counter computes its
+  own residues, padding/table, seven-product recursion and exact raw modular count, within
+  `3704*(p+1)²*(n+1)^2.81` instructions including halt. Its source-regime admission and
+  width-independent prefix bounds are proved; selecting the actual minimum-count prime and
+  the global endpoint remain separate.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
@@ -756,7 +761,6 @@ not planned, not as proved.
 [#999]: https://github.com/cslib-community/complexitylib/issues/999
 [#1001]: https://github.com/cslib-community/complexitylib/issues/1001
 [#1002]: https://github.com/cslib-community/complexitylib/issues/1002
-[#1047]: https://github.com/cslib-community/complexitylib/issues/1047
 [#1104]: https://github.com/cslib-community/complexitylib/issues/1104
 [#1124]: https://github.com/cslib-community/complexitylib/issues/1124
 [#1155]: https://github.com/cslib-community/complexitylib/issues/1155

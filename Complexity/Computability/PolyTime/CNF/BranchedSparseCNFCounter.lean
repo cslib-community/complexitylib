@@ -112,7 +112,7 @@ formulas (`leafDensityRatio k N * N < ψ.length`, including `[[]]` at `N = 0`) t
 `sparseCNFDeclaredCounter` backed by `branchedPolyCounter`. -/
 def branchedSparseCNFDeclaredCounter (k N₀_leaf N₀_top N₀_branch : ℕ)
     (branchEval : BranchEvalInput → ℕ) (x : (Unit × ℕ) × CNF ℕ) : ℕ :=
-  let N := x.1.2; let B := leafDensityRatio k N; let ψ := x.2
+  let ((_, N), ψ) := x; let B := leafDensityRatio k N
   if validDeclaredInput k N ψ && decide (B * N < ψ.length) then countCNFExhaustive (N, ψ)
   else sparseCNFDeclaredCounter Prod.snd (fun p : Unit × ℕ => leafDensityRatio k p.2)
     k (max 1 N₀_leaf) (branchedPolyCounter k N₀_top N₀_branch branchEval) x
@@ -236,7 +236,8 @@ theorem computableInPolyTime_leafDensityRatio (k : ℕ) :
 /-- **Unconditional declared-range output cap**: `branchedSparseCNFDeclaredCounter ≤ 2 ^ x.1.2`. -/
 theorem branchedSparseCNFDeclaredCounter_le_two_pow (k N₀_leaf N₀_top N₀_branch : ℕ)
     (branchEval : BranchEvalInput → ℕ) (x : (Unit × ℕ) × CNF ℕ) :
-    branchedSparseCNFDeclaredCounter k N₀_leaf N₀_top N₀_branch branchEval x ≤ 2 ^ x.1.2 := by
+    let ((_, N), _) := x
+    branchedSparseCNFDeclaredCounter k N₀_leaf N₀_top N₀_branch branchEval x ≤ 2 ^ N := by
   unfold branchedSparseCNFDeclaredCounter; dsimp only; split_ifs
   · rw [countCNFExhaustive_eq_modelCountOn_range, CNF.modelCountOn]
     refine (Finset.card_filter_le _ _).trans ?_
@@ -311,7 +312,7 @@ theorem branchedSparseCNFDeclaredCounter_exhaustive_eq_modelCountOn
     (k N₀_leaf N₀_top N₀_branch : ℕ) (c : Unit) (N : ℕ) (ψ : CNF ℕ)
     (hw : ∀ cl ∈ ψ, cl.length ≤ k) (hsub : ψ.vars.toFinset ⊆ Finset.range N) :
     branchedSparseCNFDeclaredCounter k N₀_leaf N₀_top N₀_branch
-        (fun inp => countSystemExhaustive (inp.1.1, inp.2.2.2)) ((c, N), ψ) =
+        (fun ((n', _), _, _, eqs') => countSystemExhaustive (n', eqs')) ((c, N), ψ) =
       ψ.modelCountOn (Finset.range N) :=
   branchedSparseCNFDeclaredCounter_eq_modelCountOn
     (fun n' eqs' _ => countSystemExhaustive_eq_rootCount n' eqs') c N ψ hw hsub
@@ -322,7 +323,7 @@ theorem branchedSparseCNFLeafCounter_exhaustive_eq_modelCount
     (k N₀_leaf N₀_top N₀_branch : ℕ) (c : Unit) (N : ℕ) (ψ : CNF ℕ)
     (hw : ∀ cl ∈ ψ, cl.length ≤ k) (hsub : ψ.vars.toFinset ⊆ Finset.range N) :
     branchedSparseCNFLeafCounter k N₀_leaf N₀_top N₀_branch
-        (fun inp => countSystemExhaustive (inp.1.1, inp.2.2.2)) ((c, N), ψ) =
+        (fun ((n', _), _, _, eqs') => countSystemExhaustive (n', eqs')) ((c, N), ψ) =
       ψ.modelCount :=
   branchedSparseCNFLeafCounter_eq_modelCount
     (fun n' eqs' _ => countSystemExhaustive_eq_rootCount n' eqs') c N ψ hw hsub
@@ -988,15 +989,17 @@ theorem exists_threshold_branchedSparseCNF_time_bound (k N₀_top N₀_branch : 
     (hbr_time : BranchPolylogTimeBound N₀_branch cBranch) :
     ∃ N_min : ℕ, 16384 ≤ N_min ∧ ∀ N₀_leaf : ℕ, N_min ≤ N₀_leaf →
       ∃ C_t d_t A_t : ℕ, 1 ≤ A_t ∧
-        ∀ x : (Unit × ℕ) × CNF ℕ, x.2.length ≤ leafOccBound k x.1.2 * x.1.2 + 1 →
-          ((branchedSparseCNFDeclaredCertificate k N₀_leaf N₀_top N₀_branch
-              cBranch hbound).time x : ℝ) ≤
-            (C_t : ℝ) * ((encPair (encPair encUnit encUnary) encCNF x).length + 1 : ℝ) ^ d_t *
-              (2 : ℝ) ^ ((A_t : ℝ) * interpolationScale x.1.2) ∧
-          ((branchedSparseCNFLeafCertificate k N₀_leaf N₀_top N₀_branch
-              cBranch hbound).time x : ℝ) ≤
-            (C_t : ℝ) * ((encPair (encPair encUnit encUnary) encCNF x).length + 1 : ℝ) ^ d_t *
-              (2 : ℝ) ^ ((A_t : ℝ) * interpolationScale x.1.2) := by
+        ∀ x : (Unit × ℕ) × CNF ℕ,
+          let ((_, N), ψ) := x
+          ψ.length ≤ leafOccBound k N * N + 1 →
+            ((branchedSparseCNFDeclaredCertificate k N₀_leaf N₀_top N₀_branch
+                cBranch hbound).time x : ℝ) ≤
+              (C_t : ℝ) * ((encPair (encPair encUnit encUnary) encCNF x).length + 1 : ℝ) ^ d_t *
+                (2 : ℝ) ^ ((A_t : ℝ) * interpolationScale N) ∧
+            ((branchedSparseCNFLeafCertificate k N₀_leaf N₀_top N₀_branch
+                cBranch hbound).time x : ℝ) ≤
+              (C_t : ℝ) * ((encPair (encPair encUnit encUnary) encCNF x).length + 1 : ℝ) ^ d_t *
+                (2 : ℝ) ^ ((A_t : ℝ) * interpolationScale N) := by
   obtain ⟨N_sys, C_sys, d_sys, A_sys, hNsys16, hSysT⟩ :=
     polySys_time_bound_of_branchPolylog k N₀_top N₀_branch cBranch hbound hbr_time
   obtain ⟨C_B, hCB⟩ := exists_leafDensityRatio_le_mul_clog_pow k; set β_B := 2 * (max 2 k - 1)
@@ -1156,15 +1159,17 @@ theorem exists_branchedSparseCNF_time_bound (k N₀_branch : ℕ)
     (hs_br : PolyBounded (fun x => (encBranchEvalInput x).length) cBranch.space)
     (hbr_time : BranchPolylogTimeBound N₀_branch cBranch) :
     ∃ N₀_leaf N₀_top C_t d_t A_t : ℕ, 1 ≤ A_t ∧
-      ∀ x : (Unit × ℕ) × CNF ℕ, x.2.length ≤ leafOccBound k x.1.2 * x.1.2 + 1 →
-        ((branchedSparseCNFDeclaredCertificate k N₀_leaf N₀_top N₀_branch
-            cBranch hbound).time x : ℝ) ≤
-          (C_t : ℝ) * ((encPair (encPair encUnit encUnary) encCNF x).length + 1 : ℝ) ^ d_t *
-            (2 : ℝ) ^ ((A_t : ℝ) * interpolationScale x.1.2) ∧
-        ((branchedSparseCNFLeafCertificate k N₀_leaf N₀_top N₀_branch
-            cBranch hbound).time x : ℝ) ≤
-          (C_t : ℝ) * ((encPair (encPair encUnit encUnary) encCNF x).length + 1 : ℝ) ^ d_t *
-            (2 : ℝ) ^ ((A_t : ℝ) * interpolationScale x.1.2) := by
+      ∀ x : (Unit × ℕ) × CNF ℕ,
+        let ((_, N), ψ) := x
+        ψ.length ≤ leafOccBound k N * N + 1 →
+          ((branchedSparseCNFDeclaredCertificate k N₀_leaf N₀_top N₀_branch
+              cBranch hbound).time x : ℝ) ≤
+            (C_t : ℝ) * ((encPair (encPair encUnit encUnary) encCNF x).length + 1 : ℝ) ^ d_t *
+              (2 : ℝ) ^ ((A_t : ℝ) * interpolationScale N) ∧
+          ((branchedSparseCNFLeafCertificate k N₀_leaf N₀_top N₀_branch
+              cBranch hbound).time x : ℝ) ≤
+            (C_t : ℝ) * ((encPair (encPair encUnit encUnary) encCNF x).length + 1 : ℝ) ^ d_t *
+              (2 : ℝ) ^ ((A_t : ℝ) * interpolationScale N) := by
   obtain ⟨N_min, _, hBound⟩ :=
     exists_threshold_branchedSparseCNF_time_bound k 0 N₀_branch cBranch hbound hs_br hbr_time
   obtain ⟨C_t, d_t, A_t, hA, hT⟩ := hBound N_min le_rfl
