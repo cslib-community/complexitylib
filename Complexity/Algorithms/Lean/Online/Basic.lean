@@ -218,12 +218,9 @@ theorem scheduleCost_append {s : P.State} {reqs₁ reqs₂ : List P.Req}
 
 /-- Stateful specification of valid offline transitions, used to attach `Cslib.Stateful.Amortized`
 potential certificates between offline configurations and an online strategy's memory. -/
-abbrev offlineSpec : Spec where
-  State := P.State
-  Op := P.Req × P.State
-  Result _ := Unit
-  step _ o := (o.2, ())
-  valid s o := P.ValidStep s o.1 o.2
+abbrev offlineSpec : Spec :=
+  Spec.ofFn (State := P.State) (Op := P.Req × P.State) (Result := fun _ => Unit)
+    (fun _ o => (o.2, ())) (fun s o => P.ValidStep s o.1 o.2)
 
 /-- Client program replaying a given request list and offline state trajectory in `offlineSpec`. -/
 @[expose]
@@ -484,12 +481,14 @@ def Exec : Execution P.offlineSpec A.Mem Nat :=
 
 /-- Semantic realization pairing `P.offlineSpec` with online memory invariant `A.ValidMem`. -/
 @[expose]
-def realization : Realization P.offlineSpec A.Exec where
-  rep _ m := A.ValidMem m
-  total o _ _ := ⟨(), A.step _ o.1, _, rfl, rfl⟩
-  correct hm _ he := by
-    rcases he with ⟨rfl, -⟩
-    exact ⟨rfl, (A.valid_step _ hm).1⟩
+def realization : Realization P.offlineSpec A.Exec :=
+  Realization.ofFn
+    (rep := fun _ m => A.ValidMem m)
+    (total := fun o _ _ => ⟨(), A.step _ o.1, _, rfl, rfl⟩)
+    (correct := by
+      intro _ _ _ _ _ _ hm _ he
+      rcases he with ⟨rfl, -⟩
+      exact ⟨rfl, (A.valid_step _ hm).1⟩)
 
 /-- Every valid offline schedule drives a concrete `Executes` trace of `A` whose summed trace
 weights equal `A.costFrom m reqs`. -/
@@ -529,7 +528,7 @@ theorem amortized_bound {potential : P.State → A.Mem → Nat} {c : Nat}
     rw [hrun]
     exact P.validHistory_zip hv
   have hclient := Cert.client (s := s_off) hm hvh hexec
-  rw [hrun] at hclient
+  rw [Stateful.Spec.clientState, Stateful.Spec.clientHistory, hrun] at hclient
   dsimp only at hclient
   rw [htot, P.totalCost_zip c hv] at hclient
   exact hclient
