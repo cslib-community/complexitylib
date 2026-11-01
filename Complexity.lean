@@ -1694,6 +1694,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.EncodedTree
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplay
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayAccess
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySpace
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputationTree
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockTrace
@@ -1788,6 +1789,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogS
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.Call
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.CallSpace
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.InputLength
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Reachability
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Savitch
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Words

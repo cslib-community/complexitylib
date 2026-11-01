@@ -47,7 +47,7 @@ variable {k : ℕ} {Q : Type}
 variable [Finite Q]
 
 /-- Binary numeric fields and explicit fixed families of local work cells. -/
-noncomputable def encConfig : Config k Q ↪ List Bool :=
+@[expose] noncomputable def encConfig : Config k Q ↪ List Bool :=
   encOfEquiv Config.equivProd (encPair encNat (encPair encNat (encPair encNat
     (encPair encNat (encPair (encFinite (Option Q)) (encPair (encPi encNat)
       (encPair (encPi (encList encNat)) (encFinite OutputTrack))))))))
