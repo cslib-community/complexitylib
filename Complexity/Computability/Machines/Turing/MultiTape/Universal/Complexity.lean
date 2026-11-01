@@ -242,7 +242,7 @@ open ComputableInO
 /-- Applying actions to the work tapes, within time the number of work tapes times the length of
 the arguments, and linear space. -/
 public theorem applyTapes_inO :
-    ComputableInO (fun p : List Tape × List TapeAct => applyTapes p.1 p.2)
+    ComputableInO (Function.uncurry applyTapes)
       (encPair (encList eTape) (encList eTA)) (encList eTape)
       (fun p => (p.1.length + 1) * ((encPair (encList eTape) (encList eTA) p).length + 1))
       fun p => (encPair (encList eTape) (encList eTA) p).length := by
