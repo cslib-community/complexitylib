@@ -28,17 +28,17 @@ open Cslib.Stateful Cslib.Algorithms.Lean.Queue
 
 /-- Direct lists record the operation that was performed. -/
 def directExec : Execution (stackPair Nat) (List Nat × List Nat) (stackPair Nat).Op :=
-  fun c o a c' event => (c', a) = (stackPair Nat).step c o ∧ event = o
+  fun c o a c' event => (c', a) = (stackPair Nat).stepFn c o ∧ event = o
 
 /-- Both stack components are updated by the product specification; the other is preserved. -/
-def direct : Realization (stackPair Nat) directExec where
-  rep := Eq
-  total o hr _ := by
-    subst hr
-    exact ⟨((stackPair Nat).step _ o).2, ((stackPair Nat).step _ o).1, o, rfl, rfl⟩
-  correct hr _ he := by
-    subst hr
-    exact ⟨congrArg Prod.snd he.1, (congrArg Prod.fst he.1).symm⟩
+def direct : Realization (stackPair Nat) directExec :=
+  Realization.ofFn Eq
+    (fun o hr _ => by
+      subst hr
+      exact ⟨((stackPair Nat).stepFn _ o).2, ((stackPair Nat).stepFn _ o).1, o, rfl, rfl⟩)
+    (fun hr _ he => by
+      subst hr
+      exact ⟨congrArg Prod.snd he.1, (congrArg Prod.fst he.1).symm⟩)
 
 /-- A genuinely different concrete representation: each top is at the end of its list. -/
 structure ReverseStacks where
@@ -75,22 +75,22 @@ def reverseExec : Execution (stackPair Nat) ReverseStacks ReverseEvent :=
 
 /-- The representation-specific proof needed when replacing the backend. -/
 theorem reverseStep_correct (c : ReverseStacks) (o : (stackPair Nat).Op) :
-    (reverseStep c o).2 = ((stackPair Nat).step (decode c) o).2 ∧
-      decode (reverseStep c o).1 = ((stackPair Nat).step (decode c) o).1 := by
+    (reverseStep c o).2 = ((stackPair Nat).stepFn (decode c) o).2 ∧
+      decode (reverseStep c o).1 = ((stackPair Nat).stepFn (decode c) o).1 := by
   rcases o with o | o <;> cases o <;>
     simp [reverseStep, reverseStackStep, decode, stackPair, stack]
 
 /-- Reversed stacks realize precisely the same interface, with their own evidence type. -/
-def reversed : Realization (stackPair Nat) reverseExec where
-  rep s c := decode c = s
-  total o _ _ :=
-    ⟨(reverseStep _ o).2, (reverseStep _ o).1,
-      (o, _, _), rfl, rfl⟩
-  correct {s c o a c' trace} hr _ he := by
-    subst hr
-    have h := reverseStep_correct c o
-    rw [← he.1] at h
-    exact h
+def reversed : Realization (stackPair Nat) reverseExec :=
+  Realization.ofFn (fun s c => decode c = s)
+    (fun o _ _ =>
+      ⟨(reverseStep _ o).2, (reverseStep _ o).1,
+        (o, _, _), rfl, rfl⟩)
+    (fun {s c o a c' trace} hr _ he => by
+      subst hr
+      have h := reverseStep_correct c o
+      rw [← he.1] at h
+      exact h)
 
 /-- Queue correctness transports to direct lists without any new queue proof. -/
 def directQueue := implementation.realize direct
@@ -99,14 +99,12 @@ def directQueue := implementation.realize direct
 def reversedQueue := implementation.realize reversed
 
 /-- Each direct event is one backend call; this interpretation makes no instruction-cost claim. -/
-theorem direct_calls : Bound direct (fun _ => 1) (fun _ _ => 1) := by
-  intro s c o a c' event hr hv he
-  exact Nat.le_refl 1
+theorem direct_calls : Bound direct (fun _ => 1) (fun _ _ => 1) :=
+  fun _ _ _ => Nat.le_refl 1
 
 /-- The same call-count interpretation can be applied to a different native evidence type. -/
-theorem reversed_calls : Bound reversed (fun _ => 1) (fun _ _ => 1) := by
-  intro s c o a c' event hr hv he
-  exact Nat.le_refl 1
+theorem reversed_calls : Bound reversed (fun _ => 1) (fun _ _ => 1) :=
+  fun _ _ _ => Nat.le_refl 1
 
 /-- Later enqueue data depends on the observed dequeue answer. -/
 def adaptiveClient : (queue Nat).Client (Option Nat) :=
@@ -214,12 +212,14 @@ info: 'ComplexityTests.DataStructureQueue.adaptiveClient_reversed' depends on ax
 #guard_msgs (whitespace := lax) in
 #print axioms ComplexityTests.DataStructureQueue.adaptiveClient_reversed
 /--
-info: 'Cslib.Stateful.Realization.exists_executes' does not depend on any axioms
+info: 'Cslib.Stateful.Realization.exists_executes' depends on axioms:
+[propext]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.Stateful.Realization.exists_executes
 /--
-info: 'Cslib.Stateful.Realization.correct_client' does not depend on any axioms
+info: 'Cslib.Stateful.Realization.correct_client' depends on axioms:
+[propext]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.Stateful.Realization.correct_client

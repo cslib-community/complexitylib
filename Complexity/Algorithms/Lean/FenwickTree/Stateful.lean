@@ -73,23 +73,27 @@ inductive Op (α : Type) where
   | prefixSum (len : ℕ)
   deriving DecidableEq, Repr
 
+/-- Return types for `Op α`. -/
+abbrev Op.Result (α : Type) : Op α → Type
+  | .add _ _ => Unit
+  | .prefixSum _ => α
+
+/-- Pure transition function of dynamic prefix sums on `List α`. -/
+@[expose] def specStep {α : Type} [AddCommMonoid α] (s : List α) :
+    (o : Op α) → List α × o.Result α
+  | .add pos δ => (addAt s pos δ, ())
+  | .prefixSum len => (s, (s.take len).sum)
+
 /-- Mathematical specification of dynamic prefix sums on `List α`. All operations are admissible:
 out-of-bounds `add` is a no-op and `prefixSum len` sums `s.take len`. -/
-abbrev spec (α : Type) [AddCommMonoid α] : Spec where
-  State := List α
-  Op := Op α
-  Result
-    | .add _ _ => Unit
-    | .prefixSum _ => α
-  step s
-    | .add pos δ => (addAt s pos δ, ())
-    | .prefixSum len => (s, (s.take len).sum)
+abbrev spec (α : Type) [AddCommMonoid α] : Spec :=
+  Spec.ofFn (State := List α) (Op := Op α) (Result := Op.Result α) specStep
 
 variable {α : Type} [AddCommMonoid α]
 
 @[simp]
 theorem length_spec_step (s : List α) (o : Op α) :
-    ((spec α).step s o).1.length = s.length := by
+    ((spec α).stepFn s o).1.length = s.length := by
   cases o with
   | add pos δ => exact length_addAt s pos δ
   | prefixSum len => rfl
@@ -111,19 +115,21 @@ exact `TimeM` node-visit count. -/
 
 /-- Semantic realization of `spec α` by `FenwickTree α`, using `Valid t s` directly as the
 representation invariant. -/
-@[expose] def realization : Realization (spec α) (Exec (α := α)) where
-  rep s t := Valid t s
-  total {_ t} o _ _ :=
-    match h : step t o with
-    | (t', a, c) => ⟨a, t', c, h⟩
-  correct {s t o a t' c} hr _ he := by
-    cases o with
-    | add pos δ =>
-      cases he
-      exact ⟨rfl, valid_add hr pos δ⟩
-    | prefixSum len =>
-      cases he
-      exact ⟨ret_prefixSumM_eq hr len, hr⟩
+@[expose] def realization : Realization (spec α) (Exec (α := α)) :=
+  Realization.ofFn
+    (rep := fun s t => Valid t s)
+    (total := fun {_ t} o _ _ =>
+      match h : step t o with
+      | (t', a, c) => ⟨a, t', c, h⟩)
+    (correct := by
+      intro s t o a t' c hr _ he
+      cases o with
+      | add pos δ =>
+        cases he
+        exact ⟨rfl, valid_add hr pos δ⟩
+      | prefixSum len =>
+        cases he
+        exact ⟨ret_prefixSumM_eq hr len, hr⟩)
 
 @[simp]
 theorem realization_rep (s : List α) (t : FenwickTree α) :
@@ -141,7 +147,7 @@ theorem totalCost_charge (s : List α) (os : List (Op α)) :
   induction os generalizing s with
   | nil => simp only [Spec.totalCost_nil, List.length_nil, Nat.zero_mul]
   | cons o os ih =>
-    rw [Spec.totalCost_cons, ih ((spec α).step s o).1, length_spec_step]
+    rw [Spec.totalCost_cons, ih ((spec α).stepFn s o).1, length_spec_step]
     simp only [charge, List.length_cons, Nat.add_mul, Nat.one_mul, Nat.add_comm]
 
 /-- Logarithmic per-operation node-visit certificate for `FenwickTree.realization`. -/
