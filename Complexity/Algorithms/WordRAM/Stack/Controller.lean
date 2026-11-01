@@ -171,6 +171,7 @@ theorem refines {w n : ℕ} (h3 : Fits w 3) (hn : InputFits w [n]) :
     Refines w (fun s x => s = [] ∧ x = Data.init [n]) (client w n)
       (fun a s y => Rep w 2 1 s y ∧ y.regs out = a)
       (fun _ _ => if n = 0 then 48 else 28) code := by
+  apply Refines.ofFn
   rintro s x ⟨rfl, rfl⟩
   obtain ⟨y, he, hr, ha⟩ := execute h3 hn
   obtain ⟨hv, hs⟩ := runClient_client w n

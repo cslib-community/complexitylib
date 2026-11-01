@@ -991,7 +991,6 @@ theorem isEmptyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x : 
       Modifies.refl _ _, ?_⟩
     · simp only [PQCode.decode, code, y, Data.set_regs, Function.update_self, hdom,
         decide_true, ne_eq, one_ne_zero, not_false_eq_true]
-      rfl
     · have hp : potential y = potential x :=
         potential_supported fun i hi => by
           have hne : i ≠ outFlag := fun e => by subst e; cases hi
@@ -1018,7 +1017,6 @@ theorem isEmptyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x : 
       Modifies.refl _ _, ?_⟩
     · simp only [PQCode.decode, code, y, Data.set_regs, Function.update_self, hdom_ne,
         decide_false, ne_eq, not_true_eq_false]
-      rfl
     · have hp : potential y = potential x :=
         potential_supported fun i hi => by
           have hne : i ≠ outFlag := fun e => by subst e; cases hi
@@ -1084,7 +1082,6 @@ theorem getKeyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x : D
       Modifies.refl _ _, by rw [potential_supported hreg_pres]; omega⟩
     simp only [PQCode.decode, code, y, x1, Data.set_regs,
       Function.update_of_ne (by decide : outFlag ≠ s0), Function.update_self, hin0, ↓reduceIte]
-    rfl
   | some kv =>
     have hin_ne : st.inHeap v ≠ 0 :=
       (hin_spec v).1.mpr (by simp only [hsv, Option.isSome_some])
@@ -1132,7 +1129,6 @@ theorem getKeyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x : D
     simp only [PQCode.decode, code, y, x1, Data.set_regs,
       Function.update_of_ne (by decide : outFlag ≠ outK),
       Function.update_of_ne (by decide : outFlag ≠ s0), Function.update_self, hin_ne, ↓reduceIte]
-    rfl
 
 theorem insertCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x : Data rFib}
     (v : Fin n) (k : ℕ) (hinv : FibInv n K_max w base s x)
