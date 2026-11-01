@@ -9,6 +9,7 @@ Authors: Renfei Zhou
 import ComplexityAbstracts.HashFamiliesBridge
 import Complexity.Algorithms.WordRAM.Dictionary.ChainedHash
 import Complexity.Algorithms.WordRAM.Dictionary.LinearProbing
+import Complexity.Algorithms.WordRAM.Dictionary.UniformProbing
 
 /-!
 # Bridge for the Word-RAM Hash Tables Formal Abstract
@@ -452,31 +453,32 @@ theorem chainedSpace_le (n_max : ℕ) : chainedSpace n_max ≤ 8 * (n_max + 1) :
 /-- Headline bridge theorem for chained hashing (`ChainedHash.seq_expected_amortized`). -/
 theorem chainedHashing (S : Presentation) (hS : Laws S)
     (P : DictPresentation S) (hP : DictLaws S P) :
-    ∀ (U V n_max w base : ℕ),
-      2 * chainedHashBits U n_max ≤ w →
-      base + chainedSpace n_max < 2 ^ w →
-      V < 2 ^ w →
+    ∀ (U n_max : ℕ),
       ∃ (p_init p_op : List (S.Instr 22)),
-        ∀ (reg₀ : Fin 22 → ℕ) (mem₀ : ℕ → ℕ),
-          DictPresentation.WordBounded w reg₀ mem₀ →
-          reg₀ ⟨6, by decide⟩ = base →
-          (∀ a, base ≤ a → a < base + chainedSpace n_max → mem₀ a = 0) →
-          ∀ ops : List (P.DictOp U),
-            P.ValidDictHistory V n_max (DictPresentation.emptyDict U) ops →
-            ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (P.CoupledState Seed 22)),
-              P.ExecProgramDist w p_init ⟨10, by decide⟩ reg₀ mem₀
-                (μ_init.map P.toRegMem) 16 ∧
-              P.ExecDictOps w p_op true
-                ⟨5, by decide⟩ ⟨7, by decide⟩ ⟨8, by decide⟩ ⟨9, by decide⟩ ⟨10, by decide⟩
-                base (chainedSpace n_max) (DictPresentation.emptyDict U) ops
-                μ_init μ_final T_ops ∧
-              (16 : ℝ≥0∞) + T_ops ≤ ((16 + 73 * ops.length : ℕ) : ℝ≥0∞) := by
-  intro U V n_max w base hw hfit_space hfit_V
+        ∀ (V w base : ℕ),
+          2 * chainedHashBits U n_max ≤ w →
+          base + chainedSpace n_max < 2 ^ w →
+          V < 2 ^ w →
+          ∀ (reg₀ : Fin 22 → ℕ) (mem₀ : ℕ → ℕ),
+            DictPresentation.WordBounded w reg₀ mem₀ →
+            reg₀ ⟨6, by decide⟩ = base →
+            (∀ a, base ≤ a → a < base + chainedSpace n_max → mem₀ a = 0) →
+            ∀ ops : List (P.DictOp U),
+              P.ValidDictHistory V n_max (DictPresentation.emptyDict U) ops →
+              ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (P.CoupledState Seed 22)),
+                P.ExecProgramDist w p_init ⟨10, by decide⟩ reg₀ mem₀
+                  (μ_init.map P.toRegMem) 16 ∧
+                P.ExecDictOps w p_op true
+                  ⟨5, by decide⟩ ⟨7, by decide⟩ ⟨8, by decide⟩ ⟨9, by decide⟩ ⟨10, by decide⟩
+                  base (chainedSpace n_max) (DictPresentation.emptyDict U) ops
+                  μ_init μ_final T_ops ∧
+                (16 : ℝ≥0∞) + T_ops ≤ ((16 + 73 * ops.length : ℕ) : ℝ≥0∞) := by
+  intro U n_max
   let Sub := ChainedHash.subroutineCode U n_max
-  let C := ChainedHash.subroutineDS U V n_max w base hw hfit_space hfit_V
   refine ⟨S.programOf (Sub.initFresh.program ⟨10, by decide⟩),
     S.programOf (Sub.code.program ⟨10, by decide⟩), ?_⟩
-  intro reg₀ mem₀ hbdd₀ hfr₀ hz₀ ops hv_abs
+  intro V w base hw hfit_space hfit_V reg₀ mem₀ hbdd₀ hfr₀ hz₀ ops hv_abs
+  let C := ChainedHash.subroutineDS U V n_max w base hw hfit_space hfit_V
   obtain ⟨ops_lib, rfl⟩ := ops_surjective P ops
   have hv_lib : (Dictionary.spec U V n_max).ValidHistory (Dictionary.empty U) ops_lib :=
     (validDictHistory_map_dictOpOf hP (DictPresentation.emptyDict U) ops_lib).mp hv_abs
@@ -670,39 +672,40 @@ theorem linearProbingCharge_le {U n_max : ℕ} (hU : U ≤ max n_max 4 ^ 4) :
 `c_exp = 4`. -/
 theorem linearProbing (S : Presentation) (hS : Laws S)
     (P : DictPresentation S) (hP : DictLaws S P) :
-    ∀ (U V n_max w base : ℕ),
-      U ≤ max n_max 4 ^ 4 →
-      2 * trinomialDeg U (lpTableLog n_max) ≤ w →
-      base + lpSpace n_max < 2 ^ w →
-      V < 2 ^ w →
+    ∀ (U n_max : ℕ),
       ∃ (p_init p_op : List (S.Instr 24)),
-        ∀ (reg₀ : Fin 24 → ℕ) (mem₀ : ℕ → ℕ),
-          DictPresentation.WordBounded w reg₀ mem₀ →
-          reg₀ ⟨18, by decide⟩ = base →
-          (∀ a, base ≤ a → a < base + lpSpace n_max → mem₀ a = 0) →
-          ∀ ops : List (P.DictOp U),
-            P.ValidDictHistory V n_max (DictPresentation.emptyDict U) ops →
-            ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (P.CoupledState Seed 24)),
-              P.ExecProgramDist w p_init ⟨2, by decide⟩ reg₀ mem₀
-                (μ_init.map P.toRegMem) (lpInitSteps U n_max) ∧
-              P.ExecDictOps w p_op false
-                ⟨0, by decide⟩ ⟨22, by decide⟩ ⟨1, by decide⟩ ⟨23, by decide⟩ ⟨2, by decide⟩
-                base (lpSpace n_max) (DictPresentation.emptyDict U) ops
-                μ_init μ_final T_ops ∧
-              (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
-                ((lpInitSteps U n_max + ops.length * lpOpCharge U n_max : ℕ) : ℝ≥0∞) ∧
-              (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
-                ((lpInitSteps U n_max + ops.length * lpOpChargeBound : ℕ) : ℝ≥0∞) := by
-  intro U V n_max w base hU hw hfit_space hfit_V
+        ∀ (V w base : ℕ),
+          U ≤ max n_max 4 ^ 4 →
+          2 * trinomialDeg U (lpTableLog n_max) ≤ w →
+          base + lpSpace n_max < 2 ^ w →
+          V < 2 ^ w →
+          ∀ (reg₀ : Fin 24 → ℕ) (mem₀ : ℕ → ℕ),
+            DictPresentation.WordBounded w reg₀ mem₀ →
+            reg₀ ⟨18, by decide⟩ = base →
+            (∀ a, base ≤ a → a < base + lpSpace n_max → mem₀ a = 0) →
+            ∀ ops : List (P.DictOp U),
+              P.ValidDictHistory V n_max (DictPresentation.emptyDict U) ops →
+              ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (P.CoupledState Seed 24)),
+                P.ExecProgramDist w p_init ⟨2, by decide⟩ reg₀ mem₀
+                  (μ_init.map P.toRegMem) (lpInitSteps U n_max) ∧
+                P.ExecDictOps w p_op false
+                  ⟨0, by decide⟩ ⟨22, by decide⟩ ⟨1, by decide⟩ ⟨23, by decide⟩ ⟨2, by decide⟩
+                  base (lpSpace n_max) (DictPresentation.emptyDict U) ops
+                  μ_init μ_final T_ops ∧
+                (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
+                  ((lpInitSteps U n_max + ops.length * lpOpCharge U n_max : ℕ) : ℝ≥0∞) ∧
+                (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
+                  ((lpInitSteps U n_max + ops.length * lpOpChargeBound : ℕ) : ℝ≥0∞) := by
+  intro U n_max
+  let Sub := LinearProbing.subroutineCode U n_max
+  refine ⟨S.programOf (Sub.initFresh.program ⟨2, by decide⟩),
+    S.programOf (Sub.code.program ⟨2, by decide⟩), ?_⟩
+  intro V w base hU hw hfit_space hfit_V reg₀ mem₀ hbdd₀ hfr₀ hz₀ ops hv_abs
   have hw_lib : 2 * Cslib.Probability.trinomialDeg U (LinearProbing.tableLog n_max) ≤ w := by
     rwa [← trinomialDeg_eq, ← lpTableLog_eq]
   have hfit_space_lib : Fits w (base + LinearProbing.space n_max) := by
     rwa [← lpSpace_eq]
-  let Sub := LinearProbing.subroutineCode U n_max
   let C := LinearProbing.subroutineDS U V n_max w base hw_lib hfit_space_lib hfit_V
-  refine ⟨S.programOf (Sub.initFresh.program ⟨2, by decide⟩),
-    S.programOf (Sub.code.program ⟨2, by decide⟩), ?_⟩
-  intro reg₀ mem₀ hbdd₀ hfr₀ hz₀ ops hv_abs
   obtain ⟨ops_lib, rfl⟩ := ops_surjective P ops
   have hv_lib : (Dictionary.spec U V n_max).ValidHistory (Dictionary.empty U) ops_lib :=
     (validDictHistory_map_dictOpOf hP (DictPresentation.emptyDict U) ops_lib).mp hv_abs
@@ -761,5 +764,223 @@ theorem linearProbing (S : Presentation) (hS : Laws S)
     rw [← lpOpCharge_eq]
     exact Nat.cast_le.mpr (Nat.add_le_add_left
       (Nat.mul_le_mul_left _ (linearProbingCharge_le hU)) _)
+
+/-! ## Part 4: Uniform Probing via Odd-Stride Double Hashing (`UniformProbing.lean`) -/
+
+open ComplexityAbstracts.HashFamiliesBridge
+  (regimeThreshold regimeThreshold_eq charBits charBits_eq)
+
+/-- Log₂ of the power-of-2 table size `⌈log₂(32 * max n_max 4)⌉` (`≥ 32 * max n_max 4`). -/
+def tableBits32 (n_max : ℕ) : ℕ :=
+  Nat.clog 2 (32 * max n_max 4)
+
+theorem tableBits32_eq (n_max : ℕ) : tableBits32 n_max = UniformProbing.bucketBits n_max := rfl
+
+/-- Power-of-2 table size `2 ^ tableBits32 n_max`. -/
+def tableSize32 (n_max : ℕ) : ℕ :=
+  2 ^ tableBits32 n_max
+
+theorem tableSize32_eq (n_max : ℕ) : tableSize32 n_max = UniformProbing.numBuckets n_max := rfl
+
+/-- Memory footprint `(c + 1) * d * 2 ^ b` of a single Double Tabulation instance. -/
+def doubleTabSpace (c d b : ℕ) : ℕ :=
+  (c + 1) * d * 2 ^ b
+
+theorem doubleTabSpace_eq (c d b : ℕ) :
+    doubleTabSpace c d b =
+      Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.space c d b := rfl
+
+/-- Exact instruction count `5 * doubleTabSpace c d b + 13` for resampling a Double Tabulation
+instance. -/
+def doubleTabResampleSteps (c d b : ℕ) : ℕ :=
+  5 * doubleTabSpace c d b + 13
+
+theorem doubleTabResampleSteps_eq (c d b : ℕ) :
+    doubleTabResampleSteps c d b =
+      Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.resampleSteps c d b := rfl
+
+/-- Exact instruction count `(12 * c + 11) * d + 10` for evaluating a Double Tabulation instance. -/
+def doubleTabEvalSteps (c d : ℕ) : ℕ :=
+  (12 * c + 11) * d + 10
+
+theorem doubleTabEvalSteps_eq (c d : ℕ) :
+    doubleTabEvalSteps c d =
+      Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.evalSteps c d := rfl
+
+/-- Memory footprint `doubleTabSpace 8 64 (charBits n_max)` of one Double Tabulation table at
+`c_exp = 4`. -/
+def upSingleTabSpace (n_max : ℕ) : ℕ :=
+  doubleTabSpace 8 64 (charBits n_max)
+
+theorem upSingleTabSpace_eq (n_max : ℕ) :
+    upSingleTabSpace n_max = UniformProbing.singleTabSpace 4 n_max := rfl
+
+/-- Total memory footprint `2 * upSingleTabSpace n_max + 3 * tableSize32 n_max` of uniform probing
+at `c_exp = 4`. -/
+def upSpace (n_max : ℕ) : ℕ :=
+  2 * upSingleTabSpace n_max + 3 * tableSize32 n_max
+
+theorem upSpace_eq (n_max : ℕ) : upSpace n_max = UniformProbing.space 4 n_max := rfl
+
+/-- Linear-space factor `32 * (8 + 1) * 64 + 768 = 19200` for uniform probing at `c_exp = 4`. -/
+def upSpaceFactor : ℕ :=
+  32 * (8 + 1) * 64 + 768
+
+theorem upSpaceFactor_eq : upSpaceFactor = UniformProbing.spaceFactor 4 := rfl
+
+theorem upSpaceFactor_val : upSpaceFactor = 19200 := rfl
+
+/-- Across all capacities `n_max : ℕ`, uniform probing uses at most
+`upSpaceFactor * (n_max + 1) = 19200 * (n_max + 1)` words of memory. -/
+theorem uniformProbingSpace_le (n_max : ℕ) :
+    upSpace n_max ≤ upSpaceFactor * (n_max + 1) :=
+  UniformProbing.space_le 4 n_max
+
+/-- Expected instruction count `3 + (2 * doubleTabResampleSteps 8 64 (charBits n_max) + 4)` for
+uniform-probing initialization at `c_exp = 4`. -/
+def upInitSteps (n_max : ℕ) : ℕ :=
+  3 + (2 * doubleTabResampleSteps 8 64 (charBits n_max) + 4)
+
+theorem upInitSteps_eq (n_max : ℕ) :
+    upInitSteps n_max = 3 + UniformProbing.setupSteps 4 n_max := rfl
+
+/-- Deterministic instruction count `2 * doubleTabEvalSteps 8 64 + 15 = 13731` for evaluating the
+primary and odd-stride Double Tabulation hashes at `c_exp = 4`. -/
+def upHashEvalSteps : ℕ :=
+  2 * doubleTabEvalSteps 8 64 + 15
+
+theorem upHashEvalSteps_eq : upHashEvalSteps = UniformProbing.hashEvalSteps 4 := rfl
+
+theorem upHashEvalSteps_val : upHashEvalSteps = 13731 := rfl
+
+/-- Uniform `O(1)` expected per-operation instruction charge
+`13 * regimeThreshold + upHashEvalSteps + 8 = 13 * 2 ^ 320000 + 13739` for uniform probing at
+`c_exp = 4`. -/
+def upOpCharge : ℕ :=
+  13 * regimeThreshold + upHashEvalSteps + 8
+
+theorem upOpCharge_eq : upOpCharge = UniformProbing.expectedOpCharge 4 := by
+  unfold upOpCharge UniformProbing.expectedOpCharge
+  rw [regimeThreshold_eq, upHashEvalSteps_eq]
+
+theorem upOpCharge_val : upOpCharge = 13 * 2 ^ 320000 + 13739 := by
+  unfold upOpCharge regimeThreshold
+  rw [upHashEvalSteps_val]
+
+private theorem totalCost_const {U V n_max : ℕ} (c : ℕ) (s : Dictionary.State U)
+    (ops : List (Dictionary.Op U)) :
+    (Dictionary.spec U V n_max).totalCost (fun _ _ => c) s ops = ops.length * c := by
+  induction ops generalizing s with
+  | nil =>
+    change 0 = 0 * c
+    simp
+  | cons o os ih =>
+    change c + (Dictionary.spec U V n_max).totalCost (fun _ _ => c)
+      ((Dictionary.spec U V n_max).stepFn s o).1 os = (os.length + 1) * c
+    rw [ih]
+    ring
+
+/-- Headline bridge theorem for uniform probing (`UniformProbing.seq_expected_amortized`) at
+`c_exp = 4`. -/
+theorem uniformProbing (S : Presentation) (hS : Laws S)
+    (P : DictPresentation S) (hP : DictLaws S P)
+    (regimeThreshold' upHashEvalSteps' upOpCharge' : ℕ)
+    (hRegime : regimeThreshold' = 2 ^ 320000)
+    (hHashEval : upHashEvalSteps' = 2 * doubleTabEvalSteps 8 64 + 15)
+    (hCharge : upOpCharge' = 13 * regimeThreshold' + upHashEvalSteps' + 8) :
+    ∀ (n_max : ℕ),
+      ∃ (p_init p_op : List (S.Instr 16)),
+        ∀ (U V w base : ℕ),
+          U ≤ max n_max 4 ^ 4 →
+          base + upSpace n_max < 2 ^ w →
+          (∀ u : Fin U, u.val < 2 ^ w) →
+          V < 2 ^ w →
+          ∀ (reg₀ : Fin 16 → ℕ) (mem₀ : ℕ → ℕ),
+            DictPresentation.WordBounded w reg₀ mem₀ →
+            reg₀ ⟨14, by decide⟩ = base →
+            (∀ a, base ≤ a → a < base + upSpace n_max → mem₀ a = 0) →
+            ∀ ops : List (P.DictOp U),
+              P.ValidDictHistory V n_max (DictPresentation.emptyDict U) ops →
+              ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (P.CoupledState Seed 16)),
+                P.ExecProgramDist w p_init ⟨12, by decide⟩ reg₀ mem₀
+                  (μ_init.map P.toRegMem) (upInitSteps n_max) ∧
+                P.ExecDictOps w p_op true
+                  ⟨0, by decide⟩ ⟨12, by decide⟩ ⟨13, by decide⟩ ⟨14, by decide⟩ ⟨12, by decide⟩
+                  base (upSpace n_max) (DictPresentation.emptyDict U) ops
+                  μ_init μ_final T_ops ∧
+                (upInitSteps n_max : ℝ≥0∞) + T_ops ≤
+                  ((upInitSteps n_max + ops.length * upOpCharge' : ℕ) : ℝ≥0∞) := by
+  intro n_max
+  let Sub := UniformProbing.subroutineCode 4 n_max
+  refine ⟨S.programOf (Sub.initFresh.program ⟨12, by decide⟩),
+    S.programOf (Sub.code.program ⟨12, by decide⟩), ?_⟩
+  intro U V w base hU hfit_space hfit_U hfit_V reg₀ mem₀ hbdd₀ hfr₀ hz₀ ops hv_abs
+  have hfit_space_lib : Fits w (base + UniformProbing.space 4 n_max) := by
+    rwa [← upSpace_eq]
+  let C := UniformProbing.subroutineDS (V := V) hfit_space_lib hfit_U hfit_V hU
+  obtain ⟨ops_lib, rfl⟩ := ops_surjective P ops
+  have hv_lib : (Dictionary.spec U V n_max).ValidHistory (Dictionary.empty U) ops_lib :=
+    (validDictHistory_map_dictOpOf hP (DictPresentation.emptyDict U) ops_lib).mp hv_abs
+  have hz_lib : ∀ a ∈ (Block.mk base (UniformProbing.space 4 n_max)).footprint, mem₀ a = 0 := by
+    intro a ha
+    rw [Block.mem_footprint, Block.Owns, ← upSpace_eq] at ha
+    exact hz₀ a ha.1 ha.2
+  obtain ⟨ν₀, ν_final, T_ops, he_init, hex_steps, -, -, hbound⟩ :=
+    UniformProbing.seq_expected_amortized (V := V) hfit_space_lib hfit_U hfit_V hU
+      (x := ⟨reg₀, mem₀⟩) ops_lib hbdd₀ hfr₀ hz_lib hv_lib
+  have hinit_time : (3 : ℝ≥0∞) + (UniformProbing.setupSteps 4 n_max : ℝ≥0∞) =
+      (upInitSteps n_max : ℝ≥0∞) := by
+    rw [upInitSteps_eq, Nat.cast_add, Nat.cast_ofNat]
+  have hinit_c : C.initTime = (upInitSteps n_max : ℝ≥0∞) := hinit_time
+  rw [hinit_c] at he_init hbound
+  rw [hinit_time] at hbound
+  refine ⟨UniformProbing.Seed 4 n_max, T_ops,
+    ν₀.map (P.coupledStateOf (r := 16)), ν_final.map (P.coupledStateOf (r := 16)),
+    ?_, ?_, ?_⟩
+  · rw [map_coupledStateOf_toRegMem hP (r := 16)]
+    exact compile_execCodeDist hS hP ⟨12, by decide⟩ he_init
+  · rw [upSpace_eq]
+    exact compile_execStepsOfFn hS hP C true
+      ⟨0, by decide⟩ ⟨12, by decide⟩ ⟨13, by decide⟩ ⟨14, by decide⟩ ⟨12, by decide⟩
+      (fun o d => by
+        funext i
+        cases o with
+        | get u =>
+          dsimp only [DictPresentation.dictOpOf]
+          rw [hP.prepareDictRegs_get]
+          change (if decide (i ≠ ⟨0, by decide⟩) then
+            if i = ⟨12, by decide⟩ then 0 else if i = ⟨13, by decide⟩ then u.val else 0
+          else d.regs i) = _
+          fin_cases i <;> rfl
+        | insert u v =>
+          dsimp only [DictPresentation.dictOpOf]
+          rw [hP.prepareDictRegs_insert]
+          change (if decide (i ≠ ⟨0, by decide⟩) then
+            if i = ⟨12, by decide⟩ then 1
+            else if i = ⟨13, by decide⟩ then u.val
+            else if i = ⟨14, by decide⟩ then v else 0
+          else d.regs i) = _
+          fin_cases i <;> rfl)
+      (fun s o regs hdec => by
+        cases o with
+        | get u =>
+          dsimp only [DictPresentation.dictOpOf]
+          rw [hP.opOutputCorrect_get]
+          change some (if regs ⟨12, by decide⟩ = 0 then none
+            else some (regs ⟨12, by decide⟩ - 1)) = some (s u) at hdec
+          exact Option.some.inj hdec
+        | insert u v =>
+          dsimp only [DictPresentation.dictOpOf]
+          rw [hP.opOutputCorrect_insert]
+          trivial)
+      hex_steps
+  · have hReg : regimeThreshold' = regimeThreshold := hRegime
+    have hHE : upHashEvalSteps' = upHashEvalSteps := hHashEval
+    have hCharge_eq : upOpCharge' = UniformProbing.expectedOpCharge 4 := by
+      rw [hCharge, hReg, hHE]
+      exact upOpCharge_eq
+    rw [totalCost_const, ← hCharge_eq] at hbound
+    rw [List.length_map, Nat.cast_add]
+    exact hbound
 
 end ComplexityAbstracts.HashTablesBridge

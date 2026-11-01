@@ -96,12 +96,6 @@ noncomputable def Comp.eval {α : Type} : Comp α → PMF α
     (Cslib.Probability.PMF.uniformOfFintype (Fin (n + 1))).bind fun k =>
       (next k).eval
 
-/-- Every branch of `m` performs at most `R` random draws. -/
-def Comp.CallsAtMost {α : Type} : Comp α → ℕ → Prop
-  | .pure _, _ => True
-  | .sample _ _, 0 => False
-  | .sample _ next, R + 1 => ∀ k, (next k).CallsAtMost R
-
 /-- Machine state: instruction index `pc`, registers `reg`, and memory `mem`. -/
 structure State (r : ℕ) where
   pc : ℕ
@@ -376,38 +370,40 @@ valid for capacity `n_max` and value bound `V`:
 References: `[CLRS2009]` (3rd ed., Sections 11.2 and 11.3.3, Theorem 11.3 and Corollary 11.4,
 pp. 256–268); `[DietzfelbingerHagerupKatajainenPenttonen1997]` (Lemma 2.4). -/
 theorem chainedHashing :
-    ∀ (U V n_max w base : ℕ),
-      2 * chainedHashBits U n_max ≤ w →
-      base + chainedSpace n_max < 2 ^ w →
-      V < 2 ^ w →
+    ∀ (U n_max : ℕ),
       ∃ (p_init p_op : List (Instr 22)),
-        ∀ (reg₀ : Fin 22 → ℕ) (mem₀ : ℕ → ℕ),
-          WordBounded w reg₀ mem₀ →
-          reg₀ ⟨6, by decide⟩ = base →
-          (∀ a, base ≤ a → a < base + chainedSpace n_max → mem₀ a = 0) →
-          ∀ ops : List (DictOp U),
-            ValidDictHistory V n_max (emptyDict U) ops →
-            ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (CoupledState Seed 22)),
-              ExecProgramDist w p_init ⟨10, by decide⟩ reg₀ mem₀
-                (μ_init.map CoupledState.toRegMem) 16 ∧
-              ExecDictOps w p_op true
-                ⟨5, by decide⟩ ⟨7, by decide⟩ ⟨8, by decide⟩ ⟨9, by decide⟩ ⟨10, by decide⟩
-                base (chainedSpace n_max) (emptyDict U) ops
-                μ_init μ_final T_ops ∧
-              (16 : ℝ≥0∞) + T_ops ≤ ((16 + 73 * ops.length : ℕ) : ℝ≥0∞) :=
+        ∀ (V w base : ℕ),
+          2 * chainedHashBits U n_max ≤ w →
+          base + chainedSpace n_max < 2 ^ w →
+          V < 2 ^ w →
+          ∀ (reg₀ : Fin 22 → ℕ) (mem₀ : ℕ → ℕ),
+            WordBounded w reg₀ mem₀ →
+            reg₀ ⟨6, by decide⟩ = base →
+            (∀ a, base ≤ a → a < base + chainedSpace n_max → mem₀ a = 0) →
+            ∀ ops : List (DictOp U),
+              ValidDictHistory V n_max (emptyDict U) ops →
+              ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (CoupledState Seed 22)),
+                ExecProgramDist w p_init ⟨10, by decide⟩ reg₀ mem₀
+                  (μ_init.map CoupledState.toRegMem) 16 ∧
+                ExecDictOps w p_op true
+                  ⟨5, by decide⟩ ⟨7, by decide⟩ ⟨8, by decide⟩ ⟨9, by decide⟩ ⟨10, by decide⟩
+                  base (chainedSpace n_max) (emptyDict U) ops
+                  μ_init μ_final T_ops ∧
+                (16 : ℝ≥0∞) + T_ops ≤ ((16 + 73 * ops.length : ℕ) : ℝ≥0∞) :=
   ComplexityAbstracts.HashTablesBridge.chainedHashing
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,
       Instr, .const, .copy, .alu, .width, .load, .store, .jump,
       .branchEq, .branchLt, .halt, .rand, @Instr.rec,
       Comp, @Comp.pure, @Comp.sample, @Comp.bind, @Comp.eval,
-      @Comp.CallsAtMost,
+      fun {α} (m : Comp α) =>
+        @Comp.rec α (fun _ => ℕ → Prop) (fun _ _ => True)
+          (fun _ _ ih R => Nat.casesOn R False (fun R' => ∀ k, ih k R')) m,
       State, .mk, Cfg, .running, .halted, .faulted, @stepRand, @runRand⟩
     (by refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
-      simp_all [AluOp.eval, Comp.bind, Comp.eval, Comp.CallsAtMost,
-        stepRand, runRand])
+      simp_all [AluOp.eval, Comp.bind, Comp.eval, stepRand, runRand])
     ⟨DictOp, @DictOp.get, @DictOp.insert, @DictOp.rec,
       @stepDict, @validDictOp, @ValidDictHistory,
       RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
@@ -536,42 +532,44 @@ pp. 1110–1111 and Section 4 Lemma 4.1, Theorem 4.3, Theorem 4.5 pp. 1114–111
 (3rd ed., Section 11.4); `[Vadhan2012]` (Section 3.5.5); `[CarterWegman1979]`;
 `[WegmanCarter1981]`; `[LidlNiederreiter1997]`. -/
 theorem linearProbing :
-    ∀ (U V n_max w base : ℕ),
-      U ≤ max n_max 4 ^ 4 →
-      2 * trinomialDeg U (lpTableLog n_max) ≤ w →
-      base + lpSpace n_max < 2 ^ w →
-      V < 2 ^ w →
+    ∀ (U n_max : ℕ),
       ∃ (p_init p_op : List (Instr 24)),
-        ∀ (reg₀ : Fin 24 → ℕ) (mem₀ : ℕ → ℕ),
-          WordBounded w reg₀ mem₀ →
-          reg₀ ⟨18, by decide⟩ = base →
-          (∀ a, base ≤ a → a < base + lpSpace n_max → mem₀ a = 0) →
-          ∀ ops : List (DictOp U),
-            ValidDictHistory V n_max (emptyDict U) ops →
-            ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (CoupledState Seed 24)),
-              ExecProgramDist w p_init ⟨2, by decide⟩ reg₀ mem₀
-                (μ_init.map CoupledState.toRegMem) (lpInitSteps U n_max) ∧
-              ExecDictOps w p_op false
-                ⟨0, by decide⟩ ⟨22, by decide⟩ ⟨1, by decide⟩ ⟨23, by decide⟩ ⟨2, by decide⟩
-                base (lpSpace n_max) (emptyDict U) ops
-                μ_init μ_final T_ops ∧
-              (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
-                ((lpInitSteps U n_max + ops.length * lpOpCharge U n_max : ℕ) : ℝ≥0∞) ∧
-              (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
-                ((lpInitSteps U n_max + ops.length * lpOpChargeBound : ℕ) : ℝ≥0∞) :=
+        ∀ (V w base : ℕ),
+          U ≤ max n_max 4 ^ 4 →
+          2 * trinomialDeg U (lpTableLog n_max) ≤ w →
+          base + lpSpace n_max < 2 ^ w →
+          V < 2 ^ w →
+          ∀ (reg₀ : Fin 24 → ℕ) (mem₀ : ℕ → ℕ),
+            WordBounded w reg₀ mem₀ →
+            reg₀ ⟨18, by decide⟩ = base →
+            (∀ a, base ≤ a → a < base + lpSpace n_max → mem₀ a = 0) →
+            ∀ ops : List (DictOp U),
+              ValidDictHistory V n_max (emptyDict U) ops →
+              ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (CoupledState Seed 24)),
+                ExecProgramDist w p_init ⟨2, by decide⟩ reg₀ mem₀
+                  (μ_init.map CoupledState.toRegMem) (lpInitSteps U n_max) ∧
+                ExecDictOps w p_op false
+                  ⟨0, by decide⟩ ⟨22, by decide⟩ ⟨1, by decide⟩ ⟨23, by decide⟩ ⟨2, by decide⟩
+                  base (lpSpace n_max) (emptyDict U) ops
+                  μ_init μ_final T_ops ∧
+                (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
+                  ((lpInitSteps U n_max + ops.length * lpOpCharge U n_max : ℕ) : ℝ≥0∞) ∧
+                (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
+                  ((lpInitSteps U n_max + ops.length * lpOpChargeBound : ℕ) : ℝ≥0∞) :=
   ComplexityAbstracts.HashTablesBridge.linearProbing
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,
       Instr, .const, .copy, .alu, .width, .load, .store, .jump,
       .branchEq, .branchLt, .halt, .rand, @Instr.rec,
       Comp, @Comp.pure, @Comp.sample, @Comp.bind, @Comp.eval,
-      @Comp.CallsAtMost,
+      fun {α} (m : Comp α) =>
+        @Comp.rec α (fun _ => ℕ → Prop) (fun _ _ => True)
+          (fun _ _ ih R => Nat.casesOn R False (fun R' => ∀ k, ih k R')) m,
       State, .mk, Cfg, .running, .halted, .faulted, @stepRand, @runRand⟩
     (by refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
-      simp_all [AluOp.eval, Comp.bind, Comp.eval, Comp.CallsAtMost,
-        stepRand, runRand])
+      simp_all [AluOp.eval, Comp.bind, Comp.eval, stepRand, runRand])
     ⟨DictOp, @DictOp.get, @DictOp.insert, @DictOp.rec,
       @stepDict, @validDictOp, @ValidDictHistory,
       RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
@@ -585,6 +583,152 @@ theorem linearProbing :
       fun _ _ _ _ _ _ _ _ => rfl, fun _ _ _ _ _ _ _ _ _ => rfl,
       fun _ _ _ _ => Iff.rfl, fun _ _ _ _ _ => Iff.rfl,
       @ExecDictOps.nil, @ExecDictOps.cons⟩
+
+/-! ## Table 3: Uniform Probing via Odd-Stride Double Hashing (`UniformProbing.lean`) -/
+
+/-- Double-tabulation threshold `2 ^ 320000` (`doubleTabThreshold 4`) at `c_exp = 4`, corresponding
+to character bit-width `charBits n_max ≥ 4 * (8 + 48 * 4) ^ 2 = 160000`. Note that constants
+derived from `regimeThreshold` in uniform probing and cuckoo hashing are astronomically large. -/
+def regimeThreshold : ℕ :=
+  2 ^ 320000
+
+/-- Double-tabulation character bit-width `⌊(1 + ⌈log₂(max n_max 4)⌉) / 2⌋`. -/
+def charBits (n_max : ℕ) : ℕ :=
+  (1 + Nat.clog 2 (max n_max 4)) / 2
+
+/-- Power-of-2 table bit-width `⌈log₂(32 * max n_max 4)⌉` (`≥ 7`). -/
+def tableBits32 (n_max : ℕ) : ℕ :=
+  Nat.clog 2 (32 * max n_max 4)
+
+/-- Power-of-2 table size `2 ^ tableBits32 n_max` (`≥ 32 * max n_max 4`). -/
+def tableSize32 (n_max : ℕ) : ℕ :=
+  2 ^ tableBits32 n_max
+
+/-- Memory footprint `(c + 1) * d * 2 ^ b` (in machine words) of a single Double Tabulation
+instance with `c` characters, intermediate tuple length `d`, and `b`-bit characters. -/
+def doubleTabSpace (c d b : ℕ) : ℕ :=
+  (c + 1) * d * 2 ^ b
+
+/-- Exact instruction count `5 * doubleTabSpace c d b + 13` for resampling a Double Tabulation
+instance. -/
+def doubleTabResampleSteps (c d b : ℕ) : ℕ :=
+  5 * doubleTabSpace c d b + 13
+
+/-- Exact deterministic instruction count `(12 * c + 11) * d + 10` for evaluating a Double
+Tabulation instance. -/
+def doubleTabEvalSteps (c d : ℕ) : ℕ :=
+  (12 * c + 11) * d + 10
+
+/-- Memory footprint `doubleTabSpace 8 64 (charBits n_max) = 576 * 2 ^ charBits n_max` of one
+Double Tabulation table at `c_exp = 4` (`c = 8`, `d = 64`). -/
+def upSingleTabSpace (n_max : ℕ) : ℕ :=
+  doubleTabSpace 8 64 (charBits n_max)
+
+/-- Total memory footprint `2 * upSingleTabSpace n_max + 3 * tableSize32 n_max` (in machine words)
+of uniform probing at `c_exp = 4`: primary and odd-stride Double Tabulation tables plus three
+parallel slot arrays (`used`, `key`, `val`) of length `tableSize32 n_max`. -/
+def upSpace (n_max : ℕ) : ℕ :=
+  2 * upSingleTabSpace n_max + 3 * tableSize32 n_max
+
+/-- Linear-space factor `32 * (8 + 1) * 64 + 768 = 19200` for uniform probing at `c_exp = 4`. -/
+def upSpaceFactor : ℕ :=
+  32 * (8 + 1) * 64 + 768
+
+/-- Across all capacities `n_max : ℕ`, uniform probing uses at most
+`upSpaceFactor * (n_max + 1) = 19200 * (n_max + 1)` words of memory. -/
+theorem uniformProbingSpace_le (n_max : ℕ) :
+    upSpace n_max ≤ upSpaceFactor * (n_max + 1) :=
+  ComplexityAbstracts.HashTablesBridge.uniformProbingSpace_le n_max
+
+/-- Expected instruction count `3 + (2 * doubleTabResampleSteps 8 64 (charBits n_max) + 4)` for
+uniform-probing initialization from zeroed memory at `c_exp = 4`. -/
+def upInitSteps (n_max : ℕ) : ℕ :=
+  3 + (2 * doubleTabResampleSteps 8 64 (charBits n_max) + 4)
+
+/-- Deterministic instruction count `2 * doubleTabEvalSteps 8 64 + 15 = 13731` for evaluating the
+primary and odd-stride Double Tabulation hashes at `c_exp = 4`. -/
+def upHashEvalSteps : ℕ :=
+  2 * doubleTabEvalSteps 8 64 + 15
+
+/-- Uniform `O(1)` expected per-operation instruction charge
+`13 * regimeThreshold + upHashEvalSteps + 8 = 13 * 2 ^ 320000 + 13739` for uniform probing at
+`c_exp = 4` (independent of `n_max` and `U`; astronomically large because the unconditional
+all-`n_max` probe bound uses `regimeThreshold = 2 ^ 320000` below the double-tabulation
+threshold). -/
+def upOpCharge : ℕ :=
+  13 * regimeThreshold + upHashEvalSteps + 8
+
+/-- **Uniform Probing via Odd-Stride Double Hashing** (`UniformProbing.lean:2362`
+`seq_expected_amortized`, specialized to `c_exp = 4`):
+For every capacity `n_max`, polynomial key universe `U ≤ max n_max 4 ^ 4`, value bound `V < 2 ^ w`,
+word width `w` with `∀ u : Fin U, u.val < 2 ^ w`, and base address `base` with
+`base + upSpace n_max < 2 ^ w`, there exist 16-register Word-RAM programs `p_init` and `p_op` such
+that from any word-bounded initial state `(reg₀, mem₀)` with `reg₀ 14 = base` and zeroed memory in
+`[base, base + upSpace n_max)`, for every oblivious operation history `ops : List (DictOp U)` valid
+for capacity `n_max` and value bound `V`:
+- `p_init` initializes the table in `upInitSteps n_max` expected body instructions;
+- `p_op` executes `ops` sequentially with output register `12`, matching `stepDict` and
+  `OpOutputCorrect` at every step;
+- the total expected body instruction count satisfies
+  `upInitSteps n_max + T_ops ≤ upInitSteps n_max + ops.length * upOpCharge`
+  (`upOpCharge = 13 * 2 ^ 320000 + 13739 = O(1)` expected instructions per `get` or `insert`,
+  independent of `n_max` and `U`, excluding caller argument preparation and dispatch).
+
+References: `[CLRS2009]` (3rd ed., Section 11.4, pp. 269–277); `[SchmidtSiegel1990]` (STOC 1990,
+pp. 224–234; NYU Courant Technical Report `TR1995-687`, May 1995, pp. 1–2, 4–7, 37–39);
+`[Thorup2013]` (FOCS 2013, pp. 90–99; `arXiv:1311.3121v2`, Theorem 1(a) and Lemma 2,
+pp. 4–5, 11–13). -/
+theorem uniformProbing :
+    ∀ (n_max : ℕ),
+      ∃ (p_init p_op : List (Instr 16)),
+        ∀ (U V w base : ℕ),
+          U ≤ max n_max 4 ^ 4 →
+          base + upSpace n_max < 2 ^ w →
+          (∀ u : Fin U, u.val < 2 ^ w) →
+          V < 2 ^ w →
+          ∀ (reg₀ : Fin 16 → ℕ) (mem₀ : ℕ → ℕ),
+            WordBounded w reg₀ mem₀ →
+            reg₀ ⟨14, by decide⟩ = base →
+            (∀ a, base ≤ a → a < base + upSpace n_max → mem₀ a = 0) →
+            ∀ ops : List (DictOp U),
+              ValidDictHistory V n_max (emptyDict U) ops →
+              ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (CoupledState Seed 16)),
+                ExecProgramDist w p_init ⟨12, by decide⟩ reg₀ mem₀
+                  (μ_init.map CoupledState.toRegMem) (upInitSteps n_max) ∧
+                ExecDictOps w p_op true
+                  ⟨0, by decide⟩ ⟨12, by decide⟩ ⟨13, by decide⟩ ⟨14, by decide⟩ ⟨12, by decide⟩
+                  base (upSpace n_max) (emptyDict U) ops
+                  μ_init μ_final T_ops ∧
+                (upInitSteps n_max : ℝ≥0∞) + T_ops ≤
+                  ((upInitSteps n_max + ops.length * upOpCharge : ℕ) : ℝ≥0∞) :=
+  ComplexityAbstracts.HashTablesBridge.uniformProbing
+    ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
+      @AluOp.rec, AluOp.eval,
+      Instr, .const, .copy, .alu, .width, .load, .store, .jump,
+      .branchEq, .branchLt, .halt, .rand, @Instr.rec,
+      Comp, @Comp.pure, @Comp.sample, @Comp.bind, @Comp.eval,
+      fun {α} (m : Comp α) =>
+        @Comp.rec α (fun _ => ℕ → Prop) (fun _ _ => True)
+          (fun _ _ ih R => Nat.casesOn R False (fun R' => ∀ k, ih k R')) m,
+      State, .mk, Cfg, .running, .halted, .faulted, @stepRand, @runRand⟩
+    (by refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+        ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+        ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
+      simp_all [AluOp.eval, Comp.bind, Comp.eval, stepRand, runRand])
+    ⟨DictOp, @DictOp.get, @DictOp.insert, @DictOp.rec,
+      @stepDict, @validDictOp, @ValidDictHistory,
+      RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
+      CoupledState, @CoupledState.mk, @CoupledState.seed, @CoupledState.reg, @CoupledState.mem,
+      @prepareDictRegs, @OpOutputCorrect, @ExecDictOps⟩
+    ⟨fun _ _ => rfl, fun _ _ _ => rfl,
+      fun _ _ _ _ => Iff.rfl, fun _ _ _ _ _ => Iff.rfl,
+      fun _ _ _ => Iff.rfl, fun _ _ _ _ _ => Iff.rfl,
+      fun _ _ => rfl, fun _ _ => rfl, fun _ => rfl,
+      fun _ _ _ => rfl, fun _ _ _ => rfl, fun _ _ _ => rfl, fun _ => rfl,
+      fun _ _ _ _ _ _ _ _ => rfl, fun _ _ _ _ _ _ _ _ _ => rfl,
+      fun _ _ _ _ => Iff.rfl, fun _ _ _ _ _ => Iff.rfl,
+      @ExecDictOps.nil, @ExecDictOps.cons⟩
+    regimeThreshold upHashEvalSteps upOpCharge rfl rfl rfl
 
 #check_abstract ComplexityAbstracts.HashTablesAbstract
 
