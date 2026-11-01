@@ -88,14 +88,26 @@ example (G : Matrix (ZMod 5) (ZMod 5) ℝ) (y : ZMod 5) :
       (fun (s : FrameChannel 5 2 1) (v : ZMod 5) ↦
         frameRetains 5 2 ⌈(5 : ℕ) * (1 / 2 : ℝ)⌉₊ s (id v))
       (fun t ↦ min (max t 0) 1) (fun _ ↦ 1) 20 1 ((1 / 2) ^ 2) G y ≤ 1 / 4 := by
-  refine not_lt.mp fun h ↦ ?_
-  have := lt_card_of_lt_columnDetector channels (by norm_num)
-    (fun t ↦ le_min (le_max_right _ _) zero_le_one) (fun t ↦ min_le_right _ _) (δ₀ := 0)
-    (fun t ht ↦ by rw [max_eq_right ht, min_eq_left zero_le_one]) (fun _ ↦ le_rfl)
-    (by norm_num) h
-  have hcard : (#({x | 0 * (1 / 2) ^ 2 < G x y} : Finset (ZMod 5)) : ℝ) ≤ 5 := by
-    exact_mod_cast (card_le_univ _).trans (by simp)
-  norm_num at this hcard
-  linarith
+  have hbound {ι κ : Type} [Fintype ι] [Fintype κ]
+      (X : ι → ZMod 5 → Prop) (Y : κ → ZMod 5 → Prop)
+      [∀ s v, Decidable (X s v)] [∀ t v, Decidable (Y t v)]
+      {π Cpair Cvar : ℝ}
+      (hch : RetentionChannels X Y ((1 / 2) ^ 2) π 1 (2 ^ 2) Cpair Cvar) :
+      columnDetector X Y (fun t ↦ min (max t 0) 1) (fun _ ↦ 1)
+        20 1 ((1 / 2) ^ 2) G y ≤ 1 / 4 := by
+    refine not_lt.mp fun h ↦ ?_
+    have hlarge :
+        (20 : ℝ) / (4 * (2 ^ 2) * ((1 / 2) ^ 2)) <
+          (#({x | 0 * (1 / 2) ^ 2 < G x y} : Finset (ZMod 5)) : ℝ) :=
+      lt_card_of_lt_columnDetector (J := 20) (K := 1) (G := G) (y := y)
+        (ϕ := fun t ↦ min (max t 0) 1) (ρ := fun _ ↦ 1) hch (by norm_num)
+        (fun t ↦ le_min (le_max_right _ _) zero_le_one) (fun t ↦ min_le_right _ _) (δ₀ := 0)
+        (fun t ht ↦ by rw [max_eq_right ht, min_eq_left zero_le_one]) (fun _ ↦ le_rfl)
+        (by norm_num) h
+    have hcard : (#({x | 0 * (1 / 2) ^ 2 < G x y} : Finset (ZMod 5)) : ℝ) ≤ 5 := by
+      exact_mod_cast (card_le_univ _).trans (by simp)
+    norm_num at hlarge hcard
+    linarith
+  exact hbound _ _ channels
 
 end ComplexityTests.FrameRetention

@@ -54,8 +54,8 @@ private meta def pptKnownCall : Aesop.RuleTac :=
 
 /-- Expose named probabilistic certificates as search alternatives. -/
 @[aesop unsafe 99% tactic (rule_sets := [PPT])]
-private meta def pptCertificate : Aesop.RuleTac :=
-  Cslib.Tactic.applyCertificates ``IsPPTOn
+private meta def pptCertificate : Aesop.RuleTac := fun input =>
+  withReducible <| Cslib.Tactic.applyCertificates ``IsPPTOn input
 
 /-- Let compositional rules finish a goal before exposing individual monadic binds. -/
 @[aesop safe -20 tactic (rule_sets := [PPT])]
@@ -66,7 +66,7 @@ private meta def pptFunProp : TacticM Unit :=
       throwError "expected an encoded-input PPT goal"
     if target.getAppArgs[2]!.hasExprMVar then
       throwError "input encoding is not yet determined"
-    Cslib.Tactic.PolyTime.Internal.funPropWithPlainBoundary 128
+    withReducible <| Cslib.Tactic.PolyTime.Internal.funPropWithPlainBoundary 128
 
 attribute [program_certificate]
   Turing.MultiTapeTM.ComputableInPolyTime.isPPTOn
@@ -98,7 +98,7 @@ private meta def pptConditional (rule : Name) : TacticM Unit :=
     let conditional? ← Cslib.Tactic.withConditionalBody? target.getAppArgs.back!
       fun _ => pure true
     unless conditional?.isSome do throwError "expected a conditional program"
-    liftMetaTactic fun goal => goal.applyConst rule
+    liftMetaTactic fun goal => withReducible <| goal.applyConst rule
 
 /-- Retain Boolean branch selection at its original priority. -/
 @[aesop unsafe 80% tactic (rule_sets := [PPT])]
@@ -121,7 +121,9 @@ private meta def pptIterate (rule : Name) : TacticM Unit :=
       if body.isAppOf ``OracleComp.iterate then return true
       return (← whnfR body).isAppOf ``OracleComp.iterate
     unless iteration do throwError "expected a probabilistic iteration"
-    liftMetaTactic fun goal => goal.applyConst rule
+    -- The shape check already exposes reducible iteration wrappers. Match the rule without
+    -- unfolding distributions or realizing machines when another iteration alternative fails.
+    liftMetaTactic fun goal => withReducible <| goal.applyConst rule
 
 /-- Retain the nonincreasing-state iteration alternative at its original priority. -/
 @[aesop unsafe 80% tactic (rule_sets := [PPT])]
