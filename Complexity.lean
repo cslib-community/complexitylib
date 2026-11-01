@@ -1693,6 +1693,8 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Gue
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.EncodedTree
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplay
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySpace
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputationTree
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockTrace
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Append
