@@ -9,7 +9,7 @@ module
 
 public import Complexity.Algorithms.Lean.VanEmdeBoas.Elements
 public import Complexity.Foundations.Data.OrderedSet.Spec
-public import Complexity.Foundations.Semantics.Stateful.Resource
+public import Complexity.DataStructure.StateTransition.Resource
 public import Mathlib.Data.Fintype.Fin
 public import Mathlib.Order.Fin.Basic
 
@@ -51,7 +51,7 @@ operation). In particular:
   `Fin (universeSize d)` observations and queries.
 * `step`, `Exec`, `run`: concrete `OrderedSet.Op (Fin (universeSize d))` step, native execution
   relation, and executable client interpreter.
-* `Rep`, `realization`, `callDepthBound`: representation relation, semantic realization of
+* `Rep`, `impl`, `callDepthBound`: representation relation, semantic realization of
   `OrderedSet.spec (Fin (universeSize d))`, and uniform `d + 1` per-operation resource bound.
 
 ## Main results
@@ -61,7 +61,7 @@ operation). In particular:
   makes at most `d + 1` active recursive calls.
 * `Tree.insertVisits_of_bounds_none`, `Tree.eraseVisits_of_bounds_eq`: `O(1)` single-call base
   cases on empty insertion and singleton deletion.
-* `Rep.valid`, `Rep.finElements_eq`, `rep_empty`, `realization_rep`: representation projections
+* `Rep.valid`, `Rep.finElements_eq`, `rep_empty`, `impl_rep`: representation projections
   and empty-set initialization.
 * `callDepthBound`, `realized_client`, `run_correct`: adaptive `OrderedSet` clients execute with
   finite-set correctness and total active-call cost at most `history.length * (d + 1)`.
@@ -77,7 +77,7 @@ public section
 
 namespace Cslib.Algorithms.Lean.VanEmdeBoas
 
-open Cslib.Stateful Cslib.OrderedSet
+open Cslib.DataStructure Cslib.OrderedSet
 
 /-- Every van Emde Boas universe size is nonzero, enabling `OfNat (Fin (universeSize d))` numerals
 for bounded-key clients. -/
@@ -489,9 +489,9 @@ theorem rep_empty (d : ℕ) : Rep (∅ : Finset (Fin (universeSize d))) (Tree.em
   ⟨Tree.valid_empty d, Tree.finElements_empty d⟩
 
 /-- Semantic realization of `OrderedSet.spec (Fin (universeSize d))` by `Tree d`. -/
-@[expose] def realization (d : ℕ) :
-    Realization (spec (Fin (universeSize d))) (Exec d) :=
-  Realization.ofFn
+@[expose] def impl (d : ℕ) :
+    StateTransitionImpl (spec (Fin (universeSize d))) (Exec d) :=
+  StateTransitionImpl.ofFn
     (rep := Rep)
     (total := fun {_ t} o _ _ =>
       match h : step t o with
@@ -518,8 +518,8 @@ theorem rep_empty (d : ℕ) : Rep (∅ : Finset (Fin (universeSize d))) (Tree.em
         cases he
         exact ⟨(Tree.finSuccessor_spec ht x).eq_least, ht, rfl⟩)
 
-/-- `(realization d).rep` is definitionally `Rep`. -/
-@[simp] theorem realization_rep (d : ℕ) : (realization d).rep = Rep := rfl
+/-- `(impl d).rep` is definitionally `Rep`. -/
+@[simp] theorem impl_rep (d : ℕ) : (impl d).rep = Rep := rfl
 
 /-- Every native `OrderedSet` operation on `Tree d` performs at most `d + 1` active recursive
 calls. -/
@@ -534,8 +534,8 @@ theorem exec_visits_le {t t' : Tree d} {o : Op (Fin (universeSize d))}
   | successor x => cases he; exact Tree.successorVisits_le t x.val
 
 /-- Uniform `d + 1` active-call depth bound (`O(log log U)` since `universeSize d = 2 ^ (2 ^ d)`)
-for `VanEmdeBoas.realization d`. -/
-theorem callDepthBound (d : ℕ) : Bound (realization d) id (fun _ _ => d + 1) := by
+for `VanEmdeBoas.impl d`. -/
+theorem callDepthBound (d : ℕ) : Bound (impl d) id (fun _ _ => d + 1) := by
   intro _ _ _ _ _ _ _ _ he
   exact exec_visits_le he
 
@@ -578,7 +578,7 @@ theorem run_correct {β : Type} (p : (spec (Fin (universeSize d))).Client β)
   have hv := (spec (Fin (universeSize d))).validHistory_of_forall_valid (fun _ _ => trivial)
     s ((spec (Fin (universeSize d))).runClient s p).2.2
   have hexec := run_exec p t
-  have hc := (realization d).correct_client hr hv hexec
+  have hc := (impl d).correct_client hr hv hexec
   exact ⟨hc.1, hc.2, Bound.client_const (callDepthBound d) hr hv hexec⟩
 
 end OrderedSetRealization

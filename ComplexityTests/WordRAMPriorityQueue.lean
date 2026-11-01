@@ -7,25 +7,25 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.PriorityQueue.BinaryHeap
+public import Complexity.DataStructure.PriorityQueue.WordRAM.BinaryHeap
 
 /-! Nonvacuity and interpreter checks for `IndexedMinPQ` and the standalone word-RAM binary
-min-heap (`Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap`). -/
+min-heap (`Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap`). -/
 
 @[expose] public section
 
 open Cslib Cslib.WordRAM
-open Cslib.Algorithms.Lean
-open Cslib.Algorithms.WordRAM.PriorityQueue
-open Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap
-open Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.Reg
+open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
+open Cslib.DataStructure.PriorityQueue.WordRAM Cslib.DataStructure.WordRAM
+open Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
+open Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.Reg
 
 namespace WordRAMPriorityQueueTests
 
 /-- Pure interpreter step for a single `IndexedMinPQ` operation on `BinaryHeap.pqCode`. -/
 def stepEval {n K_max : ℕ} (w fuel : ℕ) (x : Data rBin)
-    (o : (IndexedMinPQ.spec n K_max).Op) :
-    Option (Data rBin × (IndexedMinPQ.spec n K_max).Result o × ℕ) := do
+    (o : (indexedMinPQSpec n K_max).Op) :
+    Option (Data rBin × (indexedMinPQSpec n K_max).Result o × ℕ) := do
   let x' : Data rBin :=
     { regs := fun i => if pqCode.input i then pqCode.encode o i else x.regs i, mem := x.mem }
   let yn ← pqCode.code.eval w fuel x'
@@ -92,29 +92,29 @@ example : runDirtyInitClear = some (true, none, some (1, 7), true) := by
 
 /-- Lift a single `IndexedMinPQ` operation into `Client` for `spec 4 20`. -/
 abbrev callOp (o : IndexedMinPQ.Op 4) :
-    (IndexedMinPQ.spec 4 20).Client ((IndexedMinPQ.spec 4 20).Result o) :=
-  PFunctor.FreeM.lift (P := (IndexedMinPQ.spec 4 20).signature) o
+    (indexedMinPQSpec 4 20).Client ((indexedMinPQSpec 4 20).Result o) :=
+  PFunctor.FreeM.lift (P := (indexedMinPQSpec 4 20).signature) o
 
 /-- Concrete adaptive client inserting `(2, 8)` and `(1, 8)`, decreasing `2` to `0`, and extracting
 the minimum. -/
-def sampleClient : (IndexedMinPQ.spec 4 20).Client (Option (Fin 4 × ℕ)) := do
+def sampleClient : (indexedMinPQSpec 4 20).Client (Option (Fin 4 × ℕ)) := do
   callOp (.insert 2 8)
   callOp (.insert 1 8)
   callOp (.decreaseKey 2 0)
   callOp .extractMin
 
-/-- Nonvacuity check for `BinaryHeap.subroutineDS`, `Rep`, `instruction_bound`, and
+/-- Nonvacuity check for `BinaryHeap.impl`, `Rep`, `instruction_bound`, and
 `run_client_bound`: initializes an actual `Rep 4 10 10 (IndexedMinPQ.empty 4) y₀` state from
 zeroed memory and executes `sampleClient` over `Basis.standard` with result `some (2, 0)`. -/
 example :
     ∃ y₀ y traces,
       Rep 4 10 10 (IndexedMinPQ.empty 4) y₀ ∧
-      Stateful.Executes ((dynamicProgram 4 20).ExecOp 10) sampleClient y₀
+      DataStructure.Executes ((dynamicProgram 4 20).ExecOp 10) sampleClient y₀
         (some (2, 0)) y traces ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces ≤
-        (IndexedMinPQ.spec 4 20).totalCost (fun _ o => charge 4 o + 1)
+      DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤
+        (indexedMinPQSpec 4 20).totalCost (fun _ o => charge 4 o + 1)
           (IndexedMinPQ.empty 4)
-          ((IndexedMinPQ.spec 4 20).runClient (IndexedMinPQ.empty 4) sampleClient).2.2 := by
+          ((indexedMinPQSpec 4 20).runClient (IndexedMinPQ.empty 4) sampleClient).2.2 := by
   have hS : Fits 10 (10 + space 4) := by decide
   have hK : Fits 10 20 := by decide
   let x₀ : Data rBin := (((⟨fun _ => 0, fun _ => 0⟩ : Data rBin).set frontierReg 10).set nReg 4)
@@ -124,14 +124,14 @@ example :
   have hpar : ∀ j, x₀.regs (pqCode.toSubroutineCode.initParams j) = (![4] : Fin 1 → ℕ) j := by
     intro j; fin_cases j; decide
   have hz : ∀ a ∈ (Block.mk 10 (space 4)).footprint, x₀.mem a = 0 := fun _ _ => rfl
-  obtain ⟨y₀, _, _, hr₀, _, _⟩ := (subroutineDS hS hK).initFresh_exec hx₀ hfr hpar hz
-  have hhist : ((IndexedMinPQ.spec 4 20).runClient (IndexedMinPQ.empty 4) sampleClient).2.2 =
+  obtain ⟨y₀, _, _, hr₀, _, _⟩ := (impl hS hK).initFresh_exec hx₀ hfr hpar hz
+  have hhist : ((indexedMinPQSpec 4 20).runClient (IndexedMinPQ.empty 4) sampleClient).2.2 =
       [.insert 2 8, .insert 1 8, .decreaseKey 2 0, .extractMin] := rfl
-  have hv : (IndexedMinPQ.spec 4 20).ValidHistory (IndexedMinPQ.empty 4)
-      ((IndexedMinPQ.spec 4 20).runClient (IndexedMinPQ.empty 4) sampleClient).2.2 := by
+  have hv : (indexedMinPQSpec 4 20).ValidHistory (IndexedMinPQ.empty 4)
+      ((indexedMinPQSpec 4 20).runClient (IndexedMinPQ.empty 4) sampleClient).2.2 := by
     rw [hhist]
     simp [IndexedMinPQ.valid, IndexedMinPQ.step, IndexedMinPQ.empty]
-  have hres : ((IndexedMinPQ.spec 4 20).runClient (IndexedMinPQ.empty 4) sampleClient).1 =
+  have hres : ((indexedMinPQSpec 4 20).runClient (IndexedMinPQ.empty 4) sampleClient).1 =
       some (2, 0) := by
     decide
   obtain ⟨y, traces, hex, _, hcost⟩ := run_client_bound hS hK sampleClient hr₀ hv

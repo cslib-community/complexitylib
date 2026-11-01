@@ -246,7 +246,7 @@ with its head on cell `b + offset`, in the middle block. -/
 
 /-- The window cells hold the window: the cell at offset `c` from the start of the window is
 entry `c / b` of the window at `c mod b`. -/
-private theorem windowCell_eq (J : Option (Fin k) → ℤ) (w : Fin k → Fin 3 → ZMod b → Option Bool)
+theorem windowCell_eq (J : Option (Fin k) → ℤ) (w : Fin k → Fin 3 → ZMod b → Option Bool)
     (h : Fin k) (c : ℤ) :
     windowCell b J w h (b * (J (some h) - 1) + c) =
       if 0 ≤ c then (windowCells b (w h)).getD c.toNat none else none := by

@@ -58,8 +58,8 @@ namespace Cslib.WordRAM.Stack
 open Cslib.Algorithms.Lean.Queue
 
 /-- A fixed-capacity restriction of the same mathematical stack interface. -/
-abbrev spec (w capacity : ℕ) : Stateful.Spec :=
-  Stateful.Spec.ofFn (stack ℕ).stepFn fun vs o => match o with
+abbrev spec (w capacity : ℕ) : DataStructure.StateTransitionSpec :=
+  DataStructure.StateTransitionSpec.ofFn (stack ℕ).stepFn fun vs o => match o with
     | .push v => vs.length < capacity ∧ Fits w v
     | .pop | .size => True
 
@@ -298,7 +298,7 @@ theorem instructions_eq {w base capacity : ℕ} (h2 : Fits w 2)
 /-- Every admissible call has a separate worst-case bound of twelve native instructions. -/
 theorem instruction_bound {w base capacity : ℕ} (h2 : Fits w 2)
     (hcap : Fits w (base + capacity)) :
-    Stateful.Bound (certificate h2 hcap).realization
+    DataStructure.Bound (certificate h2 hcap).impl
       DynamicProgram.OperationTrace.instructions (fun _ _ => 12) :=
   (certificate h2 hcap).instruction_bound_const 12 fun o hr hv => by
     obtain ⟨y, he, _⟩ := execute h2 hcap hr o hv
@@ -351,10 +351,10 @@ theorem run_client {w base capacity : ℕ} (h2 : Fits w 2) (hcap : Fits w (base 
     {α : Type} (p : (spec w capacity).Client α) {vs : List ℕ} {x : Data 9}
     (hr : Rep w base capacity vs x)
     (hv : (spec w capacity).ValidHistory vs ((spec w capacity).runClient vs p).2.2) :
-    ∃ y traces, Stateful.Executes ((implementation w capacity).ExecOp w) p x
+    ∃ y traces, DataStructure.Executes ((implementation w capacity).ExecOp w) p x
         ((spec w capacity).runClient vs p).1 y traces ∧
       Rep w base capacity ((spec w capacity).runClient vs p).2.1 y ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces ≤
+      DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤
         ((spec w capacity).runClient vs p).2.2.length * 12 :=
   (certificate h2 hcap).run_client_const (instruction_bound h2 hcap) p hr hv
 

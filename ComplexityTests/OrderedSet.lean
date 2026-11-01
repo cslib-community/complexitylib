@@ -22,7 +22,7 @@ implementation or any cost theorem.
 
 namespace Cslib.OrderedSet
 
-open Cslib.Stateful
+open Cslib.DataStructure
 
 variable {α : Type} [LinearOrder α]
 
@@ -39,7 +39,8 @@ theorem insertAll_run (s : Finset α) (xs : List α) :
     change ((), s, []) = ((), s ∪ ∅, [])
     rw [Finset.union_empty]
   | cons x xs ih =>
-    simp only [insertAll, Spec.runClient_liftBind, spec, ih, List.toFinset_cons, List.map_cons]
+    simp only [insertAll, StateTransitionSpec.runClient_liftBind, spec, ih, List.toFinset_cons,
+      List.map_cons]
     simp [Finset.insert_union, Finset.union_insert]
 
 /-- Read the two smallest distinct keys. The successor argument comes from the minimum answer. -/
@@ -54,14 +55,14 @@ theorem firstTwo_run (s : Finset α) :
       match least s with
       | none => ((none, none), s, [.minimum])
       | some x => ((some x, least (s.filter (x < ·))), s, [.minimum, .successor x]) := by
-  simp only [firstTwo, Spec.runClient_liftBind, spec]
+  simp only [firstTwo, StateTransitionSpec.runClient_liftBind, spec]
   cases least s <;> rfl
 
 end Cslib.OrderedSet
 
 namespace ComplexityTests.OrderedSet
 
-open Cslib.OrderedSet Cslib.Stateful
+open Cslib.OrderedSet Cslib.DataStructure
 
 -- The absence contract is complete, including exhaustion above the largest key.
 example : LeastResult (∅ : Finset (Fin 3)) none := rfl
@@ -112,7 +113,7 @@ example (s : Finset (Fin 3)) (xs ys : List (Fin 3)) :
   simp only [insertAll_run, List.map_append]
 
 /-- A later bounded-key realization can restrict insertion while leaving all queries admissible. -/
-abbrev bounded (bound : Nat) : Spec :=
+abbrev bounded (bound : Nat) : StateTransitionSpec :=
   { spec Nat with valid := fun _ o => match o with
       | .insert x => x < bound
       | _ => True }

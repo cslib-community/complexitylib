@@ -42,8 +42,8 @@ namespace Cslib.WordRAM.Queue
 open Cslib.Algorithms.Lean.Queue
 
 /-- A queue admits an enqueue exactly when it has spare capacity and the value fits a word. -/
-abbrev spec (w capacity : ℕ) : Stateful.Spec :=
-  Stateful.Spec.ofFn (queue ℕ).stepFn fun q o => match o with
+abbrev spec (w capacity : ℕ) : DataStructure.StateTransitionSpec :=
+  DataStructure.StateTransitionSpec.ofFn (queue ℕ).stepFn fun q o => match o with
     | .enqueue v => q.length < capacity ∧ Fits w v
     | .dequeue => True
 

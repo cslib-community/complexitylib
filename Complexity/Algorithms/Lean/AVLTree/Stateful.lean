@@ -9,7 +9,7 @@ module
 
 public import Complexity.Algorithms.Lean.AVLTree.Erase
 public import Complexity.Foundations.Data.OrderedSet.Spec
-public import Complexity.Foundations.Semantics.Stateful.Resource
+public import Complexity.DataStructure.StateTransition.Resource
 
 /-!
 # Stateful ordered-set realization by height-balanced AVL trees
@@ -35,17 +35,18 @@ instructions.
 
 * `step`, `Exec`, `run`: concrete AVL operations, native execution relation, and executable client
   runner with exact internal-node-visit traces.
-* `Rep`, `realization`: AVL representation relation (`Valid t ∧ elements t = s`) and
-  `Cslib.Stateful.Realization` of `Cslib.OrderedSet.spec α`.
+* `Rep`, `impl`: AVL representation relation (`Valid t ∧ elements t = s`) and
+  `Cslib.DataStructure.StateTransitionImpl` of `Cslib.OrderedSet.spec α`.
 * `charge`: representation-independent logarithmic node-visit budget
   `2 * Nat.log 2 (s.card + 1)`.
 
 ## Main results
 
-* `Rep.valid`, `Rep.elements_eq`, `rep_empty`, `realization_rep`: representation invariant
+* `Rep.valid`, `Rep.elements_eq`, `rep_empty`, `impl_rep`: representation invariant
   projections and empty-set initialization.
 * `exec_visits_le_cachedHeight`: every native operation visits at most `t.cachedHeight` path nodes.
-* `nodeVisitBound`: logarithmic `Cslib.Stateful.Bound` certificate `2 * Nat.log 2 (s.card + 1)`.
+* `nodeVisitBound`: logarithmic `Cslib.DataStructure.Bound` certificate
+  `2 * Nat.log 2 (s.card + 1)`.
 * `realized_client`, `run_correct`: adaptive ordered-set clients (including `extractMin`) execute
   with finite-set correctness and additive logarithmic node-visit bounds.
 
@@ -59,7 +60,7 @@ public section
 
 namespace Cslib.Algorithms.Lean.AVLTree
 
-open Cslib.Stateful Cslib.OrderedSet
+open Cslib.DataStructure Cslib.OrderedSet
 
 variable {α : Type} [LinearOrder α]
 
@@ -92,8 +93,8 @@ theorem rep_empty : Rep (∅ : Finset α) .nil :=
   ⟨valid_nil, rfl⟩
 
 /-- Semantic realization of `OrderedSet.spec α` by `AVLTree α`. -/
-@[expose] def realization : Realization (spec α) (Exec (α := α)) :=
-  Realization.ofFn
+@[expose] def impl : StateTransitionImpl (spec α) (Exec (α := α)) :=
+  StateTransitionImpl.ofFn
     (rep := Rep)
     (total := fun {_ t} o _ _ =>
       match h : step t o with
@@ -120,9 +121,9 @@ theorem rep_empty : Rep (∅ : Finset α) .nil :=
         cases he
         exact ⟨(successor_spec ht.ordered x).eq_least, ht, rfl⟩)
 
-/-- `realization.rep` is definitionally `Rep`. -/
+/-- `impl.rep` is definitionally `Rep`. -/
 @[simp]
-theorem realization_rep : (realization (α := α)).rep = Rep := rfl
+theorem impl_rep : (impl (α := α)).rep = Rep := rfl
 
 /-- Every native AVL operation visits at most `t.cachedHeight` internal path nodes. -/
 theorem exec_visits_le_cachedHeight {t t' : AVLTree α} {o : Op α}
@@ -140,8 +141,8 @@ general). -/
 @[expose] def charge (s : Finset α) (_ : Op α) : ℕ :=
   2 * Nat.log 2 (s.card + 1)
 
-/-- Logarithmic per-operation node-visit certificate for `AVLTree.realization`. -/
-theorem nodeVisitBound : Bound (realization (α := α)) id charge := by
+/-- Logarithmic per-operation node-visit certificate for `AVLTree.impl`. -/
+theorem nodeVisitBound : Bound (impl (α := α)) id charge := by
   intro s t o a t' n hr _ he
   have hvisit := exec_visits_le_cachedHeight hr.valid.heightConsistent he
   have hlog := hr.valid.cachedHeight_le_two_mul_log
@@ -187,7 +188,7 @@ theorem run_correct {β : Type} (p : (spec α).Client β)
   have hv := (spec α).validHistory_of_forall_valid (fun _ _ => trivial)
     s ((spec α).runClient s p).2.2
   have hexec := run_exec p t
-  have hc := realization.correct_client hr hv hexec
+  have hc := impl.correct_client hr hv hexec
   exact ⟨hc.1, hc.2, Bound.client nodeVisitBound hr hv hexec⟩
 
 end Cslib.Algorithms.Lean.AVLTree

@@ -20,21 +20,22 @@ reads cost two and writes cost three. No whole-machine runtime bound is asserted
 
 @[expose] public section
 
-namespace Cslib.Stateful.Tests
+namespace Cslib.DataStructure.Tests
 
 /-- A counter supporting reads and increments. -/
-abbrev counter : Spec :=
-  Spec.ofFn (State := Nat) (Op := Bool) (Result := fun _ => Nat) fun s inc =>
+abbrev counter : StateTransitionSpec :=
+  StateTransitionSpec.ofFn (State := Nat) (Op := Bool) (Result := fun _ => Nat) fun s inc =>
     if inc then (s + 1, s + 1) else (s, s)
 
 /-- A mutable natural-number cell. -/
-abbrev cell : Spec :=
-  Spec.ofFn (State := Nat) (Op := Option Nat) (Result := fun _ => Nat) fun s o => match o with
+abbrev cell : StateTransitionSpec :=
+  StateTransitionSpec.ofFn (State := Nat) (Op := Option Nat) (Result := fun _ => Nat)
+    fun s o => match o with
     | none => (s, s)
     | some n => (n, n)
 
 /-- Two independent mutable cells. -/
-abbrev storage : Spec := product cell cell
+abbrev storage : StateTransitionSpec := product cell cell
 
 /-- Budget for a counter operation realized with reads and writes. -/
 def counterCharge (_ : Nat) (inc : Bool) : Nat := if inc then 5 else 2
@@ -92,12 +93,12 @@ theorem continue_contract (n : Nat) : counter.CostHoare counterCharge
     (if n = 0 then .liftBind true (fun m => .pure m) else .pure n : counter.Client Nat)
     (fun m s => m = s ∧ 0 < m) (fun _ => 5) := by
   split
-  · apply Spec.CostHoare.call_ofFn
+  · apply StateTransitionSpec.CostHoare.call_ofFn
     intro s _
     exact ⟨trivial, rfl, Nat.zero_lt_succ s⟩
   · have hp : counter.CostHoare counterCharge (fun s => n = s) (.pure n)
         (fun m s => m = s ∧ 0 < m) (fun _ => 0) := by
-      apply Spec.CostHoare.pure
+      apply StateTransitionSpec.CostHoare.pure
       intro s hs
       exact ⟨hs, by omega⟩
     exact hp.consequence (fun _ hs => hs) (fun _ _ hs => hs) (fun _ _ => by omega)
@@ -105,7 +106,7 @@ theorem continue_contract (n : Nat) : counter.CostHoare counterCharge
 /-- The adaptive abstract client satisfies a uniform seven-unit operation budget. -/
 theorem ensurePositive_contract : counter.CostHoare counterCharge (fun _ => True)
     ensurePositive (fun n s => n = s ∧ 0 < n) (fun _ => 7) := by
-  exact Spec.CostHoare.bind read_contract continue_contract
+  exact StateTransitionSpec.CostHoare.bind read_contract continue_contract
     (fun _ _ _ _ _ => Nat.le_refl 7)
 
 /-- Two successive interface implementations. -/
@@ -124,14 +125,14 @@ def exec : Execution storage (Nat × Nat) Nat :=
   fun s o a s' t => (s', a) = storage.stepFn s o ∧ t = storageCharge s o
 
 /-- The deterministic primitive semantics realizes the storage interface. -/
-def realization : Realization storage exec :=
-  Realization.ofFn Eq
+def impl : StateTransitionImpl storage exec :=
+  StateTransitionImpl.ofFn Eq
     (fun o hr _ => by subst hr; exact ⟨_, _, _, rfl, rfl⟩)
     (fun hr _ he => by
       subst hr
       exact ⟨congrArg Prod.snd he.1, (congrArg Prod.fst he.1).symm⟩)
 
-theorem native_bound : Bound realization id storageCharge :=
+theorem native_bound : Bound impl id storageCharge :=
   fun hr _ he => by
     subst hr
     exact he.2.le
@@ -140,9 +141,10 @@ theorem native_bound : Bound realization id storageCharge :=
 theorem ensurePositive_native (s spare : Nat) :
     ∃ a c' traces, Executes exec (link implementation.methods ensurePositive)
       (s, spare) a c' traces ∧
-      (∃ s', realization.rep s' c' ∧
+      (∃ s', impl.rep s' c' ∧
         ∃ n, (a = n ∧ 0 < a) ∧ implementation.rep n s') ∧ total id traces ≤ 7 := by
-  exact Spec.CostHoare.exists_executes (s := (s, spare)) native_bound ensurePositive_linked
+  exact StateTransitionSpec.CostHoare.exists_executes (s := (s, spare)) native_bound
+    ensurePositive_linked
     ⟨s, trivial, s, rfl, rfl⟩ rfl
 
 -- The zero branch performs a read, another read and a write; the nonzero branch only reads.
@@ -178,28 +180,28 @@ example (n : Nat) : counter.CostHoare (fun s _ => s + 1) (fun s => s = n)
     ((.liftBind true (fun a => .pure a) : counter.Client Nat).bind fun _ =>
       .liftBind false fun a => .pure a)
     (fun a s => a = s ∧ s = n + 1) (fun s => 2 * s + 3) := by
-  apply Spec.CostHoare.bind (mid := fun a s => a = s ∧ s = n + 1)
+  apply StateTransitionSpec.CostHoare.bind (mid := fun a s => a = s ∧ s = n + 1)
     (first := fun s => s + 1) (next := fun _ s => s + 1)
-  · apply Spec.CostHoare.call_ofFn
+  · apply StateTransitionSpec.CostHoare.call_ofFn
     intro s hs
     exact ⟨trivial, rfl, congrArg (· + 1) hs⟩
   · intro a
-    apply Spec.CostHoare.call_ofFn
+    apply StateTransitionSpec.CostHoare.call_ofFn
     intro s hs
     exact ⟨trivial, rfl, hs.2⟩
   · intro s hs a s' ha
     rw [hs, ha.2]
     omega
 
-/-- info: 'Cslib.Stateful.Spec.CostHoare.link' depends on axioms: [propext] -/
+/-- info: 'Cslib.DataStructure.StateTransitionSpec.CostHoare.link' depends on axioms: [propext] -/
 #guard_msgs in
-#print axioms Spec.CostHoare.link
+#print axioms StateTransitionSpec.CostHoare.link
 
-/-- info: 'Cslib.Stateful.Module.ChargeBound.comp' depends on axioms: [propext] -/
+/-- info: 'Cslib.DataStructure.Module.ChargeBound.comp' depends on axioms: [propext] -/
 #guard_msgs in
 #print axioms Module.ChargeBound.comp
 
-/-- info: 'Cslib.Stateful.Tests.ensurePositive_native' depends on axioms: [propext, Quot.sound] -/
+/-- info: 'Cslib.DataStructure.Tests.ensurePositive_native' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms ensurePositive_native
 
@@ -215,7 +217,7 @@ inductive TwoSlotOp : Type
 /-- Relational specification of a two-slot allocator whose state `(b₀, b₁) : Bool × Bool`
 records whether slots `0` and `1` are currently occupied. When both slots are free, `alloc`
 nondeterministically returns either `0` or `1`. -/
-abbrev TwoSlotAlloc : Spec where
+abbrev TwoSlotAlloc : StateTransitionSpec where
   State := Bool × Bool
   Op := TwoSlotOp
   Result
@@ -248,7 +250,7 @@ theorem twoSlotAlloc_nondeterministic :
     ((false, true), (1 : Fin 2)) ∈ TwoSlotAlloc.outcomes (false, false) .alloc :=
   ⟨Or.inl ⟨rfl, rfl, rfl⟩, Or.inr ⟨rfl, rfl, rfl⟩⟩
 
-/-- Sample LTS transition via `Spec.toLTS`. -/
+/-- Sample LTS transition via `StateTransitionSpec.toLTS`. -/
 theorem twoSlotAlloc_toLTS_tr :
     TwoSlotAlloc.toLTS.Tr (false, false) ⟨.alloc, (1 : Fin 2)⟩ (false, true) :=
   Or.inr ⟨rfl, rfl, rfl⟩
@@ -265,15 +267,16 @@ abbrev allocTwoAndFreeFirst : TwoSlotAlloc.Client (Fin 2 × Fin 2) :=
 nondeterministic choices of the first and second allocations. -/
 theorem allocTwoAndFreeFirst_demonicValid :
     TwoSlotAlloc.DemonicValid (false, false) allocTwoAndFreeFirst := by
-  refine Spec.DemonicValid.liftBind (D := TwoSlotAlloc) TwoSlotOp.alloc _ (Or.inl rfl)
+  refine StateTransitionSpec.DemonicValid.liftBind (D := TwoSlotAlloc) TwoSlotOp.alloc _
+    (Or.inl rfl)
     fun s₁ i h₁ => ?_
   have hv₂ : TwoSlotAlloc.valid s₁ TwoSlotOp.alloc := by
     rcases h₁ with ⟨rfl, _, rfl⟩ | ⟨rfl, _, rfl⟩
     · exact Or.inr rfl
     · exact Or.inl rfl
-  refine Spec.DemonicValid.liftBind (D := TwoSlotAlloc) TwoSlotOp.alloc _ hv₂
+  refine StateTransitionSpec.DemonicValid.liftBind (D := TwoSlotAlloc) TwoSlotOp.alloc _ hv₂
     fun s₂ j _ => ?_
-  refine Spec.DemonicValid.liftBind (D := TwoSlotAlloc) (TwoSlotOp.free i) _ trivial
+  refine StateTransitionSpec.DemonicValid.liftBind (D := TwoSlotAlloc) (TwoSlotOp.free i) _ trivial
     fun s₃ _ _ => .pure s₃ (i, j)
 
 /-- Demonic `CostHoare` specification: under unit per-operation charge, every relational execution
@@ -288,10 +291,10 @@ theorem allocTwoAndFreeFirst_costHoare :
   refine ⟨fun s hs => ?_, fun s hs v s' tr hrun => ?_⟩
   · subst hs
     refine ⟨allocTwoAndFreeFirst_demonicValid, fun v s' tr hrun => ?_⟩
-    obtain ⟨_, i, s₁, tr₁, h₁, hrun₁, _⟩ := (Spec.clientRun_liftBind_iff ..).mp hrun
-    obtain ⟨_, j, s₂, tr₂, h₂, hrun₂, _⟩ := (Spec.clientRun_liftBind_iff ..).mp hrun₁
-    obtain ⟨_, _, s₃, tr₃, h₃, hrun₃, _⟩ := (Spec.clientRun_liftBind_iff ..).mp hrun₂
-    obtain ⟨rfl, rfl, rfl⟩ := (Spec.clientRun_pure_iff ..).mp hrun₃
+    obtain ⟨_, i, s₁, tr₁, h₁, hrun₁, _⟩ := (StateTransitionSpec.clientRun_liftBind_iff ..).mp hrun
+    obtain ⟨_, j, s₂, tr₂, h₂, hrun₂, _⟩ := (StateTransitionSpec.clientRun_liftBind_iff ..).mp hrun₁
+    obtain ⟨_, _, s₃, tr₃, h₃, hrun₃, _⟩ := (StateTransitionSpec.clientRun_liftBind_iff ..).mp hrun₂
+    obtain ⟨rfl, rfl, rfl⟩ := (StateTransitionSpec.clientRun_pure_iff ..).mp hrun₃
     rcases h₁ with ⟨rfl, _, rfl⟩ | ⟨rfl, _, rfl⟩
     · rcases h₂ with ⟨_, hfalse, _⟩ | ⟨rfl, _, rfl⟩
       · cases hfalse
@@ -302,10 +305,12 @@ theorem allocTwoAndFreeFirst_costHoare :
         exact ⟨by decide, by decide⟩
       · cases hfalse
   · subst hs
-    obtain ⟨_, i, s₁, tr₁, _, hrun₁, rfl⟩ := (Spec.clientRun_liftBind_iff ..).mp hrun
-    obtain ⟨_, j, s₂, tr₂, _, hrun₂, rfl⟩ := (Spec.clientRun_liftBind_iff ..).mp hrun₁
-    obtain ⟨_, _, s₃, tr₃, _, hrun₃, rfl⟩ := (Spec.clientRun_liftBind_iff ..).mp hrun₂
-    obtain ⟨rfl, rfl, rfl⟩ := (Spec.clientRun_pure_iff ..).mp hrun₃
+    obtain ⟨_, i, s₁, tr₁, _, hrun₁, rfl⟩ := (StateTransitionSpec.clientRun_liftBind_iff ..).mp hrun
+    obtain ⟨_, j, s₂, tr₂, _, hrun₂, rfl⟩ :=
+      (StateTransitionSpec.clientRun_liftBind_iff ..).mp hrun₁
+    obtain ⟨_, _, s₃, tr₃, _, hrun₃, rfl⟩ :=
+      (StateTransitionSpec.clientRun_liftBind_iff ..).mp hrun₂
+    obtain ⟨rfl, rfl, rfl⟩ := (StateTransitionSpec.clientRun_pure_iff ..).mp hrun₃
     simp
 
 /-- Consequence to plain demonic `Hoare`. -/
@@ -327,7 +332,7 @@ def firstFitExec : Execution TwoSlotAlloc (Bool × Bool) ℕ
     n = 1 ∧ c' = (if i = 0 then (false, c.2) else (c.1, false))
 
 /-- Angelic realization of `TwoSlotAlloc` by `firstFitExec`. -/
-def firstFitRealization : Realization TwoSlotAlloc firstFitExec where
+def firstFitRealization : StateTransitionImpl TwoSlotAlloc firstFitExec where
   rep s c := s = c
   total {s c} o hr _ := by
     subst hr
@@ -370,7 +375,7 @@ theorem firstFitAmortized :
   Amortized.of_worstCase firstFitBound
 
 /-- End-to-end execution of `allocTwoAndFreeFirst` on `firstFitRealization` via
-`Amortized.exists_demonic` and `Spec.CostHoare.realize_amortized`. -/
+`Amortized.exists_demonic` and `StateTransitionSpec.CostHoare.realize_amortized`. -/
 theorem firstFit_allocTwoAndFreeFirst_executes :
     ∃ v c' traces s' tr,
       Executes firstFitExec allocTwoAndFreeFirst (false, false) v c' traces ∧
@@ -385,4 +390,4 @@ theorem firstFit_allocTwoAndFreeFirst_executes :
     allocTwoAndFreeFirst_costHoare.realize_amortized firstFitAmortized rfl rfl he
   exact ⟨v, c', traces, s', tr, he, hrun, hr, hpost, by omega⟩
 
-end Cslib.Stateful.Tests
+end Cslib.DataStructure.Tests

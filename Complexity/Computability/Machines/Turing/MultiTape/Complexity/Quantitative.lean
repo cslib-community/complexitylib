@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Streaming
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 public import Mathlib.Tactic.FunProp
+import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Transducer.Copy
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.OLoops
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryAddition
 import Complexity.Foundations.Data.Nat.Doubling
@@ -299,12 +300,6 @@ private def intPredT : Transducer Bool (Fin 3) where
   length_step_le q b := by fin_cases q <;> cases b <;> simp
   length_final_le q := by split_ifs <;> simp
 
-private lemma run_copy_fin3 (T : Transducer Bool (Fin 3)) (hT : ∀ b, T.step 2 b = (2, [b]))
-    (hf : T.final 2 = []) (w : List Bool) : T.run 2 w = w := by
-  induction w with
-  | nil => simp [hf]
-  | cons b w ih => simp [hT, ih]
-
 /-- Binary successor has cost and output degree one, from the transducer certificate
 `computableInTimeAndSpace_succ`. -/
 theorem natSucc : ComputableInDegree (· + 1) encNat encNat 1 1 :=
@@ -313,7 +308,7 @@ theorem natSucc : ComputableInDegree (· + 1) encNat encNat 1 1 :=
 /-- Adding one on unary-magnitude signed integers. -/
 theorem int_succ : ComputableInDegree (· + 1) encInt encInt 1 1 := by
   refine of_linear (.of_transducer intSuccT fun z => ?_)
-  have hc := run_copy_fin3 intSuccT (fun b => by cases b <;> rfl) rfl
+  have hc := Transducer.run_eq_self intSuccT 2 (fun b => by cases b <;> rfl) rfl
   rcases z with n | _ | n
   · rw [show intSuccT.q₀ = 0 from rfl]
     simp only [encInt_ofNat, Transducer.run_cons]
@@ -331,7 +326,7 @@ theorem int_succ : ComputableInDegree (· + 1) encInt encInt 1 1 := by
 /-- Subtracting one on unary-magnitude signed integers. -/
 theorem int_pred : ComputableInDegree (· - 1) encInt encInt 1 1 := by
   refine of_linear (.of_transducer intPredT fun z => ?_)
-  have hc := run_copy_fin3 intPredT (fun b => by cases b <;> rfl) rfl
+  have hc := Transducer.run_eq_self intPredT 2 (fun b => by cases b <;> rfl) rfl
   rcases z with (_ | n) | n
   · rfl
   · rw [show Int.ofNat (n + 1) - 1 = Int.ofNat n by simp, show intPredT.q₀ = 0 from rfl]

@@ -31,7 +31,7 @@ public section
 
 namespace ComplexityTests.AVLTree
 
-open Cslib.Algorithms.Lean Cslib.Algorithms.Lean.AVLTree Cslib.OrderedSet Cslib.Stateful
+open Cslib.Algorithms.Lean Cslib.Algorithms.Lean.AVLTree Cslib.OrderedSet Cslib.DataStructure
 
 def build (xs : List ℕ) : AVLTree ℕ :=
   (run .nil (insertAll xs)).2.1
@@ -171,7 +171,7 @@ example :
   intro p
   have hv := (spec ℕ).validHistory_of_forall_valid (fun _ _ => trivial) ∅
     ((spec ℕ).runClient ∅ p).2.2
-  exact ⟨(realization.correct_client rep_empty hv (run_exec p .nil)).1,
+  exact ⟨(impl.correct_client rep_empty hv (run_exec p .nil)).1,
     nodeVisitBound.client rep_empty hv (run_exec p .nil)⟩
 
 -- Independent necessity of all three conjuncts of `Valid`:

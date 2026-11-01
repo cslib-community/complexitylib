@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Data.OrderedSet
-public import Complexity.Foundations.Semantics.Stateful.Basic
+public import Complexity.DataStructure.StateTransition
 
 /-!
 # A representation-independent stateful ordered set
@@ -28,14 +28,15 @@ choose a representation or charge a computational cost.
 
 * [Cormen, Leiserson, Rivest and Stein, *Introduction to Algorithms*, Chapter 12][CLRS2009]
 
-The adaptive client syntax uses Quang Dao's upstream free monad via `Cslib.Stateful.Spec`.
+The adaptive client syntax uses Quang Dao's upstream free monad via
+`Cslib.DataStructure.StateTransitionSpec`.
 -/
 
 @[expose] public section
 
 namespace Cslib.OrderedSet
 
-open Cslib.Stateful
+open Cslib.DataStructure
 
 variable {α : Type} [LinearOrder α]
 
@@ -65,7 +66,7 @@ abbrev step (s : Finset α) : (o : Op α) → Finset α × o.Result
   | .successor x => (s, least (s.filter (x < ·)))
 
 /-- Mathematical ordered-set semantics. All operations are admissible, including empty queries. -/
-abbrev spec (α : Type) [LinearOrder α] : Spec :=
-  Spec.ofFn (State := Finset α) (Op := Op α) (Result := Op.Result) step
+abbrev spec (α : Type) [LinearOrder α] : StateTransitionSpec :=
+  StateTransitionSpec.ofFn (State := Finset α) (Op := Op α) (Result := Op.Result) step
 
 end Cslib.OrderedSet

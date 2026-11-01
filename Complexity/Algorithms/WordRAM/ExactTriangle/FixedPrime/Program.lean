@@ -83,6 +83,16 @@ open Reg in
 /-- Complete original-input fixed-prime solver: one preparation and the actual native loop. -/
 @[expose] def program : Code .standard 416 := .seq produce traverse
 
+/-- The complete structured solver never reads the physical word width. This form is used
+by actual memory-window compilation as well as by the flat initialized client. -/
+theorem program_not_readsWidth : ¬program.ReadsWidth := by
+  simp only [program, produce, traverse, setup, step, select, record, receive,
+    RecordWitness.produce, RecordProduct.produce, RecordWitness.program,
+    Code.ReadsWidth, Code.readsWidth_rename, Op.ReadsWidth, Op.bin, reduceCtorEq,
+    false_or, or_false]
+  exact not_or.mpr ⟨Instances.program_fixed.2,
+    not_or.mpr ⟨RecordProduct.program_fixed.2, RecordWitness.consume_fixed.2⟩⟩
+
 /-- The whole fixed-prime controller is one standard-native program, with a fixed register
 bank and at most 133152 flat slots including halt. It never reads the physical word width. -/
 theorem program_fixed : (program.program Reg.found).length ≤ 133152 ∧
@@ -96,12 +106,6 @@ theorem program_fixed : (program.program Reg.found).length ≤ 133152 ∧
     have hr := RecordProduct.program_fixed.1
     have hc := RecordWitness.consume_fixed.1
     omega
-  · apply Code.not_readsWidth_program
-    simp only [program, produce, traverse, setup, step, select, record, receive,
-      RecordWitness.produce, RecordProduct.produce, RecordWitness.program,
-      Code.ReadsWidth, Code.readsWidth_rename, Op.ReadsWidth, Op.bin, reduceCtorEq,
-      false_or, or_false]
-    exact not_or.mpr ⟨Instances.program_fixed.2,
-      not_or.mpr ⟨RecordProduct.program_fixed.2, RecordWitness.consume_fixed.2⟩⟩
+  · exact Code.not_readsWidth_program program_not_readsWidth _
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.FixedPrime

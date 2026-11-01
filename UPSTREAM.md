@@ -508,7 +508,8 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   routines. Its certificates expose actual native TM witnesses, parameterized time/space bounds,
   and polynomial-time corollaries, and feed the fixed-program step and whole-run simulators in
   `GenericRAM/Simulation/{Turing,Run}` (#298, #292).
-* **Stateful algorithms prototype.** `Foundations/Semantics/Stateful/*` reuses Quang Dao's merged
+* **Stateful algorithms prototype.** `DataStructure/StateTransition.lean` and
+  `DataStructure/StateTransition/*` reuse Quang Dao's merged
   `PFunctor.FreeM` for adaptive clients and substitution, adding persistent representation
   simulation, interface composition, semantic Hoare rules and separate native-resource
   certificates. Its queue and reset-and-replay constructions deliberately count backend calls;
