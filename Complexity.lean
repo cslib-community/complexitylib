@@ -2618,6 +2618,7 @@ public import Complexity.Computability.WordRAM.Signed.State
 public import Complexity.Computability.WordRAM.Structured
 public import Complexity.Computability.WordRAM.Subroutine
 public import Complexity.Computability.WordRAM.SymbolicExec
+public import Complexity.Computability.WordRAM.SymbolicExec.Init
 public import Complexity.Computability.WordRAM.Time
 public import Complexity.Computability.WordRAM.Trace
 public import Complexity.Computability.WordRAM.Turing
