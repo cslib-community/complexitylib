@@ -89,13 +89,6 @@ theorem isMonadHom_sample : IsMonadHom ProbComp (ProbOracleComp spec) (sample (s
 /-- Make one external call, whose reply may determine later sampling or queries. -/
 def query (q : Query) : ProbOracleComp spec (spec q) := OracleComp.query (Sum.inr q)
 
-/-- Transitional name for the sum handler `OracleComp.sumHandler` of `unifSpec ⊕ₒ spec`, kept
-only until its remaining clients use `OracleComp.sumHandler` directly (#814). -/
-abbrev handler {m : Type → Type v} (random : (n : ℕ) → m (Fin (n + 1)))
-    (oracle : (q : Query) → m (spec q)) :
-    (q : ℕ ⊕ Query) → m (probOracleSpec spec q) :=
-  OracleComp.sumHandler random oracle
-
 open OracleComp (sumHandler)
 
 variable {m : Type → Type v} [Monad m] [LawfulMonad m]

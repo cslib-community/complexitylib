@@ -51,16 +51,6 @@ open OracleComp
 
 variable {Query α β : Type} {spec : Query → Type}
 
-/-- A returned value is the only possible result. -/
-theorem eq_of_mem_support_pure {a result : α}
-    (h : result ∈ support (pure a : ProbOracleComp spec α)) : result = a :=
-  eq_of_mem_supportWith_pure h
-
-/-- A possible mapped result is the image of a possible result. -/
-theorem mem_support_map {program : ProbOracleComp spec α} {f : α → β} {result : β}
-    (h : result ∈ support (f <$> program)) : ∃ a ∈ support program, f a = result :=
-  mem_supportWith_map_iff.mp h
-
 /-- An external query may return any of its possible replies. -/
 @[simp] theorem supportWith_query (possible : (q : ℕ ⊕ Query) → Set (probOracleSpec spec q))
     (q : Query) : supportWith possible (query (spec := spec) q) = possible (.inr q) :=

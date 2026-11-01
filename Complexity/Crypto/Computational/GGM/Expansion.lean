@@ -67,7 +67,7 @@ def expansionGame (generator : List Bool → List Bool)
     (sample : ProbComp (List Bool)) (adversary : OracleDistinguisher) (n depth : ℕ) :
     ProbComp Bool :=
   Prod.fst <$> (OracleComp.interpret
-    (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
       (fun request => expansionOracle generator sample n depth request.2))
         (adversary n [])).run []
 
@@ -151,7 +151,7 @@ theorem isPPTOn_expansionGame {Caller : Type} {input : Caller ↪ List Bool}
   have hdepth := hdepth.tidy
   have hrun : IsPPTOn input (encPair encBool cacheEncoding) (fun a =>
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
           (fun request => expansionOracle generator (sample a) (width a) (depth a) request.2))
             (adversary (width a) [])).run []) := by
     apply hadversary.run_interpret_preprocess (operationEncoding := encFinEnum Unit)
@@ -242,10 +242,10 @@ theorem expansionGame_generated (generator : List Bool → List Bool)
 private theorem prefix_eager (n depth width : ℕ) (hdepth : depth ≤ n)
     (respond : List Bool → List Bool → List Bool) (program : WordOracleComp Unit Bool) :
     (PMF.uniformOfFintype (BitString depth → BitString width)).bind (fun table =>
-      OracleComp.interpret (ProbOracleComp.handler ProbComp.unifOracle (fun request =>
+      OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle (fun request =>
         PMF.pure (if request.2.length = n then respond request.2
           (List.ofFn (table (BitString.ofList depth (request.2.take depth)))) else []))) program) =
-      ((OracleComp.interpret (ProbOracleComp.handler
+      ((OracleComp.interpret (OracleComp.sumHandler
         (fun k => StateT.lift (ProbComp.unifOracle k)) (fun request cache =>
           if request.2.length = n then
             (memoize (fun _ : List Bool => BitString.uniformList width)
@@ -260,10 +260,10 @@ private theorem prefix_eager (n depth width : ℕ) (hdepth : depth ≤ n)
     (⟨List.ofFn, List.ofFn_injective⟩ : BitString depth ↪ List Bool) List.ofFn
     (fun _ => PMF.uniformOfFintype (BitString width)) (fun _ => BitString.uniformList width)
     (fun _ => rfl) (OracleComp.interpret
-      (ProbOracleComp.handler (fun k => ProbOracleComp.sample (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => ProbOracleComp.sample (ProbComp.unifFin k))
         (fun request : Unit × List Bool => adapter request.2)) program)
   have hstep (query : List Bool) : OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
         (fun key => memoize (fun _ : List Bool => BitString.uniformList width) (List.ofFn key)))
           (adapter query) = fun cache => if query.length = n then
         (memoize (fun _ : List Bool => BitString.uniformList width) (query.take depth) cache).map
@@ -279,7 +279,7 @@ private theorem prefix_eager (n depth width : ℕ) (hdepth : depth ≤ n)
       rfl
   have heval (table : BitString depth → BitString width) (query : List Bool) :
       OracleComp.interpret
-        (ProbOracleComp.handler ProbComp.unifOracle (fun key => PMF.pure (List.ofFn (table key))))
+        (OracleComp.sumHandler ProbComp.unifOracle (fun key => PMF.pure (List.ofFn (table key))))
           (adapter query) = PMF.pure (if query.length = n then
         respond query (List.ofFn (table (BitString.ofList depth (query.take depth)))) else []) := by
     by_cases hquery : query.length = n <;> simp [adapter, hquery, PMF.pure_map]
@@ -338,12 +338,12 @@ theorem expansionGame_uniform (generator : List Bool → List Bool) (adversary :
     ProbComp.eval (expansionGame generator (BitString.sampleList (2 * n)) adversary n depth) =
       ProbComp.eval (hybridGame generator adversary n (depth + 1)) := by
   let earlier := fun table : BitString depth → BitString (2 * n) =>
-    OracleComp.interpret (ProbOracleComp.handler ProbComp.unifOracle (fun request =>
+    OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle (fun request =>
       PMF.pure (if request.2.length = n then eval generator
         (selectChild n (List.ofFn (table (BitString.ofList depth (request.2.take depth))))
           (request.2[depth]?.getD false)) (request.2.drop (depth + 1)) else []))) (adversary n [])
   let later := fun table : BitString (depth + 1) → BitString n =>
-    OracleComp.interpret (ProbOracleComp.handler ProbComp.unifOracle (fun request =>
+    OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle (fun request =>
       PMF.pure (if request.2.length = n then eval generator
         (List.ofFn (table (BitString.ofList (depth + 1) (request.2.take (depth + 1)))))
           (request.2.drop (depth + 1)) else []))) (adversary n [])

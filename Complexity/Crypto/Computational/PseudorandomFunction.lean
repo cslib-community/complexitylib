@@ -76,7 +76,7 @@ def randomFunctionQuery (n : ℕ) (query : List Bool) :
 theorem interpret_randomFunctionQuery {m : Type → Type*} [Monad m] [LawfulMonad m]
     (random : (n : ℕ) → m (Fin (n + 1))) (n : ℕ) (table : BitString n → BitString n)
     (query : List Bool) :
-    OracleComp.interpret (ProbOracleComp.handler random (fun bits => pure (table bits)))
+    OracleComp.interpret (OracleComp.sumHandler random (fun bits => pure (table bits)))
       (randomFunctionQuery n query) = pure (randomFunctionOracle n table query) := by
   by_cases h : query.length = n <;> simp [randomFunctionQuery, randomFunctionOracle, h]
 
@@ -85,7 +85,7 @@ open Classical in
 noncomputable def lazyRandomFunctionOracle (n : ℕ) (query : List Bool) :
     StateT (RandomOracle.Cache (fun _ : BitString n => BitString n)) PMF (List Bool) :=
   OracleComp.interpret
-    (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
+    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
       (RandomOracle.answer (fun _ => PMF.uniformOfFintype (BitString n))))
         (randomFunctionQuery n query)
 
@@ -94,14 +94,14 @@ noncomputable def prfRealGame (family : List Bool → List Bool → List Bool)
     (adversary : OracleDistinguisher) (n : ℕ) : ProbComp Bool := do
   let key ← BitString.sampleList n
   OracleComp.interpret
-    (ProbOracleComp.handler ProbComp.unifFin (fun request =>
+    (OracleComp.sumHandler ProbComp.unifFin (fun request =>
       pure (prfOracle family n key request.2))) (adversary n [])
 
 /-- Sample one whole random function, independently of the adversary's private samples. -/
 noncomputable def prfIdealGame (adversary : OracleDistinguisher) (n : ℕ) : ProbComp Bool := do
   let table ← ProbComp.uniform (BitString n → BitString n)
   OracleComp.interpret
-    (ProbOracleComp.handler ProbComp.unifFin (fun request =>
+    (OracleComp.sumHandler ProbComp.unifFin (fun request =>
       pure (randomFunctionOracle n table request.2))) (adversary n [])
 
 /-- The ideal game admits consistent lazy answers to adaptive queries, with private randomness
@@ -109,17 +109,17 @@ independent of the table and the same rejection convention for malformed inputs.
 theorem prfIdealGame_eq_lazy (adversary : OracleDistinguisher) (n : ℕ) :
     ProbComp.eval (prfIdealGame adversary n) =
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
+        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
           (fun request => lazyRandomFunctionOracle n request.2)) (adversary n [])).run
             (fun _ => none)).map Prod.fst := by
   classical
   let adapted := OracleComp.interpret
-    (ProbOracleComp.handler (fun k => ProbOracleComp.sample (ProbComp.unifFin k))
+    (OracleComp.sumHandler (fun k => ProbOracleComp.sample (ProbComp.unifFin k))
       (fun request : Unit × List Bool => randomFunctionQuery n request.2)) (adversary n [])
   have h := RandomOracle.uniform_interpret_prob_eq_lazy adapted
   have heager (table : BitString n → BitString n) (query : List Bool) :
       OracleComp.interpret
-        (ProbOracleComp.handler ProbComp.unifOracle (fun bits => PMF.pure (table bits)))
+        (OracleComp.sumHandler ProbComp.unifOracle (fun bits => PMF.pure (table bits)))
           (randomFunctionQuery n query) = PMF.pure (randomFunctionOracle n table query) :=
     interpret_randomFunctionQuery ProbComp.unifOracle n table query
   simpa only [adapted, prfIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,

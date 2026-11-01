@@ -53,7 +53,7 @@ Truncation and the empty fallback make the test total on every challenge list. -
 def sampleGame (generator : List Bool → List Bool) (adversary : OracleDistinguisher)
     (n depth : ℕ) (values : List (List Bool)) : ProbComp Bool :=
   Prod.fst <$> (OracleComp.interpret
-    (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
       (OracleComp.withSampleList [] (fun expansion request =>
         expansionOracle generator (pure expansion) n depth request.2))) (adversary n [])).run
           ([], values)
@@ -102,7 +102,7 @@ theorem isPPTOn_sampleGame {Caller : Type} {input : Caller ↪ List Bool}
   have hrun : IsPPTOn input
       (encPair encBool (encPair cacheEncoding (encList encBits))) (fun a =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
             (OracleComp.withSampleList [] (fun expansion request =>
               expansionOracle generator (pure expansion) (width a) (depth a) request.2)))
                 (adversary (width a) [])).run ([], values a)) := by
