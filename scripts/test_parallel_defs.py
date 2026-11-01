@@ -1,7 +1,7 @@
 """Unit tests for scripts/parallel_defs.py: the changed lines on a scratch repository, the selection
-and reports on rows shaped like the output of `scripts/ParallelDefs.lean`, the driver's advisory
-exits, and, when Lean is available, the reader on a compiled fixture module
-(`CompiledFixtureTests`)."""
+and reports on rows shaped like the output of `scripts/ParallelDefs.lean` (parallel definitions and
+duplicate statements), the driver's advisory exits, and, when Lean is available, the reader on
+compiled fixture modules (`CompiledFixtureTests`, `CompiledStatementFixtureTests`)."""
 
 from __future__ import annotations
 
@@ -29,6 +29,15 @@ def pair(a: str, b: str, size: int, sizes: tuple[int, int], am: str = "Complexit
             "bx": False, "as": sizes[0], "bs": sizes[1], "c": list(constants)}
 
 
+def group(*thms: tuple[str, str, bool], ext: tuple[tuple[str, str], ...] = (),
+          exact: bool = True, size: int = 40) -> dict:
+    """A duplicate-statement row; each theorem is `(name, module, examined)`."""
+    return {"group": size, "exact": exact,
+            "thms": [{"n": n, "m": m, "l": 10 * (i + 1), "p": n.startswith("priv"), "x": x,
+                      "al": None} for i, (n, m, x) in enumerate(thms)],
+            "ext": [{"n": n, "m": m} for n, m in ext]}
+
+
 ALIAS = {"alias": "Cslib.MCSP.MCSPAt", "am": "Complexity.MCSP.Magnification", "al": 86,
          "b": "Cslib.GapMCSP.yesSet", "bm": "Complexity.MCSP.Basic", "bl": 40, "bp": False}
 
@@ -46,6 +55,10 @@ class ChangedLinesTests(unittest.TestCase):
                            ["Cslib.thing"])
         self.assertEqual(stdin.splitlines(), ["env Complexity.A", "lines Complexity.B *",
                                               "lines Complexity.C 3-4,9-9", "decl Cslib.thing"])
+        stdin = p.requests(["Complexity.A"], {}, [], theorems=True, external=True)
+        self.assertEqual(stdin.splitlines(), ["theorems", "external", "env Complexity.A"])
+        self.assertEqual(p.requests(["Complexity.A"], {}, [], theorems=True).splitlines(),
+                         ["theorems", "env Complexity.A"])
 
     def test_changed_ranges_on_a_repository(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -131,6 +144,29 @@ class SelectionTests(unittest.TestCase):
         self.assertEqual(found[0].constants, ("Finset.card", "Cslib.Thing", "Polynomial.eval"))
 
 
+class StatementSelectionTests(unittest.TestCase):
+    ROWS = [group(("New.dup", "Complexity.New", True), ("privOld.dup", "Complexity.Old", False)),
+            group(("New.local", "Complexity.New", True), ("New.local'", "Complexity.New", True)),
+            group(("New.core", "Complexity.New", True), ext=(("Nat.add_comm", "Init.Core"),),
+                  exact=False),
+            {"examined": 4, "theorems": 9, "modules": 2, "external": 3, "missing": []}]
+
+    def test_groups_across_modules_or_with_a_dependency(self) -> None:
+        found = p.select_groups(self.ROWS, same_module=False)
+        self.assertEqual([[t.name for t in g.theorems] for g in found],
+                         [["New.dup", "privOld.dup"], ["New.core"]])
+        self.assertEqual(found[1].external, [("Nat.add_comm", "Init.Core")])
+        self.assertFalse(found[1].exact)
+        self.assertEqual(len(p.select_groups(self.ROWS, same_module=True)), 3)
+
+    def test_examined_theorems_come_first(self) -> None:
+        row = group(("Old.a", "Complexity.Old", False), ("New.b", "Complexity.New", True))
+        [found] = p.select_groups([row], same_module=False)
+        self.assertEqual([(t.name, t.path, t.examined) for t in found.theorems],
+                         [("New.b", "Complexity/New.lean", True),
+                          ("Old.a", "Complexity/Old.lean", False)])
+
+
 class ReportTests(unittest.TestCase):
     def setUp(self) -> None:
         self.found = p.select([ALIAS, pair("New.big", "Old.big", 549, (1147, 1155),
@@ -154,6 +190,34 @@ class ReportTests(unittest.TestCase):
                       text)
         self.assertIn("- Complexity/MCSP/Magnification.lean:86: `Cslib.MCSP.MCSPAt` is", text)
         self.assertNotIn("New.big", text)
+
+    def test_statement_texts(self) -> None:
+        exact, symmetric = p.select_groups(StatementSelectionTests.ROWS, same_module=False)
+        exact.theorems[0].proof = "Nat.add_comm"
+        self.assertEqual(exact.text(),
+                         "`New.dup` (Complexity/New.lean:10, proved as `Nat.add_comm`) has the "
+                         "same statement as `privOld.dup` (Complexity/Old.lean:20, private).")
+        self.assertEqual(symmetric.text(),
+                         "`New.core` (Complexity/New.lean:10) has the same statement as "
+                         "`Nat.add_comm` (in `Init.Core`) (up to the order of hypotheses and "
+                         "instance arguments, the sides of `=` and `↔`, and `≥`, `>` and `≠`).")
+        three = p.Group(9, True, exact.theorems + [p.Theorem("C.c", "Complexity/C.lean", 3)],
+                        [("Nat.x", "Init.Core")])
+        self.assertIn("`privOld.dup` (Complexity/Old.lean:20, private), `C.c` "
+                      "(Complexity/C.lean:3) and `Nat.x` (in `Init.Core`).", three.text())
+
+    def test_statement_markdown_and_annotations(self) -> None:
+        found = p.select_groups(StatementSelectionTests.ROWS, same_module=False)
+        text = p.markdown(found, 4, 10, theorems=True)
+        self.assertTrue(text.startswith("### Duplicate-statement notice (advisory)"))
+        self.assertIn("2 group(s) of theorems with the same statement among the 4 examined "
+                      "theorems.", text)
+        self.assertIn("- `New.dup` (Complexity/New.lean:10)", text)
+        self.assertIn("No theorem among the 4 examined has the statement",
+                      p.markdown([], 4, 10, theorems=True))
+        [line] = p.annotations(found, 1)
+        self.assertTrue(line.startswith("::notice file=Complexity/New.lean,line=10,"
+                                        "title=Possible duplicate statement::`New.dup`"))
 
     def test_annotations_are_escaped(self) -> None:
         finding = p.Finding("a", "Complexity/x,y:z.lean", 3, "b%", "Complexity/O.lean", 4, 300,
@@ -218,6 +282,44 @@ class DriverTests(unittest.TestCase):
         self.assertIn("1 candidate(s) among the 3 examined declarations.", out)
         self.assertIn("::notice file=Complexity/MCSP/Magnification.lean,line=86,", out)
         self.assertIn("`Cslib.MCSP.MCSPAt` is `Cslib.GapMCSP.yesSet`", self.summary.read_text())
+
+    def test_theorems_mode(self) -> None:
+        (self.build / "Complexity").mkdir(parents=True)
+        (self.build / "Complexity/New.olean").write_text("")
+        rows = StatementSelectionTests.ROWS
+        with mock.patch.object(p, "run_reader", return_value=rows) as reader:
+            code, out = self.run_main("--theorems", "--github")
+        self.assertEqual(code, 0)
+        self.assertEqual(reader.call_args.args[1].splitlines(),
+                         ["theorems", "external", "lines Complexity.New *"])
+        self.assertIn("2 group(s) of theorems with the same statement", out)
+        self.assertIn("title=Possible duplicate statement::", out)
+        self.assertIn("### Duplicate-statement notice", self.summary.read_text())
+        with mock.patch.object(p, "run_reader", return_value=rows) as reader:
+            self.run_main("--theorems", "--no-external")
+        self.assertNotIn("external", reader.call_args.args[1].splitlines())
+
+    def test_all_examines_every_module_even_unbuilt(self) -> None:
+        (self.root / "Complexity/Old.lean").write_text("theorem t : True := trivial\n")
+        (self.build / "Complexity").mkdir(parents=True)
+        (self.build / "Complexity/New.olean").write_text("")
+        stats = {"examined": 1, "theorems": 1, "modules": 1, "external": 0,
+                 "missing": ["Complexity.Old"]}
+        with mock.patch.object(p, "run_reader", return_value=[stats]) as reader:
+            code, out = self.run_main("--theorems", "--all")
+        self.assertEqual(code, 0)
+        self.assertEqual(reader.call_args.args[1].splitlines()[2:],
+                         ["lines Complexity.New *", "lines Complexity.Old *"])
+        self.assertIn("No theorem among the 1 examined", out)
+        self.assertIn("1 library module(s) have no build outputs", out)
+
+    def test_tool_failure_in_theorems_mode(self) -> None:
+        (self.build / "Complexity").mkdir(parents=True)
+        (self.build / "Complexity/New.olean").write_text("")
+        with mock.patch.object(p, "run_reader", side_effect=RuntimeError("boom")):
+            code, out = self.run_main("--theorems")
+        self.assertEqual(code, 0)
+        self.assertIn("Duplicate-statement notice skipped: the tool failed (boom)", out)
 
     def test_nothing_changed(self) -> None:
         with mock.patch.object(p, "changed_ranges", lambda root, ref: {}):
@@ -332,6 +434,110 @@ class CompiledFixtureTests(unittest.TestCase):
         self.assertEqual(aliases, [{"alias": "aliasBounded", "am": "ParallelFixture", "al": line,
                                     "b": "oldBounded", "bm": "ParallelFixture", "bl": 5,
                                     "bp": False}])
+
+
+# A compiled module for `CompiledStatementFixtureTests`.
+STATEMENT_FIXTURE = """module
+public import Init
+public section
+
+theorem add_comm_copy (n m : Nat) : n + m = m + n := Nat.add_comm n m
+
+private theorem add_comm_private (x y : Nat) : x + y = y + x := by omega
+
+@[deprecated add_comm_copy (since := "2026-11-01")]
+theorem add_comm_old (n m : Nat) : n + m = m + n := by omega
+
+theorem ge_copy (a b : Nat) (h : a ≤ b) : b ≥ a := h
+
+theorem le_copy (a b : Nat) (h : a ≤ b) : a ≤ b := h
+
+theorem and_left (a b : Nat) (h : a ≤ b ∧ b ≤ a) : a ≤ b := h.1
+
+theorem and_right (a b : Nat) (h : a ≤ b ∧ b ≤ a) : b ≤ a := h.2
+
+theorem inst_ab {α : Type} [Inhabited α] [BEq α] (x : α) :
+    (x == default) = (x == default) := rfl
+
+theorem inst_ba {α : Type u} [BEq α] [Inhabited α] (y : α) :
+    (y == default) = (y == default) := rfl
+
+theorem hyp_ab (a b c : Nat) (h₁ : a ≤ b) (h₂ : b ≤ c) : a ≤ c := Nat.le_trans h₁ h₂
+
+theorem hyp_ba (a b : Nat) (h₁ : a ≤ b) (c : Nat) (h₂ : b ≤ c) : a ≤ c := Nat.le_trans h₁ h₂
+
+theorem my_add_zero (n : Nat) : n + 0 = n := rfl
+
+@[expose] def bump (n : Nat) : Nat := n + 1
+
+theorem bump_eq (n : Nat) : bump n = n + 1 := rfl
+
+end
+"""
+
+
+@unittest.skipUnless(shutil.which("lake") and (p.ROOT / ".lake/packages").is_dir(),
+                     "needs Lean and the repository's packages (CI runs this after the build)")
+class CompiledStatementFixtureTests(unittest.TestCase):
+    """`scripts/ParallelDefs.lean` comparing statements on a compiled module and on Lean core."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        tmp = tempfile.TemporaryDirectory()
+        cls.addClassCleanup(tmp.cleanup)
+        root = pathlib.Path(tmp.name)
+        build = root / "build"
+        build.mkdir()
+        (root / "StatementFixture.lean").write_text(STATEMENT_FIXTURE)
+        subprocess.run(["lake", "env", "lean", f"--root={root}", "-o",
+                        str(build / "StatementFixture.olean"),
+                        str(root / "StatementFixture.lean")],
+                       cwd=p.ROOT, check=True, capture_output=True)
+        cls.build = build
+        cls.rows = p.run_reader(build, "theorems\nexternal\nlines StatementFixture *\n", 0, 0)
+        cls.groups = {frozenset(t["n"] for t in r["thms"]): r for r in cls.rows if "thms" in r}
+
+    def line(self, name: str) -> int:
+        return next(i for i, text in enumerate(STATEMENT_FIXTURE.splitlines(), 1)
+                    if text.startswith(f"theorem {name} "))
+
+    def test_statistics(self) -> None:
+        # All theorems but the deprecated one and the equation lemma of `bump`.
+        self.assertEqual(self.rows[-1]["examined"], 12)
+        self.assertEqual(self.rows[-1]["theorems"], 12)
+        self.assertGreater(self.rows[-1]["external"], 100)
+
+    def test_private_copy_and_core_theorem(self) -> None:
+        row = self.groups[frozenset({"add_comm_copy", "add_comm_private"})]
+        self.assertTrue(row["exact"])
+        self.assertIn({"n": "Nat.add_comm", "m": "Init.Data.Nat.Basic"}, row["ext"])
+        copy = next(t for t in row["thms"] if t["n"] == "add_comm_copy")
+        self.assertEqual((copy["l"], copy["p"], copy["al"]),
+                         (self.line("add_comm_copy"), False, "Nat.add_comm"))
+        self.assertTrue(next(t for t in row["thms"] if t["n"] == "add_comm_private")["p"])
+
+    def test_normalizations(self) -> None:
+        for names in ({"ge_copy", "le_copy"}, {"inst_ab", "inst_ba"}, {"hyp_ab", "hyp_ba"}):
+            self.assertFalse(self.groups[frozenset(names)]["exact"], names)
+        self.assertIn("Nat.le_trans",
+                      [x["n"] for x in self.groups[frozenset({"hyp_ab", "hyp_ba"})]["ext"]])
+
+    def test_different_statements_stay_apart(self) -> None:
+        for names in self.groups:
+            self.assertFalse({"and_left", "and_right"} <= names)
+            self.assertNotIn("bump_eq", names)
+
+    def test_core_only(self) -> None:
+        row = self.groups[frozenset({"my_add_zero"})]
+        self.assertEqual(row["ext"], [{"n": "Nat.add_zero", "m": "Init.Core"}])
+
+    def test_without_dependencies_and_with_lines(self) -> None:
+        line = self.line("hyp_ab")
+        rows = p.run_reader(self.build, f"theorems\nlines StatementFixture {line}-{line}\n", 0, 0)
+        self.assertEqual([[(t["n"], t["x"]) for t in r["thms"]] for r in rows if "thms" in r],
+                         [[("hyp_ab", True), ("hyp_ba", False)]])
+        self.assertEqual(rows[-1]["examined"], 1)
+        self.assertEqual(rows[-1]["external"], 0)
 
 
 if __name__ == "__main__":
