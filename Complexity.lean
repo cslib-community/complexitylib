@@ -1774,6 +1774,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Fold
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Bit
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Cases
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatPow
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Plain
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
@@ -2358,6 +2359,7 @@ public import Complexity.Computability.TreeEval.Ary.CookMertz
 public import Complexity.Computability.TreeEval.Ary.Iterative
 public import Complexity.Computability.TreeEval.Ary.IterativeBounds
 public import Complexity.Computability.TreeEval.Ary.IterativeCorrect
+public import Complexity.Computability.TreeEval.Ary.IterativeEncoding
 public import Complexity.Computability.TreeEval.Ary.IterativePacked
 public import Complexity.Computability.TreeEval.Ary.Packed
 public import Complexity.Computability.TreeEval.Ary.Packed.Executable
@@ -2365,6 +2367,9 @@ public import Complexity.Computability.TreeEval.Ary.Packed.GateInterpolation
 public import Complexity.Computability.TreeEval.Ary.Packed.GateInterpolationSpace
 public import Complexity.Computability.TreeEval.Ary.Packed.Interpolation
 public import Complexity.Computability.TreeEval.Ary.Packed.InterpolationSpace
+public import Complexity.Computability.TreeEval.Ary.Packed.QueryGate
+public import Complexity.Computability.TreeEval.Ary.Packed.QueryGateInit
+public import Complexity.Computability.TreeEval.Ary.Packed.QueryGateSpace
 public import Complexity.Computability.TreeEval.Ary.PackingParameters
 public import Complexity.Computability.TreeEval.Basic
 public import Complexity.Computability.TreeEval.CookMertz
