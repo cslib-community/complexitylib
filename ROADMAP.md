@@ -178,14 +178,18 @@ index links to canonical definitions rather than keeping a second set.
   completeness, padding, self-reducibility, relativization and oracle separations, preserving
   each reduction's resource bound.
 - **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
-  degrees `1 ≤ a < b`, and the `O(t log t)` universal simulation ([#800]) gives
-  `DTIME f ⊂ DTIME g` for time-constructible `f ≥ n` once `(f + 1) * polylog f ≤ g`, with an
-  absolute exponent (`Hierarchy/TimePolylog`). For nondeterministic time, lazy diagonalization
-  separates degree `d` from degree `6 * d + 14`. Remaining targets include the textbook
-  `f log f = o(g)` hierarchy, which needs the diagonal to clock the universal machine's own
-  steps, noninteger polynomial degrees, the nondeterministic hierarchy at every pair of integer
-  degrees by padding, and sharp nondeterministic and alternating time hierarchies with certified
-  simulators.
+  degrees `1 ≤ a < b`, in deterministic and in nondeterministic time, and the `O(t log t)`
+  universal simulation ([#800]) gives `DTIME f ⊂ DTIME g` for time-constructible `f ≥ n` once
+  `(f + 1) * polylog f ≤ g`, with an absolute exponent (`Hierarchy/TimePolylog`). Composing it
+  with the word-RAM simulations gives `RAMTIME T ⊂ RAMTIME T⁵` over `Basis.additive` for
+  polynomial `T` (`Hierarchy/WordRAM`). For nondeterministic time, padding amplifies the coarse
+  lazy-diagonal hierarchy, which separates degree `d` from degree `6 * d + 14`; lazy
+  diagonalization also separates `NTIME (2 ^ (k * n))` from `NTIME (2 ^ ((8 * k + 16) * n))`, so
+  `NE ⊄ NTIME (2 ^ (k * n))`. Remaining targets
+  include the textbook `f log f = o(g)` hierarchy, which needs the diagonal to clock the universal
+  machine's own steps, noninteger polynomial degrees, a word-RAM hierarchy by direct
+  diagonalization with a smaller gap, and sharp nondeterministic and alternating time
+  hierarchies with certified simulators.
 - The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
   its input.
 - **Space:** Savitch bounds for general space-constructible functions.
@@ -207,13 +211,22 @@ index links to canonical definitions rather than keeping a second set.
   results of Wagner and of Chang and Kadin, not from Kadin's 1988 argument (see his erratum).
   `BooleanHierarchy/Kadin.lean` proves only `PH = Σ₃ᴾ ∩ Π₃ᴾ`.
 
+- **Explicit universal SAT solver:** construct one fixed native algorithm, independent of an
+  assumed fast SAT algorithm, and prove its worst-case running time is polynomial if and only if
+  `P = NP`. Specify a total SAT decision procedure, including unsatisfiable inputs, separately
+  from verified witness search; account for dovetailing, certificate checking and universal
+  simulation overhead rather than relying only on the existing `SAT ∈ P ↔ P = NP` equivalence.
+
 ### Reducibilities and the structure of complete sets
 
 - **Reducibilities** ([#1351]): logspace Turing reductions, in an oracle model whose query tape is
   not charged to the space bound, and their transitivity; the rest of the inclusion hierarchy of
   Ladner, Lynch and Selman, and its separations.
-- **Sparse and tally sets:** `P/poly = P^SPARSE` (Meyer), extending
-  `PPoly.of_sparse` in `Circuit/Boolean/Sparse.lean`.
+- **Sparse and tally sets:** `P/poly ⊆ P^SPARSE` (Meyer), the converse of
+  `PWithOracle_subset_PPolyOn` in `Classes/Sparse/Turing.lean`. After Kadin's
+  `PH ⊆ P^{NP[O(log n)]}` (`Classes/Sparse/Kadin.lean`, [#2062]): `P^{NP[O(log n)]} ⊆ Σ₂ᴾ ∩ Π₂ᴾ`,
+  hence `PH = Θ₂ᴾ` under his hypothesis; his stronger form with a sparse `S ∈ NP` and
+  `coNP ⊆ NP^S`; and `P^{NP[O(log n)]} = P^NP_tt` (Hemachandra).
 - **Berman–Hartmanis:** p-isomorphism and paddability; paddable NP-complete sets are p-isomorphic,
   so the standard NP-complete problems are all p-isomorphic to SAT; the isomorphism conjecture as a
   hypothesis; every many-one complete set for EXP is complete under one-one, length-increasing
@@ -363,14 +376,18 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   NEXP.
 - **Circuit lower bounds from refuting ETH** ([#1539]): `E^NP ⊄ SIZE(O(n))`, and a language in
   `E^NP` whose fan-in-two circuits need more than `c n √log n` gates infinitely often, by
-  Williams's witness-circuit argument with the library's #CircuitSAT counters. `E^NP` is defined;
-  still open are an exponential nondeterministic time separation, a succinct tableau reduction
-  with a linear-size decoder, the lexicographically first witness in `E^NP`, and the core theorem.
+  Williams's witness-circuit argument with the library's #CircuitSAT counters. `E^NP` is defined,
+  and the witness bits of formulas prepared in time `2^O(n)` are in `E^NP`; still open are an
+  exponential nondeterministic time separation, a succinct tableau reduction with a linear-size
+  decoder, and the core theorem.
 - Uniform and nonuniform NC, AC and TC, circuit-to-machine bridges, algorithm-to-lower-bound
   arguments, and barriers such as natural proofs and algebrization. NC simulation of unrestricted
   `TCⁱ` needs Muroga's threshold weight-bounding theorem.
 - Formula lower bounds beyond Andreev's, following Jukna; Raz–Wigderson's monotone depth bound for
   matching on general graphs.
+- **Monotone circuits versus P:** Razborov's `n ^ Ω(log n)` monotone bound for bipartite perfect
+  matching is proved ([#2063]); the separation also needs bipartite perfect matching in
+  `Complexity.P`.
 - **An explicit frontier extractor:** port v1's sumset-extractor construction with an explicit
   family in `Complexity.P encBits` that discharges the frontier lower bounds' hypotheses. It would
   exceed the library's unconditional `3.5 N - o(N)` bound in P, so it needs an independent
@@ -476,6 +493,13 @@ each statement against the numbered result. Organize modules by subject, not cha
   containments and complete problems. Supply the
   [quantum adversary models](#concurrent-and-quantum-security) needed by cryptographic
   reductions.
+
+- **Shor's algorithm:** bounded-error polynomial-time integer factoring and discrete logarithms
+  in the native uniform quantum-circuit model, with explicit input/output encodings, success
+  probabilities and gate-approximation costs. Develop quantum period/order finding and phase
+  estimation, the quantum Fourier transform, reversible modular exponentiation, continued-fraction
+  recovery and the classical reductions; certify uniform circuit generation and polynomial gate
+  bounds alongside correctness.
 
 ### Differential privacy and adaptive data analysis
 
@@ -741,3 +765,5 @@ not planned, not as proved.
 [#1817]: https://github.com/cslib-community/complexitylib/issues/1817
 [#1885]: https://github.com/cslib-community/complexitylib/pull/1885
 [#2019]: https://github.com/cslib-community/complexitylib/issues/2019
+[#2062]: https://github.com/cslib-community/complexitylib/issues/2062
+[#2063]: https://github.com/cslib-community/complexitylib/issues/2063
