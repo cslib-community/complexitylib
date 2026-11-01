@@ -1841,6 +1841,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Tak
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyZeroSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Transducer
+public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Transducer.Copy
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.ZipTransducer
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Arith
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
