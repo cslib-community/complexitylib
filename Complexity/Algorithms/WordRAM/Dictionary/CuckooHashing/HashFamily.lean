@@ -11,19 +11,23 @@ public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.Hashing.KWise
 public import Complexity.Algorithms.WordRAM.Hashing.Tabulation
 public import Complexity.Computability.WordRAM.RegisterFrame
+public import Complexity.DataStructure.HashFamily.WordRAM.DoubleTabulation
+public import Complexity.Probability.PMF.Bind
+public import Complexity.Probability.PMF.Map
 public import Complexity.Probability.PMF.UniformSubset
 public import Complexity.Probability.Uniform
 public import Mathlib.Order.ConditionallyCompleteLattice.Basic
 
 /-!
-# Cuckoo hash family, pure replay semantics, and shared-table Word-RAM hashing
+# Cuckoo hash family, pure replay semantics, and regime-switched Word-RAM hashing
 
 This module develops the pure displacement and replay model of Pagh and Rodler's two-table cuckoo
-hashing scheme [PaghRodler2004] together with a self-contained Word-RAM hash pair
-`h_r(u) = f_r(u) ^^^ Z_r[g_r(u)]` (`r ∈ {1, 2}`) built from `Cslib.Algorithms.WordRAM.Hashing.KWise`
-(`k = 7`, sharing a single Four-Russians carryless-multiplication table `clmulTab` across all four
-polynomial hashes `f₁, g₁, f₂, g₂`) and two random tabulation arrays `Z₁, Z₂` from
-`Cslib.Algorithms.WordRAM.Hashing.Tabulation.RandomTable`.
+hashing scheme [PaghRodler2004] together with the regime-switched Word-RAM hash pair
+`(evalHash1 c_exp n_max U M, evalHash2 c_exp n_max U M)` combining
+`Cslib.Algorithms.WordRAM.Hashing.KWise` (`k = 2 * maxEvictions n_max + 2` for
+`n_max < doubleTabThreshold c_exp`) and Mikkel Thorup's double tabulation
+(`Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation`, [Thorup2013], for
+`doubleTabThreshold c_exp ≤ n_max`).
 
 ## Primary-source mapping
 
@@ -33,44 +37,36 @@ polynomial hashes `f₁, g₁, f₂, g₂`) and two random tabulation arrays `Z�
   distinct-subsequence structure of displacement walks when the cuckoo graph contains no component
   with more than one cycle), **Eq. (3) on manuscript p. 9** (expected displacement iterations
   `O(1)`), and **manuscript pp. 9–10** (rehash probability and amortized rebuild analysis in two
-  tables of size `m ≥ (1 + ε) n`, where `ε ≥ 1` here since `m = 2 ^ M ≥ 4 n_max`).
-* **Original strengthened sufficient assumptions (`IsCuckooHashPair`):** Rather than formalizing the
-  paper's random-graph event directly, `GoodForSet`, `cuckooWalkRounds`, and `IsCuckooHashPair` are
-  **original strengthened sufficient assumptions** tailored to insertion-order replay:
+  tables of size `m ≥ (1 + ε) n`, where `m = 2 ^ M ≥ 32 * max n_max 4` here).
+* **Thorup [Thorup2013]:** M. Thorup, *"Simple Tabulation, Fast Expanders, Double Tabulation, and
+  High Independence"*, *Proc. 54th IEEE FOCS*, 2013, pp. 90–99 (`arXiv:1311.3121v2`, pp. 4–5,
+  11–13), providing high-probability `(2 * maxEvictions n_max + 2)`-wise independence via double
+  tabulation in the large-`n_max` regime `doubleTabThreshold c_exp ≤ n_max`.
+* **Sufficient cuckoo hash pair interface (`IsCuckooHashPair`):** `GoodForSet`, `cuckooWalkRounds`,
+  and `IsCuckooHashPair` capture the replay properties used by the Word-RAM cuckoo hash table:
   `GoodForSet` quantifies over every duplicate-free (`Nodup`) sublist/insertion order in `S`,
   `cuckooWalkRounds` takes the supremum (`sSup`) over all `ValidPlacement`s of `S`, and
   `rehash_prob_le_half` / `step_rehash_prob_le` package the whole-set `≤ 1 / 2` and incremental
   one-step `≤ C_reh / (max n_max 1 * max MaxLoop 1)` replay failure bounds over the
-  oblivious-adversary model (`Dictionary.spec U V n_max` is deterministic, fixing the sequence of
-  insertion-order key lists `ks_0, …, ks_t` independently of internal coin flips). For `n_max ≤ 2`,
-  `isCuckooHashPair_le_two` and `isCuckooHashFamily_le_two` instantiate `IsCuckooHashPair` and
-  `IsCuckooHashFamily` unconditionally with `C_walk = 1` and `C_reh = 0`.
-* **Dietzfelbinger and Woelfel [DietzfelbingerWoelfel2003] variant note:** `Seed` and
-  `(evalHash1, evalHash2)` form a **modified variant** inspired by M. Dietzfelbinger and P. Woelfel,
-  *"Almost Random Graphs with Simple Hash Functions"*, *Proc. 35th ACM STOC*, 2003,
-  **Definition 1 (§2.1, p. 632)**. Dietzfelbinger and Woelfel's Definition 1 uses a **single shared
-  auxiliary hash `g`** and addition modulo `m` (and explicitly distinguishes that shared-`g` pair
-  from choosing two independent single-hash instances), whereas `(evalHash1, evalHash2)` here uses
-  **independent `g₁, g₂`** and bitwise XOR (`finXor`) over `Fin (2 ^ M)`. The per-function `7`-wise
-  independence theorems (`isKWiseIndependentHash_evalHash1`, `isKWiseIndependentHash_evalHash2`) do
-  **not** establish Dietzfelbinger and Woelfel's graph/rehash guarantees for this modified pair, and
-  correspondence / `IsCuckooHashFamily` instantiation for `n_max ≥ 3` remains unproved.
+  oblivious-adversary model (`Dictionary.spec U V n_max`). These bounds are proved unconditionally
+  across all `n_max : ℕ` (`C_walk = 3`, `C_reh = 4`) whenever `U ≤ max n_max 4 ^ c_exp` in
+  `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_provableFamily`.
 
 ## Main definitions
 
 * `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.tableBits`, `tableSize`, `maxEvictions`:
-  sub-table bit-width `M = ⌈log₂ max(4 n_max, 4)⌉`, sub-table size `m = 2 ^ M`, and eviction cap
+  sub-table bit-width `M = ⌈log₂ (32 * max n_max 4)⌉`, sub-table size `m = 2 ^ M`, and eviction cap
   `MaxLoop = 6 (⌈log₂ max(n_max, 2)⌉ + 2)`.
 * `SlotEntry`, `PureTable`, `WellPlaced`, `lookupEntry`, `pureEvictRound`, `pureEvict`,
   `pureReplay`: pure two-table cuckoo displacement and insertion-order replay model.
 * `GoodForSet`, `survivingSeeds`, `cuckooWalkRounds`, `IsCuckooHashPair`, `IsCuckooHashFamily`:
-  strengthened sufficient cuckoo hash family interface for expected displacement rounds and rehash
-  probability.
-* `Seed`, `seedLaw`, `evalHash1`, `evalHash2`: modified tabulated polynomial seed space and hash
-  pair `h_r(u) = f_r(u) ^^^ Z_r[g_r(u)]` with independent `g₁, g₂` and bitwise XOR over
-  `Fin (2 ^ M)`.
+  cuckoo hash family interface for expected displacement rounds and rehash probability.
+* `Seed`, `seedLaw`, `evalHash1`, `evalHash2`: regime-switched seed space and hash pair
+  (proven to satisfy `IsCuckooHashFamily` in
+  `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_provableFamily`).
 * `HashPairRep`, `initTableHashPairCode`, `resampleHashPairCode`, `evalHash1Code`, `evalHash2Code`:
-  Word-RAM layout and programs sharing one `KWise` `clmulTab` across `f₁, g₁, f₂, g₂`.
+  two-block Word-RAM layout and programs realizing `(evalHash1, evalHash2)` in `O_{c_exp}(1)`
+  instructions and `O_{c_exp}(n_max + 1)` words of space across all `n_max : ℕ`.
 
 ## Main results
 
@@ -81,22 +77,21 @@ polynomial hashes `f₁, g₁, f₂, g₂`) and two random tabulation arrays `Z�
   replay seeds across insertions (combined with `Cslib.Probability.PMF.unifOn_rehash_eq` and
   `Cslib.Probability.PMF.uniformOfFinset_le_two_mul_uniformOfFintype` from
   `Complexity/Probability/PMF/UniformSubset.lean`).
-* `isKWiseIndependentHash_evalHash1`, `isKWiseIndependentHash_evalHash2`: each individual hash
-  function `evalHash1` and `evalHash2` is exact `7`-wise independent onto `Fin (2 ^ M)`.
-* `isCuckooHashPair_le_two`, `isCuckooHashFamily_le_two`, `isCuckooHashFamily_le_one`:
-  unconditional `IsCuckooHashPair` and `IsCuckooHashFamily` instances for `n_max ≤ 2` (`C_walk = 1`,
-  `C_reh = 0`).
+* `isCuckooHashPair_le_two`: reusable hash-pair-independent `n_max ≤ 2` instance (`C_walk = 1`,
+  `C_reh = 0`) requiring no independence assumption, with `IsCuckooHashPair.mono_consts`
+  providing monotonicity in `(C_walk, C_reh)`.
 * `initTableHashPairCode_execWithin`, `resampleHashPairCode_execRand`, `evalHash1Code_execWithin`,
-  `evalHash2Code_execWithin`: Word-RAM correctness and step bounds for initializing, resampling
-  (without rebuilding `clmulTab`), and evaluating the hash pair.
+  `evalHash2Code_execWithin`, `hashPairSpace_le`, `evalHashSteps_le`: Word-RAM correctness,
+  `O_{c_exp}(n_max + 1)` space bound, and `O_{c_exp}(1)` evaluation step bound across all
+  `n_max : ℕ`.
 
 ## References
 
 * [R. Pagh and F. F. Rodler, "Cuckoo hashing"][PaghRodler2004] (8 December 2003 author manuscript,
   Section 2.3, "Analysis", pp. 6–10: Lemma 1 on p. 7, Eq. (3) on p. 9, and rehash
   analysis on pp. 9–10).
-* [M. Dietzfelbinger and P. Woelfel, *Almost Random Graphs*][DietzfelbingerWoelfel2003]
-  (Definition 1, §2.1, p. 632).
+* [M. Thorup, "Simple tabulation, fast expanders, double tabulation, and high
+  independence"][Thorup2013] (FOCS 2013, pp. 90–99; `arXiv:1311.3121v2`, pp. 4–5, 11–13).
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing*, 2nd ed.][MitzenmacherUpfal2017]
 * [J. L. Carter and M. N. Wegman, "Universal classes of hash functions"][CarterWegman1979]
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*][CLRS2009]
@@ -114,11 +109,11 @@ open scoped ENNReal Finset
 
 /-! ### Section 1: Table scale and eviction cap parameters -/
 
-/-- Sub-table bit-width `M = ⌈log₂ max(4 * n_max, 4)⌉`, ensuring each of the two cuckoo sub-tables
-has size `m = 2 ^ M ≥ max (4 * n_max) 4` (load factor `≤ 1 / 4` per table). -/
+/-- Sub-table bit-width `M = ⌈log₂ (32 * max n_max 4)⌉`, ensuring each of the two cuckoo sub-tables
+has size `m = 2 ^ M ≥ 32 * max n_max 4`. -/
 @[expose]
 def tableBits (n_max : ℕ) : ℕ :=
-  Nat.clog 2 (max (4 * n_max) 4)
+  Nat.clog 2 (32 * max n_max 4)
 
 /-- Sub-table capacity `m = 2 ^ tableBits n_max`. -/
 @[expose]
@@ -131,21 +126,37 @@ triggering a full-table rehash. -/
 def maxEvictions (n_max : ℕ) : ℕ :=
   6 * (Nat.clog 2 (max n_max 2) + 2)
 
-theorem two_le_tableBits (n_max : ℕ) : 2 ≤ tableBits n_max := by
+theorem seven_le_tableBits (n_max : ℕ) : 7 ≤ tableBits n_max := by
   unfold tableBits
-  have h4 : 4 ≤ max (4 * n_max) 4 := le_max_right _ _
-  have h2 : Nat.clog 2 4 = 2 := by decide
-  rw [← h2]
-  exact Nat.clog_mono_right 2 h4
+  have h128 : 128 ≤ 32 * max n_max 4 := by omega
+  have h7 : Nat.clog 2 128 = 7 := by decide
+  rw [← h7]
+  exact Nat.clog_mono_right 2 h128
 
-theorem tableBits_pos (n_max : ℕ) : 0 < tableBits n_max := by
-  have := two_le_tableBits n_max
+theorem two_le_tableBits (n_max : ℕ) : 2 ≤ tableBits n_max := by
+  have := seven_le_tableBits n_max
   omega
 
-theorem four_mul_max_le_tableSize (n_max : ℕ) :
-    max (4 * n_max) 4 ≤ tableSize n_max := by
+theorem tableBits_pos (n_max : ℕ) : 0 < tableBits n_max := by
+  have := seven_le_tableBits n_max
+  omega
+
+theorem tableBits_le (n_max : ℕ) : tableBits n_max ≤ Nat.clog 2 (max n_max 4) + 5 := by
+  unfold tableBits
+  refine Nat.clog_le_of_le_pow ?_
+  calc 32 * max n_max 4
+      ≤ 32 * 2 ^ Nat.clog 2 (max n_max 4) :=
+        Nat.mul_le_mul_left 32 (Nat.le_pow_clog (by decide) _)
+    _ = 2 ^ (Nat.clog 2 (max n_max 4) + 5) := by ring
+
+theorem thirtyTwo_mul_max_le_tableSize (n_max : ℕ) :
+    32 * max n_max 4 ≤ tableSize n_max := by
   unfold tableSize tableBits
   exact Nat.le_pow_clog (by decide) _
+
+theorem four_mul_max_le_tableSize (n_max : ℕ) :
+    max (4 * n_max) 4 ≤ tableSize n_max :=
+  le_trans (by omega) (thirtyTwo_mul_max_le_tableSize n_max)
 
 theorem four_mul_le_tableSize (n_max : ℕ) : 4 * n_max ≤ tableSize n_max :=
   le_trans (le_max_left _ _) (four_mul_max_le_tableSize n_max)
@@ -156,6 +167,19 @@ theorem four_le_tableSize (n_max : ℕ) : 4 ≤ tableSize n_max :=
 theorem tableSize_pos (n_max : ℕ) : 0 < tableSize n_max := by
   have := four_le_tableSize n_max
   omega
+
+theorem tableSize_le_sixtyFour_mul_max (n_max : ℕ) :
+    tableSize n_max ≤ 64 * max n_max 4 := by
+  have h1 : tableBits n_max ≤ Nat.log 2 (max n_max 4) + 6 := by
+    have hle := tableBits_le n_max
+    have hclog : Nat.clog 2 (max n_max 4) ≤ Nat.log 2 (max n_max 4) + 1 :=
+      Nat.clog_le_of_le_pow (le_of_lt (Nat.lt_pow_succ_log_self (by decide) _))
+    omega
+  calc tableSize n_max
+      = 2 ^ tableBits n_max := rfl
+    _ ≤ 2 ^ (Nat.log 2 (max n_max 4) + 6) := Nat.pow_le_pow_right (by decide) h1
+    _ = 64 * 2 ^ Nat.log 2 (max n_max 4) := by ring
+    _ ≤ 64 * max n_max 4 := Nat.mul_le_mul_left 64 (Nat.pow_log_le_self 2 (by omega))
 
 theorem eighteen_le_maxEvictions (n_max : ℕ) : 18 ≤ maxEvictions n_max := by
   unfold maxEvictions
@@ -169,6 +193,17 @@ theorem eighteen_le_maxEvictions (n_max : ℕ) : 18 ≤ maxEvictions n_max := by
 theorem maxEvictions_pos (n_max : ℕ) : 0 < maxEvictions n_max := by
   have := eighteen_le_maxEvictions n_max
   omega
+
+theorem maxEvictions_le_thirtyTwo_mul_max (n_max : ℕ) :
+    maxEvictions n_max ≤ 32 * max n_max 4 := by
+  have hclog : Nat.clog 2 (max n_max 2) ≤ max n_max 2 :=
+    (Nat.clog_le_iff_le_pow (by decide)).mpr (Nat.le_of_lt (max n_max 2).lt_two_pow_self)
+  unfold maxEvictions
+  omega
+
+theorem maxEvictions_le_tableSize (n_max : ℕ) :
+    maxEvictions n_max ≤ tableSize n_max :=
+  le_trans (maxEvictions_le_thirtyTwo_mul_max n_max) (thirtyTwo_mul_max_le_tableSize n_max)
 
 /-! ### Section 2: Pure two-table cuckoo displacement and replay model -/
 
@@ -894,174 +929,113 @@ theorem mem_survivingSeeds_of_goodForSet {Θ : Type*} [Fintype Θ] {U m : ℕ}
   rw [mem_survivingSeeds]
   exact hgood ks hnodup hsub
 
-/-! ### Section 4: Concrete tabulated polynomial hash pair `f_r(u) ^^^ Z_r[g_r(u)]` -/
+/-! ### Section 4: Regime-switched cuckoo hash pair (`trinomialPolyHash` + `doubleTabHash`) -/
 
-/-- Degree-`< 7` trinomial polynomial seed space over `TrinomialField (trinomialStep U M)`. -/
-abbrev PolySeed (U M : ℕ) : Type :=
-  Fin 7 → Fin (2 ^ Probability.trinomialDeg U M)
-
-/-- Random tabulation array seed space `Fin (2 ^ M) → Fin (2 ^ M)`. -/
-abbrev TabSeed (M : ℕ) : Type :=
-  Fin (2 ^ M) → Fin (2 ^ M)
-
-/-- Full cuckoo hash seed storing four 7-wise independent polynomial seeds `(cf₁, cg₁, cf₂, cg₂)`
-and two random tabulation arrays `(Z₁, Z₂)` of size `2 ^ M`. This is a modified variant of
-Dietzfelbinger and Woelfel [DietzfelbingerWoelfel2003, Definition 1, §2.1, p. 632] using
-independent auxiliary polynomial hashes `g₁, g₂` and bitwise XOR (`finXor`) over `Fin (2 ^ M)`
-rather than a single shared `g` and addition modulo `m`. -/
-abbrev Seed (U M : ℕ) : Type :=
-  (Fin 4 → PolySeed U M) × TabSeed M × TabSeed M
-
-/-- Uniform seed distribution over `Seed U M`. -/
+/-- Independence parameter `k = 2 * maxEvictions n_max + 2` required by the two-table cuckoo hashing
+analysis on eviction walks of length up to `maxEvictions n_max`. -/
 @[expose]
-noncomputable def seedLaw (U M : ℕ) : PMF (Seed U M) :=
-  PMF.uniformOfFintype (Seed U M)
+def cuckooK (n_max : ℕ) : ℕ :=
+  2 * maxEvictions n_max + 2
 
-/-- Bitwise XOR on `Fin (2 ^ M)`. -/
+theorem thirtyEight_le_cuckooK (n_max : ℕ) : 38 ≤ cuckooK n_max := by
+  have := eighteen_le_maxEvictions n_max
+  unfold cuckooK
+  omega
+
+open Cslib.DataStructure.HashFamily.WordRAM
+
+/-- Regime-indexed seed space for a single regime-switched hash block (`h₁` or `h₂`):
+- When `reg = true` (`n_max < doubleTabThreshold c_exp`), a
+  `(2 * maxEvictions n_max + 2)`-wise independent trinomial polynomial seed
+  `Fin (cuckooK n_max) → Fin (2 ^ trinomialDeg U M)`.
+- When `reg = false` (`doubleTabThreshold c_exp ≤ n_max`), a double-tabulation seed pair
+  `DoubleTabTopSeed c d b × DoubleTabBotSeed d b M` with
+  `c = DoubleTabulation.provableC c_exp`, `d = DoubleTabulation.provableD c_exp`, and
+  `b = DoubleTabulation.provableB n_max`. -/
 @[expose]
-def finXor {M : ℕ} (a b : Fin (2 ^ M)) : Fin (2 ^ M) :=
-  ⟨a.val ^^^ b.val, Nat.xor_lt_two_pow a.isLt b.isLt⟩
+def SingleSeedAux (reg : Bool) (c_exp n_max U M : ℕ) : Type :=
+  match reg with
+  | true => Fin (cuckooK n_max) → Fin (2 ^ trinomialDeg U M)
+  | false =>
+    DoubleTabTopSeed (DoubleTabulation.provableC c_exp)
+      (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) ×
+    DoubleTabBotSeed (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) M
 
-@[simp]
-theorem val_finXor {M : ℕ} (a b : Fin (2 ^ M)) :
-    (finXor a b).val = a.val ^^^ b.val := rfl
+/-- Seed type for a single regime-switched hash block (`h₁` or `h₂`). -/
+abbrev SingleSeed (c_exp n_max U M : ℕ) : Type :=
+  SingleSeedAux (decide (n_max < doubleTabThreshold c_exp)) c_exp n_max U M
 
-@[simp]
-theorem finXor_cancel_right {M : ℕ} (a b : Fin (2 ^ M)) :
-    finXor (finXor a b) b = a := by
-  apply Fin.ext
-  simp [Nat.xor_assoc]
+instance (reg : Bool) (c_exp n_max U M : ℕ) :
+    Fintype (SingleSeedAux reg c_exp n_max U M) := by
+  cases reg <;> dsimp [SingleSeedAux] <;> infer_instance
 
-theorem finXor_eq_iff {M : ℕ} (a b c : Fin (2 ^ M)) :
-    finXor a b = c ↔ a = finXor c b := by
-  constructor
-  · rintro rfl; exact (finXor_cancel_right a b).symm
-  · rintro rfl; exact finXor_cancel_right c b
+instance (reg : Bool) (c_exp n_max U M : ℕ) :
+    Nonempty (SingleSeedAux reg c_exp n_max U M) := by
+  cases reg <;> dsimp [SingleSeedAux] <;> infer_instance
 
-/-- Evaluate a single 7-wise independent trinomial polynomial hash at key `u`. -/
+instance (c d b : ℕ) : DecidableEq (DoubleTabTopSeed c d b) :=
+  inferInstanceAs (DecidableEq (Fin c → Fin d → Fin (2 ^ b) → Fin (2 ^ b)))
+
+instance (d b M : ℕ) : DecidableEq (DoubleTabBotSeed d b M) :=
+  inferInstanceAs (DecidableEq (Fin d → Fin (2 ^ b) → Fin (2 ^ M)))
+
+instance (reg : Bool) (c_exp n_max U M : ℕ) :
+    DecidableEq (SingleSeedAux reg c_exp n_max U M) := by
+  cases reg <;> dsimp [SingleSeedAux] <;> infer_instance
+
+/-- Regime-indexed deterministic evaluation of a single hash block (`h₁` or `h₂`). -/
 @[expose]
-noncomputable def evalPoly {U M : ℕ} (c : PolySeed U M) (u : Fin U) : Fin (2 ^ M) :=
-  Probability.trinomialPolyHash (Probability.trinomialStep U M) 7 U M c u
+noncomputable def evalSingleAux (reg : Bool) (c_exp n_max U M : ℕ) :
+    SingleSeedAux reg c_exp n_max U M → Fin U → Fin (2 ^ M) :=
+  match reg with
+  | true => fun θ u => trinomialPolyHash (trinomialStep U M) (cuckooK n_max) U M θ u
+  | false => fun θ u =>
+    doubleTabHash (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
+      (DoubleTabulation.provableB n_max) U M θ.1 θ.2 u
 
-/-- First cuckoo hash function `h₁(u) = f₁(u) ^^^ Z₁[g₁(u)]`. -/
+/-- Deterministic evaluation of a single regime-switched hash block (`h₁` or `h₂`). -/
 @[expose]
-noncomputable def evalHash1 {U M : ℕ} (θ : Seed U M) (u : Fin U) : Fin (2 ^ M) :=
-  finXor (evalPoly (θ.1 0) u) (θ.2.1 (evalPoly (θ.1 1) u))
+noncomputable def evalSingle (c_exp n_max U M : ℕ) :
+    SingleSeed c_exp n_max U M → Fin U → Fin (2 ^ M) :=
+  evalSingleAux (decide (n_max < doubleTabThreshold c_exp)) c_exp n_max U M
 
-/-- Second cuckoo hash function `h₂(u) = f₂(u) ^^^ Z₂[g₂(u)]`. -/
+/-- Regime-indexed seed space for the unconditional cuckoo hash pair `(h₁, h₂)`. -/
+abbrev SeedAux (reg : Bool) (c_exp n_max U M : ℕ) : Type :=
+  SingleSeedAux reg c_exp n_max U M × SingleSeedAux reg c_exp n_max U M
+
+/-- Regime-indexed first cuckoo hash function. -/
 @[expose]
-noncomputable def evalHash2 {U M : ℕ} (θ : Seed U M) (u : Fin U) : Fin (2 ^ M) :=
-  finXor (evalPoly (θ.1 2) u) (θ.2.2 (evalPoly (θ.1 3) u))
+noncomputable def evalHash1Aux (reg : Bool) (c_exp n_max U M : ℕ) :
+    SeedAux reg c_exp n_max U M → Fin U → Fin (2 ^ M) :=
+  fun θ => evalSingleAux reg c_exp n_max U M θ.1
 
-theorem isKWiseIndependentHash_evalPoly (U M : ℕ) :
-    Probability.IsKWiseIndependentHash 7 (evalPoly (U := U) (M := M)) :=
-  Probability.isKWiseIndependentHash_trinomialPolyHash
-    (Probability.le_two_pow_trinomialDeg U M) (Probability.le_trinomialDeg U M)
+/-- Regime-indexed second cuckoo hash function. -/
+@[expose]
+noncomputable def evalHash2Aux (reg : Bool) (c_exp n_max U M : ℕ) :
+    SeedAux reg c_exp n_max U M → Fin U → Fin (2 ^ M) :=
+  fun θ => evalSingleAux reg c_exp n_max U M θ.2
 
-/-- If every fiber over `ι₂` of a predicate on `ι₁ × ι₂` has uniform density `c` in `ι₁`, then the
-predicate has density `c` in `ι₁ × ι₂`. -/
-theorem dens_prod_eq_of_forall_snd {ι₁ ι₂ : Type*} [Fintype ι₁] [Fintype ι₂] [Nonempty ι₂]
-    (P : ι₁ → ι₂ → Prop) [∀ i₂, DecidablePred (P · i₂)]
-    {c : ℚ≥0} (hc : ∀ i₂ : ι₂, Finset.dens {i₁ : ι₁ | P i₁ i₂} = c) :
-    open scoped Classical in
-    Finset.dens {p : ι₁ × ι₂ | P p.1 p.2} = c := by
-  classical
-  have hcard : #{p : ι₁ × ι₂ | P p.1 p.2} = ∑ i₂ : ι₂, #{i₁ : ι₁ | P i₁ i₂} := by
-    rw [← Finset.card_sigma]
-    refine Finset.card_nbij' (fun p => ⟨p.2, p.1⟩) (fun s => (s.2, s.1)) ?_ ?_ ?_ ?_
-    · rintro ⟨i₁, i₂⟩ hp
-      simp only [Finset.mem_coe, Finset.mem_filter, Finset.mem_univ, true_and] at hp
-      simp [hp]
-    · rintro ⟨i₂, i₁⟩ hs
-      simp only [Finset.mem_coe, Finset.mem_sigma, Finset.mem_univ, Finset.mem_filter,
-        true_and] at hs
-      simp [hs]
-    · rintro ⟨i₁, i₂⟩ _; rfl
-    · rintro ⟨i₂, i₁⟩ _; rfl
-  rw [Finset.dens_eq_card_div_card, hcard, Fintype.card_prod, Nat.cast_sum, Nat.cast_mul,
-    div_mul_eq_div_div, Finset.sum_div]
-  have hsum : (∑ i₂ : ι₂, (#{i₁ : ι₁ | P i₁ i₂} : ℚ≥0) / Fintype.card ι₁) =
-      (Fintype.card ι₂ : ℚ≥0) * c := by
-    calc (∑ i₂ : ι₂, (#{i₁ : ι₁ | P i₁ i₂} : ℚ≥0) / Fintype.card ι₁)
-      _ = ∑ i₂ : ι₂, Finset.dens {i₁ : ι₁ | P i₁ i₂} := by
-          refine Finset.sum_congr rfl fun i₂ _ => ?_
-          rw [Finset.dens_eq_card_div_card]
-      _ = ∑ _i₂ : ι₂, c := Finset.sum_congr rfl fun i₂ _ => hc i₂
-      _ = (Fintype.card ι₂ : ℚ≥0) * c := by simp
-  rw [hsum, mul_div_cancel_left₀ c (Nat.cast_ne_zero.mpr Fintype.card_ne_zero)]
+/-- Seed space for the regime-switched cuckoo hash pair (`trinomialPolyHash` below
+`doubleTabThreshold c_exp`, `doubleTabHash` at or above `doubleTabThreshold c_exp`). -/
+abbrev Seed (c_exp n_max U M : ℕ) : Type :=
+  SeedAux (decide (n_max < doubleTabThreshold c_exp)) c_exp n_max U M
 
-/-- Masking a `k`-wise independent hash family `f : ι₁ → X → Fin (2 ^ M)` with an arbitrary
-independent family `w : ι₂ → X → Fin (2 ^ M)` via `finXor` preserves `k`-wise independence. -/
-theorem isKWiseIndependentHash_finXor_mask {ι₁ ι₂ X : Type*} [Fintype ι₁] [Fintype ι₂]
-    [Nonempty ι₂] {k M : ℕ} {f : ι₁ → X → Fin (2 ^ M)} (w : ι₂ → X → Fin (2 ^ M))
-    (hf : Probability.IsKWiseIndependentHash k f) :
-    Probability.IsKWiseIndependentHash k
-      (fun (p : ι₁ × ι₂) x => finXor (f p.1 x) (w p.2 x)) where
-  dens_filter_restrict_eq {T} hT y := by
-    refine dens_prod_eq_of_forall_snd
-      (fun i₁ i₂ => T.restrict (fun x => finXor (f i₁ x) (w i₂ x)) = y) fun i₂ => ?_
-    have heq : Finset.filter (fun i₁ : ι₁ => T.restrict (fun x => finXor (f i₁ x) (w i₂ x)) = y)
-          Finset.univ =
-        Finset.filter (fun i₁ : ι₁ => T.restrict (f i₁) = fun x => finXor (y x) (w i₂ x.1))
-          Finset.univ := by
-      ext i₁
-      simp only [Finset.mem_filter, Finset.mem_univ, true_and, funext_iff]
-      exact forall_congr' fun x => finXor_eq_iff (f i₁ x.1) (w i₂ x.1) (y x)
-    rw [heq]
-    exact hf.dens_filter_restrict_eq hT _
+/-- Uniform seed distribution over `Seed c_exp n_max U M`. -/
+@[expose]
+noncomputable def seedLaw (c_exp n_max U M : ℕ) : PMF (Seed c_exp n_max U M) :=
+  PMF.uniformOfFintype (Seed c_exp n_max U M)
 
-private def seedEquiv1 (U M : ℕ) :
-    Seed U M ≃ PolySeed U M × ((Fin 3 → PolySeed U M) × TabSeed M × TabSeed M) where
-  toFun θ := (θ.1 0, (fun i => θ.1 i.succ, θ.2))
-  invFun p := (Fin.cons p.1 p.2.1, p.2.2)
-  left_inv θ := by
-    rcases θ with ⟨c, z⟩
-    refine Prod.ext ?_ rfl
-    ext i j
-    refine Fin.cases rfl (fun _ => rfl) i
-  right_inv p := by
-    rcases p with ⟨c0, cs, z⟩
-    ext <;> simp
+/-- First cuckoo hash function `h₁(u)` of the regime-switched cuckoo hash pair. -/
+@[expose]
+noncomputable def evalHash1 {c_exp n_max U M : ℕ} :
+    Seed c_exp n_max U M → Fin U → Fin (2 ^ M) :=
+  fun θ => evalSingle c_exp n_max U M θ.1
 
-private def seedEquiv2 (U M : ℕ) :
-    Seed U M ≃ PolySeed U M × ((Fin 3 → PolySeed U M) × TabSeed M × TabSeed M) :=
-  (Equiv.prodCongrLeft fun _ => Equiv.piCongrLeft' _ (Equiv.swap (0 : Fin 4) (2 : Fin 4))).trans
-    (seedEquiv1 U M)
-
-/-- **`evalHash1` is an exact `7`-wise independent hash family** onto `Fin (2 ^ M)`. -/
-theorem isKWiseIndependentHash_evalHash1 (U M : ℕ) :
-    Probability.IsKWiseIndependentHash 7 (evalHash1 (U := U) (M := M)) := by
-  have hmask : Probability.IsKWiseIndependentHash 7
-      (fun (p : PolySeed U M × ((Fin 3 → PolySeed U M) × TabSeed M × TabSeed M)) (u : Fin U) =>
-        finXor (evalPoly p.1 u) (p.2.2.1 (evalPoly (p.2.1 0) u))) :=
-    isKWiseIndependentHash_finXor_mask
-      (fun (q : (Fin 3 → PolySeed U M) × TabSeed M × TabSeed M) (u : Fin U) =>
-        q.2.1 (evalPoly (q.1 0) u))
-      (isKWiseIndependentHash_evalPoly U M)
-  exact hmask.comp_seedEquiv (seedEquiv1 U M)
-
-/-- **`evalHash2` is an exact `7`-wise independent hash family** onto `Fin (2 ^ M)`. -/
-theorem isKWiseIndependentHash_evalHash2 (U M : ℕ) :
-    Probability.IsKWiseIndependentHash 7 (evalHash2 (U := U) (M := M)) := by
-  have hmask : Probability.IsKWiseIndependentHash 7
-      (fun (p : PolySeed U M × ((Fin 3 → PolySeed U M) × TabSeed M × TabSeed M)) (u : Fin U) =>
-        finXor (evalPoly p.1 u) (p.2.2.2 (evalPoly (p.2.1 2) u))) :=
-    isKWiseIndependentHash_finXor_mask
-      (fun (q : (Fin 3 → PolySeed U M) × TabSeed M × TabSeed M) (u : Fin U) =>
-        q.2.2 (evalPoly (q.1 2) u))
-      (isKWiseIndependentHash_evalPoly U M)
-  have hcomp := hmask.comp_seedEquiv (seedEquiv2 U M)
-  convert hcomp using 1
-  ext θ u
-  rfl
-
-theorem isPairwiseIndependentHash_evalHash1 (U M : ℕ) :
-    Probability.IsPairwiseIndependentHash (evalHash1 (U := U) (M := M)) :=
-  (isKWiseIndependentHash_evalHash1 U M).isPairwiseIndependentHash (by decide)
-
-theorem isPairwiseIndependentHash_evalHash2 (U M : ℕ) :
-    Probability.IsPairwiseIndependentHash (evalHash2 (U := U) (M := M)) :=
-  (isKWiseIndependentHash_evalHash2 U M).isPairwiseIndependentHash (by decide)
+/-- Second cuckoo hash function `h₂(u)` of the regime-switched cuckoo hash pair. -/
+@[expose]
+noncomputable def evalHash2 {c_exp n_max U M : ℕ} :
+    Seed c_exp n_max U M → Fin U → Fin (2 ^ M) :=
+  fun θ => evalSingle c_exp n_max U M θ.2
 
 /-- **General cuckoo hash pair interface (`IsCuckooHashPair`)**:
 an original strengthened sufficient assumption bundle inspired by Pagh and Rodler [PaghRodler2004]
@@ -1098,15 +1072,27 @@ structure IsCuckooHashPair {Θ : Type*} (μ : PMF Θ) {U m : ℕ}
         (pureReplay (h₁ θ) (h₂ θ) MaxLoop (ks ++ [u])).isNone} ≤
       (C_reh : ℝ≥0∞) / ((max n_max 1 : ℝ≥0∞) * (max MaxLoop 1 : ℝ≥0∞))
 
-/-- Specialization of `IsCuckooHashPair` to the concrete modified tabulated polynomial hash pair
-`(evalHash1, evalHash2)` over `seedLaw U M` (independent `g₁, g₂` and bitwise XOR over
-`Fin (2 ^ M)`). Per-function `7`-wise independence (`isKWiseIndependentHash_evalHash1`,
-`isKWiseIndependentHash_evalHash2`) does not establish Dietzfelbinger and Woelfel's
-[DietzfelbingerWoelfel2003, Definition 1, §2.1, p. 632] shared-`g` mod-`m` graph/rehash guarantees
-for this modified pair; `isCuckooHashFamily_le_two` discharges `n_max ≤ 2`, while `n_max ≥ 3`
-remains open. -/
-abbrev IsCuckooHashFamily (U n_max M MaxLoop C_walk C_reh : ℕ) : Prop :=
-  IsCuckooHashPair (seedLaw U M) evalHash1 evalHash2 n_max MaxLoop C_walk C_reh
+/-- Monotonicity of `IsCuckooHashPair` in the constants `C_walk` and `C_reh`. -/
+theorem IsCuckooHashPair.mono_consts {Θ : Type*} {μ : PMF Θ} {U m : ℕ}
+    {h₁ h₂ : Θ → Fin U → Fin m}
+    {n_max MaxLoop C_walk C_walk' C_reh C_reh' : ℕ}
+    (hp : IsCuckooHashPair μ h₁ h₂ n_max MaxLoop C_walk C_reh)
+    (hw : C_walk ≤ C_walk') (hr : C_reh ≤ C_reh') :
+    IsCuckooHashPair μ h₁ h₂ n_max MaxLoop C_walk' C_reh' where
+  expected_walk_le S u hS hu :=
+    (hp.expected_walk_le S u hS hu).trans (by exact_mod_cast hw)
+  rehash_prob_le_half := hp.rehash_prob_le_half
+  step_rehash_prob_le ks u hnodup hlen hu :=
+    (hp.step_rehash_prob_le ks u hnodup hlen hu).trans
+      (ENNReal.div_le_div_right (by exact_mod_cast hr) _)
+
+/-- Specialization of `IsCuckooHashPair` to the regime-switched cuckoo hash pair
+`(evalHash1, evalHash2)` over `seedLaw c_exp n_max U M`.
+Proved unconditionally for every `n_max : ℕ` (`C_walk = 3`, `C_reh = 4`) whenever
+`U ≤ max n_max 4 ^ c_exp` and `32 * max n_max 4 ≤ 2 ^ M` via
+`Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_provableFamily`. -/
+abbrev IsCuckooHashFamily (c_exp U n_max M MaxLoop C_walk C_reh : ℕ) : Prop :=
+  IsCuckooHashPair (seedLaw c_exp n_max U M) evalHash1 evalHash2 n_max MaxLoop C_walk C_reh
 
 /-- When `ks` has length at most `1` and `0 < maxLoop`, `pureReplay` succeeds for every hash pair
 `(h₁, h₂)` in a single probe into `T₁`. -/
@@ -1166,10 +1152,11 @@ theorem pureReplay_isSome_of_length_le_two {U m : ℕ} (h₁ h₂ : Fin U → Fi
         simp only [List.length_cons] at hlen
         omega
 
-/-- Unconditional `IsCuckooHashPair` instance for `n_max ≤ 2` and `0 < MaxLoop` (`C_walk = 1`,
-`C_reh = 0`) over any seed distribution `μ` and hash pair `(h₁, h₂)`: inserting up to `2` keys into
-two tables `T₁, T₂` always completes in `1` round with zero rehashes (even if both keys collide in
-`T₁`, the displaced first key is placed into an empty slot of `T₂`). -/
+/-- Reusable hash-pair-independent `IsCuckooHashPair` instance for `n_max ≤ 2` and `0 < MaxLoop`
+(`C_walk = 1`, `C_reh = 0`) over any seed distribution `μ` and arbitrary hash pair `(h₁, h₂)`
+(without any independence assumption): inserting up to `2` keys into two tables `T₁, T₂` always
+completes in `1` round with zero rehashes (even if both keys collide in `T₁`, the displaced first
+key is placed into an empty slot of `T₂`). -/
 theorem isCuckooHashPair_le_two {Θ : Type*} (μ : PMF Θ) {U m n_max MaxLoop : ℕ}
     (h₁ h₂ : Θ → Fin U → Fin m) (hn : n_max ≤ 2) (hloop : 0 < MaxLoop) :
     IsCuckooHashPair μ h₁ h₂ n_max MaxLoop 1 0 where
@@ -1206,252 +1193,355 @@ theorem isCuckooHashPair_le_two {Θ : Type*} (μ : PMF Θ) {U m n_max MaxLoop : 
     rw [hempty]
     simp
 
-/-- Unconditional `IsCuckooHashFamily` instance for `n_max ≤ 2` and `0 < MaxLoop` (`C_walk = 1`,
-`C_reh = 0`). -/
-theorem isCuckooHashFamily_le_two (U : ℕ) {n_max M MaxLoop : ℕ}
-    (hn : n_max ≤ 2) (hloop : 0 < MaxLoop) :
-    IsCuckooHashFamily U n_max M MaxLoop 1 0 :=
-  isCuckooHashPair_le_two (seedLaw U M) evalHash1 evalHash2 hn hloop
+/-! ### Section 5: Two-block Word-RAM hash pair representation and programs -/
 
-/-- Unconditional `IsCuckooHashFamily` instance for `n_max ≤ 1` and `0 < MaxLoop` (`C_walk = 1`,
-`C_reh = 0`). -/
-theorem isCuckooHashFamily_le_one (U : ℕ) {n_max M MaxLoop : ℕ}
-    (hn : n_max ≤ 1) (hloop : 0 < MaxLoop) :
-    IsCuckooHashFamily U n_max M MaxLoop 1 0 :=
-  isCuckooHashFamily_le_two U (by omega) hloop
+open Cslib.Algorithms.WordRAM.Hashing Cslib.DataStructure.HashFamily.WordRAM
 
-/-! ### Section 5: Word-RAM hash pair representation and programs sharing `clmulTab` -/
-
-open Cslib.Algorithms.WordRAM.Hashing
-
-/-- Word-RAM memory footprint of the hash pair `(h₁, h₂)`:
-- `4` header words `(M, z1Base, z2Base, 0)` at `hashBase + 0 .. 3`,
-- `28` polynomial seed words (`4 × 7`) at `hashBase + 4 .. 31`,
-- `KWise.space n_max 7` words (`15 + 2 ^ (2 * chunkBits n_max)`) at `hashBase + 32 ..` storing the
-  shared `KWise` header, 7-word active seed slot, and Four-Russians `clmulTab`,
-- `2 * 2 ^ M` words for the random tabulation arrays `Z₁` and `Z₂`. -/
+/-- Word-RAM memory footprint of a single regime-switched hash instance (`h₁` or `h₂`). -/
 @[expose]
-def hashPairSpace (n_max M : ℕ) : ℕ :=
-  32 + KWise.space n_max 7 + 2 * 2 ^ M
+def singleHashSpace (c_exp n_max : ℕ) : ℕ :=
+  DoubleTabulation.provableSpace c_exp (cuckooK n_max) n_max
 
-/-- Base address of the first tabulation array `Z₁`. -/
+/-- Word-RAM memory footprint of the two-block hash pair `(h₁, h₂)` at `hashBase`:
+`singleHashSpace c_exp n_max` words at `hashBase` for `h₁` followed by
+`singleHashSpace c_exp n_max` words at `hash2Base hashBase c_exp n_max` for `h₂`. -/
 @[expose]
-def z1Base (hashBase n_max : ℕ) : ℕ :=
-  hashBase + 32 + KWise.space n_max 7
+def hashPairSpace (c_exp n_max : ℕ) : ℕ :=
+  2 * singleHashSpace c_exp n_max
 
-/-- Base address of the second tabulation array `Z₂`. -/
+/-- Base address of the second hash instance `h₂`. -/
 @[expose]
-def z2Base (hashBase n_max M : ℕ) : ℕ :=
-  z1Base hashBase n_max + 2 ^ M
+def hash2Base (hashBase c_exp n_max : ℕ) : ℕ :=
+  hashBase + singleHashSpace c_exp n_max
 
-theorem z1Base_eq (hashBase n_max : ℕ) :
-    z1Base hashBase n_max = hashBase + 47 + 2 ^ (2 * KWise.chunkBits n_max) := by
-  dsimp only [z1Base, KWise.space, KWise.spaceFromB]
+theorem le_singleHashSpace (c_exp n_max : ℕ) :
+    47 ≤ singleHashSpace c_exp n_max := by
+  dsimp only [singleHashSpace, DoubleTabulation.provableSpace]
+  split_ifs
+  · dsimp only [KWise.space, KWise.spaceFromB]
+    have hk := thirtyEight_le_cuckooK n_max
+    have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
+    omega
+  · dsimp only [DoubleTabulation.space]
+    have hc : 2 ≤ DoubleTabulation.provableC c_exp := by
+      dsimp only [DoubleTabulation.provableC]; omega
+    have hd : 16 ≤ DoubleTabulation.provableD c_exp := by
+      dsimp only [DoubleTabulation.provableD, DoubleTabulation.provableC]; omega
+    have hb : 2 ≤ 2 ^ DoubleTabulation.provableB n_max := by
+      have h1 := DoubleTabulation.one_le_provableB n_max
+      exact Nat.le_self_pow (by omega) 2
+    have hcd : 48 ≤ (DoubleTabulation.provableC c_exp + 1) * DoubleTabulation.provableD c_exp := by
+      nlinarith
+    nlinarith
+
+theorem le_hashPairSpace (c_exp n_max : ℕ) :
+    49 ≤ hashPairSpace c_exp n_max := by
+  have := le_singleHashSpace c_exp n_max
+  dsimp only [hashPairSpace]
   omega
 
-theorem le_z1Base (hashBase n_max : ℕ) :
-    hashBase + 47 ≤ z1Base hashBase n_max := by
-  rw [z1Base_eq]
-  exact Nat.le_add_right _ _
-
-theorem hashPairSpace_eq (n_max M : ℕ) :
-    hashPairSpace n_max M = 47 + 2 ^ (2 * KWise.chunkBits n_max) + 2 * 2 ^ M := by
-  dsimp only [hashPairSpace, KWise.space, KWise.spaceFromB]
-  omega
-
-theorem le_hashPairSpace (n_max M : ℕ) :
-    49 ≤ hashPairSpace n_max M := by
-  have h1 : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
-  have h2 : 1 ≤ 2 ^ M := Nat.one_le_two_pow
-  rw [hashPairSpace_eq]
-  omega
-
-theorem z2Base_add_two_pow_eq (hashBase n_max M : ℕ) :
-    z2Base hashBase n_max M + 2 ^ M = hashBase + hashPairSpace n_max M := by
-  dsimp only [z2Base, z1Base, hashPairSpace]
-  omega
-
-/-- Deterministic table representation invariant for the hash pair at `hashBase`:
-stores `(M, z1Base, z2Base)` at `hashBase + 0 .. 2` and `KWise.TableRep` at `hashBase + 32`. -/
+/-- Constant upper bound `24 * doubleTabMinB c_exp + 26` on `cuckooK n_max` throughout the small
+regime `n_max < doubleTabThreshold c_exp`. -/
 @[expose]
-def HashPairTableRep (hashBase n_max U M : ℕ) (mem : ℕ → ℕ) : Prop :=
-  mem hashBase = M ∧
-  mem (hashBase + 1) = z1Base hashBase n_max ∧
-  mem (hashBase + 2) = z2Base hashBase n_max M ∧
-  KWise.TableRep (hashBase + 32) (KWise.chunkBits n_max) U M 7 mem
+def cuckooKBound (c_exp : ℕ) : ℕ :=
+  24 * doubleTabMinB c_exp + 26
 
-/-- Seed representation invariant for `θ : Seed U M` at `hashBase`:
-stores the four 7-word polynomial seeds at `[hashBase + 4, hashBase + 32)`, `Z₁` at `z1Base`, and
-`Z₂` at `z2Base`. -/
+theorem cuckooK_le_cuckooKBound_of_lt {c_exp n_max : ℕ}
+    (hlt : n_max < doubleTabThreshold c_exp) :
+    cuckooK n_max ≤ cuckooKBound c_exp := by
+  have hb_pos : 1 ≤ doubleTabMinB c_exp := by
+    rw [doubleTabMinB_eq]
+    have hbase : 1 ≤ 24 * (2 * max c_exp 1) + 8 := by omega
+    have hsq : 1 ≤ (24 * (2 * max c_exp 1) + 8) ^ 2 := Nat.one_le_pow 2 _ hbase
+    omega
+  have hpow_ge_2 : 2 ≤ 2 ^ (2 * doubleTabMinB c_exp) := by
+    calc 2 = 2 ^ 1 := by ring
+      _ ≤ 2 ^ (2 * doubleTabMinB c_exp) := Nat.pow_le_pow_right (by decide) (by omega)
+  have hmax_le : max n_max 2 ≤ 2 ^ (2 * doubleTabMinB c_exp) := by
+    rw [← doubleTabThreshold_eq]
+    exact max_le (le_of_lt hlt) (by rw [doubleTabThreshold_eq]; exact hpow_ge_2)
+  have hclog : Nat.clog 2 (max n_max 2) ≤ 2 * doubleTabMinB c_exp :=
+    Nat.clog_le_of_le_pow hmax_le
+  dsimp only [cuckooK, maxEvictions, cuckooKBound]
+  omega
+
+theorem singleHashSpace_le_provableSpace_cuckooKBound (c_exp n_max : ℕ) :
+    singleHashSpace c_exp n_max ≤
+      DoubleTabulation.provableSpace c_exp (cuckooKBound c_exp) n_max := by
+  dsimp only [singleHashSpace, DoubleTabulation.provableSpace]
+  split_ifs with h
+  · dsimp only [KWise.space, KWise.spaceFromB]
+    have hk := cuckooK_le_cuckooKBound_of_lt h
+    omega
+  · exact le_rfl
+
+/-- Explicit `O_{c_exp}(1)` linear-space factor for `hashPairSpace c_exp n_max`. -/
 @[expose]
-def HashPairSeedRep (hashBase n_max U M : ℕ) (θ : Seed U M) (mem : ℕ → ℕ) : Prop :=
-  (∀ (r : Fin 4) (j : Fin 7),
-    mem (hashBase + 4 + 7 * r.val + j.val) = (θ.1 r j).val) ∧
-  (∀ i : Fin (2 ^ M), mem (z1Base hashBase n_max + i.val) = (θ.2.1 i).val) ∧
-  (∀ i : Fin (2 ^ M), mem (z2Base hashBase n_max M + i.val) = (θ.2.2 i).val)
+def hashPairSpaceFactor (c_exp : ℕ) : ℕ :=
+  2 * DoubleTabulation.provableSpaceFactor c_exp (cuckooKBound c_exp)
+
+/-- **All-`n_max` linear space bound for `hashPairSpace` (`O_{c_exp}(n_max + 1)`)**. -/
+theorem hashPairSpace_le (c_exp n_max : ℕ) :
+    hashPairSpace c_exp n_max ≤ hashPairSpaceFactor c_exp * (n_max + 1) := by
+  dsimp only [hashPairSpace, hashPairSpaceFactor]
+  rw [Nat.mul_assoc]
+  exact Nat.mul_le_mul_left 2
+    ((singleHashSpace_le_provableSpace_cuckooKBound c_exp n_max).trans
+      (DoubleTabulation.provableSpace_le c_exp (cuckooKBound c_exp) n_max))
+
+/-- Regime-indexed deterministic table representation for a single hash block at `base`. -/
+@[expose]
+def SingleTableRepAux (reg : Bool) (base n_max U M : ℕ) (mem : ℕ → ℕ) : Prop :=
+  match reg with
+  | true => KWise.TableRep base (KWise.chunkBits n_max) U M (cuckooK n_max) mem
+  | false => True
+
+/-- Deterministic table representation for a single hash block at `base`. -/
+@[expose]
+def SingleTableRep (base c_exp n_max U M : ℕ) (mem : ℕ → ℕ) : Prop :=
+  SingleTableRepAux (decide (n_max < doubleTabThreshold c_exp)) base n_max U M mem
+
+/-- Deterministic table representation invariant for the two-block hash pair at `hashBase`. -/
+@[expose]
+def HashPairTableRep (hashBase c_exp n_max U M : ℕ) (mem : ℕ → ℕ) : Prop :=
+  SingleTableRep hashBase c_exp n_max U M mem ∧
+  SingleTableRep (hash2Base hashBase c_exp n_max) c_exp n_max U M mem
+
+/-- Regime-indexed seed representation for a single hash block at `base`. -/
+@[expose]
+def SingleSeedRepAux (reg : Bool) (base c_exp n_max U M : ℕ) :
+    SingleSeedAux reg c_exp n_max U M → (ℕ → ℕ) → Prop :=
+  match reg with
+  | true => fun θ mem => KWise.SeedRep base U M (cuckooK n_max) θ mem
+  | false => fun θ mem =>
+    DoubleTabulation.SeedRep base
+      (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
+      (DoubleTabulation.provableB n_max) M θ mem
+
+/-- Seed representation for a single regime-switched hash block at `base`. -/
+@[expose]
+def SingleSeedRep (base c_exp n_max U M : ℕ)
+    (θ : SingleSeed c_exp n_max U M) (mem : ℕ → ℕ) : Prop :=
+  SingleSeedRepAux (decide (n_max < doubleTabThreshold c_exp)) base c_exp n_max U M θ mem
+
+/-- Regime-indexed seed extraction for a single hash block at `base`. -/
+@[expose]
+def extractSingleSeedAux (reg : Bool) (base c_exp n_max U M : ℕ) (mem : ℕ → ℕ) :
+    SingleSeedAux reg c_exp n_max U M :=
+  match reg with
+  | true => KWise.extractSeeds base U M (cuckooK n_max) mem
+  | false =>
+    DoubleTabulation.extractSeed base
+      (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
+      (DoubleTabulation.provableB n_max) M mem
+
+/-- Extract the seed of a single regime-switched hash block at `base`. -/
+@[expose]
+def extractSingleSeed (base c_exp n_max U M : ℕ) (mem : ℕ → ℕ) :
+    SingleSeed c_exp n_max U M :=
+  extractSingleSeedAux (decide (n_max < doubleTabThreshold c_exp)) base c_exp n_max U M mem
+
+/-- Regime-indexed seed representation for the two-block hash pair at `hashBase`. -/
+@[expose]
+def HashPairSeedRepAux (reg : Bool) (hashBase c_exp n_max U M : ℕ)
+    (θ : SeedAux reg c_exp n_max U M) (mem : ℕ → ℕ) : Prop :=
+  SingleSeedRepAux reg hashBase c_exp n_max U M θ.1 mem ∧
+  SingleSeedRepAux reg (hash2Base hashBase c_exp n_max) c_exp n_max U M θ.2 mem
+
+/-- Seed representation invariant for `θ : Seed c_exp n_max U M` at `hashBase`. -/
+@[expose]
+def HashPairSeedRep (hashBase c_exp n_max U M : ℕ)
+    (θ : Seed c_exp n_max U M) (mem : ℕ → ℕ) : Prop :=
+  SingleSeedRep hashBase c_exp n_max U M θ.1 mem ∧
+  SingleSeedRep (hash2Base hashBase c_exp n_max) c_exp n_max U M θ.2 mem
 
 /-- Full representation invariant for the hash pair `(h₁, h₂)` at `hashBase`. -/
 @[expose]
-def HashPairRep (hashBase n_max U M : ℕ) (θ : Seed U M) (mem : ℕ → ℕ) : Prop :=
-  HashPairTableRep hashBase n_max U M mem ∧ HashPairSeedRep hashBase n_max U M θ mem
+def HashPairRep (hashBase c_exp n_max U M : ℕ)
+    (θ : Seed c_exp n_max U M) (mem : ℕ → ℕ) : Prop :=
+  HashPairTableRep hashBase c_exp n_max U M mem ∧
+  HashPairSeedRep hashBase c_exp n_max U M θ mem
 
-/-- Equivalence currying a flat 28-word slice into four 7-word polynomial seeds. -/
+/-- Regime-indexed seed extraction from memory at `hashBase`. -/
 @[expose]
-def polySliceEquiv (U M : ℕ) :
-    (Fin 28 → Fin (2 ^ Probability.trinomialDeg U M)) ≃ (Fin 4 → PolySeed U M) where
-  toFun s r j := s ⟨7 * r.val + j.val, by omega⟩
-  invFun c i := c ⟨i.val / 7, by omega⟩ ⟨i.val % 7, by omega⟩
-  left_inv s := by
-    funext i
-    apply congrArg s
-    ext
-    dsimp only
-    exact Nat.div_add_mod i.val 7
-  right_inv c := by
-    funext r j
-    dsimp only
-    have hr : (7 * r.val + j.val) / 7 = r.val := by omega
-    have hj : (7 * r.val + j.val) % 7 = j.val := by omega
-    have hr' : (⟨(7 * r.val + j.val) / 7, by omega⟩ : Fin 4) = r := Fin.ext hr
-    have hj' : (⟨(7 * r.val + j.val) % 7, by omega⟩ : Fin 7) = j := Fin.ext hj
-    rw [hr', hj']
+def extractSeedAux (reg : Bool) (hashBase c_exp n_max U M : ℕ) (mem : ℕ → ℕ) :
+    SeedAux reg c_exp n_max U M :=
+  (extractSingleSeedAux reg hashBase c_exp n_max U M mem,
+   extractSingleSeedAux reg (hash2Base hashBase c_exp n_max) c_exp n_max U M mem)
 
-/-- Equivalence splitting a flat `2 * 2 ^ M`-word slice into two `2 ^ M`-word tabulation arrays. -/
+/-- Extract the full cuckoo hash seed `Seed c_exp n_max U M` from memory at `hashBase`. -/
 @[expose]
-def tabSliceEquiv (M : ℕ) :
-    (Fin (2 * 2 ^ M) → Fin (2 ^ M)) ≃ TabSeed M × TabSeed M where
-  toFun s := (fun i => s ⟨i.val, by omega⟩, fun i => s ⟨2 ^ M + i.val, by omega⟩)
-  invFun p j :=
-    if h : j.val < 2 ^ M then p.1 ⟨j.val, h⟩
-    else p.2 ⟨j.val - 2 ^ M, by omega⟩
-  left_inv s := by
-    funext j
-    dsimp only
-    split_ifs with h
-    · rfl
-    · congr 1
-      ext
-      dsimp only
-      omega
-  right_inv p := by
-    rcases p with ⟨z1, z2⟩
-    ext i : 2
-    · simp only [i.isLt, ↓reduceDIte]
-    · have hnot : ¬ (2 ^ M + i.val < 2 ^ M) := by omega
-      simp only [hnot, ↓reduceDIte]
-      congr 1
-      ext
-      dsimp only
-      omega
+def extractSeed (hashBase c_exp n_max U M : ℕ) (mem : ℕ → ℕ) : Seed c_exp n_max U M :=
+  (extractSingleSeed hashBase c_exp n_max U M mem,
+   extractSingleSeed (hash2Base hashBase c_exp n_max) c_exp n_max U M mem)
 
-/-- Extract the full cuckoo hash seed `Seed U M` from memory at `hashBase`. -/
-@[expose]
-def extractSeed (hashBase n_max U M : ℕ) (mem : ℕ → ℕ) : Seed U M :=
-  (polySliceEquiv U M
-      (Tabulation.extractSlice (hashBase + 4) (Probability.trinomialDeg U M) 28 mem),
-   tabSliceEquiv M
-      (Tabulation.extractSlice (z1Base hashBase n_max) M (2 * 2 ^ M) mem))
+theorem extractSingleSeed_eq_of_SingleSeedRep {base c_exp n_max U M : ℕ}
+    {θ : SingleSeed c_exp n_max U M} {mem : ℕ → ℕ}
+    (hseed : SingleSeedRep base c_exp n_max U M θ mem) :
+    extractSingleSeed base c_exp n_max U M mem = θ := by
+  unfold SingleSeed extractSingleSeed SingleSeedRep at *
+  revert θ hseed
+  cases decide (n_max < doubleTabThreshold c_exp) <;> intro θ hseed
+  · exact DoubleTabulation.extractSeed_eq_of_seedRep hseed
+  · exact KWise.extractSeeds_eq_of_seedRep hseed
 
-@[simp]
-theorem polySliceEquiv_apply (U M : ℕ)
-    (s : Fin 28 → Fin (2 ^ Probability.trinomialDeg U M)) (r : Fin 4) (j : Fin 7) :
-    polySliceEquiv U M s r j =
-      s ⟨7 * r.val + j.val, by have := r.isLt; have := j.isLt; omega⟩ := rfl
+theorem extractSeed_eq_of_HashPairSeedRep {hashBase c_exp n_max U M : ℕ}
+    {θ : Seed c_exp n_max U M} {mem : ℕ → ℕ}
+    (hseed : HashPairSeedRep hashBase c_exp n_max U M θ mem) :
+    extractSeed hashBase c_exp n_max U M mem = θ :=
+  Prod.ext (extractSingleSeed_eq_of_SingleSeedRep hseed.1)
+    (extractSingleSeed_eq_of_SingleSeedRep hseed.2)
 
-@[simp]
-theorem tabSliceEquiv_fst (M : ℕ) (s : Fin (2 * 2 ^ M) → Fin (2 ^ M)) (i : Fin (2 ^ M)) :
-    (tabSliceEquiv M s).1 i = s ⟨i.val, by have := i.isLt; omega⟩ := rfl
+theorem SingleTableRep.congr_of_footprint {base c_exp n_max U M : ℕ} {mem mem' : ℕ → ℕ}
+    (htab : SingleTableRep base c_exp n_max U M mem)
+    (hm : ∀ a, base ≤ a → a < base + singleHashSpace c_exp n_max → mem' a = mem a) :
+    SingleTableRep base c_exp n_max U M mem' := by
+  unfold SingleTableRep at *
+  revert htab
+  cases h : decide (n_max < doubleTabThreshold c_exp) <;> intro htab
+  · trivial
+  · have hlt : n_max < doubleTabThreshold c_exp := of_decide_eq_true h
+    have hsp : singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
+      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+    have hk := thirtyEight_le_cuckooK n_max
+    have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
+    have hkw : KWise.space n_max (cuckooK n_max) =
+        8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
+    rcases htab with ⟨h0, h1, h2, h3, h4, h5, h6, h7, hcl⟩
+    refine ⟨(hm _ (by omega) (by omega)).trans h0,
+      (hm _ (by omega) (by omega)).trans h1,
+      (hm _ (by omega) (by omega)).trans h2,
+      (hm _ (by omega) (by omega)).trans h3,
+      (hm _ (by omega) (by omega)).trans h4,
+      (hm _ (by omega) (by omega)).trans h5,
+      (hm _ (by omega) (by omega)).trans h6,
+      (hm _ (by omega) (by omega)).trans h7,
+      fun idx hidx => (hm _ (by omega) (by omega)).trans (hcl idx hidx)⟩
 
-@[simp]
-theorem tabSliceEquiv_snd (M : ℕ) (s : Fin (2 * 2 ^ M) → Fin (2 ^ M)) (i : Fin (2 ^ M)) :
-    (tabSliceEquiv M s).2 i = s ⟨2 ^ M + i.val, by have := i.isLt; omega⟩ := rfl
+theorem SingleTableRep.of_copy_from_hashBase {hashBase c_exp n_max U M : ℕ} {mem : ℕ → ℕ}
+    (htab : SingleTableRep hashBase c_exp n_max U M mem)
+    (hcopy : ∀ j < singleHashSpace c_exp n_max,
+      mem (hash2Base hashBase c_exp n_max + j) = mem (hashBase + j)) :
+    SingleTableRep (hash2Base hashBase c_exp n_max) c_exp n_max U M mem := by
+  unfold SingleTableRep at *
+  revert htab
+  cases h : decide (n_max < doubleTabThreshold c_exp) <;> intro htab
+  · trivial
+  · have hlt : n_max < doubleTabThreshold c_exp := of_decide_eq_true h
+    have hsp : singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
+      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+    have hk := thirtyEight_le_cuckooK n_max
+    have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
+    have hkw : KWise.space n_max (cuckooK n_max) =
+        8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
+    rcases htab with ⟨h0, h1, h2, h3, h4, h5, h6, h7, hcl⟩
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, fun idx hidx => ?_⟩
+    · simpa using (hcopy 0 (by omega)).trans (by simpa using h0)
+    · exact (hcopy 1 (by omega)).trans h1
+    · exact (hcopy 2 (by omega)).trans h2
+    · exact (hcopy 3 (by omega)).trans h3
+    · exact (hcopy 4 (by omega)).trans h4
+    · exact (hcopy 5 (by omega)).trans h5
+    · exact (hcopy 6 (by omega)).trans h6
+    · exact (hcopy 7 (by omega)).trans h7
+    · rw [show hash2Base hashBase c_exp n_max + 8 + cuckooK n_max + idx =
+            hash2Base hashBase c_exp n_max + (8 + cuckooK n_max + idx) by omega,
+          hcopy (8 + cuckooK n_max + idx) (by omega),
+          show hashBase + (8 + cuckooK n_max + idx) = hashBase + 8 + cuckooK n_max + idx by omega]
+      exact hcl idx hidx
 
-theorem hashPairSeedRep_extractSeed {hashBase n_max U M : ℕ} {mem : ℕ → ℕ}
-    (hpoly : ∀ k < 28, mem (hashBase + 4 + k) < 2 ^ Probability.trinomialDeg U M)
-    (htab : ∀ i < 2 * 2 ^ M, mem (z1Base hashBase n_max + i) < 2 ^ M) :
-    HashPairSeedRep hashBase n_max U M (extractSeed hashBase n_max U M mem) mem := by
-  refine ⟨?_, ?_, ?_⟩
-  · intro r j
-    have hr := r.isLt
-    have hj := j.isLt
-    dsimp only [extractSeed, polySliceEquiv_apply, Tabulation.extractSlice]
-    rw [show hashBase + 4 + (7 * r.val + j.val) = hashBase + 4 + 7 * r.val + j.val by omega]
-    exact (Tabulation.extractWord_val_of_lt (by
-      rw [show hashBase + 4 + 7 * r.val + j.val = hashBase + 4 + (7 * r.val + j.val) by omega]
-      exact hpoly (7 * r.val + j.val) (by omega))).symm
-  · intro i
-    have hi := i.isLt
-    dsimp only [extractSeed, tabSliceEquiv_fst, Tabulation.extractSlice]
-    exact (Tabulation.extractWord_val_of_lt (htab i.val (by omega))).symm
-  · intro i
-    have hi := i.isLt
-    dsimp only [extractSeed, tabSliceEquiv_snd, Tabulation.extractSlice, z2Base]
-    rw [show z1Base hashBase n_max + (2 ^ M + i.val) =
-      z1Base hashBase n_max + 2 ^ M + i.val by omega]
-    exact (Tabulation.extractWord_val_of_lt (by
-      rw [show z1Base hashBase n_max + 2 ^ M + i.val =
-        z1Base hashBase n_max + (2 ^ M + i.val) by omega]
-      exact htab (2 ^ M + i.val) (by omega))).symm
+theorem HashPairTableRep.congr_of_footprint {hashBase c_exp n_max U M : ℕ} {mem mem' : ℕ → ℕ}
+    (htab : HashPairTableRep hashBase c_exp n_max U M mem)
+    (hm : ∀ a, hashBase ≤ a → a < hashBase + hashPairSpace c_exp n_max → mem' a = mem a) :
+    HashPairTableRep hashBase c_exp n_max U M mem' :=
+  ⟨htab.1.congr_of_footprint (fun a hge hlt =>
+    hm a hge (by dsimp only [hashPairSpace]; omega)),
+   htab.2.congr_of_footprint (fun a hge hlt =>
+    hm a (by dsimp only [hash2Base] at hge; omega)
+      (by dsimp only [hash2Base, hashPairSpace] at hlt ⊢; omega))⟩
 
-theorem extractSeed_eq_of_HashPairSeedRep {hashBase n_max U M : ℕ} {θ : Seed U M} {mem : ℕ → ℕ}
-    (hseed : HashPairSeedRep hashBase n_max U M θ mem) :
-    extractSeed hashBase n_max U M mem = θ := by
-  rcases θ with ⟨c, z1, z2⟩
-  rcases hseed with ⟨hc, hz1, hz2⟩
-  refine Prod.ext ?_ (Prod.ext ?_ ?_)
-  · funext r j
-    ext
-    dsimp only [extractSeed, polySliceEquiv_apply, Tabulation.extractSlice]
-    rw [show hashBase + 4 + (7 * r.val + j.val) = hashBase + 4 + 7 * r.val + j.val by omega,
-      hc r j, Tabulation.extractWord_val_of_lt (c r j).isLt]
-  · funext i
-    ext
-    dsimp only [extractSeed, tabSliceEquiv_fst, Tabulation.extractSlice]
-    rw [hz1 i, Tabulation.extractWord_val_of_lt (z1 i).isLt]
-  · funext i
-    ext
-    dsimp only [extractSeed, tabSliceEquiv_snd, Tabulation.extractSlice]
-    rw [show z1Base hashBase n_max + (2 ^ M + i.val) = z2Base hashBase n_max M + i.val by
-      dsimp only [z2Base]; omega, hz2 i, Tabulation.extractWord_val_of_lt (z2 i).isLt]
+theorem SingleSeedRep.congr_of_footprint {base c_exp n_max U M : ℕ}
+    {θ : SingleSeed c_exp n_max U M} {mem mem' : ℕ → ℕ}
+    (hseed : SingleSeedRep base c_exp n_max U M θ mem)
+    (hm : ∀ a, base ≤ a → a < base + singleHashSpace c_exp n_max → mem' a = mem a) :
+    SingleSeedRep base c_exp n_max U M θ mem' := by
+  unfold SingleSeed SingleSeedRep at *
+  revert θ hseed
+  cases h : decide (n_max < doubleTabThreshold c_exp) <;> intro θ hseed
+  · have hge : ¬ (n_max < doubleTabThreshold c_exp) := of_decide_eq_false h
+    have hsp : singleHashSpace c_exp n_max =
+        DoubleTabulation.space (DoubleTabulation.provableC c_exp)
+          (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
+      simp [singleHashSpace, DoubleTabulation.provableSpace, hge]
+    exact hseed.congr_mem (fun a ha1 ha2 => hm a ha1 (by omega))
+  · have hlt : n_max < doubleTabThreshold c_exp := of_decide_eq_true h
+    have hsp : singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
+      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+    have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
+    have hkw : KWise.space n_max (cuckooK n_max) =
+        8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
+    exact hseed.congr_of_footprint (fun a ha1 ha2 => hm a ha1 (by omega))
 
-theorem HashPairTableRep.congr_of_active_slot {hashBase n_max U M : ℕ} {mem mem' : ℕ → ℕ}
-    (htab : HashPairTableRep hashBase n_max U M mem)
-    (hframe : ∀ a, (a < hashBase + 40 ∨ hashBase + 47 ≤ a) → mem' a = mem a) :
-    HashPairTableRep hashBase n_max U M mem' := by
-  rcases htab with ⟨hM, hz1, hz2, hkw⟩
-  refine ⟨(hframe hashBase (Or.inl (by omega))).trans hM,
-    (hframe (hashBase + 1) (Or.inl (by omega))).trans hz1,
-    (hframe (hashBase + 2) (Or.inl (by omega))).trans hz2, ?_⟩
-  rcases hkw with ⟨h0, h1, h2, h3, h4, h5, h6, h7, hcl⟩
-  refine ⟨(hframe (hashBase + 32) (Or.inl (by omega))).trans h0,
-    (hframe (hashBase + 32 + 1) (Or.inl (by omega))).trans h1,
-    (hframe (hashBase + 32 + 2) (Or.inl (by omega))).trans h2,
-    (hframe (hashBase + 32 + 3) (Or.inl (by omega))).trans h3,
-    (hframe (hashBase + 32 + 4) (Or.inl (by omega))).trans h4,
-    (hframe (hashBase + 32 + 5) (Or.inl (by omega))).trans h5,
-    (hframe (hashBase + 32 + 6) (Or.inl (by omega))).trans h6,
-    (hframe (hashBase + 32 + 7) (Or.inl (by omega))).trans h7,
-    fun idx hidx => (hframe (hashBase + 32 + 8 + 7 + idx) (Or.inr (by omega))).trans (hcl idx hidx)⟩
+theorem HashPairSeedRep.congr_of_footprint {hashBase c_exp n_max U M : ℕ}
+    {θ : Seed c_exp n_max U M} {mem mem' : ℕ → ℕ}
+    (hseed : HashPairSeedRep hashBase c_exp n_max U M θ mem)
+    (hm : ∀ a, hashBase ≤ a → a < hashBase + hashPairSpace c_exp n_max → mem' a = mem a) :
+    HashPairSeedRep hashBase c_exp n_max U M θ mem' :=
+  ⟨hseed.1.congr_of_footprint (fun a ha1 ha2 =>
+    hm a ha1 (by dsimp only [hashPairSpace]; omega)),
+   hseed.2.congr_of_footprint (fun a ha1 ha2 =>
+    hm a (by dsimp only [hash2Base] at ha1; omega)
+      (by dsimp only [hash2Base, hashPairSpace] at ha2 ⊢; omega))⟩
 
-theorem HashPairSeedRep.congr_of_active_slot {hashBase n_max U M : ℕ} {θ : Seed U M}
-    {mem mem' : ℕ → ℕ} (hseed : HashPairSeedRep hashBase n_max U M θ mem)
-    (hframe : ∀ a, (a < hashBase + 40 ∨ hashBase + 47 ≤ a) → mem' a = mem a) :
-    HashPairSeedRep hashBase n_max U M θ mem' := by
-  rcases hseed with ⟨hc, hz1, hz2⟩
-  have hz1_ge := le_z1Base hashBase n_max
-  have hz2_ge : hashBase + 47 ≤ z2Base hashBase n_max M :=
-    le_trans hz1_ge (Nat.le_add_right _ _)
-  refine ⟨fun r j => (hframe _ (Or.inl (by omega))).trans (hc r j),
-    fun i => (hframe _ (Or.inr (by omega))).trans (hz1 i),
-    fun i => (hframe _ (Or.inr (by omega))).trans (hz2 i)⟩
+theorem HashPairRep.congr_of_footprint {hashBase c_exp n_max U M : ℕ}
+    {θ : Seed c_exp n_max U M} {mem mem' : ℕ → ℕ}
+    (hrep : HashPairRep hashBase c_exp n_max U M θ mem)
+    (hm : ∀ a, hashBase ≤ a → a < hashBase + hashPairSpace c_exp n_max → mem' a = mem a) :
+    HashPairRep hashBase c_exp n_max U M θ mem' :=
+  ⟨hrep.1.congr_of_footprint hm, hrep.2.congr_of_footprint hm⟩
 
-theorem HashPairRep.congr_of_active_slot {hashBase n_max U M : ℕ} {θ : Seed U M}
-    {mem mem' : ℕ → ℕ} (hrep : HashPairRep hashBase n_max U M θ mem)
-    (hframe : ∀ a, (a < hashBase + 40 ∨ hashBase + 47 ≤ a) → mem' a = mem a) :
-    HashPairRep hashBase n_max U M θ mem' :=
-  ⟨hrep.1.congr_of_active_slot hframe, hrep.2.congr_of_active_slot hframe⟩
+theorem HashPairRep.congr_of_ge_hashBase {hashBase c_exp n_max U M : ℕ}
+    {θ : Seed c_exp n_max U M} {mem mem' : ℕ → ℕ}
+    (hrep : HashPairRep hashBase c_exp n_max U M θ mem)
+    (hm : ∀ a, hashBase ≤ a → mem' a = mem a) :
+    HashPairRep hashBase c_exp n_max U M θ mem' :=
+  hrep.congr_of_footprint (fun a hge _ => hm a hge)
 
-/-- Register injection `Fin 18 → Fin 19` embedding `KWise` programs into `Data 19`. -/
+theorem extractSingleSeed_congr_of_footprint {base c_exp n_max U M : ℕ} {mem mem' : ℕ → ℕ}
+    (hm : ∀ a, base ≤ a → a < base + singleHashSpace c_exp n_max → mem' a = mem a) :
+    extractSingleSeed base c_exp n_max U M mem' = extractSingleSeed base c_exp n_max U M mem := by
+  unfold SingleSeed extractSingleSeed
+  cases h : decide (n_max < doubleTabThreshold c_exp)
+  · have hge : ¬ (n_max < doubleTabThreshold c_exp) := of_decide_eq_false h
+    have hsp : singleHashSpace c_exp n_max =
+        DoubleTabulation.space (DoubleTabulation.provableC c_exp)
+          (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
+      simp [singleHashSpace, DoubleTabulation.provableSpace, hge]
+    exact DoubleTabulation.extractSeed_congr_mem (fun a ha1 ha2 => hm a ha1 (by omega))
+  · have hlt : n_max < doubleTabThreshold c_exp := of_decide_eq_true h
+    have hsp : singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
+      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+    have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
+    have hkw : KWise.space n_max (cuckooK n_max) =
+        8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
+    exact KWise.extractSeeds_congr_of_footprint (fun a ha1 ha2 => hm a ha1 (by omega))
+
+theorem extractSeed_congr_of_footprint {hashBase c_exp n_max U M : ℕ} {mem mem' : ℕ → ℕ}
+    (hm : ∀ a, hashBase ≤ a → a < hashBase + hashPairSpace c_exp n_max → mem' a = mem a) :
+    extractSeed hashBase c_exp n_max U M mem' = extractSeed hashBase c_exp n_max U M mem :=
+  Prod.ext
+    (extractSingleSeed_congr_of_footprint (fun a ha1 ha2 =>
+      hm a ha1 (by dsimp only [hashPairSpace]; omega)))
+    (extractSingleSeed_congr_of_footprint (fun a ha1 ha2 =>
+      hm a (by dsimp only [hash2Base] at ha1; omega)
+        (by dsimp only [hash2Base, hashPairSpace] at ha2 ⊢; omega)))
+
+theorem extractSeed_congr_of_ge_hashBase {hashBase c_exp n_max U M : ℕ} {mem mem' : ℕ → ℕ}
+    (hm : ∀ a, hashBase ≤ a → mem' a = mem a) :
+    extractSeed hashBase c_exp n_max U M mem' = extractSeed hashBase c_exp n_max U M mem :=
+  extractSeed_congr_of_footprint (fun a hge _ => hm a hge)
+
+/-- Injective register map embedding `Data 18` into `Data 19`. -/
 @[expose]
 def cast18To19 : Fin 18 → Fin 19 :=
   Fin.castLE (by decide : 18 ≤ 19)
@@ -1459,695 +1549,13 @@ def cast18To19 : Fin 18 → Fin 19 :=
 theorem injective_cast18To19 : Function.Injective cast18To19 :=
   Fin.castLE_injective _
 
-/-- Prefix of `initTableHashPairCode`: stores `M` at `mem[hashBase]` and advances `reg 0` to
-`hashBase + 32`. -/
+/-- Injective register map embedding `Data 12` into `Data 19`. -/
 @[expose]
-def initHashHeaderPrefix : Code .exact 19 :=
-  .seq (.op (.store 0 3))
-  (.seq (.op (.const 15 32))
-        (.op (.exactBin .add 0 0 15)))
+def cast12To19 : Fin 12 → Fin 19 :=
+  Fin.castLE (by decide : 12 ≤ 19)
 
-/-- Suffix of `initTableHashPairCode`: restores `reg 0 = hashBase` and populates `z1Base` at
-`mem[hashBase + 1]` and `z2Base` at `mem[hashBase + 2]`. -/
-@[expose]
-def initHashHeaderSuffix : Code .exact 19 :=
-  .seq (.op (.const 15 32))
-  (.seq (.op (.exactBin .sub 0 0 15))
-  (.seq (.op (.const 1 1))
-  (.seq (.op (.const 2 37))
-  (.seq (.op (.exactBin .add 2 0 2))
-  (.seq (.op (.load 2 2))
-  (.seq (.op (.exactBin .add 2 2 2))
-  (.seq (.op (.exactBin .shiftLeft 2 1 2))
-  (.seq (.op (.const 3 47))
-  (.seq (.op (.exactBin .add 3 0 3))
-  (.seq (.op (.exactBin .add 3 3 2))
-  (.seq (.op (.exactBin .add 4 0 1))
-  (.seq (.op (.store 4 3))
-  (.seq (.op (.const 5 36))
-  (.seq (.op (.exactBin .add 5 0 5))
-  (.seq (.op (.load 5 5))
-  (.seq (.op (.exactBin .add 5 5 1))
-  (.seq (.op (.exactBin .add 3 3 5))
-  (.seq (.op (.exactBin .add 4 4 1))
-        (.op (.store 4 3))))))))))))))))))))
-
-/-- Deterministic table-initialization program for the hash pair at `hashBase`:
-populates `(M, z1Base, z2Base)` and builds the shared `KWise` `clmulTab` at `hashBase + 32`. -/
-@[expose]
-def initTableHashPairCode : Code .exact 19 :=
-  .seq initHashHeaderPrefix
-  (.seq ((KWise.initTableCode 7).rename cast18To19)
-        initHashHeaderSuffix)
-
-/-- Exact instruction bound for `initTableHashPairCode`. -/
-@[expose]
-def initTableHashPairSteps (n_max U M : ℕ) : ℕ :=
-  KWise.initTableSteps n_max U M + 23
-
-theorem initTableHashPairCode_execWithin {w hashBase n_max U M : ℕ} {x : Data 19}
-    (h0 : x.regs 0 = hashBase) (h1 : x.regs 1 = n_max)
-    (h2 : x.regs 2 = U) (h3 : x.regs 3 = M)
-    (hfit_space : Fits w (hashBase + hashPairSpace n_max M))
-    (hfit_n : Fits w (max n_max 2)) (hfit_U : Fits w (max U 2 + 1))
-    (hfit_q : Fits w (2 ^ Probability.trinomialDeg U M)) :
-    ∃ y : Data 19,
-      ExecWithin w initTableHashPairCode x y (initTableHashPairSteps n_max U M) ∧
-      HashPairTableRep hashBase n_max U M y.mem ∧
-      y.regs 0 = hashBase ∧
-      (∀ a, (a < hashBase ∨ hashBase + hashPairSpace n_max M ≤ a) → y.mem a = x.mem a) := by
-  have hpow_pos : 0 < 2 ^ (2 * KWise.chunkBits n_max) := by positivity
-  have hpowM_pos : 1 ≤ 2 ^ M := Nat.one_le_two_pow
-  have hsp : hashPairSpace n_max M = 47 + 2 ^ (2 * KWise.chunkBits n_max) + 2 * 2 ^ M := by
-    dsimp only [hashPairSpace, KWise.space, KWise.spaceFromB]; omega
-  have hfit_32 : Fits w 32 := hfit_space.of_le (by omega)
-  have hfit_hb32 : Fits w (hashBase + 32) := hfit_space.of_le (by omega)
-  have hfit_kw : Fits w (hashBase + 32 + KWise.space n_max 7) :=
-    hfit_space.of_le (by dsimp only [hashPairSpace]; omega)
-  set d1 := x.write hashBase M
-  have ep1 : Exec w (.op (.store 0 3) : Code .exact 19) x d1 1 := by
-    simpa +decide [d1, h0, h3] using (Exec.store (B := .exact) (w := w) (a := 0) (s := 3) (x := x))
-  set d2 := d1.set 15 32
-  have ep2 : Exec w (.op (.const 15 32) : Code .exact 19) d1 d2 1 := Exec.const hfit_32
-  set d3 := d2.set 0 (hashBase + 32)
-  have ep3 : Exec w (.op (.exactBin .add 0 0 15) : Code .exact 19) d2 d3 1 :=
-    ExactLog.exec_exactBin (by simp +decide [d2, d1, h0]) hfit_hb32
-  have epref : Exec w initHashHeaderPrefix x d3 3 := ep1.seq (ep2.seq ep3)
-  obtain ⟨y_kw, ⟨t_kw, ht_kw, he_kw⟩, htab_kw, hy_kw0, hy_kw_out⟩ :=
-    KWise.initTableCode_execWithin (w := w) (base := hashBase + 32) (n_max := n_max)
-      (U := U) (M := M) (k := 7) (x := d3.comap cast18To19)
-      (by simp +decide [d3, d2, d1, cast18To19, Data.comap])
-      (by simp +decide [d3, d2, d1, cast18To19, Data.comap, h1])
-      (by simp +decide [d3, d2, d1, cast18To19, Data.comap, h2])
-      (by simp +decide [d3, d2, d1, cast18To19, Data.comap, h3])
-      hfit_kw hfit_n hfit_U hfit_q
-  set d4 := y_kw.extend cast18To19 d3
-  have he_kw' : Exec w ((KWise.initTableCode 7).rename cast18To19) d3 d4 t_kw :=
-    he_kw.rename injective_cast18To19
-  have hd4_0 : d4.regs 0 = hashBase + 32 := by
-    change ((y_kw.extend cast18To19 d3).comap cast18To19).regs 0 = hashBase + 32
-    rw [Data.comap_extend injective_cast18To19, hy_kw0]
-  have hd4_mem : d4.mem = y_kw.mem := rfl
-  have hd4_hb : d4.mem hashBase = M := by
-    rw [hd4_mem, hy_kw_out hashBase (Or.inl (by omega))]
-    simp [d3, d2, d1, Data.comap]
-  set b := KWise.chunkBits n_max
-  have hm_b : d4.mem (hashBase + 37) = b := by
-    rw [show hashBase + 37 = hashBase + 32 + 5 by omega, hd4_mem]
-    exact htab_kw.2.2.2.2.2.1
-  have hm_maskM : d4.mem (hashBase + 36) = 2 ^ M - 1 := by
-    rw [show hashBase + 36 = hashBase + 32 + 4 by omega, hd4_mem]
-    exact htab_kw.2.2.2.2.1
-  have h2b_lt : 2 * b < 2 ^ (2 * b) := Nat.lt_two_pow_self
-  have hsp_eq := hashPairSpace_eq n_max M
-  have hfit_1 : Fits w 1 := hfit_space.of_le (by omega)
-  have hfit_37 : Fits w 37 := hfit_space.of_le (by omega)
-  have hfit_hb37 : Fits w (hashBase + 37) := hfit_space.of_le (by omega)
-  have hfit_2b : Fits w (2 * b) := hfit_space.of_le (by omega)
-  have hfit_pow2b : Fits w (2 ^ (2 * b)) := hfit_space.of_le (by omega)
-  have hfit_47 : Fits w 47 := hfit_space.of_le (by omega)
-  have hfit_hb47 : Fits w (hashBase + 47) := hfit_space.of_le (by omega)
-  have hfit_z1 : Fits w (z1Base hashBase n_max) := by
-    rw [z1Base_eq]; exact hfit_space.of_le (by omega)
-  have hfit_hb1 : Fits w (hashBase + 1) := hfit_space.of_le (by omega)
-  have hfit_36 : Fits w 36 := hfit_space.of_le (by omega)
-  have hfit_hb36 : Fits w (hashBase + 36) := hfit_space.of_le (by omega)
-  have hfit_powM : Fits w (2 ^ M) := hfit_space.of_le (by omega)
-  have hfit_z2 : Fits w (z2Base hashBase n_max M) := by
-    dsimp only [z2Base]; rw [z1Base_eq]; exact hfit_space.of_le (by omega)
-  have hfit_hb2 : Fits w (hashBase + 2) := hfit_space.of_le (by omega)
-  have hfit_hb : Fits w hashBase := hfit_space.of_le (by omega)
-  set s1 := d4.set 15 32
-  have es1 : Exec w (.op (.const 15 32) : Code .exact 19) d4 s1 1 := Exec.const hfit_32
-  set s2 := s1.set 0 hashBase
-  have es2 : Exec w (.op (.exactBin .sub 0 0 15) : Code .exact 19) s1 s2 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s1, hd4_0]) hfit_hb
-  set s3 := s2.set 1 1
-  have es3 : Exec w (.op (.const 1 1) : Code .exact 19) s2 s3 1 := Exec.const hfit_1
-  set s4 := s3.set 2 37
-  have es4 : Exec w (.op (.const 2 37) : Code .exact 19) s3 s4 1 := Exec.const hfit_37
-  set s5 := s4.set 2 (hashBase + 37)
-  have es5 : Exec w (.op (.exactBin .add 2 0 2) : Code .exact 19) s4 s5 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s4, s3, s2]) hfit_hb37
-  set s6 := s5.set 2 b
-  have es6 : Exec w (.op (.load 2 2) : Code .exact 19) s5 s6 1 := by
-    simpa +decide [s6, s5, s4, s3, s2, s1, hm_b] using
-      (Exec.load (B := .exact) (w := w) (d := 2) (a := 2) (x := s5))
-  set s7 := s6.set 2 (2 * b)
-  have es7 : Exec w (.op (.exactBin .add 2 2 2) : Code .exact 19) s6 s7 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s6, Nat.two_mul]) hfit_2b
-  set s8 := s7.set 2 (2 ^ (2 * b))
-  have es8 : Exec w (.op (.exactBin .shiftLeft 2 1 2) : Code .exact 19) s7 s8 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s7, s6, s5, s4, s3, Nat.shiftLeft_eq]) hfit_pow2b
-  set s9 := s8.set 3 47
-  have es9 : Exec w (.op (.const 3 47) : Code .exact 19) s8 s9 1 := Exec.const hfit_47
-  set s10 := s9.set 3 (hashBase + 47)
-  have es10 : Exec w (.op (.exactBin .add 3 0 3) : Code .exact 19) s9 s10 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s9, s8, s7, s6, s5, s4, s3, s2]) hfit_hb47
-  set s11 := s10.set 3 (z1Base hashBase n_max)
-  have es11 : Exec w (.op (.exactBin .add 3 3 2) : Code .exact 19) s10 s11 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s10, s9, s8, z1Base_eq, b, Nat.add_assoc]) hfit_z1
-  set s12 := s11.set 4 (hashBase + 1)
-  have es12 : Exec w (.op (.exactBin .add 4 0 1) : Code .exact 19) s11 s12 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s11, s10, s9, s8, s7, s6, s5, s4, s3, s2]) hfit_hb1
-  set s13 := s12.write (hashBase + 1) (z1Base hashBase n_max)
-  have es13 : Exec w (.op (.store 4 3) : Code .exact 19) s12 s13 1 := by
-    simpa +decide [s13, s12, s11] using
-      (Exec.store (B := .exact) (w := w) (a := 4) (s := 3) (x := s12))
-  set s14 := s13.set 5 36
-  have es14 : Exec w (.op (.const 5 36) : Code .exact 19) s13 s14 1 := Exec.const hfit_36
-  set s15 := s14.set 5 (hashBase + 36)
-  have es15 : Exec w (.op (.exactBin .add 5 0 5) : Code .exact 19) s14 s15 1 :=
-    ExactLog.exec_exactBin
-      (by simp +decide [s14, s13, s12, s11, s10, s9, s8, s7, s6, s5, s4, s3, s2]) hfit_hb36
-  set s16 := s15.set 5 (2 ^ M - 1)
-  have es16 : Exec w (.op (.load 5 5) : Code .exact 19) s15 s16 1 := by
-    have hm36 : s15.mem (hashBase + 36) = 2 ^ M - 1 := by
-      dsimp only [s15, s14, s13, s12, s11, s10, s9, s8, s7, s6, s5, s4, s3, s2, s1,
-        Data.write, Data.set]
-      rw [Function.update_of_ne (by omega), hm_maskM]
-    simpa +decide [s16, s15, hm36] using
-      (Exec.load (B := .exact) (w := w) (d := 5) (a := 5) (x := s15))
-  set s17 := s16.set 5 (2 ^ M)
-  have es17 : Exec w (.op (.exactBin .add 5 5 1) : Code .exact 19) s16 s17 1 :=
-    ExactLog.exec_exactBin
-      (by simp +decide [s16, s15, s14, s13, s12, s11, s10, s9, s8, s7, s6, s5, s4, s3, hpowM_pos])
-      hfit_powM
-  set s18 := s17.set 3 (z2Base hashBase n_max M)
-  have es18 : Exec w (.op (.exactBin .add 3 3 5) : Code .exact 19) s17 s18 1 :=
-    ExactLog.exec_exactBin
-      (by simp +decide [s17, s16, s15, s14, s13, s12, s11, z2Base]) hfit_z2
-  set s19 := s18.set 4 (hashBase + 2)
-  have es19 : Exec w (.op (.exactBin .add 4 4 1) : Code .exact 19) s18 s19 1 :=
-    ExactLog.exec_exactBin
-      (by simp +decide [s18, s17, s16, s15, s14, s13, s12, s11, s10, s9, s8, s7, s6, s5, s4, s3,
-        Nat.add_assoc]) hfit_hb2
-  set s20 := s19.write (hashBase + 2) (z2Base hashBase n_max M)
-  have es20 : Exec w (.op (.store 4 3) : Code .exact 19) s19 s20 1 := by
-    simpa +decide [s20, s19, s18] using
-      (Exec.store (B := .exact) (w := w) (a := 4) (s := 3) (x := s19))
-  have esuf : Exec w initHashHeaderSuffix d4 s20 20 :=
-    es1.seq (es2.seq (es3.seq (es4.seq (es5.seq (es6.seq (es7.seq (es8.seq (es9.seq (es10.seq
-      (es11.seq (es12.seq (es13.seq (es14.seq (es15.seq (es16.seq (es17.seq (es18.seq
-        (es19.seq es20))))))))))))))))))
-  have hall := epref.seq (he_kw'.seq esuf)
-  have hs20_mem : ∀ a, a ≠ hashBase + 1 → a ≠ hashBase + 2 → s20.mem a = d4.mem a := by
-    intro a ha1 ha2
-    dsimp only [s20, s19, s18, s17, s16, s15, s14, s13, s12, s11, s10, s9, s8, s7, s6, s5, s4,
-      s3, s2, s1, Data.write, Data.set]
-    rw [Function.update_of_ne ha2, Function.update_of_ne ha1]
-  refine ⟨s20, ⟨3 + (t_kw + 20), by dsimp only [initTableHashPairSteps]; omega, hall⟩,
-    ?_, ?_, ?_⟩
-  · refine ⟨?_, ?_, ?_, ?_⟩
-    · rw [hs20_mem hashBase (by omega) (by omega), hd4_hb]
-    · dsimp only [s20, s19, s18, s17, s16, s15, s14, s13, Data.write, Data.set]
-      rw [Function.update_of_ne (by omega), Function.update_self]
-    · dsimp only [s20, Data.write]
-      rw [Function.update_self]
-    · rcases htab_kw with ⟨h0, h1, h2, h3, h4, h5, h6, h7, hcl⟩
-      refine ⟨(hs20_mem _ (by omega) (by omega)).trans h0,
-        (hs20_mem _ (by omega) (by omega)).trans h1,
-        (hs20_mem _ (by omega) (by omega)).trans h2,
-        (hs20_mem _ (by omega) (by omega)).trans h3,
-        (hs20_mem _ (by omega) (by omega)).trans h4,
-        (hs20_mem _ (by omega) (by omega)).trans h5,
-        (hs20_mem _ (by omega) (by omega)).trans h6,
-        (hs20_mem _ (by omega) (by omega)).trans h7,
-        fun idx hidx => (hs20_mem _ (by omega) (by omega)).trans (hcl idx hidx)⟩
-  · simp +decide [s20, s19, s18, s17, s16, s15, s14, s13, s12, s11, s10, s9, s8, s7, s6, s5,
-      s4, s3, s2]
-  · intro a ha
-    have ha' : a < hashBase + 32 ∨ hashBase + 32 + KWise.space n_max 7 ≤ a := by
-      dsimp only [hashPairSpace] at ha
-      exact ha.imp (by omega) (by omega)
-    rw [hs20_mem a (by omega) (by omega), hd4_mem, hy_kw_out a ha']
-    dsimp only [d3, d2, d1, Data.comap, Data.write, Data.set]
-    rw [Function.update_of_ne (by omega)]
-
-/-- Injective register map embedding `Tabulation.randFillLoop` into `Data 19` while preserving
-`reg 0` (`hashBase`). -/
-@[expose]
-def resampleMap19 : Fin 6 → Fin 19 :=
-  ![2, 3, 1, 4, 5, 0]
-
-theorem injective_resampleMap19 : Function.Injective resampleMap19 := by
-  decide
-
-/-- Setup prefix for sampling the 28 polynomial seed words at `[hashBase + 4, hashBase + 32)`. -/
-@[expose]
-def resamplePolySetup : Code .exact 19 :=
-  .seq (.op (.const 1 35))
-  (.seq (.op (.exactBin .add 1 0 1))
-  (.seq (.op (.load 1 1))
-  (.seq (.op (.const 2 4))
-  (.seq (.op (.exactBin .add 2 0 2))
-  (.seq (.op (.const 3 28))
-  (.seq (.op (.exactBin .add 3 2 3))
-        (.op (.const 4 1))))))))
-
-/-- Closed-form machine data after `resamplePolySetup`. -/
-@[expose]
-def resamplePolySetupData (hashBase U M : ℕ) (x : Data 19) : Data 19 :=
-  ((((x.set 1 (2 ^ Probability.trinomialDeg U M - 1)).set 2 (hashBase + 4)).set 3
-    (hashBase + 32)).set 4 1)
-
-/-- Program sampling all 28 polynomial seed words at `[hashBase + 4, hashBase + 32)`. -/
-@[expose]
-def resamplePolySeedsCode : Code .exact 19 :=
-  .seq resamplePolySetup (Tabulation.randFillLoop.rename resampleMap19)
-
-/-- Explicit `ProbComp (Data 19 × ℕ)` induced by `resamplePolySeedsCode`. -/
-@[expose]
-noncomputable def resamplePolyComp (hashBase U M : ℕ) (x : Data 19) : ProbComp (Data 19 × ℕ) :=
-  let d0 := resamplePolySetupData hashBase U M x
-  (fun z : Data 6 × ℕ => (z.1.extend resampleMap19 d0, 8 + z.2)) <$>
-    Tabulation.randFillComp (Probability.trinomialDeg U M) (hashBase + 4) 28
-      (d0.comap resampleMap19)
-
-theorem resamplePolySetup_exec {w hashBase n_max U M : ℕ} {x : Data 19}
-    (htab : HashPairTableRep hashBase n_max U M x.mem) (h0 : x.regs 0 = hashBase)
-    (hfit_end : Fits w (hashBase + 36)) :
-    Exec w resamplePolySetup x (resamplePolySetupData hashBase U M x) 8 := by
-  have hfit_35 : Fits w 35 := hfit_end.of_le (by omega)
-  have hfit_hb35 : Fits w (hashBase + 35) := hfit_end.of_le (by omega)
-  have hfit_4 : Fits w 4 := hfit_end.of_le (by omega)
-  have hfit_hb4 : Fits w (hashBase + 4) := hfit_end.of_le (by omega)
-  have hfit_28 : Fits w 28 := hfit_end.of_le (by omega)
-  have hfit_hb32 : Fits w (hashBase + 32) := hfit_end.of_le (by omega)
-  have hfit_1 : Fits w 1 := hfit_end.of_le (by omega)
-  have hm35 : x.mem (hashBase + 35) = 2 ^ Probability.trinomialDeg U M - 1 := by
-    rw [show hashBase + 35 = hashBase + 32 + 3 by omega]
-    exact htab.2.2.2.2.2.2.1
-  set s1 := x.set 1 35
-  have e1 : Exec w (.op (.const 1 35) : Code .exact 19) x s1 1 := Exec.const hfit_35
-  set s2 := s1.set 1 (hashBase + 35)
-  have e2 : Exec w (.op (.exactBin .add 1 0 1) : Code .exact 19) s1 s2 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s1, h0]) hfit_hb35
-  set s3 := s2.set 1 (2 ^ Probability.trinomialDeg U M - 1)
-  have e3 : Exec w (.op (.load 1 1) : Code .exact 19) s2 s3 1 := by
-    simpa +decide [s3, s2, s1, hm35] using
-      (Exec.load (B := .exact) (w := w) (d := 1) (a := 1) (x := s2))
-  set s4 := s3.set 2 4
-  have e4 : Exec w (.op (.const 2 4) : Code .exact 19) s3 s4 1 := Exec.const hfit_4
-  set s5 := s4.set 2 (hashBase + 4)
-  have e5 : Exec w (.op (.exactBin .add 2 0 2) : Code .exact 19) s4 s5 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s4, s3, s2, s1, h0]) hfit_hb4
-  set s6 := s5.set 3 28
-  have e6 : Exec w (.op (.const 3 28) : Code .exact 19) s5 s6 1 := Exec.const hfit_28
-  set s7 := s6.set 3 (hashBase + 32)
-  have e7 : Exec w (.op (.exactBin .add 3 2 3) : Code .exact 19) s6 s7 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s6, s5, Nat.add_assoc]) hfit_hb32
-  set s8 := s7.set 4 1
-  have e8 : Exec w (.op (.const 4 1) : Code .exact 19) s7 s8 1 := Exec.const hfit_1
-  have hall := e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq e8))))))
-  have hd : s8 = resamplePolySetupData hashBase U M x := by
-    ext i : 2
-    · fin_cases i <;> rfl
-    · rfl
-  rwa [hd] at hall
-
-theorem resamplePolySeedsCode_execRand {w hashBase n_max U M : ℕ} {x : Data 19}
-    (htab : HashPairTableRep hashBase n_max U M x.mem) (h0 : x.regs 0 = hashBase)
-    (hfit_end : Fits w (hashBase + 36))
-    (hfit_q : Fits w (2 ^ Probability.trinomialDeg U M)) :
-    ExecRand w resamplePolySeedsCode x (resamplePolyComp hashBase U M x) := by
-  have hsetup := resamplePolySetup_exec htab h0 hfit_end
-  set d0 := resamplePolySetupData hashBase U M x
-  have hfit_hb32 : Fits w (hashBase + 4 + 28) := hfit_end.of_le (by omega)
-  have hfit_mask : Fits w (2 ^ Probability.trinomialDeg U M - 1) := hfit_q.of_le (Nat.sub_le _ 1)
-  have hloop0 := Tabulation.randFillLoop_execRand (w := w)
-    (bits := Probability.trinomialDeg U M) (arrBase := hashBase + 4) 28
-    (x := d0.comap resampleMap19)
-    (by simp +decide [d0, resamplePolySetupData, resampleMap19, Data.comap, Tabulation.regPtr])
-    (by simp +decide [d0, resamplePolySetupData, resampleMap19, Data.comap, Tabulation.regEnd])
-    (by simp +decide [d0, resamplePolySetupData, resampleMap19, Data.comap, Tabulation.regMask])
-    (by simp +decide [d0, resamplePolySetupData, resampleMap19, Data.comap, Tabulation.regOne])
-    hfit_hb32 hfit_mask
-  have hloop := hloop0.rename injective_resampleMap19
-  simpa only [resamplePolySeedsCode, resamplePolyComp, d0, Functor.map_map] using
-    hsetup.seqRand hloop
-
-/-- Setup prefix for sampling the `2 * 2 ^ M` tabulation words at
-`[z1Base hashBase n_max, z1Base hashBase n_max + 2 * 2 ^ M)`. -/
-@[expose]
-def resampleTabSetup : Code .exact 19 :=
-  .seq (.op (.const 1 36))
-  (.seq (.op (.exactBin .add 1 0 1))
-  (.seq (.op (.load 1 1))
-  (.seq (.op (.const 4 1))
-  (.seq (.op (.exactBin .add 3 1 4))
-  (.seq (.op (.exactBin .add 3 3 3))
-  (.seq (.op (.exactBin .add 2 0 4))
-  (.seq (.op (.load 2 2))
-        (.op (.exactBin .add 3 2 3)))))))))
-
-/-- Closed-form machine data after `resampleTabSetup`. -/
-@[expose]
-def resampleTabSetupData (hashBase n_max M : ℕ) (x : Data 19) : Data 19 :=
-  ((((x.set 1 (2 ^ M - 1)).set 4 1).set 3 (2 * 2 ^ M)).set 2 (z1Base hashBase n_max)).set 3
-    (z1Base hashBase n_max + 2 * 2 ^ M)
-
-/-- Program sampling all `2 * 2 ^ M` tabulation words of `(Z₁, Z₂)`. -/
-@[expose]
-def resampleTabSeedsCode : Code .exact 19 :=
-  .seq resampleTabSetup (Tabulation.randFillLoop.rename resampleMap19)
-
-/-- Explicit `ProbComp (Data 19 × ℕ)` induced by `resampleTabSeedsCode`. -/
-@[expose]
-noncomputable def resampleTabComp (hashBase n_max M : ℕ) (x : Data 19) : ProbComp (Data 19 × ℕ) :=
-  let d0 := resampleTabSetupData hashBase n_max M x
-  (fun z : Data 6 × ℕ => (z.1.extend resampleMap19 d0, 9 + z.2)) <$>
-    Tabulation.randFillComp M (z1Base hashBase n_max) (2 * 2 ^ M) (d0.comap resampleMap19)
-
-theorem resampleTabSetup_exec {w hashBase n_max U M : ℕ} {x : Data 19}
-    (htab : HashPairTableRep hashBase n_max U M x.mem) (h0 : x.regs 0 = hashBase)
-    (hfit_space : Fits w (hashBase + hashPairSpace n_max M)) :
-    Exec w resampleTabSetup x (resampleTabSetupData hashBase n_max M x) 9 := by
-  have hpowM_pos : 1 ≤ 2 ^ M := Nat.one_le_two_pow
-  have hsp_eq := hashPairSpace_eq n_max M
-  have hle_sp := le_hashPairSpace n_max M
-  have hsp : z1Base hashBase n_max + 2 * 2 ^ M = hashBase + hashPairSpace n_max M := by
-    dsimp only [z1Base, hashPairSpace]; omega
-  have hfit_36 : Fits w 36 := hfit_space.of_le (by omega)
-  have hfit_hb36 : Fits w (hashBase + 36) := hfit_space.of_le (by omega)
-  have hfit_1 : Fits w 1 := hfit_space.of_le (by omega)
-  have hfit_powM : Fits w (2 ^ M) := hfit_space.of_le (by omega)
-  have hfit_2powM : Fits w (2 * 2 ^ M) := hfit_space.of_le (by omega)
-  have hfit_hb1 : Fits w (hashBase + 1) := hfit_space.of_le (by omega)
-  have hfit_end : Fits w (z1Base hashBase n_max + 2 * 2 ^ M) := by rwa [hsp]
-  have hm36 : x.mem (hashBase + 36) = 2 ^ M - 1 := by
-    rw [show hashBase + 36 = hashBase + 32 + 4 by omega]
-    exact htab.2.2.2.2.2.2.2.1
-  have hm1 : x.mem (hashBase + 1) = z1Base hashBase n_max := htab.2.1
-  set s1 := x.set 1 36
-  have e1 : Exec w (.op (.const 1 36) : Code .exact 19) x s1 1 := Exec.const hfit_36
-  set s2 := s1.set 1 (hashBase + 36)
-  have e2 : Exec w (.op (.exactBin .add 1 0 1) : Code .exact 19) s1 s2 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s1, h0]) hfit_hb36
-  set s3 := s2.set 1 (2 ^ M - 1)
-  have e3 : Exec w (.op (.load 1 1) : Code .exact 19) s2 s3 1 := by
-    simpa +decide [s3, s2, s1, hm36] using
-      (Exec.load (B := .exact) (w := w) (d := 1) (a := 1) (x := s2))
-  set s4 := s3.set 4 1
-  have e4 : Exec w (.op (.const 4 1) : Code .exact 19) s3 s4 1 := Exec.const hfit_1
-  set s5 := s4.set 3 (2 ^ M)
-  have e5 : Exec w (.op (.exactBin .add 3 1 4) : Code .exact 19) s4 s5 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s4, s3, hpowM_pos]) hfit_powM
-  set s6 := s5.set 3 (2 * 2 ^ M)
-  have e6 : Exec w (.op (.exactBin .add 3 3 3) : Code .exact 19) s5 s6 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s5, Nat.two_mul]) hfit_2powM
-  set s7 := s6.set 2 (hashBase + 1)
-  have e7 : Exec w (.op (.exactBin .add 2 0 4) : Code .exact 19) s6 s7 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s6, s5, s4, s3, s2, s1, h0]) hfit_hb1
-  set s8 := s7.set 2 (z1Base hashBase n_max)
-  have e8 : Exec w (.op (.load 2 2) : Code .exact 19) s7 s8 1 := by
-    simpa +decide [s8, s7, s6, s5, s4, s3, s2, s1, hm1] using
-      (Exec.load (B := .exact) (w := w) (d := 2) (a := 2) (x := s7))
-  set s9 := s8.set 3 (z1Base hashBase n_max + 2 * 2 ^ M)
-  have e9 : Exec w (.op (.exactBin .add 3 2 3) : Code .exact 19) s8 s9 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s8, s7, s6]) hfit_end
-  have hall := e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq (e8.seq e9)))))))
-  have hd : s9 = resampleTabSetupData hashBase n_max M x := by
-    ext i : 2
-    · fin_cases i <;> rfl
-    · rfl
-  rwa [hd] at hall
-
-theorem resampleTabSeedsCode_execRand {w hashBase n_max U M : ℕ} {x : Data 19}
-    (htab : HashPairTableRep hashBase n_max U M x.mem) (h0 : x.regs 0 = hashBase)
-    (hfit_space : Fits w (hashBase + hashPairSpace n_max M)) :
-    ExecRand w resampleTabSeedsCode x (resampleTabComp hashBase n_max M x) := by
-  have hsetup := resampleTabSetup_exec htab h0 hfit_space
-  set d0 := resampleTabSetupData hashBase n_max M x
-  have hsp_eq := hashPairSpace_eq n_max M
-  have hsp : z1Base hashBase n_max + 2 * 2 ^ M = hashBase + hashPairSpace n_max M := by
-    dsimp only [z1Base, hashPairSpace]; omega
-  have hfit_end : Fits w (z1Base hashBase n_max + 2 * 2 ^ M) := by rwa [hsp]
-  have hfit_mask : Fits w (2 ^ M - 1) :=
-    hfit_space.of_le (by omega)
-  have hloop0 := Tabulation.randFillLoop_execRand (w := w)
-    (bits := M) (arrBase := z1Base hashBase n_max) (2 * 2 ^ M)
-    (x := d0.comap resampleMap19)
-    (by simp +decide [d0, resampleTabSetupData, resampleMap19, Data.comap, Tabulation.regPtr])
-    (by simp +decide [d0, resampleTabSetupData, resampleMap19, Data.comap, Tabulation.regEnd])
-    (by simp +decide [d0, resampleTabSetupData, resampleMap19, Data.comap, Tabulation.regMask])
-    (by simp +decide [d0, resampleTabSetupData, resampleMap19, Data.comap, Tabulation.regOne])
-    hfit_end hfit_mask
-  have hloop := hloop0.rename injective_resampleMap19
-  simpa only [resampleTabSeedsCode, resampleTabComp, d0, Functor.map_map] using
-    hsetup.seqRand hloop
-
-/-- Complete seed-resampling program `resampleHashPairCode`: samples all 28 polynomial seed words
-and both random tabulation arrays `(Z₁, Z₂)` while preserving the shared `KWise` `clmulTab`. -/
-@[expose]
-def resampleHashPairCode : Code .exact 19 :=
-  .seq resamplePolySeedsCode resampleTabSeedsCode
-
-/-- Exact instruction count of `resampleHashPairCode`: `150 + (10 * 2 ^ M + 11) = 10 * 2 ^ M + 161`.
--/
-@[expose]
-def resampleHashPairSteps (M : ℕ) : ℕ :=
-  10 * 2 ^ M + 161
-
-/-- Exact `ProbComp` semantics of `resampleHashPairCode`. -/
-@[expose]
-noncomputable def resampleHashPairComp (hashBase n_max U M : ℕ) (x : Data 19) :
-    ProbComp (Data 19 × ℕ) := do
-  let z1 ← resamplePolyComp hashBase U M x
-  let z2 ← resampleTabComp hashBase n_max M z1.1
-  pure (z2.1, z1.2 + z2.2)
-
-theorem mem_support_resamplePolyComp {hashBase U M : ℕ} {x : Data 19} {z : Data 19 × ℕ}
-    (h0 : x.regs 0 = hashBase)
-    (hz : z ∈ (resamplePolyComp hashBase U M x).support) :
-    z.2 = 150 ∧
-    z.1.regs 0 = hashBase ∧
-    (∀ k < 28, z.1.mem (hashBase + 4 + k) < 2 ^ Probability.trinomialDeg U M) ∧
-    (∀ a, (a < hashBase + 4 ∨ hashBase + 32 ≤ a) → z.1.mem a = x.mem a) := by
-  dsimp only [resamplePolyComp] at hz
-  obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
-  obtain ⟨hsteps, -, -, -, -, hextra, hlt, hframe⟩ := Tabulation.mem_support_randFillComp hz₀
-  have h0' : (z₀.1.extend resampleMap19 (resamplePolySetupData hashBase U M x)).regs 0 =
-      hashBase := by
-    change ((z₀.1.extend resampleMap19
-      (resamplePolySetupData hashBase U M x)).comap resampleMap19).regs Tabulation.regExtra =
-      hashBase
-    rw [Data.comap_extend injective_resampleMap19, hextra]
-    simpa +decide [resamplePolySetupData, resampleMap19, Data.comap, Tabulation.regExtra] using h0
-  exact ⟨by omega, h0', hlt, hframe⟩
-
-theorem mem_support_resampleTabComp {hashBase n_max M : ℕ} {x : Data 19} {z : Data 19 × ℕ}
-    (h0 : x.regs 0 = hashBase)
-    (hz : z ∈ (resampleTabComp hashBase n_max M x).support) :
-    z.2 = 10 * 2 ^ M + 11 ∧
-    z.1.regs 0 = hashBase ∧
-    (∀ i < 2 * 2 ^ M, z.1.mem (z1Base hashBase n_max + i) < 2 ^ M) ∧
-    (∀ a, (a < z1Base hashBase n_max ∨ z1Base hashBase n_max + 2 * 2 ^ M ≤ a) →
-      z.1.mem a = x.mem a) := by
-  dsimp only [resampleTabComp] at hz
-  obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
-  obtain ⟨hsteps, -, -, -, -, hextra, hlt, hframe⟩ := Tabulation.mem_support_randFillComp hz₀
-  have h0' : (z₀.1.extend resampleMap19 (resampleTabSetupData hashBase n_max M x)).regs 0 =
-      hashBase := by
-    change ((z₀.1.extend resampleMap19
-      (resampleTabSetupData hashBase n_max M x)).comap resampleMap19).regs Tabulation.regExtra =
-      hashBase
-    rw [Data.comap_extend injective_resampleMap19, hextra]
-    simpa +decide [resampleTabSetupData, resampleMap19, Data.comap, Tabulation.regExtra] using h0
-  exact ⟨by omega, h0', hlt, hframe⟩
-
-theorem HashPairTableRep.of_poly_frame {hashBase n_max U M : ℕ} {mem mem' : ℕ → ℕ}
-    (htab : HashPairTableRep hashBase n_max U M mem)
-    (hframe : ∀ a, (a < hashBase + 4 ∨ hashBase + 32 ≤ a) → mem' a = mem a) :
-    HashPairTableRep hashBase n_max U M mem' := by
-  rcases htab with ⟨hM, hz1, hz2, hkw⟩
-  refine ⟨(hframe hashBase (Or.inl (by omega))).trans hM,
-    (hframe (hashBase + 1) (Or.inl (by omega))).trans hz1,
-    (hframe (hashBase + 2) (Or.inl (by omega))).trans hz2, ?_⟩
-  rcases hkw with ⟨h0, h1, h2, h3, h4, h5, h6, h7, hcl⟩
-  refine ⟨(hframe _ (Or.inr (by omega))).trans h0,
-    (hframe _ (Or.inr (by omega))).trans h1,
-    (hframe _ (Or.inr (by omega))).trans h2,
-    (hframe _ (Or.inr (by omega))).trans h3,
-    (hframe _ (Or.inr (by omega))).trans h4,
-    (hframe _ (Or.inr (by omega))).trans h5,
-    (hframe _ (Or.inr (by omega))).trans h6,
-    (hframe _ (Or.inr (by omega))).trans h7,
-    fun idx hidx => (hframe _ (Or.inr (by omega))).trans (hcl idx hidx)⟩
-
-theorem HashPairTableRep.of_tab_frame {hashBase n_max U M : ℕ} {mem mem' : ℕ → ℕ}
-    (htab : HashPairTableRep hashBase n_max U M mem)
-    (hframe : ∀ a, (a < z1Base hashBase n_max ∨ z1Base hashBase n_max + 2 * 2 ^ M ≤ a) →
-      mem' a = mem a) :
-    HashPairTableRep hashBase n_max U M mem' := by
-  have hz1_eq := z1Base_eq hashBase n_max
-  have hz1_ge := le_z1Base hashBase n_max
-  rcases htab with ⟨hM, hz1, hz2, hkw⟩
-  refine ⟨(hframe hashBase (Or.inl (by omega))).trans hM,
-    (hframe (hashBase + 1) (Or.inl (by omega))).trans hz1,
-    (hframe (hashBase + 2) (Or.inl (by omega))).trans hz2, ?_⟩
-  rcases hkw with ⟨h0, h1, h2, h3, h4, h5, h6, h7, hcl⟩
-  refine ⟨(hframe _ (Or.inl (by omega))).trans h0,
-    (hframe _ (Or.inl (by omega))).trans h1,
-    (hframe _ (Or.inl (by omega))).trans h2,
-    (hframe _ (Or.inl (by omega))).trans h3,
-    (hframe _ (Or.inl (by omega))).trans h4,
-    (hframe _ (Or.inl (by omega))).trans h5,
-    (hframe _ (Or.inl (by omega))).trans h6,
-    (hframe _ (Or.inl (by omega))).trans h7,
-    fun idx hidx => (hframe _ (Or.inl (by omega))).trans (hcl idx hidx)⟩
-
-/-- **`resampleHashPairCode` exact randomized execution**: runs in `resampleHashPairSteps M`
-instructions and `28 + 2 * 2 ^ M` `Code.rand` calls. -/
-theorem resampleHashPairCode_execRand {w hashBase n_max U M : ℕ} {x : Data 19}
-    (htab : HashPairTableRep hashBase n_max U M x.mem) (h0 : x.regs 0 = hashBase)
-    (hfit_space : Fits w (hashBase + hashPairSpace n_max M))
-    (hfit_q : Fits w (2 ^ Probability.trinomialDeg U M)) :
-    ExecRand w resampleHashPairCode x (resampleHashPairComp hashBase n_max U M x) := by
-  have hle_sp := le_hashPairSpace n_max M
-  have hfit_36 : Fits w (hashBase + 36) :=
-    hfit_space.of_le (by omega)
-  have h1 := resamplePolySeedsCode_execRand htab h0 hfit_36 hfit_q
-  refine h1.seq fun z1 hz1 => ?_
-  obtain ⟨-, hz1_0, -, hz1_frame⟩ := mem_support_resamplePolyComp h0 hz1
-  exact resampleTabSeedsCode_execRand (htab.of_poly_frame hz1_frame) hz1_0 hfit_space
-
-theorem mem_support_resampleHashPairComp {hashBase n_max U M : ℕ} {x : Data 19} {z : Data 19 × ℕ}
-    (htab : HashPairTableRep hashBase n_max U M x.mem) (h0 : x.regs 0 = hashBase)
-    (hz : z ∈ (resampleHashPairComp hashBase n_max U M x).support) :
-    z.2 = resampleHashPairSteps M ∧
-    z.1.regs 0 = hashBase ∧
-    HashPairRep hashBase n_max U M (extractSeed hashBase n_max U M z.1.mem) z.1.mem ∧
-    (∀ a, (a < hashBase + 4 ∨
-      (hashBase + 32 ≤ a ∧ a < z1Base hashBase n_max) ∨
-      hashBase + hashPairSpace n_max M ≤ a) → z.1.mem a = x.mem a) := by
-  dsimp only [resampleHashPairComp] at hz
-  obtain ⟨z1, hz1, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-  obtain ⟨z2, hz2, hpure⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-  cases OracleComp.eq_of_mem_supportWith_pure hpure
-  obtain ⟨ht1, hz1_0, hpoly, hframe1⟩ := mem_support_resamplePolyComp h0 hz1
-  obtain ⟨ht2, hz2_0, htab_lt, hframe2⟩ := mem_support_resampleTabComp hz1_0 hz2
-  have hz1_ge := le_z1Base hashBase n_max
-  have hpoly' : ∀ k < 28, z2.1.mem (hashBase + 4 + k) < 2 ^ Probability.trinomialDeg U M := by
-    intro k hk
-    rw [hframe2 (hashBase + 4 + k) (Or.inl (by omega))]
-    exact hpoly k hk
-  have htab' : HashPairTableRep hashBase n_max U M z2.1.mem :=
-    (htab.of_poly_frame hframe1).of_tab_frame hframe2
-  refine ⟨by dsimp only [resampleHashPairSteps]; omega, hz2_0,
-    ⟨htab', hashPairSeedRep_extractSeed hpoly' htab_lt⟩, ?_⟩
-  intro a ha
-  have hsp : z1Base hashBase n_max + 2 * 2 ^ M = hashBase + hashPairSpace n_max M := by
-    dsimp only [z1Base, hashPairSpace]; omega
-  rcases ha with ha_lt | ⟨ha_ge, ha_lt2⟩ | ha_ge2
-  · rw [hframe2 a (Or.inl (by omega)), hframe1 a (Or.inl ha_lt)]
-  · rw [hframe2 a (Or.inl ha_lt2), hframe1 a (Or.inr ha_ge)]
-  · rw [hframe2 a (Or.inr (by omega)), hframe1 a (Or.inr (by omega))]
-
-theorem uniformOfFintype_bind_map_prodMk (α β : Type*) [Fintype α] [Nonempty α]
-    [Fintype β] [Nonempty β] :
-    (PMF.uniformOfFintype α).bind (fun a => (PMF.uniformOfFintype β).map (a, ·)) =
-      PMF.uniformOfFintype (α × β) := by
-  ext ⟨a, b⟩
-  rw [PMF.bind_map_prodMk_apply, PMF.uniformOfFintype_apply, PMF.uniformOfFintype_apply,
-    PMF.uniformOfFintype_apply, Fintype.card_prod, Nat.cast_mul,
-    ENNReal.mul_inv (Or.inl (Nat.cast_ne_zero.mpr Fintype.card_ne_zero))
-      (Or.inl (ENNReal.natCast_ne_top _))]
-
-/-- **Exact uniformity of `resampleHashPairComp`**: the extracted seed
-`extractSeed hashBase n_max U M z.1.mem` is distributed according to `seedLaw U M`. -/
-theorem map_extractSeed_eval_resampleHashPairComp (hashBase n_max U M : ℕ) (x : Data 19) :
-    ((resampleHashPairComp hashBase n_max U M x).eval).map
-      (fun z => extractSeed hashBase n_max U M z.1.mem) = seedLaw U M := by
-  set q := Probability.trinomialDeg U M
-  set f1 : Data 19 → (Fin 4 → PolySeed U M) :=
-    fun d => polySliceEquiv U M (Tabulation.extractSlice (hashBase + 4) q 28 d.mem)
-  set f2 : Data 19 → TabSeed M × TabSeed M :=
-    fun d => tabSliceEquiv M (Tabulation.extractSlice (z1Base hashBase n_max) M (2 * 2 ^ M) d.mem)
-  have hf1_law :
-      ((resamplePolyComp hashBase U M x).eval).map (fun z : Data 19 × ℕ => f1 z.1) =
-        PMF.uniformOfFintype (Fin 4 → PolySeed U M) := by
-    dsimp only [resamplePolyComp, f1]
-    rw [ProbComp.eval_map, PMF.map_comp]
-    have hslice := Tabulation.map_extractSlice_eval_randFillComp q (hashBase + 4) 28
-      ((resamplePolySetupData hashBase U M x).comap resampleMap19)
-    have hcomp :
-        ((fun z : Data 19 × ℕ => polySliceEquiv U M
-            (Tabulation.extractSlice (hashBase + 4) q 28 z.1.mem)) ∘
-          fun z : Data 6 × ℕ =>
-            (z.1.extend resampleMap19 (resamplePolySetupData hashBase U M x), 8 + z.2)) =
-        polySliceEquiv U M ∘
-          fun z : Data 6 × ℕ => Tabulation.extractSlice (hashBase + 4) q 28 z.1.mem := rfl
-    rw [hcomp, ← PMF.map_comp, hslice]
-    exact PMF.uniformOfFintype_map_equiv (polySliceEquiv U M)
-  have hf2_law : ∀ d : Data 19,
-      ((resampleTabComp hashBase n_max M d).eval).map (fun z : Data 19 × ℕ => f2 z.1) =
-        PMF.uniformOfFintype (TabSeed M × TabSeed M) := by
-    intro d
-    dsimp only [resampleTabComp, f2]
-    rw [ProbComp.eval_map, PMF.map_comp]
-    have hslice := Tabulation.map_extractSlice_eval_randFillComp M (z1Base hashBase n_max)
-      (2 * 2 ^ M) ((resampleTabSetupData hashBase n_max M d).comap resampleMap19)
-    have hcomp :
-        ((fun z : Data 19 × ℕ => tabSliceEquiv M
-            (Tabulation.extractSlice (z1Base hashBase n_max) M (2 * 2 ^ M) z.1.mem)) ∘
-          fun z : Data 6 × ℕ =>
-            (z.1.extend resampleMap19 (resampleTabSetupData hashBase n_max M d), 9 + z.2)) =
-        tabSliceEquiv M ∘
-          fun z : Data 6 × ℕ =>
-            Tabulation.extractSlice (z1Base hashBase n_max) M (2 * 2 ^ M) z.1.mem := rfl
-    rw [hcomp, ← PMF.map_comp, hslice]
-    exact PMF.uniformOfFintype_map_equiv (tabSliceEquiv M)
-  have hinner : ∀ z1 : Data 19 × ℕ,
-      ((do
-        let z2 ← resampleTabComp hashBase n_max M z1.1
-        pure (z2.1, z1.2 + z2.2)).eval).map
-          (fun z : Data 19 × ℕ => extractSeed hashBase n_max U M z.1.mem) =
-        (PMF.uniformOfFintype (TabSeed M × TabSeed M)).map (f1 z1.1, ·) := by
-    intro z1
-    have hd : (do
-        let z2 ← resampleTabComp hashBase n_max M z1.1
-        pure (z2.1, z1.2 + z2.2)) =
-        (fun z2 : Data 19 × ℕ => (z2.1, z1.2 + z2.2)) <$>
-          resampleTabComp hashBase n_max M z1.1 :=
-      bind_pure_comp _ _
-    rw [hd, ProbComp.eval_map, PMF.map_comp]
-    have hcongr :
-        ((resampleTabComp hashBase n_max M z1.1).eval).map
-          ((fun z : Data 19 × ℕ => extractSeed hashBase n_max U M z.1.mem) ∘
-            fun z2 : Data 19 × ℕ => (z2.1, z1.2 + z2.2)) =
-        ((resampleTabComp hashBase n_max M z1.1).eval).map
-          ((fun p => (f1 z1.1, p)) ∘ fun z2 : Data 19 × ℕ => f2 z2.1) := by
-      apply PMF.map_congr_on_support
-      intro z2 hz2
-      rw [ProbComp.support_eval] at hz2
-      dsimp only [resampleTabComp] at hz2
-      obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz2
-      obtain ⟨-, -, -, -, -, -, -, hframe⟩ := Tabulation.mem_support_randFillComp hz₀
-      have hz1_ge := le_z1Base hashBase n_max
-      have hslice_eq :
-          Tabulation.extractSlice (hashBase + 4) q 28 z₀.1.mem =
-            Tabulation.extractSlice (hashBase + 4) q 28 z1.1.mem := by
-        funext i
-        dsimp only [Tabulation.extractSlice]
-        rw [hframe (hashBase + 4 + i.val) (Or.inl (by omega))]
-        rfl
-      dsimp only [Function.comp_apply, extractSeed, f1, f2]
-      exact Prod.ext (congrArg (polySliceEquiv U M) hslice_eq) rfl
-    rw [hcongr, ← PMF.map_comp, hf2_law z1.1]
-  dsimp only [resampleHashPairComp]
-  rw [ProbComp.eval_bind, PMF.map_bind]
-  simp only [hinner]
-  have hbind :
-      (resamplePolyComp hashBase U M x).eval.bind
-        (fun z1 : Data 19 × ℕ =>
-          (PMF.uniformOfFintype (TabSeed M × TabSeed M)).map (f1 z1.1, ·)) =
-      (((resamplePolyComp hashBase U M x).eval).map (fun z1 => f1 z1.1)).bind
-        (fun c => (PMF.uniformOfFintype (TabSeed M × TabSeed M)).map (c, ·)) := by
-    rw [PMF.bind_map]
-    rfl
-  rw [hbind, hf1_law, uniformOfFintype_bind_map_prodMk]
-  rfl
+theorem injective_cast12To19 : Function.Injective cast12To19 :=
+  Fin.castLE_injective _
 
 /-- Body of `copyWordsLoop`: copies one word from `[reg 3]` to `[reg 4]` and increments both
 pointers by `reg 6 = 1`. -/
@@ -2227,335 +1635,797 @@ theorem copyWordsLoop_exec {w : ℕ} (len src dst : ℕ) {x : Data 19}
       dsimp only [s4, s3, s2, s1, Data.write, Data.set]
       rw [Function.update_of_ne (by omega)]
 
-/-- Setup block for `stageSeedCode r`: prepares `src = hashBase + 4 + 7 * r.val`,
-`dst = hashBase + 40`, `dstEnd = hashBase + 47`, and `one = 1`. -/
+/-- Setup block preparing `copyWordsLoop` to duplicate
+`[hashBase, hashBase + singleHashSpace c_exp n_max)` into
+`[hash2Base hashBase c_exp n_max, hash2Base hashBase c_exp n_max + singleHashSpace c_exp n_max)`. -/
 @[expose]
-def stageSeedSetup (r : Fin 4) : Code .exact 19 :=
-  .seq (.op (.const 3 (4 + 7 * r.val)))
-  (.seq (.op (.exactBin .add 3 0 3))
-  (.seq (.op (.const 4 40))
+def copyTableSetup (c_exp n_max : ℕ) : Code .exact 19 :=
+  .seq (.op (.copy 3 0))
+  (.seq (.op (.const 4 (singleHashSpace c_exp n_max)))
   (.seq (.op (.exactBin .add 4 0 4))
-  (.seq (.op (.const 5 47))
-  (.seq (.op (.exactBin .add 5 0 5))
-        (.op (.const 6 1)))))))
+  (.seq (.op (.const 5 (singleHashSpace c_exp n_max)))
+  (.seq (.op (.exactBin .add 5 4 5))
+        (.op (.const 6 1))))))
 
-/-- Program copying the `r`-th 7-word polynomial seed into the active seed slot
-`[hashBase + 40, hashBase + 47)`. -/
+/-- Deterministic table-initialization program for the two-block hash pair at `hashBase`:
+in the small-`n_max` regime `n_max < doubleTabThreshold c_exp`, initializes the `KWise` lookup table
+at `hashBase` and copies it to `hash2Base hashBase c_exp n_max`; in the large-`n_max` regime,
+executes a 1-instruction no-op (`SingleTableRep` is `True`). -/
 @[expose]
-def stageSeedCode (r : Fin 4) : Code .exact 19 :=
-  .seq (stageSeedSetup r) copyWordsLoop
+def initTableHashPairCode (c_exp n_max : ℕ) : Code .exact 19 :=
+  if n_max < doubleTabThreshold c_exp then
+    .seq ((KWise.initTableCode (cuckooK n_max)).rename cast18To19)
+    (.seq (copyTableSetup c_exp n_max) copyWordsLoop)
+  else
+    .op (.copy 0 0)
 
-/-- Program evaluating the `r`-th polynomial hash `evalPoly (θ.1 r) u` into `reg 2` (`regOut`)
-while preserving `reg 0 = hashBase`, `reg 1 = u.val`, `reg 18`, and `HashPairRep`. -/
+/-- Instruction bound for `initTableHashPairCode`. -/
 @[expose]
-def evalPolyCode (r : Fin 4) : Code .exact 19 :=
-  .seq (stageSeedCode r)
-  (.seq (.op (.const 15 32))
-  (.seq (.op (.exactBin .add 0 0 15))
-  (.seq ((KWise.evalCode 7).rename cast18To19)
-  (.seq (.op (.const 15 32))
-        (.op (.exactBin .sub 0 0 15))))))
+def initTableHashPairSteps (c_exp n_max U M : ℕ) : ℕ :=
+  KWise.initTableSteps n_max U M + 6 * singleHashSpace c_exp n_max + 8
 
-/-- Exact step bound for `evalPolyCode r`. -/
-@[expose]
-def evalPolySteps (n_max U M : ℕ) : ℕ :=
-  KWise.evalSteps n_max U M 7 + 55
-
-theorem evalPolyCode_execWithin {w hashBase n_max U M : ℕ} {θ : Seed U M}
-    (r : Fin 4) (u : Fin U) {x : Data 19}
-    (hrep : HashPairRep hashBase n_max U M θ x.mem)
-    (h0 : x.regs 0 = hashBase) (h1 : x.regs 1 = u.val)
-    (hw : 2 * Probability.trinomialDeg U M ≤ w)
-    (hfit_space : Fits w (hashBase + hashPairSpace n_max M)) :
+theorem initTableHashPairCode_execWithin {w hashBase c_exp n_max U M : ℕ} {x : Data 19}
+    (h0 : x.regs 0 = hashBase) (h1 : x.regs 1 = n_max)
+    (h2 : x.regs 2 = U) (h3 : x.regs 3 = M)
+    (hfit_space : Fits w (hashBase + hashPairSpace c_exp n_max))
+    (hfit_n : Fits w (max n_max 2)) (hfit_U : Fits w (max U 2 + 1))
+    (hfit_q : Fits w (2 ^ Probability.trinomialDeg U M)) :
     ∃ y : Data 19,
-      ExecWithin w (evalPolyCode r) x y (evalPolySteps n_max U M) ∧
+      ExecWithin w (initTableHashPairCode c_exp n_max) x y
+        (initTableHashPairSteps c_exp n_max U M) ∧
+      HashPairTableRep hashBase c_exp n_max U M y.mem ∧
       y.regs 0 = hashBase ∧
-      y.regs 1 = u.val ∧
-      y.regs 2 = (evalPoly (θ.1 r) u).val ∧
-      y.regs 18 = x.regs 18 ∧
-      HashPairRep hashBase n_max U M θ y.mem ∧
-      (∀ a, (a < hashBase + 40 ∨ hashBase + 47 ≤ a) → y.mem a = x.mem a) := by
-  have hr_lt := r.isLt
-  have hle_sp := le_hashPairSpace n_max M
-  have hfit_src_off : Fits w (4 + 7 * r.val) :=
-    hfit_space.of_le (by omega)
-  have hfit_src : Fits w (hashBase + (4 + 7 * r.val)) :=
-    hfit_space.of_le (by omega)
-  have hfit_40 : Fits w 40 :=
-    hfit_space.of_le (by omega)
-  have hfit_hb40 : Fits w (hashBase + 40) :=
-    hfit_space.of_le (by omega)
-  have hfit_47 : Fits w 47 :=
-    hfit_space.of_le (by omega)
-  have hfit_hb47 : Fits w (hashBase + 47) :=
-    hfit_space.of_le (by omega)
-  have hfit_1 : Fits w 1 :=
-    hfit_space.of_le (by omega)
-  have hfit_32 : Fits w 32 :=
-    hfit_space.of_le (by omega)
-  have hfit_hb32 : Fits w (hashBase + 32) :=
-    hfit_space.of_le (by omega)
+      (∀ a, (a < hashBase ∨ hashBase + hashPairSpace c_exp n_max ≤ a) → y.mem a = x.mem a) := by
+  unfold initTableHashPairCode
+  split_ifs with hlt
+  · have hsp : singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
+      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+    have hle_sp := le_singleHashSpace c_exp n_max
+    have hfit_kw : Fits w (hashBase + KWise.space n_max (cuckooK n_max)) :=
+      hfit_space.of_le (by dsimp only [hashPairSpace]; omega)
+    have hfit_1 : Fits w 1 := hfit_space.of_le (by dsimp only [hashPairSpace]; omega)
+    have hfit_sh : Fits w (singleHashSpace c_exp n_max) :=
+      hfit_space.of_le (by dsimp only [hashPairSpace]; omega)
+    have hfit_h2 : Fits w (hash2Base hashBase c_exp n_max) :=
+      hfit_space.of_le (by dsimp only [hash2Base, hashPairSpace]; omega)
+    have hfit_end : Fits w (hash2Base hashBase c_exp n_max + singleHashSpace c_exp n_max) :=
+      hfit_space.of_le (by dsimp only [hash2Base, hashPairSpace]; omega)
+    obtain ⟨y_kw, ⟨t_kw, ht_kw, he_kw⟩, htab_kw, hy_kw0, hy_kw_out⟩ :=
+      KWise.initTableCode_execWithin (w := w) (base := hashBase) (n_max := n_max)
+        (U := U) (M := M) (k := cuckooK n_max) (x := x.comap cast18To19)
+        (by simp +decide [cast18To19, Data.comap, h0])
+        (by simp +decide [cast18To19, Data.comap, h1])
+        (by simp +decide [cast18To19, Data.comap, h2])
+        (by simp +decide [cast18To19, Data.comap, h3])
+        hfit_kw hfit_n hfit_U hfit_q
+    set d1 := y_kw.extend cast18To19 x
+    have he_kw' : Exec w ((KWise.initTableCode (cuckooK n_max)).rename cast18To19) x d1 t_kw :=
+      he_kw.rename injective_cast18To19
+    have hd1_0 : d1.regs 0 = hashBase := by
+      change ((y_kw.extend cast18To19 x).comap cast18To19).regs 0 = hashBase
+      rw [Data.comap_extend injective_cast18To19, hy_kw0]
+    have hd1_mem : d1.mem = y_kw.mem := rfl
+    set s1 := d1.set 3 hashBase
+    have es1 : Exec w (.op (.copy 3 0) : Code .exact 19) d1 s1 1 := by
+      simpa +decide [s1, hd1_0] using (Exec.copy (B := .exact) (w := w) (d := 3) (s := 0) (x := d1))
+    set s2 := s1.set 4 (singleHashSpace c_exp n_max)
+    have es2 : Exec w (.op (.const 4 (singleHashSpace c_exp n_max)) : Code .exact 19) s1 s2 1 :=
+      Exec.const hfit_sh
+    set s3 := s2.set 4 (hash2Base hashBase c_exp n_max)
+    have es3 : Exec w (.op (.exactBin .add 4 0 4) : Code .exact 19) s2 s3 1 :=
+      ExactLog.exec_exactBin (by simp +decide [s2, s1, hd1_0, hash2Base]) hfit_h2
+    set s4 := s3.set 5 (singleHashSpace c_exp n_max)
+    have es4 : Exec w (.op (.const 5 (singleHashSpace c_exp n_max)) : Code .exact 19) s3 s4 1 :=
+      Exec.const hfit_sh
+    set s5 := s4.set 5 (hash2Base hashBase c_exp n_max + singleHashSpace c_exp n_max)
+    have es5 : Exec w (.op (.exactBin .add 5 4 5) : Code .exact 19) s4 s5 1 :=
+      ExactLog.exec_exactBin (by simp +decide [s4, s3]) hfit_end
+    set s6 := s5.set 6 1
+    have es6 : Exec w (.op (.const 6 1) : Code .exact 19) s5 s6 1 := Exec.const hfit_1
+    have esetup : Exec w (copyTableSetup c_exp n_max) d1 s6 6 :=
+      es1.seq (es2.seq (es3.seq (es4.seq (es5.seq es6))))
+    obtain ⟨y, ecopy, hy_regs, hy_copy, hy_frame⟩ :=
+      copyWordsLoop_exec (w := w) (singleHashSpace c_exp n_max) hashBase
+        (hash2Base hashBase c_exp n_max) (x := s6)
+        (by simp +decide [s6, s5, s4, s3, s2, s1])
+        (by simp +decide [s6, s5, s4, s3])
+        (by simp +decide [s6, s5])
+        (by simp +decide [s6])
+        (by dsimp only [hash2Base]; omega)
+        hfit_end
+    have hall := he_kw'.seq (esetup.seq ecopy)
+    have hy0 : y.regs 0 = hashBase := by
+      rw [hy_regs 0 ⟨by decide, by decide, by decide⟩]
+      simp +decide [s6, s5, s4, s3, s2, s1, hd1_0]
+    have htab1_d1 : SingleTableRep hashBase c_exp n_max U M d1.mem := by
+      unfold SingleTableRep
+      rw [decide_eq_true hlt]
+      exact htab_kw
+    have htab1_y : SingleTableRep hashBase c_exp n_max U M y.mem :=
+      htab1_d1.congr_of_footprint (fun a ha1 ha2 =>
+        hy_frame a (Or.inl (by dsimp only [hash2Base]; omega)))
+    have htab2_y : SingleTableRep (hash2Base hashBase c_exp n_max) c_exp n_max U M y.mem :=
+      htab1_y.of_copy_from_hashBase (fun j hj => by
+        rw [hy_copy j hj, hy_frame (hashBase + j) (Or.inl (by dsimp only [hash2Base]; omega))])
+    refine ⟨y, ⟨t_kw + (6 + (6 * singleHashSpace c_exp n_max + 2)),
+      by dsimp only [initTableHashPairSteps]; omega, hall⟩,
+      ⟨htab1_y, htab2_y⟩, hy0, fun a ha => ?_⟩
+    have ha_copy : a < hash2Base hashBase c_exp n_max ∨
+        hash2Base hashBase c_exp n_max + singleHashSpace c_exp n_max ≤ a := by
+      dsimp only [hash2Base, hashPairSpace] at ha ⊢
+      exact ha.imp (by omega) (by omega)
+    have ha_kw : a < hashBase ∨ hashBase + KWise.space n_max (cuckooK n_max) ≤ a := by
+      dsimp only [hashPairSpace] at ha
+      exact ha.imp id (by omega)
+    exact (hy_frame a ha_copy).trans (hy_kw_out a ha_kw)
+  · refine ⟨x.set 0 (x.regs 0),
+      ⟨1, by dsimp only [initTableHashPairSteps]; omega, Exec.copy⟩,
+      ?_, by simp +decide [h0], fun _ _ => rfl⟩
+    unfold HashPairTableRep SingleTableRep
+    rw [decide_eq_false hlt]
+    exact ⟨trivial, trivial⟩
+
+/-- Shifts `reg 0` (`base`) forward by `singleHashSpace c_exp n_max` (`hashBase → hash2Base`)
+using scratch register `15`. -/
+@[expose]
+def shiftToHash2BaseCode (c_exp n_max : ℕ) : Code .exact 19 :=
+  .seq (.op (.const 15 (singleHashSpace c_exp n_max)))
+       (.op (.exactBin .add 0 0 15))
+
+/-- Closed-form machine state after `shiftToHash2BaseCode c_exp n_max`. -/
+@[expose]
+def shiftToHash2BaseData (hashBase c_exp n_max : ℕ) (x : Data 19) : Data 19 :=
+  (x.set 15 (singleHashSpace c_exp n_max)).set 0 (hash2Base hashBase c_exp n_max)
+
+/-- Shifts `reg 0` (`base`) back by `singleHashSpace c_exp n_max` (`hash2Base → hashBase`)
+using scratch register `15`. -/
+@[expose]
+def unshiftFromHash2BaseCode (c_exp n_max : ℕ) : Code .exact 19 :=
+  .seq (.op (.const 15 (singleHashSpace c_exp n_max)))
+       (.op (.exactBin .sub 0 0 15))
+
+/-- Closed-form machine state after `unshiftFromHash2BaseCode c_exp n_max`. -/
+@[expose]
+def unshiftFromHash2BaseData (hashBase c_exp n_max : ℕ) (x : Data 19) : Data 19 :=
+  (x.set 15 (singleHashSpace c_exp n_max)).set 0 hashBase
+
+theorem shiftToHash2BaseCode_exec {w hashBase c_exp n_max : ℕ} {x : Data 19}
+    (h0 : x.regs 0 = hashBase)
+    (hfit_space : Fits w (hashBase + hashPairSpace c_exp n_max)) :
+    Exec w (shiftToHash2BaseCode c_exp n_max) x
+      (shiftToHash2BaseData hashBase c_exp n_max x) 2 := by
+  have hfit_sh : Fits w (singleHashSpace c_exp n_max) :=
+    hfit_space.of_le (by dsimp only [hashPairSpace]; omega)
+  have hfit_h2 : Fits w (hash2Base hashBase c_exp n_max) :=
+    hfit_space.of_le (by dsimp only [hash2Base, hashPairSpace]; omega)
+  have e1 : Exec w (.op (.const 15 (singleHashSpace c_exp n_max)) : Code .exact 19)
+      x (x.set 15 (singleHashSpace c_exp n_max)) 1 :=
+    Exec.const hfit_sh
+  have e2 : Exec w (.op (.exactBin .add 0 0 15) : Code .exact 19)
+      (x.set 15 (singleHashSpace c_exp n_max))
+      (shiftToHash2BaseData hashBase c_exp n_max x) 1 :=
+    ExactLog.exec_exactBin (by simp +decide [h0, hash2Base]) hfit_h2
+  exact e1.seq e2
+
+theorem unshiftFromHash2BaseCode_exec {w hashBase c_exp n_max : ℕ} {x : Data 19}
+    (h0 : x.regs 0 = hash2Base hashBase c_exp n_max)
+    (hfit_space : Fits w (hashBase + hashPairSpace c_exp n_max)) :
+    Exec w (unshiftFromHash2BaseCode c_exp n_max) x
+      (unshiftFromHash2BaseData hashBase c_exp n_max x) 2 := by
+  have hfit_sh : Fits w (singleHashSpace c_exp n_max) :=
+    hfit_space.of_le (by dsimp only [hashPairSpace]; omega)
   have hfit_hb : Fits w hashBase :=
     hfit_space.of_le (by omega)
-  have hfit_kw : Fits w (hashBase + 32 + KWise.space n_max 7) :=
+  have e1 : Exec w (.op (.const 15 (singleHashSpace c_exp n_max)) : Code .exact 19)
+      x (x.set 15 (singleHashSpace c_exp n_max)) 1 :=
+    Exec.const hfit_sh
+  have e2 : Exec w (.op (.exactBin .sub 0 0 15) : Code .exact 19)
+      (x.set 15 (singleHashSpace c_exp n_max))
+      (unshiftFromHash2BaseData hashBase c_exp n_max x) 1 :=
+    ExactLog.exec_exactBin (by simp +decide [h0, hash2Base]) hfit_hb
+  exact e1.seq e2
+
+private theorem ExecRand.seqDet {w : ℕ} {c₁ c₂ : Code .exact 19} {x : Data 19}
+    {m₁ : ProbComp (Data 19 × ℕ)} {f : Data 19 → Data 19} {n₂ : ℕ}
+    (h₁ : ExecRand w c₁ x m₁)
+    (h₂ : ∀ z ∈ m₁.support, Exec w c₂ z.1 (f z.1) n₂) :
+    ExecRand w (.seq c₁ c₂) x ((fun z => (f z.1, z.2 + n₂)) <$> m₁) := by
+  have hseq := ExecRand.seq h₁ (m₂ := fun y => pure (f y, n₂)) fun z hz => (h₂ z hz).execRand
+  simpa only [pure_bind, ← bind_pure_comp] using hseq
+
+/-- Program resampling a single regime-switched hash block at `reg 0 = base`. -/
+@[expose]
+def resampleSingleCode (c_exp n_max M : ℕ) : Code .exact 19 :=
+  if n_max < doubleTabThreshold c_exp then
+    (KWise.resampleCode (cuckooK n_max)).rename cast18To19
+  else
+    (DoubleTabulation.resampleCode
+      (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
+      (DoubleTabulation.provableB n_max) M).rename cast12To19
+
+/-- Program shifting `reg 0` to `hash2Base`, resampling the second hash block, and restoring
+`reg 0 = hashBase`. -/
+@[expose]
+def resampleSecondBlockCode (c_exp n_max M : ℕ) : Code .exact 19 :=
+  .seq (shiftToHash2BaseCode c_exp n_max)
+  (.seq (resampleSingleCode c_exp n_max M)
+        (unshiftFromHash2BaseCode c_exp n_max))
+
+/-- Complete seed-resampling program `resampleHashPairCode`: resamples both regime-switched hash
+blocks at `hashBase` and `hash2Base hashBase c_exp n_max` while preserving `reg 0 = hashBase` and
+`HashPairTableRep`. -/
+@[expose]
+def resampleHashPairCode (c_exp n_max M : ℕ) : Code .exact 19 :=
+  .seq (resampleSingleCode c_exp n_max M) (resampleSecondBlockCode c_exp n_max M)
+
+/-- Exact instruction count of `resampleSingleCode c_exp n_max M`. -/
+@[expose]
+def resampleSingleSteps (c_exp n_max : ℕ) : ℕ :=
+  if n_max < doubleTabThreshold c_exp then
+    5 * cuckooK n_max + 10
+  else
+    DoubleTabulation.resampleSteps
+      (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
+      (DoubleTabulation.provableB n_max)
+
+/-- Exact instruction count of `resampleHashPairCode c_exp n_max M`. -/
+@[expose]
+def resampleHashPairSteps (c_exp n_max : ℕ) : ℕ :=
+  2 * resampleSingleSteps c_exp n_max + 4
+
+/-- Explicit `ProbComp (Data 19 × ℕ)` induced by `resampleSingleCode c_exp n_max M` at `base`. -/
+@[expose]
+noncomputable def resampleSingleComp (base c_exp n_max U M : ℕ) (x : Data 19) :
+    ProbComp (Data 19 × ℕ) :=
+  if n_max < doubleTabThreshold c_exp then
+    (fun z : Data 18 × ℕ => (z.1.extend cast18To19 x, z.2)) <$>
+      KWise.resampleComp base U M (cuckooK n_max) (x.comap cast18To19)
+  else
+    (fun z : Data 12 × ℕ => (z.1.extend cast12To19 x, z.2)) <$>
+      DoubleTabulation.resampleComp base
+        (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
+        (DoubleTabulation.provableB n_max) M (x.comap cast12To19)
+
+/-- Explicit `ProbComp (Data 19 × ℕ)` induced by `resampleSecondBlockCode c_exp n_max M`. -/
+@[expose]
+noncomputable def resampleSecondBlockComp (hashBase c_exp n_max U M : ℕ) (x : Data 19) :
+    ProbComp (Data 19 × ℕ) :=
+  let d0 := shiftToHash2BaseData hashBase c_exp n_max x
+  (fun z : Data 19 × ℕ => (unshiftFromHash2BaseData hashBase c_exp n_max z.1, 2 + (z.2 + 2))) <$>
+    resampleSingleComp (hash2Base hashBase c_exp n_max) c_exp n_max U M d0
+
+/-- Exact `ProbComp` semantics of `resampleHashPairCode c_exp n_max M`. -/
+@[expose]
+noncomputable def resampleHashPairComp (hashBase c_exp n_max U M : ℕ) (x : Data 19) :
+    ProbComp (Data 19 × ℕ) := do
+  let z1 ← resampleSingleComp hashBase c_exp n_max U M x
+  let z2 ← resampleSecondBlockComp hashBase c_exp n_max U M z1.1
+  pure (z2.1, z1.2 + z2.2)
+
+theorem resampleSingleCode_execRand {w base c_exp n_max U M : ℕ} {x : Data 19}
+    (htab : SingleTableRep base c_exp n_max U M x.mem) (hbase : x.regs 0 = base)
+    (hfit_space : Fits w (base + singleHashSpace c_exp n_max))
+    (hfit_q : Fits w (2 ^ Probability.trinomialDeg U M)) :
+    ExecRand w (resampleSingleCode c_exp n_max M) x
+      (resampleSingleComp base c_exp n_max U M x) := by
+  unfold resampleSingleCode resampleSingleComp
+  split_ifs with hlt
+  · have hsp : singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
+      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+    have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
+    have hkw : KWise.space n_max (cuckooK n_max) =
+        8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
+    have hfit_end : Fits w (base + 8 + cuckooK n_max) :=
+      hfit_space.of_le (by omega)
+    have htab_kw : KWise.TableRep base (KWise.chunkBits n_max) U M (cuckooK n_max) x.mem := by
+      unfold SingleTableRep at htab
+      rwa [decide_eq_true hlt] at htab
+    have hbase18 : (x.comap cast18To19).regs 0 = base := hbase
+    exact (KWise.resampleCode_execRand htab_kw hbase18 hfit_end hfit_q).rename injective_cast18To19
+  · have hsp : singleHashSpace c_exp n_max =
+        DoubleTabulation.space (DoubleTabulation.provableC c_exp)
+          (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
+      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+    have hfit_dt : Fits w (base + DoubleTabulation.space (DoubleTabulation.provableC c_exp)
+        (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max)) := by
+      rwa [← hsp]
+    have hpow_b_le : 2 ^ DoubleTabulation.provableB n_max ≤
+        DoubleTabulation.space (DoubleTabulation.provableC c_exp)
+          (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
+      have hc : 1 ≤ DoubleTabulation.provableC c_exp := DoubleTabulation.one_le_provableC c_exp
+      have hd : 1 ≤ DoubleTabulation.provableD c_exp := by
+        dsimp only [DoubleTabulation.provableD]; omega
+      have hle : 1 * 2 ^ DoubleTabulation.provableB n_max ≤
+          ((DoubleTabulation.provableC c_exp + 1) * DoubleTabulation.provableD c_exp) *
+            2 ^ DoubleTabulation.provableB n_max :=
+        Nat.mul_le_mul_right _ (by nlinarith)
+      dsimp only [DoubleTabulation.space]
+      omega
+    have hfit_mask_b : Fits w (2 ^ DoubleTabulation.provableB n_max - 1) :=
+      hfit_dt.of_le (by omega)
+    have hfit_mask_M : Fits w (2 ^ M - 1) :=
+      hfit_q.of_le ((Nat.sub_le _ 1).trans
+        (Nat.pow_le_pow_right (by decide) (Probability.le_trinomialDeg U M)))
+    have hfit_1 : Fits w 1 :=
+      hfit_space.of_le (by have := le_singleHashSpace c_exp n_max; omega)
+    have hbase12 : (x.comap cast12To19).regs 0 = base := hbase
+    exact (DoubleTabulation.resampleCode_execRand hbase12 hfit_dt
+      hfit_mask_b hfit_mask_M hfit_1).rename injective_cast12To19
+
+theorem mem_support_resampleSingleComp {base c_exp n_max U M : ℕ} {x : Data 19} {z : Data 19 × ℕ}
+    (htab : SingleTableRep base c_exp n_max U M x.mem) (hbase : x.regs 0 = base)
+    (hz : z ∈ (resampleSingleComp base c_exp n_max U M x).support) :
+    z.2 ≤ resampleSingleSteps c_exp n_max ∧
+    z.1.regs 0 = base ∧
+    SingleTableRep base c_exp n_max U M z.1.mem ∧
+    SingleSeedRep base c_exp n_max U M (extractSingleSeed base c_exp n_max U M z.1.mem) z.1.mem ∧
+    (∀ a, (a < base ∨ base + singleHashSpace c_exp n_max ≤ a) → z.1.mem a = x.mem a) := by
+  unfold resampleSingleComp at hz
+  split_ifs at hz with hlt
+  · obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
+    have htab_kw : KWise.TableRep base (KWise.chunkBits n_max) U M (cuckooK n_max) x.mem := by
+      unfold SingleTableRep at htab
+      rwa [decide_eq_true hlt] at htab
+    have hbase18 : (x.comap cast18To19).regs 0 = base := hbase
+    obtain ⟨⟨⟨htab', hseed'⟩, hz0, hout⟩, hsteps⟩ :=
+      KWise.mem_support_resampleComp htab_kw hbase18 hz₀
+    have h0' : (z₀.1.extend cast18To19 x).regs 0 = base := by
+      change ((z₀.1.extend cast18To19 x).comap cast18To19).regs 0 = base
+      rw [Data.comap_extend injective_cast18To19, hz0]
+    have hsp : singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
+      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+    have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
+    have hkw : KWise.space n_max (cuckooK n_max) =
+        8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
+    refine ⟨by simpa [resampleSingleSteps, hlt] using hsteps, h0', ?_, ?_,
+      fun a ha => hout a (by omega)⟩
+    · unfold SingleTableRep
+      rw [decide_eq_true hlt]
+      exact htab'
+    · unfold SingleSeedRep extractSingleSeed
+      revert hseed'
+      rw [decide_eq_true hlt]
+      exact id
+  · obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
+    have hbase12 : (x.comap cast12To19).regs 0 = base := hbase
+    obtain ⟨hz0, hseed', hout, hsteps⟩ :=
+      DoubleTabulation.mem_support_resampleComp hbase12 hz₀
+    have h0' : (z₀.1.extend cast12To19 x).regs 0 = base := by
+      change ((z₀.1.extend cast12To19 x).comap cast12To19).regs 0 = base
+      rw [Data.comap_extend injective_cast12To19, hz0]
+    have hsp : singleHashSpace c_exp n_max =
+        DoubleTabulation.space (DoubleTabulation.provableC c_exp)
+          (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
+      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+    refine ⟨by simp [resampleSingleSteps, hlt, hsteps], h0', ?_, ?_,
+      fun a ha => hout a (by rwa [← hsp])⟩
+    · unfold SingleTableRep
+      rw [decide_eq_false hlt]
+      trivial
+    · unfold SingleSeedRep extractSingleSeed
+      revert hseed'
+      rw [decide_eq_false hlt]
+      exact id
+
+theorem resampleSecondBlockCode_execRand {w hashBase c_exp n_max U M : ℕ} {x : Data 19}
+    (htab2 : SingleTableRep (hash2Base hashBase c_exp n_max) c_exp n_max U M x.mem)
+    (h0 : x.regs 0 = hashBase)
+    (hfit_space : Fits w (hashBase + hashPairSpace c_exp n_max))
+    (hfit_q : Fits w (2 ^ Probability.trinomialDeg U M)) :
+    ExecRand w (resampleSecondBlockCode c_exp n_max M) x
+      (resampleSecondBlockComp hashBase c_exp n_max U M x) := by
+  have esh := shiftToHash2BaseCode_exec h0 hfit_space
+  set d0 := shiftToHash2BaseData hashBase c_exp n_max x
+  have hd0_0 : d0.regs 0 = hash2Base hashBase c_exp n_max := by
+    simp +decide [d0, shiftToHash2BaseData]
+  have hfit_h2 : Fits w (hash2Base hashBase c_exp n_max + singleHashSpace c_exp n_max) :=
+    hfit_space.of_le (by dsimp only [hash2Base, hashPairSpace]; omega)
+  have hres := resampleSingleCode_execRand (x := d0) htab2 hd0_0 hfit_h2 hfit_q
+  have hdet := ExecRand.seqDet hres (f := unshiftFromHash2BaseData hashBase c_exp n_max) (n₂ := 2)
+    fun z hz => by
+      obtain ⟨-, hz0, -, -, -⟩ := mem_support_resampleSingleComp (x := d0) htab2 hd0_0 hz
+      exact unshiftFromHash2BaseCode_exec hz0 hfit_space
+  simpa only [resampleSecondBlockCode, resampleSecondBlockComp, d0, Functor.map_map] using
+    esh.seqRand hdet
+
+theorem mem_support_resampleSecondBlockComp {hashBase c_exp n_max U M : ℕ} {x : Data 19}
+    {z : Data 19 × ℕ}
+    (htab2 : SingleTableRep (hash2Base hashBase c_exp n_max) c_exp n_max U M x.mem)
+    (hz : z ∈ (resampleSecondBlockComp hashBase c_exp n_max U M x).support) :
+    z.2 ≤ resampleSingleSteps c_exp n_max + 4 ∧
+    z.1.regs 0 = hashBase ∧
+    SingleTableRep (hash2Base hashBase c_exp n_max) c_exp n_max U M z.1.mem ∧
+    SingleSeedRep (hash2Base hashBase c_exp n_max) c_exp n_max U M
+      (extractSingleSeed (hash2Base hashBase c_exp n_max) c_exp n_max U M z.1.mem) z.1.mem ∧
+    (∀ a, (a < hash2Base hashBase c_exp n_max ∨
+      hash2Base hashBase c_exp n_max + singleHashSpace c_exp n_max ≤ a) → z.1.mem a = x.mem a) := by
+  dsimp only [resampleSecondBlockComp] at hz
+  obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
+  set d0 := shiftToHash2BaseData hashBase c_exp n_max x
+  have hd0_0 : d0.regs 0 = hash2Base hashBase c_exp n_max := by
+    simp +decide [d0, shiftToHash2BaseData]
+  obtain ⟨ht, -, htab', hseed', hout⟩ := mem_support_resampleSingleComp (x := d0) htab2 hd0_0 hz₀
+  exact ⟨by omega, by simp +decide [unshiftFromHash2BaseData], htab', hseed', hout⟩
+
+/-- **`resampleHashPairCode` randomized execution**: resamples both regime-switched hash blocks at
+`hashBase` and `hash2Base hashBase c_exp n_max`. -/
+theorem resampleHashPairCode_execRand {w hashBase c_exp n_max U M : ℕ} {x : Data 19}
+    (htab : HashPairTableRep hashBase c_exp n_max U M x.mem) (h0 : x.regs 0 = hashBase)
+    (hfit_space : Fits w (hashBase + hashPairSpace c_exp n_max))
+    (hfit_q : Fits w (2 ^ Probability.trinomialDeg U M)) :
+    ExecRand w (resampleHashPairCode c_exp n_max M) x
+      (resampleHashPairComp hashBase c_exp n_max U M x) := by
+  have hfit_h1 : Fits w (hashBase + singleHashSpace c_exp n_max) :=
     hfit_space.of_le (by dsimp only [hashPairSpace]; omega)
-  set s1 := x.set 3 (4 + 7 * r.val)
-  have e1 : Exec w (.op (.const 3 (4 + 7 * r.val)) : Code .exact 19) x s1 1 :=
-    Exec.const hfit_src_off
-  set s2 := s1.set 3 (hashBase + (4 + 7 * r.val))
-  have e2 : Exec w (.op (.exactBin .add 3 0 3) : Code .exact 19) s1 s2 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s1, h0]) hfit_src
-  set s3 := s2.set 4 40
-  have e3 : Exec w (.op (.const 4 40) : Code .exact 19) s2 s3 1 := Exec.const hfit_40
-  set s4 := s3.set 4 (hashBase + 40)
-  have e4 : Exec w (.op (.exactBin .add 4 0 4) : Code .exact 19) s3 s4 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s3, s2, s1, h0]) hfit_hb40
-  set s5 := s4.set 5 47
-  have e5 : Exec w (.op (.const 5 47) : Code .exact 19) s4 s5 1 := Exec.const hfit_47
-  set s6 := s5.set 5 (hashBase + 47)
-  have e6 : Exec w (.op (.exactBin .add 5 0 5) : Code .exact 19) s5 s6 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s5, s4, s3, s2, s1, h0]) hfit_hb47
-  set s7 := s6.set 6 1
-  have e7 : Exec w (.op (.const 6 1) : Code .exact 19) s6 s7 1 := Exec.const hfit_1
-  have esetup : Exec w (stageSeedSetup r) x s7 7 :=
-    e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq e7)))))
-  obtain ⟨d1, ecopy, hd1_regs, hd1_copy, hd1_frame⟩ :=
-    copyWordsLoop_exec (w := w) 7 (hashBase + (4 + 7 * r.val)) (hashBase + 40) (x := s7)
-      (by simp +decide [s7, s6, s5, s4, s3, s2])
-      (by simp +decide [s7, s6, s5, s4])
-      (by simp +decide [s7, s6, Nat.add_assoc])
-      (by simp +decide [s7])
-      (by omega)
-      (by rwa [show hashBase + 40 + 7 = hashBase + 47 by omega])
-  have estage : Exec w (stageSeedCode r) x d1 51 := esetup.seq ecopy
-  have hd1_0 : d1.regs 0 = hashBase := by
-    rw [hd1_regs 0 ⟨by decide, by decide, by decide⟩]
-    simp +decide [s7, s6, s5, s4, s3, s2, s1, h0]
-  have hd1_1 : d1.regs 1 = u.val := by
-    rw [hd1_regs 1 ⟨by decide, by decide, by decide⟩]
-    simp +decide [s7, s6, s5, s4, s3, s2, s1, h1]
-  have hd1_18 : d1.regs 18 = x.regs 18 := by
-    rw [hd1_regs 18 ⟨by decide, by decide, by decide⟩]
-    simp +decide [s7, s6, s5, s4, s3, s2, s1]
-  have hd1_frame' : ∀ a, (a < hashBase + 40 ∨ hashBase + 47 ≤ a) → d1.mem a = x.mem a := by
-    intro a ha
-    exact hd1_frame a (by omega)
-  have hd1_rep : HashPairRep hashBase n_max U M θ d1.mem :=
-    hrep.congr_of_active_slot hd1_frame'
-  have hd1_kw_rep : KWise.Rep (hashBase + 32) (KWise.chunkBits n_max) U M 7 (θ.1 r) d1.mem := by
-    refine ⟨hd1_rep.1.2.2.2, fun j => ?_⟩
-    rw [show hashBase + 32 + 8 + j.val = hashBase + 40 + j.val by omega, hd1_copy j.val j.isLt]
-    dsimp only [s7, s6, s5, s4, s3, s2, s1, Data.set]
-    rw [show hashBase + (4 + 7 * r.val) + j.val = hashBase + 4 + 7 * r.val + j.val by omega]
-    exact hrep.2.1 r j
-  set d2 := d1.set 15 32
-  have esh1 : Exec w (.op (.const 15 32) : Code .exact 19) d1 d2 1 := Exec.const hfit_32
-  set d3 := d2.set 0 (hashBase + 32)
-  have esh2 : Exec w (.op (.exactBin .add 0 0 15) : Code .exact 19) d2 d3 1 :=
-    ExactLog.exec_exactBin (by simp +decide [d2, hd1_0]) hfit_hb32
-  obtain ⟨y_kw, ⟨t_kw, ht_kw, he_kw⟩, hy_kw0, hy_kw1, hy_kw2, hy_kw_mem⟩ :=
-    KWise.evalCode_execWithin (w := w) (base := hashBase + 32) (n_max := n_max)
-      (U := U) (M := M) (k := 7) (c := θ.1 r) u (x := d3.comap cast18To19)
-      hd1_kw_rep
-      (by simp +decide [d3, d2, cast18To19, Data.comap])
-      (by simp +decide [d3, d2, cast18To19, Data.comap, hd1_1])
-      hw hfit_kw
-  set d4 := y_kw.extend cast18To19 d3
-  have he_kw' : Exec w ((KWise.evalCode 7).rename cast18To19) d3 d4 t_kw :=
-    he_kw.rename injective_cast18To19
-  have hd4_0 : d4.regs 0 = hashBase + 32 := by
-    change ((y_kw.extend cast18To19 d3).comap cast18To19).regs 0 = hashBase + 32
-    rw [Data.comap_extend injective_cast18To19, hy_kw0]
-  have hd4_1 : d4.regs 1 = u.val := by
-    change ((y_kw.extend cast18To19 d3).comap cast18To19).regs 1 = u.val
-    rw [Data.comap_extend injective_cast18To19, hy_kw1]
-  have hd4_2 : d4.regs 2 = (evalPoly (θ.1 r) u).val := by
-    change ((y_kw.extend cast18To19 d3).comap cast18To19).regs 2 = (evalPoly (θ.1 r) u).val
-    rw [Data.comap_extend injective_cast18To19]
-    exact hy_kw2
-  have hd4_18 : d4.regs 18 = x.regs 18 := by
-    rw [he_kw'.regs_eq (Code.preserves_rename_of_forall_ne _ _ 18 (by decide))]
-    simp +decide [d3, d2, hd1_18]
-  have hd4_mem : d4.mem = d1.mem := hy_kw_mem
-  set d5 := d4.set 15 32
-  have esh3 : Exec w (.op (.const 15 32) : Code .exact 19) d4 d5 1 := Exec.const hfit_32
-  set d6 := d5.set 0 hashBase
-  have esh4 : Exec w (.op (.exactBin .sub 0 0 15) : Code .exact 19) d5 d6 1 :=
-    ExactLog.exec_exactBin (by simp +decide [d5, hd4_0]) hfit_hb
-  have hall := estage.seq (esh1.seq (esh2.seq (he_kw'.seq (esh3.seq esh4))))
-  refine ⟨d6, ⟨51 + (1 + (1 + (t_kw + (1 + 1)))), by dsimp only [evalPolySteps]; omega, hall⟩,
-    by simp +decide [d6, d5],
-    by simp +decide [d6, d5, hd4_1],
-    by simp +decide [d6, d5, hd4_2],
-    by simp +decide [d6, d5, hd4_18],
-    by change HashPairRep hashBase n_max U M θ d4.mem; rwa [hd4_mem],
-    fun a ha => by change d4.mem a = x.mem a; rw [hd4_mem]; exact hd1_frame' a ha⟩
+  have h1 := resampleSingleCode_execRand htab.1 h0 hfit_h1 hfit_q
+  refine h1.seq fun z1 hz1 => ?_
+  obtain ⟨-, hz1_0, -, -, hz1_frame⟩ := mem_support_resampleSingleComp htab.1 h0 hz1
+  have htab2_z1 : SingleTableRep (hash2Base hashBase c_exp n_max) c_exp n_max U M z1.1.mem :=
+    htab.2.congr_of_footprint (fun a ha1 _ =>
+      hz1_frame a (Or.inr (by dsimp only [hash2Base] at ha1; omega)))
+  exact resampleSecondBlockCode_execRand htab2_z1 hz1_0 hfit_space hfit_q
 
-/-- Word-RAM program evaluating `h₁(u) = f₁(u) ^^^ Z₁[g₁(u)]` into `reg 2` (`regOut`) while
-preserving `reg 0 = hashBase`, `reg 1 = u.val`, and `HashPairRep`. -/
+theorem mem_support_resampleHashPairComp {hashBase c_exp n_max U M : ℕ} {x : Data 19}
+    {z : Data 19 × ℕ}
+    (htab : HashPairTableRep hashBase c_exp n_max U M x.mem) (h0 : x.regs 0 = hashBase)
+    (hz : z ∈ (resampleHashPairComp hashBase c_exp n_max U M x).support) :
+    z.2 ≤ resampleHashPairSteps c_exp n_max ∧
+    z.1.regs 0 = hashBase ∧
+    HashPairRep hashBase c_exp n_max U M (extractSeed hashBase c_exp n_max U M z.1.mem) z.1.mem ∧
+    (∀ a, (a < hashBase ∨ hashBase + hashPairSpace c_exp n_max ≤ a) → z.1.mem a = x.mem a) := by
+  dsimp only [resampleHashPairComp] at hz
+  obtain ⟨z1, hz1, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
+  obtain ⟨z2, hz2, hpure⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
+  cases OracleComp.eq_of_mem_supportWith_pure hpure
+  obtain ⟨ht1, -, htab1_z1, hseed1_z1, hframe1⟩ :=
+    mem_support_resampleSingleComp htab.1 h0 hz1
+  have htab2_z1 : SingleTableRep (hash2Base hashBase c_exp n_max) c_exp n_max U M z1.1.mem :=
+    htab.2.congr_of_footprint (fun a ha1 _ =>
+      hframe1 a (Or.inr (by dsimp only [hash2Base] at ha1; omega)))
+  obtain ⟨ht2, hz2_0, htab2_z2, hseed2_z2, hframe2⟩ :=
+    mem_support_resampleSecondBlockComp htab2_z1 hz2
+  have hframe_block1 : ∀ a, hashBase ≤ a → a < hashBase + singleHashSpace c_exp n_max →
+      z2.1.mem a = z1.1.mem a :=
+    fun a _ ha2 => hframe2 a (Or.inl (by dsimp only [hash2Base]; omega))
+  have htab1_z2 : SingleTableRep hashBase c_exp n_max U M z2.1.mem :=
+    htab1_z1.congr_of_footprint hframe_block1
+  have hextract1_eq :
+      extractSingleSeed hashBase c_exp n_max U M z2.1.mem =
+        extractSingleSeed hashBase c_exp n_max U M z1.1.mem :=
+    extractSingleSeed_congr_of_footprint hframe_block1
+  have hseed1_z2 : SingleSeedRep hashBase c_exp n_max U M
+      (extractSingleSeed hashBase c_exp n_max U M z2.1.mem) z2.1.mem := by
+    rw [hextract1_eq]
+    exact hseed1_z1.congr_of_footprint hframe_block1
+  refine ⟨by dsimp only [resampleHashPairSteps]; omega, hz2_0,
+    ⟨⟨htab1_z2, htab2_z2⟩, ⟨hseed1_z2, hseed2_z2⟩⟩,
+    fun a ha => ?_⟩
+  have ha2 : a < hash2Base hashBase c_exp n_max ∨
+      hash2Base hashBase c_exp n_max + singleHashSpace c_exp n_max ≤ a := by
+    dsimp only [hash2Base, hashPairSpace] at ha ⊢
+    exact ha.imp (by omega) (by omega)
+  have ha1 : a < hashBase ∨ hashBase + singleHashSpace c_exp n_max ≤ a := by
+    dsimp only [hashPairSpace] at ha
+    exact ha.imp id (by omega)
+  rw [hframe2 a ha2, hframe1 a ha1]
+
+private theorem map_extractSingleSeed_eval_resampleSingleComp
+    (base c_exp n_max U M : ℕ) (x : Data 19) :
+    ((resampleSingleComp base c_exp n_max U M x).eval).map
+      (fun z => extractSingleSeed base c_exp n_max U M z.1.mem) =
+      PMF.uniformOfFintype (SingleSeed c_exp n_max U M) := by
+  unfold resampleSingleComp SingleSeed extractSingleSeed
+  split_ifs with hlt
+  · rw [decide_eq_true hlt, ProbComp.eval_map, PMF.map_comp]
+    exact KWise.map_extractSeeds_eval_resampleComp base U M (cuckooK n_max) (x.comap cast18To19)
+  · rw [decide_eq_false hlt, ProbComp.eval_map, PMF.map_comp]
+    exact DoubleTabulation.map_extractSeed_eval_resampleComp base
+      (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
+      (DoubleTabulation.provableB n_max) M (x.comap cast12To19)
+
+private theorem map_pair_extractSingleSeed_eval_resampleSecondBlockComp
+    {hashBase c_exp n_max U M : ℕ} {d : Data 19}
+    (htab2 : SingleTableRep (hash2Base hashBase c_exp n_max) c_exp n_max U M d.mem) :
+    ((resampleSecondBlockComp hashBase c_exp n_max U M d).eval).map
+      (fun z : Data 19 × ℕ =>
+        (extractSingleSeed hashBase c_exp n_max U M z.1.mem,
+         extractSingleSeed (hash2Base hashBase c_exp n_max) c_exp n_max U M z.1.mem)) =
+      (PMF.uniformOfFintype (SingleSeed c_exp n_max U M)).map
+        (extractSingleSeed hashBase c_exp n_max U M d.mem, ·) := by
+  set d0 := shiftToHash2BaseData hashBase c_exp n_max d
+  have hd0_0 : d0.regs 0 = hash2Base hashBase c_exp n_max := by
+    simp +decide [d0, shiftToHash2BaseData]
+  dsimp only [resampleSecondBlockComp]
+  rw [ProbComp.eval_map, PMF.map_comp]
+  have hcongr :
+      ((resampleSingleComp (hash2Base hashBase c_exp n_max) c_exp n_max U M d0).eval).map
+        ((fun z : Data 19 × ℕ =>
+            (extractSingleSeed hashBase c_exp n_max U M z.1.mem,
+             extractSingleSeed (hash2Base hashBase c_exp n_max) c_exp n_max U M z.1.mem)) ∘
+          fun z : Data 19 × ℕ =>
+            (unshiftFromHash2BaseData hashBase c_exp n_max z.1, 2 + (z.2 + 2))) =
+      ((resampleSingleComp (hash2Base hashBase c_exp n_max) c_exp n_max U M d0).eval).map
+        ((fun θ₂ => (extractSingleSeed hashBase c_exp n_max U M d.mem, θ₂)) ∘
+          fun z : Data 19 × ℕ =>
+            extractSingleSeed (hash2Base hashBase c_exp n_max) c_exp n_max U M z.1.mem) := by
+    refine PMF.map_congr_on_support _ _ _ fun z hz => ?_
+    rw [ProbComp.support_eval] at hz
+    obtain ⟨-, -, -, -, hframe⟩ := mem_support_resampleSingleComp (x := d0) htab2 hd0_0 hz
+    have h1 : extractSingleSeed hashBase c_exp n_max U M z.1.mem =
+        extractSingleSeed hashBase c_exp n_max U M d.mem :=
+      extractSingleSeed_congr_of_footprint (fun a _ ha2 =>
+        hframe a (Or.inl (by dsimp only [hash2Base]; omega)))
+    dsimp only [Function.comp_apply, unshiftFromHash2BaseData, Data.set]
+    rw [h1]
+  rw [hcongr, ← PMF.map_comp,
+    map_extractSingleSeed_eval_resampleSingleComp
+      (hash2Base hashBase c_exp n_max) c_exp n_max U M d0]
+
+private theorem map_pair_extractSingleSeed_eval_resampleHashPairComp
+    {hashBase c_exp n_max U M : ℕ} {x : Data 19}
+    (htab : HashPairTableRep hashBase c_exp n_max U M x.mem) (h0 : x.regs 0 = hashBase) :
+    ((resampleHashPairComp hashBase c_exp n_max U M x).eval).map
+      (fun z : Data 19 × ℕ =>
+        (extractSingleSeed hashBase c_exp n_max U M z.1.mem,
+         extractSingleSeed (hash2Base hashBase c_exp n_max) c_exp n_max U M z.1.mem)) =
+      PMF.uniformOfFintype (SingleSeed c_exp n_max U M × SingleSeed c_exp n_max U M) := by
+  dsimp only [resampleHashPairComp]
+  rw [ProbComp.eval_bind, PMF.map_bind]
+  have hcongr :
+      (resampleSingleComp hashBase c_exp n_max U M x).eval.bind
+        (fun z1 : Data 19 × ℕ =>
+          ((do
+            let z2 ← resampleSecondBlockComp hashBase c_exp n_max U M z1.1
+            pure (z2.1, z1.2 + z2.2)).eval).map
+            (fun z : Data 19 × ℕ =>
+              (extractSingleSeed hashBase c_exp n_max U M z.1.mem,
+               extractSingleSeed (hash2Base hashBase c_exp n_max) c_exp n_max U M z.1.mem))) =
+      (resampleSingleComp hashBase c_exp n_max U M x).eval.bind
+        (fun z1 : Data 19 × ℕ =>
+          (PMF.uniformOfFintype (SingleSeed c_exp n_max U M)).map
+            (extractSingleSeed hashBase c_exp n_max U M z1.1.mem, ·)) := by
+    refine PMF.bind_congr_on_support _ _ _ fun z1 hz1 => ?_
+    rw [ProbComp.support_eval] at hz1
+    obtain ⟨-, -, -, -, hframe1⟩ := mem_support_resampleSingleComp htab.1 h0 hz1
+    have htab2_z1 : SingleTableRep (hash2Base hashBase c_exp n_max) c_exp n_max U M z1.1.mem :=
+      htab.2.congr_of_footprint (fun a ha1 _ =>
+        hframe1 a (Or.inr (by dsimp only [hash2Base] at ha1; omega)))
+    have hd : (do
+        let z2 ← resampleSecondBlockComp hashBase c_exp n_max U M z1.1
+        pure (z2.1, z1.2 + z2.2)) =
+        (fun z2 : Data 19 × ℕ => (z2.1, z1.2 + z2.2)) <$>
+          resampleSecondBlockComp hashBase c_exp n_max U M z1.1 :=
+      bind_pure_comp _ _
+    rw [hd, ProbComp.eval_map, PMF.map_comp]
+    exact map_pair_extractSingleSeed_eval_resampleSecondBlockComp htab2_z1
+  rw [hcongr]
+  have hbind :
+      (resampleSingleComp hashBase c_exp n_max U M x).eval.bind
+        (fun z1 : Data 19 × ℕ =>
+          (PMF.uniformOfFintype (SingleSeed c_exp n_max U M)).map
+            (extractSingleSeed hashBase c_exp n_max U M z1.1.mem, ·)) =
+      (((resampleSingleComp hashBase c_exp n_max U M x).eval).map
+          (fun z1 => extractSingleSeed hashBase c_exp n_max U M z1.1.mem)).bind
+        (fun θ₁ => (PMF.uniformOfFintype (SingleSeed c_exp n_max U M)).map (θ₁, ·)) := by
+    rw [PMF.bind_map]
+    rfl
+  rw [hbind, map_extractSingleSeed_eval_resampleSingleComp,
+    PMF.uniformOfFintype_prod]
+
+/-- **Exact uniformity of `resampleHashPairComp`**: the extracted seed
+`extractSeed hashBase c_exp n_max U M z.1.mem` is distributed according to
+`seedLaw c_exp n_max U M`. -/
+theorem map_extractSeed_eval_resampleHashPairComp {hashBase c_exp n_max U M : ℕ} {x : Data 19}
+    (htab : HashPairTableRep hashBase c_exp n_max U M x.mem) (h0 : x.regs 0 = hashBase) :
+    ((resampleHashPairComp hashBase c_exp n_max U M x).eval).map
+      (fun z => extractSeed hashBase c_exp n_max U M z.1.mem) = seedLaw c_exp n_max U M :=
+  map_pair_extractSingleSeed_eval_resampleHashPairComp htab h0
+
+/-- Word-RAM program evaluating a single regime-switched hash block at `reg 0 = base` and
+`reg 1 = u.val` into `reg 2` (`regOut`) without modifying memory. -/
 @[expose]
-def evalHash1Code : Code .exact 19 :=
-  .seq (evalPolyCode 0)
-  (.seq (.op (.copy 18 2))
-  (.seq (evalPolyCode 1)
-  (.seq (.op (.const 15 1))
-  (.seq (.op (.exactBin .add 15 0 15))
-  (.seq (.op (.load 15 15))
-  (.seq (.op (.exactBin .add 15 15 2))
-  (.seq (.op (.load 15 15))
-        (.op (.exactBin .xor 2 18 15)))))))))
+def evalSingleCode (c_exp n_max : ℕ) : Code .exact 19 :=
+  if n_max < doubleTabThreshold c_exp then
+    (KWise.evalCode (cuckooK n_max)).rename cast18To19
+  else
+    (DoubleTabulation.evalCode
+      (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
+      (DoubleTabulation.provableB n_max)).rename cast12To19
 
-/-- Word-RAM program evaluating `h₂(u) = f₂(u) ^^^ Z₂[g₂(u)]` into `reg 2` (`regOut`) while
-preserving `reg 0 = hashBase`, `reg 1 = u.val`, and `HashPairRep`. -/
+/-- Word-RAM program evaluating `h₁(u)` into `reg 2` (`regOut`) while preserving
+`reg 0 = hashBase`, `reg 1 = u.val`, and all of memory (`y.mem = x.mem`). -/
 @[expose]
-def evalHash2Code : Code .exact 19 :=
-  .seq (evalPolyCode 2)
-  (.seq (.op (.copy 18 2))
-  (.seq (evalPolyCode 3)
-  (.seq (.op (.const 15 2))
-  (.seq (.op (.exactBin .add 15 0 15))
-  (.seq (.op (.load 15 15))
-  (.seq (.op (.exactBin .add 15 15 2))
-  (.seq (.op (.load 15 15))
-        (.op (.exactBin .xor 2 18 15)))))))))
+def evalHash1Code (c_exp n_max : ℕ) : Code .exact 19 :=
+  evalSingleCode c_exp n_max
 
-/-- Exact step bound for `evalHash1Code` and `evalHash2Code`. -/
+/-- Word-RAM program evaluating `h₂(u)` into `reg 2` (`regOut`) while preserving
+`reg 0 = hashBase`, `reg 1 = u.val`, and all of memory (`y.mem = x.mem`). -/
 @[expose]
-def evalHashSteps (n_max U M : ℕ) : ℕ :=
-  2 * evalPolySteps n_max U M + 7
+def evalHash2Code (c_exp n_max : ℕ) : Code .exact 19 :=
+  .seq (shiftToHash2BaseCode c_exp n_max)
+  (.seq (evalSingleCode c_exp n_max)
+        (unshiftFromHash2BaseCode c_exp n_max))
 
-theorem evalHash1Code_execWithin {w hashBase n_max U M : ℕ} {θ : Seed U M}
-    (u : Fin U) {x : Data 19}
-    (hrep : HashPairRep hashBase n_max U M θ x.mem)
+/-- Step bound for `evalSingleCode c_exp n_max`. -/
+@[expose]
+def evalSingleSteps (c_exp n_max U M : ℕ) : ℕ :=
+  if n_max < doubleTabThreshold c_exp then
+    KWise.evalSteps n_max U M (cuckooK n_max)
+  else
+    DoubleTabulation.evalSteps (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
+
+/-- Step bound for `evalHash1Code c_exp n_max` and `evalHash2Code c_exp n_max`. -/
+@[expose]
+def evalHashSteps (c_exp n_max U M : ℕ) : ℕ :=
+  evalSingleSteps c_exp n_max U M + 4
+
+/-- Uniform `O_{c_exp}(1)` instruction bound on `evalHashSteps c_exp n_max U M` across all
+`n_max : ℕ`. -/
+@[expose]
+def evalHashBound (c_exp : ℕ) : ℕ :=
+  DoubleTabulation.provableEvalBound c_exp (cuckooKBound c_exp) + 4
+
+/-- **All-`n_max` constant instruction bound for `evalHashSteps` (`O_{c_exp}(1)`)**:
+whenever `U ≤ max n_max 4 ^ c_exp` and `M ≤ max c_exp 1 * Nat.clog 2 (max n_max 4) + 5`,
+`evalHashSteps c_exp n_max U M ≤ evalHashBound c_exp`. -/
+theorem evalHashSteps_le {c_exp n_max U M : ℕ}
+    (hU : U ≤ max n_max 4 ^ c_exp)
+    (hM : M ≤ max c_exp 1 * Nat.clog 2 (max n_max 4) + 5) :
+    evalHashSteps c_exp n_max U M ≤ evalHashBound c_exp := by
+  dsimp only [evalHashSteps, evalSingleSteps, evalHashBound, DoubleTabulation.provableEvalBound]
+  refine Nat.add_le_add_right ?_ 4
+  split_ifs with hlt
+  · refine le_trans ?_ (le_max_left _ _)
+    dsimp only [KWise.evalSteps, KWise.evalStepsFromB]
+    have hL : KWise.limbCountFromB (KWise.chunkBits n_max) (trinomialDeg U M) ≤
+        DoubleTabulation.provableLimbBound c_exp :=
+      DoubleTabulation.limbCount_le_provableLimbBound hU hM
+    have hk : cuckooK n_max ≤ cuckooKBound c_exp :=
+      cuckooK_le_cuckooKBound_of_lt hlt
+    gcongr
+  · exact le_max_right _ _
+
+theorem evalSingleCode_execWithin {w base c_exp n_max U M : ℕ}
+    {θ₀ : SingleSeed c_exp n_max U M} (u : Fin U) {x : Data 19}
+    (htab : SingleTableRep base c_exp n_max U M x.mem)
+    (hseed : SingleSeedRep base c_exp n_max U M θ₀ x.mem)
+    (h0 : x.regs 0 = base) (h1 : x.regs 1 = u.val)
+    (hw : 2 * Probability.trinomialDeg U M ≤ w)
+    (hfit_space : Fits w (base + singleHashSpace c_exp n_max)) :
+    ∃ y : Data 19,
+      ExecWithin w (evalSingleCode c_exp n_max) x y (evalSingleSteps c_exp n_max U M) ∧
+      y.regs 0 = base ∧
+      y.regs 1 = u.val ∧
+      y.regs 2 = (evalSingle c_exp n_max U M θ₀ u).val ∧
+      y.mem = x.mem := by
+  unfold evalSingleCode evalSingleSteps
+  split_ifs with hlt
+  · have hsp : singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
+      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+    have hfit_kw : Fits w (base + KWise.space n_max (cuckooK n_max)) := by
+      rwa [← hsp]
+    have htab_kw : KWise.TableRep base (KWise.chunkBits n_max) U M (cuckooK n_max) x.mem := by
+      unfold SingleTableRep at htab
+      rwa [decide_eq_true hlt] at htab
+    unfold SingleSeed SingleSeedRep evalSingle at *
+    revert θ₀ hseed
+    rw [decide_eq_true hlt]
+    intro θ₀ hseed
+    obtain ⟨y_kw, hex_kw, hy0, hy1, hy2, hymem⟩ :=
+      KWise.evalCode_execWithin (w := w) (base := base) (n_max := n_max)
+        (U := U) (M := M) (k := cuckooK n_max) (c := θ₀) u (x := x.comap cast18To19)
+        ⟨htab_kw, hseed⟩
+        (by simp +decide [cast18To19, Data.comap, h0])
+        (by simp +decide [cast18To19, Data.comap, h1])
+        hw hfit_kw
+    refine ⟨y_kw.extend cast18To19 x, hex_kw.rename injective_cast18To19, ?_, ?_, ?_, hymem⟩
+    · change ((y_kw.extend cast18To19 x).comap cast18To19).regs 0 = base
+      rw [Data.comap_extend injective_cast18To19, hy0]
+    · change ((y_kw.extend cast18To19 x).comap cast18To19).regs 1 = u.val
+      rw [Data.comap_extend injective_cast18To19, hy1]
+    · change ((y_kw.extend cast18To19 x).comap cast18To19).regs 2 =
+        (trinomialPolyHash (trinomialStep U M) (cuckooK n_max) U M θ₀ u).val
+      rw [Data.comap_extend injective_cast18To19, hy2]
+  · have hsp : singleHashSpace c_exp n_max =
+        DoubleTabulation.space (DoubleTabulation.provableC c_exp)
+          (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
+      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+    have hfit_dt : Fits w (base + DoubleTabulation.space (DoubleTabulation.provableC c_exp)
+        (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max)) := by
+      rwa [← hsp]
+    have hpow_b_le : 2 ^ DoubleTabulation.provableB n_max ≤
+        DoubleTabulation.space (DoubleTabulation.provableC c_exp)
+          (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
+      have hc : 1 ≤ DoubleTabulation.provableC c_exp := DoubleTabulation.one_le_provableC c_exp
+      have hd : 1 ≤ DoubleTabulation.provableD c_exp := by
+        dsimp only [DoubleTabulation.provableD]; omega
+      have hle : 1 * 2 ^ DoubleTabulation.provableB n_max ≤
+          ((DoubleTabulation.provableC c_exp + 1) * DoubleTabulation.provableD c_exp) *
+            2 ^ DoubleTabulation.provableB n_max :=
+        Nat.mul_le_mul_right _ (by nlinarith)
+      dsimp only [DoubleTabulation.space]
+      omega
+    have hfit_pow_b : Fits w (2 ^ DoubleTabulation.provableB n_max) :=
+      hfit_dt.of_le (by omega)
+    have hq_pos : 0 < Probability.trinomialDeg U M := by
+      dsimp only [Probability.trinomialDeg]
+      positivity
+    have hfit_q : Fits w (2 ^ Probability.trinomialDeg U M) :=
+      Nat.pow_lt_pow_right (by decide : 1 < 2) (by omega)
+    have hfit_pow_M : Fits w (2 ^ M) :=
+      hfit_q.of_le (Nat.pow_le_pow_right (by decide) (Probability.le_trinomialDeg U M))
+    have hfit_u : Fits w u.val :=
+      hfit_q.of_le (le_trans (le_of_lt u.isLt) (Probability.le_two_pow_trinomialDeg U M))
+    unfold SingleSeed SingleSeedRep evalSingle at *
+    revert θ₀ hseed
+    rw [decide_eq_false hlt]
+    intro θ₀ hseed
+    obtain ⟨y12, he12, hymem, hy0, hy1, hy2, _⟩ :=
+      DoubleTabulation.evalCode_execWithin u (x := x.comap cast12To19)
+        (by simp +decide [cast12To19, Data.comap, h0])
+        (by simp +decide [cast12To19, Data.comap, h1])
+        hseed hfit_dt hfit_pow_b hfit_pow_M hfit_u
+    refine ⟨y12.extend cast12To19 x, he12.rename injective_cast12To19, ?_, ?_, ?_, hymem⟩
+    · change ((y12.extend cast12To19 x).comap cast12To19).regs 0 = base
+      rw [Data.comap_extend injective_cast12To19, hy0]
+    · change ((y12.extend cast12To19 x).comap cast12To19).regs 1 = u.val
+      rw [Data.comap_extend injective_cast12To19, hy1]
+    · change ((y12.extend cast12To19 x).comap cast12To19).regs 2 =
+        (doubleTabHash (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
+          (DoubleTabulation.provableB n_max) U M θ₀.1 θ₀.2 u).val
+      rw [Data.comap_extend injective_cast12To19, hy2]
+
+theorem evalHash1Code_execWithin {w hashBase c_exp n_max U M : ℕ}
+    {θ : Seed c_exp n_max U M} (u : Fin U) {x : Data 19}
+    (hrep : HashPairRep hashBase c_exp n_max U M θ x.mem)
     (h0 : x.regs 0 = hashBase) (h1 : x.regs 1 = u.val)
     (hw : 2 * Probability.trinomialDeg U M ≤ w)
-    (hfit_space : Fits w (hashBase + hashPairSpace n_max M)) :
+    (hfit_space : Fits w (hashBase + hashPairSpace c_exp n_max)) :
     ∃ y : Data 19,
-      ExecWithin w evalHash1Code x y (evalHashSteps n_max U M) ∧
+      ExecWithin w (evalHash1Code c_exp n_max) x y (evalHashSteps c_exp n_max U M) ∧
       y.regs 0 = hashBase ∧
       y.regs 1 = u.val ∧
       y.regs 2 = (evalHash1 θ u).val ∧
-      HashPairRep hashBase n_max U M θ y.mem ∧
-      (∀ a, (a < hashBase + 40 ∨ hashBase + 47 ≤ a) → y.mem a = x.mem a) := by
-  obtain ⟨d1, ⟨t1, ht1, he1⟩, hd1_0, hd1_1, hd1_2, -, hd1_rep, hd1_frame⟩ :=
-    evalPolyCode_execWithin 0 u hrep h0 h1 hw hfit_space
-  set d2 := d1.set 18 (evalPoly (θ.1 0) u).val
-  have ec : Exec w (.op (.copy 18 2) : Code .exact 19) d1 d2 1 := by
-    simpa +decide [d2, hd1_2] using (Exec.copy (B := .exact) (w := w) (d := 18) (s := 2) (x := d1))
-  obtain ⟨d3, ⟨t2, ht2, he2⟩, hd3_0, hd3_1, hd3_2, hd3_18, hd3_rep, hd3_frame⟩ :=
-    evalPolyCode_execWithin 1 u (x := d2) hd1_rep
-      (by simp +decide [d2, hd1_0])
-      (by simp +decide [d2, hd1_1])
-      hw hfit_space
-  have hd2_18 : d2.regs 18 = (evalPoly (θ.1 0) u).val := by simp +decide [d2]
-  rw [hd2_18] at hd3_18
-  have hle_sp := le_hashPairSpace n_max M
-  have hfit_1 : Fits w 1 :=
-    hfit_space.of_le (by omega)
-  have hfit_hb1 : Fits w (hashBase + 1) :=
-    hfit_space.of_le (by omega)
-  have hg1_lt := (evalPoly (θ.1 1) u).isLt
-  have hfit_addr : Fits w (z1Base hashBase n_max + (evalPoly (θ.1 1) u).val) :=
-    hfit_space.of_le (by dsimp only [z1Base, hashPairSpace]; omega)
-  have hxor_lt : (evalHash1 θ u).val < 2 ^ M := (evalHash1 θ u).isLt
-  have hfit_xor : Fits w (evalHash1 θ u).val :=
+      HashPairRep hashBase c_exp n_max U M θ y.mem ∧
+      y.mem = x.mem := by
+  have hfit_h1 : Fits w (hashBase + singleHashSpace c_exp n_max) :=
     hfit_space.of_le (by dsimp only [hashPairSpace]; omega)
-  have hm1 : d3.mem (hashBase + 1) = z1Base hashBase n_max := hd3_rep.1.2.1
-  have hm_z1 : d3.mem (z1Base hashBase n_max + (evalPoly (θ.1 1) u).val) =
-      (θ.2.1 (evalPoly (θ.1 1) u)).val := hd3_rep.2.2.1 (evalPoly (θ.1 1) u)
-  set s1 := d3.set 15 1
-  have el1 : Exec w (.op (.const 15 1) : Code .exact 19) d3 s1 1 := Exec.const hfit_1
-  set s2 := s1.set 15 (hashBase + 1)
-  have el2 : Exec w (.op (.exactBin .add 15 0 15) : Code .exact 19) s1 s2 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s1, hd3_0]) hfit_hb1
-  set s3 := s2.set 15 (z1Base hashBase n_max)
-  have el3 : Exec w (.op (.load 15 15) : Code .exact 19) s2 s3 1 := by
-    simpa +decide [s3, s2, s1, hm1] using
-      (Exec.load (B := .exact) (w := w) (d := 15) (a := 15) (x := s2))
-  set s4 := s3.set 15 (z1Base hashBase n_max + (evalPoly (θ.1 1) u).val)
-  have el4 : Exec w (.op (.exactBin .add 15 15 2) : Code .exact 19) s3 s4 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s3, s2, s1, hd3_2]) hfit_addr
-  set s5 := s4.set 15 (θ.2.1 (evalPoly (θ.1 1) u)).val
-  have el5 : Exec w (.op (.load 15 15) : Code .exact 19) s4 s5 1 := by
-    simpa +decide [s5, s4, s3, s2, s1, hm_z1] using
-      (Exec.load (B := .exact) (w := w) (d := 15) (a := 15) (x := s4))
-  set s6 := s5.set 2 (evalHash1 θ u).val
-  have el6 : Exec w (.op (.exactBin .xor 2 18 15) : Code .exact 19) s5 s6 1 :=
-    ExactLog.exec_exactBin
-      (by simp +decide [s5, s4, s3, s2, s1, hd3_18, evalHash1, finXor]) hfit_xor
-  have hall := he1.seq (ec.seq (he2.seq (el1.seq (el2.seq (el3.seq (el4.seq (el5.seq el6)))))))
-  refine ⟨s6, ⟨t1 + (1 + (t2 + 6)), by dsimp only [evalHashSteps]; omega, hall⟩,
-    by simp +decide [s6, s5, s4, s3, s2, s1, hd3_0],
-    by simp +decide [s6, s5, s4, s3, s2, s1, hd3_1],
-    by simp +decide [s6],
-    hd3_rep,
-    fun a ha => (hd3_frame a ha).trans (hd1_frame a ha)⟩
+  obtain ⟨y, ⟨t, ht, he⟩, hy0, hy1, hy2, hymem⟩ :=
+    evalSingleCode_execWithin u hrep.1.1 hrep.2.1 h0 h1 hw hfit_h1
+  refine ⟨y, ⟨t, by dsimp only [evalHashSteps]; omega, he⟩, hy0, hy1, hy2, ?_, hymem⟩
+  rwa [hymem]
 
-theorem evalHash2Code_execWithin {w hashBase n_max U M : ℕ} {θ : Seed U M}
-    (u : Fin U) {x : Data 19}
-    (hrep : HashPairRep hashBase n_max U M θ x.mem)
+theorem evalHash2Code_execWithin {w hashBase c_exp n_max U M : ℕ}
+    {θ : Seed c_exp n_max U M} (u : Fin U) {x : Data 19}
+    (hrep : HashPairRep hashBase c_exp n_max U M θ x.mem)
     (h0 : x.regs 0 = hashBase) (h1 : x.regs 1 = u.val)
     (hw : 2 * Probability.trinomialDeg U M ≤ w)
-    (hfit_space : Fits w (hashBase + hashPairSpace n_max M)) :
+    (hfit_space : Fits w (hashBase + hashPairSpace c_exp n_max)) :
     ∃ y : Data 19,
-      ExecWithin w evalHash2Code x y (evalHashSteps n_max U M) ∧
+      ExecWithin w (evalHash2Code c_exp n_max) x y (evalHashSteps c_exp n_max U M) ∧
       y.regs 0 = hashBase ∧
       y.regs 1 = u.val ∧
       y.regs 2 = (evalHash2 θ u).val ∧
-      HashPairRep hashBase n_max U M θ y.mem ∧
-      (∀ a, (a < hashBase + 40 ∨ hashBase + 47 ≤ a) → y.mem a = x.mem a) := by
-  obtain ⟨d1, ⟨t1, ht1, he1⟩, hd1_0, hd1_1, hd1_2, -, hd1_rep, hd1_frame⟩ :=
-    evalPolyCode_execWithin 2 u hrep h0 h1 hw hfit_space
-  set d2 := d1.set 18 (evalPoly (θ.1 2) u).val
-  have ec : Exec w (.op (.copy 18 2) : Code .exact 19) d1 d2 1 := by
-    simpa +decide [d2, hd1_2] using (Exec.copy (B := .exact) (w := w) (d := 18) (s := 2) (x := d1))
-  obtain ⟨d3, ⟨t2, ht2, he2⟩, hd3_0, hd3_1, hd3_2, hd3_18, hd3_rep, hd3_frame⟩ :=
-    evalPolyCode_execWithin 3 u (x := d2) hd1_rep
-      (by simp +decide [d2, hd1_0])
-      (by simp +decide [d2, hd1_1])
-      hw hfit_space
-  have hd2_18 : d2.regs 18 = (evalPoly (θ.1 2) u).val := by simp +decide [d2]
-  rw [hd2_18] at hd3_18
-  have hle_sp := le_hashPairSpace n_max M
-  have hfit_2 : Fits w 2 :=
-    hfit_space.of_le (by omega)
-  have hfit_hb2 : Fits w (hashBase + 2) :=
-    hfit_space.of_le (by omega)
-  have hg2_lt := (evalPoly (θ.1 3) u).isLt
-  have hfit_addr : Fits w (z2Base hashBase n_max M + (evalPoly (θ.1 3) u).val) :=
-    hfit_space.of_le (by dsimp only [z2Base, z1Base, hashPairSpace]; omega)
-  have hxor_lt : (evalHash2 θ u).val < 2 ^ M := (evalHash2 θ u).isLt
-  have hfit_xor : Fits w (evalHash2 θ u).val :=
-    hfit_space.of_le (by dsimp only [hashPairSpace]; omega)
-  have hm2 : d3.mem (hashBase + 2) = z2Base hashBase n_max M := hd3_rep.1.2.2.1
-  have hm_z2 : d3.mem (z2Base hashBase n_max M + (evalPoly (θ.1 3) u).val) =
-      (θ.2.2 (evalPoly (θ.1 3) u)).val := hd3_rep.2.2.2 (evalPoly (θ.1 3) u)
-  set s1 := d3.set 15 2
-  have el1 : Exec w (.op (.const 15 2) : Code .exact 19) d3 s1 1 := Exec.const hfit_2
-  set s2 := s1.set 15 (hashBase + 2)
-  have el2 : Exec w (.op (.exactBin .add 15 0 15) : Code .exact 19) s1 s2 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s1, hd3_0]) hfit_hb2
-  set s3 := s2.set 15 (z2Base hashBase n_max M)
-  have el3 : Exec w (.op (.load 15 15) : Code .exact 19) s2 s3 1 := by
-    simpa +decide [s3, s2, s1, hm2] using
-      (Exec.load (B := .exact) (w := w) (d := 15) (a := 15) (x := s2))
-  set s4 := s3.set 15 (z2Base hashBase n_max M + (evalPoly (θ.1 3) u).val)
-  have el4 : Exec w (.op (.exactBin .add 15 15 2) : Code .exact 19) s3 s4 1 :=
-    ExactLog.exec_exactBin (by simp +decide [s3, s2, s1, hd3_2]) hfit_addr
-  set s5 := s4.set 15 (θ.2.2 (evalPoly (θ.1 3) u)).val
-  have el5 : Exec w (.op (.load 15 15) : Code .exact 19) s4 s5 1 := by
-    simpa +decide [s5, s4, s3, s2, s1, hm_z2] using
-      (Exec.load (B := .exact) (w := w) (d := 15) (a := 15) (x := s4))
-  set s6 := s5.set 2 (evalHash2 θ u).val
-  have el6 : Exec w (.op (.exactBin .xor 2 18 15) : Code .exact 19) s5 s6 1 :=
-    ExactLog.exec_exactBin
-      (by simp +decide [s5, s4, s3, s2, s1, hd3_18, evalHash2, finXor]) hfit_xor
-  have hall := he1.seq (ec.seq (he2.seq (el1.seq (el2.seq (el3.seq (el4.seq (el5.seq el6)))))))
-  refine ⟨s6, ⟨t1 + (1 + (t2 + 6)), by dsimp only [evalHashSteps]; omega, hall⟩,
-    by simp +decide [s6, s5, s4, s3, s2, s1, hd3_0],
-    by simp +decide [s6, s5, s4, s3, s2, s1, hd3_1],
-    by simp +decide [s6],
-    hd3_rep,
-    fun a ha => (hd3_frame a ha).trans (hd1_frame a ha)⟩
+      HashPairRep hashBase c_exp n_max U M θ y.mem ∧
+      y.mem = x.mem := by
+  have esh := shiftToHash2BaseCode_exec h0 hfit_space
+  set d0 := shiftToHash2BaseData hashBase c_exp n_max x
+  have hfit_h2 : Fits w (hash2Base hashBase c_exp n_max + singleHashSpace c_exp n_max) :=
+    hfit_space.of_le (by dsimp only [hash2Base, hashPairSpace]; omega)
+  obtain ⟨d1, ⟨t, ht, he⟩, hd1_0, hd1_1, hd1_2, hd1_mem⟩ :=
+    evalSingleCode_execWithin u (x := d0) hrep.1.2 hrep.2.2
+      (by simp +decide [d0, shiftToHash2BaseData])
+      (by simp +decide [d0, shiftToHash2BaseData, h1])
+      hw hfit_h2
+  have eun := unshiftFromHash2BaseCode_exec hd1_0 hfit_space
+  set y := unshiftFromHash2BaseData hashBase c_exp n_max d1
+  refine ⟨y, ⟨2 + (t + 2), by dsimp only [evalHashSteps]; omega, esh.seq (he.seq eun)⟩,
+    by simp +decide [y, unshiftFromHash2BaseData],
+    by simp +decide [y, unshiftFromHash2BaseData, hd1_1],
+    by simp +decide [y, unshiftFromHash2BaseData, hd1_2, evalHash2],
+    ?_, ?_⟩
+  · change HashPairRep hashBase c_exp n_max U M θ d1.mem
+    rwa [hd1_mem]
+  · exact hd1_mem
 
 end Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing

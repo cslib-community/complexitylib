@@ -33,8 +33,9 @@ polynomial with values in `[0, 1]`, bounds the block sensitivity: `bs(f) ≤ 8 T
 algorithms and `bs(f) ≤ 16 T²` for error `1/3` (`Cslib.Quantum.blockSensitivity_le_eight_mul_sq`,
 `Cslib.Quantum.blockSensitivity_le_sixteen_mul_sq`).
 With `D(f) ≤ bs(f)³` a deterministic decision tree of depth at most `4096 T⁶` computes `f`
-(`Cslib.Quantum.complexity_le_mul_pow_six`). Since `bs(OR_N) = N`, computing the disjunction of
-`N` bits with error `1/3` takes `T ≥ √N / 4` queries
+(`Cslib.Quantum.complexity_le_mul_pow_six`); the quartic bound `D(f) ≤ 20736 T⁴`, through spectral
+sensitivity, is in `Complexity.Computability.QueryComplexity.Quantum.Adversary`. Since
+`bs(OR_N) = N`, computing the disjunction of `N` bits with error `1/3` takes `T ≥ √N / 4` queries
 (`Cslib.Quantum.card_le_sixteen_mul_sq_of_threshold_one_right`): the decision form of the search
 lower bound, whose search form is the BBBV bound `Cslib.Quantum.card_sub_two_le`. Since
 `deg(PARITY_N) = N`, computing the parity of `N` bits exactly takes `T ≥ N / 2` queries
