@@ -28,7 +28,7 @@ and the randomized Word-RAM interfaces `Cslib.WordRAM.Randomized.ObliviousSequen
   model (`toyTwoLevelEval`) exercise `whpKWiseHashSpec_contract_evalHashOps_prod` with non-zero
   failure probability (`0 < E * δ = 1 / 2 < 1`), within-epoch repeated-key coherence, and a concrete
   transcript distribution that satisfies `whpKWiseHashSpec` while refuting `kWiseHashSpec`;
-* oversized-key regressions (`U = 3, w = 1, u = 2`) and ordinary-import client checks for
+* oversized-key checks (`U = 3, w = 1, u = 2`) and ordinary-import client checks for
   `Stateful.Spec.Transcript.labels_map_fst`, `Cslib.Probability.uniformOfFintype_map_restrict_eq`,
   `Cslib.Probability.coupledWithin_uniformOfFintype_prod_restrict`,
   `evalHashOps_eq_of_afterCurrentEpoch_eq_some`, and `evalHashOpsFromSeed_map_equiv`.
@@ -416,7 +416,7 @@ theorem kWiseObliviousSequenceDS_nonvacuous :
     exact ⟨by decide, trivial⟩
   exact kWiseObliviousSequenceDS_seq_expected hw hfit_space hfit_n hfit_U ops hx₀ hfr hpar hz hv
 
-/-! ## 3. Word-admissibility regression: oversized-key rejection and `ExecSteps` preservation -/
+/-! ## 3. Word-admissibility checks: oversized-key rejection and `ExecSteps` preservation -/
 
 /-- At universe size `U = 3` and word width `w = 1`, key `u = ⟨2, by decide⟩` has value
 `2 = 2 ^ 1`, so no `HashFamilyDS` instance can exist because `fits_key` requires `Fits 1 2`. -/
@@ -499,7 +499,7 @@ noncomputable def kWiseWhpObliviousSequenceDS {w base n_max U M k : ℕ}
       isKWiseIndependentHash_trinomialPolyHash
         (le_two_pow_trinomialDeg U M) (le_trinomialDeg U M))
 
-/-! ## 5. Single-epoch repeated-key approximate-contract separation (`P2c`) -/
+/-! ## 5. Single-epoch repeated-key approximate-contract separation -/
 
 /-- Concrete two-level hash family on `U = 1, m = 2` with `TopSeed = Bool` and `BotSeed = Fin 2`:
 * when `α = true`, returns the uniform bottom seed `b : Fin 2`;
@@ -633,7 +633,7 @@ theorem toyRepeatedEvalDist_whp_and_not_exact :
     have h1_real := congrArg ENNReal.toReal h1
     norm_num at h1_real
 
-/-! ## 6. Exported decomposition, seed-transport, and coupling helper API checks (`P2a`, `P2b`) -/
+/-! ## 6. Exported decomposition, seed-transport, and coupling helper API checks -/
 
 /-- Ordinary-import client check for `Stateful.Spec.Transcript.labels_map_fst`. -/
 theorem transcript_labels_map_fst_client (D : Stateful.Spec) (tr : D.Transcript) :

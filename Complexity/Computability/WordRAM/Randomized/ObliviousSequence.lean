@@ -521,7 +521,7 @@ theorem seq_expected_clear (C : ObliviousSequenceDS.{u, v, z} P S w base params)
 
 end ObliviousSequenceDS
 
-/-! ## Part 3: Canonical Embedding of `SubroutineDS` into `ObliviousSequenceDS` -/
+/-! ## Canonical Embedding of `SubroutineDS` into `ObliviousSequenceDS` -/
 
 /-- Coupled latent seed, current abstract state, and accumulated relational transcript prefix for
 embedding `Cslib.WordRAM.Randomized.SubroutineDS` into `ObliviousSequenceDS`. -/
@@ -889,7 +889,7 @@ theorem toObliviousSequenceDS_charge (C : SubroutineDS P D w base params s₀)
 
 end SubroutineDS
 
-/-! ## Part 4: `HashFamilyDS` — Word-RAM Hash-Family Data Structure Interface -/
+/-! ## `HashFamilyDS` — Word-RAM Hash-Family Data Structure Interface -/
 
 /-- Embed a core hash-family register `i : Fin r_core` into `Fin (r_core + 5)`. -/
 @[expose] def hashCoreReg {r_core : ℕ} (i : Fin r_core) : Fin (r_core + 5) :=
