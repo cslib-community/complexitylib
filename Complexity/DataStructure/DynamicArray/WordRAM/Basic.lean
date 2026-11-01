@@ -22,45 +22,47 @@ the doubling array to `Cslib.DataStructure` and `Cslib.DataStructure.Amortized`.
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.DynamicArray.ptr`, `Cslib.Algorithms.WordRAM.DynamicArray.dest`,
-  `Cslib.Algorithms.WordRAM.DynamicArray.len`, `Cslib.Algorithms.WordRAM.DynamicArray.idx`,
-  `Cslib.Algorithms.WordRAM.DynamicArray.addr`, `Cslib.Algorithms.WordRAM.DynamicArray.temp`,
-  `Cslib.Algorithms.WordRAM.DynamicArray.one`, `Cslib.Algorithms.WordRAM.DynamicArray.cap`,
-  `Cslib.Algorithms.WordRAM.DynamicArray.frontier`, `Cslib.Algorithms.WordRAM.DynamicArray.arg`,
-  `Cslib.Algorithms.WordRAM.DynamicArray.count`, `Cslib.Algorithms.WordRAM.DynamicArray.zero`:
+* `Cslib.DataStructure.DynamicArray.WordRAM.ptr`, `Cslib.DataStructure.DynamicArray.WordRAM.dest`,
+  `Cslib.DataStructure.DynamicArray.WordRAM.len`, `Cslib.DataStructure.DynamicArray.WordRAM.idx`,
+  `Cslib.DataStructure.DynamicArray.WordRAM.addr`, `Cslib.DataStructure.DynamicArray.WordRAM.temp`,
+  `Cslib.DataStructure.DynamicArray.WordRAM.one`, `Cslib.DataStructure.DynamicArray.WordRAM.cap`,
+  `Cslib.DataStructure.DynamicArray.WordRAM.frontier`,
+  `Cslib.DataStructure.DynamicArray.WordRAM.arg`,
+  `Cslib.DataStructure.DynamicArray.WordRAM.count`, `Cslib.DataStructure.DynamicArray.WordRAM.zero`:
   the twelve register names.
-* `Cslib.Algorithms.WordRAM.DynamicArray.copy`, `Cslib.Algorithms.WordRAM.DynamicArray.grow`,
-  `Cslib.Algorithms.WordRAM.DynamicArray.program`: the copy, growth, and append procedures.
-* `Cslib.Algorithms.WordRAM.DynamicArray.getProgram`: the two-instruction indexed read procedure.
-* `Cslib.Algorithms.WordRAM.DynamicArray.initProgram`: charged fifteen-instruction initializer.
-* `Cslib.Algorithms.WordRAM.DynamicArray.dispatch`: fixed append/get operation dispatcher.
-* `Cslib.Algorithms.WordRAM.DynamicArray.Rep`,
-  `Cslib.Algorithms.WordRAM.DynamicArray.BoundedRep`: the live array and allocator frontier
+* `Cslib.DataStructure.DynamicArray.WordRAM.copy`, `Cslib.DataStructure.DynamicArray.WordRAM.grow`,
+  `Cslib.DataStructure.DynamicArray.WordRAM.program`: the copy, growth, and append procedures.
+* `Cslib.DataStructure.DynamicArray.WordRAM.getProgram`: the two-instruction indexed read procedure.
+* `Cslib.DataStructure.DynamicArray.WordRAM.initProgram`: charged fifteen-instruction initializer.
+* `Cslib.DataStructure.DynamicArray.WordRAM.dispatch`: fixed append/get operation dispatcher.
+* `Cslib.DataStructure.DynamicArray.WordRAM.Rep`,
+  `Cslib.DataStructure.DynamicArray.WordRAM.BoundedRep`: the live array and allocator frontier
   invariants.
-* `Cslib.Algorithms.WordRAM.DynamicArray.potential`: natural-valued credit `15 * (2 * |vs| - cap)`.
-* `Cslib.Algorithms.WordRAM.DynamicArray.Op`, `Cslib.Algorithms.WordRAM.DynamicArray.spec`,
-  `Cslib.Algorithms.WordRAM.DynamicArray.implementation`,
-  `Cslib.Algorithms.WordRAM.DynamicArray.charge`,
-  `Cslib.Algorithms.WordRAM.DynamicArray.certificate`,
-  `Cslib.Algorithms.WordRAM.DynamicArray.appendAll`: the `Stateful` specification, dynamic
+* `Cslib.DataStructure.DynamicArray.WordRAM.potential`: natural-valued credit
+  `15 * (2 * |vs| - cap)`.
+* `Cslib.DataStructure.DynamicArray.WordRAM.Op`, `Cslib.DataStructure.DynamicArray.WordRAM.spec`,
+  `Cslib.DataStructure.DynamicArray.WordRAM.implementation`,
+  `Cslib.DataStructure.DynamicArray.WordRAM.charge`,
+  `Cslib.DataStructure.DynamicArray.WordRAM.certificate`,
+  `Cslib.DataStructure.DynamicArray.WordRAM.appendAll`: the `Stateful` specification, dynamic
   program realization, amortized charge, and bulk-append client.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.DynamicArray.Rep.space`: total allocated words `< 4 * vs.length` for
+* `Cslib.DataStructure.DynamicArray.WordRAM.Rep.space`: total allocated words `< 4 * vs.length` for
   nonempty arrays.
-* `Cslib.Algorithms.WordRAM.DynamicArray.grow_exec`: capacity doubling within `15 * cap + 14`
+* `Cslib.DataStructure.DynamicArray.WordRAM.grow_exec`: capacity doubling within `15 * cap + 14`
   instructions.
-* `Cslib.Algorithms.WordRAM.DynamicArray.append_exec`: append correctness, memory preservation,
+* `Cslib.DataStructure.DynamicArray.WordRAM.append_exec`: append correctness, memory preservation,
   and the `49`-instruction potential inequality.
-* `Cslib.Algorithms.WordRAM.DynamicArray.get_exec`: two-instruction indexed read correctness.
-* `Cslib.Algorithms.WordRAM.DynamicArray.init_exec`: charged initialization of the empty array.
-* `Cslib.Algorithms.WordRAM.DynamicArray.amortized`: `DataStructure.Amortized` certificate for
+* `Cslib.DataStructure.DynamicArray.WordRAM.get_exec`: two-instruction indexed read correctness.
+* `Cslib.DataStructure.DynamicArray.WordRAM.init_exec`: charged initialization of the empty array.
+* `Cslib.DataStructure.DynamicArray.WordRAM.amortized`: `DataStructure.Amortized` certificate for
   adaptive
   histories.
-* `Cslib.Algorithms.WordRAM.DynamicArray.run_initialized`: end-to-end adaptive execution from
+* `Cslib.DataStructure.DynamicArray.WordRAM.run_initialized`: end-to-end adaptive execution from
   charged initialization with linear total instruction bound and `< 4 * m` space.
-* `Cslib.Algorithms.WordRAM.DynamicArray.run_appendAll`: appending `m` words from an initialized
+* `Cslib.DataStructure.DynamicArray.WordRAM.run_appendAll`: appending `m` words from an initialized
   empty array in at most `15 + 52 * m` total instructions and `< 4 * m` total allocated words.
 
 ## References
@@ -70,7 +72,7 @@ the doubling array to `Cslib.DataStructure` and `Cslib.DataStructure.Amortized`.
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.DynamicArray
+namespace Cslib.DataStructure.DynamicArray.WordRAM
 
 open Cslib.WordRAM
 
@@ -758,6 +760,6 @@ theorem run_appendAll {w : ℕ} (h1 : Fits w 1) {vs : List ℕ} {x : Data 12}
   rw [runClient_appendAll] at h
   simpa using h
 
-end Cslib.Algorithms.WordRAM.DynamicArray
+end Cslib.DataStructure.DynamicArray.WordRAM
 
 end

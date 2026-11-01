@@ -7,13 +7,13 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.Online.Basic
+public import Complexity.DataStructure.Online.Basic
 public import Mathlib.Data.Finset.Card
 
 /-!
 # The demand-paging action and cost model
 
-This file instantiates `Cslib.Algorithms.Lean.Online.Problem` for the classical unweighted
+This file instantiates `Cslib.DataStructure.Online.Problem` for the classical unweighted
 demand-paging (cache replacement) problem of
 [Sleator and Tarjan, *Amortized Efficiency of List Update and Paging Rules*, Section 4 ("Paging"),
 pp. 207–208][SleatorTarjan1985] and [Cormen, Leiserson, Rivest, and Stein, *Introduction to
@@ -37,10 +37,10 @@ including initial cache configurations.
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.Paging.ValidCache`: capacity bound `s.card ≤ k`.
-* `Cslib.Algorithms.Lean.Paging.ValidStep`: valid demand-paging transition `s ↦ s'` on request `p`.
-* `Cslib.Algorithms.Lean.Paging.stepCost`: unit fault cost (`0` on hit, `1` on miss).
-* `Cslib.Algorithms.Lean.Paging.problem`: the `Online.Problem` instance for demand paging.
+* `Cslib.DataStructure.Paging.ValidCache`: capacity bound `s.card ≤ k`.
+* `Cslib.DataStructure.Paging.ValidStep`: valid demand-paging transition `s ↦ s'` on request `p`.
+* `Cslib.DataStructure.Paging.stepCost`: unit fault cost (`0` on hit, `1` on miss).
+* `Cslib.DataStructure.Paging.problem`: the `Online.Problem` instance for demand paging.
 
 ## Main results
 
@@ -61,9 +61,9 @@ including initial cache configurations.
 
 public section
 
-namespace Cslib.Algorithms.Lean.Paging
+namespace Cslib.DataStructure.Paging
 
-open Cslib.Algorithms.Lean.Online
+open Cslib.DataStructure.Online
 
 /-- A cache configuration is admissible for capacity `k` when it holds at most `k` pages. -/
 @[expose]
@@ -217,4 +217,4 @@ theorem validCache_finalState {α : Type} [DecidableEq α] {k : Nat} {s₀ : Fin
     ValidCache k ((problem α k).finalState s₀ states) :=
   (problem α k).validInit_finalState (fun _ h => h.2.1) hs₀ hv
 
-end Cslib.Algorithms.Lean.Paging
+end Cslib.DataStructure.Paging

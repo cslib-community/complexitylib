@@ -45,11 +45,11 @@ are separate.
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.Online.Problem`: shared configuration, request, admissibility, and step
+* `Cslib.DataStructure.Online.Problem`: shared configuration, request, admissibility, and step
   cost specification.
 * `Problem.ValidSchedule`, `Problem.scheduleCost`, `Problem.finalState`: offline/online trajectory
   validity, total cost, and terminal configuration.
-* `Cslib.Algorithms.Lean.Online.DetStrategy`, `DetStrategy.ofHistory`: deterministic online
+* `Cslib.DataStructure.Online.DetStrategy`, `DetStrategy.ofHistory`: deterministic online
   strategies and prefix-history constructor.
 * `DetStrategy.IsCompetitiveFrom`, `DetStrategy.IsCompetitive`, `DetStrategy.IsCompetitiveAnyInit`:
   competitive-ratio predicates with additive constants.
@@ -78,7 +78,7 @@ are separate.
 
 public section
 
-namespace Cslib.Algorithms.Lean.Online
+namespace Cslib.DataStructure.Online
 
 open Cslib.DataStructure
 
@@ -651,4 +651,4 @@ theorem cost_adaptiveRequests_eq {chooseReq : P.State → P.Req} {w : Nat}
 
 end DetStrategy
 
-end Cslib.Algorithms.Lean.Online
+end Cslib.DataStructure.Online

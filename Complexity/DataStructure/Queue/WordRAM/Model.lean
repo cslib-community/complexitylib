@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.Queue
+public import Complexity.DataStructure.Queue.Spec
 public import Complexity.Computability.WordRAM.Defs
 
 /-!
@@ -37,9 +37,9 @@ executes a charged loop, moving one value at a time.
 
 @[expose] public section
 
-namespace Cslib.WordRAM.Queue
+namespace Cslib.DataStructure.Queue.WordRAM
 
-open Cslib.Algorithms.Lean.Queue
+open Cslib.WordRAM Cslib.DataStructure.Queue
 
 /-- A queue admits an enqueue exactly when it has spare capacity and the value fits a word. -/
 abbrev spec (w capacity : ℕ) : DataStructure.StateTransitionSpec :=
@@ -89,4 +89,4 @@ theorem pairStep_length_le {w capacity : ℕ} {s : List ℕ × List ℕ}
     simp only [List.length_tail]
     omega
 
-end Cslib.WordRAM.Queue
+end Cslib.DataStructure.Queue.WordRAM

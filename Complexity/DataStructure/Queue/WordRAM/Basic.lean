@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.Queue.Model
+public import Complexity.DataStructure.Queue.WordRAM.Model
 public import Complexity.Computability.WordRAM.Dynamic
 
 /-!
@@ -41,9 +41,9 @@ not require clearing the reserved memory.
 
 @[expose] public section
 
-namespace Cslib.WordRAM.Queue
+namespace Cslib.DataStructure.Queue.WordRAM
 
-open Cslib.Algorithms.Lean.Queue
+open Cslib.WordRAM Cslib.DataStructure.Queue
 
 /-- Operation tag: enqueue zero, dequeue one. -/
 abbrev tag : Fin 11 := 0
@@ -392,4 +392,4 @@ theorem initialize_exec {w base capacity : ℕ} {x : Data 11} (hx : x.Bounded w)
     fun i => Fin.elim0 i, fun i => Fin.elim0 i⟩, rfl⟩
   all_goals simp +decide [y, Data.set]
 
-end Cslib.WordRAM.Queue
+end Cslib.DataStructure.Queue.WordRAM

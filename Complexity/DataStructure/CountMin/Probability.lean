@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Streaming.CountMin.Basic
+public import Complexity.DataStructure.CountMin.Basic
 public import Complexity.Probability.UniversalHash
 import Complexity.Foundations.Data.Finset.Expect
 import Complexity.Foundations.Data.Finset.Sampling
@@ -29,11 +29,13 @@ to the number of rows. In particular, `2 ≤ w * ε` gives failure at most `2⁻
 
 ## Main results
 
-* `Cslib.CountMin.expect_noise_le`: expected single-row collision noise.
-* `Cslib.CountMin.dens_noise_gt_le`: single-row tail bound.
-* `Cslib.CountMin.dens_estimate_gt_le`: independent-row amplification at an absolute threshold.
-* `Cslib.CountMin.dens_estimate_error_le`: relative additive error for a fixed query.
-* `Cslib.CountMin.dens_estimate_error_le_inv_two_pow`: the base-two parameter guarantee.
+* `Cslib.DataStructure.CountMin.expect_noise_le`: expected single-row collision noise.
+* `Cslib.DataStructure.CountMin.dens_noise_gt_le`: single-row tail bound.
+* `Cslib.DataStructure.CountMin.dens_estimate_gt_le`: independent-row amplification at an
+  absolute threshold.
+* `Cslib.DataStructure.CountMin.dens_estimate_error_le`: relative additive error for a fixed query.
+* `Cslib.DataStructure.CountMin.dens_estimate_error_le_inv_two_pow`: the base-two parameter
+  guarantee.
 
 ## References
 
@@ -43,7 +45,7 @@ to the number of rows. In particular, `2 ≤ w * ε` gives failure at most `2⁻
 
 @[expose] public section
 
-namespace Cslib.CountMin
+namespace Cslib.DataStructure.CountMin
 
 open Finset Probability
 open scoped BigOperators
@@ -177,4 +179,4 @@ theorem dens_estimate_error_le_inv_two_pow [NeZero d] [NeZero w]
   rw [← inv_pow]
   exact pow_le_pow_left₀ (by positivity) (inv_anti₀ (by norm_num) hw) d
 
-end Cslib.CountMin
+end Cslib.DataStructure.CountMin

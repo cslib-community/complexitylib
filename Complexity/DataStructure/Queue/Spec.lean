@@ -45,7 +45,7 @@ backend implementations must justify their primitive weights and state independe
 
 @[expose] public section
 
-namespace Cslib.Algorithms.Lean.Queue
+namespace Cslib.DataStructure.Queue
 
 open Cslib.DataStructure
 
@@ -233,4 +233,4 @@ theorem realized_client_bound {C Trace β : Type} {exec : Execution (stackPair �
   refine ⟨ha, s', hrep', hr', ?_⟩
   simpa only [ht, total_flatten, StateTransitionSpec.totalCost_const] using hb
 
-end Cslib.Algorithms.Lean.Queue
+end Cslib.DataStructure.Queue

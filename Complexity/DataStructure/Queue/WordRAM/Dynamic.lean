@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.Queue.Basic
+public import Complexity.DataStructure.Queue.WordRAM.Basic
 public import Complexity.DataStructure.StateTransition.Amortized
 
 /-!
@@ -44,9 +44,9 @@ values are live. No allocator or dynamically growing capacity is assumed.
 
 @[expose] public section
 
-namespace Cslib.WordRAM.Queue
+namespace Cslib.DataStructure.Queue.WordRAM
 
-open Cslib.Algorithms.Lean.Queue
+open Cslib.WordRAM Cslib.DataStructure.Queue
 
 /-- The two reserved blocks contain exactly twice the queue capacity in word cells. -/
 theorem footprint_card (base capacity : ℕ) : (footprint base capacity).card = 2 * capacity :=
@@ -162,4 +162,4 @@ theorem frame {w base capacity : ℕ}
     (hd : Disjoint Q.footprint (footprint base capacity)) : Q.holds y.mem :=
   HeapAssertion.frame hQ hd (modifies hc hr hv he)
 
-end Cslib.WordRAM.Queue
+end Cslib.DataStructure.Queue.WordRAM

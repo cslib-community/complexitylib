@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Streaming.CountMin.Probability
+public import Complexity.DataStructure.CountMin.Probability
 public import Complexity.Languages.Probabilistic.Vector
 import Complexity.Probability.PMF.Uniform
 
@@ -28,20 +28,20 @@ the supplied sampler, hash function, or program.
 
 ## Main definitions
 
-* `Cslib.CountMin.Sketch`: row seeds together with the stored counter table.
-* `Cslib.CountMin.buildSketch`, `Cslib.CountMin.Sketch.query`: deterministic construction and
-  point queries retaining the construction's hashes.
-* `Cslib.CountMin.sampleSketch`, `Cslib.CountMin.sampleQuery`: probabilistic construction and
-  a fixed point query.
+* `Cslib.DataStructure.CountMin.Sketch`: row seeds together with the stored counter table.
+* `Cslib.DataStructure.CountMin.buildSketch`, `Cslib.DataStructure.CountMin.Sketch.query`:
+  deterministic construction and point queries retaining the construction's hashes.
+* `Cslib.DataStructure.CountMin.sampleSketch`, `Cslib.DataStructure.CountMin.sampleQuery`:
+  probabilistic construction and a fixed point query.
 
 ## Main results
 
-* `Cslib.CountMin.eval_sampleSketch`, `Cslib.CountMin.eval_sampleQuery`: output laws under a
-  uniform seed sampler.
-* `Cslib.CountMin.frequency_le_of_mem_support_sampleQuery`: every possible query result avoids
-  underestimation, without any uniformity assumption.
-* `Cslib.CountMin.sampleQuery_error_le_inv_two_pow`: failure probability at most `2⁻ᵈ` when
-  `2 ≤ w * ε`, for a two-universal hash family and a uniform seed sampler.
+* `Cslib.DataStructure.CountMin.eval_sampleSketch`,
+  `Cslib.DataStructure.CountMin.eval_sampleQuery`: output laws under a uniform seed sampler.
+* `Cslib.DataStructure.CountMin.frequency_le_of_mem_support_sampleQuery`: every possible query
+  result avoids underestimation, without any uniformity assumption.
+* `Cslib.DataStructure.CountMin.sampleQuery_error_le_inv_two_pow`: failure probability at most
+  `2⁻ᵈ` when `2 ≤ w * ε`, for a two-universal hash family and a uniform seed sampler.
 
 ## References
 
@@ -51,7 +51,7 @@ the supplied sampler, hash function, or program.
 
 @[expose] public section
 
-namespace Cslib.CountMin
+namespace Cslib.DataStructure.CountMin
 
 open Probability
 
@@ -130,4 +130,4 @@ theorem sampleQuery_error_le_inv_two_pow [DecidableEq X] [Fintype Seed] [Nonempt
   simpa only [Finset.nnratCast_dens, Set.mem_preimage, Set.mem_ofPred_eq] using
     dens_estimate_error_le_inv_two_pow (d := d) hash hh s x hε hw
 
-end Cslib.CountMin
+end Cslib.DataStructure.CountMin

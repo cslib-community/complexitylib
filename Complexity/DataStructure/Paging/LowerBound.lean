@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.Paging.Basic
+public import Complexity.DataStructure.Paging.Basic
 import Mathlib.Data.List.FinRange
 
 /-!
@@ -51,10 +51,10 @@ of capacity `n_MIN`. Specializing to `n_A = n_MIN = k`:
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.Paging.missingPage`: computable selection of a page in `pages` outside `s`.
-* `Cslib.Algorithms.Lean.Paging.adversaryRequests`: explicit length-`n` adversarial request sequence
+* `Cslib.DataStructure.Paging.missingPage`: computable selection of a page in `pages` outside `s`.
+* `Cslib.DataStructure.Paging.adversaryRequests`: explicit length-`n` adversarial request sequence
   against a deterministic online paging strategy.
-* `Cslib.Algorithms.Lean.Paging.offlineLookahead`: computable `(k - 1)`-step lookahead offline
+* `Cslib.DataStructure.Paging.offlineLookahead`: computable `(k - 1)`-step lookahead offline
   schedule over a `(k + 1)`-page universe.
 
 ## Main results
@@ -82,9 +82,9 @@ of capacity `n_MIN`. Specializing to `n_A = n_MIN = k`:
 
 public section
 
-namespace Cslib.Algorithms.Lean.Paging
+namespace Cslib.DataStructure.Paging
 
-open Cslib.Algorithms.Lean.Online
+open Cslib.DataStructure.Online
 
 variable {α : Type} [DecidableEq α]
 
@@ -630,4 +630,4 @@ theorem fin_not_isCompetitiveAnyInit_of_lt {k : Nat} (hk : 0 < k)
     ¬ A.IsCompetitiveAnyInit c b :=
   not_isCompetitiveAnyInit_of_lt hk (List.nodup_finRange (k + 1)) (List.length_finRange) A hc b
 
-end Cslib.Algorithms.Lean.Paging
+end Cslib.DataStructure.Paging

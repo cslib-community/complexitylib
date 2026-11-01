@@ -29,20 +29,24 @@ does not assign machine running times to Lean operations or certify their heap c
 
 ## Main definitions
 
-* `Cslib.CountMin.frequency`, `Cslib.CountMin.mass`: weighted frequency and total stream mass.
-* `Cslib.CountMin.bucket`, `Cslib.CountMin.noise`: exact bucket and collision sums.
-* `Cslib.CountMin.Table`, `Cslib.CountMin.update`, `Cslib.CountMin.run`: stored counters and
-  the executable streaming algorithm.
-* `Cslib.CountMin.estimate`: the minimum of a nonempty collection of hash rows.
-* `Cslib.CountMin.merge`: entrywise addition of tables using the same hashes.
+* `Cslib.DataStructure.CountMin.frequency`, `Cslib.DataStructure.CountMin.mass`: weighted
+  frequency and total stream mass.
+* `Cslib.DataStructure.CountMin.bucket`, `Cslib.DataStructure.CountMin.noise`: exact bucket and
+  collision sums.
+* `Cslib.DataStructure.CountMin.Table`, `Cslib.DataStructure.CountMin.update`,
+  `Cslib.DataStructure.CountMin.run`: stored counters and the executable streaming algorithm.
+* `Cslib.DataStructure.CountMin.estimate`: the minimum of a nonempty collection of hash rows.
+* `Cslib.DataStructure.CountMin.merge`: entrywise addition of tables using the same hashes.
 
 ## Main results
 
-* `Cslib.CountMin.bucket_hash_eq_frequency_add_noise`: a queried counter is frequency plus noise.
-* `Cslib.CountMin.run_get`: every stored counter equals its bucket sum.
-* `Cslib.CountMin.frequency_le_estimate_run`: no underestimation.
-* `Cslib.CountMin.run_get_le_mass`: each counter is at most the total stream weight.
-* `Cslib.CountMin.run_append`: concatenation of streams agrees with merging their tables.
+* `Cslib.DataStructure.CountMin.bucket_hash_eq_frequency_add_noise`: a queried counter is
+  frequency plus noise.
+* `Cslib.DataStructure.CountMin.run_get`: every stored counter equals its bucket sum.
+* `Cslib.DataStructure.CountMin.frequency_le_estimate_run`: no underestimation.
+* `Cslib.DataStructure.CountMin.run_get_le_mass`: each counter is at most the total stream weight.
+* `Cslib.DataStructure.CountMin.run_append`: concatenation of streams agrees with merging their
+  tables.
 
 ## References
 
@@ -52,7 +56,7 @@ does not assign machine running times to Lean operations or certify their heap c
 
 @[expose] public section
 
-namespace Cslib.CountMin
+namespace Cslib.DataStructure.CountMin
 
 variable {X : Type*} {d w : ℕ}
 
@@ -241,4 +245,4 @@ theorem run_append_singleton (h : Fin d → X → Fin w) (s : List (X × ℕ)) (
     run h (s ++ [u]) = update h (run h s) u := by
   simp [run, List.foldl_append]
 
-end Cslib.CountMin
+end Cslib.DataStructure.CountMin

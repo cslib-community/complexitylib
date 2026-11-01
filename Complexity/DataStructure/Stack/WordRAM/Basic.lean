@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.WordRAM.Dynamic
-public import Complexity.Algorithms.Lean.Queue
+public import Complexity.DataStructure.Queue.Spec
 
 /-!
 # A fixed-program bounded stack on the word RAM
@@ -47,15 +47,15 @@ execution of the client's pure controller.
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*,
   Section 10.1][CLRS2009]
 
-The abstract stack interface is shared with `Cslib.Algorithms.Lean.Queue`. Array indexing and
+The abstract stack interface is shared with `Cslib.DataStructure.Queue`. Array indexing and
 machine execution reuse the checked `WordRAM.Allocation` and `WordRAM.Structured` substrate.
 -/
 
 @[expose] public section
 
-namespace Cslib.WordRAM.Stack
+namespace Cslib.DataStructure.Stack.WordRAM
 
-open Cslib.Algorithms.Lean.Queue
+open Cslib.WordRAM Cslib.DataStructure.Queue
 
 /-- A fixed-capacity restriction of the same mathematical stack interface. -/
 abbrev spec (w capacity : ℕ) : DataStructure.StateTransitionSpec :=
@@ -282,7 +282,7 @@ def certificate {w base capacity : ℕ} (h2 : Fits w 2) (hcap : Fits w (base + c
     (bounded := fun h => h.bounded)
     (arguments_fit := fun o hv i _ => arguments_fit h2 o hv i)
     (execute := fun o hr hv => by
-      obtain ⟨y, he, ha, hr, _⟩ := Stack.execute h2 hcap hr o hv
+      obtain ⟨y, he, ha, hr, _⟩ := Stack.WordRAM.execute h2 hcap hr o hv
       exact ⟨y, _, he, ha, hr⟩)
 
 /-- Actual instruction count, including dispatch and the final halt, for every native call. -/
@@ -358,4 +358,4 @@ theorem run_client {w base capacity : ℕ} (h2 : Fits w 2) (hcap : Fits w (base 
         ((spec w capacity).runClient vs p).2.2.length * 12 :=
   (certificate h2 hcap).run_client_const (instruction_bound h2 hcap) p hr hv
 
-end Cslib.WordRAM.Stack
+end Cslib.DataStructure.Stack.WordRAM

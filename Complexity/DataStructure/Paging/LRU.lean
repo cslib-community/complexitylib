@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.Paging.Basic
+public import Complexity.DataStructure.Paging.Basic
 public import Mathlib.Data.Finset.Sort
 import Mathlib.Data.List.TakeDrop
 
@@ -19,7 +19,7 @@ This file implements the least-recently-used (LRU) online paging rule and proves
 Theorem 6
 of [Sleator and Tarjan, *Amortized Efficiency of List Update and Paging Rules*, Section 4
 ("Paging"), p. 207 (proof pp. 207–208)][SleatorTarjan1985] in the equal-capacity
-(`n_LRU = n_MIN = k`) demand-paging model of `Complexity.Algorithms.Lean.Paging.Basic`.
+(`n_LRU = n_MIN = k`) demand-paging model of `Complexity.DataStructure.Paging.Basic`.
 
 ## Source statement and mapping
 
@@ -55,11 +55,11 @@ extension.
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.Paging.lruNext`, `lruStep`, `lruRun`, `lruFaults`: computable recency-list
+* `Cslib.DataStructure.Paging.lruNext`, `lruStep`, `lruRun`, `lruFaults`: computable recency-list
   LRU transitions and fault counter.
-* `Cslib.Algorithms.Lean.Paging.maxWeightFrom`, `lruPotential`: potential function between an
+* `Cslib.DataStructure.Paging.maxWeightFrom`, `lruPotential`: potential function between an
   offline cache `s : Finset α` and an LRU recency list `q : List α`.
-* `Cslib.Algorithms.Lean.Paging.lruStrategy`: `Online.DetStrategy (problem α k)` realization of LRU.
+* `Cslib.DataStructure.Paging.lruStrategy`: `Online.DetStrategy (problem α k)` realization of LRU.
 
 ## Main results
 
@@ -81,9 +81,9 @@ extension.
 
 public section
 
-namespace Cslib.Algorithms.Lean.Paging
+namespace Cslib.DataStructure.Paging
 
-open Cslib.DataStructure Cslib.Algorithms.Lean.Online
+open Cslib.DataStructure Cslib.DataStructure.Online
 
 variable {α : Type} [DecidableEq α]
 
@@ -610,4 +610,4 @@ theorem lruStrategy_isCompetitiveAnyInit (k : Nat) (hk : 0 < k) :
   intro s₀ s_off _ hs_off
   exact lruPotential_le hs_off s₀.toList
 
-end Cslib.Algorithms.Lean.Paging
+end Cslib.DataStructure.Paging

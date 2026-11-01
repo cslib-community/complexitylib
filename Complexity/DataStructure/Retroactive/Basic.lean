@@ -50,9 +50,7 @@ leave pure Lean controller computation uncharged. There is no fixed Word-RAM com
 
 @[expose] public section
 
-namespace Cslib.Algorithms.Lean
-
-open Cslib.DataStructure
+namespace Cslib.DataStructure
 
 /-- An edit position names a gap for insertion and an existing entry for deletion. -/
 inductive TimelineEdit (Op : Type) where
@@ -264,4 +262,4 @@ theorem realized_linear_bound {C Trace : Type} {exec : Execution (backend D init
       (D.totalCost_le_length_mul ordinaryCharge T hT hv.2) _
 
 end Retroactive
-end Cslib.Algorithms.Lean
+end Cslib.DataStructure

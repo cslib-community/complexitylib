@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.Stack
+public import Complexity.DataStructure.Stack.WordRAM.Basic
 public import Complexity.Tactic.WordRAM
 
 /-!
@@ -34,15 +34,15 @@ needed because the reserved stack starts empty.
 
 ## References
 
-The stack implementation and specification are those of `WordRAM.Stack` and
-`Algorithms.Lean.Queue`. This example is a certificate-composition test, not a new stack algorithm.
+The stack implementation and specification are those of `DataStructure.Stack.WordRAM` and
+`DataStructure.Queue`. This example is a certificate-composition test, not a new stack algorithm.
 -/
 
 @[expose] public section
 
-namespace Cslib.WordRAM.Stack.Controller
+namespace Cslib.DataStructure.Stack.WordRAM.Controller
 
-open Cslib.Algorithms.Lean.Queue
+open Cslib.WordRAM Cslib.DataStructure.Queue
 
 /-- Push the argument register, then pop it; argument tags and clearing are real instructions. -/
 def roundTrip : Code .standard 9 := ram[
@@ -84,8 +84,8 @@ private theorem roundTrip_exec {w n : ℕ} {x : Data 9} (h3 : Fits w 3)
   have h2 : Fits w 2 := h3.of_le (by decide)
   have h1 : Fits w 1 := h3.of_le (by decide)
   have hfit : Fits w n := hn ▸ hr.bounded.1 arg
-  obtain ⟨y, hy, _, hry, _⟩ := Stack.execute h2 h3 hr (.push n) ⟨by decide, hfit⟩
-  obtain ⟨z, hz, ha, hrz, _⟩ := Stack.execute h2 h3 hry .pop trivial
+  obtain ⟨y, hy, _, hry, _⟩ := Stack.WordRAM.execute h2 h3 hr (.push n) ⟨by decide, hfit⟩
+  obtain ⟨z, hz, ha, hrz, _⟩ := Stack.WordRAM.execute h2 h3 hry .pop trivial
   have hp : Exec (B := .standard) w (.op (.const tag 0)) x
       ((implementation w 1).prepare (.push n) x) 1 := by
     rw [prepare_push hn]
@@ -230,4 +230,4 @@ theorem input_fits (n : ℕ) : InputFits (logWidth 2 n) [n] := by
     exact (fits_of_lt_pow (k := 1) (n := n) (by simp)).mono
       (logWidth_mono (by decide) le_rfl)
 
-end Cslib.WordRAM.Stack.Controller
+end Cslib.DataStructure.Stack.WordRAM.Controller

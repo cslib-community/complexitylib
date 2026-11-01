@@ -24,12 +24,13 @@ counts the seed space; hash evaluation and machine running times are separate ob
 
 ## Main definitions
 
-* `Cslib.CountMin.indexedHash`: binary linear hashing with a finite bucket index as output.
+* `Cslib.DataStructure.CountMin.indexedHash`: binary linear hashing with a finite bucket index
+  as output.
 
 ## Main results
 
-* `Cslib.CountMin.isTwoUniversal_indexedHash`: the concrete family is universal.
-* `Cslib.CountMin.card_indexedHash_seed`: a row has `2 ^ (m * n)` possible seeds.
+* `Cslib.DataStructure.CountMin.isTwoUniversal_indexedHash`: the concrete family is universal.
+* `Cslib.DataStructure.CountMin.card_indexedHash_seed`: a row has `2 ^ (m * n)` possible seeds.
 
 ## References
 
@@ -41,7 +42,7 @@ counts the seed space; hash evaluation and machine running times are separate ob
 
 @[expose] public section
 
-namespace Cslib.CountMin
+namespace Cslib.DataStructure.CountMin
 
 open Probability
 
@@ -69,4 +70,4 @@ theorem card_indexedHash_seed (n m : ℕ) :
     Fintype.card (Fin m → BitString n) = 2 ^ (m * n) := by
   rw [Fintype.card_fun, BitString.card, Fintype.card_fin, ← pow_mul, Nat.mul_comm]
 
-end Cslib.CountMin
+end Cslib.DataStructure.CountMin
