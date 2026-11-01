@@ -1702,6 +1702,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayAssignmentsCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayCheckedGate
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayChunkBits
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayGate
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayGateCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayLabelLoad
@@ -1715,6 +1716,10 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayProvidersCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySpace
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySupplierBounds
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySupplierChunk
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySupplierChunkCorrect
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySupplierChunkInit
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySupplierChunkTable
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySupplierCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySupplierInit
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySupplierTotal
@@ -1823,6 +1828,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogS
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.Call
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.CallSpace
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.FirstHalt
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.InputLength
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Reachability
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Savitch
