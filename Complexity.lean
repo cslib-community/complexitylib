@@ -2972,6 +2972,7 @@ public import Complexity.DataStructure.StateTransition.CostHoare
 public import Complexity.DataStructure.StateTransition.Hoare
 public import Complexity.DataStructure.StateTransition.Impl
 public import Complexity.DataStructure.StateTransition.Module
+public import Complexity.DataStructure.StateTransition.Refinement
 public import Complexity.DataStructure.StateTransition.Resource
 public import Complexity.DataStructure.VanEmdeBoas.Basic
 public import Complexity.DataStructure.VanEmdeBoas.Elements
@@ -2995,6 +2996,7 @@ public import Complexity.DataStructure.WordRAM.StateTransition
 public import Complexity.Foundations.Algebra.FiniteMagnitude
 public import Complexity.Foundations.Algebra.GeometricTail
 public import Complexity.Foundations.Algebra.Shear
+public import Complexity.Foundations.Analysis.Asymptotics.CostBound
 public import Complexity.Foundations.Analysis.Asymptotics.Exponential
 public import Complexity.Foundations.Analysis.BernoulliInequality
 public import Complexity.Foundations.Analysis.ENNRealTsum
