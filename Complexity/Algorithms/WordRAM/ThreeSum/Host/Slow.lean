@@ -198,7 +198,7 @@ private theorem load_preserves : ∀ i : Fin 24, i.val < 12 → loadTriple.Prese
 private theorem exec_loadTriple {w t F abp bcp acp free v₀ v₁ v₂ : ℕ}
     (x : Data 24) (h : Control t abp bcp acp x) (q : Fin (t * (t * t)))
     (hq : x.regs current = q.val)
-    (hbc : abp + t * t ≤ bcp) (hac : bcp + t * t ≤ acp) (hf : acp + t * t ≤ free)
+    (hbc : abp + t * t ≤ free) (hac : bcp + t * t ≤ free) (hf : acp + t * t ≤ free)
     (hfit : Fits w (free + t * (t * t) + 6 * F + 10))
     (hv₀ : x.mem (abp + q.divNat.val * t + q.modNat.divNat.val) = v₀)
     (hv₁ : x.mem (bcp + q.modNat.divNat.val * t + q.modNat.modNat.val) = v₁)
@@ -273,7 +273,7 @@ private theorem exec_finish {w q : ℕ} (x : Data 24)
 private theorem exec_body {w t F abp bcp acp free : ℕ}
     (A B C : Fin t → Fin t → ℤ) (x : Data 24) (h : Control t abp bcp acp x)
     (q : Fin (t * (t * t))) (hq : x.regs current = q.val) (hbool : x.regs out ≤ 1)
-    (hbc : abp + t * t ≤ bcp) (hac : bcp + t * t ≤ acp) (hf : acp + t * t ≤ free)
+    (hbc : abp + t * t ≤ free) (hac : bcp + t * t ≤ free) (hf : acp + t * t ≤ free)
     (hfit : Fits w (free + t * (t * t) + 6 * F + 10))
     (hmA : ∀ i j, x.mem (abp + i.val * t + j.val) = encode (A i j))
     (hmB : ∀ i j, x.mem (bcp + i.val * t + j.val) = encode (B i j))
@@ -352,7 +352,7 @@ private theorem exec_scan {w t F abp bcp acp free : ℕ}
     (A B C : Fin t → Fin t → ℤ) (x : Data 24)
     (ht : x.regs side = t) (hab : x.regs ab = abp)
     (hbc : x.regs bc = bcp) (hac : x.regs ac = acp)
-    (hABBC : abp + t * t ≤ bcp) (hBCAC : bcp + t * t ≤ acp)
+    (hABBC : abp + t * t ≤ free) (hBCAC : bcp + t * t ≤ free)
     (hfree : acp + t * t ≤ free)
     (hfit : Fits w (free + t * (t * t) + 6 * F + 10))
     (hmA : ∀ i j, x.mem (abp + i.val * t + j.val) = encode (A i j))
@@ -427,6 +427,26 @@ private theorem exec_scan {w t F abp bcp acp free : ℕ}
     · rintro ⟨q, hq⟩
       exact ⟨q, by rw [hend]; exact q.isLt, hq⟩
 
+/-- Execute the real exhaustive block from arbitrary old registers and memory. Source spans
+may alias: each only needs to end below the supplied address bound. Every memory cell survives,
+including dirty scratch. Empty input returns zero through the actual zero-iteration loop. -/
+theorem exec_at {w t F abp bcp acp free : ℕ}
+    (A B C : Fin t → Fin t → ℤ) (x : Data 24)
+    (ht : x.regs side = t) (hab : x.regs ab = abp)
+    (hbc : x.regs bc = bcp) (hac : x.regs ac = acp)
+    (hAB : abp + t * t ≤ free) (hBC : bcp + t * t ≤ free)
+    (hAC : acp + t * t ≤ free)
+    (hfit : Fits w (free + t * (t * t) + 6 * F + 10))
+    (hmA : ∀ i j, x.mem (abp + i.val * t + j.val) = encode (A i j))
+    (hmB : ∀ i j, x.mem (bcp + i.val * t + j.val) = encode (B i j))
+    (hmC : ∀ i j, x.mem (acp + i.val * t + j.val) = encode (C i j))
+    (hA : ∀ i j, |A i j| ≤ (F : ℤ)) (hB : ∀ i j, |B i j| ≤ (F : ℤ))
+    (hC : ∀ i j, |C i j| ≤ (F : ℤ)) :
+    ∃ y, ExecWithin w program x y (39 * (t * (t * t)) + 9) ∧ y.regs out ≤ 1 ∧
+      (y.regs out = 1 ↔ Cslib.Algorithms.ExactTriangle.HasZeroTriangle A B C) ∧
+      y.mem = x.mem :=
+  exec_scan A B C x ht hab hbc hac hAB hBC hAC hfit hmA hmB hmC hA hB hC
+
 private theorem fits_budget {w t F abp bcp acp free : ℕ}
     (ht : 0 < t) (hF : 0 < F)
     (hABBC : abp + t * t ≤ bcp) (hBCAC : bcp + t * t ≤ acp)
@@ -471,8 +491,8 @@ def callee : Callee 17 where
     intro w t F abp bcp acp free x A B C ht hF hABBC hBCAC hfree hw
       hside _ hab hbc hac _ hmA hmB hmC hA hB hC
     have hfit := fits_budget ht hF hABBC hBCAC hfree hw
-    obtain ⟨y, he, hb, hans, hm⟩ := exec_scan A B C x hside hab hbc hac
-      hABBC hBCAC hfree hfit hmA hmB hmC hA hB hC
+    obtain ⟨y, he, hb, hans, hm⟩ := exec_at A B C x hside hab hbc hac
+      (by omega) (by omega) hfree hfit hmA hmB hmC hA hB hC
     exact ⟨y, he.mono (by omega), hb, hans, fun a _ => congrFun hm a⟩
 
 end Cslib.Algorithms.WordRAM.ThreeSum.Host.Slow
