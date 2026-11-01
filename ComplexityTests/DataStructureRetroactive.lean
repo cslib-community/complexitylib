@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.Retroactive
+public import Complexity.DataStructure.Retroactive.Basic
 
 /-!
 # Reset-and-replay contract tests
@@ -23,7 +23,7 @@ machine time.
 
 namespace ComplexityTests.DataStructureRetroactive
 
-open Cslib.DataStructure Cslib.Algorithms.Lean
+open Cslib.DataStructure
 
 /-- `true` increments; `false` decrements a positive counter. -/
 abbrev counter : StateTransitionSpec :=
@@ -111,23 +111,23 @@ theorem edits_bound {c' : lower.State} {traces : List lower.Op}
   simpa only [hlen] using hb
 
 /--
-info: 'Cslib.Algorithms.Lean.Retroactive.implementation' depends on axioms:
+info: 'Cslib.DataStructure.Retroactive.implementation' depends on axioms:
 [propext]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Algorithms.Lean.Retroactive.implementation
+#print axioms Cslib.DataStructure.Retroactive.implementation
 /--
-info: 'Cslib.Algorithms.Lean.Retroactive.operation_charge' depends on axioms:
+info: 'Cslib.DataStructure.Retroactive.operation_charge' depends on axioms:
 [propext]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Algorithms.Lean.Retroactive.operation_charge
+#print axioms Cslib.DataStructure.Retroactive.operation_charge
 /--
-info: 'Cslib.Algorithms.Lean.Retroactive.realized_bound' depends on axioms:
+info: 'Cslib.DataStructure.Retroactive.realized_bound' depends on axioms:
 [propext]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Algorithms.Lean.Retroactive.realized_bound
+#print axioms Cslib.DataStructure.Retroactive.realized_bound
 /--
 info: 'ComplexityTests.DataStructureRetroactive.edits_execute' depends on axioms:
 [propext]

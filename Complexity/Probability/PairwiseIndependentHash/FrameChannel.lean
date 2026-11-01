@@ -112,14 +112,14 @@ variable {P H r}
 /-- The value `a₀ + ∑ j, y ^ (j + 1) • F j` of the channel `A = (a₀, F)` at the identifier
 `y`. -/
 @[expose] def FrameChannel.eval (A : FrameChannel P H r) (y : ZMod P) : Fin H → ZMod P :=
-  A.1 + ∑ j : Fin r, y ^ (j.val + 1) • A.2.1 j
+  A.1 + ∑ j : Fin r, y ^ (j.val + 1) • A.2.val j
 
 /-- **Coordinates of a channel at `y`**: its value at `y` and its frame. The constant column is
 recovered as the value minus the frame part. -/
 @[expose] def FrameChannel.evalEquiv (y : ZMod P) :
     FrameChannel P H r ≃ (Fin H → ZMod P) × Frame P H r where
   toFun A := (A.eval y, A.2)
-  invFun p := (p.1 - ∑ j : Fin r, y ^ (j.val + 1) • p.2.1 j, p.2)
+  invFun p := (p.1 - ∑ j : Fin r, y ^ (j.val + 1) • p.2.val j, p.2)
   left_inv A := by simp [FrameChannel.eval]
   right_inv p := by simp [FrameChannel.eval]
 
@@ -202,13 +202,13 @@ value at `y`, which ranges over the whole box `ZMod L ^ H`. -/
 
 @[simp]
 theorem sliceEquiv_apply [NeZero L] (hL : L ≤ P) (y : ZMod P) (A : RetentionSlice P H r L y) :
-    sliceEquiv hL y A = (A.1.2, fun i ↦ ((A.1.eval y i).val : ZMod L)) :=
+    sliceEquiv hL y A = (A.val.2, fun i ↦ ((A.1.eval y i).val : ZMod L)) :=
   rfl
 
 /-- The frame of a channel is its frame coordinate on the slice. -/
 @[simp]
 theorem sliceEquiv_symm_apply_snd [NeZero L] (hL : L ≤ P) (y : ZMod P)
-    (p : Frame P H r × (Fin H → ZMod L)) : ((sliceEquiv hL y).symm p).1.2 = p.1 := by
+    (p : Frame P H r × (Fin H → ZMod L)) : ((sliceEquiv hL y).symm p).val.2 = p.1 := by
   have h := congrArg Prod.fst ((sliceEquiv hL y).apply_symm_apply p)
   rwa [sliceEquiv_apply] at h
 
