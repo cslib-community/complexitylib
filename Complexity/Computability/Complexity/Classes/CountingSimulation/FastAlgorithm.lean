@@ -80,6 +80,8 @@ components of the scheme in polynomial time, the correctness of one active call
 * `Cslib.Complexity.CountingSimulation.fastGuard_polyTime`: the guard is polynomial-time.
 * `Cslib.Complexity.CountingSimulation.wf_root`: guarded inputs have well-formed roots.
 * `Cslib.Complexity.CountingSimulation.fuel_le`: the clock on admissible inputs.
+* `Cslib.Complexity.CountingSimulation.exists_clockedRun_le`: the budget of a clocked run, the
+  arithmetic shared with the machine for entry procedures (`CountingSimulation.exists_fastCore_le`).
 * `Cslib.Complexity.CountingSimulation.fastCertificate_le`: the fast machine within the
   interface's bounds.
 
@@ -252,38 +254,101 @@ whose leaves take time at most `TL` and space at most `SL`, with `H` open calls,
       TL ≤ K * ((FastContraction.encInput (P, G)).length + 1) ^ K *
         2 ^ (K * s / Nat.sqrt (Nat.log 2 s))
 
-/-- `c B ^ d ≤ c B ^ E X` for `1 ≤ B`, `d ≤ E` and `1 ≤ X`. -/
-private theorem lift_le {c B d E X : ℕ} (hB : 1 ≤ B) (hd : d ≤ E) (hX : 1 ≤ X) :
-    c * B ^ d ≤ c * B ^ E * X :=
-  (Nat.mul_le_mul_left c (Nat.pow_le_pow_right hB hd)).trans (Nat.le_mul_of_pos_right _ hX)
-
-private theorem mul_succ_le_sq (H F : ℕ) : (H + 1) * (F + 1) ≤ (H + F + 1) ^ 2 := by nlinarith
-
-private theorem mul_add_one_le {c x : ℕ} (hx : 1 ≤ x) : c * x + 1 ≤ (c + 1) * x := by nlinarith
-
-/-- The arithmetic of the time bound. -/
-private theorem time_assemble
-    {capT runT cnT crT capL fuel Z TL Wb n R₁ R₂ Q W c₁ k₁ c₃ ka c₂ k₂ : ℕ}
-    (hrun : runT ≤ cnT + crT + 2 * capL + (fuel + 1) * (Z + TL + Wb))
-    (hq : capT + cnT + crT + capL ≤ Q) (hQ : Q ≤ c₁ * W)
-    (hP1 : (fuel + 1) * Z ≤ 2 * k₁ * W) (hP2 : (fuel + 1) * TL ≤ 2 * ka * W)
-    (hP3 : (fuel + 1) * Wb ≤ 2 * c₃ * W) (hn : n + 1 ≤ 1 * W) (hR₁ : R₁ ≤ c₂ * W)
-    (hR₂ : R₂ ≤ k₂ * W) :
-    2 * (capT + runT) + n + (R₁ + R₂) ≤ (6 * c₁ + 1 + 4 * k₁ + 4 * c₃ + 4 * ka + c₂ + k₂) * W := by
-  have e : (fuel + 1) * (Z + TL + Wb) = (fuel + 1) * Z + (fuel + 1) * TL + (fuel + 1) * Wb := by
-    ring
-  rw [e] at hrun
-  nlinarith
-
-/-- The arithmetic of the space bound. -/
-private theorem space_assemble
-    {capS runS cnS crS capL fb Z SL n R₁ R₂ Q W c₁ k₁ c₃ ka c₂ k₂ : ℕ}
-    (hrun : runS ≤ cnS + crS + 2 * capL + Z + SL + fb)
-    (hq : capS + cnS + crS + capL + fb ≤ Q) (hQ : Q ≤ c₁ * W)
-    (hZ : Z ≤ k₁ * W) (hSL : SL ≤ ka * W) (hn : n + 1 ≤ 1 * W) (hR₁ : R₁ ≤ c₂ * W)
-    (hR₂ : R₂ ≤ k₂ * W) :
-    2 * (capS + runS) + n + (R₁ + R₂) ≤ (6 * c₁ + 1 + 4 * k₁ + 4 * c₃ + 4 * ka + c₂ + k₂) * W := by
-  nlinarith
+/-- **The budget of a clocked run**, the arithmetic shared by the fast machines
+(`CountingSimulation.fastCertificate_le`, `CountingSimulation.exists_fastCore_le`). Take a run
+bounded as in `Cslib.GenericRAM.StackRecursion.Scheme.certificate_le` with constant `K₁`, whose
+derivation has open calls, node sizes and leaf space at most `Ka B ^ Ka`, leaf time at most
+`Ka B ^ Ka 2 ^ (Ka s / S)` and clock at most `2 ^ (kf s / S)`, for `B` above the input length
+`n`; let the steps `pre` before it and the fuel and root machines cost at most `c B ^ d`, and the
+output step `rest` at most `r₁ B ^ e₁ + r₂ B ^ e₂`. Then the steps, twice the run, the input
+and the output step are at most `K B ^ K 2 ^ (K s / S)` in time and `K B ^ K` in space, for one
+`K` depending only on the constants. -/
+theorem exists_clockedRun_le (K₁ Ka c d r₁ e₁ r₂ e₂ kf : ℕ) :
+    ∃ K : ℕ, ∀ {s S n B fuel H F TL SL A AS runT runS pre preS rest restS : ℕ}, n < B →
+      runT ≤ A + (fuel + 1) * (K₁ * ((H + 1) * (F + 1)) ^ K₁ + TL +
+        ((encNat fuel).length + 1) ^ 2) →
+      runS ≤ AS + K₁ * ((H + 1) * (F + 1)) ^ K₁ + SL + (encNat fuel).length →
+      pre + preS + A + AS + (encNat fuel).length ≤ c * B ^ d →
+      rest + restS ≤ r₁ * B ^ e₁ + r₂ * B ^ e₂ → fuel ≤ 2 ^ (kf * s / S) →
+      H + F + SL ≤ Ka * B ^ Ka → TL ≤ Ka * B ^ Ka * 2 ^ (Ka * s / S) →
+      pre + (2 * runT + n + rest) ≤ K * B ^ K * 2 ^ (K * s / S) ∧
+        preS + (2 * runS + n + restS) ≤ K * B ^ K := by
+  set E := 2 * d + 2 * Ka * K₁ + Ka + e₁ + e₂ + 1
+  set Z₀ := K₁ * (Ka + 1) ^ (2 * K₁)
+  set M := 4 * c + 4 * Z₀ + 4 * (c + 1) ^ 2 + 4 * Ka + r₁ + r₂ + 1 with hM
+  refine ⟨M + E + kf + Ka, fun {s S n B fuel H F TL SL A AS runT runS pre preS rest restS}
+    hn hrT hrS hpoly hrest hfuel hHFS hTL => ?_⟩
+  have hBE {k : ℕ} (hk : k ≤ E) : B ^ k ≤ B ^ E := Nat.pow_le_pow_right (by omega) hk
+  have hB1 (k : ℕ) : 1 ≤ B ^ k := Nat.one_le_pow _ _ (by omega)
+  -- The pieces against `B ^ E`.
+  have hc : c * B ^ d ≤ c * B ^ E := Nat.mul_le_mul_left _ (hBE (by omega))
+  have hr : r₁ * B ^ e₁ + r₂ * B ^ e₂ ≤ (r₁ + r₂) * B ^ E := by
+    rw [Nat.add_mul]
+    exact Nat.add_le_add (Nat.mul_le_mul_left _ (hBE (by omega)))
+      (Nat.mul_le_mul_left _ (hBE (by omega)))
+  have hB : B ≤ B ^ E := by simpa using hBE (k := 1) (by omega)
+  have hZ : K₁ * ((H + 1) * (F + 1)) ^ K₁ ≤ Z₀ * B ^ E := by
+    have h1 : H + F + 1 ≤ (Ka + 1) * B ^ Ka := by have := hB1 Ka; rw [add_one_mul]; omega
+    have h2 : (H + 1) * (F + 1) ≤ ((Ka + 1) * B ^ Ka) ^ 2 :=
+      (Nat.mul_le_mul (by omega : H + 1 ≤ H + F + 1) (by omega : F + 1 ≤ H + F + 1)).trans
+        ((sq _).symm.le.trans (Nat.pow_le_pow_left h1 2))
+    calc K₁ * ((H + 1) * (F + 1)) ^ K₁ ≤ K₁ * (((Ka + 1) * B ^ Ka) ^ 2) ^ K₁ :=
+          Nat.mul_le_mul_left _ (Nat.pow_le_pow_left h2 _)
+      _ = Z₀ * B ^ (2 * Ka * K₁) := by
+          rw [mul_pow, ← pow_mul, mul_pow, ← pow_mul, ← pow_mul]; ring
+      _ ≤ Z₀ * B ^ E := Nat.mul_le_mul_left _ (hBE (by omega))
+  have hL : ((encNat fuel).length + 1) ^ 2 ≤ (c + 1) ^ 2 * B ^ E := by
+    calc ((encNat fuel).length + 1) ^ 2 ≤ ((c + 1) * B ^ d) ^ 2 :=
+          Nat.pow_le_pow_left (by have := hB1 d; rw [add_one_mul]; omega) 2
+      _ = (c + 1) ^ 2 * B ^ (2 * d) := by ring
+      _ ≤ (c + 1) ^ 2 * B ^ E := Nat.mul_le_mul_left _ (hBE (by omega))
+  have hKa : Ka * B ^ Ka ≤ Ka * B ^ E := Nat.mul_le_mul_left _ (hBE (by omega))
+  -- The space.
+  have hspace : preS + (2 * runS + n + restS) ≤ M * B ^ E := by
+    have e : M * B ^ E = 4 * (c * B ^ E) + 4 * (Z₀ * B ^ E) + 4 * ((c + 1) ^ 2 * B ^ E) +
+        4 * (Ka * B ^ E) + (r₁ + r₂) * B ^ E + B ^ E := by rw [hM]; ring
+    omega
+  -- The time, against `W = B ^ E X` with `X ≥ 2 ^ (kf s / S) 2 ^ (Ka s / S)`.
+  set Xf := 2 ^ (kf * s / S)
+  set Xa := 2 ^ (Ka * s / S)
+  set X := 2 ^ ((kf + Ka) * s / S)
+  have hXf : 1 ≤ Xf := Nat.one_le_two_pow
+  have hXa : 1 ≤ Xa := Nat.one_le_two_pow
+  have hX : Xf * Xa ≤ X := by
+    rw [← pow_add]
+    exact Nat.pow_le_pow_right (by norm_num) (Nat.div_add_div_le_add_div.trans (by rw [add_mul]))
+  have hXfX : Xf ≤ X := (Nat.le_mul_of_pos_right _ hXa).trans hX
+  set W := B ^ E * X
+  have hEW (a : ℕ) : a * B ^ E ≤ a * W :=
+    Nat.mul_le_mul_left _ (Nat.le_mul_of_pos_right _ (hXf.trans hXfX))
+  have hfuel1 : fuel + 1 ≤ 2 * Xf := by omega
+  have hP1 : (fuel + 1) * (K₁ * ((H + 1) * (F + 1)) ^ K₁) ≤ 2 * (Z₀ * W) :=
+    calc _ ≤ 2 * Xf * (Z₀ * B ^ E) := Nat.mul_le_mul hfuel1 hZ
+      _ = 2 * (Z₀ * (B ^ E * Xf)) := by ring
+      _ ≤ 2 * (Z₀ * W) :=
+          Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ hXfX))
+  have hP2 : (fuel + 1) * TL ≤ 2 * (Ka * W) :=
+    calc _ ≤ 2 * Xf * (Ka * B ^ E * Xa) :=
+          Nat.mul_le_mul hfuel1 (hTL.trans (Nat.mul_le_mul_right _ hKa))
+      _ = 2 * (Ka * (B ^ E * (Xf * Xa))) := by ring
+      _ ≤ 2 * (Ka * W) := Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ hX))
+  have hP3 : (fuel + 1) * ((encNat fuel).length + 1) ^ 2 ≤ 2 * ((c + 1) ^ 2 * W) :=
+    calc _ ≤ 2 * Xf * ((c + 1) ^ 2 * B ^ E) := Nat.mul_le_mul hfuel1 hL
+      _ = 2 * ((c + 1) ^ 2 * (B ^ E * Xf)) := by ring
+      _ ≤ 2 * ((c + 1) ^ 2 * W) :=
+          Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ hXfX))
+  have htime : pre + (2 * runT + n + rest) ≤ M * W := by
+    have e : M * W = 4 * (c * W) + 4 * (Z₀ * W) + 4 * ((c + 1) ^ 2 * W) + 4 * (Ka * W) +
+        (r₁ + r₂) * W + 1 * W := by rw [hM]; ring
+    rw [Nat.mul_add, Nat.mul_add] at hrT
+    have := hEW c; have := hEW (r₁ + r₂); have := hEW 1
+    omega
+  have hMK : M ≤ M + E + kf + Ka := by omega
+  have hEK : B ^ E ≤ B ^ (M + E + kf + Ka) := Nat.pow_le_pow_right (by omega) (by omega)
+  refine ⟨htime.trans ?_, hspace.trans (Nat.mul_le_mul hMK hEK)⟩
+  rw [← Nat.mul_assoc]
+  exact Nat.mul_le_mul (Nat.mul_le_mul hMK hEK)
+    (Nat.pow_le_pow_right (by norm_num) (Nat.div_le_div_right (Nat.mul_le_mul_right _ (by omega))))
 
 variable {mk}
 
@@ -320,70 +385,22 @@ theorem fastCertificate_le
     (ComputableInPolyTime.fst FastContraction.encInput encValue)
   obtain ⟨c₂, d₂, h₂⟩ := (((((htP.1.add htP.2).add hdP.1).add hdP.2).add hfP.1).add
     hfP.2).exists_le
-  -- The constants.
-  set E := 2 * d₁ + 2 * Ka * K₁ + (Ka + 1) * d₂ + K₂ + Ka + 1 with hE
-  set Kc := 6 * c₁ + 1 + 4 * K₁ * (Ka + 1) ^ (2 * K₁) + 4 * (c₁ + 1) ^ 2 + 4 * Ka +
-    c₂ * (Ka + 2) ^ d₂ + K₂ * 2 ^ (C * s₀) with hKc
-  refine ⟨Kc + E + FastContraction.fuelConst * (C + D) + Ka, fun s P G hs hP hPD hA hg => ?_⟩
+  obtain ⟨K, hK⟩ := exists_clockedRun_le K₁ Ka (4 * c₁) d₁ (2 * (c₂ * (Ka + 2) ^ d₂))
+    ((Ka + 1) * d₂) (2 * (K₂ * 2 ^ (C * s₀))) K₂ (FastContraction.fuelConst * (C + D))
+  refine ⟨K, fun s P G hs hP hPD hA hg => ?_⟩
   obtain ⟨I, N, H, F, TL, SL, he, hN, hnode, hframe, hvalue, hHFS, hTL⟩ :=
     hKa s P G hs hP hPD hA hg
-  set q : ℕ × ℕ × ExplicitTensorNetwork ℕ := (P, G) with hq
-  set n := (FastContraction.encInput q).length with hn
-  set B := n + 1 with hB
-  have hB1 : 1 ≤ B := by omega
-  set S := Nat.sqrt (Nat.log 2 s)
-  set Xf := 2 ^ (FastContraction.fuelConst * (C + D) * s / S)
-  set Xa := 2 ^ (Ka * s / S)
-  set X := 2 ^ ((FastContraction.fuelConst * (C + D) + Ka) * s / S)
-  have hXf : 1 ≤ Xf := Nat.one_le_two_pow
-  have hXa : 1 ≤ Xa := Nat.one_le_two_pow
-  have hXfX : Xf ≤ X := Nat.pow_le_pow_right (by norm_num)
-    (Nat.div_le_div_right (Nat.mul_le_mul_right _ (by omega)))
-  have hXfXa : Xf * Xa ≤ X := by
-    rw [← pow_add]
-    refine Nat.pow_le_pow_right (by norm_num) (Nat.div_add_div_le_add_div.trans ?_)
-    rw [add_mul]
-  have hX1 : 1 ≤ X := Nat.one_le_two_pow
-  -- The run.
+  set q : ℕ × ℕ × ExplicitTensorNetwork ℕ := (P, G)
+  have hq1 := h₁ q
+  obtain ⟨hdT, hdS⟩ := hK₂ q
+  set B := (FastContraction.encInput q).length + 1 with hB
   obtain ⟨hrT, hrS⟩ := hK₁ (NativeCertificate.ofPolyTime fuel_polyTime)
     (NativeCertificate.ofPolyTime root_polyTime) I F TL SL hnode hframe hvalue
     (ExplicitTensorNetwork.capPrecision q) _ N H he
-  have hfuel : FastContraction.fuel (ExplicitTensorNetwork.capPrecision q) ≤ Xf :=
-    fuel_le hA hs hPD
-  have hq1 := h₁ q
   have hrT' : (runCertificate hpoly).time (ExplicitTensorNetwork.capPrecision q) ≤ _ := hrT
   have hrS' : (runCertificate hpoly).space (ExplicitTensorNetwork.capPrecision q) ≤ _ := hrS
-  -- Polynomial pieces.
-  set Q₁ := c₁ * B ^ d₁ with hQ₁
-  have hBK (k : ℕ) : 1 ≤ B ^ k := Nat.one_le_pow _ _ (by omega)
-  have hHF : (H + 1) * (F + 1) ≤ ((Ka + 1) * B ^ Ka) ^ 2 := by
-    have h1 : H + F ≤ Ka * B ^ Ka := by have := hHFS; omega
-    have h2 := hBK Ka
-    calc (H + 1) * (F + 1) ≤ (H + F + 1) ^ 2 := mul_succ_le_sq H F
-      _ ≤ (Ka * B ^ Ka + B ^ Ka) ^ 2 := Nat.pow_le_pow_left (by omega) 2
-      _ = ((Ka + 1) * B ^ Ka) ^ 2 := by ring
-  have hZ : K₁ * ((H + 1) * (F + 1)) ^ K₁ ≤ K₁ * (Ka + 1) ^ (2 * K₁) * B ^ (2 * Ka * K₁) := by
-    calc K₁ * ((H + 1) * (F + 1)) ^ K₁ ≤ K₁ * (((Ka + 1) * B ^ Ka) ^ 2) ^ K₁ :=
-          Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hHF _)
-      _ = K₁ * (Ka + 1) ^ (2 * K₁) * B ^ (2 * Ka * K₁) := by
-          rw [mul_pow, ← pow_mul, mul_pow, ← pow_mul, ← pow_mul,
-            show Ka * 2 * K₁ = 2 * Ka * K₁ by ring]
-          ring
-  have hW : ((encNat (FastContraction.fuel (ExplicitTensorNetwork.capPrecision q))).length + 1) ^ 2
-      ≤ (c₁ + 1) ^ 2 * B ^ (2 * d₁) := by
-    have h1 : (encNat (FastContraction.fuel (ExplicitTensorNetwork.capPrecision q))).length ≤ Q₁ :=
-      by omega
-    have h2 := hBK d₁
-    calc _ ≤ (Q₁ + 1) ^ 2 := Nat.pow_le_pow_left (by omega) 2
-      _ ≤ ((c₁ + 1) * B ^ d₁) ^ 2 := Nat.pow_le_pow_left (mul_add_one_le h2) 2
-      _ = (c₁ + 1) ^ 2 * B ^ (2 * d₁) := by ring
-  have hTL' : TL ≤ Ka * B ^ Ka * Xa := hTL
-  have hF : F ≤ Ka * B ^ Ka := by have := hHFS; omega
-  have hSL : SL ≤ Ka * B ^ Ka := by have := hHFS; omega
-  -- Decoding and direct summation.
-  set R₁ := c₂ * (Ka + 2) ^ d₂ * B ^ ((Ka + 1) * d₂) with hR₁
-  set R₂ := K₂ * 2 ^ (C * s₀) * B ^ K₂ with hR₂
-  have hdec : ∀ v : ℕ × List ℕ, I.value v →
+  -- Decoding a value of the run, and direct summation below `s₀`.
+  have hdec (v : ℕ × List ℕ) (hv : I.value v) :
       (NativeCertificate.ofPolyTime tag_polyTime).time (q, v) +
         (NativeCertificate.ofPolyTime tag_polyTime).space (q, v) +
         (NativeCertificate.ofPolyTime decode_polyTime).time (q, v) +
@@ -391,149 +408,65 @@ theorem fastCertificate_le
         (NativeCertificate.ofPolyTime
           (ComputableInPolyTime.fst FastContraction.encInput encValue)).time (q, v) +
         (NativeCertificate.ofPolyTime
-          (ComputableInPolyTime.fst FastContraction.encInput encValue)).space (q, v) ≤ R₁ := by
-    intro v hv
-    have h := h₂ (q, v)
-    have hv' := hvalue v hv
-    have hk1 : B ≤ B ^ (Ka + 1) := by
-      calc B = B ^ 1 := (pow_one B).symm
-        _ ≤ B ^ (Ka + 1) := Nat.pow_le_pow_right hB1 (by omega)
-    have hk2 : B ^ Ka ≤ B ^ (Ka + 1) := Nat.pow_le_pow_right hB1 (by omega)
-    have hlen : (encPair FastContraction.encInput encValue (q, v)).length + 1 ≤
-        (Ka + 2) * B ^ (Ka + 1) := by
-      have hl := length_encPair (enc₁ := FastContraction.encInput) (enc₂ := encValue) (q, v)
-      simp only at hl
-      rw [hl]
-      have : Ka * B ^ Ka ≤ Ka * B ^ (Ka + 1) := Nat.mul_le_mul_left _ hk2
-      have e : (Ka + 2) * B ^ (Ka + 1) = Ka * B ^ (Ka + 1) + 2 * B ^ (Ka + 1) := by ring
-      omega
-    calc _ ≤ c₂ * ((encPair FastContraction.encInput encValue (q, v)).length + 1) ^ d₂ := h
-      _ ≤ c₂ * ((Ka + 2) * B ^ (Ka + 1)) ^ d₂ := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hlen _)
-      _ = R₁ := by rw [hR₁, mul_pow, ← pow_mul, Nat.mul_assoc]
-  obtain ⟨hdT, hdS⟩ := hK₂ q
-  have hm : q.2.2.numEdges ≤ C * s := hA.2.1
+          (ComputableInPolyTime.fst FastContraction.encInput encValue)).space (q, v) ≤
+        c₂ * (Ka + 2) ^ d₂ * B ^ ((Ka + 1) * d₂) := by
+    refine (h₂ (q, v)).trans ?_
+    rw [Nat.mul_assoc, pow_mul, ← mul_pow]
+    refine Nat.mul_le_mul_left _ (Nat.pow_le_pow_left ?_ _)
+    have := hvalue v hv
+    have hB1 : B ≤ B ^ (Ka + 1) := Nat.le_self_pow (by omega) _
+    have hBK := Nat.mul_le_mul_left Ka
+      (Nat.pow_le_pow_right (by omega : 1 ≤ B) (by omega : Ka ≤ Ka + 1))
+    simp only [length_encPair (enc₁ := FastContraction.encInput) (enc₂ := encValue), add_mul]
+    omega
+  have h2 : 1 ≤ 2 ^ (C * s₀) := Nat.one_le_two_pow
   have hdir (hs₀ : s < s₀) :
-      ExplicitTensorNetwork.directContractionBinaryCertificate.time q ≤ R₂ := by
-    refine hdT.trans ?_
-    have h2 : 2 ^ q.2.2.numEdges ≤ 2 ^ (C * s₀) :=
-      Nat.pow_le_pow_right (by norm_num) (hm.trans (Nat.mul_le_mul_left _ hs₀.le))
-    calc K₂ * ((encInput q).length + 1) ^ K₂ * 2 ^ q.2.2.numEdges
-        ≤ K₂ * B ^ K₂ * 2 ^ (C * s₀) := Nat.mul_le_mul_left _ h2
-      _ = R₂ := by rw [hR₂]; ring
-  have hdirS : ExplicitTensorNetwork.directContractionBinaryCertificate.space q ≤ R₂ :=
-    hdS.trans (by
-      rw [hR₂]
-      calc K₂ * ((encInput q).length + 1) ^ K₂ ≤
-          K₂ * ((encInput q).length + 1) ^ K₂ * 2 ^ (C * s₀) :=
-            Nat.le_mul_of_pos_right _ Nat.one_le_two_pow
-        _ = K₂ * 2 ^ (C * s₀) * B ^ K₂ := by ring)
+      ExplicitTensorNetwork.directContractionBinaryCertificate.time q ≤
+        K₂ * 2 ^ (C * s₀) * B ^ K₂ := by
+    refine hdT.trans (le_of_le_of_eq (Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by norm_num)
+      (hA.2.1.trans (Nat.mul_le_mul_left _ hs₀.le)))) (by ring))
+  have hdirS : ExplicitTensorNetwork.directContractionBinaryCertificate.space q ≤
+      K₂ * 2 ^ (C * s₀) * B ^ K₂ :=
+    hdS.trans (le_of_le_of_eq (Nat.le_mul_of_pos_right _ h2) (by ring))
   have hbig : s₀ ≤ s → (scheme tableEntry mk).run fuel root (ExplicitTensorNetwork.capPrecision q) =
       some (0, value tableEntry mk (root (ExplicitTensorNetwork.capPrecision q))) :=
     fun h => Scheme.run_eq_some he (hN h)
-  clear hKa hK₁ hK₂ h₁ h₂
-  -- Everything against `W = B ^ E X`.
-  set W := B ^ E * X with hWdef
-  have lift {c d : ℕ} (hd : d ≤ E) : c * B ^ d ≤ c * W := by
-    rw [hWdef, ← Nat.mul_assoc]; exact lift_le hB1 hd hX1
-  have lift' {c d : ℕ} (hd : d ≤ E) : c * B ^ d ≤ c * B ^ E :=
-    Nat.mul_le_mul_left _ (Nat.pow_le_pow_right hB1 hd)
-  have hQW : Q₁ ≤ c₁ * W := lift (by omega)
-  have hR₁W : R₁ ≤ c₂ * (Ka + 2) ^ d₂ * W := lift (by omega)
-  have hR₂W : R₂ ≤ K₂ * 2 ^ (C * s₀) * W := lift (by omega)
-  have hnW : n + 1 ≤ 1 * W := by
-    have := lift (c := 1) (d := 1) (by omega); rw [pow_one] at this; omega
-  have hfuel1 : FastContraction.fuel (ExplicitTensorNetwork.capPrecision q) + 1 ≤ 2 * Xf := by
-    omega
-  have hP1 : (FastContraction.fuel (ExplicitTensorNetwork.capPrecision q) + 1) *
-      (K₁ * ((H + 1) * (F + 1)) ^ K₁) ≤ 2 * (K₁ * (Ka + 1) ^ (2 * K₁)) * W := by
-    calc _ ≤ (2 * Xf) * (K₁ * (Ka + 1) ^ (2 * K₁) * B ^ (2 * Ka * K₁)) :=
-          Nat.mul_le_mul hfuel1 hZ
-      _ = 2 * (K₁ * (Ka + 1) ^ (2 * K₁)) * (B ^ (2 * Ka * K₁) * Xf) := by ring
-      _ ≤ 2 * (K₁ * (Ka + 1) ^ (2 * K₁)) * W := Nat.mul_le_mul_left _
-          (Nat.mul_le_mul (Nat.pow_le_pow_right hB1 (by omega)) hXfX)
-  have hP2 : (FastContraction.fuel (ExplicitTensorNetwork.capPrecision q) + 1) * TL ≤
-      2 * Ka * W := by
-    calc _ ≤ (2 * Xf) * (Ka * B ^ Ka * Xa) := Nat.mul_le_mul hfuel1 hTL'
-      _ = 2 * Ka * (B ^ Ka * (Xf * Xa)) := by ring
-      _ ≤ 2 * Ka * W := Nat.mul_le_mul_left _
-          (Nat.mul_le_mul (Nat.pow_le_pow_right hB1 (by omega)) hXfXa)
-  have hP3 : (FastContraction.fuel (ExplicitTensorNetwork.capPrecision q) + 1) *
-      ((encNat (FastContraction.fuel (ExplicitTensorNetwork.capPrecision q))).length + 1) ^ 2 ≤
-      2 * (c₁ + 1) ^ 2 * W := by
-    calc _ ≤ (2 * Xf) * ((c₁ + 1) ^ 2 * B ^ (2 * d₁)) := Nat.mul_le_mul hfuel1 hW
-      _ = 2 * (c₁ + 1) ^ 2 * (B ^ (2 * d₁) * Xf) := by ring
-      _ ≤ 2 * (c₁ + 1) ^ 2 * W := Nat.mul_le_mul_left _
-          (Nat.mul_le_mul (Nat.pow_le_pow_right hB1 (by omega)) hXfX)
-  have hZE : K₁ * ((H + 1) * (F + 1)) ^ K₁ ≤ K₁ * (Ka + 1) ^ (2 * K₁) * B ^ E :=
-    hZ.trans (lift' (by omega))
-  have hQE : Q₁ ≤ c₁ * B ^ E := lift' (by omega)
-  have hR₁E : R₁ ≤ c₂ * (Ka + 2) ^ d₂ * B ^ E := lift' (by omega)
-  have hR₂E : R₂ ≤ K₂ * 2 ^ (C * s₀) * B ^ E := lift' (by omega)
-  have hSLE : SL ≤ Ka * B ^ E := hSL.trans (lift' (by omega))
-  have hnE : n + 1 ≤ 1 * B ^ E := by
-    have := lift' (c := 1) (d := 1) (by omega); rw [pow_one] at this; omega
-  have hKK : Kc ≤ Kc + E + FastContraction.fuelConst * (C + D) + Ka := by omega
-  have hBE : B ^ E ≤ B ^ (Kc + E + FastContraction.fuelConst * (C + D) + Ka) :=
-    Nat.pow_le_pow_right hB1 (by omega)
-  have hXK : X ≤ 2 ^ ((Kc + E + FastContraction.fuelConst * (C + D) + Ka) * s / S) :=
-    Nat.pow_le_pow_right (by norm_num) (Nat.div_le_div_right (Nat.mul_le_mul_right _ (by omega)))
-  refine ⟨?_, ?_⟩
-  · rw [fastCertificate_time]
-    have hrest : ((scheme tableEntry mk).run fuel root (ExplicitTensorNetwork.capPrecision q)).elim
+  have hrest : ((scheme tableEntry mk).run fuel root (ExplicitTensorNetwork.capPrecision q)).elim
         (ExplicitTensorNetwork.directContractionBinaryCertificate.time q) (fun v =>
           (NativeCertificate.ofPolyTime tag_polyTime).time (q, v) +
             if decide (v.1 = 0) = true then
               (NativeCertificate.ofPolyTime decode_polyTime).time (q, v)
             else (NativeCertificate.ofPolyTime
                 (ComputableInPolyTime.fst FastContraction.encInput encValue)).time (q, v) +
-              ExplicitTensorNetwork.directContractionBinaryCertificate.time q) ≤ R₁ + R₂ := by
-      rcases hr : (scheme tableEntry mk).run fuel root
-        (ExplicitTensorNetwork.capPrecision q) with _ | v
-      · by_cases hs₀ : s₀ ≤ s
-        · rw [hbig hs₀] at hr; cases hr
-        · simp only [Option.elim_none]; have := hdir (by omega); omega
-      · have hd := hdec v (Scheme.value_of_run_eq_some he hr)
-        simp only [Option.elim_some]
-        split_ifs with h0
-        · omega
-        · by_cases hs₀ : s₀ ≤ s
-          · rw [hbig hs₀] at hr; cases hr; simp at h0
-          · have := hdir (by omega); omega
-    have htot := time_assemble (capT := (NativeCertificate.ofPolyTime
-        ExplicitTensorNetwork.capPrecision_polyTime).time q) hrT' (by omega) hQW hP1 hP2
-      hP3 hnW hR₁W hR₂W
-    have hKc' : Kc = 6 * c₁ + 1 + 4 * (K₁ * (Ka + 1) ^ (2 * K₁)) + 4 * (c₁ + 1) ^ 2 + 4 * Ka +
-        c₂ * (Ka + 2) ^ d₂ + K₂ * 2 ^ (C * s₀) := by rw [hKc]; ring
-    rw [← hKc'] at htot
-    calc _ ≤ _ := Nat.add_le_add_left hrest _
-      _ ≤ Kc * W := htot
-      _ ≤ _ := by
-        rw [hWdef, ← Nat.mul_assoc]
-        exact Nat.mul_le_mul (Nat.mul_le_mul hKK hBE) hXK
-  · rw [fastCertificate_space]
-    have hrest : ((scheme tableEntry mk).run fuel root (ExplicitTensorNetwork.capPrecision q)).elim
+              ExplicitTensorNetwork.directContractionBinaryCertificate.time q) +
+      ((scheme tableEntry mk).run fuel root (ExplicitTensorNetwork.capPrecision q)).elim
         (ExplicitTensorNetwork.directContractionBinaryCertificate.space q) (fun v =>
           (NativeCertificate.ofPolyTime tag_polyTime).space (q, v) +
             if decide (v.1 = 0) = true then
               (NativeCertificate.ofPolyTime decode_polyTime).space (q, v)
             else (NativeCertificate.ofPolyTime
                 (ComputableInPolyTime.fst FastContraction.encInput encValue)).space (q, v) +
-              ExplicitTensorNetwork.directContractionBinaryCertificate.space q) ≤ R₁ + R₂ := by
-      rcases hr : (scheme tableEntry mk).run fuel root
-        (ExplicitTensorNetwork.capPrecision q) with _ | v
-      · simp only [Option.elim_none]; omega
-      · have hd := hdec v (Scheme.value_of_run_eq_some he hr)
-        simp only [Option.elim_some]
-        split_ifs <;> omega
-    have htot := space_assemble (capS := (NativeCertificate.ofPolyTime
-        ExplicitTensorNetwork.capPrecision_polyTime).space q) (c₃ := (c₁ + 1) ^ 2) hrS'
-      (by omega) hQE hZE hSLE hnE hR₁E hR₂E
-    have hKc' : Kc = 6 * c₁ + 1 + 4 * (K₁ * (Ka + 1) ^ (2 * K₁)) + 4 * (c₁ + 1) ^ 2 + 4 * Ka +
-        c₂ * (Ka + 2) ^ d₂ + K₂ * 2 ^ (C * s₀) := by rw [hKc]; ring
-    rw [← hKc'] at htot
-    calc _ ≤ _ := Nat.add_le_add_left hrest _
-      _ ≤ Kc * B ^ E := htot
-      _ ≤ _ := Nat.mul_le_mul hKK hBE
+              ExplicitTensorNetwork.directContractionBinaryCertificate.space q) ≤
+      2 * (c₂ * (Ka + 2) ^ d₂) * B ^ ((Ka + 1) * d₂) + 2 * (K₂ * 2 ^ (C * s₀)) * B ^ K₂ := by
+    rw [Nat.mul_assoc 2, Nat.mul_assoc 2]
+    rcases hr : (scheme tableEntry mk).run fuel root (ExplicitTensorNetwork.capPrecision q)
+      with _ | v
+    · have hs₀ : s < s₀ := Nat.lt_of_not_le fun h => by rw [hbig h] at hr; cases hr
+      have := hdir hs₀
+      simp only [Option.elim_none]; omega
+    · have hd := hdec v (Scheme.value_of_run_eq_some he hr)
+      simp only [Option.elim_some]
+      split_ifs with h0
+      · omega
+      · have hs₀ : s < s₀ := Nat.lt_of_not_le fun h => by
+          rw [hbig h] at hr; cases hr; simp at h0
+        have := hdir hs₀; omega
+  rw [fastCertificate_time, fastCertificate_space]
+  exact (hK (n := (FastContraction.encInput q).length)
+    (pre := 2 * (NativeCertificate.ofPolyTime ExplicitTensorNetwork.capPrecision_polyTime).time q)
+    (preS := 2 * (NativeCertificate.ofPolyTime ExplicitTensorNetwork.capPrecision_polyTime).space q)
+    (by omega) hrT' hrS' (by rw [Nat.mul_assoc]; omega) hrest (fuel_le hA hs hPD) hHFS hTL).imp
+    (fun h => by omega) fun h => by omega
 
 /-- **The contraction algorithm from the fast machine**, given its remaining obligations:
 polynomial-time components of the scheme, the correctness of one active

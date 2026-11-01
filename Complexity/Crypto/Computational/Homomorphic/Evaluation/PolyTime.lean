@@ -40,10 +40,10 @@ own depth table; there is no supplied runtime, depth, validity, or correctness c
 @[fun_prop]
 theorem isPPTOn_evaluateCircuit (D : DecryptionCircuits E secretWidth ciphertextWidth)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun p => E.encrypt p.1 p.2.1 p.2.2))
+      (fun (n, pk, bit) => E.encrypt n pk bit))
     (hevaluate : IsPPTOn
       (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
-      encBits (fun p => E.evaluate p.1 p.2.1 p.2.2.1 p.2.2.2))
+      encBits (fun (n, pk, C, cts) => E.evaluate n pk C cts))
     (hD : ComputableInPolyTime
       (fun n => (⟨_, D.circuit n⟩ : Σ m, Circuit Boolean.signature m 1))
       encUnary (Boolean.encCircuit 1))

@@ -1538,10 +1538,6 @@ private theorem clmul_split_left (x y b : ℕ) :
   conv_lhs => rw [← and_xor_shiftRight_shiftLeft x b]
   rw [clmul_xor_left, clmul_shiftLeft_left]
 
-private theorem shiftLeft_add_eq (a m n : ℕ) :
-    a <<< (m + n) = (a <<< m) <<< n := by
-  rw [Nat.shiftLeft_eq, Nat.shiftLeft_eq, Nat.shiftLeft_eq, pow_add, ← mul_assoc]
-
 private theorem xor_shiftLeft_eq (a b k : ℕ) :
     (a ^^^ b) <<< k = (a <<< k) ^^^ (b <<< k) := by
   apply Nat.eq_of_testBit_eq
@@ -1793,7 +1789,7 @@ theorem innerClmulLoop_exec {w tabBase b q x_rem sh_x : ℕ}
           = (clmul xc yc <<< (sh_x + sh_y)) ^^^
               ((clmul xc (y_rem >>> b) <<< b) <<< (sh_x + sh_y)) := by
             rw [show sh_x + (sh_y + b) = b + (sh_x + sh_y) by omega,
-              shiftLeft_add_eq _ b (sh_x + sh_y)]
+              Nat.shiftLeft_add _ b (sh_x + sh_y)]
         _ = (clmul xc yc ^^^ (clmul xc (y_rem >>> b) <<< b)) <<< (sh_x + sh_y) := by
             rw [← xor_shiftLeft_eq]
         _ = clmul xc y_rem <<< (sh_x + sh_y) := by
@@ -2016,7 +2012,7 @@ theorem outerClmulLoop_exec {w tabBase b q L u : ℕ}
       congr 1
       calc (clmul xc u <<< sh_x) ^^^ (clmul (x_rem >>> b) u <<< (sh_x + b))
           = (clmul xc u <<< sh_x) ^^^ ((clmul (x_rem >>> b) u <<< b) <<< sh_x) := by
-            rw [show sh_x + b = b + sh_x by omega, shiftLeft_add_eq _ b sh_x]
+            rw [show sh_x + b = b + sh_x by omega, Nat.shiftLeft_add _ b sh_x]
         _ = (clmul xc u ^^^ (clmul (x_rem >>> b) u <<< b)) <<< sh_x := by
             rw [← xor_shiftLeft_eq]
         _ = clmul x_rem u <<< sh_x := by

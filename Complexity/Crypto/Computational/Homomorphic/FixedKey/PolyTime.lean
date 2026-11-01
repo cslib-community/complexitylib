@@ -201,7 +201,7 @@ include hencrypt in
 @[fun_prop]
 theorem isPPTOn_scheme_encrypt :
     IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun p => (scheme D).encrypt p.1 p.2.1 p.2.2) := by
+      (fun (n, pk, bit) => (scheme D).encrypt n pk bit) := by
   apply isPPTOn_encrypt hencrypt <;> fun_prop
 
 include hD in
@@ -209,7 +209,7 @@ include hD in
 @[fun_prop]
 theorem computableInPolyTime_scheme_decrypt :
     ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => (scheme D).decrypt p.1 p.2.1 p.2.2)
+      (fun ((n, sk, c) : ℕ × List Bool × List Bool) => (scheme D).decrypt n sk c)
       (encPair encUnary (encPair encBits encBits)) encBool := by
   apply computableInPolyTime_decrypt D hD <;> fun_prop
 
@@ -219,7 +219,7 @@ include hencrypt hevaluate hD in
 theorem isPPTOn_scheme_evaluate :
     IsPPTOn
       (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
-      encBits (fun p => (scheme D).evaluate p.1 p.2.1 p.2.2.1 p.2.2.2) := by
+      encBits (fun (n, pk, C, cts) => (scheme D).evaluate n pk C cts) := by
   apply isPPTOn_evaluate hencrypt D hD hevaluate <;> fun_prop
 
 end Cslib.Crypto.Homomorphic.FixedKey

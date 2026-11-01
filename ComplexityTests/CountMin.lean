@@ -6,8 +6,8 @@ Authors: Samuel Schlesinger
 
 module
 
-public import Complexity.Algorithms.Streaming.CountMin.LinearHash
-public import Complexity.Algorithms.Streaming.CountMin.Program
+public import Complexity.DataStructure.CountMin.LinearHash
+public import Complexity.DataStructure.CountMin.Program
 import Mathlib.Tactic.NormNum
 
 /-! # Count-Min clients
@@ -21,7 +21,7 @@ public section
 
 namespace ComplexityTests.CountMin
 
-open Cslib Cslib.CountMin Cslib.Probability
+open Cslib Cslib.DataStructure.CountMin Cslib.Probability
 
 /-- Two rows distinguishing the low and high bits of a two-bit item. -/
 private def hashBank (r : Fin 2) (x : Fin 4) : Fin 2 :=

@@ -31,8 +31,7 @@ linear in the encoded pair and in work space linear in the first operand.
   transducer with finitely many states on the encoded components of a pair is computable within
   `3 * (encPair enc₁ enc₂ p).length + 1` steps and `(enc₁ p.1).length + 2` work-tape cells.
 * `Turing.MultiTapeTM.ZipTransducer.computableInTimeAndSpace_run`: the same on raw words.
-* `Turing.MultiTapeTM.ZipTransducer.computableInLinearTimeAndSpace`,
-  `Turing.MultiTapeTM.ZipTransducer.computableInDegree`: its linear and degree-one forms.
+* `Turing.MultiTapeTM.ZipTransducer.computableInDegree`: its degree-1/1 certificate.
 -/
 
 namespace Turing.MultiTapeTM
@@ -63,20 +62,15 @@ public theorem computableInTimeAndSpace_run :
       (fun p => 3 * (encPair encBits encBits p).length + 1) (fun p => p.1.length + 2) :=
   τ.computableInTimeAndSpace fun _ => rfl
 
-/-- A function computed by a zip transducer is computable in linear time and work space. -/
-public theorem computableInLinearTimeAndSpace
-    (hf : ∀ p, encOut (f p) = τ.run τ.q₀ (enc₁ p.1) (enc₂ p.2)) :
-    ComputableInLinearTimeAndSpace f (encPair enc₁ enc₂) encOut :=
-  ⟨3, (τ.computableInTimeAndSpace hf).mono (fun _ => by omega) fun p => by
-    have := length_le_encPair_left enc₁ enc₂ p
-    omega⟩
-
 /-- A function computed by a zip transducer has cost and output degree one. -/
 public theorem computableInDegree
     (hf : ∀ p, encOut (f p) = τ.run τ.q₀ (enc₁ p.1) (enc₂ p.2)) :
     ComputableInDegree f (encPair enc₁ enc₂) encOut 1 1 :=
-  let ⟨c, hc⟩ := τ.computableInLinearTimeAndSpace hf
-  ComputableInDegree.of_bounds ⟨c, fun _ => by simp⟩ ⟨c, fun _ => by simp⟩ hc
+  ComputableInDegree.of_bounds ⟨3, fun _ => by simp only [pow_one]; omega⟩
+    ⟨3, fun p => by
+      have := length_le_encPair_left enc₁ enc₂ p
+      simp only [pow_one]
+      omega⟩ (τ.computableInTimeAndSpace hf)
 
 end ZipTransducer
 

@@ -139,7 +139,7 @@ theorem isPPTOn_keyGen : IsPPTOn encUnary (encPair encBits encBits) scheme.keyGe
 
 /-- Encryption is strict PPT on every public word and message. -/
 theorem isPPTOn_encrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-    (fun p => scheme.encrypt p.1 p.2.1 p.2.2) := by
+    (fun (n, pk, bit) => scheme.encrypt n pk bit) := by
   have hk := ComputableInPolyTime.fst encUnary (encPair encBits encBool)
   change IsPPTOn _ _ (fun p : ℕ × List Bool × Bool =>
     encryptSerialized (dimension p.1) (samples p.1) (width p.1) p.2.1 p.2.2)
@@ -152,7 +152,8 @@ theorem isPPTOn_encrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) e
 
 /-- Decryption runs in native polynomial time on every raw secret and ciphertext word. -/
 theorem computableInPolyTime_decrypt :
-    ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => scheme.decrypt p.1 p.2.1 p.2.2)
+    ComputableInPolyTime
+      (fun ((n, sk, c) : ℕ × List Bool × List Bool) => scheme.decrypt n sk c)
       (encPair encUnary (encPair encBits encBits)) encBool := by
   change ComputableInPolyTime (fun p : ℕ × List Bool × List Bool =>
     decryptSerialized (dimension p.1) (width p.1) p.2.1 p.2.2) _ _
@@ -166,7 +167,7 @@ theorem computableInPolyTime_decrypt :
 it samples no coins. -/
 theorem isPPTOn_evaluate :
     IsPPTOn (encPair encUnary (encPair encBits (encPair (encCircuit 1) (encList encBits))))
-      encBits (fun p => scheme.evaluate p.1 p.2.1 p.2.2.1 p.2.2.2) := by
+      encBits (fun (n, pk, C, cts) => scheme.evaluate n pk C cts) := by
   change IsPPTOn _ _ (fun p : ℕ × List Bool × (Σ k, Circuit signature k 1) × List (List Bool) =>
     pure (evaluateCircuit (dimension p.1) (width p.1) p.2.2.1 p.2.2.2))
   apply ComputableInPolyTime.isPPTOn
