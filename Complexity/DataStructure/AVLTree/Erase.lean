@@ -7,8 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.AVLTree.Basic
-public import Complexity.Algorithms.Lean.SearchTree.Erase
+public import Complexity.DataStructure.AVLTree.Basic
+public import Complexity.DataStructure.SearchTree.Erase
 
 /-!
 # Rebalancing deletion for AVL binary search trees
@@ -20,7 +20,7 @@ ancestor along the root-to-detached-node path.
 
 Unlike [Cormen et al., Problem 13-3][CLRS2009], which covers the AVL invariant, Fibonacci height
 bound, `balance`, and `insert`, this module extends the same `balance` combinator to
-successor-splice deletion so that `AVLTree` supports the full `Cslib.OrderedSet.spec` interface
+successor-splice deletion so that `AVLTree` supports the full `Cslib.DataStructure.OrderedSet.spec` interface
 including `Op.erase` and `extractMin`.
 
 ## Main definitions
@@ -47,7 +47,7 @@ including `Op.erase` and `extractMin`.
 
 public section
 
-namespace Cslib.Algorithms.Lean.AVLTree
+namespace Cslib.DataStructure.AVLTree
 
 section Shape
 
@@ -316,4 +316,4 @@ theorem eraseVisits_le_cachedHeight {t : AVLTree α} (hc : HeightConsistent t) (
   rw [cachedHeight_eq_height hc]
   exact SearchTree.eraseVisits_le_height x t.toBinaryTree
 
-end Cslib.Algorithms.Lean.AVLTree
+end Cslib.DataStructure.AVLTree

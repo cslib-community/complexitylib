@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.SearchTree.Cost
+public import Complexity.DataStructure.SearchTree.Cost
 
 /-!
 # Deletion from unbalanced binary search trees
@@ -43,7 +43,7 @@ leaves the tree unchanged.
 
 @[expose] public section
 
-namespace Cslib.Algorithms.Lean.SearchTree
+namespace Cslib.DataStructure.SearchTree
 
 section Shape
 
@@ -256,4 +256,4 @@ theorem height_erase_le (x : α) (t : BinaryTree α) : (erase x t).height ≤ t.
         omega
       · exact height_glue_le a l r
 
-end Cslib.Algorithms.Lean.SearchTree
+end Cslib.DataStructure.SearchTree

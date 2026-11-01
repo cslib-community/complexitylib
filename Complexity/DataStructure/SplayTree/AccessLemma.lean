@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Algorithms.Lean.SplayTree.Basic
+public import Complexity.DataStructure.SplayTree.Basic
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
 
@@ -56,7 +56,7 @@ charges one unit when no rotations occur and the exact rotation count otherwise.
   and `erase`.
 * `minimum_unitPotential_amortized_le`, `successor_unitPotential_amortized_le`: companion
   unit-weight rotation bounds derived from the Access Lemma ([SleatorTarjan1985b], Section 2,
-  Lemma 1, p. 658) for `Cslib.OrderedSet.spec` (`minimum` and `successor` are not part of
+  Lemma 1, p. 658) for `Cslib.DataStructure.OrderedSet.spec` (`minimum` and `successor` are not part of
   Lemma 2).
 
 ## References
@@ -67,9 +67,9 @@ charges one unit when no rotations occur and the exact rotation count otherwise.
 
 public section
 
-namespace Cslib.Algorithms.Lean.SplayTree
+namespace Cslib.DataStructure.SplayTree
 
-open Cslib.Algorithms.Lean.SearchTree (elements Ordered mem_elements_node card_elements)
+open Cslib.DataStructure.SearchTree (elements Ordered mem_elements_node card_elements)
 
 /-! ### Subtree Weights, Node Ranks, and Rank-Sum Potential -/
 
@@ -1453,4 +1453,4 @@ theorem successor_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t
 
 end OrderedAccess
 
-end Cslib.Algorithms.Lean.SplayTree
+end Cslib.DataStructure.SplayTree

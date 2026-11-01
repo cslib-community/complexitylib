@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Data.OrderedSet
+public import Complexity.DataStructure.OrderedSet.Basic
 public import Complexity.DataStructure.StateTransition
 
 /-!
@@ -22,7 +22,7 @@ choose a representation or charge a computational cost.
 
 ## Main definitions
 
-* `Cslib.OrderedSet.Op`, `Cslib.OrderedSet.spec`: shared typed ordered-set interface and semantics.
+* `Cslib.DataStructure.OrderedSet.Op`, `Cslib.DataStructure.OrderedSet.spec`: shared typed ordered-set interface and semantics.
 
 ## References
 
@@ -34,7 +34,7 @@ The adaptive client syntax uses Quang Dao's upstream free monad via
 
 @[expose] public section
 
-namespace Cslib.OrderedSet
+namespace Cslib.DataStructure.OrderedSet
 
 open Cslib.DataStructure
 
@@ -69,4 +69,4 @@ abbrev step (s : Finset α) : (o : Op α) → Finset α × o.Result
 abbrev spec (α : Type) [LinearOrder α] : StateTransitionSpec :=
   StateTransitionSpec.ofFn (State := Finset α) (Op := Op α) (Result := Op.Result) step
 
-end Cslib.OrderedSet
+end Cslib.DataStructure.OrderedSet

@@ -8,15 +8,15 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Algorithms.Lean.SearchTree.Cost
-public import Complexity.Foundations.Data.OrderedSet
+public import Complexity.DataStructure.SearchTree.Cost
+public import Complexity.DataStructure.OrderedSet.Basic
 
 /-!
 # Self-Adjusting Splay Trees
 
 This module formalizes annotation-free bottom-up splay trees over Mathlib's `BinaryTree α`,
-reusing the finite-set abstraction `Cslib.Algorithms.Lean.SearchTree.elements` and strict
-binary-search-tree invariant `Cslib.Algorithms.Lean.SearchTree.Ordered` ([SleatorTarjan1985b],
+reusing the finite-set abstraction `Cslib.DataStructure.SearchTree.elements` and strict
+binary-search-tree invariant `Cslib.DataStructure.SearchTree.Ordered` ([SleatorTarjan1985b],
 Sections 2–3, pp. 654–662).
 
 Unlike height- or weight-balanced search trees, splay nodes store no auxiliary balance metadata.
@@ -31,7 +31,7 @@ Section 4, p. 665).
 
 * **Set-idempotent updates**: Sleator and Tarjan ([SleatorTarjan1985b], Section 3, p. 661) specify
   `insert(i, t)` under the precondition `i ∉ t` and `delete(i, t)` under `i ∈ t`. To realize
-  `Cslib.OrderedSet.spec α` directly, `insert` and `erase` are total and set-idempotent: inserting
+  `Cslib.DataStructure.OrderedSet.spec α` directly, `insert` and `erase` are total and set-idempotent: inserting
   a present key splays that key to the root without duplicating it, and erasing an absent key
   splays the last visited node along the failed search path while leaving `elements` unchanged.
 * **Rotation counts vs. node visits**: Each `SplayResult`, `SplitResult`, and `QueryResult`
@@ -71,10 +71,10 @@ Section 4, p. 665).
 
 public section
 
-namespace Cslib.Algorithms.Lean.SplayTree
+namespace Cslib.DataStructure.SplayTree
 
-open Cslib.OrderedSet
-open Cslib.Algorithms.Lean.SearchTree (elements Ordered mem_elements_node
+open Cslib.DataStructure.OrderedSet
+open Cslib.DataStructure.SearchTree (elements Ordered mem_elements_node
   searchVisits minimumVisits)
 
 section Shape
@@ -1476,4 +1476,4 @@ theorem successor_answer_eq {t : BinaryTree α} (ht : Ordered t) (x : α) :
 
 end Ordered
 
-end Cslib.Algorithms.Lean.SplayTree
+end Cslib.DataStructure.SplayTree

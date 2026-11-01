@@ -7,22 +7,22 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.AVLTree.Erase
-public import Complexity.Foundations.Data.OrderedSet.Spec
+public import Complexity.DataStructure.AVLTree.Erase
+public import Complexity.DataStructure.OrderedSet.Spec
 public import Complexity.DataStructure.StateTransition.Resource
 
 /-!
 # Stateful ordered-set realization by height-balanced AVL trees
 
-This module realizes the shared `Cslib.OrderedSet.spec α` interface (`contains`, `insert`, `erase`,
+This module realizes the shared `Cslib.DataStructure.OrderedSet.spec α` interface (`contains`, `insert`, `erase`,
 `minimum`, `successor`) using height-cached AVL trees in the same internal-node-visit cost model as
-`Cslib.Algorithms.Lean.SearchTree`, upgrading `SearchTree.nodeVisitBound`'s worst-case linear
+`Cslib.DataStructure.SearchTree`, upgrading `SearchTree.nodeVisitBound`'s worst-case linear
 `s.card` bound to the representation-independent logarithmic bound
 `2 * Nat.log 2 (s.card + 1)`.
 
 ## Cost model and limitations
 
-As in `Cslib.Algorithms.Lean.SearchTree`, native operation traces count internal nodes visited along
+As in `Cslib.DataStructure.SearchTree`, native operation traces count internal nodes visited along
 the downward search (and `splitMin`) path (`0` on an empty tree, at most `t.cachedHeight` on any
 height-consistent tree), specified by `SearchTree`'s path-visit functions on `t.toBinaryTree`. At
 each visited ancestor during `insert` or `erase`, `balance` performs non-recursive `O(1)` reads of
@@ -36,7 +36,7 @@ instructions.
 * `step`, `Exec`, `run`: concrete AVL operations, native execution relation, and executable client
   runner with exact internal-node-visit traces.
 * `Rep`, `impl`: AVL representation relation (`Valid t ∧ elements t = s`) and
-  `Cslib.DataStructure.StateTransitionImpl` of `Cslib.OrderedSet.spec α`.
+  `Cslib.DataStructure.StateTransitionImpl` of `Cslib.DataStructure.OrderedSet.spec α`.
 * `charge`: representation-independent logarithmic node-visit budget
   `2 * Nat.log 2 (s.card + 1)`.
 
@@ -58,9 +58,9 @@ instructions.
 
 public section
 
-namespace Cslib.Algorithms.Lean.AVLTree
+namespace Cslib.DataStructure.AVLTree
 
-open Cslib.DataStructure Cslib.OrderedSet
+open Cslib.DataStructure Cslib.DataStructure.OrderedSet
 
 variable {α : Type} [LinearOrder α]
 
@@ -191,4 +191,4 @@ theorem run_correct {β : Type} (p : (spec α).Client β)
   have hc := impl.correct_client hr hv hexec
   exact ⟨hc.1, hc.2, Bound.client nodeVisitBound hr hv hexec⟩
 
-end Cslib.Algorithms.Lean.AVLTree
+end Cslib.DataStructure.AVLTree

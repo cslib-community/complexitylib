@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Data.OrderedSet.Spec
+public import Complexity.DataStructure.OrderedSet.Spec
 
 /-!
 # Minimum extraction through the shared ordered-set interface
@@ -30,7 +30,7 @@ no machine-time claim here.
 
 public section
 
-namespace Cslib.OrderedSet
+namespace Cslib.DataStructure.OrderedSet
 
 open Cslib.DataStructure
 
@@ -86,4 +86,4 @@ theorem extractMin_card (s : Finset α) :
     simp only [he, LeastResult] at hs
     exact Finset.card_erase_of_mem hs.1
 
-end Cslib.OrderedSet
+end Cslib.DataStructure.OrderedSet

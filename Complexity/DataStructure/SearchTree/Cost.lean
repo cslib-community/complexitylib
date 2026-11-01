@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.SearchTree.Basic
+public import Complexity.DataStructure.SearchTree.Basic
 
 /-!
 # Search-tree node-visit costs
@@ -37,7 +37,7 @@ and retains a candidate when descending left. No operation scans both subtrees.
 
 @[expose] public section
 
-namespace Cslib.Algorithms.Lean.SearchTree
+namespace Cslib.DataStructure.SearchTree
 
 variable {α : Type*} [LinearOrder α]
 
@@ -97,4 +97,4 @@ theorem height_insert_le (x : α) (t : BinaryTree α) :
       omega
     · split <;> simp only [BinaryTree.height] <;> omega
 
-end Cslib.Algorithms.Lean.SearchTree
+end Cslib.DataStructure.SearchTree

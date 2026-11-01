@@ -8,20 +8,20 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Algorithms.Lean.SearchTree.Stateful
-public import Complexity.Algorithms.Lean.SplayTree.AccessLemma
+public import Complexity.DataStructure.SearchTree.Impl
+public import Complexity.DataStructure.SplayTree.AccessLemma
 
 /-!
 # Self-Adjusting Stateful Ordered-Set Implementation by Splay Trees
 
-This module realizes the shared `Cslib.OrderedSet.spec α` interface (`contains`, `insert`, `erase`,
+This module realizes the shared `Cslib.DataStructure.OrderedSet.spec α` interface (`contains`, `insert`, `erase`,
 `minimum`, `successor`) using annotation-free bottom-up splay trees ([SleatorTarjan1985b],
-Section 3, pp. 660–665), reusing the shared `Cslib.Algorithms.Lean.SearchTree.Rep` representation
+Section 3, pp. 660–665), reusing the shared `Cslib.DataStructure.SearchTree.Rep` representation
 relation (`Ordered t ∧ elements t = s`) and `SearchTree.rep_empty` directly on `BinaryTree α`.
 
 ## Self-adjustment and amortized vs. worst-case guarantees
 
-Unlike `Cslib.Algorithms.Lean.AVLTree.impl`, splay trees store no balance metadata and
+Unlike `Cslib.DataStructure.AVLTree.impl`, splay trees store no balance metadata and
 restructure the concrete `BinaryTree α` even during read queries (`contains`, `minimum`,
 `successor`). The `Cslib.DataStructure.StateTransitionImpl` framework accommodates this directly:
 read queries
@@ -57,8 +57,8 @@ charged as RAM or Turing-machine instructions.
 ## Main definitions
 
 * `StepResult`, `step`, `Exec`: self-adjusting single-operation execution and native trace relation.
-* `impl`: `Cslib.DataStructure.StateTransitionImpl` of `Cslib.OrderedSet.spec α` reusing
-  `Cslib.Algorithms.Lean.SearchTree.Rep`.
+* `impl`: `Cslib.DataStructure.StateTransitionImpl` of `Cslib.DataStructure.OrderedSet.spec α` reusing
+  `Cslib.DataStructure.SearchTree.Rep`.
 * `realOpCharge`, `realHistoryCost`, `amortizedCharge`: continuous (`Real.logb 2`) and discrete
   (`Nat.log 2`) per-operation amortized rotation budgets.
 * `ClientRun`, `run`: executable adaptive client runner with named output fields.
@@ -84,10 +84,10 @@ charged as RAM or Turing-machine instructions.
 
 public section
 
-namespace Cslib.Algorithms.Lean.SplayTree
+namespace Cslib.DataStructure.SplayTree
 
-open Cslib.DataStructure Cslib.OrderedSet
-open Cslib.Algorithms.Lean.SearchTree (elements Ordered Rep rep_empty)
+open Cslib.DataStructure Cslib.DataStructure.OrderedSet
+open Cslib.DataStructure.SearchTree (elements Ordered Rep rep_empty)
 
 variable {α : Type} [LinearOrder α]
 
@@ -125,7 +125,7 @@ recording exact rotation counts. -/
   fun t o a t' n => step t o = ⟨t', a, n⟩
 
 /-- Self-adjusting semantic realization of `OrderedSet.spec α` by `BinaryTree α`, reusing
-`Cslib.Algorithms.Lean.SearchTree.Rep`. -/
+`Cslib.DataStructure.SearchTree.Rep`. -/
 @[expose] def impl : StateTransitionImpl (spec α) (Exec (α := α)) :=
   StateTransitionImpl.ofFn
     (rep := Rep)
@@ -370,4 +370,4 @@ theorem run_correct_empty {β : Type} (p : (spec α).Client β) :
   have h := run_correct p rep_empty
   simpa using h
 
-end Cslib.Algorithms.Lean.SplayTree
+end Cslib.DataStructure.SplayTree

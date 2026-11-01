@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.SearchTree.Cost
+public import Complexity.DataStructure.SearchTree.Cost
 public import Mathlib.Data.Nat.Fib.Basic
 public import Mathlib.Data.Nat.Log
 
@@ -20,7 +20,7 @@ rotations and insertion, and derives the logarithmic height bound
 `t.cachedHeight ≤ 2 * Nat.log 2 ((elements t).card + 1)`.
 
 Each tree projects to `BinaryTree α` via `toBinaryTree`, reusing key-set semantics, strict ordering,
-and query contracts from `Cslib.Algorithms.Lean.SearchTree`. Following
+and query contracts from `Cslib.DataStructure.SearchTree`. Following
 [Cormen et al., Problem 13-3][CLRS2009], every node caches its subtree height so `balance` checks
 height differences in `O(1)` without rescanning subtrees. Heights use `BinaryTree.height`'s
 node-count convention (`0` for `.nil`, `1` for a singleton leaf, i.e., `h_CLRS + 1` on nonempty
@@ -29,7 +29,7 @@ exact Fibonacci lower bound `Nat.fib (h + 2) ≤ t.numNodes + 1`.
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.AVLTree`: binary search tree caching subtree heights at internal nodes.
+* `Cslib.DataStructure.AVLTree`: binary search tree caching subtree heights at internal nodes.
 * `toBinaryTree`, `cachedHeight`, `numNodes`, `elements`: structural projection, O(1) height read,
   node count, and represented `Finset α`.
 * `Ordered`, `HeightConsistent`, `Balanced`, `Valid`: strict BST ordering, cached-height accuracy,
@@ -38,7 +38,7 @@ exact Fibonacci lower bound `Nat.fib (h + 2) ≤ t.numNodes + 1`.
   rotations, and single/double rebalancing for sibling heights differing by at most `2`.
 * `contains`, `minimum`, `successor`, `insert`: executable search queries and rebalancing insertion.
 * `searchVisits`, `minimumVisits`, `successorVisits`: downward search-path internal-node visit
-  counts matching `Cslib.Algorithms.Lean.SearchTree`.
+  counts matching `Cslib.DataStructure.SearchTree`.
 
 ## Main results
 
@@ -63,7 +63,7 @@ exact Fibonacci lower bound `Nat.fib (h + 2) ≤ t.numNodes + 1`.
 
 public section
 
-namespace Cslib.Algorithms.Lean
+namespace Cslib.DataStructure
 
 /-- A binary search tree storing cached subtree heights at internal nodes. -/
 inductive AVLTree (α : Type*) where
@@ -75,7 +75,7 @@ inductive AVLTree (α : Type*) where
 
 namespace AVLTree
 
-open Cslib.OrderedSet
+open Cslib.DataStructure.OrderedSet
 
 section Structure
 
@@ -768,4 +768,4 @@ end Ordered
 
 end AVLTree
 
-end Cslib.Algorithms.Lean
+end Cslib.DataStructure

@@ -9,7 +9,7 @@ module
 
 public import Complexity.Init
 public import Mathlib.Data.Tree.Basic
-public import Complexity.Foundations.Data.OrderedSet
+public import Complexity.DataStructure.OrderedSet.Basic
 
 /-!
 # Unbalanced binary search trees
@@ -40,9 +40,9 @@ Trees are not balanced. Cost bounds in the companion module depend on their actu
 
 @[expose] public section
 
-namespace Cslib.Algorithms.Lean.SearchTree
+namespace Cslib.DataStructure.SearchTree
 
-open Cslib.OrderedSet
+open Cslib.DataStructure.OrderedSet
 
 variable {α : Type*} [LinearOrder α]
 
@@ -269,4 +269,4 @@ theorem successor_spec {t : BinaryTree α} (ht : Ordered t) (x : α) :
       rw [he]
       exact ir hr
 
-end Cslib.Algorithms.Lean.SearchTree
+end Cslib.DataStructure.SearchTree

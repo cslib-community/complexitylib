@@ -18,14 +18,14 @@ independent of any tree, storage representation or cost model.
 
 ## Main definitions
 
-* `Cslib.OrderedSet.LeastResult`: a complete optional-minimum contract.
-* `Cslib.OrderedSet.least`: the mathematical minimum of a finite set.
+* `Cslib.DataStructure.OrderedSet.LeastResult`: a complete optional-minimum contract.
+* `Cslib.DataStructure.OrderedSet.least`: the mathematical minimum of a finite set.
 
 ## Main results
 
-* `Cslib.OrderedSet.least_spec`: the mathematical minimum satisfies the contract.
-* `Cslib.OrderedSet.LeastResult.eq_least`: any satisfying result equals that minimum.
-* `Cslib.OrderedSet.least_eq_min`: `least` agrees with `Finset.min`.
+* `Cslib.DataStructure.OrderedSet.least_spec`: the mathematical minimum satisfies the contract.
+* `Cslib.DataStructure.OrderedSet.LeastResult.eq_least`: any satisfying result equals that minimum.
+* `Cslib.DataStructure.OrderedSet.least_eq_min`: `least` agrees with `Finset.min`.
 
 ## References
 
@@ -34,7 +34,7 @@ Uses Mathlib's finite-set minimum and linear-order API.
 
 @[expose] public section
 
-namespace Cslib.OrderedSet
+namespace Cslib.DataStructure.OrderedSet
 
 variable {α : Type*} [LinearOrder α]
 
@@ -84,4 +84,4 @@ theorem LeastResult.eq_least {s : Finset α} {a : Option α} (h : LeastResult s 
   · exact Finset.coe_min' h
   · exact (Finset.min_eq_top.mpr (Finset.not_nonempty_iff_eq_empty.mp h)).symm
 
-end Cslib.OrderedSet
+end Cslib.DataStructure.OrderedSet

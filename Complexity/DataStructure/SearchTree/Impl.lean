@@ -7,8 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.SearchTree.Erase
-public import Complexity.Foundations.Data.OrderedSet.Spec
+public import Complexity.DataStructure.SearchTree.Erase
+public import Complexity.DataStructure.OrderedSet.Spec
 public import Complexity.DataStructure.StateTransition.Resource
 
 /-!
@@ -21,7 +21,7 @@ uses the existing successor-splicing operation, including unsuccessful and repea
 
 ## Main definitions
 
-* `Cslib.OrderedSet.spec`: the shared representation-independent finite-set specification.
+* `Cslib.DataStructure.OrderedSet.spec`: the shared representation-independent finite-set specification.
 * `step`, `Exec`, `run`: concrete tree operations and client interpreter with their exact
   node-visit charge.
 * `Rep`, `impl`: the search tree representation relation and its realization of the
@@ -44,9 +44,9 @@ RAM or Turing-machine time claim.
 
 @[expose] public section
 
-namespace Cslib.Algorithms.Lean.SearchTree
+namespace Cslib.DataStructure.SearchTree
 
-open Cslib.DataStructure Cslib.OrderedSet
+open Cslib.DataStructure Cslib.DataStructure.OrderedSet
 
 variable {α : Type} [LinearOrder α]
 
@@ -155,4 +155,4 @@ theorem run_correct {β : Type} (p : (spec α).Client β)
   have h := impl.correct_client hr hv (run_exec p t)
   exact ⟨h.1, h.2, nodeVisitBound.client hr hv (run_exec p t)⟩
 
-end Cslib.Algorithms.Lean.SearchTree
+end Cslib.DataStructure.SearchTree
