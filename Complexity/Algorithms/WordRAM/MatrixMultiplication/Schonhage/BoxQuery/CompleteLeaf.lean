@@ -106,7 +106,8 @@ theorem usedFrom_ofFn {L : ℕ} (η : OutStr L) (τ : Leaf L) :
       apply Fintype.sum_equiv (finCongr (show (List.ofFn τ).length = L from List.length_ofFn)) _ _
       intro i
       have hi : i.val < L := by simpa only [List.length_ofFn] using i.isLt
-      simp [outAt, hi, finCongr, Fin.cast]
+      simp only [outAt, zero_add, hi, ↓reduceDIte, List.get_eq_getElem, List.getElem_ofFn,
+        ne_eq, finCongr, Equiv.coe_fn_mk, Fin.cast]
       rfl
     _ = _ := by
       have hset : (univ.filter fun i : Fin L => (η i).IsInner ∧ τ i ≠ .P0) =

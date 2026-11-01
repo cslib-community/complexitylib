@@ -55,7 +55,7 @@ open Cslib.WordRAM Cslib.Algorithms.MatrixMultiplication.Schonhage
 
 @[simp] theorem length_input (L m t : ℕ) (q : Fin (10 ^ L))
     (a b : Fin (10 ^ L) → ℤ) : (input L m t q a b).length = 4 + 2 * 10 ^ L := by
-  simp [input]
+  simp only [input, List.length_append, List.length_cons, List.length_nil, List.length_ofFn]
   omega
 
 /-- Actual initialized headers and array words have their original contents. -/
