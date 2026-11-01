@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Foundations.Semantics.Stateful.Relational
+public import Complexity.Foundations.Semantics.Stateful.Basic
 public import Complexity.Algorithms.Lean.IndexedMinPQ
 
 /-!
@@ -45,13 +45,13 @@ the key-projection lemmas `toIndexed_update_some` and `toIndexed_update_none` co
 * `Cslib.Algorithms.Lean.MinPQ.Op`, `Op.Result`: priority-queue operations and return types.
 * `Cslib.Algorithms.Lean.MinPQ.isMinEntry`: predicate that a stored handle `h` attains the minimum
   key in `s`.
-* `Cslib.Algorithms.Lean.MinPQ.spec`: relational specification (`Stateful.RelSpec`).
+* `Cslib.Algorithms.Lean.MinPQ.spec`: relational specification (`Stateful.Spec`).
 * `Cslib.Algorithms.Lean.MinPQ.AllocState`, `stepAlloc`: deterministic free-list handle allocator
   and lexicographic tie-breaking transition refining `spec`.
 
 ## Main results
 
-* `Cslib.Algorithms.Lean.MinPQ.instTotalSpec`: `MinPQ.spec n_max U V` is total (`RelSpec.Total`).
+* `Cslib.Algorithms.Lean.MinPQ.instTotalSpec`: `MinPQ.spec n_max U V` is total (`Spec.Total`).
 * `Cslib.Algorithms.Lean.MinPQ.stepAlloc_refines_spec`: every valid `stepAlloc` transition satisfies
   `(spec n_max U V).step` and preserves `AllocState.WellFormed`.
 * `Cslib.Algorithms.Lean.MinPQ.toIndexed_update_some`, `toIndexed_update_none`: `toIndexed`
@@ -290,7 +290,7 @@ theorem exists_isMinEntry_of_dom_ne_empty {n_max : ℕ} {s : State n_max} (hne :
 * `insert u v` nondeterministically chooses *any* unused handle `h : Fin n_max` (`s h = none`);
 * `extractMin` nondeterministically removes and returns *any* stored entry `(u, v, h)` attaining
   the minimum key (`isMinEntry s h u v`), or `none` when `dom s = ∅`. -/
-def spec (n_max U V : ℕ) : RelSpec where
+def spec (n_max U V : ℕ) : Spec where
   State := State n_max
   Op := Op n_max
   Result := Op.Result (n_max := n_max)
