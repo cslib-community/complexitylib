@@ -208,6 +208,12 @@ index links to canonical definitions rather than keeping a second set.
   results of Wagner and of Chang and Kadin, not from Kadin's 1988 argument (see his erratum).
   `BooleanHierarchy/Kadin.lean` proves only `PH = Σ₃ᴾ ∩ Π₃ᴾ`.
 
+- **Explicit universal SAT solver:** construct one fixed native algorithm, independent of an
+  assumed fast SAT algorithm, and prove its worst-case running time is polynomial if and only if
+  `P = NP`. Specify a total SAT decision procedure, including unsatisfiable inputs, separately
+  from verified witness search; account for dovetailing, certificate checking and universal
+  simulation overhead rather than relying only on the existing `SAT ∈ P ↔ P = NP` equivalence.
+
 ### Reducibilities and the structure of complete sets
 
 - **Reducibilities** ([#1351]): logspace Turing reductions, in an oracle model whose query tape is
