@@ -14,6 +14,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryNormali
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Pi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Pi
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.ListSlice
 import Mathlib.Data.List.Induction
 
 /-!
@@ -198,36 +199,6 @@ private theorem scan_fold_cells (word : List Bool) (acc : List ℕ) :
     rw [ih]
     simp only [List.reverse_cons, List.append_assoc, List.singleton_append]
 
-private theorem listReverse_inSpace : ComputableInSpace List.reverse (encList encNat)
-    (encList encNat) (fun l => (encList encNat l).length) := by
-  have hl : ComputableInSpace (fun l : List ℕ => l) (encList encNat) (encList encNat)
-      (fun l => (encList encNat l).length) := of_inO ComputableInDegree.id'.inO_one
-  have hinit := budget_const (encB := encList encNat) []
-    (show (fun l : List ℕ => (encList encNat l).length) ≼
-      fun l => (encList encNat l).length from .refl _)
-  have hstep : ComputableInSpace (fun p : List ℕ × ℕ => p.2 :: p.1)
-      (encPair (encList encNat) encNat) (encList encNat)
-      (fun p => (encPair (encList encNat) encNat p).length) :=
-    budget_cons (snd _ _) (fst _ _)
-  have hstate (l : List ℕ) (i : ℕ) (_hi : i ≤ l.length) :
-      (encList encNat ((l.take i).foldl (fun acc n => n :: acc) [])).length ≤
-        (encList encNat l).length := by
-    rw [List.foldl_flip_cons_eq_append', List.append_nil]
-    simp only [length_encList, List.map_reverse, List.sum_reverse]
-    simpa only [length_encList] using length_encList_take_le encNat l i
-  have hspace (l : List ℕ) (i : ℕ) (hi : i < l.length) :
-      (encPair (encList encNat) encNat
-        ((l.take i).foldl (fun acc n => n :: acc) [], l[i])).length ≤
-          4 * ((encList encNat l).length + 1) := by
-    have ha := length_le_encList_of_mem encNat (List.getElem_mem hi)
-    have hs := hstate l i hi.le
-    simp only [length_encPair]
-    omega
-  have hf := ComputableInSpace.foldl hl hinit hstep hspace hstate
-  refine hf.weaken (.of_le_linear 8 8 fun _ => by omega) |>.of_enc_eq ?_
-  intro l
-  simp only [List.foldl_flip_cons_eq_append', List.append_nil]
-
 /-- Decode actual pairs of input bits in linear space, with at most one cell per two bits. -/
 theorem cells_inSpace : ComputableInSpace cells encBits (encList encNat)
     (fun word => word.length) := by
@@ -249,7 +220,7 @@ theorem cells_inSpace : ComputableInSpace cells encBits (encList encNat)
     simp only [encBool_apply, List.length_singleton]
     omega
   have hf := ComputableInSpace.foldl hl hinit scan_inSpace hspace hstate
-  have hout := budget_comp_linear listReverse_inSpace hf.snd'.snd'
+  have hout := budget_comp_linear (listReverse encNat) hf.snd'.snd'
   refine hout.weaken (.of_le_linear 100 100 fun _ => by
     simp only [encBits_apply]
     omega) |>.of_enc_eq ?_
