@@ -32,6 +32,7 @@ exact natural-number bound into an asymptotic one.
 ## Main results
 
 * `Cslib.CostIsBigO.of_le_nat`: export an exact monotone natural-number bound.
+* `Cslib.CostIsBigO.of_le_add_mul`: an affine bound `a + b * size` is `O(size)`.
 * `Cslib.CostIsBigO.mono`: a smaller cost has the same bound.
 * `Cslib.CostIsBigO.trans_isBigO`: weaken the comparison function.
 
@@ -75,6 +76,18 @@ theorem trans_isBigO {g' : ι → ℝ} (h : CostIsBigO l g size cost) (hg : g =O
     CostIsBigO l g' size cost := by
   obtain ⟨f, hf, hf0, hO, hb⟩ := h
   exact ⟨f, hf, hf0, hO.trans hg, hb⟩
+
+/-- A cost at most `a + b * size` is `O(size)` along `atTop`. -/
+theorem of_le_add_mul {size : α → ℕ} (a b : ℕ) (h : ∀ x, cost x ≤ a + b * size x) :
+    CostIsBigO Filter.atTop (fun n : ℕ => (n : ℝ)) size cost := by
+  refine of_le_nat (F := fun n => a + b * n)
+    (fun _ _ hmn => Nat.add_le_add_left (Nat.mul_le_mul_left b hmn) a) ?_ h
+  refine IsBigO.of_bound (a + b) ?_
+  filter_upwards [Filter.eventually_ge_atTop 1] with n hn
+  have hn' : (1 : ℝ) ≤ n := by exact_mod_cast hn
+  rw [Real.norm_of_nonneg (by positivity), Real.norm_of_nonneg (by positivity)]
+  push_cast
+  nlinarith
 
 end CostIsBigO
 
