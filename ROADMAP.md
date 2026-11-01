@@ -608,8 +608,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   exact cardinalities and a signed value recurrence. The native box-table milestone
   ([#2176](https://github.com/cslib-community/complexitylib/issues/2176)) computes one shared
   directory/catalogue and compact signed per-tile values, with actual lookup and charged
-  initialized execution. Its shared geometry cost remains explicit; global all-tile
-  amortization, wanted-query construction and Corollary 26/ET integration remain open.
+  initialized execution. The native sparse query ([#2203](https://github.com/cslib-community/complexitylib/issues/2203))
+  traverses only prefixes with at most `t` indexed inner terms, consuming low-order products
+  and actual threshold-box values in `258*(L+1)*Σ(d≤t) alpha(m,d)+28` instructions.
+  Its original-input constructor and query share one actual halting witness; table setup
+  is charged separately. Global all-tile amortization, wanted-query construction and
+  Corollary 26/ET integration remain open.
   Conservative native ordinary integer 3SUM is proved in
   `WordRAM/ThreeSum/Decision/Subquadratic.lean`: for each fixed polynomial magnitude exponent,
   one fixed 848-register program has charged time `Oκ(n^(2−1/5184))`, logarithmic physical
