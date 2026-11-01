@@ -150,7 +150,7 @@ theorem transformsTapesAt_seq {tm₀ : MultiTapeTM k Symbol State₀}
   obtain ⟨p'', ws'', e₁, hrun₁, hQ₁, hspace₁⟩ :=
     h₁ input p' ws' (out ++ e₀) (hmid input p ws p' ws' e₀ hP₀ hQ₀)
   have hstart : wordsCfgAt input p (some (tm₀.seq tm₁).q₀) ws out =
-      leftCfg tm₁ (wordsCfgAt input p (some tm₀.q₀) ws out) := rfl
+      (wordsCfgAt input p (some tm₀.q₀) ws out).mapState (handOver tm₁.q₀) := rfl
   refine ⟨p'', ws'', e₀ ++ e₁, ?_, ⟨p', ws', e₀, e₁, hQ₀, hQ₁, rfl⟩, ?_⟩
   · rw [hstart, runFrom_seq hrun₀ rfl (by simpa using hrun₁) rfl]
     rfl

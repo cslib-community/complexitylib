@@ -328,22 +328,24 @@ theorem runFrom_ofSingleTapeTM_of_outputsWithinTime (tm : SingleTapeTM Symbol)
   let fin₃ := (emitWork Symbol).runFrom start₃ (y.length + 1)
   have hfin₃_halt : fin₃.Halted := hstate₃
   have hseq₂₃ : ((runOnWork tm).seq (emitWork Symbol)).runFrom
-      (leftCfg (emitWork Symbol) start₂) (t + (y.length + 1)) = rightCfg fin₃ :=
+      (start₂.mapState (handOver (emitWork Symbol).q₀)) (t + (y.length + 1)) = fin₃.mapState
+        (Option.map Sum.inr) :=
     runFrom_seq (tm₀ := runOnWork tm) (tm₁ := emitWork Symbol) rfl hmid₂_halt rfl hfin₃_halt
   have hstart₂_eq : mid₁.withState (some ((runOnWork tm).seq (emitWork Symbol)).q₀) =
-      leftCfg (emitWork Symbol) start₂ := rfl
+      start₂.mapState (handOver (emitWork Symbol).q₀) := rfl
   rw [← hstart₂_eq] at hseq₂₃
-  have hright_halt : (rightCfg (State₀ := tm.State) fin₃).Halted := by
-    simp [Cfg.Halted, rightCfg, hfin₃_halt]
+  have hright_halt : (fin₃.mapState (Option.map (Sum.inr (α := tm.State)))).Halted := by
+    simp [Cfg.Halted, Cfg.mapState, hfin₃_halt]
   have hinit_eq : (ofSingleTapeTM tm).initCfg x =
-      leftCfg ((runOnWork tm).seq (emitWork Symbol)) ((copyInputToWork Symbol).initCfg x) := rfl
+      ((copyInputToWork Symbol).initCfg x).mapState (handOver ((runOnWork tm).seq (emitWork
+        Symbol)).q₀) := rfl
   have hseq₁₂₃ : (ofSingleTapeTM tm).runFrom ((ofSingleTapeTM tm).initCfg x) T =
-      rightCfg (rightCfg fin₃) := by
+      (fin₃.mapState (Option.map Sum.inr)).mapState (Option.map Sum.inr) := by
     rw [hinit_eq]
     exact runFrom_seq (tm₀ := copyInputToWork Symbol)
       (tm₁ := (runOnWork tm).seq (emitWork Symbol)) hcopy hmid₁_halt hseq₂₃ hright_halt
   rw [hseq₁₂₃]
-  refine ⟨by simp [Cfg.Halted, rightCfg, hfin₃_halt], ?_⟩
+  refine ⟨by simp [Cfg.Halted, Cfg.mapState, hfin₃_halt], ?_⟩
   change ((emitWork Symbol).runFrom start₃ (y.length + 1)).output = y
   rw [hout₃]
   change ((runOnWork tm).runFrom start₂ t).output ++ y = y

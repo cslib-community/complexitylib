@@ -78,8 +78,8 @@ theorem runFrom_prepareInput (mark : Symbol) (cfg : Cfg (k + 2) Symbol State inp
       runFrom_rewindWork_none _ _ _ hword le_rfl, embed_tapeEmb]
     simp [mid, Cfg.withState]
   have hseq := runFrom_seq hmark rfl hrewind rfl
-  simp only [prepareInput, marker, rewind, mid, Sequential.leftCfg, Sequential.rightCfg,
-    Cfg.withState, Cfg.mapState, Option.map_none,
+  simp only [prepareInput, marker, rewind, mid, Cfg.mapState,
+    Cfg.withState, Option.map_none,
     show 2 + (word.length + 2) = word.length + 4 by lia] at hseq ⊢
   exact hseq
 

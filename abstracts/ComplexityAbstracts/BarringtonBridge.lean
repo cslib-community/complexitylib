@@ -33,7 +33,7 @@ def HasWidthFivePrograms (L : Language Bool) : Prop :=
   ∃ size : ℕ → ℕ, Cslib.PolynomiallyBounded size ∧ ∀ n,
     ∃ (P : Cslib.BranchingPrograms.MonoidProgram (Fin n) Bool (Equiv.Perm (Fin 5)))
       (accept : Set (Equiv.Perm (Fin 5))),
-      (∀ x, L.slice n x = true ↔ P.eval x ∈ accept) ∧ P.length ≤ size n
+      (∀ x, L.slice n x = true ↔ P.eval x ∈ accept) ∧ P.toList.length ≤ size n
 
 /-- Unfold the two class definitions, retaining the same circuit and program witnesses. -/
 theorem barrington (L : Language Bool) : InNC1 L ↔ HasWidthFivePrograms L := by

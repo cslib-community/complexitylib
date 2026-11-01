@@ -395,7 +395,7 @@ private theorem count_incidenceLabelsList_eq_occupancy {r : ℕ} (hr : 1 ≤ r) 
   have hinj : Function.Injective (encodeAuxLabel (Q := Q) (r := r)) := fun x y h => by
     have := congrArg (decodeAuxLabel hD) h
     rwa [decodeAuxLabel_encodeAuxLabel, decodeAuxLabel_encodeAuxLabel] at this
-  rw [incidenceLabelsList_eq_ofFn hr, List.count_eq_countP, List.countP_ofFn]
+  rw [incidenceLabelsList_eq_ofFn hr, List.count_eq_countP, List.countP_ofFn, Finset.card_filter]
   unfold occupancy; rw [Fintype.card_subtype, Finset.card_filter,
     ← Equiv.sum_comp (scopeIncidenceEquivFin n_free scopes).symm]
   refine Finset.sum_congr rfl fun i _ => ?_

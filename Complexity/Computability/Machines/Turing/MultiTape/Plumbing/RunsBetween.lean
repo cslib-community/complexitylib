@@ -207,7 +207,8 @@ open Sequential in
 theorem seq {State₁ : Type*} {tm₁ : MultiTapeTM k Symbol State₁} {c'' : Cfg k Symbol Unit input}
     {t₁ s₁ : ℕ} (h₀ : RunsBetween tm c c' t s) (h₁ : RunsBetween tm₁ c' c'' t₁ s₁) :
     RunsBetween (tm.seq tm₁) c c'' (t + t₁) (s + s₁) := by
-  have hl : c.withState (some (tm.seq tm₁).q₀) = leftCfg tm₁ (c.withState (some tm.q₀)) := rfl
+  have hl : c.withState (some (tm.seq tm₁).q₀) = (c.withState (some tm.q₀)).mapState (handOver
+    tm₁.q₀) := rfl
   have hmid : (c'.withState (none : Option State)).Halted := rfl
   refine ⟨?_, ?_⟩
   · rw [hl, runFrom_seq h₀.1 hmid h₁.1 rfl]

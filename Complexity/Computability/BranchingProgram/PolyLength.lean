@@ -99,7 +99,7 @@ can contain every language: in the free monoid on `ℕ × α`, the program of le
 the generator `(i, x i)` at each position `i` sends different inputs to different elements. -/
 def PolyLength (α M : Type*) [Monoid M] : Set (Language α) :=
   {L | ∃ s : ℕ → ℕ, PolynomiallyBounded s ∧ ∀ n,
-    ∃ (P : MonoidProgram (Fin n) α M) (S : Set M), P.Decides S (L.slice n) ∧ P.length ≤ s n}
+    ∃ (P : MonoidProgram (Fin n) α M) (S : Set M), P.Decides S (L.slice n) ∧ P.toList.length ≤ s n}
 
 /-- **An injective homomorphism of monoids embeds the classes**: push the programs along it. -/
 theorem PolyLength.subset_of_injective {φ : M →* N} (hφ : Function.Injective φ) :

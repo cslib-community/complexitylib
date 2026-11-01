@@ -169,7 +169,7 @@ theorem select_decoded {input : List ℤ} {rs : List (ℕ × ℕ)}
 /-- List multiplicity is exactly the number of original input positions. -/
 theorem count_positions (input : List ℤ) (z : ℤ) :
     (Finset.univ.filter fun i : Fin input.length => input[i] = z).card = input.count z :=
-  Fin.card_filter_univ_eq_vector_get_eq_count z ⟨input, rfl⟩
+  (List.Vector.count_toList z ⟨input, rfl⟩).symm
 
 /-- Original input values are precisely the image of its positions. -/
 theorem input_values (input : List ℤ) :

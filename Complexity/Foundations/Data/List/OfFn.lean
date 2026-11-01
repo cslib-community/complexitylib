@@ -53,18 +53,10 @@ theorem List.Perm.exists_ofFn_iff {α : Type*} {m n : ℕ} {f : Fin m → α} {g
     exists_congr fun _ => and_congr_left fun _ => perm.mem_iff
   simpa [List.mem_ofFn] using h
 
-/-- Count satisfying array entries by summing their Boolean indicators. -/
-theorem List.countP_ofFn {α : Type*} {n : ℕ} (f : Fin n → α) (p : α → Bool) :
-    (List.ofFn f).countP p = ∑ i, if p (f i) then 1 else 0 := by
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    rw [List.ofFn_succ, List.countP_cons, Fin.sum_univ_succ, ih, Nat.add_comm]
-
 /-- The numbers below `n` that pass a test are as many as the elements of `Fin n` that pass it. -/
 theorem List.countP_range_eq_card_filter (n : ℕ) (p : ℕ → Bool) :
     (List.range n).countP p = #{j : Fin n | p j = true} := by
-  rw [← List.map_coe_finRange_eq_range, ← List.ofFn_eq_map, List.countP_ofFn, card_filter]
+  rw [← List.map_coe_finRange_eq_range, ← List.ofFn_eq_map, List.countP_ofFn]
 
 /-- A sum over `List.range n` is a sum over `Fin n`. -/
 theorem List.sum_map_range {M : Type*} [AddCommMonoid M] (n : ℕ) (f : ℕ → M) :

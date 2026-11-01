@@ -359,13 +359,13 @@ variable (S₁ B verify) in
 machine. -/
 noncomputable def lift (c : Cfg k Bool GuessState input) :
     Cfg k Bool (S₁ ⊕ GuessState ⊕ RewindWorkState ⊕ S₂) input :=
-  rightCfg (leftCfg (rewindVerify B verify) c)
+  (c.mapState (handOver (rewindVerify B verify).q₀)).mapState (Option.map Sum.inr)
 
 /-- In the guessing phase, the move `b` is a step of the guessing machine with the move `b`. -/
 theorem next_lift {c : Cfg k Bool GuessState input} (h : c.state ≠ none) (b : Bool) :
     (guessVerify B prep verify).next b (lift S₁ B verify c) =
       lift S₁ B verify ((guess B b).step c) := by
-  rw [guessVerify, next_ofTMs, machine, lift, step_rightCfg, step_leftCfg _ h]
+  rw [guessVerify, next_ofTMs, machine, lift, step_mapState_inr, step_mapState_handOver _ h]
   rfl
 
 /-- At the terminator of the frame, the guessing phase ends. -/
@@ -428,10 +428,12 @@ theorem haltsWithin_lift_tag (r : ℕ) : ∀ (zd : List Bool) (u : Bool) (n : �
     · exact fun h b zr hzr => h (b :: zr) (by simp [hzr])
 
 /-- The configurations after the guessing phase are never at the cell of a move. -/
-theorem state_rightCfg_rightCfg_ne (c : Cfg k Bool (RewindWorkState ⊕ S₂) input)
-    (u : Bool) : (rightCfg (State₀ := S₁) (rightCfg (State₀ := GuessState) c)).state ≠
+theorem state_mapState_inr_mapState_inr_ne
+    (c : Cfg k Bool (RewindWorkState ⊕ S₂) input)
+    (u : Bool) : ((c.mapState (Option.map (Sum.inr (α := GuessState)))).mapState (Option.map
+      (Sum.inr (α := S₁)))).state ≠
       some (.inr (.inl (.move u))) := by
-  rcases hc : c.state with _ | _ <;> simp [rightCfg, Cfg.mapState, hc]
+  rcases hc : c.state with _ | _ <;> simp [Cfg.mapState, hc]
 
 /-- Rewinding tape `B` from `pos` takes `pos + 2` steps. -/
 theorem runFrom_rewindWork_cfg {w : List Bool} {pos : ℕ} (hpos : pos ≤ w.length) :
@@ -450,13 +452,14 @@ theorem runFrom_lift_none {w : List Bool} {pos t : ℕ} (hpos : pos ≤ w.length
       []) t).state = none) (b : Bool) :
     (machine B prep verify b).runFrom
       (lift S₁ B verify (cfg (input := input) B none w pos)) (pos + 2 + t) =
-      rightCfg (rightCfg (rightCfg (verify.runFrom (wordsCfg input (some verify.q₀)
-        (Function.update (fun _ => []) B w) []) t))) := by
-  rw [lift, leftCfg_of_halt rfl, machine, runFrom_rightCfg, runFrom_rightCfg]
+      (((verify.runFrom (wordsCfg input (some verify.q₀)
+        (Function.update (fun _ => []) B w) []) t).mapState (Option.map Sum.inr)).mapState
+          (Option.map Sum.inr)).mapState (Option.map Sum.inr) := by
+  rw [lift, mapState_handOver_of_halt rfl, machine, runFrom_mapState_inr, runFrom_mapState_inr]
   congr 2
   have hstart : (cfg (input := input) (State := GuessState) B none w pos).withState
       (some (rewindVerify B verify).q₀) =
-        leftCfg verify (cfg B (some (rewindWork Bool).q₀) w pos) :=
+        (cfg B (some (rewindWork Bool).q₀) w pos).mapState (handOver verify.q₀) :=
     rfl
   rw [hstart, rewindVerify, runFrom_seq (runFrom_rewindWork_cfg hpos) rfl _ hfin]
   rw [← cfg_zero]
@@ -464,17 +467,22 @@ theorem runFrom_lift_none {w : List Bool} {pos t : ℕ} (hpos : pos ≤ w.length
 
 /-- The configurations reached by the deterministic machine of the move `false` agree with those of
 every move, outside the moves. -/
-theorem next_iterate_rightCfg (c : Cfg k Bool (RewindWorkState ⊕ S₂) input) (j : ℕ)
+theorem next_iterate_mapState_inr
+    (c : Cfg k Bool (RewindWorkState ⊕ S₂) input) (j : ℕ)
     (b : Bool) : (guessVerify B prep verify).next b
-      ((machine B prep verify false).step^[j] (rightCfg (rightCfg c))) =
-      (machine B prep verify false).step^[j + 1] (rightCfg (rightCfg c)) := by
+      ((machine B prep verify false).step^[j] ((c.mapState (Option.map Sum.inr)).mapState
+        (Option.map Sum.inr))) =
+      (machine B prep verify false).step^[j + 1] ((c.mapState (Option.map Sum.inr)).mapState
+        (Option.map Sum.inr)) := by
   rw [guessVerify, next_ofTMs, Function.iterate_succ_apply', step_machine]
-  have : (machine B prep verify false).step^[j] (rightCfg (rightCfg c)) =
-      rightCfg (rightCfg ((rewindVerify B verify).runFrom c j)) := by
+  have : (machine B prep verify false).step^[j] ((c.mapState (Option.map Sum.inr)).mapState
+    (Option.map Sum.inr)) =
+      (((rewindVerify B verify).runFrom c j).mapState (Option.map Sum.inr)).mapState (Option.map
+        Sum.inr) := by
     change (machine B prep verify false).runFrom _ j = _
-    rw [machine, runFrom_rightCfg, runFrom_rightCfg]
+    rw [machine, runFrom_mapState_inr, runFrom_mapState_inr]
   rw [this]
-  exact state_rightCfg_rightCfg_ne _
+  exact state_mapState_inr_mapState_inr_ne _
 
 /-- After the guessing phase, the moves do not matter, and the machine reaches the halted
 configuration of `verify`. -/
@@ -487,15 +495,17 @@ private theorem iterate_lift_none {w : List Bool} {pos t : ℕ} (hpos : pos ≤ 
           (lift S₁ B verify (cfg (input := input) B none w pos))) ∧
     (machine B prep verify false).step^[pos + 2 + t]
       (lift S₁ B verify (cfg (input := input) B none w pos)) =
-      rightCfg (rightCfg (rightCfg (verify.runFrom (wordsCfg input (some verify.q₀)
-        (Function.update (fun _ => []) B w) []) t))) := by
+      (((verify.runFrom (wordsCfg input (some verify.q₀)
+        (Function.update (fun _ => []) B w) []) t).mapState (Option.map Sum.inr)).mapState
+          (Option.map Sum.inr)).mapState (Option.map Sum.inr) := by
   have hstart : lift S₁ B verify (cfg (input := input) B none w pos) =
-      rightCfg (rightCfg ((cfg (input := input) (State := GuessState) B none w pos).withState
-        (some (rewindVerify B verify).q₀))) := by
-    rw [lift, leftCfg_of_halt rfl]
+      (((cfg (input := input) (State := GuessState) B none w pos).withState
+        (some (rewindVerify B verify).q₀)).mapState (Option.map Sum.inr)).mapState (Option.map
+          Sum.inr) := by
+    rw [lift, mapState_handOver_of_halt rfl]
   have hend := runFrom_lift_none (S₁ := S₁) (prep := prep) hpos hfin false
   rw [hstart] at hend ⊢
-  exact ⟨fun j _ b => next_iterate_rightCfg _ j b, hend⟩
+  exact ⟨fun j _ b => next_iterate_mapState_inr _ j b, hend⟩
 
 /-- **The verifying phase.** After the guessing phase, with the word `w` on tape `B`, if `verify`
 halts within `t` steps on `w`, the machine accepts within `pos + 2 + t` moves exactly when the
@@ -509,7 +519,7 @@ theorem acceptsWithin_lift_none {w : List Bool} {pos t : ℕ} (hpos : pos ≤ w.
         []) t).output = [true] := by
   obtain ⟨hdet, hend⟩ := iterate_lift_none (prep := prep) hpos hfin
   rw [← add_zero (pos + 2 + t), acceptsWithin_add_iff_of_next_eq hdet, hend,
-    acceptsWithin_of_halted _ (by simp [rightCfg, Cfg.mapState, hfin])]
+    acceptsWithin_of_halted _ (by simp [Cfg.mapState, hfin])]
   rfl
 
 /-- **The verifying phase halts.** After the guessing phase, with the word `w` on tape `B`, if
@@ -522,7 +532,7 @@ theorem haltsWithin_lift_none {w : List Bool} {pos t : ℕ} (hpos : pos ≤ w.le
       (lift S₁ B verify (cfg (input := input) B none w pos)) := by
   obtain ⟨hdet, hend⟩ := iterate_lift_none (prep := prep) hpos hfin
   rw [← add_zero (pos + 2 + t), haltsWithin_add_iff_of_next_eq hdet, hend, haltsWithin_zero]
-  simp [rightCfg, Cfg.mapState, hfin]
+  simp [Cfg.mapState, hfin]
 
 /-- **The preparing phase.** If `prep` halts at step `u` with the word `w` on tape `B` and every
 other work tape blank, then from the initial configuration the machine reaches the start of the
@@ -539,21 +549,23 @@ theorem prepare_spec {w : List Bool} {u : ℕ} (hu : prep.HaltsAt (Cfg.init prep
       ((guessVerify B prep verify).toPTM.toNTM.initCfg input) =
       lift S₁ B verify (cfg (input := input) B (some (.tag false)) w 0) := by
   have hinit : (guessVerify B prep verify).toPTM.toNTM.initCfg input =
-      leftCfg ((guess B false).seq (rewindVerify B verify)) (Cfg.init prep.q₀ input) :=
+      (Cfg.init prep.q₀ input).mapState (handOver ((guess B false).seq (rewindVerify B
+        verify)).q₀) :=
     rfl
   rw [hinit]
   refine ⟨fun j hj b => ?_, ?_⟩
   · rw [guessVerify, next_ofTMs, Function.iterate_succ_apply', step_machine]
     intro v
     have hrun : (machine B prep verify false).runFrom
-        (leftCfg ((guess B false).seq (rewindVerify B verify)) (Cfg.init prep.q₀ input)) j =
-        leftCfg ((guess B false).seq (rewindVerify B verify))
-          (prep.runFrom (Cfg.init prep.q₀ input) j) :=
-      runFrom_leftCfg _ j fun m hm => hu.not_halted (by omega)
+        ((Cfg.init prep.q₀ input).mapState (handOver ((guess B false).seq (rewindVerify B
+          verify)).q₀)) j =
+        (prep.runFrom (Cfg.init prep.q₀ input) j).mapState (handOver ((guess B false).seq
+          (rewindVerify B verify)).q₀) :=
+      runFrom_mapState_handOver _ j fun m hm => hu.not_halted (by omega)
     rw [show (machine B prep verify false).step^[j] _ =
       (machine B prep verify false).runFrom _ j from rfl, hrun]
     obtain ⟨q, hq⟩ := Option.ne_none_iff_exists'.mp (hu.not_halted hj)
-    simp only [leftCfg, Cfg.mapState, hq]
+    simp only [Cfg.mapState, hq]
     simp
   · change (machine B prep verify false).runFrom _ (u + 0) = _
     rw [machine, hu.runFrom_seq, hprep, MultiTapeTM.runFrom, Function.iterate_zero,

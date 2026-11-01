@@ -262,7 +262,7 @@ theorem walk_const [Nonempty D] (c : ℝ) : G.walk (fun _ ↦ c) = fun _ ↦ c :
 theorem walk_pow_const [Nonempty D] (t : ℕ) (c : ℝ) : (G.walk ^ t) (fun _ ↦ c) = fun _ ↦ c := by
   induction t with
   | zero => rfl
-  | succ t ih => rw [pow_succ, Module.End.mul_apply, walk_const, ih]
+  | succ t ih => rw [pow_succ, mul_apply_eq_comp, walk_const, ih]
 
 /-- **Jensen's inequality for the walk**: the square of an average of neighbors is at most the
 average of the squares. -/
@@ -284,7 +284,7 @@ theorem expect_walk [Nonempty D] (f : V → ℝ) : 𝔼 v, G.walk f v = 𝔼 v, 
 theorem expect_walk_pow [Nonempty D] (t : ℕ) (f : V → ℝ) : 𝔼 v, (G.walk ^ t) f v = 𝔼 v, f v := by
   induction t with
   | zero => rfl
-  | succ t ih => rw [pow_succ', Module.End.mul_apply, expect_walk, ih]
+  | succ t ih => rw [pow_succ', mul_apply_eq_comp, expect_walk, ih]
 
 /-- The walk operator preserves expectation zero. -/
 theorem expect_walk_eq_zero {f : V → ℝ} (hf : 𝔼 v, f v = 0) : 𝔼 v, G.walk f v = 0 := by
@@ -297,7 +297,7 @@ theorem expect_walk_pow_eq_zero {f : V → ℝ} (hf : 𝔼 v, f v = 0) (t : ℕ)
     𝔼 v, (G.walk ^ t) f v = 0 := by
   induction t with
   | zero => exact hf
-  | succ t ih => rw [pow_succ', Module.End.mul_apply, G.expect_walk_eq_zero ih]
+  | succ t ih => rw [pow_succ', mul_apply_eq_comp, G.expect_walk_eq_zero ih]
 
 /-- The walk operator is self-adjoint for the uniform inner product. -/
 theorem expect_mul_walk_comm (f g : V → ℝ) :
@@ -525,7 +525,7 @@ theorem expect_walk_pow_sq_le_spectralExpansion_pow_mul {f : V → ℝ}
     have := G.spectralExpansion_nonneg
     calc
       _ ≤ G.spectralExpansion ^ 2 * 𝔼 v, (G.walk ^ t) f v ^ 2 := by
-        rw [pow_succ', Module.End.mul_apply]
+        rw [pow_succ', mul_apply_eq_comp]
         exact expect_walk_sq_le_spectralExpansion_sq_mul (G.expect_walk_pow_eq_zero hf t)
       _ ≤ G.spectralExpansion ^ 2 * (G.spectralExpansion ^ (2 * t) * 𝔼 v, f v ^ 2) := by gcongr
       _ = G.spectralExpansion ^ (2 * (t + 1)) * 𝔼 v, f v ^ 2 := by ring

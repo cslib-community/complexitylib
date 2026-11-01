@@ -52,7 +52,7 @@ def HasWidthFivePrograms (L : Language Bool) : Prop :=
   ∃ size : ℕ → ℕ, Cslib.PolynomiallyBounded size ∧ ∀ n,
     ∃ (P : Cslib.BranchingPrograms.MonoidProgram (Fin n) Bool (Equiv.Perm (Fin 5)))
       (accept : Set (Equiv.Perm (Fin 5))),
-      (∀ x, L.slice n x = true ↔ P.eval x ∈ accept) ∧ P.length ≤ size n
+      (∀ x, L.slice n x = true ↔ P.eval x ∈ accept) ∧ P.toList.length ≤ size n
 
 /-- **Barrington.** The same language has logarithmic-depth, polynomial-size De Morgan
 circuits if and only if it has polynomial-length permutation programs on five states. -/

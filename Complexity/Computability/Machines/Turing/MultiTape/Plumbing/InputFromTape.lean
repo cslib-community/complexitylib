@@ -184,10 +184,11 @@ public theorem transformsTapes_inputFromWord (mark : Symbol)
   have hs₁ : p₁.space ≤ pM.space + 2 * (w.length + 2) := space_map_inCfgHom_le M mark outer pM
   obtain ⟨p₂, hh₂, hl₂, ht₂, hs₂⟩ := exists_runPath_eraseFlag (State := State) mark ws₁ w e outer
   obtain ⟨p₁₂, hh₁₂, hl₁₂, ht₁₂, hs₁₂⟩ := exists_runPath_seq_space_le (p₀ := p₁) (p₁ := p₂)
-    (by rw [hl₁]; rfl) (by rw [hh₂, hl₁]) (by rw [hl₂]; rfl)
+    (by rw [hl₁]; rfl) (by rw [hh₂, hl₁])
   obtain ⟨p, hph, hpl, hpt, hps⟩ := exists_runPath_seq_space_le (p₀ := p₀) (p₁ := p₁₂)
-    (by rw [hl₀]; rfl) (by simp [hh₁₂, p₁, hh, hl₀]; rfl) (by rw [hl₁₂, hl₂]; rfl)
-  refine ⟨_, e, ⟨rfl, rfl⟩, p, by rw [hph, hh₀]; rfl, by simp [hpl, hl₁₂, hl₂, rightCfg], ?_, ?_⟩
+    (by rw [hl₀]; rfl) (by simp [hh₁₂, p₁, hh, hl₀]; rfl)
+  refine ⟨_, e, ⟨rfl, rfl⟩, p, by rw [hph, hh₀]; rfl, by simp [hpl, hl₁₂, hl₂, Cfg.mapState], ?_,
+    ?_⟩
   · simp only [MultiTapeNTM.RunPath.time] at ht ht₀ ht₂ ⊢
     have : p₁.length = pM.length := rfl
     omega

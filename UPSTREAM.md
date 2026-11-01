@@ -40,6 +40,10 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   and their helpers) and the blocks marked `@9cce4cc7` in older copies come from a later local
   rewrite of the branch that is not yet published; `scripts/upstream_sync.py` reports them
   against the published head until it is. The rest of the branch is still copied at `@7f7c0696`.
+  The sequential-run additions and their callers use the pinned upstream state maps and
+  handover homomorphisms, preserving the zero-step handoff and additive time and space bounds.
+  The path-space lemma follows upstream in allowing an unfinished second phase; state-independent
+  invariants replace the control state by `some ()`, preserving the earlier erasure semantics.
 * **Universal simulation.** The local universal interpreter preserves Christian Reitwiessner’s
   description format and execution semantics. Its resource certificates now separate
   transition-description size and binary input-head length from the copied configuration;

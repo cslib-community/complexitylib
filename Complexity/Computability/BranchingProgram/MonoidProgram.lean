@@ -200,7 +200,7 @@ def map (φ : M →* N) (P : MonoidProgram ι α M) : MonoidProgram ι α N :=
 
 /-- Mapping a program by a monoid homomorphism preserves its length. -/
 @[simp] theorem length_map (φ : M →* N) (P : MonoidProgram ι α M) :
-    (P.map φ).length = P.length :=
+    (P.map φ).toList.length = P.toList.length :=
   List.length_map _
 
 /-- Mapping a program by a monoid homomorphism `φ` applies `φ` to its value. -/
@@ -223,7 +223,7 @@ def comap (g : β → α) (P : MonoidProgram ι α M) : MonoidProgram ι β M :=
 omit [Monoid M] in
 /-- Pulling a program back along `g` preserves its length. -/
 @[simp] theorem length_comap (g : β → α) (P : MonoidProgram ι α M) :
-    (P.comap g).length = P.length :=
+    (P.comap g).toList.length = P.toList.length :=
   List.length_map _
 
 /-- Pulling a program back along `g` evaluates it on `g ∘ x`. -/
@@ -239,7 +239,7 @@ def rename (f : ι → κ) (P : MonoidProgram ι α M) : MonoidProgram κ α M :
 omit [Monoid M] in
 /-- Renaming the positions of a program preserves its length. -/
 @[simp] theorem length_rename (f : ι → κ) (P : MonoidProgram ι α M) :
-    (P.rename f).length = P.length :=
+    (P.rename f).toList.length = P.toList.length :=
   List.length_map _
 
 /-- Renaming the positions of a program by `f` evaluates it on `x ∘ f`. -/
@@ -250,7 +250,7 @@ omit [Monoid M] in
 
 /-- The program with the instructions in reverse order and their elements inverted. -/
 def inv (P : MonoidProgram ι α G) : MonoidProgram ι α G :=
-  FreeMonoid.reverse (FreeMonoid.map (Instruction.map (·⁻¹)) P)
+  FreeMonoid.ofList ((P.toList.map (Instruction.map (·⁻¹))).reverse)
 
 /-- The instruction list of `P.inv` is the reversed list of elementwise-inverted instructions of
 `P`. -/
@@ -259,8 +259,8 @@ theorem toList_inv (P : MonoidProgram ι α G) :
   rfl
 
 /-- Inverting a program over a group preserves its length. -/
-@[simp] theorem length_inv (P : MonoidProgram ι α G) : P.inv.length = P.length := by
-  simp [FreeMonoid.length, toList_inv]
+@[simp] theorem length_inv (P : MonoidProgram ι α G) : P.inv.toList.length = P.toList.length := by
+  simp only [toList_inv, List.length_reverse, List.length_map]
 
 /-- The inverse of a program over a group evaluates to the inverse of its value. -/
 @[simp] theorem eval_inv (P : MonoidProgram ι α G) (x : ι → α) :
@@ -284,10 +284,10 @@ def mulLeft (g : M) (P : MonoidProgram ι α M) : MonoidProgram ι α M :=
   · simp [eval_eq_prod, h]
   · simp [eval_eq_prod, h, mul_assoc]
 
-/-- `mulLeft g P` has length `max 1 P.length`. -/
+/-- `mulLeft g P` has length `max 1 P.toList.length`. -/
 theorem length_mulLeft (g : M) (P : MonoidProgram ι α M) :
-    (mulLeft g P).length = max 1 P.length := by
-  unfold mulLeft FreeMonoid.length
+    (mulLeft g P).toList.length = max 1 P.toList.length := by
+  unfold mulLeft
   split <;> rename_i h <;> simp [h]
 
 /-- If `P` `σ⁻¹`-computes `f`, multiplying by `σ` makes it `σ`-compute the negation of `f`. -/

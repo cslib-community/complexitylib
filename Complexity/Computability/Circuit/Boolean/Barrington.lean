@@ -98,7 +98,7 @@ under inverses, in which every element is the commutator of two elements of `C`.
 theorem exists_monoidProgram_computes_of_forall_commutator {G : Type*} [Group G] [NeZero n]
     {C : Set G} (hinv : ∀ σ ∈ C, σ⁻¹ ∈ C) (hcomm : ∀ σ ∈ C, ∃ α ∈ C, ∃ β ∈ C, ⁅α, β⁆ = σ)
     (F : Formula signature n) {σ : G} (hσ : σ ∈ C) :
-    ∃ P : MonoidProgram (Fin n) Bool G, P.length ≤ 4 ^ F.depthWith binaryCost ∧
+    ∃ P : MonoidProgram (Fin n) Bool G, P.toList.length ≤ 4 ^ F.depthWith binaryCost ∧
       P.Computes σ (F.eval interpretation) := by
   induction F generalizing σ with
   | input i =>
@@ -125,12 +125,12 @@ theorem exists_monoidProgram_computes_of_forall_commutator {G : Type*} [Group G]
         (depthWith (σ := signature) binaryCost (args 1))
       have hd : (gate (σ := signature) Op.and args).depthWith binaryCost = D + 1 := by
         simp [D, Fin.univ_succ]
-      have h₀ : P.length ≤ 4 ^ D :=
+      have h₀ : P.toList.length ≤ 4 ^ D :=
         hPlen.trans (Nat.pow_le_pow_right (by decide) (le_max_left _ _))
-      have h₁ : Q.length ≤ 4 ^ D :=
+      have h₁ : Q.toList.length ≤ 4 ^ D :=
         hQlen.trans (Nat.pow_le_pow_right (by decide) (le_max_right _ _))
-      calc (P * Q * P.inv * Q.inv).length = 2 * (P.length + Q.length) := by
-            simp only [FreeMonoid.length_mul, length_inv]
+      calc (P * Q * P.inv * Q.inv).toList.length = 2 * (P.toList.length + Q.toList.length) := by
+            simp only [FreeMonoid.toList_mul, List.length_append, length_inv]
             omega
         _ ≤ 2 * (4 ^ D + 4 ^ D) := Nat.mul_le_mul_left 2 (Nat.add_le_add h₀ h₁)
         _ = 4 ^ (D + 1) := by ring
@@ -149,13 +149,13 @@ theorem exists_monoidProgram_computes_of_forall_commutator {G : Type*} [Group G]
       have hd : (gate (σ := signature) Op.or args).depthWith binaryCost = D + 1 := by
         simp [D, Fin.univ_succ]
       have hD : 1 ≤ 4 ^ D := Nat.one_le_pow _ _ (by decide)
-      have h₀ : (mulLeft α P).length ≤ 4 ^ D := (length_mulLeft α P).trans_le (max_le hD
+      have h₀ : (mulLeft α P).toList.length ≤ 4 ^ D := (length_mulLeft α P).trans_le (max_le hD
         (hPlen.trans (Nat.pow_le_pow_right (by decide) (le_max_left _ _))))
-      have h₁ : (mulLeft β Q).length ≤ 4 ^ D := (length_mulLeft β Q).trans_le (max_le hD
+      have h₁ : (mulLeft β Q).toList.length ≤ 4 ^ D := (length_mulLeft β Q).trans_le (max_le hD
         (hQlen.trans (Nat.pow_le_pow_right (by decide) (le_max_right _ _))))
-      have hRlen : R.length ≤ 4 ^ (gate (σ := signature) Op.or args).depthWith binaryCost :=
-        calc R.length = 2 * ((mulLeft α P).length + (mulLeft β Q).length) := by
-              simp only [R, FreeMonoid.length_mul, length_inv]
+      have hRlen : R.toList.length ≤ 4 ^ (gate (σ := signature) Op.or args).depthWith binaryCost :=
+        calc R.toList.length = 2 * ((mulLeft α P).toList.length + (mulLeft β Q).toList.length) := by
+              simp only [R, FreeMonoid.toList_mul, List.length_append, length_inv]
               omega
           _ ≤ 2 * (4 ^ D + 4 ^ D) := Nat.mul_le_mul_left 2 (Nat.add_le_add h₀ h₁)
           _ = 4 ^ (D + 1) := by ring
@@ -171,7 +171,7 @@ alternating group `A₅`: five-cycles are even. -/
 theorem exists_monoidProgram_alternatingGroup_computes [NeZero n] (F : Formula signature n)
     {σ : alternatingGroup (Fin 5)} (hσ : IsFiveCycle (σ : Perm (Fin 5))) :
     ∃ P : MonoidProgram (Fin n) Bool (alternatingGroup (Fin 5)),
-      P.length ≤ 4 ^ F.depthWith binaryCost ∧ P.Computes σ (F.eval interpretation) :=
+      P.toList.length ≤ 4 ^ F.depthWith binaryCost ∧ P.Computes σ (F.eval interpretation) :=
   F.exists_monoidProgram_computes_of_forall_commutator
     (C := {σ : alternatingGroup (Fin 5) | IsFiveCycle (σ : Perm (Fin 5))})
     (fun _ h => by simpa using h.inv) (fun _ h => by
@@ -184,7 +184,7 @@ negations and constants free, has a permutation branching program of width `5` a
 `4 ^ d` that `σ`-computes it: the program over `A₅` mapped into `S₅`. -/
 theorem exists_monoidProgram_computes [NeZero n] (F : Formula signature n) {σ : Perm (Fin 5)}
     (hσ : IsFiveCycle σ) :
-    ∃ P : MonoidProgram (Fin n) Bool (Perm (Fin 5)), P.length ≤ 4 ^ F.depthWith binaryCost ∧
+    ∃ P : MonoidProgram (Fin n) Bool (Perm (Fin 5)), P.toList.length ≤ 4 ^ F.depthWith binaryCost ∧
       P.Computes σ (F.eval interpretation) := by
   obtain ⟨P, hlen, hP⟩ :=
     F.exists_monoidProgram_alternatingGroup_computes (σ := ⟨σ, hσ.mem_alternatingGroup⟩) hσ
@@ -199,7 +199,7 @@ alternating group `A₅` of length at most `4 ^ d`. -/
 theorem exists_monoidProgram_alternatingGroup_computes_of_formulaDepth [NeZero n]
     (f : BooleanFunction n) {σ : alternatingGroup (Fin 5)} (hσ : IsFiveCycle (σ : Perm (Fin 5))) :
     ∃ P : MonoidProgram (Fin n) Bool (alternatingGroup (Fin 5)),
-      P.length ≤ 4 ^ formulaDepth f ∧ P.Computes σ f := by
+      P.toList.length ≤ 4 ^ formulaDepth f ∧ P.Computes σ f := by
   obtain ⟨F, hF, hd⟩ := exists_computes_depthWith_eq_formulaDepth f
   obtain ⟨P, hlen, hP⟩ := F.exists_monoidProgram_alternatingGroup_computes hσ
   exact ⟨P, hd ▸ hlen, fun x => (hP x).trans (by rw [hF x])⟩
@@ -209,7 +209,7 @@ branching program of width `5` and length at most `4 ^ d`. -/
 theorem exists_monoidProgram_computes_of_formulaDepth [NeZero n]
     (f : BooleanFunction n) {σ : Perm (Fin 5)} (hσ : IsFiveCycle σ) :
     ∃ P : MonoidProgram (Fin n) Bool (Perm (Fin 5)),
-      P.length ≤ 4 ^ formulaDepth f ∧ P.Computes σ f := by
+      P.toList.length ≤ 4 ^ formulaDepth f ∧ P.Computes σ f := by
   obtain ⟨P, hlen, hP⟩ :=
     exists_monoidProgram_alternatingGroup_computes_of_formulaDepth f
       (σ := ⟨σ, hσ.mem_alternatingGroup⟩) hσ
@@ -306,10 +306,11 @@ private theorem isNNF_entryFormula (P : MonoidProgram (Fin n) Bool (Function.End
   exact .and (hv a c) (hu c b)
 
 /-- The entry formula of a width-`w` branching program `P` has binary-gate depth at most
-`(⌈log₂ w⌉ + 1) ⌈log₂ P.length⌉`. -/
+`(⌈log₂ w⌉ + 1) ⌈log₂ P.toList.length⌉`. -/
 theorem depthWith_entryFormula_le (P : MonoidProgram (Fin n) Bool (Function.End (Fin w)))
     (a b : Fin w) :
-    (P.entryFormula a b).depthWith binaryCost ≤ (Nat.clog 2 w + 1) * Nat.clog 2 P.length := by
+    (P.entryFormula a b).depthWith binaryCost ≤
+      (Nat.clog 2 w + 1) * Nat.clog 2 P.toList.length := by
   let d (T : Fin w → Fin w → Formula signature n) : ℕ :=
     Finset.univ.sup fun ab : Fin w × Fin w => (T ab.1 ab.2).depthWith binaryCost
   have hd (T : Fin w → Fin w → Formula signature n) (a b : Fin w) :
@@ -340,7 +341,7 @@ at `a` and accepting at the states of `acc`, is computed by a De Morgan formula 
 theorem exists_formula (P : MonoidProgram (Fin n) Bool (Function.End (Fin w))) (a : Fin w)
     (acc : Finset (Fin w)) :
     ∃ F : Formula signature n, (∀ x, F.eval interpretation x = decide ((P.eval x) a ∈ acc)) ∧
-      F.depthWith binaryCost ≤ (Nat.clog 2 w + 1) * Nat.clog 2 P.length + Nat.clog 2 w ∧
+      F.depthWith binaryCost ≤ (Nat.clog 2 w + 1) * Nat.clog 2 P.toList.length + Nat.clog 2 w ∧
         F.IsNNF := by
   classical
   refine ⟨Formula.orList (acc.toList.map (P.entryFormula a)), fun x => ?_, ?_,
@@ -361,7 +362,8 @@ leaves (`Formula.IsNNF`): `f` is true where some `a` is mapped to some `b ≠ a`
 theorem Computes.exists_formula {P : MonoidProgram (Fin n) Bool (Perm (Fin w))} {σ : Perm (Fin w)}
     {f : BooleanFunction n} (hP : P.Computes σ f) (hσ : σ ≠ 1) :
     ∃ F : Formula signature n, F.Computes interpretation f ∧
-      F.depthWith binaryCost ≤ (Nat.clog 2 w + 1) * Nat.clog 2 P.length + Nat.clog 2 (w * w) ∧
+      F.depthWith binaryCost ≤
+        (Nat.clog 2 w + 1) * Nat.clog 2 P.toList.length + Nat.clog 2 (w * w) ∧
         F.IsNNF := by
   let Q := P.map (MulAction.toEndHom (M := Perm (Fin w)) (α := Fin w))
   let pairs := (List.finRange w ×ˢ List.finRange w).filter fun p => p.1 ≠ p.2

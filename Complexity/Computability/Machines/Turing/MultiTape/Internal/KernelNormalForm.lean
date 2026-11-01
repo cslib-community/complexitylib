@@ -107,9 +107,10 @@ theorem clearedCfg_cons {σ₁ : Type*} (i : Fin k) (l : List (Fin k))
     by_cases hj : pairIdx j = i <;> by_cases hj' : pairIdx j ∈ l <;> simp [hj, hj']
 
 omit [DecidableEq Symbol] in
-@[simp] theorem Sequential.rightCfg_clearedCfg {State₀ State₁ : Type*} (l : List (Fin k))
+@[simp] theorem Sequential.mapState_inr_clearedCfg
+    {State₀ State₁ : Type*} (l : List (Fin k))
     (C : Cfg (k + k) Symbol σ input) :
-    Sequential.rightCfg (State₀ := State₀) (clearedCfg (σ' := State₁) l C) =
+    (clearedCfg (σ' := State₁) l C).mapState (Option.map (Sum.inr (α := State₀))) =
       clearedCfg (σ' := State₀ ⊕ State₁) l C := rfl
 
 omit [DecidableEq Symbol] in
@@ -186,9 +187,9 @@ theorem exists_runPath_clearList (hm : m₀ ≠ m₁) (l : List (Fin k)) (hl : l
       (p₀ := .ofDeterministic ((clearShadowed m₀ m₁).extendTapes (pairEmb i))
         (C.withState (some .start)) (a i + 2 * b i + c i + 5)) (p₁ := p₁)
       (by rw [MultiTapeNTM.RunPath.last_ofDeterministic, hmid]; rfl)
-      (by rw [hh₁, MultiTapeNTM.RunPath.last_ofDeterministic, hmid]; rfl) (by rw [hl₁]; rfl)
+      (by rw [hh₁, MultiTapeNTM.RunPath.last_ofDeterministic, hmid]; rfl)
     refine ⟨p, hh, hl'.trans ?_, ?_⟩
-    · rw [hl₁, Sequential.rightCfg_clearedCfg]
+    · rw [hl₁, Sequential.mapState_inr_clearedCfg]
       exact (clearedCfg_cons i l C).symm
     · change p.length ≤ a i + 2 * b i + c i + 5 + p₁.length at ht
       change p₁.length ≤ _ at ht₁
@@ -278,22 +279,21 @@ theorem exists_runPath_tidy (hm : m₀ ≠ m₁) {u : ℕ}
   obtain ⟨pAB, hhAB, hlAB, htAB, hsAB⟩ := exists_runPath_seq_space_le
     (p₀ := .ofDeterministic (shadow m₀ m₁ tm) ((shadow m₀ m₁ tm).initCfg input) (u + 1))
     (p₁ := pB) (by rw [MultiTapeNTM.RunPath.last_ofDeterministic, hA]; exact hC₁)
-    (by rw [hhB, MultiTapeNTM.RunPath.last_ofDeterministic, hA]) (by rw [hlB])
+    (by rw [hhB, MultiTapeNTM.RunPath.last_ofDeterministic, hA])
   set R₀ : Cfg (k + k) Symbol RewindState input :=
-    (Sequential.rightCfg (State₀ := Option State)
-      (⟨none, C₁.inputPos, fun _ _ => none, fun _ => 0, C₁.output⟩ :
-        Cfg (k + k) Symbol (ClearListState (List.finRange k).length) input)).withState
+    ((⟨none, C₁.inputPos, fun _ _ => none, fun _ => 0, C₁.output⟩ :
+        Cfg (k + k) Symbol (ClearListState (List.finRange k).length) input).mapState (Option.map
+          (Sum.inr (α := Option State)))).withState
       (some ((rewindInput Symbol).extendTapes (noTapes (k + k))).q₀)
   have hR : ((rewindInput Symbol).extendTapes (noTapes (k + k))).runFrom R₀
       (C₁.inputPos.val - 1 + 2) = ⟨none, 1, fun _ _ => none, fun _ => 0, C₁.output⟩ := by
     rw [runFrom_noTapes]
-    simp only [R₀, noTapesCfg, Cfg.withState, Sequential.rightCfg, Cfg.mapState, extendTapes_q₀,
+    simp only [R₀, noTapesCfg, Cfg.withState, Cfg.mapState, extendTapes_q₀,
       runFrom_rewindInput]
   obtain ⟨p, hh, hl, ht, hs⟩ := exists_runPath_seq_space_le (p₀ := pAB)
     (p₁ := .ofDeterministic ((rewindInput Symbol).extendTapes (noTapes (k + k))) R₀
       (C₁.inputPos.val - 1 + 2))
     (by rw [hlAB, hlB]; rfl) (by rw [hlAB, hlB]; rfl)
-    (by rw [MultiTapeNTM.RunPath.last_ofDeterministic, hR])
   -- the time bound
   set Tc := ((List.finRange k).map fun i => a i + 2 * b i + c i + 5).sum + 1
   have hcard (i : Fin k) :

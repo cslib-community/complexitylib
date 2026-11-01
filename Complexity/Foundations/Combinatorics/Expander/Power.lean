@@ -157,7 +157,7 @@ theorem walk_pow (t : ℕ) : (G.pow t).walk = G.walk ^ t := by
   | zero => exact LinearMap.ext fun f ↦ funext fun v ↦ by simp [walk_apply]
   | succ t ih =>
     refine LinearMap.ext fun f ↦ funext fun v ↦ ?_
-    rw [pow_succ', Module.End.mul_apply, ← ih, walk_apply, walk_apply]
+    rw [pow_succ', mul_apply_eq_comp, ← ih, walk_apply, walk_apply]
     simp only [neighbor_pow_succ, walk_apply]
     -- a tuple of `t + 1` labels is a first label and a tuple of `t` labels
     rw [Fin.expect_univ_cons]
@@ -207,7 +207,7 @@ private theorem sq_expect_walk_pow_succ_sq_le (f : V → ℝ) (s : ℕ) :
   have h : 𝔼 v, (G.walk ^ (s + 1)) f v ^ 2 =
       𝔼 v, (G.walk ^ s) f v * (G.walk ^ (s + 2)) f v := by
     rw [show s + 2 = s + 1 + 1 from rfl, pow_succ' _ (s + 1), pow_succ' _ s]
-    simp only [Module.End.mul_apply, sq]
+    simp only [mul_apply_eq_comp, sq]
     exact (G.expect_mul_walk_comm _ _).symm
   rw [h]
   exact expect_mul_sq_le_sq_mul_sq _ _ _
@@ -228,7 +228,7 @@ theorem spectralExpansion_pow {t : ℕ} (ht : t ≠ 0) :
   have key := mul_pow_le_pow_mul_of_sq_le_mul (a := fun s ↦ 𝔼 v, (G.walk ^ s) f v ^ 2)
     (fun s ↦ expect_nonneg fun v _ ↦ sq_nonneg _) (G.sq_expect_walk_pow_succ_sq_le f) t
   have hat := (G.pow t).expect_walk_sq_le_spectralExpansion_sq_mul hf
-  simp only [pow_zero, pow_one, Module.End.one_apply] at key
+  simp only [pow_zero, pow_one, one_apply_eq_self] at key
   rw [walk_pow] at hat
   have h₀ : 0 ≤ 𝔼 v, f v ^ 2 := expect_nonneg fun v _ ↦ sq_nonneg (f v)
   rcases h₀.eq_or_lt with h0 | hpos
