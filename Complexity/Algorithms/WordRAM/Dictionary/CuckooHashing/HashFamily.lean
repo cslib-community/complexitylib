@@ -85,7 +85,7 @@ polynomial hashes `f₁, g₁, f₂, g₂`) and two random tabulation arrays `Z�
   function `evalHash1` and `evalHash2` is exact `7`-wise independent onto `Fin (2 ^ M)`.
 * `isCuckooHashPair_le_two`, `isCuckooHashFamily_le_two`, `isCuckooHashFamily_le_one`:
   unconditional `IsCuckooHashPair` and `IsCuckooHashFamily` instances for `n_max ≤ 2` (`C_walk = 1`,
-  `C_reh = 0`).
+  `C_reh = 0`), with `IsCuckooHashPair.mono_consts` providing monotonicity in `(C_walk, C_reh)`.
 * `initTableHashPairCode_execWithin`, `resampleHashPairCode_execRand`, `evalHash1Code_execWithin`,
   `evalHash2Code_execWithin`: Word-RAM correctness and step bounds for initializing, resampling
   (without rebuilding `clmulTab`), and evaluating the hash pair.
@@ -1097,6 +1097,20 @@ structure IsCuckooHashPair {Θ : Type*} (μ : PMF Θ) {U m : ℕ}
       {θ : Θ | (pureReplay (h₁ θ) (h₂ θ) MaxLoop ks).isSome ∧
         (pureReplay (h₁ θ) (h₂ θ) MaxLoop (ks ++ [u])).isNone} ≤
       (C_reh : ℝ≥0∞) / ((max n_max 1 : ℝ≥0∞) * (max MaxLoop 1 : ℝ≥0∞))
+
+/-- Monotonicity of `IsCuckooHashPair` in the constants `C_walk` and `C_reh`. -/
+theorem IsCuckooHashPair.mono_consts {Θ : Type*} {μ : PMF Θ} {U m : ℕ}
+    {h₁ h₂ : Θ → Fin U → Fin m}
+    {n_max MaxLoop C_walk C_walk' C_reh C_reh' : ℕ}
+    (hp : IsCuckooHashPair μ h₁ h₂ n_max MaxLoop C_walk C_reh)
+    (hw : C_walk ≤ C_walk') (hr : C_reh ≤ C_reh') :
+    IsCuckooHashPair μ h₁ h₂ n_max MaxLoop C_walk' C_reh' where
+  expected_walk_le S u hS hu :=
+    (hp.expected_walk_le S u hS hu).trans (by exact_mod_cast hw)
+  rehash_prob_le_half := hp.rehash_prob_le_half
+  step_rehash_prob_le ks u hnodup hlen hu :=
+    (hp.step_rehash_prob_le ks u hnodup hlen hu).trans
+      (ENNReal.div_le_div_right (by exact_mod_cast hr) _)
 
 /-- Specialization of `IsCuckooHashPair` to the concrete modified tabulated polynomial hash pair
 `(evalHash1, evalHash2)` over `seedLaw U M` (independent `g₁, g₂` and bitwise XOR over
