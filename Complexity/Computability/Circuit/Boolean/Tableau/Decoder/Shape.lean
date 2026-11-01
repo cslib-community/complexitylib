@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Boolean.Tableau.Succinct
+import Complexity.Foundations.Data.Nat.Bitwise.Carry
 
 /-!
 # The clauses of the succinct tableau as symbolic shapes
@@ -516,75 +517,6 @@ def outBit (s cb tb : ℕ) (ts sel : ℕ → Bool) (p c t T : ℕ) (lk : Bool) (
   else if i < 2 + (s + cb + tb) then payTerm ts sel s cb p c t T (i - 2)
   else sel 9 || (sel 10 && lk)
 
-/-- Bit `q` of `c - 1`, for `1 ≤ c`: bit `q` of `c`, flipped when the lower bits of `c` are
-zero. -/
-theorem testBit_sub_one {c : ℕ} (hc : 1 ≤ c) (q : ℕ) :
-    (c - 1).testBit q = (c.testBit q ^^ decide (c % 2 ^ q = 0)) := by
-  induction q generalizing c with
-  | zero =>
-    simp only [Nat.testBit_zero, pow_zero, Nat.mod_one, decide_true, Bool.xor_true]
-    rw [Bool.eq_iff_iff]
-    simp only [decide_eq_true_eq, Bool.not_eq_eq_eq_not, Bool.not_true, decide_eq_false_iff_not,
-      Nat.mod_two_not_eq_one]
-    omega
-  | succ q ih =>
-    rw [Nat.testBit_succ, Nat.testBit_succ, Nat.pow_succ', Nat.mod_mul]
-    rcases Nat.even_or_odd c with ⟨d, rfl⟩ | ⟨d, rfl⟩
-    · have hd : 1 ≤ d := by omega
-      have h₁ : (d + d - 1) / 2 = d - 1 := by omega
-      have h₂ : (d + d) / 2 = d := by omega
-      have h₃ : (d + d) % 2 = 0 := by omega
-      rw [h₁, h₂, ih hd, h₃]
-      congr 2
-      rw [Nat.zero_add, Nat.mul_eq_zero]
-      simp
-    · have h₁ : (2 * d + 1 - 1) / 2 = d := by omega
-      have h₂ : (2 * d + 1) / 2 = d := by omega
-      have h₃ : (2 * d + 1) % 2 = 1 := by omega
-      rw [h₁, h₂, h₃]
-      simp
-
-/-- Bit `q` of `c + 1`: bit `q` of `c`, flipped when the lower bits of `c` are all one. -/
-theorem testBit_add_one (c q : ℕ) :
-    (c + 1).testBit q = (c.testBit q ^^ decide (c % 2 ^ q = 2 ^ q - 1)) := by
-  induction q generalizing c with
-  | zero =>
-    simp only [Nat.testBit_zero, pow_zero, Nat.mod_one, Nat.sub_self, decide_true, Bool.xor_true]
-    rw [Bool.eq_iff_iff]
-    simp only [decide_eq_true_eq, Bool.not_eq_eq_eq_not, Bool.not_true, decide_eq_false_iff_not,
-      Nat.mod_two_not_eq_one]
-    omega
-  | succ q ih =>
-    rw [Nat.testBit_succ, Nat.testBit_succ, Nat.pow_succ', Nat.mod_mul]
-    have hq := Nat.one_le_two_pow (n := q)
-    rcases Nat.even_or_odd c with ⟨d, rfl⟩ | ⟨d, rfl⟩
-    · have h₁ : (d + d + 1) / 2 = d := by omega
-      have h₂ : (d + d) / 2 = d := by omega
-      have h₃ : (d + d) % 2 = 0 := by omega
-      rw [h₁, h₂, h₃]
-      have : ¬ (2 * (d % 2 ^ q) = 2 * 2 ^ q - 1) := by omega
-      simp [this]
-    · have h₁ : (2 * d + 1 + 1) / 2 = d + 1 := by omega
-      have h₂ : (2 * d + 1) / 2 = d := by omega
-      have h₃ : (2 * d + 1) % 2 = 1 := by omega
-      rw [h₁, h₂, h₃, ih d]
-      congr 2
-      exact propext ⟨fun h => by omega, fun h => by omega⟩
-
-/-- The bits of a tag and a payload. -/
-theorem testBit_tag_add {tag : ℕ} (htag : tag < 4) (pay i : ℕ) :
-    (tag + 4 * pay).testBit i = if i < 2 then tag.testBit i else pay.testBit (i - 2) := by
-  rw [Nat.add_comm, show 4 = 2 ^ 2 from rfl, Nat.testBit_two_pow_mul_add _ htag]
-
-/-- The bits of three fields of widths `s` and `cb` and a high field. -/
-theorem testBit_fields {s cb sl C Tm : ℕ} (hsl : sl < 2 ^ s) (hC : C < 2 ^ cb) (q : ℕ) :
-    (sl + 2 ^ s * (C + 2 ^ cb * Tm)).testBit q =
-      if q < s then sl.testBit q else if q < s + cb then C.testBit (q - s)
-      else Tm.testBit (q - s - cb) := by
-  rw [Nat.add_comm, Nat.testBit_two_pow_mul_add _ hsl, Nat.add_comm C,
-    Nat.testBit_two_pow_mul_add _ hC]
-  split_ifs <;> first | rfl | omega
-
 /-- A symbolic label whose slot and column fit their fields. -/
 def LabelSrc.InRange (s cb c T : ℕ) : LabelSrc → Prop
   | .pos sl cs _ => sl < 2 ^ s ∧ cs.eval c T < 2 ^ cb
@@ -613,10 +545,10 @@ private theorem colTerm_eq {c T q sl : ℕ} (cs : ColSrc) (ts : TimeSrc) (t0 : B
       Bool.and_self, Bool.false_and, Bool.or_self, Nat.succ_ne_self, Nat.zero_testBit,
       Bool.or_false, Bool.true_and, Bool.and_true, Bool.false_or, Bool.or_true]
   all_goals first
-    | rw [testBit_add_one]
+    | rw [Nat.testBit_add_one_eq_xor]
     | (by_cases hc : c = 0
        · simp [hc]
-       · rw [testBit_sub_one (by omega)]; simp [hc])
+       · rw [Nat.testBit_sub_one_eq_xor (by omega)]; simp [hc])
 
 private theorem timeTerm_eq {t T q sl : ℕ} (cs : ColSrc) (ts : TimeSrc) (c0 : Bool)
     (sg : SignSrc) :
@@ -628,7 +560,7 @@ private theorem timeTerm_eq {t T q sl : ℕ} (cs : ColSrc) (ts : TimeSrc) (c0 : 
   all_goals
     by_cases ht : t = 0
     · simp [ht]
-    · rw [testBit_sub_one (by omega)]; simp [ht]
+    · rw [Nat.testBit_sub_one_eq_xor (by omega)]; simp [ht]
 
 /-- **The output bits of a shape are the bits of its literal**: its label below `2 + P` and its
 sign at `2 + P`, for `P = s + cb + tb`, at least one slot bit, a looked-up bit that is the bit of
@@ -639,7 +571,7 @@ theorem outBit_shape {s cb tb p c t T : ℕ} {x : List Bool} {lk : Bool} (hs : 1
     outBit s cb tb (tagSlot sh) (selOf (decide (c = 0)) (decide (t = 0)) sh) p c t T lk i =
       if i < 2 + (s + cb + tb) then (sh.1.eval s cb p c t T).testBit i else sh.2.eval x p := by
   obtain ⟨l, sg⟩ := sh
-  rw [LabelSrc.eval_eq, testBit_tag_add l.tag_lt]
+  rw [LabelSrc.eval_eq, Nat.testBit_add_four_mul l.tag_lt]
   unfold outBit
   by_cases h2 : i < 2
   · simp [h2, tagSlot, show i < 2 + (s + cb + tb) by omega]
@@ -672,9 +604,9 @@ theorem outBit_shape {s cb tb p c t T : ℕ} {x : List Bool} {lk : Bool} (hs : 1
         all_goals
           by_cases hc : c = 0
           · simp [hc]
-          · rw [testBit_sub_one (by omega)]; simp [hc]
+          · rw [Nat.testBit_sub_one_eq_xor (by omega)]; simp [hc]
       · obtain ⟨hsl, hC⟩ := hR
-        rw [LabelSrc.payload, testBit_fields hsl hC]
+        rw [LabelSrc.payload, Nat.testBit_add_two_pow_mul_add_two_pow_mul hsl hC]
         have hcol := colTerm_eq (c := c) (T := T) (q := q - s) (sl := sl) cs ts (decide (t = 0)) sg
         have htime := timeTerm_eq (t := t) (T := T) (q := q - s - cb) (sl := sl) cs ts
           (decide (c = 0)) sg
