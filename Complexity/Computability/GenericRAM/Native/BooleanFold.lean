@@ -132,7 +132,7 @@ def clock : NativeCertificate (fun n : ℕ => 2 ^ n) encUnary encNat where
   space n := (encUnary n).length
   computes := by
     apply ComputableInO.of_linear
-    apply ComputableInLinearTimeAndSpace.of_transducer clockTransducer
+    apply ComputableInDegree.of_transducer clockTransducer
     intro n
     change (2 ^ n).bits = clockTransducer.run () (List.replicate n true)
     rw [bits_power, clockRun]
