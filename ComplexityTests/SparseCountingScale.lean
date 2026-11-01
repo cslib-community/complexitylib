@@ -74,7 +74,7 @@ example : ∃ (C : ℝ) (N : ℕ), 0 < C ∧
     ((2 ^ 640000 : ℕ) : ℝ) / (numGroups (2 ^ 640000) : ℝ) ≤
       16 * interpolationScale (2 ^ 640000) := by
   obtain ⟨c, hc_pos, hc_ev⟩ := isBigO_div_numGroups_interpolationScale.exists_pos
-  rw [IsBigOWith] at hc_ev
+  rw [isBigOWith_iff] at hc_ev
   obtain ⟨N, hN⟩ := eventually_atTop.mp
     (hc_ev.and (eventually_poly_mul_two_pow_div_numGroups_le 3))
   refine ⟨c, N, hc_pos, fun n hn => ?_, ?_, ?_⟩

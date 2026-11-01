@@ -89,10 +89,17 @@ example : |∑ x, (evenParity (tribesSize 1015 * 1015) x).toReal *
   have ht : (64 * 1016) ^ 64 ≤ K :=
     Nat.le_of_succ_le_succ (((show (64 * 1016) ^ 64 + 1 ≤ 2 ^ (1015 - 1) * 1015 by norm_num).trans
       (Nat.mul_le_mul_right 1015 hs)).trans hK.le)
-  exact abs_sum_bitVal_tribes_sub_half_le (by norm_num)
+  -- Discharge the balance hypotheses at symbolic width, before specializing the large powers.
+  have h_bias (w : ℕ) {p t : ℕ} {D : PMF (BitString (tribesSize w * w))}
+      (hp : 1 ≤ p) (hs : tribesSize w < 2 ^ p) (hw : w < 2 ^ p)
+      (ht : (64 * p) ^ 64 ≤ t) (hD : IsKWiseIndependent t D) :
+      |∑ x, (D x).toReal * bitVal ℝ (tribes w (tribesSize w) x) - 1 / 2| ≤
+        2⁻¹ ^ w + 1 / 2 ^ p :=
+    abs_sum_bitVal_tribes_sub_half_le hp hs hw (one_div_two_le_pow_tribesSize w)
+      (pow_tribesSize_add_one_lt_one_div_two w) ht hD
+  exact h_bias 1015 (by norm_num)
     ((tribesSize_lt_two_pow 1015).trans (Nat.pow_lt_pow_right one_lt_two (by norm_num)))
-    (by norm_num) (one_div_two_le_pow_tribesSize 1015) (pow_tribesSize_add_one_lt_one_div_two 1015)
-    ht (hK ▸ isKWiseIndependent_evenParity K)
+    (by norm_num) ht (hK ▸ isKWiseIndependent_evenParity K)
 
 -- The influence at `w = 2723`, `s = 2 ^ w` and `p = w + 4`: under the even-parity distribution on
 -- its `s w` bits, every coalition `Q` has influence at most `2 ^ (|Q| - 2723) + 2 ^ (-2727)` on

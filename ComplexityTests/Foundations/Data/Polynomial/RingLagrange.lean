@@ -29,9 +29,13 @@ theorem pairwise_isUnit :
 
 /-- The interpolant of the values `3, 5` at `0, 1` takes those values. -/
 example : (ringInterpolate Finset.univ (![0, 1] : Fin 2 → ZMod 8) ![3, 5]).eval 0 = 3 ∧
-    (ringInterpolate Finset.univ (![0, 1] : Fin 2 → ZMod 8) ![3, 5]).eval 1 = 5 :=
-  ⟨eval_ringInterpolate_at_node pairwise_isUnit _ (Finset.mem_univ (0 : Fin 2)),
-    eval_ringInterpolate_at_node pairwise_isUnit _ (Finset.mem_univ (1 : Fin 2))⟩
+    (ringInterpolate Finset.univ (![0, 1] : Fin 2 → ZMod 8) ![3, 5]).eval 1 = 5 := by
+  have at_node (i : Fin 2) :=
+    eval_ringInterpolate_at_node (s := Finset.univ) (v := (![0, 1] : Fin 2 → ZMod 8))
+      (i := i) pairwise_isUnit (![3, 5] : Fin 2 → ZMod 8) (Finset.mem_univ i)
+  constructor
+  · simpa only [Matrix.cons_val_zero] using at_node (0 : Fin 2)
+  · simpa only [Matrix.cons_val_one, Matrix.cons_val_zero] using at_node (1 : Fin 2)
 
 /-- A linear polynomial over `ZMod 8` is the interpolant of its values at `0` and `1`. -/
 example : (C 3 + C 2 * X : (ZMod 8)[X]) =
