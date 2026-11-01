@@ -510,11 +510,11 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   representation from the standard input. `WordRAM/Function` gives separate nonuniform and
   uniform RAM function-time predicates, with named-certificate reuse by `polytime`. Arbitrary continuation
   synthesis, iterative clients and a Turing-machine simulation remain open.
-  `Foundations/Data/OrderedSet` and `Foundations/Data/OrderedSet/*` provide neutral
+  `DataStructure/OrderedSet` and `DataStructure/OrderedSet/*` provide neutral
   optional-minimum contracts, a typed finite-set interface including deletion, and adaptive
   minimum extraction, with no tree or cost dependency. Bounded-key implementations may specialize
   insertion admissibility.
-  `Algorithms/Lean/SearchTree/*` reuses Mathlib's `BinaryTree`, height and node count for an
+  `DataStructure/SearchTree/*` reuses Mathlib's `BinaryTree`, height and node count for an
   unbalanced ordered-set realization. Finite-set behavior, strict invariants and height-bounded
   node visits are proved, including deletion through the shared interface and adaptive clients;
   allocation, comparison implementation and client computation are excluded from that cost model.
