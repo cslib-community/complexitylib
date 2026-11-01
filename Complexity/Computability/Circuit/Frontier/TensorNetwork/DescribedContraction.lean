@@ -833,9 +833,8 @@ theorem contractionCertificate_le [Inhabited Y] (hops : ops.PolyTime encQ encY)
       obtain ⟨hq, -, -, -⟩ := hx
       rw [hq] at hmem
       have h3 := hvlen v hmem
-      have hxv {c e : ℕ} :
-          c * ((encPair (encNode encQ encT) (encPair (encList encNat) encT) (x, v)).length + 1) ^ e ≤
-            c * (11 * z + 16) ^ e := by
+      have hxv {c e : ℕ} : c * ((encPair (encNode encQ encT) (encPair (encList encNat) encT)
+          (x, v)).length + 1) ^ e ≤ c * (11 * z + 16) ^ e := by
         refine Nat.mul_le_mul_left _ (Nat.pow_le_pow_left ?_ _)
         have := length_encPair (enc₁ := encNode encQ encT)
           (enc₂ := encPair (encList encNat) encT) (x, v)
