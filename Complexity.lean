@@ -1362,6 +1362,7 @@ public import Complexity.Computability.Complexity.Classes.Time.AcceptCount
 public import Complexity.Computability.Complexity.Classes.Time.BoundedExists
 public import Complexity.Computability.Complexity.Classes.Time.Polynomial
 public import Complexity.Computability.Complexity.Classes.Time.Verifier
+public import Complexity.Computability.Complexity.Classes.TimeSpace.Williams
 public import Complexity.Computability.Complexity.Classes.Toda
 public import Complexity.Computability.Complexity.Classes.Toda.Counting
 public import Complexity.Computability.Complexity.Classes.Toda.Hierarchy
@@ -1698,6 +1699,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ConcreteSupplierCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ConcreteSupplierSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Driver
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.DriverBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.DriverComputable
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.DriverCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.EncodedTree
@@ -1776,6 +1778,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleReadSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleReadWindow
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearch
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearchBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearchCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearchSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputationTree
