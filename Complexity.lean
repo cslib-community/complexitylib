@@ -1699,6 +1699,9 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateInterpolation
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateInterpolationBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateInterpolationCorrect
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateVector
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateVectorBounds
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateVectorCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ImplicitNode
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ImplicitNodeCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ImplicitPath
@@ -1711,6 +1714,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.InitialVectorCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.NodeReply
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.NodeReplyCorrect
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.NormalizePoint
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplay
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayAccess
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayAssignments
