@@ -7,7 +7,6 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Codes
 public import Mathlib.Data.Nat.Digits.Defs
 import Mathlib.Data.List.FinRange

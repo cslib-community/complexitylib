@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxQuery.Prefixes
+import Complexity.Algorithms.MatrixMultiplication.Schonhage.Orders
 import Mathlib.Data.List.OfFn
 
 /-!
