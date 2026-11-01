@@ -7,12 +7,12 @@ Authors: Samuel Schlesinger, Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Semantics.Stateful.Module
+public import Complexity.DataStructure.StateTransition.Module
 
 /-!
 # Independent additive resource certificates
 
-The same semantic realization admits multiple resource interpretations. Additive measures of
+The same semantic implementation admits multiple resource interpretations. Additive measures of
 native evidence compose exactly; this does not model peak live space or cache replacement.
 Module potentials may depend on hidden intermediate representations, which are retained as
 existential witnesses rather than silently exposed to the client.
@@ -20,7 +20,7 @@ existential witnesses rather than silently exposed to the client.
 ## Main definitions
 
 * `total`: additive interpretation of a native trace.
-* `Bound`: a per-operation resource certificate, separate from semantic realization.
+* `Bound`: a per-operation resource certificate, separate from semantic implementation.
 
 ## Main results
 
@@ -41,11 +41,11 @@ existential witnesses rather than silently exposed to the client.
 
 @[expose] public section
 
-namespace Cslib.Stateful
+namespace Cslib.DataStructure
 
 universe u v w x y
 
-variable {D E : Spec.{u, v, w}} {C τ : Type x} {α β : Type y}
+variable {D E : StateTransitionSpec.{u, v, w}} {C τ : Type x} {α β : Type y}
 
 /-- An additive interpretation of recorded native executions. Only additive resources use this. -/
 def total (weight : τ → Nat) : List τ → Nat
@@ -66,15 +66,16 @@ theorem total_eq_sum_map (weight : τ → Nat) (ts : List τ) :
   | nil => rfl
   | cons t ts ih => simp [ih]
 
-/-- A resource certificate is separate from the realization and can be supplied more than once. -/
-def Bound {exec : Execution D C τ} (R : Realization D exec)
+/-- A resource certificate is separate from the implementation and can be supplied more than
+once. -/
+def Bound {exec : Execution D C τ} (R : StateTransitionImpl D exec)
     (weight : τ → Nat) (charge : D.State → D.Op → Nat) : Prop :=
   ∀ {s c o a c' trace}, R.rep s c → D.valid s o → exec c o a c' trace →
     weight trace ≤ charge s o
 
 /-- Under a resource certificate, every native execution of a demonically admissible client
 realizes a valid `ClientRun` transcript whose total charge bounds `total weight traces`. -/
-theorem Bound.demonic {exec : Execution D C τ} {R : Realization D exec}
+theorem Bound.demonic {exec : Execution D C τ} {R : StateTransitionImpl D exec}
     {weight : τ → Nat} {charge : D.State → D.Op → Nat} (B : Bound R weight charge)
     {p : D.Client α} {s : D.State} {c c' : C} {a : α} {traces : List τ}
     (hr : R.rep s c) (hv : D.DemonicValid s p)
@@ -95,7 +96,7 @@ theorem Bound.demonic {exec : Execution D C τ} {R : Realization D exec}
 
 /-- Under a resource certificate, every demonically admissible client admits a native execution
 meeting the total charge bound along its `ClientRun` transcript. -/
-theorem Bound.exists_demonic {exec : Execution D C τ} {R : Realization D exec}
+theorem Bound.exists_demonic {exec : Execution D C τ} {R : StateTransitionImpl D exec}
     {weight : τ → Nat} {charge : D.State → D.Op → Nat} (B : Bound R weight charge)
     (p : D.Client α) {s : D.State} {c : C} (hr : R.rep s c)
     (hv : D.DemonicValid s p) :
@@ -114,7 +115,7 @@ variable {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStep
 /-- Under a resource certificate on a deterministic specification (`[D.HasStepFn f]`), every native
 execution of a client whose history is admissible has total weight at most the total charge of the
 specified history. -/
-theorem Bound.client {exec : Execution D C τ} {R : Realization D exec}
+theorem Bound.client {exec : Execution D C τ} {R : StateTransitionImpl D exec}
     {weight : τ → Nat} {charge : D.State → D.Op → Nat} (B : Bound R weight charge)
     {p : D.Client α} {s : D.State} {c c' : C} {a : α} {traces : List τ}
     (hr : R.rep s c) (hv : D.ValidHistory s (D.clientHistory s p))
@@ -125,8 +126,8 @@ theorem Bound.client {exec : Execution D C τ} {R : Realization D exec}
   obtain ⟨_, _, _, rfl⟩ := (D.clientRun_iff_runClient s p a s' tr).mp hrun
   rwa [D.totalCostTranscript_canonicalTranscript] at hb
 
-/-- Existence and semantic correctness are inherited independently from the realization. -/
-theorem Bound.exists_executes {exec : Execution D C τ} {R : Realization D exec}
+/-- Existence and semantic correctness are inherited independently from the implementation. -/
+theorem Bound.exists_executes {exec : Execution D C τ} {R : StateTransitionImpl D exec}
     {weight : τ → Nat} {charge : D.State → D.Op → Nat} (B : Bound R weight charge)
     (p : D.Client α) {s : D.State} {c : C} (hr : R.rep s c)
     (hv : D.ValidHistory s (D.clientHistory s p)) :
@@ -137,16 +138,16 @@ theorem Bound.exists_executes {exec : Execution D C τ} {R : Realization D exec}
   exact ⟨c', traces, he, hr', B.client hr hv he⟩
 
 /-- Uniform constant per-operation bounds scale by the history length. -/
-theorem Bound.client_const {exec : Execution D C τ} {R : Realization D exec}
+theorem Bound.client_const {exec : Execution D C τ} {R : StateTransitionImpl D exec}
     {weight : τ → Nat} {K : Nat} (B : Bound R weight (fun _ _ => K))
     {p : D.Client α} {s : D.State} {c c' : C} {a : α} {traces : List τ}
     (hr : R.rep s c) (hv : D.ValidHistory s (D.clientHistory s p))
     (he : Executes exec p c a c' traces) :
     total weight traces ≤ (D.clientHistory s p).length * K := by
-  simpa only [Spec.totalCost_const] using B.client hr hv he
+  simpa only [StateTransitionSpec.totalCost_const] using B.client hr hv he
 
 /-- Existence, correctness, and total cost for a uniform constant per-operation bound. -/
-theorem Bound.exists_executes_const {exec : Execution D C τ} {R : Realization D exec}
+theorem Bound.exists_executes_const {exec : Execution D C τ} {R : StateTransitionImpl D exec}
     {weight : τ → Nat} {K : Nat} (B : Bound R weight (fun _ _ => K))
     (p : D.Client α) {s : D.State} {c : C} (hr : R.rep s c)
     (hv : D.ValidHistory s (D.clientHistory s p)) :
@@ -163,7 +164,7 @@ namespace Module
 variable (M : Module D E) {exec : Execution E C τ}
 
 /-- Transport a worst-case resource bound through a relational semantic module. -/
-theorem bound_demonic (R : Realization E exec) {weight : τ → Nat}
+theorem bound_demonic (R : StateTransitionImpl E exec) {weight : τ → Nat}
     {charge : E.State → E.Op → Nat} (B : Bound R weight charge)
     (budget : D.State → D.Op → Nat)
     (hbudget : ∀ {s e} o {a e' tr}, M.rep s e → D.valid s o →
@@ -178,7 +179,7 @@ theorem bound_demonic (R : Realization E exec) {weight : τ → Nat}
 /-- A resource interpretation is transported afterwards on deterministic lower specifications. -/
 theorem bound
     {fE : (e : E.State) → (o : E.Op) → E.State × E.Result o} [E.HasStepFn fE]
-    (R : Realization E exec) {weight : τ → Nat}
+    (R : StateTransitionImpl E exec) {weight : τ → Nat}
     {charge : E.State → E.Op → Nat} (B : Bound R weight charge)
     (budget : D.State → D.Op → Nat)
     (hbudget : ∀ {s e} o, M.rep s e → D.valid s o →
@@ -192,7 +193,7 @@ theorem bound
 
 /-- Hidden representation credit telescopes along an arbitrary demonically admissible upper client.
 The intermediate abstract state remains existentially hidden in the conclusion. -/
-theorem amortized_demonic (R : Realization E exec) {weight : τ → Nat}
+theorem amortized_demonic (R : StateTransitionImpl E exec) {weight : τ → Nat}
     {lowerCharge : E.State → E.Op → Nat} (B : Bound R weight lowerCharge)
     (potential : D.State → E.State → Nat) (charge : D.State → D.Op → Nat)
     (hstep : ∀ {s e} o {a e' tr}, M.rep s e → D.valid s o →
@@ -218,7 +219,7 @@ theorem amortized_demonic (R : Realization E exec) {weight : τ → Nat}
     obtain ⟨s₂, tr_D, e₂, hrun_D, hM₂, hR₂, hpot₂⟩ := ih hM₁ hR₁ (hv_k s₁ res hstep₁)
     refine ⟨s₂, ⟨o, res, s₁⟩ :: tr_D, e₂, .liftBind o k res hv_o hstep₁ hrun_D,
       hM₂, hR₂, ?_⟩
-    simp only [total_cons, Spec.totalCostTranscript_cons]
+    simp only [total_cons, StateTransitionSpec.totalCostTranscript_cons]
     omega
 
 /-- Hidden representation credit telescopes along an arbitrary adaptive upper client on
@@ -227,7 +228,7 @@ theorem amortized_client
     {fD : (s : D.State) → (o : D.Op) → D.State × D.Result o}
     {fE : (e : E.State) → (o : E.Op) → E.State × E.Result o}
     [D.HasStepFn fD] [E.HasStepFn fE]
-    (R : Realization E exec) {weight : τ → Nat}
+    (R : StateTransitionImpl E exec) {weight : τ → Nat}
     {lowerCharge : E.State → E.Op → Nat} (B : Bound R weight lowerCharge)
     (potential : D.State → E.State → Nat) (charge : D.State → D.Op → Nat)
     (hstep : ∀ {s e} o, M.rep s e → D.valid s o →
@@ -264,7 +265,7 @@ theorem amortized_client
         o :: D.clientHistory (D.stepFn s o).1 (k (D.stepFn s o).2) from rfl,
         show D.clientState s (.liftBind o k) =
           D.clientState (D.stepFn s o).1 (k (D.stepFn s o).2) from rfl,
-        Spec.totalCost_cons]
+        StateTransitionSpec.totalCost_cons]
       omega⟩
 
 end Module
@@ -278,4 +279,4 @@ theorem total_flatten (weight : τ → Nat) (chunks : List (List τ)) :
     rw [List.flatten_cons, total_cons, ← ih, total_eq_sum_map, total_eq_sum_map,
       total_eq_sum_map, List.map_append, List.sum_append]
 
-end Cslib.Stateful
+end Cslib.DataStructure

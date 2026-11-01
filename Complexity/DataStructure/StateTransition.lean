@@ -13,7 +13,7 @@ public import Cslib.Foundations.Semantics.FLTS.Basic
 public import Cslib.Foundations.Semantics.LTS.Basic
 
 /-!
-# Stateful specifications and adaptive clients
+# State-transition specifications and adaptive clients
 
 Specifications describe mathematical states, typed operations, relational transitions, and input
 admissibility. Clients use Quang Dao's upstream `PFunctor.FreeM`; continuations may depend on
@@ -25,42 +25,54 @@ The relational semantics is **demonic** for callers and **angelic** for implemen
 * An adaptive client `p : D.Client α` is demonically admissible (`D.DemonicValid s p`) when each
   issued operation is admissible (`D.valid`) and the continuation remains admissible under *every*
   outcome `(s', a)` permitted by `D.step`.
-* Deterministic specifications are constructed via `Spec.ofFn` and characterized by the
-  `Spec.HasStepFn` typeclass, which equips them with functional execution helpers (`Spec.stepFn`,
-  `Spec.toFLTS`, `Spec.run`, `Spec.ValidHistory`, `Spec.totalCost`, `Spec.runClient`, `eval`) and
-  equivalence lemmas connecting the relational and functional views.
+* Deterministic specifications are constructed via `StateTransitionSpec.ofFn` and characterized by
+  the `StateTransitionSpec.HasStepFn` typeclass, which equips them with functional execution
+  helpers (`StateTransitionSpec.stepFn`, `StateTransitionSpec.toFLTS`, `StateTransitionSpec.run`,
+  `StateTransitionSpec.ValidHistory`, `StateTransitionSpec.totalCost`,
+  `StateTransitionSpec.runClient`, `eval`) and equivalence lemmas connecting the relational and
+  functional views.
 
 ## Main definitions
 
-* `Spec`: relational stateful operation semantics with typed answers and admissibility.
-* `Spec.Total`, `Spec.Deterministic`: totality on admissible inputs and transition determinism.
-* `Spec.toLTS`: the underlying labelled transition system (`Cslib.LTS`) of input-output transitions.
-* `Spec.Step`, `Spec.Transcript`, `Spec.ValidTranscript`, `Spec.ValidOpSeq`,
-  `Spec.totalCostTranscript`, `Spec.totalCostOutcome`: execution transcripts, demonic
-  operation-sequence admissibility, and transcript cost accounting.
-* `Spec.signature`, `Spec.Client`, `Spec.call`, `Spec.ClientRun`, `Spec.DemonicValid`: adaptive
-  clients, relational client runs, and demonic client admissibility.
-* `Spec.ofFn`, `Spec.HasStepFn`, `Spec.stepFn`: constructor and typeclass for deterministic
-  specifications.
-* `Spec.toFLTS`, `Spec.run`, `Spec.ValidHistory`, `Spec.totalCost`, `Spec.runClient`,
-  `Spec.clientResult`, `Spec.clientState`, `Spec.clientHistory`, `eval`:
-  functional execution and history interpretation for deterministic specifications.
-* `product`: independent abstract components; concrete independence is a realization obligation.
+* `StateTransitionSpec`: relational stateful operation semantics with typed answers and
+  admissibility.
+* `StateTransitionSpec.Total`, `StateTransitionSpec.Deterministic`: totality on admissible inputs
+  and transition determinism.
+* `StateTransitionSpec.toLTS`: the underlying labelled transition system (`Cslib.LTS`) of
+  input-output transitions.
+* `StateTransitionSpec.Step`, `StateTransitionSpec.Transcript`,
+  `StateTransitionSpec.ValidTranscript`, `StateTransitionSpec.ValidOpSeq`,
+  `StateTransitionSpec.totalCostTranscript`, `StateTransitionSpec.totalCostOutcome`: execution
+  transcripts, demonic operation-sequence admissibility, and transcript cost accounting.
+* `StateTransitionSpec.signature`, `StateTransitionSpec.Client`, `StateTransitionSpec.call`,
+  `StateTransitionSpec.ClientRun`, `StateTransitionSpec.DemonicValid`: adaptive clients, relational
+  client runs, and demonic client admissibility.
+* `StateTransitionSpec.ofFn`, `StateTransitionSpec.HasStepFn`, `StateTransitionSpec.stepFn`:
+  constructor and typeclass for deterministic specifications.
+* `StateTransitionSpec.toFLTS`, `StateTransitionSpec.run`, `StateTransitionSpec.ValidHistory`,
+  `StateTransitionSpec.totalCost`, `StateTransitionSpec.runClient`,
+  `StateTransitionSpec.clientResult`, `StateTransitionSpec.clientState`,
+  `StateTransitionSpec.clientHistory`, `eval`: functional execution and history interpretation for
+  deterministic specifications.
+* `product`: independent abstract components; concrete independence is an implementation obligation.
 
 ## Main results
 
-* `Spec.Transcript.labels_map_fst`, `Spec.ValidTranscript.append`,
-  `Spec.totalCostTranscript_append`: transcript projection and composition laws.
-* `Spec.exists_validTranscript_of_validOpSeq`, `Spec.DemonicValid.exists_clientRun`: existence of
-  valid runs under `[Spec.Total]`.
-* `Spec.ClientRun.bind`, `Spec.clientRun_bind_iff`, `Spec.DemonicValid.bind`: sequential
-  composition for relational adaptive clients.
-* `Spec.validOpSeq_iff_validHistory`, `Spec.validTranscript_iff_run`,
-  `Spec.demonicValid_iff_validHistory_runClient`, `Spec.clientRun_iff_runClient`: equivalence of
-  relational and functional semantics under `[Spec.HasStepFn]`.
-* `Spec.fst_run_eq_toFLTS_mtr`, `Spec.run_append`, `Spec.validHistory_append`,
-  `Spec.totalCost_append`, `Spec.run_runClient`, `Spec.runClient_bind`, `eval_bind`,
-  `eval_eq_liftM`: functional history and client laws under `[Spec.HasStepFn]`.
+* `StateTransitionSpec.Transcript.labels_map_fst`, `StateTransitionSpec.ValidTranscript.append`,
+  `StateTransitionSpec.totalCostTranscript_append`: transcript projection and composition laws.
+* `StateTransitionSpec.exists_validTranscript_of_validOpSeq`,
+  `StateTransitionSpec.DemonicValid.exists_clientRun`: existence of valid runs under
+  `[StateTransitionSpec.Total]`.
+* `StateTransitionSpec.ClientRun.bind`, `StateTransitionSpec.clientRun_bind_iff`,
+  `StateTransitionSpec.DemonicValid.bind`: sequential composition for relational adaptive clients.
+* `StateTransitionSpec.validOpSeq_iff_validHistory`, `StateTransitionSpec.validTranscript_iff_run`,
+  `StateTransitionSpec.demonicValid_iff_validHistory_runClient`,
+  `StateTransitionSpec.clientRun_iff_runClient`: equivalence of relational and functional semantics
+  under `[StateTransitionSpec.HasStepFn]`.
+* `StateTransitionSpec.fst_run_eq_toFLTS_mtr`, `StateTransitionSpec.run_append`,
+  `StateTransitionSpec.validHistory_append`, `StateTransitionSpec.totalCost_append`,
+  `StateTransitionSpec.run_runClient`, `StateTransitionSpec.runClient_bind`, `eval_bind`,
+  `eval_eq_liftM`: functional history and client laws under `[StateTransitionSpec.HasStepFn]`.
 
 ## References
 
@@ -72,7 +84,7 @@ The relational semantics is **demonic** for callers and **angelic** for implemen
 
 @[expose] public section
 
-namespace Cslib.Stateful
+namespace Cslib.DataStructure
 
 universe u v w x y
 
@@ -80,7 +92,7 @@ universe u v w x y
 `step s o s' a` holds when transitioning from `s` to `s'` and returning `a : Result o` is a
 permitted outcome of operation `o`. Only admissible operations (`valid s o`) are constrained by
 refinement certificates. -/
-structure Spec where
+structure StateTransitionSpec where
   /-- Mathematical states, independent of a storage representation. -/
   State : Type u
   /-- Operations available to clients. -/
@@ -92,9 +104,9 @@ structure Spec where
   /-- Preconditions under which an operation's implementation must satisfy its contract. -/
   valid : State → Op → Prop := fun _ _ => True
 
-namespace Spec
+namespace StateTransitionSpec
 
-variable (D : Spec.{u, v, w})
+variable (D : StateTransitionSpec.{u, v, w})
 
 /-- The set of permitted `(nextState, result)` outcomes of operation `o` from state `s`. -/
 def outcomes (s : D.State) (o : D.Op) : Set (D.State × D.Result o) :=
@@ -125,7 +137,7 @@ class Deterministic : Prop where
 /-- The polynomial operation signature, shared with upstream effectful programs. -/
 abbrev signature : PFunctor.{v, w} := ⟨D.Op, D.Result⟩
 
-instance : Coe Spec.{u, v, w} PFunctor.{v, w} := ⟨Spec.signature⟩
+instance : Coe StateTransitionSpec.{u, v, w} PFunctor.{v, w} := ⟨StateTransitionSpec.signature⟩
 
 /-- An adaptive client: each continuation may depend on the observed answer.
 Inductive clients have no infinite execution branch; branching need not be finite. -/
@@ -166,52 +178,53 @@ structure Step : Type (max u v w) where
 abbrev Transcript : Type (max u v w) := List D.Step
 
 /-- Extract the underlying sequence of operations from a transcript. -/
-def Transcript.ops {D : Spec.{u, v, w}} (tr : D.Transcript) : List D.Op :=
+def Transcript.ops {D : StateTransitionSpec.{u, v, w}} (tr : D.Transcript) : List D.Op :=
   tr.map Step.op
 
 /-- Extract the `Cslib.LTS` input-output labels from a transcript. -/
-def Transcript.labels {D : Spec.{u, v, w}} (tr : D.Transcript) : List D.Label :=
+def Transcript.labels {D : StateTransitionSpec.{u, v, w}} (tr : D.Transcript) : List D.Label :=
   tr.map fun st => ⟨st.op, st.result⟩
 
 @[simp]
-theorem Transcript.ops_nil {D : Spec.{u, v, w}} :
+theorem Transcript.ops_nil {D : StateTransitionSpec.{u, v, w}} :
     Transcript.ops ([] : D.Transcript) = [] := rfl
 
 @[simp]
-theorem Transcript.ops_cons {D : Spec.{u, v, w}} (st : D.Step) (tr : D.Transcript) :
+theorem Transcript.ops_cons {D : StateTransitionSpec.{u, v, w}} (st : D.Step) (tr : D.Transcript) :
     Transcript.ops (st :: tr) = st.op :: Transcript.ops tr := rfl
 
 @[simp]
-theorem Transcript.ops_append {D : Spec.{u, v, w}} (tr₁ tr₂ : D.Transcript) :
+theorem Transcript.ops_append {D : StateTransitionSpec.{u, v, w}} (tr₁ tr₂ : D.Transcript) :
     Transcript.ops (tr₁ ++ tr₂) = Transcript.ops tr₁ ++ Transcript.ops tr₂ :=
   List.map_append
 
 @[simp]
-theorem Transcript.length_ops {D : Spec.{u, v, w}} (tr : D.Transcript) :
+theorem Transcript.length_ops {D : StateTransitionSpec.{u, v, w}} (tr : D.Transcript) :
     (Transcript.ops tr).length = tr.length :=
   List.length_map _
 
 @[simp]
-theorem Transcript.labels_nil {D : Spec.{u, v, w}} :
+theorem Transcript.labels_nil {D : StateTransitionSpec.{u, v, w}} :
     Transcript.labels ([] : D.Transcript) = [] := rfl
 
 @[simp]
-theorem Transcript.labels_cons {D : Spec.{u, v, w}} (st : D.Step) (tr : D.Transcript) :
+theorem Transcript.labels_cons {D : StateTransitionSpec.{u, v, w}} (st : D.Step)
+    (tr : D.Transcript) :
     Transcript.labels (st :: tr) = ⟨st.op, st.result⟩ :: Transcript.labels tr := rfl
 
 @[simp]
-theorem Transcript.labels_append {D : Spec.{u, v, w}} (tr₁ tr₂ : D.Transcript) :
+theorem Transcript.labels_append {D : StateTransitionSpec.{u, v, w}} (tr₁ tr₂ : D.Transcript) :
     Transcript.labels (tr₁ ++ tr₂) = Transcript.labels tr₁ ++ Transcript.labels tr₂ :=
   List.map_append
 
 @[simp]
-theorem Transcript.length_labels {D : Spec.{u, v, w}} (tr : D.Transcript) :
+theorem Transcript.length_labels {D : StateTransitionSpec.{u, v, w}} (tr : D.Transcript) :
     (Transcript.labels tr).length = tr.length :=
   List.length_map _
 
 /-- Projecting the first component of `Transcript.labels` recovers `Transcript.ops`. -/
 @[simp]
-theorem Transcript.labels_map_fst {D : Spec.{u, v, w}} (tr : D.Transcript) :
+theorem Transcript.labels_map_fst {D : StateTransitionSpec.{u, v, w}} (tr : D.Transcript) :
     tr.labels.map Sigma.fst = tr.ops := by
   induction tr with
   | nil => rfl
@@ -229,7 +242,7 @@ inductive ValidTranscript : D.State → D.Transcript → D.State → Prop
 
 /-- The empty transcript is valid iff the initial and final states coincide. -/
 @[simp]
-theorem validTranscript_nil_iff {D : Spec.{u, v, w}} (s s' : D.State) :
+theorem validTranscript_nil_iff {D : StateTransitionSpec.{u, v, w}} (s s' : D.State) :
     D.ValidTranscript s [] s' ↔ s = s' := by
   constructor
   · intro h; cases h; rfl
@@ -238,7 +251,7 @@ theorem validTranscript_nil_iff {D : Spec.{u, v, w}} (s s' : D.State) :
 /-- A nonempty transcript is valid iff its head step is admissible and permitted and its tail is
 valid from `st.nextState`. -/
 @[simp]
-theorem validTranscript_cons_iff {D : Spec.{u, v, w}} (s s' : D.State) (st : D.Step)
+theorem validTranscript_cons_iff {D : StateTransitionSpec.{u, v, w}} (s s' : D.State) (st : D.Step)
     (tr : D.Transcript) :
     D.ValidTranscript s (st :: tr) s' ↔
       D.valid s st.op ∧ D.step s st.op st.nextState st.result ∧
@@ -251,7 +264,7 @@ theorem validTranscript_cons_iff {D : Spec.{u, v, w}} (s s' : D.State) (st : D.S
     exact .cons st hv hstep htr
 
 /-- Valid transcripts compose across concatenation. -/
-theorem ValidTranscript.append {D : Spec.{u, v, w}} {s s₁ s₂ : D.State}
+theorem ValidTranscript.append {D : StateTransitionSpec.{u, v, w}} {s s₁ s₂ : D.State}
     {tr₁ tr₂ : D.Transcript} (h₁ : D.ValidTranscript s tr₁ s₁)
     (h₂ : D.ValidTranscript s₁ tr₂ s₂) :
     D.ValidTranscript s (tr₁ ++ tr₂) s₂ := by
@@ -260,7 +273,7 @@ theorem ValidTranscript.append {D : Spec.{u, v, w}} {s s₁ s₂ : D.State}
   | cons st hv hstep _ ih => exact .cons st hv hstep (ih h₂)
 
 /-- Every valid transcript projects to a multi-step transition in `D.toLTS`. -/
-theorem ValidTranscript.toLTS_mtr {D : Spec.{u, v, w}} {s s' : D.State}
+theorem ValidTranscript.toLTS_mtr {D : StateTransitionSpec.{u, v, w}} {s s' : D.State}
     {tr : D.Transcript} (h : D.ValidTranscript s tr s') :
     D.toLTS.MTr s tr.labels s' := by
   induction h with
@@ -291,7 +304,7 @@ theorem validOpSeq_of_forall_valid (h : ∀ s o, D.valid s o) (s : D.State) (ops
 
 /-- Demonic operation-sequence admissibility splits across concatenation across all valid
 transcripts of the prefix. -/
-theorem validOpSeq_append {D : Spec.{u, v, w}} {s : D.State} {xs ys : List D.Op}
+theorem validOpSeq_append {D : StateTransitionSpec.{u, v, w}} {s : D.State} {xs ys : List D.Op}
     (h : D.ValidOpSeq s (xs ++ ys)) :
     D.ValidOpSeq s xs ∧
       ∀ {tr s'}, tr.ops = xs → D.ValidTranscript s tr s' → D.ValidOpSeq s' ys := by
@@ -372,7 +385,7 @@ theorem totalCostTranscript_eq_totalCostOutcome (charge : D.State → D.Op → �
 
 /-- Along a valid transcript prefix `D.ValidTranscript s tr₁ s₁`, `totalCostTranscript` splits
 additively at the intermediate state `s₁`. -/
-theorem totalCostTranscript_append {D : Spec.{u, v, w}} (charge : D.State → D.Op → ℕ)
+theorem totalCostTranscript_append {D : StateTransitionSpec.{u, v, w}} (charge : D.State → D.Op → ℕ)
     {s s₁ : D.State} {tr₁ : D.Transcript} (h₁ : D.ValidTranscript s tr₁ s₁)
     (tr₂ : D.Transcript) :
     D.totalCostTranscript charge s (tr₁ ++ tr₂) =
@@ -382,7 +395,8 @@ theorem totalCostTranscript_append {D : Spec.{u, v, w}} (charge : D.State → D.
   | cons st _ _ _ ih => simp [ih, Nat.add_assoc]
 
 /-- Uniform per-operation bounds scale by the transcript length on any valid transcript. -/
-theorem totalCostTranscript_le_length_mul {D : Spec.{u, v, w}} (charge : D.State → D.Op → ℕ) (T : ℕ)
+theorem totalCostTranscript_le_length_mul {D : StateTransitionSpec.{u, v, w}}
+    (charge : D.State → D.Op → ℕ) (T : ℕ)
     (h : ∀ s o, D.valid s o → charge s o ≤ T) {s s' : D.State} {tr : D.Transcript}
     (hv : D.ValidTranscript s tr s') :
     D.totalCostTranscript charge s tr ≤ tr.length * T := by
@@ -423,15 +437,15 @@ inductive ClientRun : D.State → D.Client α → α → D.State → D.Transcrip
       ClientRun s (.liftBind o k) v s₂ (⟨o, a, s₁⟩ :: tr)
 
 /-- Every `ClientRun` produces a valid transcript. -/
-theorem ClientRun.validTranscript {D : Spec.{u, v, w}} {s s' : D.State} {p : D.Client α}
-    {v : α} {tr : D.Transcript} (h : D.ClientRun s p v s' tr) :
+theorem ClientRun.validTranscript {D : StateTransitionSpec.{u, v, w}} {s s' : D.State}
+    {p : D.Client α} {v : α} {tr : D.Transcript} (h : D.ClientRun s p v s' tr) :
     D.ValidTranscript s tr s' := by
   induction h with
   | pure s _ => exact .nil s
   | liftBind _ _ _ hv hstep _ ih => exact .cons _ hv hstep ih
 
-theorem clientRun_pure_iff {D : Spec.{u, v, w}} (s : D.State) (a v : α) (s' : D.State)
-    (tr : D.Transcript) :
+theorem clientRun_pure_iff {D : StateTransitionSpec.{u, v, w}} (s : D.State) (a v : α)
+    (s' : D.State) (tr : D.Transcript) :
     D.ClientRun s (.pure a) v s' tr ↔ v = a ∧ s' = s ∧ tr = [] := by
   constructor
   · intro h
@@ -440,7 +454,7 @@ theorem clientRun_pure_iff {D : Spec.{u, v, w}} (s : D.State) (a v : α) (s' : D
   · rintro ⟨rfl, rfl, rfl⟩
     exact .pure s' v
 
-theorem clientRun_liftBind_iff {D : Spec.{u, v, w}} (s : D.State) (o : D.Op)
+theorem clientRun_liftBind_iff {D : StateTransitionSpec.{u, v, w}} (s : D.State) (o : D.Op)
     (k : D.Result o → D.Client α) (v : α) (s₂ : D.State) (tr : D.Transcript) :
     D.ClientRun s (.liftBind o k) v s₂ tr ↔
       D.valid s o ∧ ∃ a s₁ tr', D.step s o s₁ a ∧
@@ -454,7 +468,7 @@ theorem clientRun_liftBind_iff {D : Spec.{u, v, w}} (s : D.State) (o : D.Op)
     exact .liftBind o k a hv hstep hrest
 
 /-- Sequential client runs compose by concatenating their transcripts. -/
-theorem ClientRun.bind {D : Spec.{u, v, w}} {s s₁ s₂ : D.State} {p : D.Client α}
+theorem ClientRun.bind {D : StateTransitionSpec.{u, v, w}} {s s₁ s₂ : D.State} {p : D.Client α}
     {k : α → D.Client β} {a : α} {b : β} {tr₁ tr₂ : D.Transcript}
     (h₁ : D.ClientRun s p a s₁ tr₁) (h₂ : D.ClientRun s₁ (k a) b s₂ tr₂) :
     D.ClientRun s (p.bind k) b s₂ (tr₁ ++ tr₂) := by
@@ -465,7 +479,7 @@ theorem ClientRun.bind {D : Spec.{u, v, w}} {s s₁ s₂ : D.State} {p : D.Clien
 
 /-- A client run of `p.bind k` splits into a run of `p` and a run of `k` from the intermediate
 result and state. -/
-theorem clientRun_bind_iff {D : Spec.{u, v, w}} {s s₂ : D.State} {p : D.Client α}
+theorem clientRun_bind_iff {D : StateTransitionSpec.{u, v, w}} {s s₂ : D.State} {p : D.Client α}
     {k : α → D.Client β} {b : β} {tr : D.Transcript} :
     D.ClientRun s (p.bind k) b s₂ tr ↔
       ∃ a s₁ tr₁ tr₂, D.ClientRun s p a s₁ tr₁ ∧
@@ -496,11 +510,11 @@ inductive DemonicValid : D.State → D.Client α → Prop
       (∀ s' a, D.step s o s' a → DemonicValid s' (k a)) →
       DemonicValid s (.liftBind o k)
 
-theorem demonicValid_pure_iff {D : Spec.{u, v, w}} (s : D.State) (a : α) :
+theorem demonicValid_pure_iff {D : StateTransitionSpec.{u, v, w}} (s : D.State) (a : α) :
     D.DemonicValid s (.pure a) ↔ True :=
   ⟨fun _ => trivial, fun _ => .pure s a⟩
 
-theorem demonicValid_liftBind_iff {D : Spec.{u, v, w}} (s : D.State) (o : D.Op)
+theorem demonicValid_liftBind_iff {D : StateTransitionSpec.{u, v, w}} (s : D.State) (o : D.Op)
     (k : D.Result o → D.Client α) :
     D.DemonicValid s (.liftBind o k) ↔
       D.valid s o ∧ ∀ s' a, D.step s o s' a → D.DemonicValid s' (k a) := by
@@ -519,7 +533,7 @@ theorem demonicValid_of_forall_valid (h : ∀ s o, D.valid s o) (s : D.State) (p
   | liftBind o k ih => exact .liftBind o k (h s o) fun s' a _ => ih a s'
 
 /-- Under `[D.Total]`, every demonically admissible client admits at least one valid `ClientRun`. -/
-theorem DemonicValid.exists_clientRun {D : Spec.{u, v, w}} [D.Total] {s : D.State}
+theorem DemonicValid.exists_clientRun {D : StateTransitionSpec.{u, v, w}} [D.Total] {s : D.State}
     {p : D.Client α} (hv : D.DemonicValid s p) :
     ∃ v s' tr, D.ClientRun s p v s' tr := by
   induction hv with
@@ -531,7 +545,7 @@ theorem DemonicValid.exists_clientRun {D : Spec.{u, v, w}} [D.Total] {s : D.Stat
 
 /-- Demonic admissibility composes across `bind` when the continuation is demonically admissible
 after every valid run of the first client. -/
-theorem DemonicValid.bind {D : Spec.{u, v, w}} {s : D.State} {p : D.Client α}
+theorem DemonicValid.bind {D : StateTransitionSpec.{u, v, w}} {s : D.State} {p : D.Client α}
     {k : α → D.Client β} (hp : D.DemonicValid s p)
     (hk : ∀ a s' tr, D.ClientRun s p a s' tr → D.DemonicValid s' (k a)) :
     D.DemonicValid s (p.bind k) := by
@@ -542,14 +556,15 @@ theorem DemonicValid.bind {D : Spec.{u, v, w}} {s : D.State} {p : D.Client α}
     exact ih s₁ r hstep fun a s₂ tr hrun => hk a s₂ (⟨o, r, s₁⟩ :: tr)
       (.liftBind o cont r hv_o hstep hrun)
 
-/-! ## Deterministic specifications (`Spec.ofFn`, `Spec.HasStepFn`) and functional helpers -/
+/-! ## Deterministic specifications (`StateTransitionSpec.ofFn`, `StateTransitionSpec.HasStepFn`)
+and functional helpers -/
 
-/-- Construct a deterministic `Spec` from a pure transition function
+/-- Construct a deterministic `StateTransitionSpec` from a pure transition function
 `stepFn : (s : State) → (o : Op) → State × Result o` and an optional admissibility predicate
 `valid`. -/
 abbrev ofFn {State : Type u} {Op : Type v} {Result : Op → Type w}
     (stepFn : (s : State) → (o : Op) → State × Result o)
-    (valid : State → Op → Prop := fun _ _ => True) : Spec.{u, v, w} where
+    (valid : State → Op → Prop := fun _ _ => True) : StateTransitionSpec.{u, v, w} where
   State := State
   Op := Op
   Result := Result
@@ -588,9 +603,9 @@ theorem ofFn_valid {State : Type u} {Op : Type v} {Result : Op → Type w}
     (s : State) (o : Op) :
     (ofFn stepFn valid).valid s o ↔ valid s o := Iff.rfl
 
-/-- Typeclass witnessing that a specification `D : Spec` is governed by a pure transition function
-`f : (s : D.State) → (o : D.Op) → D.State × D.Result o`. -/
-class HasStepFn (D : Spec.{u, v, w})
+/-- Typeclass witnessing that a specification `D : StateTransitionSpec` is governed by a pure
+transition function `f : (s : D.State) → (o : D.Op) → D.State × D.Result o`. -/
+class HasStepFn (D : StateTransitionSpec.{u, v, w})
     (f : outParam ((s : D.State) → (o : D.Op) → D.State × D.Result o)) : Prop where
   /-- A transition `D.step s o s' a` holds if and only if `(s', a) = f s o`. -/
   step_iff : ∀ s o s' a, D.step s o s' a ↔ (s', a) = f s o
@@ -604,24 +619,26 @@ instance instHasStepFnOfFn {State : Type u} {Op : Type v} {Result : Op → Type 
 /-- The functional transition `(s : D.State) → (o : D.Op) → D.State × D.Result o` of a
 deterministic specification `D` (`[D.HasStepFn f]`). -/
 @[simp, nolint unusedArguments]
-abbrev stepFn (D : Spec.{u, v, w}) {f : (s : D.State) → (o : D.Op) → D.State × D.Result o}
+abbrev stepFn (D : StateTransitionSpec.{u, v, w})
+    {f : (s : D.State) → (o : D.Op) → D.State × D.Result o}
     [D.HasStepFn f] (s : D.State) (o : D.Op) : D.State × D.Result o :=
   f s o
 
-theorem step_iff_stepFn (D : Spec.{u, v, w}) {f} [D.HasStepFn f]
+theorem step_iff_stepFn (D : StateTransitionSpec.{u, v, w}) {f} [D.HasStepFn f]
     (s : D.State) (o : D.Op) (s' : D.State) (a : D.Result o) :
     D.step s o s' a ↔ (s', a) = D.stepFn s o :=
   HasStepFn.step_iff s o s' a
 
-theorem step_stepFn (D : Spec.{u, v, w}) {f} [D.HasStepFn f]
+theorem step_stepFn (D : StateTransitionSpec.{u, v, w}) {f} [D.HasStepFn f]
     (s : D.State) (o : D.Op) :
     D.step s o (D.stepFn s o).1 (D.stepFn s o).2 :=
   (HasStepFn.step_iff s o _ _).mpr Prod.mk.eta
 
-instance instTotalOfHasStepFn (D : Spec.{u, v, w}) {f} [D.HasStepFn f] : D.Total where
+instance instTotalOfHasStepFn (D : StateTransitionSpec.{u, v, w}) {f} [D.HasStepFn f] :
+    D.Total where
   step_total s o _ := ⟨(D.stepFn s o).1, (D.stepFn s o).2, D.step_stepFn s o⟩
 
-instance instDeterministicOfHasStepFn (D : Spec.{u, v, w}) {f} [D.HasStepFn f] :
+instance instDeterministicOfHasStepFn (D : StateTransitionSpec.{u, v, w}) {f} [D.HasStepFn f] :
     D.Deterministic where
   step_deterministic h₁ h₂ := by
     have e₁ := (D.step_iff_stepFn _ _ _ _).mp h₁
@@ -826,11 +843,11 @@ theorem run_runClient {α : Type y} (p : D.Client α) (s : D.State) :
   | pure a => rfl
   | liftBind o k ih => exact ih (D.stepFn s o).2 (D.stepFn s o).1
 
-end Spec
+end StateTransitionSpec
 
-namespace Spec
+namespace StateTransitionSpec
 
-variable {D : Spec.{u, v, w}} {f : (s : D.State) → (o : D.Op) → D.State × D.Result o}
+variable {D : StateTransitionSpec.{u, v, w}} {f : (s : D.State) → (o : D.Op) → D.State × D.Result o}
   [D.HasStepFn f] {α β : Type y}
 
 /-- Admissibility splits at the mathematical state reached by the first history. -/
@@ -874,7 +891,7 @@ theorem validOpSeq_iff_validHistory (s : D.State) (ops : List D.Op) :
 
 /-- The unique canonical transcript determined by a deterministic specification `D` on an
 operation list `os` from state `s`. -/
-def canonicalTranscript (D : Spec.{u, v, w})
+def canonicalTranscript (D : StateTransitionSpec.{u, v, w})
     {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
     (s : D.State) : List D.Op → D.Transcript
   | [] => []
@@ -1016,13 +1033,13 @@ theorem clientRun_iff_runClient (s : D.State) (p : D.Client α) (v : α) (s' : D
   ⟨D.clientRun_imp_ofFn, fun ⟨hv, h₁, h₂, h₃⟩ =>
     h₁ ▸ h₂ ▸ h₃ ▸ D.clientRun_canonical s p hv⟩
 
-end Spec
+end StateTransitionSpec
 
-variable {D : Spec.{u, v, w}} {f : (s : D.State) → (o : D.Op) → D.State × D.Result o}
+variable {D : StateTransitionSpec.{u, v, w}} {f : (s : D.State) → (o : D.Op) → D.State × D.Result o}
   [D.HasStepFn f] {α β : Type y}
 
 /-- Observe results and state without displaying the operation history. -/
-def eval (D : Spec.{u, v, w}) {f : (s : D.State) → (o : D.Op) → D.State × D.Result o}
+def eval (D : StateTransitionSpec.{u, v, w}) {f : (s : D.State) → (o : D.Op) → D.State × D.Result o}
     [D.HasStepFn f] (p : D.Client α) (s : D.State) : α × D.State :=
   (D.clientResult s p, D.clientState s p)
 
@@ -1072,7 +1089,7 @@ theorem eval_bind (p : D.Client α) (k : α → D.Client β) (s : D.State) :
 
 /-- `eval` agrees with interpreting the free monad into `StateM D.State` via `PFunctor.FreeM.liftM`
 when states, operation answers, and client results share a universe. -/
-theorem eval_eq_liftM {D : Spec.{u, v, u}}
+theorem eval_eq_liftM {D : StateTransitionSpec.{u, v, u}}
     {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
     {α : Type u} (p : D.Client α) (s : D.State) :
     (p.liftM (m := StateM D.State) fun o s => ((D.stepFn s o).2, (D.stepFn s o).1)).run s =
@@ -1082,7 +1099,7 @@ theorem eval_eq_liftM {D : Spec.{u, v, u}}
   | liftBind o k ih => exact ih (D.stepFn s o).2 (D.stepFn s o).1
 
 /-- Two independent abstract components. A backend must separately justify their independence. -/
-abbrev product (D E : Spec.{u, v, w}) : Spec where
+abbrev product (D E : StateTransitionSpec.{u, v, w}) : StateTransitionSpec where
   State := D.State × E.State
   Op := D.Op ⊕ E.Op
   Result
@@ -1097,27 +1114,30 @@ abbrev product (D E : Spec.{u, v, w}) : Spec where
 
 /-- Stepping the left component of a product specification steps the left state and preserves the
 right state. -/
-@[simp] theorem product_step_inl (D E : Spec.{u, v, w}) (s s' : D.State × E.State) (o : D.Op)
-    (a : D.Result o) :
+@[simp] theorem product_step_inl (D E : StateTransitionSpec.{u, v, w})
+    (s s' : D.State × E.State) (o : D.Op) (a : D.Result o) :
     (product D E).step s (.inl o) s' a ↔ D.step s.1 o s'.1 a ∧ s'.2 = s.2 := Iff.rfl
 
 /-- Stepping the right component of a product specification preserves the left state and steps the
 right state. -/
-@[simp] theorem product_step_inr (D E : Spec.{u, v, w}) (s s' : D.State × E.State) (o : E.Op)
-    (a : E.Result o) :
+@[simp] theorem product_step_inr (D E : StateTransitionSpec.{u, v, w})
+    (s s' : D.State × E.State) (o : E.Op) (a : E.Result o) :
     (product D E).step s (.inr o) s' a ↔ s'.1 = s.1 ∧ E.step s.2 o s'.2 a := Iff.rfl
 
 /-- Admissibility of a left operation in a product specification depends only on the left state. -/
-@[simp] theorem product_valid_inl (D E : Spec.{u, v, w}) (s : D.State × E.State) (o : D.Op) :
+@[simp] theorem product_valid_inl (D E : StateTransitionSpec.{u, v, w})
+    (s : D.State × E.State) (o : D.Op) :
     (product D E).valid s (.inl o) ↔ D.valid s.1 o := Iff.rfl
 
 /-- Admissibility of a right operation in a product specification depends only on the right
 state. -/
-@[simp] theorem product_valid_inr (D E : Spec.{u, v, w}) (s : D.State × E.State) (o : E.Op) :
+@[simp] theorem product_valid_inr (D E : StateTransitionSpec.{u, v, w})
+    (s : D.State × E.State) (o : E.Op) :
     (product D E).valid s (.inr o) ↔ E.valid s.2 o := Iff.rfl
 
 /-- Product of two total specifications is total. -/
-instance instTotalProduct (D E : Spec.{u, v, w}) [D.Total] [E.Total] : (product D E).Total where
+instance instTotalProduct (D E : StateTransitionSpec.{u, v, w}) [D.Total] [E.Total] :
+    (product D E).Total where
   step_total
     | s, .inl o, hv => by
       obtain ⟨s₁', a, hstep⟩ := D.exists_step hv
@@ -1127,23 +1147,24 @@ instance instTotalProduct (D E : Spec.{u, v, w}) [D.Total] [E.Total] : (product 
       exact ⟨(s.1, s₂'), a, rfl, hstep⟩
 
 /-- Product of two deterministic specifications is deterministic. -/
-instance instDeterministicProduct (D E : Spec.{u, v, w}) [D.Deterministic] [E.Deterministic] :
+instance instDeterministicProduct (D E : StateTransitionSpec.{u, v, w})
+    [D.Deterministic] [E.Deterministic] :
     (product D E).Deterministic where
   step_deterministic {_ o _ _ _ _} h₁ h₂ := by
     cases o with
     | inl o =>
       obtain ⟨h₁, he₁⟩ := h₁
       obtain ⟨h₂, he₂⟩ := h₂
-      obtain ⟨hs, ha⟩ := Spec.Deterministic.step_deterministic h₁ h₂
+      obtain ⟨hs, ha⟩ := StateTransitionSpec.Deterministic.step_deterministic h₁ h₂
       exact ⟨Prod.ext hs (he₁.trans he₂.symm), ha⟩
     | inr o =>
       obtain ⟨hd₁, h₁⟩ := h₁
       obtain ⟨hd₂, h₂⟩ := h₂
-      obtain ⟨hs, ha⟩ := Spec.Deterministic.step_deterministic h₁ h₂
+      obtain ⟨hs, ha⟩ := StateTransitionSpec.Deterministic.step_deterministic h₁ h₂
       exact ⟨Prod.ext (hd₁.trans hd₂.symm) hs, ha⟩
 
 /-- The canonical transition function of a product of two deterministic specifications. -/
-abbrev productStepFn (D E : Spec.{u, v, w})
+abbrev productStepFn (D E : StateTransitionSpec.{u, v, w})
     (fD : (s : D.State) → (o : D.Op) → D.State × D.Result o)
     (fE : (s : E.State) → (o : E.Op) → E.State × E.Result o)
     (s : (product D E).State) :
@@ -1151,17 +1172,17 @@ abbrev productStepFn (D E : Spec.{u, v, w})
   | .inl o => let r := fD s.1 o; ((r.1, s.2), r.2)
   | .inr o => let r := fE s.2 o; ((s.1, r.1), r.2)
 
-instance instHasStepFnProduct (D E : Spec.{u, v, w})
+instance instHasStepFnProduct (D E : StateTransitionSpec.{u, v, w})
     {fD : (s : D.State) → (o : D.Op) → D.State × D.Result o}
     {fE : (s : E.State) → (o : E.Op) → E.State × E.Result o}
     [D.HasStepFn fD] [E.HasStepFn fE] :
     (product D E).HasStepFn (productStepFn D E fD fE) where
   step_iff
     | ⟨s₁, s₂⟩, .inl o, ⟨s'₁, s'₂⟩, (a : D.Result o) => by
-      simp only [productStepFn, Spec.HasStepFn.step_iff, Prod.ext_iff, and_assoc]
+      simp only [productStepFn, StateTransitionSpec.HasStepFn.step_iff, Prod.ext_iff, and_assoc]
       exact and_congr_right fun _ => and_comm
     | ⟨s₁, s₂⟩, .inr o, ⟨s'₁, s'₂⟩, (a : E.Result o) => by
-      simp [productStepFn, Spec.HasStepFn.step_iff, Prod.ext_iff, and_assoc]
+      simp [productStepFn, StateTransitionSpec.HasStepFn.step_iff, Prod.ext_iff, and_assoc]
 
 instance instHasStepFnProductOfFn
     {State₁ : Type u} {Op₁ : Type v} {Result₁ : Op₁ → Type w}
@@ -1170,22 +1191,23 @@ instance instHasStepFnProductOfFn
     (validD : State₁ → Op₁ → Prop)
     (fE : (s : State₂) → (o : Op₂) → State₂ × Result₂ o)
     (validE : State₂ → Op₂ → Prop) :
-    (product (Spec.ofFn fD validD) (Spec.ofFn fE validE)).HasStepFn
-      (productStepFn (Spec.ofFn fD validD) (Spec.ofFn fE validE) fD fE) :=
-  instHasStepFnProduct (Spec.ofFn fD validD) (Spec.ofFn fE validE)
+    (product (StateTransitionSpec.ofFn fD validD) (StateTransitionSpec.ofFn fE validE)).HasStepFn
+      (productStepFn (StateTransitionSpec.ofFn fD validD)
+        (StateTransitionSpec.ofFn fE validE) fD fE) :=
+  instHasStepFnProduct (StateTransitionSpec.ofFn fD validD) (StateTransitionSpec.ofFn fE validE)
 
-@[simp] theorem product_stepFn_inl (D E : Spec.{u, v, w})
+@[simp] theorem product_stepFn_inl (D E : StateTransitionSpec.{u, v, w})
     {fD : (s : D.State) → (o : D.Op) → D.State × D.Result o}
     {fE : (s : E.State) → (o : E.Op) → E.State × E.Result o}
     [D.HasStepFn fD] [E.HasStepFn fE]
     (s : D.State × E.State) (o : D.Op) :
     (product D E).stepFn s (.inl o) = (((D.stepFn s.1 o).1, s.2), (D.stepFn s.1 o).2) := rfl
 
-@[simp] theorem product_stepFn_inr (D E : Spec.{u, v, w})
+@[simp] theorem product_stepFn_inr (D E : StateTransitionSpec.{u, v, w})
     {fD : (s : D.State) → (o : D.Op) → D.State × D.Result o}
     {fE : (s : E.State) → (o : E.Op) → E.State × E.Result o}
     [D.HasStepFn fD] [E.HasStepFn fE]
     (s : D.State × E.State) (o : E.Op) :
     (product D E).stepFn s (.inr o) = ((s.1, (E.stepFn s.2 o).1), (E.stepFn s.2 o).2) := rfl
 
-end Cslib.Stateful
+end Cslib.DataStructure

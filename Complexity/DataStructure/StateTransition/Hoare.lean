@@ -7,28 +7,31 @@ Authors: Samuel Schlesinger, Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Semantics.Stateful.Composition
+public import Complexity.DataStructure.StateTransition.Composition
 
 /-!
 # Compositional proof rules for stateful clients
 
 These semantic Hoare rules generate demonic admissibility and postcondition obligations for pure
 results, calls, sequential composition and consequence. They apply before choosing a backend;
-realization transports their results to native execution. Resource obligations are separate.
+implementation transports their results to native execution. Resource obligations are separate.
 
 ## Main definitions
 
-* `Spec.Hoare`: demonic Hoare triple asserting `D.DemonicValid s p` and `post v s'` for every
-  valid `D.ClientRun s p v s' tr`.
+* `StateTransitionSpec.Hoare`: demonic Hoare triple asserting `D.DemonicValid s p` and `post v s'`
+  for every valid `D.ClientRun s p v s' tr`.
 
 ## Main results
 
-* `Spec.Hoare.pure`, `Spec.Hoare.call`, `Spec.Hoare.call_ofFn`, `Spec.Hoare.bind`,
-  `Spec.Hoare.consequence`: compositional verification rules.
-* `Spec.hoare_iff_ofFn`: equivalence with the functional `runClient` formulation on deterministic
-  specifications (`[D.HasStepFn f]`).
-* `Spec.Hoare.realize`: a semantic client proof transports through any realization.
-* `Spec.Hoare.link`: transport a semantic client contract across an interface implementation.
+* `StateTransitionSpec.Hoare.pure`, `StateTransitionSpec.Hoare.call`,
+  `StateTransitionSpec.Hoare.call_ofFn`, `StateTransitionSpec.Hoare.bind`,
+  `StateTransitionSpec.Hoare.consequence`: compositional verification rules.
+* `StateTransitionSpec.hoare_iff_ofFn`: equivalence with the functional `runClient` formulation on
+  deterministic specifications (`[D.HasStepFn f]`).
+* `StateTransitionSpec.Hoare.realize`: a semantic client proof transports through any
+  implementation.
+* `StateTransitionSpec.Hoare.link`: transport a semantic client contract across an interface
+  implementation.
 
 ## References
 
@@ -37,11 +40,11 @@ realization transports their results to native execution. Resource obligations a
 
 @[expose] public section
 
-namespace Cslib.Stateful.Spec
+namespace Cslib.DataStructure.StateTransitionSpec
 
 universe u v w x y
 
-variable {D : Spec.{u, v, w}} {α β : Type y}
+variable {D : StateTransitionSpec.{u, v, w}} {α β : Type y}
 
 /-- Demonic Hoare triple: from any state satisfying `pre s`, the client `p` is demonically
 admissible (`D.DemonicValid s p`) and *every* valid `ClientRun` establishes `post v s'`. -/
@@ -123,7 +126,7 @@ theorem consequence {pre pre' : D.State → Prop} {post post' : α → D.State �
   exact ⟨hv, fun v s' tr hrun => hq v s' (hpost v s' tr hrun)⟩
 
 /-- Every native execution of a verified client satisfies its abstract postcondition. -/
-theorem realize {C Trace : Type x} {exec : Execution D C Trace} (R : Realization D exec)
+theorem realize {C Trace : Type x} {exec : Execution D C Trace} (R : StateTransitionImpl D exec)
     {pre : D.State → Prop} {post : α → D.State → Prop} {p : D.Client α}
     (h : Hoare pre p post) {s : D.State} {c c' : C} {a : α} {traces : List Trace}
     (hp : pre s) (hr : R.rep s c) (he : Executes exec p c a c' traces) :
@@ -133,10 +136,10 @@ theorem realize {C Trace : Type x} {exec : Execution D C Trace} (R : Realization
   exact ⟨s', hr', ht a s' tr hrun⟩
 
 /-- Linking preserves a client contract while existentially hiding the module representation. -/
-theorem link {α : Type w} {E : Spec.{u, v, w}} (M : Module D E)
+theorem link {α : Type w} {E : StateTransitionSpec.{u, v, w}} (M : Module D E)
     {pre : D.State → Prop} {post : α → D.State → Prop} {p : D.Client α}
     (h : Hoare pre p post) :
-    Hoare (fun e => ∃ s, pre s ∧ M.rep s e) (Stateful.link M.methods p)
+    Hoare (fun e => ∃ s, pre s ∧ M.rep s e) (DataStructure.link M.methods p)
       (fun a e => ∃ s, post a s ∧ M.rep s e) := by
   rintro e ⟨s, hp, hr⟩
   obtain ⟨hv, ht⟩ := h s hp
@@ -146,4 +149,4 @@ theorem link {α : Type w} {E : Spec.{u, v, w}} (M : Module D E)
   exact ⟨s', ht a s' tr_D hrun_D, hr'⟩
 
 end Hoare
-end Cslib.Stateful.Spec
+end Cslib.DataStructure.StateTransitionSpec

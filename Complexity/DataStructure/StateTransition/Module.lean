@@ -7,14 +7,14 @@ Authors: Samuel Schlesinger, Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Semantics.Stateful.Realization
+public import Complexity.DataStructure.StateTransition.Impl
 
 /-!
 # Compositional semantic implementations
 
 A module implements one interface using operations of another. Linking uses the upstream
 free-monad interpreter. Behavior proofs neither choose a computational model nor assign costs.
-Realization composes representation relations and hides intermediate states existentially.
+`Module.realize` composes representation relations and hides intermediate states existentially.
 Linking uses the upstream interpreter's common universe for operation answers and client
 results. Native execution itself permits an independent universe for client results.
 
@@ -28,7 +28,7 @@ results. Native execution itself permits an independent universe for client resu
 
 ## Main results
 
-* `Module.realize`: implement a module with any realization of its lower interface.
+* `Module.realize`: implement a module with any implementation of its lower interface.
 * `link_exec`, `link_exec_decompose`: exact correspondence of chunked and flattened executions.
 
 ## References
@@ -38,21 +38,21 @@ results. Native execution itself permits an independent universe for client resu
 
 @[expose] public section
 
-namespace Cslib.Stateful
+namespace Cslib.DataStructure
 
 universe u v w x
 
-variable {D E : Spec.{u, v, w}} {C τ : Type x} {α β : Type w}
+variable {D E : StateTransitionSpec.{u, v, w}} {C τ : Type x} {α β : Type w}
 
 /-- Interface methods are programs over another interface. -/
-abbrev Methods (D E : Spec.{u, v, w}) := (o : D.Op) → E.Client (D.Result o)
+abbrev Methods (D E : StateTransitionSpec.{u, v, w}) := (o : D.Op) → E.Client (D.Result o)
 
 /-- Substitution reuses upstream free-monad interpretation. -/
 def link (methods : Methods D E) (p : D.Client α) : E.Client α := p.liftM methods
 
 /-- Purely semantic module correctness over relational specifications; neither an execution model
 nor a cost appears. -/
-structure Module (D E : Spec.{u, v, w}) where
+structure Module (D E : StateTransitionSpec.{u, v, w}) where
   /-- Bodies implementing the upper interface using lower-interface calls. -/
   methods : Methods D E
   /-- The relation between upper and lower mathematical states. -/
@@ -90,9 +90,9 @@ abbrev ofFn {fD : (s : D.State) → (o : D.Op) → D.State × D.Result o}
     obtain ⟨ha, hr'⟩ := correct o hr hv
     exact ⟨(D.stepFn s o).1, (D.step_iff_stepFn s o _ _).mpr (Prod.ext rfl ha), hr'⟩
 
-/-- Module realization hides the intermediate representation and composes at any backend. -/
-def realize (R : Realization E exec) :
-    Realization D (fun c o a c' ts => Executes exec (M.methods o) c a c' ts) where
+/-- Module implementation hides the intermediate representation and composes at any backend. -/
+def realize (R : StateTransitionImpl E exec) :
+    StateTransitionImpl D (fun c o a c' ts => Executes exec (M.methods o) c a c' ts) where
   rep s c := ∃ e, M.rep s e ∧ R.rep e c
   total o hr hv := by
     obtain ⟨e, hM, hR⟩ := hr
@@ -134,4 +134,4 @@ theorem link_exec_decompose (methods : Methods D E) (exec : Execution E C τ)
     obtain ⟨chunks, hc, hts⟩ := ih b hk
     exact ⟨front :: chunks, .call hm hc, by simp [ht, hts]⟩
 
-end Cslib.Stateful
+end Cslib.DataStructure

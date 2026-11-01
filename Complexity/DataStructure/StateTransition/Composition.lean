@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger, Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Semantics.Stateful.Module
+public import Complexity.DataStructure.StateTransition.Module
 
 /-!
 # Composing verified interface implementations
@@ -36,11 +36,11 @@ This construction shares the same semantics across all backend and resource inte
 
 @[expose] public section
 
-namespace Cslib.Stateful
+namespace Cslib.DataStructure
 
 universe u v w
 
-variable {D E F : Spec.{u, v, w}} {α : Type w}
+variable {D E F : StateTransitionSpec.{u, v, w}} {α : Type w}
 
 namespace Module
 
@@ -93,7 +93,7 @@ theorem simulates_client
   exact ⟨hv_hist_E, ha, hr'⟩
 
 /-- Identity methods expose precisely one call and preserve the state representation. -/
-def id (D : Spec.{u, v, w}) : Module D D where
+def id (D : StateTransitionSpec.{u, v, w}) : Module D D where
   methods o := .liftBind o fun a => .pure a
   rep := Eq
   valid o hr hv := by
@@ -127,4 +127,4 @@ theorem link_comp (f : Methods D E) (g : Methods E F) (p : D.Client α) :
     link g (link f p) = link (fun o => link g (f o)) p :=
   PFunctor.FreeM.liftM_comp p f g
 
-end Cslib.Stateful
+end Cslib.DataStructure

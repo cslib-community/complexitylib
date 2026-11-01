@@ -7,36 +7,37 @@ Authors: Samuel Schlesinger, Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Semantics.Stateful.Basic
+public import Complexity.DataStructure.StateTransition
 
 /-!
-# Native executions and semantic realizations
+# Native executions and semantic implementations
 
-A backend chooses concrete states and native execution evidence. Realizations assert existence
+A backend chooses concrete states and native execution evidence. Implementations assert existence
 of executions and angelic step correctness of every supplied terminating execution, independently of
 cost:
 * `total`: every represented state and admissible operation admits a native execution;
 * `correct`: every native execution from a represented state on an admissible operation realizes
   *some* permitted abstract post-state `s'` with `D.step s o s' a ∧ rep s' c'`.
 
-For deterministic specifications (`[D.HasStepFn f]`), `Realization.ofFn` constructs a `Realization`
-from a functional step-correctness proof (`a = (D.stepFn s o).2 ∧ rep (D.stepFn s o).1 c'`), and
-`Realization.exists_executes` and `Realization.correct_client` recover the functional `runClient`
-characterizations directly.
+For deterministic specifications (`[D.HasStepFn f]`), `StateTransitionImpl.ofFn` constructs a
+`StateTransitionImpl` from a functional step-correctness proof
+(`a = (D.stepFn s o).2 ∧ rep (D.stepFn s o).1 c'`), and `StateTransitionImpl.exists_executes` and
+`StateTransitionImpl.correct_client` recover the functional `runClient` characterizations directly.
 
 ## Main definitions
 
 * `Execution`: one native operation with typed answer and execution evidence.
 * `Executes`: sequential adaptive execution, retaining native evidence in order.
-* `Realization`: angelic representation simulation and existence without resource assumptions.
-* `Realization.ofFn`: constructor for deterministic specifications (`[D.HasStepFn f]`).
+* `StateTransitionImpl`: angelic representation simulation and existence without resource
+  assumptions.
+* `StateTransitionImpl.ofFn`: constructor for deterministic specifications (`[D.HasStepFn f]`).
 
 ## Main results
 
-* `Realization.correct_demonic`, `Realization.exists_demonic`: soundness and existence of native
-  client executions under `D.DemonicValid`.
-* `Realization.exists_executes`, `Realization.correct_client`: deterministic specializations for
-  `[D.HasStepFn f]`.
+* `StateTransitionImpl.correct_demonic`, `StateTransitionImpl.exists_demonic`: soundness and
+  existence of native client executions under `D.DemonicValid`.
+* `StateTransitionImpl.exists_executes`, `StateTransitionImpl.correct_client`: deterministic
+  specializations for `[D.HasStepFn f]`.
 * `executes_bind_iff`: sequential execution splits exactly at the intermediate state.
 
 ## References
@@ -46,13 +47,13 @@ characterizations directly.
 
 @[expose] public section
 
-namespace Cslib.Stateful
+namespace Cslib.DataStructure
 
 universe u v w x y
 
-variable {S : PFunctor.{v, w}} {D E : Spec.{u, v, w}} {C τ : Type x} {α β : Type y}
+variable {S : PFunctor.{v, w}} {D E : StateTransitionSpec.{u, v, w}} {C τ : Type x} {α β : Type y}
 
-instance : Coe Spec.{u, v, w} PFunctor.{v, w} := ⟨Spec.signature⟩
+instance : Coe StateTransitionSpec.{u, v, w} PFunctor.{v, w} := ⟨StateTransitionSpec.signature⟩
 
 /-- A backend chooses its own execution evidence, independently of a resource measure. -/
 abbrev Execution (S : PFunctor.{v, w}) (C Trace : Type x) :=
@@ -65,11 +66,12 @@ inductive Executes (exec : Execution S C τ) : S.FreeM α → C → α → C →
       exec c o a c' trace → Executes exec (k a) c' b c'' traces →
       Executes exec (.liftBind o k) c b c'' (trace :: traces)
 
-/-- Angelic semantic realization of a relational specification `D : Spec`:
+/-- Angelic semantic implementation of a relational specification `D : StateTransitionSpec`:
 * `total`: every represented state and admissible operation admits a native execution;
 * `correct`: every native execution from a represented state on an admissible operation realizes
   *some* permitted abstract post-state `s'` with `D.step s o s' a ∧ rep s' c'`. -/
-structure Realization (D : Spec.{u, v, w}) {C τ : Type x} (exec : Execution D C τ) where
+structure StateTransitionImpl (D : StateTransitionSpec.{u, v, w}) {C τ : Type x}
+    (exec : Execution D C τ) where
   /-- The relation between mathematical states and concrete backend states. -/
   rep : D.State → C → Prop
   /-- Existence of a native execution for every represented state and admissible operation. -/
@@ -78,18 +80,18 @@ structure Realization (D : Spec.{u, v, w}) {C τ : Type x} (exec : Execution D C
   correct : ∀ {s c o a c' trace}, rep s c → D.valid s o → exec c o a c' trace →
     ∃ s', D.step s o s' a ∧ rep s' c'
 
-namespace Realization
+namespace StateTransitionImpl
 
-variable {exec : Execution D C τ} (R : Realization D exec)
+variable {exec : Execution D C τ} (R : StateTransitionImpl D exec)
 
-/-- Construct a `Realization` for a deterministic specification (`[D.HasStepFn f]`) from a
+/-- Construct a `StateTransitionImpl` for a deterministic specification (`[D.HasStepFn f]`) from a
 functional step-correctness proof. -/
 abbrev ofFn {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
     (rep : D.State → C → Prop)
     (total : ∀ {s c} o, rep s c → D.valid s o → ∃ a c' trace, exec c o a c' trace)
     (correct : ∀ {s c o a c' trace}, rep s c → D.valid s o → exec c o a c' trace →
       a = (D.stepFn s o).2 ∧ rep (D.stepFn s o).1 c') :
-    Realization D exec where
+    StateTransitionImpl D exec where
   rep := rep
   total := total
   correct {s _ o _ _ _} hr hv he := by
@@ -170,7 +172,7 @@ theorem correct_client {p : D.Client α} {s : D.State} {c c' : C} {a : α}
 
 end HasStepFn
 
-end Realization
+end StateTransitionImpl
 
 
 /-- Execution of a sequential composition splits its native trace at the call boundary. -/
@@ -202,4 +204,4 @@ theorem executes_bind_iff (exec : Execution S C τ) (p : S.FreeM α)
         simpa only [ht, List.cons_append] using h
 
 
-end Cslib.Stateful
+end Cslib.DataStructure

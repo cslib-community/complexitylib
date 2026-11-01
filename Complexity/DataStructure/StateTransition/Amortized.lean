@@ -7,19 +7,19 @@ Authors: Samuel Schlesinger, Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Semantics.Stateful.Resource
+public import Complexity.DataStructure.StateTransition.Resource
 
 /-!
 # Amortized resource certificates over native executions
 
 Potential credit can depend on both the mathematical state and the hidden concrete state.
-This layer attaches a potential inequality to an existing semantic realization; it does not
+This layer attaches a potential inequality to an existing semantic implementation; it does not
 modify execution or assign a machine cost to pure Lean computation. Endpoint credit is retained
 on the left of the bound, avoiding truncated subtraction.
 
 ## Main definitions
 
-* `Amortized`: an angelic native-resource potential certificate over a `Realization`.
+* `Amortized`: an angelic native-resource potential certificate over a `StateTransitionImpl`.
 * `Amortized.ofFn`: constructor for deterministic specifications (`[D.HasStepFn f]`).
 
 ## Main results
@@ -40,18 +40,18 @@ on the left of the bound, avoiding truncated subtraction.
 
 @[expose] public section
 
-namespace Cslib.Stateful
+namespace Cslib.DataStructure
 
 universe u v w x y
 
-variable {D : Spec.{u, v, w}} {C Trace : Type x} {α : Type y}
+variable {D : StateTransitionSpec.{u, v, w}} {C Trace : Type x} {α : Type y}
   {exec : Execution D C Trace}
 
-/-- Angelic potential certificate over a `Realization`: every native operation execution from a
-represented state on an admissible operation realizes some permitted abstract post-state `s'`
+/-- Angelic potential certificate over a `StateTransitionImpl`: every native operation execution
+from a represented state on an admissible operation realizes some permitted abstract post-state `s'`
 with `D.step s o s' a ∧ R.rep s' c'` and
 `weight trace + potential s' c' ≤ charge s o + potential s c`. -/
-structure Amortized (R : Realization D exec) (weight : Trace → Nat)
+structure Amortized (R : StateTransitionImpl D exec) (weight : Trace → Nat)
     (potential : D.State → C → Nat) (charge : D.State → D.Op → Nat) : Prop where
   /-- Angelic step correctness coupled with the potential inequality. -/
   step : ∀ {s c o a c' trace}, R.rep s c → D.valid s o → exec c o a c' trace →
@@ -60,7 +60,7 @@ structure Amortized (R : Realization D exec) (weight : Trace → Nat)
 
 namespace Amortized
 
-variable {R : Realization D exec} {weight : Trace → Nat} {potential : D.State → C → Nat}
+variable {R : StateTransitionImpl D exec} {weight : Trace → Nat} {potential : D.State → C → Nat}
   {charge : D.State → D.Op → Nat} (A : Amortized R weight potential charge)
 
 /-- Construct an `Amortized` certificate on a deterministic specification (`[D.HasStepFn f]`) from
@@ -96,7 +96,7 @@ theorem demonic {p : D.Client α} {s : D.State} {c c' : C} {a : α}
     obtain ⟨s₂, tr, hrun, hr₂, hlen, hpot₂⟩ := ih hr₁ (hv_k s₁ res hstep)
     refine ⟨s₂, ⟨o, res, s₁⟩ :: tr, .liftBind o k res hv_o hstep hrun, hr₂,
       congrArg (· + 1) hlen, ?_⟩
-    simp only [total_cons, Spec.totalCostTranscript_cons]
+    simp only [total_cons, StateTransitionSpec.totalCostTranscript_cons]
     omega
 
 include A in
@@ -132,7 +132,7 @@ theorem client {p : D.Client α} {s : D.State} {c c' : C} {a : α} {traces : Lis
   rwa [D.totalCostTranscript_canonicalTranscript] at hpot
 
 include A in
-/-- Existence and semantic correctness are inherited independently from the realization. -/
+/-- Existence and semantic correctness are inherited independently from the implementation. -/
 theorem exists_executes (p : D.Client α) {s : D.State} {c : C} (hr : R.rep s c)
     (hv : D.ValidHistory s (D.clientHistory s p)) :
     ∃ c' traces, Executes exec p c (D.clientResult s p) c' traces ∧
@@ -149,7 +149,7 @@ theorem client_const {K : Nat} (A : Amortized R weight potential (fun _ _ => K))
     (he : Executes exec p c a c' traces) :
     total weight traces + potential (D.clientState s p) c' ≤
       (D.clientHistory s p).length * K + potential s c := by
-  simpa only [Spec.totalCost_const] using A.client hr hv he
+  simpa only [StateTransitionSpec.totalCost_const] using A.client hr hv he
 
 /-- Existence, correctness, and potential bound for a uniform constant amortized charge. -/
 theorem exists_executes_const {K : Nat} (A : Amortized R weight potential (fun _ _ => K))
@@ -192,4 +192,4 @@ theorem of_worstCase (B : Bound R weight charge) :
     exact ⟨s', hstep, hr', by simpa using B hr hv he⟩
 
 end Amortized
-end Cslib.Stateful
+end Cslib.DataStructure

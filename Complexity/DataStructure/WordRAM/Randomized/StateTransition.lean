@@ -7,30 +7,31 @@ Authors: Samuel Schlesinger, Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Computability.WordRAM.Subroutine
+public import Complexity.DataStructure.WordRAM.StateTransition
 public import Complexity.Computability.WordRAM.Randomized.Expected
 import Complexity.Probability.PMF.Expect
 
 /-!
-# Composable Randomized Word-RAM Data-Structure Subroutines
+# Composable Randomized Word-RAM State-Transition Implementations
 
-This file extends the relational `Cslib.WordRAM.SubroutineDS` interface to **randomized data
-structures and Las Vegas subroutines** on the Word-RAM — covering both structures initialized from a
-random seed (such as universal hash tables, 2-choice hash tables, and cuckoo hash tables) and
-structures whose operations make random choices via `Instr.rand` (such as treaps, skip lists,
-reservoir samplers, or randomized rehashing); see [MitzenmacherUpfal2017], Sections 2.1, 2.3, and
-2.4.
+This file extends the relational `Cslib.DataStructure.WordRAM.StateTransitionImpl` interface to
+**randomized data structures and Las Vegas subroutines** on the Word-RAM — covering both structures
+initialized from a random seed (such as universal hash tables, 2-choice hash tables, and cuckoo
+hash tables) and structures whose operations make random choices via `Instr.rand` (such as treaps,
+skip lists, reservoir samplers, or randomized rehashing); see [MitzenmacherUpfal2017], Sections 2.1,
+2.3, and 2.4.
 
 ## Core design
 
-A `Cslib.WordRAM.Randomized.SubroutineDS P D w base params s₀` couples machine execution with a
-latent seed type `Seed : Type`, the relational abstract state `D.State`, and a reference
-distribution `seedLaw : PMF Seed` up to a bounded density factor `seedSlack : ℝ≥0∞`:
+A `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl P D w base params s₀` couples machine
+execution with a latent seed type `Seed : Type`, the relational abstract state `D.State`, and a
+reference distribution `seedLaw : PMF Seed` up to a bounded density factor `seedSlack : ℝ≥0∞`:
 
 1. **Seed-coupled representation (`rep θ s x`) and potential (`potential θ x`):**
    - Data structures without a persistent random seed set `Seed := Unit`, `seedLaw := PMF.pure ()`,
-     and `seedSlack := 1` (in particular, `Cslib.WordRAM.SubroutineDS.toRandomized` embeds every
-     relational `Cslib.WordRAM.SubroutineDS` directly).
+     and `seedSlack := 1` (in particular,
+     `Cslib.DataStructure.WordRAM.StateTransitionImpl.toRandomized` embeds every relational
+     `Cslib.DataStructure.WordRAM.StateTransitionImpl` directly).
    - Hash tables that resample their hash family on rare table-full events maintain a joint
      distribution whose marginal on `Seed` satisfies `(ν.map Prod.fst) θ ≤ seedSlack * seedLaw θ`.
 
@@ -52,15 +53,15 @@ distribution `seedLaw : PMF Seed` up to a bounded density factor `seedSlack : �
      (for `Φ(t) := potential t.seed t.data`)
      `∑' t, ν t * (T_step t + ∑' q, μ_step t q * Φ(q)) ≤ ∑' t, ν t * (charge t.state o + Φ(t))`.
    - General relational certificates (`singleState := False`, the default, including
-     `Cslib.WordRAM.SubroutineDS.toRandomized`) apply to arbitrary branch-dependent state
-     distributions `ν : PMF (CoupledState Seed D.State r_ds)`, whether `D` is deterministic or
-     nondeterministic.
-   - For functional specifications (`[D.HasStepFn f]`), `SubroutineDS.ofFn` (`singleState := True`),
-     `step_exec_ofFn`, `frame_caller_dist_ofFn`, `code_rename_ofFn`, `call_rename_ofFn`,
-     `ExecStepsOfFn`, `steps_expected_amortized_ofFn`, and `seq_expected_amortized_ofFn` specialize
-     the interface to a single deterministic abstract state `s : D.State` and distribution
-     `ν : PMF (Seed × Data r_ds)` (preventing adaptive correlation between `s` and the latent seed
-     `θ` in oblivious-adversary structures).
+     `Cslib.DataStructure.WordRAM.StateTransitionImpl.toRandomized`) apply to arbitrary
+     branch-dependent state distributions `ν : PMF (CoupledState Seed D.State r_ds)`, whether `D`
+     is deterministic or nondeterministic.
+   - For functional specifications (`[D.HasStepFn f]`), `StateTransitionImpl.ofFn`
+     (`singleState := True`), `step_exec_ofFn`, `frame_caller_dist_ofFn`, `code_rename_ofFn`,
+     `call_rename_ofFn`, `ExecStepsOfFn`, `steps_expected_amortized_ofFn`, and
+     `seq_expected_amortized_ofFn` specialize the interface to a single deterministic abstract state
+     `s : D.State` and distribution `ν : PMF (Seed × Data r_ds)` (preventing adaptive correlation
+     between `s` and the latent seed `θ` in oblivious-adversary structures).
 
 The sequence theorems charge initialization and subroutine bodies for a fixed operation list.
 `prepare` delivers each operation's arguments by a semantic register replacement; its encoding
@@ -71,35 +72,36 @@ the preparation code. Compiling a standalone body adds the final halt separately
 
 ## Main definitions
 
-* `Cslib.WordRAM.Randomized.CoupledState`: coupled latent seed, abstract specification state, and
-  concrete Word-RAM state for relational randomized subroutine analysis.
-* `Cslib.WordRAM.Randomized.SubroutineDS`: reusable randomized Word-RAM subroutine certificate for
-  a relational specification `D : Stateful.Spec`.
-* `Cslib.WordRAM.Randomized.SubroutineDS.ofFn`: constructor for functional specifications
-  `[D.HasStepFn f]`.
-* `Cslib.WordRAM.Randomized.SubroutineDS.ExecSteps`, `ExecStepsOfFn`: multi-operation
-  distributional execution traces across `ops : List D.Op`.
-* `Cslib.WordRAM.SubroutineDS.toRandomized`: canonical embedding of any relational
-  `Cslib.WordRAM.SubroutineDS` into `Cslib.WordRAM.Randomized.SubroutineDS`.
-* `Cslib.WordRAM.Randomized.SubroutineDS.mapSimulates`, `toStandard`: basis transport from
-  `Basis.exact` to `Basis.standard`.
+* `Cslib.DataStructure.WordRAM.Randomized.CoupledState`: coupled latent seed, abstract
+  specification state, and concrete Word-RAM state for relational randomized subroutine analysis.
+* `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl`: reusable randomized Word-RAM
+  subroutine certificate for a relational specification `D : StateTransitionSpec`.
+* `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl.ofFn`: constructor for functional
+  specifications `[D.HasStepFn f]`.
+* `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl.ExecSteps`, `ExecStepsOfFn`:
+  multi-operation distributional execution traces across `ops : List D.Op`.
+* `Cslib.DataStructure.WordRAM.StateTransitionImpl.toRandomized`: canonical embedding of any
+  relational `Cslib.DataStructure.WordRAM.StateTransitionImpl` into
+  `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl`.
+* `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl.mapSimulates`, `toStandard`: basis
+  transport from `Basis.exact` to `Basis.standard`.
 
 ## Main results
 
-* `Cslib.WordRAM.Randomized.SubroutineDS.initFresh_exec`, `initFresh_rename`: expected-time
-  initialization on fresh zeroed memory.
+* `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl.initFresh_exec`, `initFresh_rename`:
+  expected-time initialization on fresh zeroed memory.
 * `Cslib.WordRAM.SubroutineCode.zeroFillCode_exec`,
-  `Cslib.WordRAM.Randomized.SubroutineDS.initClear_exec`, `initClear_rename`:
+  `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl.initClear_exec`, `initClear_rename`:
   expected-time initialization on arbitrary dirty memory.
-* `Cslib.WordRAM.Randomized.SubroutineDS.code_rename`, `call_rename`, `code_rename_ofFn`,
-  `call_rename_ofFn`: inline subroutine invocation on caller state space `Data r_caller` via
-  register injection `f : Fin r_ds → Fin r_caller`.
-* `Cslib.WordRAM.Randomized.SubroutineDS.frame_caller`, `frame_caller_dist`,
+* `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl.code_rename`, `call_rename`,
+  `code_rename_ofFn`, `call_rename_ofFn`: inline subroutine invocation on caller state space
+  `Data r_caller` via register injection `f : Fin r_ds → Fin r_caller`.
+* `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl.frame_caller`, `frame_caller_dist`,
   `frame_caller_dist_ofFn`: preservation of `rep`, `potential`, and the coupled caller distribution
   across arbitrary deterministic or randomized caller steps that do not modify persistent DS
   registers (`P.input i = false`) or `[base, base + space)`.
-* `Cslib.WordRAM.Randomized.SubroutineDS.steps_expected_amortized`, `seq_expected_amortized`,
-  `steps_expected_amortized_ofFn`, `seq_expected_amortized_ofFn`:
+* `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl.steps_expected_amortized`,
+  `seq_expected_amortized`, `steps_expected_amortized_ofFn`, `seq_expected_amortized_ofFn`:
   telescope theorems bounding initialization and expected body time across any admissible operation
   sequence `ops : List D.Op`.
 
@@ -113,7 +115,7 @@ the preparation code. Compiling a standalone body adds the final halt separately
 
 @[expose] public section
 
-namespace Cslib.WordRAM.Randomized
+namespace Cslib.DataStructure.WordRAM.Randomized
 
 open Cslib.WordRAM
 open scoped ENNReal
@@ -133,8 +135,8 @@ structure CoupledState (Seed : Type) (State : Type u) (r : ℕ) : Type u where
 /-- Unified standalone and inline subroutine specification/resource certificate for a randomized
 Word-RAM data structure `P` realizing a relational specification `D` at word width `w`, base
 address `base`, runtime parameters `params`, and initial abstract state `s₀`. -/
-structure SubroutineDS {B : Basis} {r_ds k_init : ℕ}
-    (P : SubroutineCode B r_ds k_init) (D : Stateful.Spec.{u, v, z})
+structure StateTransitionImpl {B : Basis} {r_ds k_init : ℕ}
+    (P : SubroutineCode B r_ds k_init) (D : StateTransitionSpec.{u, v, z})
     (w base : ℕ) (params : Fin k_init → ℕ) (s₀ : D.State) : Type (max u v z 1) where
   /-- Latent random seed type (use `Unit` when no persistent seed is needed). -/
   Seed : Type
@@ -213,9 +215,9 @@ structure SubroutineDS {B : Basis} {r_ds k_init : ℕ}
   /-- Whether `step_exec` requires the pre-state distribution `ν` to be concentrated on a single
   abstract state `s : D.State` (`False` by default for general relational certificates, allowing
   branch-dependent state distributions even when `D` is deterministic; `True` for single-state
-  functional certificates constructed via `SubroutineDS.ofFn`, where the oblivious adversary fixes a
-  single abstract state `s` independent of the latent seed `θ` and every branch transitions to
-  `(D.stepFn s o).1`). -/
+  functional certificates constructed via `StateTransitionImpl.ofFn`, where the oblivious adversary
+  fixes a single abstract state `s` independent of the latent seed `θ` and every branch transitions
+  to `(D.stepFn s o).1`). -/
   singleState : Prop := False
   /-- Coupled one-step execution of `P.code` for any operation `o` from a coupled distribution
   `ν : PMF (CoupledState Seed D.State r_ds)` (supported on a single abstract state when
@@ -243,24 +245,25 @@ structure SubroutineDS {B : Basis} {r_ds k_init : ℕ}
       (∑' t, ν t * (T_step t + ∑' q, μ_step t q * (potential q.seed q.data : ℝ≥0∞))) ≤
         ∑' t, ν t * ((charge t.state o : ℝ≥0∞) + (potential t.seed t.data : ℝ≥0∞))
 
-end Cslib.WordRAM.Randomized
+end Cslib.DataStructure.WordRAM.Randomized
 
-namespace Cslib.WordRAM.SubroutineDS
+namespace Cslib.DataStructure.WordRAM.StateTransitionImpl
 
-open Cslib.WordRAM.Randomized (CoupledState)
+open Cslib.WordRAM
+open Cslib.DataStructure.WordRAM.Randomized (CoupledState)
 open scoped ENNReal
 
 universe u v z
 
 variable {B : Basis} {r_ds k_init w base : ℕ}
-  {P : SubroutineCode B r_ds k_init} {D : Stateful.Spec.{u, v, z}}
+  {P : SubroutineCode B r_ds k_init} {D : StateTransitionSpec.{u, v, z}}
   {params : Fin k_init → ℕ} {s₀ : D.State}
 
-/-- Canonical embedding of any relational `Cslib.WordRAM.SubroutineDS` certificate into
-`Cslib.WordRAM.Randomized.SubroutineDS` (`Seed := Unit`, `seedLaw := PMF.pure ()`,
-`seedSlack := 1`). -/
-noncomputable def toRandomized (C : SubroutineDS P D w base params s₀) :
-    Randomized.SubroutineDS P D w base params s₀ where
+/-- Canonical embedding of any relational `Cslib.DataStructure.WordRAM.StateTransitionImpl`
+certificate into `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl` (`Seed := Unit`,
+`seedLaw := PMF.pure ()`, `seedSlack := 1`). -/
+noncomputable def toRandomized (C : StateTransitionImpl P D w base params s₀) :
+    Randomized.StateTransitionImpl P D w base params s₀ where
   Seed := Unit
   seedLaw := PMF.pure ()
   seedSlack := 1
@@ -354,9 +357,9 @@ noncomputable def toRandomized (C : SubroutineDS P D w base params s₀) :
         exact_mod_cast hpot
       · rw [(PMF.apply_eq_zero_iff _ _).mpr ht_mem, zero_mul, zero_mul]
 
-end Cslib.WordRAM.SubroutineDS
+end Cslib.DataStructure.WordRAM.StateTransitionImpl
 
-namespace Cslib.WordRAM.Randomized.SubroutineDS
+namespace Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl
 
 open Cslib.WordRAM
 open scoped ENNReal
@@ -364,14 +367,14 @@ open scoped ENNReal
 universe u v z
 
 variable {B B' : Basis} {r_ds r_caller k_init w base : ℕ}
-  {P : SubroutineCode B r_ds k_init} {D : Stateful.Spec.{u, v, z}}
+  {P : SubroutineCode B r_ds k_init} {D : StateTransitionSpec.{u, v, z}}
   {params : Fin k_init → ℕ} {s₀ : D.State}
 
 /-- Total expected instruction bound for `P.initFresh`. -/
-def initTime (C : SubroutineDS P D w base params s₀) : ℝ≥0∞ :=
+def initTime (C : StateTransitionImpl P D w base params s₀) : ℝ≥0∞ :=
   (C.spanTime : ℝ≥0∞) + C.setupTime
 
-/-- Construct a randomized `SubroutineDS` certificate for a functional specification
+/-- Construct a randomized `StateTransitionImpl` certificate for a functional specification
 `[D.HasStepFn stepFn]`. -/
 noncomputable abbrev ofFn {stepFn : (s : D.State) → (o : D.Op) → D.State × D.Result o}
     [D.HasStepFn stepFn]
@@ -432,7 +435,7 @@ noncomputable abbrev ofFn {stepFn : (s : D.State) → (o : D.Op) → D.State × 
         (∀ θ', ((ν.bind μ_step).map Prod.fst) θ' ≤ seedSlack * seedLaw θ') ∧
         (∑' p, ν p * (T_step p + ∑' q, μ_step p q * (potential q.1 q.2 : ℝ≥0∞))) ≤
           (charge s o : ℝ≥0∞) + ∑' p, ν p * (potential p.1 p.2 : ℝ≥0∞)) :
-    SubroutineDS P D w base params s₀ where
+    StateTransitionImpl P D w base params s₀ where
   Seed := Seed
   seedLaw := seedLaw
   seedSlack := seedSlack
@@ -550,7 +553,7 @@ noncomputable abbrev ofFn {stepFn : (s : D.State) → (o : D.Op) → D.State × 
       exact hamort_det
 
 /-- Deterministic one-step execution of `P.code` when `[D.HasStepFn stepFn]`. -/
-theorem step_exec_ofFn (C : SubroutineDS P D w base params s₀)
+theorem step_exec_ofFn (C : StateTransitionImpl P D w base params s₀)
     {stepFn : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn stepFn]
     {s : D.State} (o : D.Op) (ν : PMF (C.Seed × Data r_ds))
     (hv : D.valid s o)
@@ -643,9 +646,10 @@ theorem step_exec_ofFn (C : SubroutineDS P D w base params s₀)
 
 /-! ### Projection 1: Basis lifting (`mapSimulates`, `toStandard`) -/
 
-/-- Lift a randomized `SubroutineDS` certificate along any defined-evaluation basis simulation. -/
-def mapSimulates (φ : B.Simulates B') (C : SubroutineDS P D w base params s₀) :
-    SubroutineDS (P.mapSimulates φ) D w base params s₀ where
+/-- Lift a randomized `StateTransitionImpl` certificate along any defined-evaluation basis
+simulation. -/
+def mapSimulates (φ : B.Simulates B') (C : StateTransitionImpl P D w base params s₀) :
+    StateTransitionImpl (P.mapSimulates φ) D w base params s₀ where
   Seed := C.Seed
   seedLaw := C.seedLaw
   seedSlack := C.seedSlack
@@ -682,10 +686,10 @@ def mapSimulates (φ : B.Simulates B') (C : SubroutineDS P D w base params s₀)
       fun t ht => ⟨(hstep t ht).1.mapSimulates φ, (hstep t ht).2⟩,
       hseed', hsingle', hamort⟩
 
-/-- Lift an exact-basis randomized `SubroutineDS` certificate to `Basis.standard`. -/
+/-- Lift an exact-basis randomized `StateTransitionImpl` certificate to `Basis.standard`. -/
 abbrev toStandard {P : SubroutineCode .exact r_ds k_init}
-    (C : SubroutineDS P D w base params s₀) :
-    SubroutineDS P.toStandard D w base params s₀ :=
+    (C : StateTransitionImpl P D w base params s₀) :
+    StateTransitionImpl P.toStandard D w base params s₀ :=
   C.mapSimulates .exactStandard
 
 /-! ### Projection 2: Fresh initialization and register relocation (`initFresh_exec`,
@@ -693,7 +697,7 @@ abbrev toStandard {P : SubroutineCode .exact r_ds k_init}
 
 /-- Execute `P.initFresh` on zeroed `[base, base + C.space)` in `C.initTime` expected
 instructions. -/
-theorem initFresh_exec (C : SubroutineDS P D w base params s₀) {x : Data r_ds}
+theorem initFresh_exec (C : StateTransitionImpl P D w base params s₀) {x : Data r_ds}
     (hx : x.Bounded w) (hfr : x.regs P.frontierReg = base)
     (hpar : ∀ j, x.regs (P.initParams j) = params j)
     (hz : ∀ a ∈ (Block.mk base C.space).footprint, x.mem a = 0) :
@@ -715,7 +719,7 @@ theorem initFresh_exec (C : SubroutineDS P D w base params s₀) {x : Data r_ds}
   rw [hm₁] at hsupp
   exact ⟨ν₀, (ExecCodeDist.of_execWithin he₁).seq_pure he₂, hseed, hsupp⟩
 
-private theorem init_rename_of_exec (C : SubroutineDS P D w base params s₀)
+private theorem init_rename_of_exec (C : StateTransitionImpl P D w base params s₀)
     {c : Code B r_ds} {T : ℝ≥0∞} {f : Fin r_ds → Fin r_caller} (hf : f.Injective)
     {x : Data r_caller}
     (hex : ∃ ν₀ : PMF (C.Seed × Data r_ds),
@@ -758,7 +762,7 @@ private theorem init_rename_of_exec (C : SubroutineDS P D w base params s₀)
       exact hpot
 
 /-- Relocated fresh initialization along any injective register embedding `f`. -/
-theorem initFresh_rename (C : SubroutineDS P D w base params s₀)
+theorem initFresh_rename (C : StateTransitionImpl P D w base params s₀)
     {f : Fin r_ds → Fin r_caller} (hf : f.Injective) {x : Data r_caller}
     (hx : (x.comap f).Bounded w) (hfr : x.regs (f P.frontierReg) = base)
     (hpar : ∀ j, x.regs (f (P.initParams j)) = params j)
@@ -779,7 +783,7 @@ theorem initFresh_rename (C : SubroutineDS P D w base params s₀)
 
 /-- Execute `P.initClear` on **arbitrary dirty memory** in
 `C.initTime + (4 * C.space + 6 : ℕ)` expected instructions. -/
-theorem initClear_exec (C : SubroutineDS P D w base params s₀) {x : Data r_ds}
+theorem initClear_exec (C : StateTransitionImpl P D w base params s₀) {x : Data r_ds}
     (hx : x.Bounded w) (hfr : x.regs P.frontierReg = base)
     (hpar : ∀ j, x.regs (P.initParams j) = params j) :
     ∃ ν₀ : PMF (C.Seed × Data r_ds),
@@ -809,7 +813,7 @@ theorem initClear_exec (C : SubroutineDS P D w base params s₀) {x : Data r_ds}
     exact ⟨hfr₃, hrep, hpot, hmod⟩
 
 /-- Relocated `O(space)` dirty-memory initialization along any injective register embedding `f`. -/
-theorem initClear_rename (C : SubroutineDS P D w base params s₀)
+theorem initClear_rename (C : StateTransitionImpl P D w base params s₀)
     {f : Fin r_ds → Fin r_caller} (hf : f.Injective) {x : Data r_caller}
     (hx : (x.comap f).Bounded w) (hfr : x.regs (f P.frontierReg) = base)
     (hpar : ∀ j, x.regs (f (P.initParams j)) = params j) :
@@ -832,7 +836,7 @@ theorem initClear_rename (C : SubroutineDS P D w base params s₀)
 registers (`P.input i = false`) unchanged, and writes only to a set `F` disjoint from
 `[base, base + C.space)` preserves both `C.rep θ s (x'.comap f)` and
 `C.potential θ (x'.comap f)`. -/
-theorem frame_caller (C : SubroutineDS P D w base params s₀)
+theorem frame_caller (C : StateTransitionImpl P D w base params s₀)
     {f : Fin r_ds → Fin r_caller} {θ : C.Seed} {s : D.State} {x x' : Data r_caller}
     {F : Finset ℕ}
     (hr : C.rep θ s (x.comap f))
@@ -848,14 +852,14 @@ theorem frame_caller (C : SubroutineDS P D w base params s₀)
 
 /-- Coupled caller distribution on `CoupledState C.Seed D.State r_caller` after a caller transition
 kernel `μ_caller` that does not resample the DS seed or change the abstract DS state. -/
-noncomputable def frameStateDist (C : SubroutineDS P D w base params s₀)
+noncomputable def frameStateDist (C : StateTransitionImpl P D w base params s₀)
     (ν : PMF (CoupledState C.Seed D.State r_caller))
     (μ_caller : CoupledState C.Seed D.State r_caller → PMF (Data r_caller)) :
     PMF (CoupledState C.Seed D.State r_caller) :=
   ν.bind fun t => (μ_caller t).map fun x' => ⟨t.seed, t.state, x'⟩
 
 @[simp]
-theorem frameStateDist_map_seed (C : SubroutineDS P D w base params s₀)
+theorem frameStateDist_map_seed (C : StateTransitionImpl P D w base params s₀)
     (ν : PMF (CoupledState C.Seed D.State r_caller))
     (μ_caller : CoupledState C.Seed D.State r_caller → PMF (Data r_caller)) :
     (C.frameStateDist ν μ_caller).map CoupledState.seed = ν.map CoupledState.seed := by
@@ -872,7 +876,7 @@ theorem frameStateDist_map_seed (C : SubroutineDS P D w base params s₀)
 `(x'.comap f).Bounded w`, leaves persistent DS registers (`P.input i = false`) unchanged, and
 writes only to a set `F` disjoint from `[base, base + C.space)` preserves the coupled seed
 marginal bound, `C.rep`, and expected potential under `C.frameStateDist ν μ_caller`. -/
-theorem frame_caller_dist (C : SubroutineDS P D w base params s₀)
+theorem frame_caller_dist (C : StateTransitionImpl P D w base params s₀)
     {f : Fin r_ds → Fin r_caller}
     {ν : PMF (CoupledState C.Seed D.State r_caller)}
     {μ_caller : CoupledState C.Seed D.State r_caller → PMF (Data r_caller)}
@@ -912,14 +916,14 @@ theorem frame_caller_dist (C : SubroutineDS P D w base params s₀)
 
 /-- Coupled caller distribution after a caller transition kernel `μ_caller` that does not resample
 the DS seed `θ`. -/
-noncomputable def frameDist (C : SubroutineDS P D w base params s₀)
+noncomputable def frameDist (C : StateTransitionImpl P D w base params s₀)
     (ν : PMF (C.Seed × Data r_caller))
     (μ_caller : C.Seed × Data r_caller → PMF (Data r_caller)) :
     PMF (C.Seed × Data r_caller) :=
   ν.bind fun p => (μ_caller p).map fun x' => (p.1, x')
 
 @[simp]
-theorem frameDist_map_fst (C : SubroutineDS P D w base params s₀)
+theorem frameDist_map_fst (C : StateTransitionImpl P D w base params s₀)
     (ν : PMF (C.Seed × Data r_caller))
     (μ_caller : C.Seed × Data r_caller → PMF (Data r_caller)) :
     (C.frameDist ν μ_caller).map Prod.fst = ν.map Prod.fst := by
@@ -935,7 +939,7 @@ kernel `μ_caller` that preserves `(x'.comap f).Bounded w`, leaves persistent DS
 (`P.input i = false`) unchanged, and writes only to a set `F` disjoint from `[base, base + C.space)`
 preserves the coupled seed marginal bound, `C.rep`, and expected potential under
 `C.frameDist ν μ_caller`. -/
-theorem frame_caller_dist_ofFn (C : SubroutineDS P D w base params s₀)
+theorem frame_caller_dist_ofFn (C : StateTransitionImpl P D w base params s₀)
     {f : Fin r_ds → Fin r_caller} {s : D.State}
     {ν : PMF (C.Seed × Data r_caller)}
     {μ_caller : C.Seed × Data r_caller → PMF (Data r_caller)}
@@ -996,7 +1000,7 @@ theorem frame_caller_dist_ofFn (C : SubroutineDS P D w base params s₀)
 
 /-- Execute `P.code.rename f` inline when arguments already match `(t.data.comap f).regs` on the
 support of a coupled caller distribution `ν : PMF (CoupledState C.Seed D.State r_caller)`. -/
-theorem code_rename (C : SubroutineDS P D w base params s₀)
+theorem code_rename (C : StateTransitionImpl P D w base params s₀)
     {f : Fin r_ds → Fin r_caller} (hf : f.Injective)
     (o : D.Op) (ν : PMF (CoupledState C.Seed D.State r_caller))
     (hseed : ∀ θ, (ν.map CoupledState.seed) θ ≤ C.seedSlack * C.seedLaw θ)
@@ -1106,7 +1110,7 @@ theorem code_rename (C : SubroutineDS P D w base params s₀)
 /-- Execute `P.code.rename f` inline for a functional specification `[D.HasStepFn stepFn]` when
 arguments already match `(p.2.comap f).regs` on the support of a coupled caller distribution
 `ν : PMF (C.Seed × Data r_caller)`. -/
-theorem code_rename_ofFn (C : SubroutineDS P D w base params s₀)
+theorem code_rename_ofFn (C : StateTransitionImpl P D w base params s₀)
     {stepFn : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn stepFn]
     {f : Fin r_ds → Fin r_caller} (hf : f.Injective)
     {s : D.State} (o : D.Op) (ν : PMF (C.Seed × Data r_caller))
@@ -1204,7 +1208,7 @@ theorem code_rename_ofFn (C : SubroutineDS P D w base params s₀)
 /-- Execute `.seq prep (P.code.rename f)` inline after a (deterministic or randomized) caller
 argument-preparation block `prep` that preserves persistent DS registers and memory in
 `[base, base + C.space)`. -/
-theorem call_rename (C : SubroutineDS P D w base params s₀)
+theorem call_rename (C : StateTransitionImpl P D w base params s₀)
     {f : Fin r_ds → Fin r_caller} (hf : f.Injective)
     {prep : Code B r_caller} {B_prep : ℝ≥0∞}
     (o : D.Op) (ν : PMF (CoupledState C.Seed D.State r_caller))
@@ -1376,7 +1380,7 @@ theorem call_rename (C : SubroutineDS P D w base params s₀)
 /-- Execute `.seq prep (P.code.rename f)` inline for a functional specification
 `[D.HasStepFn stepFn]` after a caller argument-preparation block `prep` that preserves persistent
 DS registers and memory in `[base, base + C.space)`. -/
-theorem call_rename_ofFn (C : SubroutineDS P D w base params s₀)
+theorem call_rename_ofFn (C : StateTransitionImpl P D w base params s₀)
     {stepFn : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn stepFn]
     {f : Fin r_ds → Fin r_caller} (hf : f.Injective)
     {s : D.State} {prep : Code B r_caller} {B_prep : ℝ≥0∞}
@@ -1503,10 +1507,10 @@ theorem call_rename_ofFn (C : SubroutineDS P D w base params s₀)
 
 /-- Reuse the signature-level program and argument-delivery API with the actual instruction basis.
 This projection carries code and the calling convention, without a deterministic certificate. -/
-def toDynamicProgram (C : SubroutineDS P D w base params s₀) : DynamicProgram D r_ds B :=
+def toDynamicProgram (C : StateTransitionImpl P D w base params s₀) : DynamicProgram D r_ds B :=
   P.toDynamicProgram C.encode C.decode
 
-theorem prepare_rep (C : SubroutineDS P D w base params s₀)
+theorem prepare_rep (C : StateTransitionImpl P D w base params s₀)
     {θ : C.Seed} {s : D.State} {o : D.Op} {x : Data r_ds}
     (hr : C.rep θ s x) (hv : D.valid s o) :
     C.rep θ s (C.toDynamicProgram.prepare o x) :=
@@ -1516,7 +1520,7 @@ theorem prepare_rep (C : SubroutineDS P D w base params s₀)
     (C.toDynamicProgram.prepare_bounded (C.bounded hr) (C.arguments_fit _ hv))
     hr
 
-theorem prepare_potential (C : SubroutineDS P D w base params s₀)
+theorem prepare_potential (C : StateTransitionImpl P D w base params s₀)
     {θ : C.Seed} {s : D.State} {o : D.Op} {x : Data r_ds}
     (hr : C.rep θ s x) :
     C.potential θ (C.toDynamicProgram.prepare o x) = C.potential θ x :=
@@ -1525,7 +1529,7 @@ theorem prepare_potential (C : SubroutineDS P D w base params s₀)
     (fun _ _ => rfl)
     hr
 
-theorem prepare_argMatch (C : SubroutineDS P D w base params s₀) (o : D.Op) (x : Data r_ds) :
+theorem prepare_argMatch (C : StateTransitionImpl P D w base params s₀) (o : D.Op) (x : Data r_ds) :
     C.argMatch o (C.toDynamicProgram.prepare o x).regs :=
   C.encode_matches o x.regs
 
@@ -1538,7 +1542,7 @@ final coupled distribution `ν_final`, angelically witnesses a valid transition 
 decoded observation `C.decode o q.data.regs = some a` at every step, modifies memory only within
 `[base, base + C.space)`, incurs total expected operation body cost `T_ops`, and accumulates total
 expected operation charge `C_ops`. -/
-inductive ExecSteps (C : SubroutineDS P D w base params s₀) :
+inductive ExecSteps (C : StateTransitionImpl P D w base params s₀) :
     List D.Op → PMF (CoupledState C.Seed D.State r_ds) →
       PMF (CoupledState C.Seed D.State r_ds) → ℝ≥0∞ → ℝ≥0∞ → Prop where
   | nil (ν : PMF (CoupledState C.Seed D.State r_ds)) :
@@ -1569,7 +1573,7 @@ distribution `ν_final`, total expected operation step count `T_ops : ℝ≥0∞
 operation charge `C_ops : ℝ≥0∞` witnessing `C.ExecSteps ops ν ν_final T_ops C_ops` and satisfying
 the addition-only `ℝ≥0∞` telescope inequality
 `T_ops + ∑' q, ν_final q * Φ(q) ≤ C_ops + ∑' t, ν t * Φ(t)`. -/
-theorem steps_expected_amortized (C : SubroutineDS P D w base params s₀)
+theorem steps_expected_amortized (C : StateTransitionImpl P D w base params s₀)
     (ops : List D.Op) (ν : PMF (CoupledState C.Seed D.State r_ds))
     (hv : ∀ t ∈ ν.support, D.ValidOpSeq t.state ops)
     (hseed : ∀ θ, (ν.map CoupledState.seed) θ ≤ C.seedSlack * C.seedLaw θ)
@@ -1684,7 +1688,7 @@ theorem steps_expected_amortized (C : SubroutineDS P D w base params s₀)
 Starting from zeroed `[base, base + C.space)`, `P.initFresh` followed by any demonically admissible
 operation sequence `ops : List D.Op` (`D.ValidOpSeq s₀ ops`) has total expected instruction cost
 `C.initTime + T_ops` bounded by `C.initTime + C.initPotential + C_ops`. -/
-theorem seq_expected_amortized (C : SubroutineDS P D w base params s₀)
+theorem seq_expected_amortized (C : StateTransitionImpl P D w base params s₀)
     {x : Data r_ds} (ops : List D.Op)
     (hx : x.Bounded w) (hfr : x.regs P.frontierReg = base)
     (hpar : ∀ j, x.regs (P.initParams j) = params j)
@@ -1746,7 +1750,7 @@ theorem seq_expected_amortized (C : SubroutineDS P D w base params s₀)
 
 /-- Inductive multi-operation distributional execution relation for a randomized subroutine `C`
 over a functional specification `[D.HasStepFn stepFn]`. -/
-inductive ExecStepsOfFn (C : SubroutineDS P D w base params s₀)
+inductive ExecStepsOfFn (C : StateTransitionImpl P D w base params s₀)
     {stepFn : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn stepFn] :
     D.State → List D.Op → PMF (C.Seed × Data r_ds) → PMF (C.Seed × Data r_ds) → ℝ≥0∞ → Prop where
   | nil (s : D.State) (ν : PMF (C.Seed × Data r_ds)) :
@@ -1767,7 +1771,7 @@ inductive ExecStepsOfFn (C : SubroutineDS P D w base params s₀)
 
 /-- Project a relational `ExecSteps` derivation to `ExecStepsOfFn` when `[D.HasStepFn stepFn]`
 and the initial coupled distribution is supported on a single abstract state `s`. -/
-theorem ExecSteps.toOfFn {C : SubroutineDS P D w base params s₀}
+theorem ExecSteps.toOfFn {C : StateTransitionImpl P D w base params s₀}
     {stepFn : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn stepFn]
     {s : D.State} {ops : List D.Op}
     {ν_rel ν_final : PMF (CoupledState C.Seed D.State r_ds)} {T_ops C_ops : ℝ≥0∞}
@@ -1846,14 +1850,14 @@ theorem ExecSteps.toOfFn {C : SubroutineDS P D w base params s₀}
         have hpair : (q_rel.state, a) = D.stepFn s o :=
           (D.step_iff_stepFn s o q_rel.state a).mp hstep_a
         exact ⟨congrArg Prod.snd hpair ▸ hdec, congrArg Prod.fst hpair ▸ hrep', hmod⟩
-    · simp only [hC_eq, hC_rest, Stateful.Spec.totalCost_cons, Nat.cast_add]
+    · simp only [hC_eq, hC_rest, StateTransitionSpec.totalCost_cons, Nat.cast_add]
     · intro q hq
-      simp only [Stateful.Spec.run_cons]
+      simp only [StateTransitionSpec.run_cons]
       exact hs_final q hq
 
 /-- **Multi-operation expected-amortized telescope for functional specifications
 (`steps_expected_amortized_ofFn`).** -/
-theorem steps_expected_amortized_ofFn (C : SubroutineDS P D w base params s₀)
+theorem steps_expected_amortized_ofFn (C : StateTransitionImpl P D w base params s₀)
     {stepFn : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn stepFn]
     {s : D.State} (ops : List D.Op) (ν : PMF (C.Seed × Data r_ds))
     (hv : D.ValidHistory s ops)
@@ -1911,7 +1915,7 @@ theorem steps_expected_amortized_ofFn (C : SubroutineDS P D w base params s₀)
 
 /-- **End-to-end expected-amortized theorem from fresh initialization for functional specifications
 (`seq_expected_amortized_ofFn`).** -/
-theorem seq_expected_amortized_ofFn (C : SubroutineDS P D w base params s₀)
+theorem seq_expected_amortized_ofFn (C : StateTransitionImpl P D w base params s₀)
     {stepFn : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn stepFn]
     {x : Data r_ds} (ops : List D.Op)
     (hx : x.Bounded w) (hfr : x.regs P.frontierReg = base)
@@ -1951,6 +1955,6 @@ theorem seq_expected_amortized_ofFn (C : SubroutineDS P D w base params s₀)
   · rw [Cslib.Probability.PMF.tsum_map_mul]
     exact hamort
 
-end Cslib.WordRAM.Randomized.SubroutineDS
+end Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl
 
 end

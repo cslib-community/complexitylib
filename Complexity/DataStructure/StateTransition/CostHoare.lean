@@ -7,17 +7,17 @@ Authors: Samuel Schlesinger, Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Semantics.Stateful.Amortized
-public import Complexity.Foundations.Semantics.Stateful.Hoare
+public import Complexity.DataStructure.StateTransition.Amortized
+public import Complexity.DataStructure.StateTransition.Hoare
 
 /-!
 # Resource contracts across stateful interfaces
 
 A client contract combines demonic admissibility, a postcondition and a bound on state-dependent
 operation charges across all permitted client runs. Semantic modules transport these contracts
-using separate method budgets; native realizations then interpret the charges as additive measures
-of execution evidence. This supports proofs at several interface levels without choosing a backend
-in the client proof.
+using separate method budgets; native implementations then interpret the charges as additive
+measures of execution evidence. This supports proofs at several interface levels without choosing a
+backend in the client proof.
 
 These are operation-cost contracts. Pure results and host-language continuations incur no charge
 in this interpretation. A total machine-time theorem additionally needs certificates for the
@@ -25,21 +25,23 @@ controller, argument preparation and result decoding.
 
 ## Main definitions
 
-* `Spec.CostHoare`: a demonic semantic client contract with an initial-state-dependent budget.
+* `StateTransitionSpec.CostHoare`: a demonic semantic client contract with an
+  initial-state-dependent budget.
 * `Module.ChargeBound`: lower method costs are bounded by upper operation charges.
 
 ## Main results
 
-* `Spec.CostHoare.pure`, `Spec.CostHoare.call`, `Spec.CostHoare.call_ofFn`, `Spec.CostHoare.bind`,
-  `Spec.CostHoare.consequence`: compositional contract rules.
-* `Spec.costHoare_iff_ofFn`: equivalence with the functional `runClient` formulation on
-  deterministic specifications (`[D.HasStepFn f]`).
+* `StateTransitionSpec.CostHoare.pure`, `StateTransitionSpec.CostHoare.call`,
+  `StateTransitionSpec.CostHoare.call_ofFn`, `StateTransitionSpec.CostHoare.bind`,
+  `StateTransitionSpec.CostHoare.consequence`: compositional contract rules.
+* `StateTransitionSpec.costHoare_iff_ofFn`: equivalence with the functional `runClient`
+  formulation on deterministic specifications (`[D.HasStepFn f]`).
 * `Module.ChargeBound.demonic`, `Module.ChargeBound.client`, `Module.ChargeBound.comp`,
   `Module.ChargeBound.realize`: transfer and compose method resource bounds across linked clients
-  and realizations.
-* `Spec.CostHoare.link`: transport a contract to a lower interface.
-* `Spec.CostHoare.realize`, `Spec.CostHoare.realize_amortized`,
-  `Spec.CostHoare.exists_executes`: native correctness, bounds and existence.
+  and implementations.
+* `StateTransitionSpec.CostHoare.link`: transport a contract to a lower interface.
+* `StateTransitionSpec.CostHoare.realize`, `StateTransitionSpec.CostHoare.realize_amortized`,
+  `StateTransitionSpec.CostHoare.exists_executes`: native correctness, bounds and existence.
 
 ## References
 
@@ -48,16 +50,16 @@ controller, argument preparation and result decoding.
 
 @[expose] public section
 
-namespace Cslib.Stateful
+namespace Cslib.DataStructure
 
 universe u v w x y
 
-variable {D E F : Spec.{u, v, w}} {α β : Type y}
+variable {D E F : StateTransitionSpec.{u, v, w}} {α β : Type y}
 
 /-- Demonic `CostHoare` triple: strengthens `D.Hoare` with a worst-case abstract charge bound
 `D.totalCostTranscript charge s tr ≤ budget s` across *every* valid `ClientRun`.
 The budget is evaluated at the initial state; it does not charge pure Lean computation. -/
-def Spec.CostHoare (charge : D.State → D.Op → Nat) (pre : D.State → Prop)
+def StateTransitionSpec.CostHoare (charge : D.State → D.Op → Nat) (pre : D.State → Prop)
     (p : D.Client α) (post : α → D.State → Prop) (budget : D.State → Nat) : Prop :=
   D.Hoare pre p post ∧
     ∀ s, pre s → ∀ v s' tr, D.ClientRun s p v s' tr →
@@ -65,14 +67,14 @@ def Spec.CostHoare (charge : D.State → D.Op → Nat) (pre : D.State → Prop)
 
 /-- On a deterministic specification (`[D.HasStepFn f]`), `D.CostHoare` is equivalent to
 `D.Hoare pre p post ∧ ∀ s, pre s → D.totalCost charge s (D.clientHistory s p) ≤ budget s`. -/
-theorem Spec.costHoare_iff_ofFn
+theorem StateTransitionSpec.costHoare_iff_ofFn
     {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
     (charge : D.State → D.Op → Nat) (pre : D.State → Prop)
     (p : D.Client α) (post : α → D.State → Prop) (budget : D.State → Nat) :
     D.CostHoare charge pre p post budget ↔
       D.Hoare pre p post ∧
         ∀ s, pre s → D.totalCost charge s (D.clientHistory s p) ≤ budget s := by
-  unfold Spec.CostHoare
+  unfold StateTransitionSpec.CostHoare
   refine and_congr_right fun hhoare => forall_congr' fun s => imp_congr_right fun hs => ?_
   have hv : D.ValidHistory s (D.clientHistory s p) :=
     (D.demonicValid_iff_validHistory_runClient s p).mp (hhoare s hs).1
@@ -84,7 +86,7 @@ theorem Spec.costHoare_iff_ofFn
     obtain ⟨_, _, _, rfl⟩ := (D.clientRun_iff_runClient s p v s' tr).mp hrun
     rwa [D.totalCostTranscript_canonicalTranscript]
 
-namespace Spec.CostHoare
+namespace StateTransitionSpec.CostHoare
 
 variable {charge : D.State → D.Op → Nat} {pre : D.State → Prop}
   {post : α → D.State → Prop} {budget : D.State → Nat} {p : D.Client α}
@@ -150,7 +152,7 @@ theorem consequence {pre' : D.State → Prop} {post' : α → D.State → Prop}
 
 /-- Transport a demonic `CostHoare` triple through an `Amortized` certificate to bound native
 execution weight plus final potential by `budget s + potential s c`. -/
-theorem realize_amortized {C τ : Type x} {exec : Execution D C τ} {R : Realization D exec}
+theorem realize_amortized {C τ : Type x} {exec : Execution D C τ} {R : StateTransitionImpl D exec}
     {weight : τ → Nat} {potential : D.State → C → Nat}
     (A : Amortized R weight potential charge)
     (h : CostHoare charge pre p post budget) {s : D.State} {c c' : C}
@@ -164,7 +166,7 @@ theorem realize_amortized {C τ : Type x} {exec : Execution D C τ} {R : Realiza
   exact ⟨s', tr, hrun, hr', hpost a s' tr hrun, by omega⟩
 
 /-- Every supplied native execution satisfies the contract and its interpreted resource bound. -/
-theorem realize {C τ : Type x} {exec : Execution D C τ} {R : Realization D exec}
+theorem realize {C τ : Type x} {exec : Execution D C τ} {R : StateTransitionImpl D exec}
     {weight : τ → Nat} (B : Bound R weight charge)
     (h : CostHoare charge pre p post budget) {s : D.State} {c c' : C}
     {a : α} {traces : List τ} (hs : pre s) (hr : R.rep s c)
@@ -175,7 +177,7 @@ theorem realize {C τ : Type x} {exec : Execution D C τ} {R : Realization D exe
   exact ⟨⟨s', hr', hpost⟩, by simpa using hpot⟩
 
 /-- A represented initial state has a native execution meeting the contract and budget. -/
-theorem exists_executes {C τ : Type x} {exec : Execution D C τ} {R : Realization D exec}
+theorem exists_executes {C τ : Type x} {exec : Execution D C τ} {R : StateTransitionImpl D exec}
     {weight : τ → Nat} (B : Bound R weight charge)
     (h : CostHoare charge pre p post budget) {s : D.State} {c : C}
     (hs : pre s) (hr : R.rep s c) :
@@ -184,7 +186,7 @@ theorem exists_executes {C τ : Type x} {exec : Execution D C τ} {R : Realizati
   obtain ⟨a, c', traces, _, _, he, _, _, _⟩ := R.exists_demonic p hr (h.hoare s hs).1
   exact ⟨a, c', traces, he, h.realize B hs hr he⟩
 
-end Spec.CostHoare
+end StateTransitionSpec.CostHoare
 
 namespace Module
 
@@ -270,25 +272,25 @@ theorem ChargeBound.comp {M : Module D E} {N : Module E F}
 /-- A method budget and a lower native certificate supply an upper native certificate. -/
 theorem ChargeBound.realize {M : Module D E} {lower : E.State → E.Op → Nat}
     {upper : D.State → D.Op → Nat} (B : M.ChargeBound lower upper)
-    {C τ : Type x} {exec : Execution E C τ} (R : Realization E exec)
+    {C τ : Type x} {exec : Execution E C τ} (R : StateTransitionImpl E exec)
     {weight : τ → Nat} (h : Bound R weight lower) :
     Bound (M.realize R) (total weight) upper := M.bound_demonic R h upper B
 
 end Module
 
 /-- Transport a client contract and its budget across an interface implementation. -/
-theorem Spec.CostHoare.link {α : Type w} {M : Module D E}
+theorem StateTransitionSpec.CostHoare.link {α : Type w} {M : Module D E}
     {lower : E.State → E.Op → Nat} {upper : D.State → D.Op → Nat}
     (B : M.ChargeBound lower upper)
     {pre : D.State → Prop} {post : α → D.State → Prop} {p : D.Client α}
     {budget : D.State → Nat} (h : D.CostHoare upper pre p post budget)
     (lowerBudget : E.State → Nat)
     (hb : ∀ s e, pre s → M.rep s e → budget s ≤ lowerBudget e) :
-    E.CostHoare lower (fun e => ∃ s, pre s ∧ M.rep s e) (Stateful.link M.methods p)
+    E.CostHoare lower (fun e => ∃ s, pre s ∧ M.rep s e) (DataStructure.link M.methods p)
       (fun a e => ∃ s, post a s ∧ M.rep s e) lowerBudget := by
-  refine ⟨Spec.Hoare.link M h.hoare, ?_⟩
+  refine ⟨StateTransitionSpec.Hoare.link M h.hoare, ?_⟩
   rintro e ⟨s, hs, hr⟩ a e' tr_E hrun_E
   obtain ⟨s', tr_D, hrun_D, _, hcost⟩ := B.demonic p hr (h.hoare s hs).1 hrun_E
   exact hcost.trans ((h.2 s hs a s' tr_D hrun_D).trans (hb s e hs hr))
 
-end Cslib.Stateful
+end Cslib.DataStructure
