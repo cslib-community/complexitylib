@@ -67,7 +67,7 @@ private theorem walk_formula (x y : Bool) (f : RetainedPairSlice source target x
 private theorem walk_two (x y : Bool) (f : RetainedPairSlice source target x y → ℝ)
     (σ : RetainedPairSlice source target x y) :
     ((graph x y).walk ^ 2) f σ = (f σ + f (swapSlice x y σ)) / 2 := by
-  rw [pow_two, Module.End.mul_apply, walk_formula, walk_formula, walk_formula,
+  rw [pow_two, mul_apply_eq_comp, walk_formula, walk_formula, walk_formula,
     swapSlice_involutive]
   ring
 
