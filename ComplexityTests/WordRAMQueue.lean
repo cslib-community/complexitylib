@@ -51,17 +51,18 @@ example {w base capacity a b : ℕ} (h1 : Fits w 1)
     (ha : Fits w a) (hb : Fits w b) {x : Data 11}
     (hr : WordRAM.Queue.QueueRep w base capacity [] x) :
     ∃ y traces,
-      Stateful.Executes ((WordRAM.Queue.implementation w capacity).ExecOp w)
+      DataStructure.Executes ((WordRAM.Queue.implementation w capacity).ExecOp w)
         (cycle a b) x (some a, some b) y traces ∧
       WordRAM.Queue.QueueRep w base capacity [a] y ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces +
+      DataStructure.total DynamicProgram.OperationTrace.instructions traces +
         WordRAM.Queue.potential y ≤ 70 + WordRAM.Queue.potential x := by
   have hv : (WordRAM.Queue.spec w capacity).ValidHistory []
       ((WordRAM.Queue.spec w capacity).runClient [] (cycle a b)).2.2 :=
     ⟨⟨by simpa using (show 0 < capacity by omega), ha⟩,
       ⟨⟨by simpa using (show 1 < capacity by omega), hb⟩,
       trivial, ⟨by simpa using (show 1 < capacity by omega), ha⟩, trivial, trivial⟩⟩
-  simpa only [cycle, Stateful.Spec.runClient_liftBind, Stateful.Spec.runClient_pure,
+  simpa only [cycle, DataStructure.StateTransitionSpec.runClient_liftBind,
+    DataStructure.StateTransitionSpec.runClient_pure,
     WordRAM.Queue.spec, queue,
     List.nil_append, List.cons_append, List.tail_cons, List.head?_cons,
     Option.getD_some, List.length_cons, List.length_nil] using
@@ -79,10 +80,10 @@ example : ∃ ready, Exec 4 (WordRAM.Queue.initializeCode 3 2) stale ready 6 ∧
 
 -- All five adaptive calls work from an initialized representation, including a zero word.
 example : ∃ ready y traces, Exec 4 (WordRAM.Queue.initializeCode 3 2) stale ready 6 ∧
-    Stateful.Executes ((WordRAM.Queue.implementation 4 2).ExecOp 4)
+    DataStructure.Executes ((WordRAM.Queue.implementation 4 2).ExecOp 4)
       (cycle 0 15) ready (some 0, some 15) y traces ∧
     WordRAM.Queue.QueueRep 4 3 2 [0] y ∧
-    6 + Stateful.total DynamicProgram.OperationTrace.instructions traces +
+    6 + DataStructure.total DynamicProgram.OperationTrace.instructions traces +
       WordRAM.Queue.potential y ≤ 76 := by
   exact WordRAM.Queue.run_initialized (by decide) (by decide) (cycle 0 15)
     stale_bounded (cycle_valid (by decide) (by decide) (by decide))

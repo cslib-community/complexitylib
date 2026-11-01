@@ -7,10 +7,10 @@ Authors: Renfei Zhou
 -- upstream: local-only (formal abstract library)
 
 import ComplexityAbstracts.HashFamiliesBridge
-import Complexity.Algorithms.WordRAM.Dictionary.ChainedHash
-import Complexity.Algorithms.WordRAM.Dictionary.CuckooHashing
-import Complexity.Algorithms.WordRAM.Dictionary.LinearProbing
-import Complexity.Algorithms.WordRAM.Dictionary.UniformProbing
+import Complexity.DataStructure.Dictionary.WordRAM.ChainedHash
+import Complexity.DataStructure.Dictionary.WordRAM.CuckooHashing
+import Complexity.DataStructure.Dictionary.WordRAM.LinearProbing
+import Complexity.DataStructure.Dictionary.WordRAM.UniformProbing
 
 /-!
 # Bridge for the Word-RAM Hash Tables Formal Abstract
@@ -34,8 +34,9 @@ open scoped ENNReal BigOperators
 open Cslib
 open Cslib.WordRAM
 open Cslib.WordRAM.Randomized
-open Cslib.Algorithms.Lean
-open Cslib.Algorithms.WordRAM.Dictionary
+open Cslib.DataStructure Cslib.DataStructure.Dictionary Cslib.DataStructure.Dictionary.WordRAM
+open Cslib.DataStructure.HashFamily.WordRAM Cslib.DataStructure.WordRAM
+open Cslib.DataStructure.WordRAM.Randomized
 open ComplexityAbstracts.RandomizedWordRAMBridge
 open ComplexityAbstracts.HashFamiliesBridge.HFPresentation (WordBounded UnchangedOutside)
 
@@ -358,14 +359,14 @@ theorem compile_execCodeDist {S : Presentation} (hS : Laws S)
     rw [S.evalRand_eq hS]
     exact pmf_le_map_apply _ S.cfgOf (.halted (P.rmReg q outReg) (P.dataOfRegMem q))
 
-/-- Generic transfer of `SubroutineDS.ExecStepsOfFn` to `P.ExecDictOps`. -/
+/-- Generic transfer of `StateTransitionImpl.ExecStepsOfFn` to `P.ExecDictOps`. -/
 theorem compile_execStepsOfFn {S : Presentation} (hS : Laws S)
     {P : DictPresentation S} (hP : DictLaws S P)
     {r_ds k_init w base U V n_max : ℕ}
     {Sub : SubroutineCode .exact r_ds k_init}
     {params : Fin k_init → ℕ}
     {s₀ : (Dictionary.spec U V n_max).State}
-    (C : Randomized.SubroutineDS Sub (Dictionary.spec U V n_max) w base params s₀)
+    (C : Randomized.StateTransitionImpl Sub (Dictionary.spec U V n_max) w base params s₀)
     (clearScratch : Bool) (baseReg tagReg keyReg valReg outReg : Fin r_ds)
     (hprep : ∀ (o : Dictionary.Op U) (d : Data r_ds),
       (C.toDynamicProgram.prepare o d).regs =
@@ -379,7 +380,7 @@ theorem compile_execStepsOfFn {S : Presentation} (hS : Laws S)
     P.ExecDictOps w (S.programOf (Sub.code.program outReg)) clearScratch
       baseReg tagReg keyReg valReg outReg base C.space s (ops.map P.dictOpOf)
       (ν.map P.coupledStateOf) (ν_final.map P.coupledStateOf) T_ops := by
-  refine @Randomized.SubroutineDS.ExecStepsOfFn.rec .exact r_ds k_init w base Sub
+  refine @Randomized.StateTransitionImpl.ExecStepsOfFn.rec .exact r_ds k_init w base Sub
     (Dictionary.spec U V n_max) params s₀ C (Dictionary.spec U V n_max).stepFn inferInstance
     (fun s ops ν ν_final T_ops _ =>
       P.ExecDictOps w (S.programOf (Sub.code.program outReg)) clearScratch
@@ -518,7 +519,7 @@ theorem chainedHashing (S : Presentation) (hS : Laws S)
   refine ⟨S.programOf (Sub.initFresh.program ⟨10, by decide⟩),
     S.programOf (Sub.code.program ⟨10, by decide⟩), ?_⟩
   intro V w base hw hfit_space hfit_V reg₀ mem₀ hbdd₀ hfr₀ hz₀
-  let C := ChainedHash.subroutineDS U V n_max w base hw hfit_space hfit_V
+  let C := ChainedHash.impl U V n_max w base hw hfit_space hfit_V
   have hz_lib : ∀ a ∈ (Block.mk base (ChainedHash.space n_max)).footprint, mem₀ a = 0 := by
     intro a ha
     rw [Block.mem_footprint, Block.Owns] at ha
@@ -597,9 +598,9 @@ def limbCount (n_max U M : ℕ) : ℕ :=
   (trinomialDeg U M + chunkBits n_max - 1) / chunkBits n_max
 
 theorem limbCount_eq (n_max U M : ℕ) :
-    limbCount n_max U M = Cslib.Algorithms.WordRAM.Hashing.KWise.limbCount n_max U M := by
-  unfold limbCount Cslib.Algorithms.WordRAM.Hashing.KWise.limbCount
-    Cslib.Algorithms.WordRAM.Hashing.KWise.limbCountFromB
+    limbCount n_max U M = KWise.limbCount n_max U M := by
+  unfold limbCount KWise.limbCount
+    KWise.limbCountFromB
   rw [trinomialDeg_eq, chunkBits_eq]
 
 /-- Memory footprint `8 + k + 2 ^ (2 * chunkBits n_max)` of the `k`-wise polynomial hash table. -/
@@ -607,9 +608,9 @@ def kWiseSpace (n_max k : ℕ) : ℕ :=
   8 + k + 2 ^ (2 * chunkBits n_max)
 
 theorem kWiseSpace_eq (n_max k : ℕ) :
-    kWiseSpace n_max k = Cslib.Algorithms.WordRAM.Hashing.KWise.space n_max k := by
-  unfold kWiseSpace Cslib.Algorithms.WordRAM.Hashing.KWise.space
-    Cslib.Algorithms.WordRAM.Hashing.KWise.spaceFromB
+    kWiseSpace n_max k = KWise.space n_max k := by
+  unfold kWiseSpace KWise.space
+    KWise.spaceFromB
   rw [chunkBits_eq]
 
 /-- Deterministic lookup-table setup step count for `KWise.initTableCode`. -/
@@ -621,8 +622,8 @@ def kWiseInitTableSteps (n_max U M : ℕ) : ℕ :=
 
 theorem kWiseInitTableSteps_eq (n_max U M : ℕ) :
     kWiseInitTableSteps n_max U M =
-      Cslib.Algorithms.WordRAM.Hashing.KWise.initTableSteps n_max U M := by
-  unfold kWiseInitTableSteps Cslib.Algorithms.WordRAM.Hashing.KWise.initTableSteps
+      KWise.initTableSteps n_max U M := by
+  unfold kWiseInitTableSteps KWise.initTableSteps
   rw [chunkBits_eq, trinomialStep_eq]
 
 /-- Deterministic instruction budget for `KWise.evalCode k`. -/
@@ -631,9 +632,9 @@ def kWiseEvalSteps (n_max U M k : ℕ) : ℕ :=
 
 theorem kWiseEvalSteps_eq (n_max U M k : ℕ) :
     kWiseEvalSteps n_max U M k =
-      Cslib.Algorithms.WordRAM.Hashing.KWise.evalSteps n_max U M k := by
-  unfold kWiseEvalSteps Cslib.Algorithms.WordRAM.Hashing.KWise.evalSteps
-    Cslib.Algorithms.WordRAM.Hashing.KWise.evalStepsFromB
+      KWise.evalSteps n_max U M k := by
+  unfold kWiseEvalSteps KWise.evalSteps
+    KWise.evalStepsFromB
   rw [limbCount_eq]
   rfl
 
@@ -707,19 +708,19 @@ theorem linearProbingCharge_le {U n_max : ℕ} (hU : U ≤ max n_max 4 ^ 4) :
     lpOpCharge U n_max ≤ lpOpChargeBound := by
   rw [lpOpCharge_eq]
   have hL :
-      Cslib.Algorithms.WordRAM.Hashing.KWise.limbCount n_max U (LinearProbing.tableLog n_max) ≤
+      KWise.limbCount n_max U (LinearProbing.tableLog n_max) ≤
         Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.provableLimbBound 4 :=
     Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.limbCount_le_provableLimbBound
       hU (lpTableLog_le_clog n_max)
   have hL100 :
-      Cslib.Algorithms.WordRAM.Hashing.KWise.limbCount n_max U (LinearProbing.tableLog n_max) ≤
+      KWise.limbCount n_max U (LinearProbing.tableLog n_max) ≤
         100 := by
     simpa [Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.provableLimbBound] using hL
-  unfold LinearProbing.charge Cslib.Algorithms.WordRAM.Hashing.KWise.evalSteps
-    Cslib.Algorithms.WordRAM.Hashing.KWise.evalStepsFromB lpOpChargeBound
-  change ((11 * Cslib.Algorithms.WordRAM.Hashing.KWise.limbCount n_max U
+  unfold LinearProbing.charge KWise.evalSteps
+    KWise.evalStepsFromB lpOpChargeBound
+  change ((11 * KWise.limbCount n_max U
         (LinearProbing.tableLog n_max) + 12) *
-      Cslib.Algorithms.WordRAM.Hashing.KWise.limbCount n_max U (LinearProbing.tableLog n_max) +
+      KWise.limbCount n_max U (LinearProbing.tableLog n_max) +
         30) * 5 + 19 + 12 * 288 + 27 ≤ 559652
   nlinarith
 
@@ -766,7 +767,7 @@ theorem linearProbing (S : Presentation) (hS : Laws S)
     rwa [← trinomialDeg_eq, ← lpTableLog_eq]
   have hfit_space_lib : Fits w (base + LinearProbing.space n_max) := by
     rwa [← lpSpace_eq]
-  let C := LinearProbing.subroutineDS U V n_max w base hw_lib hfit_space_lib hfit_V
+  let C := LinearProbing.impl U V n_max w base hw_lib hfit_space_lib hfit_V
   have hz_lib : ∀ a ∈ (Block.mk base (LinearProbing.space n_max)).footprint, mem₀ a = 0 := by
     intro a ha
     rw [Block.mem_footprint, Block.Owns, ← lpSpace_eq] at ha
@@ -957,7 +958,7 @@ theorem uniformProbing (S : Presentation) (hS : Laws S)
   intro U V w base hU hfit_space hfit_U hfit_V reg₀ mem₀ hbdd₀ hfr₀ hz₀
   have hfit_space_lib : Fits w (base + UniformProbing.space 4 n_max) := by
     rwa [← upSpace_eq]
-  let C := UniformProbing.subroutineDS (V := V) hfit_space_lib hfit_U hfit_V hU
+  let C := UniformProbing.impl (V := V) hfit_space_lib hfit_U hfit_V hU
   have hz_lib : ∀ a ∈ (Block.mk base (UniformProbing.space 4 n_max)).footprint, mem₀ a = 0 := by
     intro a ha
     rw [Block.mem_footprint, Block.Owns, ← upSpace_eq] at ha
@@ -1414,7 +1415,7 @@ private theorem cuckoo_init_and_steps (w base c_exp n_max U V : ℕ)
     (hx : x.Bounded w) (hfr : x.regs 1 = base)
     (h3 : x.regs 3 = n_max) (h4 : x.regs 4 = U)
     (hz : ∀ a ∈ (Block.mk base (CuckooHashing.space c_exp n_max)).footprint, x.mem a = 0) :
-    let C := CuckooHashing.subroutineDS w base c_exp n_max U V
+    let C := CuckooHashing.impl w base c_exp n_max U V
       hU hw hfit_end hfit_ev hfit_U hfit_V
     ∃ ν₀ : PMF (CuckooHashing.Seed c_exp n_max U (CuckooHashing.tableBits n_max) × Data 19),
       ExecCodeDist w (CuckooHashing.cuckooCode c_exp n_max).initFresh x
@@ -1464,9 +1465,9 @@ private theorem cuckoo_init_and_steps (w base c_exp n_max U V : ℕ)
     rw [hsnd₀]
     have hseq := (ExecCodeDist.of_exec he_span).seq_pure hdist_setup
     refine hseq.mono ?_
-    dsimp only [C, CuckooHashing.subroutineDS,
-      Randomized.SubroutineDS.initTime,
-      Randomized.SubroutineDS.ofFn]
+    dsimp only [C, CuckooHashing.impl,
+      Randomized.StateTransitionImpl.initTime,
+      Randomized.StateTransitionImpl.ofFn]
     exact add_le_add (by exact_mod_cast ht_span) le_rfl
   have hE₀ :
       (CuckooHashing.survivingSeeds
@@ -1633,7 +1634,7 @@ theorem cuckooHashing (S : Presentation) (hS : Laws S)
     rwa [← K.cuckooSpace_eq hK]
   have hfit_ev_lib : Fits w (CuckooHashing.maxEvictions n_max) := by
     rwa [← K.cuckooMaxEvictions_eq hK]
-  let C := CuckooHashing.subroutineDS w base 4 n_max U V
+  let C := CuckooHashing.impl w base 4 n_max U V
     hU hw_lib hfit_end_lib hfit_ev_lib hfit_U hfit_V
   have hz_lib : ∀ a ∈ (Block.mk base (CuckooHashing.space 4 n_max)).footprint, mem₀ a = 0 := by
     intro a ha

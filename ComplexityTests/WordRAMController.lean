@@ -54,7 +54,7 @@ private theorem size_refines {w : ℕ} (h4 : Fits w 4) :
       exact le_rfl)
   have hs : (spec w 2).Hoare (fun s => s.length < 2)
       (.liftBind .size fun a => .pure a) (fun a s => a = s.length ∧ s.length < 2) :=
-    Stateful.Spec.Hoare.call_ofFn _ _ _ (fun _ h => ⟨trivial, rfl, h⟩)
+    DataStructure.StateTransitionSpec.Hoare.call_ofFn _ _ _ (fun _ h => ⟨trivial, rfl, h⟩)
   exact (hcall.hoare hs (fun _ _ h => h.2)).consequence
     (fun _ _ h => h)
     (fun a s x h => ⟨⟨h.1.1, h.2.2⟩, Option.some.inj h.1.2, h.2.1⟩)
@@ -298,7 +298,7 @@ abbrev ChoiceResult : ChoiceOp → Type
 
 /-- Relational specification where `choose` may return either Boolean, while `bad` is never
 admissible (`valid := False`). -/
-abbrev choiceSpec : Stateful.Spec where
+abbrev choiceSpec : DataStructure.StateTransitionSpec where
   State := Unit
   Op := ChoiceOp
   Result := ChoiceResult
@@ -399,9 +399,9 @@ def badAfterFalseClient : choiceSpec.Client Unit :=
 
 /-- Choosing `true` produces a valid `ClientRun` of `badAfterFalseClient`. -/
 example : choiceSpec.ClientRun () badAfterFalseClient () () [⟨ChoiceOp.choose, true, ()⟩] :=
-  Stateful.Spec.ClientRun.liftBind (D := choiceSpec) (s₁ := ()) ChoiceOp.choose
+  DataStructure.StateTransitionSpec.ClientRun.liftBind (D := choiceSpec) (s₁ := ()) ChoiceOp.choose
     (fun b => if b then .pure () else .liftBind .bad fun u => .pure u)
-    true trivial trivial (Stateful.Spec.ClientRun.pure (D := choiceSpec) () ())
+    true trivial trivial (DataStructure.StateTransitionSpec.ClientRun.pure (D := choiceSpec) () ())
 
 /-- `Refines` rejects `badAfterFalseClient` for any machine program and budget, because the
 permitted `false` outcome of `choose` reaches `bad` and violates demonic caller admissibility. -/

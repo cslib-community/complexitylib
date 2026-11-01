@@ -15,7 +15,8 @@ import Mathlib.Data.List.TakeDrop
 # Least-recently-used (LRU) paging and `k`-competitiveness
 
 This file implements the least-recently-used (LRU) online paging rule and proves its
-`k`-competitiveness via a `Cslib.Stateful.Amortized` potential certificate, formalizing Theorem 6
+`k`-competitiveness via a `Cslib.DataStructure.Amortized` potential certificate, formalizing
+Theorem 6
 of [Sleator and Tarjan, *Amortized Efficiency of List Update and Paging Rules*, Section 4
 ("Paging"), p. 207 (proof pp. 207–208)][SleatorTarjan1985] in the equal-capacity
 (`n_LRU = n_MIN = k`) demand-paging model of `Complexity.Algorithms.Lean.Paging.Basic`.
@@ -39,7 +40,7 @@ Specializing to equal online and offline fast-memory capacity (`n_LRU = n_MIN = 
      filled caches `q.length < k`).
 * `lruAmortized` packages the single-step inequality
   `stepCost + lruPotential k s' q' ≤ k * stepCost_off + lruPotential k s q`
-  as a `Cslib.Stateful.Amortized` certificate over `(problem α k).offlineSpec`.
+  as a `Cslib.DataStructure.Amortized` certificate over `(problem α k).offlineSpec`.
 * Telescoping via `DetStrategy.competitive_of_amortized` and
   `DetStrategy.competitiveAnyInit_of_amortized` yields:
   * `lruStrategy_isCompetitive`: `(lruStrategy k hk).IsCompetitive k 0` when online and offline
@@ -62,7 +63,7 @@ extension.
 
 ## Main results
 
-* `lruAmortized`: `Cslib.Stateful.Amortized` certificate for LRU against `k` times offline step
+* `lruAmortized`: `Cslib.DataStructure.Amortized` certificate for LRU against `k` times offline step
   cost.
 * `lruFaults_amortized_bound`: computable-list telescoping bound for any valid initial recency list
   and any valid offline schedule.
@@ -82,7 +83,7 @@ public section
 
 namespace Cslib.Algorithms.Lean.Paging
 
-open Cslib.Stateful Cslib.Algorithms.Lean.Online
+open Cslib.DataStructure Cslib.Algorithms.Lean.Online
 
 variable {α : Type} [DecidableEq α]
 
@@ -566,12 +567,12 @@ theorem lruPotential_step {k : Nat} (hk : 0 < k) {s s' : Finset α} {q : List α
       have hpot : lruPotential k s' (p :: q.take (k - 1)) ≤ k - 1 := max_le hmaxW hsdiff
       omega
 
-/-! ### `Cslib.Stateful.Amortized` certificate and competitive theorems -/
+/-! ### `Cslib.DataStructure.Amortized` certificate and competitive theorems -/
 
-/-- Native `Cslib.Stateful.Amortized` potential certificate for `lruStrategy k hk` against `k`
+/-- Native `Cslib.DataStructure.Amortized` potential certificate for `lruStrategy k hk` against `k`
 times the offline demand-paging step cost. -/
 theorem lruAmortized (k : Nat) (hk : 0 < k) :
-    Amortized (lruStrategy (α := α) k hk).realization id (lruPotential k)
+    Amortized (lruStrategy (α := α) k hk).impl id (lruPotential k)
       (fun s o => k * stepCost s o.1 o.2) :=
   Amortized.ofFn fun {_ _ _ _ _ _} hrep hv hexec => by
     rcases hexec with ⟨rfl, rfl⟩

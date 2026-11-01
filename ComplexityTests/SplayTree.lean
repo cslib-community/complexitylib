@@ -35,7 +35,7 @@ public section
 
 namespace ComplexityTests.SplayTree
 
-open Cslib.Algorithms.Lean.SplayTree Cslib.OrderedSet Cslib.Stateful
+open Cslib.Algorithms.Lean.SplayTree Cslib.OrderedSet Cslib.DataStructure
 open Cslib.Algorithms.Lean.SearchTree (elements Ordered Rep searchVisits minimumVisits)
 
 /-- Degenerate 7-node right spine `1 → 2 → 3 → 4 → 5 → 6 → 7` of height `7`. -/

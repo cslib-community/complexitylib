@@ -363,7 +363,7 @@ for `P : SubroutineCode B r_ds k_init` over a state type `State`, operation type
 family `Result`, and admissibility predicate `valid` at word width `w`, base address `base`,
 runtime parameters `params`, and initial state `s₀`.
 
-Extended by `SubroutineDS` so that initialization (`initFresh`, `zeroFillCode`, `initClear`),
+Extended by `StateTransitionImpl` so that initialization (`initFresh`, `zeroFillCode`, `initClear`),
 register relocation, standalone `toDynamicProgram`, and bidirectional framing (`frame_caller`) are
 stated and proved once. -/
 structure SubroutineBase {B : Basis} {r_ds k_init : ℕ} (P : SubroutineCode B r_ds k_init)

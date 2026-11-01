@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Algorithms.WordRAM.Hashing.KWise
+public import Complexity.DataStructure.HashFamily.WordRAM.KWise
 public import Complexity.DataStructure.HashFamily.WordRAM.Basic
 
 /-!
@@ -19,11 +19,14 @@ Verifies the state-free oblivious-sequence specification
 `Cslib.DataStructure.HashFamily`, and the randomized Word-RAM implementation interfaces
 `Cslib.DataStructure.WordRAM.Randomized.ObliviousSequenceImpl` and
 `Cslib.DataStructure.HashFamily.WordRAM.Impl`:
-* deterministic and relational `Cslib.Stateful.Spec` and `Cslib.WordRAM.Randomized.SubroutineDS`
+* deterministic and relational `Cslib.DataStructure.StateTransitionSpec` and
+  `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl`
   instances embed canonically into `ObliviousSequenceSpec` and `ObliviousSequenceImpl` via
-  `Stateful.Spec.toObliviousSequenceSpec` and `SubroutineDS.toObliviousSequenceImpl`;
+  `StateTransitionSpec.toObliviousSequenceSpec` and
+  `StateTransitionImpl.toObliviousSequenceImpl`;
 * the self-contained Word-RAM `k`-wise independent hash family
-  `Cslib.Algorithms.WordRAM.Hashing.KWise` instantiates `HashFamily.WordRAM.Impl` and induces an
+  `Cslib.DataStructure.HashFamily.WordRAM.KWise` instantiates `HashFamily.WordRAM.Impl` and
+  induces an
   `ObliviousSequenceImpl` realizing `Cslib.DataStructure.HashFamily.kWiseSpec k U (2 ^ M)` (over
   both `Basis.exact` and `Basis.standard`), with a concrete numerical multi-epoch non-vacuity check;
 * a pure two-level hash family (`twoLevelTrinomialEval`) and a concrete single-epoch repeated-key
@@ -32,7 +35,8 @@ Verifies the state-free oblivious-sequence specification
   transcript distribution that satisfies `HashFamily.whpKWiseSpec` while refuting
   `HashFamily.kWiseSpec`;
 * oversized-key checks (`U = 3, w = 1, u = 2`) and ordinary-import client checks for
-  `Stateful.Spec.Transcript.labels_map_fst`, `Cslib.Probability.uniformOfFintype_map_restrict_eq`,
+  `StateTransitionSpec.Transcript.labels_map_fst`,
+  `Cslib.Probability.uniformOfFintype_map_restrict_eq`,
   `Cslib.Probability.coupledWithin_uniformOfFintype_prod_restrict`,
   `HashFamily.evalOps_eq_of_afterCurrentEpoch_eq_some`, and
   `HashFamily.evalOpsFromSeed_map_equiv`.
@@ -43,17 +47,18 @@ Verifies the state-free oblivious-sequence specification
 namespace ComplexityTests.ObliviousSequence
 
 open Cslib Cslib.DataStructure Cslib.DataStructure.WordRAM.Randomized
-open Cslib.Probability Cslib.WordRAM Cslib.WordRAM.Randomized
-open Cslib.Algorithms.WordRAM.Hashing
+open Cslib.Probability Cslib.WordRAM
+open Cslib.DataStructure Cslib.DataStructure.HashFamily.WordRAM
+open Cslib.DataStructure.WordRAM Cslib.DataStructure.WordRAM.Randomized
 open Cslib.Probability.PMF (uniformOfFintype uniformOfFintype_apply)
 open scoped ENNReal
 
-/-! ## 1. Embedding `Stateful.Spec` and `SubroutineDS` into `ObliviousSequenceImpl` -/
+/-! ## 1. Embedding `StateTransitionSpec` and `StateTransitionImpl` into `ObliviousSequenceImpl` -/
 
 /-- Deterministic toggle specification on `State := Fin 2` with operation `PUnit`: each step flips
 `s ↦ 1 - s` and returns the new state. -/
-abbrev toggleSpec : Stateful.Spec.{0, 0, 0} :=
-  Stateful.Spec.ofFn (State := Fin 2) (Op := PUnit) (Result := fun _ => Fin 2)
+abbrev toggleSpec : DataStructure.StateTransitionSpec.{0, 0, 0} :=
+  DataStructure.StateTransitionSpec.ofFn (State := Fin 2) (Op := PUnit) (Result := fun _ => Fin 2)
     fun s _ => (⟨1 - s.val, by omega⟩, ⟨1 - s.val, by omega⟩)
 
 /-- Canonical `ObliviousSequenceSpec` induced by `toggleSpec` from initial state `0 : Fin 2`. -/
@@ -72,7 +77,7 @@ theorem toggleObliviousSequenceSpec_contract_iff (ops : List PUnit)
 
 /-- Nondeterministic relational coin specification on `State := Fin 2` with operation `PUnit`: each
 step may transition to either `0` or `1` and returns the new state `s'`. -/
-abbrev relCoinSpec : Stateful.Spec.{0, 0, 0} where
+abbrev relCoinSpec : DataStructure.StateTransitionSpec.{0, 0, 0} where
   State := Fin 2
   Op := PUnit
   Result _ := Fin 2
@@ -109,9 +114,9 @@ private theorem pmf_map_snd_const {α β γ : Type*} (q : PMF α) (f : α → β
   rw [PMF.map_comp]
   by_cases h : y = c <;> simp [PMF.map_apply, h, q.tsum_coe]
 
-/-- Relational `SubroutineDS` certificate for `relCoinCode` over `relCoinSpec`. -/
-noncomputable abbrev relCoinSubroutineDS (w base : ℕ) (hw : 1 ≤ w) :
-    WordRAM.Randomized.SubroutineDS relCoinCode relCoinSpec w base Fin.elim0 0 where
+/-- Relational `StateTransitionImpl` certificate for `relCoinCode` over `relCoinSpec`. -/
+noncomputable abbrev relCoinStateTransitionImpl (w base : ℕ) (hw : 1 ≤ w) :
+    WordRAM.Randomized.StateTransitionImpl relCoinCode relCoinSpec w base Fin.elim0 0 where
   Seed := Fin 2
   seedLaw := uniformOfFintype (Fin 2)
   seedSlack := 1
@@ -197,11 +202,11 @@ noncomputable abbrev relCoinSubroutineDS (w base : ℕ) (hw : 1 ≤ w) :
       exact hseed θ'
     · simp [ν.tsum_coe]
 
-/-- Canonical `ObliviousSequenceImpl` embedding of `relCoinSubroutineDS` via
-`SubroutineDS.toObliviousSequenceImpl`. -/
+/-- Canonical `ObliviousSequenceImpl` embedding of `relCoinStateTransitionImpl` via
+`StateTransitionImpl.toObliviousSequenceImpl`. -/
 noncomputable abbrev relCoinObliviousImpl (w base : ℕ) (hw : 1 ≤ w) :
     ObliviousSequenceImpl relCoinCode (relCoinSpec.toObliviousSequenceSpec 0) w base Fin.elim0 :=
-  (relCoinSubroutineDS w base hw).toObliviousSequenceImpl (fun _ => 1) (fun _ _ _ => le_rfl)
+  (relCoinStateTransitionImpl w base hw).toObliviousSequenceImpl (fun _ => 1) (fun _ _ _ => le_rfl)
 
 /-- End-to-end expected-time and distributional contract theorem for `relCoinObliviousImpl`. -/
 theorem relCoinObliviousImpl_seq_expected (w base : ℕ) (hw : 1 ≤ w)
@@ -228,7 +233,8 @@ theorem relCoinObliviousImpl_seq_expected (w base : ℕ) (hw : 1 ≤ w)
 /-! ## 2. Word-RAM `KWise` instantiation of `HashFamily.WordRAM.Impl` and `ObliviousSequenceImpl` -/
 
 /-- Package the self-contained Word-RAM `k`-wise independent hash family
-`Cslib.Algorithms.WordRAM.Hashing.KWise` (`Complexity/Algorithms/WordRAM/Hashing/KWise.lean`) into a
+`Cslib.DataStructure.HashFamily.WordRAM.KWise`
+(`Complexity/DataStructure/HashFamily/WordRAM/KWise.lean`) into a
 `Cslib.DataStructure.HashFamily.WordRAM.Impl` over `Basis.exact` on `18` core registers and `3`
 initialization parameters `![n_max, U, M]`. -/
 noncomputable abbrev kWiseImpl {w base n_max U M k : ℕ}
@@ -647,8 +653,8 @@ theorem toyRepeatedEvalDist_whp_and_not_exact :
 
 /-! ## 6. Exported decomposition, seed-transport, and coupling helper API checks -/
 
-/-- Ordinary-import client check for `Stateful.Spec.Transcript.labels_map_fst`. -/
-theorem transcript_labels_map_fst_client (D : Stateful.Spec) (tr : D.Transcript) :
+/-- Ordinary-import client check for `StateTransitionSpec.Transcript.labels_map_fst`. -/
+theorem transcript_labels_map_fst_client (D : StateTransitionSpec) (tr : D.Transcript) :
     tr.labels.map Sigma.fst = tr.ops :=
   tr.labels_map_fst
 

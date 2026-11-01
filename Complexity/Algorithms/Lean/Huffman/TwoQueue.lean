@@ -31,7 +31,7 @@ This module implements:
    (`enqueue_revCost_bound`, `dequeue?_revCost_bound`). Unlike `Std.Queue` (`Init.Data.Queue`,
    which does not maintain `dList = [] → eList = []`, so inspecting the head without committing a
    dequeue would repeatedly reverse `eList`) and `Cslib.Algorithms.Lean.Queue` (an abstract
-   `Cslib.Stateful` two-stack module without `peek?`), `FifoQueue` supports `O(1)` worst-case
+   `Cslib.DataStructure` two-stack module without `peek?`), `FifoQueue` supports `O(1)` worst-case
    `peek?` needed when `popMinM` compares the heads of `q₁` and `q₂` and pops `q₁` while leaving
    `q₂` unchanged.
 2. **Cached-weight trees (`WeightedTree α β`)**: each queue entry caches `wt = tree.weight w`, so

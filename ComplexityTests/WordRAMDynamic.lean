@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.WordRAM.Dynamic
 public import Complexity.Computability.WordRAM.Subroutine
+public import Complexity.DataStructure.WordRAM.StateTransition
 public import Complexity.Algorithms.WordRAM.Stack
 
 /-! Nonvacuous fixed-program clients: a persistent exchange cell and a read-only array.
@@ -16,13 +17,13 @@ Both obtain arbitrary-history theorems from the same certificate interface. -/
 
 @[expose] public section
 
-open Cslib Cslib.WordRAM
+open Cslib Cslib.WordRAM Cslib.DataStructure.WordRAM
 
 namespace WordRAMDynamicTests
 
 /-- Exchange returns the previous contents of the single maintained cell. -/
-abbrev exchangeSpec (w : ℕ) : Stateful.Spec :=
-  Stateful.Spec.ofFn (State := ℕ) (Op := ℕ) (Result := fun _ => ℕ)
+abbrev exchangeSpec (w : ℕ) : DataStructure.StateTransitionSpec :=
+  DataStructure.StateTransitionSpec.ofFn (State := ℕ) (Op := ℕ) (Result := fun _ => ℕ)
     (fun s o => (o, s)) (fun _ o => Fits w o)
 
 /-- One fixed program loads the old cell before overwriting it with the argument. -/
@@ -61,14 +62,14 @@ theorem exchange_initial (w : ℕ) :
 /-- The exchange cell supports arbitrary admissible adaptive clients. -/
 example (w : ℕ) {α : Type} (p : (exchangeSpec w).Client α)
     (hv : (exchangeSpec w).ValidHistory 0 ((exchangeSpec w).runClient 0 p).2.2) :
-    ∃ y ts, Stateful.Executes ((exchangeProgram w).ExecOp w) p
+    ∃ y ts, DataStructure.Executes ((exchangeProgram w).ExecOp w) p
         ⟨fun _ => 0, fun _ => 0⟩ ((exchangeSpec w).runClient 0 p).1 y ts ∧
       (exchangeCertificate w).rep ((exchangeSpec w).runClient 0 p).2.1 y :=
-  (exchangeCertificate w).realization.exists_executes p (exchange_initial w) hv
+  (exchangeCertificate w).impl.exists_executes p (exchange_initial w) hv
 
 /-- Read-only array queries preserve the abstract array and return the selected entry. -/
-abbrev lookupSpec (n : ℕ) : Stateful.Spec :=
-  Stateful.Spec.ofFn (State := Fin n → ℕ) (Op := Fin n) (Result := fun _ => ℕ)
+abbrev lookupSpec (n : ℕ) : DataStructure.StateTransitionSpec :=
+  DataStructure.StateTransitionSpec.ofFn (State := Fin n → ℕ) (Op := Fin n) (Result := fun _ => ℕ)
     fun s i => (s, s i)
 
 /-- Array lookup uses one load and the final halt. -/
@@ -125,9 +126,9 @@ example : (Stack.spec 4 2).ValidHistory [] ((Stack.spec 4 2).runClient [] stackC
 
 /-- The concrete stack realizes an adaptive observation with a cumulative native cost bound. -/
 example : ∃ y ts,
-    Stateful.Executes ((Stack.implementation 4 2).ExecOp 4) stackClient
+    DataStructure.Executes ((Stack.implementation 4 2).ExecOp 4) stackClient
         (Stack.initial 3) (some 7, 0) y ts ∧ Stack.Rep 4 3 2 [] y ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions ts ≤ 48 := by
+      DataStructure.total DynamicProgram.OperationTrace.instructions ts ≤ 48 := by
   exact Stack.run_client (base := 3) (by decide : Fits 4 2) (by decide : Fits 4 (3 + 2))
       stackClient (Stack.initial_rep (by decide : Fits 4 (3 + 2))) (by
         change (0 < 2 ∧ Fits 4 7) ∧ True ∧ True ∧ True ∧ True
@@ -165,11 +166,11 @@ example : ¬(Stack.spec 4 2).valid [4, 7] (.push 2) ∧
     (Stack.spec 4 2).valid [] (.push 15) := by decide
 
 /--
-info: 'Cslib.WordRAM.DynamicCertificate.realization' depends on axioms:
+info: 'Cslib.WordRAM.DynamicCertificate.impl' depends on axioms:
 [propext]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms DynamicCertificate.realization
+#print axioms DynamicCertificate.impl
 /--
 info: 'Cslib.WordRAM.TraceExec.exec' depends on axioms:
 [propext]
@@ -177,12 +178,12 @@ info: 'Cslib.WordRAM.TraceExec.exec' depends on axioms:
 #guard_msgs (whitespace := lax) in
 #print axioms TraceExec.exec
 
-/-! ## Nondeterministic two-slot allocator `SubroutineDS` tests -/
+/-! ## Nondeterministic two-slot allocator `StateTransitionImpl` tests -/
 
 /-- Relational specification of a two-slot allocator: from state `(b₀, b₁) : Bool × Bool`, an
 allocation operation `()` nondeterministically returns any free slot `i : Fin 2` and marks slot
 `i` occupied. When both slots are free (`(false, false)`), both `0` and `1` are permitted. -/
-abbrev TwoSlotAlloc : Stateful.Spec where
+abbrev TwoSlotAlloc : DataStructure.StateTransitionSpec where
   State := Bool × Bool
   Op := Unit
   Result _ := Fin 2
@@ -220,10 +221,10 @@ abbrev twoSlotRep (w base : ℕ) (s : Bool × Bool) (x : Data 6) : Prop :=
      (s = (true, false) ∧ x.regs 5 = 1) ∨
      (s = (true, true) ∧ x.regs 5 = 2))
 
-/-- `SubroutineDS` certificate showing that `twoSlotCode` realizes the nondeterministic
+/-- `StateTransitionImpl` certificate showing that `twoSlotCode` realizes the nondeterministic
 `TwoSlotAlloc` specification whenever `Fits w 2`. -/
 abbrev twoSlotSubroutine (w base : ℕ) (h2 : Fits w 2) :
-    SubroutineDS twoSlotCode TwoSlotAlloc w base Fin.elim0 (false, false) where
+    StateTransitionImpl twoSlotCode TwoSlotAlloc w base Fin.elim0 (false, false) where
   space := 0
   spanTime := 1
   setupTime := 1
@@ -304,26 +305,27 @@ abbrev allocPair : TwoSlotAlloc.Client (Fin 2 × Fin 2) :=
 /-- `allocPair` is demonically admissible from `(false, false)` across all permitted outcomes. -/
 theorem allocPair_demonicValid :
     TwoSlotAlloc.DemonicValid (false, false) allocPair := by
-  refine Stateful.Spec.DemonicValid.liftBind (D := TwoSlotAlloc) () _ (Or.inl rfl) fun s₁ i h₁ => ?_
+  refine DataStructure.StateTransitionSpec.DemonicValid.liftBind (D := TwoSlotAlloc) () _
+    (Or.inl rfl) fun s₁ i h₁ => ?_
   have hv₂ : TwoSlotAlloc.valid s₁ () := by
     rcases h₁ with ⟨rfl, _, rfl⟩ | ⟨rfl, _, rfl⟩
     · exact Or.inr rfl
     · exact Or.inl rfl
-  exact Stateful.Spec.DemonicValid.liftBind (D := TwoSlotAlloc) () _ hv₂
+  exact DataStructure.StateTransitionSpec.DemonicValid.liftBind (D := TwoSlotAlloc) () _ hv₂
     fun s₂ j _ => .pure s₂ (i, j)
 
-/-- Standalone adaptive-client bound theorem via `SubroutineDS.toStandard` and
-`SubroutineDS.run_client_demonic_bound`. -/
+/-- Standalone adaptive-client bound theorem via `StateTransitionImpl.toStandard` and
+`StateTransitionImpl.run_client_demonic_bound`. -/
 theorem twoSlot_run_client_amortized (w base : ℕ) (h2 : Fits w 2)
     {x : Data 6} (hr : (twoSlotSubroutine w base h2).rep (false, false) x) :
     ∃ a y traces s' tr,
-      Stateful.Executes
+      DataStructure.Executes
         ((twoSlotSubroutine w base h2).toStandard.toDynamicProgram.ExecOp w)
         allocPair x a y traces ∧
       TwoSlotAlloc.ClientRun (false, false) allocPair a s' tr ∧
       (twoSlotSubroutine w base h2).rep s' y ∧
       traces.length = tr.length ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces ≤
+      DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤
         TwoSlotAlloc.totalCostTranscript (fun _ _ => 4) (false, false) tr :=
   (twoSlotSubroutine w base h2).toStandard.run_client_demonic_bound (fun _ => rfl)
     allocPair hr allocPair_demonicValid
@@ -334,7 +336,7 @@ def embed6to8 : Fin 6 → Fin 8 := Fin.castLE (by decide)
 theorem embed6to8_injective : Function.Injective embed6to8 :=
   (Fin.castLEOrderEmb (by decide : 6 ≤ 8)).injective
 
-/-- Relocated inline call via `SubroutineDS.call_rename` inside an 8-register caller. -/
+/-- Relocated inline call via `StateTransitionImpl.call_rename` inside an 8-register caller. -/
 theorem twoSlot_call_rename (w base : ℕ) (h2 : Fits w 2)
     {x : Data 8} (hx : (x.comap embed6to8).Bounded w)
     (hr : (twoSlotSubroutine w base h2).rep (false, false) (x.comap embed6to8)) :
@@ -374,7 +376,7 @@ theorem twoSlot_validOpSeq :
   · exact ⟨Or.inr rfl, fun _ _ _ => trivial⟩
   · exact ⟨Or.inl rfl, fun _ _ _ => trivial⟩
 
-/-- Flat-program execution on fresh zeroed memory via `SubroutineDS.run_ops_exact_fresh`. -/
+/-- Flat-program execution on fresh zeroed memory via `StateTransitionImpl.run_ops_exact_fresh`. -/
 theorem twoSlot_run_ops_fresh (w base : ℕ) (h2 : Fits w 2)
     {d₀ : Data 6} (hd₀ : d₀.Bounded w) (hfr : d₀.regs 1 = base)
     (hz : ∀ a ∈ (Block.mk base 0).footprint, d₀.mem a = 0) :
@@ -397,7 +399,8 @@ theorem twoSlot_run_ops_fresh (w base : ℕ) (h2 : Fits w 2)
   exact ⟨pc₀, x₀, t_init, tr, s_fin, z, t_ops, hruns, hhalt, hmod, hops_run, hops, htr, hrep,
     ht_init, by simpa using ht_ops⟩
 
-/-- Flat-program execution on reusable dirty memory via `SubroutineDS.run_ops_exact_reusable`. -/
+/-- Flat-program execution on reusable dirty memory via
+`StateTransitionImpl.run_ops_exact_reusable`. -/
 theorem twoSlot_run_ops_reusable (w base : ℕ) (h2 : Fits w 2)
     {d₀ : Data 6} (hd₀ : d₀.Bounded w) (hfr : d₀.regs 1 = base) :
     ∃ pc₀ x₀ t_init tr s_fin z t_ops,

@@ -28,10 +28,12 @@ namespace ComplexityTests.WordRAMDoubleTabulation
 
 open Cslib Cslib.DataStructure Cslib.DataStructure.WordRAM.Randomized
 open Cslib.DataStructure.HashFamily.WordRAM
+open Cslib.DataStructure.WordRAM Cslib.DataStructure.WordRAM.Randomized
 open Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation
-open Cslib.Probability Cslib.WordRAM Cslib.WordRAM.Randomized
+open Cslib.Probability Cslib.WordRAM
 open Cslib.Algorithms.WordRAM.ExactLog
-open Cslib.Algorithms.WordRAM.Hashing
+open Cslib.DataStructure Cslib.DataStructure.HashFamily.WordRAM
+open Cslib.DataStructure.WordRAM Cslib.DataStructure.WordRAM.Randomized
 open scoped ENNReal
 
 /-- Concrete top-level table `T₁ : DoubleTabTopSeed 2 2 2` for symbolic execution test. -/
