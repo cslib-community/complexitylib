@@ -11,6 +11,7 @@ public import Complexity.Algorithms.Reachability.InductiveCounting.Bounds
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.InductiveCounting.Encoding
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.InductiveCounting.Graph
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.NondeterministicQueryMachine
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Structure
 
 /-!
 # The input-scanning query machine for inductive counting
@@ -70,16 +71,8 @@ structure Runtime where
   counting : Option Cslib.InductiveCounting.State
 
 /-- The state encoding omits the input and every proof-level choice history. -/
-def encRuntime : Runtime ↪ List Bool :=
-  ⟨fun s => encPair encNat (encPair encNat (encPair encBool (encOption encState)))
-      (s.length, s.radix, s.checked, s.counting), by
-    intro s t h
-    have h' := (encPair encNat (encPair encNat (encPair encBool (encOption encState)))).injective h
-    cases s
-    cases t
-    simp only [Prod.mk.injEq] at h'
-    obtain ⟨rfl, rfl, rfl, rfl⟩ := h'
-    rfl⟩
+enc_structure encRuntime : Runtime where
+  length : encNat, radix : encNat, checked : encBool, counting : (encOption encState)
 
 variable {k : ℕ} {State : Type} [Fintype State] (ntm : MultiTapeNTM k Bool State)
 

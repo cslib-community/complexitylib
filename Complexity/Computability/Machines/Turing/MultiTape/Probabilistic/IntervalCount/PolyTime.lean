@@ -12,6 +12,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finit
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.IntBinary
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pi
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Tape
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Words
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -60,7 +61,7 @@ their stored cells (`Turing.MultiTapeTM.encBiTape`), and the head positions in b
 ## Main results
 
 * `Turing.MultiTapePTM.computableInPolyTime_localRun`: replays are polynomial-time.
-* `Turing.MultiTapePTM.IntervalData.computableInPolyTime_mk`,
+* `Turing.MultiTapePTM.encIntervalData_mk_polyTime`,
   `Turing.MultiTapePTM.ControlData.computableInPolyTime_mk`: assembling the arguments.
 * `Turing.MultiTapePTM.computableInPolyTime_localIntervalCount`: interval counts are
   polynomial-time when the `2 ^ b` coin strings are polynomially many in the input.
@@ -76,69 +77,21 @@ variable {k : ℕ} {State : Type}
 
 /-! ### Encoding finite storage -/
 
-/-- Finite storage as the tuple of its fields. -/
-@[expose] def LocalCfg.equivProd :
-    LocalCfg k State ≃ Option State × ℕ × (Fin k → BiTape Bool) × (Fin k → ℤ) × OutputTrack where
-  toFun l := (l.state, l.inputPos, l.workTapes, l.workTapePos, l.track)
-  invFun p := ⟨p.1, p.2.1, p.2.2.1, p.2.2.2.1, p.2.2.2.2⟩
-  left_inv _ := rfl
-  right_inv _ := rfl
-
 variable [Finite State]
 
 /-- **The encoding of finite storage**: the control and the output track by their ranks, the input
 position in unary, the work tapes with all their stored cells, and the head positions in
 binary. -/
-noncomputable def encLocalCfg : LocalCfg k State ↪ List Bool :=
-  encOfEquiv LocalCfg.equivProd (encPair (encFinite (Option State)) (encPair encUnary
-    (encPair (encPi (encBiTape encBool)) (encPair (encPi encIntBin) (encFinite OutputTrack)))))
+noncomputable enc_structure encLocalCfg : LocalCfg k State where
+  state : (encFinite (Option State)), inputPos : encUnary,
+  workTapes : (encPi (Index := Fin k) (encBiTape encBool)),
+  workTapePos : (encPi (Index := Fin k) encIntBin), track : (encFinite OutputTrack)
 
 /-! ### Rules for finite storage -/
 
 section Rules
 
 variable {α : Type} {input : α ↪ List Bool}
-
-/-- Assemble finite storage from its certified fields. -/
-private theorem localCfg_mk {state : α → Option State} {pos : α → ℕ}
-    {tapes : α → Fin k → BiTape Bool} {coords : α → Fin k → ℤ} {track : α → OutputTrack}
-    (hstate : ComputableInPolyTime state input (encFinite (Option State)))
-    (hpos : ComputableInPolyTime pos input encUnary)
-    (htapes : ComputableInPolyTime tapes input (encPi (encBiTape encBool)))
-    (hcoords : ComputableInPolyTime coords input (encPi encIntBin))
-    (htrack : ComputableInPolyTime track input (encFinite OutputTrack)) :
-    ComputableInPolyTime (fun a => (⟨state a, pos a, tapes a, coords a, track a⟩ :
-      LocalCfg k State)) input encLocalCfg :=
-  (hstate.prod (hpos.prod (htapes.prod (hcoords.prod htrack)))).of_enc_eq fun _ => rfl
-
-private theorem localCfg_parts : ComputableInPolyTime (LocalCfg.equivProd (k := k) (State := State))
-    encLocalCfg (encPair (encFinite (Option State)) (encPair encUnary
-      (encPair (encPi (encBiTape encBool)) (encPair (encPi encIntBin) (encFinite OutputTrack))))) :=
-  of_eq fun _ => rfl
-
-private theorem localCfg_state :
-    ComputableInPolyTime (LocalCfg.state (k := k) (State := State)) encLocalCfg
-      (encFinite (Option State)) :=
-  localCfg_parts.fst'
-
-private theorem localCfg_inputPos :
-    ComputableInPolyTime (LocalCfg.inputPos (k := k) (State := State)) encLocalCfg encUnary :=
-  localCfg_parts.snd'.fst'
-
-private theorem localCfg_workTapes :
-    ComputableInPolyTime (LocalCfg.workTapes (k := k) (State := State)) encLocalCfg
-      (encPi (encBiTape encBool)) :=
-  localCfg_parts.snd'.snd'.fst'
-
-private theorem localCfg_workTapePos :
-    ComputableInPolyTime (LocalCfg.workTapePos (k := k) (State := State)) encLocalCfg
-      (encPi encIntBin) :=
-  localCfg_parts.snd'.snd'.snd'.fst'
-
-private theorem localCfg_track :
-    ComputableInPolyTime (LocalCfg.track (k := k) (State := State)) encLocalCfg
-      (encFinite OutputTrack) :=
-  localCfg_parts.snd'.snd'.snd'.snd'
 
 /-- Adding a binary integer, by two subtractions. -/
 private theorem intBin_add' {left right : α → ℤ}
@@ -197,23 +150,24 @@ private theorem computableInPolyTime_applyAction (a : Action k Bool State) :
   have h1 : ComputableInPolyTime (fun p : (List Bool × LocalCfg k State) × Bool => p.1.1.length)
       (encPair (encPair encBits encLocalCfg) encBool) encUnary := length_bits.comp hword
   have h2 : ComputableInPolyTime (fun p : (List Bool × LocalCfg k State) × Bool => p.1.2.inputPos)
-      (encPair (encPair encBits encLocalCfg) encBool) encUnary := localCfg_inputPos.comp hcfg
+      (encPair (encPair encBits encLocalCfg) encBool) encUnary := encLocalCfg_inputPos_polyTime hcfg
   have h3 := (MultiTapeTM.ComputableInPolyTime.moveInputPosNat a.inputTape).comp (h1.prod h2)
   have h4 : ComputableInPolyTime
       (fun p : (List Bool × LocalCfg k State) × Bool => fun h => (p.1.2.workTapes h).step
         (a.workTapes h)) (encPair (encPair encBits encLocalCfg) encBool)
         (encPi (encBiTape encBool)) :=
-    pi fun h => biTape_step (a.workTapes h) ((pi_apply _ h).comp (localCfg_workTapes.comp hcfg))
+    pi fun h => biTape_step (a.workTapes h)
+      ((pi_apply _ h).comp (encLocalCfg_workTapes_polyTime hcfg))
   have h5 : ComputableInPolyTime
       (fun p : (List Bool × LocalCfg k State) × Bool => fun h => p.1.2.workTapePos h +
         ((a.workTapes h).2 : ℤ)) (encPair (encPair encBits encLocalCfg) encBool)
         (encPi encIntBin) :=
-    pi fun h => intBin_add' ((pi_apply _ h).comp (localCfg_workTapePos.comp hcfg)) (const _)
+    pi fun h => intBin_add' ((pi_apply _ h).comp (encLocalCfg_workTapePos_polyTime hcfg)) (const _)
   have h6 : ComputableInPolyTime
       (fun p : (List Bool × LocalCfg k State) × Bool => p.1.2.track.emit a.output)
       (encPair (encPair encBits encLocalCfg) encBool) (encFinite OutputTrack) :=
-    (of_finite fun t : OutputTrack => t.emit a.output).comp (localCfg_track.comp hcfg)
-  exact localCfg_mk (const a.state) h3 h4 h5 h6
+    (of_finite fun t : OutputTrack => t.emit a.output).comp (encLocalCfg_track_polyTime hcfg)
+  exact encLocalCfg_mk_polyTime (const a.state) h3 h4 h5 h6
 
 /-- The key of a coin step is polynomial-time. -/
 private theorem computableInPolyTime_stepKey :
@@ -225,13 +179,14 @@ private theorem computableInPolyTime_stepKey :
   have hheads : ComputableInPolyTime
       (fun p : (List Bool × LocalCfg k State) × Bool => fun h => (p.1.2.workTapes h).head)
       (encPair (encPair encBits encLocalCfg) encBool) (encPi (encOption encBool)) :=
-    pi fun h => (biTape_head encBool).comp ((pi_apply _ h).comp (localCfg_workTapes.comp hcfg))
+    pi fun h => (biTape_head encBool).comp
+      ((pi_apply _ h).comp (encLocalCfg_workTapes_polyTime hcfg))
   have hheads' : ComputableInPolyTime
       (fun p : (List Bool × LocalCfg k State) × Bool => fun h => (p.1.2.workTapes h).head)
       (encPair (encPair encBits encLocalCfg) encBool) (encFinite (Fin k → Option Bool)) :=
     (of_finite id).comp hheads
-  have hsym := inputAt' hword (localCfg_inputPos.comp hcfg)
-  have hall := (localCfg_state.comp hcfg).prod (hsym.prod (hheads'.prod hbit))
+  have hsym := inputAt' hword (encLocalCfg_inputPos_polyTime hcfg)
+  have hall := (encLocalCfg_state_polyTime hcfg).prod (hsym.prod (hheads'.prod hbit))
   exact (of_finite id).comp hall
 
 /-- **One coin step is polynomial-time.** -/
@@ -357,8 +312,8 @@ private theorem length_encLocalCfg_localCoinStep_le (input : List Bool) (l : Loc
     (machine.localCoinStep input l bit).workTapePos 2
     fun h => length_encIntBin_add_sign_le (l.workTapePos h) (a.workTapes h).2
   simp only [Fintype.card_fin] at htapes hcoords
-  simp only [encLocalCfg, encOfEquiv_apply, LocalCfg.equivProd, Equiv.coe_fn_mk, length_encPair,
-    encUnary_apply, List.length_replicate, stepGrowth] at hstate htrack ⊢
+  simp only [encLocalCfg_apply, length_encPair, encUnary_apply, List.length_replicate,
+    stepGrowth] at hstate htrack ⊢
   omega
 
 end Growth
@@ -492,8 +447,9 @@ private theorem localCfg_headCoord {l : α → LocalCfg k State}
   cases head with
   | none =>
     exact intBin_sub.comp
-      ((intBin_natCast.comp (unary_to_binary.comp (localCfg_inputPos.comp hl))).prod (const 1))
-  | some h => exact (pi_apply _ h).comp (localCfg_workTapePos.comp hl)
+      ((intBin_natCast.comp (unary_to_binary.comp (encLocalCfg_inputPos_polyTime hl))).prod
+        (const 1))
+  | some h => exact (pi_apply _ h).comp (encLocalCfg_workTapePos_polyTime hl)
 
 /-- The window cells of computed storage. -/
 private theorem localCfg_windowCellsAt {b : α → ℕ} {j : α → ℤ} {l : α → LocalCfg k State}
@@ -510,9 +466,10 @@ private theorem localCfg_windowCellsAt {b : α → ℕ} {j : α → ℤ} {l : α
       (fun p : α × ℕ => (b p.1 : ℤ) * (j p.1 - 1) + (p.2 : ℤ) - (l p.1).workTapePos h)
       (encPair input encUnary) encIntBin :=
     intBin_sub.comp ((intBin_add' (intBin_mul' hbZ (intBin_sub.comp ((hj.comp hfst).prod
-      (const 1)))) hcZ).prod ((pi_apply _ h).comp (localCfg_workTapePos.comp (hl.comp hfst))))
+      (const 1)))) hcZ).prod
+        ((pi_apply _ h).comp (encLocalCfg_workTapePos_polyTime (hl.comp hfst))))
   exact mapWithInput (unary_range' (unary_mul' (const 3) hb))
-    (biTape_read ((pi_apply _ h).comp (localCfg_workTapes.comp (hl.comp hfst))) hoff)
+    (biTape_read ((pi_apply _ h).comp (encLocalCfg_workTapes_polyTime (hl.comp hfst))) hoff)
 
 /-- The stored input position of a coordinate. -/
 private theorem val_inputPosOfCoord (x : List Bool) (p : ℤ) :
@@ -576,16 +533,6 @@ structure IntervalData (k : ℕ) (State : Type) where
   /-- The leaving window cells. -/
   wOut : Fin k → List (Option Bool)
 
-/-- The arguments of an interval count as a tuple. -/
-@[expose] def IntervalData.equivProd : IntervalData k State ≃
-    List Bool × ℕ × (Option (Fin k) → ℤ) × (Option (Fin k) → SignType) × ControlData k State ×
-      (Fin k → List (Option Bool)) × ControlData k State × (Fin k → List (Option Bool)) where
-  toFun d := (d.input, d.b, d.J, d.δ, d.cIn, d.wIn, d.cOut, d.wOut)
-  invFun p := ⟨p.1, p.2.1, p.2.2.1, p.2.2.2.1, p.2.2.2.2.1, p.2.2.2.2.2.1, p.2.2.2.2.2.2.1,
-    p.2.2.2.2.2.2.2⟩
-  left_inv _ := rfl
-  right_inv _ := rfl
-
 /-- The encoding of a control record on plain data: the state and the track by their ranks, and
 the offsets in unary. -/
 noncomputable def encControlData : ControlData k State ↪ List Bool :=
@@ -593,11 +540,12 @@ noncomputable def encControlData : ControlData k State ↪ List Bool :=
 
 /-- **The encoding of the arguments of an interval count**: the input, the block length in unary,
 the block indices in binary, the movements by their ranks, and the records and window cells. -/
-noncomputable def encIntervalData : IntervalData k State ↪ List Bool :=
-  encOfEquiv IntervalData.equivProd (encPair encBits (encPair encUnary (encPair (encPi encIntBin)
-    (encPair (encFinite (Option (Fin k) → SignType)) (encPair encControlData
-      (encPair (encPi (encList (encOption encBool))) (encPair encControlData
-        (encPi (encList (encOption encBool))))))))))
+noncomputable enc_structure encIntervalData : IntervalData k State where
+  input : encBits, b : encUnary, J : (encPi (Index := Option (Fin k)) encIntBin),
+  δ : (encFinite (Option (Fin k) → SignType)), cIn : (encControlData (k := k) (State := State)),
+  wIn : (encPi (Index := Fin k) (encList (encOption encBool))),
+  cOut : (encControlData (k := k) (State := State)),
+  wOut : (encPi (Index := Fin k) (encList (encOption encBool)))
 
 /-- The interval count of its arguments. -/
 @[expose] def IntervalData.count [DecidableEq State] (machine : MultiTapePTM k Bool State)
@@ -616,30 +564,6 @@ theorem ControlData.computableInPolyTime_mk {state : α → Option State}
       encControlData :=
   (hstate.prod (hoff.prod htrack)).of_enc_eq fun _ => rfl
 
-/-- Assemble the arguments of an interval count from their certified components. -/
-theorem IntervalData.computableInPolyTime_mk {word : α → List Bool} {b : α → ℕ}
-    {J : α → Option (Fin k) → ℤ} {δ : α → Option (Fin k) → SignType}
-    {cIn cOut : α → ControlData k State} {wIn wOut : α → Fin k → List (Option Bool)}
-    (hword : ComputableInPolyTime word input encBits) (hb : ComputableInPolyTime b input encUnary)
-    (hJ : ComputableInPolyTime J input (encPi encIntBin))
-    (hδ : ComputableInPolyTime δ input (encFinite _))
-    (hcIn : ComputableInPolyTime cIn input encControlData)
-    (hwIn : ComputableInPolyTime wIn input (encPi (encList (encOption encBool))))
-    (hcOut : ComputableInPolyTime cOut input encControlData)
-    (hwOut : ComputableInPolyTime wOut input (encPi (encList (encOption encBool)))) :
-    ComputableInPolyTime (fun a => (⟨word a, b a, J a, δ a, cIn a, wIn a, cOut a, wOut a⟩ :
-      IntervalData k State)) input encIntervalData :=
-  (hword.prod (hb.prod (hJ.prod (hδ.prod (hcIn.prod (hwIn.prod (hcOut.prod hwOut))))))).of_enc_eq
-    fun _ => rfl
-
-private theorem intervalData_parts : ComputableInPolyTime
-    (IntervalData.equivProd (k := k) (State := State)) encIntervalData
-    (encPair encBits (encPair encUnary (encPair (encPi encIntBin)
-      (encPair (encFinite (Option (Fin k) → SignType)) (encPair encControlData
-        (encPair (encPi (encList (encOption encBool))) (encPair encControlData
-          (encPi (encList (encOption encBool)))))))))) :=
-  of_eq fun _ => rfl
-
 private theorem controlData_parts : ComputableInPolyTime (fun c : ControlData k State => c)
     encControlData (encPair (encFinite (Option State)) (encPair (encPi encUnary)
       (encFinite OutputTrack))) :=
@@ -650,14 +574,13 @@ private theorem localStartData' {d : α → IntervalData k State}
     (hd : ComputableInPolyTime d input encIntervalData) :
     ComputableInPolyTime (fun a => localStartData (d a).b (d a).input (d a).J (d a).cIn (d a).wIn)
       input encLocalCfg := by
-  have hp := intervalData_parts.comp hd
-  have hword : ComputableInPolyTime (fun a => (d a).input) input encBits := hp.fst'
-  have hb : ComputableInPolyTime (fun a => (d a).b) input encUnary := hp.snd'.fst'
-  have hJ : ComputableInPolyTime (fun a => (d a).J) input (encPi encIntBin) := hp.snd'.snd'.fst'
-  have hc := controlData_parts.comp (hp.snd'.snd'.snd'.snd'.fst' :
+  have hword := encIntervalData_input_polyTime hd
+  have hb := encIntervalData_b_polyTime hd
+  have hJ := encIntervalData_J_polyTime hd
+  have hc := controlData_parts.comp (encIntervalData_cIn_polyTime hd :
     ComputableInPolyTime (fun a => (d a).cIn) input encControlData)
   have hw : ComputableInPolyTime (fun a => (d a).wIn) input
-      (encPi (encList (encOption encBool))) := hp.snd'.snd'.snd'.snd'.snd'.fst'
+      (encPi (encList (encOption encBool))) := encIntervalData_wIn_polyTime hd
   have hbZ : ComputableInPolyTime (fun a => ((d a).b : ℤ)) input encIntBin :=
     intBin_natCast.comp (unary_to_binary.comp hb)
   have hoff (head : Option (Fin k)) : ComputableInPolyTime (fun a => (d a).cIn.2.1 head) input
@@ -666,7 +589,7 @@ private theorem localStartData' {d : α → IntervalData k State}
       (fun a => ((d a).b : ℤ) * (d a).J head + ((d a).cIn.2.1 head : ℤ)) input encIntBin :=
     intBin_add' (intBin_mul' hbZ ((pi_apply _ head).comp hJ))
       (intBin_natCast.comp (unary_to_binary.comp (hoff head)))
-  exact localCfg_mk hc.fst' (inputPosOfCoord' hword (hcoord none))
+  exact encLocalCfg_mk_polyTime hc.fst' (inputPosOfCoord' hword (hcoord none))
     (pi fun h => biTape_ofCells ((pi_apply _ h).comp hw) (unary_add' hb (hoff (some h))))
     (pi fun h => hcoord (some h)) hc.snd'.snd'
 
@@ -705,25 +628,24 @@ private theorem computableInPolyTime_stepTest [DecidableEq State] :
       (encPair encIntervalData encLocalCfg) encBool := by
   have hd := fst (encIntervalData (k := k) (State := State)) (encLocalCfg (k := k) (State := State))
   have hl := snd (encIntervalData (k := k) (State := State)) (encLocalCfg (k := k) (State := State))
-  have hp := intervalData_parts.comp hd
   have hb : ComputableInPolyTime (fun p : IntervalData k State × LocalCfg k State => p.1.b)
-      (encPair encIntervalData encLocalCfg) encUnary := hp.snd'.fst'
+      (encPair encIntervalData encLocalCfg) encUnary := encIntervalData_b_polyTime hd
   have hJ : ComputableInPolyTime (fun p : IntervalData k State × LocalCfg k State => p.1.J)
-      (encPair encIntervalData encLocalCfg) (encPi encIntBin) := hp.snd'.snd'.fst'
+      (encPair encIntervalData encLocalCfg) (encPi encIntBin) := encIntervalData_J_polyTime hd
   have hδ : ComputableInPolyTime (fun p : IntervalData k State × LocalCfg k State => p.1.δ)
-      (encPair encIntervalData encLocalCfg) (encFinite _) := hp.snd'.snd'.snd'.fst'
-  have hc := controlData_parts.comp (hp.snd'.snd'.snd'.snd'.snd'.snd'.fst' :
+      (encPair encIntervalData encLocalCfg) (encFinite _) := encIntervalData_δ_polyTime hd
+  have hc := controlData_parts.comp (encIntervalData_cOut_polyTime hd :
     ComputableInPolyTime (fun p : IntervalData k State × LocalCfg k State => p.1.cOut)
       (encPair encIntervalData encLocalCfg) encControlData)
   have hw : ComputableInPolyTime (fun p : IntervalData k State × LocalCfg k State => p.1.wOut)
       (encPair encIntervalData encLocalCfg) (encPi (encList (encOption encBool))) :=
-    hp.snd'.snd'.snd'.snd'.snd'.snd'.snd'
+    encIntervalData_wOut_polyTime hd
   have hbZ : ComputableInPolyTime
       (fun p : IntervalData k State × LocalCfg k State => (p.1.b : ℤ))
       (encPair encIntervalData encLocalCfg) encIntBin :=
     intBin_natCast.comp (unary_to_binary.comp hb)
-  refine bool_and' (bool_and' (bool_and' (decide_eq' (localCfg_state.comp hl) hc.fst')
-    (decide_eq' (localCfg_track.comp hl) hc.snd'.snd')) ?_) ?_
+  refine bool_and' (bool_and' (bool_and' (decide_eq' (encLocalCfg_state_polyTime hl) hc.fst')
+    (decide_eq' (encLocalCfg_track_polyTime hl) hc.snd'.snd')) ?_) ?_
   · refine allConst _ fun head _ => bool_and' (unary_lt' ((pi_apply _ head).comp hc.snd'.fst') hb)
       (decide_eq' (localCfg_headCoord hl head) ?_)
     have hδZ : ComputableInPolyTime
@@ -745,13 +667,13 @@ theorem computableInPolyTime_localIntervalCount [DecidableEq State]
     (hbudget : ∀ a, 2 ^ (d a).b * (2 * (d a).b + 1) ≤ size (input a).length) :
     ComputableInPolyTime (fun a => (d a).count machine) input encUnary := by
   have hb : ComputableInPolyTime (fun a => (d a).b) input encUnary :=
-    (intervalData_parts.comp hd).snd'.fst'
+    encIntervalData_b_polyTime hd
   have hlist := bitsEnumList hb hsize hbudget
   have hfst := fst input encBits
   have hrun : ComputableInPolyTime (fun p : α × List Bool => machine.localRun (d p.1).input p.2
       (localStartData (d p.1).b (d p.1).input (d p.1).J (d p.1).cIn (d p.1).wIn))
       (encPair input encBits) encLocalCfg :=
-    computableInPolyTime_localRun machine ((intervalData_parts.comp (hd.comp hfst)).fst')
+    computableInPolyTime_localRun machine (encIntervalData_input_polyTime (hd.comp hfst))
       (snd _ _) (localStartData' (hd.comp hfst))
   have htest : ComputableInPolyTime (fun p : α × List Bool =>
       decide (machine.LocalIntervalStepData (d p.1).b (d p.1).input (d p.1).J (d p.1).δ

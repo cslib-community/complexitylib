@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.Classes.Space
 public import Complexity.Computability.Complexity.Classes.Space.TQBF.Evaluation
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
@@ -66,102 +67,19 @@ open Cslib.Logic.PL Turing.MultiTapeTM
 
 /-! ### Encodings -/
 
-/-- The fields of a frame. -/
-def Frame.fields (f : Frame) : (QBF.Kind × ℕ) × Option Bool × List (QBF.Kind × ℕ) :=
-  (f.token, f.first, f.rest)
-
-/-- The encoding of the fields of a frame. -/
-abbrev encFrameFields : (QBF.Kind × ℕ) × Option Bool × List (QBF.Kind × ℕ) ↪ List Bool :=
-  encPair encToken (encPair (encOption encBool) (encList encToken))
-
 /-- Frames encoded by their fields. -/
-def encFrame : Frame ↪ List Bool :=
-  ⟨fun f => encFrameFields f.fields, fun f g h => by
-    obtain ⟨⟩ := f
-    obtain ⟨⟩ := g
-    simpa [Frame.fields] using encFrameFields.injective h⟩
-
-/-- The fields of a state. -/
-def State.fields (s : State) : List (QBF.Kind × ℕ) × List Frame × Option Bool × Bool :=
-  (s.input, s.stack, s.value, s.ok)
-
-/-- The encoding of the fields of a state. -/
-abbrev encStateFields : List (QBF.Kind × ℕ) × List Frame × Option Bool × Bool ↪ List Bool :=
-  encPair (encList encToken) (encPair (encList encFrame) (encPair (encOption encBool) encBool))
+enc_structure encFrame : Frame where
+  token : encToken, first : (encOption encBool), rest : (encList encToken)
 
 /-- States encoded by their fields. -/
-def encState : State ↪ List Bool :=
-  ⟨fun s => encStateFields s.fields, fun s t h => by
-    obtain ⟨⟩ := s
-    obtain ⟨⟩ := t
-    simpa [State.fields] using encStateFields.injective h⟩
+enc_structure encState : State where
+  input : (encList encToken), stack : (encList encFrame), value : (encOption encBool), ok : encBool
 
 /-! ### The step in polynomial time -/
 
 section Step
 
 open ComputableInPolyTime
-
-/-- The fields of a state, the identity on encoded values. -/
-@[local fun_prop] private lemma fields_pt :
-    ComputableInPolyTime State.fields encState encStateFields :=
-  of_eq fun _ => rfl
-
-/-- A state from its fields, the identity on encoded values. -/
-@[local fun_prop] private lemma stateMk_pt :
-    ComputableInPolyTime
-      (fun p : List (QBF.Kind × ℕ) × List Frame × Option Bool × Bool =>
-        State.mk p.1 p.2.1 p.2.2.1 p.2.2.2) encStateFields encState :=
-  of_eq fun _ => rfl
-
-/-- The fields of a frame, the identity on encoded values. -/
-@[local fun_prop] private lemma frameFields_pt :
-    ComputableInPolyTime Frame.fields encFrame encFrameFields :=
-  of_eq fun _ => rfl
-
-/-- A frame from its fields, the identity on encoded values. -/
-@[local fun_prop] private lemma frameMk_pt :
-    ComputableInPolyTime
-      (fun p : (QBF.Kind × ℕ) × Option Bool × List (QBF.Kind × ℕ) => Frame.mk p.1 p.2.1 p.2.2)
-      encFrameFields encFrame :=
-  of_eq fun _ => rfl
-
-@[local fun_prop] private lemma stateMk_comp_pt {α : Type} {encIn : α ↪ List Bool}
-    {f₁ : α → List (QBF.Kind × ℕ)} {f₂ : α → List Frame}
-    {f₃ : α → Option Bool} {f₄ : α → Bool}
-    (h₁ : ComputableInPolyTime f₁ encIn (encList encToken))
-    (h₂ : ComputableInPolyTime f₂ encIn (encList encFrame))
-    (h₃ : ComputableInPolyTime f₃ encIn (encOption encBool))
-    (h₄ : ComputableInPolyTime f₄ encIn encBool) :
-    ComputableInPolyTime (fun a => State.mk (f₁ a) (f₂ a) (f₃ a) (f₄ a)) encIn encState :=
-  stateMk_pt.comp (h₁.prod (h₂.prod (h₃.prod h₄)))
-
-@[local fun_prop] private lemma input_pt :
-    ComputableInPolyTime State.input encState (encList encToken) :=
-  (fst _ _).comp fields_pt
-
-@[local fun_prop] private lemma stack_pt :
-    ComputableInPolyTime State.stack encState (encList encFrame) :=
-  ((fst _ _).comp (snd _ _)).comp fields_pt
-
-@[local fun_prop] private lemma value_pt :
-    ComputableInPolyTime State.value encState (encOption encBool) :=
-  ((fst _ _).comp ((snd _ _).comp (snd _ _))).comp fields_pt
-
-@[local fun_prop] private lemma ok_pt : ComputableInPolyTime State.ok encState encBool :=
-  ((snd _ _).comp ((snd _ _).comp (snd _ _))).comp fields_pt
-
-@[local fun_prop] private lemma token_pt :
-    ComputableInPolyTime Frame.token encFrame encToken :=
-  (fst _ _).comp frameFields_pt
-
-@[local fun_prop] private lemma first_pt :
-    ComputableInPolyTime Frame.first encFrame (encOption encBool) :=
-  ((fst _ _).comp (snd _ _)).comp frameFields_pt
-
-@[local fun_prop] private lemma rest_pt :
-    ComputableInPolyTime Frame.rest encFrame (encList encToken) :=
-  ((snd _ _).comp (snd _ _)).comp frameFields_pt
 
 /-- The next token, or `(top, 0)` when the input is empty. -/
 private def State.head (s : State) : QBF.Kind × ℕ := s.input.headD (.top, 0)
@@ -251,7 +169,7 @@ private theorem assignment_eq (stack : List Frame) (v : ℕ) :
   have h : ComputableInPolyTime (fun p : State × Frame => Frame.binds p.1.head.2 p.2)
       (encPair encState encFrame) encBool :=
     binds_pt.comp (g := fun p : State × Frame => (p.1.head.2, p.2)) (by fun_prop)
-  exact optionIsSome (findWithInput stack_pt h)
+  exact optionIsSome (findWithInput (encState_stack_polyTime id') h)
 
 /-- The value of the next variable, by a search of the stack. -/
 @[local fun_prop] private lemma assignment_pt :
@@ -260,7 +178,8 @@ private theorem assignment_eq (stack : List Frame) (v : ℕ) :
   have h : ComputableInPolyTime (fun p : State × Frame => Frame.binds p.1.head.2 p.2)
       (encPair encState encFrame) encBool :=
     binds_pt.comp (g := fun p : State × Frame => (p.1.head.2, p.2)) (by fun_prop)
-  exact optionElimWithInput (findWithInput stack_pt h) (const false) (by fun_prop)
+  exact optionElimWithInput (findWithInput (encState_stack_polyTime id') h) (const false)
+    (by fun_prop)
 
 /-- A step reading a token is polynomial-time. -/
 private lemma readStep_pt (k : QBF.Kind) :
@@ -275,7 +194,7 @@ private lemma retStep_pt (k : QBF.Kind) (second : Bool) :
 /-- **A step of the evaluator is polynomial-time** in the encoded state. -/
 theorem computableInPolyTime_step : ComputableInPolyTime step encState encState := by
   rw [show step = _ from funext step_eq]
-  refine ite (optionIsSome value_pt) (ite (by fun_prop) id' ?_)
+  refine ite (optionIsSome (encState_value_polyTime id')) (ite (by fun_prop) id' ?_)
     (ite (by fun_prop) (by fun_prop) ?_)
   · exact finite_cases (tagEncoding := encPair encKind encBool)
       (tag := fun s => (s.top.token.1, s.top.first.isSome))
@@ -311,9 +230,8 @@ private theorem length_encFrame_le {φ : QBF ℕ} {f : Frame} (h : f.token :: f.
     (encFrame f).length ≤ (encQBF φ).length + 5 := by
   have hs := length_encList_le_of_suffix h
   have hfirst : (encOption encBool f.first).length ≤ 2 := by cases f.first <;> simp [encOption]
-  change (encFrameFields f.fields).length ≤ _
   rw [encQBF_apply]
-  simp only [Frame.fields, length_encPair, encList_cons, List.length_append, length_frame] at hs ⊢
+  simp only [encFrame_apply, length_encPair, encList_cons, List.length_append, length_frame] at hs ⊢
   omega
 
 /-- **The states of a run are of quadratic size**: a state satisfying the invariant on `φ` has an
@@ -329,8 +247,7 @@ theorem length_encState_le {φ : QBF ℕ} {s : State} (h : Good φ s) :
     h.length_stack_le.trans (by have := three_mul_length_tokens_le φ; omega)
   have hval : (encOption encBool s.value).length ≤ 2 := by cases s.value <;> simp [encOption]
   have hmul := Nat.mul_le_mul_right (2 * ((encQBF φ).length + 5) + 1) hdepth
-  change (encStateFields s.fields).length ≤ _
-  simp only [State.fields, length_encPair, encBool_apply, List.length_singleton]
+  simp only [encState_apply, length_encPair, encBool_apply, List.length_singleton]
   nlinarith
 
 /-! ### The evaluator in polynomial space -/

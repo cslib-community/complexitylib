@@ -300,7 +300,7 @@ theorem computableInPolyTime_intervalEntryNum {i : α → ℕ}
     refine bool_and' (binary_lt' (hLat hi) hC) (allConst _ fun h _ => allConst _ fun δ _ => ?_)
     exact bool_not.comp (binary_lt' (hLat (unary_add' hq (unary_add' (const _)
       (unary_mul' (const _) hi)))) hC)
-  · have hd := IntervalData.computableInPolyTime_mk hx hb
+  · have hd := encIntervalData_mk_polyTime hx hb
       (computableInPolyTime_blockIndexNum hσ hi) (computableInPolyTime_blockMoveNum hσ hi) hcIn
       (pi fun h : Fin k => computableInPolyTime_inCellsNum (k := k) (s := s) h.val hb hq hσ hL hi)
       (computableInPolyTime_decodeControlData e hb hb0 (hLat hi))
