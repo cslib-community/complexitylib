@@ -37,11 +37,11 @@ issued operation sequence itself adapts to the current partition.
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.DisjointSet.Partition`: decidable equivalence relations on `Fin n`.
+* `Cslib.DataStructure.DisjointSet.Partition`: decidable equivalence relations on `Fin n`.
 * `Partition.toSetoid`, `Partition.discrete`, `Partition.classOf`, `Partition.components`,
   `Partition.numComponents`, `Partition.merge`: setoid view, singleton partition, equivalence
   classes, quotient component set, component count, and binary class merge.
-* `Cslib.Algorithms.Lean.DisjointSet.Op`, `Cslib.Algorithms.Lean.DisjointSet.spec`: typed
+* `Cslib.DataStructure.DisjointSet.Op`, `Cslib.DataStructure.DisjointSet.spec`: typed
   disjoint-set operations and `Cslib.DataStructure.StateTransitionSpec`.
 * `same`, `union`, `getNumComponents`, `connectIfNew`, `spanningForestEdges`: primitive client
   operations, history-adaptive conditional union, and the single-pass spanning-forest edge filter.
@@ -68,7 +68,7 @@ issued operation sequence itself adapts to the current partition.
 
 public section
 
-namespace Cslib.Algorithms.Lean.DisjointSet
+namespace Cslib.DataStructure.DisjointSet
 
 open Cslib.DataStructure
 
@@ -621,4 +621,4 @@ theorem spanningForestEdges_idempotent_partition {n : ℕ} {E : Type} (endpts : 
       rw [Partition.merge_of_rel hrel]
       exact ih p
 
-end Cslib.Algorithms.Lean.DisjointSet
+end Cslib.DataStructure.DisjointSet

@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.FenwickTree.Basic
+public import Complexity.DataStructure.FenwickTree.Basic
 public import Complexity.DataStructure.StateTransition.Resource
 
 /-!
@@ -16,7 +16,7 @@ public import Complexity.DataStructure.StateTransition.Resource
 This module defines a representation-independent `Cslib.DataStructure.StateTransitionSpec` for
 fixed-length dynamic
 prefix-sum sequences (`add`, `prefixSum`) over any `[AddCommMonoid α]` and realizes it by
-`Cslib.Algorithms.Lean.FenwickTree` with per-operation node-visit budget
+`Cslib.DataStructure.FenwickTree` with per-operation node-visit budget
 `Nat.clog 2 (s.length + 1)` (`0` when `s = []`, `⌊log₂ s.length⌋ + 1` when `s ≠ []`).
 
 Because every operation preserves `s.length`, the abstract `totalCost` along any `k`-operation
@@ -39,23 +39,23 @@ history starting from `s` simplifies to `k * Nat.clog 2 (s.length + 1)` (`totalC
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.FenwickTree.Op`, `spec`: representation-independent dynamic prefix-sum
+* `Cslib.DataStructure.FenwickTree.Op`, `spec`: representation-independent dynamic prefix-sum
   operations and `List α` specification.
-* `Cslib.Algorithms.Lean.FenwickTree.step`, `Exec`, `run`: concrete `TimeM`-backed execution step,
+* `Cslib.DataStructure.FenwickTree.step`, `Exec`, `run`: concrete `TimeM`-backed execution step,
   native execution relation, and executable client interpreter.
-* `Cslib.Algorithms.Lean.FenwickTree.impl`: `Cslib.DataStructure.StateTransitionImpl` of `spec α`
+* `Cslib.DataStructure.FenwickTree.impl`: `Cslib.DataStructure.StateTransitionImpl` of `spec α`
   using
   `Valid` directly as the representation invariant (`rep s t := Valid t s`).
-* `Cslib.Algorithms.Lean.FenwickTree.charge`: representation-independent logarithmic node-visit
+* `Cslib.DataStructure.FenwickTree.charge`: representation-independent logarithmic node-visit
   budget `Nat.clog 2 (s.length + 1)`.
 
 ## Main results
 
-* `Cslib.Algorithms.Lean.FenwickTree.stepBound`: logarithmic `Cslib.DataStructure.Bound`
+* `Cslib.DataStructure.FenwickTree.stepBound`: logarithmic `Cslib.DataStructure.Bound`
   certificate.
-* `Cslib.Algorithms.Lean.FenwickTree.totalCost_charge`: for any history `os`,
+* `Cslib.DataStructure.FenwickTree.totalCost_charge`: for any history `os`,
   `(spec α).totalCost charge s os = os.length * Nat.clog 2 (s.length + 1)`.
-* `Cslib.Algorithms.Lean.FenwickTree.realized_client`, `run_correct`: adaptive dynamic prefix-sum
+* `Cslib.DataStructure.FenwickTree.realized_client`, `run_correct`: adaptive dynamic prefix-sum
   clients execute with `List α` correctness and additive `Nat.clog 2 (s.length + 1)` bounds.
 
 ## References
@@ -65,7 +65,7 @@ history starting from `s` simplifies to `k * Nat.clog 2 (s.length + 1)` (`totalC
 
 public section
 
-namespace Cslib.Algorithms.Lean.FenwickTree
+namespace Cslib.DataStructure.FenwickTree
 
 open Cslib.DataStructure
 
@@ -210,4 +210,4 @@ theorem run_correct {β : Type} (p : (spec α).Client β)
   rw [totalCost_charge] at hb
   exact ⟨hc.1, hc.2, hb⟩
 
-end Cslib.Algorithms.Lean.FenwickTree
+end Cslib.DataStructure.FenwickTree

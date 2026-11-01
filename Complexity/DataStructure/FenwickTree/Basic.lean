@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Algorithms.Lean.FenwickTree.Lowbit
+public import Complexity.DataStructure.FenwickTree.Lowbit
 public import Cslib.Algorithms.Lean.TimeM
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Algebra.BigOperators.Group.List.Basic
@@ -25,7 +25,7 @@ pp. 328–332) in `Cslib.Algorithms.Lean.TimeM`:
 * Over any `[AddCommGroup α]`: half-open range queries `rangeSumM`/`rangeSum`, point reads
   `getM`/`get`, and point assignments `setM`/`set`.
 
-Unlike the power-of-two bounded-word segment tree in `Cslib.Algorithms.WordRAM.PrefixSums`, a
+Unlike the power-of-two bounded-word segment tree in `Cslib.DataStructure.PrefixSums.WordRAM`, a
 Fenwick tree represents any list `s : List α` of arbitrary length `n` in exact `n` array entries,
 without word-width side conditions.
 
@@ -66,30 +66,30 @@ without word-width side conditions.
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.FenwickTree`: array-backed Fenwick tree of size `t.size`.
-* `Cslib.Algorithms.Lean.FenwickTree.Valid`: invariant coupling `t` to `s : List α`.
-* `Cslib.Algorithms.Lean.FenwickTree.addAt`: point increment on `List α` (`no-op` out of bounds).
-* `Cslib.Algorithms.Lean.FenwickTree.zeros`, `ofArrayM`, `ofArray`, `ofListM`, `ofList`:
+* `Cslib.DataStructure.FenwickTree`: array-backed Fenwick tree of size `t.size`.
+* `Cslib.DataStructure.FenwickTree.Valid`: invariant coupling `t` to `s : List α`.
+* `Cslib.DataStructure.FenwickTree.addAt`: point increment on `List α` (`no-op` out of bounds).
+* `Cslib.DataStructure.FenwickTree.zeros`, `ofArrayM`, `ofArray`, `ofListM`, `ofList`:
   zero initialization and `a.size`-tick immediate-parent construction.
-* `Cslib.Algorithms.Lean.FenwickTree.prefixSumM`, `prefixSum`, `addM`, `add`: logarithmic prefix
+* `Cslib.DataStructure.FenwickTree.prefixSumM`, `prefixSum`, `addM`, `add`: logarithmic prefix
   queries and point increments over `[AddCommMonoid α]`.
-* `Cslib.Algorithms.Lean.FenwickTree.rangeSumM`, `rangeSum`, `getM`, `get`, `setM`, `set`:
+* `Cslib.DataStructure.FenwickTree.rangeSumM`, `rangeSum`, `getM`, `get`, `setM`, `set`:
   logarithmic range sums, point reads, and point assignments over `[AddCommGroup α]`.
 
 ## Main results
 
-* `Cslib.Algorithms.Lean.FenwickTree.Valid.unique`: `Valid t s` uniquely determines `t` (so any
+* `Cslib.DataStructure.FenwickTree.Valid.unique`: `Valid t s` uniquely determines `t` (so any
   valid construction, including `ofList s` and incremental `add` from `zeros`, produces the exact
   same tree).
-* `Cslib.Algorithms.Lean.FenwickTree.ret_prefixSumM_eq` and `prefixSumM_time_le_clog` /
+* `Cslib.DataStructure.FenwickTree.ret_prefixSumM_eq` and `prefixSumM_time_le_clog` /
   `prefixSumM_time_le_log`: `prefixSum` computes `(s.take len).sum` in at most
   `⌈log₂ (t.size + 1)⌉` (`≤ ⌊log₂ t.size⌋ + 1`) ticks.
-* `Cslib.Algorithms.Lean.FenwickTree.valid_add`, `addM_time_eq_upChain`, and
+* `Cslib.DataStructure.FenwickTree.valid_add`, `addM_time_eq_upChain`, and
   `addM_time_le_clog` / `addM_time_le_log`: `add` preserves `Valid` for `addAt s pos δ` in at most
   `⌈log₂ (t.size + 1)⌉` ticks.
-* `Cslib.Algorithms.Lean.FenwickTree.valid_ofArray` and `ofArrayM_time_eq`: `ofArray` builds a
+* `Cslib.DataStructure.FenwickTree.valid_ofArray` and `ofArrayM_time_eq`: `ofArray` builds a
   valid Fenwick tree for `a.toList` in `a.size` parent-propagation ticks.
-* `Cslib.Algorithms.Lean.FenwickTree.ret_rangeSumM_eq`, `ret_getM_eq`, `valid_set`, and their
+* `Cslib.DataStructure.FenwickTree.ret_rangeSumM_eq`, `ret_getM_eq`, `valid_set`, and their
   logarithmic `TimeM` bounds.
 
 ## References
@@ -99,9 +99,9 @@ without word-width side conditions.
 
 public section
 
-namespace Cslib.Algorithms.Lean
+namespace Cslib.DataStructure
 
-open Cslib.Algorithms.Lean.TimeM
+open Cslib.Algorithms.Lean Cslib.Algorithms.Lean.TimeM
 
 /-- Array-backed Fenwick tree (binary indexed tree) over `α`. -/
 structure FenwickTree (α : Type*) where
@@ -919,4 +919,4 @@ theorem set_of_size_le {α : Type*} [AddCommGroup α]
 
 end FenwickTree
 
-end Cslib.Algorithms.Lean
+end Cslib.DataStructure

@@ -38,24 +38,24 @@ half-open `0`-based index interval `[m - lowbit m, m)`:
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.FenwickTree.lowbit`: value of the lowest set bit of `n` (`0` at `0`).
-* `Cslib.Algorithms.Lean.FenwickTree.downChain`: downward query indices `m, m - lowbit m, …`.
-* `Cslib.Algorithms.Lean.FenwickTree.upChain`: upward update indices `m, m + lowbit m, … ≤ n`.
-* `Cslib.Algorithms.Lean.FenwickTree.fenwickChildren`: immediate Fenwick children `c < idx` with
+* `Cslib.DataStructure.FenwickTree.lowbit`: value of the lowest set bit of `n` (`0` at `0`).
+* `Cslib.DataStructure.FenwickTree.downChain`: downward query indices `m, m - lowbit m, …`.
+* `Cslib.DataStructure.FenwickTree.upChain`: upward update indices `m, m + lowbit m, … ≤ n`.
+* `Cslib.DataStructure.FenwickTree.fenwickChildren`: immediate Fenwick children `c < idx` with
   `c + lowbit c = idx`.
 
 ## Main results
 
-* `Cslib.Algorithms.Lean.FenwickTree.exists_odd_mul_lowbit`: odd-quotient power-of-two factorization
+* `Cslib.DataStructure.FenwickTree.exists_odd_mul_lowbit`: odd-quotient power-of-two factorization
   `n = (2 * q + 1) * lowbit n` with `lowbit n = 2 ^ k`.
-* `Cslib.Algorithms.Lean.FenwickTree.two_mul_lowbit_le_lowbit_sub` and
+* `Cslib.DataStructure.FenwickTree.two_mul_lowbit_le_lowbit_sub` and
   `two_mul_lowbit_le_lowbit_add`: `lowbit` at least doubles at every downward or upward step.
-* `Cslib.Algorithms.Lean.FenwickTree.fenwick_parent_bridge`: for `0 < m < idx`,
+* `Cslib.DataStructure.FenwickTree.fenwick_parent_bridge`: for `0 < m < idx`,
   `idx - lowbit idx < m ↔ idx - lowbit idx < m + lowbit m ∧ m + lowbit m ≤ idx`.
-* `Cslib.Algorithms.Lean.FenwickTree.length_downChain_le_log`, `length_upChain_le_log`,
+* `Cslib.DataStructure.FenwickTree.length_downChain_le_log`, `length_upChain_le_log`,
   `length_downChain_le_clog`, `length_upChain_le_clog`: logarithmic chain-length bounds.
-* `Cslib.Algorithms.Lean.FenwickTree.mem_upChain_iff`: exact ancestor characterization.
-* `Cslib.Algorithms.Lean.FenwickTree.pairwiseDisjoint_fenwickChildren` and
+* `Cslib.DataStructure.FenwickTree.mem_upChain_iff`: exact ancestor characterization.
+* `Cslib.DataStructure.FenwickTree.pairwiseDisjoint_fenwickChildren` and
   `insert_biUnion_fenwickChildren`: disjoint child-interval partition for linear-time construction.
 
 ## References
@@ -65,7 +65,7 @@ half-open `0`-based index interval `[m - lowbit m, m)`:
 
 public section
 
-namespace Cslib.Algorithms.Lean.FenwickTree
+namespace Cslib.DataStructure.FenwickTree
 
 /-! ## Binary lowest set bit (`lowbit`) -/
 
@@ -570,4 +570,4 @@ theorem insert_biUnion_fenwickChildren {idx : ℕ} (hidx : 0 < idx) :
       obtain ⟨hc_ge, _, hc_sub⟩ := (mem_upChain_iff hm_pos).mp hc_mem
       exact ⟨c, hc_child, by omega, by omega⟩
 
-end Cslib.Algorithms.Lean.FenwickTree
+end Cslib.DataStructure.FenwickTree

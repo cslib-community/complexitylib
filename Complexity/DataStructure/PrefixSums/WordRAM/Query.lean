@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.PrefixSums.Update
+public import Complexity.DataStructure.PrefixSums.WordRAM.Update
 
 /-!
 # Fixed Word-RAM prefix queries
@@ -34,7 +34,7 @@ the array size, query position and tree pointer are register inputs.
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.PrefixSums
+namespace Cslib.DataStructure.PrefixSums.WordRAM
 
 open Cslib.WordRAM Reg
 
@@ -167,6 +167,6 @@ theorem queryLoop_spec (t : Tree h) (hx : Entry b (2 ^ h) i δ x) (hi : i ≤ 2 
         refine ⟨z, (he.loop_iter hcond hz).mono (by omega), ?_, hm.trans queryNext_mem⟩
         simpa [Tree.prefixSum, hleft, Nat.add_assoc] using hans
 
-end Cslib.Algorithms.WordRAM.PrefixSums
+end Cslib.DataStructure.PrefixSums.WordRAM
 
 end

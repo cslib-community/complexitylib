@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.DisjointSet
+public import Complexity.DataStructure.DisjointSet.Spec
 public import Complexity.DataStructure.StateTransition.Resource
 public import Batteries.Data.UnionFind
 public import Mathlib.Data.Nat.Log
@@ -16,7 +16,7 @@ import all Batteries.Data.UnionFind.Basic
 /-!
 # Union-find realization and logarithmic step bounds
 
-This module realizes `Cslib.Algorithms.Lean.DisjointSet.spec` using `Batteries.UnionFind`
+This module realizes `Cslib.DataStructure.DisjointSet.spec` using `Batteries.UnionFind`
 (disjoint-set forests with union by rank and path compression) together with an explicit component
 counter, and establishes worst-case `O(log n)` per-operation parent-pointer traversal bounds.
 
@@ -77,9 +77,9 @@ a `Batteries.UnionFind` value is shared non-linearly.
 
 public section
 
-namespace Cslib.Algorithms.Lean.DisjointSet.UnionFind
+namespace Cslib.DataStructure.DisjointSet.UnionFind
 
-open Cslib.DataStructure Cslib.Algorithms.Lean.DisjointSet
+open Cslib.DataStructure Cslib.DataStructure.DisjointSet
 
 /-! ### Structural lemmas for `Batteries.UnionFind` -/
 
@@ -947,4 +947,4 @@ theorem run_correct {n : ℕ} {β : Type} (client : (spec n).Client β)
   exact ⟨hc.1, hc.2, Bound.client (stepBound n) hr hv hexec,
     Bound.client_const (uniformStepBound n) hr hv hexec⟩
 
-end Cslib.Algorithms.Lean.DisjointSet.UnionFind
+end Cslib.DataStructure.DisjointSet.UnionFind

@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.PrefixSums.Tree
+public import Complexity.DataStructure.PrefixSums.WordRAM.Tree
 public import Complexity.Computability.WordRAM.Compile
 public import Complexity.Computability.WordRAM.Notation
 
@@ -41,7 +41,7 @@ loads, stores, tests and jumps are actual bounded-word instructions.
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.PrefixSums
+namespace Cslib.DataStructure.PrefixSums.WordRAM
 
 open Cslib.WordRAM
 
@@ -213,6 +213,6 @@ theorem updateLoop_spec (t : Tree h) (hx : Entry b (2 ^ h) i δ x) (hi : i < 2 ^
           simp only [Tree.words, pow_succ] at ha' ⊢; omega), updateNext_mem]
         exact Function.update_of_ne (by simp only [Tree.words, pow_succ] at ha'; omega) _ _
 
-end Cslib.Algorithms.WordRAM.PrefixSums
+end Cslib.DataStructure.PrefixSums.WordRAM
 
 end

@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.PrefixSums.Query
+public import Complexity.DataStructure.PrefixSums.WordRAM.Query
 public import Complexity.Computability.WordRAM.Dynamic
 
 /-!
@@ -47,7 +47,7 @@ increments must fit the chosen word width. This is a segment tree, not a Fenwick
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.PrefixSums
+namespace Cslib.DataStructure.PrefixSums.WordRAM
 
 open Cslib.WordRAM Reg
 
@@ -273,6 +273,6 @@ theorem rep_zeroData (ha : Fits w (b + 2 * 2 ^ h)) :
   · simp +decide [zeroData]
   · simp +decide [zeroData]
 
-end Cslib.Algorithms.WordRAM.PrefixSums
+end Cslib.DataStructure.PrefixSums.WordRAM
 
 end

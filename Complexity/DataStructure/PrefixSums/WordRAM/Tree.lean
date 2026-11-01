@@ -43,7 +43,7 @@ and cost proofs.
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.PrefixSums
+namespace Cslib.DataStructure.PrefixSums.WordRAM
 
 /-- A complete binary tree with `2 ^ h` leaves. -/
 inductive Tree : ℕ → Type where
@@ -230,6 +230,6 @@ theorem rep_zero (h b : ℕ) : (zero h).Rep b (fun _ => 0) := by
   induction h generalizing b <;> simp_all [zero, Rep]
 
 end Tree
-end Cslib.Algorithms.WordRAM.PrefixSums
+end Cslib.DataStructure.PrefixSums.WordRAM
 
 end
