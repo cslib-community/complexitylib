@@ -27,6 +27,7 @@ the source's tuned 3SUM exponent.
 
 ## Main results
 
+* `costCoefficient_mono`: monotonicity in the original-weight exponent.
 * `costCoefficient_eventually_le_rpow`: reusable coefficient absorption for concrete native callers.
 
 * `exists_components_subcubic_threshold`: beyond one threshold, the actual component allowance
@@ -45,6 +46,16 @@ upper estimate, not an execution contract supplied to an algorithm. -/
 @[expose] noncomputable def costCoefficient (κ : ℝ) (n : ℕ) : ℝ :=
   238169 + 12 * (Nat.log 2 n : ℝ) + 138412032 * ((19 * level n + 1 : ℕ) : ℝ) +
     (140 * falsePositiveConst + 140) * κ * Real.log n
+
+/-- The component coefficient is monotone in its weight exponent for positive dimensions. -/
+theorem costCoefficient_mono {n : ℕ} (hn : 1 ≤ n) {a b : ℝ} (h : a ≤ b) :
+    costCoefficient a n ≤ costCoefficient b n := by
+  have hC : 0 ≤ falsePositiveConst := (by norm_num : (0 : ℝ) ≤ 1).trans one_le_falsePositiveConst
+  have hlog : 0 ≤ Real.log (n : ℝ) := Real.log_nonneg (by exact_mod_cast hn)
+  have hm := mul_le_mul_of_nonneg_left h
+    (show 0 ≤ (140 * falsePositiveConst + 140) * Real.log (n : ℝ) by positivity)
+  unfold costCoefficient
+  nlinarith only [hm]
 
 private noncomputable def logCoefficient (κ : ℝ) : ℝ :=
   238169 + 138412032 + (12 + 19 * 138412032) / Real.log 2 +

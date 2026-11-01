@@ -160,6 +160,8 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Ada
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Admission
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Copy
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Core
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.DyadicCost
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.DyadicExecution
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Exec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Flat
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Header
