@@ -40,7 +40,7 @@ example : let (q, dist, _) := (spec 3 15 16).clientState (init graph) (dijkstra 
 
 /-- The operations, by kind. The parallel edge of weight `5` is read but relaxes nothing, the edge
 `2 → 1` decreases the key of `1` from `4` to `3`, and the third extraction visits `1`, which has
-no edges. The graph queries meet their bound `n + m = 7`. -/
+no edges. The graph queries meet their bound `min (n + m) (2 m + 1) = 7`. -/
 example : ((spec 3 15 16).clientHistory (init graph) (dijkstra graph.source)).map kind =
     [.distance, .insert,
       .extractMin, .graph, .graph, .distance, .distance, .insert,
@@ -68,8 +68,22 @@ example : let (q, dist, _) := (spec 2 0 1).clientState (init edgeless) (dijkstra
     q = IndexedMinPQ.empty 2 ∧ dist = ![some 0, none] := by
   decide +kernel
 
+/-- Four vertices and one edge `0 → 1`: the counts follow the edges, not the vertices. Two
+insertions and three extractions, the last finding the queue empty, meet the bounds
+`min n (m + 1) = 2` and `min n (m + 2) = 3`. -/
+def sparse : ListInstance where
+  n := 4
+  adj := ![[(1, 7)], [], [], []]
+  source := 0
+
+example : let hist := (spec 4 28 29).clientHistory (init sparse) (dijkstra sparse.source)
+    hist.countP (kind · = .insert) = maxCount 4 1 .insert ∧
+      hist.countP (kind · = .extractMin) = maxCount 4 1 .extractMin := by
+  decide +kernel
+
 /-- Under binary-heap-style charges of `2` per queue operation, the cost theorem bounds the cost
-on `graph` by `3 · 2 + 3 · 2 + 4 · 2 + 3 + 3 · 4 + 1 = 36`. -/
+on `graph` by `3 · 2 + 3 · 2 + 4 · 2 + 3 + 3 · 4 + 1 = 36`, the lesser of the two forms of the
+budget. -/
 example : (spec 3 15 16).CostHoare (charge fun _ _ => 2) (· = init graph) (dijkstra graph.source)
     (fun _ => HasDistances graph) (fun _ => 36) :=
   (costHoare_dijkstra (K := 15) (V := 16) (cI := 2) (cE := 2) (cD := 2) graph (by decide)
