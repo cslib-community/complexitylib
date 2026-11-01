@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Semantics.Stateful.Resource
+public import Complexity.DataStructure.StateTransition.Resource
 public import Mathlib.Data.List.TakeDrop
 
 /-!
@@ -39,7 +39,8 @@ checks the entire edited history.
 
 The edit primitive includes storing the timeline and exposing the edited list to its caller.
 A backend must certify this primitive's resource weight; list copying is not assumed constant
-time. Like all `Spec.Client` results, the resource claims count explicit backend operations and
+time. Like all `StateTransitionSpec.Client` results, the resource claims count explicit backend
+operations and
 leave pure Lean controller computation uncharged. There is no fixed Word-RAM compiler here.
 
 ## References
@@ -51,7 +52,7 @@ leave pure Lean controller computation uncharged. There is no fixed Word-RAM com
 
 namespace Cslib.Algorithms.Lean
 
-open Cslib.Stateful
+open Cslib.DataStructure
 
 /-- An edit position names a gap for insertion and an existing entry for deletion. -/
 inductive TimelineEdit (Op : Type) where
@@ -92,13 +93,13 @@ end TimelineEdit
 
 namespace Retroactive
 
-variable (D : Spec.{0, 0, 0})
+variable (D : StateTransitionSpec.{0, 0, 0})
   {stepFn : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn stepFn]
   (initial : D.State)
 
 /-- A dynamic specification of admissible timeline edits. -/
-abbrev spec : Spec :=
-  Spec.ofFn (State := List D.Op) (Op := TimelineEdit D.Op) (Result := fun _ => Unit)
+abbrev spec : StateTransitionSpec :=
+  StateTransitionSpec.ofFn (State := List D.Op) (Op := TimelineEdit D.Op) (Result := fun _ => Unit)
     (fun os e => (e.apply os, ()))
     (fun os e => e.Valid os ∧ D.ValidHistory initial (e.apply os))
 
@@ -128,8 +129,9 @@ abbrev backendValid (s : List D.Op × D.State) : BackendOp D.Op → Prop
   | .execute o => D.valid s.2 o
 
 /-- The rebuilding backend tracks the stored timeline and current ordinary state separately. -/
-abbrev backend : Spec :=
-  Spec.ofFn (State := List D.Op × D.State) (Op := BackendOp D.Op) (Result := BackendOp.Result D)
+abbrev backend : StateTransitionSpec :=
+  StateTransitionSpec.ofFn (State := List D.Op × D.State) (Op := BackendOp D.Op)
+    (Result := BackendOp.Result D)
     (backendStep D initial) (backendValid D initial)
 
 /-- Replay ordinary operations through explicitly charged backend calls. -/
@@ -172,7 +174,7 @@ def implementation : Module (spec D initial) (backend D initial) :=
       change (backend D initial).ValidHistory (s, state)
         (.edit o :: .reset ::
           (backend D initial).clientHistory (o.apply s, initial) (replay D initial (o.apply s)))
-      rw [Spec.clientHistory, replay_run]
+      rw [StateTransitionSpec.clientHistory, replay_run]
       exact ⟨hv, trivial, replay_valid D initial _ _ _ hv.2⟩)
     (correct := by
       intro s e o hr _
@@ -180,7 +182,8 @@ def implementation : Module (spec D initial) (backend D initial) :=
       obtain ⟨ht, hs⟩ := hr
       dsimp only at ht hs
       subst timeline
-      simp only [methods, Spec.clientResult, Spec.clientState, Spec.runClient_liftBind, backend]
+      simp only [methods, StateTransitionSpec.clientResult, StateTransitionSpec.clientState,
+        StateTransitionSpec.runClient_liftBind, backend]
       rw [replay_run]
       exact ⟨trivial, rfl, rfl⟩)
 
@@ -201,7 +204,7 @@ private theorem replay_charge (editCharge : List D.Op → TimelineEdit D.Op → 
   induction os generalizing s with
   | nil => rfl
   | cons o os ih =>
-    simp only [List.map_cons, Spec.totalCost_cons, primitiveCharge, backend, ih]
+    simp only [List.map_cons, StateTransitionSpec.totalCost_cons, primitiveCharge, backend, ih]
 
 /-- The full operation charge retains both editing and resetting overhead. -/
 theorem operation_charge (editCharge : List D.Op → TimelineEdit D.Op → Nat)
@@ -212,7 +215,7 @@ theorem operation_charge (editCharge : List D.Op → TimelineEdit D.Op → Nat)
       ((backend D initial).runClient (timeline, state) (methods D initial e)).2.2 =
       editCharge timeline e + resetCharge +
         D.totalCost ordinaryCharge initial (e.apply timeline) := by
-  simp only [methods, Spec.runClient_liftBind, backend]
+  simp only [methods, StateTransitionSpec.runClient_liftBind, backend]
   rw [replay_run]
   change editCharge timeline e + (resetCharge +
     (backend D initial).totalCost
@@ -223,7 +226,7 @@ theorem operation_charge (editCharge : List D.Op → TimelineEdit D.Op → Nat)
 /-- Resource bounds transport to any realization of the backend interface.
 This certificate then composes across arbitrary admissible timeline edits via `Bound.client`. -/
 theorem realized_bound {C Trace : Type} {exec : Execution (backend D initial) C Trace}
-    (R : Realization (backend D initial) exec) (weight : Trace → Nat)
+    (R : StateTransitionImpl (backend D initial) exec) (weight : Trace → Nat)
     (editCharge : List D.Op → TimelineEdit D.Op → Nat) (resetCharge : Nat)
     (ordinaryCharge : D.State → D.Op → Nat)
     (B : Bound R weight (primitiveCharge D initial editCharge resetCharge ordinaryCharge)) :
@@ -241,7 +244,7 @@ theorem realized_bound {C Trace : Type} {exec : Execution (backend D initial) C 
 /-- A uniform ordinary-operation bound gives linear replay overhead. Editing and resetting
 remain explicit, and the resulting certificate applies to every concrete operation execution. -/
 theorem realized_linear_bound {C Trace : Type} {exec : Execution (backend D initial) C Trace}
-    (R : Realization (backend D initial) exec) (weight : Trace → Nat)
+    (R : StateTransitionImpl (backend D initial) exec) (weight : Trace → Nat)
     (editCharge : List D.Op → TimelineEdit D.Op → Nat) (resetCharge : Nat)
     (ordinaryCharge : D.State → D.Op → Nat)
     (B : Bound R weight (primitiveCharge D initial editCharge resetCharge ordinaryCharge))

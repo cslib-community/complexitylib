@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Semantics.Stateful.Basic
+public import Complexity.DataStructure.StateTransition
 public import Mathlib.Probability.ProbabilityMassFunction.Monad
 
 /-!
@@ -16,17 +16,17 @@ public import Mathlib.Probability.ProbabilityMassFunction.Monad
 An *oblivious-sequence specification* (`Cslib.DataStructure.ObliviousSequenceSpec`) describes the
 input-output contract of a randomized or deterministic data structure against an *oblivious*
 (non-adaptive) caller that fixes a finite operation sequence `ops : List Op` in advance. Unlike a
-state-transition specification (`Cslib.Stateful.Spec`), an oblivious-sequence specification has no
-abstract `State` field: it constrains the joint probability distribution
+state-transition specification (`Cslib.DataStructure.StateTransitionSpec`), an oblivious-sequence
+specification has no abstract `State` field: it constrains the joint probability distribution
 `μ : PMF (List (Sigma Result))` of the full input-output transcript directly via a predicate
 `Contract ops μ`.
 
-Every relational state-transition specification `D : Cslib.Stateful.Spec` at an initial state
-`s₀ : D.State` embeds canonically into `ObliviousSequenceSpec` via
-`Cslib.Stateful.Spec.toObliviousSequenceSpec`, requiring every transcript in the support of `μ` to
-arise from a valid relational execution of `D` from `s₀`. On deterministic specifications
-(`[D.HasStepFn f]`), this contract reduces to concentration on the unique canonical output trace
-`(D.run s₀ ops).2`.
+Every relational state-transition specification `D : Cslib.DataStructure.StateTransitionSpec` at an
+initial state `s₀ : D.State` embeds canonically into `ObliviousSequenceSpec` via
+`Cslib.DataStructure.StateTransitionSpec.toObliviousSequenceSpec`, requiring every transcript in the
+support of `μ` to arise from a valid relational execution of `D` from `s₀`. On deterministic
+specifications (`[D.HasStepFn f]`), this contract reduces to concentration on the unique canonical
+output trace `(D.run s₀ ops).2`.
 
 ## Main definitions
 
@@ -36,21 +36,22 @@ arise from a valid relational execution of `D` from `s₀`. On deterministic spe
   operation sequence and an input-output transcript.
 * `Cslib.DataStructure.ObliviousSequenceSpec.weaken`: monotonicity combinator strengthening
   `ValidOpSeq` and weakening `Contract`.
-* `Cslib.Stateful.Spec.toObliviousSequenceSpec`, `Cslib.DataStructure.ObliviousSequenceSpec.ofFn`:
-  canonical embeddings of relational and deterministic state-transition specifications into
-  `ObliviousSequenceSpec`.
+* `Cslib.DataStructure.StateTransitionSpec.toObliviousSequenceSpec`,
+  `Cslib.DataStructure.ObliviousSequenceSpec.ofFn`: canonical embeddings of relational and
+  deterministic state-transition specifications into `ObliviousSequenceSpec`.
 
 ## Main results
 
 * `Cslib.DataStructure.ObliviousSequenceSpec.contract_weaken`: monotonicity of
   `ObliviousSequenceSpec.weaken`.
-* `Cslib.Stateful.Spec.toObliviousSequenceSpec_contract_matches`: every transcript in the support of
-  a distribution satisfying `(D.toObliviousSequenceSpec s₀).Contract ops` matches `ops`.
-* `Cslib.Stateful.Spec.toObliviousSequenceSpec_contract_iff_of_hasStepFn`: on a deterministic
-  specification, `(D.toObliviousSequenceSpec s₀).Contract ops μ` holds under `D.ValidHistory s₀ ops`
-  if and only if every `out ∈ μ.support` equals `(D.run s₀ ops).2`.
-* `Cslib.Stateful.Spec.toObliviousSequenceSpec_contract_pure_run`: the point mass
-  `PMF.pure (D.run s₀ ops).2` satisfies `(D.toObliviousSequenceSpec s₀).Contract ops`.
+* `Cslib.DataStructure.StateTransitionSpec.toObliviousSequenceSpec_contract_matches`: every
+  transcript in the support of a distribution satisfying
+  `(D.toObliviousSequenceSpec s₀).Contract ops` matches `ops`.
+* `Cslib.DataStructure.StateTransitionSpec.toObliviousSequenceSpec_contract_iff_of_hasStepFn`: on a
+  deterministic specification, `(D.toObliviousSequenceSpec s₀).Contract ops μ` holds under
+  `D.ValidHistory s₀ ops` if and only if every `out ∈ μ.support` equals `(D.run s₀ ops).2`.
+* `Cslib.DataStructure.StateTransitionSpec.toObliviousSequenceSpec_contract_pure_run`: the point
+  mass `PMF.pure (D.run s₀ ops).2` satisfies `(D.toObliviousSequenceSpec s₀).Contract ops`.
 -/
 
 public section
@@ -161,16 +162,16 @@ end ObliviousSequenceSpec
 
 end Cslib.DataStructure
 
-/-! ## Canonical embedding of `Stateful.Spec` into `ObliviousSequenceSpec` -/
+/-! ## Canonical embedding of `StateTransitionSpec` into `ObliviousSequenceSpec` -/
 
-namespace Cslib.Stateful.Spec
+namespace Cslib.DataStructure.StateTransitionSpec
 
-/-- Embed a relational state-transition specification `D : Stateful.Spec` at initial state
+/-- Embed a relational state-transition specification `D : StateTransitionSpec` at initial state
 `s₀ : D.State` into `DataStructure.ObliviousSequenceSpec`:
 * `ValidOpSeq` is demonic operation-sequence admissibility `D.ValidOpSeq s₀`;
 * `Contract ops μ` requires every transcript `out ∈ μ.support` to be the label sequence of some
   valid relational execution transcript `tr : D.Transcript` with `tr.ops = ops`. -/
-abbrev toObliviousSequenceSpec (D : Spec.{u, v, w}) (s₀ : D.State) :
+abbrev toObliviousSequenceSpec (D : StateTransitionSpec.{u, v, w}) (s₀ : D.State) :
     DataStructure.ObliviousSequenceSpec.{v, w} where
   Op := D.Op
   Result := D.Result
@@ -180,19 +181,19 @@ abbrev toObliviousSequenceSpec (D : Spec.{u, v, w}) (s₀ : D.State) :
       tr.ops = ops ∧ tr.labels = out ∧ D.ValidTranscript s₀ tr s_fin
 
 @[simp]
-theorem toObliviousSequenceSpec_op (D : Spec.{u, v, w}) (s₀ : D.State) :
+theorem toObliviousSequenceSpec_op (D : StateTransitionSpec.{u, v, w}) (s₀ : D.State) :
     (D.toObliviousSequenceSpec s₀).Op = D.Op := rfl
 
 @[simp]
-theorem toObliviousSequenceSpec_result (D : Spec.{u, v, w}) (s₀ : D.State) :
+theorem toObliviousSequenceSpec_result (D : StateTransitionSpec.{u, v, w}) (s₀ : D.State) :
     (D.toObliviousSequenceSpec s₀).Result = D.Result := rfl
 
 @[simp]
-theorem toObliviousSequenceSpec_validOpSeq (D : Spec.{u, v, w}) (s₀ : D.State)
+theorem toObliviousSequenceSpec_validOpSeq (D : StateTransitionSpec.{u, v, w}) (s₀ : D.State)
     (ops : List D.Op) :
     (D.toObliviousSequenceSpec s₀).ValidOpSeq ops ↔ D.ValidOpSeq s₀ ops := Iff.rfl
 
-theorem toObliviousSequenceSpec_contract (D : Spec.{u, v, w}) (s₀ : D.State)
+theorem toObliviousSequenceSpec_contract (D : StateTransitionSpec.{u, v, w}) (s₀ : D.State)
     (ops : List D.Op) (μ : PMF (List (Sigma D.Result))) :
     (D.toObliviousSequenceSpec s₀).Contract ops μ ↔
       ∀ out ∈ μ.support, ∃ (tr : D.Transcript) (s_fin : D.State),
@@ -200,7 +201,7 @@ theorem toObliviousSequenceSpec_contract (D : Spec.{u, v, w}) (s₀ : D.State)
 
 /-- Every transcript in the support of a distribution satisfying
 `(D.toObliviousSequenceSpec s₀).Contract ops μ` matches `ops`. -/
-theorem toObliviousSequenceSpec_contract_matches {D : Spec.{u, v, w}} {s₀ : D.State}
+theorem toObliviousSequenceSpec_contract_matches {D : StateTransitionSpec.{u, v, w}} {s₀ : D.State}
     {ops : List D.Op} {μ : PMF (List (Sigma D.Result))}
     (h : (D.toObliviousSequenceSpec s₀).Contract ops μ) :
     ∀ out ∈ μ.support, DataStructure.TranscriptMatches ops out := by
@@ -211,7 +212,7 @@ theorem toObliviousSequenceSpec_contract_matches {D : Spec.{u, v, w}} {s₀ : D.
 /-- On a deterministic specification (`[D.HasStepFn f]`) and an admissible operation sequence
 `D.ValidHistory s₀ ops`, `(D.toObliviousSequenceSpec s₀).Contract ops μ` holds if and only if
 every output trace in `μ.support` equals `(D.run s₀ ops).2`. -/
-theorem toObliviousSequenceSpec_contract_iff_of_hasStepFn (D : Spec.{u, v, w})
+theorem toObliviousSequenceSpec_contract_iff_of_hasStepFn (D : StateTransitionSpec.{u, v, w})
     {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
     (s₀ : D.State) {ops : List D.Op} (hv : D.ValidHistory s₀ ops)
     (μ : PMF (List (Sigma D.Result))) :
@@ -229,7 +230,7 @@ theorem toObliviousSequenceSpec_contract_iff_of_hasStepFn (D : Spec.{u, v, w})
 
 /-- The point mass `PMF.pure (D.run s₀ ops).2` satisfies
 `(D.toObliviousSequenceSpec s₀).Contract ops` whenever `D.ValidHistory s₀ ops`. -/
-theorem toObliviousSequenceSpec_contract_pure_run (D : Spec.{u, v, w})
+theorem toObliviousSequenceSpec_contract_pure_run (D : StateTransitionSpec.{u, v, w})
     {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
     (s₀ : D.State) {ops : List D.Op} (hv : D.ValidHistory s₀ ops) :
     (D.toObliviousSequenceSpec s₀).Contract ops (PMF.pure (D.run s₀ ops).2) := by
@@ -237,7 +238,7 @@ theorem toObliviousSequenceSpec_contract_pure_run (D : Spec.{u, v, w})
   intro out hout
   exact (PMF.mem_support_pure_iff _ _).mp hout
 
-end Cslib.Stateful.Spec
+end Cslib.DataStructure.StateTransitionSpec
 
 namespace Cslib.DataStructure.ObliviousSequenceSpec
 
@@ -249,6 +250,6 @@ abbrev ofFn {State : Type u} {Op : Type v} {Result : Op → Type w}
     (s₀ : State)
     (valid : State → Op → Prop := fun _ _ => True) :
     ObliviousSequenceSpec.{v, w} :=
-  (Stateful.Spec.ofFn stepFn valid).toObliviousSequenceSpec s₀
+  (StateTransitionSpec.ofFn stepFn valid).toObliviousSequenceSpec s₀
 
 end Cslib.DataStructure.ObliviousSequenceSpec

@@ -32,9 +32,9 @@ def client : (spec 2 8).Client (List ℕ) :=
   .liftBind (.sum 4) fun b => .pure [a, b]
 
 /-- The generic adaptive theorem supplies the two answers, final array and cumulative bound. -/
-example : ∃ y traces, Stateful.Executes ((program 2 8).ExecOp 8) client
+example : ∃ y traces, DataStructure.Executes ((program 2 8).ExecOp 8) client
       (zeroData 2 10) [5, 12] y traces ∧ Rep 2 10 8 [0, 5, 0, 7] y ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces ≤ 204 :=
+      DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤ 204 :=
   client_spec (by decide) client (rep_zeroData (by decide)) (by
     change (1 < 4 ∧ Fits 8 5) ∧ (3 < 4 ∧ Fits 8 12) ∧ 2 ≤ 4 ∧ 4 ≤ 4 ∧ True
     decide)
@@ -45,9 +45,9 @@ def adaptive : (spec 2 8).Client ℕ :=
   .liftBind (.add 0 (total + 1)) fun _ =>
   .liftBind (.sum 1) fun first => .pure first
 
-example : ∃ y traces, Stateful.Executes ((program 2 8).ExecOp 8) adaptive
+example : ∃ y traces, DataStructure.Executes ((program 2 8).ExecOp 8) adaptive
       (zeroData 2 10) 1 y traces ∧ Rep 2 10 8 [1, 0, 0, 0] y ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces ≤ 153 :=
+      DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤ 153 :=
   client_spec (b := 10) (by decide) adaptive (rep_zeroData (by decide)) (by
     change 4 ≤ 4 ∧ (0 < 4 ∧ Fits 8 1) ∧ 1 ≤ 4 ∧ True
     decide)

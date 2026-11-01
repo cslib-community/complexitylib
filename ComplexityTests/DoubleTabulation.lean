@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.CuckooHashing
+public import Complexity.DataStructure.Dictionary.CuckooHashing
 public import Complexity.Foundations.Data.BitString.Sum
 public import Complexity.Foundations.Data.Nat.Power
 public import Complexity.Foundations.Data.Nat.SummationByParts
@@ -18,7 +18,8 @@ public import Complexity.Probability.KWiseIndependent.DoubleTabulation
 # Tests for Double Tabulation (`[Thorup2013]`) and Regime-Switched Cuckoo Hashing
 
 Non-vacuity and decidability tests for `Complexity.Probability.KWiseIndependent.DoubleTabulation`
-and the high-probability conditioning extensions in `Complexity.Algorithms.Lean.CuckooHashing`:
+and the high-probability conditioning extensions in
+`Complexity.DataStructure.Dictionary.CuckooHashing`:
 * Concrete `decide` checks showing `charDigits 2 1 (U := 4) : Fin 4 → Fin 2 → Fin 2` is `3`-unique
   (`IsKUnique 3`) on `{0, 1}²` by pigeonhole, but fails `4`-uniqueness (`¬ IsKUnique 4`) on the full
   `2 × 2` combinatorial rectangle `{(0, 0), (0, 1), (1, 0), (1, 1)}`.
@@ -34,8 +35,8 @@ public section
 namespace ComplexityTests.DoubleTabulation
 
 open Cslib.Probability
-open Cslib.Algorithms.Lean.CuckooHashing
-open Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing
+open Cslib.DataStructure.Dictionary.CuckooHashing
+open Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing
 
 /-- Every subset of `{0, 1}²` of size at most `3` has a unique coordinate value (`3`-uniqueness). -/
 example : IsKUnique 3 (charDigits 2 1 (U := 4)) := by decide

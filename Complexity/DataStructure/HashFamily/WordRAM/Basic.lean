@@ -64,7 +64,7 @@ Every `H : Impl` canonically induces an `ObliviousSequenceImpl` certificate over
 
 public section
 
-open Cslib.WordRAM Cslib.WordRAM.Randomized Cslib.DataStructure.WordRAM.Randomized Cslib.Probability
+open Cslib.WordRAM Cslib.DataStructure.WordRAM.Randomized Cslib.Probability
 open scoped ENNReal
 
 namespace Cslib.DataStructure.HashFamily.WordRAM

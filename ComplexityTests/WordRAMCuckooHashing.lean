@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Algorithms.WordRAM.Dictionary.CuckooHashing
+public import Complexity.DataStructure.Dictionary.WordRAM.CuckooHashing
 
 /-!
 # Pagh–Rodler Cuckoo Hashing on the Randomized Word RAM — Test Suite
@@ -16,9 +16,10 @@ public import Complexity.Algorithms.WordRAM.Dictionary.CuckooHashing
 Verifies the API surface, multi-step eviction replay lemmas, unconditional
 `isCuckooHashFamily_tableBits` (`C_walk = 3`, `C_reh = 4` for all `n_max : ℕ` whenever
 `U ≤ max n_max 4 ^ c_exp`), $O_{c_{\exp}}(1)$ operation charges (`expectedOpCharge c_exp`),
-$O_{c_{\exp}}(n_{\max} + 1)$ space (`space_le`), `SubroutineDS`, and end-to-end expected-amortized
+$O_{c_{\exp}}(n_{\max} + 1)$ space (`space_le`), `StateTransitionImpl`, and end-to-end
+expected-amortized
 execution (`cuckoo_seq_expected_amortized`) of
-`Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing`.
+`Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing`.
 -/
 
 @[expose] public section
@@ -26,8 +27,8 @@ execution (`cuckoo_seq_expected_amortized`) of
 namespace ComplexityTests.WordRAMCuckooHashing
 
 open Cslib Cslib.WordRAM Cslib.WordRAM.Randomized
-open Cslib.Algorithms.Lean
-open Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing
+open Cslib.DataStructure Cslib.DataStructure.Dictionary Cslib.DataStructure.WordRAM
+open Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing
 open scoped ENNReal
 
 /-! ## 1. Parameter scale, unconditional hash-family certificate, and eviction chain checks -/
@@ -72,7 +73,8 @@ example :
           some ⟨⟨3, by decide⟩, 2⟩, none) :=
   rfl
 
-/-! ## 2. Concrete non-vacuous `SubroutineDS` instantiation (`w = 64`, `c_exp = 2`, `n_max = 10`) -/
+/-! ## 2. Concrete non-vacuous `StateTransitionImpl` instantiation (`w = 64`, `c_exp = 2`,
+`n_max = 10`) -/
 
 /-- Concrete unconditional `IsCuckooHashFamily` instance at `c_exp = 2`, `n_max = 10`, `U = 16`
 with `C_walk = 3`, `C_reh = 4`. -/
@@ -90,22 +92,23 @@ theorem hfit_end_64_2_10 : Fits 64 (0 + space 2 10) := by
   have hfac : spaceFactor 2 * (10 + 1) < 2 ^ 64 := by decide
   exact lt_of_le_of_lt (by omega) hfac
 
-/-- Concrete `Basis.exact` randomized `SubroutineDS` certificate for cuckoo hashing at `w = 64`,
+/-- Concrete `Basis.exact` randomized `StateTransitionImpl` certificate for cuckoo hashing at
+`w = 64`,
 `base = 0`, `n_max = 10`, `U = 16`, `V = 256` for any exponent `c_exp` with `16 ≤ 10 ^ c_exp`
 (e.g. `c_exp = 2`). -/
-noncomputable def instSubroutineDS (c_exp : ℕ) (hU : 16 ≤ max 10 4 ^ c_exp)
+noncomputable def instStateTransitionImpl (c_exp : ℕ) (hU : 16 ≤ max 10 4 ^ c_exp)
     (hfit_end : Fits 64 (0 + space c_exp 10)) :
-    Randomized.SubroutineDS (cuckooCode c_exp 10) (Dictionary.spec 16 256 10)
+    Randomized.StateTransitionImpl (cuckooCode c_exp 10) (Dictionary.spec 16 256 10)
       64 0 ![10, 16] (Dictionary.empty 16) :=
-  subroutineDS 64 0 c_exp 10 16 256 hU
+  impl 64 0 c_exp 10 16 256 hU
     hw_64_16_10 hfit_end (by decide) (by decide) (by decide)
 
-/-- Concrete `Basis.standard` randomized `SubroutineDS` certificate for cuckoo hashing at
+/-- Concrete `Basis.standard` randomized `StateTransitionImpl` certificate for cuckoo hashing at
 `c_exp = 2`, `n_max = 10`, `U = 16`, `V = 256`. -/
-noncomputable def instSubroutineDSStandard :
-    Randomized.SubroutineDS (cuckooCode 2 10).toStandard (Dictionary.spec 16 256 10)
+noncomputable def instStateTransitionImplStandard :
+    Randomized.StateTransitionImpl (cuckooCode 2 10).toStandard (Dictionary.spec 16 256 10)
       64 0 ![10, 16] (Dictionary.empty 16) :=
-  subroutineDSStandard 64 0 2 10 16 256 (by decide)
+  implStandard 64 0 2 10 16 256 (by decide)
     hw_64_16_10 hfit_end_64_2_10 (by decide) (by decide) (by decide)
 
 /-- Sample valid operation sequence exercising multi-key insertion (`⟨3, _⟩` and `⟨11, _⟩`),
@@ -132,7 +135,7 @@ parameters `(n_max, U) = (10, 16)` in registers `3` and `4`. -/
 theorem inst_cuckoo_seq_expected_amortized (c_exp : ℕ)
     (hU : 16 ≤ max 10 4 ^ c_exp) (hfit_end : Fits 64 (0 + space c_exp 10)) :
     let x₀ : Data 19 := ((Data.init [] : Data 19).set 3 10).set 4 16
-    let C := instSubroutineDS c_exp hU hfit_end
+    let C := instStateTransitionImpl c_exp hU hfit_end
     ∃ (ν₀ ν_final : PMF (Seed c_exp 10 16 (tableBits 10) × Data 19)) (T_ops : ℝ≥0∞),
       ExecCodeDist 64 (cuckooCode c_exp 10).initFresh x₀ (ν₀.map Prod.snd) C.initTime ∧
       C.ExecStepsOfFn (Dictionary.empty 16) sampleOps ν₀ ν_final T_ops ∧

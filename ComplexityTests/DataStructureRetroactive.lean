@@ -23,24 +23,24 @@ machine time.
 
 namespace ComplexityTests.DataStructureRetroactive
 
-open Cslib.Stateful Cslib.Algorithms.Lean
+open Cslib.DataStructure Cslib.Algorithms.Lean
 
 /-- `true` increments; `false` decrements a positive counter. -/
-abbrev counter : Spec :=
-  Spec.ofFn (State := Nat) (Op := Bool) (Result := fun _ => Unit)
+abbrev counter : StateTransitionSpec :=
+  StateTransitionSpec.ofFn (State := Nat) (Op := Bool) (Result := fun _ => Unit)
     (fun n op => (if op then n + 1 else n - 1, ()))
     (fun n op => if op then True else 0 < n)
 
 /-- The primitive interface manages the operation timeline and the counter. -/
-abbrev lower : Spec := Retroactive.backend counter 0
+abbrev lower : StateTransitionSpec := Retroactive.backend counter 0
 
 /-- Direct mathematical execution with the actual primitive operation as its event. -/
 def execution : Execution lower lower.State lower.Op :=
   fun c o a c' event => (c', a) = lower.stepFn c o ∧ event = o
 
 /-- A nonempty realization of every primitive contract. -/
-def realization : Realization lower execution :=
-  Realization.ofFn Eq
+def impl : StateTransitionImpl lower execution :=
+  StateTransitionImpl.ofFn Eq
     (fun o hr _ => by
       subst hr
       exact ⟨(lower.stepFn _ o).2, (lower.stepFn _ o).1, o, rfl, rfl⟩)
@@ -49,7 +49,7 @@ def realization : Realization lower execution :=
       exact ⟨congrArg Prod.snd he.1, (congrArg Prod.fst he.1).symm⟩)
 
 /-- The trace records one event per primitive call. -/
-theorem primitive_calls : Bound realization (fun _ => 1)
+theorem primitive_calls : Bound impl (fun _ => 1)
     (Retroactive.primitiveCharge counter 0 (fun _ _ => 1) 1 (fun _ _ => 1)) :=
   fun {_ _ o _ _ _} _ _ _ => by cases o <;> exact Nat.le_refl 1
 
@@ -67,7 +67,7 @@ example : (Retroactive.spec counter 0).valid [true, false] (.erase 1) := by
   simp [TimelineEdit.apply, TimelineEdit.Valid, counter]
 
 /-- The composed realization inherits correctness without reproving counter semantics. -/
-def rebuilt := (Retroactive.implementation counter 0).realize realization
+def rebuilt := (Retroactive.implementation counter 0).realize impl
 
 /-- This edit client creates a valid increment/decrement timeline and then removes the decrement. -/
 def edits : (Retroactive.spec counter 0).Client Unit :=
@@ -96,7 +96,7 @@ theorem edits_bound {c' : lower.State} {traces : List lower.Op}
   obtain ⟨chunks, hc, ht⟩ := link_exec_decompose _ _ he
   have B : Bound rebuilt (total (fun _ : lower.Op => 1))
       (fun os e => 1 + 1 + counter.totalCost (fun _ _ => 1) 0 (e.apply os)) :=
-    Retroactive.realized_bound counter 0 realization (fun _ => 1)
+    Retroactive.realized_bound counter 0 impl (fun _ => 1)
       (fun _ _ => 1) 1 (fun _ _ => 1) primitive_calls
   have hb := B.client (p := edits) (s := [])
     ⟨([], 0), ⟨rfl, rfl⟩, rfl⟩ (by

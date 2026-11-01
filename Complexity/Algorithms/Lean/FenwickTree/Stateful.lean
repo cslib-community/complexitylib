@@ -8,12 +8,13 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.Lean.FenwickTree.Basic
-public import Complexity.Foundations.Semantics.Stateful.Resource
+public import Complexity.DataStructure.StateTransition.Resource
 
 /-!
-# Stateful Dynamic Prefix-Sum Realization by Fenwick Trees
+# Stateful Dynamic Prefix-Sum Implementation by Fenwick Trees
 
-This module defines a representation-independent `Cslib.Stateful.Spec` for fixed-length dynamic
+This module defines a representation-independent `Cslib.DataStructure.StateTransitionSpec` for
+fixed-length dynamic
 prefix-sum sequences (`add`, `prefixSum`) over any `[AddCommMonoid α]` and realizes it by
 `Cslib.Algorithms.Lean.FenwickTree` with per-operation node-visit budget
 `Nat.clog 2 (s.length + 1)` (`0` when `s = []`, `⌊log₂ s.length⌋ + 1` when `s ≠ []`).
@@ -31,7 +32,8 @@ history starting from `s` simplifies to `k * Nat.clog 2 (s.length + 1)` (`totalC
   in `Basic.lean`), pure client continuations, and functional `Array.modify` copying if a tree
   value is shared non-linearly rather than uniquely owned (for example, `step` binds
   `let m := addM t pos δ` on `t`) are uncharged.
-* **Universe level:** `Cslib.Stateful.Realization` places the concrete state `FenwickTree α` and
+* **Universe level:** `Cslib.DataStructure.StateTransitionImpl` places the concrete state
+  `FenwickTree α` and
   cost trace `ℕ : Type` in the same universe (`Type`), whereas `Basic.lean` is universe-polymorphic
   over `{α : Type*}`.
 
@@ -41,14 +43,16 @@ history starting from `s` simplifies to `k * Nat.clog 2 (s.length + 1)` (`totalC
   operations and `List α` specification.
 * `Cslib.Algorithms.Lean.FenwickTree.step`, `Exec`, `run`: concrete `TimeM`-backed execution step,
   native execution relation, and executable client interpreter.
-* `Cslib.Algorithms.Lean.FenwickTree.realization`: `Cslib.Stateful.Realization` of `spec α` using
+* `Cslib.Algorithms.Lean.FenwickTree.impl`: `Cslib.DataStructure.StateTransitionImpl` of `spec α`
+  using
   `Valid` directly as the representation invariant (`rep s t := Valid t s`).
 * `Cslib.Algorithms.Lean.FenwickTree.charge`: representation-independent logarithmic node-visit
   budget `Nat.clog 2 (s.length + 1)`.
 
 ## Main results
 
-* `Cslib.Algorithms.Lean.FenwickTree.stepBound`: logarithmic `Cslib.Stateful.Bound` certificate.
+* `Cslib.Algorithms.Lean.FenwickTree.stepBound`: logarithmic `Cslib.DataStructure.Bound`
+  certificate.
 * `Cslib.Algorithms.Lean.FenwickTree.totalCost_charge`: for any history `os`,
   `(spec α).totalCost charge s os = os.length * Nat.clog 2 (s.length + 1)`.
 * `Cslib.Algorithms.Lean.FenwickTree.realized_client`, `run_correct`: adaptive dynamic prefix-sum
@@ -63,7 +67,7 @@ public section
 
 namespace Cslib.Algorithms.Lean.FenwickTree
 
-open Cslib.Stateful
+open Cslib.DataStructure
 
 /-- Dynamic prefix-sum operations over `α`, independent of storage representation. -/
 inductive Op (α : Type) where
@@ -86,8 +90,8 @@ abbrev Op.Result (α : Type) : Op α → Type
 
 /-- Mathematical specification of dynamic prefix sums on `List α`. All operations are admissible:
 out-of-bounds `add` is a no-op and `prefixSum len` sums `s.take len`. -/
-abbrev spec (α : Type) [AddCommMonoid α] : Spec :=
-  Spec.ofFn (State := List α) (Op := Op α) (Result := Op.Result α) specStep
+abbrev spec (α : Type) [AddCommMonoid α] : StateTransitionSpec :=
+  StateTransitionSpec.ofFn (State := List α) (Op := Op α) (Result := Op.Result α) specStep
 
 variable {α : Type} [AddCommMonoid α]
 
@@ -115,8 +119,8 @@ exact `TimeM` node-visit count. -/
 
 /-- Semantic realization of `spec α` by `FenwickTree α`, using `Valid t s` directly as the
 representation invariant. -/
-@[expose] def realization : Realization (spec α) (Exec (α := α)) :=
-  Realization.ofFn
+@[expose] def impl : StateTransitionImpl (spec α) (Exec (α := α)) :=
+  StateTransitionImpl.ofFn
     (rep := fun s t => Valid t s)
     (total := fun {_ t} o _ _ =>
       match h : step t o with
@@ -132,8 +136,8 @@ representation invariant. -/
         exact ⟨ret_prefixSumM_eq hr len, hr⟩)
 
 @[simp]
-theorem realization_rep (s : List α) (t : FenwickTree α) :
-    (realization (α := α)).rep s t = Valid t s := rfl
+theorem impl_rep (s : List α) (t : FenwickTree α) :
+    (impl (α := α)).rep s t = Valid t s := rfl
 
 /-- Representation-independent per-operation node-visit budget `⌈log₂ (|s| + 1)⌉`
 (`0` when `s = []`, `⌊log₂ |s|⌋ + 1` when `s ≠ []`). -/
@@ -145,13 +149,13 @@ equals `os.length * Nat.clog 2 (s.length + 1)`. -/
 theorem totalCost_charge (s : List α) (os : List (Op α)) :
     (spec α).totalCost (charge (α := α)) s os = os.length * Nat.clog 2 (s.length + 1) := by
   induction os generalizing s with
-  | nil => simp only [Spec.totalCost_nil, List.length_nil, Nat.zero_mul]
+  | nil => simp only [StateTransitionSpec.totalCost_nil, List.length_nil, Nat.zero_mul]
   | cons o os ih =>
-    rw [Spec.totalCost_cons, ih ((spec α).stepFn s o).1, length_spec_step]
+    rw [StateTransitionSpec.totalCost_cons, ih ((spec α).stepFn s o).1, length_spec_step]
     simp only [charge, List.length_cons, Nat.add_mul, Nat.one_mul, Nat.add_comm]
 
-/-- Logarithmic per-operation node-visit certificate for `FenwickTree.realization`. -/
-theorem stepBound : Bound (realization (α := α)) id charge := by
+/-- Logarithmic per-operation node-visit certificate for `FenwickTree.impl`. -/
+theorem stepBound : Bound (impl (α := α)) id charge := by
   intro s t o a t' c hr _ he
   have hsz : t.size = s.length := hr.size_eq
   cases o with
@@ -201,7 +205,7 @@ theorem run_correct {β : Type} (p : (spec α).Client β)
   have hv := (spec α).validHistory_of_forall_valid (fun _ _ => trivial)
     s ((spec α).runClient s p).2.2
   have hexec := run_exec p t
-  have hc := realization.correct_client hr hv hexec
+  have hc := impl.correct_client hr hv hexec
   have hb := Bound.client stepBound hr hv hexec
   rw [totalCost_charge] at hb
   exact ⟨hc.1, hc.2, hb⟩

@@ -8,14 +8,14 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Foundations.Semantics.Stateful.Basic
+public import Complexity.DataStructure.StateTransition
 public import Mathlib.Data.Fintype.Card
 
 /-!
 # Representation-independent disjoint-set specification
 
 This module specifies a dynamic partition (disjoint-set / union-find abstract state machine) over
-a finite universe `Fin n` in the `Cslib.Stateful` framework.
+a finite universe `Fin n` in the `Cslib.DataStructure` framework.
 
 Mathematical states are equivalence relations `Partition n` with decidable Boolean membership,
 starting from the discrete partition `Partition.discrete n` of `n` singleton classes. The
@@ -42,7 +42,7 @@ issued operation sequence itself adapts to the current partition.
   `Partition.numComponents`, `Partition.merge`: setoid view, singleton partition, equivalence
   classes, quotient component set, component count, and binary class merge.
 * `Cslib.Algorithms.Lean.DisjointSet.Op`, `Cslib.Algorithms.Lean.DisjointSet.spec`: typed
-  disjoint-set operations and `Cslib.Stateful.Spec`.
+  disjoint-set operations and `Cslib.DataStructure.StateTransitionSpec`.
 * `same`, `union`, `getNumComponents`, `connectIfNew`, `spanningForestEdges`: primitive client
   operations, history-adaptive conditional union, and the single-pass spanning-forest edge filter.
 
@@ -70,7 +70,7 @@ public section
 
 namespace Cslib.Algorithms.Lean.DisjointSet
 
-open Cslib.Stateful
+open Cslib.DataStructure
 
 /-- A decidable partition (equivalence relation) on `Fin n`. -/
 structure Partition (n : ℕ) where
@@ -426,8 +426,8 @@ abbrev Op.Result {n : ℕ} : Op n → Type
   | .numComponents => ℕ
 
 /-- Total stateful specification of a disjoint-set structure on `Fin n`. -/
-abbrev spec (n : ℕ) : Spec :=
-  Spec.ofFn (State := Partition n) (Op := Op n) (Result := Op.Result)
+abbrev spec (n : ℕ) : StateTransitionSpec :=
+  StateTransitionSpec.ofFn (State := Partition n) (Op := Op n) (Result := Op.Result)
     fun p => fun
       | .same x y => (p, p.rel x y)
       | .union x y => (p.merge x y, !p.rel x y)
@@ -465,8 +465,8 @@ theorem runClient_connectIfNew {n : ℕ} (x y : Fin n) (p : Partition n) :
         (true, p.merge x y, [.same x y, .union x y]) := by
   unfold connectIfNew same union
   cases h : p.rel x y
-  · simp [Spec.runClient_lift_bind', Spec.runClient_lift, spec, h]
-  · simp [Spec.runClient_lift_bind', spec, h]
+  · simp [StateTransitionSpec.runClient_lift_bind', StateTransitionSpec.runClient_lift, spec, h]
+  · simp [StateTransitionSpec.runClient_lift_bind', spec, h]
 
 /-- Single-pass spanning-forest client (the cycle-filtering loop shared with Kruskal's algorithm)
 parameterized over an arbitrary edge type `E` with endpoint map `endpts : E → Fin n × Fin n`: scan
@@ -507,14 +507,15 @@ theorem runClient_spanningForestEdges_history {n : ℕ} {E : Type} (endpts : E �
   induction es generalizing p with
   | nil => rfl
   | cons e es ih =>
-    simp only [spanningForestEdges, union, Spec.runClient_lift_bind', spec, List.map_cons]
+    simp only [spanningForestEdges, union, StateTransitionSpec.runClient_lift_bind', spec,
+      List.map_cons]
     change Op.union (endpts e).1 (endpts e).2 ::
         ((spec n).runClient (p.merge (endpts e).1 (endpts e).2)
           ((spanningForestEdges endpts es).bind fun rest =>
             pure (if !p.rel (endpts e).1 (endpts e).2 then e :: rest else rest))).2.2 =
       Op.union (endpts e).1 (endpts e).2 ::
         List.map (fun e => Op.union (endpts e).1 (endpts e).2) es
-    rw [Spec.runClient_bind]
+    rw [StateTransitionSpec.runClient_bind]
     simp [ih (p.merge (endpts e).1 (endpts e).2)]
 
 /-- `spanningForestEdges endpts es` issues `es.length` operations. -/

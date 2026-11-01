@@ -31,7 +31,7 @@ namespace ComplexityTests.DisjointSet
 
 open Cslib.Algorithms.Lean.DisjointSet
 open Cslib.Algorithms.Lean.DisjointSet.UnionFind
-open Cslib.Stateful
+open Cslib.DataStructure
 
 -- Empty and singleton universes are total and preserve component counts.
 example :

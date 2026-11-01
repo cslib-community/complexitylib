@@ -43,13 +43,11 @@ namespace ComplexityAbstracts.HashFamiliesBridge
 open scoped ENNReal BigOperators
 open Cslib
 open Cslib.WordRAM
-open Cslib.WordRAM.Randomized
 open Cslib.Probability
 open Cslib.DataStructure
 open Cslib.DataStructure.WordRAM.Randomized
 open Cslib.DataStructure.HashFamily.WordRAM
 open Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation
-open Cslib.Algorithms.WordRAM.Hashing
 open ComplexityAbstracts.RandomizedWordRAMBridge
 
 /-! ## Part 1: Resource functions and failure-probability bounds at `c_exp = 4` -/
