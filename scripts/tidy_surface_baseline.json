@@ -42,7 +42,7 @@
  "Complexity/Computability/Machines/Turing/MultiTape/Halting/Computable.lean": 4,
  "Complexity/Computability/Machines/Turing/MultiTape/Halting/Rice.lean": 2,
  "Complexity/Computability/Machines/Turing/MultiTape/Probabilistic/QueryTake.lean": 2,
- "Complexity/Computability/Machines/Turing/MultiTape/Universal/Compose.lean": 7,
+ "Complexity/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/Composition/SmallSpace.lean": 7,
  "Complexity/Computability/Machines/Turing/MultiTape/Universal/InPlace.lean": 9,
  "Complexity/Computability/Machines/Turing/MultiTape/Universal/Machine.lean": 2,
  "Complexity/Computability/Machines/Turing/MultiTape/Universal/PolyTime.lean": 4,

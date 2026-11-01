@@ -8,9 +8,13 @@ module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
 -- vendored: `spaceUsed` is the space of a run path since cslib #1133 and #1122; `try` steps
 -- that the unused-tactic linter flags are dropped
+-- vendored: this is `Universal/Compose.lean` of that branch, moved out of `Universal` at the branch
+-- author's request (#2179) so that composition depends on the universal machine; `eBit` is in
+-- `Universal/Bit.lean` and two halting lemmas are in `HaltsAt.lean`
 
 public import Complexity.Computability.Machines.Turing.MultiTape.HaltsAt
 public import Complexity.Computability.Machines.Turing.MultiTape.TapeLemmas
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bit
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.InPlace
 import Mathlib.Basic.Countable.Defs
 import Mathlib.Data.Nat.Size
@@ -84,10 +88,6 @@ lemma bitTr_run (q : Unit) (w : List Bool) : bitTr.run q w = ((), w) := by
 
 public lemma bitTr_events (w : List Bool) : bitTr.events w = w := by
   simp [Translator.events, bitTr_run]
-
-/-- Bits as symbols. -/
-@[expose] public def eBit : Bool ↪ ℕ :=
-  ⟨Bool.toNat, fun a b h => by cases a <;> cases b <;> simp_all⟩
 
 /-- A round of the countdown over bits: the countdown goes down, and at `1` the bit is read. -/
 @[expose] public def bitScan (p : ℕ × ℕ) (b : Bool) : ℕ × ℕ :=

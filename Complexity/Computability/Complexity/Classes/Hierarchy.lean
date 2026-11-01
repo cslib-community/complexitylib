@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Classes.P
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.ResourceBound
-public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Compose
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bit
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Run

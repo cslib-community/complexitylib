@@ -11,7 +11,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Spac
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
-import Complexity.Computability.Machines.Turing.MultiTape.Universal.Compose
+import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bound
 import Cslib.Computability.Machines.Turing.MultiTape.Combinators.AlmostConstant
 
 /-!

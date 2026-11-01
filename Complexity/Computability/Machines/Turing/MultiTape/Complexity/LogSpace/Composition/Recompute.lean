@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace
-import Complexity.Computability.Machines.Turing.MultiTape.Universal.Compose
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Composition.SmallSpace
 import Mathlib.Data.Nat.Size
 
 /-!
@@ -20,9 +20,9 @@ small space (`Turing.MultiTapeTM.ComputableInTimeAndSpace.comp_space`) recompute
 the intermediate value when the second machine reads it, and stores only the two machines' work
 tapes and counters of logarithmic length [Sipser, Section 8.5][Sipser2013].
 
-The composed machine simulates both machines through the universal machine, so this is the module
-of the logspace API that depends on `Complexity.Computability.Machines.Turing.MultiTape.Universal`.
-It also registers the composition rule of `fun_prop` for `ComputableInLogSpace`.
+The composed machine simulates both machines through the universal machine, so this directory,
+unlike the base logspace API, depends on `Universal`. This module also registers the composition
+rule of `fun_prop` for `ComputableInLogSpace`.
 
 ## Main results
 
