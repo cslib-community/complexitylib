@@ -2352,7 +2352,12 @@ public import Complexity.Computability.RAM.Squaring
 public import Complexity.Computability.Reduction.ManyOne
 public import Complexity.Computability.TreeEval.Ary.Basic
 public import Complexity.Computability.TreeEval.Ary.CookMertz
+public import Complexity.Computability.TreeEval.Ary.Iterative
+public import Complexity.Computability.TreeEval.Ary.IterativeBounds
+public import Complexity.Computability.TreeEval.Ary.IterativeCorrect
+public import Complexity.Computability.TreeEval.Ary.IterativePacked
 public import Complexity.Computability.TreeEval.Ary.Packed
+public import Complexity.Computability.TreeEval.Ary.Packed.Executable
 public import Complexity.Computability.TreeEval.Ary.Packed.GateInterpolation
 public import Complexity.Computability.TreeEval.Ary.Packed.GateInterpolationSpace
 public import Complexity.Computability.TreeEval.Ary.Packed.Interpolation
