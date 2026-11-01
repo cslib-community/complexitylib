@@ -46,6 +46,14 @@ not download the toolchain. On a miss, `.github/actions/install-lean` installs t
 retries and saves the entry before any Lake command runs, so it never contains the local artifact
 cache above.
 
+## Hosted-runner disk space
+
+Before restoring `.lake`, Lean CI runs `scripts/ci/prepare-runner.sh` to remove the unused
+Android and .NET SDKs and report available disk space. It runs only on GitHub-hosted Linux
+runners; local and self-hosted invocations skip cleanup. The Lean toolchain, compiler, Python,
+Node actions, repository and caches are retained. Cleanup is optional; all validation still runs
+if it fails.
+
 ## Merge-queue handoff
 
 After all required checks pass, a merge-group run packages its root `.lake/build` outputs in a
