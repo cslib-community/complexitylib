@@ -2874,6 +2874,7 @@ public import Complexity.DataStructure.HashFamily.WordRAM.KWise
 public import Complexity.DataStructure.HashFamily.WordRAM.MultiplyShift
 public import Complexity.DataStructure.HashFamily.WordRAM.Tabulation
 public import Complexity.DataStructure.Memory.Field
+public import Complexity.DataStructure.Memory.Record
 public import Complexity.DataStructure.Memory.Spec
 public import Complexity.DataStructure.ObliviousSequence
 public import Complexity.DataStructure.Online.Basic
@@ -2887,6 +2888,7 @@ public import Complexity.DataStructure.PrefixSums.WordRAM.Dynamic
 public import Complexity.DataStructure.PrefixSums.WordRAM.Query
 public import Complexity.DataStructure.PrefixSums.WordRAM.Tree
 public import Complexity.DataStructure.PrefixSums.WordRAM.Update
+public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Basic
 public import Complexity.DataStructure.PriorityQueue.Spec
 public import Complexity.DataStructure.PriorityQueue.WordRAM.Basic
 public import Complexity.DataStructure.PriorityQueue.WordRAM.BinaryHeap
