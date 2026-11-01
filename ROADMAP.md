@@ -183,7 +183,9 @@ index links to canonical definitions rather than keeping a second set.
   `(f + 1) * polylog f ≤ g`, with an absolute exponent (`Hierarchy/TimePolylog`). Composing it
   with the word-RAM simulations gives `RAMTIME T ⊂ RAMTIME T⁵` over `Basis.additive` for
   polynomial `T` (`Hierarchy/WordRAM`). For nondeterministic time, padding amplifies the coarse
-  lazy-diagonal hierarchy, which separates degree `d` from degree `6 * d + 14`. Remaining targets
+  lazy-diagonal hierarchy, which separates degree `d` from degree `6 * d + 14`; lazy
+  diagonalization also separates `NTIME (2 ^ (k * n))` from `NTIME (2 ^ ((8 * k + 16) * n))`, so
+  `NE ⊄ NTIME (2 ^ (k * n))`. Remaining targets
   include the textbook `f log f = o(g)` hierarchy, which needs the diagonal to clock the universal
   machine's own steps, noninteger polynomial degrees, a word-RAM hierarchy by direct
   diagonalization with a smaller gap, and sharp nondeterministic and alternating time
@@ -196,15 +198,26 @@ index links to canonical definitions rather than keeping a second set.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
   logspace reduction.
 - **Williams's `TIME[t] ⊆ SPACE[√(t log t)]`** ([#888]): implicit Tree Evaluation with the
-  fan-in-`d` space bound, subroutine calls for implicit gates and leaves, and padding of
-  non-perfect trees. For Cook–Mertz itself: malformed-input handling and the refined
-  `O(ℓ + H log(ℓ + 2))` parameter bound.
+  fan-in-`d` space bound and the native block-tree evaluator are developed in the stacked
+  work tracked by the issue. The full `DTIME_subset_DSPACE_sqrt` inclusion is proved in
+  `Complexity/Computability/Complexity/Classes/TimeSpace/Williams.lean` for arbitrary
+  injective input encodings and every `t(n) ≥ n`, without time constructibility. Its fixed
+  driver scans the original input, searches schedules and increases balanced time guesses.
+  The stacked development still needs final CI and integration; the broad issue remains
+  open until it lands. For Cook–Mertz itself: malformed-input handling
+  and the refined `O(ℓ + H log(ℓ + 2))` parameter bound.
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
   bounds for sublinear space, distinct from polynomial-space simulation.
 - **Deeper consequences of a Boolean-hierarchy collapse:** Kadin's sparse `S` with
   `coNP ⊆ NP^S`, and the collapse of `PH` into `P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`, which follows from
   results of Wagner and of Chang and Kadin, not from Kadin's 1988 argument (see his erratum).
   `BooleanHierarchy/Kadin.lean` proves only `PH = Σ₃ᴾ ∩ Π₃ᴾ`.
+
+- **Explicit universal SAT solver:** construct one fixed native algorithm, independent of an
+  assumed fast SAT algorithm, and prove its worst-case running time is polynomial if and only if
+  `P = NP`. Specify a total SAT decision procedure, including unsatisfiable inputs, separately
+  from verified witness search; account for dovetailing, certificate checking and universal
+  simulation overhead rather than relying only on the existing `SAT ∈ P ↔ P = NP` equivalence.
 
 ### Reducibilities and the structure of complete sets
 
@@ -370,9 +383,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `FineGrained.CircuitLowerBoundBudget` proves the counter's quantitative budget for three
   circuits of size `n √⌊log₂(n+2)⌋ / (12(A+1))` plus linear overhead; the integer arithmetic,
   polynomial-time computation of this size cap, and rescaling to coefficient
-  `1 / (24(A+1)d)` at framed lengths `d n` are checked. Still open are the exponential
-  nondeterministic time separation, uniform construction of the linear-size decoder and checker,
-  and their composition with the witness language into the full separation theorem.
+  `1 / (24(A+1)d)` at framed lengths `d n` are checked. The exponential nondeterministic time
+  hierarchy has landed. Still open are connecting its separating language to the framed witness
+  preparation, uniformly constructing the linear-size decoder and checker, and completing the
+  nondeterministic simulation for the full separation theorem.
 - Uniform and nonuniform NC, AC and TC, circuit-to-machine bridges, algorithm-to-lower-bound
   arguments, and barriers such as natural proofs and algebrization. NC simulation of unrestricted
   `TCⁱ` needs Muroga's threshold weight-bounding theorem.
@@ -486,6 +500,13 @@ each statement against the numbered result. Organize modules by subject, not cha
   containments and complete problems. Supply the
   [quantum adversary models](#concurrent-and-quantum-security) needed by cryptographic
   reductions.
+
+- **Shor's algorithm:** bounded-error polynomial-time integer factoring and discrete logarithms
+  in the native uniform quantum-circuit model, with explicit input/output encodings, success
+  probabilities and gate-approximation costs. Develop quantum period/order finding and phase
+  estimation, the quantum Fourier transform, reversible modular exponentiation, continued-fraction
+  recovery and the classical reductions; certify uniform circuit generation and polynomial gate
+  bounds alongside correctness.
 
 ### Differential privacy and adaptive data analysis
 
@@ -623,7 +644,8 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   assemble preparation, evaluation and halt accounting by hand.
 - **Priority-queue and shortest-path consolidation** ([#949]): lift operation-count helpers
   (`numQueries`, `numInserts`, `numDecreaseKeys`, `numExtractMins`) to `IndexedMinPQ`, parameterize
-  flat-program operation-sequence execution (`RunsOps`) over `PQCode` in `PriorityQueue/Basic.lean`
+  flat-program operation-sequence execution (`RunsOps`) over `PQCode` in
+  `DataStructure/PriorityQueue/WordRAM/Basic.lean`
   so `BinaryHeap` and `FibonacciHeap` share a generic `run_ops_exact` theorem, and factor a common
   `ShortestPathSpec p bound` predicate in `Dijkstra/HeapStatement.lean` across `LogLinearSpec`,
   `FibonacciSpec`, and `FibonacciLinearSpec`.

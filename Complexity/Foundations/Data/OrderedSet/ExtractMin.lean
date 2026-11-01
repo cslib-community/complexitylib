@@ -32,7 +32,7 @@ public section
 
 namespace Cslib.OrderedSet
 
-open Cslib.Stateful
+open Cslib.DataStructure
 
 variable {α : Type} [LinearOrder α]
 
@@ -51,7 +51,7 @@ theorem extractMin_run (s : Finset α) :
       match least s with
       | none => (none, s, [.minimum])
       | some x => (some x, s.erase x, [.minimum, .erase x]) := by
-  simp only [extractMin, Spec.runClient_lift_bind', spec]
+  simp only [extractMin, StateTransitionSpec.runClient_lift_bind', spec]
   cases least s <;> rfl
 
 /-- Extraction returns the minimum of the original set. -/

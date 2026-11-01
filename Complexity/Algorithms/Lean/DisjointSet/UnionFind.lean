@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.Lean.DisjointSet
-public import Complexity.Foundations.Semantics.Stateful.Resource
+public import Complexity.DataStructure.StateTransition.Resource
 public import Batteries.Data.UnionFind
 public import Mathlib.Data.Nat.Log
 import all Batteries.Data.UnionFind.Basic
@@ -50,8 +50,8 @@ a `Batteries.UnionFind` value is shared non-linearly.
   `2 ^ uf.rank r ≤ (equivClass uf r).card`.
 * `findSteps`, `rankBound`, `findGo`, `compressWithSteps`: computable path-compression step counter
   and kernel-reducible helpers propositionally equal to `Batteries.UnionFind.find`.
-* `State`, `init`, `step`, `Exec`, `Rep`, `realization`, `run`: concrete disjoint-set state,
-  operations, `Cslib.Stateful.Realization`, and executable client runner.
+* `State`, `init`, `step`, `Exec`, `Rep`, `impl`, `run`: concrete disjoint-set state,
+  operations, `Cslib.DataStructure.StateTransitionImpl`, and executable client runner.
 * `charge`: worst-case per-operation step budget on `Fin n`.
 
 ## Main results
@@ -79,7 +79,7 @@ public section
 
 namespace Cslib.Algorithms.Lean.DisjointSet.UnionFind
 
-open Cslib.Stateful Cslib.Algorithms.Lean.DisjointSet
+open Cslib.DataStructure Cslib.Algorithms.Lean.DisjointSet
 
 /-! ### Structural lemmas for `Batteries.UnionFind` -/
 
@@ -745,8 +745,8 @@ theorem rep_init (n : ℕ) : Rep (Partition.discrete n) (init n) := by
 
 private theorem step_correct {n : ℕ} {p : Partition n} {s : State n} (o : Op n)
     (hr : Rep p s) :
-    (step s o).2.1 = ((spec n).step p o).2 ∧
-      Rep ((spec n).step p o).1 (step s o).1 := by
+    (step s o).2.1 = ((spec n).stepFn p o).2 ∧
+      Rep ((spec n).stepFn p o).1 (step s o).1 := by
   obtain ⟨hrank, hrel, hcomp⟩ := hr
   cases o with
   | numComponents =>
@@ -826,15 +826,19 @@ private theorem step_correct {n : ℕ} {p : Partition n} {s : State n} (o : Op n
 
 /-- Semantic realization of `DisjointSet.spec n` by `Batteries.UnionFind` with path compression
 and union by rank. -/
-def realization (n : ℕ) : Realization (spec n) (Exec n) where
-  rep := Rep
-  total o _ _ := ⟨(step _ o).2.1, (step _ o).1, (step _ o).2.2, rfl⟩
-  correct {p s o a s' steps} hr _ he := by
-    have hc := step_correct o hr
-    have hs : s' = (step s o).1 := (Prod.ext_iff.mp he).1.symm
-    have ha : a = (step s o).2.1 := (Prod.ext_iff.mp (Prod.ext_iff.mp he).2).1.symm
-    rw [ha, hs]
-    exact hc
+def impl (n : ℕ) : StateTransitionImpl (spec n) (Exec n) :=
+  StateTransitionImpl.ofFn
+    (rep := Rep)
+    (total := fun {_ s} o _ _ =>
+      match h : step s o with
+      | (s', a, steps) => ⟨a, s', steps, h⟩)
+    (correct := by
+      intro p s o a s' steps hr _ he
+      have hc := step_correct o hr
+      have hs : s' = (step s o).1 := (Prod.ext_iff.mp he).1.symm
+      have ha : a = (step s o).2.1 := (Prod.ext_iff.mp (Prod.ext_iff.mp he).2).1.symm
+      rw [ha, hs]
+      exact hc)
 
 /-- Worst-case per-operation step budget on `Fin n`: at most `Nat.log 2 n + 1` nodes inspected per
 `find`, plus `1` link step in `Op.union` and `1` counter read in `Op.numComponents`. -/
@@ -887,8 +891,8 @@ private theorem step_steps_le {n : ℕ} {p : Partition n} {s : State n} (o : Op 
     change c₁.2.2 + (compressWithSteps c₁.1 y').2.2 + 1 ≤ 2 * (Nat.log 2 n + 1) + 1
     omega
 
-/-- Per-operation logarithmic step certificate for `realization n`. -/
-theorem stepBound (n : ℕ) : Bound (realization n) id (charge n) := by
+/-- Per-operation logarithmic step certificate for `impl n`. -/
+theorem stepBound (n : ℕ) : Bound (impl n) id (charge n) := by
   intro p s o a s' steps hr _ he
   have hsteps : steps = (step s o).2.2 := (Prod.ext_iff.mp (Prod.ext_iff.mp he).2).2.symm
   rw [id, hsteps]
@@ -896,7 +900,7 @@ theorem stepBound (n : ℕ) : Bound (realization n) id (charge n) := by
 
 /-- Uniform per-operation logarithmic step certificate `2 * Nat.log 2 n + 3`. -/
 theorem uniformStepBound (n : ℕ) :
-    Bound (realization n) id (fun _ _ => 2 * Nat.log 2 n + 3) :=
+    Bound (impl n) id (fun _ _ => 2 * Nat.log 2 n + 3) :=
   fun hr hv he => (stepBound n hr hv he).trans (charge_le n _ _)
 
 /-- Every adaptive disjoint-set client has a valid execution matching abstract partition semantics
@@ -939,7 +943,7 @@ theorem run_correct {n : ℕ} {β : Type} (client : (spec n).Client β)
   have hv := (spec n).validHistory_of_forall_valid (fun _ _ => trivial)
     p ((spec n).runClient p client).2.2
   have hexec := run_exec client s
-  have hc := (realization n).correct_client hr hv hexec
+  have hc := (impl n).correct_client hr hv hexec
   exact ⟨hc.1, hc.2, Bound.client (stepBound n) hr hv hexec,
     Bound.client_const (uniformStepBound n) hr hv hexec⟩
 

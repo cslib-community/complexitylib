@@ -115,7 +115,6 @@ theorem noisyHead_mem_PiP_two : {x : List Bool | x.headD false = true} ∈ PiP 2
 theorem noisyHead_mem_PH : {x : List Bool | x.headD false = true} ∈ PH encBits :=
   BPP_subset_PH noisyHead_mem_BPP
 
-attribute [local fun_prop] ComputableInPolySpace.tidy in
 attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- Direct `fun_prop` synthesis on the Sipser-Lautemann matrix verifier for `noisyHeadVerifier`.
 example : ComputableInPolyTime

@@ -8,14 +8,14 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Algorithms.WordRAM.Hashing.KWise
-public import Complexity.Algorithms.WordRAM.Hashing.Tabulation
+public import Complexity.DataStructure.HashFamily.WordRAM.KWise
+public import Complexity.DataStructure.HashFamily.WordRAM.Tabulation
 
 /-!
 # Concrete interpreter and non-vacuity tests for `Hashing.KWise` and `Hashing.Tabulation`
 
 Verifies both concrete `Cslib.WordRAM.Code.eval` execution and theorem-level non-vacuity of:
-1. `Cslib.Algorithms.WordRAM.Hashing.KWise`:
+1. `Cslib.DataStructure.HashFamily.WordRAM.KWise`:
    - `initTableCode` and `evalCode` executed via `Code.eval` at `k = 5` for both `b = 1, L = 2`
      (`n_max = 8`, `U = 4`, `M = 2`) and `b = 2, L = 1` (`n_max = 64`, `U = 4`, `M = 2`), and at
      `t = 1` (`q = 6`, `b = 2`, `L = 3`, `n_max = 64`, `U = 16`, `M = 3`, `k = 5`), agreeing on
@@ -24,12 +24,12 @@ Verifies both concrete `Cslib.WordRAM.Code.eval` execution and theorem-level non
    - non-vacuous instantiations of `initTableCode_execWithin`, `resampleCode_execRand`,
      `initCode_execRandWithin`, `evalCode_execWithin`, and `isKWiseIndependentHash_eval` at `k = 5`,
      `U = 1000`, `M = 10`, `n_max = 64`, `w = 64`.
-2. `Cslib.Algorithms.WordRAM.Hashing.Tabulation.RandomTable`:
+2. `Cslib.DataStructure.HashFamily.WordRAM.Tabulation.RandomTable`:
    - `lookupCode` and `xorLookupCode` executed via `Code.eval` on a concrete table of size
      `2 ^ 3 = 8`;
    - non-vacuous instantiations of `resampleCode_execRand`, `map_extractTable_eval_resampleComp`,
      `resampleCode_execRandWithin`, `lookupCode_exec`, and `xorLookupCode_exec`.
-3. `Cslib.Algorithms.WordRAM.Hashing.Tabulation.TabulatedOddStride`:
+3. `Cslib.DataStructure.HashFamily.WordRAM.Tabulation.TabulatedOddStride`:
    - `evalCode 3` executed via `Code.eval` on concrete character tables (`d = 3`, `b = 1`, `M = 3`),
      matching `tabulatedOddStride` and producing odd strides whose linear probe sequence `probeSeq`
      visits all `2 ^ M = 8` table slots;
@@ -42,8 +42,8 @@ Verifies both concrete `Cslib.WordRAM.Code.eval` execution and theorem-level non
 namespace ComplexityTests.WordRAMKWiseHash
 
 open Cslib Cslib.Probability Cslib.WordRAM
-open Cslib.Algorithms.WordRAM.Hashing
-open Cslib.Algorithms.WordRAM.Hashing.Tabulation
+open Cslib.DataStructure Cslib.DataStructure.HashFamily.WordRAM
+open Cslib.DataStructure.HashFamily.WordRAM.Tabulation
 
 /-! ## Helper for compacting interpreter state between `Code.eval` calls -/
 
