@@ -184,7 +184,7 @@ theorem exists_entryAdmissible_specNet (C : ℕ) :
     -- The original entry is at most `cO (C (n + 1) ^ C + 1)` bits.
     have hout : (encList encNat (entry u.2 bs)).length ≤ cO * (C * (n + 1) ^ C + 1) :=
       (hcO (u.2, bs)).trans (Nat.mul_le_mul_left _ (Nat.add_le_add_right (hS.trans hbase) 1))
-    obtain ⟨hT', hS'⟩ := hK₁ entry ce ((u.2, P, ℓ, fl, ζ), bs)
+    obtain ⟨hT', hS'⟩ := hK₁ entry ce u.2 P ℓ fl ζ bs
     have hover : K₁ * ((encPair (encSpecDesc encT) encBits ((u.2, P, ℓ, fl, ζ), bs)).length +
         (encList encNat (entry u.2 bs)).length + 1) ^ K₁ ≤ a * (n + 1) ^ d := by
       refine le_trans ?_ (had n)
@@ -218,7 +218,6 @@ theorem exists_entryAdmissible_specNet (C : ℕ) :
       calc (specEntryCertificate entry ce).time ((u.2, P, ℓ, fl, ζ), bs)
           ≤ C * (n + 1) ^ C * 2 ^ ((C + a + d) * ceilNineTenths s) +
               a * (n + 1) ^ d * 2 ^ ((C + a + d) * ceilNineTenths s) := by
-            dsimp only at hT'
             omega
         _ = (C * (n + 1) ^ C + a * (n + 1) ^ d) * 2 ^ ((C + a + d) * ceilNineTenths s) := by
             ring
@@ -226,7 +225,6 @@ theorem exists_entryAdmissible_specNet (C : ℕ) :
             Nat.mul_le_mul_right _ hsplit
     · change (specEntryCertificate entry ce).space ((u.2, P, ℓ, fl, ζ), bs) ≤
         (C + a + d) * (n + 1) ^ (C + a + d)
-      dsimp only at hS'
       have := hS.trans hbase
       omega
 
