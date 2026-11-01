@@ -96,7 +96,9 @@ Tabulation (`[Thorup2013]`, Theorem 1(a) and Lemma 2) with `c` characters of `b`
 
 * `Cslib.Algorithms.Lean.DoubleHashing.OrderedTableRep.empty`,
   `Cslib.Algorithms.Lean.DoubleHashing.OrderedTableRep.tableInsert`,
-  `Cslib.Algorithms.Lean.DoubleHashing.orderedTableRep_runTable`: preservation of `OrderedTableRep`.
+  `Cslib.Algorithms.Lean.DoubleHashing.orderedTableRep_runTable`,
+  `Cslib.Algorithms.Lean.DoubleHashing.exists_orderedTableRep`: preservation and existence of
+  `OrderedTableRep`.
 * `Cslib.Algorithms.Lean.DoubleHashing.sum_probeCount_oddStride_le_of_kWiseIndependent`,
   `Cslib.Algorithms.Lean.DoubleHashing.expect_probeCount_oddStride_of_kWiseIndependent`: expected
   probe count $\le 2$ under $(2 L + 1)$-wise independent $(h_1, h_2)$.
@@ -268,6 +270,63 @@ theorem orderedTableRep_runTable {U V n_max m : ℕ} (hm : 0 < m) (hcap : n_max 
     OrderedTableRep π ((Dictionary.spec U V n_max).run (Dictionary.empty U) ops).1
       (runTable hm π ops) :=
   orderedTableRep_runTableFrom hm hcap π (OrderedTableRep.empty π) (by simp) hvh
+
+private theorem exists_orderedTableRep_aux {U m : ℕ}
+    (π : Fin U → Equiv.Perm (Fin m)) :
+    ∀ (D : Finset (Fin U)) (s : Dictionary.State U),
+      Dictionary.dom s = D →
+      D.card ≤ m →
+      ∃ T : Table U m, OrderedTableRep π s T := by
+  intro D
+  induction D using Finset.induction_on with
+  | empty =>
+    intro s hD _
+    have hs_empty : s = Dictionary.empty U := by
+      funext w
+      by_contra hw
+      obtain ⟨v, hvw⟩ := Option.ne_none_iff_exists'.mp hw
+      have hmem : w ∈ Dictionary.dom s := Dictionary.mem_dom_iff.mpr ⟨v, hvw⟩
+      rw [hD] at hmem
+      exact Finset.notMem_empty w hmem
+    rw [hs_empty]
+    exact ⟨emptyTable U m, OrderedTableRep.empty π⟩
+  | @insert a D' ha ih =>
+    intro s hD hcard
+    have ha_mem : a ∈ Dictionary.dom s := by rw [hD]; exact Finset.mem_insert_self a D'
+    obtain ⟨va, hsa⟩ := Dictionary.mem_dom_iff.mp ha_mem
+    let s' : Dictionary.State U := Function.update s a none
+    have hD' : Dictionary.dom s' = D' := by
+      ext w
+      simp only [Dictionary.mem_dom_iff, s']
+      by_cases hwa : w = a
+      · subst hwa
+        simp [ha]
+      · rw [Function.update_of_ne hwa, ← Dictionary.mem_dom_iff, hD, Finset.mem_insert]
+        exact ⟨fun h => h.resolve_left hwa, Or.inr⟩
+    have hcard' : D'.card < m := by
+      rw [Finset.card_insert_of_notMem ha] at hcard
+      omega
+    obtain ⟨T', hrep'⟩ := ih s' hD' (le_of_lt hcard')
+    have hcard_lt_m : (Dictionary.dom s').card < m := by
+      rw [hD']
+      exact hcard'
+    have hupd : Function.update s' a (some va) = s := by
+      funext w
+      by_cases hwa : w = a
+      · subst hwa
+        simp [hsa]
+      · simp [s', Function.update_of_ne hwa]
+    refine ⟨tableInsert (Nat.pos_of_ne_zero (by omega)) π T' a va, ?_⟩
+    rw [← hupd]
+    exact hrep'.tableInsert_of_card_lt hcard_lt_m a va
+
+/-- Every finite dictionary state `s` with `(Dictionary.dom s).card ≤ m` admits an open-addressed
+table `T : Table U m` satisfying `OrderedTableRep π s T` for any permutation family
+`π : Fin U → Equiv.Perm (Fin m)`. -/
+theorem exists_orderedTableRep {U m : ℕ} (π : Fin U → Equiv.Perm (Fin m))
+    (s : Dictionary.State U) (hcard : (Dictionary.dom s).card ≤ m) :
+    ∃ T : Table U m, OrderedTableRep π s T :=
+  exists_orderedTableRep_aux π (Dictionary.dom s) s rfl hcard
 
 /-! ## Section 2: Odd-Stride Double-Hashing Probe Permutation on `Fin (2 ^ M)` -/
 

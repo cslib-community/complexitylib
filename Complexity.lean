@@ -2798,6 +2798,7 @@ public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrSignature
 public import Complexity.Crypto.Protocols.Signature.RandomOracle
 public import Complexity.DataStructure.HashFamily.Spec
 public import Complexity.DataStructure.HashFamily.WordRAM.Basic
+public import Complexity.DataStructure.HashFamily.WordRAM.DoubleTabulation
 public import Complexity.DataStructure.ObliviousSequence
 public import Complexity.DataStructure.WordRAM.Randomized.ObliviousSequence
 public import Complexity.Foundations.Algebra.FiniteMagnitude
