@@ -86,7 +86,7 @@ structure TruncatedContractionAlgorithm (encT : T ↪ List Bool) (entry : T → 
     (Admissible : ℕ → ℕ → ℕ × DescribedNetwork T → Prop) where
   /-- The native truncated contraction. -/
   certificate : NativeCertificate
-    (fun x : ℕ × ℕ × ℕ × DescribedNetwork T => x.2.2.2.truncContraction entry x.1 x.2.1)
+    (fun ((P, ℓ, _, G) : ℕ × ℕ × ℕ × DescribedNetwork T) => G.truncContraction entry P ℓ)
     (encTrunc encT) (encList encNat)
   /-- Its time and space on admissible inputs. -/
   bound : ∀ C D : ℕ, ∃ K : ℕ, ∀ (s P ℓ r : ℕ) (G : DescribedNetwork T), 2 ≤ s → 1 ≤ P →
@@ -95,24 +95,18 @@ structure TruncatedContractionAlgorithm (encT : T ↪ List Bool) (entry : T → 
           2 ^ (K * s / Nat.sqrt (Nat.log 2 s)) ∧
         certificate.space (P, ℓ, r, G) ≤ K * ((encTrunc encT (P, ℓ, r, G)).length + 1) ^ K
 
-/-- A polynomial bound composed with a polynomially bounded size. -/
-private theorem polyBounded_comp_poly {α : Type} {size u : α → ℕ} {p : ℕ → ℕ}
-    (hp : Cslib.PolynomiallyBounded p) (hu : PolyBounded size u) :
-    PolyBounded size fun a => p (u a) :=
-  (PolyBounded.of_polynomiallyBounded id hp).comp hu
-
 /-! ### The guard -/
 
-/-- **The guard**: the modulus `FastContraction.modulus m` of the network has at least as many
-residues as the `(ℓ - 1) k + 1` interpolation points. -/
-@[expose] def truncGuard (x : ℕ × ℕ × ℕ × DescribedNetwork T) : Bool :=
-  decide (DescribedNetwork.pointCount x.2.1 x.2.2.2 ≤
-    2 ^ (FastContraction.modulus x.2.2.2.numEdges).length)
+/-- **The guard** at an input `(P, ℓ, r, G)`: the modulus `FastContraction.modulus m` of the network
+`G` with `m` edges has at least as many residues as the `(ℓ - 1) k + 1` interpolation points. -/
+@[expose] def truncGuard : ℕ × ℕ × ℕ × DescribedNetwork T → Bool
+  | (_, ℓ, _, G) =>
+    decide (DescribedNetwork.pointCount ℓ G ≤ 2 ^ (FastContraction.modulus G.numEdges).length)
 
 /-- The network of an input. -/
 private theorem network_polyTime :
-    ComputableInPolyTime (fun x : ℕ × ℕ × ℕ × DescribedNetwork T => x.2.2.2) (encTrunc encT)
-      (DescribedNetwork.encDescribed encT) :=
+    ComputableInPolyTime (fun ((_, _, _, G) : ℕ × ℕ × ℕ × DescribedNetwork T) => G)
+      (encTrunc encT) (DescribedNetwork.encDescribed encT) :=
   (ComputableInPolyTime.snd _ _).comp ((ComputableInPolyTime.snd _ _).comp
     (ComputableInPolyTime.snd _ _))
 
@@ -132,9 +126,9 @@ theorem truncGuard_polyTime :
         (DescribedNetwork.numEdges_polyTime.comp network_polyTime)))
   refine (ComputableInPolyTime.bool_not.comp (ComputableInPolyTime.binary_lt' h2 hpc)).of_enc_eq
     fun x => congrArg encBool ?_
+  obtain ⟨P, ℓ, r, G⟩ := x
   simp only [truncGuard, Function.comp_apply]
-  by_cases h : DescribedNetwork.pointCount x.2.1 x.2.2.2 ≤
-      2 ^ (FastContraction.modulus x.2.2.2.numEdges).length
+  by_cases h : DescribedNetwork.pointCount ℓ G ≤ 2 ^ (FastContraction.modulus G.numEdges).length
   · simp [h, Nat.not_lt.mpr h]
   · simp [h, Nat.lt_of_not_le h]
 
@@ -172,8 +166,8 @@ theorem truncGuard_of_le {C D s P ℓ r : ℕ} {G : DescribedNetwork T} (hs : 4 
 /-- The input of the reduction at the modulus of the network. -/
 theorem modulusEdges_polyTime :
     ComputableInPolyTime
-      (fun x : ℕ × ℕ × ℕ × DescribedNetwork T =>
-        (FastContraction.modulus x.2.2.2.numEdges, x))
+      (fun ((P, ℓ, r, G) : ℕ × ℕ × ℕ × DescribedNetwork T) =>
+        (FastContraction.modulus G.numEdges, (P, ℓ, r, G)))
       (encTrunc encT) (encEngine encT) :=
   (FastContraction.modulus_polyTime.comp
     (DescribedNetwork.numEdges_polyTime.comp network_polyTime)).prod ComputableInPolyTime.id'
@@ -185,12 +179,11 @@ to contractions over `A_P`, with the modulus `FastContraction.modulus m` for `m`
 @[expose] noncomputable def fastTruncCertificate
     (cc : NativeCertificate core (encCore encT) (encList encNat)) :
     NativeCertificate
-      (fun x : ℕ × ℕ × ℕ × DescribedNetwork T =>
-        DescribedNetwork.interpContract core (FastContraction.modulus x.2.2.2.numEdges) x.1 x.2.1
-          x.2.2.1 x.2.2.2)
+      (fun ((P, ℓ, r, G) : ℕ × ℕ × ℕ × DescribedNetwork T) =>
+        DescribedNetwork.interpContract core (FastContraction.modulus G.numEdges) P ℓ r G)
       (encTrunc encT) (encList encNat) :=
   ((engineCertificate core cc).comp (NativeCertificate.ofPolyTime modulusEdges_polyTime)).congr
-    fun _ => by simp only [Function.comp_apply]
+    fun _ => rfl
 
 /-- **The reduction is correct on guarded inputs**, for a contraction over `A_P` that is correct
 at the modulus of the number of edges. -/
@@ -200,15 +193,14 @@ theorem fastTruncCertificate_correct {entry : T → List Bool → List ℕ}
         r, G')) =
         G'.contraction fun d bs =>
           val P (FastContraction.modulus G'.numEdges) (specEntry entry d bs))
-    (x : ℕ × ℕ × ℕ × DescribedNetwork T) (hg : truncGuard x = true) :
-    DescribedNetwork.interpContract core (FastContraction.modulus x.2.2.2.numEdges) x.1 x.2.1
-        x.2.2.1 x.2.2.2 = x.2.2.2.truncContraction entry x.1 x.2.1 := by
+    (P ℓ r : ℕ) (G : DescribedNetwork T) (hg : truncGuard (P, ℓ, r, G) = true) :
+    DescribedNetwork.interpContract core (FastContraction.modulus G.numEdges) P ℓ r G =
+      G.truncContraction entry P ℓ := by
   simp only [truncGuard, decide_eq_true_eq] at hg
   refine DescribedNetwork.interpContract_eq (FastContraction.irreducible_modulus _) _ hg
     fun k _ => ?_
-  have h := hval x.1 x.2.2.1 (DescribedNetwork.specNet x.1 x.2.1
-    (FastContraction.modulus x.2.2.2.numEdges)
-    (FastContraction.digits (FastContraction.modulus x.2.2.2.numEdges).length k) x.2.2.2)
+  have h := hval P r (DescribedNetwork.specNet P ℓ (FastContraction.modulus G.numEdges)
+    (FastContraction.digits (FastContraction.modulus G.numEdges).length k) G)
   rw [DescribedNetwork.numEdges_specNet] at h
   exact h
 
@@ -255,9 +247,9 @@ noncomputable def TruncatedContractionAlgorithm.ofCore {entry : T → List Bool 
     TruncatedContractionAlgorithm encT entry Adm where
   certificate :=
     (NativeCertificate.branch (NativeCertificate.ofPolyTime truncGuard_polyTime)
-      (fastTruncCertificate cc) (truncDirectCertificate entry ce)).congr fun x => by
+      (fastTruncCertificate cc) (truncDirectCertificate entry ce)).congr fun ⟨P, ℓ, r, G⟩ => by
         split
-        · next h => exact fastTruncCertificate_correct hval x h
+        · next h => exact fastTruncCertificate_correct hval P ℓ r G h
         · rfl
   bound C D := by
     obtain ⟨C', hC'⟩ := htransfer C D
@@ -286,9 +278,11 @@ noncomputable def TruncatedContractionAlgorithm.ofCore {entry : T → List Bool 
         (PolyBounded.const 1)).pow 2)).add (PolyBounded.const 1) |>.pow K₀)
     have hEp : PolyBounded id Ef :=
       (PolyBounded.const Ke).mul ((PolyBounded.self.add (PolyBounded.const 1)).pow Ke)
+    have qg := PolyBounded.of_polynomiallyBounded id hpg
+    have qM := PolyBounded.of_polynomiallyBounded id hpM
     have hFp : PolyBounded id F :=
-      ((polyBounded_comp_poly hpg PolyBounded.self).add
-        ((polyBounded_comp_poly hpM PolyBounded.self).add (((hYp.mul hYp).add
+      ((qg.comp PolyBounded.self).add
+        ((qM.comp PolyBounded.self).add (((hYp.mul hYp).add
           (PolyBounded.const 2)).mul (((PolyBounded.const KE).mul (((hYp.add
             ((PolyBounded.const cO).mul (hQp.add (PolyBounded.const 1)))).add
               (PolyBounded.const 1)).pow KE)).add hQp)))).add
@@ -322,9 +316,8 @@ noncomputable def TruncatedContractionAlgorithm.ofCore {entry : T → List Bool 
       set fl := FastContraction.modulus G.numEdges with hfl
       have hLy : (encEngine encT (fl, P, ℓ, r, G)).length ≤ Yf n := hY (P, ℓ, r, G)
       have hNy : DescribedNetwork.pointCount ℓ G + 1 ≤ Yf n * Yf n + 2 := by
-        have h1 := pointCount_le (encT := encT) (fl, P, ℓ, r, G)
+        have h1 := pointCount_le (encT := encT) fl P ℓ r G
         have h2 := Nat.mul_le_mul hLy hLy
-        dsimp only at h1
         omega
       have hcall (k : ℕ) :
           cc.time (coreInput (fl, P, ℓ, r, G) k) ≤ Qf n * Xs ∧
@@ -351,8 +344,7 @@ noncomputable def TruncatedContractionAlgorithm.ofCore {entry : T → List Bool 
           (DescribedNetwork.specNet P ℓ fl (FastContraction.digits fl.length k) G).numEdges,
           r, DescribedNetwork.specNet P ℓ fl (FastContraction.digits fl.length k) G)
         exact hout.trans (Nat.mul_le_mul_left _ (Nat.add_le_add_right hS' 1))
-      obtain ⟨hTe, hSe⟩ := hKE (fl, P, ℓ, r, G) _ _ _ fun k _ => hcall k
-      dsimp only at hTe hSe
+      obtain ⟨hTe, hSe⟩ := hKE fl P ℓ r G _ _ _ fun k _ => hcall k
       have hEng : KE * ((encEngine encT (fl, P, ℓ, r, G)).length + cO * (Qf n + 1) + 1) ^ KE ≤
           KE * (Yf n + cO * (Qf n + 1) + 1) ^ KE :=
         Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
@@ -403,7 +395,7 @@ noncomputable def TruncatedContractionAlgorithm.ofCore {entry : T → List Bool 
         Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
       have h2s : 2 ^ (Ke * s) ≤ 2 ^ (Ke * s₀) :=
         Nat.pow_le_pow_right (by norm_num) (Nat.mul_le_mul_left _ hss.le)
-      obtain ⟨hT, hS⟩ := hKd (P, ℓ, r, G) (Ef n * 2 ^ (Ke * s₀)) (Ef n) fun v hv bs hbs => by
+      obtain ⟨hT, hS⟩ := hKd P ℓ r G (Ef n * 2 ^ (Ke * s₀)) (Ef n) fun v hv bs hbs => by
         obtain ⟨h1, h2⟩ := hKe s r G hA v hv bs hbs
         exact ⟨h1.trans (Nat.mul_le_mul hEf h2s), h2.trans hEf⟩
       have h2m : 2 ^ G.numEdges ≤ 2 ^ (C * s₀) :=

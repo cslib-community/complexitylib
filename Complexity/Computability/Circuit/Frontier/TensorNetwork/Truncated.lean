@@ -9,9 +9,11 @@ module
 
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContraction
 public import Complexity.Computability.PolyTime.GaloisRingInterpolation
+public import Mathlib.Algebra.Polynomial.CoeffList
 import Complexity.Computability.Circuit.Frontier.TensorNetwork.DescribedLift
 import Complexity.Computability.Circuit.Frontier.TensorNetwork.NativeRecovery
 import Complexity.Computability.PolyTime.GaloisRingSeries
+import Complexity.Foundations.Data.Polynomial.CoeffList
 import Complexity.Foundations.Data.Polynomial.RingLagrange
 import Mathlib.Algebra.Polynomial.BigOperators
 import Mathlib.Data.List.GetD
@@ -26,7 +28,7 @@ Theorem D.1 of [OpenAI2026ETH] (p. 53) contracts Boolean tensor networks whose e
 with the same ports, by evaluating `V` at points of `A_P` and interpolating.
 
 **Entries and the contraction.** An entry is a list of natural numbers, its coefficients of
-`1, V, V ^ 2, …` (`coeffPoly`). The contraction over `ℕ[V]` of the entries
+`1, V, V ^ 2, …` (Mathlib's `Polynomial.ofCoeffList`). The contraction over `ℕ[V]` of the entries
 (`DescribedNetwork.polyContraction`) has, below `V ^ ℓ` and modulo `2 ^ P`, the coefficients of
 the contraction in `B_{P,ℓ}` (`DescribedNetwork.truncContraction`): they depend only on the images
 of the entries in `B_{P,ℓ}`, their coefficients below `ℓ` modulo `2 ^ P`
@@ -62,7 +64,6 @@ space bounds of Theorem D.1, is not formalized here (#1538).
 
 ## Main definitions
 
-* `Cslib.Circuits.Frontier.coeffPoly`: the polynomial of a list of coefficients.
 * `Cslib.Circuits.Frontier.cutCoeffs`: the first `ℓ` coefficients.
 * `Cslib.Circuits.Frontier.DescribedNetwork.polyContraction`: the contraction over `ℕ[V]`.
 * `Cslib.Circuits.Frontier.DescribedNetwork.truncContraction`: the contraction in `B_{P,ℓ}`.
@@ -97,25 +98,6 @@ namespace Cslib.Circuits.Frontier
 open Polynomial Finset GaloisRingArith
 
 /-! ### Entries as polynomials in `V` -/
-
-/-- The polynomial `∑ i, c_i V ^ i` of a list of natural coefficients, constant first. -/
-@[expose] noncomputable def coeffPoly (c : List ℕ) : ℕ[X] :=
-  ∑ i ∈ range c.length, C (c.getD i 0) * X ^ i
-
-/-- The coefficients of `coeffPoly c` are the entries of `c`, and zero past its end. -/
-@[simp] theorem coeff_coeffPoly (c : List ℕ) (j : ℕ) : (coeffPoly c).coeff j = c.getD j 0 := by
-  rw [coeffPoly, finsetSum_coeff]
-  simp only [coeff_C_mul, coeff_X_pow, mul_ite, mul_one, mul_zero, sum_ite_eq, mem_range]
-  split_ifs with h
-  · rfl
-  · rw [List.getD_eq_default _ _ (by omega)]
-
-/-- `coeffPoly c` has degree below the length of `c`. -/
-theorem natDegree_coeffPoly_le (c : List ℕ) : (coeffPoly c).natDegree ≤ c.length - 1 :=
-  natDegree_le_iff_coeff_eq_zero.mpr fun N hN => by
-    rw [coeff_coeffPoly, List.getD_eq_default _ _ (by
-      have : c.length - 1 < N := by exact_mod_cast hN
-      omega)]
 
 /-- The first `ℓ` coefficients of a list, padded with zeros to length `ℓ`. -/
 @[expose] def cutCoeffs (ℓ : ℕ) (c : List ℕ) : List ℕ := (List.range ℓ).map fun i => c.getD i 0
@@ -154,7 +136,7 @@ variable {T : Type*}
 `1, V, V ^ 2, …`. -/
 @[expose] noncomputable def polyContraction (entry : T → List Bool → List ℕ)
     (G : DescribedNetwork T) : ℕ[X] :=
-  G.contraction fun t bs => coeffPoly (entry t bs)
+  G.contraction fun t bs => ofCoeffList (entry t bs)
 
 /-- **The contraction in `B_{P,ℓ} = (ℤ / 2 ^ P)[V] / (V ^ ℓ)`**, as its `ℓ` coefficients in
 `[0, 2 ^ P)`: the coefficients below `ℓ` of the contraction over `ℕ[V]`, modulo `2 ^ P`. -/
@@ -166,7 +148,7 @@ variable {T : Type*}
 theorem truncHom_polyContraction (entry : T → List Bool → List ℕ) (P ℓ : ℕ)
     (G : DescribedNetwork T) :
     truncHom P ℓ (G.polyContraction entry) =
-      G.contraction fun t bs => truncHom P ℓ (coeffPoly (entry t bs)) :=
+      G.contraction fun t bs => truncHom P ℓ (ofCoeffList (entry t bs)) :=
   map_contraction _ _ G
 
 /-- **The contraction depends only on the entries in `B_{P,ℓ}`**: entries whose coefficients
@@ -179,7 +161,7 @@ theorem truncContraction_congr {entry entry' : T → List Bool → List ℕ} {P 
     rw [truncHom_polyContraction, truncHom_polyContraction]
     congr 1
     funext t bs
-    exact truncHom_eq_iff.mpr fun j hj => by simpa only [coeff_coeffPoly] using h t bs j hj
+    exact truncHom_eq_iff.mpr fun j hj => by simpa only [coeff_ofCoeffList] using h t bs j hj
   refine List.map_congr_left fun j hj => truncHom_eq_iff.mp hG j (List.mem_range.mp hj)
 
 /-- Cutting the entries to their first `ℓ` coefficients does not change the truncated
@@ -198,7 +180,7 @@ theorem natDegree_polyContraction_le {entry : T → List Bool → List ℕ} {ℓ
   rw [List.map_map]
   refine (List.sum_le_length_nsmul _ (ℓ - 1) fun d hd => ?_).trans (by simp [mul_comm])
   obtain ⟨v, -, rfl⟩ := List.mem_map.mp hd
-  exact (natDegree_coeffPoly_le _).trans (Nat.sub_le_sub_right (h _ _) 1)
+  exact (natDegree_ofCoeffList_le _).trans (Nat.sub_le_sub_right (h _ _) 1)
 
 end DescribedNetwork
 
@@ -217,27 +199,28 @@ variable {T : Type*}
 
 /-- **The entry of a specialized descriptor** `(t, P, ℓ, fl, ζ)`: the value at `ζ` in `A_P`, by
 Horner's rule, of the first `ℓ` coefficients of the entry of `t`. -/
-@[expose] def specEntry (entry : T → List Bool → List ℕ) (d : SpecDesc T) (bs : List Bool) :
-    List ℕ :=
-  peval d.2.1 d.2.2.2.1 (constCoeffs d.2.2.1 (entry d.1 bs)) d.2.2.2.2
+@[expose] def specEntry (entry : T → List Bool → List ℕ) :
+    SpecDesc T → List Bool → List ℕ
+  | (t, P, ℓ, fl, ζ), bs => peval P fl (constCoeffs ℓ (entry t bs)) ζ
 
 /-- Constant coefficient lists represent the polynomial of the coefficients in `A_p`. -/
 theorem pval_constCoeffs (p ℓ : ℕ) (fl c : List ℕ) :
     pval p fl (constCoeffs ℓ c) =
-      (coeffPoly (cutCoeffs ℓ c)).map (Nat.castRingHom (Ring p fl)) := by
-  rw [pval, coeffPoly, Polynomial.map_sum, constCoeffs, List.length_map, length_cutCoeffs,
-    List.length_range]
-  refine sum_congr rfl fun k hk => ?_
-  rw [List.getD_eq_getElem _ _ (by simpa using hk), List.getElem_map, List.getElem_range,
-    val_singleton, getD_cutCoeffs _ (mem_range.mp hk)]
-  simp
+      (ofCoeffList (cutCoeffs ℓ c)).map (Nat.castRingHom (Ring p fl)) := by
+  ext j
+  rw [NativeRecovery.coeff_pval, coeff_map, coeff_ofCoeffList]
+  by_cases hj : j < ℓ
+  · rw [constCoeffs, List.getD_eq_getElem _ _ (by simpa using hj), List.getElem_map,
+      List.getElem_range, val_singleton, getD_cutCoeffs _ hj, eq_natCast]
+  · rw [List.getD_eq_default _ _ (by simpa [constCoeffs] using hj),
+      List.getD_eq_default _ _ (by simpa using hj), val_nil, map_zero]
 
 /-- **A specialized entry is the evaluation at the point** of the polynomial of the first `ℓ`
 coefficients. -/
 theorem val_specEntry (entry : T → List Bool → List ℕ) (t : T) (P ℓ : ℕ) (fl ζ : List ℕ)
     (bs : List Bool) :
     val P fl (specEntry entry (t, P, ℓ, fl, ζ) bs) =
-      ((coeffPoly (cutCoeffs ℓ (entry t bs))).map (Nat.castRingHom (Ring P fl))).eval
+      ((ofCoeffList (cutCoeffs ℓ (entry t bs))).map (Nat.castRingHom (Ring P fl))).eval
         (val P fl ζ) := by
   rw [specEntry, peval_eq, pval_constCoeffs]
 
@@ -272,8 +255,8 @@ theorem val_contraction_specNet (entry : T → List Bool → List ℕ) (P ℓ : 
         (Nat.castRingHom (Ring P fl))).eval (val P fl ζ) := by
   rw [contraction_specNet]
   have h := map_contraction ((evalRingHom (val P fl ζ)).comp
-    (mapRingHom (Nat.castRingHom (Ring P fl)))) (fun t bs => coeffPoly (cutCoeffs ℓ (entry t bs)))
-    G
+    (mapRingHom (Nat.castRingHom (Ring P fl))))
+    (fun t bs => ofCoeffList (cutCoeffs ℓ (entry t bs))) G
   simp only [RingHom.comp_apply, coe_evalRingHom, coe_mapRingHom] at h
   rw [polyContraction, h]
   simp only [val_specEntry]

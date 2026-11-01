@@ -150,7 +150,7 @@ lemma tapeRight_deg : ComputableInDegree Tape.right eTape (encList eSym) 1 1 :=
 
 /-- The symbol under the head. -/
 @[local fun_prop]
-lemma read_deg : ComputableInDegree Tape.read eTape eSym 1 1 := by
+public lemma read_deg : ComputableInDegree Tape.read eTape eSym 1 1 := by
   unfold Tape.read
   fun_prop (disch := lia)
 
@@ -163,14 +163,14 @@ lemma write_deg : ComputableInDegree (fun p : Tape × Option ℕ => p.1.write p.
 
 /-- A right move. -/
 @[local fun_prop]
-lemma movePos_deg :
+public lemma movePos_deg :
     ComputableInDegree (fun t : Tape => t.move .pos) eTape eTape 1 1 := by
   simp only [Tape.move]
   fun_prop (disch := lia)
 
 /-- A left move. -/
 @[local fun_prop]
-lemma moveNeg_deg :
+public lemma moveNeg_deg :
     ComputableInDegree (fun t : Tape => t.move .neg) eTape eTape 1 1 := by
   simp only [Tape.move]
   fun_prop (disch := lia)

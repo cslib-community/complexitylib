@@ -50,16 +50,19 @@ example : ∃ c d : ℕ, ∀ y : List ℕ × ℕ × ℕ × ℕ × DescribedNetwo
         ((PolyBounded.of_polynomiallyBounded id hp).comp
           ((PolyBounded.const 9).mul ((PolyBounded.self.add (PolyBounded.const 1)).pow 2))))
   obtain ⟨c, d, hcd⟩ := hpoly.exists_le
-  refine ⟨c, d, fun y => ?_⟩
-  have h := (hK y (p (9 * (L y + 1) ^ 2)) (p (9 * (L y + 1) ^ 2)) 0 fun k _ =>
-    ⟨(hb _).1.trans (hm (length_encCore_coreInput_le y k)),
-      (hb _).2.trans (hm (length_encCore_coreInput_le y k)), by simp [zeroCore]⟩).1
-  have hN := pointCount_le (encT := encList encNat) y
-  have hmul := Nat.mul_le_mul_right (K * (L y + 0 + 1) ^ K + p (9 * (L y + 1) ^ 2))
-    (show DescribedNetwork.pointCount y.2.2.1 y.2.2.2.2 + 1 ≤ L y * L y + 2 by
+  refine ⟨c, d, fun ⟨fl, P, ℓ, r, G⟩ => ?_⟩
+  have h := (hK fl P ℓ r G (p (9 * (L (fl, P, ℓ, r, G) + 1) ^ 2))
+    (p (9 * (L (fl, P, ℓ, r, G) + 1) ^ 2)) 0 fun k _ =>
+      ⟨(hb _).1.trans (hm (length_encCore_coreInput_le (fl, P, ℓ, r, G) k)),
+        (hb _).2.trans (hm (length_encCore_coreInput_le (fl, P, ℓ, r, G) k)),
+        by simp [zeroCore]⟩).1
+  have hN := pointCount_le (encT := encList encNat) fl P ℓ r G
+  have hmul := Nat.mul_le_mul_right
+    (K * (L (fl, P, ℓ, r, G) + 0 + 1) ^ K + p (9 * (L (fl, P, ℓ, r, G) + 1) ^ 2))
+    (show DescribedNetwork.pointCount ℓ G + 1 ≤ L (fl, P, ℓ, r, G) * L (fl, P, ℓ, r, G) + 2 by
       simp only [L]
       omega)
-  exact h.trans (hmul.trans (hcd y))
+  exact h.trans (hmul.trans (hcd (fl, P, ℓ, r, G)))
 
 /-- The entry certificate of descriptors that are their own entry. -/
 noncomputable def constCert :
@@ -68,11 +71,12 @@ noncomputable def constCert :
   NativeCertificate.ofPolyTime (ComputableInPolyTime.fst _ _)
 
 -- Specialized entries cost the original entry plus a polynomial in the input and the entry.
-example : ∃ K : ℕ, ∀ q : SpecDesc (List ℕ) × List Bool,
-    (specEntryCertificate (fun t _ => t) constCert).time q ≤ constCert.time (q.1.1, q.2) +
-      K * ((encPair (encSpecDesc (encList encNat)) encBits q).length +
-        (encList encNat q.1.1).length + 1) ^ K := by
+example : ∃ K : ℕ, ∀ (t : List ℕ) (P ℓ : ℕ) (fl ζ : List ℕ) (bs : List Bool),
+    (specEntryCertificate (fun t _ => t) constCert).time ((t, P, ℓ, fl, ζ), bs) ≤
+      constCert.time (t, bs) +
+        K * ((encPair (encSpecDesc (encList encNat)) encBits ((t, P, ℓ, fl, ζ), bs)).length +
+          (encList encNat t).length + 1) ^ K := by
   obtain ⟨K, hK⟩ := specEntryCertificate_le (encT := encList encNat)
-  exact ⟨K, fun q => (hK (fun t _ => t) constCert q).1⟩
+  exact ⟨K, fun t P ℓ fl ζ bs => (hK (fun t _ => t) constCert t P ℓ fl ζ bs).1⟩
 
 end ComplexityTests.TensorNetworkTruncatedResources
