@@ -9,6 +9,7 @@ module
 
 public import Complexity.Init
 public import Mathlib.Data.List.Basic
+import Mathlib.Data.List.Nodup
 
 /-!
 # List counts and scan bounds
@@ -17,6 +18,7 @@ public import Mathlib.Data.List.Basic
 
 * `List.length_flatMap_le`: blocks of bounded length have bounded total length.
 * `List.decide_mem_eq_any`: membership as a scan of the list.
+* `List.not_any_one_lt_countP_iff_nodup`: duplicate-freeness as a scan of the list.
 * `List.countP_and_not_add_countP_and`: members satisfying one predicate split by whether
   they satisfy another.
 * `List.existsUnique_fin_of_countP_eq_one`, `List.existsUnique_mem_of_countP_eq_one`: a Boolean
@@ -43,6 +45,21 @@ theorem List.decide_mem_eq_any {α : Type*} [DecidableEq α] (a : α) (l : List 
     decide (a ∈ l) = l.any fun u => decide (u = a) := by
   rw [Bool.eq_iff_iff, decide_eq_true_eq, List.any_eq_true]
   simp
+
+/-- Duplicate-freeness as a scan of the list: no member occurs more than once, counted with
+`countP`. This is the form in which polynomial-time tests for repetitions are certified. -/
+theorem List.not_any_one_lt_countP_iff_nodup {α : Type*} [DecidableEq α] (l : List α) :
+    (!(l.any fun a => decide (1 < l.countP fun b => decide (b = a)))) = true ↔ l.Nodup := by
+  have hc (a : α) : (l.countP fun b => decide (b = a)) = l.count a := by
+    rw [List.count_eq_countP]
+    congr 1
+  simp only [Bool.not_eq_true', List.any_eq_false, decide_eq_true_eq, Nat.not_lt, hc]
+  rw [List.nodup_iff_count_le_one]
+  refine ⟨fun h a => ?_, fun h a _ => h a⟩
+  by_cases ha : a ∈ l
+  · exact h a ha
+  · rw [List.count_eq_zero_of_not_mem ha]
+    omega
 
 /-- Partitioning the elements of a list satisfying `p` by whether they satisfy `q`. -/
 theorem List.countP_and_not_add_countP_and {α : Type*} (p q : α → Prop) [DecidablePred p]

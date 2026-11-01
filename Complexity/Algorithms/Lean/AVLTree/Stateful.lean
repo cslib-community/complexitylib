@@ -92,31 +92,33 @@ theorem rep_empty : Rep (∅ : Finset α) .nil :=
   ⟨valid_nil, rfl⟩
 
 /-- Semantic realization of `OrderedSet.spec α` by `AVLTree α`. -/
-@[expose] def realization : Realization (spec α) (Exec (α := α)) where
-  rep := Rep
-  total {_ t} o _ _ :=
-    match h : step t o with
-    | (t', a, n) => ⟨a, t', n, h⟩
-  correct {s t o a t' n} hr _ he := by
-    obtain ⟨ht, rfl⟩ := hr
-    cases o with
-    | contains x =>
-      cases he
-      refine ⟨?_, ht, rfl⟩
-      have h := contains_eq_true ht.ordered x
-      by_cases hx : x ∈ elements t <;> simp_all
-    | insert x =>
-      cases he
-      exact ⟨rfl, valid_insert ht x, elements_insert x t⟩
-    | erase x =>
-      cases he
-      exact ⟨rfl, valid_erase ht x, elements_erase ht.ordered x⟩
-    | minimum =>
-      cases he
-      exact ⟨(minimum_spec ht.ordered).eq_least, ht, rfl⟩
-    | successor x =>
-      cases he
-      exact ⟨(successor_spec ht.ordered x).eq_least, ht, rfl⟩
+@[expose] def realization : Realization (spec α) (Exec (α := α)) :=
+  Realization.ofFn
+    (rep := Rep)
+    (total := fun {_ t} o _ _ =>
+      match h : step t o with
+      | (t', a, n) => ⟨a, t', n, h⟩)
+    (correct := by
+      intro s t o a t' n hr _ he
+      obtain ⟨ht, rfl⟩ := hr
+      cases o with
+      | contains x =>
+        cases he
+        refine ⟨?_, ht, rfl⟩
+        have h := contains_eq_true ht.ordered x
+        by_cases hx : x ∈ elements t <;> simp_all
+      | insert x =>
+        cases he
+        exact ⟨rfl, valid_insert ht x, elements_insert x t⟩
+      | erase x =>
+        cases he
+        exact ⟨rfl, valid_erase ht x, elements_erase ht.ordered x⟩
+      | minimum =>
+        cases he
+        exact ⟨(minimum_spec ht.ordered).eq_least, ht, rfl⟩
+      | successor x =>
+        cases he
+        exact ⟨(successor_spec ht.ordered x).eq_least, ht, rfl⟩)
 
 /-- `realization.rep` is definitionally `Rep`. -/
 @[simp]
