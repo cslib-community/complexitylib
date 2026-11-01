@@ -102,11 +102,6 @@ variable {α β : Type}
 
 /-! ### Polynomial-time bit-string and binary-number primitives -/
 
-private theorem unary_polyBounded {encIn : α ↪ List Bool} {n : α → ℕ}
-    (hn : ComputableInPolyTime n encIn encUnary) :
-    PolyBounded (fun a => (encIn a).length) n := by
-  simpa only [encUnary_apply, List.length_replicate] using hn.polyBounded_length
-
 private theorem bool_or'_pt {encIn : α ↪ List Bool} {left right : α → Bool}
     (hleft : ComputableInPolyTime left encIn encBool)
     (hright : ComputableInPolyTime right encIn encBool) :
@@ -140,14 +135,8 @@ private theorem cond_pt {encA : α ↪ List Bool} {encB : β ↪ List Bool}
     ComputableInPolyTime (fun a => if c a then yes a else no a) encA encB :=
   hc.ite hyes hno
 
-private theorem binary_le'_pt {encIn : α ↪ List Bool} {left right : α → ℕ}
-    (hleft : ComputableInPolyTime left encIn encNat)
-    (hright : ComputableInPolyTime right encIn encNat) :
-    ComputableInPolyTime (fun a => decide (left a ≤ right a)) encIn encBool :=
-  binary_le.comp (hleft.prod hright)
-
 attribute [local fun_prop] ComputableInPolyTime.bool_and' bool_or'_pt bool_beq_pt bool_bne_pt
-  decide_ne_pt cond_pt binary_le'_pt
+  decide_ne_pt cond_pt binary_le'
 
 @[fun_prop]
 theorem computableInPolyTime_zeroVertex_comp {encIn : α ↪ List Bool} {n : α → ℕ}
@@ -222,7 +211,7 @@ theorem localOptRel_mem_FNP {enc : α ↪ List Bool} {n : α → ℕ}
     (hN : ComputableInPolyTime N (encPair enc encBits) encBits)
     (hC : ComputableInPolyTime C (encPair enc encBits) encNat) :
     localOptRel n N C ∈ FNP enc := by
-  obtain ⟨p, hp⟩ := (unary_polyBounded hn).exists_polynomial
+  obtain ⟨p, hp⟩ := (polyBounded hn).exists_polynomial
   refine ⟨⟨p, fun a u h => h.1 ▸ hp a⟩,
     fun x => decide (x.2.length = n x.1) && decide (C x ≤ C (x.1, N x)), ?_, fun a u => ?_⟩
   · fun_prop
@@ -243,7 +232,7 @@ theorem pigeonRel_mem_FNP {enc : α ↪ List Bool} {n : α → ℕ} {F : α × L
     (hn : ComputableInPolyTime n enc encUnary)
     (hF : ComputableInPolyTime F (encPair enc encBits) encBits) :
     pigeonRel n F ∈ FNP enc := by
-  obtain ⟨p, hp⟩ := (unary_polyBounded hn).exists_polynomial
+  obtain ⟨p, hp⟩ := (polyBounded hn).exists_polynomial
   refine mem_FNP.mpr ⟨⟨2 * p, fun a w h => by
       simp only [Polynomial.eval_mul, Polynomial.eval_ofNat]
       have := hp a; have := h.1; omega⟩,
@@ -274,7 +263,7 @@ theorem endOfLineRel_mem_FNP {enc : α ↪ List Bool} {n : α → ℕ}
     (hP : ComputableInPolyTime P (encPair enc encBits) encBits)
     (hS : ComputableInPolyTime S (encPair enc encBits) encBits) :
     endOfLineRel n P S ∈ FNP enc := by
-  obtain ⟨p, hp⟩ := (unary_polyBounded hn).exists_polynomial
+  obtain ⟨p, hp⟩ := (polyBounded hn).exists_polynomial
   refine ⟨⟨p, fun a u h => h.1 ▸ hp a⟩,
     fun x => decide (x.2.length = n x.1) &&
       ((hasIn n P S x.1 x.2 != hasOut n P S x.1 x.2) == decide (x.2 ≠ zeroVertex (n x.1))),
@@ -299,7 +288,7 @@ theorem leafRel_mem_FNP {enc : α ↪ List Bool} {n : α → ℕ}
     (hN₁ : ComputableInPolyTime N₁ (encPair enc encBits) encBits)
     (hN₂ : ComputableInPolyTime N₂ (encPair enc encBits) encBits) :
     leafRel n N₁ N₂ ∈ FNP enc := by
-  obtain ⟨p, hp⟩ := (unary_polyBounded hn).exists_polynomial
+  obtain ⟨p, hp⟩ := (polyBounded hn).exists_polynomial
   refine ⟨⟨p, fun a u h => h.1 ▸ hp a⟩,
     fun x => decide (x.2.length = n x.1) &&
       (hasOddDegree N₁ N₂ x.1 x.2 == decide (x.2 ≠ zeroVertex (n x.1))),

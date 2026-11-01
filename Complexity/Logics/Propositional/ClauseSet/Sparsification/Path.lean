@@ -22,11 +22,14 @@ or its petals) are new: they occur in no earlier node, survive into the next nod
 across steps. So the length of a branch is at most the number of introduced clauses.
 
 A new clause of size `c` that does not survive to the last node is *eliminated* by a smaller clause
-introduced later. The key estimate (`card_newContaining_lt`, [Calabro, Lemma 5.9][Calabro2009]) is
-that fewer than `2 θ (c - h)` new clauses of size `c` containing a fixed clause of size `h < c` can
-be present at once. When the last node is sparse and the variables of the root are among `N` given
-ones, it has fewer than `2 N θ (c - 1)` clauses of size `c`. Together these bound the number of
-introduced clauses of size `c` by
+introduced later. The key estimate ([Calabro, Lemma 5.9][Calabro2009]) is that fewer than
+`2 θ (c - h)` new clauses of size `c` containing a fixed clause of size `h < c` can be present at
+once. It holds along any valid steps whose new clauses of size at least two are introduced by the
+chosen branch (`card_newContaining_lt_of_steps`), so it serves both this procedure
+(`Path.card_newContaining_lt`) and counting sparsification, whose steps also add unit clauses.
+When the last node is sparse and the variables of the root are among `N` given ones, it has fewer
+than `2 N θ (c - 1)` clauses of size `c`. Together these bound the number of introduced clauses of
+size `c` by
 `2 N θ (c - 1) + ∑_{h < c} 2 θ (c - h) · #(introduced clauses of size h)`
 (`card_introducedOfCard_le`). Each petal step with petals of size `j` introduces at least `θ j`
 clauses of size `j` (`mul_card_petalSteps_le`).
@@ -46,7 +49,8 @@ clauses of size `j` (`mul_card_petalSteps_le`).
 
 * `Cslib.Logic.PL.ClauseSet.Sparsification.Path.len_le_card_introduced`: a branch is no longer
   than its number of introduced clauses.
-* `Cslib.Logic.PL.ClauseSet.Sparsification.Path.card_newContaining_lt`: few new clauses contain a
+* `Cslib.Logic.PL.ClauseSet.Sparsification.card_newContaining_lt_of_steps`,
+  `Cslib.Logic.PL.ClauseSet.Sparsification.Path.card_newContaining_lt`: few new clauses contain a
   fixed clause.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.Path.card_introducedOfCard_le`: the recursive bound on
   the introduced clauses.
@@ -136,6 +140,102 @@ private theorem card_filter_card_eq_le_of_sparse {θ : ℕ → ℕ} (hθ : ∀ j
     _ ≤ ∑ _l ∈ U ×ˢ (univ : Finset Bool), θ (c - 1) := sum_le_sum fun l _ => hflower l
     _ = 2 * U.card * θ (c - 1) := by
       rw [sum_const, card_product, card_univ, Fintype.card_bool, smul_eq_mul, Nat.mul_comm _ 2]
+
+/-- **Few new clauses contain a fixed clause** [Calabro, Lemma 5.9][Calabro2009]. Along clause sets
+`ψ 0, …, ψ N`, where each `ψ i` has the valid choice `(c i, H i)` and every clause of width at
+least two that is new in `ψ (i + 1)` is introduced by the branch `b i`, fewer than
+`2 θ (j - |S|)` clauses of width `j` that are absent from `ψ 0` and contain a fixed literal set `S`
+with `1 ≤ |S| < j` are present in any `ψ t`. Both the sparsification step (`child`) and the
+counting step, which also adds unit clauses, satisfy the hypothesis. -/
+theorem card_newContaining_lt_of_steps {θ : ℕ → ℕ} (hθ : ∀ r, 1 ≤ θ r)
+    (N : ℕ) (ψ : ℕ → ClauseSet V) (c : ℕ → ℕ) (H : ℕ → Finset (Literal V)) (b : ℕ → Bool)
+    (hchoice : ∀ i < N, Choice θ (ψ i) (c i) (H i))
+    (hnew : ∀ i < N, ∀ C ∈ ψ (i + 1), C ∉ ψ i → 2 ≤ C.card → C ∈ intro (ψ i) (c i) (H i) (b i))
+    {t j : ℕ} (ht : t ≤ N) {S : Finset (Literal V)} (hS : 1 ≤ S.card) (hSj : S.card < j) :
+    ((ψ t).filter fun C => C ∉ ψ 0 ∧ C.card = j ∧ S ⊆ C).card < 2 * θ (j - S.card) := by
+  set γ := (ψ t).filter fun C => C ∉ ψ 0 ∧ C.card = j ∧ S ⊆ C
+  by_contra hge
+  push Not at hge
+  have hγ : ∀ C ∈ γ, C ∉ ψ 0 ∧ C.card = j ∧ S ⊆ C := fun C hC => (mem_filter.mp hC).2
+  have hex : ∃ m, γ ⊆ ψ m := ⟨t, filter_subset _ _⟩
+  set x := Nat.find hex
+  have hxsub : γ ⊆ ψ x := Nat.find_spec hex
+  have hxle : x ≤ t := Nat.find_min' hex (filter_subset _ _)
+  have hγne : γ.Nonempty := by rw [← card_pos]; have := hθ (j - S.card); omega
+  have hx0 : x ≠ 0 := by
+    intro hx
+    obtain ⟨C, hC⟩ := hγne
+    exact (hγ C hC).1 (hx ▸ hxsub hC)
+  obtain ⟨m, hxm⟩ : ∃ m, x = m + 1 := ⟨x - 1, by omega⟩
+  have hm : m < N := by omega
+  have hnotsub : ¬ γ ⊆ ψ m := Nat.find_min hex (by omega)
+  -- the clauses of `γ` absent from `ψ m` are introduced at step `m`
+  have hintro : ∀ C ∈ γ, C ∉ ψ m → C ∈ intro (ψ m) (c m) (H m) (b m) := fun C hC hCm =>
+    hnew m hm C (hxm ▸ hxsub hC) hCm (by have := (hγ C hC).2.1; omega)
+  -- so the flower size at step `m` exceeds `j`
+  obtain ⟨C₀, hC₀γ, hC₀old⟩ := not_subset.mp hnotsub
+  have hjc : j < c m := by
+    have := (card_of_mem_intro (hchoice m hm).1 (hintro C₀ hC₀γ hC₀old)).2
+    rwa [(hγ C₀ hC₀γ).2.1] at this
+  -- and `S` is not heavy at `ψ m`
+  have hlight : (flower (ψ m) j S).card < θ (j - S.card) := by
+    by_contra hheavy
+    push Not at hheavy
+    have := (hchoice m hm).2.1 j S ⟨hS, hSj, hheavy⟩
+    omega
+  have hold : (γ.filter (· ∈ ψ m)).card < θ (j - S.card) := by
+    refine lt_of_le_of_lt (card_le_card fun C hC => ?_) hlight
+    obtain ⟨hCγ, hCold⟩ := mem_filter.mp hC
+    exact mem_flower.mpr ⟨hCold, (hγ C hCγ).2.1, (hγ C hCγ).2.2⟩
+  set Q := γ.filter (· ∉ ψ m)
+  have hsplit : (γ.filter (· ∈ ψ m)).card + Q.card = γ.card :=
+    card_filter_add_card_filter_not (s := γ) (· ∈ ψ m)
+  have hQcard : θ (j - S.card) + 1 ≤ Q.card := by omega
+  have hQintro : Q ⊆ intro (ψ m) (c m) (H m) (b m) := fun C hC =>
+    hintro C (mem_filter.mp hC).1 (mem_filter.mp hC).2
+  cases hdir : b m with
+  | false =>
+    have hQone : Q.card ≤ 1 := by
+      have := card_le_card hQintro
+      simpa only [hdir, intro, card_singleton] using this
+    have := hθ (j - S.card)
+    omega
+  | true =>
+    -- the clauses whose petals lie in `Q` all contain the larger heart `H m ∪ S`
+    have hQpetal : ∀ q ∈ Q, q ∈ petals (ψ m) (c m) (H m) := by
+      intro q hq
+      simpa only [hdir, intro] using hQintro hq
+    obtain ⟨q₀, hq₀⟩ : Q.Nonempty := by rw [← card_pos]; omega
+    obtain ⟨D₀, hD₀, hD₀q⟩ := mem_petals.mp (hQpetal q₀ hq₀)
+    have hSq₀ : S ⊆ q₀ := (hγ q₀ (mem_filter.mp hq₀).1).2.2
+    have hdisj : Disjoint (H m) S := by
+      rw [Finset.disjoint_right]
+      intro l hlS hlH
+      have := hSq₀ hlS
+      rw [← hD₀q] at this
+      exact (mem_sdiff.mp this).2 hlH
+    have hcardHS : (H m ∪ S).card = (H m).card + S.card := card_union_of_disjoint hdisj
+    have hj : j = c m - (H m).card := by
+      rw [← (hγ q₀ (mem_filter.mp hq₀).1).2.1]
+      exact card_of_mem_petals (hQpetal q₀ hq₀)
+    have hHc : (H m).card < c m := (hchoice m hm).1.2.1
+    have hQle : Q.card ≤ (flower (ψ m) (c m) (H m ∪ S)).card := by
+      have hsub : Q ⊆ ((flower (ψ m) (c m) (H m)).filter (S ⊆ ·)).image (· \ H m) := by
+        intro q hq
+        obtain ⟨D, hD, rfl⟩ := mem_petals.mp (hQpetal q hq)
+        have hSD : S ⊆ D \ H m := (hγ _ (mem_filter.mp hq).1).2.2
+        exact mem_image.mpr ⟨D, mem_filter.mpr ⟨hD, hSD.trans sdiff_subset⟩, rfl⟩
+      refine (card_le_card hsub).trans (card_image_le.trans (card_le_card fun D hD => ?_))
+      obtain ⟨hDf, hSD⟩ := mem_filter.mp hD
+      obtain ⟨hDψ, hDcard, hHD⟩ := mem_flower.mp hDf
+      exact mem_flower.mpr ⟨hDψ, hDcard, union_subset hHD hSD⟩
+    have hheavy : Heavy θ (ψ m) (c m) (H m ∪ S) := by
+      refine ⟨by omega, by omega, ?_⟩
+      have heq : c m - (H m ∪ S).card = j - S.card := by omega
+      rw [heq]
+      omega
+    have := (hchoice m hm).2.2 (H m ∪ S) hheavy
+    omega
 
 namespace Path
 
@@ -253,98 +353,9 @@ private theorem notMem_node_zero_of_mem_introduced {a : Finset (Literal V)}
 present in any node. -/
 theorem card_newContaining_lt {j c : ℕ} (hj : j ≤ P.len) {b : Finset (Literal V)}
     (hb1 : 1 ≤ b.card) (hbc : b.card < c) :
-    (P.newContaining j c b).card < 2 * θ (c - b.card) := by
-  set γ := P.newContaining j c b
-  by_contra hge
-  push Not at hge
-  have hγ0 : ∀ a ∈ γ, a ∉ P.node 0 ∧ a.card = c ∧ b ⊆ a := fun a ha => (mem_filter.mp ha).2
-  have hex : ∃ m, γ ⊆ P.node m := ⟨j, filter_subset _ _⟩
-  set x := Nat.find hex
-  have hxsub : γ ⊆ P.node x := Nat.find_spec hex
-  have hxle : x ≤ j := Nat.find_min' hex (filter_subset _ _)
-  have hγne : γ.Nonempty := by
-    rw [← card_pos]; have := hθ (c - b.card); omega
-  have hx0 : x ≠ 0 := by
-    intro hx
-    obtain ⟨a, ha⟩ := hγne
-    exact (hγ0 a ha).1 (hx ▸ hxsub ha)
-  obtain ⟨x', hx'⟩ : ∃ x', x = x' + 1 := ⟨x - 1, by omega⟩
-  have hx'len : x' < P.len := by omega
-  have hnotsub : ¬ γ ⊆ P.node x' := Nat.find_min hex (by omega)
-  -- some clause of `γ` is introduced at step `x'`, so the flower size there exceeds `c`
-  obtain ⟨a₀, ha₀γ, ha₀⟩ := not_subset.mp hnotsub
-  have ha₀intro : a₀ ∈ P.introAt x' := by
-    have := node_succ_subset hx'len (hx' ▸ hxsub ha₀γ)
-    exact (mem_union.mp this).resolve_left ha₀
-  have hcsize : c < P.size x' := by
-    have := (card_of_mem_intro (heavy hx'len) ha₀intro).2
-    rwa [(hγ0 a₀ ha₀γ).2.1] at this
-  -- so `b` is not heavy at node `x'`
-  have hlight : (flower (P.node x') c b).card < θ (c - b.card) := by
-    by_contra hheavy
-    push Not at hheavy
-    have := (P.choice x' hx'len).2.1 c b ⟨hb1, hbc, hheavy⟩
-    omega
-  have hold : (γ.filter (· ∈ P.node x')).card < θ (c - b.card) := by
-    refine lt_of_le_of_lt (card_le_card fun a ha => ?_) hlight
-    obtain ⟨haγ, hax'⟩ := mem_filter.mp ha
-    exact mem_flower.mpr ⟨hax', (hγ0 a haγ).2.1, (hγ0 a haγ).2.2⟩
-  set Q := γ.filter (· ∉ P.node x')
-  have hsplit : (γ.filter (· ∈ P.node x')).card + Q.card = γ.card :=
-    card_filter_add_card_filter_not (s := γ) (· ∈ P.node x')
-  have hQcard : θ (c - b.card) + 1 ≤ Q.card := by omega
-  have hQintro : Q ⊆ P.introAt x' := by
-    intro a ha
-    obtain ⟨haγ, hax'⟩ := mem_filter.mp ha
-    have := node_succ_subset hx'len (hx' ▸ hxsub haγ)
-    exact (mem_union.mp this).resolve_left hax'
-  cases hdir : P.dir x' with
-  | false =>
-    have : Q.card ≤ 1 := by
-      have h1 := card_le_card hQintro
-      simp only [introAt, hdir, intro, card_singleton] at h1
-      exact h1
-    have := hθ (c - b.card)
-    omega
-  | true =>
-    -- the clauses whose petals lie in `Q` all contain the larger heart `heart ∪ b`
-    have hQpetal : ∀ q ∈ Q, q ∈ petals (P.node x') (P.size x') (P.heart x') := by
-      intro q hq
-      have := hQintro hq
-      simpa only [introAt, hdir, intro] using this
-    obtain ⟨q₀, hq₀⟩ : Q.Nonempty := by rw [← card_pos]; omega
-    obtain ⟨C₀, hC₀, hC₀q⟩ := mem_petals.mp (hQpetal q₀ hq₀)
-    have hbq₀ : b ⊆ q₀ := (hγ0 q₀ (mem_filter.mp hq₀).1).2.2
-    have hdisj : Disjoint (P.heart x') b := by
-      rw [Finset.disjoint_right]
-      intro l hlb hlH
-      have := hbq₀ hlb
-      rw [← hC₀q] at this
-      exact (mem_sdiff.mp this).2 hlH
-    have hcardHb : (P.heart x' ∪ b).card = (P.heart x').card + b.card :=
-      card_union_of_disjoint hdisj
-    have hcq : c = P.size x' - (P.heart x').card := by
-      rw [← (hγ0 q₀ (mem_filter.mp hq₀).1).2.1]
-      exact card_of_mem_petals (hQpetal q₀ hq₀)
-    have hHc' : (P.heart x').card < P.size x' := (heavy hx'len).2.1
-    have hQle : Q.card ≤ (flower (P.node x') (P.size x') (P.heart x' ∪ b)).card := by
-      have hsub : Q ⊆ ((flower (P.node x') (P.size x') (P.heart x')).filter (b ⊆ ·)).image
-          (· \ P.heart x') := by
-        intro q hq
-        obtain ⟨C, hC, rfl⟩ := mem_petals.mp (hQpetal q hq)
-        have hbq : b ⊆ C \ P.heart x' := (hγ0 _ (mem_filter.mp hq).1).2.2
-        exact mem_image.mpr ⟨C, mem_filter.mpr ⟨hC, hbq.trans sdiff_subset⟩, rfl⟩
-      refine (card_le_card hsub).trans (card_image_le.trans (card_le_card fun C hC => ?_))
-      obtain ⟨hCf, hbC⟩ := mem_filter.mp hC
-      obtain ⟨hCψ, hCcard, hHC⟩ := mem_flower.mp hCf
-      exact mem_flower.mpr ⟨hCψ, hCcard, union_subset hHC hbC⟩
-    have hheavy : Heavy θ (P.node x') (P.size x') (P.heart x' ∪ b) := by
-      refine ⟨by omega, by omega, ?_⟩
-      have heq : P.size x' - (P.heart x' ∪ b).card = c - b.card := by omega
-      rw [heq]
-      omega
-    have := (P.choice x' hx'len).2.2 (P.heart x' ∪ b) hheavy
-    omega
+    (P.newContaining j c b).card < 2 * θ (c - b.card) :=
+  card_newContaining_lt_of_steps hθ P.len P.node P.size P.heart P.dir P.choice
+    (fun _ hi _ hC hCi _ => (mem_union.mp (node_succ_subset hi hC)).resolve_left hCi) hj hb1 hbc
 
 /-- **Counting introduced clauses.** If the last node is sparse and the variables of the root are
 among the `N` variables of `U`, the introduced clauses of size `c ≥ 1` number at most

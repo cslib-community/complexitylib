@@ -114,34 +114,6 @@ theorem deg_bounds_of_extra {n sz : ℕ} {st : RawState n} {T : FHTree n} {z : F
   have hd_log : T.deg ≤ 2 * Nat.log 2 sz + 1 := (hT.deg_bounds hsz).1
   exact ⟨hd_log, by omega⟩
 
-private theorem nodup_eraseIdx {α : Type*} :
-    ∀ {L : List α} (i : ℕ), L.Nodup → (L.eraseIdx i).Nodup
-  | [], _, _ => List.nodup_nil
-  | _ :: _, 0, h => (List.nodup_cons.mp h).2
-  | a :: tl, i + 1, h => by
-    obtain ⟨ha, htl⟩ := List.nodup_cons.mp h
-    rw [List.eraseIdx_cons_succ, List.nodup_cons]
-    refine ⟨?_, nodup_eraseIdx i htl⟩
-    intro hm
-    obtain ⟨j, hj, _, rfl⟩ := List.mem_eraseIdx_iff_getElem.mp hm
-    exact ha (List.getElem_mem hj)
-
-private theorem map_eraseIdx_eq {α β : Type*} (f : α → β) :
-    ∀ (L : List α) (i : ℕ), (L.eraseIdx i).map f = (L.map f).eraseIdx i
-  | [], _ => rfl
-  | _ :: _, 0 => rfl
-  | _ :: tl, i + 1 => by
-    simp only [List.eraseIdx_cons_succ, List.map_cons, map_eraseIdx_eq f tl i]
-
-private theorem length_eraseIdx_add_one {α : Type*} :
-    ∀ (L : List α) (i : ℕ), i < L.length → (L.eraseIdx i).length + 1 = L.length
-  | [], _, hi => absurd hi (Nat.not_lt_zero _)
-  | _ :: _, 0, _ => rfl
-  | _ :: tl, i + 1, hi => by
-    simp only [List.eraseIdx_cons_succ, List.length_cons]
-    have := length_eraseIdx_add_one tl i (Nat.lt_of_succ_lt_succ hi)
-    omega
-
 /-! ## Consolidation table invariant `SlotInv` -/
 
 /-- Invariant for the degree consolidation table `st.cons` holding `slotTrees` within
@@ -193,7 +165,7 @@ theorem SlotInv.lookup {n sz maxDeg : ℕ} {st : RawState n} {slotTrees : List (
     obtain ⟨T, hT_mem, hT_deg⟩ := hex
     obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hT_mem
     refine ⟨i, hi, hT_deg, hT_deg ▸ hhit slotTrees[i] (List.getElem_mem hi),
-      length_eraseIdx_add_one slotTrees i hi, ?_⟩
+      List.length_eraseIdx_add_one hi, ?_⟩
     intro R hR hR_deg
     obtain ⟨j, hj, hji, rfl⟩ := List.mem_eraseIdx_iff_getElem.mp hR
     have hget : (slotTrees.map FHTree.deg)[j]'(by simp only [List.length_map]; exact hj) =
@@ -230,7 +202,7 @@ theorem SlotInv.step_collision {n sz maxDeg : ℕ} {st st' : RawState n} {slotTr
     (hvalid' : ∀ R ∈ slotTrees.eraseIdx i, ValidRoot st' none R) :
     SlotInv n sz st' (slotTrees.eraseIdx i) maxDeg := by
   obtain ⟨hnd, htr, hhit, hemp, hmd1, hmd2⟩ := hs
-  refine ⟨by rw [map_eraseIdx_eq]; exact nodup_eraseIdx i hnd, ?_, ?_, ?_, hmd1, hmd2⟩
+  refine ⟨by rw [← List.eraseIdx_map]; exact List.Nodup.eraseIdx i hnd, ?_, ?_, ?_, hmd1, hmd2⟩
   · intro R hR
     obtain ⟨j, hj, _, rfl⟩ := List.mem_eraseIdx_iff_getElem.mp hR
     exact ⟨hvalid' _ hR, (htr _ (List.getElem_mem hj)).2⟩
@@ -1534,7 +1506,7 @@ private theorem extract_tree_by_root {n : ℕ} {cs : List (FHTree n)} {u : Fin n
   refine ⟨i, hi, hT_root, ?_, forestNodes_eraseIdx_perm cs i hi⟩
   have hnd_map : (cs.map FHTree.root).Nodup := map_root_nodup hnd
   have hi_map : i < (cs.map FHTree.root).length := by simp only [List.length_map]; exact hi
-  rw [map_eraseIdx_eq, ← hnd_map.erase_getElem i hi_map, List.getElem_map, hT_root]
+  rw [← List.eraseIdx_map, ← hnd_map.erase_getElem i hi_map, List.getElem_map, hT_root]
   simpa only [List.erase_cons_head] using hperm.erase u
 
 private theorem perm_reassoc_mid {α : Type*} (A B C D : List α) :
@@ -1543,11 +1515,6 @@ private theorem perm_reassoc_mid {α : Type*} (A B C D : List α) :
   have h2 : A ++ ((B ++ C) ++ D) = (A ++ B) ++ (C ++ D) := by simp only [List.append_assoc]
   rw [h1, ← h2]
   exact (List.perm_append_comm.append_right D).append_left A
-
-private theorem perm_swap_front {α : Type*} (X Y Z : List α) :
-    (X ++ (Y ++ Z)).Perm (Y ++ (X ++ Z)) := by
-  rw [← List.append_assoc, ← List.append_assoc]
-  exact List.perm_append_comm.append_right Z
 
 private abbrev childScatterBody : Code .exact rFib :=
   ram_exact[
@@ -1945,11 +1912,12 @@ private theorem scatterChildrenLoop_exec {n sz base w : ℕ}
         ofData_set_scratch _ (by decide : 17 ≤ iterCur.val)]
     -- Prepare induction hypotheses on `a_next`
     have hnd_next : (forestNodes c_rest ++ (forestNodes slotTrees_1 ++ fixedNodes)).Nodup :=
-      (perm_swap_front (forestNodes slotTrees_1) (forestNodes c_rest) fixedNodes).nodup_iff.mp
-        hnd_sc
+      (List.perm_append_comm_assoc (forestNodes slotTrees_1) (forestNodes c_rest)
+        fixedNodes).nodup_iff.mp hnd_sc
     have hsz_next :
         (forestNodes c_rest ++ (forestNodes slotTrees_1 ++ fixedNodes)).length ≤ sz := by
-      have hp1 := perm_swap_front (forestNodes slotTrees_1) (forestNodes c_rest) fixedNodes
+      have hp1 :=
+        List.perm_append_comm_assoc (forestNodes slotTrees_1) (forestNodes c_rest) fixedNodes
       have hp2 := hperm_sc.append_right (forestNodes c_rest ++ fixedNodes)
       have hp_len := (hp1.symm.trans hp2).length_eq
       simp only [List.length_append] at hp_len hsz_for_sc ⊢
@@ -2011,9 +1979,10 @@ private theorem scatterChildrenLoop_exec {n sz base w : ℕ}
       modifies_block_trans (modifies_block_trans (modifies_block_trans hmod1 hmod2) hmod3) hmod_tl
     have hperm_final :
         (forestNodes slotTrees').Perm (forestNodes c_trees ++ forestNodes slotTrees) :=
-      hperm_b.trans <| (hperm_sc.append_left _).trans <| (perm_swap_front _ _ _).trans <| by
-        rw [← List.append_assoc]
-        exact hperm_fn.append_right _
+      hperm_b.trans <| (hperm_sc.append_left _).trans <|
+        (List.perm_append_comm_assoc _ _ _).trans <| by
+          rw [← List.append_assoc]
+          exact hperm_fn.append_right _
     refine ⟨b, slotTrees', maxDeg', t_sc + 13 + t_tl, he_all,
       by simp only [List.length_cons] at ht_sc ht_tl ⊢; omega,
       hb_b, hbr_b, hmod_all, ?_, hmd_b, hperm_final, hnd_b, hs_b, ?_⟩
@@ -2200,11 +2169,12 @@ private theorem scatterRootsLoop_exec {n sz base w : ℕ}
       simp only [a_next, ofData_set_scratch _ (by decide : 17 ≤ remReg.val),
         ofData_set_scratch _ (by decide : 17 ≤ iterCur.val)]
     have hnd_next : (forestNodes r_rest ++ (forestNodes slotTrees_1 ++ fixedNodes)).Nodup :=
-      (perm_swap_front (forestNodes slotTrees_1) (forestNodes r_rest) fixedNodes).nodup_iff.mp
-        hnd_sc
+      (List.perm_append_comm_assoc (forestNodes slotTrees_1) (forestNodes r_rest)
+        fixedNodes).nodup_iff.mp hnd_sc
     have hsz_next :
         (forestNodes r_rest ++ (forestNodes slotTrees_1 ++ fixedNodes)).length ≤ sz := by
-      have hp1 := perm_swap_front (forestNodes slotTrees_1) (forestNodes r_rest) fixedNodes
+      have hp1 :=
+        List.perm_append_comm_assoc (forestNodes slotTrees_1) (forestNodes r_rest) fixedNodes
       have hp2 := hperm_sc.append_right (forestNodes r_rest ++ fixedNodes)
       have hp_len := (hp1.symm.trans hp2).length_eq
       simp only [List.length_append] at hp_len hsz_for_sc ⊢
@@ -2255,9 +2225,10 @@ private theorem scatterRootsLoop_exec {n sz base w : ℕ}
       modifies_block_trans hmod2 hmod_tl
     have hperm_final :
         (forestNodes slotTrees').Perm (forestNodes r_trees ++ forestNodes slotTrees) :=
-      hperm_b.trans <| (hperm_sc.append_left _).trans <| (perm_swap_front _ _ _).trans <| by
-        rw [← List.append_assoc]
-        exact hperm_fn.append_right _
+      hperm_b.trans <| (hperm_sc.append_left _).trans <|
+        (List.perm_append_comm_assoc _ _ _).trans <| by
+          rw [← List.append_assoc]
+          exact hperm_fn.append_right _
     refine ⟨b, slotTrees', maxDeg', t_sc + 6 + t_tl, he_all,
       by simp only [List.length_cons] at ht_sc ht_tl ⊢; omega,
       hb_b, hbr_b, hmod_all, ?_, hmd_b, hperm_final, hnd_b, hs_b, ?_⟩
@@ -2784,7 +2755,7 @@ private theorem gatherSlotsLoop_exec {n sz base w maxDeg : ℕ} (hn_pos : 1 ≤ 
         ExecWithin.loop_iter hc_loop he_body he_tl
       have hperm_final :
           (forestNodes finalRoots).Perm (forestNodes slotTrees ++ forestNodes accRoots) :=
-        hperm_b.trans <| (perm_swap_front (forestNodes slotRest) T_hit.nodes
+        hperm_b.trans <| (List.perm_append_comm_assoc (forestNodes slotRest) T_hit.nodes
           (forestNodes accRoots)).trans <| by
           rw [← List.append_assoc]
           exact hperm_er.append_right _
@@ -2888,7 +2859,7 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
       extract_tree_by_root hnd hperm_roots
     let T_z := ts[idx_z]
     let r_trees := ts.eraseIdx idx_z
-    have hnr_split : r_trees.length + 1 = ts.length := length_eraseIdx_add_one ts idx_z hidx_z
+    have hnr_split : r_trees.length + 1 = ts.length := List.length_eraseIdx_add_one hidx_z
     have hrtail_len : rtail.length = r_trees.length := by
       simpa only [List.length_map] using hperm_rtail.length_eq
     have hTz_val : ValidRoot st none T_z := hroots T_z (List.getElem_mem hidx_z)
@@ -3328,11 +3299,12 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
           ofData_set_scratch _ (by decide : 17 ≤ remReg.val)]
       -- Phase A2 (`x_tr → x_A2`, `rootScatterLoop`)
       have hnd_tr : (forestNodes r_trees ++ (forestNodes slotTrees_1 ++ [z])).Nodup :=
-        (perm_swap_front (forestNodes slotTrees_1) (forestNodes r_trees) [z]).nodup_iff.mp hnd_A1
+        (List.perm_append_comm_assoc (forestNodes slotTrees_1) (forestNodes r_trees)
+          [z]).nodup_iff.mp hnd_A1
       have hsz_tr :
           (forestNodes r_trees ++ (forestNodes slotTrees_1 ++ [z])).length ≤
             (IndexedMinPQ.dom s).card := by
-        have hp1 := perm_swap_front (forestNodes slotTrees_1) (forestNodes r_trees) [z]
+        have hp1 := List.perm_append_comm_assoc (forestNodes slotTrees_1) (forestNodes r_trees) [z]
         have hp2 := hperm_A1.append_right (forestNodes r_trees ++ [z])
         have hlen := (hp1.symm.trans hp2).length_eq
         simp only [List.nil_append] at hsz_crz

@@ -7,8 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.VanEmdeBoas.Call
-public import Complexity.Algorithms.Lean.VanEmdeBoas.Insert
+public import Complexity.DataStructure.VanEmdeBoas.WordRAM.Call
+public import Complexity.DataStructure.VanEmdeBoas.Insert
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.IntervalCases
 
@@ -24,8 +24,8 @@ namespace ComplexityTests.VanEmdeBoasRAM
 
 open Cslib
 open Cslib.WordRAM
-open Cslib.Algorithms.Lean.VanEmdeBoas
-open Cslib.Algorithms.WordRAM.VanEmdeBoas
+open Cslib.DataStructure.VanEmdeBoas
+open Cslib.DataStructure Cslib.DataStructure.VanEmdeBoas.WordRAM
 
 /-- The test tree represents exactly the three keys zero, one and three. -/
 def fixtureTree : Tree 1 := (((Tree.empty 1).insert 0).insert 1).insert 3

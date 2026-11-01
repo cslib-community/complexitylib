@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Erik Demaine
 -/
 
-import Complexity.Algorithms.WordRAM.FusionTree.Static
+import Complexity.DataStructure.FusionTree.WordRAM.Static
 
 /-! Concrete instruction executions and satisfiable complete endpoint premises. -/
 
@@ -12,9 +12,9 @@ import Complexity.Algorithms.WordRAM.FusionTree.Static
 set_option exponentiation.threshold 512
 
 open Cslib.WordRAM
-open Cslib.Algorithms.Lean.FusionTree
-open Cslib.Algorithms.WordRAM.FusionTree
-open Cslib.Algorithms.WordRAM.FusionTree.QueryProgram
+open Cslib.DataStructure.FusionTree
+open Cslib.DataStructure.FusionTree.WordRAM
+open Cslib.DataStructure.FusionTree.WordRAM.QueryProgram
 
 namespace FusionTreeQueryTests
 
