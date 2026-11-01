@@ -9,6 +9,7 @@ import ComplexityResults.Registry
 import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder
 import Complexity.Computability.Complexity.Classes.LogSpace.PolyTime
 import Complexity.Computability.Complexity.Classes.SharpP.Lowness
+import Complexity.Computability.Complexity.Classes.TimeSpace.Williams
 import Complexity.Computability.Complexity.FineGrained.OrthogonalVectors
 import Complexity.Computability.Complexity.FineGrained.PPZ
 import Complexity.Computability.Complexity.FineGrained.Schoening
@@ -145,3 +146,17 @@ register_result "native-sparsification" where
     encCNF and polynomial encoded-length overhead; no new sharp sparsification \
     constant."
 
+register_result "williams-square-root-space" where
+  title := "Williams's square-root-space simulation of deterministic time"
+  topic := "space complexity"
+  sources := [
+    { paper := Williams2025, theorem := "Theorem 1.1",
+      locator := "arXiv:2502.17779v1, Section 3" }
+  ]
+  theorems := [
+    Cslib.Complexity.DTIME_subset_DSPACE_sqrt
+  ]
+  scope := "For every time bound t(n) >= n and arbitrary injective input encoding, \
+    DTIME(t) is contained in DSPACE(Nat.sqrt(t * (Nat.log2(t) + 1))). Finite binary \
+    multitape machines, read-only input and visited-work-cell space; classes absorb \
+    affine constants. No time-constructibility or monotonicity hypothesis."
