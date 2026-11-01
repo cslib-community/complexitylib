@@ -34,6 +34,8 @@ import ComplexityAbstracts.GSWSecurityAbstract
 import ComplexityAbstracts.GSWSecurityBridge
 import ComplexityAbstracts.HashFamiliesAbstract
 import ComplexityAbstracts.HashFamiliesBridge
+import ComplexityAbstracts.HashTablesAbstract
+import ComplexityAbstracts.HashTablesBridge
 import ComplexityAbstracts.ImmermanSzelepcsenyiAbstract
 import ComplexityAbstracts.ImmermanSzelepcsenyiBridge
 import ComplexityAbstracts.KargerMinCutAbstract
