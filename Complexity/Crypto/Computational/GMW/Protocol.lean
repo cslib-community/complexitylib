@@ -632,7 +632,7 @@ theorem eval_runTwoRound {α : Type} (reply1 reply2 : List Bool → List Bool)
     ProbComp.eval (runTwoRound reply1 reply2 prog s) =
       ProbOracleComp.runWith
         (fun q state => PMF.pure (twoRoundStep reply1 reply2 q.2 state)) prog s := by
-  simpa [runTwoRound, ProbOracleComp.runWith] using
+  simpa [runTwoRound, ProbOracleComp.runWith, OracleComp.runWith] using
     ProbOracleComp.eval_run_interpret
       (fun q state => pure (twoRoundStep reply1 reply2 q.2 state)) prog s
 

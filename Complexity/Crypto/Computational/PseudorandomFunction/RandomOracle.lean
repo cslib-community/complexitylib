@@ -105,7 +105,7 @@ theorem prfIdealGame_eq_cached (adversary : OracleDistinguisher) (n : ℕ) :
   rw [ProbComp.eval_map, ProbOracleComp.eval_run_interpret]
   simpa only [prfIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbOracleComp.eval_interpret, ProbComp.eval_pure, PMF.pi_uniformOfFintype,
-    OracleComp.interpret_interpret, ProbOracleComp.interpret_handler,
+    OracleComp.interpret_interpret, OracleComp.interpret_sumHandler,
     ProbOracleComp.interpret_sample, ProbComp.unifFin, OracleComp.interpret_query,
     Function.Embedding.coeFn_mk, hstep, heager, PMF.monad_bind_eq_bind] using h
 

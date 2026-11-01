@@ -260,7 +260,7 @@ noncomputable def cpaGame (E : SymmetricCipher) (adversary : OracleDistinguisher
     (bit : Bool) (n : ℕ) : ProbComp Bool := do
   let k ← E.keyGen n
   let out ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (E.cpaEncryptionOracle n k bit)) (adversary n [])).run ()
   return out.1
 
@@ -272,7 +272,7 @@ theorem isPPTOn_run_cpaEncryptionOracle (E : SymmetricCipher) {adversary : Oracl
     IsPPTOn (encPair encUnary encBits) (encPair encBool (encFinEnum Unit))
       (fun caller : ℕ × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (E.cpaEncryptionOracle caller.1 caller.2 bit)) (adversary caller.1 [])).run ()) := by
   obtain ⟨c, d, hlen⟩ := E.encrypt_ppt.length_le
   let EIn := encPair (encPair encUnary encBits)
@@ -395,7 +395,7 @@ noncomputable def cpaOneTimeGame (E : SymmetricCipher) (adversary : OracleDistin
     (bit : Bool) (n : ℕ) : ProbComp Bool := do
   let k ← E.keyGen n
   let out ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (E.oneTimeCPAEncryptionOracle n k bit)) (adversary n [])).run false
   return out.1
 
@@ -407,7 +407,7 @@ theorem isPPTOn_run_oneTimeCPAEncryptionOracle (E : SymmetricCipher)
     IsPPTOn (encPair encUnary encBits) (encPair encBool encBool)
       (fun caller : ℕ × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (E.oneTimeCPAEncryptionOracle caller.1 caller.2 bit))
           (adversary caller.1 [])).run false) := by
   obtain ⟨c, d, hlen⟩ := E.encrypt_ppt.length_le
@@ -529,7 +529,7 @@ noncomputable def cpaLimitToOneQuery (ctBound : ℕ → ℕ) (adversary : Oracle
     OracleDistinguisher :=
   fun n _ => do
     let out ← (OracleComp.interpret
-      (ProbOracleComp.handler
+      (OracleComp.sumHandler
         (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
         (cpaOneTimeFilterHandler n (ctBound n)))
       (adversary n [])).run false
@@ -573,7 +573,7 @@ theorem isOraclePPT_cpaLimitToOneQuery {ctBound : ℕ → ℕ}
   have hrun : IsOraclePPTOn (encPair encUnary encBits) (encPair encBool encBool)
       (fun caller : ℕ × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler
+          (OracleComp.sumHandler
             (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
             (cpaOneTimeFilterHandler caller.1 (ctBound caller.1)))
           (adversary caller.1 [])).run false) := by
@@ -587,10 +587,10 @@ theorem isOraclePPT_cpaLimitToOneQuery {ctBound : ℕ → ℕ}
     unfold cpaOneTimeFilterHandler at hresult
     dsimp only at hresult
     split_ifs at hresult with hlenEq
-    · obtain ⟨ct, hct, rfl⟩ := ProbOracleComp.mem_support_map hresult
-      obtain ⟨rawCt, _, rfl⟩ := ProbOracleComp.mem_support_map hct
+    · obtain ⟨ct, hct, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
+      obtain ⟨rawCt, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hct
       exact ⟨trivial, (List.length_take_le _ _).trans (by lia), by simp [encBool_apply]⟩
-    · cases ProbOracleComp.eq_of_mem_support_pure hresult
+    · cases OracleComp.eq_of_mem_supportWith_pure hresult
       exact ⟨trivial, by simp, by simp [encBool_apply]⟩
   unfold cpaLimitToOneQuery
   simpa only [bind_pure_comp] using (hrun.map' (ComputableInPolyTime.fst _ _)).isOraclePPT
@@ -618,7 +618,7 @@ theorem eval_cpaGame_cpaLimitToOneQuery (E : SymmetricCipher) (ctBound : ℕ →
       ProbComp.eval (E.oneTimeCPAEncryptionOracle n k bit request alreadyQueried))
     (fun request state =>
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.cpaEncryptionOracle n k bit q s)))
         ((cpaOneTimeFilterHandler n (ctBound n) request).run state.1)).run state.2).map
         (fun result => (result.1.1, result.1.2, result.2)))
@@ -627,7 +627,7 @@ theorem eval_cpaGame_cpaLimitToOneQuery (E : SymmetricCipher) (ctBound : ℕ →
       change (ProbComp.eval (E.oneTimeCPAEncryptionOracle n k bit request alreadyQueried)).map
           (fun x => (x.1, x.2, ())) =
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
             (fun q s => ProbComp.eval (E.cpaEncryptionOracle n k bit q s)))
           (cpaOneTimeFilterHandler n (ctBound n) request alreadyQueried)).run ()).map
           (fun result => (result.1.1, result.1.2, result.2))
@@ -929,7 +929,7 @@ noncomputable def ciGame (E : SymmetricCipher) (adversary : CIAdversary) (n : �
     ProbComp Bool := do
   let k ← E.keyGen n
   let out ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (E.ciEncryptionOracle n k)) (adversary n [])).run []
   return !out.2.contains out.1 && (E.decrypt n k out.1).isSome
 
@@ -941,7 +941,7 @@ theorem isPPTOn_run_ciEncryptionOracle (E : SymmetricCipher) {adversary : CIAdve
     IsPPTOn (encPair encUnary encBits) (encPair encBits (encList encBits))
       (fun caller : ℕ × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (E.ciEncryptionOracle caller.1 caller.2)) (adversary caller.1 [])).run []) := by
   obtain ⟨c, d, hlen⟩ := E.encrypt_ppt.length_le
   let EIn := encPair (encPair encUnary encBits)
@@ -1101,7 +1101,7 @@ noncomputable def ciOneTimeGame (E : SymmetricCipher) (adversary : CIAdversary) 
     ProbComp Bool := do
   let k ← E.keyGen n
   let out ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (E.oneTimeCIEncryptionOracle n k)) (adversary n [])).run []
   return !out.2.contains out.1 && (E.decrypt n k out.1).isSome
 
@@ -1113,7 +1113,7 @@ theorem isPPTOn_run_oneTimeCIEncryptionOracle (E : SymmetricCipher) {adversary :
     IsPPTOn (encPair encUnary encBits) (encPair encBits (encList encBits))
       (fun caller : ℕ × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (E.oneTimeCIEncryptionOracle caller.1 caller.2)) (adversary caller.1 [])).run []) := by
   obtain ⟨c, d, hlen⟩ := E.encrypt_ppt.length_le
   let EIn := encPair (encPair encUnary encBits)
@@ -1262,7 +1262,7 @@ noncomputable def ciOneTimeFilterHandler (n ctBound : ℕ) (request : Unit × Li
 noncomputable def ciLimitToOneQuery (ctBound : ℕ → ℕ) (adversary : CIAdversary) : CIAdversary :=
   fun n _ => do
     let out ← (OracleComp.interpret
-      (ProbOracleComp.handler
+      (OracleComp.sumHandler
         (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
         (ciOneTimeFilterHandler n (ctBound n)))
       (adversary n [])).run false
@@ -1306,7 +1306,7 @@ theorem isOraclePPT_ciLimitToOneQuery {ctBound : ℕ → ℕ}
   have hrun : IsOraclePPTOn (encPair encUnary encBits) (encPair encBits encBool)
       (fun caller : ℕ × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler
+          (OracleComp.sumHandler
             (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
             (ciOneTimeFilterHandler caller.1 (ctBound caller.1)))
           (adversary caller.1 [])).run false) := by
@@ -1319,10 +1319,10 @@ theorem isOraclePPT_ciLimitToOneQuery {ctBound : ℕ → ℕ}
     intro caller request alreadyQueried _ result hresult
     unfold ciOneTimeFilterHandler at hresult
     split_ifs at hresult with hlenEq
-    · obtain ⟨ct, hct, rfl⟩ := ProbOracleComp.mem_support_map hresult
-      obtain ⟨rawCt, _, rfl⟩ := ProbOracleComp.mem_support_map hct
+    · obtain ⟨ct, hct, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
+      obtain ⟨rawCt, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hct
       exact ⟨trivial, (List.length_take_le _ _).trans (by lia), by simp [encBool_apply]⟩
-    · cases ProbOracleComp.eq_of_mem_support_pure hresult
+    · cases OracleComp.eq_of_mem_supportWith_pure hresult
       exact ⟨trivial, by simp, by simp [encBool_apply]⟩
   unfold ciLimitToOneQuery
   simpa only [bind_pure_comp] using (hrun.map' (ComputableInPolyTime.fst _ _)).isOraclePPT
@@ -1350,7 +1350,7 @@ theorem eval_ciGame_ciLimitToOneQuery (E : SymmetricCipher) (ctBound : ℕ → �
       ProbComp.eval (E.oneTimeCIEncryptionOracle n k request queried))
     (fun request state =>
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.ciEncryptionOracle n k q s)))
         ((ciOneTimeFilterHandler n (ctBound n) request).run state.1)).run state.2).map
         (fun result => (result.1.1, result.1.2, result.2)))
@@ -1359,7 +1359,7 @@ theorem eval_ciGame_ciLimitToOneQuery (E : SymmetricCipher) (ctBound : ℕ → �
       change (ProbComp.eval (E.oneTimeCIEncryptionOracle n k request queried)).map
           (fun x => (x.1, !x.2.isEmpty, x.2)) =
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
             (fun q s => ProbComp.eval (E.ciEncryptionOracle n k q s)))
           (ciOneTimeFilterHandler n (ctBound n) request (!queried.isEmpty))).run queried).map
           (fun result => (result.1.1, result.1.2, result.2))
@@ -1453,7 +1453,7 @@ noncomputable def ccaGame (E : SymmetricCipher) (adversary : CCAAdversary)
     (bit : Bool) (n : ℕ) : ProbComp Bool := do
   let k ← E.keyGen n
   let out ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (E.ccaOracle n k bit)) (adversary n [])).run []
   return out.1
 
@@ -1465,7 +1465,7 @@ theorem isPPTOn_run_ccaOracle (E : SymmetricCipher) {adversary : CCAAdversary}
     IsPPTOn (encPair encUnary encBits) (encPair encBool (encList encBits))
       (fun caller : ℕ × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (E.ccaOracle caller.1 caller.2 bit)) (adversary caller.1 [])).run []) := by
   obtain ⟨ce, de, hlenEnc⟩ := E.encrypt_ppt.length_le
   obtain ⟨cd, dd, hlenDec⟩ := E.decrypt_polyTime.tidy.polyBounded_length.exists_le
@@ -1668,7 +1668,7 @@ noncomputable def ccaOneTimeGame (E : SymmetricCipher) (adversary : CCAAdversary
     (bit : Bool) (n : ℕ) : ProbComp Bool := do
   let k ← E.keyGen n
   let out ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (E.oneTimeCCAOracle n k bit)) (adversary n [])).run []
   return out.1
 
@@ -1680,7 +1680,7 @@ theorem isPPTOn_run_oneTimeCCAOracle (E : SymmetricCipher) {adversary : CCAAdver
     IsPPTOn (encPair encUnary encBits) (encPair encBool (encList encBits))
       (fun caller : ℕ × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (E.oneTimeCCAOracle caller.1 caller.2 bit)) (adversary caller.1 [])).run []) := by
   obtain ⟨ce, de, hlenEnc⟩ := E.encrypt_ppt.length_le
   obtain ⟨cd, dd, hlenDec⟩ := E.decrypt_polyTime.tidy.polyBounded_length.exists_le
@@ -1875,7 +1875,7 @@ noncomputable def ccaLimitToOneEncryptionQuery (ctBound : ℕ → ℕ) (decBound
     (adversary : CCAAdversary) : CCAAdversary :=
   fun n _ => do
     let out ← (OracleComp.interpret
-      (ProbOracleComp.handler
+      (OracleComp.sumHandler
         (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
         (ccaOneTimeFilterHandler n (ctBound n) decBound))
       (adversary n [])).run false
@@ -1956,7 +1956,7 @@ theorem isOraclePPT_ccaLimitToOneEncryptionQuery {ctBound : ℕ → ℕ}
   have hrun : IsOraclePPTOn (encPair encUnary encBits) (encPair encBool encBool)
       (fun caller : ℕ × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler
+          (OracleComp.sumHandler
             (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
             (ccaOneTimeFilterHandler caller.1 (ctBound caller.1) decBound))
           (adversary caller.1 [])).run false) := by
@@ -1971,14 +1971,14 @@ theorem isOraclePPT_ccaLimitToOneEncryptionQuery {ctBound : ℕ → ℕ}
     cases hreq : request.1
     · simp only [hreq, Bool.false_eq_true, ↓reduceIte] at hresult
       split_ifs at hresult with hlenEq
-      · obtain ⟨ct, hct, rfl⟩ := ProbOracleComp.mem_support_map hresult
-        obtain ⟨rawCt, _, rfl⟩ := ProbOracleComp.mem_support_map hct
+      · obtain ⟨ct, hct, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
+        obtain ⟨rawCt, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hct
         exact ⟨trivial, (List.length_take_le _ _).trans (by lia), by simp [encBool_apply]⟩
-      · cases ProbOracleComp.eq_of_mem_support_pure hresult
+      · cases OracleComp.eq_of_mem_supportWith_pure hresult
         exact ⟨trivial, by simp, by simp [encBool_apply]⟩
     · simp only [hreq, ↓reduceIte] at hresult
-      obtain ⟨reply, hreply, rfl⟩ := ProbOracleComp.mem_support_map hresult
-      obtain ⟨rawReply, _, rfl⟩ := ProbOracleComp.mem_support_map hreply
+      obtain ⟨reply, hreply, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
+      obtain ⟨rawReply, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hreply
       exact ⟨trivial, (List.length_take_le _ _).trans (by lia), by simp [encBool_apply]⟩
   unfold ccaLimitToOneEncryptionQuery
   simpa only [bind_pure_comp] using (hrun.map' (ComputableInPolyTime.fst _ _)).isOraclePPT
@@ -2010,7 +2010,7 @@ theorem eval_ccaGame_ccaLimitToOneEncryptionQuery (E : SymmetricCipher) (ctBound
       ProbComp.eval (E.oneTimeCCAOracle n k bit request queried))
     (fun request state =>
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.ccaOracle n k bit q s)))
         ((ccaOneTimeFilterHandler n (ctBound n) decBound request).run state.1)).run state.2).map
         (fun result => (result.1.1, result.1.2, result.2)))
@@ -2019,7 +2019,7 @@ theorem eval_ccaGame_ccaLimitToOneEncryptionQuery (E : SymmetricCipher) (ctBound
       change (ProbComp.eval (E.oneTimeCCAOracle n k bit request queried)).map
           (fun x => (x.1, !x.2.isEmpty, x.2)) =
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
             (fun q s => ProbComp.eval (E.ccaOracle n k bit q s)))
           (ccaOneTimeFilterHandler n (ctBound n) decBound request (!queried.isEmpty))).run
             queried).map
@@ -2129,7 +2129,7 @@ noncomputable def ccaRejectGame (E : SymmetricCipher) (adversary : CCAAdversary)
     (bit : Bool) (n : ℕ) : ProbComp Bool := do
   let k ← E.keyGen n
   let out ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (E.ccaRejectOracle n k bit)) (adversary n [])).run []
   return out.1
 
@@ -2154,7 +2154,7 @@ noncomputable def ccaToCPAAdversary (ctBound : ℕ → ℕ) (adversary : CCAAdve
     OracleDistinguisher :=
   fun n _ => do
     let out ← (OracleComp.interpret
-      (ProbOracleComp.handler
+      (OracleComp.sumHandler
         (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
         (ccaToCPAHandler n (ctBound n)))
       (adversary n [])).run ()
@@ -2201,7 +2201,7 @@ theorem isOraclePPT_ccaToCPAAdversary {ctBound : ℕ → ℕ}
   have hrun : IsOraclePPTOn (encPair encUnary encBits) (encPair encBool (encFinEnum Unit))
       (fun caller : ℕ × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler
+          (OracleComp.sumHandler
             (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
             (ccaToCPAHandler caller.1 (ctBound caller.1)))
           (adversary caller.1 [])).run ()) := by
@@ -2216,13 +2216,13 @@ theorem isOraclePPT_ccaToCPAAdversary {ctBound : ℕ → ℕ}
     cases hreq : request.1
     · simp only [hreq, Bool.false_eq_true, ↓reduceIte] at hresult
       split_ifs at hresult with hlenEq
-      · obtain ⟨ct, hct, rfl⟩ := ProbOracleComp.mem_support_map hresult
-        obtain ⟨rawCt, _, rfl⟩ := ProbOracleComp.mem_support_map hct
+      · obtain ⟨ct, hct, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
+        obtain ⟨rawCt, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hct
         exact ⟨trivial, (List.length_take_le _ _).trans (by lia), by lia⟩
-      · cases ProbOracleComp.eq_of_mem_support_pure hresult
+      · cases OracleComp.eq_of_mem_supportWith_pure hresult
         exact ⟨trivial, by simp, by lia⟩
     · simp only [hreq, ↓reduceIte] at hresult
-      cases ProbOracleComp.eq_of_mem_support_pure hresult
+      cases OracleComp.eq_of_mem_supportWith_pure hresult
       exact ⟨trivial, by simp, by lia⟩
   unfold ccaToCPAAdversary
   simpa only [bind_pure_comp] using (hrun.map' (ComputableInPolyTime.fst _ _)).isOraclePPT
@@ -2250,7 +2250,7 @@ theorem eval_cpaGame_ccaToCPAAdversary (E : SymmetricCipher) (ctBound : ℕ → 
     (fun request queried => ProbComp.eval (E.ccaRejectOracle n k bit request queried))
     (fun request state =>
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.cpaEncryptionOracle n k bit q s)))
         ((ccaToCPAHandler n (ctBound n) request).run state.1)).run state.2).map
         (fun result => (result.1.1, result.1.2, result.2)))
@@ -2259,7 +2259,7 @@ theorem eval_cpaGame_ccaToCPAAdversary (E : SymmetricCipher) (ctBound : ℕ → 
       change (ProbComp.eval (E.ccaRejectOracle n k bit request queried)).map
           (fun x => (x.1, (), ())) =
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
             (fun q s => ProbComp.eval (E.cpaEncryptionOracle n k bit q s)))
           (ccaToCPAHandler n (ctBound n) request ())).run ()).map
           (fun result => (result.1.1, result.1.2, result.2))
@@ -2332,7 +2332,7 @@ noncomputable def ccaToCIAtIndexAdversary (ctBound : ℕ → ℕ) (j : ℕ) (bit
     (adversary : CCAAdversary) : CIAdversary :=
   fun n _ => do
     let out ← (OracleComp.interpret
-      (ProbOracleComp.handler
+      (OracleComp.sumHandler
         (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
         (ccaToCIHandler n (ctBound n) bit))
       (adversary n [])).run (j, (false, []))
@@ -2481,7 +2481,7 @@ theorem isOraclePPT_ccaToCIAdversary {ctBound Q : ℕ → ℕ}
   have hrun : IsOraclePPTOn ECaller (encPair encBool EState)
       (fun caller : (ℕ × List Bool) × ℕ =>
         (OracleComp.interpret
-          (ProbOracleComp.handler
+          (OracleComp.sumHandler
             (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
             (ccaToCIHandler caller.1.1 (ctBound caller.1.1) bit))
           (adversary caller.1.1 [])).run (caller.2, (false, []))) := by
@@ -2495,7 +2495,7 @@ theorem isOraclePPT_ccaToCIAdversary {ctBound Q : ℕ → ℕ}
     unfold ccaToCIHandler at hresult
     by_cases hcap : state.2.1 = true
     · simp only [hcap, ↓reduceIte] at hresult
-      cases ProbOracleComp.eq_of_mem_support_pure hresult
+      cases OracleComp.eq_of_mem_supportWith_pure hresult
       refine ⟨trivial, by simp, ?_⟩
       simp only [EState, length_encPair, encUnary_apply, List.length_replicate,
         encBool_apply, List.length_singleton, encBits_apply]
@@ -2505,7 +2505,7 @@ theorem isOraclePPT_ccaToCIAdversary {ctBound Q : ℕ → ℕ}
       · simp only [hzero, ↓reduceIte] at hresult
         cases hreq : request.1 <;>
           simp only [hreq, Bool.false_eq_true, ↓reduceIte] at hresult <;>
-          cases ProbOracleComp.eq_of_mem_support_pure hresult <;>
+          cases OracleComp.eq_of_mem_supportWith_pure hresult <;>
           refine ⟨trivial, by simp, ?_⟩ <;>
           simp only [EState, length_encPair, encUnary_apply, List.length_replicate,
             encBool_apply, List.length_singleton, encBits_apply, List.length_nil] <;>
@@ -2516,20 +2516,20 @@ theorem isOraclePPT_ccaToCIAdversary {ctBound Q : ℕ → ℕ}
           by_cases hlenEq : ((unframe request.2).length == caller.1.1 &&
               (dropFrame request.2).length == caller.1.1) = true
           · simp only [hlenEq, ↓reduceIte] at hresult
-            obtain ⟨ct, hct, rfl⟩ := ProbOracleComp.mem_support_map hresult
-            obtain ⟨rawCt, _, rfl⟩ := ProbOracleComp.mem_support_map hct
+            obtain ⟨ct, hct, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
+            obtain ⟨rawCt, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hct
             refine ⟨trivial, (List.length_take_le _ _).trans (by lia), ?_⟩
             simp only [EState, length_encPair, encUnary_apply, List.length_replicate,
               encBool_apply, List.length_singleton, encBits_apply, List.length_nil]
             lia
           · simp only [hlenEq, Bool.false_eq_true, ↓reduceIte] at hresult
-            cases ProbOracleComp.eq_of_mem_support_pure hresult
+            cases OracleComp.eq_of_mem_supportWith_pure hresult
             refine ⟨trivial, by simp, ?_⟩
             simp only [EState, length_encPair, encUnary_apply, List.length_replicate,
               encBool_apply, List.length_singleton, encBits_apply, List.length_nil]
             lia
         · simp only [hreq, ↓reduceIte] at hresult
-          cases ProbOracleComp.eq_of_mem_support_pure hresult
+          cases OracleComp.eq_of_mem_supportWith_pure hresult
           refine ⟨trivial, by simp, ?_⟩
           simp only [EState, length_encPair, encUnary_apply, List.length_replicate,
             encBool_apply, List.length_singleton, encBits_apply, List.length_nil]
@@ -2618,11 +2618,11 @@ private noncomputable def ccaRejectWithBadOracle (E : SymmetricCipher) (n : ℕ)
 private theorem run_ccaWithBadOracle_map_fst (E : SymmetricCipher) (n : ℕ) (k : List Bool)
     (bit : Bool) (program : WordOracleComp Bool Bool) (queried : List (List Bool)) (bad : Bool) :
     ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
         (fun q s => ProbComp.eval (E.ccaWithBadOracle n k bit q s)))
       program).run (queried, bad)).map (fun (a, s) => (a, s.1)) =
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.ccaOracle n k bit q s)))
         program).run queried := by
   refine ProbOracleComp.run_interpret_map_state
@@ -2642,11 +2642,11 @@ private theorem run_ccaWithBadOracle_map_fst (E : SymmetricCipher) (n : ℕ) (k 
 private theorem run_ccaRejectWithBadOracle_map_fst (E : SymmetricCipher) (n : ℕ) (k : List Bool)
     (bit : Bool) (program : WordOracleComp Bool Bool) (queried : List (List Bool)) (bad : Bool) :
     ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
         (fun q s => ProbComp.eval (E.ccaRejectWithBadOracle n k bit q s)))
       program).run (queried, bad)).map (fun (a, s) => (a, s.1)) =
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.ccaRejectOracle n k bit q s)))
         program).run queried := by
   refine ProbOracleComp.run_interpret_map_state
@@ -2666,16 +2666,16 @@ private theorem run_ccaRejectWithBadOracle_map_fst (E : SymmetricCipher) (n : �
 private theorem identicalUntilBad_ccaRejectWithBad_ccaWithBad (E : SymmetricCipher) (n : ℕ)
     (k : List Bool) (bit : Bool) :
     OracleComp.IdenticalUntilBad
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
         (fun q s => ProbComp.eval (E.ccaRejectWithBadOracle n k bit q s)))
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
         (fun q s => ProbComp.eval (E.ccaWithBadOracle n k bit q s)))
       (fun s => s.2 = true) where
   agree q s hs a s' hs' := by
     cases q with
     | inl m => rfl
     | inr request =>
-      simp only [ProbOracleComp.handler]
+      simp only [OracleComp.sumHandler]
       cases hreq : request.1
       · simp only [ccaRejectWithBadOracle, ccaWithBadOracle, hreq, Bool.false_eq_true, ↓reduceIte]
       · simp only [ccaRejectWithBadOracle, ccaWithBadOracle, hreq, ↓reduceIte]
@@ -2694,7 +2694,7 @@ private theorem identicalUntilBad_ccaRejectWithBad_ccaWithBad (E : SymmetricCiph
       obtain ⟨_, _, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hx
       exact hs
     | inr request =>
-      simp only [ProbOracleComp.handler, ccaRejectWithBadOracle] at hx
+      simp only [OracleComp.sumHandler, ccaRejectWithBadOracle] at hx
       cases hreq : request.1
       · simp only [hreq, Bool.false_eq_true, ↓reduceIte] at hx
         by_cases hlenEq : ((unframe request.2).length == n &&
@@ -2719,7 +2719,7 @@ private theorem identicalUntilBad_ccaRejectWithBad_ccaWithBad (E : SymmetricCiph
       obtain ⟨_, _, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hx
       exact hs
     | inr request =>
-      simp only [ProbOracleComp.handler, ccaWithBadOracle] at hx
+      simp only [OracleComp.sumHandler, ccaWithBadOracle] at hx
       cases hreq : request.1
       · simp only [hreq, Bool.false_eq_true, ↓reduceIte] at hx
         by_cases hlenEq : ((unframe request.2).length == n &&
@@ -2771,7 +2771,7 @@ private theorem ciCombined_captured_bind_eq_one {α : Type} (E : SymmetricCipher
     (ct : List Bool) (queried : List (List Bool))
     (hwin : (!queried.contains ct && (E.decrypt n k ct).isSome) = true) :
     ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
         (fun q s => ProbComp.eval (E.ccaToCICombinedOracle n k bit q s)))
       program).run ((rem, (true, ct)), queried)).bind
       (fun x => PMF.pure (!x.2.2.contains x.2.1.2.2 && (E.decrypt n k x.2.1.2.2).isSome)) true =
@@ -2862,12 +2862,12 @@ private theorem bad_ccaRejectWithBad_le_sum_ciCombined {α : Type} (E : Symmetri
     (k : List Bool) (bit : Bool) {program : WordOracleComp Bool α} {Q : ℕ}
     (hq : program.IsQueryBounded Q) (queried : List (List Bool)) :
     ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
         (fun q s => ProbComp.eval (E.ccaRejectWithBadOracle n k bit q s)))
       program).run (queried, false)).toOuterMeasure {x | x.2.2 = true} ≤
       ∑ j ∈ Finset.range (Q + 1),
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
             (fun q s => ProbComp.eval (E.ccaToCICombinedOracle n k bit q s)))
           program).run ((j, (false, [])), queried)).bind
           (fun x => PMF.pure (!x.2.2.contains x.2.1.2.2 && (E.decrypt n k x.2.1.2.2).isSome))
@@ -2880,18 +2880,18 @@ private theorem bad_ccaRejectWithBad_le_sum_ciCombined {α : Type} (E : Symmetri
     cases q with
     | inl m =>
       simp only [Sum.elim_inl, Nat.add_zero, OracleComp.run_interpret_bind,
-        OracleComp.run_interpret_query, ProbOracleComp.handler, StateT.lift,
+        OracleComp.run_interpret_query, OracleComp.sumHandler, StateT.lift,
         Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
         PMF.bind_bind, PMF.pure_bind, PMF.toOuterMeasure_bind_apply, PMF.bind_apply]
       calc ∑' a : Fin (m + 1), ProbComp.unifOracle m a *
             ((OracleComp.interpret
-              (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+              (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
                 (fun q s => ProbComp.eval (E.ccaRejectWithBadOracle n k bit q s)))
               (cont a)).run (queried, false)).toOuterMeasure {x | x.2.2 = true}
           ≤ ∑' a : Fin (m + 1), ProbComp.unifOracle m a *
               ∑ j ∈ Finset.range (Q + 1),
                 ((OracleComp.interpret
-                  (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                  (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
                     (fun q s => ProbComp.eval (E.ccaToCICombinedOracle n k bit q s)))
                   (cont a)).run ((j, (false, [])), queried)).bind
                   (fun x =>
@@ -2905,7 +2905,7 @@ private theorem bad_ccaRejectWithBad_le_sum_ciCombined {α : Type} (E : Symmetri
           simp only [← PMF.bind_apply]
     | inr request =>
       simp only [Sum.elim_inr, OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
-        ProbOracleComp.handler]
+        OracleComp.sumHandler]
       rw [Finset.sum_range_succ']
       simp only [eval_ccaRejectWithBadOracle_false, eval_ccaToCICombinedOracle_succ_false,
         eval_ccaToCICombinedOracle_zero_false]
@@ -2921,14 +2921,14 @@ private theorem bad_ccaRejectWithBad_le_sum_ciCombined {α : Type} (E : Symmetri
               ProbComp.eval
                 (E.encrypt n k (if bit then dropFrame request.2 else unframe request.2)) ct *
                 ((OracleComp.interpret
-                  (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                  (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
                     (fun q s => ProbComp.eval (E.ccaRejectWithBadOracle n k bit q s)))
                   (cont ct)).run (ct :: queried, false)).toOuterMeasure {x | x.2.2 = true} ≤
               ∑ j ∈ Finset.range (Q + 1),
                 (ProbComp.eval (E.encrypt n k
                   (if bit then dropFrame request.2 else unframe request.2))).bind (fun ct =>
                     ((OracleComp.interpret
-                      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
                         (fun q s => ProbComp.eval (E.ccaToCICombinedOracle n k bit q s)))
                       (cont ct)).run ((j, (false, [])), ct :: queried)).bind
                       (fun x =>
@@ -2939,7 +2939,7 @@ private theorem bad_ccaRejectWithBad_le_sum_ciCombined {α : Type} (E : Symmetri
                   ProbComp.eval
                     (E.encrypt n k (if bit then dropFrame request.2 else unframe request.2)) ct *
                     ((OracleComp.interpret
-                      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
                         (fun q s => ProbComp.eval (E.ccaRejectWithBadOracle n k bit q s)))
                       (cont ct)).run (ct :: queried, false)).toOuterMeasure {x | x.2.2 = true}
                 ≤ ∑' ct : List Bool,
@@ -2947,7 +2947,7 @@ private theorem bad_ccaRejectWithBad_le_sum_ciCombined {α : Type} (E : Symmetri
                       (E.encrypt n k (if bit then dropFrame request.2 else unframe request.2)) ct *
                       ∑ j ∈ Finset.range (Q + 1),
                         ((OracleComp.interpret
-                          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
                             (fun q s => ProbComp.eval (E.ccaToCICombinedOracle n k bit q s)))
                           (cont ct)).run ((j, (false, [])), ct :: queried)).bind
                           (fun x =>
@@ -2995,12 +2995,12 @@ private theorem eval_ciGame_ccaToCIAtIndexAdversary_key (E : SymmetricCipher) (c
       ∀ msg, msg.length = n →
       ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
     ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
         (fun q s => ProbComp.eval (E.ciEncryptionOracle n k q s)))
       (ccaToCIAtIndexAdversary ctBound j bit adversary n [])).run []).bind
       (fun out => PMF.pure (!out.2.contains out.1 && (E.decrypt n k out.1).isSome)) =
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.ccaToCICombinedOracle n k bit q s)))
         (adversary n [])).run ((j, (false, [])), [])).bind
         (fun x => PMF.pure (!x.2.2.contains x.2.1.2.2 && (E.decrypt n k x.2.1.2.2).isSome)) := by
@@ -3016,9 +3016,9 @@ private theorem eval_ciGame_ccaToCIAtIndexAdversary_key (E : SymmetricCipher) (c
   cases q with
   | inl m => rfl
   | inr request =>
-    simp only [ProbOracleComp.handler]
+    simp only [OracleComp.sumHandler]
     change ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
         (fun q s => ProbComp.eval (E.ciEncryptionOracle n k q s)))
       (ccaToCIHandler n (ctBound n) bit request state.1)).run state.2).map
       (fun result => (result.1.1, result.1.2, result.2)) =
@@ -3073,22 +3073,22 @@ private theorem advantage_ccaGame_ccaRejectGame_le_sum (E : SymmetricCipher) (ct
           (ProbComp.eval (E.ciGame (ccaToCIAtIndexAdversary ctBound j bit adversary) n)) : ℝ) := by
   have hccaEq (k : List Bool) :
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.ccaOracle n k bit q s)))
         (adversary n [])).run []).bind (fun out => PMF.pure out.1) =
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.ccaWithBadOracle n k bit q s)))
         (adversary n [])).run ([], false)).bind (fun out => PMF.pure out.1) := by
     rw [← run_ccaWithBadOracle_map_fst E n k bit (adversary n []) [] false,
       PMF.bind_map, Function.comp_def]
   have hrejEq (k : List Bool) :
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.ccaRejectOracle n k bit q s)))
         (adversary n [])).run []).bind (fun out => PMF.pure out.1) =
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.ccaRejectWithBadOracle n k bit q s)))
         (adversary n [])).run ([], false)).bind (fun out => PMF.pure out.1) := by
     rw [← run_ccaRejectWithBadOracle_map_fst E n k bit (adversary n []) [] false,
@@ -3100,7 +3100,7 @@ private theorem advantage_ccaGame_ccaRejectGame_le_sum (E : SymmetricCipher) (ct
   have hsum_eq : pSum = ∑' k : List Bool, ProbComp.eval (E.keyGen n) k *
       ∑ j ∈ Finset.range (Q n + 1),
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
             (fun q s => ProbComp.eval (E.ciEncryptionOracle n k q s)))
           (ccaToCIAtIndexAdversary ctBound j bit adversary n [])).run []).bind
           (fun out => PMF.pure (!out.2.contains out.1 && (E.decrypt n k out.1).isSome)) true := by
@@ -3114,7 +3114,7 @@ private theorem advantage_ccaGame_ccaRejectGame_le_sum (E : SymmetricCipher) (ct
     rw [Finset.mul_sum]
   have hCCA_eq : pCCA = ∑' k : List Bool, ProbComp.eval (E.keyGen n) k *
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.ccaWithBadOracle n k bit q s)))
         (adversary n [])).run ([], false)).bind (fun out => PMF.pure out.1) true := by
     simp only [pCCA, ccaGame, ProbComp.eval_bind, ProbComp.eval_pure,
@@ -3122,7 +3122,7 @@ private theorem advantage_ccaGame_ccaRejectGame_le_sum (E : SymmetricCipher) (ct
     exact PMF.bind_apply _ _ _
   have hRej_eq : pRej = ∑' k : List Bool, ProbComp.eval (E.keyGen n) k *
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.ccaRejectWithBadOracle n k bit q s)))
         (adversary n [])).run ([], false)).bind (fun out => PMF.pure out.1) true := by
     simp only [pRej, ccaRejectGame, ProbComp.eval_bind, ProbComp.eval_pure,
@@ -3178,7 +3178,7 @@ theorem eval_ciGame_ccaToCIAdversary (E : SymmetricCipher) (ctBound Q : ℕ → 
     ProbOracleComp.eval_run_interpret]
   have hsample (k : List Bool) :
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.ciEncryptionOracle n k q s)))
         (do
           let j ← ProbOracleComp.sample (ProbComp.sampleDyadicIndex (Q n))
@@ -3186,7 +3186,7 @@ theorem eval_ciGame_ccaToCIAdversary (E : SymmetricCipher) (ctBound Q : ℕ → 
         (fun out => PMF.pure (!out.2.contains out.1 && (E.decrypt n k out.1).isSome)) =
       (PMF.uniformOfFintype (Fin (dyadicSize (Q n)))).bind (fun i =>
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
             (fun q s => ProbComp.eval (E.ciEncryptionOracle n k q s)))
           (ccaToCIAtIndexAdversary ctBound i.val bit adversary n [])).run []).bind
           (fun out => PMF.pure (!out.2.contains out.1 && (E.decrypt n k out.1).isSome))) := by
@@ -3292,7 +3292,7 @@ theorem eval_ciGame_ccaToCIHiddenBitAdversary (E : SymmetricCipher) (ctBound Q :
     ProbOracleComp.eval_run_interpret]
   have hsample (k : List Bool) :
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.ciEncryptionOracle n k q s)))
         (do
           let bits ← ProbOracleComp.sample (BitString.sampleList 1)
@@ -3303,7 +3303,7 @@ theorem eval_ciGame_ccaToCIHiddenBitAdversary (E : SymmetricCipher) (ctBound Q :
         (fun out => PMF.pure (!out.2.contains out.1 && (E.decrypt n k out.1).isSome)) =
       (PMF.uniformOfFintype Bool).bind (fun bit =>
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
             (fun q s => ProbComp.eval (E.ciEncryptionOracle n k q s)))
           (ccaToCIAdversary ctBound Q bit adversary n [])).run []).bind
           (fun out => PMF.pure (!out.2.contains out.1 && (E.decrypt n k out.1).isSome))) := by
@@ -3442,19 +3442,19 @@ theorem isQueryBounded_ccaToCPAAdversary_of_isEncryptionQueryBounded
   unfold ccaToCPAAdversary
   have hrun :
       ((OracleComp.interpret
-        (ProbOracleComp.handler
+        (OracleComp.sumHandler
           (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
           (ccaToCPAHandler n (ctBound n)))
         (adversary n [])).run ()).IsQueryBounded Qe := by
     refine OracleComp.IsCostBounded.run_interpret (fun q s => ?_) hq ()
     cases q with
     | inl m =>
-      simp only [ProbOracleComp.handler, Sum.elim_inl]
+      simp only [OracleComp.sumHandler, Sum.elim_inl]
       change ((·, s) <$> ProbOracleComp.sample (ProbComp.unifFin m)).IsQueryBounded 0
       simp only [OracleComp.isCostBounded_map_iff]
       exact ProbOracleComp.IsQueryBounded.sample (ProbComp.unifFin m)
     | inr request =>
-      simp only [ProbOracleComp.handler, Sum.elim_inr]
+      simp only [OracleComp.sumHandler, Sum.elim_inr]
       exact isQueryBounded_ccaToCPAHandler n (ctBound n) request s
   simpa only [bind_pure_comp, OracleComp.isCostBounded_map_iff] using hrun
 
@@ -3504,19 +3504,19 @@ theorem isQueryBounded_ccaToCIAtIndexAdversary_of_isEncryptionQueryBounded
   unfold ccaToCIAtIndexAdversary
   have hrun :
       ((OracleComp.interpret
-        (ProbOracleComp.handler
+        (OracleComp.sumHandler
           (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
           (ccaToCIHandler n (ctBound n) bit))
         (adversary n [])).run (j, (false, []))).IsQueryBounded Qe := by
     refine OracleComp.IsCostBounded.run_interpret (fun q state => ?_) hq (j, (false, []))
     cases q with
     | inl m =>
-      simp only [ProbOracleComp.handler, Sum.elim_inl]
+      simp only [OracleComp.sumHandler, Sum.elim_inl]
       change ((·, state) <$> ProbOracleComp.sample (ProbComp.unifFin m)).IsQueryBounded 0
       simp only [OracleComp.isCostBounded_map_iff]
       exact ProbOracleComp.IsQueryBounded.sample (ProbComp.unifFin m)
     | inr request =>
-      simp only [ProbOracleComp.handler, Sum.elim_inr]
+      simp only [OracleComp.sumHandler, Sum.elim_inr]
       exact isQueryBounded_ccaToCIHandler n (ctBound n) bit request state
   simpa only [bind_pure_comp, OracleComp.isCostBounded_map_iff] using hrun
 
@@ -3609,7 +3609,7 @@ noncomputable def ccaOneTimeRejectGame (E : SymmetricCipher) (adversary : CCAAdv
     (bit : Bool) (n : ℕ) : ProbComp Bool := do
   let k ← E.keyGen n
   let out ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (E.oneTimeCCARejectOracle n k bit)) (adversary n [])).run []
   return out.1
 
@@ -3636,7 +3636,7 @@ theorem eval_cpaOneTimeGame_ccaToCPAAdversary (E : SymmetricCipher) (ctBound : �
     (fun request queried => ProbComp.eval (E.oneTimeCCARejectOracle n k bit request queried))
     (fun request state =>
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.oneTimeCPAEncryptionOracle n k bit q s)))
         ((ccaToCPAHandler n (ctBound n) request).run state.1)).run state.2).map
         (fun result => (result.1.1, result.1.2, result.2)))
@@ -3645,7 +3645,7 @@ theorem eval_cpaOneTimeGame_ccaToCPAAdversary (E : SymmetricCipher) (ctBound : �
       change (ProbComp.eval (E.oneTimeCCARejectOracle n k bit request queried)).map
           (fun x => (x.1, (), !x.2.isEmpty)) =
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
             (fun q s => ProbComp.eval (E.oneTimeCPAEncryptionOracle n k bit q s)))
           (ccaToCPAHandler n (ctBound n) request ())).run (!queried.isEmpty)).map
           (fun result => (result.1.1, result.1.2, result.2))
@@ -3730,11 +3730,11 @@ private noncomputable def oneTimeCCARejectWithBadOracle (E : SymmetricCipher) (n
 private theorem run_oneTimeCCAWithBadOracle_map_fst (E : SymmetricCipher) (n : ℕ) (k : List Bool)
     (bit : Bool) (program : WordOracleComp Bool Bool) (queried : List (List Bool)) (bad : Bool) :
     ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
         (fun q s => ProbComp.eval (E.oneTimeCCAWithBadOracle n k bit q s)))
       program).run (queried, bad)).map (fun (a, s) => (a, s.1)) =
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.oneTimeCCAOracle n k bit q s)))
         program).run queried := by
   refine ProbOracleComp.run_interpret_map_state
@@ -3755,11 +3755,11 @@ private theorem run_oneTimeCCARejectWithBadOracle_map_fst (E : SymmetricCipher) 
     (k : List Bool) (bit : Bool) (program : WordOracleComp Bool Bool)
     (queried : List (List Bool)) (bad : Bool) :
     ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
         (fun q s => ProbComp.eval (E.oneTimeCCARejectWithBadOracle n k bit q s)))
       program).run (queried, bad)).map (fun (a, s) => (a, s.1)) =
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.oneTimeCCARejectOracle n k bit q s)))
         program).run queried := by
   refine ProbOracleComp.run_interpret_map_state
@@ -3780,16 +3780,16 @@ private theorem run_oneTimeCCARejectWithBadOracle_map_fst (E : SymmetricCipher) 
 private theorem identicalUntilBad_oneTimeCCARejectWithBad_oneTimeCCAWithBad
     (E : SymmetricCipher) (n : ℕ) (k : List Bool) (bit : Bool) :
     OracleComp.IdenticalUntilBad
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
         (fun q s => ProbComp.eval (E.oneTimeCCARejectWithBadOracle n k bit q s)))
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
         (fun q s => ProbComp.eval (E.oneTimeCCAWithBadOracle n k bit q s)))
       (fun s => s.2 = true) where
   agree q s hs a s' hs' := by
     cases q with
     | inl m => rfl
     | inr request =>
-      simp only [ProbOracleComp.handler]
+      simp only [OracleComp.sumHandler]
       cases hreq : request.1
       · simp only [oneTimeCCARejectWithBadOracle, oneTimeCCAWithBadOracle, hreq,
           Bool.false_eq_true, ↓reduceIte]
@@ -3809,7 +3809,7 @@ private theorem identicalUntilBad_oneTimeCCARejectWithBad_oneTimeCCAWithBad
       obtain ⟨_, _, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hx
       exact hs
     | inr request =>
-      simp only [ProbOracleComp.handler, oneTimeCCARejectWithBadOracle] at hx
+      simp only [OracleComp.sumHandler, oneTimeCCARejectWithBadOracle] at hx
       cases hreq : request.1
       · simp only [hreq, Bool.false_eq_true, ↓reduceIte] at hx
         by_cases hlenEq : (s.1.isEmpty && ((unframe request.2).length == n) &&
@@ -3834,7 +3834,7 @@ private theorem identicalUntilBad_oneTimeCCARejectWithBad_oneTimeCCAWithBad
       obtain ⟨_, _, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hx
       exact hs
     | inr request =>
-      simp only [ProbOracleComp.handler, oneTimeCCAWithBadOracle] at hx
+      simp only [OracleComp.sumHandler, oneTimeCCAWithBadOracle] at hx
       cases hreq : request.1
       · simp only [hreq, Bool.false_eq_true, ↓reduceIte] at hx
         by_cases hlenEq : (s.1.isEmpty && ((unframe request.2).length == n) &&
@@ -3882,7 +3882,7 @@ private theorem oneTimeCICombined_captured_bind_eq_one {α : Type} (E : Symmetri
     (ct : List Bool) (queried : List (List Bool))
     (hwin : (!queried.contains ct && (E.decrypt n k ct).isSome) = true) :
     ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
         (fun q s => ProbComp.eval (E.oneTimeCCAToCICombinedOracle n k bit q s)))
       program).run ((rem, (true, ct)), queried)).bind
       (fun x => PMF.pure (!x.2.2.contains x.2.1.2.2 && (E.decrypt n k x.2.1.2.2).isSome)) true =
@@ -3963,12 +3963,12 @@ private theorem bad_oneTimeCCARejectWithBad_le_sum_oneTimeCICombined {α : Type}
     {program : WordOracleComp Bool α} {Q : ℕ}
     (hq : program.IsQueryBounded Q) (queried : List (List Bool)) :
     ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
         (fun q s => ProbComp.eval (E.oneTimeCCARejectWithBadOracle n k bit q s)))
       program).run (queried, false)).toOuterMeasure {x | x.2.2 = true} ≤
       ∑ j ∈ Finset.range (Q + 1),
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
             (fun q s => ProbComp.eval (E.oneTimeCCAToCICombinedOracle n k bit q s)))
           program).run ((j, (false, [])), queried)).bind
           (fun x => PMF.pure (!x.2.2.contains x.2.1.2.2 && (E.decrypt n k x.2.1.2.2).isSome))
@@ -3981,18 +3981,18 @@ private theorem bad_oneTimeCCARejectWithBad_le_sum_oneTimeCICombined {α : Type}
     cases q with
     | inl m =>
       simp only [Sum.elim_inl, Nat.add_zero, OracleComp.run_interpret_bind,
-        OracleComp.run_interpret_query, ProbOracleComp.handler, StateT.lift,
+        OracleComp.run_interpret_query, OracleComp.sumHandler, StateT.lift,
         Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
         PMF.bind_bind, PMF.pure_bind, PMF.toOuterMeasure_bind_apply, PMF.bind_apply]
       calc ∑' a : Fin (m + 1), ProbComp.unifOracle m a *
             ((OracleComp.interpret
-              (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+              (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
                 (fun q s => ProbComp.eval (E.oneTimeCCARejectWithBadOracle n k bit q s)))
               (cont a)).run (queried, false)).toOuterMeasure {x | x.2.2 = true}
           ≤ ∑' a : Fin (m + 1), ProbComp.unifOracle m a *
               ∑ j ∈ Finset.range (Q + 1),
                 ((OracleComp.interpret
-                  (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                  (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
                     (fun q s => ProbComp.eval (E.oneTimeCCAToCICombinedOracle n k bit q s)))
                   (cont a)).run ((j, (false, [])), queried)).bind
                   (fun x =>
@@ -4006,7 +4006,7 @@ private theorem bad_oneTimeCCARejectWithBad_le_sum_oneTimeCICombined {α : Type}
           simp only [← PMF.bind_apply]
     | inr request =>
       simp only [Sum.elim_inr, OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
-        ProbOracleComp.handler]
+        OracleComp.sumHandler]
       rw [Finset.sum_range_succ']
       simp only [eval_oneTimeCCARejectWithBadOracle_false,
         eval_oneTimeCCAToCICombinedOracle_succ_false,
@@ -4022,14 +4022,14 @@ private theorem bad_oneTimeCCARejectWithBad_le_sum_oneTimeCICombined {α : Type}
               ProbComp.eval
                 (E.encrypt n k (if bit then dropFrame request.2 else unframe request.2)) ct *
                 ((OracleComp.interpret
-                  (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                  (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
                     (fun q s => ProbComp.eval (E.oneTimeCCARejectWithBadOracle n k bit q s)))
                   (cont ct)).run ([ct], false)).toOuterMeasure {x | x.2.2 = true} ≤
               ∑ j ∈ Finset.range (Q + 1),
                 (ProbComp.eval (E.encrypt n k
                   (if bit then dropFrame request.2 else unframe request.2))).bind (fun ct =>
                     ((OracleComp.interpret
-                      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
                         (fun q s => ProbComp.eval (E.oneTimeCCAToCICombinedOracle n k bit q s)))
                       (cont ct)).run ((j, (false, [])), [ct])).bind
                       (fun x =>
@@ -4040,7 +4040,7 @@ private theorem bad_oneTimeCCARejectWithBad_le_sum_oneTimeCICombined {α : Type}
                   ProbComp.eval
                     (E.encrypt n k (if bit then dropFrame request.2 else unframe request.2)) ct *
                     ((OracleComp.interpret
-                      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
                         (fun q s => ProbComp.eval (E.oneTimeCCARejectWithBadOracle n k bit q s)))
                       (cont ct)).run ([ct], false)).toOuterMeasure {x | x.2.2 = true}
                 ≤ ∑' ct : List Bool,
@@ -4048,7 +4048,7 @@ private theorem bad_oneTimeCCARejectWithBad_le_sum_oneTimeCICombined {α : Type}
                       (E.encrypt n k (if bit then dropFrame request.2 else unframe request.2)) ct *
                       ∑ j ∈ Finset.range (Q + 1),
                         ((OracleComp.interpret
-                          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
                             (fun q s => ProbComp.eval (E.oneTimeCCAToCICombinedOracle n k bit q s)))
                           (cont ct)).run ((j, (false, [])), [ct])).bind
                           (fun x =>
@@ -4092,12 +4092,12 @@ private theorem eval_ciOneTimeGame_ccaToCIAtIndexAdversary_key (E : SymmetricCip
       ∀ msg, msg.length = n →
       ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
     ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
         (fun q s => ProbComp.eval (E.oneTimeCIEncryptionOracle n k q s)))
       (ccaToCIAtIndexAdversary ctBound j bit adversary n [])).run []).bind
       (fun out => PMF.pure (!out.2.contains out.1 && (E.decrypt n k out.1).isSome)) =
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.oneTimeCCAToCICombinedOracle n k bit q s)))
         (adversary n [])).run ((j, (false, [])), [])).bind
         (fun x => PMF.pure (!x.2.2.contains x.2.1.2.2 && (E.decrypt n k x.2.1.2.2).isSome)) := by
@@ -4113,9 +4113,9 @@ private theorem eval_ciOneTimeGame_ccaToCIAtIndexAdversary_key (E : SymmetricCip
   cases q with
   | inl m => rfl
   | inr request =>
-    simp only [ProbOracleComp.handler]
+    simp only [OracleComp.sumHandler]
     change ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
         (fun q s => ProbComp.eval (E.oneTimeCIEncryptionOracle n k q s)))
       (ccaToCIHandler n (ctBound n) bit request state.1)).run state.2).map
       (fun result => (result.1.1, result.1.2, result.2)) =
@@ -4188,22 +4188,22 @@ private theorem advantage_ccaOneTimeGame_ccaOneTimeRejectGame_le_sum (E : Symmet
           ℝ) := by
   have hccaEq (k : List Bool) :
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.oneTimeCCAOracle n k bit q s)))
         (adversary n [])).run []).bind (fun out => PMF.pure out.1) =
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.oneTimeCCAWithBadOracle n k bit q s)))
         (adversary n [])).run ([], false)).bind (fun out => PMF.pure out.1) := by
     rw [← run_oneTimeCCAWithBadOracle_map_fst E n k bit (adversary n []) [] false,
       PMF.bind_map, Function.comp_def]
   have hrejEq (k : List Bool) :
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.oneTimeCCARejectOracle n k bit q s)))
         (adversary n [])).run []).bind (fun out => PMF.pure out.1) =
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.oneTimeCCARejectWithBadOracle n k bit q s)))
         (adversary n [])).run ([], false)).bind (fun out => PMF.pure out.1) := by
     rw [← run_oneTimeCCARejectWithBadOracle_map_fst E n k bit (adversary n []) [] false,
@@ -4215,7 +4215,7 @@ private theorem advantage_ccaOneTimeGame_ccaOneTimeRejectGame_le_sum (E : Symmet
   have hsum_eq : pSum = ∑' k : List Bool, ProbComp.eval (E.keyGen n) k *
       ∑ j ∈ Finset.range (Q n + 1),
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
             (fun q s => ProbComp.eval (E.oneTimeCIEncryptionOracle n k q s)))
           (ccaToCIAtIndexAdversary ctBound j bit adversary n [])).run []).bind
           (fun out => PMF.pure (!out.2.contains out.1 && (E.decrypt n k out.1).isSome)) true := by
@@ -4229,7 +4229,7 @@ private theorem advantage_ccaOneTimeGame_ccaOneTimeRejectGame_le_sum (E : Symmet
     rw [Finset.mul_sum]
   have hCCA_eq : pCCA = ∑' k : List Bool, ProbComp.eval (E.keyGen n) k *
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.oneTimeCCAWithBadOracle n k bit q s)))
         (adversary n [])).run ([], false)).bind (fun out => PMF.pure out.1) true := by
     simp only [pCCA, ccaOneTimeGame, ProbComp.eval_bind, ProbComp.eval_pure,
@@ -4237,7 +4237,7 @@ private theorem advantage_ccaOneTimeGame_ccaOneTimeRejectGame_le_sum (E : Symmet
     exact PMF.bind_apply _ _ _
   have hRej_eq : pRej = ∑' k : List Bool, ProbComp.eval (E.keyGen n) k *
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.oneTimeCCARejectWithBadOracle n k bit q s)))
         (adversary n [])).run ([], false)).bind (fun out => PMF.pure out.1) true := by
     simp only [pRej, ccaOneTimeRejectGame, ProbComp.eval_bind, ProbComp.eval_pure,
@@ -4296,7 +4296,7 @@ theorem eval_ciOneTimeGame_ccaToCIAdversary (E : SymmetricCipher) (ctBound Q : �
     ProbOracleComp.eval_run_interpret]
   have hsample (k : List Bool) :
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.oneTimeCIEncryptionOracle n k q s)))
         (do
           let j ← ProbOracleComp.sample (ProbComp.sampleDyadicIndex (Q n))
@@ -4304,7 +4304,7 @@ theorem eval_ciOneTimeGame_ccaToCIAdversary (E : SymmetricCipher) (ctBound Q : �
         (fun out => PMF.pure (!out.2.contains out.1 && (E.decrypt n k out.1).isSome)) =
       (PMF.uniformOfFintype (Fin (dyadicSize (Q n)))).bind (fun i =>
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
             (fun q s => ProbComp.eval (E.oneTimeCIEncryptionOracle n k q s)))
           (ccaToCIAtIndexAdversary ctBound i.val bit adversary n [])).run []).bind
           (fun out => PMF.pure (!out.2.contains out.1 && (E.decrypt n k out.1).isSome))) := by
@@ -4410,7 +4410,7 @@ theorem eval_ciOneTimeGame_ccaToCIHiddenBitAdversary (E : SymmetricCipher) (ctBo
     ProbOracleComp.eval_run_interpret]
   have hsample (k : List Bool) :
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (E.oneTimeCIEncryptionOracle n k q s)))
         (do
           let bits ← ProbOracleComp.sample (BitString.sampleList 1)
@@ -4421,7 +4421,7 @@ theorem eval_ciOneTimeGame_ccaToCIHiddenBitAdversary (E : SymmetricCipher) (ctBo
         (fun out => PMF.pure (!out.2.contains out.1 && (E.decrypt n k out.1).isSome)) =
       (PMF.uniformOfFintype Bool).bind (fun bit =>
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
             (fun q s => ProbComp.eval (E.oneTimeCIEncryptionOracle n k q s)))
           (ccaToCIAdversary ctBound Q bit adversary n [])).run []).bind
           (fun out => PMF.pure (!out.2.contains out.1 && (E.decrypt n k out.1).isSome))) := by

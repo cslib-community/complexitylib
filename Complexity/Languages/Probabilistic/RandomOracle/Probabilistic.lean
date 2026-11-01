@@ -43,6 +43,7 @@ to the disjoint-sum interface of `ProbOracleComp`, reusing the general state sim
 namespace Cslib.RandomOracle
 
 open Probability ProbOracleComp
+open OracleComp (sumHandler)
 
 section List
 
@@ -54,7 +55,7 @@ private theorem run_interpret_memoize_transcript_prob (distribution : Query → 
     (program : ProbOracleComp (fun _ : Query => Value) α) (cache cache' : List (Query × Value))
     (result : α) (transcript : OracleComp.Transcript (fun _ : Query => Value))
     (h : (result, cache', transcript) ∈ ((OracleComp.interpret
-      (handler (fun n => StateT.lift (ProbComp.unifOracle n))
+      (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
         (OracleComp.withTranscript (memoize distribution))) program).run (cache, [])).support) :
     cache'.length ≤ cache.length + transcript.length ∧
       ∀ entry ∈ cache', entry ∈ cache ∨
@@ -78,7 +79,7 @@ theorem memoize_cache_bounds_prob (distribution : Query → PMF Value)
     (hcalls : program.IsQueryBounded calls) (hsize : program.QueriesSatisfy (size · ≤ maxSize))
     (cache cache' : List (Query × Value)) (result : α)
     (h : (result, cache') ∈ ((OracleComp.interpret
-      (handler (fun n => StateT.lift (ProbComp.unifOracle n)) (memoize distribution))
+      (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (memoize distribution))
         program).run cache).support) :
     cache'.length ≤ cache.length + calls ∧
       ∀ entry ∈ cache', entry ∈ cache ∨
@@ -102,10 +103,10 @@ theorem run_interpret_memoize_prob [LawfulBEq Query] [DecidableEq Query]
     (distribution : Query → PMF Value) (program : ProbOracleComp (fun _ : Query => Value) α)
     (cache : List (Query × Value)) :
     ((OracleComp.interpret
-      (handler (fun n => StateT.lift (ProbComp.unifOracle n)) (memoize distribution))
+      (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (memoize distribution))
         program).run cache).map (fun (result, cache') => (result, ofList cache')) =
       (OracleComp.interpret
-        (handler (fun n => StateT.lift (ProbComp.unifOracle n)) (answer distribution))
+        (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (answer distribution))
           program).run (ofList cache) := by
   apply ProbOracleComp.run_interpret_map_state
   intro q current
@@ -118,10 +119,10 @@ theorem eval_run_interpret_memoize_prob [LawfulBEq Query] [DecidableEq Query]
     (compute : Query → ProbComp Value) (program : ProbOracleComp (fun _ : Query => Value) α)
     (cache : List (Query × Value)) :
     (ProbComp.eval ((OracleComp.interpret
-      (handler (fun n => StateT.lift (ProbComp.unifFin n)) (memoize compute)) program).run
+      (sumHandler (fun n => StateT.lift (ProbComp.unifFin n)) (memoize compute)) program).run
         cache)).map (fun (result, cache') => (result, ofList cache')) =
       (OracleComp.interpret
-        (handler (fun n => StateT.lift (ProbComp.unifOracle n))
+        (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
           (answer (fun q => ProbComp.eval (compute q)))) program).run (ofList cache) := by
   rw [ProbOracleComp.eval_run_interpret]
   simpa only [ProbComp.eval_memoize] using
@@ -139,13 +140,14 @@ theorem run_interpret_answer_complete_prob [DecidableEq Query]
     (program : ProbOracleComp Response α) (cache : Cache Response) :
     (do
       let (result, cache') ← (OracleComp.interpret
-        (handler (fun n => StateT.lift (ProbComp.unifOracle n)) (answer distribution))
+        (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (answer distribution))
           program).run cache
       (complete distribution cache').map (result, ·)) =
       (do
         let table ← complete distribution cache
         (OracleComp.interpret
-          (handler ProbComp.unifOracle (fun q => PMF.pure (table q))) program).map (·, table)) := by
+          (sumHandler ProbComp.unifOracle (fun q => PMF.pure (table q))) program).map
+            (·, table)) := by
   simp only [PMF.monad_bind_eq_bind]
   have h := ProbOracleComp.run_interpret_simulation (answer distribution)
     (fun q table => (PMF.pure (table q)).map (·, table)) (complete distribution)
@@ -163,9 +165,9 @@ theorem interpret_prob_eq_lazy [DecidableEq Query]
     (do
       let table ← PMF.pi distribution
       OracleComp.interpret
-        (handler ProbComp.unifOracle (fun q => PMF.pure (table q))) program) =
+        (sumHandler ProbComp.unifOracle (fun q => PMF.pure (table q))) program) =
       ((OracleComp.interpret
-        (handler (fun n => StateT.lift (ProbComp.unifOracle n)) (answer distribution))
+        (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (answer distribution))
           program).run (fun _ => none)).map Prod.fst :=
   pi_bind_eq_map_fst_of_complete_eq distribution
     (run_interpret_answer_complete_prob distribution program (fun _ => none))
@@ -177,9 +179,9 @@ theorem uniform_interpret_prob_eq_lazy [DecidableEq Query] [∀ q, Fintype (Resp
     (do
       let table ← PMF.uniformOfFintype ((q : Query) → Response q)
       OracleComp.interpret
-        (handler ProbComp.unifOracle (fun q => PMF.pure (table q))) program) =
+        (sumHandler ProbComp.unifOracle (fun q => PMF.pure (table q))) program) =
       ((OracleComp.interpret
-        (handler (fun n => StateT.lift (ProbComp.unifOracle n))
+        (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
           (answer (fun q => PMF.uniformOfFintype (Response q))))
             program).run (fun _ => none)).map Prod.fst := by
   simpa only [PMF.pi_uniformOfFintype] using
@@ -190,9 +192,9 @@ theorem interpret_prob_eq_memoize {Value : Type} [Finite Value] [BEq Query] [Law
     (distribution : Query → PMF Value) (program : ProbOracleComp (fun _ : Query => Value) α) :
     (do
       let table ← PMF.pi distribution
-      OracleComp.interpret (handler ProbComp.unifOracle (fun q => PMF.pure (table q))) program) =
+      OracleComp.interpret (sumHandler ProbComp.unifOracle (fun q => PMF.pure (table q))) program) =
       ((OracleComp.interpret
-        (handler (fun n => StateT.lift (ProbComp.unifOracle n)) (memoize distribution))
+        (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (memoize distribution))
           program).run []).map Prod.fst := by
   classical
   rw [interpret_prob_eq_lazy]
@@ -210,8 +212,8 @@ theorem interpret_prob_eq_memoize_map {Value Key' Value' : Type} [Finite Value]
     (do
       let table ← PMF.pi distribution
       OracleComp.interpret
-        (handler ProbComp.unifOracle (fun key => PMF.pure (valueMap (table key)))) program) =
-      ((OracleComp.interpret (handler (fun n => StateT.lift (ProbComp.unifOracle n))
+        (sumHandler ProbComp.unifOracle (fun key => PMF.pure (valueMap (table key)))) program) =
+      ((OracleComp.interpret (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
         (fun key => memoize sample' (keyMap key))) program).run []).map Prod.fst := by
   let represent := fun cache : List (Query × Value) =>
     cache.map (fun entry => (keyMap entry.1, valueMap entry.2))
@@ -223,10 +225,10 @@ theorem interpret_prob_eq_memoize_map {Value Key' Value' : Type} [Finite Value]
   have houtput := congrArg (PMF.map Prod.fst) hrun
   simp only [PMF.map_comp, Function.comp_def, represent, List.map_nil] at houtput
   rw [← houtput]
-  simpa only [OracleComp.interpret_interpret, interpret_handler, interpret_sample,
+  simpa only [OracleComp.interpret_interpret, OracleComp.interpret_sumHandler, interpret_sample,
     ProbComp.unifFin, OracleComp.interpret_query, OracleComp.interpret_map, interpret_query,
     PMF.monad_map_eq_map, PMF.pure_map] using interpret_prob_eq_memoize distribution
-      (OracleComp.interpret (handler (fun n => sample (ProbComp.unifFin n))
+      (OracleComp.interpret (sumHandler (fun n => sample (ProbComp.unifFin n))
         (fun key => valueMap <$> ProbOracleComp.query key)) program)
 
 /-- Executable closed samplers with a list cache implement the eager independent-table experiment,
@@ -235,10 +237,10 @@ theorem eval_run_interpret_memoize_prob_eq_eager {Key Value Result : Type}
     [Fintype Key] [Finite Value] [BEq Key] [LawfulBEq Key]
     (compute : Key → ProbComp Value) (program : ProbOracleComp (fun _ : Key => Value) Result) :
     ProbComp.eval (Prod.fst <$> (OracleComp.interpret
-      (handler (fun n => StateT.lift (ProbComp.unifFin n)) (memoize compute)) program).run []) =
+      (sumHandler (fun n => StateT.lift (ProbComp.unifFin n)) (memoize compute)) program).run []) =
         (do
           let table ← PMF.pi (fun q => ProbComp.eval (compute q))
-          OracleComp.interpret (handler ProbComp.unifOracle (fun q => PMF.pure (table q)))
+          OracleComp.interpret (sumHandler ProbComp.unifOracle (fun q => PMF.pure (table q)))
             program) := by
   rw [interpret_prob_eq_memoize]
   simp only [ProbComp.eval_map, ProbOracleComp.eval_run_interpret, ProbComp.eval_memoize]

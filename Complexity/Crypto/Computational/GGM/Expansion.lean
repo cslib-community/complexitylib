@@ -284,7 +284,7 @@ private theorem prefix_eager (n depth width : ℕ) (hdepth : depth ≤ n)
         respond query (List.ofFn (table (BitString.ofList depth (query.take depth)))) else []) := by
     by_cases hquery : query.length = n <;> simp [adapter, hquery, PMF.pure_map]
   simpa only [PMF.pi_uniformOfFintype, OracleComp.interpret_interpret,
-    ProbOracleComp.interpret_handler, ProbOracleComp.interpret_sample, ProbComp.unifFin,
+    OracleComp.interpret_sumHandler, ProbOracleComp.interpret_sample, ProbComp.unifFin,
     OracleComp.interpret_query, Function.Embedding.coeFn_mk, hstep, heval,
     PMF.monad_bind_eq_bind] using h
 

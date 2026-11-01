@@ -77,11 +77,11 @@ example : true ∈ support coinThenQuery := by
     ProbComp.eval_uniform]
   exact ⟨true, by simp [PMF.mem_support_iff], true, by simp [ProbOracleComp.query], rfl⟩
 
--- Its run is the generic run of the sum handler.
+-- Its run is, by definition, the generic run of the sum handler.
 example (oracle : (q : Unit) → StateT ℕ PMF Bool) (s : ℕ) :
     ProbOracleComp.runWith oracle coinThenQuery s =
       runWith (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle) coinThenQuery s :=
-  ProbOracleComp.runWith_eq_runWith_sumHandler oracle coinThenQuery s
+  rfl
 
 -- Against a reply that is always `false`, it never accepts.
 example (s : ℕ) :

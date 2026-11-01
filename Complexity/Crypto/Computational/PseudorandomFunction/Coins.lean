@@ -177,7 +177,7 @@ private theorem interpret_coinDistinguisher (oracle : Unit × List Bool → Prob
     OracleComp.interpret (ProbOracleComp.handler ProbComp.unifFin (fun request =>
       List.take (coinRequestDecoder.decode request.2).2 <$>
         oracle ((), padRequest N (coinRequestDecoder.decode request.2).1))) (adversary N aux) := by
-  simp only [coinDistinguisher, OracleComp.interpret_interpret, ProbOracleComp.interpret_handler,
+  simp only [coinDistinguisher, OracleComp.interpret_interpret, OracleComp.interpret_sumHandler,
     ProbOracleComp.interpret_sample, coinQuery, OracleComp.interpret_map,
     ProbOracleComp.interpret_query]
   congr 1

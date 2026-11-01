@@ -300,7 +300,7 @@ theorem CCA2AdversaryOf.IsPPT.query_bounds {Msg : Type} {encMsg : Msg ↪ List B
       (∀ n pk (State : Type)
         (oracle : Unit × List Bool → StateT State PMF (List Bool)) s s' choice,
         (choice, s') ∈ ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m)) oracle)
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m)) oracle)
             (adversary.choose n pk)).run s).support →
         choice.2.length ≤ cs * (n + pk.length + 2) ^ ds) := by
   obtain ⟨c₁, d₁, hchoose⟩ := hA.choose.query_bounds
@@ -382,14 +382,14 @@ noncomputable def cca2GameOn {Msg Out : Type}
     (adversary : CCA2AdversaryOf Msg) (bit : Bool) (n : ℕ) : ProbComp Bool := do
   let keys ← keyGen n
   let choiceOut ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (cca2Phase1Oracle encOut decrypt n keys.2))
     (adversary.choose n keys.1)).run ()
   let choice := choiceOut.1
   if valid n keys.1 choice.1.1 choice.1.2 then
     let ct ← encrypt n keys.1 (if bit then choice.1.2 else choice.1.1)
     let guessOut ← (OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
         (cca2Phase2Oracle encOut decrypt n keys.2 ct))
       (adversary.guess n choice.2 ct)).run ()
     return guessOut.1
@@ -455,7 +455,7 @@ theorem isPPTOn_run_cca2Phase1Oracle {Msg Out : Type} {encMsg : Msg ↪ List Boo
       (encPair (encPair (encPair encMsg encMsg) encBits) (encFinEnum Unit))
       (fun caller : ℕ × List Bool × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (cca2Phase1Oracle encOut decrypt caller.1 caller.2.2))
           (adversary.choose caller.1 caller.2.1)).run ()) := by
   let ECaller := encPair encUnary (encPair encBits encBits)
@@ -513,7 +513,7 @@ theorem isPPTOn_run_cca2Phase2Oracle {Msg Out : Type} {encMsg : Msg ↪ List Boo
       (encPair encBool (encFinEnum Unit))
       (fun caller : ℕ × List Bool × List Bool × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (cca2Phase2Oracle encOut decrypt caller.1 caller.2.1 caller.2.2.2))
           (adversary.guess caller.1 caller.2.2.1 caller.2.2.2)).run ()) := by
   let ECaller := encPair encUnary (encPair encBits (encPair encBits encBits))
@@ -601,7 +601,7 @@ theorem isPPTOn_cca2GameOn {Msg Out : Type} {encMsg : Msg ↪ List Bool} {encOut
   have hphase1 : IsPPTOn E1 EChoice
       (fun p : ℕ × (List Bool × List Bool) =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (cca2Phase1Oracle encOut decrypt p.1 p.2.2))
           (adversary.choose p.1 p.2.1)).run ()) :=
     isPPTOn_run_cca2Phase1Oracle hdecrypt hA
@@ -652,7 +652,7 @@ theorem isPPTOn_cca2GameOn {Msg Out : Type} {encMsg : Msg ↪ List Bool} {encOut
   have hphase2 : IsPPTOn E3 (encPair encBool (encFinEnum Unit))
       (fun p : ((ℕ × (List Bool × List Bool)) × (((Msg × Msg) × List Bool) × Unit)) × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (cca2Phase2Oracle encOut decrypt p.1.1.1 p.1.1.2.2 p.2))
           (adversary.guess p.1.1.1 p.1.2.1.2 p.2)).run ()) :=
     (isPPTOn_run_cca2Phase2Oracle hdecrypt hA).preprocess hphase2Arg
@@ -660,7 +660,7 @@ theorem isPPTOn_cca2GameOn {Msg Out : Type} {encMsg : Msg ↪ List Bool} {encOut
       (fun p :
         ((ℕ × (List Bool × List Bool)) × (((Msg × Msg) × List Bool) × Unit)) × List Bool => do
         let guessOut ← (OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (cca2Phase2Oracle encOut decrypt p.1.1.1 p.1.1.2.2 p.2))
           (adversary.guess p.1.1.1 p.1.2.1.2 p.2)).run ()
         return guessOut.1) :=
@@ -670,7 +670,7 @@ theorem isPPTOn_cca2GameOn {Msg Out : Type} {encMsg : Msg ↪ List Bool} {encOut
         if valid p.1.1 p.1.2.1 p.2.1.1.1 p.2.1.1.2 then do
           let ct ← encrypt p.1.1 p.1.2.1 (if bit then p.2.1.1.2 else p.2.1.1.1)
           let guessOut ← (OracleComp.interpret
-            (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+            (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
               (cca2Phase2Oracle encOut decrypt p.1.1 p.1.2.2 ct))
             (adversary.guess p.1.1 p.2.1.2 ct)).run ()
           return guessOut.1
@@ -972,7 +972,7 @@ theorem MultiCCA2AdversaryOf.IsPPT.query_bounds {Msg : Type} {encMsg : Msg ↪ L
       (∀ n pk (State : Type)
         (oracle : Unit × List Bool → StateT State PMF (List Bool)) s s' choice,
         (choice, s') ∈ ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m)) oracle)
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m)) oracle)
             (adversary.choose n pk)).run s).support →
         choice.1.length ≤ cs * (n + pk.length + 2) ^ ds ∧
           choice.2.length ≤ cs * (n + pk.length + 2) ^ ds) := by
@@ -1063,14 +1063,14 @@ noncomputable def cca2MultiGameOn {Msg Out : Type}
     (adversary : MultiCCA2AdversaryOf Msg) (bit : Bool) (n : ℕ) : ProbComp Bool := do
   let keys ← keyGen n
   let choiceOut ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (cca2Phase1Oracle encOut decrypt n keys.2))
     (adversary.choose n keys.1)).run ()
   let choice := choiceOut.1
   if choice.1.all (fun p => valid n keys.1 p.1 p.2) then
     let cts ← choice.1.mapM (fun p => encrypt n keys.1 (if bit then p.2 else p.1))
     let guessOut ← (OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
         (cca2MultiPhase2Oracle encOut decrypt n keys.2 cts))
       (adversary.guess n choice.2 cts)).run ()
     return guessOut.1
@@ -1140,7 +1140,7 @@ theorem isPPTOn_run_cca2MultiPhase1Oracle {Msg Out : Type} {encMsg : Msg ↪ Lis
       (encPair (encPair (encList (encPair encMsg encMsg)) encBits) (encFinEnum Unit))
       (fun caller : ℕ × List Bool × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (cca2Phase1Oracle encOut decrypt caller.1 caller.2.2))
           (adversary.choose caller.1 caller.2.1)).run ()) := by
   let ECaller := encPair encUnary (encPair encBits encBits)
@@ -1198,7 +1198,7 @@ theorem isPPTOn_run_cca2MultiPhase2Oracle {Msg Out : Type} {encMsg : Msg ↪ Lis
       (encPair encBool (encFinEnum Unit))
       (fun caller : ℕ × List Bool × List Bool × List (List Bool) =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (cca2MultiPhase2Oracle encOut decrypt caller.1 caller.2.1 caller.2.2.2))
           (adversary.guess caller.1 caller.2.2.1 caller.2.2.2)).run ()) := by
   let ECaller := encPair encUnary (encPair encBits (encPair encBits (encList encBits)))
@@ -1291,7 +1291,7 @@ theorem isPPTOn_cca2MultiGameOn {Msg Out : Type} {encMsg : Msg ↪ List Bool}
   have hphase1 : IsPPTOn E1 EChoice
       (fun p : ℕ × (List Bool × List Bool) =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (cca2Phase1Oracle encOut decrypt p.1 p.2.2))
           (adversary.choose p.1 p.2.1)).run ()) :=
     isPPTOn_run_cca2MultiPhase1Oracle hdecrypt hA
@@ -1372,7 +1372,7 @@ theorem isPPTOn_cca2MultiGameOn {Msg Out : Type} {encMsg : Msg ↪ List Bool}
         ((ℕ × (List Bool × List Bool)) × ((List (Msg × Msg) × List Bool) × Unit)) ×
           List (List Bool) =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (cca2MultiPhase2Oracle encOut decrypt p.1.1.1 p.1.1.2.2 p.2))
           (adversary.guess p.1.1.1 p.1.2.1.2 p.2)).run ()) :=
     (isPPTOn_run_cca2MultiPhase2Oracle hdecrypt hA).preprocess hphase2Arg
@@ -1381,7 +1381,7 @@ theorem isPPTOn_cca2MultiGameOn {Msg Out : Type} {encMsg : Msg ↪ List Bool}
         ((ℕ × (List Bool × List Bool)) × ((List (Msg × Msg) × List Bool) × Unit)) ×
           List (List Bool) => do
         let guessOut ← (OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (cca2MultiPhase2Oracle encOut decrypt p.1.1.1 p.1.1.2.2 p.2))
           (adversary.guess p.1.1.1 p.1.2.1.2 p.2)).run ()
         return guessOut.1) :=
@@ -1392,7 +1392,7 @@ theorem isPPTOn_cca2MultiGameOn {Msg Out : Type} {encMsg : Msg ↪ List Bool}
           let cts ←
             p.2.1.1.mapM (fun pair => encrypt p.1.1 p.1.2.1 (if bit then pair.2 else pair.1))
           let guessOut ← (OracleComp.interpret
-            (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+            (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
               (cca2MultiPhase2Oracle encOut decrypt p.1.1 p.1.2.2 cts))
             (adversary.guess p.1.1 p.2.1.2 cts)).run ()
           return guessOut.1
@@ -1758,15 +1758,15 @@ theorem eval_run_multiPhase2FilterHandler {Out : Type}
     (hdecBound : ∀ req, (encOption encOut (decrypt n sk req)).length ≤ decBound req)
     (prog : WordOracleComp Unit Bool) :
     ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
         (cca2Phase2Oracle encOut decrypt n sk ct))
       (Prod.fst <$> (OracleComp.interpret
-        (ProbOracleComp.handler
+        (OracleComp.sumHandler
           (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
           (multiPhase2FilterHandler decBound cts))
         prog).run ())).run ()) =
     ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
         (cca2MultiPhase2Oracle encOut decrypt n sk cts))
       prog).run ()) := by
   rw [OracleComp.interpret_map, StateT.run_map, ProbComp.eval_map,
@@ -1776,7 +1776,7 @@ theorem eval_run_multiPhase2FilterHandler {Out : Type}
     (oracle := fun q s => ProbComp.eval (cca2MultiPhase2Oracle encOut decrypt n sk cts q s))
     (oracle' := fun q (state : Unit × Unit) =>
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (cca2Phase2Oracle encOut decrypt n sk ct q s)))
         ((multiPhase2FilterHandler decBound cts q).run state.1)).run state.2).map
           (fun result => (result.1.1, result.1.2, result.2)))
@@ -1786,7 +1786,7 @@ theorem eval_run_multiPhase2FilterHandler {Out : Type}
       change (ProbComp.eval (cca2MultiPhase2Oracle encOut decrypt n sk cts ((), req) ())).map
           (fun x => (x.1, (), ())) =
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
             (fun q s => ProbComp.eval (cca2Phase2Oracle encOut decrypt n sk ct q s)))
           (multiPhase2FilterHandler decBound cts ((), req) ())).run ()).map
           (fun result => (result.1.1, result.1.2, result.2))
@@ -1821,7 +1821,7 @@ noncomputable def cca2MultiHybridCont {Msg Out : Type}
   let ctsBack ← (choice.1.drop split).mapM (fun p => encrypt n keys.1 p.1)
   let cts := ctsFront ++ ctsBack
   let guessOut ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (cca2MultiPhase2Oracle encOut decrypt n keys.2 cts))
     (adversary.guess n choice.2 cts)).run ()
   return guessOut.1
@@ -1839,7 +1839,7 @@ noncomputable def cca2MultiHybridGameOn {Msg Out : Type}
     (adversary : MultiCCA2AdversaryOf Msg) (split n : ℕ) : ProbComp Bool := do
   let keys ← keyGen n
   let choiceOut ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (cca2Phase1Oracle encOut decrypt n keys.2))
     (adversary.choose n keys.1)).run ()
   let choice := choiceOut.1
@@ -1872,7 +1872,7 @@ theorem eval_cca2MultiHybridGameOn_of_le {Msg Out : Type}
     (adversary : MultiCCA2AdversaryOf Msg) (split n : ℕ)
     (hbound : ∀ keys ∈ (ProbComp.eval (keyGen n)).support,
       ∀ choiceOut ∈ (ProbComp.eval ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
           (cca2Phase1Oracle encOut decrypt n keys.2))
         (adversary.choose n keys.1)).run ())).support,
       choiceOut.1.1.length ≤ split) :
@@ -1910,7 +1910,7 @@ noncomputable def cca2MultiToSingleAt {Msg : Type} [Inhabited Msg]
     if decoded.1 then
       let cts := decoded.2.2.1 ++ ct :: decoded.2.2.2
       Prod.fst <$> (OracleComp.interpret
-        (ProbOracleComp.handler
+        (OracleComp.sumHandler
           (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
           (multiPhase2FilterHandler (decBound n) cts))
         (adversary.guess n decoded.2.1 cts)).run ()
@@ -2264,7 +2264,7 @@ theorem isOraclePPTOn_cca2MultiToSingleAt_guess {Msg : Type} [Inhabited Msg]
   have hrun : IsOraclePPTOn (Operation := Unit) EGuess (encPair encBool EState)
       (fun p : ℕ × List Bool × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler
+          (OracleComp.sumHandler
             (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
             (multiPhase2FilterHandler (decBound p.1)
               ((multiCCA2StateDecoder.decode p.2.1).2.2.1 ++
@@ -2284,15 +2284,15 @@ theorem isOraclePPTOn_cca2MultiToSingleAt_guess {Msg : Type} [Inhabited Msg]
     intro caller request state _ result hresult
     unfold multiPhase2FilterHandler at hresult
     split_ifs at hresult with hmem
-    · cases ProbOracleComp.eq_of_mem_support_pure hresult
+    · cases OracleComp.eq_of_mem_supportWith_pure hresult
       exact ⟨trivial, Nat.zero_le _, Nat.le_add_right _ _⟩
-    · obtain ⟨reply, hreply, rfl⟩ := ProbOracleComp.mem_support_map hresult
-      obtain ⟨rawReply, _, rfl⟩ := ProbOracleComp.mem_support_map hreply
+    · obtain ⟨reply, hreply, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
+      obtain ⟨rawReply, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hreply
       exact ⟨trivial, List.length_take_le _ _, Nat.le_add_right _ _⟩
   have hyes : IsOraclePPTOn (Operation := Unit) EGuess encBool
       (fun p : ℕ × List Bool × List Bool =>
         Prod.fst <$> (OracleComp.interpret
-          (ProbOracleComp.handler
+          (OracleComp.sumHandler
             (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
             (multiPhase2FilterHandler (decBound p.1)
               ((multiCCA2StateDecoder.decode p.2.1).2.2.1 ++
@@ -2384,7 +2384,7 @@ theorem isQueryBounded_cca2MultiToSingleAt {Msg : Type} [Inhabited Msg]
         (hQ.2 n (multiCCA2StateDecoder.decode state).2.1 _) ()
       cases q with
       | inl m =>
-        simpa [ProbOracleComp.handler, StateT.lift] using
+        simpa [OracleComp.sumHandler, StateT.lift] using
           (OracleComp.isCostBounded_map_iff (·, s) (ProbOracleComp.sample (ProbComp.unifFin m))
             0).mpr (ProbOracleComp.IsQueryBounded.sample (ProbComp.unifFin m))
       | inr req =>
@@ -2430,14 +2430,14 @@ theorem eval_cca2GameOn_cca2MultiToSingle {Msg Out : Type} [Inhabited Msg]
     ProbOracleComp.eval_run_interpret]
   have hsample (keys : List Bool × List Bool) :
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           (fun q s => ProbComp.eval (cca2Phase1Oracle encOut decrypt n keys.2 q s)))
         (do
           let split ← ProbOracleComp.sample (ProbComp.sampleDyadicIndex (Q n))
           (cca2MultiToSingleAt valid encrypt decBound adversary split).choose n keys.1)).run ()) =
       (PMF.uniformOfFintype (Fin (dyadicSize (Q n)))).bind (fun i =>
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
             (fun q s => ProbComp.eval (cca2Phase1Oracle encOut decrypt n keys.2 q s)))
           ((cca2MultiToSingleAt valid encrypt decBound adversary i.val).choose
             n keys.1)).run ())) := by
@@ -2471,7 +2471,7 @@ private theorem eval_cca2MultiToSingleAt_cont {Msg Out : Type} [Inhabited Msg]
     (choiceOut : (List (Msg × Msg) × List Bool) × Unit)
     (hdecBound : ∀ req, (encOption encOut (decrypt n keys.2 req)).length ≤ decBound n req) :
     (ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
         (cca2Phase1Oracle encOut decrypt n keys.2))
       (if decide (split < choiceOut.1.1.length) &&
           choiceOut.1.1.all (fun p => valid n keys.1 p.1 p.2) then do
@@ -2489,7 +2489,7 @@ private theorem eval_cca2MultiToSingleAt_cont {Msg Out : Type} [Inhabited Msg]
         ProbComp.eval (if valid n keys.1 choice.1.1 choice.1.2 then do
           let ct ← encrypt n keys.1 (if bit then choice.1.2 else choice.1.1)
           let guessOut ← (OracleComp.interpret
-            (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+            (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
               (cca2Phase2Oracle encOut decrypt n keys.2 ct))
             ((cca2MultiToSingleAt valid encrypt decBound adversary split).guess
               n choice.2 ct)).run ()
@@ -2521,12 +2521,12 @@ private theorem eval_cca2MultiToSingleAt_cont {Msg Out : Type} [Inhabited Msg]
       PMF.pure_bind, hvalid_target, ↓reduceIte]
     have hguess (ctsFront ctsBack : List (List Bool)) (ct : List Bool) :
         ProbComp.eval ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (cca2Phase2Oracle encOut decrypt n keys.2 ct))
           ((cca2MultiToSingleAt valid encrypt decBound adversary split).guess n
             (encMultiCCA2State (true, choiceOut.1.2, ctsFront, ctsBack)) ct)).run ()) =
         ProbComp.eval ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (cca2MultiPhase2Oracle encOut decrypt n keys.2 (ctsFront ++ ct :: ctsBack)))
           (adversary.guess n choiceOut.1.2 (ctsFront ++ ct :: ctsBack))).run ()) := by
       unfold cca2MultiToSingleAt
@@ -2600,7 +2600,7 @@ theorem cca2MultiHybridGameOn_step_gap {Msg Out : Type} [Inhabited Msg]
           (cca2MultiToSingleAt valid encrypt decBound adversary split) bit n) =
       (ProbComp.eval (keyGen n)).bind fun keys =>
         (ProbComp.eval ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (cca2Phase1Oracle encOut decrypt n keys.2))
           (adversary.choose n keys.1)).run ())).bind fun choiceOut =>
             if decide (split < choiceOut.1.1.length) &&
@@ -2680,7 +2680,7 @@ theorem cca2MultiGameOn_gap {Msg Out : Type} [Inhabited Msg]
       ∀ req, (encOption encOut (decrypt n keys.2 req)).length ≤ decBound n req)
     (hQ : ∀ keys ∈ (ProbComp.eval (keyGen n)).support,
       ∀ choiceOut ∈ (ProbComp.eval ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
           (cca2Phase1Oracle encOut decrypt n keys.2))
         (adversary.choose n keys.1)).run ())).support,
       choiceOut.1.1.length ≤ Q n) :
@@ -2741,7 +2741,7 @@ theorem advantage_cca2MultiGameOn {Msg Out : Type} [Inhabited Msg]
       ∀ req, (encOption encOut (decrypt n keys.2 req)).length ≤ decBound n req)
     (hQ : ∀ keys ∈ (ProbComp.eval (keyGen n)).support,
       ∀ choiceOut ∈ (ProbComp.eval ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
           (cca2Phase1Oracle encOut decrypt n keys.2))
         (adversary.choose n keys.1)).run ())).support,
       choiceOut.1.1.length ≤ Q n) :
@@ -2807,7 +2807,7 @@ theorem INDCCA2On.indcca2MultiOn {Msg Out : Type} [Inhabited Msg]
       (hkeys : keys ∈ (ProbComp.eval (keyGen n)).support)
       (choiceOut : (List (Msg × Msg) × List Bool) × Unit)
       (hchoice : choiceOut ∈ (ProbComp.eval ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
           (cca2Phase1Oracle encOut decrypt n keys.2))
         (adversary.choose n keys.1)).run ())).support) :
       choiceOut.1.1.length ≤ Q n := by

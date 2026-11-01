@@ -124,7 +124,7 @@ theorem prfIdealGame_eq_lazy (adversary : OracleDistinguisher) (n : ℕ) :
     interpret_randomFunctionQuery ProbComp.unifOracle n table query
   simpa only [adapted, prfIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbOracleComp.eval_interpret, ProbComp.eval_pure, OracleComp.interpret_interpret,
-    ProbOracleComp.interpret_handler, ProbOracleComp.interpret_sample, ProbComp.unifFin,
+    OracleComp.interpret_sumHandler, ProbOracleComp.interpret_sample, ProbComp.unifFin,
     OracleComp.interpret_query, heager, lazyRandomFunctionOracle, PMF.monad_bind_eq_bind] using h
 
 /-- A keyed family evaluated in plain polynomial time, secure against every uniform adaptive

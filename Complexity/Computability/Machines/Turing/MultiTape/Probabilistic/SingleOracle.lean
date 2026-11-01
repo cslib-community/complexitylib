@@ -100,7 +100,7 @@ theorem runOracle_singleOracle (i₀ : ι) (machine : MultiTapePTM k Symbol Stat
     (fuel : ℕ) (input : List Symbol) :
     (machine.singleOracle i₀).runOracle fuel input =
       OracleComp.interpret
-        (ProbOracleComp.handler
+        (OracleComp.sumHandler
           (fun n => OracleComp.query
             (spec := probOracleSpec (fun _ : ι × List Symbol => List Symbol)) (Sum.inl n))
           (fun q : Unit × List Symbol =>

@@ -75,7 +75,7 @@ theorem mem_support_map {program : ProbOracleComp spec α} {f : α → β} {resu
 theorem mem_support_of_mem {program : ProbOracleComp spec α} {State : Type}
     (oracle : (q : Query) → StateT State PMF (spec q)) {s s' : State} {result : α}
     (h : (result, s') ∈ ((OracleComp.interpret
-      (handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle) program).run s).support) :
+      (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle) program).run s).support) :
     result ∈ support program :=
   mem_supportWith_of_mem_support_runWith _ (fun _ _ _ _ _ => Set.mem_univ _) h
 
@@ -86,7 +86,7 @@ theorem mem_support_iff_exists [hne : ∀ q, Nonempty (spec q)] {program : ProbO
     result ∈ support program ↔
       ∃ (State : Type) (oracle : (q : Query) → StateT State PMF (spec q)) (s s' : State),
         (result, s') ∈ ((OracleComp.interpret
-          (handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle) program).run s).support
+          (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle) program).run s).support
     := by
   classical
   refine ⟨fun h => ?_, fun ⟨State, oracle, s, s', h⟩ => mem_support_of_mem oracle h⟩
@@ -99,18 +99,18 @@ theorem mem_support_iff_exists [hne : ∀ q, Nonempty (spec q)] {program : ProbO
     obtain ⟨a, -, ha⟩ := Set.mem_iUnion₂.mp h
     obtain ⟨State, oracle, s, s', hrun⟩ := ih a ha
     have hrun' {S : Type} (oracle : (q : Query) → StateT S PMF (spec q)) (state : S) :
-        (OracleComp.interpret (handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.interpret (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (PFunctor.FreeM.liftBind q cont)).run state =
-        ((handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle q).run state).bind
+        ((sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle q).run state).bind
           fun first => (OracleComp.interpret
-            (handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle) (cont first.1)).run
+            (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle) (cont first.1)).run
               first.2 := rfl
     cases q with
     | inl n =>
       refine ⟨State, oracle, s, s', ?_⟩
       rw [hrun', PMF.mem_support_bind_iff]
       refine ⟨(a, s), ?_, hrun⟩
-      simp [handler, ProbComp.unifOracle]
+      simp [sumHandler, ProbComp.unifOracle]
     | inr q =>
       let first (q' : Query) : spec q' :=
         if hq : q' = q then hq ▸ a else Classical.choice (hne q')
