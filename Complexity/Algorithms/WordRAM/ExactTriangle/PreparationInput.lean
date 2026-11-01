@@ -29,7 +29,8 @@ pre-halt state and the final halt charged.
 
 ## Main results
 
-* `PreparationInput.exec_input`: structured execution for composition, without the final halt.
+* `PreparationInput.exec_at`: structured execution from arbitrary registers and dirty memory.
+* `PreparationInput.exec_input`: initialized structured execution, without the final halt.
 * `PreparationInput.runs_input`: initialized execution, exact readback, fits and charged halt.
 * `PreparationInput.bounded_reachable`: input-derived word and address bounds at every prefix.
 * `PreparationInput.width_le_log`, `PreparationInput.wordBound_le_pow`: logarithmic physical
@@ -194,7 +195,9 @@ private theorem fits_at_width (n D g p A : ℕ) :
   · simp only [Nat.add_sub_cancel]
     exact_mod_cast hmag
 
-private theorem input_fits {n D g p A : ℕ} (values : List ℤ)
+/-- Original scalar headers and canonical signed words fit at the derived preparation width.
+Caller-side memory-window translations reuse this bound before normalizing their source view. -/
+theorem input_fits {n D g p A : ℕ} (values : List ℤ)
     (hlen : values.length = 3 * (n * n)) (hv : ∀ z ∈ values, z.natAbs ≤ A) :
     InputFits (width n D g p A) (input n D g p values) := by
   obtain ⟨hmag, hbudget⟩ := fits_at_width n D g p A
@@ -214,6 +217,37 @@ private theorem input_fits {n D g p A : ℕ} (values : List ℤ)
       have hs := hmag.of_natAbs_le ((hv z hz).trans (by omega : A ≤ A + p + 1))
       exact (Signed.encode_fits hs).mono (by dsimp only [width]; omega)
 
+/-- Execute preparation from actual scalar headers and original signed array words, with
+arbitrary old registers and dirty remaining memory. Admission is derived from original
+parameters using the same proof as the initialized client. No intermediate fit is supplied. -/
+theorem exec_at {n D g p A W : ℕ} (values : List ℤ)
+    (hlen : values.length = 3 * (n * n)) (initial : Data 64)
+    (hDHeader : initial.mem 1 = D) (hgHeader : initial.mem 2 = g)
+    (hnHeader : initial.mem 3 = n) (hpHeader : initial.mem 4 = p)
+    (hinput : ∀ q < 3 * (n * n), initial.mem (5 + q) = Signed.encode (values.getD q 0))
+    (hD : 1 ≤ D) (hDn : D ≤ n) (hg : 1 ≤ g) (hp : 0 < p)
+    (hv : ∀ z ∈ values, z.natAbs ≤ A) (hw : width n D g p A ≤ W) :
+    let C := fun rho => Nat.count (fun q => (values.getD q 0 % (p : ℤ)).toNat = rho) (n * n)
+    let K := ChunkCatalogue.before C (queryCap n D) p
+    ∃ y, ExecWithin W Instances.program initial y
+        (Instances.timeBound n D p K (numPieces n D g) - 1) ∧
+      Instances.Output n D g p (fun q => values.getD q 0) initial y := by
+  obtain ⟨hmag, hbudget⟩ := fits_at_width n D g p A
+  have hmod : GenericRAM.Signed.Fits (Nat.clog 2 (envelope n D g p A) + 1) (p : ℤ) :=
+    hmag.of_natAbs_le (by simp only [Int.natAbs_natCast]; omega)
+  have hvalues (q : ℕ) (hq : q < 3 * (n * n)) :
+      GenericRAM.Signed.Fits (Nat.clog 2 (envelope n D g p A) + 1) (values.getD q 0) := by
+    have hq' : q < values.length := by omega
+    have hmem : values.getD q 0 ∈ values := by
+      rw [List.getD_eq_getElem _ _ hq']
+      exact List.getElem_mem hq'
+    exact hmag.of_natAbs_le ((hv _ hmem).trans (by omega : A ≤ A + p + 1))
+  obtain ⟨y, hy, hout⟩ := Instances.exec_at n D g p (fun q => values.getD q 0)
+    initial hDHeader hgHeader hnHeader hpHeader hinput
+    hD hDn hg hp hmod hvalues hbudget
+  have hew := ExecWithin.mono_width Instances.program_fixed.2 hy hw
+  exact ⟨y, hew, hout⟩
+
 /-- Structured initialized execution for real native caller composition. The budget excludes
 only the final halt; all existing original-input, width and exact readback hypotheses remain.
 This does not accept an execution, layout or intermediate-fit certificate. -/
@@ -228,23 +262,10 @@ theorem exec_input {n D g p A W : ℕ} (values : List ℤ)
       Instances.Output n D g p (fun q => values.getD q 0)
         (.init (input n D g p values)) y ∧
       InputFits W (input n D g p values) ∧ y.Bounded W := by
-  obtain ⟨hmag, hbudget⟩ := fits_at_width n D g p A
-  have hmod : GenericRAM.Signed.Fits (Nat.clog 2 (envelope n D g p A) + 1) (p : ℤ) :=
-    hmag.of_natAbs_le (by simp only [Int.natAbs_natCast]; omega)
-  have hvalues (q : ℕ) (hq : q < 3 * (n * n)) :
-      GenericRAM.Signed.Fits (Nat.clog 2 (envelope n D g p A) + 1) (values.getD q 0) := by
-    have hq' : q < values.length := by omega
-    have hmem : values.getD q 0 ∈ values := by
-      rw [List.getD_eq_getElem _ _ hq']
-      exact List.getElem_mem hq'
-    exact hmag.of_natAbs_le ((hv _ hmem).trans (by omega : A ≤ A + p + 1))
-  obtain ⟨y, hy, hout⟩ := Instances.exec_at n D g p (fun q => values.getD q 0)
-    (.init (input n D g p values)) rfl rfl rfl rfl (fun q _ => input_word n D g p values q)
-    hD hDn hg hp hmod hvalues hbudget
-  have hew := ExecWithin.mono_width Instances.program_fixed.2 hy hw
+  obtain ⟨y, hew, hout⟩ := exec_at values hlen (.init (input n D g p values))
+    rfl rfl rfl rfl (fun q _ => input_word n D g p values q) hD hDn hg hp hv hw
   have hi := (input_fits values hlen hv).mono hw
-  have hybounded := hew.bounded (Data.Bounded.init hi)
-  exact ⟨y, hew, hout, hi, hybounded⟩
+  exact ⟨y, hew, hout, hi, hew.bounded (Data.Bounded.init hi)⟩
 
 /-- Complete initialized execution at every admitted physical width. The prefix witness and
 the output predicate use the same actual pre-halt memory, and the bound includes the halt. -/
