@@ -37,13 +37,15 @@ through the admissibility of `Memory.spec w`.
 * `push`, `pop`, `size`, `methods`: the operations as memory programs.
 * `abs`, `Inv`: the abstraction function and the implementation invariant.
 * `refinement`: the array stack as a `Refinement` of the bounded stack.
-* `pairRefinement`: two array stacks with disjoint layouts implement the pair of stacks.
+* `pairMethods`, `pairRefinement`: two array stacks with disjoint layouts implement the pair of
+  stacks.
 * `allocLayout`: allocate an empty stack.
 
 ## Main results
 
 * `amortized`: every operation costs at most three memory units.
 * `pair_amortized`: so does every operation of the pair.
+* `pairRefinement_methods`: the pair's methods do not depend on the proofs about its layouts.
 * `modifies_methods`, `abs_congr`, `Inv.congr`: the frame of a stack.
 * `runClient_allocLayout_bind`, `inv_allocLayout`, `abs_allocLayout`: allocation yields an empty
   stack in three memory units.
@@ -329,6 +331,12 @@ theorem frame {L' : Layout} (hL : L.Valid w C) (hL' : L'.Valid w C)
 
 /-! ## Two stacks in one memory -/
 
+/-- The operations of two stacks, each on its own layout. -/
+def pairMethods (L₁ L₂ : Layout) (w C : ℕ) :
+    Methods (product (Stack.WordRAM.spec w C) (Stack.WordRAM.spec w C)) (Memory.spec w)
+  | .inl o => methods L₁ w C o
+  | .inr o => methods L₂ w C o
+
 /-- Two array stacks with disjoint layouts implement a pair of bounded stacks. -/
 def pairRefinement {L₁ L₂ : Layout} (h₁ : L₁.Valid w C) (h₂ : L₂.Valid w C)
     (hd : Disjoint L₁.footprint L₂.footprint) :
@@ -340,6 +348,13 @@ def pairRefinement {L₁ L₂ : Layout} (h₁ : L₁.Valid w C) (h₂ : L₂.Val
     (fun {s} o {a s' tr} hs₁ hs₂ hv hrun => by
       obtain ⟨_, _, rfl, _⟩ := ((Memory.spec w).clientRun_iff_runClient _ _ _ _ _).mp hrun
       exact frame h₂ h₁ hd.symm hs₁ o hv)
+
+/-- The pair's methods are `pairMethods`, whatever the proofs about the layouts. -/
+theorem pairRefinement_methods {L₁ L₂ : Layout} (h₁ : L₁.Valid w C) (h₂ : L₂.Valid w C)
+    (hd : Disjoint L₁.footprint L₂.footprint) :
+    (pairRefinement h₁ h₂ hd).methods = pairMethods L₁ L₂ w C := by
+  funext o
+  cases o <;> rfl
 
 /-- Every operation of the pair costs at most three memory units. -/
 theorem pair_amortized {L₁ L₂ : Layout} (h₁ : L₁.Valid w C) (h₂ : L₂.Valid w C)
