@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Renfei Zhou. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Renfei Zhou. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Renfei Zhou
+Authors: Samuel Schlesinger, Renfei Zhou
 -/
 
 module
@@ -10,53 +10,38 @@ module
 public import Complexity.Computability.WordRAM.Dynamic
 public import Complexity.Computability.WordRAM.Heap
 public import Complexity.Computability.WordRAM.MapOp
-public import Complexity.Foundations.Semantics.Stateful.Amortized
 
 /-!
-# Composable Word-RAM data-structure subroutines
+# Composable Word-RAM subroutine infrastructure
 
-This file unifies standalone Word-RAM data-structure realizations (`DynamicProgram`,
-`DynamicCertificate`, `Stateful.Amortized`, `Stateful.Bound`) with inline subroutine composition
-inside structured outer algorithms (`Code.rename`, `ExecWithin`).
+This file provides the step-independent Word-RAM machine infrastructure for relocatable bounded-span
+subroutines (`SubroutineCode`, `SubroutineBase`), along with general structured-code helpers
+(`appendCode`, `execWithin_append`, `ExecWithin.loop_potential_retain`, `Data.*`).
 
-A data structure is packaged once as a `SubroutineCode B r_ds k_init` and certified by a
-`SubroutineDS` bundle. From that single proof, this file derives:
-
-1. **Defined-evaluation basis lifting (`SubroutineCode.mapSimulates`, `SubroutineDS.mapSimulates`,
-   `SubroutineDS.toStandard`):** Non-faulting executions over `Basis.exact` lift
-   instruction-for-instruction to `Basis.standard` via `Basis.Simulates.exactStandard` from
-   `Complexity.Computability.WordRAM.MapOp`, bridging exact-basis algorithms and standard-basis
-   `DynamicProgram` realizations.
-2. **Standalone `Stateful` projections:** `toDynamicProgram`, `toCertificate`, `toAmortized`,
-   `toBound`, and adaptive-client corollaries.
-3. **Relocated initialization (`initFresh_rename`, `initClear_rename`):** Both `O(1)` fresh
-   initialization on zeroed `Data.init` memory and generic `O(space)` dirty-memory re-initialization
-   along any injective register embedding `f : Fin r_ds → Fin r_caller`.
-4. **Relocated inline calls and bidirectional framing (`call_rename`, `frame_caller`):** Inline
-   execution with amortized potential accounting, DS-to-caller `Modifies` framing, and caller-to-DS
-   representation/potential framing.
-5. **Potential-retaining loop rule (`ExecWithin.loop_potential_retain`):** Retains exit potential
-   `+ Φ z` across inner loops so stored data-structure credit survives nested loops.
+State-transition data-structure implementations built on `SubroutineBase` live in
+`Complexity/DataStructure/WordRAM/StateTransition.lean`
+(`Cslib.DataStructure.WordRAM.StateTransitionImpl`), and oblivious sequence implementations live in
+`Complexity/DataStructure/WordRAM/Randomized/ObliviousSequence.lean`
+(`Cslib.DataStructure.WordRAM.Randomized.ObliviousSequenceImpl`).
 
 ## Main definitions
 
-* `Cslib.WordRAM.SubroutineCode`, `Cslib.WordRAM.SubroutineBase`, `Cslib.WordRAM.SubroutineDS`:
-  uniform relocatable machine code, step-independent initialization/framing bundle, and unified
-  standalone / inline specification and resource certificate for a Word-RAM data structure.
+* `Cslib.WordRAM.SubroutineCode`, `Cslib.WordRAM.SubroutineBase`: uniform relocatable machine code
+  and step-independent initialization/framing bundle for a Word-RAM subroutine.
 * `Cslib.WordRAM.SubroutineCode.initFresh`, `Cslib.WordRAM.SubroutineCode.initClear`: `O(1)` fresh
   initialization on zeroed memory and generic `O(space)` dirty-memory re-initialization.
-* `Cslib.WordRAM.SubroutineCode.toDynamicProgram`, `Cslib.WordRAM.SubroutineDS.toCertificate`:
-  standalone `.standard`-basis `DynamicProgram` and `DynamicCertificate` projections.
+* `Cslib.WordRAM.SubroutineCode.toDynamicProgram`: standalone `DynamicProgram` projection.
+* `Cslib.WordRAM.SubroutineCode.initFreshProg`, `Cslib.WordRAM.SubroutineCode.initClearProg`,
+  `Cslib.WordRAM.SubroutineCode.opProg`: compiled flat programs.
 
 ## Main results
 
 * `Cslib.WordRAM.ExecWithin.loop_potential_retain`: potential-retaining loop rule for nested loops.
-* `Cslib.WordRAM.SubroutineDS.toAmortized`, `Cslib.WordRAM.SubroutineDS.toBound`,
-  `Cslib.WordRAM.SubroutineDS.run_client_amortized`, `Cslib.WordRAM.SubroutineDS.run_client_bound`:
-  standalone amortized and worst-case instruction bounds over `Basis.standard`.
-* `Cslib.WordRAM.SubroutineBase.initFresh_rename`, `Cslib.WordRAM.SubroutineBase.initClear_rename`,
-  `Cslib.WordRAM.SubroutineDS.call_rename`, `Cslib.WordRAM.SubroutineBase.frame_caller`: relocated
-  inline initialization, inline operation calls, and bidirectional register/memory framing.
+* `Cslib.WordRAM.SubroutineCode.zeroFillCode_exec`: generic `4 * space + 6` zero-fill execution.
+* `Cslib.WordRAM.SubroutineBase.initFresh_exec`, `Cslib.WordRAM.SubroutineBase.initFresh_rename`,
+  `Cslib.WordRAM.SubroutineBase.initClear_exec`, `Cslib.WordRAM.SubroutineBase.initClear_rename`,
+  `Cslib.WordRAM.SubroutineBase.frame_caller`: relocated inline initialization and bidirectional
+  register/memory framing.
 
 ## References
 
@@ -133,7 +118,7 @@ theorem Data.Bounded.extend {r r' w : ℕ} {f : Fin r → Fin r'} (hf : f.Inject
   · rw [Data.extend_regs_of_notMem y x hj]
     exact hx.1 j
 
-/-! ## `SubroutineCode` and `SubroutineDS` -/
+/-! ## `SubroutineCode` and `SubroutineBase` -/
 
 /-- Uniform machine code for a relocatable bounded-footprint data-structure subroutine over `B`,
 independent of runtime problem size, base address, and word size `w`. -/
@@ -378,8 +363,7 @@ for `P : SubroutineCode B r_ds k_init` over a state type `State`, operation type
 family `Result`, and admissibility predicate `valid` at word width `w`, base address `base`,
 runtime parameters `params`, and initial state `s₀`.
 
-Extended by `SubroutineDS` (for deterministic `Stateful.Spec`) and `RelSubroutineDS` (for
-relational `Stateful.RelSpec`) so that initialization (`initFresh`, `zeroFillCode`, `initClear`),
+Extended by `StateTransitionImpl` so that initialization (`initFresh`, `zeroFillCode`, `initClear`),
 register relocation, standalone `toDynamicProgram`, and bidirectional framing (`frame_caller`) are
 stated and proved once. -/
 structure SubroutineBase {B : Basis} {r_ds k_init : ℕ} (P : SubroutineCode B r_ds k_init)
@@ -596,176 +580,22 @@ theorem frame_caller (C : SubroutineBase P Result valid w base params s₀)
 
 end SubroutineBase
 
-/-- Unified standalone and subroutine specification/resource certificate for `P` realizing `D` at
-word width `w`, base address `base`, runtime parameters `params`, and initial state `s₀`. -/
-structure SubroutineDS {B : Basis} {r_ds k_init : ℕ} (P : SubroutineCode B r_ds k_init)
-    (D : Stateful.Spec.{u, v, z}) (w base : ℕ) (params : Fin k_init → ℕ) (s₀ : D.State)
-    extends SubroutineBase P D.Result D.valid w base params s₀ where
-  /-- Concrete machine data determines at most one represented abstract state. -/
-  rep_unique : ∀ {s₁ s₂ x}, rep s₁ x → rep s₂ x → s₁ = s₂
-  /-- Execution of `P.code` for any admissible operation `o` whose arguments match `x.regs`. -/
-  step_exec : ∀ {s : D.State} {x : Data r_ds} (o : D.Op),
-    rep s x → D.valid s o → argMatch o x.regs →
-    ∃ y n, Exec w P.code x y n ∧
-      decode o y.regs = some (D.step s o).2 ∧
-      rep (D.step s o).1 y ∧
-      Modifies (Block.mk base space).footprint x.mem y.mem ∧
-      n + potential y ≤ charge s o + potential x
+namespace SubroutineCode
 
-namespace SubroutineDS
+variable {B : Basis} {r_ds k_init : ℕ}
 
-variable {B B' : Basis} {r_ds r_caller k_init w base : ℕ}
-  {P : SubroutineCode B r_ds k_init} {D : Stateful.Spec.{u, v, z}}
-  {params : Fin k_init → ℕ} {s₀ : D.State}
+/-- Compiled flat `Program B r_ds` for `O(1)` fresh zeroed-memory initialization. -/
+def initFreshProg (P : SubroutineCode B r_ds k_init) : Program B r_ds :=
+  P.initFresh.program P.output
 
-/-! ### Projection 1: Basis lifting and standalone `DynamicProgram` / `Stateful` theorems -/
+/-- Compiled flat `Program B r_ds` for `O(space)` dirty-memory reusable initialization. -/
+def initClearProg (P : SubroutineCode B r_ds k_init) : Program B r_ds :=
+  P.initClear.program P.output
 
-/-- Lift a `SubroutineDS` certificate along any defined-evaluation basis simulation. -/
-def mapSimulates (φ : B.Simulates B') (C : SubroutineDS P D w base params s₀) :
-    SubroutineDS (P.mapSimulates φ) D w base params s₀ where
-  toSubroutineBase := C.toSubroutineBase.mapSimulates φ
-  rep_unique := C.rep_unique
-  step_exec o hr hv harg :=
-    let ⟨y, n, he, hdec, hrep, hmod, hpot⟩ := C.step_exec o hr hv harg
-    ⟨y, n, he.mapSimulates φ, hdec, hrep, hmod, hpot⟩
+/-- Compiled flat `Program B r_ds` serving all operations of the data structure. -/
+def opProg (P : SubroutineCode B r_ds k_init) : Program B r_ds :=
+  P.code.program P.output
 
-/-- Lift an exact-basis `SubroutineDS` certificate to `Basis.standard`. -/
-abbrev toStandard {P : SubroutineCode .exact r_ds k_init}
-    (C : SubroutineDS P D w base params s₀) :
-    SubroutineDS P.toStandard D w base params s₀ :=
-  C.mapSimulates .exactStandard
-
-section Standard
-
-variable {P_std : SubroutineCode .standard r_ds k_init}
-  (C : SubroutineDS P_std D w base params s₀)
-
-/-- Project a `.standard`-basis `SubroutineDS` to a standalone `DynamicCertificate`. -/
-def toCertificate : DynamicCertificate C.toDynamicProgram w where
-  rep := C.rep
-  bounded := C.bounded
-  arguments_fit := C.arguments_fit
-  execute {s x} o hr hv := by
-    have hb' : (C.toDynamicProgram.prepare o x).Bounded w :=
-      C.toDynamicProgram.prepare_bounded (C.bounded hr) (C.arguments_fit o hv)
-    have hr' : C.rep s (C.toDynamicProgram.prepare o x) :=
-      C.rep_supported
-        (fun i hi => C.toDynamicProgram.prepare_regs_of_not_input hi o x)
-        (fun _ _ => rfl) hb' hr
-    have harg : C.argMatch o (C.toDynamicProgram.prepare o x).regs :=
-      C.encode_matches o x.regs
-    obtain ⟨y, n, he, hdec, hrep, _, _⟩ := C.step_exec o hr' hv harg
-    exact ⟨y, n, he, hdec, hrep⟩
-
-/-- Project a `.standard`-basis `SubroutineDS` to a standalone `Stateful.Amortized` certificate,
-charging `+ 1` per operation for `DynamicProgram`'s trailing `halt` instruction. -/
-theorem toAmortized :
-    Stateful.Amortized C.toCertificate.realization
-      DynamicProgram.OperationTrace.instructions
-      (fun _ x => C.potential x)
-      (fun s o => C.charge s o + 1) where
-  step {s x o a y trace} hr hv he := by
-    have hb' : (C.toDynamicProgram.prepare o x).Bounded w :=
-      C.toDynamicProgram.prepare_bounded (C.bounded hr) (C.arguments_fit o hv)
-    have hr' : C.rep s (C.toDynamicProgram.prepare o x) :=
-      C.rep_supported
-        (fun i hi => C.toDynamicProgram.prepare_regs_of_not_input hi o x)
-        (fun _ _ => rfl) hb' hr
-    have hp_eq : C.potential (C.toDynamicProgram.prepare o x) = C.potential x :=
-      C.potential_supported
-        (fun i hi => C.toDynamicProgram.prepare_regs_of_not_input hi o x)
-        (fun _ _ => rfl) hr
-    have harg : C.argMatch o (C.toDynamicProgram.prepare o x).regs :=
-      C.encode_matches o x.regs
-    obtain ⟨z, m, hz, _, _, _, hpot⟩ := C.step_exec o hr' hv harg
-    obtain ⟨rfl, hinst⟩ := he.eq_of_exec hz
-    rw [hinst]
-    rw [hp_eq] at hpot
-    omega
-
-/-- When `C.potential` is identically zero, `SubroutineDS` projects directly to a worst-case
-`Stateful.Bound` certificate. -/
-theorem toBound (hpot : ∀ x, C.potential x = 0) :
-    Stateful.Bound C.toCertificate.realization
-      DynamicProgram.OperationTrace.instructions
-      (fun s o => C.charge s o + 1) := by
-  intro s x o a y trace hr hv he
-  have h := C.toAmortized.step hr hv he
-  simp only [hpot] at h
-  omega
-
-/-- Standalone adaptive-client amortized bound for any admissible client program `p`. -/
-theorem run_client_amortized {α : Type*} (p : D.Client α) {s : D.State} {x : Data r_ds}
-    (hr : C.rep s x) (hv : D.ValidHistory s (D.runClient s p).2.2) :
-    ∃ y traces,
-      Stateful.Executes (C.toDynamicProgram.ExecOp w) p x (D.runClient s p).1 y traces ∧
-      C.rep (D.runClient s p).2.1 y ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces + C.potential y ≤
-        D.totalCost (fun s o => C.charge s o + 1) s (D.runClient s p).2.2 + C.potential x :=
-  C.toAmortized.exists_executes p hr hv
-
-/-- Standalone adaptive-client worst-case bound when `C.potential` is identically zero. -/
-theorem run_client_bound (hpot : ∀ x, C.potential x = 0) {α : Type*} (p : D.Client α)
-    {s : D.State} {x : Data r_ds} (hr : C.rep s x)
-    (hv : D.ValidHistory s (D.runClient s p).2.2) :
-    ∃ y traces,
-      Stateful.Executes (C.toDynamicProgram.ExecOp w) p x (D.runClient s p).1 y traces ∧
-      C.rep (D.runClient s p).2.1 y ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces ≤
-        D.totalCost (fun s o => C.charge s o + 1) s (D.runClient s p).2.2 :=
-  Stateful.Bound.exists_executes (C.toBound hpot) p hr hv
-
-end Standard
-
-/-! ### Projection 2: Relocated inline subroutine calls (`code_rename`, `call_rename`) -/
-
-/-- Execute `P.code.rename f` inline when arguments already match `(x.comap f).regs`. -/
-theorem code_rename (C : SubroutineDS P D w base params s₀)
-    {f : Fin r_ds → Fin r_caller} (hf : f.Injective)
-    {s : D.State} {x : Data r_caller} (o : D.Op)
-    (hr : C.rep s (x.comap f)) (hv : D.valid s o) (harg : C.argMatch o (x.comap f).regs) :
-    ∃ z t, ExecWithin w (P.code.rename f) x z t ∧
-      C.decode o (z.comap f).regs = some (D.step s o).2 ∧
-      C.rep (D.step s o).1 (z.comap f) ∧
-      Modifies (Block.mk base C.space).footprint x.mem z.mem ∧
-      (∀ j ∉ Set.range f, z.regs j = x.regs j) ∧
-      t + C.potential (z.comap f) ≤ C.charge s o + C.potential (x.comap f) := by
-  obtain ⟨y, n, he, hdec, hrep, hmod, hpot⟩ := C.step_exec o hr hv harg
-  refine ⟨y.extend f x, n, (he.rename hf).within, ?_, ?_, hmod,
-    fun j hj => Data.extend_regs_of_notMem y x hj, ?_⟩
-  · rw [Data.comap_extend hf]
-    exact hdec
-  · rw [Data.comap_extend hf]
-    exact hrep
-  · rw [Data.comap_extend hf]
-    exact hpot
-
-/-- Execute `.seq prep (P.code.rename f)` inline after a caller argument-preparation block `prep`
-that preserves persistent DS registers and memory in `[base, base + C.space)`. -/
-theorem call_rename (C : SubroutineDS P D w base params s₀)
-    {f : Fin r_ds → Fin r_caller} (hf : f.Injective)
-    {s : D.State} {x x' : Data r_caller} {prep : Code B r_caller} {t_prep : ℕ} (o : D.Op)
-    (hr : C.rep s (x.comap f)) (hv : D.valid s o)
-    (hprep : ExecWithin w prep x x' t_prep)
-    (hb' : (x'.comap f).Bounded w)
-    (hreg : ∀ i, P.input i = false → x'.regs (f i) = x.regs (f i))
-    (hmem : ∀ a ∈ (Block.mk base C.space).footprint, x'.mem a = x.mem a)
-    (harg : C.argMatch o (x'.comap f).regs) :
-    ∃ z t, ExecWithin w (.seq prep (P.code.rename f)) x z t ∧
-      C.decode o (z.comap f).regs = some (D.step s o).2 ∧
-      C.rep (D.step s o).1 (z.comap f) ∧
-      Modifies (Block.mk base C.space).footprint x'.mem z.mem ∧
-      (∀ j ∉ Set.range f, z.regs j = x'.regs j) ∧
-      t + C.potential (z.comap f) ≤ t_prep + C.charge s o + C.potential (x.comap f) := by
-  have hr' : C.rep s (x'.comap f) :=
-    C.rep_supported (x := x.comap f) (x' := x'.comap f) hreg hmem hb' hr
-  have hp_eq : C.potential (x'.comap f) = C.potential (x.comap f) :=
-    C.potential_supported (x := x.comap f) (x' := x'.comap f) hreg hmem hr
-  obtain ⟨z, t_op, he_op, hdec, hrep_z, hmod_z, hregs_z, hpot_z⟩ :=
-    C.code_rename hf o hr' hv harg
-  exact ⟨z, t_prep + t_op, hprep.seq he_op, hdec, hrep_z, hmod_z, hregs_z,
-    by rw [hp_eq] at hpot_z; omega⟩
-
-end SubroutineDS
+end SubroutineCode
 
 end Cslib.WordRAM

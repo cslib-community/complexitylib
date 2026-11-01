@@ -8,11 +8,12 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
+public import Complexity.Tactic.LogSpace.Init
 public import Aesop
 public import Mathlib.Tactic.FunProp
 
 /-!
-# Rule sets and certificates for polynomial-time programs
+# Shared rule sets and named efficiency certificates
 
 `polytime` searches the Aesop rule set `PolyTime`. A certificate for a named program is registered
 with `@[program_certificate]`. Certificates are indexed by their efficiency predicate and by the
@@ -24,7 +25,7 @@ same annotation supports calls inside larger functional programs without duplica
 Parameterized `IsPPT` certificates are uncurried to the definitionally equal `IsPPTOn` statement
 before registration, keeping both tactic interfaces on the same encoded-input contract.
 
-The certificate index is adapted from the cslib `crypto` branch. Both computation predicates use
+The certificate index is adapted from the cslib `crypto` branch. The computation predicates use
 separate input and output encodings. `Tactic.PPT` combines the `PPT` and `PolyTime`
 rule sets for closed probabilistic programs; machine witnesses remain behind their certificates.
 
@@ -85,13 +86,15 @@ def efficiencyKey (statement : Expr) : MetaM (Name × Name × Bool) := do
     | throwError "expected an efficiency statement"
   unless predicate == `Turing.MultiTapeTM.ComputableInPolyTime ||
       predicate == `Turing.MultiTapeTM.ComputableTidilyInPolyTime ||
+      predicate == `Turing.MultiTapeTM.ComputableInLogSpace ||
       predicate == `Cslib.Probability.IsPPTOn || predicate == `Cslib.Probability.IsPPT ||
       predicate == `Cslib.WordRAM.Refines ||
       predicate == `Cslib.WordRAM.ComputableInPolyTime ||
       predicate == `Cslib.WordRAM.UniformComputableInPolyTime do
     throwError "unsupported efficiency predicate `{predicate}` for `program_certificate`; \
-      expected TM polynomial time, PPT, or a documented word-RAM certificate"
+      expected TM polynomial time or logarithmic space, PPT, or a documented word-RAM certificate"
   let argument := if predicate == `Turing.MultiTapeTM.ComputableTidilyInPolyTime ||
+      predicate == `Turing.MultiTapeTM.ComputableInLogSpace ||
       predicate == `Turing.MultiTapeTM.ComputableInPolyTime then
     statement.getAppArgs[2]! else statement.getAppArgs.back!
   let program ← Core.betaReduce (← etaExpand argument)
@@ -144,9 +147,10 @@ private def hasGlobalFunProp (decl : Name) : CoreM Bool := do
     (← hasGlobalEntry morTheoremsExt (·.thmName) decl) ||
     (← hasGlobalEntry transitionTheoremsExt (·.thmName) decl)
 
-/-- `@[program_certificate]` registers an efficiency certificate for `polytime` and `ppt`. Its
-conclusion must be a `ComputableInPolyTime`, `ComputableTidilyInPolyTime`, `IsPPTOn` or `IsPPT`
-statement, or one of the word-RAM predicates `WordRAM.Refines`, `WordRAM.ComputableInPolyTime`,
+/-- `@[program_certificate]` registers an efficiency certificate for `polytime`, `logspace`
+and `ppt`. Its conclusion must be a `ComputableInPolyTime`, `ComputableTidilyInPolyTime`,
+`ComputableInLogSpace`, `IsPPTOn` or `IsPPT` statement, or one of the word-RAM predicates
+`WordRAM.Refines`, `WordRAM.ComputableInPolyTime`,
 `WordRAM.UniformComputableInPolyTime` used by `Tactic.WordRAM`. The indexed argument must apply
 a constant, possibly under an output encoding. Other predicates are rejected rather than indexed
 by an unrelated final argument.
@@ -160,7 +164,7 @@ syntax (name := programCertificate) "program_certificate" (ppSpace ident)* : att
 
 initialize registerBuiltinAttribute {
   name := `programCertificate
-  descr := "an efficiency certificate used by `polytime` and `ppt`, indexed by program head"
+  descr := "an efficiency certificate indexed by predicate and program head"
   applicationTime := .afterCompilation
   add := fun declName stx kind => do
     unless stx.isOfKind ``programCertificate do throwUnsupportedSyntax
@@ -172,6 +176,7 @@ initialize registerBuiltinAttribute {
       return (certificate, key)
     if key.1 == `Turing.MultiTapeTM.ComputableTidilyInPolyTime ||
         key.1 == `Turing.MultiTapeTM.ComputableInPolyTime ||
+        key.1 == `Turing.MultiTapeTM.ComputableInLogSpace ||
         key.1 == `Cslib.Probability.IsPPTOn then
       unless ← hasGlobalFunProp certificate do
         Attribute.add certificate `fun_prop .missing kind
@@ -179,7 +184,8 @@ initialize registerBuiltinAttribute {
 }
 
 /-- Solve the goal tagged `name`, or else one whose tag ends in `name` as for `case`, by proof
-search: `PPT` and `PolyTime` rules for a PPT goal, and `PolyTime` rules otherwise. -/
+search in its certificate family: `LogSpace` for logspace, `PPT` and `PolyTime` for PPT,
+and `PolyTime` otherwise. -/
 def solveTagged (name : Name) : TacticM Unit := do
   let goals ← getGoals
   let some goal ← (do
@@ -194,6 +200,10 @@ def solveTagged (name : Name) : TacticM Unit := do
     `(tactic| solve |
       aesop (config := { terminal := true, assumptionTransparency := .reducible })
         (rule_sets := [PPT, PolyTime]))
+  else if target.isAppOf `Turing.MultiTapeTM.ComputableInLogSpace then
+    `(tactic| solve |
+      aesop (config := { terminal := true, enableSimp := false })
+        (rule_sets := [LogSpace]))
   else
     `(tactic| solve |
       aesop (config := { terminal := true, assumptionTransparency := .reducible })

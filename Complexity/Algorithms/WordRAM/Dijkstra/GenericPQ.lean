@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.Dijkstra.ListEncode
-public import Complexity.Algorithms.WordRAM.PriorityQueue.Basic
+public import Complexity.DataStructure.PriorityQueue.WordRAM.Basic
 public import Complexity.Computability.WordRAM.Compile
 
 /-!
@@ -16,14 +16,16 @@ public import Complexity.Computability.WordRAM.Compile
 
 This file implements the outer graph-traversal layer of Dijkstra's single-source shortest-path
 algorithm once (`Cslib.Algorithms.WordRAM.Dijkstra.dijkstraCode`) on `15 + r_pq` registers over
-`Basis.exact`, parameterized only by a `Cslib.Algorithms.WordRAM.PriorityQueue.PQCode` subroutine,
+`Basis.exact`, parameterized only by a `Cslib.DataStructure.PriorityQueue.WordRAM.PQCode`
+subroutine,
 and proves its black-box correctness and amortized instruction-count specification
 (`Cslib.Algorithms.WordRAM.Dijkstra.dijkstra_of_pq_spec`) for any
-`Cslib.Algorithms.WordRAM.PriorityQueue.PQPackage` (supporting arbitrary concrete potentials
+`Cslib.DataStructure.PriorityQueue.WordRAM.PQPackage` (supporting arbitrary concrete potentials
 `potential : Data r_pq → ℕ`).
 
 Instantiating `dijkstra_of_pq_spec` with:
-* `PriorityQueue.BinaryHeap.pkg` (`potential = 0`) yields `LogLinearSpec` and `LogLinearStatement`
+* `PriorityQueue.WordRAM.BinaryHeap.pkg` (`potential = 0`) yields `LogLinearSpec` and
+  `LogLinearStatement`
   (`O((m + 1) (⌊log₂ n⌋ + 1))`);
 * any amortized `PQPackage` with `O(1)` `insert`/`decreaseKey` and `O(log n + 1)` `extractMin`
   (such as a Fibonacci heap) directly yields `O(m + min(n, m + 1) (⌊log₂ n⌋ + 1))` and
@@ -55,8 +57,8 @@ Instantiating `dijkstra_of_pq_spec` with:
 namespace Cslib.Algorithms.WordRAM.Dijkstra
 
 open Cslib.WordRAM
-open Cslib.Algorithms.Lean
-open Cslib.Algorithms.WordRAM.PriorityQueue
+open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
+open Cslib.DataStructure.PriorityQueue.WordRAM Cslib.DataStructure.WordRAM
 
 /-- Relocation map embedding the `r_pq` priority-queue registers above the `15` outer registers. -/
 def pqMap {r_pq : ℕ} : Fin r_pq → Fin (15 + r_pq) := Fin.natAdd 15
@@ -217,7 +219,7 @@ private theorem inputFits_encode (G : ListInstance)
         exact hw_in.of_le (by nlinarith)
 
 private theorem frame_outer_regs {P : PQCode .exact r_pq} {n K_max base : ℕ}
-    (C : SubroutineDS P.toSubroutineCode (IndexedMinPQ.spec n K_max) w base ![n]
+    (C : StateTransitionImpl P.toSubroutineCode (indexedMinPQSpec n K_max) w base ![n]
       (IndexedMinPQ.empty n))
     {s : IndexedMinPQ.State n} {x x' : Data (15 + r_pq)}
     (hr : C.rep s (x.comap pqMap)) (hx' : x'.Bounded w)
@@ -230,7 +232,7 @@ private theorem frame_outer_regs {P : PQCode .exact r_pq} {n K_max base : ℕ}
   exact Modifies.refl _ _
 
 private theorem frame_outer_write {P : PQCode .exact r_pq} {n K_max base : ℕ}
-    (C : SubroutineDS P.toSubroutineCode (IndexedMinPQ.spec n K_max) w base ![n]
+    (C : StateTransitionImpl P.toSubroutineCode (indexedMinPQSpec n K_max) w base ![n]
       (IndexedMinPQ.empty n))
     {s : IndexedMinPQ.State n} {x : Data (15 + r_pq)} (hr : C.rep s (x.comap pqMap))
     (a : ℕ) {val : ℕ} (ha : a < base) (hfit : Fits w val) :
@@ -254,8 +256,9 @@ private theorem frame_outer_write {P : PQCode .exact r_pq} {n K_max base : ℕ}
   exact C.frame_caller hr hb' (fun _ _ => rfl) hdisj hmod
 
 private theorem stateOf_unique {P : PQCode .exact r_pq} {n K_max base : ℕ}
-    (C : SubroutineDS P.toSubroutineCode (IndexedMinPQ.spec n K_max) w base ![n]
-      (IndexedMinPQ.empty n)) :
+    (C : StateTransitionImpl P.toSubroutineCode (indexedMinPQSpec n K_max) w base ![n]
+      (IndexedMinPQ.empty n))
+    (huniq : ∀ {s₁ s₂ : IndexedMinPQ.State n} {x : Data r_pq}, C.rep s₁ x → C.rep s₂ x → s₁ = s₂) :
     ∀ {s : IndexedMinPQ.State n} {y : Data (15 + r_pq)}, C.rep s (y.comap pqMap) →
       (by classical exact if h : ∃ s', C.rep s' (y.comap pqMap) then Classical.choose h
         else IndexedMinPQ.empty n) = s := by
@@ -263,22 +266,23 @@ private theorem stateOf_unique {P : PQCode .exact r_pq} {n K_max base : ℕ}
   intro s y hr
   have hex : ∃ s', C.rep s' (y.comap pqMap) := ⟨s, hr⟩
   simp only [hex, ↓reduceDIte]
-  exact C.rep_unique (Classical.choose_spec hex) hr
+  exact huniq (Classical.choose_spec hex) hr
 
-/-- Canonical abstract PQ state extracted from `y` via `C.rep_unique` (for proof potentials). -/
+/-- Canonical abstract PQ state extracted from `y` via `rep_unique` (for proof potentials). -/
 private noncomputable def stateOf {P : PQCode .exact r_pq} {n K_max base : ℕ}
-    (C : SubroutineDS P.toSubroutineCode (IndexedMinPQ.spec n K_max) w base ![n]
+    (C : StateTransitionImpl P.toSubroutineCode (indexedMinPQSpec n K_max) w base ![n]
       (IndexedMinPQ.empty n))
     (y : Data (15 + r_pq)) : IndexedMinPQ.State n := by
   classical
   exact if h : ∃ s', C.rep s' (y.comap pqMap) then Classical.choose h else IndexedMinPQ.empty n
 
 private theorem stateOf_eq {P : PQCode .exact r_pq} {n K_max base : ℕ}
-    (C : SubroutineDS P.toSubroutineCode (IndexedMinPQ.spec n K_max) w base ![n]
+    (C : StateTransitionImpl P.toSubroutineCode (indexedMinPQSpec n K_max) w base ![n]
       (IndexedMinPQ.empty n))
+    (huniq : ∀ {s₁ s₂ : IndexedMinPQ.State n} {x : Data r_pq}, C.rep s₁ x → C.rep s₂ x → s₁ = s₂)
     {s : IndexedMinPQ.State n} {y : Data (15 + r_pq)} (hr : C.rep s (y.comap pqMap)) :
     stateOf C y = s :=
-  stateOf_unique C hr
+  stateOf_unique C huniq hr
 
 private theorem edgesWord_take_succ {N b d i : ℕ} {es : List (Fin N × ℕ)} (v : Fin N)
     (hi : i < es.length) :
@@ -422,7 +426,7 @@ private theorem edgeBody_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
   have ho_out := outer_notMem_pqMap (r_pq := r_pq) (i := one) (by fin15)
   have htv_out := outer_notMem_pqMap (r_pq := r_pq) (i := tv) (by fin15)
   have hcand_out := outer_notMem_pqMap (r_pq := r_pq) (i := cand) (by fin15)
-  have hy_st : stateOf C y = s := stateOf_eq C hr
+  have hy_st : stateOf C y = s := stateOf_eq C (pkg.rep_unique hw_sp hK) hr
   by_cases hD0 : y.mem (G.dbase + V) = 0
   · have hc_eq : (Cond.eq dv zero).Holds y₁ := by
       have hdv_y₁ : y₁.regs dv = 0 := by
@@ -505,7 +509,7 @@ private theorem edgeBody_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
         simp only [hv, ↓reduceIte, hne, false_or]
     have hchg : C.charge s (.insert V (B + C_wt)) ≤ pkg.insertTime G.n :=
       pkg.charge_insert hw_sp hK s V (B + C_wt)
-    have hz_st : stateOf C z = s' := stateOf_eq C hr_z
+    have hz_st : stateOf C z = s' := stateOf_eq C (pkg.rep_unique hw_sp hK) hr_z
     refine ⟨z, s', 9 + (1 + t_ins + 1), e₁.seq (.branch_pos hc_eq (e_st.seq e_ins)),
       hz_bnd, hzj, hz_out, hr_z, hsync', hvis', hcard_dom'.le, hz_word, ?_, ?_⟩
     · intro a ha
@@ -611,7 +615,7 @@ private theorem edgeBody_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
           simp only [hv, ↓reduceIte]
       have hchg : C.charge s (.decreaseKey V (B + C_wt)) ≤ pkg.decreaseTime G.n :=
         pkg.charge_decreaseKey hw_sp hK s V (B + C_wt)
-      have hz_st : stateOf C z = s' := stateOf_eq C hr_z
+      have hz_st : stateOf C z = s' := stateOf_eq C (pkg.rep_unique hw_sp hK) hr_z
       refine ⟨z, s', 9 + (1 + t_dec + 1 + 2),
         e₁.seq (.branch_neg hc_eq (.branch_pos hc_lt (e_st.seq e_dec))),
         hz_bnd, hzj, hz_out, hr_z, hsync', hvis', by rw [hdom']; omega, hz_word, ?_, ?_⟩
@@ -653,7 +657,7 @@ private theorem edgeBody_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
         · subst hv
           simp only [y₁, Data.set_mem, ↓reduceIte, edgeWord, hD0, hlt]
         · simp only [y₁, Data.set_mem, hv, ↓reduceIte]
-      have hy₁_st : stateOf C y₁ = s := stateOf_eq C hr₁
+      have hy₁_st : stateOf C y₁ = s := stateOf_eq C (pkg.rep_unique hw_sp hK) hr₁
       refine ⟨y₁, s, 9 + (1 + 2 + 2),
         e₁.seq (.branch_neg hc_eq (.branch_neg hc_lt e_nop)),
         hy₁_bnd, hzj, fun i _ hnot => hy₁_out i hnot, hr₁, hsync, hvis_eq, Nat.le_succ _,
@@ -821,7 +825,8 @@ private theorem relaxEdges_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
   · intro v
     rw [hz_inv.word v, hlen, List.take_length]
   · dsimp only [Φ] at hΦ_end
-    rw [stateOf_eq C hr', stateOf_eq C hr₀, hsub_z, hsub_x, Nat.add_zero, Nat.mul_zero,
+    rw [stateOf_eq C (pkg.rep_unique hw_sp hK) hr', stateOf_eq C (pkg.rep_unique hw_sp hK) hr₀,
+      hsub_z, hsub_x, Nat.add_zero, Nat.mul_zero,
       Nat.add_zero] at hΦ_end
     simpa only [Nat.add_assoc] using hΦ_end
 
@@ -1073,7 +1078,8 @@ private theorem dijkstraSetup_spec (pkg : PQPackage .exact r_pq) {G : ListInstan
             (IndexedMinPQ.dom (stateOf C y)).card)
             (remEdges G (visitedSet G (stateOf C y) y)) +
         (pkg.decreaseTime G.n + 20) * remEdges G (visitedSet G (stateOf C y) y) ≤ _
-    rw [stateOf_eq C hr_y, hvis_y, hrem_emp, hcard_s₀, Finset.card_empty, Nat.sub_zero]
+    rw [stateOf_eq C (pkg.rep_unique hw_sp hK) hr_y, hvis_y, hrem_emp, hcard_s₀, Finset.card_empty,
+      Nat.sub_zero]
     have hmin1 : min (G.n - 1) G.m ≤ min G.n G.m := by omega
     have hmul_ins := Nat.mul_le_mul_left (pkg.insertTime G.n + 20) hmin1
     have hcomm1 : (pkg.extractTime G.n + pkg.emptyTime G.n + 20) * min G.n (G.m + 1) =
@@ -1117,7 +1123,8 @@ private theorem dijkstraRound_spec (pkg : PQPackage .exact r_pq) {G : ListInstan
   have hB_ne : B ≠ 0 := hB_mem ▸ hdU_ne
   obtain ⟨x₁, t_ext, he_ext, hdec_ext, hr₁_raw, hmod_ext, hregs_ext, hpot_ext⟩ :=
     pkg.code.callExtractMin_exec C hsp_pos hS_cert harg_eq hdec_eq pqMap_injective hr hy.one_eq
-  simp only [IndexedMinPQ.spec, hfm] at hdec_ext hr₁_raw
+  simp only [indexedMinPQSpec, IndexedMinPQ.step, StateTransitionSpec.stepFn, hfm]
+    at hdec_ext hr₁_raw
   let s₁ : IndexedMinPQ.State G.n := Function.update s U none
   have hr₁ : C.rep s₁ (x₁.comap pqMap) := hr₁_raw
   have hx₁_outV_K : x₁.regs (pqMap pkg.code.outV) = U.val ∧
@@ -1397,7 +1404,8 @@ private theorem dijkstraRound_spec (pkg : PQPackage .exact r_pq) {G : ListInstan
             (IndexedMinPQ.dom (stateOf C y)).card)
             (remEdges G (visitedSet G (stateOf C y) y)) +
         (pkg.decreaseTime G.n + 20) * remEdges G (visitedSet G (stateOf C y) y)
-  rw [stateOf_eq C hr_z, stateOf_eq C hr, hvis_z]
+  rw [stateOf_eq C (pkg.rep_unique hw_sp hK) hr_z, stateOf_eq C (pkg.rep_unique hw_sp hK) hr,
+    hvis_z]
   change t_ext + (1 + (1 + (4 + (t_scan + (t_emp + 1))))) + 2 +
       (C.potential (z.comap pqMap) +
         (pkg.extractTime G.n + pkg.emptyTime G.n + 20) *
