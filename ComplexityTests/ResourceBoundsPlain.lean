@@ -15,9 +15,14 @@ import Cslib.Computability.Machines.Turing.MultiTape.Combinators.AlmostConstant
 import Cslib.Computability.Machines.Turing.MultiTape.Combinators.Id
 
 /-! Plain computability within bounds up to constants, within a space bound, within polynomial
-space and in fpt time, against the tidy notions in both directions: upstream machines that are not
-tidy satisfy the plain notions and give tidy certificates, and library certificates, including
-the deciders for `TQBF` and `SAT`, give plain ones. -/
+space and in fpt time. Upstream machines that are not tidy satisfy the plain notions;
+`ComputableInO` and `ComputableInSpace` also give tidy certificates. Polynomial-space clients,
+including the decider for `TQBF`, use the plain calculus directly. -/
+
+open Lean Elab Command in
+run_cmd do
+  if (← getEnv).contains `Turing.MultiTapeTM.ComputableTidilyInPolySpace then
+    throwError "The retired tidy polynomial-space calculus was imported"
 
 namespace ComplexityTests.ResourceBoundsPlain
 
@@ -118,10 +123,10 @@ example {α β : Type} {f : α → β} {encIn : α ↪ List Bool} {encOut : β �
     (¬ComputableInSpace (id : List Bool → List Bool) encBits encBits
       fun w => Nat.log2 w.length) ∧
     ComputableInLogSpace f encIn encOut ∧
-    ComputableTidilyInPolySpace (id : List Bool → List Bool) encBits encBits := by
+    ComputableInPolySpace (id : List Bool → List Bool) encBits encBits := by
   refine ⟨id_computableInO.tidy, id_computableInSpace.tidy, ?_,
     ⟨_, 0, computableInTimeAndSpace_id.mono (fun _ => le_rfl) fun _ => Nat.zero_le _⟩,
-    ?_, (let ⟨t, c, hc, _⟩ := hlog; ⟨t, c, hc⟩), id_computableInPolySpace.tidy⟩
+    ?_, (let ⟨t, c, hc, _⟩ := hlog; ⟨t, c, hc⟩), id_computableInPolySpace⟩
   · rintro ⟨t, c, -, hl⟩
     simpa [encBits] using hl (List.replicate (c + 1) true)
   · rintro ⟨t, c, -, hl⟩
@@ -146,13 +151,13 @@ theorem id_computableInFPTTime (κ : List Bool → ℕ) :
   ⟨fun _ => 1, 1, computableInTimeAndSpace_id.mono (fun w => by simp [encBits])
     fun _ => Nat.zero_le _⟩
 
-/-- Compose, pair, and branch functions mixing plain space, tidy space, and plain time
+/-- Compose, pair, and branch functions mixing plain space and plain time
 certificates; missing certificates fail cleanly; and a time bound alone suffices for fpt time. -/
 example {α β γ : Type} (enc : α ↪ List Bool) {encA : α ↪ List Bool} {encB : β ↪ List Bool}
     {encC : γ ↪ List Bool} {f : α → β} {g : β → γ} {g' h : α → γ} {c : α → Bool}
     (_u : List Bool → Bool)
     (hf : ComputableInPolySpace f encA encB) (hg : ComputableInPolySpace g encB encC)
-    (hg' : ComputableTidilyInPolySpace g' encA encC)
+    (hg' : ComputableInPolySpace g' encA encC)
     (hh : ComputableInPolyTime h encA encC) (hc : ComputableInPolyTime c encA encBool)
     (κ : List Bool → ℕ) :
     ComputableInPolySpace (id : α → α) enc enc ∧
@@ -191,8 +196,8 @@ example (κ : List Bool → ℕ) : single ∈ PSPACE encBits ∧ single ∈ FPT 
 
 /-! ### From library certificates to plain ones -/
 
-/-- Tidy library certificates (`Prod.fst`, `polytime` list folds, `TQBF`, and `SAT`) give plain
-certificates and compose with plain preprocessing. -/
+/-- Projection certificates, `polytime` list folds, and the plain deciders for `TQBF` and `SAT`
+compose with plain preprocessing. -/
 example {α : Type} {enc : α ↪ List Bool} {f : α → Logic.PL.QBF ℕ}
     (hf : ComputableInPolyTime f enc encQBF) :
     ComputableInO Prod.fst (encPair encBits encBits) encBits
@@ -212,8 +217,8 @@ example {α : Type} {enc : α ↪ List Bool} {f : α → Logic.PL.QBF ℕ}
   obtain ⟨g, hg, hSAT⟩ := mem_FPT_iff_computableInFPTTime.mp SAT_mem_FPT
   exact ⟨.of_tidy (ComputableTidilyInO.fst encBits encBits),
     (ComputableTidilyInSpace.fst encBits encBits).computableInSpace,
-    computableInPolySpace_iff_computableTidilyInPolySpace.mpr (.of_polyTime (by polytime)),
-    ⟨dec, .of_tidy hdec.tidy, hA⟩,
+    ComputableInPolySpace.of_polyTime (by polytime),
+    ⟨dec, hdec, hA⟩,
     mem_PSPACE_iff_computableInPolySpace.mpr ⟨_, hcomp, fun a => hA (f a)⟩,
     ⟨g, hg, hSAT⟩⟩
 
