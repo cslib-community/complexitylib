@@ -2920,6 +2920,7 @@ public import Complexity.Foundations.BooleanAnalysis.SparseIncidence
 public import Complexity.Foundations.BooleanAnalysis.SparseReplacementDesign
 public import Complexity.Foundations.BooleanAnalysis.Symmetrization
 public import Complexity.Foundations.BooleanAnalysis.Tribes
+public import Complexity.Foundations.BooleanAnalysis.Variance
 public import Complexity.Foundations.Combinatorics.Additive.SumsetCover
 public import Complexity.Foundations.Combinatorics.AffineDisperser
 public import Complexity.Foundations.Combinatorics.AffineDisperser.AffineSubspace
@@ -3115,6 +3116,7 @@ public import Complexity.Foundations.Data.Finset.Sampling
 public import Complexity.Foundations.Data.Finset.SubsetSum
 public import Complexity.Foundations.Data.Finset.SymmDiff
 public import Complexity.Foundations.Data.Finset.UniqueTail
+public import Complexity.Foundations.Data.Finset.Variance
 public import Complexity.Foundations.Data.Hamming
 public import Complexity.Foundations.Data.Hamming.Expansion
 public import Complexity.Foundations.Data.Int.LogBounds
