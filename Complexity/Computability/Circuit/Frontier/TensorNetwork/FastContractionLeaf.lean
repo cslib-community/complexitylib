@@ -47,7 +47,10 @@ the packet shape and at most `2 m` edges takes time `K (n + 1) ^ K 2 ^ (K s / �
 `K (n + 1) ^ K`, provided that from some `s₀` on it has at most `leafSize m` edges and precision at
 most `m ^ c`: then `2 ^ M ≤ 2 ^ (C s / √⌊log₂ s⌋)`, and `(A p + 2) ^ A` is
 `2 ^ O(s ^ (1 / 32768) log s)` (`FastContraction.exists_packetFactor_le`). Below `s₀` everything
-but a polynomial in `n` is a constant.
+but a polynomial in `n` is a constant (`FastContraction.exists_leafFactor_le`). With an entry
+procedure whose roots cost time `E` and space `ES`, the leaf takes time
+`K (n + ES + 1) ^ K 2 ^ (K s / √⌊log₂ s⌋) (E + 1)` and space `K (n + ES + 1) ^ K`
+(`FastContraction.exists_leafCertificate_le_of_entry`).
 
 ## Main definitions
 
@@ -62,8 +65,11 @@ but a polynomial in `n` is a constant.
 * `Cslib.Circuits.Frontier.FastContraction.leafCertificate_le_of_packetShape`,
   `Cslib.Circuits.Frontier.FastContraction.leafCertificate_tableEntry_le_of_packetShape`: the cost
   of a leaf with the packet shape, and over tables.
-* `Cslib.Circuits.Frontier.FastContraction.exists_leafCertificate_le`: the leaf bound of the
-  resource analysis.
+* `Cslib.Circuits.Frontier.FastContraction.exists_leafFactor_le`: the factor `2 ^ M (A p + 2) ^ A`
+  is subexponential.
+* `Cslib.Circuits.Frontier.FastContraction.exists_leafCertificate_le`,
+  `Cslib.Circuits.Frontier.FastContraction.exists_leafCertificate_le_of_entry`: the leaf bound of
+  the resource analysis, over tables and with the costs of the root entries.
 
 ## References
 
@@ -469,12 +475,19 @@ def PacketShape (x : Call T) : Prop :=
     d.1.i < d.1.a ∧ d.1.a ≤ Nat.log 2 x.scale / 32768 ∧ d.1.tiles = 2 ^ (d.1.i + 1) ∧
       d.1.nb ≤ x.prec ∧ (∀ y ∈ d.2.1, y.2 < 2 ^ d.1.a) ∧ ((d.2.1.filter (·.1)).map (·.2)).Nodup
 
-/-- **The root has no packets.** -/
-theorem packetShape_root (q : ℕ × ℕ × ExplicitTensorNetwork ℕ) : PacketShape (root q) := by
+/-- **A call on a root network has no packets**: its descriptors are those of a network
+`G`, by `rootNet G`. -/
+theorem packetShape_of_net_eq_rootNet {x : Call T} {G : DescribedNetwork T}
+    (h : x.net = rootNet G) : PacketShape x := by
   intro v hv d hd
-  simp only [root, rootNet, Call.net, List.mem_map] at hv
+  rw [h] at hv
+  simp only [rootNet, List.mem_map] at hv
   obtain ⟨w, -, rfl⟩ := hv
   cases hd
+
+/-- **The root has no packets.** -/
+theorem packetShape_root (q : ℕ × ℕ × ExplicitTensorNetwork ℕ) : PacketShape (root q) :=
+  packetShape_of_net_eq_rootNet rfl
 
 /-- **The packet shape passes to the native children** of a well-formed active call: a retained
 vertex keeps its descriptor, at a precision that only grows, and a new packet has `a` slot bits
@@ -757,13 +770,83 @@ theorem exists_packetFactor_le (C c : ℕ) : ∃ K : ℕ, ∀ s m p : ℕ, 2 ≤
     _ ≤ 2 ^ (16 * ((c₀ + 2) * (c + 1)) * 2 ^ c₀ * s / Nat.sqrt μ) :=
         Nat.pow_le_pow_right (by norm_num) hE'
 
+/-- **The leaf factor is subexponential.** For all constants `C`, `c` and `s₀` there is `K` such
+that, for `s ≤ m ≤ C s`, `M ≤ 2 m` and `p ≤ n`, writing `A = 2 ^ (⌊log₂ m⌋ / 32768)`,
+`2 ^ M (A p + 2) ^ A ≤ K (n + 1) ^ K 2 ^ (K s / √⌊log₂ s⌋)`, provided that from `s₀` on
+`M ≤ leafSize m` and `p ≤ m ^ c`. Below `s₀`, `m` is bounded, so the packet factor is polynomial
+in `n` and `2 ^ M` is a constant; from `s₀` on, `2 ^ M ≤ 2 ^ (C s / √⌊log₂ s⌋)` and the packet
+factor is subexponential (`exists_packetFactor_le`). This is the factor of the cost of a leaf with
+the packet shape (`leafCertificate_le_of_packetShape`) that is not polynomial. -/
+theorem exists_leafFactor_le (C c s₀ : ℕ) : ∃ K : ℕ, ∀ s m M p n : ℕ, 2 ≤ s → s ≤ m →
+    m ≤ C * s → M ≤ 2 * m → p ≤ n → (s₀ ≤ s → M ≤ leafSize m ∧ p ≤ m ^ c) →
+    2 ^ M * (2 ^ (Nat.log 2 m / 32768) * p + 2) ^ 2 ^ (Nat.log 2 m / 32768) ≤
+      K * (n + 1) ^ K * 2 ^ (K * s / Nat.sqrt (Nat.log 2 s)) := by
+  obtain ⟨K₁, hK₁⟩ := exists_packetFactor_le C c
+  obtain ⟨Ks, hKs⟩ : ∃ Ks, Ks = 2 ^ (2 * (C * s₀)) * (C * s₀ + 2) ^ (C * s₀) := ⟨_, rfl⟩
+  have hKs1 : 1 ≤ Ks := by rw [hKs]; exact Nat.one_le_iff_ne_zero.mpr (by positivity)
+  refine ⟨Ks + C * s₀ + C + K₁, fun s m M p n hs hsm hmC hM hp hbig => ?_⟩
+  set K := Ks + C * s₀ + C + K₁ with hK
+  set S := Nat.sqrt (Nat.log 2 s) with hSdef
+  set A := 2 ^ (Nat.log 2 m / 32768) with hA
+  have hS1 : 1 ≤ S := Nat.one_le_sqrt_log_two hs
+  have hB1 : 1 ≤ n + 1 := by omega
+  have hX1 : 1 ≤ 2 ^ (K * s / S) := Nat.one_le_two_pow
+  have hAm : A ≤ m := (Nat.pow_le_pow_right (by norm_num) (Nat.div_le_self _ _)).trans
+    (Nat.pow_log_le_self 2 (by omega))
+  rcases lt_or_ge s s₀ with hsmall | hlarge
+  · -- Below `s₀`: constants and a polynomial.
+    have hmC' : m ≤ C * s₀ := hmC.trans (Nat.mul_le_mul_left _ hsmall.le)
+    have h2M : 2 ^ M ≤ 2 ^ (2 * (C * s₀)) := Nat.pow_le_pow_right (by norm_num) (by omega)
+    have hbase : A * p + 2 ≤ (C * s₀ + 2) * (n + 1) := by
+      have : A * p ≤ C * s₀ * n := Nat.mul_le_mul (hAm.trans hmC') hp
+      nlinarith
+    have hfac : (A * p + 2) ^ A ≤ (C * s₀ + 2) ^ (C * s₀) * (n + 1) ^ (C * s₀) := by
+      calc (A * p + 2) ^ A ≤ ((C * s₀ + 2) * (n + 1)) ^ A := Nat.pow_le_pow_left hbase _
+        _ ≤ ((C * s₀ + 2) * (n + 1)) ^ (C * s₀) :=
+            Nat.pow_le_pow_right (Nat.one_le_iff_ne_zero.mpr (by positivity)) (hAm.trans hmC')
+        _ = (C * s₀ + 2) ^ (C * s₀) * (n + 1) ^ (C * s₀) := mul_pow _ _ _
+    calc 2 ^ M * (A * p + 2) ^ A
+        ≤ 2 ^ (2 * (C * s₀)) * ((C * s₀ + 2) ^ (C * s₀) * (n + 1) ^ (C * s₀)) :=
+          Nat.mul_le_mul h2M hfac
+      _ = Ks * (n + 1) ^ (C * s₀) := by rw [hKs]; ring
+      _ ≤ K * (n + 1) ^ K := Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right hB1 (by omega))
+      _ ≤ K * (n + 1) ^ K * 2 ^ (K * s / S) := Nat.le_mul_of_pos_right _ hX1
+  · -- From `s₀` on: the leaf size and the packet factor.
+    obtain ⟨hleaf, hpm⟩ := hbig hlarge
+    have hlog : S ≤ Nat.sqrt (Nat.log 2 m) := Nat.sqrt_log_two_mono hsm
+    have hMs : M ≤ C * s / S :=
+      calc M ≤ m / Nat.sqrt (Nat.log 2 m) := hleaf
+        _ ≤ m / S := Nat.div_le_div_left hlog hS1
+        _ ≤ C * s / S := Nat.div_le_div_right hmC
+    have hfac : (A * p + 2) ^ A ≤ 2 ^ (K₁ * s / S) := hK₁ s m p hs hsm hmC hpm
+    have hCK : (C + K₁) * s ≤ K * s := Nat.mul_le_mul_right _ (by omega)
+    have hexp : C * s / S + K₁ * s / S ≤ K * s / S :=
+      Nat.div_add_div_le_add_div.trans (Nat.div_le_div_right (by rw [← add_mul]; exact hCK))
+    have hKn : 1 ≤ K * (n + 1) ^ K := Nat.mul_pos (by omega) (Nat.pos_of_ne_zero (by positivity))
+    calc 2 ^ M * (A * p + 2) ^ A ≤ 2 ^ (C * s / S) * 2 ^ (K₁ * s / S) :=
+          Nat.mul_le_mul (Nat.pow_le_pow_right (by norm_num) hMs) hfac
+      _ = 2 ^ (C * s / S + K₁ * s / S) := by rw [pow_add]
+      _ ≤ 2 ^ (K * s / S) := Nat.pow_le_pow_right (by norm_num) hexp
+      _ ≤ K * (n + 1) ^ K * 2 ^ (K * s / S) := Nat.le_mul_of_pos_left _ hKn
+
+/-- A polynomial factor `K₀ B ^ K₀` absorbed into a leaf bound `K₁ B ^ K₁ 2 ^ (K₁ s / S)`. -/
+private theorem mul_leafBound_le {K₀ K₁ B s S : ℕ} (hB : 1 ≤ B) :
+    K₀ * B ^ K₀ * (K₁ * B ^ K₁ * 2 ^ (K₁ * s / S)) ≤
+      (K₀ * K₁ + K₀ + K₁) * B ^ (K₀ * K₁ + K₀ + K₁) * 2 ^ ((K₀ * K₁ + K₀ + K₁) * s / S) :=
+  calc K₀ * B ^ K₀ * (K₁ * B ^ K₁ * 2 ^ (K₁ * s / S))
+      = K₀ * K₁ * B ^ (K₀ + K₁) * 2 ^ (K₁ * s / S) := by rw [pow_add]; ring
+    _ ≤ _ := Nat.mul_le_mul (Nat.mul_le_mul (Nat.le_add_right _ _ |>.trans (Nat.le_add_right _ _))
+        (Nat.pow_le_pow_right hB (by omega)))
+        (Nat.pow_le_pow_right (by norm_num) (Nat.div_le_div_right
+          (Nat.mul_le_mul_right _ (by omega))))
+
 /-- **The leaf bound of the resource analysis.** For all constants `C`, `c` and `s₀` there is `K`
 such that a call with the packet shape, scale `m` with `s ≤ m ≤ C s` and at most `2 m` edges takes
 time at most `K (n + 1) ^ K 2 ^ (K s / √⌊log₂ s⌋)` and space at most `K (n + 1) ^ K` at a leaf,
-provided that from `s₀` on it has at most `leafSize m` edges and precision at most `m ^ c`. Below
-`s₀`, the scale is bounded, so the packet factor is polynomial and `2 ^ M` is a constant; from
-`s₀` on, `2 ^ M ≤ 2 ^ (C s / √⌊log₂ s⌋)` and the packet factor is subexponential
-(`exists_packetFactor_le`). -/
+provided that from `s₀` on it has at most `leafSize m` edges and precision at most `m ^ c`: the
+cost of a leaf over tables with the packet shape
+(`leafCertificate_tableEntry_le_of_packetShape`), with its factor `2 ^ M (A p + 2) ^ A` bounded by
+`exists_leafFactor_le`. -/
 theorem exists_leafCertificate_le (C c s₀ : ℕ) : ∃ K : ℕ,
     ∀ (mk : Call (List ℕ) → State → ℕ × DescribedNetwork (VertexDesc (List ℕ))) (s : ℕ)
       (x : Call (List ℕ)), 2 ≤ s →
@@ -774,61 +857,56 @@ theorem exists_leafCertificate_le (C c s₀ : ℕ) : ∃ K : ℕ,
         (leafCertificate tableEntryCertificate mk).space x ≤
           K * ((encCall (encList encNat) x).length + 1) ^ K := by
   obtain ⟨K₀, hK₀⟩ := leafCertificate_tableEntry_le_of_packetShape
-  obtain ⟨K₁, hK₁⟩ := exists_packetFactor_le C c
-  obtain ⟨Ks, hKs⟩ : ∃ Ks, Ks = K₀ * 2 ^ (2 * (C * s₀)) * (C * s₀ + 2) ^ (C * s₀) := ⟨_, rfl⟩
-  refine ⟨Ks + K₀ + C * s₀ + C + K₁, fun mk s x hs hsm hmC hshape hM hbig => ?_⟩
+  obtain ⟨K₁, hK₁⟩ := exists_leafFactor_le C c s₀
+  refine ⟨K₀ * K₁ + K₀ + K₁, fun mk s x hs hsm hmC hshape hM hbig => ?_⟩
   obtain ⟨hT, hS⟩ := hK₀ mk x hshape
   set n := (encCall (encList encNat) x).length with hn
-  set K := Ks + K₀ + C * s₀ + C + K₁ with hK
-  set S := Nat.sqrt (Nat.log 2 s) with hSdef
-  have hS1 : 1 ≤ S := Nat.one_le_sqrt_log_two hs
   have hB1 : 1 ≤ n + 1 := by omega
-  have hX1 : 1 ≤ 2 ^ (K * s / S) := Nat.one_le_two_pow
-  have hnK : (n + 1) ^ K₀ ≤ (n + 1) ^ K := Nat.pow_le_pow_right hB1 (by omega)
-  refine ⟨?_, hS.trans (Nat.mul_le_mul (by omega) hnK)⟩
-  set A := 2 ^ (Nat.log 2 x.scale / 32768) with hA
-  have hAm : A ≤ x.scale := (Nat.pow_le_pow_right (by norm_num) (Nat.div_le_self _ _)).trans
-    (Nat.pow_log_le_self 2 (by omega))
-  rcases lt_or_ge s s₀ with hsmall | hlarge
-  · -- Below `s₀`: constants and a polynomial.
-    have hmC' : x.scale ≤ C * s₀ := hmC.trans (Nat.mul_le_mul_left _ hsmall.le)
-    have hp : x.prec ≤ n := by have := scale_add_prec_add_length_fl_le (encList encNat) x; omega
-    have h2M : 2 ^ x.edges ≤ 2 ^ (2 * (C * s₀)) :=
-      Nat.pow_le_pow_right (by norm_num) (by omega)
-    have hbase : A * x.prec + 2 ≤ (C * s₀ + 2) * (n + 1) := by
-      have : A * x.prec ≤ C * s₀ * n := Nat.mul_le_mul (hAm.trans hmC') hp
-      nlinarith
-    have hfac : (A * x.prec + 2) ^ A ≤ (C * s₀ + 2) ^ (C * s₀) * (n + 1) ^ (C * s₀) := by
-      calc (A * x.prec + 2) ^ A ≤ ((C * s₀ + 2) * (n + 1)) ^ A := Nat.pow_le_pow_left hbase _
-        _ ≤ ((C * s₀ + 2) * (n + 1)) ^ (C * s₀) :=
-            Nat.pow_le_pow_right (Nat.one_le_iff_ne_zero.mpr (by positivity)) (hAm.trans hmC')
-        _ = (C * s₀ + 2) ^ (C * s₀) * (n + 1) ^ (C * s₀) := mul_pow _ _ _
-    calc (leafCertificate tableEntryCertificate mk).time x
-        ≤ K₀ * (n + 1) ^ K₀ * 2 ^ x.edges * (A * x.prec + 2) ^ A := hT
-      _ ≤ K₀ * (n + 1) ^ K₀ * 2 ^ (2 * (C * s₀)) *
-            ((C * s₀ + 2) ^ (C * s₀) * (n + 1) ^ (C * s₀)) :=
-          Nat.mul_le_mul (Nat.mul_le_mul_left _ h2M) hfac
-      _ = Ks * (n + 1) ^ (K₀ + C * s₀) := by rw [hKs, pow_add]; ring
-      _ ≤ K * (n + 1) ^ K := Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right hB1 (by omega))
-      _ ≤ K * (n + 1) ^ K * 2 ^ (K * s / S) := Nat.le_mul_of_pos_right _ hX1
-  · -- From `s₀` on: the leaf size and the packet factor.
-    obtain ⟨hleaf, hp⟩ := hbig hlarge
-    have hlog : S ≤ Nat.sqrt (Nat.log 2 x.scale) := Nat.sqrt_log_two_mono hsm
-    have hMs : x.edges ≤ C * s / S :=
-      calc x.edges ≤ x.scale / Nat.sqrt (Nat.log 2 x.scale) := hleaf
-        _ ≤ x.scale / S := Nat.div_le_div_left hlog hS1
-        _ ≤ C * s / S := Nat.div_le_div_right hmC
-    have hfac := hK₁ s x.scale x.prec hs hsm hmC hp
-    have hCK : (C + K₁) * s ≤ K * s := Nat.mul_le_mul_right _ (by omega)
-    have hexp : C * s / S + K₁ * s / S ≤ K * s / S :=
-      Nat.div_add_div_le_add_div.trans (Nat.div_le_div_right (by rw [← add_mul]; exact hCK))
-    calc (leafCertificate tableEntryCertificate mk).time x
-        ≤ K₀ * (n + 1) ^ K₀ * 2 ^ x.edges * (A * x.prec + 2) ^ A := hT
-      _ ≤ K₀ * (n + 1) ^ K₀ * 2 ^ (C * s / S) * 2 ^ (K₁ * s / S) :=
-          Nat.mul_le_mul (Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by norm_num) hMs)) hfac
-      _ = K₀ * (n + 1) ^ K₀ * 2 ^ (C * s / S + K₁ * s / S) := by rw [pow_add]; ring
-      _ ≤ K * (n + 1) ^ K * 2 ^ (K * s / S) :=
-          Nat.mul_le_mul (Nat.mul_le_mul (by omega) hnK) (Nat.pow_le_pow_right (by norm_num) hexp)
+  have hp : x.prec ≤ n := by have := scale_add_prec_add_length_fl_le (encList encNat) x; omega
+  have hF := hK₁ s x.scale x.edges x.prec n hs hsm hmC hM hp hbig
+  refine ⟨hT.trans ?_, hS.trans (Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right hB1 (by omega)))⟩
+  rw [Nat.mul_assoc]
+  exact (Nat.mul_le_mul_left _ hF).trans (mul_leafBound_le hB1)
+
+/-- **The leaf bound with the costs of the root entries.** For a native certificate `ce` of the
+entry procedure and all constants `C`, `c` and `s₀` there is `K` such that a call with the packet
+shape, scale `m` with `s ≤ m ≤ C s` and at most `2 m` edges, whose root entries take time at most
+`E` and space at most `ES`, takes time at most `K (n + ES + 1) ^ K 2 ^ (K s / √⌊log₂ s⌋) (E + 1)`
+and space at most `K (n + ES + 1) ^ K` at a leaf, provided that from `s₀` on it has at most
+`leafSize m` edges and precision at most `m ^ c`: the cost of a leaf with the packet shape
+(`leafCertificate_le_of_packetShape`), with its factor `2 ^ M (A p + 2) ^ A` bounded as for tables
+by `exists_leafFactor_le`. -/
+theorem exists_leafCertificate_le_of_entry
+    (ce : NativeCertificate (fun q : T × List Bool => ev q.1 q.2) (encPair encT encBits)
+      (encList encNat)) (C c s₀ : ℕ) : ∃ K : ℕ,
+    ∀ (mk : Call T → State → ℕ × DescribedNetwork (VertexDesc T)) (s : ℕ) (x : Call T)
+      (E ES : ℕ), 2 ≤ s → s ≤ x.scale → x.scale ≤ C * s → PacketShape x →
+      x.edges ≤ 2 * x.scale → (s₀ ≤ s → x.edges ≤ leafSize x.scale ∧ x.prec ≤ x.scale ^ c) →
+      (∀ v ∈ x.net.vertices, ∀ t, v.2 = .inl t → ∀ bs : List Bool, bs.length = v.1.length →
+        ce.time (t, bs) ≤ E ∧ ce.space (t, bs) ≤ ES) →
+      (leafCertificate ce mk).time x ≤ K * ((encCall encT x).length + ES + 1) ^ K *
+          2 ^ (K * s / Nat.sqrt (Nat.log 2 s)) * (E + 1) ∧
+        (leafCertificate ce mk).space x ≤ K * ((encCall encT x).length + ES + 1) ^ K := by
+  obtain ⟨K₀, hK₀⟩ := leafCertificate_le_of_packetShape ce
+  obtain ⟨K₁, hK₁⟩ := exists_leafFactor_le C c s₀
+  refine ⟨K₀ * K₁ + K₀ + K₁, fun mk s x E ES hs hsm hmC hshape hM hbig hroot => ?_⟩
+  obtain ⟨hT, hS⟩ := hK₀ mk x E ES hshape hroot
+  set W := (encCall encT x).length + ES + 1 with hW
+  have hB1 : 1 ≤ W := by omega
+  have hp : x.prec ≤ (encCall encT x).length + ES := by
+    have := scale_add_prec_add_length_fl_le encT x; omega
+  have hF := hK₁ s x.scale x.edges x.prec _ hs hsm hmC hM hp hbig
+  rw [← hW] at hF
+  set Pk := (2 ^ (Nat.log 2 x.scale / 32768) * x.prec + 2) ^ 2 ^ (Nat.log 2 x.scale / 32768)
+  refine ⟨?_, hS.trans (Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right hB1 (by omega)))⟩
+  have hPE : Pk + E ≤ Pk * (E + 1) := by
+    have : 1 ≤ Pk := Nat.one_le_pow _ _ (by omega)
+    nlinarith
+  calc _ ≤ K₀ * W ^ K₀ * 2 ^ x.edges * (Pk + E) := hT
+    _ ≤ K₀ * W ^ K₀ * (2 ^ x.edges * Pk) * (E + 1) := by
+        rw [Nat.mul_assoc (K₀ * W ^ K₀), Nat.mul_assoc (K₀ * W ^ K₀), Nat.mul_assoc (2 ^ x.edges)]
+        exact Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ hPE)
+    _ ≤ _ := Nat.mul_le_mul_right _ ((Nat.mul_le_mul_left _ hF).trans (mul_leafBound_le hB1))
 
 end FastContraction
 

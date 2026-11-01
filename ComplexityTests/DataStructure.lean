@@ -4,42 +4,37 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Foundations.Semantics.Stateful.Hoare
-import Complexity.Foundations.Semantics.Stateful.Amortized
+import Complexity.DataStructure.StateTransition.Hoare
+import Complexity.DataStructure.StateTransition.Amortized
 import Complexity.Computability.WordRAM.Copy
 
 namespace ComplexityTests.DataStructure
 
-open Cslib.Stateful
+open Cslib.DataStructure
 
 /-- An addition interface whose result exposes the new state. -/
-abbrev counter : Spec where
-  State := Nat
-  Op := Nat
-  Result _ := Nat
-  step s n := (s + n, s + n)
+abbrev counter : StateTransitionSpec :=
+  StateTransitionSpec.ofFn (State := Nat) (Op := Nat) (Result := fun _ => Nat)
+    fun s n => (s + n, s + n)
 
 /-- A backend operation records the requested increment. -/
 def counterExec : Execution counter Nat Nat :=
   fun s n a s' trace => s' = s + n ∧ a = s' ∧ trace = n
 
 /-- The counter has a concrete, inhabited realization independent of resource interpretation. -/
-def counterRealization : Realization counter counterExec where
-  rep := Eq
-  total n hr _ := by subst hr; exact ⟨_, _, n, rfl, rfl, rfl⟩
-  correct hr _ he := by
-    subst hr
-    exact ⟨he.2.1.trans he.1, he.1.symm⟩
+def counterRealization : StateTransitionImpl counter counterExec :=
+  StateTransitionImpl.ofFn Eq (fun n hr _ => by subst hr; exact ⟨_, _, n, rfl, rfl, rfl⟩)
+    (fun hr _ he => by
+      subst hr
+      exact ⟨he.2.1.trans he.1, he.1.symm⟩)
 
 /-- Charge by increment magnitude. -/
-theorem magnitude_bound : Bound counterRealization id (fun _ n => n) := by
-  intro s c o a c' trace hr hv he
-  exact he.2.2.le
+theorem magnitude_bound : Bound counterRealization id (fun _ n => n) :=
+  fun _ _ he => he.2.2.le
 
 /-- The same realization also admits a call-count interpretation. -/
-theorem call_bound : Bound counterRealization (fun _ => 1) (fun _ _ => 1) := by
-  intro s c o a c' trace hr hv he
-  exact le_rfl
+theorem call_bound : Bound counterRealization (fun _ => 1) (fun _ _ => 1) :=
+  fun _ _ _ => le_rfl
 
 /-- Native execution supports client results above the operation-answer universe. -/
 example : Executes counterExec (.pure (ULift.up 7 : ULift.{1} Nat)) 0
@@ -52,10 +47,10 @@ example : ∃ c' traces,
 
 /-- Nonzero concrete-state credit is retained across future calls. -/
 theorem counter_amortized :
-    Amortized counterRealization id (fun _ c => c) (fun _ n => 2 * n) where
-  step hr hv he := by
+    Amortized counterRealization id (fun _ c => c) (fun _ n => 2 * n) :=
+  Amortized.ofFn fun _ _ he => by
     obtain ⟨hs, ha, ht⟩ := he
-    dsimp only [id, counter]
+    dsimp only [id, counter, StateTransitionSpec.stepFn]
     omega
 
 /-- The second increment depends on the first answer. -/
@@ -65,13 +60,13 @@ def adaptive : counter.Client Nat :=
 
 /-- A client contract can be proved compositionally, without exposing any backend. -/
 example : counter.Hoare (fun s => s = 0) adaptive (fun a s => a = 2 ∧ s = 2) := by
-  apply Spec.Hoare.bind (D := counter) (mid := fun a s => a = 1 ∧ s = 1)
-  · apply Spec.Hoare.call
+  apply StateTransitionSpec.Hoare.bind (D := counter) (mid := fun a s => a = 1 ∧ s = 1)
+  · apply StateTransitionSpec.Hoare.call_ofFn
     intro s hs
     subst s
     exact ⟨trivial, rfl, rfl⟩
   · intro a
-    apply Spec.Hoare.call
+    apply StateTransitionSpec.Hoare.call_ofFn
     rintro s ⟨rfl, rfl⟩
     exact ⟨trivial, rfl, rfl⟩
 
@@ -97,34 +92,31 @@ example {w : Nat} (x : Cslib.WordRAM.Data 7) (h1 : Cslib.WordRAM.Fits w 1)
   Cslib.WordRAM.ArrayCopy.exec x h1 hs hd hsep
 
 /--
-info: 'Cslib.Stateful.Module.comp' depends on axioms:
+info: 'Cslib.DataStructure.Module.comp' does not depend on any axioms
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Cslib.DataStructure.Module.comp
+/--
+info: 'Cslib.DataStructure.Module.simulates_client' depends on axioms:
 [propext]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Stateful.Module.comp
+#print axioms Cslib.DataStructure.Module.simulates_client
 /--
-info: 'Cslib.Stateful.Module.simulates_client' depends on axioms:
-[propext]
+info: 'Cslib.DataStructure.StateTransitionSpec.Hoare.bind' does not depend on any axioms
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Stateful.Module.simulates_client
+#print axioms Cslib.DataStructure.StateTransitionSpec.Hoare.bind
 /--
-info: 'Cslib.Stateful.Spec.Hoare.bind' depends on axioms:
-[propext]
+info: 'Cslib.DataStructure.StateTransitionSpec.Hoare.link' does not depend on any axioms
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Stateful.Spec.Hoare.bind
+#print axioms Cslib.DataStructure.StateTransitionSpec.Hoare.link
 /--
-info: 'Cslib.Stateful.Spec.Hoare.link' depends on axioms:
-[propext]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Cslib.Stateful.Spec.Hoare.link
-/--
-info: 'Cslib.Stateful.Amortized.client' depends on axioms:
+info: 'Cslib.DataStructure.Amortized.client' depends on axioms:
 [propext, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Stateful.Amortized.client
+#print axioms Cslib.DataStructure.Amortized.client
 
 end ComplexityTests.DataStructure
