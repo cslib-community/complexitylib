@@ -41,6 +41,7 @@ length is supplied by the quantitative API (`Turing.MultiTapeTM.ComputableInO.le
 * `Cslib.Complexity.timeConstructible_two_pow`,
   `Cslib.Complexity.timeConstructible_two_pow_two_pow`,
   `Cslib.Complexity.timeConstructible_succ_pow`,
+  `Cslib.Complexity.TimeConstructible.succ`,
   `Cslib.Complexity.TimeConstructible.succ_mul`: time-constructible bounds.
 * `Cslib.Complexity.spaceConstructible_const`, `Cslib.Complexity.spaceConstructible_id`,
   `Cslib.Complexity.spaceConstructible_succ`, `Cslib.Complexity.spaceConstructible_succ_pow`,
@@ -50,7 +51,7 @@ length is supplied by the quantitative API (`Turing.MultiTapeTM.ComputableInO.le
 ## References
 
 * [M. Sipser, *Introduction to the Theory of Computation*, Definition 9.1][Sipser2013]
-* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 1.2][AroraBarak09]
+* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 1.3][AroraBarak09]
 -/
 
 @[expose] public section
@@ -61,7 +62,7 @@ open Turing Turing.MultiTapeTM Turing.MultiTapeTM.Universal
 
 /-- A bound `t` is time-constructible when some machine with a binary alphabet and finitely many
 states computes `t n` in binary from any word of length `n` within time `O(t n)`. Arora and Barak
-also ask for `n ≤ t n` [Arora and Barak, Section 1.2][AroraBarak09]; this definition omits that
+also ask for `n ≤ t n` [Arora and Barak, Section 1.3][AroraBarak09]; this definition omits that
 condition, and the results that need it, such as `Cslib.Complexity.DTIME_ssubset_DTIME`, assume it
 separately. -/
 def TimeConstructible (t : ℕ → ℕ) : Prop :=
@@ -100,6 +101,16 @@ theorem TimeConstructible.of_computableInO {t : ℕ → ℕ} {T S : List Bool �
     omega
   · simp only [encBits_apply]
     exact Nat.mul_le_mul_left k (Nat.add_le_add_right (hS x) 1)
+
+/-- Adding one to a time-constructible bound preserves time constructibility. -/
+theorem TimeConstructible.succ {t : ℕ → ℕ} (ht : TimeConstructible t) :
+    TimeConstructible fun n => t n + 1 := by
+  have h := (ComputableInO.of_linear ComputableInLinearTimeAndSpace.natSucc).comp
+    ht.computableInO
+  refine TimeConstructible.of_computableInO (s := fun n => t n + (encNat (t n)).length) 2 h
+    (fun x => ?_) fun _ => le_rfl
+  have hlen := length_encNat_le (t x.length)
+  omega
 
 /-- `2 ^ n` is time-constructible: its binary digits are `n` zeros followed by a one. -/
 theorem timeConstructible_two_pow : TimeConstructible (2 ^ ·) :=

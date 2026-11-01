@@ -96,10 +96,6 @@ private theorem ofBits_lowBits {W x : ℕ} (hx : x < 2 ^ W) :
 
 variable {k : ℕ} {State : Type} [Fintype State] (ntm : MultiTapeNTM k Bool State)
 
-variable (k) in
-/-- The width of the words for the vertices of the graph of radix `B`. -/
-noncomputable def width (B : ℕ) : ℕ := (vertexBound (k := k) B).size
-
 /-- **The edges of the graph on words**, given the input bit `symbol` at the source: the edges of
 the compact configuration graph between the values of the words, and an edge from every accepting
 halted vertex to the sink, the word of ones. -/
@@ -123,31 +119,26 @@ section Graph
 
 variable {ntm} {B : ℕ} {w : List Bool}
 
-variable (k) in
-/-- Every vertex of the graph of radix `B` has a word of width `width k B`. -/
-theorem vertexBound_lt_two_pow_width (B : ℕ) : vertexBound (k := k) B < 2 ^ width k B :=
-  Nat.lt_size_self _
-
 /-- No vertex is the sink. -/
 theorem vertexBound_le_ofBits_sink (B : ℕ) :
-    vertexBound (k := k) B ≤ ofBits (List.replicate (width k B) true) := by
-  have h := lsbValue_replicate_true (width k B)
+    vertexBound (k := k) B ≤ ofBits (List.replicate (vertexWidth k B) true) := by
+  have h := lsbValue_replicate_true (vertexWidth k B)
   rw [lsbValue_eq_foldr_bit] at h
-  have := vertexBound_lt_two_pow_width k B
+  have := vertexBound_lt_two_pow_vertexWidth k B
   change _ ≤ (List.replicate _ true).foldr Nat.bit 0
   omega
 
 /-- **The sink is reachable exactly when an accepting halted vertex is.** Along the graph on words
-of width `W = width k B`, from the start vertex to the word of `W` ones. -/
+of width `W = vertexWidth k B`, from the start vertex to the word of `W` ones. -/
 theorem reflTransGen_sink_iff (hstart : startID ntm B < vertexBound (k := k) B) :
-    Relation.ReflTransGen (fun a b => a.length = width k B ∧ b.length = width k B ∧
+    Relation.ReflTransGen (fun a b => a.length = vertexWidth k B ∧ b.length = vertexWidth k B ∧
         inputEdge ntm B w a b = true)
-      (lowBits (width k B) (startID ntm B)) (List.replicate (width k B) true) ↔
+      (lowBits (vertexWidth k B) (startID ntm B)) (List.replicate (vertexWidth k B) true) ↔
       ∃ u, Relation.ReflTransGen (Edge ntm B w) (startID ntm B) u ∧
         bad (k := k) (State := State) B w.length u = true := by
-  have hW := vertexBound_lt_two_pow_width k B
+  have hW := vertexBound_lt_two_pow_vertexWidth k B
   have hsink := vertexBound_le_ofBits_sink (k := k) B
-  set W := width k B
+  set W := vertexWidth k B
   have hsrc : ofBits (lowBits W (startID ntm B)) = startID ntm B :=
     ofBits_lowBits (hstart.trans hW)
   constructor
@@ -206,14 +197,14 @@ most `c * (log₂ |w| + 1)` work cells, Savitch's midpoint recursion at depth `W
 words of width `W`, from the start vertex to the sink, decides whether the machine accepts `w`. -/
 theorem reach_eq_true_iff {c : ℕ} (hs : ntm.RunsInSpace w (c * (Nat.log2 w.length + 1))) :
     reach (inputEdge ntm (radix (radixExponent State c) w.length) w)
-        (width k (radix (radixExponent State c) w.length))
-        (width k (radix (radixExponent State c) w.length))
-        (lowBits (width k (radix (radixExponent State c) w.length))
+        (vertexWidth k (radix (radixExponent State c) w.length))
+        (vertexWidth k (radix (radixExponent State c) w.length))
+        (lowBits (vertexWidth k (radix (radixExponent State c) w.length))
           (startID ntm (radix (radixExponent State c) w.length)))
-        (List.replicate (width k (radix (radixExponent State c) w.length)) true) = true ↔
+        (List.replicate (vertexWidth k (radix (radixExponent State c) w.length)) true) = true ↔
       ntm.Accepts w := by
   set B := radix (radixExponent State c) w.length
-  set W := width k B
+  set W := vertexWidth k B
   have hstart : startID ntm B < vertexBound (k := k) B := by
     rw [← vertexID_init ntm B w]
     exact vertexID_lt (fits_of_runsInSpace c hs .refl)
@@ -249,10 +240,10 @@ abbrev encRuntime : Runtime ↪ List Bool := encPair encNat (encPair encBool (en
 call at depth `W` from the start vertex to the sink. The start vertex is written as the binary
 digits of its value plus `2 ^ W`, without the last one (`Turing.MultiTapeTM.bits_add_two_pow`). -/
 noncomputable def initRound (D n : ℕ) : ((ℕ × ℕ × Option Bool) × ℕ) × Savitch.State :=
-  (((radix D n, n, none), width k (radix D n)),
-    ⟨[], .call (width k (radix D n))
-      (startID ntm (radix D n) + 2 ^ width k (radix D n)).bits.dropLast
-      (List.replicate (width k (radix D n)) true)⟩)
+  (((radix D n, n, none), vertexWidth k (radix D n)),
+    ⟨[], .call (vertexWidth k (radix D n))
+      (startID ntm (radix D n) + 2 ^ vertexWidth k (radix D n)).bits.dropLast
+      (List.replicate (vertexWidth k (radix D n)) true)⟩)
 
 /-- The round held while the input is counted. -/
 def idle : ((ℕ × ℕ × Option Bool) × ℕ) × Savitch.State := (((0, 0, none), 0), ⟨[], .ret false⟩)
@@ -341,18 +332,18 @@ theorem run_length_succ :
 /-- **The machine runs the recursion** on the graph on words of the input, with the input bit of
 each edge test read at the source of its call. -/
 theorem exists_run_add (j : ℕ) : ∃ symbol, (machine ntm D).run w (w.length + 1 + j) =
-    (w.length, true, (((radix D w.length, w.length, symbol), width k (radix D w.length)),
-      (Savitch.step (inputEdge ntm (radix D w.length) w) (width k (radix D w.length)))^[j]
+    (w.length, true, (((radix D w.length, w.length, symbol), vertexWidth k (radix D w.length)),
+      (Savitch.step (inputEdge ntm (radix D w.length) w) (vertexWidth k (radix D w.length)))^[j]
         (initRound ntm D w.length).2)) := by
   induction j with
   | zero => exact ⟨none, run_length_succ w⟩
   | succ j ih =>
     obtain ⟨symbol, ih⟩ := ih
-    set st := (Savitch.step (inputEdge ntm (radix D w.length) w) (width k (radix D w.length)))^[j]
-      (initRound ntm D w.length).2
+    set st := (Savitch.step (inputEdge ntm (radix D w.length) w)
+      (vertexWidth k (radix D w.length)))^[j] (initRound ntm D w.length).2
     rw [← Nat.add_assoc, QueryMachine.run_succ, ih, Function.iterate_succ_apply']
     by_cases hh : halted (w.length, true, (((radix D w.length, w.length, symbol),
-        width k (radix D w.length)), st)) = true
+        vertexWidth k (radix D w.length)), st)) = true
     · refine ⟨symbol, ?_⟩
       have hst : ∃ b, st = ⟨[], .ret b⟩ := by
         obtain ⟨stack, (⟨i, u, v⟩ | b)⟩ := st
@@ -361,8 +352,8 @@ theorem exists_run_add (j : ℕ) : ∃ symbol, (machine ntm D).run w (w.length +
             Bool.not_eq_eq_eq_not, Bool.not_true] at hh
           exact ⟨b, by rw [hh.1]⟩
       obtain ⟨b, hb⟩ := hst
-      have hfix : Savitch.step (inputEdge ntm (radix D w.length) w) (width k (radix D w.length))
-          st = st := by
+      have hfix : Savitch.step (inputEdge ntm (radix D w.length) w)
+          (vertexWidth k (radix D w.length)) st = st := by
         rw [hb]; rfl
       rw [hfix, QueryMachine.step]
       simp only [show (machine ntm D).halted _ = true from hh, ↓reduceIte]
@@ -383,24 +374,26 @@ section Halting
 variable {ntm} {D : ℕ} {w : List Bool}
 
 /-- The first round, once the start vertex is known to have a word. -/
-theorem initRound_snd (hstart : startID ntm (radix D w.length) < 2 ^ width k (radix D w.length)) :
-    (initRound ntm D w.length).2 = ⟨[], .call (width k (radix D w.length))
-      (lowBits (width k (radix D w.length)) (startID ntm (radix D w.length)))
-      (List.replicate (width k (radix D w.length)) true)⟩ := by
+theorem initRound_snd
+    (hstart : startID ntm (radix D w.length) < 2 ^ vertexWidth k (radix D w.length)) :
+    (initRound ntm D w.length).2 = ⟨[], .call (vertexWidth k (radix D w.length))
+      (lowBits (vertexWidth k (radix D w.length)) (startID ntm (radix D w.length)))
+      (List.replicate (vertexWidth k (radix D w.length)) true)⟩ := by
   rw [initRound, dropLast_bits_add_two_pow hstart]
 
 /-- **The machine halts with the value of the recursion.** -/
-theorem exists_halted (hstart : startID ntm (radix D w.length) < 2 ^ width k (radix D w.length)) :
+theorem exists_halted
+    (hstart : startID ntm (radix D w.length) < 2 ^ vertexWidth k (radix D w.length)) :
     ∃ t, halted ((machine ntm D).run w t) = true ∧
       finish ((machine ntm D).run w t) =
-        [reach (inputEdge ntm (radix D w.length) w) (width k (radix D w.length))
-          (width k (radix D w.length))
-          (lowBits (width k (radix D w.length)) (startID ntm (radix D w.length)))
-          (List.replicate (width k (radix D w.length)) true)] := by
+        [reach (inputEdge ntm (radix D w.length) w) (vertexWidth k (radix D w.length))
+          (vertexWidth k (radix D w.length))
+          (lowBits (vertexWidth k (radix D w.length)) (startID ntm (radix D w.length)))
+          (List.replicate (vertexWidth k (radix D w.length)) true)] := by
   obtain ⟨T, -, hT⟩ := exists_iterate_step_call (edge := inputEdge ntm (radix D w.length) w)
-    (w := width k (radix D w.length)) (width k (radix D w.length))
-    (lowBits (width k (radix D w.length)) (startID ntm (radix D w.length)))
-    (List.replicate (width k (radix D w.length)) true) []
+    (w := vertexWidth k (radix D w.length)) (vertexWidth k (radix D w.length))
+    (lowBits (vertexWidth k (radix D w.length)) (startID ntm (radix D w.length)))
+    (List.replicate (vertexWidth k (radix D w.length)) true) []
   obtain ⟨symbol, h⟩ := exists_run_add (ntm := ntm) (D := D) w T
   refine ⟨w.length + 1 + T, ?_⟩
   rw [h, initRound_snd hstart, hT]
@@ -408,9 +401,9 @@ theorem exists_halted (hstart : startID ntm (radix D w.length) < 2 ^ width k (ra
 
 /-- The states of the recursion satisfy the invariant of a run at depth `W`. -/
 theorem invariant_iterate_initRound
-    (hstart : startID ntm (radix D w.length) < 2 ^ width k (radix D w.length)) (j : ℕ) :
-    Invariant (width k (radix D w.length)) (width k (radix D w.length))
-      ((Savitch.step (inputEdge ntm (radix D w.length) w) (width k (radix D w.length)))^[j]
+    (hstart : startID ntm (radix D w.length) < 2 ^ vertexWidth k (radix D w.length)) (j : ℕ) :
+    Invariant (vertexWidth k (radix D w.length)) (vertexWidth k (radix D w.length))
+      ((Savitch.step (inputEdge ntm (radix D w.length) w) (vertexWidth k (radix D w.length)))^[j]
         (initRound ntm D w.length).2) := by
   refine invariant_iterate _ ?_ j
   rw [initRound_snd hstart]
@@ -428,9 +421,9 @@ theorem length_encNat_radix_le (D n : ℕ) :
   exact Nat.mul_le_mul_left _ (by omega)
 
 /-- The width of the words for the radix `(n + 2) ^ D`. -/
-theorem width_radix_le (D n : ℕ) :
-    width k (radix D n) ≤ (D * Fintype.card (Register k) + 1) * (Nat.log2 n + 2) := by
-  rw [width, ← length_encNat_eq_size, vertexBound_eq_pow]
+theorem vertexWidth_radix_le (D n : ℕ) :
+    vertexWidth k (radix D n) ≤ (D * Fintype.card (Register k) + 1) * (Nat.log2 n + 2) := by
+  rw [vertexWidth, ← length_encNat_eq_size, vertexBound_eq_pow]
   refine (length_encNat_le_of_le_pow (N := n + 1) le_rfl).trans ?_
   have : Nat.log2 (n + 1) ≤ Nat.log2 n + 1 := by
     rw [Nat.log2_eq_log_two, Nat.log2_eq_log_two]
@@ -446,7 +439,7 @@ noncomputable def sizeConst (D : ℕ) : ℕ :=
 
 /-- **The states of the machine have `O((log₂ n + 1) ^ 2)` bits.** -/
 theorem length_encRuntime_run_le
-    (hstart : startID ntm (radix D w.length) < 2 ^ width k (radix D w.length)) (t : ℕ) :
+    (hstart : startID ntm (radix D w.length) < 2 ^ vertexWidth k (radix D w.length)) (t : ℕ) :
     (encRuntime ((machine ntm D).run w t)).length ≤
       sizeConst k D * (Nat.log2 w.length + 1) ^ 2 := by
   rw [sizeConst]
@@ -467,13 +460,13 @@ theorem length_encRuntime_run_le
     have hinv := length_encState_le (invariant_iterate_initRound hstart j)
     have hn := length_encNat_le_log2 (le_refl w.length)
     have hB := length_encNat_radix_le D w.length
-    have hW := width_radix_le (k := k) D w.length
+    have hW := vertexWidth_radix_le (k := k) D w.length
     have hsym : (encOption encBool symbol).length ≤ 2 := by cases symbol <;> simp
     simp only [encRuntime, encRound, encParam, length_encPair, encBool_apply, encUnary_apply,
       List.length_singleton, List.length_replicate]
     generalize Nat.log2 w.length = L at *
     generalize D * Fintype.card (Register k) = R at *
-    generalize width k (radix D w.length) = W at *
+    generalize vertexWidth k (radix D w.length) = W at *
     generalize (encState _).length = E at *
     generalize (encNat (radix D w.length)).length = Bl at *
     generalize (encNat w.length).length = nl at *
@@ -649,7 +642,7 @@ theorem initRound_inSpace (D : ℕ) : ComputableInSpace (initRound ntm D) encNat
     (budget_natPow (budget_natAdd hn (budget_const 2 hin)) hin D).of_enc_eq fun _ => rfl
   have hN := vertexBound_budget (k := k) hB hin
   have hW₀ := budget_comp_linear size_inSpace hN
-  have hW : ComputableInSpace (fun n => width k (radix D n)) encNat encUnary
+  have hW : ComputableInSpace (fun n => vertexWidth k (radix D n)) encNat encUnary
       fun n => (encNat n).length := hW₀.of_enc_eq fun _ => rfl
   have hstart := startID_budget ntm hB hin
   have hpow₀ : ComputableInSpace (fun W : ℕ => 2 ^ W) encUnary encNat
@@ -658,11 +651,11 @@ theorem initRound_inSpace (D : ℕ) : ComputableInSpace (initRound ntm D) encNat
       of_inO (ComputableInDegree.two_pow_length encUnary).inO_one
   have hpow := budget_comp_linear hpow₀ hW
   have hbits : ComputableInSpace
-      (fun n => (startID ntm (radix D n) + 2 ^ width k (radix D n)).bits) encNat encBits
+      (fun n => (startID ntm (radix D n) + 2 ^ vertexWidth k (radix D n)).bits) encNat encBits
       fun n => (encNat n).length :=
     (budget_natAdd hstart hpow).of_enc_eq fun _ => rfl
   have hsrc := budget_comp_linear (of_inO ComputableInDegree.bitsDropLast.inO_one) hbits
-  have hsink : ComputableInSpace (fun n => List.replicate (width k (radix D n)) true) encNat
+  have hsink : ComputableInSpace (fun n => List.replicate (vertexWidth k (radix D n)) true) encNat
       encBits fun n => (encNat n).length := hW.of_enc_eq fun _ => rfl
   have hcall := budget_comp_linear
     (of_inO (ComputableInDegree.optionSome (enc₁ := encCall) (enc := encOption encCall)).inO_one)
@@ -715,10 +708,10 @@ theorem exists_decidableInTimeAndSpace_log_sq {α : Type} {enc : α ↪ List Boo
   let : Fintype State := Fintype.ofFinite State
   set D := radixExponent State c
   have hstart (a : α) :
-      startID ntm (radix D (enc a).length) < 2 ^ width k (radix D (enc a).length) := by
+      startID ntm (radix D (enc a).length) < 2 ^ vertexWidth k (radix D (enc a).length) := by
     rw [← vertexID_init ntm _ (enc a)]
     exact (vertexID_lt (fits_of_runsInSpace c (hA a).1 .refl)).trans
-      (vertexBound_lt_two_pow_width k _)
+      (vertexBound_lt_two_pow_vertexWidth k _)
   have hex (a : α) : ∃ t, (machine ntm D).halted ((machine ntm D).run (enc a) t) = true :=
     let ⟨t, h, _⟩ := exists_halted (hstart a)
     ⟨t, h⟩

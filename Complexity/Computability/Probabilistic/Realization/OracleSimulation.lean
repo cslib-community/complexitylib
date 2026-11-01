@@ -110,7 +110,8 @@ theorem isPPTOn_step [Fintype Operation] {input : α ↪ List Bool}
     {handler : α → Operation × List Bool → State → ProbComp (List Bool × State)}
     (hhandler : IsPPTOn
       (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
-      (encPair encBits stateEncoding) (fun pair => handler pair.1 pair.2.1 pair.2.2)) :
+      (encPair encBits stateEncoding)
+      (fun ⟨caller, request, state⟩ => handler caller request state)) :
     IsPPTOn (encPair input (encPair encFiniteConfig stateEncoding))
       (encPair encFiniteConfig stateEncoding)
       (fun pair => step machine handler pair.1 pair.2) :=
@@ -129,7 +130,8 @@ theorem isPPTOn_run [Finite Operation] {input : α ↪ List Bool}
     (hcount : ComputableInPolyTime count input encUnary)
     (hhandler : IsPPTOn
       (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
-      (encPair encBits stateEncoding) (fun pair => handler pair.1 pair.2.1 pair.2.2))
+      (encPair encBits stateEncoding)
+      (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableInPolyTime initial input stateEncoding)
     (invariant : α → State → Prop) (hinit : ∀ a, invariant a (initial a))
     {resources : ℕ → ℕ} (hresources : PolynomiallyBounded resources)

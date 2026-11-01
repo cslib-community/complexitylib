@@ -102,4 +102,14 @@ example (k c : ℕ) :
     Kannan.language_notMem_SIZE 2 c,
     fun h => let ⟨L, hL, hS⟩ := exists_mem_SigmaP_two_notMem_SIZE k; hS c (h L hL)⟩
 
+-- Kannan's statement: no polynomial budget of a fixed degree holds all of `Σ₂ ∩ Π₂`, nor all of
+-- `Π₂`.
+example (k c : ℕ) :
+    (¬∀ L : Language Bool, (L : Set (List Bool)) ∈ SigmaP 2 encBits ∩ PiP 2 encBits →
+      L ∈ SIZE fun n => c * (n + 1) ^ k) ∧
+    ¬∀ L : Language Bool, (L : Set (List Bool)) ∈ PiP 2 encBits →
+      L ∈ SIZE fun n => c * (n + 1) ^ k :=
+  let ⟨L, hL, hS⟩ := exists_mem_SigmaP_two_inter_PiP_two_notMem_SIZE k
+  ⟨fun h => hS c (h L hL), fun h => hS c (h L hL.2)⟩
+
 end Cslib.Complexity.Tests.Kannan

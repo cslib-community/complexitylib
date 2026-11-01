@@ -19,7 +19,7 @@ detection (`isCramerShoupBadDH`), hash-collision detection (`isCramerShoupCollis
 roundtrips (`decodeCramerShoupSK_encCramerShoupSK`), challenge admissibility (`cramerShoupValid`),
 and concrete `example` instantiations of the polynomial-time certificates, Games 3–5 transition
 theorems, and end-to-end IND-CCA2 theorems (`advantage_cramerShoupGroupCCA2Game_le`,
-`DDH.cramerShoupGroupINDCCA2`, `DDH.indcca2On_cramerShoup`).
+`DDH.cramerShoupGroupINDCCA2`, `DDH.indcca2On_cramerShoup`, `DDH.indcca2MultiOn_cramerShoup`).
 -/
 
 namespace ComplexityTests.Crypto.CramerShoup
@@ -69,6 +69,7 @@ example [∀ d, DecidableEq (schnorrGroups.Carrier d)] :
     schnorrGroups.cramerShoupDecrypt testHash d23 sk badCt [] = none := by
   simp [PrimeOrderGroupFamily.cramerShoupDecrypt, PrimeOrderGroupFamily.cramerShoupEncrypt,
     PrimeOrderGroupFamily.cramerShoupPublicKey, ProjectiveHash.projHash2Aux,
+    csPkU, csPkH, csPkH₁, csPkH₂, csSkS₁, csSkT₁, csSkS₂, csSkT₂, csCtV, csCtW, csCtE, csCtZ,
     ProjectiveHash.projHash2_smul_generator, schnorrGroups.generator_ne_zero d23]
 
 /-- Framing roundtrips for `encBits3`, `encBits4`, `extractCramerShoupTuple`, and
@@ -461,9 +462,13 @@ example {AD : Type} (encAD : AD ↪ List Bool)
       (schnorrGroups.cramerShoupADDecryptOpt H isElem d) ∧
     INDCCA2On (schnorrGroups.cramerShoupValid isElem d) encBits encBits
       (schnorrGroups.cramerShoupKeyGenProb d) (schnorrGroups.cramerShoupEncryptProb H d)
+      (schnorrGroups.cramerShoupDecryptOpt H isElem d) ∧
+    INDCCA2MultiOn (schnorrGroups.cramerShoupValid isElem d) encBits encBits
+      (schnorrGroups.cramerShoupKeyGenProb d) (schnorrGroups.cramerShoupEncryptProb H d)
       (schnorrGroups.cramerShoupDecryptOpt H isElem d) :=
   ⟨hDDH.indcca2ADOn_cramerShoup encAD hH hisElem hd hmem hCR hm0 hm hinv,
-   hDDH.indcca2On_cramerShoup hH hisElem hd hmem hCR hm0 hm hinv⟩
+   hDDH.indcca2On_cramerShoup hH hisElem hd hmem hCR hm0 hm hinv,
+   hDDH.indcca2MultiOn_cramerShoup hH hisElem hd hmem hCR hm0 hm hinv⟩
 
 -- A fixed nonzero inverse-order bound cannot supply the asymptotic security premise.
 example : ¬ Negligible (fun _ : ℕ => (1 / 11 : ℝ≥0)) :=

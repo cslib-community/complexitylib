@@ -12,6 +12,7 @@ public import Complexity.Computability.WordRAM.Function
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 
 /-!
@@ -73,6 +74,8 @@ schedule chosen by the caller. Outputs are single words.
   `Cslib.WordRAM.WordBounded.length_resultEncoding_run_le`: from a fitting input, simulation states
   hold words and their encodings grow polynomially along a run.
 * `Cslib.WordRAM.inputFits_of_length_encList_le`: a word list fits its own encoded length.
+* `Cslib.WordRAM.exists_unary_majorant`: a quantity polynomially bounded in the input length has a
+  majorant computable in unary in polynomial time.
 * `Cslib.WordRAM.Program.DecidesInTime.computesInTime`: a decider computes the indicator.
 * `Cslib.WordRAM.Program.ComputesInTime.turingComputableInPolyTime_of_width`: the simulation at a
   supplied polynomial-time width schedule.
@@ -302,18 +305,6 @@ theorem run {p : GenericRAM.Program B.genericModel r} (h : WordBounded w s)
         subst hv
         exact h.step_halt hs
 
-private theorem listMax_le {α : Type*} {f : α → ℕ} {l : List α} {m : ℕ}
-    (h : ∀ a ∈ l, f a ≤ m) : listMax f l ≤ m := by
-  induction l with
-  | nil => simp [listMax]
-  | cons a l ih =>
-    simp only [listMax, List.map_cons, List.foldr_cons] at ih ⊢
-    exact max_le (h a (List.mem_cons_self ..)) (ih fun b hb => h b (List.mem_cons_of_mem _ hb))
-
-private theorem length_encNat_le_of_lt {v : ℕ} (hv : v < 2 ^ w) : (encNat v).length ≤ w := by
-  rw [encNat_apply, Nat.size_eq_bits_len]
-  exact Nat.size_le.mpr hv
-
 /-- Encoded outcomes along a clocked run from a word-bounded state are bounded by `stateBound`,
 with at most one new stored cell per step. -/
 theorem length_resultEncoding_run_le {p : GenericRAM.Program B.genericModel r}
@@ -326,7 +317,7 @@ theorem length_resultEncoding_run_le {p : GenericRAM.Program B.genericModel r}
   | some u =>
     cases u with
     | inr v =>
-      have hv := length_encNat_le_of_lt (hinr v hrun)
+      have hv := length_encNat_le_of_lt_two_pow (hinr v hrun)
       simp only [resultEncoding, encOption_some, encSum_inr, List.length_cons, Basis.encoding,
         stateBound]
       omega
@@ -334,16 +325,16 @@ theorem length_resultEncoding_run_le {p : GenericRAM.Program B.genericModel r}
       obtain ⟨ht, htpc⟩ := hinl t hrun
       have hE := length_entries_run_le hrun
       have hlen := FiniteState.length_encoding_le B.encoding t
-        (bound := w) fun i => length_encNat_le_of_lt (ht.regs_lt i)
+        (bound := w) fun i => length_encNat_le_of_lt_two_pow (ht.regs_lt i)
       have hpcl : (encNat t.pc).length ≤ (encNat (labelBound p)).length := by
         simp only [encNat_apply, Nat.size_eq_bits_len]
         exact Nat.size_le_size htpc
       have hdef : (B.encoding.value t.default).length ≤ w :=
-        length_encNat_le_of_lt ht.default_lt
+        length_encNat_le_of_lt_two_pow ht.default_lt
       have hkey : SparseMemory.maxKeyLength B.encoding.address t.memory ≤ w :=
-        listMax_le fun e he => length_encNat_le_of_lt (ht.entries_lt e he).1
+        listMax_le fun e he => length_encNat_le_of_lt_two_pow (ht.entries_lt e he).1
       have hval : SparseMemory.maxValueLength B.encoding.value t.memory ≤ w :=
-        listMax_le fun e he => length_encNat_le_of_lt (ht.entries_lt e he).2
+        listMax_le fun e he => length_encNat_le_of_lt_two_pow (ht.entries_lt e he).2
       have hmul : (SparseMemory.entries t.memory).length *
             (4 * SparseMemory.maxKeyLength B.encoding.address t.memory +
               2 * SparseMemory.maxValueLength B.encoding.value t.memory + 3) ≤
@@ -500,13 +491,13 @@ theorem Program.DecidesInTime.computesInTime {p : Program B r} {encode : ℕ →
 
 /-- A quantity polynomially bounded in the encoded input length has a majorant computable in
 unary in polynomial time: a fixed polynomial of the input length. -/
-private theorem exists_unary_majorant {u : α → ℕ}
+theorem exists_unary_majorant {u : α → ℕ}
     (h : PolyBounded (fun a => (encIn a).length) u) :
     ∃ g : α → ℕ, Turing.MultiTapeTM.ComputableInPolyTime g encIn encUnary ∧ ∀ a, u a ≤ g a := by
   obtain ⟨c, d, h⟩ := h.exists_le
   refine ⟨fun a => (Polynomial.C c * (Polynomial.X + 1) ^ d).eval (encIn a).length,
-    (Turing.MultiTapeTM.ComputableInPolyTime.unary_eval _).comp
-      (Turing.MultiTapeTM.ComputableInPolyTime.encoding_length encIn),
+    (ComputableInPolyTime.unary_eval _).comp
+      (ComputableInPolyTime.encoding_length encIn),
     fun a => ?_⟩
   simpa only [Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_pow, Polynomial.eval_add,
     Polynomial.eval_X, Polynomial.eval_one] using h a
@@ -536,7 +527,7 @@ theorem Program.ComputesInTime.turingComputableInPolyTime_of_width
   -- The step budget: a polynomial of the input length, computed in unary.
   obtain ⟨steps, hstepsU, hsteps⟩ := exists_unary_majorant htime
   have hstepsT : Turing.MultiTapeTM.ComputableInPolyTime steps encIn encNat :=
-    Turing.MultiTapeTM.ComputableInPolyTime.unary_to_binary.comp hstepsU
+    ComputableInPolyTime.unary_to_binary.comp hstepsU
   have hExec (a : α) :
       ∃ m ≤ steps a, Executes (width a) p (State.init (encode (width a) a)) (f a) m := by
     obtain ⟨m, hm, hle⟩ := h a (width a) (hallowed a) (hfits a)

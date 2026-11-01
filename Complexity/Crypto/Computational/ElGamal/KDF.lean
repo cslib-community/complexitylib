@@ -291,15 +291,14 @@ and an encoded group element `w : List Bool`, pad `w` to the self-delimiting wid
 via `Cslib.BitString.LinearHash.wordHash (keyLen d) s`. -/
 def linearHashKDF (keyLen bound : F.Desc → ℕ)
     (input : F.withSeed.Desc × List Bool) : List Bool :=
-  let desc := input.1
-  Cslib.BitString.LinearHash.wordHash (keyLen desc.1) desc.2
-    (Cslib.BitString.padWord (bound desc.1) input.2)
+  Cslib.BitString.LinearHash.wordHash (keyLen (SeededDesc.desc input.1))
+    (SeededDesc.seed input.1)
+    (Cslib.BitString.padWord (bound (SeededDesc.desc input.1)) input.2)
 
-/-- `linearHashKDF` always outputs a word of length `keyLen input.1.1`. -/
+/-- `linearHashKDF` always has the key length of its underlying group description. -/
 @[simp] theorem length_linearHashKDF (keyLen bound : F.Desc → ℕ)
     (input : F.withSeed.Desc × List Bool) :
-    let desc := input.1
-    (F.linearHashKDF keyLen bound input).length = keyLen desc.1 := by
+    (F.linearHashKDF keyLen bound input).length = keyLen (SeededDesc.desc input.1) := by
   simp [linearHashKDF]
 
 /-- `linearHashKDF` is computable in polynomial time whenever `keyLen` and `bound` are computable
@@ -443,7 +442,7 @@ theorem advantage_kdfGame_linearHashKDF_le (setup : ℕ → PMF F.Desc)
           List.ofFn (Cslib.BitString.LinearHash.hash
             (Cslib.BitString.blocksEquiv (m := m) (k := W) seed)
             (F.paddedGeneratorMultiple bound d γ)) := by
-      simp only [linearHashKDF, hkey d hd, ← hpad,
+      simp only [linearHashKDF, SeededDesc.seed, hkey d hd, ← hpad,
         Cslib.BitString.LinearHash.wordHash_eq_ofFn,
         Cslib.BitString.ofList_ofFn, Cslib.BitString.blocksEquiv_apply]
     rw [hhash]

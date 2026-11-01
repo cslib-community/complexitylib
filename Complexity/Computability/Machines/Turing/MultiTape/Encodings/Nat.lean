@@ -12,7 +12,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Option
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pair
 public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds
-import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelTransducer
+import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Transducer.Copy
 import Complexity.Foundations.Data.Nat.Bits
 
 /-!
@@ -78,18 +78,13 @@ private def predTransducer : Transducer Bool (Option Bool) where
   length_step_le q b := by rcases q with _ | _ | _ <;> cases b <;> simp
   length_final_le _ := by simp
 
-private lemma run_predTransducer_copy (l : List Bool) : predTransducer.run (some true) l = l := by
-  induction l with
-  | nil => rfl
-  | cons b l ih => exact congrArg (b :: ·) ih
-
 private lemma run_predTransducer_pending (l : List Bool) :
     predTransducer.run (some false) l = if l = [] then [] else false :: l := by
   cases l with
   | nil => rfl
   | cons b l =>
     change [false, b] ++ predTransducer.run (some true) l = _
-    rw [run_predTransducer_copy]
+    rw [Transducer.run_eq_self predTransducer (some true) (fun _ => rfl) rfl]
     rfl
 
 private lemma run_predTransducer (n : ℕ) : predTransducer.run none n.bits = (n - 1).bits := by

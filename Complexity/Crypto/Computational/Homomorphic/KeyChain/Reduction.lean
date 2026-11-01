@@ -111,11 +111,8 @@ def guessLink
     (n : ℕ) (state challengeCiphertext : List Bool) : ProbComp Bool := do
   let context := linkStateDecoder.decode state
   if context.1 then
-    let before := context.2.1
-    let predecessor := context.2.2.1
-    let target := (context.2.2.2.1, List.replicate predecessor.2.length false)
-    let after := context.2.2.2.2.1
-    let bitIndex := context.2.2.2.2.2
+    let (before, predecessor, targetKey, after, bitIndex) := context.2
+    let target := (targetKey, List.replicate predecessor.2.length false)
     let links ← E.spliceEncryptedKeyLink n before predecessor target after bitIndex
       challengeCiphertext
     test n ((before ++ predecessor :: target :: after).map Prod.fst, links)

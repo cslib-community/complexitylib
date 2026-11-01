@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Foundations.Probability.RootMetric.Slices
 public import Complexity.Foundations.Probability.ProductError
 public import Complexity.Foundations.Probability.TrueSampleMeans
 public import Complexity.Foundations.Analysis.RootError
@@ -138,24 +139,6 @@ theorem conditionalTableMean_eq_expect_product {ι κ υ : Type*}
 
 variable {s : ℕ} {N u : ℝ} {X Y : Ω → V → Prop}
   [∀ σ x, Decidable (X σ x)] [∀ σ y, Decidable (Y σ y)]
-
-/-- Exchange the finite expectation with the source and endpoint sums, preserving their
-actual joint mask. The two masks and the table may depend on the same draw. -/
-theorem expect_filtered_sum_eq (H : Ω → V → V → ℝ) :
-    (𝔼 σ, ∑ x ∈ ({x | X σ x} : Finset V), ∑ y ∈ ({y | Y σ y} : Finset V), H σ x y) =
-      ∑ x, ∑ y, 𝔼 σ, if X σ x ∧ Y σ y then H σ x y else 0 := by
-  have hpoint : ∀ σ,
-      (∑ x ∈ ({x | X σ x} : Finset V), ∑ y ∈ ({y | Y σ y} : Finset V), H σ x y) =
-        ∑ x, ∑ y, if X σ x ∧ Y σ y then H σ x y else 0 := by
-    intro σ
-    rw [sum_filter]
-    refine sum_congr rfl fun x _ => ?_
-    by_cases hx : X σ x
-    · simp [hx, sum_filter]
-    · simp [hx]
-  simp_rw [hpoint]
-  rw [expect_sum_comm]
-  exact sum_congr rfl fun x _ => expect_sum_comm _ _ _
 
 /-- A constant restricted to a finite event has expectation equal to its actual density
 times that constant, including empty events and empty ambient types. -/

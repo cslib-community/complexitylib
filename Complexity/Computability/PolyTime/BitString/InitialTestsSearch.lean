@@ -195,10 +195,6 @@ end
 private abbrev pOf := @PolyBounded.of_polynomiallyBounded
 private theorem add_mul_le_mul_add (A K B : ℕ) (hK : 1 ≤ K) : A + K * B ≤ K * (A + B) := by
   rw [Nat.mul_add]; exact Nat.add_le_add_right (Nat.le_mul_of_pos_left A hK) _
-private theorem polyBounded_unary {α : Type} {ei : α ↪ List Bool} {f : α → ℕ}
-    (hf : ComputableInPolyTime f ei encUnary) : PolyBounded (fun a => (ei a).length) f := by
-  simpa only [Function.comp_apply, encUnary_apply, List.length_replicate] using
-    hf.polyBounded_length
 private theorem equivFin_symm_eq_zero_iff {width : ℕ} (k : Fin (2 ^ width)) :
     (equivFin width).symm k = 0 ↔ k.val = 0 := by
   rw [Equiv.symm_apply_eq, Fin.ext_iff, show (0 : BitString width) = fun _ => false from rfl,
@@ -473,8 +469,8 @@ private theorem searchMatrix_cert {α Q : Type} {encIn : α ↪ List Bool} {encQ
     2 * (encQ (qOf a)).length + 1 + (3 + rowsOf (qOf a) * (2 * colsOf (qOf a) + 1))
   have hBP : PolyBounded (fun a => (encIn a).length) B :=
     (((PolyBounded.const 2).mul hq.polyBounded_length).add (.const 1)).add
-      ((PolyBounded.const 3).add ((polyBounded_unary hra).mul
-        (((PolyBounded.const 2).mul (polyBounded_unary hca)).add (.const 1))))
+      ((PolyBounded.const 3).add ((ComputableInPolyTime.polyBounded hra).mul
+        (((PolyBounded.const 2).mul (ComputableInPolyTime.polyBounded hca)).add (.const 1))))
   refine ((HasKPolyCert.indexFold (K := fun a => 2 ^ wCheck (qOf a) + 1) (B := B)
     (fun _ => Nat.le_add_left 1 _) hcount hinit hStep hBP
     (fun a j _ => by rw [(run_searchMatrixStep_inv rowsOf colsOf check j (qOf a)).1])
@@ -659,7 +655,7 @@ theorem checkSmallBiasShifts_polyTime_of_two_pow_le {α : Type} {encIn : α ↪ 
       (fun a => checkSmallBiasShifts (ell a) (d a) (maxBiasNum a) (maxBiasDen a) (shifts a))
       encIn encBool :=
   checkSmallBiasShifts_polyTime hell hd hnum hden hshifts
-    ((((PolyBounded.const 2).mul (polyBounded_unary hm)).add (.const 1)).mono hle)
+    ((((PolyBounded.const 2).mul (ComputableInPolyTime.polyBounded hm)).add (.const 1)).mono hle)
 private abbrev LocalHdr := ℕ × ℕ × ℕ
 private abbrev LocalQ := LocalHdr × List (List Bool)
 private abbrev encLocalHdr : LocalHdr ↪ List Bool := encPair encUnary (encPair encUnary encUnary)
