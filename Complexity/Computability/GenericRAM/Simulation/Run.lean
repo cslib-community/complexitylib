@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.GenericRAM.Simulation.Turing
+import Complexity.Tactic.EncLen
 
 /-!
 # Clocked multi-step execution and whole-run native transport for generic RAMs
@@ -949,7 +950,7 @@ theorem readCertificate_isPolynomial (enc : M.Encoding)
     refine ⟨.of_forall_le 32 3 fun q => ?_, .of_forall_le 32 1 fun q => ?_⟩
     · have hq : (SparseMemory.queryEncoding enc.address enc.value q.1).length ≤
           (SparseMemory.readEncoding enc.address enc.value q).length := by
-        simp only [SparseMemory.readEncoding, length_encPair]; omega
+        enc_len [SparseMemory.readEncoding]
       have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
       have ht := SparseMemory.scanTime_le_cube enc.address enc.value q.1
       have he : (SparseMemory.readEncoding enc.address enc.value q).length ≤
@@ -958,9 +959,7 @@ theorem readCertificate_isPolynomial (enc : M.Encoding)
       unfold SparseMemory.readTime
       nlinarith
     · have hs := SparseMemory.scanSpace_le_linear enc.address enc.value q.1
-      simp only [SparseMemory.readSpace, SparseMemory.readEncoding,
-        length_encPair, pow_one] at hs ⊢
-      omega
+      enc_len [SparseMemory.readSpace, SparseMemory.readEncoding, pow_one] at hs ⊢
   exact comp_isPolynomial _
     (prod (prod address (snd (snd (snd (fields enc c))))) (fst (snd (snd (fields enc c)))))
     hread (prod_isPolynomial _ _ (prod_isPolynomial _ _ ha hc) hc)
@@ -978,8 +977,7 @@ theorem writeCertificate_isPolynomial (enc : M.Encoding)
     refine ⟨.of_forall_le 33 3 fun q => ?_, .of_forall_le 33 1 fun q => ?_⟩
     · have hq : (SparseMemory.queryEncoding enc.address enc.value (q.1.1, q.2)).length ≤
           (SparseMemory.writeEncoding enc.address enc.value q).length := by
-        simp only [SparseMemory.queryEncoding, SparseMemory.writeEncoding, length_encPair]
-        omega
+        enc_len [SparseMemory.queryEncoding, SparseMemory.writeEncoding]
       have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
       have ht := SparseMemory.scanTime_le_cube enc.address enc.value (q.1.1, q.2)
       have he : (SparseMemory.writeEncoding enc.address enc.value q).length ≤
@@ -1194,8 +1192,7 @@ theorem runCertificateOf_isPolynomial (enc : M.Encoding) (N : M.NativePrimitives
       fun a j hj => by
         rw [iterate_round_inl]
         have := hOutLen a j hj
-        simp only [loopEncoding, length_encPair]
-        omega
+        enc_len [loopEncoding]
   have hInLen : PolyBounded (fun a => (ei a).length)
       (fun a => (runInputEncoding enc (steps a, (cfg a, initState a))).length) :=
     ((prod cSteps (prod cCfg cInit)).polyTime
@@ -1293,8 +1290,7 @@ theorem polyBounded_length_run (enc : M.Encoding) (N : M.NativePrimitives enc)
     (roundIterCertificate_isPolynomial enc N p cCfg cInit hN hCfg hInit j)).polyBounded_length
   refine hloop.mono fun a => ?_
   rw [iterate_round_inl]
-  simp only [loopEncoding, length_encPair]
-  omega
+  enc_len [loopEncoding]
 
 /-- Automatic `ComputableInPolyTime` transport for a constant step-budget bound
 `∀ a, steps a ≤ K`: the intermediate outcome lengths along `0 ≤ j ≤ K` are bounded by induction on

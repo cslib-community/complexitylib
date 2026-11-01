@@ -16,6 +16,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
+import Complexity.Tactic.EncLen
 
 /-!
 # A nondeterministic time hierarchy by lazy diagonalization
@@ -442,9 +443,7 @@ private theorem exists_computableInO_brute (d : ℕ) : ∃ K, ComputableInO
   have hf := hacc.comp hre
   have hsize (q : (List Bool × List Bool) × List Bool) :
       q.1.1.length ≤ (enc q).length ∧ q.1.2.length ≤ (enc q).length ∧
-        q.2.length ≤ (enc q).length := by
-    simp only [enc, length_encPair, encBits_apply]
-    omega
+        q.2.length ≤ (enc q).length := by enc_len [enc]
   have hpoly : PolyBounded (fun q => (enc q).length) fun q =>
       (enc q).length + ((enc q).length + (enc q).length) +
         accBound d D (q.1.1, q.1.2, q.2) :=
@@ -530,9 +529,7 @@ private theorem exists_computableInO_verifier (d : ℕ) :
       (2 * (encPair encBits encBits p).length + 4 +
         (2 * (unframe p.1).length + 1 + 1) ^ (d + 3)) ^ 2 ≤ (G + 4) ^ 2 * cheap d p := by
     have hu := length_unframe_le p.1
-    have hn : p.1.length ≤ (encPair encBits encBits p).length := by
-      simp only [length_encPair, encBits_apply]
-      omega
+    have hn : p.1.length ≤ (encPair encBits encBits p).length := by enc_len
     have hZ : (2 * (unframe p.1).length + 1 + 1) ^ (d + 3) ≤
         2 ^ (d + 3) * (p.1.length + 1) ^ (d + 3) := by
       rw [← mul_pow]

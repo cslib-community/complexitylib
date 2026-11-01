@@ -18,6 +18,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Tactic.EncLen
 
 /-!
 # Succinct MCSP is in NP
@@ -272,9 +273,7 @@ private theorem length_encList_rawSamples_ofFunction {n : ℕ} (f : BooleanFunct
   have hconst : ((fun a => 2 * (encPair encBits encBool a).length + 1) ∘
       fun y : BitString n => (List.ofFn y, f y)) = fun _ => 4 * n + 5 := by
     funext y
-    simp only [Function.comp_apply, length_encPair, encBits_apply, List.length_ofFn,
-      encBool_apply, List.length_singleton]
-    omega
+    enc_len [Function.comp_apply, List.length_ofFn]
   rw [hconst, List.map_const', List.sum_replicate, smul_eq_mul, hlen]
 
 /-- The encoded length of `Instance.ofFunction f S s` under `SuccinctMCSP.enc` depends only on the
@@ -299,9 +298,7 @@ private theorem arity_and_card_le_length_enc_of_encT (encT : ℕ ↪ List Bool) 
       x.samples.card ≤
         (encPair (encPair encUnary (encList (encPair encBits encBool))) encT (toRaw x)).length := by
   have hcard := card_samples_le_length_encList x
-  rw [toRaw_apply, length_encPair, length_encPair, encUnary_apply, List.length_replicate]
-  dsimp only
-  omega
+  enc_len [toRaw_apply]
 
 /-! ### Verifier and correctness -/
 

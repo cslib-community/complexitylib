@@ -21,6 +21,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Me
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
+import Complexity.Tactic.EncLen
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.List.GetD
@@ -870,7 +871,7 @@ theorem length_enc_reduced_le_parent {n n' : ℕ} {S : List ℕ} {vals : List Bo
     (length_encList_map_le _ _ fun eq₁ _ => hrel eq₁).trans
       ((length_encList_sublist _ List.filter_sublist).trans
         (length_encList_map_le _ _ fun eq₀ _ => length_enc_substituteEquation_le S vals eq₀))
-  simp only [length_encPair, encUnary_apply, List.length_replicate]; omega
+  enc_len
 
 /-- Encoded-size non-expansion: every `.reduced n' sys'` branch produced by `prepareBranch` has
 encoded solver input `(n', sys')` no longer than the parent `encBranchInput (n, S, sys)`. -/
@@ -879,7 +880,7 @@ theorem length_enc_reduced_le {n n' : ℕ} {S : List ℕ} {vals : List Bool}
     (encPair encUnary (encList (encList (encList encNat))) (n', sys')).length ≤
       (encBranchInput (n, S, sys)).length := by
   refine (length_enc_reduced_le_parent hred).trans ?_
-  simp only [encBranchInput, length_encPair]; omega
+  enc_len [encBranchInput]
 
 /-- Callback input tuple `((|S|, vals), (inp, accSum))` for `branchBody`. -/
 abbrev PrepareStepInput : Type := (ℕ × List Bool) × (BranchInput × ℕ)
@@ -1058,17 +1059,14 @@ private theorem branchCountCertificate_bounds {solver : ℕ → List (List (List
       NativeCertificate.linear, NativeCertificate.comp, NativeCertificate.payload,
       NativeCertificate.pull, NativeCertificate.post, BooleanFold.clock, BranchOutcome.toOption,
       Option.elim, reducedCost]
-    simp only [encBranchOutcome_eq, BranchOutcome.toOption, encOption_some, encOption_none,
-      length_encPair, List.length_cons, List.length_nil, encUnary_apply, List.length_replicate]
-    omega
+    enc_len [encBranchOutcome_eq, BranchOutcome.toOption]
   | reduced n' sys' =>
     rw [encBranchOutcome_eq]
     dsimp only [branchCountCertificate, NativeCertificate.congr, NativeCertificate.option,
       NativeCertificate.linear, NativeCertificate.comp, NativeCertificate.payload,
       NativeCertificate.prod, NativeCertificate.fst, NativeCertificate.post,
       BranchOutcome.toOption, Option.elim, reducedCost]
-    simp only [encBranchOutcome_eq, BranchOutcome.toOption, encOption_some, length_encPair,
-      List.length_cons, encUnary_apply, List.length_replicate]; omega
+    enc_len [encBranchOutcome_eq, BranchOutcome.toOption]
 
 theorem computableInPolyTime_prepareStep :
     ComputableInPolyTime (fun p : PrepareStepInput =>
@@ -1119,7 +1117,7 @@ private theorem length_le_encBranchInput (inp : BranchInput) :
     2 * inp.1 + 2 * inp.2.1.length + 2 ≤ (encBranchInput inp).length := by
   have hS : inp.2.1.length ≤ (encList encNat inp.2.1).length :=
     SizedListEncoding.length_le (encA := encNat) inp.2.1
-  simp only [encBranchInput, length_encPair, encUnary_apply, List.length_replicate]; omega
+  enc_len [encBranchInput]
 
 /-- Prefix sum bound: when `solver n' sys' ≤ 2 ^ n'` on reduced branches of `inp`, every streaming
 prefix `j ≤ 2 ^ |S|` keeps the running sum at most `j * 2 ^ (n - |S|)`. -/

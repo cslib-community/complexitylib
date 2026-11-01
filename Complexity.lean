@@ -3823,6 +3823,7 @@ public import Complexity.Probability.StatisticalDistance.UniformMod
 public import Complexity.Probability.Uniform
 public import Complexity.Probability.UniformNat
 public import Complexity.Probability.UniversalHash
+public import Complexity.Tactic.EncLen
 public import Complexity.Tactic.FOOperator
 public import Complexity.Tactic.FOOperator.Init
 public import Complexity.Tactic.FirstOrder

@@ -15,6 +15,7 @@ public import Complexity.Logics.Propositional.CNF.ParityTests
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
+import Complexity.Tactic.EncLen
 import Mathlib.Algebra.BigOperators.Ring.List
 import Mathlib.Data.List.Dedup
 
@@ -312,8 +313,7 @@ theorem exists_fin_of_lt_candidateTupleCount {m P j : ℕ} (hj : j < candidateTu
     (growth := fun p => 4 * (encPair (encPair encUnary encUnary) encNat p).length + 6)
     (((PolyBounded.const 4).mul .self).add (.const 6))
     (fun p state _ _ => by
-      have hm_le : p.1.1 ≤ (encPair (encPair encUnary encUnary) encNat p).length := by
-        simp only [length_encPair, encUnary_apply, List.length_replicate]; omega
+      have hm_le : p.1.1 ≤ (encPair (encPair encUnary encUnary) encNat p).length := by enc_len
       have hd_le : (if p.1.1 = 0 then 0 else state.1 % (2 * p.1.1)) / 2 ≤ p.1.1 := by
         split_ifs with hm
         · omega
@@ -321,10 +321,7 @@ theorem exists_fin_of_lt_candidateTupleCount {m P j : ℕ} (hj : j < candidateTu
       have hdiv_le : (encNat (state.1 / (2 * p.1.1))).length ≤ (encNat state.1).length := by
         simp only [encNat_apply, Nat.size_eq_bits_len]
         exact Nat.size_le_size (Nat.div_le_self _ _)
-      simp only [step, encState, encElem, length_encPair, encList_append, List.length_append,
-        encList_cons, encList_nil, List.append_nil, length_frame, encUnary_apply,
-        List.length_replicate, encBool_apply, List.length_singleton]
-      omega)
+      enc_len [step, encState, encElem, encList_append, encList_cons, encList_nil, List.append_nil])
   convert (ComputableInPolyTime.snd encNat (encList encElem)).comp hfold using 1
   funext p; simp only [Function.comp_apply, hfold_acc, List.nil_append]
 
@@ -999,14 +996,12 @@ theorem length_encSelectBestAcc_run_le (countSys : List (List Bool) → ℕ)
       6 * m + 2 * P + 2 * (encList encBits rows).length + V + 6 := by
   have hparams := run_selectBestStep_params countSys m P k rows
   rcases Nat.eq_zero_or_pos k with rfl | hkpos
-  · simp only [IndexFold.run_zero, encSelectBestAcc, length_encPair, encUnary_apply,
-      List.length_replicate, encOption_none, List.length_nil]; omega
+  · enc_len [IndexFold.run_zero, encSelectBestAcc]
   · obtain ⟨jStar, hjStar_lt, hopt, _, _⟩ := run_selectBestStep_spec countSys m P rows hkpos
     have hv := hV jStar hjStar_lt
     rcases r : IndexFold.run (selectBestStep countSys) k ((m, P), (rows, none)) with ⟨_, _, _, _⟩
     simp only [r] at hparams hopt ⊢; rcases hparams with ⟨rfl, rfl⟩; subst hopt
-    simp only [encSelectBestAcc, length_encPair, encUnary_apply, List.length_replicate,
-      encOption_some, List.length_cons, encBits_apply, length_materializeTestRow]; omega
+    enc_len [encSelectBestAcc, length_materializeTestRow]
 
 private theorem selectBestIn_le (m P : ℕ) (rows : List (List Bool)) :
     m ≤ (encSelectBestIn (m, P, rows)).length ∧ P ≤ (encSelectBestIn (m, P, rows)).length ∧

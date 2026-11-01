@@ -18,6 +18,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Me
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
+import Complexity.Tactic.EncLen
 import Mathlib.Data.List.GetD
 import Mathlib.SetTheory.Cardinal.Finite
 
@@ -125,9 +126,7 @@ namespace Graph
 /-- A graph has no more declared vertices than the length of its encoding. -/
 theorem length_vertices_le_encGraph (G : Graph) : G.1.length ≤ (encGraph G).length := by
   calc G.1.length ≤ (encList encNat G.1).length := length_le_length_encList encNat G.1
-    _ ≤ (encGraph G).length := by
-        simp only [encGraph, length_encPair]
-        omega
+    _ ≤ (encGraph G).length := by enc_len [encGraph]
 
 /-- The declared vertices of `G` without repetitions, in the order of their first occurrences. -/
 def distinctVertices (G : Graph) : List ℕ := selectDistinct G.1 (List.replicate G.1.length true)
@@ -259,8 +258,7 @@ theorem isVerifier_verifySubset {rel : Graph → ℕ → ℕ → Bool} {P : Grap
   refine isVerifier_subsetVerifier
     (fun x => by
       have := x.1.length_vertices_le_encGraph
-      simp only [Polynomial.eval_X, length_encPair]
-      omega)
+      enc_len [Polynomial.eval_X])
     fun x l hl _ => ?_
   simp only [Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true, Bool.or_eq_true,
     List.toFinset_card_of_nodup hl, List.coe_toFinset]

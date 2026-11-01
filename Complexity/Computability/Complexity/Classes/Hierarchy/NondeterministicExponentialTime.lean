@@ -19,6 +19,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.TwoPow
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
+import Complexity.Tactic.EncLen
 
 /-!
 # A nondeterministic exponential time hierarchy by lazy diagonalization
@@ -612,9 +613,7 @@ private theorem exists_computableInO_verifier (k : ℕ) :
       CE * 2 ^ (2 * (unframe p.1).length + 1) +
         4 ^ ((k + 2) * (2 * (unframe p.1).length + 1 + 1)) ≤ (2 * CE + 1) * cheap k p := by
     have hu := length_unframe_le p.1
-    have hn : p.1.length ≤ (encPair encBits encBits p).length := by
-      simp only [length_encPair, encBits_apply]
-      omega
+    have hn : p.1.length ≤ (encPair encBits encBits p).length := by enc_len
     obtain ⟨hZ, hE'⟩ := horizon_le k CE p.1
     set Y := 4 ^ ((k + 2) * (p.1.length + 1))
     have hY : 1 ≤ Y := Nat.one_le_pow _ _ (by norm_num)
@@ -763,9 +762,7 @@ theorem expLazyDiagonal_mem_NTIME (k : ℕ) :
       _ ≤ M := Nat.pow_le_pow_right (by norm_num) (Nat.le_mul_of_pos_left _ (by omega))
   -- the tests
   have hcheap : cheap k (x, v) ≤ A₁ * M := by
-    have hN : (encPair encBits encBits (x, v)).length + 1 ≤ 2 * V := by
-      simp only [length_encPair, encBits_apply, hv', ← hn]
-      omega
+    have hN : (encPair encBits encBits (x, v)).length + 1 ≤ 2 * V := by enc_len [hv', ← hn]
     calc cheap k (x, v) = ((encPair encBits encBits (x, v)).length + 1) ^ 2 *
           (4 ^ ((k + 2) * (n + 1))) ^ 2 := rfl
       _ ≤ (2 * V) ^ 2 * (4 ^ ((k + 2) * (n + 1))) ^ 2 :=
@@ -815,9 +812,7 @@ theorem expLazyDiagonal_mem_NTIME (k : ℕ) :
       calc P + 1 ≤ 2 ^ (P + 1) := Nat.lt_two_pow_self.le
         _ ≤ certLen k P := Nat.pow_le_pow_right (by norm_num) (Nat.le_mul_of_pos_left _ (by omega))
     have hlen : (encPair encBits encBits (unframe (unframe x), frame (unframe x))).length +
-        certLen k P ≤ 3 * certLen k P := by
-      simp only [length_encPair, encBits_apply, length_frame]
-      omega
+        certLen k P ≤ 3 * certLen k P := by enc_len
     rcases le_or_gt (3 * K) (2 ^ (P + 1)) with hK | hK
     · have hle : K * ((encPair encBits encBits (unframe (unframe x), frame (unframe x))).length +
           certLen k P) ≤ horizon k P :=

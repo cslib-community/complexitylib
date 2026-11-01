@@ -20,6 +20,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Tactic.EncLen
 import Mathlib.Data.List.GetD
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
@@ -501,8 +502,7 @@ private theorem polyBounded_prod_space {α β γ : Type} {ei : α ↪ List Bool}
 private theorem polyBounded_pair_len {α β : Type} {ei : α ↪ List Bool} {eo : β ↪ List Bool}
     {f : α → β} (hf : PolyBounded (fun a => (ei a).length) (fun a => (eo (f a)).length)) :
     PolyBounded (fun a => (ei a).length) (fun a => (encPair ei eo (a, f a)).length) :=
-  ((((PolyBounded.const 2).mul PolyBounded.self).add hf).add (.const 2)).mono fun a => by
-    simp only [length_encPair]; omega
+  ((((PolyBounded.const 2).mul PolyBounded.self).add hf).add (.const 2)).mono fun a => by enc_len
 
 private abbrev toSysInput (k : ℕ) (q : (ℕ × CNF ℕ) × List (List Bool)) : PolySys :=
   (q.1.1, compileParitySystemBounded k q.1.2 q.2)
@@ -786,8 +786,7 @@ private theorem polyBounded_initRowsCertificate_space
       (initRowsCertificate hBOf).space := by
   have hc := NativeCertificate.ofPolyTime_isPolynomial (computableInPolyTime_mbPair hBOf)
   have hsum : PolyBounded (fun p : ℕ × ℕ => (encPair encUnary encUnary p).length)
-      (fun p => p.1 + p.2) := PolyBounded.self.mono fun p => by
-    simp only [length_encPair, encUnary_apply, List.length_replicate]; omega
+      (fun p => p.1 + p.2) := PolyBounded.self.mono fun p => by enc_len
   exact hc.2.add (((PolyBounded.of_polynomiallyBounded id
     initialTestsRows_computableInO.choose_spec.choose_spec.2.1).comp hsum).comp
     (computableInPolyTime_mbPair hBOf).polyBounded_length)
@@ -971,7 +970,7 @@ private theorem exists_compiledRowCertificate_bounds (k N₀ : ℕ)
   obtain ⟨hw, hsub⟩ := validDeclaredInput_eq_true_iff.mp hv
   have hN_le : NOf x.1 ≤ pNLen L := by
     simpa only [Function.comp_apply, encUnary_apply, List.length_replicate, L] using hNLen x
-  have hψ_le : (encCNF x.2).length ≤ L := by simp only [L, length_encPair]; omega
+  have hψ_le : (encCNF x.2).length ≤ L := by enc_len [L]
   have hm_le : x.2.length ≤ L :=
     (show x.2.length ≤ (encCNF x.2).length from by
       unfold encCNF
@@ -981,8 +980,7 @@ private theorem exists_compiledRowCertificate_bounds (k N₀ : ℕ)
       simpa only [encBits_apply, (hrprops r hr).1] using hm_le).trans
       (Nat.mul_le_mul_right (2 * L + 1) (hrlen.trans (Nat.mul_le_mul_left 7 hN_le)))
   have hcin : (encCandIn ((NOf x.1, x.2), rows)).length ≤ candInBound L := by
-    simp only [encCandIn, encCandCtx, length_encPair, encUnary_apply, List.length_replicate,
-      candInBound]; omega
+    enc_len [encCandIn, encCandCtx, candInBound]
   have hrg := (hRowG ((NOf x.1, x.2), rows)).trans (hmRowG hcin)
   unfold compiledRowCertificate guardedTargetOfPolyTime; rw [guardedTargetCertificate_time]
   by_cases h6 : rows.length ≤ 6 * NOf x.1
@@ -1209,7 +1207,7 @@ theorem exists_normalizeDeclaredLeafCertificate_bounds
       (fun x => (encPair encNat encNat (h x, shiftAmount NOf x)).length) :=
     ((((PolyBounded.const 2).mul (polyBounded_output_of_space cLeaf hSpace)).add
       (computableInPolyTime_shiftAmount hNOf).polyBounded_length).add (.const 2)).mono fun x => by
-      simp only [length_encPair]; omega
+      enc_len
   have hShT := (NativeCertificate.ofPolyTime_isPolynomial (computableInPolyTime_shiftAmount hNOf)).1
   have hSrT := (NativeCertificate.ofPolyTime_isPolynomial
     ComputableInPolyTime.binary_shiftRight).1.comp hPairLen
