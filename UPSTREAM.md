@@ -402,6 +402,18 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
   Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
   are retained; the native proofs and representation choices are local.
+* **Finite Section 4 boxes.** The cube/box prerequisite ([#2160](https://github.com/cslib-community/complexitylib/issues/2160))
+  adapts `Sec4/{Boxes,Lemma27_28,BoxesFromLeaves,Lemma29}` at the same formal-math pin,
+  preserving Anthropic's credit and reusing the existing terms, encodings, signed leaf order
+  and alpha/beta counts. Cubes fix terms or admit every term at a star; boxes additionally
+  constrain the star/P0 count and ordering. Output boxes partition exactly the high-order
+  contributing leaves; low-order products remain explicit in the signed sum identity.
+  The finite value recurrence recomputes children and is not a memoized native data structure.
+  Its count bound needs only `m ≤ L` and `t ≤ m`, weakening the source's `10*m ≤ L` premise.
+  The reusable initial-subset argument is generalized to arbitrary linear orders in the small
+  Mathlib-intended `Foundations/Data/Finset/Lowest` topic module, used by the canonical boxes.
+  Native box enumeration/trie construction/query costs and the tuned 1.9992 route remain #1394.
+  No curated abstract or rendering changes are needed for this finite prerequisite.
 * **Native pruned-query evaluator.** The explicit-stack pruned-query evaluator ([#1526](https://github.com/cslib-community/complexitylib/issues/1526))
   is original native code, reusing the finite `Pruned.result`, `childSet` and trace/leaf
   quantities from `Sec2/Lemma10.lean`. `PrunedQuery.queryIndex` directly applies the existing

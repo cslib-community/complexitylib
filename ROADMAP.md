@@ -603,7 +603,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   equivalence and BPP/RP/ZPP simulation bridges for the randomized word RAM ([#1124]); transfer
   of cell-probe lower bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
 - **Direct 3SUM adaptation** ([#1394]): the improved Section 4 route and tuned source exponent
-  1.9992 remain open. Conservative native ordinary integer 3SUM is proved in
+  1.9992 remain open. The finite cube/box prerequisite ([#2160](https://github.com/cslib-community/complexitylib/issues/2160))
+  supplies canonical boxes, their disjoint high-order leaf partition, explicit low-order terms,
+  exact cardinalities and a signed value recurrence. Native computed box preprocessing and
+  query code, its charged bounds and Corollary 26 integration remain to be implemented.
+  Conservative native ordinary integer 3SUM is proved in
   `WordRAM/ThreeSum/Decision/Subquadratic.lean`: for each fixed polynomial magnitude exponent,
   one fixed 848-register program has charged time `Oκ(n^(2−1/5184))`, logarithmic physical
   admission and polynomial words/support at every wider execution prefix. Correctness includes
