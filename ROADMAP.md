@@ -199,10 +199,12 @@ index links to canonical definitions rather than keeping a second set.
   logspace reduction.
 - **Williams's `TIME[t] ⊆ SPACE[√(t log t)]`** ([#888]): implicit Tree Evaluation with the
   fan-in-`d` space bound and the native block-tree evaluator are developed in the stacked
-  work tracked by the issue. The fixed driver scans its original input, searches schedules
-  and increases balanced time guesses without a time-constructibility premise. Remaining:
-  assemble its physical-space allowances into `O(√(t log t))`, prove the standard class
-  inclusion, and finish review/integration. For Cook–Mertz itself: malformed-input handling
+  work tracked by the issue. The full `DTIME_subset_DSPACE_sqrt` inclusion is proved in
+  `Complexity/Computability/Complexity/Classes/TimeSpace/Williams.lean` for arbitrary
+  injective input encodings and every `t(n) ≥ n`, without time constructibility. Its fixed
+  driver scans the original input, searches schedules and increases balanced time guesses.
+  The stacked development still needs final CI and integration; the broad issue remains
+  open until it lands. For Cook–Mertz itself: malformed-input handling
   and the refined `O(ℓ + H log(ℓ + 2))` parameter bound.
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
   bounds for sublinear space, distinct from polynomial-space simulation.
