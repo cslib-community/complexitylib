@@ -101,13 +101,6 @@ variable [Finite Q]
   encPair (encFinite (Option Q)) (encPair (encPi encNat)
     (encPair (encFinite OutputTrack) (encPi (encList encNat))))
 
-private theorem configParts : ComputableInSpace (Config.equivProd (k := k) (Q := Q))
-    encConfig (encPair encNat (encPair encNat (encPair encNat
-      (encPair encNat (encPair (encFinite (Option Q)) (encPair (encPi encNat)
-        (encPair (encPi (encList encNat)) (encFinite OutputTrack))))))))
-    (fun s => (encConfig s).length) :=
-  of_inO (ComputableInO.of_eq fun _ => rfl)
-
 private theorem workResidue_inSpace : ComputableInSpace
     (fun p : ℕ × ℕ => workResidue p.1 p.2) (encPair encNat encNat) encNat
     (fun p => (encPair encNat encNat p).length) := by
@@ -133,10 +126,10 @@ private theorem inputResidue_inSpace : ComputableInSpace
 theorem rawResult_inSpace : ComputableInSpace (rawResult (k := k) (Q := Q)) encConfig
     encRawResult (fun s => (encConfig s).length) := by
   classical
-  have hcontrol := (configParts (k := k) (Q := Q)).snd'.snd'.snd'.snd'.fst'
-  have hheads := (configParts (k := k) (Q := Q)).snd'.snd'.snd'.snd'.snd'.fst'
-  have hcells := (configParts (k := k) (Q := Q)).snd'.snd'.snd'.snd'.snd'.snd'.fst'
-  have htrack := (configParts (k := k) (Q := Q)).snd'.snd'.snd'.snd'.snd'.snd'.snd'
+  have hcontrol := (equivProd_inSpace (k := k) (Q := Q)).snd'.snd'.snd'.snd'.fst'
+  have hheads := (equivProd_inSpace (k := k) (Q := Q)).snd'.snd'.snd'.snd'.snd'.fst'
+  have hcells := (equivProd_inSpace (k := k) (Q := Q)).snd'.snd'.snd'.snd'.snd'.snd'.fst'
+  have htrack := (equivProd_inSpace (k := k) (Q := Q)).snd'.snd'.snd'.snd'.snd'.snd'.snd'
   have hres (h : Option (Fin k)) : ComputableInSpace
       (fun s : Config k Q => (rawResult s).2.1 h) encConfig encNat
       (fun s => (encConfig s).length) := by
