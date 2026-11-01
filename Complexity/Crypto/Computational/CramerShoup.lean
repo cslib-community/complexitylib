@@ -191,14 +191,15 @@ noncomputable def cramerShoupMsgCCA2Game
       (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
     (adversary.choose n pk)).run ())
   let choice := choiceOut.1
-  let m₀ := encodeMsg (d, choice.1.1.1)
-  let m₁ := encodeMsg (d, choice.1.1.2)
-  let ad := encodeAD (d, choice.1.2)
+  let m₀ := encodeMsg (d, csChoiceMsg₀ choice)
+  let m₁ := encodeMsg (d, csChoiceMsg₁ choice)
+  let ad := encodeAD (d, csChoiceAD choice)
   if isElem (d, m₀) && isElem (d, m₁) then
     let m := if bit then m₁ else m₀
     let β ← PMF.uniformOfFintype (ZMod (F.order d))
     let ct := F.encodeCramerShoupEncrypt H d
-      (F.encode d pkVal.1, F.encode d pkVal.2.1, F.encode d pkVal.2.2.1, F.encode d pkVal.2.2.2)
+      (F.encode d (csPkU pkVal), F.encode d (csPkH pkVal),
+        F.encode d (csPkH₁ pkVal), F.encode d (csPkH₂ pkVal))
       m ad β.val
     let guessOut ← ProbComp.eval ((OracleComp.interpret
       (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
@@ -318,9 +319,9 @@ noncomputable def cramerShoupGame1
       (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
     (adversary.choose n pk)).run ())
   let choice := choiceOut.1
-  let m₀ := encodeMsg (d, choice.1.1.1)
-  let m₁ := encodeMsg (d, choice.1.1.2)
-  let ad := encodeAD (d, choice.1.2)
+  let m₀ := encodeMsg (d, csChoiceMsg₀ choice)
+  let m₁ := encodeMsg (d, csChoiceMsg₁ choice)
+  let ad := encodeAD (d, csChoiceAD choice)
   if isElem (d, m₀) && isElem (d, m₁) then
     let m := if bit then m₁ else m₀
     let ct := F.encodeCramerShoupChallenge H d sk v w m ad
@@ -344,6 +345,7 @@ theorem cramerShoupMsgCCA2Game_eq_game1
       F.cramerShoupGame1 hasAD encodeMsg encodeAD setup H isElem adversary bit n := by
   simp only [cramerShoupMsgCCA2Game, cramerShoupGame1, PMF.monad_bind_eq_bind,
     PMF.monad_pure_eq_pure, encodeCramerShoupPublicKey_encode, skNatOfZMod,
+    csSkS, csSkT, csSkS₁, csSkT₁, csSkS₂, csSkT₂, csChoiceMsg₀, csChoiceMsg₁, csChoiceAD,
     ZMod.natCast_zmod_val, encodeCramerShoupEncrypt_publicKey_eq_challenge]
   refine congrArg _ (funext fun d => congrArg _ (funext fun α => ?_))
   conv_rhs => rw [PMF.bind_comm (PMF.uniformOfFintype (ZMod (F.order d)))]
@@ -394,9 +396,9 @@ noncomputable def cramerShoupGame2
       (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
     (adversary.choose n pk)).run ())
   let choice := choiceOut.1
-  let m₀ := encodeMsg (d, choice.1.1.1)
-  let m₁ := encodeMsg (d, choice.1.1.2)
-  let ad := encodeAD (d, choice.1.2)
+  let m₀ := encodeMsg (d, csChoiceMsg₀ choice)
+  let m₁ := encodeMsg (d, csChoiceMsg₁ choice)
+  let ad := encodeAD (d, csChoiceAD choice)
   if isElem (d, m₀) && isElem (d, m₁) then
     let m := if bit then m₁ else m₀
     let ct := F.encodeCramerShoupChallenge H d sk v w m ad
@@ -1523,7 +1525,9 @@ theorem advantage_cca2ADGameOn_cramerShoupADGroupCCA2Game_le
         congrArg _ (funext fun τ₁ => congrArg _ (funext fun σ₂ =>
           congrArg _ (funext fun τ₂ => ?_)))))))
     simp only [cramerShoupCCA2InnerSK, cramerShoupCCA2InnerB, ↓reduceIte,
-      encodeCramerShoupPublicKey_encode, skNatOfZMod, ZMod.natCast_zmod_val]
+      encodeCramerShoupPublicKey_encode, skNatOfZMod,
+      csPkU, csPkH, csPkH₁, csPkH₂, csSkS, csSkT, csSkS₁, csSkT₁, csSkS₂, csSkT₂,
+      csChoiceMsg₀, csChoiceMsg₁, csChoiceAD, ZMod.natCast_zmod_val]
   rw [hgame0, hgame1]
   exact F.advantage_cramerShoupCCA2InnerSK_le true (fun p => encAD p.2) H isElem (d n)
     adversary bit n
@@ -1667,7 +1671,9 @@ theorem advantage_cca2GameOn_cramerShoupGroupCCA2Game_le
         congrArg _ (funext fun τ₁ => congrArg _ (funext fun σ₂ =>
           congrArg _ (funext fun τ₂ => ?_)))))))
     simp only [cramerShoupCCA2InnerSK, cramerShoupCCA2InnerB, ↓reduceIte,
-      encodeCramerShoupPublicKey_encode, skNatOfZMod, ZMod.natCast_zmod_val]
+      encodeCramerShoupPublicKey_encode, skNatOfZMod,
+      csPkU, csPkH, csPkH₁, csPkH₂, csSkS, csSkT, csSkS₁, csSkT₁, csSkS₂, csSkT₂,
+      csChoiceMsg₀, csChoiceMsg₁, ZMod.natCast_zmod_val]
   rw [hgame0, hgame1]
   exact F.advantage_cramerShoupCCA2InnerSK_le false (fun _ => []) H isElem (d n)
     adversary.toADUnit bit n
