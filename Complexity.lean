@@ -2921,6 +2921,8 @@ public import Complexity.DataStructure.HashFamily.WordRAM.DoubleTabulation
 public import Complexity.DataStructure.HashFamily.WordRAM.KWise
 public import Complexity.DataStructure.HashFamily.WordRAM.MultiplyShift
 public import Complexity.DataStructure.HashFamily.WordRAM.Tabulation
+public import Complexity.DataStructure.Memory.Field
+public import Complexity.DataStructure.Memory.Spec
 public import Complexity.DataStructure.ObliviousSequence
 public import Complexity.DataStructure.Online.Basic
 public import Complexity.DataStructure.OrderedSet.Basic
