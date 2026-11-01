@@ -14,6 +14,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Bool
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Option
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.ZipFold
 import Complexity.Tactic.OptionMatch
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.Input
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
@@ -148,36 +149,28 @@ lemma apply_deg : ComputableInDegree (fun p : Tape × TapeAct =>
 
 /-! ### Applying actions to all work tapes -/
 
-/-- One step of applying actions to the work tapes in order: the remaining actions, and the tapes
-done so far. -/
-@[expose] public def applyStep (s : List TapeAct × List Tape) (t : Tape) :
-    List TapeAct × List Tape :=
-  (s.1.tail, s.2 ++ [match s.1.head? with | none => t | some a => t.apply a])
+/-- Applying an action to a work tape, if there is one. -/
+def applyOne (_ : Unit) (t : Tape) (a : Option TapeAct) : Option Tape := some (a.elim t t.apply)
 
 lemma applyTapes_nil_right (ts : List Tape) : applyTapes ts [] = ts := by
   cases ts <;> rfl
 
-lemma foldl_applyStep (ts : List Tape) (as : List TapeAct) (acc : List Tape) :
-    ts.foldl applyStep (as, acc) = (as.drop ts.length, acc ++ applyTapes ts as) := by
-  induction ts generalizing as acc with
-  | nil => simp [applyTapes]
-  | cons t ts ih =>
-    rw [List.foldl_cons]
-    cases as with
-    | nil => simp [applyStep, ih, applyTapes, applyTapes_nil_right]
-    | cons a as => simp [applyStep, ih, applyTapes]
+lemma zipFold_applyOne (ts : List Tape) (as : List TapeAct) :
+    zipFold applyOne () ts as = applyTapes ts as := by
+  induction ts generalizing as with
+  | nil => rfl
+  | cons t ts ih => cases as <;> simp [zipFold, applyOne, applyTapes, ih, applyTapes_nil_right]
 
-lemma applyStep_deg : ComputableInDegree
-    (fun q : (List TapeAct × List Tape) × Tape => applyStep q.1 q.2)
-    (encPair (encPair (encList eTA) (encList eTape)) eTape)
-    (encPair (encList eTA) (encList eTape)) 1 1 := by
-  convert (show ComputableInDegree (fun q : (List TapeAct × List Tape) × Tape =>
-    (q.1.1.tail, q.1.2 ++ [if q.1.1.isEmpty then q.2 else q.2.apply (q.1.1.headD (none, 0))]))
-    (encPair (encPair (encList eTA) (encList eTape)) eTape)
-    (encPair (encList eTA) (encList eTape)) 1 1 by
+attribute [local fun_prop] ComputableInDegree.optionSome in
+lemma applyOne_deg : ComputableInDegree (fun q : Unit × Tape × Option TapeAct =>
+    applyOne q.1 q.2.1 q.2.2) (encPair encUnit (encPair eTape (encOption eTA)))
+    (encOption eTape) 1 1 := by
+  convert (show ComputableInDegree (fun q : Unit × Tape × Option TapeAct =>
+    some (if q.2.2.isSome then q.2.1.apply (q.2.2.getD (none, 0)) else q.2.1))
+    (encPair encUnit (encPair eTape (encOption eTA))) (encOption eTape) 1 1 by
       fun_prop (disch := first | apply le_refl | lia)) using 1
-  funext ⟨⟨as, acc⟩, t⟩
-  cases as <;> rfl
+  funext ⟨_, t, a⟩
+  cases a <;> rfl
 
 end Tape
 
@@ -253,40 +246,19 @@ public theorem applyTapes_inO :
       (encPair (encList eTape) (encList eTA)) (encList eTape)
       (fun p => (p.1.length + 1) * ((encPair (encList eTape) (encList eTA) p).length + 1))
       fun p => (encPair (encList eTape) (encList eTA) p).length := by
-  have hlen (p : List Tape × List TapeAct) (i : ℕ) :
-      (encPair (encList eTA) (encList eTape) ((p.1.take i).foldl applyStep (p.2, []))).length ≤
-        6 * (encPair (encList eTape) (encList eTA) p).length := by
-    rw [foldl_applyStep]
-    have h₁ := length_applyTapes (p.1.take i) p.2
-    have h₂ := length_encList_take_le eTape p.1 i
-    have h₃ := SizedListEncoding.length_drop_le (encA := eTA) (encL := encList eTA) p.2
-      (p.1.take i).length
-    simp only [length_encPair, List.nil_append] at h₁ h₂ h₃ ⊢
+  have hzip := ComputableInO.zipFold applyOne_deg.inO_one 4 fun q i => by
+    have h₁ := length_applyTapes (q.2.1.take i) q.2.2
+    have h₂ := length_encList_take_le eTape q.2.1 i
+    obtain ⟨⟨⟩, ts, as⟩ := q
+    rw [zipFold_applyOne]
+    simp only [length_encPair] at *
     omega
-  have hround (p : List Tape × List TapeAct) (i : ℕ) (hi : i < p.1.length) :
-      (encPair (encPair (encList eTA) (encList eTape)) eTape
-        ((p.1.take i).foldl applyStep (p.2, []), p.1[i])).length ≤
-          14 * (encPair (encList eTape) (encList eTA) p).length + 1 := by
-    have h₁ := hlen p i
-    have h₂ := length_le_encList_of_mem eTape (List.getElem_mem hi)
-    simp only [length_encPair] at h₁ h₂ ⊢
-    omega
-  have hfold := (ComputableInO.foldl (encL := encList eTape)
-    (encB := encPair (encList eTA) (encList eTape))
-    (fst (encList eTape) (encList eTA))
-    ((snd (encList eTape) (encList eTA)).prod (const []))
-    applyStep_deg.inO_one
-    (R := fun p => 14 * (encPair (encList eTape) (encList eTA) p).length + 1)
-    (Q := fun p => 14 * (encPair (encList eTape) (encList eTA) p).length + 1)
-    (B := fun p => 6 * (encPair (encList eTape) (encList eTA) p).length)
-    hround hround (fun p i _ => hlen p i))
-  refine (((snd (encList eTA) (encList eTape)).comp_linear hfold).mono 32 (fun p => ?_)
-    fun p => ?_).of_enc_eq fun p => ?_
-  · simp only [length_encPair]
-    nlinarith
-  · simp only [length_encPair]
-    omega
-  · simp [foldl_applyStep]
+  refine ((hzip.comp (g := fun p : List Tape × List TapeAct => ((), p))
+    ((const ()).prod id')).mono 16 (fun p => ?_) fun p => ?_).of_enc_eq
+    fun p => congrArg _ (zipFold_applyOne p.1 p.2).symm
+  all_goals simp only [length_encPair, encUnit_apply, List.length_nil]
+  · nlinarith
+  · omega
 
 /-- The symbols under the heads of the work tapes, within time the number of work tapes times
 their length, and linear space. -/

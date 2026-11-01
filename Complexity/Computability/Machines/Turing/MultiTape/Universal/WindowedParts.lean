@@ -11,6 +11,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Windo
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Encoding
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TakeDropUnary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.ZipFold
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lists
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryPrimitives
@@ -99,16 +100,6 @@ private lemma length_encList_zipWith_le {α β γ : Type} {encA : α ↪ List Bo
       simp only [List.zipWith_cons_cons, encList_cons, List.length_append, length_frame] at *
       omega
 
-/-- The first window is no longer than the list of windows, up to the blank window. -/
-private lemma length_eTape_headD_le (l : List Tape) :
-    (eTape (l.headD default)).length ≤ (encList eTape l).length + 8 := by
-  cases l with
-  | nil => exact (by decide : (eTape default).length ≤ 8).trans (by simp)
-  | cons t l =>
-    have := length_le_encList_of_mem eTape (List.mem_cons_self (a := t) (l := l))
-    simp only [List.headD_cons]
-    omega
-
 /-! ### Cutting and pasting a window -/
 
 /-- Cutting a window, in linear time. -/
@@ -159,37 +150,34 @@ theorem extract_inO :
     simp only [hN] at *
     nlinarith
 
-/-- One round of pasting windows back: the remaining run windows, and the windows pasted so far. -/
-private def restoreStep (r : ℕ) (s : List Tape × List Tape) (t : Tape) : List Tape × List Tape :=
-  (s.1.tail, if s.1.isEmpty then s.2 else s.2 ++ [paste r t (s.1.headD default)])
+/-- Pasting a window back onto its outer window, if there is one. -/
+private def pasteOne (r : ℕ) (t : Tape) (b : Option Tape) : Option Tape := b.map (paste r t)
 
-private lemma foldl_restoreStep (r : ℕ) (outer rest acc : List Tape) :
-    outer.foldl (restoreStep r) (rest, acc) =
-      (rest.drop outer.length, acc ++ List.zipWith (paste r) outer rest) := by
-  induction outer generalizing rest acc with
-  | nil => simp
-  | cons t outer ih =>
-    rw [List.foldl_cons]
-    cases rest with
-    | nil => simp [restoreStep, ih]
-    | cons b rest => simp [restoreStep, ih]
+private lemma zipFold_pasteOne (r : ℕ) (outer rest : List Tape) :
+    zipFold pasteOne r outer rest = List.zipWith (paste r) outer rest := by
+  induction outer generalizing rest with
+  | nil => rfl
+  | cons t outer ih => cases rest <;> simp [zipFold, pasteOne, ih]
 
 attribute [local fun_prop] paste_inO in
-/-- A round of pasting windows back, in linear time. -/
-private lemma restoreStep_inO : ComputableInO
-    (fun q : (ℕ × List Tape × List Tape) × Tape => restoreStep q.1.1 q.1.2 q.2)
-    (encPair (encPair encUnary (encPair (encList eTape) (encList eTape))) eTape)
-    (encPair (encList eTape) (encList eTape))
-    (fun q => (encPair (encPair encUnary (encPair (encList eTape) (encList eTape))) eTape q).length)
-    fun q =>
-      (encPair (encPair encUnary (encPair (encList eTape) (encList eTape))) eTape q).length := by
-  unfold restoreStep
-  refine .mono (by fun_prop) 1024 (fun q => ?_) fun q => ?_ <;>
-  · have hhead := length_eTape_headD_le q.1.2.1
-    have hpaste := length_eTape_paste_le q.1.1 q.2 (q.1.2.1.headD default)
-    have hnil : (encList eTape []).length = 0 := by simp
-    simp only [length_encPair, encList_cons, List.length_append, length_frame] at *
-    split_ifs <;> omega
+private lemma pasteOne_inO : ComputableInO (fun q : ℕ × Tape × Option Tape =>
+    pasteOne q.1 q.2.1 q.2.2) (encPair encUnary (encPair eTape (encOption eTape)))
+    (encOption eTape) (fun q => (encPair encUnary (encPair eTape (encOption eTape)) q).length)
+    fun q => (encPair encUnary (encPair eTape (encOption eTape)) q).length := by
+  have e : (fun q : ℕ × Tape × Option Tape => pasteOne q.1 q.2.1 q.2.2) = fun q =>
+      if q.2.2.isSome then some (paste q.1 q.2.1 (q.2.2.getD default)) else none := by
+    funext ⟨r, t, b⟩
+    cases b <;> rfl
+  rw [e]
+  refine .mono (by fun_prop) 1024 (fun q => ?_) fun q => ?_
+  all_goals
+    obtain ⟨r, t, _ | i⟩ := q
+    · simp only [Option.isSome_none, Bool.false_eq_true, ↓reduceIte, length_encPair]
+      omega
+    have hpaste := length_eTape_paste_le r t i
+    simp only [Option.isSome_some, ↓reduceIte, Option.getD_some, length_encPair, encOption_some,
+      List.length_cons] at *
+    omega
 
 /-- **Pasting windows back**, in time linear in the encoded windows for each window. -/
 theorem restore_inO :
@@ -197,47 +185,23 @@ theorem restore_inO :
       (encPair encUnary (encPair eWin eWin)) eWin
       (fun p => (p.2.1.2.length + 1) * ((encPair encUnary (encPair eWin eWin) p).length + 1))
       (fun p => (p.2.1.2.length + 1) * ((encPair encUnary (encPair eWin eWin) p).length + 1)) := by
+  have hzip := ComputableInO.zipFold pasteOne_inO 2 fun q i => by
+    obtain ⟨r, o, w⟩ := q
+    have h₁ := length_encList_zipWith_le (length_eTape_paste_le r) (o.take i) w
+    have h₂ := length_encList_take_le eTape o i
+    rw [zipFold_pasteOne]
+    simp only [length_encPair] at *
+    omega
   have hr := fst encUnary (encPair eWin eWin)
   have ho := (snd encUnary (encPair eWin eWin)).fst'
   have hi := (snd encUnary (encPair eWin eWin)).snd'
-  -- the states of the fold
-  have hst (p : ℕ × Win × Win) (i : ℕ) :
-      (encPair (encList eTape) (encList eTape) ((p.2.1.2.take i).foldl (restoreStep p.1)
-        (p.2.2.2, []))).length ≤ 3 * (encPair encUnary (encPair eWin eWin) p).length := by
-    obtain ⟨r, ⟨so, o⟩, ⟨si, w⟩⟩ := p
-    rw [foldl_restoreStep]
-    have h₁ := length_encList_drop_le eTape w (o.take i).length
-    have h₂ := length_encList_zipWith_le (length_eTape_paste_le r) (o.take i) w
-    have h₃ := length_encList_take_le eTape o i
-    simp only [length_encPair, List.nil_append] at *
-    omega
-  have hround (p : ℕ × Win × Win) (i : ℕ) (hi : i < p.2.1.2.length) :
-      (encPair (encPair encUnary (encPair (encList eTape) (encList eTape))) eTape
-        ((p.1, (p.2.1.2.take i).foldl (restoreStep p.1) (p.2.2.2, [])), p.2.1.2[i])).length ≤
-          16 * (encPair encUnary (encPair eWin eWin) p).length + 8 := by
-    have h₁ := hst p i
-    have h₂ := length_le_encList_of_mem eTape (List.getElem_mem hi)
-    obtain ⟨r, ⟨so, o⟩, ⟨si, w⟩⟩ := p
-    simp only [length_encPair] at *
-    omega
-  have hfold := foldlWith (encL := encList eTape) (encB := encPair (encList eTape) (encList eTape))
-    (list := fun p : ℕ × Win × Win => p.2.1.2) hr ho.snd' (hi.snd'.prod (const [])) restoreStep_inO
-    (R := fun p => 16 * (encPair encUnary (encPair eWin eWin) p).length + 8)
-    (Q := fun p => 16 * (encPair encUnary (encPair eWin eWin) p).length + 8)
-    (B := fun p => 3 * (encPair encUnary (encPair eWin eWin) p).length)
-    hround hround (fun p i _ => hst p i)
-  refine ((hi.fst'.prod hfold.snd').of_enc_eq (encOut := eWin)
-    (g := fun p : ℕ × Win × Win => restore p.1 p.2.1 p.2.2) fun ⟨r, o, i⟩ => ?_).mono 64
+  refine ((hi.fst'.prod (hzip.comp (hr.prod (ho.snd'.prod hi.snd')))).of_enc_eq (encOut := eWin)
+    (g := fun p : ℕ × Win × Win => restore p.1 p.2.1 p.2.2) fun ⟨r, o, i⟩ => ?_).mono 16
     (fun p => ?_) fun p => ?_
-  · simp only [restore, foldl_restoreStep, List.nil_append]
+  · simp only [restore, Function.comp_apply, zipFold_pasteOne]
   all_goals
     obtain ⟨r, ⟨so, o⟩, ⟨si, w⟩⟩ := p
-    have hN : (encPair encUnary (encPair eWin eWin) (r, (so, o), (si, w))).length =
-        2 * (encUnary r).length + 1 + (2 * (2 * (eSym so).length + 1 +
-          (encList eTape o).length) + 1 + (2 * (eSym si).length + 1 +
-          (encList eTape w).length)) := by
-      simp only [length_encPair]
-    simp only [hN, length_encPair] at *
+    simp only [length_encPair] at *
     nlinarith
 
 /-! ### Halving in unary -/

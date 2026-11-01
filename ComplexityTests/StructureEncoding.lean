@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Option
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.ZipFold
 import Complexity.Tactic.OptionMatch
 
 /-! Tests of `enc_structure`, `option_match_to_elim` and the list rules for `fun_prop`. -/
@@ -82,5 +83,15 @@ example : ComputableInO (fun p : List ℕ × ℕ => if p.1.isEmpty then [] else 
   refine .mono (by fun_prop) 16 (fun p => ?_) fun p => ?_ <;>
   · simp only [length_encPair]
     split_ifs <;> omega
+
+/-! `zipFold` pads or truncates, as its function decides at a missing partner. -/
+
+-- Keeping an element without a partner pads with the rest of the first list.
+example : zipFold (fun (_ : Unit) (a : ℕ) (b : Option ℕ) => some (a + b.getD 0)) ()
+    [1, 2, 3] [10] = [11, 2, 3] := by decide
+
+-- Dropping it truncates to the shorter list, as `List.zipWith` does.
+example : zipFold (fun (_ : Unit) (a : ℕ) (b : Option ℕ) => b.map (a + ·)) ()
+    [1, 2, 3] [10] = [11] := by decide
 
 end ComplexityTests.StructureEncoding

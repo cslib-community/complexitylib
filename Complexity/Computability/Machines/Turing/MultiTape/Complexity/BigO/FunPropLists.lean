@@ -62,6 +62,11 @@ theorem headD' (d : α) : ComputableInO (fun l : List α => l.headD d) (encList 
   (ComputableInDegree.listHeadD enc d).inO_one
 
 @[fun_prop]
+theorem some' : ComputableInO (fun a : α => some a) enc (encOption enc)
+    (fun a => (enc a).length) fun a => (enc a).length :=
+  (ComputableInDegree.optionSome (enc₁ := enc) (enc := encOption enc)).inO_one
+
+@[fun_prop]
 theorem unarySucc' : ComputableInO (fun n : ℕ => n + 1) encUnary encUnary
     (fun n => (encUnary n).length) fun n => (encUnary n).length :=
   ComputableInDegree.unary_succ.inO_one
