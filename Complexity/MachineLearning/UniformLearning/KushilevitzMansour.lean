@@ -142,7 +142,7 @@ theorem toFinset_mem_searchLevels (l : List ι) : l.toFinset ∈ searchLevels l 
   | cons i l => simp [searchLevels]
 
 /-- **The bucket search** of Goldreich–Levin and Kushilevitz–Mansour over the list `l` of
-coordinates, given estimates `est J S` of the bucket weights `W^{S | J}` and a threshold `τ`.
+coordinates, given estimates `est J S` of the bucket weights `W^{S | J̄}` and a threshold `τ`.
 Starting from the bucket of all sets, it adds the coordinates of `l` from the last to the first,
 splits each surviving bucket `S` of `J` into the buckets `S` and `insert i S` of `insert i J`, and
 keeps the buckets whose estimated weight is at least `τ`. -/
@@ -232,7 +232,7 @@ variable (ι) in
 def decisionTreeClass (L : ℕ) : ConceptClass (ι → Bool) Bool :=
   {f | ∃ t : DecisionTree ι Bool, t.Computes f ∧ t.leafCount ≤ L}
 
-/-- The empirical estimate of the bucket weight `W^{S | J}` of `g`, read as signs, from the
+/-- The empirical estimate of the bucket weight `W^{S | J̄}` of `g`, read as signs, from the
 samples `ω j = (x, y, z)`: the average of `g (x, z) χ_S(x) g (y, z) χ_S(y)`, where `(x, z)` takes
 the coordinates in `J` from `x` and the others from `z`. -/
 noncomputable def bucketEstimate (g : (ι → Bool) → Bool)
