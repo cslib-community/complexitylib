@@ -1,12 +1,13 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Christian Reitwiessner. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Christian Reitwiessner
 -/
 
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Bounds
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.NormalForm
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelComp
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.ConditionalMachine
@@ -15,56 +16,83 @@ import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
 /-!
-# Direct charged asymptotic composition and case distinction
+# Asymptotic composition with explicit intermediate storage
 
 The same realizing machine is normalized within the internal construction proof. Composition
-uses the encoded-output charge already included in `ComputableInO`; it is not a rule for the
-uncharged `ComputableInBigO` predicate. The independent time and space functions are retained.
+first accounts for the stored intermediate word explicitly in `ComputableInBigO`. The charged
+`ComputableInO` rule then absorbs that word using its separate output-growth bound.
+The independent time and space functions are retained.
 Adapted from #869 by worker-claude-tidyspike-c4b0c164.
 
 ## Main results
 
-* `ComputableInO.comp`: add the inner and outer resource bounds.
+* `ComputableInBigO.comp`: materializing composition with explicit intermediate storage.
+* `ComputableInO.comp`: absorb intermediate storage using the output-growth bound.
 * `ComputableInO.ite`: pay for the test and the branch actually taken.
 -/
 
 @[expose] public section
+
+namespace Turing.MultiTapeTM
+
+variable {α β γ : Type*} {encIn : α ↪ List Bool} {encMid : β ↪ List Bool}
+  {encOut : γ ↪ List Bool}
+
+/-- Materializing composition stores the inner encoded output on a work tape. Its length is
+charged explicitly to workspace; no output-growth hypothesis is needed. The copying time is
+already bounded by the inner runtime. This is not the recomputing small-space composition rule. -/
+theorem ComputableInBigO.comp {f : β → γ} {g : α → β} {T₁ S₁ : α → ℕ} {T₂ S₂ : β → ℕ}
+    (hf : ComputableInBigO f encMid encOut T₂ S₂)
+    (hg : ComputableInBigO g encIn encMid T₁ S₁) :
+    ComputableInBigO (f ∘ g) encIn encOut (fun a => T₁ a + T₂ (g a))
+      (fun a => S₁ a + S₂ (g a) + (encMid (g a)).length) := by
+  obtain ⟨c₁, k₁, Q₁, _, tm₁, h₁⟩ := Internal.NormalForm.bigO hg
+  obtain ⟨c₂, k₂, Q₂, _, tm₂, h₂⟩ := Internal.NormalForm.bigO hf
+  let K := 6 * max k₁ k₂ + 20
+  refine ⟨6 * c₁ + c₂ + K, _, _, inferInstance, tm₂.comp tm₁ true,
+    fun a => (((h₁ a).comp (h₂ (g a)) true).mono ?_ ?_).computesInTimeAndSpace⟩
+  · have hm := (h₁ a).length_output_le
+    have := Nat.mul_le_mul_left c₁ (by omega : T₁ a + 1 ≤ T₁ a + T₂ (g a) + 1)
+    have := Nat.mul_le_mul_left c₂ (by omega : T₂ (g a) + 1 ≤ T₁ a + T₂ (g a) + 1)
+    have e : (6 * c₁ + c₂) * (T₁ a + T₂ (g a) + 1) =
+        6 * (c₁ * (T₁ a + T₂ (g a) + 1)) + c₂ * (T₁ a + T₂ (g a) + 1) := by ring
+    beta_reduce
+    exact Internal.NormalForm.le_mul_succ (A := 6 * c₁ + c₂) (B := K) (by omega)
+      le_rfl
+  · have h₁ := Nat.mul_le_mul_left c₁
+      (by omega : S₁ a + 1 ≤ S₁ a + S₂ (g a) + (encMid (g a)).length + 1)
+    have h₂ := Nat.mul_le_mul_left c₂
+      (by omega : S₂ (g a) + 1 ≤ S₁ a + S₂ (g a) + (encMid (g a)).length + 1)
+    have hK : 5 ≤ K := by dsimp [K]; omega
+    have hpad := Nat.mul_le_mul_left K
+      (by omega : (encMid (g a)).length + 1 ≤
+        S₁ a + S₂ (g a) + (encMid (g a)).length + 1)
+    change c₁ * (S₁ a + 1) + c₂ * (S₂ (g a) + 1) +
+      5 * (encMid (g a)).length + K ≤ _
+    have hlen := Nat.mul_le_mul_right (encMid (g a)).length hK
+    nlinarith
+
+end Turing.MultiTapeTM
 
 namespace Turing.MultiTapeTM.ComputableInO
 
 variable {α β γ : Type*} {encIn : α ↪ List Bool} {encMid : β ↪ List Bool}
   {encOut : γ ↪ List Bool}
 
-/-- **Composition** within time `O(T₁ a + T₂ (g a))` and space `O(S₁ a + S₂ (g a))`, through the
-machine-level composition of tidy machines. -/
+/-- Composition absorbs the stored intermediate word using the inner output-growth bound,
+retaining time `O(T₁ a + T₂ (g a))` and space `O(S₁ a + S₂ (g a))`. -/
 theorem comp {f : β → γ} {g : α → β} {T₁ S₁ : α → ℕ} {T₂ S₂ : β → ℕ}
     (hf : ComputableInO f encMid encOut T₂ S₂) (hg : ComputableInO g encIn encMid T₁ S₁) :
     ComputableInO (f ∘ g) encIn encOut (fun a => T₁ a + T₂ (g a))
       (fun a => S₁ a + S₂ (g a)) := by
-  obtain ⟨c₁, ⟨k₁, Q₁, _, tm₁, h₁⟩, l₁⟩ := Internal.NormalForm.inO hg
-  obtain ⟨c₂, ⟨k₂, Q₂, _, tm₂, h₂⟩, l₂⟩ := Internal.NormalForm.inO hf
-  refine ⟨6 * c₁ + c₂ + (6 * max k₁ k₂ + 20), ⟨_, _, inferInstance, tm₂.comp tm₁ true,
-    fun a => (((h₁ a).comp (h₂ (g a)) true).mono ?_ ?_).computesInTimeAndSpace⟩, fun a => ?_⟩
-  · -- the intermediate word is no longer than the time of `g`
-    have hm := (h₁ a).length_output_le
-    have := Nat.mul_le_mul_left c₁ (by omega : T₁ a + 1 ≤ T₁ a + T₂ (g a) + 1)
-    have := Nat.mul_le_mul_left c₂ (by omega : T₂ (g a) + 1 ≤ T₁ a + T₂ (g a) + 1)
-    have e : (6 * c₁ + c₂) * (T₁ a + T₂ (g a) + 1) =
-        6 * (c₁ * (T₁ a + T₂ (g a) + 1)) + c₂ * (T₁ a + T₂ (g a) + 1) := by ring
-    beta_reduce
-    exact Internal.NormalForm.le_mul_succ (A := 6 * c₁ + c₂) (B := 6 * max k₁ k₂ + 20) (by omega)
-      le_rfl
-  · -- the intermediate word is within the space bound of `g`
-    have hm := l₁ a
-    have := Nat.mul_le_mul_left c₁ (by omega : S₁ a + 1 ≤ S₁ a + S₂ (g a) + 1)
-    have := Nat.mul_le_mul_left c₂ (by omega : S₂ (g a) + 1 ≤ S₁ a + S₂ (g a) + 1)
-    have e : (6 * c₁ + c₂) * (S₁ a + S₂ (g a) + 1) =
-        6 * (c₁ * (S₁ a + S₂ (g a) + 1)) + c₂ * (S₁ a + S₂ (g a) + 1) := by ring
-    beta_reduce
-    exact Internal.NormalForm.le_mul_succ (A := 6 * c₁ + c₂) (B := 6 * max k₁ k₂ + 20) (by omega)
-      le_rfl
-  · have := Nat.mul_le_mul_left c₂ (by omega : S₂ (g a) + 1 ≤ S₁ a + S₂ (g a) + 1)
-    exact (l₂ (g a)).trans (this.trans (Nat.mul_le_mul_right _ (by omega)))
+  have hspace : (fun a => S₁ a + S₂ (g a) + (encMid (g a)).length) ≼
+      (fun a => S₁ a + S₂ (g a)) :=
+    BigOLe.add (.refl _)
+      ((show (fun a => (encMid (g a)).length) ≼ S₁ from hg.length_le).trans_le
+        fun _ => Nat.le_add_right _ _)
+  exact ((hf.computableInBigO.comp hg.computableInBigO).weaken (.refl _) hspace).with_output_bound
+    ((show (fun a => (encOut (f a)).length) ≼ S₂ from hf.length_le).comp g |>.trans_le
+      fun _ => Nat.le_add_left _ _)
 
 /-- **Case distinction** within the bounds of the test plus those of the branch taken, through the
 explicit-bound case-distinction combinator. -/
