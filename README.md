@@ -58,6 +58,7 @@ the selection is not an exhaustive API reference.
 ## Selected results
 
 * [Cook–Levin: SAT is NP-complete](abstracts/ComplexityAbstracts/CookLevinAbstract.lean): Every efficiently checkable bit-string problem reduces in polynomial time to satisfiability.
+* [Agrawal–Kayal–Saxena: PRIMES is in P](abstracts/ComplexityAbstracts/PrimesAbstract.lean): Primality of a natural number given in binary is decidable in deterministic polynomial time.
 * [The PCP theorem](abstracts/ComplexityAbstracts/PCPAbstract.lean): NP proofs can be checked with logarithmic randomness and constantly many nonadaptive queries.
 * [Fagin: logic captures NP](abstracts/ComplexityAbstracts/FaginAbstract.lean): Existential second-order logic captures precisely the isomorphism-invariant NP properties of finite relational structures.
 * [Savitch: NPSPACE equals PSPACE](abstracts/ComplexityAbstracts/SavitchAbstract.lean): Nondeterminism does not enlarge polynomial space.
@@ -65,6 +66,7 @@ the selection is not an exhaustive API reference.
 * [Immerman–Szelepcsényi: nondeterministic space is closed under complement](abstracts/ComplexityAbstracts/ImmermanSzelepcsenyiAbstract.lean): Nondeterministic space at least logarithmic is closed under complement; in particular NL equals coNL.
 * [Shamir: IP equals PSPACE](abstracts/ComplexityAbstracts/ShamirAbstract.lean): Interaction and randomness give a polynomial-time verifier the power of polynomial space.
 * [Toda: a counting oracle decides the polynomial hierarchy](abstracts/ComplexityAbstracts/TodaAbstract.lean): Every problem in the polynomial hierarchy is decidable in polynomial time with an exact counting oracle.
+* [Adleman–DeMarrais–Huang: BQP is contained in PP](abstracts/ComplexityAbstracts/BQPAbstract.lean): Every problem decided with bounded error by a polynomial-time uniform family of quantum circuits is decided by a polynomial-time strict-majority vote over random strings.
 * [Barrington: five states capture NC¹](abstracts/ComplexityAbstracts/BarringtonAbstract.lean): Polynomial-length permutation programs on five states capture logarithmic-depth polynomial-size Boolean circuits.
 * [Håstad and Razborov–Smolensky: parity resists shallow circuits](abstracts/ComplexityAbstracts/ConstantDepthAbstract.lean): At fixed depth, parity requires more than polynomially many gates, including over an odd-prime modular basis.
 * [Braverman: polylogarithmic independence fools AC⁰](abstracts/ComplexityAbstracts/BravermanAbstract.lean): k-wise independence with k = (log(m/ε))^O(d²) fools every depth-d circuit of NOT and unbounded fan-in AND/OR gates with size and fan-in at most m, to within error ε.
@@ -77,6 +79,7 @@ the selection is not an exhaustive API reference.
 * [Sipser–Gács–Lautemann: BPP lies in the second polynomial level](abstracts/ComplexityAbstracts/SipserLautemannAbstract.lean): Bounded-error polynomial time admits both existential–universal and universal–existential polynomial descriptions.
 * [Chor–Goldreich: the inner product extracts from two weak sources](abstracts/ComplexityAbstracts/ChorGoldreichAbstract.lean): Two independent weak random sources whose min-entropies add up to more than the string length give a nearly fair bit through the inner product modulo two.
 * [OpenAI: the Exponential Time Hypothesis is false](abstracts/ComplexityAbstracts/SubexponentialSATAbstract.lean): For each fixed clause width, one deterministic machine exactly counts satisfying assignments in subexponential time and polynomial space; every fixed-width SAT exponent is zero, and ETH and SETH are false.
+* [Schöning: 3-SAT in time (4/3)^n on the randomized word RAM](abstracts/ComplexityAbstracts/SchoeningAbstract.lean): One fixed randomized word-RAM program runs ⌈(3n + 1)(4/3)^n⌉·c independent trials of Schöning's local search; it never errs on unsatisfiable formulas and fails on satisfiable 3-CNFs with probability at most e^(-c).
 * [Ilango: Partial MCSP is hard under the Exponential Time Hypothesis](abstracts/ComplexityAbstracts/PartialMCSPAbstract.lean): Under ETH, deciding circuit size for partial Boolean functions cannot be done in time 2^o(m log m) = N^o(log log N). *Note (October 2026):* the native formalization now [proves ETH false](abstracts/ComplexityAbstracts/SubexponentialSATAbstract.lean). This conditional entry is retained and its theorem remains valid, but its premise is false.
 * [McKay–Murray–Williams: barely superlinear circuit lower bounds for MCSP separate P from NP](abstracts/ComplexityAbstracts/MagnificationAbstract.lean): If NP has polynomial-size circuits, then MCSP on 2^n-bit truth tables has circuits of size 2^n poly(n + s(n)); hence barely superlinear MCSP lower bounds separate NP from P/poly and P from NP.
 

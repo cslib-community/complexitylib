@@ -43,9 +43,9 @@ open Cslib.Algorithms.Lean.Queue
 
 /-- A queue admits an enqueue exactly when it has spare capacity and the value fits a word. -/
 abbrev spec (w capacity : ℕ) : Stateful.Spec :=
-  { queue ℕ with valid := fun q o => match o with
+  Stateful.Spec.ofFn (queue ℕ).stepFn fun q o => match o with
     | .enqueue v => q.length < capacity ∧ Fits w v
-    | .dequeue => True }
+    | .dequeue => True
 
 /-- Front is in FIFO order; rear is in reverse FIFO order. -/
 def contents (s : List ℕ × List ℕ) : List ℕ := s.1 ++ s.2.reverse
@@ -61,7 +61,7 @@ def pairStep (s : List ℕ × List ℕ) (o : QueueOp ℕ) :
 
 /-- Projecting the concrete stack transition gives exactly the specified FIFO step. -/
 theorem pairStep_correct (s : List ℕ × List ℕ) (o : QueueOp ℕ) :
-    (contents (pairStep s o).1, (pairStep s o).2) = (queue ℕ).step (contents s) o := by
+    (contents (pairStep s o).1, (pairStep s o).2) = (queue ℕ).stepFn (contents s) o := by
   obtain ⟨front, rear⟩ := s
   cases o with
   | enqueue v => simp [pairStep, contents, queue, List.reverse_cons, List.append_assoc]

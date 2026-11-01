@@ -46,7 +46,8 @@ code/encoding selection or identification with Turing-machine complexity is asse
 * `WordSizeDependentProgram.DecidesInTime.mono`: increase time and restrict admissible widths.
 * `WordSizeDependentProgram.DecidesInTime.of_inputFits`: discharge input fitting with a certificate.
 * `LinearTime.polynomialTime`, `UniformLinearTime.polynomialTime`: linear time is polynomial.
-* `fits_of_lt_pow`: polynomially bounded values fit logarithmic words.
+* `fits_of_lt_pow`, `two_pow_logWidth_le`: polynomially bounded values fit logarithmic words,
+  and a logarithmic word holds only polynomially bounded values.
 
 ## References
 
@@ -109,6 +110,17 @@ theorem fits_of_lt_pow {k n v : ℕ} (hv : v < (n + 1) ^ k) : Fits (logWidth k n
 theorem logWidth_mono {k k' n n' : ℕ} (hk : k ≤ k') (hn : n ≤ n') :
     logWidth k n ≤ logWidth k' n' :=
   Nat.mul_le_mul hk (Nat.add_le_add_right (Nat.log_mono_right hn) 1)
+
+/-- A word of `logWidth k n` bits holds a number polynomial in `n`. -/
+theorem two_pow_logWidth_le (k n : ℕ) : 2 ^ logWidth k n ≤ 2 ^ k * (n + 1) ^ k := by
+  unfold logWidth
+  rw [mul_comm, pow_mul, ← mul_pow]
+  refine Nat.pow_le_pow_left ?_ k
+  rw [pow_succ, mul_comm]
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp
+  · have := Nat.pow_log_le_self 2 hn.ne'
+    omega
 
 /-- A big-O bound on a natural-valued width schedule is an eventual upper-width condition
 with a fixed positive natural multiplier. Swapping `width` and `bound` expresses a big-Omega

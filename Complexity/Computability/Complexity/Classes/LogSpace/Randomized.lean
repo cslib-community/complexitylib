@@ -11,6 +11,7 @@ public import Complexity.Computability.Complexity.Classes.LogSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.HaltingTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Machine.Nondeterministic
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Deterministic
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.HaltedReplay
 
 /-!
 # Randomized logarithmic space
@@ -83,18 +84,6 @@ noncomputable def acceptCoins (input : List Bool) (t : ℕ) : ℕ :=
 /-- At most all coin strings are accepted. -/
 theorem acceptCoins_le (input : List Bool) (t : ℕ) : machine.acceptCoins input t ≤ 2 ^ t :=
   (Finset.card_filter_le _ _).trans (by simp)
-
-/-- A halted configuration ignores its coin. -/
-theorem step_withCoin_of_halted {input : List Bool} {c : Cfg k Bool State input} (h : c.Halted)
-    (bit : Bool) : (machine.withCoin bit).toTM.step c = c :=
-  MultiTapeTM.step_iff.mp ((MultiTapeNTM.step_of_halt h).mpr rfl)
-
-/-- A halted configuration ignores any further coins. -/
-theorem stepCoins_of_halted {input : List Bool} {c : Cfg k Bool State input} (h : c.Halted)
-    (coins : List Bool) : machine.stepCoins coins c = c := by
-  induction coins with
-  | nil => rfl
-  | cons bit coins ih => rw [stepCoins_cons, step_withCoin_of_halted machine h, ih]
 
 /-- Under a time bound `t`, every replay of `t` or more coins ends halted. -/
 theorem halted_stepCoins {input : List Bool} {t : ℕ} (ht : machine.toNTM.RunsInTime input t)
