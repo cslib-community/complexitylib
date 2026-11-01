@@ -144,7 +144,7 @@ theorem evalTest_degree (B : Basis) (t : Option Bool) :
         (fun p : ℕ × (Fin 2 → ℕ) => some (decide (p.2 0 = p.2 1)))
         (encPair encUnary (encPi encNat (Index := Fin 2))) (encOption encBool) 2 1
       exact ((optionSome (enc₁ := encBool) (enc := encOption encBool)).comp
-        ((of_linear ComputableInLinearTimeAndSpace.natEq).comp hxy)).mono
+        (ComputableInDegree.natEq.comp hxy)).mono
     · change ComputableInDegree
         (fun p : ℕ × (Fin 2 → ℕ) => some (decide (p.2 0 < p.2 1)))
         (encPair encUnary (encPi encNat (Index := Fin 2))) (encOption encBool) 2 1

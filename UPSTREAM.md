@@ -316,7 +316,17 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `(n+2)^(κ+25)`. The generic caller allows dirty scratch and original-array aliasing below
   its workspace. `Int.toNat_neg_emod` is kept in the existing integer-residue topic module.
   This completes the counter's mathematical/native component, with validation/review tracked
-  in #1701. Native prime selection (#2098), global parameter/host composition and #1394 remain open.
+  in #1701. Native minimum-count prime selection (#2098) is implemented in
+  `Algorithms/WordRAM/ExactTriangle/PrimeSelection/`: square tests and charged trial division
+  enumerate the exact existing prime window, invoking the real counter on original signed
+  matrices and dirty scratch. Original-input halting correctness and the existing selected-prime
+  predicate are proved, with charge at most `3704*(sqrt(D)+1)^3*(n+1)^2.81 + 42*(D+1)` including
+  header/halt. For `D≤n`, `κ≥1` and weights bounded by `(n+2)^κ`, physical width
+  `(κ+30)*clog₂(n+2)` suffices, and all wider prefixes have words/support below
+  `(n+2)^(2κ+60)`. The general initialized theorem permits `D>n` and empty matrices with
+  `D≥16`; the logarithmic source-regime simplification is separate. The source prime-list
+  producer and Light execution are not imported. Global parameter/host composition and #1394
+  remain open.
   `Algorithms/ExactTriangle/{Splitting,Witnesses}.lean` adapts the complete finite splitting and
   witness recovery component ([#1447](https://github.com/cslib-community/complexitylib/issues/1447)),
   using the existing matrices, lopsided graph and `Set.EqOn` answer API. Computable integer parameters
