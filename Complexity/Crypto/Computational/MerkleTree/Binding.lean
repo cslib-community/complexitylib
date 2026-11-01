@@ -189,8 +189,7 @@ theorem computableInPolyTime_merkleVerify
     (hlen : ∀ k x, (H k x).length = k.length) :
     ComputableInPolyTime
       (fun p : (List Bool × ℕ) × (List Bool × ℕ) × (List Bool × List (List Bool)) =>
-        merkleVerify H (Prod.fst p.1) (Prod.snd p.1) (Prod.fst (Prod.fst p.2))
-          (Prod.snd (Prod.fst p.2)) (Prod.fst (Prod.snd p.2)) (Prod.snd (Prod.snd p.2)))
+        merkleVerify H p.1.1 p.1.2 p.2.1.1 p.2.1.2 p.2.2.1 p.2.2.2)
       (encPair (encPair encBits encUnary)
         (encPair (encPair encBits encUnary) (encPair encBits (encList encBits)))) encBool := by
   have hargs : ComputableInPolyTime

@@ -627,7 +627,7 @@ theorem computableInPolyTime_merklePath
       (encPair encBits encBits) encBits)
     (hlen : ∀ k x, (H k x).length = k.length) :
     ComputableInPolyTime
-      (fun p : List Bool × List (List Bool) × ℕ => merklePath H p.1 (Prod.fst p.2) (Prod.snd p.2))
+      (fun p : List Bool × List (List Bool) × ℕ => merklePath H p.1 p.2.1 p.2.2)
       (encPair encBits (encPair (encList encBits) encUnary)) (encList encBits) :=
   .of_tidy (computableTidilyInPolyTime_merklePath hH.tidy hlen)
 
@@ -710,7 +710,7 @@ theorem computableInPolyTime_merkleRootOfPath
     (hlen : ∀ k x, (H k x).length = k.length) :
     ComputableInPolyTime
       (fun p : List Bool × List Bool × ℕ × List (List Bool) =>
-        merkleRootOfPath H p.1 (Prod.fst p.2) (Prod.fst (Prod.snd p.2)) (Prod.snd (Prod.snd p.2)))
+        merkleRootOfPath H p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair encBits (encPair encBits (encPair encUnary (encList encBits)))) encBits := by
   apply ComputableInPolyTime.of_tidy
   have hk := ComputableTidilyInPolyTime.fst encBits
@@ -733,11 +733,8 @@ theorem computableInPolyTime_extractMerkleCollision
       (encPair encBits encBits) encBits)
     (hlen : ∀ k x, (H k x).length = k.length) :
     ComputableInPolyTime
-      (fun p : List Bool × (List Bool × List Bool) × ℕ ×
-          (List (List Bool) × List (List Bool)) =>
-        extractMerkleCollision H p.1 (Prod.fst (Prod.fst p.2)) (Prod.snd (Prod.fst p.2))
-          (Prod.fst (Prod.snd p.2)) (Prod.fst (Prod.snd (Prod.snd p.2)))
-          (Prod.snd (Prod.snd (Prod.snd p.2))))
+      (fun p : List Bool × (List Bool × List Bool) × ℕ × List (List Bool) × List (List Bool) =>
+        extractMerkleCollision H p.1 p.2.1.1 p.2.1.2 p.2.2.1 p.2.2.2.1 p.2.2.2.2)
       (encPair encBits (encPair (encPair encBits encBits)
         (encPair encUnary (encPair (encList encBits) (encList encBits)))))
       (encPair encBits encBits) := by

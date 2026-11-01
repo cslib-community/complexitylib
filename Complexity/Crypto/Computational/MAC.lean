@@ -191,7 +191,7 @@ structure MACScheme where
   sign_ppt : IsPPTOn (encPair encBits encBits) encBits (fun p => sign p.1 p.2)
   /-- Verification is computable in plain polynomial time on `(sk, msg, tag)`. -/
   verify_polyTime : ComputableInPolyTime
-    (fun p : List Bool × List Bool × List Bool => verify p.1 (Prod.fst p.2) (Prod.snd p.2))
+    (fun p : List Bool × List Bool × List Bool => verify p.1 p.2.1 p.2.2)
     (encPair encBits (encPair encBits encBits)) encBool
   /-- Every tag produced by `sign` on a `msgLen n`-bit message under a supported secret key at
   security parameter `n` is accepted by `verify`. -/
@@ -1595,9 +1595,7 @@ noncomputable def prfMAC (family : List Bool → List Bool → List Bool)
   verify_polyTime := by
     have htidy := hpoly.tidy
     have hcall : ComputableTidilyInPolyTime
-        (fun p : List Bool × List Bool × List Bool =>
-          let rest := p.2
-          family p.1 rest.1)
+        (fun p : List Bool × List Bool × List Bool => family p.1 p.2.1)
         (encPair encBits (encPair encBits encBits)) encBits :=
       htidy.comp ((ComputableTidilyInPolyTime.fst _ _).prod
         ((ComputableTidilyInPolyTime.fst _ _).comp (ComputableTidilyInPolyTime.snd _ _)))
@@ -2153,11 +2151,10 @@ structure NonceMACScheme where
   keyGen_ppt : IsPPTOn encUnary encBits keyGen
   /-- Tag generation is uniformly strict PPT in the encoded `(sk, msg, nonce)`. -/
   sign_ppt : IsPPTOn (encPair encBits (encPair encBits encBits)) encBits
-    (fun p => sign p.1 (Prod.fst p.2) (Prod.snd p.2))
+    (fun p => sign p.1 p.2.1 p.2.2)
   /-- Verification is computable in plain polynomial time on `(sk, msg, nonce, tag)`. -/
   verify_polyTime : ComputableInPolyTime
-    (fun p : List Bool × List Bool × List Bool × List Bool =>
-      verify p.1 (Prod.fst p.2) (Prod.fst (Prod.snd p.2)) (Prod.snd (Prod.snd p.2)))
+    (fun p : List Bool × List Bool × List Bool × List Bool => verify p.1 p.2.1 p.2.2.1 p.2.2.2)
     (encPair encBits (encPair encBits (encPair encBits encBits))) encBool
   /-- Every tag produced by `sign` on a `msgLen n`-bit message and `nonceLen n`-bit nonce under a
   supported secret key at security parameter `n` is accepted by `verify`. -/

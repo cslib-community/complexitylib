@@ -544,10 +544,9 @@ def encodeDDHRerandomize
 /-- `encodeDDHRerandomize` evaluates `ddhRerandomize` on encoded group elements. -/
 @[simp] theorem encodeDDHRerandomize_encode (d : F.Desc) (u v w : F.Carrier d) (r s₁ s₂ : ℕ) :
     F.encodeDDHRerandomize (d, (F.encode d u, F.encode d v, F.encode d w), r, s₁, s₂) =
-      let t := F.ddhRerandomize d u v w
+      let (u', v', w') := F.ddhRerandomize d u v w
         (r : ZMod (F.order d)) (s₁ : ZMod (F.order d)) (s₂ : ZMod (F.order d))
-      let vw := t.2
-      (F.encode d t.1, F.encode d vw.1, F.encode d vw.2) := by
+      (F.encode d u', F.encode d v', F.encode d w') := by
   simp only [encodeDDHRerandomize, ddhRerandomize, F.smul_encode, F.add_encode, Nat.cast_mul]
 
 /-- Evaluating `encodeDDHRerandomize` at `.val` of exponents in `ZMod (F.order d)` agrees with
@@ -555,9 +554,8 @@ def encodeDDHRerandomize
 theorem encodeDDHRerandomize_val (d : F.Desc) (u v w : F.Carrier d)
     (r s₁ s₂ : ZMod (F.order d)) :
     F.encodeDDHRerandomize (d, (F.encode d u, F.encode d v, F.encode d w), r.val, s₁.val, s₂.val) =
-      let t := F.ddhRerandomize d u v w r s₁ s₂
-      let vw := t.2
-      (F.encode d t.1, F.encode d vw.1, F.encode d vw.2) := by
+      let (u', v', w') := F.ddhRerandomize d u v w r s₁ s₂
+      (F.encode d u', F.encode d v', F.encode d w') := by
   simp only [encodeDDHRerandomize_encode, ZMod.natCast_zmod_val]
 
 /-- Word-level DDH tuple re-randomization is computable in polynomial time. -/
