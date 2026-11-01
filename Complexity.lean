@@ -886,6 +886,10 @@ public import Complexity.Computability.Circuit.Boolean.Synthesis
 public import Complexity.Computability.Circuit.Boolean.TC0
 public import Complexity.Computability.Circuit.Boolean.Tableau.Basic
 public import Complexity.Computability.Circuit.Boolean.Tableau.Correct
+public import Complexity.Computability.Circuit.Boolean.Tableau.Decoder.Assembly
+public import Complexity.Computability.Circuit.Boolean.Tableau.Decoder.Circuit
+public import Complexity.Computability.Circuit.Boolean.Tableau.Decoder.Fields
+public import Complexity.Computability.Circuit.Boolean.Tableau.Decoder.Shape
 public import Complexity.Computability.Circuit.Boolean.Tableau.Layout
 public import Complexity.Computability.Circuit.Boolean.Tableau.Space
 public import Complexity.Computability.Circuit.Boolean.Tableau.Succinct
@@ -3263,6 +3267,7 @@ public import Complexity.Foundations.Data.Nat.ArithmeticProgression
 public import Complexity.Foundations.Data.Nat.Asymptotics
 public import Complexity.Foundations.Data.Nat.BinarySize
 public import Complexity.Foundations.Data.Nat.Bits
+public import Complexity.Foundations.Data.Nat.Bitwise.Carry
 public import Complexity.Foundations.Data.Nat.Bitwise.HighestDiff
 public import Complexity.Foundations.Data.Nat.Bitwise.Multiplication
 public import Complexity.Foundations.Data.Nat.Bitwise.PackedCount
