@@ -53,7 +53,8 @@ variable [Finite Q]
     (encPair encNat (encPair (encFinite (Option Q)) (encPair (encPi encNat)
       (encPair (encPi (encList encNat)) (encFinite OutputTrack))))))))
 
-private theorem config_parts : ComputableInSpace (Config.equivProd (k := k) (Q := Q))
+/-- Read all named replay fields through their defining product encoding in native space. -/
+theorem equivProd_inSpace : ComputableInSpace (Config.equivProd (k := k) (Q := Q))
     encConfig (encPair encNat (encPair encNat (encPair encNat
       (encPair encNat (encPair (encFinite (Option Q)) (encPair (encPi encNat)
         (encPair (encPi (encList encNat)) (encFinite OutputTrack))))))))
@@ -62,19 +63,19 @@ private theorem config_parts : ComputableInSpace (Config.equivProd (k := k) (Q :
 
 /-- The runtime input length can be read in linear encoded-state space. -/
 theorem inputLength_inSpace : ComputableInSpace (Config.inputLength (k := k) (Q := Q))
-    encConfig encNat (fun s => (encConfig s).length) := config_parts.fst'
+    encConfig encNat (fun s => (encConfig s).length) := equivProd_inSpace.fst'
 
 /-- The runtime block width can be read in linear encoded-state space. -/
 theorem width_inSpace : ComputableInSpace (Config.width (k := k) (Q := Q))
-    encConfig encNat (fun s => (encConfig s).length) := config_parts.snd'.fst'
+    encConfig encNat (fun s => (encConfig s).length) := equivProd_inSpace.snd'.fst'
 
 /-- The remaining replay duration can be read in linear encoded-state space. -/
 theorem remaining_inSpace : ComputableInSpace (Config.remaining (k := k) (Q := Q))
-    encConfig encNat (fun s => (encConfig s).length) := config_parts.snd'.snd'.fst'
+    encConfig encNat (fun s => (encConfig s).length) := equivProd_inSpace.snd'.snd'.fst'
 
 /-- The original input pointer can be read in linear encoded-state space. -/
 theorem inputPos_inSpace : ComputableInSpace (Config.inputPos (k := k) (Q := Q))
-    encConfig encNat (fun s => (encConfig s).length) := config_parts.snd'.snd'.snd'.fst'
+    encConfig encNat (fun s => (encConfig s).length) := equivProd_inSpace.snd'.snd'.snd'.fst'
 
 /-- Native original-input query component. -/
 theorem machine_query_inSpace (M : MultiTapeTM k Bool Q) :
@@ -167,19 +168,19 @@ private theorem piApplyLinear {Index Value : Type} [Fintype Index]
 
 private theorem control_inSpace : ComputableInSpace (Config.control (k := k) (Q := Q))
     encConfig (encFinite (Option Q)) (fun s => (encConfig s).length) :=
-  config_parts.snd'.snd'.snd'.snd'.fst'
+  equivProd_inSpace.snd'.snd'.snd'.snd'.fst'
 
 private theorem heads_inSpace : ComputableInSpace (Config.heads (k := k) (Q := Q))
     encConfig (encPi encNat) (fun s => (encConfig s).length) :=
-  config_parts.snd'.snd'.snd'.snd'.snd'.fst'
+  equivProd_inSpace.snd'.snd'.snd'.snd'.snd'.fst'
 
 private theorem cells_inSpace : ComputableInSpace (Config.cells (k := k) (Q := Q))
     encConfig (encPi (encList encNat)) (fun s => (encConfig s).length) :=
-  config_parts.snd'.snd'.snd'.snd'.snd'.snd'.fst'
+  equivProd_inSpace.snd'.snd'.snd'.snd'.snd'.snd'.fst'
 
 private theorem track_inSpace : ComputableInSpace (Config.track (k := k) (Q := Q))
     encConfig (encFinite OutputTrack) (fun s => (encConfig s).length) :=
-  config_parts.snd'.snd'.snd'.snd'.snd'.snd'.snd'
+  equivProd_inSpace.snd'.snd'.snd'.snd'.snd'.snd'.snd'
 
 private theorem cellOfCode_inSpace : ComputableInSpace cellOfCode encNat
     (encFinite (Option Bool)) (fun n => (encNat n).length) := by
