@@ -70,6 +70,24 @@ theorem ValidRoot.par_eq_zero_iff_root {n : ℕ} {st : RawState n} {pending : Op
   · rintro rfl
     exact hT.2.1
 
+/-- In a valid subtree with `Nodup` nodes, no strict descendant `v` is its own parent. -/
+theorem ValidSubtree.par_ne_self {n : ℕ} {st : RawState n} {pending : Option (Fin n)}
+    {U : FHTree n} (hU : ValidSubtree st pending U) (hnd : U.nodes.Nodup) {v : Fin n}
+    (hv : v ∈ forestNodes U.children) : st.par v ≠ v.val + 1 :=
+  match U, hU with
+  | .node u cs, .mk _ _ _ _ hpar _ _ hsub => by
+    intro hpv
+    have hu_not : u ∉ forestNodes cs := (List.nodup_cons.mp hnd).1
+    obtain ⟨c, hc, hv_c⟩ := mem_forestNodes_iff.mp hv
+    rw [c.nodes_eq] at hv_c
+    rcases List.mem_cons.mp hv_c with hvc_eq | hv_desc_c
+    · have hpc := hpar c hc
+      rw [← hvc_eq] at hpc
+      have huv : u = v := Fin.ext (by omega)
+      exact hu_not (huv ▸ hv)
+    · exact (hsub c hc).par_ne_self (forestNodes_nodup_tree (List.nodup_cons.mp hnd).2 hc)
+        hv_desc_c hpv
+
 /-- Lowering `key[v]` to `k ≤ st.key v` preserves `ValidSubtree st' none T` whenever `v = T.root` or
 `v` has parent `p` (`st.par v = p.val + 1`) with `¬IndexedMinPQ.PrioLT (v, k) (p, st.key p)`. -/
 theorem ValidSubtree.lower_key_no_cut {n : ℕ} {st st' : RawState n} {T : FHTree n}
@@ -223,11 +241,10 @@ theorem evalCascGuard_exec {n base w : ℕ} {x : Data rFib}
       y.regs iterCur = gval ∧
       (∀ r : Fin rFib, r ≠ s0 → r ≠ s1 → r ≠ s2 → r ≠ iterCur → y.regs r = x.regs r) := by
   intro st gval
-  have hfit := hbr.fits_stop hb
+  have hfit := hbr.fits_of_le hb
   have := cur.isLt
   unfold evalCascGuard
-  wram_exec (disch := first | omega | exact hfit.of_le (by unfold space; omega))
-    [hbr.regs_parBase, hbr.regs_markBase, hbr.regs_zeroP, hbr.regs_oneP, hz_reg]
+  wram_exec [hfit, hbr.regs_parBase, hbr.regs_markBase, hbr.regs_zeroP, hbr.regs_oneP, hz_reg]
   all_goals refine ⟨by wram_simp [BaseRegs.set_iff, hbr], by wram_simp [ofData_set_scratch]; rfl,
     rfl, ?_, fun r h0 h1 h2 h3 => by wram_simp⟩
   all_goals wram_simp [gval, st, RawState.ofData]; split_ifs <;> omega
@@ -284,19 +301,17 @@ theorem cutNodeCode_raw {n base w : ℕ} {x : Data rFib}
        IsCircList st'.left st'.right (m :: cur :: rtail) ∧
        (∀ u, st.par u ≠ p.val + 1 → st.par u ≠ 0 →
          st'.left u = st.left u ∧ st'.right u = st.right u)) := by
-  have hfit_stop := hbr.fits_stop hb
+  have hfit := hbr.fits_of_le hb
   set st := RawState.ofData n base x with hst_def
   have hp_lt := p.isLt
   have hcur_lt := cur.isLt
   have hm_lt := m.isLt
-  have hfit (v : ℕ) (hv : v ≤ base + 9 * n) : Fits w v := hfit_stop.of_le (by unfold space; omega)
   have hfp (a : ℕ) (ha : a < base ∨ base + space n ≤ a) : a < base ∨ base + 9 * n + 1 ≤ a := by
     unfold space at ha; omega
   have hdeg_p : x.mem (base + 5 * n + p.val) = st.deg p := rfl
   unfold cutNodeCode
   -- Step 1: decrement `deg[p]`, and stop at the branch on the new degree.
-  wram_exec -split (disch := first | omega | exact hfit _ (by omega))
-    [hbr.regs_degBase, hbr.regs_oneP, hp_reg, hdeg_p]
+  wram_exec -split [hfit, hbr.regs_degBase, hbr.regs_oneP, hp_reg, hdeg_p]
   -- Step 2: unlink `cur` from the children of `p`; both alternatives reach the same assertion.
   refine WP.cut (fun y t => t ≤ 13 ∧ y.Bounded w ∧ BaseRegs n base y ∧
       Modifies (Block.mk base (space n)).footprint x.mem y.mem ∧
@@ -319,8 +334,7 @@ theorem cutNodeCode_raw {n base w : ℕ} {x : Data rFib}
        (∀ u, st.par u ≠ p.val + 1 → st2.left u = st.left u ∧ st2.right u = st.right u)))
     (WP.bounded (by wram_bounded <;> exact hfit _ (by omega)) ?_) ?_
   · by_cases hdp1 : st.deg p - 1 = 0
-    · wram_exec (disch := first | omega | exact hfit _ (by omega))
-        [hbr.regs_childBase, hbr.regs_zeroP, hp_reg, hdp1]
+    · wram_exec [hfit, hbr.regs_childBase, hbr.regs_zeroP, hp_reg, hdp1]
       intro hb2
       refine ⟨by omega, hb2, by wram_simp [BaseRegs.set_iff, BaseRegs.write_iff, hbr],
         Modifies.block_iff.2 fun a ha => by have := hfp a ha; wram_simp,
@@ -344,9 +358,8 @@ theorem cutNodeCode_raw {n base w : ℕ} {x : Data rFib}
       have hl_lt := l_nb.isLt
       have hr_cur' : x.mem (base + 4 * n + cur.val) = r_nb.val := hr_cur
       have hl_cur' : x.mem (base + 3 * n + cur.val) = l_nb.val := hl_cur
-      wram_exec (disch := first | omega | exact hfit _ (by omega))
-        [hbr.regs_childBase, hbr.regs_leftBase, hbr.regs_rightBase, hbr.regs_zeroP,
-          hbr.regs_oneP, hp_reg, hz_reg, hr_cur', hl_cur', hdp1]
+      wram_exec [hfit, hbr.regs_childBase, hbr.regs_leftBase, hbr.regs_rightBase, hbr.regs_zeroP,
+        hbr.regs_oneP, hp_reg, hz_reg, hr_cur', hl_cur', hdp1]
       intro hb2
       refine ⟨by omega, hb2, by wram_simp [BaseRegs.set_iff, BaseRegs.write_iff, hbr],
         Modifies.block_iff.2 fun a ha => by have := hfp a ha; wram_simp,
@@ -401,7 +414,7 @@ theorem cutNodeCode_raw {n base w : ℕ} {x : Data rFib}
     (hx2_reg zReg (by decide) (by decide) (by decide) (by decide) (by decide)).trans hz_reg
   have hmin_x2 : x2.regs minRootReg = m.val + 1 := hmin2.trans hmin
   -- Step 3: `s1 ← minRootReg - oneP`, and splice `cur` after `m` in the root list.
-  wram_exec (disch := first | omega | exact hfit _ (by omega)) [hbr2.regs_oneP, hmin_x2]
+  wram_exec [hfit, hbr2.regs_oneP, hmin_x2]
   have hcur_not_roots : cur ∉ m :: rtail := fun hm_in => by
     have hp0 := hroots_par0 cur hm_in
     omega
@@ -423,8 +436,7 @@ theorem cutNodeCode_raw {n base w : ℕ} {x : Data rFib}
   have hnm4 : (RawState.ofData n base x4).numMarked = st.numMarked := by rw [hst4]; exact hnm2
   have hmk4_cur : x4.mem (base + 6 * n + cur.val) = st.mark cur := congrFun hmk4 cur
   -- Step 4: clear `par[cur]`, load `mark[cur]`, and stop at the branch on it.
-  wram_exec -split (disch := first | omega | exact hfit _ (by omega))
-    [hbr4.regs_parBase, hbr4.regs_markBase, hbr4.regs_zeroP, hx4_z, hmk4_cur]
+  wram_exec -split [hfit, hbr4.regs_parBase, hbr4.regs_markBase, hbr4.regs_zeroP, hx4_z, hmk4_cur]
   have hnm_le : st.numMarked ≤ n := hnm ▸ markedCount_le_n st
   let nm' := if st.mark cur = 0 then st.numMarked else st.numMarked - 1
   -- Step 5: clear `mark[cur]`, and decrement `numMarkedReg` if it was set.
@@ -438,7 +450,7 @@ theorem cutNodeCode_raw {n base w : ℕ} {x : Data rFib}
           mark := Function.update st.mark cur 0
           numMarked := nm' }) ?_ ?_
   · by_cases hmk0 : st.mark cur = 0
-    · wram_exec (disch := first | omega | exact hfit _ (by omega)) [hbr4.regs_zeroP, hmk0]
+    · wram_exec [hfit, hbr4.regs_zeroP, hmk0]
       refine ⟨by wram_simp [BaseRegs.set_iff, BaseRegs.write_iff, hbr4],
         Modifies.block_iff.2 fun a ha => by have := hfp a ha; wram_simp,
         fun r h0 h1 h2 h3 h4 _ => by wram_simp [hx4_reg r h0 h1 h2 h3 h4], ?_⟩
@@ -452,8 +464,7 @@ theorem cutNodeCode_raw {n base w : ℕ} {x : Data rFib}
         omega
       have hx4_nm : x4.regs numMarkedReg = st.numMarked :=
         hx4_reg numMarkedReg (by decide) (by decide) (by decide) (by decide) (by decide)
-      wram_exec (disch := first | omega | exact hfit _ (by omega))
-        [hbr4.regs_zeroP, hbr4.regs_oneP, hx4_nm, hmk0]
+      wram_exec [hfit, hbr4.regs_zeroP, hbr4.regs_oneP, hx4_nm, hmk0]
       refine ⟨by wram_simp [BaseRegs.set_iff, BaseRegs.write_iff, hbr4],
         Modifies.block_iff.2 fun a ha => by have := hfp a ha; wram_simp,
         fun r h0 h1 h2 h3 h4 hnm => by wram_simp [hx4_reg r h0 h1 h2 h3 h4], ?_⟩
@@ -463,7 +474,7 @@ theorem cutNodeCode_raw {n base w : ℕ} {x : Data rFib}
   have hx7_nr : x7.regs numRootsReg = st.numRoots :=
     hx7_reg numRootsReg (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
   -- Step 6: increment `numRootsReg`.
-  wram_exec (disch := first | omega | exact hfit _ (by omega)) [hbr7.regs_oneP, hx7_nr]
+  wram_exec [hfit, hbr7.regs_oneP, hx7_nr]
   refine ⟨by wram_simp [BaseRegs.set_iff, hbr7],
     modifies_block_trans (modifies_block_trans hmod2 hmod4) hmod7,
     fun r h0 h1 h2 h3 h4 hnm_ne hnr_ne => by wram_simp [hx7_reg r h0 h1 h2 h3 h4 hnm_ne], ?_⟩
@@ -913,7 +924,7 @@ private theorem decreaseKeyTail_exec {n base w : ℕ} {x : Data rFib}
            minRoot :=
              if IndexedMinPQ.PrioLT (v, st.key v) (m, st.key m)
                then v.val + 1 else m.val + 1 }) := by
-  have hfit := hbr.fits_stop hb
+  have hfit := hbr.fits_of_le hb
   set st := RawState.ofData n base x with hst_def
   have := v.isLt
   have := m.isLt
@@ -921,24 +932,21 @@ private theorem decreaseKeyTail_exec {n base w : ℕ} {x : Data rFib}
   have hkm : x.mem (base + m.val) = st.key m := rfl
   refine WP.exists_execWithin (WP.bounded hb ?_)
   unfold decreaseKeyTail
-  wram_exec (disch := first | omega | exact hfit.of_le (by unfold space; omega))
-    [hbr.regs_oneP, hbr.regs_baseReg, hmin', hkm]
+  wram_exec [hfit, hbr.regs_oneP, hbr.regs_baseReg, hmin', hkm]
   refine WP.of_execWithin (prioLTFlag_exec (n := n) (base := base)
     (by wram_simp [BaseRegs.set_iff, hbr]) argV argK s1 s2 s3) ?_
   have hlt_iff : IndexedMinPQ.PrioLT (v, st.key v) (m, st.key m) ↔
       k < st.key m ∨ k = st.key m ∧ v.val < m.val := by
     rw [← hkv]; rfl
   by_cases hlt : IndexedMinPQ.PrioLT (v, st.key v) (m, st.key m)
-  · wram_exec (disch := first | omega | exact hfit.of_le (by unfold space; omega))
-      [hv_reg, hk_reg, hbr.regs_zeroP, hbr.regs_oneP, hlt_iff.mp hlt]
+  · wram_exec [hfit, hv_reg, hk_reg, hbr.regs_zeroP, hbr.regs_oneP, hlt_iff.mp hlt]
     refine fun hby => ⟨by omega, hby, by wram_simp [BaseRegs.set_iff, hbr], rfl, ?_, ?_⟩
     · simp only [potential]; wram_simp
     · simp only [ofData_set_minRoot, ofData_set_scratch _ (by decide : 17 ≤ s3.val),
         ofData_set_scratch _ (by decide : 17 ≤ s2.val),
         ofData_set_scratch _ (by decide : 17 ≤ s0.val),
         ofData_set_scratch _ (by decide : 17 ≤ s1.val), ← hst_def, hlt, ↓reduceIte]
-  · wram_exec (disch := first | omega | exact hfit.of_le (by unfold space; omega))
-      [hv_reg, hk_reg, hbr.regs_zeroP, hbr.regs_oneP, hlt_iff.not.mp hlt]
+  · wram_exec [hfit, hv_reg, hk_reg, hbr.regs_zeroP, hbr.regs_oneP, hlt_iff.not.mp hlt]
     refine fun hby => ⟨by omega, hby, by wram_simp [BaseRegs.set_iff, hbr], rfl, ?_, ?_⟩
     · simp only [potential]; wram_simp
     · simp only [ofData_set_scratch _ (by decide : 17 ≤ s0.val),
@@ -946,9 +954,6 @@ private theorem decreaseKeyTail_exec {n base w : ℕ} {x : Data rFib}
         ofData_set_scratch _ (by decide : 17 ≤ s2.val),
         ofData_set_scratch _ (by decide : 17 ≤ s1.val), ← hst_def, hlt, ↓reduceIte, ← hmin]
 
--- The proof term built by `wram_exec` through the cascading-cut loop body and the surrounding
--- program nests deeper than the default limit of 512 when the declaration is elaborated.
-set_option maxRecDepth 1024 in
 /-- `decreaseKeyCode` lowers `key[v]` to `k ≤ k₀` (`s v = some k₀`), performs cascading cuts when
 parent heap order is violated, updates `minRootReg`, and restores `FibInv` in amortized time
 `t + potential y ≤ 330 + potential x`. -/
@@ -962,7 +967,7 @@ theorem decreaseKeyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {
       t + potential y ≤ 330 + potential x := by
   obtain ⟨hb, hbr, hraw⟩ := hinv
   obtain ⟨⟨k₀, hsv₀, hkle₀⟩, hk_max⟩ := hval
-  have hfit_stop := hbr.fits_stop hb
+  have hfit := hbr.fits_of_le hb
   set st₀ := RawState.ofData n base x with hst₀_def
   obtain ⟨ts₀, hts₀, hnd₀, hdom₀, hin₀, hkeys₀, hsz₀, hnr₀, hnm₀, hcons₀, hrl₀⟩ := hraw
   have hk_st₀ : st₀.key v = k₀ := (hkeys₀ v k₀ hsv₀).1
@@ -1001,7 +1006,6 @@ theorem decreaseKeyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {
   obtain ⟨T_rv, hTrv_mem, hv_in_Trv⟩ := mem_forestNodes_iff.mp hv_in_fn₀
   have hnd_Trv : T_rv.nodes.Nodup := forestNodes_nodup_tree hnd₀ hTrv_mem
   have hv_lt := v.isLt
-  have hfit (u : ℕ) (hu : u ≤ base + 9 * n) : Fits w u := hfit_stop.of_le (by unfold space; omega)
   have hfp (a : ℕ) (ha : a < base ∨ base + space n ≤ a) : a < base ∨ base + 9 * n + 1 ≤ a := by
     unfold space at ha; omega
   have hfit_k : Fits w k := hk_reg ▸ hb.1 argK
@@ -1009,8 +1013,7 @@ theorem decreaseKeyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {
   have hpar_v : x.mem (base + n + v.val) = st₀.par v := rfl
   unfold decreaseKeyCode
   -- Step 1: write `key[v] ← k`, load `par[v]`, and stop at the branch on it.
-  wram_exec -split (disch := first | omega | exact hfit _ (by omega))
-    [hbr.regs_baseReg, hbr.regs_parBase, hv_reg, hk_reg, hpar_v]
+  wram_exec -split [hfit, hbr.regs_baseReg, hbr.regs_parBase, hv_reg, hk_reg, hpar_v]
   by_cases hpv0 : st₀.par v = 0
   · -- Case A: `v` is already a root (`T_rv.root = v`)
     have hv_eq_root : v = T_rv.root := ((hts₀ T_rv hTrv_mem).par_eq_zero_iff_root hv_in_Trv).mp hpv0
@@ -1068,25 +1071,8 @@ theorem decreaseKeyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {
       exact (List.mem_cons.mp hv_in_Trv).resolve_left hv_ne_root
     obtain ⟨p₀, hp₀_in_Trv, hpv_eq⟩ := (hts₀ T_rv hTrv_mem).1.par_of_mem_children v hv_desc
     have hp₀_lt := p₀.isLt
-    have hp₀_ne_v : p₀ ≠ v := by
-      -- If `p₀ = v`, `v` would have `v` as its own parent inside `T_rv` (`Nodup` impossible!):
-      intro heq
-      subst p₀
-      let rec hnot_v (U : FHTree n) (hU : ValidSubtree st₀ none U) (hnd_U : U.nodes.Nodup)
-          (hv_cs : v ∈ forestNodes U.children) : False :=
-        match U, hU with
-        | .node u cs, .mk _ _ _ _ hpar _ _ hsub => by
-          have hu_not : u ∉ forestNodes cs := (List.nodup_cons.mp hnd_U).1
-          obtain ⟨c, hc, hv_c⟩ := mem_forestNodes_iff.mp hv_cs
-          rw [c.nodes_eq] at hv_c
-          rcases List.mem_cons.mp hv_c with hvc_eq | hv_desc_c
-          · have hpc := hpar c hc
-            rw [← hvc_eq] at hpc
-            have huv : u = v := Fin.ext (by omega)
-            exact hu_not (huv ▸ hv_cs)
-          · exact hnot_v c (hsub c hc)
-              (forestNodes_nodup_tree (List.nodup_cons.mp hnd_U).2 hc) hv_desc_c
-      exact hnot_v T_rv (hts₀ T_rv hTrv_mem).1 hnd_Trv hv_desc
+    have hp₀_ne_v : p₀ ≠ v := fun heq =>
+      (hts₀ T_rv hTrv_mem).1.par_ne_self hnd_Trv hv_desc (heq ▸ hpv_eq)
     have hp₀_ne_v' : p₀.val ≠ v.val := fun e => hp₀_ne_v (Fin.ext e)
     have hkey_p₀ : x.mem (base + p₀.val) = st₀.key p₀ := rfl
     have hviol_iff : IndexedMinPQ.PrioLT (v, k) (p₀, st₀.key p₀) ↔
@@ -1101,8 +1087,7 @@ theorem decreaseKeyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {
           CutInv n K_max s' (RawState.ofData n base y) v m none ∧
           t + potential y ≤ 314 + potential x) ?_ ?_
       · -- `pReg ← par[v] - 1`, compare with `key[p₀]`, and cut `v` from `p₀`.
-        wram_exec (disch := first | omega | exact hfit _ (by omega))
-          [hbr.regs_baseReg, hbr.regs_zeroP, hbr.regs_oneP, hpv_eq, hkey_p₀]
+        wram_exec [hfit, hbr.regs_baseReg, hbr.regs_zeroP, hbr.regs_oneP, hpv_eq, hkey_p₀]
         refine WP.of_execWithin (prioLTFlag_exec (n := n) (base := base)
           (by wram_simp [BaseRegs.set_iff, BaseRegs.write_iff, hbr]) argV argK pReg s2 s3) ?_
         wram_exec [hv_reg, hk_reg, hbr.regs_zeroP, hviol_iff.mp hviol]
@@ -1253,8 +1238,7 @@ theorem decreaseKeyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {
           have hpar_c' : a.mem (base + n + cur.val) = p_c.val + 1 := hpar_cur_c
           simp only [loopBody]
           -- `s0 ← parBase + zReg; s1 ← *s0; pReg ← s1 - oneP`, then cut `cur` from `p_c`.
-          wram_exec (disch := first | omega | exact hfit _ (by omega))
-            [hbra.regs_parBase, hbra.regs_oneP, ha_z, hpar_c']
+          wram_exec [hfit, hbra.regs_parBase, hbra.regs_oneP, ha_z, hpar_c']
           refine WP.name fun a3 ha3 => ?_
           have hb_a3 : a3.Bounded w := by rw [ha3]; wram_bounded <;> exact hfit _ (by omega)
           have hbr_a3 : BaseRegs n base a3 := by rw [ha3]; wram_simp [BaseRegs.set_iff, hbra]
@@ -1369,8 +1353,7 @@ theorem decreaseKeyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {
               (fun e => by subst e; cases hi) (fun e => by subst e; cases hi)).trans hpot8
         refine WP.bounded hb_lp ?_
         by_cases hpf0 : st_lp.par cur_f = 0
-        · wram_exec (disch := first | omega | exact hfit _ (by omega))
-            [hbr_lp.regs_parBase, hbr_lp.regs_zeroP, hlp_z, hlp_par, hpf0]
+        · wram_exec [hfit, hbr_lp.regs_parBase, hbr_lp.regs_zeroP, hlp_z, hlp_par, hpf0]
           intro hb_post
           obtain ⟨T_cf, hTcf_mem, hcurf_in_Tcf⟩ := mem_forestNodes_iff.mp hcurf_fn
           have hcurf_root : cur_f = T_cf.root :=
@@ -1413,9 +1396,8 @@ theorem decreaseKeyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {
             have := markedCount_le_n st_mk
             omega
           have hlp_nm : z_lp.regs numMarkedReg = st_lp.numMarked := rfl
-          wram_exec (disch := first | omega | exact hfit _ (by omega))
-            [hbr_lp.regs_parBase, hbr_lp.regs_markBase, hbr_lp.regs_zeroP, hbr_lp.regs_oneP, hlp_z,
-              hlp_par, hlp_nm, hpf0]
+          wram_exec [hfit, hbr_lp.regs_parBase, hbr_lp.regs_markBase, hbr_lp.regs_zeroP,
+            hbr_lp.regs_oneP, hlp_z, hlp_par, hlp_nm, hpf0]
           intro hb_post
           have hts_none : ∀ T ∈ ts_f, ValidRoot st_mk none T := fun T hT => by
             have hr_ne_curf : T.root ≠ cur_f := fun e =>
@@ -1469,8 +1451,7 @@ theorem decreaseKeyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {
           RawState.ofData n base y = { st₀ with key := Function.update st₀.key v k } ∧
           potential y = potential x)
         (WP.bounded (by wram_bounded <;> exact hfit _ (by omega)) ?_) ?_
-      · wram_exec (disch := first | omega | exact hfit _ (by omega))
-          [hbr.regs_baseReg, hbr.regs_zeroP, hbr.regs_oneP, hpv_eq, hkey_p₀]
+      · wram_exec [hfit, hbr.regs_baseReg, hbr.regs_zeroP, hbr.regs_oneP, hpv_eq, hkey_p₀]
         refine WP.of_execWithin (prioLTFlag_exec (n := n) (base := base)
           (by wram_simp [BaseRegs.set_iff, BaseRegs.write_iff, hbr]) argV argK pReg s2 s3) ?_
         wram_exec [hv_reg, hk_reg, hbr.regs_zeroP, hviol_iff.not.mp hviol]

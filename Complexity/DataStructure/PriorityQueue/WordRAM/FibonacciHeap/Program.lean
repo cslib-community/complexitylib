@@ -739,6 +739,11 @@ theorem BaseRegs.fits_stop {n base w : ℕ} {x : Data rFib} (hb : x.Bounded w)
     (hbr : BaseRegs n base x) : Fits w (base + space n) :=
   hbr.regs_frontierReg ▸ hb.1 frontierReg
 
+/-- A value at most `base + 9 * n`, such as an address in one of the nine arrays, fits a word. -/
+theorem BaseRegs.fits_of_le {n base w : ℕ} {x : Data rFib} (hb : x.Bounded w)
+    (hbr : BaseRegs n base x) (v : ℕ) (hv : v ≤ base + 9 * n) : Fits w v :=
+  (hbr.fits_stop hb).of_le (by unfold space; omega)
+
 theorem BaseRegs.set_non_base {n base : ℕ} {x : Data rFib} (hbr : BaseRegs n base x)
     {d : Fin rFib} (hd : 13 ≤ d.val) (v : ℕ) : BaseRegs n base (x.set d v) := by
   have ne_of : ∀ r : Fin rFib, r.val < 13 → r ≠ d := fun r hr e => by subst e; omega
