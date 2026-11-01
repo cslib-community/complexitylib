@@ -602,24 +602,22 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   expected-time rules for unbounded almost-surely terminating structured loops; random-tape
   equivalence and BPP/RP/ZPP simulation bridges for the randomized word RAM ([#1124]); transfer
   of cell-probe lower bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
-- **Direct 3SUM adaptation** ([#1394]): global parameter/asymptotic composition, using the concrete
-  native cyclic-Strassen counter ([#1701]), minimum-count selector ([#2098]) and conservative
-  computed dyadic parameters ([#2127]); the aggregate
-  subcubic Exact Triangle bound and source exponent; and the unconditional ordinary-3SUM
-  input/time/width/asymptotic composition, including the improved Section 4 route to exponent
-  1.9992. These build on the native Chan–He preprocessing, queried thin products, fixed-prime
-  Exact Triangle solving and the conditional Convolution-3SUM host. The counter computes its
-  own residues, padding/table, seven-product recursion and exact raw modular count, within
-  `3704*(p+1)²*(n+1)^2.81` instructions including halt. Its source-regime admission and
-  width-independent prefix bounds are proved. The selector computes the actual attained window
-  minimum with native trial division and real counter calls, preserving the explicit window
-  cost factor. The dyadic parameter kernel computes geometry-compatible values and explicitly
-  classifies the small regime. The assembled solver ([#2146]) executes actual parameter
-  preparation, selection and the complete fixed-prime solver, or the real exhaustive small
-  branch, restoring the original host arguments. It supplies the concrete host callee and
-  initialized correctness, logarithmic admission and polynomial prefix/support guarantees.
-  Remaining are global asymptotic composition using the component-cost bridge ([#2145]),
-  outer-host execution, the tuned source exponent and the full endpoint.
+- **Direct 3SUM adaptation** ([#1394]): the improved Section 4 route and tuned source exponent
+  1.9992 remain open. Conservative native ordinary integer 3SUM is proved in
+  `WordRAM/ThreeSum/Decision/Subquadratic.lean`: for each fixed polynomial magnitude exponent,
+  one fixed 848-register program has charged time `Oκ(n^(2−1/5184))`, logarithmic physical
+  admission and polynomial words/support at every wider execution prefix. Correctness includes
+  every length, distinct positions and repeated values; only the time estimate is eventual.
+  This is standard Word-RAM instruction time, not bit/Turing time or arbitrary-real 3SUM.
+  The concrete cyclic-Strassen counter ([#1701]), minimum-count selector ([#2098]) and computed
+  conservative parameters ([#2127]) feed the actual assembled ET callee ([#2146]). Its time
+  field is `Oκ(n^(3−1/1296))` for polynomial weights. The ordinary proof charges native Chan–He
+  preprocessing, actual packed dimensions, all matrix/callee calls, control work and halt;
+  it does not assume a fast solver, prime procedure, layout or time contract. The counter
+  computes residues, padding, seven-product recursion and exact modular counts within
+  `3704*(p+1)²*(n+1)^2.81` instructions. The selected prime is computed by trial division and
+  actual counter calls; the assembled solver runs the real exhaustive branch at smaller
+  geometry. These conservative original estimates do not establish the source's tuned endpoint.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and

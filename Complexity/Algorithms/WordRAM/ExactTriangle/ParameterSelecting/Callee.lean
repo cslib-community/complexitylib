@@ -80,6 +80,16 @@ noncomputable def callee : ThreeSum.Host.Callee 633 where
     change y.regs Reg.result ≤ 1
     rcases hf with h | h <;> omega
 
+/-- The concrete host interface uses the proved original-input allowance. This projection
+lemma lets asymptotic clients inspect the time field without exposing the whole certificate. -/
+theorem callee_time (n F : ℕ) : callee.time n F = callerTime n F := by
+  simp only [callee]
+
+/-- The actual fixed logarithmic admission coefficient, available without unfolding the
+semantic execution certificate. -/
+theorem callee_widthCoefficient : callee.widthCoefficient = 123357 := by
+  simp only [callee]
+
 /-- Every admitted initialized run has the same original-scalar time allowance as the host
 callee. Prefix, verdict, restored arguments and charged halt refer to the same final state. -/
 theorem runs_input_uniform {W n F : ℕ} (values : List ℤ)
