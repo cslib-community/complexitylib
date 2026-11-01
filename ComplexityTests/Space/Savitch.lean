@@ -6,7 +6,7 @@ Authors: Bolton Bailey, Samuel Schlesinger
 
 import Complexity.Algorithms.Reachability.Savitch
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space.Reachability
-import Complexity.Computability.Machines.Turing.MultiTape.Universal.Complexity
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Bool
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 
 /-!
@@ -22,7 +22,6 @@ polynomial-space form for a family of depths, so that their hypotheses are satis
 namespace ComplexityTests.Savitch
 
 open Cslib Cslib.Reachability Turing.MultiTapeTM
-open Turing.MultiTapeTM.Universal (encUnit)
 
 /-! ### The binary counter -/
 

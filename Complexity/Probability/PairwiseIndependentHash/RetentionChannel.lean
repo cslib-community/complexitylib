@@ -50,6 +50,7 @@ only for the later averaging walks, so they are not needed here.
 
 ## Main results
 
+* `Cslib.Probability.mem_retentionBox`: membership in the box, coordinatewise.
 * `Cslib.Probability.card_retentionBox`: the box has `L ^ H` points.
 * `Cslib.Probability.dens_affineRetains`, `Cslib.Probability.dens_affineRetains_and`: exact
   retention probabilities of one identifier and of two distinct ones.
@@ -93,6 +94,11 @@ def retentionBox : Finset (Fin H → ZMod P) :=
   Fintype.piFinset fun _ ↦ {a : ZMod P | a.val < L}
 
 variable {P H L}
+
+/-- A vector lies in the retention box when each coordinate has representative less than `L`. -/
+@[simp]
+theorem mem_retentionBox {v : Fin H → ZMod P} : v ∈ retentionBox P H L ↔ ∀ j, (v j).val < L := by
+  simp [retentionBox]
 
 /-- `L` residues of `ZMod P` have representatives less than `L ≤ P`. -/
 private theorem card_filter_val_lt (hL : L ≤ P) : #{a : ZMod P | a.val < L} = L := by

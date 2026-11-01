@@ -13,10 +13,11 @@ public import Complexity.Foundations.Semantics.Stateful.Basic
 /-!
 # A representation-independent stateful ordered set
 
-The abstract state is a finite set over any linear order. Membership, insertion, minimum and
-strict successor have operation-dependent result types. All operations are admissible, including
-empty queries and duplicate insertion. A bounded-key implementation can specialize `spec.valid`
-for insertion while preserving arbitrary membership and successor queries. This module does not
+The abstract state is a finite set over any linear order. Membership, insertion, deletion, minimum
+and strict successor have operation-dependent result types. All operations are admissible,
+including empty queries, duplicate insertion and deletion of absent keys. A bounded-key
+implementation can specialize `spec.valid` for insertion while preserving arbitrary membership
+and successor queries. This module does not
 choose a representation or charge a computational cost.
 
 ## Main definitions
@@ -42,23 +43,29 @@ variable {α : Type} [LinearOrder α]
 inductive Op (α : Type) where
   | contains (key : α)
   | insert (key : α)
+  | erase (key : α)
   | minimum
   | successor (key : α)
   deriving DecidableEq
 
+/-- Return type for each `Op α`. -/
+abbrev Op.Result {α : Type} : Op α → Type
+  | .contains _ => Bool
+  | .insert _ => Unit
+  | .erase _ => Unit
+  | .minimum => Option α
+  | .successor _ => Option α
+
+/-- Pure transition function for ordered-set operations. -/
+abbrev step (s : Finset α) : (o : Op α) → Finset α × o.Result
+  | .contains x => (s, decide (x ∈ s))
+  | .insert x => (Insert.insert x s, ())
+  | .erase x => (s.erase x, ())
+  | .minimum => (s, least s)
+  | .successor x => (s, least (s.filter (x < ·)))
+
 /-- Mathematical ordered-set semantics. All operations are admissible, including empty queries. -/
-abbrev spec (α : Type) [LinearOrder α] : Spec where
-  State := Finset α
-  Op := Op α
-  Result
-    | .contains _ => Bool
-    | .insert _ => Unit
-    | .minimum => Option α
-    | .successor _ => Option α
-  step s
-    | .contains x => (s, decide (x ∈ s))
-    | .insert x => (Insert.insert x s, ())
-    | .minimum => (s, least s)
-    | .successor x => (s, least (s.filter (x < ·)))
+abbrev spec (α : Type) [LinearOrder α] : Spec :=
+  Spec.ofFn (State := Finset α) (Op := Op α) (Result := Op.Result) step
 
 end Cslib.OrderedSet

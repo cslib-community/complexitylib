@@ -11,6 +11,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogS
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Bool
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Bits
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame
+import Complexity.Foundations.Data.Nat.Doubling
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Bitwise
 import Mathlib.Data.Nat.Size
@@ -155,14 +156,6 @@ private theorem bits_eq_map_testBit (v : ℕ) : v.bits = (List.range v.size).map
   refine List.ext_getElem (by simp [Nat.size_eq_bits_len]) fun i h _ => ?_
   simp [Nat.testBit_eq_inth, List.getI_eq_getElem _ h]
 
-private theorem two_pow_size_le (v : ℕ) : 2 ^ v.size ≤ 2 * v + 1 := by
-  rcases Nat.eq_zero_or_pos v with rfl | hv
-  · simp
-  · obtain ⟨s, hs⟩ : ∃ s, v.size = s + 1 := ⟨v.size - 1, by have := Nat.size_pos.mpr hv; omega⟩
-    have : 2 ^ s ≤ v := Nat.lt_size.mp (by omega)
-    rw [hs, pow_succ]
-    omega
-
 /-- The loop of `binaryProgram`, from the power `2 ^ i`, emits the bits of `v` from index `i` on
 below its size. -/
 private theorem reachesOut_binaryLoop (e : Expr) {v : ℕ} (hB : 2 * a + 1 + b ≤ B)
@@ -170,7 +163,7 @@ private theorem reachesOut_binaryLoop (e : Expr) {v : ℕ} (hB : 2 * a + 1 + b �
     ∀ i ≤ v.size, (binaryProgram e).ReachesOut (encPair encUnary encUnary (a, b))
       ((binaryProgram e).Active B) (6, [a, b, 2 ^ i, v]) (11, [a, b, 2 ^ v.size, v])
       ((List.range' i (v.size - i)).map v.testBit) := by
-  have hsize := two_pow_size_le v
+  have hsize := Nat.two_pow_size_le v
   intro i hi
   induction h : v.size - i generalizing i with
   | zero =>
@@ -266,7 +259,7 @@ theorem computableInLogSpace_binary (e : Expr) (d : ℕ) (he : ∀ a b, e.eval [
   rw [length_input]
   obtain ⟨h₁, h₂⟩ := le_pow_add_two (n := 2 * a + 1 + b) (by omega)
     ((hF a b).trans (Nat.pow_le_pow_left (by omega) d))
-  have hsize := two_pow_size_le (F a b)
+  have hsize := Nat.two_pow_size_le (F a b)
   refine ⟨_, _, [], reachesOut_binaryProgram e (he a b) (by omega) h₂, rfl,
     by simp [encNat_apply], bounded4 (by omega) (by omega) (by omega) (by omega)⟩
 

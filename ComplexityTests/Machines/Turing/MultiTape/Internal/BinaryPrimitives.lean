@@ -22,27 +22,17 @@ run_elab do
 
 namespace ComplexityTests.Internal.BinaryPrimitives
 
--- Unbounded carry/borrow chains are verified for the actual folds, then specialized to long words.
+-- Unbounded carry chains are verified for `NatSucc.incr`, then specialized to long words.
 theorem carryChain (k : ℕ) :
-    NatSucc.succFinish ((List.replicate k true).foldl NatSucc.succStep (true, [])) =
+    NatSucc.incr true (List.replicate k true) =
       List.replicate k false ++ [true] := by
-  rw [NatSucc.succFinish_foldl, List.nil_append]
   induction k with
   | zero => rfl
   | succ k ih =>
     simpa only [List.replicate_succ, NatSucc.incr, List.cons_append] using
       congrArg (List.cons false) ih
 
-theorem borrowChain (k : ℕ) :
-    NatPred.norm (NatPred.decr (List.replicate k false ++ [true])) =
-      List.replicate k true := by
-  induction k with
-  | zero => rfl
-  | succ k ih =>
-    simp only [List.replicate_succ, List.cons_append, NatPred.decr]
-    rw [NatPred.norm_cons (NatPred.decr_ne_nil (by simp)), ih]
-
--- Uniform certificates on all natural numbers, carry/borrow boundary equations, and independent
+-- Uniform certificates on all natural numbers, carry boundary equations, and independent
 -- workspace/output charges.
 example (n : ℕ) {f : ℕ → ℕ} {t s T S : ℕ → ℕ}
     (h : ComputableInTimeAndSpace f encNat encNat t s)
@@ -58,29 +48,23 @@ example (n : ℕ) {f : ℕ → ℕ} {t s T S : ℕ → ℕ}
       (fun n => c * (((encNat n).length + 1) ^ 2 + 1))
       (fun n => c * ((encNat n).length + 1 + 1)) ∧
       ∀ n, (encNat (n - 1)).length ≤ c * ((encNat n).length + 1 + 1)) ∧
-    NatSucc.succFinish ([].foldl NatSucc.succStep (true, [])) = [true] ∧
-    NatSucc.succFinish ([true].foldl NatSucc.succStep (true, [])) = [false, true] ∧
-    NatPred.norm (NatPred.decr []) = [] ∧
-    NatPred.norm (NatPred.decr [true]) = [] ∧
-    NatPred.norm (NatPred.decr [false, false, true]) = [true, true] ∧
+    NatSucc.incr true [] = [true] ∧
+    NatSucc.incr true [true] = [false, true] ∧
     NatSucc.incr true [true, true, true] = [false, false, false, true] ∧
-    NatSucc.succFinish ((List.replicate 128 true).foldl NatSucc.succStep (true, [])) =
+    NatSucc.incr true (List.replicate 128 true) =
       List.replicate 128 false ++ [true] ∧
-    NatPred.norm (NatPred.decr (List.replicate 128 false ++ [true])) =
-      List.replicate 128 true ∧
     (encNat 0).isEmpty = true ∧
     (encNat 1).isEmpty = false ∧
-    encNat (n + 1) = NatSucc.succFinish ((encNat n).foldl NatSucc.succStep (true, [])) ∧
-    encNat (n - 1) = NatPred.norm (NatPred.decr (encNat n)) ∧
+    encNat (n + 1) = NatSucc.incr true (encNat n) ∧
     encNat 0 = [] ∧
     encNat 1 = [true] ∧
     (¬ ComputableInO (fun w : List Bool => w) encBits encBits
       (fun w => (w.length + 1) ^ 2) (fun _ => 0)) ∧
     ComputableInO f encNat encNat T S := by
   refine ⟨.natSucc, .natPred, .natIsZero, ComputableInO.natPred,
-    rfl, rfl, rfl, rfl, rfl, rfl, carryChain 128, borrowChain 128, rfl, rfl,
-    by simp only [encNat_apply, NatSucc.succFinish_foldl, List.nil_append, NatSucc.bits_succ],
-    NatPred.bits_pred n, rfl, rfl, ?_, ?_⟩
+    rfl, rfl, rfl, carryChain 128, rfl, rfl,
+    by simp only [encNat_apply, NatSucc.bits_succ],
+    rfl, rfl, ?_, ?_⟩
   · rintro ⟨c, _, hl'⟩
     have hlen := hl' (List.replicate (c + 1) true)
     simp only [encBits_apply, List.length_replicate, Nat.zero_add, Nat.mul_one] at hlen

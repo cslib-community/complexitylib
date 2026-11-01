@@ -14,6 +14,7 @@ public import Complexity.Algorithms.WordRAM.Karger.FastCut
 public import Complexity.Computability.WordRAM.Copy
 public import Complexity.Computability.WordRAM.Randomized.LoopSegment
 public import Complexity.Computability.WordRAM.Time
+import Complexity.Languages.Probabilistic.Event
 
 /-!
 # Karger–Stein's recursive `FastCut` algorithm on the word RAM
@@ -88,6 +89,8 @@ endpoints on `n :: flattenMatrix W`:
 namespace Cslib.Algorithms.WordRAM.Karger
 
 open scoped ENNReal
+open Cslib.WeightedCut
+open Cslib.Probability.PMF
 open Cslib.WordRAM
 
 /-! ### Word-size sufficiency (`logWidth 4 n ≤ w`) and input layout -/
@@ -2724,7 +2727,7 @@ theorem fastCutNode_spec {n w : ℕ} {W₀ : Fin n → Fin n → ℕ}
         dsimp only [t] at ht₁ ht₂
         omega
       · intro B hmin_pos hB_nt hB_min
-        have hrec := two_branch_hit_prob_ge m_b1 (fun z₁ => m₂_fn z₁.1)
+        have hrec := ProbComp.two_branch_hit_prob_ge m_b1 (fun z₁ => m₂_fn z₁.1)
           (fun z₁ z₂ => (z₂.1, z₁.2 + z₂.2))
           {z₁ | z₁.1.regs retVal = minCut W₀}
           {z | z.1.regs retVal = minCut W₀}
@@ -2979,7 +2982,7 @@ theorem fastCutTree_spec {n w sb : ℕ} {W : Fin n → Fin n → ℕ} {x : Data 
         hmod_x₃ Finset.Subset.rfl Finset.Subset.rfl)
       hmod₀ Finset.Subset.rfl hsub_seg
   · intro hmin_pos
-    obtain ⟨C_star, hC_nt, hC_min⟩ := exists_minCut_achiever hn W
+    obtain ⟨C_star, hC_nt, hC_min⟩ := exists_minCut_achiever (by rwa [Fintype.card_fin]) W
     have hpb : pullbackCut (id : Fin n → Fin n) C_star = C_star := by
       ext u; simp [pullbackCut]
     have hprob := hsurv_seg C_star hmin_pos hC_nt (by rw [hpb, hC_min])

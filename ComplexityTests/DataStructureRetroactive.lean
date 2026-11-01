@@ -26,35 +26,32 @@ namespace ComplexityTests.DataStructureRetroactive
 open Cslib.Stateful Cslib.Algorithms.Lean
 
 /-- `true` increments; `false` decrements a positive counter. -/
-abbrev counter : Spec where
-  State := Nat
-  Op := Bool
-  Result := fun _ => Unit
-  step n op := (if op then n + 1 else n - 1, ())
-  valid n op := if op then True else 0 < n
+abbrev counter : Spec :=
+  Spec.ofFn (State := Nat) (Op := Bool) (Result := fun _ => Unit)
+    (fun n op => (if op then n + 1 else n - 1, ()))
+    (fun n op => if op then True else 0 < n)
 
 /-- The primitive interface manages the operation timeline and the counter. -/
 abbrev lower : Spec := Retroactive.backend counter 0
 
 /-- Direct mathematical execution with the actual primitive operation as its event. -/
 def execution : Execution lower lower.State lower.Op :=
-  fun c o a c' event => (c', a) = lower.step c o ∧ event = o
+  fun c o a c' event => (c', a) = lower.stepFn c o ∧ event = o
 
 /-- A nonempty realization of every primitive contract. -/
-def realization : Realization lower execution where
-  rep := Eq
-  total o hr _ := by
-    subst hr
-    exact ⟨(lower.step _ o).2, (lower.step _ o).1, o, rfl, rfl⟩
-  correct hr _ he := by
-    subst hr
-    exact ⟨congrArg Prod.snd he.1, (congrArg Prod.fst he.1).symm⟩
+def realization : Realization lower execution :=
+  Realization.ofFn Eq
+    (fun o hr _ => by
+      subst hr
+      exact ⟨(lower.stepFn _ o).2, (lower.stepFn _ o).1, o, rfl, rfl⟩)
+    (fun hr _ he => by
+      subst hr
+      exact ⟨congrArg Prod.snd he.1, (congrArg Prod.fst he.1).symm⟩)
 
 /-- The trace records one event per primitive call. -/
 theorem primitive_calls : Bound realization (fun _ => 1)
-    (Retroactive.primitiveCharge counter 0 (fun _ _ => 1) 1 (fun _ _ => 1)) := by
-  intro s c o a c' event hr hv he
-  cases o <;> exact Nat.le_refl 1
+    (Retroactive.primitiveCharge counter 0 (fun _ _ => 1) 1 (fun _ _ => 1)) :=
+  fun {_ _ o _ _ _} _ _ _ => by cases o <;> exact Nat.le_refl 1
 
 /-- Insertions retain both incremental and decremental operations. -/
 example : (Retroactive.spec counter 0).ValidHistory []
