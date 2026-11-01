@@ -72,9 +72,9 @@ The second stage receives that same state and the actual challenge ciphertext. -
 noncomputable def uniformPublicGame (bit : Bool) : PMF Bool := do
   let A ← PMF.uniformOfFintype (Matrix (Fin m) (Fin (n + 1)) (ZMod (2 ^ w)))
   let choice ← choose A
-  let msgs := choice.1
+  let ((m₀, m₁), state) := choice
   let R ← PMF.uniformOfFintype (Matrix (Fin (n + 1) × Fin w) (Fin m) Bool)
-  guess choice.2 (encryptWithCoins A (if bit then msgs.2 else msgs.1) R)
+  guess state (encryptWithCoins A (if bit then m₁ else m₀) R)
 
 /-- The common ideal experiment retains the first-stage state. Its ciphertext no longer depends
 on either chosen message. The state type need not be finite. -/

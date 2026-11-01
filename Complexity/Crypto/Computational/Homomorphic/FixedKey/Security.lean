@@ -78,9 +78,7 @@ encryption and both adversary stages are certified on their complete inputs. -/
 theorem negligible_publicKeyGame {E : Scheme}
     (hcircular : Encryption.CircularSecure E.keyGen E.encrypt)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun p =>
-        let pb := p.2
-        E.encrypt p.1 pb.1 pb.2))
+      (fun (n, pk, bit) => E.encrypt n pk bit))
     {adversary : Encryption.Adversary} (hadversary : adversary.IsPPT) (bit : Bool) :
     Negligible (fun n => Game.advantage
       (ProbComp.eval (Encryption.circularPublicKey E.keyGen E.encrypt true n >>=
@@ -106,9 +104,7 @@ theorem indCPA_keyGen {E : Scheme}
     (hcircular : Encryption.CircularSecure E.keyGen E.encrypt)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun p =>
-        let pb := p.2
-        E.encrypt p.1 pb.1 pb.2))
+      (fun (n, pk, bit) => E.encrypt n pk bit))
     {width : ℕ → ℕ}
     (hwidth : ∀ n keys, keys ∈ (ProbComp.eval (E.keyGen n)).support → keys.2.length = width n) :
     Encryption.INDCPA (keyGen E) (encrypt E) := by
@@ -139,9 +135,7 @@ theorem indCPA_scheme {E : Scheme} {secretWidth ciphertextWidth : ℕ → ℕ}
     (hcircular : Encryption.CircularSecure E.keyGen E.encrypt)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun p =>
-        let pb := p.2
-        E.encrypt p.1 pb.1 pb.2))
+      (fun (n, pk, bit) => E.encrypt n pk bit))
     {width : ℕ → ℕ}
     (hwidth : ∀ n keys, keys ∈ (ProbComp.eval (E.keyGen n)).support → keys.2.length = width n) :
     Encryption.INDCPA (scheme D).keyGen (scheme D).encrypt :=

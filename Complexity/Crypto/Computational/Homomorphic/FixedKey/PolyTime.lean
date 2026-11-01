@@ -51,9 +51,7 @@ open Circuits Probability Turing.MultiTapeTM
 variable {α : Type} {input : α ↪ List Bool} {E : Scheme}
   (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
   (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-    (fun p =>
-      let pb := p.2
-      E.encrypt p.1 pb.1 pb.2))
+    (fun p => E.encrypt p.1 p.2.1 p.2.2))
   {n : α → ℕ} {pk sk ciphertext : α → List Bool}
 
 include hkeyGen hencrypt in
@@ -111,10 +109,7 @@ theorem computableInPolyTime_decrypt
 
 variable (hevaluate : IsPPTOn
     (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
-    encBits (fun p =>
-      let rest := p.2
-      let ci := rest.2
-      E.evaluate p.1 rest.1 ci.1 ci.2))
+    encBits (fun p => E.evaluate p.1 p.2.1 p.2.2.1 p.2.2.2))
 
 private theorem computableInPolyTime_replicate {β : Type} {encB : β ↪ List Bool}
     {count : α → ℕ} {value : α → β}
@@ -206,7 +201,7 @@ include hencrypt in
 @[fun_prop]
 theorem isPPTOn_scheme_encrypt :
     IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun p => (scheme D).encrypt p.1 (Prod.fst p.2) (Prod.snd p.2)) := by
+      (fun (n, pk, bit) => (scheme D).encrypt n pk bit) := by
   apply isPPTOn_encrypt hencrypt <;> fun_prop
 
 include hD in
@@ -214,8 +209,7 @@ include hD in
 @[fun_prop]
 theorem computableInPolyTime_scheme_decrypt :
     ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool =>
-        (scheme D).decrypt p.1 (Prod.fst p.2) (Prod.snd p.2))
+      (fun ((n, sk, c) : ℕ × List Bool × List Bool) => (scheme D).decrypt n sk c)
       (encPair encUnary (encPair encBits encBits)) encBool := by
   apply computableInPolyTime_decrypt D hD <;> fun_prop
 
@@ -225,9 +219,7 @@ include hencrypt hevaluate hD in
 theorem isPPTOn_scheme_evaluate :
     IsPPTOn
       (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
-      encBits (fun p =>
-        (scheme D).evaluate p.1 (Prod.fst p.2)
-          (Prod.fst (Prod.snd p.2)) (Prod.snd (Prod.snd p.2))) := by
+      encBits (fun (n, pk, C, cts) => (scheme D).evaluate n pk C cts) := by
   apply isPPTOn_evaluate hencrypt D hD hevaluate <;> fun_prop
 
 end Cslib.Crypto.Homomorphic.FixedKey

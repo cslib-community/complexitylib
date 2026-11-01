@@ -74,9 +74,7 @@ theorem computableInPolyTime_keyPair {depth : α → ℕ}
 variable {E : Scheme}
   (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
   (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-    (fun p =>
-      let pb := p.2
-      E.encrypt p.1 pb.1 pb.2))
+    (fun p => E.encrypt p.1 p.2.1 p.2.2))
   {n budget : α → ℕ} {pk sk ciphertext : α → List Bool}
 
 include hkeyGen hencrypt in
@@ -127,10 +125,7 @@ theorem computableInPolyTime_decrypt
 
 variable (hevaluate : IsPPTOn
     (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
-    encBits (fun p =>
-      let rest := p.2
-      let ci := rest.2
-      E.evaluate p.1 rest.1 ci.1 ci.2))
+    encBits (fun p => E.evaluate p.1 p.2.1 p.2.2.1 p.2.2.2))
 
 include hencrypt hevaluate hD in
 /-- Compile, pad, evaluate and select outputs uniformly in the full raw code and unary budget. -/
@@ -256,7 +251,7 @@ include hencrypt in
 @[fun_prop]
 theorem isPPTOn_scheme_encrypt (budget : ℕ → ℕ) :
     IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun p => (scheme D budget).encrypt p.1 (Prod.fst p.2) (Prod.snd p.2)) := by
+      (fun (n, pk, bit) => (scheme D budget).encrypt n pk bit) := by
   apply isPPTOn_encrypt hencrypt <;> fun_prop
 
 include hD in
@@ -264,8 +259,7 @@ include hD in
 @[fun_prop]
 theorem computableInPolyTime_scheme_decrypt (budget : ℕ → ℕ) :
     ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool =>
-        (scheme D budget).decrypt p.1 (Prod.fst p.2) (Prod.snd p.2))
+      (fun ((n, sk, c) : ℕ × List Bool × List Bool) => (scheme D budget).decrypt n sk c)
       (encPair encUnary (encPair encBits encBits)) encBool := by
   apply computableInPolyTime_decrypt D hD <;> fun_prop
 
@@ -276,9 +270,7 @@ theorem isPPTOn_scheme_evaluate (budget : ℕ → ℕ)
     (hbudget : ComputableInPolyTime budget encUnary encUnary) :
     IsPPTOn
       (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
-      encBits (fun p =>
-        (scheme D budget).evaluate p.1 (Prod.fst p.2)
-          (Prod.fst (Prod.snd p.2)) (Prod.snd (Prod.snd p.2))) := by
+      encBits (fun (n, pk, C, cts) => (scheme D budget).evaluate n pk C cts) := by
   apply isPPTOn_evaluate hencrypt D hD hevaluate <;> fun_prop
 
 end Cslib.Crypto.Homomorphic.Leveled

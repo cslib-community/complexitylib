@@ -48,9 +48,7 @@ open Probability Turing.MultiTapeTM
 variable {E : Scheme}
   (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
   (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-    (fun p =>
-      let pb := p.2
-      E.encrypt p.1 pb.1 pb.2))
+    (fun p => E.encrypt p.1 p.2.1 p.2.2))
   {α : Type} {input : α ↪ List Bool} {n depth cut : α → ℕ}
   {keys : α → List (List Bool × List Bool)}
 

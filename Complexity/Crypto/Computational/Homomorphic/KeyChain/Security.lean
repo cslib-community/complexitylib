@@ -47,9 +47,7 @@ theorem negligible_publicKeyChainHybrid {E : Scheme}
     (hsecure : Encryption.INDCPA E.keyGen E.encrypt)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun p =>
-        let pb := p.2
-        E.encrypt p.1 pb.1 pb.2))
+      (fun (n, pk, bit) => E.encrypt n pk bit))
     {width depth : ℕ → ℕ}
     (hwidth : ∀ n keys, keys ∈ (ProbComp.eval (E.keyGen n)).support →
       keys.2.length = width n)
