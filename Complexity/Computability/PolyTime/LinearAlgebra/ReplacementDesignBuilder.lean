@@ -523,10 +523,12 @@ def ReplacementDesignData.equivTuple : ReplacementDesignData ≃ ReplacementDesi
   toFun d := ((d.varGroups, d.factorGroups, d.incidences),
     (d.copyCount, d.placements, d.measurementMatrix),
     (d.groupMeasurementMatrices, d.denom, d.replacementRows))
-  invFun t :=
-    { varGroups := t.1.1, factorGroups := t.1.2.1, incidences := t.1.2.2,
-      copyCount := t.2.1.1, placements := t.2.1.2.1, measurementMatrix := t.2.1.2.2,
-      groupMeasurementMatrices := t.2.2.1, denom := t.2.2.2.1, replacementRows := t.2.2.2.2 }
+  invFun := fun ((varGroups, factorGroups, incidences),
+      (copyCount, placements, measurementMatrix),
+      (groupMeasurementMatrices, denom, replacementRows)) =>
+    { varGroups, factorGroups, incidences,
+      copyCount, placements, measurementMatrix,
+      groupMeasurementMatrices, denom, replacementRows }
   left_inv d := by cases d; rfl
   right_inv _ := rfl
 
