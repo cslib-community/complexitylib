@@ -313,7 +313,7 @@ lemma wronskian_linearCombination {K : Type*} [CommRing K] {h : ℕ}
     calc
       derivative^[r.val] (∑ i, A i j • f i) =
           ∑ i, derivative^[r.val] (A i j • f i) := by
-            simp only [← Module.End.pow_apply, map_sum]
+            exact iterate_derivative_sum r.val Finset.univ (fun i => A i j • f i)
       _ = _ := by
         simp only [iterate_derivative_smul]
         simp only [smul_eq_C_mul, mul_comm]

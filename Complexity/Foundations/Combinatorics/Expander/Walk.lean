@@ -499,9 +499,9 @@ theorem expect_walkDart_mk (v : V) (i : Fin t) (f : V × D → ℝ) :
     induction i using Fin.cases with
     | zero =>
       simp only [walkDart, Fin.val_zero, walkAt_zero, Fin.cons_zero, Fintype.expect_const,
-        pow_zero, Module.End.one_apply]
+        pow_zero, one_apply_eq_self]
     | succ i =>
-      simp only [walkDart_cons_succ, ih, Fin.val_succ, pow_succ', Module.End.mul_apply, walk_apply]
+      simp only [walkDart_cons_succ, ih, Fin.val_succ, pow_succ', mul_apply_eq_comp, walk_apply]
 
 variable [Fintype V]
 

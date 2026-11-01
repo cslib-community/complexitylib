@@ -194,9 +194,10 @@ omit hchoose in
 /-- In the effect-free deterministic case, tape extension is exactly upstream's compiler. -/
 theorem toTM_extendTapes (machine : MultiTapeMachine k Symbol State Empty Id) :
     (machine.extendTapes e).toTM = machine.toTM.extendTapes e := by
-  simp only [toTM, MultiTapeTM.extendTapes, MultiTapeTM.tr_ofTr, extendTapes]
+  simp only [toTM, MultiTapeTM.extendTapes, MultiTapeTM.adapt, extendTapes]
   congr 1
   funext state symbol work
+  simp only [MultiTapeTM.adaptedTr, MultiTapeTM.tr_ofTr, Function.comp_def]
   cases machine.tr state symbol (fun i => work (e i)) Empty.elim with
   | step action symbol move => rfl
   | query oracle next => exact oracle.elim

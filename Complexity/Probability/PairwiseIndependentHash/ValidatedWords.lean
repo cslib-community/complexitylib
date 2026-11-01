@@ -95,7 +95,7 @@ theorem walk_pow_sliceGraph_lazy_ofPerms_eq [Nonempty K] [NeZero L] (hL : L ≤ 
   | succ t ih =>
     have hfun : ((sliceGraph L hL y (ofPerms fun k ↦ coordMove (σ k).1 (σ k).2).lazy).walk ^ t)
         (fun B ↦ f B.1) = fun B ↦ (validatedStep L σ Z y)^[t] f B.1 := funext ih
-    rw [pow_succ', Module.End.mul_apply, hfun, Function.iterate_succ_apply']
+    rw [pow_succ', mul_apply_eq_comp, hfun, Function.iterate_succ_apply']
     set h := (validatedStep L σ Z y)^[t] f
     have hstep := walk_sliceGraph_ofPerms_eq hL σ hZ h A
     simp only [sliceGraph, walk_reindex] at hstep ⊢

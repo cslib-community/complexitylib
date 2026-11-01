@@ -181,9 +181,10 @@ omit hchoose in
 /-- Effect-free deterministic input redirection is exactly upstream's compiler. -/
 theorem toTM_inputFromTape (machine : MultiTapeMachine k Symbol State Empty Id) :
     machine.inputFromTape.toTM = machine.toTM.inputFromTape := by
-  simp only [toTM, MultiTapeTM.inputFromTape, MultiTapeTM.tr_ofTr, inputFromTape]
+  simp only [toTM, MultiTapeTM.inputFromTape, MultiTapeTM.adapt, inputFromTape]
   congr 1
   funext state symbol work
+  simp only [MultiTapeTM.adaptedTr, MultiTapeTM.tr_ofTr, Function.comp_def]
   cases machine.tr state (work (Fin.natAdd k 0)) (fun i => work (i.castAdd 2)) Empty.elim with
   | step a symbol move => rfl
   | query oracle next => exact oracle.elim

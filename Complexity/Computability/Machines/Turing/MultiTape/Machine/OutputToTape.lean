@@ -157,9 +157,10 @@ omit hchoose in
 /-- Effect-free deterministic output redirection is exactly upstream's compiler. -/
 theorem toTM_outputToTape (machine : MultiTapeMachine k Symbol State Empty Id) :
     machine.outputToTape.toTM = machine.toTM.outputToTape := by
-  simp only [toTM, MultiTapeTM.outputToTape, MultiTapeTM.tr_ofTr, outputToTape]
+  simp only [toTM, MultiTapeTM.outputToTape, MultiTapeTM.adapt, outputToTape]
   congr 1
   funext state symbol work
+  simp only [MultiTapeTM.adaptedTr, MultiTapeTM.tr_ofTr, Function.comp_def]
   cases machine.tr state symbol (fun i => work i.castSucc) Empty.elim with
   | step a symbol move => rfl
   | query oracle next => exact oracle.elim

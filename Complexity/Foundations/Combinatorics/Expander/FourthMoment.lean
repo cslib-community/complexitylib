@@ -80,8 +80,8 @@ theorem sq_walk_pow_le (t : ℕ) (f : V → ℝ) (v : V) :
   induction t generalizing v with
   | zero => simp
   | succ t ih =>
-    rw [show G.walk ^ (t + 1) = G.walk * G.walk ^ t from pow_succ' _ _, Module.End.mul_apply,
-      Module.End.mul_apply]
+    rw [show G.walk ^ (t + 1) = G.walk * G.walk ^ t from pow_succ' _ _, mul_apply_eq_comp,
+      mul_apply_eq_comp]
     exact (G.sq_walk_le _ v).trans (G.walk_mono ih v)
 
 /-- **Jensen's inequality for fourth powers.** -/
@@ -127,7 +127,7 @@ theorem expect_walk_pow_add_pow_four_le {f : V → ℝ} (hf : 𝔼 v, f v = 0) (
   set m := 𝔼 v, q v with hm
   set h := (G.walk ^ t) fun w ↦ q w - m with hh
   have hsplit : (G.walk ^ (s + t)) f = (G.walk ^ t) g := by
-    rw [add_comm, pow_add, Module.End.mul_apply]
+    rw [add_comm, pow_add, mul_apply_eq_comp]
   -- The walk of `q` is its mean plus the walk of the part of expectation zero.
   have hq_split (v : V) : (G.walk ^ t) q v = h v + m := by
     have : q = (fun w ↦ q w - m) + fun _ ↦ m := by

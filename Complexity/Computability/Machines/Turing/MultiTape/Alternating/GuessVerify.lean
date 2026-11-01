@@ -347,12 +347,14 @@ theorem step_machine {c : Cfg k Bool (S₁ ⊕ GuessState ⊕ RewindWorkState �
   · rw [MultiTapeTM.step_of_state hs, MultiTapeTM.step_of_state hs]
     congr 1
     rcases s with q | (g | r)
-    · simp [machine, MultiTapeTM.seq, guess]
+    · simp [machine, MultiTapeTM.seq, MultiTapeTM.combine, guess]
     · rcases g with u | u
-      · simp only [machine, MultiTapeTM.seq, MultiTapeTM.tr_ofTr, guess]
+      · simp only [machine, MultiTapeTM.seq, MultiTapeTM.combine, MultiTapeTM.tr_ofTr,
+          Sum.elim_inr, Sum.elim_inl, MultiTapeTM.adaptedTr, MultiTapeNTM.Adapter.mapState,
+          id_eq, guess]
         rcases c.workTapeSymbols B with _ | _ | _ <;> rfl
       · exact absurd hs (h u)
-    · simp [machine, MultiTapeTM.seq]
+    · simp [machine, MultiTapeTM.seq, MultiTapeTM.combine, MultiTapeTM.adaptedTr]
 
 variable (S₁ B verify) in
 /-- A configuration of the guessing machine, as a configuration of the guess-then-verify

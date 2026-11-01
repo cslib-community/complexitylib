@@ -150,7 +150,8 @@ end Partialize
 theorem runFrom_partialize (tm : MultiTapeTM k Bool State) (input : List Bool) (t : ℕ) :
     tm.partialize.runFrom (tm.partialize.initCfg input) t =
       liftCfg (tm.runFrom (tm.initCfg input) t) :=
-  runFrom_map (stepHom liftCfg fun c => (step_liftCfg tm c).symm) (tm.initCfg input) t
+  (Function.Semiconj.iterate_right (fun c => (step_liftCfg tm c).symm) t
+    (tm.initCfg input)).symm
 
 /-- Partial results as words: the divergence `none` as `[true]`, the output `some o` as
 `false :: o`. -/
