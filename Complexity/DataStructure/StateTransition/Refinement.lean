@@ -96,6 +96,18 @@ structure Refinement (D E : StateTransitionSpec.{u, v, w}) where
   correct : ∀ {e} o {a e' tr}, inv e → D.valid (abs e) o →
     E.ClientRun e (methods o) a e' tr → D.step (abs e) o (abs e') a ∧ inv e'
 
+/-- Componentwise charges of a product specification. -/
+def productCharge (c₁ : D₁.State → D₁.Op → ℕ) (c₂ : D₂.State → D₂.Op → ℕ) :
+    (product D₁ D₂).State → (product D₁ D₂).Op → ℕ
+  | s, .inl o => c₁ s.1 o
+  | s, .inr o => c₂ s.2 o
+
+/-- Equal constant charges on both components are that constant charge on the product. -/
+@[simp] theorem productCharge_const (K : ℕ) :
+    productCharge (D₁ := D₁) (D₂ := D₂) (fun _ _ => K) (fun _ _ => K) = fun _ _ => K := by
+  funext s o
+  cases o <;> rfl
+
 /-- Smaller charges total less along any transcript. -/
 theorem StateTransitionSpec.totalCostTranscript_mono {c c' : D.State → D.Op → ℕ}
     (h : ∀ s o, c s o ≤ c' s o) (s : D.State) (tr : D.Transcript) :
@@ -349,18 +361,6 @@ theorem Amortized.comp {N : Refinement E F} {lower : F.State → F.Op → ℕ}
   change F.totalCostTranscript lower f tr + (Φ (N.abs f') + Ψ f') ≤
     upper (M.abs (N.abs f)) o + (Φ (N.abs f) + Ψ f)
   omega
-
-/-- Componentwise charges of a product specification. -/
-def productCharge (c₁ : D₁.State → D₁.Op → ℕ) (c₂ : D₂.State → D₂.Op → ℕ) :
-    (product D₁ D₂).State → (product D₁ D₂).Op → ℕ
-  | s, .inl o => c₁ s.1 o
-  | s, .inr o => c₂ s.2 o
-
-/-- Equal constant charges on both components are that constant charge on the product. -/
-@[simp] theorem productCharge_const (K : ℕ) :
-    productCharge (D₁ := D₁) (D₂ := D₂) (fun _ _ => K) (fun _ _ => K) = fun _ _ => K := by
-  funext s o
-  cases o <;> rfl
 
 /-- **Potentials add across non-interfering products**, provided the methods of each side leave
 the other side's potential unchanged. -/
