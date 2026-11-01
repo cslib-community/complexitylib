@@ -1699,6 +1699,9 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateInterpolation
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateInterpolationBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateInterpolationCorrect
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateReply
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateReplyBounds
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateReplyCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateVector
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateVectorBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateVectorCorrect
@@ -1712,6 +1715,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.InitialChunkCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.InitialVector
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.InitialVectorCorrect
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.InitialVectorGate
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.NodeReply
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.NodeReplyCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.NormalizePoint
@@ -2384,6 +2388,7 @@ public import Complexity.Computability.TreeEval.Ary.Packed
 public import Complexity.Computability.TreeEval.Ary.Packed.AssignmentLabels
 public import Complexity.Computability.TreeEval.Ary.Packed.AssignmentLabelsCorrect
 public import Complexity.Computability.TreeEval.Ary.Packed.AssignmentLabelsSpace
+public import Complexity.Computability.TreeEval.Ary.Packed.Constant
 public import Complexity.Computability.TreeEval.Ary.Packed.Executable
 public import Complexity.Computability.TreeEval.Ary.Packed.GateInterpolation
 public import Complexity.Computability.TreeEval.Ary.Packed.GateInterpolationSpace
@@ -2975,6 +2980,7 @@ public import Complexity.Foundations.Data.Code.ListDecoding
 public import Complexity.Foundations.Data.Code.LocalDecoding
 public import Complexity.Foundations.Data.Code.LocalListDecoding
 public import Complexity.Foundations.Data.Code.LowDegreeExtension
+public import Complexity.Foundations.Data.Code.LowDegreeExtension.Constant
 public import Complexity.Foundations.Data.Code.LowDegreeExtension.UnitSum
 public import Complexity.Foundations.Data.Code.Multilinearity
 public import Complexity.Foundations.Data.Code.MultilinearitySoundness
