@@ -20,8 +20,8 @@ import Mathlib.Data.Nat.Sqrt
 minimum correctness, a complete controller bound and register preservation from the explicitly
 stated execution law for the supplied finite counting code. The law also preserves a memory
 predicate, allowing original matrices and a caller frame to persist across dirty workspace
-reuse. Completing fast prime selection requires discharging that law using the actual modular
-counter; this module does not assume it as a completed algorithm or complexity result.
+reuse. `PrimeSelection.Exec` discharges that law using the actual modular counter; this
+component rule alone does not assume a completed algorithm or complexity result.
 -/
 
 public section
@@ -31,8 +31,8 @@ namespace Cslib.Algorithms.WordRAM.ExactTriangle.PrimeSelection
 open Cslib.WordRAM
 
 /-- Compose the real selector with an explicitly certified finite counting call. `T` bounds
-that call including its six argument copies. There is no supplied prime list. The remaining
-concrete-counter instantiation is a separate obligation, not a consequence of this rule. -/
+that call including its six argument copies. There is no supplied prime list. The
+concrete-counter instantiation is proved separately in `PrimeSelection.Exec`. -/
 theorem exec_of_count {w D T : ℕ} (counter : Code .standard 128) (score : ℕ → ℕ)
     (Source : (ℕ → ℕ) → Prop) (x : Data 160) (hD : 4 ≤ D)
     (hne : (Nat.sqrtPrimeWindow D).Nonempty) (hxD : x.regs Reg.window = D)

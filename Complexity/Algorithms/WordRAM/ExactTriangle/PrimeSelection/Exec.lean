@@ -22,7 +22,7 @@ layout or running-time oracle is a hypothesis.
 
 The caller supplies ordinary runtime scalar/pointer arguments, original weight bounds and
 explicit numerical word admission. Initialized input, derived logarithmic admission and
-width-independent prefix/support bounds are separate composition obligations.
+width-independent prefix/support bounds are exported by the main prime-selection module.
 -/
 
 public section
@@ -35,7 +35,7 @@ open Cslib.WordRAM Cslib.WordRAM.Signed
 Every original-array read, argument copy and counter instruction is charged. The common
 admission and memory envelope use the largest possible prime; no intermediate state or
 execution certificate is supplied. The final halt is excluded from this caller rule. -/
-theorem exec {w n D scratch a b c A : ℕ} (x : Data 160) (u v z : ℕ → ℤ)
+theorem exec {w W n D scratch a b c A : ℕ} (x : Data 160) (u v z : ℕ → ℤ)
     (hD : 16 ≤ D) (hn : x.regs Reg.side = n) (hwindow : x.regs Reg.window = D)
     (hAB : x.regs Reg.inputAB = a) (hBC : x.regs Reg.inputBC = b)
     (hAC : x.regs Reg.inputAC = c) (hs : x.regs Reg.scratch = scratch)
@@ -50,8 +50,9 @@ theorem exec {w n D scratch a b c A : ℕ} (x : Data 160) (u v z : ℕ → ℤ)
       (CountPrime.magnitudeBudget (Nat.sqrt D) (Nat.clog 2 n) A : ℤ))
     (hw : Fits (w + 2)
       (CountPrime.addressBudget n (Nat.sqrt D) (Nat.clog 2 n) scratch a b c))
-    (hctrl : Fits (w + 2) (4 * (D + 2) * (D + 2) + 4)) :
-    ∃ y, ExecWithin (w + 2) (program CountPrime.program) x y (timeBound n D) ∧
+    (hwidth : w + 2 ≤ W)
+    (hctrl : Fits W (4 * (D + 2) * (D + 2) + 4)) :
+    ∃ y, ExecWithin W (program CountPrime.program) x y (timeBound n D) ∧
       y.regs Reg.found = 1 ∧
       Cslib.Algorithms.ExactTriangle.IsSelectedPrime
         (fun α β : Fin n => u (α.val * n + β.val))
@@ -79,7 +80,7 @@ theorem exec {w n D scratch a b c A : ℕ} (x : Data 160) (u v z : ℕ → ℤ)
   have hcount (q : Data 160) (hqSource : Source q.mem)
       (hstatic : ∀ i, 131 ≤ i.val ∧ i.val ≤ 136 → q.regs i = x.regs i)
       (hpwin : q.regs Reg.cursor ∈ Nat.sqrtPrimeWindow D) :
-      ∃ r, ExecWithin (w + 2) (count CountPrime.program) q r (countTimeBound n D) ∧
+      ∃ r, ExecWithin W (count CountPrime.program) q r (countTimeBound n D) ∧
         r.regs Reg.countResult = score (q.regs Reg.cursor) ∧ Source r.mem := by
     obtain ⟨qU, qV, qZ, qFrame⟩ := hqSource
     have hp0 : 0 < q.regs Reg.cursor := (Nat.mem_sqrtPrimeWindow_iff_sq.1 hpwin).1.pos
@@ -100,7 +101,8 @@ theorem exec {w n D scratch a b c A : ℕ} (x : Data 160) (u v z : ℕ → ℤ)
     have hM : CountPrime.memoryEnd n (q.regs Reg.cursor) k scratch ≤
         CountPrime.memoryEnd n cap k scratch :=
       CountPrime.memoryEnd_monotone_modulus n k scratch hpc
-    refine ⟨r, he.mono ?_, hr, ?_⟩
+    have noWidth : ¬(count CountPrime.program).ReadsWidth := by decide +kernel
+    refine ⟨r, (he.mono_width noWidth hwidth).mono ?_, hr, ?_⟩
     · exact Nat.add_le_add_right (CountPrime.cost_monotone_modulus n hpc) 6
     · refine ⟨?_, ?_, ?_, ?_⟩
       · intro i hi
@@ -116,7 +118,8 @@ theorem exec {w n D scratch a b c A : ℕ} (x : Data 160) (u v z : ℕ → ℤ)
     (fun α β : Fin n => v (α.val * n + β.val))
     (fun α β : Fin n => z (α.val * n + β.val)) D hD
   obtain ⟨y, he, hfound, hprime, hvalue, hmin, hSourceY, hregs⟩ :=
-    exec_of_count CountPrime.program score Source x (by omega) ⟨p, hp.1⟩ hwindow hctrl hSource hcount
+    exec_of_count CountPrime.program score Source x (by omega) ⟨p, hp.1⟩ hwindow
+      hctrl hSource hcount
   obtain ⟨_, _, _, frame⟩ := hSourceY
   exact ⟨y, he, hfound, ⟨hprime, hmin⟩, hvalue, frame, hregs⟩
 

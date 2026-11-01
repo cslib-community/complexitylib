@@ -14,7 +14,7 @@ import Complexity.Computability.WordRAM.Compile
 
 These execute the actual selector/trial-division controller with small explicit score programs.
 The scores isolate enumeration, endpoints, minimum updates and stable ties. They are not
-modular triangle counters and do not certify the missing concrete-counter instantiation.
+modular triangle counters; the concrete-counter clients are in `WordRAMPrimeSelectionExecution`.
 -/
 
 set_option linter.hashCommand false

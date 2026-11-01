@@ -28,7 +28,7 @@ theorem magnitudeBudget_monotone_modulus (k A : ℕ) :
   intro p q hpq
   have hm := Nat.mul_le_mul_right (16 ^ k)
     (Nat.mul_le_mul_left 2 (Nat.add_le_add_right hpq 4))
-  unfold magnitudeBudget
+  dsimp only [magnitudeBudget]
   omega
 
 /-- One address envelope suffices for every modulus below its supplied maximum. -/
@@ -45,13 +45,14 @@ theorem memoryEnd_monotone_modulus (n k scratch : ℕ) :
     Monotone (fun p => memoryEnd n p k scratch) := by
   intro p q hpq
   have hm := Nat.mul_le_mul_left 4 (Nat.mul_le_mul_left (4 ^ k) hpq)
-  unfold memoryEnd
+  dsimp only [memoryEnd]
   omega
 
 /-- The complete native pre-halt counter cost is monotone in its runtime modulus. -/
 theorem cost_monotone_modulus (n : ℕ) : Monotone (cost n) := by
   intro p q hpq
   have ht := Strassen.traceBudget_monotone (Nat.clog 2 n) hpq
+  dsimp only at ht
   have hm := Nat.mul_le_mul_right (4 ^ Nat.clog 2 n)
     (Nat.add_le_add_right (Nat.mul_le_mul_left 14 hpq) 48)
   unfold cost readyCost

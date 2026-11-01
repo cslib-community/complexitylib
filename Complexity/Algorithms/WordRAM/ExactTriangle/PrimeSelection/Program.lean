@@ -22,11 +22,11 @@ No prime list, bitmap or primality oracle is supplied.
 The counting code occupies registers below 128 and uses the concrete CountPrime ABI:
 64 is `n`, 65 is `p`, 66/67/68 are the three original signed matrix pointers, 69 is the dirty
 workspace pointer, and 70 is the returned unsigned count. Selector metadata is above that bank.
-This module defines a component controller parameterized by finite code. Its instantiation
-with the concrete modular counter, correctness and complete width/resource composition are
-separate obligations under #2098; this is not a completed prime-selection endpoint.
+This module defines the component controller parameterized by finite code. The concrete
+instantiation, initialized correctness and complete width/resource composition are exported by
+`Complexity/Algorithms/WordRAM/ExactTriangle/PrimeSelection.lean`.
 
-The selection policy adapts `chKeep`/`chRound` in Anthropic's
+The selection policy adapts `chKeep`/`chRound` (lines 95–107) in Anthropic's
 [ChoosePrime source](https://github.com/anthropics/formal-math/blob/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Programs/Sec3/Theorem17/Hashing/ChoosePrime.lean).
 The source first constructs a prime list; this
 native controller instead enumerates by integer square tests and charged trial division.
