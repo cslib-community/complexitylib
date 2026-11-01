@@ -70,7 +70,7 @@ theorem bucketWeight_nonneg (F : (ι → Bool) → ℝ) (J S : Finset ι) : 0 �
 /-- For `J` the set of all coordinates, the bucket of `S` is `S` alone. -/
 @[simp] theorem bucketWeight_univ (F : (ι → Bool) → ℝ) (S : Finset ι) :
     bucketWeight F univ S = fourierCoeff F S ^ 2 := by
-  simp [bucketWeight, inter_univ, filter_eq']
+  simp [bucketWeight, filter_eq']
 
 /-- The bucket of `U ∩ J` holds at least the weight of `U`. -/
 theorem sq_fourierCoeff_le_bucketWeight (F : (ι → Bool) → ℝ) (J U : Finset ι) :
