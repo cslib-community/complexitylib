@@ -43,6 +43,8 @@ jobs:
         timeout-minutes: 10
         run: scripts/cache/get-missing.sh
       - name: Generate API documentation
+        env:
+          LEAN_NUM_THREADS: "2"
         run: DISABLE_EQUATIONS=1 lake -d docbuild build Complexity:docs
       # Also catches library changes that break one of the guide's examples.
       - name: Build the guide
