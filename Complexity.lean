@@ -1746,9 +1746,6 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayLoadCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayMotion
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayMotionCorrect
-public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayLabelLoad
-public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayLoad
-public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayLoadCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySpace
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputationTree
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockTrace
