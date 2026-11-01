@@ -12,7 +12,7 @@ public import Complexity.Computability.Circuit.Quantum.PathNetworkPolyTime
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastLeaves
 public import Complexity.Computability.Complexity.Classes.Time
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
-import Complexity.Computability.GenericRAM.Native.ExpTimePolySpace
+public import Complexity.Computability.GenericRAM.Native.ExpTimePolySpace
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -185,7 +185,7 @@ variable {α : Type} {enc : α ↪ List Bool} {gs : α → List GateCode} {X : �
 gate codes `gs a`, well formed on the polynomial-time computed register `X a`, the projected gap
 is computed in time `2 ^ (A (L + 1) / √⌊log₂ (L + 2)⌋)` times a polynomial and in polynomial
 space. -/
-private theorem exists_expTimePolySpace_gapValue {S : α → List ℕ}
+theorem exists_expTimePolySpace_gapValue {S : α → List ℕ}
     (hS : ComputableInPolyTime S enc (encList encUnary))
     (hgs : ComputableInPolyTime gs enc (encList encGateCode))
     (hX : ComputableInPolyTime X enc encBits) (hwf : ∀ a, ∀ g ∈ gs a, g.WellFormed (X a).length) :

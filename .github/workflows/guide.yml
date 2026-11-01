@@ -41,6 +41,10 @@ jobs:
         run: |
           render=true
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            # The recorded PR base can be older than this shallow checkout's history.
+            if ! git cat-file -e "$GUIDE_BASE_SHA^{commit}" 2>/dev/null; then
+              git fetch --no-tags --depth=1 origin "$GUIDE_BASE_SHA"
+            fi
             guide_changes="$(git diff --name-only "$GUIDE_BASE_SHA" HEAD -- \
               guide scripts/guide.sh scripts/check_docs.py lean-toolchain \
               .github/actions/install-lean .github/workflows/guide.yml)"

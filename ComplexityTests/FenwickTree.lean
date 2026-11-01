@@ -8,7 +8,7 @@ module
 -- upstream: local-only (test driver)
 
 public import Complexity.Init
-public import Complexity.Algorithms.Lean.FenwickTree.Stateful
+public import Complexity.DataStructure.FenwickTree.Impl
 import Mathlib.Algebra.Group.ULift
 
 /-!
@@ -23,7 +23,7 @@ Kernel-checked examples and theorems (without `native_decide`) exercising:
    `TimeM` tick counts.
 3. `[AddCommGroup ℤ]` operations (`rangeSum`, `get`, `set`) at length `n = 7` with negative updates,
    and universe polymorphism of `FenwickTree` in `Type 1` (`ULift.{1} ℤ`).
-4. Adaptive `Cslib.Stateful` clients running on `FenwickTree` with checked answers, node-visit
+4. Adaptive `Cslib.DataStructure` clients running on `FenwickTree` with checked answers, node-visit
    traces, and `Nat.clog 2 (s.length + 1)` bounds.
 5. Positive and negative `Valid` witnesses showing both conjuncts of `Valid` are non-vacuous and
    independently necessary.
@@ -33,7 +33,7 @@ public section
 
 namespace ComplexityTests.FenwickTree
 
-open Cslib.Algorithms.Lean Cslib.Algorithms.Lean.FenwickTree Cslib.Stateful
+open Cslib.DataStructure Cslib.DataStructure.FenwickTree
 
 /-! ## 1. `lowbit`, chain, and child-interval checks -/
 
@@ -199,7 +199,7 @@ example :
   · rw [prefixSum_eq hv]; rfl
   · rw [rangeSum_eq hv]; rfl
 
-/-! ## 4. Adaptive `Cslib.Stateful` client execution and non-vacuity -/
+/-! ## 4. Adaptive `Cslib.DataStructure` client execution and non-vacuity -/
 
 /-- Adaptive client: query `prefixSum 3`; if at least `8`, add `10` at index `4`, else add `2` at
 index `0`; then return `(initialSum, prefixSum 6)`. -/

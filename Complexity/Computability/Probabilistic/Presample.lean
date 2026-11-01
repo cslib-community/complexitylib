@@ -55,7 +55,8 @@ theorem IsOraclePPTOn.run_interpret_withSampleList
     (horacle : IsPPTOn
       (encPair (encPair input valueEncoding)
         (encPair (encPair operationEncoding encBits) stateEncoding))
-      (encPair encBits stateEncoding) (fun pair => oracle pair.1.1 pair.1.2 pair.2.1 pair.2.2))
+      (encPair encBits stateEncoding)
+      (fun ⟨⟨caller, value⟩, ⟨request, state⟩⟩ => oracle caller value request state))
     (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
     (hvalues : ComputableTidilyInPolyTime values input (encList valueEncoding))
     (invariant : Caller → State → Prop) (hinit : ∀ a, invariant a (initial a))
@@ -115,7 +116,8 @@ theorem IsOraclePPT.run_interpret_withSampleList
     (horacle : IsPPTOn
       (encPair (encPair input valueEncoding)
         (encPair (encPair operationEncoding encBits) stateEncoding))
-      (encPair encBits stateEncoding) (fun pair => oracle pair.1.1 pair.1.2 pair.2.1 pair.2.2))
+      (encPair encBits stateEncoding)
+      (fun ⟨⟨caller, value⟩, ⟨request, state⟩⟩ => oracle caller value request state))
     (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
     (hvalues : ComputableTidilyInPolyTime values input (encList valueEncoding))
     (invariant : Caller → State → Prop) (hinit : ∀ a, invariant a (initial a))

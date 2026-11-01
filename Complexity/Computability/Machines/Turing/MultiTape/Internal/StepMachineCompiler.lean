@@ -53,8 +53,8 @@ namespace Turing.MultiTapeTM
 @[expose] public def stepFlagWord (b : Bool) : List Bool := if b then [true] else []
 
 public lemma linear_stepFlagWord :
-    ComputableInLinearTimeAndSpace stepFlagWord encBool encBits :=
-  .of_finite stepFlagWord
+    ComputableInDegree stepFlagWord encBool encBits 1 1 :=
+  (ComputableInDegree.of_finite stepFlagWord).mono
 
 @[simp] public lemma moveOfCell_encSign (m : SignType) : moveOfCell (encSign m).head? = m := by
   cases m <;> rfl
@@ -133,19 +133,19 @@ variable {τ : Type} {enc : τ ↪ List Bool}
 /-- The value behind the recorded symbol. -/
 public lemma peek_snd : ComputableInO Prod.snd (encPeek enc) enc
     (fun p => (encPeek enc p).length) fun p => (encPeek enc p).length :=
-  of_linear (ComputableInLinearTimeAndSpace.of_transducer dropTwoT fun p => by
+  of_linear (ComputableInDegree.of_transducer dropTwoT fun p => by
     obtain ⟨_ | b, t⟩ := p <;> simp [peekWord, dropTwoT_run_two])
 
 /-- The recorded symbol. -/
 public lemma peek_fst : ComputableInO Prod.fst (encPeek enc) (encOption encBool)
     (fun p => (encPeek enc p).length) fun p => (encPeek enc p).length :=
-  of_linear (ComputableInLinearTimeAndSpace.of_transducer peekSymT fun p => by
+  of_linear (ComputableInDegree.of_transducer peekSymT fun p => by
     obtain ⟨_ | b, t⟩ := p <;> simp [peekWord, peekSymT_run_three])
 
 /-- No symbol recorded in front of a value. -/
 public lemma peek_none : ComputableInO (fun t => ((none : Option Bool), t)) enc (encPeek enc)
     (fun t => (enc t).length) fun t => (enc t).length :=
-  of_linear (ComputableInLinearTimeAndSpace.of_transducer slotT fun t => by
+  of_linear (ComputableInDegree.of_transducer slotT fun t => by
     cases h : enc t with
     | nil => simp [h, peekWord]
     | cons b w => simp [h, peekWord, slotT_run_some])
@@ -266,7 +266,7 @@ private theorem Internal.compileStepMachine {σ γ ω : Type} {encS : σ ↪ Lis
   have fN := peek_none.comp_linear (hS.fst'.prod hS.snd'.fst')
   have fM := (peek_snd (enc := encAug encS)).snd'
   have fC := (of_linear linear_stepFlagWord).comp_linear
-    ((of_linear (ComputableInLinearTimeAndSpace.of_finite
+    ((of_linear (ComputableInDegree.of_finite
       (encIn := encBool) (encMid := encBool) fun b : Bool => !b)).comp_linear
       (hhalt.comp (peek_snd (enc := encAug encS)).fst'))
   have fI := (peek_none (enc := encAug encS)).comp_linear

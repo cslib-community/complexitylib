@@ -4,15 +4,15 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Erik Demaine
 -/
 
-import Complexity.Algorithms.WordRAM.FusionTree.Model
-import Complexity.Algorithms.WordRAM.FusionTree.Parameters
-import Complexity.Algorithms.WordRAM.FusionTree.ReadHeader
+import Complexity.DataStructure.FusionTree.WordRAM.Model
+import Complexity.DataStructure.FusionTree.WordRAM.Parameters
+import Complexity.DataStructure.FusionTree.WordRAM.ReadHeader
 
 /-! Concrete parameter nonvacuity, serialization, and actual header reads. -/
 
 open Cslib.WordRAM
-open Cslib.Algorithms.Lean.FusionTree
-open Cslib.Algorithms.WordRAM.FusionTree
+open Cslib.DataStructure.FusionTree
+open Cslib.DataStructure.FusionTree.WordRAM
 
 namespace FusionTreeLayoutTests
 
@@ -67,7 +67,7 @@ example : [50, 51, 52, 53].map (memory zeroParameters tree 32) = [0, 54, 7, 72] 
 
 example : decode 3 (memory zeroParameters tree 32) 32 = tree :=
   decode_encode (by simp [tree, Tree.Valid, Tree.keys] : Tree.Valid 2 tree)
-    (by simp [tree, Cslib.Algorithms.Lean.FusionTree.Tree.height]) zeroParameters 32
+    (by simp [tree, Cslib.DataStructure.FusionTree.Tree.height]) zeroParameters 32
 
 def input : Data 21 :=
   ⟨fun i => if i = 0 then 32 else 127, memory zeroParameters tree 32⟩
@@ -80,7 +80,7 @@ example : (ReadHeaderProgram.code.eval 7 0 input).map
 example : Exec 7 ReadHeaderProgram.code input (ReadHeaderProgram.result input) 54 :=
   ReadHeaderProgram.exec input (by decide)
 
-/-- info: 'Cslib.Algorithms.WordRAM.FusionTree.ReadHeaderProgram.exec' depends on axioms:
+/-- info: 'Cslib.DataStructure.FusionTree.WordRAM.ReadHeaderProgram.exec' depends on axioms:
 [propext, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReadHeaderProgram.exec

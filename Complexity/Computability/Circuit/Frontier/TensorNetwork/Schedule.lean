@@ -37,12 +37,13 @@ p. 64).
 * The node `t` of valuation `i` is recovered from its children at precision
   `p_t = p + 8 h 2 ^ (a - i) + 8 M (a + 1)` (`nodePrecision`), as in Lemma D.5, where
   `D_t = L / 2 ^ i`.
-* Precisions stay below `precisionBound C s d`, which starts at `C s` and grows by
+* Precisions stay below `precisionBound C s d`, which starts at `C s (⌊log₂ s⌋ + 1)` and grows by
   `8 C s (4 · 2 ^ a_d + a_d + 1)` per level.
 
 **Active calls.** `Active C s d M p` says that a call at depth `d` has `M` edges, with
 `16 ^ d M ≤ C s` and `H < M`, and precision `p ≤ precisionBound C s d`. The root is active when
-it has more than `H` edges and edges and precision are at most `C s` (`Active.root`), and an
+it has more than `H` edges, at most `C s` edges and precision at most
+`C s (⌊log₂ s⌋ + 1)` (`Active.root_logPrecision`), and an
 active call's children are active when they have more than `H` edges (`Active.child`): Lemma D.3
 gives them at most `M / 16` edges.
 
@@ -69,6 +70,10 @@ consumer interface of #1833, where the manuscript has `⌈log₂ s⌉` and `⌈s
 `u_d ≥ ⌊√λ⌋ / (2 ^ 17 C)` instead of `u_d ≥ λ ^ (4/5)`, which suffices for (D.11). The manuscript's
 precision bound `p ≤ s λ^{O(1)} 2 ^ (a_{d-1})` is `precisionBound_le`.
 
+The logarithmic factor in the root precision extends the manuscript's `O(s)` allowance.
+It changes only the polynomial factor in the inherited-precision estimate (D.11); the taper
+absorbs it, so the mode and call-count bounds are unchanged.
+
 ## Main definitions
 
 * `leafSize`, `taper`, `prefixBits`, `slotBits`, `degreeBound`, `nodePrecision`,
@@ -82,7 +87,7 @@ precision bound `p ≤ s λ^{O(1)} 2 ^ (a_{d-1})` is `precisionBound_le`.
 * `card_modeBudget_le`, `ActiveBounds.card_modeBudget_le`: the mode count (D.15) at an active
   call.
 * `sum_branchExponent_le`: the excess exponents sum to `O(s / √⌊log₂ s⌋)`.
-* `precisionBound_le`: the precision bound `p ≤ C s 2 ^ (a_{d-1}) (1 + d (8 λ + 40))`.
+* `precisionBound_le`: the precision bound `p ≤ C s 2 ^ (a_{d-1}) (λ + 1 + d (8 λ + 40))`.
 
 ## References
 
@@ -120,10 +125,10 @@ slots. -/
 is recovered by Lemma D.5, for input precision `p`, `h = ⌈3 M / u⌉` and `2 ^ a` slots. -/
 @[expose] def nodePrecision (p h a M i : ℕ) : ℕ := p + 8 * h * 2 ^ (a - i) + 8 * M * (a + 1)
 
-/-- The precision schedule: `C s` at the root, growing by `8 C s (4 · 2 ^ a_d + a_d + 1)` from
-depth `d` to `d + 1`. -/
+/-- The precision schedule: `C s (⌊log₂ s⌋ + 1)` at the root, growing by
+`8 C s (4 · 2 ^ a_d + a_d + 1)` from depth `d` to `d + 1`. -/
 @[expose] def precisionBound (C s : ℕ) : ℕ → ℕ
-  | 0 => C * s
+  | 0 => C * s * (Nat.log 2 s + 1)
   | d + 1 => precisionBound C s d + 8 * C * s * (4 * 2 ^ slotBits s d + slotBits s d + 1)
 
 /-- The excess exponent `e_d = 4 ⌊15360 C s / (⌊√⌊log₂ s⌋⌋ 8 ^ d)⌋ + 4` of the mode count at
@@ -145,6 +150,12 @@ structure Active (C s d M p : ℕ) : Prop where
 /-- The root is active when it is not a leaf and its edges and precision are at most `C s`. -/
 theorem Active.root {C s M p : ℕ} (hM : M ≤ C * s) (hH : leafSize s < M) (hp : p ≤ C * s) :
     Active C s 0 M p :=
+  ⟨by simpa using hM, hH, hp.trans (Nat.le_mul_of_pos_right _ (Nat.succ_pos _))⟩
+
+/-- The same schedule allows root precision `C s (⌊log₂ s⌋ + 1)`, with unchanged branching
+bounds. The additional logarithm is absorbed by the taper in (D.11). -/
+theorem Active.root_logPrecision {C s M p : ℕ} (hM : M ≤ C * s) (hH : leafSize s < M)
+    (hp : p ≤ C * s * (Nat.log 2 s + 1)) : Active C s 0 M p :=
   ⟨by simpa using hM, hH, hp⟩
 
 /-- A child of an active call at depth `d` with at most a sixteenth of its edges, precision
@@ -215,9 +226,10 @@ theorem degreeBound_mono {a b : ℕ} (h : a ≤ b) : degreeBound a ≤ degreeBou
   Nat.pow_le_pow_right (by norm_num) (by have := Nat.log_mono_right (b := 2) h; omega)
 
 /-- **The precision bound** of (D.11), `p ≤ s λ^{O(1)} 2 ^ (a_{d - 1})`:
-`precisionBound C s d ≤ C s 2 ^ (a_{d - 1}) (1 + d (8 λ + 40))`. -/
+`precisionBound C s d ≤ C s 2 ^ (a_{d - 1}) (λ + 1 + d (8 λ + 40))`. -/
 theorem precisionBound_le (C s d : ℕ) :
-    precisionBound C s d ≤ C * s * 2 ^ prefixBits s d * (1 + d * (8 * Nat.log 2 s + 40)) := by
+    precisionBound C s d ≤
+      C * s * 2 ^ prefixBits s d * (Nat.log 2 s + 1 + d * (8 * Nat.log 2 s + 40)) := by
   induction d with
   | zero => simp [precisionBound, prefixBits]
   | succ d ih =>
@@ -230,14 +242,14 @@ theorem precisionBound_le (C s d : ℕ) :
     have hstep : 8 * (4 * 2 ^ a + a + 1) ≤ 2 ^ a * (8 * n + 40) := by
       have : a + 1 ≤ 2 ^ a * (n + 1) := by nlinarith
       nlinarith
-    have hP : precisionBound C s d ≤ C * s * 2 ^ a * (1 + d * (8 * n + 40)) :=
+    have hP : precisionBound C s d ≤ C * s * 2 ^ a * (n + 1 + d * (8 * n + 40)) :=
       ih.trans (Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ hpow))
     calc precisionBound C s (d + 1)
         = precisionBound C s d + C * s * (8 * (4 * 2 ^ a + a + 1)) := by
           rw [precisionBound]; ring
-      _ ≤ C * s * 2 ^ a * (1 + d * (8 * n + 40)) + C * s * (2 ^ a * (8 * n + 40)) :=
+      _ ≤ C * s * 2 ^ a * (n + 1 + d * (8 * n + 40)) + C * s * (2 ^ a * (8 * n + 40)) :=
           Nat.add_le_add hP (Nat.mul_le_mul_left _ hstep)
-      _ = C * s * 2 ^ prefixBits s (d + 1) * (1 + (d + 1) * (8 * n + 40)) := by
+      _ = C * s * 2 ^ prefixBits s (d + 1) * (n + 1 + (d + 1) * (8 * n + 40)) := by
           rw [show prefixBits s (d + 1) = a from rfl]; ring
 
 /-! ### Active calls -/
@@ -351,10 +363,11 @@ structure ActiveBounds (C s d M p : ℕ) : Prop where
 
 /-! #### Arithmetic lemmas -/
 
-private theorem one_add_mul_le_sq (n : ℕ) : 1 + n * (8 * n + 40) ≤ 49 * (n + 1) ^ 2 := by
+private theorem one_add_mul_le_sq (n : ℕ) : n + 1 + n * (8 * n + 40) ≤ 50 * (n + 1) ^ 2 := by
   nlinarith
 
-private theorem one_add_mul_le_sq' {n : ℕ} (hn : 1 ≤ n) : 1 + n * (8 * n + 40) ≤ 49 * n ^ 2 := by
+private theorem one_add_mul_le_sq' {n : ℕ} (hn : 1 ≤ n) :
+    n + 1 + n * (8 * n + 40) ≤ 50 * n ^ 2 := by
   nlinarith
 
 /-- The children's precisions are within the schedule. -/
@@ -374,34 +387,35 @@ private theorem nodePrecision_le_of {p P h u M C s a i : ℕ} (hp : p ≤ P)
 
 /-- The inherited precision is absorbed by the taper: `p u ≤ M 2 ^ (a_{d-1} + u)`. -/
 private theorem mul_taper_le_of {p C s A d n σ u M : ℕ}
-    (hp : p ≤ C * s * 2 ^ A * (1 + d * (8 * n + 40))) (hsM : s ≤ M * σ) (hσ : σ ≤ n)
-    (hd : d ≤ n) (hu : u ≤ n) (hn : 1 ≤ n) (hpow : 49 * C * n ^ 4 ≤ 2 ^ u) :
+    (hp : p ≤ C * s * 2 ^ A * (n + 1 + d * (8 * n + 40))) (hsM : s ≤ M * σ) (hσ : σ ≤ n)
+    (hd : d ≤ n) (hu : u ≤ n) (hn : 1 ≤ n) (hpow : 50 * C * n ^ 4 ≤ 2 ^ u) :
     p * u ≤ M * 2 ^ (A + u) := by
   have h0 : d * (8 * n + 40) ≤ n * (8 * n + 40) := Nat.mul_le_mul_right _ hd
-  have h1 : 1 + d * (8 * n + 40) ≤ 49 * n ^ 2 := (Nat.add_le_add_left h0 1).trans
-    (one_add_mul_le_sq' hn)
+  have h1 : n + 1 + d * (8 * n + 40) ≤ 50 * n ^ 2 :=
+    (Nat.add_le_add_left h0 (n + 1)).trans (one_add_mul_le_sq' hn)
   have h2 : σ * u ≤ n ^ 2 := by rw [sq]; exact Nat.mul_le_mul hσ hu
-  have hfac : C * σ * (1 + d * (8 * n + 40)) * u ≤ 49 * C * n ^ 4 :=
-    calc C * σ * (1 + d * (8 * n + 40)) * u = C * (σ * u) * (1 + d * (8 * n + 40)) := by ring
-      _ ≤ C * n ^ 2 * (49 * n ^ 2) := Nat.mul_le_mul (Nat.mul_le_mul_left _ h2) h1
-      _ = 49 * C * n ^ 4 := by ring
-  calc p * u ≤ C * s * 2 ^ A * (1 + d * (8 * n + 40)) * u := Nat.mul_le_mul_right _ hp
-    _ ≤ C * (M * σ) * 2 ^ A * (1 + d * (8 * n + 40)) * u :=
+  have hfac : C * σ * (n + 1 + d * (8 * n + 40)) * u ≤ 50 * C * n ^ 4 :=
+    calc C * σ * (n + 1 + d * (8 * n + 40)) * u
+        = C * (σ * u) * (n + 1 + d * (8 * n + 40)) := by ring
+      _ ≤ C * n ^ 2 * (50 * n ^ 2) := Nat.mul_le_mul (Nat.mul_le_mul_left _ h2) h1
+      _ = 50 * C * n ^ 4 := by ring
+  calc p * u ≤ C * s * 2 ^ A * (n + 1 + d * (8 * n + 40)) * u := Nat.mul_le_mul_right _ hp
+    _ ≤ C * (M * σ) * 2 ^ A * (n + 1 + d * (8 * n + 40)) * u :=
         Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _
           (Nat.mul_le_mul_left C hsM)))
-    _ = M * 2 ^ A * (C * σ * (1 + d * (8 * n + 40)) * u) := by ring
+    _ = M * 2 ^ A * (C * σ * (n + 1 + d * (8 * n + 40)) * u) := by ring
     _ ≤ M * 2 ^ A * 2 ^ u := Nat.mul_le_mul_left _ (hfac.trans hpow)
     _ = M * 2 ^ (A + u) := by rw [mul_assoc, ← pow_add]
 
 /-- The evaluation loss is absorbed by the taper: `8 (a + 1) u ≤ 2 ^ u`. -/
 private theorem eight_mul_le_two_pow {a u n C : ℕ} (hC : 1 ≤ C) (hn : 1 ≤ n) (ha : a ≤ n)
-    (hu : u ≤ n) (hpow : 49 * C * n ^ 4 ≤ 2 ^ u) : 8 * (a + 1) * u ≤ 2 ^ u := by
+    (hu : u ≤ n) (hpow : 50 * C * n ^ 4 ≤ 2 ^ u) : 8 * (a + 1) * u ≤ 2 ^ u := by
   have h1 : 8 * (a + 1) * u ≤ 16 * n ^ 2 := by
     calc 8 * (a + 1) * u ≤ 8 * (n + n) * n :=
           Nat.mul_le_mul (Nat.mul_le_mul_left 8 (Nat.add_le_add ha hn)) hu
       _ = 16 * n ^ 2 := by ring
   have h2 : n ^ 2 ≤ n ^ 4 := Nat.pow_le_pow_right hn (by norm_num)
-  have h3 : 16 * n ^ 4 ≤ 49 * C * n ^ 4 :=
+  have h3 : 16 * n ^ 4 ≤ 50 * C * n ^ 4 :=
     Nat.mul_le_mul_right _ (by omega)
   omega
 
@@ -456,39 +470,39 @@ private theorem points_le_of {M a C s n : ℕ} (hM1 : 1 ≤ M) (hM : M ≤ C * s
 
 /-- The asymptotic inequalities behind the certificate, in `n = ⌊log₂ s⌋`. -/
 private theorem eventually_large (C : ℕ) (hC : 1 ≤ C) : ∀ᶠ n : ℕ in atTop,
-    200 ≤ n ∧ 49 * C * (Nat.sqrt n + 1) ^ 8 ≤ 2 ^ (Nat.sqrt n / (2 ^ 17 * C)) ∧
+    200 ≤ n ∧ 50 * C * (Nat.sqrt n + 1) ^ 8 ≤ 2 ^ (Nat.sqrt n / (2 ^ 17 * C)) ∧
       C * (n + 1) ^ 1 ≤ 2 ^ (n / 8) ∧ 8 * (n + 1) ^ 1 ≤ 2 ^ (n / 20) ∧
-      49 * C * (n + 1) ^ 2 ≤ 2 ^ (n / 2) := by
+      50 * C * (n + 1) ^ 2 ≤ 2 ^ (n / 2) := by
   have hsqrt : Tendsto Nat.sqrt atTop atTop :=
     tendsto_atTop_atTop.2 fun b => ⟨b * b, fun n hn => Nat.le_sqrt.2 hn⟩
   filter_upwards [eventually_ge_atTop 200,
-    hsqrt.eventually (Nat.eventually_mul_add_one_pow_le_pow_div (49 * C) 8 (2 ^ 17 * C)
+    hsqrt.eventually (Nat.eventually_mul_add_one_pow_le_pow_div (50 * C) 8 (2 ^ 17 * C)
       one_lt_two (by positivity)),
     Nat.eventually_mul_add_one_pow_le_pow_div C 1 8 one_lt_two (by norm_num),
     Nat.eventually_mul_add_one_pow_le_pow_div 8 1 20 one_lt_two (by norm_num),
-    Nat.eventually_mul_add_one_pow_le_pow_div (49 * C) 2 2 one_lt_two (by norm_num)]
+    Nat.eventually_mul_add_one_pow_le_pow_div (50 * C) 2 2 one_lt_two (by norm_num)]
     with n h1 h2 h3 h4 h5
   exact ⟨h1, h2, h3, h4, h5⟩
 
 /-! #### The certificate -/
 
-/-- Precisions up to depth `⌊log₂ s⌋` are at most `s ^ 2` once `49 C (λ + 1)² ≤ 2 ^ (λ / 2)`. -/
+/-- Precisions up to depth `⌊log₂ s⌋` are at most `s ^ 2` once `50 C (λ + 1)² ≤ 2 ^ (λ / 2)`. -/
 private theorem precisionBound_le_sq_of {C s d : ℕ} (hd : d ≤ Nat.log 2 s) (hs : s ≠ 0)
-    (h : 49 * C * (Nat.log 2 s + 1) ^ 2 ≤ 2 ^ (Nat.log 2 s / 2)) :
+    (h : 50 * C * (Nat.log 2 s + 1) ^ 2 ≤ 2 ^ (Nat.log 2 s / 2)) :
     precisionBound C s d ≤ s ^ 2 := by
   set n := Nat.log 2 s
   have h2n : 2 ^ n ≤ s := Nat.pow_log_le_self 2 hs
   have hpow : 2 ^ prefixBits s d ≤ 2 ^ (n / 32768) :=
     Nat.pow_le_pow_right two_pos (prefixBits_le s d)
-  have hfac : C * (1 + d * (8 * n + 40)) ≤ 49 * C * (n + 1) ^ 2 := by
+  have hfac : C * (n + 1 + d * (8 * n + 40)) ≤ 50 * C * (n + 1) ^ 2 := by
     have h1 : d * (8 * n + 40) ≤ n * (8 * n + 40) := Nat.mul_le_mul_right _ hd
     have h2 := one_add_mul_le_sq n
-    calc C * (1 + d * (8 * n + 40)) ≤ C * (49 * (n + 1) ^ 2) :=
+    calc C * (n + 1 + d * (8 * n + 40)) ≤ C * (50 * (n + 1) ^ 2) :=
           Nat.mul_le_mul_left _ (by omega)
-      _ = 49 * C * (n + 1) ^ 2 := by ring
-  calc precisionBound C s d ≤ C * s * 2 ^ prefixBits s d * (1 + d * (8 * n + 40)) :=
+      _ = 50 * C * (n + 1) ^ 2 := by ring
+  calc precisionBound C s d ≤ C * s * 2 ^ prefixBits s d * (n + 1 + d * (8 * n + 40)) :=
         precisionBound_le C s d
-    _ = s * (C * (1 + d * (8 * n + 40))) * 2 ^ prefixBits s d := by ring
+    _ = s * (C * (n + 1 + d * (8 * n + 40))) * 2 ^ prefixBits s d := by ring
     _ ≤ s * 2 ^ (n / 2) * 2 ^ (n / 32768) :=
         Nat.mul_le_mul (Nat.mul_le_mul_left _ (hfac.trans h)) hpow
     _ = s * 2 ^ (n / 2 + n / 32768) := by rw [mul_assoc, ← pow_add]
@@ -499,7 +513,7 @@ private theorem precisionBound_le_sq_of {C s d : ℕ} (hd : d ≤ Nat.log 2 s) (
 /-- The certificate at one active call, from the asymptotic inequalities at `λ = ⌊log₂ s⌋`. -/
 private theorem activeBounds_of {C s d M p : ℕ} (hA : Active C s d M p)
     (h200 : 200 ≤ Nat.log 2 s)
-    (hA1 : 49 * C * (Nat.sqrt (Nat.log 2 s) + 1) ^ 8 ≤
+    (hA1 : 50 * C * (Nat.sqrt (Nat.log 2 s) + 1) ^ 8 ≤
       2 ^ (Nat.sqrt (Nat.log 2 s) / (2 ^ 17 * C)))
     (hA2 : C * (Nat.log 2 s + 1) ≤ 2 ^ (Nat.log 2 s / 8))
     (hA3 : 8 * (Nat.log 2 s + 1) ≤ 2 ^ (Nat.log 2 s / 20)) :
@@ -532,12 +546,12 @@ private theorem activeBounds_of {C s d M p : ℕ} (hA : Active C s d M p)
     have := (Nat.pow_lt_pow_iff_right one_lt_two).1 h1
     omega
   -- The taper.
-  have hpowu : 49 * C * Nat.log 2 s ^ 4 ≤ 2 ^ taper s d := by
+  have hpowu : 50 * C * Nat.log 2 s ^ 4 ≤ 2 ^ taper s d := by
     have hn4 : Nat.log 2 s ^ 4 ≤ (Nat.sqrt (Nat.log 2 s) + 1) ^ 8 := by
       calc Nat.log 2 s ^ 4 ≤ ((Nat.sqrt (Nat.log 2 s) + 1) ^ 2) ^ 4 :=
             Nat.pow_le_pow_left hnσ.le 4
         _ = (Nat.sqrt (Nat.log 2 s) + 1) ^ 8 := by rw [← pow_mul]
-    calc 49 * C * Nat.log 2 s ^ 4 ≤ 49 * C * (Nat.sqrt (Nat.log 2 s) + 1) ^ 8 :=
+    calc 50 * C * Nat.log 2 s ^ 4 ≤ 50 * C * (Nat.sqrt (Nat.log 2 s) + 1) ^ 8 :=
           Nat.mul_le_mul_left _ hn4
       _ ≤ 2 ^ (Nat.sqrt (Nat.log 2 s) / (2 ^ 17 * C)) := hA1
       _ ≤ 2 ^ taper s d := Nat.pow_le_pow_right two_pos (hA.le_taper hs2)
@@ -546,9 +560,9 @@ private theorem activeBounds_of {C s d M p : ℕ} (hA : Active C s d M p)
     have h0 : taper s d = 0 := by omega
     rw [h0, pow_zero] at hpowu
     have : 1 ≤ Nat.log 2 s ^ 4 := Nat.one_le_pow _ _ (by omega)
-    have : 49 ≤ 49 * C * Nat.log 2 s ^ 4 :=
-      calc 49 = 49 * 1 * 1 := rfl
-        _ ≤ 49 * C * Nat.log 2 s ^ 4 := Nat.mul_le_mul (Nat.mul_le_mul_left _ hC) this
+    have : 50 ≤ 50 * C * Nat.log 2 s ^ 4 :=
+      calc 50 = 50 * 1 * 1 := rfl
+        _ ≤ 50 * C * Nat.log 2 s ^ 4 := Nat.mul_le_mul (Nat.mul_le_mul_left _ hC) this
     omega
   have hun : taper s d ≤ Nat.log 2 s := Nat.div_le_self _ _
   have huM : taper s d ≤ M := by
