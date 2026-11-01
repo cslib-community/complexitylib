@@ -61,16 +61,14 @@ inductive Operation where
 
 /-- Abstract list specification. The admissibility of an update includes the word bound on
 its new total; a query does not modify the array. -/
-def spec (h w : ℕ) : Stateful.Spec where
-  State := List ℕ
-  Op := Operation
-  Result := fun _ => ℕ
-  step s
-    | .add i δ => (increment s i δ, 0)
-    | .sum i => (s, (s.take i).sum)
-  valid s
-    | .add i δ => i < 2 ^ h ∧ Fits w (s.sum + δ)
-    | .sum i => i ≤ 2 ^ h
+abbrev spec (h w : ℕ) : Stateful.Spec :=
+  Stateful.Spec.ofFn (State := List ℕ) (Op := Operation) (Result := fun _ => ℕ)
+    (fun s => fun
+      | .add i δ => (increment s i δ, 0)
+      | .sum i => (s, (s.take i).sum))
+    (fun s => fun
+      | .add i δ => i < 2 ^ h ∧ Fits w (s.sum + δ)
+      | .sum i => i ≤ 2 ^ h)
 
 /-- Initialize constants and traversal registers, charging all seven instructions. -/
 def setup : Code .standard 14 := ram[
@@ -147,7 +145,7 @@ the specified result within `13 (h + 1) + 11` structured instructions. All memor
 theorem dispatch_spec (ha : Fits w (b + 2 * 2 ^ h)) {s : List ℕ} (o : Operation)
     (hx : Rep h b w s x) (ho : (spec h w).valid s o) :
     ∃ y, ExecWithin w dispatch ((program h w).prepare o x) y (13 * (h + 1) + 11) ∧
-      y.regs ans = ((spec h w).step s o).2 ∧ Rep h b w ((spec h w).step s o).1 y ∧
+      y.regs ans = ((spec h w).stepFn s o).2 ∧ Rep h b w ((spec h w).stepFn s o).1 y ∧
       (∀ a, a < b ∨ b + Tree.words h ≤ a → y.mem a = x.mem a) := by
   have hp := Nat.two_pow_pos h
   have h2 : Fits w 2 := ha.of_le (by omega)
@@ -204,13 +202,14 @@ theorem dispatch_spec (ha : Fits w (b + 2 * 2 ^ h)) {s : List ℕ} (o : Operatio
       simp [hym, z, setupData, DynamicProgram.prepare]
 
 /-- Semantic correctness and totality of the fixed bounded-word implementation. -/
-def certificate (ha : Fits w (b + 2 * 2 ^ h)) : DynamicCertificate (program h w) w where
-  rep := Rep h b w
-  bounded := Rep.bounded
-  arguments_fit o ho j _ := arguments_fit ha o ho j
-  execute o hx ho := by
-    obtain ⟨y, ⟨n, _, he⟩, hans, hy, _⟩ := dispatch_spec ha o hx ho
-    exact ⟨y, n, he, congrArg some hans, hy⟩
+def certificate (ha : Fits w (b + 2 * 2 ^ h)) : DynamicCertificate (program h w) w :=
+  DynamicCertificate.ofFn
+    (rep := Rep h b w)
+    (bounded := Rep.bounded)
+    (arguments_fit := fun o ho j _ => arguments_fit ha o ho j)
+    (execute := fun o hx ho => by
+      obtain ⟨y, ⟨n, _, he⟩, hans, hy, _⟩ := dispatch_spec ha o hx ho
+      exact ⟨y, n, he, congrArg some hans, hy⟩)
 
 /-- Separate worst-case instruction certificate, counting the final halt. -/
 theorem instruction_bound (ha : Fits w (b + 2 * 2 ^ h)) :
