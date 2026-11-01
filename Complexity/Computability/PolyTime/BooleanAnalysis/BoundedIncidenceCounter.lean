@@ -860,17 +860,17 @@ private theorem computableInPolyTime_branchClamped :
   have hRu : PolyT branchR_u encBranchEvalInput encUnary := binary_min_unary' hn' hR
   have hru : PolyT branchr_u encBranchEvalInput encUnary := binary_min_unary' hn' hr
   have hA₀u : PolyT branchA₀_u encBranchEvalInput encUnary :=
-    binary_min_unary' (bi_unary_add.comp (hn'.prod (const 1))) hA₀
+    binary_min_unary' (unary_add.comp (hn'.prod (const 1))) hA₀
   have hpow : PolyT (fun inp : BranchEvalInput => branchr_u inp ^ (2 * branchQ_u inp))
       encBranchEvalInput encNat :=
     (binary_pow.comp
-      ((unary_to_binary.comp hru).prod (bi_unary_add.comp (hQu.prod hQu)))).of_enc_eq
+      ((unary_to_binary.comp hru).prod (unary_add.comp (hQu.prod hQu)))).of_enc_eq
       fun inp => by congr 1; dsimp only [Function.comp_apply]; congr 1; omega
   have hDcap : PolyT branchD_cap encBranchEvalInput encUnary := binary_min_unary' hn' hpow
-  have hnum := bi_unary_mul.comp
-    ((bi_unary_mul.comp (hk'.prod (unary_sub.comp (hRu.prod (const 1))))).prod
-    (bi_unary_add.comp (((length_list (encList (encList encNat))).comp heqs).prod
-      (bi_unary_add.comp (hn'.prod hn')))))
+  have hnum := unary_mul.comp
+    ((unary_mul.comp (hk'.prod (unary_sub.comp (hRu.prod (const 1))))).prod
+    (unary_add.comp (((length_list (encList (encList encNat))).comp heqs).prod
+      (unary_add.comp (hn'.prod hn')))))
   have hdiv := binary_div.comp ((unary_to_binary.comp hnum).prod
     (unary_to_binary.comp (bi_unary_max.comp ((const 1).prod hQu))))
   have hq : PolyT branchTruncQ encBranchEvalInput encUnary := by
@@ -1028,19 +1028,19 @@ private theorem exists_boundedIncidenceBranch_cert :
     have hn_p := hn'.comp hinp; have hk_p := hk'.comp hinp; have heqs_p := heqs.comp hinp
     have hru_p := hru.comp hinp; have hDcap_p := hDcap.comp hinp; have hq_p := hq.comp hinp
     have hJ_p : PolyT (fun p : _ × ℕ => branchTruncQ p.1.1.1 + 1) eIn encUnary :=
-      bi_unary_add.comp (hq_p.prod (const 1))
+      unary_add.comp (hq_p.prod (const 1))
     have hℓ_p : PolyT (fun p : _ × ℕ => p.1.1.1.1.1 + 1) eIn encUnary :=
-      bi_unary_add.comp (hn_p.prod (const 1))
+      unary_add.comp (hn_p.prod (const 1))
     have hm_rows : PolyT (fun p : _ × ℕ => p.1.1.2.measurementMatrix.length) eIn encUnary :=
       (length_list (encList encIntBin)).comp (computableInPolyTime_measurementMatrix hdat)
     have hmeq_p := (length_list (encList (encList encNat))).comp heqs_p
-    have hc_cap := bi_unary_mul.comp ((bi_unary_mul.comp ((const 4).prod hℓ_p)).prod
-      (bi_unary_add.comp ((bi_unary_add.comp ((bi_unary_mul.comp (hmeq_p.prod hn_p)).prod
+    have hc_cap := unary_mul.comp ((unary_mul.comp ((const 4).prod hℓ_p)).prod
+      (unary_add.comp ((unary_add.comp ((unary_mul.comp (hmeq_p.prod hn_p)).prod
         hn_p)).prod (const 1))))
     have hc_meas : PolyT
         (fun p : _ × ℕ => min (4 * (p.1.1.1.1.1 + 1) * (p.1.1.1.2.2.2.length * p.1.1.1.1.1 +
           p.1.1.1.1.1 + 1)) (branchr_u p.1.1.1 * p.1.1.2.measurementMatrix.length)) eIn encUnary :=
-      bi_unary_min.comp (hc_cap.prod (bi_unary_mul.comp (hru_p.prod hm_rows)))
+      bi_unary_min.comp (hc_cap.prod (unary_mul.comp (hru_p.prod hm_rows)))
     have hnode : PolyT (fun p : _ × ℕ => ((p.2 : ℤ) + 1)) eIn encIntBin :=
       bi_intBin_add' (intBin_natCast.comp (unary_to_binary.comp ht)) (const 1)
     have hvgt := (listGetD (encA := encList (encList encNat)) []).comp
@@ -1071,11 +1071,11 @@ private theorem exists_boundedIncidenceBranch_cert :
     have hn_f := hn'.comp hp1; have hk_f := hk'.comp hp1
     have heqs_f := heqs.comp hp1; have hQu_f := hQu.comp hp1; have hq_f := hq.comp hp1
     have hℓ_f : PolyT (fun p : _ × List JetRows => p.1.1.1.1 + 1) eF encUnary :=
-      bi_unary_add.comp (hn_f.prod (const 1))
+      unary_add.comp (hn_f.prod (const 1))
     have hJ_f : PolyT (fun p : _ × List JetRows => branchTruncQ p.1.1 + 1) eF encUnary :=
-      bi_unary_add.comp (hq_f.prod (const 1))
+      unary_add.comp (hq_f.prod (const 1))
     have h2ℓ_sub1 : PolyT (fun p : _ × List JetRows => 2 * (p.1.1.1.1 + 1) - 1) eF encUnary :=
-      unary_sub.comp ((bi_unary_mul.comp ((const 2).prod hℓ_f)).prod (const 1))
+      unary_sub.comp ((unary_mul.comp ((const 2).prod hℓ_f)).prod (const 1))
     have hmeq_f : PolyT (fun p : _ × List JetRows => p.1.1.2.2.2.length) eF encUnary :=
       (length_list (encList (encList encNat))).comp heqs_f
     have hnode_fn : PolyT (fun q : (_ × List JetRows) × ℕ => ((q.2 : ℤ) + 1))
@@ -1103,7 +1103,7 @@ private theorem exists_boundedIncidenceBranch_cert :
           hnodes hJ_f hℓ_f hΩ hnj)
     have h2pow : PolyT (fun p : _ × List JetRows => 2 ^ p.1.1.1.1) eF encNat :=
       binary_two_pow.comp hn_f
-    refine ((bi_binary_le' h2pow hrec_nat).ite' h2pow hrec_nat).of_enc_eq fun p =>
+    refine ((binary_le' h2pow hrec_nat).ite' h2pow hrec_nat).of_enc_eq fun p =>
       congrArg encNat ?_
     simp only [finalizeDesignStage, Nat.min_def, decide_eq_true_eq]
   obtain ⟨P_nj, hPnj_pb, hNJ⟩ := exists_computableInO_nodeJet

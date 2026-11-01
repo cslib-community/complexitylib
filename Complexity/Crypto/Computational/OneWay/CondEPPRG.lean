@@ -1254,14 +1254,6 @@ private theorem bind_four_comm_fifth {α₁ α₂ α₃ α₄ α₅ β : Type*}
   congr 1; funext a₃
   exact PMF.bind_comm p₄ p₅ (fun a₄ a₅ => PMF.pure (F a₁ a₂ a₃ a₄ a₅))
 
-private theorem uniformList_map_ofList (m : ℕ) :
-    (uniformList m).map (ofList m) = PMF.uniformOfFintype (BitString m) := by
-  unfold uniformList
-  rw [PMF.map_comp]
-  have hid : ofList m ∘ (List.ofFn : BitString m → List Bool) = id := by
-    funext x; exact ofList_ofFn x
-  rw [hid, PMF.map_id]
-
 private theorem ofList_take_eq_ofList (m : ℕ) (w : List Bool) :
     ofList m (w.take m) = ofList m w := by
   funext i
@@ -1305,7 +1297,7 @@ private theorem unifCoreDist_bind_packLHL (k imgLen_k m1 m2 c2 padLen m_lhl : �
     simp only [unifCoreDist, PMF.bind_bind, PMF.bind_map, PMF.map_bind,
       PMF.map_comp, Function.comp_def]
     exact bind_four_comm_fifth _ _ _ _ _ _
-  rw [h1, uniformOfFintype_five_append, hlen, uniformList_map_ofList]
+  rw [h1, uniformOfFintype_five_append, hlen, Cslib.BitString.uniformList_ofList]
 
 /-- Conditional entropy preservation for `fullGen` on `condSeedSet`:
 when `coreLHLDist` is within `1 / (lhlPrefixLen d k n) ^ 2` of `unifCoreDist`, the Shannon
