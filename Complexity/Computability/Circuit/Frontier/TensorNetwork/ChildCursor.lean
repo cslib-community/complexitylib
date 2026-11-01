@@ -357,26 +357,16 @@ theorem computableInPolyTime_cursorStep :
       cursorStep x.1.1.1 x.1.1.2.1 x.1.1.2.2 x.1.2.1 x.1.2.2.1 x.1.2.2.2 x.2) encStepInput
       (encOption encState) := by
   let e := encStepInput
-  have hT : ComputableInPolyTime (fun x : StepInput => x.1.1.1) e encUnary := by
-    unfold e encStepInput; fun_prop
-  have hn : ComputableInPolyTime (fun x : StepInput => x.1.1.2.1) e encUnary := by
-    unfold e encStepInput; fun_prop
-  have hr : ComputableInPolyTime (fun x : StepInput => x.1.1.2.2) e encUnary := by
-    unfold e encStepInput; fun_prop
-  have hwt : ComputableInPolyTime (fun x : StepInput => x.1.2.1) e (encList encNat) := by
-    unfold e encStepInput; fun_prop
-  have hpt : ComputableInPolyTime (fun x : StepInput => x.1.2.2.1) e encNat := by
-    unfold e encStepInput; fun_prop
-  have hnext : ComputableInPolyTime (fun x : StepInput => x.1.2.2.2) e encUnary := by
-    unfold e encStepInput; fun_prop
-  have ht : ComputableInPolyTime (fun x : StepInput => x.2.1) e encUnary := by
-    unfold e encStepInput encState; fun_prop
-  have hk : ComputableInPolyTime (fun x : StepInput => x.2.2.1) e encUnary := by
-    unfold e encStepInput encState; fun_prop
-  have hβ : ComputableInPolyTime (fun x : StepInput => x.2.2.2.1) e (encList encNat) := by
-    unfold e encStepInput encState; fun_prop
-  have hg : ComputableInPolyTime (fun x : StepInput => x.2.2.2.2) e encUnary := by
-    unfold e encStepInput encState; fun_prop
+  have hT : ComputableInPolyTime (fun x : StepInput => x.1.1.1) e encUnary := by fun_prop
+  have hn : ComputableInPolyTime (fun x : StepInput => x.1.1.2.1) e encUnary := by fun_prop
+  have hr : ComputableInPolyTime (fun x : StepInput => x.1.1.2.2) e encUnary := by fun_prop
+  have hwt : ComputableInPolyTime (fun x : StepInput => x.1.2.1) e (encList encNat) := by fun_prop
+  have hpt : ComputableInPolyTime (fun x : StepInput => x.1.2.2.1) e encNat := by fun_prop
+  have hnext : ComputableInPolyTime (fun x : StepInput => x.1.2.2.2) e encUnary := by fun_prop
+  have ht : ComputableInPolyTime (fun x : StepInput => x.2.1) e encUnary := by fun_prop
+  have hk : ComputableInPolyTime (fun x : StepInput => x.2.2.1) e encUnary := by fun_prop
+  have hβ : ComputableInPolyTime (fun x : StepInput => x.2.2.2.1) e (encList encNat) := by fun_prop
+  have hg : ComputableInPolyTime (fun x : StepInput => x.2.2.2.2) e encUnary := by fun_prop
   have hsome {f : StepInput → State} (hf : ComputableInPolyTime f e encState) :
       ComputableInPolyTime (fun x => some (f x)) e (encOption encState) :=
     (ComputableInPolyTime.optionSome encState).comp hf
@@ -399,22 +389,10 @@ theorem computableInPolyTime_cursorStep :
         some ((x.2.1, x.2.2.1 + 1, List.replicate x.1.2.1.length 0, 0) : State)
       else if x.2.1 + 1 < x.1.1.1 then
         some ((x.2.1 + 1, 0, List.replicate x.1.2.2.2 0, 0) : State)
-      else none) e (encOption encState) := by
-    refine (ComputableInPolyTime.ite' (ComputableInPolyTime.unary_lt' (hsucc hk) hn)
-      (hsome (hmk ht (hsucc hk) (hzeros ((ComputableInPolyTime.length_list _).comp hwt))
-        (.const 0)))
-      (ComputableInPolyTime.ite' (ComputableInPolyTime.unary_lt' (hsucc ht) hT)
-        (hsome (hmk (hsucc ht) (.const 0) (hzeros hnext) (.const 0))) (.const none))).of_enc_eq
-      fun x => ?_
-    simp only [decide_eq_true_eq, Function.comp_apply]
+      else none) e (encOption encState) := by fun_prop
   have hbody : ComputableInPolyTime (fun p : StepInput × List ℕ =>
       some ((p.1.2.1, p.1.2.2.1, p.2, 0) : State)) (encPair e (encList encNat))
-      (encOption encState) := by
-    refine (ComputableInPolyTime.optionSome encState).comp ?_
-    unfold encState
-    exact (ht.comp (ComputableInPolyTime.fst _ _)).prod
-      ((hk.comp (ComputableInPolyTime.fst _ _)).prod ((ComputableInPolyTime.snd _ _).prod
-        (.const 0)))
+      (encOption encState) := by fun_prop
   have helim := ComputableInPolyTime.optionElimWithInput
     (body := fun x β => some ((x.2.1, x.2.2.1, β, 0) : State)) hbudget hfallback hbody
   have h := ComputableInPolyTime.ite' (ComputableInPolyTime.unary_lt' (hsucc hg) hr)

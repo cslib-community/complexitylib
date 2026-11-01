@@ -257,9 +257,7 @@ theorem computableInPolyTime_validBranchEvalParams :
   have h2Qu := unary_add.comp (hQu.prod hQu)
   have hpow : ComputableInPolyTime
       (fun inp : BranchEvalInput => (min inp.1.1 inp.2.2.1.1) ^ (2 * min inp.1.1 inp.2.2.1.2.1))
-      (encPair (encPair encUnary encUnary) eR) encNat :=
-    (binary_pow.comp ((unary_to_binary.comp hru).prod h2Qu)).of_enc_eq
-      fun inp => by congr 1; dsimp only [Function.comp_apply]; congr 1; omega
+      (encPair (encPair encUnary encUnary) eR) encNat := by fun_prop
   have hc1 := binary_le' (const 1) hn_b; have hc2 := binary_le' (const 2) hr
   have hc3 := binary_le' (const 1) hR; have hc4 := binary_lt' hR hQ
   have hc5 := binary_le' hQ hn_b; have hc6 := binary_le' hr hn_b
@@ -300,9 +298,7 @@ theorem computableInPolyTime_validDesignShape {α : Type} {encIn : α ↪ List B
   have hlen_b := unary_to_binary.comp ((length_list encNat).comp (snd e1 (encList encNat)))
   have hcmp : ComputableInPolyTime
       (fun q : (α × List (List ℕ)) × List ℕ => decide (q.2.length ≤ 2 * n' q.1.1)) e2 encBool := by
-    refine (binary_le' hlen_b h2n_b).of_enc_eq fun q => ?_
-    congr 1; apply Bool.eq_iff_iff.mpr
-    simp only [Function.comp_apply, decide_eq_true_eq]; omega
+    fun_prop
   have hall := bi_allWith hvgs (bi_allWith (snd encIn (encList (encList encNat))) hcmp)
   exact bool_and' h1 hall
 
@@ -395,8 +391,7 @@ private theorem computableInPolyTime_checkRestrictedGroup {α : Type} {encIn : �
   have hgetV := bi_listGetD_nat_dyn (hVg.comp hx) hj (unary_to_binary.comp (hn'.comp hx))
   have hindE_x := hindE.comp hx
   have hlenE : ComputableInPolyTime (fun p : α × ℕ => (indE p.1).length)
-      (encPair encIn encUnary) encUnary :=
-    length_bits_comp hindE_x
+      (encPair encIn encUnary) encUnary := by fun_prop
   have hv_cap := binary_min_unary' hlenE hgetV
   have hgetE : ComputableInPolyTime
       (fun p : α × ℕ => (indE p.1).getD ((Vg p.1).getD p.2 (n' p.1)) false)
@@ -616,18 +611,13 @@ private theorem exists_computableInO_mapRange {ι γ δ : Type} {encIn : ι ↪ 
   have hinit : ComputableInPolyTime (fun x : ι => ((m x, ctx x), ([] : List δ))) encIn encAcc :=
     (hm.prod hctx).prod (const [])
   have hcond : ComputableInPolyTime (fun p : ℕ × ((ℕ × γ) × List δ) => decide (p.1 < p.2.1.1))
-      eSt encBool :=
-    binary_lt' (fst encNat encAcc) (unary_to_binary.comp (snd encNat encAcc).fst'.fst')
+      eSt encBool := by fun_prop
   have hprep : ComputableInPolyTime
       (fun p : ℕ × ((ℕ × γ) × List δ) => (p.2.1.2, min p.2.1.1 p.1))
-      eSt (encPair encC encUnary) :=
-    (snd encNat encAcc).fst'.snd'.prod
-      (binary_min_unary' (snd encNat encAcc).fst'.fst' (fst encNat encAcc))
+      eSt (encPair encC encUnary) := by fun_prop
   have hcomb : ComputableInPolyTime
       (fun q : (ℕ × ((ℕ × γ) × List δ)) × δ => (q.1.2.1, q.1.2.2 ++ [q.2]))
-      (encPair eSt encB) encAcc := by
-    have hq1 := fst eSt encB; have hq2 := snd eSt encB
-    exact hq1.snd'.fst'.prod (listAppend' hq1.snd'.snd' (cons' hq2 (const [])))
+      (encPair eSt encB) encAcc := by fun_prop
   let cCond := NativeCertificate.ofPolyTime hcond
   let cPrep := NativeCertificate.ofPolyTime hprep
   let cComb := NativeCertificate.ofPolyTime hcomb
@@ -825,28 +815,13 @@ theorem exists_computableInO_measPayload :
         P := by
   let eWC := encPair (encList encIntBin) encMeasStepCtx
   have hru_wc : ComputableInPolyTime (fun wc : List ℤ × MeasStepCtx => wc.2.numGroups)
-      eWC encUnary := by
-    have hctx := snd (encList encIntBin) encMeasStepCtx
-    unfold encMeasStepCtx at hctx
-    exact hctx.fst'.snd'.fst'
+      eWC encUnary := by fun_prop
   have hprepS : ComputableInPolyTime
       (fun p : (List ℤ × MeasStepCtx) × ℕ =>
         ((p.1.2.2.2.2.1.2.getD p.2 [], (p.1.1.drop (p.2 * p.1.2.1.2.2)).take p.1.2.1.2.2),
           min (2 * p.1.2.numVars) (p.1.2.varGroups.getD p.2 []).length))
       (encPair eWC encUnary)
-      (encPair (encPair (encList (encList encIntBin)) (encList encIntBin)) encUnary) := by
-    have hwc := fst eWC encUnary; have hg := snd eWC encUnary
-    unfold eWC encMeasStepCtx at hwc
-    have hword := hwc.fst'; have hctx := hwc.snd'
-    have hn' := hctx.fst'.fst'; have hm := hctx.fst'.snd'.snd'
-    have hvgs := hctx.snd'.snd'.snd'.fst'.fst'; have hgm := hctx.snd'.snd'.snd'.fst'.snd'
-    have hCtg := (listGetD (encA := encList (encList encIntBin)) []).comp (hgm.prod hg)
-    have hyg := bi_listTakeWithInput
-      (bi_listDropWithInput hword (unary_mul.comp (hg.prod hm))) hm
-    have hVg := (listGetD (encA := encList encNat) []).comp (hvgs.prod hg)
-    have hdg := bi_unary_min.comp
-      ((unary_mul.comp ((const 2).prod hn')).prod ((length_list encNat).comp hVg))
-    exact (hCtg.prod hyg).prod hdg
+      (encPair (encPair (encList (encList encIntBin)) (encList encIntBin)) encUnary) := by fun_prop
   have hM_pr := fst (encList (encList encIntBin)) (encList encIntBin)
   have ht_pr := snd (encList (encList encIntBin)) (encList encIntBin)
   let cSBase := BooleanMeasurements.searchCertificate hM_pr ht_pr
@@ -904,8 +879,7 @@ theorem exists_computableInO_measPayload :
   let eWX := encPair eWC encBits
   have hcond : ComputableInPolyTime
       (fun wr : (List ℤ × MeasStepCtx) × List (Option (List Bool)) => wr.2.all Option.isSome)
-      eWR encBool :=
-    bi_allWith (snd eWC (encList (encOption encBits))) (optionIsSome (snd eWR (encOption encBits)))
+      eWR encBool := by fun_prop
   have hxStar : ComputableInPolyTime
       (fun wr : (List ℤ × MeasStepCtx) × List (Option (List Bool)) =>
         (wr.1, buildBaseAssignment wr.1.2.numVars wr.1.2.numGroups wr.1.2.varGroups
@@ -919,19 +893,12 @@ theorem exists_computableInO_measPayload :
       hctx.fst'.snd'.fst' hctx.snd'.snd'.snd'.fst'.fst' hreps
     exact hwc.prod hb
   have hru_wx : ComputableInPolyTime
-      (fun wx : (List ℤ × MeasStepCtx) × List Bool => wx.1.2.numGroups) eWX encUnary :=
-    hru_wc.comp (fst eWC encBits)
+      (fun wx : (List ℤ × MeasStepCtx) × List Bool => wx.1.2.numGroups) eWX encUnary := by fun_prop
   let eWXG := encPair eWX encUnary
   have hJ_g : ComputableInPolyTime (fun p : ((List ℤ × MeasStepCtx) × List Bool) × ℕ =>
-      p.1.1.2.jetOrder) eWXG encUnary := by
-    have hp1 := fst eWX encUnary
-    unfold eWX eWC encMeasStepCtx at hp1
-    exact hp1.fst'.snd'.snd'.fst'.fst'
+      p.1.1.2.jetOrder) eWXG encUnary := by fun_prop
   have hℓ_g : ComputableInPolyTime (fun p : ((List ℤ × MeasStepCtx) × List Bool) × ℕ =>
-      p.1.1.2.precision) eWXG encUnary := by
-    have hp1 := fst eWX encUnary
-    unfold eWX eWC encMeasStepCtx at hp1
-    exact hp1.fst'.snd'.snd'.fst'.snd'.fst'
+      p.1.1.2.precision) eWXG encUnary := by fun_prop
   have hd_g : ComputableInPolyTime (fun p : ((List ℤ × MeasStepCtx) × List Bool) × ℕ =>
       min (2 * p.1.1.2.numVars) (p.1.1.2.varGroups.getD p.2 []).length) eWXG encUnary := by
     have hp1 := fst eWX encUnary; have hg := snd eWX encUnary
@@ -947,23 +914,7 @@ theorem exists_computableInO_measPayload :
         (p.1.1.2.varGroups.getD p.2 [], p.1.1.2.2.2.2.1.2.getD p.2 [],
           (p.1.1.1.drop (p.2 * p.1.1.2.1.2.2)).take p.1.1.2.1.2.2),
         (p.1.1.2.2.2.2.2.1.1, p.1.1.2.2.2.2.2.1.2, p.1.2),
-        p.1.1.2.2.2.2.2.2.getD p.2 [])) eWXG encGroupEvalCtx := by
-    have hp1 := fst eWX encUnary; have hg := snd eWX encUnary
-    unfold eWX eWC encMeasStepCtx at hp1
-    unfold encGroupEvalCtx
-    have hword := hp1.fst'.fst'; have hctx := hp1.fst'.snd'; have hx := hp1.snd'
-    have hc1 := hctx.fst'; have hc2 := hctx.snd'
-    have hm := hc1.snd'.snd'
-    have hVg := (listGetD (encA := encList encNat) []).comp (hc2.snd'.snd'.fst'.fst'.prod hg)
-    have hCtg := (listGetD (encA := encList (encList encIntBin)) []).comp
-      (hc2.snd'.snd'.fst'.snd'.prod hg)
-    have hyg := bi_listTakeWithInput
-      (bi_listDropWithInput hword (unary_mul.comp (hg.prod hm))) hm
-    have heqs := (listGetD (encA := encList encGroupEqEntry) []).comp
-      (hc2.snd'.snd'.snd'.snd'.prod hg)
-    exact (hc1.fst'.prod hc2.fst').prod
-      (hc2.snd'.fst'.prod ((hVg.prod (hCtg.prod hyg)).prod
-        ((hc2.snd'.snd'.snd'.fst'.fst'.prod (hc2.snd'.snd'.snd'.fst'.snd'.prod hx)).prod heqs)))
+        p.1.1.2.2.2.2.2.2.getD p.2 [])) eWXG encGroupEvalCtx := by fun_prop
   obtain ⟨Pg0, hPg0_pb, hstreamOne⟩ := CommonCountingAccum.computableInO_streamGroupJetSum
     hJ_g hℓ_g hd_g hctx_g computableInPolyTime_evalGroupFactorJet
   obtain ⟨cg1, dg1, hg1_le⟩ := hPg0_pb.exists_le
@@ -995,18 +946,7 @@ theorem exists_computableInO_measPayload :
   have hprodSome : ComputableInPolyTime
       (fun wj : ((List ℤ × MeasStepCtx) × List Bool) × List JetRows =>
         some (CommonCountingAccum.prodJet wj.1.1.2.jetOrder wj.1.1.2.precision wj.2))
-      (encPair eWX (encList encJet)) (encOption encJet) := by
-    have hwj1 := fst eWX (encList encJet); have hwj2 := snd eWX (encList encJet)
-    have hJ_p : ComputableInPolyTime
-        (fun wj : ((List ℤ × MeasStepCtx) × List Bool) × List JetRows => wj.1.1.2.jetOrder)
-        (encPair eWX (encList encJet)) encUnary := by
-      unfold eWX eWC encMeasStepCtx; exact hwj1.fst'.snd'.snd'.fst'.fst'
-    have hℓ_p : ComputableInPolyTime
-        (fun wj : ((List ℤ × MeasStepCtx) × List Bool) × List JetRows => wj.1.1.2.precision)
-        (encPair eWX (encList encJet)) encUnary := by
-      unfold eWX eWC encMeasStepCtx; exact hwj1.fst'.snd'.snd'.fst'.snd'.fst'
-    exact (optionSome encJet).comp
-      (CommonCountingAccum.computableInPolyTime_prodJet hJ_p hℓ_p hwj2)
+      (encPair eWX (encList encJet)) (encOption encJet) := by fun_prop
   let cCondWR := NativeCertificate.ofPolyTime hcond
   let cXStar := NativeCertificate.ofPolyTime hxStar
   let cProdS := NativeCertificate.ofPolyTime hprodSome

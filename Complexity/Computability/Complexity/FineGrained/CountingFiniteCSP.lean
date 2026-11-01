@@ -111,25 +111,10 @@ theorem computableInPolyTime_toBoolean (encRel : Rel ↪ List Bool) (q : ℕ) :
   have hnone : ComputableInPolyTime
       (fun x : ℕ × CSP Rel ℕ =>
         (List.range x.1).map fun v => ((none : Option Rel), CSP.bitScope b v))
-      encIn (encList encOutElem) :=
-    ComputableInPolyTime.mapWithInput
-      (ComputableInPolyTime.unary_range' (ComputableInPolyTime.fst encUnary (encCSP encRel encNat)))
-      ((ComputableInPolyTime.const (encOut := encOption encRel) none).prod
-        ((computableInPolyTime_bitScope b).comp
-          (ComputableInPolyTime.unary_to_binary.comp (ComputableInPolyTime.snd encIn encUnary))))
+      encIn (encList encOutElem) := by fun_prop
   have hsome : ComputableInPolyTime
       (fun x : ℕ × CSP Rel ℕ => x.2.map fun c => (some c.1, c.2.flatMap (CSP.bitScope b)))
-      encIn (encList encOutElem) :=
-    ComputableInPolyTime.mapWithInput
-      (ComputableInPolyTime.snd encUnary (encCSP encRel encNat))
-      (((ComputableInPolyTime.optionSome encRel).comp
-          ((ComputableInPolyTime.fst encRel (encList encNat)).comp
-            (ComputableInPolyTime.snd encIn (encConstraint encRel encNat)))).prod
-        (ComputableInPolyTime.flatMapWithInput
-          ((ComputableInPolyTime.snd encRel (encList encNat)).comp
-            (ComputableInPolyTime.snd encIn (encConstraint encRel encNat)))
-          ((computableInPolyTime_bitScope b).comp
-            (ComputableInPolyTime.snd (encPair encIn (encConstraint encRel encNat)) encNat))))
+      encIn (encList encOutElem) := by fun_prop
   exact ComputableInPolyTime.listAppend' hnone hsome
 
 /-- Compiling a declared finite-domain CSP `(N, F)` into the declared Boolean CSP
@@ -210,26 +195,13 @@ private theorem computableInPolyTime_validDeclaredCSP_plain (encRel : Rel ↪ Li
     (ComputableInPolyTime.fst encUnary (encCSP encRel encNat))
   have hlt : ComputableInPolyTime
       (fun p : (ℕ × CSP Rel ℕ) × ℕ => decide (p.2 < p.1.1))
-      (encPair encIn encNat) encBool :=
-    ComputableInPolyTime.binary_lt'
-      (ComputableInPolyTime.snd encIn encNat)
-      (hN.comp (ComputableInPolyTime.fst encIn encNat))
+      (encPair encIn encNat) encBool := by fun_prop
   have hvars : ComputableInPolyTime
       (fun x : ℕ × CSP Rel ℕ => x.2.vars.all fun v => decide (v < x.1))
-      encIn encBool :=
-    ComputableInPolyTime.allWithInput
-      ((computableInPolyTime_vars encRel encNat).comp
-        (ComputableInPolyTime.snd encUnary (encCSP encRel encNat))) hlt
+      encIn encBool := by fun_prop
   have hwidth : ComputableInPolyTime
       (fun x : ℕ × CSP Rel ℕ => x.2.all fun c => decide (c.2.length ≤ k))
-      encIn encBool :=
-    ComputableInPolyTime.allWithInput
-      (ComputableInPolyTime.snd encUnary (encCSP encRel encNat))
-      (ComputableInPolyTime.unary_le'
-        ((ComputableInPolyTime.length_list encNat).comp
-          ((ComputableInPolyTime.snd encRel (encList encNat)).comp
-            (ComputableInPolyTime.snd encIn (encConstraint encRel encNat))))
-        (ComputableInPolyTime.const k))
+      encIn encBool := by fun_prop
   unfold validDeclaredCSP
   exact ComputableInPolyTime.bool_and.comp (hwidth.prod hvars)
 
@@ -386,8 +358,7 @@ theorem exists_modelCounter_finiteDomain_of_forall [DecidableEq V] (encRel : Rel
   let g (F : CSP Rel V) : ℕ × CNF ℕ :=
     (F.numVars * b, (F.denseRelabel.toBoolean q F.numVars).toCNFBounded k' sem')
   have hrel : ComputableInPolyTime (fun F : CSP Rel V => (F.numVars, F.denseRelabel))
-      (encCSP encRel encV) (encPair encUnary (encCSP encRel encNat)) :=
-    (computableInPolyTime_numVars encRel encV).prod (computableInPolyTime_denseRelabel encRel encV)
+      (encCSP encRel encV) (encPair encUnary (encCSP encRel encNat)) := by fun_prop
   have htoCNF : ComputableInPolyTime
       (fun y : ℕ × CSP (Option Rel) ℕ => (y.1, y.2.toCNFBounded k' sem'))
       encB (encPair encUnary encCNF) :=
@@ -398,14 +369,7 @@ theorem exists_modelCounter_finiteDomain_of_forall [DecidableEq V] (encRel : Rel
   have hg : ComputableInPolyTime g (encCSP encRel encV) (encPair encUnary encCNF) :=
     htoCNF.comp ((computableInPolyTime_toBooleanDeclared encRel q).comp hrel)
   let valid (F : CSP Rel V) : Bool := F.all fun c => decide (c.2.length ≤ k)
-  have hvalid : ComputableInPolyTime valid (encCSP encRel encV) encBool :=
-    ComputableInPolyTime.allWithInput
-      (ComputableInPolyTime.id' (encIn := encCSP encRel encV))
-      (ComputableInPolyTime.unary_le'
-        ((ComputableInPolyTime.length_list encV).comp
-          ((ComputableInPolyTime.snd encRel (encList encV)).comp
-            (ComputableInPolyTime.snd (encCSP encRel encV) (encConstraint encRel encV))))
-        (ComputableInPolyTime.const k))
+  have hvalid : ComputableInPolyTime valid (encCSP encRel encV) encBool := by fun_prop
   have hvalid_imp (F : CSP Rel V) (hF : valid F = true) :
       CNF.validDeclaredInput k' (g F).1 (g F).2 = true := by
     simp only [valid, List.all_eq_true, decide_eq_true_eq] at hF
@@ -480,10 +444,8 @@ theorem decidableInSubexpTime_finiteDomainKCSP_of_forall [DecidableEq V] (encRel
   let k' := max 1 k * b
   let sem' := CSP.semBoolean q sem
   let f (F : CSP Rel V) : CSP (Option Rel) ℕ := F.denseRelabel.toBoolean q F.numVars
-  have hf : ComputableInPolyTime f (encCSP encRel encV) (encCSP (encOption encRel) encNat) :=
-    (computableInPolyTime_toBoolean encRel q).comp
-      ((computableInPolyTime_numVars encRel encV).prod
-        (computableInPolyTime_denseRelabel encRel encV))
+  have hf : ComputableInPolyTime f (encCSP encRel encV) (encCSP (encOption encRel) encNat) := by
+    fun_prop
   have hB : DecidableInSubexpTime {F : CSP Rel V | f F ∈ KCSP k' sem'}
       (encCSP encRel encV) CSP.numVars :=
     (decidableInSubexpTime_KCSP_of_forall (encOption encRel) encNat k' sem'
@@ -499,14 +461,7 @@ theorem decidableInSubexpTime_finiteDomainKCSP_of_forall [DecidableEq V] (encRel
         omega
   have hwidth : ComputableInPolyTime
       (fun F : CSP Rel V => F.all fun c => decide (c.2.length ≤ k))
-      (encCSP encRel encV) encBool :=
-    ComputableInPolyTime.allWithInput
-      (ComputableInPolyTime.id' (encIn := encCSP encRel encV))
-      (ComputableInPolyTime.unary_le'
-        ((ComputableInPolyTime.length_list encV).comp
-          ((ComputableInPolyTime.snd encRel (encList encV)).comp
-            (ComputableInPolyTime.snd (encCSP encRel encV) (encConstraint encRel encV))))
-        (ComputableInPolyTime.const k))
+      (encCSP encRel encV) encBool := by fun_prop
   intro δ hδ
   have hKCSP_eq : KCSP k sem =
       {F : CSP Rel V | (F.all fun c => decide (c.2.length ≤ k)) = true} ∩
