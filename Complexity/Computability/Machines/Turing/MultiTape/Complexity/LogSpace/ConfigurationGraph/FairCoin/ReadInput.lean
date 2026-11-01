@@ -142,7 +142,7 @@ binary label-and-register encoding, rather than the length of the original input
 theorem coinCountProgram_query_inSpace (machine : MultiTapePTM k Bool State) (D : ℕ) :
     ComputableInSpace (coinCountProgram machine D).query Simulation.encConfig encNat
       (fun s => (Simulation.encConfig s).length) :=
-  (Simulation.query_inSpace (P := coinCountProgram machine D)).computableInSpace
+  (Simulation.query_inSpace (P := coinCountProgram machine D))
 
 /-- The concrete reader's register-update routine has a native linear-space certificate in the
 binary register state together with the one optional input bit returned by the native query. -/
@@ -151,6 +151,6 @@ theorem coinCountProgram_exec_inSpace (machine : MultiTapePTM k Bool State) (D :
       (fun p : Config × Option Bool => (coinCountProgram machine D).exec p.1 p.2)
       Simulation.encConfigRead Simulation.encConfig
       (fun p => (Simulation.encConfigRead p).length) :=
-  (Simulation.exec_inSpace (P := coinCountProgram machine D)).computableInSpace
+  (Simulation.exec_inSpace (P := coinCountProgram machine D))
 
 end Turing.MultiTapePTM.ConfigurationGraph
