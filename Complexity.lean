@@ -2444,7 +2444,6 @@ public import Complexity.Computability.WordRAM.Randomized.Defs
 public import Complexity.Computability.WordRAM.Randomized.Expected
 public import Complexity.Computability.WordRAM.Randomized.Law
 public import Complexity.Computability.WordRAM.Randomized.LoopSegment
-public import Complexity.Computability.WordRAM.Randomized.ObliviousSequence
 public import Complexity.Computability.WordRAM.Randomized.Structured
 public import Complexity.Computability.WordRAM.Randomized.Subroutine
 public import Complexity.Computability.WordRAM.Randomized.UniformLoopExit
@@ -2700,7 +2699,10 @@ public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtra
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrIdentification
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrSignature
 public import Complexity.Crypto.Protocols.Signature.RandomOracle
+public import Complexity.DataStructure.HashFamily.Spec
+public import Complexity.DataStructure.HashFamily.WordRAM.Basic
 public import Complexity.DataStructure.ObliviousSequence
+public import Complexity.DataStructure.WordRAM.Randomized.ObliviousSequence
 public import Complexity.Foundations.Algebra.FiniteMagnitude
 public import Complexity.Foundations.Algebra.GeometricTail
 public import Complexity.Foundations.Algebra.Shear
