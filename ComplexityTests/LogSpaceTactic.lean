@@ -69,6 +69,16 @@ example {α : Type} {enc : α ↪ List Bool} {r : α → ℕ} {f : α × ℕ →
   fail_if_success (clear h; logspace)
   exact h
 
+-- The indexed callback must use unary indices; an unrelated encoding is insufficient.
+example {α : Type} {enc : α ↪ List Bool} {indexEncoding : ℕ ↪ List Bool}
+    {r : α → ℕ} {f : α × ℕ → Bool} (k : ℕ)
+    (_hr : ComputableInLogSpace r enc encUnary) (_hk : ∀ a, r a ≤ k)
+    (_hf : ComputableInLogSpace f (encPair enc indexEncoding) encBool)
+    (h : ComputableInLogSpace (fun a => (List.range (r a)).map fun i => f (a, i)) enc encBits) :
+    ComputableInLogSpace (fun a => (List.range (r a)).map fun i => f (a, i)) enc encBits := by
+  fail_if_success (clear h; logspace)
+  exact h
+
 -- The existing inclusion remains one-way, even with the tactic imported.
 example {f : List Bool → Bool} (_hf : ComputableInPolyTime f encBits encBool)
     (h : ComputableInLogSpace f encBits encBool) :
@@ -79,6 +89,7 @@ example {f : List Bool → Bool} (_hf : ComputableInPolyTime f encBits encBool)
 example {f : List Bool → Bool} (hf : ComputableInLogSpace f encBits encBool) :
     ComputableInPolyTime (fun p : List Bool × List Bool => f (p.1 ++ p.2))
       (encPair encBits encBits) encBool := by
+  fail_if_success logspace
   fun_prop
 
 end ComplexityTests.LogSpaceTactic

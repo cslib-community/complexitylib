@@ -99,10 +99,14 @@ private meta def compositional : TacticM Unit := withMainContext do
 
 end Cslib.Tactic.LogSpace
 
+open Lean Meta Elab Tactic in
 /-- Prove a plain logspace certificate using composition and supplied constant bounds. -/
-macro "logspace" : tactic =>
-  `(tactic| solve |
+elab "logspace" : tactic => withMainContext do
+  let target := (← instantiateMVars (← getMainTarget)).consumeMData
+  unless target.isAppOf ``Turing.MultiTapeTM.ComputableInLogSpace do
+    throwError "expected a plain logspace certificate"
+  evalTactic (← `(tactic| solve |
     aesop (config := { terminal := true, enableSimp := false })
-      (rule_sets := [LogSpace]))
+      (rule_sets := [LogSpace])))
 
 end
