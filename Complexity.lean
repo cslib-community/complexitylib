@@ -1741,6 +1741,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayAssignments
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayAssignmentsCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayBounds
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayCheckedGate
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayGate
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayGateCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayLabelLoad
@@ -1749,12 +1750,18 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayMotion
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayMotionCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayProviderLabels
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayProviderLabelsCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayProviders
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayProvidersCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySpace
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySupplierBounds
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySupplierCorrect
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySupplierInit
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySupplierTotal
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleRead
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleReadCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleReadPort
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleReadRow
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleReadSearch
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleReadSearchSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleReadSpace
