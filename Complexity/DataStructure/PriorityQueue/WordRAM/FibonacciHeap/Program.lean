@@ -9,6 +9,7 @@ module
 
 public import Complexity.DataStructure.PriorityQueue.WordRAM.Basic
 public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Forest
+public import Complexity.Computability.WordRAM.SymbolicExec
 
 /-!
 # Fibonacci Heap: Static-Array Word-RAM Program and State Representation
@@ -633,20 +634,33 @@ def RawState.ofData (n base : ℕ) (x : Data rFib) : RawState n where
   sz := x.regs szReg
 
 /-- Persistent base-address and constant registers `0..12` hold their initialized values. -/
-def BaseRegs (n base : ℕ) (x : Data rFib) : Prop :=
-  x.regs nReg = n ∧
-  x.regs frontierReg = base + space n ∧
-  x.regs baseReg = base ∧
-  x.regs parBase = base + n ∧
-  x.regs childBase = base + 2 * n ∧
-  x.regs leftBase = base + 3 * n ∧
-  x.regs rightBase = base + 4 * n ∧
-  x.regs degBase = base + 5 * n ∧
-  x.regs markBase = base + 6 * n ∧
-  x.regs inBase = base + 7 * n ∧
-  x.regs consBase = base + 8 * n ∧
-  x.regs zeroP = 0 ∧
-  x.regs oneP = 1
+structure BaseRegs (n base : ℕ) (x : Data rFib) : Prop where
+  /-- `nReg` holds the handle-universe size `n`. -/
+  regs_nReg : x.regs nReg = n
+  /-- `frontierReg` holds the end of the footprint. -/
+  regs_frontierReg : x.regs frontierReg = base + space n
+  /-- `baseReg` holds the base address of `key`. -/
+  regs_baseReg : x.regs baseReg = base
+  /-- `parBase` holds the base address of `par`. -/
+  regs_parBase : x.regs parBase = base + n
+  /-- `childBase` holds the base address of `child`. -/
+  regs_childBase : x.regs childBase = base + 2 * n
+  /-- `leftBase` holds the base address of `left`. -/
+  regs_leftBase : x.regs leftBase = base + 3 * n
+  /-- `rightBase` holds the base address of `right`. -/
+  regs_rightBase : x.regs rightBase = base + 4 * n
+  /-- `degBase` holds the base address of `deg`. -/
+  regs_degBase : x.regs degBase = base + 5 * n
+  /-- `markBase` holds the base address of `mark`. -/
+  regs_markBase : x.regs markBase = base + 6 * n
+  /-- `inBase` holds the base address of `inHeap`. -/
+  regs_inBase : x.regs inBase = base + 7 * n
+  /-- `consBase` holds the base address of `cons`. -/
+  regs_consBase : x.regs consBase = base + 8 * n
+  /-- `zeroP` holds `0`. -/
+  regs_zeroP : x.regs zeroP = 0
+  /-- `oneP` holds `1`. -/
+  regs_oneP : x.regs oneP = 1
 
 /-- Full Word-RAM representation invariant for `FibonacciHeap` at `(n, K_max, w, base)`. -/
 def FibInv (n K_max w base : ℕ) (s : IndexedMinPQ.State n) (x : Data rFib) : Prop :=
@@ -723,7 +737,7 @@ theorem modifies_block_trans {b : Block} {m₁ m₂ m₃ : ℕ → ℕ}
 
 theorem BaseRegs.fits_stop {n base w : ℕ} {x : Data rFib} (hb : x.Bounded w)
     (hbr : BaseRegs n base x) : Fits w (base + space n) :=
-  hbr.2.1 ▸ hb.1 frontierReg
+  hbr.regs_frontierReg ▸ hb.1 frontierReg
 
 theorem BaseRegs.set_non_base {n base : ℕ} {x : Data rFib} (hbr : BaseRegs n base x)
     {d : Fin rFib} (hd : 13 ≤ d.val) (v : ℕ) : BaseRegs n base (x.set d v) := by
@@ -745,7 +759,33 @@ theorem BaseRegs.set_non_base {n base : ℕ} {x : Data rFib} (hbr : BaseRegs n b
   · simpa only [Data.set_regs, Function.update_of_ne (ne_of oneP (by decide))] using h12
 
 theorem BaseRegs.write_eq {n base : ℕ} {x : Data rFib} (hbr : BaseRegs n base x) (a v : ℕ) :
-    BaseRegs n base (x.write a v) := hbr
+    BaseRegs n base (x.write a v) :=
+  let ⟨h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hbr
+  ⟨h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩
+
+/-- Setting a register outside the base registers `0..12` keeps `BaseRegs`. -/
+theorem BaseRegs.set_iff {n base : ℕ} {x : Data rFib} {d : Fin rFib} (hd : 13 ≤ d.val) (v : ℕ) :
+    BaseRegs n base (x.set d v) ↔ BaseRegs n base x := by
+  refine ⟨fun h => ?_, fun h => h.set_non_base hd v⟩
+  have key (r : Fin rFib) (hr : r.val < 13) : x.regs r = (x.set d v).regs r :=
+    (Data.set_regs_of_ne (fun e => by subst e; omega) v).symm
+  exact ⟨(key nReg (by decide)).trans h.regs_nReg,
+    (key frontierReg (by decide)).trans h.regs_frontierReg,
+    (key baseReg (by decide)).trans h.regs_baseReg,
+    (key parBase (by decide)).trans h.regs_parBase,
+    (key childBase (by decide)).trans h.regs_childBase,
+    (key leftBase (by decide)).trans h.regs_leftBase,
+    (key rightBase (by decide)).trans h.regs_rightBase,
+    (key degBase (by decide)).trans h.regs_degBase,
+    (key markBase (by decide)).trans h.regs_markBase,
+    (key inBase (by decide)).trans h.regs_inBase, (key consBase (by decide)).trans h.regs_consBase,
+    (key zeroP (by decide)).trans h.regs_zeroP, (key oneP (by decide)).trans h.regs_oneP⟩
+
+/-- Writing memory keeps `BaseRegs`. -/
+theorem BaseRegs.write_iff {n base : ℕ} {x : Data rFib} (a v : ℕ) :
+    BaseRegs n base (x.write a v) ↔ BaseRegs n base x :=
+  ⟨fun ⟨h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ =>
+    ⟨h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩, fun h => h.write_eq a v⟩
 
 theorem BaseRegs.preserved {n base w T : ℕ} {c : Code .exact rFib} {x y : Data rFib}
     (he : ExecWithin w c x y T) (hbr : BaseRegs n base x)
@@ -754,15 +794,15 @@ theorem BaseRegs.preserved {n base w T : ℕ} {c : Code .exact rFib} {x y : Data
     (hp6 : c.Preserves rightBase) (hp7 : c.Preserves degBase) (hp8 : c.Preserves markBase)
     (hp9 : c.Preserves inBase) (hp10 : c.Preserves consBase) (hp11 : c.Preserves zeroP)
     (hp12 : c.Preserves oneP) : BaseRegs n base y :=
-  ⟨(he.regs_eq hp0).trans hbr.1, (he.regs_eq hp1).trans hbr.2.1,
-    (he.regs_eq hp2).trans hbr.2.2.1, (he.regs_eq hp3).trans hbr.2.2.2.1,
-    (he.regs_eq hp4).trans hbr.2.2.2.2.1, (he.regs_eq hp5).trans hbr.2.2.2.2.2.1,
-    (he.regs_eq hp6).trans hbr.2.2.2.2.2.2.1, (he.regs_eq hp7).trans hbr.2.2.2.2.2.2.2.1,
-    (he.regs_eq hp8).trans hbr.2.2.2.2.2.2.2.2.1,
-    (he.regs_eq hp9).trans hbr.2.2.2.2.2.2.2.2.2.1,
-    (he.regs_eq hp10).trans hbr.2.2.2.2.2.2.2.2.2.2.1,
-    (he.regs_eq hp11).trans hbr.2.2.2.2.2.2.2.2.2.2.2.1,
-    (he.regs_eq hp12).trans hbr.2.2.2.2.2.2.2.2.2.2.2.2⟩
+  ⟨(he.regs_eq hp0).trans hbr.regs_nReg, (he.regs_eq hp1).trans hbr.regs_frontierReg,
+    (he.regs_eq hp2).trans hbr.regs_baseReg, (he.regs_eq hp3).trans hbr.regs_parBase,
+    (he.regs_eq hp4).trans hbr.regs_childBase, (he.regs_eq hp5).trans hbr.regs_leftBase,
+    (he.regs_eq hp6).trans hbr.regs_rightBase, (he.regs_eq hp7).trans hbr.regs_degBase,
+    (he.regs_eq hp8).trans hbr.regs_markBase,
+    (he.regs_eq hp9).trans hbr.regs_inBase,
+    (he.regs_eq hp10).trans hbr.regs_consBase,
+    (he.regs_eq hp11).trans hbr.regs_zeroP,
+    (he.regs_eq hp12).trans hbr.regs_oneP⟩
 
 theorem ofData_set_scratch {n base : ℕ} (x : Data rFib) {d : Fin rFib} (hd : 17 ≤ d.val)
     (v : ℕ) : RawState.ofData n base (x.set d v) = RawState.ofData n base x := by
@@ -1056,19 +1096,19 @@ theorem FibInv.supported {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x x'
     FibInv n K_max w base s x' := by
   obtain ⟨_, hbr, hraw⟩ := h
   refine ⟨hb', ?_, ?_⟩
-  · exact ⟨(hreg nReg (by decide)).trans hbr.1,
-      (hreg frontierReg (by decide)).trans hbr.2.1,
-      (hreg baseReg (by decide)).trans hbr.2.2.1,
-      (hreg parBase (by decide)).trans hbr.2.2.2.1,
-      (hreg childBase (by decide)).trans hbr.2.2.2.2.1,
-      (hreg leftBase (by decide)).trans hbr.2.2.2.2.2.1,
-      (hreg rightBase (by decide)).trans hbr.2.2.2.2.2.2.1,
-      (hreg degBase (by decide)).trans hbr.2.2.2.2.2.2.2.1,
-      (hreg markBase (by decide)).trans hbr.2.2.2.2.2.2.2.2.1,
-      (hreg inBase (by decide)).trans hbr.2.2.2.2.2.2.2.2.2.1,
-      (hreg consBase (by decide)).trans hbr.2.2.2.2.2.2.2.2.2.2.1,
-      (hreg zeroP (by decide)).trans hbr.2.2.2.2.2.2.2.2.2.2.2.1,
-      (hreg oneP (by decide)).trans hbr.2.2.2.2.2.2.2.2.2.2.2.2⟩
+  · exact ⟨(hreg nReg (by decide)).trans hbr.regs_nReg,
+      (hreg frontierReg (by decide)).trans hbr.regs_frontierReg,
+      (hreg baseReg (by decide)).trans hbr.regs_baseReg,
+      (hreg parBase (by decide)).trans hbr.regs_parBase,
+      (hreg childBase (by decide)).trans hbr.regs_childBase,
+      (hreg leftBase (by decide)).trans hbr.regs_leftBase,
+      (hreg rightBase (by decide)).trans hbr.regs_rightBase,
+      (hreg degBase (by decide)).trans hbr.regs_degBase,
+      (hreg markBase (by decide)).trans hbr.regs_markBase,
+      (hreg inBase (by decide)).trans hbr.regs_inBase,
+      (hreg consBase (by decide)).trans hbr.regs_consBase,
+      (hreg zeroP (by decide)).trans hbr.regs_zeroP,
+      (hreg oneP (by decide)).trans hbr.regs_oneP⟩
   · rw [ofData_supported hreg hmem]
     exact hraw
 
@@ -1076,5 +1116,20 @@ theorem potential_supported {x x' : Data rFib}
     (hreg : ∀ i : Fin rFib, inputReg i = false → x'.regs i = x.regs i) :
     potential x' = potential x := by
   simp only [potential, hreg numRootsReg (by decide), hreg numMarkedReg (by decide)]
+
+/-- Setting a caller or scratch register keeps the potential. -/
+theorem potential_set_scratch (x : Data rFib) {d : Fin rFib} (hd : 17 ≤ d.val) (v : ℕ) :
+    potential (x.set d v) = potential x :=
+  potential_supported fun i hi =>
+    Data.set_regs_of_ne (fun e => by subst e; simp [inputReg, hd] at hi) v
+
+/-- Writing memory keeps the potential. -/
+theorem potential_write (x : Data rFib) (a v : ℕ) : potential (x.write a v) = potential x := rfl
+
+/-- Setting the marked-node counter. -/
+theorem potential_set_numMarked (x : Data rFib) (v : ℕ) :
+    potential (x.set numMarkedReg v) = unitCredit * (x.regs numRootsReg + 2 * v) := by
+  simp only [potential, Data.set_regs_self,
+    Data.set_regs_of_ne (by decide : numRootsReg ≠ numMarkedReg)]
 
 end Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap
