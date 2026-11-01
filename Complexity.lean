@@ -1037,6 +1037,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ScheduledR
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TaperedRecovery
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Truncated
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TruncatedAlgorithm
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TruncatedEntry
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TruncatedPolyTime
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TruncatedResources
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.VertexDesc
@@ -1266,6 +1267,7 @@ public import Complexity.Computability.Complexity.Classes.CountingSimulation.Gua
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Interfaces
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Promise
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Separation
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.TruncatedEntry
 public import Complexity.Computability.Complexity.Classes.DP
 public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Complexity.Classes.FewP
