@@ -70,6 +70,39 @@ private def queryState (digits : List ℕ) : Data registers :=
   | some (y, _) => y.regs Reg.found == 0 && y.regs Reg.answer == 0
   | none => false
 
+-- At threshold m, only the nine non-P0 fixed leaves remain; a star is rejected.
+#guard match program.eval 16 10000
+    ((State.init (input 1 1 1 leftValues rightValues)).data) with
+  | some (y, _) => y.regs Reg.count == 9 && y.regs Reg.values == 61 && y.mem 33 == 0
+  | none => false
+
+#guard match request.eval 16 10000 ((queryState [10]).write 3 1) with
+  | some (y, _) => y.regs Reg.found == 0 && y.regs Reg.answer == 0
+  | none => false
+
+private def depthTwoState (digits : List ℕ) : Data registers :=
+  let x := (State.init (input 2 2 0 (fun _ => 1) (fun _ => 1)) : State registers).data
+  { x with mem := fun p => if 204 ≤ p ∧ p < 984 then 99 else
+      if p = 1050 then 777 else if 1100 ≤ p then digits[p - 1100]?.getD 0 else x.mem p }
+
+private def depthTwoRequest : Code .standard registers :=
+  .seq program (.seq (ram[ Reg.cube ← #1100 ]) lookup)
+
+-- Both star layers use real earlier ranks; the full two-star cube sums 100 leaf products.
+#guard match depthTwoRequest.eval 20 10000 (depthTwoState [10, 10]) with
+  | some (y, _) => y.regs Reg.count == 120 && y.regs Reg.values == 864 &&
+      y.regs Reg.found == 1 && y.regs Reg.answer == encode 100 && y.mem 1050 == 777
+  | none => false
+
+#guard match depthTwoRequest.eval 20 10000 (depthTwoState [10, 9]) with
+  | some (y, _) => y.regs Reg.found == 1 && y.regs Reg.answer == encode 10
+  | none => false
+
+-- Reversing those symbols puts a fixed P0 below a star and is not a canonical box.
+#guard match depthTwoRequest.eval 20 10000 (depthTwoState [9, 10]) with
+  | some (y, _) => y.regs Reg.found == 0 && y.regs Reg.answer == 0 && y.mem 1050 == 777
+  | none => false
+
 -- Fully admitted compilation client: the observed word belongs to the same native
 -- pre-halt witness as the initialized prefix and charged halt.
 example : ∃ y n,
