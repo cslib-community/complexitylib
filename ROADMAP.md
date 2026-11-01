@@ -602,8 +602,9 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   expected-time rules for unbounded almost-surely terminating structured loops; random-tape
   equivalence and BPP/RP/ZPP simulation bridges for the randomized word RAM ([#1124]); transfer
   of cell-probe lower bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
-- **Direct 3SUM adaptation** ([#1394]): global parameter selection, using the concrete
-  native cyclic-Strassen modular counter ([#1701]) and minimum-count prime selector ([#2098]); unrestricted small geometry; the aggregate
+- **Direct 3SUM adaptation** ([#1394]): global parameter/asymptotic composition, using the concrete
+  native cyclic-Strassen counter ([#1701]), minimum-count selector ([#2098]) and conservative
+  computed dyadic parameters ([#2127]); unrestricted small geometry; the aggregate
   subcubic Exact Triangle bound and source exponent; and the unconditional ordinary-3SUM
   input/time/width/asymptotic composition, including the improved Section 4 route to exponent
   1.9992. These build on the native Chan–He preprocessing, queried thin products, fixed-prime
@@ -612,7 +613,9 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   `3704*(p+1)²*(n+1)^2.81` instructions including halt. Its source-regime admission and
   width-independent prefix bounds are proved. The selector computes the actual attained window
   minimum with native trial division and real counter calls, preserving the explicit window
-  cost factor. Global parameter choices and the full endpoint remain separate.
+  cost factor. The dyadic parameter kernel computes geometry-compatible values and explicitly
+  classifies the small regime; it does not prove the tuned aggregate exponent or dispatch a solver.
+  Global solver/host composition and the full endpoint remain separate.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and

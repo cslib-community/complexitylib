@@ -6,6 +6,7 @@ public import Complexity.Algorithms.ExactTriangle.Defs
 public import Complexity.Algorithms.ExactTriangle.FailureAccounting
 public import Complexity.Algorithms.ExactTriangle.Hashing
 public import Complexity.Algorithms.ExactTriangle.Lopsided
+public import Complexity.Algorithms.ExactTriangle.ParameterChoice
 public import Complexity.Algorithms.ExactTriangle.PieceBounds
 public import Complexity.Algorithms.ExactTriangle.Splitting
 public import Complexity.Algorithms.ExactTriangle.Weights
@@ -186,6 +187,11 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.SourceBound
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.Spread
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.TimeBound
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.Width
+public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters
+public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.Exec
+public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.Input
+public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.Program
+public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.SourceBounds
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Accounting
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Controller
@@ -2501,6 +2507,7 @@ public import Complexity.Computability.WordRAM.Notation
 public import Complexity.Computability.WordRAM.OfTuring
 public import Complexity.Computability.WordRAM.PackedCount
 public import Complexity.Computability.WordRAM.Power
+public import Complexity.Computability.WordRAM.Power.Rename
 public import Complexity.Computability.WordRAM.RAM
 public import Complexity.Computability.WordRAM.RAMInput
 public import Complexity.Computability.WordRAM.Randomized.Defs
