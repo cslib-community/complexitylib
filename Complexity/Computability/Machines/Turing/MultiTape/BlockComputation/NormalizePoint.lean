@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
 public import Mathlib.Data.ZMod.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinarySizeFacts
+import Complexity.Tactic.EncLen
 import Mathlib.Data.List.GetD
 import Mathlib.Data.List.OfFn
 
@@ -94,16 +95,14 @@ theorem normalize_inSpace :
     rw [fold_normalize, List.nil_append]
     have hn := length_enc_normalize_le a.1 (a.2.take i)
     have ht := length_encList_take_le encNat a.2 i
-    simp only [encArgs, length_encPair]
-    omega
+    enc_len [encArgs]
   have hspace (a : Args) (i : ℕ) (hi : i < a.2.length) :
       (encPair (encPair encNat (encList encNat)) encNat
         ((a.1, (a.2.take i).foldl (fun acc v => acc ++ [v % a.1]) []), a.2[i])).length ≤
           16 * ((encArgs a).length + 1) := by
     have hs := hstates a i hi.le
     have hv := length_le_encList_of_mem encNat (List.getElem_mem hi)
-    simp only [encArgs, length_encPair] at *
-    omega
+    enc_len [encArgs] at *
   have hfold := ComputableInSpace.foldlWith
     (encIn := encArgs) (encP := encNat) (encA := encNat) (encL := encList encNat)
     (encB := encList encNat) (par := fun a : Args => a.1) (list := fun a : Args => a.2)
@@ -113,9 +112,7 @@ theorem normalize_inSpace :
     (Si := fun a => (encArgs a).length)
     (Q := fun a => 16 * ((encArgs a).length + 1)) (B := fun a => (encArgs a).length)
     hp hl hinit hstep hspace hstates
-  refine hfold.weaken (.of_le_linear 100 100 fun a => by
-    simp only [encArgs, length_encPair]
-    omega) |>.of_enc_eq ?_
+  refine hfold.weaken (.of_le_linear 100 100 fun a => by enc_len [encArgs]) |>.of_enc_eq ?_
   intro a
   simp only [fold_normalize, List.nil_append]
 

@@ -11,6 +11,7 @@ public import Complexity.Init
 public import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceSemantics
 public import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceStepCert
 public import Complexity.Computability.PolyTime.CNF.BranchedSparseCNFCounter
+import Complexity.Tactic.EncLen
 import all Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceStepCert
 import all Complexity.Computability.PolyTime.CNF.BranchedSparseCNFCounter
 import Complexity.Computability.Complexity.FineGrained.SparseBranchAsymptotics
@@ -177,8 +178,7 @@ private theorem parametric_branch_step_bound {N₀_branch k_deg β C_inc C_p d_p
       simpa only [pow_one] using Nat.pow_le_pow_right (by omega) (by decide : 1 ≤ 2)
     exact (one_mul r).symm.le.trans ((Nat.mul_le_mul (by omega) hr_sq).trans hvar_bal)
   have hrQ_le_n : r ^ Q ≤ n' := numGroups_pow_numNodes_le_self (by omega) (by omega)
-  have hn_le_enc : n' ≤ (encPair encUnary encSys (n', sys')).length := by
-    simp only [length_encPair, encUnary_apply, List.length_replicate]; omega
+  have hn_le_enc : n' ≤ (encPair encUnary encSys (n', sys')).length := by enc_len
   generalize hL_eq : (encPair encUnary encSys (n', sys')).length = L at hn_le_enc hT_le ⊢
   set S_sp := Cslib.subsetPairCount n' q; set D := ReplacementParams.auxDim n'
   have hS_eq : SubsetPairFold.subsetPairCount n' q = S_sp := SubsetPairFold.subsetPairCount_eq n' q
@@ -359,8 +359,7 @@ private theorem exists_computableInO_signedMeasJet :
       omega
     | some y =>
       have hiy : (encPair eMIn encJet (inp, y)).length ≤
-          2 * (eMIn inp).length + 2 * (encOption encJet (some y)).length + 1 := by
-        simp only [length_encPair, encOption_some, List.length_cons]; omega
+          2 * (eMIn inp).length + 2 * (encOption encJet (some y)).length + 1 := by enc_len
       have hb := (ha (inp, y)).trans
         (Nat.mul_le_mul_left ca (Nat.pow_le_pow_left (Nat.add_le_add_right hiy 1) da))
       simp only [Option.elim_some]; dsimp only [cAddM]; omega
@@ -386,8 +385,7 @@ private theorem exists_computableInO_signedMeasJet :
       simp only [Option.elim_none, NativeCertificate.snd_time, NativeCertificate.linear_time]; omega
     | some y =>
       have hiy : (encPair eMIn encJet (inp, y)).length ≤
-          2 * (eMIn inp).length + 2 * (encOption encJet (some y)).length + 1 := by
-        simp only [length_encPair, encOption_some, List.length_cons]; omega
+          2 * (eMIn inp).length + 2 * (encOption encJet (some y)).length + 1 := by enc_len
       have hb := (ha (inp, y)).trans
         (Nat.mul_le_mul_left ca (Nat.pow_le_pow_left (Nat.add_le_add_right hiy 1) da))
       simp only [Option.elim_some]; dsimp only [cProjWC, cAddM]; omega
@@ -492,7 +490,7 @@ private theorem exists_computableInO_signedMeasJet :
       hj fun i _ y hy j' _ u' _ => by
         have hw_len := MeasurementFold.length_values_le dc.2.2.1.1 dc.2.2.1.2 i
         have hwc_len : (eWC (Cslib.Radix.measurementValues dc.2.2.1.1 dc.2.2.1.2 i,
-            mkMCtx dc)).length ≤ L_wc dc := by simp only [eWC, length_encPair, L_wc]; omega
+            mkMCtx dc)).length ≤ L_wc dc := by enc_len [eWC, L_wc]
         have hopt_len : (encOption encJet (some y)).length ≤ L_opt dc := by
           rw [← hy]; exact (ho1_le _).trans (Nat.mul_le_mul_left co1
             (Nat.pow_le_pow_left (Nat.add_le_add_right hwc_len 1) do1))
@@ -539,7 +537,7 @@ private theorem exists_computableInO_signedMeasJet :
           (Cslib.Radix.measurementValues dc.2.2.1.1 dc.2.2.1.2 j, mkMCtx dc) := by
         rw [IndexFold.run_index, hrun_eq dc j]
       have hwc_len : (eWC (Cslib.Radix.measurementValues dc.2.2.1.1 dc.2.2.1.2 j,
-          mkMCtx dc)).length ≤ L_wc dc := by simp only [eWC, length_encPair, L_wc]; omega
+          mkMCtx dc)).length ≤ L_wc dc := by enc_len [eWC, L_wc]
       have hpay_t : cPay.time (Cslib.Radix.measurementValues st.2.1.1 st.2.1.2 st.1, st.2.2.1) ≤
           (dc.2.numGroups * (2 ^ maxGroupDim dc.2.numVars dc.2.numGroups dc.2.varGroups + 1) + 1) *
             P_pay dc := by
@@ -682,9 +680,7 @@ private theorem exists_computableInO_nodeJet :
       (SubsetPairFold.encDecodedPair (SubsetPairFold.unrankSubsetPair n q i)).length ≤
         6 * n + 7 := by
     unfold SubsetPairFold.encDecodedPair
-    rw [length_encPair, length_encPair, encBits_apply, encBits_apply, encBool_apply,
-      List.length_singleton, SubsetPairFold.length_fst_unrankSubsetPair,
-      SubsetPairFold.length_snd_unrankSubsetPair]; omega
+    enc_len [SubsetPairFold.length_fst_unrankSubsetPair, SubsetPairFold.length_snd_unrankSubsetPair]
   have hB : ∀ qs j, j ≤ SubsetPairFold.subsetPairCount qs.2.numVars qs.1 →
       (eSubAcc (SubsetPairFold.runPrefix subsetPairStepBody qs.2.numVars qs.1 j
         (qs.2, zeroJet qs.2.jetOrder qs.2.precision)).2.2).length ≤ B_sub qs := by
@@ -709,7 +705,7 @@ private theorem exists_computableInO_nodeJet :
       (Nat.mul_le_mul_left 2 (Nat.mul_le_mul_left _ (Nat.add_le_add_right
         (Nat.mul_le_mul_left 2 (Nat.add_le_add hN_sz hM_sz)) 3))) 1))
     simp only [Option.elim_some] at hjet_le
-    dsimp only [eSubAcc, B_sub, B_jet] at hjet_le ⊢; rw [length_encPair]; dsimp only; omega
+    dsimp only [eSubAcc, B_sub, B_jet] at hjet_le ⊢; enc_len
   let L_sub (qs : ℕ × SubsetStepCtx) := 2 * (6 * qs.2.numVars + 7) + 2 * B_sub qs + 1
   have hLsub_pb : PolyBounded (fun qs => (eQS qs).length) L_sub :=
     (((PolyBounded.const 2).mul (((PolyBounded.const 6).mul hn_pb).add (.const 7))).add
@@ -1140,8 +1136,7 @@ private theorem exists_boundedIncidenceBranch_cert :
       have hlen : (encPair eCtx encUnary
           ((idPair, buildEqRowTables idPair.1.1.1 idPair.1.2.2.2 idPair.2), t)).length ≤
           2 * (eCtx (idPair, buildEqRowTables idPair.1.1.1 idPair.1.2.2.2 idPair.2)).length +
-            2 * branchQ_u idPair.1 + 1 := by
-        simp only [length_encPair, encUnary_apply, List.length_replicate]; omega
+            2 * branchQ_u idPair.1 + 1 := by enc_len
       have hov :=
         (hn1_le ((idPair, buildEqRowTables idPair.1.1.1 idPair.1.2.2.2 idPair.2), t)).trans
         (Nat.mul_le_mul_left cn1 (Nat.pow_le_pow_left (Nat.add_le_add_right hlen 1) dn1))

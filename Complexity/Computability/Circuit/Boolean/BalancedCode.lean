@@ -16,6 +16,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Tactic.EncLen
 import Mathlib.Data.List.GetD
 import Mathlib.Data.List.TakeDrop
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -103,11 +104,9 @@ private theorem codeMass_le_encoding (c : Code) : codeMass c ≤ (encCode c).len
     apply List.sum_le_sum
     intro gate _
     have := length_le_length_encList encNat gate.2
-    simp only [encGate, Circuit.encGate, length_encPair]
-    omega
+    enc_len [encGate, Circuit.encGate]
   have ho := length_le_length_encList encNat c.2
-  simp only [codeMass, encCode, Circuit.encCode, encGate, length_encPair] at hg ⊢
-  omega
+  enc_len [codeMass, encCode, Circuit.encCode, encGate] at hg ⊢
 
 private theorem wireBitsLe_encoding (c : Code) : WireBitsLe c (encCode c).length := by
   constructor
@@ -121,8 +120,7 @@ private theorem wireBitsLe_encoding (c : Code) : WireBitsLe c (encCode c).length
     omega
   · intro wire hw
     have := length_le_encList_of_mem encNat hw
-    simp only [encCode, length_encPair]
-    omega
+    enc_len [encCode]
 
 private theorem codeMass_append (n : ℕ) (c d : Code) :
     codeMass (appendCode n c d) = codeMass c + codeMass d := by

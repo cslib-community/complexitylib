@@ -11,6 +11,7 @@ public import Complexity.Computability.GenericRAM.SparseMemory.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lists
+import Complexity.Tactic.EncLen
 
 /-!
 # Native Turing-machine certificates for sparse memory
@@ -154,8 +155,7 @@ theorem scanSpace_le (q : Address × SparseMemory Address Value) :
     have hv := le_listMax (f := fun e : Address × Value => (encV e.2).length) he
     change (encA e.1).length ≤ maxKeyLength encA q.2 at hk
     change (encV e.2).length ≤ maxValueLength encV q.2 at hv
-    simp only [compareSpace, length_encPair]
-    omega
+    enc_len [compareSpace]
   unfold scanSpace
   omega
 
@@ -343,9 +343,7 @@ theorem insert_inO_cube :
   apply (insert_inO encA encV).mono 40
   · intro q
     have hq : (queryEncoding encA encV (q.1.1, q.2)).length ≤
-        (writeEncoding encA encV q).length := by
-      simp only [queryEncoding, writeEncoding, length_encPair]
-      omega
+        (writeEncoding encA encV q).length := by enc_len [queryEncoding, writeEncoding]
     have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
     have ht := scanTime_le_cube encA encV (q.1.1, q.2)
     have he : (writeEncoding encA encV q).length ≤
@@ -354,8 +352,7 @@ theorem insert_inO_cube :
     nlinarith
   · intro q
     have hs := scanSpace_le_linear encA encV (q.1.1, q.2)
-    simp only [writeSpace, queryEncoding, writeEncoding, length_encPair] at hs ⊢
-    omega
+    enc_len [writeSpace, queryEncoding, writeEncoding] at hs ⊢
 
 /-- A cubic-time, linear-space specialization of the parameterized read certificate. -/
 theorem read_inO_cube :
@@ -367,8 +364,7 @@ theorem read_inO_cube :
   apply (read_inO encA encV).mono 40
   · intro q
     have hq : (queryEncoding encA encV q.1).length ≤ (readEncoding encA encV q).length := by
-      simp only [readEncoding, length_encPair]
-      omega
+      enc_len [readEncoding]
     have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
     have ht := scanTime_le_cube encA encV q.1
     have he : (readEncoding encA encV q).length ≤
@@ -377,8 +373,7 @@ theorem read_inO_cube :
     nlinarith
   · intro q
     have hs := scanSpace_le_linear encA encV q.1
-    simp only [readSpace, readEncoding, length_encPair] at hs ⊢
-    omega
+    enc_len [readSpace, readEncoding] at hs ⊢
 
 /-- Polynomial-time writes are a corollary of the native parameterized certificate. -/
 @[fun_prop]
