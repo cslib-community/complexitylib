@@ -37,6 +37,7 @@ open Cslib.WordRAM.Randomized
 open Cslib.Algorithms.Lean
 open Cslib.Algorithms.WordRAM.Dictionary
 open ComplexityAbstracts.RandomizedWordRAMBridge
+open ComplexityAbstracts.HashFamiliesBridge.HFPresentation (WordBounded UnchangedOutside)
 
 /-! ## Part 1: Polymorphic Dictionary Presentation and Execution Transfer -/
 
@@ -75,14 +76,6 @@ variable {S : Presentation} (P : DictPresentation S)
 /-- Empty dictionary state `fun _ => none`. -/
 def emptyDict (U : ℕ) : Fin U → Option ℕ :=
   fun _ => none
-
-/-- All registers and memory cells carry `w`-bit machine words (`< 2 ^ w`). -/
-def WordBounded {r : ℕ} (w : ℕ) (reg : Fin r → ℕ) (mem : ℕ → ℕ) : Prop :=
-  (∀ i, reg i < 2 ^ w) ∧ ∀ a, mem a < 2 ^ w
-
-/-- Memory cells outside `[base, base + sp)` are unchanged between `mem` and `mem'`. -/
-def UnchangedOutside (base sp : ℕ) (mem mem' : ℕ → ℕ) : Prop :=
-  ∀ a, (a < base ∨ base + sp ≤ a) → mem' a = mem a
 
 /-- No reachable configuration of program `p` from state `s` at word width `w` faults at any time
 horizon `T`. -/
@@ -195,9 +188,9 @@ structure DictLaws (S : Presentation) (P : DictPresentation S) : Prop where
         (P.prepareDictRegs clearScratch baseReg tagReg keyReg valReg o (P.csReg p)) (P.csMem p)
         ((μ_step p).map P.toRegMem) (T_step p) ∧
       ∀ q ∈ (μ_step p).support,
-        DictPresentation.WordBounded w (P.csReg q) (P.csMem q) ∧
+        WordBounded w (P.csReg q) (P.csMem q) ∧
         P.OpOutputCorrect outReg s o (P.csReg q) ∧
-        DictPresentation.UnchangedOutside base sp (P.csMem p) (P.csMem q)) →
+        UnchangedOutside base sp (P.csMem p) (P.csMem q)) →
     P.ExecDictOps w p_op clearScratch baseReg tagReg keyReg valReg outReg base sp
       (P.stepDict s o) ops (μ.bind μ_step) μ_final T_rest →
     P.ExecDictOps w p_op clearScratch baseReg tagReg keyReg valReg outReg base sp
@@ -285,6 +278,48 @@ private theorem map_coupledStateOf_toRegMem {S : Presentation} {P : DictPresenta
   rcases p with ⟨θ, ⟨reg, mem⟩⟩
   simp [DictPresentation.toRegMem, DictPresentation.coupledStateOf, DictPresentation.regMemOf,
     hP.csReg_mk, hP.csMem_mk]
+
+private theorem support_coupledStateOf_init {S : Presentation} {P : DictPresentation S}
+    (hP : DictLaws S P) {Seed : Type} {r w base sp : ℕ}
+    {baseReg frontierReg : Fin r} {mem₀ : ℕ → ℕ}
+    {ν₀ : PMF (Seed × Data r)}
+    (hsupp : ∀ p ∈ ν₀.support,
+      WordBounded w p.2.regs p.2.mem ∧
+      p.2.regs baseReg = base ∧
+      p.2.regs frontierReg = base + sp ∧
+      Modifies (Block.mk base sp).footprint mem₀ p.2.mem) :
+    ∀ p_abs ∈ (ν₀.map P.coupledStateOf).support,
+      WordBounded w (P.csReg p_abs) (P.csMem p_abs) ∧
+      P.csReg p_abs baseReg = base ∧
+      P.csReg p_abs frontierReg = base + sp ∧
+      UnchangedOutside base sp mem₀ (P.csMem p_abs) := by
+  intro p_abs hp_abs
+  rw [PMF.mem_support_map_iff] at hp_abs
+  obtain ⟨p, hp, rfl⟩ := hp_abs
+  obtain ⟨hbdd, hbase, hfr, hmod⟩ := hsupp p hp
+  have hreg : P.csReg (P.coupledStateOf p) = p.2.regs :=
+    hP.csReg_mk p.1 p.2.regs p.2.mem
+  have hmem : P.csMem (P.coupledStateOf p) = p.2.mem :=
+    hP.csMem_mk p.1 p.2.regs p.2.mem
+  rw [hreg, hmem]
+  refine ⟨hbdd, hbase, hfr, fun a ha => ?_⟩
+  have ha' : a ∉ (Block.mk base sp).footprint := by
+    rw [Block.mem_footprint, Block.Owns, not_and_or, not_le, not_lt]
+    exact ha
+  exact hmod a ha'
+
+private theorem totalCost_const {U V n_max : ℕ} (c : ℕ) (s : Dictionary.State U)
+    (ops : List (Dictionary.Op U)) :
+    (Dictionary.spec U V n_max).totalCost (fun _ _ => c) s ops = ops.length * c := by
+  induction ops generalizing s with
+  | nil =>
+    change 0 = 0 * c
+    simp
+  | cons o os ih =>
+    change c + (Dictionary.spec U V n_max).totalCost (fun _ _ => c)
+      ((Dictionary.spec U V n_max).stepFn s o).1 os = (os.length + 1) * c
+    rw [ih]
+    ring
 
 /-- Compile any library `ExecCodeDist w c ⟨reg, mem⟩ μ_lib T` to `P.ExecProgramDist`. -/
 theorem compile_execCodeDist {S : Presentation} (hS : Laws S)
@@ -443,8 +478,6 @@ def chainedHashBits (U n_max : ℕ) : ℕ :=
 def chainedSpace (n_max : ℕ) : ℕ :=
   4 + chainedNumBuckets n_max + 3 * n_max
 
-theorem chainedSpace_eq (n_max : ℕ) : chainedSpace n_max = ChainedHash.space n_max := rfl
-
 /-- Linear space bound `chainedSpace n_max ≤ 8 * (n_max + 1)`. -/
 theorem chainedSpace_le (n_max : ℕ) : chainedSpace n_max ≤ 8 * (n_max + 1) := by
   have hb : chainedNumBuckets n_max ≤ 2 * n_max + 4 := ChainedHash.numBuckets_le n_max
@@ -461,76 +494,97 @@ theorem chainedHashing (S : Presentation) (hS : Laws S)
           base + chainedSpace n_max < 2 ^ w →
           V < 2 ^ w →
           ∀ (reg₀ : Fin 22 → ℕ) (mem₀ : ℕ → ℕ),
-            DictPresentation.WordBounded w reg₀ mem₀ →
+            WordBounded w reg₀ mem₀ →
             reg₀ ⟨6, by decide⟩ = base →
             (∀ a, base ≤ a → a < base + chainedSpace n_max → mem₀ a = 0) →
-            ∀ ops : List (P.DictOp U),
-              P.ValidDictHistory V n_max (DictPresentation.emptyDict U) ops →
-              ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (P.CoupledState Seed 22)),
-                P.ExecProgramDist w p_init ⟨10, by decide⟩ reg₀ mem₀
-                  (μ_init.map P.toRegMem) 16 ∧
-                P.ExecDictOps w p_op true
-                  ⟨5, by decide⟩ ⟨7, by decide⟩ ⟨8, by decide⟩ ⟨9, by decide⟩ ⟨10, by decide⟩
-                  base (chainedSpace n_max) (DictPresentation.emptyDict U) ops
-                  μ_init μ_final T_ops ∧
-                (16 : ℝ≥0∞) + T_ops ≤ ((16 + 73 * ops.length : ℕ) : ℝ≥0∞) := by
+            ∃ (Seed : Type) (μ_init : PMF (P.CoupledState Seed 22)),
+              P.ExecProgramDist w p_init ⟨10, by decide⟩ reg₀ mem₀
+                (μ_init.map P.toRegMem) 16 ∧
+              (∀ p ∈ μ_init.support,
+                WordBounded w (P.csReg p) (P.csMem p) ∧
+                P.csReg p ⟨5, by decide⟩ = base ∧
+                P.csReg p ⟨6, by decide⟩ = base + chainedSpace n_max ∧
+                UnchangedOutside base (chainedSpace n_max) mem₀ (P.csMem p)) ∧
+              ∀ ops : List (P.DictOp U),
+                P.ValidDictHistory V n_max (DictPresentation.emptyDict U) ops →
+                ∃ (μ_final : PMF (P.CoupledState Seed 22)) (T_ops : ℝ≥0∞),
+                  P.ExecDictOps w p_op true
+                    ⟨5, by decide⟩ ⟨7, by decide⟩ ⟨8, by decide⟩ ⟨9, by decide⟩ ⟨10, by decide⟩
+                    base (chainedSpace n_max) (DictPresentation.emptyDict U) ops
+                    μ_init μ_final T_ops ∧
+                  (16 : ℝ≥0∞) + T_ops ≤ ((16 + 73 * ops.length : ℕ) : ℝ≥0∞) := by
   intro U n_max
   let Sub := ChainedHash.subroutineCode U n_max
   refine ⟨S.programOf (Sub.initFresh.program ⟨10, by decide⟩),
     S.programOf (Sub.code.program ⟨10, by decide⟩), ?_⟩
-  intro V w base hw hfit_space hfit_V reg₀ mem₀ hbdd₀ hfr₀ hz₀ ops hv_abs
+  intro V w base hw hfit_space hfit_V reg₀ mem₀ hbdd₀ hfr₀ hz₀
   let C := ChainedHash.subroutineDS U V n_max w base hw hfit_space hfit_V
-  obtain ⟨ops_lib, rfl⟩ := ops_surjective P ops
-  have hv_lib : (Dictionary.spec U V n_max).ValidHistory (Dictionary.empty U) ops_lib :=
-    (validDictHistory_map_dictOpOf hP (DictPresentation.emptyDict U) ops_lib).mp hv_abs
   have hz_lib : ∀ a ∈ (Block.mk base (ChainedHash.space n_max)).footprint, mem₀ a = 0 := by
     intro a ha
     rw [Block.mem_footprint, Block.Owns] at ha
     exact hz₀ a ha.1 ha.2
-  obtain ⟨ν₀, ν_final, T_ops, he_init, hex_steps, -, -, hbound⟩ :=
-    ChainedHash.seq_expected_amortized U V n_max w base hw hfit_space hfit_V
-      (x := ⟨reg₀, mem₀⟩) ops_lib hbdd₀ hfr₀ hz_lib hv_lib
+  obtain ⟨ν₀, he_init, hseed₀, hsupp₀⟩ :=
+    C.initFresh_exec (x := ⟨reg₀, mem₀⟩) hbdd₀ hfr₀ (fun j => Fin.elim0 j) hz_lib
   have hinit_time : C.initTime = 16 := by
     change (3 : ℝ≥0∞) + 13 = 16
     norm_num
-  rw [hinit_time] at he_init hbound
-  refine ⟨C.Seed, T_ops, ν₀.map P.coupledStateOf, ν_final.map P.coupledStateOf, ?_, ?_, ?_⟩
+  rw [hinit_time] at he_init
+  refine ⟨C.Seed, ν₀.map P.coupledStateOf, ?_, ?_, ?_⟩
   · rw [map_coupledStateOf_toRegMem hP]
     exact compile_execCodeDist hS hP ⟨10, by decide⟩ he_init
-  · refine compile_execStepsOfFn hS hP C true
-      ⟨5, by decide⟩ ⟨7, by decide⟩ ⟨8, by decide⟩ ⟨9, by decide⟩ ⟨10, by decide⟩
-      (fun o d => ?_) (fun s o regs hdec => ?_) hex_steps
-    · funext i
-      cases o with
-      | get u =>
-        dsimp only [DictPresentation.dictOpOf]
-        rw [hP.prepareDictRegs_get]
-        change (if decide (i ≠ ⟨5, by decide⟩) then
-          if i = ⟨7, by decide⟩ then 0 else if i = ⟨8, by decide⟩ then u.val else 0
-        else d.regs i) = _
-        fin_cases i <;> rfl
-      | insert u v =>
-        dsimp only [DictPresentation.dictOpOf]
-        rw [hP.prepareDictRegs_insert]
-        change (if decide (i ≠ ⟨5, by decide⟩) then
-          if i = ⟨7, by decide⟩ then 1
-          else if i = ⟨8, by decide⟩ then u.val
-          else if i = ⟨9, by decide⟩ then v else 0
-        else d.regs i) = _
-        fin_cases i <;> rfl
-    · cases o with
-      | get u =>
-        dsimp only [DictPresentation.dictOpOf]
-        rw [hP.opOutputCorrect_get]
-        change (if regs ⟨10, by decide⟩ = 0 then some none
-          else some (some (regs ⟨10, by decide⟩ - 1))) = some (s u) at hdec
-        split_ifs at hdec ⊢ with h0 <;> simp_all
-      | insert u v =>
-        dsimp only [DictPresentation.dictOpOf]
-        rw [hP.opOutputCorrect_insert]
-        trivial
-  · rw [List.length_map]
-    simpa only [ChainedHash.chargeVal, Nat.cast_add, Nat.cast_ofNat] using hbound
+  · exact support_coupledStateOf_init hP fun p hp =>
+      ⟨(hsupp₀ p hp).2.1.bounded, (hsupp₀ p hp).2.1.reg_base, (hsupp₀ p hp).1, (hsupp₀ p hp).2.2.2⟩
+  · intro ops hv_abs
+    obtain ⟨ops_lib, rfl⟩ := ops_surjective P ops
+    have hv_lib : (Dictionary.spec U V n_max).ValidHistory (Dictionary.empty U) ops_lib :=
+      (validDictHistory_map_dictOpOf hP (DictPresentation.emptyDict U) ops_lib).mp hv_abs
+    obtain ⟨ν_final, T_ops, hex_steps, -, -, hamort⟩ :=
+      C.steps_expected_amortized_ofFn ops_lib ν₀ hv_lib hseed₀ fun p hp => (hsupp₀ p hp).2.1
+    refine ⟨ν_final.map P.coupledStateOf, T_ops, ?_, ?_⟩
+    · refine compile_execStepsOfFn hS hP C true
+        ⟨5, by decide⟩ ⟨7, by decide⟩ ⟨8, by decide⟩ ⟨9, by decide⟩ ⟨10, by decide⟩
+        (fun o d => ?_) (fun s o regs hdec => ?_) hex_steps
+      · funext i
+        cases o with
+        | get u =>
+          dsimp only [DictPresentation.dictOpOf]
+          rw [hP.prepareDictRegs_get]
+          change (if decide (i ≠ ⟨5, by decide⟩) then
+            if i = ⟨7, by decide⟩ then 0 else if i = ⟨8, by decide⟩ then u.val else 0
+          else d.regs i) = _
+          fin_cases i <;> rfl
+        | insert u v =>
+          dsimp only [DictPresentation.dictOpOf]
+          rw [hP.prepareDictRegs_insert]
+          change (if decide (i ≠ ⟨5, by decide⟩) then
+            if i = ⟨7, by decide⟩ then 1
+            else if i = ⟨8, by decide⟩ then u.val
+            else if i = ⟨9, by decide⟩ then v else 0
+          else d.regs i) = _
+          fin_cases i <;> rfl
+      · cases o with
+        | get u =>
+          dsimp only [DictPresentation.dictOpOf]
+          rw [hP.opOutputCorrect_get]
+          change (if regs ⟨10, by decide⟩ = 0 then some none
+            else some (some (regs ⟨10, by decide⟩ - 1))) = some (s u) at hdec
+          split_ifs at hdec ⊢ with h0 <;> simp_all
+        | insert u v =>
+          dsimp only [DictPresentation.dictOpOf]
+          rw [hP.opOutputCorrect_insert]
+          trivial
+    · change T_ops + ∑' q, ν_final q * ((0 : ℕ) : ℝ≥0∞) ≤
+        ((Dictionary.spec U V n_max).totalCost (fun _ _ => ChainedHash.chargeVal)
+          (Dictionary.empty U) ops_lib : ℝ≥0∞) + ∑' p, ν₀ p * ((0 : ℕ) : ℝ≥0∞) at hamort
+      simp only [Nat.cast_zero, mul_zero, tsum_zero, add_zero] at hamort
+      rw [totalCost_const] at hamort
+      rw [List.length_map]
+      calc (16 : ℝ≥0∞) + T_ops
+        _ ≤ 16 + ((ops_lib.length * ChainedHash.chargeVal : ℕ) : ℝ≥0∞) := add_le_add le_rfl hamort
+        _ = ((16 + 73 * ops_lib.length : ℕ) : ℝ≥0∞) := by
+          dsimp only [ChainedHash.chargeVal]
+          push_cast
+          ring
 
 /-! ## Part 3: Linear Probing with `5`-Wise Independent Hashing (`LinearProbing.lean`) -/
 
@@ -681,140 +735,142 @@ theorem linearProbing (S : Presentation) (hS : Laws S)
           base + lpSpace n_max < 2 ^ w →
           V < 2 ^ w →
           ∀ (reg₀ : Fin 24 → ℕ) (mem₀ : ℕ → ℕ),
-            DictPresentation.WordBounded w reg₀ mem₀ →
+            WordBounded w reg₀ mem₀ →
             reg₀ ⟨18, by decide⟩ = base →
             (∀ a, base ≤ a → a < base + lpSpace n_max → mem₀ a = 0) →
-            ∀ ops : List (P.DictOp U),
-              P.ValidDictHistory V n_max (DictPresentation.emptyDict U) ops →
-              ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (P.CoupledState Seed 24)),
-                P.ExecProgramDist w p_init ⟨2, by decide⟩ reg₀ mem₀
-                  (μ_init.map P.toRegMem) (lpInitSteps U n_max) ∧
-                P.ExecDictOps w p_op false
-                  ⟨0, by decide⟩ ⟨22, by decide⟩ ⟨1, by decide⟩ ⟨23, by decide⟩ ⟨2, by decide⟩
-                  base (lpSpace n_max) (DictPresentation.emptyDict U) ops
-                  μ_init μ_final T_ops ∧
-                (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
-                  ((lpInitSteps U n_max + ops.length * lpOpCharge U n_max : ℕ) : ℝ≥0∞) ∧
-                (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
-                  ((lpInitSteps U n_max + ops.length * lpOpChargeBound : ℕ) : ℝ≥0∞) := by
+            ∃ (Seed : Type) (μ_init : PMF (P.CoupledState Seed 24)),
+              P.ExecProgramDist w p_init ⟨2, by decide⟩ reg₀ mem₀
+                (μ_init.map P.toRegMem) (lpInitSteps U n_max) ∧
+              (∀ p ∈ μ_init.support,
+                WordBounded w (P.csReg p) (P.csMem p) ∧
+                P.csReg p ⟨0, by decide⟩ = base ∧
+                P.csReg p ⟨18, by decide⟩ = base + lpSpace n_max ∧
+                UnchangedOutside base (lpSpace n_max) mem₀ (P.csMem p)) ∧
+              ∀ ops : List (P.DictOp U),
+                P.ValidDictHistory V n_max (DictPresentation.emptyDict U) ops →
+                ∃ (μ_final : PMF (P.CoupledState Seed 24)) (T_ops : ℝ≥0∞),
+                  P.ExecDictOps w p_op false
+                    ⟨0, by decide⟩ ⟨22, by decide⟩ ⟨1, by decide⟩ ⟨23, by decide⟩ ⟨2, by decide⟩
+                    base (lpSpace n_max) (DictPresentation.emptyDict U) ops
+                    μ_init μ_final T_ops ∧
+                  (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
+                    ((lpInitSteps U n_max + ops.length * lpOpCharge U n_max : ℕ) : ℝ≥0∞) ∧
+                  (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
+                    ((lpInitSteps U n_max + ops.length * lpOpChargeBound : ℕ) : ℝ≥0∞) := by
   intro U n_max
   let Sub := LinearProbing.subroutineCode U n_max
   refine ⟨S.programOf (Sub.initFresh.program ⟨2, by decide⟩),
     S.programOf (Sub.code.program ⟨2, by decide⟩), ?_⟩
-  intro V w base hU hw hfit_space hfit_V reg₀ mem₀ hbdd₀ hfr₀ hz₀ ops hv_abs
+  intro V w base hU hw hfit_space hfit_V reg₀ mem₀ hbdd₀ hfr₀ hz₀
   have hw_lib : 2 * Cslib.Probability.trinomialDeg U (LinearProbing.tableLog n_max) ≤ w := by
     rwa [← trinomialDeg_eq, ← lpTableLog_eq]
   have hfit_space_lib : Fits w (base + LinearProbing.space n_max) := by
     rwa [← lpSpace_eq]
   let C := LinearProbing.subroutineDS U V n_max w base hw_lib hfit_space_lib hfit_V
-  obtain ⟨ops_lib, rfl⟩ := ops_surjective P ops
-  have hv_lib : (Dictionary.spec U V n_max).ValidHistory (Dictionary.empty U) ops_lib :=
-    (validDictHistory_map_dictOpOf hP (DictPresentation.emptyDict U) ops_lib).mp hv_abs
   have hz_lib : ∀ a ∈ (Block.mk base (LinearProbing.space n_max)).footprint, mem₀ a = 0 := by
     intro a ha
     rw [Block.mem_footprint, Block.Owns, ← lpSpace_eq] at ha
     exact hz₀ a ha.1 ha.2
-  obtain ⟨ν₀, ν_final, T_ops, he_init, hex_steps, hbound⟩ :=
-    LinearProbing.seq_expected_amortized U V n_max w base hw_lib hfit_space_lib hfit_V
-      (x₀ := ⟨reg₀, mem₀⟩) hbdd₀ hfr₀ hz_lib ops_lib hv_lib
-  rw [← lpInitSteps_eq] at he_init hbound
-  refine ⟨LinearProbing.Seed U n_max, T_ops,
-    ν₀.map (P.coupledStateOf (r := 24)), ν_final.map (P.coupledStateOf (r := 24)),
-    ?_, ?_, ?_, ?_⟩
-  · rw [map_coupledStateOf_toRegMem hP (r := 24)]
+  obtain ⟨ν₀, he_init, hseed₀, hsupp₀⟩ :=
+    C.initFresh_exec (x := ⟨reg₀, mem₀⟩) hbdd₀ hfr₀ (fun j => Fin.elim0 j) hz_lib
+  have hinit_time : C.initTime = (lpInitSteps U n_max : ℝ≥0∞) := by
+    rw [lpInitSteps_eq, Nat.cast_add, Nat.cast_ofNat]
+    rfl
+  rw [hinit_time] at he_init
+  refine ⟨C.Seed, ν₀.map P.coupledStateOf, ?_, ?_, ?_⟩
+  · rw [map_coupledStateOf_toRegMem hP]
     exact compile_execCodeDist hS hP ⟨2, by decide⟩ he_init
   · rw [lpSpace_eq]
-    exact compile_execStepsOfFn hS hP C false
-      ⟨0, by decide⟩ ⟨22, by decide⟩ ⟨1, by decide⟩ ⟨23, by decide⟩ ⟨2, by decide⟩
-      (fun o d => by
-        funext i
-        cases o with
-        | get u =>
-          dsimp only [DictPresentation.dictOpOf]
-          rw [hP.prepareDictRegs_get]
-          change (if decide (i = ⟨1, by decide⟩ ∨ i = ⟨22, by decide⟩ ∨ i = ⟨23, by decide⟩) then
-            if i = ⟨1, by decide⟩ then u.val else 0
-          else d.regs i) = _
-          fin_cases i <;> rfl
-        | insert u v =>
-          dsimp only [DictPresentation.dictOpOf]
-          rw [hP.prepareDictRegs_insert]
-          change (if decide (i = ⟨1, by decide⟩ ∨ i = ⟨22, by decide⟩ ∨ i = ⟨23, by decide⟩) then
-            if i = ⟨1, by decide⟩ then u.val
-            else if i = ⟨22, by decide⟩ then 1
-            else if i = ⟨23, by decide⟩ then v else 0
-          else d.regs i) = _
-          fin_cases i <;> rfl)
-      (fun s o regs hdec => by
-        cases o with
-        | get u =>
-          dsimp only [DictPresentation.dictOpOf]
-          rw [hP.opOutputCorrect_get]
-          change some (if regs ⟨2, by decide⟩ = 0 then none
-            else some (regs ⟨2, by decide⟩ - 1)) = some (s u) at hdec
-          exact Option.some.inj hdec
-        | insert u v =>
-          dsimp only [DictPresentation.dictOpOf]
-          rw [hP.opOutputCorrect_insert]
-          trivial)
-      hex_steps
-  · rw [List.length_map, lpOpCharge_eq]
-    exact hbound
-  · rw [List.length_map]
-    refine hbound.trans ?_
-    rw [← lpOpCharge_eq]
-    exact Nat.cast_le.mpr (Nat.add_le_add_left
-      (Nat.mul_le_mul_left _ (linearProbingCharge_le hU)) _)
+    exact support_coupledStateOf_init hP fun p hp =>
+      ⟨(hsupp₀ p hp).2.1.bounded, (hsupp₀ p hp).2.1.reg_base, (hsupp₀ p hp).1, (hsupp₀ p hp).2.2.2⟩
+  · intro ops hv_abs
+    obtain ⟨ops_lib, rfl⟩ := ops_surjective P ops
+    have hv_lib : (Dictionary.spec U V n_max).ValidHistory (Dictionary.empty U) ops_lib :=
+      (validDictHistory_map_dictOpOf hP (DictPresentation.emptyDict U) ops_lib).mp hv_abs
+    obtain ⟨ν_final, T_ops, hex_steps, -, -, hamort⟩ :=
+      C.steps_expected_amortized_ofFn ops_lib ν₀ hv_lib hseed₀ fun p hp => (hsupp₀ p hp).2.1
+    change T_ops + ∑' q, ν_final q * ((0 : ℕ) : ℝ≥0∞) ≤
+      ((Dictionary.spec U V n_max).totalCost (fun _ _ => LinearProbing.charge U n_max)
+        (Dictionary.empty U) ops_lib : ℝ≥0∞) + ∑' p, ν₀ p * ((0 : ℕ) : ℝ≥0∞) at hamort
+    simp only [Nat.cast_zero, mul_zero, tsum_zero, add_zero] at hamort
+    rw [totalCost_const, ← lpOpCharge_eq] at hamort
+    have hbound : (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
+        ((lpInitSteps U n_max + ops_lib.length * lpOpCharge U n_max : ℕ) : ℝ≥0∞) := by
+      rw [Nat.cast_add]
+      exact add_le_add le_rfl hamort
+    refine ⟨ν_final.map P.coupledStateOf, T_ops, ?_, ?_, ?_⟩
+    · rw [lpSpace_eq]
+      exact compile_execStepsOfFn hS hP C false
+        ⟨0, by decide⟩ ⟨22, by decide⟩ ⟨1, by decide⟩ ⟨23, by decide⟩ ⟨2, by decide⟩
+        (fun o d => by
+          funext i
+          cases o with
+          | get u =>
+            dsimp only [DictPresentation.dictOpOf]
+            rw [hP.prepareDictRegs_get]
+            change (if decide (i = ⟨1, by decide⟩ ∨ i = ⟨22, by decide⟩ ∨ i = ⟨23, by decide⟩) then
+              if i = ⟨1, by decide⟩ then u.val else 0
+            else d.regs i) = _
+            fin_cases i <;> rfl
+          | insert u v =>
+            dsimp only [DictPresentation.dictOpOf]
+            rw [hP.prepareDictRegs_insert]
+            change (if decide (i = ⟨1, by decide⟩ ∨ i = ⟨22, by decide⟩ ∨ i = ⟨23, by decide⟩) then
+              if i = ⟨1, by decide⟩ then u.val
+              else if i = ⟨22, by decide⟩ then 1
+              else if i = ⟨23, by decide⟩ then v else 0
+            else d.regs i) = _
+            fin_cases i <;> rfl)
+        (fun s o regs hdec => by
+          cases o with
+          | get u =>
+            dsimp only [DictPresentation.dictOpOf]
+            rw [hP.opOutputCorrect_get]
+            change some (if regs ⟨2, by decide⟩ = 0 then none
+              else some (regs ⟨2, by decide⟩ - 1)) = some (s u) at hdec
+            exact Option.some.inj hdec
+          | insert u v =>
+            dsimp only [DictPresentation.dictOpOf]
+            rw [hP.opOutputCorrect_insert]
+            trivial)
+        hex_steps
+    · rw [List.length_map]
+      exact hbound
+    · rw [List.length_map]
+      refine hbound.trans ?_
+      exact Nat.cast_le.mpr (Nat.add_le_add_left
+        (Nat.mul_le_mul_left _ (linearProbingCharge_le hU)) _)
 
 /-! ## Part 4: Uniform Probing via Odd-Stride Double Hashing (`UniformProbing.lean`) -/
 
 open ComplexityAbstracts.HashFamiliesBridge
-  (regimeThreshold regimeThreshold_eq charBits charBits_eq)
+  (regimeThreshold regimeThreshold_eq charBits)
 
 /-- Log₂ of the power-of-2 table size `⌈log₂(32 * max n_max 4)⌉` (`≥ 32 * max n_max 4`). -/
 def tableBits32 (n_max : ℕ) : ℕ :=
   Nat.clog 2 (32 * max n_max 4)
 
-theorem tableBits32_eq (n_max : ℕ) : tableBits32 n_max = UniformProbing.bucketBits n_max := rfl
-
 /-- Power-of-2 table size `2 ^ tableBits32 n_max`. -/
 def tableSize32 (n_max : ℕ) : ℕ :=
   2 ^ tableBits32 n_max
 
-theorem tableSize32_eq (n_max : ℕ) : tableSize32 n_max = UniformProbing.numBuckets n_max := rfl
-
 /-- Memory footprint `(c + 1) * d * 2 ^ b` of a single Double Tabulation instance. -/
 def doubleTabSpace (c d b : ℕ) : ℕ :=
   (c + 1) * d * 2 ^ b
-
-theorem doubleTabSpace_eq (c d b : ℕ) :
-    doubleTabSpace c d b =
-      Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.space c d b := rfl
 
 /-- Exact instruction count `5 * doubleTabSpace c d b + 13` for resampling a Double Tabulation
 instance. -/
 def doubleTabResampleSteps (c d b : ℕ) : ℕ :=
   5 * doubleTabSpace c d b + 13
 
-theorem doubleTabResampleSteps_eq (c d b : ℕ) :
-    doubleTabResampleSteps c d b =
-      Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.resampleSteps c d b := rfl
-
 /-- Exact instruction count `(12 * c + 11) * d + 10` for evaluating a Double Tabulation instance. -/
 def doubleTabEvalSteps (c d : ℕ) : ℕ :=
   (12 * c + 11) * d + 10
-
-theorem doubleTabEvalSteps_eq (c d : ℕ) :
-    doubleTabEvalSteps c d =
-      Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.evalSteps c d := rfl
 
 /-- Memory footprint `doubleTabSpace 8 64 (charBits n_max)` of one Double Tabulation table at
 `c_exp = 4`. -/
 def upSingleTabSpace (n_max : ℕ) : ℕ :=
   doubleTabSpace 8 64 (charBits n_max)
-
-theorem upSingleTabSpace_eq (n_max : ℕ) :
-    upSingleTabSpace n_max = UniformProbing.singleTabSpace 4 n_max := rfl
 
 /-- Total memory footprint `2 * upSingleTabSpace n_max + 3 * tableSize32 n_max` of uniform probing
 at `c_exp = 4`. -/
@@ -826,10 +882,6 @@ theorem upSpace_eq (n_max : ℕ) : upSpace n_max = UniformProbing.space 4 n_max 
 /-- Linear-space factor `32 * (8 + 1) * 64 + 768 = 19200` for uniform probing at `c_exp = 4`. -/
 def upSpaceFactor : ℕ :=
   32 * (8 + 1) * 64 + 768
-
-theorem upSpaceFactor_eq : upSpaceFactor = UniformProbing.spaceFactor 4 := rfl
-
-theorem upSpaceFactor_val : upSpaceFactor = 19200 := rfl
 
 /-- Across all capacities `n_max : ℕ`, uniform probing uses at most
 `upSpaceFactor * (n_max + 1) = 19200 * (n_max + 1)` words of memory. -/
@@ -852,8 +904,6 @@ def upHashEvalSteps : ℕ :=
 
 theorem upHashEvalSteps_eq : upHashEvalSteps = UniformProbing.hashEvalSteps 4 := rfl
 
-theorem upHashEvalSteps_val : upHashEvalSteps = 13731 := rfl
-
 /-- Uniform `O(1)` expected per-operation instruction charge
 `13 * regimeThreshold + upHashEvalSteps + 8 = 13 * 2 ^ 320000 + 13739` for uniform probing at
 `c_exp = 4`. -/
@@ -863,23 +913,6 @@ def upOpCharge : ℕ :=
 theorem upOpCharge_eq : upOpCharge = UniformProbing.expectedOpCharge 4 := by
   unfold upOpCharge UniformProbing.expectedOpCharge
   rw [regimeThreshold_eq, upHashEvalSteps_eq]
-
-theorem upOpCharge_val : upOpCharge = 13 * 2 ^ 320000 + 13739 := by
-  unfold upOpCharge regimeThreshold
-  rw [upHashEvalSteps_val]
-
-private theorem totalCost_const {U V n_max : ℕ} (c : ℕ) (s : Dictionary.State U)
-    (ops : List (Dictionary.Op U)) :
-    (Dictionary.spec U V n_max).totalCost (fun _ _ => c) s ops = ops.length * c := by
-  induction ops generalizing s with
-  | nil =>
-    change 0 = 0 * c
-    simp
-  | cons o os ih =>
-    change c + (Dictionary.spec U V n_max).totalCost (fun _ _ => c)
-      ((Dictionary.spec U V n_max).stepFn s o).1 os = (os.length + 1) * c
-    rw [ih]
-    ring
 
 /-- Headline bridge theorem for uniform probing (`UniformProbing.seq_expected_amortized`) at
 `c_exp = 4`. -/
@@ -897,92 +930,104 @@ theorem uniformProbing (S : Presentation) (hS : Laws S)
           (∀ u : Fin U, u.val < 2 ^ w) →
           V < 2 ^ w →
           ∀ (reg₀ : Fin 16 → ℕ) (mem₀ : ℕ → ℕ),
-            DictPresentation.WordBounded w reg₀ mem₀ →
+            WordBounded w reg₀ mem₀ →
             reg₀ ⟨14, by decide⟩ = base →
             (∀ a, base ≤ a → a < base + upSpace n_max → mem₀ a = 0) →
-            ∀ ops : List (P.DictOp U),
-              P.ValidDictHistory V n_max (DictPresentation.emptyDict U) ops →
-              ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (P.CoupledState Seed 16)),
-                P.ExecProgramDist w p_init ⟨12, by decide⟩ reg₀ mem₀
-                  (μ_init.map P.toRegMem) (upInitSteps n_max) ∧
-                P.ExecDictOps w p_op true
-                  ⟨0, by decide⟩ ⟨12, by decide⟩ ⟨13, by decide⟩ ⟨14, by decide⟩ ⟨12, by decide⟩
-                  base (upSpace n_max) (DictPresentation.emptyDict U) ops
-                  μ_init μ_final T_ops ∧
-                (upInitSteps n_max : ℝ≥0∞) + T_ops ≤
-                  ((upInitSteps n_max + ops.length * upOpCharge' : ℕ) : ℝ≥0∞) := by
+            ∃ (Seed : Type) (μ_init : PMF (P.CoupledState Seed 16)),
+              P.ExecProgramDist w p_init ⟨12, by decide⟩ reg₀ mem₀
+                (μ_init.map P.toRegMem) (upInitSteps n_max) ∧
+              (∀ p ∈ μ_init.support,
+                WordBounded w (P.csReg p) (P.csMem p) ∧
+                P.csReg p ⟨0, by decide⟩ = base ∧
+                P.csReg p ⟨14, by decide⟩ = base + upSpace n_max ∧
+                UnchangedOutside base (upSpace n_max) mem₀ (P.csMem p)) ∧
+              ∀ ops : List (P.DictOp U),
+                P.ValidDictHistory V n_max (DictPresentation.emptyDict U) ops →
+                ∃ (μ_final : PMF (P.CoupledState Seed 16)) (T_ops : ℝ≥0∞),
+                  P.ExecDictOps w p_op true
+                    ⟨0, by decide⟩ ⟨12, by decide⟩ ⟨13, by decide⟩ ⟨14, by decide⟩ ⟨12, by decide⟩
+                    base (upSpace n_max) (DictPresentation.emptyDict U) ops
+                    μ_init μ_final T_ops ∧
+                  (upInitSteps n_max : ℝ≥0∞) + T_ops ≤
+                    ((upInitSteps n_max + ops.length * upOpCharge' : ℕ) : ℝ≥0∞) := by
   intro n_max
   let Sub := UniformProbing.subroutineCode 4 n_max
   refine ⟨S.programOf (Sub.initFresh.program ⟨12, by decide⟩),
     S.programOf (Sub.code.program ⟨12, by decide⟩), ?_⟩
-  intro U V w base hU hfit_space hfit_U hfit_V reg₀ mem₀ hbdd₀ hfr₀ hz₀ ops hv_abs
+  intro U V w base hU hfit_space hfit_U hfit_V reg₀ mem₀ hbdd₀ hfr₀ hz₀
   have hfit_space_lib : Fits w (base + UniformProbing.space 4 n_max) := by
     rwa [← upSpace_eq]
   let C := UniformProbing.subroutineDS (V := V) hfit_space_lib hfit_U hfit_V hU
-  obtain ⟨ops_lib, rfl⟩ := ops_surjective P ops
-  have hv_lib : (Dictionary.spec U V n_max).ValidHistory (Dictionary.empty U) ops_lib :=
-    (validDictHistory_map_dictOpOf hP (DictPresentation.emptyDict U) ops_lib).mp hv_abs
   have hz_lib : ∀ a ∈ (Block.mk base (UniformProbing.space 4 n_max)).footprint, mem₀ a = 0 := by
     intro a ha
     rw [Block.mem_footprint, Block.Owns, ← upSpace_eq] at ha
     exact hz₀ a ha.1 ha.2
-  obtain ⟨ν₀, ν_final, T_ops, he_init, hex_steps, -, -, hbound⟩ :=
-    UniformProbing.seq_expected_amortized (V := V) hfit_space_lib hfit_U hfit_V hU
-      (x := ⟨reg₀, mem₀⟩) ops_lib hbdd₀ hfr₀ hz_lib hv_lib
-  have hinit_time : (3 : ℝ≥0∞) + (UniformProbing.setupSteps 4 n_max : ℝ≥0∞) =
-      (upInitSteps n_max : ℝ≥0∞) := by
+  obtain ⟨ν₀, he_init, hseed₀, hsupp₀⟩ :=
+    C.initFresh_exec (x := ⟨reg₀, mem₀⟩) hbdd₀ hfr₀ (fun j => Fin.elim0 j) hz_lib
+  have hinit_c : C.initTime = (upInitSteps n_max : ℝ≥0∞) := by
     rw [upInitSteps_eq, Nat.cast_add, Nat.cast_ofNat]
-  have hinit_c : C.initTime = (upInitSteps n_max : ℝ≥0∞) := hinit_time
-  rw [hinit_c] at he_init hbound
-  rw [hinit_time] at hbound
-  refine ⟨UniformProbing.Seed 4 n_max, T_ops,
-    ν₀.map (P.coupledStateOf (r := 16)), ν_final.map (P.coupledStateOf (r := 16)),
-    ?_, ?_, ?_⟩
-  · rw [map_coupledStateOf_toRegMem hP (r := 16)]
+    rfl
+  rw [hinit_c] at he_init
+  refine ⟨C.Seed, ν₀.map P.coupledStateOf, ?_, ?_, ?_⟩
+  · rw [map_coupledStateOf_toRegMem hP]
     exact compile_execCodeDist hS hP ⟨12, by decide⟩ he_init
   · rw [upSpace_eq]
-    exact compile_execStepsOfFn hS hP C true
-      ⟨0, by decide⟩ ⟨12, by decide⟩ ⟨13, by decide⟩ ⟨14, by decide⟩ ⟨12, by decide⟩
-      (fun o d => by
-        funext i
-        cases o with
-        | get u =>
-          dsimp only [DictPresentation.dictOpOf]
-          rw [hP.prepareDictRegs_get]
-          change (if decide (i ≠ ⟨0, by decide⟩) then
-            if i = ⟨12, by decide⟩ then 0 else if i = ⟨13, by decide⟩ then u.val else 0
-          else d.regs i) = _
-          fin_cases i <;> rfl
-        | insert u v =>
-          dsimp only [DictPresentation.dictOpOf]
-          rw [hP.prepareDictRegs_insert]
-          change (if decide (i ≠ ⟨0, by decide⟩) then
-            if i = ⟨12, by decide⟩ then 1
-            else if i = ⟨13, by decide⟩ then u.val
-            else if i = ⟨14, by decide⟩ then v else 0
-          else d.regs i) = _
-          fin_cases i <;> rfl)
-      (fun s o regs hdec => by
-        cases o with
-        | get u =>
-          dsimp only [DictPresentation.dictOpOf]
-          rw [hP.opOutputCorrect_get]
-          change some (if regs ⟨12, by decide⟩ = 0 then none
-            else some (regs ⟨12, by decide⟩ - 1)) = some (s u) at hdec
-          exact Option.some.inj hdec
-        | insert u v =>
-          dsimp only [DictPresentation.dictOpOf]
-          rw [hP.opOutputCorrect_insert]
-          trivial)
-      hex_steps
-  · have hReg : regimeThreshold' = regimeThreshold := hRegime
-    have hHE : upHashEvalSteps' = upHashEvalSteps := hHashEval
-    have hCharge_eq : upOpCharge' = UniformProbing.expectedOpCharge 4 := by
-      rw [hCharge, hReg, hHE]
-      exact upOpCharge_eq
-    rw [totalCost_const, ← hCharge_eq] at hbound
-    rw [List.length_map, Nat.cast_add]
-    exact hbound
+    exact support_coupledStateOf_init hP fun p hp =>
+      ⟨(hsupp₀ p hp).2.1.bounded, (hsupp₀ p hp).2.1.regs_base, (hsupp₀ p hp).1, (hsupp₀ p hp).2.2.2⟩
+  · intro ops hv_abs
+    obtain ⟨ops_lib, rfl⟩ := ops_surjective P ops
+    have hv_lib : (Dictionary.spec U V n_max).ValidHistory (Dictionary.empty U) ops_lib :=
+      (validDictHistory_map_dictOpOf hP (DictPresentation.emptyDict U) ops_lib).mp hv_abs
+    obtain ⟨ν_final, T_ops, hex_steps, -, -, hamort⟩ :=
+      C.steps_expected_amortized_ofFn ops_lib ν₀ hv_lib hseed₀ fun p hp => (hsupp₀ p hp).2.1
+    refine ⟨ν_final.map P.coupledStateOf, T_ops, ?_, ?_⟩
+    · rw [upSpace_eq]
+      exact compile_execStepsOfFn hS hP C true
+        ⟨0, by decide⟩ ⟨12, by decide⟩ ⟨13, by decide⟩ ⟨14, by decide⟩ ⟨12, by decide⟩
+        (fun o d => by
+          funext i
+          cases o with
+          | get u =>
+            dsimp only [DictPresentation.dictOpOf]
+            rw [hP.prepareDictRegs_get]
+            change (if decide (i ≠ ⟨0, by decide⟩) then
+              if i = ⟨12, by decide⟩ then 0 else if i = ⟨13, by decide⟩ then u.val else 0
+            else d.regs i) = _
+            fin_cases i <;> rfl
+          | insert u v =>
+            dsimp only [DictPresentation.dictOpOf]
+            rw [hP.prepareDictRegs_insert]
+            change (if decide (i ≠ ⟨0, by decide⟩) then
+              if i = ⟨12, by decide⟩ then 1
+              else if i = ⟨13, by decide⟩ then u.val
+              else if i = ⟨14, by decide⟩ then v else 0
+            else d.regs i) = _
+            fin_cases i <;> rfl)
+        (fun s o regs hdec => by
+          cases o with
+          | get u =>
+            dsimp only [DictPresentation.dictOpOf]
+            rw [hP.opOutputCorrect_get]
+            change some (if regs ⟨12, by decide⟩ = 0 then none
+              else some (regs ⟨12, by decide⟩ - 1)) = some (s u) at hdec
+            exact Option.some.inj hdec
+          | insert u v =>
+            dsimp only [DictPresentation.dictOpOf]
+            rw [hP.opOutputCorrect_insert]
+            trivial)
+        hex_steps
+    · change T_ops + ∑' q, ν_final q * ((0 : ℕ) : ℝ≥0∞) ≤
+        ((Dictionary.spec U V n_max).totalCost (fun _ _ => UniformProbing.expectedOpCharge 4)
+          (Dictionary.empty U) ops_lib : ℝ≥0∞) + ∑' p, ν₀ p * ((0 : ℕ) : ℝ≥0∞) at hamort
+      simp only [Nat.cast_zero, mul_zero, tsum_zero, add_zero] at hamort
+      have hReg : regimeThreshold' = regimeThreshold := hRegime
+      have hHE : upHashEvalSteps' = upHashEvalSteps := hHashEval
+      have hCharge_eq : upOpCharge' = UniformProbing.expectedOpCharge 4 := by
+        rw [hCharge, hReg, hHE]
+        exact upOpCharge_eq
+      rw [totalCost_const, ← hCharge_eq] at hamort
+      rw [List.length_map, Nat.cast_add]
+      exact add_le_add le_rfl hamort
 
 /-! ## Part 5: Pagh–Rodler Cuckoo Hashing (`CuckooHashing.lean`) -/
 
@@ -1080,6 +1125,57 @@ structure CuckooLaws (K : CuckooPresentation) : Prop where
       2 * (K.cuckooInsertBaseBound + 3 + 3 * K.cuckooEvictIterBound +
         4 * K.cuckooRehashAmortizedBound)
 
+private theorem cuckooSingleHashSpace_eq_of
+    (regimeThreshold' : ℕ)
+    (charBits' cuckooMaxEvictions' cuckooK' : ℕ → ℕ)
+    (kWiseSpace' : ℕ → ℕ → ℕ)
+    (doubleTabSpace' : ℕ → ℕ → ℕ → ℕ)
+    (cuckooSingleHashSpace' : ℕ → ℕ)
+    (hRegime : regimeThreshold' = 2 ^ 320000)
+    (hChar : ∀ n_max, charBits' n_max = (1 + Nat.clog 2 (max n_max 4)) / 2)
+    (hKW : ∀ n_max k, kWiseSpace' n_max k = kWiseSpace n_max k)
+    (hDT : ∀ c d b, doubleTabSpace' c d b = (c + 1) * d * 2 ^ b)
+    (hEv : ∀ n_max, cuckooMaxEvictions' n_max = 6 * (Nat.clog 2 (max n_max 2) + 2))
+    (hCk : ∀ n_max, cuckooK' n_max = 2 * cuckooMaxEvictions' n_max + 2)
+    (hSingle : ∀ n_max, cuckooSingleHashSpace' n_max =
+      if n_max < regimeThreshold' then kWiseSpace' n_max (cuckooK' n_max)
+      else doubleTabSpace' 8 64 (charBits' n_max))
+    (n_max : ℕ) :
+    cuckooSingleHashSpace' n_max = CuckooHashing.singleHashSpace 4 n_max := by
+  have hReg := hRegime.trans regimeThreshold_eq
+  unfold CuckooHashing.singleHashSpace
+    Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.provableSpace
+  rw [hSingle, hReg, hKW, kWiseSpace_eq, hCk, hEv, hDT, hChar]
+  rfl
+
+private theorem cuckooSpace_eq_of
+    (regimeThreshold' : ℕ)
+    (charBits' tableBits32' tableSize32' cuckooMaxEvictions' cuckooK' : ℕ → ℕ)
+    (kWiseSpace' : ℕ → ℕ → ℕ)
+    (doubleTabSpace' : ℕ → ℕ → ℕ → ℕ)
+    (cuckooSingleHashSpace' cuckooHashPairSpace' cuckooSpace' : ℕ → ℕ)
+    (hRegime : regimeThreshold' = 2 ^ 320000)
+    (hChar : ∀ n_max, charBits' n_max = (1 + Nat.clog 2 (max n_max 4)) / 2)
+    (hBits : ∀ n_max, tableBits32' n_max = Nat.clog 2 (32 * max n_max 4))
+    (hSize : ∀ n_max, tableSize32' n_max = 2 ^ tableBits32' n_max)
+    (hKW : ∀ n_max k, kWiseSpace' n_max k = kWiseSpace n_max k)
+    (hDT : ∀ c d b, doubleTabSpace' c d b = (c + 1) * d * 2 ^ b)
+    (hEv : ∀ n_max, cuckooMaxEvictions' n_max = 6 * (Nat.clog 2 (max n_max 2) + 2))
+    (hCk : ∀ n_max, cuckooK' n_max = 2 * cuckooMaxEvictions' n_max + 2)
+    (hSingle : ∀ n_max, cuckooSingleHashSpace' n_max =
+      if n_max < regimeThreshold' then kWiseSpace' n_max (cuckooK' n_max)
+      else doubleTabSpace' 8 64 (charBits' n_max))
+    (hPair : ∀ n_max, cuckooHashPairSpace' n_max = 2 * cuckooSingleHashSpace' n_max)
+    (hSpace : ∀ n_max, cuckooSpace' n_max =
+      20 + cuckooHashPairSpace' n_max + 2 * tableSize32' n_max + 2 * n_max)
+    (n_max : ℕ) :
+    cuckooSpace' n_max = CuckooHashing.space 4 n_max := by
+  have hSingle_eq := cuckooSingleHashSpace_eq_of regimeThreshold' charBits' cuckooMaxEvictions'
+    cuckooK' kWiseSpace' doubleTabSpace' cuckooSingleHashSpace'
+    hRegime hChar hKW hDT hEv hCk hSingle n_max
+  rw [hSpace, hPair, hSingle_eq, hSize, hBits]
+  rfl
+
 namespace CuckooPresentation
 
 variable (K : CuckooPresentation) (hK : CuckooLaws K)
@@ -1108,15 +1204,11 @@ theorem tableSize32_eq_cuckoo (n_max : ℕ) :
   rfl
 
 theorem cuckooSingleHashSpace_eq (n_max : ℕ) :
-    K.cuckooSingleHashSpace n_max = CuckooHashing.singleHashSpace 4 n_max := by
-  have hReg := hK.regimeThreshold_def.trans regimeThreshold_eq
-  unfold CuckooHashing.singleHashSpace
-    Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.provableSpace
-  rw [hK.cuckooSingleHashSpace_def, hReg,
-    hK.kWiseSpace_def, kWiseSpace_eq, K.cuckooK_eq hK,
-    hK.doubleTabSpace_def, ← doubleTabSpace_eq, doubleTabSpace_eq,
-    hK.charBits_def, ← charBits_eq, charBits_eq]
-  rfl
+    K.cuckooSingleHashSpace n_max = CuckooHashing.singleHashSpace 4 n_max :=
+  cuckooSingleHashSpace_eq_of K.regimeThreshold K.charBits K.cuckooMaxEvictions K.cuckooK
+    K.kWiseSpace K.doubleTabSpace K.cuckooSingleHashSpace
+    hK.regimeThreshold_def hK.charBits_def hK.kWiseSpace_def hK.doubleTabSpace_def
+    hK.cuckooMaxEvictions_def hK.cuckooK_def hK.cuckooSingleHashSpace_def n_max
 
 theorem cuckooHashPairSpace_eq (n_max : ℕ) :
     K.cuckooHashPairSpace n_max = CuckooHashing.hashPairSpace 4 n_max := by
@@ -1124,14 +1216,13 @@ theorem cuckooHashPairSpace_eq (n_max : ℕ) :
   rfl
 
 theorem cuckooSpace_eq (n_max : ℕ) :
-    K.cuckooSpace n_max = CuckooHashing.space 4 n_max := by
-  rw [hK.cuckooSpace_def, K.cuckooHashPairSpace_eq hK, K.tableSize32_eq_cuckoo hK]
-  rfl
-
-theorem cuckooSpaceFactor_eq :
-    K.cuckooSpaceFactor = CuckooHashing.spaceFactor 4 := by
-  rw [hK.cuckooSpaceFactor_def, K.cuckooKBound_eq hK]
-  rfl
+    K.cuckooSpace n_max = CuckooHashing.space 4 n_max :=
+  cuckooSpace_eq_of K.regimeThreshold K.charBits K.tableBits32 K.tableSize32
+    K.cuckooMaxEvictions K.cuckooK K.kWiseSpace K.doubleTabSpace
+    K.cuckooSingleHashSpace K.cuckooHashPairSpace K.cuckooSpace
+    hK.regimeThreshold_def hK.charBits_def hK.tableBits32_def hK.tableSize32_def
+    hK.kWiseSpace_def hK.doubleTabSpace_def hK.cuckooMaxEvictions_def hK.cuckooK_def
+    hK.cuckooSingleHashSpace_def hK.cuckooHashPairSpace_def hK.cuckooSpace_def n_max
 
 theorem cuckooResampleSingleSteps_eq (n_max : ℕ) :
     K.cuckooResampleSingleSteps n_max = CuckooHashing.resampleSingleSteps 4 n_max := by
@@ -1220,16 +1311,10 @@ theorem cuckooSpace_le
     (hFactor : cuckooSpaceFactor' = 20 + 2 * (16 + cuckooKBound' + 16 * (8 + 1) * 64) + 514)
     (n_max : ℕ) :
     cuckooSpace' n_max ≤ cuckooSpaceFactor' * (n_max + 1) := by
-  have hSingle_eq (n : ℕ) :
-      cuckooSingleHashSpace' n = CuckooHashing.singleHashSpace 4 n := by
-    have hReg := hRegime.trans regimeThreshold_eq
-    unfold CuckooHashing.singleHashSpace
-      Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.provableSpace
-    rw [hSingle, hReg, hKW, kWiseSpace_eq, hK, hEv, hDT, hChar]
-    rfl
-  have hSpace_eq : cuckooSpace' n_max = CuckooHashing.space 4 n_max := by
-    rw [hSpace, hPair, hSingle_eq, hSize, hBits]
-    rfl
+  have hSpace_eq := cuckooSpace_eq_of regimeThreshold' charBits' tableBits32' tableSize32'
+    cuckooMaxEvictions' cuckooK' kWiseSpace' doubleTabSpace'
+    cuckooSingleHashSpace' cuckooHashPairSpace' cuckooSpace'
+    hRegime hChar hBits hSize hKW hDT hEv hK hSingle hPair hSpace n_max
   have hFactor_eq : cuckooSpaceFactor' = CuckooHashing.spaceFactor 4 := by
     rw [hFactor, hKB]
     rfl
@@ -1318,6 +1403,116 @@ private theorem decodeOptionNat_eq_ite (n : ℕ) :
     CuckooHashing.decodeOptionNat n = if n = 0 then none else some (n - 1) := by
   cases n <;> rfl
 
+private theorem cuckoo_init_and_steps (w base c_exp n_max U V : ℕ)
+    (hU : U ≤ max n_max 4 ^ c_exp)
+    (hw : 2 * Cslib.Probability.trinomialDeg U (CuckooHashing.tableBits n_max) ≤ w)
+    (hfit_end : Fits w (base + CuckooHashing.space c_exp n_max))
+    (hfit_ev : Fits w (CuckooHashing.maxEvictions n_max))
+    (hfit_U : Fits w (max U 2 + 1))
+    (hfit_V : Fits w V)
+    {x : Data 19}
+    (hx : x.Bounded w) (hfr : x.regs 1 = base)
+    (h3 : x.regs 3 = n_max) (h4 : x.regs 4 = U)
+    (hz : ∀ a ∈ (Block.mk base (CuckooHashing.space c_exp n_max)).footprint, x.mem a = 0) :
+    let C := CuckooHashing.subroutineDS w base c_exp n_max U V
+      hU hw hfit_end hfit_ev hfit_U hfit_V
+    ∃ ν₀ : PMF (CuckooHashing.Seed c_exp n_max U (CuckooHashing.tableBits n_max) × Data 19),
+      ExecCodeDist w (CuckooHashing.cuckooCode c_exp n_max).initFresh x
+        (ν₀.map Prod.snd) C.initTime ∧
+      (∀ p ∈ ν₀.support,
+        p.2.Bounded w ∧
+        p.2.regs 0 = base ∧
+        p.2.regs 1 = base + CuckooHashing.space c_exp n_max ∧
+        Modifies (Block.mk base (CuckooHashing.space c_exp n_max)).footprint x.mem p.2.mem) ∧
+      ∀ ops : List (Dictionary.Op U),
+        (Dictionary.spec U V n_max).ValidHistory (Dictionary.empty U) ops →
+        ∃ (ν_final :
+            PMF (CuckooHashing.Seed c_exp n_max U (CuckooHashing.tableBits n_max) × Data 19))
+          (T_ops : ℝ≥0∞),
+          C.ExecStepsOfFn (Dictionary.empty U) ops ν₀ ν_final T_ops ∧
+          C.initTime + T_ops ≤
+            C.initTime +
+              ((Dictionary.spec U V n_max).totalCost (CuckooHashing.expectedOpCharge c_exp)
+                (Dictionary.empty U) ops : ℝ≥0∞) := by
+  classical
+  intro C
+  have hd_pos : 0 < Cslib.Probability.trinomialDeg U (CuckooHashing.tableBits n_max) :=
+    lt_of_lt_of_le (CuckooHashing.tableBits_pos n_max)
+      (Cslib.Probability.le_trinomialDeg U (CuckooHashing.tableBits n_max))
+  have hfit_q : Fits w (2 ^ Cslib.Probability.trinomialDeg U (CuckooHashing.tableBits n_max)) :=
+    Nat.pow_lt_pow_right (by decide) (by omega)
+  obtain ⟨x₁, ⟨t_span, ht_span, he_span⟩, hm₁, hb₁, hfr₁, h3₁, h4₁⟩ :=
+    CuckooHashing.allocSpan_execWithin hfr h3 h4 hfit_end hfit_ev
+  have hx₁_bdd : x₁.Bounded w := he_span.bounded hx
+  have hz₁ : ∀ a ∈ (Block.mk base (CuckooHashing.space c_exp n_max)).footprint, x₁.mem a = 0 := by
+    intro a ha
+    rw [hm₁]
+    exact hz a ha
+  obtain ⟨μ_init, hdist_setup, hseed_setup, hsupp_setup⟩ :=
+    CuckooHashing.initSetup_spec (V := V) hx₁_bdd hb₁ hfr₁ h3₁ h4₁ hz₁ hfit_ev hfit_U hfit_q
+  let ν₀ : PMF (CuckooHashing.Seed c_exp n_max U (CuckooHashing.tableBits n_max) × Data 19) :=
+    μ_init.map fun y =>
+      (CuckooHashing.extractSeed (CuckooHashing.hashBase base) c_exp n_max U
+        (CuckooHashing.tableBits n_max) y.mem, y)
+  have hsnd₀ : ν₀.map Prod.snd = μ_init := by
+    dsimp only [ν₀]
+    rw [PMF.map_comp]
+    exact PMF.map_id _
+  have he_init :
+      ExecCodeDist w (CuckooHashing.cuckooCode c_exp n_max).initFresh x
+        (ν₀.map Prod.snd) C.initTime := by
+    rw [hsnd₀]
+    have hseq := (ExecCodeDist.of_exec he_span).seq_pure hdist_setup
+    refine hseq.mono ?_
+    dsimp only [C, CuckooHashing.subroutineDS,
+      Randomized.SubroutineDS.initTime,
+      Randomized.SubroutineDS.ofFn]
+    exact add_le_add (by exact_mod_cast ht_span) le_rfl
+  have hE₀ :
+      (CuckooHashing.survivingSeeds
+        (Θ := CuckooHashing.Seed c_exp n_max U (CuckooHashing.tableBits n_max))
+        CuckooHashing.evalHash1 CuckooHashing.evalHash2
+        (CuckooHashing.maxEvictions n_max) ([] : List (Fin U))).Nonempty := by
+    rw [CuckooHashing.survivingSeeds_nil]
+    exact Finset.univ_nonempty
+  have hseed₀ : ν₀.map Prod.fst =
+      Cslib.Probability.PMF.uniformOfFinset
+        (CuckooHashing.survivingSeeds CuckooHashing.evalHash1 CuckooHashing.evalHash2
+          (CuckooHashing.maxEvictions n_max) ([] : List (Fin U))) hE₀ := by
+    have hfst : ν₀.map Prod.fst =
+        CuckooHashing.seedLaw c_exp n_max U (CuckooHashing.tableBits n_max) := by
+      dsimp only [ν₀]
+      rw [PMF.map_comp]
+      exact hseed_setup
+    rw [hfst]
+    ext θ
+    rw [CuckooHashing.seedLaw, Cslib.Probability.PMF.uniformOfFintype_apply,
+      Cslib.Probability.PMF.uniformOfFinset_apply]
+    simp [CuckooHashing.survivingSeeds_nil]
+  have hsupp₀ : ∀ p ∈ ν₀.support,
+      p.1 = CuckooHashing.extractSeed (CuckooHashing.hashBase base) c_exp n_max U
+        (CuckooHashing.tableBits n_max) p.2.mem ∧
+      CuckooHashing.RepWithKeys w base c_exp n_max U V [] (Dictionary.empty U) p.2 := by
+    intro p hp
+    dsimp only [ν₀] at hp
+    rw [PMF.mem_support_map_iff] at hp
+    obtain ⟨y, hy, rfl⟩ := hp
+    exact ⟨rfl, (hsupp_setup y hy).2.1⟩
+  refine ⟨ν₀, he_init, ?_, ?_⟩
+  · intro p hp
+    dsimp only [ν₀] at hp
+    rw [PMF.mem_support_map_iff] at hp
+    obtain ⟨y, hy, rfl⟩ := hp
+    obtain ⟨hfr_y, hrep_y, hmod_y⟩ := hsupp_setup y hy
+    rw [hm₁] at hmod_y
+    exact ⟨hrep_y.1, hrep_y.2.1, hfr_y, hmod_y⟩
+  · intro ops hv
+    obtain ⟨ν_final, T_ops, hex_steps, -, -, hamort⟩ :=
+      CuckooHashing.cuckoo_steps_expected_amortized w base c_exp n_max U V
+        hU hw hfit_end hfit_ev hfit_U hfit_V
+        ops ν₀ hv hE₀ hseed₀ hsupp₀
+    exact ⟨ν_final, T_ops, hex_steps, add_le_add le_rfl hamort⟩
+
 /-- Headline bridge theorem for Pagh–Rodler cuckoo hashing
 (`CuckooHashing.cuckoo_seq_expected_amortized`) at `c_exp = 4`. -/
 theorem cuckooHashing (S : Presentation) (hS : Laws S)
@@ -1391,24 +1586,31 @@ theorem cuckooHashing (S : Presentation) (hS : Laws S)
           max U 2 + 1 < 2 ^ w →
           V < 2 ^ w →
           ∀ (reg₀ : Fin 19 → ℕ) (mem₀ : ℕ → ℕ),
-            DictPresentation.WordBounded w reg₀ mem₀ →
+            WordBounded w reg₀ mem₀ →
             reg₀ ⟨1, by decide⟩ = base →
             reg₀ ⟨3, by decide⟩ = n_max →
             reg₀ ⟨4, by decide⟩ = U →
             (∀ a, base ≤ a → a < base + cuckooSpace' n_max → mem₀ a = 0) →
-            ∀ ops : List (P.DictOp U),
-              P.ValidDictHistory V n_max (DictPresentation.emptyDict U) ops →
-              ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (P.CoupledState Seed 19)),
-                P.ExecProgramDist w p_init ⟨2, by decide⟩ reg₀ mem₀
-                  (μ_init.map P.toRegMem) (cuckooInitSteps' n_max U) ∧
-                P.ExecDictOps w p_op true
-                  ⟨0, by decide⟩ ⟨2, by decide⟩ ⟨3, by decide⟩ ⟨4, by decide⟩ ⟨2, by decide⟩
-                  base (cuckooSpace' n_max) (DictPresentation.emptyDict U) ops
-                  μ_init μ_final T_ops ∧
-                (cuckooInitSteps' n_max U : ℝ≥0∞) + T_ops ≤
-                  ((cuckooInitSteps' n_max U + (ops.map cuckooOpCharge).sum : ℕ) : ℝ≥0∞) ∧
-                (cuckooInitSteps' n_max U : ℝ≥0∞) + T_ops ≤
-                  ((cuckooInitSteps' n_max U + ops.length * cuckooInsertCharge' : ℕ) : ℝ≥0∞) := by
+            ∃ (Seed : Type) (μ_init : PMF (P.CoupledState Seed 19)),
+              P.ExecProgramDist w p_init ⟨2, by decide⟩ reg₀ mem₀
+                (μ_init.map P.toRegMem) (cuckooInitSteps' n_max U) ∧
+              (∀ p ∈ μ_init.support,
+                WordBounded w (P.csReg p) (P.csMem p) ∧
+                P.csReg p ⟨0, by decide⟩ = base ∧
+                P.csReg p ⟨1, by decide⟩ = base + cuckooSpace' n_max ∧
+                UnchangedOutside base (cuckooSpace' n_max) mem₀ (P.csMem p)) ∧
+              ∀ ops : List (P.DictOp U),
+                P.ValidDictHistory V n_max (DictPresentation.emptyDict U) ops →
+                ∃ (μ_final : PMF (P.CoupledState Seed 19)) (T_ops : ℝ≥0∞),
+                  P.ExecDictOps w p_op true
+                    ⟨0, by decide⟩ ⟨2, by decide⟩ ⟨3, by decide⟩ ⟨4, by decide⟩ ⟨2, by decide⟩
+                    base (cuckooSpace' n_max) (DictPresentation.emptyDict U) ops
+                    μ_init μ_final T_ops ∧
+                  (cuckooInitSteps' n_max U : ℝ≥0∞) + T_ops ≤
+                    ((cuckooInitSteps' n_max U + (ops.map cuckooOpCharge).sum : ℕ) : ℝ≥0∞) ∧
+                  (cuckooInitSteps' n_max U : ℝ≥0∞) + T_ops ≤
+                    ((cuckooInitSteps' n_max U + ops.length * cuckooInsertCharge' : ℕ) : ℝ≥0∞) := by
+  classical
   let K : CuckooPresentation :=
     ⟨regimeThreshold', charBits', tableBits32', tableSize32', kWiseSpace', kWiseInitTableSteps',
       doubleTabSpace', doubleTabResampleSteps', doubleTabEvalSteps', cuckooMaxEvictions',
@@ -1424,7 +1626,7 @@ theorem cuckooHashing (S : Presentation) (hS : Laws S)
   let Sub := CuckooHashing.cuckooCode 4 n_max
   refine ⟨S.programOf (Sub.initFresh.program ⟨2, by decide⟩),
     S.programOf (Sub.code.program ⟨2, by decide⟩), ?_⟩
-  intro U V w base hU hw hfit_end hfit_ev hfit_U hfit_V reg₀ mem₀ hbdd₀ hfr₀ h3₀ h4₀ hz₀ ops hv_abs
+  intro U V w base hU hw hfit_end hfit_ev hfit_U hfit_V reg₀ mem₀ hbdd₀ hfr₀ h3₀ h4₀ hz₀
   have hw_lib : 2 * Cslib.Probability.trinomialDeg U (CuckooHashing.tableBits n_max) ≤ w := by
     rwa [← trinomialDeg_eq, ← K.tableBits32_eq_cuckoo hK]
   have hfit_end_lib : Fits w (base + CuckooHashing.space 4 n_max) := by
@@ -1433,70 +1635,74 @@ theorem cuckooHashing (S : Presentation) (hS : Laws S)
     rwa [← K.cuckooMaxEvictions_eq hK]
   let C := CuckooHashing.subroutineDS w base 4 n_max U V
     hU hw_lib hfit_end_lib hfit_ev_lib hfit_U hfit_V
-  obtain ⟨ops_lib, rfl⟩ := ops_surjective P ops
-  have hv_lib : (Dictionary.spec U V n_max).ValidHistory (Dictionary.empty U) ops_lib :=
-    (validDictHistory_map_dictOpOf hP (DictPresentation.emptyDict U) ops_lib).mp hv_abs
   have hz_lib : ∀ a ∈ (Block.mk base (CuckooHashing.space 4 n_max)).footprint, mem₀ a = 0 := by
     intro a ha
     rw [Block.mem_footprint, Block.Owns, ← K.cuckooSpace_eq hK] at ha
     exact hz₀ a ha.1 ha.2
-  obtain ⟨ν₀, ν_final, T_ops, he_init, hex_steps, -, -, hbound⟩ :=
-    CuckooHashing.cuckoo_seq_expected_amortized w base 4 n_max U V
+  obtain ⟨ν₀, he_init, hsupp₀, hsteps⟩ :=
+    cuckoo_init_and_steps w base 4 n_max U V
       hU hw_lib hfit_end_lib hfit_ev_lib hfit_U hfit_V
-      (x := ⟨reg₀, mem₀⟩) ops_lib hbdd₀ hfr₀ h3₀ h4₀ hz_lib hv_lib
-  have hinit_time : (CuckooHashing.spanSteps : ℝ≥0∞) +
-      (CuckooHashing.setupSteps 4 n_max U : ℝ≥0∞) = (K.cuckooInitSteps n_max U : ℝ≥0∞) := by
+      (x := ⟨reg₀, mem₀⟩) hbdd₀ hfr₀ h3₀ h4₀ hz_lib
+  have hinit_c : C.initTime = (K.cuckooInitSteps n_max U : ℝ≥0∞) := by
     rw [K.cuckooInitSteps_eq hK, Nat.cast_add]
-  have hinit_c : C.initTime = (K.cuckooInitSteps n_max U : ℝ≥0∞) := hinit_time
-  rw [hinit_c] at he_init hbound
-  refine ⟨CuckooHashing.Seed 4 n_max U (CuckooHashing.tableBits n_max), T_ops,
-    ν₀.map (P.coupledStateOf (r := 19)), ν_final.map (P.coupledStateOf (r := 19)),
-    ?_, ?_, ?_, ?_⟩
+    rfl
+  rw [hinit_c] at he_init
+  have hSpace_eq : cuckooSpace' n_max = CuckooHashing.space 4 n_max :=
+    K.cuckooSpace_eq hK n_max
+  refine ⟨CuckooHashing.Seed 4 n_max U (CuckooHashing.tableBits n_max),
+    ν₀.map (P.coupledStateOf (r := 19)), ?_, ?_, ?_⟩
   · rw [map_coupledStateOf_toRegMem hP (r := 19)]
     exact compile_execCodeDist hS hP ⟨2, by decide⟩ he_init
-  · have hSpace_eq : cuckooSpace' n_max = CuckooHashing.space 4 n_max :=
-      K.cuckooSpace_eq hK n_max
-    rw [hSpace_eq]
-    exact compile_execStepsOfFn hS hP C true
-      ⟨0, by decide⟩ ⟨2, by decide⟩ ⟨3, by decide⟩ ⟨4, by decide⟩ ⟨2, by decide⟩
-      (fun o d => by
-        funext i
-        cases o with
-        | get u =>
-          dsimp only [DictPresentation.dictOpOf]
-          rw [hP.prepareDictRegs_get]
-          change (if decide (0 < i.val) then
-            if i = ⟨2, by decide⟩ then 0 else if i = ⟨3, by decide⟩ then u.val else 0
-          else d.regs i) = _
-          fin_cases i <;> rfl
-        | insert u v =>
-          dsimp only [DictPresentation.dictOpOf]
-          rw [hP.prepareDictRegs_insert]
-          change (if decide (0 < i.val) then
-            if i = ⟨2, by decide⟩ then 1
-            else if i = ⟨3, by decide⟩ then u.val
-            else if i = ⟨4, by decide⟩ then v else 0
-          else d.regs i) = _
-          fin_cases i <;> rfl)
-      (fun s o regs hdec => by
-        cases o with
-        | get u =>
-          dsimp only [DictPresentation.dictOpOf]
-          rw [hP.opOutputCorrect_get, ← decodeOptionNat_eq_ite]
-          change some (CuckooHashing.decodeOptionNat (regs ⟨2, by decide⟩)) = some (s u) at hdec
-          exact Option.some.inj hdec
-        | insert u v =>
-          dsimp only [DictPresentation.dictOpOf]
-          rw [hP.opOutputCorrect_insert]
-          trivial)
-      hex_steps
-  · rw [totalCost_cuckoo P K hK cuckooOpCharge hGet hIns] at hbound
-    rw [← Nat.cast_add] at hbound
-    exact hbound
-  · rw [totalCost_cuckoo P K hK cuckooOpCharge hGet hIns] at hbound
-    rw [← Nat.cast_add] at hbound
-    refine hbound.trans ?_
-    exact Nat.cast_le.mpr (Nat.add_le_add_left
-      (sum_map_cuckooOpCharge_le P K hK cuckooOpCharge hGet hIns _) _)
+  · rw [hSpace_eq]
+    exact support_coupledStateOf_init hP hsupp₀
+  · intro ops hv_abs
+    obtain ⟨ops_lib, rfl⟩ := ops_surjective P ops
+    have hv_lib : (Dictionary.spec U V n_max).ValidHistory (Dictionary.empty U) ops_lib :=
+      (validDictHistory_map_dictOpOf hP (DictPresentation.emptyDict U) ops_lib).mp hv_abs
+    obtain ⟨ν_final, T_ops, hex_steps, hamort⟩ := hsteps ops_lib hv_lib
+    have hbound : (K.cuckooInitSteps n_max U : ℝ≥0∞) + T_ops ≤
+        ((K.cuckooInitSteps n_max U +
+          ((ops_lib.map P.dictOpOf).map cuckooOpCharge).sum : ℕ) : ℝ≥0∞) := by
+      rw [hinit_c, totalCost_cuckoo P K hK cuckooOpCharge hGet hIns, ← Nat.cast_add] at hamort
+      exact hamort
+    refine ⟨ν_final.map (P.coupledStateOf (r := 19)), T_ops, ?_, ?_, ?_⟩
+    · rw [hSpace_eq]
+      exact compile_execStepsOfFn hS hP C true
+        ⟨0, by decide⟩ ⟨2, by decide⟩ ⟨3, by decide⟩ ⟨4, by decide⟩ ⟨2, by decide⟩
+        (fun o d => by
+          funext i
+          cases o with
+          | get u =>
+            dsimp only [DictPresentation.dictOpOf]
+            rw [hP.prepareDictRegs_get]
+            change (if decide (0 < i.val) then
+              if i = ⟨2, by decide⟩ then 0 else if i = ⟨3, by decide⟩ then u.val else 0
+            else d.regs i) = _
+            fin_cases i <;> rfl
+          | insert u v =>
+            dsimp only [DictPresentation.dictOpOf]
+            rw [hP.prepareDictRegs_insert]
+            change (if decide (0 < i.val) then
+              if i = ⟨2, by decide⟩ then 1
+              else if i = ⟨3, by decide⟩ then u.val
+              else if i = ⟨4, by decide⟩ then v else 0
+            else d.regs i) = _
+            fin_cases i <;> rfl)
+        (fun s o regs hdec => by
+          cases o with
+          | get u =>
+            dsimp only [DictPresentation.dictOpOf]
+            rw [hP.opOutputCorrect_get, ← decodeOptionNat_eq_ite]
+            change some (CuckooHashing.decodeOptionNat (regs ⟨2, by decide⟩)) = some (s u) at hdec
+            exact Option.some.inj hdec
+          | insert u v =>
+            dsimp only [DictPresentation.dictOpOf]
+            rw [hP.opOutputCorrect_insert]
+            trivial)
+        hex_steps
+    · exact hbound
+    · refine hbound.trans ?_
+      exact Nat.cast_le.mpr (Nat.add_le_add_left
+        (sum_map_cuckooOpCharge_le P K hK cuckooOpCharge hGet hIns _) _)
 
 end ComplexityAbstracts.HashTablesBridge

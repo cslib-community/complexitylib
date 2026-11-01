@@ -18,27 +18,32 @@ This self-contained file states the formal specification and expected-amortized 
 theorems for the four Word-RAM dictionary hash tables in Complexitylib, specialized to the
 polynomial key-universe exponent `c_exp = 4` (`U ≤ max n_max 4 ^ 4` where required):
 
-1. **Chained hashing with multiply-shift** (`ChainedHash.lean:1983` `seq_expected_amortized`,
+1. **Chained hashing with multiply-shift** (`ChainedHash.seq_expected_amortized`,
    following `[CLRS2009]`, 3rd ed., Sections 11.2 and 11.3.3, Theorem 11.3 and Corollary 11.4,
-   pp. 256–268, and `[DietzfelbingerHagerupKatajainenPenttonen1997]`, Lemma 2.4).
-2. **Linear probing with `5`-wise independent polynomial hashing** (`LinearProbing.lean:2263`
-   `seq_expected_amortized`, following `[PaghPaghRuzic2009]`, *SIAM J. Comput.* 39(3):1107–1120,
-   2009, Section 2.3 Lemma 2.1 pp. 1110–1111 and Section 4 Lemma 4.1, Theorem 4.3, Theorem 4.5
-   pp. 1114–1118; `[CLRS2009]`, 3rd ed., Section 11.4; `[Vadhan2012]`, Section 3.5.5;
-   `[CarterWegman1979]`; `[WegmanCarter1981]`; `[LidlNiederreiter1997]`).
-3. **Uniform probing via odd-stride double hashing** (`UniformProbing.lean:2312`
-   `seq_expected_amortized`, following `[CLRS2009]`, 3rd ed., Section 11.4, pp. 269–277;
-   `[SchmidtSiegel1990]`, STOC 1990, pp. 224–234, and NYU Courant TR1995-687, May 1995,
-   pp. 1–2, 4–7, 37–39; `[Thorup2013]`, FOCS 2013, pp. 90–99, and `arXiv:1311.3121v2`,
-   Theorem 1(a) and Lemma 2, pp. 4–5, 11–13).
-4. **Cuckoo hashing** (`CuckooHashing.lean:6373` `cuckoo_seq_expected_amortized`, following
-   `[PaghRodler2004]`, 8 Dec 2003 author manuscript / *J. Algorithms* 51(2):122–144, 2004,
-   Section 2.3 "Analysis", manuscript pp. 6–10: Lemma 1 p. 7, Eq. (3) p. 9, rehash analysis
-   pp. 9–10; `[Thorup2013]`, FOCS 2013, pp. 90–99, and `arXiv:1311.3121v2`, Sections 1.3 and 3,
-   pp. 4–5, 11–13; `[CarterWegman1979]`; `[WegmanCarter1981]`).
+   and `[DietzfelbingerHagerupKatajainenPenttonen1997]`, Lemma 2.4).
+2. **Linear probing with `5`-wise independent polynomial hashing**
+   (`LinearProbing.seq_expected_amortized`, following `[PaghPaghRuzic2009]`,
+   *SIAM J. Comput.* 39(3):1107–1120, 2009, Section 2.3 Lemma 2.1 pp. 1110–1111 and Section 4
+   Lemma 4.1, Theorem 4.3, Theorem 4.5 pp. 1114–1118; `[CLRS2009]`, 3rd ed., Section 11.4;
+   `[Vadhan2012]`, Section 3.5.5; `[CarterWegman1979]`; `[WegmanCarter1981]`;
+   `[LidlNiederreiter1997]`).
+3. **Uniform probing via odd-stride double hashing** (`UniformProbing.seq_expected_amortized`,
+   following `[CLRS2009]`, 3rd ed., Section 11.4, pp. 269–277; `[SchmidtSiegel1990]`, STOC 1990,
+   pp. 224–234, and NYU Courant TR1995-687, May 1995, pp. 1–2, 4–7, 37–39; `[Thorup2013]`,
+   FOCS 2013, pp. 90–99, and `arXiv:1311.3121v2`, Theorem 1(a) p. 4, Lemma 2 p. 5, and Section 2
+   Eqs. (6)–(7) p. 11).
+4. **Cuckoo hashing** (`CuckooHashing.cuckoo_seq_expected_amortized`, following `[PaghRodler2004]`,
+   8 Dec 2003 author manuscript / *J. Algorithms* 51(2):122–144, 2004, Section 2.3 "Analysis",
+   manuscript pp. 6–10: Lemma 1 p. 7, Eq. (3) p. 9, rehash analysis pp. 9–10; `[Thorup2013]`,
+   FOCS 2013, pp. 90–99, and `arXiv:1311.3121v2`, Theorem 1(a) p. 4, Lemma 2 p. 5, Section 2
+   Eqs. (6)–(7) p. 11, and Section 3 Theorem 7(a) and Lemmas 8–9 pp. 12–14; `[CarterWegman1979]`;
+   `[WegmanCarter1981]`).
 
-## Program parameterization and cost accounting
+## Scope, program parameterization, and cost accounting
 
+- **Insert-only bounded capacity:** All four tables implement `DictOp U` (`get` and `insert` with
+  overwrite) up to `n_max` distinct keys (`ValidDictHistory V n_max`). Key deletion (`erase`) is
+  not supported, unlike the dynamic dictionaries in `[PaghPaghRuzic2009]` and `[PaghRodler2004]`.
 - **Program dependence:** In each headline theorem, the existential over the initializer and
   operation programs `∃ (p_init p_op : List (Instr r))` is placed outside the universal quantifiers
   over `V`, `w`, and `base` (and outside `U` for uniform probing and cuckoo hashing):
@@ -49,8 +54,22 @@ polynomial key-universe exponent `c_exp = 4` (`U ≤ max n_max 4 ^ 4` where requ
   No theorem in this abstract bounds the static code length `p_init.length` or `p_op.length`; all
   time bounds count **executed instructions** (`expectedTime w p s ≤ T + 1`), excluding caller
   argument preparation (`prepareDictRegs`) and dispatch.
-- **Oblivious adversary:** Every headline theorem quantifies universally over a valid operation
-  history `ops : List (DictOp U)` fixed before the random choices of `p_init` and `p_op`.
+- **Initialization step scaling and memory confinement:** From zeroed memory in `[base, base + sp)`,
+  initialization executes in `16 = O(1)` steps for `chainedHashing`,
+  `lpInitSteps U n_max = O(n_max + log U)` steps for `linearProbing`,
+  `upInitSteps n_max = O(n_max ^ (1 / 2))` steps for `uniformProbing`, and
+  `cuckooInitSteps n_max U = O(n_max + log U)` steps for `cuckooHashing`. Every state in
+  `μ_init.support` satisfies `WordBounded w`, stores `base` in `baseReg` and `base + sp` in the
+  frontier register, and satisfies `UnchangedOutside base sp mem₀`.
+- **Linear probing proof adaptation and calling convention:** `linearProbing` uses the library's
+  simplified proof adaptation at load factor `α ≤ 1 / 8` (`lpTableSize n_max ≥ 8 * n_max`) with
+  `5`-wise independent polynomial hashing over binary trinomial fields, and preserves non-argument
+  registers across calls (`clearScratch = false`), whereas `chainedHashing`, `uniformProbing`, and
+  `cuckooHashing` zero scratch registers except `baseReg` (`clearScratch = true`).
+- **Oblivious adversary:** In every headline theorem, the initial coupled distribution
+  `∃ (Seed : Type) (μ_init : PMF (CoupledState Seed r))` produced by `p_init` is quantified
+  **before** `∀ ops : List (DictOp U)`, and `ops` is fixed before the random choices of `p_init`
+  and `p_op`.
 
 A reader only needs to inspect the definitions and theorem statements in this file to verify that
 the formalization proves the intended mathematical claims; Lean verifies the proofs through
@@ -317,9 +336,9 @@ operation program `p_op : Program r` at word width `w`, with calling-convention 
 - `cons`: from every supported coupled state `p ∈ μ.support`, running `p_op` after loading the
   encoded arguments of `o` via `prepareDictRegs clearScratch baseReg tagReg keyReg valReg o`
   executes with distribution `(μ_step p).map CoupledState.toRegMem` and expected step budget
-  `T_step p` (`ExecProgramDist`), every resulting state `q ∈ (μ_step p).support` has `w`-bit
+  `T_step p` (`ExecProgramDist`). Every resulting state `q ∈ (μ_step p).support` has `w`-bit
   bounded registers and memory, satisfies `OpOutputCorrect outReg s o q.reg` (matching the
-  dictionary specification), and leaves memory outside `[base, base + sp)` unchanged, and the
+  dictionary specification), and leaves memory outside `[base, base + sp)` unchanged. The
   remaining operations `ops` execute from `μ.bind μ_step` to `μ_final` with expected step budget
   `T_rest`, yielding total expected operation cost `(∑' p, μ p * T_step p) + T_rest`. -/
 inductive ExecDictOps {Seed : Type} {r U : ℕ}
@@ -372,25 +391,28 @@ theorem chainedSpace_le (n_max : ℕ) :
     chainedSpace n_max ≤ 8 * (n_max + 1) :=
   ComplexityAbstracts.HashTablesBridge.chainedSpace_le n_max
 
-/-- **Chained Hashing with Multiply-Shift** (`ChainedHash.lean:1983` `seq_expected_amortized`):
+/-- **Chained Hashing with Multiply-Shift** (`ChainedHash.seq_expected_amortized`):
 For every key universe `U` and capacity `n_max`, there exist 22-register Word-RAM programs `p_init`
 and `p_op` (depending on `(U, n_max)` and independent of `V`, `w`, and `base`) such that for every
 value bound `V`, word width `w`, and base address `base` satisfying
 `2 * chainedHashBits U n_max ≤ w`, `base + chainedSpace n_max < 2 ^ w`, and `V < 2 ^ w`, from any
 word-bounded initial state `(reg₀, mem₀)` with `reg₀ 6 = base` and zeroed memory in
-`[base, base + chainedSpace n_max)`, for every oblivious operation history `ops : List (DictOp U)`
-valid for capacity `n_max` and value bound `V`:
+`[base, base + chainedSpace n_max)`, there exists an initial coupled distribution `μ_init` (chosen
+before any operation sequence `ops`) such that:
 - `p_init` initializes the table in `16` expected executed body instructions (`≤ 17` including
-  `halt`);
-- `p_op` executes `ops` sequentially with output register `10`, matching `stepDict` and
-  `OpOutputCorrect` at every step;
+  `halt`), and every `p ∈ μ_init.support` satisfies `WordBounded w p.reg p.mem`,
+  `p.reg 5 = base`, `p.reg 6 = base + chainedSpace n_max`, and
+  `UnchangedOutside base (chainedSpace n_max) mem₀ p.mem`;
+- for every oblivious operation history `ops : List (DictOp U)` valid for capacity `n_max` and
+  value bound `V`, `p_op` executes `ops` sequentially with output register `10`, matching
+  `stepDict` and `OpOutputCorrect` at every step;
 - the total expected executed body instruction count satisfies
   `16 + T_ops ≤ 16 + 73 * ops.length` (`O(1)` initialization and `73 = O(1)` expected executed
   instructions per `get` or `insert`, excluding caller argument preparation and dispatch; no bound
   is stated on static code length).
 
-References: `[CLRS2009]` (3rd ed., Sections 11.2 and 11.3.3, Theorem 11.3 and Corollary 11.4,
-pp. 256–268); `[DietzfelbingerHagerupKatajainenPenttonen1997]` (Lemma 2.4). -/
+References: `[CLRS2009]` (3rd ed., Sections 11.2 and 11.3.3, Theorem 11.3 and Corollary 11.4);
+`[DietzfelbingerHagerupKatajainenPenttonen1997]` (Lemma 2.4). -/
 theorem chainedHashing :
     ∀ (U n_max : ℕ),
       ∃ (p_init p_op : List (Instr 22)),
@@ -402,16 +424,22 @@ theorem chainedHashing :
             WordBounded w reg₀ mem₀ →
             reg₀ ⟨6, by decide⟩ = base →
             (∀ a, base ≤ a → a < base + chainedSpace n_max → mem₀ a = 0) →
-            ∀ ops : List (DictOp U),
-              ValidDictHistory V n_max (emptyDict U) ops →
-              ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (CoupledState Seed 22)),
-                ExecProgramDist w p_init ⟨10, by decide⟩ reg₀ mem₀
-                  (μ_init.map CoupledState.toRegMem) 16 ∧
-                ExecDictOps w p_op true
-                  ⟨5, by decide⟩ ⟨7, by decide⟩ ⟨8, by decide⟩ ⟨9, by decide⟩ ⟨10, by decide⟩
-                  base (chainedSpace n_max) (emptyDict U) ops
-                  μ_init μ_final T_ops ∧
-                (16 : ℝ≥0∞) + T_ops ≤ ((16 + 73 * ops.length : ℕ) : ℝ≥0∞) :=
+            ∃ (Seed : Type) (μ_init : PMF (CoupledState Seed 22)),
+              ExecProgramDist w p_init ⟨10, by decide⟩ reg₀ mem₀
+                (μ_init.map CoupledState.toRegMem) 16 ∧
+              (∀ p ∈ μ_init.support,
+                WordBounded w p.reg p.mem ∧
+                p.reg ⟨5, by decide⟩ = base ∧
+                p.reg ⟨6, by decide⟩ = base + chainedSpace n_max ∧
+                UnchangedOutside base (chainedSpace n_max) mem₀ p.mem) ∧
+              ∀ ops : List (DictOp U),
+                ValidDictHistory V n_max (emptyDict U) ops →
+                ∃ (μ_final : PMF (CoupledState Seed 22)) (T_ops : ℝ≥0∞),
+                  ExecDictOps w p_op true
+                    ⟨5, by decide⟩ ⟨7, by decide⟩ ⟨8, by decide⟩ ⟨9, by decide⟩ ⟨10, by decide⟩
+                    base (chainedSpace n_max) (emptyDict U) ops
+                    μ_init μ_final T_ops ∧
+                  (16 : ℝ≥0∞) + T_ops ≤ ((16 + 73 * ops.length : ℕ) : ℝ≥0∞) :=
   ComplexityAbstracts.HashTablesBridge.chainedHashing
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,
@@ -531,18 +559,22 @@ theorem linearProbingCharge_le {U n_max : ℕ} (hU : U ≤ max n_max 4 ^ 4) :
     lpOpCharge U n_max ≤ lpOpChargeBound :=
   ComplexityAbstracts.HashTablesBridge.linearProbingCharge_le hU
 
-/-- **Linear Probing with `5`-Wise Independent Hashing** (`LinearProbing.lean:2263`
-`seq_expected_amortized`, specialized to `c_exp = 4`):
+/-- **Linear Probing with `5`-Wise Independent Hashing** (`LinearProbing.seq_expected_amortized`,
+specialized to `c_exp = 4`):
 For every key universe `U` and capacity `n_max`, there exist 24-register Word-RAM programs `p_init`
 and `p_op` (depending on `(U, n_max)` and independent of `V`, `w`, and `base`) such that for every
 value bound `V`, word width `w`, and base address `base` satisfying `U ≤ max n_max 4 ^ 4`,
 `2 * trinomialDeg U (lpTableLog n_max) ≤ w`, `base + lpSpace n_max < 2 ^ w`, and `V < 2 ^ w`, from
 any word-bounded initial state `(reg₀, mem₀)` with `reg₀ 18 = base` and zeroed memory in
-`[base, base + lpSpace n_max)`, for every oblivious operation history `ops : List (DictOp U)` valid
-for capacity `n_max` and value bound `V`:
-- `p_init` initializes the table in `lpInitSteps U n_max` expected executed body instructions;
-- `p_op` executes `ops` sequentially with output register `2`, matching `stepDict` and
-  `OpOutputCorrect` at every step;
+`[base, base + lpSpace n_max)`, there exists an initial coupled distribution `μ_init` (chosen before
+any operation sequence `ops`) such that:
+- `p_init` initializes the table in `lpInitSteps U n_max` expected executed body instructions, and
+  every `p ∈ μ_init.support` satisfies `WordBounded w p.reg p.mem`, `p.reg 0 = base`,
+  `p.reg 18 = base + lpSpace n_max`, and `UnchangedOutside base (lpSpace n_max) mem₀ p.mem`;
+- for every oblivious operation history `ops : List (DictOp U)` valid for capacity `n_max` and
+  value bound `V`, `p_op` executes `ops` sequentially with output register `2` (`clearScratch =
+  false`, preserving non-argument registers), matching `stepDict` and `OpOutputCorrect` at every
+  step;
 - the total expected executed body instruction count satisfies both
   `lpInitSteps U n_max + T_ops ≤ lpInitSteps U n_max + ops.length * lpOpCharge U n_max` and the
   uniform `O(1)` per-operation bound
@@ -566,19 +598,25 @@ theorem linearProbing :
             WordBounded w reg₀ mem₀ →
             reg₀ ⟨18, by decide⟩ = base →
             (∀ a, base ≤ a → a < base + lpSpace n_max → mem₀ a = 0) →
-            ∀ ops : List (DictOp U),
-              ValidDictHistory V n_max (emptyDict U) ops →
-              ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (CoupledState Seed 24)),
-                ExecProgramDist w p_init ⟨2, by decide⟩ reg₀ mem₀
-                  (μ_init.map CoupledState.toRegMem) (lpInitSteps U n_max) ∧
-                ExecDictOps w p_op false
-                  ⟨0, by decide⟩ ⟨22, by decide⟩ ⟨1, by decide⟩ ⟨23, by decide⟩ ⟨2, by decide⟩
-                  base (lpSpace n_max) (emptyDict U) ops
-                  μ_init μ_final T_ops ∧
-                (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
-                  ((lpInitSteps U n_max + ops.length * lpOpCharge U n_max : ℕ) : ℝ≥0∞) ∧
-                (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
-                  ((lpInitSteps U n_max + ops.length * lpOpChargeBound : ℕ) : ℝ≥0∞) :=
+            ∃ (Seed : Type) (μ_init : PMF (CoupledState Seed 24)),
+              ExecProgramDist w p_init ⟨2, by decide⟩ reg₀ mem₀
+                (μ_init.map CoupledState.toRegMem) (lpInitSteps U n_max) ∧
+              (∀ p ∈ μ_init.support,
+                WordBounded w p.reg p.mem ∧
+                p.reg ⟨0, by decide⟩ = base ∧
+                p.reg ⟨18, by decide⟩ = base + lpSpace n_max ∧
+                UnchangedOutside base (lpSpace n_max) mem₀ p.mem) ∧
+              ∀ ops : List (DictOp U),
+                ValidDictHistory V n_max (emptyDict U) ops →
+                ∃ (μ_final : PMF (CoupledState Seed 24)) (T_ops : ℝ≥0∞),
+                  ExecDictOps w p_op false
+                    ⟨0, by decide⟩ ⟨22, by decide⟩ ⟨1, by decide⟩ ⟨23, by decide⟩ ⟨2, by decide⟩
+                    base (lpSpace n_max) (emptyDict U) ops
+                    μ_init μ_final T_ops ∧
+                  (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
+                    ((lpInitSteps U n_max + ops.length * lpOpCharge U n_max : ℕ) : ℝ≥0∞) ∧
+                  (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
+                    ((lpInitSteps U n_max + ops.length * lpOpChargeBound : ℕ) : ℝ≥0∞) :=
   ComplexityAbstracts.HashTablesBridge.linearProbing
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,
@@ -680,18 +718,21 @@ threshold). -/
 def upOpCharge : ℕ :=
   13 * regimeThreshold + upHashEvalSteps + 8
 
-/-- **Uniform Probing via Odd-Stride Double Hashing** (`UniformProbing.lean:2312`
-`seq_expected_amortized`, specialized to `c_exp = 4`):
+/-- **Uniform Probing via Odd-Stride Double Hashing** (`UniformProbing.seq_expected_amortized`,
+specialized to `c_exp = 4`):
 For every capacity `n_max`, there exist 16-register Word-RAM programs `p_init` and `p_op`
 (depending only on `n_max` at fixed `c_exp = 4` and independent of `U`, `V`, `w`, and `base`) such
 that for every key universe `U`, value bound `V`, word width `w`, and base address `base` satisfying
 `U ≤ max n_max 4 ^ 4`, `base + upSpace n_max < 2 ^ w`, `∀ u : Fin U, u.val < 2 ^ w`, and
 `V < 2 ^ w`, from any word-bounded initial state `(reg₀, mem₀)` with `reg₀ 14 = base` and zeroed
-memory in `[base, base + upSpace n_max)`, for every oblivious operation history
-`ops : List (DictOp U)` valid for capacity `n_max` and value bound `V`:
-- `p_init` initializes the table in `upInitSteps n_max` expected executed body instructions;
-- `p_op` executes `ops` sequentially with output register `12`, matching `stepDict` and
-  `OpOutputCorrect` at every step;
+memory in `[base, base + upSpace n_max)`, there exists an initial coupled distribution `μ_init`
+(chosen before any operation sequence `ops`) such that:
+- `p_init` initializes the table in `upInitSteps n_max` expected executed body instructions, and
+  every `p ∈ μ_init.support` satisfies `WordBounded w p.reg p.mem`, `p.reg 0 = base`,
+  `p.reg 14 = base + upSpace n_max`, and `UnchangedOutside base (upSpace n_max) mem₀ p.mem`;
+- for every oblivious operation history `ops : List (DictOp U)` valid for capacity `n_max` and
+  value bound `V`, `p_op` executes `ops` sequentially with output register `12`, matching
+  `stepDict` and `OpOutputCorrect` at every step;
 - the total expected executed body instruction count satisfies
   `upInitSteps n_max + T_ops ≤ upInitSteps n_max + ops.length * upOpCharge`
   (`upOpCharge = 13 * 2 ^ 320000 + 13739 = O(1)` expected executed instructions per `get` or
@@ -700,8 +741,8 @@ memory in `[base, base + upSpace n_max)`, for every oblivious operation history
 
 References: `[CLRS2009]` (3rd ed., Section 11.4, pp. 269–277); `[SchmidtSiegel1990]` (STOC 1990,
 pp. 224–234; NYU Courant Technical Report `TR1995-687`, May 1995, pp. 1–2, 4–7, 37–39);
-`[Thorup2013]` (FOCS 2013, pp. 90–99; `arXiv:1311.3121v2`, Theorem 1(a) and Lemma 2,
-pp. 4–5, 11–13). -/
+`[Thorup2013]` (FOCS 2013, pp. 90–99; `arXiv:1311.3121v2`, Theorem 1(a) p. 4, Lemma 2 p. 5, and
+Section 2 Eqs. (6)–(7) p. 11). -/
 theorem uniformProbing :
     ∀ (n_max : ℕ),
       ∃ (p_init p_op : List (Instr 16)),
@@ -714,17 +755,23 @@ theorem uniformProbing :
             WordBounded w reg₀ mem₀ →
             reg₀ ⟨14, by decide⟩ = base →
             (∀ a, base ≤ a → a < base + upSpace n_max → mem₀ a = 0) →
-            ∀ ops : List (DictOp U),
-              ValidDictHistory V n_max (emptyDict U) ops →
-              ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (CoupledState Seed 16)),
-                ExecProgramDist w p_init ⟨12, by decide⟩ reg₀ mem₀
-                  (μ_init.map CoupledState.toRegMem) (upInitSteps n_max) ∧
-                ExecDictOps w p_op true
-                  ⟨0, by decide⟩ ⟨12, by decide⟩ ⟨13, by decide⟩ ⟨14, by decide⟩ ⟨12, by decide⟩
-                  base (upSpace n_max) (emptyDict U) ops
-                  μ_init μ_final T_ops ∧
-                (upInitSteps n_max : ℝ≥0∞) + T_ops ≤
-                  ((upInitSteps n_max + ops.length * upOpCharge : ℕ) : ℝ≥0∞) :=
+            ∃ (Seed : Type) (μ_init : PMF (CoupledState Seed 16)),
+              ExecProgramDist w p_init ⟨12, by decide⟩ reg₀ mem₀
+                (μ_init.map CoupledState.toRegMem) (upInitSteps n_max) ∧
+              (∀ p ∈ μ_init.support,
+                WordBounded w p.reg p.mem ∧
+                p.reg ⟨0, by decide⟩ = base ∧
+                p.reg ⟨14, by decide⟩ = base + upSpace n_max ∧
+                UnchangedOutside base (upSpace n_max) mem₀ p.mem) ∧
+              ∀ ops : List (DictOp U),
+                ValidDictHistory V n_max (emptyDict U) ops →
+                ∃ (μ_final : PMF (CoupledState Seed 16)) (T_ops : ℝ≥0∞),
+                  ExecDictOps w p_op true
+                    ⟨0, by decide⟩ ⟨12, by decide⟩ ⟨13, by decide⟩ ⟨14, by decide⟩ ⟨12, by decide⟩
+                    base (upSpace n_max) (emptyDict U) ops
+                    μ_init μ_final T_ops ∧
+                  (upInitSteps n_max : ℝ≥0∞) + T_ops ≤
+                    ((upInitSteps n_max + ops.length * upOpCharge : ℕ) : ℝ≥0∞) :=
   ComplexityAbstracts.HashTablesBridge.uniformProbing
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,
@@ -890,7 +937,7 @@ theorem cuckooOpCharge_le {U : ℕ} (o : DictOp U) :
     rfl rfl rfl rfl
     @cuckooOpCharge (fun _ => rfl) (fun _ _ => rfl) o
 
-/-- **Pagh–Rodler Cuckoo Hashing** (`CuckooHashing.lean:6373` `cuckoo_seq_expected_amortized`,
+/-- **Pagh–Rodler Cuckoo Hashing** (`CuckooHashing.cuckoo_seq_expected_amortized`,
 specialized to `c_exp = 4`):
 For every capacity `n_max`, there exist 19-register Word-RAM programs `p_init` and `p_op`
 (depending only on `n_max` at fixed `c_exp = 4` and independent of `U`, `V`, `w`, and `base`) such
@@ -898,11 +945,15 @@ that for every key universe `U`, value bound `V`, word width `w`, and base addre
 `U ≤ max n_max 4 ^ 4`, `2 * trinomialDeg U (tableBits32 n_max) ≤ w`,
 `base + cuckooSpace n_max < 2 ^ w`, `cuckooMaxEvictions n_max < 2 ^ w`, `max U 2 + 1 < 2 ^ w`, and
 `V < 2 ^ w`, from any word-bounded initial state `(reg₀, mem₀)` with `reg₀ 1 = base`,
-`reg₀ 3 = n_max`, `reg₀ 4 = U`, and zeroed memory in `[base, base + cuckooSpace n_max)`, for every
-oblivious operation history `ops : List (DictOp U)` valid for capacity `n_max` and value bound `V`:
-- `p_init` initializes the table in `cuckooInitSteps n_max U` expected executed body instructions;
-- `p_op` executes `ops` sequentially with output register `2`, matching `stepDict` and
-  `OpOutputCorrect` at every step;
+`reg₀ 3 = n_max`, `reg₀ 4 = U`, and zeroed memory in `[base, base + cuckooSpace n_max)`, there
+exists an initial coupled distribution `μ_init` (chosen before any operation sequence `ops`) such
+that:
+- `p_init` initializes the table in `cuckooInitSteps n_max U` expected executed body instructions,
+  and every `p ∈ μ_init.support` satisfies `WordBounded w p.reg p.mem`, `p.reg 0 = base`,
+  `p.reg 1 = base + cuckooSpace n_max`, and `UnchangedOutside base (cuckooSpace n_max) mem₀ p.mem`;
+- for every oblivious operation history `ops : List (DictOp U)` valid for capacity `n_max` and
+  value bound `V`, `p_op` executes `ops` sequentially with output register `2`, matching
+  `stepDict` and `OpOutputCorrect` at every step;
 - the total expected executed body instruction count satisfies both the operation-sensitive bound
   `cuckooInitSteps n_max U + T_ops ≤ cuckooInitSteps n_max U + (ops.map cuckooOpCharge).sum`
   (`cuckooGetCharge = 854252184111` per `get`, `cuckooInsertCharge = 27336684332552` per `insert`)
@@ -914,8 +965,9 @@ oblivious operation history `ops : List (DictOp U)` valid for capacity `n_max` a
 
 References: `[PaghRodler2004]` (8 Dec 2003 author manuscript / *J. Algorithms* 51(2):122–144, 2004,
 Section 2.3 "Analysis", manuscript pp. 6–10: Lemma 1 p. 7, Eq. (3) p. 9, rehash analysis pp. 9–10);
-`[Thorup2013]` (FOCS 2013, pp. 90–99; `arXiv:1311.3121v2`, Theorem 1(a) and Lemma 2 on pp. 4–5, and
-Section 3, Theorem 7(a) and Lemmas 8–9 on pp. 11–13); `[CarterWegman1979]`; `[WegmanCarter1981]`. -/
+`[Thorup2013]` (FOCS 2013, pp. 90–99; `arXiv:1311.3121v2`, Theorem 1(a) p. 4, Lemma 2 p. 5,
+Section 2 Eqs. (6)–(7) p. 11, and Section 3 Theorem 7(a) and Lemmas 8–9 pp. 12–14);
+`[CarterWegman1979]`; `[WegmanCarter1981]`. -/
 theorem cuckooHashing :
     ∀ (n_max : ℕ),
       ∃ (p_init p_op : List (Instr 19)),
@@ -932,19 +984,25 @@ theorem cuckooHashing :
             reg₀ ⟨3, by decide⟩ = n_max →
             reg₀ ⟨4, by decide⟩ = U →
             (∀ a, base ≤ a → a < base + cuckooSpace n_max → mem₀ a = 0) →
-            ∀ ops : List (DictOp U),
-              ValidDictHistory V n_max (emptyDict U) ops →
-              ∃ (Seed : Type) (T_ops : ℝ≥0∞) (μ_init μ_final : PMF (CoupledState Seed 19)),
-                ExecProgramDist w p_init ⟨2, by decide⟩ reg₀ mem₀
-                  (μ_init.map CoupledState.toRegMem) (cuckooInitSteps n_max U) ∧
-                ExecDictOps w p_op true
-                  ⟨0, by decide⟩ ⟨2, by decide⟩ ⟨3, by decide⟩ ⟨4, by decide⟩ ⟨2, by decide⟩
-                  base (cuckooSpace n_max) (emptyDict U) ops
-                  μ_init μ_final T_ops ∧
-                (cuckooInitSteps n_max U : ℝ≥0∞) + T_ops ≤
-                  ((cuckooInitSteps n_max U + (ops.map cuckooOpCharge).sum : ℕ) : ℝ≥0∞) ∧
-                (cuckooInitSteps n_max U : ℝ≥0∞) + T_ops ≤
-                  ((cuckooInitSteps n_max U + ops.length * cuckooInsertCharge : ℕ) : ℝ≥0∞) :=
+            ∃ (Seed : Type) (μ_init : PMF (CoupledState Seed 19)),
+              ExecProgramDist w p_init ⟨2, by decide⟩ reg₀ mem₀
+                (μ_init.map CoupledState.toRegMem) (cuckooInitSteps n_max U) ∧
+              (∀ p ∈ μ_init.support,
+                WordBounded w p.reg p.mem ∧
+                p.reg ⟨0, by decide⟩ = base ∧
+                p.reg ⟨1, by decide⟩ = base + cuckooSpace n_max ∧
+                UnchangedOutside base (cuckooSpace n_max) mem₀ p.mem) ∧
+              ∀ ops : List (DictOp U),
+                ValidDictHistory V n_max (emptyDict U) ops →
+                ∃ (μ_final : PMF (CoupledState Seed 19)) (T_ops : ℝ≥0∞),
+                  ExecDictOps w p_op true
+                    ⟨0, by decide⟩ ⟨2, by decide⟩ ⟨3, by decide⟩ ⟨4, by decide⟩ ⟨2, by decide⟩
+                    base (cuckooSpace n_max) (emptyDict U) ops
+                    μ_init μ_final T_ops ∧
+                  (cuckooInitSteps n_max U : ℝ≥0∞) + T_ops ≤
+                    ((cuckooInitSteps n_max U + (ops.map cuckooOpCharge).sum : ℕ) : ℝ≥0∞) ∧
+                  (cuckooInitSteps n_max U : ℝ≥0∞) + T_ops ≤
+                    ((cuckooInitSteps n_max U + ops.length * cuckooInsertCharge : ℕ) : ℝ≥0∞) :=
   ComplexityAbstracts.HashTablesBridge.cuckooHashing
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,
