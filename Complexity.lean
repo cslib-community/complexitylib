@@ -1280,6 +1280,8 @@ public import Complexity.Computability.Complexity.Classes.Oracle.WitnessBit
 public import Complexity.Computability.Complexity.Classes.P
 public import Complexity.Computability.Complexity.Classes.P.Closure
 public import Complexity.Computability.Complexity.Classes.P.Complement
+public import Complexity.Computability.Complexity.Classes.P.FirstOrder
+public import Complexity.Computability.Complexity.Classes.P.FirstOrder.ModelChecker
 public import Complexity.Computability.Complexity.Classes.P.Slices
 public import Complexity.Computability.Complexity.Classes.P.WordRAM
 public import Complexity.Computability.Complexity.Classes.PCP
@@ -3420,6 +3422,7 @@ public import Complexity.Logics.FirstOrder.Ordered.FullTuple.Composition
 public import Complexity.Logics.FirstOrder.Ordered.FullTuple.DomainInterpretation
 public import Complexity.Logics.FirstOrder.Ordered.FullTuple.Encoding
 public import Complexity.Logics.FirstOrder.Ordered.Interpretation
+public import Complexity.Logics.FirstOrder.Ordered.LeastFixedPoint
 public import Complexity.Logics.FirstOrder.Ordered.Multiplication
 public import Complexity.Logics.FirstOrder.Ordered.Multiplication.Blocks
 public import Complexity.Logics.FirstOrder.Ordered.Multiplication.Bounds
