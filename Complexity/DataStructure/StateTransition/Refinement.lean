@@ -263,10 +263,12 @@ def prod (M₁ : Refinement D₁ E) (M₂ : Refinement D₂ E)
 are at most the upper charge of the operation plus the potential before it. Potentials are
 natural numbers, hence nonnegative; a client bound subtracts nothing when the initial potential
 is zero. -/
-def Amortized (lower : E.State → E.Op → ℕ) (upper : D.State → D.Op → ℕ)
-    (potential : E.State → ℕ) : Prop :=
-  ∀ {e} o {a e' tr}, M.inv e → D.valid (M.abs e) o → E.ClientRun e (M.methods o) a e' tr →
-    E.totalCostTranscript lower e tr + potential e' ≤ upper (M.abs e) o + potential e
+structure Amortized (lower : E.State → E.Op → ℕ) (upper : D.State → D.Op → ℕ)
+    (potential : E.State → ℕ) : Prop where
+  /-- The physicist's inequality for one method run. -/
+  step : ∀ {e} o {a e' tr}, M.inv e → D.valid (M.abs e) o →
+    E.ClientRun e (M.methods o) a e' tr →
+      E.totalCostTranscript lower e tr + potential e' ≤ upper (M.abs e) o + potential e
 
 variable {M} {lower : E.State → E.Op → ℕ} {upper : D.State → D.Op → ℕ}
   {potential : E.State → ℕ}
@@ -280,7 +282,7 @@ theorem Amortized.ofFn {fE : (e : E.State) → (o : E.Op) → E.State × E.Resul
           potential (E.clientState e (M.methods o)) ≤
         upper (M.abs e) o + potential e) :
     M.Amortized lower upper potential := by
-  intro e o a e' tr hi hv hrun
+  refine ⟨fun {e} o {a e' tr} hi hv hrun => ?_⟩
   obtain ⟨_, _, rfl, rfl⟩ := (E.clientRun_iff_runClient e (M.methods o) a e' tr).mp hrun
   rw [E.totalCostTranscript_canonicalTranscript]
   exact h o hi hv
@@ -291,8 +293,8 @@ theorem Amortized.mono (A : M.Amortized lower upper potential)
     (hlower : ∀ e o, lower' e o ≤ lower e o)
     (hupper : ∀ s o, D.valid s o → upper s o ≤ upper' s o) :
     M.Amortized lower' upper' potential := by
-  intro e o a e' tr hi hv hrun
-  have h := A o hi hv hrun
+  refine ⟨fun {e} o {a e' tr} hi hv hrun => ?_⟩
+  have h := A.step o hi hv hrun
   have hl := E.totalCostTranscript_mono hlower e tr
   have hu := hupper _ o hv
   omega
@@ -302,9 +304,9 @@ the amortized inequality. -/
 theorem Amortized.mul_left (A : M.Amortized lower upper potential) (K : ℕ) :
     M.Amortized (fun e o => K * lower e o) (fun s o => K * upper s o)
       (fun e => K * potential e) := by
-  intro e o a e' tr hi hv hrun
+  refine ⟨fun {e} o {a e' tr} hi hv hrun => ?_⟩
   rw [E.totalCostTranscript_mul_left, ← Nat.mul_add, ← Nat.mul_add]
-  exact Nat.mul_le_mul_left K (A o hi hv hrun)
+  exact Nat.mul_le_mul_left K (A.step o hi hv hrun)
 
 /-- Potentials telescope along any run of a linked admissible client. -/
 theorem Amortized.demonic (A : M.Amortized lower upper potential) (p : D.Client α)
@@ -324,7 +326,7 @@ theorem Amortized.demonic (A : M.Amortized lower upper potential) (p : D.Client 
     rw [heq] at hrun
     obtain ⟨res, e₁, tr₁, tr₂, hrun₁, hrun₂, rfl⟩ := E.clientRun_bind_iff.mp hrun
     obtain ⟨hstep₁, he₁⟩ := M.correct o he hv_o hrun₁
-    have hc₁ := A o he hv_o hrun₁
+    have hc₁ := A.step o he hv_o hrun₁
     obtain ⟨he₂, tr_D, hrun_D, hc₂⟩ := ih res he₁ (hv_k _ res hstep₁) hrun₂
     refine ⟨he₂, ⟨o, res, M.abs e₁⟩ :: tr_D, .liftBind o k res hv_o hstep₁ hrun_D, ?_⟩
     rw [E.totalCostTranscript_append lower hrun₁.validTranscript tr₂]
@@ -355,9 +357,9 @@ theorem Amortized.comp {N : Refinement E F} {lower : F.State → F.Op → ℕ}
     {middle : E.State → E.Op → ℕ} {Φ : E.State → ℕ} {Ψ : F.State → ℕ}
     (A : M.Amortized middle upper Φ) (B : N.Amortized lower middle Ψ) :
     (M.comp N).Amortized lower upper (fun f => Φ (N.abs f) + Ψ f) := by
-  intro f o a f' tr hi hv hrun
+  refine ⟨fun {f} o {a f' tr} hi hv hrun => ?_⟩
   obtain ⟨_, tr_E, hrun_E, hN⟩ := B.demonic (M.methods o) hi.1 (M.valid o hi.2 hv) hrun
-  have hM := A o hi.2 hv hrun_E
+  have hM := A.step o hi.2 hv hrun_E
   change F.totalCostTranscript lower f tr + (Φ (N.abs f') + Ψ f') ≤
     upper (M.abs (N.abs f)) o + (Φ (N.abs f) + Ψ f)
   omega
@@ -378,16 +380,16 @@ theorem Amortized.prod {M₁ : Refinement D₁ E} {M₂ : Refinement D₂ E}
       E.ClientRun e (M₂.methods o) a e' tr → Φ₁ e' = Φ₁ e) :
     (M₁.prod M₂ frame₁ frame₂).Amortized lower (productCharge upper₁ upper₂)
       (fun e => Φ₁ e + Φ₂ e) := by
-  intro e o a e' tr hi hv hrun
+  refine ⟨fun {e} o {a e' tr} hi hv hrun => ?_⟩
   cases o with
   | inl o =>
-    have h := A₁ o hi.1 hv hrun
+    have h := A₁.step o hi.1 hv hrun
     have hΦ := potential₁ o hi.1 hi.2 hv hrun
     change E.totalCostTranscript lower e tr + (Φ₁ e' + Φ₂ e') ≤
       upper₁ (M₁.abs e) o + (Φ₁ e + Φ₂ e)
     omega
   | inr o =>
-    have h := A₂ o hi.2 hv hrun
+    have h := A₂.step o hi.2 hv hrun
     have hΦ := potential₂ o hi.1 hi.2 hv hrun
     change E.totalCostTranscript lower e tr + (Φ₁ e' + Φ₂ e') ≤
       upper₂ (M₂.abs e) o + (Φ₁ e + Φ₂ e)
@@ -407,7 +409,7 @@ theorem Amortized.realize (A : M.Amortized lower upper potential)
     obtain ⟨e, ⟨hi, rfl⟩, hR₀⟩ := hr
     obtain ⟨e', tr, hrun, hR', _, hcost⟩ := B.demonic hR₀ (M.valid o hi hv) he
     obtain ⟨hstep, hi'⟩ := M.correct o hi hv hrun
-    have hc := A o hi hv hrun
+    have hc := A.step o hi hv hrun
     refine ⟨M.abs e', hstep, ⟨e', ⟨hi', rfl⟩, hR'⟩, ?_⟩
     rw [← hR hR₀, ← hR hR']
     omega
@@ -415,7 +417,7 @@ theorem Amortized.realize (A : M.Amortized lower upper potential)
 /-- The identity refinement passes each charge through unchanged. -/
 theorem Amortized.id (charge : D.State → D.Op → ℕ) :
     (Refinement.id D).Amortized charge charge fun _ => 0 := by
-  intro e o a e' tr _ _ hrun
+  refine ⟨fun {e} o {a e' tr} _ _ hrun => ?_⟩
   cases hrun with
   | liftBind _ _ r _ _ hrest =>
     cases hrest
@@ -426,13 +428,13 @@ module. -/
 theorem Amortized.chargeBound (A : M.Amortized lower upper fun _ => 0) :
     M.toModule.ChargeBound lower upper := by
   rintro s e o a e' tr ⟨hi, rfl⟩ hv hrun
-  simpa using A o hi hv hrun
+  simpa using A.step o hi hv hrun
 
 /-- A worst-case `Module.ChargeBound` of the module is an amortized refinement with zero
 potential. -/
 theorem Amortized.of_chargeBound (B : M.toModule.ChargeBound lower upper) :
     M.Amortized lower upper fun _ => 0 := by
-  intro e o a e' tr hi hv hrun
+  refine ⟨fun {e} o {a e' tr} hi hv hrun => ?_⟩
   simpa using B o ⟨hi, rfl⟩ hv hrun
 
 end Refinement
