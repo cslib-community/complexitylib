@@ -524,7 +524,7 @@ private theorem sum_univ_eq_add_sdiff [DecidableEq V] (S : Finset V) (g : V → 
     Finset.union_sdiff_of_subset (Finset.subset_univ S)]
 
 /-- **Net-flow-across-cut lemma** ([FordFulkerson1962], Chapter I, Section 4, Lemma 4.1; [CLRS2009],
-Lemma 26.4, p. 717): for every feasible flow `f` and `s`-`t` cut `S`, `f.value` equals the total
+Lemma 26.4, p. 721): for every feasible flow `f` and `s`-`t` cut `S`, `f.value` equals the total
 flow leaving `S` minus the total flow entering `S`. -/
 theorem value_eq_netFlow_across_cut [DecidableEq V] (f : N.Flow) {S : Finset V} (hS : N.IsCut S) :
     f.value =
@@ -550,7 +550,7 @@ theorem value_eq_netFlow_across_cut [DecidableEq V] (f : N.Flow) {S : Finset V} 
     Finset.sum_comm
   omega
 
-/-- **Weak duality** ([FordFulkerson1956], p. 400; [CLRS2009], Corollary 26.5, p. 718): the value
+/-- **Weak duality** ([FordFulkerson1956], p. 400; [CLRS2009], Corollary 26.5, p. 723): the value
 of any feasible flow is bounded above by the capacity of any `s`-`t` cut. -/
 theorem value_le_cutCapacity [DecidableEq V] (f : N.Flow) {S : Finset V} (hS : N.IsCut S) :
     f.value ≤ (N.cutCapacity S : ℤ) := by
@@ -902,7 +902,7 @@ theorem value_eq_cutCapacity_reachableCut [DecidableEq V] (f : N.Flow)
   simp only [cutCapacity, Nat.cast_sum]
 
 /-- **Ford–Fulkerson augmenting-path characterization** ([FordFulkerson1956], Theorem 1,
-pp. 400–402; [CLRS2009], Theorem 26.6, p. 720, `(1) ↔ (2)`): when `N.s ≠ N.t`, a feasible flow `f`
+pp. 400–402; [CLRS2009], Theorem 26.6, p. 723, `(1) ↔ (2)`): when `N.s ≠ N.t`, a feasible flow `f`
 is a maximum flow if and only if it admits no residual `s`-`t` augmenting path. -/
 theorem isMaxFlow_iff_not_exists_augmentingPath (f : N.Flow) (hst : N.s ≠ N.t) :
     f.IsMaxFlow ↔ ¬ ∃ p, f.IsAugmentingPath p := by
@@ -917,7 +917,7 @@ theorem isMaxFlow_iff_not_exists_augmentingPath (f : N.Flow) (hst : N.s ≠ N.t)
     exact g.value_le_cutCapacity (f.reachableCut_isCut hno)
 
 /-- **Ford–Fulkerson strong-duality characterization** ([FordFulkerson1956], Theorem 1,
-pp. 400–402; [CLRS2009], Theorem 26.6, p. 720, `(1) ↔ (3)`): when `N.s ≠ N.t`, a feasible flow `f`
+pp. 400–402; [CLRS2009], Theorem 26.6, p. 723, `(1) ↔ (3)`): when `N.s ≠ N.t`, a feasible flow `f`
 is a maximum flow if and only if `f.value` equals the capacity of some `s`-`t` cut `S` (which is
 then automatically a minimum `s`-`t` cut). -/
 theorem isMaxFlow_iff_exists_cut_value_eq [DecidableEq V] (f : N.Flow) (hst : N.s ≠ N.t) :

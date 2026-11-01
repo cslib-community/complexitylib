@@ -30,7 +30,7 @@ shortest-path distances and terminates in strongly polynomial time independent o
    `N.s` to `v`, or `|V|` when `v` is unreachable.
 2. **Distance monotonicity (`Flow.resDist_le_augmentByBottleneck`):** augmenting `f` along any
    shortest augmenting path `p` (`IsShortestAugmentingPath`) never decreases `resDist v` for any
-   vertex `v` ([EdmondsKarp1972], p. 251; [CLRS2009], Lemma 26.7, p. 728).
+   vertex `v` ([EdmondsKarp1972], p. 251; [CLRS2009], Lemma 26.7, pp. 727–728).
 3. **Critical-arc bound (`Network.shortestAugmentingSeq_length_le`):** each directed residual pair
    `(u, v) ∈ N.symArcs` becomes a bottleneck critical arc at most `|V| / 2` times because
    `resDist u` increases by at least `2` between critical occurrences, bounding any sequence of
@@ -393,7 +393,7 @@ theorem resDist_arc_of_isShortestAugmentingPath (f : N.Flow) {p : List V}
   exact hgen p N.s haug.head? haug.getLast? (fun e he => haug.pos_resCap he) (by simp [hlen]) he
 
 /-- **Edmonds–Karp shortest-path distance monotonicity** ([EdmondsKarp1972], Section 1, p. 251;
-[CLRS2009], Lemma 26.7, p. 728): augmenting `f` along a shortest augmenting path `p` never
+[CLRS2009], Lemma 26.7, pp. 727–728): augmenting `f` along a shortest augmenting path `p` never
 decreases `resDist v` for any vertex `v`. -/
 theorem resDist_le_augmentByBottleneck [DecidableEq V] (f : N.Flow) {p : List V}
     (hp : f.IsShortestAugmentingPath p) (v : V) :
@@ -2055,7 +2055,7 @@ private theorem edmondsKarpLoopM_spec {n : ℕ} {N : Network (Fin n)}
       exact ⟨hno, hcut, hk_sym, hk_pos, by omega⟩
 
 /-- **Edmonds–Karp correctness theorem** ([EdmondsKarp1972], Theorem 1, p. 251; [CLRS2009],
-Theorems 26.6 & 26.8, pp. 720, 729): on any integral network `N : Network (Fin n)` with `N.s ≠ N.t`
+Theorems 26.6 & 26.8, pp. 723, 729): on any integral network `N : Network (Fin n)` with `N.s ≠ N.t`
 and valid candidate neighbor lists `adj`, `edmondsKarpM N adj` returns an integral maximum flow
 `out.flow` and minimum `s`-`t` cut `out.cut = out.flow.reachableCut` with
 `out.flow.value = N.cutCapacity out.cut` in at most `N.symArcs.card * (n / 2)` (and at most
