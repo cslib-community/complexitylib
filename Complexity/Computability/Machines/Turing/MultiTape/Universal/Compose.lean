@@ -455,8 +455,6 @@ public lemma stepG_inO :
       rw [Nat.mul_pow] at this
       omega
     dsimp only [eCSt] at *
-    generalize ((encPair eCtl (encPair encNat encUnary)) s).length = L at *
-    generalize (L + 1) ^ 3 = Y at *
     omega
 
 /-- A step of `f`, with the symbol found by the countdown over the input. -/
@@ -485,8 +483,6 @@ public lemma stepF_inO : ComputableTidilyInO (fun s : CSt => stepWith s.1.1.2.1 
       rw [Nat.mul_pow] at this
       omega
     dsimp only [eCSt] at *
-    generalize ((encPair eCtl (encPair encNat encUnary)) s).length = L at *
-    generalize (L + 1) ^ 3 = Y at *
     omega
 
 /-- The `g` branch of a step of the composition: a step of `g`, restarting `f`. -/
@@ -508,8 +504,6 @@ lemma gBranch_inO : ComputableTidilyInO (fun s : CSt =>
       Nat.pow_le_pow_right (by omega) (by omega)
     have hL : (eCSt s).length + 1 ≤ ((eCSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
     dsimp only [eCSt] at *
-    generalize ((encPair eCtl (encPair encNat encUnary)) s).length = L at *
-    generalize (L + 1) ^ 3 = Y at *
     omega
 
 lemma emitScan_eq (p : ℕ × ℕ) (o : Option ℕ) : emitScan p o =
@@ -562,11 +556,6 @@ lemma fBranch_inO : ComputableTidilyInO (fun s : CSt =>
     dsimp only [eCSt] at *
     rw [hp] at *
     try simp only [h1] at *
-    generalize ((encPair eCtl (encPair encNat encUnary)) s).length = L at *
-    generalize (L + 1) ^ 3 = Y at *
-    generalize (L + 1) ^ 2 = B at *
-    generalize ((encNat s.1.2.1).length + 1) ^ 2 = A at *
-    generalize ((encNat s.1.2.1).length + 1) * ((encNat s.1.2.1).length + 1 + 1) = P at *
     split_ifs <;> omega
 
 /-- A step of the composition at the end of a pass. -/
@@ -579,8 +568,6 @@ lemma cstep_inO : ComputableTidilyInO (fun s : CSt => cstep s.1 (xSym s)) eCSt e
   all_goals
     have hL : (eCSt s).length + 1 ≤ ((eCSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
     dsimp only [eCSt] at *
-    generalize ((encPair eCtl (encPair encNat encUnary)) s).length = L at *
-    generalize (L + 1) ^ 3 = Y at *
     split_ifs <;> omega
 
 /-- **The end of a pass.** -/
@@ -614,8 +601,6 @@ public lemma cEmit_inO : ComputableTidilyInO (fun s : CSt => gEmit s.1) eCSt enc
   all_goals
     have hL : (eCSt s).length + 1 ≤ ((eCSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
     dsimp only [eCSt] at *
-    generalize ((encPair eCtl (encPair encNat encUnary)) s).length = L at *
-    generalize (L + 1) ^ 3 = Y at *
     split_ifs <;> omega
 
 /-- Whether another pass follows: `g` has not halted. -/
@@ -627,8 +612,6 @@ public lemma cCont_inO : ComputableTidilyInO (fun s : CSt => s.1.1.1.2.state.isS
     (fun s => by
       have hL : (eCSt s).length + 1 ≤ ((eCSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
       dsimp only [eCSt] at *
-      generalize ((encPair eCtl (encPair encNat encUnary)) s).length = L at *
-      generalize (L + 1) ^ 3 = Y at *
       omega) fun s => by dsimp only [eCSt]; omega
 
 /-- **A round**: one bit of the countdown over the input. -/
@@ -812,7 +795,6 @@ public theorem computableTidily_compose {α γ : Type} {encIn : α ↪ List Bool
     have h₃ := Nat.pow_le_pow_left (Nat.add_le_add_right h₁ 1) 3
     have h₄ := Nat.pow_le_pow_left (Nat.add_le_add_right h₂ 1) 3
     refine (Nat.add_le_add (Nat.add_le_add h₃ h₃) h₄).trans ?_
-    generalize (L a + 1) ^ 3 = Y
     omega
   case refine_6 =>
     intro a i hi
