@@ -436,6 +436,38 @@ private meta def plainBuiltinEnvironment (env : Environment) : MetaM Environment
   unless matched.size == 1 do throwError "expected one builtin local-application rule"
   return searchRuleState ext env fun state => { state with unsafeRules := index }
 
+open Lean in
+/-- For each imported module, whether its import closure declares a raw-family constant. -/
+private meta def rawImportClosure (header : EnvironmentHeader) : Std.HashMap Name Bool := Id.run do
+  -- Imports are dependency-first. A theorem in a module with no raw-family declaration in
+  -- its import closure cannot hide one behind an alias: aliases cannot refer to later modules.
+  let mut rawModules : Std.HashMap Name Bool := {}
+  for i in [:header.moduleNames.size] do
+    let moduleName := header.moduleNames[i]!
+    let data := header.moduleData[i]!
+    let ownsRaw := data.constNames.any fun name =>
+      name.toString.startsWith "Turing.MultiTapeTM.ComputableTidily" ||
+        name.toString.startsWith "Turing.MultiTapeTM.ComputesTidily"
+    let importsRaw := data.imports.any fun imported => rawModules.getD imported.module true
+    rawModules := rawModules.insert moduleName (ownsRaw || importsRaw)
+  return rawModules
+
+open Lean in
+/-- The latest import list with its `rawImportClosure`. Scanning every imported constant name
+takes about half a second, and the import header is fixed while a file is elaborated. -/
+private meta initialize rawImportClosureCache : IO.Ref (Array Name × Std.HashMap Name Bool) ←
+  IO.mkRef (#[], {})
+
+open Lean in
+/-- `rawImportClosure`, computed once per import list rather than once per invocation. -/
+private meta def cachedRawImportClosure (header : EnvironmentHeader) :
+    BaseIO (Std.HashMap Name Bool) := do
+  let (moduleNames, rawModules) ← rawImportClosureCache.get
+  if moduleNames == header.moduleNames then return rawModules
+  let rawModules := rawImportClosure header
+  rawImportClosureCache.set (header.moduleNames, rawModules)
+  return rawModules
+
 open Lean Meta Mathlib.Meta.FunProp in
 /-- Prepare only immutable global declaration classifications, never proofs or local evidence. -/
 private meta def preparePlainRuleMemo : MetaM PlainRuleCache := do
@@ -453,18 +485,8 @@ private meta def preparePlainRuleMemo : MetaM PlainRuleCache := do
     for node in rules.theorems.tries do
       for rule in node.values do names := names.insert rule.thmName
       for (_, rule) in node.pending do names := names.insert rule.thmName
-  -- Imports are dependency-first. A theorem in a module with no raw-family declaration in
-  -- its import closure cannot hide one behind an alias: aliases cannot refer to later modules.
   -- Unknown module metadata remains conservative, and current-module rules are always checked.
-  let mut rawModules : Std.HashMap Name Bool := {}
-  for i in [:env.header.moduleNames.size] do
-    let moduleName := env.header.moduleNames[i]!
-    let data := env.header.moduleData[i]!
-    let ownsRaw := data.constNames.any fun name =>
-      name.toString.startsWith "Turing.MultiTapeTM.ComputableTidily" ||
-        name.toString.startsWith "Turing.MultiTapeTM.ComputesTidily"
-    let importsRaw := data.imports.any fun imported => rawModules.getD imported.module true
-    rawModules := rawModules.insert moduleName (ownsRaw || importsRaw)
+  let rawModules ← cachedRawImportClosure env.header
   let mut cache : Std.HashMap Name Bool := {}
   for name in names do
     let mayUseRaw := match env.getModuleIdxFor? name with
