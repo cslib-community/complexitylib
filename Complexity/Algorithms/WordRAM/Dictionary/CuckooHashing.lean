@@ -66,7 +66,7 @@ expected-amortized sequence theorem `cuckoo_seq_expected_amortized`.
      `PMF.uniformOfFinset E_t` (`unifOn_rehash_eq` and `loopExitPMF_map_eq_uniformOfFinset`),
      which is bounded by `2 * seedLaw c_exp n_max U M` via `rehash_prob_le_half`
      (`uniformOfFinset_le_two_mul_uniformOfFintype`).
-   - Whenever `U ≤ max n_max 4 ^ c_exp`, `isCuckooHashFamily_provable` discharges
+   - Whenever `U ≤ max n_max 4 ^ c_exp`, `isCuckooHashFamily_tableBits` discharges
      `IsCuckooHashFamily c_exp U n_max (tableBits n_max) (maxEvictions n_max) 3 4` unconditionally
      for every `n_max : ℕ` via `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_provableFamily`
      [PaghRodler2004, Thorup2013], yielding assumption-free `O_{c_exp}(1)` worst-case `get` cost
@@ -87,7 +87,7 @@ expected-amortized sequence theorem `cuckoo_seq_expected_amortized`.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.isCuckooHashFamily_provable`: unconditional
+* `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.isCuckooHashFamily_tableBits`: unconditional
   `IsCuckooHashFamily` instance (`C_walk = 3`, `C_reh = 4`) for every `n_max : ℕ` under
   `U ≤ max n_max 4 ^ c_exp`.
 * `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.getCode_execWithin`: worst-case deterministic
@@ -5857,12 +5857,13 @@ theorem cuckoo_span_exec {w base c_exp n_max U : ℕ}
   · exact h3
   · exact h4
 
-/-- **Unconditional Pagh–Rodler cuckoo hash family certificate (`C_walk = 3`, `C_reh = 4`):**
+/-- **Unconditional Pagh–Rodler cuckoo hash family certificate at `tableBits n_max` (`C_walk = 3`,
+`C_reh = 4`):**
 whenever `U ≤ max n_max 4 ^ c_exp`, the regime-switched Word-RAM cuckoo hash pair (`KWise`
 below `doubleTabThreshold c_exp`, `DoubleTabulation` at or above `doubleTabThreshold c_exp`)
 satisfies `IsCuckooHashFamily c_exp U n_max (tableBits n_max) (maxEvictions n_max) 3 4` for
 **every** capacity `n_max : ℕ` (`[PaghRodler2004]`, `[Thorup2013]`). -/
-theorem isCuckooHashFamily_provable {c_exp U n_max : ℕ}
+theorem isCuckooHashFamily_tableBits {c_exp U n_max : ℕ}
     (hU : U ≤ max n_max 4 ^ c_exp) :
     IsCuckooHashFamily c_exp U n_max (tableBits n_max) (maxEvictions n_max) 3 4 :=
   Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_provableFamily
@@ -6105,7 +6106,7 @@ noncomputable def subroutineDS (w base c_exp n_max U V : ℕ)
     (setup_exec := fun hx₁ hb hfr hpar hz =>
       initSetup_coupled_spec hx₁ hb hfr hpar hz hw hfit_ev hfit_U)
     (step_exec := fun {_s} o ν hv hseed hsupp =>
-      opCode_coupled_step_spec o ν (isCuckooHashFamily_provable hU).rehash_prob_le_half
+      opCode_coupled_step_spec o ν (isCuckooHashFamily_tableBits hU).rehash_prob_le_half
         hv hseed hsupp hw hfit_end hfit_ev hfit_V)
 
 /-- Standard-basis (`Basis.standard`) randomized `SubroutineDS` certificate for Pagh–Rodler cuckoo
@@ -6152,7 +6153,7 @@ private theorem cuckoo_steps_expected_amortized (w base c_exp n_max U V : ℕ)
         ((Dictionary.spec U V n_max).totalCost (expectedOpCharge c_exp) s ops : ℝ≥0∞) := by
   classical
   intro C
-  have hfam := isCuckooHashFamily_provable hU
+  have hfam := isCuckooHashFamily_tableBits hU
   have hd_pos : 0 < Probability.trinomialDeg U (tableBits n_max) :=
     lt_of_lt_of_le (tableBits_pos n_max) (Probability.le_trinomialDeg U (tableBits n_max))
   have hfit_q : Fits w (2 ^ Probability.trinomialDeg U (tableBits n_max)) :=

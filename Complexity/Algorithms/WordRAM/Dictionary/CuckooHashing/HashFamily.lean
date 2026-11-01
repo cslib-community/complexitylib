@@ -944,35 +944,34 @@ theorem thirtyEight_le_cuckooK (n_max : ℕ) : 38 ≤ cuckooK n_max := by
 
 open Cslib.DataStructure.HashFamily.WordRAM
 
-/-- Regime-indexed seed space for the unconditional cuckoo hash pair:
-- When `reg = true` (`n_max < doubleTabThreshold c_exp`), two independent
-  `(2 * maxEvictions n_max + 2)`-wise independent trinomial polynomial seeds
-  `Fin k → Fin (2 ^ (2 * 3 ^ trinomialStep U M))`.
-- When `reg = false` (`doubleTabThreshold c_exp ≤ n_max`), two independent double-tabulation seed
-  pairs `DoubleTabTopSeed c d b × DoubleTabBotSeed d b M` with
+/-- Regime-indexed seed space for a single regime-switched hash block (`h₁` or `h₂`):
+- When `reg = true` (`n_max < doubleTabThreshold c_exp`), a
+  `(2 * maxEvictions n_max + 2)`-wise independent trinomial polynomial seed
+  `Fin (cuckooK n_max) → Fin (2 ^ trinomialDeg U M)`.
+- When `reg = false` (`doubleTabThreshold c_exp ≤ n_max`), a double-tabulation seed pair
+  `DoubleTabTopSeed c d b × DoubleTabBotSeed d b M` with
   `c = DoubleTabulation.provableC c_exp`, `d = DoubleTabulation.provableD c_exp`, and
   `b = DoubleTabulation.provableB n_max`. -/
 @[expose]
-def SeedAux (reg : Bool) (c_exp n_max U M : ℕ) : Type :=
+def SingleSeedAux (reg : Bool) (c_exp n_max U M : ℕ) : Type :=
   match reg with
-  | true =>
-    let k := 2 * maxEvictions n_max + 2
-    (Fin k → Fin (2 ^ (2 * 3 ^ trinomialStep U M))) ×
-      (Fin k → Fin (2 ^ (2 * 3 ^ trinomialStep U M)))
+  | true => Fin (cuckooK n_max) → Fin (2 ^ trinomialDeg U M)
   | false =>
-    let c := DoubleTabulation.provableC c_exp
-    let d := DoubleTabulation.provableD c_exp
-    let b := DoubleTabulation.provableB n_max
-    (DoubleTabTopSeed c d b × DoubleTabBotSeed d b M) ×
-      (DoubleTabTopSeed c d b × DoubleTabBotSeed d b M)
+    DoubleTabTopSeed (DoubleTabulation.provableC c_exp)
+      (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) ×
+    DoubleTabBotSeed (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) M
+
+/-- Seed type for a single regime-switched hash block (`h₁` or `h₂`). -/
+abbrev SingleSeed (c_exp n_max U M : ℕ) : Type :=
+  SingleSeedAux (decide (n_max < doubleTabThreshold c_exp)) c_exp n_max U M
 
 instance (reg : Bool) (c_exp n_max U M : ℕ) :
-    Fintype (SeedAux reg c_exp n_max U M) := by
-  cases reg <;> dsimp [SeedAux] <;> infer_instance
+    Fintype (SingleSeedAux reg c_exp n_max U M) := by
+  cases reg <;> dsimp [SingleSeedAux] <;> infer_instance
 
 instance (reg : Bool) (c_exp n_max U M : ℕ) :
-    Nonempty (SeedAux reg c_exp n_max U M) := by
-  cases reg <;> dsimp [SeedAux] <;> infer_instance
+    Nonempty (SingleSeedAux reg c_exp n_max U M) := by
+  cases reg <;> dsimp [SingleSeedAux] <;> infer_instance
 
 instance (c d b : ℕ) : DecidableEq (DoubleTabTopSeed c d b) :=
   inferInstanceAs (DecidableEq (Fin c → Fin d → Fin (2 ^ b) → Fin (2 ^ b)))
@@ -981,30 +980,40 @@ instance (d b M : ℕ) : DecidableEq (DoubleTabBotSeed d b M) :=
   inferInstanceAs (DecidableEq (Fin d → Fin (2 ^ b) → Fin (2 ^ M)))
 
 instance (reg : Bool) (c_exp n_max U M : ℕ) :
-    DecidableEq (SeedAux reg c_exp n_max U M) := by
-  cases reg <;> dsimp [SeedAux] <;> infer_instance
+    DecidableEq (SingleSeedAux reg c_exp n_max U M) := by
+  cases reg <;> dsimp [SingleSeedAux] <;> infer_instance
+
+/-- Regime-indexed deterministic evaluation of a single hash block (`h₁` or `h₂`). -/
+@[expose]
+noncomputable def evalSingleAux (reg : Bool) (c_exp n_max U M : ℕ) :
+    SingleSeedAux reg c_exp n_max U M → Fin U → Fin (2 ^ M) :=
+  match reg with
+  | true => fun θ u => trinomialPolyHash (trinomialStep U M) (cuckooK n_max) U M θ u
+  | false => fun θ u =>
+    doubleTabHash (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
+      (DoubleTabulation.provableB n_max) U M θ.1 θ.2 u
+
+/-- Deterministic evaluation of a single regime-switched hash block (`h₁` or `h₂`). -/
+@[expose]
+noncomputable def evalSingle (c_exp n_max U M : ℕ) :
+    SingleSeed c_exp n_max U M → Fin U → Fin (2 ^ M) :=
+  evalSingleAux (decide (n_max < doubleTabThreshold c_exp)) c_exp n_max U M
+
+/-- Regime-indexed seed space for the unconditional cuckoo hash pair `(h₁, h₂)`. -/
+abbrev SeedAux (reg : Bool) (c_exp n_max U M : ℕ) : Type :=
+  SingleSeedAux reg c_exp n_max U M × SingleSeedAux reg c_exp n_max U M
 
 /-- Regime-indexed first cuckoo hash function. -/
 @[expose]
 noncomputable def evalHash1Aux (reg : Bool) (c_exp n_max U M : ℕ) :
     SeedAux reg c_exp n_max U M → Fin U → Fin (2 ^ M) :=
-  match reg with
-  | true => fun (seed₁, _) =>
-    trinomialPolyHash (trinomialStep U M) (2 * maxEvictions n_max + 2) U M seed₁
-  | false => fun ((top₁, bottom₁), _) =>
-    doubleTabHash (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
-      (DoubleTabulation.provableB n_max) U M top₁ bottom₁
+  fun θ => evalSingleAux reg c_exp n_max U M θ.1
 
 /-- Regime-indexed second cuckoo hash function. -/
 @[expose]
 noncomputable def evalHash2Aux (reg : Bool) (c_exp n_max U M : ℕ) :
     SeedAux reg c_exp n_max U M → Fin U → Fin (2 ^ M) :=
-  match reg with
-  | true => fun (_, seed₂) =>
-    trinomialPolyHash (trinomialStep U M) (2 * maxEvictions n_max + 2) U M seed₂
-  | false => fun (_, (top₂, bottom₂)) =>
-    doubleTabHash (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
-      (DoubleTabulation.provableB n_max) U M top₂ bottom₂
+  fun θ => evalSingleAux reg c_exp n_max U M θ.2
 
 /-- Seed space for the regime-switched cuckoo hash pair (`trinomialPolyHash` below
 `doubleTabThreshold c_exp`, `doubleTabHash` at or above `doubleTabThreshold c_exp`). -/
@@ -1020,13 +1029,13 @@ noncomputable def seedLaw (c_exp n_max U M : ℕ) : PMF (Seed c_exp n_max U M) :
 @[expose]
 noncomputable def evalHash1 {c_exp n_max U M : ℕ} :
     Seed c_exp n_max U M → Fin U → Fin (2 ^ M) :=
-  evalHash1Aux (decide (n_max < doubleTabThreshold c_exp)) c_exp n_max U M
+  fun θ => evalSingle c_exp n_max U M θ.1
 
 /-- Second cuckoo hash function `h₂(u)` of the regime-switched cuckoo hash pair. -/
 @[expose]
 noncomputable def evalHash2 {c_exp n_max U M : ℕ} :
     Seed c_exp n_max U M → Fin U → Fin (2 ^ M) :=
-  evalHash2Aux (decide (n_max < doubleTabThreshold c_exp)) c_exp n_max U M
+  fun θ => evalSingle c_exp n_max U M θ.2
 
 /-- **General cuckoo hash pair interface (`IsCuckooHashPair`)**:
 an original strengthened sufficient assumption bundle inspired by Pagh and Rodler [PaghRodler2004]
@@ -1298,27 +1307,53 @@ def HashPairTableRep (hashBase c_exp n_max U M : ℕ) (mem : ℕ → ℕ) : Prop
   SingleTableRep hashBase c_exp n_max U M mem ∧
   SingleTableRep (hash2Base hashBase c_exp n_max) c_exp n_max U M mem
 
+/-- Regime-indexed seed representation for a single hash block at `base`. -/
+@[expose]
+def SingleSeedRepAux (reg : Bool) (base c_exp n_max U M : ℕ) :
+    SingleSeedAux reg c_exp n_max U M → (ℕ → ℕ) → Prop :=
+  match reg with
+  | true => fun θ mem => KWise.SeedRep base U M (cuckooK n_max) θ mem
+  | false => fun θ mem =>
+    DoubleTabulation.SeedRep base
+      (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
+      (DoubleTabulation.provableB n_max) M θ mem
+
+/-- Seed representation for a single regime-switched hash block at `base`. -/
+@[expose]
+def SingleSeedRep (base c_exp n_max U M : ℕ)
+    (θ : SingleSeed c_exp n_max U M) (mem : ℕ → ℕ) : Prop :=
+  SingleSeedRepAux (decide (n_max < doubleTabThreshold c_exp)) base c_exp n_max U M θ mem
+
+/-- Regime-indexed seed extraction for a single hash block at `base`. -/
+@[expose]
+def extractSingleSeedAux (reg : Bool) (base c_exp n_max U M : ℕ) (mem : ℕ → ℕ) :
+    SingleSeedAux reg c_exp n_max U M :=
+  match reg with
+  | true => KWise.extractSeeds base U M (cuckooK n_max) mem
+  | false =>
+    DoubleTabulation.extractSeed base
+      (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
+      (DoubleTabulation.provableB n_max) M mem
+
+/-- Extract the seed of a single regime-switched hash block at `base`. -/
+@[expose]
+def extractSingleSeed (base c_exp n_max U M : ℕ) (mem : ℕ → ℕ) :
+    SingleSeed c_exp n_max U M :=
+  extractSingleSeedAux (decide (n_max < doubleTabThreshold c_exp)) base c_exp n_max U M mem
+
 /-- Regime-indexed seed representation for the two-block hash pair at `hashBase`. -/
 @[expose]
-def HashPairSeedRepAux (reg : Bool) (hashBase c_exp n_max U M : ℕ) :
-    SeedAux reg c_exp n_max U M → (ℕ → ℕ) → Prop :=
-  match reg with
-  | true => fun (θ₁, θ₂) mem =>
-    KWise.SeedRep hashBase U M (cuckooK n_max) θ₁ mem ∧
-    KWise.SeedRep (hash2Base hashBase c_exp n_max) U M (cuckooK n_max) θ₂ mem
-  | false => fun (θ₁, θ₂) mem =>
-    DoubleTabulation.SeedRep hashBase
-      (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
-      (DoubleTabulation.provableB n_max) M θ₁ mem ∧
-    DoubleTabulation.SeedRep (hash2Base hashBase c_exp n_max)
-      (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
-      (DoubleTabulation.provableB n_max) M θ₂ mem
+def HashPairSeedRepAux (reg : Bool) (hashBase c_exp n_max U M : ℕ)
+    (θ : SeedAux reg c_exp n_max U M) (mem : ℕ → ℕ) : Prop :=
+  SingleSeedRepAux reg hashBase c_exp n_max U M θ.1 mem ∧
+  SingleSeedRepAux reg (hash2Base hashBase c_exp n_max) c_exp n_max U M θ.2 mem
 
 /-- Seed representation invariant for `θ : Seed c_exp n_max U M` at `hashBase`. -/
 @[expose]
 def HashPairSeedRep (hashBase c_exp n_max U M : ℕ)
     (θ : Seed c_exp n_max U M) (mem : ℕ → ℕ) : Prop :=
-  HashPairSeedRepAux (decide (n_max < doubleTabThreshold c_exp)) hashBase c_exp n_max U M θ mem
+  SingleSeedRep hashBase c_exp n_max U M θ.1 mem ∧
+  SingleSeedRep (hash2Base hashBase c_exp n_max) c_exp n_max U M θ.2 mem
 
 /-- Full representation invariant for the hash pair `(h₁, h₂)` at `hashBase`. -/
 @[expose]
@@ -1331,22 +1366,14 @@ def HashPairRep (hashBase c_exp n_max U M : ℕ)
 @[expose]
 def extractSeedAux (reg : Bool) (hashBase c_exp n_max U M : ℕ) (mem : ℕ → ℕ) :
     SeedAux reg c_exp n_max U M :=
-  match reg with
-  | true =>
-    (KWise.extractSeeds hashBase U M (cuckooK n_max) mem,
-     KWise.extractSeeds (hash2Base hashBase c_exp n_max) U M (cuckooK n_max) mem)
-  | false =>
-    (DoubleTabulation.extractSeed hashBase
-      (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
-      (DoubleTabulation.provableB n_max) M mem,
-     DoubleTabulation.extractSeed (hash2Base hashBase c_exp n_max)
-      (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
-      (DoubleTabulation.provableB n_max) M mem)
+  (extractSingleSeedAux reg hashBase c_exp n_max U M mem,
+   extractSingleSeedAux reg (hash2Base hashBase c_exp n_max) c_exp n_max U M mem)
 
 /-- Extract the full cuckoo hash seed `Seed c_exp n_max U M` from memory at `hashBase`. -/
 @[expose]
 def extractSeed (hashBase c_exp n_max U M : ℕ) (mem : ℕ → ℕ) : Seed c_exp n_max U M :=
-  extractSeedAux (decide (n_max < doubleTabThreshold c_exp)) hashBase c_exp n_max U M mem
+  (extractSingleSeed hashBase c_exp n_max U M mem,
+   extractSingleSeed (hash2Base hashBase c_exp n_max) c_exp n_max U M mem)
 
 private theorem extractSeeds_eq_of_seedRep {base U M k : ℕ}
     {c : Fin k → Fin (2 ^ trinomialDeg U M)} {mem : ℕ → ℕ}
@@ -1374,15 +1401,22 @@ private theorem extractSeed_eq_of_doubleTabSeedRep {base c d b M : ℕ}
     rw [DoubleTabulation.extractBot_apply, h2 j y,
       Tabulation.extractWord_val_of_lt (T₂ j y).isLt]
 
+theorem extractSingleSeed_eq_of_SingleSeedRep {base c_exp n_max U M : ℕ}
+    {θ : SingleSeed c_exp n_max U M} {mem : ℕ → ℕ}
+    (hseed : SingleSeedRep base c_exp n_max U M θ mem) :
+    extractSingleSeed base c_exp n_max U M mem = θ := by
+  unfold SingleSeed extractSingleSeed SingleSeedRep at *
+  revert θ hseed
+  cases decide (n_max < doubleTabThreshold c_exp) <;> intro θ hseed
+  · exact extractSeed_eq_of_doubleTabSeedRep hseed
+  · exact extractSeeds_eq_of_seedRep hseed
+
 theorem extractSeed_eq_of_HashPairSeedRep {hashBase c_exp n_max U M : ℕ}
     {θ : Seed c_exp n_max U M} {mem : ℕ → ℕ}
     (hseed : HashPairSeedRep hashBase c_exp n_max U M θ mem) :
-    extractSeed hashBase c_exp n_max U M mem = θ := by
-  unfold Seed extractSeed HashPairSeedRep at *
-  revert θ hseed
-  cases decide (n_max < doubleTabThreshold c_exp) <;> intro ⟨θ₁, θ₂⟩ ⟨h1, h2⟩
-  · exact Prod.ext (extractSeed_eq_of_doubleTabSeedRep h1) (extractSeed_eq_of_doubleTabSeedRep h2)
-  · exact Prod.ext (extractSeeds_eq_of_seedRep h1) (extractSeeds_eq_of_seedRep h2)
+    extractSeed hashBase c_exp n_max U M mem = θ :=
+  Prod.ext (extractSingleSeed_eq_of_SingleSeedRep hseed.1)
+    (extractSingleSeed_eq_of_SingleSeedRep hseed.2)
 
 theorem SingleTableRep.congr_of_footprint {base c_exp n_max U M : ℕ} {mem mem' : ℕ → ℕ}
     (htab : SingleTableRep base c_exp n_max U M mem)
@@ -1459,35 +1493,38 @@ private theorem kwiseSeedRep_congr_of_footprint {base U M k : ℕ}
     KWise.SeedRep base U M k c mem' :=
   fun j => (hm (base + 8 + j.val) (by omega) (by have := j.isLt; omega)).trans (hseed j)
 
-theorem HashPairSeedRep.congr_of_footprint {hashBase c_exp n_max U M : ℕ}
-    {θ : Seed c_exp n_max U M} {mem mem' : ℕ → ℕ}
-    (hseed : HashPairSeedRep hashBase c_exp n_max U M θ mem)
-    (hm : ∀ a, hashBase ≤ a → a < hashBase + hashPairSpace c_exp n_max → mem' a = mem a) :
-    HashPairSeedRep hashBase c_exp n_max U M θ mem' := by
-  unfold Seed HashPairSeedRep at *
+theorem SingleSeedRep.congr_of_footprint {base c_exp n_max U M : ℕ}
+    {θ : SingleSeed c_exp n_max U M} {mem mem' : ℕ → ℕ}
+    (hseed : SingleSeedRep base c_exp n_max U M θ mem)
+    (hm : ∀ a, base ≤ a → a < base + singleHashSpace c_exp n_max → mem' a = mem a) :
+    SingleSeedRep base c_exp n_max U M θ mem' := by
+  unfold SingleSeed SingleSeedRep at *
   revert θ hseed
-  cases h : decide (n_max < doubleTabThreshold c_exp) <;> intro ⟨θ₁, θ₂⟩ ⟨h1, h2⟩
+  cases h : decide (n_max < doubleTabThreshold c_exp) <;> intro θ hseed
   · have hge : ¬ (n_max < doubleTabThreshold c_exp) := of_decide_eq_false h
     have hsp : singleHashSpace c_exp n_max =
         DoubleTabulation.space (DoubleTabulation.provableC c_exp)
           (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
       simp [singleHashSpace, DoubleTabulation.provableSpace, hge]
-    exact ⟨h1.congr_mem (fun a ha1 ha2 =>
-        hm a ha1 (by dsimp only [hashPairSpace]; omega)),
-      h2.congr_mem (fun a ha1 ha2 =>
-        hm a (by dsimp only [hash2Base] at ha1; omega)
-          (by dsimp only [hash2Base, hashPairSpace] at ha2 ⊢; omega))⟩
+    exact hseed.congr_mem (fun a ha1 ha2 => hm a ha1 (by omega))
   · have hlt : n_max < doubleTabThreshold c_exp := of_decide_eq_true h
     have hsp : singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
       simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
     have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
     have hkw : KWise.space n_max (cuckooK n_max) =
         8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
-    exact ⟨kwiseSeedRep_congr_of_footprint h1 (fun a ha1 ha2 =>
-        hm a ha1 (by dsimp only [hashPairSpace]; omega)),
-      kwiseSeedRep_congr_of_footprint h2 (fun a ha1 ha2 =>
-        hm a (by dsimp only [hash2Base] at ha1; omega)
-          (by dsimp only [hash2Base, hashPairSpace] at ha2 ⊢; omega))⟩
+    exact kwiseSeedRep_congr_of_footprint hseed (fun a ha1 ha2 => hm a ha1 (by omega))
+
+theorem HashPairSeedRep.congr_of_footprint {hashBase c_exp n_max U M : ℕ}
+    {θ : Seed c_exp n_max U M} {mem mem' : ℕ → ℕ}
+    (hseed : HashPairSeedRep hashBase c_exp n_max U M θ mem)
+    (hm : ∀ a, hashBase ≤ a → a < hashBase + hashPairSpace c_exp n_max → mem' a = mem a) :
+    HashPairSeedRep hashBase c_exp n_max U M θ mem' :=
+  ⟨hseed.1.congr_of_footprint (fun a ha1 ha2 =>
+    hm a ha1 (by dsimp only [hashPairSpace]; omega)),
+   hseed.2.congr_of_footprint (fun a ha1 ha2 =>
+    hm a (by dsimp only [hash2Base] at ha1; omega)
+      (by dsimp only [hash2Base, hashPairSpace] at ha2 ⊢; omega))⟩
 
 theorem HashPairRep.congr_of_footprint {hashBase c_exp n_max U M : ℕ}
     {θ : Seed c_exp n_max U M} {mem mem' : ℕ → ℕ}
@@ -1510,36 +1547,34 @@ private theorem extractSeeds_congr_of_footprint {base U M k : ℕ} {mem mem' : �
   dsimp only [KWise.extractSeeds, Tabulation.extractSlice]
   rw [hm (base + 8 + j.val) (by omega) (by have := j.isLt; omega)]
 
-theorem extractSeed_congr_of_footprint {hashBase c_exp n_max U M : ℕ} {mem mem' : ℕ → ℕ}
-    (hm : ∀ a, hashBase ≤ a → a < hashBase + hashPairSpace c_exp n_max → mem' a = mem a) :
-    extractSeed hashBase c_exp n_max U M mem' = extractSeed hashBase c_exp n_max U M mem := by
-  unfold Seed extractSeed
+theorem extractSingleSeed_congr_of_footprint {base c_exp n_max U M : ℕ} {mem mem' : ℕ → ℕ}
+    (hm : ∀ a, base ≤ a → a < base + singleHashSpace c_exp n_max → mem' a = mem a) :
+    extractSingleSeed base c_exp n_max U M mem' = extractSingleSeed base c_exp n_max U M mem := by
+  unfold SingleSeed extractSingleSeed
   cases h : decide (n_max < doubleTabThreshold c_exp)
   · have hge : ¬ (n_max < doubleTabThreshold c_exp) := of_decide_eq_false h
     have hsp : singleHashSpace c_exp n_max =
         DoubleTabulation.space (DoubleTabulation.provableC c_exp)
           (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
       simp [singleHashSpace, DoubleTabulation.provableSpace, hge]
-    dsimp only [extractSeedAux]
-    exact Prod.ext
-      (DoubleTabulation.extractSeed_congr_mem (fun a ha1 ha2 =>
-        hm a ha1 (by dsimp only [hashPairSpace]; omega)))
-      (DoubleTabulation.extractSeed_congr_mem (fun a ha1 ha2 =>
-        hm a (by dsimp only [hash2Base] at ha1; omega)
-          (by dsimp only [hash2Base, hashPairSpace] at ha2 ⊢; omega)))
+    exact DoubleTabulation.extractSeed_congr_mem (fun a ha1 ha2 => hm a ha1 (by omega))
   · have hlt : n_max < doubleTabThreshold c_exp := of_decide_eq_true h
     have hsp : singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
       simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
     have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
     have hkw : KWise.space n_max (cuckooK n_max) =
-        8 + (2 * maxEvictions n_max + 2) + 2 ^ (2 * KWise.chunkBits n_max) := rfl
-    dsimp only [extractSeedAux]
-    exact Prod.ext
-      (extractSeeds_congr_of_footprint (fun a ha1 ha2 =>
-        hm a ha1 (by dsimp only [hashPairSpace]; omega)))
-      (extractSeeds_congr_of_footprint (fun a ha1 ha2 =>
-        hm a (by dsimp only [hash2Base] at ha1; omega)
-          (by dsimp only [hash2Base, hashPairSpace] at ha2 ⊢; omega)))
+        8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
+    exact extractSeeds_congr_of_footprint (fun a ha1 ha2 => hm a ha1 (by omega))
+
+theorem extractSeed_congr_of_footprint {hashBase c_exp n_max U M : ℕ} {mem mem' : ℕ → ℕ}
+    (hm : ∀ a, hashBase ≤ a → a < hashBase + hashPairSpace c_exp n_max → mem' a = mem a) :
+    extractSeed hashBase c_exp n_max U M mem' = extractSeed hashBase c_exp n_max U M mem :=
+  Prod.ext
+    (extractSingleSeed_congr_of_footprint (fun a ha1 ha2 =>
+      hm a ha1 (by dsimp only [hashPairSpace]; omega)))
+    (extractSingleSeed_congr_of_footprint (fun a ha1 ha2 =>
+      hm a (by dsimp only [hash2Base] at ha1; omega)
+        (by dsimp only [hash2Base, hashPairSpace] at ha2 ⊢; omega)))
 
 theorem extractSeed_congr_of_ge_hashBase {hashBase c_exp n_max U M : ℕ} {mem mem' : ℕ → ℕ}
     (hm : ∀ a, hashBase ≤ a → mem' a = mem a) :
@@ -1769,114 +1804,6 @@ theorem initTableHashPairCode_execWithin {w hashBase c_exp n_max U M : ℕ} {x :
     unfold HashPairTableRep SingleTableRep
     rw [decide_eq_false hlt]
     exact ⟨trivial, trivial⟩
-
-/-- Regime-indexed seed type for a single hash block (`h₁` or `h₂`). -/
-@[expose]
-def SingleSeedAux (reg : Bool) (c_exp n_max U M : ℕ) : Type :=
-  match reg with
-  | true => Fin (cuckooK n_max) → Fin (2 ^ trinomialDeg U M)
-  | false =>
-    DoubleTabTopSeed (DoubleTabulation.provableC c_exp)
-      (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) ×
-    DoubleTabBotSeed (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) M
-
-/-- Seed type for a single regime-switched hash block (`h₁` or `h₂`). -/
-abbrev SingleSeed (c_exp n_max U M : ℕ) : Type :=
-  SingleSeedAux (decide (n_max < doubleTabThreshold c_exp)) c_exp n_max U M
-
-instance (reg : Bool) (c_exp n_max U M : ℕ) :
-    Fintype (SingleSeedAux reg c_exp n_max U M) := by
-  cases reg <;> dsimp [SingleSeedAux] <;> infer_instance
-
-instance (reg : Bool) (c_exp n_max U M : ℕ) :
-    Nonempty (SingleSeedAux reg c_exp n_max U M) := by
-  cases reg <;> dsimp [SingleSeedAux] <;> infer_instance
-
-/-- Regime-indexed seed representation for a single hash block at `base`. -/
-@[expose]
-def SingleSeedRepAux (reg : Bool) (base c_exp n_max U M : ℕ) :
-    SingleSeedAux reg c_exp n_max U M → (ℕ → ℕ) → Prop :=
-  match reg with
-  | true => fun θ mem => KWise.SeedRep base U M (cuckooK n_max) θ mem
-  | false => fun θ mem =>
-    DoubleTabulation.SeedRep base
-      (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
-      (DoubleTabulation.provableB n_max) M θ mem
-
-/-- Seed representation for a single regime-switched hash block at `base`. -/
-@[expose]
-def SingleSeedRep (base c_exp n_max U M : ℕ)
-    (θ : SingleSeed c_exp n_max U M) (mem : ℕ → ℕ) : Prop :=
-  SingleSeedRepAux (decide (n_max < doubleTabThreshold c_exp)) base c_exp n_max U M θ mem
-
-/-- Regime-indexed seed extraction for a single hash block at `base`. -/
-@[expose]
-def extractSingleSeedAux (reg : Bool) (base c_exp n_max U M : ℕ) (mem : ℕ → ℕ) :
-    SingleSeedAux reg c_exp n_max U M :=
-  match reg with
-  | true => KWise.extractSeeds base U M (cuckooK n_max) mem
-  | false =>
-    DoubleTabulation.extractSeed base
-      (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
-      (DoubleTabulation.provableB n_max) M mem
-
-/-- Extract the seed of a single regime-switched hash block at `base`. -/
-@[expose]
-def extractSingleSeed (base c_exp n_max U M : ℕ) (mem : ℕ → ℕ) :
-    SingleSeed c_exp n_max U M :=
-  extractSingleSeedAux (decide (n_max < doubleTabThreshold c_exp)) base c_exp n_max U M mem
-
-theorem SingleSeedRep.congr_of_footprint {base c_exp n_max U M : ℕ}
-    {θ : SingleSeed c_exp n_max U M} {mem mem' : ℕ → ℕ}
-    (hseed : SingleSeedRep base c_exp n_max U M θ mem)
-    (hm : ∀ a, base ≤ a → a < base + singleHashSpace c_exp n_max → mem' a = mem a) :
-    SingleSeedRep base c_exp n_max U M θ mem' := by
-  unfold SingleSeed SingleSeedRep at *
-  revert θ hseed
-  cases h : decide (n_max < doubleTabThreshold c_exp) <;> intro θ hseed
-  · have hge : ¬ (n_max < doubleTabThreshold c_exp) := of_decide_eq_false h
-    have hsp : singleHashSpace c_exp n_max =
-        DoubleTabulation.space (DoubleTabulation.provableC c_exp)
-          (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
-      simp [singleHashSpace, DoubleTabulation.provableSpace, hge]
-    exact hseed.congr_mem (fun a ha1 ha2 => hm a ha1 (by omega))
-  · have hlt : n_max < doubleTabThreshold c_exp := of_decide_eq_true h
-    have hsp : singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
-      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
-    have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
-    have hkw : KWise.space n_max (cuckooK n_max) =
-        8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
-    exact kwiseSeedRep_congr_of_footprint hseed (fun a ha1 ha2 => hm a ha1 (by omega))
-
-theorem extractSingleSeed_congr_of_footprint {base c_exp n_max U M : ℕ} {mem mem' : ℕ → ℕ}
-    (hm : ∀ a, base ≤ a → a < base + singleHashSpace c_exp n_max → mem' a = mem a) :
-    extractSingleSeed base c_exp n_max U M mem' = extractSingleSeed base c_exp n_max U M mem := by
-  unfold SingleSeed extractSingleSeed
-  cases h : decide (n_max < doubleTabThreshold c_exp)
-  · have hge : ¬ (n_max < doubleTabThreshold c_exp) := of_decide_eq_false h
-    have hsp : singleHashSpace c_exp n_max =
-        DoubleTabulation.space (DoubleTabulation.provableC c_exp)
-          (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
-      simp [singleHashSpace, DoubleTabulation.provableSpace, hge]
-    exact DoubleTabulation.extractSeed_congr_mem (fun a ha1 ha2 => hm a ha1 (by omega))
-  · have hlt : n_max < doubleTabThreshold c_exp := of_decide_eq_true h
-    have hsp : singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
-      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
-    have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
-    have hkw : KWise.space n_max (cuckooK n_max) =
-        8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
-    exact extractSeeds_congr_of_footprint (fun a ha1 ha2 => hm a ha1 (by omega))
-
-private theorem hashPairSeedRep_extractSeed_of_single {hashBase c_exp n_max U M : ℕ}
-    {mem : ℕ → ℕ}
-    (h1 : SingleSeedRep hashBase c_exp n_max U M
-      (extractSingleSeed hashBase c_exp n_max U M mem) mem)
-    (h2 : SingleSeedRep (hash2Base hashBase c_exp n_max) c_exp n_max U M
-      (extractSingleSeed (hash2Base hashBase c_exp n_max) c_exp n_max U M mem) mem) :
-    HashPairSeedRep hashBase c_exp n_max U M (extractSeed hashBase c_exp n_max U M mem) mem := by
-  unfold HashPairSeedRep extractSeed SingleSeedRep extractSingleSeed at *
-  revert h1 h2
-  cases decide (n_max < doubleTabThreshold c_exp) <;> intro h1 h2 <;> exact ⟨h1, h2⟩
 
 /-- Shifts `reg 0` (`base`) forward by `singleHashSpace c_exp n_max` (`hashBase → hash2Base`)
 using scratch register `15`. -/
@@ -2211,7 +2138,7 @@ theorem mem_support_resampleHashPairComp {hashBase c_exp n_max U M : ℕ} {x : D
     rw [hextract1_eq]
     exact hseed1_z1.congr_of_footprint hframe_block1
   refine ⟨by dsimp only [resampleHashPairSteps]; omega, hz2_0,
-    ⟨⟨htab1_z2, htab2_z2⟩, hashPairSeedRep_extractSeed_of_single hseed1_z2 hseed2_z2⟩,
+    ⟨⟨htab1_z2, htab2_z2⟩, ⟨hseed1_z2, hseed2_z2⟩⟩,
     fun a ha => ?_⟩
   have ha2 : a < hash2Base hashBase c_exp n_max ∨
       hash2Base hashBase c_exp n_max + singleHashSpace c_exp n_max ≤ a := by
@@ -2325,19 +2252,6 @@ private theorem map_pair_extractSingleSeed_eval_resampleHashPairComp
   rw [hbind, map_extractSingleSeed_eval_resampleSingleComp,
     DoubleTabulation.uniformOfFintype_bind_prodMk]
 
-private theorem map_extractSeedAux_eval_resampleHashPairComp (reg : Bool)
-    {hashBase c_exp n_max U M : ℕ} {x : Data 19}
-    (h : ((resampleHashPairComp hashBase c_exp n_max U M x).eval).map
-      (fun z : Data 19 × ℕ =>
-        (extractSingleSeedAux reg hashBase c_exp n_max U M z.1.mem,
-         extractSingleSeedAux reg (hash2Base hashBase c_exp n_max) c_exp n_max U M z.1.mem)) =
-      PMF.uniformOfFintype (SingleSeedAux reg c_exp n_max U M ×
-        SingleSeedAux reg c_exp n_max U M)) :
-    ((resampleHashPairComp hashBase c_exp n_max U M x).eval).map
-      (fun z => extractSeedAux reg hashBase c_exp n_max U M z.1.mem) =
-      PMF.uniformOfFintype (SeedAux reg c_exp n_max U M) := by
-  cases reg <;> exact h
-
 /-- **Exact uniformity of `resampleHashPairComp`**: the extracted seed
 `extractSeed hashBase c_exp n_max U M z.1.mem` is distributed according to
 `seedLaw c_exp n_max U M`. -/
@@ -2345,80 +2259,7 @@ theorem map_extractSeed_eval_resampleHashPairComp {hashBase c_exp n_max U M : �
     (htab : HashPairTableRep hashBase c_exp n_max U M x.mem) (h0 : x.regs 0 = hashBase) :
     ((resampleHashPairComp hashBase c_exp n_max U M x).eval).map
       (fun z => extractSeed hashBase c_exp n_max U M z.1.mem) = seedLaw c_exp n_max U M :=
-  map_extractSeedAux_eval_resampleHashPairComp (decide (n_max < doubleTabThreshold c_exp))
-    (map_pair_extractSingleSeed_eval_resampleHashPairComp htab h0)
-
-/-- Regime-indexed deterministic evaluation of a single hash block (`h₁` or `h₂`). -/
-@[expose]
-noncomputable def evalSingleAux (reg : Bool) (c_exp n_max U M : ℕ) :
-    SingleSeedAux reg c_exp n_max U M → Fin U → Fin (2 ^ M) :=
-  match reg with
-  | true => fun θ u => trinomialPolyHash (trinomialStep U M) (cuckooK n_max) U M θ u
-  | false => fun θ u =>
-    doubleTabHash (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
-      (DoubleTabulation.provableB n_max) U M θ.1 θ.2 u
-
-/-- Deterministic evaluation of a single regime-switched hash block (`h₁` or `h₂`). -/
-@[expose]
-noncomputable def evalSingle (c_exp n_max U M : ℕ) :
-    SingleSeed c_exp n_max U M → Fin U → Fin (2 ^ M) :=
-  evalSingleAux (decide (n_max < doubleTabThreshold c_exp)) c_exp n_max U M
-
-/-- Extract the first block's seed from `SeedAux`. -/
-@[expose]
-def fstSeedAux (reg : Bool) (c_exp n_max U M : ℕ) :
-    SeedAux reg c_exp n_max U M → SingleSeedAux reg c_exp n_max U M :=
-  match reg with
-  | true => Prod.fst
-  | false => Prod.fst
-
-/-- Extract the second block's seed from `SeedAux`. -/
-@[expose]
-def sndSeedAux (reg : Bool) (c_exp n_max U M : ℕ) :
-    SeedAux reg c_exp n_max U M → SingleSeedAux reg c_exp n_max U M :=
-  match reg with
-  | true => Prod.snd
-  | false => Prod.snd
-
-/-- Extract the first block's seed from `θ : Seed c_exp n_max U M`. -/
-@[expose]
-def fstSeed {c_exp n_max U M : ℕ} (θ : Seed c_exp n_max U M) : SingleSeed c_exp n_max U M :=
-  fstSeedAux (decide (n_max < doubleTabThreshold c_exp)) c_exp n_max U M θ
-
-/-- Extract the second block's seed from `θ : Seed c_exp n_max U M`. -/
-@[expose]
-def sndSeed {c_exp n_max U M : ℕ} (θ : Seed c_exp n_max U M) : SingleSeed c_exp n_max U M :=
-  sndSeedAux (decide (n_max < doubleTabThreshold c_exp)) c_exp n_max U M θ
-
-private theorem evalSingle_fstSeed {c_exp n_max U M : ℕ}
-    (θ : Seed c_exp n_max U M) (u : Fin U) :
-    evalSingle c_exp n_max U M (fstSeed θ) u = evalHash1 θ u := by
-  unfold Seed evalSingle fstSeed evalHash1 at *
-  revert θ
-  cases decide (n_max < doubleTabThreshold c_exp) <;> intro _ <;> rfl
-
-private theorem evalSingle_sndSeed {c_exp n_max U M : ℕ}
-    (θ : Seed c_exp n_max U M) (u : Fin U) :
-    evalSingle c_exp n_max U M (sndSeed θ) u = evalHash2 θ u := by
-  unfold Seed evalSingle sndSeed evalHash2 at *
-  revert θ
-  cases decide (n_max < doubleTabThreshold c_exp) <;> intro _ <;> rfl
-
-private theorem singleSeedRep_fstSeed {hashBase c_exp n_max U M : ℕ}
-    {θ : Seed c_exp n_max U M} {mem : ℕ → ℕ}
-    (hseed : HashPairSeedRep hashBase c_exp n_max U M θ mem) :
-    SingleSeedRep hashBase c_exp n_max U M (fstSeed θ) mem := by
-  unfold Seed HashPairSeedRep SingleSeedRep fstSeed at *
-  revert θ hseed
-  cases decide (n_max < doubleTabThreshold c_exp) <;> intro _ hseed <;> exact hseed.1
-
-private theorem singleSeedRep_sndSeed {hashBase c_exp n_max U M : ℕ}
-    {θ : Seed c_exp n_max U M} {mem : ℕ → ℕ}
-    (hseed : HashPairSeedRep hashBase c_exp n_max U M θ mem) :
-    SingleSeedRep (hash2Base hashBase c_exp n_max) c_exp n_max U M (sndSeed θ) mem := by
-  unfold Seed HashPairSeedRep SingleSeedRep sndSeed at *
-  revert θ hseed
-  cases decide (n_max < doubleTabThreshold c_exp) <;> intro _ hseed <;> exact hseed.2
+  map_pair_extractSingleSeed_eval_resampleHashPairComp htab h0
 
 /-- Word-RAM program evaluating a single regime-switched hash block at `reg 0 = base` and
 `reg 1 = u.val` into `reg 2` (`regOut`) without modifying memory. -/
@@ -2590,8 +2431,7 @@ theorem evalHash1Code_execWithin {w hashBase c_exp n_max U M : ℕ}
   have hfit_h1 : Fits w (hashBase + singleHashSpace c_exp n_max) :=
     hfit_space.of_le (by dsimp only [hashPairSpace]; omega)
   obtain ⟨y, ⟨t, ht, he⟩, hy0, hy1, hy2, hymem⟩ :=
-    evalSingleCode_execWithin u hrep.1.1 (singleSeedRep_fstSeed hrep.2) h0 h1 hw hfit_h1
-  rw [evalSingle_fstSeed] at hy2
+    evalSingleCode_execWithin u hrep.1.1 hrep.2.1 h0 h1 hw hfit_h1
   refine ⟨y, ⟨t, by dsimp only [evalHashSteps]; omega, he⟩, hy0, hy1, hy2, ?_, hymem⟩
   rwa [hymem]
 
@@ -2613,17 +2453,16 @@ theorem evalHash2Code_execWithin {w hashBase c_exp n_max U M : ℕ}
   have hfit_h2 : Fits w (hash2Base hashBase c_exp n_max + singleHashSpace c_exp n_max) :=
     hfit_space.of_le (by dsimp only [hash2Base, hashPairSpace]; omega)
   obtain ⟨d1, ⟨t, ht, he⟩, hd1_0, hd1_1, hd1_2, hd1_mem⟩ :=
-    evalSingleCode_execWithin u (x := d0) hrep.1.2 (singleSeedRep_sndSeed hrep.2)
+    evalSingleCode_execWithin u (x := d0) hrep.1.2 hrep.2.2
       (by simp +decide [d0, shiftToHash2BaseData])
       (by simp +decide [d0, shiftToHash2BaseData, h1])
       hw hfit_h2
-  rw [evalSingle_sndSeed] at hd1_2
   have eun := unshiftFromHash2BaseCode_exec hd1_0 hfit_space
   set y := unshiftFromHash2BaseData hashBase c_exp n_max d1
   refine ⟨y, ⟨2 + (t + 2), by dsimp only [evalHashSteps]; omega, esh.seq (he.seq eun)⟩,
     by simp +decide [y, unshiftFromHash2BaseData],
     by simp +decide [y, unshiftFromHash2BaseData, hd1_1],
-    by simp +decide [y, unshiftFromHash2BaseData, hd1_2],
+    by simp +decide [y, unshiftFromHash2BaseData, hd1_2, evalHash2],
     ?_, ?_⟩
   · change HashPairRep hashBase c_exp n_max U M θ d1.mem
     rwa [hd1_mem]

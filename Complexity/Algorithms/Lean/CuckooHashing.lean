@@ -139,9 +139,9 @@ In Pagh and Rodler [PaghRodler2004] (8 December 2003 manuscript,
   `1 / (2 * max n_max 1 * max MaxLoop 1)` satisfies `IsCuckooHashPair` (`C_walk = 3`, `C_reh = 4`).
 * `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_doubleTabHash`,
   `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_provableFamily`: `IsCuckooHashPair` for
-  Mikkel Thorup's double tabulation hash family [Thorup2013] and `IsCuckooHashFamily` for the
-  regime-switched Word-RAM family (`evalHash1`/`evalHash2` over `seedLaw`) across all `n_max : ℕ`
-  and `U ≤ max n_max 4 ^ c_exp`.
+  Mikkel Thorup's double tabulation hash family [Thorup2013] and for the regime-switched Word-RAM
+  family (`evalHash1`/`evalHash2` over `seedLaw`) across all `n_max : ℕ` and
+  `U ≤ max n_max 4 ^ c_exp`.
 * `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_trinomialPolyHash`,
   `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_uniform`,
   `Cslib.Algorithms.Lean.CuckooHashing.uniform_interpret_eq_lazy_hashPair`: specializations to
@@ -2921,7 +2921,7 @@ private theorem isCuckooHashPair_seedAux (reg : Bool) {c_exp n_max U M : ℕ}
   have hloop_le : maxEvictions n_max ≤ 2 ^ M :=
     (maxEvictions_le_thirtyTwo_mul_max n_max).trans hm
   cases reg
-  · dsimp only [SeedAux, evalHash1Aux, evalHash2Aux,
+  · dsimp only [SeedAux, SingleSeedAux, evalHash1Aux, evalHash2Aux, evalSingleAux,
       Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.provableC,
       Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.provableD,
       Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.provableB]
@@ -3005,19 +3005,21 @@ private theorem isCuckooHashPair_seedAux (reg : Bool) {c_exp n_max U M : ℕ}
             ring
     exact isCuckooHashPair_doubleTabHash (by omega) hU_cb n_max (maxEvictions n_max)
       hm le_rfl hloop_le hprod_le
-  · dsimp only [SeedAux, evalHash1Aux, evalHash2Aux]
+  · dsimp only [SeedAux, SingleSeedAux, evalHash1Aux, evalHash2Aux, evalSingleAux,
+      cuckooK, trinomialDeg]
     exact (isCuckooHashPair_trinomialPolyHash (le_two_pow_trinomialDeg U M) (le_trinomialDeg U M)
       n_max (maxEvictions n_max) le_rfl hm le_rfl hloop_le).mono_consts (by decide) (by decide)
 
-/-- **Unconditional `IsCuckooHashFamily` for the regime-switched Word-RAM hash family
+/-- **Unconditional `IsCuckooHashPair` for the regime-switched Word-RAM hash family
 (`trinomialPolyHash` + `doubleTabHash`) across all capacities `n_max : ℕ` and polynomial universes
 `U ≤ max n_max 4 ^ c_exp`**:
 Whenever `U ≤ max n_max 4 ^ c_exp` and `32 * max n_max 4 ≤ 2 ^ M`, the uniform distribution
 `seedLaw c_exp n_max U M` on `Seed c_exp n_max U M` with `(evalHash1, evalHash2)` satisfies
-`IsCuckooHashFamily c_exp U n_max M (maxEvictions n_max) 3 4`. -/
+`IsCuckooHashPair (seedLaw c_exp n_max U M) evalHash1 evalHash2 n_max (maxEvictions n_max) 3 4`. -/
 theorem isCuckooHashPair_provableFamily {c_exp n_max U M : ℕ}
     (hU : U ≤ max n_max 4 ^ c_exp) (hm : 32 * max n_max 4 ≤ 2 ^ M) :
-    IsCuckooHashFamily c_exp U n_max M (maxEvictions n_max) 3 4 :=
+    IsCuckooHashPair (seedLaw c_exp n_max U M) evalHash1 evalHash2
+      n_max (maxEvictions n_max) 3 4 :=
   isCuckooHashPair_seedAux (decide (n_max < doubleTabThreshold c_exp)) rfl hU hm
 
 end Cslib.Algorithms.Lean.CuckooHashing

@@ -14,7 +14,7 @@ public import Complexity.Algorithms.WordRAM.Dictionary.CuckooHashing
 # Pagh–Rodler Cuckoo Hashing on the Randomized Word RAM — Test Suite
 
 Verifies the API surface, multi-step eviction replay lemmas, unconditional
-`isCuckooHashFamily_provable` (`C_walk = 3`, `C_reh = 4` for all `n_max : ℕ` whenever
+`isCuckooHashFamily_tableBits` (`C_walk = 3`, `C_reh = 4` for all `n_max : ℕ` whenever
 `U ≤ max n_max 4 ^ c_exp`), $O_{c_{\exp}}(1)$ operation charges (`expectedOpCharge c_exp`),
 $O_{c_{\exp}}(n_{\max} + 1)$ space (`space_le`), `SubroutineDS`, and end-to-end expected-amortized
 execution (`cuckoo_seq_expected_amortized`) of
@@ -41,7 +41,7 @@ example (c_exp n_max : ℕ) : space c_exp n_max ≤ spaceFactor c_exp * (n_max +
   space_le c_exp n_max
 example {c_exp U n_max : ℕ} (hU : U ≤ max n_max 4 ^ c_exp) :
     IsCuckooHashFamily c_exp U n_max (tableBits n_max) (maxEvictions n_max) 3 4 :=
-  isCuckooHashFamily_provable hU
+  isCuckooHashFamily_tableBits hU
 example {c_exp n_max U : ℕ} (hU : U ≤ max n_max 4 ^ c_exp)
     (s : Dictionary.State U) (o : Dictionary.Op U) :
     charge c_exp n_max U 3 4 s o ≤ expectedOpCharge c_exp s o :=
@@ -78,7 +78,7 @@ example :
 with `C_walk = 3`, `C_reh = 4`. -/
 theorem instCuckooHashFamily_2_16_10 :
     IsCuckooHashFamily 2 16 10 (tableBits 10) (maxEvictions 10) 3 4 :=
-  isCuckooHashFamily_provable (by decide)
+  isCuckooHashFamily_tableBits (by decide)
 
 theorem hw_64_16_10 : 2 * Probability.trinomialDeg 16 (tableBits 10) ≤ 64 := by
   have hle := Probability.trinomialDeg_le_three_mul 16 (tableBits 10)
