@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinarySizeFacts
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Bit
 import Mathlib.Data.List.GetD

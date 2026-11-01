@@ -9,6 +9,7 @@ module
 -- vendored: `spaceUsed` is the space of a run path since cslib #1133 and #1122; `try` steps
 -- that the unused-tactic linter flags are dropped
 
+public import Complexity.Computability.Machines.Turing.MultiTape.HaltsAt
 public import Complexity.Computability.Machines.Turing.MultiTape.TapeLemmas
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.InPlace
 import Mathlib.Basic.Countable.Defs
@@ -43,18 +44,6 @@ namespace Turing.MultiTapeTM
 section Halting
 
 variable {k : ℕ} {State Symbol : Type*} {tm : MultiTapeTM k Symbol State}
-
-/-- The output at the first halt is the computed output. -/
-public lemma output_haltsAt {input output : List Symbol} {h : ℕ}
-    (hc : tm.Computes input output) (hh : tm.HaltsAt (tm.initCfg input) h) :
-    (tm.runFrom (tm.initCfg input) h).output = output := by
-  obtain ⟨u, hu, rfl⟩ := hc
-  rw [hh.runFrom_eq (hh.le_of_halted hu)]
-
-/-- The first halt is no later than the time bound. -/
-public lemma exists_haltsAt_of_runsInTime {input : List Symbol} {t : ℕ}
-    (ht : tm.RunsInTime input t) : ∃ h ≤ t, tm.HaltsAt (tm.initCfg input) h :=
-  exists_haltsAt (runsInTime_iff_halted.mp ht)
 
 /-- The machine starts in a state, so it halts at a positive time. -/
 public lemma haltsAt_pos {input : List Symbol} {h : ℕ} (hh : tm.HaltsAt (tm.initCfg input) h) :
