@@ -612,54 +612,24 @@ theorem computableInPolyTime_checkCert (c d : ℕ) :
   have hconsistent := computableInPolyTime_consistentHist
   have ht : ComputableInPolyTime
       (fun q : List Bool × Cert => c * (q.1.length + 1) ^ d)
-      (encPair encBits encCert) encUnary := by
-    have hlen : ComputableInPolyTime (fun q : List Bool × Cert => q.1.length)
-        (encPair encBits encCert) encUnary := by fun_prop
-    exact ((unary_eval (Polynomial.C c * (Polynomial.X + 1) ^ d)).comp hlen).of_enc_eq
-      fun q => by simp
+      (encPair encBits encCert) encUnary := by fun_prop
   have h1 : ComputableInPolyTime
       (fun q : List Bool × Cert =>
         q.2.all fun e => (e.1.length == c * (q.1.length + 1) ^ d) && accepts M q.1 e.1 e.2)
-      (encPair encBits encCert) encBool := by
-    apply allWithInput (by fun_prop)
-    have hbeq : ComputableInPolyTime (fun x : (List Bool × Cert) × (List Bool × TaggedHistory) =>
-        x.2.1.length == c * (x.1.1.length + 1) ^ d)
-        (encPair (encPair encBits encCert) encCertEntry) encBool :=
-      beq (by fun_prop) (ht.comp (fst _ _))
-    have hacc := haccepts.comp (encIn := encPair (encPair encBits encCert) encCertEntry)
-      (g := fun x : (List Bool × Cert) × (List Bool × TaggedHistory) => (x.1.1, x.2.1, x.2.2))
-      (by fun_prop)
-    have h := bool_and.comp (hbeq.prod hacc)
-    exact h
+      (encPair encBits encCert) encBool := by fun_prop
   have h2 : ComputableInPolyTime
       (fun q : List Bool × Cert =>
         q.2.all fun e₁ => q.2.countP (fun e₂ => e₁.1 == e₂.1) == 1)
-      (encPair encBits encCert) encBool := by
-    apply allWithInput (by fun_prop)
-    refine beq (encB := encUnary) ?_ (const 1)
-    apply countPWithInput (by fun_prop)
-    fun_prop
+      (encPair encBits encCert) encBool := by fun_prop
   have h3 : ComputableInPolyTime
       (fun q : List Bool × Cert =>
         q.2.all fun e₁ => q.2.all fun e₂ =>
           (List.range p).all fun i => consistentHist (projHistory i e₁.2) (projHistory i e₂.2))
-      (encPair encBits encCert) encBool := by
-    apply allWithInput (by fun_prop)
-    apply allWithInput (by fun_prop)
-    apply allWithInput (range.comp (const p))
-    fun_prop
+      (encPair encBits encCert) encBool := by fun_prop
   have h4 : ComputableInPolyTime
       (fun q : List Bool × Cert =>
         decide (2 ^ (c * (q.1.length + 1) ^ d) < 2 * q.2.length))
-      (encPair encBits encCert) encBool := by
-    have hpow : ComputableInPolyTime
-        (fun q : List Bool × Cert => 2 ^ (c * (q.1.length + 1) ^ d))
-        (encPair encBits encCert) encNat := binary_two_pow.comp ht
-    have hlen : ComputableInPolyTime
-        (fun q : List Bool × Cert => q.2.length)
-        (encPair encBits encCert) encNat :=
-      (length_list_binary encCertEntry).comp (snd encBits encCert)
-    exact binary_lt.comp (hpow.prod (binary_mul' (const 2) hlen))
+      (encPair encBits encCert) encBool := by fun_prop
   have h := bool_and.comp ((bool_and.comp ((bool_and.comp (h1.prod h2)).prod h3)).prod h4)
   exact h
 
@@ -670,9 +640,7 @@ theorem computableInPolyTime_checkPaddedCert (c d : ℕ) :
       encBool := by
   have hlen : ComputableInPolyTime
       (fun q : List Bool × Cert => decide ((encCert q.2).length ≤ q.1.length))
-      (encPair encBits encCert) encBool :=
-    unary_le' ((encoding_length encCert).comp (snd encBits encCert))
-      (length_bits.comp (fst encBits encCert))
+      (encPair encBits encCert) encBool := by fun_prop
   have h := bool_and.comp (hlen.prod ((computableInPolyTime_checkCert M c d).comp
     ((unframe.comp (fst encBits encCert)).prod (snd encBits encCert))))
   exact h
@@ -914,11 +882,7 @@ theorem MIP_subset_NEXP : MIP enc ⊆ NEXP enc := by
   rintro A ⟨p, verifier, hV, hproto⟩
   obtain ⟨_, k, Control, hfinControl, M, c, d, hreal⟩ := hV
   let f (n : ℕ) : ℕ := 32 * (p + n + c * (n + 1) ^ d + 1) ^ 2 + c * (n + 1) ^ d
-  have hf : ComputableInPolyTime f encUnary encUnary := by
-    have hpoly : ComputableInPolyTime (fun n : ℕ => c * (n + 1) ^ d) encUnary encUnary :=
-      (ComputableInPolyTime.unary_eval (Polynomial.C c * (Polynomial.X + 1) ^ d)).of_enc_eq
-        fun n => by simp
-    fun_prop
+  have hf : ComputableInPolyTime f encUnary encUnary := by fun_prop
   have hn : ∀ n, n ≤ f n := fun n => by
     have hB : n ≤ p + n + c * (n + 1) ^ d + 1 := by lia
     have hsq : p + n + c * (n + 1) ^ d + 1 ≤ (p + n + c * (n + 1) ^ d + 1) ^ 2 :=

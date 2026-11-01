@@ -1006,9 +1006,7 @@ private theorem polyBounded_maxReducedCost_space (N₀_branch : ℕ)
 private theorem computableInPolyTime_exhaustProj :
     ComputableInPolyTime (fun inp : SparseSystemInput => (inp.1, inp.2.2))
       encSparseSystemInput (encPair encUnary encSys) := by
-  unfold encSparseSystemInput
-  exact (ComputableInPolyTime.fst _ _).prod
-    ((ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.snd _ _))
+  fun_prop
 
 /-- **Full native certificate for `countSparsePolySystem N₀_top N₀_branch branchEval`** (§5.5). -/
 noncomputable def sparsePolyCounterCertificate (N₀_top N₀_branch : ℕ)

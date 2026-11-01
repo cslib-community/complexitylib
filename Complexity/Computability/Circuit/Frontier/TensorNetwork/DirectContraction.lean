@@ -323,11 +323,8 @@ theorem numEdges_polyTime :
 /-- The initial live state: the precision, the network and a zero accumulator. -/
 theorem initial_polyTime :
     ComputableInPolyTime (fun x : ℕ × ℕ × ExplicitTensorNetwork ℕ => ((x.1, x.2.2), (0 : ℕ)))
-      encContractionInput encSumState :=
-  ((ComputableInPolyTime.fst encUnary (encPair encNat encExplicitNetwork)).prod
-    ((ComputableInPolyTime.snd encNat encExplicitNetwork).comp
-      (ComputableInPolyTime.snd encUnary (encPair encNat encExplicitNetwork)))).prod
-    (ComputableInPolyTime.const 0)
+      encContractionInput encSumState := by
+  fun_prop
 
 /-- **A native certificate for direct summation**: one finite machine streams the `2 ^ m`
 assignments with `BooleanFold`, running the polynomial-time step `sumStep` on each. Its explicit

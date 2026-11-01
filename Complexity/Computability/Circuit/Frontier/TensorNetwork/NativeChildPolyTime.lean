@@ -123,9 +123,7 @@ private theorem test_polyTime (sel : ℕ × ℕ → ℕ)
       decide ((groups p.1).getD (sel ((ends p.1).getD p.2 (0, 0))) 0 = g p.1))
       (encPair encIn encUnary) encBool := by
   have hentry : ComputableInPolyTime (fun p : δ × ℕ => (ends p.1).getD p.2 (0, 0))
-      (encPair encIn encUnary) (encPair encNat encNat) :=
-    (ComputableInPolyTime.listGetD (0, 0)).comp
-      ((hends.comp (ComputableInPolyTime.fst _ _)).prod (ComputableInPolyTime.snd _ _))
+      (encPair encIn encUnary) (encPair encNat encNat) := by fun_prop
   exact ComputableInPolyTime.decide_eq'
     (ComputableInPolyTime.listGetD_binary 0 (hgroups.comp (ComputableInPolyTime.fst _ _))
       (hsel.comp hentry))
@@ -152,24 +150,16 @@ theorem computableInPolyTime_portRank (sel : ℕ × ℕ → ℕ)
     (hends : ComputableInPolyTime ends encIn (encList (encPair encNat encNat)))
     {e : δ → ℕ} (he : ComputableInPolyTime e encIn encNat) :
     ComputableInPolyTime (fun x => portRank (groups x) (g x) (ends x) sel (e x)) encIn encNat := by
-  have hlen : ComputableInPolyTime (fun x => (ends x).length) encIn encUnary :=
-    (ComputableInPolyTime.length_list _).comp hends
+  have hlen : ComputableInPolyTime (fun x => (ends x).length) encIn encUnary := by fun_prop
   have hcount := ComputableInPolyTime.countPWithInput
     (test := fun x e' => decide ((groups x).getD (sel ((ends x).getD e' (0, 0))) 0 = g x))
     (ComputableInPolyTime.range.comp (ComputableInPolyTime.binary_min_unary' hlen he))
     (test_polyTime sel hsel hgroups hg hends)
   have hdefault : ComputableInPolyTime (fun x => decide ((groups x).getD (sel (0, 0)) 0 = g x))
-      encIn encBool :=
-    ComputableInPolyTime.decide_eq'
-      (ComputableInPolyTime.listGetD_binary 0 hgroups (ComputableInPolyTime.const (sel (0, 0))))
-      hg
+      encIn encBool := by fun_prop
   have hextra : ComputableInPolyTime (fun x =>
       (e x - (ends x).length) * (if decide ((groups x).getD (sel (0, 0)) 0 = g x) then 1 else 0))
-      encIn encNat :=
-    ComputableInPolyTime.binary_mul'
-      (ComputableInPolyTime.binary_sub' he (ComputableInPolyTime.unary_to_binary.comp hlen))
-      (ComputableInPolyTime.ite hdefault (ComputableInPolyTime.const 1)
-        (ComputableInPolyTime.const 0))
+      encIn encNat := by fun_prop
   refine (ComputableInPolyTime.binary_add.comp
     ((ComputableInPolyTime.unary_to_binary.comp hcount).prod hextra)).of_enc_eq fun x => ?_
   rw [portRank_eq_countP]
@@ -227,15 +217,11 @@ theorem computableInPolyTime_groupsOf {r i k : δ → ℕ}
       (encList encNat) := by
   let e := encPair encIn encUnary
   have hx : ComputableInPolyTime (fun p : δ × ℕ => p.1) e encIn := ComputableInPolyTime.fst _ _
-  have hv : ComputableInPolyTime (fun p : δ × ℕ => p.2) e encNat :=
-    ComputableInPolyTime.unary_to_binary.comp (ComputableInPolyTime.snd _ _)
+  have hv : ComputableInPolyTime (fun p : δ × ℕ => p.2) e encNat := by fun_prop
   have hw₁ := (ComputableInPolyTime.fst _ _).comp (hwords.comp hx)
   have hw₂ := (ComputableInPolyTime.snd _ _).comp (hwords.comp hx)
   have hrow : ComputableInPolyTime (fun p : δ × ℕ =>
-      (((words p.1).1.getD p.2 []).getD (i p.1) 0)) e encNat :=
-    (ComputableInPolyTime.listGetD (encA := encNat) (encL := encList encNat) 0).comp
-      (((ComputableInPolyTime.listGetD (encA := encList encNat) (encL := encList (encList encNat))
-        []).comp (hw₁.prod (ComputableInPolyTime.snd _ _))).prod (hi.comp hx))
+      (((words p.1).1.getD p.2 []).getD (i p.1) 0)) e encNat := by fun_prop
   have hcol : ComputableInPolyTime (fun p : δ × ℕ =>
       (((words p.1).2.getD (p.2 - r p.1) []).getD (i p.1) 0)) e encNat :=
     (ComputableInPolyTime.listGetD (encA := encNat) (encL := encList encNat) 0).comp
@@ -254,17 +240,7 @@ private theorem listTake {α : Type} {encA : α ↪ List Bool} {l : δ → List 
     (hl : ComputableInPolyTime l encIn (encList encA))
     (hn : ComputableInPolyTime n encIn encUnary) :
     ComputableInPolyTime (fun x => (l x).take (n x)) encIn (encList encA) := by
-  have hrev := ComputableInPolyTime.listReverseWithInput hl
-  have hdrop := (ComputableInPolyTime.dropUnary (encA := encA) (encL := encList encA)).comp
-    (hrev.prod (ComputableInPolyTime.unary_sub'
-      ((ComputableInPolyTime.length_list _).comp hl) hn))
-  refine (ComputableInPolyTime.listReverseWithInput hdrop).of_enc_eq fun x => ?_
-  change encList encA ((l x).take (n x)) =
-    encList encA (((l x).reverse.drop ((l x).length - n x)).reverse)
-  rw [List.drop_reverse, List.reverse_reverse]
-  rcases le_total (l x).length (n x) with h | h
-  · rw [Nat.sub_eq_zero_of_le h, Nat.sub_zero, List.take_length, List.take_of_length_le h]
-  · rw [Nat.sub_sub_self h]
+  fun_prop
 
 /-- Counting a group among the groups, in binary. -/
 private theorem count_polyTime (hgroups : ComputableInPolyTime groups encIn (encList encNat))
@@ -291,20 +267,11 @@ private theorem retained_polyTime {r : δ → ℕ} {V : δ → List (List ℕ ×
       encIn (encList (encPair (encList encNat) (VertexDesc.enc encT))) := by
   let e₁ := encPair encIn encUnary
   have hx : ComputableInPolyTime (fun p : δ × ℕ => p.1) e₁ encIn := ComputableInPolyTime.fst _ _
-  have hy : ComputableInPolyTime (fun p : δ × ℕ => p.2) e₁ encUnary :=
-    ComputableInPolyTime.snd _ _
+  have hy : ComputableInPolyTime (fun p : δ × ℕ => p.2) e₁ encUnary := by fun_prop
   have hfilter : ComputableInPolyTime (fun x => (List.range (V x).length).filter
-      fun v => decide ((groups x).getD v 0 = g x)) encIn (encList encUnary) :=
-    ComputableInPolyTime.filterWithInput (test := fun x v => decide ((groups x).getD v 0 = g x))
-      (ComputableInPolyTime.range.comp ((ComputableInPolyTime.length_list _).comp hV))
-      (ComputableInPolyTime.decide_eq'
-        ((ComputableInPolyTime.listGetD (encA := encNat) (encL := encList encNat) 0).comp
-          ((hgroups.comp hx).prod hy)) (hg.comp hx))
+      fun v => decide ((groups x).getD v 0 = g x)) encIn (encList encUnary) := by fun_prop
   have hvtx : ComputableInPolyTime (fun p : δ × ℕ => (V p.1).getD p.2 defaultVertex) e₁
-      (encPair (encList encNat) (VertexDesc.enc encT)) :=
-    (ComputableInPolyTime.listGetD (encA := encPair (encList encNat) (VertexDesc.enc encT))
-      (encL := encList (encPair (encList encNat) (VertexDesc.enc encT))) defaultVertex).comp
-      ((hV.comp hx).prod hy)
+      (encPair (encList encNat) (VertexDesc.enc encT)) := by fun_prop
   have hxx : ComputableInPolyTime (fun q : (δ × ℕ) × ℕ => q.1.1) (encPair e₁ encNat) encIn :=
     hx.comp (ComputableInPolyTime.fst _ _)
   have hr' : ComputableInPolyTime (fun q : (δ × ℕ) × ℕ => r q.1.1) (encPair e₁ encNat) encNat :=
@@ -325,10 +292,7 @@ private theorem retained_polyTime {r : δ → ℕ} {V : δ → List (List ℕ ×
     computableInPolyTime_childEdgeOf hr' hgroups' hg' hends' hv' he'
   have hports : ComputableInPolyTime (fun p : δ × ℕ =>
       ((V p.1).getD p.2 defaultVertex).1.map (childEdgeOf (r p.1) (groups p.1) (g p.1)
-        (ends p.1) p.2)) e₁ (encList encNat) :=
-    ComputableInPolyTime.mapWithInput
-      (f := fun p e => childEdgeOf (r p.1) (groups p.1) (g p.1) (ends p.1) p.2 e)
-      ((ComputableInPolyTime.fst _ _).comp hvtx) hce
+        (ends p.1) p.2)) e₁ (encList encNat) := by fun_prop
   exact ComputableInPolyTime.mapWithInput
     (f := fun x v => (((V x).getD v defaultVertex).1.map
         (childEdgeOf (r x) (groups x) (g x) (ends x) v), ((V x).getD v defaultVertex).2))
@@ -401,8 +365,7 @@ private theorem packetVertices_polyTime {P : δ → ℕ} {cedges : δ → List (
       encIn (encList (encPair (encList encNat) (VertexDesc.enc encT))) := by
   let e₁ := encPair encIn encUnary
   have hx : ComputableInPolyTime (fun p : δ × ℕ => p.1) e₁ encIn := ComputableInPolyTime.fst _ _
-  have hy : ComputableInPolyTime (fun p : δ × ℕ => p.2) e₁ encUnary :=
-    ComputableInPolyTime.snd _ _
+  have hy : ComputableInPolyTime (fun p : δ × ℕ => p.2) e₁ encUnary := by fun_prop
   -- The ports.
   have hpq : ComputableInPolyTime (fun p : δ × ℕ =>
       childPorts (cedges p.1) ((groups p.1).count (g p.1) + p.2)) e₁ (encList encUnary) :=
@@ -503,9 +466,7 @@ theorem computableInPolyTime_nativeChild (hfl : ComputableInPolyTime fl encIn (e
   have hgroups := computableInPolyTime_groupsOf hr hi
     ((ComputableInPolyTime.length_list _).comp hV) hwords
   have hpackets : ComputableInPolyTime (fun x => (pk x).2.2.map Prod.fst) encIn
-      (encList encNat) :=
-    ComputableInPolyTime.mapWithInput (f := fun _ q => q.1) hplace
-      ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _))
+      (encList encNat) := by fun_prop
   have hcedges : ComputableInPolyTime (fun x =>
       childEdgeList (groupsOf (r x) (i x) (D x).vertices.length (pk x).1) (g x) (D x).edgeEnds
         ((pk x).2.2.map Prod.fst)) encIn (encList (encPair encNat encNat)) :=
@@ -591,19 +552,14 @@ theorem computableInPolyTime_nativeParentPacking (hr : ComputableInPolyTime r en
   have hends := (DescribedNetwork.computableInPolyTime_edgeEnds (VertexDesc.enc encT)).comp hD
   have hrb := ComputableInPolyTime.unary_to_binary.comp hr
   have hshift : ComputableInPolyTime (fun x => (D x).edgeEnds.map fun e => (e.1, e.2 - r x))
-      encIn (encList (encPair encNat encNat)) :=
-    ComputableInPolyTime.mapWithInput (f := fun x e => (e.1, e.2 - r x)) hends
-      (((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _)).prod
-        (ComputableInPolyTime.binary_sub' ((ComputableInPolyTime.snd _ _).comp
-          (ComputableInPolyTime.snd _ _)) (hrb.comp (ComputableInPolyTime.fst _ _))))
+      encIn (encList (encPair encNat encNat)) := by fun_prop
   have hnC : ComputableInPolyTime (fun x => (D x).vertices.length - r x) encIn encUnary :=
     ComputableInPolyTime.unary_sub' ((ComputableInPolyTime.length_list _).comp
       (DescribedNetwork.vertices_polyTime.comp hD)) hr
   have hin : ComputableInPolyTime (fun x => (((r x, (D x).vertices.length - r x, a x), 64,
       (D x).edgeEnds.map fun e => (e.1, e.2 - r x)) : PacketPacking.PackingInput)) encIn
       (encPair (encPair encUnary (encPair encUnary encUnary))
-        (encPair encNat (encList (encPair encNat encNat)))) :=
-    (hr.prod (hnC.prod ha)).prod ((ComputableInPolyTime.const 64).prod hshift)
+        (encPair encNat (encList (encPair encNat encNat)))) := by fun_prop
   have h := PacketPacking.computableInPolyTime_nativePacking.comp hin
   refine h.of_enc_eq fun x => ?_
   simp only [Function.comp_apply, nativeParentPacking]
