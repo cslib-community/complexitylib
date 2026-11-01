@@ -3039,6 +3039,7 @@ public import Complexity.Foundations.BooleanAnalysis.Hypercube
 public import Complexity.Foundations.BooleanAnalysis.IncidenceExpansion
 public import Complexity.Foundations.BooleanAnalysis.Influence
 public import Complexity.Foundations.BooleanAnalysis.KahnKalaiLinial
+public import Complexity.Foundations.BooleanAnalysis.LevelWeight
 public import Complexity.Foundations.BooleanAnalysis.LightPatterns
 public import Complexity.Foundations.BooleanAnalysis.Linearity
 public import Complexity.Foundations.BooleanAnalysis.LongCode
@@ -3063,6 +3064,7 @@ public import Complexity.Foundations.BooleanAnalysis.SparseEquations.Degree
 public import Complexity.Foundations.BooleanAnalysis.SparseHermiteRecovery
 public import Complexity.Foundations.BooleanAnalysis.SparseIncidence
 public import Complexity.Foundations.BooleanAnalysis.SparseReplacementDesign
+public import Complexity.Foundations.BooleanAnalysis.SpectralSample
 public import Complexity.Foundations.BooleanAnalysis.Symmetrization
 public import Complexity.Foundations.BooleanAnalysis.Tribes
 public import Complexity.Foundations.BooleanAnalysis.Variance
