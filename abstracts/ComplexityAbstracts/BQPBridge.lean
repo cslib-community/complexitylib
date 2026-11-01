@@ -185,7 +185,7 @@ theorem acceptProb_eq {gs : List GateCode} (hwf : ∀ g ∈ gs, GateCode.WellFor
       run gs (basis (pad m x)) := by
     rw [Circuit.run, ofLp_eval_ofCodes hwf, ofLp_ket]
     rfl
-  rw [Cslib.Quantum.acceptProb, measureProb, accepting, sum_filter, hrun, acceptProb]
+  rw [Cslib.Quantum.acceptProb, measureProb, accepting, onesAt, sum_filter, hrun, acceptProb]
   refine sum_congr rfl fun y _ => if_congr ?_ rfl rfl
   unfold bit
   split_ifs with h <;> simp [h]
