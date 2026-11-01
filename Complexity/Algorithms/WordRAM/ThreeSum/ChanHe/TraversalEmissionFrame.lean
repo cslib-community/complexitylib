@@ -30,7 +30,7 @@ These memory-frame and representation proofs are original.
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 
-open Cslib.WordRAM
+open Cslib.WordRAM Cslib.DataStructure
 
 /-- An actual emission preserves each old-prefix cell except its one explicit table store. -/
 theorem Emission.prefix_preserved {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : Data 128}
@@ -196,16 +196,16 @@ length registers; its sole external memory store lies above the stack reservatio
 theorem Emission.stack {Q : Finset ℕ} {Λ w : ℕ} {e : Entry} {x y : Data 128}
     (h : Emission Q Λ e x y) {a : Arena} (ha : a.Separated) (hc : a.Controls x)
     (hy : y.Bounded w) (vs : List ℕ)
-    (hr : Stack.Rep w a.stack a.capacity vs (x.comap Traversal.registers))
+    (hr : Stack.WordRAM.Rep w a.stack a.capacity vs (x.comap Traversal.registers))
     (htable : x.regs outputs + x.regs outputCount < x.regs heap) :
-    Stack.Rep w a.stack a.capacity vs (y.comap Traversal.registers) := by
+    Stack.WordRAM.Rep w a.stack a.capacity vs (y.comap Traversal.registers) := by
   have hregs (i : Fin 9) : y.regs (Traversal.registers i) = x.regs (Traversal.registers i) := by
     apply h.registers <;>
       first | (dsimp [Traversal.registers]; omega) |
         (intro he; have := congrArg Fin.val he; dsimp [Traversal.registers] at this; omega)
   have ht : x.regs outputs = a.table := hc.2.2.2.2.2.2.1
-  refine ⟨⟨fun i => hy.1 (Traversal.registers i), hy.2⟩, (hregs Stack.ptr).trans hr.pointer,
-    (hregs Stack.len).trans hr.length_eq, hr.capacity_le, ?_⟩
+  refine ⟨⟨fun i => hy.1 (Traversal.registers i), hy.2⟩, (hregs Stack.WordRAM.ptr).trans hr.pointer,
+    (hregs Stack.WordRAM.len).trans hr.length_eq, hr.capacity_le, ?_⟩
   intro i
   have hi : i.val < a.capacity := lt_of_lt_of_le i.isLt hr.capacity_le
   change y.mem (a.stack + i.val) = _

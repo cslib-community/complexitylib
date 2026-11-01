@@ -524,12 +524,6 @@ local notation "CPT" => ComputableInPolyTime
 
 private theorem unaryToBin : CPT id encUnary encNat := by fun_prop
 
-private theorem binLe {α : Type} {encIn : α ↪ List Bool} {l r : α → ℕ}
-    (hl : CPT l encIn encNat) (hr : CPT r encIn encNat) :
-    CPT (fun x => decide (l x ≤ r x)) encIn encBool :=
-  (show CPT (fun p : ℕ × ℕ => decide (p.1 ≤ p.2)) (encPair encNat encNat) encBool by
-    fun_prop).comp (hl.prod hr)
-
 private theorem unaryFoldMax (init : ℕ) :
     CPT (fun l : List ℕ => l.foldl max init) (encList encUnary) encUnary := by
   refine foldl' (encA := encUnary) (encL := encList encUnary) (encB := encUnary)
@@ -671,7 +665,7 @@ theorem computableInPolyTime_checkBranchFeasible (N₀_branch : ℕ) :
       decide (N₀_branch ≤ p.1) && checkVarsLt p.1 p.2 && checkCanonicalSystem p.2)
       (encPair encUnary encSys) encBool :=
     bool_and' (bool_and'
-      (binLe (const N₀_branch) hn_b)
+      (binary_le' (const N₀_branch) hn_b)
       computableInPolyTime_checkVarsLt)
       (computableInPolyTime_checkCanonicalSystem.comp (snd encUnary encSys))
   have hβ := ParameterCheck.computableInPolyTime_chooseBeta_apply
@@ -701,9 +695,9 @@ theorem computableInPolyTime_checkTopFeasible (N₀_top : ℕ) :
   have hvars := computableInPolyTime_checkVarsLt.comp (hn_u.prod heqs)
   have hcan := computableInPolyTime_checkCanonicalSystem.comp heqs
   exact bool_and' (bool_and' (bool_and' (bool_and' (bool_and'
-    (binLe (const N₀_top) hn_b) (binLe (const 1) hs_b)) hvars)
-    hcan) (binLe hdeg_b hk_b))
-    (binLe hS_len (binary_div.comp (hn_b.prod hs_b)))
+    (binary_le' (const N₀_top) hn_b) (binary_le' (const 1) hs_b)) hvars)
+    hcan) (binary_le' hdeg_b hk_b))
+    (binary_le' hS_len (binary_div.comp (hn_b.prod hs_b)))
 
 @[fun_prop]
 theorem computableInPolyTime_toBranchInput :
@@ -730,7 +724,7 @@ theorem computableInPolyTime_mkPaperSparseInput :
   have hn_b := unaryToBin.comp hn_u
   have hM := computableInPolyTime_branchAugmentedIncidence.comp (hn_u.prod heqs)
   have hmax1 : CPT (fun x : ℕ => max 1 x) encNat encNat :=
-    ((binLe (const 1) id').ite' id' (const 1)).of_enc_eq fun x =>
+    ((binary_le' (const 1) id').ite' id' (const 1)).of_enc_eq fun x =>
       congrArg encNat (by split_ifs with hx <;> simp only [decide_eq_true_eq] at hx <;> omega)
   have hs := hmax1.comp (ParameterCheck.computableInPolyTime_heavyIncidenceCutoff_apply
     (const 1) hn_b)

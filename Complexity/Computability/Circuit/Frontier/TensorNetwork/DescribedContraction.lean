@@ -33,6 +33,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.BigOperators.Intervals
 import Mathlib.Data.List.GetD
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 
 /-!
 # Contracting a network with described tensors by direct summation
@@ -731,11 +732,6 @@ private theorem term_le {c a b d D z : ℕ} (hd : d ≤ D) :
     _ ≤ c * (a + b) ^ d * (z + 1) ^ D :=
         Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (Nat.succ_pos _) hd)
 
-private theorem length_encNat_lt {y P : ℕ} (h : y < 2 ^ P) : (encNat y).length ≤ P := by
-  have h' := Nat.size_le.mpr h
-  rw [← Nat.size_eq_bits_len] at h'
-  exact h'
-
 /-- **The resources of direct summation over described networks.** There is `K` such that, for
 an input `(q, d)` of length `n` with `m` edges and `k` vertices, if the evaluator takes time at
 most `E` and space at most `ES` and outputs at most `Ev` bits on every vertex and every list of
@@ -857,7 +853,7 @@ theorem contractionCertificate_le [Inhabited Y] (hops : ops.PolyTime encQ encY)
       obtain ⟨hx, ha1, ha2⟩ := ha
       have h1 := hnode x hx
       have h2 : (encNat a.1).length ≤ d.numEdges + d.vertices.length + 1 := by
-        refine length_encNat_lt (lt_of_le_of_lt ha1 ?_)
+        refine length_encNat_le_of_lt_two_pow (lt_of_le_of_lt ha1 ?_)
         calc 2 ^ d.numEdges + d.vertices.length
             < 2 ^ d.numEdges + 2 ^ d.vertices.length := by
               have := Nat.lt_two_pow_self (n := d.vertices.length); omega
@@ -887,7 +883,7 @@ theorem contractionCertificate_le [Inhabited Y] (hops : ops.PolyTime encQ encY)
     have h3 := Nat.two_pow_pos (d.numEdges + d.vertices.length)
     simp only [fuel]
     omega
-  have hfl := length_encNat_lt hfuel
+  have hfl := length_encNat_le_of_lt_two_pow hfuel
   obtain ⟨B, hB⟩ : ∃ B, B = 2 ^ d.numEdges * (d.vertices.length + 1) + 1 := ⟨_, rfl⟩
   have hfuel1 : fuel (P, d) + 1 = 2 * B := by rw [hB]; simp only [fuel]; ring
   have hB1 : 1 ≤ B := by omega
