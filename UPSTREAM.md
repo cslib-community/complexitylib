@@ -295,7 +295,22 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   array multiplication in `Algorithms/WordRAM/MatrixMultiplication/CyclicConvolution/`.
   Source indexing/quotient mathematics adapt pinned Anthropic `RingOps.lean`/`Cyclic.lean`;
   the native execution, frame and `42p² + 9p + 4` pre-halt instruction bound are proved directly.
-  Full Strassen/modular-counter composition, fast prime selection and #1394 remain open.
+  The concrete counter continues in `Algorithms/WordRAM/ExactTriangle/CountPrime/` and the
+  native explicit-stack `Algorithms/WordRAM/MatrixMultiplication/Strassen/` component, using
+  original native pointwise signed array operations under `Computability/WordRAM/Signed/`.
+  It selectively adapts the pinned `CountPrime`, `Strassen`, `ZOrder` and `Count` algorithms;
+  actual standard WordRAM setup/residues/matrices/seven-product recursion/extraction are proved
+  from original signed arrays. The 128-register ABI uses raw arguments 64..69 and result 70;
+  initialized input is raw `(n,p)` plus three canonical signed row-major arrays. The existing
+  `ExactTriangle.countZeroMod`, cyclic quotient and Morton APIs retain their meanings.
+  Native cost, including halt, is at most `3704*(p+1)²*(n+1)^2.81`; all p-dependent coefficient
+  arithmetic is charged, rather than importing Light's ring-operation constants. If the
+  original modulus and weight bound satisfy `p,A≤(n+2)^κ`, physical width
+  `(κ+24)*clog₂(n+2)` suffices and every wider prefix has words/support below
+  `(n+2)^(κ+25)`. The generic caller allows dirty scratch and original-array aliasing below
+  its workspace. `Int.toNat_neg_emod` is kept in the existing integer-residue topic module.
+  This completes the counter's mathematical/native component, with validation/review tracked
+  in #1701. Native prime selection (#2098), global parameter/host composition and #1394 remain open.
   `Algorithms/ExactTriangle/{Splitting,Witnesses}.lean` adapts the complete finite splitting and
   witness recovery component ([#1447](https://github.com/cslib-community/complexitylib/issues/1447)),
   using the existing matrices, lopsided graph and `Set.EqOn` answer API. Computable integer parameters
@@ -483,7 +498,8 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   routines. Its certificates expose actual native TM witnesses, parameterized time/space bounds,
   and polynomial-time corollaries, and feed the fixed-program step and whole-run simulators in
   `GenericRAM/Simulation/{Turing,Run}` (#298, #292).
-* **Stateful algorithms prototype.** `Foundations/Semantics/Stateful/*` reuses Quang Dao's merged
+* **Stateful algorithms prototype.** `DataStructure/StateTransition.lean` and
+  `DataStructure/StateTransition/*` reuse Quang Dao's merged
   `PFunctor.FreeM` for adaptive clients and substitution, adding persistent representation
   simulation, interface composition, semantic Hoare rules and separate native-resource
   certificates. Its queue and reset-and-replay constructions deliberately count backend calls;

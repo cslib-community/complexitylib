@@ -85,6 +85,10 @@ restriction algorithms from §5.5 (pp. 38–39) and §6 / §6.2–6.3 (pp. 39–
 * `Cslib.Complexity.computableInPolyTime_compileClauseBounded`,
   `Cslib.Complexity.computableInPolyTime_compileParityRowBounded`,
   `Cslib.Complexity.computableInPolyTime_compileParitySystemBounded`: polynomial-time compilation.
+* `Cslib.Complexity.length_sortDedup_le`, `Cslib.Complexity.length_equationVars_le`,
+  `Cslib.Complexity.computableInPolyTime_equationVars`: `sortDedup` never lengthens a list, a scope
+  has at most `k` variables per monomial of degree at most `k`, and the scope `equationVars` is
+  polynomial-time.
 * `Cslib.Complexity.findHeavyVar_eq_some_iff`, `Cslib.Complexity.findHeavyVar_eq_none_iff`,
   `Cslib.Complexity.evalMonomialList_restrictEquation`,
   `Cslib.Complexity.length_restrictEquation_le`, `Cslib.Complexity.length_mem_restrictEquation_le`,
@@ -408,7 +412,8 @@ theorem nodup_sortDedup (vs : List ℕ) : (sortDedup vs).Nodup :=
 @[simp] theorem toFinset_sortDedup (vs : List ℕ) : (sortDedup vs).toFinset = vs.toFinset := by
   ext u; simp only [List.mem_toFinset, mem_sortDedup]
 
-private theorem length_sortDedup_le (vs : List ℕ) : (sortDedup vs).length ≤ vs.length := by
+/-- Sorting and deduplicating never lengthens a list. -/
+theorem length_sortDedup_le (vs : List ℕ) : (sortDedup vs).length ≤ vs.length := by
   rw [← List.toFinset_card_of_nodup (nodup_sortDedup vs), toFinset_sortDedup]
   exact List.toFinset_card_le vs
 
@@ -784,6 +789,16 @@ def restrictSystem (v : ℕ) (val : Bool) (sys : List (List (List ℕ))) : List 
 @[simp] theorem mem_equationVars {eq : List (List ℕ)} {v : ℕ} :
     v ∈ equationVars eq ↔ ∃ m ∈ eq, v ∈ m := by
   simp only [equationVars, mem_sortDedup, List.mem_flatten]
+
+/-- A scope has at most as many variables as the monomials of the equation have entries: at most
+`k * eq.length` for monomials of degree at most `k`. -/
+theorem length_equationVars_le {k : ℕ} {eq : List (List ℕ)} (hk : ∀ m ∈ eq, m.length ≤ k) :
+    (equationVars eq).length ≤ k * eq.length := by
+  refine (length_sortDedup_le _).trans ?_
+  rw [List.length_flatten, mul_comm]
+  exact (List.sum_le_length_nsmul _ k fun x hx => by
+    obtain ⟨m, hm, rfl⟩ := List.mem_map.mp hx; exact hk m hm).trans_eq (by
+      rw [List.length_map, smul_eq_mul])
 
 /-- `findHeavyVar n b₀ sys = some v` iff `v < n` is minimal with `varDegree v sys > b₀`. -/
 theorem findHeavyVar_eq_some_iff {n b₀ : ℕ} {sys : List (List (List ℕ))} {v : ℕ} :
@@ -1206,8 +1221,9 @@ theorem computableInPolyTime_compileParitySystemBounded (k : ℕ)
     ((computableInPolyTime_compileParityRowBounded k (encRow := encRow)).comp
       (((fst _ _).fst').prod (snd _ _)))
 
-@[local fun_prop]
-private theorem computableInPolyTime_equationVars :
+/-- The variable scope `equationVars` of an equation is polynomial-time. -/
+@[fun_prop]
+theorem computableInPolyTime_equationVars :
     ComputableInPolyTime equationVars encEq encM := by
   unfold equationVars; fun_prop
 
@@ -1222,7 +1238,7 @@ theorem computableInPolyTime_varDegree :
 binary, result in `encOption encNat`) is polynomial-time. -/
 theorem computableInPolyTime_findHeavyVar :
     ComputableInPolyTime
-      (fun p : (ℕ × ℕ) × List (List (List ℕ)) => findHeavyVar p.1.1 p.1.2 p.2)
+      (fun (((n, b), sys) : (ℕ × ℕ) × List (List (List ℕ))) => findHeavyVar n b sys)
       (encPair (encPair encUnary encNat) encSys) (encOption encNat) := by
   have hdeg := computableInPolyTime_varDegree
   have hrange : ComputableInPolyTime
@@ -1235,7 +1251,7 @@ theorem computableInPolyTime_findHeavyVar :
     binary_lt' ((fst _ _).fst'.snd')
       (unary_to_binary.comp (hdeg.comp ((snd _ _).prod ((fst _ _).snd'))))
   have hfind := findWithInput (test := fun x v => decide (x.1.2 < varDegree v x.2)) hrange hpred
-  refine hfind.of_enc_eq fun p => congrArg (encOption encNat) ?_
+  refine hfind.of_enc_eq fun ⟨⟨_, _⟩, _⟩ => congrArg (encOption encNat) ?_
   rw [List.map_id']; rfl
 
 @[fun_prop]
@@ -1250,9 +1266,11 @@ theorem computableInPolyTime_findHeavyVar_apply {α : Type} {encIn : α ↪ List
 /-- Substituting `x_v = val` into a sparse `𝔽₂` equation (`restrictEquation`) is polynomial-time. -/
 theorem computableInPolyTime_restrictEquation :
     ComputableInPolyTime
-      (fun p : (ℕ × Bool) × List (List ℕ) => restrictEquation p.1.1 p.1.2 p.2)
-      (encPair (encPair encNat encBool) encEq) encEq := by
-  unfold restrictEquation; fun_prop
+      (fun (((v, val), eq) : (ℕ × Bool) × List (List ℕ)) => restrictEquation v val eq)
+      (encPair (encPair encNat encBool) encEq) encEq :=
+  (by unfold restrictEquation; fun_prop :
+    ComputableInPolyTime (fun p : (ℕ × Bool) × List (List ℕ) => restrictEquation p.1.1 p.1.2 p.2)
+      (encPair (encPair encNat encBool) encEq) encEq).of_enc_eq fun ⟨⟨_, _⟩, _⟩ => rfl
 
 @[fun_prop]
 theorem computableInPolyTime_restrictEquation_apply {α : Type} {encIn : α ↪ List Bool}
@@ -1267,10 +1285,14 @@ theorem computableInPolyTime_restrictEquation_apply {α : Type} {encIn : α ↪ 
 /-- Substituting `x_v = val` across a sparse `𝔽₂` system (`restrictSystem`) is polynomial-time. -/
 theorem computableInPolyTime_restrictSystem :
     ComputableInPolyTime
-      (fun p : (ℕ × Bool) × List (List (List ℕ)) => restrictSystem p.1.1 p.1.2 p.2)
+      (fun (((v, val), sys) : (ℕ × Bool) × List (List (List ℕ))) => restrictSystem v val sys)
       (encPair (encPair encNat encBool) encSys) encSys :=
-  mapWithInput (snd (encPair encNat encBool) encSys)
-    (computableInPolyTime_restrictEquation.comp (((fst _ _).fst').prod (snd _ _)))
+  (mapWithInput
+    (f := fun x a =>
+      (fun (((v, val), eq) : (ℕ × Bool) × List (List ℕ)) => restrictEquation v val eq) (x.1, a))
+    (snd (encPair encNat encBool) encSys)
+    (computableInPolyTime_restrictEquation.comp (((fst _ _).fst').prod (snd _ _)))).of_enc_eq
+    fun ⟨⟨_, _⟩, _⟩ => rfl
 
 @[fun_prop]
 theorem computableInPolyTime_restrictSystem_apply {α : Type} {encIn : α ↪ List Bool}

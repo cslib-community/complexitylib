@@ -32,6 +32,11 @@ polynomially bounded. On an input word `x` the family runs its circuit for `n = 
 `|x 0^{m - n}⟩` and accepts when the final measurement finds qubit `0` in state `1`
 (`Cslib.Quantum.UniformCircuitFamily.acceptProb`).
 
+Postselected classes condition on a second measured qubit: the postselected acceptance probability
+is the probability that qubit `0` reads `1` given that qubit `1` does
+(`Cslib.Quantum.UniformCircuitFamily.postselectedAcceptProb`), as in
+[Aaronson][Aaronson2005Postselection], Definition 1, with the two qubits exchanged.
+
 Appending a NOT gate on qubit `0` gives a family with complementary acceptance probability
 (`Cslib.Quantum.UniformCircuitFamily.appendNot`).
 
@@ -40,6 +45,9 @@ Appending a NOT gate on qubit `0` gives a family with complementary acceptance p
 * `Cslib.Quantum.encGateCode`: the encoding of gate codes.
 * `Cslib.Quantum.UniformCircuitFamily`: polynomial-time uniform families of circuits.
 * `Cslib.Quantum.UniformCircuitFamily.acceptProb`: the acceptance probability on an input word.
+* `Cslib.Quantum.UniformCircuitFamily.onesProb`,
+  `Cslib.Quantum.UniformCircuitFamily.postselectedAcceptProb`: the probability that measured qubits
+  read `1`, and the acceptance probability postselected on qubit `1`.
 * `Cslib.Quantum.UniformCircuitFamily.appendNot`: the family with a final NOT on qubit `0`.
 
 ## Main results
@@ -50,6 +58,8 @@ Appending a NOT gate on qubit `0` gives a family with complementary acceptance p
 ## References
 
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
+* [S. Aaronson, *Quantum computing, postselection, and probabilistic
+  polynomial-time*][Aaronson2005Postselection]
 -/
 
 @[expose] public section
@@ -89,6 +99,22 @@ theorem acceptProb_nonneg (F : UniformCircuitFamily) (x : List Bool) : 0 ≤ F.a
 
 theorem acceptProb_le_one (F : UniformCircuitFamily) (x : List Bool) : F.acceptProb x ≤ 1 :=
   Quantum.acceptProb_le_one _ _ _
+
+/-- The probability that the final measurement of the family's circuit on the input word `x` finds
+every qubit of `S` in state `1`. -/
+noncomputable def onesProb (F : UniformCircuitFamily) (S : List ℕ) (x : List Bool) : ℝ :=
+  Quantum.onesProb (F.width x.length) (F.gates x.length) S x
+
+theorem acceptProb_eq_onesProb (F : UniformCircuitFamily) (x : List Bool) :
+    F.acceptProb x = F.onesProb [0] x :=
+  rfl
+
+/-- The **postselected acceptance probability** of the family on the input word `x`: the
+probability that qubit `0` reads `1` conditioned on qubit `1` reading `1`, that is, the probability
+that both read `1` divided by the probability that qubit `1` does. It is `0` when qubit `1` never
+reads `1`. -/
+noncomputable def postselectedAcceptProb (F : UniformCircuitFamily) (x : List Bool) : ℝ :=
+  F.onesProb [0, 1] x / F.onesProb [1] x
 
 /-- The family with a final NOT gate on qubit `0`. -/
 def appendNot (F : UniformCircuitFamily) : UniformCircuitFamily where

@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.Queue.Basic
-public import Complexity.Foundations.Semantics.Stateful.Amortized
+public import Complexity.DataStructure.StateTransition.Amortized
 
 /-!
 # Correctness and amortized instruction cost of a RAM queue
@@ -59,17 +59,18 @@ def QueueRep (w base capacity : ℕ) (q : List ℕ) (x : Data 11) : Prop :=
 /-- The fixed dispatcher implements the bounded FIFO specification. -/
 def certificate {w base capacity : ℕ} (h1 : Fits w 1)
     (hc : Fits w (base + 2 * capacity)) :
-    DynamicCertificate (implementation w capacity) w where
-  rep := QueueRep w base capacity
-  bounded h := by obtain ⟨_, _, _, hr⟩ := h; exact hr.bounded
-  arguments_fit o hv i _ := arguments_fit h1 o hv i
-  execute o hr hv := by
-    obtain ⟨front, back, rfl, hr⟩ := hr
-    obtain ⟨y, he, ha, hy, _⟩ := execute hc hr o hv
-    have hs := pairStep_correct (front, back) o
-    refine ⟨y, _, he, ?_, ?_⟩
-    · exact ha.trans (congrArg some (congrArg Prod.snd hs))
-    · exact ⟨_, _, (congrArg Prod.fst hs).symm, hy⟩
+    DynamicCertificate (implementation w capacity) w :=
+  DynamicCertificate.ofFn
+    (rep := QueueRep w base capacity)
+    (bounded := fun h => by obtain ⟨_, _, _, hr⟩ := h; exact hr.bounded)
+    (arguments_fit := fun o hv i _ => arguments_fit h1 o hv i)
+    (execute := fun o hr hv => by
+      obtain ⟨front, back, rfl, hr⟩ := hr
+      obtain ⟨y, he, ha, hy, _⟩ := execute hc hr o hv
+      have hs := pairStep_correct (front, back) o
+      refine ⟨y, _, he, ?_, ?_⟩
+      · exact ha.trans (congrArg some (congrArg Prod.snd hs))
+      · exact ⟨_, _, (congrArg Prod.fst hs).symm, hy⟩)
 
 /-- The expensive transfer consumes eight credits per rear element, including loop control.
 The final halt contributes the extra one in the left side. -/
@@ -99,9 +100,9 @@ def potential (x : Data 11) : ℕ := 8 * x.regs backLen
 /-- Amortized constant instruction cost is certified separately from FIFO correctness. -/
 theorem amortized {w base capacity : ℕ} (h1 : Fits w 1)
     (hc : Fits w (base + 2 * capacity)) :
-    Stateful.Amortized (certificate h1 hc).realization
-      DynamicProgram.OperationTrace.instructions (fun _ x => potential x) (fun _ _ => 14) where
-  step hr hv he := by
+    DataStructure.Amortized (certificate h1 hc).impl
+      DynamicProgram.OperationTrace.instructions (fun _ x => potential x) (fun _ _ => 14) :=
+  DataStructure.Amortized.ofFn fun hr hv he => by
     obtain ⟨front, back, rfl, hr⟩ := hr
     obtain ⟨z, hz, _, hrz, _⟩ := execute hc hr _ hv
     obtain ⟨rfl, hn⟩ := he.eq_of_exec hz
@@ -115,10 +116,10 @@ theorem run_client {w base capacity : ℕ} (h1 : Fits w 1)
     (hc : Fits w (base + 2 * capacity)) {α : Type} (p : (spec w capacity).Client α)
     {q : List ℕ} {x : Data 11} (hr : QueueRep w base capacity q x)
     (hv : (spec w capacity).ValidHistory q ((spec w capacity).runClient q p).2.2) :
-    ∃ y traces, Stateful.Executes ((implementation w capacity).ExecOp w) p x
+    ∃ y traces, DataStructure.Executes ((implementation w capacity).ExecOp w) p x
         ((spec w capacity).runClient q p).1 y traces ∧
       QueueRep w base capacity ((spec w capacity).runClient q p).2.1 y ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces + potential y ≤
+      DataStructure.total DynamicProgram.OperationTrace.instructions traces + potential y ≤
         ((spec w capacity).runClient q p).2.2.length * 14 + potential x :=
   (amortized h1 hc).exists_executes_const p hr hv
 
@@ -130,10 +131,10 @@ theorem run_initialized {w base capacity : ℕ} (h1 : Fits w 1)
     {x : Data 11} (hx : x.Bounded w)
     (hv : (spec w capacity).ValidHistory [] ((spec w capacity).runClient [] p).2.2) :
     ∃ ready y traces, Exec w (initializeCode base capacity) x ready 6 ∧
-      Stateful.Executes ((implementation w capacity).ExecOp w) p ready
+      DataStructure.Executes ((implementation w capacity).ExecOp w) p ready
         ((spec w capacity).runClient [] p).1 y traces ∧
       QueueRep w base capacity ((spec w capacity).runClient [] p).2.1 y ∧
-      6 + Stateful.total DynamicProgram.OperationTrace.instructions traces + potential y ≤
+      6 + DataStructure.total DynamicProgram.OperationTrace.instructions traces + potential y ≤
         6 + ((spec w capacity).runClient [] p).2.2.length * 14 := by
   obtain ⟨ready, hi, hr, _⟩ := initialize_exec hx h1 hc
   have hp : potential ready = 0 := by simp [potential, hr.backLen_eq]
