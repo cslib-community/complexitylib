@@ -44,8 +44,8 @@ public theorem computesTidily_seq_rewindInput_of_runPath {q : tm.RunPath input}
   have hr : r.last = wordsCfg input none (fun _ => []) q.last.output :=
     (runFrom_rewindInput q.last.inputPos q.last.workTapes q.last.workTapePos q.last.output).trans
       (Cfg.ext_zero_tapes rfl rfl rfl)
-  obtain ⟨p, hph, hpl, hpt, -⟩ := exists_runPath_seq hl rfl
-  exact computesTidily_iff.mpr ⟨p, by rw [hph, hh]; rfl, by simp [hpl, hr, Cfg.mapState], hpt,
+  obtain ⟨p, hph, hpl, hpt, -⟩ := exists_runPath_seq (p₁ := r) hl rfl
+  exact computesTidily_iff.mpr ⟨p, by rw [hph, hh]; rfl, by simp [hpl, hr], hpt,
     by simp [MultiTapeNTM.RunPath.space]⟩
 
 /-- A machine without work tapes that computes `output` in time `t`, followed by

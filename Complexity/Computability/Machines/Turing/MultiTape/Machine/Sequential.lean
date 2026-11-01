@@ -147,17 +147,19 @@ omit hchoose in
 theorem toTM_seq (first : MultiTapeMachine k Symbol State₀ Empty Id)
     (second : MultiTapeMachine k Symbol State₁ Empty Id) :
     (first.seq second).toTM = first.toTM.seq second.toTM := by
-  simp only [toTM, MultiTapeTM.seq, MultiTapeTM.tr_ofTr, MultiTapeMachine.seq]
+  simp only [toTM, MultiTapeTM.seq, MultiTapeTM.combine, MultiTapeMachine.seq]
   congr 1
   funext state symbol work
   cases state with
   | inl state =>
-    dsimp only
+    simp only [Sum.elim_inl, MultiTapeTM.adaptedTr, MultiTapeNTM.Adapter.mapState,
+      id_eq, MultiTapeTM.tr_ofTr]
     cases first.tr state symbol work Empty.elim with
     | step action symbol move => rfl
     | query oracle next => exact oracle.elim
   | inr state =>
-    dsimp only
+    simp only [Sum.elim_inr, MultiTapeTM.adaptedTr, MultiTapeNTM.Adapter.mapState,
+      id_eq, MultiTapeTM.tr_ofTr]
     cases second.tr state symbol work Empty.elim with
     | step action symbol move => rfl
     | query oracle next => exact oracle.elim

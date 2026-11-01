@@ -238,9 +238,9 @@ lemma appendOne_space_le (p : Fin (input.length + 2)) (hp : p.val ≠ 0) (v out 
   have hmid := r.withState_eq_coreCfg p hp v out
   obtain ⟨hn, h₁⟩ := r.core_runFrom _ r.q₀ (p.val - 1) hp' rfl v out
   have hinv : ∀ m, (((forwardWork Symbol).seq (r.core.seq (rewindWork Symbol))).runFrom
-      ((⟨some (forwardWork Symbol).q₀, p,
-        fun _ => tapeOfList v, fun _ => ((0 : ℕ) : ℤ), out⟩).mapState (handOver (r.core.seq
-          (rewindWork Symbol)).q₀)) m).workTapePos 0 ∈
+      ((⟨some (forwardWork Symbol).q₀, p, fun _ => tapeOfList v,
+          fun _ => ((0 : ℕ) : ℤ), out⟩ : Cfg 1 Symbol Unit input).mapState
+        (handOver (r.core.seq (rewindWork Symbol)).q₀)) m).workTapePos 0 ∈
         Set.Icc (-1 : ℤ) L := by
     refine withState_runFrom_seq (P := fun c => c.workTapePos 0 ∈ Set.Icc (-1 : ℤ) L) h₀ rfl
       (fun m _ => ?_) (fun n => ?_)

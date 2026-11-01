@@ -107,7 +107,7 @@ public theorem ComputesTidilyInTimeAndSpace.outputToWord {tm : MultiTapeTM k Sym
   obtain ⟨p₁, hh₁, hl₁, ht₁, hs₁⟩ := exists_runPath_rewindLast (k := k) (input := input) output
   obtain ⟨q, hqh, hql, hqt, hqs⟩ := exists_runPath_seq_space_le (p₀ := p₀) (p₁ := p₁)
     (by rw [hl₀]; rfl) (by rw [hh₁, hl₀]; rfl)
-  refine ⟨_, [], ⟨rfl, rfl⟩, q, ?_, by simp [hql, hl₁, Cfg.mapState], ?_, by omega⟩
+  refine ⟨_, [], ⟨rfl, rfl⟩, q, ?_, by simp [hql, hl₁], ?_, by omega⟩
   · simp only [hqh, p₀, RelSeries.head_map, outCfgHom_apply, hh, outCfg_wordsCfg]
     rfl
   · simp only [MultiTapeNTM.RunPath.time] at ht ht₁ ⊢

@@ -187,7 +187,7 @@ public theorem transformsTapes_inputFromWord (mark : Symbol)
     (by rw [hl₁]; rfl) (by rw [hh₂, hl₁])
   obtain ⟨p, hph, hpl, hpt, hps⟩ := exists_runPath_seq_space_le (p₀ := p₀) (p₁ := p₁₂)
     (by rw [hl₀]; rfl) (by simp [hh₁₂, p₁, hh, hl₀]; rfl)
-  refine ⟨_, e, ⟨rfl, rfl⟩, p, by rw [hph, hh₀]; rfl, by simp [hpl, hl₁₂, hl₂, Cfg.mapState], ?_,
+  refine ⟨_, e, ⟨rfl, rfl⟩, p, by rw [hph, hh₀]; rfl, by simp [hpl, hl₁₂, hl₂], ?_,
     ?_⟩
   · simp only [MultiTapeNTM.RunPath.time] at ht ht₀ ht₂ ⊢
     have : p₁.length = pM.length := rfl
