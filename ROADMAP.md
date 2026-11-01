@@ -639,7 +639,8 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   assemble preparation, evaluation and halt accounting by hand.
 - **Priority-queue and shortest-path consolidation** ([#949]): lift operation-count helpers
   (`numQueries`, `numInserts`, `numDecreaseKeys`, `numExtractMins`) to `IndexedMinPQ`, parameterize
-  flat-program operation-sequence execution (`RunsOps`) over `PQCode` in `PriorityQueue/Basic.lean`
+  flat-program operation-sequence execution (`RunsOps`) over `PQCode` in
+  `DataStructure/PriorityQueue/WordRAM/Basic.lean`
   so `BinaryHeap` and `FibonacciHeap` share a generic `run_ops_exact` theorem, and factor a common
   `ShortestPathSpec p bound` predicate in `Dijkstra/HeapStatement.lean` across `LogLinearSpec`,
   `FibonacciSpec`, and `FibonacciLinearSpec`.

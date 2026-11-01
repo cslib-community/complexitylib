@@ -7,8 +7,8 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.UniformProbing
-public import Complexity.Algorithms.WordRAM.Dictionary.UniformProbing
+public import Complexity.DataStructure.Dictionary.UniformProbing
+public import Complexity.DataStructure.Dictionary.WordRAM.UniformProbing
 
 /-!
 # Tests for Uniform Probing (`Lean.UniformProbing` and `WordRAM.Dictionary.UniformProbing`)
@@ -19,13 +19,13 @@ This test file verifies:
    bounds (`≤ m / (m - n) ≤ 2` for unsuccessful lookups by [CLRS2009], third edition, Theorem 11.6
    and Corollary 11.7, pp. 274–276, and for fixed-key successful lookups via the insertion-cost
    identity and intermediate bound from the proof of Theorem 11.8, p. 276) and lazy random-oracle
-   equivalence in `Cslib.Algorithms.Lean.UniformProbing`.
+   equivalence in `Cslib.DataStructure.Dictionary.UniformProbing`.
 2. Concrete parameter values, full-cycle stride permutations, pathwise Word-RAM execution
-   (`opCode_execWithin`), composable `SubroutineDS` certificates over `Basis.exact` and
+   (`opCode_execWithin`), composable `StateTransitionImpl` certificates over `Basis.exact` and
    `Basis.standard`, end-to-end multi-operation expected complexity (`seq_expected_amortized`)
    charging $O_{c_{\exp}}(1)$ per operation (`expectedOpCharge c_exp`), linear space bound
    (`space_le`), and expected-step transfer (`expect_idealProbeSteps_le`) in
-   `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing`.
+   `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing`.
 -/
 
 public section
@@ -33,15 +33,14 @@ public section
 namespace ComplexityTests.WordRAMUniformProbing
 
 open Cslib
-open Cslib.Algorithms.Lean
-open Cslib.Algorithms.Lean.UniformProbing
-open Cslib.Algorithms.WordRAM.Dictionary.UniformProbing
+open Cslib.DataStructure Cslib.DataStructure.Dictionary
+open Cslib.DataStructure.Dictionary.UniformProbing
+open Cslib.DataStructure.Dictionary.WordRAM.UniformProbing
 open Cslib.Probability
 open Cslib.WordRAM
-open Cslib.WordRAM.Randomized
 open scoped ENNReal
 
-/-! ## Part 1: Pure Textbook Uniform Probing (`Cslib.Algorithms.Lean.UniformProbing`) -/
+/-! ## Part 1: Pure Textbook Uniform Probing (`Cslib.DataStructure.Dictionary.UniformProbing`) -/
 
 /-- A concrete permutation family on `U = 4` keys and `m = 4` slots where keys `0` and `1` both
 start at slot `0`, and key `1` swaps slots `1` and `3`. -/
@@ -116,7 +115,7 @@ theorem test_lazy_random_oracle_equiv
         prog).run (fun _ => none)).map Prod.fst :=
   uniform_interpret_eq_lazy_perm prog
 
-/-! ## Part 2: Word-RAM Realization (`Cslib.Algorithms.WordRAM.Dictionary.UniformProbing`) -/
+/-! ## Part 2: Word-RAM Realization (`Cslib.DataStructure.Dictionary.WordRAM.UniformProbing`) -/
 
 /-- Verify concrete table dimension parameters at `c_exp = 2`, `n_max = 2`. -/
 theorem test_wordram_params :
@@ -154,10 +153,11 @@ def testOps : List (Dictionary.Op 16) :=
 
 theorem testOps_validHistory :
     (Dictionary.spec 16 100 2).ValidHistory (Dictionary.empty 16) testOps := by
-  dsimp only [testOps, Cslib.Stateful.Spec.ValidHistory, Dictionary.spec]
+  dsimp only [testOps, Cslib.DataStructure.StateTransitionSpec.ValidHistory, Dictionary.spec]
   decide
 
-/-- Concrete instantiation of the `Basis.exact` and `Basis.standard` `SubroutineDS` certificates
+/-- Concrete instantiation of the `Basis.exact` and `Basis.standard` `StateTransitionImpl`
+certificates
 and end-to-end `seq_expected_amortized` bound at `w = 64`, `base = 16`, `c_exp = 2`, `U = 16`,
 `V = 100`, `n_max = 2`. -/
 theorem test_wordram_seq_expected_amortized :
@@ -168,14 +168,14 @@ theorem test_wordram_seq_expected_amortized :
     let x₀ : Data 16 := (⟨fun _ => 0, fun _ => 0⟩ : Data 16).set regV 16
     ∃ (ν₀ ν_final : PMF (Seed 2 2 × Data 16)) (T_ops : ℝ≥0∞),
       ExecCodeDist 64 (subroutineCode 2 2).initFresh x₀ (ν₀.map Prod.snd)
-        (subroutineDS (V := 100) hS hU_fit hV hU).initTime ∧
-      (subroutineDS (V := 100) hS hU_fit hV hU).ExecStepsOfFn (Dictionary.empty 16) testOps ν₀
+        (impl (V := 100) hS hU_fit hV hU).initTime ∧
+      (impl (V := 100) hS hU_fit hV hU).ExecStepsOfFn (Dictionary.empty 16) testOps ν₀
         ν_final T_ops ∧
       (∀ θ, (ν_final.map Prod.fst) θ ≤ seedLaw 2 2 θ) ∧
       (∀ p ∈ ν_final.support,
         Rep 64 16 2 16 100 2 p.1
           ((Dictionary.spec 16 100 2).run (Dictionary.empty 16) testOps).1 p.2) ∧
-      (subroutineDS (V := 100) hS hU_fit hV hU).initTime + T_ops ≤
+      (impl (V := 100) hS hU_fit hV hU).initTime + T_ops ≤
         (3 + setupSteps 2 2 : ℝ≥0∞) +
           ((Dictionary.spec 16 100 2).totalCost (fun _ _ => expectedOpCharge 2)
             (Dictionary.empty 16) testOps : ℝ≥0∞) := by
@@ -200,7 +200,7 @@ theorem test_wordram_standard_and_collision_bounds :
     have hU_fit : ∀ u : Fin 16, Fits 64 u.val := fun u => by fin_cases u <;> decide
     have hV : Fits 64 100 := by decide
     have hU : 16 ≤ max 2 4 ^ 2 := by decide
-    (subroutineDSStandard (V := 100) hS hU_fit hV hU).space = 1024 ∧
+    (implStandard (V := 100) hS hU_fit hV hU).space = 1024 ∧
     ∀ (T : Fin (numBuckets 2) → Option (Fin 16 × ℕ)) (u : Fin 16),
       (otherOccupiedSlots T u).card ≤ 2 →
       (∑' π : Equiv.Perm (Fin (numBuckets 2)),

@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Computability.WordRAM.Randomized.Subroutine
+public import Complexity.DataStructure.WordRAM.Randomized.StateTransition
 public import Complexity.DataStructure.ObliviousSequence
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
@@ -33,10 +33,13 @@ This file connects state-free oblivious-sequence specifications
      the total expected instruction bound;
    - basis simulation transport `mapSimulates` and exact-to-standard lifting `toStandard`.
 
-2. **Canonical embedding `Cslib.WordRAM.Randomized.SubroutineDS.toObliviousSequenceImpl`**:
-   Every relational `Cslib.WordRAM.Randomized.SubroutineDS P D w base params s₀` whose per-operation
-   amortized charge is bounded by a state-independent `opCharge : D.Op → ℕ` on admissible inputs
-   canonically induces an `ObliviousSequenceImpl P (D.toObliviousSequenceSpec s₀) w base params`.
+2. **Canonical embedding
+   `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl.toObliviousSequenceImpl`**:
+   Every relational
+   `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl P D w base params s₀` whose
+   per-operation amortized charge is bounded by a state-independent `opCharge : D.Op → ℕ` on
+   admissible inputs canonically induces an
+   `ObliviousSequenceImpl P (D.toObliviousSequenceSpec s₀) w base params`.
 
 `ObliviousSequenceImpl` bounds the instruction cost of initialization and of the subroutine
 operation bodies across an oblivious sequence `ops`, excluding external caller argument delivery and
@@ -52,8 +55,8 @@ dispatch, with the word width `w` treated as an external admissible parameter.
   relation across an oblivious sequence `ops : List S.Op`.
 * `Cslib.DataStructure.WordRAM.Randomized.ObliviousSequenceImpl`: Word-RAM implementation
   certificate for an `ObliviousSequenceSpec`.
-* `Cslib.WordRAM.Randomized.SubroutineDS.toObliviousSequenceImpl`: canonical embedding of a
-  relational `SubroutineDS` into `ObliviousSequenceImpl`.
+* `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl.toObliviousSequenceImpl`: canonical
+  embedding of a relational `StateTransitionImpl` into `ObliviousSequenceImpl`.
 
 ## Main results
 
@@ -71,7 +74,7 @@ dispatch, with the word width `w` treated as an external admissible parameter.
 
 public section
 
-open Cslib.WordRAM Cslib.WordRAM.Randomized Cslib.Probability
+open Cslib.WordRAM Cslib.Probability
 open scoped ENNReal
 
 universe u v z
@@ -496,9 +499,10 @@ theorem seq_expected_clear (C : ObliviousSequenceImpl.{u, v, z} P S w base param
 end ObliviousSequenceImpl
 
 /-- Coupled latent seed, current abstract state, and accumulated relational transcript prefix for
-embedding `Cslib.WordRAM.Randomized.SubroutineDS` into `ObliviousSequenceImpl`. -/
-structure TraceLatent (D : Stateful.Spec.{u, v, z}) (Seed : Type) : Type (max u v z) where
-  /-- Latent random seed from the underlying `SubroutineDS`. -/
+embedding `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl` into
+`ObliviousSequenceImpl`. -/
+structure TraceLatent (D : StateTransitionSpec.{u, v, z}) (Seed : Type) : Type (max u v z) where
+  /-- Latent random seed from the underlying `StateTransitionImpl`. -/
   seed : Seed
   /-- Current abstract state of `D`. -/
   state : D.State
@@ -507,26 +511,26 @@ structure TraceLatent (D : Stateful.Spec.{u, v, z}) (Seed : Type) : Type (max u 
 
 end Cslib.DataStructure.WordRAM.Randomized
 
-/-! ## Canonical Embedding of `SubroutineDS` into `ObliviousSequenceImpl` -/
+/-! ## Canonical Embedding of `StateTransitionImpl` into `ObliviousSequenceImpl` -/
 
-namespace Cslib.WordRAM.Randomized.SubroutineDS
+namespace Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl
 
-open Cslib.DataStructure.WordRAM.Randomized
+open Cslib.WordRAM Cslib.DataStructure.WordRAM.Randomized
 
 variable {B : Basis} {r_ds k_init w base : ℕ}
-  {P : SubroutineCode B r_ds k_init} {D : Stateful.Spec.{u, v, z}}
+  {P : SubroutineCode B r_ds k_init} {D : StateTransitionSpec.{u, v, z}}
   {params : Fin k_init → ℕ} {s₀ : D.State}
 
 /-- Project a `SeqOutcome (TraceLatent D C.Seed) D.Result r_ds` to
 `CoupledState C.Seed D.State r_ds` by forgetting the accumulated transcript prefix. -/
-private def projCoupled (C : SubroutineDS P D w base params s₀)
+private def projCoupled (C : StateTransitionImpl P D w base params s₀)
     (t : SeqOutcome (TraceLatent D C.Seed) D.Result r_ds) :
     CoupledState C.Seed D.State r_ds :=
   ⟨t.latent.seed, t.latent.state, t.data⟩
 
-/-- Multi-step execution and potential-telescope helper for `SubroutineDS.toObliviousSequenceImpl`.
--/
-private theorem steps_toObliviousSequenceImpl (C : SubroutineDS P D w base params s₀)
+/-- Multi-step execution and potential-telescope helper for
+`StateTransitionImpl.toObliviousSequenceImpl`. -/
+private theorem steps_toObliviousSequenceImpl (C : StateTransitionImpl P D w base params s₀)
     (opCharge : D.Op → ℕ)
     (hcharge : ∀ s o, D.valid s o → C.charge s o ≤ opCharge o)
     (prefOps remOps : List D.Op)
@@ -731,11 +735,12 @@ private theorem steps_toObliviousSequenceImpl (C : SubroutineDS P D w base param
         _ = ((opCharge o : ℝ≥0∞) + (((os.map opCharge).sum : ℕ) : ℝ≥0∞)) +
               ∑' t, ν t * (C.potential t.latent.seed t.data : ℝ≥0∞) := by ac_rfl
 
-/-- Canonical embedding of any relational `Cslib.WordRAM.Randomized.SubroutineDS` certificate into
+/-- Canonical embedding of any relational
+`Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl` certificate into
 `ObliviousSequenceImpl` realizing `D.toObliviousSequenceSpec s₀`, given a state-independent
 operation charge bound `opCharge : D.Op → ℕ` such that
 `∀ s o, D.valid s o → C.charge s o ≤ opCharge o`. -/
-@[expose] noncomputable def toObliviousSequenceImpl (C : SubroutineDS P D w base params s₀)
+@[expose] noncomputable def toObliviousSequenceImpl (C : StateTransitionImpl P D w base params s₀)
     (opCharge : D.Op → ℕ := C.charge s₀)
     (hcharge : ∀ s o, D.valid s o → C.charge s o ≤ opCharge o := by intros; exact le_rfl) :
     ObliviousSequenceImpl.{v, z, max u v z} P (D.toObliviousSequenceSpec s₀) w base params where
@@ -856,18 +861,18 @@ operation charge bound `opCharge : D.Op → ℕ` such that
         _ = (C.initPotential : ℝ≥0∞) + (((ops.map opCharge).sum : ℕ) : ℝ≥0∞) := add_comm _ _
 
 @[simp]
-theorem toObliviousSequenceImpl_space (C : SubroutineDS P D w base params s₀)
+theorem toObliviousSequenceImpl_space (C : StateTransitionImpl P D w base params s₀)
     (opCharge) (hcharge) :
     (C.toObliviousSequenceImpl opCharge hcharge).space = C.space := by rfl
 
 @[simp]
-theorem toObliviousSequenceImpl_initPotential (C : SubroutineDS P D w base params s₀)
+theorem toObliviousSequenceImpl_initPotential (C : StateTransitionImpl P D w base params s₀)
     (opCharge) (hcharge) :
     (C.toObliviousSequenceImpl opCharge hcharge).initPotential = C.initPotential := by rfl
 
 @[simp]
-theorem toObliviousSequenceImpl_charge (C : SubroutineDS P D w base params s₀)
+theorem toObliviousSequenceImpl_charge (C : StateTransitionImpl P D w base params s₀)
     (opCharge) (hcharge) :
     (C.toObliviousSequenceImpl opCharge hcharge).charge = opCharge := by rfl
 
-end Cslib.WordRAM.Randomized.SubroutineDS
+end Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl

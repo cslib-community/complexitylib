@@ -61,8 +61,8 @@ inductive Operation where
 
 /-- Abstract list specification. The admissibility of an update includes the word bound on
 its new total; a query does not modify the array. -/
-abbrev spec (h w : ℕ) : Stateful.Spec :=
-  Stateful.Spec.ofFn (State := List ℕ) (Op := Operation) (Result := fun _ => ℕ)
+abbrev spec (h w : ℕ) : DataStructure.StateTransitionSpec :=
+  DataStructure.StateTransitionSpec.ofFn (State := List ℕ) (Op := Operation) (Result := fun _ => ℕ)
     (fun s => fun
       | .add i δ => (increment s i δ, 0)
       | .sum i => (s, (s.take i).sum))
@@ -213,7 +213,7 @@ def certificate (ha : Fits w (b + 2 * 2 ^ h)) : DynamicCertificate (program h w)
 
 /-- Separate worst-case instruction certificate, counting the final halt. -/
 theorem instruction_bound (ha : Fits w (b + 2 * 2 ^ h)) :
-    Stateful.Bound (certificate ha).realization DynamicProgram.OperationTrace.instructions
+    DataStructure.Bound (certificate ha).impl DynamicProgram.OperationTrace.instructions
       (fun _ _ => 13 * (h + 1) + 12) := by
   apply (certificate ha).instruction_bound_const
   intro s x o hx ho
@@ -222,7 +222,7 @@ theorem instruction_bound (ha : Fits w (b + 2 * 2 ^ h)) :
 
 /-- The same instruction certificate stated in terms of the abstract array length. -/
 theorem instruction_bound_log (ha : Fits w (b + 2 * 2 ^ h)) :
-    Stateful.Bound (certificate ha).realization DynamicProgram.OperationTrace.instructions
+    DataStructure.Bound (certificate ha).impl DynamicProgram.OperationTrace.instructions
       (fun s _ => 13 * (Nat.log 2 s.length + 1) + 12) := by
   intro s x o a y trace hx ho he
   have hb := instruction_bound ha hx ho he
@@ -244,10 +244,10 @@ controller itself is mathematical; this counts its calls into the fixed machine 
 theorem client_spec (ha : Fits w (b + 2 * 2 ^ h)) {α : Type}
     (p : (spec h w).Client α) {s : List ℕ} (hx : Rep h b w s x)
     (hv : (spec h w).ValidHistory s ((spec h w).runClient s p).2.2) :
-    ∃ y traces, Stateful.Executes ((program h w).ExecOp w) p x
+    ∃ y traces, DataStructure.Executes ((program h w).ExecOp w) p x
         ((spec h w).runClient s p).1 y traces ∧
       Rep h b w ((spec h w).runClient s p).2.1 y ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces ≤
+      DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤
         ((spec h w).runClient s p).2.2.length * (13 * (h + 1) + 12) :=
   (certificate ha).run_client_const (instruction_bound ha) p hx hv
 

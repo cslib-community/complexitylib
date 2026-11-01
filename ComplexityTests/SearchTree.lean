@@ -26,7 +26,7 @@ the kernel, with no `native_decide`.
 
 namespace ComplexityTests.SearchTree
 
-open Cslib.Algorithms.Lean.SearchTree Cslib.OrderedSet Cslib.Stateful
+open Cslib.Algorithms.Lean.SearchTree Cslib.OrderedSet Cslib.DataStructure
 
 def build (xs : List Nat) : BinaryTree Nat := (run .nil (insertAll xs)).2.1
 
