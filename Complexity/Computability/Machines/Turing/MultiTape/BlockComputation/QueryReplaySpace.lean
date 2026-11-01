@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplay
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pi
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Pi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Pi
 import Complexity.Foundations.Data.List.Fold
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
@@ -158,16 +159,6 @@ private theorem finiteCases {α β Tag : Type} [Finite Tag]
     simpa only [List.foldr_ite_eq_of_mem, Finset.mem_toList, Finset.mem_univ] using
       hselect (Finset.univ.toList : List Tag)
 
-private theorem piLinear {α Index Value : Type} [Fintype Index]
-    {input : α ↪ List Bool} {enc : Value ↪ List Bool} {values : α → Index → Value}
-    (hvalues : ∀ i, ComputableInSpace (fun a => values a i) input enc
-      (fun a => (input a).length)) :
-    ComputableInSpace values input (encPi enc) (fun a => (input a).length) := by
-  classical
-  choose T hT using fun i => (hvalues i).exists_inO
-  refine (of_inO (ComputableInO.pi hT)).weaken ?_
-  exact ⟨Fintype.card Index + 1, fun a => by simp; nlinarith⟩
-
 private theorem piApplyLinear {Index Value : Type} [Fintype Index]
     (enc : Value ↪ List Bool) (i : Index) :
     ComputableInSpace (fun q : Index → Value => q i) (encPi enc) enc
@@ -205,7 +196,7 @@ private theorem cellOfCode_inSpace : ComputableInSpace cellOfCode encNat
 /-- Reading the symbols uses finite tuples only for the fixed number of tapes. -/
 theorem symbols_inSpace : ComputableInSpace (symbols (k := k) (Q := Q)) encConfig
     (encPi (encFinite (Option Bool))) (fun s => (encConfig s).length) := by
-  refine piLinear fun h => ?_
+  refine pi_linear fun h => ?_
   have hh := budget_comp_linear (piApplyLinear encNat h) (heads_inSpace (k := k) (Q := Q))
   have hc := budget_comp_linear (piApplyLinear (encList encNat) h) (cells_inSpace (k := k) (Q := Q))
   have hread := budget_comp_lin getD (linear_mul 8) (budget_prod hc hh)
@@ -253,7 +244,7 @@ private theorem fixedActionTick_inSpace (a : Option (Action k Bool Q)) :
     have hh : ComputableInSpace (fun s : Config k Q =>
         fun h => move (s.heads h) (a.workTapes h).2) encConfig (encPi encNat)
         (fun s => (encConfig s).length) := by
-      refine piLinear fun h => ?_
+      refine pi_linear fun h => ?_
       have hhead := budget_comp_linear (piApplyLinear encNat h)
         (heads_inSpace (k := k) (Q := Q))
       cases (a.workTapes h).2 with
@@ -265,7 +256,7 @@ private theorem fixedActionTick_inSpace (a : Option (Action k Bool Q)) :
         | none => s.cells h
         | some b => (s.cells h).set (s.heads h) (symbolCode b))
         encConfig (encPi (encList encNat)) (fun s => (encConfig s).length) := by
-      refine piLinear fun h => ?_
+      refine pi_linear fun h => ?_
       have hcell := budget_comp_linear (piApplyLinear (encList encNat) h)
         (cells_inSpace (k := k) (Q := Q))
       have hhead := budget_comp_linear (piApplyLinear encNat h)

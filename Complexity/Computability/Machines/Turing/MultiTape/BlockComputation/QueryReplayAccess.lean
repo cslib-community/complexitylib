@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySpace
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Pi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Pi
 
 /-!
@@ -146,11 +147,7 @@ theorem rawResult_inSpace : ComputableInSpace (rawResult (k := k) (Q := Q)) encC
     | some i =>
       have hhead := budget_comp_linear (of_inO (ComputableInO.pi_apply encNat i)) hheads
       exact budget_comp_linear workResidue_inSpace (budget_prod width_inSpace hhead)
-  choose T hT using fun i => (hres i).exists_inO
-  have hr := (of_inO (ComputableInO.pi hT)).weaken
-    (show (fun s => (encConfig s).length +
-      ∑ _i : Option (Fin k), (encConfig s).length) ≼ fun s => (encConfig s).length from
-        ⟨Fintype.card (Option (Fin k)) + 1, fun s => by simp; nlinarith⟩)
+  have hr := pi_linear hres
   exact (budget_prod hcontrol (budget_prod hr (budget_prod htrack hcells))).of_enc_eq
     fun _ => rfl
 

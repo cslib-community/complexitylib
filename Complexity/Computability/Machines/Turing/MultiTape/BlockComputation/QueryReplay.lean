@@ -306,8 +306,8 @@ theorem runFrom_represents (M : MultiTapeTM k Bool Q) {s : Config k Q}
     exact hprev.tick M (fun h => (hinterior h).2) (fun h => (hinterior h).1)
 
 /-- Initialize the local replay from decoded block data. The input length is an explicit
-argument, and every work cell is stored using the existing ternary symbol code. This initializer
-has no native decoding certificate yet. -/
+argument, and every work cell is stored using the existing ternary symbol code. Native loading
+and its semantic correspondence are provided by `QueryReplayLoad` and `QueryReplayLoadCorrect`. -/
 @[expose] def loadView (inputLength width : ℕ)
     (J : Option (Fin k) → ℤ) (v : View k Q width) : Config k Q :=
   { inputLength := inputLength
