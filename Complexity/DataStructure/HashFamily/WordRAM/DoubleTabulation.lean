@@ -7,9 +7,9 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.Hashing.KWise
-public import Complexity.Algorithms.WordRAM.Hashing.Tabulation
 public import Complexity.DataStructure.HashFamily.WordRAM.Basic
+public import Complexity.DataStructure.HashFamily.WordRAM.KWise
+public import Complexity.DataStructure.HashFamily.WordRAM.Tabulation
 public import Complexity.Probability.KWiseIndependent.DoubleTabulation
 
 /-!
@@ -74,6 +74,8 @@ and lifts it to `Cslib.WordRAM.Basis.standard`:
 
 ## Main results
 
+* `Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.extractSeed_eq_of_seedRep`: seed
+  extraction recovers `(T₁, T₂)` whenever `SeedRep` holds.
 * `Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.resampleCode_execRand`,
   `Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.map_extractSeed_eval_resampleComp`: exact
   `ExecRand` execution and product uniformity of `resampleCode`.
@@ -97,9 +99,9 @@ public section
 
 namespace Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation
 
-open Cslib.WordRAM Cslib.WordRAM.Randomized Cslib.Probability
+open Cslib.WordRAM Cslib.Probability
 open Cslib.DataStructure Cslib.DataStructure.WordRAM.Randomized
-open Cslib.Algorithms.WordRAM.ExactLog Cslib.Algorithms.WordRAM.Hashing
+open Cslib.Algorithms.WordRAM.ExactLog
 open scoped ENNReal BigOperators
 
 /-! ## Section 1: Flat memory layout, seed representations, and slice equivalences -/
@@ -227,6 +229,8 @@ theorem extractBot_apply (base c d b M : ℕ) (mem : ℕ → ℕ)
   congr 2
   ring
 
+/-- When `SeedRep base c d b M θ mem` holds, `extractSeed base c d b M mem` recovers the seed pair
+`θ`. -/
 theorem extractSeed_eq_of_seedRep {base c d b M : ℕ}
     {θ : DoubleTabTopSeed c d b × DoubleTabBotSeed d b M} {mem : ℕ → ℕ}
     (hseed : SeedRep base c d b M θ mem) :
@@ -1379,7 +1383,7 @@ theorem le_two_pow_provableC_mul_provableB {c_exp n_max U : ℕ}
       dsimp only [provableC]
       ring
 
-/-- Package `KWise` (`Complexity/Algorithms/WordRAM/Hashing/KWise.lean`) into an `Impl` on
+/-- Package `KWise` (`Complexity/DataStructure/HashFamily/WordRAM/KWise.lean`) into an `Impl` on
 `Data 18` with `3` initialization parameters `![n_max, U, M]`. -/
 @[expose] noncomputable def kWiseImpl {w base n_max U M k : ℕ}
     (hw : 2 * trinomialDeg U M ≤ w)

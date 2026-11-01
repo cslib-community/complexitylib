@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactLog
-public import Complexity.Algorithms.WordRAM.Hashing.Tabulation
+public import Complexity.DataStructure.HashFamily.WordRAM.Tabulation
 public import Complexity.Foundations.FieldTheory.Finite.Trinomial
 public import Complexity.Probability.KWiseIndependent.Trinomial
 import Complexity.Probability.PMF.Map
@@ -54,39 +54,46 @@ The initialization is factored into two reusable stages:
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.Hashing.KWise.chunkBits`,
-  `Cslib.Algorithms.WordRAM.Hashing.KWise.limbCount`,
-  `Cslib.Algorithms.WordRAM.Hashing.KWise.space`: chunk bit-width, limb count, and memory footprint.
-* `Cslib.Algorithms.WordRAM.Hashing.KWise.TableRep`,
-  `Cslib.Algorithms.WordRAM.Hashing.KWise.SeedRep`,
-  `Cslib.Algorithms.WordRAM.Hashing.KWise.Rep`: memory representation predicates separating the
-  deterministic `clmulTab` / header from the $k$ random seed words.
-* `Cslib.Algorithms.WordRAM.Hashing.KWise.initTableCode`,
-  `Cslib.Algorithms.WordRAM.Hashing.KWise.resampleCode`,
-  `Cslib.Algorithms.WordRAM.Hashing.KWise.initCode`,
-  `Cslib.Algorithms.WordRAM.Hashing.KWise.evalCode`,
-  `Cslib.Algorithms.WordRAM.Hashing.KWise.evalHashOut`: structured Word-RAM programs over
+* `Cslib.DataStructure.HashFamily.WordRAM.KWise.chunkBits`,
+  `Cslib.DataStructure.HashFamily.WordRAM.KWise.limbCount`,
+  `Cslib.DataStructure.HashFamily.WordRAM.KWise.space`: chunk bit-width, limb count, and memory
+  footprint.
+* `Cslib.DataStructure.HashFamily.WordRAM.KWise.TableRep`,
+  `Cslib.DataStructure.HashFamily.WordRAM.KWise.SeedRep`,
+  `Cslib.DataStructure.HashFamily.WordRAM.KWise.Rep`: memory representation predicates separating
+  the deterministic `clmulTab` / header from the $k$ random seed words.
+* `Cslib.DataStructure.HashFamily.WordRAM.KWise.initTableCode`,
+  `Cslib.DataStructure.HashFamily.WordRAM.KWise.resampleCode`,
+  `Cslib.DataStructure.HashFamily.WordRAM.KWise.initCode`,
+  `Cslib.DataStructure.HashFamily.WordRAM.KWise.evalCode`,
+  `Cslib.DataStructure.HashFamily.WordRAM.KWise.evalHashOut`: structured Word-RAM programs over
   `Basis.exact` and the induced deterministic hash output map.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.Hashing.KWise.two_pow_two_mul_chunkBits_le`,
-  `Cslib.Algorithms.WordRAM.Hashing.KWise.two_pow_two_mul_chunkBits_pow_three_le`: coarse
+* `Cslib.DataStructure.HashFamily.WordRAM.KWise.two_pow_two_mul_chunkBits_le`,
+  `Cslib.DataStructure.HashFamily.WordRAM.KWise.two_pow_two_mul_chunkBits_pow_three_le`: coarse
   $\max(4, n_{\max})$ and sublinear $n_{\max}^{2/3}$ bounds on the Four-Russians table size.
-* `Cslib.Algorithms.WordRAM.Hashing.KWise.initTableCode_execWithin`: deterministic
+* `Cslib.DataStructure.HashFamily.WordRAM.KWise.extractSeeds_eq_of_seedRep`,
+  `Cslib.DataStructure.HashFamily.WordRAM.KWise.SeedRep.congr_of_footprint`,
+  `Cslib.DataStructure.HashFamily.WordRAM.KWise.extractSeeds_congr_of_footprint`: seed-extraction
+  inversion and memory-footprint congruence lemmas for `SeedRep` and `extractSeeds`.
+* `Cslib.DataStructure.HashFamily.WordRAM.KWise.initTableCode_execWithin`: deterministic
   `initTableSteps n_max U M` ($= O(n_{\max} + \log U + \log M)$) table construction establishing
   `TableRep`.
-* `Cslib.Algorithms.WordRAM.Hashing.KWise.resampleCode_execRand`,
-  `Cslib.Algorithms.WordRAM.Hashing.KWise.map_extractSeeds_eval_resampleComp`,
-  `Cslib.Algorithms.WordRAM.Hashing.KWise.resampleCode_execRandWithin`: $(5k + 10)$-step, $k$-query
-  seed resampling preserving `TableRep` and inducing `PMF.uniformOfFintype (Fin k → Fin (2 ^ q))`.
-* `Cslib.Algorithms.WordRAM.Hashing.KWise.evalCode_execWithin`,
-  `Cslib.Algorithms.WordRAM.Hashing.KWise.evalHashOut_eq_trinomialPolyHash`: deterministic
+* `Cslib.DataStructure.HashFamily.WordRAM.KWise.resampleCode_execRand`,
+  `Cslib.DataStructure.HashFamily.WordRAM.KWise.map_extractSeeds_eval_resampleComp`,
+  `Cslib.DataStructure.HashFamily.WordRAM.KWise.resampleCode_execRandWithin`: $(5k + 10)$-step,
+  $k$-query seed resampling preserving `TableRep` and inducing
+  `PMF.uniformOfFintype (Fin k → Fin (2 ^ q))`.
+* `Cslib.DataStructure.HashFamily.WordRAM.KWise.evalCode_execWithin`,
+  `Cslib.DataStructure.HashFamily.WordRAM.KWise.evalHashOut_eq_trinomialPolyHash`: deterministic
   `evalSteps n_max U M k` ($= O(k \cdot L^2 + 1)$) Horner evaluation matching `trinomialPolyHash`.
-* `Cslib.Algorithms.WordRAM.Hashing.KWise.map_evalHashOut_eval_resampleComp`,
-  `Cslib.Algorithms.WordRAM.Hashing.KWise.isKWiseIndependentHash_eval`: composed Word-RAM $k$-wise
-  independence theorem proving that for every set $T$ of at most $k$ keys, the restricted tuple of
-  `evalCode k` outputs after `resampleCode k` is uniformly distributed on $T \to \text{Fin}(2^M)$.
+* `Cslib.DataStructure.HashFamily.WordRAM.KWise.map_evalHashOut_eval_resampleComp`,
+  `Cslib.DataStructure.HashFamily.WordRAM.KWise.isKWiseIndependentHash_eval`: composed Word-RAM
+  $k$-wise independence theorem proving that for every set $T$ of at most $k$ keys, the restricted
+  tuple of `evalCode k` outputs after `resampleCode k` is uniformly distributed on
+  $T \to \text{Fin}(2^M)$.
 
 ## References
 
@@ -100,11 +107,11 @@ The initialization is factored into two reusable stages:
 
 public section
 
-namespace Cslib.Algorithms.WordRAM.Hashing.KWise
+namespace Cslib.DataStructure.HashFamily.WordRAM.KWise
 
 open Cslib.WordRAM Cslib.Probability
 open Cslib.Algorithms.WordRAM.ExactLog
-open Cslib.Algorithms.WordRAM.Hashing.Tabulation
+open Cslib.DataStructure.HashFamily.WordRAM.Tabulation
 open scoped ENNReal
 
 /-! ## Section 1: Parameters, bounds, and memory layout -/
@@ -229,6 +236,8 @@ coefficients `(c j).val < 2 ^ (trinomialDeg U M)` at `base + 8 + j.val`. -/
     Fin k → Fin (2 ^ trinomialDeg U M) :=
   extractSlice (base + 8) (trinomialDeg U M) k mem
 
+/-- When `SeedRep base U M k c mem` holds, `extractSeeds base U M k mem` recovers the seed tuple
+`c`. -/
 theorem extractSeeds_eq_of_seedRep {base U M k : ℕ}
     {c : Fin k → Fin (2 ^ trinomialDeg U M)} {mem : ℕ → ℕ}
     (hseed : SeedRep base U M k c mem) :
@@ -238,6 +247,7 @@ theorem extractSeeds_eq_of_seedRep {base U M k : ℕ}
   dsimp only [extractSeeds, extractSlice]
   rw [hseed j, extractWord_val_of_lt (c j).isLt]
 
+/-- `SeedRep base U M k c` depends only on the memory values in `[base, base + 8 + k)`. -/
 theorem SeedRep.congr_of_footprint {base U M k : ℕ}
     {c : Fin k → Fin (2 ^ trinomialDeg U M)} {mem mem' : ℕ → ℕ}
     (hseed : SeedRep base U M k c mem)
@@ -245,6 +255,7 @@ theorem SeedRep.congr_of_footprint {base U M k : ℕ}
     SeedRep base U M k c mem' :=
   fun j => (hm (base + 8 + j.val) (by omega) (by have := j.isLt; omega)).trans (hseed j)
 
+/-- `extractSeeds base U M k` depends only on the memory values in `[base, base + 8 + k)`. -/
 theorem extractSeeds_congr_of_footprint {base U M k : ℕ} {mem mem' : ℕ → ℕ}
     (hm : ∀ a, base ≤ a → a < base + 8 + k → mem' a = mem a) :
     extractSeeds base U M k mem' = extractSeeds base U M k mem := by
@@ -2744,4 +2755,4 @@ theorem isKWiseIndependentHash_eval {w base n_max U M k : ℕ} {x : Data 18}
     (isKWiseIndependentHash_trinomialPolyHash (le_two_pow_trinomialDeg U M) (le_trinomialDeg U M))
     hT)
 
-end Cslib.Algorithms.WordRAM.Hashing.KWise
+end Cslib.DataStructure.HashFamily.WordRAM.KWise

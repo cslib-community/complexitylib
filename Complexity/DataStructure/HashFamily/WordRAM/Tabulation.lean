@@ -43,35 +43,26 @@ built on a shared uniform word-slice sampler (`randFillLoop`):
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.Hashing.Tabulation.randFillLoop`,
-  `Cslib.Algorithms.WordRAM.Hashing.Tabulation.randFillComp`,
-  `Cslib.Algorithms.WordRAM.Hashing.Tabulation.extractSlice`: generic loop filling a contiguous
+* `Cslib.DataStructure.HashFamily.WordRAM.Tabulation.randFillLoop`,
+  `randFillComp`, `extractSlice`: generic loop filling a contiguous
   memory slice with independent uniform `bits`-bit words.
-* `Cslib.Algorithms.WordRAM.Hashing.Tabulation.RandomTable.resampleCode`,
-  `Cslib.Algorithms.WordRAM.Hashing.Tabulation.RandomTable.lookupCode`,
-  `Cslib.Algorithms.WordRAM.Hashing.Tabulation.RandomTable.xorLookupCode`: 1-D random table
+* `Cslib.DataStructure.HashFamily.WordRAM.Tabulation.RandomTable.resampleCode`,
+  `lookupCode`, `xorLookupCode`: 1-D random table
   initialization/resampling and `O(1)` deterministic lookup.
-* `Cslib.Algorithms.WordRAM.Hashing.Tabulation.TabulatedOddStride.charBits`,
-  `Cslib.Algorithms.WordRAM.Hashing.Tabulation.TabulatedOddStride.simpleTab`,
-  `Cslib.Algorithms.WordRAM.Hashing.Tabulation.TabulatedOddStride.oddStride`,
-  `Cslib.Algorithms.WordRAM.Hashing.Tabulation.TabulatedOddStride.probeSeq`,
-  `Cslib.Algorithms.WordRAM.Hashing.Tabulation.TabulatedOddStride.initCode`,
-  `Cslib.Algorithms.WordRAM.Hashing.Tabulation.TabulatedOddStride.evalCode`: `d`-character simple
+* `Cslib.DataStructure.HashFamily.WordRAM.Tabulation.TabulatedOddStride.charBits`,
+  `simpleTab`, `oddStride`, `probeSeq`, `initCode`, `evalCode`: `d`-character simple
   tabulation and odd-stride permutation generator on the Word RAM.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.Hashing.Tabulation.randFillLoop_execRand`,
-  `Cslib.Algorithms.WordRAM.Hashing.Tabulation.map_extractSlice_eval_randFillComp`: exact execution
+* `Cslib.DataStructure.HashFamily.WordRAM.Tabulation.randFillLoop_execRand`,
+  `map_extractSlice_eval_randFillComp`: exact execution
   and product uniformity of `randFillLoop`.
-* `Cslib.Algorithms.WordRAM.Hashing.Tabulation.RandomTable.resampleCode_execRand`,
-  `Cslib.Algorithms.WordRAM.Hashing.Tabulation.RandomTable.map_extractTable_eval_resampleComp`,
-  `Cslib.Algorithms.WordRAM.Hashing.Tabulation.RandomTable.lookupCode_exec`,
-  `Cslib.Algorithms.WordRAM.Hashing.Tabulation.RandomTable.xorLookupCode_exec`: exact execution and
+* `Cslib.DataStructure.HashFamily.WordRAM.Tabulation.RandomTable.resampleCode_execRand`,
+  `map_extractTable_eval_resampleComp`, `lookupCode_exec`, `xorLookupCode_exec`: exact execution and
   uniformity of `RandomTable`.
-* `Cslib.Algorithms.WordRAM.Hashing.Tabulation.TabulatedOddStride.bijective_probeSeq`,
-  `Cslib.Algorithms.WordRAM.Hashing.Tabulation.TabulatedOddStride.initCode_execRandWithin`,
-  `Cslib.Algorithms.WordRAM.Hashing.Tabulation.TabulatedOddStride.evalCode_execWithin`: full-cycle
+* `Cslib.DataStructure.HashFamily.WordRAM.Tabulation.TabulatedOddStride.bijective_probeSeq`,
+  `initCode_execRandWithin`, `evalCode_execWithin`: full-cycle
   permutation property, `O(d * 2 ^ b + log n_max)` initialization, and `O(d)` deterministic
   evaluation of `TabulatedOddStride`.
 
@@ -85,7 +76,7 @@ built on a shared uniform word-slice sampler (`randFillLoop`):
 
 public section
 
-namespace Cslib.Algorithms.WordRAM.Hashing.Tabulation
+namespace Cslib.DataStructure.HashFamily.WordRAM.Tabulation
 
 open Cslib.WordRAM Cslib.Probability
 open Cslib.Algorithms.WordRAM.ExactLog
@@ -1459,4 +1450,4 @@ theorem evalCode_execWithin {w base b d M u : ℕ} {T : Fin (d * 2 ^ b) → Fin 
 
 end TabulatedOddStride
 
-end Cslib.Algorithms.WordRAM.Hashing.Tabulation
+end Cslib.DataStructure.HashFamily.WordRAM.Tabulation

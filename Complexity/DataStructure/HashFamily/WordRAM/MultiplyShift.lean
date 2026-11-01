@@ -17,9 +17,9 @@ This file implements the multiply-shift universal hash family of Dietzfelbinger,
 Katajainen, and Penttonen [DietzfelbingerHagerupKatajainenPenttonen1997] as a self-contained pair
 of structured Word-RAM programs over `Cslib.WordRAM.Basis.exact`:
 
-* `Cslib.Algorithms.WordRAM.Hashing.MultiplyShift.initCode w₀`: samples a uniform seed
+* `Cslib.DataStructure.HashFamily.WordRAM.MultiplyShift.initCode w₀`: samples a uniform seed
   `b ∈ [0, 2 ^ (w₀ - 1) - 1]` into register `regB` in `2` instructions and `1` `Instr.rand` call.
-* `Cslib.Algorithms.WordRAM.Hashing.MultiplyShift.evalCode w₀ M`: deterministically computes
+* `Cslib.DataStructure.HashFamily.WordRAM.MultiplyShift.evalCode w₀ M`: deterministically computes
   `((2 * b + 1) * x % 2 ^ w₀) / 2 ^ (w₀ - M)` in register `regOut` from seed `b` in `regB` and key
   `x` in `regX` in `9` instructions (`0` `rand` calls) without intermediate word overflow whenever
   `0 < w₀`, `M ≤ w₀`, and `2 * w₀ ≤ w`.
@@ -53,7 +53,7 @@ computes `Cslib.Probability.multiplyShift w₀ M b x`, and hence that the Word-R
 
 public section
 
-namespace Cslib.Algorithms.WordRAM.Hashing.MultiplyShift
+namespace Cslib.DataStructure.HashFamily.WordRAM.MultiplyShift
 
 open Cslib.WordRAM Cslib.Probability
 open scoped ENNReal
@@ -361,4 +361,4 @@ theorem isUniversalHash_evalData {w₀ M : ℕ} (hw₀ : 0 < w₀) (hM : M ≤ w
   rw [hfun]
   exact isUniversalHash_multiplyShift hw₀ hM
 
-end Cslib.Algorithms.WordRAM.Hashing.MultiplyShift
+end Cslib.DataStructure.HashFamily.WordRAM.MultiplyShift
