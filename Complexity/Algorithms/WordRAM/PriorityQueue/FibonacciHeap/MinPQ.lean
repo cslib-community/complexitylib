@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.Lean.MinPQ
-public import Complexity.Computability.WordRAM.RelSubroutine
+public import Complexity.Computability.WordRAM.Subroutine
 public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.BasicOps
 public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Cut
 public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Consolidate
@@ -18,7 +18,7 @@ public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Consolid
 
 This file realizes the relational priority-queue specification `Cslib.Algorithms.Lean.MinPQ.spec`
 (returning an opaque handle `h : Fin n_max` on `insert` and `(u, v, h)` on `extractMin`) as a
-Word-RAM `RelSubroutineDS` over `Cslib.WordRAM.Basis.exact` (and lifted to `Basis.standard`),
+Word-RAM `SubroutineDS` over `Cslib.WordRAM.Basis.exact` (and lifted to `Basis.standard`),
 layered on top of `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap`.
 
 Over capacity `n_max` in a contiguous memory block `[base, base + 11 * n_max + 1)`:
@@ -36,13 +36,13 @@ Over capacity `n_max` in a contiguous memory block `[base, base + 11 * n_max + 1
 * `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.MinPQ.Rep`, `charge`: relational
   representation invariant and per-operation amortized instruction charges (`O(log n + 1)` on
   `extractMin` in the current number of stored elements `n = MinPQ.size s`).
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.MinPQ.relSubroutineDS`:
-  `RelSubroutineDS` certificate over `Basis.exact`.
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.MinPQ.subroutineDS`:
+  `SubroutineDS` certificate over `Basis.exact`.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.MinPQ.relAmortized`,
-  `run_client_amortized`: standalone `Stateful.RelAmortized` certificate and adaptive-client bound
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.MinPQ.amortized`,
+  `run_client_amortized`: standalone `Stateful.Amortized` certificate and adaptive-client bound
   over `Basis.standard`.
 * `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.MinPQ.run_ops_exact_fresh`,
   `run_ops_exact_reusable`: standalone `Basis.exact` flat-program execution theorems.
@@ -365,7 +365,7 @@ def rawArgMatch {n_max : ℕ} : Cslib.Algorithms.Lean.MinPQ.Op n_max → (Fin rM
       regs tag2 = 0 ∧ regs tag1 ≠ 0 ∧ regs tag0 ≠ 0 ∧ regs argV = h.val ∧ regs argK = u'
   | .extractMin => fun regs => regs tag2 ≠ 0
 
-/-- Argument-matching predicate paired with `encode U` for `RelSubroutineDS`. -/
+/-- Argument-matching predicate paired with `encode U` for `SubroutineDS`. -/
 def argMatch {n_max : ℕ} (U : ℕ) : Cslib.Algorithms.Lean.MinPQ.Op n_max → (Fin rMinPQ → ℕ) → Prop
   | .decreaseKey h u' => fun regs =>
       regs tag2 = 0 ∧ regs tag1 ≠ 0 ∧ regs tag0 ≠ 0 ∧ regs argV = h.val ∧
@@ -1349,7 +1349,8 @@ theorem extractMinCode_exec {n_max U V w base : ℕ}
   rcases hfm : IndexedMinPQ.findMin (Cslib.Algorithms.Lean.MinPQ.toIndexed s.entries) with
     _ | ⟨h, u⟩
   · -- Empty queue (`findMin = none`)
-    simp only [PQCode.decode, FibonacciHeap.code, IndexedMinPQ.spec, hfm] at hdec_fib hinv_fib
+    simp only [PQCode.decode, FibonacciHeap.code, IndexedMinPQ.spec, IndexedMinPQ.step,
+      Stateful.Spec.stepFn, hfm] at hdec_fib hinv_fib
     have hfl0 : x1.regs outFlag = 0 := by
       rw [hx1_fl]
       by_contra hne
@@ -1394,7 +1395,8 @@ theorem extractMinCode_exec {n_max U V w base : ℕ}
       omega
   · -- Non-empty queue (`findMin = some (h, u)`)
     obtain ⟨v, hsh, hfm', _⟩ := Cslib.Algorithms.Lean.MinPQ.findMin_eq_some_of_indexed hfm
-    simp only [PQCode.decode, FibonacciHeap.code, IndexedMinPQ.spec, hfm] at hdec_fib hinv_fib
+    simp only [PQCode.decode, FibonacciHeap.code, IndexedMinPQ.spec, IndexedMinPQ.step,
+      Stateful.Spec.stepFn, hfm] at hdec_fib hinv_fib
     have hfl_ne : x1.regs outFlag ≠ 0 := by
       rw [hx1_fl]
       intro h0
@@ -1563,7 +1565,7 @@ theorem extractMinCode_exec {n_max U V w base : ℕ}
       unfold potential
       omega
 
-/-! ## Unified dispatcher and `RelSubroutineDS` certificate -/
+/-! ## Unified dispatcher and `SubroutineDS` certificate -/
 
 /-- Unified dispatcher `dispatchCode` implements all five `MinPQ` operations within
 `charge n_max e o` amortized instructions over `Basis.exact`. -/
@@ -1652,9 +1654,9 @@ theorem dispatchCode_exec {n_max U V w base : ℕ}
 
 /-- Unified standalone and inline-subroutine relational certificate for the key–value
 Fibonacci heap with handles over `Basis.exact`. -/
-def relSubroutineDS {n_max U V w base : ℕ}
+def subroutineDS {n_max U V w base : ℕ}
     (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V) :
-    RelSubroutineDS subroutineCode (Cslib.Algorithms.Lean.MinPQ.spec n_max U V) w base ![n_max]
+    SubroutineDS subroutineCode (Cslib.Algorithms.Lean.MinPQ.spec n_max U V) w base ![n_max]
       (Cslib.Algorithms.Lean.MinPQ.empty n_max) where
   space := space n_max
   spanTime := 15
@@ -1678,30 +1680,30 @@ def relSubroutineDS {n_max U V w base : ℕ}
   setup_exec := initSetup_exec
   step_exec := dispatchCode_exec
 
-/-! ## Standalone `Basis.standard` `DynamicProgram` and `Stateful.RelAmortized` realizations -/
+/-! ## Standalone `Basis.standard` `DynamicProgram` and `Stateful.Amortized` realizations -/
 
 /-- Standalone `DynamicProgram` realization of the key–value Fibonacci heap over
 `Basis.standard`. -/
-def relDynamicProgram {n_max U V w base : ℕ}
+def dynamicProgram {n_max U V w base : ℕ}
     (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V) :
     DynamicProgram (Cslib.Algorithms.Lean.MinPQ.spec n_max U V) rMinPQ :=
-  (relSubroutineDS (n_max := n_max) (U := U) (V := V) hS hU hV).toStandard.toDynamicProgram
+  (subroutineDS (n_max := n_max) (U := U) (V := V) hS hU hV).toStandard.toDynamicProgram
 
-/-- Standalone `RelDynamicCertificate` for the key–value Fibonacci heap over `Basis.standard`. -/
-def relCertificate {n_max U V w base : ℕ}
+/-- Standalone `DynamicCertificate` for the key–value Fibonacci heap over `Basis.standard`. -/
+def certificate {n_max U V w base : ℕ}
     (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V) :
-    RelDynamicCertificate (relDynamicProgram hS hU hV) w :=
-  (relSubroutineDS hS hU hV).toStandard.toRelCertificate
+    DynamicCertificate (dynamicProgram hS hU hV) w :=
+  (subroutineDS hS hU hV).toStandard.toCertificate
 
-/-- Standalone `Stateful.RelAmortized` certificate for the key–value Fibonacci heap over
+/-- Standalone `Stateful.Amortized` certificate for the key–value Fibonacci heap over
 `Basis.standard`, charging `+ 1` per operation for the trailing `halt` instruction. -/
-theorem relAmortized {n_max U V w base : ℕ}
+theorem amortized {n_max U V w base : ℕ}
     (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V) :
-    Stateful.RelAmortized (relCertificate hS hU hV).realization
+    Stateful.Amortized (certificate hS hU hV).realization
       DynamicProgram.OperationTrace.instructions
       (fun _ x => potential x)
       (fun s o => charge n_max s o + 1) :=
-  (relSubroutineDS hS hU hV).toStandard.toRelAmortized
+  (subroutineDS hS hU hV).toStandard.toAmortized
 
 /-- Adaptive-client amortized execution bound for any demonically admissible `MinPQ` client `p`
 over `Basis.standard`. -/
@@ -1712,14 +1714,14 @@ theorem run_client_amortized {n_max U V w base : ℕ}
     (hr : Rep n_max U V w base s x)
     (hv : (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).DemonicValid s p) :
     ∃ a y traces s' tr,
-      Stateful.Executes ((relDynamicProgram hS hU hV).ExecOp w) p x a y traces ∧
+      Stateful.Executes ((dynamicProgram hS hU hV).ExecOp w) p x a y traces ∧
       (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).ClientRun s p a s' tr ∧
       Rep n_max U V w base s' y ∧
       traces.length = tr.length ∧
       Stateful.total DynamicProgram.OperationTrace.instructions traces + potential y ≤
-        (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).totalCost
+        (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).totalCostTranscript
           (fun st o => charge n_max st o + 1) s tr + potential x :=
-  (relSubroutineDS hS hU hV).toStandard.run_client_amortized p hr hv
+  (subroutineDS hS hU hV).toStandard.run_client_demonic_amortized p hr hv
 
 /-! ## Standalone end-to-end `Basis.exact` flat-program operation-sequence theorems -/
 
@@ -1795,11 +1797,11 @@ theorem extractLogSum_le_numExtractMins {n_max U V : ℕ} :
       Nat.log_mono_right (Cslib.Algorithms.Lean.MinPQ.size_le s)
     cases o with
     | extractMin =>
-      simp only [extractLogSum, Stateful.RelSpec.Transcript.ops_cons, numExtractMins,
+      simp only [extractLogSum, Stateful.Spec.Transcript.ops_cons, numExtractMins,
         Nat.add_mul, Nat.one_mul]
       omega
     | _ =>
-      simp only [extractLogSum, Stateful.RelSpec.Transcript.ops_cons, numExtractMins,
+      simp only [extractLogSum, Stateful.Spec.Transcript.ops_cons, numExtractMins,
         Nat.zero_add]
       omega
 
@@ -1930,7 +1932,7 @@ theorem run_ops_exact_fresh {n_max U V w base : ℕ}
   have hpar : ∀ j : Fin 1, d₀.regs (![nReg] j) = ![n_max] j := fun j => by
     fin_cases j; rfl
   obtain ⟨x₀, ⟨t_init, ht_init, he_init⟩, _, hr₀, hpot₀, hmod₀⟩ :=
-    (relSubroutineDS hS hU hV).initFresh_exec (initRegs_bounded hS hmem) hfr_eq hpar hzero
+    (subroutineDS hS hU hV).initFresh_exec (initRegs_bounded hS hmem) hfr_eq hpar hzero
   have hruns₀ : Runs w initFreshProg ⟨0, d₀⟩
       ⟨0 + subroutineCode.initFresh.size, x₀⟩ t_init :=
     he_init.runs (pc := 0) (p := initFreshProg) (Program.Contains.self _).append_left
@@ -1981,7 +1983,7 @@ theorem run_ops_exact_reusable {n_max U V w base : ℕ}
   have hpar : ∀ j : Fin 1, d₀.regs (![nReg] j) = ![n_max] j := fun j => by
     fin_cases j; rfl
   obtain ⟨x₀, ⟨t_init, ht_init, he_init⟩, _, hr₀, hpot₀, hmod₀⟩ :=
-    (relSubroutineDS hS hU hV).initClear_exec (initRegs_bounded hS hmem) hfr_eq hpar
+    (subroutineDS hS hU hV).initClear_exec (initRegs_bounded hS hmem) hfr_eq hpar
   have hruns₀ : Runs w initClearProg ⟨0, d₀⟩
       ⟨0 + subroutineCode.initClear.size, x₀⟩ t_init :=
     he_init.runs (pc := 0) (p := initClearProg) (Program.Contains.self _).append_left

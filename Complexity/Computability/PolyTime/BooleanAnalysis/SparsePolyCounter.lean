@@ -41,7 +41,7 @@ False*][OpenAI2026ETH], parameterized over a Proposition 5.3 branch evaluator (`
   `encSparseSystemInput`, and `encPair encC (encList encBits)` with `ComputableInPolyTime` and
   `NativeCertificate` bounds (`guardedBranchCertificate`, `guardedBranchingCertificate`,
   `sparsePolyCounterCertificate`, `contextParityCertificate`), whereas `branchNeutralScope` and
-  `maxReducedCost` are unencoded mathematical specification definitions.
+  `HeavyBranchFold.maxReducedCost` are unencoded mathematical specification definitions.
 * **Out-of-range and fallback conventions**: `scopeWidthOn n eq` ignores variables `≥ n`; both
   `checkTopFeasible = false` and `checkBranchFeasible = false` fall back to
   `ExhaustiveCountFallback.countSystemExhaustive`, evaluating indices `≥ n` (resp. `≥ n'`) as
@@ -60,7 +60,7 @@ False*][OpenAI2026ETH], parameterized over a Proposition 5.3 branch evaluator (`
   `sparsePolyCounterCertificate`: top-level §5.5 heavy-branched counter and native certificates.
 * `compileContextParityInput`, `countContextParity`, `contextParityCertificate`: §6.3
   context-carrying CNF parity-system counter and `NativeCertificate` for `GreedyContext`.
-* `branchNeutralScope`, `maxReducedCost`: unencoded neutral-scope and reduced-branch cost specs.
+* `branchNeutralScope`: unencoded neutral-scope spec.
 
 ## Main results
 
@@ -976,41 +976,6 @@ theorem exists_guardedBranchCertificate_time_le (N₀_branch N₁ : ℕ)
     omega
   · simp only [↓reduceIte]; omega
 
-/-- Maximum per-branch solver cost across all `.reduced` branches of `inp : BranchInput`. -/
-noncomputable def maxReducedCost (cost : ℕ × List (List (List ℕ)) → ℕ)
-    (inp : HeavyBranchFold.BranchInput) : ℕ :=
-  let (n, S, eqs) := inp
-  ((List.range (2 ^ S.length)).map fun idx =>
-    match HeavyBranchFold.prepareBranch n S (lowBits S.length idx) eqs with
-    | .reduced n' sys' => cost (n', sys')
-    | _ => 0).foldl max 0
-
-private theorem le_maxReducedCost (cost : ℕ × List (List (List ℕ)) → ℕ)
-    (inp : HeavyBranchFold.BranchInput) {idx : ℕ} (hidx : idx < 2 ^ inp.2.1.length)
-    {n' : ℕ} {sys' : List (List (List ℕ))}
-    (hred : HeavyBranchFold.prepareBranch inp.1 inp.2.1 (lowBits inp.2.1.length idx) inp.2.2 =
-      .reduced n' sys') : cost (n', sys') ≤ maxReducedCost cost inp := by
-  unfold maxReducedCost
-  refine List.le_max_of_mem
-    (List.mem_cons_of_mem _ (List.mem_map.mpr ⟨idx, List.mem_range.mpr hidx, ?_⟩))
-  rw [hred]
-
-theorem maxReducedCost_le {cost : ℕ × List (List (List ℕ)) → ℕ}
-    {inp : HeavyBranchFold.BranchInput} {B : ℕ}
-    (hB :
-      ∀ idx < 2 ^ (branchInputVars inp).length, ∀ n' sys',
-        HeavyBranchFold.prepareBranch (branchInputNumVars inp) (branchInputVars inp)
-          (lowBits (branchInputVars inp).length idx) (branchInputEquations inp) =
-          .reduced n' sys' → cost (n', sys') ≤ B) : maxReducedCost cost inp ≤ B := by
-  unfold maxReducedCost
-  refine (List.max_le_iff (l := _ :: _) (by simp)).mpr ?_
-  simp only [List.mem_cons, forall_eq_or_imp]
-  refine ⟨Nat.zero_le B, fun x hx => ?_⟩
-  obtain ⟨idx, hidx, rfl⟩ := List.mem_map.mp hx
-  cases hout : HeavyBranchFold.prepareBranch inp.1 inp.2.1 (lowBits inp.2.1.length idx) inp.2.2 with
-  | contradiction | tautology _ => exact Nat.zero_le B
-  | reduced n' sys' => exact hB idx (List.mem_range.mp hidx) n' sys' hout
-
 /-- Native certificate for `HeavyBranchFold.countByBranching (guardedBranchSolver ...)`. -/
 noncomputable def guardedBranchingCertificate (N₀_branch : ℕ)
     (cBranch : NativeCertificate branchEval encBranchEvalInput encNat)
@@ -1023,24 +988,24 @@ noncomputable def guardedBranchingCertificate (N₀_branch : ℕ)
       HeavyBranchFold.stepOverhead (HeavyBranchFold.encBranchInput inp).length +
         (2 ^ (branchInputVars inp).length + 1) *
           (HeavyBranchFold.stepOverhead (HeavyBranchFold.encBranchInput inp).length +
-            maxReducedCost csolver.time inp)
+            HeavyBranchFold.maxReducedCost csolver.time inp)
     space := fun inp => HeavyBranchFold.stepOverhead (HeavyBranchFold.encBranchInput inp).length +
-      maxReducedCost csolver.space inp
+      HeavyBranchFold.maxReducedCost csolver.space inp
     computes := HeavyBranchFold.countByBranching_computableInO csolver
-      (maxReducedCost csolver.time) (maxReducedCost csolver.space)
+      (HeavyBranchFold.maxReducedCost csolver.time) (HeavyBranchFold.maxReducedCost csolver.space)
       (fun _ _ _ n' sys' _ => guardedBranchSolver_le_two_pow hbound n' sys')
-      (fun inp _ hidx _ _ hred => le_maxReducedCost csolver.time inp hidx hred)
-      (fun inp _ hidx _ _ hred => le_maxReducedCost csolver.space inp hidx hred) }
+      (fun _ _ hidx _ _ hred => HeavyBranchFold.le_maxReducedCost csolver.time hidx hred)
+      (fun _ _ hidx _ _ hred => HeavyBranchFold.le_maxReducedCost csolver.space hidx hred) }
 
 private theorem polyBounded_maxReducedCost_space (N₀_branch : ℕ)
     (cBranch : NativeCertificate branchEval encBranchEvalInput encNat)
     (hs : PolyBounded (fun x => (encBranchEvalInput x).length) cBranch.space) :
     PolyBounded (fun b : HeavyBranchFold.BranchInput => (HeavyBranchFold.encBranchInput b).length)
-      (maxReducedCost (guardedBranchCertificate N₀_branch cBranch).space) := by
+      (HeavyBranchFold.maxReducedCost (guardedBranchCertificate N₀_branch cBranch).space) := by
   obtain ⟨cs, ds, hcs⟩ :=
     (polyBounded_guardedBranchCertificate_space N₀_branch cBranch hs).exists_le
   refine (NativeCertificate.polyBounded_pow_of_polyBounded PolyBounded.self cs ds).mono fun b => ?_
-  refine maxReducedCost_le fun _ _ n' sys' hred => (hcs (n', sys')).trans ?_
+  refine HeavyBranchFold.maxReducedCost_le fun _ _ n' sys' hred => (hcs (n', sys')).trans ?_
   exact Nat.mul_le_mul_left cs
     (Nat.pow_le_pow_left (Nat.add_le_add_right (HeavyBranchFold.length_enc_reduced_le hred) 1) ds)
 
@@ -1110,8 +1075,8 @@ theorem sparsePolyCounterCertificate_time_le_of_feasible (N₀_top N₀_branch :
       computableInPolyTime_toBranchInput.polyBounded_length
   obtain ⟨C_ov, d_ov, hCov⟩ := ((hok.1.add hto.1).add (hstep.add hstep)).exists_le
   refine ⟨C_ov, d_ov, fun inp R_branch htop hR => ?_⟩
-  have hmax := maxReducedCost_le (inp := toBranchInput inp)
-    (cost := (guardedBranchCertificate N₀_branch cBranch).time) hR
+  have hmax : HeavyBranchFold.maxReducedCost (guardedBranchCertificate N₀_branch cBranch).time
+      (toBranchInput inp) ≤ R_branch := HeavyBranchFold.maxReducedCost_le hR
   simp only [sparsePolyCounterCertificate, ExhaustiveCountFallback.guardedBranchOfPolyTime,
     NativeCertificate.branch_time, NativeCertificate.comp_time, guardedBranchingCertificate,
     htop, ↓reduceIte]

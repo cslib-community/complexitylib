@@ -261,29 +261,35 @@ private theorem foldMin_mem_and_le {n : ℕ} {l : List (Fin n × ℕ)} {uk : Fin
 def findMin {n : ℕ} (s : State n) : Option (Fin n × ℕ) :=
   foldMin ((List.finRange n).filterMap fun v => (s v).map (v, ·))
 
+/-- Operation return types for `Op n`. -/
+abbrev Op.Result {n : ℕ} : Op n → Type
+  | .isEmpty => Bool
+  | .getKey _ => Option ℕ
+  | .insert _ _ => Unit
+  | .decreaseKey _ _ => Unit
+  | .extractMin => Option (Fin n × ℕ)
+
+/-- Pure transition function of an indexed min-priority queue on `Fin n`. -/
+def step {n : ℕ} (s : State n) : (o : Op n) → State n × o.Result
+  | .isEmpty => (s, decide (dom s = ∅))
+  | .getKey v => (s, s v)
+  | .insert v k => (Function.update s v (some k), ())
+  | .decreaseKey v k => (Function.update s v (some k), ())
+  | .extractMin =>
+    match findMin s with
+    | none => (s, none)
+    | some (u, k) => (Function.update s u none, some (u, k))
+
+/-- Admissibility predicate for `Op n` with key upper bound `K_max`. -/
+def valid {n : ℕ} (K_max : ℕ) (s : State n) : Op n → Prop
+  | .isEmpty | .getKey _ | .extractMin => True
+  | .insert v k => s v = none ∧ k ≤ K_max
+  | .decreaseKey v k => (∃ k₀, s v = some k₀ ∧ k ≤ k₀) ∧ k ≤ K_max
+
 /-- Graph-free indexed min-priority queue specification with key upper bound `K_max`. -/
-def spec (n K_max : ℕ) : Cslib.Stateful.Spec where
-  State := State n
-  Op := Op n
-  Result
-    | .isEmpty => Bool
-    | .getKey _ => Option ℕ
-    | .insert _ _ => Unit
-    | .decreaseKey _ _ => Unit
-    | .extractMin => Option (Fin n × ℕ)
-  step s
-    | .isEmpty => (s, decide (dom s = ∅))
-    | .getKey v => (s, s v)
-    | .insert v k => (Function.update s v (some k), ())
-    | .decreaseKey v k => (Function.update s v (some k), ())
-    | .extractMin =>
-      match findMin s with
-      | none => (s, none)
-      | some (u, k) => (Function.update s u none, some (u, k))
-  valid s
-    | .isEmpty | .getKey _ | .extractMin => True
-    | .insert v k => s v = none ∧ k ≤ K_max
-    | .decreaseKey v k => (∃ k₀, s v = some k₀ ∧ k ≤ k₀) ∧ k ≤ K_max
+abbrev spec (n K_max : ℕ) : Cslib.Stateful.Spec :=
+  Cslib.Stateful.Spec.ofFn (State := State n) (Op := Op n) (Result := Op.Result)
+    step (valid K_max)
 
 /-! ### Domain and `findMin` lemmas -/
 
@@ -400,7 +406,7 @@ theorem findMin_eq_some_iff {n : ℕ} {s : State n} {u : Fin n} {k : ℕ} :
 /-- Domain evolution of `extractMin` when `findMin s = some (u, k)`. -/
 theorem dom_extractMin {n K_max : ℕ} {s : State n} {u : Fin n} {k : ℕ}
     (h : findMin s = some (u, k)) :
-    dom ((spec n K_max).step s .extractMin).1 = (dom s).erase u := by
-  simp [spec, h]
+    dom ((spec n K_max).stepFn s .extractMin).1 = (dom s).erase u := by
+  simp [spec, step, h]
 
 end Cslib.Algorithms.Lean.IndexedMinPQ
