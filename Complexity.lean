@@ -1736,6 +1736,12 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding.NativeChecked
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding.NativeDecode
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding.NativeEncode
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ImplicitPath
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ImplicitPathCorrect
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ImplicitPathLookup
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ImplicitPathSpace
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.InitialChunk
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.InitialChunkCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplay
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayAccess
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayAssignments
