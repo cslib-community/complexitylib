@@ -59,7 +59,8 @@ private def step (s : Work) : Work := (s.1, s.2.1 + 1, s.2.2 ++ [bit s.1 s.2.1])
 
 /-- Rejected inputs return the empty word. Accepted inputs stream exactly `b` output bits. -/
 @[expose] def decode (q : Args) : List Bool :=
-  if valid q then List.ofFn (fun j : Fin q.1.1 => bit q j) else []
+  let ((b, _, _, _, _), _) := q
+  if valid q then List.ofFn (fun j : Fin b => bit q j) else []
 
 private theorem iterate_step (q : Args) (j : ℕ) (out : List Bool) (n : ℕ) :
     step^[n] (q, j, out) =
