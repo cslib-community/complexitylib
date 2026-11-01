@@ -327,9 +327,9 @@ private theorem formalEqParityFactor_congr_fiber {n' D_cap Q r A₀ R k' ℓ : �
           CopyPlacement.restrictGroupColumns ((data.varGroups.getD t.1 []).getD h.1 [])
             data.measurementMatrix := by
         subst hdata; dsimp only [buildReplacementDesignData]
-        rw [List.map_map, getD_map_range _ [] t.2, Function.comp_apply, List.map_map,
-          getD_map_range _ [] h.2, Function.comp_apply,
-          getD_map_range _ [] t.2, getD_map_range _ [] h.2]
+        rw [List.map_map, List.getD_map_range _ [] t.2, Function.comp_apply, List.map_map,
+          List.getD_map_range _ [] h.2, Function.comp_apply,
+          List.getD_map_range _ [] t.2, List.getD_map_range _ [] h.2]
       have hget := congrArg (fun L : List ℤ => L.getD idx 0) (hCth ▸ hmeas_eq h)
       dsimp only [BooleanMeasurements.evalBoolMatrix, CopyPlacement.restrictGroupColumns] at hget
       have hlen1 : idx < (List.map (fun r_sub => BooleanMeasurements.evalBoolRow r_sub
@@ -530,7 +530,7 @@ private theorem toJetTable_measurementFold_eq {n' Q r A₀ R J ℓ k' : ℕ} {τ
     intro g xList
     rw [CommonCountingAccum.toJetTable_prodJet]
     dsimp only [grpEqLists]
-    rw [getD_map_range _ [] g.2]
+    rw [List.getD_map_range _ [] g.2]
     unfold groupEquationsAt
     have hrange_fin : List.range eqs'.length = (List.finRange eqs'.length).map Fin.val := by
       refine List.ext_getElem (by simp only [List.length_range, List.length_map,
@@ -553,7 +553,7 @@ private theorem toJetTable_measurementFold_eq {n' Q r A₀ R J ℓ k' : ℕ} {τ
       simp only [Function.comp_apply, List.getD_eq_getElem eqs' [] f.2]
       have hert : eqRowTables.getD f.1 [] =
           (List.range n').map fun v => data.lookupReplacementRow f.1 v := by
-        dsimp only [eqRowTables, buildEqRowTables]; exact getD_map_range _ [] f.2
+        dsimp only [eqRowTables, buildEqRowTables]; exact List.getD_map_range _ [] f.2
       have hrows_len : ∀ r_tbl ∈ eqRowTables.getD f.1 [], r_tbl.length ≤ n' := by
         rw [hert]; intro r_tbl hr_tbl
         obtain ⟨v, _, rfl⟩ := List.mem_map.mp hr_tbl
@@ -570,7 +570,7 @@ private theorem toJetTable_measurementFold_eq {n' Q r A₀ R J ℓ k' : ℕ} {τ
           Polynomial.ofCoeffList (((eqRowTables.getD f.1 []).getD v.1 []).getD i.1 [])) =
           designRows f v := by
         funext i
-        rw [hert, getD_map_range _ [] v.2]
+        rw [hert, List.getD_map_range _ [] v.2]
         have hf_eq := href.2.2.2.2.1 ⟨emb f, ⟨v, hv_sc⟩⟩
         have hsc_fv : (BalancedSchedules.scopeFactorOf scope ⟨emb f, ⟨v, hv_sc⟩⟩).1 = f.1 ∧
             (BalancedSchedules.scopeVarOf scope ⟨emb f, ⟨v, hv_sc⟩⟩).1 = v.1 :=
@@ -635,7 +635,7 @@ private theorem toJetTable_measurementFold_eq {n' Q r A₀ R J ℓ k' : ℕ} {τ
           BooleanMeasurements.evalBoolMatrix (grpMeas_t.getD g.1 []) (reps.getD g.1 []) =
             (word.drop (g.1 * m_rows)).take m_rows := fun g => by
         dsimp only [reps, repOpts]
-        rw [List.map_map, getD_map_range _ [] g.2, Function.comp_apply, hdg_eq g]
+        rw [List.map_map, List.getD_map_range _ [] g.2, Function.comp_apply, hdg_eq g]
         obtain ⟨ys, hys⟩ := Option.isSome_iff_exists.mp (hAll_mem g)
         rw [hys, Option.getD_some]
         exact BooleanMeasurements.search_some Prod.fst Prod.snd _ hys

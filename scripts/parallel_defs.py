@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Advisory notice: new definitions that may restate an existing library notion.
+"""Advisory notices: new definitions that may restate an existing library notion, and theorems
+whose statement the library or its dependencies already prove.
 
-Usage: python3 scripts/parallel_defs.py [--base REF | --decl NAME...] [--tiers SIZE:SHARE,...]
-           [--max-shared N] [--same-module] [--limit N] [--github] [--no-build-check]
+Usage: python3 scripts/parallel_defs.py [--base REF | --decl NAME... | --all]
+           [--theorems [--no-external]] [--tiers SIZE:SHARE,...] [--max-shared N] [--same-module]
+           [--limit N] [--github] [--no-build-check]
 
 AGENTS.md asks for reuse of existing definitions rather than parallel notions: the same concept
 defined again for another carrier type, or a copied verifier or game. This tool points authors and
@@ -10,7 +12,8 @@ reviewers at candidates. It examines the public `def`s, `abbrev`s, `structure`s,
 `inductive`s that a change adds or modifies: those of the `Complexity/` files changed since the
 merge base of REF (default `origin/main`) whose code, from the declared name to its end, contains
 an added or modified line or the place of a deleted one (an edit to a docstring alone does not
-count). With `--decl`, it examines the named declarations instead, for audits and calibration.
+count). With `--decl`, it examines the named declarations instead, for audits and calibration;
+with `--all`, every declaration of the library.
 
 `scripts/ParallelDefs.lean` compares each examined declaration with every definition and
 inductive type of the built `Complexity` library (instances excluded, private declarations
@@ -38,6 +41,25 @@ exits 0, and it skips itself, with a note, when the build outputs are missing or
 `--github` it also writes the candidates to the job summary (`$GITHUB_STEP_SUMMARY`) and as notice
 annotations on the examined declarations. It needs `lake build` (the `Complexity` library); CI
 runs it after the build with `--no-build-check`.
+
+Duplicate statements (`--theorems`)
+-----------------------------------
+
+With `--theorems`, the tool looks for theorems proved twice (#949, item A.2) instead. It examines
+the theorems that a change adds or modifies, private ones included, and groups each with the
+theorems of the library, and the public theorems of its dependencies (Lean core, Batteries,
+Mathlib, cslib and the others it imports), that have the same statement up to binder names and
+kinds, universe levels, the order of hypotheses and of instance arguments, the notations `≥`, `>`
+and `≠`, the order of the sides of `=` and `↔`, and default arguments. `scripts/ParallelDefs.lean`
+defines this statement key exactly. It is equality, not unification: a local lemma that only
+specializes a more general one is not found. The tool reports the groups that span two modules of
+the library or contain a dependency's theorem (`--same-module` adds the others); `--no-external`
+skips the dependencies. With `--all` it examines the whole library, as an audit (under a minute).
+
+A group is a candidate too. If its theorems state the same fact, keep one copy in the most general
+home (the dependency, then `Foundations`, then the topic module), use it in the clients and delete
+the others; a theorem marked as an alias only renames another one. Otherwise say in the PR
+description why the copies are needed.
 """
 
 from __future__ import annotations
@@ -98,6 +120,43 @@ class Finding:
                 f"{self.share:.0%} of the smaller body{about}.")
 
 
+@dataclass
+class Theorem:
+    """A library theorem of a duplicate-statement group; `proof` is the constant that its proof
+    merely applies, if any."""
+    name: str
+    path: str
+    line: int
+    private: bool = False
+    examined: bool = False
+    proof: str | None = None
+
+    def text(self) -> str:
+        notes = [f"{self.path}:{self.line}"] + (["private"] if self.private else []) + \
+            ([f"proved as `{self.proof}`"] if self.proof else [])
+        return f"`{self.name}` ({', '.join(notes)})"
+
+
+@dataclass
+class Group:
+    """Theorems with the same statement key: library theorems, the first of them examined, and
+    theorems of dependencies as `(name, module)`. `exact` when they differ only in binder names
+    and kinds and universe levels."""
+    size: int
+    exact: bool
+    theorems: list[Theorem]
+    external: list[tuple[str, str]]
+
+    def text(self) -> str:
+        first, *others = self.theorems
+        same = [t.text() for t in others] + \
+            [f"`{name}` (in `{module}`)" for name, module in self.external]
+        listed = same[0] if len(same) == 1 else ", ".join(same[:-1]) + " and " + same[-1]
+        up_to = "" if self.exact else (" (up to the order of hypotheses and instance arguments, "
+                                       "the sides of `=` and `↔`, and `≥`, `>` and `≠`)")
+        return f"{first.text()} has the same statement as {listed}{up_to}."
+
+
 # --- What to examine ----------------------------------------------------------------------------
 
 def module_of(path: str) -> str:
@@ -146,9 +205,11 @@ def library_modules(root: Path) -> list[str]:
 
 
 def requests(modules: list[str], changed: dict[str, list[tuple[int, int]] | None],
-             decls: list[str]) -> str:
+             decls: list[str], theorems: bool = False, external: bool = False) -> str:
     """The standard input of `scripts/ParallelDefs.lean`."""
-    lines = []
+    lines = ["theorems"] if theorems else []
+    if theorems and external:
+        lines.append("external")
     for module in modules:
         rel = path_of(module)
         if rel not in changed:
@@ -206,6 +267,24 @@ def select(rows: list[dict], tiers: list[tuple[int, float]], same_module: bool) 
     return found
 
 
+def select_groups(rows: list[dict], same_module: bool) -> list[Group]:
+    """The duplicate-statement groups, in the reader's order (largest statement first), with
+    their examined theorems first; without `same_module`, only those that span two library
+    modules or contain a dependency's theorem."""
+    found = []
+    for r in rows:
+        if "thms" not in r:
+            continue
+        if not (same_module or r["ext"] or len({t["m"] for t in r["thms"]}) > 1):
+            continue
+        theorems = sorted((Theorem(t["n"], path_of(t["m"]), t["l"], t["p"], t["x"], t["al"])
+                           for t in r["thms"]),
+                          key=lambda t: (not t.examined, t.path, t.line))
+        found.append(Group(r["group"], r["exact"], theorems,
+                           [(x["n"], x["m"]) for x in r["ext"]]))
+    return found
+
+
 # --- Reports ------------------------------------------------------------------------------------
 
 ADVICE = ("These are candidates, not findings. If a pair states the same notion, reuse or "
@@ -213,16 +292,33 @@ ADVICE = ("These are candidates, not findings. If a pair states the same notion,
           "the PR description why it differs (AGENTS.md, \"New statements and definitions\").")
 
 
-def markdown(found: list[Finding], examined: int, limit: int) -> str:
-    head = "### Parallel-definition notice (advisory)\n\n"
+STATEMENT_ADVICE = ("These are candidates, not findings. If the theorems state the same fact, "
+                    "keep one copy in the most general home (the dependency, then `Foundations`, "
+                    "then the topic module), use it in the clients and delete the others, without "
+                    "an alias; otherwise, say in the PR description why the copies are needed.")
+
+DEFS_TITLE = "Parallel-definition notice"
+THEOREMS_TITLE = "Duplicate-statement notice"
+
+
+def markdown(found: list[Finding] | list[Group], examined: int, limit: int,
+             theorems: bool = False) -> str:
+    head = f"### {THEOREMS_TITLE if theorems else DEFS_TITLE} (advisory)\n\n"
     if not found:
-        return head + (f"No candidate parallel definitions among the {examined} examined "
+        return head + (f"No theorem among the {examined} examined has the statement of another "
+                       "library or dependency theorem.\n" if theorems else
+                       f"No candidate parallel definitions among the {examined} examined "
                        "declarations.\n")
     shown = found[:limit]
     more = f" The first {limit} are listed." if len(found) > limit else ""
-    lines = [head + f"{len(found)} candidate(s) among the {examined} examined declarations."
-             f"{more} {ADVICE}\n"]
-    lines += [f"- {f.path}:{f.line}: {f.text()}" for f in shown]
+    if theorems:
+        lines = [head + f"{len(found)} group(s) of theorems with the same statement among the "
+                 f"{examined} examined theorems.{more} {STATEMENT_ADVICE}\n"]
+        lines += [f"- {g.text()}" for g in shown]
+    else:
+        lines = [head + f"{len(found)} candidate(s) among the {examined} examined declarations."
+                 f"{more} {ADVICE}\n"]
+        lines += [f"- {f.path}:{f.line}: {f.text()}" for f in shown]
     return "\n".join(lines) + "\n"
 
 
@@ -232,10 +328,13 @@ def escape(text: str, prop: bool = False) -> str:
     return text.replace(":", "%3A").replace(",", "%2C") if prop else text
 
 
-def annotations(found: list[Finding], limit: int) -> list[str]:
-    return [f"::notice file={escape(f.path, True)},line={f.line},"
-            f"title={escape('Possible parallel definition', True)}::"
-            f"{escape(f.text() + ' Advisory only; see the job summary.')}"
+def annotations(found: list[Finding] | list[Group], limit: int) -> list[str]:
+    def notice(path: str, line: int, title: str, text: str) -> str:
+        return (f"::notice file={escape(path, True)},line={line},title={escape(title, True)}::"
+                f"{escape(text + ' Advisory only; see the job summary.')}")
+    return [notice(f.theorems[0].path, f.theorems[0].line, "Possible duplicate statement",
+                   f.text()) if isinstance(f, Group)
+            else notice(f.path, f.line, "Possible parallel definition", f.text())
             for f in found[:limit]]
 
 
@@ -246,35 +345,46 @@ def outputs_current() -> bool:
                           capture_output=True).returncode == 0
 
 
-def skip(reason: str, github: bool) -> int:
-    message = f"Parallel-definition notice skipped: {reason}."
+def skip(reason: str, github: bool, title: str = DEFS_TITLE) -> int:
+    message = f"{title} skipped: {reason}."
     print(message)
     if github and os.environ.get("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
-            summary.write(f"### Parallel-definition notice (advisory)\n\n{message}\n")
+            summary.write(f"### {title} (advisory)\n\n{message}\n")
     return 0
 
 
 def run(args: argparse.Namespace, root: Path, build_dir: Path) -> int:
-    changed = {} if args.decl else changed_ranges(root, args.base)
+    title = THEOREMS_TITLE if args.theorems else DEFS_TITLE
+    modules = library_modules(root)
+    if args.all:
+        changed: dict[str, list[tuple[int, int]] | None] = {path_of(m): None for m in modules}
+    else:
+        changed = {} if args.decl else changed_ranges(root, args.base)
     if not changed and not args.decl:
-        print("Parallel-definition notice: no `Complexity/` definitions added or modified.")
+        what = "theorems" if args.theorems else "definitions"
+        print(f"{title}: no `Complexity/` {what} added or modified.")
         return 0
     if not build_dir.is_dir():
-        return skip(f"no build outputs in {build_dir}; run `lake build` first", args.github)
+        return skip(f"no build outputs in {build_dir}; run `lake build` first", args.github,
+                    title)
     unbuilt = [rel for rel in changed
                if not (build_dir / rel.removesuffix(".lean")).with_suffix(".olean").is_file()]
-    if unbuilt:
+    if unbuilt and not args.all:
         return skip(f"{len(unbuilt)} changed module(s) are not built, e.g. {unbuilt[0]}",
-                    args.github)
+                    args.github, title)
     if not args.no_build_check and not outputs_current():
-        return skip("the build outputs are stale; run `lake build` first", args.github)
+        return skip("the build outputs are stale; run `lake build` first", args.github, title)
     tiers = parse_tiers(args.tiers)
-    rows = run_reader(build_dir, requests(library_modules(root), changed, args.decl),
-                      min(size for size, _ in tiers), args.max_shared)
+    stdin = requests(modules, changed, args.decl, args.theorems, not args.no_external)
+    rows = run_reader(build_dir, stdin, min(size for size, _ in tiers), args.max_shared)
     stats = next((r for r in rows if "examined" in r), {"examined": 0, "missing": []})
-    found = select(rows, tiers, args.same_module)
-    report = markdown(found, stats["examined"], args.limit)
+    if args.theorems:
+        found: list[Finding] | list[Group] = select_groups(rows, args.same_module)
+        report = markdown(found, stats["examined"], args.limit, theorems=True)
+    else:
+        found = select(rows, tiers, args.same_module)
+        report = markdown(found, stats["examined"], args.limit)
     print(report, end="")
     if stats["missing"]:
         print(f"note: {len(stats['missing'])} library module(s) have no build outputs and were "
@@ -295,6 +405,14 @@ def main(argv: list[str] | None = None, root: Path = ROOT, build_dir: Path = BUI
                         help="comparison ref; changes are taken from its merge base with HEAD")
     parser.add_argument("--decl", action="append", default=[], metavar="NAME",
                         help="examine this declaration instead of the changed ones (repeatable)")
+    parser.add_argument("--all", action="store_true",
+                        help="examine every declaration of the library (an audit)")
+    parser.add_argument("--theorems", action="store_true",
+                        help="look for theorems with the same statement instead of parallel "
+                        "definitions")
+    parser.add_argument("--no-external", action="store_true",
+                        help="with --theorems, do not compare with the theorems of the "
+                        "dependencies")
     parser.add_argument("--tiers", default="200:0.3,120:0.6",
                         help="report a pair whose shared subterm has at least SIZE nodes and at "
                         "least SHARE of the smaller body, for some SIZE:SHARE (default "
@@ -302,7 +420,7 @@ def main(argv: list[str] | None = None, root: Path = ROOT, build_dir: Path = BUI
     parser.add_argument("--max-shared", type=int, default=4,
                         help="ignore subterms that more declarations contain (default 4)")
     parser.add_argument("--same-module", action="store_true",
-                        help="also report pairs within one module")
+                        help="also report pairs (or groups) within one module")
     parser.add_argument("--limit", type=int, default=10, help="report at most this many")
     parser.add_argument("--github", action="store_true",
                         help="write the job summary and notice annotations")
@@ -312,7 +430,8 @@ def main(argv: list[str] | None = None, root: Path = ROOT, build_dir: Path = BUI
     try:
         return run(args, root, build_dir)
     except (Exception, SystemExit) as error:  # advisory: never fail the caller
-        return skip(f"the tool failed ({error})", args.github)
+        return skip(f"the tool failed ({error})", args.github,
+                    THEOREMS_TITLE if args.theorems else DEFS_TITLE)
 
 
 if __name__ == "__main__":

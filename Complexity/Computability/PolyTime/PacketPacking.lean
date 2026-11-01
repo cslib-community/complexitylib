@@ -343,14 +343,6 @@ abbrev PackingInput : Type := (ℕ × ℕ × ℕ) × ℕ × List (ℕ × ℕ)
   encPair (encPair encUnary (encPair encUnary encUnary)) (encPair encNat (encList (encPair encNat
     encNat)))
 
-/-- A list has at most as many entries as its encoding has bits. -/
-private theorem length_le_length_encList {α : Type} {enc : α ↪ List Bool} (l : List α) :
-    l.length ≤ (encList enc l).length := by
-  rw [length_encList]
-  induction l with
-  | nil => simp
-  | cons _ _ ih => simp only [List.length_cons, List.map_cons, List.sum_cons]; omega
-
 /-- The capped label length, in unary. -/
 private theorem computableInPolyTime_cappedLength :
     ComputableInPolyTime (fun p : LabelParams => cappedLength p.1.1 p.1.2 p.2.length)

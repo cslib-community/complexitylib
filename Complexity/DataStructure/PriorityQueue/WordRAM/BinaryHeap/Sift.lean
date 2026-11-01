@@ -244,9 +244,6 @@ private def upSwap : Code .exact rBin := ram_exact[ ⟪swapCode⟫; k ← p ]
 private theorem siftUpBody_eq : siftUpBody = appendCode upLoad
     (.seq cmpKP (.branch (.lt zero t) upSwap ram_exact[ k ← one ])) := rfl
 
-private theorem shiftRight_one (K : ℕ) : K >>> 1 = K / 2 := by
-  rw [Nat.shiftRight_eq_div_pow]
-
 private theorem siftUpBody_spec {K : ℕ} {y : Data rBin}
     (hzero : y.regs zero = 0) (hone : y.regs one = 1)
     (hbase : y.regs baseReg = base) (hhb : y.regs hb = base + N)
@@ -285,7 +282,8 @@ private theorem siftUpBody_spec {K : ℕ} {y : Data rBin}
     (base + VK)).set dk (y.mem (base + VK))).set t (base + N + K / 2)).set vp VP).set t
     (base + VP)).set dp (y.mem (base + VP))
   have e₁ : ExecWithin w upLoad y y₁ 9 := by
-    ram_exact_eval [upLoad, y₁, hone, hbase, hhb, hk, hvk, hvp, shiftRight_one, f₁, f₂, f₃, f₄, f₅]
+    ram_exact_eval [upLoad, y₁, hone, hbase, hhb, hk, hvk, hvp, Nat.shiftRight_one, f₁, f₂, f₃, f₄,
+      f₅]
   have ecmp : ExecWithin w cmpKP y₁
       (y₁.set t (if IndexedMinPQ.RawPrioLT (VK, y.mem (base + VK)) (VP, y.mem (base + VP))
         then 1 else 0)) 6 := by

@@ -9,10 +9,11 @@ import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalExec
 import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalRoot
 
 open Cslib.WordRAM
-open Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
+open Cslib.DataStructure Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 
 private def fixture : Data 128 where
-  regs i := if i = registers Stack.ptr then 20 else if i = registers Stack.len then 0
+  regs i := if i = registers Stack.WordRAM.ptr then 20
+    else if i = registers Stack.WordRAM.len then 0
     else if 64 ≤ i.val ∧ i.val < 71 then i.val - 60 else 79
   mem _ := 79
 
@@ -24,7 +25,7 @@ private def roundTrip : Code .standard 128 := .seq pushFrame popFrame
 #guard_msgs in
 #eval decide ((Code.eval 8 16 roundTrip fixture).map (fun (y, _) =>
   (List.ofFn (fun i : Fin 7 => y.regs (slot i)),
-    y.regs 0, y.regs (registers Stack.len), y.mem 19, y.mem 27)) =
+    y.regs 0, y.regs (registers Stack.WordRAM.len), y.mem 19, y.mem 27)) =
   some ([4, 5, 6, 7, 8, 9, 10], 79, 0, 79, 79))
 
 -- Address arithmetic really runs in the admitted physical width.
@@ -32,7 +33,7 @@ private def roundTrip : Code .standard 128 := .seq pushFrame popFrame
 #guard_msgs in
 #eval (Code.eval 1 16 pushFrame fixture).isNone
 
-private theorem fixture_rep : Stack.Rep 8 20 7 [] (fixture.comap registers) := by
+private theorem fixture_rep : Stack.WordRAM.Rep 8 20 7 [] (fixture.comap registers) := by
   refine ⟨?_, ?_, ?_, by decide, fun i => Fin.elim0 i⟩
   · constructor
     · intro i
@@ -55,7 +56,7 @@ private theorem fixture_rep : Stack.Rep 8 20 7 [] (fixture.comap registers) := b
 
 -- The native transfer contracts have a fully admitted client, including old nonzero memory.
 example : ∃ y, Exec 8 roundTrip fixture y 163 ∧
-    Stack.Rep 8 20 7 [] (y.comap registers) ∧
+    Stack.WordRAM.Rep 8 20 7 [] (y.comap registers) ∧
     (∀ i, y.regs (slot i) = fixture.regs (slot i)) := by
   have hwords (i : Fin 7) : Fits 8 (fixture.regs (slot i)) := by
     dsimp only [fixture]
@@ -110,7 +111,7 @@ private def treeInput (f n : ℕ) (z : ℤ) : Data 128 where
 
 private def observeTree (f n : ℕ) (z : ℤ) :=
   (Code.eval 16 32 oneRoot (treeInput f n z)).map fun (y, _) =>
-    (y.regs outputCount, y.regs heap, y.mem 60, y.regs (registers Stack.len),
+    (y.regs outputCount, y.regs heap, y.mem 60, y.regs (registers Stack.WordRAM.len),
       (List.range 32).map (fun i => y.mem (106 + i)))
 
 private def packedSingleton (z : ℤ) : List ℕ :=
@@ -167,7 +168,7 @@ private def expectedBranching : List (List ℕ) :=
 /-- info: true -/
 #guard_msgs in
 #eval decide ((Code.eval 16 64 oneRoot branchingInput).map (fun (y, _) =>
-  (y.regs outputCount, y.regs heap, y.regs (registers Stack.len),
+  (y.regs outputCount, y.regs heap, y.regs (registers Stack.WordRAM.len),
     [y.mem 60, y.mem 61], [108, 156].map fun p => (List.range 32).map fun i => y.mem (p + i))) =
   some (2, 196, 0, [108, 156], expectedBranching))
 

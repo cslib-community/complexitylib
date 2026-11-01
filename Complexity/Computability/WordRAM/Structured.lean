@@ -38,6 +38,11 @@ Loop-free code can instead be executed symbolically: `Cslib.WordRAM.Code.eval` i
 recursive interpreter, so `simp` and `decide` evaluate it, and `Cslib.WordRAM.Exec.of_eval` turns
 its result into an execution.
 
+In correctness proofs, execute the straight-line parts of a program with the tactic `wram_exec`
+(`Complexity/Computability/WordRAM/SymbolicExec.lean`) rather than stating each intermediate state
+and applying these rules by hand. It runs data instructions and conditionals on symbolic data, and
+stops at loops and subprograms given by name, whose specifications continue the proof.
+
 Subprograms are reused through `Cslib.WordRAM.Code.rename`, which runs a program on any
 injectively chosen registers of a larger register file and leaves the others untouched
 (`Cslib.WordRAM.Exec.rename`).

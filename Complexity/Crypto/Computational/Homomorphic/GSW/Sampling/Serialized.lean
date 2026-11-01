@@ -88,9 +88,10 @@ def serializeKeyInputs {n m w : ℕ} (inputs : KeyInputs n m w) : SerializedKeyI
 /-- Read fixed dimensions from arbitrary lists, padding absent entries with zero and reducing
 natural representatives modulo `2 ^ w`. Excess entries are ignored. -/
 def decodeKeyInputs (n m w : ℕ) (inputs : SerializedKeyInputs) : KeyInputs n m w :=
-  ⟨fun i => (inputs.1.getD i.val 0 : ZMod (2 ^ w)),
-    fun i j => ((inputs.2.1.getD i.val []).getD j.val 0 : ZMod (2 ^ w)),
-    fun i => inputs.2.2.getD i.val 0⟩
+  let (secret, publicPart, error) := inputs
+  ⟨fun i => (secret.getD i.val 0 : ZMod (2 ^ w)),
+    fun i j => ((publicPart.getD i.val []).getD j.val 0 : ZMod (2 ^ w)),
+    fun i => error.getD i.val 0⟩
 
 /-- Canonical lists decode to their original typed key inputs, including empty dimensions. -/
 @[simp] theorem decode_serializeKeyInputs {n m w : ℕ} (inputs : KeyInputs n m w) :
