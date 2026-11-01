@@ -25,6 +25,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListP
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives
+import Complexity.Tactic.OptionMatch
 import Mathlib.Data.List.GetD
 
 /-!
@@ -650,12 +651,6 @@ theorem rowTermList_polyTime {p : α → ℕ} {fl : α → List ℕ} {a L i nb :
   have hx := (ComputableInPolyTime.fst encNat encBool).comp hr
   have hbit := (ComputableInPolyTime.snd encNat encBool).comp hr
   have hloc := localFormList_polyTime hp hfl ha hL ht hcols hx hζ
-  have hnone : ComputableInPolyTime (fun z => if (r z).2 then
-      localFormList (p z) (fl z) (a z) (L z) (t z) (cols z) (r z).1 (ζ z) else
-      sub (p z) (fl z) (one (fl z)) (localFormList (p z) (fl z) (a z) (L z) (t z) (cols z)
-        (r z).1 (ζ z))) encIn (encList encNat) :=
-    ComputableInPolyTime.ite hbit hloc
-      (computableInPolyTime_sub hp hfl (computableInPolyTime_one hfl) hloc)
   have h1 := ComputableInPolyTime.fst encIn encNat
   have hk := ComputableInPolyTime.snd encIn encNat
   have hnb' := ComputableInPolyTime.unary_to_binary.comp (hnb.comp h1)
@@ -666,26 +661,18 @@ theorem rowTermList_polyTime {p : α → ℕ} {fl : α → List ℕ} {a L i nb :
     (hi.comp h1) (ht.comp h1) (hdiffer.comp h1) (hx.comp h1) hy hexp (hζ.comp h1)
   have hzero := computableInPolyTime_tabulate (g := fun _ _ => 0)
     ((ComputableInPolyTime.length_list encNat).comp (hfl.comp h1)) (ComputableInPolyTime.const 0)
-  have hsome : ComputableInPolyTime (fun q : α × ℕ => if nb q.1 = 0 then zero (fl q.1) else
-      if (r q.1).2 then modeCoeffList (p q.1) (fl q.1) (a q.1) (L q.1) (i q.1) (t q.1)
-        (differ q.1) (r q.1).1 (q.2 / nb q.1) (q.2 % nb q.1) (ζ q.1)
-      else neg (p q.1) (fl q.1) (modeCoeffList (p q.1) (fl q.1) (a q.1) (L q.1) (i q.1) (t q.1)
-        (differ q.1) (r q.1).1 (q.2 / nb q.1) (q.2 % nb q.1) (ζ q.1)))
-      (encPair encIn encNat) (encList encNat) := by
-    refine (ComputableInPolyTime.ite (ComputableInPolyTime.beq (hnb.comp h1)
+  unfold rowTermList
+  option_match_to_elim
+  refine ComputableInPolyTime.optionElimWithInput ho (ComputableInPolyTime.ite hbit hloc
+    (computableInPolyTime_sub hp hfl (computableInPolyTime_one hfl) hloc))
+    ((ComputableInPolyTime.ite (ComputableInPolyTime.beq (hnb.comp h1)
       (ComputableInPolyTime.const 0)) hzero (ComputableInPolyTime.ite (hbit.comp h1) hcoef
-        (computableInPolyTime_neg (hp.comp h1) (hfl.comp h1) hcoef))).of_enc_eq fun q => ?_
-    by_cases h0 : nb q.1 = 0
-    · simp [h0, GaloisRingArith.zero]
-    · have hmin : min (nb q.1) (q.2 % nb q.1) = q.2 % nb q.1 :=
-        min_eq_right (Nat.mod_lt _ (Nat.pos_of_ne_zero h0)).le
-      simp only [h0, beq_iff_eq, ↓reduceIte, Function.comp_apply, hmin]
-  refine (ComputableInPolyTime.optionElimWithInput (body := fun z k => if nb z = 0 then zero (fl z)
-      else if (r z).2 then modeCoeffList (p z) (fl z) (a z) (L z) (i z) (t z) (differ z) (r z).1
-        (k / nb z) (k % nb z) (ζ z)
-      else neg (p z) (fl z) (modeCoeffList (p z) (fl z) (a z) (L z) (i z) (t z) (differ z) (r z).1
-        (k / nb z) (k % nb z) (ζ z))) ho hnone hsome).of_enc_eq fun z => ?_
-  cases o z <;> rfl
+        (computableInPolyTime_neg (hp.comp h1) (hfl.comp h1) hcoef))).of_enc_eq fun q => ?_)
+  by_cases h0 : nb q.1 = 0
+  · simp [h0, GaloisRingArith.zero]
+  · have hmin : min (nb q.1) (q.2 % nb q.1) = q.2 % nb q.1 :=
+      min_eq_right (Nat.mod_lt _ (Nat.pos_of_ne_zero h0)).le
+    simp only [h0, beq_iff_eq, ↓reduceIte, Function.comp_apply, hmin]
 
 end PolyTime
 

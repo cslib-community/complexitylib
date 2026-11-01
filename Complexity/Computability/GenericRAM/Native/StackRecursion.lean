@@ -14,6 +14,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListLookup
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives
+import Complexity.Tactic.OptionMatch
 
 /-!
 # Depth-first recursion with an explicit stack
@@ -378,34 +379,11 @@ variable {R}
 theorem resume_polyTime (h : R.PolyTime encX encA encY) :
     ComputableInPolyTime (fun q : (X × A) × List (X × A) => R.resume q.1.1 q.1.2 q.2)
       (encPair (encPair encX encA) (encList (encPair encX encA))) (encState encX encA encY) := by
-  have hfr := ComputableInPolyTime.fst (encPair encX encA) (encList (encPair encX encA))
-  have hst := ComputableInPolyTime.snd (encPair encX encA) (encList (encPair encX encA))
-  have hfallback : ComputableInPolyTime
-      (fun q : (X × A) × List (X × A) => (q.2, (none : Option X), some (R.finish q.1.1 q.1.2)))
-      (encPair (encPair encX encA) (encList (encPair encX encA))) (encState encX encA encY) :=
-    hst.prod ((ComputableInPolyTime.const none).prod
-      ((ComputableInPolyTime.optionSome encY).comp (h.finish.comp hfr)))
-  have hbody : ComputableInPolyTime
-      (fun p : ((X × A) × List (X × A)) × X => (p.1.1 :: p.1.2, some p.2, (none : Option Y)))
-      (encPair (encPair (encPair encX encA) (encList (encPair encX encA))) encX)
-      (encState encX encA encY) := by
-    have hq := ComputableInPolyTime.fst
-      (encPair (encPair encX encA) (encList (encPair encX encA))) encX
-    have hc := ComputableInPolyTime.snd
-      (encPair (encPair encX encA) (encList (encPair encX encA))) encX
-    exact (ComputableInPolyTime.cons' (hfr.comp hq) (hst.comp hq)).prod
-      (((ComputableInPolyTime.optionSome encX).comp hc).prod (ComputableInPolyTime.const none))
-  have helim := ComputableInPolyTime.optionElimWithInput
-    (value := fun q : (X × A) × List (X × A) => R.next q.1.1 q.1.2)
-    (fallback := fun q => (q.2, (none : Option X), some (R.finish q.1.1 q.1.2)))
-    (body := fun q c => (q.1 :: q.2, some c, (none : Option Y))) (h.next.comp hfr) hfallback hbody
-  refine helim.of_enc_eq fun q => ?_
-  rcases q with ⟨⟨x, a⟩, st⟩
-  change encState encX encA encY (R.resume x a st) =
-    encState encX encA encY ((R.next x a).elim (st, none, some (R.finish x a))
-      fun c => ((x, a) :: st, some c, none))
-  rw [resume]
-  cases R.next x a <;> rfl
+  have hnext := h.next
+  have hfinish := h.finish
+  unfold resume
+  option_match_to_elim
+  fun_prop
 
 /-- The leaf test on the register is polynomial-time. -/
 theorem isLeafCall_polyTime (h : R.PolyTime encX encA encY) :

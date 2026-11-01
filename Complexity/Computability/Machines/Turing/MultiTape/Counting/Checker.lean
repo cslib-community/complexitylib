@@ -17,6 +17,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Poly
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Machine.ChoiceTable
+import Complexity.Tactic.OptionMatch
 
 /-!
 # Finite replay of binary counting certificates
@@ -204,28 +205,10 @@ theorem computableInPolyTime_binaryStep [Finite State]
     ComputableInPolyTime (binaryStep machine width)
       (encPair encBits (encOption encFiniteConfig))
       (encPair encBits (encOption encFiniteConfig)) := by
-  let encRuntime := encPair encBits (encOption
-    (encFiniteConfig (k := k) (State := State) (Oracle := Empty)))
-  have hbits : ComputableInPolyTime (fun r : Runtime k State => r.1)
-      encRuntime encBits := .fst _ _
-  have hparse : ComputableInPolyTime (fun r : Runtime k State =>
-      BitString.boundedBinaryValue (2 ^ width) (r.1.take width)) encRuntime encUnary := by
-    fun_prop
-  have hbody : ComputableInPolyTime (fun p : Runtime k State × Storage k State =>
-      indexStep machine p.2 (BitString.boundedBinaryValue (2 ^ width) (p.1.1.take width)))
-      (encPair encRuntime encFiniteConfig) (encOption encFiniteConfig) :=
-    (computableInPolyTime_indexStep machine).comp
-      ((ComputableInPolyTime.snd _ _).prod
-        (hparse.comp (ComputableInPolyTime.fst _ _)))
-  have hnext := (ComputableInPolyTime.snd encBits
-    (encOption encFiniteConfig)).optionElimWithInput
-      (body := fun r finite => indexStep machine finite
-        (BitString.boundedBinaryValue (2 ^ width) (r.1.take width)))
-      (ComputableInPolyTime.const none) hbody
-  convert (hbits.bitsDropWithInput (.const width)).prod hnext using 1
-  funext runtime
-  simp only [binaryStep]
-  cases runtime.2 <;> rfl
+  unfold binaryStep
+  simp only [bind]
+  option_match_to_elim
+  fun_prop
 
 /-- Initialize the actual checker on an input word and a binary certificate. -/
 def initial (machine : MultiTapeCTM k Bool State) (p : List Bool × List Bool) : Runtime k State :=
@@ -351,21 +334,10 @@ theorem finishRuntime_runBinary (machine : MultiTapeCTM k Bool State)
 theorem computableInPolyTime_finishRuntime [Finite State] :
     ComputableInPolyTime (finishRuntime (k := k) (State := State))
       (encPair encBits (encOption encFiniteConfig)) (encOption encBits) := by
-  let encR := encPair encBits (encOption
-    (encFiniteConfig (k := k) (State := State) (Oracle := Empty)))
-  have hfinish : ComputableInPolyTime
-      (fun p : Runtime k State × Storage k State => finish p.2)
-      (encPair encR encFiniteConfig) (encOption encBits) :=
-    computableInPolyTime_finish.comp (ComputableInPolyTime.snd _ _)
-  have hfinal := (ComputableInPolyTime.snd encBits
-    (encOption encFiniteConfig)).optionElimWithInput
-    (body := fun _ finite => finish finite) (ComputableInPolyTime.const none) hfinish
-  have hempty : ComputableInPolyTime (fun r : Runtime k State => decide (r.1 = []))
-      encR encBool := by fun_prop
-  convert hempty.ite hfinal (ComputableInPolyTime.const none) using 1
-  funext runtime
-  simp only [finishRuntime]
-  by_cases h1 : runtime.1 = [] <;> cases runtime.2 <;> simp [h1]
+  unfold finishRuntime
+  simp only [bind]
+  option_match_to_elim
+  fun_prop
 
 /-- The actual binary checker retains validity independently of its requested terminal verdict. -/
 def checkBinary (machine : MultiTapeCTM k Bool State) (width : ℕ) (verdict : Bool)
@@ -389,16 +361,8 @@ theorem checkBinary_eq_certificateAccepts (machine : MultiTapeCTM k Bool State)
 theorem computableInPolyTime_checkBinary [Finite State]
     (machine : MultiTapeCTM k Bool State) (width : ℕ) (verdict : Bool) :
     ComputableInPolyTime (checkBinary machine width verdict) (encPair encBits encBits) encBool := by
-  have hout := computableInPolyTime_finishRuntime.comp
-    (computableInPolyTime_runBinary machine width)
-  have hclass : ComputableInPolyTime
-      (fun p : (List Bool × List Bool) × List Bool => (p.2 == [true]) == verdict)
-      (encPair (encPair encBits encBits) encBits) encBool := by fun_prop
-  have h := hout.optionElimWithInput (body := fun _ out => (out == [true]) == verdict)
-    (ComputableInPolyTime.const false) hclass
-  convert h using 1
-  funext p
-  simp only [checkBinary, Function.comp_def]
-  cases finishRuntime (runBinary machine width p) <;> rfl
+  unfold checkBinary Option.any
+  option_match_to_elim
+  fun_prop
 
 end Turing.MultiTapeCTM.Checker
