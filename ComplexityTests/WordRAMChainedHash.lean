@@ -8,16 +8,16 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Algorithms.WordRAM.Dictionary.ChainedHash
+public import Complexity.DataStructure.Dictionary.WordRAM.ChainedHash
 
 /-!
 # Tests for Chained Hash Table on the Randomized Word RAM
 
-Verifies `Cslib.Algorithms.WordRAM.Dictionary.ChainedHash`:
+Verifies `Cslib.DataStructure.Dictionary.WordRAM.ChainedHash`:
 * concrete table parameters (`bucketBits`, `numBuckets`, `hashBits`, `space`, `space_le`);
 * concrete hash collisions (`u₁ ≠ u₂` mapping to the same `multiplyShift` bucket), in-place key
   updates at full capacity `n_max`, and absent-key misses via `opCode_spec`;
-* `subroutineDS`, `subroutineDSStandard`, `initFresh_exec`, `initClear_exec`, `call_rename`, and
+* `impl`, `implStandard`, `initFresh_exec`, `initClear_exec`, `call_rename`, and
   `seq_expected_amortized` across a multi-operation sequence containing hash collisions, an
   in-place overwrite at full capacity `n_max`, and present/absent lookups.
 -/
@@ -26,11 +26,12 @@ Verifies `Cslib.Algorithms.WordRAM.Dictionary.ChainedHash`:
 
 namespace ComplexityTests.WordRAMChainedHash
 
-open Cslib Cslib.WordRAM Cslib.WordRAM.Randomized
-open Cslib.Algorithms.Lean
-open Cslib.Algorithms.WordRAM.Dictionary
-open Cslib.Algorithms.WordRAM.Dictionary.ChainedHash
-open Cslib.Algorithms.WordRAM.Dictionary.ChainedHash.Reg
+open Cslib Cslib.WordRAM
+open Cslib.DataStructure Cslib.DataStructure.Dictionary
+open Cslib.DataStructure.Dictionary.WordRAM
+open Cslib.DataStructure.WordRAM Cslib.DataStructure.WordRAM.Randomized
+open Cslib.DataStructure.Dictionary.WordRAM.ChainedHash
+open Cslib.DataStructure.Dictionary.WordRAM.ChainedHash.Reg
 open Cslib.Probability
 open scoped ENNReal
 
@@ -120,7 +121,7 @@ at full capacity `n_max = 2`, the two present-key lookups (`some 30` and `some 2
 absent-key lookup (`none`). -/
 theorem concrete_collision_update_and_miss_exec {x : Data rHash}
     (hr₀ : Rep 16 100 2 16 10 seed₀ s₀ x) :
-    let C := subroutineDS 16 100 2 16 10 hw_test hS_test hV_test
+    let C := impl 16 100 2 16 10 hw_test hS_test hV_test
     ∃ z₁ z₂ z₃ z₄ z₅ z₆ : Data rHash,
       ExecWithin 16 (opCode 16 2) (C.toDynamicProgram.prepare (.insert u₁ 10) x) z₁
         (55 + 9 * collCount 2 s₀ u₁ seed₀) ∧
@@ -173,19 +174,20 @@ theorem concrete_collision_update_and_miss_exec {x : Data rHash}
     he₅, hdec₅.trans (congrArg some hs₃_u₂),
     he₆, hdec₆.trans (congrArg some hs₃_u₃)⟩
 
-/-! ## 3. `SubroutineDS`, `toStandard`, `initClear_exec`, `call_rename`, `seq_expected_amortized` -/
+/-! ## 3. `StateTransitionImpl`, `toStandard`, `initClear_exec`, `call_rename`,
+`seq_expected_amortized` -/
 
-/-- Concrete `SubroutineDS` instance over `Basis.exact`. -/
-noncomputable def testDS :
-    Randomized.SubroutineDS (subroutineCode 16 2) (Dictionary.spec 16 100 2)
+/-- Concrete `StateTransitionImpl` instance over `Basis.exact`. -/
+noncomputable abbrev testDS :
+    Randomized.StateTransitionImpl (subroutineCode 16 2) (Dictionary.spec 16 100 2)
       16 10 Fin.elim0 (Dictionary.empty 16) :=
-  subroutineDS 16 100 2 16 10 hw_test hS_test hV_test
+  impl 16 100 2 16 10 hw_test hS_test hV_test
 
-/-- Concrete `SubroutineDS` instance over `Basis.standard`. -/
-noncomputable def testDSStandard :
-    Randomized.SubroutineDS (subroutineCode 16 2).toStandard (Dictionary.spec 16 100 2)
+/-- Concrete `StateTransitionImpl` instance over `Basis.standard`. -/
+noncomputable abbrev testDSStandard :
+    Randomized.StateTransitionImpl (subroutineCode 16 2).toStandard (Dictionary.spec 16 100 2)
       16 10 Fin.elim0 (Dictionary.empty 16) :=
-  subroutineDSStandard 16 100 2 16 10 hw_test hS_test hV_test
+  implStandard 16 100 2 16 10 hw_test hS_test hV_test
 
 /-- End-to-end expected-time guarantee for `ops6` from zeroed memory: total expected instruction
 count of `initFresh` (`16` steps) followed by `ops6` (`6` operations) is at most
@@ -195,7 +197,7 @@ theorem test_seq_expected_amortized {x : Data rHash}
     (hz : ∀ a ∈ (Block.mk 10 (space 2)).footprint, x.mem a = 0) :
     ∃ (ν₀ ν_final : PMF (testDS.Seed × Data rHash)) (T_ops : ℝ≥0∞),
       ExecCodeDist 16 (subroutineCode 16 2).initFresh x (ν₀.map Prod.snd) testDS.initTime ∧
-      testDS.ExecSteps (Dictionary.empty 16) ops6 ν₀ ν_final T_ops ∧
+      testDS.ExecStepsOfFn (Dictionary.empty 16) ops6 ν₀ ν_final T_ops ∧
       (∀ θ, (ν_final.map Prod.fst) θ ≤ testDS.seedSlack * testDS.seedLaw θ) ∧
       (∀ p ∈ ν_final.support,
         testDS.rep p.1 ((Dictionary.spec 16 100 2).run (Dictionary.empty 16) ops6).1 p.2) ∧
@@ -239,8 +241,8 @@ theorem test_call_rename
           p.2 ((μ_call p).map Prod.snd) (T_call p) ∧
         ∀ q ∈ (μ_call p).support,
           testDS.decode (.get u₁) (q.2.comap Fin.castSucc).regs =
-            some ((Dictionary.spec 16 100 2).step (Dictionary.empty 16) (.get u₁)).2 ∧
-          testDS.rep q.1 ((Dictionary.spec 16 100 2).step (Dictionary.empty 16) (.get u₁)).1
+            some ((Dictionary.spec 16 100 2).stepFn (Dictionary.empty 16) (.get u₁)).2 ∧
+          testDS.rep q.1 ((Dictionary.spec 16 100 2).stepFn (Dictionary.empty 16) (.get u₁)).1
             (q.2.comap Fin.castSucc) ∧
           ∃ x' ∈ (PMF.pure (p.2.set (Fin.last rHash) 0) : PMF (Data (rHash + 1))).support,
             Modifies (Block.mk 10 testDS.space).footprint x'.mem q.2.mem ∧
@@ -251,7 +253,7 @@ theorem test_call_rename
         1 + (testDS.charge (Dictionary.empty 16) (.get u₁) : ℝ≥0∞) +
           ∑' p, ν p * (testDS.potential p.1 (p.2.comap Fin.castSucc) : ℝ≥0∞) := by
   intro prep
-  refine testDS.call_rename (Fin.castSucc_injective rHash) (.get u₁) ν
+  refine testDS.call_rename_ofFn (Fin.castSucc_injective rHash) (.get u₁) ν
     (prep := prep) (B_prep := 1)
     (μ_prep := fun p => PMF.pure (p.2.set (Fin.last rHash) 0)) (T_prep := fun _ => 1)
     trivial hseed hrep ?_

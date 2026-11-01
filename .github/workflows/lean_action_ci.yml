@@ -56,6 +56,9 @@ jobs:
       # This reads only checked-in files: no Lean, network or `.lake`.
       - name: "Documentation pins"
         run: python3 -B scripts/check_docs.py --config-only
+      - name: Reclaim unused hosted-runner SDK space
+        continue-on-error: true
+        run: scripts/ci/prepare-runner.sh
       # lean-action has no hook between installing the toolchain and building, so here it only
       # installs elan. The steps around it do the rest of what it did, with bounded cache retries:
       # restore and save `.lake` under the same Actions cache key, then build, test and lint.

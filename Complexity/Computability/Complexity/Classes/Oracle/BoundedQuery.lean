@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Classes.Oracle.QueryBit
 public import Complexity.Computability.Complexity.Problems.SAT
+public import Complexity.Languages.Probabilistic.Iteration
 import Complexity.Computability.Complexity.Classes.NP.Image
 import Complexity.Computability.Complexity.CookLevin.Completeness
 import Complexity.Computability.Probabilistic.Oracle.Composition
@@ -41,6 +42,8 @@ is closed under complement.
 
 ## Main results
 
+* `Cslib.OracleComp.length_queriesWith_iterate_le`: a bounded loop of rounds with boundedly many
+  requests makes boundedly many requests.
 * `Cslib.Complexity.ComputableInPolyTimeWithOracleQueries.computableInPolyTimeWithOracle`,
   `.mono`, `.map`: forgetting and weakening the bound, and postprocessing.
 * `Turing.MultiTapeTM.ComputableInPolyTime.computableInPolyTimeWithOracleQueries`: polynomial time
@@ -62,7 +65,21 @@ is closed under complement.
 
 @[expose] public section
 
-namespace Cslib.Complexity
+namespace Cslib
+
+/-- **A bounded loop makes a bounded number of requests**: if every round makes at most `r`
+requests, `n` rounds make at most `n * r`. -/
+theorem OracleComp.length_queriesWith_iterate_le {ι State : Type} {spec : OracleSpec.{0, 0} ι}
+    (answer : (q : ι) → spec q) {step : State → OracleComp spec State} {r : ℕ}
+    (h : ∀ st, (queriesWith answer (step st)).length ≤ r) (n : ℕ) (st : State) :
+    (queriesWith answer (iterate n step st)).length ≤ n * r := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [iterate_succ, queriesWith_bind, List.length_append, Nat.succ_mul]
+    exact Nat.add_le_add ih (h _)
+
+namespace Complexity
 
 open Probability Turing.MultiTapeTM Cslib.Logic.PL
 
@@ -232,4 +249,6 @@ theorem PNPLog_subset_PWithOracle (enc : α ↪ List Bool) :
 
 end
 
-end Cslib.Complexity
+end Complexity
+
+end Cslib

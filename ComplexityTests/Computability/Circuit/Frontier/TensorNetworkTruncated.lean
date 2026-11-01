@@ -32,23 +32,15 @@ open Cslib Cslib.Circuits.Frontier Cslib.Circuits.Frontier.DescribedNetwork
 def entry (table : List (List ℕ)) (bs : List Bool) : List ℕ :=
   table.getD (BitString.lsbValue bs) []
 
-/-- Direct summation in `A_P` of a specialized network. -/
-def direct (x : ℕ × List ℕ × ℕ × DescribedNetwork (SpecDesc (List (List ℕ)))) : List ℕ :=
-  sumValue SumOps.galois (specEntry entry) (x.1, x.2.1) x.2.2.2
+/-- Direct summation in `A_P` of a specialized network, at the input `(P, fl, r, G)`. -/
+def direct : ℕ × List ℕ × ℕ × DescribedNetwork (SpecDesc (List (List ℕ))) → List ℕ
+  | (P, fl, _, G) => sumValue SumOps.galois (specEntry entry) (P, fl) G
 
 /-- Row entries `1, V` and column entries `1 + V, 2`: the contraction `1 + 3 V`. -/
 def G₁ : DescribedNetwork (List (List ℕ)) := ⟨1, [([0], [[1], [0, 1]]), ([0], [[1, 1], [2]])]⟩
 
 /-- Row entries `1 + V, 0` and column entries `1 + V, 5`: the contraction `1 + 2 V + V ^ 2`. -/
 def G₂ : DescribedNetwork (List (List ℕ)) := ⟨1, [([0], [[1, 1], [0]]), ([0], [[1, 1], [5]])]⟩
-
-/-! ### Coefficients -/
-
-example : (coeffPoly [3, 5]).coeff 1 = 5 := by simp
-
-example : (coeffPoly [3, 5]).coeff 7 = 0 := by simp
-
-example : (coeffPoly [3, 5, 2]).natDegree ≤ 2 := natDegree_coeffPoly_le _
 
 /-! ### The reduction, computed -/
 

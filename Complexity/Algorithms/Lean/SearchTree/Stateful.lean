@@ -9,7 +9,7 @@ module
 
 public import Complexity.Algorithms.Lean.SearchTree.Erase
 public import Complexity.Foundations.Data.OrderedSet.Spec
-public import Complexity.Foundations.Semantics.Stateful.Resource
+public import Complexity.DataStructure.StateTransition.Resource
 
 /-!
 # A stateful ordered set realized by a binary search tree
@@ -24,7 +24,7 @@ uses the existing successor-splicing operation, including unsuccessful and repea
 * `Cslib.OrderedSet.spec`: the shared representation-independent finite-set specification.
 * `step`, `Exec`, `run`: concrete tree operations and client interpreter with their exact
   node-visit charge.
-* `Rep`, `realization`: the search tree representation relation and its realization of the
+* `Rep`, `impl`: the search tree representation relation and its realization of the
   finite-set interface.
 
 ## Main results
@@ -46,7 +46,7 @@ RAM or Turing-machine time claim.
 
 namespace Cslib.Algorithms.Lean.SearchTree
 
-open Cslib.Stateful Cslib.OrderedSet
+open Cslib.DataStructure Cslib.OrderedSet
 
 variable {α : Type} [LinearOrder α]
 
@@ -70,29 +70,33 @@ def Rep (s : Finset α) (t : BinaryTree α) : Prop := Ordered t ∧ elements t =
 theorem rep_empty : Rep (∅ : Finset α) .nil := ⟨trivial, rfl⟩
 
 /-- Semantic correctness is independent of the later resource certificate. -/
-def realization : Realization (spec α) Exec where
-  rep := Rep
-  total o _ _ := ⟨(step _ o).2.1, (step _ o).1, (step _ o).2.2, rfl⟩
-  correct {s t o a t' n} hr _ he := by
-    obtain ⟨ht, rfl⟩ := hr
-    cases o with
-    | contains x =>
-      cases he
-      refine ⟨?_, ht, rfl⟩
-      have h := contains_eq_true ht x
-      by_cases hx : x ∈ elements t <;> simp_all
-    | insert x =>
-      cases he
-      exact ⟨rfl, ordered_insert ht x, elements_insert x t⟩
-    | erase x =>
-      cases he
-      exact ⟨rfl, ordered_erase ht x, elements_erase ht x⟩
-    | minimum =>
-      cases he
-      exact ⟨(minimum_spec ht).eq_least, ht, rfl⟩
-    | successor x =>
-      cases he
-      exact ⟨(successor_spec ht x).eq_least, ht, rfl⟩
+def impl : StateTransitionImpl (spec α) Exec :=
+  StateTransitionImpl.ofFn
+    (rep := Rep)
+    (total := fun {_ t} o _ _ =>
+      match h : step t o with
+      | (t', a, n) => ⟨a, t', n, h⟩)
+    (correct := by
+      intro s t o a t' n hr _ he
+      obtain ⟨ht, rfl⟩ := hr
+      cases o with
+      | contains x =>
+        cases he
+        refine ⟨?_, ht, rfl⟩
+        have h := contains_eq_true ht x
+        by_cases hx : x ∈ elements t <;> simp_all
+      | insert x =>
+        cases he
+        exact ⟨rfl, ordered_insert ht x, elements_insert x t⟩
+      | erase x =>
+        cases he
+        exact ⟨rfl, ordered_erase ht x, elements_erase ht x⟩
+      | minimum =>
+        cases he
+        exact ⟨(minimum_spec ht).eq_least, ht, rfl⟩
+      | successor x =>
+        cases he
+        exact ⟨(successor_spec ht x).eq_least, ht, rfl⟩)
 
 /-- Costs depend on the actual initial tree height, even for an unsuccessful query. -/
 theorem exec_visits_le_height {t t' : BinaryTree α} {o : Op α}
@@ -105,7 +109,7 @@ theorem exec_visits_le_height {t t' : BinaryTree α} {o : Op α}
   | successor x => cases he; exact successorVisits_le_height x t
 
 /-- Forgetting shape gives a safe linear bound, not a logarithmic claim. -/
-theorem nodeVisitBound : Bound (realization (α := α)) id (fun s _ => s.card) := by
+theorem nodeVisitBound : Bound (impl (α := α)) id (fun s _ => s.card) := by
   intro s t o a t' n hr _ he
   have h := (exec_visits_le_height he).trans t.height_le_numNodes
   rw [← card_elements hr.1, hr.2] at h
@@ -148,7 +152,7 @@ theorem run_correct {β : Type} (p : (spec α).Client β)
         ((spec α).runClient s p).2.2 := by
   have hv := (spec α).validHistory_of_forall_valid (fun _ _ => trivial)
     s ((spec α).runClient s p).2.2
-  have h := realization.correct_client hr hv (run_exec p t)
+  have h := impl.correct_client hr hv (run_exec p t)
   exact ⟨h.1, h.2, nodeVisitBound.client hr hv (run_exec p t)⟩
 
 end Cslib.Algorithms.Lean.SearchTree

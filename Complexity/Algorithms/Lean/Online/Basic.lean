@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Semantics.Stateful.Amortized
+public import Complexity.DataStructure.StateTransition.Amortized
 
 /-!
 # Online request-serving problems and competitive analysis
@@ -30,8 +30,8 @@ definitions:
 * `IsCompetitive` compares an online strategy against every valid offline schedule from the same
   admissible initial state with integer multiplicative factor `c : Nat` and additive constant
   `b : Nat`; `IsCompetitiveAnyInit` compares across arbitrary admissible initial states.
-* `Problem.offlineSpec` and `DetStrategy.amortized_bound` reuse `Cslib.Stateful.Amortized` from
-  `Complexity.Foundations.Semantics.Stateful.Amortized` directly: a step-level potential
+* `Problem.offlineSpec` and `DetStrategy.amortized_bound` reuse `Cslib.DataStructure.Amortized` from
+  `Complexity.DataStructure.StateTransition.Amortized` directly: a step-level potential
   certificate between offline state and online internal memory telescopes via `Amortized.client`
   to yield competitive bounds.
 * `DetStrategy.adaptiveRequests` generates an explicit finite request sequence step-by-step against
@@ -53,8 +53,8 @@ are separate.
   strategies and prefix-history constructor.
 * `DetStrategy.IsCompetitiveFrom`, `DetStrategy.IsCompetitive`, `DetStrategy.IsCompetitiveAnyInit`:
   competitive-ratio predicates with additive constants.
-* `Problem.offlineSpec`, `DetStrategy.Exec`, `DetStrategy.realization`: embedding into
-  `Cslib.Stateful` for potential-based competitive proofs.
+* `Problem.offlineSpec`, `DetStrategy.Exec`, `DetStrategy.impl`: embedding into
+  `Cslib.DataStructure` for potential-based competitive proofs.
 * `DetStrategy.adaptiveRequestsFrom`, `DetStrategy.adaptiveRequests`: explicit adversarial request
   generation against a deterministic strategy.
 
@@ -63,7 +63,7 @@ are separate.
 * `DetStrategy.validSchedule_states`, `DetStrategy.cost_eq_costFrom`: online strategies produce
   valid schedules evaluated in the common cost model.
 * `DetStrategy.amortized_bound`, `DetStrategy.competitive_of_amortized`,
-  `DetStrategy.competitiveAnyInit_of_amortized`: `Cslib.Stateful.Amortized` certificates imply
+  `DetStrategy.competitiveAnyInit_of_amortized`: `Cslib.DataStructure.Amortized` certificates imply
   competitive bounds.
 * `DetStrategy.cost_adaptiveRequests_eq`: an adversary forcing per-step cost `w` at every reachable
   state forces total online cost `n * w` over `n` requests.
@@ -80,7 +80,7 @@ public section
 
 namespace Cslib.Algorithms.Lean.Online
 
-open Cslib.Stateful
+open Cslib.DataStructure
 
 /-- An online request-serving problem with a common action and cost model for online strategies
 and offline schedules. -/
@@ -216,14 +216,12 @@ theorem scheduleCost_append {s : P.State} {reqs₁ reqs₂ : List P.Req}
       simp only [List.length_cons, Nat.add_right_cancel_iff] at hlen
       simp only [List.cons_append, scheduleCost_cons, finalState_cons, ih hlen, Nat.add_assoc]
 
-/-- Stateful specification of valid offline transitions, used to attach `Cslib.Stateful.Amortized`
+/-- Stateful specification of valid offline transitions, used to attach
+`Cslib.DataStructure.Amortized`
 potential certificates between offline configurations and an online strategy's memory. -/
-abbrev offlineSpec : Spec where
-  State := P.State
-  Op := P.Req × P.State
-  Result _ := Unit
-  step _ o := (o.2, ())
-  valid s o := P.ValidStep s o.1 o.2
+abbrev offlineSpec : StateTransitionSpec :=
+  StateTransitionSpec.ofFn (State := P.State) (Op := P.Req × P.State) (Result := fun _ => Unit)
+    (fun _ o => (o.2, ())) (fun s o => P.ValidStep s o.1 o.2)
 
 /-- Client program replaying a given request list and offline state trajectory in `offlineSpec`. -/
 @[expose]
@@ -473,7 +471,7 @@ theorem IsCompetitive.mono {A : DetStrategy P} {c₁ c₂ b₁ b₂ : Nat}
     _ ≤ c₂ * P.scheduleCost s₀ reqs offStates + b₂ :=
       Nat.add_le_add (Nat.mul_le_mul_right _ hc) hb
 
-/-! ### Potential method via `Cslib.Stateful.Amortized` -/
+/-! ### Potential method via `Cslib.DataStructure.Amortized` -/
 
 /-- Native step execution of `A` over `P.offlineSpec`: `A` steps using only the request `o.1`,
 ignoring the offline target state `o.2`, and emits its single-step cost in `P`. -/
@@ -484,12 +482,14 @@ def Exec : Execution P.offlineSpec A.Mem Nat :=
 
 /-- Semantic realization pairing `P.offlineSpec` with online memory invariant `A.ValidMem`. -/
 @[expose]
-def realization : Realization P.offlineSpec A.Exec where
-  rep _ m := A.ValidMem m
-  total o _ _ := ⟨(), A.step _ o.1, _, rfl, rfl⟩
-  correct hm _ he := by
-    rcases he with ⟨rfl, -⟩
-    exact ⟨rfl, (A.valid_step _ hm).1⟩
+def impl : StateTransitionImpl P.offlineSpec A.Exec :=
+  StateTransitionImpl.ofFn
+    (rep := fun _ m => A.ValidMem m)
+    (total := fun o _ _ => ⟨(), A.step _ o.1, _, rfl, rfl⟩)
+    (correct := by
+      intro _ _ _ _ _ _ hm _ he
+      rcases he with ⟨rfl, -⟩
+      exact ⟨rfl, (A.valid_step _ hm).1⟩)
 
 /-- Every valid offline schedule drives a concrete `Executes` trace of `A` whose summed trace
 weights equal `A.costFrom m reqs`. -/
@@ -512,11 +512,12 @@ theorem exists_executes_scheduleClient (m : A.Mem) {s_off : P.State}
         .call (a := ()) ⟨rfl, rfl⟩ hexec, ?_⟩
       simp only [total_cons, id_eq, htot, costFrom_cons]
 
-/-- Telescoping competitive potential bound derived directly from `Cslib.Stateful.Amortized.client`:
+/-- Telescoping competitive potential bound derived directly from
+`Cslib.DataStructure.Amortized.client`:
 if `potential` satisfies the step inequality against `c * stepCost`, then `A.costFrom` plus final
 potential is bounded by `c * P.scheduleCost` plus initial potential. -/
 theorem amortized_bound {potential : P.State → A.Mem → Nat} {c : Nat}
-    (Cert : Amortized A.realization id potential
+    (Cert : Amortized A.impl id potential
       (fun s o => c * P.stepCost s o.1 o.2))
     {s_off : P.State} {m : A.Mem} {reqs : List P.Req} {offStates : List P.State}
     (hm : A.ValidMem m) (hv : P.ValidSchedule s_off reqs offStates) :
@@ -529,15 +530,15 @@ theorem amortized_bound {potential : P.State → A.Mem → Nat} {c : Nat}
     rw [hrun]
     exact P.validHistory_zip hv
   have hclient := Cert.client (s := s_off) hm hvh hexec
-  rw [hrun] at hclient
+  rw [StateTransitionSpec.clientState, StateTransitionSpec.clientHistory, hrun] at hclient
   dsimp only at hclient
   rw [htot, P.totalCost_zip c hv] at hclient
   exact hclient
 
-/-- A `Cslib.Stateful.Amortized` certificate whose initial potential on `(s₀, A.init s₀)` is at
+/-- A `Cslib.DataStructure.Amortized` certificate whose initial potential on `(s₀, A.init s₀)` is at
 most `b` establishes `A.IsCompetitive c b`. -/
 theorem competitive_of_amortized {potential : P.State → A.Mem → Nat} {c b : Nat}
-    (Cert : Amortized A.realization id potential
+    (Cert : Amortized A.impl id potential
       (fun s o => c * P.stepCost s o.1 o.2))
     (hinit : ∀ s₀, P.ValidInit s₀ → potential s₀ (A.init s₀) ≤ b) :
     A.IsCompetitive c b := by
@@ -548,10 +549,11 @@ theorem competitive_of_amortized {potential : P.State → A.Mem → Nat} {c b : 
   have hb₀ := hinit s₀ hs₀
   omega
 
-/-- A `Cslib.Stateful.Amortized` certificate whose initial potential on `(s_off, A.init s₀)` is at
+/-- A `Cslib.DataStructure.Amortized` certificate whose initial potential on `(s_off, A.init s₀)`
+is at
 most `b` across all admissible initial states establishes `A.IsCompetitiveAnyInit c b`. -/
 theorem competitiveAnyInit_of_amortized {potential : P.State → A.Mem → Nat} {c b : Nat}
-    (Cert : Amortized A.realization id potential
+    (Cert : Amortized A.impl id potential
       (fun s o => c * P.stepCost s o.1 o.2))
     (hinit : ∀ s₀ s_off, P.ValidInit s₀ → P.ValidInit s_off → potential s_off (A.init s₀) ≤ b) :
     A.IsCompetitiveAnyInit c b := by
