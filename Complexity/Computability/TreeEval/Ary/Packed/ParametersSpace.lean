@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.TreeEval.Ary.PackingParameters
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatSize
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatPrime
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatPow
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
@@ -31,20 +32,11 @@ namespace Cslib.TreeEval.Ary.Packed
 
 open Turing MultiTapeTM ComputableInSpace
 
-private theorem natSize_inSpace :
-    ComputableInSpace Nat.size encNat encNat (fun n => (encNat n).length) := by
-  have hlen := (of_inO ComputableInO.lengthNat).weaken
-    (show (fun w : List Bool => w.length + 1) ≼ fun w => (encBits w).length from
-      .of_le_linear 1 1 fun w => by simp [encBits_apply])
-  refine (hlen.of_encIn_eq Nat.bits (fun _ => rfl)).of_enc_eq ?_
-  intro n
-  rw [Nat.size_eq_bits_len]
-
 /-- Runtime chunk width is computed by measuring the binary product, not by a finite lookup. -/
 theorem chunkWidth_inSpace :
     ComputableInSpace (fun q : ℕ × ℕ => chunkWidth q.1 q.2)
       (encPair encNat encNat) encNat (fun q => (encPair encNat encNat q).length) :=
-  (budget_comp_linear natSize_inSpace
+  (budget_comp_linear natSize
     (budget_natMul (fst encNat encNat) (snd encNat encNat))).of_enc_eq fun _ => rfl
 
 /-- Ceiling division uses binary addition, predecessor and division at runtime. -/
