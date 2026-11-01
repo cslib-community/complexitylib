@@ -3511,7 +3511,10 @@ public import Complexity.Logics.FirstOrder.Operator.Definability
 public import Complexity.Logics.FirstOrder.Operator.Definability.Polarity
 public import Complexity.Logics.FirstOrder.Operator.LeastFixedPoint
 public import Complexity.Logics.FirstOrder.Operator.LeastFixedPoint.Definability
+public import Complexity.Logics.FirstOrder.Operator.LeastFixedPoint.Tuple
+public import Complexity.Logics.FirstOrder.Operator.LeastFixedPoint.Tuple.Semantics
 public import Complexity.Logics.FirstOrder.Operator.Polarity
+public import Complexity.Logics.FirstOrder.Operator.Quantifiers
 public import Complexity.Logics.FirstOrder.Operator.Relabel
 public import Complexity.Logics.FirstOrder.Operator.TransitiveClosure
 public import Complexity.Logics.FirstOrder.Operator.TransitiveClosure.Definability
@@ -3525,10 +3528,13 @@ public import Complexity.Logics.FirstOrder.Ordered.DomainInterpretation
 public import Complexity.Logics.FirstOrder.Ordered.DomainInterpretation.Certificate
 public import Complexity.Logics.FirstOrder.Ordered.DomainInterpretation.Composition
 public import Complexity.Logics.FirstOrder.Ordered.DomainInterpretation.Encoding
+public import Complexity.Logics.FirstOrder.Ordered.Encoding
 public import Complexity.Logics.FirstOrder.Ordered.FullTuple
 public import Complexity.Logics.FirstOrder.Ordered.FullTuple.Composition
 public import Complexity.Logics.FirstOrder.Ordered.FullTuple.DomainInterpretation
 public import Complexity.Logics.FirstOrder.Ordered.FullTuple.Encoding
+public import Complexity.Logics.FirstOrder.Ordered.FullTuple.LeastFixedPoint
+public import Complexity.Logics.FirstOrder.Ordered.FullTuple.Power
 public import Complexity.Logics.FirstOrder.Ordered.Interpretation
 public import Complexity.Logics.FirstOrder.Ordered.LeastFixedPoint
 public import Complexity.Logics.FirstOrder.Ordered.Multiplication
@@ -3543,6 +3549,7 @@ public import Complexity.Logics.FirstOrder.Ordered.Radix.Conversion
 public import Complexity.Logics.FirstOrder.Ordered.Radix.Decode
 public import Complexity.Logics.FirstOrder.Ordered.Radix.Multiplication
 public import Complexity.Logics.FirstOrder.Ordered.Reduction
+public import Complexity.Logics.FirstOrder.Ordered.StrictOrder
 public import Complexity.Logics.FirstOrder.Ordered.Tuple
 public import Complexity.Logics.FirstOrder.Ordered.Tuple.Flatten
 public import Complexity.Logics.FirstOrder.Ordered.TupleBit
