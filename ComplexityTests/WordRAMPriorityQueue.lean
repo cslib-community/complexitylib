@@ -130,7 +130,7 @@ example :
   have hv : (IndexedMinPQ.spec 4 20).ValidHistory (IndexedMinPQ.empty 4)
       ((IndexedMinPQ.spec 4 20).runClient (IndexedMinPQ.empty 4) sampleClient).2.2 := by
     rw [hhist]
-    simp [Stateful.Spec.ValidHistory, IndexedMinPQ.spec, IndexedMinPQ.empty]
+    simp [IndexedMinPQ.valid, IndexedMinPQ.step, IndexedMinPQ.empty]
   have hres : ((IndexedMinPQ.spec 4 20).runClient (IndexedMinPQ.empty 4) sampleClient).1 =
       some (2, 0) := by
     decide

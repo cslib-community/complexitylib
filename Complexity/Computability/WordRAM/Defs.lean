@@ -152,8 +152,8 @@ convention.
 * `Cslib.WordRAM.executes_iff_exists_run_eq`: the interpreter computes exactly the halting runs.
 * `Cslib.WordRAM.Executes.unique`: output and instruction count are determined by the program,
   the word size and the state.
-* `Cslib.WordRAM.Runs.bounded_init`: from an input that fits, every reachable register and memory
-  cell holds a `w`-bit word.
+* `Cslib.WordRAM.Runs.bounded_init`, `Cslib.WordRAM.Executes.fits_init`: from an input that fits,
+  every reachable register and memory cell, and the output, holds a `w`-bit word.
 * `Cslib.WordRAM.Executes.mono_width`: a program that does not read the word size halts in the
   same way at every larger word size.
 
@@ -865,6 +865,21 @@ theorem Runs.bounded {w : ℕ} {p : Program B r} {s t : State r} {n : ℕ} (h : 
 theorem Runs.bounded_init {w : ℕ} {p : Program B r} {input : List ℕ} {t : State r} {n : ℕ}
     (h : Runs w p (State.init input) t n) (hi : InputFits w input) : t.data.Bounded w :=
   h.bounded (Data.Bounded.init hi)
+
+/-- A halting run from an input that fits returns a `w`-bit word. -/
+theorem Executes.fits_init {w : ℕ} {p : Program B r} {input : List ℕ} {v n : ℕ}
+    (h : Executes w p (State.init input) v n) (hi : InputFits w input) : Fits w v := by
+  obtain ⟨t, m, hr, ht, rfl⟩ := h
+  have hb := hr.bounded_init hi
+  cases hpc : p[t.pc]? with
+  | none => simp [step, hpc] at ht
+  | some i =>
+    cases i with
+    | op o => simp only [step, hpc] at ht; split at ht <;> cases ht
+    | jump => simp [step_jump hpc] at ht
+    | branch => simp [step_branch hpc] at ht
+    | halt i => rw [step_halt hpc] at ht; cases ht; exact hb.1 i
+    | rand => simp [step_rand hpc] at ht
 
 /-! ## Larger word sizes
 
