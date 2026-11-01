@@ -1757,6 +1757,9 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySupplierCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySupplierInit
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySupplierTotal
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.RootDecision
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.RootDecisionCorrect
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleCounter
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleRead
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleReadCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleReadPort
@@ -1765,6 +1768,9 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleReadSearchSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleReadSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleReadWindow
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearch
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearchCorrect
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearchSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputationTree
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockTrace
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Append

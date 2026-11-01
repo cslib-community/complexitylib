@@ -109,7 +109,8 @@ private theorem wordDrop_inSpace : ComputableInSpace
 private theorem wordReverse_inSpace : ComputableInSpace List.reverse encBits encBits
     (fun w => w.length) := of_inO ComputableInDegree.bitsReverse.inO_one
 
-private theorem wordLength_inSpace : ComputableInSpace List.length encBits encNat
+/-- Native length measurement of an actual stored bit word. -/
+theorem wordLength_inSpace : ComputableInSpace List.length encBits encNat
     (fun w => w.length) :=
   (of_inO ComputableInO.lengthNat).weaken (.of_le_linear 1 1 fun _ => by omega)
 
@@ -143,7 +144,9 @@ theorem readNat_inSpace : ComputableInSpace
     (fun p => (encPair encBits (encPair encNat encNat) p).length) :=
   budget_comp_linear (of_inO ComputableInO.bitsToNat) slice_inSpace
 
-private theorem bit_inSpace : ComputableInSpace
+/-- Read one stored bit natively. Header-only root classification uses this without decoding
+windows. -/
+theorem bit_inSpace : ComputableInSpace
     (fun p : List Bool × ℕ => p.1.getD p.2 false) (encPair encBits encNat) encBool
     (fun p => (encPair encBits encNat p).length) := by
   have hhead : ComputableInSpace (fun w : List Bool => w.headD false) encBits encBool
@@ -271,7 +274,8 @@ theorem length_payload_cells (e : Q ≃ Fin s) (b : ℕ) (bits : BitString (widt
 
 variable [Finite Q]
 
-private theorem state_inSpace (e : Q ≃ Fin s) : ComputableInSpace (state e) encNat
+/-- Decode a finite control rank natively, including unused halted ranks for root classification. -/
+theorem state_inSpace (e : Q ≃ Fin s) : ComputableInSpace (state e) encNat
     (encFinite (Option Q)) (fun n => (encNat n).length) := by
   classical
   let tags := List.ofFn fun i : Fin (s + 1) => (stateIndex e).symm i
@@ -290,7 +294,8 @@ private theorem state_inSpace (e : Q ≃ Fin s) : ComputableInSpace (state e) en
 /-- Runtime width and an actual stored Boolean label. -/
 abbrev encArgs : (ℕ × List Bool) ↪ List Bool := encPair encNat encBits
 
-private theorem trackOffset_inSpace : ComputableInSpace
+/-- Compute the output-summary offset without allocating the skipped head or window fields. -/
+theorem trackOffset_inSpace : ComputableInSpace
     (fun p : ℕ × List Bool => trackOffset k s p.1) encArgs encNat
     (fun p => (encArgs p).length) := by
   have hb := fst encNat encBits
