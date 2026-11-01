@@ -1054,6 +1054,8 @@ public import Complexity.Computability.Circuit.Quantum.Basic
 public import Complexity.Computability.Circuit.Quantum.Classical
 public import Complexity.Computability.Circuit.Quantum.Code
 public import Complexity.Computability.Circuit.Quantum.Counter
+public import Complexity.Computability.Circuit.Quantum.Output
+public import Complexity.Computability.Circuit.Quantum.OutputSupport
 public import Complexity.Computability.Circuit.Quantum.Parallel
 public import Complexity.Computability.Circuit.Quantum.PathNetwork
 public import Complexity.Computability.Circuit.Quantum.PathNetworkPolyTime
@@ -1172,6 +1174,10 @@ public import Complexity.Computability.Complexity.Classes.BQP
 public import Complexity.Computability.Complexity.Classes.BQP.Amplification
 public import Complexity.Computability.Complexity.Classes.BQP.Classical
 public import Complexity.Computability.Complexity.Classes.BQP.Counting
+public import Complexity.Computability.Complexity.Classes.BQP.OutputGap
+public import Complexity.Computability.Complexity.Classes.BQP.Sampling
+public import Complexity.Computability.Complexity.Classes.BQP.Sampling.Resources
+public import Complexity.Computability.Complexity.Classes.BQP.Sampling.Seeded
 public import Complexity.Computability.Complexity.Classes.BQP.TensorContraction
 public import Complexity.Computability.Complexity.Classes.BQP.Time
 public import Complexity.Computability.Complexity.Classes.BooleanHierarchy
@@ -1663,6 +1669,7 @@ public import Complexity.Computability.GenericRAM.Native.Combinators
 public import Complexity.Computability.GenericRAM.Native.Degree
 public import Complexity.Computability.GenericRAM.Native.ExhaustiveCountFallback
 public import Complexity.Computability.GenericRAM.Native.ExpTimePolySpace
+public import Complexity.Computability.GenericRAM.Native.ExpTimePolySpace.Iteration
 public import Complexity.Computability.GenericRAM.Native.HeavyBranchFold
 public import Complexity.Computability.GenericRAM.Native.IndexFold
 public import Complexity.Computability.GenericRAM.Native.MeasurementFold
@@ -2900,6 +2907,7 @@ public import Complexity.Foundations.Data.BitString.Isolation
 public import Complexity.Foundations.Data.BitString.List
 public import Complexity.Foundations.Data.BitString.List.Binary
 public import Complexity.Foundations.Data.BitString.List.Operations
+public import Complexity.Foundations.Data.BitString.List.Positions
 public import Complexity.Foundations.Data.BitString.List.Vote
 public import Complexity.Foundations.Data.BitString.Parity
 public import Complexity.Foundations.Data.BitString.Parity.DotProduct
@@ -3494,6 +3502,8 @@ public import Complexity.Probability.Product
 public import Complexity.Probability.ProductConditioning
 public import Complexity.Probability.ProductConditioning.SideInformation
 public import Complexity.Probability.Quantile
+public import Complexity.Probability.RankDecoder
+public import Complexity.Probability.RankDecoder.Native
 public import Complexity.Probability.RejectionSampling
 public import Complexity.Probability.Resilience
 public import Complexity.Probability.Rewinding
