@@ -40,6 +40,32 @@ theorem runFrom_eq (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s) (w : List Bool)
     · simp [h]
     · simp [h]
 
+/-- A local call stops at its requested runtime width, even if native control halted earlier. -/
+theorem halted_runFrom_load (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s) (w : List Bool)
+    (N b positive negative : ℕ) (expected : Option (Fin k) → SignType) (raw : RawResult k Q) :
+    (machine M e).halted ((machine M e).runFrom w
+      ((positive, negative, expected), Load.load (N, b, (positive, negative), raw)) b) = true := by
+  rw [runFrom_eq]
+  change decide (((QueryReplay.machine M).runFrom w
+    (Load.load (N, b, (positive, negative), raw)) b).remaining = 0) = true
+  rw [remaining_runFrom]
+  change decide (b - b = 0) = true
+  simp
+
+/-- Before the requested duration, the local call remains live. Together with the stopping
+lemma this supplies the exact first-halt contract for state-returning query calls. -/
+theorem live_runFrom_load (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s) (w : List Bool)
+    (N b positive negative : ℕ) (expected : Option (Fin k) → SignType) (raw : RawResult k Q)
+    {t : ℕ} (ht : t < b) :
+    (machine M e).halted ((machine M e).runFrom w
+      ((positive, negative, expected), Load.load (N, b, (positive, negative), raw)) t) = false := by
+  rw [runFrom_eq]
+  change decide (((QueryReplay.machine M).runFrom w
+    (Load.load (N, b, (positive, negative), raw)) t).remaining = 0) = false
+  rw [remaining_runFrom]
+  change decide (b - t = 0) = false
+  exact decide_eq_false_iff_not.mpr (by omega)
+
 /-- Finishing a loaded replay emits exactly the encoded leaving view on successful all-head
 motion validation, and the exact FAIL code otherwise. Retained context and windows are explicit. -/
 theorem finish_runFrom_load (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s) (w : List Bool)
