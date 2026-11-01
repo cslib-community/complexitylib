@@ -418,14 +418,13 @@ theorem chainedHashing :
       Instr, .const, .copy, .alu, .width, .load, .store, .jump,
       .branchEq, .branchLt, .halt, .rand, @Instr.rec,
       Comp, @Comp.pure, @Comp.sample, @Comp.bind, @Comp.eval,
-      fun {α} (m : Comp α) =>
-        @Comp.rec α (fun _ => ℕ → Prop) (fun _ _ => True)
-          (fun _ _ ih R => Nat.casesOn R False (fun R' => ∀ k, ih k R')) m,
+      ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
       State, .mk, Cfg, .running, .halted, .faulted, @stepRand, @runRand⟩
     (by refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
-      simp_all [AluOp.eval, Comp.bind, Comp.eval, stepRand, runRand])
+      simp_all [AluOp.eval, Comp.bind, Comp.eval,
+        ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
     ⟨DictOp, @DictOp.get, @DictOp.insert, @DictOp.rec,
       @stepDict, @validDictOp, @ValidDictHistory,
       RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
@@ -586,14 +585,13 @@ theorem linearProbing :
       Instr, .const, .copy, .alu, .width, .load, .store, .jump,
       .branchEq, .branchLt, .halt, .rand, @Instr.rec,
       Comp, @Comp.pure, @Comp.sample, @Comp.bind, @Comp.eval,
-      fun {α} (m : Comp α) =>
-        @Comp.rec α (fun _ => ℕ → Prop) (fun _ _ => True)
-          (fun _ _ ih R => Nat.casesOn R False (fun R' => ∀ k, ih k R')) m,
+      ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
       State, .mk, Cfg, .running, .halted, .faulted, @stepRand, @runRand⟩
     (by refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
-      simp_all [AluOp.eval, Comp.bind, Comp.eval, stepRand, runRand])
+      simp_all [AluOp.eval, Comp.bind, Comp.eval,
+        ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
     ⟨DictOp, @DictOp.get, @DictOp.insert, @DictOp.rec,
       @stepDict, @validDictOp, @ValidDictHistory,
       RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
@@ -733,14 +731,13 @@ theorem uniformProbing :
       Instr, .const, .copy, .alu, .width, .load, .store, .jump,
       .branchEq, .branchLt, .halt, .rand, @Instr.rec,
       Comp, @Comp.pure, @Comp.sample, @Comp.bind, @Comp.eval,
-      fun {α} (m : Comp α) =>
-        @Comp.rec α (fun _ => ℕ → Prop) (fun _ _ => True)
-          (fun _ _ ih R => Nat.casesOn R False (fun R' => ∀ k, ih k R')) m,
+      ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
       State, .mk, Cfg, .running, .halted, .faulted, @stepRand, @runRand⟩
     (by refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
-      simp_all [AluOp.eval, Comp.bind, Comp.eval, stepRand, runRand])
+      simp_all [AluOp.eval, Comp.bind, Comp.eval,
+        ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
     ⟨DictOp, @DictOp.get, @DictOp.insert, @DictOp.rec,
       @stepDict, @validDictOp, @ValidDictHistory,
       RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
@@ -870,13 +867,13 @@ def cuckooRehashAmortizedBound : ℕ :=
 
 /-- Uniform `O(1)` expected-amortized instruction charge
 `2 * (cuckooInsertBaseBound + 3 + 3 * cuckooEvictIterBound + 4 * cuckooRehashAmortizedBound) =
-27337095620552` for an `insert` operation at `c_exp = 4` (with `C_walk = 3`, `C_reh = 4`, and
+27336684332552` for an `insert` operation at `c_exp = 4` (with `C_walk = 3`, `C_reh = 4`, and
 conditional-uniform seed slack `2`). -/
 def cuckooInsertCharge : ℕ :=
   2 * (cuckooInsertBaseBound + 3 + 3 * cuckooEvictIterBound + 4 * cuckooRehashAmortizedBound)
 
 /-- Per-operation expected instruction charge for cuckoo hashing at `c_exp = 4`:
-`cuckooGetCharge` (`854252184111`) for `get` and `cuckooInsertCharge` (`27337095620552`) for
+`cuckooGetCharge` (`854252184111`) for `get` and `cuckooInsertCharge` (`27336684332552`) for
 `insert`, both independent of `n_max` and `U`. -/
 def cuckooOpCharge {U : ℕ} : DictOp U → ℕ
   | .get _ => cuckooGetCharge
@@ -908,7 +905,7 @@ oblivious operation history `ops : List (DictOp U)` valid for capacity `n_max` a
   `OpOutputCorrect` at every step;
 - the total expected executed body instruction count satisfies both the operation-sensitive bound
   `cuckooInitSteps n_max U + T_ops ≤ cuckooInitSteps n_max U + (ops.map cuckooOpCharge).sum`
-  (`cuckooGetCharge = 854252184111` per `get`, `cuckooInsertCharge = 27337095620552` per `insert`)
+  (`cuckooGetCharge = 854252184111` per `get`, `cuckooInsertCharge = 27336684332552` per `insert`)
   and the uniform per-operation bound
   `cuckooInitSteps n_max U + T_ops ≤ cuckooInitSteps n_max U + ops.length * cuckooInsertCharge`
   (independent of `n_max` and `U`, excluding caller argument preparation and dispatch; no bound is
@@ -954,14 +951,13 @@ theorem cuckooHashing :
       Instr, .const, .copy, .alu, .width, .load, .store, .jump,
       .branchEq, .branchLt, .halt, .rand, @Instr.rec,
       Comp, @Comp.pure, @Comp.sample, @Comp.bind, @Comp.eval,
-      fun {α} (m : Comp α) =>
-        @Comp.rec α (fun _ => ℕ → Prop) (fun _ _ => True)
-          (fun _ _ ih R => Nat.casesOn R False (fun R' => ∀ k, ih k R')) m,
+      ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
       State, .mk, Cfg, .running, .halted, .faulted, @stepRand, @runRand⟩
     (by refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
-      simp_all [AluOp.eval, Comp.bind, Comp.eval, stepRand, runRand])
+      simp_all [AluOp.eval, Comp.bind, Comp.eval,
+        ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
     ⟨DictOp, @DictOp.get, @DictOp.insert, @DictOp.rec,
       @stepDict, @validDictOp, @ValidDictHistory,
       RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
