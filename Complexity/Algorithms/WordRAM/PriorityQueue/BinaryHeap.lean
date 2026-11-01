@@ -160,7 +160,7 @@ private theorem doIsEmpty_spec {s : IndexedMinPQ.State n} {x : Data rBin}
     (hr : Rep n w base s x) (hz0 : x.regs zero = 0) (ho1 : x.regs one = 1) :
     ∃ y, ExecWithin w doIsEmpty x y 3 ∧
       pqCode.decode (K_max := K_max) .isEmpty y.regs =
-        some ((IndexedMinPQ.spec n K_max).step s .isEmpty).2 ∧
+        some ((IndexedMinPQ.spec n K_max).stepFn s .isEmpty).2 ∧
       Rep n w base s y ∧ y.mem = x.mem := by
   by_cases hS : x.regs sz = 0
   · obtain ⟨y, he, hyf, hym, hyr⟩ : ∃ y, ExecWithin w doIsEmpty x y 3 ∧
@@ -174,8 +174,8 @@ private theorem doIsEmpty_spec {s : IndexedMinPQ.State n} {x : Data rBin}
     refine ⟨y, he, ?_, ⟨he.bounded hr.bounded, (hyr _ (by decide)).trans hr.reg_base,
       (hyr _ (by decide)).trans hr.reg_n, (hyr _ (by decide)).trans hr.reg_hb,
       (hyr _ (by decide)).trans hr.reg_pb, ?_, hym ▸ hr.state_eq⟩, hym⟩
-    · simp only [pqCode, PQCode.decode, IndexedMinPQ.spec, hyf, hdom, ne_eq, one_ne_zero,
-        not_false_eq_true, decide_true]
+    · simp only [pqCode, PQCode.decode, IndexedMinPQ.spec, IndexedMinPQ.step,
+        Stateful.Spec.stepFn, hyf, hdom, ne_eq, one_ne_zero, not_false_eq_true, decide_true]
     · rw [hyr sz (by decide), hym]; exact hr.heap
   · obtain ⟨y, he, hyf, hym, hyr⟩ : ∃ y, ExecWithin w doIsEmpty x y 3 ∧
         y.regs outFlag = 0 ∧ y.mem = x.mem ∧ ∀ i, i ≠ outFlag → y.regs i = x.regs i := by
@@ -189,8 +189,8 @@ private theorem doIsEmpty_spec {s : IndexedMinPQ.State n} {x : Data rBin}
     refine ⟨y, he, ?_, ⟨he.bounded hr.bounded, (hyr _ (by decide)).trans hr.reg_base,
       (hyr _ (by decide)).trans hr.reg_n, (hyr _ (by decide)).trans hr.reg_hb,
       (hyr _ (by decide)).trans hr.reg_pb, ?_, hym ▸ hr.state_eq⟩, hym⟩
-    · simp only [pqCode, PQCode.decode, IndexedMinPQ.spec, hyf, hdom, ne_eq, not_true_eq_false,
-        decide_false]
+    · simp only [pqCode, PQCode.decode, IndexedMinPQ.spec, IndexedMinPQ.step,
+        Stateful.Spec.stepFn, hyf, hdom, ne_eq, not_true_eq_false, decide_false]
     · rw [hyr sz (by decide), hym]; exact hr.heap
 
 private theorem doGetKey_spec (hS : Fits w (base + space n)) {s : IndexedMinPQ.State n}
@@ -198,7 +198,7 @@ private theorem doGetKey_spec (hS : Fits w (base + space n)) {s : IndexedMinPQ.S
     {v : Fin n} (hv_reg : x.regs argV = v.val) :
     ∃ y, ExecWithin w doGetKey x y 7 ∧
       pqCode.decode (K_max := K_max) (.getKey v) y.regs =
-        some ((IndexedMinPQ.spec n K_max).step s (.getKey v)).2 ∧
+        some ((IndexedMinPQ.spec n K_max).stepFn s (.getKey v)).2 ∧
       Rep n w base s y ∧ y.mem = x.mem := by
   have hsp : space n = 3 * n + 1 := rfl
   have hv_lt := v.isLt
@@ -218,8 +218,8 @@ private theorem doGetKey_spec (hS : Fits w (base + space n)) {s : IndexedMinPQ.S
     refine ⟨y, he, ?_, ⟨he.bounded hr.bounded, (hyr _ (by decide)).trans hr.reg_base,
       (hyr _ (by decide)).trans hr.reg_n, (hyr _ (by decide)).trans hr.reg_hb,
       (hyr _ (by decide)).trans hr.reg_pb, ?_, hym ▸ hr.state_eq⟩, hym⟩
-    · simp only [pqCode, PQCode.decode, IndexedMinPQ.spec, hyf, ↓reduceIte, hr.state_eq,
-        stateOfMem, hp0]
+    · simp only [pqCode, PQCode.decode, IndexedMinPQ.spec, IndexedMinPQ.step,
+        Stateful.Spec.stepFn, hyf, ↓reduceIte, hr.state_eq, stateOfMem, hp0]
     · rw [hyr sz (by decide), hym]; exact hr.heap
   · obtain ⟨y, he, hyf, hyk, hym, hyr⟩ : ∃ y, ExecWithin w doGetKey x y 7 ∧
         y.regs outFlag = 1 ∧ y.regs outK = x.mem (base + v.val) ∧ y.mem = x.mem ∧
@@ -236,8 +236,8 @@ private theorem doGetKey_spec (hS : Fits w (base + space n)) {s : IndexedMinPQ.S
     refine ⟨y, he, ?_, ⟨he.bounded hr.bounded, (hyr _ (by decide)).trans hr.reg_base,
       (hyr _ (by decide)).trans hr.reg_n, (hyr _ (by decide)).trans hr.reg_hb,
       (hyr _ (by decide)).trans hr.reg_pb, ?_, hym ▸ hr.state_eq⟩, hym⟩
-    · simp only [pqCode, PQCode.decode, IndexedMinPQ.spec, hyf, one_ne_zero, ↓reduceIte, hyk,
-        hr.state_eq, stateOfMem, hp0]
+    · simp only [pqCode, PQCode.decode, IndexedMinPQ.spec, IndexedMinPQ.step,
+        Stateful.Spec.stepFn, hyf, one_ne_zero, ↓reduceIte, hyk, hr.state_eq, stateOfMem, hp0]
     · rw [hyr sz (by decide), hym]; exact hr.heap
 
 private def insertHead : Code .exact rBin := ram_exact[
@@ -442,8 +442,8 @@ private theorem doExtractMin_spec (hS : Fits w (base + space n)) {s : IndexedMin
     {x : Data rBin} (hr : Rep n w base s x) (hz0 : x.regs zero = 0) (ho1 : x.regs one = 1) :
     ∃ y, ExecWithin w doExtractMin x y (46 * Nat.log 2 n + 22) ∧
       pqCode.decode (K_max := K_max) .extractMin y.regs =
-        some ((IndexedMinPQ.spec n K_max).step s .extractMin).2 ∧
-      Rep n w base ((IndexedMinPQ.spec n K_max).step s .extractMin).1 y ∧
+        some ((IndexedMinPQ.spec n K_max).stepFn s .extractMin).2 ∧
+      Rep n w base ((IndexedMinPQ.spec n K_max).stepFn s .extractMin).1 y ∧
       Modifies (Block.mk base (space n)).footprint x.mem y.mem := by
   have hsp : space n = 3 * n + 1 := rfl
   obtain ⟨S, hsz_eq⟩ : ∃ S, x.regs sz = S := ⟨_, rfl⟩
@@ -461,9 +461,10 @@ private theorem doExtractMin_spec (hS : Fits w (base + space n)) {s : IndexedMin
       exact hheap.size_eq_zero_iff.mp rfl
     refine ⟨x.set outFlag 0, hetot, ?_, ⟨hetot.bounded hr.bounded, hr.reg_base, hr.reg_n,
       hr.reg_hb, hr.reg_pb, hsz_eq ▸ hheap, ?_⟩, Modifies.refl _ _⟩
-    · simp only [pqCode, PQCode.decode, IndexedMinPQ.spec, hfm, Data.set_regs,
-        Function.update_self, ↓reduceIte]
-    · simp only [IndexedMinPQ.spec, hfm, Data.set_mem]; exact hr.state_eq
+    · simp only [pqCode, PQCode.decode, IndexedMinPQ.spec, IndexedMinPQ.step,
+        Stateful.Spec.stepFn, hfm, Data.set_regs, Function.update_self, ↓reduceIte]
+    · simp only [IndexedMinPQ.spec, IndexedMinPQ.step, Stateful.Spec.stepFn, hfm, Data.set_mem]
+      exact hr.state_eq
   · have hS1 : 1 ≤ S := Nat.one_le_iff_ne_zero.2 hS0
     have hc : ¬(Cond.eq sz zero).Holds x := by simp only [Cond.holds_eq, hsz_eq, hz0]; omega
     obtain ⟨y, he₁, hfr, hyf, hyu, hyk, hysz, hheap', hpos, hout⟩ :=
@@ -483,9 +484,9 @@ private theorem doExtractMin_spec (hS : Fits w (base + space n)) {s : IndexedMin
       (hfr hb (by decide)).trans hr.reg_hb,
       (hfr pb (by decide)).trans hr.reg_pb,
       hysz ▸ hheap', ?_⟩, ?_⟩
-    · simp only [pqCode, PQCode.decode, IndexedMinPQ.spec, hfm, hyf, one_ne_zero, ↓reduceIte,
-        ↓reduceDIte, hyu, hUN, hyk]
-    · simp only [IndexedMinPQ.spec, hfm]
+    · simp only [pqCode, PQCode.decode, IndexedMinPQ.spec, IndexedMinPQ.step,
+        Stateful.Spec.stepFn, hfm, hyf, one_ne_zero, ↓reduceIte, ↓reduceDIte, hyu, hUN, hyk]
+    · simp only [IndexedMinPQ.spec, IndexedMinPQ.step, Stateful.Spec.stepFn, hfm]
       funext u
       have hu_lt := u.isLt
       have hkey : y.mem (base + u.val) = x.mem (base + u.val) :=
@@ -524,8 +525,8 @@ private theorem opCode_spec (hS : Fits w (base + space n)) {s : IndexedMinPQ.Sta
     (hv : (IndexedMinPQ.spec n K_max).valid s o) (harg : pqCode.argMatch o x.regs) :
     ∃ y m, Exec w opCode x y m ∧
       pqCode.decode (K_max := K_max) o y.regs =
-        some ((IndexedMinPQ.spec n K_max).step s o).2 ∧
-      Rep n w base ((IndexedMinPQ.spec n K_max).step s o).1 y ∧
+        some ((IndexedMinPQ.spec n K_max).stepFn s o).2 ∧
+      Rep n w base ((IndexedMinPQ.spec n K_max).stepFn s o).1 y ∧
       Modifies (Block.mk base (space n)).footprint x.mem y.mem ∧
       m ≤ charge n o := by
   have hsp : space n = 3 * n + 1 := rfl
@@ -613,51 +614,51 @@ private theorem opCode_spec (hS : Fits w (base + space n)) {s : IndexedMinPQ.Sta
 end OpSpecs
 
 /-- Exact-basis `SubroutineDS` certificate for the standalone binary min-heap. -/
-def subroutineDS {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max) :
+abbrev subroutineDS {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max) :
     SubroutineDS pqCode.toSubroutineCode (IndexedMinPQ.spec n K_max) w base ![n]
-      (IndexedMinPQ.empty n) where
-  space := space n
-  spanTime := 6
-  setupTime := 5
-  initPotential := 0
-  charge _ o := charge n o
-  rep := Rep n w base
-  potential _ := 0
-  encode := pqCode.encode
-  argMatch := pqCode.argMatch
-  decode := pqCode.decode
-  bounded hr := hr.bounded
-  rep_unique hr₁ hr₂ := hr₁.state_eq.trans hr₂.state_eq.symm
-  arguments_fit o hv i _ := pqCode.arguments_fit (space_lower n) hS hK o hv i
-  encode_matches := pqCode.encode_matches
-  rep_supported {s x x'} hreg hmem hbx' hr := by
-    have hbase' : x'.regs baseReg = base := (hreg baseReg (by decide)).trans hr.reg_base
-    have hn' : x'.regs nReg = n := (hreg nReg (by decide)).trans hr.reg_n
-    have hhb' : x'.regs hb = base + n := (hreg hb (by decide)).trans hr.reg_hb
-    have hpb' : x'.regs pb = base + 2 * n + 1 := (hreg pb (by decide)).trans hr.reg_pb
-    have hsz' : x'.regs sz = x.regs sz := hreg sz (by decide)
-    refine ⟨hbx', hbase', hn', hhb', hpb', ?_, ?_⟩
-    · rw [hsz']
-      exact hr.heap.congr_mem hmem
-    · rw [hr.state_eq]
-      exact (stateOfMem_congr hmem).symm
-  potential_supported _ _ _ := rfl
-  clear_nodup := by decide
-  params_not_clear j := by fin_cases j; decide
-  incCur_eval {x} hone hfit := by
-    dsimp only [pqCode, PQCode.toSubroutineCode] at hone hfit ⊢
-    simp only [Op.eval_exactBin, BinOp.evalExact, hone, Option.bind_some, Data.put_of_fits hfit]
-  span_exec {x} _ hfr hpar := by
-    obtain ⟨x₁, he, hm, hb', hfr', hn'⟩ := allocSpan_spec hS hfr (hpar 0)
-    refine ⟨x₁, he, hm, hb', hfr', fun j => ?_⟩
-    fin_cases j
-    exact hn'
-  setup_exec {x₁} hx₁ hb' hfr' hpar hz := by
-    obtain ⟨y, he, hfr_y, hry, hmod⟩ := initSetup_spec hS hx₁ hb' hfr' (hpar 0) hz
-    exact ⟨y, he, hfr_y, hry, le_rfl, hmod⟩
-  step_exec {s x} o hr hv harg := by
-    obtain ⟨y, m, hex, hdec, hry, hmod, hm⟩ := opCode_spec hS o hr hv harg
-    exact ⟨y, m, hex, hdec, hry, hmod, by omega⟩
+      (IndexedMinPQ.empty n) :=
+  SubroutineDS.ofFn
+    (space := space n)
+    (spanTime := 6)
+    (setupTime := 5)
+    (initPotential := 0)
+    (charge := fun _ o => charge n o)
+    (rep := Rep n w base)
+    (potential := fun _ => 0)
+    (encode := pqCode.encode)
+    (argMatch := pqCode.argMatch)
+    (decode := pqCode.decode)
+    (bounded := fun hr => hr.bounded)
+    (arguments_fit := fun o hv i _ => pqCode.arguments_fit (space_lower n) hS hK o hv i)
+    (encode_matches := pqCode.encode_matches)
+    (rep_supported := fun {s x x'} hreg hmem hbx' hr => by
+      have hbase' : x'.regs baseReg = base := (hreg baseReg (by decide)).trans hr.reg_base
+      have hn' : x'.regs nReg = n := (hreg nReg (by decide)).trans hr.reg_n
+      have hhb' : x'.regs hb = base + n := (hreg hb (by decide)).trans hr.reg_hb
+      have hpb' : x'.regs pb = base + 2 * n + 1 := (hreg pb (by decide)).trans hr.reg_pb
+      have hsz' : x'.regs sz = x.regs sz := hreg sz (by decide)
+      refine ⟨hbx', hbase', hn', hhb', hpb', ?_, ?_⟩
+      · rw [hsz']
+        exact hr.heap.congr_mem hmem
+      · rw [hr.state_eq]
+        exact (stateOfMem_congr hmem).symm)
+    (potential_supported := fun _ _ _ => rfl)
+    (clear_nodup := by decide)
+    (params_not_clear := fun j => by fin_cases j; decide)
+    (incCur_eval := fun {x} hone hfit => by
+      dsimp only [pqCode, PQCode.toSubroutineCode] at hone hfit ⊢
+      simp only [Op.eval_exactBin, BinOp.evalExact, hone, Option.bind_some, Data.put_of_fits hfit])
+    (span_exec := fun {x} _ hfr hpar => by
+      obtain ⟨x₁, he, hm, hb', hfr', hn'⟩ := allocSpan_spec hS hfr (hpar 0)
+      refine ⟨x₁, he, hm, hb', hfr', fun j => ?_⟩
+      fin_cases j
+      exact hn')
+    (setup_exec := fun {x₁} hx₁ hb' hfr' hpar hz => by
+      obtain ⟨y, he, hfr_y, hry, hmod⟩ := initSetup_spec hS hx₁ hb' hfr' (hpar 0) hz
+      exact ⟨y, he, hfr_y, hry, le_rfl, hmod⟩)
+    (step_exec := fun {s x} o hr hv harg => by
+      obtain ⟨y, m, hex, hdec, hry, hmod, hm⟩ := opCode_spec hS o hr hv harg
+      exact ⟨y, m, hex, hdec, hry, hmod, by omega⟩)
 
 /-- Packaged `PQPackage .exact rBin` for plug-and-play subroutine callers (`dijkstra_of_pq_spec`).
 -/
@@ -672,6 +673,7 @@ def pkg : PQPackage .exact rBin where
   decreaseTime := tDec
   extractTime := tExt
   cert hS hK := subroutineDS hS hK
+  rep_unique _ _ := fun hr₁ hr₂ => hr₁.state_eq.trans hr₂.state_eq.symm
   cert_space _ _ := rfl
   cert_initTime _ _ := le_rfl
   cert_initPotential _ _ := rfl

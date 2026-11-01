@@ -69,13 +69,13 @@ example : ¬ LeastResult ({1} : Finset (Fin 3)) none := by
   simp [LeastResult]
 example : least ({0, 2} : Finset (Fin 3)) = some 0 := by decide
 example (s : Finset (Fin 3)) : (least s : WithTop (Fin 3)) = s.min := least_eq_min s
-example : (spec (Fin 3)).step {0, 2} (.successor 1) = ({0, 2}, some 2) := by decide
-example : (spec (Fin 3)).step {0, 2} (.successor 2) = ({0, 2}, none) := by decide
+example : (spec (Fin 3)).stepFn {0, 2} (.successor 1) = ({0, 2}, some 2) := by decide
+example : (spec (Fin 3)).stepFn {0, 2} (.successor 2) = ({0, 2}, none) := by decide
 
 -- Deletion is total: present, absent, and empty-set cases have the same typed interface.
-example : (spec (Fin 3)).step {0, 2} (.erase 0) = ({2}, ()) := by decide
-example : (spec (Fin 3)).step {0, 2} (.erase 1) = ({0, 2}, ()) := by decide
-example : (spec (Fin 3)).step ∅ (.erase 0) = (∅, ()) := by decide
+example : (spec (Fin 3)).stepFn {0, 2} (.erase 0) = ({2}, ()) := by decide
+example : (spec (Fin 3)).stepFn {0, 2} (.erase 1) = ({0, 2}, ()) := by decide
+example : (spec (Fin 3)).stepFn ∅ (.erase 0) = (∅, ()) := by decide
 
 -- The erased key comes from the minimum answer; an empty query performs no deletion.
 example : (spec (Fin 3)).runClient {0, 2} extractMin =
