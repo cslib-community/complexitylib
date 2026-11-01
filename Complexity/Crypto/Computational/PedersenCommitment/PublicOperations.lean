@@ -52,10 +52,9 @@ opening words. The public element is already encoded; no discrete logarithm or s
 value is supplied to this algorithm. -/
 def encodePedersenVerify
     (input : (F.Desc × List Bool) × List Bool × List Bool × List Bool) : Bool :=
-  decide (ofBits input.2.1 < F.order input.1.1) &&
-    decide ((ofBits input.2.1).bits = input.2.1) &&
-    decide (F.encodePedersenCommit
-      (input.1.1, input.1.2, ofBits input.2.1, ofBits input.2.2.2) = input.2.2.1)
+  let ((d, h), m, c, o) := input
+  decide (ofBits m < F.order d) && decide ((ofBits m).bits = m) &&
+    decide (F.encodePedersenCommit (d, h, ofBits m, ofBits o) = c)
 
 /-- The encoded verifier computes exactly the verifier used by `pedersenScheme`. -/
 @[simp]
@@ -109,7 +108,7 @@ noncomputable def pedersenPublicOperations : F.pedersenScheme.PublicOperations w
       (encPair encBits (encPair encBits encBits))
     have hv := F.computableInPolyTime_encodePedersenVerify.comp (hpublic.prod hrest)
     convert hv using 1
-    funext p
-    exact (F.encodePedersenVerify_encode p.1.1 p.1.2 p.2.1 p.2.2.1 p.2.2.2).symm
+    funext ⟨⟨d, h⟩, m, c, o⟩
+    exact (F.encodePedersenVerify_encode d h m c o).symm
 
 end Cslib.Crypto.PrimeOrderGroupFamily

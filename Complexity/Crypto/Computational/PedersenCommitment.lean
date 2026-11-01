@@ -182,9 +182,8 @@ theorem pedersenCommit_smul_generator_eq_iff (d : F.Desc) (α m₀ r₀ m₁ r�
 /-- Pedersen commitment on encoded group elements: given `(d, encode h, m, r)`, compute
 `encode (m • g + r • h)`. -/
 def encodePedersenCommit (input : F.Desc × List Bool × ℕ × ℕ) : List Bool :=
-  F.add (input.1,
-    F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
-    F.smul (input.1, input.2.2.2, input.2.1))
+  let (d, h, m, r) := input
+  F.add (d, F.smul (d, m, F.encode d (F.generator d)), F.smul (d, r, h))
 
 /-- `encodePedersenCommit` computes `F.encode d (F.pedersenCommit d h m r)` on encoded group
 elements. -/
@@ -510,9 +509,13 @@ Section 10.6.1, Fact 10.3). -/
 theorem pedersenExtractNat_eq_of_isBindingCollision (d : F.Desc) (α : ZMod (F.order d))
     {out : List Bool × (List Bool × List Bool) × (List Bool × List Bool)}
     (hcoll : F.pedersenScheme.isBindingCollision ⟨d, α • F.generator d⟩ out = true) :
+    let openings := out.2
+    let open₀ := openings.1
+    let open₁ := openings.2
     (pedersenExtractNat (F.order d)
-      (ofBits out.2.1.1) (ofBits out.2.1.2)
-      (ofBits out.2.2.1) (ofBits out.2.2.2) : ZMod (F.order d)) = α := by
+      (ofBits open₀.1) (ofBits open₀.2)
+      (ofBits open₁.1) (ofBits open₁.2) : ZMod (F.order d)) = α := by
+  dsimp only
   simp only [CommitmentScheme.isBindingCollision, pedersenScheme, pedersenVerify,
     Bool.and_eq_true, decide_eq_true_eq] at hcoll
   rcases hcoll with ⟨⟨hne, ⟨hm₀_lt, hm₀_bits⟩, hc₀⟩, ⟨hm₁_lt, hm₁_bits⟩, hc₁⟩
@@ -548,9 +551,12 @@ def pedersenToDLAdversary
       ProbComp (List Bool × (List Bool × List Bool) × (List Bool × List Bool)))
     (n : ℕ) (input : F.Desc × List Bool) : ProbComp (List Bool) := do
   let out ← adversary n (encPair F.encDesc encBits input)
+  let openings := out.2
+  let open₀ := openings.1
+  let open₁ := openings.2
   return (pedersenExtractNat (F.order input.1)
-    (ofBits out.2.1.1) (ofBits out.2.1.2)
-    (ofBits out.2.2.1) (ofBits out.2.2.2)).bits
+    (ofBits open₀.1) (ofBits open₀.2)
+    (ofBits open₁.1) (ofBits open₁.2)).bits
 
 /-- **Exact binding-to-discrete-logarithm reduction** ([BonehShoup2023], Section 10.6.1,
 Theorem 10.4, pp. 414–415; [Pedersen1991], Section 3, Theorem 3.1): for every security parameter

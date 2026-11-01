@@ -69,10 +69,11 @@ structure Seeded (S : IndexedSignatureScheme) where
   eval_keyGen : ∀ n length, keyGenBudget n ≤ length →
     ProbComp.eval (S.keyGen n) = (BitString.uniformList length).map (keyGenWith n)
   signWith_polyTime : ComputableInPolyTime
-    (fun p : (List Bool × ℕ × List Bool) × List Bool => signWith p.1.1 p.1.2.1 p.1.2.2 p.2)
+    (fun (((sk, u, msg), coins) : (List Bool × ℕ × List Bool) × List Bool) =>
+      signWith sk u msg coins)
     (encPair (encPair encBits (encPair encUnary encBits)) encBits) encBits
   signBudget_polyTime : ComputableInPolyTime
-    (fun p : List Bool × ℕ × List Bool => signBudget p.1 p.2.1 p.2.2)
+    (fun ((sk, u, msg) : List Bool × ℕ × List Bool) => signBudget sk u msg)
     (encPair encBits (encPair encUnary encBits)) encUnary
   signWith_mem_support : ∀ sk u msg coins,
     signWith sk u msg coins ∈ (ProbComp.eval (S.sign sk u msg)).support
@@ -112,9 +113,12 @@ theorem exists_signWith (S : IndexedSignatureScheme) :
       ComputableInPolyTime (fun p : (List Bool × ℕ × List Bool) × List Bool => signWith p.1 p.2)
         (encPair (encPair encBits (encPair encUnary encBits)) encBits) encBits ∧
       ComputableInPolyTime budget (encPair encBits (encPair encUnary encBits)) encUnary ∧
-      (∀ a coins, signWith a coins ∈ (ProbComp.eval (S.sign a.1 a.2.1 a.2.2)).support) ∧
+      (∀ a coins,
+        let (sk, u, msg) := a
+        signWith a coins ∈ (ProbComp.eval (S.sign sk u msg)).support) ∧
       ∀ a length, budget a ≤ length →
-        ProbComp.eval (S.sign a.1 a.2.1 a.2.2) =
+        let (sk, u, msg) := a
+        ProbComp.eval (S.sign sk u msg) =
           (BitString.uniformList length).map (signWith a) := by
   obtain ⟨c, d, evaluate, hpoly, hsupport, hlaw⟩ :=
     IsPPTOn.exists_total_seeded_evaluator S.sign_ppt
@@ -124,21 +128,27 @@ theorem exists_signWith (S : IndexedSignatureScheme) :
 /-- The seeded algorithms of any indexed scheme, read off its strict-PPT certificates. -/
 noncomputable def seeded (S : IndexedSignatureScheme) : S.Seeded :=
   let hk := S.exists_keyGenWith
+  let hk_spec := hk.choose_spec.choose_spec
+  let hk_rest := hk_spec.2
+  let hk_laws := hk_rest.2
   let hs := S.exists_signWith
+  let hs_spec := hs.choose_spec.choose_spec
+  let hs_rest := hs_spec.2
+  let hs_laws := hs_rest.2
   { keyGenWith := hk.choose
     keyGenBudget := hk.choose_spec.choose
     signWith := fun sk u msg coins => hs.choose (sk, u, msg) coins
     signBudget := fun sk u msg => hs.choose_spec.choose (sk, u, msg)
-    keyGenWith_polyTime := hk.choose_spec.choose_spec.1
-    keyGenBudget_polyTime := hk.choose_spec.choose_spec.2.1
-    keyGenWith_mem_support := hk.choose_spec.choose_spec.2.2.1
-    eval_keyGen := hk.choose_spec.choose_spec.2.2.2
-    signWith_polyTime := hs.choose_spec.choose_spec.1
-    signBudget_polyTime := hs.choose_spec.choose_spec.2.1
+    keyGenWith_polyTime := hk_spec.1
+    keyGenBudget_polyTime := hk_rest.1
+    keyGenWith_mem_support := hk_laws.1
+    eval_keyGen := hk_laws.2
+    signWith_polyTime := hs_spec.1
+    signBudget_polyTime := hs_rest.1
     signWith_mem_support := fun sk u msg coins =>
-      hs.choose_spec.choose_spec.2.2.1 (sk, u, msg) coins
+      hs_laws.1 (sk, u, msg) coins
     eval_sign := fun sk u msg length h =>
-      hs.choose_spec.choose_spec.2.2.2 (sk, u, msg) length h }
+      hs_laws.2 (sk, u, msg) length h }
 
 end IndexedSignatureScheme
 

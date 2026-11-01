@@ -142,8 +142,8 @@ def indexedEufCmaGame (S : IndexedSignatureScheme) (adversary : IndexedForger) (
   let out ← (OracleComp.interpret
     (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
       (S.indexedSigningOracle n keys.2)) (adversary n keys.1)).run []
-  return !out.2.contains (out.1.1, out.1.2.1) &&
-    S.verify keys.1 out.1.1 out.1.2.1 out.1.2.2
+  let (u, msg, sig) := out.1
+  return !out.2.contains (u, msg) && S.verify keys.1 u msg sig
 
 /-- Running an oracle-PPT indexed forger against `indexedSigningOracle` is uniformly strict PPT in
 the unary security parameter, the public key and the secret key. -/

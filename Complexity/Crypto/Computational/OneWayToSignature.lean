@@ -583,7 +583,8 @@ noncomputable def lamportInverter (f : List Bool → List Bool)
     let out ← (OracleComp.interpret
       (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
         ((lamportScheme f hf).oneTimeSigningOracle keys.2)) (adversary n keys.1)).run []
-    return (frames out.1.2).getD (j / 2) []
+    let msig := out.1
+    return (frames msig.2).getD (j / 2) []
   else
     return []
 
