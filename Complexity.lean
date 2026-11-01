@@ -2353,6 +2353,7 @@ public import Complexity.Computability.Reduction.ManyOne
 public import Complexity.Computability.TreeEval.Ary.Basic
 public import Complexity.Computability.TreeEval.Ary.CookMertz
 public import Complexity.Computability.TreeEval.Ary.Packed
+public import Complexity.Computability.TreeEval.Ary.PackingParameters
 public import Complexity.Computability.TreeEval.Basic
 public import Complexity.Computability.TreeEval.CookMertz
 public import Complexity.Computability.TreeEval.Encoding
