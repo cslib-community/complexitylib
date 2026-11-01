@@ -1731,11 +1731,15 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Alternating
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Game
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.GuessVerify
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.BalancedParameters
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ConcreteEvaluator
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ConcreteEvaluatorCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ConcreteSupplier
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ConcreteSupplierCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ConcreteSupplierSpace
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Driver
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.DriverComputable
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.DriverCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.EncodedTree
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding.NativeChecked
@@ -1770,6 +1774,9 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.NodeReply
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.NodeReplyCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.NormalizePoint
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.OuterSearch
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.OuterSearchCorrect
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.OuterSearchSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplay
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayAccess
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayAssignments

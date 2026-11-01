@@ -198,9 +198,12 @@ index links to canonical definitions rather than keeping a second set.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
   logspace reduction.
 - **Williams's `TIME[t] ⊆ SPACE[√(t log t)]`** ([#888]): implicit Tree Evaluation with the
-  fan-in-`d` space bound, subroutine calls for implicit gates and leaves, and padding of
-  non-perfect trees. For Cook–Mertz itself: malformed-input handling and the refined
-  `O(ℓ + H log(ℓ + 2))` parameter bound.
+  fan-in-`d` space bound and the native block-tree evaluator are developed in the stacked
+  work tracked by the issue. The fixed driver scans its original input, searches schedules
+  and increases balanced time guesses without a time-constructibility premise. Remaining:
+  assemble its physical-space allowances into `O(√(t log t))`, prove the standard class
+  inclusion, and finish review/integration. For Cook–Mertz itself: malformed-input handling
+  and the refined `O(ℓ + H log(ℓ + 2))` parameter bound.
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
   bounds for sublinear space, distinct from polynomial-space simulation.
 - **Deeper consequences of a Boolean-hierarchy collapse:** Kadin's sparse `S` with
