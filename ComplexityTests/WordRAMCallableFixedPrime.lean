@@ -6,7 +6,7 @@ Authors: Erik Demaine
 
 -- upstream: local-only (tests)
 
-import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Program
+import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Input
 
 /-!
 # Actual caller adaptation regressions
@@ -54,5 +54,28 @@ private def adapted : Option (List ℕ × ℕ) :=
       y.mem 1, y.mem 15, y.mem 24], t)
 
 #guard adapted == some ([7, 16, 1, 1, 3, 5, 2, 8, 15, 777, 777, 1, 5, 99, 99], 62)
+
+private def returned (flag : ℕ) : Option (List ℕ × ℕ) :=
+  let x : Data 640 :=
+    { regs := fun j =>
+        if j = CallableFixedPrime.sourceReg FixedPrime.Reg.found then flag
+        else if j = CallableFixedPrime.sourceReg FixedPrime.Reg.scans then 3
+        else 717
+      mem := fun _ => 99 }
+  (CallableFixedPrime.receive.eval 16 1 x).map fun (y, t) =>
+    ([y.regs CallableFixedPrime.Reg.found, y.regs CallableFixedPrime.Reg.scans,
+      y.regs CallableFixedPrime.Reg.witnessA, y.regs CallableFixedPrime.Reg.witnessB,
+      y.regs CallableFixedPrime.Reg.witnessC, y.regs 0, y.regs 159, y.mem 77], t)
+
+#guard returned 1 == some ([1, 3, 717, 717, 717, 717, 717, 99], 5)
+#guard returned 0 == some ([0, 3, 717, 717, 717, 717, 717, 99], 5)
+
+private def initialized : Option (List ℕ × ℕ) :=
+  let x : Data 640 := .init (PreparationInput.input 1 16 1 3 [-2, 1, 4])
+  (CallableFixedPrime.entryHeader.eval 16 1 x).map fun (y, t) =>
+    ([y.regs 600, y.regs 601, y.regs 602, y.regs 603, y.regs 604, y.regs 605,
+      y.regs 606, y.regs 607, y.regs 0, y.regs 159, y.mem 6, y.mem 7, y.mem 8], t)
+
+#guard initialized == some ([1, 16, 1, 3, 5, 6, 7, 8, 0, 0, 2, 8, 0], 14)
 
 end ComplexityTests.WordRAMCallableFixedPrime

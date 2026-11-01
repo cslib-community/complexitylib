@@ -29,7 +29,8 @@ pre-halt state and the final halt charged.
 
 ## Main results
 
-* `PreparationInput.exec_input`: structured execution for composition, without the final halt.
+* `PreparationInput.exec_at`: structured execution from arbitrary registers and dirty memory.
+* `PreparationInput.exec_input`: initialized structured execution, without the final halt.
 * `PreparationInput.runs_input`: initialized execution, exact readback, fits and charged halt.
 * `PreparationInput.bounded_reachable`: input-derived word and address bounds at every prefix.
 * `PreparationInput.width_le_log`, `PreparationInput.wordBound_le_pow`: logarithmic physical

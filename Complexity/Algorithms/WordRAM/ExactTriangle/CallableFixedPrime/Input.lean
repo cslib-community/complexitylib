@@ -62,6 +62,14 @@ theorem entryProgram_fixed : (entryProgram.program Reg.found).length ≤ 400014 
     List.length_singleton, entryProgram, Code.size, entryHeader_fixed.1] at h ⊢
   omega
 
+private theorem entryHeader_selector_frame : ∀ j : Fin 640, j.val < 160 →
+    entryHeader.Preserves j := by decide +kernel
+
+/-- Original-input header delivery also retains the selector/parameter bank. -/
+theorem entryProgram_preserves_selector (j : Fin 640) (hj : j.val < 160) :
+    entryProgram.Preserves j :=
+  ⟨entryHeader_selector_frame j hj, program_preserves j (Or.inl hj)⟩
+
 /-- The real initialized setup provides actual runtime pointers and preserves every original
 memory cell. Its only numerical premise concerns the original scalar/address arithmetic. -/
 theorem exec_entryHeader {W n D g p : ℕ} (values : List ℤ)
