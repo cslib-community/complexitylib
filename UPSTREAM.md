@@ -44,6 +44,8 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   handover homomorphisms, preserving the zero-step handoff and additive time and space bounds.
   The path-space lemma follows upstream in allowing an unfinished second phase; state-independent
   invariants replace the control state by `some ()`, preserving the earlier erasure semantics.
+  Loop control states use the upstream `State ⊕ Unit` carrier; input and condition loops still
+  test before entering their body.
 * **Universal simulation.** The local universal interpreter preserves Christian Reitwiessner’s
   description format and execution semantics. Its resource certificates now separate
   transition-description size and binary input-head length from the copied configuration;

@@ -45,18 +45,18 @@ public lemma inputSymbol_eq_inputSymbolAt (c : Cfg k Symbol State input) :
   have := c.inputPos.isLt
   split_ifs <;> grind
 
-/-- From `check`, the machine halts if the input head reads a blank and otherwise starts `tm`,
-moving no head. Each round of `tm` returns to `check`. -/
+/-- The test state `.inr ()` halts if the input head reads a blank and otherwise starts
+`tm`, moving no head. Each round of `tm` returns to the test state. -/
 public noncomputable def whileInput (tm : MultiTapeTM k Symbol State) :
-    MultiTapeTM k Symbol (RepeatUntilBlankState State) :=
-  ofTr .check fun q inp work =>
+    MultiTapeTM k Symbol (State ⊕ Unit) :=
+  ofTr (.inr ()) fun q inp work =>
     match q with
-    | .run q =>
+    | .inl q =>
       let a := tm.tr q inp work
-      { a with state := some (a.state.elim .check .run) }
-    | .check =>
+      { a with state := handOver () a.state }
+    | .inr _ =>
       { inputTape := 0, workTapes := fun _ => (none, 0), output := none,
-        state := inp.map fun _ => .run tm.q₀ }
+        state := inp.map fun _ => .inl tm.q₀ }
 
 -- upstream: vendored crei:crei/tidy-universal @9cce4cc7 (unsubmitted)
 -- vendored: the two input-head lemmas below, from that revision's `Plumbing/WhileInput`
@@ -79,15 +79,15 @@ namespace WhileInput
 
 variable {tm : MultiTapeTM k Symbol State}
 
-/-- A configuration of `tm` as one of `whileInput tm`: a live state `q` becomes `run q` and the
-halted state becomes `check`. -/
-def runCfg (cfg : Cfg k Symbol State input) : Cfg k Symbol (RepeatUntilBlankState State) input :=
-  cfg.mapState (fun st => some (st.elim .check .run))
+/-- A configuration of `tm` as one of `whileInput tm`: a live state `q` becomes `.inl q` and the
+halted state becomes the test state `.inr ()`. -/
+def runCfg (cfg : Cfg k Symbol State input) : Cfg k Symbol (State ⊕ Unit) input :=
+  cfg.mapState (handOver ())
 
 lemma step_runCfg (cfg : Cfg k Symbol State input) (h : ¬ cfg.Halted) :
     (whileInput tm).step (runCfg cfg) = runCfg (tm.step cfg) := by
   obtain ⟨q, hq⟩ := Option.ne_none_iff_exists'.mp h
-  have hstate : (runCfg cfg).state = some (RepeatUntilBlankState.run q) := by
+  have hstate : (runCfg cfg).state = some (Sum.inl q) := by
     simp [runCfg, Cfg.mapState, hq]
   rw [step_of_state hstate, step_of_state hq]
   simp only [whileInput, tr_ofTr]
@@ -101,33 +101,33 @@ lemma runFrom_runCfg {cfg : Cfg k Symbol State input} {u n : ℕ} (hhalt : tm.Ha
   | succ n ih =>
     rw [runFrom_succ, runFrom_succ, ih (by lia), step_runCfg _ (hhalt.not_halted (by lia))]
 
-/-- From `check`, the machine halts on a blank and otherwise starts `tm`. -/
+/-- From the test state `.inr ()`, the machine halts on a blank and otherwise starts `tm`. -/
 lemma step_check (p : Fin (input.length + 2)) (ws : Fin k → List Symbol) (out : List Symbol) :
-    (whileInput tm).step (wordsCfgAt input p (some .check) ws out) =
-      wordsCfgAt input p ((inputSymbolAt input p).map fun _ => .run tm.q₀) ws out := by
+    (whileInput tm).step (wordsCfgAt input p (some (.inr ())) ws out) =
+      wordsCfgAt input p ((inputSymbolAt input p).map fun _ => .inl tm.q₀) ws out := by
   rw [step_of_state rfl, inputSymbol_eq_inputSymbolAt]
   refine Cfg.ext ?_ ?_ ?_ ?_ ?_ <;> (try simp [whileInput, Action.apply, moveInputPos_zero]) <;>
     rfl
 
-/-- One round: from `check` with the input head on a symbol, the loop runs `tm` once and is back
-in `check`, after at most `τ + 1` steps and with its heads within `[-σ, σ]`. -/
-lemma exists_runFrom_round {c : Cfg k Symbol (RepeatUntilBlankState State) input} {t : ℕ}
+/-- One round: from the test state with the input head on a symbol, the loop runs `tm` once
+and returns to the test after at most `τ + 1` steps, with its heads within `[-σ, σ]`. -/
+lemma exists_runFrom_round {c : Cfg k Symbol (State ⊕ Unit) input} {t : ℕ}
     {p p' : Fin (input.length + 2)} {w w' : Fin k → List Symbol} {out out' : List Symbol}
-    {τ σ : ℕ} (hc : ConfinedRun (whileInput tm) c (wordsCfgAt input p (some .check) w out) t σ)
+    {τ σ : ℕ} (hc : ConfinedRun (whileInput tm) c (wordsCfgAt input p (some (.inr ())) w out) t σ)
     (hsym : inputSymbolAt input p ≠ none)
     (hrun : tm.runFrom (wordsCfgAt input p (some tm.q₀) w out) τ = wordsCfgAt input p' none w' out')
     (hsp : (MultiTapeNTM.RunPath.ofDeterministic tm (wordsCfgAt input p (some tm.q₀) w out)
       τ).space ≤ σ) :
-    ∃ u ≤ τ, ConfinedRun (whileInput tm) c (wordsCfgAt input p' (some .check) w' out')
+    ∃ u ≤ τ, ConfinedRun (whileInput tm) c (wordsCfgAt input p' (some (.inr ())) w' out')
       (t + (u + 1)) σ := by
   obtain ⟨u, hu, hhalt⟩ := exists_haltsAt (show (tm.runFrom _ τ).Halted by rw [hrun]; rfl)
   obtain ⟨a, ha⟩ := Option.ne_none_iff_exists'.mp hsym
-  have hstart : (whileInput tm).step (wordsCfgAt input p (some .check) w out) =
+  have hstart : (whileInput tm).step (wordsCfgAt input p (some (.inr ())) w out) =
       runCfg (wordsCfgAt input p (some tm.q₀) w out) := by
     rw [step_check, ha]
     rfl
-  have hround : (whileInput tm).runFrom (wordsCfgAt input p (some .check) w out) (u + 1) =
-      wordsCfgAt input p' (some .check) w' out' := by
+  have hround : (whileInput tm).runFrom (wordsCfgAt input p (some (.inr ())) w out) (u + 1) =
+      wordsCfgAt input p' (some (.inr ())) w' out' := by
     rw [Nat.add_comm, runFrom_add, runFrom_one, hstart, runFrom_runCfg hhalt le_rfl,
       ← hhalt.runFrom_eq hu, hrun]
     rfl
@@ -167,14 +167,14 @@ public theorem transformsTapesAt_whileInput {tm : MultiTapeTM k Symbol State}
       (fun input _ _ p' ws' emitted => R input p' ws' emitted)
       (∑ n ∈ Finset.range rounds, (t n + 1) + 1) (2 * k * s + k) := by
   intro input p ws out hP0
-  rw [show (whileInput tm).q₀ = .check from rfl]
-  set start := wordsCfgAt (State := RepeatUntilBlankState State) input p (some .check) ws out
+  rw [show (whileInput tm).q₀ = (.inr ()) from rfl]
+  set start := wordsCfgAt (State := State ⊕ Unit) input p (some (.inr ())) ws out
     with hstart
-  -- after `n ≤ rounds` rounds the loop is back in `check` with `P n` holding
+  -- after `n ≤ rounds` rounds the loop is back in the test state `.inr ()` with `P n` holding
   have hrec : ∀ n ≤ rounds, ∃ m ≤ ∑ j ∈ Finset.range n, (t j + 1),
       ∃ (pn : Fin (input.length + 2)) (wsn : Fin k → List Symbol) (acc : List Symbol),
-      ConfinedRun (whileInput tm) start (wordsCfgAt input pn (some .check) wsn (out ++ acc)) m s ∧
-        P n input pn wsn acc := by
+      ConfinedRun (whileInput tm) start
+        (wordsCfgAt input pn (some (.inr ())) wsn (out ++ acc)) m s ∧ P n input pn wsn acc := by
     intro n hn
     induction n with
     | zero =>

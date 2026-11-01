@@ -121,7 +121,7 @@ public abbrev IterateWhileRoundState (State : Type*) :=
 /-- The states of `Turing.MultiTapeTM.iterateWhile`. -/
 public abbrev IterateWhileState (State : Type*) :=
   ((Unit ⊕ RewindState) ⊕ RewindWorkState) ⊕
-    RepeatUntilBlankState (IterateWhileRoundState State) ⊕
+    (IterateWhileRoundState State ⊕ Unit) ⊕
       (MarkWorkState ⊕ (Unit ⊕ RewindState) ⊕ MarkWorkState) ⊕ Unit ⊕ RewindWorkState
 
 section Machine
