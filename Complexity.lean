@@ -1736,6 +1736,9 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding.NativeChecked
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding.NativeDecode
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding.NativeEncode
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateInterpolation
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateInterpolationBounds
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateInterpolationCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ImplicitNode
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ImplicitNodeCorrect
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.ImplicitPath
