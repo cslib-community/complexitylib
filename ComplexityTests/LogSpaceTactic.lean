@@ -5,6 +5,7 @@ Authors: Christian Reitwiessner
 -/
 
 import Complexity.Tactic.LogSpace
+import ComplexityTests.LogSpaceCertificates
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Words
 
 /-! # Bounded logspace automation and its resource boundary -/
@@ -91,5 +92,74 @@ example {f : List Bool → Bool} (hf : ComputableInLogSpace f encBits encBool) :
       (encPair encBits encBits) encBool := by
   fail_if_success logspace
   fun_prop
+
+open ComplexityTests.LogSpaceCertificates
+
+-- An imported opaque routine has an eager premise requiring the bounded logspace recipe.
+example : ComputableInLogSpace
+    (runNamed (fun a : List Bool => (List.range 3).map fun _ => a.headD false))
+      encBits encBits := by
+  have hbound : ∀ _ : List Bool, 3 ≤ 3 := fun _ => le_rfl
+  fail_if_success fun_prop
+  logspace
+
+-- The imported opaque program really constructs the three first-bit answers, including empty input.
+example : runNamed (fun a : List Bool => (List.range 3).map fun _ => a.headD false) [] =
+    [false, false, false] := by rw [runNamed_apply]; rfl
+
+example : runNamed (fun a : List Bool => (List.range 3).map fun _ => a.headD false) [true, false] =
+    [true, true, true] := by rw [runNamed_apply]; rfl
+
+-- A named certificate also composes inside a larger ordinary functional expression.
+example (f : List Bool → List Bool) (hf : ComputableInLogSpace f encBits encBits) :
+    ComputableInLogSpace (fun w => (runNamed f w).headD false) encBits encBool := by
+  fun_prop
+
+-- Neither an unavailable constant bound nor a polynomial-time callback is inferred.
+example {r : List Bool → ℕ} (_hr : ComputableInLogSpace r encBits encUnary)
+    (h : ComputableInLogSpace
+      (runNamed (fun a => (List.range (r a)).map fun _ => a.headD false)) encBits encBits) :
+    ComputableInLogSpace
+      (runNamed (fun a => (List.range (r a)).map fun _ => a.headD false)) encBits encBits := by
+  fail_if_success (clear h; logspace)
+  exact h
+
+example {f : List Bool → List Bool} (_hf : ComputableInPolyTime f encBits encBits)
+    (h : ComputableInLogSpace (runNamed f) encBits encBits) :
+    ComputableInLogSpace (runNamed f) encBits encBits := by
+  fail_if_success (clear h; logspace)
+  exact h
+
+example {f : List Bool → List Bool} {other : List Bool ↪ List Bool}
+    (_hf : ComputableInLogSpace f other encBits)
+    (h : ComputableInLogSpace (runNamed f) encBits encBits) :
+    ComputableInLogSpace (runNamed f) encBits encBits := by
+  fail_if_success (clear h; logspace)
+  exact h
+
+section
+attribute [local program_certificate hf] localNamed_logspace
+
+example (f : List Bool → List Bool) (hf : ComputableInLogSpace f encBits encBits) :
+    ComputableInLogSpace (localNamed f) encBits encBits := by logspace
+end
+
+-- The local registration cannot escape its section.
+example {f : List Bool → List Bool} (_hf : ComputableInLogSpace f encBits encBits)
+    (h : ComputableInLogSpace (localNamed f) encBits encBits) :
+    ComputableInLogSpace (localNamed f) encBits encBits := by
+  fail_if_success (clear h; logspace)
+  exact h
+
+open scoped ComplexityTests.LogSpaceCertificates.Scoped in
+example (f : List Bool → List Bool) (hf : ComputableInLogSpace f encBits encBits) :
+    ComputableInLogSpace (Scoped.scopedNamed f) encBits encBits := by logspace
+
+-- Opening a scope for one declaration does not change subsequent search.
+example {f : List Bool → List Bool} (_hf : ComputableInLogSpace f encBits encBits)
+    (h : ComputableInLogSpace (Scoped.scopedNamed f) encBits encBits) :
+    ComputableInLogSpace (Scoped.scopedNamed f) encBits encBits := by
+  fail_if_success (clear h; logspace)
+  exact h
 
 end ComplexityTests.LogSpaceTactic
