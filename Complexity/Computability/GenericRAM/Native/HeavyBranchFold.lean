@@ -43,16 +43,19 @@ False*][OpenAI2026ETH] over `SparsePolyCompile`, bridged to `SparseEquations` an
 * `BranchInput`, `encBranchInput`, `branchBody`, `streamBranches`, `countByBranching`,
   `branchCountCertificate`, `branchBodyCertificate`, `certificate`, `countCertificate`,
   `stepOverhead`: streaming `BooleanFold` combinator and native time/space certificates.
+* `reducedCost`, `maxReducedCost`: the cost of a solver on a reduced branch, and its maximum over
+  the branches.
 
 ## Main results
 
 * `rootCount_eq_commonZeroCount`, `toFinset_heavyVarList_eq_heavyVars`,
   `length_heavyVarList_le_div`, `prepareBranch_reduced_canonical`,
   `prepareBranch_reduced_degree_le`, `prepareBranch_reduced_length_le`,
-  `prepareBranch_reduced_varDegree_le`, `length_enc_reduced_le`.
+  `prepareBranch_reduced_varDegree_le`, `length_enc_reduced_le_parent`, `length_enc_reduced_le`.
 * `branchRootCount_prepareBranch`, `sum_branch_count_eq_rootCount`, `streamBranches_correct`,
   `countByBranching_eq_rootCount`, `runPrefix_sum_le_two_pow`, `computableInPolyTime_prepareBranch`,
   `streamBranches_computableInO`, `countByBranching_computableInO`, `polyBounded_branchWorkspace`.
+* `le_maxReducedCost`, `maxReducedCost_le`: bounds on the maximum branch cost.
 
 ## References
 
@@ -822,12 +825,12 @@ instance : DecidableEq BranchInput := inferInstance
 def encBranchInput : BranchInput ↪ List Bool :=
   encPair encUnary (encPair (encList encNat) (encList (encList (encList encNat))))
 
-/-- Encoded-size non-expansion: every `.reduced n' sys'` branch produced by `prepareBranch` has
-encoded solver input `(n', sys')` no longer than the parent `encBranchInput (n, S, sys)`. -/
-theorem length_enc_reduced_le {n n' : ℕ} {S : List ℕ} {vals : List Bool}
+/-- Encoded-size non-expansion against the parent system: every `.reduced n' sys'` branch produced
+by `prepareBranch` has encoded solver input `(n', sys')` no longer than the parent `(n, sys)`. -/
+theorem length_enc_reduced_le_parent {n n' : ℕ} {S : List ℕ} {vals : List Bool}
     {sys sys' : List (List (List ℕ))} (hred : prepareBranch n S vals sys = .reduced n' sys') :
     (encPair encUnary (encList (encList (encList encNat))) (n', sys')).length ≤
-      (encBranchInput (n, S, sys)).length := by
+      (encPair encUnary (encList (encList (encList encNat))) (n, sys)).length := by
   obtain ⟨_, _, rfl, rfl⟩ := prepareBranch_eq_reduced_iff.mp hred
   have hrel : ∀ eq₁ : List (List ℕ), (encList (encList encNat) (relabelEquation S eq₁)).length ≤
       (encList (encList encNat) eq₁).length := fun eq₁ =>
@@ -840,7 +843,16 @@ theorem length_enc_reduced_le {n n' : ℕ} {S : List ℕ} {vals : List Bool}
     (length_encList_map_le _ _ fun eq₁ _ => hrel eq₁).trans
       ((length_encList_sublist _ List.filter_sublist).trans
         (length_encList_map_le _ _ fun eq₀ _ => length_enc_substituteEquation_le S vals eq₀))
-  simp only [encBranchInput, length_encPair, encUnary_apply, List.length_replicate]; omega
+  simp only [length_encPair, encUnary_apply, List.length_replicate]; omega
+
+/-- Encoded-size non-expansion: every `.reduced n' sys'` branch produced by `prepareBranch` has
+encoded solver input `(n', sys')` no longer than the parent `encBranchInput (n, S, sys)`. -/
+theorem length_enc_reduced_le {n n' : ℕ} {S : List ℕ} {vals : List Bool}
+    {sys sys' : List (List (List ℕ))} (hred : prepareBranch n S vals sys = .reduced n' sys') :
+    (encPair encUnary (encList (encList (encList encNat))) (n', sys')).length ≤
+      (encBranchInput (n, S, sys)).length := by
+  refine (length_enc_reduced_le_parent hred).trans ?_
+  simp only [encBranchInput, length_encPair]; omega
 
 /-- Single streaming step of heavy-variable branching. -/
 def branchBody (solver : ℕ → List (List (List ℕ)) → ℕ)
@@ -911,9 +923,44 @@ public section
 namespace Cslib.GenericRAM.HeavyBranchFold
 open Cslib Cslib.BitString Cslib.Complexity Turing.MultiTapeTM
 
-private def reducedCost (f : ℕ × List (List (List ℕ)) → ℕ) : BranchOutcome → ℕ
+/-- The cost `f (n', sys')` of a reduced branch outcome `.reduced n' sys'`, and `0` on the other
+outcomes, on which no solver runs. -/
+def reducedCost (f : ℕ × List (List (List ℕ)) → ℕ) : BranchOutcome → ℕ
   | .reduced n' sys' => f (n', sys')
   | _ => 0
+
+/-- The largest cost `cost (n', sys')` over the reduced branches `.reduced n' sys'` of the
+streaming input `(n, S, eqs)`, over all `2 ^ |S|` assignments to `S`. -/
+noncomputable def maxReducedCost (cost : ℕ × List (List (List ℕ)) → ℕ) (inp : BranchInput) : ℕ :=
+  let (n, S, eqs) := inp
+  ((List.range (2 ^ S.length)).map fun idx =>
+    reducedCost cost (prepareBranch n S (lowBits S.length idx) eqs)).foldl max 0
+
+/-- The cost of every reduced branch is at most `maxReducedCost`. -/
+theorem le_maxReducedCost (cost : ℕ × List (List (List ℕ)) → ℕ) {n : ℕ} {S : List ℕ}
+    {eqs : List (List (List ℕ))} {idx : ℕ} (hidx : idx < 2 ^ S.length) {n' : ℕ}
+    {sys' : List (List (List ℕ))}
+    (hred : prepareBranch n S (lowBits S.length idx) eqs = .reduced n' sys') :
+    cost (n', sys') ≤ maxReducedCost cost (n, S, eqs) := by
+  unfold maxReducedCost
+  refine List.le_max_of_mem
+    (List.mem_cons_of_mem _ (List.mem_map.mpr ⟨idx, List.mem_range.mpr hidx, ?_⟩))
+  rw [hred, reducedCost]
+
+/-- `maxReducedCost` is at most any bound on the costs of the reduced branches. -/
+theorem maxReducedCost_le {cost : ℕ × List (List (List ℕ)) → ℕ} {n : ℕ} {S : List ℕ}
+    {eqs : List (List (List ℕ))} {B : ℕ}
+    (hB : ∀ idx < 2 ^ S.length, ∀ n' sys',
+      prepareBranch n S (lowBits S.length idx) eqs = .reduced n' sys' → cost (n', sys') ≤ B) :
+    maxReducedCost cost (n, S, eqs) ≤ B := by
+  unfold maxReducedCost
+  refine (List.max_le_iff (l := _ :: _) (by simp)).mpr ?_
+  simp only [List.mem_cons, forall_eq_or_imp]
+  refine ⟨Nat.zero_le B, fun x hx => ?_⟩
+  obtain ⟨idx, hidx, rfl⟩ := List.mem_map.mp hx
+  cases hout : prepareBranch n S (lowBits S.length idx) eqs with
+  | contradiction | tautology _ => exact Nat.zero_le B
+  | reduced n' sys' => exact hB idx (List.mem_range.mp hidx) n' sys' hout
 
 /-- Selected-branch native certificate for `branchCountOracle solver`: a fixed `csolver` runs ONLY
 on `.reduced n' sys'` outcomes, while `.contradiction` emits `0` and `.tautology n'` emits `2 ^ n'`
