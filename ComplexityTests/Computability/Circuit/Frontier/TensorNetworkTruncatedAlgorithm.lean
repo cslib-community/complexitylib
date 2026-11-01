@@ -76,7 +76,7 @@ noncomputable def boundedAlgorithm :
         simp only [length_encPair, encBits_apply] at hvl ⊢
         omega
       exact ⟨(hb _).1.trans (hm hlen), (hb _).2.trans (hm hlen)⟩
-    obtain ⟨hT, hS⟩ := hK (P, ℓ, r, G) _ _ hv
+    obtain ⟨hT, hS⟩ := hK P ℓ r G _ _ hv
     have h2 : 2 ^ G.numEdges ≤ 2 ^ C := Nat.pow_le_pow_right (by norm_num) hA
     have hFn := had n
     simp only [id] at hFn
