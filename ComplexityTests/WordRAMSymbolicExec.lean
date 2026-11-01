@@ -14,7 +14,9 @@ Regressions for `wram_exec` and `wram_simp`: a concrete program runs to its exac
 instruction count; registers and memory hold symbolic values, reads after writes to other
 addresses reduce, and a conditional the facts do not decide splits; execution stops at a
 subprogram, continues from its specification and resumes; and goals of the wrong form, or
-programs with nothing to execute, fail with an explanation.
+programs with nothing to execute, fail with an explanation. The simplification procedures
+`Data.reduceRegs` and `Data.reduceMem` read through writes on their own, and `wram_bounded`
+proves the fitting conditions it can.
 -/
 
 namespace ComplexityTests.WordRAMSymbolicExec
@@ -144,6 +146,33 @@ example (x : Data 4) (hx : x.Bounded 8) :
   · exact hyb.set (by rw [hy]; wram_simp; decide)
   · wram_exec
     exact fun _ => ⟨by omega, fun _ => by wram_simp [hy]⟩
+
+/-! ## Reads and word bounds -/
+
+/-- A register name given as `⟨k, _⟩`, as in larger programs. -/
+abbrev e : Fin 8 := ⟨5, by decide⟩
+
+/-- `Data.reduceRegs` reads past other registers and a memory write, comparing register names by
+evaluation, whether literals or abbreviations. -/
+example (x : Data 8) (p : ℕ) : ((((x.set e 1).write p 3).set 6 2).set 7 4).regs e = 1 := by
+  simp only [↓Data.reduceRegs]
+
+/-- `Data.reduceMem` reads a cell written at an address that is a different term, which the
+discharger proves equal, past a register. -/
+example (x : Data 4) (p : ℕ) : ((x.write (p + 1) 7).set a 0).mem (1 + p) = 7 := by
+  wram_simp
+
+/-- `Data.reduceMem` leaves a read whose address the discharger cannot compare. -/
+example (x : Data 4) (p q : ℕ) (h : (x.write p 7).mem q = 0) :
+    ((x.write p 7).set a 0).mem q = 0 := by
+  simp only [Data.reduceMem]
+  exact h
+
+/-- `wram_bounded` proves the fitting conditions of values read from the data and of values with a
+hypothesis. -/
+example (w p : ℕ) (x : Data 4) (hx : x.Bounded w) (hp : Fits w p) :
+    (((x.set a (x.regs b)).write p (x.mem 3)).set c p).Bounded w := by
+  wram_bounded
 
 /-! ## Failures -/
 
