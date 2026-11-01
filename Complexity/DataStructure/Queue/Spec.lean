@@ -28,6 +28,8 @@ method is described in Chapter 17.
 ## Main results
 
 * `transfer_run`: stack operations reverse the rear contents into the front stack.
+* `runClient_dequeue_nil`, `stepFn_methods`: the methods realize the FIFO step on the represented
+  list.
 * `potential_step`: at most three amortized stack calls, including the size query.
 * `realized_client`: every adaptive client has a correct backend execution with its bound.
 * `realized_client_bound`: every supplied linked execution satisfies correctness and the bound.
@@ -123,6 +125,36 @@ theorem transfer_run (front back : List α) :
         (fun r : Unit × (stackPair α).State × List (stackPair α).Op =>
           (r.1, r.2.1, .inr .pop :: .inl (.push a) :: r.2.2)) (ih (a :: front))
 
+/-- A dequeue from an empty front stack asks for the rear size, transfers the rear, and pops the
+front again. -/
+theorem runClient_dequeue_nil (back : List α) :
+    (stackPair α).runClient ([], back) (methods .dequeue) =
+      (back.reverse.head?, (back.reverse.tail, []),
+        .inl .pop :: .inr .size :: (transferTrace back ++ [.inl .pop])) := by
+  simp only [methods, bind, StateTransitionSpec.runClient_liftBind, stackPair, stack,
+    List.tail_nil, List.head?_nil]
+  rw [StateTransitionSpec.runClient_bind, transfer_run]
+  simp
+
+/-- Each method returns the FIFO answer, and the stacks then represent the FIFO successor of the
+represented list. -/
+theorem stepFn_methods (front back : List α) (o : QueueOp α) :
+    (queue α).stepFn (front ++ back.reverse) o =
+      (((stackPair α).clientState (front, back) (methods o)).1 ++
+          ((stackPair α).clientState (front, back) (methods o)).2.reverse,
+        (stackPair α).clientResult (front, back) (methods o)) := by
+  cases o with
+  | enqueue n =>
+    change ((front ++ back.reverse) ++ [n], ()) = (front ++ (n :: back).reverse, ())
+    simp [List.reverse_cons, List.append_assoc]
+  | dequeue =>
+    cases front with
+    | cons a front => rfl
+    | nil =>
+      simp only [StateTransitionSpec.clientState, StateTransitionSpec.clientResult]
+      rw [runClient_dequeue_nil]
+      simp
+
 /-- Representation and behavior are proved once, before selecting a backend or cost model. -/
 def implementation : Module (queue α) (stackPair α) :=
   Module.ofFn
@@ -134,21 +166,8 @@ def implementation : Module (queue α) (stackPair α) :=
       intro q s o hr _
       subst q
       obtain ⟨front, back⟩ := s
-      cases o with
-      | enqueue n =>
-        constructor
-        · rfl
-        · change (front ++ back.reverse) ++ [n] = front ++ (n :: back).reverse
-          simp [List.reverse_cons, List.append_assoc]
-      | dequeue =>
-        cases front with
-        | cons a front => exact ⟨rfl, rfl⟩
-        | nil =>
-          simp only [methods, bind, StateTransitionSpec.clientResult,
-            StateTransitionSpec.clientState, StateTransitionSpec.runClient_liftBind,
-            stackPair, stack, List.tail_nil, List.head?_nil]
-          rw [StateTransitionSpec.runClient_bind, transfer_run]
-          simp)
+      have h := stepFn_methods front back o
+      exact ⟨(congrArg Prod.snd h).symm, congrArg Prod.fst h⟩)
 
 /-- Each transferred element incurs one pop and one push. -/
 theorem transferTrace_length (back : List α) : (transferTrace back).length = 2 * back.length := by
@@ -173,13 +192,9 @@ theorem potential_step (s : (stackPair α).State) (o : QueueOp α) :
       change 1 + 2 * back.length ≤ 3 + 2 * back.length
       omega
     | nil =>
-      simp only [methods, bind, StateTransitionSpec.runClient_liftBind, stackPair,
-        stack, List.tail_nil, List.head?_nil]
-      rw [StateTransitionSpec.runClient_bind, transfer_run]
-      simp only [StateTransitionSpec.runClient_liftBind, StateTransitionSpec.runClient_pure]
-      change (transferTrace back ++ [Sum.inl StackOp.pop]).length + 2 ≤ 3 + 2 * back.length
-      rw [List.length_append, transferTrace_length]
-      simp only [List.length_singleton]
+      rw [runClient_dequeue_nil]
+      simp only [List.length_cons, List.length_append, List.length_nil]
+      rw [transferTrace_length]
       omega
 
 private theorem weighted_potential_step (K : Nat) {q : (queue α).State} {s : (stackPair α).State}
