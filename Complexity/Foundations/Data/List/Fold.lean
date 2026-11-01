@@ -20,7 +20,8 @@ public import Mathlib.Data.List.Basic
   component and folds over the second.
 * `List.foldr_ite_eq_of_mem`: a chain of equality tests selects the branch of a contained tag,
   regardless of duplicates or fallback. Used by finite-control certificates.
-* `List.foldl_or_eq`: folding a disjunction is `List.any`.
+* `List.foldl_or_eq`, `List.foldl_min_add_eq`: folding a disjunction is `List.any`, and folding a
+  sum capped at `cap` caps the sum.
 
 ## References
 
@@ -75,3 +76,12 @@ theorem List.foldl_or_eq {α : Type*} (f : α → Bool) (b : Bool) (l : List α)
   induction l generalizing b with
   | nil => simp
   | cons x l ih => simp [ih, Bool.or_assoc]
+
+/-- Folding a sum capped at `cap` over a list, from a value at most `cap`, caps the whole sum. -/
+theorem List.foldl_min_add_eq {α : Type*} (cap : ℕ) (f : α → ℕ) {b : ℕ} (hb : b ≤ cap)
+    (l : List α) : l.foldl (fun acc x => min cap (acc + f x)) b = min cap (b + (l.map f).sum) := by
+  induction l generalizing b with
+  | nil => simpa using (Nat.min_eq_right hb).symm
+  | cons x l ih =>
+    rw [List.foldl_cons, ih (Nat.min_le_left _ _), List.map_cons, List.sum_cons]
+    omega
