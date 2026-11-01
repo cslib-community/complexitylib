@@ -59,7 +59,7 @@ abbrev seed {gs : α → List GateCode} : SeededInput gs → List Bool
   | ⟨(_, bits), _⟩ => bits
 
 /-- The seed length is exactly the Hadamard count of the supplied circuit. -/
-@[simp] theorem seed_length {gs : α → List GateCode} (p : SeededInput gs) :
+theorem seed_length {gs : α → List GateCode} (p : SeededInput gs) :
     p.seed.length = hadamardCount (gs p.input) := p.property
 
 /-- Restrict the ordinary input/seed pair encoding; validity proofs contribute no symbols. -/
