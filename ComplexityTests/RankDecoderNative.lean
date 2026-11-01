@@ -4,11 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-module
--- upstream: local-only (test driver)
-
-public import Complexity.Probability.RankDecoder.Native
-public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryDivision
+import Complexity.Probability.RankDecoder.Native
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryDivision
 
 /-!
 # Native rank-decoder resource regression
@@ -21,8 +18,6 @@ The resulting decoder keeps that exponent and polynomial workspace.
 The constant masses intentionally do not satisfy a probability-tree law: native realization and
 its resource bound are independent of the distribution theorem's assumptions.
 -/
-
-public section
 
 open Turing.MultiTapeTM Cslib.GenericRAM Cslib.BitString.RankDecoder
 

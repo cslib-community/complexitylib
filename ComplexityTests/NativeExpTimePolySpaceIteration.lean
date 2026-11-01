@@ -4,13 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-module
--- upstream: local-only (test driver)
-
-public import Complexity.Computability.GenericRAM.Native.ExpTimePolySpace.Iteration
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
-public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
-public import Cslib.Computability.Machines.Turing.MultiTape.Combinators.Id
+import Complexity.Computability.GenericRAM.Native.ExpTimePolySpace.Iteration
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
+import Cslib.Computability.Machines.Turing.MultiTape.Combinators.Id
 
 /-!
 # Iterating a callback supplied with an exponential time bound
@@ -20,8 +17,6 @@ and polynomial workspace. Repeating it for the input length demonstrates that th
 retains one common exponent, without requiring a polynomial-time callback certificate. The concrete
 odd- and even-length examples also check that the callback is actually iterated.
 -/
-
-public section
 
 open Turing.MultiTapeTM Cslib.GenericRAM
 
