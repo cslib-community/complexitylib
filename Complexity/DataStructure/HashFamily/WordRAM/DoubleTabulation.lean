@@ -227,6 +227,21 @@ theorem extractBot_apply (base c d b M : ℕ) (mem : ℕ → ℕ)
   congr 2
   ring
 
+theorem extractSeed_eq_of_seedRep {base c d b M : ℕ}
+    {θ : DoubleTabTopSeed c d b × DoubleTabBotSeed d b M} {mem : ℕ → ℕ}
+    (hseed : SeedRep base c d b M θ mem) :
+    extractSeed base c d b M mem = θ := by
+  rcases θ with ⟨T₁, T₂⟩
+  rcases hseed with ⟨h1, h2⟩
+  dsimp only [extractSeed]
+  congr 1
+  · funext i j ch
+    ext
+    rw [extractTop_apply, h1 i j ch, Tabulation.extractWord_val_of_lt (T₁ i j ch).isLt]
+  · funext j y
+    ext
+    rw [extractBot_apply, h2 j y, Tabulation.extractWord_val_of_lt (T₂ j y).isLt]
+
 theorem SeedRep.congr_mem {base c d b M : ℕ}
     {θ : DoubleTabTopSeed c d b × DoubleTabBotSeed d b M} {mem mem' : ℕ → ℕ}
     (hrep : SeedRep base c d b M θ mem)
@@ -557,18 +572,6 @@ theorem mem_support_resampleComp {base c d b M : ℕ} {x : Data 12}
     rw [hsteps1, hsteps2, ← hsp]
     ring
 
-/-- Bind of two independent `PMF.uniformOfFintype` distributions is `PMF.uniformOfFintype` on the
-product type `α × β`. -/
-theorem uniformOfFintype_bind_prodMk {α β : Type*}
-    [Fintype α] [Nonempty α] [Fintype β] [Nonempty β] :
-    (PMF.uniformOfFintype α).bind (fun a => (PMF.uniformOfFintype β).map (a, ·)) =
-      PMF.uniformOfFintype (α × β) := by
-  ext ⟨a, b⟩
-  rw [Cslib.Probability.PMF.bind_map_prodMk_apply, PMF.uniformOfFintype_apply,
-    PMF.uniformOfFintype_apply, PMF.uniformOfFintype_apply, Fintype.card_prod, Nat.cast_mul,
-    ENNReal.mul_inv (Or.inl (Nat.cast_ne_zero.mpr Fintype.card_ne_zero))
-      (Or.inl (ENNReal.natCast_ne_top _))]
-
 /-- **Exact product uniformity of `resampleComp`**: `extractSeed base c d b M z.1.mem` under
 `resampleComp base c d b M x` has distribution
 `PMF.uniformOfFintype (DoubleTabTopSeed c d b × DoubleTabBotSeed d b M)`. -/
@@ -652,7 +655,7 @@ theorem map_extractSeed_eval_resampleComp (base c d b M : ℕ) (x : Data 12) :
         (fun T₁ => (PMF.uniformOfFintype (DoubleTabBotSeed d b M)).map (T₁, ·)) := by
     rw [PMF.bind_map]
     rfl
-  rw [hmap_bind, hm1_unif, uniformOfFintype_bind_prodMk]
+  rw [hmap_bind, hm1_unif, PMF.uniformOfFintype_prod]
 
 /-! ## Section 3: Register-by-register deterministic query evaluation (`evalCode`) -/
 

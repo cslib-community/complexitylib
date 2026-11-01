@@ -872,7 +872,7 @@ theorem map_fst_initSeedStatePMF (base c_exp n_max : ℕ) (x₁ : Data 16) :
     rw [PMF.bind_map]
     rfl
   rw [hmap_bind, map_extractSeed_primaryInitPMF]
-  exact DoubleTabulation.uniformOfFintype_bind_prodMk
+  exact PMF.uniformOfFintype_prod _ _
 
 theorem initSetup_execCodeDist {w base c_exp n_max : ℕ} {x₁ : Data 16}
     (hbase : x₁.regs regBase = base) (hS : Fits w (base + space c_exp n_max)) :
@@ -2051,57 +2051,6 @@ theorem decodeOp_eq_step {U V n_max : ℕ} {s : Dictionary.State U}
 def expectedOpCharge (c_exp : ℕ) : ℕ :=
   13 * doubleTabThreshold c_exp + hashEvalSteps c_exp + 8
 
-private theorem exists_orderedTableRep_aux {U n_max : ℕ}
-    (π : Fin U → Equiv.Perm (Fin (numBuckets n_max))) :
-    ∀ (D : Finset (Fin U)) (s : Dictionary.State U),
-      Dictionary.dom s = D →
-      D.card ≤ n_max →
-      ∃ T : UniformProbing.Table U (numBuckets n_max),
-        DoubleHashing.OrderedTableRep π s T := by
-  intro D
-  induction D using Finset.induction_on with
-  | empty =>
-    intro s hD _
-    have hs_empty : s = Dictionary.empty U := by
-      funext w
-      by_contra hw
-      obtain ⟨v, hvw⟩ := Option.ne_none_iff_exists'.mp hw
-      have hmem : w ∈ Dictionary.dom s := Dictionary.mem_dom_iff.mpr ⟨v, hvw⟩
-      rw [hD] at hmem
-      exact Finset.notMem_empty w hmem
-    rw [hs_empty]
-    exact ⟨emptyTable U (numBuckets n_max), DoubleHashing.OrderedTableRep.empty π⟩
-  | @insert a D' ha ih =>
-    intro s hD hcard
-    have ha_mem : a ∈ Dictionary.dom s := by rw [hD]; exact Finset.mem_insert_self a D'
-    obtain ⟨va, hsa⟩ := Dictionary.mem_dom_iff.mp ha_mem
-    let s' : Dictionary.State U := Function.update s a none
-    have hD' : Dictionary.dom s' = D' := by
-      ext w
-      simp only [Dictionary.mem_dom_iff, s']
-      by_cases hwa : w = a
-      · subst hwa
-        simp [ha]
-      · rw [Function.update_of_ne hwa, ← Dictionary.mem_dom_iff, hD, Finset.mem_insert]
-        exact ⟨fun h => h.resolve_left hwa, Or.inr⟩
-    have hcard' : D'.card < n_max := by
-      rw [Finset.card_insert_of_notMem ha] at hcard
-      omega
-    obtain ⟨T', hrep'⟩ := ih s' hD' (le_of_lt hcard')
-    have hcard_lt_m : (Dictionary.dom s').card < numBuckets n_max := by
-      rw [hD']
-      have := lt_numBuckets n_max
-      omega
-    have hupd : Function.update s' a (some va) = s := by
-      funext w
-      by_cases hwa : w = a
-      · subst hwa
-        simp [hsa]
-      · simp [s', Function.update_of_ne hwa]
-    refine ⟨tableInsert (numBuckets_pos n_max) π T' a va, ?_⟩
-    rw [← hupd]
-    exact hrep'.tableInsert_of_card_lt hcard_lt_m a va
-
 private noncomputable instance instDecidableExistsOrderedTableProbe {U n_max : ℕ}
     (π : Fin U → Equiv.Perm (Fin (numBuckets n_max)))
     (s : Dictionary.State U) (u : Fin U) :
@@ -2116,7 +2065,8 @@ private theorem maxOrderedProbe_nonempty {U n_max : ℕ}
     ((Finset.range (n_max + 2)).filter (fun k : ℕ =>
       ∃ T : UniformProbing.Table U (numBuckets n_max),
         DoubleHashing.OrderedTableRep π s T ∧ probeCount T u (π u) = k)).Nonempty := by
-  obtain ⟨T₀, hrep₀⟩ := exists_orderedTableRep_aux π (Dictionary.dom s) s rfl hdom
+  obtain ⟨T₀, hrep₀⟩ := DoubleHashing.exists_orderedTableRep π s
+    (le_of_lt (lt_of_le_of_lt hdom (lt_numBuckets n_max)))
   have hle : probeCount T₀ u (π u) ≤ n_max + 1 :=
     probeCount_le_add_one hrep₀.toTableRep hdom u
   exact ⟨probeCount T₀ u (π u),

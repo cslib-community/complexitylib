@@ -1375,32 +1375,6 @@ def extractSeed (hashBase c_exp n_max U M : ℕ) (mem : ℕ → ℕ) : Seed c_ex
   (extractSingleSeed hashBase c_exp n_max U M mem,
    extractSingleSeed (hash2Base hashBase c_exp n_max) c_exp n_max U M mem)
 
-private theorem extractSeeds_eq_of_seedRep {base U M k : ℕ}
-    {c : Fin k → Fin (2 ^ trinomialDeg U M)} {mem : ℕ → ℕ}
-    (hseed : KWise.SeedRep base U M k c mem) :
-    KWise.extractSeeds base U M k mem = c := by
-  funext j
-  ext
-  dsimp only [KWise.extractSeeds, Tabulation.extractSlice]
-  rw [hseed j, Tabulation.extractWord_val_of_lt (c j).isLt]
-
-private theorem extractSeed_eq_of_doubleTabSeedRep {base c d b M : ℕ}
-    {θ : DoubleTabTopSeed c d b × DoubleTabBotSeed d b M} {mem : ℕ → ℕ}
-    (hseed : DoubleTabulation.SeedRep base c d b M θ mem) :
-    DoubleTabulation.extractSeed base c d b M mem = θ := by
-  rcases θ with ⟨T₁, T₂⟩
-  rcases hseed with ⟨h1, h2⟩
-  dsimp only [DoubleTabulation.extractSeed]
-  congr 1
-  · funext i j ch
-    ext
-    rw [DoubleTabulation.extractTop_apply, h1 i j ch,
-      Tabulation.extractWord_val_of_lt (T₁ i j ch).isLt]
-  · funext j y
-    ext
-    rw [DoubleTabulation.extractBot_apply, h2 j y,
-      Tabulation.extractWord_val_of_lt (T₂ j y).isLt]
-
 theorem extractSingleSeed_eq_of_SingleSeedRep {base c_exp n_max U M : ℕ}
     {θ : SingleSeed c_exp n_max U M} {mem : ℕ → ℕ}
     (hseed : SingleSeedRep base c_exp n_max U M θ mem) :
@@ -1408,8 +1382,8 @@ theorem extractSingleSeed_eq_of_SingleSeedRep {base c_exp n_max U M : ℕ}
   unfold SingleSeed extractSingleSeed SingleSeedRep at *
   revert θ hseed
   cases decide (n_max < doubleTabThreshold c_exp) <;> intro θ hseed
-  · exact extractSeed_eq_of_doubleTabSeedRep hseed
-  · exact extractSeeds_eq_of_seedRep hseed
+  · exact DoubleTabulation.extractSeed_eq_of_seedRep hseed
+  · exact KWise.extractSeeds_eq_of_seedRep hseed
 
 theorem extractSeed_eq_of_HashPairSeedRep {hashBase c_exp n_max U M : ℕ}
     {θ : Seed c_exp n_max U M} {mem : ℕ → ℕ}
@@ -1486,13 +1460,6 @@ theorem HashPairTableRep.congr_of_footprint {hashBase c_exp n_max U M : ℕ} {me
     hm a (by dsimp only [hash2Base] at hge; omega)
       (by dsimp only [hash2Base, hashPairSpace] at hlt ⊢; omega))⟩
 
-private theorem kwiseSeedRep_congr_of_footprint {base U M k : ℕ}
-    {c : Fin k → Fin (2 ^ trinomialDeg U M)} {mem mem' : ℕ → ℕ}
-    (hseed : KWise.SeedRep base U M k c mem)
-    (hm : ∀ a, base ≤ a → a < base + 8 + k → mem' a = mem a) :
-    KWise.SeedRep base U M k c mem' :=
-  fun j => (hm (base + 8 + j.val) (by omega) (by have := j.isLt; omega)).trans (hseed j)
-
 theorem SingleSeedRep.congr_of_footprint {base c_exp n_max U M : ℕ}
     {θ : SingleSeed c_exp n_max U M} {mem mem' : ℕ → ℕ}
     (hseed : SingleSeedRep base c_exp n_max U M θ mem)
@@ -1513,7 +1480,7 @@ theorem SingleSeedRep.congr_of_footprint {base c_exp n_max U M : ℕ}
     have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
     have hkw : KWise.space n_max (cuckooK n_max) =
         8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
-    exact kwiseSeedRep_congr_of_footprint hseed (fun a ha1 ha2 => hm a ha1 (by omega))
+    exact hseed.congr_of_footprint (fun a ha1 ha2 => hm a ha1 (by omega))
 
 theorem HashPairSeedRep.congr_of_footprint {hashBase c_exp n_max U M : ℕ}
     {θ : Seed c_exp n_max U M} {mem mem' : ℕ → ℕ}
@@ -1540,13 +1507,6 @@ theorem HashPairRep.congr_of_ge_hashBase {hashBase c_exp n_max U M : ℕ}
     HashPairRep hashBase c_exp n_max U M θ mem' :=
   hrep.congr_of_footprint (fun a hge _ => hm a hge)
 
-private theorem extractSeeds_congr_of_footprint {base U M k : ℕ} {mem mem' : ℕ → ℕ}
-    (hm : ∀ a, base ≤ a → a < base + 8 + k → mem' a = mem a) :
-    KWise.extractSeeds base U M k mem' = KWise.extractSeeds base U M k mem := by
-  funext j
-  dsimp only [KWise.extractSeeds, Tabulation.extractSlice]
-  rw [hm (base + 8 + j.val) (by omega) (by have := j.isLt; omega)]
-
 theorem extractSingleSeed_congr_of_footprint {base c_exp n_max U M : ℕ} {mem mem' : ℕ → ℕ}
     (hm : ∀ a, base ≤ a → a < base + singleHashSpace c_exp n_max → mem' a = mem a) :
     extractSingleSeed base c_exp n_max U M mem' = extractSingleSeed base c_exp n_max U M mem := by
@@ -1564,7 +1524,7 @@ theorem extractSingleSeed_congr_of_footprint {base c_exp n_max U M : ℕ} {mem m
     have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
     have hkw : KWise.space n_max (cuckooK n_max) =
         8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
-    exact extractSeeds_congr_of_footprint (fun a ha1 ha2 => hm a ha1 (by omega))
+    exact KWise.extractSeeds_congr_of_footprint (fun a ha1 ha2 => hm a ha1 (by omega))
 
 theorem extractSeed_congr_of_footprint {hashBase c_exp n_max U M : ℕ} {mem mem' : ℕ → ℕ}
     (hm : ∀ a, hashBase ≤ a → a < hashBase + hashPairSpace c_exp n_max → mem' a = mem a) :
@@ -2250,7 +2210,7 @@ private theorem map_pair_extractSingleSeed_eval_resampleHashPairComp
     rw [PMF.bind_map]
     rfl
   rw [hbind, map_extractSingleSeed_eval_resampleSingleComp,
-    DoubleTabulation.uniformOfFintype_bind_prodMk]
+    PMF.uniformOfFintype_prod]
 
 /-- **Exact uniformity of `resampleHashPairComp`**: the extracted seed
 `extractSeed hashBase c_exp n_max U M z.1.mem` is distributed according to

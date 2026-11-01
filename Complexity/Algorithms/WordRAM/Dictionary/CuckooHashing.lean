@@ -95,9 +95,10 @@ expected-amortized sequence theorem `cuckoo_seq_expected_amortized`.
 * `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.rehashLoopCode_execCodeDist`: geometric Las
   Vegas termination, expected step bound, and exact conditional-uniform exit law for full-table
   rehashing.
-* `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.cuckoo_seq_expected_amortized`: unconditional
-  end-to-end expected-time bound across arbitrary valid `get`/`insert` histories under
-  `U ≤ max n_max 4 ^ c_exp`.
+* `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.cuckoo_steps_expected_amortized`,
+  `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.cuckoo_seq_expected_amortized`: unconditional
+  continuation and end-to-end expected-time bounds across arbitrary valid `get`/`insert` histories
+  under `U ≤ max n_max 4 ^ c_exp`.
 
 ## References
 
@@ -105,8 +106,8 @@ expected-amortized sequence theorem `cuckoo_seq_expected_amortized`.
   Section 2.3, "Analysis", pp. 6–10: Lemma 1 on p. 7, Eq. (3) on p. 9, and rehash
   analysis on pp. 9–10).
 * [M. Thorup, "Simple Tabulation, Fast Expanders, Double Tabulation, and High
-  Independence"][Thorup2013] (FOCS 2013, pp. 90–99; `arXiv:1311.3121v2`, Sections 1.3 and 3,
-  Theorem 1.3, Lemma 3.1, Theorem 3.2, pp. 4–5, 11–13).
+  Independence"][Thorup2013] (FOCS 2013, pp. 90–99; `arXiv:1311.3121v2`, Theorem 1(a) and Lemma 2
+  on pp. 4–5, and Section 3, Theorem 7(a) and Lemmas 8–9 on pp. 11–13).
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing*, 2nd ed.][MitzenmacherUpfal2017]
 * [J. L. Carter and M. N. Wegman, "Universal classes of hash functions"][CarterWegman1979]
 * [M. N. Wegman and J. L. Carter, "New hash functions and their use in authentication and set
@@ -5869,29 +5870,29 @@ theorem isCuckooHashFamily_tableBits {c_exp U n_max : ℕ}
   Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_provableFamily
     hU (thirtyTwo_mul_max_le_tableSize n_max)
 
-/-- `O(c_exp²)` worst-case step bound for `getCode c_exp n_max`, independent of `n_max` and `U`
-whenever `U ≤ max n_max 4 ^ c_exp`. -/
+/-- `O(c_exp⁴) = O_{c_exp}(1)` worst-case step bound for `getCode c_exp n_max`, independent of
+`n_max` and `U` whenever `U ≤ max n_max 4 ^ c_exp`. -/
 @[expose]
 def getStepsBound (c_exp : ℕ) : ℕ :=
   2 * (evalHashBound c_exp + 36) + 31
 
-/-- `O(c_exp²)` worst-case instruction bound for `get` via `opCode c_exp n_max`. -/
+/-- `O(c_exp⁴) = O_{c_exp}(1)` worst-case instruction bound for `get` via `opCode c_exp n_max`. -/
 @[expose]
 def getChargeBound (c_exp : ℕ) : ℕ :=
   getStepsBound c_exp + 2
 
-/-- `O(c_exp²)` step bound per eviction round in `evictLoopCode c_exp n_max`. -/
+/-- `O(c_exp⁴) = O_{c_exp}(1)` step bound per eviction round in `evictLoopCode c_exp n_max`. -/
 @[expose]
 def evictIterBound (c_exp : ℕ) : ℕ :=
   2 * (evalHashBound c_exp + 54) + 59
 
-/-- `O(c_exp²)` base step bound for `insertCode c_exp n_max`. -/
+/-- `O(c_exp⁴) = O_{c_exp}(1)` base step bound for `insertCode c_exp n_max`. -/
 @[expose]
 def insertBaseBound (c_exp : ℕ) : ℕ :=
   2 * (evalHashBound c_exp + 35) + 78
 
 open Cslib.DataStructure.HashFamily.WordRAM in
-/-- `O(c_exp²)` upper bound factor for `resampleAtBaseSteps c_exp n_max` relative to
+/-- `O(c_exp²) = O_{c_exp}(1)` upper bound factor for `resampleAtBaseSteps c_exp n_max` relative to
 `max n_max 1 * max (maxEvictions n_max) 1`. -/
 @[expose]
 def resampleAtBaseFactor (c_exp : ℕ) : ℕ :=
@@ -5899,19 +5900,19 @@ def resampleAtBaseFactor (c_exp : ℕ) : ℕ :=
     (80 * ((DoubleTabulation.provableC c_exp + 1) *
       DoubleTabulation.provableD c_exp) + 63)
 
-/-- `O(c_exp²)` upper bound on `rehashAmortizedSteps c_exp n_max U`, independent of `n_max` and
-`U` whenever `U ≤ max n_max 4 ^ c_exp`. -/
+/-- `O(c_exp⁴) = O_{c_exp}(1)` upper bound on `rehashAmortizedSteps c_exp n_max U`, independent of
+`n_max` and `U` whenever `U ≤ max n_max 4 ^ c_exp`. -/
 @[expose]
 def rehashAmortizedBound (c_exp : ℕ) : ℕ :=
   3 * evictIterBound c_exp + 2 * resampleAtBaseFactor c_exp + 4290 + 1
 
-/-- `O(c_exp²)` expected amortized instruction bound for `insert` (`C_walk = 3`, `C_reh = 4`),
-independent of `n_max` and `U` whenever `U ≤ max n_max 4 ^ c_exp`. -/
+/-- `O(c_exp⁴) = O_{c_exp}(1)` expected amortized instruction bound for `insert` (`C_walk = 3`,
+`C_reh = 4`), independent of `n_max` and `U` whenever `U ≤ max n_max 4 ^ c_exp`. -/
 @[expose]
 def insertChargeBound (c_exp : ℕ) : ℕ :=
   2 * (insertBaseBound c_exp + 3 + 3 * evictIterBound c_exp + 4 * rehashAmortizedBound c_exp)
 
-/-- `O(c_exp²) = O_{c_exp}(1)` expected amortized per-operation instruction charge for Pagh–Rodler
+/-- `O(c_exp⁴) = O_{c_exp}(1)` expected amortized per-operation instruction charge for Pagh–Rodler
 cuckoo hashing, completely independent of `n_max` and `U` whenever `U ≤ max n_max 4 ^ c_exp`. -/
 @[expose]
 def expectedOpCharge (c_exp : ℕ) {U : ℕ} (_s : Dictionary.State U) : Dictionary.Op U → ℕ
@@ -6126,7 +6127,7 @@ noncomputable abbrev subroutineDSStandard (w base c_exp n_max U V : ℕ)
 conditional-uniform in-memory seed marginal
 `PMF.uniformOfFinset (survivingSeeds evalHash1 evalHash2 (maxEvictions n_max) ks) hE` across an
 operation sequence `ops`. -/
-private theorem cuckoo_steps_expected_amortized (w base c_exp n_max U V : ℕ)
+theorem cuckoo_steps_expected_amortized (w base c_exp n_max U V : ℕ)
     (hU : U ≤ max n_max 4 ^ c_exp)
     (hw : 2 * Probability.trinomialDeg U (tableBits n_max) ≤ w)
     (hfit_end : Fits w (base + space c_exp n_max))
@@ -6365,7 +6366,7 @@ Whenever `U ≤ max n_max 4 ^ c_exp`, starting from zeroed memory in
 sequence `ops : List (Dictionary.Op U)` of `get` and `insert` operations takes expected
 instruction cost at most `spanSteps + setupSteps c_exp n_max U +
   (Dictionary.spec U V n_max).totalCost (expectedOpCharge c_exp) (Dictionary.empty U) ops`,
-where `expectedOpCharge c_exp` charges `O(c_exp²) = O_{c_exp}(1)` instructions per `get` and
+where `expectedOpCharge c_exp` charges `O(c_exp⁴) = O_{c_exp}(1)` instructions per `get` and
 `insert` operation (completely independent of `n_max` and `U`!) and `space c_exp n_max ≤
 spaceFactor c_exp * (n_max + 1)` uses `O_{c_exp}(n_max + 1)` words of memory across every
 capacity `n_max : ℕ` (`[PaghRodler2004]`, `[Thorup2013]`). -/
