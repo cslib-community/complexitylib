@@ -174,7 +174,6 @@ theorem parityOn_symmDiff (s t : Finset ι) (x : ι → Bool) :
   have hunion := sum_union_inter (s₁ := s) (s₂ := t) (f := x)
   rw [symmDiff_eq_sup_sdiff_inf, parityOn_eq_sum, parityOn_eq_sum, parityOn_eq_sum,
     ← Bool.add_eq_xor, ← hunion, ← hsdiff, add_assoc, BooleanRing.add_self, add_zero]
-  rfl
 
 /-- The parity of a union of pairwise disjoint blocks is the parity of the parities of the
 blocks. -/
