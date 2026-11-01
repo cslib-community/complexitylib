@@ -570,7 +570,7 @@ theorem bernoulliProb_mul_le [Finite α] (hr : r ∈ Set.Icc (0 : ℝ) 1) (hE : 
           have h5 := card_le_card (subset_union_left : a ⊆ a ∪ b)
           omega
         refine le_of_eq ?_
-        simp only [hμ, inf_eq_inter, sup_eq_union, ha, hb, hab, hab', ite_true]
+        simp only [hμ, ha, hb, hab, hab', ite_true]
         calc r ^ #a * (1 - r) ^ (#U - #a) * (r ^ #b * (1 - r) ^ (#U - #b))
             = r ^ (#a + #b) * (1 - r) ^ ((#U - #a) + (#U - #b)) := by ring
           _ = r ^ (#(a ∩ b) + #(a ∪ b)) * (1 - r) ^ ((#U - #(a ∩ b)) + (#U - #(a ∪ b))) := by

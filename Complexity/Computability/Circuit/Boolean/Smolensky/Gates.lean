@@ -155,7 +155,7 @@ private theorem two_mul_card_sum_eq_zero_le [Nontrivial R] [DecidableEq R] (u : 
       · rw [symmDiff_of_ge (Finset.singleton_subset_iff.2 hkS), Finset.sdiff_singleton_eq_erase,
           Finset.sum_erase_eq_sub hkS, hS, hk, bitVal_true, zero_sub]
         exact neg_ne_zero.2 one_ne_zero
-      · rw [(Finset.disjoint_singleton_right.2 hkS).symmDiff_eq_sup, Finset.sup_eq_union,
+      · rw [(Finset.disjoint_singleton_right.2 hkS).symmDiff_eq_sup,
           Finset.sum_union (Finset.disjoint_singleton_right.2 hkS), Finset.sum_singleton, hS, hk,
           bitVal_true, zero_add]
         exact one_ne_zero
