@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Partialize
 public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Reduction
-public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Compose
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bit
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Decode
 
 /-!

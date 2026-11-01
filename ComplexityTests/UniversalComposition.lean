@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (regression tests)
 
-public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Compose
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Composition.SmallSpace
 public import ComplexityTests.UniversalExecution
 
 /-!

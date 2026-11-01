@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.Problems.MonotoneCircuitValue
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Completeness
 public import Complexity.Computability.Circuit.Monotone.DualRail
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Doubled
 
 /-!
 # The monotone circuit value problem is `P`-complete

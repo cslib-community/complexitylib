@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Classes.Space
 public import Complexity.Computability.Complexity.Reduction
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Composition.Recompute
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
