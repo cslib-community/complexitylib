@@ -54,8 +54,9 @@ key and retain the adversary's exact saved state. -/
 def publicKeyGame (E : Scheme) (adversary : Encryption.Adversary) (bit : Bool) (n : ℕ)
     (artifact : List Bool × List (List Bool)) : ProbComp Bool := do
   let choice ← adversary.choose n (encPublicKey artifact)
-  let ciphertext ← E.encrypt n artifact.1 (if bit then choice.1.2 else choice.1.1)
-  adversary.guess n choice.2 ciphertext
+  let ((m₀, m₁), state) := choice
+  let ciphertext ← E.encrypt n artifact.1 (if bit then m₁ else m₀)
+  adversary.guess n state ciphertext
 
 /-- Build the zero-vector public artifact from the challenge public key. An independently
 generated secret supplies only its length; the challenge secret is neither read nor saved. -/

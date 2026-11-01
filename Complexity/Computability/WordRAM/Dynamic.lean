@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.WordRAM.Compile
-public import Complexity.Foundations.Semantics.Stateful.Resource
+public import Complexity.DataStructure.StateTransition.Resource
 public import Complexity.Computability.WordRAM.Trace
 
 /-!
@@ -62,7 +62,7 @@ ComplexityTests/WordRAMPrefixSums.lean for repeated calls retaining persistent d
 
 * `DynamicProgram.ExecOp.executes`: calls execute the same flat program.
 * `DynamicCertificate.execOp_of_eval`: certify an evaluated admissible call.
-* `DynamicCertificate.realization`: machine certificates instantiate shared adaptive execution.
+* `DynamicCertificate.impl`: machine certificates instantiate shared adaptive execution.
 * `DynamicCertificate.instruction_bound`: separate native instruction-cost certificates.
 
 ## References
@@ -76,7 +76,7 @@ namespace Cslib.WordRAM
 
 universe u v z
 
-variable {r : ℕ} {D : Stateful.Spec.{u, v, z}}
+variable {r : ℕ} {D : DataStructure.StateTransitionSpec.{u, v, z}}
 
 /-- A single program serving an operation signature through a fixed register calling convention.
 Deterministic and relational stateful specifications supply their signatures by coercion;
@@ -139,7 +139,7 @@ structure OperationTrace where
   probes : List Probe
 
 /-- A bounded machine call with native execution evidence independent of any resource bound. -/
-def ExecOp (w : ℕ) : Stateful.Execution S (Data r) OperationTrace := fun x o a y trace =>
+def ExecOp (w : ℕ) : DataStructure.Execution S (Data r) OperationTrace := fun x o a y trace =>
   (P.prepare o x).Bounded w ∧ ∃ n, TraceExec w P.code (P.prepare o x) y n trace.probes ∧
     P.decode o y.regs = some a ∧ trace.instructions = n + 1
 
@@ -206,7 +206,7 @@ theorem ExecOp.frame {w : ℕ} {x y : Data r} {o : S.A} {a : S.B o}
 end DynamicProgram
 
 /-- Per-operation relational semantic proof obligations tied to fixed bounded-word code.
-Performance claims are supplied separately, as `Stateful.Bound` or `Stateful.Amortized`
+Performance claims are supplied separately, as `DataStructure.Bound` or `DataStructure.Amortized`
 certificates. -/
 structure DynamicCertificate (P : DynamicProgram D r) (w : ℕ) where
   /-- Abstract state represented by the persistent machine data. -/
@@ -250,9 +250,9 @@ theorem execOp_of_eval {s : D.State} {x y : Data r} {o : D.Op} {a : D.Result o} 
   DynamicProgram.ExecOp.of_eval P
     (P.prepare_bounded (C.bounded hr) (C.arguments_fit o hv)) h
 
-/-- Fixed-program certificates realize the relational dynamic specification, without choosing a
+/-- Fixed-program certificates implement the relational dynamic specification, without choosing a
 cost. -/
-def realization : Stateful.Realization D (P.ExecOp w) where
+def impl : DataStructure.StateTransitionImpl D (P.ExecOp w) where
   rep := C.rep
   total o hr hv := by
     obtain ⟨y, _, a, n, he, _, ha, _⟩ := C.execute o hr hv
@@ -271,7 +271,7 @@ def realization : Stateful.Realization D (P.ExecOp w) where
 theorem instruction_bound (charge : D.State → D.Op → ℕ)
     (hbound : ∀ {s x} (o) {y n}, C.rep s x → D.valid s o →
       Exec w P.code (P.prepare o x) y n → n + 1 ≤ charge s o) :
-    Stateful.Bound C.realization DynamicProgram.OperationTrace.instructions charge := by
+    DataStructure.Bound C.impl DynamicProgram.OperationTrace.instructions charge := by
   intro s x o a y trace hr hv he
   obtain ⟨_, n, ht, _, hn⟩ := he
   rw [hn]
@@ -281,7 +281,7 @@ theorem instruction_bound (charge : D.State → D.Op → ℕ)
 theorem instruction_bound_const (K : ℕ)
     (hbound : ∀ {s x} (o), C.rep s x → D.valid s o →
       ∃ y n, Exec w P.code (P.prepare o x) y n ∧ n + 1 ≤ K) :
-    Stateful.Bound C.realization DynamicProgram.OperationTrace.instructions (fun _ _ => K) := by
+    DataStructure.Bound C.impl DynamicProgram.OperationTrace.instructions (fun _ _ => K) := by
   apply C.instruction_bound
   intro s x o y n hr hv he
   obtain ⟨z, m, he', hn⟩ := hbound o hr hv
@@ -293,12 +293,12 @@ uniform constant per-operation instruction certificate on a deterministic specif
 theorem run_client_const
     {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
     {K : ℕ}
-    (B : Stateful.Bound C.realization DynamicProgram.OperationTrace.instructions (fun _ _ => K))
+    (B : DataStructure.Bound C.impl DynamicProgram.OperationTrace.instructions (fun _ _ => K))
     {α : Type*} (p : D.Client α) {s : D.State} {x : Data r}
     (hr : C.rep s x) (hv : D.ValidHistory s (D.clientHistory s p)) :
-    ∃ y traces, Stateful.Executes (P.ExecOp w) p x (D.clientResult s p) y traces ∧
+    ∃ y traces, DataStructure.Executes (P.ExecOp w) p x (D.clientResult s p) y traces ∧
       C.rep (D.clientState s p) y ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces ≤
+      DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤
         (D.clientHistory s p).length * K :=
   B.exists_executes_const p hr hv
 
@@ -333,13 +333,13 @@ theorem executes_demonic_frame {j : ℕ}
     {α : Type*} {p : D.Client α} {s : D.State} {x y : Data r} {val : α}
     {traces : List DynamicProgram.OperationTrace}
     (hr : C.rep s x) (hv : D.DemonicValid s p)
-    (he : Stateful.Executes (P.ExecOp w) p x val y traces) :
+    (he : DataStructure.Executes (P.ExecOp w) p x val y traces) :
     y.mem j = x.mem j := by
   induction he generalizing s with
   | pure _ _ => rfl
   | @call o k x res x₁ trace _ _ _ hstep _ ih =>
     obtain ⟨hv_o, hv_k⟩ := (D.demonicValid_liftBind_iff s o k).mp hv
-    obtain ⟨s₁, hstep_s, hr₁⟩ := C.realization.correct hr hv_o hstep
+    obtain ⟨s₁, hstep_s, hr₁⟩ := C.impl.correct hr hv_o hstep
     exact (ih hr₁ (hv_k s₁ res hstep_s)).trans (hframe hr hv_o hstep)
 
 /-- Lift a per-operation `Modifies` bound across a demonically admissible adaptive client
@@ -350,7 +350,7 @@ theorem executes_demonic_modifies {F : Finset ℕ}
     {α : Type*} {p : D.Client α} {s : D.State} {x y : Data r} {val : α}
     {traces : List DynamicProgram.OperationTrace}
     (hr : C.rep s x) (hv : D.DemonicValid s p)
-    (he : Stateful.Executes (P.ExecOp w) p x val y traces) :
+    (he : DataStructure.Executes (P.ExecOp w) p x val y traces) :
     Modifies F x.mem y.mem :=
   fun j hj => C.executes_demonic_frame
     (fun hr' hv' he' => hmod hr' hv' he' j hj) hr hv he
@@ -365,7 +365,7 @@ theorem executes_client_frame
     {α : Type*} {p : D.Client α} {s : D.State} {x y : Data r} {val : α}
     {traces : List DynamicProgram.OperationTrace}
     (hr : C.rep s x) (hv : D.ValidHistory s (D.clientHistory s p))
-    (he : Stateful.Executes (P.ExecOp w) p x val y traces) :
+    (he : DataStructure.Executes (P.ExecOp w) p x val y traces) :
     y.mem j = x.mem j :=
   C.executes_demonic_frame hframe hr
     ((D.demonicValid_iff_validHistory_runClient s p).mpr hv) he
@@ -380,15 +380,15 @@ theorem executes_client_modifies
     {α : Type*} {p : D.Client α} {s : D.State} {x y : Data r} {val : α}
     {traces : List DynamicProgram.OperationTrace}
     (hr : C.rep s x) (hv : D.ValidHistory s (D.clientHistory s p))
-    (he : Stateful.Executes (P.ExecOp w) p x val y traces) :
+    (he : DataStructure.Executes (P.ExecOp w) p x val y traces) :
     Modifies F x.mem y.mem :=
   C.executes_demonic_modifies hmod hr
     ((D.demonicValid_iff_validHistory_runClient s p).mpr hv) he
 
 /-- The same native evidence separately bounds memory probes by the instruction charge. -/
 theorem probe_bound (charge : D.State → D.Op → ℕ)
-    (B : Stateful.Bound C.realization DynamicProgram.OperationTrace.instructions charge) :
-    Stateful.Bound C.realization (fun t => t.probes.length) charge := by
+    (B : DataStructure.Bound C.impl DynamicProgram.OperationTrace.instructions charge) :
+    DataStructure.Bound C.impl (fun t => t.probes.length) charge := by
   intro s x o a y trace hr hv he
   have hb := B hr hv he
   obtain ⟨_, n, ht, _, hn⟩ := he

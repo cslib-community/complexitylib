@@ -212,17 +212,27 @@ theorem Reach.onSchedule (hB : ∀ d M p, Active C m d M p → ActiveBounds C m 
 
 /-- **The root is on the schedule**: a well-formed root with `m` edges, at scale `m` with the
 modulus of `m`, of maximum degree at most `degreeBound m`, with edge bound `m + 1` and precision at
-most `C m` for `1 ≤ C`. -/
-theorem onSchedule_root {x₀ : Call T} (hC : 1 ≤ C) (hs : x₀.scale = m) (he : x₀.edges = m)
+most `C m (⌊log₂ m⌋ + 1)` for `1 ≤ C`. -/
+theorem onSchedule_root_logPrecision {x₀ : Call T} (hC : 1 ≤ C)
+    (hs : x₀.scale = m) (he : x₀.edges = m)
     (hfl : x₀.fl = modulus m) (hwf : WF x₀)
     (hdeg : ∀ v ∈ x₀.net.vertices, v.1.length ≤ degreeBound m)
-    (hb : x₀.bound = m + 1) (hd : x₀.depth = 0) (hp : x₀.prec ≤ C * m) : OnSchedule C m x₀ := by
+    (hb : x₀.bound = m + 1) (hd : x₀.depth = 0) (hp : x₀.prec ≤ C * m * (Nat.log 2 m + 1)) :
+    OnSchedule C m x₀ := by
   refine ⟨hs, hfl, hwf, hdeg, by omega, ?_⟩
   by_cases hl : x₀.edges ≤ leafSize m
   · exact Or.inl hl
   · refine Or.inr ?_
     rw [hd, he]
-    exact Active.root (Nat.le_mul_of_pos_left m hC) (by omega) hp
+    exact Active.root_logPrecision (Nat.le_mul_of_pos_left m hC) (by omega) hp
+
+/-- A root of linear precision is on the same schedule. -/
+theorem onSchedule_root {x₀ : Call T} (hC : 1 ≤ C) (hs : x₀.scale = m) (he : x₀.edges = m)
+    (hfl : x₀.fl = modulus m) (hwf : WF x₀)
+    (hdeg : ∀ v ∈ x₀.net.vertices, v.1.length ≤ degreeBound m)
+    (hb : x₀.bound = m + 1) (hd : x₀.depth = 0) (hp : x₀.prec ≤ C * m) : OnSchedule C m x₀ :=
+  onSchedule_root_logPrecision hC hs he hfl hwf hdeg hb hd
+    (hp.trans (Nat.le_mul_of_pos_right _ (Nat.succ_pos _)))
 
 /-! ### The number of children -/
 

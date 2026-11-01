@@ -7,8 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (test driver)
 
-public import Complexity.Algorithms.Lean.AVLTree.Stateful
-public import Complexity.Algorithms.Lean.SearchTree.Stateful
+public import Complexity.DataStructure.AVLTree.Impl
+public import Complexity.DataStructure.SearchTree.Impl
 public import ComplexityTests.OrderedSet
 
 /-!
@@ -31,7 +31,7 @@ public section
 
 namespace ComplexityTests.AVLTree
 
-open Cslib.Algorithms.Lean Cslib.Algorithms.Lean.AVLTree Cslib.OrderedSet Cslib.Stateful
+open Cslib.DataStructure Cslib.DataStructure.AVLTree Cslib.DataStructure.OrderedSet
 
 def build (xs : List ℕ) : AVLTree ℕ :=
   (run .nil (insertAll xs)).2.1
@@ -58,7 +58,7 @@ example :
       Valid zigzagRL ∧
       sortedSeven.cachedHeight = 3 ∧
       reverseSeven.cachedHeight = 3 ∧
-      ((Cslib.Algorithms.Lean.SearchTree.run .nil (insertAll [1, 2, 3, 4, 5, 6, 7])).2.1).height =
+      ((Cslib.DataStructure.SearchTree.run .nil (insertAll [1, 2, 3, 4, 5, 6, 7])).2.1).height =
         7 ∧
       searchVisits 7 sortedSeven = 3 ∧
       searchVisits 8 sortedSeven = 3 ∧
@@ -171,7 +171,7 @@ example :
   intro p
   have hv := (spec ℕ).validHistory_of_forall_valid (fun _ _ => trivial) ∅
     ((spec ℕ).runClient ∅ p).2.2
-  exact ⟨(realization.correct_client rep_empty hv (run_exec p .nil)).1,
+  exact ⟨(impl.correct_client rep_empty hv (run_exec p .nil)).1,
     nodeVisitBound.client rep_empty hv (run_exec p .nil)⟩
 
 -- Independent necessity of all three conjuncts of `Valid`:
@@ -202,19 +202,19 @@ example :
       3 ∈ elements misorderedAVL ∧
       contains 3 misorderedAVL = false := by
   refine ⟨?_, ?_, ?_, rfl, by decide, ?_, ?_, ?_, rfl, ?_, ?_, ?_, by decide, rfl⟩
-  · simp [unbalancedFiveSpine, mkNode, Ordered, Cslib.Algorithms.Lean.SearchTree.Ordered,
-      Cslib.Algorithms.Lean.SearchTree.elements]
+  · simp [unbalancedFiveSpine, mkNode, Ordered, Cslib.DataStructure.SearchTree.Ordered,
+      Cslib.DataStructure.SearchTree.elements]
   · exact heightConsistent_mkNode trivial (heightConsistent_mkNode trivial
       (heightConsistent_mkNode trivial (heightConsistent_mkNode trivial
         (heightConsistent_mkNode trivial trivial))))
   · simp [unbalancedFiveSpine, mkNode, Balanced]
-  · simp [bogusCachedHeight, Ordered, Cslib.Algorithms.Lean.SearchTree.Ordered,
-      Cslib.Algorithms.Lean.SearchTree.elements]
+  · simp [bogusCachedHeight, Ordered, Cslib.DataStructure.SearchTree.Ordered,
+      Cslib.DataStructure.SearchTree.elements]
   · simp [bogusCachedHeight, Balanced]
   · simp [bogusCachedHeight, HeightConsistent]
   · exact heightConsistent_mkNode (heightConsistent_mkNode trivial trivial) trivial
   · simp [misorderedAVL, mkNode, Balanced]
-  · simp [misorderedAVL, mkNode, Ordered, Cslib.Algorithms.Lean.SearchTree.Ordered,
-      Cslib.Algorithms.Lean.SearchTree.elements]
+  · simp [misorderedAVL, mkNode, Ordered, Cslib.DataStructure.SearchTree.Ordered,
+      Cslib.DataStructure.SearchTree.elements]
 
 end ComplexityTests.AVLTree

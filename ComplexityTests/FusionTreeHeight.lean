@@ -6,11 +6,11 @@ Authors: Samuel Schlesinger
 
 -- upstream: local-only (tests)
 
-import Complexity.Algorithms.Lean.FusionTree.Tree
+import Complexity.DataStructure.FusionTree.Tree
 
 /-! Child-height clients need only the functional tree module, without RAM machinery. -/
 
-open Cslib.Algorithms.Lean.FusionTree
+open Cslib.DataStructure.FusionTree
 
 -- The membership form applies to children of any shape, without a validity invariant.
 example (t : Tree) : t.height < (Tree.node 0 [.leaf [], t]).height :=
