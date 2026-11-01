@@ -155,36 +155,6 @@ theorem stepFn_methods (front back : List α) (o : QueueOp α) :
       rw [runClient_dequeue_nil]
       simp
 
-/-- A dequeue from an empty front stack asks for the rear size, transfers the rear, and pops the
-front again. -/
-theorem runClient_dequeue_nil (back : List α) :
-    (stackPair α).runClient ([], back) (methods .dequeue) =
-      (back.reverse.head?, (back.reverse.tail, []),
-        .inl .pop :: .inr .size :: (transferTrace back ++ [.inl .pop])) := by
-  simp only [methods, bind, StateTransitionSpec.runClient_liftBind, stackPair, stack,
-    List.tail_nil, List.head?_nil]
-  rw [StateTransitionSpec.runClient_bind, transfer_run]
-  simp
-
-/-- Each method returns the FIFO answer, and the stacks then represent the FIFO successor of the
-represented list. -/
-theorem stepFn_methods (front back : List α) (o : QueueOp α) :
-    (queue α).stepFn (front ++ back.reverse) o =
-      (((stackPair α).clientState (front, back) (methods o)).1 ++
-          ((stackPair α).clientState (front, back) (methods o)).2.reverse,
-        (stackPair α).clientResult (front, back) (methods o)) := by
-  cases o with
-  | enqueue n =>
-    change ((front ++ back.reverse) ++ [n], ()) = (front ++ (n :: back).reverse, ())
-    simp [List.reverse_cons, List.append_assoc]
-  | dequeue =>
-    cases front with
-    | cons a front => rfl
-    | nil =>
-      simp only [StateTransitionSpec.clientState, StateTransitionSpec.clientResult]
-      rw [runClient_dequeue_nil]
-      simp
-
 /-- Representation and behavior are proved once, before selecting a backend or cost model. -/
 def implementation : Module (queue α) (stackPair α) :=
   Module.ofFn

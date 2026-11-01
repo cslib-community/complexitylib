@@ -17,9 +17,9 @@ public import Complexity.DataStructure.Stack.WordRAM.Basic
 The bounded stack `Stack.WordRAM.spec w C` is implemented by three short programs over
 `Memory.spec w`. The storage is a `Layout` with two named fields: a one-cell `count` and an
 `items` array of `C` cells, bottom first. The abstraction function reads the first `count` items
-and reverses them, so the top comes first. Each operation is one read, two writes at most, and a
-single branch; its evaluation is definitional (`runClient_push`, `runClient_pop_of_pos`, …), and
-the refinement obligations follow from those equations and the list view of the array.
+and reverses them, so the top comes first. Each operation is at most three memory operations and
+one branch. Its evaluation is definitional (`runClient_push`, `runClient_pop_of_pos`, …), and the
+refinement obligations follow from those equations and the list view of the array.
 
 Every operation costs at most three memory units, with no potential (`amortized`). The methods
 write only the layout's cells and never allocate (`modifies_methods`), and the abstraction and
@@ -27,8 +27,8 @@ invariant depend only on those cells (`abs_congr`, `Inv.congr`). Two stacks with
 layouts therefore implement the product of two stacks (`pairRefinement`).
 
 This is the same specification that `Stack.WordRAM` implements by a hand-stepped nine-register
-dispatcher. Here no register, instruction count or word-fit chain appears; fits enter only
-through the admissibility of `Memory.spec w`.
+dispatcher. Here no register or instruction count appears. Word fit enters only through the
+admissibility of `Memory.spec w` and one static fact of the layout, that the capacity fits.
 
 ## Main definitions
 
@@ -46,9 +46,11 @@ through the admissibility of `Memory.spec w`.
 * `amortized`: every operation costs at most three memory units.
 * `pair_amortized`: so does every operation of the pair.
 * `pairRefinement_methods`: the pair's methods do not depend on the proofs about its layouts.
-* `modifies_methods`, `abs_congr`, `Inv.congr`: the frame of a stack.
-* `runClient_allocLayout_bind`, `inv_allocLayout`, `abs_allocLayout`: allocation yields an empty
-  stack in three memory units.
+* `runClient_push`, `runClient_pop_of_eq_zero`, `runClient_pop_of_pos`, `runClient_size`: the
+  operations evaluate definitionally.
+* `modifies_methods`, `abs_congr`, `Inv.congr`, `frame`: the frame of a stack.
+* `runClient_allocLayout_bind`, `valid_allocLayout`, `inv_allocLayout`: allocation yields a
+  well-formed empty stack in three memory units.
 
 ## References
 

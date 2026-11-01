@@ -2902,6 +2902,7 @@ public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.MinPQ
 public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Model
 public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Program
 public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Trees
+public import Complexity.DataStructure.Queue.Memory
 public import Complexity.DataStructure.Queue.Spec
 public import Complexity.DataStructure.Queue.WordRAM.Basic
 public import Complexity.DataStructure.Queue.WordRAM.Dynamic
@@ -2914,6 +2915,7 @@ public import Complexity.DataStructure.SearchTree.Impl
 public import Complexity.DataStructure.SplayTree.AccessLemma
 public import Complexity.DataStructure.SplayTree.Basic
 public import Complexity.DataStructure.SplayTree.Impl
+public import Complexity.DataStructure.Stack.Memory
 public import Complexity.DataStructure.Stack.WordRAM.Basic
 public import Complexity.DataStructure.Stack.WordRAM.Controller
 public import Complexity.DataStructure.StateTransition
