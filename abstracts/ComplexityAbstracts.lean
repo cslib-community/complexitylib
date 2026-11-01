@@ -1,3 +1,5 @@
+import ComplexityAbstracts.BQPAbstract
+import ComplexityAbstracts.BQPBridge
 import ComplexityAbstracts.BarringtonAbstract
 import ComplexityAbstracts.BarringtonBridge
 import ComplexityAbstracts.BravermanAbstract
@@ -30,6 +32,8 @@ import ComplexityAbstracts.GSWFHEAbstract
 import ComplexityAbstracts.GSWFHEBridge
 import ComplexityAbstracts.GSWSecurityAbstract
 import ComplexityAbstracts.GSWSecurityBridge
+import ComplexityAbstracts.HashFamiliesAbstract
+import ComplexityAbstracts.HashFamiliesBridge
 import ComplexityAbstracts.ImmermanSzelepcsenyiAbstract
 import ComplexityAbstracts.ImmermanSzelepcsenyiBridge
 import ComplexityAbstracts.KargerMinCutAbstract
@@ -40,6 +44,8 @@ import ComplexityAbstracts.PCPAbstract
 import ComplexityAbstracts.PCPBridge
 import ComplexityAbstracts.PartialMCSPAbstract
 import ComplexityAbstracts.PartialMCSPBridge
+import ComplexityAbstracts.PrimesAbstract
+import ComplexityAbstracts.PrimesBridge
 import ComplexityAbstracts.Randomized
 import ComplexityAbstracts.RandomizedWordRAMAbstract
 import ComplexityAbstracts.RandomizedWordRAMBridge
@@ -47,6 +53,8 @@ import ComplexityAbstracts.ResolutionAbstract
 import ComplexityAbstracts.ResolutionBridge
 import ComplexityAbstracts.SavitchAbstract
 import ComplexityAbstracts.SavitchBridge
+import ComplexityAbstracts.SchoeningAbstract
+import ComplexityAbstracts.SchoeningBridge
 import ComplexityAbstracts.ShamirAbstract
 import ComplexityAbstracts.ShamirBridge
 import ComplexityAbstracts.SipserLautemannAbstract

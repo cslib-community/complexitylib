@@ -572,8 +572,8 @@ theorem lruPotential_step {k : Nat} (hk : 0 < k) {s s' : Finset α} {q : List α
 times the offline demand-paging step cost. -/
 theorem lruAmortized (k : Nat) (hk : 0 < k) :
     Amortized (lruStrategy (α := α) k hk).realization id (lruPotential k)
-      (fun s o => k * stepCost s o.1 o.2) where
-  step {s q o _ q' w} hrep hv hexec := by
+      (fun s o => k * stepCost s o.1 o.2) :=
+  Amortized.ofFn fun {_ _ _ _ _ _} hrep hv hexec => by
     rcases hexec with ⟨rfl, rfl⟩
     simpa only [id_eq, lruStrategy, problem, Problem.offlineSpec] using
       lruPotential_step hk hrep hv

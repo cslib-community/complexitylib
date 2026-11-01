@@ -12,6 +12,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Exponential
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
 
@@ -85,14 +86,6 @@ theorem savitch_boundedExistsEdge {β : Type} (f : β × List Bool → Bool) (x 
     refine ⟨true :: w, by simp [hw], Or.inr ?_, Or.inr ?_⟩
     · simp [boundedExistsEdge, List.replicate_succ, hf]
     · simp [boundedExistsEdge, List.replicate_succ]
-
-/-- A polynomially bounded resource function is within a constant multiple of `2 ^ size`. -/
-private theorem PolyBounded.exists_le_mul_two_pow {α : Type*} {size u : α → ℕ}
-    (h : PolyBounded size u) : ∃ C, ∀ a, u a ≤ C * 2 ^ size a := by
-  obtain ⟨c, d, hcd⟩ := h.exists_le
-  obtain ⟨C, hC⟩ := PolynomiallyBounded.exists_le_mul_two_pow
-    (p := fun n => c * (n + 1) ^ d) (by fun_prop)
-  exact ⟨C, fun a => (hcd a).trans (hC _)⟩
 
 attribute [local fun_prop] ComputableInPolyTime.fst' ComputableInPolyTime.snd'
     ComputableInPolyTime.bool_and' in
