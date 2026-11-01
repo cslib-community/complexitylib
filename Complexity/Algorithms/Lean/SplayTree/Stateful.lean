@@ -122,30 +122,32 @@ recording exact rotation counts. -/
 
 /-- Self-adjusting semantic realization of `OrderedSet.spec α` by `BinaryTree α`, reusing
 `Cslib.Algorithms.Lean.SearchTree.Rep`. -/
-@[expose] def realization : Realization (spec α) (Exec (α := α)) where
-  rep := Rep
-  total {_ t} o _ _ :=
-    match h : step t o with
-    | ⟨t', a, n⟩ => ⟨a, t', n, h⟩
-  correct {s t o a t' n} hr _ he := by
-    obtain ⟨ht, rfl⟩ := hr
-    cases o with
-    | contains x =>
-      cases he
-      refine ⟨?_, ordered_contains ht x, elements_contains x t⟩
-      rw [Bool.eq_iff_iff, contains_answer_eq_true ht x, decide_eq_true_eq]
-    | insert x =>
-      cases he
-      exact ⟨rfl, ordered_insert ht x, elements_insert x t⟩
-    | erase x =>
-      cases he
-      exact ⟨rfl, ordered_erase ht x, elements_erase ht x⟩
-    | minimum =>
-      cases he
-      exact ⟨(minimum_spec ht).eq_least, ordered_minimum ht, elements_minimum t⟩
-    | successor x =>
-      cases he
-      exact ⟨(successor_spec ht x).eq_least, ordered_successor ht x, elements_successor x t⟩
+@[expose] def realization : Realization (spec α) (Exec (α := α)) :=
+  Realization.ofFn
+    (rep := Rep)
+    (total := fun {_ t} o _ _ =>
+      match h : step t o with
+      | ⟨t', a, n⟩ => ⟨a, t', n, h⟩)
+    (correct := by
+      intro s t o a t' n hr _ he
+      obtain ⟨ht, rfl⟩ := hr
+      cases o with
+      | contains x =>
+        cases he
+        refine ⟨?_, ordered_contains ht x, elements_contains x t⟩
+        rw [Bool.eq_iff_iff, contains_answer_eq_true ht x, decide_eq_true_eq]
+      | insert x =>
+        cases he
+        exact ⟨rfl, ordered_insert ht x, elements_insert x t⟩
+      | erase x =>
+        cases he
+        exact ⟨rfl, ordered_erase ht x, elements_erase ht x⟩
+      | minimum =>
+        cases he
+        exact ⟨(minimum_spec ht).eq_least, ordered_minimum ht, elements_minimum t⟩
+      | successor x =>
+        cases he
+        exact ⟨(successor_spec ht x).eq_least, ordered_successor ht x, elements_successor x t⟩)
 
 @[simp] theorem realization_rep : (realization (α := α)).rep = Rep := rfl
 
@@ -158,12 +160,12 @@ recording exact rotation counts. -/
 /-- Sum of `realOpCharge` along an abstract `OrderedSet.spec α` operation history. -/
 @[expose] noncomputable def realHistoryCost (s : Finset α) : List (Op α) → ℝ
   | [] => 0
-  | o :: os => realOpCharge s o + realHistoryCost ((spec α).step s o).1 os
+  | o :: os => realOpCharge s o + realHistoryCost ((spec α).stepFn s o).1 os
 
 @[simp] theorem realHistoryCost_nil (s : Finset α) : realHistoryCost s [] = 0 := rfl
 
 @[simp] theorem realHistoryCost_cons (s : Finset α) (o : Op α) (os : List (Op α)) :
-    realHistoryCost s (o :: os) = realOpCharge s o + realHistoryCost ((spec α).step s o).1 os :=
+    realHistoryCost s (o :: os) = realOpCharge s o + realHistoryCost ((spec α).stepFn s o).1 os :=
   rfl
 
 /-- Discrete `ℕ`-valued per-operation amortized rotation budget
@@ -198,7 +200,7 @@ theorem realHistoryCost_le_totalCost (s : Finset α) (os : List (Op α)) :
   | nil => simp
   | cons o os ih =>
     simp only [realHistoryCost_cons, Spec.totalCost_cons, Nat.cast_add]
-    linarith [realOpCharge_le_amortizedCharge s o, ih ((spec α).step s o).1]
+    linarith [realOpCharge_le_amortizedCharge s o, ih ((spec α).stepFn s o).1]
 
 /-- Uniform unit-weight amortized rotation bound across all five `OrderedSet.Op α` operations,
 combining the unit-weight specialization of [SleatorTarjan1985b], Section 3, Lemma 2, pp. 663–664
@@ -243,7 +245,7 @@ theorem executes_amortized_real_le {β : Type} {p : (spec α).Client β}
   | pure a t =>
     simp
   | call hstep hrest ih =>
-    obtain ⟨ha, hr'⟩ := realization.correct hr trivial hstep
+    obtain ⟨ha, hr'⟩ := realization.correct_ofFn hr trivial hstep
     have hop := exec_unitPotential_amortized_le hr hstep
     subst ha
     have htail := ih hr'

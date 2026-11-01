@@ -481,21 +481,22 @@ inductive Op where
   | get (index : ℕ)
   deriving DecidableEq, Repr
 
+/-- Return type for each `Op`. -/
+abbrev Op.Result : Op → Type
+  | .append _ => Unit
+  | .get _ => ℕ
+
 /-- Mathematical specification of a bounded-word dynamic array.
 Appending requires the value and the worst-case doubled frontier bound `8 * vs.length + 4`
 to fit in a machine word; indexed reads require a valid index fitting a machine word. -/
-abbrev spec (w : ℕ) : Stateful.Spec where
-  State := List ℕ
-  Op := Op
-  Result
-    | .append _ => Unit
-    | .get _ => ℕ
-  step vs
-    | .append v => (vs ++ [v], ())
-    | .get i => (vs, vs.getD i 0)
-  valid vs
-    | .append v => Fits w v ∧ Fits w (8 * vs.length + 4)
-    | .get i => i < vs.length ∧ Fits w i
+abbrev spec (w : ℕ) : Stateful.Spec :=
+  Stateful.Spec.ofFn (State := List ℕ) (Op := Op) (Result := Op.Result)
+    (fun vs => fun
+      | .append v => (vs ++ [v], ())
+      | .get i => (vs, vs[i]?.getD 0))
+    (fun vs => fun
+      | .append v => Fits w v ∧ Fits w (8 * vs.length + 4)
+      | .get i => i < vs.length ∧ Fits w i)
 
 /-- Fixed operation dispatcher: `dest = 0` runs `program` (append), `dest = 1` runs `getProgram`. -/
 def dispatch : Code .standard 12 := ram[
@@ -558,10 +559,10 @@ cells below `y.regs frontier`, and satisfies the potential inequality with `char
 theorem dispatch_exec {w : ℕ} (h1 : Fits w 1) {vs : List ℕ} {x : Data 12}
     (hr : BoundedRep w vs x) (o : Op) (hv : (spec w).valid vs o) :
     ∃ y n, Exec w dispatch ((implementation w).prepare o x) y n ∧
-      (implementation w).decode o y.regs = some ((spec w).step vs o).2 ∧
-      BoundedRep w ((spec w).step vs o).1 y ∧
+      (implementation w).decode o y.regs = some ((spec w).stepFn vs o).2 ∧
+      BoundedRep w ((spec w).stepFn vs o).1 y ∧
       (∀ a, y.regs frontier ≤ a → y.mem a = x.mem a) ∧
-      (n + 1) + potential ((spec w).step vs o).1 y ≤ charge o + potential vs x := by
+      (n + 1) + potential ((spec w).stepFn vs o).1 y ≤ charge o + potential vs x := by
   let x₀ := (implementation w).prepare o x
   have hx₀_bounded : x₀.Bounded w :=
     (implementation w).prepare_bounded hr.bounded (fun i _ => arguments_fit h1 o hv i)
@@ -619,20 +620,21 @@ theorem dispatch_exec {w : ℕ} (h1 : Fits w 1) {vs : List ℕ} {x : Data 12}
       omega
 
 /-- Semantic realization certificate for the bounded-word dynamic array. -/
-def certificate {w : ℕ} (h1 : Fits w 1) : DynamicCertificate (implementation w) w where
-  rep := BoundedRep w
-  bounded h := h.bounded
-  arguments_fit o hv i _ := arguments_fit h1 o hv i
-  execute o hr hv := by
-    obtain ⟨y, n, he, ha, hy, _⟩ := dispatch_exec h1 hr o hv
-    exact ⟨y, n, he, ha, hy⟩
+def certificate {w : ℕ} (h1 : Fits w 1) : DynamicCertificate (implementation w) w :=
+  DynamicCertificate.ofFn
+    (rep := BoundedRep w)
+    (bounded := fun h => h.bounded)
+    (arguments_fit := fun o hv i _ => arguments_fit h1 o hv i)
+    (execute := fun o hr hv => by
+      obtain ⟨y, n, he, ha, hy, _⟩ := dispatch_exec h1 hr o hv
+      exact ⟨y, n, he, ha, hy⟩)
 
 /-- Amortized instruction-cost certificate for the dynamic array (`52` per append, `6` per get,
 including dispatch and final halt). -/
 theorem amortized {w : ℕ} (h1 : Fits w 1) :
     Stateful.Amortized (certificate h1).realization
-      DynamicProgram.OperationTrace.instructions potential (fun _ o => charge o) where
-  step hr hv he := by
+      DynamicProgram.OperationTrace.instructions potential (fun _ o => charge o) :=
+  Stateful.Amortized.ofFn fun hr hv he => by
     obtain ⟨z, n, hz, _, _, _, hpot⟩ := dispatch_exec h1 hr _ hv
     obtain ⟨rfl, hk⟩ := he.eq_of_exec hz
     rw [hk]
@@ -641,9 +643,11 @@ theorem amortized {w : ℕ} (h1 : Fits w 1) :
 /-- Uniform amortized instruction-cost certificate (`52` instructions per operation). -/
 theorem amortized_uniform {w : ℕ} (h1 : Fits w 1) :
     Stateful.Amortized (certificate h1).realization
-      DynamicProgram.OperationTrace.instructions potential (fun _ _ => 52) where
-  step {vs c o a c' trace} hr hv he := by
-    have h := (amortized h1).step hr hv he
+      DynamicProgram.OperationTrace.instructions potential (fun _ _ => 52) :=
+  Stateful.Amortized.ofFn fun {vs c o a c' trace} hr hv he => by
+    obtain ⟨s', hstep, _, h⟩ := (amortized h1).step hr hv he
+    have hs : s' = ((spec w).stepFn vs o).1 := congrArg Prod.fst hstep
+    subst hs
     cases o <;> simp only [charge] at h ⊢ <;> omega
 
 /-- Every concrete call modifies only cells below `y.regs frontier`. -/
@@ -716,7 +720,10 @@ theorem runClient_appendAll (w : ℕ) (vs us : List ℕ) :
   induction us generalizing vs with
   | nil => simp [appendAll]
   | cons v us ih =>
-    simp [appendAll, spec, ih, List.append_assoc]
+    rw [appendAll, Stateful.Spec.runClient_liftBind]
+    dsimp only [spec, Stateful.Spec.stepFn]
+    rw [ih (vs ++ [v]), List.append_assoc]
+    rfl
 
 /-- `appendAll us` is admissible from `vs` whenever every element of `us` fits `w` and
 `8 * (vs.length + us.length) + 4` fits `w`. -/
@@ -745,7 +752,9 @@ theorem run_appendAll {w : ℕ} (h1 : Fits w 1) {vs : List ℕ} {x : Data 12}
       (vs ≠ [] → y.regs frontier < 4 * vs.length) := by
   have hv : (spec w).ValidHistory [] ((spec w).runClient [] (appendAll vs)).2.2 :=
     validHistory_appendAll hvals (by simpa using hlen)
-  simpa [runClient_appendAll] using run_initialized h1 (appendAll vs) hx hv
+  have h := run_initialized h1 (appendAll vs) hx hv
+  rw [runClient_appendAll] at h
+  simpa using h
 
 end Cslib.Algorithms.WordRAM.DynamicArray
 
