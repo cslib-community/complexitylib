@@ -7,10 +7,10 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.CuckooHashing
-public import Complexity.Algorithms.Lean.Dictionary
-public import Complexity.Algorithms.WordRAM.Dictionary.CuckooHashing.HashFamily
-public import Complexity.Computability.WordRAM.Randomized.Subroutine
+public import Complexity.DataStructure.Dictionary.CuckooHashing
+public import Complexity.DataStructure.Dictionary.Spec
+public import Complexity.DataStructure.Dictionary.WordRAM.CuckooHashing.HashFamily
+public import Complexity.DataStructure.WordRAM.Randomized.StateTransition
 public import Complexity.Computability.WordRAM.Randomized.UniformLoopExit
 
 /-!
@@ -19,8 +19,9 @@ public import Complexity.Computability.WordRAM.Randomized.UniformLoopExit
 This module implements Pagh and Rodler's two-table cuckoo hashing dictionary [PaghRodler2004] on
 the randomized Word RAM (`Cslib.WordRAM.Basis.exact` and `Cslib.WordRAM.Basis.standard`), realizing
 the bounded-capacity lookup-and-insert specification
-`Cslib.Algorithms.Lean.Dictionary.spec U V n_max` via a composable, assumption-free
-`Cslib.WordRAM.Randomized.SubroutineDS` certificate (`seedSlack := 2`, `potential := 0`) and an
+`Cslib.DataStructure.Dictionary.spec U V n_max` via a composable, assumption-free
+`Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl` certificate
+(`seedSlack := 2`, `potential := 0`) and an
 expected-amortized sequence theorem `cuckoo_seq_expected_amortized`.
 
 ## Design overview
@@ -32,7 +33,7 @@ expected-amortized sequence theorem `cuckoo_seq_expected_amortized`.
      resamplings.
    - A self-contained regime-switched hash pair region at `hashBase = base + 20` of size
      `hashPairSpace c_exp n_max`
-     (`Complexity/Algorithms/WordRAM/Dictionary/CuckooHashing/HashFamily.lean`),
+     (`Complexity/DataStructure/Dictionary/WordRAM/CuckooHashing/HashFamily.lean`),
      switching at `doubleTabThreshold c_exp` between two independent
      `(2 * maxEvictions n_max + 2)`-wise independent trinomial-field polynomial hashes
      (`KWise`, `[CarterWegman1979]`, `[WegmanCarter1981]`) and two independent Mikkel Thorup
@@ -68,35 +69,38 @@ expected-amortized sequence theorem `cuckoo_seq_expected_amortized`.
      (`uniformOfFinset_le_two_mul_uniformOfFintype`).
    - Whenever `U ≤ max n_max 4 ^ c_exp`, `isCuckooHashFamily_tableBits` discharges
      `IsCuckooHashFamily c_exp U n_max (tableBits n_max) (maxEvictions n_max) 3 4` unconditionally
-     for every `n_max : ℕ` via `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_provableFamily`
+     for every `n_max : ℕ` via
+     `Cslib.DataStructure.Dictionary.CuckooHashing.isCuckooHashPair_provableFamily`
      [PaghRodler2004, Thorup2013], yielding assumption-free `O_{c_exp}(1)` worst-case `get` cost
      `getChargeBound c_exp` and `O_{c_exp}(1)` expected-amortized `insert` cost
      `insertChargeBound c_exp` (`expectedOpCharge c_exp`) independent of `n_max` and `U`.
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.space`: total Word-RAM footprint in words.
-* `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.RepWithKeys`,
-  `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.Rep`: representation invariants.
-* `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.cuckooCode`: `SubroutineCode .exact 19 2`
+* `Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.space`: total Word-RAM footprint in words.
+* `Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.RepWithKeys`,
+  `Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.Rep`: representation invariants.
+* `Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.cuckooCode`: `SubroutineCode .exact 19 2`
   packaging `allocSpan`, `initSetup`, and `opCode`.
-* `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.subroutineDS`,
-  `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.subroutineDSStandard`: composable
+* `Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.impl`,
+  `Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.implStandard`: composable
   assumption-free randomized Word-RAM data-structure certificates over `Basis.exact` and
   `Basis.standard`.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.isCuckooHashFamily_tableBits`: unconditional
+* `Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.isCuckooHashFamily_tableBits`: unconditional
   `IsCuckooHashFamily` instance (`C_walk = 3`, `C_reh = 4`) for every `n_max : ℕ` under
   `U ≤ max n_max 4 ^ c_exp`.
-* `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.getCode_execWithin`: worst-case deterministic
+* `Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.getCode_execWithin`: worst-case
+  deterministic
   2-probe lookup specification.
-* `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.rehashLoopCode_execCodeDist`: geometric Las
+* `Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.rehashLoopCode_execCodeDist`: geometric Las
   Vegas termination, expected step bound, and exact conditional-uniform exit law for full-table
   rehashing.
-* `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.cuckoo_steps_expected_amortized`,
-  `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.cuckoo_seq_expected_amortized`: unconditional
+* `Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.cuckoo_steps_expected_amortized`,
+  `Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.cuckoo_seq_expected_amortized`:
+  unconditional
   continuation and end-to-end expected-time bounds across arbitrary valid `get`/`insert` histories
   under `U ≤ max n_max 4 ^ c_exp`.
 
@@ -117,14 +121,14 @@ expected-amortized sequence theorem `cuckoo_seq_expected_amortized`.
 
 public section
 
-namespace Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing
+namespace Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing
 
-open Cslib.WordRAM
+open Cslib.WordRAM Cslib.Algorithms.WordRAM
 open Cslib.WordRAM.Randomized
 open Cslib.Probability
 open Cslib.Probability.PMF
-open Cslib.Algorithms.Lean
-open Cslib.Algorithms.WordRAM.Hashing
+open Cslib.DataStructure.WordRAM Cslib.DataStructure.WordRAM.Randomized
+open Cslib.DataStructure.HashFamily.WordRAM
 open scoped ENNReal
 
 /-! ### Section 1: Memory layout, slot encoding, and representation invariants -/
@@ -5358,7 +5362,7 @@ theorem insertCode_execCodeDist {w base c_exp n_max U V v : ℕ}
     · rw [hstep_eq]
       exact hbr_supp
 
-/-! ### Section 6: `opCode`, `cuckooCode`, `subroutineDS`, and `cuckoo_seq_expected_amortized` -/
+/-! ### Section 6: `opCode`, `cuckooCode`, `impl`, and `cuckoo_seq_expected_amortized` -/
 
 /-- Standalone register encoding for `Dictionary.Op U`:
 * `get u` sets `reg 2 = 0` (selector) and `reg 3 = u.val`.
@@ -5422,7 +5426,7 @@ def charge (c_exp n_max U C_walk C_reh : ℕ) (_s : Dictionary.State U) : Dictio
   | .insert _ _ => insertCharge c_exp n_max U C_walk C_reh
 
 /-- State-independent expected step bound for a single `opCode` invocation under an arbitrary
-input distribution (used in the standalone `SubroutineDS` certificate, while
+input distribution (used in the standalone `Randomized.StateTransitionImpl` certificate, while
 `cuckoo_seq_expected_amortized` establishes the tighter `charge` / `expectedOpCharge` bound along
 valid trajectories from `initFresh`). -/
 @[expose]
@@ -5867,7 +5871,7 @@ satisfies `IsCuckooHashFamily c_exp U n_max (tableBits n_max) (maxEvictions n_ma
 theorem isCuckooHashFamily_tableBits {c_exp U n_max : ℕ}
     (hU : U ≤ max n_max 4 ^ c_exp) :
     IsCuckooHashFamily c_exp U n_max (tableBits n_max) (maxEvictions n_max) 3 4 :=
-  Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_provableFamily
+  Cslib.DataStructure.Dictionary.CuckooHashing.isCuckooHashPair_provableFamily
     hU (thirtyTwo_mul_max_le_tableSize n_max)
 
 /-- `O(c_exp⁴) = O_{c_exp}(1)` worst-case step bound for `getCode c_exp n_max`, independent of
@@ -6064,19 +6068,20 @@ theorem charge_le_expectedOpCharge {c_exp n_max U : ℕ}
     have hr := rehashAmortizedSteps_le hU
     omega
 
-/-- Composable randomized Word-RAM `SubroutineDS` certificate for Pagh–Rodler cuckoo hashing over
+/-- Composable randomized Word-RAM `StateTransitionImpl` certificate for Pagh–Rodler cuckoo hashing
+over
 `Basis.exact`, unconditional whenever `U ≤ max n_max 4 ^ c_exp`. -/
 @[expose]
-noncomputable def subroutineDS (w base c_exp n_max U V : ℕ)
+noncomputable def impl (w base c_exp n_max U V : ℕ)
     (hU : U ≤ max n_max 4 ^ c_exp)
     (hw : 2 * Probability.trinomialDeg U (tableBits n_max) ≤ w)
     (hfit_end : Fits w (base + space c_exp n_max))
     (hfit_ev : Fits w (maxEvictions n_max))
     (hfit_U : Fits w (max U 2 + 1))
     (hfit_V : Fits w V) :
-    Randomized.SubroutineDS (cuckooCode c_exp n_max) (Dictionary.spec U V n_max)
+    Randomized.StateTransitionImpl (cuckooCode c_exp n_max) (Dictionary.spec U V n_max)
       w base ![n_max, U] (Dictionary.empty U) :=
-  Randomized.SubroutineDS.ofFn
+  Randomized.StateTransitionImpl.ofFn
     (Seed := Seed c_exp n_max U (tableBits n_max))
     (seedLaw := seedLaw c_exp n_max U (tableBits n_max))
     (seedSlack := 2)
@@ -6110,18 +6115,19 @@ noncomputable def subroutineDS (w base c_exp n_max U V : ℕ)
       opCode_coupled_step_spec o ν (isCuckooHashFamily_tableBits hU).rehash_prob_le_half
         hv hseed hsupp hw hfit_end hfit_ev hfit_V)
 
-/-- Standard-basis (`Basis.standard`) randomized `SubroutineDS` certificate for Pagh–Rodler cuckoo
+/-- Standard-basis (`Basis.standard`) randomized `StateTransitionImpl` certificate for Pagh–Rodler
+cuckoo
 hashing, unconditional whenever `U ≤ max n_max 4 ^ c_exp`. -/
-noncomputable abbrev subroutineDSStandard (w base c_exp n_max U V : ℕ)
+noncomputable abbrev implStandard (w base c_exp n_max U V : ℕ)
     (hU : U ≤ max n_max 4 ^ c_exp)
     (hw : 2 * Probability.trinomialDeg U (tableBits n_max) ≤ w)
     (hfit_end : Fits w (base + space c_exp n_max))
     (hfit_ev : Fits w (maxEvictions n_max))
     (hfit_U : Fits w (max U 2 + 1))
     (hfit_V : Fits w V) :
-    Randomized.SubroutineDS (cuckooCode c_exp n_max).toStandard (Dictionary.spec U V n_max)
+    Randomized.StateTransitionImpl (cuckooCode c_exp n_max).toStandard (Dictionary.spec U V n_max)
       w base ![n_max, U] (Dictionary.empty U) :=
-  (subroutineDS w base c_exp n_max U V hU hw hfit_end hfit_ev hfit_U hfit_V).toStandard
+  (impl w base c_exp n_max U V hU hw hfit_end hfit_ev hfit_U hfit_V).toStandard
 
 /-- Coupled multi-step execution telescope for Pagh–Rodler cuckoo hashing maintaining the exact
 conditional-uniform in-memory seed marginal
@@ -6144,7 +6150,7 @@ theorem cuckoo_steps_expected_amortized (w base c_exp n_max U V : ℕ)
     (hsupp : ∀ p ∈ ν.support,
       p.1 = extractSeed (hashBase base) c_exp n_max U (tableBits n_max) p.2.mem ∧
       RepWithKeys w base c_exp n_max U V ks s p.2) :
-    let C := subroutineDS w base c_exp n_max U V hU hw hfit_end hfit_ev hfit_U hfit_V
+    let C := impl w base c_exp n_max U V hU hw hfit_end hfit_ev hfit_U hfit_V
     ∃ (ν_final : PMF (Seed c_exp n_max U (tableBits n_max) × Data 19)) (T_ops : ℝ≥0∞),
       C.ExecStepsOfFn s ops ν ν_final T_ops ∧
       (∀ θ, (ν_final.map Prod.fst) θ ≤ 2 * seedLaw c_exp n_max U (tableBits n_max) θ) ∧
@@ -6165,7 +6171,7 @@ theorem cuckoo_steps_expected_amortized (w base c_exp n_max U V : ℕ)
     have hrep₀ := (hsupp p₀ hp₀).2
     have hcard := (survivingSeeds_card_and_nonempty (c_exp := c_exp) (U := U) (n_max := n_max)
       hfam.rehash_prob_le_half hrep₀.2.2.2.2.1.1 hrep₀.2.2.2.2.1.2.1).1
-    refine ⟨ν, 0, Randomized.SubroutineDS.ExecStepsOfFn.nil (C := C) s ν, ?_, ?_, by simp⟩
+    refine ⟨ν, 0, Randomized.StateTransitionImpl.ExecStepsOfFn.nil (C := C) s ν, ?_, ?_, by simp⟩
     · intro θ
       rw [hseed]
       exact uniformOfFinset_le_two_mul_uniformOfFintype hE hcard θ
@@ -6309,7 +6315,7 @@ theorem cuckoo_steps_expected_amortized (w base c_exp n_max U V : ℕ)
     obtain ⟨ν_final, T_rest, hex_rest, hseed_final, hrep_final, hamort_rest⟩ :=
       ih ν₁ hvos hE' hseed₁ hsupp₁
     have hex_cons : C.ExecStepsOfFn s (o :: os) ν ν_final ((∑' p, ν p * T_step p) + T_rest) := by
-      refine Randomized.SubroutineDS.ExecStepsOfFn.cons (C := C) (μ_step := μ_step)
+      refine Randomized.StateTransitionImpl.ExecStepsOfFn.cons (C := C) (μ_step := μ_step)
         (T_step := T_step) (fun p hp => ?_) hex_rest
       obtain ⟨hex, _, hpost⟩ := hstep_spec p hp
       refine ⟨hex, fun q hq => ?_⟩
@@ -6382,7 +6388,7 @@ theorem cuckoo_seq_expected_amortized (w base c_exp n_max U V : ℕ)
     (h3 : x.regs 3 = n_max) (h4 : x.regs 4 = U)
     (hz : ∀ a ∈ (Block.mk base (space c_exp n_max)).footprint, x.mem a = 0)
     (hv : (Dictionary.spec U V n_max).ValidHistory (Dictionary.empty U) ops) :
-    let C := subroutineDS w base c_exp n_max U V hU hw hfit_end hfit_ev hfit_U hfit_V
+    let C := impl w base c_exp n_max U V hU hw hfit_end hfit_ev hfit_U hfit_V
     ∃ (ν₀ ν_final : PMF (Seed c_exp n_max U (tableBits n_max) × Data 19)) (T_ops : ℝ≥0∞),
       ExecCodeDist w (cuckooCode c_exp n_max).initFresh x (ν₀.map Prod.snd) C.initTime ∧
       C.ExecStepsOfFn (Dictionary.empty U) ops ν₀ ν_final T_ops ∧
@@ -6418,7 +6424,8 @@ theorem cuckoo_seq_expected_amortized (w base c_exp n_max U V : ℕ)
     rw [hsnd₀]
     have hseq := (ExecCodeDist.of_exec he_span).seq_pure hdist_setup
     refine hseq.mono ?_
-    dsimp only [C, subroutineDS, Randomized.SubroutineDS.initTime, Randomized.SubroutineDS.ofFn]
+    dsimp only [C, impl, Randomized.StateTransitionImpl.initTime,
+      Randomized.StateTransitionImpl.ofFn]
     exact add_le_add (by exact_mod_cast ht_span) le_rfl
   have hE₀ :
       (survivingSeeds (Θ := Seed c_exp n_max U (tableBits n_max)) evalHash1 evalHash2
@@ -6450,5 +6457,5 @@ theorem cuckoo_seq_expected_amortized (w base c_exp n_max U V : ℕ)
   exact ⟨ν₀, ν_final, T_ops, he_init, hex_steps, hseed_final, hrep_final,
     add_le_add le_rfl hamort⟩
 
-end Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing
+end Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing
 

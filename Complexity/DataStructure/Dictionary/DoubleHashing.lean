@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.UniformProbing
+public import Complexity.DataStructure.Dictionary.UniformProbing
 public import Complexity.Foundations.Data.Nat.OddMulMod
 public import Complexity.Probability.KWiseIndependent.DoubleTabulation
 import Complexity.Foundations.Data.Nat.Power
@@ -24,7 +24,8 @@ import Mathlib.Order.Interval.Finset.Nat
 
 This module proves $O(1)$ expected probes for power-of-two odd-stride double hashing
 `oddStridePerm h₁ h₂ u i = (h₁(u) + i * (2 * h₂(u) + 1)) mod 2 ^ M` ([CLRS2009], Section 11.4,
-pp. 272–274) over open-addressed tables `Cslib.Algorithms.Lean.UniformProbing.Table U (2 ^ M)`
+pp. 272–274) over open-addressed tables
+`Cslib.DataStructure.Dictionary.UniformProbing.Table U (2 ^ M)`
 with key universe size `U`, table bit-width `M` (`m = 2 ^ M` slots), and maximum stored key count
 `n_max`. The bound holds both under $(2 L + 1)$-wise independence for probe cutoff
 `L = maxProbeCutoff n_max = Nat.clog 2 (max n_max 4) + 4` and under Mikkel Thorup's Double
@@ -79,35 +80,41 @@ Tabulation (`[Thorup2013]`, Theorem 1(a) and Lemma 2) with `c` characters of `b`
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.DoubleHashing.OrderedTableRep`: open-addressed representation invariant
+* `Cslib.DataStructure.Dictionary.DoubleHashing.OrderedTableRep`: open-addressed representation
+  invariant
   extending `UniformProbing.TableRep` with an acyclic insertion-order rank.
-* `Cslib.Algorithms.Lean.DoubleHashing.oddStrideSeq`,
-  `Cslib.Algorithms.Lean.DoubleHashing.oddStridePerm`,
-  `Cslib.Algorithms.Lean.DoubleHashing.twoStageOddStridePerm`: full-cycle odd-stride double-hashing
+* `Cslib.DataStructure.Dictionary.DoubleHashing.oddStrideSeq`,
+  `Cslib.DataStructure.Dictionary.DoubleHashing.oddStridePerm`,
+  `Cslib.DataStructure.Dictionary.DoubleHashing.twoStageOddStridePerm`: full-cycle odd-stride
+  double-hashing
   probe sequence and permutation families on `Fin (2 ^ M)`.
-* `Cslib.Algorithms.Lean.DoubleHashing.maxProbeCutoff`,
-  `Cslib.Algorithms.Lean.DoubleHashing.DoubleTabOddStrideSeed`,
-  `Cslib.Algorithms.Lean.DoubleHashing.doubleTabOddStridePerm`,
-  `Cslib.Algorithms.Lean.DoubleHashing.DoubleHashSeed`,
-  `Cslib.Algorithms.Lean.DoubleHashing.doubleHashOddStridePerm`: cutoff parameter and Double
+* `Cslib.DataStructure.Dictionary.DoubleHashing.maxProbeCutoff`,
+  `Cslib.DataStructure.Dictionary.DoubleHashing.DoubleTabOddStrideSeed`,
+  `Cslib.DataStructure.Dictionary.DoubleHashing.doubleTabOddStridePerm`,
+  `Cslib.DataStructure.Dictionary.DoubleHashing.DoubleHashSeed`,
+  `Cslib.DataStructure.Dictionary.DoubleHashing.doubleHashOddStridePerm`: cutoff parameter and
+  Double
   Tabulation seed types and permutation families.
 
 ## Main results
 
-* `Cslib.Algorithms.Lean.DoubleHashing.OrderedTableRep.empty`,
-  `Cslib.Algorithms.Lean.DoubleHashing.OrderedTableRep.tableInsert`,
-  `Cslib.Algorithms.Lean.DoubleHashing.orderedTableRep_runTable`,
-  `Cslib.Algorithms.Lean.DoubleHashing.exists_orderedTableRep`: preservation and existence of
+* `Cslib.DataStructure.Dictionary.DoubleHashing.OrderedTableRep.empty`,
+  `Cslib.DataStructure.Dictionary.DoubleHashing.OrderedTableRep.tableInsert`,
+  `Cslib.DataStructure.Dictionary.DoubleHashing.orderedTableRep_runTable`,
+  `Cslib.DataStructure.Dictionary.DoubleHashing.exists_orderedTableRep`: preservation and existence
+  of
   `OrderedTableRep`.
-* `Cslib.Algorithms.Lean.DoubleHashing.sum_probeCount_oddStride_le_of_kWiseIndependent`,
-  `Cslib.Algorithms.Lean.DoubleHashing.expect_probeCount_oddStride_of_kWiseIndependent`: expected
+* `Cslib.DataStructure.Dictionary.DoubleHashing.sum_probeCount_oddStride_le_of_kWiseIndependent`,
+  `Cslib.DataStructure.Dictionary.DoubleHashing.expect_probeCount_oddStride_of_kWiseIndependent`:
+  expected
   probe count $\le 2$ under $(2 L + 1)$-wise independent $(h_1, h_2)$.
-* `Cslib.Algorithms.Lean.DoubleHashing.sum_probeCount_oddStride_of_whp_kWiseIndependent`,
-  `Cslib.Algorithms.Lean.DoubleHashing.expect_probeCount_oddStride_of_whp_kWiseIndependent`:
+* `Cslib.DataStructure.Dictionary.DoubleHashing.sum_probeCount_oddStride_of_whp_kWiseIndependent`,
+  `Cslib.DataStructure.Dictionary.DoubleHashing.expect_probeCount_oddStride_of_whp_kWiseIndependent`
   expected probe count $\le 3$ under high-probability $(2 L + 1)$-wise independence.
-* `Cslib.Algorithms.Lean.DoubleHashing.sum_probeCount_oddStride_doubleTab_le`,
-  `Cslib.Algorithms.Lean.DoubleHashing.expect_probeCount_oddStride_doubleTab_le`,
-  `Cslib.Algorithms.Lean.DoubleHashing.expect_probeCount_oddStride_unconditional_le`: expected probe
+* `Cslib.DataStructure.Dictionary.DoubleHashing.sum_probeCount_oddStride_doubleTab_le`,
+  `Cslib.DataStructure.Dictionary.DoubleHashing.expect_probeCount_oddStride_doubleTab_le`,
+  `Cslib.DataStructure.Dictionary.DoubleHashing.expect_probeCount_oddStride_unconditional_le`:
+  expected probe
   count $\le 3$ under Double Tabulation for $n_{\max} \ge \mathrm{doubleTabThreshold}\ c_{\exp}$,
   and $\le \max(\mathrm{doubleTabThreshold}\ c_{\exp}, 3)$ unconditionally across all $n_{\max}$.
 
@@ -124,10 +131,9 @@ Tabulation (`[Thorup2013]`, Theorem 1(a) and Lemma 2) with `c` characters of `b`
 
 public section
 
-namespace Cslib.Algorithms.Lean.DoubleHashing
+namespace Cslib.DataStructure.Dictionary.DoubleHashing
 
-open Cslib.Algorithms.Lean
-open Cslib.Algorithms.Lean.UniformProbing
+open Cslib.DataStructure.Dictionary.UniformProbing
 open Cslib.Probability
 open scoped BigOperators ENNReal
 
@@ -2786,4 +2792,4 @@ theorem expect_probeCount_oddStride_unconditional_le
       exact_mod_cast (by omega : n_max + 1 ≤ doubleTabThreshold c_exp)
     exact (hdet.trans hle).trans (le_max_left _ 3)
 
-end Cslib.Algorithms.Lean.DoubleHashing
+end Cslib.DataStructure.Dictionary.DoubleHashing

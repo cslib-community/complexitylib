@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.Dictionary
+public import Complexity.DataStructure.Dictionary.Spec
 public import Complexity.Languages.Probabilistic.RandomOracle
 public import Complexity.Probability.PMF.Expect
 public import Complexity.Probability.PMF.Uniform
@@ -22,7 +22,7 @@ import Mathlib.Topology.Instances.ENNReal.Lemmas
 This file formalizes the classical uniform-probing model of open-addressed hashing from
 [Cormen, Leiserson, Rivest, and Stein, *Introduction to Algorithms*, third edition (MIT Press,
 2009), Section 11.4 ("Open addressing", pp. 269–277)][CLRS2009], realizing the bounded-capacity
-insert-only dictionary specification `Cslib.Algorithms.Lean.Dictionary.spec` over `m` table slots
+insert-only dictionary specification `Cslib.DataStructure.Dictionary.spec` over `m` table slots
 (`2 * n_max ≤ m`).
 
 In the textbook uniform-probing ("uniform hashing") model, each key `u : Fin U` is assigned an
@@ -60,59 +60,63 @@ In [CLRS2009], third edition, Section 11.4:
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.UniformProbing.allOccupied`,
-  `Cslib.Algorithms.Lean.UniformProbing.missedProbesFrom`,
-  `Cslib.Algorithms.Lean.UniformProbing.missedProbes`,
-  `Cslib.Algorithms.Lean.UniformProbing.unsuccessfulProbes`,
-  `Cslib.Algorithms.Lean.UniformProbing.probeSlotIndex`: slot-probe predicates, probe counts, and
+* `Cslib.DataStructure.Dictionary.UniformProbing.allOccupied`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.missedProbesFrom`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.missedProbes`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.unsuccessfulProbes`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.probeSlotIndex`: slot-probe predicates, probe
+  counts, and
   first-available slot index along a probe permutation `σ : Equiv.Perm (Fin m)`.
-* `Cslib.Algorithms.Lean.UniformProbing.Table`,
-  `Cslib.Algorithms.Lean.UniformProbing.emptyTable`,
-  `Cslib.Algorithms.Lean.UniformProbing.occupiedSlots`,
-  `Cslib.Algorithms.Lean.UniformProbing.otherOccupiedSlots`,
-  `Cslib.Algorithms.Lean.UniformProbing.probeCount`: pure open-addressed table of `m` slots and
+* `Cslib.DataStructure.Dictionary.UniformProbing.Table`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.emptyTable`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.occupiedSlots`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.otherOccupiedSlots`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.probeCount`: pure open-addressed table of `m`
+  slots and
   per-key probe count.
-* `Cslib.Algorithms.Lean.UniformProbing.tableGet`,
-  `Cslib.Algorithms.Lean.UniformProbing.tableInsert`,
-  `Cslib.Algorithms.Lean.UniformProbing.tableStep`,
-  `Cslib.Algorithms.Lean.UniformProbing.runTable`,
-  `Cslib.Algorithms.Lean.UniformProbing.TableRep`: open-addressed `get`/`insert` operations and
+* `Cslib.DataStructure.Dictionary.UniformProbing.tableGet`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.tableInsert`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.tableStep`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.runTable`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.TableRep`: open-addressed `get`/`insert`
+  operations and
   representation invariant linking `Table U m` to `Dictionary.State U`.
 
 ## Main results
 
-* `Cslib.Algorithms.Lean.UniformProbing.toOuterMeasure_allOccupied_eq_prod`,
-  `Cslib.Algorithms.Lean.UniformProbing.toOuterMeasure_allOccupied_le_pow`: on a table with
+* `Cslib.DataStructure.Dictionary.UniformProbing.toOuterMeasure_allOccupied_eq_prod`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.toOuterMeasure_allOccupied_le_pow`: on a table with
   `n = O.card ≤ m` occupied slots, the probability over
   `σ ← PMF.uniformOfFintype (Equiv.Perm (Fin m))`
   that the first `k ≤ m` probes all hit `O` (`k < unsuccessfulProbes O σ`) is
   `∏ i ∈ Finset.range k, ((n - i : ℝ≥0∞) / (m - i : ℝ≥0∞)) ≤ ((n : ℝ≥0∞) / (m : ℝ≥0∞)) ^ k`
   ([CLRS2009], third edition, proof of Theorem 11.6, pp. 274–275).
-* `Cslib.Algorithms.Lean.UniformProbing.expect_unsuccessfulProbes_le`,
-  `Cslib.Algorithms.Lean.UniformProbing.expect_unsuccessfulProbes_le_two`,
-  `Cslib.Algorithms.Lean.UniformProbing.expect_probeCount_of_eq_none_le`,
-  `Cslib.Algorithms.Lean.UniformProbing.expect_probeCount_of_eq_none_le_two`: Theorem 11.6
+* `Cslib.DataStructure.Dictionary.UniformProbing.expect_unsuccessfulProbes_le`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.expect_unsuccessfulProbes_le_two`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.expect_probeCount_of_eq_none_le`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.expect_probeCount_of_eq_none_le_two`: Theorem 11.6
   (pp. 274–275) and Corollary 11.7 (p. 275) of [CLRS2009], third edition — an unsuccessful lookup or
   fresh-key insertion into a table holding `n < m` keys makes at most `m / (m - n)` probes in
   expectation (`≤ 2` when `2 * n ≤ m`).
-* `Cslib.Algorithms.Lean.UniformProbing.TableRep.probeCount_tableInsert_of_isSome`,
-  `Cslib.Algorithms.Lean.UniformProbing.probeCount_runTable_eq_firstInsert`,
-  `Cslib.Algorithms.Lean.UniformProbing.expect_probeCount_of_mem_dom_le`,
-  `Cslib.Algorithms.Lean.UniformProbing.expect_probeCount_of_mem_dom_le_two`: pathwise
+* `Cslib.DataStructure.Dictionary.UniformProbing.TableRep.probeCount_tableInsert_of_isSome`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.probeCount_runTable_eq_firstInsert`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.expect_probeCount_of_mem_dom_le`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.expect_probeCount_of_mem_dom_le_two`: pathwise
   insertion-cost identity and per-key intermediate bound from the proof of Theorem 11.8 (p. 276) of
   [CLRS2009], third edition — a successful lookup of a fixed present key `u ∈ dom s` makes the
   exact same number of probes as the operation that first inserted `u` after prefix `ops₁`
   (reaching state `s₁`), which is at most `m / (m - (Dictionary.dom s₁).card) ≤ 2` in expectation
   when `2 * n_max ≤ m` (the uniform-key-averaged `(1 / α) ln(1 / (1 - α))` endpoint of Theorem 11.8
   is not formalized here).
-* `Cslib.Algorithms.Lean.UniformProbing.uniform_interpret_eq_lazy_perm`: eager sampling of the
+* `Cslib.DataStructure.Dictionary.UniformProbing.uniform_interpret_eq_lazy_perm`: eager sampling
+  of the
   independent permutation family `Fin U → Equiv.Perm (Fin m)` agrees in distribution with lazy
   on-demand oracle evaluation (`RandomOracle.uniform_interpret_eq_lazy`).
-* `Cslib.Algorithms.Lean.UniformProbing.missedProbes_le_card`,
-  `Cslib.Algorithms.Lean.UniformProbing.probeCount_le_card_otherOccupied_add_one`,
-  `Cslib.Algorithms.Lean.UniformProbing.probeCount_le_dom_card_add_one`,
-  `Cslib.Algorithms.Lean.UniformProbing.probeCount_le_add_one`,
-  `Cslib.Algorithms.Lean.UniformProbing.expect_probeCount_le_add_one`: deterministic and
+* `Cslib.DataStructure.Dictionary.UniformProbing.missedProbes_le_card`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.probeCount_le_card_otherOccupied_add_one`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.probeCount_le_dom_card_add_one`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.probeCount_le_add_one`,
+  `Cslib.DataStructure.Dictionary.UniformProbing.expect_probeCount_le_add_one`: deterministic and
   expected pigeonhole probe-count bounds (`probeCount T u (π u) ≤ n_max + 1`) for any full-cycle
   probe permutation family `π`.
 
@@ -121,7 +125,7 @@ In [CLRS2009], third edition, Section 11.4:
 Storing an explicit table of independent permutations in `(Equiv.Perm (Fin m)) ^ U` requires
 `U * log₂ (m!)` bits (`Ω(U)` machine words when `U = poly(n_max) ≫ n_max`). To achieve an
 `O(n_max)`-word self-contained Word-RAM dictionary,
-`Complexity/Algorithms/WordRAM/Dictionary/UniformProbing.lean` pairs a 2-universal multiply-shift
+`Complexity/DataStructure/Dictionary/WordRAM/UniformProbing.lean` pairs a 2-universal multiply-shift
 primary hash `h₁(u) ∈ Fin (2 ^ M)` with a tabulated odd stride `h₂(u) ∈ Fin (2 ^ M)`
 ([CLRS2009], third edition, Section 11.4, "Double hashing", pp. 272–274), reusing the
 open-addressed table invariants proved here.
@@ -136,9 +140,8 @@ open-addressed table invariants proved here.
 
 @[expose] public section
 
-namespace Cslib.Algorithms.Lean.UniformProbing
+namespace Cslib.DataStructure.Dictionary.UniformProbing
 
-open Cslib.Algorithms.Lean
 open Cslib.Probability
 open scoped BigOperators ENNReal
 
@@ -1267,7 +1270,7 @@ private theorem isSome_run_of_isSome {U V n_max : ℕ} {u : Fin U} :
   | .get _ :: l, _, h => isSome_run_of_isSome l h
   | .insert w _ :: l, s₀, h => by
     apply isSome_run_of_isSome l (s₀ := ((Dictionary.spec U V n_max).stepFn s₀ (.insert w _)).1)
-    dsimp only [Dictionary.spec, Dictionary.step, Cslib.Stateful.Spec.stepFn]
+    dsimp only [Dictionary.spec, Dictionary.step, StateTransitionSpec.stepFn]
     by_cases hwu : u = w
     · subst hwu; simp
     · simpa [Function.update_of_ne hwu] using h
@@ -1287,7 +1290,7 @@ theorem not_mem_insert_of_run_eq_none {U V n_max : ℕ} {u : Fin U} :
             (((Dictionary.spec U V n_max).stepFn s (.insert u v)).1) os).1 u).isSome :=
         isSome_run_of_isSome (V := V) (n_max := n_max) os
           (by
-            dsimp [Dictionary.spec, Dictionary.step, Cslib.Stateful.Spec.stepFn]
+            dsimp [Dictionary.spec, Dictionary.step, StateTransitionSpec.stepFn]
             rw [Function.update_self]; rfl)
       have hnone' :
           (((Dictionary.spec U V n_max).run
@@ -1507,4 +1510,4 @@ theorem expect_probeCount_le_add_one
       _ = (n_max + 1) * Fintype.card Θ := by simp [Nat.mul_comm]
   exact mod_cast Cslib.Probability.PMF.tsum_uniformOfFintype_le_of_sum_le hsum
 
-end Cslib.Algorithms.Lean.UniformProbing
+end Cslib.DataStructure.Dictionary.UniformProbing

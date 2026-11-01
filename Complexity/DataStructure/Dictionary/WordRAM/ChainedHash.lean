@@ -7,10 +7,10 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.Dictionary
-public import Complexity.Algorithms.WordRAM.Hashing.MultiplyShift
+public import Complexity.DataStructure.Dictionary.Spec
+public import Complexity.DataStructure.HashFamily.WordRAM.MultiplyShift
 public import Complexity.Computability.WordRAM.ExactNotation
-public import Complexity.Computability.WordRAM.Randomized.Subroutine
+public import Complexity.DataStructure.WordRAM.Randomized.StateTransition
 import Complexity.Probability.PMF.Expect
 import Mathlib.Data.Nat.Log
 
@@ -19,9 +19,9 @@ import Mathlib.Data.Nat.Log
 
 This file implements a textbook chained hash table ([CLRS2009], Sections 11.2 and 11.3.3,
 Theorem 11.3 and Corollary 11.4) realizing the bounded-capacity insert-only dictionary specification
-`Cslib.Algorithms.Lean.Dictionary.spec U V n_max` (`get` and `insert` up to `n_max` distinct keys,
+`Cslib.DataStructure.Dictionary.spec U V n_max` (`get` and `insert` up to `n_max` distinct keys,
 with deletion deferred to a follow-up) on the randomized Word RAM over `Cslib.WordRAM.Basis.exact`
-(and lifted to `Basis.standard` via `SubroutineDS.toStandard`).
+(and lifted to `Basis.standard` via `StateTransitionImpl.toStandard`).
 
 ## Model, specialization, and cost scope
 
@@ -77,22 +77,24 @@ All state resides in a single contiguous memory block `[base, base + space n_max
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.Dictionary.ChainedHash.bucketBits`, `numBuckets`, `hashBits`, `space`:
+* `Cslib.DataStructure.Dictionary.WordRAM.ChainedHash.bucketBits`, `numBuckets`, `hashBits`,
+  `space`:
   table dimension parameters and `O(n_max)` memory footprint.
-* `Cslib.Algorithms.WordRAM.Dictionary.ChainedHash.subroutineCode`: relocatable `SubroutineCode`
+* `Cslib.DataStructure.Dictionary.WordRAM.ChainedHash.subroutineCode`: relocatable `SubroutineCode`
   bundle over `Basis.exact`.
-* `Cslib.Algorithms.WordRAM.Dictionary.ChainedHash.Rep`: seed-coupled concrete representation
+* `Cslib.DataStructure.Dictionary.WordRAM.ChainedHash.Rep`: seed-coupled concrete representation
   invariant.
-* `Cslib.Algorithms.WordRAM.Dictionary.ChainedHash.subroutineDS`, `subroutineDSStandard`:
-  `Cslib.WordRAM.Randomized.SubroutineDS` certificates over `Basis.exact` and `Basis.standard`.
+* `Cslib.DataStructure.Dictionary.WordRAM.ChainedHash.impl`, `implStandard`:
+  `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl` certificates over `Basis.exact` and
+  `Basis.standard`.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.Dictionary.ChainedHash.space_le`: linear space bound
+* `Cslib.DataStructure.Dictionary.WordRAM.ChainedHash.space_le`: linear space bound
   `space n_max ≤ 5 * n_max + 8`.
-* `Cslib.Algorithms.WordRAM.Dictionary.ChainedHash.expect_collCount_le_card_mul`,
+* `Cslib.DataStructure.Dictionary.WordRAM.ChainedHash.expect_collCount_le_card_mul`,
   `expect_collCount_le_two`: universal-hashing expected collision bounds.
-* `Cslib.Algorithms.WordRAM.Dictionary.ChainedHash.seq_expected_amortized`: expected subroutine
+* `Cslib.DataStructure.Dictionary.WordRAM.ChainedHash.seq_expected_amortized`: expected subroutine
   body step bound across any admissible oblivious sequence of `get` and `insert` operations.
 
 ## References
@@ -105,11 +107,11 @@ All state resides in a single contiguous memory block `[base, base + space n_max
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.Dictionary.ChainedHash
+namespace Cslib.DataStructure.Dictionary.WordRAM.ChainedHash
 
-open Cslib.WordRAM Cslib.WordRAM.Randomized
-open Cslib.Algorithms.Lean
-open Cslib.Algorithms.WordRAM.Hashing
+open Cslib.WordRAM
+open Cslib.DataStructure.WordRAM Cslib.DataStructure.WordRAM.Randomized
+open Cslib.DataStructure.HashFamily.WordRAM
 open Cslib.Probability
 open scoped ENNReal
 
@@ -1733,7 +1735,7 @@ theorem opCode_spec {U V n_max w base : ℕ}
       change 24 + (9 * L.length + 2 + 20) ≤ 55 + 9 * collCount n_max s u b
       omega
 
-/-! ## 6. Expected collision bounds and `SubroutineDS` certificate -/
+/-! ## 6. Expected collision bounds and `Randomized.StateTransitionImpl` certificate -/
 
 /-- By linearity of expectation and `(2 / 2 ^ M)`-universality of multiply-shift hashing
 (`isUniversalHash_multiplyShift`), the expected number of keys in `(dom s).erase u` colliding with
@@ -1825,18 +1827,18 @@ def charge (U V n_max : ℕ) :
     (Dictionary.spec U V n_max).State → (Dictionary.spec U V n_max).Op → ℕ :=
   fun _ _ => chargeVal
 
-/-- **Chained hash table `SubroutineDS` certificate over `Basis.exact`.**
+/-- **Chained hash table `Randomized.StateTransitionImpl` certificate over `Basis.exact`.**
 Realizes `Dictionary.spec U V n_max` in `space n_max = 4 + 2 ^ M + 3 * n_max = O(n_max)` words of
 memory, `O(1)` (`16`-instruction) initialization on zeroed memory (`O(n_max)` via `initClear` on
 dirty memory), and `chargeVal = 73 = O(1)` worst-case expected instructions per `get` or `insert`
 operation with zero potential (`potential = 0`). -/
-noncomputable def subroutineDS (U V n_max w base : ℕ)
+noncomputable def impl (U V n_max w base : ℕ)
     (hw : 2 * hashBits U n_max ≤ w)
     (hS : Fits w (base + space n_max))
     (hV : Fits w V) :
-    Randomized.SubroutineDS (subroutineCode U n_max) (Dictionary.spec U V n_max)
+    Randomized.StateTransitionImpl (subroutineCode U n_max) (Dictionary.spec U V n_max)
       w base Fin.elim0 (Dictionary.empty U) :=
-  Randomized.SubroutineDS.ofFn
+  Randomized.StateTransitionImpl.ofFn
     (Seed := Fin (2 ^ (hashBits U n_max - 1)))
     (seedLaw := PMF.uniformOfFintype (Fin (2 ^ (hashBits U n_max - 1))))
     (seedSlack := 1)
@@ -1961,15 +1963,15 @@ noncomputable def subroutineDS (U V n_max w base : ℕ)
         · obtain ⟨p₀, hp₀⟩ := ν.support_nonempty
           exact absurd ⟨p₀, hp₀⟩ hsupp_nonempty)
 
-/-- **Chained hash table `SubroutineDS` certificate over `Basis.standard`.**
-Obtained from `subroutineDS` by basis transport (`SubroutineDS.toStandard`). -/
-noncomputable def subroutineDSStandard (U V n_max w base : ℕ)
+/-- **Chained hash table `Randomized.StateTransitionImpl` certificate over `Basis.standard`.**
+Obtained from `impl` by basis transport (`Randomized.StateTransitionImpl.toStandard`). -/
+noncomputable def implStandard (U V n_max w base : ℕ)
     (hw : 2 * hashBits U n_max ≤ w)
     (hS : Fits w (base + space n_max))
     (hV : Fits w V) :
-    Randomized.SubroutineDS (subroutineCode U n_max).toStandard (Dictionary.spec U V n_max)
+    Randomized.StateTransitionImpl (subroutineCode U n_max).toStandard (Dictionary.spec U V n_max)
       w base Fin.elim0 (Dictionary.empty U) :=
-  (subroutineDS U V n_max w base hw hS hV).toStandard
+  (impl U V n_max w base hw hS hV).toStandard
 
 /-- **Expected subroutine body time across an oblivious operation sequence
 (`seq_expected_amortized`).**
@@ -1988,7 +1990,7 @@ theorem seq_expected_amortized (U V n_max w base : ℕ)
     (hx : x.Bounded w) (hfr : x.regs frontierReg = base)
     (hz : ∀ a ∈ (Block.mk base (space n_max)).footprint, x.mem a = 0)
     (hv : (Dictionary.spec U V n_max).ValidHistory (Dictionary.empty U) ops) :
-    let C := subroutineDS U V n_max w base hw hS hV
+    let C := impl U V n_max w base hw hS hV
     ∃ (ν₀ ν_final : PMF (C.Seed × Data rHash)) (T_ops : ℝ≥0∞),
       ExecCodeDist w (subroutineCode U n_max).initFresh x (ν₀.map Prod.snd) C.initTime ∧
       C.ExecStepsOfFn (Dictionary.empty U) ops ν₀ ν_final T_ops ∧
@@ -2026,4 +2028,4 @@ theorem seq_expected_amortized (U V n_max w base : ℕ)
   rw [hpot0, add_zero, hinitPot, add_zero, htotal] at hbound
   exact hbound.trans_eq (by rw [hinit])
 
-end Cslib.Algorithms.WordRAM.Dictionary.ChainedHash
+end Cslib.DataStructure.Dictionary.WordRAM.ChainedHash

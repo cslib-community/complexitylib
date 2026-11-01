@@ -8,8 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Algorithms.WordRAM.Hashing.KWise
-public import Complexity.Algorithms.WordRAM.Hashing.Tabulation
+public import Complexity.DataStructure.HashFamily.WordRAM.KWise
+public import Complexity.DataStructure.HashFamily.WordRAM.Tabulation
 public import Complexity.Computability.WordRAM.RegisterFrame
 public import Complexity.DataStructure.HashFamily.WordRAM.DoubleTabulation
 public import Complexity.Probability.PMF.Bind
@@ -24,7 +24,7 @@ public import Mathlib.Order.ConditionallyCompleteLattice.Basic
 This module develops the pure displacement and replay model of Pagh and Rodler's two-table cuckoo
 hashing scheme [PaghRodler2004] together with the regime-switched Word-RAM hash pair
 `(evalHash1 c_exp n_max U M, evalHash2 c_exp n_max U M)` combining
-`Cslib.Algorithms.WordRAM.Hashing.KWise` (`k = 2 * maxEvictions n_max + 2` for
+`Cslib.DataStructure.HashFamily.WordRAM.KWise` (`k = 2 * maxEvictions n_max + 2` for
 `n_max < doubleTabThreshold c_exp`) and Mikkel Thorup's double tabulation
 (`Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation`, [Thorup2013], for
 `doubleTabThreshold c_exp ≤ n_max`).
@@ -50,11 +50,11 @@ hashing scheme [PaghRodler2004] together with the regime-switched Word-RAM hash 
   one-step `≤ C_reh / (max n_max 1 * max MaxLoop 1)` replay failure bounds over the
   oblivious-adversary model (`Dictionary.spec U V n_max`). These bounds are proved unconditionally
   across all `n_max : ℕ` (`C_walk = 3`, `C_reh = 4`) whenever `U ≤ max n_max 4 ^ c_exp` in
-  `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_provableFamily`.
+  `Cslib.DataStructure.Dictionary.CuckooHashing.isCuckooHashPair_provableFamily`.
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.tableBits`, `tableSize`, `maxEvictions`:
+* `Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.tableBits`, `tableSize`, `maxEvictions`:
   sub-table bit-width `M = ⌈log₂ (32 * max n_max 4)⌉`, sub-table size `m = 2 ^ M`, and eviction cap
   `MaxLoop = 6 (⌈log₂ max(n_max, 2)⌉ + 2)`.
 * `SlotEntry`, `PureTable`, `WellPlaced`, `lookupEntry`, `pureEvictRound`, `pureEvict`,
@@ -63,7 +63,7 @@ hashing scheme [PaghRodler2004] together with the regime-switched Word-RAM hash 
   cuckoo hash family interface for expected displacement rounds and rehash probability.
 * `Seed`, `seedLaw`, `evalHash1`, `evalHash2`: regime-switched seed space and hash pair
   (proven to satisfy `IsCuckooHashFamily` in
-  `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_provableFamily`).
+  `Cslib.DataStructure.Dictionary.CuckooHashing.isCuckooHashPair_provableFamily`).
 * `HashPairRep`, `initTableHashPairCode`, `resampleHashPairCode`, `evalHash1Code`, `evalHash2Code`:
   two-block Word-RAM layout and programs realizing `(evalHash1, evalHash2)` in `O_{c_exp}(1)`
   instructions and `O_{c_exp}(n_max + 1)` words of space across all `n_max : ℕ`.
@@ -99,12 +99,12 @@ hashing scheme [PaghRodler2004] together with the regime-switched Word-RAM hash 
 
 public section
 
-namespace Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing
+namespace Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing
 
-open Cslib.WordRAM
+open Cslib.WordRAM Cslib.Algorithms.WordRAM
 open Cslib.Probability
 open Cslib.Probability.PMF
-open Cslib.Algorithms.WordRAM.Hashing
+open Cslib.DataStructure.HashFamily.WordRAM
 open scoped ENNReal Finset
 
 /-! ### Section 1: Table scale and eviction cap parameters -/
@@ -1090,7 +1090,7 @@ theorem IsCuckooHashPair.mono_consts {Θ : Type*} {μ : PMF Θ} {U m : ℕ}
 `(evalHash1, evalHash2)` over `seedLaw c_exp n_max U M`.
 Proved unconditionally for every `n_max : ℕ` (`C_walk = 3`, `C_reh = 4`) whenever
 `U ≤ max n_max 4 ^ c_exp` and `32 * max n_max 4 ≤ 2 ^ M` via
-`Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_provableFamily`. -/
+`Cslib.DataStructure.Dictionary.CuckooHashing.isCuckooHashPair_provableFamily`. -/
 abbrev IsCuckooHashFamily (c_exp U n_max M MaxLoop C_walk C_reh : ℕ) : Prop :=
   IsCuckooHashPair (seedLaw c_exp n_max U M) evalHash1 evalHash2 n_max MaxLoop C_walk C_reh
 
@@ -1195,7 +1195,7 @@ theorem isCuckooHashPair_le_two {Θ : Type*} (μ : PMF Θ) {U m n_max MaxLoop : 
 
 /-! ### Section 5: Two-block Word-RAM hash pair representation and programs -/
 
-open Cslib.Algorithms.WordRAM.Hashing Cslib.DataStructure.HashFamily.WordRAM
+open Cslib.DataStructure.HashFamily.WordRAM
 
 /-- Word-RAM memory footprint of a single regime-switched hash instance (`h₁` or `h₂`). -/
 @[expose]
@@ -2428,4 +2428,4 @@ theorem evalHash2Code_execWithin {w hashBase c_exp n_max U M : ℕ}
     rwa [hd1_mem]
   · exact hd1_mem
 
-end Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing
+end Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing

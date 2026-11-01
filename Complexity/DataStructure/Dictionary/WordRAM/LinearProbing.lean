@@ -8,17 +8,18 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Algorithms.Lean.Dictionary
-public import Complexity.Algorithms.WordRAM.Hashing.KWise
-public import Complexity.Algorithms.WordRAM.Dictionary.LinearProbing.FiveWise
-public import Complexity.Computability.WordRAM.Randomized.Subroutine
+public import Complexity.DataStructure.Dictionary.Spec
+public import Complexity.DataStructure.HashFamily.WordRAM.KWise
+public import Complexity.DataStructure.Dictionary.WordRAM.LinearProbing.FiveWise
+public import Complexity.DataStructure.WordRAM.Randomized.StateTransition
 
 /-!
 # Open-Addressed Linear Probing on the Randomized Word RAM
 
 This file implements a self-contained open-addressed linear-probing hash table realizing
-`Cslib.Algorithms.Lean.Dictionary.spec U V n_max` on the randomized Word RAM
-(`Cslib.WordRAM.Randomized.SubroutineDS`), adapting [Pagh, Pagh and Ružić, *Linear Probing with
+`Cslib.DataStructure.Dictionary.spec U V n_max` on the randomized Word RAM
+(`Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl`), adapting
+[Pagh, Pagh and Ružić, *Linear Probing with
 Constant Independence*, *SIAM J. Comput.* 39(3):1107–1120, 2009, Section 2.3 (Lemma 2.1,
 pp. 1110–1111) and Section 4 (Lemma 4.1, Theorem 4.3, and Theorem 4.5,
 pp. 1114–1118)][PaghPaghRuzic2009]; [Cormen, Leiserson, Rivest and Stein, *Introduction to
@@ -32,7 +33,7 @@ Algorithms*, Section 11.4][CLRS2009].
    $8 n_{\max} \le 2^M < 16 \max(n_{\max}, 1)$ (load factor $\alpha \le 1/8$). Memory at `base`
    consists of:
    - `[base, base + KWise.space n_max 5)`: embedded $5$-wise independent trinomial-field hash state
-     (`Cslib.Algorithms.WordRAM.Hashing.KWise`);
+     (`Cslib.DataStructure.HashFamily.WordRAM.KWise`);
    - `[usedBase, usedBase + 2^M)`: occupancy flags `used[0 .. 2^M - 1]` (`0` = empty, `1` =
      occupied, so zero-initialized memory is immediately a valid empty table);
    - `[keyBase, keyBase + 2^M)`: stored keys `key[0 .. 2^M - 1]`;
@@ -57,7 +58,8 @@ Algorithms*, Section 11.4][CLRS2009].
    `cyclicInterval M b a ℓ` (`TableInv.hasClusterWitness_probeLen`, adapting the occupied-run
    argument in the proof of Lemma 4.1, p. 1114 of `[PaghPaghRuzic2009]`). Applying
    `tsum_uniform_probe_le_of_cluster_witness` from
-   `Complexity.Algorithms.WordRAM.Dictionary.LinearProbing.FiveWise` bounds the expected number of
+   `Complexity.DataStructure.Dictionary.WordRAM.LinearProbing.FiveWise` bounds the expected number
+   of
    skipped occupied slots `TableInv.probeLen` by $288 = O(1)$ (`tsum_probeLen_le`).
 
 ## Source mapping, specialization, and cost scope
@@ -106,8 +108,9 @@ follows:
   For fixed `(U, V, n_max)` on an admissible external machine word width `w`
   (`2 * trinomialDeg U (tableLog n_max) ≤ w`, `Fits w (base + space n_max)`, `Fits w V`),
   `subroutineCode U n_max` specializes configuration constants as instruction literals. Expected
-  instruction bounds (`subroutineDS`, `subroutineDSStandard`, and `seq_expected_amortized`) charge
-  fresh initialization (`initFresh`) and subroutine operation bodies (`SubroutineDS.ExecSteps`),
+  instruction bounds (`impl`, `implStandard`, and `seq_expected_amortized`) charge
+  fresh initialization (`initFresh`) and subroutine operation bodies
+  (`StateTransitionImpl.ExecSteps`),
   excluding caller argument delivery, caller control/dispatch loops, and host-level code
   construction.
 - **Insert-only dictionary specification vs. source deletions:**
@@ -126,12 +129,12 @@ follows:
 
 public section
 
-namespace Cslib.Algorithms.WordRAM.Dictionary.LinearProbing
+namespace Cslib.DataStructure.Dictionary.WordRAM.LinearProbing
 
-open Cslib.WordRAM Cslib.WordRAM.Randomized Cslib.Probability
-open Cslib.Algorithms.Lean
+open Cslib.WordRAM Cslib.Probability
+open Cslib.DataStructure.WordRAM Cslib.DataStructure.WordRAM.Randomized
 open Cslib.Algorithms.WordRAM.ExactLog
-open Cslib.Algorithms.WordRAM.Hashing
+open Cslib.DataStructure.HashFamily.WordRAM
 open Finset
 open scoped BigOperators ENNReal
 
@@ -972,7 +975,7 @@ theorem tsum_probeLen_le {α : Type*} {U V n_max base : ℕ}
 
 /-! ## Section 3: Word-RAM register layout, programs, and operational execution -/
 
-open Cslib.Algorithms.WordRAM.Hashing.Tabulation
+open Cslib.DataStructure.HashFamily.WordRAM.Tabulation
 
 /-- Total number of registers used by the linear-probing subroutine (`0 .. 17` for `KWise` and
 probe scratch, `18 .. 23` for allocation, zero-fill, and operation arguments). -/
@@ -2094,9 +2097,10 @@ theorem opCode_execWithin {U V w base n_max : ℕ} {θ : Seed U n_max}
         Function.update_of_ne (by omega)]
     exact ⟨y, hex_within, rfl, ⟨hex_within.bounded hrep.bounded, hy0, hkrep_y, htable_y⟩, hmod_y⟩
 
-/-! ## Section 4: `SubroutineDS` certificate and expected-time sequence theorem -/
+/-! ## Section 4: `Randomized.StateTransitionImpl` certificate and expected-time sequence theorem -/
 
-/-- **`SubroutineDS` certificate for open-addressed linear probing on the randomized Word RAM**
+/-- **`StateTransitionImpl` certificate for open-addressed linear probing on the randomized Word
+RAM**
 over `Cslib.WordRAM.Basis.exact`:
 - **Space**: `space n_max = KWise.space n_max 5 + 3 * 2 ^ (tableLog n_max) = O(n_max)` words;
 - **Initialization time**: `setupTime U n_max = KWise.initTableSteps n_max U (tableLog n_max) + 38
@@ -2105,13 +2109,13 @@ over `Cslib.WordRAM.Basis.exact`:
   = O(L ^ 2 + 1)` expected instructions per `get` or `insert`, which is `O(1)` whenever
   `U ≤ n_max ^ c` for any constant `c`;
 - **Potential**: `0` (`seedSlack := 1`). -/
-@[expose] noncomputable def subroutineDS (U V n_max w base : ℕ)
+@[expose] noncomputable def impl (U V n_max w base : ℕ)
     (hw : 2 * trinomialDeg U (tableLog n_max) ≤ w)
     (hfit_space : Fits w (base + space n_max))
     (hfit_V : Fits w V) :
-    Cslib.WordRAM.Randomized.SubroutineDS (subroutineCode U n_max)
+    Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl (subroutineCode U n_max)
       (Dictionary.spec U V n_max) w base Fin.elim0 (Dictionary.empty U) :=
-  Cslib.WordRAM.Randomized.SubroutineDS.ofFn
+  Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl.ofFn
     (Seed := Seed U n_max)
     (seedLaw := seedLaw U n_max)
     (seedSlack := 1)
@@ -2243,21 +2247,23 @@ over `Cslib.WordRAM.Basis.exact`:
               simp only [Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat]
               ring_nf)
 
-/-- Standard-basis (`Basis.standard`) `SubroutineDS` certificate for linear probing, transported
-from `subroutineDS` via `SubroutineDS.toStandard`. -/
-noncomputable def subroutineDSStandard (U V n_max w base : ℕ)
+/-- Standard-basis (`Basis.standard`) `StateTransitionImpl` certificate for linear probing,
+transported
+from `impl` via `Randomized.StateTransitionImpl.toStandard`. -/
+noncomputable def implStandard (U V n_max w base : ℕ)
     (hw : 2 * trinomialDeg U (tableLog n_max) ≤ w)
     (hfit_space : Fits w (base + space n_max))
     (hfit_V : Fits w V) :
-    Cslib.WordRAM.Randomized.SubroutineDS
+    Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl
       (subroutineCode U n_max).toStandard
       (Dictionary.spec U V n_max) w base Fin.elim0 (Dictionary.empty U) :=
-  (subroutineDS U V n_max w base hw hfit_space hfit_V).toStandard
+  (impl U V n_max w base hw hfit_space hfit_V).toStandard
 
 /-- **Expected amortized multi-operation theorem for linear probing**: for any admissible sequence
 `ops : List (Dictionary.Op U)` starting from the empty dictionary on fresh zeroed memory and fixed
 independently of the sampled hash seed (oblivious adversary), `initFresh` followed by the
-subroutine operation bodies (`SubroutineDS.ExecSteps`) executes with total expected instruction
+subroutine operation bodies (`StateTransitionImpl.ExecSteps`) executes with total expected
+instruction
 count at most `3 + setupTime U n_max + ops.length * charge U n_max` (excluding caller argument
 delivery, caller dispatch loops, and host-level code specialization). -/
 theorem seq_expected_amortized (U V n_max w base : ℕ)
@@ -2274,11 +2280,11 @@ theorem seq_expected_amortized (U V n_max w base : ℕ)
       (T_ops : ℝ≥0∞),
       ExecCodeDist w (subroutineCode U n_max).initFresh x₀
         (ν₀.map Prod.snd) (3 + setupTime U n_max : ℕ) ∧
-      (subroutineDS U V n_max w base hw hfit_space hfit_V).ExecStepsOfFn
+      (impl U V n_max w base hw hfit_space hfit_V).ExecStepsOfFn
         (Dictionary.empty U) ops ν₀ ν_f T_ops ∧
       (3 + setupTime U n_max : ℕ) + T_ops ≤
         (3 + setupTime U n_max + ops.length * charge U n_max : ℕ) := by
-  let C := subroutineDS U V n_max w base hw hfit_space hfit_V
+  let C := impl U V n_max w base hw hfit_space hfit_V
   obtain ⟨ν₀, ν_f, T_ops, hinit, hsteps, _, _, hbound⟩ :=
     C.seq_expected_amortized_ofFn ops hx₀ hfr (fun j => Fin.elim0 j) hz hvalid
   have htotal : (Dictionary.spec U V n_max).totalCost C.charge (Dictionary.empty U) ops =
@@ -2288,19 +2294,19 @@ theorem seq_expected_amortized (U V n_max w base : ℕ)
           l.length * charge U n_max := by
       intro s l
       induction l generalizing s with
-      | nil => simp [Stateful.Spec.totalCost]
+      | nil => simp [StateTransitionSpec.totalCost]
       | cons o tl ih =>
-        simp only [Stateful.Spec.totalCost, ih, List.length_cons]
+        simp only [StateTransitionSpec.totalCost, ih, List.length_cons]
         ring
     exact hconst (Dictionary.empty U) ops
   have hinitTime : C.initTime = ((3 + setupTime U n_max : ℕ) : ℝ≥0∞) := by
-    dsimp only [Cslib.WordRAM.Randomized.SubroutineDS.initTime,
-      Cslib.WordRAM.Randomized.SubroutineDS.ofFn, C, subroutineDS]
+    dsimp only [Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl.initTime,
+      Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl.ofFn, C, impl]
     push_cast
     rfl
   rw [hinitTime] at hinit hbound
   have hpot0 : (∑' q, ν_f q * (C.potential q.1 q.2 : ℝ≥0∞)) = 0 := by
-    simp [C, subroutineDS, Cslib.WordRAM.Randomized.SubroutineDS.ofFn]
+    simp [C, impl, Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl.ofFn]
   have hinitPot0 : (C.initPotential : ℝ≥0∞) = 0 := Nat.cast_zero
   rw [htotal, hpot0, hinitPot0, add_zero, add_zero] at hbound
   have hbound' : ((3 + setupTime U n_max : ℕ) : ℝ≥0∞) + T_ops ≤
@@ -2308,4 +2314,4 @@ theorem seq_expected_amortized (U V n_max w base : ℕ)
     simpa only [← Nat.cast_add] using hbound
   exact ⟨ν₀, ν_f, T_ops, hinit, hsteps, hbound'⟩
 
-end Cslib.Algorithms.WordRAM.Dictionary.LinearProbing
+end Cslib.DataStructure.Dictionary.WordRAM.LinearProbing

@@ -64,30 +64,32 @@ Lemmas 4.2 and 4.4 in `[PaghPaghRuzic2009]`:
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.Dictionary.LinearProbing.tableLog`,
-  `Cslib.Algorithms.WordRAM.Dictionary.LinearProbing.tableSize`: power-of-$2$ table bit-width
+* `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.tableLog`,
+  `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.tableSize`: power-of-$2$ table bit-width
   $M = \lceil \log_2 \max(8 n_{\max}, 8) \rceil$ and capacity $2^M$.
-* `Cslib.Algorithms.WordRAM.Dictionary.LinearProbing.cyclicSlotMod`,
-  `Cslib.Algorithms.WordRAM.Dictionary.LinearProbing.cyclicInterval`,
-  `Cslib.Algorithms.WordRAM.Dictionary.LinearProbing.scaleWindow`: cyclic slot indexing, contiguous
+* `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.cyclicSlotMod`,
+  `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.cyclicInterval`,
+  `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.scaleWindow`: cyclic slot indexing,
+  contiguous
   cyclic intervals containing $b$, and centered dyadic-scale windows $W_j(b)$.
-* `Cslib.Algorithms.WordRAM.Dictionary.LinearProbing.scaleOverload`,
-  `Cslib.Algorithms.WordRAM.Dictionary.LinearProbing.HasClusterWitness`: scale-$j$ window overload
+* `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.scaleOverload`,
+  `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.HasClusterWitness`: scale-$j$ window
+  overload
   event $2^{j-1} \le \#\{x \in S \mid h_i(x) \in W_j(h_i(u))\}$ and left-anchored cluster-witness
   predicate.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.Dictionary.LinearProbing.eight_mul_le_tableSize`,
-  `Cslib.Algorithms.WordRAM.Dictionary.LinearProbing.tableSize_le_sixteen_mul`: load-factor and
+* `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.eight_mul_le_tableSize`,
+  `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.tableSize_le_sixteen_mul`: load-factor and
   linear-space bounds for `tableSize`.
-* `Cslib.Algorithms.WordRAM.Dictionary.LinearProbing.expect_indicator_mul_sum_pow_four_le`:
+* `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.expect_indicator_mul_sum_pow_four_le`:
   fourth-moment bound for centered bucket indicators conditioned on $h_i(u) = b$ under $5$-wise
   independence.
-* `Cslib.Algorithms.WordRAM.Dictionary.LinearProbing.expect_scaleOverload_le`: scale-$j$ overload
+* `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.expect_scaleOverload_le`: scale-$j$ overload
   probability bound $\le 288 / 4^j$.
-* `Cslib.Algorithms.WordRAM.Dictionary.LinearProbing.expect_probe_le_of_cluster_witness`,
-  `Cslib.Algorithms.WordRAM.Dictionary.LinearProbing.tsum_uniform_probe_le_of_cluster_witness`:
+* `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.expect_probe_le_of_cluster_witness`,
+  `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.tsum_uniform_probe_le_of_cluster_witness`:
   expected probe count $\le 288$ under `Finset.expect` and `PMF.uniformOfFintype`.
 
 ## References
@@ -100,7 +102,7 @@ Lemmas 4.2 and 4.4 in `[PaghPaghRuzic2009]`:
 
 public section
 
-namespace Cslib.Algorithms.WordRAM.Dictionary.LinearProbing
+namespace Cslib.DataStructure.Dictionary.WordRAM.LinearProbing
 
 open Cslib.Probability Finset Fintype
 open scoped BigOperators ENNReal
@@ -746,4 +748,4 @@ theorem tsum_uniform_probe_le_of_cluster_witness {ι X : Type*} [Fintype ι] [No
         · exact Nat.cast_ne_zero.mpr Fintype.card_ne_zero
         · exact ENNReal.natCast_ne_top _
 
-end Cslib.Algorithms.WordRAM.Dictionary.LinearProbing
+end Cslib.DataStructure.Dictionary.WordRAM.LinearProbing

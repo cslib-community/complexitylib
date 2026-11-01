@@ -7,20 +7,20 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.Dictionary
-public import Complexity.Algorithms.Lean.DoubleHashing
-public import Complexity.Algorithms.Lean.UniformProbing
+public import Complexity.DataStructure.Dictionary.Spec
+public import Complexity.DataStructure.Dictionary.DoubleHashing
+public import Complexity.DataStructure.Dictionary.UniformProbing
 public import Complexity.DataStructure.HashFamily.WordRAM.DoubleTabulation
 public import Complexity.Computability.WordRAM.ExactNotation
-public import Complexity.Computability.WordRAM.Randomized.Subroutine
-import all Complexity.Algorithms.Lean.DoubleHashing
+public import Complexity.DataStructure.WordRAM.Randomized.StateTransition
+import all Complexity.DataStructure.Dictionary.DoubleHashing
 import Complexity.Probability.PMF.Expect
 
 /-!
 # Self-Contained Open-Addressed Permutation-Probing Dictionary on the Word-RAM
 
 This file implements a self-contained open-addressed permutation-probing dictionary realizing
-`Cslib.Algorithms.Lean.Dictionary.spec U V n_max` (`get` and `insert` up to `n_max` distinct keys)
+`Cslib.DataStructure.Dictionary.spec U V n_max` (`get` and `insert` up to `n_max` distinct keys)
 on the Word-RAM (`Cslib.WordRAM.Basis.exact` and `Cslib.WordRAM.Basis.standard`), combining the
 power-of-two odd-stride double-hashing construction of
 [Cormen, Leiserson, Rivest, and Stein, *Introduction to Algorithms*, third edition (MIT Press,
@@ -31,9 +31,10 @@ pp. 1–2, 4–7, 37–39][SchmidtSiegel1990], and Mikkel Thorup's Double Tabula
 ([M. Thorup, *Simple Tabulation, Fast Expanders, Double Tabulation, and High Independence*, FOCS
 2013, pp. 90–99; `arXiv:1311.3121v2`, pp. 4–5, 11–13][Thorup2013], Theorem 1(a) and Lemma 2).
 
-## Design and reuse of `Cslib.Algorithms.Lean.UniformProbing` and `DoubleHashing`
+## Design and reuse of `Cslib.DataStructure.Dictionary.UniformProbing` and `DoubleHashing`
 
-In the ideal uniform-probing model (`Complexity/Algorithms/Lean/UniformProbing.lean`), each key
+In the ideal uniform-probing model (`Complexity/DataStructure/Dictionary/UniformProbing.lean`),
+each key
 `u : Fin U` is assigned an independent random permutation `π u : Equiv.Perm (Fin m)`. Storing an
 explicit table of `U` permutations requires `Ω(U)` words when `U = poly(n_max) ≫ n_max`.
 
@@ -59,47 +60,48 @@ words of memory.
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.bucketBits`,
-  `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.numBuckets`,
-  `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.numChars`,
-  `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.tupleLen`,
-  `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.charBits`,
-  `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.singleTabSpace`,
-  `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.slotOffset`,
-  `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.space`,
-  `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.spaceFactor`: table dimension parameters and
+* `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.bucketBits`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.numBuckets`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.numChars`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.tupleLen`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.charBits`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.singleTabSpace`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.slotOffset`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.space`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.spaceFactor`: table dimension parameters
+  and
   memory footprint.
-* `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.Seed`,
-  `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.seedLaw`,
-  `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.primaryHash`,
-  `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.rawStrideHash`,
-  `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.strideHash`,
-  `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.probePerm`: Double Tabulation seed space,
+* `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.Seed`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.seedLaw`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.primaryHash`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.rawStrideHash`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.strideHash`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.probePerm`: Double Tabulation seed space,
   uniform seed law, primary and odd-stride hashes, and full-cycle probe permutation.
-* `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.extractSlots`,
-  `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.Rep`: slot-array extractor and Word-RAM
+* `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.extractSlots`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.Rep`: slot-array extractor and Word-RAM
   representation invariant (`DoubleHashing.OrderedTableRep`).
-* `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.allocSpan`,
-  `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.initSetup`,
-  `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.opCode`,
-  `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.subroutineCode`,
-  `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.expectedOpCharge`,
-  `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.subroutineDS`,
-  `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.subroutineDSStandard`: structured Word-RAM
-  programs and assumption-free `Randomized.SubroutineDS` certificates over `Basis.exact` and
+* `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.allocSpan`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.initSetup`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.opCode`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.subroutineCode`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.expectedOpCharge`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.impl`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.implStandard`: structured Word-RAM
+  programs and assumption-free `Randomized.StateTransitionImpl` certificates over `Basis.exact` and
   `Basis.standard`.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.space_le`:
+* `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.space_le`:
   `space c_exp n_max ≤ spaceFactor c_exp * (n_max + 1) = O_{c_exp}(n_max + 1)` across all `n_max`.
-* `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.setup_exec_spec`: randomized seed and table
+* `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.setup_exec_spec`: randomized seed and table
   initialization in `setupSteps c_exp n_max = O_{c_exp}(n_max + 1)` instructions.
-* `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.opCode_execWithin`: every `get` or `insert`
+* `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.opCode_execWithin`: every `get` or `insert`
   operation on key `u` executes in at most
   `opPathSteps c_exp θ T u = 13 * probeCount T u (probePerm θ u) + hashEvalSteps c_exp + 8`
   instructions.
-* `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.seq_expected_amortized`: assumption-free
+* `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.seq_expected_amortized`: assumption-free
   `O_{c_exp}(1)` expected operation time (`expectedOpCharge c_exp`) across any admissible sequence
   `ops : List (Dictionary.Op U)` whenever `U ≤ max n_max 4 ^ c_exp`.
 
@@ -117,17 +119,15 @@ words of memory.
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.Dictionary.UniformProbing
+namespace Cslib.DataStructure.Dictionary.WordRAM.UniformProbing
 
-open Cslib.Algorithms.Lean
-open Cslib.Algorithms.Lean.DoubleHashing
-open Cslib.Algorithms.Lean.UniformProbing
-open Cslib.Algorithms.WordRAM.Hashing
+open Cslib.DataStructure.WordRAM Cslib.DataStructure.WordRAM.Randomized
+open Cslib.DataStructure.Dictionary.DoubleHashing
+open Cslib.DataStructure.Dictionary.UniformProbing
 open Cslib.DataStructure.HashFamily.WordRAM
 open Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation
 open Cslib.Probability
 open Cslib.WordRAM
-open Cslib.WordRAM.Randomized
 open scoped BigOperators ENNReal
 
 /-! ## Section 1: Table Parameters, Seed Space, and Full-Cycle Probe Permutations -/
@@ -964,7 +964,7 @@ theorem initSetup_execCodeDist {w base c_exp n_max : ℕ} {x₁ : Data 16}
   norm_cast
   omega
 
-/-- Full `SubroutineDS.setup_exec` certificate for `initSetup c_exp n_max`. -/
+/-- Full `Randomized.StateTransitionImpl.setup_exec` certificate for `initSetup c_exp n_max`. -/
 theorem setup_exec_spec {w base c_exp U V n_max : ℕ} {x₁ : Data 16}
     (hS : Fits w (base + space c_exp n_max))
     (hx₁ : x₁.Bounded w) (hbase : x₁.regs regBase = base)
@@ -1950,7 +1950,7 @@ theorem opCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_exp n_max}
       ⟨hbdd_y, hy_base, hy_prim, hy_str, hy_wf, hy_trep, hy_dom, hy_vals⟩,
       hy_op, hy_mod⟩
 
-/-! ## Section 5: `SubroutineCode`, `SubroutineDS`, and Expected Probe / Collision Bounds -/
+/-! ## Section 5: `SubroutineCode`, `StateTransitionImpl`, and Expected Probe / Collision Bounds -/
 
 /-- Relocatable `SubroutineCode` over `Basis.exact` (`16` registers, `0` runtime init parameters)
 for the open-addressed permutation-probing dictionary. -/
@@ -2037,7 +2037,8 @@ theorem decodeOp_eq_step {U V n_max : ℕ} {s : Dictionary.State U}
       some ((Dictionary.spec U V n_max).stepFn s op).2 := by
   cases op with
   | get u =>
-    dsimp only [decodeOp, Dictionary.spec, Dictionary.step, Stateful.Spec.stepFn, opOutWord] at h ⊢
+    dsimp only [decodeOp, Dictionary.spec, Dictionary.step, StateTransitionSpec.stepFn,
+      opOutWord] at h ⊢
     rw [h]
     cases s u with
     | none => simp
@@ -2244,18 +2245,18 @@ theorem step_exec_spec {w base c_exp U V n_max : ℕ}
           push_cast
           ring
 
-/-- **Composable randomized Word-RAM `SubroutineDS` certificate over `Basis.exact`** for the
+/-- **Composable randomized Word-RAM `StateTransitionImpl` certificate over `Basis.exact`** for the
 open-addressed odd-stride double-hashing dictionary realizing `Dictionary.spec U V n_max` with
 $O_{c_{\exp}}(1)$ expected operation time (`expectedOpCharge c_exp`) and
 $O_{c_{\exp}}(n_{\max} + 1)$ space (`space c_exp n_max`) for every `n_max : ℕ` whenever
 `U ≤ max n_max 4 ^ c_exp`. -/
-noncomputable abbrev subroutineDS {w base c_exp U V n_max : ℕ}
+noncomputable abbrev impl {w base c_exp U V n_max : ℕ}
     (hS : Fits w (base + space c_exp n_max))
     (hU_fit : ∀ u : Fin U, Fits w u.val) (hV : Fits w V)
     (hU : U ≤ max n_max 4 ^ c_exp) :
-    Randomized.SubroutineDS (subroutineCode c_exp n_max)
+    Randomized.StateTransitionImpl (subroutineCode c_exp n_max)
       (Dictionary.spec U V n_max) w base Fin.elim0 (Dictionary.empty U) :=
-  Randomized.SubroutineDS.ofFn
+  Randomized.StateTransitionImpl.ofFn
     (Seed := Seed c_exp n_max)
     (seedLaw := seedLaw c_exp n_max)
     (seedSlack := 1)
@@ -2291,15 +2292,16 @@ noncomputable abbrev subroutineDS {w base c_exp U V n_max : ℕ}
     (step_exec := fun {s} o ν hv hseed hsupp =>
       step_exec_spec hS hU_fit hV hU o ν hv hseed hsupp)
 
-/-- Standard-basis (`Basis.standard`) randomized `SubroutineDS` certificate for the open-addressed
+/-- Standard-basis (`Basis.standard`) randomized `StateTransitionImpl` certificate for the
+open-addressed
 odd-stride double-hashing dictionary. -/
-noncomputable abbrev subroutineDSStandard {w base c_exp U V n_max : ℕ}
+noncomputable abbrev implStandard {w base c_exp U V n_max : ℕ}
     (hS : Fits w (base + space c_exp n_max))
     (hU_fit : ∀ u : Fin U, Fits w u.val) (hV : Fits w V)
     (hU : U ≤ max n_max 4 ^ c_exp) :
-    Randomized.SubroutineDS (subroutineCode c_exp n_max).toStandard
+    Randomized.StateTransitionImpl (subroutineCode c_exp n_max).toStandard
       (Dictionary.spec U V n_max) w base Fin.elim0 (Dictionary.empty U) :=
-  (subroutineDS hS hU_fit hV hU).toStandard
+  (impl hS hU_fit hV hU).toStandard
 
 /-- **End-to-end multi-operation expected-time theorem (`seq_expected_amortized`)**:
 from fresh zeroed memory `[base, base + space c_exp n_max)`, initializing the odd-stride
@@ -2319,25 +2321,25 @@ theorem seq_expected_amortized {w base c_exp U V n_max : ℕ}
     (hv : (Dictionary.spec U V n_max).ValidHistory (Dictionary.empty U) ops) :
     ∃ (ν₀ ν_final : PMF (Seed c_exp n_max × Data 16)) (T_ops : ℝ≥0∞),
       ExecCodeDist w (subroutineCode c_exp n_max).initFresh x (ν₀.map Prod.snd)
-        (subroutineDS (V := V) hS hU_fit hV hU).initTime ∧
-      (subroutineDS (V := V) hS hU_fit hV hU).ExecStepsOfFn (Dictionary.empty U) ops ν₀ ν_final
+        (impl (V := V) hS hU_fit hV hU).initTime ∧
+      (impl (V := V) hS hU_fit hV hU).ExecStepsOfFn (Dictionary.empty U) ops ν₀ ν_final
         T_ops ∧
       (∀ θ, (ν_final.map Prod.fst) θ ≤ seedLaw c_exp n_max θ) ∧
       (∀ p ∈ ν_final.support,
         Rep w base c_exp U V n_max p.1
           ((Dictionary.spec U V n_max).run (Dictionary.empty U) ops).1 p.2) ∧
-      (subroutineDS (V := V) hS hU_fit hV hU).initTime + T_ops ≤
+      (impl (V := V) hS hU_fit hV hU).initTime + T_ops ≤
         (3 + setupSteps c_exp n_max : ℝ≥0∞) +
           ((Dictionary.spec U V n_max).totalCost (fun _ _ => expectedOpCharge c_exp)
             (Dictionary.empty U) ops : ℝ≥0∞) := by
   obtain ⟨ν₀, ν_final, T_ops, he_init, hex_steps, hseed_final, hrep_final, hbound⟩ :=
-    (subroutineDS (V := V) hS hU_fit hV hU).seq_expected_amortized_ofFn ops hx hfr
+    (impl (V := V) hS hU_fit hV hU).seq_expected_amortized_ofFn ops hx hfr
       (fun j => Fin.elim0 j) hz hv
   refine ⟨ν₀, ν_final, T_ops, he_init, hex_steps, ?_, hrep_final, ?_⟩
   · intro θ
     have h1 : (ν_final.map Prod.fst) θ ≤ 1 * seedLaw c_exp n_max θ := hseed_final θ
     rwa [one_mul] at h1
-  · have hinit : (subroutineDS (V := V) hS hU_fit hV hU).initTime =
+  · have hinit : (impl (V := V) hS hU_fit hV hU).initTime =
         (3 + setupSteps c_exp n_max : ℝ≥0∞) := rfl
     rw [hinit]
     have h2 : (3 + (setupSteps c_exp n_max : ℝ≥0∞)) + T_ops +
@@ -2398,4 +2400,4 @@ theorem expect_idealProbeSteps_le {c_exp U n_max : ℕ}
     ring
   exact le_of_eq heq
 
-end Cslib.Algorithms.WordRAM.Dictionary.UniformProbing
+end Cslib.DataStructure.Dictionary.WordRAM.UniformProbing

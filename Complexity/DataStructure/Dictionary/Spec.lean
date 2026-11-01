@@ -8,19 +8,20 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Foundations.Semantics.Stateful.Basic
+public import Complexity.DataStructure.StateTransition
 public import Mathlib.Data.Fintype.Basic
 
 /-!
 # Bounded-capacity dictionary specification
 
 This file defines a deterministic abstract specification
-(`Cslib.Algorithms.Lean.Dictionary.spec`) for a bounded-capacity dictionary mapping keys from a
+(`Cslib.DataStructure.Dictionary.spec`) for a bounded-capacity dictionary mapping keys from a
 finite universe `Fin U` to natural-number values bounded by `V`, supporting at most `n_max`
 distinct stored keys at any point in time.
 
 States map each key `u : Fin U` to `Option ℕ` (`none` when absent, `some v` when present with
-value `v`). Following `Cslib.Algorithms.Lean.IndexedMinPQ`, values are represented as `ℕ` with the
+value `v`). Following `Cslib.DataStructure.PriorityQueue.IndexedMinPQ`, values are represented as
+`ℕ` with the
 bound `v < V` enforced by operation admissibility (`valid`), so Word-RAM realizations can encode
 `Option ℕ` in a single machine register (`0` for `none` and `v + 1` for `some v`) without carrying
 dependent `Fin V` proof obligations inside register decoding.
@@ -33,11 +34,11 @@ operation.
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.Dictionary.Op`: dictionary operations (`get`, `insert`).
-* `Cslib.Algorithms.Lean.Dictionary.State`, `empty`, `dom`: abstract map state, empty dictionary,
+* `Cslib.DataStructure.Dictionary.Op`: dictionary operations (`get`, `insert`).
+* `Cslib.DataStructure.Dictionary.State`, `empty`, `dom`: abstract map state, empty dictionary,
   and finite set of present keys.
-* `Cslib.Algorithms.Lean.Dictionary.ValuesBounded`: invariant that all stored values lie below `V`.
-* `Cslib.Algorithms.Lean.Dictionary.spec`: the `Cslib.Stateful.Spec` with universe `U`, value bound
+* `Cslib.DataStructure.Dictionary.ValuesBounded`: invariant that all stored values lie below `V`.
+* `Cslib.DataStructure.Dictionary.spec`: the `StateTransitionSpec` with universe `U`, value bound
   `V`, and capacity bound `n_max`.
 
 ## Main results
@@ -58,7 +59,7 @@ operation.
 
 public section
 
-namespace Cslib.Algorithms.Lean.Dictionary
+namespace Cslib.DataStructure.Dictionary
 
 /-- Lookup and insertion operations on a dictionary over keys `Fin U` and natural-number values. -/
 inductive Op (U : ℕ) where
@@ -103,8 +104,8 @@ abbrev valid {U : ℕ} (V n_max : ℕ) (s : State U) : Op U → Prop
 
 /-- Bounded-capacity dictionary specification over key universe `Fin U`, value bound `V`, and
 maximum key count `n_max`. -/
-abbrev spec (U V n_max : ℕ) : Cslib.Stateful.Spec :=
-  Cslib.Stateful.Spec.ofFn (State := State U) (Op := Op U) (Result := Op.Result)
+abbrev spec (U V n_max : ℕ) : StateTransitionSpec :=
+  StateTransitionSpec.ofFn (State := State U) (Op := Op U) (Result := Op.Result)
     step (valid V n_max)
 
 /-! ### Domain, capacity, and value-bound lemmas -/
@@ -182,9 +183,9 @@ theorem card_dom_step_le_of_valid {U V n_max : ℕ} {s : State U} {o : Op U}
   | insert u v =>
     rcases hval.1 with hlt | hisSome
     · have hle := card_dom_insert_le s u v
-      dsimp only [spec, Cslib.Stateful.Spec.stepFn, step]
+      dsimp only [spec, StateTransitionSpec.stepFn, step]
       omega
-    · dsimp only [spec, Cslib.Stateful.Spec.stepFn, step]
+    · dsimp only [spec, StateTransitionSpec.stepFn, step]
       rw [card_dom_insert_eq_of_isSome hisSome]
       exact hs
 
@@ -217,7 +218,7 @@ theorem valuesBounded_step_of_valid {U V n_max : ℕ} {s : State U} {o : Op U}
   | get u => exact hs
   | insert u v =>
     intro x w hxw
-    dsimp only [spec, Cslib.Stateful.Spec.stepFn, step] at hxw
+    dsimp only [spec, StateTransitionSpec.stepFn, step] at hxw
     by_cases hxu : x = u
     · subst hxu
       rw [Function.update_self] at hxw
@@ -236,4 +237,4 @@ theorem valuesBounded_run_of_validHistory {U V n_max : ℕ} {s : State U} {os : 
   | cons o os ih =>
     exact ih (valuesBounded_step_of_valid hs hvh.1) hvh.2
 
-end Cslib.Algorithms.Lean.Dictionary
+end Cslib.DataStructure.Dictionary

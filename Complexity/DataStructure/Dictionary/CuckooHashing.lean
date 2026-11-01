@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.Dictionary.CuckooHashing.HashFamily
+public import Complexity.DataStructure.Dictionary.WordRAM.CuckooHashing.HashFamily
 public import Complexity.Languages.Probabilistic.RandomOracle
 public import Complexity.Probability.KWiseIndependent.DoubleTabulation
 public import Complexity.Probability.PMF.Uniform
@@ -36,7 +36,7 @@ This module establishes `IsCuckooHashPair` for uniform random hash pairs
 polynomial hash pairs (`isCuckooHashPair_trinomialPolyHash`), for Mikkel Thorup's double-tabulation
 hash family (`isCuckooHashPair_doubleTabHash`), and for the concrete Word-RAM regime-switched hash
 pair `(evalHash1, evalHash2)` over `seedLaw c_exp n_max U M` from
-`Complexity/Algorithms/WordRAM/Dictionary/CuckooHashing/HashFamily.lean`
+`Complexity/DataStructure/Dictionary/WordRAM/CuckooHashing/HashFamily.lean`
 (`isCuckooHashPair_provableFamily`), discharging `IsCuckooHashFamily` (`C_walk = 3`, `C_reh = 4`)
 for every `n_max : ℕ` whenever `U ≤ max n_max 4 ^ c_exp` and `32 * max n_max 4 ≤ 2 ^ M`.
 
@@ -104,47 +104,49 @@ In Pagh and Rodler [PaghRodler2004] (8 December 2003 manuscript,
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.CuckooHashing.HasAltPath`: Case B of the walk dichotomy — existence of a
-  simple alternating path of length `ℓ` starting at `u` with subsequent keys in `S`.
-* `Cslib.Algorithms.Lean.CuckooHashing.HasBicyclicPrefix`: Case A of the walk dichotomy — existence
-  of a walk prefix of `L + 1` distinct keys (`u` and `L` keys in `S`) closing two cycles across
-  `L + 2` independent hash-collision equations.
-* `Cslib.Algorithms.Lean.CuckooHashing.HasExcessSubset`: set-level Case A predicate — existence of
-  a subset `K ⊆ insert u S` containing `u` with `3 ≤ K.card ≤ maxCard` and
+* `Cslib.DataStructure.Dictionary.CuckooHashing.HasAltPath`: Case B of the walk dichotomy —
+  existence of a simple alternating path of length `ℓ` starting at `u` with subsequent keys in `S`.
+* `Cslib.DataStructure.Dictionary.CuckooHashing.HasBicyclicPrefix`: Case A of the walk dichotomy —
+  existence of a walk prefix of `L + 1` distinct keys (`u` and `L` keys in `S`) closing two cycles
+  across `L + 2` independent hash-collision equations.
+* `Cslib.DataStructure.Dictionary.CuckooHashing.HasExcessSubset`: set-level Case A predicate —
+  existence of a subset `K ⊆ insert u S` containing `u` with `3 ≤ K.card ≤ maxCard` and
   `|(K.image h₁)| + |(K.image h₂)| + 1 ≤ K.card`.
 
 ## Main results
 
-* `Cslib.Algorithms.Lean.CuckooHashing.hasAltPath_iff`,
-  `Cslib.Algorithms.Lean.CuckooHashing.hasBicyclicPrefix_iff`: plain characterizations of
+* `Cslib.DataStructure.Dictionary.CuckooHashing.hasAltPath_iff`,
+  `Cslib.DataStructure.Dictionary.CuckooHashing.hasBicyclicPrefix_iff`: plain characterizations of
   `HasAltPath` and `HasBicyclicPrefix` directly in terms of injective key sequences and alternating
   / cycle-closing hash collisions, without internal equation-chain helpers.
-* `Cslib.Algorithms.Lean.CuckooHashing.hasBicyclicPrefix_imp_hasExcessSubset`: any bicyclic prefix
-  of length `L ∈ [2, 2 * r)` yields an excess-`≥ 1` subset `K ⊆ insert u S` of size
+* `Cslib.DataStructure.Dictionary.CuckooHashing.hasBicyclicPrefix_imp_hasExcessSubset`: any
+  bicyclic prefix of length `L ∈ [2, 2 * r)` yields an excess-`≥ 1` subset `K ⊆ insert u S` of size
   `3 ≤ K.card ≤ 2 * r`.
-* `Cslib.Algorithms.Lean.CuckooHashing.cuckooWalk_dichotomy_bicyclic`,
-  `Cslib.Algorithms.Lean.CuckooHashing.cuckooWalk_dichotomy`,
-  `Cslib.Algorithms.Lean.CuckooHashing.lt_cuckooWalkRounds_imp_dichotomy`: Pagh and Rodler
+* `Cslib.DataStructure.Dictionary.CuckooHashing.cuckooWalk_dichotomy_bicyclic`,
+  `Cslib.DataStructure.Dictionary.CuckooHashing.cuckooWalk_dichotomy`,
+  `Cslib.DataStructure.Dictionary.CuckooHashing.lt_cuckooWalkRounds_imp_dichotomy`: Pagh and Rodler
   [PaghRodler2004], Section 2.3, Lemma 1 (manuscript p. 7) — any non-terminating `r`-round cuckoo
   walk from `u ∉ S` produces either `HasAltPath` of length `(2 * r + 2) / 3` or `HasBicyclicPrefix`
   of length `2 ≤ L < 2 * r` (and `HasExcessSubset` of size `≤ 2 * r`).
-* `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_of_kWiseIndependent`: Pagh and Rodler
-  [PaghRodler2004], Section 2.3 (Lemma 1, manuscript p. 7; Eq. (3), manuscript p. 9; rehash
+* `Cslib.DataStructure.Dictionary.CuckooHashing.isCuckooHashPair_of_kWiseIndependent`: Pagh and
+  Rodler [PaghRodler2004], Section 2.3 (Lemma 1, manuscript p. 7; Eq. (3), manuscript p. 9; rehash
   analysis, manuscript p. 10) — any independent pair of `(2 * MaxLoop + 2)`-wise independent
   hash families satisfies `IsCuckooHashPair` (`C_walk = 2`, `C_reh = 3`) under
   `32 * max n_max 4 ≤ m` and `maxEvictions n_max ≤ MaxLoop ≤ m`.
-* `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_of_whp_kWiseIndependent`: black-box
+* `Cslib.DataStructure.Dictionary.CuckooHashing.isCuckooHashPair_of_whp_kWiseIndependent`: black-box
   conditioning bridge showing that any two-level hash family whose top-level seed yields a
   `(2 * MaxLoop + 2)`-wise independent bottom-level family with failure probability at most
   `1 / (2 * max n_max 1 * max MaxLoop 1)` satisfies `IsCuckooHashPair` (`C_walk = 3`, `C_reh = 4`).
-* `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_doubleTabHash`,
-  `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_provableFamily`: `IsCuckooHashPair` for
+* `Cslib.DataStructure.Dictionary.CuckooHashing.isCuckooHashPair_doubleTabHash`,
+  `Cslib.DataStructure.Dictionary.CuckooHashing.isCuckooHashPair_provableFamily`:
+  `IsCuckooHashPair` for
   Mikkel Thorup's double tabulation hash family [Thorup2013] and for the regime-switched Word-RAM
   family (`evalHash1`/`evalHash2` over `seedLaw`) across all `n_max : ℕ` and
   `U ≤ max n_max 4 ^ c_exp`.
-* `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_trinomialPolyHash`,
-  `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_uniform`,
-  `Cslib.Algorithms.Lean.CuckooHashing.uniform_interpret_eq_lazy_hashPair`: specializations to
+* `Cslib.DataStructure.Dictionary.CuckooHashing.isCuckooHashPair_trinomialPolyHash`,
+  `Cslib.DataStructure.Dictionary.CuckooHashing.isCuckooHashPair_uniform`,
+  `Cslib.DataStructure.Dictionary.CuckooHashing.uniform_interpret_eq_lazy_hashPair`:
+  specializations to
   explicit trinomial-field polynomial hashing and uniform random hash pairs, plus lazy random-oracle
   equivalence via `Cslib.RandomOracle.uniform_interpret_eq_lazy`.
 
@@ -162,10 +164,10 @@ In Pagh and Rodler [PaghRodler2004] (8 December 2003 manuscript,
 
 public section
 
-namespace Cslib.Algorithms.Lean.CuckooHashing
+namespace Cslib.DataStructure.Dictionary.CuckooHashing
 
 open Cslib.Probability
-open Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing
+open Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing
 open scoped BigOperators ENNReal Finset
 
 /-! ## Section 1: Fresh-key equation chains and `k`-wise independent counting -/
@@ -3022,4 +3024,4 @@ theorem isCuckooHashPair_provableFamily {c_exp n_max U M : ℕ}
       n_max (maxEvictions n_max) 3 4 :=
   isCuckooHashPair_seedAux (decide (n_max < doubleTabThreshold c_exp)) rfl hU hm
 
-end Cslib.Algorithms.Lean.CuckooHashing
+end Cslib.DataStructure.Dictionary.CuckooHashing
