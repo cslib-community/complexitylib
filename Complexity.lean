@@ -2085,6 +2085,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTi
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimePrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeRadix
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.ResourceFacts
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.SpaceNormalForm
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.StepMachineCompiler
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.UnaryMachines
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.WordPredicates
