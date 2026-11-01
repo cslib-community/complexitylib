@@ -61,8 +61,9 @@ hashing scheme [PaghRodler2004] together with the regime-switched Word-RAM hash 
   `pureReplay`: pure two-table cuckoo displacement and insertion-order replay model.
 * `GoodForSet`, `survivingSeeds`, `cuckooWalkRounds`, `IsCuckooHashPair`, `IsCuckooHashFamily`:
   cuckoo hash family interface for expected displacement rounds and rehash probability.
-* `Seed`, `seedLaw`, `evalHash1`, `evalHash2`: regime-switched seed space and hash pair matching
-  `Cslib.Algorithms.Lean.CuckooHashing.ProvableHashSeed`, `provableHash1`, and `provableHash2`.
+* `Seed`, `seedLaw`, `evalHash1`, `evalHash2`: regime-switched seed space and hash pair
+  (proven to satisfy `IsCuckooHashFamily` in
+  `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_provableFamily`).
 * `HashPairRep`, `initTableHashPairCode`, `resampleHashPairCode`, `evalHash1Code`, `evalHash2Code`:
   two-block Word-RAM layout and programs realizing `(evalHash1, evalHash2)` in `O_{c_exp}(1)`
   instructions and `O_{c_exp}(n_max + 1)` words of space across all `n_max : ℕ`.
@@ -76,8 +77,8 @@ hashing scheme [PaghRodler2004] together with the regime-switched Word-RAM hash 
   replay seeds across insertions (combined with `Cslib.Probability.PMF.unifOn_rehash_eq` and
   `Cslib.Probability.PMF.uniformOfFinset_le_two_mul_uniformOfFintype` from
   `Complexity/Probability/PMF/UniformSubset.lean`).
-* `isCuckooHashPair_le_two`, `isCuckooHashFamily_le_two`, `isCuckooHashFamily_le_one`:
-  direct `n_max ≤ 2` instances (`C_walk = 1`, `C_reh = 0`), with `IsCuckooHashPair.mono_consts`
+* `isCuckooHashPair_le_two`: reusable hash-pair-independent `n_max ≤ 2` instance (`C_walk = 1`,
+  `C_reh = 0`) requiring no independence assumption, with `IsCuckooHashPair.mono_consts`
   providing monotonicity in `(C_walk, C_reh)`.
 * `initTableHashPairCode_execWithin`, `resampleHashPairCode_execRand`, `evalHash1Code_execWithin`,
   `evalHash2Code_execWithin`, `hashPairSpace_le`, `evalHashSteps_le`: Word-RAM correctness,
@@ -941,13 +942,16 @@ theorem thirtyEight_le_cuckooK (n_max : ℕ) : 38 ≤ cuckooK n_max := by
   unfold cuckooK
   omega
 
+open Cslib.DataStructure.HashFamily.WordRAM
+
 /-- Regime-indexed seed space for the unconditional cuckoo hash pair:
 - When `reg = true` (`n_max < doubleTabThreshold c_exp`), two independent
   `(2 * maxEvictions n_max + 2)`-wise independent trinomial polynomial seeds
   `Fin k → Fin (2 ^ (2 * 3 ^ trinomialStep U M))`.
 - When `reg = false` (`doubleTabThreshold c_exp ≤ n_max`), two independent double-tabulation seed
-  pairs `DoubleTabTopSeed c (8 * c) b × DoubleTabBotSeed (8 * c) b M` with `c = 2 * max c_exp 1` and
-  `b = (1 + Nat.clog 2 (max n_max 4)) / 2`. -/
+  pairs `DoubleTabTopSeed c d b × DoubleTabBotSeed d b M` with
+  `c = DoubleTabulation.provableC c_exp`, `d = DoubleTabulation.provableD c_exp`, and
+  `b = DoubleTabulation.provableB n_max`. -/
 @[expose]
 def SeedAux (reg : Bool) (c_exp n_max U M : ℕ) : Type :=
   match reg with
@@ -956,10 +960,11 @@ def SeedAux (reg : Bool) (c_exp n_max U M : ℕ) : Type :=
     (Fin k → Fin (2 ^ (2 * 3 ^ trinomialStep U M))) ×
       (Fin k → Fin (2 ^ (2 * 3 ^ trinomialStep U M)))
   | false =>
-    let c := 2 * max c_exp 1
-    let b := (1 + Nat.clog 2 (max n_max 4)) / 2
-    (DoubleTabTopSeed c (8 * c) b × DoubleTabBotSeed (8 * c) b M) ×
-      (DoubleTabTopSeed c (8 * c) b × DoubleTabBotSeed (8 * c) b M)
+    let c := DoubleTabulation.provableC c_exp
+    let d := DoubleTabulation.provableD c_exp
+    let b := DoubleTabulation.provableB n_max
+    (DoubleTabTopSeed c d b × DoubleTabBotSeed d b M) ×
+      (DoubleTabTopSeed c d b × DoubleTabBotSeed d b M)
 
 instance (reg : Bool) (c_exp n_max U M : ℕ) :
     Fintype (SeedAux reg c_exp n_max U M) := by
@@ -987,9 +992,8 @@ noncomputable def evalHash1Aux (reg : Bool) (c_exp n_max U M : ℕ) :
   | true => fun (seed₁, _) =>
     trinomialPolyHash (trinomialStep U M) (2 * maxEvictions n_max + 2) U M seed₁
   | false => fun ((top₁, bottom₁), _) =>
-    let c := 2 * max c_exp 1
-    let b := (1 + Nat.clog 2 (max n_max 4)) / 2
-    doubleTabHash c (8 * c) b U M top₁ bottom₁
+    doubleTabHash (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
+      (DoubleTabulation.provableB n_max) U M top₁ bottom₁
 
 /-- Regime-indexed second cuckoo hash function. -/
 @[expose]
@@ -999,9 +1003,8 @@ noncomputable def evalHash2Aux (reg : Bool) (c_exp n_max U M : ℕ) :
   | true => fun (_, seed₂) =>
     trinomialPolyHash (trinomialStep U M) (2 * maxEvictions n_max + 2) U M seed₂
   | false => fun (_, (top₂, bottom₂)) =>
-    let c := 2 * max c_exp 1
-    let b := (1 + Nat.clog 2 (max n_max 4)) / 2
-    doubleTabHash c (8 * c) b U M top₂ bottom₂
+    doubleTabHash (DoubleTabulation.provableC c_exp) (DoubleTabulation.provableD c_exp)
+      (DoubleTabulation.provableB n_max) U M top₂ bottom₂
 
 /-- Seed space for the regime-switched cuckoo hash pair (`trinomialPolyHash` below
 `doubleTabThreshold c_exp`, `doubleTabHash` at or above `doubleTabThreshold c_exp`). -/
@@ -1140,10 +1143,11 @@ theorem pureReplay_isSome_of_length_le_two {U m : ℕ} (h₁ h₂ : Fin U → Fi
         simp only [List.length_cons] at hlen
         omega
 
-/-- Unconditional `IsCuckooHashPair` instance for `n_max ≤ 2` and `0 < MaxLoop` (`C_walk = 1`,
-`C_reh = 0`) over any seed distribution `μ` and hash pair `(h₁, h₂)`: inserting up to `2` keys into
-two tables `T₁, T₂` always completes in `1` round with zero rehashes (even if both keys collide in
-`T₁`, the displaced first key is placed into an empty slot of `T₂`). -/
+/-- Reusable hash-pair-independent `IsCuckooHashPair` instance for `n_max ≤ 2` and `0 < MaxLoop`
+(`C_walk = 1`, `C_reh = 0`) over any seed distribution `μ` and arbitrary hash pair `(h₁, h₂)`
+(without any independence assumption): inserting up to `2` keys into two tables `T₁, T₂` always
+completes in `1` round with zero rehashes (even if both keys collide in `T₁`, the displaced first
+key is placed into an empty slot of `T₂`). -/
 theorem isCuckooHashPair_le_two {Θ : Type*} (μ : PMF Θ) {U m n_max MaxLoop : ℕ}
     (h₁ h₂ : Θ → Fin U → Fin m) (hn : n_max ≤ 2) (hloop : 0 < MaxLoop) :
     IsCuckooHashPair μ h₁ h₂ n_max MaxLoop 1 0 where
@@ -1179,20 +1183,6 @@ theorem isCuckooHashPair_le_two {Θ : Type*} (μ : PMF Θ) {U m n_max MaxLoop : 
       simp [Option.isNone_iff_eq_none, Option.ne_none_iff_isSome.mpr (hsome θ)]
     rw [hempty]
     simp
-
-/-- Unconditional `IsCuckooHashFamily` instance for `n_max ≤ 2` and `0 < MaxLoop` (`C_walk = 1`,
-`C_reh = 0`). -/
-theorem isCuckooHashFamily_le_two (c_exp U : ℕ) {n_max M MaxLoop : ℕ}
-    (hn : n_max ≤ 2) (hloop : 0 < MaxLoop) :
-    IsCuckooHashFamily c_exp U n_max M MaxLoop 1 0 :=
-  isCuckooHashPair_le_two (seedLaw c_exp n_max U M) evalHash1 evalHash2 hn hloop
-
-/-- Unconditional `IsCuckooHashFamily` instance for `n_max ≤ 1` and `0 < MaxLoop` (`C_walk = 1`,
-`C_reh = 0`). -/
-theorem isCuckooHashFamily_le_one (c_exp U : ℕ) {n_max M MaxLoop : ℕ}
-    (hn : n_max ≤ 1) (hloop : 0 < MaxLoop) :
-    IsCuckooHashFamily c_exp U n_max M MaxLoop 1 0 :=
-  isCuckooHashFamily_le_two c_exp U (by omega) hloop
 
 /-! ### Section 5: Two-block Word-RAM hash pair representation and programs -/
 

@@ -32,19 +32,13 @@ independent hash functions into sub-tables of size `32 * max n_max 4 ≤ m` with
 
 This module establishes `IsCuckooHashPair` for uniform random hash pairs
 (`isCuckooHashPair_uniform`, connected to lazy random-oracle evaluation via
-`uniform_interpret_eq_lazy_hashPair`) and for explicit `(2 * MaxLoop + 2)`-wise independent
-polynomial hash pairs (`isCuckooHashPair_trinomialPolyHash`). It does **not** instantiate
-`IsCuckooHashFamily` for the concrete Word-RAM hash pair `evalHash1`/`evalHash2` in
-`Complexity/Algorithms/WordRAM/Dictionary/CuckooHashing/HashFamily.lean` when `n_max ≥ 3`, for two
-reasons:
-1. The theorems here assume sub-table size `32 * max n_max 4 ≤ m`, whereas the Word-RAM dictionary
-   allocates sub-tables of `tableSize n_max` slots (between `4 * n_max` and `8 * n_max`).
-2. The theorems here assume `(2 * MaxLoop + 2)`-wise independence (`Θ(log n_max)`-wise), whereas
-   the Word-RAM hash pair combines `7`-wise independent polynomial hashes `f_r, g_r` with random
-   tabulation arrays `Z_r`.
-
-Accordingly, the expected-time bound `cuckoo_seq_expected_amortized` for the Word-RAM cuckoo
-dictionary remains conditional on `IsCuckooHashFamily` for `n_max ≥ 3`.
+`uniform_interpret_eq_lazy_hashPair`), for explicit `(2 * MaxLoop + 2)`-wise independent
+polynomial hash pairs (`isCuckooHashPair_trinomialPolyHash`), for Mikkel Thorup's double-tabulation
+hash family (`isCuckooHashPair_doubleTabHash`), and for the concrete Word-RAM regime-switched hash
+pair `(evalHash1, evalHash2)` over `seedLaw c_exp n_max U M` from
+`Complexity/Algorithms/WordRAM/Dictionary/CuckooHashing/HashFamily.lean`
+(`isCuckooHashPair_provableFamily`), discharging `IsCuckooHashFamily` (`C_walk = 3`, `C_reh = 4`)
+for every `n_max : ℕ` whenever `U ≤ max n_max 4 ^ c_exp` and `32 * max n_max 4 ≤ 2 ^ M`.
 
 ## Source statements, assumptions, and notation mapping
 
@@ -119,13 +113,6 @@ In Pagh and Rodler [PaghRodler2004] (8 December 2003 manuscript,
   a subset `K ⊆ insert u S` containing `u` with `3 ≤ K.card ≤ maxCard` and
   `|(K.image h₁)| + |(K.image h₂)| + 1 ≤ K.card`.
 
-* `Cslib.Algorithms.Lean.CuckooHashing.ProvableHashSeed`,
-  `Cslib.Algorithms.Lean.CuckooHashing.provableHash1`,
-  `Cslib.Algorithms.Lean.CuckooHashing.provableHash2`: regime-switched hash family parameterized by
-  the polynomial universe exponent `c_exp : ℕ` (`U ≤ max n_max 4 ^ c_exp`), using
-  `trinomialPolyHash` below `Cslib.Probability.doubleTabThreshold c_exp` and Thorup's
-  `doubleTabHash` [Thorup2013] at or above `Cslib.Probability.doubleTabThreshold c_exp`.
-
 ## Main results
 
 * `Cslib.Algorithms.Lean.CuckooHashing.hasAltPath_iff`,
@@ -152,9 +139,9 @@ In Pagh and Rodler [PaghRodler2004] (8 December 2003 manuscript,
   `1 / (2 * max n_max 1 * max MaxLoop 1)` satisfies `IsCuckooHashPair` (`C_walk = 3`, `C_reh = 4`).
 * `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_doubleTabHash`,
   `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_provableFamily`: `IsCuckooHashPair` for
-  Mikkel Thorup's double tabulation hash family [Thorup2013] and for the unconditional
-  regime-switched family (`provableHash1`/`provableHash2`) across all `n_max : ℕ` and
-  `U ≤ max n_max 4 ^ c_exp`.
+  Mikkel Thorup's double tabulation hash family [Thorup2013] and `IsCuckooHashFamily` for the
+  regime-switched Word-RAM family (`evalHash1`/`evalHash2` over `seedLaw`) across all `n_max : ℕ`
+  and `U ≤ max n_max 4 ^ c_exp`.
 * `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_trinomialPolyHash`,
   `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_uniform`,
   `Cslib.Algorithms.Lean.CuckooHashing.uniform_interpret_eq_lazy_hashPair`: specializations to
@@ -2923,91 +2910,23 @@ theorem isCuckooHashPair_doubleTabHash {c b U M : ℕ}
       (Finset.mem_filter.mp hT₁).2)
     hwhp hm hloop_ge hloop_le
 
-/-- Regime-indexed seed space for `ProvableHashSeed`. -/
-@[expose] def ProvableHashSeedAux (reg : Bool) (c_exp n_max U M : ℕ) : Type :=
-  match reg with
-  | true =>
-    let k := 2 * maxEvictions n_max + 2
-    (Fin k → Fin (2 ^ (2 * 3 ^ trinomialStep U M))) ×
-      (Fin k → Fin (2 ^ (2 * 3 ^ trinomialStep U M)))
-  | false =>
-    let c := 2 * max c_exp 1
-    let b := (1 + Nat.clog 2 (max n_max 4)) / 2
-    (DoubleTabTopSeed c (8 * c) b × DoubleTabBotSeed (8 * c) b M) ×
-      (DoubleTabTopSeed c (8 * c) b × DoubleTabBotSeed (8 * c) b M)
-
-instance (reg : Bool) (c_exp n_max U M : ℕ) :
-    Fintype (ProvableHashSeedAux reg c_exp n_max U M) := by
-  cases reg <;> dsimp [ProvableHashSeedAux] <;> infer_instance
-
-instance (reg : Bool) (c_exp n_max U M : ℕ) :
-    Nonempty (ProvableHashSeedAux reg c_exp n_max U M) := by
-  cases reg <;> dsimp [ProvableHashSeedAux] <;> infer_instance
-
-/-- Regime-indexed first hash function for `provableHash1`. -/
-@[expose] noncomputable def provableHash1Aux (reg : Bool) (c_exp n_max U M : ℕ) :
-    ProvableHashSeedAux reg c_exp n_max U M → Fin U → Fin (2 ^ M) :=
-  match reg with
-  | true => fun (seed₁, _) =>
-    trinomialPolyHash (trinomialStep U M) (2 * maxEvictions n_max + 2) U M seed₁
-  | false => fun ((top₁, bottom₁), _) =>
-    let c := 2 * max c_exp 1
-    let b := (1 + Nat.clog 2 (max n_max 4)) / 2
-    doubleTabHash c (8 * c) b U M top₁ bottom₁
-
-/-- Regime-indexed second hash function for `provableHash2`. -/
-@[expose] noncomputable def provableHash2Aux (reg : Bool) (c_exp n_max U M : ℕ) :
-    ProvableHashSeedAux reg c_exp n_max U M → Fin U → Fin (2 ^ M) :=
-  match reg with
-  | true => fun (_, seed₂) =>
-    trinomialPolyHash (trinomialStep U M) (2 * maxEvictions n_max + 2) U M seed₂
-  | false => fun (_, (top₂, bottom₂)) =>
-    let c := 2 * max c_exp 1
-    let b := (1 + Nat.clog 2 (max n_max 4)) / 2
-    doubleTabHash c (8 * c) b U M top₂ bottom₂
-
-/-- Seed space for the unconditional regime-switched cuckoo hash family (`trinomialPolyHash` below
-`doubleTabThreshold c_exp`, `doubleTabHash` at or above `doubleTabThreshold c_exp`). -/
-abbrev ProvableHashSeed (c_exp n_max U M : ℕ) : Type :=
-  ProvableHashSeedAux (decide (n_max < doubleTabThreshold c_exp)) c_exp n_max U M
-
-/-- First hash function of the unconditional regime-switched cuckoo hash family. -/
-@[expose] noncomputable def provableHash1 (c_exp n_max U M : ℕ) :
-    ProvableHashSeed c_exp n_max U M → Fin U → Fin (2 ^ M) :=
-  provableHash1Aux (decide (n_max < doubleTabThreshold c_exp)) c_exp n_max U M
-
-/-- Second hash function of the unconditional regime-switched cuckoo hash family. -/
-@[expose] noncomputable def provableHash2 (c_exp n_max U M : ℕ) :
-    ProvableHashSeed c_exp n_max U M → Fin U → Fin (2 ^ M) :=
-  provableHash2Aux (decide (n_max < doubleTabThreshold c_exp)) c_exp n_max U M
-
-private theorem maxEvictions_le_thirtyTwo_mul_max (n_max : ℕ) :
-    maxEvictions n_max ≤ 32 * max n_max 4 := by
-  have hclog : Nat.clog 2 (max n_max 2) ≤ max n_max 2 :=
-    (Nat.clog_le_iff_le_pow (by decide)).mpr (Nat.le_of_lt (max n_max 2).lt_two_pow_self)
-  unfold maxEvictions
-  omega
-
-/-- **Unconditional `IsCuckooHashPair` for the regime-switched hash family (`trinomialPolyHash` +
-`doubleTabHash`) across all capacities `n_max : ℕ` and polynomial universes
-`U ≤ max n_max 4 ^ c_exp`**:
-Whenever `U ≤ max n_max 4 ^ c_exp` and `32 * max n_max 4 ≤ 2 ^ M`, the uniform distribution on
-`ProvableHashSeed c_exp n_max U M` with `(provableHash1, provableHash2)` satisfies
-`IsCuckooHashPair ... n_max (maxEvictions n_max) 3 4`. -/
-theorem isCuckooHashPair_provableFamily {c_exp n_max U M : ℕ}
+private theorem isCuckooHashPair_seedAux (reg : Bool) {c_exp n_max U M : ℕ}
+    (hreg : reg = decide (n_max < doubleTabThreshold c_exp))
     (hU : U ≤ max n_max 4 ^ c_exp) (hm : 32 * max n_max 4 ≤ 2 ^ M) :
     IsCuckooHashPair
-      (PMF.uniformOfFintype (ProvableHashSeed c_exp n_max U M))
-      (provableHash1 c_exp n_max U M)
-      (provableHash2 c_exp n_max U M)
+      (PMF.uniformOfFintype (SeedAux reg c_exp n_max U M))
+      (evalHash1Aux reg c_exp n_max U M)
+      (evalHash2Aux reg c_exp n_max U M)
       n_max (maxEvictions n_max) 3 4 := by
   have hloop_le : maxEvictions n_max ≤ 2 ^ M :=
     (maxEvictions_le_thirtyTwo_mul_max n_max).trans hm
-  unfold ProvableHashSeed provableHash1 provableHash2
-  cases hreg : decide (n_max < doubleTabThreshold c_exp)
-  · dsimp only [ProvableHashSeedAux, provableHash1Aux, provableHash2Aux]
+  cases reg
+  · dsimp only [SeedAux, evalHash1Aux, evalHash2Aux,
+      Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.provableC,
+      Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.provableD,
+      Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.provableB]
     have hge : doubleTabThreshold c_exp ≤ n_max :=
-      not_lt.mp (of_decide_eq_false hreg)
+      not_lt.mp (of_decide_eq_false hreg.symm)
     let c := 2 * max c_exp 1
     let b := (1 + Nat.clog 2 (max n_max 4)) / 2
     have hc2 : 2 ≤ c := by omega
@@ -3086,8 +3005,19 @@ theorem isCuckooHashPair_provableFamily {c_exp n_max U M : ℕ}
             ring
     exact isCuckooHashPair_doubleTabHash (by omega) hU_cb n_max (maxEvictions n_max)
       hm le_rfl hloop_le hprod_le
-  · dsimp only [ProvableHashSeedAux, provableHash1Aux, provableHash2Aux]
+  · dsimp only [SeedAux, evalHash1Aux, evalHash2Aux]
     exact (isCuckooHashPair_trinomialPolyHash (le_two_pow_trinomialDeg U M) (le_trinomialDeg U M)
       n_max (maxEvictions n_max) le_rfl hm le_rfl hloop_le).mono_consts (by decide) (by decide)
+
+/-- **Unconditional `IsCuckooHashFamily` for the regime-switched Word-RAM hash family
+(`trinomialPolyHash` + `doubleTabHash`) across all capacities `n_max : ℕ` and polynomial universes
+`U ≤ max n_max 4 ^ c_exp`**:
+Whenever `U ≤ max n_max 4 ^ c_exp` and `32 * max n_max 4 ≤ 2 ^ M`, the uniform distribution
+`seedLaw c_exp n_max U M` on `Seed c_exp n_max U M` with `(evalHash1, evalHash2)` satisfies
+`IsCuckooHashFamily c_exp U n_max M (maxEvictions n_max) 3 4`. -/
+theorem isCuckooHashPair_provableFamily {c_exp n_max U M : ℕ}
+    (hU : U ≤ max n_max 4 ^ c_exp) (hm : 32 * max n_max 4 ≤ 2 ^ M) :
+    IsCuckooHashFamily c_exp U n_max M (maxEvictions n_max) 3 4 :=
+  isCuckooHashPair_seedAux (decide (n_max < doubleTabThreshold c_exp)) rfl hU hm
 
 end Cslib.Algorithms.Lean.CuckooHashing

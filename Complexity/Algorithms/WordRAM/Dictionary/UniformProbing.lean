@@ -97,7 +97,7 @@ words of memory.
   initialization in `setupSteps c_exp n_max = O_{c_exp}(n_max + 1)` instructions.
 * `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.opCode_execWithin`: every `get` or `insert`
   operation on key `u` executes in at most
-  `opPathSteps c_exp n_max θ T u = 13 * probeCount T u (probePerm θ u) + hashEvalSteps c_exp + 8`
+  `opPathSteps c_exp θ T u = 13 * probeCount T u (probePerm θ u) + hashEvalSteps c_exp + 8`
   instructions.
 * `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing.seq_expected_amortized`: assumption-free
   `O_{c_exp}(1)` expected operation time (`expectedOpCharge c_exp`) across any admissible sequence

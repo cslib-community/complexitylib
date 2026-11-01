@@ -35,7 +35,8 @@ expected-amortized sequence theorem `cuckoo_seq_expected_amortized`.
      (`Complexity/Algorithms/WordRAM/Dictionary/CuckooHashing/HashFamily.lean`),
      switching at `doubleTabThreshold c_exp` between two independent
      `(2 * maxEvictions n_max + 2)`-wise independent trinomial-field polynomial hashes
-     (`KWise`, `[SchmidtSiegel1990]`) and two independent Mikkel Thorup double-tabulation hashes
+     (`KWise`, `[CarterWegman1979]`, `[WegmanCarter1981]`) and two independent Mikkel Thorup
+     double-tabulation hashes
      (`Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation`, `[Thorup2013]`).
    - Two cuckoo sub-tables `T₁` and `T₂` of size `m = 2 ^ M = tableSize n_max ≥ 32 * max n_max 4`
      (`M = tableBits n_max = Nat.clog 2 (32 * max n_max 4)`) each, storing `1`-based indices
@@ -106,13 +107,10 @@ expected-amortized sequence theorem `cuckoo_seq_expected_amortized`.
 * [M. Thorup, "Simple Tabulation, Fast Expanders, Double Tabulation, and High
   Independence"][Thorup2013] (FOCS 2013, pp. 90–99; `arXiv:1311.3121v2`, Sections 1.3 and 3,
   Theorem 1.3, Lemma 3.1, Theorem 3.2, pp. 4–5, 11–13).
-* [J. P. Schmidt and A. Siegel, "The Spatial Complexity of Oblivious k-Probe Hash
-  Functions"][SchmidtSiegel1990] (STOC 1990, pp. 224–234; `TR1995-687`, Sections 1–2 and Appendix,
-  pp. 1–2, 4–7, 37–39).
-* [M. Dietzfelbinger and P. Woelfel, *Almost Random Graphs*][DietzfelbingerWoelfel2003]
-  (Definition 1, §2.1, p. 632).
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing*, 2nd ed.][MitzenmacherUpfal2017]
 * [J. L. Carter and M. N. Wegman, "Universal classes of hash functions"][CarterWegman1979]
+* [M. N. Wegman and J. L. Carter, "New hash functions and their use in authentication and set
+  equality"][WegmanCarter1981]
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*][CLRS2009]
 -/
 
@@ -1138,7 +1136,7 @@ theorem unshiftFromHashBaseCode_exec {w base : ℕ} {x : Data 19}
   exact e1.seq e2
 
 /-- Evaluates `h₁(u)` with `reg 0 = base`, `reg 1 = u.val`, placing
-`(evalHash1 c_exp n_max U M θ u).val` in `reg 2` and restoring `reg 0 = base`. -/
+`(evalHash1 θ u).val` in `reg 2` and restoring `reg 0 = base`. -/
 @[expose]
 def evalHash1AtBaseCode (c_exp n_max : ℕ) : Code .exact 19 :=
   .seq shiftToHashBaseCode
@@ -1146,7 +1144,7 @@ def evalHash1AtBaseCode (c_exp n_max : ℕ) : Code .exact 19 :=
         unshiftFromHashBaseCode)
 
 /-- Evaluates `h₂(u)` with `reg 0 = base`, `reg 1 = u.val`, placing
-`(evalHash2 c_exp n_max U M θ u).val` in `reg 2` and restoring `reg 0 = base`. -/
+`(evalHash2 θ u).val` in `reg 2` and restoring `reg 0 = base`. -/
 @[expose]
 def evalHash2AtBaseCode (c_exp n_max : ℕ) : Code .exact 19 :=
   .seq shiftToHashBaseCode
@@ -3845,8 +3843,8 @@ theorem syncRehashCondCode_exec {w base c_exp n_max act : ℕ} {x : Data 19}
   exact ⟨s2, e1.seq e2, by simp +decide [s2, s1, h0],
     by simp +decide [s2, s1, hm16], by simp +decide [s2], rfl⟩
 
-/-- One rehash attempt: resamples `(h₁, h₂)` without rebuilding `clmulTab`, clears `T₁` and `T₂`,
-replays all `allocCount` keys from `insKeys`, and synchronizes `(Cond.lt 18 17)`. -/
+/-- One rehash attempt: resamples `(h₁, h₂)` without rebuilding `HashPairTableRep`, clears `T₁` and
+`T₂`, replays all `allocCount` keys from `insKeys`, and synchronizes `(Cond.lt 18 17)`. -/
 @[expose]
 def rehashAttemptCode (c_exp n_max : ℕ) : Code .exact 19 :=
   .seq (resampleAtBaseCode c_exp n_max)
@@ -3860,8 +3858,8 @@ def rehashAttemptSteps (c_exp n_max U : ℕ) : ℕ :=
   resampleAtBaseSteps c_exp n_max + clearTablesSteps n_max + replayLoopSteps c_exp n_max U + 4
 
 /-- Loop invariant for `rehashLoopInner`: machine configuration is word-bounded, `reg 0 = base`,
-the header and `clmulTab` are intact, `insKeys` / `insVals` realize `(ks, s)`, and all memory
-modifications since `x₀` lie inside `[base, base + space c_exp n_max)`. -/
+the header and `HashPairTableRep` are intact, `insKeys` / `insVals` realize `(ks, s)`, and all
+memory modifications since `x₀` lie inside `[base, base + space c_exp n_max)`. -/
 @[expose]
 def RehashLoopInv (w base c_exp n_max U V : ℕ) (ks : List (Fin U)) (s : Dictionary.State U)
     (x₀ z : Data 19) : Prop :=

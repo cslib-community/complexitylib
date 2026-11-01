@@ -69,9 +69,9 @@ example :
 `U = 256 ≤ 4 ^ 4`, `M = 7` (`2 ^ 7 = 128 ≥ 32 * 4`). -/
 example :
     IsCuckooHashPair
-      (PMF.uniformOfFintype (ProvableHashSeed 4 0 256 7))
-      (provableHash1 4 0 256 7)
-      (provableHash2 4 0 256 7)
+      (PMF.uniformOfFintype (Seed 4 0 256 7))
+      (evalHash1 (c_exp := 4) (n_max := 0) (U := 256) (M := 7))
+      (evalHash2 (c_exp := 4) (n_max := 0) (U := 256) (M := 7))
       0 (maxEvictions 0) 3 4 :=
   isCuckooHashPair_provableFamily (c_exp := 4) (n_max := 0) (U := 256) (M := 7)
     (by decide) (by decide)
@@ -80,9 +80,9 @@ example :
 `U = 10000 ≤ 10 ^ 4`, `M = 9` (`2 ^ 9 = 512 ≥ 32 * 10`). -/
 example :
     IsCuckooHashPair
-      (PMF.uniformOfFintype (ProvableHashSeed 4 10 10000 9))
-      (provableHash1 4 10 10000 9)
-      (provableHash2 4 10 10000 9)
+      (PMF.uniformOfFintype (Seed 4 10 10000 9))
+      (evalHash1 (c_exp := 4) (n_max := 10) (U := 10000) (M := 9))
+      (evalHash2 (c_exp := 4) (n_max := 10) (U := 10000) (M := 9))
       10 (maxEvictions 10) 3 4 :=
   isCuckooHashPair_provableFamily (c_exp := 4) (n_max := 10) (U := 10000) (M := 9)
     (by decide) (by decide)
@@ -94,9 +94,9 @@ example (c_exp : ℕ) :
     let N := doubleTabThreshold c_exp
     let M := 2 * doubleTabMinB c_exp + 5
     IsCuckooHashPair
-      (PMF.uniformOfFintype (ProvableHashSeed c_exp N (N ^ c_exp) M))
-      (provableHash1 c_exp N (N ^ c_exp) M)
-      (provableHash2 c_exp N (N ^ c_exp) M)
+      (PMF.uniformOfFintype (Seed c_exp N (N ^ c_exp) M))
+      (evalHash1 (c_exp := c_exp) (n_max := N) (U := N ^ c_exp) (M := M))
+      (evalHash2 (c_exp := c_exp) (n_max := N) (U := N ^ c_exp) (M := M))
       N (maxEvictions N) 3 4 := by
   intro N M
   have hmax : max N 4 = N := max_eq_left (four_le_doubleTabThreshold c_exp)
@@ -138,9 +138,9 @@ example (a : ℕ → ℕ) :
 /-- Concrete check of `IsCuckooHashPair.mono_consts` widening `(3, 4)` to `(5, 6)`. -/
 example :
     IsCuckooHashPair
-      (PMF.uniformOfFintype (ProvableHashSeed 4 0 256 7))
-      (provableHash1 4 0 256 7)
-      (provableHash2 4 0 256 7)
+      (PMF.uniformOfFintype (Seed 4 0 256 7))
+      (evalHash1 (c_exp := 4) (n_max := 0) (U := 256) (M := 7))
+      (evalHash2 (c_exp := 4) (n_max := 0) (U := 256) (M := 7))
       0 (maxEvictions 0) 5 6 :=
   (isCuckooHashPair_provableFamily (c_exp := 4) (n_max := 0) (U := 256) (M := 7)
     (by decide) (by decide)).mono_consts (by decide) (by decide)
