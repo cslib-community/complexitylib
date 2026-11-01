@@ -33,7 +33,7 @@ autoImplicit = false
 [[require]]
 name = "cslib"
 git = "https://github.com/leanprover/cslib"
-rev = "ed60db8113574cf807d8e40b1a02f2b4d843a87c"
+rev = "52897fc2059b1a550cd7fb06bbd00713e490b8d6"
 
 [[lean_lib]]
 name = "Complexity"
