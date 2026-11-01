@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.BasicOps
+public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.BasicOps
 
 /-!
 # Degree-indexed root consolidation and `extractMin` for a Fibonacci heap
@@ -34,14 +34,14 @@ bound of `scatterRootCode` and `extractMinCode` in the current number of stored 
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.SlotInv`: consolidation-table invariant
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.SlotInv`: consolidation-table invariant
   tracking distinct-degree root trees in `cons[0..maxDeg]`.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.scatterRootCode_exec`: amortized root
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.scatterRootCode_exec`: amortized root
   scattering and equal-degree linking specification.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.extractMinCode_exec`:
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.extractMinCode_exec`:
   `O(log |dom s| + 1)` amortized `extractMin` specification in the current number of stored
   elements.
 
@@ -55,10 +55,9 @@ bound of `scatterRootCode` and `extractMinCode` in the current number of stored 
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+namespace Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap
 
-open Cslib.WordRAM
-open Cslib.Algorithms.Lean
+open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 open scoped Cslib.WordRAM
 
 /-! ## Framing and pure-`ℕ` degree bounds during consolidation -/
@@ -2839,8 +2838,8 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
     (hinv : FibInv n K_max w base s x) :
     ∃ y t, ExecWithin w extractMinCode x y t ∧
       code.decode (n := n) (K_max := K_max) .extractMin y.regs =
-        some ((IndexedMinPQ.spec n K_max).stepFn s .extractMin).2 ∧
-      FibInv n K_max w base ((IndexedMinPQ.spec n K_max).stepFn s .extractMin).1 y ∧
+        some ((indexedMinPQSpec n K_max).stepFn s .extractMin).2 ∧
+      FibInv n K_max w base ((indexedMinPQSpec n K_max).stepFn s .extractMin).1 y ∧
       Modifies (Block.mk base (space n)).footprint x.mem y.mem ∧
       t + potential y ≤
         410 * (Nat.log 2 (IndexedMinPQ.dom s).card + 1) + potential x := by
@@ -2865,9 +2864,10 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
         have hne : i ≠ outFlag := fun e => by subst e; cases hi
         simp only [y, Data.set_regs, Function.update_of_ne hne]
     refine ⟨y, 2, he, ?_, ?_, Modifies.refl _ _, by omega⟩
-    · simp only [PQCode.decode, code, IndexedMinPQ.spec, IndexedMinPQ.step, Stateful.Spec.stepFn,
+    · simp only [PQCode.decode, code, indexedMinPQSpec, IndexedMinPQ.step,
+        StateTransitionSpec.stepFn,
         hfind, y, Data.set_regs, Function.update_self, ↓reduceIte]
-    · simp only [IndexedMinPQ.spec, IndexedMinPQ.step, Stateful.Spec.stepFn, hfind]
+    · simp only [indexedMinPQSpec, IndexedMinPQ.step, StateTransitionSpec.stepFn, hfind]
       exact ⟨he.bounded hb, hbr.set_non_base (by decide) 0,
         (ofData_set_scratch x (by decide : 17 ≤ outFlag.val) 0).symm ▸ hraw⟩
   · -- Non-empty heap (`st.minRoot = z.val + 1`)
@@ -3528,9 +3528,10 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
         rw [hnm_y_eq, hnm_A1]
         exact markedCount_congr fun u => by rw [hin_y, hin_A1, hmk_y]
       refine ⟨y, t_else + 2, he_full, ?_, ?_, hmod_full, ?_⟩
-      · simp only [PQCode.decode, code, IndexedMinPQ.spec, IndexedMinPQ.step, Stateful.Spec.stepFn,
+      · simp only [PQCode.decode, code, indexedMinPQSpec, IndexedMinPQ.step,
+          StateTransitionSpec.stepFn,
           hfind, hy_of, hy_ov, hy_ok, one_ne_zero, ↓reduceIte, hz_lt, ↓reduceDIte, Fin.eta]
-      · simp only [IndexedMinPQ.spec, IndexedMinPQ.step, Stateful.Spec.stepFn, hfind]
+      · simp only [indexedMinPQSpec, IndexedMinPQ.step, StateTransitionSpec.stepFn, hfind]
         refine ⟨hb_y, hbr_y, finalRoots, hval_B, (List.nodup_cons.mp hnd_B).2, ?_, ?_, ?_,
           ?_, hnr_B, hnm_y_mc, hcons_B, hrl_B⟩
         · intro v
@@ -3576,4 +3577,4 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
           hnr_y] at ht_A1 ht_A2 ht_B ⊢
         omega
 
-end Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+end Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap

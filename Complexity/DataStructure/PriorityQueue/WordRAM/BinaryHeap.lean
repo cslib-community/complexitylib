@@ -7,41 +7,43 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.PriorityQueue.BinaryHeap.Sift
+public import Complexity.DataStructure.PriorityQueue.WordRAM.BinaryHeap.Sift
 
 /-!
 # Standalone Word-RAM Indexed Binary Min-Heap
 
-This file proves the full `SubroutineDS` and `PQPackage` specifications for the standalone
-word-RAM indexed binary min-heap (`Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.pqCode`) over
+This file proves the full `StateTransitionImpl` and `PQPackage` specifications for the standalone
+word-RAM indexed binary min-heap (`Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.pqCode`)
+over
 `Basis.exact`, and projects it via `Basis.Simulates.exactStandard` to standalone `.standard`-basis
-`DynamicProgram`, `DynamicCertificate`, `Stateful.Bound`, and adaptive-client theorems.
+`DynamicProgram`, `DynamicCertificate`, `Bound`, and adaptive-client theorems.
 
 The heap uses `space n = 3 * n + 1` words at any base address `base` with `Fits w (base + space n)`
 and `Fits w K_max`:
 * `initFresh` runs in `O(1)` (`11` instructions);
-* `initClear` runs in `O(n)` (`12 * n + 21` instructions, derived generically via `SubroutineDS`);
+* `initClear` runs in `O(n)` (`12 * n + 21` instructions, derived generically via
+  `StateTransitionImpl`);
 * `isEmpty` and `getKey` run in `O(1)` worst-case instructions;
 * `insert`, `decreaseKey`, and `extractMin` run in `O(log n + 1)` worst-case instructions with zero
   potential (`potential = 0`).
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.Rep`: concrete representation invariant.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.subroutineDS`: exact-basis `SubroutineDS`
+* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.Rep`: concrete representation invariant.
+* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.impl`: exact-basis `StateTransitionImpl`
   certificate.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.pkg`: `PQPackage .exact rBin` bundle for
+* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.pkg`: `PQPackage .exact rBin` bundle for
   black-box algorithm callers such as `dijkstra_of_pq_spec`.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.dynamicProgram`,
-  `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.certificate`: standalone `.standard`-basis
+* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.dynamicProgram`,
+  `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.certificate`: standalone `.standard`-basis
   machine realization.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.instruction_bound`: worst-case per-operation
-  `Stateful.Bound` over `Basis.standard`.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.run_client_bound`: worst-case total instruction
-  bound for any adaptive `Stateful.Client` program.
+* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.instruction_bound`: worst-case per-operation
+  `Bound` over `Basis.standard`.
+* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.run_client_bound`: worst-case total
+  instruction bound for any adaptive `StateTransitionSpec.Client` program.
 
 ## References
 
@@ -51,10 +53,9 @@ and `Fits w K_max`:
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap
+namespace Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
 
-open Cslib.WordRAM
-open Cslib.Algorithms.Lean
+open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 open Reg
 
 /-- Concrete representation invariant of the standalone binary heap at `base` on `n` handles. -/
@@ -160,7 +161,7 @@ private theorem doIsEmpty_spec {s : IndexedMinPQ.State n} {x : Data rBin}
     (hr : Rep n w base s x) (hz0 : x.regs zero = 0) (ho1 : x.regs one = 1) :
     ∃ y, ExecWithin w doIsEmpty x y 3 ∧
       pqCode.decode (K_max := K_max) .isEmpty y.regs =
-        some ((IndexedMinPQ.spec n K_max).stepFn s .isEmpty).2 ∧
+        some ((indexedMinPQSpec n K_max).stepFn s .isEmpty).2 ∧
       Rep n w base s y ∧ y.mem = x.mem := by
   by_cases hS : x.regs sz = 0
   · obtain ⟨y, he, hyf, hym, hyr⟩ : ∃ y, ExecWithin w doIsEmpty x y 3 ∧
@@ -174,8 +175,8 @@ private theorem doIsEmpty_spec {s : IndexedMinPQ.State n} {x : Data rBin}
     refine ⟨y, he, ?_, ⟨he.bounded hr.bounded, (hyr _ (by decide)).trans hr.reg_base,
       (hyr _ (by decide)).trans hr.reg_n, (hyr _ (by decide)).trans hr.reg_hb,
       (hyr _ (by decide)).trans hr.reg_pb, ?_, hym ▸ hr.state_eq⟩, hym⟩
-    · simp only [pqCode, PQCode.decode, IndexedMinPQ.spec, IndexedMinPQ.step,
-        Stateful.Spec.stepFn, hyf, hdom, ne_eq, one_ne_zero, not_false_eq_true, decide_true]
+    · simp only [pqCode, PQCode.decode, indexedMinPQSpec, IndexedMinPQ.step,
+        StateTransitionSpec.stepFn, hyf, hdom, ne_eq, one_ne_zero, not_false_eq_true, decide_true]
     · rw [hyr sz (by decide), hym]; exact hr.heap
   · obtain ⟨y, he, hyf, hym, hyr⟩ : ∃ y, ExecWithin w doIsEmpty x y 3 ∧
         y.regs outFlag = 0 ∧ y.mem = x.mem ∧ ∀ i, i ≠ outFlag → y.regs i = x.regs i := by
@@ -189,8 +190,8 @@ private theorem doIsEmpty_spec {s : IndexedMinPQ.State n} {x : Data rBin}
     refine ⟨y, he, ?_, ⟨he.bounded hr.bounded, (hyr _ (by decide)).trans hr.reg_base,
       (hyr _ (by decide)).trans hr.reg_n, (hyr _ (by decide)).trans hr.reg_hb,
       (hyr _ (by decide)).trans hr.reg_pb, ?_, hym ▸ hr.state_eq⟩, hym⟩
-    · simp only [pqCode, PQCode.decode, IndexedMinPQ.spec, IndexedMinPQ.step,
-        Stateful.Spec.stepFn, hyf, hdom, ne_eq, not_true_eq_false, decide_false]
+    · simp only [pqCode, PQCode.decode, indexedMinPQSpec, IndexedMinPQ.step,
+        StateTransitionSpec.stepFn, hyf, hdom, ne_eq, not_true_eq_false, decide_false]
     · rw [hyr sz (by decide), hym]; exact hr.heap
 
 private theorem doGetKey_spec (hS : Fits w (base + space n)) {s : IndexedMinPQ.State n}
@@ -198,7 +199,7 @@ private theorem doGetKey_spec (hS : Fits w (base + space n)) {s : IndexedMinPQ.S
     {v : Fin n} (hv_reg : x.regs argV = v.val) :
     ∃ y, ExecWithin w doGetKey x y 7 ∧
       pqCode.decode (K_max := K_max) (.getKey v) y.regs =
-        some ((IndexedMinPQ.spec n K_max).stepFn s (.getKey v)).2 ∧
+        some ((indexedMinPQSpec n K_max).stepFn s (.getKey v)).2 ∧
       Rep n w base s y ∧ y.mem = x.mem := by
   have hsp : space n = 3 * n + 1 := rfl
   have hv_lt := v.isLt
@@ -218,8 +219,8 @@ private theorem doGetKey_spec (hS : Fits w (base + space n)) {s : IndexedMinPQ.S
     refine ⟨y, he, ?_, ⟨he.bounded hr.bounded, (hyr _ (by decide)).trans hr.reg_base,
       (hyr _ (by decide)).trans hr.reg_n, (hyr _ (by decide)).trans hr.reg_hb,
       (hyr _ (by decide)).trans hr.reg_pb, ?_, hym ▸ hr.state_eq⟩, hym⟩
-    · simp only [pqCode, PQCode.decode, IndexedMinPQ.spec, IndexedMinPQ.step,
-        Stateful.Spec.stepFn, hyf, ↓reduceIte, hr.state_eq, stateOfMem, hp0]
+    · simp only [pqCode, PQCode.decode, indexedMinPQSpec, IndexedMinPQ.step,
+        StateTransitionSpec.stepFn, hyf, ↓reduceIte, hr.state_eq, stateOfMem, hp0]
     · rw [hyr sz (by decide), hym]; exact hr.heap
   · obtain ⟨y, he, hyf, hyk, hym, hyr⟩ : ∃ y, ExecWithin w doGetKey x y 7 ∧
         y.regs outFlag = 1 ∧ y.regs outK = x.mem (base + v.val) ∧ y.mem = x.mem ∧
@@ -236,8 +237,8 @@ private theorem doGetKey_spec (hS : Fits w (base + space n)) {s : IndexedMinPQ.S
     refine ⟨y, he, ?_, ⟨he.bounded hr.bounded, (hyr _ (by decide)).trans hr.reg_base,
       (hyr _ (by decide)).trans hr.reg_n, (hyr _ (by decide)).trans hr.reg_hb,
       (hyr _ (by decide)).trans hr.reg_pb, ?_, hym ▸ hr.state_eq⟩, hym⟩
-    · simp only [pqCode, PQCode.decode, IndexedMinPQ.spec, IndexedMinPQ.step,
-        Stateful.Spec.stepFn, hyf, one_ne_zero, ↓reduceIte, hyk, hr.state_eq, stateOfMem, hp0]
+    · simp only [pqCode, PQCode.decode, indexedMinPQSpec, IndexedMinPQ.step,
+        StateTransitionSpec.stepFn, hyf, one_ne_zero, ↓reduceIte, hyk, hr.state_eq, stateOfMem, hp0]
     · rw [hyr sz (by decide), hym]; exact hr.heap
 
 private def insertHead : Code .exact rBin := ram_exact[
@@ -442,8 +443,8 @@ private theorem doExtractMin_spec (hS : Fits w (base + space n)) {s : IndexedMin
     {x : Data rBin} (hr : Rep n w base s x) (hz0 : x.regs zero = 0) (ho1 : x.regs one = 1) :
     ∃ y, ExecWithin w doExtractMin x y (46 * Nat.log 2 n + 22) ∧
       pqCode.decode (K_max := K_max) .extractMin y.regs =
-        some ((IndexedMinPQ.spec n K_max).stepFn s .extractMin).2 ∧
-      Rep n w base ((IndexedMinPQ.spec n K_max).stepFn s .extractMin).1 y ∧
+        some ((indexedMinPQSpec n K_max).stepFn s .extractMin).2 ∧
+      Rep n w base ((indexedMinPQSpec n K_max).stepFn s .extractMin).1 y ∧
       Modifies (Block.mk base (space n)).footprint x.mem y.mem := by
   have hsp : space n = 3 * n + 1 := rfl
   obtain ⟨S, hsz_eq⟩ : ∃ S, x.regs sz = S := ⟨_, rfl⟩
@@ -461,9 +462,9 @@ private theorem doExtractMin_spec (hS : Fits w (base + space n)) {s : IndexedMin
       exact hheap.size_eq_zero_iff.mp rfl
     refine ⟨x.set outFlag 0, hetot, ?_, ⟨hetot.bounded hr.bounded, hr.reg_base, hr.reg_n,
       hr.reg_hb, hr.reg_pb, hsz_eq ▸ hheap, ?_⟩, Modifies.refl _ _⟩
-    · simp only [pqCode, PQCode.decode, IndexedMinPQ.spec, IndexedMinPQ.step,
-        Stateful.Spec.stepFn, hfm, Data.set_regs, Function.update_self, ↓reduceIte]
-    · simp only [IndexedMinPQ.spec, IndexedMinPQ.step, Stateful.Spec.stepFn, hfm, Data.set_mem]
+    · simp only [pqCode, PQCode.decode, indexedMinPQSpec, IndexedMinPQ.step,
+        StateTransitionSpec.stepFn, hfm, Data.set_regs, Function.update_self, ↓reduceIte]
+    · simp only [indexedMinPQSpec, IndexedMinPQ.step, StateTransitionSpec.stepFn, hfm, Data.set_mem]
       exact hr.state_eq
   · have hS1 : 1 ≤ S := Nat.one_le_iff_ne_zero.2 hS0
     have hc : ¬(Cond.eq sz zero).Holds x := by simp only [Cond.holds_eq, hsz_eq, hz0]; omega
@@ -484,9 +485,9 @@ private theorem doExtractMin_spec (hS : Fits w (base + space n)) {s : IndexedMin
       (hfr hb (by decide)).trans hr.reg_hb,
       (hfr pb (by decide)).trans hr.reg_pb,
       hysz ▸ hheap', ?_⟩, ?_⟩
-    · simp only [pqCode, PQCode.decode, IndexedMinPQ.spec, IndexedMinPQ.step,
-        Stateful.Spec.stepFn, hfm, hyf, one_ne_zero, ↓reduceIte, ↓reduceDIte, hyu, hUN, hyk]
-    · simp only [IndexedMinPQ.spec, IndexedMinPQ.step, Stateful.Spec.stepFn, hfm]
+    · simp only [pqCode, PQCode.decode, indexedMinPQSpec, IndexedMinPQ.step,
+        StateTransitionSpec.stepFn, hfm, hyf, one_ne_zero, ↓reduceIte, ↓reduceDIte, hyu, hUN, hyk]
+    · simp only [indexedMinPQSpec, IndexedMinPQ.step, StateTransitionSpec.stepFn, hfm]
       funext u
       have hu_lt := u.isLt
       have hkey : y.mem (base + u.val) = x.mem (base + u.val) :=
@@ -522,11 +523,11 @@ private theorem opCode_eq : opCode = appendCode opSetup
 
 private theorem opCode_spec (hS : Fits w (base + space n)) {s : IndexedMinPQ.State n}
     {x : Data rBin} (o : IndexedMinPQ.Op n) (hr : Rep n w base s x)
-    (hv : (IndexedMinPQ.spec n K_max).valid s o) (harg : pqCode.argMatch o x.regs) :
+    (hv : (indexedMinPQSpec n K_max).valid s o) (harg : pqCode.argMatch o x.regs) :
     ∃ y m, Exec w opCode x y m ∧
       pqCode.decode (K_max := K_max) o y.regs =
-        some ((IndexedMinPQ.spec n K_max).stepFn s o).2 ∧
-      Rep n w base ((IndexedMinPQ.spec n K_max).stepFn s o).1 y ∧
+        some ((indexedMinPQSpec n K_max).stepFn s o).2 ∧
+      Rep n w base ((indexedMinPQSpec n K_max).stepFn s o).1 y ∧
       Modifies (Block.mk base (space n)).footprint x.mem y.mem ∧
       m ≤ charge n o := by
   have hsp : space n = 3 * n + 1 := rfl
@@ -613,11 +614,11 @@ private theorem opCode_spec (hS : Fits w (base + space n)) {s : IndexedMinPQ.Sta
 
 end OpSpecs
 
-/-- Exact-basis `SubroutineDS` certificate for the standalone binary min-heap. -/
-abbrev subroutineDS {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max) :
-    SubroutineDS pqCode.toSubroutineCode (IndexedMinPQ.spec n K_max) w base ![n]
+/-- Exact-basis `WordRAM.StateTransitionImpl` certificate for the standalone binary min-heap. -/
+abbrev impl {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max) :
+    WordRAM.StateTransitionImpl pqCode.toSubroutineCode (indexedMinPQSpec n K_max) w base ![n]
       (IndexedMinPQ.empty n) :=
-  SubroutineDS.ofFn
+  WordRAM.StateTransitionImpl.ofFn
     (space := space n)
     (spanTime := 6)
     (setupTime := 5)
@@ -672,7 +673,7 @@ def pkg : PQPackage .exact rBin where
   insertTime := tIns
   decreaseTime := tDec
   extractTime := tExt
-  cert hS hK := subroutineDS hS hK
+  cert hS hK := impl hS hK
   rep_unique _ _ := fun hr₁ hr₂ => hr₁.state_eq.trans hr₂.state_eq.symm
   cert_space _ _ := rfl
   cert_initTime _ _ := le_rfl
@@ -685,10 +686,10 @@ def pkg : PQPackage .exact rBin where
   charge_decreaseKey _ _ _ _ _ := le_rfl
   charge_extractMin _ _ _ := le_rfl
 
-/-! ## Standalone `.standard`-Basis Word-RAM Realization and Worst-Case Bounds -/
+/-! ## Standalone `.standard`-Basis Word-RAM Implementation and Worst-Case Bounds -/
 
-/-- Standalone `.standard`-basis `DynamicProgram` serving `IndexedMinPQ.spec n K_max`. -/
-def dynamicProgram (n K_max : ℕ) : DynamicProgram (IndexedMinPQ.spec n K_max) rBin where
+/-- Standalone `.standard`-basis `DynamicProgram` serving `indexedMinPQSpec n K_max`. -/
+def dynamicProgram (n K_max : ℕ) : DynamicProgram (indexedMinPQSpec n K_max) rBin where
   code := pqCode.toStandard.code
   output := pqCode.output
   input := pqCode.input
@@ -698,30 +699,30 @@ def dynamicProgram (n K_max : ℕ) : DynamicProgram (IndexedMinPQ.spec n K_max) 
 /-- Standalone `.standard`-basis `DynamicCertificate` for the binary min-heap. -/
 def certificate {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max) :
     DynamicCertificate (dynamicProgram n K_max) w :=
-  ((subroutineDS hS hK).toStandard).toCertificate
+  ((impl hS hK).toStandard).toCertificate
 
 /-- **Standalone worst-case per-operation bound** for the word-RAM binary min-heap over
 `Basis.standard` (`charge n o + 1` instructions including the trailing `halt`). -/
 theorem instruction_bound {n K_max w base : ℕ} (hS : Fits w (base + space n))
     (hK : Fits w K_max) :
-    Stateful.Bound (certificate hS hK).realization
+    Bound (certificate hS hK).impl
       DynamicProgram.OperationTrace.instructions
       (fun _ o => charge n o + 1) :=
-  ((subroutineDS hS hK).toStandard).toBound fun _ => rfl
+  ((impl hS hK).toStandard).toBound fun _ => rfl
 
 /-- **Standalone adaptive-client bound** for the word-RAM binary min-heap over `Basis.standard`. -/
 theorem run_client_bound {n K_max w base : ℕ} (hS : Fits w (base + space n))
-    (hK : Fits w K_max) {α : Type*} (p : (IndexedMinPQ.spec n K_max).Client α)
+    (hK : Fits w K_max) {α : Type*} (p : (indexedMinPQSpec n K_max).Client α)
     {s : IndexedMinPQ.State n} {x : Data rBin} (hr : Rep n w base s x)
-    (hv : (IndexedMinPQ.spec n K_max).ValidHistory s
-      ((IndexedMinPQ.spec n K_max).runClient s p).2.2) :
+    (hv : (indexedMinPQSpec n K_max).ValidHistory s
+      ((indexedMinPQSpec n K_max).runClient s p).2.2) :
     ∃ y traces,
-      Stateful.Executes ((dynamicProgram n K_max).ExecOp w) p x
-        ((IndexedMinPQ.spec n K_max).runClient s p).1 y traces ∧
-      Rep n w base ((IndexedMinPQ.spec n K_max).runClient s p).2.1 y ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces ≤
-        (IndexedMinPQ.spec n K_max).totalCost (fun _ o => charge n o + 1) s
-          ((IndexedMinPQ.spec n K_max).runClient s p).2.2 :=
-  ((subroutineDS hS hK).toStandard).run_client_bound (fun _ => rfl) p hr hv
+      Executes ((dynamicProgram n K_max).ExecOp w) p x
+        ((indexedMinPQSpec n K_max).runClient s p).1 y traces ∧
+      Rep n w base ((indexedMinPQSpec n K_max).runClient s p).2.1 y ∧
+      DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤
+        (indexedMinPQSpec n K_max).totalCost (fun _ o => charge n o + 1) s
+          ((indexedMinPQSpec n K_max).runClient s p).2.2 :=
+  ((impl hS hK).toStandard).run_client_bound (fun _ => rfl) p hr hv
 
-end Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap
+end Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap

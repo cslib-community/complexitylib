@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Program
+public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Program
 
 /-!
 # Fibonacci Heap: Shared Primitives, Initialization, Queries, and Insertion
@@ -21,16 +21,16 @@ This file proves the exact-Word-RAM specifications for:
 ## Main definitions
 
 * Shared code fragments are defined in
-  `Complexity/Algorithms/WordRAM/PriorityQueue/FibonacciHeap/Program.lean` and verified here
+  `Complexity/DataStructure/PriorityQueue/WordRAM/FibonacciHeap/Program.lean` and verified here
   against `FibInv`.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.prioLTFlag_exec`,
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.prioLTFlag_exec`,
   `insertIntoNonEmptyList_exec`, `addRootAndUpdateMin_exec`: shared list and priority primitives.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.allocSpan_exec`, `initSetup_exec`,
-  `incCur_eval`: initialization specifications for `SubroutineDS`.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.isEmptyCode_exec`, `getKeyCode_exec`,
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.allocSpan_exec`, `initSetup_exec`,
+  `incCur_eval`: initialization specifications for `StateTransitionImpl`.
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.isEmptyCode_exec`, `getKeyCode_exec`,
   `insertCode_exec`: `O(1)` query and amortized insertion specifications.
 
 ## References
@@ -43,10 +43,9 @@ This file proves the exact-Word-RAM specifications for:
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+namespace Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap
 
-open Cslib.WordRAM
-open Cslib.Algorithms.Lean
+open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 
 theorem owns_arr_addr {n base k idx : ℕ} (hk : k < 8) (hidx : idx < n) :
     base ≤ base + k * n + idx ∧ base + k * n + idx < base + space n := by
@@ -1426,4 +1425,4 @@ theorem insertCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x : D
     simp only [potential, hy_nr, hy_nm, hx_nr, hx_nm, unitCredit]
     omega
 
-end Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+end Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap

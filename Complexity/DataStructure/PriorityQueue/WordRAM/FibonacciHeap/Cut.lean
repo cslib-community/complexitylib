@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.BasicOps
+public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.BasicOps
 
 /-!
 # Fibonacci Heap: `decreaseKey` and Cascading Cuts
@@ -30,14 +30,14 @@ under `potential = 80 * (numRoots + 2 * numMarked)`):
 ## Main definitions
 
 * `cutNodeCode` and `decreaseKeyCode` are defined in
-  `Complexity/Algorithms/WordRAM/PriorityQueue/FibonacciHeap/Program.lean` and verified here
+  `Complexity/DataStructure/PriorityQueue/WordRAM/FibonacciHeap/Program.lean` and verified here
   against `CutInv` and `FibInv`.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.cutNodeCode_raw`, `cutNode_forest`:
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.cutNodeCode_raw`, `cutNode_forest`:
   single-edge pointer and forest cut specifications.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.decreaseKeyCode_exec`: `O(1)` amortized
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.decreaseKeyCode_exec`: `O(1)` amortized
   `decreaseKey` specification with cascading cuts.
 
 ## References
@@ -50,10 +50,9 @@ under `potential = 80 * (numRoots + 2 * numMarked)`):
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+namespace Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap
 
-open Cslib.WordRAM
-open Cslib.Algorithms.Lean
+open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 
 /-! ## Pure forest lemmas for `decreaseKey` -/
 
@@ -2402,4 +2401,4 @@ theorem decreaseKeyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {
       exact ⟨y, 330, he_all, ⟨hby, hbry, hraw_y⟩, hmemy ▸ hmod2,
         by rw [hpoty, hpot6]⟩
 
-end Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+end Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap

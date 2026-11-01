@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.IndexedMinPQ
+public import Complexity.DataStructure.PriorityQueue.Spec
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Data.List.Nodup
 public import Mathlib.Data.List.Perm.Basic
@@ -32,14 +32,14 @@ Word-RAM Fibonacci heap [Fredman and Tarjan][FredmanTarjan1987]
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.ChainLinks`, `IsCircList`: pointer-level
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.ChainLinks`, `IsCircList`: pointer-level
   invariants for circular doubly-linked lists over `Fin n → ℕ`.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.IsCircList.singleton`,
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.IsCircList.singleton`,
   `IsCircList.insertAfter`, `IsCircList.rotate_to`, `IsCircList.remove`: circular-list operations.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.fib_sum_pred_add_two`,
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.fib_sum_pred_add_two`,
   `deg_le_two_mul_log_add_one`: pure-`ℕ` Fibonacci child-rank sum and `2 * Nat.log 2 n + 1` degree
   bound.
 
@@ -53,9 +53,9 @@ Word-RAM Fibonacci heap [Fredman and Tarjan][FredmanTarjan1987]
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+namespace Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap
 
-open Cslib.Algorithms.Lean
+open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 
 /-! ## Circular doubly-linked lists over `Fin n` -/
 
@@ -324,4 +324,4 @@ theorem deg_le_two_mul_log_add_one {d n : ℕ} (hfib : Nat.fib (d + 2) ≤ n) :
   have hlog : d / 2 ≤ Nat.log 2 n := Nat.le_log_of_pow_le (by omega) hpow
   omega
 
-end Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+end Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap

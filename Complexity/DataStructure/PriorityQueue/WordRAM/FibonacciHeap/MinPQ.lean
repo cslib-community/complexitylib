@@ -7,19 +7,21 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.MinPQ
+public import Complexity.DataStructure.PriorityQueue.Spec
 public import Complexity.Computability.WordRAM.Subroutine
-public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.BasicOps
-public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Cut
-public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Consolidate
+public import Complexity.DataStructure.WordRAM.StateTransition
+public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.BasicOps
+public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Cut
+public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Consolidate
 
 /-!
 # Fibonacci Heap with Handles and Satellite Values
 
-This file realizes the relational priority-queue specification `Cslib.Algorithms.Lean.MinPQ.spec`
+This file implements the relational priority-queue specification
+`Cslib.DataStructure.PriorityQueue.minPQSpec`
 (returning an opaque handle `h : Fin n_max` on `insert` and `(u, v, h)` on `extractMin`) as a
-Word-RAM `SubroutineDS` over `Cslib.WordRAM.Basis.exact` (and lifted to `Basis.standard`),
-layered on top of `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap`.
+Word-RAM `StateTransitionImpl` over `Cslib.WordRAM.Basis.exact` (and lifted to `Basis.standard`),
+layered on top of `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap`.
 
 Over capacity `n_max` in a contiguous memory block `[base, base + 11 * n_max + 1)`:
 * `[base, base + 9 * n_max + 1)` holds the inner Fibonacci heap arrays (`key`, `par`, `child`,
@@ -31,20 +33,20 @@ Over capacity `n_max` in a contiguous memory block `[base, base + 11 * n_max + 1
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.MinPQ.rMinPQ`, `space`, `subroutineCode`:
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.MinPQ.rMinPQ`, `space`, `subroutineCode`:
   `48`-register, `(11 * n_max + 1)`-word `SubroutineCode .exact rMinPQ 1`.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.MinPQ.Rep`, `charge`: relational
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.MinPQ.Rep`, `charge`: relational
   representation invariant and per-operation amortized instruction charges (`O(log n + 1)` on
   `extractMin` in the current number of stored elements `n = MinPQ.size s`).
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.MinPQ.subroutineDS`:
-  `SubroutineDS` certificate over `Basis.exact`.
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.MinPQ.impl`:
+  `StateTransitionImpl` certificate over `Basis.exact`.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.MinPQ.amortized`,
-  `run_client_amortized`: standalone `Stateful.Amortized` certificate and adaptive-client bound
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.MinPQ.amortized`,
+  `run_client_amortized`: standalone `Amortized` certificate and adaptive-client bound
   over `Basis.standard`.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.MinPQ.run_ops_exact_fresh`,
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.MinPQ.run_ops_exact_fresh`,
   `run_ops_exact_reusable`: standalone `Basis.exact` flat-program execution theorems.
 
 ## References
@@ -57,10 +59,9 @@ Over capacity `n_max` in a contiguous memory block `[base, base + 11 * n_max + 1
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.MinPQ
+namespace Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.MinPQ
 
-open Cslib.WordRAM
-open Cslib.Algorithms.Lean
+open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue Cslib.DataStructure.WordRAM
 open scoped Cslib.WordRAM
 
 /-! ## Register file (`rMinPQ = 48`), embedding `f42`, and footprint size -/
@@ -184,20 +185,20 @@ def tExt (n : ℕ) : ℕ := 420 * (Nat.log 2 n + 1)
 /-- Per-operation amortized instruction charge for the key–value Fibonacci heap, charging
 `tExt (MinPQ.size s)` on `.extractMin` in terms of the current number of stored elements
 `MinPQ.size s`. -/
-def charge (n_max : ℕ) (s : Cslib.Algorithms.Lean.MinPQ.State n_max) :
-    Cslib.Algorithms.Lean.MinPQ.Op n_max → ℕ
+def charge (n_max : ℕ) (s : PriorityQueue.MinPQ.State n_max) :
+    PriorityQueue.MinPQ.Op n_max → ℕ
   | .isEmpty => tEmpty n_max
   | .get _ => tGet n_max
   | .insert _ _ => tIns n_max
   | .decreaseKey _ _ => tDec n_max
-  | .extractMin => tExt (Cslib.Algorithms.Lean.MinPQ.size s)
+  | .extractMin => tExt (PriorityQueue.MinPQ.size s)
 
 /-- Since `MinPQ.size s ≤ n_max`, `charge n_max s .extractMin ≤ tExt n_max`. -/
-theorem charge_extractMin_le_tExt (n_max : ℕ) (s : Cslib.Algorithms.Lean.MinPQ.State n_max) :
+theorem charge_extractMin_le_tExt (n_max : ℕ) (s : PriorityQueue.MinPQ.State n_max) :
     charge n_max s .extractMin ≤ tExt n_max := by
   simp only [charge, tExt]
-  have hlog : Nat.log 2 (Cslib.Algorithms.Lean.MinPQ.size s) ≤ Nat.log 2 n_max :=
-    Nat.log_mono_right (Cslib.Algorithms.Lean.MinPQ.size_le s)
+  have hlog : Nat.log 2 (PriorityQueue.MinPQ.size s) ≤ Nat.log 2 n_max :=
+    Nat.log_mono_right (PriorityQueue.MinPQ.size_le s)
   omega
 
 /-- Concrete integer potential `80 * (numRoots + 2 * numMarked)` inherited from the inner
@@ -333,9 +334,9 @@ def subroutineCode : SubroutineCode .exact rMinPQ 1 where
 
 /-! ## Calling convention: `encode`, `argMatch`, `decode` -/
 
-/-- Raw register encoding for `Cslib.Algorithms.Lean.MinPQ.Op n_max` using 1-bit tags
+/-- Raw register encoding for `PriorityQueue.MinPQ.Op n_max` using 1-bit tags
 `(tag2, tag1, tag0)`. -/
-def rawEncode {n_max : ℕ} : Cslib.Algorithms.Lean.MinPQ.Op n_max → Fin rMinPQ → ℕ
+def rawEncode {n_max : ℕ} : PriorityQueue.MinPQ.Op n_max → Fin rMinPQ → ℕ
   | .isEmpty => fun _ => 0
   | .get h => fun i => if i = tag0 then 1 else if i = argV then h.val else 0
   | .insert u v => fun i =>
@@ -345,17 +346,17 @@ def rawEncode {n_max : ℕ} : Cslib.Algorithms.Lean.MinPQ.Op n_max → Fin rMinP
       else if i = argV then h.val else if i = argK then u' else 0
   | .extractMin => fun i => if i = tag2 then 1 else 0
 
-/-- Register encoding for `Cslib.Algorithms.Lean.MinPQ.Op n_max` bounded by `U` on `decreaseKey`
+/-- Register encoding for `PriorityQueue.MinPQ.Op n_max` bounded by `U` on `decreaseKey`
 so `arguments_fit` holds on arbitrary states; coincides with `rawEncode` on every represented
 state (`encode_eq_rawEncode_of_rep`). -/
-def encode {n_max : ℕ} (U : ℕ) : Cslib.Algorithms.Lean.MinPQ.Op n_max → Fin rMinPQ → ℕ
+def encode {n_max : ℕ} (U : ℕ) : PriorityQueue.MinPQ.Op n_max → Fin rMinPQ → ℕ
   | .decreaseKey h u' => fun i =>
       if i = tag1 then 1 else if i = tag0 then 1
       else if i = argV then h.val else if i = argK then (if u' < U then u' else 0) else 0
   | o => rawEncode o
 
-/-- Standard argument-matching predicate for `Cslib.Algorithms.Lean.MinPQ.Op n_max`. -/
-def rawArgMatch {n_max : ℕ} : Cslib.Algorithms.Lean.MinPQ.Op n_max → (Fin rMinPQ → ℕ) → Prop
+/-- Standard argument-matching predicate for `PriorityQueue.MinPQ.Op n_max`. -/
+def rawArgMatch {n_max : ℕ} : PriorityQueue.MinPQ.Op n_max → (Fin rMinPQ → ℕ) → Prop
   | .isEmpty => fun regs => regs tag2 = 0 ∧ regs tag1 = 0 ∧ regs tag0 = 0
   | .get h => fun regs =>
       regs tag2 = 0 ∧ regs tag1 = 0 ∧ regs tag0 ≠ 0 ∧ regs argV = h.val
@@ -365,17 +366,17 @@ def rawArgMatch {n_max : ℕ} : Cslib.Algorithms.Lean.MinPQ.Op n_max → (Fin rM
       regs tag2 = 0 ∧ regs tag1 ≠ 0 ∧ regs tag0 ≠ 0 ∧ regs argV = h.val ∧ regs argK = u'
   | .extractMin => fun regs => regs tag2 ≠ 0
 
-/-- Argument-matching predicate paired with `encode U` for `SubroutineDS`. -/
-def argMatch {n_max : ℕ} (U : ℕ) : Cslib.Algorithms.Lean.MinPQ.Op n_max → (Fin rMinPQ → ℕ) → Prop
+/-- Argument-matching predicate paired with `encode U` for `WordRAM.StateTransitionImpl`. -/
+def argMatch {n_max : ℕ} (U : ℕ) : PriorityQueue.MinPQ.Op n_max → (Fin rMinPQ → ℕ) → Prop
   | .decreaseKey h u' => fun regs =>
       regs tag2 = 0 ∧ regs tag1 ≠ 0 ∧ regs tag0 ≠ 0 ∧ regs argV = h.val ∧
         regs argK = (if u' < U then u' else 0)
   | o => rawArgMatch o
 
-/-- Output decoder for `Cslib.Algorithms.Lean.MinPQ.spec n_max U V`. -/
+/-- Output decoder for `minPQSpec n_max U V`. -/
 def decode {n_max U V : ℕ} :
-    (o : (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).Op) → (Fin rMinPQ → ℕ) →
-      Option ((Cslib.Algorithms.Lean.MinPQ.spec n_max U V).Result o)
+    (o : (minPQSpec n_max U V).Op) → (Fin rMinPQ → ℕ) →
+      Option ((minPQSpec n_max U V).Result o)
   | .isEmpty, regs => some (decide (regs outFlag ≠ 0))
   | .get _, regs =>
       if regs outFlag = 0 then some none else some (some (regs outK, regs outValReg))
@@ -389,8 +390,8 @@ def decode {n_max U V : ℕ} :
 
 theorem arguments_fit {n_max U V w base : ℕ}
     (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V)
-    {s : Cslib.Algorithms.Lean.MinPQ.State n_max} (o : Cslib.Algorithms.Lean.MinPQ.Op n_max)
-    (hv : (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).valid s o) (i : Fin rMinPQ) :
+    {s : PriorityQueue.MinPQ.State n_max} (o : PriorityQueue.MinPQ.Op n_max)
+    (hv : (minPQSpec n_max U V).valid s o) (i : Fin rMinPQ) :
     Fits w (encode U o i) := by
   have hsp := space_lower n_max
   have h0 : Fits w 0 := hS.of_le (Nat.zero_le _)
@@ -426,7 +427,7 @@ theorem arguments_fit {n_max U V w base : ℕ}
     · exact h1
     · exact h0
 
-theorem encode_matches {n_max U : ℕ} (o : Cslib.Algorithms.Lean.MinPQ.Op n_max)
+theorem encode_matches {n_max U : ℕ} (o : PriorityQueue.MinPQ.Op n_max)
     (regs : Fin rMinPQ → ℕ) :
     argMatch U o (fun i => if subroutineCode.input i then encode U o i else regs i) := by
   cases o with
@@ -445,11 +446,11 @@ theorem encode_matches {n_max U : ℕ} (o : Cslib.Algorithms.Lean.MinPQ.Op n_max
 /-! ## Representation invariant (`AllocRep`, `Rep`) and framing lemmas -/
 
 /-- Full machine-state representation invariant for an internal allocator state
-`s : Cslib.Algorithms.Lean.MinPQ.AllocState n_max`. -/
-def AllocRep (n_max U V w base : ℕ) (s : Cslib.Algorithms.Lean.MinPQ.AllocState n_max)
+`s : PriorityQueue.MinPQ.AllocState n_max`. -/
+def AllocRep (n_max U V w base : ℕ) (s : PriorityQueue.MinPQ.AllocState n_max)
     (x : Data rMinPQ) : Prop :=
   x.Bounded w ∧
-  FibonacciHeap.FibInv n_max U w base (Cslib.Algorithms.Lean.MinPQ.toIndexed s.entries)
+  FibonacciHeap.FibInv n_max U w base (PriorityQueue.MinPQ.toIndexed s.entries)
     (x.comap f42) ∧
   s.WellFormed ∧
   x.regs outerFrontierReg = base + space n_max ∧
@@ -463,10 +464,10 @@ def AllocRep (n_max U V w base : ℕ) (s : Cslib.Algorithms.Lean.MinPQ.AllocStat
       (s.freeList[i]).val)
 
 /-- Existential relational representation invariant over abstract state
-`e : Cslib.Algorithms.Lean.MinPQ.State n_max`. -/
-def Rep (n_max U V w base : ℕ) (e : Cslib.Algorithms.Lean.MinPQ.State n_max)
+`e : PriorityQueue.MinPQ.State n_max`. -/
+def Rep (n_max U V w base : ℕ) (e : PriorityQueue.MinPQ.State n_max)
     (x : Data rMinPQ) : Prop :=
-  ∃ s : Cslib.Algorithms.Lean.MinPQ.AllocState n_max,
+  ∃ s : PriorityQueue.MinPQ.AllocState n_max,
     s.entries = e ∧ AllocRep n_max U V w base s x
 
 theorem owns_val_addr {n_max base idx : ℕ} (hidx : idx < n_max) :
@@ -499,7 +500,7 @@ theorem modifies_of_fib {n_max base : ℕ} {m₁ m₂ : ℕ → ℕ}
   fun a ha => h a fun ha' => ha (fib_footprint_subset ha')
 
 theorem AllocRep.supported {n_max U V w base : ℕ}
-    {s : Cslib.Algorithms.Lean.MinPQ.AllocState n_max} {x x' : Data rMinPQ}
+    {s : PriorityQueue.MinPQ.AllocState n_max} {x x' : Data rMinPQ}
     (hreg : ∀ i : Fin rMinPQ, inputReg i = false → x'.regs i = x.regs i)
     (hmem : ∀ a ∈ (Block.mk base (space n_max)).footprint, x'.mem a = x.mem a)
     (hb' : x'.Bounded w) (h : AllocRep n_max U V w base s x) :
@@ -527,7 +528,7 @@ theorem AllocRep.supported {n_max U V w base : ℕ}
     exact hfree i hi
 
 theorem Rep.supported {n_max U V w base : ℕ}
-    {e : Cslib.Algorithms.Lean.MinPQ.State n_max} {x x' : Data rMinPQ}
+    {e : PriorityQueue.MinPQ.State n_max} {x x' : Data rMinPQ}
     (hreg : ∀ i : Fin rMinPQ, inputReg i = false → x'.regs i = x.regs i)
     (hmem : ∀ a ∈ (Block.mk base (space n_max)).footprint, x'.mem a = x.mem a)
     (hb' : x'.Bounded w) (h : Rep n_max U V w base e x) :
@@ -541,10 +542,10 @@ theorem potential_supported {x x' : Data rMinPQ}
   FibonacciHeap.potential_supported fun j hj => hreg (f42 j) (inputReg_f42_of_false j hj)
 
 theorem rawArgMatch_of_argMatch {n_max U V w base : ℕ}
-    {s : Cslib.Algorithms.Lean.MinPQ.AllocState n_max} {x : Data rMinPQ}
-    {o : Cslib.Algorithms.Lean.MinPQ.Op n_max}
+    {s : PriorityQueue.MinPQ.AllocState n_max} {x : Data rMinPQ}
+    {o : PriorityQueue.MinPQ.Op n_max}
     (hrep : AllocRep n_max U V w base s x)
-    (hv : (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).valid s.entries o)
+    (hv : (minPQSpec n_max U V).valid s.entries o)
     (harg : argMatch U o x.regs) :
     rawArgMatch o x.regs := by
   cases o with
@@ -557,10 +558,10 @@ theorem rawArgMatch_of_argMatch {n_max U V w base : ℕ}
     exact harg
 
 theorem encode_eq_rawEncode_of_rep {n_max U V w base : ℕ}
-    {e : Cslib.Algorithms.Lean.MinPQ.State n_max} {x : Data rMinPQ}
-    {o : Cslib.Algorithms.Lean.MinPQ.Op n_max}
+    {e : PriorityQueue.MinPQ.State n_max} {x : Data rMinPQ}
+    {o : PriorityQueue.MinPQ.Op n_max}
     (hr : Rep n_max U V w base e x)
-    (hv : (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).valid e o) :
+    (hv : (minPQSpec n_max U V).valid e o) :
     encode U o = rawEncode o := by
   cases o with
   | isEmpty | get _ | insert _ _ | extractMin => rfl
@@ -659,7 +660,7 @@ theorem initSetup_exec {n_max U V w base : ℕ} {x₁ : Data rMinPQ}
     (hpar₁ : ∀ j : Fin 1, x₁.regs (![nReg] j) = ![n_max] j)
     (hz : ∀ a ∈ (Block.mk base (space n_max)).footprint, x₁.mem a = 0) :
     ∃ y, ExecWithin w initSetup x₁ y 18 ∧ y.regs outerFrontierReg = base + space n_max ∧
-      Rep n_max U V w base (Cslib.Algorithms.Lean.MinPQ.empty n_max) y ∧ potential y ≤ 0 ∧
+      Rep n_max U V w base (PriorityQueue.MinPQ.empty n_max) y ∧ potential y ≤ 0 ∧
       Modifies (Block.mk base (space n_max)).footprint x₁.mem y.mem := by
   have hn : x₁.regs nReg = n_max := hpar₁ 0
   have hS : Fits w (base + space n_max) := hfr₁ ▸ hx₁.1 outerFrontierReg
@@ -734,9 +735,9 @@ theorem initSetup_exec {n_max U V w base : ℕ} {x₁ : Data rMinPQ}
       Function.update_of_ne (by decide : outerFrontierReg ≠ valBaseReg),
       Function.update_of_ne (by decide : outerFrontierReg ≠ freeBaseReg), hfr₁]
   refine ⟨y, he, hy_ofr,
-    ⟨Cslib.Algorithms.Lean.MinPQ.AllocState.empty n_max, rfl,
+    ⟨PriorityQueue.MinPQ.AllocState.empty n_max, rfl,
       he.bounded hx₁, ?_,
-      Cslib.Algorithms.Lean.MinPQ.AllocState.wellFormed_empty n_max,
+      PriorityQueue.MinPQ.AllocState.wellFormed_empty n_max,
       hy_ofr, ?_, ?_, ?_, ?_,
       fun _ hi => absurd hi (Nat.not_lt_zero _)⟩,
     ?_, modifies_of_fib hmod_fib⟩
@@ -762,33 +763,33 @@ theorem initSetup_exec {n_max U V w base : ℕ} {x₁ : Data rMinPQ}
 /-! ## Operation specifications: `isEmptyCode`, `getCode`, `insertCode` -/
 
 theorem AllocRep.fits_stop {n_max U V w base : ℕ}
-    {s : Cslib.Algorithms.Lean.MinPQ.AllocState n_max} {x : Data rMinPQ}
+    {s : PriorityQueue.MinPQ.AllocState n_max} {x : Data rMinPQ}
     (hrep : AllocRep n_max U V w base s x) : Fits w (base + space n_max) :=
   hrep.2.2.2.1 ▸ hrep.1.1 outerFrontierReg
 
 theorem AllocRep.valBase_eq {n_max U V w base : ℕ}
-    {s : Cslib.Algorithms.Lean.MinPQ.AllocState n_max} {x : Data rMinPQ}
+    {s : PriorityQueue.MinPQ.AllocState n_max} {x : Data rMinPQ}
     (hrep : AllocRep n_max U V w base s x) :
     x.regs valBaseReg = base + FibonacciHeap.space n_max :=
   hrep.2.1.2.1.2.1
 
 theorem AllocRep.zeroP_eq {n_max U V w base : ℕ}
-    {s : Cslib.Algorithms.Lean.MinPQ.AllocState n_max} {x : Data rMinPQ}
+    {s : PriorityQueue.MinPQ.AllocState n_max} {x : Data rMinPQ}
     (hrep : AllocRep n_max U V w base s x) : x.regs zeroP = 0 :=
   hrep.2.1.2.1.2.2.2.2.2.2.2.2.2.2.2.1
 
 theorem AllocRep.oneP_eq {n_max U V w base : ℕ}
-    {s : Cslib.Algorithms.Lean.MinPQ.AllocState n_max} {x : Data rMinPQ}
+    {s : PriorityQueue.MinPQ.AllocState n_max} {x : Data rMinPQ}
     (hrep : AllocRep n_max U V w base s x) : x.regs oneP = 1 :=
   hrep.2.1.2.1.2.2.2.2.2.2.2.2.2.2.2.2
 
 theorem isEmptyCode_exec {n_max U V w base : ℕ}
-    {s : Cslib.Algorithms.Lean.MinPQ.AllocState n_max} {x : Data rMinPQ}
+    {s : PriorityQueue.MinPQ.AllocState n_max} {x : Data rMinPQ}
     (hrep : AllocRep n_max U V w base s x) :
     ∃ y t, ExecWithin w isEmptyCode x y t ∧
       decode (n_max := n_max) (U := U) (V := V) .isEmpty y.regs =
-        some (Cslib.Algorithms.Lean.MinPQ.stepAlloc s .isEmpty).2 ∧
-      AllocRep n_max U V w base (Cslib.Algorithms.Lean.MinPQ.stepAlloc s .isEmpty).1 y ∧
+        some (PriorityQueue.MinPQ.stepAlloc s .isEmpty).2 ∧
+      AllocRep n_max U V w base (PriorityQueue.MinPQ.stepAlloc s .isEmpty).1 y ∧
       Modifies (Block.mk base (space n_max)).footprint x.mem y.mem ∧
       t + potential y ≤ 3 + potential x := by
   obtain ⟨hb, hfib, hwf, hfr, hfb, hfresh, htop, hval, hfree⟩ := hrep
@@ -808,14 +809,14 @@ theorem isEmptyCode_exec {n_max U V w base : ℕ}
         (hmem_ge _ (Nat.le_add_right _ _)).trans (hval h u v hsh).2.2⟩,
       fun i hi => (hmem_ge _ (by omega)).trans (hfree i hi)⟩,
     modifies_of_fib hmod_fib, ?_⟩
-  · simp only [PQCode.decode, FibonacciHeap.code, Cslib.Algorithms.Lean.MinPQ.dom_toIndexed]
+  · simp only [PQCode.decode, FibonacciHeap.code, PriorityQueue.MinPQ.dom_toIndexed]
       at hdec_fib
     have hfl_eq : y.regs outFlag = y_fib.regs FibonacciHeap.outFlag := by
       change (y.comap f42).regs FibonacciHeap.outFlag = y_fib.regs FibonacciHeap.outFlag
       rw [Data.comap_extend f42_injective]
-    simp only [decode, Cslib.Algorithms.Lean.MinPQ.stepAlloc, hfl_eq]
+    simp only [decode, PriorityQueue.MinPQ.stepAlloc, hfl_eq]
     exact hdec_fib
-  · simp only [Cslib.Algorithms.Lean.MinPQ.stepAlloc]
+  · simp only [PriorityQueue.MinPQ.stepAlloc]
     rw [Data.comap_extend f42_injective]
     exact hinv_fib
   · unfold potential
@@ -823,12 +824,12 @@ theorem isEmptyCode_exec {n_max U V w base : ℕ}
     exact hpot_fib
 
 theorem getCode_exec {n_max U V w base : ℕ}
-    {s : Cslib.Algorithms.Lean.MinPQ.AllocState n_max} {x : Data rMinPQ}
+    {s : PriorityQueue.MinPQ.AllocState n_max} {x : Data rMinPQ}
     (h : Fin n_max) (hrep : AllocRep n_max U V w base s x) (hv_reg : x.regs argV = h.val) :
     ∃ y t, ExecWithin w getCode x y t ∧
       decode (n_max := n_max) (U := U) (V := V) (.get h) y.regs =
-        some (Cslib.Algorithms.Lean.MinPQ.stepAlloc s (.get h)).2 ∧
-      AllocRep n_max U V w base (Cslib.Algorithms.Lean.MinPQ.stepAlloc s (.get h)).1 y ∧
+        some (PriorityQueue.MinPQ.stepAlloc s (.get h)).2 ∧
+      AllocRep n_max U V w base (PriorityQueue.MinPQ.stepAlloc s (.get h)).1 y ∧
       Modifies (Block.mk base (space n_max)).footprint x.mem y.mem ∧
       t + potential y ≤ 11 + potential x := by
   have hfit_stop := hrep.fits_stop
@@ -865,7 +866,7 @@ theorem getCode_exec {n_max U V w base : ℕ}
   | none =>
     have hfl0 : x1.regs outFlag = 0 := by
       rw [hx1_fl]
-      simp only [PQCode.decode, FibonacciHeap.code, Cslib.Algorithms.Lean.MinPQ.toIndexed_apply,
+      simp only [PQCode.decode, FibonacciHeap.code, PriorityQueue.MinPQ.toIndexed_apply,
         hsh, Option.map_none] at hdec_fib
       by_contra hne
       simp only [hne, ↓reduceIte] at hdec_fib
@@ -883,7 +884,7 @@ theorem getCode_exec {n_max U V w base : ℕ}
     refine ⟨y, t1 + 2, he1.seq he2, ?_,
       hrep1.supported hreg_y (fun _ _ => rfl) (he2.bounded hrep1.1),
       modifies_of_fib hmod_fib, ?_⟩
-    · simp only [decode, Cslib.Algorithms.Lean.MinPQ.stepAlloc, hsh, y, Data.set_regs,
+    · simp only [decode, PriorityQueue.MinPQ.stepAlloc, hsh, y, Data.set_regs,
         Function.update_of_ne (by decide : outFlag ≠ s0), hfl0, ↓reduceIte]
       rfl
     · rw [potential_supported hreg_y]
@@ -895,7 +896,7 @@ theorem getCode_exec {n_max U V w base : ℕ}
       omega
   | some uv =>
     rcases uv with ⟨u, v⟩
-    simp only [PQCode.decode, FibonacciHeap.code, Cslib.Algorithms.Lean.MinPQ.toIndexed_apply,
+    simp only [PQCode.decode, FibonacciHeap.code, PriorityQueue.MinPQ.toIndexed_apply,
       hsh, Option.map_some] at hdec_fib
     have hfl_ne : x1.regs outFlag ≠ 0 := by
       rw [hx1_fl]
@@ -934,7 +935,7 @@ theorem getCode_exec {n_max U V w base : ℕ}
     refine ⟨y, t1 + 4, he1.seq he2, ?_,
       hrep1.supported hreg_y (fun _ _ => rfl) (he2.bounded hrep1.1),
       modifies_of_fib hmod_fib, ?_⟩
-    · simp only [decode, Cslib.Algorithms.Lean.MinPQ.stepAlloc, hsh, y, Data.set_regs,
+    · simp only [decode, PriorityQueue.MinPQ.stepAlloc, hsh, y, Data.set_regs,
         Function.update_of_ne (by decide : outFlag ≠ outValReg),
         Function.update_of_ne (by decide : outFlag ≠ s0),
         Function.update_of_ne (by decide : outK ≠ outValReg),
@@ -950,13 +951,13 @@ theorem getCode_exec {n_max U V w base : ℕ}
       omega
 
 private theorem allocHandleBranch_exec {n_max U V w base u v : ℕ}
-    {s : Cslib.Algorithms.Lean.MinPQ.AllocState n_max} {x : Data rMinPQ}
+    {s : PriorityQueue.MinPQ.AllocState n_max} {x : Data rMinPQ}
     (hrep : AllocRep n_max U V w base s x)
-    (hsz : Cslib.Algorithms.Lean.MinPQ.size s.entries < n_max) :
+    (hsz : PriorityQueue.MinPQ.size s.entries < n_max) :
     ∃ h freeList' fresh' x1,
-      Cslib.Algorithms.Lean.MinPQ.allocHandle s = some (h, freeList', fresh') ∧
+      PriorityQueue.MinPQ.allocHandle s = some (h, freeList', fresh') ∧
       s.entries h = none ∧
-      (Cslib.Algorithms.Lean.MinPQ.AllocState.mk
+      (PriorityQueue.MinPQ.AllocState.mk
         (Function.update s.entries h (some (u, v))) freeList' fresh').WellFormed ∧
       ExecWithin w allocHandleBranch x x1 5 ∧
       x1.Bounded w ∧
@@ -974,7 +975,7 @@ private theorem allocHandleBranch_exec {n_max U V w base u v : ℕ}
   have ho1 := hrep.oneP_eq
   obtain ⟨hb, _, hwf, _, hfb, hfresh, htop, _, hfree⟩ := hrep
   obtain ⟨h, freeList', fresh', halloc, hh_none, hwf'⟩ :=
-    Cslib.Algorithms.Lean.MinPQ.allocHandle_spec hwf hsz u v
+    PriorityQueue.MinPQ.allocHandle_spec hwf hsz u v
   have halloc_eq := halloc
   rcases hfl : s.freeList with _ | ⟨hd, tl⟩
   · -- Bump-pointer case (`freeList = []`)
@@ -982,7 +983,7 @@ private theorem allocHandleBranch_exec {n_max U V w base u v : ℕ}
       have hsum := hwf.2.2.2.2
       rw [hfl, List.length_nil, Nat.add_zero] at hsum
       omega
-    simp only [Cslib.Algorithms.Lean.MinPQ.allocHandle, hfl, hfr_lt, ↓reduceDIte,
+    simp only [PriorityQueue.MinPQ.allocHandle, hfl, hfr_lt, ↓reduceDIte,
       Option.some.injEq, Prod.mk.injEq] at halloc
     obtain ⟨rfl, rfl, rfl⟩ := halloc
     have hc : (Cond.eq freeTopReg zeroP).Holds x := by
@@ -1015,7 +1016,7 @@ private theorem allocHandleBranch_exec {n_max U V w base u v : ℕ}
         Function.update_of_ne h1],
       fun _ hi => absurd hi (Nat.not_lt_zero _)⟩
   · -- Free-stack pop case (`freeList = hd :: tl`)
-    simp only [Cslib.Algorithms.Lean.MinPQ.allocHandle, hfl, Option.some.injEq,
+    simp only [PriorityQueue.MinPQ.allocHandle, hfl, Option.some.injEq,
       Prod.mk.injEq] at halloc
     obtain ⟨rfl, rfl, rfl⟩ := halloc
     have htop_eq : x.regs freeTopReg = tl.length + 1 := by
@@ -1077,14 +1078,14 @@ private theorem allocHandleBranch_exec {n_max U V w base u v : ℕ}
     exact hfi
 
 theorem insertCode_exec {n_max U V w base u v : ℕ}
-    {s : Cslib.Algorithms.Lean.MinPQ.AllocState n_max} {x : Data rMinPQ}
+    {s : PriorityQueue.MinPQ.AllocState n_max} {x : Data rMinPQ}
     (hrep : AllocRep n_max U V w base s x)
-    (hv : (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).valid s.entries (.insert u v))
+    (hv : (minPQSpec n_max U V).valid s.entries (.insert u v))
     (hk_reg : x.regs argK = u) (hval_reg : x.regs inValReg = v) :
     ∃ y t, ExecWithin w insertCode x y t ∧
       decode (n_max := n_max) (U := U) (V := V) (.insert u v) y.regs =
-        some (Cslib.Algorithms.Lean.MinPQ.stepAlloc s (.insert u v)).2 ∧
-      AllocRep n_max U V w base (Cslib.Algorithms.Lean.MinPQ.stepAlloc s (.insert u v)).1 y ∧
+        some (PriorityQueue.MinPQ.stepAlloc s (.insert u v)).2 ∧
+      AllocRep n_max U V w base (PriorityQueue.MinPQ.stepAlloc s (.insert u v)).1 y ∧
       Modifies (Block.mk base (space n_max)).footprint x.mem y.mem ∧
       t + potential y ≤ 129 + potential x := by
   have hfit_stop := hrep.fits_stop
@@ -1130,7 +1131,7 @@ theorem insertCode_exec {n_max U V w base u v : ℕ}
       notMem_fib_footprint_of_ge (by omega) (e ▸ ha)
     simp only [x2, Data.comap, Data.write_mem, Data.set_mem, Function.update_of_ne hne, hm1]
   have hinv2 : FibonacciHeap.FibInv n_max U w base
-      (Cslib.Algorithms.Lean.MinPQ.toIndexed s.entries) (x2.comap f42) :=
+      (PriorityQueue.MinPQ.toIndexed s.entries) (x2.comap f42) :=
     FibonacciHeap.FibInv.supported hreg2 hmem2_fib (hb2.comap f42) hrep.2.1
   have hpot2 : potential x2 = potential x :=
     FibonacciHeap.potential_supported hreg2
@@ -1143,8 +1144,8 @@ theorem insertCode_exec {n_max U V w base u v : ℕ}
     simp only [x2, Data.write_regs, Data.set_regs,
       Function.update_of_ne (by decide : argK ≠ s0)]
     exact (hx1_regs argK (by decide) (by decide) (by decide) (by decide)).trans hk_reg
-  have hval_fib : Cslib.Algorithms.Lean.MinPQ.toIndexed s.entries h = none ∧ u ≤ U := by
-    simp only [Cslib.Algorithms.Lean.MinPQ.toIndexed_apply, hh_none, Option.map_none, true_and]
+  have hval_fib : PriorityQueue.MinPQ.toIndexed s.entries h = none ∧ u ≤ U := by
+    simp only [PriorityQueue.MinPQ.toIndexed_apply, hh_none, Option.map_none, true_and]
     exact Nat.le_of_lt hu_lt
   obtain ⟨y_fib, t_fib, he_fib, hinv_fib, hmod_fib, hpot_fib⟩ :=
     FibonacciHeap.insertCode_exec h u hinv2 hval_fib hx2_v hx2_k
@@ -1176,15 +1177,15 @@ theorem insertCode_exec {n_max U V w base u v : ℕ}
       exact Modifies.write_of_owns ho_val v
     exact FibonacciHeap.modifies_block_trans hm_x2 (modifies_of_fib hmod_fib)
   refine ⟨y, 5 + 1 + 1 + t_fib + 1, he, ?_, ?_, hmod_all, ?_⟩
-  · simp only [decode, Cslib.Algorithms.Lean.MinPQ.stepAlloc, halloc, y, Data.set_regs,
+  · simp only [decode, PriorityQueue.MinPQ.stepAlloc, halloc, y, Data.set_regs,
       Function.update_self, hh_lt, ↓reduceDIte, Fin.eta]
     rfl
-  · simp only [Cslib.Algorithms.Lean.MinPQ.stepAlloc, halloc]
+  · simp only [PriorityQueue.MinPQ.stepAlloc, halloc]
     refine AllocRep.supported hreg_y3 (fun _ _ => rfl) hby ⟨he3.bounded hb2, ?_, hwf',
       ?_, ?_, ?_, ?_, ?_, ?_⟩
     · dsimp only
       rw [Data.comap_extend f42_injective,
-        Cslib.Algorithms.Lean.MinPQ.toIndexed_update_some s.entries h u v]
+        PriorityQueue.MinPQ.toIndexed_update_some s.entries h u v]
       exact hinv_fib
     · rw [Data.extend_regs_of_notMem y_fib x2 outerFrontierReg_notMem_range]
       simp only [x2, Data.write_regs, Data.set_regs,
@@ -1232,14 +1233,14 @@ theorem insertCode_exec {n_max U V w base u v : ℕ}
     omega
 
 theorem decreaseKeyCode_exec {n_max U V w base : ℕ}
-    {s : Cslib.Algorithms.Lean.MinPQ.AllocState n_max} {x : Data rMinPQ}
+    {s : PriorityQueue.MinPQ.AllocState n_max} {x : Data rMinPQ}
     (h : Fin n_max) (u' : ℕ) (hrep : AllocRep n_max U V w base s x)
-    (hv : (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).valid s.entries (.decreaseKey h u'))
+    (hv : (minPQSpec n_max U V).valid s.entries (.decreaseKey h u'))
     (hv_reg : x.regs argV = h.val) (hk_reg : x.regs argK = u') :
     ∃ y t, ExecWithin w decreaseKeyCode x y t ∧
       decode (n_max := n_max) (U := U) (V := V) (.decreaseKey h u') y.regs =
-        some (Cslib.Algorithms.Lean.MinPQ.stepAlloc s (.decreaseKey h u')).2 ∧
-      AllocRep n_max U V w base (Cslib.Algorithms.Lean.MinPQ.stepAlloc s (.decreaseKey h u')).1 y ∧
+        some (PriorityQueue.MinPQ.stepAlloc s (.decreaseKey h u')).2 ∧
+      AllocRep n_max U V w base (PriorityQueue.MinPQ.stepAlloc s (.decreaseKey h u')).1 y ∧
       Modifies (Block.mk base (space n_max)).footprint x.mem y.mem ∧
       t + potential y ≤ 330 + potential x := by
   obtain ⟨hb, hfib, hwf, hfr, hfb, hfresh, htop, hval, hfree⟩ := hrep
@@ -1247,9 +1248,9 @@ theorem decreaseKeyCode_exec {n_max U V w base : ℕ}
   obtain ⟨hu_lt, hv_lt, _⟩ := hval h u v hsh
   have hu'_lt : u' < U := Nat.lt_of_le_of_lt hu'_le hu_lt
   have hval_fib :
-      (∃ k₀, Cslib.Algorithms.Lean.MinPQ.toIndexed s.entries h = some k₀ ∧ u' ≤ k₀) ∧ u' ≤ U := by
+      (∃ k₀, PriorityQueue.MinPQ.toIndexed s.entries h = some k₀ ∧ u' ≤ k₀) ∧ u' ≤ U := by
     refine ⟨⟨u, ?_, hu'_le⟩, Nat.le_of_lt hu'_lt⟩
-    simp only [Cslib.Algorithms.Lean.MinPQ.toIndexed_apply, hsh, Option.map_some]
+    simp only [PriorityQueue.MinPQ.toIndexed_apply, hsh, Option.map_some]
   obtain ⟨y_fib, t, he_fib, hinv_fib, hmod_fib, hpot_fib⟩ :=
     FibonacciHeap.decreaseKeyCode_exec h u' hfib hval_fib hv_reg hk_reg
   let y := y_fib.extend f42 x
@@ -1257,23 +1258,23 @@ theorem decreaseKeyCode_exec {n_max U V w base : ℕ}
   have hmem_ge : ∀ a, base + FibonacciHeap.space n_max ≤ a → y.mem a = x.mem a :=
     fun a ha => hmod_fib a (notMem_fib_footprint_of_ge ha)
   have hwf' :=
-    (Cslib.Algorithms.Lean.MinPQ.stepAlloc_refines_spec (U := U) (V := V) hwf
+    (PriorityQueue.MinPQ.stepAlloc_refines_spec (U := U) (V := V) hwf
       (.decreaseKey h u') ⟨u, v, hsh, hu'_le⟩).2
   refine ⟨y, t, he, rfl, ?_, modifies_of_fib hmod_fib, ?_⟩
   · refine ⟨he.bounded hb, ?_, hwf',
       (Data.extend_regs_of_notMem y_fib x outerFrontierReg_notMem_range).trans hfr,
       (Data.extend_regs_of_notMem y_fib x freeBaseReg_notMem_range).trans hfb,
-      by simp only [Cslib.Algorithms.Lean.MinPQ.stepAlloc, hsh];
+      by simp only [PriorityQueue.MinPQ.stepAlloc, hsh];
          exact (Data.extend_regs_of_notMem y_fib x freshReg_notMem_range).trans hfresh,
-      by simp only [Cslib.Algorithms.Lean.MinPQ.stepAlloc, hsh];
+      by simp only [PriorityQueue.MinPQ.stepAlloc, hsh];
          exact (Data.extend_regs_of_notMem y_fib x freeTopReg_notMem_range).trans htop,
       ?_, ?_⟩
-    · simp only [Cslib.Algorithms.Lean.MinPQ.stepAlloc, hsh]
+    · simp only [PriorityQueue.MinPQ.stepAlloc, hsh]
       rw [Data.comap_extend f42_injective,
-        Cslib.Algorithms.Lean.MinPQ.toIndexed_update_some s.entries h u' v]
+        PriorityQueue.MinPQ.toIndexed_update_some s.entries h u' v]
       exact hinv_fib
     · intro h' u₁ v₁ hsh'
-      simp only [Cslib.Algorithms.Lean.MinPQ.stepAlloc, hsh] at hsh'
+      simp only [PriorityQueue.MinPQ.stepAlloc, hsh] at hsh'
       rw [hmem_ge _ (Nat.le_add_right _ _)]
       by_cases hh' : h' = h
       · subst hh'
@@ -1283,7 +1284,7 @@ theorem decreaseKeyCode_exec {n_max U V w base : ℕ}
       · simp only [Function.update_of_ne hh'] at hsh'
         exact hval h' u₁ v₁ hsh'
     · intro i hi
-      simp only [Cslib.Algorithms.Lean.MinPQ.stepAlloc, hsh] at hi ⊢
+      simp only [PriorityQueue.MinPQ.stepAlloc, hsh] at hi ⊢
       rw [hmem_ge _ (by omega)]
       exact hfree i hi
   · unfold potential
@@ -1291,22 +1292,22 @@ theorem decreaseKeyCode_exec {n_max U V w base : ℕ}
     exact hpot_fib
 
 theorem extractMinCode_exec {n_max U V w base : ℕ}
-    {s : Cslib.Algorithms.Lean.MinPQ.AllocState n_max} {x : Data rMinPQ}
+    {s : PriorityQueue.MinPQ.AllocState n_max} {x : Data rMinPQ}
     (hrep : AllocRep n_max U V w base s x) :
     ∃ y t, ExecWithin w extractMinCode x y t ∧
       decode (n_max := n_max) (U := U) (V := V) .extractMin y.regs =
-        some (Cslib.Algorithms.Lean.MinPQ.stepAlloc s .extractMin).2 ∧
-      AllocRep n_max U V w base (Cslib.Algorithms.Lean.MinPQ.stepAlloc s .extractMin).1 y ∧
+        some (PriorityQueue.MinPQ.stepAlloc s .extractMin).2 ∧
+      AllocRep n_max U V w base (PriorityQueue.MinPQ.stepAlloc s .extractMin).1 y ∧
       Modifies (Block.mk base (space n_max)).footprint x.mem y.mem ∧
       t + potential y ≤
-        418 * (Nat.log 2 (Cslib.Algorithms.Lean.MinPQ.size s.entries) + 1) + potential x := by
+        418 * (Nat.log 2 (PriorityQueue.MinPQ.size s.entries) + 1) + potential x := by
   have hfit_stop := hrep.fits_stop
   obtain ⟨hb, hfib, hwf, hfr, hfb, hfresh, htop, hval, hfree⟩ := hrep
   obtain ⟨y_fib, t1, he_fib, hdec_fib, hinv_fib, hmod_fib, hpot_fib⟩ :=
     FibonacciHeap.extractMinCode_exec hfib
-  rw [Cslib.Algorithms.Lean.MinPQ.dom_toIndexed] at hpot_fib
+  rw [PriorityQueue.MinPQ.dom_toIndexed] at hpot_fib
   change t1 + FibonacciHeap.potential y_fib ≤
-    410 * (Nat.log 2 (Cslib.Algorithms.Lean.MinPQ.size s.entries) + 1) +
+    410 * (Nat.log 2 (PriorityQueue.MinPQ.size s.entries) + 1) +
       FibonacciHeap.potential (x.comap f42) at hpot_fib
   let x1 := y_fib.extend f42 x
   have he1 : ExecWithin w (FibonacciHeap.extractMinCode.rename f42) x x1 t1 :=
@@ -1344,13 +1345,13 @@ theorem extractMinCode_exec {n_max U V w base : ℕ}
     change (x1.comap f42).regs FibonacciHeap.outK = y_fib.regs FibonacciHeap.outK
     rw [Data.comap_extend f42_injective]
   have hwf' :=
-    (Cslib.Algorithms.Lean.MinPQ.stepAlloc_refines_spec (U := U) (V := V) hwf .extractMin
+    (PriorityQueue.MinPQ.stepAlloc_refines_spec (U := U) (V := V) hwf .extractMin
       trivial).2
-  rcases hfm : IndexedMinPQ.findMin (Cslib.Algorithms.Lean.MinPQ.toIndexed s.entries) with
+  rcases hfm : IndexedMinPQ.findMin (PriorityQueue.MinPQ.toIndexed s.entries) with
     _ | ⟨h, u⟩
   · -- Empty queue (`findMin = none`)
-    simp only [PQCode.decode, FibonacciHeap.code, IndexedMinPQ.spec, IndexedMinPQ.step,
-      Stateful.Spec.stepFn, hfm] at hdec_fib hinv_fib
+    simp only [PQCode.decode, FibonacciHeap.code, indexedMinPQSpec, IndexedMinPQ.step,
+      StateTransitionSpec.stepFn, hfm] at hdec_fib hinv_fib
     have hfl0 : x1.regs outFlag = 0 := by
       rw [hx1_fl]
       by_contra hne
@@ -1379,14 +1380,14 @@ theorem extractMinCode_exec {n_max U V w base : ℕ}
           (hmem1_ge _ (Nat.le_add_right _ _)).trans (hval h' u' v' hsh').2.2⟩,
         fun i hi => (hmem1_ge _ (by omega)).trans (hfree i hi)⟩
     refine ⟨y, t1 + 2, he1.seq he2, ?_, ?_, modifies_of_fib hmod_fib, ?_⟩
-    · have hfm' : Cslib.Algorithms.Lean.MinPQ.findMin s.entries = none := by
-        simp only [Cslib.Algorithms.Lean.MinPQ.findMin, hfm]
-      simp only [decode, Cslib.Algorithms.Lean.MinPQ.stepAlloc, hfm', y, Data.set_regs,
+    · have hfm' : PriorityQueue.MinPQ.findMin s.entries = none := by
+        simp only [PriorityQueue.MinPQ.findMin, hfm]
+      simp only [decode, PriorityQueue.MinPQ.stepAlloc, hfm', y, Data.set_regs,
         Function.update_of_ne (by decide : outFlag ≠ s0), hfl0, ↓reduceIte]
       rfl
-    · have hfm' : Cslib.Algorithms.Lean.MinPQ.findMin s.entries = none := by
-        simp only [Cslib.Algorithms.Lean.MinPQ.findMin, hfm]
-      simp only [Cslib.Algorithms.Lean.MinPQ.stepAlloc, hfm']
+    · have hfm' : PriorityQueue.MinPQ.findMin s.entries = none := by
+        simp only [PriorityQueue.MinPQ.findMin, hfm]
+      simp only [PriorityQueue.MinPQ.stepAlloc, hfm']
       exact hrep1.supported hreg_y (fun _ _ => rfl) (he2.bounded hb1)
     · rw [potential_supported hreg_y]
       change t1 + 2 + FibonacciHeap.potential (x1.comap f42) ≤ _ + potential x
@@ -1394,9 +1395,9 @@ theorem extractMinCode_exec {n_max U V w base : ℕ}
       unfold potential
       omega
   · -- Non-empty queue (`findMin = some (h, u)`)
-    obtain ⟨v, hsh, hfm', _⟩ := Cslib.Algorithms.Lean.MinPQ.findMin_eq_some_of_indexed hfm
-    simp only [PQCode.decode, FibonacciHeap.code, IndexedMinPQ.spec, IndexedMinPQ.step,
-      Stateful.Spec.stepFn, hfm] at hdec_fib hinv_fib
+    obtain ⟨v, hsh, hfm', _⟩ := PriorityQueue.MinPQ.findMin_eq_some_of_indexed hfm
+    simp only [PQCode.decode, FibonacciHeap.code, indexedMinPQSpec, IndexedMinPQ.step,
+      StateTransitionSpec.stepFn, hfm] at hdec_fib hinv_fib
     have hfl_ne : x1.regs outFlag ≠ 0 := by
       rw [hx1_fl]
       intro h0
@@ -1412,8 +1413,8 @@ theorem extractMinCode_exec {n_max U V w base : ℕ}
     have hok_eq : x1.regs outK = u := hx1_ok.trans hdec_fib.2
     have hc : ¬(Cond.eq outFlag zeroP).Holds x1 := by simp only [Cond.Holds, hx1_z0]; exact hfl_ne
     have hh_lt := h.isLt
-    have hsz_pos : 1 ≤ Cslib.Algorithms.Lean.MinPQ.size s.entries :=
-      Finset.card_pos.mpr ⟨h, Cslib.Algorithms.Lean.MinPQ.mem_dom_iff.mpr ⟨u, v, hsh⟩⟩
+    have hsz_pos : 1 ≤ PriorityQueue.MinPQ.size s.entries :=
+      Finset.card_pos.mpr ⟨h, PriorityQueue.MinPQ.mem_dom_iff.mpr ⟨u, v, hsh⟩⟩
     have hfl_lt : s.freeList.length < n_max := by
       have := hwf.1
       have := hwf.2.2.2.2
@@ -1496,7 +1497,7 @@ theorem extractMinCode_exec {n_max U V w base : ℕ}
         Modifies.write_of_owns ho_free h.val
       exact FibonacciHeap.modifies_block_trans (modifies_of_fib hmod_fib) hm_y
     refine ⟨y, t1 + 7, he1.seq he2, ?_, ?_, hmod_all, ?_⟩
-    · simp only [decode, Cslib.Algorithms.Lean.MinPQ.stepAlloc, hfm', y, a4, a3, a2, a1,
+    · simp only [decode, PriorityQueue.MinPQ.stepAlloc, hfm', y, a4, a3, a2, a1,
         Data.set_regs, Data.write_regs,
         Function.update_of_ne (by decide : outFlag ≠ freeTopReg),
         Function.update_of_ne (by decide : outFlag ≠ s0),
@@ -1511,12 +1512,12 @@ theorem extractMinCode_exec {n_max U V w base : ℕ}
         Function.update_of_ne (by decide : outValReg ≠ s0),
         Function.update_self, hfl_ne, hov_eq, hok_eq, hh_lt, ↓reduceIte, ↓reduceDIte, Fin.eta]
       rfl
-    · simp only [Cslib.Algorithms.Lean.MinPQ.stepAlloc, hfm'] at hwf' ⊢
+    · simp only [PriorityQueue.MinPQ.stepAlloc, hfm'] at hwf' ⊢
       refine ⟨hby, ?_, hwf', ?_, ?_, ?_, ?_, ?_, ?_⟩
       · refine FibonacciHeap.FibInv.supported hreg_fib hmem_fib (hby.comap f42) ?_
         dsimp only
         rw [Data.comap_extend f42_injective,
-          Cslib.Algorithms.Lean.MinPQ.toIndexed_update_none s.entries h]
+          PriorityQueue.MinPQ.toIndexed_update_none s.entries h]
         exact hinv_fib
       · simp only [y, a4, a3, a2, a1, Data.set_regs, Data.write_regs,
           Function.update_of_ne (by decide : outerFrontierReg ≠ freeTopReg),
@@ -1565,17 +1566,17 @@ theorem extractMinCode_exec {n_max U V w base : ℕ}
       unfold potential
       omega
 
-/-! ## Unified dispatcher and `SubroutineDS` certificate -/
+/-! ## Unified dispatcher and `WordRAM.StateTransitionImpl` certificate -/
 
 /-- Unified dispatcher `dispatchCode` implements all five `MinPQ` operations within
 `charge n_max e o` amortized instructions over `Basis.exact`. -/
 theorem dispatchCode_exec_raw {n_max U V w base : ℕ}
-    {e : Cslib.Algorithms.Lean.MinPQ.State n_max} {x : Data rMinPQ}
-    (o : Cslib.Algorithms.Lean.MinPQ.Op n_max) (hr : Rep n_max U V w base e x)
-    (hv : (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).valid e o)
+    {e : PriorityQueue.MinPQ.State n_max} {x : Data rMinPQ}
+    (o : PriorityQueue.MinPQ.Op n_max) (hr : Rep n_max U V w base e x)
+    (hv : (minPQSpec n_max U V).valid e o)
     (harg : rawArgMatch o x.regs) :
     ∃ y s' a m, Exec w dispatchCode x y m ∧
-      (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).step e o s' a ∧
+      (minPQSpec n_max U V).step e o s' a ∧
       decode (n_max := n_max) (U := U) (V := V) o y.regs = some a ∧
       Rep n_max U V w base s' y ∧
       Modifies (Block.mk base (space n_max)).footprint x.mem y.mem ∧
@@ -1583,7 +1584,7 @@ theorem dispatchCode_exec_raw {n_max U V w base : ℕ}
   obtain ⟨s, rfl, hrep⟩ := hr
   have hz0 : x.regs zeroP = 0 := hrep.zeroP_eq
   obtain ⟨hstep_s, _⟩ :=
-    Cslib.Algorithms.Lean.MinPQ.stepAlloc_refines_spec (U := U) (V := V) hrep.2.2.1 o hv
+    PriorityQueue.MinPQ.stepAlloc_refines_spec (U := U) (V := V) hrep.2.2.1 o hv
   cases o with
   | isEmpty =>
     obtain ⟨ht2, ht1, ht0⟩ := harg
@@ -1639,12 +1640,12 @@ theorem dispatchCode_exec_raw {n_max U V w base : ℕ}
     omega
 
 theorem dispatchCode_exec {n_max U V w base : ℕ}
-    {e : Cslib.Algorithms.Lean.MinPQ.State n_max} {x : Data rMinPQ}
-    (o : Cslib.Algorithms.Lean.MinPQ.Op n_max) (hr : Rep n_max U V w base e x)
-    (hv : (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).valid e o)
+    {e : PriorityQueue.MinPQ.State n_max} {x : Data rMinPQ}
+    (o : PriorityQueue.MinPQ.Op n_max) (hr : Rep n_max U V w base e x)
+    (hv : (minPQSpec n_max U V).valid e o)
     (harg : argMatch U o x.regs) :
     ∃ y s' a m, Exec w dispatchCode x y m ∧
-      (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).step e o s' a ∧
+      (minPQSpec n_max U V).step e o s' a ∧
       decode (n_max := n_max) (U := U) (V := V) o y.regs = some a ∧
       Rep n_max U V w base s' y ∧
       Modifies (Block.mk base (space n_max)).footprint x.mem y.mem ∧
@@ -1654,10 +1655,10 @@ theorem dispatchCode_exec {n_max U V w base : ℕ}
 
 /-- Unified standalone and inline-subroutine relational certificate for the key–value
 Fibonacci heap with handles over `Basis.exact`. -/
-def subroutineDS {n_max U V w base : ℕ}
+def impl {n_max U V w base : ℕ}
     (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V) :
-    SubroutineDS subroutineCode (Cslib.Algorithms.Lean.MinPQ.spec n_max U V) w base ![n_max]
-      (Cslib.Algorithms.Lean.MinPQ.empty n_max) where
+    WordRAM.StateTransitionImpl subroutineCode (minPQSpec n_max U V) w base ![n_max]
+      (PriorityQueue.MinPQ.empty n_max) where
   space := space n_max
   spanTime := 15
   setupTime := 18
@@ -1680,48 +1681,48 @@ def subroutineDS {n_max U V w base : ℕ}
   setup_exec := initSetup_exec
   step_exec := dispatchCode_exec
 
-/-! ## Standalone `Basis.standard` `DynamicProgram` and `Stateful.Amortized` realizations -/
+/-! ## Standalone `Basis.standard` `DynamicProgram` and `Amortized` implementations -/
 
-/-- Standalone `DynamicProgram` realization of the key–value Fibonacci heap over
+/-- Standalone `DynamicProgram` implementation of the key–value Fibonacci heap over
 `Basis.standard`. -/
 def dynamicProgram {n_max U V w base : ℕ}
     (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V) :
-    DynamicProgram (Cslib.Algorithms.Lean.MinPQ.spec n_max U V) rMinPQ :=
-  (subroutineDS (n_max := n_max) (U := U) (V := V) hS hU hV).toStandard.toDynamicProgram
+    DynamicProgram (minPQSpec n_max U V) rMinPQ :=
+  (impl (n_max := n_max) (U := U) (V := V) hS hU hV).toStandard.toDynamicProgram
 
 /-- Standalone `DynamicCertificate` for the key–value Fibonacci heap over `Basis.standard`. -/
 def certificate {n_max U V w base : ℕ}
     (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V) :
     DynamicCertificate (dynamicProgram hS hU hV) w :=
-  (subroutineDS hS hU hV).toStandard.toCertificate
+  (impl hS hU hV).toStandard.toCertificate
 
-/-- Standalone `Stateful.Amortized` certificate for the key–value Fibonacci heap over
+/-- Standalone `Amortized` certificate for the key–value Fibonacci heap over
 `Basis.standard`, charging `+ 1` per operation for the trailing `halt` instruction. -/
 theorem amortized {n_max U V w base : ℕ}
     (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V) :
-    Stateful.Amortized (certificate hS hU hV).realization
+    Amortized (certificate hS hU hV).impl
       DynamicProgram.OperationTrace.instructions
       (fun _ x => potential x)
       (fun s o => charge n_max s o + 1) :=
-  (subroutineDS hS hU hV).toStandard.toAmortized
+  (impl hS hU hV).toStandard.toAmortized
 
 /-- Adaptive-client amortized execution bound for any demonically admissible `MinPQ` client `p`
 over `Basis.standard`. -/
 theorem run_client_amortized {n_max U V w base : ℕ}
     (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V)
-    {α : Type*} (p : (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).Client α)
-    {s : Cslib.Algorithms.Lean.MinPQ.State n_max} {x : Data rMinPQ}
+    {α : Type*} (p : (minPQSpec n_max U V).Client α)
+    {s : PriorityQueue.MinPQ.State n_max} {x : Data rMinPQ}
     (hr : Rep n_max U V w base s x)
-    (hv : (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).DemonicValid s p) :
+    (hv : (minPQSpec n_max U V).DemonicValid s p) :
     ∃ a y traces s' tr,
-      Stateful.Executes ((dynamicProgram hS hU hV).ExecOp w) p x a y traces ∧
-      (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).ClientRun s p a s' tr ∧
+      Executes ((dynamicProgram hS hU hV).ExecOp w) p x a y traces ∧
+      (minPQSpec n_max U V).ClientRun s p a s' tr ∧
       Rep n_max U V w base s' y ∧
       traces.length = tr.length ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces + potential y ≤
-        (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).totalCostTranscript
+      DataStructure.total DynamicProgram.OperationTrace.instructions traces + potential y ≤
+        (minPQSpec n_max U V).totalCostTranscript
           (fun st o => charge n_max st o + 1) s tr + potential x :=
-  (subroutineDS hS hU hV).toStandard.run_client_demonic_amortized p hr hv
+  (impl hS hU hV).toStandard.run_client_demonic_amortized p hr hv
 
 /-! ## Standalone end-to-end `Basis.exact` flat-program operation-sequence theorems -/
 
@@ -1742,7 +1743,7 @@ def initRegs (n_max base : ℕ) : Fin rMinPQ → ℕ :=
 /-- Deliver operation `o`'s 3-bit tag into `tag2..tag0` (`R[17..19]`), handle/key arguments into
 `argV, argK` (`R[20..21]`), and satellite value into `inValReg` (`R[46]`), leaving all other
 registers unchanged. -/
-def prepareRegs {n_max : ℕ} (o : Cslib.Algorithms.Lean.MinPQ.Op n_max)
+def prepareRegs {n_max : ℕ} (o : PriorityQueue.MinPQ.Op n_max)
     (regs : Fin rMinPQ → ℕ) : Fin rMinPQ → ℕ :=
   fun i =>
     if i = tag2 ∨ i = tag1 ∨ i = tag0 ∨ i = argV ∨ i = argK ∨ i = inValReg then
@@ -1751,25 +1752,25 @@ def prepareRegs {n_max : ℕ} (o : Cslib.Algorithms.Lean.MinPQ.Op n_max)
       regs i
 
 /-- Count `isEmpty` and `get` queries in an operation sequence. -/
-def numQueries {n_max : ℕ} : List (Cslib.Algorithms.Lean.MinPQ.Op n_max) → ℕ
+def numQueries {n_max : ℕ} : List (PriorityQueue.MinPQ.Op n_max) → ℕ
   | [] => 0
   | .isEmpty :: ops | .get _ :: ops => 1 + numQueries ops
   | _ :: ops => numQueries ops
 
 /-- Count `insert` operations in an operation sequence. -/
-def numInserts {n_max : ℕ} : List (Cslib.Algorithms.Lean.MinPQ.Op n_max) → ℕ
+def numInserts {n_max : ℕ} : List (PriorityQueue.MinPQ.Op n_max) → ℕ
   | [] => 0
   | .insert _ _ :: ops => 1 + numInserts ops
   | _ :: ops => numInserts ops
 
 /-- Count `decreaseKey` operations in an operation sequence. -/
-def numDecreaseKeys {n_max : ℕ} : List (Cslib.Algorithms.Lean.MinPQ.Op n_max) → ℕ
+def numDecreaseKeys {n_max : ℕ} : List (PriorityQueue.MinPQ.Op n_max) → ℕ
   | [] => 0
   | .decreaseKey _ _ :: ops => 1 + numDecreaseKeys ops
   | _ :: ops => numDecreaseKeys ops
 
 /-- Count `extractMin` operations in an operation sequence. -/
-def numExtractMins {n_max : ℕ} : List (Cslib.Algorithms.Lean.MinPQ.Op n_max) → ℕ
+def numExtractMins {n_max : ℕ} : List (PriorityQueue.MinPQ.Op n_max) → ℕ
   | [] => 0
   | .extractMin :: ops => 1 + numExtractMins ops
   | _ :: ops => numExtractMins ops
@@ -1778,48 +1779,48 @@ def numExtractMins {n_max : ℕ} : List (Cslib.Algorithms.Lean.MinPQ.Op n_max) �
 transcript `tr` starting from state `s`, where `MinPQ.size s` is the number of stored elements
 immediately before each `extractMin`. -/
 def extractLogSum {n_max U V : ℕ} :
-    Cslib.Algorithms.Lean.MinPQ.State n_max →
-      (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).Transcript → ℕ
+    PriorityQueue.MinPQ.State n_max →
+      (minPQSpec n_max U V).Transcript → ℕ
   | _, [] => 0
   | s, e :: tr =>
     (match e.op with
-     | .extractMin => Nat.log 2 (Cslib.Algorithms.Lean.MinPQ.size s) + 1
+     | .extractMin => Nat.log 2 (PriorityQueue.MinPQ.size s) + 1
      | _ => 0) + extractLogSum e.nextState tr
 
 theorem extractLogSum_le_numExtractMins {n_max U V : ℕ} :
-    ∀ (tr : (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).Transcript)
-      (s : Cslib.Algorithms.Lean.MinPQ.State n_max),
+    ∀ (tr : (minPQSpec n_max U V).Transcript)
+      (s : PriorityQueue.MinPQ.State n_max),
       extractLogSum s tr ≤ numExtractMins tr.ops * (Nat.log 2 n_max + 1)
   | [], _ => Nat.zero_le _
   | ⟨o, res, s₁⟩ :: tr, s => by
     have ih := extractLogSum_le_numExtractMins tr s₁
-    have hlog : Nat.log 2 (Cslib.Algorithms.Lean.MinPQ.size s) ≤ Nat.log 2 n_max :=
-      Nat.log_mono_right (Cslib.Algorithms.Lean.MinPQ.size_le s)
+    have hlog : Nat.log 2 (PriorityQueue.MinPQ.size s) ≤ Nat.log 2 n_max :=
+      Nat.log_mono_right (PriorityQueue.MinPQ.size_le s)
     cases o with
     | extractMin =>
-      simp only [extractLogSum, Stateful.Spec.Transcript.ops_cons, numExtractMins,
+      simp only [extractLogSum, StateTransitionSpec.Transcript.ops_cons, numExtractMins,
         Nat.add_mul, Nat.one_mul]
       omega
     | _ =>
-      simp only [extractLogSum, Stateful.Spec.Transcript.ops_cons, numExtractMins,
+      simp only [extractLogSum, StateTransitionSpec.Transcript.ops_cons, numExtractMins,
         Nat.zero_add]
       omega
 
 /-- Sequential flat-program execution of `ops` by repeated calls to `opProg`: each call prepares
 input registers via `prepareRegs`, runs `opProg` from `pc = 0` to `halt`, decodes a valid
-`MinPQ.spec` transition `(s₁, a)`, modifies memory only within `[base, base + space n_max)`,
+`minPQSpec` transition `(s₁, a)`, modifies memory only within `[base, base + space n_max)`,
 records the resulting transcript `tr`, and accumulates total instructions executed (including
 each trailing `halt`). -/
 inductive RunsOps {n_max U V : ℕ} (w base : ℕ) :
-    Cslib.Algorithms.Lean.MinPQ.State n_max → Data rMinPQ →
-      List (Cslib.Algorithms.Lean.MinPQ.Op n_max) →
-      (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).Transcript →
-      Cslib.Algorithms.Lean.MinPQ.State n_max → Data rMinPQ → ℕ → Prop
+    PriorityQueue.MinPQ.State n_max → Data rMinPQ →
+      List (PriorityQueue.MinPQ.Op n_max) →
+      (minPQSpec n_max U V).Transcript →
+      PriorityQueue.MinPQ.State n_max → Data rMinPQ → ℕ → Prop
   | nil {s x} : RunsOps w base s x [] [] s x 0
   | cons {s s₁ s₂ x o a ops tr pc y z steps rest} :
       Runs w opProg ⟨0, ⟨prepareRegs o x.regs, x.mem⟩⟩ ⟨pc, y⟩ steps →
       (∃ out, step w opProg ⟨pc, y⟩ = .halt out) →
-      (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).step s o s₁ a →
+      (minPQSpec n_max U V).step s o s₁ a →
       decode (n_max := n_max) (U := U) (V := V) o y.regs = some a →
       Modifies (Block.mk base (space n_max)).footprint x.mem y.mem →
       RunsOps w base s₁ y ops tr s₂ z rest →
@@ -1834,20 +1835,20 @@ private theorem step_program_halt {w : ℕ} (c : Code .exact rMinPQ) (out : Fin 
 
 private theorem seq_runsOps {n_max U V w base : ℕ}
     (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V) :
-    ∀ (ops : List (Cslib.Algorithms.Lean.MinPQ.Op n_max))
-      {s : Cslib.Algorithms.Lean.MinPQ.State n_max} {x : Data rMinPQ},
+    ∀ (ops : List (PriorityQueue.MinPQ.Op n_max))
+      {s : PriorityQueue.MinPQ.State n_max} {x : Data rMinPQ},
       Rep n_max U V w base s x →
-      (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).ValidOpSeq s ops →
+      (minPQSpec n_max U V).ValidOpSeq s ops →
       ∃ tr s_fin z total,
         RunsOps (U := U) (V := V) w base s x ops tr s_fin z total ∧
         tr.ops = ops ∧
-        (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).ValidTranscript s tr s_fin ∧
+        (minPQSpec n_max U V).ValidTranscript s tr s_fin ∧
         Rep n_max U V w base s_fin z ∧
         total + potential z ≤
           421 * (numQueries ops + numInserts ops + numDecreaseKeys ops +
             extractLogSum s tr) + potential x
   | [], s, x, hr, _ =>
-    ⟨[], s, x, 0, .nil, rfl, .nil (D := Cslib.Algorithms.Lean.MinPQ.spec n_max U V) s, hr,
+    ⟨[], s, x, 0, .nil, rfl, .nil (D := minPQSpec n_max U V) s, hr,
       by simp only [numQueries, numInserts, numDecreaseKeys, extractLogSum]; omega⟩
   | o :: ops, s, x, hr, ⟨hv_o, hv_rest⟩ => by
     let x' : Data rMinPQ := ⟨prepareRegs o x.regs, x.mem⟩
@@ -1907,22 +1908,22 @@ theorem run_ops_exact_fresh {n_max U V w base : ℕ}
     (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V)
     {mem₀ : ℕ → ℕ} (hmem : ∀ a, Fits w (mem₀ a))
     (hzero : ∀ a ∈ (Block.mk base (space n_max)).footprint, mem₀ a = 0)
-    (ops : List (Cslib.Algorithms.Lean.MinPQ.Op n_max))
-    (hv : (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).ValidOpSeq
-      (Cslib.Algorithms.Lean.MinPQ.empty n_max) ops) :
+    (ops : List (PriorityQueue.MinPQ.Op n_max))
+    (hv : (minPQSpec n_max U V).ValidOpSeq
+      (PriorityQueue.MinPQ.empty n_max) ops) :
     ∃ pc₀ x₀ t_init tr s_fin z t_ops,
       Runs w initFreshProg ⟨0, ⟨initRegs n_max base, mem₀⟩⟩ ⟨pc₀, x₀⟩ t_init ∧
       (∃ out, step w initFreshProg ⟨pc₀, x₀⟩ = .halt out) ∧
       Modifies (Block.mk base (space n_max)).footprint mem₀ x₀.mem ∧
-      RunsOps (U := U) (V := V) w base (Cslib.Algorithms.Lean.MinPQ.empty n_max) x₀ ops tr
+      RunsOps (U := U) (V := V) w base (PriorityQueue.MinPQ.empty n_max) x₀ ops tr
         s_fin z t_ops ∧
       tr.ops = ops ∧
-      (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).ValidTranscript
-        (Cslib.Algorithms.Lean.MinPQ.empty n_max) tr s_fin ∧
+      (minPQSpec n_max U V).ValidTranscript
+        (PriorityQueue.MinPQ.empty n_max) tr s_fin ∧
       t_init + 1 ≤ 421 ∧
       t_ops ≤
         421 * (numQueries ops + numInserts ops + numDecreaseKeys ops +
-          extractLogSum (Cslib.Algorithms.Lean.MinPQ.empty n_max) tr) ∧
+          extractLogSum (PriorityQueue.MinPQ.empty n_max) tr) ∧
       t_ops ≤
         421 * (numQueries ops + numInserts ops + numDecreaseKeys ops +
           numExtractMins ops * (Nat.log 2 n_max + 1)) := by
@@ -1932,7 +1933,7 @@ theorem run_ops_exact_fresh {n_max U V w base : ℕ}
   have hpar : ∀ j : Fin 1, d₀.regs (![nReg] j) = ![n_max] j := fun j => by
     fin_cases j; rfl
   obtain ⟨x₀, ⟨t_init, ht_init, he_init⟩, _, hr₀, hpot₀, hmod₀⟩ :=
-    (subroutineDS hS hU hV).initFresh_exec (initRegs_bounded hS hmem) hfr_eq hpar hzero
+    (impl hS hU hV).initFresh_exec (initRegs_bounded hS hmem) hfr_eq hpar hzero
   have hruns₀ : Runs w initFreshProg ⟨0, d₀⟩
       ⟨0 + subroutineCode.initFresh.size, x₀⟩ t_init :=
     he_init.runs (pc := 0) (p := initFreshProg) (Program.Contains.self _).append_left
@@ -1941,7 +1942,7 @@ theorem run_ops_exact_fresh {n_max U V w base : ℕ}
     step_program_halt subroutineCode.initFresh outFlag x₀
   obtain ⟨tr, s_fin, z, t_ops, hruns_ops, hops, htr, _, hbound⟩ :=
     seq_runsOps hS hU hV ops hr₀ hv
-  have hlog_le := extractLogSum_le_numExtractMins tr (Cslib.Algorithms.Lean.MinPQ.empty n_max)
+  have hlog_le := extractLogSum_le_numExtractMins tr (PriorityQueue.MinPQ.empty n_max)
   rw [hops] at hlog_le
   refine ⟨_, x₀, t_init, tr, s_fin, z, t_ops, hruns₀, ⟨_, hhalt₀⟩, hmod₀, hruns_ops,
     hops, htr, ?_, ?_, ?_⟩
@@ -1958,22 +1959,22 @@ number of stored elements `n = MinPQ.size s`. -/
 theorem run_ops_exact_reusable {n_max U V w base : ℕ}
     (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V)
     {mem₀ : ℕ → ℕ} (hmem : ∀ a, Fits w (mem₀ a))
-    (ops : List (Cslib.Algorithms.Lean.MinPQ.Op n_max))
-    (hv : (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).ValidOpSeq
-      (Cslib.Algorithms.Lean.MinPQ.empty n_max) ops) :
+    (ops : List (PriorityQueue.MinPQ.Op n_max))
+    (hv : (minPQSpec n_max U V).ValidOpSeq
+      (PriorityQueue.MinPQ.empty n_max) ops) :
     ∃ pc₀ x₀ t_init tr s_fin z t_ops,
       Runs w initClearProg ⟨0, ⟨initRegs n_max base, mem₀⟩⟩ ⟨pc₀, x₀⟩ t_init ∧
       (∃ out, step w initClearProg ⟨pc₀, x₀⟩ = .halt out) ∧
       Modifies (Block.mk base (space n_max)).footprint mem₀ x₀.mem ∧
-      RunsOps (U := U) (V := V) w base (Cslib.Algorithms.Lean.MinPQ.empty n_max) x₀ ops tr
+      RunsOps (U := U) (V := V) w base (PriorityQueue.MinPQ.empty n_max) x₀ ops tr
         s_fin z t_ops ∧
       tr.ops = ops ∧
-      (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).ValidTranscript
-        (Cslib.Algorithms.Lean.MinPQ.empty n_max) tr s_fin ∧
+      (minPQSpec n_max U V).ValidTranscript
+        (PriorityQueue.MinPQ.empty n_max) tr s_fin ∧
       t_init + 1 ≤ 421 * (n_max + 1) ∧
       t_ops ≤
         421 * (numQueries ops + numInserts ops + numDecreaseKeys ops +
-          extractLogSum (Cslib.Algorithms.Lean.MinPQ.empty n_max) tr) ∧
+          extractLogSum (PriorityQueue.MinPQ.empty n_max) tr) ∧
       t_ops ≤
         421 * (numQueries ops + numInserts ops + numDecreaseKeys ops +
           numExtractMins ops * (Nat.log 2 n_max + 1)) := by
@@ -1983,7 +1984,7 @@ theorem run_ops_exact_reusable {n_max U V w base : ℕ}
   have hpar : ∀ j : Fin 1, d₀.regs (![nReg] j) = ![n_max] j := fun j => by
     fin_cases j; rfl
   obtain ⟨x₀, ⟨t_init, ht_init, he_init⟩, _, hr₀, hpot₀, hmod₀⟩ :=
-    (subroutineDS hS hU hV).initClear_exec (initRegs_bounded hS hmem) hfr_eq hpar
+    (impl hS hU hV).initClear_exec (initRegs_bounded hS hmem) hfr_eq hpar
   have hruns₀ : Runs w initClearProg ⟨0, d₀⟩
       ⟨0 + subroutineCode.initClear.size, x₀⟩ t_init :=
     he_init.runs (pc := 0) (p := initClearProg) (Program.Contains.self _).append_left
@@ -1992,7 +1993,7 @@ theorem run_ops_exact_reusable {n_max U V w base : ℕ}
     step_program_halt subroutineCode.initClear outFlag x₀
   obtain ⟨tr, s_fin, z, t_ops, hruns_ops, hops, htr, _, hbound⟩ :=
     seq_runsOps hS hU hV ops hr₀ hv
-  have hlog_le := extractLogSum_le_numExtractMins tr (Cslib.Algorithms.Lean.MinPQ.empty n_max)
+  have hlog_le := extractLogSum_le_numExtractMins tr (PriorityQueue.MinPQ.empty n_max)
   rw [hops] at hlog_le
   refine ⟨_, x₀, t_init, tr, s_fin, z, t_ops, hruns₀, ⟨_, hhalt₀⟩, hmod₀, hruns_ops,
     hops, htr, ?_, ?_, ?_⟩
@@ -2003,4 +2004,4 @@ theorem run_ops_exact_reusable {n_max U V w base : ℕ}
   · change potential x₀ ≤ 0 at hpot₀
     omega
 
-end Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.MinPQ
+end Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.MinPQ

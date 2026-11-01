@@ -7,10 +7,10 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.BasicOps
-public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Cut
-public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Consolidate
-public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.MinPQ
+public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.BasicOps
+public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Cut
+public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Consolidate
+public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.MinPQ
 
 /-!
 # Static-array Word-RAM Fibonacci heap
@@ -19,11 +19,13 @@ This file assembles the standalone static-array Word-RAM Fibonacci heap
 [Fredman and Tarjan][FredmanTarjan1987] [Cormen et al., Chapter 19][CLRS2009] over
 `Cslib.WordRAM.Basis.exact` (and lifted to `Basis.standard`) for both:
 
-* the fixed-vertex priority queue `Cslib.Algorithms.Lean.IndexedMinPQ.spec` (used by graph
+* the fixed-vertex priority queue `Cslib.DataStructure.PriorityQueue.indexedMinPQSpec` (used by
+  graph
   algorithms such as Dijkstra's algorithm), in `9 * n + 1` words at `[base, base + 9 * n + 1)`; and
-* the relational key–value priority queue with handles `Cslib.Algorithms.Lean.MinPQ.spec` (where
+* the relational key–value priority queue with handles
+  `Cslib.DataStructure.PriorityQueue.minPQSpec` (where
   `insert u v` allocates and returns a handle `h : Fin n_max`), in `11 * n_max + 1` words at
-  `[base, base + 11 * n_max + 1)` under the `FibonacciHeap.MinPQ` namespace (`MinPQ.subroutineDS`,
+  `[base, base + 11 * n_max + 1)` under the `FibonacciHeap.MinPQ` namespace (`MinPQ.impl`,
   `MinPQ.dynamicProgram`, `MinPQ.certificate`, `MinPQ.amortized`).
 
 Over capacity `n` (`n_max`) with concrete integer potential
@@ -41,23 +43,25 @@ Over capacity `n` (`n_max`) with concrete integer potential
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.subroutineDS`: `SubroutineDS` certificate
-  over `Basis.exact` for `IndexedMinPQ.spec`.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.pkg`, `pkgStd`: `PQPackage` bundles over
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.impl`: `StateTransitionImpl` certificate
+  over `Basis.exact` for `indexedMinPQSpec`.
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.pkg`, `pkgStd`: `PQPackage` bundles over
   `Basis.exact` and `Basis.standard` for plug-and-play graph algorithms (such as Dijkstra).
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.MinPQ.subroutineDS`,
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.MinPQ.impl`,
   `MinPQ.dynamicProgram`, `MinPQ.certificate`, `MinPQ.run_ops_exact_fresh`,
-  `MinPQ.run_ops_exact_reusable`: `SubroutineDS` and flat-program realizations of the key–value
-  Fibonacci heap with handles (`Cslib.Algorithms.Lean.MinPQ.spec`).
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.initFreshProg`, `initClearProg`, `opProg`,
+  `MinPQ.run_ops_exact_reusable`: `StateTransitionImpl` and flat-program implementations of the
+  key–value
+  Fibonacci heap with handles (`Cslib.DataStructure.PriorityQueue.minPQSpec`).
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.initFreshProg`, `initClearProg`,
+  `opProg`,
   `initRegs`, `prepareRegs`, `RunsOps`: compiled flat `Program .exact rFib` artifacts, register
   calling conventions, and sequential execution predicate for standalone multi-operation execution.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.amortized`, `run_client_amortized`:
-  standalone `Stateful.Amortized` certificate and adaptive-client bound over `Basis.standard`.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.run_ops_exact_fresh`,
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.amortized`, `run_client_amortized`:
+  standalone `Amortized` certificate and adaptive-client bound over `Basis.standard`.
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.run_ops_exact_fresh`,
   `run_ops_exact_reusable`: standalone end-to-end `Basis.exact` flat-program execution theorems
   bounding initialization by `t_init + 1 ≤ 421` (`initFreshProg` on zeroed memory) or
   `t_init + 1 ≤ 421 * (n + 1)` (`initClearProg` on arbitrary memory) and total operation
@@ -74,10 +78,9 @@ Over capacity `n` (`n_max`) with concrete integer potential
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+namespace Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap
 
-open Cslib.WordRAM
-open Cslib.Algorithms.Lean
+open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 
 /-! ## Unified dispatcher -/
 
@@ -85,11 +88,11 @@ open Cslib.Algorithms.Lean
 `charge n s o` amortized instructions over `Basis.exact`. -/
 theorem dispatchCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x : Data rFib}
     (o : IndexedMinPQ.Op n) (hinv : FibInv n K_max w base s x)
-    (hval : (IndexedMinPQ.spec n K_max).valid s o) (harg : code.argMatch o x.regs) :
+    (hval : (indexedMinPQSpec n K_max).valid s o) (harg : code.argMatch o x.regs) :
     ∃ y m, Exec w dispatchCode x y m ∧
       code.decode (n := n) (K_max := K_max) o y.regs =
-        some ((IndexedMinPQ.spec n K_max).stepFn s o).2 ∧
-      FibInv n K_max w base ((IndexedMinPQ.spec n K_max).stepFn s o).1 y ∧
+        some ((indexedMinPQSpec n K_max).stepFn s o).2 ∧
+      FibInv n K_max w base ((indexedMinPQSpec n K_max).stepFn s o).1 y ∧
       Modifies (Block.mk base (space n)).footprint x.mem y.mem ∧
       m + potential y ≤ charge n s o + potential x := by
   have hz0 : x.regs zeroP = 0 := hinv.2.1.2.2.2.2.2.2.2.2.2.2.2.1
@@ -143,14 +146,14 @@ theorem dispatchCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x :
     simp only [charge, tExt]
     omega
 
-/-! ## `SubroutineDS` certificate and `PQPackage` bundles -/
+/-! ## `WordRAM.StateTransitionImpl` certificate and `PQPackage` bundles -/
 
 /-- Unified standalone and inline-subroutine specification/resource certificate for `FibonacciHeap`
 over `Basis.exact`. -/
-abbrev subroutineDS {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max) :
-    SubroutineDS code.toSubroutineCode (IndexedMinPQ.spec n K_max) w base ![n]
+abbrev impl {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max) :
+    WordRAM.StateTransitionImpl code.toSubroutineCode (indexedMinPQSpec n K_max) w base ![n]
       (IndexedMinPQ.empty n) :=
-  SubroutineDS.ofFn
+  WordRAM.StateTransitionImpl.ofFn
     (space := space n)
     (spanTime := 12)
     (setupTime := 14)
@@ -185,7 +188,7 @@ def pkg : PQPackage .exact rFib where
   insertTime := tIns
   decreaseTime := tDec
   extractTime := tExt
-  cert hS hK := subroutineDS hS hK
+  cert hS hK := impl hS hK
   rep_unique _ _ := fun ⟨_, _, h₁⟩ ⟨_, _, h₂⟩ => h₁.unique h₂
   cert_space _ _ := rfl
   cert_initTime _ _ := le_rfl
@@ -201,42 +204,42 @@ def pkg : PQPackage .exact rFib where
 /-- Parametric `PQPackage .standard rFib` bundle lifted to `Basis.standard`. -/
 abbrev pkgStd : PQPackage .standard rFib := pkg.toStandard
 
-/-! ## Standalone `Basis.standard` `DynamicProgram` and `Stateful.Amortized` realizations -/
+/-! ## Standalone `Basis.standard` `DynamicProgram` and `Amortized` implementations -/
 
-/-- Standalone `DynamicProgram` realization of `FibonacciHeap` over `Basis.standard`. -/
+/-- Standalone `DynamicProgram` implementation of `FibonacciHeap` over `Basis.standard`. -/
 def dynamicProgram {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max) :
-    DynamicProgram (IndexedMinPQ.spec n K_max) rFib :=
-  (subroutineDS (n := n) (K_max := K_max) hS hK).toStandard.toDynamicProgram
+    DynamicProgram (indexedMinPQSpec n K_max) rFib :=
+  (impl (n := n) (K_max := K_max) hS hK).toStandard.toDynamicProgram
 
 /-- Standalone `DynamicCertificate` for `FibonacciHeap` over `Basis.standard`. -/
 def certificate {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max) :
     DynamicCertificate (dynamicProgram hS hK) w :=
-  (subroutineDS hS hK).toStandard.toCertificate
+  (impl hS hK).toStandard.toCertificate
 
-/-- Standalone `Stateful.Amortized` certificate for `FibonacciHeap` over `Basis.standard`, charging
+/-- Standalone `Amortized` certificate for `FibonacciHeap` over `Basis.standard`, charging
 `+ 1` per operation for the trailing `halt` instruction. -/
 theorem amortized {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max) :
-    Stateful.Amortized (certificate hS hK).realization
+    Amortized (certificate hS hK).impl
       DynamicProgram.OperationTrace.instructions
       (fun _ x => potential x)
       (fun s o => charge n s o + 1) :=
-  (subroutineDS hS hK).toStandard.toAmortized
+  (impl hS hK).toStandard.toAmortized
 
 /-- Adaptive-client amortized execution bound for any admissible `IndexedMinPQ` client `p` over
 `Basis.standard`. -/
 theorem run_client_amortized {n K_max w base : ℕ} (hS : Fits w (base + space n))
-    (hK : Fits w K_max) {α : Type*} (p : (IndexedMinPQ.spec n K_max).Client α)
+    (hK : Fits w K_max) {α : Type*} (p : (indexedMinPQSpec n K_max).Client α)
     {s : IndexedMinPQ.State n} {x : Data rFib} (hr : FibInv n K_max w base s x)
-    (hv : (IndexedMinPQ.spec n K_max).ValidHistory s
-      ((IndexedMinPQ.spec n K_max).runClient s p).2.2) :
+    (hv : (indexedMinPQSpec n K_max).ValidHistory s
+      ((indexedMinPQSpec n K_max).runClient s p).2.2) :
     ∃ y traces,
-      Stateful.Executes ((dynamicProgram hS hK).ExecOp w) p x
-        ((IndexedMinPQ.spec n K_max).runClient s p).1 y traces ∧
-      FibInv n K_max w base ((IndexedMinPQ.spec n K_max).runClient s p).2.1 y ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces + potential y ≤
-        (IndexedMinPQ.spec n K_max).totalCost (fun s o => charge n s o + 1) s
-          ((IndexedMinPQ.spec n K_max).runClient s p).2.2 + potential x :=
-  (subroutineDS hS hK).toStandard.run_client_amortized p hr hv
+      Executes ((dynamicProgram hS hK).ExecOp w) p x
+        ((indexedMinPQSpec n K_max).runClient s p).1 y traces ∧
+      FibInv n K_max w base ((indexedMinPQSpec n K_max).runClient s p).2.1 y ∧
+      DataStructure.total DynamicProgram.OperationTrace.instructions traces + potential y ≤
+        (indexedMinPQSpec n K_max).totalCost (fun s o => charge n s o + 1) s
+          ((indexedMinPQSpec n K_max).runClient s p).2.2 + potential x :=
+  (impl hS hK).toStandard.run_client_amortized p hr hv
 
 /-! ## Standalone end-to-end `Basis.exact` flat-program operation-sequence theorems -/
 
@@ -295,9 +298,9 @@ inductive RunsOps {n K_max : ℕ} (w base : ℕ) :
       Runs w opProg ⟨0, ⟨prepareRegs o x.regs, x.mem⟩⟩ ⟨pc, y⟩ steps →
       (∃ out, step w opProg ⟨pc, y⟩ = .halt out) →
       code.decode (n := n) (K_max := K_max) o y.regs =
-        some ((IndexedMinPQ.spec n K_max).stepFn s o).2 →
+        some ((indexedMinPQSpec n K_max).stepFn s o).2 →
       Modifies (Block.mk base (space n)).footprint x.mem y.mem →
-      RunsOps w base ((IndexedMinPQ.spec n K_max).stepFn s o).1 y ops z rest →
+      RunsOps w base ((indexedMinPQSpec n K_max).stepFn s o).1 y ops z rest →
       RunsOps w base s x (o :: ops) z ((steps + 1) + rest)
 
 private theorem step_program_halt {w : ℕ} (c : Code .exact rFib) (out : Fin rFib)
@@ -310,10 +313,10 @@ private theorem step_program_halt {w : ℕ} (c : Code .exact rFib) (out : Fin rF
 private theorem seq_runsOps {n K_max w base : ℕ} (hS : Fits w (base + space n))
     (hK : Fits w K_max) :
     ∀ (ops : List (IndexedMinPQ.Op n)) {s : IndexedMinPQ.State n} {x : Data rFib},
-      FibInv n K_max w base s x → (IndexedMinPQ.spec n K_max).ValidHistory s ops →
+      FibInv n K_max w base s x → (indexedMinPQSpec n K_max).ValidHistory s ops →
       ∃ z total, RunsOps (K_max := K_max) w base s x ops z total ∧
         FibInv n K_max w base
-          (ops.foldl (fun st o => ((IndexedMinPQ.spec n K_max).stepFn st o).1) s) z ∧
+          (ops.foldl (fun st o => ((indexedMinPQSpec n K_max).stepFn st o).1) s) z ∧
         total + potential z ≤
           421 * (numQueries ops + numInserts ops + numDecreaseKeys ops +
             numExtractMins ops * (Nat.log 2 n + 1)) + potential x
@@ -370,7 +373,7 @@ theorem run_ops_exact_fresh {n K_max w base : ℕ} (hS : Fits w (base + space n)
     (hK : Fits w K_max) {mem₀ : ℕ → ℕ} (hmem : ∀ a, Fits w (mem₀ a))
     (hzero : ∀ a ∈ (Block.mk base (space n)).footprint, mem₀ a = 0)
     (ops : List (IndexedMinPQ.Op n))
-    (hv : (IndexedMinPQ.spec n K_max).ValidHistory (IndexedMinPQ.empty n) ops) :
+    (hv : (indexedMinPQSpec n K_max).ValidHistory (IndexedMinPQ.empty n) ops) :
     ∃ pc₀ x₀ t_init z t_ops,
       Runs w initFreshProg ⟨0, ⟨initRegs n base, mem₀⟩⟩ ⟨pc₀, x₀⟩ t_init ∧
       (∃ out, step w initFreshProg ⟨pc₀, x₀⟩ = .halt out) ∧
@@ -386,7 +389,7 @@ theorem run_ops_exact_fresh {n K_max w base : ℕ} (hS : Fits w (base + space n)
   have hpar : ∀ j : Fin 1, d₀.regs (![nReg] j) = ![n] j := fun j => by
     fin_cases j; rfl
   obtain ⟨x₀, ⟨t_init, ht_init, he_init⟩, _, hinv₀, hpot₀, hmod₀⟩ :=
-    (subroutineDS (K_max := K_max) hS hK).initFresh_exec (initRegs_bounded hS hmem) hfr_eq hpar
+    (impl (K_max := K_max) hS hK).initFresh_exec (initRegs_bounded hS hmem) hfr_eq hpar
       hzero
   have hruns₀ : Runs w initFreshProg ⟨0, d₀⟩
       ⟨0 + code.toSubroutineCode.initFresh.size, x₀⟩ t_init :=
@@ -406,7 +409,7 @@ arbitrary `w`-bounded memory `mem₀`. -/
 theorem run_ops_exact_reusable {n K_max w base : ℕ} (hS : Fits w (base + space n))
     (hK : Fits w K_max) {mem₀ : ℕ → ℕ} (hmem : ∀ a, Fits w (mem₀ a))
     (ops : List (IndexedMinPQ.Op n))
-    (hv : (IndexedMinPQ.spec n K_max).ValidHistory (IndexedMinPQ.empty n) ops) :
+    (hv : (indexedMinPQSpec n K_max).ValidHistory (IndexedMinPQ.empty n) ops) :
     ∃ pc₀ x₀ t_init z t_ops,
       Runs w initClearProg ⟨0, ⟨initRegs n base, mem₀⟩⟩ ⟨pc₀, x₀⟩ t_init ∧
       (∃ out, step w initClearProg ⟨pc₀, x₀⟩ = .halt out) ∧
@@ -422,7 +425,7 @@ theorem run_ops_exact_reusable {n K_max w base : ℕ} (hS : Fits w (base + space
   have hpar : ∀ j : Fin 1, d₀.regs (![nReg] j) = ![n] j := fun j => by
     fin_cases j; rfl
   obtain ⟨x₀, ⟨t_init, ht_init, he_init⟩, _, hinv₀, hpot₀, hmod₀⟩ :=
-    (subroutineDS (K_max := K_max) hS hK).initClear_exec (initRegs_bounded hS hmem) hfr_eq hpar
+    (impl (K_max := K_max) hS hK).initClear_exec (initRegs_bounded hS hmem) hfr_eq hpar
   have hruns₀ : Runs w initClearProg ⟨0, d₀⟩
       ⟨0 + code.toSubroutineCode.initClear.size, x₀⟩ t_init :=
     he_init.runs (pc := 0) (p := initClearProg) (Program.Contains.self _).append_left
@@ -436,4 +439,4 @@ theorem run_ops_exact_reusable {n K_max w base : ℕ} (hS : Fits w (base + space
   · change potential x₀ ≤ 0 at hpot₀
     omega
 
-end Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+end Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap

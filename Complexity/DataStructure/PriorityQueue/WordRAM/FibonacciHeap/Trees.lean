@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Model
+public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Model
 
 /-!
 # Chronological heap-tree model for a static-array Fibonacci heap
@@ -23,11 +23,11 @@ consolidation table leave existing subtrees valid by direct structural induction
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.RawState`: abstract view of the eight
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.RawState`: abstract view of the eight
   `n`-word node arrays, `(n + 1)`-word consolidation array, and four scalar heap counters.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.FHTree`: rose tree over `Fin n` with
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.FHTree`: rose tree over `Fin n` with
   chronological child lists.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.ValidSubtree`, `ValidRoot`: heap-order,
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.ValidSubtree`, `ValidRoot`: heap-order,
   pointer-realization, and Fredman–Tarjan chronological rank invariants (allowing at most one
   transient `pending` node during cascading cuts).
 
@@ -48,9 +48,9 @@ consolidation table leave existing subtrees valid by direct structural induction
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+namespace Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap
 
-open Cslib.Algorithms.Lean
+open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 
 /-! ## Raw array/scalar state and marked-node counting -/
 
@@ -642,4 +642,4 @@ theorem ValidRoot.link {n : ℕ} {st st' : RawState n} {T₁ T₂ : FHTree n}
             have hlr := hlr' x hx_mem hx_ne_v hx_not_sib
             exact ⟨hpar'.2.2 x hx_mem hx_ne_v, hlr.1, hlr.2, Iff.rfl⟩
 
-end Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+end Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap

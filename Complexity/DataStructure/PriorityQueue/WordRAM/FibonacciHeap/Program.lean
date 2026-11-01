@@ -7,8 +7,8 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.PriorityQueue.Basic
-public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Forest
+public import Complexity.DataStructure.PriorityQueue.WordRAM.Basic
+public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Forest
 
 /-!
 # Fibonacci Heap: Static-Array Word-RAM Program and State Representation
@@ -33,18 +33,19 @@ bounds, and memory/register framing lemmas.
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.rFib`, `space`, `potential`, `charge`:
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.rFib`, `space`, `potential`, `charge`:
   register count (`42`), memory footprint (`9 * n + 1`), integer potential, and per-operation
   amortized charges.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.code`, `dispatchCode`: structured
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.code`, `dispatchCode`: structured
   `PQCode .exact rFib` bundle and unified operation dispatcher.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.FibInv`: full machine-state invariant over
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.FibInv`: full machine-state invariant
+  over
   `Data rFib`.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.FibInv.supported`, `potential_supported`:
-  register and memory framing for `SubroutineDS`.
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.FibInv.supported`, `potential_supported`:
+  register and memory framing for `StateTransitionImpl`.
 
 ## References
 
@@ -56,10 +57,9 @@ bounds, and memory/register framing lemmas.
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+namespace Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap
 
-open Cslib.WordRAM
-open Cslib.Algorithms.Lean
+open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue Cslib.DataStructure.WordRAM
 open scoped Cslib.WordRAM
 
 /-! ## Register file (`rFib = 42`) and footprint size -/
@@ -1077,4 +1077,4 @@ theorem potential_supported {x x' : Data rFib}
     potential x' = potential x := by
   simp only [potential, hreg numRootsReg (by decide), hreg numMarkedReg (by decide)]
 
-end Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+end Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap

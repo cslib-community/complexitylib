@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.PriorityQueue.BinaryHeap.Program
+public import Complexity.DataStructure.PriorityQueue.WordRAM.BinaryHeap.Program
 
 /-!
 # Indexed Binary Min-Heap: Sift-Up, Sift-Down, and Root Extraction Proofs
@@ -18,11 +18,12 @@ bounds for `siftUp`, `siftDown`, and `doExtractNonEmpty` under the lexicographic
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.siftUp_spec`: upward restoration from index `K`
+* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.siftUp_spec`: upward restoration from
+  index `K`
   in at most `28 * ⌊log₂ K⌋ + 2` instructions.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.siftDown_spec`: downward restoration at heap
+* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.siftDown_spec`: downward restoration at heap
   size `S` in at most `46 * ⌊log₂ (S + 1)⌋ + 4` instructions.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.doExtractNonEmpty_spec`: non-empty root
+* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.doExtractNonEmpty_spec`: non-empty root
   extraction at heap size `S ≥ 1` in at most `46 * ⌊log₂ S⌋ + 20` instructions.
 
 ## References
@@ -33,10 +34,9 @@ bounds for `siftUp`, `siftDown`, and `doExtractNonEmpty` under the lexicographic
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap
+namespace Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
 
-open Cslib.WordRAM
-open Cslib.Algorithms.Lean
+open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 open Reg
 
 section Order
@@ -883,4 +883,4 @@ theorem doExtractNonEmpty_spec {x : Data rBin}
 
 end SiftDown
 
-end Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap
+end Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap

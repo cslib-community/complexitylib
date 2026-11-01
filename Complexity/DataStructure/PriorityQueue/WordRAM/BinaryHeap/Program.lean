@@ -7,8 +7,8 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.PriorityQueue.Basic
-public import Complexity.Algorithms.WordRAM.PriorityQueue.BinaryHeap.Model
+public import Complexity.DataStructure.PriorityQueue.WordRAM.Basic
+public import Complexity.DataStructure.PriorityQueue.WordRAM.BinaryHeap.Model
 
 /-!
 # Indexed Binary Min-Heap: Exact-Basis Word-RAM Program
@@ -24,10 +24,10 @@ every word width `w` with `Fits w (base + space n)` and `Fits w K_max` (includin
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.rBin`: register count (`25`).
-* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.siftUp`,
-  `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.siftDown`: heap-order restoration loops.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.pqCode`: packaged `PQCode .exact rBin`.
+* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.rBin`: register count (`25`).
+* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.siftUp`,
+  `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.siftDown`: heap-order restoration loops.
+* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.pqCode`: packaged `PQCode .exact rBin`.
 
 ## References
 
@@ -37,9 +37,9 @@ every word width `w` with `Fits w (base + space n)` and `Fits w K_max` (includin
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap
+namespace Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
 
-open Cslib.WordRAM
+open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue Cslib.DataStructure.WordRAM
 
 /-- Total register count of the standalone binary heap (`5` persistent + `20` caller/scratch). -/
 abbrev rBin : ℕ := 25
@@ -270,4 +270,4 @@ def pqCode : PQCode .exact rBin where
   argK_input := by decide
   output_eq := rfl
 
-end Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap
+end Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap

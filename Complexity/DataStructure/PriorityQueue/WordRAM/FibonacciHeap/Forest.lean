@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Trees
+public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Trees
 
 /-!
 # Forest invariants and pure state transitions for a Fibonacci heap
@@ -26,16 +26,17 @@ This file lifts the single-tree model of `Trees.lean` to the full multi-root for
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.FibRawInv`: full multi-root forest
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.FibRawInv`: full multi-root forest
   representation invariant relating `IndexedMinPQ.State n` to `RawState n`.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.CutInv`: transient forest invariant during
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.CutInv`: transient forest invariant
+  during
   cascading cuts in `decreaseKey`.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.ValidSubtree.exists_cut`: severing a
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.ValidSubtree.exists_cut`: severing a
   non-root node splits its enclosing tree into a valid root tree and a `pending`-parent tree.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.FibRawInv.findMin_eq_some`: `minRoot`
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.FibRawInv.findMin_eq_some`: `minRoot`
   identifies the exact `IndexedMinPQ.findMin` element.
 
 ## References
@@ -48,9 +49,9 @@ This file lifts the single-tree model of `Trees.lean` to the full multi-root for
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+namespace Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap
 
-open Cslib.Algorithms.Lean
+open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 
 /-! ## List surgery lemmas for child removal and replacement -/
 
@@ -789,4 +790,4 @@ theorem FibRawInv.findMin_eq_some {n K_max : ℕ} {s : IndexedMinPQ.State n} {st
       (hroots T_v hTv).1.prioLE_of_mem hv_in_Tv
     exact hle1.trans hle2
 
-end Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+end Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap

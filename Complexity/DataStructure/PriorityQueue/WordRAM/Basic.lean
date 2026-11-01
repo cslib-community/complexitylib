@@ -7,33 +7,36 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.IndexedMinPQ
+public import Complexity.DataStructure.PriorityQueue.Spec
 public import Complexity.Computability.WordRAM.ExactNotation
 public import Complexity.Computability.WordRAM.Subroutine
+public import Complexity.DataStructure.WordRAM.StateTransition
 
 /-!
 # Word-RAM interface for indexed min-priority queues
 
 This file packages uniform Word-RAM calling conventions (`PQCode`) and parametric specification /
-resource certificates (`PQPackage`) for `Cslib.Algorithms.Lean.IndexedMinPQ.spec`.
+resource certificates (`PQPackage`) for `Cslib.DataStructure.PriorityQueue.indexedMinPQSpec`.
 
 A `PQPackage B r_pq` bundles a `SubroutineCode B r_pq 1` with:
 * three 1-bit operation-tag registers (`tag2`, `tag1`, `tag0`) taking values only in `{0, 1}`, so
   encoded operation arguments fit in `w`-bit words even at small word sizes (`w ≥ 1`);
 * standard argument registers (`argV`, `argK`) and result registers (`outFlag`, `outV`, `outK`);
-* parametric `SubroutineDS` certificates over `(n, K_max, w, base)` supporting arbitrary concrete
+* parametric `StateTransitionImpl` certificates over `(n, K_max, w, base)` supporting arbitrary
+  concrete
   potentials `potential : Data r_pq → ℕ` (both worst-case `potential = 0` heaps such as
   `BinaryHeap` and amortized heaps such as `FibonacciHeap`).
 
 It also provides basis-polymorphic inline caller helpers (`callIsEmpty`, `callGetKey`, `callInsert`,
-`callDecreaseKey`, `callExtractMin`) built from `Op.copy` and `SubroutineDS.call_rename`.
+`callDecreaseKey`, `callExtractMin`) built from `Op.copy` and `StateTransitionImpl.call_rename`.
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.PQCode`: `SubroutineCode B r_pq 1` equipped with standard
+* `Cslib.DataStructure.PriorityQueue.WordRAM.PQCode`: `SubroutineCode B r_pq 1` equipped with
+  standard
   priority-queue interface registers, `encode`, `argMatch`, `decode`, and inline caller blocks.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.PQPackage`: uniform code together with parametric
-  `SubroutineDS` certificates and per-operation amortized charge bounds.
+* `Cslib.DataStructure.PriorityQueue.WordRAM.PQPackage`: uniform code together with parametric
+  `StateTransitionImpl` certificates and per-operation amortized charge bounds.
 
 ## Main results
 
@@ -51,10 +54,9 @@ It also provides basis-polymorphic inline caller helpers (`callIsEmpty`, `callGe
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.PriorityQueue
+namespace Cslib.DataStructure.PriorityQueue.WordRAM
 
-open Cslib.WordRAM
-open Cslib.Algorithms.Lean
+open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue Cslib.DataStructure.WordRAM
 
 /-! ## `PQCode`: Uniform priority-queue subroutine code and calling convention -/
 
@@ -150,10 +152,10 @@ def argMatch (P : PQCode B r_pq) {n : ℕ} : IndexedMinPQ.Op n → (Fin r_pq →
       regs P.tag2 = 0 ∧ regs P.tag1 ≠ 0 ∧ regs P.tag0 ≠ 0 ∧ regs P.argV = v.val ∧ regs P.argK = k
   | .extractMin => fun regs => regs P.tag2 ≠ 0
 
-/-- Standard output decoder for `IndexedMinPQ.spec n K_max`. -/
+/-- Standard output decoder for `indexedMinPQSpec n K_max`. -/
 def decode (P : PQCode B r_pq) {n K_max : ℕ} :
-    (o : (IndexedMinPQ.spec n K_max).Op) → (Fin r_pq → ℕ) →
-      Option ((IndexedMinPQ.spec n K_max).Result o)
+    (o : (indexedMinPQSpec n K_max).Op) → (Fin r_pq → ℕ) →
+      Option ((indexedMinPQSpec n K_max).Result o)
   | .isEmpty, regs => some (decide (regs P.outFlag ≠ 0))
   | .getKey _, regs =>
       if regs P.outFlag = 0 then some none else some (some (regs P.outK))
@@ -183,7 +185,7 @@ private theorem nodup_dests (P : PQCode B r_pq) :
 theorem arguments_fit (P : PQCode B r_pq) {n K_max w base space : ℕ}
     (hsp : n + 1 ≤ space) (hS : Fits w (base + space)) (hK : Fits w K_max)
     {s : IndexedMinPQ.State n} (o : IndexedMinPQ.Op n)
-    (hv : (IndexedMinPQ.spec n K_max).valid s o) (i : Fin r_pq) :
+    (hv : (indexedMinPQSpec n K_max).valid s o) (i : Fin r_pq) :
     Fits w (P.encode o i) := by
   have h0 : Fits w 0 := hS.of_le (Nat.zero_le _)
   have h1 : Fits w 1 := hS.of_le (by omega)
@@ -301,7 +303,7 @@ private theorem set_regs_out {r₁ r₂ : ℕ} {f : Fin r₁ → Fin r₂} (x : 
 /-- Inline execution of `P.callIsEmpty`: preserves abstract state `s`, sets `z.regs (f P.outFlag)`
 so `z.regs (f P.outFlag) = 0 ↔ IndexedMinPQ.dom s ≠ ∅`, and charges `3 + C.charge s .isEmpty`. -/
 theorem callIsEmpty_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
-    (C : SubroutineDS P.toSubroutineCode (IndexedMinPQ.spec n K_max) w base ![n]
+    (C : WordRAM.StateTransitionImpl P.toSubroutineCode (indexedMinPQSpec n K_max) w base ![n]
       (IndexedMinPQ.empty n))
     (harg_eq : C.argMatch = P.argMatch) (hdec_eq : C.decode = P.decode)
     {f : Fin r_pq → Fin r_caller} (hf : f.Injective)
@@ -351,7 +353,7 @@ theorem callIsEmpty_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
     (set_regs_out x₂ P.tag0 0 hj).trans
       ((set_regs_out x₁ P.tag1 0 hj).trans (set_regs_out x P.tag2 0 hj))
   rw [hdec_eq] at hdec
-  simp only [decode, IndexedMinPQ.spec, IndexedMinPQ.step, Stateful.Spec.stepFn,
+  simp only [decode, indexedMinPQSpec, IndexedMinPQ.step, StateTransitionSpec.stepFn,
     Option.some.injEq, decide_eq_decide] at hdec
   have hflag : z.regs (f P.outFlag) = 0 ↔ IndexedMinPQ.dom s ≠ ∅ := by
     change (z.comap f).regs P.outFlag = 0 ↔ IndexedMinPQ.dom s ≠ ∅
@@ -362,7 +364,7 @@ theorem callIsEmpty_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
 /-- Inline execution of `P.callExtractMin`: extracts `findMin s` and charges
 `1 + C.charge s .extractMin`. -/
 theorem callExtractMin_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
-    (C : SubroutineDS P.toSubroutineCode (IndexedMinPQ.spec n K_max) w base ![n]
+    (C : WordRAM.StateTransitionImpl P.toSubroutineCode (indexedMinPQSpec n K_max) w base ![n]
       (IndexedMinPQ.empty n))
     (hsp_pos : 1 ≤ C.space) (hS : Fits w (base + C.space))
     (harg_eq : C.argMatch = P.argMatch) (hdec_eq : C.decode = P.decode)
@@ -372,8 +374,8 @@ theorem callExtractMin_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
     (hr : C.rep s (x.comap f)) (ho1 : x.regs oneReg_c = 1) :
     ∃ z t, ExecWithin w (P.callExtractMin f oneReg_c) x z t ∧
       P.decode (K_max := K_max) .extractMin (z.comap f).regs =
-        some ((IndexedMinPQ.spec n K_max).stepFn s .extractMin).2 ∧
-      C.rep ((IndexedMinPQ.spec n K_max).stepFn s .extractMin).1 (z.comap f) ∧
+        some ((indexedMinPQSpec n K_max).stepFn s .extractMin).2 ∧
+      C.rep ((indexedMinPQSpec n K_max).stepFn s .extractMin).1 (z.comap f) ∧
       Modifies (Block.mk base C.space).footprint x.mem z.mem ∧
       (∀ j ∉ Set.range f, z.regs j = x.regs j) ∧
       t + C.potential (z.comap f) ≤ 1 + C.charge s .extractMin + C.potential (x.comap f) := by
@@ -405,7 +407,7 @@ theorem callExtractMin_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
 /-- Inline execution of `P.callInsert`: inserts `(v, k)` and charges
 `5 + C.charge s (.insert v k)`. -/
 theorem callInsert_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
-    (C : SubroutineDS P.toSubroutineCode (IndexedMinPQ.spec n K_max) w base ![n]
+    (C : WordRAM.StateTransitionImpl P.toSubroutineCode (indexedMinPQSpec n K_max) w base ![n]
       (IndexedMinPQ.empty n))
     (hsp : n + 1 ≤ C.space) (hS : Fits w (base + C.space)) (hK : Fits w K_max)
     (harg_eq : C.argMatch = P.argMatch)
@@ -486,7 +488,7 @@ theorem callInsert_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
 /-- Inline execution of `P.callDecreaseKey`: lowers `v`'s key to `k` and charges
 `5 + C.charge s (.decreaseKey v k)`. -/
 theorem callDecreaseKey_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
-    (C : SubroutineDS P.toSubroutineCode (IndexedMinPQ.spec n K_max) w base ![n]
+    (C : WordRAM.StateTransitionImpl P.toSubroutineCode (indexedMinPQSpec n K_max) w base ![n]
       (IndexedMinPQ.empty n))
     (hsp : n + 1 ≤ C.space) (hS : Fits w (base + C.space)) (hK : Fits w K_max)
     (harg_eq : C.argMatch = P.argMatch)
@@ -567,7 +569,7 @@ theorem callDecreaseKey_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
 
 /-- Inline execution of `P.callGetKey`: queries `s v` and charges `4 + C.charge s (.getKey v)`. -/
 theorem callGetKey_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
-    (C : SubroutineDS P.toSubroutineCode (IndexedMinPQ.spec n K_max) w base ![n]
+    (C : WordRAM.StateTransitionImpl P.toSubroutineCode (indexedMinPQSpec n K_max) w base ![n]
       (IndexedMinPQ.empty n))
     (hsp : n + 1 ≤ C.space) (hS : Fits w (base + C.space))
     (harg_eq : C.argMatch = P.argMatch) (hdec_eq : C.decode = P.decode)
@@ -643,7 +645,8 @@ end PQCode
 /-! ## `PQPackage`: Parametric priority-queue implementation bundle -/
 
 /-- A priority-queue implementation over basis `B` with uniform `PQCode B r_pq`, memory footprint
-`space n`, per-operation amortized instruction charges `*Time n`, and parametric `SubroutineDS`
+`space n`, per-operation amortized instruction charges `*Time n`, and parametric
+`WordRAM.StateTransitionImpl`
 certificates supporting arbitrary concrete potentials `potential : Data r_pq → ℕ`. -/
 structure PQPackage (B : Basis) (r_pq : ℕ) where
   /-- Uniform priority-queue code and register convention. -/
@@ -666,10 +669,11 @@ structure PQPackage (B : Basis) (r_pq : ℕ) where
   decreaseTime : ℕ → ℕ
   /-- Amortized instruction bound for `extractMin`. -/
   extractTime : ℕ → ℕ
-  /-- Parametric `SubroutineDS` certificate whenever `base + space n` and `K_max` fit in `w` bits.
+  /-- Parametric `StateTransitionImpl` certificate whenever `base + space n` and `K_max` fit in
+  `w` bits.
   -/
   cert : ∀ {n K_max w base : ℕ}, Fits w (base + space n) → Fits w K_max →
-    SubroutineDS code.toSubroutineCode (IndexedMinPQ.spec n K_max) w base ![n]
+    WordRAM.StateTransitionImpl code.toSubroutineCode (indexedMinPQSpec n K_max) w base ![n]
       (IndexedMinPQ.empty n)
   /-- Each concrete state represents at most one `IndexedMinPQ.State n`. -/
   rep_unique : ∀ {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max)
@@ -741,4 +745,4 @@ abbrev toStandard {r_pq : ℕ} (pkg : PQPackage .exact r_pq) : PQPackage .standa
 
 end PQPackage
 
-end Cslib.Algorithms.WordRAM.PriorityQueue
+end Cslib.DataStructure.PriorityQueue.WordRAM

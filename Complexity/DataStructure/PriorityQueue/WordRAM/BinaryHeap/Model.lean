@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.IndexedMinPQ
+public import Complexity.DataStructure.PriorityQueue.Spec
 public import Complexity.Computability.WordRAM.Heap
 import Mathlib.Order.Interval.Finset.Nat
 
@@ -25,20 +25,22 @@ with footprint `space N = 3 * N + 1`:
 * `mem (base + 2 * N + 1 + v)` (`v < N`): 1-based heap position of handle `v`, or `0` when `v` is
   absent from the priority queue.
 
-Heap entries are ordered by `Cslib.Algorithms.Lean.IndexedMinPQ.PrioLE` on `(handle, key)`,
+Heap entries are ordered by `Cslib.DataStructure.PriorityQueue.IndexedMinPQ.PrioLE` on
+`(handle, key)`,
 breaking equal-key ties toward smaller handle indices so `extractMin` deterministically implements
-`Cslib.Algorithms.Lean.IndexedMinPQ.findMin`.
+`Cslib.DataStructure.PriorityQueue.IndexedMinPQ.findMin`.
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.space`: footprint size `3 * N + 1`.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.stateOfMem`: abstract `IndexedMinPQ.State N`
+* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.space`: footprint size `3 * N + 1`.
+* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.stateOfMem`: abstract `IndexedMinPQ.State N`
   represented in memory.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.HeapShape`,
-  `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.HeapInv`: structural and lexicographic heap
+* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.HeapShape`,
+  `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.HeapInv`: structural and lexicographic heap
   invariants.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.UpOrdered`,
-  `Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.DownOrdered`: single-defect invariants during
+* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.UpOrdered`,
+  `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.DownOrdered`: single-defect invariants
+  during
   `siftUp` and `siftDown`.
 
 ## References
@@ -49,10 +51,9 @@ breaking equal-key ties toward smaller handle indices so `extractMin` determinis
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap
+namespace Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
 
-open Cslib.WordRAM
-open Cslib.Algorithms.Lean
+open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 
 /-- Memory footprint size (`3 * N + 1` words) of an indexed binary heap over `N` handles. -/
 def space (N : ℕ) : ℕ := 3 * N + 1
@@ -421,4 +422,4 @@ theorem HeapInv.extract_one (h : HeapInv N base 1 mem) :
 
 end InvariantLemmas
 
-end Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap
+end Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap

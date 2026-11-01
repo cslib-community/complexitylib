@@ -8,61 +8,432 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Foundations.Semantics.Stateful.Basic
-public import Complexity.Algorithms.Lean.IndexedMinPQ
+public import Complexity.DataStructure.StateTransition
+public import Mathlib.Data.Fintype.Basic
 
 /-!
-# Relational Priority Queue with Handles
+# Min-priority queue state-transition specifications
 
-This module defines the pure relational specification `Cslib.Algorithms.Lean.MinPQ` of a
-bounded-capacity min-priority queue storing key–value entries `(u, v)` (`u < U`, `v < V`) addressed
-by handles `h : Fin n_max` allocated by the data structure.
+This file defines two abstract state-transition specifications
+(`Cslib.DataStructure.StateTransitionSpec`) for min-priority queues over finite handles:
 
-Unlike `Cslib.Algorithms.Lean.IndexedMinPQ`, where the caller chooses the vertex index `v : Fin n`
-on `insert v k` (as required by graph algorithms such as Dijkstra's algorithm), here the caller
-passes only a key–value pair `(u, v)` to `insert u v` and receives a handle `h : Fin n_max` chosen
-by the data structure:
-
-* `insert u v` (`size s < n_max ∧ u < U ∧ v < V`): nondeterministically selects *any* unused handle
-  `h : Fin n_max` (`s h = none`), stores `some (u, v)` at `h`, and returns `some h`;
-* `extractMin`: returns `none` when the queue is empty (`dom s = ∅`), or nondeterministically
-  selects *any* stored element `(u, v, h)` attaining the minimum key (`isMinEntry s h u v`),
-  removes `h`, and returns `some (u, v, h)`;
-* `decreaseKey h u'` (`∃ u v, s h = some (u, v) ∧ u' ≤ u`): lowers the key of active handle `h` to
-  `u'` while preserving its satellite value `v`;
-* `isEmpty` and `get h`: read-only queries returning `decide (dom s = ∅)` and `s h`.
-
-This module also defines the deterministic free-list handle allocator (`AllocState`, `stepAlloc`),
-proves that `stepAlloc` refines `MinPQ.spec` while preserving `AllocState.WellFormed`, and provides
-the key-projection lemmas `toIndexed_update_some` and `toIndexed_update_none` connecting `State` to
-`IndexedMinPQ.State`.
+1. `Cslib.DataStructure.PriorityQueue.indexedMinPQSpec n K_max`: a deterministic, graph-free
+   specification for an indexed min-priority queue over caller-chosen handles `Fin n` and
+   natural-number keys bounded by `K_max` (used by graph algorithms such as Dijkstra's algorithm).
+   Equal-key ties in `extractMin` are broken deterministically by smallest handle index
+   (`IndexedMinPQ.PrioLE`).
+2. `Cslib.DataStructure.PriorityQueue.minPQSpec n_max U V`: a relational specification for a
+   bounded-capacity min-priority queue storing key–value entries `(u, v)` (`u < U`, `v < V`)
+   addressed by handles `h : Fin n_max` allocated by the data structure (`insert u v`
+   nondeterministically chooses any unused handle `h` and `extractMin` nondeterministically removes
+   any minimum-key entry), together with a deterministic free-list handle allocator
+   (`MinPQ.AllocState`, `MinPQ.stepAlloc`) refining `minPQSpec`.
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.MinPQ.State`: abstract priority-queue state `Fin n_max → Option (ℕ × ℕ)`.
-* `Cslib.Algorithms.Lean.MinPQ.dom`, `size`: active handle set and current number of stored
-  elements.
-* `Cslib.Algorithms.Lean.MinPQ.Op`, `Op.Result`: priority-queue operations and return types.
-* `Cslib.Algorithms.Lean.MinPQ.isMinEntry`: predicate that a stored handle `h` attains the minimum
-  key in `s`.
-* `Cslib.Algorithms.Lean.MinPQ.spec`: relational specification (`Stateful.Spec`).
-* `Cslib.Algorithms.Lean.MinPQ.AllocState`, `stepAlloc`: deterministic free-list handle allocator
-  and lexicographic tie-breaking transition refining `spec`.
+* `Cslib.DataStructure.PriorityQueue.IndexedMinPQ.Op`, `State`, `empty`, `dom`, `PrioLE`, `PrioLT`,
+  `findMin`: operations, state, priority orders, and minimum selector for indexed min-priority
+  queues.
+* `Cslib.DataStructure.PriorityQueue.indexedMinPQSpec`: deterministic `StateTransitionSpec` for
+  indexed min-priority queues with key bound `K_max`.
+* `Cslib.DataStructure.PriorityQueue.MinPQ.State`, `dom`, `size`, `Op`, `Op.Result`, `isMinEntry`:
+  operations, state, and minimum-entry predicate for handle-allocating min-priority queues.
+* `Cslib.DataStructure.PriorityQueue.minPQSpec`: relational `StateTransitionSpec` for
+  handle-allocating min-priority queues.
+* `Cslib.DataStructure.PriorityQueue.MinPQ.AllocState`, `stepAlloc`: deterministic free-list handle
+  allocator and lexicographic tie-breaking transition refining `minPQSpec`.
 
 ## Main results
 
-* `Cslib.Algorithms.Lean.MinPQ.instTotalSpec`: `MinPQ.spec n_max U V` is total (`Spec.Total`).
-* `Cslib.Algorithms.Lean.MinPQ.stepAlloc_refines_spec`: every valid `stepAlloc` transition satisfies
-  `(spec n_max U V).step` and preserves `AllocState.WellFormed`.
-* `Cslib.Algorithms.Lean.MinPQ.toIndexed_update_some`, `toIndexed_update_none`: `toIndexed`
-  commutes with `Function.update` on active and cleared handles.
+* `Cslib.DataStructure.PriorityQueue.IndexedMinPQ.not_rawPrioLT_iff_rawPrioLE`,
+  `not_prioLT_iff_prioLE`, `prioLT_or_prioLT_of_ne`: relationship between strict and weak
+  lexicographic priority orders.
+* `Cslib.DataStructure.PriorityQueue.IndexedMinPQ.dom_empty`, `dom_insert`, `dom_decreaseKey`,
+  `dom_extractMin`: domain evolution under each indexed priority-queue operation.
+* `Cslib.DataStructure.PriorityQueue.IndexedMinPQ.findMin_eq_none_iff`, `findMin_eq_some_iff`,
+  `findMin_mem_dom`, `findMin_le`, `findMin_key_le`: characterization and optimality of
+  `IndexedMinPQ.findMin`.
+* `Cslib.DataStructure.PriorityQueue.MinPQ.instTotalSpec`: `minPQSpec n_max U V` is total
+  (`StateTransitionSpec.Total`).
+* `Cslib.DataStructure.PriorityQueue.MinPQ.stepAlloc_refines_spec`: every valid `stepAlloc`
+  transition satisfies `(minPQSpec n_max U V).step` and preserves `AllocState.WellFormed`.
+* `Cslib.DataStructure.PriorityQueue.MinPQ.toIndexed_update_some`, `toIndexed_update_none`:
+  `toIndexed` commutes with `Function.update` on active and cleared handles.
+
+## References
+
+* [T. H. Cormen, C. E. Leiserson, C. L. Rivest and C. Stein, *Introduction to Algorithms*,
+  Chapters 6 and 19][CLRS2009]
 -/
 
 @[expose] public section
 
-namespace Cslib.Algorithms.Lean.MinPQ
+namespace Cslib.DataStructure.PriorityQueue
 
-open Cslib.Stateful
+namespace IndexedMinPQ
+
+/-- Operations on an indexed min-priority queue over handles `Fin n` and natural-number keys. -/
+inductive Op (n : ℕ) where
+  /-- Test whether the queue holds no handles. -/
+  | isEmpty
+  /-- Query the current key of handle `v`, if present. -/
+  | getKey (v : Fin n)
+  /-- Insert an absent handle `v` with key `k`. -/
+  | insert (v : Fin n) (k : ℕ)
+  /-- Lower the key of a present handle `v` to `k`. -/
+  | decreaseKey (v : Fin n) (k : ℕ)
+  /-- Remove and return the present `(handle, key)` pair of minimum `(key, handle)`. -/
+  | extractMin
+  deriving DecidableEq, Repr
+
+/-- Abstract state of an indexed min-priority queue on `Fin n`. -/
+abbrev State (n : ℕ) := Fin n → Option ℕ
+
+/-- The empty priority queue on `Fin n`. -/
+def empty (n : ℕ) : State n := fun _ => none
+
+/-- The finite set of handles currently present in state `s`. -/
+def dom {n : ℕ} (s : State n) : Finset (Fin n) :=
+  Finset.univ.filter fun v => (s v).isSome
+
+/-- Lexicographic priority comparison on raw `(handle, key) : ℕ × ℕ` pairs: smaller key first,
+breaking equal-key ties by smaller handle index. -/
+abbrev RawPrioLE (a b : ℕ × ℕ) : Prop :=
+  a.2 < b.2 ∨ (a.2 = b.2 ∧ a.1 ≤ b.1)
+
+instance instDecidableRawPrioLE (a b : ℕ × ℕ) : Decidable (RawPrioLE a b) :=
+  inferInstanceAs (Decidable (_ ∨ _))
+
+/-- Reflexivity of `RawPrioLE`. -/
+theorem RawPrioLE.refl (a : ℕ × ℕ) : RawPrioLE a a :=
+  Or.inr ⟨rfl, le_rfl⟩
+
+/-- Transitivity of `RawPrioLE`. -/
+theorem RawPrioLE.trans {a b c : ℕ × ℕ} (hab : RawPrioLE a b) (hbc : RawPrioLE b c) :
+    RawPrioLE a c := by
+  unfold RawPrioLE at hab hbc ⊢
+  omega
+
+/-- Lexicographic priority comparison on `(handle, key)` pairs: smaller key first, breaking
+equal-key ties by smaller handle index. -/
+def PrioLE {n : ℕ} (a b : Fin n × ℕ) : Prop :=
+  RawPrioLE (a.1.val, a.2) (b.1.val, b.2)
+
+instance instDecidablePrioLE {n : ℕ} (a b : Fin n × ℕ) : Decidable (PrioLE a b) :=
+  inferInstanceAs (Decidable (RawPrioLE _ _))
+
+/-- Reflexivity of `PrioLE`. -/
+theorem PrioLE.refl {n : ℕ} (a : Fin n × ℕ) : PrioLE a a :=
+  RawPrioLE.refl _
+
+/-- Transitivity of `PrioLE`. -/
+theorem PrioLE.trans {n : ℕ} {a b c : Fin n × ℕ} (hab : PrioLE a b) (hbc : PrioLE b c) :
+    PrioLE a c :=
+  RawPrioLE.trans hab hbc
+
+/-- Antisymmetry of `PrioLE`. -/
+theorem PrioLE.antisymm {n : ℕ} {a b : Fin n × ℕ} (hab : PrioLE a b) (hba : PrioLE b a) :
+    a = b := by
+  rcases a with ⟨ua, ka⟩
+  rcases b with ⟨ub, kb⟩
+  dsimp only [PrioLE, RawPrioLE] at hab hba
+  have hk : ka = kb := by omega
+  have hu : ua = ub := Fin.ext (by omega)
+  rw [hu, hk]
+
+/-- Totality of `PrioLE`. -/
+theorem PrioLE.total {n : ℕ} (a b : Fin n × ℕ) : PrioLE a b ∨ PrioLE b a := by
+  unfold PrioLE
+  omega
+
+/-- Strict lexicographic priority comparison on raw `(handle, key) : ℕ × ℕ` pairs: smaller key
+first, breaking equal-key ties by strictly smaller handle index. -/
+def RawPrioLT (a b : ℕ × ℕ) : Prop :=
+  a.2 < b.2 ∨ (a.2 = b.2 ∧ a.1 < b.1)
+
+instance instDecidableRawPrioLT (a b : ℕ × ℕ) : Decidable (RawPrioLT a b) :=
+  inferInstanceAs (Decidable (_ ∨ _))
+
+/-- Irreflexivity of `RawPrioLT`. -/
+theorem RawPrioLT.irrefl (a : ℕ × ℕ) : ¬RawPrioLT a a := by
+  unfold RawPrioLT
+  omega
+
+/-- Transitivity of `RawPrioLT`. -/
+theorem RawPrioLT.trans {a b c : ℕ × ℕ} (hab : RawPrioLT a b) (hbc : RawPrioLT b c) :
+    RawPrioLT a c := by
+  unfold RawPrioLT at hab hbc ⊢
+  omega
+
+/-- Strict priority order `RawPrioLT` implies weak priority order `RawPrioLE`. -/
+theorem RawPrioLT.le {a b : ℕ × ℕ} (h : RawPrioLT a b) : RawPrioLE a b := by
+  unfold RawPrioLT RawPrioLE at *
+  omega
+
+/-- Negation of `RawPrioLT` is the converse weak priority order `RawPrioLE`. -/
+theorem not_rawPrioLT_iff_rawPrioLE {a b : ℕ × ℕ} : ¬RawPrioLT a b ↔ RawPrioLE b a := by
+  unfold RawPrioLT RawPrioLE
+  omega
+
+/-- Strict lexicographic priority comparison on `(handle, key)` pairs: smaller key first, breaking
+equal-key ties by strictly smaller handle index. -/
+def PrioLT {n : ℕ} (a b : Fin n × ℕ) : Prop :=
+  RawPrioLT (a.1.val, a.2) (b.1.val, b.2)
+
+instance instDecidablePrioLT {n : ℕ} (a b : Fin n × ℕ) : Decidable (PrioLT a b) :=
+  inferInstanceAs (Decidable (RawPrioLT _ _))
+
+/-- Irreflexivity of `PrioLT`. -/
+theorem PrioLT.irrefl {n : ℕ} (a : Fin n × ℕ) : ¬PrioLT a a :=
+  RawPrioLT.irrefl _
+
+/-- Transitivity of `PrioLT`. -/
+theorem PrioLT.trans {n : ℕ} {a b c : Fin n × ℕ} (hab : PrioLT a b) (hbc : PrioLT b c) :
+    PrioLT a c :=
+  RawPrioLT.trans hab hbc
+
+/-- Asymmetry of `PrioLT`. -/
+theorem PrioLT.asymm {n : ℕ} {a b : Fin n × ℕ} (hab : PrioLT a b) : ¬PrioLT b a :=
+  fun hba => PrioLT.irrefl a (hab.trans hba)
+
+/-- `PrioLT` implies `PrioLE`. -/
+theorem PrioLT.le {n : ℕ} {a b : Fin n × ℕ} (h : PrioLT a b) : PrioLE a b :=
+  RawPrioLT.le h
+
+/-- `PrioLT` mixed with `PrioLE` on the left. -/
+theorem PrioLT.of_le_of_lt {n : ℕ} {a b c : Fin n × ℕ}
+    (hab : PrioLE a b) (hbc : PrioLT b c) : PrioLT a c := by
+  dsimp only [PrioLE, PrioLT, RawPrioLE, RawPrioLT] at hab hbc ⊢
+  omega
+
+/-- `PrioLT` mixed with `PrioLE` on the right. -/
+theorem PrioLT.of_lt_of_le {n : ℕ} {a b c : Fin n × ℕ}
+    (hab : PrioLT a b) (hbc : PrioLE b c) : PrioLT a c := by
+  dsimp only [PrioLE, PrioLT, RawPrioLE, RawPrioLT] at hab hbc ⊢
+  omega
+
+/-- Negation of `PrioLT` is reverse `PrioLE`. -/
+theorem not_prioLT_iff_prioLE {n : ℕ} {a b : Fin n × ℕ} :
+    ¬PrioLT a b ↔ PrioLE b a :=
+  not_rawPrioLT_iff_rawPrioLE
+
+/-- Any two pairs with distinct handles are strictly comparable under `PrioLT`. -/
+theorem prioLT_or_prioLT_of_ne {n : ℕ} {u v : Fin n} (huv : u ≠ v) (ku kv : ℕ) :
+    PrioLT (u, ku) (v, kv) ∨ PrioLT (v, kv) (u, ku) := by
+  have hval : u.val ≠ v.val := fun h => huv (Fin.ext h)
+  dsimp only [PrioLT, RawPrioLT]
+  omega
+
+/-- Pick the lexicographically smaller `(handle, key)` pair. -/
+def chooseMin {n : ℕ} (a b : Fin n × ℕ) : Fin n × ℕ :=
+  if PrioLE a b then a else b
+
+/-- Minimum `(handle, key)` pair of a list under `PrioLE`, or `none` on the empty list. -/
+def foldMin {n : ℕ} : List (Fin n × ℕ) → Option (Fin n × ℕ)
+  | [] => none
+  | a :: l =>
+    match foldMin l with
+    | none => some a
+    | some b => some (chooseMin a b)
+
+private theorem foldMin_eq_none_iff {n : ℕ} {l : List (Fin n × ℕ)} :
+    foldMin l = none ↔ l = [] := by
+  cases l with
+  | nil => simp [foldMin]
+  | cons a l =>
+    simp only [foldMin, List.cons_ne_nil, iff_false]
+    cases foldMin l <;> simp
+
+private theorem foldMin_mem_and_le {n : ℕ} {l : List (Fin n × ℕ)} {uk : Fin n × ℕ}
+    (h : foldMin l = some uk) : uk ∈ l ∧ ∀ uk' ∈ l, PrioLE uk uk' := by
+  induction l generalizing uk with
+  | nil => simp [foldMin] at h
+  | cons a l ih =>
+    simp only [foldMin] at h
+    cases hl : foldMin l with
+    | none =>
+      rw [hl] at h
+      injection h with h
+      subst h
+      rw [foldMin_eq_none_iff.mp hl]
+      exact ⟨List.mem_singleton.mpr rfl, fun uk' huk' => by
+        rw [List.mem_singleton.mp huk']; exact PrioLE.refl _⟩
+    | some b =>
+      rw [hl] at h
+      injection h with h
+      subst h
+      obtain ⟨hb_mem, hb_le⟩ := ih hl
+      unfold chooseMin
+      split_ifs with hab
+      · refine ⟨List.mem_cons_self, fun uk' huk' => ?_⟩
+        rcases List.mem_cons.mp huk' with rfl | huk'
+        · exact PrioLE.refl _
+        · exact hab.trans (hb_le uk' huk')
+      · have hba : PrioLE b a := (PrioLE.total a b).resolve_left hab
+        refine ⟨List.mem_cons_of_mem a hb_mem, fun uk' huk' => ?_⟩
+        rcases List.mem_cons.mp huk' with rfl | huk'
+        · exact hba
+        · exact hb_le uk' huk'
+
+/-- Unique present `(u, k)` minimizing `(k, u.val)` lexicographically, or `none` if empty. -/
+def findMin {n : ℕ} (s : State n) : Option (Fin n × ℕ) :=
+  foldMin ((List.finRange n).filterMap fun v => (s v).map (v, ·))
+
+/-- Operation return types for `Op n`. -/
+abbrev Op.Result {n : ℕ} : Op n → Type
+  | .isEmpty => Bool
+  | .getKey _ => Option ℕ
+  | .insert _ _ => Unit
+  | .decreaseKey _ _ => Unit
+  | .extractMin => Option (Fin n × ℕ)
+
+/-- Pure transition function of an indexed min-priority queue on `Fin n`. -/
+def step {n : ℕ} (s : State n) : (o : Op n) → State n × o.Result
+  | .isEmpty => (s, decide (dom s = ∅))
+  | .getKey v => (s, s v)
+  | .insert v k => (Function.update s v (some k), ())
+  | .decreaseKey v k => (Function.update s v (some k), ())
+  | .extractMin =>
+    match findMin s with
+    | none => (s, none)
+    | some (u, k) => (Function.update s u none, some (u, k))
+
+/-- Admissibility predicate for `Op n` with key upper bound `K_max`. -/
+def valid {n : ℕ} (K_max : ℕ) (s : State n) : Op n → Prop
+  | .isEmpty | .getKey _ | .extractMin => True
+  | .insert v k => s v = none ∧ k ≤ K_max
+  | .decreaseKey v k => (∃ k₀, s v = some k₀ ∧ k ≤ k₀) ∧ k ≤ K_max
+
+end IndexedMinPQ
+
+/-- Graph-free indexed min-priority queue specification with key upper bound `K_max`. -/
+abbrev indexedMinPQSpec (n K_max : ℕ) : StateTransitionSpec :=
+  StateTransitionSpec.ofFn (State := IndexedMinPQ.State n) (Op := IndexedMinPQ.Op n)
+    (Result := IndexedMinPQ.Op.Result) IndexedMinPQ.step (IndexedMinPQ.valid K_max)
+
+namespace IndexedMinPQ
+
+/-! ### Domain and `findMin` lemmas -/
+
+/-- A handle belongs to `dom s` if and only if `s v` is `some k` for some key `k`. -/
+theorem mem_dom_iff {n : ℕ} {s : State n} {v : Fin n} :
+    v ∈ dom s ↔ ∃ k, s v = some k := by
+  simp [dom, Option.isSome_iff_exists]
+
+/-- A handle is outside `dom s` if and only if `s v = none`. -/
+@[simp]
+theorem notMem_dom_iff {n : ℕ} {s : State n} {v : Fin n} :
+    v ∉ dom s ↔ s v = none := by
+  simp [dom]
+
+/-- The empty priority queue has empty domain. -/
+@[simp]
+theorem dom_empty (n : ℕ) : dom (empty n) = ∅ := by
+  ext v
+  simp [dom, empty]
+
+/-- Updating `v` to `some k` inserts `v` into `dom s`. -/
+@[simp]
+theorem dom_insert {n : ℕ} (s : State n) (v : Fin n) (k : ℕ) :
+    dom (Function.update s v (some k)) = insert v (dom s) := by
+  ext u
+  by_cases huv : u = v
+  · subst huv; simp [dom]
+  · simp [dom, huv]
+
+/-- Lowering the key of a handle already in `dom s` preserves `dom s`. -/
+theorem dom_decreaseKey {n : ℕ} {s : State n} {v : Fin n} (hv : v ∈ dom s) (k : ℕ) :
+    dom (Function.update s v (some k)) = dom s := by
+  rw [dom_insert, Finset.insert_eq_of_mem hv]
+
+/-- Clearing `u` to `none` erases `u` from `dom s`. -/
+@[simp]
+theorem dom_erase_update {n : ℕ} (s : State n) (u : Fin n) :
+    dom (Function.update s u none) = (dom s).erase u := by
+  ext v
+  by_cases hvu : v = u
+  · subst hvu; simp [dom]
+  · simp [dom, hvu]
+
+private theorem mem_entries_iff {n : ℕ} {s : State n} {uk : Fin n × ℕ} :
+    uk ∈ ((List.finRange n).filterMap fun v => (s v).map (v, ·)) ↔ s uk.1 = some uk.2 := by
+  rcases uk with ⟨u, k⟩
+  simp only [List.mem_filterMap, List.mem_finRange, true_and, Option.map_eq_some_iff]
+  constructor
+  · rintro ⟨v, k', hsv, heq⟩
+    injection heq with hv hk
+    subst hv hk
+    exact hsv
+  · intro hsu
+    exact ⟨u, k, hsu, rfl⟩
+
+/-- `findMin s` returns `none` if and only if `dom s` is empty. -/
+@[simp]
+theorem findMin_eq_none_iff {n : ℕ} {s : State n} :
+    findMin s = none ↔ dom s = ∅ := by
+  rw [findMin, foldMin_eq_none_iff, List.filterMap_eq_nil_iff, Finset.eq_empty_iff_forall_notMem]
+  constructor
+  · intro h v
+    rw [notMem_dom_iff]
+    simpa using h v (List.mem_finRange v)
+  · intro h v _
+    have hv := notMem_dom_iff.mp (h v)
+    simp [hv]
+
+/-- If `findMin s = some (u, k)`, then `s u = some k`. -/
+theorem findMin_eq_some_state {n : ℕ} {s : State n} {u : Fin n} {k : ℕ}
+    (h : findMin s = some (u, k)) : s u = some k :=
+  mem_entries_iff.mp (foldMin_mem_and_le h).1
+
+/-- Any handle returned by `findMin` belongs to `dom s`. -/
+theorem findMin_mem_dom {n : ℕ} {s : State n} {u : Fin n} {k : ℕ}
+    (h : findMin s = some (u, k)) : u ∈ dom s :=
+  mem_dom_iff.mpr ⟨k, findMin_eq_some_state h⟩
+
+/-- `findMin` minimizes `(k, u.val)` lexicographically among all present handles. -/
+theorem findMin_le {n : ℕ} {s : State n} {u : Fin n} {k : ℕ}
+    (h : findMin s = some (u, k)) :
+    ∀ v k', s v = some k' → k < k' ∨ (k = k' ∧ u.val ≤ v.val) := by
+  intro v k' hsv
+  exact (foldMin_mem_and_le h).2 (v, k') (mem_entries_iff.mpr hsv)
+
+/-- The key returned by `findMin` is at most the key of every present handle. -/
+theorem findMin_key_le {n : ℕ} {s : State n} {u : Fin n} {k : ℕ}
+    (h : findMin s = some (u, k)) {v : Fin n} {k' : ℕ} (hv : s v = some k') :
+    k ≤ k' := by
+  rcases findMin_le h v k' hv with hlt | ⟨heq, _⟩ <;> omega
+
+/-- Complete characterization of `findMin`: `findMin s = some (u, k)` if and only if `s u = some k`
+and `(u, k)` precedes every present `(v, k')` under `PrioLE`. -/
+theorem findMin_eq_some_iff {n : ℕ} {s : State n} {u : Fin n} {k : ℕ} :
+    findMin s = some (u, k) ↔
+      s u = some k ∧ ∀ v k', s v = some k' → k < k' ∨ (k = k' ∧ u.val ≤ v.val) := by
+  constructor
+  · intro h
+    exact ⟨findMin_eq_some_state h, findMin_le h⟩
+  · rintro ⟨hsu, hle⟩
+    cases hm : findMin s with
+    | none =>
+      have hemp := findMin_eq_none_iff.mp hm
+      have hmem : u ∈ dom s := mem_dom_iff.mpr ⟨k, hsu⟩
+      rw [hemp] at hmem
+      exact absurd hmem (Finset.notMem_empty u)
+    | some uk =>
+      rcases uk with ⟨u', k'⟩
+      have h1 : PrioLE (u', k') (u, k) := findMin_le hm u k hsu
+      have h2 : PrioLE (u, k) (u', k') := hle u' k' (findMin_eq_some_state hm)
+      have heq := PrioLE.antisymm h2 h1
+      rw [heq]
+
+/-- Domain evolution of `extractMin` when `findMin s = some (u, k)`. -/
+theorem dom_extractMin {n K_max : ℕ} {s : State n} {u : Fin n} {k : ℕ}
+    (h : findMin s = some (u, k)) :
+    dom ((indexedMinPQSpec n K_max).stepFn s .extractMin).1 = (dom s).erase u := by
+  simp [indexedMinPQSpec, step, h]
+
+end IndexedMinPQ
+
+namespace MinPQ
 
 /-- Abstract state of a min-priority queue of capacity `n_max`: each handle `h : Fin n_max` is
 either unused (`none`) or stores a key–value pair `some (u, v)`. -/
@@ -283,39 +654,43 @@ theorem exists_isMinEntry_of_dom_ne_empty {n_max : ℕ} {s : State n_max} (hne :
   obtain ⟨v, _, _, hmin⟩ := findMin_eq_some_of_indexed hfm
   exact ⟨h, u, v, hmin⟩
 
-/-! ## Relational specification `MinPQ.spec` and totality -/
+end MinPQ
+
+/-! ## Relational specification `minPQSpec` and totality -/
 
 /-- Pure relational specification of a capacity-`n_max` min-priority queue with handles storing keys
 `u < U` and values `v < V`:
 * `insert u v` nondeterministically chooses *any* unused handle `h : Fin n_max` (`s h = none`);
 * `extractMin` nondeterministically removes and returns *any* stored entry `(u, v, h)` attaining
-  the minimum key (`isMinEntry s h u v`), or `none` when `dom s = ∅`. -/
-def spec (n_max U V : ℕ) : Spec where
-  State := State n_max
-  Op := Op n_max
-  Result := Op.Result (n_max := n_max)
+  the minimum key (`MinPQ.isMinEntry s h u v`), or `none` when `MinPQ.dom s = ∅`. -/
+def minPQSpec (n_max U V : ℕ) : StateTransitionSpec where
+  State := MinPQ.State n_max
+  Op := MinPQ.Op n_max
+  Result := MinPQ.Op.Result (n_max := n_max)
   valid s
     | .isEmpty => True
     | .get _ => True
-    | .insert u v => size s < n_max ∧ u < U ∧ v < V
+    | .insert u v => MinPQ.size s < n_max ∧ u < U ∧ v < V
     | .decreaseKey h u' => ∃ u v, s h = some (u, v) ∧ u' ≤ u
     | .extractMin => True
   step s o s' res :=
     match o with
-    | .isEmpty => s' = s ∧ res = decide (dom s = ∅)
+    | .isEmpty => s' = s ∧ res = decide (MinPQ.dom s = ∅)
     | .get h => s' = s ∧ res = s h
     | .insert u v =>
       ∃ h : Fin n_max, s h = none ∧ s' = Function.update s h (some (u, v)) ∧ res = some h
     | .decreaseKey h u' =>
       ∃ u v, s h = some (u, v) ∧ s' = Function.update s h (some (u', v)) ∧ res = ()
     | .extractMin =>
-      (dom s = ∅ ∧ s' = s ∧ res = none) ∨
-        ∃ h u v, isMinEntry s h u v ∧ s' = Function.update s h none ∧ res = some (u, v, h)
+      (MinPQ.dom s = ∅ ∧ s' = s ∧ res = none) ∨
+        ∃ h u v, MinPQ.isMinEntry s h u v ∧ s' = Function.update s h none ∧ res = some (u, v, h)
+
+namespace MinPQ
 
 /-- Every admissible `MinPQ` operation has at least one valid relational transition:
 `insert` finds an unused handle by pigeonhole (`exists_none_of_size_lt`), and `extractMin` on a
 nonempty queue selects a minimum-key entry (`exists_isMinEntry_of_dom_ne_empty`). -/
-instance instTotalSpec (n_max U V : ℕ) : (spec n_max U V).Total where
+instance instTotalSpec (n_max U V : ℕ) : (minPQSpec n_max U V).Total where
   step_total s o hv := by
     cases o with
     | isEmpty => exact ⟨s, decide (dom s = ∅), rfl, rfl⟩
@@ -332,7 +707,7 @@ instance instTotalSpec (n_max U V : ℕ) : (spec n_max U V).Total where
       · obtain ⟨h, u, v, hmin⟩ := exists_isMinEntry_of_dom_ne_empty hemp
         exact ⟨Function.update s h none, some (u, v, h), Or.inr ⟨h, u, v, hmin, rfl, rfl⟩⟩
 
-/-! ## Deterministic free-list handle allocator refining `MinPQ.spec` -/
+/-! ## Deterministic free-list handle allocator refining `minPQSpec` -/
 
 /-- Internal deterministic allocator state refining `State n_max`: combines the active entry map
 `entries` with a LIFO recycled-handle stack `freeList` and a bump pointer `fresh ≤ n_max`. -/
@@ -447,12 +822,12 @@ theorem allocHandle_spec {n_max : ℕ} {s : AllocState n_max}
         omega
 
 /-- Every valid operation on a well-formed `AllocState` stepped by `stepAlloc`:
-1. satisfies the relational transition `(spec n_max U V).step s.entries o (stepAlloc s o).1.entries
-   (stepAlloc s o).2`, and
+1. satisfies the relational transition
+   `(minPQSpec n_max U V).step s.entries o (stepAlloc s o).1.entries (stepAlloc s o).2`, and
 2. preserves `AllocState.WellFormed`. -/
 theorem stepAlloc_refines_spec {n_max U V : ℕ} {s : AllocState n_max} (hwf : s.WellFormed)
-    (o : Op n_max) (hv : (spec n_max U V).valid s.entries o) :
-    (spec n_max U V).step s.entries o (stepAlloc s o).1.entries (stepAlloc s o).2 ∧
+    (o : Op n_max) (hv : (minPQSpec n_max U V).valid s.entries o) :
+    (minPQSpec n_max U V).step s.entries o (stepAlloc s o).1.entries (stepAlloc s o).2 ∧
       (stepAlloc s o).1.WellFormed := by
   cases o with
   | isEmpty =>
@@ -519,4 +894,6 @@ theorem stepAlloc_refines_spec {n_max U V : ℕ} {s : AllocState n_max} (hwf : s
       · rw [size_update_none_of_some hsh, List.length_cons]
         omega
 
-end Cslib.Algorithms.Lean.MinPQ
+end MinPQ
+
+end Cslib.DataStructure.PriorityQueue
