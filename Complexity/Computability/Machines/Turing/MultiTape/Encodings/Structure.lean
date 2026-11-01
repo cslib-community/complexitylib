@@ -26,10 +26,6 @@ of its fields, with everything a certificate needs to work with it:
 
 The rules are `scoped` `fun_prop` rules, so that a program using the structure is assembled by
 `fun_prop` inside the namespace of the declaration.
-
-## Main definitions
-
-* `enc_structure`: declare the encoding of a structure.
 -/
 
 public meta section
