@@ -56,14 +56,15 @@ open Turing.MultiTapeTM Cslib.GenericRAM GaloisRingArith Cslib.BitString
 
 /-- The number of selected incidences of a context, in unary. -/
 theorem rowDim_polyTime :
-    ComputableInPolyTime (fun ctx : RowCtx => ctx.2.2.2.length) encRowCtx encUnary :=
-  (ComputableInPolyTime.length_list (encPair encNat encNat)).comp
+    ComputableInPolyTime (fun ((_, _, _, sel) : RowCtx) => sel.length) encRowCtx encUnary :=
+  ((ComputableInPolyTime.length_list (encPair encNat encNat)).comp
     ((ComputableInPolyTime.snd _ _).comp ((ComputableInPolyTime.snd _ _).comp
-      (ComputableInPolyTime.snd _ _)))
+      (ComputableInPolyTime.snd _ _)))).of_enc_eq fun (_, _, _, _) => rfl
 
 /-- The initial state of the sum of a row: the context and zero. -/
 theorem rowInit_polyTime :
-    ComputableInPolyTime (fun ctx : RowCtx => (ctx, zero (truncFl ctx.2.1))) encRowCtx
+    ComputableInPolyTime
+      (fun ((P, ℓ, tests, sel) : RowCtx) => ((P, ℓ, tests, sel), zero (truncFl ℓ))) encRowCtx
       encRowState := by
   have hℓ := (ComputableInPolyTime.fst encUnary (encPair (encList (encList (encList encNat)))
     (encList (encPair encNat encNat)))).comp (ComputableInPolyTime.snd encUnary
@@ -72,69 +73,82 @@ theorem rowInit_polyTime :
   have hfl := truncFl_polyTime.comp hℓ
   have hz := computableInPolyTime_tabulate (g := fun (_ : RowCtx) (_ : ℕ) => 0)
     ((ComputableInPolyTime.length_list encNat).comp hfl) (ComputableInPolyTime.const 0)
-  exact ComputableInPolyTime.id'.prod (hz.of_enc_eq fun _ => rfl)
+  exact (ComputableInPolyTime.id'.prod (hz.of_enc_eq fun _ => rfl)).of_enc_eq
+    fun (_, _, _, _) => rfl
 
 /-- The streaming fold of the sum of a row. -/
 noncomputable def rowLoopCertificate :=
   BooleanFold.certificate (encIn := encRowCtx) (encB := encRowState)
-    (dimension := fun ctx : RowCtx => ctx.2.2.2.length)
-    (initial := fun ctx => (ctx, zero (truncFl ctx.2.1))) (body := rowBody)
+    (dimension := fun ((_, _, _, sel) : RowCtx) => sel.length)
+    (initial := fun ((P, ℓ, tests, sel) : RowCtx) => ((P, ℓ, tests, sel), zero (truncFl ℓ)))
+    (body := rowBody)
     (NativeCertificate.ofPolyTime rowDim_polyTime) (NativeCertificate.ofPolyTime rowInit_polyTime)
     (NativeCertificate.ofPolyTime rowBody_polyTime)
 
 /-- The streaming fold computes the sum of a row. -/
-theorem run_rowBody (ctx : RowCtx) :
-    (BooleanFold.run rowBody ctx.2.2.2.length (ctx, zero (truncFl ctx.2.1))).2.2.2 =
-      rowSum ctx := by
+private theorem run_rowBody (P ℓ : ℕ) (tests : List (List (List ℕ))) (sel : List (ℕ × ℕ)) :
+    (BooleanFold.run rowBody sel.length ((P, ℓ, tests, sel), zero (truncFl ℓ))).2.2.2 =
+      rowSum (P, ℓ, tests, sel) := by
   rw [BooleanFold.run_accumulator]
   rfl
 
 /-- **The native certificate of the sum of a row.** -/
 noncomputable def rowSumCertificate : NativeCertificate rowSum encRowCtx (encList encNat) :=
-  rowLoopCertificate.snd.snd.snd.congr run_rowBody
+  rowLoopCertificate.snd.snd.snd.congr fun (P, ℓ, tests, sel) => run_rowBody P ℓ tests sel
 
 /-- A term keeps the context. -/
-theorem fst_rowBody (q : (ℕ × List Bool) × RowCtx × List ℕ) : (rowBody q).1 = q.2.1 := rfl
+theorem fst_rowBody (n : ℕ) (w : List Bool) (ctx : RowCtx) (acc : List ℕ) :
+    (rowBody ((n, w), ctx, acc)).1 = ctx := by
+  obtain ⟨_, _, _, _⟩ := ctx
+  rfl
 
 /-- A term leaves a reduced accumulator: `ℓ` coefficients below `2 ^ P`. -/
-theorem reduced_rowBody (q : (ℕ × List Bool) × RowCtx × List ℕ) :
-    (rowBody q).2.length = q.2.1.2.1 ∧ ∀ x ∈ (rowBody q).2, x < 2 ^ q.2.1.1 := by
-  unfold rowBody
+theorem reduced_rowBody (n : ℕ) (w : List Bool) (P ℓ : ℕ) (tests : List (List (List ℕ)))
+    (sel : List (ℕ × ℕ)) (acc : List ℕ) :
+    (rowBody ((n, w), (P, ℓ, tests, sel), acc)).2.length = ℓ ∧
+      ∀ x ∈ (rowBody ((n, w), (P, ℓ, tests, sel), acc)).2, x < 2 ^ P := by
+  simp only [rowBody]
   split_ifs
   · exact ⟨by simp, fun x hx => lt_of_mem_add hx⟩
   · exact ⟨by simp [sub], fun x hx => lt_of_mem_add hx⟩
 
 /-- Every prefix of the sum of a row keeps the context and a reduced accumulator. -/
-theorem foldl_rowBody {α : Type*} (ctx : RowCtx) (n : ℕ) (word : α → List Bool) (l : List α)
-    (acc : List ℕ) (hlen : acc.length = ctx.2.1) (hlt : ∀ x ∈ acc, x < 2 ^ ctx.1) :
-    (l.foldl (fun st i => rowBody ((n, word i), st)) (ctx, acc)).1 = ctx ∧
-      (l.foldl (fun st i => rowBody ((n, word i), st)) (ctx, acc)).2.length = ctx.2.1 ∧
-      ∀ x ∈ (l.foldl (fun st i => rowBody ((n, word i), st)) (ctx, acc)).2, x < 2 ^ ctx.1 := by
+theorem foldl_rowBody {α : Type*} (P ℓ : ℕ) (tests : List (List (List ℕ)))
+    (sel : List (ℕ × ℕ)) (n : ℕ) (word : α → List Bool) (l : List α) (acc : List ℕ)
+    (hlen : acc.length = ℓ) (hlt : ∀ x ∈ acc, x < 2 ^ P) :
+    (l.foldl (fun st i => rowBody ((n, word i), st)) ((P, ℓ, tests, sel), acc)).1 =
+        (P, ℓ, tests, sel) ∧
+      (l.foldl (fun st i => rowBody ((n, word i), st)) ((P, ℓ, tests, sel), acc)).2.length = ℓ ∧
+      ∀ x ∈ (l.foldl (fun st i => rowBody ((n, word i), st)) ((P, ℓ, tests, sel), acc)).2,
+        x < 2 ^ P := by
   induction l generalizing acc with
   | nil => exact ⟨rfl, hlen, hlt⟩
   | cons i l ih =>
     rw [List.foldl_cons]
-    have h := reduced_rowBody ((n, word i), (ctx, acc))
-    have hst : rowBody ((n, word i), (ctx, acc)) = (ctx, (rowBody ((n, word i), (ctx, acc))).2) :=
-      Prod.ext (fst_rowBody _) rfl
+    have h := reduced_rowBody n (word i) P ℓ tests sel acc
+    have hst : rowBody ((n, word i), ((P, ℓ, tests, sel), acc)) =
+        ((P, ℓ, tests, sel), (rowBody ((n, word i), ((P, ℓ, tests, sel), acc))).2) :=
+      Prod.ext (fst_rowBody _ _ _ _) rfl
     rw [hst]
     exact ih _ h.1 h.2
 
 /-- The bound on the states of the sum of a row. -/
-theorem length_encRowState_le (ctx : RowCtx) (acc : List ℕ) (hlen : acc.length = ctx.2.1)
-    (hlt : ∀ x ∈ acc, x < 2 ^ ctx.1) :
-    (encRowState (ctx, acc)).length ≤
-      2 * (encRowCtx ctx).length + 1 +
-        (encRowCtx ctx).length * (2 * (encRowCtx ctx).length + 1) := by
+theorem length_encRowState_le (P ℓ : ℕ) (tests : List (List (List ℕ))) (sel : List (ℕ × ℕ))
+    (acc : List ℕ) (hlen : acc.length = ℓ) (hlt : ∀ x ∈ acc, x < 2 ^ P) :
+    (encRowState ((P, ℓ, tests, sel), acc)).length ≤
+      2 * (encRowCtx (P, ℓ, tests, sel)).length + 1 +
+        (encRowCtx (P, ℓ, tests, sel)).length *
+          (2 * (encRowCtx (P, ℓ, tests, sel)).length + 1) := by
   have h1 := GaloisRingArith.length_encList_le hlen hlt
-  have hP : ctx.1 ≤ (encRowCtx ctx).length := by
+  have hP : P ≤ (encRowCtx (P, ℓ, tests, sel)).length := by
     simp only [length_encPair, encUnary_apply, List.length_replicate]
     omega
-  have hℓ : ctx.2.1 ≤ (encRowCtx ctx).length := by
+  have hℓ : ℓ ≤ (encRowCtx (P, ℓ, tests, sel)).length := by
     simp only [length_encPair, encUnary_apply, List.length_replicate]
     omega
-  have h0 : (encRowState (ctx, acc)).length =
-      2 * (encRowCtx ctx).length + 1 + (encList encNat acc).length := length_encPair _
+  have h0 : (encRowState ((P, ℓ, tests, sel), acc)).length =
+      2 * (encRowCtx (P, ℓ, tests, sel)).length + 1 + (encList encNat acc).length :=
+    length_encPair _
   have := Nat.mul_le_mul hℓ (Nat.add_le_add_right (Nat.mul_le_mul_left 2 hP) 1)
   omega
 
@@ -142,10 +156,13 @@ theorem length_encRowState_le (ctx : RowCtx) (acc : List ℕ) (hlen : acc.length
 theorem rowSumCertificate_bounds :
     PolyBounded (fun ctx => (encRowCtx ctx).length) rowSumCertificate.space ∧
       ∃ T : RowCtx → ℕ, PolyBounded (fun ctx => (encRowCtx ctx).length) T ∧
-        ∀ ctx, rowSumCertificate.time ctx ≤ (2 ^ ctx.2.2.2.length + 1) * T ctx := by
+        ∀ (P ℓ : ℕ) (tests : List (List (List ℕ))) (sel : List (ℕ × ℕ)),
+          rowSumCertificate.time (P, ℓ, tests, sel) ≤
+            (2 ^ sel.length + 1) * T (P, ℓ, tests, sel) := by
   have h := BooleanFold.certificate_bounds (encIn := encRowCtx) (encB := encRowState)
-    (dimension := fun ctx : RowCtx => ctx.2.2.2.length)
-    (initial := fun ctx => (ctx, zero (truncFl ctx.2.1))) (body := rowBody)
+    (dimension := fun ((_, _, _, sel) : RowCtx) => sel.length)
+    (initial := fun ((P, ℓ, tests, sel) : RowCtx) => ((P, ℓ, tests, sel), zero (truncFl ℓ)))
+    (body := rowBody)
     (cn := NativeCertificate.ofPolyTime rowDim_polyTime)
     (ci := NativeCertificate.ofPolyTime rowInit_polyTime)
     (cb := NativeCertificate.ofPolyTime rowBody_polyTime)
@@ -155,23 +172,24 @@ theorem rowSumCertificate_bounds :
       (encRowCtx ctx).length * (2 * (encRowCtx ctx).length + 1))
     ((((PolyBounded.const 2).mul .self).add (.const 1)).add
       (PolyBounded.self.mul (((PolyBounded.const 2).mul .self).add (.const 1))))
-    (fun ctx j _ => by
+    (fun (P, ℓ, tests, sel) j _ => by
       rw [BooleanFold.prefix_accumulator]
-      have hz : (zero (truncFl ctx.2.1)).length = ctx.2.1 := by simp
-      have hz' : ∀ x ∈ zero (truncFl ctx.2.1), x < 2 ^ ctx.1 := fun x hx => by
+      have hz : (zero (truncFl ℓ)).length = ℓ := by simp
+      have hz' : ∀ x ∈ zero (truncFl ℓ), x < 2 ^ P := fun x hx => by
         simp only [zero, List.mem_map] at hx
         obtain ⟨_, -, rfl⟩ := hx
         exact Nat.two_pow_pos _
-      obtain ⟨h1, h2, h3⟩ := foldl_rowBody ctx ctx.2.2.2.length
-        (lowBits ctx.2.2.2.length) (List.range j) _ hz hz'
-      have heq : List.foldl (fun acc i => rowBody ((ctx.2.2.2.length,
-          lowBits ctx.2.2.2.length i), acc)) (ctx, zero (truncFl ctx.2.1)) (List.range j) =
-          (ctx, (List.foldl (fun acc i => rowBody ((ctx.2.2.2.length,
-            lowBits ctx.2.2.2.length i), acc)) (ctx, zero (truncFl ctx.2.1)) (List.range j)).2) :=
+      obtain ⟨h1, h2, h3⟩ := foldl_rowBody P ℓ tests sel sel.length (lowBits sel.length)
+        (List.range j) _ hz hz'
+      have heq : List.foldl (fun acc i => rowBody ((sel.length, lowBits sel.length i), acc))
+          ((P, ℓ, tests, sel), zero (truncFl ℓ)) (List.range j) =
+          ((P, ℓ, tests, sel), (List.foldl (fun acc i => rowBody ((sel.length,
+            lowBits sel.length i), acc)) ((P, ℓ, tests, sel), zero (truncFl ℓ))
+              (List.range j)).2) :=
         Prod.ext h1 rfl
       rw [heq]
-      exact length_encRowState_le ctx _ h2 h3)
-  exact ⟨h.1, h.2⟩
+      exact length_encRowState_le P ℓ tests sel _ h2 h3)
+  exact ⟨h.1, h.2.imp fun _ hT => ⟨hT.1, fun P ℓ tests sel => hT.2 (P, ℓ, tests, sel)⟩⟩
 
 /-! ### Rows -/
 
@@ -181,10 +199,11 @@ noncomputable def rowCertificate :
       (encPair encRowDesc encBits) (encList encNat) :=
   (NativeCertificate.branch (NativeCertificate.ofPolyTime rowValid_polyTime)
     (rowSumCertificate.comp (NativeCertificate.ofPolyTime rowContext_polyTime))
-    (NativeCertificate.const [])).congr fun _ => rfl
+    (NativeCertificate.const [])).congr fun ((_, _, _, _), _) => rfl
 
 /-- The incidences of the blocks of a row descriptor. -/
-@[expose] def rowInc (row : RowDesc) : ℕ := (row.2.2.2.map fun b => b.1.length).sum
+@[expose] def rowInc : RowDesc → ℕ
+  | (_, _, _, blocks) => (blocks.map fun b => b.1.length).sum
 
 /-- **The entries of rows in time `2 ^ N` times a polynomial and polynomial space**, for `N` the
 incidences of the blocks. -/
@@ -210,19 +229,24 @@ theorem rowCertificate_bounds :
         else (encPair encRowDesc encBits q).length := rfl
     rw [hsp]
     split_ifs <;> omega
-  · have htm : rowCertificate.time q = (NativeCertificate.ofPolyTime rowValid_polyTime).time q +
-        if validIndices q.1.2.2.2 (blockIndices q.1.2.2.2 q.2) then
-          (NativeCertificate.ofPolyTime rowContext_polyTime).time q +
-            rowSumCertificate.time (rowContext q.1 q.2)
-        else (encPair encRowDesc encBits q).length := rfl
+  · obtain ⟨⟨P, ℓ, tests, blocks⟩, bs⟩ := q
+    have htm : rowCertificate.time ((P, ℓ, tests, blocks), bs) =
+        (NativeCertificate.ofPolyTime rowValid_polyTime).time ((P, ℓ, tests, blocks), bs) +
+        if validIndices blocks (blockIndices blocks bs) then
+          (NativeCertificate.ofPolyTime rowContext_polyTime).time ((P, ℓ, tests, blocks), bs) +
+            rowSumCertificate.time (P, ℓ, tests, selected blocks (blockIndices blocks bs))
+        else (encPair encRowDesc encBits ((P, ℓ, tests, blocks), bs)).length := rfl
     rw [htm]
-    have hdim : (rowContext q.1 q.2).2.2.2.length ≤ rowInc q.1 :=
+    dsimp only [rowContext]
+    have hdim : (selected blocks (blockIndices blocks bs)).length ≤ rowInc (P, ℓ, tests, blocks) :=
       length_selected_le _ _
-    have h2 : 2 ^ (rowContext q.1 q.2).2.2.2.length ≤ 2 ^ rowInc q.1 :=
+    have h2 : 2 ^ (selected blocks (blockIndices blocks bs)).length ≤
+        2 ^ rowInc (P, ℓ, tests, blocks) :=
       Nat.pow_le_pow_right (by norm_num) hdim
-    have h1 : 1 ≤ 2 ^ rowInc q.1 := Nat.one_le_two_pow
-    have hl := hle (rowContext q.1 q.2)
-    have h3 := Nat.mul_le_mul_right (Tl (rowContext q.1 q.2)) (Nat.add_le_add h2 h1)
+    have h1 : 1 ≤ 2 ^ rowInc (P, ℓ, tests, blocks) := Nat.one_le_two_pow
+    have hl := hle P ℓ tests (selected blocks (blockIndices blocks bs))
+    have h3 := Nat.mul_le_mul_right (Tl (P, ℓ, tests, selected blocks (blockIndices blocks bs)))
+      (Nat.add_le_add h2 h1)
     split_ifs
     · nlinarith
     · nlinarith

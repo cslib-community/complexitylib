@@ -3051,6 +3051,7 @@ public import Complexity.Foundations.Data.BitString.AgreeExpect
 public import Complexity.Foundations.Data.BitString.Basic
 public import Complexity.Foundations.Data.BitString.Binary
 public import Complexity.Foundations.Data.BitString.Block
+public import Complexity.Foundations.Data.BitString.Combination
 public import Complexity.Foundations.Data.BitString.Convolution
 public import Complexity.Foundations.Data.BitString.Counter
 public import Complexity.Foundations.Data.BitString.CoverCoding

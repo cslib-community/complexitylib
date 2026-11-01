@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntry
+import Complexity.Computability.GenericRAM.Native.SubsetPairFold
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.BinaryDiv
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -162,7 +163,7 @@ theorem selectBlock_polyTime :
   have hinc := (fst (encList (encPair encNat encNat)) encUnary).comp hb
   have hN := (length_list (encPair encNat encNat)).comp hinc
   have hd := (snd (encList (encPair encNat encNat)) encUnary).comp hb
-  have hmask := SubsetPairFold.pureUnrankComb_polyTime.comp ((hN.prod hd).prod hι)
+  have hmask := SubsetPairFold.unrankCombination_polyTime.comp ((hN.prod hd).prod hι)
   have hzip := (zip (encPair encNat encNat) encBool).comp (hinc.prod (bitsToList.comp hmask))
   have htest : ComputableInPolyTime
       (fun p : (Block × ℕ) × ((ℕ × ℕ) × Bool) => p.2.2)
@@ -215,24 +216,26 @@ theorem rowContext_polyTime :
   have htests := (fst _ _).comp hr2
   have hblocks := (snd (encList (encList (encList encNat))) (encList encBlock)).comp hr2
   have hsel := selected_polyTime.comp (hblocks.prod (blockIndices_polyTime.comp (hblocks.prod hbs)))
-  exact (hP.prod (hℓ.prod (htests.prod hsel))).of_enc_eq fun q => rfl
+  exact (hP.prod (hℓ.prod (htests.prod hsel))).of_enc_eq fun ((_, _, _, _), _) => rfl
 
 /-- **The validity test of a row is polynomial-time.** -/
 theorem rowValid_polyTime :
     ComputableInPolyTime
-      (fun q : RowDesc × List Bool => validIndices q.1.2.2.2 (blockIndices q.1.2.2.2 q.2))
+      (fun (((_, _, _, blocks), bs) : RowDesc × List Bool) =>
+        validIndices blocks (blockIndices blocks bs))
       (encPair encRowDesc encBits) encBool := by
   have hblocks := (snd (encList (encList (encList encNat))) (encList encBlock)).comp
     ((snd _ _).comp ((snd _ _).comp (fst encRowDesc encBits)))
-  exact validIndices_polyTime.comp
-    (hblocks.prod (blockIndices_polyTime.comp (hblocks.prod (snd encRowDesc encBits))))
+  exact (validIndices_polyTime.comp
+    (hblocks.prod (blockIndices_polyTime.comp (hblocks.prod (snd encRowDesc encBits))))).of_enc_eq
+      fun ((_, _, _, _), _) => rfl
 
 /-! ### One term of a row -/
 
 /-- **The parity factor in `B_{P,ℓ}` is polynomial-time**, with `P` and `ℓ` in unary and the
 count in binary. -/
 theorem factorCoeffs_polyTime :
-    ComputableInPolyTime (fun q : (ℕ × ℕ) × ℕ => factorCoeffs q.1.1 q.1.2 q.2)
+    ComputableInPolyTime (fun (((P, ℓ), x) : (ℕ × ℕ) × ℕ) => factorCoeffs P ℓ x)
       (encPair (encPair encUnary encUnary) encNat) (encList encNat) := by
   let encQ := encPair (encPair encUnary encUnary) encNat
   have hq := fst encQ encUnary
@@ -253,7 +256,7 @@ theorem factorCoeffs_polyTime :
   exact (computableInPolyTime_tabulate (g := fun (q : (ℕ × ℕ) × ℕ) (j : ℕ) =>
     ((((parityLinearCoeffs q.1.2).getD j (0, 0)).1 % ((2 ^ q.1.1 : ℕ) : ℤ)).toNat +
         (((parityLinearCoeffs q.1.2).getD j (0, 0)).2 % ((2 ^ q.1.1 : ℕ) : ℤ)).toNat * q.2) *
-      (q.2 * (q.2 - 1)) ^ j % 2 ^ q.1.1) hℓ₀ hg).of_enc_eq fun q => rfl
+      (q.2 * (q.2 - 1)) ^ j % 2 ^ q.1.1) hℓ₀ hg).of_enc_eq fun ((_, _), _) => rfl
 
 /-- The input of `monomialsIn`: the test, its position and the chosen incidences. -/
 abbrev encMonomialsIn : (List (List ℕ) × ℕ) × List (ℕ × ℕ) ↪ List Bool :=
@@ -261,8 +264,8 @@ abbrev encMonomialsIn : (List (List ℕ) × ℕ) × List (ℕ × ℕ) ↪ List B
 
 /-- **Counting the monomials inside the chosen variables is polynomial-time**, in unary. -/
 theorem monomialsIn_polyTime :
-    ComputableInPolyTime (fun q : (List (List ℕ) × ℕ) × List (ℕ × ℕ) =>
-        monomialsIn q.1.1 q.1.2 q.2) encMonomialsIn encUnary := by
+    ComputableInPolyTime (fun (((test, t), chosen) : (List (List ℕ) × ℕ) × List (ℕ × ℕ)) =>
+        monomialsIn test t chosen) encMonomialsIn encUnary := by
   have htest := (fst (encList (encList encNat)) encUnary).comp
     (fst (encPair (encList (encList encNat)) encUnary) (encList (encPair encNat encNat)))
   -- The inner test: `(t, v) ∈ chosen`.
@@ -282,7 +285,7 @@ theorem monomialsIn_polyTime :
   have hall := allWithInput (test := fun (p : ((List (List ℕ) × ℕ) × List (ℕ × ℕ)) × List ℕ)
     (v : ℕ) => decide ((p.1.1.2, v) ∈ p.1.2)) hinner hmem
   exact (countPWithInput (test := fun (q : (List (List ℕ) × ℕ) × List (ℕ × ℕ)) (M : List ℕ) =>
-    M.all fun v => decide ((q.1.2, v) ∈ q.2)) htest hall).of_enc_eq fun q => rfl
+    M.all fun v => decide ((q.1.2, v) ∈ q.2)) htest hall).of_enc_eq fun ((_, _), _) => rfl
 
 /-- The input of `rowTerm`: `P`, `ℓ` and the tests, then the chosen incidences. -/
 abbrev encRowTerm : (ℕ × ℕ × List (List (List ℕ))) × List (ℕ × ℕ) ↪ List Bool :=
@@ -295,8 +298,9 @@ theorem truncFl_polyTime : ComputableInPolyTime truncFl encUnary (encList encNat
 
 /-- **The product of the parity factors of the tests is polynomial-time.** -/
 theorem rowTerm_polyTime :
-    ComputableInPolyTime (fun q : (ℕ × ℕ × List (List (List ℕ))) × List (ℕ × ℕ) =>
-        rowTerm q.1.1 q.1.2.1 q.1.2.2 q.2) encRowTerm (encList encNat) := by
+    ComputableInPolyTime
+      (fun (((P, ℓ, tests), chosen) : (ℕ × ℕ × List (List (List ℕ))) × List (ℕ × ℕ)) =>
+        rowTerm P ℓ tests chosen) encRowTerm (encList encNat) := by
   have hctx := fst (encPair encUnary (encPair encUnary (encList (encList (encList encNat)))))
     (encList (encPair encNat encNat))
   have hP := (fst _ _).comp hctx
@@ -334,7 +338,7 @@ theorem rowTerm_polyTime :
         fun _ h => lt_of_mem_mul h
       simp only [length_truncFl, encUnary_apply, List.length_replicate] at h ⊢
       nlinarith⟩
-  exact hfold.of_enc_eq fun q => rfl
+  exact hfold.of_enc_eq fun ((_, _, _), _) => rfl
 
 /-- **The incidences chosen by a word are polynomial-time.** -/
 theorem chosenBy_polyTime :
@@ -378,7 +382,7 @@ theorem rowBody_polyTime :
   have hdiff := unary_to_binary.comp (unary_sub.comp
     (((length_list (encPair encNat encNat)).comp hsel).prod (bitsCountWithInput hw (const true))))
   have hcond := (binary_mod.comp (hdiff.prod (const 2))).beq (const 0)
-  exact (hctx.prod (ite hcond hadd hsub)).of_enc_eq fun q => by
+  exact (hctx.prod (ite hcond hadd hsub)).of_enc_eq fun ((_, _), (_, _, _, _), _) => by
     simp only [rowBody, Function.comp_apply, beq_iff_eq]
 
 /-- **The entries of columns are polynomial-time.** -/
@@ -399,7 +403,7 @@ theorem colEntry_polyTime :
   have hu := countPWithInput (test := fun (q : ColDesc × List Bool) (v : ℕ) =>
     decide (v ∉ (selected q.1.2.2 (blockIndices q.1.2.2 q.2)).map Prod.snd)) hvars hmem
   have hval := computableInPolyTime_mod_two_pow (binary_two_pow.comp hu) hP
-  exact (cons' hval (const [])).of_enc_eq fun q => rfl
+  exact (cons' hval (const [])).of_enc_eq fun ((_, _, _), _) => rfl
 
 end PolyTime
 

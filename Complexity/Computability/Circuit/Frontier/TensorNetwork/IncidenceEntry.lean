@@ -10,8 +10,8 @@ module
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetwork
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TruncatedRing
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.VertexDesc
-public import Complexity.Computability.GenericRAM.Native.SubsetPairFold
 public import Complexity.Computability.PolyTime.ParityFactorEval
+public import Complexity.Foundations.Data.BitString.Combination
 public import Complexity.Foundations.Data.BitString.Enumeration
 
 /-!
@@ -30,7 +30,7 @@ coefficient lists (`GaloisRingArith` at the modulus `truncFl ℓ`, see
 bits block by block (`blockIndices`), each chunk as an index `ι` in little-endian order
 (`BitString.lsbValue`). An index `ι < C(N, d)` names the weight-`d` subset of the block's
 incidences at the `true` positions of the combination of rank `ι`
-(`GenericRAM.SubsetPairFold.pureUnrankComb`, `selectBlock`). The selected incidences of all
+(`Cslib.BitString.unrankCombination`, `selectBlock`). The selected incidences of all
 blocks are `selected`.
 
 **Rows** (`rowEntry`, p. 56). For the test group with tests `t`, an index `ι ≥ C(N, d)` in any
@@ -90,16 +90,16 @@ open GaloisRingArith Cslib.BitString Cslib.GenericRAM Turing.MultiTapeTM
 /-- **The incidences of a block selected by an index**: those at the `true` positions of the
 combination of that rank. -/
 @[expose] def selectBlock (b : Block) (ι : ℕ) : List (ℕ × ℕ) :=
-  ((b.1.zip (SubsetPairFold.pureUnrankComb b.1.length b.2 ι)).filter (·.2)).map (·.1)
+  ((b.1.zip (unrankCombination b.1.length b.2 ι)).filter (·.2)).map (·.1)
 
 /-- **The selected incidences** of the blocks at the indices. -/
 @[expose] def selected (blocks : List Block) (idx : List ℕ) : List (ℕ × ℕ) :=
-  (blocks.zip idx).flatMap fun p => selectBlock p.1 p.2
+  (blocks.zip idx).flatMap fun (b, ι) => selectBlock b ι
 
 /-- **Valid indices**: the index of every block of `N` incidences with `d` selected is below
 `C(N, d)`. -/
 @[expose] def validIndices (blocks : List Block) (idx : List ℕ) : Bool :=
-  (blocks.zip idx).all fun p => decide (p.2 < p.1.1.length.choose p.1.2)
+  (blocks.zip idx).all fun ((incs, d), ι) => decide (ι < incs.length.choose d)
 
 /-! ### Rows -/
 
@@ -138,29 +138,32 @@ abbrev RowCtx : Type := ℕ × ℕ × List (List (List ℕ)) × List (ℕ × ℕ
 
 /-- **One term of the sum of a row**, at a word `w` on the selected incidences: add
 `(-1) ^ (|sel| - |w|) ∏_t B(m_t; V)` to the accumulator, keeping the context. -/
-@[expose] def rowBody (q : (ℕ × List Bool) × RowCtx × List ℕ) : RowCtx × List ℕ :=
-  (q.2.1,
-    if (q.2.1.2.2.2.length - q.1.2.count true) % 2 = 0 then
-      add q.2.1.1 (truncFl q.2.1.2.1) q.2.2
-        (rowTerm q.2.1.1 q.2.1.2.1 q.2.1.2.2.1 (chosenBy q.2.1.2.2.2 q.1.2))
-    else
-      sub q.2.1.1 (truncFl q.2.1.2.1) q.2.2
-        (rowTerm q.2.1.1 q.2.1.2.1 q.2.1.2.2.1 (chosenBy q.2.1.2.2.2 q.1.2)))
+@[expose] def rowBody : (ℕ × List Bool) × RowCtx × List ℕ → RowCtx × List ℕ
+  | ((_, w), (P, ℓ, tests, sel), acc) =>
+    ((P, ℓ, tests, sel),
+      if (sel.length - w.count true) % 2 = 0 then
+        add P (truncFl ℓ) acc (rowTerm P ℓ tests (chosenBy sel w))
+      else
+        sub P (truncFl ℓ) acc (rowTerm P ℓ tests (chosenBy sel w)))
 
 /-- **The sum of a row** over all words on its selected incidences, in enumeration order. -/
-@[expose] def rowSum (ctx : RowCtx) : List ℕ :=
-  ((enumList ctx.2.2.2.length).foldl (fun st w => rowBody ((ctx.2.2.2.length, w), st))
-    (ctx, zero (truncFl ctx.2.1))).2
+@[expose] def rowSum : RowCtx → List ℕ
+  | (P, ℓ, tests, sel) =>
+    ((enumList sel.length).foldl (fun st w => rowBody ((sel.length, w), st))
+      ((P, ℓ, tests, sel), zero (truncFl ℓ))).2
 
 /-- The context of a row at the bits on its ports: its `P`, `ℓ` and tests, and the incidences
 selected by the indices. -/
-@[expose] def rowContext (row : RowDesc) (bs : List Bool) : RowCtx :=
-  (row.1, row.2.1, row.2.2.1, selected row.2.2.2 (blockIndices row.2.2.2 bs))
+@[expose] def rowContext : RowDesc → List Bool → RowCtx
+  | (P, ℓ, tests, blocks), bs => (P, ℓ, tests, selected blocks (blockIndices blocks bs))
 
 /-- **The entry of a row**: zero (the empty list) at an invalid index, and the sum of the row
 otherwise. -/
-@[expose] def rowEntry (row : RowDesc) (bs : List Bool) : List ℕ :=
-  if validIndices row.2.2.2 (blockIndices row.2.2.2 bs) then rowSum (rowContext row bs) else []
+@[expose] def rowEntry : RowDesc → List Bool → List ℕ
+  | (P, ℓ, tests, blocks), bs =>
+    if validIndices blocks (blockIndices blocks bs) then
+      rowSum (rowContext (P, ℓ, tests, blocks) bs)
+    else []
 
 /-! ### Columns -/
 
@@ -173,8 +176,9 @@ abbrev ColDesc : Type := ℕ × List ℕ × List Block
 
 /-- **The entry of a column**: the constant `2 ^ u` modulo `2 ^ P`, for `u` the number of its
 variables selected by no incidence. -/
-@[expose] def colEntry (col : ColDesc) (bs : List Bool) : List ℕ :=
-  [2 ^ unselectedCount col.2.1 (selected col.2.2 (blockIndices col.2.2 bs)) % 2 ^ col.1]
+@[expose] def colEntry : ColDesc → List Bool → List ℕ
+  | (P, vars, blocks), bs =>
+    [2 ^ unselectedCount vars (selected blocks (blockIndices blocks bs)) % 2 ^ P]
 
 /-! ### The entry procedure -/
 
@@ -213,8 +217,9 @@ abbrev encDesc : Desc ↪ List Bool := encSum encRowDesc (encSum encColDesc (enc
 /-! ### Basic facts -/
 
 /-- The rows of an invalid index have entry zero. -/
-theorem rowEntry_of_not_valid {row : RowDesc} {bs : List Bool}
-    (h : validIndices row.2.2.2 (blockIndices row.2.2.2 bs) = false) : rowEntry row bs = [] := by
+theorem rowEntry_of_not_valid {P ℓ : ℕ} {tests : List (List (List ℕ))} {blocks : List Block}
+    {bs : List Bool} (h : validIndices blocks (blockIndices blocks bs) = false) :
+    rowEntry (P, ℓ, tests, blocks) bs = [] := by
   simp [rowEntry, h]
 
 @[simp] theorem length_factorCoeffs (P ℓ x : ℕ) : (factorCoeffs P ℓ x).length = ℓ := by
