@@ -686,15 +686,17 @@ theorem computableInTimeAndSpace_forwardIterate_captured {α : Type}
     (hgen : ComputableInTimeAndSpace (fun p : α × List Bool => generator p.1 p.2)
       (encPair encParam encBits) encBits tGen sGen)
     {Q : (α × List Bool) × ℕ → ℕ}
-    (hspace : ∀ x i, i < x.2 → sGen (x.1.1, seedAt (generator x.1.1) x.1.2 i) ≤ Q x) :
+    (hspace : ∀ x i, i < x.2 →
+      sGen (Prod.fst x.1, seedAt (generator (Prod.fst x.1)) (Prod.snd x.1) i) ≤ Q x) :
     ∃ c, ComputableInTimeAndSpace
-      (fun x : (α × List Bool) × ℕ => forwardIterate (generator x.1.1) x.2 x.1.2)
+      (fun x : (α × List Bool) × ℕ =>
+        forwardIterate (generator (Prod.fst x.1)) x.2 (Prod.snd x.1))
       (encPair (encPair encParam encBits) encUnary) encBits
-      (fun x => c * ((encParam x.1.1).length + x.1.2.length + x.2 +
+      (fun x => c * ((encParam (Prod.fst x.1)).length + (Prod.snd x.1).length + x.2 +
         (∑ i ∈ Finset.range x.2,
-          (tGen (x.1.1, seedAt (generator x.1.1) x.1.2 i) +
-            (encParam x.1.1).length + x.1.2.length + 1)) + 1))
-      (fun x => c * (Q x + (encParam x.1.1).length + x.1.2.length + 1)) := by
+          (tGen (Prod.fst x.1, seedAt (generator (Prod.fst x.1)) (Prod.snd x.1) i) +
+            (encParam (Prod.fst x.1)).length + (Prod.snd x.1).length + 1)) + 1))
+      (fun x => c * (Q x + (encParam (Prod.fst x.1)).length + (Prod.snd x.1).length + 1)) := by
   -- Retain the captured streaming construction as a proof-local raw witness.
   have build {α : Type}
       {encParam : α ↪ List Bool} {generator : α → List Bool → List Bool}
@@ -835,15 +837,18 @@ theorem computableInTimeAndSpace_iterate_captured {α : Type}
     (hgen : ComputableInTimeAndSpace (fun p : α × List Bool => generator p.1 p.2)
       (encPair encParam encBits) encBits tGen sGen)
     {Q : (α × List Bool) × ℕ → ℕ}
-    (hspace : ∀ x i, i < x.2 → sGen (x.1.1, seedAt (generator x.1.1) x.1.2 i) ≤ Q x) :
+    (hspace : ∀ x i, i < x.2 →
+      sGen (Prod.fst x.1, seedAt (generator (Prod.fst x.1)) (Prod.snd x.1) i) ≤ Q x) :
     ∃ c, ComputableInTimeAndSpace
-      (fun x : (α × List Bool) × ℕ => iterate (generator x.1.1) x.1.2.length x.2 x.1.2)
+      (fun x : (α × List Bool) × ℕ =>
+        iterate (generator (Prod.fst x.1)) (Prod.snd x.1).length x.2 (Prod.snd x.1))
       (encPair (encPair encParam encBits) encUnary) encBits
-      (fun x => c * ((encParam x.1.1).length + x.1.2.length + x.2 +
+      (fun x => c * ((encParam (Prod.fst x.1)).length + (Prod.snd x.1).length + x.2 +
         (∑ i ∈ Finset.range x.2,
-          (tGen (x.1.1, seedAt (generator x.1.1) x.1.2 i) +
-            (encParam x.1.1).length + x.1.2.length + 1)) + 1))
-      (fun x => c * (Q x + (encParam x.1.1).length + x.1.2.length + x.2 + 1)) := by
+          (tGen (Prod.fst x.1, seedAt (generator (Prod.fst x.1)) (Prod.snd x.1) i) +
+            (encParam (Prod.fst x.1)).length + (Prod.snd x.1).length + 1)) + 1))
+      (fun x =>
+        c * (Q x + (encParam (Prod.fst x.1)).length + (Prod.snd x.1).length + x.2 + 1)) := by
   obtain ⟨c, hfwd⟩ := computableInTimeAndSpace_forwardIterate_captured hlen hgen hspace
   have hcharged := hfwd.mono (fun _ => le_rfl)
     (fun x => show c * (Q x + (encParam x.1.1).length + x.1.2.length + 1) ≤

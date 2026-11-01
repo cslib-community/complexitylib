@@ -70,7 +70,7 @@ theorem isPPTOn_selectPredictor {α : Type} {input : α ↪ List Bool}
     (htrials : ComputableInPolyTime trials input encUnary)
     (hsource : IsPPTOn input (encPair encBits encBool) source)
     (hpredict : IsPPTOn (encPair (encPair input encUnary) encBits)
-      encBool (fun x => predict x.1.1 x.1.2 x.2))
+      encBool (fun x => predict (Prod.fst x.1) (Prod.snd x.1) x.2))
     (hobservation : ComputableInPolyTime observation input encBits) :
     IsPPTOn input encBool (fun a =>
       selectPredictor (count a) (trials a) (source a) (predict a) (observation a)) := by
@@ -124,7 +124,7 @@ theorem HasGap.eventually_indexed_error_ge {pair : SamplablePair} {gap : ℕ →
     (hgap : pair.HasGap gap) (predict : ℕ → ℕ → List Bool → ProbComp Bool)
     (hpredict : IsPPTOn
       (encPair (encPair encUnary encUnary) encBits) encBool
-      (fun x => predict x.1.1 x.1.2 x.2))
+      (fun x => predict (Prod.fst x.1) (Prod.snd x.1) x.2))
     {count inverseTolerance : ℕ → ℕ}
     (hcount : ComputableInPolyTime count encUnary encUnary)
     (htolerance : ComputableInPolyTime inverseTolerance encUnary encUnary)

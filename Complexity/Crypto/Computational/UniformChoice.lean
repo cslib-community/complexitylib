@@ -77,7 +77,7 @@ theorem isPPTOn_test {α : Type} {input : α ↪ List Bool}
     (hreal : IsPPTOn input encBits real)
     (hideal : IsPPTOn input encBits ideal)
     (hadversary : IsPPTOn (encPair (encPair input encUnary) encBits) encBool
-      (fun a => adversary a.1.1 a.1.2 a.2))
+      (fun a => adversary (Prod.fst a.1) (Prod.snd a.1) a.2))
     (hchallenge : ComputableInPolyTime challenge input encBits) :
     IsPPTOn input encBool
       (fun a => test (bound a) (real a) (ideal a) (adversary a) (challenge a)) := by
@@ -149,7 +149,7 @@ theorem ComputationallyIndistinguishable.uniform_bound
     (hbound : ComputableInPolyTime bound encUnary encUnary)
     (adversary : ℕ → ℕ → List Bool → ProbComp Bool)
     (hadversary : IsPPTOn (encPair (encPair encUnary encUnary) encBits)
-      encBool (fun a => adversary a.1.1 a.1.2 a.2)) :
+      encBool (fun a => adversary (Prod.fst a.1) (Prod.snd a.1) a.2)) :
     ∃ ε : ℕ → ℝ≥0, Negligible ε ∧ ∀ n index, index ≤ bound n →
       Game.advantage (ProbComp.eval (real n >>= adversary n index))
         (ProbComp.eval (ideal n >>= adversary n index)) ≤ ε n := by

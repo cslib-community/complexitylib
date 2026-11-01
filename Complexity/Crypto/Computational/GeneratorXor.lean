@@ -71,8 +71,8 @@ theorem isPolyTime_generate {α : Type} {input : α ↪ List Bool}
     (hcount : ComputableInPolyTime count input encUnary)
     (hseedBits : ComputableInPolyTime seedBits input encUnary)
     (houtputBits : ComputableInPolyTime outputBits input encUnary)
-    (hgenerator : ComputableInPolyTime (fun pair => generator pair.1.1 pair.1.2 pair.2)
-      (encPair (encPair input encUnary) encBits) encBits)
+    (hgenerator : ComputableInPolyTime (fun pair => generator (Prod.fst pair.1) (Prod.snd pair.1)
+      pair.2) (encPair (encPair input encUnary) encBits) encBits)
     (hseed : ComputableInPolyTime seed input encBits) :
     ComputableInPolyTime (fun a =>
       generate (count a) (seedBits a) (outputBits a) (generator a) (seed a)) input encBits := by
@@ -198,8 +198,8 @@ theorem isPPTOn_test {α : Type} {input : α ↪ List Bool}
     (hseedBits : ComputableInPolyTime seedBits input encUnary)
     (houtputBits : ComputableInPolyTime outputBits input encUnary)
     (hindex : ComputableInPolyTime index input encUnary)
-    (hgenerator : ComputableInPolyTime (fun pair => generator pair.1.1 pair.1.2 pair.2)
-      (encPair (encPair input encUnary) encBits) encBits)
+    (hgenerator : ComputableInPolyTime (fun pair => generator (Prod.fst pair.1) (Prod.snd pair.1)
+      pair.2) (encPair (encPair input encUnary) encBits) encBits)
     (hadversary : IsPPTOn (encPair input encBits) encBool
       (fun pair => adversary pair.1 pair.2))
     (hchallenge : ComputableInPolyTime challenge input encBits) :
@@ -252,12 +252,13 @@ theorem indistinguishable {generator : ℕ → ℕ → List Bool → List Bool}
     (hcount : ComputableInPolyTime count encUnary encUnary)
     (hseedBits : ComputableInPolyTime seedBits encUnary encUnary)
     (houtputBits : ComputableInPolyTime outputBits encUnary encUnary)
-    (hgenerator : ComputableInPolyTime (fun input => generator input.1.1 input.1.2 input.2)
+    (hgenerator : ComputableInPolyTime
+      (fun input => generator (Prod.fst input.1) (Prod.snd input.1) input.2)
       (encPair (encPair encUnary encUnary) encBits) encBits)
     (hchoose : ∀ᶠ n in Filter.atTop, choose n < count n)
     (hsecure : ∀ adversary : ℕ → ℕ → List Bool → ProbComp Bool,
       IsPPTOn (encPair (encPair encUnary encUnary) encBits)
-        encBool (fun input => adversary input.1.1 input.1.2 input.2) →
+        encBool (fun input => adversary (Prod.fst input.1) (Prod.snd input.1) input.2) →
       Negligible (fun n => Game.advantage
         (((uniformList (seedBits n)).map (generator n (choose n))).bind
           (fun word => ProbComp.eval (adversary n (choose n) word)))
