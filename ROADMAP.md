@@ -42,7 +42,6 @@ Priorities live in this list and in the tiers of [#897].
 7. [The Kabanets–Impagliazzo theorem](#circuits-and-algebraic-complexity) ([#891])
 8. [MIP = NEXP](#interactive-proofs) ([#892])
 9. [Regev's worst-case to average-case reduction](#cryptographic-landmarks)
-10. [The Immerman–Vardi theorem](#descriptive-complexity-and-first-order-reductions)
 
 ## Cryptography
 
@@ -302,12 +301,8 @@ universe size, not supplied as unverified input tables. In dependency order:
   domain need not be first-order definable.
 - Order-free: SAT-to-3SAT, graph-property hardness, and bridges to the separately encoded
   problems.
-- **The Immerman–Vardi theorem:** on ordered finite structures, first-order logic with least
-  fixed points defines exactly the polynomial-time properties, with the machine side proved for
-  actual native algorithms in both directions. Build on the scoped FO(LFP) syntax and finite-stage
-  semantics: certify a fixed-formula evaluator with explicitly charged relation tables, then prove
-  the native-machine-to-positive-LFP converse. Extend the synthesis rules to nested operator bodies
-  and give regular-language quantifiers their ordered characteristic-word semantics.
+- Extend the synthesis rules to nested operator bodies and give regular-language quantifiers
+  their ordered characteristic-word semantics.
 - Further logical characterizations on ordered structures: FO(TC) = NL and FO(DTC) = L,
   SO-Horn = P (Grädel), and DLOGTIME-uniform AC⁰ = FO(≤, BIT) (Barrington–Immerman–Straubing);
   then order-invariant and fixed-point queries and uniform translations between syntax,

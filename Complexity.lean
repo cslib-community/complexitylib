@@ -1515,6 +1515,13 @@ public import Complexity.Computability.Complexity.FineGrained.ThreeOccurrenceRed
 public import Complexity.Computability.Complexity.FineGrained.WideClauseCounting
 public import Complexity.Computability.Complexity.HardnessEncoding.PolyTime
 public import Complexity.Computability.Complexity.HardnessEncoding.Program
+public import Complexity.Computability.Complexity.ImmermanVardi
+public import Complexity.Computability.Complexity.ImmermanVardi.Input
+public import Complexity.Computability.Complexity.ImmermanVardi.Tableau.Acceptance
+public import Complexity.Computability.Complexity.ImmermanVardi.Tableau.Correct
+public import Complexity.Computability.Complexity.ImmermanVardi.Tableau.Definability
+public import Complexity.Computability.Complexity.ImmermanVardi.Tableau.FixedPoint
+public import Complexity.Computability.Complexity.ImmermanVardi.Tableau.Step
 public import Complexity.Computability.Complexity.Parameterized
 public import Complexity.Computability.Complexity.Parameterized.Kernelization
 public import Complexity.Computability.Complexity.Parameterized.VertexCover
@@ -3547,6 +3554,7 @@ public import Complexity.Logics.FirstOrder.Interpretation.Tuple
 public import Complexity.Logics.FirstOrder.Interpretation.Unit
 public import Complexity.Logics.FirstOrder.Operator.Basic
 public import Complexity.Logics.FirstOrder.Operator.Definability
+public import Complexity.Logics.FirstOrder.Operator.Definability.Finite
 public import Complexity.Logics.FirstOrder.Operator.Definability.Polarity
 public import Complexity.Logics.FirstOrder.Operator.LeastFixedPoint
 public import Complexity.Logics.FirstOrder.Operator.LeastFixedPoint.Definability
