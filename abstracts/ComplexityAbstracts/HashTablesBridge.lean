@@ -986,10 +986,11 @@ theorem uniformProbing (S : Presentation) (hS : Laws S)
 
 /-! ## Part 5: Pagh–Rodler Cuckoo Hashing (`CuckooHashing.lean`) -/
 
-/-- Polymorphic presentation of the space and time constants for Pagh–Rodler cuckoo hashing at
-`c_exp = 4` in `HashTablesAbstract.lean`. Passing these definitions explicitly allows the abstract
-to discharge each definitional equality in one step (`rfl`) without kernel `Nat` reduction on the
-double-tabulation threshold `2 ^ 320000`. -/
+/-- Internal bundle of the space and time constants for Pagh–Rodler cuckoo hashing at
+`c_exp = 4` in `HashTablesAbstract.lean`. The public bridge theorems take these constants as flat
+parameters and construct `CuckooPresentation` internally so `instantiateRev` substitutes bound
+variables directly (avoiding `.proj` terms on the right-hand side of equational laws) and each `rfl`
+in `HashTablesAbstract.lean` succeeds by syntactic equality without reducing `2 ^ 320000`. -/
 structure CuckooPresentation where
   regimeThreshold : ℕ
   charBits : ℕ → ℕ
@@ -1188,14 +1189,6 @@ theorem cuckooInsertCharge_eq :
   rw [hK.cuckooInsertCharge_def, K.cuckooInsertBaseBound_eq hK,
     K.cuckooEvictIterBound_eq hK, K.cuckooRehashAmortizedBound_eq hK]
   rfl
-
-theorem cuckooGetCharge_le_cuckooInsertCharge :
-    K.cuckooGetCharge ≤ K.cuckooInsertCharge := by
-  have h1 := hK.cuckooGetCharge_def
-  have h2 := hK.cuckooGetStepsBound_def
-  have h3 := hK.cuckooInsertCharge_def
-  have h4 := hK.cuckooInsertBaseBound_def
-  omega
 
 end CuckooPresentation
 

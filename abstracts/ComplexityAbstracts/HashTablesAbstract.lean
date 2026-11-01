@@ -26,12 +26,12 @@ polynomial key-universe exponent `c_exp = 4` (`U ≤ max n_max 4 ^ 4` where requ
    2009, Section 2.3 Lemma 2.1 pp. 1110–1111 and Section 4 Lemma 4.1, Theorem 4.3, Theorem 4.5
    pp. 1114–1118; `[CLRS2009]`, 3rd ed., Section 11.4; `[Vadhan2012]`, Section 3.5.5;
    `[CarterWegman1979]`; `[WegmanCarter1981]`; `[LidlNiederreiter1997]`).
-3. **Uniform probing via odd-stride double hashing** (`UniformProbing.lean:2362`
+3. **Uniform probing via odd-stride double hashing** (`UniformProbing.lean:2312`
    `seq_expected_amortized`, following `[CLRS2009]`, 3rd ed., Section 11.4, pp. 269–277;
    `[SchmidtSiegel1990]`, STOC 1990, pp. 224–234, and NYU Courant TR1995-687, May 1995,
    pp. 1–2, 4–7, 37–39; `[Thorup2013]`, FOCS 2013, pp. 90–99, and `arXiv:1311.3121v2`,
    Theorem 1(a) and Lemma 2, pp. 4–5, 11–13).
-4. **Cuckoo hashing** (`CuckooHashing.lean:6372` `cuckoo_seq_expected_amortized`, following
+4. **Cuckoo hashing** (`CuckooHashing.lean:6373` `cuckoo_seq_expected_amortized`, following
    `[PaghRodler2004]`, 8 Dec 2003 author manuscript / *J. Algorithms* 51(2):122–144, 2004,
    Section 2.3 "Analysis", manuscript pp. 6–10: Lemma 1 p. 7, Eq. (3) p. 9, rehash analysis
    pp. 9–10; `[Thorup2013]`, FOCS 2013, pp. 90–99, and `arXiv:1311.3121v2`, Sections 1.3 and 3,
@@ -680,7 +680,7 @@ threshold). -/
 def upOpCharge : ℕ :=
   13 * regimeThreshold + upHashEvalSteps + 8
 
-/-- **Uniform Probing via Odd-Stride Double Hashing** (`UniformProbing.lean:2362`
+/-- **Uniform Probing via Odd-Stride Double Hashing** (`UniformProbing.lean:2312`
 `seq_expected_amortized`, specialized to `c_exp = 4`):
 For every capacity `n_max`, there exist 16-register Word-RAM programs `p_init` and `p_op`
 (depending only on `n_max` at fixed `c_exp = 4` and independent of `U`, `V`, `w`, and `base`) such
@@ -890,7 +890,7 @@ theorem cuckooOpCharge_le {U : ℕ} (o : DictOp U) :
     rfl rfl rfl rfl
     @cuckooOpCharge (fun _ => rfl) (fun _ _ => rfl) o
 
-/-- **Pagh–Rodler Cuckoo Hashing** (`CuckooHashing.lean:6372` `cuckoo_seq_expected_amortized`,
+/-- **Pagh–Rodler Cuckoo Hashing** (`CuckooHashing.lean:6373` `cuckoo_seq_expected_amortized`,
 specialized to `c_exp = 4`):
 For every capacity `n_max`, there exist 19-register Word-RAM programs `p_init` and `p_op`
 (depending only on `n_max` at fixed `c_exp = 4` and independent of `U`, `V`, `w`, and `base`) such
