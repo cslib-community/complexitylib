@@ -991,11 +991,12 @@ theorem realized_kruskal {n : ℕ} {W : Type} [LE W] [DecidableLE W]
         (DisjointSet.spec n).totalCost charge (Partition.discrete n)
           ((sortEdges es).map fun e => DisjointSet.Op.union e.u e.v) := by
   have hv := (DisjointSet.spec n).validHistory_of_forall_valid (fun _ _ => trivial)
-    (Partition.discrete n) ((DisjointSet.spec n).runClient (Partition.discrete n)
-      (kruskalClient (sortEdges es))).2.2
+    (Partition.discrete n) ((DisjointSet.spec n).clientHistory (Partition.discrete n)
+      (kruskalClient (sortEdges es)))
   obtain ⟨s', traces, hexec, hrep, hcost⟩ :=
     Bound.exists_executes B (kruskalClient (sortEdges es)) hr hv
-  rw [runClient_kruskalClient] at hexec hrep hcost
+  simp only [Spec.clientResult, Spec.clientState, Spec.clientHistory, runClient_kruskalClient]
+    at hexec hrep hcost
   refine ⟨s', traces, hexec, ?_, hcost⟩
   rwa [← edgePartition, Perm.edgePartition_eq (sortEdges_perm es)] at hrep
 
