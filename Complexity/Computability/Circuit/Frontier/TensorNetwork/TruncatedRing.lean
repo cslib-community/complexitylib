@@ -9,6 +9,8 @@ module
 
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Truncated
 public import Complexity.Computability.PolyTime.GaloisRingArithmetic
+import Complexity.Foundations.Data.Polynomial.CoeffList
+import Mathlib.Algebra.Polynomial.Degree.Support
 import Mathlib.Data.List.GetD
 
 /-!
@@ -24,7 +26,7 @@ with their correctness (`GaloisRingArith.val_mul`, …) and polynomial-time cert
 multiplication of truncated coefficient lists is needed.
 
 The bridge to the contraction over `ℕ[V]` is the ring map `truncNatHom P ℓ : ℕ[X] → B_{P,ℓ}`.
-It sends the polynomial of a coefficient list to its value (`truncNatHom_coeffPoly`), and two
+It sends the polynomial of a coefficient list to its value (`truncNatHom_ofCoeffList`), and two
 polynomials have the same image exactly when their coefficients below `ℓ` agree modulo `2 ^ P`
 (`truncNatHom_eq_iff`). So the image of the contraction over `ℕ[V]` is the contraction of the
 values of the entries in `B_{P,ℓ}` (`truncNatHom_polyContraction`). The same holds over `ℤ[X]`
@@ -42,7 +44,7 @@ lives.
 * `Cslib.Circuits.Frontier.monicOf_truncFl`: the monic polynomial is `V ^ ℓ`.
 * `Cslib.Circuits.Frontier.truncRingHom_eq_iff`, `Cslib.Circuits.Frontier.truncNatHom_eq_iff`:
   equality in `B_{P,ℓ}` is agreement of the coefficients below `ℓ` modulo `2 ^ P`.
-* `Cslib.Circuits.Frontier.truncNatHom_coeffPoly`: a coefficient list maps to its value.
+* `Cslib.Circuits.Frontier.truncNatHom_ofCoeffList`: a coefficient list maps to its value.
 * `Cslib.Circuits.Frontier.DescribedNetwork.truncNatHom_polyContraction`: the contraction over
   `ℕ[V]` maps to the contraction of the values.
 
@@ -128,14 +130,18 @@ theorem truncNatHom_eq_iff {p q : ℕ[X]} :
   rw [show (2 : ℤ) ^ P = ((2 ^ P : ℕ) : ℤ) by push_cast; rfl, Int.natCast_modEq_iff]
   rfl
 
-/-- **A coefficient list maps to its value**: the image of `coeffPoly c` in `B_{P,ℓ}` is
+/-- **A coefficient list maps to its value**: the image of `ofCoeffList c` in `B_{P,ℓ}` is
 `GaloisRingArith.val P (truncFl ℓ) c`. -/
-theorem truncNatHom_coeffPoly (c : List ℕ) :
-    truncNatHom P ℓ (coeffPoly c) = GaloisRingArith.val P (truncFl ℓ) c := by
+theorem truncNatHom_ofCoeffList (c : List ℕ) :
+    truncNatHom P ℓ (ofCoeffList c) = GaloisRingArith.val P (truncFl ℓ) c := by
   have hterm (i : ℕ) : truncNatHom P ℓ (C (c.getD i 0) * X ^ i) =
       ((c.getD i 0 : ℕ) : Ring P (truncFl ℓ)) * AdjoinRoot.root _ ^ i := by
     simp [truncNatHom, truncRingHom]
-  rw [coeffPoly, map_sum, GaloisRingArith.val, length_truncFl]
+  have hsum : ofCoeffList c = ∑ i ∈ range (c.length + 1), C (c.getD i 0) * X ^ i := by
+    conv_lhs => rw [as_sum_range' (ofCoeffList c) (c.length + 1)
+      ((natDegree_ofCoeffList_le c).trans_lt (by omega))]
+    simp only [coeff_ofCoeffList, ← C_mul_X_pow_eq_monomial]
+  rw [hsum, map_sum, GaloisRingArith.val, length_truncFl]
   simp only [hterm]
   -- Both sums agree with the sum below `max |c| ℓ`.
   have hzero : ∀ i, ¬ (i < c.length ∧ i < ℓ) →
@@ -146,9 +152,9 @@ theorem truncNatHom_coeffPoly (c : List ℕ) :
       rw [← Nat.add_sub_cancel' hℓ, pow_add, root_pow_truncFl, zero_mul, mul_zero]
     · rw [List.getD_eq_default _ _ (by omega)]
       simp
-  rw [← sum_subset (range_subset_range.mpr (Nat.min_le_left c.length ℓ)) fun i _ hi =>
+  rw [← sum_subset (range_subset_range.mpr (Nat.min_le_left (c.length + 1) ℓ)) fun i _ hi =>
       hzero i (by simp only [mem_range] at hi; omega),
-    ← sum_subset (range_subset_range.mpr (Nat.min_le_right c.length ℓ)) fun i _ hi =>
+    ← sum_subset (range_subset_range.mpr (Nat.min_le_right (c.length + 1) ℓ)) fun i _ hi =>
       hzero i (by simp only [mem_range] at hi; omega)]
 
 namespace DescribedNetwork
@@ -161,7 +167,7 @@ theorem truncNatHom_polyContraction (entry : T → List Bool → List ℕ) (G : 
     truncNatHom P ℓ (G.polyContraction entry) =
       G.contraction fun t bs => GaloisRingArith.val P (truncFl ℓ) (entry t bs) := by
   rw [polyContraction, map_contraction]
-  simp only [truncNatHom_coeffPoly]
+  simp only [truncNatHom_ofCoeffList]
 
 end DescribedNetwork
 
