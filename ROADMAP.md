@@ -185,6 +185,12 @@ index links to canonical definitions rather than keeping a second set.
   machine's own steps, noninteger polynomial degrees, a word-RAM hierarchy by direct
   diagonalization with a smaller gap, and sharp nondeterministic and alternating time
   hierarchies with certified simulators.
+- **Probabilistic time hierarchies** ([#2084]): the hierarchy for promise problems
+  (`PromiseBPTIME`), by delayed diagonalization following He (ECCC TR25-004), and the
+  one-bit-advice hierarchy for languages of van Melkebeek and Pervyshev. `PromiseBPTIME` and its
+  explicit-time sample-and-verify characterization are in place (`Classes/Promise/Time` and
+  `Classes/Promise/Time/Verifier`). The advice-free hierarchy for `BPTIME` itself is open and is
+  not a target.
 - The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
   its input.
 - **Space:** Savitch bounds for general space-constructible functions.
@@ -642,9 +648,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   Word-RAM certificates can be derived from semantic modules after discharging their local
   initialization, footprint and ABI conditions; a one-cell ADT checks that boundary. Multiword
   glue preserves full-word Option payloads, and the actual memory-stack size/push/pop methods
-  have uniform native certificates over runtime layouts, with local work 0/10/19. Remaining:
-  the representative framed queue and its faithful whole-memory allocation/native-client path.
-  The full C2/M1b objective remains open; arbitrary host continuations do not acquire runtime bounds.
+  have uniform native certificates over runtime layouts, with local work 0/10/19. Backends of
+  framed refinements export their frame (`modifies`, `frame`), run products over one memory,
+  and allocate from arbitrary memory through `Memory.Allocator` (`Backend.Allocation`); the stack
+  and a pair of stacks check all three. Remaining: the queue and binary-heap migrations onto them,
+  and the full C2/M1b objective; arbitrary host continuations do not acquire runtime bounds.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
@@ -805,3 +813,4 @@ not planned, not as proved.
 [#2127]: https://github.com/cslib-community/complexitylib/issues/2127
 [#2145]: https://github.com/cslib-community/complexitylib/issues/2145
 [#2146]: https://github.com/cslib-community/complexitylib/issues/2146
+[#2084]: https://github.com/cslib-community/complexitylib/issues/2084
