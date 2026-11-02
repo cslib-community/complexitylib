@@ -24,6 +24,7 @@ true tag still requires the visible word-fit condition for `1`.
 
 ## Main definitions
 
+* `optionWordsWith`: a presence tag over any faithful payload-word encoding.
 * `optionWords`: a faithful tag/payload encoding of optional natural words.
 * `boolWords`: a Boolean tag with a retained zero slot for native comparisons.
 
@@ -45,6 +46,34 @@ open Cslib.DataStructure
 
 variable {B : Basis} {δ α : Type} {k l r : ℕ}
 
+/-- Prefix a faithful payload encoding by a presence tag. Missing payload words are zero;
+present payload words retain their values. No decoder or payload-fit bound is implicit. -/
+def optionWordsWith (payload : α ↪ (Fin l → ℕ)) : Option α ↪ (Fin (l + 1) → ℕ) where
+  toFun
+    | none => Fin.cases 0 (fun _ => 0)
+    | some a => Fin.cases 1 (payload a)
+  inj' := by
+    intro a b h
+    cases a with
+    | none =>
+      cases b with
+      | none => rfl
+      | some b => have hh := congrFun h 0; change 0 = 1 at hh; omega
+    | some a =>
+      cases b with
+      | none => have hh := congrFun h 0; change 1 = 0 at hh; omega
+      | some b =>
+        apply congrArg some
+        apply payload.injective
+        funext i
+        exact congrFun h i.succ
+
+@[simp] theorem optionWordsWith_none (payload : α ↪ (Fin l → ℕ)) :
+    optionWordsWith payload none = Fin.cases 0 (fun _ => 0) := rfl
+
+@[simp] theorem optionWordsWith_some (payload : α ↪ (Fin l → ℕ)) (a : α) :
+    optionWordsWith payload (some a) = Fin.cases 1 (payload a) := rfl
+
 /-- A presence tag and unshifted payload distinguish `none` from every `some v`. -/
 def optionWords : Option ℕ ↪ (Fin 2 → ℕ) where
   toFun
@@ -64,6 +93,15 @@ def optionWords : Option ℕ ↪ (Fin 2 → ℕ) where
 
 @[simp] theorem optionWords_none : optionWords none = ![0, 0] := rfl
 @[simp] theorem optionWords_some (v : ℕ) : optionWords (some v) = ![1, v] := rfl
+
+/-- The legacy scalar encoding is the one-word instance of `optionWordsWith`. Its original
+vector presentation is retained for existing definitional and simplification clients. -/
+theorem optionWords_eq_optionWordsWith :
+    optionWords = optionWordsWith (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding := by
+  apply DFunLike.ext
+  intro a
+  funext i
+  cases a <;> fin_cases i <;> rfl
 
 /-- A Boolean tag with a retained zero slot supports native comparisons without immediates. -/
 def boolWords : Bool ↪ (Fin 2 → ℕ) where
