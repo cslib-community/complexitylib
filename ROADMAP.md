@@ -650,9 +650,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   glue preserves full-word Option payloads, and the actual memory-stack size/push/pop methods
   have uniform native certificates over runtime layouts, with local work 0/10/19. The stack is
   migrated: `Stack.Native` and `Stack.Controller` replace its hand-stepped dispatcher, which
-  remains only as the stepped component of Chan–He traversal (`Traversal.WordStack`). Remaining:
-  the representative framed queue and its faithful whole-memory allocation/native-client path.
-  The full C2/M1b objective remains open; arbitrary host continuations do not acquire runtime bounds.
+  remains only as the stepped component of Chan–He traversal (`Traversal.WordStack`). Backends of
+  framed refinements export their frame (`modifies`, `frame`), run products over one memory,
+  and allocate from arbitrary memory through `Memory.Allocator` (`Backend.Allocation`); the stack
+  and a pair of stacks check all three. Remaining: the queue and binary-heap migrations onto them,
+  and the full C2/M1b objective; arbitrary host continuations do not acquire runtime bounds.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and

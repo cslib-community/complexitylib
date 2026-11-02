@@ -321,8 +321,8 @@ def readMany : ℕ → Memory.Prog Unit
 error: realize: unsupported client form
   readMany d
 Expected `bind`, `pure`, a memory query, `if` on a word comparison,
-or a `match` on an optional answer. Recursion on a runtime value is a loop
-and needs a loop rule.
+a `match` on an optional answer, `iterate` or `boundedWhile`.
+Write recursion on a runtime value as one of these loops.
 -/
 #guard_msgs in
 example : Realizes .exact readMany (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding

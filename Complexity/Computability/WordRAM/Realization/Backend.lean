@@ -51,9 +51,11 @@ so `memoryCost`, which is taken at width zero, is the charge that refinements st
 * `Backend.registers`, `Backend.frontier`, `Backend.code`, `Backend.factor`: the register file,
   the body of each tag and one exchange factor.
 * `Backend.data`: the native data holding a memory state.
+* `Backend.install`: a tag's arguments installed in its argument registers.
 * `Backend`: the tag, arguments and answer of each operation.
 * `Backend.Implements`: a backend runs the methods of a refinement.
 * `Backend.sum`: two backends side by side, for a product specification.
+* `Backend.extend`: a backend with further tags, such as an allocation's.
 * `Backend.exec`, `Backend.implementation`: native execution, and the native implementation.
 
 ## Main results
@@ -61,6 +63,7 @@ so `memoryCost`, which is taken at width zero, is the charge that refinements st
 * `totalCost_width`, `clientHistory_width`, `memoryCost_eq_totalCost`: memory charges do not
   depend on the word width.
 * `fits_appendWords`: appended argument words fit when both parts do.
+* `Backend.exists_exec`: the body of one tag runs its program on installed arguments.
 * `Backend.Implements.prod`: side-by-side backends run a product of refinements.
 * `Backend.exec_iff`, `Backend.rep_iff`: the execution relation and representation, unfolded.
 * `Backend.rep_data`: the data holding an invariant state represents its abstraction.
@@ -216,6 +219,58 @@ private theorem layout (i : ι) :
   refine ⟨fun a b h => Fin.ext ?_, fun a b h => ?_, fun b h => ?_, fun a h => ?_⟩ <;>
     have := congrArg Fin.val h <;> simp only [src, tmp, frontier, argWords] at * <;> omega
 
+/-- Install arguments `d` of tag `i` in its argument registers. Installation is uncharged and
+leaves memory and the frontier unchanged. -/
+def install (i : ι) (d : (C i).Arg) (x : Data (registers C)) : Data (registers C) where
+  regs j := if h : 0 < j.val ∧ j.val ≤ (C i).k then (C i).input d ⟨j.val - 1, by omega⟩
+    else x.regs j
+  mem := x.mem
+
+/-- Installation leaves the memory and the frontier. -/
+@[simp] theorem memoryState_install (i : ι) (d : (C i).Arg) (x : Data (registers C)) :
+    memoryState (frontier C) (install C i d x) = memoryState (frontier C) x := by
+  apply Memory.State.ext rfl
+  simp [memoryState, install, frontier]
+
+private theorem install_src (i : ι) (d : (C i).Arg) (x : Data (registers C)) :
+    (install C i d x).regs ∘ src C i = (C i).input d := by
+  funext j
+  simp [install, src]
+
+private theorem install_bounded {w : ℕ} (i : ι) (d : (C i).Arg) {x : Data (registers C)}
+    (hx : x.Bounded w) (hin : ∀ j, Fits w ((C i).input d j)) : (install C i d x).Bounded w := by
+  refine ⟨fun j => ?_, hx.2⟩
+  simp only [install]
+  split
+  · exact hin _
+  · exact hx.1 j
+
+/-- **The body of one tag.** From bounded data, with arguments that fit words, inside the tag's
+domain and with an admissible memory history, the body of tag `i` runs its program on the
+installed arguments within the certified bound at the common exchange factor. It leaves the
+program's final memory and encoded result, and every register and cell a word. -/
+theorem exists_exec {w : ℕ} (i : ι) (d : (C i).Arg) {x : Data (registers C)} (hx : x.Bounded w)
+    (hin : ∀ j, Fits w ((C i).input d j)) (hsafe : (C i).safe w d (memoryState (frontier C) x))
+    (hv : (Memory.spec w).ValidHistory (memoryState (frontier C) x)
+      ((Memory.spec w).clientHistory (memoryState (frontier C) x) ((C i).prog d))) :
+    ∃ y n, Exec w (code C i) (install C i d x) y n ∧
+      n ≤ factor C * (memoryCost ((C i).prog d) (memoryState (frontier C) x) +
+        (C i).work d (memoryState (frontier C) x) + 1) ∧
+      memoryState (frontier C) y =
+        (Memory.spec w).clientState (memoryState (frontier C) x) ((C i).prog d) ∧
+      (∀ j, y.regs (tmp C i (Fin.castAdd ((C i).realizes.scratchSize + 1) j)) =
+        (C i).output ((Memory.spec w).clientResult (memoryState (frontier C) x) ((C i).prog d))
+          j) ∧
+      y.Bounded w := by
+  have hb := install_bounded C i d hx hin
+  have hm := memoryState_install C i d x
+  obtain ⟨hi', hd, hf, hs⟩ := layout C i
+  obtain ⟨y, ⟨n, hn, he⟩, hm', hout, -⟩ :=
+    ((C i).realizes.code_spec (frontier C) (src C i) (tmp C i) hi' hd hf hs).2 w d _ hb
+      (install_src C i d x) (hm ▸ hsafe) (hm ▸ hv)
+  rw [hm] at hn hm' hout
+  exact ⟨y, n, he, hn.trans (Nat.mul_le_mul_right _ (factor_le C i)), hm', hout, he.bounded hb⟩
+
 end Registers
 
 variable {C : ι → Certificate B} {D : StateTransitionSpec.{0, 0, 0}} (S : Backend D C)
@@ -266,6 +321,19 @@ theorem Implements.prod {w : ℕ} {S : Backend D C} {S' : Backend D' C'}
     | .inl o, hw, hi, hv => hS.entry o hw hi.1 hv
     | .inr o, hw, hi, hv => hS'.entry o hw hi.2.1 hv
 
+/-- The backend with the tags of a second family added, such as a realized allocation's
+(`Backend.Allocation`). Every operation selects the body it selects in `S`. -/
+def extend (C' : ι' → Certificate B) : Backend D (Sum.elim C C') where
+  tag o := .inl (S.tag o)
+  arg := S.arg
+  answer := S.answer
+
+/-- An extended backend runs the methods its original runs. -/
+theorem Implements.extend {w : ℕ} {S : Backend D C} {R : Refinement D (Memory.spec w)}
+    (hS : S.Implements R) (C' : ι' → Certificate B) : (S.extend C').Implements R where
+  run := hS.run
+  entry := hS.entry
+
 end Sum
 
 /-! ### Native execution -/
@@ -274,11 +342,8 @@ variable [Fintype ι]
 
 /-- Install the selected program's arguments in its argument registers. Installation is
 uncharged and leaves memory and the frontier unchanged. -/
-def prepare (o : D.Op) (x : Data (registers C)) : Data (registers C) where
-  regs j := if h : 0 < j.val ∧ j.val ≤ (C (S.tag o)).k then
-      (C (S.tag o)).input (S.arg o) ⟨j.val - 1, by omega⟩
-    else x.regs j
-  mem := x.mem
+def prepare (o : D.Op) (x : Data (registers C)) : Data (registers C) :=
+  install C (S.tag o) (S.arg o) x
 
 /-- An operation runs the body of its tag from the prepared data, in the counted number of
 instructions, and its answer is read off the encoded result. -/
@@ -295,24 +360,6 @@ theorem exec_iff (w : ℕ) (x y : Data (registers C)) (o : D.Op) (a : D.Result o
           (C (S.tag o)).output b j := Iff.rfl
 
 variable {S} {w : ℕ} {R : Refinement D (Memory.spec w)}
-
-private theorem prepare_memoryState (o : D.Op) (x : Data (registers C)) :
-    memoryState (frontier C) (S.prepare o x) = memoryState (frontier C) x := by
-  apply Memory.State.ext rfl
-  simp [memoryState, prepare, frontier]
-
-private theorem prepare_src (o : D.Op) (x : Data (registers C)) :
-    (S.prepare o x).regs ∘ src C (S.tag o) = (C (S.tag o)).input (S.arg o) := by
-  funext j
-  simp [prepare, src]
-
-private theorem prepare_bounded {o : D.Op} {x : Data (registers C)} (hx : x.Bounded w)
-    (hin : ∀ j, Fits w ((C (S.tag o)).input (S.arg o) j)) : (S.prepare o x).Bounded w := by
-  refine ⟨fun j => ?_, hx.2⟩
-  simp only [prepare]
-  split
-  · exact hin _
-  · exact hx.1 j
 
 /-- One operation from represented data: its body's execution, instruction count, memory,
 encoded result and answer. -/
@@ -339,20 +386,14 @@ private theorem exists_body (hS : S.Implements R) (o : D.Op) {x : Data (register
   have hvalid := ((Memory.spec w).demonicValid_iff_validHistory_runClient _ _).mp
     (R.valid o hi hv)
   obtain ⟨hin, hsafe⟩ := hS.entry o (wellFormed_memoryState hx) hi hv
-  have hb := prepare_bounded hx hin
-  have hp := prepare_memoryState (S := S) o x
-  obtain ⟨hi', hd, hf, hs⟩ := layout C (S.tag o)
   have hhist : (Memory.spec w).clientHistory (memoryState (frontier C) x) (R.methods o) =
       (Memory.spec w).clientHistory (memoryState (frontier C) x)
         ((C (S.tag o)).prog (S.arg o)) := congrArg (fun t => t.2.2) hrun
-  obtain ⟨y, ⟨n, hn, he⟩, hm, hout, -⟩ :=
-    ((C (S.tag o)).realizes.code_spec (frontier C) (src C _) (tmp C _) hi' hd hf hs).2 w
-      (S.arg o) _ hb (prepare_src o x) (hp ▸ hsafe) (hp ▸ hhist ▸ hvalid)
-  rw [hp] at hn hm hout
-  refine ⟨y, n, he, hn.trans ?_, hm.trans (congrArg (fun t => t.2.1) hrun).symm, hout,
-    (congrArg Prod.fst hrun).symm, he.bounded hb, hvalid⟩
+  obtain ⟨y, n, he, hn, hm, hout, hb⟩ :=
+    exists_exec C (S.tag o) (S.arg o) hx hin hsafe (hhist ▸ hvalid)
+  refine ⟨y, n, he, hn.trans_eq ?_, hm.trans (congrArg (fun t => t.2.1) hrun).symm, hout,
+    (congrArg Prod.fst hrun).symm, hb, hvalid⟩
   rw [memoryCost_eq_totalCost w, ← hhist]
-  exact Nat.mul_le_mul_right _ (factor_le C _)
 
 /-- The answer of an execution is the method's result. -/
 private theorem answer_eq (hS : S.Implements R) {o : D.Op} {x y : Data (registers C)}
