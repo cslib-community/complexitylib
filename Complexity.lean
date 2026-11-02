@@ -2927,6 +2927,7 @@ public import Complexity.DataStructure.HashFamily.WordRAM.DoubleTabulation
 public import Complexity.DataStructure.HashFamily.WordRAM.KWise
 public import Complexity.DataStructure.HashFamily.WordRAM.MultiplyShift
 public import Complexity.DataStructure.HashFamily.WordRAM.Tabulation
+public import Complexity.DataStructure.Memory.Alloc
 public import Complexity.DataStructure.Memory.Field
 public import Complexity.DataStructure.Memory.Frame
 public import Complexity.DataStructure.Memory.Record
@@ -2947,6 +2948,7 @@ public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Basic
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.DecreaseKey
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.ExtractMin
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Memory
+public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.MinPQ
 public import Complexity.DataStructure.PriorityQueue.Spec
 public import Complexity.DataStructure.PriorityQueue.WordRAM.Basic
 public import Complexity.DataStructure.PriorityQueue.WordRAM.BinaryHeap
