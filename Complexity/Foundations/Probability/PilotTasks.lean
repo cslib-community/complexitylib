@@ -23,8 +23,9 @@ unnormalized detector score of Section 5.4, not a dense atom with a clipped deno
 `PilotTask.children` specifies the constructor recipes. Ranks are computed from the iteration
 and constructor, never supplied by a caller. Their strict decrease supplies the rank premise
 of the existing fourth-moment precision calculation. The stage-local iteration bound is explicit;
-this is not yet the global stage order or a recursive estimator. Preparations/normalizations of
-correction atoms, routed bins, copy/reward multipliers and full mean-prefix assembly remain open.
+this is not yet the global stage order or a recursive estimator. The stochastic extension is in
+`Complexity/Foundations/Probability/PilotRowTasks.lean`; routed bins, copy/reward multipliers
+and full mean-prefix assembly remain open.
 
 The exact finite detector mean is independent of the fourth/eighth moment choice. The precision
 client specializes to fourth moments and uses the existing integer logarithmic-rate schedule.
