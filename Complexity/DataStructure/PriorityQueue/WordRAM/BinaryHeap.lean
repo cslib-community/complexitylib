@@ -640,7 +640,7 @@ abbrev impl {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K
       have hsz' : x'.regs sz = x.regs sz := hreg sz (by decide)
       refine ⟨hbx', hbase', hn', hhb', hpb', ?_, ?_⟩
       · rw [hsz']
-        exact hr.heap.congr_mem hmem
+        exact hr.heap.congr_mem fun a ha _ => hmem a ha
       · rw [hr.state_eq]
         exact (stateOfMem_congr hmem).symm)
     (potential_supported := fun _ _ _ => rfl)
