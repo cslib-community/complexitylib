@@ -567,6 +567,8 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   log-linear endpoint, including the actual input prefix and final halt, with one existential
   uniform factor. The old hand-stepped binary-heap execution and its fixed clock/register
   constants are retired; no reduction in source size, space or instruction count is asserted.
+  The bounded two-stack queue migration landed in #2303; the generic framed/allocation/whole-client
+  and Fibonacci objectives remain open.
   `DataStructure/OrderedSet` and `DataStructure/OrderedSet/*` provide neutral
   optional-minimum contracts, a typed finite-set interface including deletion, and adaptive
   minimum extraction, with no tree or cost dependency. Bounded-key implementations may specialize

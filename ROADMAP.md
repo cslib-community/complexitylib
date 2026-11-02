@@ -663,8 +663,9 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   supplies the original log-linear Dijkstra endpoint through an actual initialized native program.
   The graph encoding and word envelope stay unchanged; one factor precedes all graphs and widths,
   and the clock includes the prefix, control and halt. The old hand-stepped binary execution is
-  retired, while its pure model/order lemmas and source credit remain. Remaining: the queue and
-  Fibonacci execution migrations and the full C2/M1b objective; arbitrary host continuations do
+  retired, while its pure model/order lemmas and source credit remain. The bounded two-stack queue
+  migration has landed in #2303. Generic framed, allocation and whole-client transfer, Fibonacci
+  execution migration and the full C2/M1b objective remain open; arbitrary host continuations do
   not acquire runtime bounds.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
