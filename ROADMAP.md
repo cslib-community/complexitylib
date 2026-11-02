@@ -651,9 +651,8 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   have uniform native certificates over runtime layouts, with local work 0/10/19. Backends of
   framed refinements export their frame (`modifies`, `frame`), run products over one memory,
   and allocate from arbitrary memory through `Memory.Allocator` (`Backend.Allocation`); the stack
-  checks all three. Remaining: the queue and binary-heap migrations onto them, allocation of
-  products in one body, and the full C2/M1b objective; arbitrary host continuations do not acquire
-  runtime bounds.
+  and a pair of stacks check all three. Remaining: the queue and binary-heap migrations onto them,
+  and the full C2/M1b objective; arbitrary host continuations do not acquire runtime bounds.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and

@@ -15,7 +15,7 @@ their layout's cells (`modifies`, `frame`), as the hand-stepped `Stack.WordRAM.m
 `frame` did. An allocation tag, added by `Backend.extend`, sets up an empty stack from arbitrary
 bounded data in constant time, clearing only the count cell (`allocate`), and a client then runs
 on it (`run_allocated`). Two stacks share one memory with two frames (`modifies_left`,
-`instruction_bound_pair`). -/
+`instruction_bound_pair`), and one body allocates both (`allocate_pair`). -/
 
 open Cslib Cslib.DataStructure Cslib.WordRAM Cslib.WordRAM.Realization
   Cslib.WordRAM.Realization.MemoryStack Cslib.DataStructure.Queue
@@ -196,5 +196,75 @@ theorem instruction_bound_pair : ∃ K, ∀ {w C : ℕ} {L₁ L₂ : Stack.Memor
     rcases o with o | o <;> cases o <;> exact Nat.le_of_ble_eq_true rfl
   intro s x o a y n hr hv he
   exact Backend.bound (implements_pair h₁ h₂) A 19 hwork hr hv he
+
+/-! ## Allocating two stacks in one body -/
+
+/-- The four layout words, for a bind that returns a layout. -/
+instance : WordEncoding Stack.Memory.Layout := ⟨4, layoutWords⟩
+
+/-- Allocate two stacks of capacity `C`, one after the other, as `Memory.Allocator.prod` does. -/
+def allocTwo (C : ℕ) : Memory.Prog (Stack.Memory.Layout × Stack.Memory.Layout) := do
+  let L₁ ← Stack.Memory.allocLayout C
+  let L₂ ← Stack.Memory.allocLayout C
+  pure (L₁, L₂)
+
+/-- Allocating two stacks clears only their two count cells. -/
+theorem realizes_allocTwo : Realizes .exact allocTwo (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
+    (appendWords layoutWords layoutWords) (fun w C s => Fits w (s.frontier + 2 * (C + 1)))
+    (fun _ _ => 0) := by
+  realize
+  all_goals exact h.of_le (by omega)
+
+/-- The body allocating both stacks. -/
+noncomputable def pairAllocCertificate : Unit → Certificate .exact := fun _ => ⟨realizes_allocTwo⟩
+
+/-- The pair's bodies and the allocation's. -/
+noncomputable abbrev pairWithAlloc : (Tag ⊕ Tag) ⊕ Unit → Certificate .exact :=
+  Sum.elim (Sum.elim certificates certificates) pairAllocCertificate
+
+/-- Two stacks on a pair of layouts, with the allocation tag. -/
+noncomputable def pairAllocated (w C : ℕ) :
+    Stack.Memory.Layout × Stack.Memory.Layout →
+      Backend (product (Stack.WordRAM.spec w C) (Stack.WordRAM.spec w C)) pairWithAlloc
+  | (L₁, L₂) => ((backend w C L₁).sum (backend w C L₂)).extend pairAllocCertificate
+
+/-- The allocation tag allocates both stacks. -/
+noncomputable def pairAllocation (w C : ℕ) :
+    Backend.Allocation ((Stack.Memory.allocator w C).prod (Stack.Memory.allocator w C))
+      pairWithAlloc where
+  tag := .inr ()
+  arg := C
+  handle := id
+  run _ := rfl
+  entry _ _ hroom := by
+    change Fits w (_ + ((C + 1) + (C + 1))) at hroom
+    exact ⟨fun _ => (hroom.of_le (by omega) : Fits w C), hroom.of_le (by omega)⟩
+
+/-- **Two stacks from dirty memory in constant time.** One constant bounds the allocation of two
+empty stacks, one after the other, from any bounded data with room for both; the data then
+represents the pair of empty stacks, each on its own layout. -/
+theorem allocate_pair : ∃ K, ∀ {w C : ℕ} {x : Data (Backend.registers pairWithAlloc)},
+    x.Bounded w → Fits w (x.regs (Backend.frontier pairWithAlloc) + 2 * (C + 1)) →
+    ∃ y n, Exec w (Backend.code pairWithAlloc (.inr ()))
+        (Backend.install pairWithAlloc (.inr ()) C x) y n ∧ n ≤ K ∧
+      ∃ (h₁ : (layoutAt (x.regs (Backend.frontier pairWithAlloc)) C).Valid w C)
+        (h₂ : (layoutAt (x.regs (Backend.frontier pairWithAlloc) + 1 + C) C).Valid w C),
+        (Backend.implementation (((implements_framed h₁).prod_framed
+          (implements_framed h₂)).extend pairAllocCertificate)).rep ([], []) y := by
+  refine ⟨Backend.factor pairWithAlloc * 7, fun {w C x} hx hroom => ?_⟩
+  have hF : ∀ s (hs : ((Stack.Memory.allocator w C).prod (Stack.Memory.allocator w C)).Pre s)
+      (hr : Fits w (s.frontier + ((Stack.Memory.allocator w C).prod
+        (Stack.Memory.allocator w C)).room)),
+      (pairAllocated w C ((Memory.spec w).clientResult s
+        ((Stack.Memory.allocator w C).prod (Stack.Memory.allocator w C)).alloc)).Implements
+        (((Stack.Memory.allocator w C).prod (Stack.Memory.allocator w C)).framed s hs
+          hr).toRefinement :=
+    fun s hs hr =>
+      ((implements_framed _).prod_framed (implements_framed _)).extend pairAllocCertificate
+  obtain ⟨y, n, b, he, hn, -, -, -, hrep⟩ := (pairAllocation w C).exec hF hx
+    ⟨trivial, trivial, Finset.disjoint_empty_left _⟩
+    (show Fits w (x.regs (Backend.frontier pairWithAlloc) + ((C + 1) + (C + 1))) from
+      hroom.of_le (by omega))
+  exact ⟨y, n, he, hn, _, _, hrep⟩
 
 end ComplexityTests.WordRAMRealizationFramed
