@@ -44,7 +44,7 @@ private def allocator : Memory.Allocator (indexedMinPQSpec 3 63) 6 :=
     ((zeroAllocator (n := 3) (K := 63) (w := 6) (by decide) (by decide)).run
       consolidationClient)
 
-private theorem consolidated_inv :
+theorem consolidated_inv :
     (framed (n := 3) (K := 63) (w := 6) (by decide) (by decide) 2).inv
     consolidated := by
   have hv : (indexedMinPQSpec 3 63).ValidHistory allocator.init

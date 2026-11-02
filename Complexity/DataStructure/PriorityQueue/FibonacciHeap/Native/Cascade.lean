@@ -143,15 +143,6 @@ theorem cascadeStepSafe_of_cascading {n K w base : ℕ} {s : IndexedMinPQ.State 
   rw [hpz', Nat.add_sub_cancel]
   exact cutSafe_of_cascading hfit halloc h hz hpar
 
-private theorem link_width {n : ℕ} (base w : ℕ) {α : Type} (p : Prog α) :
-    DataStructure.link (E := Memory.spec w) ((layout n base).methods w) p =
-      DataStructure.link (E := Memory.spec 0) ((layout n base).methods 0) p := by
-  have hm : ((layout n base).methods w :
-      (o : Record.Op Cell) → Memory.Prog (Record.Op.Result o)) =
-      ((layout n base).methods 0 : (o : Record.Op Cell) → Memory.Prog (Record.Op.Result o)) := by
-    funext o
-    cases o <;> rfl
-  exact congrArg (fun methods => PFunctor.FreeM.liftM methods p) hm
 
 /-- The original marked-node rank justifies the source cascade's finite while cutoff. The
 valid-history premise is the certificate's intrinsic source admissibility condition, not an

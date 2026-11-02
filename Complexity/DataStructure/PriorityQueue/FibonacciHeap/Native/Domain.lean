@@ -31,6 +31,19 @@ namespace Cslib.DataStructure.PriorityQueue.FibonacciHeap.Native
 open Cslib.WordRAM
 open Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap
 
+/-- Linking the Fibonacci record source has width-independent memory behavior. Width remains
+in the separate admissibility predicate. -/
+theorem link_width {n : ℕ} (base w : ℕ) {α : Type} (p : Prog α) :
+    DataStructure.link (E := Memory.spec w) ((layout n base).methods w) p =
+      DataStructure.link (E := Memory.spec 0) ((layout n base).methods 0) p := by
+  have hm : ((layout n base).methods w :
+      (o : Record.Op Cell) → Memory.Prog (Record.Op.Result o)) =
+      ((layout n base).methods 0 : (o : Record.Op Cell) → Memory.Prog (Record.Op.Result o)) := by
+    funext o
+    cases o <;> rfl
+  exact congrArg (fun methods => PFunctor.FreeM.liftM methods p) hm
+
+
 private theorem mark_le_numMarked_of_par {n K : ℕ} {s : IndexedMinPQ.State n}
     {st : RawState n} {v m cur p : Fin n} {pending : Option (Fin n)} {ts : List (FHTree n)}
     (h : Cascading n K s st v m pending ts) (hcur : cur ∈ forestNodes ts)
@@ -133,16 +146,7 @@ theorem cutSafe_of_cascading {n K w base : ℕ} {s : IndexedMinPQ.State n}
       (DataStructure.link (E := Memory.spec w) ((layout n base).methods w) (unlink cur p))) =
     (Record.spec (Cell.ok n) w).clientState ((layout n base).abs mem) (unlink cur p) at habs
   rw [Realization.clientState_width w] at habs
-  have hprogram : DataStructure.link (E := Memory.spec w) ((layout n base).methods w)
-      (unlink cur p) = DataStructure.link (E := Memory.spec 0) ((layout n base).methods 0)
-        (unlink cur p) := by
-    have hmethods : ((layout n base).methods w :
-        (o : Record.Op Cell) → Memory.Prog (Record.Op.Result o)) =
-        ((layout n base).methods 0 : (o : Record.Op Cell) → Memory.Prog (Record.Op.Result o)) := by
-      funext o
-      cases o <;> rfl
-    exact congrArg (fun methods => PFunctor.FreeM.liftM methods (unlink cur p)) hmethods
-  rw [hprogram] at habs
+  rw [link_width] at habs
   rw [← habs] at hfields
   let next := (Memory.spec 0).clientState mem
     (DataStructure.link (E := Memory.spec 0) ((layout n base).methods 0) (unlink cur p))

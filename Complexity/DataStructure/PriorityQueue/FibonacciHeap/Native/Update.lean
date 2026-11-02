@@ -49,7 +49,9 @@ private theorem lift_write {ok : Cell → Prop} (L : Record.Layout ok) (i : Cell
     (PFunctor.FreeM.liftM (L.methods 0) (Record.write i k) : Memory.Prog Unit) =
       Memory.write (L.addr i) k := rfl
 
-private theorem priority_if (u ku p kp : ℕ) (yes no : Prog Unit) :
+/-- Compile the existing lexicographic priority predicate as native word comparisons. The
+same normalization applies to record and memory source branches. -/
+theorem priority_if {α : Type} (u ku p kp : ℕ) (yes no : α) :
     (if IndexedMinPQ.RawPrioLT (u, ku) (p, kp) then yes else no) =
       if ku < kp then yes else if ku = kp then if u < p then yes else no else no := by
   change (if ku < kp ∨ ku = kp ∧ u < p then yes else no) = _
