@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactLog
+public import Complexity.Computability.WordRAM.ExactLog
 public import Complexity.DataStructure.HashFamily.WordRAM.Tabulation
 public import Complexity.Foundations.FieldTheory.Finite.Trinomial
 public import Complexity.Probability.KWiseIndependent.Trinomial
@@ -110,7 +110,7 @@ public section
 namespace Cslib.DataStructure.HashFamily.WordRAM.KWise
 
 open Cslib.WordRAM Cslib.Probability
-open Cslib.Algorithms.WordRAM.ExactLog
+open Cslib.WordRAM.ExactLog
 open Cslib.DataStructure.HashFamily.WordRAM.Tabulation
 open scoped ENNReal
 

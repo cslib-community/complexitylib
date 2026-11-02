@@ -107,7 +107,6 @@ public import Complexity.Algorithms.WordRAM.Dijkstra.LogLinear
 public import Complexity.Algorithms.WordRAM.Dijkstra.Statement
 public import Complexity.Algorithms.WordRAM.ElementDistinctness
 public import Complexity.Algorithms.WordRAM.ElementDistinctnessRAM
-public import Complexity.Algorithms.WordRAM.ExactLog
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Adapt
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Admission
@@ -2582,6 +2581,7 @@ public import Complexity.Computability.WordRAM.Copy
 public import Complexity.Computability.WordRAM.CopySum
 public import Complexity.Computability.WordRAM.Defs
 public import Complexity.Computability.WordRAM.Dynamic
+public import Complexity.Computability.WordRAM.ExactLog
 public import Complexity.Computability.WordRAM.ExactNotation
 public import Complexity.Computability.WordRAM.Function
 public import Complexity.Computability.WordRAM.GhostLoop
