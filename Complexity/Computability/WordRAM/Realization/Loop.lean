@@ -20,6 +20,8 @@ uses one fixed body emitter and static registers for the mutable state and count
 
 * `iterate`: bounded iteration in the existing memory-client monad.
 * `iterationWork`, `iterationSafe`: local work and domains along the actual semantic states.
+* `loopEmit`, `loopBody`: the native loop with a fixed body emitter, and one native iteration,
+  over the register bank `stateSlot`, `counterSlot`, `zeroSlot`, `oneSlot`, `bodySlot`.
 
 ## Main results
 
@@ -192,17 +194,24 @@ theorem iterationSum_eq (body : δ × σ → Memory.Prog σ)
     dsimp only [iterationStep] at *
     omega
 
-private def stateSlot {l n : ℕ} (i : Fin l) : Fin (l + (l + n + 3) + 1) :=
+/-- The loop's state words, which are also its result slots. -/
+def stateSlot {l n : ℕ} (i : Fin l) : Fin (l + (l + n + 3) + 1) :=
   ⟨i.val, by omega⟩
 
-private def counterSlot (l n : ℕ) : Fin (l + (l + n + 3) + 1) := ⟨l, by omega⟩
-private def zeroSlot (l n : ℕ) : Fin (l + (l + n + 3) + 1) := ⟨l + 1, by omega⟩
-private def oneSlot (l n : ℕ) : Fin (l + (l + n + 3) + 1) := ⟨l + 2, by omega⟩
+/-- The loop's countdown register. -/
+def counterSlot (l n : ℕ) : Fin (l + (l + n + 3) + 1) := ⟨l, by omega⟩
+/-- A register holding zero, for the loop test. -/
+def zeroSlot (l n : ℕ) : Fin (l + (l + n + 3) + 1) := ⟨l + 1, by omega⟩
+/-- A register holding one, for the countdown. -/
+def oneSlot (l n : ℕ) : Fin (l + (l + n + 3) + 1) := ⟨l + 2, by omega⟩
 
-private def bodySlot {l n : ℕ} (i : Fin (l + n + 1)) : Fin (l + (l + n + 3) + 1) :=
+/-- The body's scratch bank inside the loop's bank. -/
+def bodySlot {l n : ℕ} (i : Fin (l + n + 1)) : Fin (l + (l + n + 3) + 1) :=
   ⟨l + 3 + i.val, by omega⟩
 
-private def loopBody {n : ℕ} (emit : ∀ {r : ℕ}, Fin r → (Fin (k + l) → Fin r) →
+/-- One native iteration: run the body on the environment and state words, copy its result into
+the state words and count down. -/
+def loopBody {n : ℕ} (emit : ∀ {r : ℕ}, Fin r → (Fin (k + l) → Fin r) →
     (Fin (l + n + 1) → Fin r) → Code .exact r)
     (frontier : Fin r) (src : Fin (k + l + 1) → Fin r)
     (tmp : Fin (l + (l + n + 3) + 1) → Fin r) : Code .exact r :=
@@ -214,7 +223,9 @@ private def loopBody {n : ℕ} (emit : ∀ {r : ℕ}, Fin r → (Fin (k + l) →
         (.op (.exactBin .sub (tmp (counterSlot l n))
           (tmp (counterSlot l n)) (tmp (oneSlot l n))))
 
-private def loopEmit {n : ℕ} (emit : ∀ {r : ℕ}, Fin r → (Fin (k + l) → Fin r) →
+/-- The native loop: install the state words and the counter, then iterate `loopBody` while the
+counter is positive. -/
+def loopEmit {n : ℕ} (emit : ∀ {r : ℕ}, Fin r → (Fin (k + l) → Fin r) →
     (Fin (l + n + 1) → Fin r) → Code .exact r)
     (frontier : Fin r) (src : Fin (k + l + 1) → Fin r)
     (tmp : Fin (l + (l + n + 3) + 1) → Fin r) : Code .exact r :=

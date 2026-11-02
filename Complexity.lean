@@ -2637,6 +2637,8 @@ public import Complexity.Computability.WordRAM.Realization.MemoryBackend
 public import Complexity.Computability.WordRAM.Realization.Module
 public import Complexity.Computability.WordRAM.Realization.Primitive
 public import Complexity.Computability.WordRAM.Realization.Program
+public import Complexity.Computability.WordRAM.Realization.Random
+public import Complexity.Computability.WordRAM.Realization.RandomLoop
 public import Complexity.Computability.WordRAM.Realization.Result
 public import Complexity.Computability.WordRAM.Realization.Witness
 public import Complexity.Computability.WordRAM.RegisterFrame
