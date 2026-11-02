@@ -157,9 +157,9 @@ noncomputable def reductionHandler :
     (q : M ⊕ (M × T)) → StateT (ReductionState M T C Z) (OracleComp (fun _ : M × T => C))
       (ForgerSpec M (M × T) (T × Z) C q)
   | .inl m => fun st =>
-    let v := st.transcripts.headD (Classical.arbitrary _)
-    pure ((v.1, v.2.2),
-      ⟨((m, v.1), v.2.1, none) :: st.table, m :: st.signed, st.count, st.transcripts.tail⟩)
+    let (t, c, z) := st.transcripts.headD (Classical.arbitrary _)
+    pure ((t, z),
+      ⟨((m, t), c, none) :: st.table, m :: st.signed, st.count, st.transcripts.tail⟩)
   | .inr x => fun st =>
     match st.table.lookup x with
     | some entry => pure (entry.1, ⟨st.table, st.signed, st.count, st.transcripts.tail⟩)
@@ -172,18 +172,20 @@ the position of the query for `(m, t)`. The verdict records the point, the chall
 response. -/
 def verdict (P : SigmaProtocol X Y T C Z) (y : Y) (forged : (M × (T × Z)) × ReductionState M T C Z)
     (c : C) (position : Option ℕ) : Option ℕ × Bool × (M × T) × C × Z :=
-  (if P.verify y forged.1.2.1 c forged.1.2.2 && !forged.2.signed.contains forged.1.1 then position
-    else none, P.verify y forged.1.2.1 c forged.1.2.2 && !forged.2.signed.contains forged.1.1,
-    (forged.1.1, forged.1.2.1), c, forged.1.2.2)
+  let ((m, t, z), state) := forged
+  (if P.verify y t c z && !state.signed.contains m then position
+    else none, P.verify y t c z && !state.signed.contains m,
+    (m, t), c, z)
 
 /-- Check a forgery, querying its point when the table lacks it. -/
 noncomputable def finish (P : SigmaProtocol X Y T C Z) (y : Y)
     (forged : (M × (T × Z)) × ReductionState M T C Z) :
     OracleComp (fun _ : M × T => C) (Option ℕ × Bool × (M × T) × C × Z) :=
-  match forged.2.table.lookup (forged.1.1, forged.1.2.1) with
+  let ((m, t, _), state) := forged
+  match state.table.lookup (m, t) with
   | some entry => pure (verdict P y forged entry.1 entry.2)
-  | none => (fun c => verdict P y forged c (some forged.2.count)) <$>
-      OracleComp.query (forged.1.1, forged.1.2.1)
+  | none => (fun c => verdict P y forged c (some state.count)) <$>
+      OracleComp.query (m, t)
 
 /-- The forger, with simulated signing, as a program over the hash oracle with explicit coins: the
 statement, the forger's coins and the simulated transcripts. It names the query of the forgery's
@@ -191,7 +193,8 @@ point when the forger wins. -/
 noncomputable def forkingProgram (P : SigmaProtocol X Y T C Z)
     (A : Forger Y M (T × Z) (M × T) C) (s : Y × A.Coins × List (T × C × Z)) :
     OracleComp (fun _ : M × T => C) (Option ℕ × Bool × (M × T) × C × Z) :=
-  (interpret reductionHandler (A.forge s.1 s.2.1)).run ⟨[], [], 0, s.2.2⟩ >>= finish P s.1
+  let (y, coins, transcripts) := s
+  (interpret reductionHandler (A.forge y coins)).run ⟨[], [], 0, transcripts⟩ >>= finish P y
 
 /-- The coins of the forking program for the statement `y`: the forger's coins and `Q` simulated
 transcripts. -/
@@ -214,7 +217,9 @@ noncomputable def reduction [Nonempty X] (P : SigmaProtocol X Y T C Z)
       match result with
       | none => Classical.arbitrary X
       | some (_, out, out') =>
-        extract y out.1.2.2.1.2 out.1.2.2.2.1 out.1.2.2.2.2 out'.1.2.2.2.1 out'.1.2.2.2.2
+        let (_, _, (_, t), c, z) := out.1
+        let (_, _, _, c', z') := out'.1
+        extract y t c z c' z'
 
 end FiatShamir
 

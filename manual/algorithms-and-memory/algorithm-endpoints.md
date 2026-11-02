@@ -21,6 +21,57 @@ Quickselect receives the index followed by the array; an invalid index has an ex
 
 [abstracts/ComplexityAbstracts/FibonacciHeapAbstract.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/FibonacciHeapAbstract.lean) specifies bounded-capacity handles, bounded key/value ranges, fresh-handle insertion and arbitrary minimum ties. Initializer/operation code is chosen before capacity/key/value/base/width parameters. The amortized total is constant per ordinary operation plus a sum of logarithms of current size for extract-min. Fresh zeroed memory permits constant-time initialization; the reusable-memory version explicitly clears the region and costs linear time. The abstract's fixed operation list is demonic over all allowed results; the shared data-structure layer separately supports fully adaptive clients.
 
+
+### Native binary heap and Dijkstra
+
+Choose the API by the cost contract you need. For standalone operation calls, import
+`Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.Certificate` and use the
+`Cslib.DataStructure.PriorityQueue.BinaryHeap.Native` namespace. `dynamicProgram`, `certificate`,
+`instruction_bound` and `run_client_bound` provide one fixed program, its representation and
+halt-inclusive bounds for admissible calls and adaptive clients. The
+[complete priority-queue client](../../ComplexityTests/WordRAMPriorityQueue.lean) supplies the
+imports, argument-register setup, representation and valid-history proofs. The
+[raw implementation client](../../ComplexityTests/WordRAMBinaryHeapImplementation.lean) also
+checks zero capacity, narrow widths, noncanonical tags and retained outside memory.
+
+Keep initialization separate from those call bounds. Here `n` is capacity, `K` the key bound
+and `base` the owned base; `Fits w a` means `a < 2^w`. The linked clients supply bounded-state,
+argument-matching and representation premises at the points where they are required:
+
+| Route | Storage and prerequisite | Charged initialization |
+|---|---|---|
+| Fresh compact raw heap | `3*n+1` words, `Fits w (base+3*n+1)`, `Fits w K` and an explicitly zero owned block | The native fresh initializer; no clearing is needed under this premise |
+| Dirty compact raw heap | The same `3*n+1`-word region with arbitrary bounded contents | Shared `initClear`: `initTime + 4*space + 6` body instructions, with any final halt separate |
+| Allocated memory-program heap | Original `Memory.allocLayout`, with `Fits w (frontier+3*n+2)` and `3*n+2` reserved words | Two dirty memory queries preserve old contents; heap-invariant construction uses `ZeroAbove` |
+
+The [complete initialization client](../../ComplexityTests/WordRAMBinaryHeapInitialize.lean)
+checks these distinct layouts and width boundaries. The native certificates are in
+[Native/Initialize.lean](../../Complexity/DataStructure/PriorityQueue/BinaryHeap/Native/Initialize.lean).
+The two-query count uses `Memory.charge`; its native realization also pays staging and copying.
+Dirty allocation does not itself make memory zero, and local zero for one raw initialization is
+not a reusable global allocator precondition. If fresh-zero premises are unavailable, retain the
+linear dirty-clear allowance instead of applying the fresh theorem.
+
+Standalone calls leave external argument delivery, result decoding and host continuation work
+uncharged. For the fully compiled binary-heap Dijkstra client, import
+`Complexity.Algorithms.Lean.Dijkstra.Native.Binary`. In its
+`Cslib.Algorithms.Lean.Dijkstra.Native.Binary` namespace, `realizes_run` certifies the original
+allocated `Memory.run`; `exists_program_state` exports one program/register layout/factor before
+all graphs and widths, with full final memory/frontier and the actual prefix, control and halt
+charged. Use the [complete native client](../../ComplexityTests/DijkstraNativeBinary.lean) and
+[headline client](../../ComplexityTests/WordRAMDijkstra.lean) for their imports, fitting hypotheses
+and actual-run conclusions. The encoded graph is still supplied freely in the initial
+`Data.init` memory with its zero tail: graph construction and installing those raw input words
+are not included. The original word condition and `LogLinearStatement`/`dijkstra_logLinear`
+headline are unchanged.
+
+The old `PriorityQueue.WordRAM.BinaryHeap` execution modules and their `Program`/`Sift` imports
+are retired. Pure Model/Order declarations now live under `PriorityQueue.BinaryHeap`; use the
+native route above for execution. Old fixed register/clock constants and the implementation
+helpers with coefficients `200`/`230` are not replacement API guarantees. GenericPQ/PQCode and
+Fibonacci interfaces with live consumers remain; this binary migration does not complete the
+generic or Fibonacci realization objectives.
+
 ## Hash families and dictionaries
 
 [abstracts/ComplexityAbstracts/HashTablesAbstract.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/HashTablesAbstract.lean) selects four expected-amortized dictionary implementations: multiply-shift chained hashing, five-wise linear probing, odd-stride uniform probing and cuckoo hashing. Each supports `get` and `insert` with overwrite, up to bounded distinct-key capacity. **Deletion is not included.** The operation list is fixed before initialization randomness; these are oblivious-sequence guarantees.
