@@ -41,8 +41,10 @@ strict PPT sampler's fair-bit tape as a uniform seed, including unused randomnes
 * `Cslib.Crypto.Pseudoentropy.SamplablePair.eval_latentSample`: recover the exact latent joint law.
 * `Cslib.Crypto.Pseudoentropy.SamplablePair.hasGap_iff_hasGapWithAdvice_nil`: the uniform gap is
   the empty-advice case.
-* `Cslib.Crypto.Pseudoentropy.SamplablePair.HasGap.eventually_error_ge`: prediction error bound.
-* `Cslib.Crypto.Pseudoentropy.SamplablePair.HasGap.eventually_entropy_add_gap_le_one`:
+* `Cslib.Crypto.Pseudoentropy.SamplablePair.HasGapWithAdvice.eventually_error_ge`,
+  `Cslib.Crypto.Pseudoentropy.SamplablePair.HasGap.eventually_error_ge`: prediction error bounds.
+* `Cslib.Crypto.Pseudoentropy.SamplablePair.HasGapWithAdvice.eventually_entropy_add_gap_le_one`,
+  `Cslib.Crypto.Pseudoentropy.SamplablePair.HasGap.eventually_entropy_add_gap_le_one`:
   the threshold forced by an independent fair-bit predictor.
 
 ## References
@@ -159,23 +161,39 @@ theorem HasGapWithAdvice.mono {pair : SamplablePair} {gap smaller : ℕ → ℝ}
   filter_upwards [h adversary hPPT] with n hn
   exact hn.trans (sub_le_sub_left (hle n) _)
 
+/-- The pseudoentropy threshold relative to fixed advice equivalently lower-bounds each efficient
+advised predictor's error. -/
+theorem HasGapWithAdvice.eventually_error_ge {pair : SamplablePair} {gap : ℕ → ℝ}
+    {advice : ℕ → List Bool} (hgap : pair.HasGapWithAdvice gap advice)
+    (adversary : (ℕ × List Bool) × List Bool → ProbComp Bool)
+    (hefficient : IsPPTOn (encPair (encPair encUnary encBits) encBits) encBool adversary) :
+    ∀ᶠ n in atTop, (PMF.conditionalEntropy (pair.joint n) + gap n) / 2 ≤
+      (ProbComp.eval
+        (predictionGame pair.sample (fun n word => adversary ((n, advice n), word)) n)
+          false).toReal := by
+  filter_upwards [hgap adversary hefficient] with n hn
+  have hsum := PMF.toReal_true_add_toReal_false
+    (ProbComp.eval (predictionGame pair.sample (fun n word => adversary ((n, advice n), word)) n))
+  linarith
+
 /-- The pseudoentropy threshold equivalently lower-bounds each efficient predictor's error. -/
 theorem HasGap.eventually_error_ge {pair : SamplablePair} {gap : ℕ → ℝ}
     (hgap : pair.HasGap gap) (adversary : Distinguisher)
     (hefficient : IsPPT encBool adversary) :
     ∀ᶠ n in atTop, (PMF.conditionalEntropy (pair.joint n) + gap n) / 2 ≤
       (ProbComp.eval (predictionGame pair.sample adversary n) false).toReal := by
-  filter_upwards [hgap adversary hefficient] with n hn
-  have hsum := PMF.toReal_true_add_toReal_false
-    (ProbComp.eval (predictionGame pair.sample adversary n))
-  linarith
+  have hprepare : ComputableInPolyTime
+      (fun ((n, _), word) => (n, word) : (ℕ × List Bool) × List Bool → ℕ × List Bool)
+      (encPair (encPair encUnary encBits) encBits) (encPair encUnary encBits) := by fun_prop
+  exact (hasGap_iff_hasGapWithAdvice_nil.mp hgap).eventually_error_ge
+    (fun ((n, _), word) => adversary n word) (hefficient.on.preprocess hprepare)
 
-/-- A fair-bit predictor has zero correlation, so entropy plus the prediction gap cannot
-eventually exceed one. -/
-theorem HasGap.eventually_entropy_add_gap_le_one {pair : SamplablePair} {gap : ℕ → ℝ}
-    (hgap : pair.HasGap gap) :
+/-- A fair-bit predictor has zero correlation, so entropy plus the prediction gap relative to fixed
+advice cannot eventually exceed one. -/
+theorem HasGapWithAdvice.eventually_entropy_add_gap_le_one {pair : SamplablePair} {gap : ℕ → ℝ}
+    {advice : ℕ → List Bool} (hgap : pair.HasGapWithAdvice gap advice) :
     ∀ᶠ n in atTop, PMF.conditionalEntropy (pair.joint n) + gap n ≤ 1 := by
-  have h := hgap (fun _ _ => ProbComp.uniform Bool) (by ppt)
+  have h := hgap (fun _ => ProbComp.uniform Bool) (by ppt)
   have hfair (n : ℕ) :
       Pr[predictionGame pair.sample (fun _ _ => ProbComp.uniform Bool) n] = 1 / 2 := by
     simp [predictionGame, ProbComp.eval_bind, ProbComp.eval_map, PMF.bind_apply, PMF.map_apply,
@@ -183,6 +201,13 @@ theorem HasGap.eventually_entropy_add_gap_le_one {pair : SamplablePair} {gap : �
   filter_upwards [h] with n hn
   rw [hfair] at hn
   linarith
+
+/-- A fair-bit predictor has zero correlation, so entropy plus the prediction gap cannot
+eventually exceed one. -/
+theorem HasGap.eventually_entropy_add_gap_le_one {pair : SamplablePair} {gap : ℕ → ℝ}
+    (hgap : pair.HasGap gap) :
+    ∀ᶠ n in atTop, PMF.conditionalEntropy (pair.joint n) + gap n ≤ 1 :=
+  (hasGap_iff_hasGapWithAdvice_nil.mp hgap).eventually_entropy_add_gap_le_one
 
 /-- A smaller requested gap follows from any larger proved gap. -/
 theorem HasGap.mono {pair : SamplablePair} {gap smaller : ℕ → ℝ} (h : pair.HasGap gap)

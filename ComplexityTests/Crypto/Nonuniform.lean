@@ -7,6 +7,8 @@ Authors: Samuel Schlesinger
 import Complexity.Crypto.Computational.Nonuniform.ZeroKnowledge
 import Complexity.Crypto.Computational.Stretch
 import Complexity.Crypto.Computational.Pseudoentropy.OneWay
+import Complexity.Crypto.Computational.Pseudoentropy.LabelExtraction
+import Complexity.Languages.Probabilistic.Notation
 
 /-! Checked clients of the nonuniform security notions. Existence of a nonuniform one-way
 function or generator is open, so these checks show that the notions are not trivially true
@@ -16,7 +18,7 @@ from the uniform ones. -/
 
 namespace ComplexityTests.Crypto.Nonuniform
 
-open Cslib Cslib.Crypto
+open Cslib Cslib.Crypto Probability
 
 /-- A constant function is not nonuniformly one-way, because it is not even uniformly one-way. -/
 example (word : List Bool) : ¬ NonuniformOneWay (fun _ => word) :=
@@ -76,12 +78,39 @@ example {generator : List Bool → List Bool} (h : NonuniformPRG generator (fun 
   (h.amplify (fun n => 3 * n + 1) (by fun_prop) (fun n => by omega))
     |>.exists_auxiliaryInputZeroKnowledge_of_mem_NP (fun _ => le_rfl) hA
 
-/-- A pair with a prediction gap against predictors given empty advice has the uniform gap, so the
-fair-coin bound of `HasGap` applies to it. -/
-example {pair : Pseudoentropy.SamplablePair} {gap : ℕ → ℝ}
-    (h : pair.HasGapWithAdvice gap (fun _ => [])) :
+/-- A pair with a prediction gap against predictors given any advice family satisfies the
+fair-coin bound directly via `HasGapWithAdvice.eventually_entropy_add_gap_le_one`. -/
+example {pair : Pseudoentropy.SamplablePair} {gap : ℕ → ℝ} {advice : ℕ → List Bool}
+    (h : pair.HasGapWithAdvice gap advice) :
     ∀ᶠ n in Filter.atTop, Probability.PMF.conditionalEntropy (pair.joint n) + gap n ≤ 1 :=
-  (Pseudoentropy.SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mpr
-    h).eventually_entropy_add_gap_le_one
+  h.eventually_entropy_add_gap_le_one
+
+/-- Every advised sequence test eventually admits a dense soft mask with small distinguishing
+advantage under `HasGapWithAdvice`. -/
+example {pair : Pseudoentropy.SamplablePair} {gap : ℕ → ℝ} {advice : ℕ → List Bool}
+    (h : pair.HasGapWithAdvice gap advice)
+    (test : ℕ × List Bool → List (List Bool × Bool) → ProbComp Bool)
+    (htest : Probability.IsPPTOn
+      (Turing.MultiTapeTM.encPair
+        (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encBits)
+        (Turing.MultiTapeTM.encList
+          (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encBits Turing.MultiTapeTM.encBool)))
+      Turing.MultiTapeTM.encBool (fun input => test input.1 input.2)) :
+    ∀ᶠ n in Filter.atTop, 0 < 1 → 1 ≤ dyadicSize 1 →
+      ((1 : ℕ) : ℝ) / dyadicSize 1 ≤ Probability.PMF.conditionalEntropy (pair.joint n) + gap n →
+      ∃ mask : pair.Observation n × Bool → ProbComp Bool,
+        ((1 : ℕ) : ℝ) / dyadicSize 1 ≤ Pr[pair.latentSample n >>= mask] ∧
+        (∀ value, 0 < Pr[mask value] →
+          1 / (dyadicSize (2 * 1 * dyadicSize 1) : ℝ) ≤ Pr[mask value]) ∧
+        (Game.advantage
+          (ProbComp.eval (OracleComp.replicate 1 (pair.sample n) >>= test (n, advice n)))
+          (ProbComp.eval (OracleComp.replicate 1
+            (Pseudoentropy.maskedSample (pair.latentSample n)
+              (fun value => pair.encode n value.1) Prod.snd mask) >>=
+                test (n, advice n))) : ℝ) < (dyadicSize 1 : ℝ) / (1 : ℕ) :=
+  h.eventually_exists_mask test htest
+    (count := fun _ => 1) (numerator := fun _ => 1) (densityBound := fun _ => 1)
+    (inverseGap := fun _ => 1)
+    (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (fun _ => Nat.one_pos)
 
 end ComplexityTests.Crypto.Nonuniform
