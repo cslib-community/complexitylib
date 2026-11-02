@@ -122,7 +122,7 @@ theorem exists_verifier_of_mem_NTIME {A : Set α} {t : ℕ → ℕ} (hA : A ∈ 
         ((ComputableInO.of_eq (f := fun x : α => enc x) (encIn := enc) (encMid := encBits)
           fun _ => rfl).comp (ComputableInO.fst enc encBits))
     have hrun := (ComputableInO.of_linear
-      (MultiTapePTM.computableInLinearTimeAndSpace_runClosedCoins ntm.choiceTable)).comp hswap
+      (MultiTapePTM.computableInDegree_runClosedCoins ntm.choiceTable)).comp hswap
     obtain ⟨cr, hcr⟩ := hrun.length_le_time
     have heq := ComputableInO.eqWords.comp ((ComputableInO.const (encIn := encPair enc encBits)
       (encMid := encBits) [true]).prod hrun)

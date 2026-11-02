@@ -175,7 +175,7 @@ theorem run_copyReply (x : List Bool)
       (pos : ℕ) (answer out : List Bool) (ch : Operation → Channel Bool)
       (_hch : ch op = ⟨[], answer, (pos : ℤ)⟩) (s : OracleState),
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         ((queryTakeCore op).runOracleConfigFrom (remLimit + 1)
           (config x (some .copyReply) pre.length (by subst h; simp) out ch))).run s =
         PMF.pure
@@ -264,7 +264,7 @@ theorem run_frame (x : List Bool)
     ∀ (pre suf : List Bool) (h : x = pre ++ frame rem ++ suf)
       (out : List Bool) (ch : Operation → Channel Bool) (s : OracleState),
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         ((queryTakeCore op).runOracleConfigFrom (2 * rem.length + 2)
           (config x (some .marker) pre.length (by subst h; simp) out ch))).run s =
         (oracle (op, (ch op).queryBuffer ++ rem) s).map
@@ -294,7 +294,7 @@ theorem run_frame (x : List Bool)
       rw [moveInputPos_pos_of_ne_right _ (by simp only [config]; lia)]
       rfl
     change (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         ((queryTakeCore op).runOracleConfigFrom (0 + 1 + 1)
           (config x (some .marker) pre.length hlt.le out ch))).run s = _
     rw [run_interpret_runOracleConfigFrom_succ_step (queryTakeCore op) oracle (0 + 1)
@@ -412,7 +412,7 @@ theorem computesTidily_queryTakePTM (op : Operation) (q : List Bool) (limit : �
   -- Combine `run_frame` and `run_copyReply` for `queryTakeCore op`
   have hcore :
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         ((queryTakeCore op).runOracleConfigFrom tCore cfg₀)).run s =
       (oracle (op, q) s).map
         (fun (answer, s') =>
@@ -434,7 +434,7 @@ theorem computesTidily_queryTakePTM (op : Operation) (q : List Bool) (limit : �
     dsimp only [runOracleConfigFrom, runConfigFrom] at hcopy
     simpa only [List.drop_zero, Nat.cast_zero, zero_add, Function.update_idem] using hcopy
   have hhalt₁ : ∀ result ∈ ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       ((queryTakeCore op).runOracleConfigFrom tCore cfg₀)).run s).support,
       result.1.tapes.state = none := by
     intro result hresult
@@ -455,10 +455,10 @@ theorem computesTidily_queryTakePTM (op : Operation) (q : List Bool) (limit : �
     exact (runFrom_rewindInput ⟨x.length + 1, by lia⟩ Fin.elim0 Fin.elim0
       (out₀ ++ answer.take limit)).trans (Cfg.ext_zero_tapes rfl rfl rfl)
   have hhalt₂ : ∀ result ∈ ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       ((queryTakeCore op).runOracleConfigFrom tCore cfg₀)).run s).support,
       ∀ final ∈ ((OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         ((ofDeterministic (rewindInput Bool)).runOracleConfigFrom tRew
           (Sequential.start (ofDeterministic (rewindInput Bool)) result.1))).run result.2).support,
         final.1.tapes.state = none := by

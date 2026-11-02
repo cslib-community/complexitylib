@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (test driver)
 
-public import Complexity.Algorithms.Lean.SearchTree.Stateful
+public import Complexity.DataStructure.SearchTree.Impl
 public import ComplexityTests.OrderedSet
 
 /-!
@@ -26,7 +26,7 @@ the kernel, with no `native_decide`.
 
 namespace ComplexityTests.SearchTree
 
-open Cslib.Algorithms.Lean.SearchTree Cslib.OrderedSet Cslib.DataStructure
+open Cslib.DataStructure.SearchTree Cslib.DataStructure.OrderedSet Cslib.DataStructure
 
 def build (xs : List Nat) : BinaryTree Nat := (run .nil (insertAll xs)).2.1
 

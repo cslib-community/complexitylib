@@ -29,7 +29,7 @@ These native composition and invariant proofs are original.
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 
-open Cslib.WordRAM
+open Cslib.WordRAM Cslib.DataStructure
 open Cslib.Algorithms.ThreeSum.ChanHe (Node)
 
 /-- Popping a skipped entry executes the complete native body and preserves every part of the
@@ -56,7 +56,7 @@ theorem skip_transition {a : Arena} {w : ℕ} {target : List Node}
   have hbody := body_skip hy hloaded hcontrols.2.2.2.2.2.2.2.2.2.1 hskip
   have hmem (p : ℕ) (hp : p < a.stack ∨ a.stack + a.capacity ≤ p) : y.mem p = x.mem p := by
     apply hframe
-    simp only [Stack.footprint, Block.mem_footprint, Block.Owns]
+    simp only [Stack.WordRAM.footprint, Block.mem_footprint, Block.Owns]
     omega
   have hstep : Math.step (Nat.primesLE a.m) a.Λ e.task (es.map Entry.task) =
       (es.map Entry.task, none) := by

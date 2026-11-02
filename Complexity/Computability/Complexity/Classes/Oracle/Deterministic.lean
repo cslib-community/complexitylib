@@ -87,7 +87,7 @@ oracle's state. -/
 private theorem run_interpret_interpret_query {σ : Type}
     (answer : Operation × List Bool → List Bool)
     (program : WordQueryComp Operation β) (s : σ) :
-    (OracleComp.interpret (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
+    (OracleComp.interpret (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
         (fun q s => PMF.pure (answer q, s)))
       (OracleComp.interpret ProbOracleComp.query program)).run s =
       PMF.pure (OracleComp.interpret (m := Id) answer program, s) := by
@@ -123,7 +123,7 @@ theorem exists_run_pure_false {program : α → WordQueryComp Operation β}
     (c * ((input a).length + 1) ^ d) (machine.initialConfig (input a))
   have hmem' : (OracleComp.interpret (m := Id) answer (machine.run (pure false)
       (fun op word => OracleComp.query (op, word)) (c * ((input a).length + 1) ^ d) (input a)),
-      ()) ∈ ((OracleComp.interpret (ProbOracleComp.handler
+      ()) ∈ ((OracleComp.interpret (OracleComp.sumHandler
         (fun n => StateT.lift (ProbComp.unifOracle n)) (fun q s => PMF.pure (answer q, s)))
         (machine.runOracle (c * ((input a).length + 1) ^ d) (input a))).run ()).support := by
     simp only [MultiTapePTM.runOracle, MultiTapePTM.run, MultiTapePTM.runFrom,

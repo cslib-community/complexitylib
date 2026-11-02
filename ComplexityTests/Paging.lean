@@ -8,23 +8,23 @@ module
 -- upstream: local-only (test driver)
 
 public import Complexity.Init
-public import Complexity.Algorithms.Lean.Paging.LRU
-public import Complexity.Algorithms.Lean.Paging.LowerBound
+public import Complexity.DataStructure.Paging.LRU
+public import Complexity.DataStructure.Paging.LowerBound
 import Mathlib.Data.List.FinRange
 
 /-!
 # Tests for Online Competitive Analysis and Paging
 
 Concrete evaluations, tight adversarial sequences, history-strategy instantiation, and non-vacuity
-checks for `Complexity.Algorithms.Lean.Online.Basic`, `Complexity.Algorithms.Lean.Paging.Basic`,
-`Complexity.Algorithms.Lean.Paging.LRU`, and `Complexity.Algorithms.Lean.Paging.LowerBound`.
+checks for `Complexity.DataStructure.Online.Basic`, `Complexity.DataStructure.Paging.Basic`,
+`Complexity.DataStructure.Paging.LRU`, and `Complexity.DataStructure.Paging.LowerBound`.
 -/
 
 @[expose] public section
 
 namespace ComplexityTests.Paging
 
-open Cslib.Algorithms.Lean.Online Cslib.Algorithms.Lean.Paging
+open Cslib.DataStructure.Online Cslib.DataStructure.Paging
 
 /-! ### Computable LRU recency-list execution and recency promotion -/
 

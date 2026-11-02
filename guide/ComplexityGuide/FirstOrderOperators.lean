@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 import VersoManual
+import Complexity.Computability.Complexity.ImmermanVardi
 import Complexity.Logics.FirstOrder.Operator.LeastFixedPoint.Definability
 import Complexity.Logics.FirstOrder.Operator.Relabel
 import Complexity.Logics.FirstOrder.Operator.TransitiveClosure.Definability
@@ -26,7 +27,7 @@ least fixed points. The library provides a shared syntax for these extensions, c
 and FO(TC) interpretations, and certificates that construct formulas from ordinary Lean predicates.
 
 ```lean -show
-open FirstOrder Language Cslib.Logic.FO
+open FirstOrder Language Cslib.Logic Cslib.Logic.FO
 ```
 
 # Binding and Interpretation
@@ -70,8 +71,50 @@ For a finite structure with `n` elements and an arity-`k` relation, iteration st
 relation and reaches the least fixed point by stage `n ^ k`. The theorem proves equality at that
 stage, including empty domains and arity zero; it counts possible tuples, rather than all possible
 relations. {name}`OrderHom.iterate_card_bot_eq_lfp` provides the underlying general powerset bound.
-This is a semantic iteration theorem. A native polynomial-time evaluator and the ordered
-Immerman–Vardi capture theorem remain separate work.
+The native model checker uses this bound and charges for constructing and reading its relation
+tables. Its polynomial-time certificate covers arbitrary fixed formulas, including nested fixed
+points and captured parameters.
+
+# Capturing Polynomial Time
+%%%
+tag := "operator-capture"
+%%%
+
+{name}`Cslib.Logic.FO.Ordered.lfpDefinable_iff_encodedLanguage_mem_P` proves the
+Immerman–Vardi characterization using the library's native multitape Turing-machine class P:
+
+```lean
+example {L : Language} [L.IsRelational]
+    (v : Vocabulary L) (K : Ordered.Query L) :
+    Ordered.LFPDefinable K ↔
+      K.encodedLanguage v ∈ Cslib.Complexity.P encStructure :=
+  Ordered.lfpDefinable_iff_encodedLanguage_mem_P v K
+```
+
+The vocabulary is fixed, finite, and relational. An ordered structure has universe `Fin n` with
+`n ≥ 2`; order, BIT, zero, one, and maximum have their canonical numeric meanings. Its encoded
+input contains the unary cardinality and full truth tables of the source relations. Numeric
+symbols are computed from the universe size. Malformed table shapes and universes below two
+are rejected by the language. This is the existing FO(≤, BIT) convention; the theorem does not
+include a separate elimination of BIT from pure-order FO(LFP).
+
+The forward direction is {name}`Cslib.Logic.FO.Ordered.LFPDefinable.encodedLanguage_mem_P`.
+For each fixed formula, the executable evaluator enumerates assignments and builds finite
+relation tables, using `n ^ k` iterations at each arity-`k` binder. The native loop calculus
+accounts for intermediate tables and captured input. The claim is data complexity: the formula
+and vocabulary are fixed while the input structure varies.
+
+The converse is {name}`Cslib.Logic.FO.Ordered.LFPDefinable.of_encodedLanguage_mem_P`.
+It takes an actual native polynomial-time machine and constructs one syntactically positive
+tableau formula. Its least fixed point equals the native execution table. First-order formulas
+recover the input symbols directly from the source encoding, including its framing and the
+machine's input endmarkers. One tuple width bounds the runtime, input length, and finite feature
+tags for every structure. The width and sentence are chosen before the input structure.
+
+{name}`Cslib.Logic.FO.Ordered.FullTupleInterpretation.onLFPSentence` transports that sentence
+back to the original universe. The reusable translation handles nested binders, scales relation
+arities by the tuple width, and preserves both syntactic positivity and realization. Its proof
+transports all candidate fixed-point relations through the tuple equivalence.
 
 # Tuple Reachability
 %%%
@@ -156,6 +199,12 @@ proves its semantics uniformly across the family. Register it with
 their syntactic polarity certificate. The current LFP synthesis rules cover first-order bodies;
 nested LFP syntax is supported, but an automatic rule for nested fixed-point bodies is not supplied.
 
+Finite-choice rules also let `fo_definable` combine a fixed finite family of alternatives. The
+native tableau compiler uses these rules for transition cases, with the machine's finite state
+and symbol sets fixed before the input varies. Model-checker certificates are registered with
+`fun_prop`, so later native programs can compose a fixed FO(LFP) query with other polynomial-time
+computations without unfolding its evaluator.
+
 # Adding Other Operators
 %%%
 tag := "operator-extensions"
@@ -171,7 +220,11 @@ a body whose changes are not monotone. In a recursive context, that declaration 
 polarity checks and conservatively excludes dependence on the recursive relation. The interface
 supports such an extension; no REG interpretation or FO(REG) capture theorem is implemented here.
 
-The [checked regression examples][examples] exercise nesting, rejected negative recursion,
-finite iteration, relation weakening, empty domains, and formula synthesis.
+The [operator examples][examples] exercise nesting, rejected negative recursion, finite iteration,
+relation weakening, empty domains, and formula synthesis. The [model-checker tests][evaluator]
+cover executable iteration and encoding rejection; the [capture tests][capture] use the public
+characterization and native input-symbol formulas.
 
 [examples]: https://github.com/cslib-community/complexitylib/blob/main/ComplexityTests/FOOperators.lean
+[evaluator]: https://github.com/cslib-community/complexitylib/blob/main/ComplexityTests/FOLeastFixedPointPolyTime.lean
+[capture]: https://github.com/cslib-community/complexitylib/blob/main/ComplexityTests/ImmermanVardi.lean

@@ -67,7 +67,7 @@ theorem IsOraclePPTOn.run_interpret_withSampleList
         invariant a result.2 ∧ result.1.length ≤ resources a request.2 ∧
         (stateEncoding result.2).length ≤ (stateEncoding state).length + resources a request.2) :
     IsPPTOn input (encPair output (encPair stateEncoding (encList valueEncoding))) (fun a =>
-      (OracleComp.interpret (ProbOracleComp.handler
+      (OracleComp.interpret (OracleComp.sumHandler
         (fun n => StateT.lift (ProbComp.unifFin n))
         (OracleComp.withSampleList fallback (oracle a))) (program (prepare a))).run
           (initial a, values a)) := by
@@ -128,7 +128,7 @@ theorem IsOraclePPT.run_interpret_withSampleList
         invariant a result.2 ∧ result.1.length ≤ resources a request.2 ∧
         (stateEncoding result.2).length ≤ (stateEncoding state).length + resources a request.2) :
     IsPPTOn input (encPair output (encPair stateEncoding (encList valueEncoding))) (fun a =>
-      (OracleComp.interpret (ProbOracleComp.handler
+      (OracleComp.interpret (OracleComp.sumHandler
         (fun n => StateT.lift (ProbComp.unifFin n))
         (OracleComp.withSampleList fallback (oracle a)))
           (program (prepare a).1 (prepare a).2)).run (initial a, values a)) :=

@@ -579,14 +579,6 @@ theorem clearedJointScore_le_iff_normalizedPartialScore_le {E m n Q r : ℕ} (hr
 
 /-! ### Polynomial-time certificate for `clearedJointScore` -/
 
-private theorem ite_decide_polyTime {γ β : Type} {encIn : γ ↪ List Bool} {encB : β ↪ List Bool}
-    {P : γ → Prop} [∀ g, Decidable (P g)] {yes no : γ → β}
-    (hP : ComputableInPolyTime (fun g => decide (P g)) encIn encBool)
-    (hyes : ComputableInPolyTime yes encIn encB)
-    (hno : ComputableInPolyTime no encIn encB) :
-    ComputableInPolyTime (fun g => if P g then yes g else no g) encIn encB :=
-  (hP.ite' hyes hno).of_enc_eq fun _ => by simp only [decide_eq_true_eq]
-
 private theorem binary_sum_polyTime :
     ComputableInPolyTime List.sum (encList encNat) encNat := by fun_prop
 
@@ -610,10 +602,11 @@ private theorem computableInPolyTime_clearedPartialCollision {α γ : Type} [Dec
   have hboth : ComputableInPolyTime
       (fun g => ((assigned g).getD (i g) none).isSome && ((assigned g).getD (j g) none).isSome)
       encIn encBool := by fun_prop
-  have hinner := ite_decide_polyTime (ComputableInPolyTime.decide_eq' hgi hgj) hc (.const 0)
+  have hinner :=
+    ComputableInPolyTime.ite_decide (ComputableInPolyTime.decide_eq' hgi hgj) hc (.const 0)
   have hmatch := hboth.ite' hinner (.const 1)
-  refine (ite_decide_polyTime (ComputableInPolyTime.decide_eq' hi hj) hc hmatch).of_enc_eq
-    fun g => congrArg encNat ?_
+  refine (ComputableInPolyTime.ite_decide (ComputableInPolyTime.decide_eq' hi hj) hc
+    hmatch).of_enc_eq fun g => congrArg encNat ?_
   dsimp only [clearedPartialCollision]; by_cases hij : i g = j g
   · simp only [hij, ↓reduceIte]
   · simp only [hij, ↓reduceIte]
@@ -624,7 +617,7 @@ private theorem computableInPolyTime_clearedPartialCollision {α γ : Type} [Dec
 private theorem computableInPolyTime_binary_max1 {γ : Type} {encIn : γ ↪ List Bool} {x : γ → ℕ}
     (hx : ComputableInPolyTime x encIn encNat) :
     ComputableInPolyTime (fun g => max (x g) 1) encIn encNat := by
-  refine (ite_decide_polyTime (ComputableInPolyTime.decide_eq' hx (.const 0))
+  refine (ComputableInPolyTime.ite_decide (ComputableInPolyTime.decide_eq' hx (.const 0))
     (.const 1) hx).of_enc_eq fun g => congrArg encNat ?_
   rcases Nat.eq_zero_or_pos (x g) with h0 | hpos
   · simp only [h0, ↓reduceIte]; omega
@@ -701,10 +694,10 @@ def encScoreParams : ((ℕ × ℕ) × (ℕ × ℕ) × List (ℕ × ℕ)) ↪ Lis
     (ComputableInPolyTime.binary_mul' hQBin hn2)
   unfold clearedJointScore clearedIncidencePotential clearedGroupPotential
   exact binary_add_polyTime
-    (ite_decide_polyTime (ComputableInPolyTime.decide_eq' hec (.const 0))
+    (ComputableInPolyTime.ite_decide (ComputableInPolyTime.decide_eq' hec (.const 0))
       (.const 0) (ComputableInPolyTime.binary_mul' hincPot
         (ComputableInPolyTime.binary_mul' hrBin (computableInPolyTime_binary_max1 hqn))))
-    (ite_decide_polyTime (ComputableInPolyTime.decide_eq' hqn (.const 0))
+    (ComputableInPolyTime.ite_decide (ComputableInPolyTime.decide_eq' hqn (.const 0))
       (.const 0) (ComputableInPolyTime.binary_mul' hgrpPot
         (ComputableInPolyTime.binary_mul' hK2 (computableInPolyTime_binary_max1 hec))))
 

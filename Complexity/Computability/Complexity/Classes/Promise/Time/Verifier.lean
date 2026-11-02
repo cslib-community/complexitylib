@@ -119,7 +119,7 @@ theorem exists_verifier_of_mem_PromiseBPTIME {Q : PromiseProblem α} {t : ℕ �
         ((ComputableInO.of_eq (f := fun x : α => enc x) (encIn := enc) (encMid := encBits)
           fun _ => rfl).comp (ComputableInO.fst enc encBits))
     have hrun := (ComputableInO.of_linear
-      (MultiTapePTM.computableInLinearTimeAndSpace_runClosedCoins machine)).comp hswap
+      (MultiTapePTM.computableInDegree_runClosedCoins machine)).comp hswap
     obtain ⟨cr, hcr⟩ := hrun.length_le_time
     have heq := ComputableInO.eqWords.comp ((ComputableInO.const (encIn := encPair enc encBits)
       (encMid := encBits) [true]).prod hrun)

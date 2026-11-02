@@ -180,7 +180,12 @@ end Instr
 end CounterProgram
 
 /-- A **counter program**: a list of instructions, indexed by their labels, over a fixed number of
-registers. -/
+registers.
+
+A program assembled from blocks of code writes its code as `List.flatten [b₀, b₁, …]`. Then
+`rfl` quickly reads off the instruction at a label (`Turing.CounterProgram.instr`), and
+`Turing.CounterProgram.codeAt_of_prefix` places a block. Written as `b₀ ++ b₁ ++ ⋯`, which
+associates to the left, the same code makes each such lookup far slower. -/
 structure CounterProgram : Type where
   /-- The instructions; the instruction at label `c` is the `c`-th one. -/
   code : List CounterProgram.Instr
@@ -423,6 +428,13 @@ theorem codeAt_of_code_eq {pre post : List Instr} (h : P.code = pre ++ l ++ post
     List.getElem_append_left (by simp only [List.length_append]; omega),
     List.getElem_append_right (by omega)]
   simp
+
+/-- Code read off a program: `l` is at `b` when the code from label `b` on starts with `l`. For
+code written as `List.flatten` of its blocks, `codeAt_of_prefix ⟨_, rfl⟩` places a block. -/
+theorem codeAt_of_prefix (h : l <+: P.code.drop b) : P.CodeAt b l := fun i hi => by
+  have hlt := Nat.lt_of_lt_of_le hi h.length_le
+  rw [List.length_drop] at hlt
+  rw [instr, List.getD_eq_getElem _ _ (by omega), h.getElem hi, List.getElem_drop]
 
 /-! ### The parts of a step, in linear space -/
 
