@@ -22,7 +22,7 @@ the client syntax, unfolding definitions, with one rule per form:
   the exact- or standard-basis arithmetic and bitwise operations.
 * the four memory queries: `Realizes.read`, `write`, `alloc` and `allocDirty`.
 * `if` on `a = b`, `a < b` or `a > b`: `Realizes.branch₀`.
-* `match` on an optional answer: the client equals the branch on its presence tag
+* `match` on an optional word or word pair: the client equals the branch on its presence tag
   (`Realizes.congr`, proved by cases).
 * `iterate step D n a` whose step begins with a query: `Realizes.iterate₀`, after
   `iterate_comap` moves `D` into the step.
@@ -837,9 +837,22 @@ private partial def realizeOptionSplit (ctx : Ctx) (env : Env) (d : Expr) (atoms
   let enc ← encodingOf rTy
   let words ← mkAppM ``DFunLike.coe #[enc, r]
   let l ← encodingWidth enc
-  unless l == 2 do throwError "realize: expected a tag and payload encoding for{indentExpr r}"
-  let tag := mkApp words (← finLit 2 0)
-  let payload := mkApp words (← finLit 2 1)
+  let payloadTy ← whnfR rTy.appArg!
+  let payload ← if payloadTy.isConstOf ``Nat then
+      unless l == 2 do
+        throwError "realize: expected a tag and payload encoding for{indentExpr r}"
+      pure (mkApp words (← finLit l 1))
+    else if let some (a, b) := payloadTy.app2? ``Prod then
+      unless (← whnfR a).isConstOf ``Nat && (← whnfR b).isConstOf ``Nat do
+        throwError "realize: optional matches support a word or a pair of words, \
+          got{indentExpr rTy}"
+      unless l == 3 do
+        throwError "realize: expected a tag and two payload words for{indentExpr r}"
+      mkAppM ``Prod.mk #[mkApp words (← finLit l 1), mkApp words (← finLit l 2)]
+    else
+      throwError "realize: optional matches support a word or a pair of words, \
+          got{indentExpr rTy}"
+  let tag := mkApp words (← finLit l 0)
   let cond ← mkEq tag (← mkNumeral (mkConst ``Nat) 0)
   let noneE ← mkAppOptM ``Option.none #[rTy.appArg!]
   let someE ← mkAppM ``Option.some #[payload]
