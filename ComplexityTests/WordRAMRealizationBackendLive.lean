@@ -219,4 +219,44 @@ example {w : ℕ} (L : Stack.Memory.Layout)
   intro a
   exact (Backend.src_ne_tmp sizeCertificate () () j a).symm
 
+section Metadata
+
+variable {B : Basis} {ι ι' : Type} [Fintype ι] [Fintype ι']
+  {D : StateTransitionSpec.{0, 0, 0}} {C : ι → Certificate B}
+
+-- Adding a fixed family preserves dependent method arguments, results and observations.
+example (S : Backend D C) (extra : ι' → Certificate B) (o : D.Op)
+    (a : (C (S.tag o)).Res) : (S.extend extra).answer o a = S.answer o a := rfl
+
+-- This is the extended-bank bound pattern needed by the heap's actual bound_extend caller.
+example {w : ℕ} (S : Backend D C) (extra : ι' → Certificate B)
+    {R : Refinement D (Memory.spec w)} (hS : S.Implements R)
+    {upper : D.State → D.Op → ℕ} (A : R.Amortized Memory.charge upper (fun _ => 0))
+    (c : ℕ) (hw : ∀ {e} o, R.inv e → D.valid (R.abs e) o →
+      (C (S.tag o)).work (S.arg o) e ≤ c) :
+    Bound (Backend.implementation (hS.extend extra)) id
+      (fun s o => Backend.factor (Sum.elim C extra) * (upper s o + c + 1)) :=
+  Backend.bound (hS.extend extra) A c (fun o hi hv => hw o hi hv)
+
+-- Preparation is the identity only when the selected method's actual words are live.
+example (S : Backend D C) (o : D.Op) (x : Data (Backend.registers C))
+    (hin : x.regs ∘ Backend.src C (S.tag o) = (C (S.tag o)).input (S.arg o)) :
+    S.prepare o x = x :=
+  Backend.install_eq_self C (S.tag o) (S.arg o) x hin
+
+-- A real live-input body execution enters the existing operation relation with its decoder.
+example (S : Backend D C) (w : ℕ) (o : D.Op) (a : D.Result o)
+    (x y : Data (Backend.registers C)) (n : ℕ)
+    (hin : x.regs ∘ Backend.src C (S.tag o) = (C (S.tag o)).input (S.arg o))
+    (he : Exec w (Backend.code C (S.tag o)) x y n)
+    (hout : ∃ b, a = S.answer o b ∧ ∀ j,
+      y.regs (Backend.tmp C (S.tag o)
+        (Fin.castAdd ((C (S.tag o)).realizes.scratchSize + 1) j)) =
+          (C (S.tag o)).output b j) :
+    S.exec w x o a y n := by
+  have hp : S.prepare o x = x := Backend.install_eq_self C (S.tag o) (S.arg o) x hin
+  exact (S.exec_iff w x y o a n).mpr ⟨by simpa only [hp] using he, hout⟩
+
+end Metadata
+
 end Cslib.WordRAM.Realization.Tests.BackendLive

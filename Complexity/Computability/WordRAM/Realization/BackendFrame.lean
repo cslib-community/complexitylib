@@ -24,17 +24,20 @@ again by the union of the footprints and the sum of the rooms, so products itera
 
 **Allocation.** An allocator (`Memory.Allocator`) sets a structure up in memory with a program
 that returns a handle, such as a layout of named fields. A `Backend.Allocation` names the tag
-whose body runs that program, and reads the handle off the body's result. From arbitrary bounded
-data with the allocator's precondition and room, the body runs within the certified bound,
-returns the handle, writes only the room it takes above the frontier, and leaves data that the
-handle's backend represents at the allocator's initial state (`Allocation.exec`). The bound is
-the allocator's memory cost and the body's local work. When the allocation reserves memory
-without clearing it (`Memory.allocDirty`), as the array stack does, both are constant.
+whose body runs that program, and reads the handle off the body's result. After uncharged
+argument installation, the body runs from bounded data with the allocator's precondition and
+room within the certified bound. It returns the handle, writes only the room it takes above the
+frontier, and leaves data that the handle's backend represents at the allocator's initial state
+(`Allocation.exec`). The bound is the allocator's memory cost and the body's local work. When
+allocation reserves memory without clearing it (`Memory.allocDirty`), as the array stack does,
+both are constant.
 
-**Base-relative layouts.** The handle is a runtime value. A family of backends
-`F : A.Handle → Backend D C` passes it to its bodies as an argument, and a body is chosen by its
-tag alone (`Backend.code`), so one body serves every layout. Bounds stated for every handle are
-therefore uniform in the structure's base address.
+**Base-relative layouts.** A family `F : A.Handle → Backend D C` uses one fixed finite
+certificate family `C`, whose bodies, register layout and exchange factor precede the runtime
+handle. The handle supplies arguments to those bodies. The selected tag `(F h).tag o` may depend
+on `h`. If the tag is handle-independent for each operation, that operation uses the same body
+across layouts. The general guarantee is a fixed finite code family; uniform local-work bounds
+must also hold across handles.
 
 The frame is that of the memory-level refinement (`Memory.Framed.region`). The frame argument
 follows the block frame of #2273 (Codex), and allocation without clearing follows the queue
@@ -183,7 +186,10 @@ variable [Fintype ι]
 allocate from, with its room fitting a word, the allocation body runs within
 `factor C * (A.cost + work + 1)` instructions, where `work` is its local work. It returns the
 allocated handle in its result registers, writes only the room it takes above the frontier, and
-leaves data that the handle's backend represents at the allocator's initial state. -/
+leaves data that the handle's backend represents at the allocator's initial state.
+
+Execution starts after the uncharged `install` has supplied the argument registers. A raw-data
+initializer must separately pay native argument installation and any allocation-cursor setup. -/
 theorem Allocation.exec {A : Memory.Allocator D w} (I : Allocation A C)
     {F : A.Handle → Backend D C}
     (hF : ∀ s (hs : A.Pre s) (hroom : Fits w (s.frontier + A.room)),
