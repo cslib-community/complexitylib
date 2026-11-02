@@ -62,8 +62,10 @@ budget together with a polynomial-time bounded-search left inverse (`coinParamIn
   coins at that secret only (`treeGameWith_congr`).
 * `Cslib.Crypto.TreeSignature.eval_coinRealGame_treeCoinAdversary`,
   `Cslib.Crypto.TreeSignature.eval_coinIdealGame_treeCoinAdversary`: the exact simulation.
-* `Cslib.Crypto.TreeSignature.succProbability_treeGame_le`: the hybrid bound by the coin-game
-  advantage at `N n`.
+* `Cslib.Crypto.Game.succProbability_le_add_advantage`,
+  `Cslib.Crypto.TreeSignature.succProbability_treeGame_le`,
+  `Cslib.Crypto.TreeSignature.succProbability_treeGame_le_prf`: the hybrid bound by the coin-game
+  and PRF advantages at `N n`.
 * `Cslib.Crypto.TreeSignature.isOraclePPT_treeCoinAdversary`: the coin adversary is strict oracle
   PPT, built from `isOraclePPTOn_certifyO`, `isOraclePPTOn_signO`, `isOraclePPTOn_simulateTreeGame`,
   and the output bounds `keyBound` and `sigBound`.
@@ -178,22 +180,27 @@ variable (N : ℕ → ℕ)
   let root ← nodeKeyO S T n []
   OracleComp.iterate (depth n - 1) (certifyStepO S T n leaf) ([], root, [])
 
-/-- Sign `msg`: a uniform leaf, the chain to its parent, and the parent's signature. -/
-noncomputable def signO (n : ℕ) (msg : List Bool) : WordOracleComp Unit (List Bool) := do
-  let leaf ← ProbOracleComp.sample (BitString.sampleList (depth n))
-  let (node, (_, sk), certs) ← certifyO S T depth n leaf
-  let σ ← signAtO S T node sk (leaf.getLastD false).toNat msg
-  return encodeSignature leaf certs σ
+/-- Sign `msg`: when `msg` has length `n`, sample a uniform leaf, certify the chain to its parent,
+and sign `msg` there; otherwise return `[]`. -/
+@[expose] noncomputable def signO (n : ℕ) (msg : List Bool) : WordOracleComp Unit (List Bool) :=
+  if msg.length = n then do
+    let leaf ← ProbOracleComp.sample (BitString.sampleList (depth n))
+    let (node, (_, sk), certs) ← certifyO S T depth n leaf
+    let σ ← signAtO S T node sk (leaf.getLastD false).toNat msg
+    return encodeSignature leaf certs σ
+  else
+    pure []
 
 /-- The signing handler of the simulated game: sign through the coin oracle and log the
 message. -/
-noncomputable def signHandler (n : ℕ) (request : Unit × List Bool) :
+@[expose] noncomputable def signHandler (n : ℕ) (request : Unit × List Bool) :
     StateT (List (List Bool)) (WordOracleComp Unit) (List Bool) := fun queried => do
   let sig ← signO S T depth n request.2
   return (sig, request.2 :: queried)
 
 /-- The tree game at parameter `n`, played against the coin oracle. -/
-noncomputable def simulateTreeGame (adversary : Forger) (n : ℕ) : WordOracleComp Unit Bool := do
+@[expose] noncomputable def simulateTreeGame (adversary : Forger) (n : ℕ) :
+    WordOracleComp Unit Bool := do
   let root ← nodeKeyO S T n []
   let pk := encPair encUnary encBits (n, root.1)
   let out ← (OracleComp.interpret
@@ -318,12 +325,15 @@ key word `(n, k)`: the coins do not depend on `k`. -/
 theorem evalDet_signO (n : ℕ) (k msg : List Bool) :
     evalDet c (signO S T depth n msg) =
       ProbComp.eval (sign S T (coinsOf c) depth (encPair encUnary encBits (n, k)) msg) := by
-  simp only [signO, sign, keyDecoder.decode_enc, evalDet_bind, evalDet_pure, evalDet_sample,
-    ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList]
-  refine PMF.bind_congr_on_support _ _ _ fun leaf hleaf => ?_
-  have hlen := BitString.length_of_mem_support_uniformList hleaf
-  rw [evalDet_certifyO hc n k leaf (by omega), PMF.pure_bind, evalDet_signAtO hc k, PMF.pure_bind,
-    signWithLeaf, List.dropLast_eq_take, hlen]
+  by_cases hmsg : msg.length = n
+  · simp only [signO, sign, keyDecoder.decode_enc, hmsg, ↓reduceIte, evalDet_bind, evalDet_pure,
+      evalDet_sample, ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList]
+    refine PMF.bind_congr_on_support _ _ _ fun leaf hleaf => ?_
+    have hlen := BitString.length_of_mem_support_uniformList hleaf
+    rw [evalDet_certifyO hc n k leaf (by omega), PMF.pure_bind, evalDet_signAtO hc k, PMF.pure_bind,
+      signWithLeaf, List.dropLast_eq_take, hlen]
+  · simp only [signO, sign, keyDecoder.decode_enc, hmsg, ↓reduceIte, evalDet_pure,
+      ProbComp.eval_pure]
 
 include hc in
 /-- With deterministic coins, the simulated game is the tree game under any secret `k`. -/
@@ -472,7 +482,7 @@ section Bound
 variable {S T depth N}
 
 /-- A game's success is at most another's plus their advantage. -/
-private theorem succProbability_le_add_advantage (game1 game2 : Game) :
+theorem _root_.Cslib.Crypto.Game.succProbability_le_add_advantage (game1 game2 : Game) :
     Game.succProbability game1 ≤ Game.succProbability game2 + Game.advantage game1 game2 := by
   rw [← NNReal.coe_le_coe, NNReal.coe_add, Game.advantage, coe_nndist, NNReal.dist_eq]
   linarith [le_abs_self ((Game.succProbability game1 : ℝ) - Game.succProbability game2)]
@@ -490,7 +500,21 @@ theorem succProbability_treeGame_le (adversary : Forger) (n : ℕ) :
           (ProbComp.eval (coinRealGame family (treeCoinAdversary S T depth N inv adversary) (N n)))
           (ProbComp.eval (coinIdealGame (treeCoinAdversary S T depth N inv adversary) (N n))) := by
   rw [eval_coinRealGame_treeCoinAdversary family hinv, eval_coinIdealGame_treeCoinAdversary hinv]
-  exact succProbability_le_add_advantage _ _
+  exact Game.succProbability_le_add_advantage _ _
+
+include hinv in
+/-- **From pseudorandom to random coins, in PRF advantage**: the hybrid loss equals the PRF
+distinguishing advantage of `coinDistinguisher (treeCoinAdversary …)` at `N n`. -/
+theorem succProbability_treeGame_le_prf (adversary : Forger) (n : ℕ) :
+    Game.succProbability (ProbComp.eval (treeGame S T depth N (prfCoins family) adversary n)) ≤
+      Game.succProbability (ProbComp.eval (treeIdealGame S T depth N adversary n)) +
+        Game.advantage
+          (ProbComp.eval (prfRealGame family
+            (coinDistinguisher (treeCoinAdversary S T depth N inv adversary)) (N n)))
+          (ProbComp.eval (prfIdealGame
+            (coinDistinguisher (treeCoinAdversary S T depth N inv adversary)) (N n))) := by
+  rw [← eval_coinRealGame, ← eval_coinIdealGame]
+  exact succProbability_treeGame_le family hinv adversary n
 
 open Filter in
 omit hinv in
@@ -555,20 +579,13 @@ local notation "encCertState" =>
 /-- A chain state, written out so that the certificate automation sees the product. -/
 local notation "CertTriple" => (List Bool × (List Bool × List Bool) × List (List Bool × List Bool))
 
-private theorem computableInPolyTime_boolToNat :
-    ComputableInPolyTime Bool.toNat encBool encUnary := by
-  have heq : Bool.toNat = fun b => if b then 1 else 0 := by
-    funext b
-    cases b <;> rfl
-  rw [heq]
-  polytime
-
 /-- One chain step is strict oracle PPT in the parameter, the leaf and the state. -/
 private theorem isOraclePPTOn_certifyStepO :
     IsOraclePPTOn (encPair (encPair encUnary encBits) encCertState) encCertState
       (fun (((n, leaf), state) : (ℕ × List Bool) × CertTriple) =>
         certifyStepO S T n leaf state) := by
-  have htoNat := computableInPolyTime_boolToNat
+  have htoNat : ComputableInPolyTime Bool.toNat encBool encUnary :=
+    ComputableInPolyTime.of_finite Bool.toNat
   have hnode := isOraclePPTOn_nodeKeyO (S := S) (T := T)
     (enc := encPair (encPair encUnary encBits) encCertState)
     (n := fun pair : (ℕ × List Bool) × CertTriple => pair.1.1)
@@ -872,7 +889,8 @@ private theorem isOraclePPTOn_signO_aux :
     ∀ p : ℕ × List Bool, ∀ sig ∈ OracleComp.support (signO S T depth p.1 p.2),
       sig.length ≤ sigWordBound ck dk cb db cs ds cB dB depth p.1 p.2.length := by
   obtain ⟨hcert, hcertBound⟩ := isOraclePPTOn_certifyO_aux hkg hkb hsg hsb hdepth
-  have htoNat := computableInPolyTime_boolToNat
+  have htoNat : ComputableInPolyTime Bool.toNat encBool encUnary :=
+    ComputableInPolyTime.of_finite Bool.toNat
   refine ⟨?_, ?_⟩
   · have hleaf : IsOraclePPTOn (Operation := Unit) (encPair encUnary encBits) encBits
         (fun p : ℕ × List Bool => ProbOracleComp.sample (BitString.sampleList (depth p.1))) :=
@@ -914,7 +932,7 @@ private theorem isOraclePPTOn_signO_aux :
       ComputableInPolyTime.encoding_comp (output :=
         encPair encBits (encPair (encList (encPair encBits encBits)) encBits))
         ((hleaf'.comp hs1).prod ((hcerts'.comp hs1).prod hs2))
-    exact hleaf.bind_with
+    have hyes := hleaf.bind_with
       (second := fun (p : ℕ × List Bool) (leaf : List Bool) =>
         certifyO S T depth p.1 leaf >>= fun c =>
           signAtO S T c.1 c.2.1.2 (leaf.getLastD false).toNat p.2 >>= fun σ =>
@@ -927,33 +945,41 @@ private theorem isOraclePPTOn_signO_aux :
           (second := fun (r : ((ℕ × List Bool) × List Bool) × CertState) (σ : List Bool) =>
             (pure (encodeSignature r.1.2 r.2.2.2 σ) : WordOracleComp Unit (List Bool)))
           hpost.isOraclePPTOn))
+    exact IsOraclePPTOn.ite' (condition := fun p : ℕ × List Bool => p.2.length = p.1)
+      (by polytime) hyes (ComputableInPolyTime.isOraclePPTOn (ComputableInPolyTime.const []))
   · intro p sig hsig
-    simp only [signO, OracleComp.support, OracleComp.mem_supportWith_bind_iff] at hsig
-    obtain ⟨leaf, hleaf, ⟨node, ⟨pk, sk⟩, certs⟩, hc, σ, hσ, hsig⟩ := hsig
-    have hsig := OracleComp.eq_of_mem_supportWith_pure hsig
-    subst hsig
-    have hleaf : leaf ∈ OracleComp.support
-      (ProbOracleComp.sample (BitString.sampleList (depth p.1))) := hleaf
-    rw [ProbOracleComp.support_sample, BitString.eval_sampleList] at hleaf
-    have hleafLen := BitString.length_of_mem_support_uniformList hleaf
-    obtain ⟨-, hsk, hlen, hcerts⟩ := hcertBound (p.1, leaf) (node, (pk, sk), certs) hc
-    simp only at hsk hlen hcerts
-    have hσ' := length_le_of_mem_support_signAtO hsg hsb hsk
-      (show (leaf.getLastD false).toNat ≤ 1 from Bool.toNat_le _) le_rfl hσ
-    have hlist := length_encList_le (encPair encBits encBits) certs
-      (b := 2 * (3 * keyBound ck dk cb db p.1) + 1 + sigBound cs ds cB dB
-        (3 * keyBound ck dk cb db p.1) (3 * keyBound ck dk cb db p.1)) fun e he => by
-      obtain ⟨h1, h2⟩ := hcerts e he
-      simp only [length_encPair, encBits_apply]
+    unfold signO at hsig
+    split_ifs at hsig with hmsg
+    · simp only [OracleComp.support, OracleComp.mem_supportWith_bind_iff] at hsig
+      obtain ⟨leaf, hleaf, ⟨node, ⟨pk, sk⟩, certs⟩, hc, σ, hσ, hsig⟩ := hsig
+      have hsig := OracleComp.eq_of_mem_supportWith_pure hsig
+      subst hsig
+      have hleaf : leaf ∈ OracleComp.support
+        (ProbOracleComp.sample (BitString.sampleList (depth p.1))) := hleaf
+      rw [ProbOracleComp.support_sample, BitString.eval_sampleList] at hleaf
+      have hleafLen := BitString.length_of_mem_support_uniformList hleaf
+      obtain ⟨-, hsk, hlen, hcerts⟩ := hcertBound (p.1, leaf) (node, (pk, sk), certs) hc
+      simp only at hsk hlen hcerts
+      have hσ' := length_le_of_mem_support_signAtO hsg hsb hsk
+        (show (leaf.getLastD false).toNat ≤ 1 from Bool.toNat_le _) le_rfl hσ
+      have hlist := length_encList_le (encPair encBits encBits) certs
+        (b := 2 * (3 * keyBound ck dk cb db p.1) + 1 + sigBound cs ds cB dB
+          (3 * keyBound ck dk cb db p.1) (3 * keyBound ck dk cb db p.1)) fun e he => by
+        obtain ⟨h1, h2⟩ := hcerts e he
+        simp only [length_encPair, encBits_apply]
+        omega
+      rw [hlen] at hlist
+      have hmul : (depth p.1 - 1) * (2 * (2 * (3 * keyBound ck dk cb db p.1) + 1 +
+          sigBound cs ds cB dB (3 * keyBound ck dk cb db p.1) (3 * keyBound ck dk cb db p.1)) + 1) ≤
+          depth p.1 * (2 * (2 * (3 * keyBound ck dk cb db p.1) + 1 +
+          sigBound cs ds cB dB (3 * keyBound ck dk cb db p.1)
+            (3 * keyBound ck dk cb db p.1)) + 1) :=
+        Nat.mul_le_mul_right _ (Nat.sub_le _ _)
+      simp only [encodeSignature, length_encPair, encBits_apply, sigWordBound, hleafLen]
       omega
-    rw [hlen] at hlist
-    have hmul : (depth p.1 - 1) * (2 * (2 * (3 * keyBound ck dk cb db p.1) + 1 +
-        sigBound cs ds cB dB (3 * keyBound ck dk cb db p.1) (3 * keyBound ck dk cb db p.1)) + 1) ≤
-        depth p.1 * (2 * (2 * (3 * keyBound ck dk cb db p.1) + 1 +
-        sigBound cs ds cB dB (3 * keyBound ck dk cb db p.1) (3 * keyBound ck dk cb db p.1)) + 1) :=
-      Nat.mul_le_mul_right _ (Nat.sub_le _ _)
-    simp only [encodeSignature, length_encPair, encBits_apply, sigWordBound, hleafLen]
-    omega
+    · have hsig := OracleComp.eq_of_mem_supportWith_pure hsig
+      subst hsig
+      exact Nat.zero_le _
 
 include hkg hkb hsg hsb hdepth in
 private theorem isOraclePPTOn_simulateTreeGame_aux {adversary : Forger}
@@ -1085,10 +1111,11 @@ theorem isOraclePPT_treeCoinAdversary (hdepth : ComputableInPolyTime depth encUn
   have hsim := isOraclePPTOn_simulateTreeGame (S := S) (T := T) hdepth hA
   refine IsOraclePPTOn.isOraclePPT ?_
   unfold treeCoinAdversary
-  refine IsOraclePPTOn.ite' (condition := fun input : ℕ × List Bool => N (inv input.1) = input.1)
-    (by polytime) ?_ (ComputableInPolyTime.isOraclePPTOn (ComputableInPolyTime.const false))
-  exact hsim.preprocess' (prepare := fun input : ℕ × List Bool => inv input.1)
-    (hinvPoly.comp (ComputableInPolyTime.fst encUnary encBits))
+  exact IsOraclePPTOn.ite' (condition := fun input : ℕ × List Bool => N (inv input.1) = input.1)
+    (by polytime)
+    (hsim.preprocess' (prepare := fun input : ℕ × List Bool => inv input.1)
+      (hinvPoly.comp (ComputableInPolyTime.fst encUnary encBits)))
+    (ComputableInPolyTime.isOraclePPTOn (ComputableInPolyTime.const false))
 
 end Efficiency
 
