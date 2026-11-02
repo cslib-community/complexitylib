@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.DataStructure.Memory.Field
-public import Complexity.DataStructure.StateTransition.Refinement
+public import Complexity.DataStructure.Memory.Frame
 public import Complexity.DataStructure.Stack.WordRAM.Basic
 
 /-!
@@ -23,8 +23,9 @@ refinement obligations follow from those equations and the list view of the arra
 
 Every operation costs at most three memory units, with no potential (`amortized`). The methods
 write only the layout's cells and never allocate (`modifies_methods`), and the abstraction and
-invariant depend only on those cells (`abs_congr`, `Inv.congr`). Two stacks with disjoint
-layouts therefore implement the product of two stacks (`pairRefinement`).
+invariant depend only on those cells (`abs_congr`, `Inv.congr`). So the stack is framed by its
+layout (`framed`), and stacks with disjoint layouts share one memory through the generic product
+`Memory.Framed.prod`.
 
 This is the same specification that `Stack.WordRAM` implements by a hand-stepped nine-register
 dispatcher. Here no register or instruction count appears. Word fit enters only through the
@@ -37,18 +38,15 @@ admissibility of `Memory.spec w` and one static fact of the layout, that the cap
 * `push`, `pop`, `size`, `methods`: the operations as memory programs.
 * `abs`, `Inv`: the abstraction function and the implementation invariant.
 * `refinement`: the array stack as a `Refinement` of the bounded stack.
-* `pairMethods`, `pairRefinement`: two array stacks with disjoint layouts implement the pair of
-  stacks.
+* `framed`: the same refinement, framed by the layout's cells.
 * `allocLayout`: allocate an empty stack.
 
 ## Main results
 
 * `amortized`: every operation costs at most three memory units.
-* `pair_amortized`: so does every operation of the pair.
-* `pairRefinement_methods`: the pair's methods do not depend on the proofs about its layouts.
 * `runClient_push`, `runClient_pop_of_eq_zero`, `runClient_pop_of_pos`, `runClient_size`: the
   operations evaluate definitionally.
-* `modifies_methods`, `abs_congr`, `Inv.congr`, `frame`: the frame of a stack.
+* `modifies_methods`, `abs_congr`, `Inv.congr`, `Inv.lt_frontier`: the frame of a stack.
 * `runClient_allocLayout_bind`, `valid_allocLayout`, `inv_allocLayout`: allocation yields a
   well-formed empty stack in three memory units.
 
@@ -278,20 +276,6 @@ def refinement (hL : L.Valid w C) : Refinement (Stack.WordRAM.spec w C) (Memory.
           runClient_size]
         exact ⟨by simp, hs⟩)
 
-/-- Every operation costs at most three memory units, so the stack needs no potential. -/
-theorem amortized (hL : L.Valid w C) :
-    (refinement hL).Amortized charge (fun _ _ => 3) fun _ => 0 := by
-  apply Refinement.Amortized.ofFn
-  intro s o _ _
-  cases o with
-  | push v => simp [refinement, methods, StateTransitionSpec.clientHistory, runClient_push]
-  | pop =>
-    by_cases h0 : s.mem L.count.base = 0
-    · simp [refinement, methods, StateTransitionSpec.clientHistory,
-        runClient_pop_of_eq_zero L s h0]
-    · simp [refinement, methods, StateTransitionSpec.clientHistory, runClient_pop_of_pos L s h0]
-  | size => simp [refinement, methods, StateTransitionSpec.clientHistory, runClient_size]
-
 /-! ## The frame of a stack -/
 
 /-- Each admissible operation writes only the layout's cells and never allocates. -/
@@ -319,54 +303,44 @@ theorem modifies_methods (hL : L.Valid w C) {s : Memory.State} (o : StackOp ℕ)
       exact ⟨fun a ha => Function.update_of_ne (ne_of_mem_of_not_mem hc ha).symm _ _, trivial⟩
   | size => exact ⟨fun _ _ => rfl, rfl⟩
 
-/-- A stack's operations leave a stack with a disjoint layout unchanged. -/
-theorem frame {L' : Layout} (hL : L.Valid w C) (hL' : L'.Valid w C)
-    (hd : Disjoint L.footprint L'.footprint) {s : Memory.State} (hs' : Inv L' s)
-    (o : StackOp ℕ) (hv : (Stack.WordRAM.spec w C).valid (abs L s) o) :
-    abs L' ((Memory.spec w).clientState s (methods L w C o)) = abs L' s ∧
-      Inv L' ((Memory.spec w).clientState s (methods L w C o)) := by
-  obtain ⟨hm, hf⟩ := modifies_methods hL o hv
-  have h : ∀ a ∈ L'.footprint,
-      ((Memory.spec w).clientState s (methods L w C o)).mem a = s.mem a :=
-    fun a ha => hm a (Finset.disjoint_right.mp hd ha)
-  exact ⟨abs_congr hL' hs' h, hs'.congr hL' h hf.ge⟩
+/-- The layout's cells are allocated. -/
+theorem Inv.lt_frontier {s : Memory.State} (hs : Inv L s) {a : ℕ} (ha : a ∈ L.footprint) :
+    a < s.frontier := by
+  have h₁ := hs.count_allocated
+  have h₂ := hs.items_allocated
+  simp only [Layout.footprint, Finset.mem_union, Block.mem_footprint, Block.Owns] at ha
+  unfold Block.Allocated at h₁ h₂
+  omega
 
-/-! ## Two stacks in one memory -/
+/-- The array stack, with its layout's cells as a constant footprint. Stacks with disjoint
+layouts therefore share one memory as a product of stacks (`Memory.Framed.prod`). -/
+def framed (hL : L.Valid w C) : Memory.Framed (Stack.WordRAM.spec w C) w :=
+  .ofStatic (refinement hL) L.footprint (fun hs ha => Inv.lt_frontier hs ha)
+    (fun hs h hf => ⟨hs.congr hL h hf, abs_congr hL hs h⟩)
+    (fun o _ hv b _ hb => (modifies_methods hL o hv).1 b hb)
 
-/-- The operations of two stacks, each on its own layout. -/
-def pairMethods (L₁ L₂ : Layout) (w C : ℕ) :
-    Methods (product (Stack.WordRAM.spec w C) (Stack.WordRAM.spec w C)) (Memory.spec w)
-  | .inl o => methods L₁ w C o
-  | .inr o => methods L₂ w C o
+/-- Every operation costs at most three memory units, so the stack needs no potential. -/
+theorem amortized (hL : L.Valid w C) :
+    (framed hL).Amortized charge (fun _ _ => 3) fun _ => 0 := by
+  apply Refinement.Amortized.ofFn
+  intro s o _ _
+  cases o with
+  | push v =>
+    simp [framed, Memory.Framed.ofStatic, refinement, methods,
+      StateTransitionSpec.clientHistory, runClient_push]
+  | pop =>
+    by_cases h0 : s.mem L.count.base = 0
+    · simp [framed, Memory.Framed.ofStatic, refinement, methods,
+        StateTransitionSpec.clientHistory, runClient_pop_of_eq_zero L s h0]
+    · simp [framed, Memory.Framed.ofStatic, refinement, methods,
+        StateTransitionSpec.clientHistory, runClient_pop_of_pos L s h0]
+  | size =>
+    simp [framed, Memory.Framed.ofStatic, refinement, methods,
+      StateTransitionSpec.clientHistory, runClient_size]
 
-/-- Two array stacks with disjoint layouts implement a pair of bounded stacks. -/
-def pairRefinement {L₁ L₂ : Layout} (h₁ : L₁.Valid w C) (h₂ : L₂.Valid w C)
-    (hd : Disjoint L₁.footprint L₂.footprint) :
-    Refinement (product (Stack.WordRAM.spec w C) (Stack.WordRAM.spec w C)) (Memory.spec w) :=
-  (refinement h₁).prod (refinement h₂)
-    (fun {s} o {a s' tr} hs₁ hs₂ hv hrun => by
-      obtain ⟨_, _, rfl, _⟩ := ((Memory.spec w).clientRun_iff_runClient _ _ _ _ _).mp hrun
-      exact frame h₁ h₂ hd hs₂ o hv)
-    (fun {s} o {a s' tr} hs₁ hs₂ hv hrun => by
-      obtain ⟨_, _, rfl, _⟩ := ((Memory.spec w).clientRun_iff_runClient _ _ _ _ _).mp hrun
-      exact frame h₂ h₁ hd.symm hs₁ o hv)
-
-/-- The pair's methods are `pairMethods`, whatever the proofs about the layouts. -/
-theorem pairRefinement_methods {L₁ L₂ : Layout} (h₁ : L₁.Valid w C) (h₂ : L₂.Valid w C)
-    (hd : Disjoint L₁.footprint L₂.footprint) :
-    (pairRefinement h₁ h₂ hd).methods = pairMethods L₁ L₂ w C := by
-  funext o
-  cases o <;> rfl
-
-/-- Every operation of the pair costs at most three memory units. -/
-theorem pair_amortized {L₁ L₂ : Layout} (h₁ : L₁.Valid w C) (h₂ : L₂.Valid w C)
-    (hd : Disjoint L₁.footprint L₂.footprint) :
-    (pairRefinement h₁ h₂ hd).Amortized charge (fun _ _ => 3) fun _ => 0 := by
-  have h : (pairRefinement h₁ h₂ hd).Amortized charge
-      (productCharge (fun _ _ => 3) (fun _ _ => 3)) fun _ => 0 :=
-    (amortized h₁).prod (amortized h₂) (fun _ _ _ _ _ _ _ _ => rfl)
-      (fun _ _ _ _ _ _ _ _ => rfl)
-  rwa [productCharge_const] at h
+/-- The footprint of a stack is its layout's cells. -/
+@[simp] theorem framed_footprint (hL : L.Valid w C) (s : Memory.State) :
+    (framed hL).footprint s = L.footprint := rfl
 
 /-! ## Allocation -/
 
