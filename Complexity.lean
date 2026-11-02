@@ -2434,6 +2434,7 @@ public import Complexity.Computability.Probabilistic.PPT
 public import Complexity.Computability.Probabilistic.PPT.Capture
 public import Complexity.Computability.Probabilistic.PPT.Clock
 public import Complexity.Computability.Probabilistic.PPT.Composition
+public import Complexity.Computability.Probabilistic.PPT.Extension
 public import Complexity.Computability.Probabilistic.Parameter
 public import Complexity.Computability.Probabilistic.Presample
 public import Complexity.Computability.Probabilistic.QueryBounds
@@ -2799,6 +2800,8 @@ public import Complexity.Crypto.Computational.MerkleTree.Binding
 public import Complexity.Crypto.Computational.NaorReingold
 public import Complexity.Crypto.Computational.NaorReingold.PRF
 public import Complexity.Crypto.Computational.NaorReingold.Security
+public import Complexity.Crypto.Computational.Nonuniform.Basic
+public import Complexity.Crypto.Computational.Nonuniform.ZeroKnowledge
 public import Complexity.Crypto.Computational.OneWay
 public import Complexity.Crypto.Computational.OneWay.Amplification
 public import Complexity.Crypto.Computational.OneWay.BPP

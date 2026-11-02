@@ -33,7 +33,7 @@ the FHE industrial context, the first-order design decisions and the repository'
 
 Priorities live in this list and in the tiers of [#897].
 
-1. [Goldreich–Micali–Wigderson zero knowledge in full](#cryptographic-landmarks)
+1. [Goldreich–Micali–Wigderson zero knowledge in full](#cryptographic-landmarks) ([#2316])
 2. [Rompel's signature theorem](#cryptographic-landmarks) ([#1001])
 3. [Completeness of oblivious transfer](#cryptographic-landmarks)
 4. [Håstad's optimal MAX-E3SAT hardness](#approximation-and-pcp) ([#886])
@@ -47,7 +47,7 @@ Priorities live in this list and in the tiers of [#897].
 
 ### Cryptographic landmarks
 
-- **Goldreich–Micali–Wigderson zero knowledge in full.** If one-way functions exist, every
+- **Goldreich–Micali–Wigderson zero knowledge in full** ([#2316]). If one-way functions exist, every
   language in NP has a computational zero-knowledge proof in Goldreich's sense (Def. 4.3.10):
   for every `x ∈ L` and arbitrary auxiliary input `z`, against probabilistic polynomial-time
   verifiers. This needs a bridge between the security premise and a clock independent of an
@@ -830,3 +830,4 @@ not planned, not as proved.
 [#2145]: https://github.com/cslib-community/complexitylib/issues/2145
 [#2146]: https://github.com/cslib-community/complexitylib/issues/2146
 [#2084]: https://github.com/cslib-community/complexitylib/issues/2084
+[#2316]: https://github.com/cslib-community/complexitylib/issues/2316
