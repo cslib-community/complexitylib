@@ -3396,6 +3396,7 @@ public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Scatte
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.ScatterList
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Source
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Update
+public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.MinPQ
 public import Complexity.DataStructure.PriorityQueue.Spec
 public import Complexity.DataStructure.PriorityQueue.WordRAM.Basic
 public import Complexity.DataStructure.PriorityQueue.WordRAM.Decode
