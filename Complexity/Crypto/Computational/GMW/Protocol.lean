@@ -597,7 +597,7 @@ def twoRoundStep (reply1 reply2 : List Bool → List Bool) (q : List Bool)
 /-- Run a `WordOracleComp Unit` program against `twoRoundStep` inside `ProbComp`. -/
 def runTwoRound {α : Type} (reply1 reply2 : List Bool → List Bool)
     (prog : WordOracleComp Unit α) (s : ℕ × List Bool) : ProbComp (α × (ℕ × List Bool)) :=
-  (OracleComp.interpret (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
+  (OracleComp.interpret (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
     (fun q state => pure (twoRoundStep reply1 reply2 q.2 state))) prog).run s
 
 @[simp] theorem runTwoRound_pure {α : Type} (reply1 reply2 : List Bool → List Bool)
@@ -632,7 +632,7 @@ theorem eval_runTwoRound {α : Type} (reply1 reply2 : List Bool → List Bool)
     ProbComp.eval (runTwoRound reply1 reply2 prog s) =
       ProbOracleComp.runWith
         (fun q state => PMF.pure (twoRoundStep reply1 reply2 q.2 state)) prog s := by
-  simpa [runTwoRound, ProbOracleComp.runWith] using
+  simpa [runTwoRound, ProbOracleComp.runWith, OracleComp.runWith] using
     ProbOracleComp.eval_run_interpret
       (fun q state => pure (twoRoundStep reply1 reply2 q.2 state)) prog s
 
@@ -694,7 +694,7 @@ theorem run_gmwProver_fst {α : Type} (generator : List Bool → List Bool) (s m
         simp [P, gmwProver, relate, oracle', PMF.bind_map, Function.comp_def]) prog P.init
   have hmap := congrArg (PMF.map Prod.fst) hsim
   have hlhs : (((OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) P.respond)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) P.respond)
         prog).run P.init).bind (fun (a, s') => (relate s').map (a, ·))).map Prod.fst =
       (P.run prog P.init).map Prod.fst := by
     simp only [Prover.run, PMF.map_bind, PMF.map_comp, Function.comp_def]

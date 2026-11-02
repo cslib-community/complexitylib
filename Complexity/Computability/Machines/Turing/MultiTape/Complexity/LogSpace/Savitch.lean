@@ -500,7 +500,7 @@ theorem transducer_inSpace {Q : Type} [Finite Q] (τ : Transducer Bool Q) {α β
     {encIn : α ↪ List Bool} {encOut : β ↪ List Bool} {f : α → β}
     (h : ∀ a, encOut (f a) = τ.run τ.q₀ (encIn a)) :
     ComputableInSpace f encIn encOut fun a => (encIn a).length :=
-  of_inO (ComputableInO.of_linear (ComputableInLinearTimeAndSpace.of_transducer τ h))
+  of_inO (ComputableInO.of_linear (ComputableInDegree.of_transducer τ h))
 
 /-- Whether an option holds a value, in linear space. -/
 theorem isSome_inSpace {β : Type} (e : β ↪ List Bool) :
