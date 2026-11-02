@@ -21,10 +21,10 @@ private theorem finite_query_native {σ : Type} [Finite σ]
     ∃ (k : ℕ) (State : Type) (_ : Finite State) (ntm : MultiTapeNTM k Bool State) (c : ℕ),
       ntm.DecidesInSpace encBits A fun input => c * (Nat.log2 input.length + 1) := by
   apply M.exists_decidesInSpace (enc := encBits) (encS := encFinite σ)
-    (ComputableTidilyInSpace.of_finite _)
-    (ComputableTidilyInSpace.of_finite _)
-    (ComputableTidilyInSpace.of_finite _)
-    (ComputableTidilyInSpace.of_finite _)
+    (ComputableInSpace.of_finite _)
+    (ComputableInSpace.of_finite _)
+    (ComputableInSpace.of_finite _)
+    (ComputableInSpace.of_finite _)
     (fun _ => time) hhalt hcorrect
     (fun input : List Bool => Nat.log2 input.length + 1) (fun _ => le_rfl)
   refine ⟨Nat.card σ, fun input choices => ?_⟩

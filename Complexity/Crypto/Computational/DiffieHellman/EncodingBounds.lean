@@ -9,6 +9,7 @@ module
 
 public import Complexity.Crypto.Computational.DiscreteLog
 import Complexity.Tactic.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 
 /-!
 # Polynomial Bit-Length Bounds for Encoded Group Elements
@@ -31,10 +32,6 @@ namespace Cslib.Crypto.PrimeOrderGroupFamily
 open Turing.MultiTapeTM
 
 variable (F : PrimeOrderGroupFamily)
-
-private theorem length_encNat_mono {m n : ℕ} (h : m ≤ n) :
-    (encNat m).length ≤ (encNat n).length := by
-  simpa only [encNat_apply, ← Nat.size_eq_bits_len] using Nat.size_le_size h
 
 /-- Every encoded group element `F.encode d x` has bit-length polynomially bounded in
 `(F.encDesc d).length`. -/

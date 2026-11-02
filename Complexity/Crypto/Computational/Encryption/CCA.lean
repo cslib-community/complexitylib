@@ -280,7 +280,7 @@ structure CCA2AdversaryOf.IsPPT {Msg : Type} (encMsg : Msg ↪ List Bool)
     adversary.choose
   /-- Phase 2 guessing is uniform strict oracle PPT on `(n, state, ct)`. -/
   guess : IsOraclePPTOn (Operation := Unit) (encPair encUnary (encPair encBits encBits)) encBool
-    (fun p => adversary.guess p.1 p.2.1 p.2.2)
+    (fun ⟨n, state, ct⟩ => adversary.guess n state ct)
 
 /-- Per-stage decryption-query bound `(Q₁ n, Q₂ n)` for a `CCA2AdversaryOf Msg`. -/
 def CCA2AdversaryOf.IsQueryBounded {Msg : Type} (adversary : CCA2AdversaryOf Msg)
@@ -386,12 +386,12 @@ noncomputable def cca2GameOn {Msg Out : Type}
       (cca2Phase1Oracle encOut decrypt n keys.2))
     (adversary.choose n keys.1)).run ()
   let choice := choiceOut.1
-  if valid n keys.1 choice.1.1 choice.1.2 then
-    let ct ← encrypt n keys.1 (if bit then choice.1.2 else choice.1.1)
+  if valid n keys.1 (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice) then
+    let ct ← encrypt n keys.1 (if bit then ChoiceOut.msg₁ choice else ChoiceOut.msg₀ choice)
     let guessOut ← (OracleComp.interpret
       (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
         (cca2Phase2Oracle encOut decrypt n keys.2 ct))
-      (adversary.guess n choice.2 ct)).run ()
+      (adversary.guess n (ChoiceOut.state choice) ct)).run ()
     return guessOut.1
   else
     return false
@@ -448,16 +448,16 @@ theorem isPPTOn_run_cca2Phase1Oracle {Msg Out : Type} {encMsg : Msg ↪ List Boo
     {encOut : Out ↪ List Bool} {decrypt : ℕ → List Bool → List Bool → Option Out}
     {adversary : CCA2AdversaryOf Msg}
     (hdec : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
+      (fun ⟨n, sk, ct⟩ => decrypt n sk ct)
       (encPair encUnary (encPair encBits encBits)) (encOption encOut))
     (hA : adversary.IsPPT encMsg) :
     IsPPTOn (encPair encUnary (encPair encBits encBits))
       (encPair (encPair (encPair encMsg encMsg) encBits) (encFinEnum Unit))
-      (fun caller : ℕ × List Bool × List Bool =>
+      (fun ⟨n, pk, sk⟩ =>
         (OracleComp.interpret
           (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
-            (cca2Phase1Oracle encOut decrypt caller.1 caller.2.2))
-          (adversary.choose caller.1 caller.2.1)).run ()) := by
+            (cca2Phase1Oracle encOut decrypt n sk))
+          (adversary.choose n pk)).run ()) := by
   let ECaller := encPair encUnary (encPair encBits encBits)
   let EIn := encPair ECaller (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
   have hdecArg : ComputableTidilyInPolyTime
@@ -506,16 +506,16 @@ theorem isPPTOn_run_cca2Phase2Oracle {Msg Out : Type} {encMsg : Msg ↪ List Boo
     {encOut : Out ↪ List Bool} {decrypt : ℕ → List Bool → List Bool → Option Out}
     {adversary : CCA2AdversaryOf Msg}
     (hdec : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
+      (fun ⟨n, sk, ct⟩ => decrypt n sk ct)
       (encPair encUnary (encPair encBits encBits)) (encOption encOut))
     (hA : adversary.IsPPT encMsg) :
     IsPPTOn (encPair encUnary (encPair encBits (encPair encBits encBits)))
       (encPair encBool (encFinEnum Unit))
-      (fun caller : ℕ × List Bool × List Bool × List Bool =>
+      (fun ⟨n, sk, state, ct⟩ =>
         (OracleComp.interpret
           (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
-            (cca2Phase2Oracle encOut decrypt caller.1 caller.2.1 caller.2.2.2))
-          (adversary.guess caller.1 caller.2.2.1 caller.2.2.2)).run ()) := by
+            (cca2Phase2Oracle encOut decrypt n sk ct))
+          (adversary.guess n state ct)).run ()) := by
   let ECaller := encPair encUnary (encPair encBits (encPair encBits encBits))
   let EIn := encPair ECaller (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
   have hdecArg : ComputableTidilyInPolyTime
@@ -584,13 +584,13 @@ theorem isPPTOn_cca2GameOn {Msg Out : Type} {encMsg : Msg ↪ List Bool} {encOut
     {decrypt : ℕ → List Bool → List Bool → Option Out}
     {adversary : CCA2AdversaryOf Msg}
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
+      (fun ⟨n, pk, msg⟩ => encrypt n pk msg))
     (hdecrypt : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
+      (fun ⟨n, sk, ct⟩ => decrypt n sk ct)
       (encPair encUnary (encPair encBits encBits)) (encOption encOut))
     (hA : adversary.IsPPT encMsg) (bit : Bool) :
     IsPPTOn encUnary encBool (cca2GameOn valid encOut keyGen encrypt decrypt adversary bit) := by
@@ -690,9 +690,9 @@ theorem isPPTOn_cca2Game {Msg Out : Type} {encMsg : Msg ↪ List Bool} {encOut :
     {adversary : CCA2AdversaryOf Msg}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
+      (fun ⟨n, pk, msg⟩ => encrypt n pk msg))
     (hdecrypt : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
+      (fun ⟨n, sk, ct⟩ => decrypt n sk ct)
       (encPair encUnary (encPair encBits encBits)) (encOption encOut))
     (hA : adversary.IsPPT encMsg) (bit : Bool) :
     IsPPTOn encUnary encBool (cca2Game encOut keyGen encrypt decrypt adversary bit) :=
@@ -709,7 +709,8 @@ def CCA2AdversaryOf.restrict {Msg : Type} (valid : ℕ → List Bool → Msg →
     (adversary : CCA2AdversaryOf Msg) : CCA2AdversaryOf Msg where
   choose n pk := do
     let choice ← adversary.choose n pk
-    return (choice.1, valid n pk choice.1.1 choice.1.2 :: choice.2)
+    return (choice.1,
+      valid n pk (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice) :: ChoiceOut.state choice)
   guess n state ct :=
     if state.headD false then adversary.guess n state.tail ct else pure false
 
@@ -738,7 +739,7 @@ one bit to the saved state, and `guess` branches on that bit without querying th
 theorem CCA2AdversaryOf.IsPPT.restrict {Msg : Type} {encMsg : Msg ↪ List Bool}
     {valid : ℕ → List Bool → Msg → Msg → Bool}
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     {adversary : CCA2AdversaryOf Msg} (hadversary : CCA2AdversaryOf.IsPPT encMsg adversary) :
     CCA2AdversaryOf.IsPPT encMsg (adversary.restrict valid) where
@@ -797,7 +798,7 @@ theorem INDCCA2Of.indcca2On {Msg Out : Type} {encMsg : Msg ↪ List Bool}
     {decrypt : ℕ → List Bool → List Bool → Option Out}
     (h : INDCCA2Of encMsg encOut keyGen encrypt decrypt)
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool) :
     INDCCA2On valid encMsg encOut keyGen encrypt decrypt := by
   intro adversary hadversary

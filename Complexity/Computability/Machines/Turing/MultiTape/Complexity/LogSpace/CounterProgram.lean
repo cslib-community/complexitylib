@@ -428,11 +428,11 @@ theorem codeAt_of_code_eq {pre post : List Instr} (h : P.code = pre ++ l ++ post
 
 section Computability
 
-open MultiTapeTM ComputableTidilyInSpace
+open MultiTapeTM ComputableInSpace
 
 /-- **Expressions are evaluated in linear space** in the binary registers. -/
 theorem Expr.eval_inSpace : ∀ e : Expr,
-    ComputableTidilyInSpace (fun regs => e.eval regs) (encList encNat) encNat
+    ComputableInSpace (fun regs => e.eval regs) (encList encNat) encNat
       fun regs => (encList encNat regs).length
   | .const k => budget_const k (.refl _)
   | .reg i => budget_comp getD
@@ -445,7 +445,7 @@ theorem Expr.eval_inSpace : ∀ e : Expr,
     budget_comp natAdd h (.add h.length_le (.const 1 _))
   | .sub a b => budget_natSub (Expr.eval_inSpace a) (Expr.eval_inSpace b)
   | .bit a i =>
-    have h : ComputableTidilyInSpace
+    have h : ComputableInSpace
         (fun regs => (a.eval regs).testBit (i.eval regs)) (encList encNat) encBool
         (fun regs => (encList encNat regs).length) :=
       budget_comp_lin (g := fun p : ℕ × ℕ => p.1.testBit p.2)
@@ -473,27 +473,27 @@ abbrev encConfig : Config ↪ List Bool := encPair encNat (encList encNat)
 abbrev encConfigRead : Config × Option Bool ↪ List Bool := encPair encConfig (encOption encBool)
 
 theorem evalConfig_inSpace (e : Expr) :
-    ComputableTidilyInSpace (fun s : Config => e.eval s.2) encConfig encNat
+    ComputableInSpace (fun s : Config => e.eval s.2) encConfig encNat
       fun s => (encConfig s).length :=
   budget_comp (e.eval_inSpace) (snd _ _) (.of_le fun s => by simp only [length_encPair]; omega)
 
 theorem fst_inSpace :
-    ComputableTidilyInSpace (fun x : Config × Option Bool => x.1) encConfigRead encConfig
+    ComputableInSpace (fun x : Config × Option Bool => x.1) encConfigRead encConfig
       fun x => (encConfigRead x).length := fst _ _
 
 theorem regs_inSpace :
-    ComputableTidilyInSpace (fun x : Config × Option Bool => x.1.2) encConfigRead
+    ComputableInSpace (fun x : Config × Option Bool => x.1.2) encConfigRead
       (encList encNat) fun x => (encConfigRead x).length :=
   budget_comp_lin (snd _ _) (.refl _) fst_inSpace
 
 theorem evalConfigRead_inSpace (e : Expr) :
-    ComputableTidilyInSpace (fun x : Config × Option Bool => e.eval x.1.2) encConfigRead encNat
+    ComputableInSpace (fun x : Config × Option Bool => e.eval x.1.2) encConfigRead encNat
       fun x => (encConfigRead x).length :=
   budget_comp (e.eval_inSpace) regs_inSpace
     (.of_le fun x => by simp only [length_encPair]; omega)
 
 theorem query_inSpace :
-    ComputableTidilyInSpace P.query encConfig encNat fun s => (encConfig s).length :=
+    ComputableInSpace P.query encConfig encNat fun s => (encConfig s).length :=
   dispatch P.code (.halt []) (fun i s => i.query s.2)
     (fun i => by
       cases i with
@@ -502,28 +502,28 @@ theorem query_inSpace :
     (fst _ _)
 
 theorem halted_inSpace :
-    ComputableTidilyInSpace P.halted encConfig encBool fun s => (encConfig s).length :=
+    ComputableInSpace P.halted encConfig encBool fun s => (encConfig s).length :=
   dispatch P.code (.halt []) (fun i _ => i.halts)
     (fun _ => budget_const _ (.refl _)) (fst _ _)
 
 theorem finish_inSpace :
-    ComputableTidilyInSpace P.finish encConfig encBits fun s => (encConfig s).length :=
+    ComputableInSpace P.finish encConfig encBits fun s => (encConfig s).length :=
   dispatch P.code (.halt []) (fun i _ => i.finish)
     (fun _ => budget_const _ (.refl _)) (fst _ _)
 
 theorem label_inSpace :
-    ComputableTidilyInSpace (fun x : Config × Option Bool => x.1.1) encConfigRead encNat
+    ComputableInSpace (fun x : Config × Option Bool => x.1.1) encConfigRead encNat
       fun x => (encConfigRead x).length :=
   budget_comp_lin (fst _ _) (.refl _) fst_inSpace
 
 theorem emitted_inSpace :
-    ComputableTidilyInSpace (fun x : Config × Option Bool => P.emitted x.1) encConfigRead
+    ComputableInSpace (fun x : Config × Option Bool => P.emitted x.1) encConfigRead
       encBits fun x => (encConfigRead x).length :=
   dispatch P.code (.halt []) (fun i _ => i.emitted)
     (fun _ => budget_const _ (.refl _)) label_inSpace
 
 theorem exec_inSpace :
-    ComputableTidilyInSpace (fun x : Config × Option Bool => P.exec x.1 x.2) encConfigRead
+    ComputableInSpace (fun x : Config × Option Bool => P.exec x.1 x.2) encConfigRead
       encConfig fun x => (encConfigRead x).length := by
   refine dispatch P.code (.halt []) (fun i x => i.exec x.1 x.2) (fun i => ?_) label_inSpace
   cases i with
@@ -531,7 +531,7 @@ theorem exec_inSpace :
     have hv := budget_prod regs_inSpace
       (budget_prod (budget_const (encB := encNat) j (.refl _)) (evalConfigRead_inSpace e))
     exact budget_prod (budget_const next (.refl _))
-      (budget_comp ComputableTidilyInSpace.set hv
+      (budget_comp ComputableInSpace.set hv
         (.const_mul 128 (.add hv.length_le (.const 1 _))))
   | lt x y yes no =>
     have hxy := budget_prod (evalConfigRead_inSpace x) (evalConfigRead_inSpace y)
@@ -632,11 +632,11 @@ theorem computableInLogSpace {α β : Type} {enc : α ↪ List Bool} {encOut : �
     ComputableInLogSpace f enc encOut := by
   obtain ⟨d, hd⟩ := hbound
   exact P.toQueryMachine.computableInLogSpace (encS := Simulation.encConfig)
-    (Simulation.query_inSpace (P := P)).computableInSpace
-    (Simulation.exec_inSpace (P := P)).computableInSpace
-    (Simulation.emitted_inSpace (P := P)).computableInSpace
-    (Simulation.halted_inSpace (P := P)).computableInSpace
-    (Simulation.finish_inSpace (P := P)).computableInSpace time hhalt hpre hf
+    (Simulation.query_inSpace (P := P))
+    (Simulation.exec_inSpace (P := P))
+    (Simulation.emitted_inSpace (P := P))
+    (Simulation.halted_inSpace (P := P))
+    (Simulation.finish_inSpace (P := P)) time hhalt hpre hf
     ⟨_, fun a t ht => Simulation.length_encConfig_le P (P.run_fst_le _ t) (P.run_snd_length _ t)
       (hd a t ht)⟩
 

@@ -22,6 +22,7 @@ import Mathlib.Data.List.GetD
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
+import Complexity.Foundations.Data.List.Lookup
 
 /-!
 # Executable bounded-incidence branch evaluator and Stage-1 design refinement (Proposition 5.3)
@@ -300,12 +301,6 @@ section Stage1
 
 open Cslib.BalancedSchedules
 
-private theorem getD_map_range {α : Type*} (f : ℕ → α) (d : α) {n i : ℕ} (hi : i < n) :
-    ((List.range n).map f).getD i d = f i := by
-  have hi' : i < ((List.range n).map f).length := by
-    simpa only [List.length_map, List.length_range] using hi
-  rw [List.getD_eq_getElem _ _ hi', List.getElem_map, List.getElem_range]
-
 private theorem auxDim_le_of_twenty_le {n' : ℕ} (hn : 20 ≤ n') :
     ReplacementParams.auxDim n' ≤ n' := by
   have h5 : 5 ≤ Nat.clog 2 n' := by
@@ -532,8 +527,8 @@ private theorem balancedSchedule_construct_of_scopes {n' Q r b w : ℕ}
     have hx_lt : (BalancedSchedules.constructBalancedSchedules
         n' augScopes.length Q r (b + w) edges).1[v.1][t.1] < r := by
       simpa only [Nat.max_eq_left hr] using hlt_w _ (List.getElem_mem ht_lt)
-    simp only [val_varAssignOfList, normalizeVarSchedules, getD_map_range _ [] v.2,
-      List.getD_eq_getElem _ [] hv_lt, normalizeScheduleWord, getD_map_range _ 0 t.2,
+    simp only [val_varAssignOfList, normalizeVarSchedules, List.getD_map_range _ [] v.2,
+      List.getD_eq_getElem _ [] hv_lt, normalizeScheduleWord, List.getD_map_range _ 0 t.2,
       List.getD_eq_getElem _ 0 ht_lt, Nat.max_eq_left hr, Nat.mod_eq_of_lt hx_lt, a,
       BalancedSchedules.constructedVarSchedule, BalancedSchedules.wordToSchedule, hx_lt,
       ↓reduceDIte]
@@ -560,9 +555,9 @@ private theorem balancedSchedule_construct_of_scopes {n' Q r b w : ℕ}
         simpa only [Nat.max_eq_left hr] using hlt_w _ (List.getElem_mem ht_lt)
       have hfalse : (canonicalScopeVars n' (augScopes.getD f.1 [])).isEmpty = false :=
         Bool.eq_false_iff.mpr fun h => hemp ((canonicalScopeVars_isEmpty_iff n' augScopes f).mp h)
-      simp only [val_factorAssignOfList, normalizeScopeSchedules, getD_map_range _ [] f.2,
+      simp only [val_factorAssignOfList, normalizeScopeSchedules, List.getD_map_range _ [] f.2,
         hfalse, Bool.false_eq_true, ↓reduceIte, List.getD_eq_getElem _ [] hf_lt,
-        normalizeScheduleWord, getD_map_range _ 0 t.2, List.getD_eq_getElem _ 0 ht_lt,
+        normalizeScheduleWord, List.getD_map_range _ 0 t.2, List.getD_eq_getElem _ 0 ht_lt,
         Nat.max_eq_left hr, Nat.mod_eq_of_lt hx_lt, d,
         BalancedSchedules.constructedFactorSchedule, BalancedSchedules.wordToSchedule, hx_lt,
         ↓reduceDIte]
@@ -727,7 +722,7 @@ private theorem groupMeasurementMatrices_spec {n' D_cap Q r A₀ R : ℕ}
   let varScheds := normalizeVarSchedules n' Q r sv
   have hVg_eq : Vg = CopyPlacement.varGroupList varScheds t.1 g.1 := by
     dsimp only [Vg, data, buildReplacementDesignData, varScheds]
-    rw [getD_map_range _ [] t.2, getD_map_range _ [] g.2]
+    rw [List.getD_map_range _ [] t.2, List.getD_map_range _ [] g.2]
   have hVg_lt : ∀ w ∈ Vg, w < n' := fun w hw => by
     rw [hVg_eq, CopyPlacement.mem_varGroupList] at hw
     simpa only [varScheds, length_normalizeVarSchedules] using hw.1
@@ -736,8 +731,8 @@ private theorem groupMeasurementMatrices_spec {n' D_cap Q r A₀ R : ℕ}
     exact CopyPlacement.nodup_varGroupList varScheds t.1 g.1
   have hCtg_eq : Ctg = CopyPlacement.restrictGroupColumns Vg data.measurementMatrix := by
     dsimp only [Ctg, data, buildReplacementDesignData]
-    rw [List.map_map, getD_map_range _ [] t.2, Function.comp_apply, List.map_map,
-      getD_map_range _ [] g.2, Function.comp_apply, ← hVg_eq]
+    rw [List.map_map, List.getD_map_range _ [] t.2, Function.comp_apply, List.map_map,
+      List.getD_map_range _ [] g.2, Function.comp_apply, ← hVg_eq]
   refine ⟨hVg_lt, ?_, fun row hrow => ?_⟩
   · rw [hCtg_eq, CopyPlacement.restrictGroupColumns, List.length_map]
   · rw [hCtg_eq, CopyPlacement.restrictGroupColumns, List.mem_map] at hrow
@@ -791,7 +786,7 @@ private theorem getD_applyGroupBits_mem {n' : ℕ} {Vg : List ℕ} (hnodup : Vg.
     (hlt : ∀ w ∈ Vg, w < n') (ug base : List Bool) (j₀ : Fin Vg.length) :
     (applyGroupBits n' Vg ug base).getD Vg[j₀] false = ug.getD j₀.1 false := by
   have hv_lt : Vg[j₀] < n' := hlt Vg[j₀] (List.getElem_mem j₀.2)
-  rw [applyGroupBits, getD_map_range _ false hv_lt]
+  rw [applyGroupBits, List.getD_map_range _ false hv_lt]
   suffices ∀ k ≤ Vg.length,
       (List.range k).foldl (fun cur j => if Vg.getD j n' == Vg[j₀] then ug.getD j false else cur)
         (base.getD Vg[j₀] false) =
@@ -816,7 +811,7 @@ private theorem getD_applyGroupBits_mem {n' : ℕ} {Vg : List ℕ} (hnodup : Vg.
 private theorem getD_applyGroupBits_not_mem {n' v : ℕ} {Vg : List ℕ} (hv_lt : v < n')
     (hnot : v ∉ Vg) (ug base : List Bool) :
     (applyGroupBits n' Vg ug base).getD v false = base.getD v false := by
-  rw [applyGroupBits, getD_map_range _ false hv_lt]
+  rw [applyGroupBits, List.getD_map_range _ false hv_lt]
   suffices ∀ k ≤ Vg.length,
       (List.range k).foldl (fun cur j => if Vg.getD j n' == v then ug.getD j false else cur)
         (base.getD v false) = base.getD v false from this Vg.length le_rfl
