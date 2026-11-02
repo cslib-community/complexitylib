@@ -629,7 +629,8 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   minimum with native trial division and real counter calls, preserving the explicit window
   cost factor. The dyadic parameter kernel computes geometry-compatible values and explicitly
   classifies the small regime; it does not prove the tuned aggregate exponent or dispatch a solver.
-  Global solver/host composition and the full endpoint remain separate.
+  Remaining are native fast/small solver assembly ([#2146]), global asymptotic composition
+  using the component-cost bridge ([#2145]), outer-host execution and the full endpoint.
 - **Memory-oracle realization** ([#2205], [#2213]): the foundational graded kernel certifies
   all four memory queries, register-word glue, native branches and binds with one fixed
   continuation emitter for all runtime replies. Its functional representation retains the
@@ -794,3 +795,7 @@ not planned, not as proved.
 [#2063]: https://github.com/cslib-community/complexitylib/issues/2063
 [#2205]: https://github.com/cslib-community/complexitylib/issues/2205
 [#2213]: https://github.com/cslib-community/complexitylib/issues/2213
+[#2098]: https://github.com/cslib-community/complexitylib/issues/2098
+[#2127]: https://github.com/cslib-community/complexitylib/issues/2127
+[#2145]: https://github.com/cslib-community/complexitylib/issues/2145
+[#2146]: https://github.com/cslib-community/complexitylib/issues/2146
