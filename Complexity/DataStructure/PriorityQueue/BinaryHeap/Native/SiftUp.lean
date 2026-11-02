@@ -252,7 +252,7 @@ def localWork (d : HeapLayout × ℕ) (s : Memory.State) : ℕ :=
 
 /-- Realize the original sift-up, with one emitter before all runtime layouts, indices, memory
 contents and widths. Constant-one preparation and loop/finish composition use shared rules. -/
-theorem realizes_siftUp :
+private theorem realizes_siftUp_graded :
     Realizes .exact (fun d : HeapLayout × ℕ => PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 d.2)
       indexWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
       (fun w d s => Shape w (d.1, ()) d.2 s) localWork := by
@@ -280,6 +280,28 @@ theorem realizes_siftUp :
   · intro d s
     simp [localWork, StateTransitionSpec.clientResult, StateTransitionSpec.clientState,
       StateTransitionSpec.runClient_pure', Nat.add_assoc]
+
+/-- The queryful source pays every executed loop control. Bounded preparation/finish work is
+absorbed into one fixed factor, so call sites may use the standard zero-work certificate.
+This does not discard a query-free or arbitrary grading. -/
+theorem realizes_siftUp :
+    Realizes .exact (fun d : HeapLayout × ℕ => PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 d.2)
+      indexWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
+      (fun w d s => Shape w (d.1, ()) d.2 s) (fun _ _ => 0) := by
+  refine realizes_siftUp_graded.mono_mul 2 (fun d s => ?_)
+  have hquery : ∀ x t, 1 ≤ memoryCost (step x) t := by
+    intro x t
+    change 1 ≤ 1 + _
+    omega
+  have hc := whileWork_zero_le guard step hquery (d.1, ()) (Nat.log 2 d.2) d.2 s
+  have he := finish_loop_eq (d.1, ()) (Nat.log 2 d.2) d.2 le_rfl
+  have hm : memoryCost (PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 d.2) s =
+      memoryCost (boundedWhile guard step (d.1, ()) (Nat.log 2 d.2) d.2) s := by
+    rw [← he]
+    simp only [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind, memoryCost_pure, Nat.add_zero]
+  rw [← hm] at hc
+  dsimp only [localWork]
+  omega
 
 /-- The actual combined currency is logarithmic. The premise is admissibility of the original
 program's complete history, not an assumed cost of a different implementation. -/
@@ -349,6 +371,10 @@ theorem exec_siftUp {r : ℕ} (frontier : Fin r) (src : Fin 5 → Fin r)
         Nat.mul_le_mul_left _ (by omega)
       _ = _ := by ring
   rw [← hm] at hpost
-  exact ⟨y, hy.mono hbound, hm, hpost.1, hpost.2, hframe⟩
+  refine ⟨y, hy.mono (le_trans ?_ hbound), hm, hpost.1, hpost.2, hframe⟩
+  apply Nat.mul_le_mul_left
+  change memoryCost (PriorityQueue.BinaryHeap.Memory.siftUp L k) (memoryState frontier x) +
+      0 + 1 ≤ _
+  omega
 
 end Cslib.DataStructure.PriorityQueue.BinaryHeap.Native.SiftUp
