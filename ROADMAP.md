@@ -201,9 +201,14 @@ index links to canonical definitions rather than keeping a second set.
   schedule with endpointwise telescoping and summable available-scale precision payments.
   Actual correction iterates now supply product entry/row-mass bounds and their scheduled
   omitted-product norm sum. Product-seed correction/reward samples have proved true means,
-  reaching the next actual hierarchy reward. The full task family remains to be assembled:
-  routed direct bins, pilot rows, preparatory/normalized rows, detector vectors, estimated copy/reward
-  multipliers and the complete scheduled mean-prefix bound with dependency ranks. Paired raw
+  reaching the next actual hierarchy reward. The local pilot and actual-correction
+  preparation/normalization families now share an expanded dependency order, including
+  normalized children and an actual copy/reward projection client. Ranks are computed from
+  finite iteration bounds; role/rate/suffix requests preserve the inherited source or reset it
+  to the midpoint. Pilot steps use the current maximum; actual corrections and copy weights
+  use the final pilot maximum. The previous reward is still a local leaf. Cross-stage/global
+  role tuple assembly, routed direct bins, and the complete scheduled mean-prefix bound remain
+  open; range/true means do not establish root regularity or the error recurrence. Paired raw
   differences, full-coordinate conditional walks, summed noise, compression, strong recursive
   induction and native logarithmic workspace/class equality remain required.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a

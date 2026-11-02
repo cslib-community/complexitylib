@@ -2790,6 +2790,7 @@ public import Complexity.Crypto.Computational.Hybrid.Sequence
 public import Complexity.Crypto.Computational.IndexedSignature
 public import Complexity.Crypto.Computational.IndexedSignature.Counter
 public import Complexity.Crypto.Computational.IndexedSignature.Seeded
+public import Complexity.Crypto.Computational.Kilian
 public import Complexity.Crypto.Computational.LWE.Basic
 public import Complexity.Crypto.Computational.MAC
 public import Complexity.Crypto.Computational.MerkleDamgard
@@ -2864,6 +2865,7 @@ public import Complexity.Crypto.Computational.PseudorandomFunction.Coins
 public import Complexity.Crypto.Computational.PseudorandomFunction.RandomOracle
 public import Complexity.Crypto.Computational.PseudorandomFunction.TruthTable
 public import Complexity.Crypto.Computational.PseudorandomGenerator
+public import Complexity.Crypto.Computational.PseudorandomPermutation
 public import Complexity.Crypto.Computational.SIS.Basic
 public import Complexity.Crypto.Computational.SchnorrIdentification
 public import Complexity.Crypto.Computational.SchnorrProtocol
@@ -3565,6 +3567,7 @@ public import Complexity.Foundations.Probability.AtomCutoffs
 public import Complexity.Foundations.Probability.ColumnDetector
 public import Complexity.Foundations.Probability.ConditionalProductMean
 public import Complexity.Foundations.Probability.CorrectionAtom
+public import Complexity.Foundations.Probability.CorrectionRowRecipe
 public import Complexity.Foundations.Probability.CorrectionRowTasks
 public import Complexity.Foundations.Probability.DetectedHierarchy
 public import Complexity.Foundations.Probability.DetectedStage
@@ -3580,10 +3583,12 @@ public import Complexity.Foundations.Probability.Gaussian.Sheppard
 public import Complexity.Foundations.Probability.HeavyCount
 public import Complexity.Foundations.Probability.HeavyCountRarity
 public import Complexity.Foundations.Probability.HeavyCountTail
+public import Complexity.Foundations.Probability.HierarchyAtomCutoff
 public import Complexity.Foundations.Probability.HierarchyParams
 public import Complexity.Foundations.Probability.HierarchySampling
 public import Complexity.Foundations.Probability.HierarchyTaskData
 public import Complexity.Foundations.Probability.HierarchyTaskMeans
+public import Complexity.Foundations.Probability.PilotRowTasks
 public import Complexity.Foundations.Probability.PilotTasks
 public import Complexity.Foundations.Probability.PolynomialAtomCompression
 public import Complexity.Foundations.Probability.PolynomialAtomCutoffs
@@ -3630,6 +3635,7 @@ public import Complexity.Languages.Probabilistic.LinearHash
 public import Complexity.Languages.Probabilistic.Memoize
 public import Complexity.Languages.Probabilistic.Notation
 public import Complexity.Languages.Probabilistic.Oracle
+public import Complexity.Languages.Probabilistic.Oracle.CoinFixing
 public import Complexity.Languages.Probabilistic.Oracle.Interaction
 public import Complexity.Languages.Probabilistic.Oracle.QueryCount
 public import Complexity.Languages.Probabilistic.Oracle.Simulation

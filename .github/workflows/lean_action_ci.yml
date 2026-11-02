@@ -45,8 +45,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           DISABLE_BUILD_HANDOFF: ${{ vars.DISABLE_BUILD_HANDOFF }}
         run: python3 -B scripts/cache_handoff_measurement.py prepare
-      - name: Test documentation checker
+      # Includes the manual checker/builder controls in test_operator_manual.py. These source
+      # checks need only Python: no research exports, publishing tools or Lean installation.
+      - name: Test Python tooling
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
+      - name: Operator manual links and excerpts
+        run: python3 -B scripts/check_operator_manual.py
       - name: "Source hygiene"
         run: python3 -B scripts/check_hygiene.py --check-simp
       # The API documentation (docbuild/) and the guide (guide/) are separate Lake projects that

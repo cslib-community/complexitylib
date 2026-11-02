@@ -67,28 +67,48 @@ theorem correctionInput_count_le
     hC hC1 (P.cutoff_nonneg hf) hct (P.cutoff_mono hf) P.γ_nonneg P.γ_le_one
     P.γ_antitone P.γ_zero P.gate P.J_pos P.R_rank P.R_var hpos hi
 
+/-- The pilot's incoming-count certificate uses the current step's maximum, before the final
+pilot is known. This is the pilot case of [OpenAI2026LogSpace, Lemma 4.3 (3)]. -/
+theorem pilotInput_count_le
+    (hch : Cslib.Probability.RetentionChannels X Y f π cπ Cπ Cpair Cvar)
+    (hf : 0 < f) (hcπ : 0 < cπ) (hpair : 0 ≤ Cpair)
+    (hC : ∀ x y, 0 ≤ C x y) (hC1 : C *ᵥ 1 ≤ 1) {i : ℕ} (hi : i < P.k)
+    {z : V} (hg : P.γ (pilotMax (P.cutoff f) P.γ
+      (columnDetector X Y P.ϕ P.ρ P.J P.K f) C (i + 1) z) ≠ 0) :
+    (#({w | P.δ₁ * f ≤ pilotInput (P.cutoff f) P.γ
+      (columnDetector X Y P.ϕ P.ρ P.J P.K f) C i w z} : Finset V) : ℝ) ≤ P.R / f := by
+  have hct (t : ℝ) (ht : 0 ≤ t) : P.cutoff f t ≤ t :=
+    (P.cutoff_le hf t).trans (max_le (by
+      have := mul_nonneg P.θ_pos.le hf.le
+      linarith) ht)
+  exact card_le_of_pilot_pos hch hf hcπ hpair P.ϕ_one P.ρ_le_one P.η_pos P.ρ_one
+    hC hC1 (P.cutoff_nonneg hf) hct P.γ_nonneg P.γ_le_one P.γ_zero
+    P.gate P.J_pos P.R_rank P.R_var hi (lt_of_le_of_ne (P.γ_nonneg _) hg.symm)
+
 end Matrix.HierarchyParams
 
-namespace Matrix.HierarchyParams.CorrectionSampling
+namespace Matrix.CorrectionSamplingLaws
 
-variable {q cπ Cπ Cpair Cvar : ℝ} (P : FourthRootHierarchyParams q cπ Cπ Cpair Cvar)
+variable {q cπ Cπ Cpair Cvar : ℝ}
+  (P : Matrix.FourthRootHierarchyParams q cπ Cπ Cpair Cvar)
   {V ι κ : Type*} [Fintype V] [Fintype ι] [Fintype κ]
   (X : ι → V → Prop) (Y : κ → V → Prop)
   [∀ s v, Decidable (X s v)] [∀ t v, Decidable (Y t v)]
-  {f π : ℝ} {C : Matrix V V ℝ} {i : ℕ}
+  {f π : ℝ} {G : Matrix V V ℝ} {g : V → ℝ} {i : ℕ}
 
-/-- Build actual correction sampling data from two ordered channel laws and primitive cutoffs.
-The incoming count follows from the hierarchy detector, rather than being a supplied field. -/
-noncomputable def ofChannels
+/-- Common channel-to-gate construction. Clients derive the incoming count for their own true
+input and deterministic multiplier; the shared code derives ranks and both pair-count laws. -/
+noncomputable def ofHierarchyChannels
     (hXY : Cslib.Probability.RetentionChannels X Y f π cπ Cπ Cpair Cvar)
     (hYX : Cslib.Probability.RetentionChannels Y X f π cπ Cπ Cpair Cvar)
-    (hf : 0 < f) (hπ : 0 < π) (hcπ : 0 < cπ) (hpair : 0 ≤ Cpair)
-    (hC : ∀ x y, 0 ≤ C x y) (hC1 : C *ᵥ 1 ≤ 1) (hi : i < P.k)
+    (hf : 0 < f) (hπ : 0 < π) (hpair : 0 ≤ Cpair) (hi : i < P.k)
+    (hcount : ∀ z, g z ≠ 0 →
+      (#({w | P.δ₁ * f ≤ G w z} : Finset V) : ℝ) ≤ P.R / f)
     (I : ℝ → ℝ → ℝ) (τ h : ℝ → ℝ) (τ₀ : ℝ)
     (hQ : ∀ v, P.Q v ≠ 0 → h v = 1)
     (hτ0 : ∀ r, 0 ≤ τ r) (hτ1 : ∀ r, τ r ≤ 1) (hτ₀ : 0 ≤ τ₀)
     (hτ : ∀ r, r ≤ τ₀ → τ r = 1) (hI : ∀ v r, v ≤ P.δ₁ → I v r = 0) :
-    P.toHierarchyParams.CorrectionSampling X Y X Y Y f C i where
+    CorrectionSamplingLaws P.Q G g X Y Y f ((i : ℝ) + 1) where
   I := I
   τ := τ
   h := h
@@ -136,18 +156,46 @@ noncomputable def ofChannels
     exact Cslib.Probability.card_filter_and_le_of_dens_le (by
       simpa only [and_comm] using hYX.pair w x hw)
   incoming_count z hg := by
-    have hc := P.toHierarchyParams.correctionInput_count_le X Y hXY hf hcπ hpair hC hC1 hi hg
-    have hsub : ({w | P.δ₁ < P.toHierarchyParams.correctionInput X Y f C i w z / f} : Finset V)
-        ⊆ ({w | P.δ₁ * f ≤ P.toHierarchyParams.correctionInput X Y f C i w z} : Finset V) := by
+    have hc := hcount z hg
+    have hsub : ({w | P.δ₁ < G w z / f} : Finset V)
+        ⊆ ({w | P.δ₁ * f ≤ G w z} : Finset V) := by
       intro w hw
       simp only [mem_filter, mem_univ, true_and] at hw ⊢
       exact ((lt_div_iff₀ hf).mp hw).le
     have hcount := (show
-      (#({w | P.δ₁ < P.toHierarchyParams.correctionInput X Y f C i w z / f} : Finset V) : ℝ) ≤
-        #({w | P.δ₁ * f ≤ P.toHierarchyParams.correctionInput X Y f C i w z} : Finset V) by
+      (#({w | P.δ₁ < G w z / f} : Finset V) : ℝ) ≤
+        #({w | P.δ₁ * f ≤ G w z} : Finset V) by
           exact_mod_cast card_le_card hsub).trans hc
     have hscaled := mul_le_mul_of_nonneg_left ((le_div_iff₀ hf).mp hcount) hpair
     nlinarith
   incoming_rank := Nat.le_ceil _
+
+end Matrix.CorrectionSamplingLaws
+
+namespace Matrix.HierarchyParams.CorrectionSampling
+
+variable {q cπ Cπ Cpair Cvar : ℝ} (P : FourthRootHierarchyParams q cπ Cπ Cpair Cvar)
+  {V ι κ : Type*} [Fintype V] [Fintype ι] [Fintype κ]
+  (X : ι → V → Prop) (Y : κ → V → Prop)
+  [∀ s v, Decidable (X s v)] [∀ t v, Decidable (Y t v)]
+  {f π : ℝ} {C : Matrix V V ℝ} {i : ℕ}
+
+/-- Build actual correction sampling data from two ordered channel laws and primitive cutoffs.
+The incoming count follows from the hierarchy detector, rather than being a supplied field. -/
+noncomputable def ofChannels
+    (hXY : Cslib.Probability.RetentionChannels X Y f π cπ Cπ Cpair Cvar)
+    (hYX : Cslib.Probability.RetentionChannels Y X f π cπ Cπ Cpair Cvar)
+    (hf : 0 < f) (hπ : 0 < π) (hcπ : 0 < cπ) (hpair : 0 ≤ Cpair)
+    (hC : ∀ x y, 0 ≤ C x y) (hC1 : C *ᵥ 1 ≤ 1) (hi : i < P.k)
+    (I : ℝ → ℝ → ℝ) (τ h : ℝ → ℝ) (τ₀ : ℝ)
+    (hQ : ∀ v, P.Q v ≠ 0 → h v = 1)
+    (hτ0 : ∀ r, 0 ≤ τ r) (hτ1 : ∀ r, τ r ≤ 1) (hτ₀ : 0 ≤ τ₀)
+    (hτ : ∀ r, r ≤ τ₀ → τ r = 1) (hI : ∀ v r, v ≤ P.δ₁ → I v r = 0) :
+    P.toHierarchyParams.CorrectionSampling X Y X Y Y f C i where
+  toCorrectionSamplingLaws := CorrectionSamplingLaws.ofHierarchyChannels P X Y
+    hXY hYX hf hπ hpair hi
+    (fun z hg => P.toHierarchyParams.correctionInput_count_le X Y
+      hXY hf hcπ hpair hC hC1 hi (z := z) hg)
+    I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI
 
 end Matrix.HierarchyParams.CorrectionSampling

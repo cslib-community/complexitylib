@@ -63,7 +63,7 @@ theorem HasGap.eventually_exists_indexed_mask {pair : SamplablePair} {gap : ℕ 
     (hpair : pair.HasGap gap) (test : ℕ → ℕ → List (List Bool × Bool) → ProbComp Bool)
     (htest : IsPPTOn (encPair (encPair encUnary encUnary)
       (encList (encPair encBits encBool))) encBool
-        (fun input => test input.1.1 input.1.2 input.2))
+        (fun ((n, i), samples) => test n i samples))
     {candidates count densityBound inverseGap : ℕ → ℕ} {numerator : ℕ → ℕ → ℕ}
     (hcandidates : ComputableInPolyTime candidates encUnary encUnary)
     (hcount : ComputableInPolyTime count encUnary encUnary)
