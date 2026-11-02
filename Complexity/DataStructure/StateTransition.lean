@@ -1098,13 +1098,14 @@ theorem eval_eq_liftM {D : StateTransitionSpec.{u, v, u}}
   | pure a => rfl
   | liftBind o k ih => exact ih (D.stepFn s o).2 (D.stepFn s o).1
 
-/-- Two independent abstract components. A backend must separately justify their independence. -/
+/-- Two independent abstract components. A backend must separately justify their independence.
+The answer types are `Sum.elim D.Result E.Result`, so the signature of a product depends only on
+the signatures of its components: clients of `product D E` are clients of `product D' E'` when
+`D`, `D'` and `E`, `E'` differ only in their states' admissibility. -/
 abbrev product (D E : StateTransitionSpec.{u, v, w}) : StateTransitionSpec where
   State := D.State × E.State
   Op := D.Op ⊕ E.Op
-  Result
-    | .inl o => D.Result o
-    | .inr o => E.Result o
+  Result := Sum.elim D.Result E.Result
   step s
     | .inl o, s', a => D.step s.1 o s'.1 a ∧ s'.2 = s.2
     | .inr o, s', a => s'.1 = s.1 ∧ E.step s.2 o s'.2 a
