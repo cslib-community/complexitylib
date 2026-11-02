@@ -6,10 +6,14 @@ public import Complexity.Algorithms.ExactTriangle.Defs
 public import Complexity.Algorithms.ExactTriangle.FailureAccounting
 public import Complexity.Algorithms.ExactTriangle.Hashing
 public import Complexity.Algorithms.ExactTriangle.Lopsided
+public import Complexity.Algorithms.ExactTriangle.ParameterChoice
+public import Complexity.Algorithms.ExactTriangle.ParameterChoice.CostGeometry
 public import Complexity.Algorithms.ExactTriangle.PieceBounds
 public import Complexity.Algorithms.ExactTriangle.Splitting
 public import Complexity.Algorithms.ExactTriangle.Weights
 public import Complexity.Algorithms.ExactTriangle.Witnesses
+public import Complexity.Algorithms.Lean.Dijkstra.Client
+public import Complexity.Algorithms.Lean.Dijkstra.Cost
 public import Complexity.Algorithms.Lean.Huffman.Basic
 public import Complexity.Algorithms.Lean.Huffman.Kraft
 public import Complexity.Algorithms.Lean.Huffman.Optimality
@@ -155,6 +159,12 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.SourceBound
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.Spread
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.TimeBound
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.Width
+public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicCost
+public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters
+public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.Exec
+public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.Input
+public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.Program
+public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.SourceBounds
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Accounting
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Controller
@@ -2599,6 +2609,7 @@ public import Complexity.Computability.WordRAM.Notation
 public import Complexity.Computability.WordRAM.OfTuring
 public import Complexity.Computability.WordRAM.PackedCount
 public import Complexity.Computability.WordRAM.Power
+public import Complexity.Computability.WordRAM.Power.Rename
 public import Complexity.Computability.WordRAM.RAM
 public import Complexity.Computability.WordRAM.RAMInput
 public import Complexity.Computability.WordRAM.Randomized.Defs
@@ -2867,6 +2878,7 @@ public import Complexity.Crypto.Protocols.Signature.RandomOracle
 public import Complexity.DataStructure.AVLTree.Basic
 public import Complexity.DataStructure.AVLTree.Erase
 public import Complexity.DataStructure.AVLTree.Impl
+public import Complexity.DataStructure.AdjacencyList.Spec
 public import Complexity.DataStructure.CountMin.Basic
 public import Complexity.DataStructure.CountMin.LinearHash
 public import Complexity.DataStructure.CountMin.Probability
@@ -2930,6 +2942,7 @@ public import Complexity.DataStructure.HashFamily.WordRAM.KWise
 public import Complexity.DataStructure.HashFamily.WordRAM.MultiplyShift
 public import Complexity.DataStructure.HashFamily.WordRAM.Tabulation
 public import Complexity.DataStructure.Memory.Field
+public import Complexity.DataStructure.Memory.Frame
 public import Complexity.DataStructure.Memory.Spec
 public import Complexity.DataStructure.ObliviousSequence
 public import Complexity.DataStructure.Online.Basic
@@ -2981,9 +2994,11 @@ public import Complexity.DataStructure.StateTransition.CostHoare
 public import Complexity.DataStructure.StateTransition.Hoare
 public import Complexity.DataStructure.StateTransition.Impl
 public import Complexity.DataStructure.StateTransition.Module
+public import Complexity.DataStructure.StateTransition.Oracle
 public import Complexity.DataStructure.StateTransition.Randomized
 public import Complexity.DataStructure.StateTransition.Refinement
 public import Complexity.DataStructure.StateTransition.Resource
+public import Complexity.DataStructure.StateTransition.TotalCost
 public import Complexity.DataStructure.VanEmdeBoas.Basic
 public import Complexity.DataStructure.VanEmdeBoas.Elements
 public import Complexity.DataStructure.VanEmdeBoas.Erase
