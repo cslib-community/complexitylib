@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Computability.GenericRAM.Native.IndexFold
 public import Complexity.Foundations.Combinatorics.SubsetPairCount
+public import Complexity.Foundations.Data.BitString.Combination
 public import Complexity.Foundations.Data.BitString.Support
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
@@ -358,67 +359,24 @@ private theorem findBucket_of_le {n q j : ℕ} (hj : subsetPairCount n q ≤ j) 
   have hnot : ¬(j < subsetPairCount n q) := by omega
   simp only [hnot, ↓reduceIte] at hspec; simp only [Internal.findBucket, hspec]
 
-private def pureUnrankComb : ℕ → ℕ → ℕ → List Bool
-  | 0, _, _ => []
-  | m + 1, k, r =>
-    if r < m.choose k then false :: pureUnrankComb m k r
-    else true :: pureUnrankComb m (k - 1) (r - m.choose k)
-
 private theorem foldl_unrankCombStep_eq {N m : ℕ} (hm : m ≤ N) (k r : ℕ) (acc : List Bool) :
     ((List.range m).reverse.foldl (Internal.unrankCombStep (pascalTable N)) ((k, r), acc)).2 =
-      acc ++ pureUnrankComb m k r := by
+      acc ++ unrankCombination m k r := by
   induction m generalizing k r acc with
-  | zero => simp [pureUnrankComb]
+  | zero => simp [unrankCombination]
   | succ m ih =>
     rw [List.range_succ, List.reverse_append, List.reverse_singleton, List.singleton_append,
-      List.foldl_cons, pureUnrankComb]
+      List.foldl_cons, unrankCombination]
     have hm_le : m ≤ N := by omega
     simp only [Internal.unrankCombStep, getD_pascalTable_eq_choose hm_le k]; split_ifs
     · rw [ih hm_le k r (acc ++ [false]), List.append_assoc, List.singleton_append]
     · rw [ih hm_le (k - 1) (r - m.choose k) (acc ++ [true]), List.append_assoc,
         List.singleton_append]
 
-private theorem unrankComb_eq_pure (n k r : ℕ) :
-    Internal.unrankComb n k r (pascalTable n) = pureUnrankComb n k r := by
+/-- The table-driven unranker computes `Cslib.BitString.unrankCombination`. -/
+theorem unrankComb_eq_unrankCombination (n k r : ℕ) :
+    Internal.unrankComb n k r (pascalTable n) = unrankCombination n k r := by
   simpa only [Internal.unrankComb, List.nil_append] using foldl_unrankCombStep_eq le_rfl k r []
-
-private theorem length_pureUnrankComb (m k r : ℕ) : (pureUnrankComb m k r).length = m := by
-  induction m generalizing k r with
-  | zero => rfl
-  | succ m ih => simp only [pureUnrankComb]; split_ifs <;> simp [ih]
-
-private theorem count_true_pureUnrankComb {m k r : ℕ} (hr : r < m.choose k) :
-    (pureUnrankComb m k r).count true = k := by
-  induction m generalizing k r with
-  | zero => cases k with | zero => rfl | succ k => simp at hr
-  | succ m ih =>
-    simp only [pureUnrankComb]; split_ifs with hlt
-    · simp [ih hlt]
-    · cases k with
-      | zero => simp only [Nat.choose_zero_right] at hr hlt; omega
-      | succ k =>
-        rw [Nat.choose_succ_succ, Nat.succ_eq_add_one] at hr
-        simp [ih (by omega : r - m.choose (k + 1) < m.choose k)]
-
-private theorem pureUnrankComb_injective {m k r₁ r₂ : ℕ}
-    (hr₁ : r₁ < m.choose k) (hr₂ : r₂ < m.choose k)
-    (heq : pureUnrankComb m k r₁ = pureUnrankComb m k r₂) : r₁ = r₂ := by
-  induction m generalizing k r₁ r₂ with
-  | zero =>
-    cases k with
-    | zero => simp only [Nat.choose_zero_right, Nat.lt_one_iff] at hr₁ hr₂; omega
-    | succ k => simp at hr₁
-  | succ m ih =>
-    simp only [pureUnrankComb] at heq; split_ifs at heq with h₁ h₂ h₂
-    · simp only [List.cons.injEq, true_and] at heq; exact ih h₁ h₂ heq
-    · simp at heq
-    · simp at heq
-    · simp only [List.cons.injEq, true_and] at heq
-      cases k with
-      | zero => simp only [Nat.choose_zero_right] at hr₁ h₁; omega
-      | succ k =>
-        rw [Nat.choose_succ_succ, Nat.succ_eq_add_one] at hr₁ hr₂
-        have := ih (by omega : r₁ - m.choose (k + 1) < m.choose k) (by omega) heq; omega
 
 private def pureScatter : List Bool → ℕ → List Bool
   | [], _ => []
@@ -480,7 +438,7 @@ theorem unrankSubsetPair_of_le {n q j : ℕ} (hj : subsetPairCount n q ≤ j) :
     (unrankSubsetPair n q j).1.length = n := by
   by_cases hj : j < subsetPairCount n q
   · obtain ⟨_, _, hfb, -⟩ := findBucket_of_lt hj
-    simp [unrankSubsetPair, hfb, unrankComb_eq_pure, length_pureUnrankComb]
+    simp [unrankSubsetPair, hfb, unrankComb_eq_unrankCombination, length_unrankCombination]
   · rw [unrankSubsetPair_of_le (by omega)]; simp
 
 /-- The second indicator `indU` returned by `unrankSubsetPair n q j` has exact length `n`. -/
@@ -489,8 +447,8 @@ theorem unrankSubsetPair_of_le {n q j : ℕ} (hj : subsetPairCount n q ≤ j) :
   dsimp only [DecodedPair.indU, DecodedPair.innerSign]
   by_cases hj : j < subsetPairCount n q
   · obtain ⟨_, _, hfb, -⟩ := findBucket_of_lt hj
-    simp [unrankSubsetPair, hfb, scatterMask_eq_pure, length_pureScatter, unrankComb_eq_pure,
-      length_pureUnrankComb]
+    simp [unrankSubsetPair, hfb, scatterMask_eq_pure, length_pureScatter,
+      unrankComb_eq_unrankCombination, length_unrankCombination]
   · rw [unrankSubsetPair_of_le (by omega)]; simp
 
 /-- Pointwise containment: every `true` position of `indU` is also `true` in `indE`. -/
@@ -511,8 +469,8 @@ theorem count_true_fst_unrankSubsetPair_le (n q j : ℕ) :
   · obtain ⟨s, offset, hfb, hs_le, hoff_lt, -⟩ := findBucket_of_lt hj
     have hr_lt : offset / 2 ^ s < n.choose s := by
       rw [Nat.div_lt_iff_lt_mul (by positivity), Nat.mul_comm]; exact hoff_lt
-    simp only [unrankSubsetPair, hfb, Option.elim_some, unrankComb_eq_pure,
-      count_true_pureUnrankComb hr_lt]; exact hs_le
+    simp only [unrankSubsetPair, hfb, Option.elim_some, unrankComb_eq_unrankCombination,
+      count_true_unrankCombination hr_lt]; exact hs_le
   · rw [unrankSubsetPair_of_le (by omega)]; simp [List.count_replicate]
 
 /-- The third component `negSign` is `decide (Odd (indE.count true - indU.count true))`. -/
@@ -561,17 +519,20 @@ private theorem unrankPair_injective {n q j₁ j₂ : ℕ}
     rw [Nat.div_lt_iff_lt_mul (by positivity), Nat.mul_comm]; exact hoff₂
   simp only [unrankSubsetPair, hfb₁, hfb₂, Option.elim_some] at hE hU
   have hs_eq : s₁ = s₂ := by
-    simpa only [unrankComb_eq_pure, count_true_pureUnrankComb hr₁,
-      count_true_pureUnrankComb hr₂] using congrArg (List.count true) hE
+    simpa only [unrankComb_eq_unrankCombination, count_true_unrankCombination hr₁,
+      count_true_unrankCombination hr₂] using congrArg (List.count true) hE
   subst hs_eq
   have hr_eq : off₁ / 2 ^ s₁ = off₂ / 2 ^ s₁ := by
-    simp only [unrankComb_eq_pure] at hE; exact pureUnrankComb_injective hr₁ hr₂ hE
+    simp only [unrankComb_eq_unrankCombination] at hE
+    exact unrankCombination_injective hr₁ hr₂ hE
   have hm₁ : off₁ % 2 ^ s₁ <
       2 ^ (Internal.unrankComb n s₁ (off₁ / 2 ^ s₁) (pascalTable n)).count true := by
-    rw [unrankComb_eq_pure, count_true_pureUnrankComb hr₁]; exact Nat.mod_lt off₁ (by positivity)
+    rw [unrankComb_eq_unrankCombination, count_true_unrankCombination hr₁]
+    exact Nat.mod_lt off₁ (by positivity)
   have hm₂ : off₂ % 2 ^ s₁ <
       2 ^ (Internal.unrankComb n s₁ (off₁ / 2 ^ s₁) (pascalTable n)).count true := by
-    rw [unrankComb_eq_pure, count_true_pureUnrankComb hr₁]; exact Nat.mod_lt off₂ (by positivity)
+    rw [unrankComb_eq_unrankCombination, count_true_unrankCombination hr₁]
+    exact Nat.mod_lt off₂ (by positivity)
   rw [← hE] at hU; simp only [scatterMask_eq_pure] at hU
   have hm_eq := pureScatter_injective hm₁ hm₂ hU
   have hd₁ := Nat.div_add_mod off₁ (2 ^ s₁); have hd₂ := Nat.div_add_mod off₂ (2 ^ s₁)
@@ -831,9 +792,12 @@ private theorem computableInPolyTime_findBucket :
         (by omega) hj_le hn_le)
   exact hfold.snd'
 
-private theorem computableInPolyTime_unrankComb :
+/-- The table-driven unranker is polynomial-time, from `(n, k)` in unary, the rank in binary and
+the table. -/
+@[fun_prop, program_certificate] theorem unrankComb_polyTime :
     ComputableInPolyTime
-      (fun p : ((ℕ × ℕ) × ℕ) × List (List ℕ) => Internal.unrankComb p.1.1.1 p.1.1.2 p.1.2 p.2)
+      (fun ((((n, k), rank), table) : ((ℕ × ℕ) × ℕ) × List (List ℕ)) =>
+        Internal.unrankComb n k rank table)
       (encPair (encPair encParams encNat) (encList (encList encNat))) encBits := by
   let encTab := encList (encList encNat); let encIn := encPair (encPair encParams encNat) encTab
   let encSt := encPair (encPair encUnary encNat) encBits
@@ -911,7 +875,7 @@ private theorem computableInPolyTime_scatterMask :
   have hq_fst := fst encIn (encPair encUnary encNat)
   have hq_snd := snd encIn (encPair encUnary encNat)
   have hq_pow := binary_two_pow.comp hq_snd.fst'
-  have hq_indE := computableInPolyTime_unrankComb.comp
+  have hq_indE := unrankComb_polyTime.comp
     ((((hn_in.comp hq_fst).prod hq_snd.fst').prod (binary_div.comp (hq_snd.snd'.prod hq_pow))).prod
       (htab.comp hq_fst))
   have hq_indU := computableInPolyTime_scatterMask.comp
@@ -920,6 +884,15 @@ private theorem computableInPolyTime_scatterMask :
     ((bitsCountWithInput hq_indE (const true)).prod (bitsCountWithInput hq_indU (const true)))
   have hq_sign := (binary_mod.comp ((unary_to_binary.comp hq_diff).prod (const 2))).beq (const 1)
   exact optionElimWithInput hfb hfall (hq_indE.prod (hq_indU.prod hq_sign))
+
+/-- **Unranking combinations is polynomial-time**, from `(m, k)` in unary and the rank in
+binary. -/
+@[fun_prop, program_certificate] theorem unrankCombination_polyTime :
+    ComputableInPolyTime (fun (((m, k), rank) : (ℕ × ℕ) × ℕ) => unrankCombination m k rank)
+      (encPair encParams encNat) encBits :=
+  (unrankComb_polyTime.comp
+    (id'.prod (pascalTable_polyTime.comp (fst encParams encNat).fst'))).of_enc_eq
+      fun ((m, k), rank) => congrArg encBits (unrankComb_eq_unrankCombination m k rank).symm
 
 end PlainProofs
 
