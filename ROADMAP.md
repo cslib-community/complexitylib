@@ -673,9 +673,15 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   and a pair of stacks check all three. Queue operation calls now use one fixed native
   dispatcher over physical-array memory programs, with resident count words and paid commits.
   Its dynamic certificate preserves the original two-array space, dirty six-instruction
-  initialization and adaptive-call bounds. Remaining are the binary-heap migration, the full
-  framed queue/faithful-allocation client and generic stateful composition, and the full C2/M1b
-  objective; arbitrary host continuations do not acquire runtime bounds.
+  initialization and adaptive-call bounds. The binary heap now realizes its original memory methods
+  and allocator, retains compact local-zero initialization and a genuine linear dirty clear, and
+  supplies the original log-linear Dijkstra endpoint through an actual initialized native program.
+  The graph encoding and word envelope stay unchanged; one factor precedes all graphs and widths,
+  and the clock includes the prefix, control and halt. The old hand-stepped binary execution is
+  retired, while its pure model/order lemmas and source credit remain. Remaining are the full
+  framed queue/faithful-allocation client, generic stateful and whole-client composition, Fibonacci
+  execution migration and the full C2/M1b objective; arbitrary host continuations do not acquire
+  runtime bounds.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
