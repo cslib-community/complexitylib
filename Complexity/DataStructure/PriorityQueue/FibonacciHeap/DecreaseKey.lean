@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Renfei Zhou, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Renfei Zhou, Samuel Schlesinger
 -/
 
 module
@@ -34,6 +34,11 @@ The proof splits as in `Basic.lean`:
 Each cascading cut costs at most `22` record operations and turns a marked non-root into an
 unmarked root, which releases `credit = 24`, so the cascade is paid by the potential and
 `decreaseKey` costs at most `104` operations amortized.
+
+The module adapts Renfei Zhou's native formalization (`WordRAM/FibonacciHeap`, its `Cut.lean`) to
+the record level: his cut (`cutNodeCode_raw`, `cutNode_forest`, with its circular-list uniqueness
+argument) and cascading-cut development become `cut`, `CutsNode.cascading`,
+`IsCircList.tail_unique` and `cascade`, and his forest lemmas are reused unchanged.
 
 ## Main definitions
 
