@@ -15,7 +15,7 @@ namespace ComplexityTests.WordRAMBinaryHeapBase
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.Memory Cslib.DataStructure.PriorityQueue
 open Cslib.DataStructure.PriorityQueue.BinaryHeap.Native
-open Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap (space)
+open Cslib.DataStructure.PriorityQueue.BinaryHeap (space)
 
 noncomputable section
 

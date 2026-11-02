@@ -34,6 +34,8 @@ bounds for `siftUp`, `siftDown`, and `doExtractNonEmpty` under the lexicographic
 
 @[expose] public section
 
+open Cslib.DataStructure.PriorityQueue.BinaryHeap
+
 namespace Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue
@@ -359,14 +361,14 @@ theorem siftUp_spec {K : ℕ} {x : Data rBin}
         (b := y.regs k / 2) (by omega) hkS (by omega) (by omega) (by omega)
       rw [← hzm] at hs hga hgb hgo hpos hout
       refine ⟨z, he, ⟨hfr', by omega, by omega, hs, ?_, ?_, ?_⟩, ?_⟩
-      · rw [hzk]; exact hy.ordered.swap hK2 hy.le_size hlt hga hgb hgo
+      · rw [hzk]; exact UpOrdered.swap hy.ordered hK2 hy.le_size hlt hga hgb hgo
       · intro v hv; rw [hpos v hv]; exact hy.pos v hv
       · intro a ha; rw [hout a ha]; exact hy.outside a ha
       · rw [hzk, Nat.log_div_base]; omega
     · refine ⟨z, he, ⟨hfr', by omega, by omega, hzm ▸ hy.shape, ?_, ?_, ?_⟩, ?_⟩
       · rw [hzk, hzm]
-        exact (hy.ordered.ordered
-          (fun _ _ => IndexedMinPQ.not_rawPrioLT_iff_rawPrioLE.mp hlt)).upOrdered_one
+        exact Ordered.upOrdered_one (UpOrdered.ordered hy.ordered
+          (fun _ _ => IndexedMinPQ.not_rawPrioLT_iff_rawPrioLE.mp hlt))
       · intro v hv; rw [hzm]; exact hy.pos v hv
       · intro a ha; rw [hzm]; exact hy.outside a ha
       · rw [hzk, Nat.log_one_right]; exact hlog
@@ -379,7 +381,7 @@ theorem siftUp_spec {K : ℕ} {x : Data rBin}
   refine ⟨y, he.mono (by rw [hk]; omega), hy.frame, ⟨hy.shape, ?_⟩, hy.pos, hy.outside⟩
   have hord' := hy.ordered
   rw [hk1] at hord'
-  exact hord'.ordered (fun h => absurd h (by omega))
+  exact UpOrdered.ordered hord' (fun h => absurd h (by omega))
 
 end SiftUp
 
@@ -713,7 +715,9 @@ theorem siftDown_spec {K : ℕ} {x : Data rBin}
       rw [← hzm] at hs hga hgb hgo hpos hout
       refine ⟨z, he, ⟨hfr', hzs, by omega, by omega, hs, Or.inl ⟨by rw [hzl, hzk], ?_⟩, ?_, ?_⟩,
         ?_⟩
-      · rw [hzk]; exact hdo.swap (by omega) hCS (fun i _ hiS hia => hmin i hiS hia) hlt hga hgb hgo
+      · rw [hzk]
+        exact DownOrdered.swap hdo (by omega) hCS
+          (fun i _ hiS hia => hmin i hiS hia) hlt hga hgb hgo
       · intro v hv; rw [hpos v hv]; exact hy.pos v hv
       · intro a ha; rw [hout a ha]; exact hy.outside a ha
       · have h₀ : Nat.log 2 (y.regs l) ≤ Nat.log 2 (S + 1) := Nat.log_mono_right (by omega)
@@ -729,7 +733,7 @@ theorem siftDown_spec {K : ℕ} {x : Data rBin}
     · refine ⟨z, he, ⟨hfr', hzs, by omega, by omega, hzm ▸ hy.shape, Or.inr ⟨hzl, ?_⟩, ?_, ?_⟩,
         ?_⟩
       · rw [hzm]
-        exact hdo.ordered fun i _ hiS hia =>
+        exact DownOrdered.ordered hdo fun i _ hiS hia =>
           (IndexedMinPQ.not_rawPrioLT_iff_rawPrioLE.mp hlt).trans (hmin i hiS hia)
       · intro v hv; rw [hzm]; exact hy.pos v hv
       · intro a ha; rw [hzm]; exact hy.outside a ha
@@ -751,7 +755,7 @@ theorem siftDown_spec {K : ℕ} {x : Data rBin}
   · have := hy.size_reg
     simp only [Cond.holds_lt, this] at hexit
     rcases hy.order with ⟨_, hdo⟩ | ⟨_, hord'⟩
-    · exact hdo.ordered fun i _ hiS _ => absurd hiS (by omega)
+    · exact DownOrdered.ordered hdo fun i _ hiS _ => absurd hiS (by omega)
     · exact hord'
 
 private def extractHead : Code .exact rBin := ram_exact[

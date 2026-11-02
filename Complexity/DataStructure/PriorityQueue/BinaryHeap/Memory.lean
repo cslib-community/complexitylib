@@ -75,7 +75,7 @@ dispatcher over the same memory layout.
 namespace Cslib.DataStructure.PriorityQueue.BinaryHeap.Memory
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.Memory
-open Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
+open Cslib.DataStructure.PriorityQueue.BinaryHeap
 
 /-- The storage of an indexed binary heap on the handles `Fin n`: a one-cell field holding the
 number of entries, and three arrays from `base`, laid out as in `BinaryHeap.Model`. -/

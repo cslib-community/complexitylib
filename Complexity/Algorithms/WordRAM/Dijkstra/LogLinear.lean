@@ -56,7 +56,7 @@ private theorem fits_pq_space {G : ListInstance} {w : ℕ}
     Fits w (G.dbase + G.n + PriorityQueue.WordRAM.BinaryHeap.pkg.space G.n) := by
   apply hw.of_le
   dsimp only [ListInstance.dbase, PriorityQueue.WordRAM.BinaryHeap.pkg,
-    PriorityQueue.WordRAM.BinaryHeap.space]
+    PriorityQueue.BinaryHeap.space]
   nlinarith [Nat.zero_le G.maxWeight]
 
 private theorem binaryHeap_dijkstra_bound (G : ListInstance) :

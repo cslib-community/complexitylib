@@ -55,7 +55,7 @@ example : ∃ y, ExecWithin 1 code.initFresh (input 0 0 minimumMemory) y initBou
     intro a
     change Fits 1 (if a = 100 then 1 else 0)
     split_ifs <;> decide
-  have hz : ∀ a, (Block.mk 0 (PriorityQueue.WordRAM.BinaryHeap.space 0)).Owns a →
+  have hz : ∀ a, (Block.mk 0 (PriorityQueue.BinaryHeap.space 0)).Owns a →
       (input 0 0 minimumMemory).mem a = 0 := by
     intro a ha
     change 0 ≤ a ∧ a < 1 at ha
@@ -80,7 +80,7 @@ example : ∃ y, ExecWithin 3 code.initFresh (input 1 3 shiftedMemory) y initBou
     intro a
     change Fits 3 (if a = 0 ∨ a = 100 then 7 else 0)
     split_ifs <;> decide
-  have hz : ∀ a, (Block.mk 3 (PriorityQueue.WordRAM.BinaryHeap.space 1)).Owns a →
+  have hz : ∀ a, (Block.mk 3 (PriorityQueue.BinaryHeap.space 1)).Owns a →
       (input 1 3 shiftedMemory).mem a = 0 := by
     intro a ha
     change 3 ≤ a ∧ a < 7 at ha
@@ -92,7 +92,7 @@ example : ∃ y, ExecWithin 3 code.initFresh (input 1 3 shiftedMemory) y initBou
   exact ⟨y, hy, hm, congrFun hm 0, congrFun hm 100, hf, hn, hb, hs, hl, ha⟩
 
 example : ¬Fits 3 8 := by decide
-example : ¬∀ a, (Block.mk 3 (PriorityQueue.WordRAM.BinaryHeap.space 1)).Owns a →
+example : ¬∀ a, (Block.mk 3 (PriorityQueue.BinaryHeap.space 1)).Owns a →
     (if a = 6 then 7 else 0) = 0 := by
   intro h
   have hh := h 6 (by change 3 ≤ 6 ∧ 6 < 7; omega)

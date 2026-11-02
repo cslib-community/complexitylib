@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.DataStructure.PriorityQueue.WordRAM.Basic
-public import Complexity.DataStructure.PriorityQueue.WordRAM.BinaryHeap.Model
+public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Model
 
 /-!
 # Indexed Binary Min-Heap: Exact-Basis Word-RAM Program
@@ -36,6 +36,8 @@ every word width `w` with `Fits w (base + space n)` and `Fits w K_max` (includin
 -/
 
 @[expose] public section
+
+open Cslib.DataStructure.PriorityQueue.BinaryHeap
 
 namespace Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
 

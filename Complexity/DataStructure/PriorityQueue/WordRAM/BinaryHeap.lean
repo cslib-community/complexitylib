@@ -53,6 +53,8 @@ and `Fits w K_max`:
 
 @[expose] public section
 
+open Cslib.DataStructure.PriorityQueue.BinaryHeap
+
 namespace Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue

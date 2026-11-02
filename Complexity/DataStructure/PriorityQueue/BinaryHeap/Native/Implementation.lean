@@ -36,7 +36,7 @@ namespace Cslib.DataStructure.PriorityQueue.BinaryHeap.Native
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.PriorityQueue.WordRAM
-open Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap (space)
+open Cslib.DataStructure.PriorityQueue.BinaryHeap (space)
 
 private theorem decode_body {w n K : ℕ} (L : Memory.Layout n) (e : Memory.State)
     (o : IndexedMinPQ.Op n) (y z : Data Program.registers)

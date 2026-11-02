@@ -17,7 +17,7 @@ open Cslib.WordRAM Cslib.WordRAM.Realization
 open Cslib.DataStructure.PriorityQueue.BinaryHeap.Native
 open Cslib.DataStructure.PriorityQueue.BinaryHeap.Native.SiftUp
 open Cslib.DataStructure Cslib.DataStructure.Memory Cslib.DataStructure.PriorityQueue
-open Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
+open Cslib.DataStructure.PriorityQueue.BinaryHeap
 
 private def layout : BinaryHeap.Memory.Layout 4 := ⟨⟨0, 1⟩, 1⟩
 

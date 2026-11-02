@@ -36,7 +36,7 @@ public section
 namespace Cslib.DataStructure.PriorityQueue.BinaryHeap.Native
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
-open Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap (space)
+open Cslib.DataStructure.PriorityQueue.BinaryHeap (space)
 
 private theorem dimension_fits {w n base : ℕ} (hS : Fits w (base + space n)) : Fits w n :=
   hS.of_le (by unfold space; omega)

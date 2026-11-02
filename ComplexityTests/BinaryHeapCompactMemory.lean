@@ -15,7 +15,7 @@ namespace ComplexityTests.BinaryHeapCompactMemory
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.Memory
 open Cslib.DataStructure.PriorityQueue Cslib.DataStructure.PriorityQueue.BinaryHeap.Memory
-open Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap (space)
+open Cslib.DataStructure.PriorityQueue.BinaryHeap (space)
 
 private abbrev layout := compactLayout 1 3
 private def mem (a : ℕ) : ℕ := if a = 0 ∨ a = 100 then 7 else 0

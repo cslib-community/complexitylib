@@ -32,14 +32,14 @@ breaking equal-key ties toward smaller handle indices so `extractMin` determinis
 
 ## Main definitions
 
-* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.space`: footprint size `3 * N + 1`.
-* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.stateOfMem`: abstract `IndexedMinPQ.State N`
+* `Cslib.DataStructure.PriorityQueue.BinaryHeap.space`: footprint size `3 * N + 1`.
+* `Cslib.DataStructure.PriorityQueue.BinaryHeap.stateOfMem`: abstract `IndexedMinPQ.State N`
   represented in memory.
-* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.HeapShape`,
-  `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.HeapInv`: structural and lexicographic heap
+* `Cslib.DataStructure.PriorityQueue.BinaryHeap.HeapShape`,
+  `Cslib.DataStructure.PriorityQueue.BinaryHeap.HeapInv`: structural and lexicographic heap
   invariants.
-* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.UpOrdered`,
-  `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.DownOrdered`: single-defect invariants
+* `Cslib.DataStructure.PriorityQueue.BinaryHeap.UpOrdered`,
+  `Cslib.DataStructure.PriorityQueue.BinaryHeap.DownOrdered`: single-defect invariants
   during
   `siftUp` and `siftDown`.
 
@@ -51,7 +51,7 @@ breaking equal-key ties toward smaller handle indices so `extractMin` determinis
 
 @[expose] public section
 
-namespace Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
+namespace Cslib.DataStructure.PriorityQueue.BinaryHeap
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 
@@ -423,4 +423,4 @@ theorem HeapInv.extract_one (h : HeapInv N base 1 mem) :
 
 end InvariantLemmas
 
-end Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
+end Cslib.DataStructure.PriorityQueue.BinaryHeap

@@ -7,13 +7,13 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.DataStructure.PriorityQueue.WordRAM.BinaryHeap.Model
+public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Model
 
 /-!
 # Indexed binary min-heap: the order lemmas of sift-up and sift-down
 
 These are the machine-free steps of sift-up and sift-down on the indexed binary heap of
-`Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.Model`: swapping two heap positions keeps the
+`Cslib.DataStructure.PriorityQueue.BinaryHeap.Model`: swapping two heap positions keeps the
 heap shape (`HeapShape.swap`), and a swap with the parent or with the child of highest priority
 moves a single order defect one level (`UpOrdered.swap`, `DownOrdered.swap`) until it disappears
 (`UpOrdered.ordered`, `DownOrdered.ordered`).
@@ -26,19 +26,19 @@ private originals go when the word-RAM heap is migrated (#2205).
 
 ## Main definitions
 
-* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.swapMem`: memory after swapping two heap
+* `Cslib.DataStructure.PriorityQueue.BinaryHeap.swapMem`: memory after swapping two heap
   positions.
-* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.minChild`: the child of highest priority.
+* `Cslib.DataStructure.PriorityQueue.BinaryHeap.minChild`: the child of highest priority.
 
 ## Main results
 
-* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.HeapShape.swap`: a swap keeps the shape.
-* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.UpOrdered.swap`,
-  `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.UpOrdered.ordered`,
-  `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.Ordered.upOrdered_one`: sift-up.
-* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.DownOrdered.swap`,
-  `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.DownOrdered.ordered`,
-  `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.minChild_spec`: sift-down.
+* `Cslib.DataStructure.PriorityQueue.BinaryHeap.HeapShape.swap`: a swap keeps the shape.
+* `Cslib.DataStructure.PriorityQueue.BinaryHeap.UpOrdered.swap`,
+  `Cslib.DataStructure.PriorityQueue.BinaryHeap.UpOrdered.ordered`,
+  `Cslib.DataStructure.PriorityQueue.BinaryHeap.Ordered.upOrdered_one`: sift-up.
+* `Cslib.DataStructure.PriorityQueue.BinaryHeap.DownOrdered.swap`,
+  `Cslib.DataStructure.PriorityQueue.BinaryHeap.DownOrdered.ordered`,
+  `Cslib.DataStructure.PriorityQueue.BinaryHeap.minChild_spec`: sift-down.
 
 ## References
 
@@ -48,7 +48,7 @@ private originals go when the word-RAM heap is migrated (#2205).
 
 @[expose] public section
 
-namespace Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
+namespace Cslib.DataStructure.PriorityQueue.BinaryHeap
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 
@@ -237,4 +237,4 @@ theorem minChild_spec {f : ℕ → ℕ × ℕ} {a : ℕ} (ha : 2 * a ≤ S) :
 
 end Swap
 
-end Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
+end Cslib.DataStructure.PriorityQueue.BinaryHeap

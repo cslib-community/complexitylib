@@ -41,7 +41,7 @@ namespace Cslib.DataStructure.PriorityQueue.BinaryHeap.Native.SiftUp
 
 open Cslib.DataStructure Cslib.DataStructure.Memory
 open Cslib.WordRAM Cslib.WordRAM.Realization
-open Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
+open Cslib.DataStructure.PriorityQueue.BinaryHeap
 
 open Cslib.DataStructure.PriorityQueue
 

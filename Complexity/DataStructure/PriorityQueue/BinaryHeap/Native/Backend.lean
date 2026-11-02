@@ -40,7 +40,7 @@ public section
 namespace Cslib.DataStructure.PriorityQueue.BinaryHeap.Native
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
-open Cslib.DataStructure.Memory Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
+open Cslib.DataStructure.Memory Cslib.DataStructure.PriorityQueue.BinaryHeap
 
 /-- The five fixed original-source certificates, independent of every runtime heap parameter. -/
 @[expose] def certificates : Fin 5 → Certificate .exact :=

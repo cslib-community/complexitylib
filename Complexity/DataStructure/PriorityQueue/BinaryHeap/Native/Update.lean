@@ -35,7 +35,7 @@ namespace Cslib.DataStructure.PriorityQueue.BinaryHeap.Native
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.Memory
-open Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
+open Cslib.DataStructure.PriorityQueue.BinaryHeap
 
 /-- Runtime layout and handle, followed by the new key. -/
 abbrev updateWords := appendWords indexWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding

@@ -38,7 +38,7 @@ in constant time, and local zero is not a generic allocator precondition.
 namespace Cslib.DataStructure.PriorityQueue.BinaryHeap.Native.Representation
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
-open Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap (space)
+open Cslib.DataStructure.PriorityQueue.BinaryHeap (space)
 
 /-- The existing Backend representation specialized to compact storage and the global register
 family. Only the four persistent layout words are added to its invariant. -/

@@ -40,7 +40,7 @@ namespace Cslib.DataStructure.PriorityQueue.BinaryHeap.Native.Initialize
 
 open Cslib.DataStructure Cslib.DataStructure.Memory
 open Cslib.WordRAM Cslib.WordRAM.Realization
-open Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap (space)
+open Cslib.DataStructure.PriorityQueue.BinaryHeap (space)
 
 private theorem space_add (n : ℕ) : space n = (n + n) + n + 1 := by
   unfold space

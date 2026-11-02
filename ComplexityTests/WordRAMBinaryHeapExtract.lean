@@ -94,7 +94,7 @@ private theorem initialInv (n : ℕ) (hn : n ≤ 3) :
       initial, Nat.zero_add]
     omega
   · simp only [layout, PriorityQueue.BinaryHeap.Memory.compactLayout, Block.Allocated,
-      initial, Nat.zero_add, PriorityQueue.WordRAM.BinaryHeap.space]
+      initial, Nat.zero_add, PriorityQueue.BinaryHeap.space]
     exact le_rfl
   · simp only [initial, layout, PriorityQueue.BinaryHeap.Memory.compactLayout, Nat.zero_add]
     rw [ite_eq_right (by omega)]

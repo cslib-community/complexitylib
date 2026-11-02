@@ -39,7 +39,7 @@ namespace Cslib.DataStructure.PriorityQueue.BinaryHeap.Native.SiftDown
 
 open Cslib.DataStructure Cslib.DataStructure.Memory
 open Cslib.WordRAM Cslib.WordRAM.Realization
-open Cslib.DataStructure.PriorityQueue Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
+open Cslib.DataStructure.PriorityQueue Cslib.DataStructure.PriorityQueue.BinaryHeap
 
 /-- Layout, size and one control word: a threshold inside the loop, an index at entry. -/
 abbrev Argument := (HeapLayout × ℕ) × ℕ

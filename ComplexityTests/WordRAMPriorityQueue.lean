@@ -14,6 +14,8 @@ min-heap (`Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap`). -/
 
 @[expose] public section
 
+open Cslib.DataStructure.PriorityQueue.BinaryHeap
+
 open Cslib Cslib.WordRAM
 open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 open Cslib.DataStructure.PriorityQueue.WordRAM Cslib.DataStructure.WordRAM

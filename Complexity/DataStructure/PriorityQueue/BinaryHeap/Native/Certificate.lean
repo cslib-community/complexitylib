@@ -47,7 +47,7 @@ public section
 namespace Cslib.DataStructure.PriorityQueue.BinaryHeap.Native
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
-open Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap (space)
+open Cslib.DataStructure.PriorityQueue.BinaryHeap (space)
 
 /-- The source-method allowance and paid native dispatcher; the final halt is separate. -/
 @[expose] noncomputable def operationTime {n : ℕ} (o : IndexedMinPQ.Op n) : ℕ :=

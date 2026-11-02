@@ -493,10 +493,10 @@ private theorem reserve_layout :
 its live dimension parameter; no host argument installation or zeroing is substituted. -/
 theorem span_exec {w n base : ℕ} (x : Data registers) (hx : x.Bounded w)
     (hfront : x.regs code.frontierReg = base) (hn : x.regs code.nReg = n)
-    (hfit : Fits w (base + PriorityQueue.WordRAM.BinaryHeap.space n)) :
+    (hfit : Fits w (base + PriorityQueue.BinaryHeap.space n)) :
     ∃ y, ExecWithin w code.allocSpan x y (2 * Initialize.realizes_reserve.factor) ∧
       y.Bounded w ∧ y.mem = x.mem ∧ y.regs code.baseReg = base ∧
-      y.regs code.frontierReg = base + PriorityQueue.WordRAM.BinaryHeap.space n ∧
+      y.regs code.frontierReg = base + PriorityQueue.BinaryHeap.space n ∧
       y.regs code.nReg = n := by
   change x.regs (Backend.frontier family) = base at hfront
   change x.regs (argument 0) = n at hn
@@ -563,7 +563,7 @@ private theorem metadataScratch_ne_frontier
 Only the count address/length and private scratch are written. -/
 theorem setup_registers {w n base : ℕ} (x : Data registers) (hx : x.Bounded w)
     (hn : x.regs code.nReg = n) (hb : x.regs code.baseReg = base)
-    (hfit : Fits w (base + PriorityQueue.WordRAM.BinaryHeap.space n)) :
+    (hfit : Fits w (base + PriorityQueue.BinaryHeap.space n)) :
     ∃ y, ExecWithin w code.initSetup x y Initialize.realizes_metadata.factor ∧
       y.Bounded w ∧ y.mem = x.mem ∧ y.regs code.frontierReg = x.regs code.frontierReg ∧
       y.regs code.nReg = n ∧ y.regs code.baseReg = base ∧
@@ -611,13 +611,13 @@ is exactly the original 3n+1 block, and its code and constant clock precede all 
 This one-run statement is not a globally composable allocator with a local precondition. -/
 theorem initFresh_exec {w n base : ℕ} (x : Data registers) (hx : x.Bounded w)
     (hfront : x.regs code.frontierReg = base) (hn : x.regs code.nReg = n)
-    (hfit : Fits w (base + PriorityQueue.WordRAM.BinaryHeap.space n))
-    (hz : ∀ a, (Block.mk base (PriorityQueue.WordRAM.BinaryHeap.space n)).Owns a →
+    (hfit : Fits w (base + PriorityQueue.BinaryHeap.space n))
+    (hz : ∀ a, (Block.mk base (PriorityQueue.BinaryHeap.space n)).Owns a →
       x.mem a = 0) :
     ∃ y, ExecWithin w code.initFresh x y
         (2 * Initialize.realizes_reserve.factor + Initialize.realizes_metadata.factor) ∧
       y.Bounded w ∧ y.mem = x.mem ∧
-      y.regs code.frontierReg = base + PriorityQueue.WordRAM.BinaryHeap.space n ∧
+      y.regs code.frontierReg = base + PriorityQueue.BinaryHeap.space n ∧
       y.regs code.nReg = n ∧ y.regs code.baseReg = base ∧
       y.regs (argument 1) = base + n ∧ y.regs (argument 2) = 1 ∧
       Memory.Inv (Memory.compactLayout n base) (memoryState code.frontierReg y) ∧
@@ -627,11 +627,11 @@ theorem initFresh_exec {w n base : ℕ} (x : Data registers) (hx : x.Bounded w)
   obtain ⟨y, hyrun, hybounded, hymem, hyfront, hyn, hybase, hysize, hylen⟩ :=
     setup_registers z hzbounded hzn hzbase hfit
   have hmem : y.mem = x.mem := hymem.trans hzmem
-  have hf : y.regs code.frontierReg = base + PriorityQueue.WordRAM.BinaryHeap.space n :=
+  have hf : y.regs code.frontierReg = base + PriorityQueue.BinaryHeap.space n :=
     hyfront.trans hzfront
   have hi := Memory.inv_compactLayout (n := n) (base := base)
     (s := memoryState code.frontierReg y) (by
-      change base + PriorityQueue.WordRAM.BinaryHeap.space n ≤ y.regs code.frontierReg
+      change base + PriorityQueue.BinaryHeap.space n ≤ y.regs code.frontierReg
       rw [hf])
     (by intro a ha; change y.mem a = 0; rw [hmem]; exact hz a ha)
   exact ⟨y, hzrun.seq hyrun, hybounded, hmem, hf, hyn, hybase, hysize, hylen, hi⟩
