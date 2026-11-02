@@ -319,8 +319,15 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `(κ+30)*clog₂(n+2)` suffices, and all wider prefixes have words/support below
   `(n+2)^(2κ+60)`. The general initialized theorem permits `D>n` and empty matrices with
   `D≥16`; the logarithmic source-regime simplification is separate. The source prime-list
-  producer and Light execution are not imported. Global parameter/host composition and #1394
-  remain open.
+  producer and Light execution are not imported. The original conservative parameter family
+  in `Algorithms/ExactTriangle/ParameterChoice.lean` (#2127) uses `t=floor(log₂(n)/1296)`,
+  `m=36t`, `D=4^m`, `g=4^t`, `L=19m`, with `g^36=D` and `D^18≤n` for positive n.
+  `Algorithms/WordRAM/ExactTriangle/DyadicParameters/` computes it using the actual logarithm and
+  two power routines, with a fast/small flag, same-state prefix/halt, complete logarithmic
+  charge and width-independent polynomial prefixes. `Power/Rename.lean` exposes the existing
+  power execution on an arbitrary injective bank, reused by both calls without repeated
+  comap/extend proofs. These coarse parameters are not attributed to Anthropic's tuned choice.
+  Aggregate asymptotics, small-case solver dispatch, outer host and #1394 remain open.
   `Algorithms/ExactTriangle/{Splitting,Witnesses}.lean` adapts the complete finite splitting and
   witness recovery component ([#1447](https://github.com/cslib-community/complexitylib/issues/1447)),
   using the existing matrices, lopsided graph and `Set.EqOn` answer API. Computable integer parameters
