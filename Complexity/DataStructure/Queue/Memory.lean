@@ -22,16 +22,18 @@ proved once:
    (`Queue.potential_step`); only the capacity and word-fit admissibility of the bounded stacks is
    new. Each queue operation costs at most three stack calls, amortized, with two credits per
    rear element.
-2. `pair`: two array stacks with disjoint layouts in one memory, as the generic product
-   `Memory.Framed.prod` of two framed stacks, each stack call costing at most three memory
+2. Two array stacks allocated one after the other, as the generic product
+   `Memory.Allocator.prod` of two stack allocators, each stack call costing at most three memory
    units.
 
-`memRefinement` composes them, and `mem_amortized` stacks the potentials across the composition
-(`Refinement.Amortized.comp`): every queue operation costs at most nine memory units, amortized,
-with six credits per rear element. `run` allocates the two stacks and then runs a queue client.
-From any memory with room for both stacks, `run_correct` gives its answer and the admissibility of
-its memory operations, `run_cost` bounds its memory cost by `6 + 9 m` for `m` queue operations,
-and `run_cost_isBigO` exports that bound as `O(m)`.
+`allocator` puts the first step on top of the second (`Memory.Allocator.comp`), and
+`amortized_allocator` stacks the potentials across the composition: every queue operation costs
+at most nine memory units, amortized, with six credits per rear element. `run` allocates the two
+stacks and then runs a queue client. From any memory with room for both stacks, `run_correct`
+gives its answer and the admissibility of its memory operations, `run_cost` bounds its memory
+cost by `6 + 9 m` for `m` queue operations, and `run_cost_isBigO` exports that bound as `O(m)`.
+All three are instances of the generic theorems of `Memory.Allocator`, so this file has no setup
+proof of its own.
 
 The machine-level counterpart is `Queue.WordRAM`, whose dispatcher is hand-stepped instruction by
 instruction. Here the proofs mention neither registers nor instructions. Executing the memory
@@ -43,16 +45,15 @@ provide.
 * `boundedStacks`: the pair of bounded stacks.
 * `Inv`: a FIFO list within capacity holding words.
 * `refinement`: the two-stack queue over the pair of bounded stacks.
-* `pair`: the two stacks in one memory.
-* `memRefinement`, `memMethods`: the queue over two array stacks over memory, and its methods as
-  plain memory programs.
+* `allocator`: the queue over two array stacks, allocated in memory.
 * `run`: allocate the stacks, then run a queue client.
 
 ## Main results
 
 * `runClient_boundedStacks`: bounded stacks run clients exactly as unbounded ones.
 * `amortized`: three stack calls per queue operation, with two credits per rear element.
-* `mem_amortized`: nine memory units per queue operation, with six credits per rear element.
+* `amortized_allocator`: nine memory units per queue operation, with six credits per rear
+  element.
 * `run_correct`, `run_cost`: the allocated queue answers like the specification and costs at
   most `6 + 9 m` memory units for `m` queue operations.
 * `run_cost_glue`: with glue charged per memory operation, at most `(2 K + 1) (6 + 9 m)`.
@@ -191,100 +192,32 @@ theorem amortized :
 
 /-! ## Over memory -/
 
-/-- The two stacks over one memory, in disjoint layouts. -/
-abbrev pair {L₁ L₂ : Stack.Memory.Layout} (h₁ : L₁.Valid w C) (h₂ : L₂.Valid w C) :
-    Memory.Framed (boundedStacks w C) w :=
-  (Stack.Memory.framed h₁).prod (Stack.Memory.framed h₂)
+/-- The queue over two array stacks of capacity `C`: allocate the stacks one after the other,
+and run the two-stack queue on their product. -/
+def allocator (w C : ℕ) : Allocator (Queue.WordRAM.spec w C) w :=
+  ((Stack.Memory.allocator w C).prod (Stack.Memory.allocator w C)).comp (refinement w C)
+    (show Inv w C [] from ⟨Nat.zero_le C, fun _ h => absurd h List.not_mem_nil⟩)
 
-/-- The queue over two array stacks over memory. -/
-def memRefinement {L₁ L₂ : Stack.Memory.Layout} (h₁ : L₁.Valid w C) (h₂ : L₂.Valid w C) :
-    Refinement (Queue.WordRAM.spec w C) (Memory.spec w) :=
-  (refinement w C).comp (pair h₁ h₂).toRefinement
+/-- The allocated queue is empty. -/
+@[simp] theorem init_allocator : (allocator w C).init = [] := rfl
+
+/-- The two stacks take `2 (C + 1)` cells. -/
+@[simp] theorem room_allocator : (allocator w C).room = 2 * (C + 1) := by
+  change (C + 1) + (C + 1) = _
+  omega
 
 /-- **Stacked potentials.** Every queue operation costs at most nine memory units, amortized,
 with six credits per element of the rear stack: the queue's potential, at three memory units per
-stack call, read through the stacks' abstraction. -/
-theorem mem_amortized {L₁ L₂ : Stack.Memory.Layout} (h₁ : L₁.Valid w C) (h₂ : L₂.Valid w C) :
-    (memRefinement h₁ h₂).Amortized charge (fun _ _ => 9)
-      fun s => 6 * (Stack.Memory.abs L₂ s).length := by
-  have hpair := Memory.Framed.amortized_prod (Stack.Memory.amortized h₁)
-    (Stack.Memory.amortized h₂) (Memory.Framed.Local.const _ 0) (Memory.Framed.Local.const _ 0)
+stack call, read through the stacks' abstraction. Allocation leaves no potential. -/
+theorem amortized_allocator : (allocator w C).Amortized (fun _ _ => 9) 0 := by
+  have hpair := (Stack.Memory.amortized_allocator (w := w) (C := C)).prod
+    (Stack.Memory.amortized_allocator (w := w) (C := C))
   rw [productCharge_const] at hpair
-  have h := (amortized.mul_left 3).comp hpair
-  have hΦ : (fun s : Memory.State =>
-      3 * (2 * (Stack.Memory.abs L₂ s).length) + (0 + 0)) =
-        fun s => 6 * (Stack.Memory.abs L₂ s).length := by
-    funext s
-    omega
-  exact hΦ ▸ h
-
-/-! ## Allocation and a whole run -/
-
-/-- The queue methods over two array stacks, as plain memory programs. -/
-def memMethods (L₁ L₂ : Stack.Memory.Layout) (w C : ℕ) :
-    Methods (Queue.WordRAM.spec w C) (Memory.spec w) :=
-  fun o => link (Methods.prod (Stack.Memory.methods L₁ w C) (Stack.Memory.methods L₂ w C))
-    (methods o)
-
-/-- The composite's methods are `memMethods`, whatever the proofs about the layouts. -/
-theorem memRefinement_methods {L₁ L₂ : Stack.Memory.Layout} (h₁ : L₁.Valid w C)
-    (h₂ : L₂.Valid w C) : (memRefinement h₁ h₂).methods = memMethods L₁ L₂ w C := rfl
+  exact Allocator.Amortized.comp (amortized.mul_left 3) hpair
 
 /-- Allocate two empty stacks of capacity `C`, then run a queue client on them. -/
-def run (w C : ℕ) {β : Type} (p : (Queue.WordRAM.spec w C).Client β) : Prog β := do
-  let L₁ ← Stack.Memory.allocLayout C
-  let L₂ ← Stack.Memory.allocLayout C
-  link (memMethods L₁ L₂ w C) p
-
-/-- The first stack allocated from `s`. -/
-abbrev frontLayout (s : Memory.State) (C : ℕ) : Stack.Memory.Layout :=
-  ⟨⟨s.frontier, 1⟩, ⟨s.frontier + 1, C⟩⟩
-
-/-- The second stack allocated from `s`. -/
-abbrev rearLayout (s : Memory.State) (C : ℕ) : Stack.Memory.Layout :=
-  ⟨⟨s.frontier + 1 + C, 1⟩, ⟨s.frontier + 1 + C + 1, C⟩⟩
-
-/-- The memory after both allocations. -/
-abbrev allocated (s : Memory.State) (C : ℕ) : Memory.State :=
-  ⟨clear (clear s.mem s.frontier 1) (s.frontier + 1 + C) 1, s.frontier + 1 + C + 1 + C⟩
-
-/-- A run allocates both stacks, then runs the linked client from the allocated memory. -/
-theorem runClient_run {β : Type} (p : (Queue.WordRAM.spec w C).Client β) (s : Memory.State) :
-    (Memory.spec w).runClient s (run w C p) =
-      let (v, s', os) := (Memory.spec w).runClient (allocated s C)
-        (link (memMethods (frontLayout s C) (rearLayout s C) w C) p)
-      (v, s', .alloc 1 :: .allocDirty C :: .alloc 1 :: .allocDirty C :: os) := rfl
-
-/-- The facts that start the refinement after allocation. -/
-private theorem setup (s : Memory.State) (hfit : Fits w (s.frontier + 2 * (C + 1))) :
-    ∃ (h₁ : (frontLayout s C).Valid w C) (h₂ : (rearLayout s C).Valid w C),
-      (memRefinement h₁ h₂).inv (allocated s C) ∧
-        (memRefinement h₁ h₂).abs (allocated s C) = [] ∧
-        Stack.Memory.abs (rearLayout s C) (allocated s C) = [] := by
-  have h₁ : (frontLayout s C).Valid w C := Stack.Memory.valid_allocLayout (hfit.of_le (by omega))
-  have h₂ : (rearLayout s C).Valid w C := Stack.Memory.valid_allocLayout (hfit.of_le (by omega))
-  -- Each stack is empty once allocated, the second one from the state after the first.
-  obtain ⟨hi₁, ha₁⟩ := Stack.Memory.inv_allocLayout (C := C) s
-  obtain ⟨hi₂, ha₂⟩ := Stack.Memory.inv_allocLayout (C := C)
-    ⟨clear s.mem s.frontier 1, s.frontier + 1 + C⟩
-  -- The second allocation is fresh, so the stacks form a product.
-  obtain ⟨hinv, habs⟩ := Memory.Framed.prod_of_fresh (M₁ := Stack.Memory.framed h₁)
-    (M₂ := Stack.Memory.framed h₂) hi₁
-    (fun a ha => clear_of_not_owns (by simp only [Block.Owns] at ha ⊢; omega)) (by simp only; omega)
-    hi₂
-    (fun a ha => by
-      simp only [Stack.Memory.framed_footprint, Stack.Memory.Layout.footprint, Finset.mem_union,
-        Block.mem_footprint, Block.Owns] at ha
-      simp only
-      omega)
-  have hempty : (pair h₁ h₂).abs (allocated s C) = ([], []) := habs.trans (Prod.ext ha₁ ha₂)
-  refine ⟨h₁, h₂, ⟨hinv, ?_⟩, ?_, ha₂⟩
-  · change Inv w C (Queue.WordRAM.contents ((pair h₁ h₂).abs (allocated s C)))
-    rw [hempty]
-    exact ⟨by simp [Queue.WordRAM.contents], by simp [Queue.WordRAM.contents]⟩
-  · change Queue.WordRAM.contents ((pair h₁ h₂).abs (allocated s C)) = []
-    rw [hempty]
-    rfl
+def run (w C : ℕ) {β : Type} (p : (Queue.WordRAM.spec w C).Client β) : Prog β :=
+  (allocator w C).run p
 
 /-- **Correctness.** From any memory with room for both stacks, an admissible queue client run
 over two freshly allocated array stacks issues only admissible memory operations and returns the
@@ -293,17 +226,9 @@ theorem run_correct {β : Type} (p : (Queue.WordRAM.spec w C).Client β) {s : Me
     (hfit : Fits w (s.frontier + 2 * (C + 1)))
     (hv : (Queue.WordRAM.spec w C).ValidHistory [] ((Queue.WordRAM.spec w C).clientHistory [] p)) :
     (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (run w C p)) ∧
-      (Memory.spec w).clientResult s (run w C p) = (Queue.WordRAM.spec w C).clientResult [] p := by
-  obtain ⟨h₁, h₂, hinv, habs, -⟩ := setup s hfit
-  obtain ⟨hvE, hres, -, -⟩ :=
-    (memRefinement h₁ h₂).simulates_client p hinv (by rw [habs]; exact hv)
-  rw [memRefinement_methods] at hvE hres
-  simp only [StateTransitionSpec.clientHistory, StateTransitionSpec.clientResult,
-    runClient_run] at hvE hres ⊢
-  simp only [StateTransitionSpec.validHistory_cons, StateTransitionSpec.stepFn, step_alloc,
-    step_allocDirty, valid_alloc, valid_allocDirty]
-  refine ⟨⟨hfit.of_le (by omega), hfit.of_le (by omega), hfit.of_le (by omega),
-    hfit.of_le (by omega), hvE⟩, hres.trans (by rw [habs])⟩
+      (Memory.spec w).clientResult s (run w C p) = (Queue.WordRAM.spec w C).clientResult [] p :=
+  have ⟨hvE, hres, _⟩ := (allocator w C).run_correct p ⟨trivial, trivial⟩ (room_allocator ▸ hfit) hv
+  ⟨hvE, hres⟩
 
 /-- **Cost.** The same run costs at most `6 + 9 m` memory units for a client of `m` queue
 operations: six for the two allocations and nine per operation, amortized. -/
@@ -311,15 +236,8 @@ theorem run_cost {β : Type} (p : (Queue.WordRAM.spec w C).Client β) {s : Memor
     (hfit : Fits w (s.frontier + 2 * (C + 1)))
     (hv : (Queue.WordRAM.spec w C).ValidHistory [] ((Queue.WordRAM.spec w C).clientHistory [] p)) :
     (Memory.spec w).totalCost charge s ((Memory.spec w).clientHistory s (run w C p)) ≤
-      6 + 9 * ((Queue.WordRAM.spec w C).clientHistory [] p).length := by
-  obtain ⟨h₁, h₂, hinv, habs, hrear⟩ := setup s hfit
-  have h := (mem_amortized h₁ h₂).client p hinv (by rw [habs]; exact hv)
-  rw [memRefinement_methods, habs, StateTransitionSpec.totalCost_const, hrear] at h
-  simp only [StateTransitionSpec.clientHistory, runClient_run,
-    StateTransitionSpec.totalCost_cons, charge_alloc, charge_allocDirty,
-    StateTransitionSpec.stepFn, step_alloc, step_allocDirty] at h ⊢
-  simp only [List.length_nil, Nat.mul_zero, Nat.add_zero, allocated] at h ⊢
-  omega
+      6 + 9 * ((Queue.WordRAM.spec w C).clientHistory [] p).length :=
+  Allocator.run_cost_le amortized_allocator p ⟨trivial, trivial⟩ (room_allocator ▸ hfit) hv
 
 /-- **Cost with glue.** A realization also charges the glue that runs after each memory operation.
 If that glue costs at most `K` times the operation's charge plus `K`, the run costs at most
@@ -345,6 +263,6 @@ theorem run_cost_isBigO (s : Memory.State) (hfit : Fits w (s.frontier + 2 * (C +
         ((Queue.WordRAM.spec w C).clientHistory [] p.1).length)
       (fun p => (Memory.spec w).totalCost charge s
         ((Memory.spec w).clientHistory s (run w C p.1))) :=
-  CostIsBigO.of_le_add_mul 6 9 fun p => run_cost p.1 hfit p.2
+  Allocator.run_cost_isBigO amortized_allocator ⟨trivial, trivial⟩ (room_allocator ▸ hfit)
 
 end Cslib.DataStructure.Queue.Memory

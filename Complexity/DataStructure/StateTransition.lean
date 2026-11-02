@@ -71,8 +71,10 @@ The relational semantics is **demonic** for callers and **angelic** for implemen
   under `[StateTransitionSpec.HasStepFn]`.
 * `StateTransitionSpec.fst_run_eq_toFLTS_mtr`, `StateTransitionSpec.run_append`,
   `StateTransitionSpec.validHistory_append`, `StateTransitionSpec.totalCost_append`,
-  `StateTransitionSpec.run_runClient`, `StateTransitionSpec.runClient_bind`, `eval_bind`,
-  `eval_eq_liftM`: functional history and client laws under `[StateTransitionSpec.HasStepFn]`.
+  `StateTransitionSpec.run_runClient`, `StateTransitionSpec.runClient_bind`,
+  `StateTransitionSpec.clientResult_bind`, `StateTransitionSpec.clientState_bind`,
+  `StateTransitionSpec.clientHistory_bind`, `eval_bind`, `eval_eq_liftM`: functional history and
+  client laws under `[StateTransitionSpec.HasStepFn]`.
 
 ## References
 
@@ -869,6 +871,26 @@ theorem runClient_bind (p : D.Client α) (k : α → D.Client β) (s : D.State) 
   | liftBind o cont ih =>
     exact congrArg (fun r : β × D.State × List D.Op => (r.1, r.2.1, o :: r.2.2))
       (ih (D.stepFn s o).2 (D.stepFn s o).1)
+
+/-- A sequential client answers as its continuation, run from where the first client stopped. -/
+theorem clientResult_bind (p : D.Client α) (k : α → D.Client β) (s : D.State) :
+    D.clientResult s (p >>= k) = D.clientResult (D.clientState s p) (k (D.clientResult s p)) := by
+  change D.clientResult s (p.bind k) = _
+  rw [clientResult, runClient_bind]
+
+/-- A sequential client stops where its continuation, run from where the first client stopped,
+stops. -/
+theorem clientState_bind (p : D.Client α) (k : α → D.Client β) (s : D.State) :
+    D.clientState s (p >>= k) = D.clientState (D.clientState s p) (k (D.clientResult s p)) := by
+  change D.clientState s (p.bind k) = _
+  rw [clientState, runClient_bind]
+
+/-- The history of a sequential client is the first client's history, then its continuation's. -/
+theorem clientHistory_bind (p : D.Client α) (k : α → D.Client β) (s : D.State) :
+    D.clientHistory s (p >>= k) =
+      D.clientHistory s p ++ D.clientHistory (D.clientState s p) (k (D.clientResult s p)) := by
+  change D.clientHistory s (p.bind k) = _
+  rw [clientHistory, runClient_bind]
 
 /-- On a deterministic specification (`[D.HasStepFn f]`), demonic operation-sequence admissibility
 `ValidOpSeq` coincides with `D.ValidHistory`. -/

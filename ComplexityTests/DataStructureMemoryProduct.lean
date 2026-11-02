@@ -99,15 +99,16 @@ theorem inv_layout (i : ℕ) (hi : i < 3) : Stack.Memory.Inv (layout i) empty wh
 
 /-- The three stacks hold in the empty memory, with disjoint footprints. -/
 theorem inv_empty : triple.inv empty :=
-  ⟨⟨inv_layout 0 (by decide), inv_layout 1 (by decide), by decide⟩, inv_layout 2 (by decide),
-    by decide⟩
+  ⟨⟨inv_layout 0 (by decide), inv_layout 1 (by decide), by decide, by decide⟩,
+    inv_layout 2 (by decide), by decide, by decide⟩
 
 /-- The specification's answer, transported to the memory run by the iterated product. -/
 example : (spec 8).clientResult empty (link triple.methods client) =
     (product (product S S) S).clientResult (triple.abs empty) client :=
-  (triple.simulates_client client inv_empty
+  have ⟨_, hres, _⟩ := triple.simulates_client client inv_empty
     ⟨⟨by decide, by decide⟩, ⟨by decide, by decide⟩, ⟨by decide, by decide⟩, trivial, trivial,
-      trivial, trivial, trivial⟩).2.1
+      trivial, trivial, trivial⟩
+  hres
 
 /-- Every operation of the three stacks costs at most three memory units, amortized with zero
 potential: the stacks' certificates add across both products. -/
@@ -117,11 +118,73 @@ theorem amortized : triple.Amortized charge (fun _ _ => 3) fun _ => 0 := by
     (Framed.Local.const _ 0)
   rw [productCharge_const] at h₀₁
   have h := Framed.amortized_prod h₀₁ (Stack.Memory.amortized (valid 2 (by decide)))
-    (fun _ _ _ => rfl) (Framed.Local.const _ 0)
+    (fun _ _ _ _ => rfl) (Framed.Local.const _ 0)
   rwa [productCharge_const] at h
 
 /-- With zero potential, the same certificate is a worst-case charge bound. -/
 example : triple.toModule.ChargeBound charge fun _ _ => 3 :=
   amortized.chargeBound
+
+/-! ## Allocated one after the other
+
+The same three stacks, allocated by a program rather than laid out by hand, in the shape of a
+client of three structures such as Dijkstra's algorithm over `product PQ (product Dict Adj)`.
+The generic theorems of `Memory.Allocator` give the run's admissibility, answer and cost, with no
+setup proof for this client. -/
+
+/-- Three stacks of capacity `2`, allocated one after the other. -/
+abbrev allocated : Allocator (product S (product S S)) 8 :=
+  (Stack.Memory.allocator 8 2).prod
+    ((Stack.Memory.allocator 8 2).prod (Stack.Memory.allocator 8 2))
+
+/-- The client above, on the right-nested product. -/
+def client' : (product S (product S S)).Client (List (Option ℕ) × List ℕ) := do
+  let _ ← (product S (product S S)).call (.inl (.push 1))
+  let _ ← (product S (product S S)).call (.inl (.push 2))
+  let _ ← (product S (product S S)).call (.inr (.inr (.push 3)))
+  let a ← (product S (product S S)).call (.inl .pop)
+  let b ← (product S (product S S)).call (.inl .pop)
+  let m ← (product S (product S S)).call (.inr (.inl .size))
+  let n ← (product S (product S S)).call (.inr (.inr .size))
+  pure ([a, b], [m, n])
+
+/-- Memory with nothing allocated. -/
+def nothing : State := ⟨fun _ => 0, 0⟩
+
+/-- The allocated run answers as the linked client on hand-placed stacks. -/
+example : (spec 8).clientResult nothing (allocated.run client') = ([some 2, some 1], [0, 1]) := by
+  decide
+
+/-- It costs the 17 units of the client and three units per allocated stack. -/
+example : (spec 8).totalCost charge nothing ((spec 8).clientHistory nothing
+    (allocated.run client')) = 9 + 17 := by
+  decide
+
+/-- The client is admissible for the three bounded stacks. -/
+theorem client'_valid : (product S (product S S)).ValidHistory allocated.init
+    ((product S (product S S)).clientHistory allocated.init client') :=
+  ⟨⟨by decide, by decide⟩, ⟨by decide, by decide⟩, ⟨by decide, by decide⟩, trivial, trivial,
+    trivial, trivial, trivial⟩
+
+/-- The stacks' certificates add across both products of allocators. -/
+theorem amortized_allocated : allocated.Amortized (fun _ _ => 3) 0 := by
+  have h := Allocator.Amortized.prod (Stack.Memory.amortized_allocator (w := 8) (C := 2))
+    (Allocator.Amortized.prod (Stack.Memory.amortized_allocator (w := 8) (C := 2))
+      (Stack.Memory.amortized_allocator (w := 8) (C := 2)))
+  simp only [productCharge_const] at h
+  exact h
+
+/-- The generic correctness theorem gives the specification's answer. -/
+example : (spec 8).clientResult nothing (allocated.run client') =
+    (product S (product S S)).clientResult allocated.init client' :=
+  have ⟨_, hres, _⟩ :=
+    allocated.run_correct client' ⟨trivial, trivial, trivial⟩ (by decide) client'_valid
+  hres
+
+/-- The generic cost theorem: nine units to allocate, and three per operation. -/
+example : (spec 8).totalCost charge nothing ((spec 8).clientHistory nothing
+    (allocated.run client')) ≤ 9 + 0 + 3 * 7 :=
+  Allocator.run_cost_le amortized_allocated client' ⟨trivial, trivial, trivial⟩ (by decide)
+    client'_valid
 
 end ComplexityTests.DataStructureMemoryProduct
