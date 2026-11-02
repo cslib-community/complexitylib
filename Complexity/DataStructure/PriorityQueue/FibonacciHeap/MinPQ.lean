@@ -155,21 +155,21 @@ def wr (c : Slot) (x : ℕ) : (Lower n K w).Client Unit := .liftBind (.inr (.wri
       (v, e, .inr (.write c x) :: os) := rfl
 
 /-- Admissibility of a heap call. -/
-@[simp] theorem validHistory_heapOp_cons (s : IndexedMinPQ.State n) (g : Slot → ℕ)
+theorem validHistory_heapOp_cons (s : IndexedMinPQ.State n) (g : Slot → ℕ)
     (o : IndexedMinPQ.Op n) (os : List (Lower n K w).Op) :
     (Lower n K w).ValidHistory (s, g) (.inl o :: os) ↔
       IndexedMinPQ.valid K s o ∧ (Lower n K w).ValidHistory ((IndexedMinPQ.step s o).1, g) os :=
   Iff.rfl
 
 /-- Admissibility of a read. -/
-@[simp] theorem validHistory_rd_cons (s : IndexedMinPQ.State n) (g : Slot → ℕ) (c : Slot)
+theorem validHistory_rd_cons (s : IndexedMinPQ.State n) (g : Slot → ℕ) (c : Slot)
     (os : List (Lower n K w).Op) :
     (Lower n K w).ValidHistory (s, g) (.inr (.read c) :: os) ↔
       Slot.ok n c ∧ (Lower n K w).ValidHistory (s, g) os :=
   Iff.rfl
 
 /-- Admissibility of a write. -/
-@[simp] theorem validHistory_wr_cons (s : IndexedMinPQ.State n) (g : Slot → ℕ) (c : Slot)
+theorem validHistory_wr_cons (s : IndexedMinPQ.State n) (g : Slot → ℕ) (c : Slot)
     (x : ℕ) (os : List (Lower n K w).Op) :
     (Lower n K w).ValidHistory (s, g) (.inr (.write c x) :: os) ↔
       (Slot.ok n c ∧ Fits w x) ∧ (Lower n K w).ValidHistory (s, Function.update g c x) os :=
