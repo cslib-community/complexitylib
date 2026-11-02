@@ -3000,6 +3000,7 @@ public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Consolidation
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.DecreaseKey
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.ExtractMin
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Memory
+public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Domain
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Initialize
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Read
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Source

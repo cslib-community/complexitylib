@@ -8,7 +8,7 @@ module
 -- upstream: local-only (test driver)
 
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Allocation
-public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Update
+public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Domain
 public import Complexity.Computability.WordRAM.Realization.Witness
 
 /-!
@@ -44,7 +44,8 @@ private def allocator : Memory.Allocator (indexedMinPQSpec 3 63) 6 :=
     ((zeroAllocator (n := 3) (K := 63) (w := 6) (by decide) (by decide)).run
       consolidationClient)
 
-example : (framed (n := 3) (K := 63) (w := 6) (by decide) (by decide) 2).inv
+private theorem consolidated_inv :
+    (framed (n := 3) (K := 63) (w := 6) (by decide) (by decide) 2).inv
     consolidated := by
   have hv : (indexedMinPQSpec 3 63).ValidHistory allocator.init
       ((indexedMinPQSpec 3 63).clientHistory allocator.init consolidationClient) := by
@@ -53,6 +54,18 @@ example : (framed (n := 3) (K := 63) (w := 6) (by decide) (by decide) 2).inv
       ((none : Option ℕ) = none ∧ (7 : ℕ) ≤ 63) ∧ True ∧ True
     decide
   exact (allocator.run_correct _ (Memory.zeroAbove_init [63]) (by decide) hv).2.2.1
+
+/-- The new native-domain bridge applies to an actual existing heap invariant. -/
+example : cutSafe 6 ![3, 2, 2, 1] consolidated := by
+  have hi : (layout 3 2).Inv consolidated ∧ Inv 3 63 ((layout 3 2).abs consolidated) :=
+    consolidated_inv
+  have hc : (abs 3 ((layout 3 2).abs consolidated) (2 : Fin 3)).isSome := by decide
+  obtain ⟨m, ts, h⟩ := cascading_of_fibRawInv hi.2 hc
+  have hcur : (2 : Fin 3) ∈
+      Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.forestNodes ts := (h.dom 2).mpr hc
+  have hpar : (view 3 ((layout 3 2).abs consolidated)).par (2 : Fin 3) =
+      (1 : Fin 3).val + 1 := by decide
+  exact cutSafe_of_cascading (by decide) hi.1 h hcur hpar
 
 private theorem consolidated_wellFormed : Memory.WellFormed 6 consolidated := by
   have hv : (Memory.spec 6).ValidHistory (Memory.State.init [63])
@@ -152,7 +165,7 @@ example : ∃ y, ExecWithin 6 (realizes_cut.code frontier source scratch) loaded
   have hp : memoryState frontier loaded = consolidated := rfl
   obtain ⟨y, hy, hm, _, _⟩ :=
     (realizes_cut.code_spec frontier source scratch hi hd hf hs).2 6 ![3, 2, 2, 1]
-      loaded hb hin (by rw [hp]; decide) (by rw [hp]; decide)
+      loaded hb hin (by rw [hp]; unfold cutSafe; decide) (by rw [hp]; decide)
   rw [hp] at hy hm
   simp only [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
     Matrix.cons_val_three, Matrix.head_cons, Matrix.tail_cons] at hy hm

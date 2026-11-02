@@ -21,6 +21,10 @@ lexicographic priority test is distributed into ordinary word comparisons using 
 admissibility contract; the existing heap refinement supplies that contract for indexed-queue
 clients. These blocks do not constitute a complete native method family.
 
+## Main definitions
+
+* `cutSafe`: the native cut's arithmetic and reached-state splice conditions.
+
 ## Main results
 
 * `realizes_addRoot`: a uniform runtime `[capacity, base, handle]` root insertion certificate.
@@ -356,6 +360,19 @@ theorem realizes_toRoot : Realizes .exact
       s.mem (d 1 + 6 * d 0 + d 2) ≤ s.mem (d 1 + 9 * d 0 + 3)) (fun _ _ => 0) :=
   realizes_toRoot_history.consequence_valid (fun _ _ _ _ _ hv h => ⟨h, hv⟩)
 
+/-- Arithmetic and root-list domains of the native cut. The intermediate state is the actual
+original unlink run. This records compilation side conditions, not a replacement for the
+forest invariant or for the certificate's intrinsic source-history admissibility premise. -/
+@[expose] def cutSafe (w : ℕ) (d : Fin 4 → ℕ) (s : Memory.State) : Prop :=
+  Fits w (d 1 + (9 * d 0 + 5)) ∧ d 2 < d 0 ∧ d 3 < d 0 ∧
+    1 ≤ s.mem (d 1 + 5 * d 0 + d 3) ∧
+    let s' := (Memory.spec 0).clientState s
+      (DataStructure.link (E := Memory.spec 0) ((layout (d 0) (d 1)).methods 0)
+        (unlink (d 2) (d 3)))
+    1 ≤ s'.mem (d 1 + 9 * d 0 + 1) ∧ s'.mem (d 1 + 9 * d 0 + 1) ≤ d 0 ∧
+    s'.mem (d 1 + 4 * d 0 + (s'.mem (d 1 + 9 * d 0 + 1) - 1)) < d 0 ∧
+    s'.mem (d 1 + 6 * d 0 + d 2) ≤ s'.mem (d 1 + 9 * d 0 + 3)
+
 /-- The original cut is the composition of its two native source blocks. Its root-list and
 mark/count obligations concern the memory actually reached by unlinking. Transport from the
 existing forest invariants remains a separate proof obligation. No native loop nontruncation
@@ -363,15 +380,8 @@ or complete decrease-key is asserted by this block certificate. -/
 theorem realizes_cut : Realizes .exact
     (fun d : Fin 4 → ℕ => DataStructure.link (E := Memory.spec 0)
       ((layout (d 0) (d 1)).methods 0) (cut (d 2) (d 3)))
-    (.refl _) (WordEncoding.encode (α := Unit))
-    (fun w d s => Fits w (d 1 + (9 * d 0 + 5)) ∧ d 2 < d 0 ∧ d 3 < d 0 ∧
-      1 ≤ s.mem (d 1 + 5 * d 0 + d 3) ∧
-      let s' := (Memory.spec 0).clientState s
-        (DataStructure.link (E := Memory.spec 0) ((layout (d 0) (d 1)).methods 0)
-          (unlink (d 2) (d 3)))
-      1 ≤ s'.mem (d 1 + 9 * d 0 + 1) ∧ s'.mem (d 1 + 9 * d 0 + 1) ≤ d 0 ∧
-      s'.mem (d 1 + 4 * d 0 + (s'.mem (d 1 + 9 * d 0 + 1) - 1)) < d 0 ∧
-      s'.mem (d 1 + 6 * d 0 + d 2) ≤ s'.mem (d 1 + 9 * d 0 + 3)) (fun _ _ => 0) := by
+    (.refl _) (WordEncoding.encode (α := Unit)) cutSafe (fun _ _ => 0) := by
+  unfold cutSafe
   have ht := realizes_toRoot.reindex
     (fun d : (Fin 4 → ℕ) × Unit => ![d.1 0, d.1 1, d.1 2])
     (appendWords (.refl _) (WordEncoding.encode (α := Unit)))
