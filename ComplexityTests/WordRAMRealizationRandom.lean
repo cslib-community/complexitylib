@@ -12,8 +12,8 @@ import Complexity.Tactic.Realize
 The client `sample` reads the input length, draws a uniform index below it, and reads that input
 word. Its two memory reads are certified by `realize` and enter through `Realizes.toRand`; the
 draw is `RealizesRand.coin`. On every path the flat program from the list input halts within a
-fixed bound and makes at most one `rand` call, and it outputs each input word with probability one
-over the length (`sample_program`). Repeated in a loop (`RealizesRand.iterate`), every path takes
+fixed bound and makes at most one `rand` call. It chooses an input position uniformly, retaining
+repeated values (`sample_program`). Repeated in a loop (`RealizesRand.iterate`), every path takes
 `6` units of time and at most one `rand` call per iteration. -/
 
 namespace ComplexityTests.WordRAMRealizationRandom
@@ -61,7 +61,7 @@ theorem run_sample (w : ℕ) (s : Memory.State) :
   rw [RandomizedSpec.withCoins_run_liftRight, StateTransitionSpec.run_toRandomized]
   rfl
 
-/-- On the list input, `sample` outputs each input word with probability one over the length. -/
+/-- On the list input, `sample` chooses a position uniformly, retaining repeated values. -/
 theorem run_sample_inputState (w : ℕ) (xs : List ℕ) :
     ((Memory.spec w).toRandomized.withCoins.run sample (inputState xs)).map Prod.fst =
       (Probability.PMF.uniformOfFintype (Fin (xs.length - 1 + 1))).map
@@ -156,9 +156,9 @@ def observe {r : ℕ} (frontier : Fin r) : RandCfg r → ℕ × Memory.State
   | .halted v y => (v, memoryState frontier y)
   | _ => (0, ⟨fun _ => 0, 0⟩)
 
-/-- **End to end.** One flat word-RAM program samples a uniform input word: from every
+/-- **End to end.** One flat word-RAM program samples a uniform input position: from every
 nonempty input that fits, it halts within `T` steps on every path, makes at most one `rand`
-call, and outputs each input word with probability one over the length. -/
+call, and returns the word at the chosen position. Repeated values retain their multiplicity. -/
 theorem sample_program : ∃ (r : ℕ) (prog : Program .exact r) (T : ℕ),
     ∀ (w : ℕ) (xs : List ℕ), xs ≠ [] → Fits w (xs.length + 1) → InputFits w xs →
       RandHaltsWithin w prog (State.init xs) T ∧ RandCallsBounded w prog (State.init xs) T 1 ∧
@@ -217,5 +217,65 @@ example : RealizesRand .exact (fun ((_, a), fuel) => sampleTimes fuel a)
     obtain ⟨⟨v, s₁⟩, h₁, h₂⟩ := h
     obtain rfl := eq_of_mem_support_sample h₁
     exact ih v b s' h₂
+
+/-! ## An adaptive write retains the joint result/memory law -/
+
+/-- Sample an input word, then store the sampled value in the length cell. -/
+noncomputable def storeSample : ProbOracleComp Memory.Op.Result ℕ := do
+  let v ← sample
+  OracleComp.liftRight (do
+    Memory.write 0 v
+    pure v)
+
+/-- The returned value and the updated cell are correlated, while every other cell and the
+frontier are unchanged. Separate result and memory marginals would not express this law. -/
+theorem run_storeSample (w : ℕ) (s : Memory.State) :
+    (Memory.spec w).toRandomized.withCoins.run storeSample s =
+      (Probability.PMF.uniformOfFintype (Fin (s.mem 0 - 1 + 1))).map fun c =>
+        (s.mem (c.val + 1),
+          (⟨Function.update s.mem 0 (s.mem (c.val + 1)), s.frontier⟩ : Memory.State)) := by
+  rw [storeSample, RandomizedSpec.run_bind, run_sample, PMF.bind_map, ← PMF.bind_pure_comp]
+  congr 1
+  funext c
+  simp only [Function.comp_apply]
+  rw [RandomizedSpec.withCoins_run_liftRight, StateTransitionSpec.run_toRandomized]
+  rfl
+
+/-- Every supported joint outcome records the returned value in cell zero. -/
+theorem storeSample_result_eq_cell {w : ℕ} {s s' : Memory.State} {v : ℕ}
+    (h : (v, s') ∈ ((Memory.spec w).toRandomized.withCoins.run storeSample s).support) :
+    s'.mem 0 = v := by
+  rw [run_storeSample, PMF.mem_support_map_iff] at h
+  obtain ⟨c, -, hc⟩ := h
+  obtain ⟨rfl, rfl⟩ := Prod.mk.inj hc
+  simp only [Function.update_self]
+
+/-- The adaptive write is admissible on the same nonempty allocated input as `sample`, when
+the memory words fit. The stored value is a word read from that memory. -/
+theorem demonicValid_storeSample {w : ℕ} {s : Memory.State} (hs : Memory.WellFormed w s)
+    (h0 : 1 ≤ s.mem 0) (hf : s.mem 0 < s.frontier) :
+    (Memory.spec w).toRandomized.withCoins.toSpec.DemonicValid s storeSample := by
+  refine StateTransitionSpec.DemonicValid.bind (demonicValid_sample h0 hf) fun v s' tr hrun => ?_
+  have hmem := RandomizedSpec.mem_support_run_of_clientRun _ hrun
+  rw [run_sample, PMF.mem_support_map_iff] at hmem
+  obtain ⟨c, -, hc⟩ := hmem
+  obtain ⟨rfl, rfl⟩ := Prod.mk.inj hc
+  apply RandomizedSpec.demonicValid_liftRight
+  apply StateTransitionSpec.toRandomized_demonicValid_of_validHistory
+  exact ⟨⟨by omega, hs.mem_fits _⟩, trivial⟩
+
+/-- The adaptive store uses the same deterministic entry point and preserves a pathwise
+single-call budget; its concrete memory write is included in the instruction currency. -/
+theorem realizesRand_storeSample :
+    RealizesRand .exact (fun _ : Unit => storeSample) unitWords word
+      (fun _ _ s => 1 ≤ s.mem 0) (fun _ _ => 7) (fun _ _ => 1) := by
+  have hwrite : Realizes .exact (fun e : Unit × ℕ => do
+      Memory.write 0 e.2
+      pure e.2) (appendWords unitWords word) word (fun _ _ _ => True) (fun _ _ => 0) := by
+    realize
+  refine ((realizesRand_sample_unit.bind hwrite.toRand (fun _ _ => 1) (fun _ _ => 0)).congr
+    fun _ => rfl).consequence ?_
+  intro w d s _ _ h
+  exact ⟨⟨h, fun _ _ _ => ⟨trivial, le_rfl, le_rfl⟩⟩, le_rfl, le_rfl⟩
 
 end ComplexityTests.WordRAMRealizationRandom
