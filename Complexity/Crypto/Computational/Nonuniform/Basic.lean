@@ -149,7 +149,7 @@ theorem not_computationallyIndistinguishable_pure_uniformList (target : ℕ → 
       (fun n => BitString.uniformList (length n)) := by
   intro h
   have hfirst : IsPPT encBool (fun _ word => pure (word.headD false)) :=
-    (ComputableTidilyInPolyTime.headD false).isPPT
+    ((ComputableInPolyTime.headD false).comp (ComputableInPolyTime.snd encUnary encBits)).isPPTOn
   have hneg := h _ hfirst
   refine not_negligible_const (c := 1 / 2) (by norm_num) (negligible_of_eventually_le hneg ?_)
   filter_upwards [hlength] with n hn
