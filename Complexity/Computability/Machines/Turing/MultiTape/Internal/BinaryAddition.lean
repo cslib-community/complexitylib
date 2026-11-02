@@ -33,7 +33,7 @@ space and polynomial-time forms are weakenings of it.
 * `Turing.MultiTapeTM.computableInTimeAndSpace_natAdd`: binary addition within
   `3 * (encPair encNat encNat p).length + 1` steps and `(encNat p.1).length + 2` work-tape cells.
 * `Turing.MultiTapeTM.computableInTimeAndSpace_natOr`: bitwise disjunction within the same bounds.
-* `Turing.MultiTapeTM.ComputableInLinearTimeAndSpace.natAdd`, `.natOr`: their linear forms.
+* `Turing.MultiTapeTM.ComputableInDegree.natAdd`, `.natOr`: their linear forms.
 * `Turing.MultiTapeTM.ComputableInO.natAdd`: binary addition in quadratic time and linear charged
   workspace.
 * `Turing.MultiTapeTM.ComputableInO.natMul`: binary multiplication in cubic time and linear
@@ -81,9 +81,9 @@ public theorem computableInTimeAndSpace_natAdd :
   addZip.computableInTimeAndSpace encNat_natAdd
 
 /-- Binary addition in linear time and work space, from `computableInTimeAndSpace_natAdd`. -/
-public theorem ComputableInLinearTimeAndSpace.natAdd :
-    ComputableInLinearTimeAndSpace (fun p : ℕ × ℕ => p.1 + p.2) (encPair encNat encNat) encNat :=
-  addZip.computableInLinearTimeAndSpace encNat_natAdd
+public theorem ComputableInDegree.natAdd :
+    ComputableInDegree (fun p : ℕ × ℕ => p.1 + p.2) (encPair encNat encNat) encNat 1 1 :=
+  addZip.computableInDegree encNat_natAdd
 
 /-- Bitwise disjunction as a zip transducer with a single state. -/
 private def orZip : ZipTransducer Unit where
@@ -115,9 +115,9 @@ public theorem computableInTimeAndSpace_natOr :
   orZip.computableInTimeAndSpace fun p => (run_orZip p.1 p.2).symm
 
 /-- Bitwise disjunction in linear time and work space, from `computableInTimeAndSpace_natOr`. -/
-public theorem ComputableInLinearTimeAndSpace.natOr :
-    ComputableInLinearTimeAndSpace (fun p : ℕ × ℕ => p.1 ||| p.2) (encPair encNat encNat) encNat :=
-  orZip.computableInLinearTimeAndSpace fun p => (run_orZip p.1 p.2).symm
+public theorem ComputableInDegree.natOr :
+    ComputableInDegree (fun p : ℕ × ℕ => p.1 ||| p.2) (encPair encNat encNat) encNat 1 1 :=
+  orZip.computableInDegree fun p => (run_orZip p.1 p.2).symm
 
 end Turing.MultiTapeTM
 
@@ -129,7 +129,7 @@ theorem natAdd :
     ComputableInO (fun p : ℕ × ℕ => p.1 + p.2) (encPair encNat encNat) encNat
       (fun p => ((encPair encNat encNat p).length + 1) ^ 2)
       (fun p => (encPair encNat encNat p).length + 1) :=
-  (of_linear ComputableInLinearTimeAndSpace.natAdd).mono 1
+  (of_linear ComputableInDegree.natAdd).mono 1
     (fun p => by have := Nat.le_self_pow two_ne_zero ((encPair encNat encNat p).length + 1); omega)
     (fun _ => by omega)
 

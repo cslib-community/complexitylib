@@ -46,7 +46,7 @@ private theorem run_counting (reply : ℕ → List Bool) (request : Bool × List
 -- The unselected branch makes no call: the counter records exactly one external request.
 example (word : List Bool) :
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
         (counting fun _ => [false, true])) (adaptive word)).run 0 = PMF.pure ([], 1) := by
   simp [adaptive, run_counting]
 
@@ -54,7 +54,7 @@ example (word : List Bool) :
 -- reply is truncated to the input length.
 example :
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
         (counting fun calls => List.replicate (calls + 5) true))
           (adaptive [false, false, false])).run 0 = PMF.pure ([true, true, true], 2) := by
   simp [adaptive, run_counting]
