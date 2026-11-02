@@ -12,6 +12,7 @@ import Complexity.Languages.Probabilistic.Notation
 public import Complexity.Crypto.Computational.OneWay.Normalize
 import Complexity.Computability.Probabilistic.CoinTape
 import Complexity.Crypto.Negligible.Basic
+import Complexity.Computability.Probabilistic.PPT.Composition
 
 /-!
 # The pseudoentropy prediction gap from one-wayness

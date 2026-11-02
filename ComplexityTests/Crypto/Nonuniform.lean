@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.Crypto.Computational.Nonuniform.ZeroKnowledge
 import Complexity.Crypto.Computational.Stretch
+import Complexity.Crypto.Computational.Pseudoentropy.OneWay
 
 /-! Checked clients of the nonuniform security notions. Existence of a nonuniform one-way
 function or generator is open, so these checks show that the notions are not trivially true
@@ -74,5 +75,13 @@ example {generator : List Bool → List Bool} (h : NonuniformPRG generator (fun 
     ∃ zk : ZeroKnowledgeProof enc A, zk.AuxiliaryInputZeroKnowledge :=
   (h.amplify (fun n => 3 * n + 1) (by fun_prop) (fun n => by omega))
     |>.exists_auxiliaryInputZeroKnowledge_of_mem_NP (fun _ => le_rfl) hA
+
+/-- A pair with a prediction gap against predictors given empty advice has the uniform gap, so the
+fair-coin bound of `HasGap` applies to it. -/
+example {pair : Pseudoentropy.SamplablePair} {gap : ℕ → ℝ}
+    (h : pair.HasGapWithAdvice gap (fun _ => [])) :
+    ∀ᶠ n in Filter.atTop, Probability.PMF.conditionalEntropy (pair.joint n) + gap n ≤ 1 :=
+  (Pseudoentropy.SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mpr
+    h).eventually_entropy_add_gap_le_one
 
 end ComplexityTests.Crypto.Nonuniform
