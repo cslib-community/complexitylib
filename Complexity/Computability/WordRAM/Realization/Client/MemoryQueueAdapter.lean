@@ -26,10 +26,11 @@ Its representation adds bounded native data and persistent layout registers to t
 M1a queue representation. Finite-block support, argument encoding, typed decoding, fresh
 initialization and the full method memory footprint are proved at this boundary.
 
-The certified method work satisfies `G ≤ 7 M + 80` on queue states. Scaling the existing
-nine-memory-unit queue inequality gives an amortized native body charge `153 * factor` and a
-potential
-`48 * factor * rearCount`. The existing flat-call API adds its trailing halt separately.
+The common optional answer omits the enqueue payload echo; the known operation determines
+its result observation. The certified method work satisfies `G ≤ 7 M + 71` on queue states.
+Scaling the existing nine-memory-unit queue inequality gives an amortized native body charge
+`144 * factor` and a potential `48 * factor * rearCount`. The existing flat-call API adds its
+trailing halt separately.
 Register argument delivery follows that API's `prepareRegs` convention; arbitrary host-client
 pure computations are not part of this operation-sequence clock.
 
@@ -297,25 +298,41 @@ private theorem method_memoryCost (L₁ L₂ : Stack.Memory.Layout) (w C : ℕ) 
     memoryCost (MemoryQueueMethod.method ((L₁, L₂), o)) s =
       memoryCost (Queue.Memory.memMethods L₁ L₂ w C o) s := by
   rw [MemoryQueueMethod.method_source_eq ((L₁, L₂), o) w C]
-  change memoryCost ((Queue.Memory.memMethods L₁ L₂ w C o).bind _) s = _
-  rw [memoryCost_bind]
-  rfl
+  cases o with
+  | enqueue v =>
+    change memoryCost ((Queue.Memory.memMethods L₁ L₂ w C (.enqueue v)).bind _) s = _
+    rw [memoryCost_bind]
+    rfl
+  | dequeue => rfl
 
-/-- The global method's actual grading, including typed-result staging and operation dispatch,
-is uniformly dominated on queue states. The constant 80 is retained on empty and short paths. -/
+private theorem method_clientState (L₁ L₂ : Stack.Memory.Layout) (v w C : ℕ)
+    (o : Queue.QueueOp ℕ) (s : Memory.State) :
+    (Memory.spec v).clientState s (MemoryQueueMethod.method ((L₁, L₂), o)) =
+      (Memory.spec v).clientState s (Queue.Memory.memMethods L₁ L₂ w C o) := by
+  rw [MemoryQueueMethod.method_source_eq ((L₁, L₂), o) w C]
+  cases o with
+  | enqueue n =>
+    change (Memory.spec v).clientState s
+      ((Queue.Memory.memMethods L₁ L₂ w C (.enqueue n)).bind _) = _
+    simp only [StateTransitionSpec.clientState, StateTransitionSpec.runClient_bind]
+    rfl
+  | dequeue => rfl
+
+/-- The global method's actual grading, including answer staging and operation dispatch,
+is uniformly dominated on queue states. The constant 71 is retained on empty and short paths. -/
 theorem method_work_bound {L₁ L₂ : Stack.Memory.Layout} {w C : ℕ}
     (h₁ : L₁.Valid w C) (h₂ : L₂.Valid w C) (hd : Disjoint L₁.footprint L₂.footprint)
     {s : Memory.State} (hw : Memory.WellFormed w s)
     (hi : (Queue.Memory.memRefinement h₁ h₂ hd).inv s) (o : Queue.QueueOp ℕ) :
     MemoryQueueMethod.methodWork ((L₁, L₂), o) s ≤
-      7 * memoryCost (MemoryQueueMethod.method ((L₁, L₂), o)) s + 80 := by
+      7 * memoryCost (MemoryQueueMethod.method ((L₁, L₂), o)) s + 71 := by
   obtain ⟨hs₁, hs₂, hlen⟩ := invariant_fields h₁ h₂ hd hi
   rw [method_memoryCost L₁ L₂ w C o s]
   cases o with
-  | enqueue v => change 21 ≤ _; omega
+  | enqueue v => change 17 ≤ _; omega
   | dequeue =>
     have h := dequeue_work_bound h₁ h₂ hd hw hs₁ hs₂ hlen
-    change MemoryQueueDispatch.dequeueWork (L₁, L₂) s + 11 ≤ _
+    change MemoryQueueDispatch.dequeueWork (L₁, L₂) s + 2 ≤ _
     omega
 
 private theorem totalCost_width (w : ℕ) (os : List Memory.Op) (s : Memory.State) :
@@ -340,7 +357,7 @@ theorem method_pay {L₁ L₂ : Stack.Memory.Layout} {w C : ℕ}
         MemoryQueueMethod.methodWork ((L₁, L₂), o) s + 1) +
         48 * factor * ((Memory.spec 0).clientState s
           (MemoryQueueMethod.method ((L₁, L₂), o))).mem L₂.count.base ≤
-      153 * factor + 48 * factor * s.mem L₂.count.base := by
+      144 * factor + 48 * factor * s.mem L₂.count.base := by
   let M := Queue.Memory.memRefinement h₁ h₂ hd
   have hvalid := ((Memory.spec w).demonicValid_iff_validHistory_runClient _ _).mp
     (M.valid o hi hv)
@@ -362,12 +379,7 @@ theorem method_pay {L₁ L₂ : Stack.Memory.Layout} {w C : ℕ}
       6 * (Stack.Memory.abs L₂ ((Memory.spec 0).clientState s
         (Queue.Memory.memMethods L₁ L₂ w C o))).length ≤
     9 + 6 * (Stack.Memory.abs L₂ s).length at hpay
-  have hstate : (Memory.spec 0).clientState s (MemoryQueueMethod.method ((L₁, L₂), o)) =
-      (Memory.spec 0).clientState s (Queue.Memory.memMethods L₁ L₂ w C o) := by
-    rw [MemoryQueueMethod.method_source_eq ((L₁, L₂), o) w C]
-    change (Memory.spec 0).clientState s ((Queue.Memory.memMethods L₁ L₂ w C o).bind _) = _
-    simp only [StateTransitionSpec.clientState, StateTransitionSpec.runClient_bind]
-    rfl
+  have hstate := method_clientState L₁ L₂ 0 w C o s
   rw [← method_memoryCost L₁ L₂ w C o s, ← hstate] at hpay
   simp only [Stack.Memory.length_abs] at hpay
   have h := scaled_potential_pay
@@ -378,11 +390,11 @@ theorem method_pay {L₁ L₂ : Stack.Memory.Layout} {w C : ℕ}
     (6 * s.mem L₂.count.base)
     (6 * ((Memory.spec 0).clientState s
       (MemoryQueueMethod.method ((L₁, L₂), o))).mem L₂.count.base)
-    9 factor 7 80 le_rfl (method_work_bound h₁ h₂ hd hw hi o) hpay
+    9 factor 7 71 le_rfl (method_work_bound h₁ h₂ hd hw hi o) hpay
   convert h using 1 <;> ring
 
 /-- The register count is fixed by the global method certificate, before base, capacity or width. -/
-noncomputable def registers : ℕ := 16 + (4 + MemoryQueueMethod.realizes_method.scratchSize + 1)
+noncomputable def registers : ℕ := 16 + (2 + MemoryQueueMethod.realizes_method.scratchSize + 1)
 
 /-- The fixed ABI reserves the first sixteen registers; the global method's scratch follows. -/
 noncomputable def register : Fin 16 ↪ Fin registers where
@@ -398,11 +410,11 @@ noncomputable def source : Fin 11 → Fin registers :=
 
 /-- The complete output and scratch bank follows the persistent ABI and controls. -/
 noncomputable def scratch :
-    Fin (4 + MemoryQueueMethod.realizes_method.scratchSize + 1) → Fin registers :=
+    Fin (2 + MemoryQueueMethod.realizes_method.scratchSize + 1) → Fin registers :=
   fun i => ⟨16 + i.val, by have := i.isLt; unfold registers; omega⟩
 
-/-- The four typed-label words occupy the first four result-bank registers. -/
-noncomputable def outputRegister (i : Fin 4) : Fin registers :=
+/-- The two optional-answer words occupy the first two result-bank registers. -/
+noncomputable def outputRegister (i : Fin 2) : Fin registers :=
   scratch (Fin.castAdd (MemoryQueueMethod.realizes_method.scratchSize + 1) i)
 
 /-- One fixed code body and initialization ABI for all runtime bases and capacities. The first
@@ -419,7 +431,7 @@ noncomputable def program : SubroutineCode .exact registers 1 where
   oneReg := register 15
   incCur := .exactBin .add (register 13) (register 13) (register 15)
   input i := decide (8 ≤ i.val ∧ i.val < 11)
-  output := outputRegister 3
+  output := outputRegister 1
 
 private def semanticModule (w base C : ℕ) (hf : Fits w (base + space C)) :
     Module (Queue.WordRAM.spec w C) (Memory.spec w) :=
@@ -447,7 +459,7 @@ private noncomputable def decode : (o : Queue.QueueOp ℕ) →
     (Fin registers → ℕ) → Option ((Queue.WordRAM.spec 0 0).Result o)
   | .enqueue _, _ => some ()
   | .dequeue, regs =>
-      some (if regs (outputRegister 2) = 0 then none else some (regs (outputRegister 3)))
+      some (if regs (outputRegister 0) = 0 then none else some (regs (outputRegister 1)))
 
 private theorem scratch_injective : Function.Injective scratch := by
   intro i j h
@@ -496,7 +508,7 @@ private noncomputable def baseCertificate (w base C : ℕ) (hf : Fits w (base + 
   spanTime := 6
   setupTime := 7
   initPotential := 0
-  charge _ _ := 153 * MemoryQueueMethod.realizes_method.factor
+  charge _ _ := 144 * MemoryQueueMethod.realizes_method.factor
   rep := representation w base C hf
   potential x := 48 * MemoryQueueMethod.realizes_method.factor * x.mem (base + 1 + C)
   encode := encode
@@ -591,16 +603,14 @@ zero-block contract; `initClear` has its explicit linear cost on dirty owned mem
     DataStructure.WordRAM.StateTransitionImpl program (Queue.WordRAM.spec w C)
       w base (fun _ => C) [] := by
   let M := semanticModule w base C hf
-  refine Realizes.toStateTransitionImplWithArgs M MemoryQueueMethod.realizes_method
-    (fun o => ((frontLayout base C, rearLayout base C), o)) ?_
+  refine Realizes.toStateTransitionImplWithObservation M MemoryQueueMethod.realizes_method
+    (fun o => ((frontLayout base C, rearLayout base C), o)) MemoryQueueMethod.answer ?_
     (register 11) source scratch scratch_injective source_scratch scratch_frontier source_frontier
     (baseCertificate w base C hf) rfl ?_ ?_ ?_ ?_ ?_
   · intro o
-    rw [MemoryQueueMethod.method_source_eq _ w C]
-    change _ = (do
-      let a ← (Queue.Memory.memRefinement (layouts_valid hf).1 (layouts_valid hf).2.1
-        (layouts_valid hf).2.2).methods o
-      pure (⟨o, a⟩ : (Queue.queue ℕ).Label))
+    rw [MemoryQueueMethod.method_answer _ w C]
+    change _ = (Queue.Memory.memRefinement (layouts_valid hf).1 (layouts_valid hf).2.1
+      (layouts_valid hf).2.2).methods o
     rw [Queue.Memory.memRefinement_methods]
   · intro q x o hr hv ha
     change representation w base C hf q x at hr
@@ -620,24 +630,27 @@ zero-block contract; `initClear` has its explicit linear cost on dirty owned mem
     · apply method_safe (layouts_valid hf).1 (layouts_valid hf).2.1 (layouts_valid hf).2.2
         (wellFormed_memoryState hr.1) hr.2.2.1 o
       simpa only [hr.2.2.2] using hv
-  · intro o a regs hout
+  · intro o e regs hout
     cases o with
-    | enqueue v => cases a; rfl
+    | enqueue v => rfl
     | dequeue =>
-      have htag := hout 2
-      have hval := hout 3
-      cases a with
+      let a := (Memory.spec w).clientResult e
+        (MemoryQueueMethod.method ((frontLayout base C, rearLayout base C), .dequeue))
+      change (∀ i : Fin 2, regs (outputRegister i) = optionWords a i) at hout
+      change some (if regs (outputRegister 0) = 0 then none else
+        some (regs (outputRegister 1))) = some a
+      have htag := hout 0
+      have hval := hout 1
+      cases ha : a with
       | none =>
-        change regs (outputRegister 2) = 0 at htag
-        change some (if regs (outputRegister 2) = 0 then none else
-          some (regs (outputRegister 3))) = some none
+        rw [ha] at htag
+        change regs (outputRegister 0) = 0 at htag
         rw [htag]
         rfl
       | some v =>
-        change regs (outputRegister 2) = 1 at htag
-        change regs (outputRegister 3) = v at hval
-        change some (if regs (outputRegister 2) = 0 then none else
-          some (regs (outputRegister 3))) = some (some v)
+        rw [ha] at htag hval
+        change regs (outputRegister 0) = 1 at htag
+        change regs (outputRegister 1) = v at hval
         simp only [htag, hval, one_ne_zero, ↓reduceIte]
   · intro q q' x y o a hr _ _ _ hM hy hframe
     change representation w base C hf q x at hr
@@ -685,18 +698,7 @@ zero-block contract; `initClear` has its explicit linear cost on dirty owned mem
         (MemoryQueueMethod.method ((frontLayout base C, rearLayout base C), o))
         (memoryState (register 11) x)).symm
       apply hw'.trans
-      rw [MemoryQueueMethod.method_source_eq _ w C]
-      change (Memory.spec w).clientState (memoryState (register 11) x)
-        ((Queue.Memory.memMethods (frontLayout base C) (rearLayout base C) w C o).bind _) = _
-      have htag : (Memory.spec w).clientState (memoryState (register 11) x)
-          ((Queue.Memory.memMethods (frontLayout base C) (rearLayout base C) w C o).bind
-            (fun a => pure (⟨o, a⟩ : (Queue.queue ℕ).Label))) =
-          (Memory.spec w).clientState (memoryState (register 11) x)
-            (Queue.Memory.memMethods (frontLayout base C) (rearLayout base C) w C o) := by
-        simp only [StateTransitionSpec.clientState, StateTransitionSpec.runClient_bind]
-        rfl
-      rw [htag]
-      change _ = (memoryState (register 11) y)
+      rw [method_clientState _ _ w w C o]
       change memoryState (register 11) y = (Memory.spec w).clientState
         (memoryState (register 11) x) ((Queue.Memory.memRefinement (layouts_valid hf).1
           (layouts_valid hf).2.1 (layouts_valid hf).2.2).methods o) at hm
@@ -710,12 +712,12 @@ private theorem implementation_data (w base C : ℕ) (hf : Fits w (base + space 
     (implementation w base C hf).initTime = 13 ∧
     (implementation w base C hf).initPotential = 0 ∧
     (∀ q o, (implementation w base C hf).charge q o =
-      153 * MemoryQueueMethod.realizes_method.factor) ∧
+      144 * MemoryQueueMethod.realizes_method.factor) ∧
     (∀ x, (implementation w base C hf).potential x =
       48 * MemoryQueueMethod.realizes_method.factor * x.mem (base + 1 + C)) ∧
     (∀ v regs, (implementation w base C hf).decode (.enqueue v) regs = some ()) ∧
     (∀ regs, (implementation w base C hf).decode .dequeue regs =
-      some (if regs (outputRegister 2) = 0 then none else some (regs (outputRegister 3)))) :=
+      some (if regs (outputRegister 0) = 0 then none else some (regs (outputRegister 1)))) :=
   ⟨rfl, rfl, rfl, fun _ _ => rfl, fun _ => rfl, fun _ _ => rfl, fun _ => rfl⟩
 
 @[simp] theorem implementation_space (w base C : ℕ) (hf : Fits w (base + space C)) :
@@ -729,7 +731,7 @@ private theorem implementation_data (w base C : ℕ) (hf : Fits w (base + space 
 
 @[simp] theorem implementation_charge (w base C : ℕ) (hf : Fits w (base + space C))
     (q : List ℕ) (o : Queue.QueueOp ℕ) :
-    (implementation w base C hf).charge q o = 153 * MemoryQueueMethod.realizes_method.factor :=
+    (implementation w base C hf).charge q o = 144 * MemoryQueueMethod.realizes_method.factor :=
   (implementation_data w base C hf).2.2.2.1 q o
 
 @[simp] theorem implementation_potential (w base C : ℕ) (hf : Fits w (base + space C))
@@ -757,7 +759,7 @@ theorem implementation_rep_iff (w base C : ℕ) (hf : Fits w (base + space C))
 @[simp] theorem implementation_decode_dequeue (w base C : ℕ) (hf : Fits w (base + space C))
     (regs : Fin registers → ℕ) :
     (implementation w base C hf).decode .dequeue regs =
-      some (if regs (outputRegister 2) = 0 then none else some (regs (outputRegister 3))) :=
+      some (if regs (outputRegister 0) = 0 then none else some (regs (outputRegister 1))) :=
   (implementation_data w base C hf).2.2.2.2.2.2 regs
 
 end Cslib.WordRAM.Realization.MemoryQueueAdapter
