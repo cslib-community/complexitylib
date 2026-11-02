@@ -7,6 +7,7 @@ public import Complexity.Algorithms.ExactTriangle.FailureAccounting
 public import Complexity.Algorithms.ExactTriangle.Hashing
 public import Complexity.Algorithms.ExactTriangle.Lopsided
 public import Complexity.Algorithms.ExactTriangle.ParameterChoice
+public import Complexity.Algorithms.ExactTriangle.ParameterChoice.CostGeometry
 public import Complexity.Algorithms.ExactTriangle.PieceBounds
 public import Complexity.Algorithms.ExactTriangle.Splitting
 public import Complexity.Algorithms.ExactTriangle.Weights
@@ -156,6 +157,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.SourceBound
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.Spread
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.TimeBound
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.Width
+public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicCost
 public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters
 public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.Exec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.Input
