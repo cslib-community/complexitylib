@@ -36,6 +36,27 @@ theorem projection_call (m : ℕ → Memory.Prog ℕ) (P : ℕ → ℕ → Memor
   realize
   exact h
 
+-- A tuple-argument certificate can certify a curried method without unfolding its body.
+example (m : ℕ → ℕ → Memory.Prog ℕ) (P : ℕ → ℕ × ℕ → Memory.State → Prop)
+    (hm : Realizes .exact (fun d : ℕ × ℕ => m d.1 d.2) pairWords word P (fun _ _ => 0)) :
+    Realizes .exact (fun d : ℕ × ℕ => m d.2 d.1) pairWords word
+      (fun w d s => P w (d.2, d.1) s) (fun _ _ => 0) := by
+  realize
+  exact h
+
+-- A curried opaque extraction feeds the canonical three-word optional-pair continuation.
+example (extract : ℕ → ℕ → Memory.Prog (Option (ℕ × ℕ)))
+    (P : ℕ → ℕ × ℕ → Memory.State → Prop)
+    (hm : Realizes .exact (fun d : ℕ × ℕ => extract d.1 d.2) pairWords
+      (WordEncoding.encode (α := Option (ℕ × ℕ))) P (fun _ _ => 0)) :
+    Realizes .exact (fun d : ℕ × ℕ => do
+      match ← extract d.2 d.1 with
+      | none => pure (0, 0)
+      | some (v, k) => pure (v, k)) pairWords pairWords
+      (fun w d s => P w (d.2, d.1) s) (fun _ _ => 0) := by
+  realize
+  exact h
+
 -- Input registers need not be distinct: the existing reindex rule permits aliasing.
 example (m : ℕ × ℕ → Memory.Prog ℕ) (P : ℕ → ℕ × ℕ → Memory.State → Prop)
     (hm : Realizes .exact m pairWords word P (fun _ _ => 0)) :

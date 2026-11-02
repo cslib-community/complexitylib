@@ -725,6 +725,19 @@ private def bindRun (hP hQ reply next : Expr) : MetaM Expr := do
     lambdaBoundedTelescope f 2 fun xs b => do mkLambdaFVars xs (← mkEqRefl b)
   mkAppM ``Realizes.bind₀_of_run #[hP, hQ, reply, next, ← refl reply, ← refl next]
 
+/-- Expose pair projections to unification when a certificate packages curried arguments.
+Other types remain whole metavariables: no data constructor or runtime value is guessed. -/
+private partial def callArgument (ty : Expr) : MetaM Expr := do
+  let ty ← whnfR ty
+  if let some (a, b) := ty.app2? ``Prod then
+    return mkAppN (mkConst ``Prod.mk ty.getAppFn.constLevels!)
+      #[a, b, ← callArgument a, ← callArgument b]
+  if let some (a, b) := ty.app2? ``Sigma then
+    let x ← callArgument a
+    return mkAppN (mkConst ``Sigma.mk ty.getAppFn.constLevels!)
+      #[a, b, x, ← callArgument (b.beta #[x])]
+  mkFreshExprMVar ty
+
 /-- Reuse a local method certificate before unfolding its body. Every input word must already
 be live: `Realizes.reindex` supplies static wiring, without granting argument computation. -/
 private def tryRealizeCall (ctx : Ctx) (env : Env) (d : Expr) (atoms : Array Expr)
@@ -740,7 +753,7 @@ private def tryRealizeCall (ctx : Ctx) (env : Env) (d : Expr) (atoms : Array Exp
         throwError "realize: the method's basis differs"
       unless ← withReducible (isDefEq args[9]! (← zeroWork args[2]!)) do
         throwError "realize: a called certificate must have absorbed local work"
-      let arg ← mkFreshExprMVar args[2]!
+      let arg ← callArgument args[2]!
       unless ← withReducible (isDefEq (mkApp args[5]! arg) body) do
         throwError "realize: the method does not match"
       let arg ← instantiateMVars arg
