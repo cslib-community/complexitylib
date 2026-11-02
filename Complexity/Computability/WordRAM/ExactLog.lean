@@ -27,28 +27,28 @@ formulas (`log2LoopData` and `clog2LoopData`) for embedding via `Code.rename`.
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.ExactLog.maxCode`: 3-instruction equal-cost branch computing the
+* `Cslib.WordRAM.ExactLog.maxCode`: 3-instruction equal-cost branch computing the
   maximum of two registers.
-* `Cslib.Algorithms.WordRAM.ExactLog.log2Body`,
-  `Cslib.Algorithms.WordRAM.ExactLog.log2Loop`,
-  `Cslib.Algorithms.WordRAM.ExactLog.log2LoopData`: floor-`log₂` loop over `Basis.exact`.
-* `Cslib.Algorithms.WordRAM.ExactLog.clog2Body`,
-  `Cslib.Algorithms.WordRAM.ExactLog.clog2Loop`,
-  `Cslib.Algorithms.WordRAM.ExactLog.clog2LoopData`: ceiling-`log₂` loop over `Basis.exact`.
+* `Cslib.WordRAM.ExactLog.log2Body`,
+  `Cslib.WordRAM.ExactLog.log2Loop`,
+  `Cslib.WordRAM.ExactLog.log2LoopData`: floor-`log₂` loop over `Basis.exact`.
+* `Cslib.WordRAM.ExactLog.clog2Body`,
+  `Cslib.WordRAM.ExactLog.clog2Loop`,
+  `Cslib.WordRAM.ExactLog.clog2LoopData`: ceiling-`log₂` loop over `Basis.exact`.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.ExactLog.exec_exactBin`: single-instruction execution of `.exactBin`.
-* `Cslib.Algorithms.WordRAM.ExactLog.maxCode_exec`: 3-instruction execution of `maxCode`.
-* `Cslib.Algorithms.WordRAM.ExactLog.log2Loop_exec`: exact `4 * Nat.log 2 rem + 2`-instruction
+* `Cslib.WordRAM.ExactLog.exec_exactBin`: single-instruction execution of `.exactBin`.
+* `Cslib.WordRAM.ExactLog.maxCode_exec`: 3-instruction execution of `maxCode`.
+* `Cslib.WordRAM.ExactLog.log2Loop_exec`: exact `4 * Nat.log 2 rem + 2`-instruction
   execution of `log2Loop`.
-* `Cslib.Algorithms.WordRAM.ExactLog.clog2Loop_exec`: exact `5 * Nat.clog 2 rem + 2`-instruction
+* `Cslib.WordRAM.ExactLog.clog2Loop_exec`: exact `5 * Nat.clog 2 rem + 2`-instruction
   execution of `clog2Loop`.
 -/
 
 public section
 
-namespace Cslib.Algorithms.WordRAM.ExactLog
+namespace Cslib.WordRAM.ExactLog
 
 open Cslib.WordRAM
 
@@ -236,4 +236,4 @@ theorem clog2Loop_exec {w : ℕ} (rem : ℕ) {acc : ℕ} {x : Data 3}
       rw [hd, hclog0]
       exact Exec.loop_exit hc
 
-end Cslib.Algorithms.WordRAM.ExactLog
+end Cslib.WordRAM.ExactLog
