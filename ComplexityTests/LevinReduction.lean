@@ -4,7 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Computability.Complexity.Problems.ThreeSAT.Levin
+module
+-- upstream: local-only (test driver)
+
+public import Complexity.Computability.Complexity.Problems.ThreeSAT.Levin
 
 /-!
 # Levin reductions
@@ -12,8 +15,11 @@ import Complexity.Computability.Complexity.Problems.ThreeSAT.Levin
 Checked clients of `Cslib.Complexity.NPRelation` and `Cslib.Complexity.LevinReduction`: the SAT
 relation has witnesses, the explicit SAT → 3SAT witness maps compute concrete certificates on a
 clause of width four (one auxiliary variable), the composed and identity reductions are available,
-and a Levin reduction yields the Karp reduction of the languages.
+and a Levin reduction yields the Karp reduction of the languages. The file is a `module`, so it
+also checks that `LevinHard` can be introduced and transported by downstream modules.
 -/
+
+public section
 
 namespace ComplexityTests.LevinReduction
 
@@ -58,5 +64,17 @@ example : toThreeSAT [[]] ∉ ThreeSAT.npRelation.language := fun h => by
 example : PolyTimeReducible encCNF encCNF SAT ThreeSAT := by
   simpa only [SAT.language_npRelation, ThreeSAT.language_npRelation] using
     ((LevinReduction.refl _).trans toThreeSATLevinReduction).toPolyTimeReducible
+
+/-- `LevinHard` unfolds in a downstream module: it is introduced from reductions of every NP
+relation. -/
+example {S : NPRelation encCNF}
+    (h : ∀ ⦃α : Type⦄ (encA : α ↪ List Bool) (R : NPRelation encA),
+      Nonempty (LevinReduction R S)) : LevinHard S :=
+  h
+
+/-- Levin-hardness of SAT transfers to 3SAT along the explicit reduction, and gives `NP`-hardness
+of `ThreeSAT`. -/
+example (h : LevinHard SAT.npRelation) : NPHard encCNF ThreeSAT :=
+  ThreeSAT.language_npRelation ▸ (h.trans toThreeSATLevinReduction).npHard
 
 end ComplexityTests.LevinReduction

@@ -33,8 +33,8 @@ polynomial-time:
 * forward (`Cslib.Complexity.toThreeSATWitness`): the assignment `σ` described by a certificate for
   `φ` is extended to the auxiliary variables of `φ.to3CNF` by
   `Cslib.Logic.PL.CNF.to3CNFAssignment`, the auxiliary variable `(i, k)` taking the value of the
-  literals of clause `i` after position `k + 1` [Arora and Barak, Section 2.3.1][AroraBarak09],
-  and listed along the occurrences of `φ.to3CNF`;
+  disjunction of the literals of clause `i` after position `k + 1`
+  [Arora and Barak, Section 2.3.1][AroraBarak09], and listed along the occurrences of `φ.to3CNF`;
 * backward (`Cslib.Complexity.ofThreeSATWitness`): the assignment described by a certificate for
   `toThreeSAT φ` is restricted to the original variables, which `toThreeSAT` numbers `2 * v`.
 

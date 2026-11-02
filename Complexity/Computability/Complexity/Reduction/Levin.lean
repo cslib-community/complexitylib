@@ -27,8 +27,8 @@ polynomial-time many-one reduction between the languages
 (`Cslib.Complexity.LevinReduction.toPolyTimeReducible`). Levin reductions compose
 (`Cslib.Complexity.LevinReduction.trans`), and an NP relation is `LevinHard` when every NP
 relation, over any encoded instance type, Levin-reduces to it; its language is then `NP`-hard
-(`Cslib.Complexity.LevinHard.npHard`). This is Goldreich's `PC`-hardness
-[Goldreich, Definition 2.18][Goldreich2008] for the augmented reductions.
+(`Cslib.Complexity.LevinHard.npHard`). This is Goldreich's `PC`-hardness (the
+remark following [Goldreich, Definition 2.18][Goldreich2008]) for the augmented reductions.
 
 ## Main definitions
 
@@ -145,14 +145,17 @@ theorem trans_toFun (r : LevinReduction R S) (s : LevinReduction S T) :
 end LevinReduction
 
 /-- The NP relation `S` is **Levin-hard**: every NP relation, over any encoded type of instances,
-Levin-reduces to it. This is Goldreich's `PC`-hardness [Goldreich, Definition 2.18][Goldreich2008]
-for reductions with both witness maps. -/
+Levin-reduces to it. This is Goldreich's `PC`-hardness (the remark following
+[Goldreich, Definition 2.18][Goldreich2008]) for reductions with both witness maps, over NP
+relations with certificates of exactly the prescribed length. As in `Cslib.Complexity.HardUnder`,
+the instance type is strict-implicit. -/
+@[expose]
 def LevinHard (S : NPRelation encB) : Prop :=
-  ∀ {α : Type} (encA : α ↪ List Bool) (R : NPRelation encA), Nonempty (LevinReduction R S)
+  ∀ ⦃α : Type⦄ (encA : α ↪ List Bool) (R : NPRelation encA), Nonempty (LevinReduction R S)
 
 /-- Levin-hardness transfers along a Levin reduction. -/
 theorem LevinHard.trans {S : NPRelation encB} {T : NPRelation encC} (hS : LevinHard S)
-    (s : LevinReduction S T) : LevinHard T := fun encA R =>
+    (s : LevinReduction S T) : LevinHard T := fun _ encA R =>
   let ⟨r⟩ := hS encA R
   ⟨r.trans s⟩
 
