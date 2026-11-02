@@ -95,6 +95,10 @@ law.
 * `Cslib.Algorithms.WordRAM.Karger.contractDownTo_law`: `contractDownTo` simulates `k - t`
   contractions of the specification: `ExecRandLaw` with `IsQueryBounded (k - t)`, worst-case step
   bound `36 * (k ^ 2 - t ^ 2) + 4`, `Modifies` frame, and the law of `heldGraph`.
+* `Cslib.Algorithms.WordRAM.Karger.contractDownToAt_law`: the same on any `r ≥ 16` registers,
+  preserving the caller's registers.
+* `Cslib.Algorithms.WordRAM.Karger.ContractState.mem_add_one`: on two supervertices, the weight
+  between them is half the total weight of the held graph.
 * `Cslib.Algorithms.WordRAM.Karger.contractDownTo_spec`: joint certificate of `ExecRand`,
   `IsQueryBounded (k - t)`, worst-case step bound `36 * (k ^ 2 - t ^ 2) + 4`, `Modifies` frame,
   contraction invariant `IsContractionOf`, and cut-survival probability lower bound
@@ -197,6 +201,16 @@ theorem ContractState.heldGraph_eq {w wb db str k t : ℕ} {W : Fin k → Fin k 
   unfold heldGraph
   rw [hst.regs_activeK]
   exact congrArg _ (funext₂ hst.workspace.1)
+
+/-- On two supervertices, the weight between them, at `wb + 1`, is half the total weight of the
+held graph. -/
+theorem ContractState.mem_add_one {w wb db str t : ℕ} {W : Fin 2 → Fin 2 → ℕ} {x : Data 16}
+    (hst : ContractState w wb db str 2 t W x) (hW : IsMultigraph W) :
+    x.mem (wb + 1) = totalDoubledWeight (heldGraph wb str x).weight / 2 := by
+  rw [hst.heldGraph_eq]
+  change _ = totalDoubledWeight W / 2
+  rw [totalDoubledWeight_fin_two hW, show x.mem (wb + 1) = W 0 1 by simpa using hst.workspace.1 0 1]
+  omega
 
 /-- The weight matrix of a state is the weight of the graph it holds. -/
 private theorem ContractState.eq_of_heldGraph_eq {w wb db str k t : ℕ} {W W' : Fin k → Fin k → ℕ}
@@ -2854,6 +2868,24 @@ theorem computeDegreesAndTotalAt_exec {r w wb db str k : ℕ} (hr : 16 ≤ r)
   · rw [extend_castLE_regs_lt, hy₀_k]
   · rw [extend_castLE_regs_lt, hy₀_t]; rfl
   · rw [extend_castLE_regs_lt, hy₀_tot]
+
+/-- `contractDownToAt hr` simulates `k - t` contractions of `Lean.Karger.spec` on any `r`-register
+file (`16 ≤ r`), as `contractDownTo_law` does, and preserves all caller registers with index
+`≥ 16`. -/
+theorem contractDownToAt_law {r w wb db str k t : ℕ} (hr : 16 ≤ r) {W : Fin k → Fin k → ℕ}
+    {x : Data r} (ht : 2 ≤ t) (htk : t ≤ k) (hW : IsMultigraph W)
+    (hst : ContractState w wb db str k t W (x.comap (Fin.castLE hr))) :
+    ExecRandLaw w (contractDownToAt hr) x
+      (fun y => Modifies (workspaceFootprint wb db str k) x.mem y.mem ∧
+        (∀ j : Fin r, 16 ≤ j.val → y.regs j = x.regs j) ∧
+        ∃ W' : Fin t → Fin t → ℕ, IsMultigraph W' ∧
+          ContractState w wb db str t t W' (y.comap (Fin.castLE hr)))
+      (36 * (k ^ 2 - t ^ 2) + 4) (k - t) (fun y => heldGraph wb str (y.comap (Fin.castLE hr)))
+      ((Lean.Karger.spec.toRandomized.withCoins.run (Lean.Karger.contractTimes (k - t))
+        ⟨k, W⟩).map Prod.snd) :=
+  (ExecRandLaw.rename (Fin.castLE_injective hr) (contractDownTo_law ht htk hW hst)).mono
+    (fun _ ⟨y, ⟨hmod, hy⟩, he⟩ => he ▸ ⟨hmod, fun j hj => extend_castLE_regs_ge hr y x j hj,
+      by rwa [Data.comap_extend (Fin.castLE_injective hr)]⟩) le_rfl le_rfl
 
 /-- Specification of `contractDownToAt hr` on any `r`-register file (`16 ≤ r`), preserving all
 caller registers with index `≥ 16`. -/
