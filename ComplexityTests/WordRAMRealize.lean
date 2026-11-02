@@ -55,8 +55,8 @@ def enqueueWords : (Stack.Memory.Layout × Stack.Memory.Layout) × ℕ ↪ (Fin 
 
 example (w₀ C : ℕ) : Realizes .exact
     (fun d : (Stack.Memory.Layout × Stack.Memory.Layout) × ℕ =>
-      (link (Methods.prod (Stack.Memory.methods d.1.1 w₀ C) (Stack.Memory.methods d.1.2 w₀ C))
-        (Queue.methods (.enqueue d.2)) : Memory.Prog Unit))
+      (link (Methods.prod (Stack.Memory.methods d.1.1 w₀ C)
+        (Stack.Memory.methods d.1.2 w₀ C)) (Queue.methods (.enqueue d.2)) : Memory.Prog Unit))
     enqueueWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
     (fun w d s => d.1.2.Valid w d.1.2.items.length ∧ Stack.Memory.Inv d.1.2 s ∧
       s.mem d.1.2.count.base < d.1.2.items.length) (fun _ _ => 0) := by

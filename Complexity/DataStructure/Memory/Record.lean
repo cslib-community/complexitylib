@@ -44,6 +44,9 @@ are therefore proved once here, for every record.
   postcondition on its answer, final state and length.
 * `Record.wp_bind`, `Record.wp_mono`: sequencing and consequence.
 * `Record.amortized`: each record operation costs one memory unit.
+* `Record.Layout.mem_clientState_link`: an admissible record program writes only the addresses
+  of cells.
+* `Record.Layout.frontier_clientState_link`: an admissible record program keeps the frontier.
 -/
 
 @[expose] public section
@@ -202,6 +205,49 @@ theorem abs_write {m : Memory.State} {i : ι} (hi : ok i) (v : ℕ) :
       simp [abs, hj, hji, Function.update_of_ne ha]
   · have hji : j ≠ i := fun h => hj (h ▸ hi)
     simp [abs, hj, hji]
+
+/-- The memory run of an admissible record program writes only the addresses of cells. -/
+theorem mem_clientState_link {α : Type} :
+    ∀ (p : Prog ι α) {s : Memory.State} {Q : α → (ι → ℕ) → ℕ → Prop}, L.Inv s →
+      wp ok w p Q (L.abs s) → ∀ b, (∀ i, ok i → L.addr i ≠ b) →
+        ((Memory.spec w).clientState s (link (L.methods w) p)).mem b = s.mem b
+  | .pure _, _, _, _, _, _, _ => rfl
+  | .liftBind (.read i) k, s, Q, hs, hp, b, hb => by
+    obtain ⟨hi, hk⟩ := hp
+    have hi' : ok i := hi
+    have habs : L.abs s i = s.mem (L.addr i) := by simp [Layout.abs, hi']
+    change wp ok w (k (L.abs s i)) _ (L.abs s) at hk
+    rw [habs] at hk
+    exact mem_clientState_link (k (s.mem (L.addr i))) hs hk b hb
+  | .liftBind (.write i v) k, s, Q, hs, hp, b, hb => by
+    obtain ⟨⟨hi, -⟩, hk⟩ := hp
+    have hi : ok i := hi
+    change wp ok w (k ()) _ (Function.update (L.abs s) i v) at hk
+    rw [← L.abs_write hi v (m := s)] at hk
+    have h := mem_clientState_link (k ()) (s := ⟨Function.update s.mem (L.addr i) v, s.frontier⟩)
+      hs hk b hb
+    exact h.trans (Function.update_of_ne (hb i hi).symm v s.mem)
+
+/-- The memory run of an admissible record program keeps the frontier. -/
+theorem frontier_clientState_link {α : Type} :
+    ∀ (p : Prog ι α) {s : Memory.State} {Q : α → (ι → ℕ) → ℕ → Prop}, L.Inv s →
+      wp ok w p Q (L.abs s) →
+        ((Memory.spec w).clientState s (link (L.methods w) p)).frontier = s.frontier
+  | .pure _, _, _, _, _ => rfl
+  | .liftBind (.read i) k, s, Q, hs, hp => by
+    obtain ⟨hi, hk⟩ := hp
+    have hi' : ok i := hi
+    have habs : L.abs s i = s.mem (L.addr i) := by simp [Layout.abs, hi']
+    change wp ok w (k (L.abs s i)) _ (L.abs s) at hk
+    rw [habs] at hk
+    exact frontier_clientState_link (k (s.mem (L.addr i))) hs hk
+  | .liftBind (.write i v) k, s, Q, hs, hp => by
+    obtain ⟨⟨hi, -⟩, hk⟩ := hp
+    have hi : ok i := hi
+    change wp ok w (k ()) _ (Function.update (L.abs s) i v) at hk
+    rw [← L.abs_write hi v (m := s)] at hk
+    exact frontier_clientState_link (k ()) (s := ⟨Function.update s.mem (L.addr i) v, s.frontier⟩)
+      hs hk
 
 end Layout
 

@@ -57,14 +57,20 @@ noncomputable def extractMatrixLabels {Observation Label : Type} (inputBits outp
     (fun seed labels => LinearHash.wordHash outputBits seed
       (listRow inputBits 0 (prepare labels))) samples
 
+/-- The hash-seed component of an extraction result `(observations, seed, digest)`. -/
+abbrev extractedSeed {Obs Seed Digest : Type*} (r : Obs × Seed × Digest) : Seed := r.2.1
+
+/-- The hash-digest component of an extraction result `(observations, seed, digest)`. -/
+abbrev extractedDigest {Obs Seed Digest : Type*} (r : Obs × Seed × Digest) : Digest := r.2.2
+
 /-- Every result preserves the observations and has the declared seed and digest lengths. -/
 theorem extractMatrixLabels_result {Observation Label : Type} (inputBits outputBits : ℕ)
     (prepare : List Label → List Bool) (samples : List (Observation × Label))
     {result : List Observation × List Bool × List Bool}
     (hresult : result ∈ (ProbComp.eval
       (extractMatrixLabels inputBits outputBits prepare samples)).support) :
-    result.1 = samples.map Prod.fst ∧ result.2.1.length = outputBits * inputBits ∧
-      result.2.2.length = outputBits := by
+    result.1 = samples.map Prod.fst ∧ (extractedSeed result).length = outputBits * inputBits ∧
+      (extractedDigest result).length = outputBits := by
   simp only [extractMatrixLabels, extractLabels, bind_pure_comp, ProbComp.eval_map,
     BitString.eval_sampleList, PMF.mem_support_map_iff] at hresult
   obtain ⟨seed, hseed, rfl⟩ := hresult
@@ -104,7 +110,9 @@ theorem eval_extractMatrixLabels {Observation Label : Type} (inputBits outputBit
       (ProbComp.eval (extractLabels (ProbComp.uniform (BitString (outputBits * inputBits)))
         (fun seed labels => LinearHash.hash (blocksEquiv (m := outputBits) (k := inputBits) seed)
           (ofList inputBits (prepare labels))) samples)).map
-            (fun result => (result.1, List.ofFn result.2.1, List.ofFn result.2.2)) := by
+            (fun result =>
+              (result.1, List.ofFn (extractedSeed result),
+                List.ofFn (extractedDigest result))) := by
   have hrow (word : List Bool) : listRow inputBits 0 word =
       List.ofFn (ofList inputBits word) :=
     listRow_eq_ofFn inputBits (0 : Fin 1) word
@@ -118,7 +126,8 @@ theorem eval_extractMatrixLabelsIdeal {Observation : Type} (source : ProbComp Ob
     ProbComp.eval (extractMatrixLabelsIdeal source count inputBits outputBits) =
       (extractLabelsIdeal (Output := BitString outputBits) source count
         (ProbComp.uniform (BitString (outputBits * inputBits)))).map
-          (fun result => (result.1, List.ofFn result.2.1, List.ofFn result.2.2)) := by
+          (fun result =>
+            (result.1, List.ofFn (extractedSeed result), List.ofFn (extractedDigest result))) := by
   simp only [extractMatrixLabelsIdeal, ProbComp.eval_bind, ProbComp.eval_pure,
     extractLabelsIdeal, ProbComp.eval_uniform, eval_sampleList, uniformList,
     Function.comp_def, PMF.map, PMF.bind_bind, PMF.pure_bind]
@@ -131,7 +140,7 @@ theorem eval_extractMatrixLabelsIdeal_bind {Observation Output : Type}
     (next : List Observation → List Bool → ProbComp Output) :
     ProbComp.eval (do
       let result ← extractMatrixLabelsIdeal source count inputBits outputBits
-      next result.1 (result.2.1 ++ result.2.2)) =
+      next result.1 (extractedSeed result ++ extractedDigest result)) =
         ProbComp.eval (do
           let observations ← OracleComp.replicate count source
           let bits ← BitString.sampleList (outputBits * inputBits + outputBits)
@@ -147,7 +156,8 @@ theorem eval_extractMatrixLabelsIdeal_append {Observation : Type}
     (next : List Observation → ProbComp (List Bool)) :
     ProbComp.eval (do
       let result ← extractMatrixLabelsIdeal source count inputBits outputBits
-      (fun front => front ++ (result.2.1 ++ result.2.2)) <$> next result.1) =
+      (fun front => front ++ (extractedSeed result ++ extractedDigest result)) <$>
+        next result.1) =
         ProbComp.eval (do
           let observations ← OracleComp.replicate count source
           let front ← next observations

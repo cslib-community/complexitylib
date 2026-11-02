@@ -533,8 +533,7 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   arbitrary pure continuations do not have machine-time certificates. `CostHoare` adds client
   operation-cost contracts and separate method-budget composition. The `stateful` Aesop rules
   support these contracts. `WordRAM/Controller` adds fixed-code client refinements with charged
-  preparation, control flow and final halt; the adaptive stack example constructs its empty
-  representation from the standard input. `WordRAM/Function` gives separate nonuniform and
+  preparation, control flow and final halt. `WordRAM/Function` gives separate nonuniform and
   uniform RAM function-time predicates, with named-certificate reuse by `polytime`. Arbitrary continuation
   synthesis, iterative clients and a Turing-machine simulation remain open.
   The bounded `WordRAM/Realization` foundation (#2213, under #2205) reuses the memory
@@ -554,7 +553,18 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   values use a tag and unshifted payload, including maximal fitting words. The actual
   `Stack.Memory` size/push/pop clients reuse those rules over faithfully encoded runtime layouts,
   with visible layout/representation/spare-capacity conditions and local work 0/10/19.
+  `Stack.Native` runs those three certificates through `Realization.Backend` as a native stack
+  with one constant per-operation bound, and `Stack.Controller` compiles an adaptive stack client
+  to one flat program through `realize`; the hand-stepped stack dispatcher survives only inside
+  Chan–He traversal (`Traversal.WordStack`), which steps it with exact counts.
   The full framed queue/faithful allocation client remains separate. No abstract headline is added.
+  Karger–Stein's specification-law bridge (#2289) reuses the existing contraction client and
+  native execution model. `LoopSegmentLaw` packages the existing finite loop segments with an
+  exact observation law and strict pathwise instruction/query bounds; the two-branch recurrence
+  lives at the PMF layer, and compiled cut-output transport is shared with basic Karger.
+  The exact-basis abstract bridge keeps its existing compatibility statements and source.
+  This refactor does not supply the later memory-oracle contraction/frame-stack realization
+  under #2205 or introduce a new curated headline.
   `DataStructure/OrderedSet` and `DataStructure/OrderedSet/*` provide neutral
   optional-minimum contracts, a typed finite-set interface including deletion, and adaptive
   minimum extraction, with no tree or cost dependency. Bounded-key implementations may specialize
@@ -567,10 +577,15 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   a balanced tree or machine-time certificate.
   `WordRAM/Dynamic` separately connects
   fixed bounded-word operation programs and faithful memory transcripts to those contracts.
-  The direct shared-heap queue uses the existing FIFO operation signature and native operation
-  traces, with a hidden two-stack representation, a concrete-register potential, framed storage,
-  and separately charged initialization. Its `2 * capacity` reservation is explicit; external
-  client computation and argument delivery are not charged by the operation-history bound.
+  The direct shared-heap queue realizes physical-array memory programs through one fixed
+  finite Backend family and the existing dynamic certificate. Count words remain in registers;
+  one native dispatcher, charged metadata copies and a scaled rear potential give uniform
+  amortized instruction bounds, including halt. Initialization uses six register instructions
+  from arbitrary bounded dirty data, preserving every memory cell. The original `2 * capacity`
+  reservation and end-fit domain are retained. The shared register count and exchange factor are
+  fixed before widths, layouts, values and clients; the removed hand-code's literal instruction
+  constants are not asserted. External client computation and tag/payload delivery remain outside
+  the operation-history bound; no generic stateful memory-only Backend instance is claimed.
   Coordinate placement and overlap with Srinivas's #685 and the merged #401 (`Algorithms/Lean/Query`)
   before upstream submission; #685 is not copied here. This is a prototype of composition and
   refinement, not a replacement for their query models or a general cell-probe lower-bound semantics.
