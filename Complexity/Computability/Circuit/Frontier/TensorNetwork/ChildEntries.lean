@@ -15,7 +15,7 @@ import Mathlib.Data.List.GetD
 # The entries of the child networks from their descriptors
 
 A child network of the contraction recursion of [OpenAI2026ETH] (`ModeSplitting.child`, §D.4.6,
-p. 63) is carried natively as a network of vertex descriptors (`VertexDesc`) with port lists. This
+p. 63) is carried natively as a network of vertex descriptors (`VertexDesc T`) with port lists. This
 file proves that such a network has the contraction of the child, once each descriptor reads its
 ports in the right order.
 
@@ -230,7 +230,8 @@ valuation `i < a`, `L = 2 ^ a` slots, `2 ^ (i + 1)` tiles and `p` exponents per 
 of `q` against `g`, an interpolation value mapping to `ζ`, and the dense exponents of `β` at `q`.
 Then along a ring map `ψ` from `A_p`, at the packet's precision, to `R`, the descriptor's entry at
 the bits on its ports is the child's entry. -/
-theorem map_val_entry_child_inr [DecidableEq V] (β : P × Fin (2 ^ (i + 1)) × Fin p → ℕ) (g : G)
+theorem map_val_entry_child_inr [DecidableEq V] {T : Type} {ev : T → List Bool → List ℕ}
+    (β : P × Fin (2 ^ (i + 1)) × Fin p → ℕ) (g : G)
     (q : P)
     (cs : List ({e // (cauchyModeSplitting side hsrc htgt horient hslot hia κ ζ hp ht hti
         hti').group (N.src e) = g} ⊕
@@ -246,7 +247,7 @@ theorem map_val_entry_child_inr [DecidableEq V] (β : P × Fin (2 ^ (i + 1)) × 
         (N.src e) = g} ⊕
       {e // (cauchyModeSplitting side hsrc htgt horient hslot hia κ ζ hp ht hti hti').group
         (N.tgt e) = g} → Bool) :
-    ψ (val c.p c.fl (VertexDesc.entry
+    ψ (val c.p c.fl (VertexDesc.entry ev
         (.inr (c, cs.map fun e => (e.isLeft, slot (Sum.elim Subtype.val Subtype.val e)), βd))
         (cs.map y))) =
       ((cauchyModeSplitting side hsrc htgt horient hslot hia κ ζ hp ht hti hti').child β g).tensor
@@ -257,10 +258,10 @@ theorem map_val_entry_child_inr [DecidableEq V] (β : P × Fin (2 ^ (i + 1)) × 
     intro x hx
     obtain ⟨e, -, rfl⟩ := List.mem_map.mp hx
     exact hslot _
-  have key := VertexDesc.map_val_entry_inr (c, cs.map fun e => (e.isLeft,
+  have key := VertexDesc.map_val_entry_inr ev (c, cs.map fun e => (e.isLeft,
     slot (Sum.elim Subtype.val Subtype.val e)), βd) (cs.map y) ψ hp κ hL hia htiles ht hti hti'
     hports
-  have hgoal : ψ (val c.p c.fl (VertexDesc.entry (.inr (c, cs.map fun e => (e.isLeft,
+  have hgoal : ψ (val c.p c.fl (VertexDesc.entry ev (.inr (c, cs.map fun e => (e.isLeft,
     slot (Sum.elim Subtype.val Subtype.val e)), βd)) (cs.map y))) = _ := key
   rw [hgoal]
   dsimp only

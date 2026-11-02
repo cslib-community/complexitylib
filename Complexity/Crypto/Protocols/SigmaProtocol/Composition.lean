@@ -154,14 +154,6 @@ def orRelation (R₀ : X₀ → Y₀ → Prop) (R₁ : X₁ → Y₁ → Prop) :
 
 variable [AddCommGroup C] [Fintype C]
 
-/-- First-side response `z₀` of an OR-proof response `(c₀, z₀, z₁)`. -/
-abbrev orResp₀ {C Z₀ Z₁ : Type*} (z : C × Z₀ × Z₁) : Z₀ :=
-  z.2.1
-
-/-- Second-side response `z₁` of an OR-proof response `(c₀, z₀, z₁)`. -/
-abbrev orResp₁ {C Z₀ Z₁ : Type*} (z : C × Z₀ × Z₁) : Z₁ :=
-  z.2.2
-
 /-- The OR-proof ([BonehShoup2023], Section 19.7.2). With a witness for one side, the prover
 simulates the other side at a uniform challenge `c'`, commits honestly on its own side, and
 answers the verifier's challenge `c` on its own side at `c - c'`. The response
@@ -184,16 +176,18 @@ noncomputable def orProof (P₀ : SigmaProtocol X₀ Y₀ T₀ C Z₀) (P₁ : S
   respond _ y s c := match s with
     | .inl (x, s₀, c₁, z₁) => (c - c₁, P₀.respond x y.1 s₀ (c - c₁), z₁)
     | .inr (x, s₁, c₀, z₀) => (c₀, z₀, P₁.respond x y.2 s₁ (c - c₀))
-  verify y t c z :=
-    P₀.verify y.1 t.1 z.1 (orResp₀ z) && P₁.verify y.2 t.2 (c - z.1) (orResp₁ z)
+  verify y t c
+    | (c₀, z₀, z₁) => P₀.verify y.1 t.1 c₀ z₀ && P₁.verify y.2 t.2 (c - c₀) z₁
 
 /-- The OR extractor uses the first side when the first side's challenges differ, and the
 second side otherwise. -/
 def orExtract [DecidableEq C] (extract₀ : Y₀ → T₀ → C → Z₀ → C → Z₀ → X₀)
     (extract₁ : Y₁ → T₁ → C → Z₁ → C → Z₁ → X₁) (y : Y₀ × Y₁) (t : T₀ × T₁) (c : C)
     (z : C × Z₀ × Z₁) (c' : C) (z' : C × Z₀ × Z₁) : X₀ ⊕ X₁ :=
-  if z.1 = z'.1 then .inr (extract₁ y.2 t.2 (c - z.1) (orResp₁ z) (c' - z'.1) (orResp₁ z'))
-  else .inl (extract₀ y.1 t.1 z.1 (orResp₀ z) z'.1 (orResp₀ z'))
+  let (c₀, z₀, z₁) := z
+  let (c₀', z₀', z₁') := z'
+  if c₀ = c₀' then .inr (extract₁ y.2 t.2 (c - c₀) z₁ (c' - c₀') z₁')
+  else .inl (extract₀ y.1 t.1 c₀ z₀ c₀' z₀')
 
 /-- The OR simulator splits the challenge uniformly and simulates both sides. -/
 noncomputable def orSimulate (simulate₀ : Y₀ → C → PMF (T₀ × Z₀))
@@ -210,9 +204,9 @@ variable {P₀ : SigmaProtocol X₀ Y₀ T₀ C Z₀} {P₁ : SigmaProtocol X₁
 
 /-- An OR conversation `(c₀, z₀, z₁)` for the challenge `c` is accepting exactly when the first
 side accepts at `c₀` and the second at `c - c₀`. -/
-@[simp] theorem orProof_accepts_iff {y : Y₀ × Y₁} {t : T₀ × T₁} {c : C} {z : C × Z₀ × Z₁} :
-    (orProof P₀ P₁ simulate₀ simulate₁).Accepts y t c z ↔
-      P₀.Accepts y.1 t.1 z.1 (orResp₀ z) ∧ P₁.Accepts y.2 t.2 (c - z.1) (orResp₁ z) := by
+@[simp] theorem orProof_accepts_iff {y : Y₀ × Y₁} {t : T₀ × T₁} {c c₀ : C} {z₀ : Z₀} {z₁ : Z₁} :
+    (orProof P₀ P₁ simulate₀ simulate₁).Accepts y t c (c₀, z₀, z₁) ↔
+      P₀.Accepts y.1 t.1 c₀ z₀ ∧ P₁.Accepts y.2 t.2 (c - c₀) z₁ := by
   simp only [Accepts, orProof, Bool.and_eq_true]
 
 /-- With a witness for the first statement, the OR prover simulates the second side at a

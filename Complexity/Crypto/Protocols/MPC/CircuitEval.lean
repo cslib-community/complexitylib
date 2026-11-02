@@ -637,7 +637,7 @@ private theorem eval_progDist_restrict_of_ne_univ {m inputCount g : ℕ} [NeZero
     (recv : (Round.message (spec := spec) s r Bool).Received i) : Bool :=
   if h : i = r then recv h else 0
 
-/-- Gather `Bool` shares at receiver `r` from senders `S`, preserving `st.1` and `st.2.1` and
+/-- Gather `Bool` shares at receiver `r` from senders `S`, preserving `state` and `myShare` and
 applying `finish` at `.done`. -/
 @[expose] def gatherStepsWith {m : ℕ} {spec : MultiOracleSpec} {State Out : Fin m → Type}
     (r : Fin m) (finish : (i : Fin m) → State i → Bool → Out i) :

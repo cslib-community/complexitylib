@@ -217,19 +217,11 @@ noncomputable def chaumPedersen (g : G) : SigmaProtocol (ZMod q) (G × G × G) (
   linear (fun s => (LinearMap.toSpanSingleton (ZMod q) G g).prod
     (LinearMap.toSpanSingleton (ZMod q) G s.1)) Prod.snd ι
 
-/-- First group element `v` of a Chaum–Pedersen statement `(u, v, w)`. -/
-abbrev cpStatementV {G : Type*} (s : G × G × G) : G :=
-  s.2.1
-
-/-- Second group element `w` of a Chaum–Pedersen statement `(u, v, w)`. -/
-abbrev cpStatementW {G : Type*} (s : G × G × G) : G :=
-  s.2.2
-
 /-- The Chaum–Pedersen verification equations `z • g = t₁ + c • v` and `z • u = t₂ + c • w`
 ([BonehShoup2023], Section 19.5.2). -/
-@[simp] theorem chaumPedersen_accepts_iff {s : G × G × G} {t : G × G} {c : C} {z : ZMod q} :
-    (chaumPedersen ι g).Accepts s t c z ↔
-      z • g = t.1 + ι c • cpStatementV s ∧ z • s.1 = t.2 + ι c • cpStatementW s := by
+@[simp] theorem chaumPedersen_accepts_iff {u v w : G} {t : G × G} {c : C} {z : ZMod q} :
+    (chaumPedersen ι g).Accepts (u, v, w) t c z ↔
+      z • g = t.1 + ι c • v ∧ z • u = t.2 + ι c • w := by
   simp [chaumPedersen, Prod.ext_iff]
 
 /-- Theorem 19.10 of [BonehShoup2023]: completeness. -/

@@ -16,20 +16,21 @@ public import Mathlib.Analysis.SpecialFunctions.Sqrt
 # The recursion behind the parallel repetition theorem
 
 Holenstein's proof of the parallel repetition theorem picks coordinates one at a time. With `p_m`
-the probability of winning the `m` coordinates picked so far, Lemma 15 bounds each step by
+the probability of winning the `m` coordinates picked so far, Lemma 6.5 bounds each step by
 `p_{m+1} ≤ p_m (v + C √((m L + ln (1 / p_m)) / (n - m)))`, where `v` is the value of the game and
-`L` stands for `ln (|A| |B|)`. Section 7 turns this recursion into an exponential bound
-[Holenstein, Section 7][Holenstein2009]: while `12 C² m L ≤ (1 - v)² (n - m)`, the probability
+`L` stands for `ln (|A| |B|)`. Lemma 7.1 turns this recursion into an exponential bound
+[Holenstein, Lemma 7.1][Holenstein2009]: while `12 C² m L ≤ (1 - v)² (n - m)`, the probability
 `p_m` is at most `((1 + v) / 2)^m` (`le_pow_of_step`), and therefore the probability of winning all
 `n` coordinates is at most `((1 + v) / 2)^⌊(1 - v)² n / (13 C² L)⌋`
-(`le_pow_floor_of_step`). Holenstein's proof takes `C = 15`, uses `12 · 15² = 2700` and
-`13 · 15² ≤ 3000`, and ignores the rounding of the number of steps, which the floor here records.
+(`le_pow_floor_of_step`). Holenstein's Lemma 7.1 is stated with `c = C²` inside the root and
+`c ≥ 12`; his proof of Theorem 2.5 applies it with `C = 15` by (7.6), and his (7.4) ignores the
+rounding of the number of steps, which the floor here records.
 This file is the analytic part of the theorem only: it assumes the recursion, which the
 embedding lemmas establish.
 
 ## Main results
 
-* `Cslib.PCP.ParallelRepetition.le_pow_of_step`: the induction of Section 7.
+* `Cslib.PCP.ParallelRepetition.le_pow_of_step`: the induction in the proof of Lemma 7.1.
 * `Cslib.PCP.ParallelRepetition.le_pow_floor_of_step`: the resulting bound on `p_n`.
 * `Cslib.PCP.ParallelRepetition.le_two_mul_rpow_of_step`: the bound in Holenstein's exponential
   form, `p_n ≤ 2 (1 - (1 - v)³ / (26 C²))^{n / L}`.
@@ -90,7 +91,7 @@ private theorem mul_sqrt_le_one_sub_div_two (hv : 0 ≤ v) (hv1 : v < 1) (hL : 1
         nlinarith
     _ = (1 - v) / 2 := Real.sqrt_sq (by linarith)
 
-/-- **The induction of Holenstein's Section 7** [Holenstein, Section 7][Holenstein2009]: if
+/-- **The induction of Holenstein's Lemma 7.1** [Holenstein, proof of Lemma 7.1][Holenstein2009]: if
 `p_0 = 1`, `p` is nonnegative and nonincreasing, and every step satisfies
 `p_{m+1} ≤ p_m (v + C √((m L + ln (1 / p_m)) / (n - m)))`, then
 `p_m ≤ ((1 + v) / 2)^m` as long as `12 C² m L ≤ (1 - v)² (n - m)`. -/
@@ -140,8 +141,8 @@ theorem le_pow_of_step (hv : 0 ≤ v) (hv1 : v ≤ 1) (hL : 1 ≤ L) (hp0 : p 0 
         _ ≤ ((1 + v) / 2) ^ m * ((1 + v) / 2) := by gcongr
         _ = ((1 + v) / 2) ^ (m + 1) := (pow_succ _ _).symm
 
-/-- **The bound of Holenstein's Section 7** [Holenstein, Section 7][Holenstein2009]: under the
-recursion of `le_pow_of_step` with `C ≥ 1`, `p_n ≤ ((1 + v) / 2)^⌊(1 - v)² n / (13 C² L)⌋`. -/
+/-- **The bound of Holenstein's Lemma 7.1** [Holenstein, Lemma 7.1, (7.4)][Holenstein2009]: under
+the recursion of `le_pow_of_step` with `C ≥ 1`, `p_n ≤ ((1 + v) / 2)^⌊(1 - v)² n / (13 C² L)⌋`. -/
 theorem le_pow_floor_of_step (hv : 0 ≤ v) (hv1 : v ≤ 1) (hC : 1 ≤ C) (hL : 1 ≤ L)
     (hp0 : p 0 = 1) (hnn : ∀ m, 0 ≤ p m) (hmono : ∀ m, p (m + 1) ≤ p m)
     (hstep : ∀ m < n, p (m + 1) ≤
@@ -170,8 +171,8 @@ theorem le_pow_floor_of_step (hv : 0 ≤ v) (hv1 : v ≤ 1) (hC : 1 ≤ C) (hL :
   rw [hk]
   exact (hanti k).trans (le_pow_of_step hv hv1 hL hp0 hnn hmono hstep M hcond)
 
-/-- **The bound of Holenstein's Theorem 4, in exponential form** [Holenstein, Section 7, (39)]
-[Holenstein2009]: under the recursion of `le_pow_of_step` with `C ≥ 1`,
+/-- **The bound of Holenstein's Theorem 2.5, in exponential form** [Holenstein, Lemma 7.1, (7.2)
+and (7.7)][Holenstein2009]: under the recursion of `le_pow_of_step` with `C ≥ 1`,
 `p_n ≤ 2 (1 - (1 - v)³ / (26 C²))^{n / L}`. The factor `2` accounts for rounding the number of
 steps down; Holenstein's `6000` corresponds to `26 C²` with `C = 15` (`26 · 225 = 5850`). -/
 theorem le_two_mul_rpow_of_step (hv : 0 ≤ v) (hv1 : v ≤ 1) (hC : 1 ≤ C) (hL : 1 ≤ L)

@@ -11,6 +11,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogS
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Bool
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Bits
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame
+import Complexity.Foundations.Data.Nat.Doubling
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Bitwise
 import Mathlib.Data.Nat.Size
@@ -63,7 +64,7 @@ open Instr Expr MultiTapeTM Words
 in register `3`, and the counting loop at `5` emits a `true` for each value of register `2`
 below it. -/
 def unaryProgram (e : Expr) : CounterProgram where
-  code := headerCode ++ [assign 3 e 5] ++ forCode 5 2 (reg 3) 8 9 ++ [emit true 7, halt []]
+  code := List.flatten [headerCode, [assign 3 e 5], forCode 5 2 (reg 3) 8 9, [emit true 7, halt []]]
   registers := 4
 
 /-- The program emitting the value of `e` in binary, least significant bit first: after the
@@ -120,16 +121,12 @@ private theorem reachesOut_unaryProgram (e : Expr) {v : ℕ} (hv : e.eval [a, b,
     ∃ regs, (unaryProgram e).ReachesOut (encPair encUnary encUnary (a, b))
       ((unaryProgram e).Active B) (unaryProgram e).init (9, regs)
       ((List.range v).flatMap fun _ => [true]) ∧ ∀ r ∈ regs, r ≤ B := by
-  have hhead := reachesOut_header' (P := unaryProgram e)
-    (codeAt_of_code_eq (pre := []) (post := _) rfl) hB
+  have hhead := reachesOut_header' (P := unaryProgram e) (codeAt_of_prefix ⟨_, rfl⟩) hB
   have hset : (unaryProgram e).ReachesOut (encPair encUnary encUnary (a, b))
       ((unaryProgram e).Active B) (4, [a, b, 0, 0]) (5, [a, b, 0, v]) [] :=
     ReachesOut.assign (show (unaryProgram e).instr 4 = _ from rfl)
       (bounded4 (by omega) (by omega) (by omega) (by omega)) (by simpa [hv] using ReachesOut.refl _)
-  have hfor : (unaryProgram e).CodeAt 5 (forCode 5 2 (reg 3) 8 9) := by
-    have h := codeAt_of_code_eq (P := unaryProgram e) (pre := headerCode ++ [assign 3 e 5])
-      (l := forCode 5 2 (reg 3) 8 9) (post := [emit true 7, halt []]) (by simp [unaryProgram])
-    simpa [headerCode] using h
+  have hfor : (unaryProgram e).CodeAt 5 (forCode 5 2 (reg 3) 8 9) := codeAt_of_prefix ⟨_, rfl⟩
   obtain ⟨regs, hloop, hinv⟩ := reachesOut_forCode (w := encPair encUnary encUnary (a, b))
     hfor (fun i regs => regs = [a, b, i, v] ∧ i ≤ v) (fun _ => [true]) hvB
     (fun i regs h => by
@@ -155,14 +152,6 @@ private theorem bits_eq_map_testBit (v : ℕ) : v.bits = (List.range v.size).map
   refine List.ext_getElem (by simp [Nat.size_eq_bits_len]) fun i h _ => ?_
   simp [Nat.testBit_eq_inth, List.getI_eq_getElem _ h]
 
-private theorem two_pow_size_le (v : ℕ) : 2 ^ v.size ≤ 2 * v + 1 := by
-  rcases Nat.eq_zero_or_pos v with rfl | hv
-  · simp
-  · obtain ⟨s, hs⟩ : ∃ s, v.size = s + 1 := ⟨v.size - 1, by have := Nat.size_pos.mpr hv; omega⟩
-    have : 2 ^ s ≤ v := Nat.lt_size.mp (by omega)
-    rw [hs, pow_succ]
-    omega
-
 /-- The loop of `binaryProgram`, from the power `2 ^ i`, emits the bits of `v` from index `i` on
 below its size. -/
 private theorem reachesOut_binaryLoop (e : Expr) {v : ℕ} (hB : 2 * a + 1 + b ≤ B)
@@ -170,7 +159,7 @@ private theorem reachesOut_binaryLoop (e : Expr) {v : ℕ} (hB : 2 * a + 1 + b �
     ∀ i ≤ v.size, (binaryProgram e).ReachesOut (encPair encUnary encUnary (a, b))
       ((binaryProgram e).Active B) (6, [a, b, 2 ^ i, v]) (11, [a, b, 2 ^ v.size, v])
       ((List.range' i (v.size - i)).map v.testBit) := by
-  have hsize := two_pow_size_le v
+  have hsize := Nat.two_pow_size_le v
   intro i hi
   induction h : v.size - i generalizing i with
   | zero =>
@@ -207,8 +196,7 @@ private theorem reachesOut_binaryProgram (e : Expr) {v : ℕ} (hv : e.eval [a, b
     (hB : 2 * a + 1 + b ≤ B) (hvB : 2 * v + 1 ≤ B) :
     (binaryProgram e).ReachesOut (encPair encUnary encUnary (a, b))
       ((binaryProgram e).Active B) (binaryProgram e).init (11, [a, b, 2 ^ v.size, v]) v.bits := by
-  have hhead := reachesOut_header' (P := binaryProgram e)
-    (codeAt_of_code_eq (pre := []) (post := _) rfl) hB
+  have hhead := reachesOut_header' (P := binaryProgram e) (codeAt_of_prefix ⟨_, rfl⟩) hB
   have hset : (binaryProgram e).ReachesOut (encPair encUnary encUnary (a, b))
       ((binaryProgram e).Active B) (4, [a, b, 0, 0]) (6, [a, b, 2 ^ 0, v]) [] := by
     refine ReachesOut.assign (show (binaryProgram e).instr 4 = _ from rfl)
@@ -266,7 +254,7 @@ theorem computableInLogSpace_binary (e : Expr) (d : ℕ) (he : ∀ a b, e.eval [
   rw [length_input]
   obtain ⟨h₁, h₂⟩ := le_pow_add_two (n := 2 * a + 1 + b) (by omega)
     ((hF a b).trans (Nat.pow_le_pow_left (by omega) d))
-  have hsize := two_pow_size_le (F a b)
+  have hsize := Nat.two_pow_size_le (F a b)
   refine ⟨_, _, [], reachesOut_binaryProgram e (he a b) (by omega) h₂, rfl,
     by simp [encNat_apply], bounded4 (by omega) (by omega) (by omega) (by omega)⟩
 
@@ -278,8 +266,7 @@ theorem computableInLogSpace_lt (e₁ e₂ : Expr) (h₁ : ∀ a b, e₁.eval [a
       (encPair encUnary encUnary) encBool := by
   refine (ltProgram e₁ e₂).computableInLogSpace_of_reachesOut 1 fun ⟨a, b⟩ => ?_
   rw [length_input, pow_one]
-  have hhead := reachesOut_header' (P := ltProgram e₁ e₂)
-    (codeAt_of_code_eq (pre := []) (post := _) rfl)
+  have hhead := reachesOut_header' (P := ltProgram e₁ e₂) (codeAt_of_prefix ⟨_, rfl⟩)
     (show 2 * a + 1 + b ≤ 2 * a + 1 + b + 1 by omega)
   have hb := bounded4 (B := 2 * a + 1 + b + 1) (a₀ := a) (a₁ := b) (a₂ := 0) (a₃ := 0) (by omega)
     (by omega) (by omega) (by omega)

@@ -90,7 +90,7 @@ private theorem runTwoRound_query_inl {α β : Type} (reply1 reply2 : List Bool 
     f <$> runTwoRound reply1 reply2 (OracleComp.query (Sum.inl n) >>= k) s =
       (ProbComp.unifFin n >>= fun u => f <$> runTwoRound reply1 reply2 (k u) s) := by
   simp only [runTwoRound, OracleComp.interpret_bind, OracleComp.interpret_query,
-    ProbOracleComp.handler, StateT.run_bind, StateT.run_lift, bind_assoc, pure_bind, map_bind]
+    OracleComp.sumHandler, StateT.run_bind, StateT.run_lift, bind_assoc, pure_bind, map_bind]
 
 private theorem runTwoRound_query_inr {α β : Type} (reply1 reply2 : List Bool → List Bool)
     (q : Unit × List Bool) (k : List Bool → WordOracleComp Unit α) (s : ℕ × List Bool)
@@ -99,7 +99,7 @@ private theorem runTwoRound_query_inr {α β : Type} (reply1 reply2 : List Bool 
       let step := twoRoundStep reply1 reply2 q.2 s
       f <$> runTwoRound reply1 reply2 (k step.1) step.2 := by
   simp only [runTwoRound, OracleComp.interpret_bind, OracleComp.interpret_query,
-    ProbOracleComp.handler, StateT.run_bind]
+    OracleComp.sumHandler, StateT.run_bind]
   rfl
 
 private theorem length_snd_mem_support_runTwoRound {α : Type} (r1 r2 : List Bool → List Bool)
@@ -474,11 +474,11 @@ noncomputable def gmwRealWithPads (generator : List Bool → List Bool) (s m : �
   let bits := realBits φ w m₀ m₁ m₂
   let openFlags := allOpenFlags φ ch_guess bits
   let seeds ← OracleComp.replicate (totalLen φ) (BitString.sampleList s)
-  let p ← runTwoRound
+  let (view, _, challenge) ← runTwoRound
     (fun r => proverReply1 generator m r openFlags bits seeds pads)
     (fun _ => proverReply2 s φ ch_guess bits seeds)
     prog (0, [false, false, false])
-  return if twoRoundChallenge p == ch_guess then true :: p.1 else []
+  return if challenge == ch_guess then true :: view else []
 
 /-- Single-attempt hybrid with pseudorandom unopened pads. -/
 noncomputable def gmwRealPRGPads (generator : List Bool → List Bool) (s m : ℕ) (φ : CNF ℕ)

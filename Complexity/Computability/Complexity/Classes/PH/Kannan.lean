@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Circuit.Boolean.PPoly
 public import Complexity.Computability.Circuit.Boolean.Substitution
+public import Complexity.Computability.Complexity.Classes.NP.Image
 public import Complexity.Computability.Complexity.Classes.PH
 public import Complexity.Computability.Complexity.Problems.SAT
 public import Complexity.Computability.MCSP.NP
@@ -27,10 +28,12 @@ import Cslib.Foundations.Data.Nat.Asymptotics
 /-!
 # Kannan's theorem
 
-For every `k`, some language in `Σ₂` has no circuits of size `O(n ^ k)`: it lies in no class
-`SIZE (c (n + 1) ^ k)` (`Cslib.Complexity.exists_mem_SigmaP_two_notMem_SIZE`)
-[Kannan][Kannan1982], [Arora and Barak, Chapter 6][AroraBarak09]. Size counts gates, as in
-`Cslib.Circuits.Boolean.SIZE`.
+For every `k`, some language in `Σ₂ ∩ Π₂` has no circuits of size `O(n ^ k)`: it lies in no class
+`SIZE (c (n + 1) ^ k)` (`Cslib.Complexity.exists_mem_SigmaP_two_inter_PiP_two_notMem_SIZE`). This
+is Kannan's statement, Theorem 2 of the technical memo [Kannan][Kannan1981] (p. 5); the journal
+version is [Kannan][Kannan1982]. The weaker `Σ₂` form
+(`Cslib.Complexity.exists_mem_SigmaP_two_notMem_SIZE`) is set as an exercise in
+[Arora and Barak, Chapter 6][AroraBarak09]. Size counts gates, as in `Cslib.Circuits.Boolean.SIZE`.
 
 Kannan's language (`Cslib.Complexity.Kannan.language`) is first built in `Σ₃`. At input length
 `n`, let `m = (k + 3) (⌊log₂ (n + 1)⌋ + 1)`; the language evaluates, on the first `m` bits of the
@@ -48,9 +51,10 @@ on the input (`Cslib.Complexity.Kannan.language_mem_SigmaP_three`).
 The theorem splits on whether `SAT` has circuits of polynomial size. If some language in `P/poly`
 has preimage `SAT` under `encCNF`, the Karp–Lipton theorem
 (`Cslib.Complexity.PH_eq_SigmaP_two_of_SAT`) collapses the polynomial hierarchy to `Σ₂`, so
-Kannan's language is in `Σ₂`. Otherwise the encodings of the satisfiable formulas, a problem in
-`NP ⊆ Σ₂` (`Cslib.Complexity.image_SAT_mem_NP`), have no circuits of polynomial size at all. The
-proof does not say which of the two languages witnesses the theorem.
+Kannan's language is in `Σ₂`; so is its complement, which is in `Π₃`, so the language is also in
+`Π₂`. Otherwise the encodings of the satisfiable formulas, a problem in `NP ⊆ Σ₂ ∩ Π₂`
+(`Cslib.Complexity.image_SAT_mem_NP`), have no circuits of polynomial size at all. The proof does
+not say which of the two languages witnesses the theorem.
 
 ## Main definitions
 
@@ -59,18 +63,17 @@ proof does not say which of the two languages witnesses the theorem.
 
 ## Main results
 
-* `Cslib.Complexity.mem_NP_image`: the encodings of the members of a problem in `NP` form a
-  problem in `NP` on words, when the encoding has a decoder.
-* `Cslib.Complexity.image_SAT_mem_NP`: the encodings of the satisfiable formulas form a problem in
-  `NP` on words.
 * `Cslib.Complexity.Kannan.language_notMem_SIZE`: Kannan's language has no circuits of size
   `O(n ^ k)`.
 * `Cslib.Complexity.Kannan.language_mem_SigmaP_three`: Kannan's language is in `Σ₃`.
-* `Cslib.Complexity.exists_mem_SigmaP_two_notMem_SIZE`: **Kannan's theorem**, for every `k` some
-  language in `Σ₂` has no circuits of size `O(n ^ k)`.
+* `Cslib.Complexity.exists_mem_SigmaP_two_inter_PiP_two_notMem_SIZE`: **Kannan's theorem**, for
+  every `k` some language in `Σ₂ ∩ Π₂` has no circuits of size `O(n ^ k)`.
+* `Cslib.Complexity.exists_mem_SigmaP_two_notMem_SIZE`: its `Σ₂` form.
 
 ## References
 
+* [R. Kannan, *Circuit-size lower bounds and non-reducibility to sparse sets*, technical memo
+  MIT/LCS/TM-205][Kannan1981]
 * [R. Kannan, *Circuit-size lower bounds and non-reducibility to sparse sets*][Kannan1982]
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
@@ -80,32 +83,6 @@ proof does not say which of the two languages witnesses the theorem.
 namespace Cslib.Complexity
 
 open Circuits Circuits.Boolean Turing.MultiTapeTM Filter
-
-/-! ### Images of problems in `NP` -/
-
-/-- **Images of problems in `NP`.** The encodings of the members of a problem in `NP` form a
-problem in `NP` on words, when the encoding has a decoder: the verifier decodes the word, checks
-that it encodes what was decoded, and runs the verifier of the problem. -/
-theorem mem_NP_image {β : Type} {encB : β ↪ List Bool} (D : Decoder encB) {B : Set β}
-    (hB : B ∈ NP encB) : encB '' B ∈ NP encBits := by
-  obtain ⟨p, V, hV, hBV⟩ := mem_NP.mp hB
-  have hdec : ComputableInPolyTime (fun x : List Bool × List Bool => D.decode x.1)
-      (encPair encBits encBits) encB := D.computableInPolyTime.comp (.fst _ _)
-  have henc : ComputableInPolyTime (fun b => encB b) encB encBits := .of_eq fun _ => rfl
-  refine mem_NP.mpr
-    ⟨p, fun x => decide (encB (D.decode x.1) = x.1) && V (D.decode x.1, x.2), by fun_prop,
-      fun w => ?_⟩
-  simp only [encBits_apply, Bool.and_eq_true, decide_eq_true_eq]
-  constructor
-  · rintro ⟨b, hb, rfl⟩
-    obtain ⟨c, hc, hVc⟩ := (hBV b).1 hb
-    exact ⟨c, hc, by rw [D.decode_enc], by rw [D.decode_enc]; exact hVc⟩
-  · rintro ⟨c, hc, hw, hVc⟩
-    exact ⟨D.decode w, (hBV _).2 ⟨c, by rw [hw]; exact hc, hVc⟩, hw⟩
-
-/-- The encodings of the satisfiable formulas form a problem in `NP` on words. -/
-theorem image_SAT_mem_NP : encCNF '' SAT ∈ NP encBits :=
-  mem_NP_image (.list (.list (.pair .nat .bool))) SAT.mem_NP
 
 namespace Kannan
 
@@ -493,23 +470,38 @@ end Kannan
 /-! ### Kannan's theorem -/
 
 open Kannan in
-/-- **Kannan's theorem**: for every `k`, some language in `Σ₂` has no circuits of size
-`O(n ^ k)`, that is, lies in no class `SIZE (c (n + 1) ^ k)` [Kannan][Kannan1982],
-[Arora and Barak, Chapter 6][AroraBarak09]. If some
-language in `P/poly` has preimage `SAT` under `encCNF`, the Karp–Lipton theorem collapses the
-polynomial hierarchy to `Σ₂` and Kannan's language, in `Σ₃`, is in `Σ₂`; otherwise the encodings
-of the satisfiable formulas, in `NP ⊆ Σ₂`, have no circuits of polynomial size. -/
-theorem exists_mem_SigmaP_two_notMem_SIZE (k : ℕ) :
-    ∃ L : Language Bool, (L : Set (List Bool)) ∈ SigmaP 2 encBits ∧
+/-- **Kannan's theorem**: for every `k`, some language in `Σ₂ ∩ Π₂` has no circuits of size
+`O(n ^ k)`, that is, lies in no class `SIZE (c (n + 1) ^ k)` ([Kannan][Kannan1981], Theorem 2,
+p. 5; [Kannan][Kannan1982]). If some language in `P/poly` has preimage `SAT` under `encCNF`, the
+Karp–Lipton theorem collapses the polynomial hierarchy to `Σ₂`, so Kannan's language, in `Σ₃`, and
+its complement, in `Π₃`, are both in `Σ₂`; otherwise the encodings of the satisfiable formulas, in
+`NP ⊆ Σ₂ ∩ Π₂`, have no circuits of polynomial size. -/
+theorem exists_mem_SigmaP_two_inter_PiP_two_notMem_SIZE (k : ℕ) :
+    ∃ L : Language Bool, (L : Set (List Bool)) ∈ SigmaP 2 encBits ∩ PiP 2 encBits ∧
       ∀ c, L ∉ SIZE fun n => c * (n + 1) ^ k := by
   by_cases hSAT : SAT ∈ PPolyOn encCNF
-  · refine ⟨language k, ?_, language_notMem_SIZE k⟩
-    rw [← PH_eq_SigmaP_two_of_SAT hSAT]
-    exact SigmaP_subset_PH 3 (language_mem_SigmaP_three k)
+  · have hPH := PH_eq_SigmaP_two_of_SAT (enc := encBits) hSAT
+    have h₃ := language_mem_SigmaP_three k
+    have hcompl : (language k : Set (List Bool))ᶜ ∈ SigmaP 2 encBits := by
+      rw [← hPH]
+      exact PiP_subset_PH 3 (compl_mem_PiP_of_mem_SigmaP h₃)
+    refine ⟨language k, ⟨?_, compl_compl (language k : Set (List Bool)) ▸
+      compl_mem_PiP_of_mem_SigmaP hcompl⟩, language_notMem_SIZE k⟩
+    rw [← hPH]
+    exact SigmaP_subset_PH 3 h₃
   · have hNP : encCNF '' SAT ∈ SigmaP 1 encBits := SigmaP_one ▸ image_SAT_mem_NP
-    refine ⟨encCNF '' SAT, SigmaP_mono (by norm_num : 1 ≤ 2) hNP,
+    refine ⟨encCNF '' SAT, ⟨SigmaP_mono (by norm_num : 1 ≤ 2) hNP, SigmaP_subset_PiP_succ 1 hNP⟩,
       fun c hc => hSAT ⟨encCNF '' SAT, mem_PPoly_iff_exists_mem_SIZE.2
         ⟨max c k, SIZE_mono (fun n => ?_) hc⟩, fun φ => encCNF.injective.mem_set_image.symm⟩⟩
     exact Nat.mul_le_mul (le_max_left c k) (Nat.pow_le_pow_right n.succ_pos (le_max_right c k))
+
+/-- **Kannan's theorem, `Σ₂` form**: for every `k`, some language in `Σ₂` has no circuits of size
+`O(n ^ k)`. This form is set as an exercise in [Arora and Barak, Chapter 6][AroraBarak09]; Kannan's
+own statement is `Cslib.Complexity.exists_mem_SigmaP_two_inter_PiP_two_notMem_SIZE`. -/
+theorem exists_mem_SigmaP_two_notMem_SIZE (k : ℕ) :
+    ∃ L : Language Bool, (L : Set (List Bool)) ∈ SigmaP 2 encBits ∧
+      ∀ c, L ∉ SIZE fun n => c * (n + 1) ^ k :=
+  let ⟨L, hL, hS⟩ := exists_mem_SigmaP_two_inter_PiP_two_notMem_SIZE k
+  ⟨L, hL.1, hS⟩
 
 end Cslib.Complexity

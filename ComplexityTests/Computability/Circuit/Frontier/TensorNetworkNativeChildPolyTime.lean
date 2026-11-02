@@ -33,10 +33,10 @@ The path of `TensorNetworkNativeChild` with one row joined to two columns. The c
 keeps the row and the column `1` and adds one packet. -/
 
 /-- The tables of the vertices. -/
-def table (n : ℕ) : VertexDesc := .inl (List.replicate n 1)
+def table (n : ℕ) : VertexDesc (List ℕ) := .inl (List.replicate n 1)
 
 /-- The row `0` with ports `1, 0`, the columns `1` and `2`. -/
-def path : DescribedNetwork VertexDesc :=
+def path : DescribedNetwork (VertexDesc (List ℕ)) :=
   ⟨2, [([1, 0], table 4), ([0], table 2), ([1], table 2)]⟩
 
 /-- The packing: the row and the column `1` in group `0`, the column `2` in group `1`, both edges
@@ -58,17 +58,17 @@ and its number of packets in unary, with the other parameters fixed. -/
 
 /-- A parent, the packing words, the number of packets and the placements. -/
 abbrev Input : Type :=
-  DescribedNetwork VertexDesc × (List (List ℕ) × List (List ℕ)) × ℕ × List (ℕ × ℕ)
+  DescribedNetwork (VertexDesc (List ℕ)) × (List (List ℕ) × List (List ℕ)) × ℕ × List (ℕ × ℕ)
 
 /-- The encoding of `Input`, with the number of packets in unary. -/
 abbrev encInput : Input ↪ List Bool :=
-  encPair (DescribedNetwork.encDescribed VertexDesc.enc)
+  encPair (DescribedNetwork.encDescribed (VertexDesc.enc (encList encNat)))
     (encPair (encPair (encList (encList encNat)) (encList (encList encNat)))
       (encPair encUnary (encList (encPair encNat encNat))))
 
 example : ComputableInPolyTime (fun x : Input =>
     nativeChild [1] 1 0 3 (-1) [0] 1 x.1 x.2 [] 0) encInput
-    (DescribedNetwork.encDescribed VertexDesc.enc) := by
+    (DescribedNetwork.encDescribed (VertexDesc.enc (encList encNat))) := by
   have hpk : ComputableInPolyTime (fun x : Input => x.2) encInput
       PacketPacking.encNativePacking :=
     ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _)).prod
@@ -85,10 +85,10 @@ example : ComputableInPolyTime (fun x : Input =>
     (ComputableInPolyTime.const _) (ComputableInPolyTime.const _)
 
 /-- With the native parent packing, the number of rows and `a` are the only further inputs. -/
-example : ComputableInPolyTime (fun D : DescribedNetwork VertexDesc =>
+example : ComputableInPolyTime (fun D : DescribedNetwork (VertexDesc (List ℕ)) =>
     nativeChild [1] 1 0 3 (-1) [0] 1 D (nativeParentPacking 1 1 D) [] 0)
-    (DescribedNetwork.encDescribed VertexDesc.enc)
-    (DescribedNetwork.encDescribed VertexDesc.enc) :=
+    (DescribedNetwork.encDescribed (VertexDesc.enc (encList encNat)))
+    (DescribedNetwork.encDescribed (VertexDesc.enc (encList encNat))) :=
   computableInPolyTime_nativeChild_nativeParentPacking (ComputableInPolyTime.const _)
     (ComputableInPolyTime.const _) (ComputableInPolyTime.const _) (ComputableInPolyTime.const _)
     (ComputableInPolyTime.const _) (ComputableInPolyTime.const _) (ComputableInPolyTime.const _)

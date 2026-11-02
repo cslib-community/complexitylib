@@ -32,15 +32,18 @@ example : (packing (root (3, 1, tiny))).2.1 ≤
   NativeChild.numPackets_nativeParentPacking_le _ _ _
 
 -- On every call, `2 ^ a ≤ s + 1`, and the levels are at most `a + 1`.
-example (x : Call) : 2 ^ slots x ≤ x.scale + 1 := two_pow_slots_le x
-example (x : Call) (k : ℕ) : level x k ≤ slots x + 1 := level_le x k
+example {T : Type} (x : Call T) : 2 ^ slots x ≤ x.scale + 1 := two_pow_slots_le x
+example {T : Type} (x : Call T) (k : ℕ) : level x k ≤ slots x + 1 := level_le x k
 
 -- The cap on the exponents leaves the tuples of weight below the budget unchanged.
 example : ([1, 0, 1] : List ℕ).map (min · 3) = [1, 0, 1] :=
   map_min_of_mem_budgetTuples (ws := [1, 1, 1]) (by decide) (by decide)
 
--- The components of the scheme of the native child builder are polynomial-time.
-example : (scheme nativeMk).PolyTime encCall encFrame encValue := scheme_nativeMk_polyTime
+-- The components of the scheme of the native child builder are polynomial-time, for every type
+-- of root descriptors and every entry procedure.
+example {T : Type} (encT : T ↪ List Bool) (ev : T → List Bool → List ℕ) :
+    (scheme ev (nativeMk (T := T))).PolyTime (encCall encT) encFrame encValue :=
+  scheme_nativeMk_polyTime ev
 
 -- The contraction interface for admissible explicit networks, from the resource analysis alone.
 noncomputable example (hana : FastAnalysis nativeMk) :

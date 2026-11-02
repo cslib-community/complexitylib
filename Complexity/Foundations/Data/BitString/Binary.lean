@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Renfei Zhou. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Renfei Zhou
 -/
 
 module
@@ -37,6 +37,8 @@ significant bit first), as well as `Nat.ofBits` and `Nat.testBit`, without addin
   gives its number in `equivFin n`.
 * `Cslib.BitString.lsbValue_lowBits`: reading `lowBits n x` with `lsbValue` recovers `x < 2 ^ n`.
 * `Cslib.BitString.lowBits_lsbValue`: re-encoding `lsbValue w` with `lowBits` recovers `w`.
+* `Cslib.BitString.val_equivFin_add`: addition in `BitString n` is bitwise XOR (`^^^`) on
+  `equivFin n` coordinates.
 -/
 
 @[expose] public section
@@ -117,5 +119,21 @@ length recovers the original word. -/
 theorem lowBits_lsbValue (w : List Bool) : lowBits w.length (lsbValue w) = w := by
   refine lsbValue_injective (by simp) ?_
   exact lsbValue_lowBits (lsbValue_lt w)
+
+/-- Addition in `BitString n` is bitwise XOR (`^^^`) on `equivFin n` coordinates. -/
+theorem val_equivFin_add {n : ℕ} (a b : BitString n) :
+    (equivFin n (a + b)).val = (equivFin n a).val ^^^ (equivFin n b).val := by
+  let ka := equivFin n a
+  let kb := equivFin n b
+  let k : Fin (2 ^ n) := ⟨ka.val ^^^ kb.val, Nat.xor_lt_two_pow ka.isLt kb.isLt⟩
+  have hsymm : (equivFin n).symm k = a + b := by
+    ext i
+    rw [equivFin_symm_apply, show (k : ℕ) = ka.val ^^^ kb.val from rfl,
+      Nat.testBit_xor, ← equivFin_symm_apply ka i,
+      ← equivFin_symm_apply kb i, Equiv.symm_apply_apply, Equiv.symm_apply_apply]
+    rfl
+  have hk : equivFin n (a + b) = k := by
+    rw [← hsymm, Equiv.apply_symm_apply]
+  exact congrArg Fin.val hk
 
 end Cslib.BitString

@@ -429,16 +429,16 @@ first state component. -/
     .message (sender := parties s₀) (receiver := parties r₀)
       (fun st_sender => send (st_sender.2 s₀ rfl))
       ((Steps.embed parties Outer next).mapState fun _ st_i =>
-        let ((out_i, st_k_i), recv_i) := st_i
-        (out_i, fun s hs =>
+        let ((outer_i, st_k_i), recv_i) := st_i
+        (outer_i, fun s hs =>
           (st_k_i s hs,
             pullRoundReceived parties (.message s₀ r₀ Msg) hs recv_i)))
   | .oracle (op := op) (parties := subParties) query next =>
     .oracle (op := op) (parties := subParties.trans parties)
       (fun t st_party => query t (st_party.2 (subParties t) rfl))
       ((Steps.embed parties Outer next).mapState fun _ st_i =>
-        let ((out_i, st_k_i), recv_i) := st_i
-        (out_i, fun s hs =>
+        let ((outer_i, st_k_i), recv_i) := st_i
+        (outer_i, fun s hs =>
           (st_k_i s hs,
             pullRoundReceived parties (.oracle op subParties) hs recv_i)))
 

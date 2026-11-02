@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Christian Reitwiessner. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Christian Reitwiessner
 -/
 
 module
@@ -26,7 +26,10 @@ charge and the relative-stability comparison in [OpenAI2026LogSpace, Sections 8.
 ## Main results
 
 * `Cslib.PolynomialAtomRow.abs_stateRootError_le_one`: the pointwise range bound.
-* `Cslib.PolynomialAtomRow.sum_stateRootError_pow_four_le`: the width-independent support bound.
+* `Cslib.PolynomialAtomRow.card_filter_stateRootError_ne_zero_le`: the union support bound.
+* `Cslib.PolynomialAtomRow.sum_stateRootError_pow_four_le_of_bound`: converts a pointwise
+  envelope into a width-independent fourth-moment bound.
+* `Cslib.PolynomialAtomRow.sum_stateRootError_pow_four_le`: the uniform fourth-moment bound.
 
 ## References
 
@@ -67,11 +70,11 @@ theorem abs_stateRootError_le_one (θ : ℝ) (S : Finset ι) (K : ℕ)
   apply abs_sub_le_iff.mpr
   constructor <;> linarith
 
-/-- The discrepancy is supported on the union of the two actual supports. Neither the
-ambient cardinality nor a bound on the row entries occurs in its fourth-power sum. -/
-theorem sum_stateRootError_pow_four_le {θ : ℝ} (hθ : 0 < θ) (S : Finset ι) {K : ℕ}
+open Classical in
+/-- The discrepancy is supported on the union of the two output supports. -/
+theorem card_filter_stateRootError_ne_zero_le {θ : ℝ} (hθ : 0 < θ) (S : Finset ι) {K : ℕ}
     (hK : 0 < K) (a b : State ι) :
-    ∑ y ∈ S, |kind.stateRootError θ S K a b y| ^ 4 ≤ 2 * (K : ℝ) := by
+    #{y ∈ S | kind.stateRootError θ S K a b y ≠ 0} ≤ 2 * K := by
   classical
   let A := {y ∈ S | kind.eval θ (a.row y 0) (firstRank S K a.defaultValue a.row) ≠ 0}
   let B := {y ∈ S | kind.eval θ (b.row y 0) (firstRank S K b.defaultValue b.row) ≠ 0}
@@ -84,19 +87,38 @@ theorem sum_stateRootError_pow_four_le {θ : ℝ} (hθ : 0 < θ) (S : Finset ι)
       refine mem_filter.mpr ⟨hyS, fun hb => hy ?_⟩
       simp [stateRootError, ha, hb]
     · exact mem_union_left _ (mem_filter.mpr ⟨hyS, ha⟩)
+  change #D ≤ 2 * K
   have hcard : #D ≤ 2 * K := by
     have hA : #A < K := kind.card_filter_eval_ne_zero_lt hθ hK
     have hB : #B < K := kind.card_filter_eval_ne_zero_lt hθ hK
     have h := (card_le_card hsub).trans (card_union_le A B)
     omega
+  exact hcard
+
+/-- A row-dependent pointwise envelope costs only the union support, not the ambient width. -/
+theorem sum_stateRootError_pow_four_le_of_bound {θ : ℝ} (hθ : 0 < θ) (S : Finset ι)
+    {K : ℕ} (hK : 0 < K) (a b : State ι) {B : ℝ}
+    (hB : ∀ y ∈ S, |kind.stateRootError θ S K a b y| ≤ B) :
+    ∑ y ∈ S, |kind.stateRootError θ S K a b y| ^ 4 ≤ 2 * (K : ℝ) * B ^ 4 := by
+  classical
+  let D := {y ∈ S | kind.stateRootError θ S K a b y ≠ 0}
+  have hcard : #D ≤ 2 * K := kind.card_filter_stateRootError_ne_zero_le hθ S hK a b
   rw [← sum_filter_of_ne (p := fun y => kind.stateRootError θ S K a b y ≠ 0)
     fun y _ h hy => h (by rw [hy, abs_zero, zero_pow (by decide)])]
   calc
-    _ ≤ ∑ _y ∈ D, (1 : ℝ) := by
-      refine sum_le_sum fun y _ => ?_
-      simpa using pow_le_pow_left₀ (abs_nonneg (kind.stateRootError θ S K a b y))
-        (kind.abs_stateRootError_le_one θ S K a b y) 4
-    _ = (#D : ℝ) := by simp
-    _ ≤ 2 * (K : ℝ) := by exact_mod_cast hcard
+    _ ≤ ∑ _y ∈ D, B ^ 4 := by
+      refine sum_le_sum fun y hy => ?_
+      exact pow_le_pow_left₀ (abs_nonneg _) (hB y (mem_filter.mp hy).1) 4
+    _ = (#D : ℝ) * B ^ 4 := by simp
+    _ ≤ 2 * (K : ℝ) * B ^ 4 := by
+      apply mul_le_mul_of_nonneg_right _ (by positivity)
+      exact_mod_cast hcard
+
+/-- The fourth-power sum is bounded independently of the ambient width and entry magnitudes. -/
+theorem sum_stateRootError_pow_four_le {θ : ℝ} (hθ : 0 < θ) (S : Finset ι) {K : ℕ}
+    (hK : 0 < K) (a b : State ι) :
+    ∑ y ∈ S, |kind.stateRootError θ S K a b y| ^ 4 ≤ 2 * (K : ℝ) := by
+  simpa only [one_pow, mul_one] using kind.sum_stateRootError_pow_four_le_of_bound hθ S hK a b
+    (B := 1) (fun y _ => kind.abs_stateRootError_le_one θ S K a b y)
 
 end Cslib.PolynomialAtomRow

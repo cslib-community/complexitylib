@@ -329,6 +329,15 @@ end Example
                                 r"^{\mathsf{f}}", r"\cdots"):
                     self.assertIn(command, rendered)
 
+    def test_complex_amplitudes_are_pdflatex_safe(self):
+        sample = "(Fin m → Bool) → ℂ, ‖ψ y‖ ^ 2, ±1"
+        for rendered in (abstract_to_tex.escape_tex_code_line(sample),
+                         abstract_to_tex.escape_tex_prose(sample)):
+            with self.subTest(rendered=rendered):
+                self.assertTrue(rendered.isascii())
+                for command in (r"\mathbb{C}", r"\|", r"\pm"):
+                    self.assertIn(command, rendered)
+
     def test_named_axiom_audits_are_stripped(self):
         sample = (
             "/-! # Title\n\nIntro.\n-/\n\nnamespace Foo\n\n"

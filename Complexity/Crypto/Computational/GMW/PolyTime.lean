@@ -660,21 +660,17 @@ theorem isPPTOn_gmwSampleSimCoins {α : Type} {input : α ↪ List Bool}
     · fun_prop
   · fun_prop
 
-/-- Verifier challenge component of a `runTwoRound` output `(view, round, challenge)`. -/
-abbrev twoRoundChallenge {α β γ : Type*} (p : α × β × γ) : γ :=
-  p.2.2
-
 /-- Run one simulated GMW attempt with pre-sampled unopened pads `pads` (without any witness). -/
 noncomputable def gmwSimWithPads (generator : List Bool → List Bool) (s m : ℕ) (φ : CNF ℕ)
     (prog : WordOracleComp Unit (List Bool)) (pads : List (List Bool)) :
     ProbComp (List Bool) := do
   let ch_guess ← BitString.sampleList 3
   let coins ← gmwSampleSimCoins s φ ch_guess
-  let p ← runTwoRound
+  let (view, _, challenge) ← runTwoRound
     (fun r => proverReply1 generator m r (allOpenFlags φ ch_guess coins.1) coins.1 coins.2 pads)
     (fun _ => proverReply2 s φ ch_guess coins.1 coins.2)
     prog (0, [false, false, false])
-  return if twoRoundChallenge p == ch_guess then true :: p.1 else []
+  return if challenge == ch_guess then true :: view else []
 
 /-- One attempt of the GMW zero-knowledge simulator (without any witness). -/
 noncomputable def gmwSimAttempt (generator : List Bool → List Bool) (s m : ℕ) (φ : CNF ℕ)
@@ -705,7 +701,7 @@ private theorem isPPTOn_gmwSimWithPads {α : Type} {enc : α ↪ List Bool}
   have hgPlain := ComputableInPolyTime.of_tidy hg
   have hfPlain := ComputableInPolyTime.of_tidy hf
   have hlength := PRG.polyTime_length hgPlain hlen
-  dsimp only [gmwSimWithPads, twoRoundChallenge]
+  dsimp only [gmwSimWithPads]
   apply IsPPTOn.bind_with (left := encBits)
   · exact (ComputableInPolyTime.const 3).sampleList
   apply IsPPTOn.bind_with (left := encPair encBits (encList encBits))
@@ -833,9 +829,13 @@ theorem isPPTOn_gmwInteract {α : Type} {enc : α ↪ List Bool}
     (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
       (fun (n, a, z) => Vstar n a z)) :
     IsPPTOn (encPair encUnary (encPair enc (encPair encBits encBits))) encBits
-      (fun p : ℕ × α × List Bool × List Bool =>
-        gmwInteract generator (p.1 + 7) (length (p.1 + 7)) (f p.2.1) p.2.2.1
-          (Vstar p.1 p.2.1 p.2.2.2)) := by
+      (fun (n, a, w, z) =>
+        gmwInteract generator (n + 7) (length (n + 7)) (f a) w
+          (Vstar n a z)) := by
+  change IsPPTOn (encPair encUnary (encPair enc (encPair encBits encBits))) encBits
+    (fun p : ℕ × α × List Bool × List Bool =>
+      gmwInteract generator (p.1 + 7) (length (p.1 + 7)) (f p.2.1) p.2.2.1
+        (Vstar p.1 p.2.1 p.2.2.2))
   have hgPlain := hg
   have hfPlain := hf
   have hg := hg.tidy

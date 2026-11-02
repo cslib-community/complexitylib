@@ -89,6 +89,7 @@ endpoints on `n :: flattenMatrix W`:
 namespace Cslib.Algorithms.WordRAM.Karger
 
 open scoped ENNReal
+open Cslib.WeightedCut
 open Cslib.Probability.PMF
 open Cslib.WordRAM
 
@@ -2981,7 +2982,7 @@ theorem fastCutTree_spec {n w sb : ℕ} {W : Fin n → Fin n → ℕ} {x : Data 
         hmod_x₃ Finset.Subset.rfl Finset.Subset.rfl)
       hmod₀ Finset.Subset.rfl hsub_seg
   · intro hmin_pos
-    obtain ⟨C_star, hC_nt, hC_min⟩ := exists_minCut_achiever hn W
+    obtain ⟨C_star, hC_nt, hC_min⟩ := exists_minCut_achiever (by rwa [Fintype.card_fin]) W
     have hpb : pullbackCut (id : Fin n → Fin n) C_star = C_star := by
       ext u; simp [pullbackCut]
     have hprob := hsurv_seg C_star hmin_pos hC_nt (by rw [hpb, hC_min])

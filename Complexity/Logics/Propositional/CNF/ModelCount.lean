@@ -11,6 +11,7 @@ public import Complexity.Foundations.Data.List.SelectDistinct
 public import Complexity.Logics.Propositional.CNF
 public import Mathlib.Data.Fintype.Pi
 public import Mathlib.Data.Nat.Bitwise
+import Mathlib.Data.Fintype.BigOperators
 
 /-!
 # Counting satisfying assignments
@@ -57,6 +58,8 @@ with a given one on the variables of the formula (`CNF.modelCount_eq_one_iff`).
 * `Cslib.Logic.PL.exists_lt_two_pow_bitsAssignment_eq`,
   `Cslib.Logic.PL.CNF.satisfiable_iff_exists_bitsAssignment`: satisfiability is a search over
   `2 ^ |vs|` numbered assignments.
+* `Cslib.Logic.PL.CNF.modelCount_le_two_pow_numVars`: at most `2 ^ φ.numVars` satisfying
+  assignments.
 * `Cslib.Logic.PL.CNF.modelCount_eq_card_filter`: counting satisfying assignments through a map.
 * `Cslib.Logic.PL.CNF.modelCount_pos_iff`, `Cslib.Logic.PL.CNF.modelCount_eq_one_iff`.
 
@@ -198,6 +201,12 @@ theorem CNF.extendAssignment_of_mem {φ : CNF V} (τ : φ.vars.toFinset → Bool
 in `φ` that satisfy it. -/
 def CNF.modelCount (φ : CNF V) : ℕ :=
   (Finset.univ.filter fun τ : φ.vars.toFinset → Bool => φ.eval (φ.extendAssignment τ) = true).card
+
+/-- A formula has at most `2 ^ φ.numVars` satisfying assignments of its occurring variables. -/
+theorem CNF.modelCount_le_two_pow_numVars (φ : CNF V) : φ.modelCount ≤ 2 ^ φ.numVars := by
+  rw [CNF.modelCount, CNF.numVars]
+  refine (Finset.card_filter_le _ _).trans ?_
+  simp only [Finset.card_univ, Fintype.card_fun, Fintype.card_bool, Fintype.card_coe, le_rfl]
 
 /-- An assignment of all variables satisfies `φ` exactly when its restriction to the variables of
 `φ`, extended by `false`, does. -/

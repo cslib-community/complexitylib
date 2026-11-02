@@ -40,6 +40,10 @@ parsimonious reduction to `#SAT ∈ #P`.
 
 ## Main results
 
+* `Cslib.Complexity.length_le_three_of_mem_toSharpThreeSAT`,
+  `Cslib.Complexity.modelCount_toSharpThreeSAT`, `Cslib.Complexity.length_vars_toSharpThreeSAT`:
+  the reduction has width three, preserves model counts and at most multiplies the number of
+  literal occurrences by seven.
 * `Cslib.Complexity.sharpThreeSAT_toSharpThreeSAT`: the reduction preserves counts.
 * `Cslib.Complexity.computableInPolyTime_toSharpThreeSAT`: it is polynomial-time.
 * `Cslib.Complexity.parsimoniousReducible_SharpSAT_SharpThreeSAT`: `#SAT` reduces
@@ -63,16 +67,31 @@ open Cslib.Logic.PL Turing.MultiTapeTM
 number the original and gate variables injectively. -/
 def toSharpThreeSAT (φ : CNF ℕ) : CNF ℕ := φ.toExact3CNF.relabel splitVarToNat
 
+/-- Every clause of `toSharpThreeSAT φ` has at most three literals. -/
+theorem length_le_three_of_mem_toSharpThreeSAT {φ : CNF ℕ} {c : Clause ℕ}
+    (hc : c ∈ toSharpThreeSAT φ) : c.length ≤ 3 := by
+  obtain ⟨d, hd, rfl⟩ := List.mem_map.1 hc
+  simpa using CNF.length_le_three_of_mem_toExact3CNF hd
+
+/-- `toSharpThreeSAT` preserves the number of satisfying assignments. -/
+theorem modelCount_toSharpThreeSAT (φ : CNF ℕ) :
+    (toSharpThreeSAT φ).modelCount = φ.modelCount := by
+  rw [toSharpThreeSAT, CNF.modelCount_relabel splitVarToNat_injective, CNF.modelCount_toExact3CNF]
+
+/-- `toSharpThreeSAT φ` has between one and seven times as many literal occurrences as `φ`. -/
+theorem length_vars_toSharpThreeSAT (φ : CNF ℕ) :
+    φ.vars.length ≤ (toSharpThreeSAT φ).vars.length ∧
+      (toSharpThreeSAT φ).vars.length ≤ 7 * φ.vars.length := by
+  rw [toSharpThreeSAT, CNF.vars_relabel, List.length_map]
+  exact ⟨CNF.length_vars_le_length_vars_toExact3CNF φ, CNF.length_vars_toExact3CNF_le φ⟩
+
 /-- `toSharpThreeSAT` has width at most three and the same number of satisfying assignments. -/
 theorem sharpThreeSAT_toSharpThreeSAT (φ : CNF ℕ) :
     SharpThreeSAT (toSharpThreeSAT φ) = SharpSAT φ := by
   have hw : ((toSharpThreeSAT φ).all fun c => decide (c.length ≤ 3)) = true := by
-    simp only [List.all_eq_true, decide_eq_true_eq, toSharpThreeSAT, CNF.relabel, List.mem_map]
-    rintro _ ⟨c, hc, rfl⟩
-    simpa using CNF.length_le_three_of_mem_toExact3CNF hc
-  simp only [SharpThreeSAT, hw, ↓reduceIte]
-  simp only [SharpSAT, toSharpThreeSAT, CNF.modelCount_relabel splitVarToNat_injective,
-    CNF.modelCount_toExact3CNF]
+    simp only [List.all_eq_true, decide_eq_true_eq]
+    exact fun c hc => length_le_three_of_mem_toSharpThreeSAT hc
+  simp only [SharpThreeSAT, hw, ↓reduceIte, SharpSAT, modelCount_toSharpThreeSAT]
 
 /-- The reduction `toSharpThreeSAT` is computable in polynomial time under `encCNF`. -/
 @[fun_prop]

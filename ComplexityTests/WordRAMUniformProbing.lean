@@ -7,8 +7,8 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.UniformProbing
-public import Complexity.Algorithms.WordRAM.Dictionary.UniformProbing
+public import Complexity.DataStructure.Dictionary.UniformProbing
+public import Complexity.DataStructure.Dictionary.WordRAM.UniformProbing
 
 /-!
 # Tests for Uniform Probing (`Lean.UniformProbing` and `WordRAM.Dictionary.UniformProbing`)
@@ -19,12 +19,13 @@ This test file verifies:
    bounds (`≤ m / (m - n) ≤ 2` for unsuccessful lookups by [CLRS2009], third edition, Theorem 11.6
    and Corollary 11.7, pp. 274–276, and for fixed-key successful lookups via the insertion-cost
    identity and intermediate bound from the proof of Theorem 11.8, p. 276) and lazy random-oracle
-   equivalence in `Cslib.Algorithms.Lean.UniformProbing`.
+   equivalence in `Cslib.DataStructure.Dictionary.UniformProbing`.
 2. Concrete parameter values, full-cycle stride permutations, pathwise Word-RAM execution
-   (`opCode_execWithin`), composable `SubroutineDS` certificates over `Basis.exact` and
-   `Basis.standard`, end-to-end multi-operation expected complexity (`seq_expected_amortized`),
-   primary-slot universality (`isUniversalHash_primaryHash`), and expected-step transfer
-   (`expect_idealProbeSteps_le`) in `Cslib.Algorithms.WordRAM.Dictionary.UniformProbing`.
+   (`opCode_execWithin`), composable `StateTransitionImpl` certificates over `Basis.exact` and
+   `Basis.standard`, end-to-end multi-operation expected complexity (`seq_expected_amortized`)
+   charging $O_{c_{\exp}}(1)$ per operation (`expectedOpCharge c_exp`), linear space bound
+   (`space_le`), and expected-step transfer (`expect_idealProbeSteps_le`) in
+   `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing`.
 -/
 
 public section
@@ -32,15 +33,14 @@ public section
 namespace ComplexityTests.WordRAMUniformProbing
 
 open Cslib
-open Cslib.Algorithms.Lean
-open Cslib.Algorithms.Lean.UniformProbing
-open Cslib.Algorithms.WordRAM.Dictionary.UniformProbing
+open Cslib.DataStructure Cslib.DataStructure.Dictionary
+open Cslib.DataStructure.Dictionary.UniformProbing
+open Cslib.DataStructure.Dictionary.WordRAM.UniformProbing
 open Cslib.Probability
 open Cslib.WordRAM
-open Cslib.WordRAM.Randomized
 open scoped ENNReal
 
-/-! ## Part 1: Pure Textbook Uniform Probing (`Cslib.Algorithms.Lean.UniformProbing`) -/
+/-! ## Part 1: Pure Textbook Uniform Probing (`Cslib.DataStructure.Dictionary.UniformProbing`) -/
 
 /-- A concrete permutation family on `U = 4` keys and `m = 4` slots where keys `0` and `1` both
 start at slot `0`, and key `1` swaps slots `1` and `3`. -/
@@ -115,25 +115,27 @@ theorem test_lazy_random_oracle_equiv
         prog).run (fun _ => none)).map Prod.fst :=
   uniform_interpret_eq_lazy_perm prog
 
-/-! ## Part 2: Word-RAM Realization (`Cslib.Algorithms.WordRAM.Dictionary.UniformProbing`) -/
+/-! ## Part 2: Word-RAM Realization (`Cslib.DataStructure.Dictionary.WordRAM.UniformProbing`) -/
 
-/-- Verify concrete table dimension parameters at `U = 16`, `n_max = 2`. -/
+/-- Verify concrete table dimension parameters at `c_exp = 2`, `n_max = 2`. -/
 theorem test_wordram_params :
-    bucketBits 2 = 3 ∧
-    numBuckets 2 = 8 ∧
-    hashBits 16 2 = 4 ∧
+    bucketBits 2 = 7 ∧
+    numBuckets 2 = 128 ∧
+    numChars 2 = 4 ∧
+    tupleLen 2 = 32 ∧
     charBits 2 = 1 ∧
-    numChars 16 2 = 4 ∧
-    tabSpace 16 2 = 12 ∧
-    slotOffset 16 2 = 13 ∧
-    space 16 2 = 37 ∧
-    setupSteps 16 2 = 65 ∧
-    opSteps 16 2 = 185 := by
-  decide
+    singleTabSpace 2 2 = 320 ∧
+    slotOffset 2 2 = 640 ∧
+    space 2 2 = 1024 ∧
+    space 2 2 ≤ spaceFactor 2 * (2 + 1) ∧
+    setupSteps 2 2 = 3230 ∧
+    hashEvalSteps 2 = 3811 := by
+  refine ⟨by decide, by decide, by decide, by decide, by decide, by decide, by decide, by decide,
+    space_le 2 2, by decide, by decide⟩
 
-/-- For every seed `θ : Seed 16 2` and key `u : Fin 16`, `probePerm θ u` is a bijection on the `8`
+/-- For every seed `θ : Seed 2 2` and key `u : Fin 16`, `probePerm θ u` is a bijection on the `128`
 table slots, and its `0`-th probe slot is `primaryHash θ u`. -/
-theorem test_wordram_probePerm_bijective (θ : Seed 16 2) (u : Fin 16) :
+theorem test_wordram_probePerm_bijective (θ : Seed 2 2) (u : Fin 16) :
     Function.Bijective (probePerm θ u) ∧
     probePerm θ u ⟨0, by decide⟩ = primaryHash θ u :=
   ⟨(probePerm θ u).bijective, probePerm_zero θ u⟩
@@ -151,70 +153,63 @@ def testOps : List (Dictionary.Op 16) :=
 
 theorem testOps_validHistory :
     (Dictionary.spec 16 100 2).ValidHistory (Dictionary.empty 16) testOps := by
-  dsimp only [testOps, Cslib.Stateful.Spec.ValidHistory, Dictionary.spec]
+  dsimp only [testOps, Cslib.DataStructure.StateTransitionSpec.ValidHistory, Dictionary.spec]
   decide
 
-/-- Concrete instantiation of the `Basis.exact` and `Basis.standard` `SubroutineDS` certificates
-and end-to-end `seq_expected_amortized` bound at `w = 64`, `base = 16`, `U = 16`, `V = 100`,
-`n_max = 2`. -/
+/-- Concrete instantiation of the `Basis.exact` and `Basis.standard` `StateTransitionImpl`
+certificates
+and end-to-end `seq_expected_amortized` bound at `w = 64`, `base = 16`, `c_exp = 2`, `U = 16`,
+`V = 100`, `n_max = 2`. -/
 theorem test_wordram_seq_expected_amortized :
-    have hS : Fits 64 (16 + space 16 2) := by decide
-    have hw : 2 * hashBits 16 2 ≤ 64 := by decide
+    have hS : Fits 64 (16 + space 2 2) := by decide
+    have hU_fit : ∀ u : Fin 16, Fits 64 u.val := fun u => by fin_cases u <;> decide
     have hV : Fits 64 100 := by decide
-    let x₀ : Data 12 := (⟨fun _ => 0, fun _ => 0⟩ : Data 12).set regV 16
-    ∃ (ν₀ ν_final : PMF (Seed 16 2 × Data 12)) (T_ops : ℝ≥0∞),
-      ExecCodeDist 64 (subroutineCode 16 2).initFresh x₀ (ν₀.map Prod.snd)
-        (subroutineDS (V := 100) hS hw hV).initTime ∧
-      (subroutineDS (V := 100) hS hw hV).ExecSteps (Dictionary.empty 16) testOps ν₀ ν_final
-        T_ops ∧
-      (∀ θ, (ν_final.map Prod.fst) θ ≤ seedLaw 16 2 θ) ∧
+    have hU : 16 ≤ max 2 4 ^ 2 := by decide
+    let x₀ : Data 16 := (⟨fun _ => 0, fun _ => 0⟩ : Data 16).set regV 16
+    ∃ (ν₀ ν_final : PMF (Seed 2 2 × Data 16)) (T_ops : ℝ≥0∞),
+      ExecCodeDist 64 (subroutineCode 2 2).initFresh x₀ (ν₀.map Prod.snd)
+        (impl (V := 100) hS hU_fit hV hU).initTime ∧
+      (impl (V := 100) hS hU_fit hV hU).ExecStepsOfFn (Dictionary.empty 16) testOps ν₀
+        ν_final T_ops ∧
+      (∀ θ, (ν_final.map Prod.fst) θ ≤ seedLaw 2 2 θ) ∧
       (∀ p ∈ ν_final.support,
-        Rep 64 16 16 100 2 p.1
+        Rep 64 16 2 16 100 2 p.1
           ((Dictionary.spec 16 100 2).run (Dictionary.empty 16) testOps).1 p.2) ∧
-      (subroutineDS (V := 100) hS hw hV).initTime + T_ops ≤ (1178 : ℝ≥0∞) := by
-  have hS : Fits 64 (16 + space 16 2) := by decide
-  have hw : 2 * hashBits 16 2 ≤ 64 := by decide
+      (impl (V := 100) hS hU_fit hV hU).initTime + T_ops ≤
+        (3 + setupSteps 2 2 : ℝ≥0∞) +
+          ((Dictionary.spec 16 100 2).totalCost (fun _ _ => expectedOpCharge 2)
+            (Dictionary.empty 16) testOps : ℝ≥0∞) := by
+  have hS : Fits 64 (16 + space 2 2) := by decide
+  have hU_fit : ∀ u : Fin 16, Fits 64 u.val := fun u => by fin_cases u <;> decide
   have hV : Fits 64 100 := by decide
-  let x₀ : Data 12 := (⟨fun _ => 0, fun _ => 0⟩ : Data 12).set regV 16
+  have hU : 16 ≤ max 2 4 ^ 2 := by decide
+  let x₀ : Data 16 := (⟨fun _ => 0, fun _ => 0⟩ : Data 16).set regV 16
   have hx₀ : x₀.Bounded 64 := by
     refine ⟨fun i => ?_, fun a => ?_⟩
     · fin_cases i <;> decide
     · change Fits 64 0
       exact fits_zero 64
   have hfr : x₀.regs regV = 16 := rfl
-  have hz : ∀ a ∈ (Block.mk 16 (space 16 2)).footprint, x₀.mem a = 0 := fun _ _ => rfl
-  obtain ⟨ν₀, ν_final, T_ops, he_init, hex_steps, hseed, hrep, hbound⟩ :=
-    seq_expected_amortized (V := 100) hS hw hV testOps hx₀ hfr hz testOps_validHistory
-  refine ⟨ν₀, ν_final, T_ops, he_init, hex_steps, hseed, hrep, hbound.trans ?_⟩
-  have htot : (3 + setupSteps 16 2 : ℝ≥0∞) +
-      ((Dictionary.spec 16 100 2).totalCost (fun _ _ => opSteps 16 2)
-        (Dictionary.empty 16) testOps : ℝ≥0∞) = 1178 := by
-    have h1 : setupSteps 16 2 = 65 := by decide
-    have h2 : (Dictionary.spec 16 100 2).totalCost (fun _ _ => opSteps 16 2)
-        (Dictionary.empty 16) testOps = 1110 := by decide
-    rw [h1, h2]
-    norm_num
-  exact le_of_eq htot
+  have hz : ∀ a ∈ (Block.mk 16 (space 2 2)).footprint, x₀.mem a = 0 := fun _ _ => rfl
+  exact seq_expected_amortized (V := 100) hS hU_fit hV hU testOps hx₀ hfr hz testOps_validHistory
 
-/-- Concrete instantiation of the standard-basis (`Basis.standard`) certificate, primary-slot
-`1/4`-universality (`2 / 8`), and ideal uniform-probing expected-step bound (`≤ 107` steps) at
-`U = 16`, `n_max = 2`. -/
+/-- Concrete instantiation of the standard-basis (`Basis.standard`) certificate and ideal
+uniform-probing expected-step bound (`≤ 3845` steps) at `c_exp = 2`, `U = 16`, `n_max = 2`. -/
 theorem test_wordram_standard_and_collision_bounds :
-    have hS : Fits 64 (16 + space 16 2) := by decide
-    have hw : 2 * hashBits 16 2 ≤ 64 := by decide
+    have hS : Fits 64 (16 + space 2 2) := by decide
+    have hU_fit : ∀ u : Fin 16, Fits 64 u.val := fun u => by fin_cases u <;> decide
     have hV : Fits 64 100 := by decide
-    (subroutineDSStandard (V := 100) hS hw hV).space = 37 ∧
-    Cslib.Probability.IsUniversalHash (seedLaw 16 2) (primaryHash (U := 16) (n_max := 2))
-      (2 / (8 : ℝ≥0∞)) ∧
+    have hU : 16 ≤ max 2 4 ^ 2 := by decide
+    (implStandard (V := 100) hS hU_fit hV hU).space = 1024 ∧
     ∀ (T : Fin (numBuckets 2) → Option (Fin 16 × ℕ)) (u : Fin 16),
       (otherOccupiedSlots T u).card ≤ 2 →
       (∑' π : Equiv.Perm (Fin (numBuckets 2)),
         (PMF.uniformOfFintype (Equiv.Perm (Fin (numBuckets 2)))) π *
-          ((13 * probeCount T u π + 8 * numChars 16 2 + 49 : ℕ) : ℝ≥0∞)) ≤ 107 := by
-  refine ⟨by decide, isUniversalHash_primaryHash 16 2, fun T u hcard => ?_⟩
-  have h := expect_idealProbeSteps_le T u hcard
-  have heq : (8 * numChars 16 2 + 75 : ℝ≥0∞) = 107 := by
-    have hc : numChars 16 2 = 4 := by decide
+          ((13 * probeCount T u π + hashEvalSteps 2 + 8 : ℕ) : ℝ≥0∞)) ≤ 3845 := by
+  refine ⟨by decide, fun T u hcard => ?_⟩
+  have h := expect_idealProbeSteps_le (c_exp := 2) T u hcard
+  have heq : (hashEvalSteps 2 + 34 : ℝ≥0∞) = 3845 := by
+    have hc : hashEvalSteps 2 = 3811 := by decide
     rw [hc]
     norm_num
   rwa [heq] at h

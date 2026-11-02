@@ -193,8 +193,8 @@ point when the forger wins. -/
 noncomputable def forkingProgram (P : SigmaProtocol X Y T C Z)
     (A : Forger Y M (T × Z) (M × T) C) (s : Y × A.Coins × List (T × C × Z)) :
     OracleComp (fun _ : M × T => C) (Option ℕ × Bool × (M × T) × C × Z) :=
-  let (y, c, transcripts) := s
-  (interpret reductionHandler (A.forge y c)).run ⟨[], [], 0, transcripts⟩ >>= finish P y
+  let (y, coins, transcripts) := s
+  (interpret reductionHandler (A.forge y coins)).run ⟨[], [], 0, transcripts⟩ >>= finish P y
 
 /-- The coins of the forking program for the statement `y`: the forger's coins and `Q` simulated
 transcripts. -/

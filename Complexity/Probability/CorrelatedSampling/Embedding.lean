@@ -22,7 +22,7 @@ knows `KY y`. Using correlated sampling, each samples from his own kernel with s
 statistical distance `2 ε₁ + 2 ε₂` of `(x, y, s, s)`, where `ε₁` and `ε₂` are the average distances
 of `KX x` and `KY y` from `K (x, y)` (`dist_embed_le`). With `K` the conditional distribution of
 `S` given `(X, Y)` and `KX`, `KY` the conditional distributions given `X` and `Y`, this is
-Holenstein's embedding lemma [Holenstein, Lemma 8][Holenstein2009]: `(X, Y)` is
+Holenstein's embedding lemma [Holenstein, Lemma 5.2][Holenstein2009]: `(X, Y)` is
 `1 - 2ε₁ - 2ε₂`-embeddable in `(XS, YS)`.
 
 ## Main definitions
@@ -97,10 +97,10 @@ theorem dist_localSample_le (KX : X → PMF S) (KY : Y → PMF S) (K : X × Y �
     (PMF.toOuterMeasure_ne_top _ _) (PMF.toOuterMeasure_ne_top _ _)).trans
       (add_le_add hA hB)
 
-/-- **Holenstein's embedding lemma** [Holenstein, Lemma 8][Holenstein2009]. Draw `(x, y)` from `P`.
-If Alice and Bob sample from their own kernels with shared randomness, the result `(x, y, s_A, s_B)`
-is within statistical distance `2 ε₁ + 2 ε₂` of `(x, y, s, s)` with `s` drawn from `K (x, y)`, where
-`ε₁` and `ε₂` are the distances of `P ⊗ KX` and `P ⊗ KY` from `P ⊗ K`. -/
+/-- **Holenstein's embedding lemma** [Holenstein, Lemma 5.2][Holenstein2009]. Draw `(x, y)` from
+`P`. If Alice and Bob sample from their own kernels with shared randomness, the result
+`(x, y, s_A, s_B)` is within statistical distance `2 ε₁ + 2 ε₂` of `(x, y, s, s)` with `s` drawn
+from `K (x, y)`, where `ε₁` and `ε₂` are the distances of `P ⊗ KX` and `P ⊗ KY` from `P ⊗ K`. -/
 theorem dist_embed_le (P : PMF (X × Y)) (KX : X → PMF S) (KY : Y → PMF S) (K : X × Y → PMF S) :
     dist (P.bind fun xy => (localSample KX KY K xy.1 xy.2).map (xy, ·))
         (P.bind fun xy => ((K xy).map fun s => (s, s)).map (xy, ·)) ≤

@@ -22,17 +22,19 @@ import Mathlib.Data.List.GetD
 
 The recursion of Theorem D.1 of [OpenAI2026ETH] (Appendix D.4.7, p. 64), as a depth-first stack
 recursion (`Cslib.GenericRAM.StackRecursion.Scheme`) over *calls*. A call
-(`FastContraction.Call`) is a described network (`DescribedNetwork VertexDesc`) whose first `r`
-vertices are its rows, with the schedule's scale `s` (the number of edges of the root, since the
-machine sees no other size), its depth `d`, an edge bound, its precision `p` and the coefficients
-`fl` of the modulus `f`.
+(`FastContraction.Call T`) is a described network (`DescribedNetwork (VertexDesc T)`) whose first
+`r` vertices are its rows, with the schedule's scale `s` (the number of edges of the root, since
+the machine sees no other size), its depth `d`, an edge bound, its precision `p` and the
+coefficients `fl` of the modulus `f`. The vertices of the input network have descriptors of a type
+`T`, read by an entry procedure `ev : T → List Bool → List ℕ` (`VertexDesc.entry ev`); only the
+leaves and the correctness statement read them, so the recursion is the same for every `T`.
 
 **Active calls and leaves.** A call with `M` edges is *active* (`FastContraction.active`) when the
 schedule makes it an active call (`ContractionSchedule.callParams`, with `a = slotBits s d`,
 `u = taper s d` and `h = ⌈3 M / u⌉`), its parameters satisfy the hypotheses of Lemma D.5, its
 degrees are at most `degreeBound s`, the `M (2 L - 1) + 1` interpolation points are distinct
 residues (`n ≤ 2 ^ e` for `e = deg f`), and `M` is below its edge bound. Every other call is a leaf,
-evaluated by direct summation over the coefficient lists of `A_p` (`FastContraction.leafValue`).
+evaluated by direct summation over the coefficient lists of `A_p` (`FastContraction.leafValue ev`).
 A child receives its parent's number of edges as its bound, so the recursion terminates, as
 `TensorNetwork.contractRec` does; a child that is not smaller is a leaf.
 
@@ -93,13 +95,15 @@ open GaloisRingArith ChildCursor NativeRecovery ContractionSchedule NativeChild 
 coefficients `fl` of the modulus and the number `r` of rows. -/
 abbrev Params : Type := ℕ × ℕ × ℕ × ℕ × List ℕ × ℕ
 
-/-- **A call** of the recursion: its parameters and its network, whose first `r` vertices are its
-rows. -/
-abbrev Call : Type := Params × DescribedNetwork VertexDesc
+/-- **A call** of the recursion: its parameters and its network over root descriptors `T`, whose
+first `r` vertices are its rows. -/
+abbrev Call (T : Type) : Type := Params × DescribedNetwork (VertexDesc T)
+
+variable {T : Type}
 
 namespace Call
 
-variable (x : Call)
+variable (x : Call T)
 
 /-- The scale `s` of the schedule. -/
 abbrev scale : ℕ := x.1.1
@@ -114,7 +118,7 @@ abbrev fl : List ℕ := x.1.2.2.2.2.1
 /-- The number of rows. -/
 abbrev rows : ℕ := x.1.2.2.2.2.2
 /-- The network. -/
-abbrev net : DescribedNetwork VertexDesc := x.2
+abbrev net : DescribedNetwork (VertexDesc T) := x.2
 /-- The number `M` of edges. -/
 abbrev edges : ℕ := x.2.numEdges
 
@@ -122,7 +126,9 @@ end Call
 
 /-! ### The data of a call -/
 
-variable (x : Call)
+variable (ev : T → List Bool → List ℕ)
+
+variable (x : Call T)
 
 /-- The packets have `2 ^ a` slots, `a = slotBits s d`. -/
 @[expose] def slots : ℕ := slotBits x.scale x.depth
@@ -145,7 +151,7 @@ points are distinct residues (`n ≤ 2 ^ e`), and it has fewer edges than its bo
     x.edges < x.bound)
 
 /-- An active call has fewer edges than its bound. -/
-theorem edges_lt_bound_of_active {x : Call} (h : active x = true) : x.edges < x.bound := by
+theorem edges_lt_bound_of_active {x : Call T} (h : active x = true) : x.edges < x.bound := by
   simp only [active, decide_eq_true_eq] at h
   exact h.2.2.2.2.2.2
 
@@ -169,7 +175,7 @@ of rows is stored in binary and the packing lists one word per row. -/
 @[expose] def rowCap : ℕ := min x.rows x.net.vertices.length
 
 /-- The cap on the rows is inactive when there are at most as many rows as vertices. -/
-theorem rowCap_eq {x : Call} (h : x.rows ≤ x.net.vertices.length) : rowCap x = x.rows :=
+theorem rowCap_eq {x : Call T} (h : x.rows ≤ x.net.vertices.length) : rowCap x = x.rows :=
   min_eq_left h
 
 /-- **The packing of Lemma D.3**, natively (`nativeParentPacking`, `r = 64`), with the rows
@@ -179,7 +185,7 @@ capped (`FastContraction.rowCap`). -/
 
 /-- The packing is the native packing of the rows when there are at most as many rows as
 vertices. -/
-theorem packing_eq {x : Call} (h : x.rows ≤ x.net.vertices.length) :
+theorem packing_eq {x : Call T} (h : x.rows ≤ x.net.vertices.length) :
     packing x = nativeParentPacking x.rows (slots x) x.net := by
   rw [packing, rowCap_eq h]
 
@@ -226,16 +232,16 @@ the stored values. -/
 
 /-- **The value of a leaf**: direct summation in `A_p`. -/
 @[expose] def leafValue : List ℕ :=
-  DescribedNetwork.sumValue SumOps.galois VertexDesc.entry (x.prec, x.fl) x.net
+  DescribedNetwork.sumValue SumOps.galois (VertexDesc.entry ev) (x.prec, x.fl) x.net
 
 /-! ### The scheme -/
 
-variable (mk : Call → State → ℕ × DescribedNetwork VertexDesc)
+variable (mk : Call T → State → ℕ × DescribedNetwork (VertexDesc T))
 
 /-- **The child call** at a cursor state `c = (i, k, β, g)`: the rows and the network given by the
 child builder `mk`, at depth `d + 1`, with the parent's number of edges as its bound and the
 node's precision `p_i`. -/
-@[expose] def child (c : State) : Call :=
+@[expose] def child (c : State) : Call T :=
   ((x.scale, x.depth + 1, x.edges, nodePrec x c.1, x.fl, (mk x c).1), (mk x c).2)
 
 /-- The accumulator of a call: the cursor state of the next child, if any, and the accumulator of
@@ -243,9 +249,9 @@ the cursor. -/
 abbrev Frame : Type := Option State × Acc (List ℕ)
 
 /-- **The recursion as a stack recursion**, with values tagged by the depth. -/
-@[expose] def scheme : Scheme Call Frame (ℕ × List ℕ) where
+@[expose] def scheme : Scheme (Call T) Frame (ℕ × List ℕ) where
   isLeaf x := !active x
-  leaf x := (x.depth, leafValue x)
+  leaf x := (x.depth, leafValue ev x)
   start x := (some (cursorStart (weights x)), (one x.fl, zero x.fl, []))
   next x a := a.1.map (child x mk)
   absorb x a y := match a.1 with
@@ -257,18 +263,19 @@ abbrev Frame : Type := Option State × Acc (List ℕ)
 
 /-- **The value of a call**, by well-founded recursion on the edge bound: the leaf value, or the
 recovery from the values of the children. -/
-@[expose] def value (x : Call) : List ℕ :=
+@[expose] def value (x : Call T) : List ℕ :=
   if _h : active x = true then
     finishValue x (runLoop x fun c => value (child x mk c))
-  else leafValue x
+  else leafValue ev x
 termination_by x.bound
 decreasing_by exact edges_lt_bound_of_active _h
 
-theorem value_of_active {x : Call} (h : active x = true) :
-    value mk x = finishValue x (runLoop x fun c => value mk (child x mk c)) := by
+theorem value_of_active {x : Call T} (h : active x = true) :
+    value ev mk x = finishValue x (runLoop x fun c => value ev mk (child x mk c)) := by
   rw [value, dite_eq_left h]
 
-theorem value_of_not_active {x : Call} (h : active x = false) : value mk x = leafValue x := by
+theorem value_of_not_active {x : Call T} (h : active x = false) :
+    value ev mk x = leafValue ev x := by
   rw [value, dite_eq_right (by simp [h])]
 
 /-! ### Derivations -/
@@ -370,12 +377,12 @@ values `vals` of the earlier children absorbed. -/
 
 /-- **The loop of an active call walks its children**: from `start`, the `c`-th frame asks for the
 child at the `c`-th cursor state, absorbing it gives the next frame, and the last frame stops. -/
-theorem walk {x : Call} (h : active x = true) (vals : State → List ℕ) :
-    frameAt x vals 0 = (scheme mk).start x ∧
-      (∀ c < (children x).length, (scheme mk).next x (frameAt x vals c) =
+theorem walk {x : Call T} (h : active x = true) (vals : State → List ℕ) :
+    frameAt x vals 0 = (scheme ev mk).start x ∧
+      (∀ c < (children x).length, (scheme ev mk).next x (frameAt x vals c) =
         some (child x mk ((children x).getD c (0, 0, [], 0)))) ∧
-      (scheme mk).next x (frameAt x vals (children x).length) = none ∧
-      (∀ c < (children x).length, (scheme mk).absorb x (frameAt x vals c)
+      (scheme ev mk).next x (frameAt x vals (children x).length) = none ∧
+      (∀ c < (children x).length, (scheme ev mk).absorb x (frameAt x vals c)
         (x.depth + 1, vals ((children x).getD c (0, 0, [], 0))) = frameAt x vals (c + 1)) ∧
       runLoop x vals = (frameAt x vals (children x).length).2 := by
   have hM := one_le_edges_of_active h
@@ -406,34 +413,35 @@ theorem walk {x : Call} (h : active x = true) (vals : State → List ℕ) :
 
 /-- The invariant of the derivation from a root `x₀` at depth `0`: the only node at depth `0` is
 the root, and a value tagged `0` is the root's value. -/
-@[expose] def inv (x₀ : Call) : Invariant Call Frame (ℕ × List ℕ) :=
-  ⟨fun x => x.depth = 0 → x = x₀, fun _ _ => True, fun y => y.1 = 0 → y.2 = value mk x₀⟩
+@[expose] def inv (x₀ : Call T) : Invariant (Call T) Frame (ℕ × List ℕ) :=
+  ⟨fun x => x.depth = 0 → x = x₀, fun _ _ => True, fun y => y.1 = 0 → y.2 = value ev mk x₀⟩
 
 /-- **Derivations of the values.** Every call satisfying the invariant of a root `x₀` has a
 derivation of its tagged value. -/
-theorem exists_eval (x₀ : Call) (x : Call) (hx : (inv mk x₀).node x) :
-    ∃ n h, (scheme mk).Eval (inv mk x₀) x (x.depth, value mk x) n h := by
-  refine Scheme.exists_eval_of_measure (R := scheme mk) (I := inv mk x₀) Call.bound
-    (fun x => (x.depth, value mk x)) (fun x _ hl => ?_) (fun x _ hl => ?_) (fun x hx h0 => ?_) x hx
+theorem exists_eval (x₀ : Call T) (x : Call T) (hx : (inv ev mk x₀).node x) :
+    ∃ n h, (scheme ev mk).Eval (inv ev mk x₀) x (x.depth, value ev mk x) n h := by
+  refine Scheme.exists_eval_of_measure (R := scheme ev mk) (I := inv ev mk x₀) Call.bound
+    (fun x => (x.depth, value ev mk x)) (fun x _ hl => ?_) (fun x _ hl => ?_)
+    (fun x hx h0 => ?_) x hx
   · have hl' : active x = false := by simpa [scheme] using hl
-    simp [scheme, value_of_not_active mk hl']
+    simp [scheme, value_of_not_active ev mk hl']
   · have hl' : active x = true := by simpa [scheme] using hl
-    obtain ⟨h0, hnext, hdone, habs, hfin⟩ := walk mk hl' fun c => value mk (child x mk c)
-    refine ⟨(children x).length, frameAt x fun c => value mk (child x mk c),
+    obtain ⟨h0, hnext, hdone, habs, hfin⟩ := walk ev mk hl' fun c => value ev mk (child x mk c)
+    refine ⟨(children x).length, frameAt x fun c => value ev mk (child x mk c),
       fun c => child x mk ((children x).getD c (0, 0, [], 0)), h0, hnext, hdone,
       fun c hc => habs c hc,
       fun c _ => ⟨trivial, fun h => absurd h (by simp [child]), edges_lt_bound_of_active hl'⟩, ?_⟩
     simp only [scheme, Prod.mk.injEq, true_and]
-    rw [value_of_active mk hl', hfin]
+    rw [value_of_active ev mk hl', hfin]
   · simp only at h0
     rw [hx h0]
 
 /-- **A tagged value returned by the run is the root's value**, for any fuel: if the root is at
 depth `0` and the run returns `(0, y)`, then `y` is the value of the root. -/
-theorem eq_value_of_run {J : Type} {fuel : J → ℕ} {root : J → Call} {a : J} {y : List ℕ}
-    (hroot : (root a).depth = 0) (hrun : (scheme mk).run fuel root a = some (0, y)) :
-    y = value mk (root a) := by
-  obtain ⟨n, h, he⟩ := exists_eval mk (root a) (root a) fun _ => rfl
+theorem eq_value_of_run {J : Type} {fuel : J → ℕ} {root : J → Call T} {a : J} {y : List ℕ}
+    (hroot : (root a).depth = 0) (hrun : (scheme ev mk).run fuel root a = some (0, y)) :
+    y = value ev mk (root a) := by
+  obtain ⟨n, h, he⟩ := exists_eval ev mk (root a) (root a) fun _ => rfl
   rw [hroot] at he
   exact Scheme.value_of_run_eq_some he hrun rfl
 
@@ -527,30 +535,30 @@ theorem val_table_runLoop (h : active x = true) (vals : State → List ℕ) {j :
 /-- **The correctness of one active call** for a well-formedness predicate `WF`: at a well-formed
 active call, if the values `vals` of the children are their contractions in `A_{p_i}`, then the
 recovered value is the contraction of the call's network in `A_p`. -/
-@[expose] def StepCorrect (WF : Call → Prop) : Prop :=
+@[expose] def StepCorrect (WF : Call T → Prop) : Prop :=
   ∀ x, WF x → active x = true → ∀ vals : State → List ℕ,
     (∀ c ∈ children x, val (nodePrec x c.1) x.fl (vals c) =
-      (mk x c).2.contraction fun t bs => val (nodePrec x c.1) x.fl (VertexDesc.entry t bs)) →
+      (mk x c).2.contraction fun t bs => val (nodePrec x c.1) x.fl (VertexDesc.entry ev t bs)) →
     val x.prec x.fl (finishValue x (runLoop x vals)) =
-      x.net.contraction fun t bs => val x.prec x.fl (VertexDesc.entry t bs)
+      x.net.contraction fun t bs => val x.prec x.fl (VertexDesc.entry ev t bs)
 
 /-- **Well-formedness passes to the children** of an active call. -/
-@[expose] def WFChildren (WF : Call → Prop) : Prop :=
+@[expose] def WFChildren (WF : Call T → Prop) : Prop :=
   ∀ x, WF x → active x = true → ∀ c ∈ children x, WF (child x mk c)
 
 /-- **Correctness of the recursion.** If the step of an active call is correct and
 well-formedness passes to the children, every well-formed call computes the contraction of its
 network in `A_p`. -/
-theorem val_value {WF : Call → Prop} (hstep : StepCorrect mk WF) (hwf : WFChildren mk WF)
-    (x : Call) (hx : WF x) :
-    val x.prec x.fl (value mk x) =
-      x.net.contraction fun t bs => val x.prec x.fl (VertexDesc.entry t bs) := by
+theorem val_value {WF : Call T → Prop} (hstep : StepCorrect ev mk WF) (hwf : WFChildren mk WF)
+    (x : Call T) (hx : WF x) :
+    val x.prec x.fl (value ev mk x) =
+      x.net.contraction fun t bs => val x.prec x.fl (VertexDesc.entry ev t bs) := by
   induction hb : x.bound using Nat.strong_induction_on generalizing x with
   | _ b ih =>
   cases ha : active x
-  · rw [value_of_not_active mk ha]
-    exact DescribedNetwork.val_sumValue_galois VertexDesc.entry (x.prec, x.fl) x.net
-  · rw [value_of_active mk ha]
+  · rw [value_of_not_active ev mk ha]
+    exact DescribedNetwork.val_sumValue_galois (VertexDesc.entry ev) (x.prec, x.fl) x.net
+  · rw [value_of_active ev mk ha]
     refine hstep x hx ha _ fun c hc => ?_
     exact ih _ (hb ▸ edges_lt_bound_of_active ha) (child x mk c) (hwf x hx ha c hc) rfl
 
