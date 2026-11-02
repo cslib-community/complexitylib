@@ -195,7 +195,12 @@ index links to canonical definitions rather than keeping a second set.
   its input.
 - **Space:** Savitch bounds for general space-constructible functions.
 - **Randomized logspace** ([#459], [#474]): RL and BPL, `USTCON ∈ RL`, Nisan's generator,
-  `BPL ⊆ L²` and Saks–Zhou.
+  `BPL ⊆ L²` and Saks–Zhou. The preprint route to native `RL = L` remains open in
+  [#1444](https://github.com/cslib-community/complexitylib/issues/1444). Its estimator work in
+  [#1721](https://github.com/cslib-community/complexitylib/issues/1721) has an integer-grid slack
+  schedule with endpointwise telescoping and summable available-scale precision payments.
+  Omitted fine-bin errors, task-specific mean/raw-difference comparisons, summed walk noise,
+  recursive-estimator induction and native logarithmic workspace realization remain required.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
   logspace reduction.
 - **Williams's `TIME[t] ⊆ SPACE[√(t log t)]`** ([#888]): implicit Tree Evaluation with the
