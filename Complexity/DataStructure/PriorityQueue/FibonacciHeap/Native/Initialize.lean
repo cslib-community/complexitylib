@@ -7,9 +7,10 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.WordRAM.Realization.Absorb
 public import Complexity.Computability.WordRAM.Realization.Witness
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Allocation
-public import Complexity.Tactic.Realize
+import Complexity.Tactic.Realize
 
 /-!
 # Native reservation of an empty indexed Fibonacci heap
