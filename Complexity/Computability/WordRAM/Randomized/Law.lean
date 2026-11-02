@@ -42,6 +42,7 @@ with `f` (`Cslib.WordRAM.ExecRandLaw.program`).
 * `Cslib.WordRAM.ExecRandLaw.seq`, `Cslib.WordRAM.ExecRandLaw.branch_pos`,
   `Cslib.WordRAM.ExecRandLaw.branch_neg`, `Cslib.WordRAM.ExecRandLaw.loop_exit`,
   `Cslib.WordRAM.ExecRandLaw.loop_iter`: composition rules.
+* `Cslib.WordRAM.ExecRandLaw.rename`: renaming registers.
 * `Cslib.WordRAM.ExecRandLaw.execRandWithin`: forgetting the law.
 * `Cslib.WordRAM.ExecRandLaw.program`: the compiled program halts within the bound, respects the
   call budget and the postcondition, and has the law `μ`.
@@ -87,6 +88,18 @@ theorem withPreserves {i : Fin r} (h : ExecRandLaw w c x P T R f μ) (hi : c.Pre
     ExecRandLaw w c x (fun y => P y ∧ y.regs i = x.regs i) T R f μ := by
   obtain ⟨m, hm, hq, hsup, hlaw⟩ := h
   exact ⟨m, hm, hq, fun z hz => ⟨⟨(hsup z hz).1, hm.regs_eq hi hz⟩, (hsup z hz).2⟩, hlaw⟩
+
+/-- Renaming along an injective register map `ρ`: the renamed code observes the registers that `ρ`
+chooses and keeps the others. -/
+theorem rename {r' : ℕ} {ρ : Fin r → Fin r'} (hρ : ρ.Injective) {x' : Data r'}
+    (h : ExecRandLaw w c (x'.comap ρ) P T R f μ) :
+    ExecRandLaw w (c.rename ρ) x' (fun y' => ∃ y, P y ∧ y' = y.extend ρ x') T R
+      (fun y' => f (y'.comap ρ)) μ := by
+  obtain ⟨m, hm, hq, hsup, hlaw⟩ := h
+  refine ⟨_, hm.rename hρ, (OracleComp.isCostBounded_map_iff _ _ _).mpr hq, fun z hz => ?_, ?_⟩
+  · obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
+    exact ⟨⟨z₀.1, (hsup z₀ hz₀).1, rfl⟩, (hsup z₀ hz₀).2⟩
+  · simpa only [Functor.map_map, Data.comap_extend hρ] using hlaw
 
 /-- Deterministic code reaching `y` has the point law at the observation of `y`. -/
 theorem of_execWithin {y : Data r} (h : ExecWithin w c x y T) (hy : P y) :

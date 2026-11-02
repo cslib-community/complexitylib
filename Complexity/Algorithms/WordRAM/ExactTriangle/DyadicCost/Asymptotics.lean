@@ -27,6 +27,9 @@ the source's tuned 3SUM exponent.
 
 ## Main results
 
+* `costCoefficient_mono`: monotonicity in the original-weight exponent.
+* `costCoefficient_eventually_le_rpow`: reusable coefficient absorption for concrete native callers.
+
 * `exists_components_subcubic_threshold`: beyond one threshold, the actual component allowance
   is at most `4*n^(3-1/1296)`, uniformly over original weights bounded by `n^κ`.
 -/
@@ -38,9 +41,21 @@ namespace Cslib.Algorithms.WordRAM.ExactTriangle.DyadicCost
 open Filter Cslib.Matrix Cslib.Algorithms.ExactTriangle
 open ParameterChoice
 
-private noncomputable def coefficient (κ : ℝ) (n : ℕ) : ℝ :=
+/-- The explicit coefficient in the proved dyadic component allowance. This is a numerical
+upper estimate, not an execution contract supplied to an algorithm. -/
+@[expose] noncomputable def costCoefficient (κ : ℝ) (n : ℕ) : ℝ :=
   238169 + 12 * (Nat.log 2 n : ℝ) + 138412032 * ((19 * level n + 1 : ℕ) : ℝ) +
     (140 * falsePositiveConst + 140) * κ * Real.log n
+
+/-- The component coefficient is monotone in its weight exponent for positive dimensions. -/
+theorem costCoefficient_mono {n : ℕ} (hn : 1 ≤ n) {a b : ℝ} (h : a ≤ b) :
+    costCoefficient a n ≤ costCoefficient b n := by
+  have hC : 0 ≤ falsePositiveConst := (by norm_num : (0 : ℝ) ≤ 1).trans one_le_falsePositiveConst
+  have hlog : 0 ≤ Real.log (n : ℝ) := Real.log_nonneg (by exact_mod_cast hn)
+  have hm := mul_le_mul_of_nonneg_left h
+    (show 0 ≤ (140 * falsePositiveConst + 140) * Real.log (n : ℝ) by positivity)
+  unfold costCoefficient
+  nlinarith only [hm]
 
 private noncomputable def logCoefficient (κ : ℝ) : ℝ :=
   238169 + 138412032 + (12 + 19 * 138412032) / Real.log 2 +
@@ -54,7 +69,7 @@ private theorem logCoefficient_pos {κ : ℝ} (hκ : 1 ≤ κ) : 0 < logCoeffici
   positivity
 
 private theorem coefficient_le_log {n : ℕ} {κ : ℝ} (hn : 16 ≤ n) :
-    coefficient κ n ≤ logCoefficient κ * Real.log n := by
+    costCoefficient κ n ≤ logCoefficient κ * Real.log n := by
   have hnR : (16 : ℝ) ≤ n := by exact_mod_cast hn
   have hlog1 : 1 ≤ Real.log n :=
     (Real.le_log_iff_exp_le (by linarith)).mpr
@@ -62,7 +77,7 @@ private theorem coefficient_le_log {n : ℕ} {κ : ℝ} (hn : 16 ≤ n) :
   have hl : (level n : ℝ) ≤ Nat.log 2 n := by exact_mod_cast level_le_log n
   have hb : (Nat.log 2 n : ℝ) ≤ Real.log n / Real.log 2 := by
     simpa only [Real.logb, Nat.cast_ofNat] using Real.natLog_le_logb n 2
-  unfold coefficient logCoefficient
+  unfold costCoefficient logCoefficient
   push_cast
   have hlevel := mul_le_mul_of_nonneg_left hl (by norm_num : (0 : ℝ) ≤ 19 * 138412032)
   have hconstant := mul_le_mul_of_nonneg_left hlog1
@@ -81,8 +96,10 @@ private theorem coefficient_le_log {n : ℕ} {κ : ℝ} (hn : 16 ≤ n) :
         simpa only [mul_one] using hconstant
     _ = _ := by ring
 
-private theorem coefficient_eventually_le_rpow {κ ε : ℝ} (hκ : 1 ≤ κ) (hε : 0 < ε) :
-    ∀ᶠ n : ℕ in atTop, coefficient κ n ≤ (n : ℝ) ^ ε := by
+/-- The complete component coefficient, including all logarithmic terms, is eventually at
+most any fixed positive real power. Its threshold is chosen before original matrix data. -/
+theorem costCoefficient_eventually_le_rpow {κ ε : ℝ} (hκ : 1 ≤ κ) (hε : 0 < ε) :
+    ∀ᶠ n : ℕ in atTop, costCoefficient κ n ≤ (n : ℝ) ^ ε := by
   have hc := logCoefficient_pos hκ
   have hlog : (fun n : ℕ => Real.log (n : ℝ)) =o[atTop] (fun n => (n : ℝ) ^ ε) :=
     (isLittleO_log_rpow_atTop hε).comp_tendsto tendsto_natCast_atTop_atTop
@@ -111,14 +128,14 @@ private theorem components_eventually_le {κ ε : ℝ} (hκ : 1 ≤ κ) (hε : 0
       ((12 * Nat.log 2 n + 36 + (PrimeSelection.timeBound n (window n) + 16) +
           FixedPrime.timeBound (m := level n) hn (groups n) p values mem : ℕ) : ℝ) ≤
         4 * (n : ℝ) ^ (3 - 1 / 648 + ε : ℝ) := by
-  filter_upwards [coefficient_eventually_le_rpow hκ hε,
+  filter_upwards [costCoefficient_eventually_le_rpow hκ hε,
     eventually_ge_atTop (2 ^ 1296 : ℕ)] with n hc hfast
   intro hn values mem p hv hp
   have hf := (blocks_pos_iff n).mpr hfast
   have hb := components_timeBound_le hf hκ values mem hv hp
-  change (_ : ℝ) ≤ coefficient κ n * ((n : ℝ) ^ 3 / groups n) at hb
+  change (_ : ℝ) ≤ costCoefficient κ n * ((n : ℝ) ^ 3 / groups n) at hb
   calc
-    _ ≤ coefficient κ n * ((n : ℝ) ^ 3 / groups n) := hb
+    _ ≤ costCoefficient κ n * ((n : ℝ) ^ 3 / groups n) := hb
     _ ≤ (n : ℝ) ^ ε * ((n : ℝ) ^ 3 / groups n) :=
       mul_le_mul_of_nonneg_right hc (by positivity)
     _ ≤ (n : ℝ) ^ ε * (4 * (n : ℝ) ^ (3 - 1 / 648 : ℝ)) :=
