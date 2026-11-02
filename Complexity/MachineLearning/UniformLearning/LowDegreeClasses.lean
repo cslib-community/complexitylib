@@ -22,17 +22,21 @@ influence or the noise sensitivity [O'Donnell, Propositions 3.2 and 3.3][ODonnel
 natural classes it learns [O'Donnell, Section 3.4][ODonnell2014]:
 
 * the Boolean functions of total influence at most `K`, with `ε (t + 1) ≥ 2 K`
-  (`UniformLearning.lowDegreeLearner_learns_totalInfluence_le`), so in `n ^ O(K / ε)` examples
+  (`UniformLearning.lowDegreeLearner_learns_totalInfluence_le`), so in
+  `(n + 1) ^ O(K / ε) · poly(1 / ε, log (1 / δ))` examples
   [O'Donnell, Corollary 3.32][ODonnell2014];
 * the monotone Boolean functions, whose total influence is at most `√n`, with
   `ε (t + 1) ≥ 2 √n` (`UniformLearning.lowDegreeLearner_learns_monotone`), so in
-  `n ^ O(√n / ε)` examples [O'Donnell, Corollary 3.33][ODonnell2014];
+  `(n + 1) ^ O(√n / ε) · poly(1 / ε, log (1 / δ))` examples
+  [O'Donnell, Corollary 3.33][ODonnell2014];
 * the Boolean functions of noise sensitivity at most `ε / 6` at a rate `η ≤ 1 / 2`, with
   `η (t + 1) ≥ 1` (`UniformLearning.lowDegreeLearner_learns_noiseSensitivity_le`), so in
-  `n ^ O(1 / η)` examples [O'Donnell, Corollary 3.34][ODonnell2014].
+  `(n + 1) ^ O(1 / η) · poly(1 / ε, log (1 / δ))` examples
+  [O'Donnell, Corollary 3.34][ODonnell2014].
 
-In each case the number of examples is the low-degree algorithm's `(4 N / ε) log (2 N / δ)`, for
-`N ≤ (n + 1) ^ t` the number of sets of at most `t` coordinates. As there, only the number of
+In each case the exact number of examples is the low-degree algorithm's `(4 N / ε) log (2 N / δ)`,
+for `N ≤ (n + 1) ^ t` the number of sets of at most `t` coordinates; the shorthand above keeps its
+dependence on the accuracy `ε` and the confidence `δ`. As there, only the number of
 examples is bounded; the running time is not certified by a machine model.
 
 ## Main results
