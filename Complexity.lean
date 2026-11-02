@@ -2633,7 +2633,6 @@ public import Complexity.Computability.WordRAM.Realization.MemoryBackend
 public import Complexity.Computability.WordRAM.Realization.Module
 public import Complexity.Computability.WordRAM.Realization.Primitive
 public import Complexity.Computability.WordRAM.Realization.Program
-public import Complexity.Computability.WordRAM.Realization.While
 public import Complexity.Computability.WordRAM.Realization.Reindex
 public import Complexity.Computability.WordRAM.Realization.Result
 public import Complexity.Computability.WordRAM.Realization.While
@@ -2982,6 +2981,10 @@ public import Complexity.DataStructure.PrefixSums.WordRAM.Query
 public import Complexity.DataStructure.PrefixSums.WordRAM.Tree
 public import Complexity.DataStructure.PrefixSums.WordRAM.Update
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Memory
+public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.Encoding
+public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.Read
+public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.SiftUp
+public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.Update
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Order
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Basic
 public import Complexity.DataStructure.PriorityQueue.Spec
