@@ -90,12 +90,12 @@ def StepReady (w : ℕ) (F R : Stack.Memory.Layout) (s : Memory.State) : Prop :=
   s.mem R.count.base ≠ 0 → Fits w (R.items.base + (s.mem R.count.base - 1)) ∧
     Fits w (F.items.base + s.mem F.count.base) ∧ Fits w (s.mem F.count.base + 1)
 
+set_option maxHeartbeats 40000 in
+-- Performance guard: about 3k heartbeats are needed, side conditions included.
 /-- `realize` certifies the size query and the loop, with the pop's `match` and the push in the
 body. Each step's domain follows from `StepReady` at the reached memory. What remains,
 `whileSafe … StepReady …`, is what a queue migration discharges with its transfer invariant
 (`whileSafe_of_measure`, rank `r`). -/
-set_option maxHeartbeats 40000 in
--- Performance guard: about 3k heartbeats are needed, side conditions included.
 example : Realizes .exact transfer queueWords word
     (fun w (F, R) s => F.count.base ≠ R.count.base ∧
       whileSafe (fun _ r => 0 < r) (fun ((F, R), r) => transferStep F R r)
