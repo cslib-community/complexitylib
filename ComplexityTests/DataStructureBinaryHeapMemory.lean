@@ -17,6 +17,8 @@ bound `2 + 8 opCost 4`, the admissibility of every memory operation, and that th
 the general theorems hold here.
 -/
 
+set_option linter.hashCommand false
+
 namespace ComplexityTests.DataStructureBinaryHeapMemory
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.Memory Cslib.DataStructure.PriorityQueue
