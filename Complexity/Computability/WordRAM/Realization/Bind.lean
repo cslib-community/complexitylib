@@ -35,21 +35,6 @@ private def bindLeft {m n₂ l n₁ : ℕ} (i : Fin (m + n₂ + 1)) :
 private def bindRight {m n₂ l n₁ : ℕ} (i : Fin (l + n₁ + 1)) :
     Fin (m + (n₂ + l + n₁ + 1) + 1) := ⟨m + n₂ + 1 + i.val, by omega⟩
 
-private theorem validHistory_bind {α β : Type} (w : ℕ) (s : Memory.State)
-    (p : Memory.Prog α) (q : α → Memory.Prog β) :
-    (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (p.bind q)) ↔
-      (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s p) ∧
-        (Memory.spec w).ValidHistory ((Memory.spec w).clientState s p)
-          ((Memory.spec w).clientHistory ((Memory.spec w).clientState s p)
-            (q ((Memory.spec w).clientResult s p))) := by
-  have hh : (Memory.spec w).clientHistory s (p.bind q) =
-      (Memory.spec w).clientHistory s p ++
-        (Memory.spec w).clientHistory ((Memory.spec w).clientState s p)
-          (q ((Memory.spec w).clientResult s p)) := by
-    simp only [StateTransitionSpec.clientHistory, StateTransitionSpec.clientState,
-      StateTransitionSpec.clientResult, StateTransitionSpec.runClient_bind]
-  rw [hh, StateTransitionSpec.validHistory_append, StateTransitionSpec.run_runClient]
-
 namespace Realizes
 
 variable {B : Basis} {δ α β : Type} {k l m : ℕ}
@@ -63,7 +48,7 @@ variable {B : Basis} {δ α β : Type} {k l m : ℕ}
 answer. Its domain and work charge are evaluated at the deterministic intermediate state.
 All emitted code, register banks and the exchange constant precede runtime answers. -/
 theorem bind (hP : Realizes B p input answer safeP workP)
-    (hQ : Realizes B q ((input.prodMap answer).trans (Fin.appendEquiv k l).toEmbedding)
+    (hQ : Realizes B q (appendWords input answer)
       output safeQ workQ) :
     Realizes B (fun d => (p d).bind (fun a => q (d, a))) input output
       (fun w d s => safeP w d s ∧
@@ -124,10 +109,10 @@ theorem bind (hP : Realizes B p input answer safeP workP)
   let a := (Memory.spec 0).clientResult s (p d)
   let s' := (Memory.spec 0).clientState s (p d)
   have hresult : (Memory.spec w).clientResult s (p d) = a :=
-    congrArg Prod.fst (runClient_width w (p d) s)
+    clientResult_width w (p d) s
   have hstate : (Memory.spec w).clientState s (p d) = s' :=
-    congrArg (fun z => z.2.1) (runClient_width w (p d) s)
-  obtain ⟨hvP, hvQ⟩ := (validHistory_bind w s (p d) (fun a => q (d, a))).mp hv
+    clientState_width w (p d) s
+  obtain ⟨hvP, hvQ⟩ := (validHistory_bind w (p d) (fun a => q (d, a)) s).mp hv
   obtain ⟨z, hz, hmP, houtP, hframeP⟩ := hrunP w d x hx hin hsafe.1 hvP
   change memoryState frontier z = (Memory.spec w).clientState s (p d) at hmP
   rw [hstate] at hmP
@@ -135,7 +120,7 @@ theorem bind (hP : Realizes B p input answer safeP workP)
     answer ((Memory.spec w).clientResult s (p d)) i at houtP
   rw [hresult] at houtP
   have hinQ : z.regs ∘ nextSrc =
-      ((input.prodMap answer).trans (Fin.appendEquiv k l).toEmbedding) (d, a) := by
+      (appendWords input answer) (d, a) := by
     funext i
     refine Fin.addCases (fun j => ?_) (fun j => ?_) i
     · change z.regs (nextSrc (Fin.castAdd l j)) =
