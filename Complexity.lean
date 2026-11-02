@@ -2434,6 +2434,7 @@ public import Complexity.Computability.Probabilistic.PPT
 public import Complexity.Computability.Probabilistic.PPT.Capture
 public import Complexity.Computability.Probabilistic.PPT.Clock
 public import Complexity.Computability.Probabilistic.PPT.Composition
+public import Complexity.Computability.Probabilistic.PPT.Extension
 public import Complexity.Computability.Probabilistic.Parameter
 public import Complexity.Computability.Probabilistic.Presample
 public import Complexity.Computability.Probabilistic.QueryBounds
@@ -2644,6 +2645,7 @@ public import Complexity.Computability.WordRAM.Realization.MemoryBackend
 public import Complexity.Computability.WordRAM.Realization.Module
 public import Complexity.Computability.WordRAM.Realization.Primitive
 public import Complexity.Computability.WordRAM.Realization.Program
+public import Complexity.Computability.WordRAM.Realization.Reindex
 public import Complexity.Computability.WordRAM.Realization.Result
 public import Complexity.Computability.WordRAM.Realization.While
 public import Complexity.Computability.WordRAM.Realization.WhileAbsorb
@@ -2788,6 +2790,7 @@ public import Complexity.Crypto.Computational.Hybrid.Sequence
 public import Complexity.Crypto.Computational.IndexedSignature
 public import Complexity.Crypto.Computational.IndexedSignature.Counter
 public import Complexity.Crypto.Computational.IndexedSignature.Seeded
+public import Complexity.Crypto.Computational.Kilian
 public import Complexity.Crypto.Computational.LWE.Basic
 public import Complexity.Crypto.Computational.MAC
 public import Complexity.Crypto.Computational.MerkleDamgard
@@ -2798,6 +2801,8 @@ public import Complexity.Crypto.Computational.MerkleTree.Binding
 public import Complexity.Crypto.Computational.NaorReingold
 public import Complexity.Crypto.Computational.NaorReingold.PRF
 public import Complexity.Crypto.Computational.NaorReingold.Security
+public import Complexity.Crypto.Computational.Nonuniform.Basic
+public import Complexity.Crypto.Computational.Nonuniform.ZeroKnowledge
 public import Complexity.Crypto.Computational.OneWay
 public import Complexity.Crypto.Computational.OneWay.Amplification
 public import Complexity.Crypto.Computational.OneWay.BPP
@@ -2860,6 +2865,7 @@ public import Complexity.Crypto.Computational.PseudorandomFunction.Coins
 public import Complexity.Crypto.Computational.PseudorandomFunction.RandomOracle
 public import Complexity.Crypto.Computational.PseudorandomFunction.TruthTable
 public import Complexity.Crypto.Computational.PseudorandomGenerator
+public import Complexity.Crypto.Computational.PseudorandomPermutation
 public import Complexity.Crypto.Computational.SIS.Basic
 public import Complexity.Crypto.Computational.SchnorrIdentification
 public import Complexity.Crypto.Computational.SchnorrProtocol
@@ -3016,10 +3022,16 @@ public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Model
 public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Program
 public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Trees
 public import Complexity.DataStructure.Queue.Memory
+public import Complexity.DataStructure.Queue.Memory.Transfer
 public import Complexity.DataStructure.Queue.Spec
-public import Complexity.DataStructure.Queue.WordRAM.Basic
-public import Complexity.DataStructure.Queue.WordRAM.Dynamic
 public import Complexity.DataStructure.Queue.WordRAM.Model
+public import Complexity.DataStructure.Queue.WordRAM.RegisterCorrectness
+public import Complexity.DataStructure.Queue.WordRAM.RegisterDynamic
+public import Complexity.DataStructure.Queue.WordRAM.RegisterExecution
+public import Complexity.DataStructure.Queue.WordRAM.RegisterMetadata
+public import Complexity.DataStructure.Queue.WordRAM.RegisterMethods
+public import Complexity.DataStructure.Queue.WordRAM.RegisterProgram
+public import Complexity.DataStructure.Queue.WordRAM.RegisterTransfer
 public import Complexity.DataStructure.Retroactive.Basic
 public import Complexity.DataStructure.SearchTree.Basic
 public import Complexity.DataStructure.SearchTree.Cost
@@ -3624,6 +3636,7 @@ public import Complexity.Languages.Probabilistic.LinearHash
 public import Complexity.Languages.Probabilistic.Memoize
 public import Complexity.Languages.Probabilistic.Notation
 public import Complexity.Languages.Probabilistic.Oracle
+public import Complexity.Languages.Probabilistic.Oracle.CoinFixing
 public import Complexity.Languages.Probabilistic.Oracle.Interaction
 public import Complexity.Languages.Probabilistic.Oracle.QueryCount
 public import Complexity.Languages.Probabilistic.Oracle.Simulation
