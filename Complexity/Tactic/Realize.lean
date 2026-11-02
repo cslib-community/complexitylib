@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.WordRAM.Realization.Absorb
+public import Complexity.Computability.WordRAM.Realization.WhileAbsorb
 
 /-!
 # The `realize` tactic
@@ -26,6 +26,13 @@ the client syntax, unfolding definitions, with one rule per form:
   (`Realizes.congr`, proved by cases).
 * `iterate step D n a` whose step begins with a query: `Realizes.iterate₀`, after
   `iterate_comap` moves `D` into the step.
+* `boundedWhile G step D n a` whose step begins with a query: `Realizes.while₀`. The guard
+  `G D r` may be `a = b`, `a < b`, `a > b` or `a ≠ 0` (tested as `0 < a`), with any decidability
+  instance, over the live words and the state's words; an operand independent of the state, such
+  as a constant, is computed before the loop. The cutoff `n` is a ghost bound and is not computed.
+  The certificate is transported to the client's guard, step and `D` (`boundedWhile_congr`,
+  `whileSafe_imp`), so the loop's domain is `whileSafe G step …` in the client's terms, under
+  the loop's valid history (`Realizes.consequence_valid`), ready for `whileSafe_of_measure`.
 
 Operands are located among the live words by definitional equality. An operand that is not a
 live word is first computed by an inserted `pure`, which leaves the program unchanged up to
@@ -41,7 +48,7 @@ Local work is absorbed (`Realizes.mono_mul`): every certificate built by `realiz
 `0`, so any local-work grading in the goal is accepted. Intermediate domains are stated in the
 client's own terms, with the replies of earlier queries written as `s.mem a`, `s.frontier`,
 updated memories, or the interpreter's result of a called method; a loop contributes its
-`iterationSafe` domain.
+`iterationSafe` or `whileSafe` domain.
 
 After the composition, `realize` introduces `w d s hwords hmem h`: the word width, the
 environment, the memory, the fit of the input words, memory well-formedness, and the goal's
@@ -605,16 +612,37 @@ private def checkOutput (proof : Expr) (output? : Option Expr) : MetaM Expr := d
         but the goal requires{indentExpr o}"
   return out
 
+/-- The native comparison of a word condition, equality or `<`, with its operands. -/
+private def cond? (c : Expr) : MetaM (Option (Name × Expr × Expr)) := do
+  if let some (ty, a, b) := c.eq? then
+    if (← whnfR ty).isConstOf ``Nat then return some (``Cond.eq, a, b)
+  if c.isAppOfArity ``LT.lt 4 && (c.getArg! 0).isConstOf ``Nat then
+    return some (``Cond.lt, c.getArg! 2, c.getArg! 3)
+  if c.isAppOfArity ``GT.gt 4 && (c.getArg! 0).isConstOf ``Nat then
+    return some (``Cond.lt, c.getArg! 3, c.getArg! 2)
+  return none
+
 /-- The comparison of a branch condition: equality or `<`, with its operands. -/
 private def parseCond (c : Expr) : MetaM (Name × Expr × Expr) := do
-  if let some (ty, a, b) := c.eq? then
-    if (← whnfR ty).isConstOf ``Nat then return (``Cond.eq, a, b)
-  if c.isAppOfArity ``LT.lt 4 && (c.getArg! 0).isConstOf ``Nat then
-    return (``Cond.lt, c.getArg! 2, c.getArg! 3)
-  if c.isAppOfArity ``GT.gt 4 && (c.getArg! 0).isConstOf ``Nat then
-    return (``Cond.lt, c.getArg! 3, c.getArg! 2)
+  if let some r ← cond? c then return r
   throwError "realize: a branch condition must be `a = b`, `a < b` or `a > b` on words, \
     got{indentExpr c}"
+
+/-- The comparison of a loop guard, after unfolding definitions. `a = b`, `a < b` and `a > b`
+are tested as written. `a ≠ 0` is tested as `0 < a`; the flag records this rewriting. -/
+private partial def parseGuard (g : Expr) (orig : Expr := g.headBeta) (fuel : Nat := 64) :
+    MetaM (Name × Expr × Expr × Bool) := do
+  let g := g.headBeta
+  if let some (kind, a, b) ← cond? g then return (kind, a, b, false)
+  if let some (ty, a, z) := g.ne?.orElse fun _ => g.not?.bind Expr.eq? then
+    if (← whnfR ty).isConstOf ``Nat && (← withNewMCtxDepth (isDefEq z (mkNatLit 0))) then
+      return (``Cond.lt, z, a, true)
+  if fuel != 0 then
+    let g' ← whnfR g
+    if g' != g then return ← parseGuard g' orig (fuel - 1)
+    if let some g' ← unfoldDefinition? g then return ← parseGuard g' orig (fuel - 1)
+  throwError "realize: a loop guard must be `a = b`, `a < b`, `a > b` or `a ≠ 0` on words, \
+    got{indentExpr orig}"
 
 /-- Rebuild a branch condition with new operands. -/
 private def rebuildCond (c a b : Expr) : MetaM Expr := do
@@ -627,7 +655,7 @@ private def isClientForm (e : Expr) : Bool :=
   e.isAppOfArity ``Bind.bind 6 || e.isAppOfArity ``PFunctor.FreeM.bind 5 ||
   e.isAppOfArity ``Pure.pure 4 || e.isAppOfArity ``PFunctor.FreeM.pure 3 ||
   e.isAppOfArity ``PFunctor.FreeM.lift 2 || e.isAppOfArity ``PFunctor.FreeM.liftBind 4 ||
-  e.isAppOfArity ``ite 5
+  e.isAppOfArity ``ite 5 || e.isAppOfArity ``boundedWhile 8
 
 /-- Unfold definitions until a client form appears. -/
 private partial def normBody (e : Expr) (fuel : Nat := 64) : MetaM Expr := do
@@ -785,6 +813,9 @@ private partial def realizeBody (ctx : Ctx) (env : Env) (d : Expr) (atoms : Arra
         mkLambdaFVars #[w, d, s] (mkApp5 (mkConst ``ite [Level.one]) (mkSort Level.zero) c inst
           (hp.safe.beta #[w, d, s]) (hn.safe.beta #[w, d, s]))
     return { proof, output := out, safe }
+  -- a guarded loop
+  if body.isAppOfArity ``boundedWhile 8 then
+    return ← realizeWhile ctx env d atoms body output?
   -- a runtime-bounded loop
   if body.isAppOfArity ``iterate 6 then
     return ← realizeIterate ctx env d atoms (body.getArg! 1) (body.getArg! 2) (body.getArg! 3)
@@ -795,8 +826,8 @@ private partial def realizeBody (ctx : Ctx) (env : Env) (d : Expr) (atoms : Arra
     return ← realizeOptionSplit ctx env d atoms body r output?
   throwError "realize: unsupported client form{indentExpr body}\n\
     Expected `bind`, `pure`, a memory query, `if` on a word comparison,\n\
-    or a `match` on an optional answer. Recursion on a runtime value is a loop\n\
-    and needs a loop rule."
+    a `match` on an optional answer, `iterate` or `boundedWhile`.\n\
+    Write recursion on a runtime value as one of these loops."
 
 /-- Certify a client that matches on the optional answer `r`: it equals the branch on `r`'s
 presence tag, with `r` replaced by `none` and by `some` of its payload. -/
@@ -871,6 +902,151 @@ private partial def realizeIterate (ctx : Ctx) (env : Env) (d : Expr) (atoms : A
   let g ← mkLambdaFVars #[d] D
   let eq ← mkLambdaFVars #[d] (← mkEqSymm (← mkAppM ``iterate_comap #[g, step, d, n, a]))
   return { proof := ← mkAppM ``Realizes.congr #[proof, eq], output := out, safe }
+
+/-- Certify `boundedWhile G step D n a` for the environment variable `d`.
+
+The guard becomes a native comparison of the live words and the state's words. An operand that
+does not depend on the state, such as the `0` of `0 < r`, is computed first into one more live
+word. The body runs over the environment and the state, and must begin with a query
+(`Realizes.while₀`). The cutoff `n` is a ghost bound: it is never computed. The certificate is
+transported to the client's own guard, step and loop environment `D` (`boundedWhile_congr`,
+`whileSafe_imp`), and the loop's domain may assume the loop's valid history
+(`Realizes.consequence_valid`), which `whileSafe_of_measure` uses. -/
+private partial def realizeWhile (ctx : Ctx) (env : Env) (d : Expr) (atoms : Array Expr)
+    (body : Expr) (output? : Option Expr) : TermElabM Out := do
+  let args := body.getAppArgs
+  let (Δ, σ, G, inst, step, D, n, a) :=
+    (args[0]!, args[1]!, args[2]!, args[3]!, args[4]!, args[5]!, args[6]!, args[7]!)
+  let out ← match output? with
+    | some o => pure o
+    | none => encodingOf σ
+  let l ← encodingWidth out
+  let k := env.k
+  let nat := mkConst ``Nat
+  let state := mkConst ``Memory.State
+  -- the comparison, its operands among the live words and the state's words (`none` for a
+  -- computed operand), the computed operand, and the operand of a guard `x ≠ 0`
+  let (kind, posA, posB, pre?, neFn?) ← withLocalDeclD `a σ fun x => do
+    let (kind, oa, ob, ne) ← parseGuard (mkApp2 G D x)
+    let words := atoms ++ (← encodingAtoms out x l)
+    let locate (o : Expr) : MetaM (Option Nat) := do
+      if let some i ← findAtom words o then return some i
+      if o.containsFVar x.fvarId! then
+        throwError "realize: a loop guard compares words; the operand{indentExpr o}\n\
+          depends on the loop state but is not one of its words"
+      return none
+    let (ia, ib) := (← locate oa, ← locate ob)
+    let pre? ← match ia, ib with
+      | none, none => throwError "realize: the loop guard{indentExpr (mkApp2 G D x)}\n\
+          does not depend on the loop state"
+      | none, _ => pure (some oa)
+      | _, none => pure (some ob)
+      | _, _ => pure none
+    let neFn? ← if ne then pure (some (← mkLambdaFVars #[x] ob)) else pure none
+    return (kind, ia, ib, pre?, neFn?)
+  let word ← encodingOf nat
+  let envP ← if pre?.isSome then extend env nat word 1 else pure env
+  let cmp := envP.k + l
+  let pos (i? : Option Nat) : MetaM Expr := finLit cmp <| match i? with
+    | none => k
+    | some i => if i < k || pre?.isNone then i else i + 1
+  let cond ← mkAppM kind #[← pos posA, ← pos posB]
+  -- `X` at the loop environment `e`, whose first component is `d` when an operand is computed
+  let atEnv (X e : Expr) : MetaM Expr := do
+    return X.replaceFVar d (← if pre?.isSome then mkAppM ``Prod.fst #[e] else pure e)
+  -- the body over the loop environment and the state, and the ghost cutoff
+  let envB ← extend envP σ out l
+  let (bodyN, cutoff) ← withLocalDeclD `y envB.ty fun y => do
+    let e ← mkAppM ``Prod.fst #[y]
+    let x ← mkAppM ``Prod.mk #[← atEnv D e, ← mkAppM ``Prod.snd #[y]]
+    return (← mkLambdaFVars #[y] (mkApp (← atEnv step e) x), ← mkLambdaFVars #[y] (← atEnv n e))
+  let hB ← realizeProg ctx envB bodyN (some out)
+  let hLoop ← mkAppM ``Realizes.while₀
+    #[envP.input, out, cond, cutoff, hB.proof, ← proveQuery bodyN envB.ty]
+  -- the initial state, then the loop
+  let (hA, h) ← withLocalDeclD `e envP.ty fun e => do
+    let ae ← atEnv a e
+    let hA ← realizePure ctx envP e (envP.atoms.map (·.beta #[e])) ae out
+    let (reply, next) ← withLocalDeclD `s state fun s => do
+      return (← mkLambdaFVars #[e, s] ae, ← mkLambdaFVars #[e, s] s)
+    return (hA, ← bindRun hA.proof hLoop reply next)
+  -- the computed operand, then the initial state and the loop
+  let (hC?, h, e₀) ← match pre? with
+    | none => pure (none, h, d)
+    | some c => do
+      let hC ← realizePure ctx env d atoms c word
+      let (reply, next) ← withLocalDeclD `s state fun s => do
+        return (← mkLambdaFVars #[d, s] c, ← mkLambdaFVars #[d, s] s)
+      pure (some hC, ← bindRun hC.proof h reply next, ← mkAppM ``Prod.mk #[d, c])
+  -- the native guard at the loop environment, and its agreement with the client's
+  let (gN, iN) ← withLocalDeclD `e envP.ty fun e => withLocalDeclD `a σ fun x => do
+    let words ← mkAppM ``DFunLike.coe
+      #[← mkAppM ``appendWords #[envP.input, out], ← mkAppM ``Prod.mk #[e, x]]
+    let t ← mkAppM ``test #[cond, words]
+    return (← mkLambdaFVars #[e, x] t,
+      ← mkLambdaFVars #[e, x] (← synthInstance (← mkAppM ``Decidable #[t])))
+  let (hgU, hgN, hbU, hbN) ← withLocalDeclD `a σ fun x => do
+    let gU := mkApp2 G D x
+    let gn := mkApp2 gN e₀ x
+    let iff ← match neFn? with
+      | some f => mkAppM ``Iff.symm #[← mkAppOptM ``Nat.pos_iff_ne_zero #[f.beta #[x]]]
+      | none => mkAppM ``Iff.refl #[gU]
+    let hgU ← mkExpectedTypeHint iff (mkApp2 (mkConst ``Iff) gU gn)
+    let bU := mkApp step (← mkAppM ``Prod.mk #[D, x])
+    let bN := mkApp bodyN (← mkAppM ``Prod.mk #[e₀, x])
+    let hbU ← mkExpectedTypeHint (← mkEqRefl bU) (← mkEq bU bN)
+    return (← mkLambdaFVars #[x] hgU, ← mkLambdaFVars #[x] (← mkAppM ``Iff.symm #[hgU]),
+      ← mkLambdaFVars #[x] hbU, ← mkLambdaFVars #[x] (← mkEqSymm hbU))
+  -- the client's loop
+  let prog := (← instantiateMVars (← inferType h)).getArg! 5
+  let eq ← mkLambdaFVars #[d] (← mkExpectedTypeHint
+    (← mkAppOptM ``boundedWhile_congr #[envP.ty, Δ, σ, gN, iN, G, inst, bodyN, step, e₀, D,
+      hgN, hbN, n, a])
+    (← mkEq (mkApp prog d) body))
+  let h ← mkAppM ``Realizes.congr #[h, eq]
+  -- the domain in the client's terms: the body's domain at the client's loop environment
+  let pairTy ← mkAppM ``Prod #[Δ, σ]
+  let safeB ← withLocalDeclD `w nat fun w => withLocalDeclD `x pairTy fun x =>
+    withLocalDeclD `s state fun s => do
+      let y ← mkAppM ``Prod.mk #[e₀, ← mkAppM ``Prod.snd #[x]]
+      mkLambdaFVars #[w, x, s] (← reducePairs (hB.safe.beta #[w, y, s]))
+  let safe ← withLocalDeclD `w nat fun w => withLocalDeclD `s state fun s => do
+    let spec ← mkAppM ``Memory.spec #[w]
+    let valid ← mkAppM ``StateTransitionSpec.ValidHistory
+      #[spec, s, ← mkAppM ``StateTransitionSpec.clientHistory #[spec, s, body]]
+    let loop ← mkArrow valid
+      (← mkAppOptM ``whileSafe #[Δ, σ, G, inst, step, safeB, w, D, n, a, s])
+    let dom := mkAnd (← reducePairs (hA.safe.beta #[w, e₀, s])) loop
+    mkLambdaFVars #[w, d, s] <| match hC? with
+      | some hC => mkAnd (hC.safe.beta #[w, d, s]) dom
+      | none => dom
+  -- the client's domain implies the native one under the loop's valid history
+  let cv ← mkAppOptM ``Realizes.consequence_valid
+    #[none, none, none, none, none, none, none, none, none, none, safe, h]
+  let hsafeTy := (← whnf (← inferType cv)).bindingDomain!
+  let hsafe ← withLocalDeclD `w nat fun w => withLocalDeclD `s state fun s => do
+    forallBoundedTelescope (← instantiateForall hsafeTy #[w, d, s]) (some 4) fun hs goal => do
+      let #[_, _, hv, hd] := hs | throwError "realize: internal error in the loop domain"
+      let part (h : Expr) : MetaM (Expr × Expr) := do
+        return (← mkAppM ``And.left #[h], ← mkAppM ``And.right #[h])
+      let (hcs, rest) ← match hC? with
+        | some _ => do let (p, q) ← part hd; pure (some p, q)
+        | none => pure (none, hd)
+      let (has, hloop) ← part rest
+      let hsU ← withLocalDeclD `a σ fun x => withLocalDeclD `s state fun s' =>
+        withLocalDeclD `hg (mkApp2 G D x) fun hg => do
+          let hs := mkApp3 safeB w (← mkAppM ``Prod.mk #[D, x]) s'
+          withLocalDeclD `h hs fun hh => do
+            let hN := mkApp3 hB.safe w (← mkAppM ``Prod.mk #[e₀, x]) s'
+            mkLambdaFVars #[x, s', hg, hh] (← mkExpectedTypeHint hh hN)
+      let ws ← mkAppOptM ``whileSafe_imp #[Δ, envP.ty, σ, G, inst, gN, iN, step, bodyN, D, e₀,
+        safeB, hB.safe, w, hgU, hbU, hsU, none, none, none, mkApp hloop hv]
+      let dom ← mkAppM ``And.intro #[has, ws]
+      let pf ← match hcs with
+        | some p => mkAppM ``And.intro #[p, dom]
+        | none => pure dom
+      mkLambdaFVars (#[w, d, s] ++ hs) (← mkExpectedTypeHint pf goal)
+  return { proof := mkApp cv hsafe, output := out, safe }
 
 /-- Certify `bind m f`: the first client, then the continuation over the extended environment. -/
 private partial def realizeBind (ctx : Ctx) (env : Env) (d m f : Expr) (output? : Option Expr) :
