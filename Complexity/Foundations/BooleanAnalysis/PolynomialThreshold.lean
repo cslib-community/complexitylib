@@ -40,7 +40,9 @@ If `F p ≥ 0` everywhere for some nonzero `p` with Fourier coefficients vanishi
 comparing `𝔼 |p| = ∑_{S ∈ T} F̂(S) p̂(S)` with `|p̂(S)| ≤ 𝔼 |p|` shows that the Fourier coefficients
 of `F` on `T` have absolute values summing to at least one
 (`BitString.one_le_sum_abs_fourierCoeff_of_nonneg_mul`) [O'Donnell, Theorem 5.10][ODonnell2014];
-its proof allows zeros of `p`, so this covers the book's notion for every family. The case of all
+its proof allows zeros of `p`, so this covers every representation `f = sgn(p)` with `sgn(0) = 1`
+and `p` not identically zero, for every family. The book leaves `p ≢ 0` implicit; it is needed,
+since for `T = ∅`, `p = 0` and the constant `F = 1` the sum is zero. The case of all
 sets is `BitString.one_le_sum_abs_fourierCoeff_signVal`.
 
 ## Main definitions
@@ -180,7 +182,9 @@ theorem IsPTF.eq_of_fourierCoeff_eq {k : ℕ} {f g : (ι → Bool) → Bool} (hf
 signs, `F p ≥ 0` everywhere for a nonzero real `p` whose Fourier coefficients vanish outside `T`,
 then the Fourier coefficients of `F` on `T` have absolute values summing to at least one
 [O'Donnell, Theorem 5.10][ODonnell2014]. The function `p` may vanish somewhere, so this covers
-the book's `f = sgn(p)` with `sgn(0) = 1` for every family. -/
+the book's `f = sgn(p)` with `sgn(0) = 1` for every family, provided `p` is not identically zero;
+the book leaves that assumption implicit, and it is necessary: for `T = ∅`, `p = 0` and the
+constant `F = 1` the sum is zero. -/
 theorem one_le_sum_abs_fourierCoeff_of_nonneg_mul {T : Finset (Finset ι)}
     {f : (ι → Bool) → Bool} {p : (ι → Bool) → ℝ} (hpT : ∀ S ∉ T, fourierCoeff p S = 0)
     (hp₀ : p ≠ 0) (hp : ∀ x, 0 ≤ signVal (f x) * p x) :
