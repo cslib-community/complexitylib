@@ -67,7 +67,7 @@ example : cutSafe 6 ![3, 2, 2, 1] consolidated := by
       (1 : Fin 3).val + 1 := by decide
   exact cutSafe_of_cascading (by decide) hi.1 h hcur hpar
 
-private theorem consolidated_wellFormed : Memory.WellFormed 6 consolidated := by
+theorem consolidated_wellFormed : Memory.WellFormed 6 consolidated := by
   have hv : (Memory.spec 6).ValidHistory (Memory.State.init [63])
       ((Memory.spec 6).clientHistory (Memory.State.init [63])
         (allocator.run consolidationClient)) := by decide

@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Update
-import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Source
+public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Source
 
 /-!
 # Source forest domains for native Fibonacci updates
@@ -21,6 +21,7 @@ not a replacement heap model or a complete native decrease-key theorem.
 
 * `cutSafe_of_cascading`: the existing forest invariant and allocated layout supply the native
   cut's entry and actual intermediate-state domains.
+* `cascadeStep_progress`: continuing source steps strictly decrease the original marked count.
 -/
 
 public section
@@ -62,7 +63,10 @@ private theorem wp_unlink_rootFields {n K w : ℕ} {s : IndexedMinPQ.State n} {g
   rw [hview]
   exact ⟨h.minRoot, ⟨r, hr⟩, hmark_count⟩
 
-private theorem wp_cascadeStep {n K w : ℕ} {s : IndexedMinPQ.State n} {g : Cell → ℕ}
+/-- A continuing original cascade step has a typed parent in the updated forest and strictly
+fewer marked nodes. Stopping branches require no continuing forest witness. This is the
+source progress fact used to justify native while nontruncation. -/
+theorem cascadeStep_progress {n K w : ℕ} {s : IndexedMinPQ.State n} {g : Cell → ℕ}
     {v m z : Fin n} {ts : List (FHTree n)} (hfit : Fits w n)
     (h : Cascading n K s (view n g) v m (some z) ts)
     (hv : ∃ T ∈ ts, T.root = v)
