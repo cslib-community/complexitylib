@@ -2256,6 +2256,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.O
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.OutputToTape
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.PairSampler
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.PolynomialClock
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.PrefixLocality
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.QueryBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.QueryTake
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay
@@ -2435,6 +2436,7 @@ public import Complexity.Computability.Probabilistic.Oracle.Substitution
 public import Complexity.Computability.Probabilistic.Oracle.Tidy
 public import Complexity.Computability.Probabilistic.OracleSimulation
 public import Complexity.Computability.Probabilistic.PPT
+public import Complexity.Computability.Probabilistic.PPT.AuxClock
 public import Complexity.Computability.Probabilistic.PPT.Capture
 public import Complexity.Computability.Probabilistic.PPT.Clock
 public import Complexity.Computability.Probabilistic.PPT.Composition
@@ -2880,6 +2882,7 @@ public import Complexity.Crypto.Computational.TreeSignature
 public import Complexity.Crypto.Computational.TreeSignature.CoinHybrid
 public import Complexity.Crypto.Computational.UniformChoice
 public import Complexity.Crypto.Computational.ZeroKnowledge
+public import Complexity.Crypto.Computational.ZeroKnowledge.AuxClock
 public import Complexity.Crypto.Game
 public import Complexity.Crypto.Game.Hybrid
 public import Complexity.Crypto.Game.Statistical

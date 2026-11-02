@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Crypto.Computational.ZeroKnowledge
+import Complexity.Crypto.Computational.ZeroKnowledge.AuxClock
 import Complexity.Tactic.PPT
 
 /-! Tests for Naor's bit commitment scheme and the Goldreich–Micali–Wigderson
@@ -191,5 +191,75 @@ example {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (hAdv : GMW.AdvicePRG encCNF generator length) :
     ∃ zk : ZeroKnowledgeProof encCNF ThreeSAT, zk.AuxiliaryInputZeroKnowledge :=
   hG.exists_auxiliaryInputZeroKnowledge_of_mem_NP hstretch hAdv ThreeSAT.mem_NP
+
+-- Machine-level input-tape prefix locality: a `fuel`-step run on `u ++ v` depends only on
+-- `u ++ v.take fuel`.
+example {k : ℕ} {State : Type} (machine : Turing.MultiTapePTM k Bool State)
+    (fuel : ℕ) (u v : List Bool) :
+    machine.runClosed fuel (u ++ v.take fuel) = machine.runClosed fuel (u ++ v) :=
+  machine.runClosed_append_take fuel u v
+
+example {k : ℕ} {State Operation : Type} [DecidableEq Operation]
+    (machine : Turing.MultiTapePTM k Bool State Operation)
+    (fuel : ℕ) (u v : List Bool) :
+    machine.runOracle fuel (u ++ v.take fuel) = machine.runOracle fuel (u ++ v) :=
+  machine.runOracle_append_take fuel u v
+
+-- Non-vacuity of `IsPPTWithAux` and `IsOraclePPTWithAux` via `of_machine`, together with their
+-- bridges to `IsPPTOn` and `IsOraclePPTOn`.
+private def haltClosedMachine : Turing.MultiTapePTM 0 Bool Unit where
+  initial := ()
+  tr _ _ _ _ _ := .step ⟨0, Fin.elim0, none, none⟩ (fun _ => none) (fun _ => 0)
+
+private def haltOracleMachine : Turing.MultiTapePTM 0 Bool Unit Unit where
+  initial := ()
+  tr _ _ _ _ _ := .step ⟨0, Fin.elim0, none, none⟩ (fun _ => none) (fun _ => 0)
+
+example :
+    IsPPTWithAux encBits encBits
+      (fun a z =>
+        haltClosedMachine.runClosed (1 * ((encBits a).length + 1) ^ 1)
+          (encPair encBits encBits (a, z))) :=
+  IsPPTWithAux.of_machine haltClosedMachine 1 1
+
+example :
+    IsPPTOn (encPair encBits encBits) encBits
+      (fun (a, z) =>
+        haltClosedMachine.runClosed (1 * ((encBits a).length + 1) ^ 1)
+          (encPair encBits encBits (a, z))) :=
+  (IsPPTWithAux.of_machine (input := encBits) haltClosedMachine 1 1).isPPTOn
+
+example :
+    IsOraclePPTWithAux encBits encBits
+      (fun a z =>
+        haltOracleMachine.runOracle (1 * ((encBits a).length + 1) ^ 1)
+          (encPair encBits encBits (a, z))) :=
+  IsOraclePPTWithAux.of_machine haltOracleMachine 1 1
+
+example :
+    IsOraclePPTOn (encPair encBits encBits) encBits
+      (fun (a, z) =>
+        haltOracleMachine.runOracle (1 * ((encBits a).length + 1) ^ 1)
+          (encPair encBits encBits (a, z))) :=
+  (IsOraclePPTWithAux.of_machine (input := encBits) haltOracleMachine 1 1).isOraclePPTOn
+
+-- Unconditional non-vacuity of `UnboundedAuxiliaryInputZeroKnowledge` and
+-- `InstanceAuxiliaryInputZeroKnowledge` for `univZeroKnowledgeProof`.
+example : univZeroKnowledgeProof.UnboundedAuxiliaryInputZeroKnowledge :=
+  univZeroKnowledgeProof_auxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
+
+example : univZeroKnowledgeProof.InstanceAuxiliaryInputZeroKnowledge :=
+  univZeroKnowledgeProof_auxiliaryInputZeroKnowledge.instanceAuxiliaryInputZeroKnowledge
+
+-- Under `GMW.AdvicePRG`, the GMW `ThreeSAT` proof system satisfies both
+-- `UnboundedAuxiliaryInputZeroKnowledge` and Goldreich-style `InstanceAuxiliaryInputZeroKnowledge`.
+example {generator : List Bool → List Bool} {length : ℕ → ℕ}
+    (hG : PseudorandomGenerator generator length)
+    (hstretch : ∀ k, 3 * k + 1 ≤ length k)
+    (hAdv : GMW.AdvicePRG encCNF generator length) :
+    (hG.zeroKnowledgeProofThreeSAT hstretch).UnboundedAuxiliaryInputZeroKnowledge ∧
+      (hG.zeroKnowledgeProofThreeSAT hstretch).InstanceAuxiliaryInputZeroKnowledge :=
+  let hzk := hG.auxiliaryInputZeroKnowledge_zeroKnowledgeProofThreeSAT hstretch hAdv
+  ⟨hzk.unboundedAuxiliaryInputZeroKnowledge, hzk.instanceAuxiliaryInputZeroKnowledge⟩
 
 end ComplexityTests.Crypto.ZeroKnowledge
