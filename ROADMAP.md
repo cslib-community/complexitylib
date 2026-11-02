@@ -42,7 +42,6 @@ Priorities live in this list and in the tiers of [#897].
 7. [The Kabanets–Impagliazzo theorem](#circuits-and-algebraic-complexity) ([#891])
 8. [MIP = NEXP](#interactive-proofs) ([#892])
 9. [Regev's worst-case to average-case reduction](#cryptographic-landmarks)
-10. [The Immerman–Vardi theorem](#descriptive-complexity-and-first-order-reductions)
 
 ## Cryptography
 
@@ -186,6 +185,12 @@ index links to canonical definitions rather than keeping a second set.
   machine's own steps, noninteger polynomial degrees, a word-RAM hierarchy by direct
   diagonalization with a smaller gap, and sharp nondeterministic and alternating time
   hierarchies with certified simulators.
+- **Probabilistic time hierarchies** ([#2084]): the hierarchy for promise problems
+  (`PromiseBPTIME`), by delayed diagonalization following He (ECCC TR25-004), and the
+  one-bit-advice hierarchy for languages of van Melkebeek and Pervyshev. `PromiseBPTIME` and its
+  explicit-time sample-and-verify characterization are in place (`Classes/Promise/Time` and
+  `Classes/Promise/Time/Verifier`). The advice-free hierarchy for `BPTIME` itself is open and is
+  not a target.
 - The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
   its input.
 - **Space:** Savitch bounds for general space-constructible functions.
@@ -302,12 +307,8 @@ universe size, not supplied as unverified input tables. In dependency order:
   domain need not be first-order definable.
 - Order-free: SAT-to-3SAT, graph-property hardness, and bridges to the separately encoded
   problems.
-- **The Immerman–Vardi theorem:** on ordered finite structures, first-order logic with least
-  fixed points defines exactly the polynomial-time properties, with the machine side proved for
-  actual native algorithms in both directions. Build on the scoped FO(LFP) syntax and finite-stage
-  semantics: certify a fixed-formula evaluator with explicitly charged relation tables, then prove
-  the native-machine-to-positive-LFP converse. Extend the synthesis rules to nested operator bodies
-  and give regular-language quantifiers their ordered characteristic-word semantics.
+- Extend the synthesis rules to nested operator bodies and give regular-language quantifiers
+  their ordered characteristic-word semantics.
 - Further logical characterizations on ordered structures: FO(TC) = NL and FO(DTC) = L,
   SO-Horn = P (Grädel), and DLOGTIME-uniform AC⁰ = FO(≤, BIT) (Barrington–Immerman–Straubing);
   then order-invariant and fixed-point queries and uniform translations between syntax,
@@ -375,9 +376,14 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Circuit lower bounds from refuting ETH** ([#1539]): `E^NP ⊄ SIZE(O(n))`, and a language in
   `E^NP` whose fan-in-two circuits need more than `c n √log n` gates infinitely often, by
   Williams's witness-circuit argument with the library's #CircuitSAT counters. `E^NP` is defined,
-  and the witness bits of formulas prepared in time `2^O(n)` are in `E^NP`; still open are an
-  exponential nondeterministic time separation, a succinct tableau reduction with a linear-size
-  decoder, and the core theorem.
+  and the witness bits of formulas prepared in time `2^O(n)` are in `E^NP`.
+  `FineGrained.CircuitLowerBoundBudget` proves the counter's quantitative budget for three
+  circuits of size `n √⌊log₂(n+2)⌋ / (12(A+1))` plus linear overhead; the integer arithmetic,
+  polynomial-time computation of this size cap, and rescaling to coefficient
+  `1 / (24(A+1)d)` at framed lengths `d n` are checked. The exponential nondeterministic time
+  hierarchy has landed. Still open are connecting its separating language to the framed witness
+  preparation, uniformly constructing the linear-size decoder and checker, and completing the
+  nondeterministic simulation for the full separation theorem.
 - Uniform and nonuniform NC, AC and TC, circuit-to-machine bridges, algorithm-to-lower-bound
   arguments, and barriers such as natural proofs and algebrization. NC simulation of unrestricted
   `TCⁱ` needs Muroga's threshold weight-bounding theorem.
@@ -616,12 +622,39 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   expected-time rules for unbounded almost-surely terminating structured loops; random-tape
   equivalence and BPP/RP/ZPP simulation bridges for the randomized word RAM ([#1124]); transfer
   of cell-probe lower bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
-- **Direct 3SUM adaptation** ([#1394]): global parameter and prime selection, including the
-  native cyclic-Strassen modular counter ([#1701]); unrestricted small geometry; the aggregate
+- **Direct 3SUM adaptation** ([#1394]): global parameter/asymptotic composition, using the concrete
+  native cyclic-Strassen counter ([#1701]), minimum-count selector ([#2098]) and conservative
+  computed dyadic parameters ([#2127]); unrestricted small geometry; the aggregate
   subcubic Exact Triangle bound and source exponent; and the unconditional ordinary-3SUM
   input/time/width/asymptotic composition, including the improved Section 4 route to exponent
   1.9992. These build on the native Chan–He preprocessing, queried thin products, fixed-prime
-  Exact Triangle solving and the conditional Convolution-3SUM host.
+  Exact Triangle solving and the conditional Convolution-3SUM host. The counter computes its
+  own residues, padding/table, seven-product recursion and exact raw modular count, within
+  `3704*(p+1)²*(n+1)^2.81` instructions including halt. Its source-regime admission and
+  width-independent prefix bounds are proved. The selector computes the actual attained window
+  minimum with native trial division and real counter calls, preserving the explicit window
+  cost factor. The dyadic parameter kernel computes geometry-compatible values and explicitly
+  classifies the small regime; it does not prove the tuned aggregate exponent or dispatch a solver.
+  Remaining are native fast/small solver assembly ([#2146]), global asymptotic composition
+  using the component-cost bridge ([#2145]), outer-host execution and the full endpoint.
+- **Memory-oracle realization** ([#2205], [#2213]): the foundational graded kernel certifies
+  all four memory queries, register-word glue, native branches and binds with one fixed
+  continuation emitter for all runtime replies. Its functional representation retains the
+  complete memory and frontier, and its instruction currency adds local work to memory charges.
+  Bounded runtime loops also charge local computation and every iteration, including query-free
+  iterations. Fixed flat programs include the actual input-installation prefix and final halt,
+  with explicit input layout, fits and safe-domain hypotheses. A separate operation-level
+  memory implementation exposes body-only costs under delivered arguments. Existing framed
+  Word-RAM certificates can be derived from semantic modules after discharging their local
+  initialization, footprint and ABI conditions; a one-cell ADT checks that boundary. Multiword
+  glue preserves full-word Option payloads, and the actual memory-stack size/push/pop methods
+  have uniform native certificates over runtime layouts, with local work 0/10/19. The stack is
+  migrated: `Stack.Native` and `Stack.Controller` replace its hand-stepped dispatcher, which
+  remains only as the stepped component of Chan–He traversal (`Traversal.WordStack`). Backends of
+  framed refinements export their frame (`modifies`, `frame`), run products over one memory,
+  and allocate from arbitrary memory through `Memory.Allocator` (`Backend.Allocation`); the stack
+  and a pair of stacks check all three. Remaining: the queue and binary-heap migrations onto them,
+  and the full C2/M1b objective; arbitrary host continuations do not acquire runtime bounds.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
@@ -631,7 +664,7 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   predecessor for van Emde Boas sets; and deallocation,
   shrinking and compiled client controllers for the doubling array.
 - **A typed-call evaluator** for fixed-program Word-RAM clients, returning the typed observation,
-  final state and halt-inclusive instruction cost, so the prefix-sum and stack clients no longer
+  final state and halt-inclusive instruction cost, so the prefix-sum clients no longer
   assemble preparation, evaluation and halt accounting by hand.
 - **Priority-queue and shortest-path consolidation** ([#949]): lift operation-count helpers
   (`numQueries`, `numInserts`, `numDecreaseKeys`, `numExtractMins`) to `IndexedMinPQ`, parameterize
@@ -689,8 +722,19 @@ and credited.
   `ContractionCounting.exists_modelCounter_fixedDensity` proves the fixed-density bound
   `2^{O_{k,D}(n / √log n)}` by tensor contraction (Theorem D.1 with `ℓ = 1`), and
   `DensityBranchCounting.exists_modelCounter` combines it with the interpolation-scale counter in
-  one machine. The arbitrary-density bound `2^{O_k(n log log n / √log n)}` still needs Theorem D.1
-  with truncation order `ℓ = n + 1` and Lemma D.2.
+  one machine. `CountingSimulation.truncEntryContractionAlgorithm` now supplies polynomial
+  truncation order and precision `O(s log s)`, with a linear vertex bound. The arbitrary-density
+  bound `2^{O_k(n log log n / √log n)}` still needs the Lemma D.2 construction and its native
+  application to this interface; #1538 remains open.
+- **Exact optimization and large weights:** `MaxSAT.exists_histogram_algorithm` and
+  `MaxSAT.exists_optimum_algorithm` compute the complete score distribution and optimum value in
+  contraction time measured by literal occurrences plus clauses. Their sparse fixed-width
+  specializations give `2^{O_{k,c}(n / √log n)}` time and polynomial space.
+  `BinaryWeights.certificate` contracts natural tensor tables exactly when their bit lengths are
+  polynomial in the structural size; `BinaryWeightedCounting.exists_partitionFunctionCounter`
+  supplies the native weighted-CSP application. Remaining extensions are native optimizing
+  assignment extraction and signed or rational weight interfaces. A variable-count rate for
+  dense exact MAX-SAT is not established by these results or by ordinary SAT sparsification.
 
 ## Documentation and repository
 
@@ -765,3 +809,10 @@ not planned, not as proved.
 [#2019]: https://github.com/cslib-community/complexitylib/issues/2019
 [#2062]: https://github.com/cslib-community/complexitylib/issues/2062
 [#2063]: https://github.com/cslib-community/complexitylib/issues/2063
+[#2205]: https://github.com/cslib-community/complexitylib/issues/2205
+[#2213]: https://github.com/cslib-community/complexitylib/issues/2213
+[#2098]: https://github.com/cslib-community/complexitylib/issues/2098
+[#2127]: https://github.com/cslib-community/complexitylib/issues/2127
+[#2145]: https://github.com/cslib-community/complexitylib/issues/2145
+[#2146]: https://github.com/cslib-community/complexitylib/issues/2146
+[#2084]: https://github.com/cslib-community/complexitylib/issues/2084

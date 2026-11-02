@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.Queue
+public import Complexity.DataStructure.Queue.Spec
 
 /-!
 # Queue substitution and resource contract tests
@@ -24,7 +24,7 @@ Recorded events describe operations and sizes; they are not measurements of runn
 
 namespace ComplexityTests.DataStructureQueue
 
-open Cslib.DataStructure Cslib.Algorithms.Lean.Queue
+open Cslib.DataStructure Cslib.DataStructure.Queue
 
 /-- Direct lists record the operation that was performed. -/
 def directExec : Execution (stackPair Nat) (List Nat × List Nat) (stackPair Nat).Op :=
@@ -247,28 +247,28 @@ info: 'Cslib.DataStructure.link_exec_decompose' depends on axioms:
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.DataStructure.link_exec_decompose
 /--
-info: 'Cslib.Algorithms.Lean.Queue.implementation' depends on axioms:
+info: 'Cslib.DataStructure.Queue.implementation' depends on axioms:
 [propext, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Algorithms.Lean.Queue.implementation
+#print axioms Cslib.DataStructure.Queue.implementation
 /--
-info: 'Cslib.Algorithms.Lean.Queue.potential_step' depends on axioms:
+info: 'Cslib.DataStructure.Queue.potential_step' depends on axioms:
 [propext, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Algorithms.Lean.Queue.potential_step
+#print axioms Cslib.DataStructure.Queue.potential_step
 /--
-info: 'Cslib.Algorithms.Lean.Queue.realized_client' depends on axioms:
+info: 'Cslib.DataStructure.Queue.realized_client' depends on axioms:
 [propext, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Algorithms.Lean.Queue.realized_client
+#print axioms Cslib.DataStructure.Queue.realized_client
 /--
-info: 'Cslib.Algorithms.Lean.Queue.realized_client_bound' depends on axioms:
+info: 'Cslib.DataStructure.Queue.realized_client_bound' depends on axioms:
 [propext, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Algorithms.Lean.Queue.realized_client_bound
+#print axioms Cslib.DataStructure.Queue.realized_client_bound
 
 end ComplexityTests.DataStructureQueue

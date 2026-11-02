@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (test driver)
 
-public import Complexity.Foundations.Data.OrderedSet.ExtractMin
+public import Complexity.DataStructure.OrderedSet.ExtractMin
 
 /-!
 # Representation-independent ordered-set clients
@@ -20,7 +20,7 @@ implementation or any cost theorem.
 
 @[expose] public section
 
-namespace Cslib.OrderedSet
+namespace Cslib.DataStructure.OrderedSet
 
 open Cslib.DataStructure
 
@@ -58,11 +58,11 @@ theorem firstTwo_run (s : Finset α) :
   simp only [firstTwo, StateTransitionSpec.runClient_liftBind, spec]
   cases least s <;> rfl
 
-end Cslib.OrderedSet
+end Cslib.DataStructure.OrderedSet
 
 namespace ComplexityTests.OrderedSet
 
-open Cslib.OrderedSet Cslib.DataStructure
+open Cslib.DataStructure.OrderedSet Cslib.DataStructure
 
 -- The absence contract is complete, including exhaustion above the largest key.
 example : LeastResult (∅ : Finset (Fin 3)) none := rfl

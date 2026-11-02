@@ -69,7 +69,7 @@ theorem IsOraclePPTOn.run_interpret_preprocess {Operation α β Caller State : T
         (stateEncoding result.2).length ≤ (stateEncoding state).length + resources a request.2) :
     IsPPTOn input (encPair output stateEncoding) (fun a =>
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n)) (handler a))
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n)) (handler a))
           (program (prepare a))).run (initial a)) := by
   refine ((hprogram.run_interpret_preprocess_open (External := Empty)
     (handler := fun a request state => ProbOracleComp.sample (handler a request state))

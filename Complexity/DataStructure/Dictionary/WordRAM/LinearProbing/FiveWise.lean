@@ -178,39 +178,6 @@ theorem tableSize_le_sixteen_mul (n_max : ℕ) : tableSize n_max ≤ 16 * max n_
 
 /-! ## Section 2: Fourth central moment under $5$-wise independence conditioned on $h_i(u) = b$ -/
 
-/-- Tuples of `n` elements of `S` with at most `m ≤ n` distinct entries factor through `Fin m`, so
-there are at most `m ^ n * #S ^ m` of them. -/
-private theorem card_filter_card_image_le {X : Type*} [DecidableEq X] (S : Finset X) {m n : ℕ}
-    (hmn : m ≤ n) :
-    #{t ∈ piFinset fun _ : Fin n => S | #(univ.image t) ≤ m} ≤ m ^ n * #S ^ m := by
-  classical
-  calc #{t ∈ piFinset fun _ : Fin n => S | #(univ.image t) ≤ m}
-      ≤ #(((piFinset fun _ : Fin n => (univ : Finset (Fin m))) ×ˢ
-          (piFinset fun _ : Fin m => S)).image fun q => q.2 ∘ q.1) := by
-        refine card_le_card fun t ht => ?_
-        rw [mem_filter, mem_piFinset] at ht
-        obtain ⟨htS, hcard⟩ := ht
-        set I := univ.image t
-        let e := I.equivFin
-        have hmem (j : Fin n) : t j ∈ I := mem_image_of_mem t (mem_univ j)
-        let v (r : Fin m) : X := if hr : r.1 < #I then (e.symm ⟨r, hr⟩).1 else
-          t ⟨0, lt_of_lt_of_le (Nat.zero_lt_of_lt r.2) hmn⟩
-        refine mem_image.2 ⟨(fun j => Fin.castLE hcard (e ⟨t j, hmem j⟩), v), ?_, ?_⟩
-        · refine mem_product.2 ⟨by simp, mem_piFinset.2 fun r => ?_⟩
-          by_cases hr : r.1 < #I
-          · obtain ⟨j, -, hj⟩ := mem_image.1 (e.symm ⟨r, hr⟩).2
-            simp only [v, hr, ↓reduceDIte, ← hj]
-            exact htS j
-          · simp only [v, hr, ↓reduceDIte]
-            exact htS _
-        · funext j
-          have hlt : (Fin.castLE hcard (e ⟨t j, hmem j⟩)).1 < #I := (e ⟨t j, hmem j⟩).2
-          simp only [Function.comp_apply, v, hlt, ↓reduceDIte]
-          have : (⟨(Fin.castLE hcard (e ⟨t j, hmem j⟩)).1, hlt⟩ : Fin #I) = e ⟨t j, hmem j⟩ :=
-            Fin.ext rfl
-          rw [this, Equiv.symm_apply_apply]
-    _ ≤ m ^ n * #S ^ m := card_image_le.trans (by simp [card_piFinset])
-
 /-- Centered indicator of a bucket subset `W ⊆ Y`: `1 - #W / |Y|` on `W` and `- #W / |Y|` outside
 `W`. -/
 @[expose] noncomputable def bucketCentered {Y : Type*} [Fintype Y] [DecidableEq Y]

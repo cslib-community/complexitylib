@@ -27,6 +27,7 @@ import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Algebra.Order.BigOperators.Group.List
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Size
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 
 /-!
 # Contracting an explicit tensor network by direct summation
@@ -212,17 +213,6 @@ private theorem vertices_polyTime :
   (ComputableInPolyTime.snd encUnary encVertices).comp
     (ComputableInPolyTime.of_eq (f := DescribedNetwork.equivProd) fun _ => rfl)
 
-/-- `2 ^ P` in binary from `P` in unary. -/
-private theorem twoPow_polyTime :
-    ComputableInPolyTime (fun P : ℕ => 2 ^ P) encUnary encNat :=
-  BooleanFold.clock.polyTime ⟨PolyBounded.self, PolyBounded.self⟩
-
-/-- A number below `2 ^ P` has at most `P` binary digits. -/
-private theorem length_encNat_le {x P : ℕ} (hx : x < 2 ^ P) : (encNat x).length ≤ P := by
-  change x.bits.length ≤ P
-  rw [Nat.size_eq_bits_len]
-  exact Nat.size_le.mpr hx
-
 /-- The weight of the current word modulo `2 ^ P` is computable in polynomial time. -/
 theorem weightMod_polyTime :
     ComputableInPolyTime (fun q : (ℕ × ExplicitTensorNetwork ℕ) × List Bool =>
@@ -230,7 +220,7 @@ theorem weightMod_polyTime :
   -- The modulus `2 ^ P`, the vertices and the word.
   have hP := (ComputableInPolyTime.fst encUnary encExplicitNetwork).comp
     (ComputableInPolyTime.fst (encPair encUnary encExplicitNetwork) encBits)
-  have hmod := twoPow_polyTime.comp hP
+  have hmod := ComputableInPolyTime.binary_two_pow.comp hP
   have hverts := vertices_polyTime.comp ((ComputableInPolyTime.snd encUnary encExplicitNetwork).comp
     (ComputableInPolyTime.fst (encPair encUnary encExplicitNetwork) encBits))
   have hinit : ComputableInPolyTime (fun q : (ℕ × ExplicitTensorNetwork ℕ) × List Bool =>
@@ -266,7 +256,8 @@ theorem weightMod_polyTime :
     (ComputableInPolyTime.bitsReverse.comp hbits)
   have hentry := ComputableInPolyTime.listGetD_binary (encA := encNat) (encL := encList encNat) 0
     htable hindex
-  have hstepMod := twoPow_polyTime.comp ((ComputableInPolyTime.fst encUnary encExplicitNetwork).comp
+  have hstepMod := ComputableInPolyTime.binary_two_pow.comp
+    ((ComputableInPolyTime.fst encUnary encExplicitNetwork).comp
     ((ComputableInPolyTime.fst (encPair encUnary encExplicitNetwork) encBits).comp hq))
   have hstep : ComputableInPolyTime
       (fun p : (((ℕ × ExplicitTensorNetwork ℕ) × List Bool) × ℕ) × (List ℕ × List ℕ) =>
@@ -284,7 +275,7 @@ theorem weightMod_polyTime :
     (growth := fun q => q.1.1)
     ⟨PolyBounded.of_forall_le 1 1 fun q => by
       simp only [length_encPair, encUnary_apply, List.length_replicate, pow_one, one_mul]; omega,
-      fun q acc v _ => (length_encNat_le (Nat.mod_lt _ (Nat.two_pow_pos _))).trans
+      fun q acc v _ => (length_encNat_le_of_lt_two_pow (Nat.mod_lt _ (Nat.two_pow_pos _))).trans
         (Nat.le_add_left _ _)⟩
   exact hfold
 
@@ -301,7 +292,7 @@ theorem sumStep_polyTime :
   have hword := (ComputableInPolyTime.snd encUnary encBits).comp
     (ComputableInPolyTime.fst (encPair encUnary encBits) encSumState)
   have hweight := weightMod_polyTime.comp (hpd.prod hword)
-  have hmod := twoPow_polyTime.comp
+  have hmod := ComputableInPolyTime.binary_two_pow.comp
     ((ComputableInPolyTime.fst encUnary encExplicitNetwork).comp hpd)
   have hsum := (ComputableInPolyTime.snd encNat encNat).comp
     (ComputableInPolyTime.binary_divMod.comp
@@ -357,7 +348,7 @@ private theorem length_runPrefix_sumStep_le (x : ℕ × ℕ × ExplicitTensorNet
       3 * (encContractionInput x).length := by
   obtain ⟨P, r, d⟩ := x
   rw [runPrefix_sumStep]
-  have h := length_encNat_le
+  have h := length_encNat_le_of_lt_two_pow
     (Nat.mod_lt (((List.range j).map (lowBits d.numEdges)).map (weightMod P d)).sum
       (Nat.two_pow_pos P))
   simp only [encContractionInput, length_encPair, encUnary_apply, List.length_replicate]

@@ -364,7 +364,7 @@ theorem ADCCA2AdversaryOf.IsPPT.query_bounds {Msg AD : Type} {encMsg : Msg ↪ L
       (∀ n pk (State : Type)
         (oracle : Unit × List Bool → StateT State PMF (List Bool)) s s' choice,
         (choice, s') ∈ ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m)) oracle)
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m)) oracle)
             (adversary.choose n pk)).run s).support →
         choice.2.length ≤ cs * (n + pk.length + 2) ^ ds) := by
   obtain ⟨c₁, d₁, hchoose⟩ := hA.choose.query_bounds
@@ -473,7 +473,7 @@ noncomputable def cca2ADGameOn {Msg AD Out : Type}
     (adversary : ADCCA2AdversaryOf Msg AD) (bit : Bool) (n : ℕ) : ProbComp Bool := do
   let keys ← keyGen n
   let choiceOut ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (cca2ADPhase1Oracle encOut decrypt n keys.2))
     (adversary.choose n keys.1)).run ()
   let choice := choiceOut.1
@@ -481,7 +481,7 @@ noncomputable def cca2ADGameOn {Msg AD Out : Type}
     let ct ← encrypt n keys.1 (if bit then csChoiceMsg₁ choice else csChoiceMsg₀ choice)
       (csChoiceAD choice)
     let guessOut ← (OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
         (cca2ADPhase2Oracle encOut decrypt n keys.2 ct (encAD (csChoiceAD choice))))
       (adversary.guess n (csChoiceState choice) ct)).run ()
     return guessOut.1
@@ -1608,7 +1608,7 @@ def HonestPhase2QueryBound (hasAD : Bool) {Msg AD : Type}
     (adversary : ADCCA2AdversaryOf Msg AD) (n Q₂ : ℕ) : Prop :=
   ∀ d ∈ (setup n).support, ∀ α β γ δ τ δ₁ δ₂ ξ : ZMod (F.order d),
     ∀ choiceOut ∈ (ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
         (fun req (s : Unit) =>
           pure (F.cramerShoupDHPhase1Reply hasAD H isElem d α δ δ₁ δ₂ req.2, s)))
       (adversary.choose n

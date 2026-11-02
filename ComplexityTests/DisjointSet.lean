@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (test driver)
 
-public import Complexity.Algorithms.Lean.DisjointSet.UnionFind
+public import Complexity.DataStructure.DisjointSet.UnionFind
 
 /-!
 # Worked disjoint-set and union-find examples
@@ -29,8 +29,8 @@ public section
 
 namespace ComplexityTests.DisjointSet
 
-open Cslib.Algorithms.Lean.DisjointSet
-open Cslib.Algorithms.Lean.DisjointSet.UnionFind
+open Cslib.DataStructure.DisjointSet
+open Cslib.DataStructure.DisjointSet.UnionFind
 open Cslib.DataStructure
 
 -- Empty and singleton universes are total and preserve component counts.
