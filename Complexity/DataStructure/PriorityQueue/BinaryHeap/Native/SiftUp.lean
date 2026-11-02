@@ -10,7 +10,7 @@ module
 public import Complexity.Computability.WordRAM.Realization.While
 public import Complexity.Computability.WordRAM.Realization.Reindex
 public import Complexity.Computability.WordRAM.Realization.Witness
-public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Memory
+public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.Encoding
 import Complexity.Tactic.Realize
 
 /-!
@@ -37,15 +37,13 @@ or machine semantics is redefined here.
 
 @[expose] public section
 
-namespace Cslib.WordRAM.Realization.BinaryHeapSiftUp
+namespace Cslib.DataStructure.PriorityQueue.BinaryHeap.Native.SiftUp
 
 open Cslib.DataStructure Cslib.DataStructure.Memory
+open Cslib.WordRAM Cslib.WordRAM.Realization
 open Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
 
 open Cslib.DataStructure.PriorityQueue
-
-/-- The existing dependent layout, including the runtime number of handles. -/
-abbrev HeapLayout := Σ n, BinaryHeap.Memory.Layout n
 
 /-- Four original reads, followed by the original swap or a stop index. The nested comparisons
 are the existing key-first, handle-tie priority relation spelled as native scalar conditions. -/
@@ -57,11 +55,11 @@ def step (d : (HeapLayout × Unit) × ℕ) : Memory.Prog ℕ := do
   let vp ← L.heap.get (k / 2)
   let kp ← L.key.get vp
   if kk < kp then do
-    BinaryHeap.Memory.swap L k (k / 2) vk vp
+    PriorityQueue.BinaryHeap.Memory.swap L k (k / 2) vk vp
     pure (k / 2)
   else if kk = kp then
     if vk < vp then do
-      BinaryHeap.Memory.swap L k (k / 2) vk vp
+      PriorityQueue.BinaryHeap.Memory.swap L k (k / 2) vk vp
       pure (k / 2)
     else pure 1
   else pure 1
@@ -76,7 +74,7 @@ theorem step_eq (d : (HeapLayout × Unit) × ℕ) :
       let vp ← L.heap.get (k / 2)
       let kp ← L.key.get vp
       if PriorityQueue.IndexedMinPQ.RawPrioLT (vk, kk) (vp, kp) then do
-        BinaryHeap.Memory.swap L k (k / 2) vk vp
+        PriorityQueue.BinaryHeap.Memory.swap L k (k / 2) vk vp
         pure (k / 2)
       else pure 1) := by
   unfold step
@@ -104,17 +102,17 @@ instance (d : HeapLayout × Unit) (k : ℕ) : Decidable (guard d k) :=
 theorem finish_loop_eq (d : HeapLayout × Unit) (fuel k : ℕ) (hf : Nat.log 2 k ≤ fuel) :
     (do
       let _ ← boundedWhile guard step d fuel k
-      pure ()) = BinaryHeap.Memory.siftUp d.1.2 k := by
+      pure ()) = PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 k := by
   induction fuel generalizing k with
   | zero =>
     have hk : ¬2 ≤ k := by
       intro hk
       have := Nat.log_of_one_lt_of_le one_lt_two hk
       omega
-    rw [BinaryHeap.Memory.siftUp, ite_eq_right hk]
+    rw [PriorityQueue.BinaryHeap.Memory.siftUp, ite_eq_right hk]
     rfl
   | succ fuel ih =>
-    rw [BinaryHeap.Memory.siftUp]
+    rw [PriorityQueue.BinaryHeap.Memory.siftUp]
     by_cases hk : 2 ≤ k
     · have hlog := Nat.log_of_one_lt_of_le one_lt_two hk
       simp only [boundedWhile, guard, hk, ↓reduceIte, step_eq, bind_assoc]
@@ -133,19 +131,6 @@ theorem finish_loop_eq (d : HeapLayout × Unit) (fuel k : ℕ) (hf : Nat.log 2 k
         exact ih (k / 2) (by omega)
       · simp only [pure_bind, boundedWhile_of_not guard step d fuel 1 (by change ¬(2 ≤ 1); omega)]
     · simp [boundedWhile, guard, hk]
-
-/-- The runtime layout has a faithful four-word representation. The source size field is
-retained even though this primitive touches only the key, heap and position arrays. -/
-def layoutWords : HeapLayout ↪ (Fin 4 → ℕ) where
-  toFun d := ![d.1, d.2.size.base, d.2.size.length, d.2.base]
-  inj' := by
-    rintro ⟨n, ⟨⟨b, l⟩, a⟩⟩ ⟨n', ⟨⟨b', l'⟩, a'⟩⟩ h
-    have hn : n = n' := by simpa using congrFun h 0
-    have hb : b = b' := by simpa using congrFun h 1
-    have hl : l = l' := by simpa using congrFun h 2
-    have ha : a = a' := by simpa using congrFun h 3
-    subst n'; subst b'; subst l'; subst a'
-    rfl
 
 /-- A certified constant-one register. The preparation rule below emits this value; it is
 not a preinstalled or free host argument to the native loop. -/
@@ -172,14 +157,14 @@ theorem step_triple {w : ℕ} {d : HeapLayout × Unit} {k : ℕ} {s : Memory.Sta
   have hlog := Nat.log_of_one_lt_of_le one_lt_two hk
   rw [step_eq]
   dsimp only
-  refine Triple.read_bind (BinaryHeap.Memory.heap_lt hA (by omega)) <|
-    Triple.read_bind (BinaryHeap.Memory.key_lt hA hvk) <|
-    Triple.read_bind (BinaryHeap.Memory.heap_lt hA (by omega)) <|
-    Triple.read_bind (BinaryHeap.Memory.key_lt hA hvp) ?_
+  refine Triple.read_bind (PriorityQueue.BinaryHeap.Memory.heap_lt hA (by omega)) <|
+    Triple.read_bind (PriorityQueue.BinaryHeap.Memory.key_lt hA hvk) <|
+    Triple.read_bind (PriorityQueue.BinaryHeap.Memory.heap_lt hA (by omega)) <|
+    Triple.read_bind (PriorityQueue.BinaryHeap.Memory.key_lt hA hvp) ?_
   split
   · obtain ⟨hshape', -, -, -, -, -⟩ :=
       hshape.swap (a := k) (b := k / 2) hk1 hkS (by omega) (by omega) (by omega)
-    refine BinaryHeap.Memory.swap_bind hn hA (by omega) (by omega) hvk hvp <|
+    refine PriorityQueue.BinaryHeap.Memory.swap_bind hn hA (by omega) (by omega) hvk hvp <|
       Triple.pure ?_
     exact ⟨⟨hn, hA, S, by omega, by omega, hshape'⟩, by omega⟩
   · exact Triple.pure ⟨⟨hn, hA, S, by omega, by omega, hshape⟩, by simp; omega⟩
@@ -204,7 +189,7 @@ theorem loop_currency_le {w : ℕ} {d : HeapLayout × Unit} {k fuel : ℕ} {s : 
       StateTransitionSpec.runClient_lift_bind', StateTransitionSpec.totalCost_cons,
       StateTransitionSpec.stepFn, Memory.step, Memory.charge]
     split_ifs with hlt <;>
-      simp only [hlt, ↓reduceIte, BinaryHeap.Memory.swap,
+      simp only [hlt, ↓reduceIte, PriorityQueue.BinaryHeap.Memory.swap,
         ← PFunctor.FreeM.bind_eq_bind, StateTransitionSpec.runClient_bind,
         StateTransitionSpec.runClient_lift, StateTransitionSpec.runClient_pure',
         StateTransitionSpec.totalCost, StateTransitionSpec.stepFn, Memory.step, Memory.charge,
@@ -228,11 +213,11 @@ theorem realizes_step :
     first
     | omega
     | exact hn.of_le (by omega)
-    | exact hmem.fits_of_lt_frontier (BinaryHeap.Memory.heap_lt hA (by omega))
-    | exact hmem.fits_of_lt_frontier (BinaryHeap.Memory.key_lt hA hvk)
-    | exact hmem.fits_of_lt_frontier (BinaryHeap.Memory.key_lt hA hvp)
-    | exact hmem.fits_of_lt_frontier (BinaryHeap.Memory.pos_lt hA hvk)
-    | exact hmem.fits_of_lt_frontier (BinaryHeap.Memory.pos_lt hA hvp)
+    | exact hmem.fits_of_lt_frontier (PriorityQueue.BinaryHeap.Memory.heap_lt hA (by omega))
+    | exact hmem.fits_of_lt_frontier (PriorityQueue.BinaryHeap.Memory.key_lt hA hvk)
+    | exact hmem.fits_of_lt_frontier (PriorityQueue.BinaryHeap.Memory.key_lt hA hvp)
+    | exact hmem.fits_of_lt_frontier (PriorityQueue.BinaryHeap.Memory.pos_lt hA hvk)
+    | exact hmem.fits_of_lt_frontier (PriorityQueue.BinaryHeap.Memory.pos_lt hA hvp)
 
 /-- The actual index guard selects a native early exit; the logarithmic cutoff is proof data.
 No register contains a fuel counter or a computed logarithm. -/
@@ -260,9 +245,6 @@ theorem realizes_loop :
       exact ⟨⟨hg, hi⟩, hp⟩)
   exact h.consequence (fun _ _ _ _ _ hi => ⟨hi, le_rfl⟩) (fun _ _ => le_rfl)
 
-/-- Faithful runtime layout and initial sift position. -/
-abbrev argumentWords := appendWords layoutWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
-
 /-- Actual reached loop controls, plus two binds. Constant preparation and the Unit return are
 certified native glue, absorbed into the same fixed exchange factor. -/
 def localWork (d : HeapLayout × ℕ) (s : Memory.State) : ℕ :=
@@ -271,24 +253,25 @@ def localWork (d : HeapLayout × ℕ) (s : Memory.State) : ℕ :=
 /-- Realize the original sift-up, with one emitter before all runtime layouts, indices, memory
 contents and widths. Constant-one preparation and loop/finish composition use shared rules. -/
 theorem realizes_siftUp :
-    Realizes .exact (fun d : HeapLayout × ℕ => BinaryHeap.Memory.siftUp d.1.2 d.2)
-      argumentWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
+    Realizes .exact (fun d : HeapLayout × ℕ => PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 d.2)
+      indexWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
       (fun w d s => Shape w (d.1, ()) d.2 s) localWork := by
   have hprepare : Realizes .exact (fun _ : HeapLayout × ℕ => pure ())
-      argumentWords oneWords (fun w d s => Shape w (d.1, ()) d.2 s) (fun _ _ => 0) := by
+      indexWords oneWords (fun w d s => Shape w (d.1, ()) d.2 s) (fun _ _ => 0) := by
     realize
     obtain ⟨hn, _, S, hk, hkS, hshape⟩ := h
     exact hn.of_le (hk.trans (hkS.trans hshape.size_le))
   have hloop := realizes_loop.reindex
     (fun e : (HeapLayout × ℕ) × Unit => ((e.1.1, e.2), e.1.2))
-    (appendWords argumentWords oneWords) ![0, 1, 2, 3, 5, 4]
+    (appendWords indexWords oneWords) ![0, 1, 2, 3, 5, 4]
     (by intro e i; fin_cases i <;> rfl)
   have hfinish : Realizes .exact (fun _ : (HeapLayout × ℕ) × ℕ => pure ())
-      (appendWords argumentWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding)
+      (appendWords indexWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding)
       (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding (fun _ _ _ => True) (fun _ _ => 0) := by
     realize
   have h := (hprepare.bind hloop).bind hfinish
-  refine (h.congr (p' := fun d => BinaryHeap.Memory.siftUp d.1.2 d.2) ?_).consequence ?_ ?_
+  refine (h.congr (p' := fun d => PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 d.2)
+    ?_).consequence ?_ ?_
   · intro d
     simpa only [← PFunctor.FreeM.bind_eq_bind, PFunctor.FreeM.pure_bind] using
       finish_loop_eq (d.1, ()) (Nat.log 2 d.2) d.2 le_rfl
@@ -303,8 +286,8 @@ program's complete history, not an assumed cost of a different implementation. -
 theorem combined_le {w : ℕ} {d : HeapLayout × ℕ} {s : Memory.State}
     (hi : Shape w (d.1, ()) d.2 s)
     (hv : (Memory.spec w).ValidHistory s
-      ((Memory.spec w).clientHistory s (BinaryHeap.Memory.siftUp d.1.2 d.2))) :
-    memoryCost (BinaryHeap.Memory.siftUp d.1.2 d.2) s + localWork d s ≤
+      ((Memory.spec w).clientHistory s (PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 d.2))) :
+    memoryCost (PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 d.2) s + localWork d s ≤
       9 * Nat.log 2 d.2 + 2 := by
   have he := finish_loop_eq (d.1, ()) (Nat.log 2 d.2) d.2 le_rfl
   have hvalid : (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s
@@ -314,7 +297,7 @@ theorem combined_le {w : ℕ} {d : HeapLayout × ℕ} {s : Memory.State}
       simpa only [← PFunctor.FreeM.bind_eq_bind] using hv
   have hvloop := ((validHistory_bind w _ (fun _ => pure ()) s).mp hvalid).1
   have hp := loop_currency_le hi hvloop
-  have hm : memoryCost (BinaryHeap.Memory.siftUp d.1.2 d.2) s =
+  have hm : memoryCost (PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 d.2) s =
       memoryCost (boundedWhile guard step (d.1, ()) (Nat.log 2 d.2) d.2) s := by
     rw [← he]
     simp only [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind, memoryCost_pure, Nat.add_zero]
@@ -330,33 +313,35 @@ theorem exec_siftUp {r : ℕ} (frontier : Fin r) (src : Fin 5 → Fin r)
     (tmp : Fin (0 + realizes_siftUp.scratchSize + 1) → Fin r)
     (hi : Function.Injective tmp) (hd : ∀ i j, src i ≠ tmp j)
     (hf : ∀ j, tmp j ≠ frontier) (hs : ∀ i, src i ≠ frontier)
-    {w n S k : ℕ} (L : BinaryHeap.Memory.Layout n) (x : Data r)
-    (hx : x.Bounded w) (hin : x.regs ∘ src = argumentWords (⟨n, L⟩, k))
+    {w n S k : ℕ} (L : PriorityQueue.BinaryHeap.Memory.Layout n) (x : Data r)
+    (hx : x.Bounded w) (hin : x.regs ∘ src = indexWords (⟨n, L⟩, k))
     (hA : L.arrays.Allocated (memoryState frontier x)) (hk : 1 ≤ k) (hkS : k ≤ S)
     (hshape : HeapShape n L.base S x.mem) (hord : UpOrdered (heapEntry n L.base x.mem) S k) :
     ∃ y, ExecWithin w (realizes_siftUp.code frontier src tmp) x y
         (9 * realizes_siftUp.factor * (Nat.log 2 n + 1)) ∧
       memoryState frontier y =
-        (Memory.spec w).clientState (memoryState frontier x) (BinaryHeap.Memory.siftUp L k) ∧
+        (Memory.spec w).clientState (memoryState frontier x)
+          (PriorityQueue.BinaryHeap.Memory.siftUp L k) ∧
       HeapInv n L.base S y.mem ∧
-      BinaryHeap.Memory.Rearranges L (memoryState frontier x) (memoryState frontier y) ∧
+      PriorityQueue.BinaryHeap.Memory.Rearranges L
+        (memoryState frontier x) (memoryState frontier y) ∧
       ∀ i, i ≠ frontier → (∀ j, tmp j ≠ i) → y.regs i = x.regs i := by
   have hn : Fits w n := by
     have h : Fits w ((x.regs ∘ src) 0) := hx.1 (src 0)
     rw [hin] at h
     exact h
   obtain ⟨hv, _, hpost⟩ := triple_iff.mp
-    (BinaryHeap.Memory.siftUp_triple hn hA hk hkS hshape hord)
+    (PriorityQueue.BinaryHeap.Memory.siftUp_triple hn hA hk hkS hshape hord)
   have hI : Shape w ((⟨n, L⟩ : HeapLayout), ()) k (memoryState frontier x) :=
     ⟨hn, hA, S, hk, hkS, hshape⟩
   obtain ⟨y, hy, hm, _, hframe⟩ :=
     (realizes_siftUp.code_spec frontier src tmp hi hd hf hs).2 w (⟨n, L⟩, k) x hx hin hI hv
   have hc := combined_le (d := (⟨n, L⟩, k)) hI hv
-  change memoryCost (BinaryHeap.Memory.siftUp L k) (memoryState frontier x) +
+  change memoryCost (PriorityQueue.BinaryHeap.Memory.siftUp L k) (memoryState frontier x) +
     localWork (⟨n, L⟩, k) (memoryState frontier x) ≤ 9 * Nat.log 2 k + 2 at hc
   have hlog := Nat.log_mono_right (b := 2) (hkS.trans hshape.size_le)
   have hbound : realizes_siftUp.factor *
-      (memoryCost (BinaryHeap.Memory.siftUp L k) (memoryState frontier x) +
+      (memoryCost (PriorityQueue.BinaryHeap.Memory.siftUp L k) (memoryState frontier x) +
         localWork (⟨n, L⟩, k) (memoryState frontier x) + 1) ≤
       9 * realizes_siftUp.factor * (Nat.log 2 n + 1) := by
     calc
@@ -366,4 +351,4 @@ theorem exec_siftUp {r : ℕ} (frontier : Fin r) (src : Fin 5 → Fin r)
   rw [← hm] at hpost
   exact ⟨y, hy.mono hbound, hm, hpost.1, hpost.2, hframe⟩
 
-end Cslib.WordRAM.Realization.BinaryHeapSiftUp
+end Cslib.DataStructure.PriorityQueue.BinaryHeap.Native.SiftUp

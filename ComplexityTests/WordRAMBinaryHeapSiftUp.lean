@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Computability.WordRAM.Realization.Client.BinaryHeapSiftUp
+import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.SiftUp
 import Mathlib.Tactic.IntervalCases
 
 /-! A real two-level sift at maximum fitting key 15, a no-swap/root exit, and a key-tie swap.
@@ -13,11 +13,18 @@ No native instruction or algorithm-specific register-frame proof is supplied by 
 
 namespace ComplexityTests.WordRAMBinaryHeapSiftUp
 
-open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.WordRAM.Realization.BinaryHeapSiftUp
+open Cslib.WordRAM Cslib.WordRAM.Realization
+open Cslib.DataStructure.PriorityQueue.BinaryHeap.Native
+open Cslib.DataStructure.PriorityQueue.BinaryHeap.Native.SiftUp
 open Cslib.DataStructure Cslib.DataStructure.Memory Cslib.DataStructure.PriorityQueue
 open Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
 
 private def layout : BinaryHeap.Memory.Layout 4 := ⟨⟨0, 1⟩, 1⟩
+
+-- The typed handle uses its actual word, without a successor sentinel or extra fit premise.
+example : handleWords ⟨4, layout, 3⟩ = ![4, 0, 1, 1, 3] := by
+  funext i
+  fin_cases i <;> rfl
 
 private def mem (low : Bool) (a : ℕ) : ℕ :=
   if a = 100 then 7
@@ -96,7 +103,7 @@ private def src (i : Fin 5) : Fin regs := (Fin.castAdd bankSize i).castSucc
 private def tmp (i : Fin bankSize) : Fin regs := (Fin.natAdd 5 i).castSucc
 
 private def packed (s : Memory.State) (k : ℕ) : Data regs :=
-  ⟨Fin.lastCases s.frontier (Fin.append (argumentWords (⟨4, layout⟩, k)) (fun _ => 0)), s.mem⟩
+  ⟨Fin.lastCases s.frontier (Fin.append (indexWords (⟨4, layout⟩, k)) (fun _ => 0)), s.mem⟩
 
 private theorem tmp_injective : Function.Injective tmp := by
   intro i j h
@@ -123,7 +130,7 @@ private theorem src_frontier : ∀ i, src i ≠ frontier := by
   omega
 
 private theorem packed_input (s : Memory.State) (k : ℕ) :
-    (packed s k).regs ∘ src = argumentWords (⟨4, layout⟩, k) := by
+    (packed s k).regs ∘ src = indexWords (⟨4, layout⟩, k) := by
   funext i
   simp [packed, src]
 
