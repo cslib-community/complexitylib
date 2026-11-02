@@ -67,10 +67,10 @@ def IsOraclePPTOn {Operation α β : Type} [DecidableEq Operation]
     (machine : Turing.MultiTapePTM k Bool Control Operation) (c d : ℕ),
     ∀ a (State : Type) (oracle : Operation × List Bool → StateT State PMF (List Bool)) s,
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (output <$> program a)).run s =
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (machine.runOracle (c * ((input a).length + 1) ^ d) (input a))).run s
 
 namespace IsOraclePPTOn
@@ -97,10 +97,10 @@ theorem congr {program program' : α → WordOracleComp Operation β}
     (h : IsOraclePPTOn input output program)
     (heq : ∀ a (State : Type) (oracle : Operation × List Bool → StateT State PMF (List Bool)) s,
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (program a)).run s =
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (program' a)).run s) : IsOraclePPTOn input output program' := by
   obtain ⟨hops, k, Control, hfinite, machine, c, d, h⟩ := h
   refine ⟨hops, k, Control, hfinite, machine, c, d, fun a State oracle s => ?_⟩
@@ -118,13 +118,13 @@ theorem length_le {program : α → WordOracleComp Operation β}
     ∃ c d : ℕ, ∀ a (State : Type)
       (oracle : Operation × List Bool → StateT State PMF (List Bool)) s s' result,
       (result, s') ∈ ((OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (program a)).run s).support →
       (output result).length ≤ c * ((input a).length + 1) ^ d := by
   obtain ⟨_, k, Control, _, machine, c, d, h⟩ := h
   refine ⟨c, d, fun a State oracle s s' result hresult => ?_⟩
   have hmap : (output result, s') ∈ ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
         (output <$> program a)).run s).support := by
     rw [OracleComp.interpret_map, StateT.run_map, PMF.monad_map_eq_map]
     exact (PMF.mem_support_map_iff _ _ _).mpr ⟨(result, s'), hresult, rfl⟩
