@@ -381,23 +381,22 @@ theorem indexed_indistinguishable {κ : Type} {encContext : κ ↪ List Bool}
             (fun word => ProbComp.eval (adversary n (choose n) word)))
         ((uniformList (seedBits n + count n)).bind
           (fun word => ProbComp.eval (adversary n (choose n) word)))) := by
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hgenerator
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hseedBits
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hcount
   intro adversary hadversary
   let reduction := fun n context =>
     test (generator n context) (seedBits n) (count n) (adversary n context)
-  have hprepare : ComputableTidilyInPolyTime
+  have hprepare : ComputableInPolyTime
       (fun p : ((ℕ × κ) × List Bool) × List Bool => (p.1.1, p.2))
       (encPair (encPair (encPair encUnary encContext) encBits) encBits)
       (encPair (encPair encUnary encContext) encBits) := by fun_prop
+  have hparameter : ComputableInPolyTime (fun p : (ℕ × κ) × List Bool => p.1.1)
+      (encPair (encPair encUnary encContext) encBits) encUnary := by fun_prop
   have hreduce : IsPPTOn (encPair (encPair encUnary encContext) encBits)
       encBool (fun ((n, context), word) => reduction n context word) := by
     unfold reduction
-    exact isPPT_test (.of_tidy (hgenerator.comp hprepare)) (.of_tidy (by polytime))
-      (.of_tidy (by polytime))
-      (hadversary.preprocess (.of_tidy hprepare)) (.of_tidy (by polytime))
-  have h := (hsecure reduction hreduce).polynomiallyBounded_mul (loss_polynomial (.of_tidy hcount))
+    exact isPPT_test (hgenerator.comp hprepare) (hseedBits.comp hparameter)
+      (hcount.comp hparameter) (hadversary.preprocess hprepare)
+      (ComputableInPolyTime.snd _ _)
+  have h := (hsecure reduction hreduce).polynomiallyBounded_mul (loss_polynomial hcount)
   exact h.congr' (Filter.Eventually.of_forall (fun n => (test_advantage_eq _ _ _ _).symm))
 
 /-- **Polynomially many seed expansions, relative to fixed advice.** If a generator's output is
@@ -461,7 +460,7 @@ theorem nonuniformPRG {generator : List Bool → List Bool} {count : ℕ → ℕ
     (hpositive : ∀ n, 0 < count n) :
     NonuniformPRG (stretch generator count) (fun n => n + count n) where
   polyTime := polyTime_stretch hgenerator.polyTime hcount
-  length_eq seed := length_iterate hgenerator.length_eq _ _ _
+  length_eq _ := length_iterate hgenerator.length_eq _ _ _
   stretch n := Nat.lt_add_of_pos_right (hpositive n)
   secure advice hadvice :=
     indistinguishableWithAdvice hgenerator.polyTime hcount (hgenerator.secure advice hadvice)
@@ -512,9 +511,8 @@ theorem NonuniformPRG.amplify {generator : List Bool → List Bool}
     (target : ℕ → ℕ) (htarget : ComputableInPolyTime target encUnary encUnary)
     (hstretch : ∀ n, n < target n) :
     NonuniformPRG (PRGStretch.stretch generator (fun n => target n - n)) target := by
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at htarget
-  have hcount : ComputableTidilyInPolyTime (fun n => target n - n) encUnary encUnary := by polytime
-  have h := PRGStretch.nonuniformPRG hgenerator (.of_tidy hcount) (fun n => by
+  have hcount : ComputableInPolyTime (fun n => target n - n) encUnary encUnary := by fun_prop
+  have h := PRGStretch.nonuniformPRG hgenerator hcount (fun n => by
     have := hstretch n
     lia)
   convert h using 1
@@ -530,12 +528,11 @@ theorem NonuniformPRG.truncate {generator : List Bool → List Bool} {length : �
     (htarget : ComputableInPolyTime target encUnary encUnary)
     (hle : ∀ n, target n ≤ length n) (hstretch : ∀ n, n < target n) :
     NonuniformPRG (fun seed => (generator seed).take (target seed.length)) target := by
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at htarget
-  have hpoly := hgenerator.polyTime.tidy
-  refine ⟨.of_tidy (by polytime), fun seed => ?_, hstretch, fun advice hadvice => ?_⟩
+  have hpoly := hgenerator.polyTime
+  refine ⟨by fun_prop, fun seed => ?_, hstretch, fun advice hadvice => ?_⟩
   · simp only [List.length_take, hgenerator.length_eq, Nat.min_eq_left (hle _)]
   · have h := (hgenerator.secure advice hadvice).map
-      (f := fun n word => word.take (target n)) (by polytime)
+      (f := fun n word => word.take (target n)) (by fun_prop)
     simpa only [← generatorEnsemble_postprocess generator (fun n word => word.take (target n)),
       uniformList_take (hle _)] using h
 
