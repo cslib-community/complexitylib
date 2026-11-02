@@ -7,41 +7,36 @@ Authors: Renfei Zhou, Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Languages.Probabilistic.Semantics
-import Complexity.Probability.PMF.Event
+public import Complexity.Probability.PMF.Event
 
 /-!
-# Sequential success bounds for probabilistic programs
+# Retained success across two probabilistic branches
 
-A first program can establish success, and a second program can recover when the first fails.
-If each branch succeeds with probability at least `1 / s` on the inputs that need it, and later
-execution retains every first-branch success, the sequence succeeds with probability at least
-`2 / (s + 1)`. The second program may depend on the first result. Hypotheses apply only to
-possible outcomes, and no independence or finite output-type hypothesis is needed.
-
-These are bounds on the distributions denoted by terminating `ProbComp` programs. Runtime and
-oracle-query costs require separate certificates.
+A first branch may establish success; a conditional second branch may recover from its failure.
+If each relevant branch hits with probability at least `1 / s` and the second retains every
+first-branch success, the final hit probability is at least `2 / (s + 1)`. The continuation may
+depend on the first outcome, so no independence or finite ambient type is assumed.
 
 ## Main results
 
-* `Cslib.ProbComp.two_branch_hit_prob_ge`: retained first-branch success and conditional recovery
-  give the two-branch success bound.
+* `two_branch_hit_prob_ge`: conditional recovery and retention give the two-branch recurrence.
+* `one_sub_sq_one_sub_inv_ge`: its elementary extended-nonnegative arithmetic inequality.
 
 ## References
 
-The generic success rule is from Renfei Zhou's Karger–Stein development.
+Generalized from Renfei Zhou's Karger–Stein success rule over `ProbComp`. Runtime and query
+budgets are separate execution obligations.
 -/
 
 @[expose] public section
 
-namespace Cslib.ProbComp
+namespace Cslib.Probability.PMF
 
 open scoped ENNReal
-open Cslib.Probability.PMF
 
 /-- Elementary recurrence `2 / (s + 1) ≤ 1 - (1 - 1 / s) ^ 2` in `ℝ≥0∞` for `1 ≤ s`, derived from
 `(2 * s - 1) * (s + 1) = 2 * s ^ 2 + s - 1 ≥ 2 * s ^ 2`. -/
-private theorem one_sub_sq_one_sub_inv_ge {s : ℕ} (hs : 1 ≤ s) :
+theorem one_sub_sq_one_sub_inv_ge {s : ℕ} (hs : 1 ≤ s) :
     (2 : ℝ≥0∞) / ((s + 1 : ℕ) : ℝ≥0∞) ≤ 1 - (1 - (1 : ℝ≥0∞) / (s : ℝ≥0∞)) ^ 2 := by
   have hs0 : (s : ℝ≥0∞) ≠ 0 := by exact_mod_cast (by omega : s ≠ 0)
   have hst : (s : ℝ≥0∞) ≠ ⊤ := ENNReal.natCast_ne_top s
@@ -84,42 +79,34 @@ private theorem one_sub_sq_one_sub_inv_ge {s : ℕ} (hs : 1 ≤ s) :
     nlinarith
   exact_mod_cast hnat
 
-/-- Sequential two-branch success probability recurrence on `ProbComp`: if Branch 1 hits `hit₁`
-with probability `≥ 1 / s`, any outcome in `hit₁` guarantees `f a b ∈ hit` on every supported `b`,
-and conditioned on any outcome outside `hit₁` Branch 2 achieves `f a b ∈ hit` with probability
-`≥ 1 / s`, then the combined computation hits `hit` with probability `≥ 2 / (s + 1)`. -/
-theorem two_branch_hit_prob_ge {α β γ : Type} (m₁ : ProbComp α) (m₂ : α → ProbComp β)
+/-- If the first branch hits with probability at least `1 / s`, its hits are retained, and
+conditional recovery has the same lower bound on every supported miss, the two-stage result
+hits with probability at least `2 / (s + 1)`. -/
+theorem two_branch_hit_prob_ge {α β γ : Type*} (m₁ : PMF α) (m₂ : α → PMF β)
     (f : α → β → γ) (hit₁ : Set α) (hit : Set γ) {s : ℕ} (hs : 1 ≤ s)
-    (hb₁ : (1 : ℝ≥0∞) / (s : ℝ≥0∞) ≤ m₁.eval.toOuterMeasure hit₁)
+    (hb₁ : (1 : ℝ≥0∞) / (s : ℝ≥0∞) ≤ m₁.toOuterMeasure hit₁)
     (hprop₁ : ∀ a ∈ m₁.support, a ∈ hit₁ → ∀ b ∈ (m₂ a).support, f a b ∈ hit)
     (hb₂ : ∀ a ∈ m₁.support, a ∉ hit₁ →
-      (1 : ℝ≥0∞) / (s : ℝ≥0∞) ≤ ((m₂ a).eval.map (f a)).toOuterMeasure hit) :
+      (1 : ℝ≥0∞) / (s : ℝ≥0∞) ≤ ((m₂ a).map (f a)).toOuterMeasure hit) :
     (2 : ℝ≥0∞) / ((s + 1 : ℕ) : ℝ≥0∞) ≤
-      (do let a ← m₁; let b ← m₂ a; pure (f a b)).eval.toOuterMeasure hit := by
-  let p := (do let a ← m₁; let b ← m₂ a; pure (f a b)).eval
-  have hp_eq : p = m₁.eval.bind (fun a => (m₂ a).eval.map (f a)) := by
-    dsimp only [p]
-    rw [ProbComp.eval_bind]
-    refine congrArg (m₁.eval.bind ·) (funext fun a => ?_)
-    rw [bind_pure_comp, ProbComp.eval_map]
+      (m₁.bind fun a => (m₂ a).map (f a)).toOuterMeasure hit := by
+  let p := m₁.bind fun a => (m₂ a).map (f a)
   have hcompl_le : p.toOuterMeasure hitᶜ ≤ (1 - (1 : ℝ≥0∞) / (s : ℝ≥0∞)) ^ 2 := by
-    rw [hp_eq, sq]
-    refine toOuterMeasure_bind_le_mul_ennreal m₁.eval (fun a => (m₂ a).eval.map (f a))
-      hit₁ᶜ hitᶜ (toOuterMeasure_compl_le_one_sub m₁.eval hit₁ hb₁) ?_ ?_
-    · intro a ha_eval ha_miss
-      have ha : a ∈ m₁.support := (ProbComp.support_eval m₁) ▸ ha_eval
+    dsimp only [p]
+    rw [sq]
+    refine toOuterMeasure_bind_le_mul_ennreal m₁ (fun a => (m₂ a).map (f a))
+      hit₁ᶜ hitᶜ (toOuterMeasure_compl_le_one_sub m₁ hit₁ hb₁) ?_ ?_
+    · intro a ha ha_miss
       exact toOuterMeasure_compl_le_one_sub _ hit (hb₂ a ha ha_miss)
-    · intro a ha_eval ha_not_miss
-      have ha : a ∈ m₁.support := (ProbComp.support_eval m₁) ▸ ha_eval
+    · intro a ha ha_not_miss
       have ha_hit : a ∈ hit₁ := not_not.mp ha_not_miss
       rw [PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_apply]
       refine tsum_eq_zero_iff.mpr fun b => ?_
-      by_cases hb_eval : b ∈ (m₂ a).eval.support
-      · have hb : b ∈ (m₂ a).support := (ProbComp.support_eval (m₂ a)) ▸ hb_eval
-        have hmem : f a b ∈ hit := hprop₁ a ha ha_hit b hb
-        have hnot : b ∉ (f a ⁻¹' hitᶜ) := fun hc => hc hmem
+      by_cases hb : b ∈ (m₂ a).support
+      · have hmem : f a b ∈ hit := hprop₁ a ha ha_hit b hb
+        have hnot : b ∉ f a ⁻¹' hitᶜ := fun hc => hc hmem
         exact Set.indicator_of_notMem hnot _
-      · have hp0 : (m₂ a).eval b = 0 := by simpa only [PMF.mem_support_iff, not_not] using hb_eval
+      · have hp0 : m₂ a b = 0 := by simpa only [PMF.mem_support_iff, not_not] using hb
         simp [hp0]
   have hsum := toOuterMeasure_add_compl_ennreal p hit
   have hhit_ge : 1 - (1 - (1 : ℝ≥0∞) / (s : ℝ≥0∞)) ^ 2 ≤ p.toOuterMeasure hit := by
@@ -129,4 +116,4 @@ theorem two_branch_hit_prob_ge {α β γ : Type} (m₁ : ProbComp α) (m₂ : α
       _ ≤ p.toOuterMeasure hit + (1 - (1 : ℝ≥0∞) / (s : ℝ≥0∞)) ^ 2 := by gcongr
   exact (one_sub_sq_one_sub_inv_ge hs).trans hhit_ge
 
-end Cslib.ProbComp
+end Cslib.Probability.PMF

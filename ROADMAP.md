@@ -676,6 +676,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   initialization and adaptive-call bounds. Remaining are the binary-heap migration, the full
   framed queue/faithful-allocation client and generic stateful composition, and the full C2/M1b
   objective; arbitrary host continuations do not acquire runtime bounds.
+  The Karger–Stein specification bridge ([#2289]) gives the existing recursive native code the
+  exact answer law of its contraction-oracle client, preserving pathwise instruction/random-call
+  bounds, word fits and memory frames. Probability and amplification are proved at the
+  specification layer. This does not complete its memory-oracle native realization: the
+  randomized realization adapters, contraction implementation and recursive frame-stack
+  migration remain part of [#2205].
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
@@ -832,6 +838,7 @@ not planned, not as proved.
 [#2063]: https://github.com/cslib-community/complexitylib/issues/2063
 [#2205]: https://github.com/cslib-community/complexitylib/issues/2205
 [#2213]: https://github.com/cslib-community/complexitylib/issues/2213
+[#2289]: https://github.com/cslib-community/complexitylib/issues/2289
 [#2098]: https://github.com/cslib-community/complexitylib/issues/2098
 [#2127]: https://github.com/cslib-community/complexitylib/issues/2127
 [#2145]: https://github.com/cslib-community/complexitylib/issues/2145
