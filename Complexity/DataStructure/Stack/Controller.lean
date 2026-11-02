@@ -111,7 +111,7 @@ public theorem realizes_program : Realizes .exact program
       StateTransitionSpec.clientState, StateTransitionSpec.clientResult,
       Stack.Memory.runClient_push, Stack.Memory.runClient_pop_of_pos, Nat.zero_add,
       Nat.add_zero, Nat.sub_self, ne_eq, Nat.one_ne_zero, not_false_eq_true,
-      Function.update_self, optionWords_some, Matrix.cons_val_zero, Matrix.cons_val_one] at *
+      Function.update_self]
     first | exact le_rfl | exact h.of_le (by omega)
 
 /-- The abstract client is admissible when its two values fit. -/
