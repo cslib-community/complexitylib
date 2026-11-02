@@ -66,12 +66,13 @@ namespace Cslib.WordRAM.Realization.MemoryQueueAdapter
 
 open Cslib.DataStructure
 
-/-- The front count cell and item array, relative to the queue's runtime base. -/
-def frontLayout (base C : ℕ) : Stack.Memory.Layout := ⟨⟨base, 1⟩, ⟨base + 1, C⟩⟩
+/-- The existing front layout specialized to a runtime base. Only its frontier argument is read. -/
+abbrev frontLayout (base C : ℕ) : Stack.Memory.Layout :=
+  Queue.Memory.frontLayout (⟨fun _ => 0, base⟩ : Memory.State) C
 
-/-- The rear follows the complete front layout. -/
-def rearLayout (base C : ℕ) : Stack.Memory.Layout :=
-  ⟨⟨base + 1 + C, 1⟩, ⟨base + 1 + C + 1, C⟩⟩
+/-- The existing rear layout specialized to the same runtime base. -/
+abbrev rearLayout (base C : ℕ) : Stack.Memory.Layout :=
+  Queue.Memory.rearLayout (⟨fun _ => 0, base⟩ : Memory.State) C
 
 /-- The two count cells and two capacity-sized arrays. -/
 def space (C : ℕ) : ℕ := 2 * (C + 1)
@@ -82,11 +83,11 @@ theorem layouts_valid {w base C : ℕ} (hf : Fits w (base + space C)) :
       Disjoint (frontLayout base C).footprint (rearLayout base C).footprint := by
   have hC : Fits w C := hf.of_le (by unfold space; omega)
   refine ⟨⟨rfl, ?_, rfl, hC⟩, ⟨rfl, ?_, rfl, hC⟩, ?_⟩
-  · simp [frontLayout, Block.Owns]
-  · simp [rearLayout, Block.Owns]
+  · simp [Block.Owns]
+  · simp [Block.Owns]
   · rw [Finset.disjoint_left]
     intro a ha hb
-    simp only [Stack.Memory.Layout.footprint, frontLayout, rearLayout, Finset.mem_union,
+    simp only [Stack.Memory.Layout.footprint, Finset.mem_union,
       Block.mem_footprint, Block.Owns] at ha hb
     omega
 
@@ -95,7 +96,7 @@ theorem layouts_footprint (base C : ℕ) :
     (frontLayout base C).footprint ∪ (rearLayout base C).footprint =
       (Block.mk base (space C)).footprint := by
   ext a
-  simp only [Stack.Memory.Layout.footprint, frontLayout, rearLayout, Finset.mem_union,
+  simp only [Stack.Memory.Layout.footprint, Finset.mem_union,
     Block.mem_footprint, Block.Owns, space]
   omega
 
@@ -139,9 +140,9 @@ theorem empty_rep {w base C : ℕ} (hf : Fits w (base + space C)) (e : Memory.St
       rw [h₁]
       exact Nat.zero_le C
   have ha₀ : Stack.Memory.abs (frontLayout base C) e = [] := by
-    simp only [Stack.Memory.abs, frontLayout, h₀, Block.entries_zero, List.reverse_nil]
+    simp only [Stack.Memory.abs, h₀, Block.entries_zero, List.reverse_nil]
   have ha₁ : Stack.Memory.abs (rearLayout base C) e = [] := by
-    simp only [Stack.Memory.abs, rearLayout, h₁, Block.entries_zero, List.reverse_nil]
+    simp only [Stack.Memory.abs, h₁, Block.entries_zero, List.reverse_nil]
   change ((Stack.Memory.Inv (frontLayout base C) e ∧
     Stack.Memory.Inv (rearLayout base C) e) ∧
     Queue.Memory.Inv w C (Queue.WordRAM.contents
