@@ -1222,7 +1222,6 @@ public import Complexity.Computability.Complexity.Classes.CountingSimulation.Gua
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Interfaces
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Promise
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Separation
-public import Complexity.Computability.Complexity.Classes.CountingSimulation.TruncatedEntry
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.TruncatedBoundedDegree
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.TruncatedEntry
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.TruncatedSum
