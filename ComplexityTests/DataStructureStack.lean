@@ -29,10 +29,13 @@ def stackClient : (Stack.spec 4 2).Client (Option ℕ × ℕ) :=
 /-- The native stack runs the client from the initial state, one operation at a time: it pops
 the pushed value, ends empty, and spends at most the constant `K` on each of its four calls. -/
 example : ∃ K, ∃ y traces,
-    Executes (Stack.Native.exec 4 2) stackClient (Stack.Native.initial 3 2) (some 7, 0) y traces ∧
-      Stack.Native.Rep 4 2 (Stack.Native.initialLayout 3 2) [] y ∧ total id traces ≤ 4 * K := by
+    Executes ((Stack.Native.backend 4 2 (Stack.Native.initialLayout 3 2)).exec 4) stackClient
+        (Stack.Native.initial 3 2) (some 7, 0) y traces ∧
+      (Stack.Native.implementation
+        (Stack.Native.valid_initialLayout (w := 4) (base := 3) (C := 2) (by decide))).rep [] y ∧
+      total id traces ≤ 4 * K := by
   obtain ⟨K, hK⟩ := Stack.Native.run_client
-  exact ⟨K, hK stackClient (Stack.Native.initial_rep (by decide)) (by
+  exact ⟨K, hK _ stackClient (Stack.Native.initial_rep (by decide)) (by
     change (0 < 2 ∧ Fits 4 7) ∧ True ∧ True ∧ True ∧ True
     decide)⟩
 

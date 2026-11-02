@@ -38,7 +38,7 @@ noncomputable def certificates : Tag → Certificate .exact
 
 /-- The stack on layout `L`: the push value and the layout are the only arguments. -/
 noncomputable def backend (w C : ℕ) (L : Stack.Memory.Layout) :
-    Backend (Stack.WordRAM.spec w C) certificates where
+    Backend (Stack.spec w C) certificates where
   tag
     | .push _ => .push
     | .pop => .pop
@@ -78,7 +78,7 @@ theorem implements {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w C) :
 
 /-- The native stack on layout `L`. -/
 noncomputable def implementation {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w C) :
-    StateTransitionImpl (Stack.WordRAM.spec w C) ((backend w C L).exec w) :=
+    StateTransitionImpl (Stack.spec w C) ((backend w C L).exec w) :=
   Backend.implementation (implements hL)
 
 /-- One constant bounds every operation, before every width, capacity and layout. -/
@@ -90,14 +90,14 @@ theorem instruction_bound : ∃ K, ∀ {w C : ℕ} {L : Stack.Memory.Layout} (hL
 
 /-- Adaptive clients run one operation at a time, within `K` instructions per operation. -/
 theorem run_client : ∃ K, ∀ {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w C) {α : Type}
-    (p : (Stack.WordRAM.spec w C).Client α) {vs : List ℕ}
+    (p : (Stack.spec w C).Client α) {vs : List ℕ}
     {x : Data (Backend.registers certificates)},
     (implementation hL).rep vs x →
-    (Stack.WordRAM.spec w C).ValidHistory vs ((Stack.WordRAM.spec w C).clientHistory vs p) →
+    (Stack.spec w C).ValidHistory vs ((Stack.spec w C).clientHistory vs p) →
     ∃ y traces, Executes ((backend w C L).exec w) p x
-        ((Stack.WordRAM.spec w C).clientResult vs p) y traces ∧
-      (implementation hL).rep ((Stack.WordRAM.spec w C).clientState vs p) y ∧
-      total id traces ≤ ((Stack.WordRAM.spec w C).clientHistory vs p).length * K := by
+        ((Stack.spec w C).clientResult vs p) y traces ∧
+      (implementation hL).rep ((Stack.spec w C).clientState vs p) y ∧
+      total id traces ≤ ((Stack.spec w C).clientHistory vs p).length * K := by
   obtain ⟨K, hK⟩ := instruction_bound
   exact ⟨K, fun hL _ p _ _ hr hv => Bound.exists_executes_const (hK hL) p hr hv⟩
 
@@ -113,9 +113,9 @@ example : (certificates .push).l = 0 := rfl
 -- the method's final memory.
 example {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w C) {vs : List ℕ}
     {x y : Data (Backend.registers certificates)} {o : StackOp ℕ}
-    {a : (Stack.WordRAM.spec w C).Result o} {n : ℕ} (hr : (implementation hL).rep vs x)
-    (hv : (Stack.WordRAM.spec w C).valid vs o) (he : (backend w C L).exec w x o a y n) :
-    a = ((Stack.WordRAM.spec w C).stepFn vs o).2 ∧
+    {a : (Stack.spec w C).Result o} {n : ℕ} (hr : (implementation hL).rep vs x)
+    (hv : (Stack.spec w C).valid vs o) (he : (backend w C L).exec w x o a y n) :
+    a = ((Stack.spec w C).stepFn vs o).2 ∧
       memoryState (Backend.frontier certificates) y = (Memory.spec w).clientState
         (memoryState (Backend.frontier certificates) x) (Stack.Memory.methods L w C o) :=
   ⟨((implementation hL).correct_ofFn hr hv he).1,

@@ -10,7 +10,8 @@ module
 public import Complexity.Computability.WordRAM.Function
 public import Complexity.Computability.WordRAM.MapOp
 public import Complexity.Computability.WordRAM.Realization.Client.MemoryStack
-public import Complexity.Computability.WordRAM.Realization.Program
+public import Complexity.Computability.WordRAM.Realization.Backend
+public import Complexity.Computability.WordRAM.Realization.Function
 import Complexity.Tactic.Realize
 import Complexity.Tactic.WordRAM
 
@@ -153,14 +154,6 @@ private theorem length_clientHistory_client (w n : ℕ) :
   by_cases hn0 : n = 0 <;>
     simp [StateTransitionSpec.clientHistory, client, -PFunctor.FreeM.pure_eq_pure, hn0]
 
-/-- Memory charges along a history do not depend on the word width. -/
-private theorem totalCost_width (w : ℕ) (s : Memory.State) (os : List Memory.Op) :
-    (Memory.spec 0).totalCost Memory.charge s os =
-      (Memory.spec w).totalCost Memory.charge s os := by
-  induction os generalizing s with
-  | nil => rfl
-  | cons o os ih => exact congrArg (Memory.charge s o + ·) (ih _)
-
 /-- **Correctness through the refinement.** From a memory whose frontier leaves room, `program`
 returns `positive n`, its memory history is admissible, and it costs at most fifteen memory
 units: two for the allocation and three for each of at most four stack calls. -/
@@ -193,7 +186,7 @@ public theorem program_spec {w n : ℕ} {s : Memory.State} (hf : Fits w (s.front
     have hlen := length_clientHistory_client w n
     unfold memoryCost
     simp only [StateTransitionSpec.clientHistory, program]
-    rw [hrun0, ← runClient_width w, totalCost_width w]
+    rw [hrun0, ← runClient_width w, ← totalCost_width w]
     change 2 + (1 + (Memory.spec w).totalCost Memory.charge ⟨clear s.mem s.frontier 1,
       s.frontier + 1 + 1⟩ ((Memory.spec w).clientHistory ⟨clear s.mem s.frontier 1,
         s.frontier + 1 + 1⟩ (run L n))) ≤ 15
@@ -203,43 +196,12 @@ public theorem program_spec {w n : ℕ} {s : Memory.State} (hf : Fits w (s.front
 every width of at least three bits per input bit. -/
 @[fun_prop, program_certificate]
 public theorem positive_polytime :
-    UniformComputableInPolyTime .standard positive (fun _ n => [n]) id := by
-  obtain ⟨m, C, emit, he⟩ := realizes_program
-  let fr : Fin (m + 4) := ⟨0, by omega⟩
-  let src : Fin 1 → Fin (m + 4) := fun _ => ⟨1, by omega⟩
-  let tmp : Fin (1 + m + 1) → Fin (m + 4) := fun i => ⟨i.val + 2, by omega⟩
-  have htmp : Function.Injective tmp := fun i j h =>
-    Fin.ext (by have := congrArg Fin.val h; simp only [tmp] at this; omega)
-  have hd : ∀ i j, src i ≠ tmp j := fun i j h => by
-    have := congrArg Fin.val h; simp only [src, tmp] at this; omega
-  have hf : ∀ j, tmp j ≠ fr := fun j h => by
-    have := congrArg Fin.val h; simp only [tmp, fr] at this; omega
-  have hs : ∀ i, src i ≠ fr := fun i h => by
-    have := congrArg Fin.val h; simp only [src, fr] at this; omega
-  apply UniformComputableInPolyTime.of_code
-    ((Code.seq (inputPrefix fr (tmp (Fin.last (1 + m))) src) (emit fr src tmp)).mapSimulates
-      .exactStandard) (tmp (Fin.castAdd (m + 1) 0)) (.const (7 + C * 17)) 3 (by decide)
-  intro n w hw hin
-  have h3 : 3 ≤ w := by unfold logWidth at hw; simp only [id] at hw; omega
-  have h4 : Fits w 4 := (show Fits 3 4 by decide).mono h3
-  have hn : Fits w n := hin.2 n (by simp)
-  obtain ⟨x, ex, hx, hm, hwords, -⟩ := inputPrefix_exec fr (tmp (Fin.last (1 + m))) src [n]
-    (fun _ _ _ => Subsingleton.elim _ _) (hf _) (fun i => hd i _) hs (by simp)
-    (h4.of_le (by simp)) hin
-  have harg : x.regs ∘ src = (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding n := by
-    funext i
-    simpa using hwords i
-  have hroom : Fits w ((inputState [n]).frontier + 2) := h4.of_le (by simp [inputState])
-  obtain ⟨hres, hvalid, hcost⟩ := program_spec hroom hn
-  obtain ⟨y, ey, -, hout, -⟩ := (he fr src tmp htmp hd hf hs).2 w n x hx harg
-    (by rw [hm]; exact hroom) (by rw [hm]; exact hvalid)
-  refine ⟨y, ((ex.seq ey).mapSimulates _).mono ?_, ?_⟩
-  · rw [hm]
-    beta_reduce
-    have := Nat.mul_le_mul_left C (show memoryCost (program n) (inputState [n]) + 1 + 1 ≤ 17 by
-      omega)
-    omega
-  · rw [hout 0, hm, hres]
-    rfl
+    UniformComputableInPolyTime .standard positive (fun _ n => [n]) id :=
+  realizes_program.uniformComputableInPolyTime .exactStandard 0 (.const 16) 3 (by decide)
+    (fun _ _ j => by fin_cases j; rfl) fun n w hw hin => by
+      have h4 : Fits w 4 := (show Fits 3 4 by decide).mono (le_trans (by simp [logWidth]) hw)
+      have hroom : Fits w ((inputState [n]).frontier + 2) := h4.of_le (by simp [inputState])
+      obtain ⟨hres, hvalid, hcost⟩ := program_spec hroom (hin.2 n (by simp))
+      exact ⟨by simp, h4.of_le (by simp), hroom, hvalid, hres, by omega⟩
 
 end Cslib.DataStructure.Stack.Controller
