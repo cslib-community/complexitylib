@@ -82,7 +82,8 @@ with coins (`RandomizedRefinement.compCoins`), and expected potentials stack acr
   deterministic run is a point mass, and the support of a deterministic specification is itself.
 * `RandomizedSpec.demonicValid_liftRight`, `RandomizedSpec.demonicValid_sample_bind`: coin calls
   are admissible, and programs over `E` keep their admissibility.
-* `RandomizedSpec.expectedCost_bind`, `RandomizedSpec.expectedCost_le_of_isCostBounded`,
+* `RandomizedSpec.expectedCost_bind`, `RandomizedSpec.expectedCost_bind_le`,
+  `RandomizedSpec.expectedCost_le_of_isCostBounded`,
   `RandomizedSpec.isCostBounded_obliviousClient`: expected charges of sequenced programs, and
   query budgets.
 * `RandomizedRefinement.run_link`: the law of a linked client, read through the abstraction, is
@@ -229,6 +230,22 @@ theorem expectedCost_bind (charge : D.State → D.Op → ℕ) (p : OracleComp D.
     congr 1
     refine tsum_congr fun x => ?_
     rw [ih, mul_add]
+
+/-- A bound on the expected charge of `p`, and one on the continuation from every outcome of `p`,
+bound the expected charge of `p >>= k` by their sum. -/
+theorem expectedCost_bind_le {charge : D.State → D.Op → ℕ} {p : OracleComp D.Result α}
+    {k : α → OracleComp D.Result β} {s : D.State} {a c : ℝ≥0∞}
+    (hp : D.expectedCost charge p s ≤ a)
+    (hk : ∀ x ∈ (D.run p s).support, D.expectedCost charge (k x.1) x.2 ≤ c) :
+    D.expectedCost charge (p >>= k) s ≤ a + c := by
+  rw [expectedCost_bind]
+  refine add_le_add hp ?_
+  calc _ ≤ ∑' x, D.run p s x * c := by
+        refine tsum_le_tsum fun x => ?_
+        by_cases hx : x ∈ (D.run p s).support
+        · exact mul_le_mul' le_rfl (hk x hx)
+        · rw [(PMF.apply_eq_zero_iff _ _).mpr hx, zero_mul, zero_mul]
+    _ = c := by rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
 
 /-- With charges independent of the state, a query budget bounds the expected charge. -/
 theorem expectedCost_le_of_isCostBounded {cost : D.Op → ℕ} {p : OracleComp D.Result α} {n : ℕ}
