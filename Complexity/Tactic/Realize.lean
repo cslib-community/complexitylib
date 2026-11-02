@@ -8,7 +8,6 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.WordRAM.Realization.Absorb
-public import Mathlib.Tactic.FinCases
 
 /-!
 # The `realize` tactic
@@ -48,6 +47,11 @@ After the composition, `realize` introduces `w d s hwords hmem h`: the word widt
 environment, the memory, the fit of the input words, memory well-formedness, and the goal's
 domain. It splits the conjunctions and `if`s of the synthesized domain and leaves each remaining
 condition as a goal. There is no search: an unsupported form is reported with its subterm.
+
+Each certificate is stated for the client form as written, with its domain in the client's terms
+(`certify`), so certificates compose syntactically. A bind's continuation domain is stated at the
+first client's reply and next memory in closed form (`Realizes.bind₀_of_run`), not at the
+interpreter's run. The kernel checks, locally at each form, that the rule's statement agrees.
 
 ## Main definitions
 
@@ -100,9 +104,11 @@ private def encodingAtoms (enc x : Expr) (l : Nat) : MetaM (Array Expr) :=
   (Array.range l).mapM fun j => do
     whnf (mkApp (← mkAppM ``DFunLike.coe #[enc, x]) (← finLit l j))
 
-/-- Locate an expression among the live words. -/
+/-- Locate an expression among the live words: syntactically after `whnf`, as the live words are
+themselves in weak-head normal form, and otherwise by definitional equality. -/
 private def findAtom (atoms : Array Expr) (e : Expr) : MetaM (Option Nat) := do
   let e' ← whnf e
+  if let some i := atoms.findIdx? (· == e') then return some i
   for h : i in [0:atoms.size] do
     if ← withNewMCtxDepth (isDefEq e' atoms[i]) then return some i
   return none
@@ -497,13 +503,28 @@ private def bindPure (a cont : Expr) : MetaM Expr := do
   let pa ← mkAppOptM ``Pure.pure #[prog, none, mkConst ``Nat, a]
   mkAppOptM ``Bind.bind #[prog, none, mkConst ``Nat, none, pa, cont]
 
-/-- Prove `∀ d i, output (f d) i = g i (input d)` coordinate by coordinate. -/
-private def proveResult (ty : Expr) : TermElabM Expr := do
-  let mvar ← mkFreshExprMVar ty
-  let gs ← Tactic.run mvar.mvarId! do
-    evalTactic (← `(tactic| (intro d i; fin_cases i <;> rfl)))
-  unless gs.isEmpty do throwError "realize: could not match the result encoding:{indentExpr ty}"
-  instantiateMVars mvar
+/-- Prove `∀ d i, output (f d) i = g i (input d)` for `i : Fin l` by `Fin.cases`, with one `rfl` per
+coordinate. Both sides are the same coordinate by construction of `g` (`coordinates`, `analyze`);
+the kernel checks each `rfl`. -/
+private def proveResult (ty : Expr) (l : Nat) : MetaM Expr :=
+  forallBoundedTelescope ty (some 2) fun xs eq => do
+    let #[d, i] := xs | throwError "realize: internal error in the result encoding"
+    let P ← mkLambdaFVars #[i] eq
+    -- a proof of `∀ j : Fin n, P (emb j)`
+    let rec cover (n : Nat) (emb : Expr → MetaM Expr) : MetaM Expr := do
+      let finN := mkApp (mkConst ``Fin) (mkNatLit n)
+      match n with
+      | 0 => withLocalDeclD `j finN fun j => do
+        mkLambdaFVars #[j] (← mkAppOptM ``Fin.elim0 #[P.beta #[← emb j], j])
+      | m + 1 => do
+        let motive ← withLocalDeclD `j finN fun j => do mkLambdaFVars #[j] (P.beta #[← emb j])
+        let goal := P.beta #[← emb (← mkNumeral finN 0)]
+        let some (_, lhs, _) := goal.eq?
+          | throwError "realize: internal error in the result encoding"
+        let h0 ← mkExpectedTypeHint (← mkEqRefl lhs) goal
+        let hs ← cover m fun j => do emb (← mkAppM ``Fin.succ #[j])
+        mkAppOptM ``Fin.cases #[mkNatLit m, motive, h0, hs]
+    mkLambdaFVars #[d] (← cover l pure)
 
 /-- Certify `pure a` with the result encoding `out`, for the environment variable `d`. -/
 private def realizePure (ctx : Ctx) (env : Env) (d : Expr) (atoms : Array Expr) (a out : Expr) :
@@ -562,7 +583,7 @@ private def realizePure (ctx : Ctx) (env : Env) (d : Expr) (atoms : Array Expr) 
         let lhs := mkApp (← mkAppM ``DFunLike.coe #[out, f.beta #[d']]) i
         let rhs := mkApp2 gfun i (← mkAppM ``DFunLike.coe #[env.input, d'])
         mkForallFVars #[d', i] (← mkEq lhs rhs)
-      let hresult ← proveResult resTy
+      let hresult ← proveResult resTy l
       let proof ← mkAppM ``Realizes.pure₀
         #[env.input, out, f, gfun, need, hresult, hcoord, hneed]
       let safe ← withLocalDeclD `s (mkConst ``Memory.State) fun s =>
@@ -652,6 +673,24 @@ private def proveQuery (body ty : Expr) : MetaM Expr :=
     let goal ← mkAppM ``LE.le #[mkNatLit 1, ← mkAppM ``memoryCost #[mkApp body x, s]]
     mkLambdaFVars #[x, s] (← mkExpectedTypeHint pf goal)
 
+/-- State `proof` as the certificate `Realizes B prog input output safe 0`, for the client `prog`
+as written and the domain `safe` in the client's terms.
+
+The rule's statement agrees with this one by construction: up to unfolding `prog`, reducing pair
+projections, and evaluating the live words, which were located as the weak-head normal forms of
+`input d i`. The kernel checks the agreement locally at each form. Elaboration does not re-check
+it, because unfolding composed domains with nested interpreter runs grows with the client. -/
+private def certify (ctx : Ctx) (env : Env) (proof prog output safe : Expr) : MetaM Expr := do
+  mkExpectedTypeHint proof
+    (← mkAppM ``Realizes #[ctx.basis, prog, env.input, output, safe, ← zeroWork env.ty])
+
+/-- `Realizes.bind₀_of_run hP hQ reply next`, with the reply and next memory `fun d s => …` proved
+by `rfl`. -/
+private def bindRun (hP hQ reply next : Expr) : MetaM Expr := do
+  let refl (f : Expr) : MetaM Expr :=
+    lambdaBoundedTelescope f 2 fun xs b => do mkLambdaFVars xs (← mkEqRefl b)
+  mkAppM ``Realizes.bind₀_of_run #[hP, hQ, reply, next, ← refl reply, ← refl next]
+
 mutual
 
 /-- Certify a client `prog : δ → Memory.Prog α` in the environment `env`. -/
@@ -660,7 +699,8 @@ private partial def realizeProg (ctx : Ctx) (env : Env) (prog : Expr) (output? :
   withLocalDeclD `d env.ty fun d => do
     let atoms := env.atoms.map (·.beta #[d])
     let body ← normBody (prog.beta #[d]).headBeta
-    realizeBody ctx env d atoms body output?
+    let out ← realizeBody ctx env d atoms body output?
+    return { out with proof := ← certify ctx env out.proof prog out.output out.safe }
 
 /-- Certify the body of a client for the environment variable `d`. -/
 private partial def realizeBody (ctx : Ctx) (env : Env) (d : Expr) (atoms : Array Expr)
@@ -777,9 +817,8 @@ private partial def realizeOptionSplit (ctx : Ctx) (env : Env) (d : Expr) (atoms
   let rhs ← mkAppM ``ite #[cond, bodyNone, bodySome]
   let eq ← proveSplit d r (← mkForallFVars #[d] (← mkEq rhs body))
   let out ← realizeBody ctx env d atoms rhs output?
-  let stmt ← mkAppM ``Realizes #[ctx.basis, ← mkLambdaFVars #[d] rhs, env.input, out.output,
-    out.safe, ← zeroWork env.ty]
-  let proof ← mkAppM ``Realizes.congr #[← mkExpectedTypeHint out.proof stmt, eq]
+  let h ← certify ctx env out.proof (← mkLambdaFVars #[d] rhs) out.output out.safe
+  let proof ← mkAppM ``Realizes.congr #[h, eq]
   return { out with proof }
 
 /-- Certify `iterate step D n a`: copy the initial state and the fuel, then run the loop over the
@@ -811,8 +850,15 @@ private partial def realizeIterate (ctx : Ctx) (env : Env) (d : Expr) (atoms : A
     let o ← realizePure ctx envB x atomsX nx word
     pure o
   let hA ← realizePure ctx env d atoms a out
-  let h2 ← mkAppM ``Realizes.bind₀ #[hN.proof, hLoop]
-  let proof ← mkAppM ``Realizes.bind₀ #[hA.proof, h2]
+  -- both binds return a computed value and leave the memory unchanged
+  let (nReply, nNext) ← withLocalDeclD `x envB.ty fun x =>
+    withLocalDeclD `s (mkConst ``Memory.State) fun s => do
+      let nx := (← mkLambdaFVars #[d] n).beta #[← mkAppM ``Prod.fst #[x]]
+      return (← mkLambdaFVars #[x, s] nx, ← mkLambdaFVars #[x, s] s)
+  let h2 ← bindRun hN.proof hLoop nReply nNext
+  let (aReply, aNext) ← withLocalDeclD `s (mkConst ``Memory.State) fun s => do
+    return (← mkLambdaFVars #[d, s] a, ← mkLambdaFVars #[d, s] s)
+  let proof ← bindRun hA.proof h2 aReply aNext
   let safe ← withLocalDeclD `w (mkConst ``Nat) fun w =>
     withLocalDeclD `s (mkConst ``Memory.State) fun s => do
       let pair ← mkAppM ``Prod.mk #[d, a]
@@ -820,8 +866,7 @@ private partial def realizeIterate (ctx : Ctx) (env : Env) (d : Expr) (atoms : A
       let sl ← mkAppM ``iterationSafe #[body, hB.safe, w, d, n, a, s]
       mkLambdaFVars #[w, d, s] (mkAnd (hA.safe.beta #[w, d, s]) (mkAnd sn sl))
   let progR ← mkLambdaFVars #[d] (← mkAppM ``iterate #[body, d, n, a])
-  let stmt ← mkAppM ``Realizes #[ctx.basis, progR, env.input, out, safe, ← zeroWork env.ty]
-  let proof ← mkExpectedTypeHint proof stmt
+  let proof ← certify ctx env proof progR out safe
   if D == d then return { proof, output := out, safe }
   let g ← mkLambdaFVars #[d] D
   let eq ← mkLambdaFVars #[d] (← mkEqSymm (← mkAppM ``iterate_comap #[g, step, d, n, a]))
@@ -840,12 +885,15 @@ private partial def realizeBind (ctx : Ctx) (env : Env) (d m f : Expr) (output? 
     let x2 ← mkAppM ``Prod.snd #[x]
     mkLambdaFVars #[x] (fd.beta #[x1, x2]).headBeta
   let hQ ← realizeProg ctx env' q output?
-  let proof ← mkAppM ``Realizes.bind₀ #[hP.proof, hQ.proof]
+  -- the reply and next memory in the client's terms, so that the domain is stated in them
+  let (reply, next) ← withLocalDeclD `s (mkConst ``Memory.State) fun s => do
+    let (r, s') ← replyState m s
+    return (← mkLambdaFVars #[d, s] r, ← mkLambdaFVars #[d, s] s')
+  let proof ← bindRun hP.proof hQ.proof reply next
   let safe ← withLocalDeclD `w (mkConst ``Nat) fun w =>
     withLocalDeclD `s (mkConst ``Memory.State) fun s => do
-      let (r, s') ← replyState m s
-      let pair ← mkAppM ``Prod.mk #[d, r]
-      let sq ← reducePairs (hQ.safe.beta #[w, pair, s'])
+      let pair ← mkAppM ``Prod.mk #[d, reply.beta #[d, s]]
+      let sq ← reducePairs (hQ.safe.beta #[w, pair, next.beta #[d, s]])
       mkLambdaFVars #[w, d, s] (mkAnd (hP.safe.beta #[w, d, s]) sq)
   return { proof, output := hQ.output, safe }
 
@@ -896,14 +944,10 @@ elab "realize" : tactic => withMainContext do
   let atoms ← withLocalDeclD `d δ fun d => do
     (← encodingAtoms input d k).mapM (mkLambdaFVars #[d] ·)
   let env : Env := { ty := δ, k, input, atoms }
+  -- `realizeProg` states the certificate for `p` itself, with the domain `out.safe`
   let out ← realizeProg { basis := B, exact, standard } env p (some output)
-  let zero ← zeroWork δ
-  let stmt ← mkAppM ``Realizes #[B, p, input, output, out.safe, zero]
-  unless ← isDefEq (← inferType out.proof) stmt do
-    throwError "realize: internal error, the certificate does not match the client{indentExpr p}"
-  let h ← mkExpectedTypeHint out.proof stmt
   let cons ← mkAppOptM ``Realizes.consequence #[B, args[0]!, args[1]!, δ, args[3]!, p, input,
-    output, out.safe, zero, args[8]!, args[9]!, h]
+    output, out.safe, ← zeroWork δ, args[8]!, args[9]!, out.proof]
   let [hsafe, hwork] ← goal.apply cons | throwError "realize: internal error in `consequence`"
   setGoals [hwork]
   evalTactic (← `(tactic| exact fun _ _ => Nat.zero_le _))

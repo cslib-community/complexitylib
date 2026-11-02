@@ -21,6 +21,7 @@ public import Complexity.Algorithms.Lean.Huffman.Optimality
 public import Complexity.Algorithms.Lean.Huffman.TwoQueue
 public import Complexity.Algorithms.Lean.KMP.Basic
 public import Complexity.Algorithms.Lean.KMP.Search
+public import Complexity.Algorithms.Lean.Karger.Contraction
 public import Complexity.Algorithms.Lean.Kruskal.Basic
 public import Complexity.Algorithms.Lean.Kruskal.SimpleGraph
 public import Complexity.Algorithms.Lean.Matroid.Greedy
@@ -106,12 +107,13 @@ public import Complexity.Algorithms.WordRAM.Dijkstra.LogLinear
 public import Complexity.Algorithms.WordRAM.Dijkstra.Statement
 public import Complexity.Algorithms.WordRAM.ElementDistinctness
 public import Complexity.Algorithms.WordRAM.ElementDistinctnessRAM
-public import Complexity.Algorithms.WordRAM.ExactLog
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Adapt
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Admission
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Copy
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Core
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.DyadicCost
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.DyadicExecution
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Exec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Flat
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Header
@@ -2579,6 +2581,7 @@ public import Complexity.Computability.WordRAM.Copy
 public import Complexity.Computability.WordRAM.CopySum
 public import Complexity.Computability.WordRAM.Defs
 public import Complexity.Computability.WordRAM.Dynamic
+public import Complexity.Computability.WordRAM.ExactLog
 public import Complexity.Computability.WordRAM.ExactNotation
 public import Complexity.Computability.WordRAM.Function
 public import Complexity.Computability.WordRAM.GhostLoop
@@ -2639,6 +2642,7 @@ public import Complexity.Computability.WordRAM.Realization.Module
 public import Complexity.Computability.WordRAM.Realization.Primitive
 public import Complexity.Computability.WordRAM.Realization.Program
 public import Complexity.Computability.WordRAM.Realization.Result
+public import Complexity.Computability.WordRAM.Realization.While
 public import Complexity.Computability.WordRAM.Realization.Witness
 public import Complexity.Computability.WordRAM.RegisterFrame
 public import Complexity.Computability.WordRAM.Sequence
@@ -2966,6 +2970,7 @@ public import Complexity.DataStructure.HashFamily.WordRAM.KWise
 public import Complexity.DataStructure.HashFamily.WordRAM.MultiplyShift
 public import Complexity.DataStructure.HashFamily.WordRAM.Tabulation
 public import Complexity.DataStructure.Memory.Alloc
+public import Complexity.DataStructure.Memory.Copy
 public import Complexity.DataStructure.Memory.Field
 public import Complexity.DataStructure.Memory.Frame
 public import Complexity.DataStructure.Memory.Record
@@ -2987,7 +2992,10 @@ public import Complexity.DataStructure.PrefixSums.WordRAM.Update
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Memory
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Order
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Basic
+public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Consolidation
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.DecreaseKey
+public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.ExtractMin
+public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Memory
 public import Complexity.DataStructure.PriorityQueue.Spec
 public import Complexity.DataStructure.PriorityQueue.WordRAM.Basic
 public import Complexity.DataStructure.PriorityQueue.WordRAM.BinaryHeap
@@ -3016,6 +3024,7 @@ public import Complexity.DataStructure.SearchTree.Impl
 public import Complexity.DataStructure.SplayTree.AccessLemma
 public import Complexity.DataStructure.SplayTree.Basic
 public import Complexity.DataStructure.SplayTree.Impl
+public import Complexity.DataStructure.Stack.Doubling
 public import Complexity.DataStructure.Stack.Memory
 public import Complexity.DataStructure.Stack.WordRAM.Basic
 public import Complexity.DataStructure.Stack.WordRAM.Controller
@@ -3360,6 +3369,7 @@ public import Complexity.Foundations.Data.List.Last
 public import Complexity.Foundations.Data.List.Lex
 public import Complexity.Foundations.Data.List.Lookup
 public import Complexity.Foundations.Data.List.OfFn
+public import Complexity.Foundations.Data.List.Perm
 public import Complexity.Foundations.Data.List.Range
 public import Complexity.Foundations.Data.List.RowMajor
 public import Complexity.Foundations.Data.List.SelectDistinct

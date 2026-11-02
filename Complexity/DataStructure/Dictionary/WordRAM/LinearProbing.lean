@@ -133,7 +133,7 @@ namespace Cslib.DataStructure.Dictionary.WordRAM.LinearProbing
 
 open Cslib.WordRAM Cslib.Probability
 open Cslib.DataStructure.WordRAM Cslib.DataStructure.WordRAM.Randomized
-open Cslib.Algorithms.WordRAM.ExactLog
+open Cslib.WordRAM.ExactLog
 open Cslib.DataStructure.HashFamily.WordRAM
 open Finset
 open scoped BigOperators ENNReal
