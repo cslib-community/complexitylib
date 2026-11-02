@@ -47,6 +47,14 @@ it telescopes along adaptive clients (`ExpectedAmortized.client`) and stacks acr
 (`ExpectedAmortized.comp`). When charges do not depend on the state, a query budget
 (`OracleComp.IsCostBounded`) bounds the expected cost (`expectedCost_le_of_isCostBounded`).
 
+Hops stack whether or not they flip coins. A deterministic refinement is a distributional one of
+the point-mass laws (`Refinement.toRandomized`), and its pathwise amortized costs are expected
+ones (`Refinement.Amortized.toRandomized`). Coins pass through a refinement unchanged
+(`RandomizedRefinement.withCoins`), and two layers of coins merge into one
+(`RandomizedRefinement.mergeCoins`). So a hop with coins of its own composes over a lower hop
+with coins (`RandomizedRefinement.compCoins`), and expected potentials stack across it
+(`ExpectedAmortized.compCoins`).
+
 ## Main definitions
 
 * `RandomizedSpec`, `RandomizedSpec.run`: randomized specifications and the law of a client run.
@@ -60,6 +68,11 @@ it telescopes along adaptive clients (`ExpectedAmortized.client`) and stacks acr
 * `RandomizedRefinement.handler`: the methods as a stateful handler on lower states.
 * `RandomizedSpec.expectedCost`, `RandomizedRefinement.ExpectedAmortized`: expected charges and
   expected amortized cost refinements.
+* `RandomizedSpec.coinCharge`: charges on an interface with coins.
+* `RandomizedRefinement.withCoins`, `RandomizedRefinement.mergeCoins`,
+  `RandomizedRefinement.compCoins`: coins through refinements, merged coin streams, and the
+  composition of hops with coins.
+* `Refinement.toRandomized`: a deterministic refinement as a distributional one.
 
 ## Main results
 
@@ -79,6 +92,11 @@ it telescopes along adaptive clients (`ExpectedAmortized.client`) and stacks acr
   `RandomizedRefinement.abs_sub_le_of_identicalUntilBad`: the identical-until-bad step.
 * `RandomizedRefinement.ExpectedAmortized.client`, `RandomizedRefinement.ExpectedAmortized.comp`,
   `RandomizedRefinement.ExpectedAmortized.of_isCostBounded`: expected amortized costs.
+* `StateTransitionSpec.expectedCost_toRandomized`, `Refinement.Amortized.toRandomized`: expected
+  charges of deterministic runs, and pathwise amortized costs as expected ones.
+* `RandomizedRefinement.ExpectedAmortized.withCoins`,
+  `RandomizedRefinement.expectedAmortized_mergeCoins`,
+  `RandomizedRefinement.ExpectedAmortized.compCoins`: expected amortized costs through coins.
 
 ## References
 
@@ -140,6 +158,11 @@ theorem run_map (f : α → β) (p : OracleComp D.Result α) (s : D.State) :
     D.run (f <$> p) s = (D.run p s).map fun (a, s') => (f a, s') :=
   OracleComp.run_interpret_map _ _ _ _
 
+/-- A single call draws its answer and next state from the law. -/
+@[simp] theorem run_query (o : D.Op) (s : D.State) :
+    D.run (OracleComp.query o) s = D.law o s :=
+  PMF.bind_pure _
+
 /-- Every relational run of a client has positive probability. -/
 theorem mem_support_run_of_clientRun {p : D.toSpec.Client α} {s s' : D.toSpec.State} {a : α}
     {tr : D.toSpec.Transcript} (h : D.toSpec.ClientRun s p a s' tr) :
@@ -179,6 +202,12 @@ theorem expectedCost_liftBind (charge : D.State → D.Op → ℕ) (o : D.Op)
     (k : D.Result o → OracleComp D.Result α) (s : D.State) :
     D.expectedCost charge (.liftBind o k) s =
       charge s o + ∑' x, D.law o s x * D.expectedCost charge (k x.1) x.2 := rfl
+
+/-- The expected charge of a single call is its charge. -/
+@[simp] theorem expectedCost_query (charge : D.State → D.Op → ℕ) (o : D.Op) (s : D.State) :
+    D.expectedCost charge (OracleComp.query o) s = charge s o := by
+  rw [OracleComp.query, PFunctor.FreeM.lift, expectedCost_liftBind]
+  simp
 
 /-- The expected charge of `p >>= k` is that of `p` plus the expected charge of the
 continuation. -/
@@ -288,6 +317,51 @@ theorem demonicValid_sample_bind {q : ProbComp β} {k : β → OracleComp D.with
     subst hs
     exact ih i
 
+/-- A coin call draws uniformly and leaves the state unchanged. -/
+theorem withCoins_law_inl (n : ℕ) (s : D.State) :
+    D.withCoins.law (.inl n) s = (ProbComp.unifOracle n).map (·, s) := rfl
+
+/-- A single coin call is admissible. -/
+theorem demonicValid_coin (n : ℕ) (s : D.State) :
+    D.withCoins.toSpec.DemonicValid s
+      (OracleComp.query (spec := probOracleSpec D.Result) (.inl n)) :=
+  .liftBind (D := D.withCoins.toSpec) (Sum.inl n) _ trivial fun s' a _ => .pure s' a
+
+/-- A single admissible call of `D`, made over `D.withCoins`, is admissible. -/
+theorem demonicValid_query_inr {o : D.Op} {s : D.State} (h : D.valid s o) :
+    D.withCoins.toSpec.DemonicValid s
+      (OracleComp.query (spec := probOracleSpec D.Result) (.inr o)) :=
+  .liftBind (D := D.withCoins.toSpec) (Sum.inr o) _ h fun s' a _ => .pure s' a
+
+variable (D) in
+/-- Charges on `D.withCoins`: a coin call `.inl n` costs `coin n`, and a call `.inr o` costs as
+in `D`. -/
+def coinCharge (coin : ℕ → ℕ) (charge : D.State → D.Op → ℕ) :
+    D.withCoins.State → D.withCoins.Op → ℕ
+  | _, .inl n => coin n
+  | s, .inr o => charge s o
+
+/-- A constant charge on coin calls and on calls of `D` is that constant on `D.withCoins`. -/
+@[simp] theorem coinCharge_const (K : ℕ) :
+    D.coinCharge (fun _ => K) (fun _ _ => K) = fun _ _ => K := by
+  funext s o
+  cases o <;> rfl
+
+/-- A program over `D` alone costs over `D.withCoins` what it costs over `D`. -/
+theorem expectedCost_liftRight (coin : ℕ → ℕ) (charge : D.State → D.Op → ℕ)
+    (p : OracleComp D.Result α) (s : D.State) :
+    D.withCoins.expectedCost (D.coinCharge coin charge) (OracleComp.liftRight p) s =
+      D.expectedCost charge p s := by
+  induction p generalizing s with
+  | pure a => rfl
+  | liftBind o k ih =>
+    change D.withCoins.expectedCost _
+      (.liftBind (Sum.inr o) fun a => OracleComp.liftRight (k a)) s = _
+    rw [expectedCost_liftBind, expectedCost_liftBind]
+    change (charge s o : ℝ≥0∞) + ∑' x : D.Result o × D.State, D.law o s x *
+      D.withCoins.expectedCost _ (OracleComp.liftRight (k x.1)) x.2 = _
+    simp only [ih]
+
 end RandomizedSpec
 
 /-! ## Deterministic specifications -/
@@ -328,16 +402,33 @@ theorem toRandomized_step_iff (s s' : D.State) (o : D.Op) (a : D.Result o) :
   · intro h
     rw [← h]
 
-/-- Admissibility of a deterministic history is admissibility on the support. -/
-theorem toRandomized_demonicValid_of_validHistory {p : D.Client α} {s : D.State}
-    (h : D.ValidHistory s (D.clientHistory s p)) : D.toRandomized.toSpec.DemonicValid s p := by
-  have hv := (D.demonicValid_iff_validHistory_runClient s p).mpr h
-  clear h
-  induction hv with
+/-- Admissibility on a deterministic specification is admissibility on its support. -/
+theorem toRandomized_demonicValid {p : D.Client α} {s : D.State} (h : D.DemonicValid s p) :
+    D.toRandomized.toSpec.DemonicValid s p := by
+  induction h with
   | pure s a => exact StateTransitionSpec.DemonicValid.pure (D := D.toRandomized.toSpec) s a
   | liftBind o k hv _ ih =>
     exact StateTransitionSpec.DemonicValid.liftBind (D := D.toRandomized.toSpec) o k hv
       fun s' a hstep => ih s' a ((toRandomized_step_iff _ _ _ _).mp hstep)
+
+/-- Admissibility of a deterministic history is admissibility on the support. -/
+theorem toRandomized_demonicValid_of_validHistory {p : D.Client α} {s : D.State}
+    (h : D.ValidHistory s (D.clientHistory s p)) : D.toRandomized.toSpec.DemonicValid s p :=
+  toRandomized_demonicValid ((D.demonicValid_iff_validHistory_runClient s p).mpr h)
+
+/-- The expected charge of a deterministic run is the total charge of its history. -/
+theorem expectedCost_toRandomized (charge : D.State → D.Op → ℕ) (p : D.Client α)
+    (s : D.State) :
+    D.toRandomized.expectedCost charge p s = D.totalCost charge s (D.clientHistory s p) := by
+  induction p generalizing s with
+  | pure a => exact Nat.cast_zero.symm
+  | liftBind o k ih =>
+    rw [RandomizedSpec.expectedCost_liftBind]
+    change _ + ∑' x, PMF.pure ((D.stepFn s o).2, (D.stepFn s o).1) x * _ =
+      ((charge s o + D.totalCost charge (D.stepFn s o).1
+        (D.clientHistory (D.stepFn s o).1 (k (D.stepFn s o).2)) : ℕ) : ℝ≥0∞)
+    rw [tsum_eq_single ((D.stepFn s o).2, (D.stepFn s o).1) fun x hx => by
+      simp [PMF.pure_apply, hx], PMF.pure_apply_self, one_mul, ih, Nat.cast_add]
 
 end StateTransitionSpec
 
@@ -568,6 +659,200 @@ theorem ExpectedAmortized.of_isCostBounded {cost : F.Op → ℕ} {budget : D.Op 
   step {e} o _ _ := by
     simpa using F.expectedCost_le_of_isCostBounded (h o) e
 
+/-! ## Private coins through refinements -/
+
+/-- The methods with private coins forwarded: a coin call `.inl n` is the same coin call, and a
+call `.inr o` runs the method of `o` over `F`. -/
+def coinMethods (methods : Methods D.toSpec F.toSpec) :
+    Methods D.withCoins.toSpec F.withCoins.toSpec
+  | .inl n => OracleComp.query (spec := probOracleSpec F.Result) (.inl n)
+  | .inr o => OracleComp.liftRight (methods o)
+
+variable (M) in
+/-- **Coins pass through refinements.** A refinement of `D` by `F` refines `D.withCoins` by
+`F.withCoins`, with the same invariant and abstraction: coin calls are forwarded unchanged, and
+calls of `D` run their methods. -/
+noncomputable def withCoins : RandomizedRefinement D.withCoins F.withCoins :=
+  .ofLaw (coinMethods M.methods) M.inv M.abs
+    (fun {e} o hi hv => by
+      cases o with
+      | inl n => exact F.demonicValid_coin n e
+      | inr o => exact RandomizedSpec.demonicValid_liftRight (M.valid o hi hv))
+    (fun {e} o hi hv a e' h => by
+      cases o with
+      | inl n =>
+        rw [coinMethods, RandomizedSpec.run_query, RandomizedSpec.withCoins_law_inl] at h
+        obtain ⟨_, _, h⟩ := (PMF.mem_support_map_iff _ _ _).mp h
+        obtain ⟨-, rfl⟩ := Prod.mk.inj h
+        exact hi
+      | inr o =>
+        rw [coinMethods, RandomizedSpec.withCoins_run_liftRight] at h
+        exact M.inv_of_mem_support o hi hv h)
+    (fun {e} o hi hv => by
+      cases o with
+      | inl n =>
+        rw [coinMethods, RandomizedSpec.run_query, RandomizedSpec.withCoins_law_inl, PMF.map_comp]
+        rfl
+      | inr o =>
+        rw [coinMethods, RandomizedSpec.withCoins_run_liftRight]
+        exact M.law o hi hv)
+
+@[simp] theorem withCoins_methods_inl (n : ℕ) :
+    M.withCoins.methods (.inl n) = OracleComp.query (spec := probOracleSpec F.Result) (.inl n) :=
+  rfl
+
+@[simp] theorem withCoins_methods_inr (o : D.Op) :
+    M.withCoins.methods (.inr o) = OracleComp.liftRight (M.methods o) := rfl
+
+@[simp] theorem withCoins_inv (e : F.State) : M.withCoins.inv e ↔ M.inv e := Iff.rfl
+
+@[simp] theorem withCoins_abs (e : F.State) : M.withCoins.abs e = M.abs e := rfl
+
+/-- The methods merging two layers of private coins: coin calls of either layer become coin
+calls, and calls of `G` are forwarded. -/
+def mergeMethods (G : RandomizedSpec) : Methods G.withCoins.withCoins.toSpec G.withCoins.toSpec
+  | .inl n => OracleComp.query (spec := probOracleSpec G.Result) (.inl n)
+  | .inr (.inl n) => OracleComp.query (spec := probOracleSpec G.Result) (.inl n)
+  | .inr (.inr o) => OracleComp.query (spec := probOracleSpec G.Result) (.inr o)
+
+variable (G) in
+/-- **Two layers of private coins are one.** Every call of `G.withCoins.withCoins` is one call
+of `G.withCoins` with the same law, so the identity on states is a refinement. -/
+noncomputable def mergeCoins : RandomizedRefinement G.withCoins.withCoins G.withCoins :=
+  .ofLaw (mergeMethods G) (fun _ => True) id
+    (fun {e} o _ hv => by
+      rcases o with n | n | o
+      · exact G.demonicValid_coin n e
+      · exact G.demonicValid_coin n e
+      · exact RandomizedSpec.demonicValid_query_inr hv)
+    (fun _ _ _ _ _ _ => trivial)
+    (fun {e} o _ _ => by
+      rcases o with n | n | o <;>
+      · rw [mergeMethods, RandomizedSpec.run_query]
+        exact PMF.map_id _)
+
+theorem mergeCoins_methods : (mergeCoins G).methods = mergeMethods G := rfl
+
+/-- **Coin-using hops compose.** A refinement of `D` by `F` with coins, over a refinement of `F` by
+`G` with coins, refines `D` by `G` with one stream of coins. -/
+noncomputable def compCoins (M : RandomizedRefinement D F.withCoins)
+    (N : RandomizedRefinement F G.withCoins) : RandomizedRefinement D G.withCoins :=
+  M.comp (N.withCoins.comp (mergeCoins G))
+
+@[simp] theorem compCoins_inv (M : RandomizedRefinement D F.withCoins)
+    (N : RandomizedRefinement F G.withCoins) (g : G.State) :
+    (M.compCoins N).inv g ↔ N.inv g ∧ M.inv (N.abs g) := by
+  change (True ∧ N.inv g) ∧ M.inv (N.abs g) ↔ _
+  rw [true_and]
+
+@[simp] theorem compCoins_abs (M : RandomizedRefinement D F.withCoins)
+    (N : RandomizedRefinement F G.withCoins) (g : G.State) :
+    (M.compCoins N).abs g = M.abs (N.abs g) := rfl
+
+variable {coin : ℕ → ℕ}
+
+/-- Expected amortized costs pass through coins: coin calls cost the same on both sides and leave
+the potential unchanged. -/
+theorem ExpectedAmortized.withCoins (A : M.ExpectedAmortized lower upper potential) :
+    M.withCoins.ExpectedAmortized (F.coinCharge coin lower) (D.coinCharge coin upper)
+      potential where
+  step {e} o hi hv := by
+    cases o with
+    | inl n =>
+      change F.withCoins.expectedCost _ (OracleComp.query (.inl n)) e +
+        ∑' x, F.withCoins.run (OracleComp.query (.inl n)) e x * potential x.2 ≤ coin n + potential e
+      rw [RandomizedSpec.expectedCost_query, RandomizedSpec.run_query,
+        RandomizedSpec.withCoins_law_inl, Probability.PMF.tsum_map_mul]
+      simp only [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
+      exact le_rfl
+    | inr o =>
+      change F.withCoins.expectedCost _ (OracleComp.liftRight (M.methods o)) e +
+        ∑' x, F.withCoins.run (OracleComp.liftRight (M.methods o)) e x * potential x.2 ≤
+          upper (M.abs e) o + potential e
+      rw [RandomizedSpec.expectedCost_liftRight, RandomizedSpec.withCoins_run_liftRight]
+      exact A.step o hi hv
+
+/-- Merging coin streams costs one call per call, with zero potential. -/
+theorem expectedAmortized_mergeCoins (charge : G.State → G.Op → ℕ) :
+    (mergeCoins G).ExpectedAmortized (G.coinCharge coin charge)
+      (G.withCoins.coinCharge coin (G.coinCharge coin charge)) fun _ => 0 where
+  step {e} o _ _ := by
+    simp only [mul_zero, tsum_zero, add_zero]
+    rcases o with n | n | o <;>
+    · rw [mergeCoins_methods, mergeMethods, RandomizedSpec.expectedCost_query]
+      exact le_rfl
+
+/-- **Expected potentials stack across coin-using hops.** -/
+theorem ExpectedAmortized.compCoins {M : RandomizedRefinement D F.withCoins}
+    {N : RandomizedRefinement F G.withCoins} {lower : G.State → G.Op → ℕ}
+    {middle : F.State → F.Op → ℕ} {Φ : F.State → ℝ≥0∞} {Ψ : G.State → ℝ≥0∞}
+    (A : M.ExpectedAmortized (F.coinCharge coin middle) upper Φ)
+    (B : N.ExpectedAmortized (G.coinCharge coin lower) middle Ψ) :
+    (M.compCoins N).ExpectedAmortized (G.coinCharge coin lower) upper
+      fun g => Φ (N.abs g) + Ψ g where
+  step {g} o hi hv := by
+    have h := (A.comp (B.withCoins.comp (expectedAmortized_mergeCoins lower))).step o hi hv
+    simp only [add_zero] at h
+    exact h
+
 end RandomizedRefinement
+
+/-! ## Deterministic refinements -/
+
+namespace Refinement
+
+variable {D E : StateTransitionSpec.{0, 0, 0}}
+  {fD : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn fD]
+  {fE : (e : E.State) → (o : E.Op) → E.State × E.Result o} [E.HasStepFn fE]
+
+/-- **Deterministic hops are distributional hops.** A refinement of deterministic specifications
+refines their point-mass laws, with the same methods, invariant and abstraction. -/
+noncomputable def toRandomized (M : Refinement D E) :
+    RandomizedRefinement D.toRandomized E.toRandomized :=
+  .ofLaw M.methods M.inv M.abs
+    (fun o hi hv => StateTransitionSpec.toRandomized_demonicValid (M.valid o hi hv))
+    (fun {e} o hi hv a e' h => by
+      rw [StateTransitionSpec.run_toRandomized, PMF.mem_support_pure_iff] at h
+      have he' : e' = E.clientState e (M.methods o) := congrArg Prod.snd h
+      subst he'
+      exact (M.correct o hi hv (E.clientRun_canonical e (M.methods o)
+        ((E.demonicValid_iff_validHistory_runClient e _).mp (M.valid o hi hv)))).2)
+    (fun {e} o hi hv => by
+      have hstep := (D.step_iff_stepFn _ _ _ _).mp (M.correct o hi hv
+        (E.clientRun_canonical e (M.methods o)
+          ((E.demonicValid_iff_validHistory_runClient e _).mp (M.valid o hi hv)))).1
+      rw [StateTransitionSpec.run_toRandomized, PMF.pure_map]
+      change _ = PMF.pure ((D.stepFn (M.abs e) o).2, (D.stepFn (M.abs e) o).1)
+      rw [← hstep]
+      rfl)
+
+@[simp] theorem toRandomized_methods (M : Refinement D E) :
+    M.toRandomized.methods = M.methods := rfl
+
+@[simp] theorem toRandomized_inv (M : Refinement D E) (e : E.State) :
+    M.toRandomized.inv e ↔ M.inv e := Iff.rfl
+
+@[simp] theorem toRandomized_abs (M : Refinement D E) (e : E.State) :
+    M.toRandomized.abs e = M.abs e := rfl
+
+/-- Pathwise amortized costs of a deterministic refinement are expected amortized costs of its
+distributional form. -/
+theorem Amortized.toRandomized {M : Refinement D E} {lower : E.State → E.Op → ℕ}
+    {upper : D.State → D.Op → ℕ} {potential : E.State → ℕ}
+    (A : M.Amortized lower upper potential) :
+    M.toRandomized.ExpectedAmortized lower upper fun e => potential e where
+  step {e} o hi hv := by
+    have h := A.step o hi hv (E.clientRun_canonical e (M.methods o)
+      ((E.demonicValid_iff_validHistory_runClient e _).mp (M.valid o hi hv)))
+    rw [E.totalCostTranscript_canonicalTranscript] at h
+    change E.toRandomized.expectedCost lower (M.methods o) e +
+      ∑' x, E.toRandomized.run (M.methods o) e x * (potential x.2 : ℝ≥0∞) ≤
+        upper (M.abs e) o + potential e
+    rw [StateTransitionSpec.expectedCost_toRandomized, StateTransitionSpec.run_toRandomized,
+      tsum_eq_single (DataStructure.eval E (M.methods o) e) fun x hx => by
+        simp [PMF.pure_apply, hx], PMF.pure_apply_self, one_mul]
+    exact_mod_cast h
+
+end Refinement
 
 end Cslib.DataStructure
