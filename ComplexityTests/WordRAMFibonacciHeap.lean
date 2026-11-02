@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap
 
 /-!
 # Concrete interpreter and non-vacuity tests for `PriorityQueue.FibonacciHeap`
@@ -24,9 +24,10 @@ Exercises `FibonacciHeap` on the concrete `Cslib.WordRAM.Code.eval` interpreter 
 
 @[expose] public section
 
-open Cslib Cslib.WordRAM Cslib.Algorithms.Lean
-open Cslib.Algorithms.WordRAM.PriorityQueue
-open Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+open Cslib Cslib.WordRAM
+open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
+open Cslib.DataStructure.PriorityQueue.WordRAM Cslib.DataStructure.WordRAM
+open Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap
 
 namespace WordRAMFibonacciHeapTests
 
@@ -153,7 +154,7 @@ def sampleOps : List (IndexedMinPQ.Op 4) :=
   [.insert 2 30, .insert 1 30, .decreaseKey 2 10, .getKey 2, .extractMin, .isEmpty]
 
 theorem sampleOps_valid :
-    (IndexedMinPQ.spec 4 50).ValidHistory (IndexedMinPQ.empty 4) sampleOps := by
+    (indexedMinPQSpec 4 50).ValidHistory (IndexedMinPQ.empty 4) sampleOps := by
   refine ⟨⟨rfl, by decide⟩, ⟨⟨by decide, by decide⟩, ⟨⟨⟨30, rfl, by decide⟩, by decide⟩,
     ⟨trivial, ⟨trivial, ⟨trivial, trivial⟩⟩⟩⟩⟩⟩
 
@@ -208,11 +209,11 @@ example :
   simp only [sampleOps, numQueries, numInserts, numDecreaseKeys, numExtractMins, hlog] at ht_ops
   omega
 
-/-- Non-vacuity of the `Stateful.Amortized` certificate over `Basis.standard`. -/
+/-- Non-vacuity of the `DataStructure.Amortized` certificate over `Basis.standard`. -/
 example :
     let hS : Fits 10 (8 + space 4) := by unfold space Fits; decide
     let hK : Fits 10 50 := by decide
-    Stateful.Amortized (certificate hS hK).realization
+    DataStructure.Amortized (certificate hS hK).impl
       DynamicProgram.OperationTrace.instructions
       (fun _ x => potential x)
       (fun s o => charge 4 s o + 1) :=
@@ -220,18 +221,18 @@ example :
 
 /-- Lift a single `IndexedMinPQ` operation into `Client` for `spec 4 50`. -/
 abbrev callOp (o : IndexedMinPQ.Op 4) :
-    (IndexedMinPQ.spec 4 50).Client ((IndexedMinPQ.spec 4 50).Result o) :=
-  PFunctor.FreeM.lift (P := (IndexedMinPQ.spec 4 50).signature) o
+    (indexedMinPQSpec 4 50).Client ((indexedMinPQSpec 4 50).Result o) :=
+  PFunctor.FreeM.lift (P := (indexedMinPQSpec 4 50).signature) o
 
 /-- Concrete adaptive client inserting `(2, 8)` and `(1, 8)`, decreasing `2` to `0`, and extracting
 the minimum. -/
-def sampleClient : (IndexedMinPQ.spec 4 50).Client (Option (Fin 4 × ℕ)) := do
+def sampleClient : (indexedMinPQSpec 4 50).Client (Option (Fin 4 × ℕ)) := do
   callOp (.insert 2 8)
   callOp (.insert 1 8)
   callOp (.decreaseKey 2 0)
   callOp .extractMin
 
-/-- Non-vacuity of `subroutineDS`, `FibInv`, and `run_client_amortized` over `Basis.standard`:
+/-- Non-vacuity of `impl`, `FibInv`, and `run_client_amortized` over `Basis.standard`:
 initializes `y₀` from zeroed memory with `potential y₀ = 0` and executes `sampleClient` returning
 `some (2, 0)`. -/
 example :
@@ -240,12 +241,12 @@ example :
     ∃ y₀ y traces,
       FibInv 4 50 10 8 (IndexedMinPQ.empty 4) y₀ ∧
       potential y₀ = 0 ∧
-      Stateful.Executes ((dynamicProgram hS hK).ExecOp 10) sampleClient y₀
+      DataStructure.Executes ((dynamicProgram hS hK).ExecOp 10) sampleClient y₀
         (some (2, 0)) y traces ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces + potential y ≤
-        (IndexedMinPQ.spec 4 50).totalCost (fun s o => charge 4 s o + 1)
+      DataStructure.total DynamicProgram.OperationTrace.instructions traces + potential y ≤
+        (indexedMinPQSpec 4 50).totalCost (fun s o => charge 4 s o + 1)
           (IndexedMinPQ.empty 4)
-          ((IndexedMinPQ.spec 4 50).runClient (IndexedMinPQ.empty 4) sampleClient).2.2 := by
+          ((indexedMinPQSpec 4 50).runClient (IndexedMinPQ.empty 4) sampleClient).2.2 := by
   intro hS hK
   let x₀ : Data rFib := ⟨initRegs 4 8, fun _ => 0⟩
   have hx₀ : x₀.Bounded 10 :=
@@ -254,15 +255,15 @@ example :
   have hpar : ∀ j : Fin 1, x₀.regs (![nReg] j) = ![4] j := fun j => by fin_cases j; rfl
   have hz : ∀ a ∈ (Block.mk 8 (space 4)).footprint, x₀.mem a = 0 := fun _ _ => rfl
   obtain ⟨y₀, _, _, hr₀, hpot₀, _⟩ :=
-    (subroutineDS (K_max := 50) hS hK).initFresh_exec hx₀ hfr hpar hz
+    (impl (K_max := 50) hS hK).initFresh_exec hx₀ hfr hpar hz
   have hp₀ : potential y₀ = 0 := Nat.eq_zero_of_le_zero hpot₀
-  have hhist : ((IndexedMinPQ.spec 4 50).runClient (IndexedMinPQ.empty 4) sampleClient).2.2 =
+  have hhist : ((indexedMinPQSpec 4 50).runClient (IndexedMinPQ.empty 4) sampleClient).2.2 =
       [.insert 2 8, .insert 1 8, .decreaseKey 2 0, .extractMin] := rfl
-  have hv : (IndexedMinPQ.spec 4 50).ValidHistory (IndexedMinPQ.empty 4)
-      ((IndexedMinPQ.spec 4 50).runClient (IndexedMinPQ.empty 4) sampleClient).2.2 := by
+  have hv : (indexedMinPQSpec 4 50).ValidHistory (IndexedMinPQ.empty 4)
+      ((indexedMinPQSpec 4 50).runClient (IndexedMinPQ.empty 4) sampleClient).2.2 := by
     rw [hhist]
     simp [IndexedMinPQ.valid, IndexedMinPQ.step, IndexedMinPQ.empty]
-  have hres : ((IndexedMinPQ.spec 4 50).runClient (IndexedMinPQ.empty 4) sampleClient).1 =
+  have hres : ((indexedMinPQSpec 4 50).runClient (IndexedMinPQ.empty 4) sampleClient).1 =
       some (2, 0) := by
     decide
   obtain ⟨y, traces, hex, _, hcost⟩ := run_client_amortized hS hK sampleClient hr₀ hv
@@ -282,9 +283,9 @@ def compactDataMinPQ (memCap : ℕ) (d : Data MinPQ.rMinPQ) : Option (Data MinPQ
     { regs := fun i => rs.getD i.val 0
       mem := fun a => if a < memCap then ms.getD a 0 else tail }
 
-/-- Run a single `Cslib.Algorithms.Lean.MinPQ.Op` via `MinPQ.dispatchCode.eval`. -/
+/-- Run a single `Cslib.DataStructure.PriorityQueue.MinPQ.Op` via `MinPQ.dispatchCode.eval`. -/
 def stepEvalMinPQ {n_max : ℕ} (w fuel : ℕ) (dt : Data MinPQ.rMinPQ × ℕ)
-    (o : Cslib.Algorithms.Lean.MinPQ.Op n_max) :
+    (o : Cslib.DataStructure.PriorityQueue.MinPQ.Op n_max) :
     Option (Data MinPQ.rMinPQ × ℕ) := do
   let (d', t) ← MinPQ.dispatchCode.eval w fuel ⟨MinPQ.prepareRegs o dt.1.regs, dt.1.mem⟩
   let dc ← compactDataMinPQ 80 d'
@@ -326,22 +327,22 @@ example :
     let hS : Fits 10 (8 + MinPQ.space 4) := by unfold MinPQ.space Fits; decide
     let hU : Fits 10 50 := by decide
     let hV : Fits 10 500 := by decide
-    Stateful.Amortized (MinPQ.certificate hS hU hV).realization
+    DataStructure.Amortized (MinPQ.certificate hS hU hV).impl
       DynamicProgram.OperationTrace.instructions
       (fun _ x => MinPQ.potential x)
       (fun s o => MinPQ.charge 4 s o + 1) :=
   MinPQ.amortized _ _ _
 
-/-- Lift a single `Cslib.Algorithms.Lean.MinPQ.Op` into an adaptive `Client`. -/
-abbrev callMinPQOp (o : Cslib.Algorithms.Lean.MinPQ.Op 4) :
-    (Cslib.Algorithms.Lean.MinPQ.spec 4 50 500).Client
-      ((Cslib.Algorithms.Lean.MinPQ.spec 4 50 500).Result o) :=
-  PFunctor.FreeM.lift (P := (Cslib.Algorithms.Lean.MinPQ.spec 4 50 500).signature) o
+/-- Lift a single `Cslib.DataStructure.PriorityQueue.MinPQ.Op` into an adaptive `Client`. -/
+abbrev callMinPQOp (o : Cslib.DataStructure.PriorityQueue.MinPQ.Op 4) :
+    (Cslib.DataStructure.PriorityQueue.minPQSpec 4 50 500).Client
+      ((Cslib.DataStructure.PriorityQueue.minPQSpec 4 50 500).Result o) :=
+  PFunctor.FreeM.lift (P := (Cslib.DataStructure.PriorityQueue.minPQSpec 4 50 500).signature) o
 
 /-- Concrete adaptive client that inserts `(30, 300)`, receives the allocated handle `h`, lowers
 `h`'s key to `5`, and extracts the minimum entry. -/
 def sampleMinPQClient :
-    (Cslib.Algorithms.Lean.MinPQ.spec 4 50 500).Client (Option (ℕ × ℕ × Fin 4)) := do
+    (Cslib.DataStructure.PriorityQueue.minPQSpec 4 50 500).Client (Option (ℕ × ℕ × Fin 4)) := do
   let hOpt ← callMinPQOp (.insert 30 300)
   match hOpt with
   | some h =>
@@ -350,23 +351,23 @@ def sampleMinPQClient :
   | none =>
     callMinPQOp .extractMin
 
-/-- Non-vacuity of `MinPQ.subroutineDS`, `MinPQ.Rep`, and `MinPQ.run_client_amortized` for an
+/-- Non-vacuity of `MinPQ.impl`, `MinPQ.Rep`, and `MinPQ.run_client_amortized` for an
 adaptive handle-passing client over `Basis.standard`. -/
 example :
     let hS : Fits 10 (8 + MinPQ.space 4) := by unfold MinPQ.space Fits; decide
     let hU : Fits 10 50 := by decide
     let hV : Fits 10 500 := by decide
     ∃ a y₀ y traces s' tr,
-      MinPQ.Rep 4 50 500 10 8 (Cslib.Algorithms.Lean.MinPQ.empty 4) y₀ ∧
+      MinPQ.Rep 4 50 500 10 8 (Cslib.DataStructure.PriorityQueue.MinPQ.empty 4) y₀ ∧
       MinPQ.potential y₀ = 0 ∧
-      Stateful.Executes ((MinPQ.dynamicProgram hS hU hV).ExecOp 10) sampleMinPQClient y₀
+      DataStructure.Executes ((MinPQ.dynamicProgram hS hU hV).ExecOp 10) sampleMinPQClient y₀
         a y traces ∧
-      (Cslib.Algorithms.Lean.MinPQ.spec 4 50 500).ClientRun
-        (Cslib.Algorithms.Lean.MinPQ.empty 4) sampleMinPQClient a s' tr ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces + MinPQ.potential y ≤
-        (Cslib.Algorithms.Lean.MinPQ.spec 4 50 500).totalCostTranscript
+      (Cslib.DataStructure.PriorityQueue.minPQSpec 4 50 500).ClientRun
+        (Cslib.DataStructure.PriorityQueue.MinPQ.empty 4) sampleMinPQClient a s' tr ∧
+      DataStructure.total DynamicProgram.OperationTrace.instructions traces + MinPQ.potential y ≤
+        (Cslib.DataStructure.PriorityQueue.minPQSpec 4 50 500).totalCostTranscript
           (fun st o => MinPQ.charge 4 st o + 1)
-          (Cslib.Algorithms.Lean.MinPQ.empty 4) tr := by
+          (Cslib.DataStructure.PriorityQueue.MinPQ.empty 4) tr := by
   intro hS hU hV
   let x₀ : Data MinPQ.rMinPQ := ⟨MinPQ.initRegs 4 8, fun _ => 0⟩
   have hx₀ : x₀.Bounded 10 :=
@@ -375,10 +376,10 @@ example :
   have hpar : ∀ j : Fin 1, x₀.regs (![MinPQ.nReg] j) = ![4] j := fun j => by fin_cases j; rfl
   have hz : ∀ a ∈ (Block.mk 8 (MinPQ.space 4)).footprint, x₀.mem a = 0 := fun _ _ => rfl
   obtain ⟨y₀, _, _, hr₀, hpot₀, _⟩ :=
-    (MinPQ.subroutineDS hS hU hV).initFresh_exec hx₀ hfr hpar hz
+    (MinPQ.impl hS hU hV).initFresh_exec hx₀ hfr hpar hz
   have hp₀ : MinPQ.potential y₀ = 0 := Nat.eq_zero_of_le_zero hpot₀
-  have hv : (Cslib.Algorithms.Lean.MinPQ.spec 4 50 500).DemonicValid
-      (Cslib.Algorithms.Lean.MinPQ.empty 4) sampleMinPQClient := by
+  have hv : (Cslib.DataStructure.PriorityQueue.minPQSpec 4 50 500).DemonicValid
+      (Cslib.DataStructure.PriorityQueue.MinPQ.empty 4) sampleMinPQClient := by
     refine .liftBind _ _ ⟨by decide, by decide, by decide⟩ ?_
     rintro s₁ _ ⟨h, _, rfl, rfl⟩
     refine .liftBind _ _ ⟨30, 300, by simp [Function.update], by decide⟩ ?_

@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (test driver)
 
-public import Complexity.Algorithms.Lean.VanEmdeBoas.Stateful
+public import Complexity.DataStructure.VanEmdeBoas.Impl
 public import ComplexityTests.OrderedSet
 
 /-!
@@ -16,8 +16,8 @@ Boundary and adaptive examples for the recursive vEB algorithms (`member`, `inse
 functions and active recursive-call counts; they do not measure or certify RAM running time.
 -/
 
-open Cslib.Algorithms.Lean.VanEmdeBoas
-open Cslib.OrderedSet Cslib.Stateful
+open Cslib.DataStructure.VanEmdeBoas
+open Cslib.DataStructure.OrderedSet Cslib.DataStructure
 
 @[expose] public section
 
@@ -228,7 +228,7 @@ theorem priorityWorkflow_correct_and_bounded :
   run_correct priorityWorkflow (rep_empty 2)
 
 /--
-info: 'Cslib.Algorithms.Lean.VanEmdeBoas.Tree.valid_empty' depends on axioms: [propext, Quot.sound]
+info: 'Cslib.DataStructure.VanEmdeBoas.Tree.valid_empty' depends on axioms: [propext, Quot.sound]
 -/
 #guard_msgs in
 #print axioms Tree.valid_empty

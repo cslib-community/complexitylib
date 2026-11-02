@@ -56,6 +56,9 @@ jobs:
       # This reads only checked-in files: no Lean, network or `.lake`.
       - name: "Documentation pins"
         run: python3 -B scripts/check_docs.py --config-only
+      - name: Reclaim unused hosted-runner SDK space
+        continue-on-error: true
+        run: scripts/ci/prepare-runner.sh
       # lean-action has no hook between installing the toolchain and building, so here it only
       # installs elan. The steps around it do the rest of what it did, with bounded cache retries:
       # restore and save `.lake` under the same Actions cache key, then build, test and lint.
@@ -184,12 +187,14 @@ jobs:
           python3 -B scripts/check_changed_files.py --base "$BASE"
       # Advisory only: public definitions that a pull request adds or changes and that share a
       # large anonymized subterm with an existing definition, or only rename one (AGENTS.md, "New
-      # statements and definitions"). Candidates go to the job summary and appear as notices; the
-      # step never fails the job. Its compiled-fixture tests need Lean, so the Python tests at the
-      # start skip them; they run here. See scripts/parallel_defs.py. The comparison base is the
-      # first parent of the checked-out merge commit: `pull_request.base.sha` can be an older tip of
-      # the base branch, and comparing with it would attribute later base commits to the PR.
-      - name: "Parallel-definition notice (advisory)"
+      # statements and definitions"), and theorems it adds or changes whose statement the library
+      # or a dependency already proves (#949). Candidates go to the job summary and appear as
+      # notices; the step never fails the job. Its compiled-fixture tests need Lean, so the Python
+      # tests at the start skip them; they run here. See scripts/parallel_defs.py. The comparison
+      # base is the first parent of the checked-out merge commit: `pull_request.base.sha` can be an
+      # older tip of the base branch, and comparing with it would attribute later base commits to
+      # the PR.
+      - name: "Parallel-definition and duplicate-statement notices (advisory)"
         if: github.event_name == 'pull_request'
         continue-on-error: true
         timeout-minutes: 10
@@ -200,6 +205,7 @@ jobs:
           BASE=${BASE:-$RECORDED_BASE}
           git fetch --no-tags --depth=1 origin "$BASE"
           python3 -B scripts/parallel_defs.py --base "$BASE" --github --no-build-check
+          python3 -B scripts/parallel_defs.py --theorems --base "$BASE" --github --no-build-check
           python3 -B -m unittest scripts/test_parallel_defs.py
       # Advisory only: backticked Lean names in the PR description that the checked-out merge
       # commit does not declare (renamed or dropped while the PR evolved). It reads the sources of

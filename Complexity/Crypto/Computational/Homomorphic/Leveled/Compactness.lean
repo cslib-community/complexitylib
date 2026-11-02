@@ -63,7 +63,7 @@ theorem exists_decrypt_parameter_bound :
     ∃ (time space : ℕ × List Bool × List Bool → ℕ) (bound : ℕ → ℕ),
       PolynomiallyBounded bound ∧
         (∀ budget : ℕ → ℕ, ComputableInTimeAndSpace
-          (fun p : ℕ × List Bool × List Bool => (scheme D budget).decrypt p.1 p.2.1 p.2.2)
+          (fun ((n, sk, c) : ℕ × List Bool × List Bool) => (scheme D budget).decrypt n sk c)
           (encPair encUnary (encPair encBits encBits)) encBool time space) ∧
         ∀ n (sk ciphertext : List Bool),
           sk.length = 3 * secretWidth n + 1 →

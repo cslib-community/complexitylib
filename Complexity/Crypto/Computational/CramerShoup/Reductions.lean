@@ -239,7 +239,8 @@ theorem advantage_bind_sampleCramerShoupTripleExponents_le (n : ℕ) (d : F.Desc
     (k : ZMod (F.order d) → ZMod (F.order d) → ZMod (F.order d) → Game) :
     Game.advantage
       ((ProbComp.eval (F.sampleCramerShoupTripleExponents n d)).bind fun p =>
-        k (p.1 : ZMod (F.order d)) (p.2.1 : ZMod (F.order d)) (p.2.2 : ZMod (F.order d)))
+        let bc := p.2
+        k (p.1 : ZMod (F.order d)) (bc.1 : ZMod (F.order d)) (bc.2 : ZMod (F.order d)))
       ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
         (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β =>
           (PMF.uniformOfFintype (ZMod (F.order d))).bind fun γ => k α β γ) ≤
@@ -531,7 +532,7 @@ private theorem isPPTOn_run_cramerShoupPhase1Oracle
     IsPPTOn encIn
       (encPair (encPair (encPair (encPair encMsg encMsg) encAD) encBits) (encFinEnum Unit))
       (fun a => (OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
           (F.cramerShoupPhase1Oracle hasAD H isElem (d a) (sk a)))
         (adversary.choose (n a) (pk a))).run ()) := by
   have hp1 := ComputableTidilyInPolyTime.fst encIn encBits
@@ -575,7 +576,7 @@ private theorem isPPTOn_run_cramerShoupPhase2Oracle
     (had : ComputableTidilyInPolyTime ad encIn encBits) :
     IsPPTOn encIn (encPair encBool (encFinEnum Unit))
       (fun a => (OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
           (F.cramerShoupPhase2Oracle hasAD H isElem (d a) (sk a) (ct a) (ad a)))
         (adversary.guess (n a) (state a) (ct a))).run ()) := by
   have hp1 := ComputableTidilyInPolyTime.fst encIn encBits
@@ -622,7 +623,7 @@ private theorem isPPTOn_run_cramerShoupCollisionPhase2Oracle
     (had : ComputableTidilyInPolyTime ad encIn encBits) :
     IsPPTOn encIn (encPair encBool (encOption encBits))
       (fun a => (OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
           (F.cramerShoupCollisionPhase2Oracle hasAD H isElem (d a) (sk a) (ct a) (ad a)))
         (adversary.guess (n a) (state a) (ct a))).run none) := by
   have hp1 := ComputableTidilyInPolyTime.fst encIn encBits
@@ -692,20 +693,20 @@ noncomputable def cramerShoupMsgToDDHDistinguisher
     (adversary : ADCCA2AdversaryOf Msg AD) (bit : Bool)
     (n : ℕ) (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool :=
   F.sampleCramerShoupSK n input.1 >>= fun sk =>
-    let pk := F.encodeCramerShoupPublicKey input.1 input.2.1 sk
+    let pk := F.encodeCramerShoupPublicKey input.1 (csDdhU input) sk
     ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
         (F.cramerShoupPhase1Oracle hasAD H isElem input.1 sk))
       (adversary.choose n pk)).run ()) >>= fun choiceOut =>
       let choice := choiceOut.1
-      let m₀ := encodeMsg (input.1, choice.1.1.1)
-      let m₁ := encodeMsg (input.1, choice.1.1.2)
-      let ad := encodeAD (input.1, choice.1.2)
+      let m₀ := encodeMsg (input.1, csChoiceMsg₀ choice)
+      let m₁ := encodeMsg (input.1, csChoiceMsg₁ choice)
+      let ad := encodeAD (input.1, csChoiceAD choice)
       if isElem (input.1, m₀) && isElem (input.1, m₁) then
         let m := if bit then m₁ else m₀
-        let ct := F.encodeCramerShoupChallenge H input.1 sk input.2.2.1 input.2.2.2 m ad
+        let ct := F.encodeCramerShoupChallenge H input.1 sk (csDdhV input) (csDdhW input) m ad
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (F.cramerShoupPhase2Oracle hasAD H isElem input.1 sk ct ad))
           (adversary.guess n choice.2 ct)).run ()) >>= fun guessOut =>
           pure guessOut.1
@@ -831,23 +832,23 @@ noncomputable def cramerShoupMsgToCollisionFinder
     F.sampleCramerShoupTripleExponents n d >>= fun abc =>
       F.sampleCramerShoupSK n d >>= fun sk =>
         let gen := F.encode d (F.generator d)
-        let u := F.smul (d, abc.1, gen)
-        let v := F.smul (d, abc.2.1, gen)
-        let w := F.smul (d, abc.2.2, gen)
+        let u := F.smul (d, csExpA abc, gen)
+        let v := F.smul (d, csExpB abc, gen)
+        let w := F.smul (d, csExpC abc, gen)
         let pk := F.encodeCramerShoupPublicKey d u sk
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
           (adversary.choose n pk)).run ()) >>= fun choiceOut =>
           let choice := choiceOut.1
-          let m₀ := encodeMsg (d, choice.1.1.1)
-          let m₁ := encodeMsg (d, choice.1.1.2)
-          let ad := encodeAD (d, choice.1.2)
+          let m₀ := encodeMsg (d, csChoiceMsg₀ choice)
+          let m₁ := encodeMsg (d, csChoiceMsg₁ choice)
+          let ad := encodeAD (d, csChoiceAD choice)
           if isElem (d, m₀) && isElem (d, m₁) then
             let m := if bit then m₁ else m₀
             let ct := F.encodeCramerShoupChallenge H d sk v w m ad
             ((OracleComp.interpret
-              (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+              (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
                 (F.cramerShoupCollisionPhase2Oracle hasAD H isElem d sk ct ad))
               (adversary.guess n choice.2 ct)).run none) >>= fun out =>
               let target := extractCramerShoupTuple ct ad
@@ -980,10 +981,11 @@ theorem encodeCramerShoupPublicKey_eq_skNatOfZMod (d : F.Desc)
     (α : ZMod (F.order d)) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :
     F.encodeCramerShoupPublicKey d (F.encode d (α • F.generator d)) sk =
       F.encodeCramerShoupPublicKey d (F.encode d (α • F.generator d))
-        (F.skNatOfZMod d (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
-          (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
-          (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d))) := by
-  simp only [encodeCramerShoupPublicKey_encode, skNatOfZMod, ZMod.natCast_zmod_val]
+        (F.skNatOfZMod d ((csSkS sk : ℕ) : ZMod (F.order d)) ((csSkT sk : ℕ) : ZMod (F.order d))
+          ((csSkS₁ sk : ℕ) : ZMod (F.order d)) ((csSkT₁ sk : ℕ) : ZMod (F.order d))
+          ((csSkS₂ sk : ℕ) : ZMod (F.order d)) ((csSkT₂ sk : ℕ) : ZMod (F.order d))) := by
+  simp only [encodeCramerShoupPublicKey_encode, skNatOfZMod,
+    csSkS, csSkT, csSkS₁, csSkT₁, csSkS₂, csSkT₂, ZMod.natCast_zmod_val]
 
 /-- `encodeCramerShoupChallenge` depends on `sk` only through its residues modulo `F.order d`. -/
 theorem encodeCramerShoupChallenge_eq_skNatOfZMod
@@ -991,12 +993,12 @@ theorem encodeCramerShoupChallenge_eq_skNatOfZMod
     (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) (v w : F.Carrier d) (m ad : List Bool) :
     F.encodeCramerShoupChallenge H d sk (F.encode d v) (F.encode d w) m ad =
       F.encodeCramerShoupChallenge H d
-        (F.skNatOfZMod d (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
-          (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
-          (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d)))
+        (F.skNatOfZMod d ((csSkS sk : ℕ) : ZMod (F.order d)) ((csSkT sk : ℕ) : ZMod (F.order d))
+          ((csSkS₁ sk : ℕ) : ZMod (F.order d)) ((csSkT₁ sk : ℕ) : ZMod (F.order d))
+          ((csSkS₂ sk : ℕ) : ZMod (F.order d)) ((csSkT₂ sk : ℕ) : ZMod (F.order d)))
         (F.encode d v) (F.encode d w) m ad := by
   simp only [encodeCramerShoupChallenge, skNatOfZMod, encodeProjHash_encode,
-    encodeProjHash2_encode, ZMod.natCast_zmod_val]
+    encodeProjHash2_encode, csSkS, csSkT, csSkS₁, csSkT₁, csSkS₂, csSkT₂, ZMod.natCast_zmod_val]
 
 /-- `decodeCramerShoup` depends on `sk` only through its residues modulo `F.order d`. -/
 theorem decodeCramerShoup_eq_skNatOfZMod
@@ -1005,16 +1007,16 @@ theorem decodeCramerShoup_eq_skNatOfZMod
     (d : F.Desc) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) (ct ad : List Bool) :
     F.decodeCramerShoup H isElem d sk ct ad =
       F.decodeCramerShoup H isElem d
-        (F.skNatOfZMod d (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
-          (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
-          (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d))) ct ad := by
+        (F.skNatOfZMod d ((csSkS sk : ℕ) : ZMod (F.order d)) ((csSkT sk : ℕ) : ZMod (F.order d))
+          ((csSkS₁ sk : ℕ) : ZMod (F.order d)) ((csSkT₁ sk : ℕ) : ZMod (F.order d))
+          ((csSkS₂ sk : ℕ) : ZMod (F.order d)) ((csSkT₂ sk : ℕ) : ZMod (F.order d))) ct ad := by
   unfold decodeCramerShoup
   by_cases hvw :
       isElem (d, (decodeBits4 ct).1) = true ∧ isElem (d, (decodeBits4 ct).2.1) = true
   · obtain ⟨v, hv⟩ := (hmem d _).mp hvw.1
     obtain ⟨w, hw⟩ := (hmem d _).mp hvw.2
     simp only [← hv, ← hw, skNatOfZMod, encodeProjHash2_encode, encodeProjHash_encode,
-      ZMod.natCast_zmod_val]
+      csSkS, csSkT, csSkS₁, csSkT₁, csSkS₂, csSkT₂, ZMod.natCast_zmod_val]
   · have hfalse : ((encBits4 (decodeBits4 ct) == ct) && isElem (d, (decodeBits4 ct).1) &&
         isElem (d, (decodeBits4 ct).2.1) && isElem (d, (decodeBits4 ct).2.2.1)) = false := by
       revert hvw
@@ -1028,9 +1030,9 @@ theorem cramerShoupPhase1Oracle_eq_skNatOfZMod
     (d : F.Desc) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :
     F.cramerShoupPhase1Oracle hasAD H isElem d sk =
       F.cramerShoupPhase1Oracle hasAD H isElem d
-        (F.skNatOfZMod d (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
-          (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
-          (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d))) := by
+        (F.skNatOfZMod d ((csSkS sk : ℕ) : ZMod (F.order d)) ((csSkT sk : ℕ) : ZMod (F.order d))
+          ((csSkS₁ sk : ℕ) : ZMod (F.order d)) ((csSkT₁ sk : ℕ) : ZMod (F.order d))
+          ((csSkS₂ sk : ℕ) : ZMod (F.order d)) ((csSkT₂ sk : ℕ) : ZMod (F.order d))) := by
   funext req s
   simp only [cramerShoupPhase1Oracle, cramerShoupPhase1Reply,
     F.decodeCramerShoup_eq_skNatOfZMod H isElem hmem d sk]
@@ -1042,9 +1044,9 @@ theorem cramerShoupPhase2Oracle_eq_skNatOfZMod
     (d : F.Desc) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) (ct ad : List Bool) :
     F.cramerShoupPhase2Oracle hasAD H isElem d sk ct ad =
       F.cramerShoupPhase2Oracle hasAD H isElem d
-        (F.skNatOfZMod d (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
-          (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
-          (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d))) ct ad := by
+        (F.skNatOfZMod d ((csSkS sk : ℕ) : ZMod (F.order d)) ((csSkT sk : ℕ) : ZMod (F.order d))
+          ((csSkS₁ sk : ℕ) : ZMod (F.order d)) ((csSkT₁ sk : ℕ) : ZMod (F.order d))
+          ((csSkS₂ sk : ℕ) : ZMod (F.order d)) ((csSkT₂ sk : ℕ) : ZMod (F.order d))) ct ad := by
   funext req s
   simp only [cramerShoupPhase2Oracle, cramerShoupPhase2Reply,
     F.decodeCramerShoup_eq_skNatOfZMod H isElem hmem d sk]
@@ -1057,9 +1059,9 @@ theorem cramerShoupCollisionPhase2Oracle_eq_skNatOfZMod
     (d : F.Desc) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) (ct ad : List Bool) :
     F.cramerShoupCollisionPhase2Oracle hasAD H isElem d sk ct ad =
       F.cramerShoupCollisionPhase2Oracle hasAD H isElem d
-        (F.skNatOfZMod d (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
-          (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
-          (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d))) ct ad := by
+        (F.skNatOfZMod d ((csSkS sk : ℕ) : ZMod (F.order d)) ((csSkT sk : ℕ) : ZMod (F.order d))
+          ((csSkS₁ sk : ℕ) : ZMod (F.order d)) ((csSkT₁ sk : ℕ) : ZMod (F.order d))
+          ((csSkS₂ sk : ℕ) : ZMod (F.order d)) ((csSkT₂ sk : ℕ) : ZMod (F.order d))) ct ad := by
   funext req s
   simp only [cramerShoupCollisionPhase2Oracle, finderPhase2Oracle, cramerShoupCollisionPhase2Reply,
     F.decodeCramerShoup_eq_skNatOfZMod H isElem hmem d sk]
@@ -1073,13 +1075,16 @@ theorem encodeCramerShoupEncrypt_publicKey_eq_challenge
     (α β σ τ σ₁ τ₁ σ₂ τ₂ : ZMod (F.order d)) (m ad : List Bool) :
     let pkVal := F.cramerShoupPublicKey d α σ τ σ₁ τ₁ σ₂ τ₂
     F.encodeCramerShoupEncrypt H d
-      (F.encode d pkVal.1, F.encode d pkVal.2.1, F.encode d pkVal.2.2.1, F.encode d pkVal.2.2.2)
+      (F.encode d (csPkU pkVal), F.encode d (csPkH pkVal),
+        F.encode d (csPkH₁ pkVal), F.encode d (csPkH₂ pkVal))
       m ad β.val =
       F.encodeCramerShoupChallenge H d (F.skNatOfZMod d σ τ σ₁ τ₁ σ₂ τ₂)
         (F.encode d (β • F.generator d)) (F.encode d ((α * β) • F.generator d)) m ad := by
+  dsimp only
   have hαβ : (α * β) • F.generator d = β • (α • F.generator d) := by rw [smul_smul, mul_comm]
   rw [hαβ]
   simp only [encodeCramerShoupEncrypt, encodeCramerShoupChallenge, cramerShoupPublicKey,
+    csPkU, csPkH, csPkH₁, csPkH₂, csSkS, csSkT, csSkS₁, csSkT₁, csSkS₂, csSkT₂,
     projHash2Aux, skNatOfZMod, F.smul_encode, F.add_encode, ZMod.natCast_zmod_val,
     encodeProjHash_encode, encodeProjHash2_encode, projHash_smul_generator,
     projHash2_smul_generator]
@@ -1173,8 +1178,7 @@ theorem computableInPolyTime_cramerShoupValid
     (hisElem : ComputableInPolyTime isElem (encPair F.encDesc encBits) encBool)
     (hd : ComputableInPolyTime d encUnary F.encDesc) :
     ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool × List Bool =>
-        F.cramerShoupValid isElem d p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, pk, m₀, m₁⟩ => F.cramerShoupValid isElem d n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encBits encBits))) encBool := by
   let EIn := encPair encUnary (encPair encBits (encPair encBits encBits))
   have hd_in : ComputableTidilyInPolyTime
@@ -1225,7 +1229,7 @@ theorem isPPTOn_cramerShoupADEncryptProb
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     (hd : ComputableInPolyTime d encUnary F.encDesc) :
     IsPPTOn (encPair encUnary (encPair encBits (encPair encBits encAD))) encBits
-      (fun p => F.cramerShoupADEncryptProb encAD H d p.1 p.2.1 p.2.2.1 p.2.2.2) := by
+      (fun ⟨n, pk, m, ad⟩ => F.cramerShoupADEncryptProb encAD H d n pk m ad) := by
   let E0 := encPair encUnary (encPair encBits (encPair encBits encAD))
   let E1 := encPair E0 encNat
   have hct : ComputableTidilyInPolyTime
@@ -1247,7 +1251,7 @@ theorem isPPTOn_cramerShoupEncryptProb
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     (hd : ComputableInPolyTime d encUnary F.encDesc) :
     IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun p => F.cramerShoupEncryptProb H d p.1 p.2.1 p.2.2) := by
+      (fun ⟨n, pk, m⟩ => F.cramerShoupEncryptProb H d n pk m) := by
   let E0 := encPair encUnary (encPair encBits encBits)
   let E1 := encPair E0 encNat
   have hct : ComputableTidilyInPolyTime
@@ -1270,8 +1274,7 @@ theorem computableInPolyTime_cramerShoupADDecryptOpt
     (hisElem : ComputableInPolyTime isElem (encPair F.encDesc encBits) encBool)
     (hd : ComputableInPolyTime d encUnary F.encDesc) :
     ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool × List Bool =>
-        F.cramerShoupADDecryptOpt H isElem d p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, skBits, ct, ad⟩ => F.cramerShoupADDecryptOpt H isElem d n skBits ct ad)
       (encPair encUnary (encPair encBits (encPair encBits encBits))) (encOption encBits) := by
   exact .of_tidy (F.computableTidilyInPolyTime_decodeCramerShoup hH.tidy hisElem.tidy
     (hd.tidy.comp (by fun_prop))
@@ -1287,7 +1290,7 @@ theorem computableInPolyTime_cramerShoupDecryptOpt
     (hisElem : ComputableInPolyTime isElem (encPair F.encDesc encBits) encBool)
     (hd : ComputableInPolyTime d encUnary F.encDesc) :
     ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => F.cramerShoupDecryptOpt H isElem d p.1 p.2.1 p.2.2)
+      (fun ⟨n, skBits, ct⟩ => F.cramerShoupDecryptOpt H isElem d n skBits ct)
       (encPair encUnary (encPair encBits encBits)) (encOption encBits) := by
   exact .of_tidy (F.computableTidilyInPolyTime_decodeCramerShoup hH.tidy hisElem.tidy
     (hd.tidy.comp (by fun_prop))
@@ -1346,9 +1349,9 @@ theorem cca2Phase2Oracle_cramerShoupDecryptOpt
 theorem decodeBits4_dropFrame_encodeCramerShoupPublicKey
     (d : F.Desc) (u : List Bool) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :
     decodeBits4 (dropFrame (F.encodeCramerShoupPublicKey d u sk)) =
-      (u, F.encodeProjHashAux d sk.1.1 sk.1.2 u,
-        F.encodeProjHashAux d sk.2.1.1 sk.2.1.2 u,
-        F.encodeProjHashAux d sk.2.2.1 sk.2.2.2 u) := by
+      (u, F.encodeProjHashAux d (csSkS sk) (csSkT sk) u,
+        F.encodeProjHashAux d (csSkS₁ sk) (csSkT₁ sk) u,
+        F.encodeProjHashAux d (csSkS₂ sk) (csSkT₂ sk) u) := by
   simp [encodeCramerShoupPublicKey, encPair_apply, dropFrame_frame_append]
 
 /-- `encodeCramerShoupEncrypt` on the public-key words generated by `skNatOfZMod` agrees with
@@ -1360,14 +1363,15 @@ theorem encodeCramerShoupEncrypt_skNatOfZMod
     let sk := F.skNatOfZMod d σ τ σ₁ τ₁ σ₂ τ₂
     let pkVal := F.cramerShoupPublicKey d α σ τ σ₁ τ₁ σ₂ τ₂
     F.encodeCramerShoupEncrypt H d
-      (u, F.encodeProjHashAux d sk.1.1 sk.1.2 u,
-        F.encodeProjHashAux d sk.2.1.1 sk.2.1.2 u,
-        F.encodeProjHashAux d sk.2.2.1 sk.2.2.2 u) m ad b =
+      (u, F.encodeProjHashAux d (csSkS sk) (csSkT sk) u,
+        F.encodeProjHashAux d (csSkS₁ sk) (csSkT₁ sk) u,
+        F.encodeProjHashAux d (csSkS₂ sk) (csSkT₂ sk) u) m ad b =
       F.encodeCramerShoupEncrypt H d
-        (F.encode d pkVal.1, F.encode d pkVal.2.1,
-          F.encode d pkVal.2.2.1, F.encode d pkVal.2.2.2)
+        (F.encode d (csPkU pkVal), F.encode d (csPkH pkVal),
+          F.encode d (csPkH₁ pkVal), F.encode d (csPkH₂ pkVal))
         m ad (b : ZMod (F.order d)).val := by
   simp only [skNatOfZMod, encodeProjHashAux_encode, ZMod.natCast_zmod_val,
+    csPkU, csPkH, csPkH₁, csPkH₂, csSkS, csSkT, csSkS₁, csSkT₁, csSkS₂, csSkT₂,
     cramerShoupPublicKey, projHash2Aux, encodeCramerShoupEncrypt, F.smul_encode, F.add_encode]
 
 

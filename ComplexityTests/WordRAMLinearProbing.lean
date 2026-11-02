@@ -8,14 +8,14 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Algorithms.WordRAM.Dictionary.LinearProbing
+public import Complexity.DataStructure.Dictionary.WordRAM.LinearProbing
 
 /-!
 # Linear Probing Word-RAM Dictionary Tests
 
 Exercises the open-addressed linear-probing dictionary implementation in
-`Complexity.Algorithms.WordRAM.Dictionary.LinearProbing` and its 5-wise independent dyadic
-cluster analysis in `Complexity.Algorithms.WordRAM.Dictionary.LinearProbing.FiveWise`:
+`Complexity.DataStructure.Dictionary.WordRAM.LinearProbing` and its 5-wise independent dyadic
+cluster analysis in `Complexity.DataStructure.Dictionary.WordRAM.LinearProbing.FiveWise`:
 * concrete space, table-size (`2 ^ tableLog n_max`), setup-time, and per-operation charge bounds;
 * multi-key linear-probe cluster collisions when distinct keys share the same home bucket, forcing
   sequential probing across contiguous occupied runs;
@@ -24,7 +24,7 @@ cluster analysis in `Complexity.Algorithms.WordRAM.Dictionary.LinearProbing.Five
   `none`);
 * deterministic step-bounded Word-RAM execution `opCode_execWithin` across inserts, cluster
   collisions, in-place updates at capacity, hits, and misses;
-* instantiation of `subroutineDS`, `subroutineDSStandard`, and `seq_expected_amortized` on a
+* instantiation of `impl`, `implStandard`, and `seq_expected_amortized` on a
   concrete 6-operation trace.
 -/
 
@@ -32,10 +32,11 @@ cluster analysis in `Complexity.Algorithms.WordRAM.Dictionary.LinearProbing.Five
 
 namespace ComplexityTests.WordRAMLinearProbing
 
-open Cslib Cslib.WordRAM Cslib.WordRAM.Randomized Cslib.Probability
-open Cslib.Algorithms.Lean
-open Cslib.Algorithms.WordRAM.Hashing
-open Cslib.Algorithms.WordRAM.Dictionary.LinearProbing
+open Cslib Cslib.WordRAM Cslib.Probability
+open Cslib.DataStructure Cslib.DataStructure.Dictionary
+open Cslib.DataStructure.HashFamily.WordRAM
+open Cslib.DataStructure.WordRAM Cslib.DataStructure.WordRAM.Randomized
+open Cslib.DataStructure.Dictionary.WordRAM.LinearProbing
 open scoped ENNReal
 
 /-! ## 1. Concrete parameter and table-sizing sanity checks -/
@@ -47,7 +48,7 @@ example : tableSize 3 = 32 := by decide
 example : space 3 ≤ 49 * max 3 4 + 13 := space_le 3
 
 /-- Concrete machine parameters `U = 16`, `V = 100`, `n_max = 3`, `w = 64`, `base = 32` satisfy
-the word-width and address-fit hypotheses of `LinearProbing.subroutineDS`. -/
+the word-width and address-fit hypotheses of `LinearProbing.impl`. -/
 theorem hw_example : 2 * trinomialDeg 16 (tableLog 3) ≤ 64 := by
   have hle := trinomialDeg_le_three_mul 16 (tableLog 3)
   have hval : 3 * max (Nat.clog 2 (max 16 2)) (max (tableLog 3) 1) = 15 := by decide
@@ -228,21 +229,22 @@ theorem collision_probeLen_pos :
     exact hnot0 hcont0
   omega
 
-/-! ## 4. Word-RAM `opCode_execWithin`, `subroutineDS`, `subroutineDSStandard`, and
+/-! ## 4. Word-RAM `opCode_execWithin`, `impl`, `implStandard`, and
 `seq_expected_amortized` -/
 
-/-- Concrete `SubroutineDS` instance for `(U = 16, V = 100, n_max = 3, w = 64, base = 32)` on
+/-- Concrete `StateTransitionImpl` instance for `(U = 16, V = 100, n_max = 3, w = 64, base = 32)` on
 `Basis.exact`. -/
 noncomputable abbrev sampleDS :
-    Cslib.WordRAM.Randomized.SubroutineDS (subroutineCode 16 3) (Dictionary.spec 16 100 3) 64 32
+    Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl (subroutineCode 16 3)
+      (Dictionary.spec 16 100 3) 64 32
       Fin.elim0 (Dictionary.empty 16) :=
-  subroutineDS 16 100 3 64 32 hw_example hfit_space_example hfit_V_example
+  impl 16 100 3 64 32 hw_example hfit_space_example hfit_V_example
 
-/-- Concrete `SubroutineDS` instance on `Basis.standard`. -/
+/-- Concrete `StateTransitionImpl` instance on `Basis.standard`. -/
 noncomputable abbrev sampleDSStandard :
-    Cslib.WordRAM.Randomized.SubroutineDS (subroutineCode 16 3).toStandard
+    Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl (subroutineCode 16 3).toStandard
       (Dictionary.spec 16 100 3) 64 32 Fin.elim0 (Dictionary.empty 16) :=
-  subroutineDSStandard 16 100 3 64 32 hw_example hfit_space_example hfit_V_example
+  implStandard 16 100 3 64 32 hw_example hfit_space_example hfit_V_example
 
 /-- End-to-end expected-time execution of `initFresh` followed by the 6-operation trace
 `sampleOps` (3 inserts to capacity `n_max = 3`, 1 in-place update at capacity, 1 hit lookup, and

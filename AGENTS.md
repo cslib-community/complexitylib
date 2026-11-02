@@ -180,6 +180,10 @@ concrete and the change is small; otherwise record a specific follow-up with dec
 consumers, and a proposed home. Apply the migration policy below when changing public interfaces.
 Do not expand a bounded PR into an unbounded architectural cleanup.
 
+Do not prove a lemma that the library, Mathlib or core already has, even privately: use it, or make
+a private original public. After a build, `python3 scripts/parallel_defs.py --theorems` lists the
+theorems a change adds or modifies whose statement already exists; CI posts the same notice.
+
 "Lowest suitable" does not mean the most widely imported file. Adding a public declaration changes
 a module's public interface and can invalidate downstream build artifacts, even for clients that do
 not use the new declaration. Prefer a small topic module imported by its consumers over appending

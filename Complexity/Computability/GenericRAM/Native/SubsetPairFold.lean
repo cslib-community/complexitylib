@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Computability.GenericRAM.Native.IndexFold
 public import Complexity.Foundations.Combinatorics.SubsetPairCount
+public import Complexity.Foundations.Data.BitString.Combination
 public import Complexity.Foundations.Data.BitString.Support
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
@@ -101,12 +102,27 @@ def bucketStep (rowN : List ℕ) (state : ℕ × Option (ℕ × ℕ)) (s : ℕ) 
 def findBucket (n q j : ℕ) (table : List (List ℕ)) : Option (ℕ × ℕ) :=
   ((List.range (min q n + 1)).foldl (bucketStep (table.getD n [])) (j, none)).2
 
+/-- State `((k, r), bits)` of combinatorial unranking `unrankCombStep`. -/
+abbrev UnrankCombState : Type := (ℕ × ℕ) × List Bool
+
+/-- Remaining weight and rank pair `(k, r)` of `UnrankCombState`. -/
+abbrev UnrankCombState.kr (state : UnrankCombState) : ℕ × ℕ := state.1
+
+/-- Remaining weight `k` of `UnrankCombState`. -/
+abbrev UnrankCombState.k (state : UnrankCombState) : ℕ := state.kr.1
+
+/-- Remaining rank `r` of `UnrankCombState`. -/
+abbrev UnrankCombState.r (state : UnrankCombState) : ℕ := state.kr.2
+
+/-- Accumulated indicator bit list `bits` of `UnrankCombState`. -/
+abbrev UnrankCombState.bits (state : UnrankCombState) : List Bool := state.2
+
 /-- One step of combinatorial unranking of rank `r < C(n, k)` into an `n`-bit indicator. -/
-def unrankCombStep (table : List (List ℕ)) (state : (ℕ × ℕ) × List Bool) (m : ℕ) :
-    (ℕ × ℕ) × List Bool :=
-  let c := (table.getD m []).getD state.1.1 0
-  if state.1.2 < c then ((state.1.1, state.1.2), state.2 ++ [false])
-  else ((state.1.1 - 1, state.1.2 - c), state.2 ++ [true])
+def unrankCombStep (table : List (List ℕ)) (state : UnrankCombState) (m : ℕ) :
+    UnrankCombState :=
+  let c := (table.getD m []).getD state.k 0
+  if state.r < c then ((state.k, state.r), state.bits ++ [false])
+  else ((state.k - 1, state.r - c), state.bits ++ [true])
 
 /-- Unrank `r < C(n, k)` using `table = pascalTable n` into a length-`n` weight-`k` bit list. -/
 def unrankComb (n k r : ℕ) (table : List (List ℕ)) : List Bool :=
@@ -270,6 +286,18 @@ theorem length_encNat_subsetPairCount_le (n q : ℕ) :
 /-- Decoded `(indE, indU, negSign)` triple: length-`n` indicators and `Odd (#E - #U)` flag. -/
 abbrev DecodedPair : Type := List Bool × List Bool × Bool
 
+/-- First indicator list `indE` of a `DecodedPair`. -/
+abbrev DecodedPair.indE (d : DecodedPair) : List Bool := d.1
+
+/-- Inner indicator and sign pair `(indU, negSign)` of a `DecodedPair`. -/
+abbrev DecodedPair.innerSign (d : DecodedPair) : List Bool × Bool := d.2
+
+/-- Second indicator list `indU` of a `DecodedPair`. -/
+abbrev DecodedPair.indU (d : DecodedPair) : List Bool := d.innerSign.1
+
+/-- Parity sign flag `negSign` of a `DecodedPair`. -/
+abbrev DecodedPair.negSign (d : DecodedPair) : Bool := d.innerSign.2
+
 /-- Combinatorial `(E, U)` unranker: decodes `j < subsetPairCount n q` into `(indE, indU, negSign)`
 without materializing subsets, with deterministic empty-pair fallback for `j ≥ C_q`. -/
 def unrankSubsetPair (n q j : ℕ) : DecodedPair :=
@@ -331,67 +359,24 @@ private theorem findBucket_of_le {n q j : ℕ} (hj : subsetPairCount n q ≤ j) 
   have hnot : ¬(j < subsetPairCount n q) := by omega
   simp only [hnot, ↓reduceIte] at hspec; simp only [Internal.findBucket, hspec]
 
-private def pureUnrankComb : ℕ → ℕ → ℕ → List Bool
-  | 0, _, _ => []
-  | m + 1, k, r =>
-    if r < m.choose k then false :: pureUnrankComb m k r
-    else true :: pureUnrankComb m (k - 1) (r - m.choose k)
-
 private theorem foldl_unrankCombStep_eq {N m : ℕ} (hm : m ≤ N) (k r : ℕ) (acc : List Bool) :
     ((List.range m).reverse.foldl (Internal.unrankCombStep (pascalTable N)) ((k, r), acc)).2 =
-      acc ++ pureUnrankComb m k r := by
+      acc ++ unrankCombination m k r := by
   induction m generalizing k r acc with
-  | zero => simp [pureUnrankComb]
+  | zero => simp [unrankCombination]
   | succ m ih =>
     rw [List.range_succ, List.reverse_append, List.reverse_singleton, List.singleton_append,
-      List.foldl_cons, pureUnrankComb]
+      List.foldl_cons, unrankCombination]
     have hm_le : m ≤ N := by omega
     simp only [Internal.unrankCombStep, getD_pascalTable_eq_choose hm_le k]; split_ifs
     · rw [ih hm_le k r (acc ++ [false]), List.append_assoc, List.singleton_append]
     · rw [ih hm_le (k - 1) (r - m.choose k) (acc ++ [true]), List.append_assoc,
         List.singleton_append]
 
-private theorem unrankComb_eq_pure (n k r : ℕ) :
-    Internal.unrankComb n k r (pascalTable n) = pureUnrankComb n k r := by
+/-- The table-driven unranker computes `Cslib.BitString.unrankCombination`. -/
+theorem unrankComb_eq_unrankCombination (n k r : ℕ) :
+    Internal.unrankComb n k r (pascalTable n) = unrankCombination n k r := by
   simpa only [Internal.unrankComb, List.nil_append] using foldl_unrankCombStep_eq le_rfl k r []
-
-private theorem length_pureUnrankComb (m k r : ℕ) : (pureUnrankComb m k r).length = m := by
-  induction m generalizing k r with
-  | zero => rfl
-  | succ m ih => simp only [pureUnrankComb]; split_ifs <;> simp [ih]
-
-private theorem count_true_pureUnrankComb {m k r : ℕ} (hr : r < m.choose k) :
-    (pureUnrankComb m k r).count true = k := by
-  induction m generalizing k r with
-  | zero => cases k with | zero => rfl | succ k => simp at hr
-  | succ m ih =>
-    simp only [pureUnrankComb]; split_ifs with hlt
-    · simp [ih hlt]
-    · cases k with
-      | zero => simp only [Nat.choose_zero_right] at hr hlt; omega
-      | succ k =>
-        rw [Nat.choose_succ_succ, Nat.succ_eq_add_one] at hr
-        simp [ih (by omega : r - m.choose (k + 1) < m.choose k)]
-
-private theorem pureUnrankComb_injective {m k r₁ r₂ : ℕ}
-    (hr₁ : r₁ < m.choose k) (hr₂ : r₂ < m.choose k)
-    (heq : pureUnrankComb m k r₁ = pureUnrankComb m k r₂) : r₁ = r₂ := by
-  induction m generalizing k r₁ r₂ with
-  | zero =>
-    cases k with
-    | zero => simp only [Nat.choose_zero_right, Nat.lt_one_iff] at hr₁ hr₂; omega
-    | succ k => simp at hr₁
-  | succ m ih =>
-    simp only [pureUnrankComb] at heq; split_ifs at heq with h₁ h₂ h₂
-    · simp only [List.cons.injEq, true_and] at heq; exact ih h₁ h₂ heq
-    · simp at heq
-    · simp at heq
-    · simp only [List.cons.injEq, true_and] at heq
-      cases k with
-      | zero => simp only [Nat.choose_zero_right] at hr₁ h₁; omega
-      | succ k =>
-        rw [Nat.choose_succ_succ, Nat.succ_eq_add_one] at hr₁ hr₂
-        have := ih (by omega : r₁ - m.choose (k + 1) < m.choose k) (by omega) heq; omega
 
 private def pureScatter : List Bool → ℕ → List Bool
   | [], _ => []
@@ -453,22 +438,24 @@ theorem unrankSubsetPair_of_le {n q j : ℕ} (hj : subsetPairCount n q ≤ j) :
     (unrankSubsetPair n q j).1.length = n := by
   by_cases hj : j < subsetPairCount n q
   · obtain ⟨_, _, hfb, -⟩ := findBucket_of_lt hj
-    simp [unrankSubsetPair, hfb, unrankComb_eq_pure, length_pureUnrankComb]
+    simp [unrankSubsetPair, hfb, unrankComb_eq_unrankCombination, length_unrankCombination]
   · rw [unrankSubsetPair_of_le (by omega)]; simp
 
 /-- The second indicator `indU` returned by `unrankSubsetPair n q j` has exact length `n`. -/
 @[simp] theorem length_snd_unrankSubsetPair (n q j : ℕ) :
-    (unrankSubsetPair n q j).2.1.length = n := by
+    (unrankSubsetPair n q j).indU.length = n := by
+  dsimp only [DecodedPair.indU, DecodedPair.innerSign]
   by_cases hj : j < subsetPairCount n q
   · obtain ⟨_, _, hfb, -⟩ := findBucket_of_lt hj
-    simp [unrankSubsetPair, hfb, scatterMask_eq_pure, length_pureScatter, unrankComb_eq_pure,
-      length_pureUnrankComb]
+    simp [unrankSubsetPair, hfb, scatterMask_eq_pure, length_pureScatter,
+      unrankComb_eq_unrankCombination, length_unrankCombination]
   · rw [unrankSubsetPair_of_le (by omega)]; simp
 
 /-- Pointwise containment: every `true` position of `indU` is also `true` in `indE`. -/
 theorem getD_snd_imp_fst_unrankSubsetPair (n q j i : ℕ) :
-    (unrankSubsetPair n q j).2.1.getD i false = true →
-      (unrankSubsetPair n q j).1.getD i false = true := by
+    (unrankSubsetPair n q j).indU.getD i false = true →
+      (unrankSubsetPair n q j).indE.getD i false = true := by
+  dsimp only [DecodedPair.indU, DecodedPair.innerSign, DecodedPair.indE]
   by_cases hj : j < subsetPairCount n q
   · obtain ⟨_, _, hfb, -⟩ := findBucket_of_lt hj
     simp only [unrankSubsetPair, hfb, Option.elim_some, scatterMask_eq_pure]
@@ -482,15 +469,16 @@ theorem count_true_fst_unrankSubsetPair_le (n q j : ℕ) :
   · obtain ⟨s, offset, hfb, hs_le, hoff_lt, -⟩ := findBucket_of_lt hj
     have hr_lt : offset / 2 ^ s < n.choose s := by
       rw [Nat.div_lt_iff_lt_mul (by positivity), Nat.mul_comm]; exact hoff_lt
-    simp only [unrankSubsetPair, hfb, Option.elim_some, unrankComb_eq_pure,
-      count_true_pureUnrankComb hr_lt]; exact hs_le
+    simp only [unrankSubsetPair, hfb, Option.elim_some, unrankComb_eq_unrankCombination,
+      count_true_unrankCombination hr_lt]; exact hs_le
   · rw [unrankSubsetPair_of_le (by omega)]; simp [List.count_replicate]
 
 /-- The third component `negSign` is `decide (Odd (indE.count true - indU.count true))`. -/
 theorem snd_snd_unrankSubsetPair_eq_decide_odd (n q j : ℕ) :
-    (unrankSubsetPair n q j).2.2 =
-      decide (Odd ((unrankSubsetPair n q j).1.count true -
-        (unrankSubsetPair n q j).2.1.count true)) := by
+    (unrankSubsetPair n q j).negSign =
+      decide (Odd ((unrankSubsetPair n q j).indE.count true -
+        (unrankSubsetPair n q j).indU.count true)) := by
+  dsimp only [DecodedPair.negSign, DecodedPair.indE, DecodedPair.indU, DecodedPair.innerSign]
   by_cases hj : j < subsetPairCount n q
   · obtain ⟨_, _, h, -⟩ := findBucket_of_lt hj; simp only [unrankSubsetPair, h, Option.elim_some]
     rw [Bool.eq_iff_iff, beq_iff_eq, decide_eq_true_eq, Nat.odd_iff]
@@ -508,14 +496,14 @@ theorem card_fst_supportOfList_unrankSubsetPair_le (n q j : ℕ) :
 
 /-- Every decoded `unrankSubsetPair n q j` satisfies `U ⊆ E`. -/
 theorem supportOfList_snd_subset_fst_unrankSubsetPair (n q j : ℕ) :
-    supportOfList n (unrankSubsetPair n q j).2.1 ⊆
-      supportOfList n (unrankSubsetPair n q j).1 := by
+    supportOfList n (unrankSubsetPair n q j).indU ⊆
+      supportOfList n (unrankSubsetPair n q j).indE := by
   intro i hi; rw [mem_supportOfList] at hi ⊢; exact getD_snd_imp_fst_unrankSubsetPair n q j i.val hi
 
 /-- Map a valid index `j : Fin (subsetPairCount n q)` to its `ValidSubsetPair n q`. -/
 def unrankValidSubsetPair (n q : ℕ) (j : Fin (subsetPairCount n q)) : ValidSubsetPair n q :=
-  ⟨(supportOfList n (unrankSubsetPair n q j.val).1,
-      supportOfList n (unrankSubsetPair n q j.val).2.1),
+  ⟨(supportOfList n (unrankSubsetPair n q j.val).indE,
+      supportOfList n (unrankSubsetPair n q j.val).indU),
     ⟨card_fst_supportOfList_unrankSubsetPair_le n q j.val,
       supportOfList_snd_subset_fst_unrankSubsetPair n q j.val⟩⟩
 
@@ -531,17 +519,20 @@ private theorem unrankPair_injective {n q j₁ j₂ : ℕ}
     rw [Nat.div_lt_iff_lt_mul (by positivity), Nat.mul_comm]; exact hoff₂
   simp only [unrankSubsetPair, hfb₁, hfb₂, Option.elim_some] at hE hU
   have hs_eq : s₁ = s₂ := by
-    simpa only [unrankComb_eq_pure, count_true_pureUnrankComb hr₁,
-      count_true_pureUnrankComb hr₂] using congrArg (List.count true) hE
+    simpa only [unrankComb_eq_unrankCombination, count_true_unrankCombination hr₁,
+      count_true_unrankCombination hr₂] using congrArg (List.count true) hE
   subst hs_eq
   have hr_eq : off₁ / 2 ^ s₁ = off₂ / 2 ^ s₁ := by
-    simp only [unrankComb_eq_pure] at hE; exact pureUnrankComb_injective hr₁ hr₂ hE
+    simp only [unrankComb_eq_unrankCombination] at hE
+    exact unrankCombination_injective hr₁ hr₂ hE
   have hm₁ : off₁ % 2 ^ s₁ <
       2 ^ (Internal.unrankComb n s₁ (off₁ / 2 ^ s₁) (pascalTable n)).count true := by
-    rw [unrankComb_eq_pure, count_true_pureUnrankComb hr₁]; exact Nat.mod_lt off₁ (by positivity)
+    rw [unrankComb_eq_unrankCombination, count_true_unrankCombination hr₁]
+    exact Nat.mod_lt off₁ (by positivity)
   have hm₂ : off₂ % 2 ^ s₁ <
       2 ^ (Internal.unrankComb n s₁ (off₁ / 2 ^ s₁) (pascalTable n)).count true := by
-    rw [unrankComb_eq_pure, count_true_pureUnrankComb hr₁]; exact Nat.mod_lt off₂ (by positivity)
+    rw [unrankComb_eq_unrankCombination, count_true_unrankCombination hr₁]
+    exact Nat.mod_lt off₂ (by positivity)
   rw [← hE] at hU; simp only [scatterMask_eq_pure] at hU
   have hm_eq := pureScatter_injective hm₁ hm₂ hU
   have hd₁ := Nat.div_add_mod off₁ (2 ^ s₁); have hd₂ := Nat.div_add_mod off₂ (2 ^ s₁)
@@ -623,20 +614,39 @@ theorem existsUnique_unrankSubsetPair (n q : ℕ) {E U : Finset (Fin n)}
   obtain ⟨j₀, hj₀, hunique⟩ :=
     (bijective_unrankValidSubsetPair n q).existsUnique ⟨(E, U), ⟨hE, hU⟩⟩
   refine ⟨j₀.val, ⟨j₀.isLt, ?_⟩, fun j ⟨hj_lt, hj_eq⟩ => ?_⟩
-  · simp only [unrankValidSubsetPair, Subtype.mk.injEq, Prod.mk.injEq] at hj₀
+  · simp only [unrankValidSubsetPair, DecodedPair.indE, Subtype.mk.injEq, Prod.mk.injEq] at hj₀
     refine Prod.ext ?_ (Prod.ext ?_ ?_)
     · rw [← hj₀.1, ofFn_decide_mem_supportOfList (length_fst_unrankSubsetPair n q j₀.val)]
-    · rw [← hj₀.2, ofFn_decide_mem_supportOfList (length_snd_unrankSubsetPair n q j₀.val)]
-    · rw [snd_snd_unrankSubsetPair_eq_decide_odd,
-        ← card_supportOfList_of_length (length_fst_unrankSubsetPair n q j₀.val),
+    · change (unrankSubsetPair n q j₀.val).indU = _
+      rw [← hj₀.2, ofFn_decide_mem_supportOfList (length_snd_unrankSubsetPair n q j₀.val)]
+    · change (unrankSubsetPair n q j₀.val).negSign = _
+      rw [snd_snd_unrankSubsetPair_eq_decide_odd]
+      dsimp only [DecodedPair.indE]
+      rw [← card_supportOfList_of_length (length_fst_unrankSubsetPair n q j₀.val),
         ← card_supportOfList_of_length (length_snd_unrankSubsetPair n q j₀.val), hj₀.1, hj₀.2]
   · refine congrArg Fin.val (hunique ⟨j, hj_lt⟩ (Subtype.ext ?_))
-    simp only [unrankValidSubsetPair, hj_eq, supportOfList_ofFn_decide]
+    simp only [unrankValidSubsetPair, DecodedPair.indE, DecodedPair.indU, DecodedPair.innerSign,
+      hj_eq, supportOfList_ofFn_decide]
 
 /-! ## Section 3: Plain `ComputableInPolyTime` and `NativeCertificate` witnesses -/
 
 /-- Encoding for unary `(n, q)` dimension/degree parameters. -/
 abbrev encParams : (ℕ × ℕ) ↪ List Bool := encPair encUnary encUnary
+
+/-- Input tuple `((n, q), j)` for `unrankSubsetPair`. -/
+abbrev SubsetPairQuery : Type := (ℕ × ℕ) × ℕ
+
+/-- Dimension/degree pair `(n, q)` of a `SubsetPairQuery`. -/
+abbrev SubsetPairQuery.params (p : SubsetPairQuery) : ℕ × ℕ := p.1
+
+/-- Dimension `n` of a `SubsetPairQuery`. -/
+abbrev SubsetPairQuery.dim (p : SubsetPairQuery) : ℕ := p.params.1
+
+/-- Degree bound `q` of a `SubsetPairQuery`. -/
+abbrev SubsetPairQuery.deg (p : SubsetPairQuery) : ℕ := p.params.2
+
+/-- Binary rank index `j` of a `SubsetPairQuery`. -/
+abbrev SubsetPairQuery.index (p : SubsetPairQuery) : ℕ := p.2
 
 /-- Encoding for decoded `(indE, indU, negSign)` triples. -/
 abbrev encDecodedPair : DecodedPair ↪ List Bool := encPair encBits (encPair encBits encBool)
@@ -782,9 +792,12 @@ private theorem computableInPolyTime_findBucket :
         (by omega) hj_le hn_le)
   exact hfold.snd'
 
-private theorem computableInPolyTime_unrankComb :
+/-- The table-driven unranker is polynomial-time, from `(n, k)` in unary, the rank in binary and
+the table. -/
+@[fun_prop, program_certificate] theorem unrankComb_polyTime :
     ComputableInPolyTime
-      (fun p : ((ℕ × ℕ) × ℕ) × List (List ℕ) => Internal.unrankComb p.1.1.1 p.1.1.2 p.1.2 p.2)
+      (fun ((((n, k), rank), table) : ((ℕ × ℕ) × ℕ) × List (List ℕ)) =>
+        Internal.unrankComb n k rank table)
       (encPair (encPair encParams encNat) (encList (encList encNat))) encBits := by
   let encTab := encList (encList encNat); let encIn := encPair (encPair encParams encNat) encTab
   let encSt := encPair (encPair encUnary encNat) encBits
@@ -813,7 +826,9 @@ private theorem computableInPolyTime_unrankComb :
     (step := Internal.unrankCombStep) (snd (encPair encParams encNat) encTab)
     (listReverseWithInput (range.comp hp1.fst'.fst')) hinit hstep
     (growth := fun _ => 1) (.const 1) fun p state m _ => ?_).snd'
-  simp only [encSt, Internal.unrankCombStep]; split_ifs
+  simp only [encSt, Internal.unrankCombStep, Internal.UnrankCombState.k,
+    Internal.UnrankCombState.r, Internal.UnrankCombState.kr,
+    Internal.UnrankCombState.bits]; split_ifs
   · simp only [length_encPair, encBits_apply, List.length_append, List.length_singleton]; omega
   · have : (encNat (state.1.2 - (p.2.getD m []).getD state.1.1 0)).length ≤
         (encNat state.1.2).length := by
@@ -847,7 +862,8 @@ private theorem computableInPolyTime_scatterMask :
 
 /-- `unrankSubsetPair` is computable in polynomial time from `(n, q)` in unary and `j` in binary. -/
 @[fun_prop, program_certificate] theorem unrankSubsetPair_polyTime :
-    ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => unrankSubsetPair p.1.1 p.1.2 p.2)
+    ComputableInPolyTime
+      (fun p : SubsetPairQuery => unrankSubsetPair p.dim p.deg p.index)
       (encPair encParams encNat) encDecodedPair := by
   let encIn := encPair encParams encNat
   have hn_in := (fst encParams encNat).fst'; have htab := pascalTable_polyTime.comp hn_in
@@ -859,7 +875,7 @@ private theorem computableInPolyTime_scatterMask :
   have hq_fst := fst encIn (encPair encUnary encNat)
   have hq_snd := snd encIn (encPair encUnary encNat)
   have hq_pow := binary_two_pow.comp hq_snd.fst'
-  have hq_indE := computableInPolyTime_unrankComb.comp
+  have hq_indE := unrankComb_polyTime.comp
     ((((hn_in.comp hq_fst).prod hq_snd.fst').prod (binary_div.comp (hq_snd.snd'.prod hq_pow))).prod
       (htab.comp hq_fst))
   have hq_indU := computableInPolyTime_scatterMask.comp
@@ -868,6 +884,15 @@ private theorem computableInPolyTime_scatterMask :
     ((bitsCountWithInput hq_indE (const true)).prod (bitsCountWithInput hq_indU (const true)))
   have hq_sign := (binary_mod.comp ((unary_to_binary.comp hq_diff).prod (const 2))).beq (const 1)
   exact optionElimWithInput hfb hfall (hq_indE.prod (hq_indU.prod hq_sign))
+
+/-- **Unranking combinations is polynomial-time**, from `(m, k)` in unary and the rank in
+binary. -/
+@[fun_prop, program_certificate] theorem unrankCombination_polyTime :
+    ComputableInPolyTime (fun (((m, k), rank) : (ℕ × ℕ) × ℕ) => unrankCombination m k rank)
+      (encPair encParams encNat) encBits :=
+  (unrankComb_polyTime.comp
+    (id'.prod (pascalTable_polyTime.comp (fst encParams encNat).fst'))).of_enc_eq
+      fun ((m, k), rank) => congrArg encBits (unrankComb_eq_unrankCombination m k rank).symm
 
 end PlainProofs
 
@@ -891,7 +916,8 @@ theorem subsetPairCountCertificate_isPolynomial : subsetPairCountCertificate.IsP
 
 /-- Native certificate for `unrankSubsetPair`, selected via `NativeCertificate.ofPolyTime`. -/
 noncomputable def unrankSubsetPairCertificate :
-    NativeCertificate (fun p : (ℕ × ℕ) × ℕ => unrankSubsetPair p.1.1 p.1.2 p.2)
+    NativeCertificate (fun p : SubsetPairQuery =>
+      unrankSubsetPair p.dim p.deg p.index)
       (encPair encParams encNat) encDecodedPair :=
   NativeCertificate.ofPolyTime unrankSubsetPair_polyTime
 
@@ -905,12 +931,19 @@ section Streaming
 
 variable {α β : Type}
 
+/-- Persistent streaming state `(index, ((n, q), acc))` of `SubsetPairFold`. -/
+abbrev LoopState (β : Type) : Type := ℕ × ((ℕ × ℕ) × β)
+
+/-- Retained `((n, q), acc)` payload of a `SubsetPairFold` state. -/
+abbrev LoopState.payload (s : LoopState β) : (ℕ × ℕ) × β := s.2
+
 /-- Retained accumulator encoding pairing unary `(n, q)` parameters with the caller's `encB`. -/
 abbrev encLoopAcc (encB : β ↪ List Bool) : ((ℕ × ℕ) × β) ↪ List Bool := encPair encParams encB
 
 /-- Per-index round body for `IndexFold.run`, retaining `(n, q)` and decoding `j` on the fly. -/
 def indexBody (body : DecodedPair × β → β) (p : ℕ × ((ℕ × ℕ) × β)) : (ℕ × ℕ) × β :=
-  (p.2.1, body (unrankSubsetPair p.2.1.1 p.2.1.2 p.1, p.2.2))
+  let (j, (n, q), acc) := p
+  ((n, q), body (unrankSubsetPair n q j, acc))
 
 /-- Streaming prefix after `m` binary-indexed steps of `IndexFold.run`. -/
 def runPrefix (body : DecodedPair × β → β) (n q m : ℕ) (initial : β) : ℕ × ((ℕ × ℕ) × β) :=
@@ -918,14 +951,14 @@ def runPrefix (body : DecodedPair × β → β) (n q m : ℕ) (initial : β) : �
 
 /-- Stream all `subsetPairCount n q` valid `(E, U)` subset pairs through `IndexFold.run`. -/
 def run (body : DecodedPair × β → β) (n q : ℕ) (initial : β) : β :=
-  (runPrefix body n q (subsetPairCount n q) initial).2.2
+  (LoopState.payload (runPrefix body n q (subsetPairCount n q) initial)).2
 
 @[simp] theorem runPrefix_index (body : DecodedPair × β → β) (n q m : ℕ) (initial : β) :
     (runPrefix body n q m initial).1 = m := IndexFold.run_index _ _ _
 
 /-- The retained unary parameter pair `(n, q)` is invariant across all streaming prefixes. -/
 @[simp] theorem runPrefix_params (body : DecodedPair × β → β) (n q m : ℕ) (initial : β) :
-    (runPrefix body n q m initial).2.1 = (n, q) := by
+    (LoopState.payload (runPrefix body n q m initial)).1 = (n, q) := by
   induction m with
   | zero => rfl
   | succ m ih =>
@@ -933,7 +966,7 @@ def run (body : DecodedPair × β → β) (n q : ℕ) (initial : β) : β :=
 
 /-- Every prefix accumulator equals the ordered range fold over decoded indices `0, …, m - 1`. -/
 theorem runPrefix_acc (body : DecodedPair × β → β) (n q m : ℕ) (initial : β) :
-    (runPrefix body n q m initial).2.2 =
+    (LoopState.payload (runPrefix body n q m initial)).2 =
       (List.range m).foldl (fun acc j => body (unrankSubsetPair n q j, acc)) initial := by
   induction m with
   | zero => rfl
@@ -962,24 +995,27 @@ theorem run_eq_foldl_map (body : DecodedPair × β → β) (n q : ℕ) (initial 
 /-- Commutative-monoid accumulation via `run` sums over all `E ⊆ Fin n` (`#E ≤ q`) and `U ⊆ E`. -/
 theorem run_add_eq_sum_validSubsetPairs {M : Type} [AddCommMonoid M]
     (n q : ℕ) (f : Finset (Fin n) → Finset (Fin n) → Bool → M) :
-    run (fun p => p.2 + f (supportOfList n p.1.1) (supportOfList n p.1.2.1) p.1.2.2) n q 0 =
+    run (fun ((indE, indU, negSign), acc) =>
+      acc + f (supportOfList n indE) (supportOfList n indU) negSign) n q 0 =
       ∑ E ∈ (Finset.univ : Finset (Fin n)).powerset.filter (fun E => E.card ≤ q),
         ∑ U ∈ E.powerset, f E U (decide (Odd (E.card - U.card))) := by
   rw [run_eq_foldl_range]
   change (List.range (subsetPairCount n q)).foldl (fun a j => a +
-      f (supportOfList n (unrankSubsetPair n q j).1)
-        (supportOfList n (unrankSubsetPair n q j).2.1) (unrankSubsetPair n q j).2.2) 0 = _
+      f (supportOfList n (unrankSubsetPair n q j).indE)
+        (supportOfList n (unrankSubsetPair n q j).indU) (unrankSubsetPair n q j).negSign) 0 = _
   rw [← List.foldl_map, ← List.sum_eq_foldl, ← List.sum_toFinset _ List.nodup_range,
     List.toFinset_range, ← Fin.sum_univ_eq_sum_range]
   let φ : ValidSubsetPair n q → M :=
     fun v => f v.1.1 v.1.2 (decide (Odd (v.1.1.card - v.1.2.card)))
   have hcongr : (∑ j : Fin (subsetPairCount n q),
-      f (supportOfList n (unrankSubsetPair n q j.val).1)
-        (supportOfList n (unrankSubsetPair n q j.val).2.1) (unrankSubsetPair n q j.val).2.2) =
+      f (supportOfList n (unrankSubsetPair n q j.val).indE)
+        (supportOfList n (unrankSubsetPair n q j.val).indU)
+        (unrankSubsetPair n q j.val).negSign) =
       ∑ j : Fin (subsetPairCount n q), φ (validSubsetPairEquiv n q j) :=
     Finset.sum_congr rfl fun j _ => by
       simp only [φ, validSubsetPairEquiv, Equiv.ofBijective_apply, unrankValidSubsetPair,
-        snd_snd_unrankSubsetPair_eq_decide_odd,
+        snd_snd_unrankSubsetPair_eq_decide_odd, DecodedPair.indE,
+        DecodedPair.indU, DecodedPair.innerSign,
         card_supportOfList_of_length (length_fst_unrankSubsetPair n q j.val),
         card_supportOfList_of_length (length_snd_unrankSubsetPair n q j.val)]
   rw [hcongr, Equiv.sum_comp (validSubsetPairEquiv n q) φ]
@@ -989,16 +1025,16 @@ theorem run_add_eq_sum_validSubsetPairs {M : Type} [AddCommMonoid M]
 over any commutative ring `R` ([OpenAI2026ETH], Lemma 3.3 eq. (3.10), Proposition 3.4). -/
 theorem run_mobius_eq_sum_restricted_subsets {R : Type} [CommRing R]
     (n q : ℕ) (g : Finset (Fin n) → Finset (Fin n) → R) :
-    run (fun p =>
-      let term := g (supportOfList n p.1.1) (supportOfList n p.1.2.1)
-      if p.1.2.2 then p.2 - term else p.2 + term) n q 0 =
+    run (fun ((indE, indU, negSign), acc) =>
+      let term := g (supportOfList n indE) (supportOfList n indU)
+      if negSign then acc - term else acc + term) n q 0 =
       ∑ E ∈ (Finset.univ : Finset (Fin n)).powerset.filter (fun E => E.card ≤ q),
         ∑ U ∈ E.powerset, (-1 : R) ^ (E.card - U.card) * g E U := by
-  have hbody : (fun p : DecodedPair × R =>
-      let term := g (supportOfList n p.1.1) (supportOfList n p.1.2.1)
-      if p.1.2.2 then p.2 - term else p.2 + term) =
-      fun p => p.2 + (if p.1.2.2 then (-1 : R) else 1) *
-        g (supportOfList n p.1.1) (supportOfList n p.1.2.1) := by
+  have hbody : (fun (((indE, indU, negSign), acc) : DecodedPair × R) =>
+      let term := g (supportOfList n indE) (supportOfList n indU)
+      if negSign then acc - term else acc + term) =
+      fun ((indE, indU, negSign), acc) => acc + (if negSign then (-1 : R) else 1) *
+        g (supportOfList n indE) (supportOfList n indU) := by
     funext ⟨⟨_, _, negSign⟩, _⟩; cases negSign <;> simp [sub_eq_add_neg]
   rw [hbody, run_add_eq_sum_validSubsetPairs n q
     (fun E U neg => (if neg then (-1 : R) else 1) * g E U)]
@@ -1089,12 +1125,12 @@ theorem computableInO {encIn : α ↪ List Bool} {dim deg : α → ℕ}
     (cb : NativeCertificate body (encPair encDecodedPair encB) encB) (R Q B : α → ℕ)
     (hR : ∀ a j, j ≤ subsetPairCount (dim a) (deg a) →
       cb.time (unrankSubsetPair (dim a) (deg a) j,
-        (runPrefix body (dim a) (deg a) j (initial a)).2.2) ≤ R a)
+        (LoopState.payload (runPrefix body (dim a) (deg a) j (initial a))).2) ≤ R a)
     (hQ : ∀ a j, j ≤ subsetPairCount (dim a) (deg a) →
       cb.space (unrankSubsetPair (dim a) (deg a) j,
-        (runPrefix body (dim a) (deg a) j (initial a)).2.2) ≤ Q a)
+        (LoopState.payload (runPrefix body (dim a) (deg a) j (initial a))).2) ≤ Q a)
     (hB : ∀ a j, j ≤ subsetPairCount (dim a) (deg a) →
-      (encB (runPrefix body (dim a) (deg a) j (initial a)).2.2).length ≤ B a) :
+      (encB (LoopState.payload (runPrefix body (dim a) (deg a) j (initial a))).2).length ≤ B a) :
     ComputableInO (fun a => run body (dim a) (deg a) (initial a)) encIn encB
       (fun a => (encIn a).length + cn.time a + cq.time a + ci.time a +
         decodeOverhead (dim a + deg a) +
@@ -1109,10 +1145,14 @@ theorem computableInO {encIn : α ↪ List Bool} {dim deg : α → ℕ}
   have hspec := exists_decodeOverhead.choose_spec
   rw [← show decodeOverhead = exists_decodeOverhead.choose from rfl] at hspec
   rcases hspec with ⟨_, hsq_all, hcnt_all, hunr_all⟩
+  have hparams (a : α) (j : ℕ) :
+      (runPrefix body (dim a) (deg a) j (initial a)).2.1 = (dim a, deg a) :=
+    runPrefix_params body (dim a) (deg a) j (initial a)
   have hB_loop : ∀ a j, j ≤ subsetPairCount (dim a) (deg a) →
       (encLoopAcc encB (runPrefix body (dim a) (deg a) j (initial a)).2).length ≤ BLoop a := by
-    intro a j hj; have := hB a j hj
-    simp only [encLoopAcc, encParams, length_encPair, runPrefix_params, encUnary_apply,
+    intro a j hj
+    have : (encB (runPrefix body (dim a) (deg a) j (initial a)).2.2).length ≤ B a := hB a j hj
+    simp only [encLoopAcc, encParams, length_encPair, hparams, encUnary_apply,
       List.length_replicate, BLoop]; omega
   have hlenP : ∀ a j, j ≤ subsetPairCount (dim a) (deg a) →
       (encPair encNat (encLoopAcc encB) (runPrefix body (dim a) (deg a) j (initial a))).length ≤
@@ -1125,17 +1165,27 @@ theorem computableInO {encIn : α ↪ List Bool} {dim deg : α → ℕ}
   have hR_loop : ∀ a j, j ≤ subsetPairCount (dim a) (deg a) →
       cStep.time (runPrefix body (dim a) (deg a) j (initial a)) ≤ RLoop a := by
     intro a j hj; have := hlenP a j hj; have := (hunr_all (dim a) (deg a) j hj).1; have := hR a j hj
-    dsimp only [cStep, indexBodyCertificate, RLoop]
+    dsimp only [cStep, indexBodyCertificate, RLoop,
+      SubsetPairQuery.dim, SubsetPairQuery.deg, SubsetPairQuery.index, SubsetPairQuery.params]
     simp only [NativeCertificate.prod_time, NativeCertificate.comp_time, NativeCertificate.fst_time,
-      NativeCertificate.snd_time, NativeCertificate.linear_time, runPrefix_index, runPrefix_params]
+      NativeCertificate.snd_time, NativeCertificate.linear_time, runPrefix_index, hparams]
+    rw [show cb.time (unrankSubsetPair (dim a) (deg a) j,
+        (runPrefix body (dim a) (deg a) j (initial a)).2.2) =
+      cb.time (unrankSubsetPair (dim a) (deg a) j,
+        (LoopState.payload (runPrefix body (dim a) (deg a) j (initial a))).2) from rfl]
     omega
   have hQ_loop : ∀ a j, j ≤ subsetPairCount (dim a) (deg a) →
       cStep.space (runPrefix body (dim a) (deg a) j (initial a)) ≤ QLoop a := by
     intro a j hj; have := hlenP a j hj; have := (hunr_all (dim a) (deg a) j hj).2; have := hQ a j hj
-    dsimp only [cStep, indexBodyCertificate, QLoop]
+    dsimp only [cStep, indexBodyCertificate, QLoop,
+      SubsetPairQuery.dim, SubsetPairQuery.deg, SubsetPairQuery.index, SubsetPairQuery.params]
     simp only [NativeCertificate.prod_space, NativeCertificate.comp_space,
       NativeCertificate.fst_space, NativeCertificate.snd_space, NativeCertificate.linear_space,
-      runPrefix_index, runPrefix_params]
+      runPrefix_index, hparams]
+    rw [show cb.space (unrankSubsetPair (dim a) (deg a) j,
+        (runPrefix body (dim a) (deg a) j (initial a)).2.2) =
+      cb.space (unrankSubsetPair (dim a) (deg a) j,
+        (LoopState.payload (runPrefix body (dim a) (deg a) j (initial a))).2) from rfl]
     omega
   have hfold := IndexFold.computableInO cCount cInit cStep RLoop QLoop BLoop hR_loop hQ_loop hB_loop
   have hproj : ComputableInO (fun a => run body (dim a) (deg a) (initial a)) encIn encB _ _ :=

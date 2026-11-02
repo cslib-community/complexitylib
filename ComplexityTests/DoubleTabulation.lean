@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.CuckooHashing
+public import Complexity.DataStructure.Dictionary.CuckooHashing
 public import Complexity.Foundations.Data.BitString.Sum
 public import Complexity.Foundations.Data.Nat.Power
 public import Complexity.Foundations.Data.Nat.SummationByParts
@@ -18,7 +18,8 @@ public import Complexity.Probability.KWiseIndependent.DoubleTabulation
 # Tests for Double Tabulation (`[Thorup2013]`) and Regime-Switched Cuckoo Hashing
 
 Non-vacuity and decidability tests for `Complexity.Probability.KWiseIndependent.DoubleTabulation`
-and the high-probability conditioning extensions in `Complexity.Algorithms.Lean.CuckooHashing`:
+and the high-probability conditioning extensions in
+`Complexity.DataStructure.Dictionary.CuckooHashing`:
 * Concrete `decide` checks showing `charDigits 2 1 (U := 4) : Fin 4 → Fin 2 → Fin 2` is `3`-unique
   (`IsKUnique 3`) on `{0, 1}²` by pigeonhole, but fails `4`-uniqueness (`¬ IsKUnique 4`) on the full
   `2 × 2` combinatorial rectangle `{(0, 0), (0, 1), (1, 0), (1, 1)}`.
@@ -34,8 +35,8 @@ public section
 namespace ComplexityTests.DoubleTabulation
 
 open Cslib.Probability
-open Cslib.Algorithms.Lean.CuckooHashing
-open Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing
+open Cslib.DataStructure.Dictionary.CuckooHashing
+open Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing
 
 /-- Every subset of `{0, 1}²` of size at most `3` has a unique coordinate value (`3`-uniqueness). -/
 example : IsKUnique 3 (charDigits 2 1 (U := 4)) := by decide
@@ -69,9 +70,9 @@ example :
 `U = 256 ≤ 4 ^ 4`, `M = 7` (`2 ^ 7 = 128 ≥ 32 * 4`). -/
 example :
     IsCuckooHashPair
-      (PMF.uniformOfFintype (ProvableHashSeed 4 0 256 7))
-      (provableHash1 4 0 256 7)
-      (provableHash2 4 0 256 7)
+      (PMF.uniformOfFintype (Seed 4 0 256 7))
+      (evalHash1 (c_exp := 4) (n_max := 0) (U := 256) (M := 7))
+      (evalHash2 (c_exp := 4) (n_max := 0) (U := 256) (M := 7))
       0 (maxEvictions 0) 3 4 :=
   isCuckooHashPair_provableFamily (c_exp := 4) (n_max := 0) (U := 256) (M := 7)
     (by decide) (by decide)
@@ -80,9 +81,9 @@ example :
 `U = 10000 ≤ 10 ^ 4`, `M = 9` (`2 ^ 9 = 512 ≥ 32 * 10`). -/
 example :
     IsCuckooHashPair
-      (PMF.uniformOfFintype (ProvableHashSeed 4 10 10000 9))
-      (provableHash1 4 10 10000 9)
-      (provableHash2 4 10 10000 9)
+      (PMF.uniformOfFintype (Seed 4 10 10000 9))
+      (evalHash1 (c_exp := 4) (n_max := 10) (U := 10000) (M := 9))
+      (evalHash2 (c_exp := 4) (n_max := 10) (U := 10000) (M := 9))
       10 (maxEvictions 10) 3 4 :=
   isCuckooHashPair_provableFamily (c_exp := 4) (n_max := 10) (U := 10000) (M := 9)
     (by decide) (by decide)
@@ -94,9 +95,9 @@ example (c_exp : ℕ) :
     let N := doubleTabThreshold c_exp
     let M := 2 * doubleTabMinB c_exp + 5
     IsCuckooHashPair
-      (PMF.uniformOfFintype (ProvableHashSeed c_exp N (N ^ c_exp) M))
-      (provableHash1 c_exp N (N ^ c_exp) M)
-      (provableHash2 c_exp N (N ^ c_exp) M)
+      (PMF.uniformOfFintype (Seed c_exp N (N ^ c_exp) M))
+      (evalHash1 (c_exp := c_exp) (n_max := N) (U := N ^ c_exp) (M := M))
+      (evalHash2 (c_exp := c_exp) (n_max := N) (U := N ^ c_exp) (M := M))
       N (maxEvictions N) 3 4 := by
   intro N M
   have hmax : max N 4 = N := max_eq_left (four_le_doubleTabThreshold c_exp)
@@ -138,9 +139,9 @@ example (a : ℕ → ℕ) :
 /-- Concrete check of `IsCuckooHashPair.mono_consts` widening `(3, 4)` to `(5, 6)`. -/
 example :
     IsCuckooHashPair
-      (PMF.uniformOfFintype (ProvableHashSeed 4 0 256 7))
-      (provableHash1 4 0 256 7)
-      (provableHash2 4 0 256 7)
+      (PMF.uniformOfFintype (Seed 4 0 256 7))
+      (evalHash1 (c_exp := 4) (n_max := 0) (U := 256) (M := 7))
+      (evalHash2 (c_exp := 4) (n_max := 0) (U := 256) (M := 7))
       0 (maxEvictions 0) 5 6 :=
   (isCuckooHashPair_provableFamily (c_exp := 4) (n_max := 0) (U := 256) (M := 7)
     (by decide) (by decide)).mono_consts (by decide) (by decide)

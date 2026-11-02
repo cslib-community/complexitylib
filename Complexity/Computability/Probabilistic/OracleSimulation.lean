@@ -57,7 +57,8 @@ theorem IsOraclePPTOn.run_interpret_preprocess {Operation α β Caller State : T
     (hprepare : ComputableTidilyInPolyTime prepare input source)
     (hhandler : IsPPTOn
       (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
-      (encPair encBits stateEncoding) (fun pair => handler pair.1 pair.2.1 pair.2.2))
+      (encPair encBits stateEncoding)
+      (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
     (invariant : Caller → State → Prop) (hinit : ∀ a, invariant a (initial a))
     (hresources : ComputableTidilyInPolyTime (fun pair => resources pair.1 pair.2)
@@ -68,7 +69,7 @@ theorem IsOraclePPTOn.run_interpret_preprocess {Operation α β Caller State : T
         (stateEncoding result.2).length ≤ (stateEncoding state).length + resources a request.2) :
     IsPPTOn input (encPair output stateEncoding) (fun a =>
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n)) (handler a))
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n)) (handler a))
           (program (prepare a))).run (initial a)) := by
   refine ((hprogram.run_interpret_preprocess_open (External := Empty)
     (handler := fun a request state => ProbOracleComp.sample (handler a request state))

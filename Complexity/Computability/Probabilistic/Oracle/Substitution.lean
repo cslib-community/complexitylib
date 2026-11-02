@@ -68,7 +68,8 @@ theorem IsOraclePPTOn.run_interpret_preprocess_open
     (hprepare : ComputableTidilyInPolyTime prepare input source)
     (hhandler : IsOraclePPTOn
       (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
-      (encPair encBits stateEncoding) (fun pair => handler pair.1 pair.2.1 pair.2.2))
+      (encPair encBits stateEncoding)
+      (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
     (invariant : Caller → State → Prop) (hinit : ∀ a, invariant a (initial a))
     (hresources : ComputableTidilyInPolyTime (fun pair => resources pair.1 pair.2)
@@ -79,7 +80,7 @@ theorem IsOraclePPTOn.run_interpret_preprocess_open
         (stateEncoding result.2).length ≤ (stateEncoding state).length + resources a request.2) :
     IsOraclePPTOn input (encPair output stateEncoding) (fun a =>
       (OracleComp.interpret
-        (ProbOracleComp.handler
+        (OracleComp.sumHandler
           (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n))) (handler a))
           (program (prepare a))).run (initial a)) := by
   obtain ⟨resourceCoeff, resourceDegree, hbound⟩ := hresources.polyBounded_length.exists_le
@@ -110,11 +111,11 @@ theorem IsOraclePPTOn.run_interpret_preprocess_open
   apply IsOraclePPTOn.iff_encoded.mpr
   refine (IsOraclePPTOn.iff_encoded.mp hrun).congr fun a External' oracle e => ?_
   have hout : encPair output stateEncoding <$> (OracleComp.interpret
-      (ProbOracleComp.handler
+      (OracleComp.sumHandler
         (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n))) (handler a))
         (program (prepare a))).run (initial a) =
       encPair encBits stateEncoding <$> (OracleComp.interpret
-        (ProbOracleComp.handler
+        (OracleComp.sumHandler
           (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n))) (handler a))
           (output <$> program (prepare a))).run (initial a) := by
     rw [OracleComp.interpret_map, StateT.run_map, Functor.map_map]
@@ -138,7 +139,8 @@ theorem IsOraclePPTOn.run_interpret_preprocess_open'
     (hprepare : ComputableInPolyTime prepare input source)
     (hhandler : IsOraclePPTOn
       (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
-      (encPair encBits stateEncoding) (fun pair => handler pair.1 pair.2.1 pair.2.2))
+      (encPair encBits stateEncoding)
+      (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableInPolyTime initial input stateEncoding)
     (invariant : Caller → State → Prop) (hinit : ∀ a, invariant a (initial a))
     (hresources : ComputableInPolyTime (fun pair => resources pair.1 pair.2)
@@ -149,7 +151,7 @@ theorem IsOraclePPTOn.run_interpret_preprocess_open'
         (stateEncoding result.2).length ≤ (stateEncoding state).length + resources a request.2) :
     IsOraclePPTOn input (encPair output stateEncoding) (fun a =>
       (OracleComp.interpret
-        (ProbOracleComp.handler
+        (OracleComp.sumHandler
           (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n))) (handler a))
           (program (prepare a))).run (initial a)) :=
   hprogram.run_interpret_preprocess_open hprepare.tidy hhandler hinitial.tidy invariant hinit
@@ -191,7 +193,7 @@ theorem IsOraclePPTOn.interpret_bitQueries
     fun a State oracle s => ?_
   congr 2
   rw [OracleComp.interpret_interpret, OracleComp.interpret_interpret]
-  have hH : (fun q : Unit × List Bool => OracleComp.interpret (ProbOracleComp.handler
+  have hH : (fun q : Unit × List Bool => OracleComp.interpret (OracleComp.sumHandler
       (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
       (fun (q : Unit × List Bool) (_ : Unit) => (fun r => (r, ())) <$> (List.take 1 <$>
         ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool)

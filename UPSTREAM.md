@@ -521,7 +521,8 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   routines. Its certificates expose actual native TM witnesses, parameterized time/space bounds,
   and polynomial-time corollaries, and feed the fixed-program step and whole-run simulators in
   `GenericRAM/Simulation/{Turing,Run}` (#298, #292).
-* **Stateful algorithms prototype.** `Foundations/Semantics/Stateful/*` reuses Quang Dao's merged
+* **Stateful algorithms prototype.** `DataStructure/StateTransition.lean` and
+  `DataStructure/StateTransition/*` reuse Quang Dao's merged
   `PFunctor.FreeM` for adaptive clients and substitution, adding persistent representation
   simulation, interface composition, semantic Hoare rules and separate native-resource
   certificates. Its queue and reset-and-replay constructions deliberately count backend calls;
@@ -532,11 +533,11 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   representation from the standard input. `WordRAM/Function` gives separate nonuniform and
   uniform RAM function-time predicates, with named-certificate reuse by `polytime`. Arbitrary continuation
   synthesis, iterative clients and a Turing-machine simulation remain open.
-  `Foundations/Data/OrderedSet` and `Foundations/Data/OrderedSet/*` provide neutral
+  `DataStructure/OrderedSet` and `DataStructure/OrderedSet/*` provide neutral
   optional-minimum contracts, a typed finite-set interface including deletion, and adaptive
   minimum extraction, with no tree or cost dependency. Bounded-key implementations may specialize
   insertion admissibility.
-  `Algorithms/Lean/SearchTree/*` reuses Mathlib's `BinaryTree`, height and node count for an
+  `DataStructure/SearchTree/*` reuses Mathlib's `BinaryTree`, height and node count for an
   unbalanced ordered-set realization. Finite-set behavior, strict invariants and height-bounded
   node visits are proved, including deletion through the shared interface and adaptive clients;
   allocation, comparison implementation and client computation are excluded from that cost model.
