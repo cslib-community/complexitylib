@@ -23,6 +23,7 @@ import Complexity.Probability.PMF.Bind
 * `Cslib.Probability.PMF.map_injective`: injective encodings preserve equality of distributions.
 * `Cslib.Probability.PMF.map_apply_of_support`: the weight of an outcome whose image no other
   supported outcome shares.
+* `Cslib.Probability.PMF.pure_injective`: point masses determine their points.
 
 ## References
 
@@ -105,5 +106,9 @@ theorem map_apply_of_support {p : PMF α} {f : α → β} {a : α}
     by_contra hp
     exact hx (h x ((PMF.mem_support_iff _ _).mpr hp) hf.symm)
   · exact ite_eq_right hf
+
+/-- Point masses are equal only at equal points. -/
+theorem pure_injective : Function.Injective (PMF.pure : α → PMF α) := fun a a' h =>
+  (PMF.mem_support_pure_iff a' a).mp (h ▸ (PMF.mem_support_pure_iff a a).mpr rfl)
 
 end Cslib.Probability.PMF
