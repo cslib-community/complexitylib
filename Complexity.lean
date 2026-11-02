@@ -2639,11 +2639,6 @@ public import Complexity.Computability.WordRAM.Realization.Primitive
 public import Complexity.Computability.WordRAM.Realization.Program
 public import Complexity.Computability.WordRAM.Realization.Result
 public import Complexity.Computability.WordRAM.Realization.Witness
-public import Complexity.Computability.WordRAM.Realization.Basic
-public import Complexity.Computability.WordRAM.Realization.Bind
-public import Complexity.Computability.WordRAM.Realization.Branch
-public import Complexity.Computability.WordRAM.Realization.Glue
-public import Complexity.Computability.WordRAM.Realization.Primitive
 public import Complexity.Computability.WordRAM.RegisterFrame
 public import Complexity.Computability.WordRAM.Sequence
 public import Complexity.Computability.WordRAM.Signed.Arithmetic
@@ -2969,8 +2964,6 @@ public import Complexity.DataStructure.HashFamily.WordRAM.DoubleTabulation
 public import Complexity.DataStructure.HashFamily.WordRAM.KWise
 public import Complexity.DataStructure.HashFamily.WordRAM.MultiplyShift
 public import Complexity.DataStructure.HashFamily.WordRAM.Tabulation
-public import Complexity.DataStructure.Memory.Field
-public import Complexity.DataStructure.Memory.Spec
 public import Complexity.DataStructure.Memory.Alloc
 public import Complexity.DataStructure.Memory.Field
 public import Complexity.DataStructure.Memory.Frame
