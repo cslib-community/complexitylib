@@ -68,9 +68,40 @@ headline are unchanged.
 The old `PriorityQueue.WordRAM.BinaryHeap` execution modules and their `Program`/`Sift` imports
 are retired. Pure Model/Order declarations now live under `PriorityQueue.BinaryHeap`; use the
 native route above for execution. Old fixed register/clock constants and the implementation
-helpers with coefficients `200`/`230` are not replacement API guarantees. GenericPQ/PQCode and
-Fibonacci interfaces with live consumers remain; this binary migration does not complete the
-generic or Fibonacci realization objectives.
+helpers with coefficients `200`/`230` are not replacement API guarantees. PQCode and the
+Fibonacci execution core with live MinPQ consumers remain; these native Dijkstra endpoints do
+not complete generic whole-client realization or the remaining heap migration.
+
+### Native Fibonacci heap and Dijkstra
+
+For the full shortest-path client, import
+`Complexity.Algorithms.Lean.Dijkstra.Native.Fibonacci` and use
+`Cslib.Algorithms.Lean.Dijkstra.Native.Fibonacci.realizes_run` or `exists_program_state`.
+The [checked client](../../ComplexityTests/WordRAMDijkstraFibonacci.lean) applies one native
+program to the parallel-edge/multi-hop sample, unreachable vertices and sparse edgeless graphs;
+it retains the whole source memory and exact allocated frontier. The stable
+`fibonacciSpecStatement` and `fibonacciStatement` reader routes in
+`Complexity.Algorithms.WordRAM.Dijkstra.Fibonacci` keep their original types. The sharper clock
+is `C*(m+min(n,m+1)*(floorlog₂(n)+1))`, and the same program also meets the textbook bound.
+
+One program, register layout and factor precede all runtime graphs and widths. The original
+`Fits w (8*(n+m+2)*(W+2))` condition is unchanged. The initialized graph's zero tail permits
+dirty reservations of the distance table and original `9*n+5` heap layout without linear
+clearing; this is not an arbitrary-dirty-memory initialization theorem. The existing disjoint
+framed product composes the heap, mutable distance table and immutable graph; original valid
+remaining histories and key bounds establish reached native-method domains. Its nonzero Fibonacci potential telescopes
+through the existing amortized refinement; a decrease or extraction is not assigned a
+worst-case constant native clock.
+
+The method-level Backend's external argument installation and observation are uncharged. The
+full Dijkstra theorem instead charges actual argument staging, arithmetic, copies, early-exit
+control, initialized register/frontier prefix and halt. Raw graph placement in `Data.init`
+remains free, as in the original specification. The old `fibDijkstra` and its program-specific
+`fibDijkstra_spec`, `fibonacciSpec` and `fibonacciLinearSpec` coefficient-640 helpers are
+superseded, without claiming that the new uniform factor is 640. The unused GenericPQ Dijkstra
+executor is removed, while Model/Trees/Forest, PQCode and the execution core still used by
+MinPQ/FibonacciHeapBridge remain. F2, its abstract-space decision and general whole-client
+transfer remain open; the selected abstract statements are unchanged.
 
 ## Hash families and dictionaries
 
