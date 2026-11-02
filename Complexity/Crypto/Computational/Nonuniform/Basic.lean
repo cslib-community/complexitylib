@@ -27,12 +27,13 @@ family need not be computable, so it can hard-wire information about every param
 `NonuniformlyIndistinguishable`, `NonuniformOneWay` and `NonuniformPRG` relativize
 `ComputationallyIndistinguishable`, `OneWay` and `PseudorandomGenerator` to this class. Each
 uniform adversary is an advice adversary that ignores empty advice, so every nonuniform notion
-implies its uniform counterpart. `IndistinguishableWithAdvice advice` fixes one advice family;
-with empty advice it is exactly uniform indistinguishability, so a reduction proved relative to a
-fixed family yields both the uniform and the nonuniform theorem. Moreover, an advice word may carry
-a value of any type under any encoding (`IndistinguishableWithAdvice.negligible_encoded`,
-`NonuniformOneWay.inversion_negligible_encoded`): an adversary need not decode its advice, since
-it may run on the encoded word exactly as on the typed value.
+implies its uniform counterpart. `IndistinguishableWithAdvice advice` and
+`InversionHardWithAdvice f advice` fix one advice family; with empty advice they are exactly the
+uniform notions, so a reduction proved relative to a fixed family yields both the uniform and the
+nonuniform theorem. Moreover, an advice word may carry a value of any type under any encoding
+(`IndistinguishableWithAdvice.negligible_encoded`,
+`InversionHardWithAdvice.inversion_negligible_encoded`): an adversary need not decode its advice,
+since it may run on the encoded word exactly as on the typed value.
 
 These are definitions, not assertions that such primitives exist.
 
@@ -42,6 +43,8 @@ These are definitions, not assertions that such primitives exist.
   tests given one fixed advice family.
 * `Cslib.Crypto.NonuniformlyIndistinguishable`: indistinguishability with every polynomially
   bounded advice family.
+* `Cslib.Crypto.InversionHardWithAdvice`: hardness of inversion against uniform strict PPT
+  inverters given one fixed advice family.
 * `Cslib.Crypto.NonuniformOneWay`: one-wayness against inverters given polynomially bounded
   advice.
 * `Cslib.Crypto.NonuniformPRG`: a stretching generator whose output is nonuniformly
@@ -60,7 +63,9 @@ These are definitions, not assertions that such primitives exist.
   indistinguishability is indistinguishability with empty advice.
 * `Cslib.Crypto.IndistinguishableWithAdvice.map`: efficient postprocessing.
 * `Cslib.Crypto.IndistinguishableWithAdvice.negligible_encoded`,
-  `Cslib.Crypto.NonuniformOneWay.inversion_negligible_encoded`: advice of any encoded type.
+  `Cslib.Crypto.InversionHardWithAdvice.inversion_negligible_encoded`: advice of any encoded type.
+* `Cslib.Crypto.oneWay_iff_inversionHardWithAdvice_nil`: uniform one-wayness is hardness of
+  inversion with empty advice.
 * `Cslib.Crypto.not_computationallyIndistinguishable_pure_uniformList`,
   `Cslib.Crypto.not_nonuniformlyIndistinguishable_pure_uniformList`: fixed words are
   distinguishable from uniform words, so the indistinguishability notions are not trivially true.
@@ -219,51 +224,45 @@ theorem not_nonuniformlyIndistinguishable_pure_uniformList (target : ℕ → Lis
   not_computationallyIndistinguishable_pure_uniformList target hlength
     h.computationallyIndistinguishable
 
-/-- A function is **nonuniformly one-way** when one deterministic polynomial-time algorithm
-evaluates it and, for every polynomially bounded advice family, each uniform strict PPT inverter
-reading the parameter, the advice word and the image has negligible probability of finding any
-preimage of a uniform input. -/
-structure NonuniformOneWay (f : List Bool → List Bool) : Prop where
-  /-- A deterministic polynomial-time algorithm evaluates the function. -/
-  polyTime : ComputableInPolyTime f encBits encBits
-  /-- With each polynomially bounded advice family, inversion is indistinguishable from certain
-  failure. -/
-  secure : ∀ advice : ℕ → List Bool, PolynomiallyBounded (fun n => (advice n).length) →
-    Game.Indistinguishable
-      (fun (adversary : (ℕ × List Bool) × List Bool → ProbComp (List Bool)) n =>
-        ProbComp.eval (inversionGame f (fun n image => adversary ((n, advice n), image)) n))
-      (fun _ _ => PMF.pure false) (IsPPTOn (encPair (encPair encUnary encBits) encBits) encBits)
+/-- **Inversion of `f` is hard with advice** `advice` when each uniform strict PPT inverter
+reading the parameter `n`, the advice word `advice n` and the image of a uniform `n`-bit input has
+negligible probability of finding any preimage. The advice family is not bounded here; its length
+is charged to the inverter's clock. With empty advice this is the security condition of `OneWay`
+(`oneWay_iff_inversionHardWithAdvice_nil`). -/
+def InversionHardWithAdvice (f : List Bool → List Bool) (advice : ℕ → List Bool) : Prop :=
+  Game.Indistinguishable
+    (fun (adversary : (ℕ × List Bool) × List Bool → ProbComp (List Bool)) n =>
+      ProbComp.eval (inversionGame f (fun n image => adversary ((n, advice n), image)) n))
+    (fun _ _ => PMF.pure false) (IsPPTOn (encPair (encPair encUnary encBits) encBits) encBits)
 
-/-- Each efficient inverter with polynomially bounded advice has negligible success. -/
-theorem NonuniformOneWay.inversion_negligible {f : List Bool → List Bool}
-    (h : NonuniformOneWay f) (adversary : (ℕ × List Bool) × List Bool → ProbComp (List Bool))
-    (hPPT : IsPPTOn (encPair (encPair encUnary encBits) encBits) encBits adversary)
-    {advice : ℕ → List Bool} (hadvice : PolynomiallyBounded (fun n => (advice n).length)) :
+/-- Each efficient inverter with the given advice has negligible success. -/
+theorem InversionHardWithAdvice.inversion_negligible {f : List Bool → List Bool}
+    {advice : ℕ → List Bool} (h : InversionHardWithAdvice f advice)
+    (adversary : (ℕ × List Bool) × List Bool → ProbComp (List Bool))
+    (hPPT : IsPPTOn (encPair (encPair encUnary encBits) encBits) encBits adversary) :
     Negligible (fun n => Game.succProbability (ProbComp.eval
       (inversionGame f (fun n image => adversary ((n, advice n), image)) n))) := by
-  simpa only [Game.advantage_pure_false] using h.secure advice hadvice adversary hPPT
+  simpa only [Game.advantage_pure_false] using h adversary hPPT
 
-/-- Establish nonuniform one-wayness by bounding the success probability of every efficient
-inverter with polynomially bounded advice. -/
-theorem NonuniformOneWay.of_inversion_negligible {f : List Bool → List Bool}
-    (hf : ComputableInPolyTime f encBits encBits)
+/-- Establish hardness with advice by bounding every efficient inverter's success
+probability. -/
+theorem InversionHardWithAdvice.of_inversion_negligible {f : List Bool → List Bool}
+    {advice : ℕ → List Bool}
     (h : ∀ adversary : (ℕ × List Bool) × List Bool → ProbComp (List Bool),
       IsPPTOn (encPair (encPair encUnary encBits) encBits) encBits adversary →
-      ∀ advice : ℕ → List Bool, PolynomiallyBounded (fun n => (advice n).length) →
         Negligible (fun n => Game.succProbability (ProbComp.eval
           (inversionGame f (fun n image => adversary ((n, advice n), image)) n)))) :
-    NonuniformOneWay f := by
-  refine ⟨hf, fun advice hadvice adversary hPPT => ?_⟩
-  simpa only [Game.advantage_pure_false] using h adversary hPPT advice hadvice
+    InversionHardWithAdvice f advice := fun adversary hPPT => by
+  simpa only [Game.advantage_pure_false] using h adversary hPPT
 
-/-- **Advice of any encoded type.** A nonuniformly one-way function resists every uniform strict
-PPT inverter reading an advice value of an arbitrary type, under an arbitrary encoding with
-polynomially bounded lengths. -/
-theorem NonuniformOneWay.inversion_negligible_encoded {f : List Bool → List Bool}
-    (h : NonuniformOneWay f) {γ : Type} {encAdvice : γ ↪ List Bool}
+/-- **Advice of any encoded type.** Hardness with the advice words `encAdvice (advice n)` covers
+every uniform strict PPT inverter that reads the advice value `advice n` itself, of an arbitrary
+type under an arbitrary encoding. -/
+theorem InversionHardWithAdvice.inversion_negligible_encoded {f : List Bool → List Bool}
+    {γ : Type} {encAdvice : γ ↪ List Bool} {advice : ℕ → γ}
+    (h : InversionHardWithAdvice f (fun n => encAdvice (advice n)))
     {adversary : (ℕ × γ) × List Bool → ProbComp (List Bool)}
-    (hPPT : IsPPTOn (encPair (encPair encUnary encAdvice) encBits) encBits adversary)
-    {advice : ℕ → γ} (hadvice : PolynomiallyBounded (fun n => (encAdvice (advice n)).length)) :
+    (hPPT : IsPPTOn (encPair (encPair encUnary encAdvice) encBits) encBits adversary) :
     Negligible (fun n => Game.succProbability (ProbComp.eval
       (inversionGame f (fun n image => adversary ((n, advice n), image)) n))) := by
   obtain ⟨extension, hextension, heq⟩ :=
@@ -280,16 +279,62 @@ theorem NonuniformOneWay.inversion_negligible_encoded {f : List Bool → List Bo
         (encPair (encPair encUnary encBits) encBits ((n, encAdvice (advice n)), image))) n) =
       ProbComp.eval (inversionGame f (fun n image => adversary ((n, advice n), image)) n) := by
     simp only [inversionGame, ProbComp.eval_bind, hkey]
-  simpa only [hgame] using h.inversion_negligible _ hword hadvice
+  simpa only [hgame] using h.inversion_negligible _ hword
+
+/-- **Uniform one-wayness is the empty-advice case.** A uniform inverter is an advice inverter
+that ignores its advice, and an advice inverter run on empty advice is a uniform inverter. -/
+theorem oneWay_iff_inversionHardWithAdvice_nil {f : List Bool → List Bool} :
+    OneWay f ↔
+      ComputableInPolyTime f encBits encBits ∧ InversionHardWithAdvice f (fun _ => []) := by
+  constructor
+  · intro h
+    refine ⟨h.polyTime, .of_inversion_negligible fun adversary hPPT => ?_⟩
+    have hprepare : ComputableInPolyTime (fun input : ℕ × List Bool => ((input.1, []), input.2))
+        (encPair encUnary encBits) (encPair (encPair encUnary encBits) encBits) := by fun_prop
+    exact h.inversion_negligible (fun n image => adversary ((n, []), image))
+      (hPPT.preprocess hprepare)
+  · rintro ⟨hf, h⟩
+    refine OneWay.of_inversion_negligible hf fun adversary hPPT => ?_
+    have hneg := h.inversion_negligible (fun input => adversary input.1.1 input.2)
+      (isPPTOn_dropAdvice hPPT)
+    simpa only using hneg
+
+/-- A function is **nonuniformly one-way** when one deterministic polynomial-time algorithm
+evaluates it and inversion is hard with every polynomially bounded advice family. -/
+structure NonuniformOneWay (f : List Bool → List Bool) : Prop where
+  /-- A deterministic polynomial-time algorithm evaluates the function. -/
+  polyTime : ComputableInPolyTime f encBits encBits
+  /-- With each polynomially bounded advice family, inversion is hard. -/
+  secure : ∀ advice : ℕ → List Bool, PolynomiallyBounded (fun n => (advice n).length) →
+    InversionHardWithAdvice f advice
+
+/-- Each efficient inverter with polynomially bounded advice has negligible success. -/
+theorem NonuniformOneWay.inversion_negligible {f : List Bool → List Bool}
+    (h : NonuniformOneWay f) (adversary : (ℕ × List Bool) × List Bool → ProbComp (List Bool))
+    (hPPT : IsPPTOn (encPair (encPair encUnary encBits) encBits) encBits adversary)
+    {advice : ℕ → List Bool} (hadvice : PolynomiallyBounded (fun n => (advice n).length)) :
+    Negligible (fun n => Game.succProbability (ProbComp.eval
+      (inversionGame f (fun n image => adversary ((n, advice n), image)) n))) :=
+  (h.secure advice hadvice).inversion_negligible adversary hPPT
+
+/-- Establish nonuniform one-wayness by bounding the success probability of every efficient
+inverter with polynomially bounded advice. -/
+theorem NonuniformOneWay.of_inversion_negligible {f : List Bool → List Bool}
+    (hf : ComputableInPolyTime f encBits encBits)
+    (h : ∀ adversary : (ℕ × List Bool) × List Bool → ProbComp (List Bool),
+      IsPPTOn (encPair (encPair encUnary encBits) encBits) encBits adversary →
+      ∀ advice : ℕ → List Bool, PolynomiallyBounded (fun n => (advice n).length) →
+        Negligible (fun n => Game.succProbability (ProbComp.eval
+          (inversionGame f (fun n image => adversary ((n, advice n), image)) n)))) :
+    NonuniformOneWay f :=
+  ⟨hf, fun advice hadvice =>
+    .of_inversion_negligible fun adversary hPPT => h adversary hPPT advice hadvice⟩
 
 /-- Nonuniform one-wayness implies uniform one-wayness: a uniform inverter ignores empty
 advice. -/
 theorem NonuniformOneWay.toOneWay {f : List Bool → List Bool} (h : NonuniformOneWay f) :
-    OneWay f := by
-  refine OneWay.of_inversion_negligible h.polyTime fun adversary hPPT => ?_
-  have hneg := h.inversion_negligible (fun input => adversary input.1.1 input.2)
-    (isPPTOn_dropAdvice hPPT) (advice := fun _ => []) (PolynomiallyBounded.const 0)
-  simpa only using hneg
+    OneWay f :=
+  oneWay_iff_inversionHardWithAdvice_nil.mpr ⟨h.polyTime, h.secure _ (PolynomiallyBounded.const 0)⟩
 
 /-- A **nonuniform pseudorandom generator**: a plain polynomial-time generator with exact output
 length `length`, strictly expanding every seed length, whose output on a uniform seed is

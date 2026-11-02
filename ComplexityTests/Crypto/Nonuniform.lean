@@ -21,6 +21,12 @@ open Cslib Cslib.Crypto
 example (word : List Bool) : ¬ NonuniformOneWay (fun _ => word) :=
   fun h => not_oneWay_const word h.toOneWay
 
+/-- Inverting a constant function is not hard even with empty advice: by
+`oneWay_iff_inversionHardWithAdvice_nil` that would make it uniformly one-way. -/
+example (word : List Bool) : ¬ InversionHardWithAdvice (fun _ => word) (fun _ => []) :=
+  fun h => not_oneWay_const word (oneWay_iff_inversionHardWithAdvice_nil.mpr
+    ⟨Turing.MultiTapeTM.ComputableInPolyTime.const word, h⟩)
+
 /-- The nonuniform indistinguishability relation holds between equal ensembles. -/
 example : NonuniformlyIndistinguishable (fun n => BitString.uniformList n)
     (fun n => BitString.uniformList n) :=
