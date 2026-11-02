@@ -2560,9 +2560,14 @@ public import Complexity.Computability.WordRAM.Realization.Basic
 public import Complexity.Computability.WordRAM.Realization.Bind
 public import Complexity.Computability.WordRAM.Realization.Branch
 public import Complexity.Computability.WordRAM.Realization.Glue
+public import Complexity.Computability.WordRAM.Realization.Grade
 public import Complexity.Computability.WordRAM.Realization.Loop
+public import Complexity.Computability.WordRAM.Realization.MemoryBackend
+public import Complexity.Computability.WordRAM.Realization.Module
 public import Complexity.Computability.WordRAM.Realization.Primitive
 public import Complexity.Computability.WordRAM.Realization.Program
+public import Complexity.Computability.WordRAM.Realization.Result
+public import Complexity.Computability.WordRAM.Realization.Witness
 public import Complexity.Computability.WordRAM.RegisterFrame
 public import Complexity.Computability.WordRAM.Sequence
 public import Complexity.Computability.WordRAM.Signed.Arithmetic
