@@ -319,8 +319,25 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `(κ+30)*clog₂(n+2)` suffices, and all wider prefixes have words/support below
   `(n+2)^(2κ+60)`. The general initialized theorem permits `D>n` and empty matrices with
   `D≥16`; the logarithmic source-regime simplification is separate. The source prime-list
-  producer and Light execution are not imported. Global parameter/host composition and #1394
-  remain open.
+  producer and Light execution are not imported. The original conservative parameter family
+  in `Algorithms/ExactTriangle/ParameterChoice.lean` (#2127) uses `t=floor(log₂(n)/1296)`,
+  `m=36t`, `D=4^m`, `g=4^t`, `L=19m`, with `g^36=D` and `D^18≤n` for positive n.
+  `Algorithms/WordRAM/ExactTriangle/DyadicParameters/` computes it using the actual logarithm and
+  two power routines, with a fast/small flag, same-state prefix/halt, complete logarithmic
+  charge and width-independent polynomial prefixes. `Power/Rename.lean` exposes the existing
+  power execution on an arbitrary injective bank, reused by both calls without repeated
+  comap/extend proofs. These coarse parameters are not attributed to Anthropic's tuned choice.
+  The original arithmetic bridge in `ParameterChoice/CostGeometry.lean` and native
+  `ExactTriangle/DyadicCost.lean` (#2145) simplifies actual preparation/product/query charges
+  to `n³/g`, absorbs the actual counter-based selector cost using `g^648≤n`, and applies the
+  existing selected-prime failed-scan estimate once globally. Its combined component allowance
+  has an explicit logarithmic factor and a `3-1/648` real-power scale.
+  `DyadicCost/Asymptotics.lean` absorbs that factor via Mathlib's existing logarithm-growth
+  theorem: beyond a threshold depending only on the weight exponent, all actual component
+  allowances are at most `4*n^(3-1/1296)`, uniformly over matrices, selected primes and memories.
+  This existential asymptotic threshold is not an algorithm input. Neither result asserts
+  a composed execution theorem or the source's tuned exponent.
+  Callable adaptation, small-case solver dispatch (#2146), outer host and #1394 remain open.
   `Algorithms/ExactTriangle/{Splitting,Witnesses}.lean` adapts the complete finite splitting and
   witness recovery component ([#1447](https://github.com/cslib-community/complexitylib/issues/1447)),
   using the existing matrices, lopsided graph and `Set.EqOn` answer API. Computable integer parameters
@@ -520,6 +537,12 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   representation from the standard input. `WordRAM/Function` gives separate nonuniform and
   uniform RAM function-time predicates, with named-certificate reuse by `polytime`. Arbitrary continuation
   synthesis, iterative clients and a Turing-machine simulation remain open.
+  The bounded `WordRAM/Realization` foundation (#2213, under #2205) reuses the memory
+  oracle and the same native `Code`/`ExecWithin` semantics. Its explicit faithful register
+  encodings support all four memory queries, certified word glue, branches and uniform
+  reply-dependent bind, charging local work as well as memory operations. Query arguments are
+  already in live registers; whole-input installation, final halt, bounded-loop and local-ADT
+  adapter endpoints remain separate work. This adds no abstract-catalogue headline.
   `DataStructure/OrderedSet` and `DataStructure/OrderedSet/*` provide neutral
   optional-minimum contracts, a typed finite-set interface including deletion, and adaptive
   minimum extraction, with no tree or cost dependency. Bounded-key implementations may specialize
