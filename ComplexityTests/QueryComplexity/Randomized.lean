@@ -58,7 +58,7 @@ private theorem randomBit_depth : randomBit.depth ≤ 1 := by
   classical
   refine RandomizedDecisionTree.depth_le_iff.mpr fun t ht => ?_
   obtain ⟨i, -, rfl⟩ := Finset.mem_image.mp
-    (Finsupp.mapDomain_support (by simpa [randomBit, StdSimplex.weights_map] using ht))
+    (Finsupp.mapDomain_support (by simpa only [randomBit, StdSimplex.weights_map] using ht))
   simp
 
 /-- Read as signs, majority of three bits has Fourier coefficient `-1/2` on all three

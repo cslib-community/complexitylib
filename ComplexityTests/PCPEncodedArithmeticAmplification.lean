@@ -76,7 +76,7 @@ example : (rejectingEdge.arithmeticAmplify).WellFormed :=
     subst edge
     exact ⟨by decide, by decide⟩)
 
-example : 0 < gap ∧ gap = 1 / (2 : ℝ) ^ 61 := ⟨gap_pos, rfl⟩
+example : 0 < gap ∧ gap = 1 / (2 : ℝ) ^ 61 := ⟨by norm_num [gap], rfl⟩
 
 -- Two parallel rejecting constraints force a complete round, beyond the zero-round clients.
 -- We instantiate its semantic contract without attempting to materialize its enormous tables.

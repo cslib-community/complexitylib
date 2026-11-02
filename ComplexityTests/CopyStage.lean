@@ -130,10 +130,11 @@ example : ((copyStage χ 1 r (C - cutoffCorrectionIter φ C 0 +
 -- Concretely, the copy `(1, 1)` of the middle vertex comes after both copies of vertex `0`, so
 -- the entries from it back to them vanish.
 example (i : Fin 2) : (copyStage χ 1 r (C - cutoffCorrectionIter φ C 0 +
-    cutoffCorrectionIter φ C 0 * C)) (1, 1) (0, i) = 0 :=
-  copyStage_isStrictUpperTriangular (V := Fin 3)
-    (cutoffCorrection_residual_isStrictUpperTriangular hφ0 hφθ (by norm_num) hC 0)
-    (i := toLex (1, 1)) (j := toLex (0, i)) (by simp [Prod.Lex.lt_iff])
+    cutoffCorrectionIter φ C 0 * C)) (1, 1) (0, i) = 0 := by
+  simpa only [Matrix.submatrix_apply, ofLex_toLex] using
+    (copyStage_isStrictUpperTriangular (V := Fin 3) (χ := χ) (r := r)
+      (cutoffCorrection_residual_isStrictUpperTriangular hφ0 hφθ (by norm_num) hC 0)
+      (i := toLex (1, 1)) (j := toLex (0, i)) (by simp [Prod.Lex.lt_iff]))
 
 /-! ### Incidence counting -/
 

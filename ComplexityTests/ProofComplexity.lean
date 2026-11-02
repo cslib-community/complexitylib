@@ -106,7 +106,8 @@ example : ¬ ∃ a w : List Bool, frame a ++ w = [] := by
   simp [length_frame] at this
 
 private theorem decodedWordsProofSystem_nil : decodedWordsProofSystem [] = [] := by
-  change (if ProofSystem.verifierAccepts bitsDecoder 0 (fun _ => true) [] then _ else _) = []
+  change (if ProofSystem.verifierAccepts bitsDecoder 0 (fun _ => true) [] then
+    ProofSystem.verifierInstance bitsDecoder [] else [true]) = []
   simp [ProofSystem.verifierAccepts, ProofSystem.verifierInstance, dropFrame, unframe,
     bitsDecoder]
 

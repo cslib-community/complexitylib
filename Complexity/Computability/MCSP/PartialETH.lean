@@ -837,7 +837,7 @@ private def NotZLeaf (S : PosFormula (6 * n)) : Prop :=
     zCount (.var (zVar i) : PosFormula (6 * n)) = 1 := by
   have : ({zVar i} ∩ zSet n : Finset (Fin (6 * n))) = {zVar i} :=
     Finset.inter_eq_left.mpr (Finset.singleton_subset_iff.mpr (zVar_mem_zSet i))
-  simp [zCount, this]
+  simp [zCount]
 
 private theorem zCount_var_of_notZLeaf {v : Fin (6 * n)}
     (h : NotZLeaf (.var v : PosFormula (6 * n))) :

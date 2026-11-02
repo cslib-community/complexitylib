@@ -65,7 +65,7 @@ example : ∃ q : ℕ, 2 ≤ q ∧
 open Amplification.Arithmetic in
 example : Nonempty (Amplifier.{0} (Bool × (Fin 6 → Bool))) :=
   ⟨Amplification.amplifier arithmeticInputs walkLength killRate
-    (by norm_num [spectralBound]) two_le_killRate walkLength_eq gap_pos gap_le_one gain⟩
+    (by norm_num [spectralBound]) two_le_killRate walkLength_eq (by norm_num [gap]) gap_le_one gain⟩
 
 -- A concrete normalization check for the generic coefficients, separate from family existence.
 example : Amplification.retention 120 (1 - 1 / 360000) = 1 / 1452000 := by
