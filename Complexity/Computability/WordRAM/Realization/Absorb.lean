@@ -219,16 +219,15 @@ namespace Realizes
 control unit is paid by that query's memory charge. -/
 theorem iterate₀ {σ : Type} (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ (Fin l → ℕ))
     {body : δ × σ → Memory.Prog σ} {safe : ℕ → (δ × σ) → Memory.State → Prop}
-    (h : Realizes .exact body ((input.prodMap output).trans (Fin.appendEquiv k l).toEmbedding)
-      output safe (fun _ _ => 0))
+    (h : Realizes .exact body (appendWords input output) output safe (fun _ _ => 0))
     (hquery : ∀ x s, 1 ≤ memoryCost (body x) s) :
-    Realizes .exact (fun d : (δ × σ) × ℕ => iterate body d.1.1 d.2 d.1.2)
-      ((((input.prodMap output).trans (Fin.appendEquiv k l).toEmbedding).prodMap
-        (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding).trans
-          (Fin.appendEquiv (k + l) 1).toEmbedding) output
-      (fun w d s => iterationSafe body safe w d.1.1 d.2 d.1.2 s) (fun _ _ => 0) :=
-  (iterateRuntime input output h).mono_mul 1 fun d s => by
-    have := iterationWork_zero_le body hquery d.1.1 d.2 d.1.2 s
+    Realizes .exact (fun ((d, a), fuel) => iterate body d fuel a)
+      (((appendWords input output).prodMap (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding).trans
+        (Fin.appendEquiv (k + l) 1).toEmbedding) output
+      (fun w ((d, a), fuel) s => iterationSafe body safe w d fuel a s) (fun _ _ => 0) :=
+  (iterateRuntime input output h).mono_mul 1 fun ((d, a), fuel) s => by
+    have := iterationWork_zero_le body hquery d fuel a s
+    dsimp only
     omega
 
 end Realizes
