@@ -248,21 +248,23 @@ def sum (S' : Backend D' C') : Backend (product D D') (Sum.elim C C') where
     | .inl o => S.answer o
     | .inr o => S'.answer o
 
-/-- Side-by-side backends run the product of two non-interfering refinements. -/
+/-- Side-by-side backends run the product of two non-interfering refinements, whatever their
+joint invariant `J`. -/
 theorem Implements.prod {w : ℕ} {S : Backend D C} {S' : Backend D' C'}
     {R : Refinement D (Memory.spec w)} {R' : Refinement D' (Memory.spec w)}
-    {frame₁ : ∀ {e} o {a e' tr}, R.inv e → R'.inv e → D.valid (R.abs e) o →
-      (Memory.spec w).ClientRun e (R.methods o) a e' tr → R'.abs e' = R'.abs e ∧ R'.inv e'}
-    {frame₂ : ∀ {e} o {a e' tr}, R.inv e → R'.inv e → D'.valid (R'.abs e) o →
-      (Memory.spec w).ClientRun e (R'.methods o) a e' tr → R.abs e' = R.abs e ∧ R.inv e'}
+    {J : Memory.State → Prop}
+    {frame₁ : ∀ {e} o {a e' tr}, R.inv e → R'.inv e → J e → D.valid (R.abs e) o →
+      (Memory.spec w).ClientRun e (R.methods o) a e' tr → R'.abs e' = R'.abs e ∧ R'.inv e' ∧ J e'}
+    {frame₂ : ∀ {e} o {a e' tr}, R.inv e → R'.inv e → J e → D'.valid (R'.abs e) o →
+      (Memory.spec w).ClientRun e (R'.methods o) a e' tr → R.abs e' = R.abs e ∧ R.inv e' ∧ J e'}
     (hS : S.Implements R) (hS' : S'.Implements R') :
-    (S.sum S').Implements (R.prod R' frame₁ frame₂) where
+    (S.sum S').Implements (R.prod R' J frame₁ frame₂) where
   run
     | .inl o, s => hS.run o s
     | .inr o, s => hS'.run o s
   entry
     | .inl o, hw, hi, hv => hS.entry o hw hi.1 hv
-    | .inr o, hw, hi, hv => hS'.entry o hw hi.2 hv
+    | .inr o, hw, hi, hv => hS'.entry o hw hi.2.1 hv
 
 end Sum
 
