@@ -2,8 +2,20 @@
 
 Read the Markdown without any publishing tools. The default build produces the substantial
 Operator’s Manual; `--agent-manual` selects the short Agent Operator’s Manual for humans
-driving agents. To produce the books, install Python 3.11+,
-Pandoc, XeLaTeX and `pdfinfo` (Poppler). The main book's model diagrams also require
+driving agents. To check the maintained source, run these commands from the repository root
+with Python 3.11+:
+
+```bash
+python3 scripts/check_operator_manual.py
+python3 scripts/test_operator_manual.py
+```
+
+CI and both full and quick `scripts/check.sh` runs require these checks. They need no PDF
+tools, Lean build or generated research data, and do not replace independent review of the
+manuals' meaning and usability.
+
+To produce the books, also install Pandoc, XeLaTeX and `pdfinfo` (Poppler).
+The main book's model diagrams require
 Graphviz (`dot`); the short agent manual does not invoke it. The TeX installation needs
 `fontspec`, `fvextra`, `xurl`, `bookmark`, `microtype`, `fancyhdr`, `etoolbox`, `tcolorbox` and the usual
 AMS/graphics/table packages, plus TeX Gyre Pagella, TeX Gyre Heros and DejaVu Sans Mono fonts.
@@ -13,7 +25,6 @@ the build script does not download tools or invoke Lean.
 From the repository root:
 
 ```bash
-python3 scripts/check_operator_manual.py
 python3 scripts/build_operator_manual.py
 python3 scripts/build_operator_manual.py --agent-manual
 ```

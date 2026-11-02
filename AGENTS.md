@@ -243,7 +243,12 @@ lake exe lint-style
 lake exe checkInitImports
 ```
 
-`scripts/check.sh` restores optional caches and runs this sequence. CI runs the same checks.
+`scripts/check.sh` first runs the live manual checker and its tooling tests, then restores
+optional caches and runs this sequence. Both full and quick modes require those manual checks;
+CI runs them too, with the tests included in its Python tooling suite. These stdlib-only checks
+need no PDF tools or generated research data. They catch source/link drift and malformed visual
+markup; they do not replace the required review of both manuals' meaning and usability.
+CI runs the same six Lean checks.
 For Lean, dependency or build changes, all six gates must pass on the final source revision before
 integration. A successful hosted run covering that revision supplies full validation; do not
 repeat it locally merely to satisfy a second reporting requirement. Use local full validation

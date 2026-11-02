@@ -283,12 +283,14 @@ participant procedures in the Operator's Manual and historical evidence in its s
 Keep executable Lean examples in `ComplexityTests/` or the checked Verso guide and link their
 complete source, including imports and local context. Use checked excerpts rather than a second
 independently maintained copy. Check new or changed examples with Lean; source comparison alone
-does not establish that an example elaborates. Run `python3 scripts/check_operator_manual.py`
-when changing the manual or a source it excerpts. See the manual's build instructions for PDF
-generation; inspect affected rendered pages when changing its content or rendering. Generated
-LaTeX, PDFs and research exports stay untracked; retain their scripts and maintained source
-inputs. Keep historical measurements and transcript evidence explicitly
-dated; do not present their frozen counts as current library state.
+does not establish that an example elaborates. The live checker and its controls are required
+in CI and in both full and quick `scripts/check.sh` runs. For documentation-only validation, run
+`python3 scripts/check_operator_manual.py` and `python3 scripts/test_operator_manual.py`
+directly; they use only Python and need no generated data or publishing tools. See the manual's
+build instructions for PDF generation; inspect affected rendered pages when changing its content
+or rendering. Generated LaTeX, PDFs and research exports stay untracked; retain their scripts and
+maintained source inputs. Keep historical measurements and transcript evidence explicitly dated;
+do not present their frozen counts as current library state.
 
 Impact on both manuals is a mandatory part of independent review before integration, and
 coordinators are responsible for ensuring that this review happens. The reviewer checks

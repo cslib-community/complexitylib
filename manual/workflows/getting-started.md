@@ -89,8 +89,8 @@ The editorial check described here does not itself claim a fresh Lean build.
 
 **Worked example: Repair a named-certificate proof**
 
-**Goal:** observe the difference between ordinary property search and the named-certificate
-search used by `polytime`, then restore the successful proof in your disposable worktree.
+**Goal:** observe how `polytime` discharges a named certificate's remaining bound when
+ordinary `fun_prop` does not, then restore the successful proof in your disposable worktree.
 
 Open the complete client
 [`ComplexityTests/PolyTimePlainDriver.lean`](../../ComplexityTests/PolyTimePlainDriver.lean).
@@ -113,9 +113,11 @@ Save and run:
 scripts/build.sh ComplexityTests.PolyTimePlainDriver --wfail --iofail
 ```
 
-The check is expected to fail at that example: ordinary property search cannot discharge
-the opaque routine's contract. Read the remaining goal in the editor or command output;
-it asks for the certificate, not a new implementation of the routine.
+The check is expected to fail at that example. Read the diagnostic in the editor or command
+output: `fun_prop` finds `checkedNamedConstant_polyTime`, but cannot prove the necessary
+assumption `c ≤ c`. The `program_certificate` annotation also registers the theorem with
+`fun_prop`; here the extra work is discharging its bound. The
+[automation reference](../design-and-assurance/automation.md) explains the shared registration.
 
 **Repair:** restore
 `fail_if_success fun_prop` followed by `polytime` and repeat the same command. It is
