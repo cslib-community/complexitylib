@@ -317,6 +317,15 @@ theorem demonicValid_sample_bind {q : ProbComp β} {k : β → OracleComp D.with
     subst hs
     exact ih i
 
+/-- A closed sampler followed by a continuation draws a value, then runs the continuation from
+the same state. -/
+theorem withCoins_run_sample_bind (q : ProbComp β) (k : β → OracleComp D.withCoins.Result α)
+    (s : D.State) :
+    D.withCoins.run (ProbOracleComp.sample q >>= k) s =
+      (ProbComp.eval q).bind fun b => D.withCoins.run (k b) s := by
+  rw [run_bind, withCoins_run_sample, PMF.bind_map]
+  rfl
+
 /-- A coin call draws uniformly and leaves the state unchanged. -/
 theorem withCoins_law_inl (n : ℕ) (s : D.State) :
     D.withCoins.law (.inl n) s = (ProbComp.unifOracle n).map (·, s) := rfl
@@ -415,6 +424,24 @@ theorem toRandomized_demonicValid {p : D.Client α} {s : D.State} (h : D.Demonic
 theorem toRandomized_demonicValid_of_validHistory {p : D.Client α} {s : D.State}
     (h : D.ValidHistory s (D.clientHistory s p)) : D.toRandomized.toSpec.DemonicValid s p :=
   toRandomized_demonicValid ((D.demonicValid_iff_validHistory_runClient s p).mpr h)
+
+/-- Over a deterministic specification with coins, a call steps the state and continues with its
+answer. -/
+theorem run_withCoins_query_bind {β : Type} (o : D.Op) (k : D.Result o → ProbOracleComp D.Result β)
+    (s : D.State) :
+    D.toRandomized.withCoins.run (ProbOracleComp.query o >>= k) s =
+      D.toRandomized.withCoins.run (k (D.stepFn s o).2) (D.stepFn s o).1 :=
+  PMF.pure_bind _ _
+
+/-- Over a deterministic specification with coins, an admissible call whose continuation is
+admissible from the next state is admissible. -/
+theorem demonicValid_withCoins_query_bind {β : Type} {o : D.Op}
+    {k : D.Result o → ProbOracleComp D.Result β} {s : D.State} (hv : D.valid s o)
+    (hk : D.toRandomized.withCoins.toSpec.DemonicValid (D.stepFn s o).1 (k (D.stepFn s o).2)) :
+    D.toRandomized.withCoins.toSpec.DemonicValid s (ProbOracleComp.query o >>= k) :=
+  .liftBind (D := D.toRandomized.withCoins.toSpec) (Sum.inr o) k hv fun s' a hstep => by
+    obtain ⟨rfl, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hstep)
+    exact hk
 
 /-- The expected charge of a deterministic run is the total charge of its history. -/
 theorem expectedCost_toRandomized (charge : D.State → D.Op → ℕ) (p : D.Client α)
