@@ -107,7 +107,7 @@ theorem exists_seedRealization (pair : SamplablePair) : Nonempty (SeedRealizatio
   refine ⟨{ length := fun n => c * (n + 1) ^ d
             length_isPolyTime := by polytime
             evaluate := evaluate
-            efficient := .of_tidy hefficient
+            efficient := hefficient
             distribution := ?_ }⟩
   intro n
   rw [← pair.eval_sample]
