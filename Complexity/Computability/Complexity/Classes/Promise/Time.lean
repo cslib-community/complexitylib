@@ -19,9 +19,13 @@ the output is `[true]` with probability at least `2/3`, and on no-instances it i
 probability at least `2/3`. No probability gap or answer is required outside the promise.
 
 This is the library's time-indexed native-machine convention, extending `BPTIME` to partial
-promises. It does not define the class through bounded-error total completions. A strict-majority
-completion belongs to `PPTIME` at the same caller-supplied clock, with ties rejecting; this is not
-a bounded-error completion in `BPTIME`.
+promises: a decision problem is in `PromiseBPTIME` exactly when it is in `BPTIME`. It does not
+define the class through bounded-error total completions. A strict-majority completion belongs to
+`PPTIME` at the same caller-supplied clock, with ties rejecting; this is not a bounded-error
+completion in `BPTIME`.
+
+The characterization by sample-and-verify and coin replay at the same clock, up to constant
+factors, is in `Complexity.Computability.Complexity.Classes.Promise.Time.Verifier`.
 
 ## Main definitions
 
@@ -30,7 +34,11 @@ a bounded-error completion in `BPTIME`.
 
 ## Main results
 
+* `Turing.MultiTapePTM.solvesPromiseWithBoundedErrorInTime_ofSet_iff`,
+  `ofSet_mem_PromiseBPTIME`: on decision problems, the notions are
+  `Turing.MultiTapePTM.DecidesWithBoundedErrorInTime` and `BPTIME`.
 * `PromiseBPTIME_mono`: increasing the time bound preserves membership.
+* `mem_PromiseBPTIME_of_subset`: shrinking either side of the promise preserves membership.
 * `promiseClass_BPTIME_subset_PromiseBPTIME`: total bounded-error completions give witnesses.
 * `PromiseBPTIME_subset_promiseClass_PPTIME`: a strict-majority completion at the same time scale.
 -/
@@ -65,6 +73,29 @@ theorem SolvesPromiseWithBoundedErrorInTime.mono
   · rw [machine.eval_runClosed_eq_of_halted _ (ht a) hhalt]
     exact ⟨hyes, hno⟩
 
+/-- A machine solving a promise problem solves every promise problem with fewer yes-instances and
+fewer no-instances. -/
+theorem SolvesPromiseWithBoundedErrorInTime.of_subset
+    {machine : MultiTapePTM k Bool State} {enc : α ↪ List Bool} {Q Q' : PromiseProblem α}
+    {t : α → ℕ} (h : machine.SolvesPromiseWithBoundedErrorInTime enc Q t)
+    (hyes : Q'.yes ⊆ Q.yes) (hno : Q'.no ⊆ Q.no) :
+    machine.SolvesPromiseWithBoundedErrorInTime enc Q' t := fun a =>
+  let ⟨hhalt, hQyes, hQno⟩ := h a
+  ⟨hhalt, fun ha => hQyes (hyes ha), fun ha => hQno (hno ha)⟩
+
+/-- On a decision problem, solving with bounded error is deciding with bounded error. -/
+theorem solvesPromiseWithBoundedErrorInTime_ofSet_iff {machine : MultiTapePTM k Bool State}
+    {enc : α ↪ List Bool} {A : Set α} {t : α → ℕ} :
+    machine.SolvesPromiseWithBoundedErrorInTime enc (PromiseProblem.ofSet A) t ↔
+      machine.DecidesWithBoundedErrorInTime enc A t := by
+  refine forall_congr' fun a => and_congr_right fun _ => ?_
+  by_cases ha : a ∈ A
+  · have hno : a ∉ (PromiseProblem.ofSet A).no := fun h => h ha
+    simp only [MultiTapeTM.indicator, ha, ite_true]
+    exact ⟨fun h => h.1 ha, fun h => ⟨fun _ => h, fun h' => absurd h' hno⟩⟩
+  · simp only [MultiTapeTM.indicator, ha, ite_false]
+    exact ⟨fun h => h.2 ha, fun h => ⟨fun h' => absurd h' ha, fun _ => h⟩⟩
+
 end Turing.MultiTapePTM
 
 namespace Cslib.Complexity
@@ -87,6 +118,21 @@ theorem PromiseBPTIME_mono {T₁ T₂ : ℕ → ℕ} (h : ∀ n, T₁ n ≤ T₂
   rintro Q ⟨c₁, c₂, k, State, hfinite, machine, hQ⟩
   exact ⟨c₁, c₂, k, State, hfinite, machine, hQ.mono fun a =>
     Nat.add_le_add_right (Nat.mul_le_mul_left _ (h _)) _⟩
+
+/-- A promise problem with fewer yes-instances and fewer no-instances than one in `PromiseBPTIME`
+is in `PromiseBPTIME`. -/
+theorem mem_PromiseBPTIME_of_subset {Q Q' : PromiseProblem α} (hQ : Q ∈ PromiseBPTIME enc T)
+    (hyes : Q'.yes ⊆ Q.yes) (hno : Q'.no ⊆ Q.no) : Q' ∈ PromiseBPTIME enc T :=
+  let ⟨c₁, c₂, k, State, hfinite, machine, hQ⟩ := hQ
+  ⟨c₁, c₂, k, State, hfinite, machine, hQ.of_subset hyes hno⟩
+
+/-- A decision problem, as a promise problem, is in `PromiseBPTIME` exactly when it is in
+`BPTIME`. -/
+@[simp]
+theorem ofSet_mem_PromiseBPTIME {A : Set α} :
+    PromiseProblem.ofSet A ∈ PromiseBPTIME enc T ↔ A ∈ BPTIME enc T := by
+  simp only [PromiseBPTIME, BPTIME, Set.mem_ofPred_eq,
+    MultiTapePTM.solvesPromiseWithBoundedErrorInTime_ofSet_iff]
 
 /-- A bounded-error total completion supplies a native bounded-error promise solver. -/
 theorem promiseClass_BPTIME_subset_PromiseBPTIME :
