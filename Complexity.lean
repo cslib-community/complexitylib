@@ -497,6 +497,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalStack
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalStep
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalTime
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalVisit
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalWordStack
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Body
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Boundary
@@ -2931,9 +2932,10 @@ public import Complexity.DataStructure.SearchTree.Impl
 public import Complexity.DataStructure.SplayTree.AccessLemma
 public import Complexity.DataStructure.SplayTree.Basic
 public import Complexity.DataStructure.SplayTree.Impl
+public import Complexity.DataStructure.Stack.Controller
 public import Complexity.DataStructure.Stack.Memory
-public import Complexity.DataStructure.Stack.WordRAM.Basic
-public import Complexity.DataStructure.Stack.WordRAM.Controller
+public import Complexity.DataStructure.Stack.Native
+public import Complexity.DataStructure.Stack.Spec
 public import Complexity.DataStructure.StateTransition
 public import Complexity.DataStructure.StateTransition.Amortized
 public import Complexity.DataStructure.StateTransition.Composition

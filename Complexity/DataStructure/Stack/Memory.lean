@@ -9,12 +9,12 @@ module
 
 public import Complexity.DataStructure.Memory.Field
 public import Complexity.DataStructure.StateTransition.Refinement
-public import Complexity.DataStructure.Stack.WordRAM.Basic
+public import Complexity.DataStructure.Stack.Spec
 
 /-!
 # An array stack over the memory oracle
 
-The bounded stack `Stack.WordRAM.spec w C` is implemented by three short programs over
+The bounded stack `Stack.spec w C` is implemented by three short programs over
 `Memory.spec w`. The storage is a `Layout` with two named fields: a one-cell `count` and an
 `items` array of `C` cells, bottom first. The abstraction function reads the first `count` items
 and reverses them, so the top comes first. Each operation is at most three memory operations and
@@ -26,9 +26,9 @@ write only the layout's cells and never allocate (`modifies_methods`), and the a
 invariant depend only on those cells (`abs_congr`, `Inv.congr`). Two stacks with disjoint
 layouts therefore implement the product of two stacks (`pairRefinement`).
 
-This is the same specification that `Stack.WordRAM` implements by a hand-stepped nine-register
-dispatcher. Here no register or instruction count appears. Word fit enters only through the
-admissibility of `Memory.spec w` and one static fact of the layout, that the capacity fits.
+No register or instruction count appears here. Word fit enters only through the admissibility
+of `Memory.spec w` and one static fact of the layout, that the capacity fits. `Stack.Native` runs
+these programs on the word RAM.
 
 ## Main definitions
 
@@ -121,7 +121,7 @@ def pop : Prog (Option ℕ) := do
 def size : Prog ℕ := L.count.get 0
 
 /-- The stack operations as memory programs. -/
-def methods (w C : ℕ) : Methods (Stack.WordRAM.spec w C) (Memory.spec w)
+def methods (w C : ℕ) : Methods (Stack.spec w C) (Memory.spec w)
   | .push v => push L v
   | .pop => pop L
   | .size => size L
@@ -216,7 +216,7 @@ theorem Inv.item_lt {s : Memory.State} (hs : Inv L s) {i : ℕ} (hi : i < L.item
   hs.items_allocated.lt_frontier hi
 
 /-- The array stack implements the bounded stack of capacity `C`. -/
-def refinement (hL : L.Valid w C) : Refinement (Stack.WordRAM.spec w C) (Memory.spec w) :=
+def refinement (hL : L.Valid w C) : Refinement (Stack.spec w C) (Memory.spec w) :=
   Refinement.ofFn (methods L w C) (Inv L) (abs L)
     (by
       intro s o hs hv
@@ -296,7 +296,7 @@ theorem amortized (hL : L.Valid w C) :
 
 /-- Each admissible operation writes only the layout's cells and never allocates. -/
 theorem modifies_methods (hL : L.Valid w C) {s : Memory.State} (o : StackOp ℕ)
-    (hv : (Stack.WordRAM.spec w C).valid (abs L s) o) :
+    (hv : (Stack.spec w C).valid (abs L s) o) :
     (∀ a ∉ L.footprint,
         ((Memory.spec w).clientState s (methods L w C o)).mem a = s.mem a) ∧
       ((Memory.spec w).clientState s (methods L w C o)).frontier = s.frontier := by
@@ -322,7 +322,7 @@ theorem modifies_methods (hL : L.Valid w C) {s : Memory.State} (o : StackOp ℕ)
 /-- A stack's operations leave a stack with a disjoint layout unchanged. -/
 theorem frame {L' : Layout} (hL : L.Valid w C) (hL' : L'.Valid w C)
     (hd : Disjoint L.footprint L'.footprint) {s : Memory.State} (hs' : Inv L' s)
-    (o : StackOp ℕ) (hv : (Stack.WordRAM.spec w C).valid (abs L s) o) :
+    (o : StackOp ℕ) (hv : (Stack.spec w C).valid (abs L s) o) :
     abs L' ((Memory.spec w).clientState s (methods L w C o)) = abs L' s ∧
       Inv L' ((Memory.spec w).clientState s (methods L w C o)) := by
   obtain ⟨hm, hf⟩ := modifies_methods hL o hv
@@ -335,14 +335,14 @@ theorem frame {L' : Layout} (hL : L.Valid w C) (hL' : L'.Valid w C)
 
 /-- The operations of two stacks, each on its own layout. -/
 def pairMethods (L₁ L₂ : Layout) (w C : ℕ) :
-    Methods (product (Stack.WordRAM.spec w C) (Stack.WordRAM.spec w C)) (Memory.spec w)
+    Methods (product (Stack.spec w C) (Stack.spec w C)) (Memory.spec w)
   | .inl o => methods L₁ w C o
   | .inr o => methods L₂ w C o
 
 /-- Two array stacks with disjoint layouts implement a pair of bounded stacks. -/
 def pairRefinement {L₁ L₂ : Layout} (h₁ : L₁.Valid w C) (h₂ : L₂.Valid w C)
     (hd : Disjoint L₁.footprint L₂.footprint) :
-    Refinement (product (Stack.WordRAM.spec w C) (Stack.WordRAM.spec w C)) (Memory.spec w) :=
+    Refinement (product (Stack.spec w C) (Stack.spec w C)) (Memory.spec w) :=
   (refinement h₁).prod (refinement h₂)
     (fun {s} o {a s' tr} hs₁ hs₂ hv hrun => by
       obtain ⟨_, _, rfl, _⟩ := ((Memory.spec w).clientRun_iff_runClient _ _ _ _ _).mp hrun
