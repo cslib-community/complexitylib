@@ -190,26 +190,6 @@ theorem isPPT_test {α : Type} {input : α ↪ List Bool}
   simpa only [test, reduction, hop, pairEncoding, fullEncoding, Function.comp_def] using
     hindex.bind_with hbranch
 
-/-- The reduction's complete efficiency proof uses the public programming interface. -/
-@[program_certificate]
-theorem isPPT_reduction {generator : List Bool → List Bool} {count : ℕ → ℕ}
-    {adversary : Distinguisher} (hgenerator : ComputableInPolyTime generator encBits encBits)
-    (hcount : ComputableInPolyTime count encUnary encUnary)
-    (hadversary : IsPPT encBool adversary) :
-    IsPPT encBool (reduction generator count adversary) := by
-  have hgen : ComputableInPolyTime
-      (fun p : (ℕ × List Bool) × List Bool => generator p.2)
-      (encPair (encPair encUnary encBits) encBits) encBits :=
-    hgenerator.comp (ComputableInPolyTime.snd (encPair encUnary encBits) encBits)
-  have hadv : IsPPTOn (encPair (encPair encUnary encBits) encBits) encBool
-      (fun p => adversary p.1.1 p.2) := hadversary.on.preprocess
-    ((ComputableInPolyTime.fst (encPair encUnary encBits) encBits).fst'.prod
-      (ComputableInPolyTime.snd (encPair encUnary encBits) encBits))
-  simpa only [IsPPT, test, reduction, hop, Function.comp_def] using
-    (isPPT_test hgen (ComputableInPolyTime.fst encUnary encBits)
-      (hcount.comp (ComputableInPolyTime.fst encUnary encBits)) hadv
-      (ComputableInPolyTime.snd encUnary encBits))
-
 /-- Capping a sampled index only merges rejecting branches. -/
 theorem hop_min (generator : List Bool → List Bool) (count : ℕ → ℕ)
     (adversary : Distinguisher)

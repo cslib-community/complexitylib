@@ -87,7 +87,8 @@ private theorem isPPTOn_dropAdvice {β : Type} {output : β ↪ List Bool}
 
 /-- Two ensembles are **indistinguishable with advice** `advice` when each uniform strict PPT
 test reading the parameter `n`, the advice word `advice n` and a sample has negligible advantage.
-The test's clock is polynomial in the length of its whole input, including the sample, as for
+The advice family is not bounded here; its length is charged to the test's clock, which is
+polynomial in the length of its whole input, including the advice and the sample, as for
 `ComputationallyIndistinguishable`: for ensembles of superpolynomial sample length the test gets
 more than `poly(n)` time, unlike a polynomial-size circuit. With empty advice this is uniform
 computational indistinguishability
