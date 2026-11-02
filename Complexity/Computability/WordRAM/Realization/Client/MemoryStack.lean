@@ -62,10 +62,6 @@ def pushWords : Stack.Memory.Layout × ℕ ↪ (Fin 5 → ℕ) :=
   (layoutWords.prodMap (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding).trans
     (Fin.appendEquiv 4 1).toEmbedding
 
-private def append {δ α : Type} {k l : ℕ} (input : δ ↪ (Fin k → ℕ))
-    (answer : α ↪ (Fin l → ℕ)) : δ × α ↪ (Fin (k + l) → ℕ) :=
-  (input.prodMap answer).trans (Fin.appendEquiv k l).toEmbedding
-
 private theorem addWords {δ : Type} {k : ℕ} (input : δ ↪ (Fin k → ℕ)) (i j : Fin k) :
     Realizes .exact (fun d => pure (input d i + input d j)) input word
       (fun w d _ => Fits w (input d i + input d j)) (fun _ _ => 3) := by
@@ -137,10 +133,10 @@ theorem realizes_push :
       pushWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
       (fun w d s => d.1.Valid w d.1.items.length ∧ Stack.Memory.Inv d.1 s ∧
         s.mem d.1.count.base < d.1.items.length) (fun _ _ => 10) := by
-  let e₁ := append pushWords word
-  let e₂ := append e₁ word
-  let e₃ := append e₂ word
-  let e₄ := append e₃ unitWords
+  let e₁ := appendWords pushWords word
+  let e₂ := appendWords e₁ word
+  let e₃ := appendWords e₂ word
+  let e₄ := appendWords e₃ unitWords
   have hread : Realizes .exact (fun d : Stack.Memory.Layout × ℕ => Memory.read d.1.count.base)
       pushWords word (fun _ _ _ => True) (fun _ _ => 0) := Realizes.read pushWords 0
   have haddr : Realizes .exact
@@ -180,12 +176,12 @@ are charged; the local-work allowance is 19 for either path, including the short
 theorem realizes_pop :
     Realizes .exact Stack.Memory.pop layoutWords optionWords
       (fun w L s => L.Valid w L.items.length ∧ Stack.Memory.Inv L s) (fun _ _ => 19) := by
-  let e₁ := append layoutWords word
-  let e₂ := append e₁ word
-  let e₃ := append e₂ word
-  let e₄ := append e₃ word
-  let e₅ := append e₄ word
-  let e₆ := append e₅ unitWords
+  let e₁ := appendWords layoutWords word
+  let e₂ := appendWords e₁ word
+  let e₃ := appendWords e₂ word
+  let e₄ := appendWords e₃ word
+  let e₅ := appendWords e₄ word
+  let e₆ := appendWords e₅ unitWords
   have hread : Realizes .exact (fun L : Stack.Memory.Layout => Memory.read L.count.base)
       layoutWords word (fun _ _ _ => True) (fun _ _ => 0) := Realizes.read layoutWords 0
   have hzero : Realizes .exact (fun _ : Stack.Memory.Layout × ℕ => pure 0) e₁ word
