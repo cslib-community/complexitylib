@@ -159,6 +159,45 @@ noncomputable def code : PQCode .exact registers where
   argK_input := by simp
   output_eq := rfl
 
+private theorem code_frontier_aux : code.frontierReg = Backend.frontier family := rfl
+
+/-- The ABI uses the common native frontier register. -/
+theorem code_frontier : code.frontierReg = Backend.frontier family := code_frontier_aux
+
+private theorem code_nReg_aux : code.nReg = argument 0 := rfl
+
+/-- The runtime dimension occupies the first method-argument position. -/
+theorem code_nReg : code.nReg = argument 0 := code_nReg_aux
+
+private theorem code_baseReg_aux : code.baseReg = argument 3 := rfl
+
+/-- The persistent compact base occupies the fourth method-argument position. -/
+theorem code_baseReg : code.baseReg = argument 3 := code_baseReg_aux
+
+/-- Operation argument delivery preserves the frontier. -/
+theorem code_input_frontier : code.input (Backend.frontier family) = false := by
+  change decide (_ ∨ _ ∨ _ ∨ _ ∨ _) = false
+  simp only [decide_eq_false_iff_not, not_or]
+  exact ⟨(bank_ne_frontier 0).symm, (bank_ne_frontier 1).symm,
+    (bank_ne_frontier 2).symm, (argument_ne_frontier 4).symm,
+    (argument_ne_frontier 5).symm⟩
+
+/-- Operation argument delivery preserves all four persistent layout words. -/
+theorem code_input_argument (i : Fin 4) : code.input (argument (i.castAdd 2)) = false := by
+  change decide (_ ∨ _ ∨ _ ∨ _ ∨ _) = false
+  simp only [decide_eq_false_iff_not, not_or]
+  refine ⟨(bank_ne_argument 0 (i.castAdd 2)).symm,
+    (bank_ne_argument 1 (i.castAdd 2)).symm, (bank_ne_argument 2 (i.castAdd 2)).symm,
+    argument_injective.ne ?_, argument_injective.ne ?_⟩
+  · intro he
+    have hh : i.val = 4 := congrArg (fun z : Fin 6 => z.val) he
+    have hi := i.isLt
+    omega
+  · intro he
+    have hh : i.val = 5 := congrArg (fun z : Fin 6 => z.val) he
+    have hi := i.isLt
+    omega
+
 private theorem reserve_layout :
     Function.Injective reserveScratch ∧
       (∀ (_i : Fin 1) j, argument 0 ≠ reserveScratch j) ∧
