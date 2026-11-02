@@ -23,6 +23,9 @@ This file lifts the single-tree model of `Trees.lean` to the full multi-root for
   proving `IndexedMinPQ.findMin` agreement (`FibRawInv.findMin_eq_some`) and scalar bounds.
 * **Transient cut invariant (`CutInv`):** Loop invariant for cascading cuts during `decreaseKey`,
   allowing a single `pending` ancestor whose child was just severed.
+* **Consolidation table invariant (`SlotInv`):** the trees stored in `cons[0..maxDeg]` while
+  consolidating at most `sz` nodes, with pairwise-distinct degrees,
+  `maxDeg ≤ 2 * Nat.log 2 sz + 1`, and every unoccupied entry `cons[d]` (`d ≤ n`) zero.
 
 ## Main definitions
 
@@ -31,6 +34,8 @@ This file lifts the single-tree model of `Trees.lean` to the full multi-root for
 * `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.CutInv`: transient forest invariant
   during
   cascading cuts in `decreaseKey`.
+* `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.SlotInv`: consolidation-table invariant
+  tracking distinct-degree root trees in `cons[0..maxDeg]`.
 
 ## Main results
 
@@ -789,5 +794,240 @@ theorem FibRawInv.findMin_eq_some {n K_max : ℕ} {s : IndexedMinPQ.State n} {st
     have hle2 : IndexedMinPQ.PrioLE (T_v.root, st.key T_v.root) (v, st.key v) :=
       (hroots T_v hTv).1.prioLE_of_mem hv_in_Tv
     exact hle1.trans hle2
+
+/-! ## Forest facts used by several operations -/
+
+/-- In any `Nodup` forest `ts`, no strict descendant `x ∈ forestNodes T.children` (`T ∈ ts`) can
+equal the root of any tree `R ∈ ts`. -/
+theorem descendant_ne_root_of_nodup {n : ℕ} {ts : List (FHTree n)} (hnd : (forestNodes ts).Nodup)
+    {T R : FHTree n} (hT : T ∈ ts) (hR : R ∈ ts) {x : Fin n} (hx : x ∈ forestNodes T.children) :
+    x ≠ R.root := by
+  intro hxr
+  by_cases hTR : T = R
+  · subst hTR
+    have hnd_T := forestNodes_nodup_tree hnd hT
+    rw [T.nodes_eq] at hnd_T
+    exact (List.nodup_cons.mp hnd_T).1 (hxr ▸ hx)
+  · have hx_T : x ∈ T.nodes := T.nodes_eq ▸ List.mem_cons_of_mem T.root hx
+    exact forestNodes_nodup_disjoint hnd hT hR hTR hx_T (hxr ▸ R.root_mem_nodes)
+
+/-- A tree is rebuilt from its root and children. -/
+theorem FHTree.eta {n : ℕ} (T : FHTree n) : FHTree.node T.root T.children = T := by
+  cases T
+  rfl
+
+/-! ## Framing and pure-`ℕ` degree bounds during consolidation -/
+
+/-- Framing `ValidRoot st none T` across a state transition preserving node fields on `T.nodes` and
+pointer fields on strict descendants `forestNodes T.children`. -/
+theorem ValidRoot.frame_tree {n : ℕ} {st st' : RawState n} {T : FHTree n}
+    (hT : ValidRoot st none T)
+    (hnode : ∀ u ∈ T.nodes,
+      st'.inHeap u = st.inHeap u ∧ st'.mark u = st.mark u ∧ st'.deg u = st.deg u ∧
+      st'.child u = st.child u ∧ st'.key u = st.key u ∧ st'.par u = st.par u)
+    (hlr : ∀ u ∈ forestNodes T.children,
+      st'.left u = st.left u ∧ st'.right u = st.right u) :
+    ValidRoot st' none T := by
+  have hr := hnode T.root T.root_mem_nodes
+  refine ⟨hT.1.frame
+    (fun u hu =>
+      let h := hnode u hu
+      ⟨h.1, h.2.1, h.2.2.1, h.2.2.2.1, h.2.2.2.2.1⟩)
+    (fun u hu =>
+      let h := hnode u (T.nodes_eq ▸ List.mem_cons_of_mem T.root hu)
+      let hl := hlr u hu
+      ⟨h.2.2.2.2.2, hl.1, hl.2, Iff.rfl⟩),
+    hr.2.2.2.2.2.trans hT.2.1, hr.2.1.trans hT.2.2⟩
+
+/-- Framing `ValidRoot st none T` when all seven vertex arrays agree on `T.nodes`. -/
+theorem ValidRoot.frame_nodes {n : ℕ} {st st' : RawState n} {T : FHTree n}
+    (hT : ValidRoot st none T)
+    (h : ∀ u ∈ T.nodes,
+      st'.inHeap u = st.inHeap u ∧ st'.mark u = st.mark u ∧ st'.deg u = st.deg u ∧
+      st'.child u = st.child u ∧ st'.key u = st.key u ∧ st'.par u = st.par u ∧
+      st'.left u = st.left u ∧ st'.right u = st.right u) :
+    ValidRoot st' none T :=
+  hT.frame_tree
+    (fun u hu =>
+      let hu' := h u hu
+      ⟨hu'.1, hu'.2.1, hu'.2.2.1, hu'.2.2.2.1, hu'.2.2.2.2.1, hu'.2.2.2.2.2.1⟩)
+    (fun u hu =>
+      let hu' := h u (T.nodes_eq ▸ List.mem_cons_of_mem T.root hu)
+      hu'.2.2.2.2.2.2)
+
+/-- Every valid subtree `T` with `T.size ≤ sz` disjoint from at least one other handle `z : Fin n`
+satisfies both `T.deg ≤ 2 * Nat.log 2 sz + 1` and `T.deg + 2 ≤ n`. -/
+theorem deg_bounds_of_extra {n sz : ℕ} {st : RawState n} {T : FHTree n} {z : Fin n}
+    (hsz : T.size ≤ sz) (hT : ValidSubtree st none T) (hnd : (z :: T.nodes).Nodup) :
+    T.deg ≤ 2 * Nat.log 2 sz + 1 ∧ T.deg + 2 ≤ n := by
+  have hlen : 1 + T.size ≤ n := by
+    have h : (z :: T.nodes).length ≤ n := by simpa using hnd.length_le_card
+    simp only [List.length_cons] at h
+    unfold FHTree.size
+    omega
+  have hfib : Nat.fib (T.deg + 2) ≤ T.size := hT.fib_le_size
+  have hd_size : T.deg + 1 ≤ T.size := (deg_add_one_le_fib T.deg).trans hfib
+  have hd_log : T.deg ≤ 2 * Nat.log 2 sz + 1 := (hT.deg_bounds hsz).1
+  exact ⟨hd_log, by omega⟩
+
+/-! ## Consolidation table invariant `SlotInv` -/
+
+/-- Invariant for the degree consolidation table `st.cons` holding `slotTrees` within
+`0 .. maxDeg`, where `sz` bounds the total number of nodes being consolidated. -/
+def SlotInv (n sz : ℕ) (st : RawState n) (slotTrees : List (FHTree n)) (maxDeg : ℕ) : Prop :=
+  (slotTrees.map FHTree.deg).Nodup ∧
+  (∀ T ∈ slotTrees, ValidRoot st none T ∧ T.deg ≤ maxDeg) ∧
+  (∀ T ∈ slotTrees, st.cons T.deg = T.root.val + 1) ∧
+  (∀ d ≤ n, (∀ T ∈ slotTrees, T.deg ≠ d) → st.cons d = 0) ∧
+  maxDeg ≤ 2 * Nat.log 2 sz + 1 ∧
+  (maxDeg = 0 ∨ maxDeg + 2 ≤ n)
+
+/-- Initial empty consolidation table when `∀ d ≤ n, st.cons d = 0`. -/
+theorem SlotInv.empty {n sz : ℕ} {st : RawState n} (hcons : ∀ d ≤ n, st.cons d = 0) :
+    SlotInv n sz st [] 0 :=
+  ⟨List.nodup_nil,
+   fun _ h => absurd h List.not_mem_nil,
+   fun _ h => absurd h List.not_mem_nil,
+   fun d hd _ => hcons d hd,
+   by omega, Or.inl rfl⟩
+
+/-- Framing `SlotInv` across a transition preserving `cons` and `ValidRoot` on `slotTrees`. -/
+theorem SlotInv.frame {n sz maxDeg : ℕ} {st st' : RawState n} {slotTrees : List (FHTree n)}
+    (hs : SlotInv n sz st slotTrees maxDeg)
+    (hcons : st'.cons = st.cons)
+    (hvalid : ∀ T ∈ slotTrees, ValidRoot st' none T) :
+    SlotInv n sz st' slotTrees maxDeg := by
+  obtain ⟨hnd, htr, hhit, hemp, hmd1, hmd2⟩ := hs
+  exact ⟨hnd,
+    fun T hT => ⟨hvalid T hT, (htr T hT).2⟩,
+    fun T hT => hcons ▸ hhit T hT,
+    fun d hd hnone => hcons ▸ hemp d hd hnone,
+    hmd1, hmd2⟩
+
+/-- Lookup in `st.cons d` (`d ≤ n`): either `st.cons d = 0` and no tree in `slotTrees` has degree
+`d`, or a unique index `i < slotTrees.length` has `(slotTrees[i]).deg = d` and
+`st.cons d = (slotTrees[i]).root.val + 1`. -/
+theorem SlotInv.lookup {n sz maxDeg : ℕ} {st : RawState n} {slotTrees : List (FHTree n)}
+    (hs : SlotInv n sz st slotTrees maxDeg) {d : ℕ} (hd : d ≤ n) :
+    (st.cons d = 0 ∧ ∀ T ∈ slotTrees, T.deg ≠ d) ∨
+    ∃ (i : ℕ) (hi : i < slotTrees.length),
+      (slotTrees[i]).deg = d ∧
+      st.cons d = (slotTrees[i]).root.val + 1 ∧
+      (slotTrees.eraseIdx i).length + 1 = slotTrees.length ∧
+      (∀ R ∈ slotTrees.eraseIdx i, R.deg ≠ d) := by
+  obtain ⟨hnd, _, hhit, hemp, _, _⟩ := hs
+  by_cases hex : ∃ T ∈ slotTrees, T.deg = d
+  · right
+    obtain ⟨T, hT_mem, hT_deg⟩ := hex
+    obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hT_mem
+    refine ⟨i, hi, hT_deg, hT_deg ▸ hhit slotTrees[i] (List.getElem_mem hi),
+      List.length_eraseIdx_add_one hi, ?_⟩
+    intro R hR hR_deg
+    obtain ⟨j, hj, hji, rfl⟩ := List.mem_eraseIdx_iff_getElem.mp hR
+    have hget : (slotTrees.map FHTree.deg)[j]'(by simp only [List.length_map]; exact hj) =
+        (slotTrees.map FHTree.deg)[i]'(by simp only [List.length_map]; exact hi) := by
+      simp only [List.getElem_map, hR_deg, hT_deg]
+    exact hji ((List.Nodup.getElem_inj_iff hnd).mp hget)
+  · left
+    have hnone : ∀ T ∈ slotTrees, T.deg ≠ d := fun T hT e => hex ⟨T, hT, e⟩
+    exact ⟨hemp d hd hnone, hnone⟩
+
+private theorem getElem_mem_eraseIdx_of_ne {α : Type*} :
+    ∀ (L : List α) (i k : ℕ) (_hi : i < L.length) (hk : k < L.length),
+      k ≠ i → L[k] ∈ L.eraseIdx i
+  | [], _, _, _, hk, _ => absurd hk (Nat.not_lt_zero _)
+  | _ :: _, 0, 0, _, _, hki => absurd rfl hki
+  | _ :: _, 0, _ + 1, _, hk, _ => by
+    simp only [List.eraseIdx_zero, List.getElem_cons_succ]
+    exact List.getElem_mem (Nat.lt_of_succ_lt_succ hk)
+  | _ :: _, _ + 1, 0, _, _, _ => by
+    simp only [List.eraseIdx_cons_succ, List.getElem_cons_zero]
+    exact List.mem_cons_self
+  | a :: tl, i + 1, k + 1, hi, hk, hki => by
+    simp only [List.eraseIdx_cons_succ, List.getElem_cons_succ]
+    exact List.mem_cons_of_mem a
+      (getElem_mem_eraseIdx_of_ne tl i k (Nat.lt_of_succ_lt_succ hi) (Nat.lt_of_succ_lt_succ hk)
+        fun e => hki (congrArg Nat.succ e))
+
+/-- Clearing slot `d = (slotTrees[i]).deg` (`d ≤ n`) removes `slotTrees[i]` from `SlotInv`. -/
+theorem SlotInv.step_collision {n sz maxDeg : ℕ} {st st' : RawState n} {slotTrees : List (FHTree n)}
+    (hs : SlotInv n sz st slotTrees maxDeg) {i d : ℕ} (hi : i < slotTrees.length)
+    (hdeg_i : (slotTrees[i]).deg = d) (_hd : d ≤ n)
+    (hno_other : ∀ R ∈ slotTrees.eraseIdx i, R.deg ≠ d)
+    (hcons' : st'.cons = Function.update st.cons d 0)
+    (hvalid' : ∀ R ∈ slotTrees.eraseIdx i, ValidRoot st' none R) :
+    SlotInv n sz st' (slotTrees.eraseIdx i) maxDeg := by
+  obtain ⟨hnd, htr, hhit, hemp, hmd1, hmd2⟩ := hs
+  refine ⟨by rw [← List.eraseIdx_map]; exact List.Nodup.eraseIdx i hnd, ?_, ?_, ?_, hmd1, hmd2⟩
+  · intro R hR
+    obtain ⟨j, hj, _, rfl⟩ := List.mem_eraseIdx_iff_getElem.mp hR
+    exact ⟨hvalid' _ hR, (htr _ (List.getElem_mem hj)).2⟩
+  · intro R hR
+    obtain ⟨j, hj, _, hR_eq⟩ := List.mem_eraseIdx_iff_getElem.mp hR
+    rw [hcons', Function.update_of_ne (hno_other R hR)]
+    exact hR_eq ▸ hhit _ (List.getElem_mem hj)
+  · intro d' hd' hnone'
+    rw [hcons']
+    by_cases hdd : d' = d
+    · rw [hdd, Function.update_self]
+    · rw [Function.update_of_ne hdd]
+      refine hemp d' hd' fun T hT hTd' => ?_
+      obtain ⟨k, hk, rfl⟩ := List.mem_iff_getElem.mp hT
+      by_cases hki : k = i
+      · subst hki; exact hdd (hTd'.symm.trans hdeg_i)
+      · exact hnone' slotTrees[k] (getElem_mem_eraseIdx_of_ne slotTrees i k hi hk hki) hTd'
+
+/-- Storing a consolidated tree `T_cur` of unoccupied degree `d` into `st.cons d` and updating
+`maxDeg` to `max maxDeg d` inserts `T_cur` into `SlotInv`. -/
+theorem SlotInv.insert_empty {n sz maxDeg : ℕ} {st : RawState n} {slotTrees : List (FHTree n)}
+    (hs : SlotInv n sz st slotTrees maxDeg) {T_cur : FHTree n} {d : ℕ}
+    (_hd_n : d + 2 ≤ n) (hd_log : d ≤ 2 * Nat.log 2 sz + 1)
+    (hT_deg : T_cur.deg = d)
+    (hnone : ∀ R ∈ slotTrees, R.deg ≠ d)
+    (hT_valid : ValidRoot st none T_cur) :
+    SlotInv n sz { st with cons := Function.update st.cons d (T_cur.root.val + 1) }
+      (T_cur :: slotTrees) (max maxDeg d) := by
+  obtain ⟨hnd, htr, hhit, hemp, hmd1, _⟩ := hs
+  let st' : RawState n := { st with cons := Function.update st.cons d (T_cur.root.val + 1) }
+  have hv_all : ∀ R : FHTree n, ValidRoot st none R → ValidRoot st' none R := fun R hR =>
+    hR.frame_nodes fun _ _ => ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+  refine ⟨?_, ?_, ?_, ?_, by omega, Or.inr (by omega)⟩
+  · rw [List.map_cons, List.nodup_cons]
+    refine ⟨?_, hnd⟩
+    intro hm
+    obtain ⟨R, hR, hR_eq⟩ := List.mem_map.mp hm
+    exact hnone R hR (hR_eq.trans hT_deg)
+  · intro R hR
+    rcases List.mem_cons.mp hR with rfl | hR_tl
+    · exact ⟨hv_all R hT_valid, by omega⟩
+    · exact ⟨hv_all R (htr R hR_tl).1, (htr R hR_tl).2.trans (Nat.le_max_left maxDeg d)⟩
+  · intro R hR
+    rcases List.mem_cons.mp hR with rfl | hR_tl
+    · dsimp only [st']
+      rw [hT_deg, Function.update_self]
+    · dsimp only [st']
+      rw [Function.update_of_ne (hnone R hR_tl)]
+      exact hhit R hR_tl
+  · intro d' hd' hnone'
+    dsimp only [st']
+    have hne_d : d' ≠ d := fun e => hnone' T_cur List.mem_cons_self (hT_deg.trans e.symm)
+    rw [Function.update_of_ne hne_d]
+    exact hemp d' hd' fun R hR => hnone' R (List.mem_cons_of_mem T_cur hR)
+
+/-- Once every degree `< maxDeg + 1` has been cleared from `SlotInv`, `slotTrees = []` and all
+entries `st.cons d` (`d ≤ n`) are `0`. -/
+theorem SlotInv.done_of_cleared {n sz maxDeg : ℕ} {st : RawState n} {slotTrees : List (FHTree n)}
+    (hs : SlotInv n sz st slotTrees maxDeg)
+    (hcleared : ∀ d < maxDeg + 1, ∀ T ∈ slotTrees, T.deg ≠ d) :
+    slotTrees = [] ∧ ∀ d ≤ n, st.cons d = 0 := by
+  obtain ⟨_, htr, _, hemp, _, _⟩ := hs
+  have hnil : slotTrees = [] := by
+    cases slotTrees with
+    | nil => rfl
+    | cons T rest =>
+      have hle : T.deg < maxDeg + 1 := Nat.lt_succ_of_le (htr T List.mem_cons_self).2
+      exact absurd rfl (hcleared T.deg hle T List.mem_cons_self)
+  subst hnil
+  exact ⟨rfl, fun d hd => hemp d hd fun _ h => absurd h List.not_mem_nil⟩
 
 end Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap

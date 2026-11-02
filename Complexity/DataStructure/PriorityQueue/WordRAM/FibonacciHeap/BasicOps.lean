@@ -264,20 +264,6 @@ theorem insertIntoNonEmptyList_exec {n base w : ℕ} {x : Data rFib}
   rw [hst5]
   exact hcirc.insertAfter hu_not hr_eq
 
-/-- In any `Nodup` forest `ts`, no strict descendant `x ∈ forestNodes T.children` (`T ∈ ts`) can
-equal the root of any tree `R ∈ ts`. -/
-theorem descendant_ne_root_of_nodup {n : ℕ} {ts : List (FHTree n)} (hnd : (forestNodes ts).Nodup)
-    {T R : FHTree n} (hT : T ∈ ts) (hR : R ∈ ts) {x : Fin n} (hx : x ∈ forestNodes T.children) :
-    x ≠ R.root := by
-  intro hxr
-  by_cases hTR : T = R
-  · subst hTR
-    have hnd_T := forestNodes_nodup_tree hnd hT
-    rw [T.nodes_eq] at hnd_T
-    exact (List.nodup_cons.mp hnd_T).1 (hxr ▸ hx)
-  · have hx_T : x ∈ T.nodes := T.nodes_eq ▸ List.mem_cons_of_mem T.root hx
-    exact forestNodes_nodup_disjoint hnd hT hR hTR hx_T (hxr ▸ R.root_mem_nodes)
-
 theorem addRootAndUpdateMin_preserves {r uReg : Fin rFib}
     (h0 : r ≠ s0) (h1 : r ≠ s1) (h2 : r ≠ s2) (h3 : r ≠ s3) (h4 : r ≠ s4) (h5 : r ≠ s5)
     (hm : r ≠ minRootReg) (hnr : r ≠ numRootsReg) :

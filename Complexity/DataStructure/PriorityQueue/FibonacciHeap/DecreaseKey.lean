@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Basic
+public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Cut
 
 /-!
 # Fibonacci-heap `decreaseKey` over a record of named cells
