@@ -41,11 +41,12 @@ less than it (`minCut_le_of_mem_support_karger`). Every call it makes is admissi
 `telescope_survival_step`), used unchanged, and the composition of the stages is
 `Probability.PMF.toOuterMeasure_bind_ge_mul_ennreal`.
 
-The word-RAM implementation proves the same bound on machine states, interleaved with register
-steps (`Cslib.Algorithms.WordRAM.Karger.contractDownTo_spec`). Here no register, address or
-instruction count appears. An implementation of `spec` over the memory oracle is a separate,
-deterministic hop, and `Refinement.toRandomized` with `RandomizedRefinement.withCoins` carries the
-law of the client through it.
+No register, address or instruction count appears here. The word-RAM loop
+`Cslib.Algorithms.WordRAM.Karger.contractDownTo` simulates `contractTimes`: the graph it holds has
+the law of the client's final state (`Cslib.Algorithms.WordRAM.Karger.contractDownTo_law`), so its
+survival bound is `survives_contractTimes`. An implementation of `spec` over the memory oracle is a
+separate, deterministic hop, and `Refinement.toRandomized` with `RandomizedRefinement.withCoins`
+carries the law of the client through it.
 
 ## Main definitions
 
@@ -56,6 +57,8 @@ law of the client through it.
 
 ## Main results
 
+* `run_contractStep_bind`, `run_contractStep_bind_of_eq_zero`: the run of one contraction, the
+  step that an implementation simulates.
 * `survives_contractTimes`: the survival bound.
 * `two_div_le_toOuterMeasure_karger`: Karger's success probability.
 * `isContractionOf_of_mem_support_contractTimes`, `minCut_le_of_mem_support_karger`: every
@@ -181,7 +184,7 @@ noncomputable def karger : ProbOracleComp Op.Result ℕ := do
 
 /-- One contraction of a graph of positive weight draws a uniform offset below the weight and
 contracts the pair sampled there. -/
-private theorem run_contractStep_bind {α : Type} (p : ProbOracleComp Op.Result α) {m : ℕ}
+theorem run_contractStep_bind {α : Type} (p : ProbOracleComp Op.Result α) {m : ℕ}
     (W : Fin (m + 1) → Fin (m + 1) → ℕ) (hS : totalDoubledWeight W ≠ 0) :
     spec.toRandomized.withCoins.run (contractStep >>= fun _ => p) ⟨m + 1, W⟩ =
       (ProbComp.unifOracle (totalDoubledWeight W - 1)).bind fun r =>
@@ -197,7 +200,7 @@ private theorem run_contractStep_bind {α : Type} (p : ProbOracleComp Op.Result 
   rfl
 
 /-- One contraction of a weightless graph contracts its first and last supervertices. -/
-private theorem run_contractStep_bind_of_eq_zero {α : Type} (p : ProbOracleComp Op.Result α)
+theorem run_contractStep_bind_of_eq_zero {α : Type} (p : ProbOracleComp Op.Result α)
     {m : ℕ} (W : Fin (m + 1) → Fin (m + 1) → ℕ) (hS : totalDoubledWeight W = 0) :
     spec.toRandomized.withCoins.run (contractStep >>= fun _ => p) ⟨m + 1, W⟩ =
       spec.toRandomized.withCoins.run p ⟨m, contractMatrix W 0 (Fin.last m)⟩ := by
