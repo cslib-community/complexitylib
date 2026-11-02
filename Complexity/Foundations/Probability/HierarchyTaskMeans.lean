@@ -56,17 +56,21 @@ structure CorrectionSampling where
   h : ℝ → ℝ
   /-- Row gate. -/
   ρ : ℝ → ℝ
-  /-- Row and incoming ranks. -/
+  /-- Row rank used by the row gate. -/
   K : ℕ
+  /-- Incoming rank used by the incoming gate. -/
   Kc : ℕ
-  /-- Row-gate safe threshold and incoming-gate safe threshold. -/
+  /-- Safe threshold for the row gate. -/
   η : ℝ
+  /-- Safe threshold for the incoming gate. -/
   τ₀ : ℝ
   /-- Auxiliary-score support threshold. -/
   e : ℝ
-  /-- Terminal pair, source pair and incoming count constants. -/
+  /-- Terminal pair-count constant. -/
   c : ℝ
+  /-- Source pair-count constant. -/
   p : ℝ
+  /-- Incoming-count bound on the support of the pilot multiplier. -/
   R : ℝ
   /-- Actual uniform midpoint density, not a nominal rate. -/
   π : ℝ
