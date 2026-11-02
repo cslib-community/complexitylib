@@ -31,7 +31,8 @@ the client syntax, unfolding definitions, with one rule per form:
 * `match` on an optional word or word pair: the client equals the branch on its presence tag
   (`Realizes.congr`, proved by cases).
 * `iterate step D n a` whose step begins with a query: `Realizes.iterate₀`, after
-  `iterate_comap` moves `D` into the step.
+  adapting `D` and any captured live words to the whole environment. The source and reached-state
+  domain are transported back to the client's original loop.
 * `boundedWhile G step D n a` whose step begins with a query: `Realizes.while₀`. The guard
   `G D r` may be `a = b`, `a < b`, `a > b` or `a ≠ 0` (tested as `0 < a`), with any decidability
   instance, over the live words and the state's words; an operand independent of the state, such
@@ -953,13 +954,14 @@ private partial def realizeIterate (ctx : Ctx) (env : Env) (d : Expr) (atoms : A
     | none => encodingOf σ
   let l ← encodingWidth out
   let envB ← extend env σ out l
+  let captured := step.containsFVar d.fvarId!
   -- the body over the whole environment
-  let body ← if D == d then pure step else
+  let body ← if D == d && !captured then pure step else
     withLocalDeclD `x envB.ty fun x => do
       let x1 ← mkAppM ``Prod.fst #[x]
       let x2 ← mkAppM ``Prod.snd #[x]
       let Dx := (← mkLambdaFVars #[d] D).beta #[x1]
-      mkLambdaFVars #[x] (mkApp step (← mkAppM ``Prod.mk #[Dx, x2]))
+      mkLambdaFVars #[x] (mkApp (step.replaceFVar d x1) (← mkAppM ``Prod.mk #[Dx, x2]))
   let hB ← realizeProg ctx envB body (some out)
   let hq ← proveQuery body envB.ty
   let hLoop ← mkAppM ``Realizes.iterate₀ #[env.input, out, hB.proof, hq]
@@ -989,10 +991,71 @@ private partial def realizeIterate (ctx : Ctx) (env : Env) (d : Expr) (atoms : A
       mkLambdaFVars #[w, d, s] (mkAnd (hA.safe.beta #[w, d, s]) (mkAnd sn sl))
   let progR ← mkLambdaFVars #[d] (← mkAppM ``iterate #[body, d, n, a])
   let proof ← certify ctx env proof progR out safe
-  if D == d then return { proof, output := out, safe }
+  if D == d && !captured then return { proof, output := out, safe }
   let g ← mkLambdaFVars #[d] D
-  let eq ← mkLambdaFVars #[d] (← mkEqSymm (← mkAppM ``iterate_comap #[g, step, d, n, a]))
-  return { proof := ← mkAppM ``Realizes.congr #[proof, eq], output := out, safe }
+  let eq ← if captured then do
+    -- The adapted step agrees at this fixed environment, not at every possible environment.
+    let ty ← withLocalDeclD `n (mkConst ``Nat) fun n => withLocalDeclD `a σ fun a => do
+      mkForallFVars #[n, a] (← mkEq (← mkAppM ``iterate #[body, d, n, a])
+        (← mkAppM ``iterate #[step, D, n, a]))
+    let h ← Term.withSynthesize <| Term.elabTermEnsuringType (← `(by
+      intro n a
+      induction n generalizing a with
+      | zero => rfl
+      | succ n ih =>
+        simp only [iterate]
+        congr 1
+        funext b
+        exact ih b)) (some ty)
+    mkLambdaFVars #[d] (mkApp2 (← instantiateMVars h) n a)
+  else
+    mkLambdaFVars #[d] (← mkEqSymm (← mkAppM ``iterate_comap #[g, step, d, n, a]))
+  let proof ← mkAppM ``Realizes.congr #[proof, eq]
+  if !captured then return { proof, output := out, safe }
+  -- State the reached-state domain in the original loop's terms, as in `realizeWhile`.
+  let nat := mkConst ``Nat
+  let state := mkConst ``Memory.State
+  let pairTy ← mkAppM ``Prod #[← inferType D, σ]
+  let clientSafe ← withLocalDeclD `w nat fun w =>
+    withLocalDeclD `x pairTy fun x =>
+      withLocalDeclD `s state fun s => do
+        let pair ← mkAppM ``Prod.mk #[d, ← mkAppM ``Prod.snd #[x]]
+        mkLambdaFVars #[w, x, s] (← reducePairs (hB.safe.beta #[w, pair, s]))
+  let safe' ← withLocalDeclD `w nat fun w => withLocalDeclD `s state fun s => do
+    let pair ← mkAppM ``Prod.mk #[d, a]
+    let sn ← reducePairs (hN.safe.beta #[w, pair, s])
+    let sl ← mkAppM ``iterationSafe #[step, clientSafe, w, D, n, a, s]
+    mkLambdaFVars #[w, d, s] (mkAnd (hA.safe.beta #[w, d, s]) (mkAnd sn sl))
+  let pointwise ← withLocalDeclD `w nat fun w => withLocalDeclD `s state fun s => do
+    let ty ← withLocalDeclD `n nat fun n => withLocalDeclD `a σ fun a =>
+      withLocalDeclD `s state fun s => do
+        mkForallFVars #[n, a, s] (← mkEq
+          (← mkAppM ``iterationSafe #[body, hB.safe, w, d, n, a, s])
+          (← mkAppM ``iterationSafe #[step, clientSafe, w, D, n, a, s]))
+    let h ← Term.withSynthesize <| Term.elabTermEnsuringType (← `(by
+      intro n a s
+      induction n generalizing a s with
+      | zero => rfl
+      | succ n ih =>
+        simp only [iterationSafe]
+        congr 1
+        exact ih _ _)) (some ty)
+    let pair ← mkAppM ``Prod.mk #[d, a]
+    let sn ← reducePairs (hN.safe.beta #[w, pair, s])
+    let wrap ← withLocalDeclD `p (mkSort Level.zero) fun p =>
+      mkLambdaFVars #[p] (mkAnd (hA.safe.beta #[w, d, s]) (mkAnd sn p))
+    mkLambdaFVars #[w, d, s] (← mkAppM ``congrArg
+      #[wrap, mkApp3 (← instantiateMVars h) n a s])
+  let safeEq ← withLocalDeclD `w nat fun w => do
+    let hd ← withLocalDeclD `e env.ty fun e => do
+      mkLambdaFVars #[e] (← mkAppM ``funext #[mkApp2 pointwise w e])
+    mkLambdaFVars #[w] (← mkAppM ``funext #[hd])
+  let safeEq ← mkAppM ``funext #[safeEq]
+  let proofTy ← inferType proof
+  let wrap ← withLocalDeclD `safe (← inferType safe) fun s =>
+    mkLambdaFVars #[s] (mkAppN proofTy.getAppFn (proofTy.getAppArgs.set! 8 s))
+  let proof ← mkAppM ``Eq.mp #[← mkAppM ``congrArg #[wrap, safeEq], proof]
+  return { proof, output := out, safe := safe' }
 
 /-- Certify `boundedWhile G step D n a` for the environment variable `d`.
 
