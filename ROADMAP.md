@@ -622,8 +622,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   ([#2335](https://github.com/cslib-community/complexitylib/issues/2335)) compute their runtime
   memory window, normalize the appended threshold with the full input, and connect one actual
   native producer record to the improved product. The finite saving includes every translation,
-  descriptor/copy/header/call instruction and halt. The full ET controller still uses the previous
-  consumer; its replacement, aggregate cost, polynomial-factor absorption and final tuning remain open.
+  descriptor/copy/header/call instruction and halt. The full box-backed fixed-prime controller
+  ([#2341](https://github.com/cslib-community/complexitylib/issues/2341)) executes the genuine producer
+  once, visits its occupied records with dirty-workspace reuse, and returns an original witness
+  exactly when a zero triangle exists. At `m=9k`, its aggregate box term is
+  `125829120(189k+1)^2(9k+1)D^(-8/125)n³g`, with producer, root/query/controller and one global
+  failed-scan reserve explicit. Global parameter/prime selection still calls the previous consumer;
+  connecting this controller, polynomial-factor absorption and final tuning remain open.
   Conservative native ordinary integer 3SUM is proved in
   `WordRAM/ThreeSum/Decision/Subquadratic.lean`: for each fixed polynomial magnitude exponent,
   one fixed 848-register program has charged time `Oκ(n^(2−1/5184))`, logarithmic physical
