@@ -38,7 +38,7 @@ variable {ι α β : Type}
 def WordOracleComp.singleOracle (i₀ : ι) (p : WordOracleComp Unit α) :
     WordOracleComp ι α :=
   OracleComp.interpret
-    (ProbOracleComp.handler
+    (OracleComp.sumHandler
       (fun n => OracleComp.query
         (spec := probOracleSpec (fun _ : ι × List Bool => List Bool)) (Sum.inl n))
       (fun q : Unit × List Bool =>
@@ -55,15 +55,15 @@ theorem WordOracleComp.run_interpret_singleOracle {State : Type} (i₀ : ι)
     (oracle : ι × List Bool → StateT State PMF (List Bool)) (p : WordOracleComp Unit α)
     (s : State) :
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       (WordOracleComp.singleOracle i₀ p)).run s =
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
         (fun q : Unit × List Bool => oracle (i₀, q.2))) p).run s := by
   rw [WordOracleComp.singleOracle, OracleComp.interpret_interpret]
   congr 2
   funext q
-  cases q <;> simp only [ProbOracleComp.handler, ProbOracleComp.query, OracleComp.interpret_query]
+  cases q <;> simp only [OracleComp.sumHandler, ProbOracleComp.query, OracleComp.interpret_query]
 
 /-- Routing a strict oracle-PPT single-channel program to channel `i₀ : ι` preserves
 `IsOraclePPTOn`. -/

@@ -8,6 +8,7 @@ module
 -- upstream: local-only (tests of Complexity.Foundations.Data.BinaryBranching)
 
 public import Complexity.Foundations.Data.BinaryBranching
+import Mathlib.Data.Nat.Fib.Basic
 
 /-!
 # Tests for binary branchings
@@ -47,5 +48,21 @@ example : fib.walkSeq 10 4 (fun i => decide (i % 2 = 0)) = 1 :=
     (by simp [BinaryBranching.IsLeafWord, fib]) (fun i hi => by
       obtain rfl | rfl : i = 0 ∨ i = 1 := by simp at hi; omega
       all_goals rfl) (by simp)
+
+/-- The state `4` has five leaves: `n ↦ Nat.fib (n + 1)` is additive at inner states and `1` at
+the leaves, so `sum_leafWords_eq` counts them as `Nat.fib 5`. -/
+example {W : Finset (List Bool)} (hW : ∀ w, w ∈ W ↔ fib.IsLeafWord 4 w) : W.card = 5 := by
+  have hsum := BinaryBranching.sum_leafWords_eq fib_terminating (g := fun n => Nat.fib (n + 1))
+    (fun n hn => by
+      obtain ⟨m, rfl⟩ : ∃ m, n = m + 2 := ⟨n - 2, by simp [fib] at hn; omega⟩
+      simp only [fib, Bool.false_eq_true, ↓reduceIte]
+      rw [show m + 2 - 1 = m + 1 by omega, show m + 2 - 2 = m by omega, Nat.fib_add_two,
+        add_comm]) 4 hW
+  rw [Finset.sum_congr rfl fun w hw => (?_ : Nat.fib (fib.walk 4 w + 1) = 1)] at hsum
+  · simp only [Finset.sum_const, smul_eq_mul, mul_one] at hsum
+    exact hsum.trans (by decide)
+  · have hleaf : fib.walk 4 w ≤ 1 := ((hW w).mp hw).isLeaf_walk
+    obtain h | h : fib.walk 4 w = 0 ∨ fib.walk 4 w = 1 := by omega
+    all_goals rw [h]; rfl
 
 end ComplexityTests.BinaryBranching
