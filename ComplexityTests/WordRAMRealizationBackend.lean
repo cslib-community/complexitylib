@@ -75,10 +75,11 @@ example : ∃ K, ∃ y traces,
   exact ⟨K, y, traces, he, hb⟩
 
 -- Two stacks with disjoint layouts: product operations select tags of `Tag ⊕ Tag`.
-example {w C : ℕ} {L₁ L₂ : Stack.Memory.Layout} (h₁ : L₁.Valid w C) (h₂ : L₂.Valid w C)
-    (hd : Disjoint L₁.footprint L₂.footprint) :
-    ((backend w C L₁).sum (backend w C L₂)).Implements (Stack.Memory.pairRefinement h₁ h₂ hd) :=
-  (implements h₁).prod (implements h₂)
+example {w C : ℕ} {L₁ L₂ : Stack.Memory.Layout} (h₁ : L₁.Valid w C) (h₂ : L₂.Valid w C) :
+    ((backend w C L₁).sum (backend w C L₂)).Implements
+      ((Stack.Memory.framed h₁).prod (Stack.Memory.framed h₂)).toRefinement :=
+  (implements h₁).prod (frame₁ := Memory.Framed.prod_frame_left _ _)
+    (frame₂ := Memory.Framed.prod_frame_right _ _) (implements h₂)
 
 -- Doubling at every width of at least `2 * (log₂ n + 1)` bits, as one flat program.
 example : UniformComputableInPolyTime .standard (fun n => n + n) (fun _ n => [n]) id :=

@@ -581,7 +581,7 @@ noncomputable def lamportInverter (f : List Bool → List Bool)
   if j < 2 * n then do
     let keys ← lamportSimKeys f n j y
     let out ← (OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         ((lamportScheme f hf).oneTimeSigningOracle keys.2)) (adversary n keys.1)).run []
     return (frames out.1.2).getD (j / 2) []
   else
@@ -602,7 +602,7 @@ theorem isPPT_lamportInverter {f : List Bool → List Bool}
       encBits
       (fun r : ((ℕ × List Bool) × ℕ) × (List Bool × List Bool) => do
         let out ← (OracleComp.interpret
-          (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
             ((lamportScheme f (.of_tidy hf)).oneTimeSigningOracle r.2.2))
           (adversary r.1.1.1 r.2.1)).run []
         return (frames out.1.2).getD (r.1.2 / 2) []) := by
@@ -645,7 +645,7 @@ theorem isPPT_lamportInverter {f : List Bool → List Bool}
         if q.2 < 2 * q.1.1 then do
           let keys ← lamportSimKeys f q.1.1 q.2 q.1.2
           let out ← (OracleComp.interpret
-            (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+            (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
               ((lamportScheme f (.of_tidy hf)).oneTimeSigningOracle keys.2))
             (adversary q.1.1 keys.1)).run []
           return (frames out.1.2).getD (q.2 / 2) []
@@ -691,7 +691,7 @@ theorem OneWay.oneTimeEUFCMA_lamport {f : List Bool → List Bool} (hf : OneWay 
     encList encBits (w.take j ++ [] :: w.drop (j + 1))
   let runWith (pk sk : List Bool) : PMF ((List Bool × List Bool) × List (List Bool)) :=
     ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (S.oneTimeSigningOracle sk)) (adversary n pk)).run [])
   let win (w : List (List Bool)) (out : (List Bool × List Bool) × List (List Bool)) : Bool :=
     (out.1.1.length == n) && !out.2.contains out.1.1 &&
@@ -703,7 +703,7 @@ theorem OneWay.oneTimeEUFCMA_lamport {f : List Bool → List Bool} (hf : OneWay 
     if j < 2 * n then do
       let keys ← lamportSimKeys f n j y
       let out ← (OracleComp.interpret
-        (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
           (S.oneTimeSigningOracle keys.2)) (adversary n keys.1)).run []
       return (frames out.1.2).getD (j / 2) []
     else

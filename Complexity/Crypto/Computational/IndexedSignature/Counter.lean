@@ -109,7 +109,7 @@ that was never signed, of any length. -/
 def counterEufCmaGame (adversary : Forger) (n : ℕ) : ProbComp Bool := do
   let keys ← S.keyGen n
   let out ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
       (S.counterSigningOracle n keys.2)) (adversary n keys.1)).run (0, [])
   return !out.2.2.contains out.1.1 && S.counterVerify keys.1 out.1.1 out.1.2
 
@@ -149,7 +149,7 @@ theorem isPPTOn_run_counterSigningOracle {adversary : Forger}
       (encPair (encPair encBits encBits) (encPair encUnary (encList encBits)))
       (fun caller : ℕ × (List Bool × List Bool) =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
             (S.counterSigningOracle caller.1 caller.2.2)) (adversary caller.1 caller.2.1)).run
           (0, [])) := by
   obtain ⟨c, d, hlen⟩ := S.sign_ppt.length_le
@@ -278,7 +278,7 @@ variable (S) in
 and forward its forgery `(msg, encPair encUnary encBits (u, σ))` as `(u, msg, σ)`. -/
 def counterForger (bound : ℕ → ℕ → ℕ) (adversary : Forger) : IndexedForger := fun n pk => do
   let out ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
+    (OracleComp.sumHandler (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
       (S.counterHandler n bound)) (adversary n pk)).run 0
   return ((requestDecoder.decode out.1.2).1, out.1.1, (requestDecoder.decode out.1.2).2)
 
@@ -291,7 +291,7 @@ private noncomputable def jointOracle (n : ℕ) (sk : List Bool) (bound : ℕ �
     (q : Unit × List Bool) (state : ℕ × List (ℕ × List Bool)) :
     PMF (List Bool × ℕ × List (ℕ × List Bool)) :=
   ((OracleComp.interpret
-    (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
+    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
       (fun q s => ProbComp.eval (S.indexedSigningOracle n sk q s)))
     ((S.counterHandler n bound q).run state.1)).run state.2).map
       (fun result => (result.1.1, result.1.2, result.2))
@@ -329,11 +329,11 @@ private theorem map_run_jointOracle {n : ℕ} {sk : List Bool} {bound : ℕ → 
       σ.length ≤ bound n msg.length)
     {α : Type} (program : WordOracleComp Unit α) :
     ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
         (jointOracle S n sk bound)) program).run (0, [])).map
           (fun r => (r.1, r.2.1, r.2.2.map Prod.snd)) =
     ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (S.counterSigningOracle n sk)) program).run (0, [])) := by
   rw [ProbOracleComp.eval_run_interpret]
   refine ProbOracleComp.run_interpret_map_state_of_invariant _ _
@@ -376,7 +376,7 @@ private theorem eval_indexedEufCmaGame_counterForger (bound : ℕ → ℕ → �
     ProbComp.eval (S.indexedEufCmaGame (S.counterForger bound adversary) n) =
       (ProbComp.eval (S.keyGen n)).bind fun keys =>
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
+          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
             (jointOracle S n keys.2 bound)) (adversary n keys.1)).run (0, [])).map
               (indexedWin S keys.1) := by
   simp only [indexedEufCmaGame, counterForger, ProbComp.eval_bind, ProbComp.eval_pure,
@@ -394,7 +394,7 @@ private theorem eval_counterEufCmaGame_eq {bound : ℕ → ℕ → ℕ} {n : ℕ
     ProbComp.eval (S.counterEufCmaGame adversary n) =
       (ProbComp.eval (S.keyGen n)).bind fun keys =>
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
+          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
             (jointOracle S n keys.2 bound)) (adversary n keys.1)).run (0, [])).map
               (fun r => !(r.2.2.map Prod.snd).contains r.1.1 &&
                 S.counterVerify keys.1 r.1.1 r.1.2) := by
@@ -474,12 +474,12 @@ private theorem counterHandler_bound {bound : ℕ → ℕ → ℕ} (c : ℕ × L
         (encUnary j).length + (bound c.1 request.2.length + 2 * S.capacity c.1 + 1) := by
   unfold counterHandler at hresult
   split_ifs at hresult with hj
-  · obtain ⟨sig, hsig, rfl⟩ := ProbOracleComp.mem_support_map hresult
-    obtain ⟨raw, -, rfl⟩ := ProbOracleComp.mem_support_map hsig
+  · obtain ⟨sig, hsig, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
+    obtain ⟨raw, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hsig
     have htake := List.length_take_le (bound c.1 request.2.length) raw
     simp only [length_encPair, encUnary_apply, encBits_apply, List.length_replicate]
     omega
-  · have h := ProbOracleComp.eq_of_mem_support_pure hresult
+  · have h := OracleComp.eq_of_mem_supportWith_pure hresult
     subst h
     simp only [List.length_nil, encUnary_apply, List.length_replicate]
     omega
@@ -506,7 +506,7 @@ theorem isOraclePPT_counterForger {bound : ℕ → ℕ → ℕ}
       (encPair (encPair encBits encBits) encUnary)
       (fun c : ℕ × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler
+          (OracleComp.sumHandler
             (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
             (S.counterHandler c.1 bound)) (adversary c.1 c.2)).run 0) :=
     hadversary.run_interpret_preprocess_open' (prepare := fun c => c)
