@@ -18,15 +18,22 @@ The strongest organizing claim is that Complexitylib makes complexity-theoretic 
 The arrows below label kinds of proved connection, not an assertion that every object in a layer has an efficient realization.
 
 ```mermaid
-flowchart TD
-  P[Functional and free oracle programs] -->|denotation| S[Functions, distributions and state transitions]
-  P -->|resource certificate| M[Native finite machines]
-  R[RAM programs and representations] -->|refinement| S
-  R -->|stated simulation bounds| M
-  C[Circuits and formulas] -->|evaluation| S
-  M -->|selected simulation theorems| C
-  L[Logical descriptions and reductions] -->|encoding and evaluation theorems| M
-  M --> K[Complexity classes and completeness]
+flowchart TB
+  P["Functional and free oracle programs"]
+  S["Functions, distributions and state transitions"]
+  M["Native finite machines"]
+  R["RAM programs and representations"]
+  C["Circuits and formulas"]
+  L["Logical descriptions and reductions"]
+  K["Complexity classes and completeness"]
+  P -->|"denotation"| S
+  P -->|"resource certificate"| M
+  R -->|"refinement"| S
+  R -->|"stated simulation bounds"| M
+  C -->|"evaluation"| S
+  M -->|"selected simulation theorems"| C
+  L -->|"encoding and evaluation theorems"| M
+  M --> K
   C --> K
 ```
 

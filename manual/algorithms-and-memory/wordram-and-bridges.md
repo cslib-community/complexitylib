@@ -29,6 +29,27 @@ Time bounds, input encodings and permitted input/width pairs can depend on width
 | Polynomial-time scalar functions | [Complexity/Computability/WordRAM/Invariance.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Invariance.lean) | General polynomial-bit answers use a polynomial width threshold; logarithmic-width equivalence additionally requires polynomially bounded answer values |
 | Word-RAM → unbounded log-cost RAM | [Complexity/Computability/WordRAM/RAM.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/RAM.lean) | Additive fragment; eight target slots per instruction; successful forward simulation, not overflow-reflecting equivalence |
 
+The fixed-program, scalar-output route to native polynomial time has these inputs:
+
+```mermaid
+flowchart TB
+program["Fixed Word-RAM program<br/>basis and registers"]
+fits["Admitted width<br/>all inputs fit"]
+run["Successful RAM run<br/>polynomial step bound"]
+operations["Checked operations<br/>native cost certificates"]
+setup["Efficient setup<br/>unary width and words"]
+simulation["Clock and simulator<br/>finite sparse memory"]
+result["ComputableInPolyTime<br/>binary scalar output"]
+program -->|"prove computation"| run
+fits -->|"supply valid inputs"| run
+run -->|"bound step count"| simulation
+operations -->|"implement operations"| simulation
+setup -->|"prepare state"| simulation
+simulation -->|"charge the whole simulation"| result
+```
+
+Every incoming requirement is explicit in [Program.ComputesInTime.turingComputableInPolyTime_of_width](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Turing.lean#L514). The chosen width is computable in unary, the fitted input words are computable from the original encoding, and each checked basis operation has a native certificate. The bounds are measured in that original encoded input length. [WordRAMTuring](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/WordRAMTuring.lean#L65) demonstrates the route. List-output and width-selected code use their own contracts.
+
 The reverse TM simulation's displayed overhead for a `T`-step, `n`-word, width-`w` run with scalar degree `d` is `O((T+1)*((n+T+1)*(w+1))^max(3,d))`, in addition to setup/clock obligations. The cubic floor reflects the finite association-list representation used by this simulator; it is not asserted to be an optimal RAM/TM overhead. The additive case has scalar degree two and still pays this cubic floor.
 
 For scalar functions, polynomial output **bit length** differs from polynomial output **value**. `UniformComputableInPolyTime.polyBounded` records the necessity of the latter for a logarithmic-width scalar output. The general-width equivalence and logarithmic-width equivalence should not be merged into one unqualified theorem.

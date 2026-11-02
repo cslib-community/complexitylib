@@ -41,6 +41,26 @@ The inspectable abstract uses a finite random tape and a deterministic polynomia
 
 [WordOracleComp](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Probabilistic/Oracle.lean#L56) combines private samples with a finite operation name and an arbitrary bit-string payload/reply. [IsOraclePPTOn](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Probabilistic/Oracle.lean#L63) chooses one native oracle machine and one polynomial clock before all inputs, state types, stateful handlers and starting states. The equality includes the final external state.
 
+For the word-oracle interface, interpretation, query accounting and native realization are distinct proof tasks:
+
+```mermaid
+flowchart TB
+program["Word-oracle program family<br/>free requests and continuations"]
+handler["Stateful PMF handler<br/>external oracle state"]
+law["Joint probability law<br/>result and final state"]
+queries["Pathwise request bound<br/>chosen request charges"]
+certificate["IsOraclePPTOn certificate<br/>explicit input and output encodings"]
+machine["One native oracle machine<br/>one polynomial clock"]
+program -->|"interpret"| law
+handler -->|"answer and update state"| law
+program -->|"bound every branch"| queries
+program -.->|"prove realization"| certificate
+law -.->|"match the full law"| certificate
+certificate -->|"supply a uniform witness"| machine
+```
+
+The dotted arrows are obligations of [IsOraclePPTOn](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Probabilistic/Oracle.lean#L63): one machine and clock must match the joint law for every input, stateful handler and starting state. The [request bound](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Languages/Probabilistic/QueryCount.lean) has no implication arrow to that certificate; it does not charge arbitrary pure continuation work. For a closed program, [IsPPTOn](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Probabilistic/PPT.lean#L71) instead matches the encoded output law without an external handler.
+
 Request construction, tape-head movement and reply inspection are charged machine operations. The external handler's own computation is outside the oracle machine's cost. A reply may be arbitrarily long; the machine cannot return an arbitrarily long output for free, as the native `length_le` theorem records. Typed oracle interfaces need explicit word encodings and realization certificates before this native predicate applies.
 
 [Complexity/Computability/Probabilistic/Oracle/Substitution.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Probabilistic/Oracle/Substitution.lean) closes an efficient open program under efficient stateful oracle replacement. The principal endpoint `IsOraclePPTOn.run_interpret_preprocess_open` includes an invariant and controlled growth of replies and encoded handler state. Merely saying that each call is polynomial time would permit iterated state doubling and does not imply a polynomial total run. The underlying [Complexity/Computability/Probabilistic/Realization/OpenOracleSimulation.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Probabilistic/Realization/OpenOracleSimulation.lean) supplies a machine-configuration simulation; the public theorem is supported by that realization.

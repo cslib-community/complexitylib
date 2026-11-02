@@ -85,7 +85,14 @@ plain certificate automation. This does not establish a new completeness result 
 all integration gates. The client bodies are canonical source, not copied tutorial files.
 The editorial check described here does not itself claim a fresh Lean build.
 
-**Observe a failure and repair it:** open
+<!-- worked-example -->
+
+**Worked example: Repair a named-certificate proof**
+
+**Goal:** observe the difference between ordinary property search and the named-certificate
+search used by `polytime`, then restore the successful proof in your disposable worktree.
+
+Open the complete client
 [`ComplexityTests/PolyTimePlainDriver.lean`](../../ComplexityTests/PolyTimePlainDriver.lean).
 Its imports and `open Turing.MultiTapeTM` are at the top; the following contextual excerpt
 is inside `namespace PlainDriverTests`, after the opaque routine and its named certificate:
@@ -99,7 +106,8 @@ example (B : Cslib.WordRAM.Basis) (c : ℕ) :
   polytime
 ```
 
-In your isolated copy only, replace the last two lines by `fun_prop`. Save and run:
+**Try the failure:** in your isolated copy only, replace the last two lines by `fun_prop`.
+Save and run:
 
 ```bash
 scripts/build.sh ComplexityTests.PolyTimePlainDriver --wfail --iofail
@@ -107,12 +115,22 @@ scripts/build.sh ComplexityTests.PolyTimePlainDriver --wfail --iofail
 
 The check is expected to fail at that example: ordinary property search cannot discharge
 the opaque routine's contract. Read the remaining goal in the editor or command output;
-it asks for the certificate, not a new implementation of the routine. Restore
+it asks for the certificate, not a new implementation of the routine.
+
+**Repair:** restore
 `fail_if_success fun_prop` followed by `polytime` and repeat the same command. It is
-expected to succeed: `polytime` performs named-certificate lookup and solves the bound.
-`fail_if_success` deliberately asserts the weaker tactic's failure. If the original guard
-itself fails on a future revision, the automation changed and this exercise needs review.
-Do not leave the intentional failure in a contribution.
+expected to succeed.
+
+**Result:** `polytime` performs named-certificate lookup and solves the bound;
+`fail_if_success` deliberately asserts the weaker tactic's failure. The test file should
+be restored to its original contents, with no intentional failure left in a contribution.
+
+**When it fails:** if the original guard itself fails on a future revision, the automation
+changed and this exercise needs review. If the original client fails before reaching this
+example, use [build troubleshooting](troubleshooting.md#diagnose-missing-or-stale-artifacts)
+before drawing conclusions about the tactic.
+
+<!-- /worked-example -->
 
 **Finish:** from that worktree run `git diff --check` and `git status --short`. After
 restoring the experiment, the test file should have no diff. For a real change, include

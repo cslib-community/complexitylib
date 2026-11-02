@@ -4,6 +4,10 @@ Use plain `Turing.MultiTapeTM.ComputableInPolyTime` for public polynomial-time c
 
 ## Compose a certified function
 
+<!-- worked-example -->
+
+**Worked example: Swap the arguments of a certified routine**
+
 **Goal:** `ComputableInPolyTime f encIn encOut`. Start with `Complexity.Tactic.PolyTime`, the modules supplying your operations, and `open Turing.MultiTapeTM`. [PolyTimePlainDriver](../../ComplexityTests/PolyTimePlainDriver.lean) also imports `Complexity.Computability.WordRAM.Native` for its arithmetic examples.
 
 The input obligation in this excerpt is a polynomial-time certificate for `routine` with *binary* pair inputs and binary output:
@@ -16,7 +20,15 @@ example (routine : ℕ × ℕ → ℕ)
       (encPair encNat encNat) encNat := by polytime
 ```
 
-Prove certificates for opaque subroutines, then let `fun_prop` compose registered rules or use `polytime` for the richer certificate search. Here success certifies argument swapping followed by `routine`; it does not establish any additional functional specification of `routine`. When automation stops, expose a local definition or supply its named certificate, then inspect the remaining contract. Do not replace the goal with a tidy interface. The [automation reference](../design-and-assurance/automation.md) explains registration and [troubleshooting](troubleshooting.md) handles failures.
+Prove certificates for opaque subroutines, then let `fun_prop` compose registered rules or use `polytime` for the richer certificate search.
+
+**Result:** argument swapping followed by `routine` is polynomial-time computable under the stated binary encodings. This does not establish any additional functional specification of `routine`.
+
+**When it fails:** expose a local definition or supply its named certificate, then inspect the remaining contract. Do not replace the goal with a tidy interface.
+
+<!-- /worked-example -->
+
+The [automation reference](../design-and-assurance/automation.md) explains registration and [troubleshooting](troubleshooting.md) handles failures.
 
 ## Certify a loop and its postcondition
 
@@ -29,6 +41,10 @@ The result has two projections: polynomial-time computability of the iterated fu
 For a step capturing a parameter, use `iterateWith_spec` and certify the joint `(parameter, state)` operation. `iterateWith_of_bounded_growth` handles additive encoded-state growth bounded polynomially in the original input. A separate efficient procedure for each fixed parameter does not provide the required uniform joint certificate. A polynomial number of efficient steps also does not bound a state that doubles each time. The [plain loop regression client](../../ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeLoops.lean) exercises both positive contracts and a failed constant-state bound. When the size obligation fails, inspect the representation and growth argument before changing tactics.
 
 ## Preserve independent workspace
+
+<!-- worked-example -->
+
+**Worked example: Compose a logspace callback without storing the intermediate word**
 
 **Goal:** `ComputableInLogSpace f encIn encOut`, whose [definition](../../Complexity/Computability/Machines/Turing/MultiTape/Complexity/LogSpace.lean) requires halting and workspace at most `c * (Nat.log2 n + 1)`. Input and append-only output are excluded. Use the `LogSpace.Words` and `LogSpace.CounterProgram.Words` modules under `Complexity.Computability.Machines.Turing.MultiTape.Complexity`, as imported by [LogSpaceFunProp](../../ComplexityTests/LogSpaceFunProp.lean), and open `Turing.MultiTapeTM`.
 
@@ -43,13 +59,21 @@ example (f : List Bool → Bool) (hf : ComputableInLogSpace f encBits encBool) :
   fun_prop
 ```
 
-`ComputableInLogSpace.comp` uses `ComputableInTimeAndSpace.comp_space`: the second machine's requests for intermediate symbols cause recomputation of the first machine's output. It need not store the complete intermediate word. The implementation also proves that logspace outputs have polynomial length, allowing position counters to fit the space bound.
+**Result:** the two callback results form a list computable in logarithmic workspace under the displayed encodings. `ComputableInLogSpace.comp` uses `ComputableInTimeAndSpace.comp_space`: the second machine's requests for intermediate symbols cause recomputation of the first machine's output. It need not store the complete intermediate word. The implementation also proves that logspace outputs have polynomial length, allowing position counters to fit the space bound.
 
-This conclusion is different from `ComputableInO`, which additionally charges encoded output against its space bound. A long output is compatible with logarithmic *workspace*. For sharper independent bounds, state `ComputableInTimeAndSpace` or `ComputableInBigO` directly and retain both functions. When only polynomial time is needed downstream, use `ComputableInLogSpace.computableInPolyTime`; the same client demonstrates that transition. A polynomial-time callback hypothesis alone will not discharge a logspace goal: prove its stronger certificate or change the intended claim explicitly. See the [resource table](../machines-and-classes/native-and-resources.md).
+**When it fails:** a polynomial-time callback hypothesis alone will not discharge a logspace goal. Prove its stronger certificate or change the intended claim explicitly.
+
+<!-- /worked-example -->
+
+This conclusion is different from `ComputableInO`, which additionally charges encoded output against its space bound. A long output is compatible with logarithmic *workspace*. For sharper independent bounds, state `ComputableInTimeAndSpace` or `ComputableInBigO` directly and retain both functions. When only polynomial time is needed downstream, use `ComputableInLogSpace.computableInPolyTime`; the same client demonstrates that transition. See the [resource table](../machines-and-classes/native-and-resources.md).
 
 ## Turn computation into P, NP and hardness
 
-**Goals:** `A ∈ P enc`, `A ∈ NP enc`, or `PolyTimeReducible encA encB A B`. Open [NPCompleteness](../../ComplexityTests/NPCompleteness.lean), which imports `Complexity.Computability.Complexity.Problems.Clique` and `Complexity.Tactic.PolyTime`, and opens `Cslib.Complexity Turing.MultiTapeTM`.
+<!-- worked-example -->
+
+**Worked example: Supply the fields of a class-membership proof**
+
+**Goals:** `A ∈ P enc` or `A ∈ NP enc`. Open [NPCompleteness](../../ComplexityTests/NPCompleteness.lean), which imports `Complexity.Computability.Complexity.Problems.Clique` and `Complexity.Tactic.PolyTime`, and opens `Cslib.Complexity Turing.MultiTapeTM`.
 
 A P proof supplies the Boolean decider, its computation certificate, and its membership equivalence:
 
@@ -74,7 +98,19 @@ theorem clique_mem_NP : Clique ∈ NP (encPair encGraph encNat) :=
   ⟨Polynomial.X, Clique.verifier, by fun_prop, Clique.isVerifier⟩
 ```
 
-To transfer hardness, build a map from the known hard problem **to** your problem. Prove its cost separately from correctness. Here `complementInstance`, defined and certified immediately above the excerpt, complements the declared graph and keeps the requested size:
+**Result:** the first example supplies P membership and then NP membership by inclusion; the second supplies Clique's NP membership using the existing verifier and its exact witness-length theorem. These are applications of the library's class interfaces.
+
+**When it fails:** separate a failed computation certificate from a failed membership or witness-length equivalence. Check the verifier's encoding and exact length convention before trying a different tactic.
+
+<!-- /worked-example -->
+
+<!-- worked-example -->
+
+**Worked example: Transfer hardness through graph complementation**
+
+**Goal:** prove `PolyTimeReducible encA encB A B` from a known hard source problem to the target problem, then combine transferred hardness with NP membership.
+
+Continue in [NPCompleteness](../../ComplexityTests/NPCompleteness.lean), keeping the imports and open declarations above. Build a map from the known hard problem **to** your problem. Prove its cost separately from correctness. Here `complementInstance`, defined and certified immediately above the excerpt in the source file, complements the declared graph and keeps the requested size:
 
 <!-- excerpt: deterministic-reduction -->
 ```lean
@@ -90,6 +126,12 @@ theorem clique_npComplete : NPComplete (encPair encGraph encNat) Clique :=
   ⟨clique_mem_NP, IndependentSet_npHard.trans independentSet_to_clique⟩
 ```
 
-The reversal `.symm` aligns the correctness lemma with the source-to-target membership equivalence. `NPHard.trans` then transports hardness forward; `PolyTimeReducible.mem_P` instead transports a target's P algorithm backward to the source. This client reuses known results; it is not a new completeness theorem. A new problem still needs the verifier, certificate length, reduction cost and equivalence. Check empty instances and boundary targets as the client does, and use the [reduction reference](../machines-and-classes/reductions.md) when the desired reduction is stronger than polynomial-time many-one reducibility.
+**Result:** `.symm` aligns the correctness lemma with the source-to-target membership equivalence, and `NPHard.trans` transports hardness forward. The final proof combines that hardness with `clique_mem_NP`. This client reuses known results; it is not a new completeness theorem.
+
+**When it fails:** check the reduction's direction and both encodings, then isolate its computation and equivalence obligations. A new problem still needs the verifier, certificate length, reduction cost and equivalence. Check empty instances and boundary targets as the client does.
+
+<!-- /worked-example -->
+
+`PolyTimeReducible.mem_P` instead transports a target's P algorithm backward to the source. Use the [reduction reference](../machines-and-classes/reductions.md) when the desired reduction is stronger than polynomial-time many-one reducibility.
 
 [complexitylib]: ../sources.md#complexitylib

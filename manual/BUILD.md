@@ -3,8 +3,9 @@
 Read the Markdown without any publishing tools. The default build produces the substantial
 Operator’s Manual; `--agent-manual` selects the short Agent Operator’s Manual for humans
 driving agents. To produce the books, install Python 3.11+,
-Pandoc, XeLaTeX and `pdfinfo` (Poppler). The TeX installation needs
-`fontspec`, `fvextra`, `xurl`, `bookmark`, `microtype`, `fancyhdr`, `etoolbox` and the usual
+Pandoc, XeLaTeX and `pdfinfo` (Poppler). The main book's model diagrams also require
+Graphviz (`dot`); the short agent manual does not invoke it. The TeX installation needs
+`fontspec`, `fvextra`, `xurl`, `bookmark`, `microtype`, `fancyhdr`, `etoolbox`, `tcolorbox` and the usual
 AMS/graphics/table packages, plus TeX Gyre Pagella, TeX Gyre Heros and DejaVu Sans Mono fonts.
 The converter uses the font filenames shipped by TeX Live. Dependencies are local commands;
 the build script does not download tools or invoke Lean.
@@ -24,12 +25,13 @@ Outputs share the ignored `manual/_build/` directory and have distinct names:
 | Operator’s Manual | `complexitylib-operators-manual` | `manual-source-manifest.json` |
 | Agent Operator’s Manual | `complexitylib-agent-operators-manual` | `agent-manual-source-manifest.json` |
 
-Neither book needs generated research data or plots. The short book contains only
+Neither book needs research exports or historical plots. The short book contains only
 [AGENT_OPERATORS.md](AGENT_OPERATORS.md) and its policy/source links; it carries no academic
 bibliography or historical figure. Each manifest records the selected manual, source revision,
 working-tree status and exact input hashes. It is build provenance, not validation of the
-mathematical statements. Each generated TeX file is editable and compiles independently with
-XeLaTeX.
+mathematical statements. The main build renders model diagrams from the Markdown into
+`figures/` beside its TeX. Each generated TeX file is editable and compiles independently with
+XeLaTeX; retain those figure PDFs with the main book's TeX file.
 
 Before distributing an existing book, check that its chapter and bibliography inputs still
 match the current manual:
@@ -39,13 +41,14 @@ python3 scripts/build_operator_manual.py --check-build manual/_build
 python3 scripts/build_operator_manual.py --agent-manual --check-build manual/_build
 ```
 
-Each check needs only Python and validates the selected manual. It fails for missing chapters, changed input text or
-converters, stale bibliography contents or altered generated TeX/PDF. A build that produces only TeX does not certify
+Each check needs only Python and validates the selected manual. It fails for missing chapters,
+changed input text or converters, stale bibliography contents, missing or altered diagrams,
+or altered generated TeX/PDF. A build that produces only TeX does not certify
 an older PDF left in the output directory. Rebuild after such changes and inspect the
 affected pages. A passing live link/excerpt check alone does not validate an older PDF.
 Bibliography bodies are read directly from canonical `sources.md`.
 
-To generate only TeX, or select another output directory:
+To generate TeX with its diagram assets, or select another output directory:
 
 ```bash
 python3 scripts/build_operator_manual.py --tex-only
@@ -72,6 +75,43 @@ manual changes, check its rendered pages and retain its matching manifest when d
 the artifact. A shared converter change requires checking both editions. See
 [the maintenance procedure](MAINTAINING.md) and the
 [contribution policy](../CONTRIBUTING.md#maintaining-the-manuals).
+
+## Maintain diagrams and worked examples
+
+Model diagrams live in `mermaid` code fences in the reference pages. GitHub renders them
+directly; the PDF builder reads the same source and uses Graphviz to produce vector figures.
+Keep the fences unindented and at the top level, outside lists and blockquotes; nested
+diagrams are rejected. Generated asset paths preserve the source directory hierarchy.
+The supported flowchart subset is deliberately small: start with `flowchart TB` or
+`flowchart LR`; define each rectangular node separately as `input["Input value"]`; use
+`input -->|"encoded by"| output` for a labelled edge or `input --> output` without a label.
+The dotted form is `input -.->|"needs a certificate"| output`. Identifiers use letters,
+digits and underscores and start with a letter. Labels are quoted plain text with optional
+`<br/>` line breaks. Define both endpoints; do not use subgraphs, styles, clicks or inline
+node definitions on edges. The checker rejects unsupported syntax instead of omitting it.
+The renderer supplies consistent typography, colours and arrow styles. Explain the meaning
+and limits of arrows in the adjacent prose; an arrow must not imply an unstated realization
+or resource theorem.
+
+Wrap an existing worked example using these source markers and a plain bold title:
+
+```text
+<!-- worked-example -->
+**Worked example: A descriptive task title**
+
+Ordinary Markdown, including the existing contextual excerpt and its source link.
+<!-- /worked-example -->
+```
+
+Keep headings outside the markers and do not nest panels. In Markdown the title and example
+remain ordinary readable text. The PDF numbers examples within their chapter and gives them
+a shaded panel, a contrasting title and a continuation label when they cross a page.
+State the goal, required context, result and likely failure or recovery. Keep the Lean excerpt
+unchanged unless its checked source client changes. The live checker verifies panel boundaries
+and diagram syntax as well as excerpt identity; it does not establish diagram semantics.
+
+Generated figure PDFs and the source manifest stay in the ignored build directory. The
+freshness check includes figure hashes, so replacing or losing a figure requires a rebuild.
 
 ## Regenerating research outputs
 

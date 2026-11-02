@@ -253,5 +253,97 @@ class BookInputs(unittest.TestCase):
             book.validate_manifest(self.root, self.output, ["README.md"])
 
 
+class VisualSources(unittest.TestCase):
+    diagram = 'flowchart TB\nA["Encoded input"]\nB["Machine<br/>certificate"]\nA -->|"realized by"| B\n'
+
+    def test_diagram_labels_edges_and_line_breaks_survive_conversion(self):
+        dot = book.visuals.graphviz_source(self.diagram)
+        self.assertIn('A [label="Encoded input"]', dot)
+        self.assertIn('B [label="Machine\\ncertificate"]', dot)
+        self.assertIn('A -> B [label="realized by"]', dot)
+        self.assertIn('style=dashed', book.visuals.graphviz_source(self.diagram.replace('-->', '-.->')))
+
+    def test_unsupported_diagram_syntax_and_unknown_nodes_fail(self):
+        for bad in (self.diagram + 'click A "https://example.org"\n',
+                    self.diagram.replace('B["Machine<br/>certificate"]\n', ''),
+                    self.diagram + 'A["Another input"]\n'):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                book.visuals.flowchart(bad)
+
+    def test_diagrams_inside_documentation_fences_are_not_figures(self):
+        text = '````markdown\n```mermaid\n' + self.diagram + '```\n````\n'
+        self.assertEqual(book.visuals.diagram_sources(text), [])
+        self.assertEqual(book.visuals.check_markup(text)['diagrams'], 0)
+
+    def test_similar_source_paths_keep_distinct_diagram_assets(self):
+        paths = ['topic-one.md', 'topic/one.md', 'topic_one.md']
+        names = [book.visuals.diagram_name(path, 1) for path in paths]
+        self.assertEqual(len(set(names)), len(paths))
+        self.assertEqual(names[1], 'figures/topic/one-1.pdf')
+
+    def test_nested_mermaid_fences_fail_before_publishing(self):
+        for prefix in ('> ', '>> ', '  ', '    ', '- ', '1. ', '> - '):
+            with self.subTest(prefix=prefix), self.assertRaisesRegex(ValueError, 'top-level'):
+                book.visuals.check_markup(prefix + '```mermaid\n' + self.diagram + '```\n')
+
+    def test_nested_mermaid_ast_cannot_silently_remain_code(self):
+        code = {'t': 'CodeBlock', 'c': [['', ['mermaid'], []], self.diagram]}
+        for block in ({'t': 'BlockQuote', 'c': [code]},
+                      {'t': 'BulletList', 'c': [[code]]}):
+            with self.subTest(block=block), self.assertRaisesRegex(ValueError, 'top-level'):
+                book.visuals.render_blocks([block], 'topic.md', Path('/unused'), {}, book.base.tex_escape)
+
+    def test_example_boundaries_fail_before_publishing(self):
+        for text in ('<!-- worked-example -->\n**Worked example: Test**\n',
+                     '<!-- /worked-example -->',
+                     '<!-- worked-example -->\n**Missing title prefix**\n<!-- /worked-example -->',
+                     '<!-- worked-example -->\n**Worked example: Test**\n## Heading\n<!-- /worked-example -->'):
+            with self.subTest(text=text), self.assertRaises(ValueError):
+                book.visuals.check_markup(text)
+
+    def test_example_markers_inside_code_are_not_boundaries(self):
+        text = '<!-- worked-example -->\n**Worked example: Test**\n```text\n<!-- /worked-example -->\n```\n<!-- /worked-example -->'
+        self.assertEqual(book.visuals.check_markup(text)['worked_examples'], 1)
+
+    def test_example_title_and_lean_body_are_preserved_in_render_ast(self):
+        blocks = [
+            {'t': 'RawBlock', 'c': ['html', '<!-- worked-example -->']},
+            {'t': 'Para', 'c': [{'t': 'Strong', 'c': [{'t': 'Str', 'c': 'Worked example: A & B'}]}]},
+            {'t': 'CodeBlock', 'c': [['', ['lean'], []], 'example : True := by trivial']},
+            {'t': 'RawBlock', 'c': ['html', '<!-- /worked-example -->']},
+        ]
+        result = book.visuals.render_blocks(blocks, 'topic.md', Path('/unused'), {}, book.base.tex_escape)
+        self.assertEqual(result[1], blocks[2])
+        self.assertEqual(result[0]['c'][1], r'\begin{manualexample}{A \& B}')
+        self.assertEqual(result[-1]['c'][1], r'\end{manualexample}')
+
+
+class DiagramFreshness(unittest.TestCase):
+    setUp = BookInputs.setUp
+    build = BookInputs.build
+    def test_missing_or_altered_diagram_cannot_pass_freshness(self):
+        self.build()
+        chapter = self.root / 'README.md'
+        chapter.write_text(chapter.read_text() + '\n```mermaid\n' + VisualSources.diagram + '```\n')
+        path = self.output / 'manual-source-manifest.json'
+        manifest = json.loads(path.read_text())
+        manifest['chapter_inputs']['README.md'] = book.sha(chapter)
+        path.write_text(json.dumps(manifest))
+        with self.assertRaisesRegex(ValueError, 'Manifest diagrams'):
+            book.validate_manifest(self.root, self.output, ['README.md'])
+        figure = self.output / 'figures/README-1.pdf'
+        figure.parent.mkdir()
+        figure.write_bytes(b'original diagram')
+        manifest['diagram_outputs'] = {'figures/README-1.pdf': book.sha(figure)}
+        path.write_text(json.dumps(manifest))
+        book.validate_manifest(self.root, self.output, ['README.md'])
+        figure.write_bytes(b'changed diagram')
+        with self.assertRaisesRegex(ValueError, 'Missing or changed diagram'):
+            book.validate_manifest(self.root, self.output, ['README.md'])
+        figure.unlink()
+        with self.assertRaisesRegex(ValueError, 'Missing or changed diagram'):
+            book.validate_manifest(self.root, self.output, ['README.md'])
+
+
 if __name__ == "__main__":
     unittest.main()

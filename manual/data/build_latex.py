@@ -154,9 +154,20 @@ PREAMBLE = r'''% Generated from the reviewed Complexitylib research dossier.
 \newcounter{none}
 \usepackage{graphicx}
 \usepackage{fvextra}
-\DefineVerbatimEnvironment{verbatim}{Verbatim}{breaklines,fontsize=\small}
 \usepackage{xcolor}
 \definecolor{inkblue}{HTML}{193C5A}
+\definecolor{examplepaper}{HTML}{F3F6FA}
+\usepackage[skins,breakable]{tcolorbox}
+\newtcolorbox[auto counter,number within=chapter]{manualexample}[1]{
+  enhanced,breakable,ignore nobreak,colback=examplepaper,colframe=inkblue,
+  colbacktitle=inkblue,coltitle=white,fonttitle=\sffamily\bfseries\small,
+  title={Worked example \thetcbcounter\enspace---\enspace #1},
+  title after break={Worked example \thetcbcounter\enspace (continued)},
+  boxrule=0.4pt,arc=1.5pt,left=10pt,right=10pt,top=7pt,bottom=7pt,
+  before skip=12pt,after skip=12pt,pad at break*=5pt,
+  before upper={\setlength{\parskip}{0.35em}}}
+% tcolorbox loads verbatim; apply fvextra's wrapping after that package.
+\DefineVerbatimEnvironment{verbatim}{Verbatim}{breaklines,breakanywhere,fontsize=\small}
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \fancyhf{}

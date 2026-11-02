@@ -2,6 +2,26 @@
 
 The circuit architecture separates syntax from meaning. Upstream CSLib supplies a signature of operation symbols and arities, an interpretation of those symbols on a carrier, and a straight-line program indexed by its number of gates. A new line can refer only to inputs or earlier gates. A circuit adds a finite list of designated output wires. Topological validity is therefore part of the type, while gate meaning is a parameter. The central definition is [Circuit](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Computability/Circuit/Basic.lean#L46); `Program`, `Line` and `Wire` live in the same pinned upstream circuit directory. [cslib][cslib]
 
+```mermaid
+flowchart TB
+signature["Gate signature<br/>operations and arities"]
+circuit["Circuit DAG<br/>shared gates and output wires"]
+meaning["Gate interpretation<br/>meaning on a carrier"]
+evaluation["Circuit evaluation<br/>output function"]
+measures["Size and depth<br/>stated counting convention"]
+formula["Formula tree<br/>input occurrences and gates"]
+generator["Certified Boolean family<br/>native code constructor"]
+signature -->|"types the gates"| circuit
+circuit -->|"evaluate wires"| evaluation
+meaning -->|"supply gate meaning"| evaluation
+circuit -->|"measure"| measures
+formula -->|"compile"| circuit
+circuit -->|"unfold one output"| formula
+generator -->|"generate each instance"| circuit
+```
+
+The arrows distinguish parameters, evaluation and constructions. [Formula compilation](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Formula.lean#L724) gives one circuit output; [unfolding an output](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Unfolding.lean#L182) can duplicate shared gates. The constructor node refers to [exists_uniformCircuitFamily](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Problems/CircuitValue/Compilation.lean#L142), which requires polynomial-time input/output widths and a polynomial-time evaluator. An arbitrary size or depth bound supplies neither that constructor nor a native runtime bound.
+
 ## What size and depth mean
 
 A circuit's size is the number of operation gates. Inputs, projections, fan-out, repeated output designation and wiring are free. A constant costs a gate when represented by a nullary operation. Depth is the maximum depth of the designated outputs, so a syntactically present but unused gate contributes to size without necessarily contributing to output depth. These conventions are explicitly different from presentations that count input nodes. Weighted `Program.cost` and depth interfaces let a theorem count only selected operations. [complexitylib][complexitylib]

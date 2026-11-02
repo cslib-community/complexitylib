@@ -12,6 +12,7 @@ import subprocess
 from pathlib import Path
 
 import build_latex as base
+import visuals
 
 ROOT = Path(__file__).resolve().parents[1]
 REPO = ROOT.parent
@@ -30,7 +31,7 @@ HISTORICAL_REVISION = '13e6a31951bf1c89a1a6258c44f9444aecbbefd8'
 EXCLUDED_DIRECTORIES = {'_build', '_generated', '__pycache__'}
 # Bibliography bodies are rendered separately; the old paper plan is archival editorial context.
 NON_CHAPTER_DOCUMENTS = {'sources.md', 'paper-plan.md', 'AGENT_OPERATORS.md'}
-CONVERTER_INPUTS = ['data/build_manual.py', 'data/build_latex.py']
+CONVERTER_INPUTS = ['data/build_manual.py', 'data/build_latex.py', 'data/visuals.py']
 
 
 def sha(path):
@@ -100,6 +101,12 @@ def validate_manifest(root, output, files, check_pdf=True, agent=False):
         raise ValueError('Generated LaTeX chapter order differs from the book')
     if manifest.get('figure_inputs') != {}:
         raise ValueError('Unexpected figure inputs; rebuild from the maintained sources')
+    figures = manifest.get('diagram_outputs', {})
+    if set(figures) != visuals.expected_diagrams(root, files):
+        raise ValueError('Manifest diagrams differ from the source diagrams')
+    for name, digest in figures.items():
+        if not (output / name).is_file() or sha(output / name) != digest:
+            raise ValueError(f'Missing or changed diagram output: {name}')
     if manifest.get('converter_inputs') != {path: sha(root / path) for path in CONVERTER_INPUTS}:
         raise ValueError('Stale converter inputs')
     if check_pdf:
@@ -220,7 +227,7 @@ def main():
 
     base.transform = transform
     revision, dirty = git('rev-parse', 'HEAD'), bool(git('status', '--porcelain'))
-    parts, inputs = [preamble(revision, dirty, agent=args.agent_manual)], {}
+    parts, inputs, figure_outputs = [preamble(revision, dirty, agent=args.agent_manual)], {}, {}
     for relative in files:
         if not args.agent_manual and relative == WORKFLOWS[0]:
             parts.append(r'\part{Using Complexitylib}' + '\n')
@@ -234,6 +241,7 @@ def main():
         inputs[relative] = sha(path)
         ast = base.ast_for(path.read_text())
         ast['blocks'] = base.remove_navigation(ast['blocks'])
+        ast['blocks'] = visuals.render_blocks(ast['blocks'], relative, out, figure_outputs, base.tex_escape)
         is_chapter = args.agent_manual or relative in WORKFLOWS or relative in APPENDICES or relative.endswith('/index.md')
         ast = base.transform(ast, relative, is_chapter)
         parts.append(f'\n% Source: {relative}\n' + write(ast))
@@ -260,7 +268,7 @@ def main():
         'model_reference_documents': 0 if args.agent_manual else len(REFERENCE),
         'history_documents': 0 if args.agent_manual else len(HISTORY),
         'appendix_documents': 0 if args.agent_manual else len(APPENDICES),
-        'figure_inputs': {}, 'converter_inputs': converter_inputs,
+        'figure_inputs': {}, 'diagram_outputs': figure_outputs, 'converter_inputs': converter_inputs,
     }
     if not args.tex_only:
         for _ in range(3):

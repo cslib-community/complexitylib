@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Build the Operator's Manual or the human Agent Operator's Manual.
 
-Requires Pandoc, XeLaTeX and pdfinfo. --tex-only skips the last two.
+Requires Pandoc, XeLaTeX and pdfinfo; model diagrams also use Graphviz.
+--tex-only skips XeLaTeX/pdfinfo but still renders the diagram assets.
 Checks current source excerpts first; does not fetch dependencies or compile Lean.
 See manual/BUILD.md. All outputs default to ignored manual/_build/.
 """

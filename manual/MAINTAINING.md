@@ -30,6 +30,13 @@ into this manual without a checked source client. The workflow snippets are cont
 excerpts, each declared in `workflows/data/*-excerpts.json`. They retain source authorship
 and require the linked client's imports, namespace and local assumptions.
 
+Model diagrams and worked-example panels are part of the maintained account. Review the
+meaning of every changed arrow and resource label against the referenced definitions; keep
+missing implementation or uniformity obligations visible. Panels should make the goal, context,
+result and recovery easy to find while preserving the canonical excerpt. Follow the
+[source conventions](BUILD.md#maintain-diagrams-and-worked-examples); generated graphics stay
+with the untracked book products.
+
 ## Check the affected reader path
 
 1. Read the changed instructions using only the repository and its declared tools. Check

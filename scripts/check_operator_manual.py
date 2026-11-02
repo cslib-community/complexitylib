@@ -10,10 +10,14 @@ import argparse
 import html
 import json
 import re
+import sys
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'manual/data'))
+from visuals import check_markup
+
 EXCLUDED = {"_build", "_generated", "__pycache__"}
 FENCE = re.compile(r"^\s*(`{3,}|~{3,})(.*)$")
 
@@ -83,7 +87,13 @@ def check(repo: Path, manual: Path | None = None) -> dict:
     document_set = set(documents)
     edges = {p: set() for p in documents}
     link_count = 0
+    visual_counts = {'diagrams': 0, 'worked_examples': 0}
     for doc in documents:
+        try:
+            for key, value in check_markup(doc.read_text()).items():
+                visual_counts[key] += value
+        except ValueError as error:
+            errors.append(f'{doc.relative_to(manual)}: {error}')
         urls, undefined = links(doc.read_text())
         errors.extend(f"{doc.relative_to(manual)}: undefined reference [{key}]" for key in undefined)
         for url in urls:
@@ -183,6 +193,7 @@ def check(repo: Path, manual: Path | None = None) -> dict:
         errors.append("No contextual Lean excerpts registered")
     return {"status": "fail" if errors else "pass", "manual_documents": len(documents),
             "local_links_checked": link_count, "excerpts_checked": len(excerpt_results),
+            **visual_counts,
             "excerpts": excerpt_results, "errors": errors, "lean_compilation": False,
             "external_links_fetched": False, "historical_revision_checked": False}
 

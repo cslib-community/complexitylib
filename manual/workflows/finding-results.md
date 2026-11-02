@@ -16,7 +16,13 @@ Before applying a result, identify its input/output types and encoding, quantifi
 
 ## Build a shared Boolean circuit
 
-Suppose the goal is a three-input, two-output Boolean circuit computing `(!x₀ ∧ x₁, !x₀ ∨ x₂)` with at most three gates. Open [ComplexityTests/SynthesisBuilder.lean](../../ComplexityTests/SynthesisBuilder.lean). Its imports are `Complexity.Computability.Circuit.Boolean.Word`, `Complexity.Tactic.Synthesis` and `Mathlib.Tactic.FinCases`. The contextual excerpt below requires that file's `open Cslib Cslib.Circuits Cslib.Circuits.Boolean` and checked surrounding context:
+<!-- worked-example -->
+
+**Worked example: Share one negation between two circuit outputs**
+
+**Goal:** a three-input, two-output Boolean circuit computing `(!x₀ ∧ x₁, !x₀ ∨ x₂)` with at most three gates.
+
+Open [ComplexityTests/SynthesisBuilder.lean](../../ComplexityTests/SynthesisBuilder.lean). Its imports are `Complexity.Computability.Circuit.Boolean.Word`, `Complexity.Tactic.Synthesis` and `Mathlib.Tactic.FinCases`. The contextual excerpt below requires that file's `open Cslib Cslib.Circuits Cslib.Circuits.Boolean` and checked surrounding context:
 
 <!-- excerpt: synthesis-shared-circuit -->
 ```lean
@@ -41,7 +47,13 @@ example : ∃ c : Circuit signature 3 2,
 
 The obligations are availability of every gate input, availability of the selected outputs, and the final budget inequality. Begin with input wires; append the negation once; reuse it for AND and OR; finish with the desired output family. `synthesis_available` searches existing wires, while `add` charges the appended construction. The extra reuse step costs zero.
 
-Success produces a circuit, its evaluation theorem and an upper bound on gate count. The failed two-gate budget checks this builder's accumulated cost; it does not prove an optimal lower bound over all circuits. It also says nothing about native construction time. If availability fails, inspect the current wire set: the tactic cannot manufacture a missing negation. If the budget fails, inspect which construction was appended twice. The [circuit reference](../circuits-logic-and-other-models/circuits-and-formulas.md) explains other bases and measures before you transfer the recipe.
+**Result:** a circuit, its evaluation theorem and an upper bound on gate count. The failed two-gate budget checks this builder's accumulated cost; it does not prove an optimal lower bound over all circuits. It also says nothing about native construction time.
+
+**When it fails:** if availability fails, inspect the current wire set: the tactic cannot manufacture a missing negation. If the budget fails, inspect which construction was appended twice.
+
+<!-- /worked-example -->
+
+The [circuit reference](../circuits-logic-and-other-models/circuits-and-formulas.md) explains other bases and measures before you transfer the recipe.
 
 ## Read abstracts, bridges and comparison contracts
 

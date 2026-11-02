@@ -8,6 +8,26 @@ The underlying native configuration is cslib's [Turing.Cfg](https://github.com/l
 
 A raw machine can have an arbitrary state or symbol type. Complexity predicates quantify one fixed number of tapes, finite state type, and binary-alphabet machine before quantifying over inputs. Encodings are explicit embeddings `α ↪ List Bool`; they do not by themselves promise a computable decoder or a decidable image. Native correctness therefore applies to all valid encoded values. A theorem over an encoded graph type does not automatically recognize malformed graph strings. [complexitylib][complexitylib]
 
+The native execution model keeps data access and resource accounting separate:
+
+```mermaid
+flowchart TB
+input["Read-only input<br/>bounded head position"]
+work["Work tapes<br/>symbols and head positions"]
+control["Finite control<br/>one native transition"]
+output["Append-only output<br/>not readable"]
+time["Time bound<br/>transitions until halt"]
+space["Workspace bound<br/>visited work-tape cells"]
+input -->|"read input symbol"| control
+work -->|"read"| control
+control -->|"write and move heads"| work
+control -->|"emit at most one symbol"| output
+control -->|"count transitions"| time
+work -->|"count visited cells"| space
+```
+
+The read/write arrows describe a transition; the counting arrows describe its resource contracts. Input and output are excluded from workspace, while emitting output still takes time. The diagram uses the finite-control machine required by [ComputableInTimeAndSpace](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Computability/Machines/Turing/MultiTape/Deterministic.lean#L352), with the components of [Cfg](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Computability/Machines/Turing/MultiTape/Configuration.lean#L97). The oracle extension below adds its own query buffers and reply heads.
+
 The common extension [MultiTapeMachine](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Machine.lean#L148) adds a finite family of named oracle channels and a choice functor. A channel has a query buffer, a reply word and a reply-head position. An ordinary action writes at most one query symbol per channel and moves reply heads locally. A query action invokes one channel, clears that query buffer, installs the returned word and resets its reply head. Other channels and ordinary tapes retain their state, apart from the specified control continuation. Payloads are words; channel names identify operations, not payload values.
 
 The specialization to no channels and `Id` is [step-exactly equivalent to the deterministic machine](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Machine/Equivalence.lean#L74); `Set` gives [the nondeterministic machine](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Machine/Equivalence.lean#L79). A clocked run is itself a program, through [runConfigFrom, runFrom and run](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Machine/Program.lean#L59), linking operational semantics to the free-program chapter.
