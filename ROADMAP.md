@@ -612,8 +612,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   traverses only prefixes with at most `t` indexed inner terms, consuming low-order products
   and actual threshold-box values in `258*(L+1)*Σ(d≤t) alpha(m,d)+28` instructions.
   Its original-input constructor and query share one actual halting witness; table setup
-  is charged separately. Global all-tile amortization, wanted-query construction and
-  Corollary 26/ET integration remain open.
+  is charged separately. The routed box product
+  ([#2314](https://github.com/cslib-community/complexitylib/issues/2314)) connects actual
+  raw-coordinate routing and shared band encodings to one geometry construction and all native
+  tile/query batches, with original-order reconstruction and a complete charged ledger.
+  At `L=189k`, `m=9k`, `t=k`, finite count and ledger estimates give a `D^(-8/125)` saving
+  under `D^18≤N` and occurrence sparsity, retaining polynomial depth factors.
+  Polynomial-factor absorption, Corollary 26/ET replacement and final parameter tuning remain open.
   Conservative native ordinary integer 3SUM is proved in
   `WordRAM/ThreeSum/Decision/Subquadratic.lean`: for each fixed polynomial magnitude exponent,
   one fixed 848-register program has charged time `Oκ(n^(2−1/5184))`, logarithmic physical

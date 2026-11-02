@@ -441,9 +441,23 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   least significant and the inner `P0` digit is nine. Actual initialized preparation,
   same-witness prefix/halt and outside frame are proved; a logarithm of original magnitudes
   and addresses admits all wider machines, with an independent-width polynomial envelope
-  for every prefix. Shared table setup and retained storage remain explicit. Global all-tile
-  reuse, wanted-query construction, Corollary 26/ET integration and the tuned 1.9992 endpoint
-  remain #1394; this milestone changes no curated abstract or rendering.
+  for every prefix. Shared table setup and retained storage remain explicit. The following
+  routed-product component supplies all-tile reuse and actual routing; remaining endpoint
+  composition stays #1394. This query milestone changes no curated abstract or rendering.
+* **Routed native box product.** [#2314](https://github.com/cslib-community/complexitylib/issues/2314)
+  reuses the existing actual raw-coordinate router, shared band producer and original-order
+  reconstruction. One native geometry construction serves all tiles; each actual retained-value
+  table and sparse query batch is charged, including temporary-result copies and every repeated
+  request occurrence. An appended ordinary threshold is read before low-memory reuse and restored
+  with all original input words. No computed layout, routing, encoding, table, run or time oracle
+  is supplied. The original native controller preserves the existing source terms and numbering.
+  The finite `BoxTradeoff` modules adapt the Section 4 geometric-tail and weighted-binomial
+  estimates at the same formal-math pin, with an original algebraic block specialization
+  `L=189k`, `m=9k`, `t=k`. Under `D^18≤N` and `Q*2^m≤N²`, the complete actual ledger has
+  finite `D^(-8/125)` saving with polynomial depth factors explicit. Here `Q` counts occurrences,
+  strengthening distinct-set sparsity when inputs repeat. Exact integer comparisons replace
+  analytic numerical approximations. Polynomial-factor absorption, ET replacement, parameter
+  retuning and tuned ordinary-3SUM 1.9992 remain #1394. No curated abstract or rendering changes.
 * **Native pruned-query evaluator.** The explicit-stack pruned-query evaluator ([#1526](https://github.com/cslib-community/complexitylib/issues/1526))
   is original native code, reusing the finite `Pruned.result`, `childSet` and trace/leaf
   quantities from `Sec2/Lemma10.lean`. `PrunedQuery.queryIndex` directly applies the existing
