@@ -2994,6 +2994,7 @@ public import Complexity.DataStructure.PrefixSums.WordRAM.Tree
 public import Complexity.DataStructure.PrefixSums.WordRAM.Update
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Memory
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.Backend
+public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.Base
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.Encoding
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.Extract
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.Initialize
@@ -3015,6 +3016,7 @@ public import Complexity.DataStructure.PriorityQueue.WordRAM.BinaryHeap
 public import Complexity.DataStructure.PriorityQueue.WordRAM.BinaryHeap.Model
 public import Complexity.DataStructure.PriorityQueue.WordRAM.BinaryHeap.Program
 public import Complexity.DataStructure.PriorityQueue.WordRAM.BinaryHeap.Sift
+public import Complexity.DataStructure.PriorityQueue.WordRAM.Decode
 public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap
 public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.BasicOps
 public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Consolidate

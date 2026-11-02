@@ -164,6 +164,22 @@ theorem bound {w n K : ℕ} (L : Memory.Layout n) (hL : L.Valid w K) :
   have h := Backend.bound (implements L hL) (source_amortized L hL) 0 hw hr hv he
   simpa only [Nat.add_zero] using h
 
+/-- The same operation bounds after adding fixed initialization certificates to the bank.
+Only the selected method body is charged; extra tags do not install or execute arguments. -/
+theorem bound_extend {ι : Type} [Fintype ι] (extra : ι → Certificate .exact)
+    {w n K : ℕ} (L : Memory.Layout n) (hL : L.Valid w K) :
+    Bound (Backend.implementation ((implements L hL).extend extra)) id
+      (fun _ o => Backend.factor (Sum.elim certificates extra) * (memoryBound o + 1)) := by
+  have hw : ∀ {s} o, (Memory.refinement hL).inv s →
+      (indexedMinPQSpec n K).valid ((Memory.refinement hL).abs s) o →
+      ((Sum.elim certificates extra) (((backend n K L).extend extra).tag o)).work
+        (((backend n K L).extend extra).arg o) s ≤ 0 := by
+    intro s o _ _
+    cases o <;> exact Nat.le_refl 0
+  intro s x o a y steps hr hv he
+  have h := Backend.bound ((implements L hL).extend extra) (source_amortized L hL) 0 hw hr hv he
+  simpa only [Nat.add_zero] using h
+
 /-- Every operation preserves all cells outside the existing heap layout, including inaccessible
 cells. The proof is the shared BackendFrame theorem specialized to a zero-room heap. -/
 theorem modifies {w n K : ℕ} (L : Memory.Layout n) (hL : L.Valid w K)

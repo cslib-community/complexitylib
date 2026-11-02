@@ -198,6 +198,30 @@ theorem code_input_argument (i : Fin 4) : code.input (argument (i.castAdd 2)) = 
     have hi := i.isLt
     omega
 
+private theorem code_outFlag_aux : code.outFlag = bank 0 := rfl
+private theorem code_outV_aux : code.outV = bank 1 := rfl
+private theorem code_outK_aux : code.outK = bank 2 := rfl
+
+/-- The optional-result presence flag uses the first common output slot. -/
+theorem code_outFlag : code.outFlag = bank 0 := code_outFlag_aux
+
+/-- An extracted handle uses the second common output slot. -/
+theorem code_outV : code.outV = bank 1 := code_outV_aux
+
+/-- The established PQ key output uses the third common output slot. -/
+theorem code_outK : code.outK = bank 2 := code_outK_aux
+
+private theorem output_bank_aux (i : Fin 5) (j : Fin (certificates i).l) (a : Fin 4)
+    (he : j.val = a.val) :
+    Backend.tmp family (.inl i) (Fin.castAdd ((certificates i).realizes.scratchSize + 1) j) =
+      bank a := Backend.tmp_eq_of_val_eq family (.inl i) (.inr 1) he
+
+/-- Each selected body's output position is the same position in the common ABI bank. -/
+theorem output_bank (i : Fin 5) (j : Fin (certificates i).l) (a : Fin 4)
+    (he : j.val = a.val) :
+    Backend.tmp family (.inl i) (Fin.castAdd ((certificates i).realizes.scratchSize + 1) j) =
+      bank a := output_bank_aux i j a he
+
 private theorem clear_nodup_aux :
     [code.curReg, code.zeroReg, code.oneReg, code.baseReg, code.frontierReg].Nodup := by
   change [bank 0, bank 1, bank 2, argument 3, Backend.frontier family].Nodup
@@ -369,6 +393,68 @@ private theorem dispatch_exec {w n K : ℕ} (L : Memory.Layout n) (x : Data regi
     have h : ExecWithin w code.code x y (1 + (N + 2)) :=
       hc.seq (ExecWithin.branch_neg (fun h => ha (hp0.mp h)) he)
     exact h.mono (by omega)
+
+/-- The paid zero staging preserves the source memory and all persistent layout words. -/
+theorem stage_zero {w : ℕ} (x : Data registers) (hx : x.Bounded w) :
+    (x.set (bank 3) 0).Bounded w ∧
+      memoryState (Backend.frontier family) (x.set (bank 3) 0) =
+        memoryState (Backend.frontier family) x ∧
+      ∀ i : Fin 4, (x.set (bank 3) 0).regs (argument (i.castAdd 2)) =
+        x.regs (argument (i.castAdd 2)) := by
+  refine ⟨(Exec.const (B := Basis.exact) (d := bank 3) (fits_zero w)).bounded hx, ?_, ?_⟩
+  · refine @Memory.State.ext (memoryState (Backend.frontier family) (x.set (bank 3) 0))
+      (memoryState (Backend.frontier family) x) rfl ?_
+    change Function.update x.regs (bank 3) 0 (Backend.frontier family) = _
+    exact Function.update_of_ne (bank_ne_frontier 3).symm _ _
+  · intro i
+    change Function.update x.regs (bank 3) 0 (argument (i.castAdd 2)) = _
+    exact Function.update_of_ne (bank_ne_argument 3 (i.castAdd 2)).symm _ _
+
+/-- Every selected method's live input words survive the actual zero staging. -/
+theorem stage_zero_input (i : Fin 5) (x : Data registers) :
+    (x.set (bank 3) 0).regs ∘ Backend.src family (.inl i) =
+      x.regs ∘ Backend.src family (.inl i) := by
+  funext j
+  change Function.update x.regs (bank 3) 0 (Backend.src family (.inl i) j) = _
+  exact Function.update_of_ne (Backend.src_ne_tmp family (.inl i) (.inr 1) j _) _ _
+
+/-- Lift a selected body's actual native execution through the paid raw ABI dispatcher. Only
+lookup copies the body key from its OptionNat slot into the established PQ output-key slot. -/
+theorem wrap_body {w n K : ℕ} (L : Memory.Layout n) (x : Data registers)
+    (o : IndexedMinPQ.Op n) (ha : PQCode.argMatch code o x.regs)
+    {y : Data registers} {N : ℕ}
+    (he : ExecWithin w (Backend.code family (.inl ((backend n K L).tag o)))
+      (x.set (bank 3) 0) y N) (hy : y.Bounded w) :
+    ∃ z, ExecWithin w code.code x z (N + 6) ∧ z.Bounded w ∧ z.mem = y.mem ∧
+      z.regs code.frontierReg = y.regs code.frontierReg ∧
+      (∀ i : Fin 4, z.regs (argument (i.castAdd 2)) = y.regs (argument (i.castAdd 2))) ∧
+      z.regs code.outFlag = y.regs code.outFlag ∧ z.regs code.outV = y.regs code.outV ∧
+      z.regs code.outK =
+        (match o with | .getKey _ => y.regs code.outV | _ => y.regs code.outK) := by
+  refine ⟨finish o y, dispatch_exec L x o ha he, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · cases o <;> first
+    | exact hy
+    | exact (Exec.copy (B := Basis.exact) (d := bank 2) (s := bank 1)).bounded hy
+  · cases o <;> rfl
+  · cases o <;> try rfl
+    change (y.set (bank 2) (y.regs (bank 1))).regs (Backend.frontier family) =
+      y.regs (Backend.frontier family)
+    simp only [Data.set_regs, Function.update_of_ne (bank_ne_frontier 2).symm]
+  · intro i
+    cases o <;> try rfl
+    change (y.set (bank 2) (y.regs (bank 1))).regs (argument (i.castAdd 2)) = _
+    simp only [Data.set_regs, Function.update_of_ne (bank_ne_argument 2 (i.castAdd 2)).symm]
+  · cases o <;> try rfl
+    change (y.set (bank 2) (y.regs (bank 1))).regs (bank 0) = y.regs (bank 0)
+    simp only [Data.set_regs, Function.update_of_ne
+      (bank_injective.ne (by decide : (0 : Fin 4) ≠ 2))]
+  · cases o <;> try rfl
+    change (y.set (bank 2) (y.regs (bank 1))).regs (bank 1) = y.regs (bank 1)
+    simp only [Data.set_regs, Function.update_of_ne
+      (bank_injective.ne (by decide : (1 : Fin 4) ≠ 2))]
+  · cases o <;> try rfl
+    change Function.update y.regs (bank 2) (y.regs (bank 1)) (bank 2) = y.regs (bank 1)
+    exact Function.update_self _ _ _
 
 private theorem reserve_layout :
     Function.Injective reserveScratch ∧
