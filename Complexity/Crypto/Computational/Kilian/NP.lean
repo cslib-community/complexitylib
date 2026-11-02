@@ -52,15 +52,19 @@ variable {α : Type} {H : List Bool → List Bool → List Bool}
 
 /-- **Kilian's arguments for NP**: for a collision-resistant `HashFamily H`, every language `L` in
 NP has a polynomial-time PCP verifier `V` with `O(log n)` random bits whose accepted compact tables
-characterize `L`, and Kilian's protocol over `V` and `H` is computationally sound for `L`. -/
+characterize `L`, such that Kilian's protocol over `V` and `H` accepts the honest prover on every
+accepted table with probability one and is computationally sound for `L`. -/
 theorem exists_kilianSound_of_mem_NP (hH : HashFamily H) {enc : α ↪ List Bool} {L : Set α}
     (hL : L ∈ NP enc) :
     ∃ (V : PCPVerifier α) (c : ℕ), V.PolyTime enc ∧
       (∀ x, V.coins x ≤ c * (Nat.log 2 (enc x).length + 1)) ∧
-      (∀ x, x ∈ L ↔ ∃ table, V.tableVerifier (x, table) = true) ∧ KilianSound H V enc L := by
+      (∀ x, x ∈ L ↔ ∃ table, V.tableVerifier (x, table) = true) ∧
+      (∀ x table, V.tableVerifier (x, table) = true →
+        ∀ n, ProbComp.eval (kilianHonestGame H V x table n) = PMF.pure true) ∧
+      KilianSound H V enc L := by
   obtain ⟨V, c, d, hV, hpcp⟩ := NP_subset_PCP_log enc hL
   refine ⟨V, c, hV, hpcp.1, fun x => ⟨fun hx => ?_, fun ⟨table, htable⟩ => ?_⟩,
-    hH.kilianSound hV hpcp⟩
+    fun x table htable n => eval_kilianHonestGame H V htable n, hH.kilianSound hV hpcp⟩
   · obtain ⟨proof, hproof⟩ := hpcp.2.2.1 x hx
     exact ⟨_, by simpa using PCPVerifier.tableVerifier_complete x proof [] hproof⟩
   · by_contra hx

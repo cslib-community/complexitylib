@@ -9,6 +9,7 @@ module
 
 public import Complexity.Probability.Rewinding
 import Complexity.Probability.PMF
+import Complexity.Probability.PMF.Expect
 import Complexity.Probability.PMF.Event
 
 /-!
@@ -31,7 +32,7 @@ The proof fixes the saved state `s` and chooses, at each position, the bit that 
 open more often. A run that accepts but disagrees with that table opens some position to its less
 likely bit `b`, an event of probability `p_j(b) = min (p_j(false), p_j(true))`, whose square is at
 most the probability `p_j(false) * p_j(true)` that two independent runs open `j` to both bits.
-Jensen's inequality averages over `s`.
+Jensen's inequality (`Cslib.Probability.PMF.sq_tsum_le_tsum_sq`) averages over `s`.
 
 This is the probabilistic core of the soundness of Kilian's protocol
 ([BarakGoldreich2001], Construction 3.4 and Lemma 3.5): positions are the leaves of a hash tree,
@@ -219,7 +220,8 @@ theorem le_add_mul_sqrt_disagreement {ε : ℝ}
   have hsqrt := hsum (f := fun s => √(d s)) (fun s => Real.sqrt_nonneg _)
     fun s => Real.sqrt_le_one.mpr (hd s).2
   have hjensen : ∑' s, (first s).toReal * √(d s) ≤ √(∑' s, (first s).toReal * d s) := by
-    have h := sq_tsum_le_tsum_sq first (g := fun s => √(d s)) (fun s => Real.sqrt_nonneg _)
+    have h := Probability.PMF.sq_tsum_le_tsum_sq first (g := fun s => √(d s))
+      (fun s => Real.sqrt_nonneg _)
       fun s => Real.sqrt_le_one.mpr (hd s).2
     simp only [Real.sq_sqrt (hd _).1] at h
     exact le_trans (le_abs_self _) (Real.abs_le_sqrt h)

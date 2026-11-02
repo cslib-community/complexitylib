@@ -177,10 +177,9 @@ variable {H V}
 /-- Every opening of an accepted response passes `merkleVerify` at its position. -/
 theorem merkleVerify_of_mem_kilianOpenings {k : List Bool} {x : α} {root : List Bool}
     {ρs : List (List Bool)} {response : KilianResponse}
-    (h : kilianVerify H V k x root ρs response = true) {o : ℕ × KilianOpening}
-    (ho : o ∈ kilianOpenings V x ρs response) :
-    merkleVerify H k (kilianDepth V x) root (kilianPosition V x o.1) [o.2.1] o.2.2 = true := by
-  obtain ⟨a, b, path⟩ := o
+    (h : kilianVerify H V k x root ρs response = true) {a : ℕ} {b : Bool}
+    {path : List (List Bool)} (ho : (a, b, path) ∈ kilianOpenings V x ρs response) :
+    merkleVerify H k (kilianDepth V x) root (kilianPosition V x a) [b] path = true := by
   simp only [kilianVerify, Bool.and_eq_true, beq_iff_eq, List.all_eq_true] at h
   simp only [kilianOpenings, List.mem_flatMap] at ho
   obtain ⟨⟨ρ, answers⟩, hmem, ho⟩ := ho
@@ -194,18 +193,17 @@ breaks binding. -/
 theorem merkleBreaksBinding_kilianBindingOutput {k : List Bool} {x : α} {root : List Bool}
     {ρs₁ ρs₂ : List (List Bool)} {response₁ response₂ : KilianResponse}
     (h₁ : kilianVerify H V k x root ρs₁ response₁ = true)
-    (h₂ : kilianVerify H V k x root ρs₂ response₂ = true) {o₁ o₂ : ℕ × KilianOpening}
-    (ho₁ : o₁ ∈ kilianOpenings V x ρs₁ response₁) (ho₂ : o₂ ∈ kilianOpenings V x ρs₂ response₂)
-    (hpos : kilianPosition V x o₁.1 = kilianPosition V x o₂.1) (hb : o₁.2.1 ≠ o₂.2.1) :
+    (h₂ : kilianVerify H V k x root ρs₂ response₂ = true) {a₁ a₂ : ℕ} {b₁ b₂ : Bool}
+    {path₁ path₂ : List (List Bool)} (ho₁ : (a₁, b₁, path₁) ∈ kilianOpenings V x ρs₁ response₁)
+    (ho₂ : (a₂, b₂, path₂) ∈ kilianOpenings V x ρs₂ response₂)
+    (hpos : kilianPosition V x a₁ = kilianPosition V x a₂) (hb : b₁ ≠ b₂) :
     merkleBreaksBinding H k (kilianBindingOutput V x root (kilianOpenings V x ρs₁ response₁)
       (kilianOpenings V x ρs₂ response₂)) = true := by
   set openings₁ := kilianOpenings V x ρs₁ response₁
   set openings₂ := kilianOpenings V x ρs₂ response₂
   have hsome : (kilianConflict V x openings₁ openings₂).isSome = true := by
-    refine List.find?_isSome.mpr ⟨(o₁, o₂), List.mem_flatMap.mpr ⟨o₁, ho₁,
-      List.mem_map.mpr ⟨o₂, ho₂, rfl⟩⟩, ?_⟩
-    obtain ⟨a₁, b₁, path₁⟩ := o₁
-    obtain ⟨a₂, b₂, path₂⟩ := o₂
+    refine List.find?_isSome.mpr ⟨((a₁, b₁, path₁), (a₂, b₂, path₂)),
+      List.mem_flatMap.mpr ⟨_, ho₁, List.mem_map.mpr ⟨_, ho₂, rfl⟩⟩, ?_⟩
     simpa [hpos] using hb
   obtain ⟨⟨p₁, p₂⟩, hfind⟩ := Option.isSome_iff_exists.mp hsome
   have hp := List.find?_some hfind
@@ -213,13 +211,13 @@ theorem merkleBreaksBinding_kilianBindingOutput {k : List Bool} {x : α} {root :
   obtain ⟨q₂, hq₂, hqeq⟩ := List.mem_map.mp hq
   simp only [Prod.mk.injEq] at hqeq
   obtain ⟨rfl, rfl⟩ := hqeq
+  obtain ⟨c₁, d₁, e₁⟩ := q₁
+  obtain ⟨c₂, d₂, e₂⟩ := q₂
   have v₁ := merkleVerify_of_mem_kilianOpenings h₁ hq₁
   have v₂ := merkleVerify_of_mem_kilianOpenings h₂ hq₂
-  obtain ⟨a₁, b₁, path₁⟩ := q₁
-  obtain ⟨a₂, b₂, path₂⟩ := q₂
   simp only [bne_iff_ne, ne_eq, Bool.and_eq_true, beq_iff_eq] at hp
   rw [kilianBindingOutput, hfind]
-  have hlen : path₁.length = kilianDepth V x := by
+  have hlen : e₁.length = kilianDepth V x := by
     simp only [merkleVerify, Bool.and_eq_true, beq_iff_eq] at v₁
     exact v₁.1.1
   simp only [Option.elim, merkleBreaksBinding, hlen, Bool.and_eq_true, bne_iff_ne, ne_eq,
@@ -275,30 +273,6 @@ private theorem accepts_kilianProof {k : List Bool} {x : α} {root : List Bool}
   have hlt : q < (V.queryTable x).sum + 1 := Nat.lt_succ_of_le (List.le_sum_of_mem hq)
   simp [kilianProof, List.getD_eq_getElem?_getD, hlt]
 
-
-/-- Every one of `n` independent runs satisfies a test with the `n`-th power of the probability
-of one run. -/
-private theorem toOuterMeasure_replicate_forall {β : Type} (program : ProbComp β)
-    (f : β → Bool) (n : ℕ) :
-    (ProbComp.eval (OracleComp.replicate n program)).toOuterMeasure {l | ∀ b ∈ l, f b = true} =
-      (ProbComp.eval program).toOuterMeasure {b | f b = true} ^ n := by
-  induction n with
-  | zero => simp [PMF.toOuterMeasure_pure_apply]
-  | succ n ih =>
-    rw [OracleComp.replicate_succ, ProbComp.eval_bind, PMF.toOuterMeasure_bind_apply, pow_succ',
-      PMF.toOuterMeasure_apply, ← ENNReal.tsum_mul_right]
-    refine tsum_congr fun b => ?_
-    rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
-    by_cases hb : f b = true
-    · have hpre : List.cons b ⁻¹' {l | ∀ c ∈ l, f c = true} = {l | ∀ c ∈ l, f c = true} := by
-        ext l
-        simp [hb]
-      rw [hpre, ih, Set.indicator_of_mem (by exact hb), PMF.toOuterMeasure_apply]
-    · have hpre : List.cons b ⁻¹' {l | ∀ c ∈ l, f c = true} = ∅ := by
-        ext l
-        simp [hb]
-      rw [hpre, Set.indicator_of_notMem (by exact hb)]
-      simp
 
 /-! ### The exact bound -/
 
@@ -359,9 +333,10 @@ private theorem disagreement_le_merkleBindingGame (L : Set α) (P : KilianProver
   · rw [hE]
     simp only [kilianWins, kilianOpens, Bool.and_eq_true, decide_eq_true_eq, List.any_eq_true,
       beq_iff_eq] at hE
-    obtain ⟨⟨⟨-, h₁⟩, -, h₂⟩, j, -, ⟨o₁, ho₁, hj₁, hb₁⟩, ⟨o₂, ho₂, hj₂, hb₂⟩⟩ := hE
+    obtain ⟨⟨⟨-, h₁⟩, -, h₂⟩, j, -, ⟨⟨a₁, b₁, path₁⟩, ho₁, hj₁, hb₁⟩,
+      ⟨⟨a₂, b₂, path₂⟩, ho₂, hj₂, hb₂⟩⟩ := hE
     rw [merkleBreaksBinding_kilianBindingOutput h₁ h₂ ho₁ ho₂ (hj₁.trans hj₂.symm)
-      (by rw [hb₁, hb₂]; decide)]
+      (by simp only at hb₁ hb₂; rw [hb₁, hb₂]; decide)]
   · rw [Bool.not_eq_true] at hE
     rw [hE]
     simp
@@ -418,8 +393,9 @@ original packaging (see the module documentation); it makes no efficiency assump
 theorem succProbability_kilianSoundnessGame_le (L : Set α) (P : KilianProver α) (n M : ℕ)
     (hsound : ∀ x ∉ L, ∀ π : List Bool,
       2 * acceptCount (fun y => V.accepts y.1 π y.2) x (V.coins x) ≤ 2 ^ V.coins x)
-    (hM : ∀ k : List Bool, k.length = n → ∀ out ∈ (ProbComp.eval (P.commit n k)).support,
-      (V.queryTable out.1.1).length ≤ M) :
+    (hM : ∀ k : List Bool, k.length = n → ∀ x root state,
+      ((x, root), state) ∈ (ProbComp.eval (P.commit n k)).support →
+        (V.queryTable x).length ≤ M) :
     Game.succProbability (ProbComp.eval (kilianSoundnessGame H V L P n)) ≤
       (1 / 2) ^ n + M * NNReal.sqrt (Game.succProbability
         (ProbComp.eval (merkleBindingGame H (kilianBindingAdversary V P) n))) := by
@@ -431,7 +407,7 @@ theorem succProbability_kilianSoundnessGame_le (L : Set α) (P : KilianProver α
     simp only [kilianOpens, List.any_eq_true, Bool.and_eq_true, beq_iff_eq] at hopen
     obtain ⟨o, ho, rfl, -⟩ := hopen
     exact (kilianPosition_lt_of_mem_kilianOpenings (length_of_mem_support_kilianRun hr)
-      ho).trans_le (hM _ hk _ hout)
+      ho).trans_le (hM _ hk _ _ _ hout)
   case hcons =>
     intro s hs π
     by_cases hx : s.2.1.1 ∈ L
@@ -454,7 +430,7 @@ theorem succProbability_kilianSoundnessGame_le (L : Set α) (P : KilianProver α
         exact hcons (kilianPosition V s.2.1.1 o.1) o.2.1
           (List.any_eq_true.mpr ⟨o, ho, by simp⟩)
       rw [← PMF.toOuterMeasure_map_apply, map_fst_kilianRun, kilianChallenges,
-        toOuterMeasure_replicate_forall] at hsub
+        ProbComp.toOuterMeasure_replicate_forall] at hsub
       refine (ENNReal.toReal_mono (by simp [Probability.PMF.toOuterMeasure_ne_top]) hsub).trans ?_
       rw [ENNReal.toReal_pow]
       exact pow_le_pow_left₀ ENNReal.toReal_nonneg (toReal_accepts_le (hsound _ hx _)) n
@@ -638,8 +614,9 @@ end Efficiency
 theorem succProbability_kilianSoundnessGame_le_collision (L : Set α) (P : KilianProver α) (n M : ℕ)
     (hsound : ∀ x ∉ L, ∀ π : List Bool,
       2 * acceptCount (fun y => V.accepts y.1 π y.2) x (V.coins x) ≤ 2 ^ V.coins x)
-    (hM : ∀ k : List Bool, k.length = n → ∀ out ∈ (ProbComp.eval (P.commit n k)).support,
-      (V.queryTable out.1.1).length ≤ M) :
+    (hM : ∀ k : List Bool, k.length = n → ∀ x root state,
+      ((x, root), state) ∈ (ProbComp.eval (P.commit n k)).support →
+        (V.queryTable x).length ≤ M) :
     Game.succProbability (ProbComp.eval (kilianSoundnessGame H V L P n)) ≤
       (1 / 2) ^ n + M * NNReal.sqrt (Game.succProbability (ProbComp.eval
         (collisionGame H (fun _ _ => true) (merkleCollisionFinder H (kilianBindingAdversary V P))
@@ -664,17 +641,18 @@ theorem HashFamily.kilianSound (hH : HashFamily H) {enc : α ↪ List Bool} {L :
       (encPair (encPair enc encBits) encBits) (encList encNat) :=
     (PCPVerifier.isPolyTime_queryTable hV hcoins).comp (by fun_prop)
   obtain ⟨c₂, d₂, hlen₂⟩ := hq.polyBounded_length.exists_le
-  have hM (n : ℕ) (k : List Bool) (hk : k.length = n) (out : (α × List Bool) × List Bool)
-      (hout : out ∈ (ProbComp.eval (P.commit n k)).support) :
-      (V.queryTable out.1.1).length ≤ c₂ * (c₁ * (3 * n + 2) ^ d₁ + 1) ^ d₂ := by
-    have h₁ := hlen₁ (n, k) out hout
+  have hM (n : ℕ) (k : List Bool) (hk : k.length = n) (x : α) (root state : List Bool)
+      (hout : ((x, root), state) ∈ (ProbComp.eval (P.commit n k)).support) :
+      (V.queryTable x).length ≤ c₂ * (c₁ * (3 * n + 2) ^ d₁ + 1) ^ d₂ := by
+    have h₁ := hlen₁ (n, k) _ hout
     have hin : (encPair encUnary encBits (n, k)).length + 1 = 3 * n + 2 := by
       simp [hk]
       ring
     rw [hin] at h₁
-    calc (V.queryTable out.1.1).length ≤ (encList encNat (V.queryTable out.1.1)).length :=
+    calc (V.queryTable x).length ≤ (encList encNat (V.queryTable x)).length :=
           length_le_length_encList _ _
-      _ ≤ c₂ * ((encPair (encPair enc encBits) encBits out).length + 1) ^ d₂ := hlen₂ out
+      _ ≤ c₂ * ((encPair (encPair enc encBits) encBits ((x, root), state)).length + 1) ^ d₂ :=
+          hlen₂ ((x, root), state)
       _ ≤ c₂ * (c₁ * (3 * n + 2) ^ d₁ + 1) ^ d₂ := by gcongr
   have hpoly : PolynomiallyBounded fun n => c₂ * (c₁ * (3 * n + 2) ^ d₁ + 1) ^ d₂ := by
     fun_prop
