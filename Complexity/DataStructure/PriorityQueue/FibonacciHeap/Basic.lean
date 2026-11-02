@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Renfei Zhou, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Renfei Zhou, Samuel Schlesinger
 -/
 
 module
@@ -33,6 +33,11 @@ consolidation table `cons`, and four scalars. `view` reads a record as the exist
 The forest reasoning behind `insert` is `RootList.addRoot`, a statement about `RawState n`
 alone: adding a valid root tree to a valid root list. The program-level proofs evaluate the
 programs with `simp` and apply it.
+
+The module adapts Renfei Zhou's native formalization (`WordRAM/FibonacciHeap`, in particular
+`Program.lean` and `BasicOps.lean`) to the record level: his programs `insertCode` and
+`addRootAndUpdateMin` become `insert` and `addRoot`, and their forest reasoning becomes
+`FibRawInv.insert` and `RootList.addRoot`.
 
 ## Main definitions
 
