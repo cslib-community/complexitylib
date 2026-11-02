@@ -176,12 +176,14 @@ theorem holds_inputGraph (G : ListInstance) :
 /-- **The structures after allocation.** Past the input of `G`, a distance table and then a heap,
 allocated without clearing, together with the adjacency arrays of the input, represent the
 initial state of Dijkstra's algorithm on `G`: an empty queue, an empty distance map and the
-graph. -/
+graph. The structures share memory only while its frontier fits a word (`Memory.Framed.Apart`). -/
 theorem inv_input (G : ListInstance) {w K V : ℕ}
     (hH : (BinaryHeap.Memory.allocated G.n ((Memory.State.init G.encode).frontier + G.n)).Valid
       w K)
     (hT : Dictionary.Memory.Valid ⟨(Memory.State.init G.encode).frontier, G.n⟩ w G.n V)
-    (hA : (inputGraph G.n G.m).Valid G.n) :
+    (hA : (inputGraph G.n G.m).Valid G.n)
+    (hfit : Fits w ((Memory.State.init G.encode).frontier + G.n + 1 +
+      PriorityQueue.WordRAM.BinaryHeap.space G.n)) :
     (framed hH hT hA G.adj).inv ⟨(Memory.State.init G.encode).mem,
         (Memory.State.init G.encode).frontier + G.n + 1 +
           PriorityQueue.WordRAM.BinaryHeap.space G.n⟩ ∧
@@ -202,13 +204,15 @@ theorem inv_input (G : ListInstance) {w K V : ℕ}
     ⟨by simp only [inputGraph, Block.Allocated]; omega,
       by simp only [inputGraph, Block.Allocated]; omega, holds_inputGraph G⟩, ?_⟩, ?_⟩,
     Prod.ext hHabs (Prod.ext hTabs rfl)⟩
-  · simp only [Dictionary.Memory.framed_footprint, AdjacencyList.Memory.framed_footprint]
+  · refine ⟨?_, hfit⟩
+    simp only [Dictionary.Memory.framed_footprint, AdjacencyList.Memory.framed_footprint]
     rw [Finset.disjoint_left]
     intro a ha hb
     simp only [Block.mem_footprint, Block.Owns, AdjacencyList.Memory.Layout.footprint,
       inputGraph, Finset.mem_union] at ha hb
     omega
-  · simp only [Memory.Framed.prod_footprint, BinaryHeap.Memory.framed_footprint,
+  · refine ⟨?_, hfit⟩
+    simp only [Memory.Framed.prod_footprint, BinaryHeap.Memory.framed_footprint,
       Dictionary.Memory.framed_footprint, AdjacencyList.Memory.framed_footprint]
     rw [Finset.disjoint_left]
     intro a ha hb
@@ -300,6 +304,7 @@ theorem run_triple (G : ListInstance) {w : ℕ}
   have hA : (inputGraph G.n G.m).Valid G.n := ⟨rfl⟩
   set M := framed hH hT hA G.adj with hM
   obtain ⟨hinv, habs⟩ := inv_input G hH hT hA
+    (hfit.of_le (by simp only [PriorityQueue.WordRAM.BinaryHeap.space]; nlinarith))
   obtain ⟨hvalid, hdist⟩ := dijkstra_correct (K := K) (V := K + 1) G le_rfl (by omega)
   rw [← habs] at hvalid hdist
   obtain ⟨hvE, -, hstate, -⟩ := M.simulates_client (dijkstra G.source) hinv hvalid

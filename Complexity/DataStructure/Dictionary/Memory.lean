@@ -164,6 +164,9 @@ def framed (hT : Valid T w U V) : Memory.Framed (Dictionary.spec U V n_max) w :=
     (fun o hs hv b _ hb => by
       obtain ⟨-, -, -, -, -, h⟩ := ops_run hT hs o hv
       exact h b hb)
+    (fun o hs hv => by
+      obtain ⟨-, -, -, -, h, -⟩ := ops_run hT hs o hv
+      exact h)
 
 /-- The footprint of a table is its field. -/
 @[simp] theorem framed_footprint (hT : Valid T w U V) (s : Memory.State) :
