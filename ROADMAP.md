@@ -629,7 +629,8 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   minimum with native trial division and real counter calls, preserving the explicit window
   cost factor. The dyadic parameter kernel computes geometry-compatible values and explicitly
   classifies the small regime; it does not prove the tuned aggregate exponent or dispatch a solver.
-  Global solver/host composition and the full endpoint remain separate.
+  Remaining are native fast/small solver assembly ([#2146]), global asymptotic composition
+  using the component-cost bridge ([#2145]), outer-host execution and the full endpoint.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
@@ -784,3 +785,7 @@ not planned, not as proved.
 [#2019]: https://github.com/cslib-community/complexitylib/issues/2019
 [#2062]: https://github.com/cslib-community/complexitylib/issues/2062
 [#2063]: https://github.com/cslib-community/complexitylib/issues/2063
+[#2098]: https://github.com/cslib-community/complexitylib/issues/2098
+[#2127]: https://github.com/cslib-community/complexitylib/issues/2127
+[#2145]: https://github.com/cslib-community/complexitylib/issues/2145
+[#2146]: https://github.com/cslib-community/complexitylib/issues/2146
