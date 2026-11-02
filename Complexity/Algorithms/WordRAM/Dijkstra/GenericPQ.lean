@@ -196,28 +196,6 @@ private theorem fits_pqKeyMax {G : ListInstance}
     Fits w (pqKeyMax G) :=
   hw_in.of_le (by unfold pqKeyMax; nlinarith)
 
-private theorem inputFits_encode (G : ListInstance)
-    (hw_in : Fits w (8 * (G.n + G.m + 2) * (G.maxWeight + 2))) :
-    InputFits w G.encode := by
-  refine ⟨?_, ?_⟩
-  · rw [G.encode_length]
-    exact hw_in.of_le (by nlinarith)
-  · intro x hx
-    simp only [ListInstance.encode, List.mem_cons, List.mem_append, List.mem_map, List.mem_range,
-      List.mem_flatMap, List.mem_finRange, true_and] at hx
-    rcases hx with rfl | rfl | ⟨⟨i, hi, rfl⟩ | ⟨u, ⟨v, c⟩, he, hx⟩⟩
-    · exact hw_in.of_le (by nlinarith)
-    · have := G.source.isLt
-      exact hw_in.of_le (by nlinarith)
-    · have hle : G.offset i ≤ G.m := G.offset_n ▸ G.offset_mono (by omega)
-      exact hw_in.of_le (by nlinarith)
-    · simp only [List.not_mem_nil, or_false] at hx
-      rcases hx with rfl | rfl
-      · have := v.isLt
-        exact hw_in.of_le (by nlinarith)
-      · have hc := G.le_maxWeight he
-        exact hw_in.of_le (by nlinarith)
-
 private theorem frame_outer_regs {P : PQCode .exact r_pq} {n K_max base : ℕ}
     (C : StateTransitionImpl P.toSubroutineCode (indexedMinPQSpec n K_max) w base ![n]
       (IndexedMinPQ.empty n))
@@ -908,7 +886,7 @@ private theorem dijkstraSetup_spec (pkg : PQPackage .exact r_pq) {G : ListInstan
   have fds : Fits w (G.dbase + G.source) := hw_sp.of_le (by unfold pqBase; omega)
   have fpq : Fits w (pqBase G) := hw_sp.of_le (by omega)
   let x₀ : Data (15 + r_pq) := .init G.encode
-  have hx₀_bnd : x₀.Bounded w := Data.Bounded.init (inputFits_encode G hw_in)
+  have hx₀_bnd : x₀.Bounded w := Data.Bounded.init (G.inputFits_encode hw_in)
   obtain ⟨x₁, he_hdr, hx₁_m, hx₁_z, hx₁_o, hx₁_3, hx₁_n, hx₁_u, hx₁_db, hx₁_eb, hx₁_t⟩ :
       ∃ x₁, ExecWithin w outerHeader x₀ x₁ 18 ∧
         x₁.mem = Function.update x₀.mem (G.dbase + G.source) 1 ∧
