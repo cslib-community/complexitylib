@@ -3043,6 +3043,7 @@ public import Complexity.DataStructure.StateTransition.Composition
 public import Complexity.DataStructure.StateTransition.CostHoare
 public import Complexity.DataStructure.StateTransition.Hoare
 public import Complexity.DataStructure.StateTransition.Impl
+public import Complexity.DataStructure.StateTransition.LinkCongr
 public import Complexity.DataStructure.StateTransition.Module
 public import Complexity.DataStructure.StateTransition.Oracle
 public import Complexity.DataStructure.StateTransition.Randomized
