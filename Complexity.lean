@@ -14,6 +14,7 @@ public import Complexity.Algorithms.ExactTriangle.Weights
 public import Complexity.Algorithms.ExactTriangle.Witnesses
 public import Complexity.Algorithms.Lean.Dijkstra.Client
 public import Complexity.Algorithms.Lean.Dijkstra.Cost
+public import Complexity.Algorithms.Lean.Dijkstra.Memory
 public import Complexity.Algorithms.Lean.Huffman.Basic
 public import Complexity.Algorithms.Lean.Huffman.Kraft
 public import Complexity.Algorithms.Lean.Huffman.Optimality
@@ -2618,6 +2619,11 @@ public import Complexity.Computability.WordRAM.Randomized.Law
 public import Complexity.Computability.WordRAM.Randomized.LoopSegment
 public import Complexity.Computability.WordRAM.Randomized.Structured
 public import Complexity.Computability.WordRAM.Randomized.UniformLoopExit
+public import Complexity.Computability.WordRAM.Realization.Basic
+public import Complexity.Computability.WordRAM.Realization.Bind
+public import Complexity.Computability.WordRAM.Realization.Branch
+public import Complexity.Computability.WordRAM.Realization.Glue
+public import Complexity.Computability.WordRAM.Realization.Primitive
 public import Complexity.Computability.WordRAM.RegisterFrame
 public import Complexity.Computability.WordRAM.Sequence
 public import Complexity.Computability.WordRAM.Signed.Arithmetic
@@ -2878,6 +2884,7 @@ public import Complexity.Crypto.Protocols.Signature.RandomOracle
 public import Complexity.DataStructure.AVLTree.Basic
 public import Complexity.DataStructure.AVLTree.Erase
 public import Complexity.DataStructure.AVLTree.Impl
+public import Complexity.DataStructure.AdjacencyList.Memory
 public import Complexity.DataStructure.AdjacencyList.Spec
 public import Complexity.DataStructure.CountMin.Basic
 public import Complexity.DataStructure.CountMin.LinearHash
@@ -2885,6 +2892,7 @@ public import Complexity.DataStructure.CountMin.Probability
 public import Complexity.DataStructure.CountMin.Program
 public import Complexity.DataStructure.Dictionary.CuckooHashing
 public import Complexity.DataStructure.Dictionary.DoubleHashing
+public import Complexity.DataStructure.Dictionary.Memory
 public import Complexity.DataStructure.Dictionary.Spec
 public import Complexity.DataStructure.Dictionary.UniformProbing
 public import Complexity.DataStructure.Dictionary.WordRAM.ChainedHash
@@ -2933,6 +2941,8 @@ public import Complexity.DataStructure.FusionTree.WordRAM.Rank
 public import Complexity.DataStructure.FusionTree.WordRAM.ReadHeader
 public import Complexity.DataStructure.FusionTree.WordRAM.Static
 public import Complexity.DataStructure.FusionTree.XorCorrection
+public import Complexity.DataStructure.HashFamily.Memory
+public import Complexity.DataStructure.HashFamily.Randomized
 public import Complexity.DataStructure.HashFamily.Spec
 public import Complexity.DataStructure.HashFamily.WordRAM.Basic
 public import Complexity.DataStructure.HashFamily.WordRAM.DoubleTabulation
@@ -2997,9 +3007,11 @@ public import Complexity.DataStructure.StateTransition.Hoare
 public import Complexity.DataStructure.StateTransition.Impl
 public import Complexity.DataStructure.StateTransition.Module
 public import Complexity.DataStructure.StateTransition.Oracle
+public import Complexity.DataStructure.StateTransition.Randomized
 public import Complexity.DataStructure.StateTransition.Refinement
 public import Complexity.DataStructure.StateTransition.Resource
 public import Complexity.DataStructure.StateTransition.TotalCost
+public import Complexity.DataStructure.StateTransition.WP
 public import Complexity.DataStructure.VanEmdeBoas.Basic
 public import Complexity.DataStructure.VanEmdeBoas.Elements
 public import Complexity.DataStructure.VanEmdeBoas.Erase
