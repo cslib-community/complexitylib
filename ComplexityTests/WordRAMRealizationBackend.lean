@@ -70,7 +70,8 @@ theorem implements {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w C) :
       obtain ⟨hlen, hv⟩ := hv
       change (Stack.Memory.abs L e).length < C at hlen
       rw [Stack.Memory.length_abs] at hlen
-      refine ⟨?_, (hC ▸ hL : L.Valid w L.items.length), hi, (by omega : e.mem L.count.base < L.items.length)⟩
+      refine ⟨?_, (hC ▸ hL : L.Valid w L.items.length), hi,
+        (by omega : e.mem L.count.base < L.items.length)⟩
       change ∀ j : Fin (4 + 1), Fits w (pushWords (L, v) j)
       refine Fin.addCases (fun j => ?_) (fun j => ?_)
       · simpa [pushWords, appendWords, Fin.appendEquiv] using layoutWords_fits hw hi j
@@ -92,7 +93,8 @@ theorem instruction_bound : ∃ K, ∀ {w C : ℕ} {L : Stack.Memory.Layout} (hL
 
 /-- Adaptive clients run one operation at a time, within `K` instructions per operation. -/
 theorem run_client : ∃ K, ∀ {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w C) {α : Type}
-    (p : (Stack.WordRAM.spec w C).Client α) {vs : List ℕ} {x : Data (Backend.registers certificates)},
+    (p : (Stack.WordRAM.spec w C).Client α) {vs : List ℕ}
+    {x : Data (Backend.registers certificates)},
     (implementation hL).rep vs x →
     (Stack.WordRAM.spec w C).ValidHistory vs ((Stack.WordRAM.spec w C).clientHistory vs p) →
     ∃ y traces, Executes ((backend w C L).exec w) p x
