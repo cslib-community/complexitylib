@@ -546,6 +546,13 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   writes a real zero word. Input layout, bounded words and safe domains remain explicit.
   Generic memory and local-ADT adapter endpoints remain separate work. This adds no
   abstract-catalogue headline.
+  Karger–Stein's specification-law bridge (#2289) reuses the existing contraction client and
+  native execution model. `LoopSegmentLaw` packages the existing finite loop segments with an
+  exact observation law and strict pathwise instruction/query bounds; the two-branch recurrence
+  lives at the PMF layer, and compiled cut-output transport is shared with basic Karger.
+  The exact-basis abstract bridge keeps its existing compatibility statements and source.
+  This refactor does not supply the later memory-oracle contraction/frame-stack realization
+  under #2205 or introduce a new curated headline.
   `DataStructure/OrderedSet` and `DataStructure/OrderedSet/*` provide neutral
   optional-minimum contracts, a typed finite-set interface including deletion, and adaptive
   minimum extraction, with no tree or cost dependency. Bounded-key implementations may specialize
