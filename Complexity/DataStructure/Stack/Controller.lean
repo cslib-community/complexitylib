@@ -150,7 +150,8 @@ public theorem program_spec {w n : ℕ} {s : Memory.State} (hf : Fits w (s.front
   have hlink : (Stack.Memory.refinement hL).methods = Stack.Memory.methods L w 1 := rfl
   have habs' : (Stack.Memory.refinement hL).abs = Stack.Memory.abs L := rfl
   obtain ⟨hvE, hres, -, -⟩ := (Stack.Memory.refinement hL).simulates_client (client w n) hinv hv
-  have hcost := (Stack.Memory.amortized hL).client (client w n) hinv hv
+  have hcost := (show (Stack.Memory.refinement hL).Amortized Memory.charge
+    (fun _ _ => 3) (fun _ => 0) from Stack.Memory.amortized hL).client (client w n) hinv hv
   rw [hlink, ← run_eq_link] at hvE hres hcost
   rw [habs', habs] at hres hcost
   have hrun := Stack.Memory.runClient_allocLayout_bind (w := w) 1 (fun L => run L n) s
