@@ -646,8 +646,10 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   queue transfer and dequeue dispatch also have native certificates; bounded transfer charges
   inactive iterations after early stop, and valid transfer fuel has memory cost 6*n and local
   work 40*n+1. One typed method emitter handles both operations before runtime layouts and
-  widths; register setup and footprint lemmas support the local-ADT boundary. Remaining: the
-  complete framed queue and faithful allocation/native-client path.
+  widths; register setup and footprint lemmas support the local-ADT boundary. The complete
+  framed queue certificate has explicit runtime-base/capacity fit, finite locality, fresh
+  initialization and an amortized native-body charge. Its linear dirty clear is separate from
+  faithful source allocation. Remaining: the faithful allocation/native-client path.
   The full C2/M1b objective remains open; arbitrary host continuations do not acquire runtime bounds.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable

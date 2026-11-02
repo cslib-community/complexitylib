@@ -2560,6 +2560,7 @@ public import Complexity.Computability.WordRAM.Realization.Basic
 public import Complexity.Computability.WordRAM.Realization.Bind
 public import Complexity.Computability.WordRAM.Realization.Branch
 public import Complexity.Computability.WordRAM.Realization.Client.MemoryQueue
+public import Complexity.Computability.WordRAM.Realization.Client.MemoryQueueAdapter
 public import Complexity.Computability.WordRAM.Realization.Client.MemoryQueueDispatch
 public import Complexity.Computability.WordRAM.Realization.Client.MemoryQueueFrame
 public import Complexity.Computability.WordRAM.Realization.Client.MemoryQueueInit
