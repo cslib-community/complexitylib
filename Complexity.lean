@@ -2873,6 +2873,7 @@ public import Complexity.DataStructure.CountMin.Probability
 public import Complexity.DataStructure.CountMin.Program
 public import Complexity.DataStructure.Dictionary.CuckooHashing
 public import Complexity.DataStructure.Dictionary.CuckooHashing.Memory.Basic
+public import Complexity.DataStructure.Dictionary.CuckooHashing.Memory.Insert
 public import Complexity.DataStructure.Dictionary.CuckooHashing.Model
 public import Complexity.DataStructure.Dictionary.DoubleHashing
 public import Complexity.DataStructure.Dictionary.Spec
