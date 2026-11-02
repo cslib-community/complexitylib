@@ -8,9 +8,13 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.WordRAM.Realization.WhileAbsorb
+public import Complexity.Computability.WordRAM.Realization.Reindex
 
 /-!
 # The `realize` tactic
+
+The tactic is available inside `Cslib.WordRAM`, or after `open Cslib.WordRAM` or
+`open scoped Cslib.WordRAM`. Importing this module alone does not activate its syntax.
 
 `realize` proves a goal `Realizes B p input output safe work` for a memory client `p`. It walks
 the client syntax, unfolding definitions, with one rule per form:
@@ -21,8 +25,10 @@ the client syntax, unfolding definitions, with one rule per form:
   from the closure rules of `Complexity.Computability.WordRAM.Glue`: projections, constants, and
   the exact- or standard-basis arithmetic and bitwise operations.
 * the four memory queries: `Realizes.read`, `write`, `alloc` and `allocDirty`.
+* a method with a local zero-work `Realizes` certificate: `Realizes.reindex`, selecting its
+  arguments from live words before unfolding its implementation.
 * `if` on `a = b`, `a < b` or `a > b`: `Realizes.branch₀`.
-* `match` on an optional answer: the client equals the branch on its presence tag
+* `match` on an optional word or word pair: the client equals the branch on its presence tag
   (`Realizes.congr`, proved by cases).
 * `iterate step D n a` whose step begins with a query: `Realizes.iterate₀`, after
   `iterate_comap` moves `D` into the step.
@@ -53,7 +59,10 @@ updated memories, or the interpreter's result of a called method; a loop contrib
 After the composition, `realize` introduces `w d s hwords hmem h`: the word width, the
 environment, the memory, the fit of the input words, memory well-formedness, and the goal's
 domain. It splits the conjunctions and `if`s of the synthesized domain and leaves each remaining
-condition as a goal. There is no search: an unsupported form is reported with its subterm.
+condition as a goal. Local method certificates are tried in context order; the remaining rule
+selection follows the client syntax, without searching for bounds. An unsupported form is
+reported with its subterm. A called method's arguments must already be live words; computed
+arguments need an explicit `pure` step, whose glue is certified and charged as usual.
 
 Each certificate is stated for the client form as written, with its domain in the client's terms
 (`certify`), so certificates compose syntactically. A bind's continuation domain is stated at the
@@ -719,6 +728,73 @@ private def bindRun (hP hQ reply next : Expr) : MetaM Expr := do
     lambdaBoundedTelescope f 2 fun xs b => do mkLambdaFVars xs (← mkEqRefl b)
   mkAppM ``Realizes.bind₀_of_run #[hP, hQ, reply, next, ← refl reply, ← refl next]
 
+/-- Expose pair projections to unification when a certificate packages curried arguments.
+Other types remain whole metavariables: no data constructor or runtime value is guessed. -/
+private partial def callArgument (ty : Expr) : MetaM Expr := do
+  let ty ← whnfR ty
+  if let some (a, b) := ty.app2? ``Prod then
+    return mkAppN (mkConst ``Prod.mk ty.getAppFn.constLevels!)
+      #[a, b, ← callArgument a, ← callArgument b]
+  if let some (a, b) := ty.app2? ``Sigma then
+    let x ← callArgument a
+    return mkAppN (mkConst ``Sigma.mk ty.getAppFn.constLevels!)
+      #[a, b, x, ← callArgument (b.beta #[x])]
+  mkFreshExprMVar ty
+
+/-- Reuse a local method certificate before unfolding its body. Every input word must already
+be live: `Realizes.reindex` supplies static wiring, without granting argument computation. -/
+private def tryRealizeCall (ctx : Ctx) (env : Env) (d : Expr) (atoms : Array Expr)
+    (body : Expr) (output? : Option Expr) : TermElabM (Option Out) := do
+  for decl in ← getLCtx do
+    if decl.isImplementationDetail then continue
+    let ty ← instantiateMVars decl.type
+    unless ty.isAppOfArity ``Realizes 10 do continue
+    let saved ← saveState
+    try
+      let args := ty.getAppArgs
+      unless ← withReducible (isDefEq args[4]! ctx.basis) do
+        throwError "realize: the method's basis differs"
+      unless ← withReducible (isDefEq args[9]! (← zeroWork args[2]!)) do
+        throwError "realize: a called certificate must have absorbed local work"
+      let arg ← callArgument args[2]!
+      let called := (mkApp args[5]! arg).headBeta
+      -- Solve dependent arguments in binder order without unfolding a matching method head.
+      let matched ← if called.getAppFn == body.getAppFn &&
+          called.getAppNumArgs == body.getAppNumArgs then
+          (called.getAppArgs.zip body.getAppArgs).allM fun (a, b) => do
+            withReducible (isDefEq (← whnfR a) (← whnfR b))
+        else withReducible (isDefEq called body)
+      unless matched do
+        throwError "realize: the method does not match"
+      let arg ← instantiateMVars arg
+      if arg.hasMVar then throwError "realize: the method argument is undetermined"
+      let out ← checkOutput decl.toExpr output?
+      let k ← encodingWidth args[6]!
+      let coords ← encodingAtoms args[6]! arg k
+      let positions ← coords.mapM fun a => do
+        let some i ← findAtom atoms a
+          | throwError "realize: a method argument must first be computed into a live word"
+        pure i
+      let finK := mkApp (mkConst ``Fin) (mkNatLit k)
+      let finEnv := mkApp (mkConst ``Fin) (mkNatLit env.k)
+      let rec indices : List Nat → MetaM Expr
+        | [] => mkAppOptM ``Matrix.vecEmpty #[finEnv]
+        | i :: is => do mkAppM ``Matrix.vecCons #[← finLit env.k i, ← indices is]
+      let ix ← indices positions.toList
+      let f ← mkLambdaFVars #[d] arg
+      let hwTy ← withLocalDeclD `e env.ty fun e => withLocalDeclD `i finK fun i => do
+        let lhs := mkApp (← mkAppM ``DFunLike.coe #[args[6]!, f.beta #[e]]) i
+        let rhs := mkApp (← mkAppM ``DFunLike.coe #[env.input, e]) (mkApp ix i)
+        mkForallFVars #[e, i] (← mkEq lhs rhs)
+      let hw ← proveResult hwTy k
+      let proof ← mkAppM ``Realizes.reindex #[decl.toExpr, f, env.input, ix, hw]
+      let safe ← withLocalDeclD `w (mkConst ``Nat) fun w =>
+        withLocalDeclD `s (mkConst ``Memory.State) fun s => do
+          mkLambdaFVars #[w, d, s] (← reducePairs (mkApp3 args[8]! w arg s))
+      return some { proof, output := out, safe }
+    catch _ => saved.restore
+  return none
+
 mutual
 
 /-- Certify a client `prog : δ → Memory.Prog α` in the environment `env`. -/
@@ -726,6 +802,8 @@ private partial def realizeProg (ctx : Ctx) (env : Env) (prog : Expr) (output? :
     TermElabM Out :=
   withLocalDeclD `d env.ty fun d => do
     let atoms := env.atoms.map (·.beta #[d])
+    if let some out ← tryRealizeCall ctx env d atoms (prog.beta #[d]).headBeta output? then
+      return { out with proof := ← certify ctx env out.proof prog out.output out.safe }
     let body ← normBody (prog.beta #[d]).headBeta
     let out ← realizeBody ctx env d atoms body output?
     return { out with proof := ← certify ctx env out.proof prog out.output out.safe }
@@ -837,9 +915,22 @@ private partial def realizeOptionSplit (ctx : Ctx) (env : Env) (d : Expr) (atoms
   let enc ← encodingOf rTy
   let words ← mkAppM ``DFunLike.coe #[enc, r]
   let l ← encodingWidth enc
-  unless l == 2 do throwError "realize: expected a tag and payload encoding for{indentExpr r}"
-  let tag := mkApp words (← finLit 2 0)
-  let payload := mkApp words (← finLit 2 1)
+  let payloadTy ← whnfR rTy.appArg!
+  let payload ← if payloadTy.isConstOf ``Nat then
+      unless l == 2 do
+        throwError "realize: expected a tag and payload encoding for{indentExpr r}"
+      pure (mkApp words (← finLit l 1))
+    else if let some (a, b) := payloadTy.app2? ``Prod then
+      unless (← whnfR a).isConstOf ``Nat && (← whnfR b).isConstOf ``Nat do
+        throwError "realize: optional matches support a word or a pair of words, \
+          got{indentExpr rTy}"
+      unless l == 3 do
+        throwError "realize: expected a tag and two payload words for{indentExpr r}"
+      mkAppM ``Prod.mk #[mkApp words (← finLit l 1), mkApp words (← finLit l 2)]
+    else
+      throwError "realize: optional matches support a word or a pair of words, \
+          got{indentExpr rTy}"
+  let tag := mkApp words (← finLit l 0)
   let cond ← mkEq tag (← mkNumeral (mkConst ``Nat) 0)
   let noneE ← mkAppOptM ``Option.none #[rTy.appArg!]
   let someE ← mkAppM ``Option.some #[payload]
@@ -1100,10 +1191,12 @@ private partial def splitDomain (g : MVarId) : MetaM (List MVarId) := g.withCont
 
 end Cslib.Tactic.Realize
 
+namespace Cslib.WordRAM
+
 open Lean Meta Elab Tactic Cslib.WordRAM Cslib.WordRAM.Realization Cslib.Tactic.Realize in
 /-- Prove `Realizes B p input output safe work` for a memory client `p`, leaving the genuine fit
 and domain conditions as goals in the context `w d s hwords hmem h`. -/
-elab "realize" : tactic => withMainContext do
+scoped elab "realize" : tactic => withMainContext do
   let goal ← getMainGoal
   let target ← instantiateMVars (← whnfR (← goal.getType))
   unless target.isAppOfArity ``Realizes 10 do
@@ -1150,3 +1243,5 @@ elab "realize" : tactic => withMainContext do
     | some g' => g.assign (mkMVar g')
     | none => kept := kept.push g
   setGoals kept.toList
+
+end Cslib.WordRAM

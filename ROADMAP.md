@@ -33,7 +33,7 @@ the FHE industrial context, the first-order design decisions and the repository'
 
 Priorities live in this list and in the tiers of [#897].
 
-1. [Goldreich–Micali–Wigderson zero knowledge in full](#cryptographic-landmarks)
+1. [Goldreich–Micali–Wigderson zero knowledge in full](#cryptographic-landmarks) ([#2316])
 2. [Rompel's signature theorem](#cryptographic-landmarks) ([#1001])
 3. [Completeness of oblivious transfer](#cryptographic-landmarks)
 4. [Håstad's optimal MAX-E3SAT hardness](#approximation-and-pcp) ([#886])
@@ -47,7 +47,7 @@ Priorities live in this list and in the tiers of [#897].
 
 ### Cryptographic landmarks
 
-- **Goldreich–Micali–Wigderson zero knowledge in full.** If one-way functions exist, every
+- **Goldreich–Micali–Wigderson zero knowledge in full** ([#2316]). If one-way functions exist, every
   language in NP has a computational zero-knowledge proof in Goldreich's sense (Def. 4.3.10):
   for every `x ∈ L` and arbitrary auxiliary input `z`, against probabilistic polynomial-time
   verifiers. This needs a bridge between the security premise and a clock independent of an
@@ -673,8 +673,18 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   remains only as the stepped component of Chan–He traversal (`Traversal.WordStack`). Backends of
   framed refinements export their frame (`modifies`, `frame`), run products over one memory,
   and allocate from arbitrary memory through `Memory.Allocator` (`Backend.Allocation`); the stack
-  and a pair of stacks check all three. Remaining: the queue and binary-heap migrations onto them,
-  and the full C2/M1b objective; arbitrary host continuations do not acquire runtime bounds.
+  and a pair of stacks check all three. Queue operation calls now use one fixed native
+  dispatcher over physical-array memory programs, with resident count words and paid commits.
+  Its dynamic certificate preserves the original two-array space, dirty six-instruction
+  initialization and adaptive-call bounds. Remaining are the binary-heap migration, the full
+  framed queue/faithful-allocation client and generic stateful composition, and the full C2/M1b
+  objective; arbitrary host continuations do not acquire runtime bounds.
+  The Karger–Stein specification bridge ([#2289]) gives the existing recursive native code the
+  exact answer law of its contraction-oracle client, preserving pathwise instruction/random-call
+  bounds, word fits and memory frames. Probability and amplification are proved at the
+  specification layer. This does not complete its memory-oracle native realization: the
+  randomized realization adapters, contraction implementation and recursive frame-stack
+  migration remain part of [#2205].
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
@@ -831,8 +841,10 @@ not planned, not as proved.
 [#2063]: https://github.com/cslib-community/complexitylib/issues/2063
 [#2205]: https://github.com/cslib-community/complexitylib/issues/2205
 [#2213]: https://github.com/cslib-community/complexitylib/issues/2213
+[#2289]: https://github.com/cslib-community/complexitylib/issues/2289
 [#2098]: https://github.com/cslib-community/complexitylib/issues/2098
 [#2127]: https://github.com/cslib-community/complexitylib/issues/2127
 [#2145]: https://github.com/cslib-community/complexitylib/issues/2145
 [#2146]: https://github.com/cslib-community/complexitylib/issues/2146
 [#2084]: https://github.com/cslib-community/complexitylib/issues/2084
+[#2316]: https://github.com/cslib-community/complexitylib/issues/2316
