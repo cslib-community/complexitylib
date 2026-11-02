@@ -542,8 +542,12 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   native-body charge `153*factor`; each flat call's halt is separate. Fresh initialization costs
   13 body instructions under the zero-block premise; dirty clearing costs `4*space+19` and can
   change unused item cells. Delivered arguments follow the existing calling convention. Faithful
-  source allocation and a complete allocated-client clock remain separate. No abstract headline
-  or legacy size/space/step improvement is claimed.
+  source allocation remains distinct: its actual two count-cell and two dirty-array allocations
+  have memory charge 6 and certified local work 42, independent of capacity. A supported actual
+  allocated enqueue/dequeue client has local work 163. Its same native body preserves unused
+  dirty cells at different starting frontiers; a separate standard-input flat program charges
+  its real input prefix and halt. This does not time arbitrary opaque queue clients, close the
+  broader M1 comparison gate, or claim an abstract headline or legacy size/space/step improvement.
   `DataStructure/OrderedSet` and `DataStructure/OrderedSet/*` provide neutral
   optional-minimum contracts, a typed finite-set interface including deletion, and adaptive
   minimum extraction, with no tree or cost dependency. Bounded-key implementations may specialize

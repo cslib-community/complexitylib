@@ -649,8 +649,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   widths; register setup and footprint lemmas support the local-ADT boundary. The complete
   framed queue certificate has explicit runtime-base/capacity fit, finite locality, fresh
   initialization and an amortized native-body charge. Its linear dirty clear is separate from
-  faithful source allocation. Remaining: the faithful allocation/native-client path.
-  The full C2/M1b objective remains open; arbitrary host continuations do not acquire runtime bounds.
+  faithful source allocation. The exact source allocation prefix also has a constant-work native
+  certificate, preserving dirty item cells, followed by a supported allocated enqueue/dequeue
+  client. Its installed-argument dirty-memory and charged standard-input flat endpoints are
+  distinct. Broader M1 migration and comparison remain open; arbitrary host continuations do not
+  acquire runtime bounds.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
