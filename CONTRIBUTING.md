@@ -234,8 +234,13 @@ validation/review evidence belong in commit or PR descriptions.
 Link to these sources instead of repeating them in new guides. Add a separate document only when
 it provides useful explanation that does not already have a suitable home.
 
-The guide (`guide/`) is the narrative path into the library: a chapter per area, written as a
-newcomer should meet it, with checked Lean examples whose names link to the API documentation.
+The [Operator's Manual](manual/README.md) is the substantial codebase reference for human and
+agent contributors: installation, first use, tactics, models and resource conventions, design
+and proof patterns, development procedures and troubleshooting. The short
+[Agent Operator's Manual](manual/AGENT_OPERATORS.md) explains to humans how to direct agents,
+choose roles, assign work and judge review and handoffs. The Operator's Manual's tutorial layer
+includes the guide (`guide/`): a chapter per area, written as a newcomer
+should meet it, with checked Lean examples whose names link to the API documentation.
 When a chapter needs proof plumbing or a missing lemma, improve the library rather than
 documenting around it.
 
@@ -249,6 +254,54 @@ and the same with `-d guide`. When changing the Lean toolchain, also update the 
 version, and run `MATHLIB_NO_CACHE_ON_UPDATE=1 lake -d docbuild update doc-gen4` and
 `MATHLIB_NO_CACHE_ON_UPDATE=1 lake -d guide update verso`. Commit the refreshed lockfiles and
 run the documentation checks and builds.
+
+### Maintaining the manuals
+
+Every change must assess its effect on both manuals. Changes to a model,
+encoding, theorem hypothesis or bound, public API, import, tactic, dependency, build command or
+development procedure must update the affected instructions and reference material in the same
+change. Changes to agent roles, delegation, review, coordination or human direction must update
+the affected Agent Operator's Manual instructions too. If no edit is needed for one or both
+manuals, give a short, concrete reason in the PR's Manual impact
+section, or in the commit description when there is no PR. This assessment is required; needless
+text changes are not. Update the assessment when the scope changes, and keep its evidence in one
+place.
+
+Write the Operator's Manual as a user manual in the ordinary sense: a human with basic Lean,
+editor and terminal skills
+should be able to set up the library, complete a first example, choose an appropriate model,
+apply its API, diagnose a failed attempt, validate a change and prepare it for review. Assume no
+agent tools or prior conversation. Each procedure should state its prerequisites and starting
+point, give the necessary commands or code with their context, describe the expected result,
+and explain how to check it and recover from likely failures. Include the model, encoding and
+resource conventions that affect the user's choice, and explain particular proof considerations
+where they teach a reusable method or a model boundary. Agents should be able to consult this
+maintained account without repeating the investigation or relying on earlier conversations.
+Keep the Agent Operator's Manual short and directed at the person driving the agents; put
+participant procedures in the Operator's Manual and historical evidence in its supplement.
+
+Keep executable Lean examples in `ComplexityTests/` or the checked Verso guide and link their
+complete source, including imports and local context. Use checked excerpts rather than a second
+independently maintained copy. Check new or changed examples with Lean; source comparison alone
+does not establish that an example elaborates. The live checker and its controls are required
+in CI and in both full and quick `scripts/check.sh` runs. For documentation-only validation, run
+`python3 scripts/check_operator_manual.py` and `python3 scripts/test_operator_manual.py`
+directly; they use only Python and need no generated data or publishing tools. See the manual's
+build instructions for PDF generation; inspect affected rendered pages when changing its content
+or rendering. Generated LaTeX, PDFs and research exports stay untracked; retain their scripts and
+maintained source inputs. Keep historical measurements and transcript evidence explicitly dated;
+do not present their frozen counts as current library state.
+
+Impact on both manuals is a mandatory part of independent review before integration, and
+coordinators are responsible for ensuring that this review happens. The reviewer checks
+the assessment against the final revision, including the reason for no edit when applicable.
+For an affected procedure, follow the documented starting point, inspect or run the example and
+its validation as appropriate, and check that a human can understand the outcome and next step.
+Check relevant API names, imports, assumptions, resource bounds, source credit and recovery
+instructions, as well as affected role, delegation and handoff guidance. Record the verdict with
+the existing code review; an additional reviewer is needed
+only for an uncovered question. Compilation, excerpt checks and a completed PR field do not by
+themselves establish that the manual is usable or correct.
 
 ## Maintaining the headline abstracts
 
