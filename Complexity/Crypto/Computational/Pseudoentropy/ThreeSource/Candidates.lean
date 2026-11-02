@@ -34,8 +34,10 @@ them into one generator.
 * `isPolyTime_generate`, `isPolyTime_generate_of_realization`: candidate evaluation is uniformly
   polynomial time.
 * `seedLength_lt_outputLength`, `length_generate`: strict expansion and exact output length.
-* `exists_valid_choice`: every sufficiently fine grid eventually contains a valid entry.
-* `exists_secure_choice`: a single proof-only choice works for every uniform indexed test.
+* `exists_valid_choice_withAdvice`, `exists_valid_choice`: every sufficiently fine grid eventually
+  contains a valid entry.
+* `exists_secure_choice_withAdvice`, `exists_secure_choice`: a single proof-only choice works for
+  every uniform indexed test, relative to fixed advice and in the uniform case.
 
 ## References
 
@@ -154,9 +156,11 @@ theorem length_generate {pair : SamplablePair} (saved : pair.SeedRealization)
   ThreeSource.length_generate _ _ _ _ _ _ _
     (fun _ h => saved.observation_length_le n observationBound hbound h) hseed
 
-/-- Every sufficiently fine grid contains a valid entry, with no entropy estimation required. -/
-theorem exists_valid_choice {pair : SamplablePair} {gap : ℕ → ℝ}
-    (hpair : pair.HasGap gap) (saved : pair.SeedRealization) {densityBound : ℕ → ℕ}
+/-- Every sufficiently fine grid contains a valid entry relative to fixed advice, with no entropy
+estimation required. -/
+theorem exists_valid_choice_withAdvice {pair : SamplablePair} {gap : ℕ → ℝ}
+    {advice : ℕ → List Bool} (hpair : pair.HasGapWithAdvice gap advice)
+    (saved : pair.SeedRealization) {densityBound : ℕ → ℕ}
     (hgap : ∀ᶠ n in atTop, 4 / (dyadicSize (densityBound n) : ℝ) ≤ gap n) :
     ∃ choose : ℕ → ℕ, ∀ᶠ n in atTop,
       Valid n (saved.length n) (densityBound n) (choose n)
@@ -171,10 +175,22 @@ theorem exists_valid_choice {pair : SamplablePair} {gap : ℕ → ℝ}
     linarith [saved.entropy_chain_rule n, conditionalEntropy_nonneg (saved.jointWithSeed n)]
   exact ⟨fun n => Classical.epsilon _, hexists.mono (fun _ h => Classical.epsilon_spec h)⟩
 
-/-- A single varying candidate is secure against every uniform indexed test. The choice is
-made before the test is quantified and is used only in the proof, never by `generate`. -/
-theorem exists_secure_choice {pair : SamplablePair} {gap : ℕ → ℝ}
-    (hpair : pair.HasGap gap) (saved : pair.SeedRealization)
+/-- Every sufficiently fine grid contains a valid entry, with no entropy estimation required. -/
+theorem exists_valid_choice {pair : SamplablePair} {gap : ℕ → ℝ}
+    (hpair : pair.HasGap gap) (saved : pair.SeedRealization) {densityBound : ℕ → ℕ}
+    (hgap : ∀ᶠ n in atTop, 4 / (dyadicSize (densityBound n) : ℝ) ≤ gap n) :
+    ∃ choose : ℕ → ℕ, ∀ᶠ n in atTop,
+      Valid n (saved.length n) (densityBound n) (choose n)
+        (entropy ((pair.joint n).map Prod.fst)) (conditionalEntropy (pair.joint n)) (gap n) :=
+  exists_valid_choice_withAdvice
+    (SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mp hpair) saved hgap
+
+/-- A single varying candidate is secure relative to fixed advice against every uniform indexed
+test. The choice is made before the test is quantified and is used only in the proof, never by
+`generate`. -/
+theorem exists_secure_choice_withAdvice {pair : SamplablePair} {gap : ℕ → ℝ}
+    {advice : ℕ → List Bool} (hpair : pair.HasGapWithAdvice gap advice)
+    (saved : pair.SeedRealization)
     {observationBound densityBound : ℕ → ℕ}
     (hobservation : ComputableInPolyTime observationBound encUnary encUnary)
     (hdensity : ComputableInPolyTime densityBound encUnary encUnary)
@@ -183,19 +199,20 @@ theorem exists_secure_choice {pair : SamplablePair} {gap : ℕ → ℝ}
     (hgap : ∀ᶠ n in atTop, 4 / (dyadicSize (densityBound n) : ℝ) ≤ gap n) :
     ∃ choose : ℕ → ℕ,
       (∀ᶠ n in atTop, choose n < size (saved.length n) (densityBound n)) ∧
-      ∀ test : ℕ → ℕ → List Bool → ProbComp Bool,
-        IsPPTOn (encPair (encPair encUnary encUnary) encBits)
-          encBool (fun ((n, i), word) => test n i word) →
+      ∀ test : ℕ × List Bool → ℕ → List Bool → ProbComp Bool,
+        IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
+          encBool (fun ((a, i), word) => test a i word) →
         Negligible (fun n => Game.advantage
           (((uniformList (seedLength n (saved.length n) (observationBound n) (densityBound n)
             (choose n))).map (generate n (saved.length n) (observationBound n) (densityBound n)
               (choose n) (saved.evaluate n))).bind
-                (fun word => ProbComp.eval (test n (choose n) word)))
+                (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))
           ((uniformList (outputLength n (saved.length n) (observationBound n) (densityBound n)
-            (choose n))).bind (fun word => ProbComp.eval (test n (choose n) word)))) := by
+            (choose n))).bind
+              (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))) := by
   have hobservation := hobservation.tidy
   have hdensity := hdensity.tidy
-  obtain ⟨choose, hvalid⟩ := exists_valid_choice hpair saved hgap
+  obtain ⟨choose, hvalid⟩ := exists_valid_choice_withAdvice hpair saved hgap
   refine ⟨choose, hvalid.mono (fun _ h => h.index_lt), ?_⟩
   intro test htest
   have hlength := saved.length_isPolyTime.tidy
@@ -219,6 +236,38 @@ theorem exists_secure_choice {pair : SamplablePair} {gap : ℕ → ℝ}
   unfold seedLength outputLength generate
   simp_rw [ThreeSource.eval_generate_of_realization saved _ _ _ _ _ _ (hfits _)]
   simpa only [ProbComp.eval_bind, BitString.eval_sampleList] using h
+
+/-- A single varying candidate is secure against every uniform indexed test. The choice is
+made before the test is quantified and is used only in the proof, never by `generate`. -/
+theorem exists_secure_choice {pair : SamplablePair} {gap : ℕ → ℝ}
+    (hpair : pair.HasGap gap) (saved : pair.SeedRealization)
+    {observationBound densityBound : ℕ → ℕ}
+    (hobservation : ComputableInPolyTime observationBound encUnary encUnary)
+    (hdensity : ComputableInPolyTime densityBound encUnary encUnary)
+    (hfits : ∀ n observation, observation ∈ ((pair.joint n).map Prod.fst).support →
+      (pair.encode n observation).length ≤ observationBound n)
+    (hgap : ∀ᶠ n in atTop, 4 / (dyadicSize (densityBound n) : ℝ) ≤ gap n) :
+    ∃ choose : ℕ → ℕ,
+      (∀ᶠ n in atTop, choose n < size (saved.length n) (densityBound n)) ∧
+      ∀ test : ℕ → ℕ → List Bool → ProbComp Bool,
+        IsPPTOn (encPair (encPair encUnary encUnary) encBits)
+          encBool (fun ((n, i), word) => test n i word) →
+        Negligible (fun n => Game.advantage
+          (((uniformList (seedLength n (saved.length n) (observationBound n) (densityBound n)
+            (choose n))).map (generate n (saved.length n) (observationBound n) (densityBound n)
+              (choose n) (saved.evaluate n))).bind
+                (fun word => ProbComp.eval (test n (choose n) word)))
+          ((uniformList (outputLength n (saved.length n) (observationBound n) (densityBound n)
+            (choose n))).bind (fun word => ProbComp.eval (test n (choose n) word)))) := by
+  obtain ⟨choose, hchoose, hsecure⟩ := exists_secure_choice_withAdvice
+    (SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mp hpair) saved hobservation hdensity hfits hgap
+  refine ⟨choose, hchoose, fun test htest => ?_⟩
+  have hprepare : ComputableInPolyTime
+      (fun (((n, _), i), word) => ((n, i), word) :
+        ((ℕ × List Bool) × ℕ) × List Bool → (ℕ × ℕ) × List Bool)
+      (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
+      (encPair (encPair encUnary encUnary) encBits) := by fun_prop
+  exact hsecure (fun a i word => test a.1 i word) (htest.preprocess hprepare)
 
 /-- A linear grid precision suffices for the gap already obtained from a general one-way
 function. This is a numerical consequence of rounding the denominator up to a power of two. -/
