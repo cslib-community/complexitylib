@@ -435,10 +435,11 @@ def feistelXor {U : ℕ} (b m : ℕ) (hbm : b ≤ m) (qOf : Fin U → Q)
       ((keyLow_lt b u.val).trans_le (Nat.pow_le_pow_right (by decide) hbm))⟩
 
 omit [Fintype ι] in
-/-- Distinct keys sharing the same quotient never collide under `feistelXor`, for any seed `i`. -/
-theorem feistelXor_ne_of_qOf_eq {U b m : ℕ} (hbm : b ≤ m) {qOf : Fin U → Q}
-    (hq : ∀ u₁ u₂ : Fin U, qOf u₁ = qOf u₂ → keyQuotient b u₁.val = keyQuotient b u₂.val)
+/-- Pointwise form of `feistelXor_ne_of_qOf_eq`: two distinct keys sharing the same `qOf` value
+and the same `keyQuotient b` value never collide under `feistelXor`, for any seed `i`. -/
+theorem feistelXor_ne_of_qOf_eq_pt {U b m : ℕ} (hbm : b ≤ m) (qOf : Fin U → Q)
     (H : ι → Q → Fin (2 ^ m)) (i : ι) {u₁ u₂ : Fin U}
+    (hquot : keyQuotient b u₁.val = keyQuotient b u₂.val)
     (hne : u₁ ≠ u₂) (hqq : qOf u₁ = qOf u₂) :
     feistelXor b m hbm qOf H i u₁ ≠ feistelXor b m hbm qOf H i u₂ := by
   intro heq
@@ -449,13 +450,21 @@ theorem feistelXor_ne_of_qOf_eq {U b m : ℕ} (hbm : b ≤ m) {qOf : Fin U → Q
     have h1 := congrArg ((H i (qOf u₂)).val ^^^ ·) hval
     rwa [← Nat.xor_assoc, Nat.xor_self, Nat.zero_xor, ← Nat.xor_assoc, Nat.xor_self,
       Nat.zero_xor] at h1
-  have hquot := hq u₁ u₂ hqq
   have hu : u₁.val = u₂.val := by
     calc u₁.val = 2 ^ b * keyQuotient b u₁.val + keyLow b u₁.val :=
           (Nat.div_add_mod u₁.val (2 ^ b)).symm
       _ = 2 ^ b * keyQuotient b u₂.val + keyLow b u₂.val := by rw [hquot, hlow]
       _ = u₂.val := Nat.div_add_mod u₂.val (2 ^ b)
   exact hne (Fin.ext hu)
+
+omit [Fintype ι] in
+/-- Distinct keys sharing the same quotient never collide under `feistelXor`, for any seed `i`. -/
+theorem feistelXor_ne_of_qOf_eq {U b m : ℕ} (hbm : b ≤ m) {qOf : Fin U → Q}
+    (hq : ∀ u₁ u₂ : Fin U, qOf u₁ = qOf u₂ → keyQuotient b u₁.val = keyQuotient b u₂.val)
+    (H : ι → Q → Fin (2 ^ m)) (i : ι) {u₁ u₂ : Fin U}
+    (hne : u₁ ≠ u₂) (hqq : qOf u₁ = qOf u₂) :
+    feistelXor b m hbm qOf H i u₁ ≠ feistelXor b m hbm qOf H i u₂ :=
+  feistelXor_ne_of_qOf_eq_pt hbm qOf H i (hq u₁ u₂ hqq) hne hqq
 
 /-- Equivalence on `Fin (2 ^ m)` given by bitwise XOR with `Δ < 2 ^ m`. -/
 @[expose]
@@ -517,15 +526,15 @@ theorem expect_boole_apply_eq_equiv {Y 𝕜 : Type*} [Fintype Y] [DecidableEq Y]
   · have hne_zero : (Fintype.card Y : 𝕜) ≠ 0 := Nat.cast_ne_zero.mpr hpos.ne'
     rw [sq, mul_inv, ← mul_assoc, mul_inv_cancel₀ hne_zero, one_mul]
 
-/-- Under a pairwise independent hash `H : ι → Q → Fin (2 ^ m)`, for any `S : Finset (Fin U)` and
-`u : Fin U`, the expected number of keys `x ∈ S.erase u` colliding with `u` under `feistelXor` is
-`#({x ∈ S.erase u | qOf x ≠ qOf u}) / 2 ^ m`. -/
-theorem expect_card_feistelXor_eq [DecidableEq Q] {U b m : ℕ} {𝕜 : Type*}
+/-- Localized form of `expect_card_feistelXor_eq`: requires quotient injectivity of `qOf` only on
+`insert u (S.erase u)`. -/
+theorem expect_card_feistelXor_eq_on [DecidableEq Q] {U b m : ℕ} {𝕜 : Type*}
     [Semifield 𝕜] [CharZero 𝕜]
     (hbm : b ≤ m) {qOf : Fin U → Q}
-    (hq : ∀ u₁ u₂ : Fin U, qOf u₁ = qOf u₂ → keyQuotient b u₁.val = keyQuotient b u₂.val)
     {H : ι → Q → Fin (2 ^ m)} (hh : IsPairwiseIndependentHash H)
-    (S : Finset (Fin U)) (u : Fin U) :
+    (S : Finset (Fin U)) (u : Fin U)
+    (hq : ∀ u₁ ∈ insert u (S.erase u), ∀ u₂ ∈ insert u (S.erase u),
+      qOf u₁ = qOf u₂ → keyQuotient b u₁.val = keyQuotient b u₂.val) :
     𝔼 i, (#{x ∈ S.erase u | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} : 𝕜) =
       (#{x ∈ S.erase u | qOf x ≠ qOf u} : 𝕜) / (2 ^ m : 𝕜) := by
   let S' : Finset (Fin U) := {x ∈ S.erase u | qOf x ≠ qOf u}
@@ -537,7 +546,9 @@ theorem expect_card_feistelXor_eq [DecidableEq Q] {U b m : ℕ} {𝕜 : Type*}
     refine ⟨fun ⟨⟨hne, hxS⟩, hcoll⟩ => ⟨⟨⟨hne, hxS⟩, ?_⟩, hcoll⟩,
       fun ⟨⟨h1, _⟩, hcoll⟩ => ⟨h1, hcoll⟩⟩
     intro hqq
-    exact feistelXor_ne_of_qOf_eq hbm hq H i hne hqq hcoll
+    have hx_mem : x ∈ insert u (S.erase u) := mem_insert_of_mem (mem_erase.mpr ⟨hne, hxS⟩)
+    have hu_mem : u ∈ insert u (S.erase u) := mem_insert_self u (S.erase u)
+    exact feistelXor_ne_of_qOf_eq_pt hbm qOf H i (hq x hx_mem u hu_mem hqq) hne hqq hcoll
   have hcard (i : ι) :
       (#{x ∈ S.erase u | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} : 𝕜) =
         ∑ x ∈ S',
@@ -565,6 +576,19 @@ theorem expect_card_feistelXor_eq [DecidableEq Q] {U b m : ℕ} {𝕜 : Type*}
     have h1 := expect_boole_apply_eq_equiv (𝕜 := 𝕜) hh hqne e
     simpa [Fintype.card_fin] using h1
   rw [sum_congr rfl hterm, sum_const, nsmul_eq_mul, div_eq_mul_inv, Nat.cast_pow, Nat.cast_ofNat]
+
+/-- Under a pairwise independent hash `H : ι → Q → Fin (2 ^ m)`, for any `S : Finset (Fin U)` and
+`u : Fin U`, the expected number of keys `x ∈ S.erase u` colliding with `u` under `feistelXor` is
+`#({x ∈ S.erase u | qOf x ≠ qOf u}) / 2 ^ m`. -/
+theorem expect_card_feistelXor_eq [DecidableEq Q] {U b m : ℕ} {𝕜 : Type*}
+    [Semifield 𝕜] [CharZero 𝕜]
+    (hbm : b ≤ m) {qOf : Fin U → Q}
+    (hq : ∀ u₁ u₂ : Fin U, qOf u₁ = qOf u₂ → keyQuotient b u₁.val = keyQuotient b u₂.val)
+    {H : ι → Q → Fin (2 ^ m)} (hh : IsPairwiseIndependentHash H)
+    (S : Finset (Fin U)) (u : Fin U) :
+    𝔼 i, (#{x ∈ S.erase u | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} : 𝕜) =
+      (#{x ∈ S.erase u | qOf x ≠ qOf u} : 𝕜) / (2 ^ m : 𝕜) :=
+  expect_card_feistelXor_eq_on hbm hh S u fun u₁ _ u₂ _ => hq u₁ u₂
 
 /-- Under a pairwise independent hash `H : ι → Q → Fin (2 ^ m)`, the expected number of keys in
 `S.erase u` colliding with `u` under `feistelXor` is at most `#(S.erase u) / 2 ^ m`. -/
@@ -644,14 +668,14 @@ theorem expect_boole_apply_eq_equiv_two {Y 𝕜 : Type*} [Fintype Y] [DecidableE
       ring
     rw [hpow, mul_inv, ← mul_assoc, mul_inv_cancel₀ hne_zero, one_mul]
 
-/-- Under a 3-wise independent hash `H : ι → Q → Fin (2 ^ m)`, the second factorial moment of the
-number of keys in `S.erase u` colliding with `u` under `feistelXor` is at most
-`(#({x ∈ S.erase u | qOf x ≠ qOf u}) / 2 ^ m) ^ 2`. -/
-theorem expect_feistelXor_mul_sub_one_le [DecidableEq Q] {U b m : ℕ}
+/-- Localized form of `expect_feistelXor_mul_sub_one_le`: requires quotient injectivity of `qOf`
+only on `insert u (S.erase u)`. -/
+theorem expect_feistelXor_mul_sub_one_le_on [DecidableEq Q] {U b m : ℕ}
     (hbm : b ≤ m) {qOf : Fin U → Q}
-    (hq : ∀ u₁ u₂ : Fin U, qOf u₁ = qOf u₂ → keyQuotient b u₁.val = keyQuotient b u₂.val)
     {H : ι → Q → Fin (2 ^ m)} (hh : IsKWiseIndependentHash 3 H)
-    (S : Finset (Fin U)) (u : Fin U) :
+    (S : Finset (Fin U)) (u : Fin U)
+    (hq : ∀ u₁ ∈ insert u (S.erase u), ∀ u₂ ∈ insert u (S.erase u),
+      qOf u₁ = qOf u₂ → keyQuotient b u₁.val = keyQuotient b u₂.val) :
     𝔼 i,
       ((#{x ∈ S.erase u | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} : ℚ) *
         ((#{x ∈ S.erase u | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} : ℚ) -
@@ -666,7 +690,9 @@ theorem expect_feistelXor_mul_sub_one_le [DecidableEq Q] {U b m : ℕ}
     refine ⟨fun ⟨⟨hne, hxS⟩, hcoll⟩ => ⟨⟨⟨hne, hxS⟩, ?_⟩, hcoll⟩,
       fun ⟨⟨h1, _⟩, hcoll⟩ => ⟨h1, hcoll⟩⟩
     intro hqq
-    exact feistelXor_ne_of_qOf_eq hbm hq H i hne hqq hcoll
+    have hx_mem : x ∈ insert u (S.erase u) := mem_insert_of_mem (mem_erase.mpr ⟨hne, hxS⟩)
+    have hu_mem : u ∈ insert u (S.erase u) := mem_insert_self u (S.erase u)
+    exact feistelXor_ne_of_qOf_eq_pt hbm qOf H i (hq x hx_mem u hu_mem hqq) hne hqq hcoll
   have hcell (i : ι) :
       ((#{x ∈ S.erase u | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} : ℚ) *
         ((#{x ∈ S.erase u | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} : ℚ) -
@@ -702,7 +728,10 @@ theorem expect_feistelXor_mul_sub_one_le [DecidableEq Q] {U b m : ℕ}
             0 := by
         rw [ite_eq_right]
         rintro ⟨h1, h2⟩
-        exact feistelXor_ne_of_qOf_eq hbm hq H i hne12 hqq (h1.trans h2.symm)
+        have hp1_mem : p.1 ∈ insert u (S.erase u) := mem_insert_of_mem (mem_filter.mp hp1).1
+        have hp2_mem : p.2 ∈ insert u (S.erase u) := mem_insert_of_mem (mem_filter.mp hp2).1
+        exact feistelXor_ne_of_qOf_eq_pt hbm qOf H i
+          (hq p.1 hp1_mem p.2 hp2_mem hqq) hne12 hqq (h1.trans h2.symm)
       simp only [hzero]
       have hexp0 : (𝔼 _i : ι, (0 : ℚ)) = 0 := by simp
       rw [hexp0]
@@ -740,6 +769,21 @@ theorem expect_feistelXor_mul_sub_one_le [DecidableEq Q] {U b m : ℕ}
         rw [Nat.cast_pow, Nat.cast_ofNat]
         ring
 
+/-- Under a 3-wise independent hash `H : ι → Q → Fin (2 ^ m)`, the second factorial moment of the
+number of keys in `S.erase u` colliding with `u` under `feistelXor` is at most
+`(#({x ∈ S.erase u | qOf x ≠ qOf u}) / 2 ^ m) ^ 2`. -/
+theorem expect_feistelXor_mul_sub_one_le [DecidableEq Q] {U b m : ℕ}
+    (hbm : b ≤ m) {qOf : Fin U → Q}
+    (hq : ∀ u₁ u₂ : Fin U, qOf u₁ = qOf u₂ → keyQuotient b u₁.val = keyQuotient b u₂.val)
+    {H : ι → Q → Fin (2 ^ m)} (hh : IsKWiseIndependentHash 3 H)
+    (S : Finset (Fin U)) (u : Fin U) :
+    𝔼 i,
+      ((#{x ∈ S.erase u | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} : ℚ) *
+        ((#{x ∈ S.erase u | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} : ℚ) -
+          1)) ≤
+      ((#{x ∈ S.erase u | qOf x ≠ qOf u} : ℚ) / (2 ^ m : ℚ)) ^ 2 :=
+  expect_feistelXor_mul_sub_one_le_on hbm hh S u fun u₁ _ u₂ _ => hq u₁ u₂
+
 /-- Pointwise quadratic upper bound on truncated excess above `2 * D`: for any `N, D : ℕ` and
 `0 ≤ μ ≤ D` in `ℚ`, `((N - 2 * D : ℕ) : ℚ) * D ≤ ((N : ℚ) - μ) ^ 2`. -/
 theorem nat_sub_two_mul_le_sq {N D : ℕ} {μ : ℚ} (hμ0 : 0 ≤ μ) (hμD : μ ≤ D) :
@@ -752,15 +796,14 @@ theorem nat_sub_two_mul_le_sq {N D : ℕ} {μ : ℚ} (hμ0 : 0 ≤ μ) (hμD : �
     have hN : (2 : ℚ) * (D : ℚ) ≤ (N : ℚ) := by exact_mod_cast hle'
     nlinarith
 
-/-- **3-wise independent Feistel bucket overflow bound**: under a 3-wise independent hash
-`H : ι → Q → Fin (2 ^ m)`, for any `D ≥ 1` and `S : Finset (Fin U)` with
-`#(S.erase u) ≤ D * 2 ^ m`, the expected overflow above `2 * D` in `u`'s Feistel bucket is at most
-`1`. -/
-theorem expect_feistelXor_overflow_le {U b m D : ℕ}
+/-- Localized form of `expect_feistelXor_overflow_le`: requires quotient injectivity of `qOf` only
+on `insert u (S.erase u)`. -/
+theorem expect_feistelXor_overflow_le_on {U b m D : ℕ}
     (hbm : b ≤ m) (hD : 1 ≤ D) {qOf : Fin U → Q}
-    (hq : ∀ u₁ u₂ : Fin U, qOf u₁ = qOf u₂ → keyQuotient b u₁.val = keyQuotient b u₂.val)
     {H : ι → Q → Fin (2 ^ m)} (hh : IsKWiseIndependentHash 3 H)
-    (S : Finset (Fin U)) (u : Fin U) (hS : #(S.erase u) ≤ D * 2 ^ m) :
+    (S : Finset (Fin U)) (u : Fin U) (hS : #(S.erase u) ≤ D * 2 ^ m)
+    (hq : ∀ u₁ ∈ insert u (S.erase u), ∀ u₂ ∈ insert u (S.erase u),
+      qOf u₁ = qOf u₂ → keyQuotient b u₁.val = keyQuotient b u₂.val) :
     𝔼 i,
       (((#{x ∈ S.erase u | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} -
           2 * D : ℕ) : ℚ)) ≤ 1 := by
@@ -778,9 +821,9 @@ theorem expect_feistelXor_overflow_le {U b m D : ℕ}
     exact_mod_cast hcard
   have hhpw : IsPairwiseIndependentHash H := hh.isPairwiseIndependentHash (by decide)
   have hexp1 : 𝔼 i, (N i : ℚ) = μ :=
-    expect_card_feistelXor_eq (𝕜 := ℚ) hbm hq hhpw S u
+    expect_card_feistelXor_eq_on (𝕜 := ℚ) hbm hhpw S u hq
   have hexp2 : 𝔼 i, (N i : ℚ) * ((N i : ℚ) - 1) ≤ μ ^ 2 :=
-    expect_feistelXor_mul_sub_one_le hbm hq hh S u
+    expect_feistelXor_mul_sub_one_le_on hbm hh S u hq
   have hsq (i : ι) :
       ((N i : ℚ) - μ) ^ 2 =
         (N i : ℚ) * ((N i : ℚ) - 1) + (1 - 2 * μ) * (N i : ℚ) + μ ^ 2 := by
@@ -797,6 +840,20 @@ theorem expect_feistelXor_overflow_le {U b m D : ℕ}
   rw [← expect_mul] at hpt
   have hD_pos : (0 : ℚ) < (D : ℚ) := by exact_mod_cast hD
   nlinarith
+
+/-- **3-wise independent Feistel bucket overflow bound**: under a 3-wise independent hash
+`H : ι → Q → Fin (2 ^ m)`, for any `D ≥ 1` and `S : Finset (Fin U)` with
+`#(S.erase u) ≤ D * 2 ^ m`, the expected overflow above `2 * D` in `u`'s Feistel bucket is at most
+`1`. -/
+theorem expect_feistelXor_overflow_le {U b m D : ℕ}
+    (hbm : b ≤ m) (hD : 1 ≤ D) {qOf : Fin U → Q}
+    (hq : ∀ u₁ u₂ : Fin U, qOf u₁ = qOf u₂ → keyQuotient b u₁.val = keyQuotient b u₂.val)
+    {H : ι → Q → Fin (2 ^ m)} (hh : IsKWiseIndependentHash 3 H)
+    (S : Finset (Fin U)) (u : Fin U) (hS : #(S.erase u) ≤ D * 2 ^ m) :
+    𝔼 i,
+      (((#{x ∈ S.erase u | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} -
+          2 * D : ℕ) : ℚ)) ≤ 1 :=
+  expect_feistelXor_overflow_le_on hbm hD hh S u hS fun u₁ _ u₂ _ => hq u₁ u₂
 
 end ProbabilityBounds
 
