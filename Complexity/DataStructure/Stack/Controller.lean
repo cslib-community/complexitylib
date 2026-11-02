@@ -7,8 +7,6 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.WordRAM.Function
-public import Complexity.Computability.WordRAM.MapOp
 public import Complexity.Computability.WordRAM.Realization.Client.MemoryStack
 public import Complexity.Computability.WordRAM.Realization.Backend
 public import Complexity.Computability.WordRAM.Realization.Function
@@ -174,7 +172,6 @@ public theorem program_spec {w n : ℕ} {s : Memory.State} (hf : Fits w (s.front
   rw [hlink, ← run_eq_link] at hvE hres hcost
   rw [habs', habs] at hres hcost
   have hrun := Stack.Memory.runClient_allocLayout_bind (w := w) 1 (fun L => run L n) s
-  have hrun0 := Stack.Memory.runClient_allocLayout_bind (w := 0) 1 (fun L => run L n) s
   refine ⟨?_, ?_, ?_⟩
   · simp only [StateTransitionSpec.clientResult, program] at hres ⊢
     rw [hrun, hres]
@@ -184,9 +181,9 @@ public theorem program_spec {w n : ℕ} {s : Memory.State} (hf : Fits w (s.front
     exact ⟨hf.of_le (by omega), hf, hvE⟩
   · rw [StateTransitionSpec.totalCost_const] at hcost
     have hlen := length_clientHistory_client w n
-    unfold memoryCost
+    rw [memoryCost_eq_totalCost w]
     simp only [StateTransitionSpec.clientHistory, program]
-    rw [hrun0, ← runClient_width w, ← totalCost_width w]
+    rw [hrun]
     change 2 + (1 + (Memory.spec w).totalCost Memory.charge ⟨clear s.mem s.frontier 1,
       s.frontier + 1 + 1⟩ ((Memory.spec w).clientHistory ⟨clear s.mem s.frontier 1,
         s.frontier + 1 + 1⟩ (run L n))) ≤ 15

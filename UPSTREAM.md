@@ -526,10 +526,10 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   values use a tag and unshifted payload, including maximal fitting words. The actual
   `Stack.Memory` size/push/pop clients reuse those rules over faithfully encoded runtime layouts,
   with visible layout/representation/spare-capacity conditions and local work 0/10/19.
-  `Stack.Native` runs those three certificates as a native stack with one constant
-  per-operation bound, and `Stack.Controller` compiles an adaptive stack client to one flat
-  program through `realize`; the hand-stepped stack dispatcher survives only inside Chan–He
-  traversal (`Traversal.WordStack`), which steps it with exact counts.
+  `Stack.Native` runs those three certificates through `Realization.Backend` as a native stack
+  with one constant per-operation bound, and `Stack.Controller` compiles an adaptive stack client
+  to one flat program through `realize`; the hand-stepped stack dispatcher survives only inside
+  Chan–He traversal (`Traversal.WordStack`), which steps it with exact counts.
   The full framed queue/faithful allocation client remains separate. No abstract headline is added.
   `DataStructure/OrderedSet` and `DataStructure/OrderedSet/*` provide neutral
   optional-minimum contracts, a typed finite-set interface including deletion, and adaptive

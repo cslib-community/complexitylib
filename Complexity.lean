@@ -497,7 +497,6 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalStack
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalStep
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalTime
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalVisit
-public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalWordStack
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Body
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Boundary

@@ -7,7 +7,6 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.WordRAM.Heap
 public import Complexity.Computability.WordRAM.Realization.Backend
 public import Complexity.Computability.WordRAM.Realization.Client.MemoryStack
 
@@ -23,23 +22,21 @@ with no result words.
 
 Correctness is that of `Stack.Memory.refinement`. Its memory charges are constant
 (`Stack.Memory.amortized`), so one constant, chosen before every width, capacity and layout,
-bounds the instructions of every operation (`instruction_bound`), and an adaptive client with
-`m` operations runs within `m` times that constant (`run_client`). Each operation writes only
-the layout's cells (`modifies`, `frame`).
+bounds the instructions of every operation (`instruction_bound`). An adaptive client with `m`
+operations then runs within `m` times that constant (`Bound.exists_executes_const`). Each
+operation leaves its method's final memory (`Backend.exec_memoryState`), so it writes only the
+layout's cells (`Stack.Memory.modifies_methods`).
 
 ## Main definitions
 
 * `Tag`, `certificates`, `backend`: the operation constructors, their realizations, and the
   stack's operations on a layout.
 * `implementation`: the native stack.
-* `initialLayout`, `initial`: an empty stack at a fixed address, as a calling-convention state.
 
 ## Main results
 
 * `implements`: the backend runs the methods of `Stack.Memory`.
-* `instruction_bound`, `run_client`: a constant bound per operation.
-* `modifies`, `frame`: operations write only the layout's cells.
-* `initial_rep`: the initial state represents the empty stack.
+* `instruction_bound`: a constant bound per operation.
 
 ## References
 
@@ -120,62 +117,5 @@ public theorem instruction_bound : ∃ K, ∀ {w C : ℕ} {L : Stack.Memory.Layo
   ⟨Backend.factor certificates * 23, fun hL =>
     Backend.bound (implements hL) (Stack.Memory.amortized hL) 19 fun o _ _ => by
       cases o <;> exact Nat.le_of_ble_eq_true rfl⟩
-
-/-- **Adaptive clients.** Every client whose history is admissible has a native execution, one
-operation at a time, that returns the specified answer and represents the specified final stack,
-within `K` instructions per operation. The client's own computation is outside the machine. -/
-public theorem run_client : ∃ K, ∀ {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w C)
-    {α : Type} (p : (Stack.spec w C).Client α) {vs : List ℕ}
-    {x : Data (Backend.registers certificates)}, (implementation hL).rep vs x →
-    (Stack.spec w C).ValidHistory vs ((Stack.spec w C).clientHistory vs p) →
-    ∃ y traces, Executes ((backend w C L).exec w) p x ((Stack.spec w C).clientResult vs p) y
-        traces ∧ (implementation hL).rep ((Stack.spec w C).clientState vs p) y ∧
-      total id traces ≤ ((Stack.spec w C).clientHistory vs p).length * K := by
-  obtain ⟨K, hK⟩ := instruction_bound
-  exact ⟨K, fun hL _ p _ _ hr hv => Bound.exists_executes_const (hK hL) p hr hv⟩
-
-/-- Every operation writes only the layout's cells and keeps the frontier. -/
-public theorem modifies {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w C) {vs : List ℕ}
-    {x y : Data (Backend.registers certificates)} {o : StackOp ℕ}
-    {a : (Stack.spec w C).Result o} {n : ℕ} (hr : (implementation hL).rep vs x)
-    (hv : (Stack.spec w C).valid vs o) (he : (backend w C L).exec w x o a y n) :
-    Modifies L.footprint x.mem y.mem ∧
-      y.regs (Backend.frontier certificates) = x.regs (Backend.frontier certificates) := by
-  have hm : memoryState (Backend.frontier certificates) y = (Memory.spec w).clientState
-      (memoryState (Backend.frontier certificates) x) (Stack.Memory.methods L w C o) :=
-    Backend.exec_memoryState (implements hL) hr hv he
-  rw [← ((Backend.rep_iff _ _ _).mp hr).2.1] at hv
-  obtain ⟨hmem, hfr⟩ := Stack.Memory.modifies_methods hL o hv
-  rw [← hm] at hmem hfr
-  exact ⟨hmem, hfr⟩
-
-/-- Every operation preserves each heap assertion disjoint from the layout. -/
-public theorem frame {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w C) {vs : List ℕ}
-    {x y : Data (Backend.registers certificates)} {o : StackOp ℕ}
-    {a : (Stack.spec w C).Result o} {n : ℕ} (hr : (implementation hL).rep vs x)
-    (hv : (Stack.spec w C).valid vs o) (he : (backend w C L).exec w x o a y n)
-    {Q : HeapAssertion} (hQ : Q.holds x.mem) (hd : Disjoint Q.footprint L.footprint) :
-    Q.holds y.mem :=
-  HeapAssertion.frame hQ hd (modifies hL hr hv he).1
-
-/-- The layout of a stack of capacity `C` at `base`: the count cell `base`, then the items. -/
-public def initialLayout (base C : ℕ) : Stack.Memory.Layout := ⟨⟨base, 1⟩, ⟨base + 1, C⟩⟩
-
-/-- The initial layout is well formed when the end of the items fits a word. -/
-public theorem valid_initialLayout {w base C : ℕ} (hf : Fits w (base + 1 + C)) :
-    (initialLayout base C).Valid w C := Stack.Memory.valid_allocLayout hf
-
-/-- An empty stack of capacity `C` at `base`: zero memory, and the frontier just past the items.
-This is a calling-convention state, not an uncharged allocation; `Stack.Memory.allocLayout`
-allocates. -/
-public noncomputable def initial (base C : ℕ) : Data (Backend.registers certificates) :=
-  Backend.data certificates ⟨fun _ => 0, base + 1 + C⟩
-
-/-- The initial state represents the empty stack when the end of the items fits a word. -/
-public theorem initial_rep {w base C : ℕ} (hf : Fits w (base + 1 + C)) :
-    (implementation (valid_initialLayout hf)).rep [] (initial base C) :=
-  Backend.rep_data _ ⟨hf, fun _ => fits_zero w⟩
-    ⟨show base + 1 ≤ base + 1 + C by omega, le_rfl, Nat.zero_le _⟩
-    (by simp [Stack.Memory.refinement, Stack.Memory.abs])
 
 end Cslib.DataStructure.Stack.Native
