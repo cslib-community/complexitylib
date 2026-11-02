@@ -140,7 +140,7 @@ def indexedEufCmaGame (S : IndexedSignatureScheme) (adversary : IndexedForger) (
     ProbComp Bool := do
   let keys ← S.keyGen n
   let out ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
       (S.indexedSigningOracle n keys.2)) (adversary n keys.1)).run []
   return !out.2.contains (out.1.1, out.1.2.1) &&
     S.verify keys.1 out.1.1 out.1.2.1 out.1.2.2
@@ -154,7 +154,7 @@ theorem isPPTOn_run_indexedSigningOracle (S : IndexedSignatureScheme) {adversary
       (encPair (encPair encUnary (encPair encBits encBits)) (encList (encPair encUnary encBits)))
       (fun caller : ℕ × (List Bool × List Bool) =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
             (S.indexedSigningOracle caller.1 caller.2.2)) (adversary caller.1 caller.2.1)).run
           []) := by
   obtain ⟨c, d, hlen⟩ := S.sign_ppt.length_le

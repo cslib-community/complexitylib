@@ -310,7 +310,34 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `(n+2)^(κ+25)`. The generic caller allows dirty scratch and original-array aliasing below
   its workspace. `Int.toNat_neg_emod` is kept in the existing integer-residue topic module.
   This completes the counter's mathematical/native component, with validation/review tracked
-  in #1701. Native prime selection (#2098), global parameter/host composition and #1394 remain open.
+  in #1701. Native minimum-count prime selection (#2098) is implemented in
+  `Algorithms/WordRAM/ExactTriangle/PrimeSelection/`: square tests and charged trial division
+  enumerate the exact existing prime window, invoking the real counter on original signed
+  matrices and dirty scratch. Original-input halting correctness and the existing selected-prime
+  predicate are proved, with charge at most `3704*(sqrt(D)+1)^3*(n+1)^2.81 + 42*(D+1)` including
+  header/halt. For `D≤n`, `κ≥1` and weights bounded by `(n+2)^κ`, physical width
+  `(κ+30)*clog₂(n+2)` suffices, and all wider prefixes have words/support below
+  `(n+2)^(2κ+60)`. The general initialized theorem permits `D>n` and empty matrices with
+  `D≥16`; the logarithmic source-regime simplification is separate. The source prime-list
+  producer and Light execution are not imported. The original conservative parameter family
+  in `Algorithms/ExactTriangle/ParameterChoice.lean` (#2127) uses `t=floor(log₂(n)/1296)`,
+  `m=36t`, `D=4^m`, `g=4^t`, `L=19m`, with `g^36=D` and `D^18≤n` for positive n.
+  `Algorithms/WordRAM/ExactTriangle/DyadicParameters/` computes it using the actual logarithm and
+  two power routines, with a fast/small flag, same-state prefix/halt, complete logarithmic
+  charge and width-independent polynomial prefixes. `Power/Rename.lean` exposes the existing
+  power execution on an arbitrary injective bank, reused by both calls without repeated
+  comap/extend proofs. These coarse parameters are not attributed to Anthropic's tuned choice.
+  The original arithmetic bridge in `ParameterChoice/CostGeometry.lean` and native
+  `ExactTriangle/DyadicCost.lean` (#2145) simplifies actual preparation/product/query charges
+  to `n³/g`, absorbs the actual counter-based selector cost using `g^648≤n`, and applies the
+  existing selected-prime failed-scan estimate once globally. Its combined component allowance
+  has an explicit logarithmic factor and a `3-1/648` real-power scale.
+  `DyadicCost/Asymptotics.lean` absorbs that factor via Mathlib's existing logarithm-growth
+  theorem: beyond a threshold depending only on the weight exponent, all actual component
+  allowances are at most `4*n^(3-1/1296)`, uniformly over matrices, selected primes and memories.
+  This existential asymptotic threshold is not an algorithm input. Neither result asserts
+  a composed execution theorem or the source's tuned exponent.
+  Callable adaptation, small-case solver dispatch (#2146), outer host and #1394 remain open.
   `Algorithms/ExactTriangle/{Splitting,Witnesses}.lean` adapts the complete finite splitting and
   witness recovery component ([#1447](https://github.com/cslib-community/complexitylib/issues/1447)),
   using the existing matrices, lopsided graph and `Set.EqOn` answer API. Computable integer parameters
@@ -506,8 +533,7 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   arbitrary pure continuations do not have machine-time certificates. `CostHoare` adds client
   operation-cost contracts and separate method-budget composition. The `stateful` Aesop rules
   support these contracts. `WordRAM/Controller` adds fixed-code client refinements with charged
-  preparation, control flow and final halt; the adaptive stack example constructs its empty
-  representation from the standard input. `WordRAM/Function` gives separate nonuniform and
+  preparation, control flow and final halt. `WordRAM/Function` gives separate nonuniform and
   uniform RAM function-time predicates, with named-certificate reuse by `polytime`. Arbitrary continuation
   synthesis, iterative clients and a Turing-machine simulation remain open.
   The bounded `WordRAM/Realization` foundation (#2213, under #2205) reuses the memory
@@ -527,6 +553,10 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   values use a tag and unshifted payload, including maximal fitting words. The actual
   `Stack.Memory` size/push/pop clients reuse those rules over faithfully encoded runtime layouts,
   with visible layout/representation/spare-capacity conditions and local work 0/10/19.
+  `Stack.Native` runs those three certificates through `Realization.Backend` as a native stack
+  with one constant per-operation bound, and `Stack.Controller` compiles an adaptive stack client
+  to one flat program through `realize`; the hand-stepped stack dispatcher survives only inside
+  Chan–He traversal (`Traversal.WordStack`), which steps it with exact counts.
   The full framed queue/faithful allocation client remains separate. No abstract headline is added.
   `DataStructure/OrderedSet` and `DataStructure/OrderedSet/*` provide neutral
   optional-minimum contracts, a typed finite-set interface including deletion, and adaptive
@@ -540,10 +570,15 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   a balanced tree or machine-time certificate.
   `WordRAM/Dynamic` separately connects
   fixed bounded-word operation programs and faithful memory transcripts to those contracts.
-  The direct shared-heap queue uses the existing FIFO operation signature and native operation
-  traces, with a hidden two-stack representation, a concrete-register potential, framed storage,
-  and separately charged initialization. Its `2 * capacity` reservation is explicit; external
-  client computation and argument delivery are not charged by the operation-history bound.
+  The direct shared-heap queue realizes physical-array memory programs through one fixed
+  finite Backend family and the existing dynamic certificate. Count words remain in registers;
+  one native dispatcher, charged metadata copies and a scaled rear potential give uniform
+  amortized instruction bounds, including halt. Initialization uses six register instructions
+  from arbitrary bounded dirty data, preserving every memory cell. The original `2 * capacity`
+  reservation and end-fit domain are retained. The shared register count and exchange factor are
+  fixed before widths, layouts, values and clients; the removed hand-code's literal instruction
+  constants are not asserted. External client computation and tag/payload delivery remain outside
+  the operation-history bound; no generic stateful memory-only Backend instance is claimed.
   Coordinate placement and overlap with Srinivas's #685 and the merged #401 (`Algorithms/Lean/Query`)
   before upstream submission; #685 is not copied here. This is a prototype of composition and
   refinement, not a replacement for their query models or a general cell-probe lower-bound semantics.

@@ -11,7 +11,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Spac
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
-import Complexity.Computability.Machines.Turing.MultiTape.Universal.Compose
+import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bound
 import Cslib.Computability.Machines.Turing.MultiTape.Combinators.AlmostConstant
 
 /-!
@@ -105,7 +105,7 @@ theorem TimeConstructible.of_computableInO {t : ℕ → ℕ} {T S : List Bool �
 /-- Adding one to a time-constructible bound preserves time constructibility. -/
 theorem TimeConstructible.succ {t : ℕ → ℕ} (ht : TimeConstructible t) :
     TimeConstructible fun n => t n + 1 := by
-  have h := (ComputableInO.of_linear ComputableInLinearTimeAndSpace.natSucc).comp
+  have h := ComputableInDegree.natSucc.inO_one.comp
     ht.computableInO
   refine TimeConstructible.of_computableInO (s := fun n => t n + (encNat (t n)).length) 2 h
     (fun x => ?_) fun _ => le_rfl

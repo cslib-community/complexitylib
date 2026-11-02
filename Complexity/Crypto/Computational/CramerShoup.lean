@@ -187,7 +187,7 @@ noncomputable def cramerShoupMsgCCA2Game
   let pkVal := F.cramerShoupPublicKey d α σ τ σ₁ τ₁ σ₂ τ₂
   let pk := F.encodeCramerShoupPublicKeyValues d pkVal
   let choiceOut ← ProbComp.eval ((OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
     (adversary.choose n pk)).run ())
   let choice := choiceOut.1
@@ -202,7 +202,7 @@ noncomputable def cramerShoupMsgCCA2Game
         F.encode d (csPkH₁ pkVal), F.encode d (csPkH₂ pkVal))
       m ad β.val
     let guessOut ← ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
         (F.cramerShoupPhase2Oracle hasAD H isElem d sk ct ad))
       (adversary.guess n choice.2 ct)).run ())
     return guessOut.1
@@ -315,7 +315,7 @@ noncomputable def cramerShoupGame1
   let w := F.encode d ((α * β) • F.generator d)
   let pk := F.encodeCramerShoupPublicKey d u sk
   let choiceOut ← ProbComp.eval ((OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
     (adversary.choose n pk)).run ())
   let choice := choiceOut.1
@@ -326,7 +326,7 @@ noncomputable def cramerShoupGame1
     let m := if bit then m₁ else m₀
     let ct := F.encodeCramerShoupChallenge H d sk v w m ad
     let guessOut ← ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
         (F.cramerShoupPhase2Oracle hasAD H isElem d sk ct ad))
       (adversary.guess n choice.2 ct)).run ())
     return guessOut.1
@@ -392,7 +392,7 @@ noncomputable def cramerShoupGame2
   let w := F.encode d (γ • F.generator d)
   let pk := F.encodeCramerShoupPublicKey d u sk
   let choiceOut ← ProbComp.eval ((OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
     (adversary.choose n pk)).run ())
   let choice := choiceOut.1
@@ -403,7 +403,7 @@ noncomputable def cramerShoupGame2
     let m := if bit then m₁ else m₀
     let ct := F.encodeCramerShoupChallenge H d sk v w m ad
     let guessOut ← ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
         (F.cramerShoupPhase2Oracle hasAD H isElem d sk ct ad))
       (adversary.guess n choice.2 ct)).run ())
     return guessOut.1
@@ -526,7 +526,7 @@ private noncomputable def cramerShoupExactCollisionGame
   let w := F.encode d (γ • F.generator d)
   let pk := F.encodeCramerShoupPublicKey d u sk
   let choiceOut ← ProbComp.eval ((OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
     (adversary.choose n pk)).run ())
   let choice := choiceOut.1
@@ -584,7 +584,7 @@ private theorem advantage_cramerShoupGame2_game3_le_exactCollision
     let ct := F.encodeCramerShoupChallenge H d sk v w m ad
     have hrun :
         (ProbComp.eval ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (F.cramerShoupPhase2Oracle hasAD H isElem d sk ct ad))
           (adversary.guess n choiceOut.1.2 ct)).run ())).bind
             (fun guessOut => PMF.pure guessOut.1) =
@@ -639,7 +639,7 @@ private theorem succProbability_cramerShoupExactCollisionGame_le
       let w := F.encode d (γ • F.generator d)
       let pk := F.encodeCramerShoupPublicKey d u sk
       (ProbComp.eval ((OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
           (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
         (adversary.choose n pk)).run ())).bind fun choiceOut =>
         let choice := choiceOut.1
@@ -666,7 +666,7 @@ private theorem succProbability_cramerShoupExactCollisionGame_le
         let w := F.encode d (γ • F.generator d)
         let pk := F.encodeCramerShoupPublicKey d u sk
         (ProbComp.eval ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
           (adversary.choose n pk)).run ())).bind fun choiceOut =>
           let choice := choiceOut.1
@@ -677,7 +677,7 @@ private theorem succProbability_cramerShoupExactCollisionGame_le
               let ad := encodeAD (d, choice.1.2)
               let ct := F.encodeCramerShoupChallenge H d sk v w m ad
               ((OracleComp.interpret
-                (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+                (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
                   (F.cramerShoupCollisionPhase2Oracle hasAD H isElem d sk ct ad))
                 (adversary.guess n choice.2 ct)).run none) >>= fun out =>
                 let target := extractCramerShoupTuple ct ad
@@ -1336,10 +1336,10 @@ private theorem eval_run_interpret_map_bind
     (f : α → β) (oa : WordOracleComp Unit α) (s : State)
     (k : β × State → PMF γ) :
     (ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m)) oracle)
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m)) oracle)
       (f <$> oa)).run s)).bind k =
     (ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m)) oracle)
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m)) oracle)
       oa).run s)).bind (fun p => k (f p.1, p.2)) := by
   rw [OracleComp.interpret_map, StateT.run_map]
   simp only [← bind_pure_comp, ProbComp.eval_bind, ProbComp.eval_pure,
@@ -1361,7 +1361,7 @@ private noncomputable def cramerShoupCCA2InnerB
     (F.encode d pkVal.1, F.encode d pkVal.2.1,
       F.encode d pkVal.2.2.1, F.encode d pkVal.2.2.2) m adBits β.val
   (ProbComp.eval ((OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (F.cramerShoupPhase2Oracle hasAD H isElem d sk ct adBits))
     (adversary.guess n choiceOut.1.2 ct)).run ())).bind (fun guessOut => PMF.pure guessOut.1)
 
@@ -1374,7 +1374,7 @@ private noncomputable def cramerShoupCCA2InnerSK
   let sk := F.skNatOfZMod d σ τ σ₁ τ₁ σ₂ τ₂
   let pk := F.encodeCramerShoupPublicKey d (F.encode d (α • F.generator d)) sk
   (ProbComp.eval ((OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
     (adversary.choose n pk)).run ())).bind fun choiceOut =>
     if isElem (d, choiceOut.1.1.1.1) && isElem (d, choiceOut.1.1.1.2) then

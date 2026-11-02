@@ -134,7 +134,7 @@ theorem Program.DecidesInTime.mem_DTIME (hk : 1 ≤ k) {p : Program .additive r}
   obtain ⟨S, hO⟩ := h.computesInTime.computableInO_bits hk hT
   have hone : Turing.MultiTapeTM.ComputableInO (fun v : ℕ => decide (v = 1)) encNat encBool
       (fun v => (encNat v).length) (fun v => (encNat v).length) :=
-    ((ComputableInDegree.of_linear ComputableInLinearTimeAndSpace.natEq).comp
+    ((ComputableInDegree.natEq).comp
       ((ComputableInDegree.of_eq (f := fun v : ℕ => v) (encIn := encNat) (encMid := encNat)
         fun _ => rfl).prod (ComputableInDegree.const 1))).mono (d' := 1) (e' := 1) |>.inO_one
   have h := setOf_mem_DTIME_of_computableInO (hone.comp_linear hO)
