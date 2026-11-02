@@ -2556,6 +2556,7 @@ public import Complexity.Computability.WordRAM.Randomized.Law
 public import Complexity.Computability.WordRAM.Randomized.LoopSegment
 public import Complexity.Computability.WordRAM.Randomized.Structured
 public import Complexity.Computability.WordRAM.Randomized.UniformLoopExit
+public import Complexity.Computability.WordRAM.Realization.Absorb
 public import Complexity.Computability.WordRAM.Realization.Basic
 public import Complexity.Computability.WordRAM.Realization.Bind
 public import Complexity.Computability.WordRAM.Realization.Branch
@@ -3807,6 +3808,7 @@ public import Complexity.Tactic.LogSpace.Init
 public import Complexity.Tactic.PPT
 public import Complexity.Tactic.PolyTime
 public import Complexity.Tactic.PolyTime.Init
+public import Complexity.Tactic.Realize
 public import Complexity.Tactic.Stateful
 public import Complexity.Tactic.Stateful.Init
 public import Complexity.Tactic.Synthesis
