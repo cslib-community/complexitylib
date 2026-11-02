@@ -19,6 +19,8 @@ open Cslib.WordRAM Cslib.DataStructure
 open Cslib.Algorithms.WordRAM.Dijkstra (ListInstance encodeDist)
 open Cslib.Algorithms.Lean.Dijkstra.Memory
 
+set_option linter.hashCommand false
+
 namespace DijkstraMemoryTests
 
 /-- Edges `0 → 1` of weights `4` and `5`, `0 → 2` of weight `1`, and `2 → 1` of weight `2`, from
