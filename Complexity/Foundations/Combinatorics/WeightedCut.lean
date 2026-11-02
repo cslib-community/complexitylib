@@ -49,6 +49,8 @@ weights; see `Complexity.Foundations.Combinatorics.WeightedCut.Multigraph`.
 
 * `Cslib.WeightedCut.cutWeight_compl`: a cut and its complement have the same weight.
 * `Cslib.WeightedCut.cutWeight_singleton`: a singleton cut weighs the degree of its vertex.
+* `Cslib.WeightedCut.cutWeight_fin_two`, `Cslib.WeightedCut.totalDoubledWeight_fin_two`: on two
+  vertices, every non-trivial cut weighs the weight of the edge, and the degrees sum to twice it.
 * `Cslib.WeightedCut.le_minCut_iff`: with at least two vertices, `m ≤ minCut W` exactly when every
   non-trivial cut weighs at least `m`.
 * `Cslib.WeightedCut.mul_minCut_le_totalDoubledWeight`: `|V| * minCut W` is at most the sum of the
@@ -182,6 +184,23 @@ theorem cutWeight_two_singleton_zero {W : Fin 2 → Fin 2 → ℕ} (hW : IsMulti
   rw [cutWeight_singleton hW 0]
   unfold rowDeg
   rw [Fin.sum_univ_two, hW.2 0, zero_add]
+
+/-- On two vertices, every non-trivial cut weighs the weight of the edge. -/
+theorem cutWeight_fin_two {W : Fin 2 → Fin 2 → ℕ} (hW : IsMultigraph W) {B : Finset (Fin 2)}
+    (hB : IsNonTrivialCut B) : cutWeight W B = W 0 1 := by
+  rw [isNonTrivialCut_iff_card, Fintype.card_fin] at hB
+  obtain ⟨b, rfl⟩ := Finset.card_eq_one.mp (show B.card = 1 by omega)
+  match b with
+  | 0 => exact cutWeight_two_singleton_zero hW
+  | 1 =>
+    rw [show ({1} : Finset (Fin 2)) = Finset.univ \ {0} by decide, cutWeight_compl hW,
+      cutWeight_two_singleton_zero hW]
+
+/-- On two vertices, the sum of the degrees is twice the weight of the edge. -/
+theorem totalDoubledWeight_fin_two {W : Fin 2 → Fin 2 → ℕ} (hW : IsMultigraph W) :
+    totalDoubledWeight W = 2 * W 0 1 := by
+  simp only [totalDoubledWeight, rowDeg, Fin.sum_univ_two, hW.2, hW.1 1 0]
+  omega
 
 /-- Global minimum cut weight of a multigraph `W`, defined as the greatest lower bound of
 `cutWeight W C` over all non-trivial cuts `C`. -/

@@ -16,6 +16,7 @@ public import Complexity.Algorithms.Lean.Huffman.Optimality
 public import Complexity.Algorithms.Lean.Huffman.TwoQueue
 public import Complexity.Algorithms.Lean.KMP.Basic
 public import Complexity.Algorithms.Lean.KMP.Search
+public import Complexity.Algorithms.Lean.Karger.Contraction
 public import Complexity.Algorithms.Lean.Kruskal.Basic
 public import Complexity.Algorithms.Lean.Kruskal.SimpleGraph
 public import Complexity.Algorithms.Lean.Matroid.Greedy
