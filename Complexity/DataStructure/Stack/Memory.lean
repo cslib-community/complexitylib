@@ -410,7 +410,7 @@ def allocator (w C : ℕ) : Allocator (Stack.WordRAM.spec w C) w where
     obtain ⟨hinv, habs⟩ := inv_allocLayout (C := C) s
     refine
       { validHistory := ?_, cost_le := ?_, mem_eq := ?_, methods_eq := rfl, inv := ?_,
-        abs_eq := ?_, le_footprint := ?_, room_le := ?_ } <;>
+        abs_eq := ?_, of_mem_footprint := ?_, room_le := ?_ } <;>
       simp only [StateTransitionSpec.clientHistory, StateTransitionSpec.clientState,
         runClient_allocLayout]
     · simp only [StateTransitionSpec.validHistory_cons, StateTransitionSpec.stepFn, step_alloc,
@@ -423,6 +423,7 @@ def allocator (w C : ℕ) : Allocator (Stack.WordRAM.spec w C) w where
     · intro a ha
       simp only [framed_footprint, Layout.footprint, Finset.mem_union, Block.mem_footprint,
         Block.Owns] at ha
+      right
       omega
     · simp only [framed, Memory.Framed.ofStatic]
       omega

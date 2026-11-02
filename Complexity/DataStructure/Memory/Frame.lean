@@ -66,6 +66,8 @@ structures allocated one after the other. `Memory.Allocator` packages this.
   frontier.
 * `Memory.mem_run_of_lt_frontier`, `Memory.mem_clientState_of_lt_frontier`: a run changes an
   allocated cell only by writing it.
+* `Memory.mem_run_of_frontier_le`, `Memory.mem_clientState_of_frontier_le`: an admissible run
+  changes no cell at or above its final frontier.
 * `Memory.Framed.modifies_demonic`: a linked client keeps the frame of its calls.
 * `Memory.Framed.frame`: a method run of one structure leaves a structure with a disjoint
   footprint unchanged, and the shared room budget fitting.
@@ -122,6 +124,38 @@ theorem mem_clientState_of_lt_frontier {α : Type} (s : State) (p : Prog α) {a 
     ((spec w).clientState s p).mem a = s.mem a := by
   rw [← (spec w).run_runClient]
   exact mem_run_of_lt_frontier s _ ha hw
+
+/-- An admissible sequence of operations changes no cell at or above its final frontier: writes
+go below the frontier, and an allocation clears only the block that it hands out. -/
+theorem mem_run_of_frontier_le {s : State} {os : List Op} (hv : (spec w).ValidHistory s os)
+    {a : ℕ} (ha : ((spec w).run s os).1.frontier ≤ a) : ((spec w).run s os).1.mem a = s.mem a := by
+  induction os generalizing s with
+  | nil => rfl
+  | cons o os ih =>
+    obtain ⟨hvo, hvs⟩ := hv
+    change ((spec w).run (step s o).1 os).1.frontier ≤ a at ha
+    change ((spec w).run (step s o).1 os).1.mem a = s.mem a
+    rw [ih hvs ha]
+    have hf : (step s o).1.frontier ≤ a := (frontier_le_run _ os).trans ha
+    cases o with
+    | read => rfl
+    | write b v =>
+      have hb : b < s.frontier := hvo.1
+      simp only [step_write] at hf
+      have hab : a ≠ b := by omega
+      exact Function.update_of_ne hab v s.mem
+    | alloc k =>
+      simp only [step_alloc] at hf
+      exact clear_of_not_owns (by simp only [Block.Owns]; omega)
+    | allocDirty => rfl
+
+/-- An admissible memory program changes no cell at or above its final frontier. -/
+theorem mem_clientState_of_frontier_le {α : Type} (s : State) (p : Prog α)
+    (hv : (spec w).ValidHistory s ((spec w).clientHistory s p)) {a : ℕ}
+    (ha : ((spec w).clientState s p).frontier ≤ a) :
+    ((spec w).clientState s p).mem a = s.mem a := by
+  rw [← (spec w).run_runClient] at ha ⊢
+  exact mem_run_of_frontier_le hv ha
 
 /-! ## Framed refinements -/
 
@@ -478,20 +512,19 @@ theorem amortized_prod {lower : State → Op → ℕ} {upper₁ : D₁.State →
 
 /-- Setting up a product from structures allocated one after the other: `M₁` holds at `s`; a
 run from `s` to `s'` leaves the cells below `s.frontier` unchanged; `M₂` holds at `s'` on a
-footprint at or above `s.frontier`; and the frontier plus both rooms fits. Then the product holds
-at `s'`, with `M₁`'s abstraction, footprint and room unchanged. -/
+footprint disjoint from `M₁`'s, such as one at or above `s.frontier`; and the frontier plus both
+rooms fits. Then the product holds at `s'`, with `M₁`'s abstraction, footprint and room
+unchanged. -/
 theorem prod_of_fresh {s s' : State} (h₁ : M₁.inv s)
     (hmem : ∀ a < s.frontier, s'.mem a = s.mem a) (hf : s.frontier ≤ s'.frontier)
-    (h₂ : M₂.inv s') (hfp : ∀ a ∈ M₂.footprint s', s.frontier ≤ a)
+    (h₂ : M₂.inv s') (hd : Disjoint (M₁.footprint s) (M₂.footprint s'))
     (hroom : Fits w (s'.frontier + (M₁.room s + M₂.room s'))) :
     (M₁.prod M₂).inv s' ∧ (M₁.prod M₂).abs s' = (M₁.abs s, M₂.abs s') ∧
       (M₁.prod M₂).footprint s' = M₁.footprint s ∪ M₂.footprint s' ∧
       (M₁.prod M₂).room s' = M₁.room s + M₂.room s' := by
   obtain ⟨h₁', habs, hfp₁, hr₁⟩ := M₁.of_fresh h₁ hmem hf (hroom.of_le (by omega))
-  refine ⟨⟨h₁', h₂, Finset.disjoint_left.mpr fun a ha ha' => ?_, by rwa [hr₁]⟩,
-    by rw [prod_abs, habs], by rw [prod_footprint, hfp₁], by rw [prod_room, hr₁]⟩
-  rw [hfp₁] at ha
-  exact absurd (M₁.lt_frontier h₁ ha) (Nat.not_lt.mpr (hfp a ha'))
+  exact ⟨⟨h₁', h₂, by rwa [hfp₁], by rwa [hr₁]⟩, by rw [prod_abs, habs],
+    by rw [prod_footprint, hfp₁], by rw [prod_room, hr₁]⟩
 
 end Framed
 

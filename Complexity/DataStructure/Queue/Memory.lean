@@ -206,6 +206,11 @@ def allocator (w C : ℕ) : Allocator (Queue.WordRAM.spec w C) w :=
   change (C + 1) + (C + 1) = _
   omega
 
+/-- The two stacks are allocated from scratch, so the allocation needs nothing of the memory
+besides room. -/
+theorem pre_allocator (s : Memory.State) : (allocator w C).Pre s :=
+  ⟨trivial, trivial, Finset.disjoint_empty_left _⟩
+
 /-- **Stacked potentials.** Every queue operation costs at most nine memory units, amortized,
 with six credits per element of the rear stack: the queue's potential, at three memory units per
 stack call, read through the stacks' abstraction. Allocation leaves no potential. -/
@@ -227,7 +232,7 @@ theorem run_correct {β : Type} (p : (Queue.WordRAM.spec w C).Client β) {s : Me
     (hv : (Queue.WordRAM.spec w C).ValidHistory [] ((Queue.WordRAM.spec w C).clientHistory [] p)) :
     (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (run w C p)) ∧
       (Memory.spec w).clientResult s (run w C p) = (Queue.WordRAM.spec w C).clientResult [] p :=
-  have ⟨hvE, hres, _⟩ := (allocator w C).run_correct p ⟨trivial, trivial⟩ (room_allocator ▸ hfit) hv
+  have ⟨hvE, hres, _⟩ := (allocator w C).run_correct p (pre_allocator s) (room_allocator ▸ hfit) hv
   ⟨hvE, hres⟩
 
 /-- **Cost.** The same run costs at most `6 + 9 m` memory units for a client of `m` queue
@@ -237,7 +242,7 @@ theorem run_cost {β : Type} (p : (Queue.WordRAM.spec w C).Client β) {s : Memor
     (hv : (Queue.WordRAM.spec w C).ValidHistory [] ((Queue.WordRAM.spec w C).clientHistory [] p)) :
     (Memory.spec w).totalCost charge s ((Memory.spec w).clientHistory s (run w C p)) ≤
       6 + 9 * ((Queue.WordRAM.spec w C).clientHistory [] p).length :=
-  Allocator.run_cost_le amortized_allocator p ⟨trivial, trivial⟩ (room_allocator ▸ hfit) hv
+  Allocator.run_cost_le amortized_allocator p (pre_allocator s) (room_allocator ▸ hfit) hv
 
 /-- **Cost with glue.** A realization also charges the glue that runs after each memory operation.
 If that glue costs at most `K` times the operation's charge plus `K`, the run costs at most
@@ -263,6 +268,6 @@ theorem run_cost_isBigO (s : Memory.State) (hfit : Fits w (s.frontier + 2 * (C +
         ((Queue.WordRAM.spec w C).clientHistory [] p.1).length)
       (fun p => (Memory.spec w).totalCost charge s
         ((Memory.spec w).clientHistory s (run w C p.1))) :=
-  Allocator.run_cost_isBigO amortized_allocator ⟨trivial, trivial⟩ (room_allocator ▸ hfit)
+  Allocator.run_cost_isBigO amortized_allocator (pre_allocator s) (room_allocator ▸ hfit)
 
 end Cslib.DataStructure.Queue.Memory

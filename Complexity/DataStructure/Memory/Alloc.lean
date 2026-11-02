@@ -23,6 +23,13 @@ first half for a specification `D`:
 * for each memory with that room, the framed refinement it sets up (`Allocator.framed`), with the
   proof that the allocation sets it up (`Memory.Allocates`).
 
+The structure's footprint lies in fresh cells, which the allocation and later operations take
+from the frontier, and in the allocated cells `Allocator.owned` that it takes over. A structure
+allocated from scratch takes over none. One that the input already holds, such as a graph given
+as adjacency arrays, takes over the cells holding it, and its precondition `Allocator.Pre` says
+that they do. `Allocator.resident` is the allocator of a framed structure already in memory,
+whose allocation does nothing.
+
 `Allocator.run` allocates and then runs a client. `Allocator.run_correct` and
 `Allocator.run_cost` hold for every allocator and every client: a client admissible for the
 specification issues only admissible memory operations, answers as the specification does, and
@@ -39,10 +46,14 @@ Allocators combine as their structures do.
 * `Allocator.comp` puts a refinement on top, such as a queue over the pair of its stacks, with
   `Memory.Framed.comp`.
 
-Certificates combine along with them (`Allocator.Amortized.prod`, `Allocator.Amortized.comp`).
-A structure that lives in its input rather than in fresh memory, such as a graph given as input,
-states what it needs of the memory as the precondition `Allocator.Pre`, which allocations of
-other structures preserve.
+Certificates combine along with them (`Allocator.Amortized.prod`, `Allocator.Amortized.comp`,
+`Allocator.Amortized.resident`). An allocation changes no allocated cell, and being admissible,
+no cell beyond its new frontier either (`Memory.mem_clientState_of_frontier_le`). So it keeps the
+other structures' preconditions, such as that the memory beyond the frontier is zero, and the
+cells they take over (`Allocator.pre_fresh`, `Allocator.owned_fresh`). The product's
+precondition (`Allocator.ProdPre`) asks in addition that the cells the two structures take over
+be disjoint. So `A₁.prod (A₂.prod A₃)` may combine structures allocated from scratch with
+structures that the input holds.
 
 ## Main definitions
 
@@ -50,6 +61,8 @@ other structures preserve.
 * `Memory.Allocator`: an allocation program, the methods it sets up, and their framed refinement.
 * `Memory.Allocator.run`: allocate, then run a client.
 * `Memory.Allocator.prod`, `Memory.Allocator.comp`: products and refinements on top.
+* `Memory.Allocator.ProdPre`: the precondition of a product.
+* `Memory.Allocator.resident`: a structure already in memory.
 * `Memory.Allocator.Amortized`: an amortized cost certificate of an allocator.
 
 ## Main results
@@ -57,7 +70,9 @@ other structures preserve.
 * `Memory.Allocator.run_correct`: the run is admissible and answers as the specification.
 * `Memory.Allocator.run_cost`, `Memory.Allocator.run_cost_le`: its memory cost.
 * `Memory.Allocator.run_cost_isBigO`: the cost as `O(m)` for constant per-operation charges.
-* `Memory.Allocator.Amortized.prod`, `Memory.Allocator.Amortized.comp`: certificates combine.
+* `Memory.Allocator.Amortized.prod`, `Memory.Allocator.Amortized.comp`,
+  `Memory.Allocator.Amortized.resident`: certificates combine, and carry over to structures
+  already in memory.
 -/
 
 @[expose] public section
@@ -71,11 +86,11 @@ variable {w : ℕ}
 /-- What running the allocation program `alloc` from the memory `s` establishes for the framed
 refinement `M`: its operations are admissible and cost at most `cost`, it changes no allocated
 cell, and it sets up `M` with the methods of the handle it returns, holding at the abstract state
-`init` on fresh cells, with the frontier plus `M`'s room at most `room` beyond the old
-frontier. -/
+`init`. The footprint lies in the allocated cells `owned` that the structure takes over and in
+fresh cells, and the frontier plus `M`'s room is at most `room` beyond the old frontier. -/
 structure Allocates {D : StateTransitionSpec.{0, 0, 0}} {H : Type} (alloc : Prog H)
-    (methods : H → Methods D (spec w)) (init : D.State) (room cost : ℕ) (s : State)
-    (M : Framed D w) : Prop where
+    (methods : H → Methods D (spec w)) (init : D.State) (owned : Finset ℕ) (room cost : ℕ)
+    (s : State) (M : Framed D w) : Prop where
   /-- The allocation's operations are admissible. -/
   validHistory : (spec w).ValidHistory s ((spec w).clientHistory s alloc)
   /-- The allocation costs at most `cost`. -/
@@ -88,8 +103,8 @@ structure Allocates {D : StateTransitionSpec.{0, 0, 0}} {H : Type} (alloc : Prog
   inv : M.inv ((spec w).clientState s alloc)
   /-- It represents `init`. -/
   abs_eq : M.abs ((spec w).clientState s alloc) = init
-  /-- Its footprint is fresh. -/
-  le_footprint : ∀ a ∈ M.footprint ((spec w).clientState s alloc), s.frontier ≤ a
+  /-- Its footprint lies in the cells it takes over and in fresh cells. -/
+  of_mem_footprint : ∀ a ∈ M.footprint ((spec w).clientState s alloc), a ∈ owned ∨ s.frontier ≤ a
   /-- The allocation and the structure's reserved room take at most `room` cells. -/
   room_le : ((spec w).clientState s alloc).frontier + M.room ((spec w).clientState s alloc) ≤
     s.frontier + room
@@ -97,7 +112,9 @@ structure Allocates {D : StateTransitionSpec.{0, 0, 0}} {H : Type} (alloc : Prog
 /-- **Allocators.** A memory program `alloc` that allocates a structure implementing `D`, and
 the structure's methods, given the handle that `alloc` returns. From a memory satisfying `Pre` in
 which `room` cells beyond the frontier fit a word, the allocation sets up the framed refinement
-`framed s`, which represents `init`, at a memory cost of at most `cost`. -/
+`framed s`, which represents `init`, at a memory cost of at most `cost`. Its footprint lies in
+fresh cells and in the allocated cells `owned s` that it takes over, such as an input that holds
+the structure already. -/
 structure Allocator (D : StateTransitionSpec.{0, 0, 0}) (w : ℕ) where
   /-- What the allocation returns, such as a layout of named fields. -/
   Handle : Type
@@ -111,16 +128,27 @@ structure Allocator (D : StateTransitionSpec.{0, 0, 0}) (w : ℕ) where
   room : ℕ
   /-- A bound on the memory cost of the allocation. -/
   cost : ℕ
-  /-- What the allocation needs of the memory besides room, such as an input it reads. -/
+  /-- What the allocation needs of the memory besides room, such as the structure it takes
+  over. -/
   Pre : State → Prop := fun _ => True
-  /-- Runs that keep every allocated cell, such as other allocations, keep the precondition. -/
+  /-- The allocated cells that the structure takes over instead of allocating them. -/
+  owned : State → Finset ℕ := fun _ => ∅
+  /-- The cells taken over are allocated. -/
+  owned_lt : ∀ {s a}, Pre s → a ∈ owned s → a < s.frontier := by intros; simp_all
+  /-- Runs that keep every allocated cell and every cell beyond the new frontier and leave the
+  room fitting, such as other allocations, keep the precondition. -/
   pre_fresh : ∀ {s s' : State}, Pre s → (∀ a < s.frontier, s'.mem a = s.mem a) →
-    s.frontier ≤ s'.frontier → Pre s' := by intros; trivial
+    (∀ a, s'.frontier ≤ a → s'.mem a = s.mem a) → s.frontier ≤ s'.frontier →
+      Fits w (s'.frontier + room) → Pre s' := by intros; trivial
+  /-- Such runs keep the cells taken over. -/
+  owned_fresh : ∀ {s s' : State}, Pre s → (∀ a < s.frontier, s'.mem a = s.mem a) →
+    (∀ a, s'.frontier ≤ a → s'.mem a = s.mem a) → s.frontier ≤ s'.frontier →
+      Fits w (s'.frontier + room) → owned s' = owned s := by intros; rfl
   /-- The framed refinement that allocating from `s` sets up. -/
   framed : (s : State) → Pre s → Fits w (s.frontier + room) → Framed D w
   /-- Allocating from `s` sets it up. -/
   allocates : ∀ s (hs : Pre s) (hroom : Fits w (s.frontier + room)),
-    Allocates alloc methods init room cost s (framed s hs hroom)
+    Allocates alloc methods init (owned s) room cost s (framed s hs hroom)
 
 namespace Allocator
 
@@ -244,7 +272,10 @@ def comp (R : Refinement D E) (A : Allocator E w) (hinit : R.inv A.init) : Alloc
   room := A.room
   cost := A.cost
   Pre := A.Pre
+  owned := A.owned
+  owned_lt := A.owned_lt
   pre_fresh := A.pre_fresh
+  owned_fresh := A.owned_fresh
   framed s hs hroom := Framed.comp R (A.framed s hs hroom)
   allocates s hs hroom :=
     have h := A.allocates s hs hroom
@@ -254,7 +285,7 @@ def comp (R : Refinement D E) (A : Allocator E w) (hinit : R.inv A.init) : Alloc
       methods_eq := by rw [Framed.comp_methods, h.methods_eq]
       inv := ⟨h.inv, by rw [h.abs_eq]; exact hinit⟩
       abs_eq := by rw [Framed.comp_abs, h.abs_eq]
-      le_footprint := h.le_footprint
+      of_mem_footprint := h.of_mem_footprint
       room_le := h.room_le }
 
 /-- **Potentials stack through a refinement on top.** A certificate of `R` against the middle
@@ -310,11 +341,6 @@ theorem clientResult_allocPair (s : State) :
 
 variable {A₁}
 
-/-- After allocating the first structure, the second one's precondition still holds. -/
-theorem pre_after {s : State} (hs₁ : A₁.Pre s) (hroom : Fits w (s.frontier + A₁.room))
-    (hs₂ : A₂.Pre s) : A₂.Pre ((spec w).clientState s A₁.alloc) :=
-  A₂.pre_fresh hs₂ (A₁.allocates s hs₁ hroom).mem_eq (frontier_le_clientState s _)
-
 /-- After allocating the first structure, room for both leaves room for the second. -/
 theorem room_after {s : State} (hs₁ : A₁.Pre s) {r : ℕ}
     (hroom : Fits w (s.frontier + (A₁.room + r))) :
@@ -323,10 +349,37 @@ theorem room_after {s : State} (hs₁ : A₁.Pre s) {r : ℕ}
     have := (A₁.allocates s hs₁ (hroom.of_le (by omega))).room_le
     omega)
 
+/-- After allocating the first structure, the second one's precondition still holds. -/
+theorem pre_after {s : State} (hs₁ : A₁.Pre s)
+    (hroom : Fits w (s.frontier + (A₁.room + A₂.room))) (hs₂ : A₂.Pre s) :
+    A₂.Pre ((spec w).clientState s A₁.alloc) :=
+  have h₁ := A₁.allocates s hs₁ (hroom.of_le (by omega))
+  A₂.pre_fresh hs₂ h₁.mem_eq (fun _ => mem_clientState_of_frontier_le s _ h₁.validHistory)
+    (frontier_le_clientState s _) (room_after hs₁ hroom)
+
+/-- After allocating the first structure, the second one takes over the same cells. -/
+theorem owned_after {s : State} (hs₁ : A₁.Pre s)
+    (hroom : Fits w (s.frontier + (A₁.room + A₂.room))) (hs₂ : A₂.Pre s) :
+    A₂.owned ((spec w).clientState s A₁.alloc) = A₂.owned s :=
+  have h₁ := A₁.allocates s hs₁ (hroom.of_le (by omega))
+  A₂.owned_fresh hs₂ h₁.mem_eq (fun _ => mem_clientState_of_frontier_le s _ h₁.validHistory)
+    (frontier_le_clientState s _) (room_after hs₁ hroom)
+
 variable (A₁)
 
+/-- The precondition of a product of allocators: both preconditions, and the cells that the two
+structures take over are disjoint. -/
+structure ProdPre (s : State) : Prop where
+  /-- The first allocator's precondition. -/
+  left : A₁.Pre s
+  /-- The second allocator's precondition. -/
+  right : A₂.Pre s
+  /-- The two structures take over disjoint cells. -/
+  disjoint : Disjoint (A₁.owned s) (A₂.owned s)
+
 /-- **Products of allocators.** Allocate the two structures one after the other, and set up
-their product over one memory. The room and the cost add. -/
+their product over one memory. The room and the cost add, and the product takes over the cells
+that either structure takes over. -/
 def prod : Allocator (product D₁ D₂) w where
   Handle := A₁.Handle × A₂.Handle
   alloc := allocPair A₁ A₂
@@ -334,25 +387,53 @@ def prod : Allocator (product D₁ D₂) w where
   init := (A₁.init, A₂.init)
   room := A₁.room + A₂.room
   cost := A₁.cost + A₂.cost
-  Pre s := A₁.Pre s ∧ A₂.Pre s
-  pre_fresh hs hmem hf := ⟨A₁.pre_fresh hs.1 hmem hf, A₂.pre_fresh hs.2 hmem hf⟩
+  Pre := ProdPre A₁ A₂
+  owned s := A₁.owned s ∪ A₂.owned s
+  owned_lt hs ha := (Finset.mem_union.mp ha).elim (A₁.owned_lt hs.left) (A₂.owned_lt hs.right)
+  pre_fresh hs hmem habove hf hr :=
+    have hr₁ := hr.of_le (Nat.add_le_add_left (Nat.le_add_right A₁.room A₂.room) _)
+    have hr₂ := hr.of_le (Nat.add_le_add_left (Nat.le_add_left A₂.room A₁.room) _)
+    { left := A₁.pre_fresh hs.left hmem habove hf hr₁
+      right := A₂.pre_fresh hs.right hmem habove hf hr₂
+      disjoint := by
+        rw [A₁.owned_fresh hs.left hmem habove hf hr₁, A₂.owned_fresh hs.right hmem habove hf hr₂]
+        exact hs.disjoint }
+  owned_fresh hs hmem habove hf hr := by
+    rw [A₁.owned_fresh hs.left hmem habove hf
+        (hr.of_le (Nat.add_le_add_left (Nat.le_add_right A₁.room A₂.room) _)),
+      A₂.owned_fresh hs.right hmem habove hf
+        (hr.of_le (Nat.add_le_add_left (Nat.le_add_left A₂.room A₁.room) _))]
   framed s hs hroom :=
-    (A₁.framed s hs.1 (hroom.of_le (by omega))).prod
-      (A₂.framed ((spec w).clientState s A₁.alloc)
-        (pre_after A₂ hs.1 (hroom.of_le (by omega)) hs.2) (room_after hs.1 hroom))
+    (A₁.framed s hs.left (hroom.of_le (by omega))).prod
+      (A₂.framed ((spec w).clientState s A₁.alloc) (pre_after A₂ hs.left hroom hs.right)
+        (room_after hs.left hroom))
   allocates s hs hroom := by
     -- The two allocations, from `s` to `s₁` and from `s₁` to `s₂`.
-    have h₁ := A₁.allocates s hs.1 (hroom.of_le (by omega))
-    have h₂ := A₂.allocates _ (pre_after A₂ hs.1 (hroom.of_le (by omega)) hs.2)
-      (room_after hs.1 hroom)
+    obtain ⟨hs₁, hs₂, hd⟩ := hs
+    have hroom₁ : Fits w (s.frontier + A₁.room) := hroom.of_le (by omega)
+    have h₁ := A₁.allocates s hs₁ hroom₁
+    have h₂ := A₂.allocates _ (pre_after A₂ hs₁ hroom hs₂) (room_after hs₁ hroom)
+    have ho₂ := owned_after A₂ hs₁ hroom hs₂
     have hf₁ := frontier_le_clientState (w := w) s A₁.alloc
     have hfit := h₁.room_le
     have hfit₂ := h₂.room_le
+    -- The second footprint lies in cells taken over, which are allocated and apart from the
+    -- first structure's, and in cells fresh after the first allocation.
     obtain ⟨hinv, habs, hfp, hr⟩ := Framed.prod_of_fresh h₁.inv h₂.mem_eq
-      (frontier_le_clientState _ _) h₂.inv h₂.le_footprint (hroom.of_le (by omega))
+      (frontier_le_clientState _ _) h₂.inv
+      (Finset.disjoint_left.mpr fun a ha ha' => by
+        have hlt := (A₁.framed s hs₁ hroom₁).lt_frontier h₁.inv ha
+        rcases h₂.of_mem_footprint a ha' with ha' | ha'
+        · rw [ho₂] at ha'
+          have := A₂.owned_lt hs₂ ha'
+          rcases h₁.of_mem_footprint a ha with ha | ha
+          · exact Finset.disjoint_left.mp hd ha ha'
+          · omega
+        · omega)
+      (hroom.of_le (by omega))
     refine
       { validHistory := ?_, cost_le := ?_, mem_eq := ?_, methods_eq := ?_, inv := ?_,
-        abs_eq := ?_, le_footprint := ?_, room_le := ?_ }
+        abs_eq := ?_, of_mem_footprint := ?_, room_le := ?_ }
     · rw [clientHistory_allocPair, StateTransitionSpec.validHistory_append,
         StateTransitionSpec.run_runClient]
       exact ⟨h₁.validHistory, h₂.validHistory⟩
@@ -370,8 +451,11 @@ def prod : Allocator (product D₁ D₂) w where
     · intro a ha
       rw [clientState_allocPair, hfp] at ha
       rcases Finset.mem_union.mp ha with ha | ha
-      · exact h₁.le_footprint a ha
-      · exact hf₁.trans (h₂.le_footprint a ha)
+      · exact (h₁.of_mem_footprint a ha).imp_left (Finset.mem_union_left _)
+      · rcases h₂.of_mem_footprint a ha with ha | ha
+        · rw [ho₂] at ha
+          exact .inl (Finset.mem_union_right _ ha)
+        · exact .inr (hf₁.trans ha)
     · rw [clientState_allocPair, hr]
       omega
 
@@ -388,6 +472,13 @@ def prod : Allocator (product D₁ D₂) w where
 /-- The product's allocation costs at most the sum of the costs. -/
 @[simp] theorem prod_cost : (A₁.prod A₂).cost = A₁.cost + A₂.cost := rfl
 
+/-- The product takes over the cells that either structure takes over. -/
+@[simp] theorem prod_owned (s : State) :
+    (A₁.prod A₂).owned s = A₁.owned s ∪ A₂.owned s := rfl
+
+/-- The product's precondition. -/
+theorem prod_pre_iff (s : State) : (A₁.prod A₂).Pre s ↔ ProdPre A₁ A₂ s := Iff.rfl
+
 variable {A₁ A₂}
 
 /-- **Certificates add across a product of allocators**: the charges componentwise, the
@@ -396,20 +487,21 @@ theorem Amortized.prod {upper₁ : D₁.State → D₁.Op → ℕ} {upper₂ : D
     {Φ₁ Φ₂ : ℕ} (hA₁ : A₁.Amortized upper₁ Φ₁) (hA₂ : A₂.Amortized upper₂ Φ₂) :
     (A₁.prod A₂).Amortized (productCharge upper₁ upper₂) (Φ₁ + Φ₂) := by
   intro s hs hroom
+  obtain ⟨hs₁, hs₂, -⟩ := hs
   have hroom₁ : Fits w (s.frontier + A₁.room) := hroom.of_le (by simp only [prod_room]; omega)
-  have hs₂ := pre_after A₂ hs.1 hroom₁ hs.2
-  have hroom₂ := room_after hs.1 hroom
-  obtain ⟨Ψ₁, hc₁, hl₁, hΨ₁⟩ := hA₁ s hs.1 hroom₁
-  obtain ⟨Ψ₂, hc₂, hl₂, hΨ₂⟩ := hA₂ _ hs₂ hroom₂
+  have hs₂' := pre_after A₂ hs₁ hroom hs₂
+  have hroom₂ := room_after hs₁ hroom
+  obtain ⟨Ψ₁, hc₁, hl₁, hΨ₁⟩ := hA₁ s hs₁ hroom₁
+  obtain ⟨Ψ₂, hc₂, hl₂, hΨ₂⟩ := hA₂ _ hs₂' hroom₂
   refine ⟨fun s' => Ψ₁ s' + Ψ₂ s', Framed.amortized_prod hc₁ hc₂ hl₁ hl₂,
     Framed.Local.add hl₁.prod_left hl₂.prod_right, ?_⟩
   -- The first potential is unchanged by the second allocation.
-  have h₁ := A₁.allocates s hs.1 hroom₁
-  have h₂ := A₂.allocates _ hs₂ hroom₂
+  have h₁ := A₁.allocates s hs₁ hroom₁
+  have h₂ := A₂.allocates _ hs₂' hroom₂
   have hfit := h₁.room_le
   have hfit₂ := h₂.room_le
   have hkeep := hl₁ h₁.inv
-    (fun a ha => h₂.mem_eq a ((A₁.framed s hs.1 hroom₁).lt_frontier h₁.inv ha))
+    (fun a ha => h₂.mem_eq a ((A₁.framed s hs₁ hroom₁).lt_frontier h₁.inv ha))
     (frontier_le_clientState _ _) (hroom.of_le (by simp only [prod_room]; omega))
   change Ψ₁ ((spec w).clientState s (allocPair A₁ A₂)) +
     Ψ₂ ((spec w).clientState s (allocPair A₁ A₂)) ≤ Φ₁ + Φ₂
@@ -417,6 +509,75 @@ theorem Amortized.prod {upper₁ : D₁.State → D₁.Op → ℕ} {upper₂ : D
   omega
 
 end Prod
+
+/-! ## Structures already in memory -/
+
+section Resident
+
+variable (M : Framed D w) (init : D.State) (room : ℕ)
+
+/-- **A structure already in memory**, such as a graph that the input holds as adjacency arrays.
+Its allocation does nothing. It takes over the footprint of `M`, and needs `M` to hold, to
+represent `init` and to have at most `room` cells of room. -/
+def resident : Allocator D w where
+  Handle := Unit
+  alloc := pure ()
+  methods _ := M.methods
+  init := init
+  room := room
+  cost := 0
+  Pre s := M.inv s ∧ M.abs s = init ∧ M.room s ≤ room
+  owned := M.footprint
+  owned_lt hs ha := M.lt_frontier hs.1 ha
+  pre_fresh {s _} hs hmem _ hf hr := by
+    obtain ⟨hinv, habs, hle⟩ := hs
+    obtain ⟨hinv', habs', -, hroom'⟩ := M.of_fresh hinv hmem hf (hr.of_le (by omega))
+    exact ⟨hinv', habs'.trans habs, hroom' ▸ hle⟩
+  owned_fresh {s _} hs hmem _ hf hr := by
+    obtain ⟨hinv, -, hle⟩ := hs
+    obtain ⟨-, -, hfp, -⟩ := M.of_fresh hinv hmem hf (hr.of_le (by omega))
+    exact hfp
+  framed _ _ _ := M
+  allocates s hs _ := by
+    obtain ⟨hinv, habs, hle⟩ := hs
+    exact
+      { validHistory := trivial
+        cost_le := le_rfl
+        mem_eq := fun _ _ => rfl
+        methods_eq := rfl
+        inv := hinv
+        abs_eq := habs
+        of_mem_footprint := fun _ ha => .inl ha
+        room_le := Nat.add_le_add_left hle s.frontier }
+
+/-- A structure already in memory runs `M`'s methods. -/
+@[simp] theorem resident_methods (h : Unit) : (resident M init room).methods h = M.methods := rfl
+
+/-- It represents `init`. -/
+@[simp] theorem resident_init : (resident M init room).init = init := rfl
+
+/-- It takes over `M`'s footprint. -/
+@[simp] theorem resident_owned (s : State) : (resident M init room).owned s = M.footprint s := rfl
+
+/-- Its allocation costs nothing. -/
+@[simp] theorem resident_cost : (resident M init room).cost = 0 := rfl
+
+/-- Its precondition: `M` holds, represents `init` and has at most `room` cells of room. -/
+theorem resident_pre_iff (s : State) :
+    (resident M init room).Pre s ↔ M.inv s ∧ M.abs s = init ∧ M.room s ≤ room := Iff.rfl
+
+variable {M init room}
+
+/-- **The certificate of a structure already in memory** is the structure's own: a potential
+that reads only its footprint and is at most `Φ₀` wherever the structure represents `init`. -/
+theorem Amortized.resident {upper : D.State → D.Op → ℕ} {Φ : State → ℕ} {Φ₀ : ℕ}
+    (hc : M.Amortized charge upper Φ) (hl : M.Local Φ)
+    (hΦ : ∀ s, M.inv s → M.abs s = init → Φ s ≤ Φ₀) :
+    (resident M init room).Amortized upper Φ₀ := fun s hs _ => by
+  obtain ⟨hinv, habs, -⟩ := hs
+  exact ⟨Φ, hc, hl, hΦ s hinv habs⟩
+
+end Resident
 
 end Allocator
 
