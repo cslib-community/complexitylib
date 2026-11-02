@@ -2872,6 +2872,8 @@ public import Complexity.DataStructure.CountMin.LinearHash
 public import Complexity.DataStructure.CountMin.Probability
 public import Complexity.DataStructure.CountMin.Program
 public import Complexity.DataStructure.Dictionary.CuckooHashing
+public import Complexity.DataStructure.Dictionary.CuckooHashing.Memory.Basic
+public import Complexity.DataStructure.Dictionary.CuckooHashing.Model
 public import Complexity.DataStructure.Dictionary.DoubleHashing
 public import Complexity.DataStructure.Dictionary.Spec
 public import Complexity.DataStructure.Dictionary.UniformProbing
@@ -2984,6 +2986,7 @@ public import Complexity.DataStructure.StateTransition.Module
 public import Complexity.DataStructure.StateTransition.Randomized
 public import Complexity.DataStructure.StateTransition.Refinement
 public import Complexity.DataStructure.StateTransition.Resource
+public import Complexity.DataStructure.StateTransition.WP
 public import Complexity.DataStructure.VanEmdeBoas.Basic
 public import Complexity.DataStructure.VanEmdeBoas.Elements
 public import Complexity.DataStructure.VanEmdeBoas.Erase
