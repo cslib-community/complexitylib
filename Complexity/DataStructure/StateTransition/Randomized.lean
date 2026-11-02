@@ -245,7 +245,7 @@ noncomputable abbrev withCoins (E : RandomizedSpec) : RandomizedSpec where
   State := E.State
   Op := ℕ ⊕ E.Op
   Result := probOracleSpec E.Result
-  law := ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) E.law
+  law := OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) E.law
   valid s
     | .inl _ => True
     | .inr o => E.valid s o
@@ -255,7 +255,7 @@ variable {D}
 /-- A program over `E` alone runs as over `E`. -/
 @[simp] theorem withCoins_run_liftRight (p : OracleComp D.Result α) (s : D.State) :
     D.withCoins.run (OracleComp.liftRight p) s = D.run p s := by
-  simp only [run, ProbOracleComp.handler_eq_sumHandler, OracleComp.interpret_sumHandler_liftRight]
+  simp only [run, OracleComp.interpret_sumHandler_liftRight]
 
 /-- A closed sampler draws its value and leaves the state unchanged. -/
 @[simp] theorem withCoins_run_sample (q : ProbComp α) (s : D.State) :
