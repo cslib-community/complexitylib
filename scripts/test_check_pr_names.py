@@ -195,6 +195,7 @@ class CheckPrNamesTests(unittest.TestCase):
 
     def test_names_removed_by_the_change_are_recognized(self) -> None:
         self.git("init", "-q")
+        self.git("config", "color.ui", "always")
         self.commit("--allow-empty", "-m", "root")
         self.write("Complexity/Demo/Old.lean",
                    "namespace Cslib.Old\ntheorem old_lemma : True := trivial\nend Cslib.Old\n")

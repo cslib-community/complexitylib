@@ -33,6 +33,8 @@ Complexity/Computability/Machines/Turing/MultiTape/Internal/KernelOnWords.lean
 # Bare machine-witness normalization only; Internal kernel boundary approved in #862:
 # https://github.com/cslib-community/complexitylib/issues/862#issuecomment-6400704445
 Complexity/Computability/Machines/Turing/MultiTape/Internal/NormalForm.lean
+# Charged-space machine witness normalization for native multi-pass routines (#862).
+Complexity/Computability/Machines/Turing/MultiTape/Internal/SpaceNormalForm.lean
 # Three unchanged fixed-machine tape lemmas; kernel classification approved in #862:
 # https://github.com/cslib-community/complexitylib/issues/862#issuecomment-6403378531
 Complexity/Computability/Machines/Turing/MultiTape/Internal/OnWords.lean

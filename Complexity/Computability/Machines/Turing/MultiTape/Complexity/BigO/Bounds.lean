@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Christian Reitwiessner. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Christian Reitwiessner
 -/
 
 module
@@ -14,10 +14,12 @@ public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.
 import Mathlib.Tactic.Linarith
 
 /-!
-# Direct consequences of charged asymptotic bounds
+# Independent computation bounds and encoded-output growth
 
 Time, workspace and encoded output are separate obligations. These rules package or forget the
 actual realizing machine; they do not normalize it or import a higher construction calculus.
+`computableInO_iff_computableInBigO_and_length_le` separates the charged convenience
+predicate into uncharged machine bounds and the existing pointwise output-length relation.
 -/
 
 @[expose] public section
@@ -27,6 +29,18 @@ open Cslib
 
 variable {α β : Type*} {f : α → β} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool}
   {T S : α → ℕ}
+
+/-- Forget the encoded-output charge, retaining the same realizing machine. -/
+theorem computableInBigO (h : ComputableInO f encIn encOut T S) :
+    ComputableInBigO f encIn encOut T S :=
+  let ⟨c, hc, _⟩ := h
+  ⟨c, hc⟩
+
+/-- The encoded value is within the certificate's existing workspace charge. -/
+theorem length_le (h : ComputableInO f encIn encOut T S) :
+    ∃ c, ∀ a, (encOut (f a)).length ≤ c * (S a + 1) :=
+  let ⟨c, _, hl⟩ := h
+  ⟨c, hl⟩
 
 /-- Exact plain machine bounds and an explicit output charge supply asymptotic bounds. -/
 theorem of_bounds {t s : α → ℕ}
@@ -100,6 +114,22 @@ namespace Turing.MultiTapeTM
 
 variable {α β : Type*} {f : α → β} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool}
   {T S T' S' t s : α → ℕ}
+
+/-- Add an independently proved output-length bound to an uncharged machine certificate. -/
+public theorem ComputableInBigO.with_output_bound (h : ComputableInBigO f encIn encOut T S)
+    (hl : (fun a => (encOut (f a)).length) ≼ S) : ComputableInO f encIn encOut T S := by
+  obtain ⟨c, hc⟩ := h
+  obtain ⟨d, hd⟩ := hl
+  refine ⟨c + d, hc.mono (fun a => Nat.mul_le_mul_right _ (Nat.le_add_right c d))
+    (fun a => Nat.mul_le_mul_right _ (Nat.le_add_right c d)), ?_⟩
+  exact fun a => (hd a).trans (Nat.mul_le_mul_right _ (Nat.le_add_left d c))
+
+/-- Charged computability is exactly uncharged computation and a separate output-growth bound.
+The two existential constants can be enlarged to a common constant without changing machines. -/
+public theorem computableInO_iff_computableInBigO_and_length_le :
+    ComputableInO f encIn encOut T S ↔ ComputableInBigO f encIn encOut T S ∧
+      (fun a => (encOut (f a)).length) ≼ S :=
+  ⟨fun h => ⟨h.computableInBigO, h.length_le⟩, fun ⟨h, hl⟩ => h.with_output_bound hl⟩
 
 /-- Bounds up to constant factors. -/
 public theorem ComputableInBigO.of_bounds (h : ComputableInTimeAndSpace f encIn encOut t s)

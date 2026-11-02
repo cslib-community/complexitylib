@@ -83,7 +83,7 @@ variable {K H : Type*} [Field K] [Fintype H] [DecidableEq H] {b d r : ℕ}
 
 /-- Extend a Boolean gate after encoding each value in `r` alphabet symbols. On symbols outside
 the encoding's image, the caller's decoder determines a total table. -/
-noncomputable def gateExtension (h : H ↪ K) (encode : (Fin b → Bool) → Fin r → H)
+@[expose] noncomputable def gateExtension (h : H ↪ K) (encode : (Fin b → Bool) → Fin r → H)
     (decode : (Fin r → H) → Fin b → Bool) (f : Gate d b)
     (x : Fin d → Fin r → K) (i : Fin r) : K :=
   Code.lowDegreeExtension h

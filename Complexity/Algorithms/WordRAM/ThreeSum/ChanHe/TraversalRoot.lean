@@ -32,7 +32,7 @@ logarithmic-width/subquadratic-cost composition remain separate obligations.
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 
-open Cslib.WordRAM
+open Cslib.WordRAM Cslib.DataStructure
 open Cslib.Algorithms.ThreeSum.ChanHe (Node)
 
 /-- Concrete caller obligations before the complete native root program initializes its stack. -/
@@ -95,20 +95,21 @@ theorem root_exec {a : Arena} {w : ℕ} (e : Entry) (ns : List (ℕ × Node)) (x
     have ht := ha.2.1
     have hgap := ha.2.2.1
     omega)
-  let p := (((x.set zero 0).set one 1).set (registers Stack.ptr) (x.regs stackBase)).set
-    (registers Stack.len) 0
-  let ptr := registers Stack.ptr
-  let len := registers Stack.len
+  let p := (((x.set zero 0).set one 1).set (registers Stack.WordRAM.ptr) (x.regs stackBase)).set
+    (registers Stack.WordRAM.len) 0
+  let ptr := registers Stack.WordRAM.ptr
+  let len := registers Stack.WordRAM.len
   have h1 : Fits (w + 2) 1 := h2.of_le (by decide)
   have hp : Exec (B := .standard) (w + 2)
       (ram[ zero ← #0; one ← #1; ptr ← stackBase; len ← #0 ]) x p 4 := by
-    ram_eval [p, ptr, len, zero, one, registers, Stack.ptr, Stack.len, stackBase, h1]
+    ram_eval [p, ptr, len, zero, one, registers, Stack.WordRAM.ptr, Stack.WordRAM.len,
+      stackBase, h1]
   have preg (i : Fin 128) (hi : i.val < 96) :
       p.regs i = ((x.set zero 0).set one 1).regs i := by
-    have hp' : i ≠ registers Stack.ptr := by
-      intro he; have := congrArg Fin.val he; norm_num [registers, Stack.ptr] at this; omega
-    have hl' : i ≠ registers Stack.len := by
-      intro he; have := congrArg Fin.val he; norm_num [registers, Stack.len] at this; omega
+    have hp' : i ≠ registers Stack.WordRAM.ptr := by
+      intro he; have := congrArg Fin.val he; norm_num [registers, Stack.WordRAM.ptr] at this; omega
+    have hl' : i ≠ registers Stack.WordRAM.len := by
+      intro he; have := congrArg Fin.val he; norm_num [registers, Stack.WordRAM.len] at this; omega
     simp only [p, Data.set_regs, Function.update_of_ne hp', Function.update_of_ne hl']
   have pmeta (i : Fin 128) (hi : i.val < 96) : p.regs i = x.regs i := by
     rw [preg i hi]
@@ -129,12 +130,13 @@ theorem root_exec {a : Arena} {w : ℕ} (e : Entry) (ns : List (ℕ × Node)) (x
       exact (pmeta _ (by dsimp [arraySource, slot]; omega)).trans (h.loaded.2.1 j)
     · intro j
       exact (pmeta _ (by dsimp [arrayLength, slot]; omega)).trans (h.loaded.2.2 j)
-  have pstack : Stack.Rep (w + 2) a.stack a.capacity [] (p.comap registers) := by
+  have pstack : Stack.WordRAM.Rep (w + 2) a.stack a.capacity [] (p.comap registers) := by
     refine ⟨⟨fun i => (hp.bounded h.bounded).1 (registers i), (hp.bounded h.bounded).2⟩,
       ?_, ?_, Nat.zero_le _, fun i => Fin.elim0 i⟩
-    · simpa +decide [p, Data.comap, Data.set, registers, Stack.ptr, Stack.len, zero, one]
-        using h.controls.2.2.2.2.2.2.2.1
-    · simp +decide [p, Data.comap, Data.set, registers, Stack.ptr, Stack.len, zero, one]
+    · simpa +decide [p, Data.comap, Data.set, registers, Stack.WordRAM.ptr, Stack.WordRAM.len,
+        zero, one] using h.controls.2.2.2.2.2.2.2.1
+    · simp +decide [p, Data.comap, Data.set, registers, Stack.WordRAM.ptr, Stack.WordRAM.len,
+        zero, one]
   obtain ⟨b, hb, hstack, hframe, hbr⟩ := pushFrame_exec p [] h2 hcap pstack
     (fun i => (hp.bounded h.bounded).1 (slot i)) (by
       have := ha.2.2.2
@@ -144,7 +146,7 @@ theorem root_exec {a : Arena} {w : ℕ} (e : Entry) (ns : List (ℕ × Node)) (x
     (hbr i (Or.inl hi)).trans (pmeta i hi)
   have bframe (q : ℕ) (hq : q < a.stack ∨ a.stack + a.capacity ≤ q) : b.mem q = x.mem q := by
     apply hframe
-    simp only [Stack.footprint, Block.mem_footprint, Block.Owns]
+    simp only [Stack.WordRAM.footprint, Block.mem_footprint, Block.Owns]
     omega
   let s : Cursor := ⟨[e], ns⟩
   have work : s.work = Math.work e.fuel := by

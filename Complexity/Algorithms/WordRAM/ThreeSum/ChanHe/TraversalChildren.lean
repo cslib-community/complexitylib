@@ -32,7 +32,7 @@ The native stack controller and proofs are original.
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 
-open Cslib.WordRAM
+open Cslib.WordRAM Cslib.DataStructure
 
 /-- Save both descriptors needed for restoration and prepare the third child. -/
 def thirdState (x : Data 128) : Data 128 :=
@@ -112,27 +112,27 @@ top-first stack contains first, second, third, followed by the original pending 
 theorem pushChildren_exec {w base capacity : ℕ} (x : Data 128) (vs : List ℕ)
     (hx : x.Bounded w) (hone : x.regs one = 1) (h2 : Fits w 2)
     (hcap : Fits w (base + capacity))
-    (hr : Stack.Rep w base capacity vs (x.comap registers))
+    (hr : Stack.WordRAM.Rep w base capacity vs (x.comap registers))
     (hcapacity : 21 + vs.length ≤ capacity) :
     ∃ y, Exec w pushChildren x y 207 ∧
-      Stack.Rep w base capacity (childWords x 0 ++ childWords x 1 ++ childWords x 2 ++ vs)
+      Stack.WordRAM.Rep w base capacity (childWords x 0 ++ childWords x 1 ++ childWords x 2 ++ vs)
         (y.comap registers) ∧
-      Modifies (Stack.footprint base capacity) x.mem y.mem ∧
+      Modifies (Stack.WordRAM.footprint base capacity) x.mem y.mem ∧
       ∀ i, ((71 ≤ i.val ∧ i.val < 96) ∨ 109 ≤ i.val) → y.regs i = x.regs i := by
   let a := thirdState x
   have ha := prepareThird_exec x hx hone
-  have hra : Stack.Rep w base capacity vs (a.comap registers) := by
+  have hra : Stack.WordRAM.Rep w base capacity vs (a.comap registers) := by
     simpa only [a, thirdState_comap] using hr
   obtain ⟨b, hb, hrb, hfb, hpb⟩ := pushFrame_exec a vs h2 hcap hra
     (fun i => (ha.bounded hx).1 (slot i)) (by omega)
   have hwa : words a = childWords x 2 := by
     simp +decide [words, a, thirdState, childWords, Data.set, slot, original,
       heavyBase, heavyLength]
-  change Stack.Rep w base capacity (words a ++ vs) (b.comap registers) at hrb
+  change Stack.WordRAM.Rep w base capacity (words a ++ vs) (b.comap registers) at hrb
   rw [hwa] at hrb
   let c := secondState b
   have hc := prepareSecond_exec (w := w) b
-  have hrc : Stack.Rep w base capacity (childWords x 2 ++ vs) (c.comap registers) := by
+  have hrc : Stack.WordRAM.Rep w base capacity (childWords x 2 ++ vs) (c.comap registers) := by
     simpa only [c, secondState_comap] using hrb
   obtain ⟨d, hd, hrd, hfd, hpd⟩ := pushFrame_exec c (childWords x 2 ++ vs) h2 hcap hrc
     (fun i => (hc.bounded (hb.bounded (ha.bounded hx))).1 (slot i))
@@ -140,11 +140,12 @@ theorem pushChildren_exec {w base capacity : ℕ} (x : Data 128) (vs : List ℕ)
   have hwc : words c = childWords x 1 := by
     simp +decide [words, c, secondState, hpb, Outside, a, thirdState, childWords, Data.set,
       slot, original, heavyBase, heavyLength]
-  change Stack.Rep w base capacity (words c ++ (childWords x 2 ++ vs)) (d.comap registers) at hrd
+  change Stack.WordRAM.Rep w base capacity (words c ++ (childWords x 2 ++ vs))
+    (d.comap registers) at hrd
   rw [hwc] at hrd
   let e := firstState d
   have he := prepareFirst_exec (w := w) d
-  have hre : Stack.Rep w base capacity (childWords x 1 ++ (childWords x 2 ++ vs))
+  have hre : Stack.WordRAM.Rep w base capacity (childWords x 1 ++ (childWords x 2 ++ vs))
       (e.comap registers) := by
     simpa only [e, firstState_comap] using hrd
   obtain ⟨z, hz, hrz, hfz, _⟩ := pushFrame_exec e (childWords x 1 ++ (childWords x 2 ++ vs))
@@ -154,7 +155,7 @@ theorem pushChildren_exec {w base capacity : ℕ} (x : Data 128) (vs : List ℕ)
   have hwe : words e = childWords x 0 := by
     simp +decide [words, e, firstState, hpd, Outside, c, secondState, hpb, a, thirdState,
       childWords, Data.set, slot, original, heavyBase, heavyLength]
-  change Stack.Rep w base capacity (words e ++ (childWords x 1 ++ (childWords x 2 ++ vs)))
+  change Stack.WordRAM.Rep w base capacity (words e ++ (childWords x 1 ++ (childWords x 2 ++ vs)))
     (z.comap registers) at hrz
   rw [hwe] at hrz
   have hrun : Exec w pushChildren x z 207 := ha.seq (hb.seq (hc.seq (hd.seq (he.seq hz))))

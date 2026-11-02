@@ -7,7 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.Stack
+public import Complexity.DataStructure.Stack.WordRAM.Basic
 import Mathlib.Tactic.FinCases
 
 /-!
@@ -18,7 +18,8 @@ registers 96–104. Registers below 64 remain available to the complete modulus 
 Each record contains fuel followed by three base/length pairs. The stack stores words, so a
 record is pushed in reverse order and popped in forward order.
 
-The dispatcher, representation and memory frame are reused from `Cslib.WordRAM.Stack`.
+The dispatcher, representation and memory frame are reused from
+`Cslib.DataStructure.Stack.WordRAM`.
 Argument delivery and result copies here are actual native instructions and are charged.
 
 ## Main definitions
@@ -41,7 +42,7 @@ The native controller and its composition proofs are original.
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 
-open Cslib.WordRAM
+open Cslib.WordRAM Cslib.DataStructure
 
 /-- Fuel and the three base/length pairs, retained across both 64-register native kernels. -/
 def slot (i : Fin 7) : Fin 128 := ⟨64 + i.val, by omega⟩
@@ -81,46 +82,48 @@ private theorem extend_outside (a : Data 9) (x : Data 128) (i : Fin 128) (hi : O
 
 /-- Deliver the push tag and actual record word, then execute the existing stack program. -/
 def pushSlot (i : Fin 7) : Code .standard 128 :=
-  let tag := registers Stack.tag
-  let arg := registers Stack.arg
+  let tag := registers Stack.WordRAM.tag
+  let arg := registers Stack.WordRAM.arg
   let src := slot i
-  .seq (ram[ tag ← #0; arg ← src ]) (Stack.program.rename registers)
+  .seq (ram[ tag ← #0; arg ← src ]) (Stack.WordRAM.program.rename registers)
 
 /-- Each native push includes both argument instructions, not a host-level stack operation.
 Every register outside 96–104 and every memory cell outside the reserved stack is preserved. -/
 theorem pushSlot_exec {w base capacity : ℕ} (i : Fin 7) (x : Data 128) (vs : List ℕ)
     (h2 : Fits w 2) (hcap : Fits w (base + capacity))
-    (hr : Stack.Rep w base capacity vs (x.comap registers))
+    (hr : Stack.WordRAM.Rep w base capacity vs (x.comap registers))
     (hw : Fits w (x.regs (slot i))) (hv : vs.length < capacity) :
     ∃ y, Exec w (pushSlot i) x y 9 ∧
-      Stack.Rep w base capacity (x.regs (slot i) :: vs) (y.comap registers) ∧
-      Modifies (Stack.footprint base capacity) x.mem y.mem ∧
+      Stack.WordRAM.Rep w base capacity (x.regs (slot i) :: vs) (y.comap registers) ∧
+      Modifies (Stack.WordRAM.footprint base capacity) x.mem y.mem ∧
       ∀ j, Outside j → y.regs j = x.regs j := by
-  let q := (x.set (registers Stack.tag) 0).set (registers Stack.arg) (x.regs (slot i))
-  have hs : slot i ≠ registers Stack.tag := outside_ne _ (Or.inl (by dsimp [slot]; omega)) _
+  let q :=
+    (x.set (registers Stack.WordRAM.tag) 0).set (registers Stack.WordRAM.arg) (x.regs (slot i))
+  have hs : slot i ≠ registers Stack.WordRAM.tag := outside_ne _ (Or.inl (by dsimp [slot]; omega)) _
   have hp : Exec (B := .standard) w
-      (.seq (.op (.const (registers Stack.tag) 0))
-        (.op (.copy (registers Stack.arg) (slot i)))) x q 2 := by
+      (.seq (.op (.const (registers Stack.WordRAM.tag) 0))
+        (.op (.copy (registers Stack.WordRAM.arg) (slot i)))) x q 2 := by
     ram_eval [q, hs]
   have hq : q.comap registers =
-      (Stack.implementation w capacity).prepare (.push (x.regs (slot i)))
+      (Stack.WordRAM.implementation w capacity).prepare (.push (x.regs (slot i)))
         (x.comap registers) := by
     ext j
     · fin_cases j <;>
-        simp +decide [q, Data.comap, Data.set, registers, Stack.implementation,
-          DynamicProgram.prepare, Stack.tag, Stack.arg]
+        simp +decide [q, Data.comap, Data.set, registers, Stack.WordRAM.implementation,
+          DynamicProgram.prepare, Stack.WordRAM.tag, Stack.WordRAM.arg]
     · rfl
-  obtain ⟨a, ha, _, hra, hframe⟩ := Stack.execute h2 hcap hr (.push (x.regs (slot i))) ⟨hv, hw⟩
-  have hcall : Exec w Stack.program (q.comap registers) a 7 := by
-    simpa only [hq, Stack.bodyCost] using ha
+  obtain ⟨a, ha, _, hra, hframe⟩ :=
+    Stack.WordRAM.execute h2 hcap hr (.push (x.regs (slot i))) ⟨hv, hw⟩
+  have hcall : Exec w Stack.WordRAM.program (q.comap registers) a 7 := by
+    simpa only [hq, Stack.WordRAM.bodyCost] using ha
   let y := a.extend registers q
   refine ⟨y, ?_, ?_, hframe, ?_⟩
   · exact hp.seq (hcall.rename registers_injective)
   · simpa only [y, Data.comap_extend registers_injective] using hra
   · intro j hj
     rw [extend_outside a q j hj]
-    simp only [q, Data.set_regs, Function.update_of_ne (outside_ne j hj Stack.arg),
-      Function.update_of_ne (outside_ne j hj Stack.tag)]
+    simp only [q, Data.set_regs, Function.update_of_ne (outside_ne j hj Stack.WordRAM.arg),
+      Function.update_of_ne (outside_ne j hj Stack.WordRAM.tag)]
 
 private def pushSlots : List (Fin 7) → Code .standard 128
   | [] => .op (.copy (slot 0) (slot 0))
@@ -128,12 +131,12 @@ private def pushSlots : List (Fin 7) → Code .standard 128
 
 private theorem pushSlots_exec {w base capacity : ℕ} (is : List (Fin 7)) (x : Data 128)
     (vs : List ℕ) (h2 : Fits w 2) (hcap : Fits w (base + capacity))
-    (hr : Stack.Rep w base capacity vs (x.comap registers))
+    (hr : Stack.WordRAM.Rep w base capacity vs (x.comap registers))
     (hw : ∀ i, Fits w (x.regs (slot i))) (hv : is.length + vs.length ≤ capacity) :
     ∃ y, Exec w (pushSlots is) x y (9 * is.length + 1) ∧
-      Stack.Rep w base capacity (is.reverse.map (fun i => x.regs (slot i)) ++ vs)
+      Stack.WordRAM.Rep w base capacity (is.reverse.map (fun i => x.regs (slot i)) ++ vs)
         (y.comap registers) ∧
-      Modifies (Stack.footprint base capacity) x.mem y.mem ∧
+      Modifies (Stack.WordRAM.footprint base capacity) x.mem y.mem ∧
       ∀ j, Outside j → y.regs j = x.regs j := by
   induction is generalizing x vs with
   | nil =>
@@ -169,13 +172,13 @@ def pushFrame : Code .standard 128 :=
 There is no host-level record write, and the exact seven-word sequence is at the stack top. -/
 theorem pushFrame_exec {w base capacity : ℕ} (x : Data 128) (vs : List ℕ)
     (h2 : Fits w 2) (hcap : Fits w (base + capacity))
-    (hr : Stack.Rep w base capacity vs (x.comap registers))
+    (hr : Stack.WordRAM.Rep w base capacity vs (x.comap registers))
     (hw : ∀ i, Fits w (x.regs (slot i))) (hv : 7 + vs.length ≤ capacity) :
     ∃ y, Exec w pushFrame x y 64 ∧
-      Stack.Rep w base capacity
+      Stack.WordRAM.Rep w base capacity
         ([x.regs (slot 0), x.regs (slot 1), x.regs (slot 2), x.regs (slot 3),
           x.regs (slot 4), x.regs (slot 5), x.regs (slot 6)] ++ vs) (y.comap registers) ∧
-      Modifies (Stack.footprint base capacity) x.mem y.mem ∧
+      Modifies (Stack.WordRAM.footprint base capacity) x.mem y.mem ∧
       ∀ j, Outside j → y.regs j = x.regs j := by
   simpa only [pushFrame, pushSlots, List.length_cons, List.length_nil, List.reverse_cons,
     List.reverse_nil, List.nil_append, List.cons_append, List.append_assoc, List.singleton_append,
@@ -192,59 +195,61 @@ private theorem comap_set_slot (x : Data 128) (i : Fin 7) (v : ℕ) :
 
 /-- Deliver the pop tag, execute the complete dispatcher, and copy its answer to the record. -/
 def popSlot (i : Fin 7) : Code .standard 128 :=
-  let tag := registers Stack.tag
-  let arg := registers Stack.arg
+  let tag := registers Stack.WordRAM.tag
+  let arg := registers Stack.WordRAM.arg
   .seq (ram[ tag ← #1; arg ← #0 ])
-    (.seq (Stack.program.rename registers) (.op (.copy (slot i) (registers Stack.out))))
+    (.seq (Stack.WordRAM.program.rename registers)
+      (.op (.copy (slot i) (registers Stack.WordRAM.out))))
 
 /-- A nonempty native pop includes both argument instructions and the actual result copy.
 Only the selected record register, stack workspace and reserved stack memory may change. -/
 theorem popSlot_exec {w base capacity : ℕ} (i : Fin 7) (x : Data 128) (v : ℕ) (vs : List ℕ)
     (h2 : Fits w 2) (hcap : Fits w (base + capacity))
-    (hr : Stack.Rep w base capacity (v :: vs) (x.comap registers)) :
+    (hr : Stack.WordRAM.Rep w base capacity (v :: vs) (x.comap registers)) :
     ∃ y, Exec w (popSlot i) x y 14 ∧
-      Stack.Rep w base capacity vs (y.comap registers) ∧ y.regs (slot i) = v ∧
-      Modifies (Stack.footprint base capacity) x.mem y.mem ∧
+      Stack.WordRAM.Rep w base capacity vs (y.comap registers) ∧ y.regs (slot i) = v ∧
+      Modifies (Stack.WordRAM.footprint base capacity) x.mem y.mem ∧
       ∀ j, Outside j → j ≠ slot i → y.regs j = x.regs j := by
-  let q := (x.set (registers Stack.tag) 1).set (registers Stack.arg) 0
+  let q := (x.set (registers Stack.WordRAM.tag) 1).set (registers Stack.WordRAM.arg) 0
   have h1 : Fits w 1 := h2.of_le (by decide)
   have hp : Exec (B := .standard) w
-      (.seq (.op (.const (registers Stack.tag) 1))
-        (.op (.const (registers Stack.arg) 0))) x q 2 := by
+      (.seq (.op (.const (registers Stack.WordRAM.tag) 1))
+        (.op (.const (registers Stack.WordRAM.arg) 0))) x q 2 := by
     ram_eval [q, h1]
   have hq : q.comap registers =
-      (Stack.implementation w capacity).prepare .pop (x.comap registers) := by
+      (Stack.WordRAM.implementation w capacity).prepare .pop (x.comap registers) := by
     ext j
     · fin_cases j <;>
-        simp +decide [q, Data.comap, Data.set, registers, Stack.implementation,
-          DynamicProgram.prepare, Stack.tag, Stack.arg]
+        simp +decide [q, Data.comap, Data.set, registers, Stack.WordRAM.implementation,
+          DynamicProgram.prepare, Stack.WordRAM.tag, Stack.WordRAM.arg]
     · rfl
-  obtain ⟨a, ha, hans, hra, hframe⟩ := Stack.execute h2 hcap hr .pop trivial
-  have hcall : Exec w Stack.program (q.comap registers) a 11 := by
-    simpa only [hq, Stack.bodyCost, List.cons_ne_nil, ↓reduceIte] using ha
-  have hout : a.regs Stack.out = v := by
-    change some (if a.regs Stack.present = 0 then none else some (a.regs Stack.out)) =
+  obtain ⟨a, ha, hans, hra, hframe⟩ := Stack.WordRAM.execute h2 hcap hr .pop trivial
+  have hcall : Exec w Stack.WordRAM.program (q.comap registers) a 11 := by
+    simpa only [hq, Stack.WordRAM.bodyCost, List.cons_ne_nil, ↓reduceIte] using ha
+  have hout : a.regs Stack.WordRAM.out = v := by
+    change some (if a.regs Stack.WordRAM.present = 0 then none
+      else some (a.regs Stack.WordRAM.out)) =
       some (some v) at hans
     split at hans
     · cases hans
     · exact Option.some.inj (Option.some.inj hans)
-  have hread : (a.extend registers q).regs (registers Stack.out) = v := by
-    change Function.extend registers a.regs q.regs (registers Stack.out) = v
+  have hread : (a.extend registers q).regs (registers Stack.WordRAM.out) = v := by
+    change Function.extend registers a.regs q.regs (registers Stack.WordRAM.out) = v
     rw [registers_injective.extend_apply, hout]
   let y := (a.extend registers q).set (slot i) v
   have hcopy : Exec (B := .standard) w
-      (.op (.copy (slot i) (registers Stack.out))) (a.extend registers q) y 1 := by
+      (.op (.copy (slot i) (registers Stack.WordRAM.out))) (a.extend registers q) y 1 := by
     simpa only [y, hread] using
       (Exec.copy (B := Basis.standard) (w := w) (x := a.extend registers q)
-        (d := slot i) (s := registers Stack.out))
+        (d := slot i) (s := registers Stack.WordRAM.out))
   refine ⟨y, hp.seq ((hcall.rename registers_injective).seq hcopy), ?_, ?_, hframe, ?_⟩
   · simpa only [y, comap_set_slot, Data.comap_extend registers_injective, List.tail_cons] using hra
   · exact Function.update_self ..
   · intro j hj hji
     change Function.update (a.extend registers q).regs (slot i) v j = x.regs j
     rw [Function.update_of_ne hji, extend_outside a q j hj]
-    simp only [q, Data.set_regs, Function.update_of_ne (outside_ne j hj Stack.arg),
-      Function.update_of_ne (outside_ne j hj Stack.tag)]
+    simp only [q, Data.set_regs, Function.update_of_ne (outside_ne j hj Stack.WordRAM.arg),
+      Function.update_of_ne (outside_ne j hj Stack.WordRAM.tag)]
 
 private def popSlots : List (Fin 7) → Code .standard 128
   | [] => .op (.copy (slot 0) (slot 0))
@@ -270,11 +275,11 @@ private theorem restore_congr_at (is : List (Fin 7)) (vs : List ℕ)
 
 private theorem popSlots_exec {w base capacity : ℕ} (is : List (Fin 7)) (ws : List ℕ)
     (x : Data 128) (vs : List ℕ) (h2 : Fits w 2) (hcap : Fits w (base + capacity))
-    (hr : Stack.Rep w base capacity (ws ++ vs) (x.comap registers))
+    (hr : Stack.WordRAM.Rep w base capacity (ws ++ vs) (x.comap registers))
     (hlen : ws.length = is.length) :
     ∃ y, Exec w (popSlots is) x y (14 * is.length + 1) ∧
-      Stack.Rep w base capacity vs (y.comap registers) ∧
-      Modifies (Stack.footprint base capacity) x.mem y.mem ∧
+      Stack.WordRAM.Rep w base capacity vs (y.comap registers) ∧
+      Modifies (Stack.WordRAM.footprint base capacity) x.mem y.mem ∧
       ∀ j, Outside j → y.regs j = restore is ws x.regs j := by
   induction is generalizing ws x with
   | nil =>
@@ -312,11 +317,11 @@ def popFrame : Code .standard 128 :=
 The seven restored words have their original order; other caller registers are preserved. -/
 theorem popFrame_exec {w base capacity : ℕ} (x : Data 128) (vs : List ℕ) (a : Fin 7 → ℕ)
     (h2 : Fits w 2) (hcap : Fits w (base + capacity))
-    (hr : Stack.Rep w base capacity
+    (hr : Stack.WordRAM.Rep w base capacity
       ([a 0, a 1, a 2, a 3, a 4, a 5, a 6] ++ vs) (x.comap registers)) :
-    ∃ y, Exec w popFrame x y 99 ∧ Stack.Rep w base capacity vs (y.comap registers) ∧
+    ∃ y, Exec w popFrame x y 99 ∧ Stack.WordRAM.Rep w base capacity vs (y.comap registers) ∧
       (∀ i, y.regs (slot i) = a i) ∧
-      Modifies (Stack.footprint base capacity) x.mem y.mem ∧
+      Modifies (Stack.WordRAM.footprint base capacity) x.mem y.mem ∧
       ∀ j, Outside j → (j.val < 64 ∨ 71 ≤ j.val) → y.regs j = x.regs j := by
   obtain ⟨y, hy, hry, hfy, hpy⟩ :=
     popSlots_exec [0, 1, 2, 3, 4, 5, 6] [a 0, a 1, a 2, a 3, a 4, a 5, a 6]

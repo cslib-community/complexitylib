@@ -143,10 +143,10 @@ def GenerableZeroKnowledge {α : Type} (enc : α ↪ List Bool)
     (isWitness : α → List Bool → Bool) : Prop :=
   ∀ Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool),
     IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun p : ℕ × α × List Bool => Vstar p.1 p.2.1 p.2.2) →
+      (fun ⟨n, a, z⟩ => Vstar n a z) →
     ∃ S : ℕ → α → List Bool → ProbComp (List Bool),
       IsPPTOn (encPair encUnary (encPair enc encBits)) encBits
-        (fun p : ℕ × α × List Bool => S p.1 p.2.1 p.2.2) ∧
+        (fun ⟨n, a, z⟩ => S n a z) ∧
       ∀ (a : ℕ → α) (w z : ℕ → List Bool),
         ComputableInPolyTime a encUnary enc →
         ComputableInPolyTime w encUnary encBits →
@@ -172,10 +172,10 @@ def AuxiliaryInputZeroKnowledge {α : Type} (enc : α ↪ List Bool)
     (isWitness : α → List Bool → Bool) : Prop :=
   ∀ Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool),
     IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun p : ℕ × α × List Bool => Vstar p.1 p.2.1 p.2.2) →
+      (fun ⟨n, a, z⟩ => Vstar n a z) →
     ∃ S : ℕ → α → List Bool → ProbComp (List Bool),
       IsPPTOn (encPair encUnary (encPair enc encBits)) encBits
-        (fun p : ℕ × α × List Bool => S p.1 p.2.1 p.2.2) ∧
+        (fun ⟨n, a, z⟩ => S n a z) ∧
       ∀ (a : ℕ → α) (w z : ℕ → List Bool),
         PolynomiallyBounded (fun n => (enc (a n)).length) →
         PolynomiallyBounded (fun n => (w n).length) →
@@ -183,7 +183,7 @@ def AuxiliaryInputZeroKnowledge {α : Type} (enc : α ↪ List Bool)
         (∀ n, isWitness (a n) (w n) = true) →
         ∀ adversary : ℕ → α → List Bool → List Bool → ProbComp Bool,
           IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
-            (fun p => adversary p.1.1 p.1.2.1 p.1.2.2 p.2) →
+            (fun ⟨⟨n, a, z⟩, view⟩ => adversary n a z view) →
           Negligible (fun n => Game.advantage
             (distinguishingGame
               (((prover n (a n) (w n)).run (Vstar n (a n) (z n))
@@ -223,10 +223,10 @@ theorem GenerableZeroKnowledge.advantage_negligible {α : Type} {enc : α ↪ Li
     (h : GenerableZeroKnowledge enc prover isWitness)
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
     (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun p : ℕ × α × List Bool => Vstar p.1 p.2.1 p.2.2)) :
+      (fun ⟨n, a, z⟩ => Vstar n a z)) :
     ∃ S : ℕ → α → List Bool → ProbComp (List Bool),
       IsPPTOn (encPair encUnary (encPair enc encBits)) encBits
-        (fun p : ℕ × α × List Bool => S p.1 p.2.1 p.2.2) ∧
+        (fun ⟨n, a, z⟩ => S n a z) ∧
       ∀ (a : ℕ → α) (w z : ℕ → List Bool),
         ComputableInPolyTime a encUnary enc →
         ComputableInPolyTime w encUnary encBits →
@@ -234,7 +234,7 @@ theorem GenerableZeroKnowledge.advantage_negligible {α : Type} {enc : α ↪ Li
         (∀ n, isWitness (a n) (w n) = true) →
         ∀ adversary : ℕ → α → List Bool → List Bool → ProbComp Bool,
           IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
-            (fun p => adversary p.1.1 p.1.2.1 p.1.2.2 p.2) →
+            (fun ⟨⟨n, a, z⟩, view⟩ => adversary n a z view) →
           Negligible (fun n => Game.advantage
             (distinguishingGame
               (((prover n (a n) (w n)).run (Vstar n (a n) (z n))
@@ -309,10 +309,10 @@ structure ZeroKnowledgeProof {α : Type} (enc : α ↪ List Bool) (A : Set α) w
   isPPT_interact :
     ∀ Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool),
       IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-        (fun p : ℕ × α × List Bool => Vstar p.1 p.2.1 p.2.2) →
+        (fun ⟨n, a, z⟩ => Vstar n a z) →
       IsPPTOn (encPair encUnary (encPair enc (encPair encBits encBits))) encBits
-        (fun p : ℕ × α × List Bool × List Bool =>
-          interact p.1 p.2.1 p.2.2.1 (Vstar p.1 p.2.1 p.2.2.2))
+        (fun ⟨n, a, w, z⟩ =>
+          interact n a w (Vstar n a z))
   /-- Perfect completeness: for every valid witness `w` of `a`, the honest prover convinces the
   honest verifier with probability `1`. -/
   complete : ∀ n a w, isWitness a w = true → acceptProb (verifier n a) (prover n a w) = 1
@@ -381,16 +381,16 @@ theorem AuxiliaryInputZeroKnowledge.zero_knowledge_const {zk : ZeroKnowledgeProo
     (h : zk.AuxiliaryInputZeroKnowledge)
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
     (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun p : ℕ × α × List Bool => Vstar p.1 p.2.1 p.2.2)) :
+      (fun ⟨n, a, z⟩ => Vstar n a z)) :
     ∃ S : ℕ → α → List Bool → ProbComp (List Bool),
       IsPPTOn (encPair encUnary (encPair enc encBits)) encBits
-        (fun p : ℕ × α × List Bool => S p.1 p.2.1 p.2.2) ∧
+        (fun ⟨n, a, z⟩ => S n a z) ∧
       ∀ a w (z : ℕ → List Bool),
         zk.isWitness a w = true →
         PolynomiallyBounded (fun n => (z n).length) →
         ∀ adversary : ℕ → α → List Bool → List Bool → ProbComp Bool,
           IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
-            (fun p => adversary p.1.1 p.1.2.1 p.1.2.2 p.2) →
+            (fun ⟨⟨n, a, z⟩, view⟩ => adversary n a z view) →
           Negligible (fun n => Game.advantage
             (distinguishingGame
               (((zk.prover n a w).run (Vstar n a (z n))
@@ -426,10 +426,10 @@ the real interaction output and simulator output are computationally indistingui
 theorem zero_knowledge_const (zk : ZeroKnowledgeProof enc A)
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
     (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun p : ℕ × α × List Bool => Vstar p.1 p.2.1 p.2.2)) :
+      (fun ⟨n, a, z⟩ => Vstar n a z)) :
     ∃ S : ℕ → α → List Bool → ProbComp (List Bool),
       IsPPTOn (encPair encUnary (encPair enc encBits)) encBits
-        (fun p : ℕ × α × List Bool => S p.1 p.2.1 p.2.2) ∧
+        (fun ⟨n, a, z⟩ => S n a z) ∧
       ∀ a w (z : ℕ → List Bool),
         zk.isWitness a w = true →
         ComputableInPolyTime z encUnary encBits →

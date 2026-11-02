@@ -30,7 +30,7 @@ These native composition and invariant proofs are original.
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 
-open Cslib.WordRAM
+open Cslib.WordRAM Cslib.DataStructure
 open Cslib.Algorithms.ThreeSum.ChanHe (Node)
 
 /-- Execute and verify the whole live native worklist transition. -/
@@ -54,7 +54,7 @@ theorem live_transition {a : Arena} {w : ℕ} {target : List Node}
     exact preg i (by omega) (by omega))
   have frame (q : ℕ) (hq : q < a.stack ∨ a.stack + a.capacity ≤ q) : p.mem q = x.mem q := by
     apply hframe
-    simp only [Stack.footprint, Block.mem_footprint, Block.Owns]
+    simp only [Stack.WordRAM.footprint, Block.mem_footprint, Block.Owns]
     omega
   have gap : a.capacity ≤ a.floor - a.stack := by
     have ht := ha.2.1
@@ -128,7 +128,7 @@ theorem live_transition {a : Arena} {w : ℕ} {target : List Node}
       y.regs i = v.regs i := hyr i (Or.inl ⟨hi, hi'⟩)
   have yframe (q : ℕ) (hq : q < a.stack ∨ a.stack + a.capacity ≤ q) : y.mem q = v.mem q := by
     apply hyframe
-    simp only [Stack.footprint, Block.mem_footprint, Block.Owns]
+    simp only [Stack.WordRAM.footprint, Block.mem_footprint, Block.Owns]
     omega
   have hbody := body_live hp hl hc.2.2.2.2.2.2.2.2.2.1 hf hn hv hy
   have vsStored := em.stored ha hc (oldStored e (by simp)) (h.around e (by simp))

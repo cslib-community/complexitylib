@@ -32,14 +32,14 @@ composition is a separate obligation.
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 
-open Cslib.WordRAM
+open Cslib.WordRAM Cslib.DataStructure
 open Cslib.Algorithms.ThreeSum.ChanHe (Node)
 
 /-- Every actual live loop header admits a native body execution with the same finite program. -/
 theorem transition {a : Arena} {w : ℕ} {target : List Node}
     (ha : a.Separated) (hw : a.Ready w) (h2 : Fits (w + 2) 2)
     (hcap : Fits (w + 2) (a.stack + a.capacity)) (s : Cursor) (x : Data 128)
-    (h : s.Invariant a w target x) (hc : (Cond.lt zero (registers Stack.len)).Holds x) :
+    (h : s.Invariant a w target x) (hc : (Cond.lt zero (registers Stack.WordRAM.len)).Holds x) :
     ∃ (s' : Cursor) (y : Data 128),
       ExecWithin (w + 2) body x y (visitTime a.n a.m a.N + 314) ∧
       s'.Invariant a w target y ∧ s'.work < s.work := by
