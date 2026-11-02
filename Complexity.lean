@@ -2929,6 +2929,7 @@ public import Complexity.DataStructure.StateTransition.Module
 public import Complexity.DataStructure.StateTransition.Oracle
 public import Complexity.DataStructure.StateTransition.Refinement
 public import Complexity.DataStructure.StateTransition.Resource
+public import Complexity.DataStructure.StateTransition.WP
 public import Complexity.DataStructure.VanEmdeBoas.Basic
 public import Complexity.DataStructure.VanEmdeBoas.Elements
 public import Complexity.DataStructure.VanEmdeBoas.Erase
