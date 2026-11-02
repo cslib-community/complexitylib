@@ -3672,6 +3672,7 @@ public import Complexity.Foundations.Probability.SamplerPrefix
 public import Complexity.Foundations.Probability.ScheduledFineProductMean
 public import Complexity.Foundations.Probability.ScheduledProductMean
 public import Complexity.Foundations.Probability.SecondMoment
+public import Complexity.Foundations.Probability.SignedResidualBins
 public import Complexity.Foundations.Probability.SourceRelease
 public import Complexity.Foundations.Probability.StochasticAtom
 public import Complexity.Foundations.Probability.TrueSampleMeans
