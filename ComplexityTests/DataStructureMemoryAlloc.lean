@@ -15,9 +15,11 @@ public import Complexity.DataStructure.Stack.Memory
 Two checks of the allocator contract of `Memory.Allocator`, at word size `8`.
 
 **Room consumed inside operations.** A write-once cell reserves one cell of room when it is
-allocated, and allocates that cell inside its first `set`. Two such cells share one memory as
-`cells`, the product of their allocators. A client sets them alternately, so each `set`
-allocates above the other structure's newest cell. The tests check:
+allocated, and allocates that cell inside its first `set`. Its header is taken without clearing,
+so its allocator needs the memory beyond the frontier to be zero, which the other cell's
+allocation keeps. Two such cells share one memory as `cells`, the product of their allocators.
+A client sets them alternately, so each `set` allocates above the other structure's newest cell.
+The tests check:
 
 * the answers and the admissibility of the whole run, by the generic `Allocator.run_correct`;
 * the allocations inside the operations, in the run's memory history;
@@ -25,7 +27,8 @@ allocates above the other structure's newest cell. The tests check:
   which stays at the frontier the allocation reserved up to;
 * the boundary: from frontier `251`, where `251 + 4` fits a byte, the run is admissible. From
   `252` it is not, and only the right `set` fails: its allocation, of the last of the four
-  reserved cells, would leave the frontier at `256`.
+  reserved cells, would leave the frontier at `256`;
+* that the precondition is needed: over a nonzero cell, an unset cell reads as set.
 
 **Structures already in memory.** A stack that the input holds is taken over by
 `Allocator.resident`, in the shape of Dijkstra's algorithm: two stacks are allocated from
@@ -139,10 +142,10 @@ theorem runClient_cellGet_of_ne_zero (s : State) (h0 : s.mem h ≠ 0) :
     ↓reduceIte]
   rfl
 
-/-- Allocating a header clears one cell at the frontier. -/
-theorem runClient_alloc_one (s : State) :
-    (spec w).runClient s (alloc 1) =
-      (s.frontier, ⟨clear s.mem s.frontier 1, s.frontier + 1⟩, [.alloc 1]) := rfl
+/-- Allocating a header takes one cell at the frontier, without clearing it. -/
+theorem runClient_allocDirty_one (s : State) :
+    (spec w).runClient s (allocDirty 1) = (s.frontier, ⟨s.mem, s.frontier + 1⟩, [.allocDirty 1]) :=
+  rfl
 
 variable {h w}
 
@@ -292,38 +295,40 @@ theorem cellAmortized : (cellFramed h w).Amortized charge (fun _ _ => 3) fun _ =
     · simp [cellMethods, StateTransitionSpec.clientHistory, runClient_cellGet_of_eq_zero h w s h0]
     · simp [cellMethods, StateTransitionSpec.clientHistory, runClient_cellGet_of_ne_zero h w s h0]
 
-/-- **The write-once cell as an allocator**: allocate a zeroed header, and reserve one more cell
-for the first `set`. -/
+/-- **The write-once cell as an allocator**: take a header at the frontier without clearing it,
+since the memory beyond the frontier is zero, and reserve one more cell for the first `set`.
+Another structure's allocation keeps the memory beyond the new frontier zero. -/
 def cellAllocator : Allocator (Cell w) w where
   Handle := ℕ
-  alloc := alloc 1
+  alloc := allocDirty 1
   methods h := cellMethods h w
   init := none
   room := 2
-  cost := 2
+  cost := 1
+  Pre s := ∀ a, s.frontier ≤ a → s.mem a = 0
+  pre_fresh hs _ habove hf _ a ha := (habove a ha).trans (hs a (hf.trans ha))
   framed s _ _ := cellFramed s.frontier w
-  allocates s _ hroom := by
-    have h0 : clear s.mem s.frontier 1 s.frontier = 0 :=
-      clear_of_owns ⟨le_rfl, Nat.lt_add_one _⟩
+  allocates s hs hroom := by
+    have h0 : s.mem s.frontier = 0 := hs _ le_rfl
     refine
       { validHistory := ?_, cost_le := ?_, mem_eq := ?_, methods_eq := rfl, inv := ?_,
         abs_eq := ?_, of_mem_footprint := ?_, room_le := ?_ } <;>
       simp only [StateTransitionSpec.clientHistory, StateTransitionSpec.clientState,
-        runClient_alloc_one]
+        runClient_allocDirty_one]
     · exact ⟨hroom.of_le (by omega), trivial⟩
     · simp
-    · exact fun a ha => clear_of_not_owns (by simp only [Block.Owns]; omega)
+    · exact fun _ _ => trivial
     · refine ⟨Nat.lt_add_one _, fun h => absurd h0 h, ?_⟩
-      change Fits w (s.frontier + 1 + cellRoom s.frontier ⟨clear s.mem s.frontier 1, _⟩)
+      change Fits w (s.frontier + 1 + cellRoom s.frontier ⟨s.mem, _⟩)
       simp only [cellRoom, h0, ↓reduceIte]
       exact hroom.of_le (by omega)
-    · change cellAbs s.frontier ⟨clear s.mem s.frontier 1, _⟩ = none
+    · change cellAbs s.frontier ⟨s.mem, _⟩ = none
       simp [cellAbs, h0]
     · intro a ha
-      change a ∈ cellFootprint s.frontier ⟨clear s.mem s.frontier 1, _⟩ at ha
+      change a ∈ cellFootprint s.frontier ⟨s.mem, _⟩ at ha
       simp only [cellFootprint, h0, ↓reduceIte, Finset.mem_singleton] at ha
       exact .inr ha.ge
-    · change s.frontier + 1 + cellRoom s.frontier ⟨clear s.mem s.frontier 1, _⟩ ≤ _
+    · change s.frontier + 1 + cellRoom s.frontier ⟨s.mem, _⟩ ≤ _
       simp only [cellRoom, h0, ↓reduceIte]
       omega
 
@@ -359,14 +364,17 @@ def client : (product (Cell 8) (Cell 8)).Client (Option ℕ × Option ℕ) := do
 /-- Memory with nothing allocated. -/
 def nothing : State := ⟨fun _ => 0, 0⟩
 
-/-- Nothing is needed of the memory besides room. -/
-theorem pre (s : State) : cells.Pre s := ⟨trivial, trivial, Finset.disjoint_empty_left _⟩
+/-- Besides room, the two cells need the memory beyond the frontier to be zero, as the input
+convention leaves it. The second cell's need survives the first cell's allocation. -/
+theorem pre {s : State} (hs : ∀ a, s.frontier ≤ a → s.mem a = 0) : cells.Pre s :=
+  ⟨hs, hs, Finset.disjoint_empty_left _⟩
 
 /-- The four reserved cells fit a byte. -/
 theorem fits : Fits 8 (nothing.frontier + cells.room) := by decide
 
 /-- The two cells, as set up by the allocation from `nothing`. -/
-abbrev framed : Framed (product (Cell 8) (Cell 8)) 8 := cells.framed nothing (pre _) fits
+abbrev framed : Framed (product (Cell 8) (Cell 8)) 8 :=
+  cells.framed nothing (pre fun _ _ => rfl) fits
 
 /-- The client is admissible: each cell is set once, to a byte. -/
 theorem client_valid : (product (Cell 8) (Cell 8)).ValidHistory cells.init
@@ -379,7 +387,7 @@ theorem run_correct :
     (spec 8).ValidHistory nothing ((spec 8).clientHistory nothing (cells.run client)) ∧
       (spec 8).clientResult nothing (cells.run client) = (some 5, some 7) ∧
       framed.abs ((spec 8).clientState nothing (cells.run client)) = (some 5, some 7) := by
-  obtain ⟨hv, hres, -, habs⟩ := cells.run_correct client (pre _) fits client_valid
+  obtain ⟨hv, hres, -, habs⟩ := cells.run_correct client (pre fun _ _ => rfl) fits client_valid
   exact ⟨hv, hres, habs⟩
 
 /-- The same answer, by evaluation. -/
@@ -388,8 +396,8 @@ example : (spec 8).clientResult nothing (cells.run client) = (some 5, some 7) :=
 /-- **Each `set` allocates inside the operation**: the headers at `0` and `1`, then the left
 value cell at `2` and the right one at `3`, above the other structure's newest cell. -/
 example : (spec 8).clientHistory nothing (cells.run client) =
-    [.alloc 1, .alloc 1, .allocDirty 1, .write 2 5, .write 0 2, .allocDirty 1, .write 3 7,
-      .write 1 3, .read 0, .read 2, .read 1, .read 3] := by
+    [.allocDirty 1, .allocDirty 1, .allocDirty 1, .write 2 5, .write 0 2, .allocDirty 1,
+      .write 3 7, .write 1 3, .read 0, .read 2, .read 1, .read 3] := by
   decide
 
 /-- After allocation: both headers, both cells unset, and two cells of room up to frontier
@@ -412,18 +420,30 @@ example : let s := (spec 8).clientState nothing (cells.run setBoth)
       framed.room s = 0 := by
   decide
 
-/-- It costs two units per header and three per `set` and two per `get`. -/
+/-- It costs one unit per header, three per `set` and two per `get`. -/
 example : (spec 8).totalCost charge nothing ((spec 8).clientHistory nothing (cells.run client)) =
-    14 := by
+    12 := by
   decide
 
-/-- The generic cost theorem: four units to allocate, and three per operation. -/
+/-- The generic cost theorem: two units to allocate, and three per operation. -/
 example : (spec 8).totalCost charge nothing ((spec 8).clientHistory nothing (cells.run client)) ≤
-    4 + 0 + 3 * 4 := by
+    2 + 0 + 3 * 4 := by
   have h := Allocator.Amortized.prod (cellAllocator_amortized (w := 8))
     (cellAllocator_amortized (w := 8))
   simp only [productCharge_const] at h
-  exact Allocator.run_cost_le h client (pre _) fits client_valid
+  exact Allocator.run_cost_le h client (pre fun _ _ => rfl) fits client_valid
+
+/-- Get the left cell. -/
+def getLeft : (product (Cell 8) (Cell 8)).Client (Option ℕ) :=
+  (product (Cell 8) (Cell 8)).call (.inl .get)
+
+/-- A memory with a nonzero cell beyond the frontier, where the left header will be taken. -/
+def dirty : State := ⟨fun a => if a = 0 then 9 else 0, 0⟩
+
+/-- **The precondition is needed**: from `dirty` it fails, and the left cell, never set, reads as
+set, since its header was taken without clearing. -/
+example : ¬cells.Pre dirty ∧ (spec 8).clientResult dirty (cells.run getLeft) = some 0 := by
+  refine ⟨fun hs => absurd (Allocator.ProdPre.left hs 0 le_rfl) (by decide), by decide⟩
 
 /-! ### The boundary of the reservation -/
 
@@ -438,7 +458,7 @@ example : Fits 8 (high.frontier + cells.room) ∧ ¬Fits 8 (tooHigh.frontier + c
 
 /-- From the highest frontier with room, the generic theorem gives an admissible run. -/
 example : (spec 8).ValidHistory high ((spec 8).clientHistory high (cells.run client)) :=
-  (cells.run_correct client (pre _) (by decide) client_valid).1
+  (cells.run_correct client (pre fun _ _ => rfl) (by decide) client_valid).1
 
 /-- One cell higher, the run is not admissible. -/
 example : ¬(spec 8).ValidHistory tooHigh ((spec 8).clientHistory tooHigh (cells.run client)) := by

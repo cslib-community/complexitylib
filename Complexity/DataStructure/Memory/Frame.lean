@@ -66,6 +66,8 @@ structures allocated one after the other. `Memory.Allocator` packages this.
   frontier.
 * `Memory.mem_run_of_lt_frontier`, `Memory.mem_clientState_of_lt_frontier`: a run changes an
   allocated cell only by writing it.
+* `Memory.mem_run_of_frontier_le`, `Memory.mem_clientState_of_frontier_le`: an admissible run
+  changes no cell at or above its final frontier.
 * `Memory.Framed.modifies_demonic`: a linked client keeps the frame of its calls.
 * `Memory.Framed.frame`: a method run of one structure leaves a structure with a disjoint
   footprint unchanged, and the shared room budget fitting.
@@ -122,6 +124,38 @@ theorem mem_clientState_of_lt_frontier {α : Type} (s : State) (p : Prog α) {a 
     ((spec w).clientState s p).mem a = s.mem a := by
   rw [← (spec w).run_runClient]
   exact mem_run_of_lt_frontier s _ ha hw
+
+/-- An admissible sequence of operations changes no cell at or above its final frontier: writes
+go below the frontier, and an allocation clears only the block that it hands out. -/
+theorem mem_run_of_frontier_le {s : State} {os : List Op} (hv : (spec w).ValidHistory s os)
+    {a : ℕ} (ha : ((spec w).run s os).1.frontier ≤ a) : ((spec w).run s os).1.mem a = s.mem a := by
+  induction os generalizing s with
+  | nil => rfl
+  | cons o os ih =>
+    obtain ⟨hvo, hvs⟩ := hv
+    change ((spec w).run (step s o).1 os).1.frontier ≤ a at ha
+    change ((spec w).run (step s o).1 os).1.mem a = s.mem a
+    rw [ih hvs ha]
+    have hf : (step s o).1.frontier ≤ a := (frontier_le_run _ os).trans ha
+    cases o with
+    | read => rfl
+    | write b v =>
+      have hb : b < s.frontier := hvo.1
+      simp only [step_write] at hf
+      have hab : a ≠ b := by omega
+      exact Function.update_of_ne hab v s.mem
+    | alloc k =>
+      simp only [step_alloc] at hf
+      exact clear_of_not_owns (by simp only [Block.Owns]; omega)
+    | allocDirty => rfl
+
+/-- An admissible memory program changes no cell at or above its final frontier. -/
+theorem mem_clientState_of_frontier_le {α : Type} (s : State) (p : Prog α)
+    (hv : (spec w).ValidHistory s ((spec w).clientHistory s p)) {a : ℕ}
+    (ha : ((spec w).clientState s p).frontier ≤ a) :
+    ((spec w).clientState s p).mem a = s.mem a := by
+  rw [← (spec w).run_runClient] at ha ⊢
+  exact mem_run_of_frontier_le hv ha
 
 /-! ## Framed refinements -/
 

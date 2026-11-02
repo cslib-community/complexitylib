@@ -47,11 +47,13 @@ Allocators combine as their structures do.
   `Memory.Framed.comp`.
 
 Certificates combine along with them (`Allocator.Amortized.prod`, `Allocator.Amortized.comp`,
-`Allocator.Amortized.resident`). An allocation changes no allocated cell, so it keeps the other
-structures' preconditions and the cells they take over (`Allocator.pre_fresh`,
-`Allocator.owned_fresh`). The product's precondition (`Allocator.ProdPre`) asks in addition that
-the cells the two structures take over be disjoint. So `A₁.prod (A₂.prod A₃)` may combine
-structures allocated from scratch with structures that the input holds.
+`Allocator.Amortized.resident`). An allocation changes no allocated cell, and being admissible,
+no cell beyond its new frontier either (`Memory.mem_clientState_of_frontier_le`). So it keeps the
+other structures' preconditions, such as that the memory beyond the frontier is zero, and the
+cells they take over (`Allocator.pre_fresh`, `Allocator.owned_fresh`). The product's
+precondition (`Allocator.ProdPre`) asks in addition that the cells the two structures take over
+be disjoint. So `A₁.prod (A₂.prod A₃)` may combine structures allocated from scratch with
+structures that the input holds.
 
 ## Main definitions
 
@@ -133,14 +135,15 @@ structure Allocator (D : StateTransitionSpec.{0, 0, 0}) (w : ℕ) where
   owned : State → Finset ℕ := fun _ => ∅
   /-- The cells taken over are allocated. -/
   owned_lt : ∀ {s a}, Pre s → a ∈ owned s → a < s.frontier := by intros; simp_all
-  /-- Runs that keep every allocated cell and leave the room fitting, such as other allocations,
-  keep the precondition. -/
+  /-- Runs that keep every allocated cell and every cell beyond the new frontier and leave the
+  room fitting, such as other allocations, keep the precondition. -/
   pre_fresh : ∀ {s s' : State}, Pre s → (∀ a < s.frontier, s'.mem a = s.mem a) →
-    s.frontier ≤ s'.frontier → Fits w (s'.frontier + room) → Pre s' := by intros; trivial
+    (∀ a, s'.frontier ≤ a → s'.mem a = s.mem a) → s.frontier ≤ s'.frontier →
+      Fits w (s'.frontier + room) → Pre s' := by intros; trivial
   /-- Such runs keep the cells taken over. -/
   owned_fresh : ∀ {s s' : State}, Pre s → (∀ a < s.frontier, s'.mem a = s.mem a) →
-    s.frontier ≤ s'.frontier → Fits w (s'.frontier + room) → owned s' = owned s := by
-    intros; rfl
+    (∀ a, s'.frontier ≤ a → s'.mem a = s.mem a) → s.frontier ≤ s'.frontier →
+      Fits w (s'.frontier + room) → owned s' = owned s := by intros; rfl
   /-- The framed refinement that allocating from `s` sets up. -/
   framed : (s : State) → Pre s → Fits w (s.frontier + room) → Framed D w
   /-- Allocating from `s` sets it up. -/
@@ -350,14 +353,16 @@ theorem room_after {s : State} (hs₁ : A₁.Pre s) {r : ℕ}
 theorem pre_after {s : State} (hs₁ : A₁.Pre s)
     (hroom : Fits w (s.frontier + (A₁.room + A₂.room))) (hs₂ : A₂.Pre s) :
     A₂.Pre ((spec w).clientState s A₁.alloc) :=
-  A₂.pre_fresh hs₂ (A₁.allocates s hs₁ (hroom.of_le (by omega))).mem_eq
+  have h₁ := A₁.allocates s hs₁ (hroom.of_le (by omega))
+  A₂.pre_fresh hs₂ h₁.mem_eq (fun _ => mem_clientState_of_frontier_le s _ h₁.validHistory)
     (frontier_le_clientState s _) (room_after hs₁ hroom)
 
 /-- After allocating the first structure, the second one takes over the same cells. -/
 theorem owned_after {s : State} (hs₁ : A₁.Pre s)
     (hroom : Fits w (s.frontier + (A₁.room + A₂.room))) (hs₂ : A₂.Pre s) :
     A₂.owned ((spec w).clientState s A₁.alloc) = A₂.owned s :=
-  A₂.owned_fresh hs₂ (A₁.allocates s hs₁ (hroom.of_le (by omega))).mem_eq
+  have h₁ := A₁.allocates s hs₁ (hroom.of_le (by omega))
+  A₂.owned_fresh hs₂ h₁.mem_eq (fun _ => mem_clientState_of_frontier_le s _ h₁.validHistory)
     (frontier_le_clientState s _) (room_after hs₁ hroom)
 
 variable (A₁)
@@ -385,18 +390,18 @@ def prod : Allocator (product D₁ D₂) w where
   Pre := ProdPre A₁ A₂
   owned s := A₁.owned s ∪ A₂.owned s
   owned_lt hs ha := (Finset.mem_union.mp ha).elim (A₁.owned_lt hs.left) (A₂.owned_lt hs.right)
-  pre_fresh hs hmem hf hr :=
+  pre_fresh hs hmem habove hf hr :=
     have hr₁ := hr.of_le (Nat.add_le_add_left (Nat.le_add_right A₁.room A₂.room) _)
     have hr₂ := hr.of_le (Nat.add_le_add_left (Nat.le_add_left A₂.room A₁.room) _)
-    { left := A₁.pre_fresh hs.left hmem hf hr₁
-      right := A₂.pre_fresh hs.right hmem hf hr₂
+    { left := A₁.pre_fresh hs.left hmem habove hf hr₁
+      right := A₂.pre_fresh hs.right hmem habove hf hr₂
       disjoint := by
-        rw [A₁.owned_fresh hs.left hmem hf hr₁, A₂.owned_fresh hs.right hmem hf hr₂]
+        rw [A₁.owned_fresh hs.left hmem habove hf hr₁, A₂.owned_fresh hs.right hmem habove hf hr₂]
         exact hs.disjoint }
-  owned_fresh hs hmem hf hr := by
-    rw [A₁.owned_fresh hs.left hmem hf
+  owned_fresh hs hmem habove hf hr := by
+    rw [A₁.owned_fresh hs.left hmem habove hf
         (hr.of_le (Nat.add_le_add_left (Nat.le_add_right A₁.room A₂.room) _)),
-      A₂.owned_fresh hs.right hmem hf
+      A₂.owned_fresh hs.right hmem habove hf
         (hr.of_le (Nat.add_le_add_left (Nat.le_add_left A₂.room A₁.room) _))]
   framed s hs hroom :=
     (A₁.framed s hs.left (hroom.of_le (by omega))).prod
@@ -524,11 +529,11 @@ def resident : Allocator D w where
   Pre s := M.inv s ∧ M.abs s = init ∧ M.room s ≤ room
   owned := M.footprint
   owned_lt hs ha := M.lt_frontier hs.1 ha
-  pre_fresh {s _} hs hmem hf hr := by
+  pre_fresh {s _} hs hmem _ hf hr := by
     obtain ⟨hinv, habs, hle⟩ := hs
     obtain ⟨hinv', habs', -, hroom'⟩ := M.of_fresh hinv hmem hf (hr.of_le (by omega))
     exact ⟨hinv', habs'.trans habs, hroom' ▸ hle⟩
-  owned_fresh {s _} hs hmem hf hr := by
+  owned_fresh {s _} hs hmem _ hf hr := by
     obtain ⟨hinv, -, hle⟩ := hs
     obtain ⟨-, -, hfp, -⟩ := M.of_fresh hinv hmem hf (hr.of_le (by omega))
     exact hfp
