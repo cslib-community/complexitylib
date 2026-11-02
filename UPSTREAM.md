@@ -523,6 +523,10 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   initialization/locality bundle and semantic module; its argument map instantiates one global
   emitter rather than selecting code after runtime layouts. Combined cost takes the program and
   an explicit work grading, with a separately proved envelope before dropping local work.
+  Certified coordinate-wise glue stages multiword results with every copy charged; Option
+  values use a tag and unshifted payload, including maximal fitting words. The actual
+  `Stack.Memory` size/push/pop clients reuse those rules over faithfully encoded runtime layouts,
+  with visible layout/representation/spare-capacity conditions and local work 0/10/19.
   The full framed queue/faithful allocation client remains separate. No abstract headline is added.
   `DataStructure/OrderedSet` and `DataStructure/OrderedSet/*` provide neutral
   optional-minimum contracts, a typed finite-set interface including deletion, and adaptive
