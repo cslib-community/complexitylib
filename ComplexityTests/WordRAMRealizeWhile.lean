@@ -148,7 +148,8 @@ example : Realizes .exact descend pairWords word
 
 /-- A truncating cutoff leaves an unsatisfiable domain: at cutoff `0` the guard must be false. -/
 example (w : ℕ) (s : Memory.State) :
-    ¬whileSafe (fun _ r => 0 < r) (fun ((_ : ℕ), r) => pure (r - 1)) (fun _ _ _ => True) w 0 0 1 s :=
+    ¬whileSafe (fun _ r => 0 < r) (fun ((_ : ℕ), r) => pure (r - 1)) (fun _ _ _ => True)
+      w 0 0 1 s :=
   fun h => h Nat.one_pos
 
 /-- A query-free loop keeps a graded charge, which `whileWork_le` bounds by the cutoff. -/
