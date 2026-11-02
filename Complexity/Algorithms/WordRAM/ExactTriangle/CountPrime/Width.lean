@@ -39,7 +39,9 @@ theorem admissionWidth_pos (n p A : ℕ) : 0 < admissionWidth n p A := by
   unfold admissionWidth
   omega
 
-private theorem fits_at_width (n p A : ℕ) :
+/-- The original-input threshold admits the signed magnitude budget and every native address.
+This exposes numerical admission for callers reusing the counter at a larger physical width. -/
+theorem admission_fits (n p A : ℕ) :
     GenericRAM.Signed.Fits (Nat.clog 2 (envelope n p A) + 1)
         (magnitudeBudget p (Nat.clog 2 n) A : ℤ) ∧
       Fits (admissionWidth n p A)
@@ -75,7 +77,7 @@ theorem exec_input {W n p A : ℕ} (values : List ℤ)
       y.Bounded W ∧
       ∀ d, d < 3 + 3 * (n * n) ∨ memoryEnd n p (Nat.clog 2 n) (3 + 3 * (n * n)) ≤ d →
         y.mem d = (Data.init (inputWords n p values) : Data 128).mem d := by
-  obtain ⟨hmag, haddr⟩ := fits_at_width n p A
+  obtain ⟨hmag, haddr⟩ := admission_fits n p A
   obtain ⟨hi, y, he, result, _, frame⟩ := exec_input_at values hlen hp hv hmag
     (by simpa only [Nat.add_assoc, admissionWidth] using haddr)
   have hwidth : Nat.clog 2 (envelope n p A) + 1 + 2 ≤ W := by

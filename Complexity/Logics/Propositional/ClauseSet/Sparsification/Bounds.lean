@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Tree
+import Complexity.Foundations.Combinatorics.SmallSubsets
 import Mathlib.Algebra.Group.Action.Defs
 import Mathlib.Algebra.BigOperators.Intervals
 import Mathlib.Algebra.BigOperators.Ring.Finset
@@ -28,7 +29,7 @@ recursive bound of the path analysis: the products `θ (c - h) · X ^ (2 h - 1)`
 most `(k - 1) N / α` petal steps, and nodes with at most `Λ` more clauses than the root.
 
 For any branching rule, a leaf word is determined by the positions of its petal steps among the
-first `Λ` steps (`BranchingRule.IsLeafWord.eq_of_getD_eq`), so there are at most
+first `Λ` steps (`Cslib.BinaryBranching.IsLeafWord.eq_of_getD_eq`), so there are at most
 `∑_{j ≤ (k - 1) N / α} (Λ choose j)` leaf words (`BranchingRule.card_le_of_isLeafWord`), and the
 canonical rule gives a family of that many leaves (`exists_leaves`). The leaves are sparse, so
 every variable occurs in at most `2 ∑_{c < k} θ c` of their clauses (`occurrences_le_of_sparse`),
@@ -48,8 +49,8 @@ and they have at most `2 (∑_{c < k} θ c) N + 1` clauses (`card_le_of_sparse`)
   steps and small nodes.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.BranchingRule.card_le_of_isLeafWord`: the number of
   leaves of any branching rule.
-* `Cslib.Logic.PL.ClauseSet.Sparsification.BranchingRule.IsNodeWord.card_walk_le`: the states of
-  the tree are small.
+* `Cslib.Logic.PL.ClauseSet.Sparsification.BranchingRule.card_walk_le`: the states of the tree are
+  small.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.exists_leaves`: the leaves of the canonical rule.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.occurrences_le_of_sparse`,
   `Cslib.Logic.PL.ClauseSet.Sparsification.card_le_of_sparse`: sparse clause sets are sparse.
@@ -249,79 +250,45 @@ include hk hα hred hk0 hU
 
 /-- **Leaf words are short.** From a reduced clause set of width `k` over the `N` variables of `U`,
 every leaf word has length at most `N k X ^ (2 k)`. -/
-theorem IsLeafWord.length_le {w : List Bool} (hw : R.IsLeafWord s w) :
+theorem length_le_of_isLeafWord {w : List Bool} (hw : R.tree.IsLeafWord s w) :
     w.length ≤ U.card * (k * base k α ^ (2 * k)) := by
   obtain ⟨P, hP0, hPlen, hPleaf, -⟩ := exists_path_of_isLeafWord hred hw
-  have h0 : P.node 0 = R.toClauseSet s := by simpa [walk] using hP0 0 (Nat.zero_le _)
+  have h0 : P.node 0 = R.toClauseSet s := by
+    simpa [BinaryBranching.walk] using hP0 0 (Nat.zero_le _)
   rw [← hPlen]
   exact Path.len_le hk hα P (h0 ▸ hk0) hPleaf U (h0 ▸ hU)
 
 /-- **Leaf words have few petal steps.** From a reduced clause set of width `k` over the `N`
 variables of `U`, every leaf word has at most `(k - 1) N / α` petal steps. -/
-private theorem IsLeafWord.mul_card_le {w : List Bool} (hw : R.IsLeafWord s w) :
+private theorem mul_card_le_of_isLeafWord {w : List Bool} (hw : R.tree.IsLeafWord s w) :
     α * ((range w.length).filter fun i => w.getD i false = true).card ≤ (k - 1) * U.card := by
   obtain ⟨P, hP0, hPlen, hPleaf, hPdir⟩ := exists_path_of_isLeafWord hred hw
-  have h0 : P.node 0 = R.toClauseSet s := by simpa [walk] using hP0 0 (Nat.zero_le _)
+  have h0 : P.node 0 = R.toClauseSet s := by
+    simpa [BinaryBranching.walk] using hP0 0 (Nat.zero_le _)
   rw [← hPdir]
   exact Path.mul_card_petal_le hk hα P (h0 ▸ hk0) hPleaf U (h0 ▸ hU)
 
 /-- **Few leaves.** From a reduced clause set of width `k` over the `N` variables of `U`, there
 are at most `∑_{j ≤ (k - 1) N / α} (Λ choose j)` leaf words, `Λ = N k X ^ (2 k)`. -/
-theorem card_le_of_isLeafWord (W : Finset (List Bool)) (hW : ∀ w ∈ W, R.IsLeafWord s w) :
+theorem card_le_of_isLeafWord (W : Finset (List Bool)) (hW : ∀ w ∈ W, R.tree.IsLeafWord s w) :
     W.card ≤ ∑ j ∈ range ((k - 1) * U.card / α + 1),
-      (U.card * (k * base k α ^ (2 * k))).choose j := by
-  classical
-  set Λ := U.card * (k * base k α ^ (2 * k))
-  set ρ := (k - 1) * U.card / α
-  let pos (w : List Bool) : Finset ℕ := (range Λ).filter fun i => w.getD i false = true
-  have hpos : ∀ w ∈ W, pos w ∈ (range Λ).powerset.filter (·.card ≤ ρ) := by
-    intro w hw
-    have hlen := (hW w hw).length_le hk hα hred hk0 U hU
-    refine mem_filter.mpr ⟨mem_powerset.mpr (filter_subset _ _), ?_⟩
-    refine (Nat.le_div_iff_mul_le (by omega)).mpr ((Nat.mul_comm _ _).trans_le
-      ((Nat.mul_le_mul_left α (card_le_card fun i hi => ?_)).trans
-        ((hW w hw).mul_card_le hk hα hred hk0 U hU)))
-    obtain ⟨-, hi⟩ := mem_filter.mp hi
-    refine mem_filter.mpr ⟨mem_range.mpr ?_, hi⟩
-    by_contra hge
-    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_none (by omega)] at hi
-    exact Bool.false_ne_true hi
-  have hinj : Set.InjOn pos W := by
-    intro w hw w' hw' h
-    refine (hW w hw).eq_of_getD_eq (hW w' hw') fun i => ?_
-    by_cases hi : i < Λ
-    · have := congrArg (i ∈ ·) h
-      simp only [pos, mem_filter, mem_range, hi, true_and, eq_iff_iff] at this
-      cases hwi : w.getD i false <;> cases hw'i : w'.getD i false <;> simp_all
-    · have hl := (hW w hw).length_le hk hα hred hk0 U hU
-      have hl' := (hW w' hw').length_le hk hα hred hk0 U hU
-      rw [List.getD_eq_getElem?_getD, List.getElem?_eq_none (by omega),
-        List.getD_eq_getElem?_getD, List.getElem?_eq_none (by omega)]
-  calc W.card = (W.image pos).card := (card_image_of_injOn hinj).symm
-    _ ≤ ((range Λ).powerset.filter (·.card ≤ ρ)).card :=
-        card_le_card fun t ht => by
-          obtain ⟨w, hw, rfl⟩ := mem_image.mp ht
-          exact hpos w hw
-    _ ≤ ((range (ρ + 1)).biUnion fun j => (range Λ).powersetCard j).card := by
-        refine card_le_card fun t ht => ?_
-        obtain ⟨htΛ, htρ⟩ := mem_filter.mp ht
-        exact mem_biUnion.mpr ⟨t.card, mem_range.mpr (by omega),
-          mem_powersetCard.mpr ⟨mem_powerset.mp htΛ, rfl⟩⟩
-    _ ≤ ∑ j ∈ range (ρ + 1), ((range Λ).powersetCard j).card := card_biUnion_le
-    _ = ∑ j ∈ range (ρ + 1), Λ.choose j := by
-        refine sum_congr rfl fun j _ => ?_
-        rw [card_powersetCard, card_range]
+      (U.card * (k * base k α ^ (2 * k))).choose j :=
+  BinaryBranching.card_le_sum_choose_of_isLeafWord hW
+    (fun w hw => length_le_of_isLeafWord hk hα hred hk0 U hU (hW w hw))
+    fun w hw => (Nat.le_div_iff_mul_le (by omega)).mpr ((Nat.mul_comm _ _).trans_le
+      (mul_card_le_of_isLeafWord hk hα hred hk0 U hU (hW w hw)))
 
 /-- **The states of the tree are small.** From a reduced clause set `ψ` of width `k` over the `N`
 variables of `U`, every state reached along a node word has at most `|ψ| + N k X ^ (2 k)`
 clauses. -/
-theorem IsNodeWord.card_walk_le {w : List Bool} (hw : R.IsNodeWord s w) :
-    (R.toClauseSet (R.walk s w)).card ≤
+theorem card_walk_le {w : List Bool} (hw : R.tree.IsNodeWord s w) :
+    (R.toClauseSet (R.tree.walk s w)).card ≤
       (R.toClauseSet s).card + U.card * (k * base k α ^ (2 * k)) := by
-  obtain ⟨u, hu⟩ := hw.exists_isLeafWord_append (one_le_threshold hk hα)
+  obtain ⟨u, hu⟩ := hw.exists_isLeafWord_append (tree_terminating (one_le_threshold hk hα))
   obtain ⟨P, hP0, hPlen, hPleaf, -⟩ := exists_path_of_isLeafWord hred hu
-  have h0 : P.node 0 = R.toClauseSet s := by simpa [walk] using hP0 0 (Nat.zero_le _)
-  have hw' : P.node w.length = R.toClauseSet (R.walk s w) := by
+  have h0 : P.node 0 = R.toClauseSet s := by
+    simpa [BinaryBranching.walk] using hP0 0 (Nat.zero_le _)
+  have hw' : P.node w.length = R.toClauseSet (R.tree.walk s w) := by
     rw [hP0 _ (by simp), List.take_left]
   rw [← hw', ← h0]
   exact Path.card_node_le hk hα P (h0 ▸ hk0) hPleaf U (h0 ▸ hU) (by rw [hPlen]; simp)
@@ -352,47 +319,44 @@ theorem exists_leaves [Fintype V] (hk : 1 ≤ k) (hα : 1 ≤ α) (φ : ClauseSe
   have hU : ∀ C ∈ R.toClauseSet ψ₀, ∀ l ∈ C, l.1 ∈ (univ : Finset V) :=
     fun _ _ _ _ => mem_univ _
   let S : Finset (Finset ℕ) := (range Λ).powerset.filter (·.card ≤ ρ)
-  let leaf : Finset ℕ → ClauseSet V := fun s => R.walkSeq Λ ψ₀ fun i => decide (i ∈ s)
+  let leaf : Finset ℕ → ClauseSet V := fun s => R.tree.walkSeq Λ ψ₀ fun i => decide (i ∈ s)
   refine ⟨(S.image leaf).filter (Sparse θ), ?_, ?_, ?_⟩
   · -- counting position sets
     calc ((S.image leaf).filter (Sparse θ)).card ≤ (S.image leaf).card := card_filter_le _ _
       _ ≤ S.card := card_image_le
-      _ ≤ ((range (ρ + 1)).biUnion fun j => (range Λ).powersetCard j).card := by
-          refine card_le_card fun s hs => ?_
-          obtain ⟨hsΛ, hsρ⟩ := mem_filter.mp hs
-          exact mem_biUnion.mpr ⟨s.card, mem_range.mpr (by omega),
-            mem_powersetCard.mpr ⟨mem_powerset.mp hsΛ, rfl⟩⟩
-      _ ≤ ∑ j ∈ range (ρ + 1), ((range Λ).powersetCard j).card := card_biUnion_le
       _ = ∑ j ∈ range (ρ + 1), Λ.choose j := by
-          refine sum_congr rfl fun j _ => ?_
-          rw [card_powersetCard, card_range]
+          rw [card_filter_powerset_card_le_eq_sum_choose, card_range]
   · intro ψ hψ
     obtain ⟨hψimg, hsparse⟩ := mem_filter.mp hψ
     obtain ⟨s, -, rfl⟩ := mem_image.mp hψimg
+    obtain ⟨w, hw, heq⟩ := R.tree.exists_isNodeWord_walkSeq Λ ψ₀ fun i => decide (i ∈ s)
+    have heq' : leaf s = R.tree.walk ψ₀ w := heq
+    rw [heq'] at hsparse ⊢
     refine ⟨hsparse, fun C hC => ?_, fun x hx => ?_⟩
-    · obtain ⟨D, hD, hCD⟩ := BranchingRule.refines_walkSeq (R := R) hθ C hC
+    · obtain ⟨D, hD, hCD⟩ := BranchingRule.refines_walk (R := R) hθ hw C hC
       exact ⟨D, reduce_subset φ hD, hCD⟩
-    · exact sat_reduce_iff.mp (BranchingRule.sat_of_sat_walkSeq (R := R) hx)
+    · exact sat_reduce_iff.mp (BranchingRule.sat_of_sat_walk (R := R) hw hx)
   · intro x hx
     obtain ⟨w, hw, hwx⟩ :=
       BranchingRule.exists_isLeafWord_sat (R := R) hθ ψ₀ (sat_reduce_iff.mpr hx)
     have hlen : w.length ≤ Λ := by
-      simpa [card_univ] using hw.length_le hk hα (reduced_reduce φ) hψ₀ univ hU
+      simpa [card_univ] using
+        BranchingRule.length_le_of_isLeafWord hk hα (reduced_reduce φ) hψ₀ univ hU hw
     set s := (range w.length).filter fun i => w.getD i false = true
     have hs : s ∈ S := by
       refine mem_filter.mpr ⟨mem_powerset.mpr fun i hi => ?_, ?_⟩
       · exact mem_range.mpr (lt_of_lt_of_le (mem_range.mp (mem_filter.mp hi).1) hlen)
       · refine (Nat.le_div_iff_mul_le (by omega)).mpr ?_
         rw [mul_comm]
-        have := hw.mul_card_le hk hα (reduced_reduce φ) hψ₀ univ hU
+        have := BranchingRule.mul_card_le_of_isLeafWord hk hα (reduced_reduce φ) hψ₀ univ hU hw
         rwa [card_univ] at this
-    have hleaf : leaf s = R.walk ψ₀ w := by
-      refine BranchingRule.walkSeq_eq_walk hw (fun i hi => ?_) hlen
+    have hleaf : leaf s = R.tree.walk ψ₀ w := by
+      refine BinaryBranching.walkSeq_eq_walk hw (fun i hi => ?_) hlen
       simp only [s, mem_filter, mem_range, hi, true_and]
       cases w.getD i false <;> simp
     refine ⟨leaf s, mem_filter.mpr ⟨mem_image.mpr ⟨s, hs, rfl⟩, ?_⟩, hleaf ▸ hwx⟩
     rw [hleaf]
-    exact hw.sparse_walk
+    exact hw.isLeaf_walk
 
 /-- **Bounded occurrences.** In a sparse clause set of width `k`, every variable occurs in at most
 `2 ∑_{c < k} θ c` clauses. -/

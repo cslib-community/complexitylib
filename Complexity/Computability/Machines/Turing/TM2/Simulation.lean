@@ -93,10 +93,8 @@ omit [Fintype K] in
 private theorem listTail_encFinite (k : K) :
     ComputableInPolyTime (List.tail : List (Γ k) → List (Γ k))
       (encList (encFinite (Γ k))) (encList (encFinite (Γ k))) := by
-  obtain ⟨c, t, Q, hfin, tm, htm⟩ :=
-    ListEncoding.tail (enc₁ := encFinite (Γ k)) (enc := encList (encFinite (Γ k)))
-  exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-    t, Q, hfin, tm, fun l => htm l⟩
+  exact (ListEncoding.tail (enc₁ := encFinite (Γ k))
+    (enc := encList (encFinite (Γ k)))).computableInPolyTime
 
 variable [DecidableEq K]
 

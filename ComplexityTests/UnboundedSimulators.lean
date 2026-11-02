@@ -68,7 +68,7 @@ theorem closeTo_refl {α : Type} (μ : PMF α) : CloseTo μ μ 0 := fun _ => by 
 
 /-- A prover-side program without oracles, as a closed probabilistic program. -/
 noncomputable def closeProgram {α : Type} (p : ProbOracleComp OracleSpec.empty α) : ProbComp α :=
-  OracleComp.interpret (ProbOracleComp.handler ProbComp.unifFin fun e => e.elim) p
+  OracleComp.interpret (OracleComp.sumHandler ProbComp.unifFin fun e => e.elim) p
 
 theorem eval_closeProgram {α : Type} (p : ProbOracleComp OracleSpec.empty α) :
     ProbComp.eval (closeProgram p) = plainLaw p := by
