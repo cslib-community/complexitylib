@@ -128,12 +128,15 @@ theorem amortized_twoStacks : twoStacks.Amortized (fun _ _ => 13) 0 := by
 /-- The generic theorems apply to the two growing stacks in one memory. -/
 example : (spec 8).clientResult nothing (twoStacks.run client₂) =
     T.clientResult twoStacks.init client₂ :=
-  have ⟨_, hres, _⟩ := twoStacks.run_correct client₂ ⟨trivial, trivial⟩ (by decide) client₂_valid
+  have ⟨_, hres, _⟩ :=
+    twoStacks.run_correct client₂ ⟨trivial, trivial, Finset.disjoint_empty_left _⟩ (by decide)
+      client₂_valid
   hres
 
 example : (spec 8).totalCost charge nothing ((spec 8).clientHistory nothing
     (twoStacks.run client₂)) ≤ 14 + 0 + 13 * 12 :=
-  Allocator.run_cost_le amortized_twoStacks client₂ ⟨trivial, trivial⟩ (by decide) client₂_valid
+  Allocator.run_cost_le amortized_twoStacks client₂
+    ⟨trivial, trivial, Finset.disjoint_empty_left _⟩ (by decide) client₂_valid
 
 /-! ## The queue over two doubling stacks -/
 
@@ -176,7 +179,7 @@ theorem queueClient_valid : (Queue.WordRAM.spec 8 3).ValidHistory growingQueue.i
 /-- The generic cost theorem: at most `14 + 39 m` memory units. -/
 example : (spec 8).totalCost charge nothing ((spec 8).clientHistory nothing
     (growingQueue.run queueClient)) ≤ 14 + 0 + 39 * 7 :=
-  Allocator.run_cost_le amortized_growingQueue queueClient ⟨trivial, trivial⟩ (by decide)
-    queueClient_valid
+  Allocator.run_cost_le amortized_growingQueue queueClient
+    ⟨trivial, trivial, Finset.disjoint_empty_left _⟩ (by decide) queueClient_valid
 
 end ComplexityTests.DataStructureDoubling

@@ -691,7 +691,7 @@ def allocator (w C : ℕ) : Allocator (Stack.WordRAM.spec w C) w where
     have hfr : ((spec w).clientState s create).frontier = s.frontier + 3 + 1 := rfl
     refine
       { validHistory := ?_, cost_le := ?_, mem_eq := ?_, methods_eq := rfl, inv := ?_,
-        abs_eq := ?_, le_footprint := ?_, room_le := ?_ }
+        abs_eq := ?_, of_mem_footprint := ?_, room_le := ?_ }
     · simp only [StateTransitionSpec.clientHistory, runClient_create,
         StateTransitionSpec.validHistory_cons, StateTransitionSpec.stepFn, step_alloc,
         step_allocDirty, step_write, valid_alloc, valid_allocDirty, valid_write]
@@ -709,6 +709,7 @@ def allocator (w C : ℕ) : Allocator (Stack.WordRAM.spec w C) w where
     · exact List.eq_nil_of_length_eq_zero (by change (abs _ _).length = 0; rw [length_abs, hn])
     · intro a ha
       change a ∈ footprint _ _ at ha
+      right
       rcases mem_footprint.mp ha with ha | ha <;> omega
     · change ((spec w).clientState s create).frontier +
         room s.frontier C ((spec w).clientState s create) ≤ s.frontier + (4 * C + 4)
