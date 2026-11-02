@@ -14,8 +14,9 @@ public import Complexity.Foundations.Probability.HierarchySampling
 # Preparatory and normalized actual-correction rows
 
 This is the actual-correction family of [OpenAI2026LogSpace, Sections 5.3, 7.1–7.2], revision
-`7ef5c0cc`: the raw input is `C + Eᵢ C`, the preparation is (5.13), and the normalized row is
-(5.14). Its multiplier is the final pilot maximum, rather than the current pilot maximum.
+`7ef5c0cc`: the raw input is `C + Eᵢ C`, the preparation is (5.13), and the normalized row agrees with
+(5.14) on the true bounded inputs. The recipe uses `P.Q` without the source's `Qat` cap;
+it does not establish the bounded extension on arbitrary estimated child tables. Its multiplier is the final pilot maximum, rather than the current pilot maximum.
 The incoming scores and gates are local operations on the completed raw matrix, not recursive
 calls to another task. Constructor ranks below account for the final pilot and actual iterations.
 
