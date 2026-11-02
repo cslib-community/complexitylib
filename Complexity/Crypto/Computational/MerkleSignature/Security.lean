@@ -121,7 +121,7 @@ noncomputable def collisionFinder
     (adversary : IndexedForger) : CollisionFinder := fun n k => do
   let keys ← OracleComp.replicate (2 ^ depth n) (S.keyGen n)
   let out ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun j => StateT.lift (ProbComp.unifFin j))
+    (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifFin j))
       ((scheme S H depth hH hlen hcap).indexedSigningOracle n (secretKey k keys)))
     (adversary n (publicKey H k keys))).run []
   return collisionOf H k keys out
@@ -163,7 +163,7 @@ noncomputable def oneTimeForgerAt (bound : ℕ → ℕ) (adversary : IndexedForg
     Forger := fun n vk => do
   let setup ← ProbOracleComp.sample (plantKeys S depth n i vk)
   let out ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun j => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin j)))
+    (OracleComp.sumHandler (fun j => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin j)))
       (plantedHandler S H depth n setup.1 setup.2 i (bound n)))
     (adversary n (publicKey H setup.1 setup.2))).run []
   return (H setup.1 out.1.2.1, (signatureDecoder.decode out.1.2.2).2.1)
@@ -196,15 +196,15 @@ private theorem eval_run_plantedHandler
       σ.length ≤ b)
     {α : Type} (program : WordOracleComp Unit α) :
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun j => StateT.lift (ProbComp.unifOracle j))
+      (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
         (fun q s => ProbComp.eval (S.oneTimeSigningOracle x.2 q s)))
       ((OracleComp.interpret
-        (ProbOracleComp.handler
+        (OracleComp.sumHandler
           (fun j => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin j)))
           (plantedHandler S H depth n k (front ++ (x.1, []) :: back) front.length b))
         program).run [])).run [] =
     (ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun j => StateT.lift (ProbComp.unifFin j))
+      (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifFin j))
         ((scheme S H depth hH hlen hcap).indexedSigningOracle n
           (secretKey k (front ++ x :: back)))) program).run [])).map
       (fun r => (r, otsLogOf H front.length k r.2)) := by
@@ -215,7 +215,7 @@ private theorem eval_run_plantedHandler
         (secretKey k (front ++ x :: back)) q signed))
     (oracle' := fun (q : Unit × List Bool) (state : List (ℕ × List Bool) × List (List Bool)) =>
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun j => StateT.lift (ProbComp.unifOracle j))
+        (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
           (fun q s => ProbComp.eval (S.oneTimeSigningOracle x.2 q s)))
         ((plantedHandler S H depth n k (front ++ (x.1, []) :: back) front.length b q).run
           state.1)).run state.2).map
@@ -229,7 +229,7 @@ private theorem eval_run_plantedHandler
           (pure a : StateT σ PMF β) state = PMF.pure (a, state) := fun _ _ => rfl
       have hsampleApply : ∀ {β : Type} (p : ProbComp β) (state : List (List Bool)),
           (OracleComp.interpret
-            (ProbOracleComp.handler (fun j => StateT.lift (ProbComp.unifOracle j))
+            (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
               (fun q s => ProbComp.eval (S.oneTimeSigningOracle x.2 q s)))
             (ProbOracleComp.sample p)) state = (ProbComp.eval p).map (·, state) :=
         fun p state => ProbOracleComp.run_interpret_sample _ p state
@@ -284,7 +284,7 @@ private noncomputable def realRun
     (adversary : IndexedForger) (n : ℕ) (k : List Bool) (keys : List (List Bool × List Bool)) :
     PMF ((ℕ × List Bool × List Bool) × List (ℕ × List Bool)) :=
   ProbComp.eval ((OracleComp.interpret
-    (ProbOracleComp.handler (fun j => StateT.lift (ProbComp.unifFin j))
+    (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifFin j))
       ((scheme S H depth hH hlen hcap).indexedSigningOracle n (secretKey k keys)))
     (adversary n (publicKey H k keys))).run [])
 
@@ -653,7 +653,7 @@ theorem isPPT_collisionFinder {adversary : IndexedForger}
       (encPair (encPair encUnary (encPair encBits encBits)) (encList (encPair encUnary encBits)))
       (fun q : (ℕ × List Bool) × List (List Bool × List Bool) =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun j => StateT.lift (ProbComp.unifFin j))
+          (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifFin j))
             ((scheme S H depth hH hlen hcap).indexedSigningOracle q.1.1 (secretKey q.1.2 q.2)))
           (adversary q.1.1 (publicKey H q.1.2 q.2))).run []) :=
     hrun₀.preprocess (prepare := fun q : (ℕ × List Bool) × List (List Bool × List Bool) =>
@@ -901,8 +901,8 @@ private theorem plantedHandler_bound (hlen : ∀ k m, (H k m).length = k.length)
   unfold plantedHandler at hres
   dsimp only at hres
   split_ifs at hres with hguard hi
-  · obtain ⟨ots, hots, rfl⟩ := ProbOracleComp.mem_support_map hres
-    obtain ⟨raw, -, rfl⟩ := ProbOracleComp.mem_support_map hots
+  · obtain ⟨ots, hots, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hres
+    obtain ⟨raw, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hots
     have htake := List.length_take_le (bound n) raw
     have hvk := (hkeyLen i).1
     have hp := hpath i
@@ -912,10 +912,9 @@ private theorem plantedHandler_bound (hlen : ∀ k m, (H k m).length = k.length)
     · simp only [hdecode, encList_cons, encPair_apply, encUnary_apply,
         encBits_apply, List.length_append, length_frame, List.length_replicate]
       omega
-  · obtain ⟨sig, hsig, rfl⟩ := ProbOracleComp.mem_support_map hres
-    rw [ProbOracleComp.support_sample] at hsig
-    simp only [signWith, ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
-      PMF.mem_support_pure_iff] at hsig
+  · obtain ⟨sig, hsig, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hres
+    simp only [ProbOracleComp.support_sample, signWith, ProbComp.eval_bind, ProbComp.eval_pure,
+      PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hsig
     obtain ⟨ots, hots, rfl⟩ := hsig
     have hotsLen := hsignLen (_, _) ots hots
     simp only [encBits_apply, encPair_apply, List.length_append, length_frame, hlen] at hotsLen
@@ -932,7 +931,7 @@ private theorem plantedHandler_bound (hlen : ∀ k m, (H k m).length = k.length)
     · simp only [hdecode, encList_cons, encPair_apply, encUnary_apply,
         encBits_apply, List.length_append, length_frame, List.length_replicate]
       omega
-  · have h := ProbOracleComp.eq_of_mem_support_pure hres
+  · have h := OracleComp.eq_of_mem_supportWith_pure hres
     subst h
     exact ⟨by simp, Nat.le_add_right _ _⟩
 
@@ -975,7 +974,7 @@ theorem isOraclePPT_oneTimeForger {bound : ℕ → ℕ}
       (encPair (encPair encUnary (encPair encBits encBits)) (encList (encPair encUnary encBits)))
       (fun c : ((ℕ × List Bool) × ℕ) × (List Bool × List (List Bool × List Bool)) =>
         (OracleComp.interpret
-          (ProbOracleComp.handler
+          (OracleComp.sumHandler
             (fun j => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin j)))
             (plantedHandler S H depth c.1.1.1 c.2.1 c.2.2 c.1.2 (bound c.1.1.1)))
           (adversary c.1.1.1 (publicKey H c.2.1 c.2.2))).run []) :=
@@ -1017,7 +1016,7 @@ theorem isOraclePPT_oneTimeForger {bound : ℕ → ℕ}
       (second := fun (c : (ℕ × List Bool) × ℕ)
           (setup : List Bool × List (List Bool × List Bool)) => do
         let out ← (OracleComp.interpret
-          (ProbOracleComp.handler
+          (OracleComp.sumHandler
             (fun j => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin j)))
             (plantedHandler S H depth c.1.1 setup.1 setup.2 c.2 (bound c.1.1)))
           (adversary c.1.1 (publicKey H setup.1 setup.2))).run []
