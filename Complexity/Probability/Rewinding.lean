@@ -51,6 +51,8 @@ since they return a `PMF Bool`, the outcome, challenge and answer types are in `
 * `Cslib.Probability.Rewinding.le_add_sqrt_twice`: `ε ≤ κ + √δ` for bounded challenge atoms.
 * `Cslib.Probability.Rewinding.sq_sub_le_twice`: `ε² − ε / N ≤ δ` ([BonehShoup2023], Lemma 19.2).
 * `Cslib.Probability.Rewinding.le_inv_add_sqrt_twice`: `ε ≤ 1 / N + √δ`.
+* `Cslib.Probability.Rewinding.sq_tsum_le_tsum_sq`: Jensen's inequality `E[g]² ≤ E[g²]` for
+  `[0, 1]`-valued `g`.
 
 ## References
 
@@ -88,7 +90,7 @@ noncomputable def twice [DecidableEq T] (first : PMF S) (challenge : S → PMF T
 /-! ### Proof of the rewinding lemma -/
 
 /-- Jensen's inequality `E[g]² ≤ E[g²]` for a function with values in `[0, 1]`. -/
-private theorem sq_tsum_le_tsum_sq {α : Type*} (μ : PMF α) {g : α → ℝ} (h0 : ∀ a, 0 ≤ g a)
+theorem sq_tsum_le_tsum_sq {α : Type*} (μ : PMF α) {g : α → ℝ} (h0 : ∀ a, 0 ≤ g a)
     (h1 : ∀ a, g a ≤ 1) :
     (∑' a, (μ a).toReal * g a) ^ 2 ≤ ∑' a, (μ a).toReal * g a ^ 2 := by
   have hm : Summable fun a => (μ a).toReal := Probability.PMF.summable_toReal μ
