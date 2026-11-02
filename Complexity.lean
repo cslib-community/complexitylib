@@ -2921,6 +2921,8 @@ public import Complexity.DataStructure.FusionTree.WordRAM.Rank
 public import Complexity.DataStructure.FusionTree.WordRAM.ReadHeader
 public import Complexity.DataStructure.FusionTree.WordRAM.Static
 public import Complexity.DataStructure.FusionTree.XorCorrection
+public import Complexity.DataStructure.HashFamily.Memory
+public import Complexity.DataStructure.HashFamily.Randomized
 public import Complexity.DataStructure.HashFamily.Spec
 public import Complexity.DataStructure.HashFamily.WordRAM.Basic
 public import Complexity.DataStructure.HashFamily.WordRAM.DoubleTabulation
@@ -2979,6 +2981,7 @@ public import Complexity.DataStructure.StateTransition.CostHoare
 public import Complexity.DataStructure.StateTransition.Hoare
 public import Complexity.DataStructure.StateTransition.Impl
 public import Complexity.DataStructure.StateTransition.Module
+public import Complexity.DataStructure.StateTransition.Randomized
 public import Complexity.DataStructure.StateTransition.Refinement
 public import Complexity.DataStructure.StateTransition.Resource
 public import Complexity.DataStructure.VanEmdeBoas.Basic
