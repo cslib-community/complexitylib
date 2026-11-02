@@ -121,7 +121,7 @@ theorem univZeroKnowledgeProof_auxiliaryInputZeroKnowledge :
   intro Vstar hV
   refine ⟨fun n a z => Prod.fst <$>
     GMW.runTwoRound (fun _ => []) (fun _ => []) (Vstar n a z) (0, [false, false, false]),
-    ?_, fun a w z _ _ _ _ _ _ => ?_⟩
+    ?_, fun _ _ _ _ h => by simp only [h], fun a w z _ _ _ _ _ _ => ?_⟩
   · have hrun := GMW.isPPTOn_runTwoRound hV
       (input := encPair encUnary (encPair encBits encBits))
       (prepare := fun p : ℕ × List Bool × List Bool => p)
@@ -243,10 +243,28 @@ example :
           (encPair encBits encBits (a, z))) :=
   (IsOraclePPTWithAux.of_machine (input := encBits) haltOracleMachine 1 1).isOraclePPTOn
 
+-- Truncating the auxiliary input of an `IsPPTOn` / `IsOraclePPTOn` program to a polynomial in the
+-- primary input length upgrades it to `IsPPTWithAux` / `IsOraclePPTWithAux`.
+example {program : List Bool → List Bool → ProbComp (List Bool)}
+    (h : IsPPTOn (encPair encBits encBits) encBits (fun (a, z) => program a z)) :
+    IsPPTWithAux encBits encBits
+      (fun a z => program a (z.take (2 * ((encBits a).length + 1) ^ 3))) :=
+  h.isPPTWithAux_take 2 3
+
+example {program : List Bool → List Bool → WordOracleComp Unit (List Bool)}
+    (h : IsOraclePPTOn (encPair encBits encBits) encBits (fun (a, z) => program a z)) :
+    IsOraclePPTWithAux encBits encBits
+      (fun a z => program a (z.take (2 * ((encBits a).length + 1) ^ 3))) :=
+  h.isOraclePPTWithAux_take 2 3
+
 -- Unconditional non-vacuity of `UnboundedAuxiliaryInputZeroKnowledge` and
 -- `InstanceAuxiliaryInputZeroKnowledge` for `univZeroKnowledgeProof`.
 example : univZeroKnowledgeProof.UnboundedAuxiliaryInputZeroKnowledge :=
   univZeroKnowledgeProof_auxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
+
+example : univZeroKnowledgeProof.InstanceAuxiliaryInputZeroKnowledge :=
+  let hub := univZeroKnowledgeProof_auxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
+  hub.instanceAuxiliaryInputZeroKnowledge
 
 example : univZeroKnowledgeProof.InstanceAuxiliaryInputZeroKnowledge :=
   univZeroKnowledgeProof_auxiliaryInputZeroKnowledge.instanceAuxiliaryInputZeroKnowledge

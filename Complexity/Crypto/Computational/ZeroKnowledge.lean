@@ -176,6 +176,7 @@ def AuxiliaryInputZeroKnowledge {α : Type} (enc : α ↪ List Bool)
     ∃ S : ℕ → α → List Bool → ProbComp (List Bool),
       IsPPTOn (encPair encUnary (encPair enc encBits)) encBits
         (fun ⟨n, a, z⟩ => S n a z) ∧
+      (∀ n a z₁ z₂, Vstar n a z₁ = Vstar n a z₂ → S n a z₁ = S n a z₂) ∧
       ∀ (a : ℕ → α) (w z : ℕ → List Bool),
         PolynomiallyBounded (fun n => (enc (a n)).length) →
         PolynomiallyBounded (fun n => (w n).length) →
@@ -202,7 +203,7 @@ theorem AuxiliaryInputZeroKnowledge.generableZeroKnowledge {α : Type} {enc : α
     (h : AuxiliaryInputZeroKnowledge enc prover isWitness) :
     GenerableZeroKnowledge enc prover isWitness := by
   intro Vstar hV
-  obtain ⟨S, hS_ppt, hS_zk⟩ := h Vstar hV
+  obtain ⟨S, hS_ppt, _, hS_zk⟩ := h Vstar hV
   refine ⟨S, hS_ppt, fun a w z ha hw hz hw_sat adversary hadversary => ?_⟩
   have ha_poly : PolynomiallyBounded (fun n => (enc (a n)).length) :=
     ((encoding_length enc).comp ha.tidy).polynomiallyBounded
@@ -399,7 +400,7 @@ theorem AuxiliaryInputZeroKnowledge.zero_knowledge_const {zk : ZeroKnowledgeProo
             (distinguishingGame
               (ProbComp.eval (S n a (z n)))
               (adversary n a (z n)))) := by
-  obtain ⟨S, hS_ppt, hS_zk⟩ := h Vstar hV
+  obtain ⟨S, hS_ppt, _, hS_zk⟩ := h Vstar hV
   exact ⟨S, hS_ppt, fun a w z hw hz adversary hadv =>
     hS_zk (fun _ => a) (fun _ => w) z (.const _) (.const _) hz (fun _ => hw) adversary hadv⟩
 
@@ -502,6 +503,7 @@ theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_zeroKnowledgeProofOfRe
   intro Vstar hV
   exact ⟨GMW.gmwSimulator generator length f Vstar,
     GMW.isPPTOn_gmwSimulator hG.polyTime hG.length_eq hf hV,
+    fun _ _ _ _ h => by dsimp only [GMW.gmwSimulator]; rw [h],
     fun _ _ _ ha hw hz hw_sat _ hadv =>
       hAdv.gmwView_negligible hf hV hadv ha hw hz hw_sat⟩
 
