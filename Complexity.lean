@@ -2611,6 +2611,14 @@ public import Complexity.Computability.WordRAM.Randomized.Law
 public import Complexity.Computability.WordRAM.Randomized.LoopSegment
 public import Complexity.Computability.WordRAM.Randomized.Structured
 public import Complexity.Computability.WordRAM.Randomized.UniformLoopExit
+public import Complexity.Computability.WordRAM.Realization.Basic
+public import Complexity.Computability.WordRAM.Realization.Bind
+public import Complexity.Computability.WordRAM.Realization.Branch
+public import Complexity.Computability.WordRAM.Realization.Glue
+public import Complexity.Computability.WordRAM.Realization.Loop
+public import Complexity.Computability.WordRAM.Realization.Primitive
+public import Complexity.Computability.WordRAM.Realization.Program
+public import Complexity.Computability.WordRAM.Realization.While
 public import Complexity.Computability.WordRAM.RegisterFrame
 public import Complexity.Computability.WordRAM.Sequence
 public import Complexity.Computability.WordRAM.Signed.Arithmetic

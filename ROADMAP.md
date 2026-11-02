@@ -627,6 +627,15 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   width-independent prefix bounds are proved. The selector computes the actual attained window
   minimum with native trial division and real counter calls, preserving the explicit window
   cost factor. Global parameter choices and the full endpoint remain separate.
+- **Memory-oracle realization** ([#2205], [#2213]): the foundational graded kernel certifies
+  all four memory queries, register-word glue, native branches and binds with one fixed
+  continuation emitter for all runtime replies. Its functional representation retains the
+  complete memory and frontier, and its instruction currency adds local work to memory charges.
+  Bounded runtime loops also charge local computation and every iteration, including query-free
+  iterations. Fixed flat programs include the actual input-installation prefix and final halt,
+  with explicit input layout, fits and safe-domain hypotheses. Remaining: operation-level memory
+  implementation, framed upper-ADT adapters and the representative queue transfer. The full
+  C2/M1b objective remains open; arbitrary host continuations do not acquire machine-time bounds.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
@@ -781,3 +790,5 @@ not planned, not as proved.
 [#2019]: https://github.com/cslib-community/complexitylib/issues/2019
 [#2062]: https://github.com/cslib-community/complexitylib/issues/2062
 [#2063]: https://github.com/cslib-community/complexitylib/issues/2063
+[#2205]: https://github.com/cslib-community/complexitylib/issues/2205
+[#2213]: https://github.com/cslib-community/complexitylib/issues/2213
