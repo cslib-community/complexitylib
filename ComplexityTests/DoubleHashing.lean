@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.DoubleHashing
+public import Complexity.DataStructure.Dictionary.DoubleHashing
 public import Complexity.Foundations.Data.Nat.OddMulMod
 public import Complexity.Init
 
@@ -15,7 +15,7 @@ public import Complexity.Init
 # Tests for Odd-Stride Double Hashing and Power-of-Two Quotient Fiber Bounds
 
 Non-vacuity and concrete evaluation tests for `Complexity.Foundations.Data.Nat.OddMulMod` and
-`Complexity.Algorithms.Lean.DoubleHashing`:
+`Complexity.DataStructure.Dictionary.DoubleHashing`:
 * Concrete `decide` checks of the power-of-two odd-stride fiber bound `Nat.card_odd_mul_mod_eq_le`
   when `gcd(Δ, 2 ^ M) > 1` (even step count `Δ = 6` modulo `2 ^ 4 = 16`).
 * Concrete instantiation of `oddStridePerm`, `OrderedTableRep.empty`,
@@ -31,9 +31,9 @@ public section
 
 namespace ComplexityTests.DoubleHashing
 
-open Cslib.Algorithms.Lean
-open Cslib.Algorithms.Lean.UniformProbing
-open Cslib.Algorithms.Lean.DoubleHashing
+open Cslib.DataStructure Cslib.DataStructure.Dictionary
+open Cslib.DataStructure.Dictionary.UniformProbing
+open Cslib.DataStructure.Dictionary.DoubleHashing
 open Cslib.Probability
 open scoped BigOperators ENNReal
 

@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (test driver)
 
-public import Complexity.Algorithms.WordRAM.Stack.Controller
+public import Complexity.DataStructure.Stack.WordRAM.Controller
 
 /-!
 # Controller certificates on concrete stack code
@@ -21,7 +21,7 @@ both exact execution paths, the smallest admissible word width, and rejection of
 
 namespace ComplexityTests.WordRAMController
 
-open Cslib Cslib.WordRAM Cslib.WordRAM.Stack
+open Cslib Cslib.WordRAM Cslib.DataStructure.Stack.WordRAM
 
 private def sizePrep : Code .standard 9 := ram[tag ← #2; arg ← #0]
 private def pushPrep : Code .standard 9 := ram[arg ← out; tag ← #0]
@@ -49,12 +49,12 @@ private theorem size_refines {w : ℕ} (h4 : Fits w 4) :
       exact (Exec.seq (Exec.const h2) (Exec.const (fits_zero w))).within)
     (by
       intro s x hx y n he
-      obtain ⟨z, hz, _, _, _⟩ := Stack.execute h2 h4 hx.1 .size trivial
+      obtain ⟨z, hz, _, _, _⟩ := DataStructure.Stack.WordRAM.execute h2 h4 hx.1 .size trivial
       obtain ⟨_, rfl⟩ := he.unique hz
       exact le_rfl)
   have hs : (spec w 2).Hoare (fun s => s.length < 2)
       (.liftBind .size fun a => .pure a) (fun a s => a = s.length ∧ s.length < 2) :=
-    Stateful.Spec.Hoare.call_ofFn _ _ _ (fun _ h => ⟨trivial, rfl, h⟩)
+    DataStructure.StateTransitionSpec.Hoare.call_ofFn _ _ _ (fun _ h => ⟨trivial, rfl, h⟩)
   exact (hcall.hoare hs (fun _ _ h => h.2)).consequence
     (fun _ _ h => h)
     (fun a s x h => ⟨⟨h.1.1, h.2.2⟩, Option.some.inj h.1.2, h.2.1⟩)
@@ -82,7 +82,8 @@ private theorem push_refines {w a : ℕ} (h4 : Fits w 4) :
       exact (Exec.seq Exec.copy (Exec.const (fits_zero w))).within)
     (by
       intro s x hx y n he
-      obtain ⟨z, hz, _, _, _⟩ := Stack.execute h2 h4 hx.1.1 (.push a) (hv s x hx)
+      obtain ⟨z, hz, _, _, _⟩ :=
+        DataStructure.Stack.WordRAM.execute h2 h4 hx.1.1 (.push a) (hv s x hx)
       obtain ⟨_, rfl⟩ := he.unique hz
       exact le_rfl)
   exact hcall.consequence (fun _ _ h => h) (fun _ _ _ h => h.1)
@@ -158,49 +159,49 @@ example :
     (∃ y, ExecWithin (B := .standard) 2
       (.branch (.eq out len) (.op (.const out 1)) (.op (.const out 2)))
       ((Data.init []).set out 1) y 3 ∧ y.regs out = 2) ∧
-    Executes 2 (Stack.Controller.code.program out) (State.init [0]) 1 49 ∧
-    Executes 2 (Stack.Controller.code.program out) (State.init [3]) 3 29 := by
+    Executes 2 (Controller.code.program out) (State.init [0]) 1 49 ∧
+    Executes 2 (Controller.code.program out) (State.init [3]) 3 29 := by
   obtain ⟨_, y₀, he₀, hr₀⟩ := (branch_refines (n := 0) (show Fits 2 2 by decide)).toOfFn
     (x := Data.init []) ⟨rfl, rfl, rfl⟩
   obtain ⟨_, y₁, he₁, hr₁⟩ := (branch_refines (n := 1) (show Fits 2 2 by decide)).toOfFn
     (x := (Data.init []).set out 1) ⟨rfl, by simp [Data.set], by decide⟩
   exact ⟨⟨y₀, he₀, hr₀⟩, ⟨y₁, he₁, hr₁⟩,
-    Stack.Controller.executes (by decide) (by decide),
-    Stack.Controller.executes (by decide) (by decide)⟩
+    Controller.executes (by decide) (by decide),
+    Controller.executes (by decide) (by decide)⟩
 
 /-- The actual zero-input execution refutes a forty-eight-step whole-program budget. -/
 theorem rejects_short_budget :
-    ¬∃ t ≤ 48, Executes 2 (Stack.Controller.code.program out) (State.init [0]) 1 t := by
+    ¬∃ t ≤ 48, Executes 2 (Controller.code.program out) (State.init [0]) 1 t := by
   rintro ⟨t, ht, he⟩
-  have hx := Stack.Controller.executes (w := 2) (n := 0) (by decide) (by decide)
+  have hx := Controller.executes (w := 2) (n := 0) (by decide) (by decide)
   have hn : t = 49 := (he.unique hx).2
   omega
 
 -- A second matching certificate must not hide the usable one or force its false premise.
 @[program_certificate]
 private theorem unusable_controller {w n : ℕ} (impossible : False) :
-    Refines w (fun s x => s = [] ∧ x = Data.init [n]) (Stack.Controller.client w n)
+    Refines w (fun s x => s = [] ∧ x = Data.init [n]) (Controller.client w n)
       (fun a s y => Rep w 2 1 s y ∧ y.regs out = a)
-      (fun _ _ => if n = 0 then 48 else 28) Stack.Controller.code := impossible.elim
+      (fun _ _ => if n = 0 then 48 else 28) Controller.code := impossible.elim
 
 example {w n : ℕ} (h3 : Fits w 3) (hn : InputFits w [n]) :
-    Refines w (fun s x => s = [] ∧ x = Data.init [n]) (Stack.Controller.client w n)
+    Refines w (fun s x => s = [] ∧ x = Data.init [n]) (Controller.client w n)
       (fun a s y => Rep w 2 1 s y ∧ y.regs out = a)
-      (fun _ _ => if n = 0 then 48 else 28) Stack.Controller.code := by
+      (fun _ _ => if n = 0 then 48 else 28) Controller.code := by
   stateful
 
 @[program_certificate]
 private theorem nonuniform_positive_polytime :
-    ComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id :=
-  Stack.Controller.positive_polytime.computableInPolyTime
+    ComputableInPolyTime .standard Controller.positive (fun _ n => [n]) id :=
+  Controller.positive_polytime.computableInPolyTime
 
 attribute [local fun_prop] nonuniform_positive_polytime
 
 example :
-    UniformComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id ∧
-    UniformComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id ∧
-    ComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id ∧
-    ComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id :=
+    UniformComputableInPolyTime .standard Controller.positive (fun _ n => [n]) id ∧
+    UniformComputableInPolyTime .standard Controller.positive (fun _ n => [n]) id ∧
+    ComputableInPolyTime .standard Controller.positive (fun _ n => [n]) id ∧
+    ComputableInPolyTime .standard Controller.positive (fun _ n => [n]) id :=
   ⟨by polytime, by fun_prop, by polytime, by fun_prop⟩
 
 /-- The family puts its width in the instruction's literal, rather than reading it at runtime. -/
@@ -298,7 +299,7 @@ abbrev ChoiceResult : ChoiceOp → Type
 
 /-- Relational specification where `choose` may return either Boolean, while `bad` is never
 admissible (`valid := False`). -/
-abbrev choiceSpec : Stateful.Spec where
+abbrev choiceSpec : DataStructure.StateTransitionSpec where
   State := Unit
   Op := ChoiceOp
   Result := ChoiceResult
@@ -399,9 +400,9 @@ def badAfterFalseClient : choiceSpec.Client Unit :=
 
 /-- Choosing `true` produces a valid `ClientRun` of `badAfterFalseClient`. -/
 example : choiceSpec.ClientRun () badAfterFalseClient () () [⟨ChoiceOp.choose, true, ()⟩] :=
-  Stateful.Spec.ClientRun.liftBind (D := choiceSpec) (s₁ := ()) ChoiceOp.choose
+  DataStructure.StateTransitionSpec.ClientRun.liftBind (D := choiceSpec) (s₁ := ()) ChoiceOp.choose
     (fun b => if b then .pure () else .liftBind .bad fun u => .pure u)
-    true trivial trivial (Stateful.Spec.ClientRun.pure (D := choiceSpec) () ())
+    true trivial trivial (DataStructure.StateTransitionSpec.ClientRun.pure (D := choiceSpec) () ())
 
 /-- `Refines` rejects `badAfterFalseClient` for any machine program and budget, because the
 permitted `false` outcome of `choose` reaches `bad` and violates demonic caller admissibility. -/

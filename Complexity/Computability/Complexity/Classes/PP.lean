@@ -38,6 +38,8 @@ characterisation by fair-coin machines deciding by strict majority within polyno
 
 ## Main results
 
+* `Cslib.Complexity.PromiseProblem.SolvesWithBoundedError.solvedBy_majority`: bounded error
+  gives a strict-majority solver on the promise.
 * `Cslib.Complexity.DecidesWithBoundedError.decidesByMajority`: bounded error gives a majority.
 * `Cslib.Complexity.BPP_subset_PP`.
 
@@ -74,24 +76,37 @@ theorem mem_PP {A : Set α} : A ∈ PP enc ↔ ∃ (p : Polynomial ℕ) (V : α 
     ComputableInPolyTime V (encPair enc encBits) encBool ∧ DecidesByMajority enc p V A :=
   Iff.rfl
 
+/-- A bounded-error verifier solves its promise problem by strict majority. Ties reject, and
+there is no error-margin requirement outside the promise. -/
+theorem PromiseProblem.SolvesWithBoundedError.solvedBy_majority {p : Polynomial ℕ}
+    {V : α × List Bool → Bool} {Q : PromiseProblem α}
+    (h : Q.SolvesWithBoundedError enc p V) :
+    Q.SolvedBy (fun a => decide
+      (2 ^ p.eval (enc a).length < 2 * acceptCount V a (p.eval (enc a).length))) := by
+  constructor
+  · intro a ha
+    have hyes := (h a).1 ha
+    have hpos := Nat.one_le_two_pow (n := p.eval (enc a).length)
+    unfold BoundedErrorAt at hyes
+    rw [← acceptCount] at hyes
+    simp only [decide_eq_true_eq]
+    omega
+  · intro a ha
+    have hno := (h a).2 ha
+    have hsum := acceptCount_add_card_filter_eq_false
+      (V := V) (a := a) (n := p.eval (enc a).length)
+    unfold BoundedErrorAt at hno
+    simp only [decide_eq_false_iff_not]
+    omega
+
 /-- Bounded error gives a majority: a decider that is right on at least two thirds of the random
 strings accepts the members of its problem, and only them, on more than half. -/
 theorem DecidesWithBoundedError.decidesByMajority {p : Polynomial ℕ} {V : α × List Bool → Bool}
     {A : Set α} (h : DecidesWithBoundedError enc p V A) : DecidesByMajority enc p V A := by
   intro a
-  have hsum := acceptCount_add_card_filter_eq_false (V := V) (a := a) (n := p.eval (enc a).length)
-  have hpos := Nat.one_le_two_pow (n := p.eval (enc a).length)
-  constructor
-  · intro ha
-    have := (h a).1 ha
-    unfold BoundedErrorAt at this
-    rw [← acceptCount] at this
-    omega
-  · intro hlt
-    by_contra ha
-    have := (h a).2 ha
-    unfold BoundedErrorAt at this
-    omega
+  simpa only [decide_eq_true_eq] using
+    (PromiseProblem.solvedBy_ofSet.mp
+      (PromiseProblem.SolvesWithBoundedError.solvedBy_majority h) a)
 
 /-- **`BPP ⊆ PP`.** -/
 theorem BPP_subset_PP : BPP enc ⊆ PP enc :=

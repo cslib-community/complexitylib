@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Algorithms.Lean.DisjointSet.UnionFind
+public import Complexity.DataStructure.DisjointSet.UnionFind
 public import Cslib.Algorithms.Lean.Sort.Merge
 public import Cslib.Algorithms.Lean.TimeM
 public import Mathlib.Algebra.BigOperators.Group.List.Defs
@@ -21,7 +21,8 @@ import Complexity.Algorithms.Lean.MergeSort.Comparator
 
 This module formalizes Kruskal's greedy algorithm for minimum-weight spanning forests and minimum
 spanning trees on finite multigraphs over `Fin n`, together with its functional correctness,
-global optimality, distinct-weight uniqueness, `Cslib.Stateful` disjoint-set client specification,
+global optimality, distinct-weight uniqueness, `Cslib.DataStructure` disjoint-set client
+specification,
 and `TimeM` comparison and disjoint-set step bounds.
 
 ## Mathematical model and source mapping
@@ -29,7 +30,7 @@ and `TimeM` comparison and disjoint-set step bounds.
 An input multigraph on `n` vertices is represented as a finite list `es : List (WeightedEdge n W)`
 of undirected weighted edges `(u, v, weight)` with `u v : Fin n` (allowing parallel edges,
 self-loops, disconnected graphs, and negative or duplicate weights). Connectivity is tracked via
-`Cslib.Algorithms.Lean.DisjointSet.Partition n`:
+`Cslib.DataStructure.DisjointSet.Partition n`:
 
 * `edgePartitionFrom p es` folds `Partition.merge` across `es` starting from `p`, and
   `edgePartition es := edgePartitionFrom (Partition.discrete n) es` is the induced
@@ -71,12 +72,13 @@ Primary-source correspondence:
   performed by `List.mergeSortM`, bounded by `m * Nat.clog 2 m` (`m = es.length`) via
   `Cslib.Algorithms.Lean.TimeM.time_mergeSortM_le`.
 * `Cost.ufSteps`: exact number of disjoint-set forest steps (`find` parent-pointer inspections plus
-  `union` root links) recorded by `Cslib.Algorithms.Lean.DisjointSet.UnionFind.run` on
+  `union` root links) recorded by `Cslib.DataStructure.DisjointSet.UnionFind.run` on
   `kruskalClient`, bounded by `m * (2 * Nat.log 2 n + 3)` via `DisjointSet.UnionFind.run_correct`
   (worst-case `O(log n)` per operation from union by rank, rather than Tarjan's amortized
   `O(α(n))` inverse-Ackermann bound).
 * `realized_kruskal` additionally decouples Kruskal's scan from any particular concrete forest:
-  any `Cslib.Stateful.Realization` and `Cslib.Stateful.Bound` for `DisjointSet.spec n` immediately
+  any `Cslib.DataStructure.StateTransitionImpl` and `Cslib.DataStructure.Bound` for
+  `DisjointSet.spec n` immediately
   transfers its cost certificate to `kruskalClient (sortEdges es)`.
 
 `DisjointSet.UnionFind.init n` (`O(n)` `MAKE-SET` initialization in `[CLRS2009]`, `MST-KRUSKAL`
@@ -110,7 +112,8 @@ could copy, whereas `DisjointSet.UnionFind.run` threads its state single-threade
   (and a minimum spanning tree when connected).
 * `perm_kruskalEdges_of_isMinSpanningForest_of_nodup_weights`: uniqueness of the minimum spanning
   forest up to permutation when edge weights are pairwise distinct.
-* `realized_kruskal`: backend-parametric `Cslib.Stateful` correctness and resource bound for any
+* `realized_kruskal`: backend-parametric `Cslib.DataStructure` correctness and resource bound for
+  any
   realization of `DisjointSet.spec n`.
 * `kruskalM_forest`, `kruskalM_rep`, `kruskalM_comparisons_le`, `kruskalM_ufSteps_le`,
   `kruskalM_total_le`: functional correctness, final union-find representation, `m ⌈log₂ m⌉`
@@ -128,7 +131,7 @@ public section
 
 namespace Cslib.Algorithms.Lean.Kruskal
 
-open Cslib.Stateful Cslib.Algorithms.Lean.DisjointSet
+open Cslib.DataStructure Cslib.DataStructure.DisjointSet
 
 /-! ### Weighted edges and edge-induced partitions -/
 
@@ -974,12 +977,13 @@ theorem kruskalScan_map_endpoints {n : ℕ} {W : Type} (p : Partition n)
     · simp [hrel, Partition.merge_of_rel hrel, ih p]
     · simp [hrel, ih (p.merge e.u e.v)]
 
-/-- Backend-parametric Kruskal execution: any `Cslib.Stateful.Realization` and
-`Cslib.Stateful.Bound` for `DisjointSet.spec n` executes `kruskalClient (sortEdges es)` to produce
+/-- Backend-parametric Kruskal execution: any `Cslib.DataStructure.StateTransitionImpl` and
+`Cslib.DataStructure.Bound` for `DisjointSet.spec n` executes `kruskalClient (sortEdges es)` to
+produce
 `kruskalEdges es` and transfers its resource bound along the `m` `Op.union` calls. -/
 theorem realized_kruskal {n : ℕ} {W : Type} [LE W] [DecidableLE W]
     {C τ : Type} {exec : Execution (DisjointSet.spec n) C τ}
-    (R : Realization (DisjointSet.spec n) exec)
+    (R : StateTransitionImpl (DisjointSet.spec n) exec)
     {cost : τ → ℕ} {charge : Partition n → DisjointSet.Op n → ℕ}
     (B : Bound R cost charge)
     {s₀ : C} (hr : R.rep (Partition.discrete n) s₀)
@@ -995,7 +999,8 @@ theorem realized_kruskal {n : ℕ} {W : Type} [LE W] [DecidableLE W]
       (kruskalClient (sortEdges es)))
   obtain ⟨s', traces, hexec, hrep, hcost⟩ :=
     Bound.exists_executes B (kruskalClient (sortEdges es)) hr hv
-  simp only [Spec.clientResult, Spec.clientState, Spec.clientHistory, runClient_kruskalClient]
+  simp only [StateTransitionSpec.clientResult, StateTransitionSpec.clientState,
+    StateTransitionSpec.clientHistory, runClient_kruskalClient]
     at hexec hrep hcost
   refine ⟨s', traces, hexec, ?_, hcost⟩
   rwa [← edgePartition, Perm.edgePartition_eq (sortEdges_perm es)] at hrep

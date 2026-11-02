@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Christian Reitwiessner. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Christian Reitwiessner
 -/
 
 import Complexity.Computability.Complexity.Classes.Space.Closure
@@ -15,15 +15,58 @@ import Cslib.Computability.Machines.Turing.MultiTape.Combinators.AlmostConstant
 import Cslib.Computability.Machines.Turing.MultiTape.Combinators.Id
 
 /-! Plain computability within bounds up to constants, within a space bound, within polynomial
-space and in fpt time, against the tidy notions in both directions: upstream machines that are not
-tidy satisfy the plain notions and give tidy certificates, and library certificates, including
-the deciders for `TQBF` and `SAT`, give plain ones. -/
+space and in fpt time. Upstream machines that are not tidy satisfy the plain notions;
+`ComputableInO` and `ComputableInSpace` also give tidy certificates. Polynomial-space clients,
+including the decider for `TQBF`, use the plain calculus directly. -/
+
+open Lean Elab Command in
+run_cmd do
+  if (← getEnv).contains `Turing.MultiTapeTM.ComputableTidilyInPolySpace then
+    throwError "The retired tidy polynomial-space calculus was imported"
 
 namespace ComplexityTests.ResourceBoundsPlain
 
 universe u v
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
+
+/-! ### Output growth is independent of transducer workspace -/
+
+/-- The copy machine streams arbitrarily long words with zero workspace. -/
+private theorem copy_uncharged :
+    ComputableInBigO (id : List Bool → List Bool) encBits encBits (·.length) (fun _ => 0) :=
+  ⟨1, computableInTimeAndSpace_id.mono (fun w => by simp [encBits])
+    (fun _ => Nat.zero_le _)⟩
+
+/-- Unbounded streamed output does not satisfy a constant output-growth bound. -/
+private theorem copy_output_not_constant :
+    ¬BigOLe (fun w : List Bool => (encBits (id w)).length) (fun _ => 0) := by
+  rintro ⟨c, hc⟩
+  have h := hc (List.replicate (c + 1) true)
+  simp [encBits] at h
+
+/-- Forgetting output growth admits streaming; it cannot reconstruct a constant charged bound.
+Materializing the intermediate word explicitly pays its length in workspace. -/
+example :
+    ComputableInBigO (id : List Bool → List Bool) encBits encBits (·.length) (fun _ => 0) ∧
+    ¬ComputableInO (id : List Bool → List Bool) encBits encBits (·.length) (fun _ => 0) ∧
+    ComputableInBigO (id ∘ id : List Bool → List Bool) encBits encBits
+      (fun w => w.length + (id w).length) (fun w => (encBits (id w)).length) := by
+  refine ⟨copy_uncharged, fun h => copy_output_not_constant h.length_le, ?_⟩
+  simpa only [Nat.zero_add] using copy_uncharged.comp copy_uncharged
+
+/-- A separate linear output bound reconstructs the charged certificate, with independently
+chosen constants and the original same-machine time/workspace realization. -/
+example : ComputableInO (id : List Bool → List Bool) encBits encBits (·.length) (·.length) :=
+  (copy_uncharged.weaken (.refl _) (.of_le fun _ => Nat.zero_le _)).with_output_bound
+    (BigOLe.of_le fun _ => le_rfl)
+
+/-- The factorization remains available at unrelated input and output universes. -/
+example {α : Type u} {β : Type v} (f : α → β) (encIn : α ↪ List Bool)
+    (encOut : β ↪ List Bool) (T S : α → ℕ) :
+    ComputableInO f encIn encOut T S ↔ ComputableInBigO f encIn encOut T S ∧
+      BigOLe (fun a => (encOut (f a)).length) S :=
+  computableInO_iff_computableInBigO_and_length_le
 
 /-! ### Independent plain polynomial degrees -/
 
@@ -118,10 +161,10 @@ example {α β : Type} {f : α → β} {encIn : α ↪ List Bool} {encOut : β �
     (¬ComputableInSpace (id : List Bool → List Bool) encBits encBits
       fun w => Nat.log2 w.length) ∧
     ComputableInLogSpace f encIn encOut ∧
-    ComputableTidilyInPolySpace (id : List Bool → List Bool) encBits encBits := by
+    ComputableInPolySpace (id : List Bool → List Bool) encBits encBits := by
   refine ⟨id_computableInO.tidy, id_computableInSpace.tidy, ?_,
     ⟨_, 0, computableInTimeAndSpace_id.mono (fun _ => le_rfl) fun _ => Nat.zero_le _⟩,
-    ?_, (let ⟨t, c, hc, _⟩ := hlog; ⟨t, c, hc⟩), id_computableInPolySpace.tidy⟩
+    ?_, (let ⟨t, c, hc, _⟩ := hlog; ⟨t, c, hc⟩), id_computableInPolySpace⟩
   · rintro ⟨t, c, -, hl⟩
     simpa [encBits] using hl (List.replicate (c + 1) true)
   · rintro ⟨t, c, -, hl⟩
@@ -146,13 +189,13 @@ theorem id_computableInFPTTime (κ : List Bool → ℕ) :
   ⟨fun _ => 1, 1, computableInTimeAndSpace_id.mono (fun w => by simp [encBits])
     fun _ => Nat.zero_le _⟩
 
-/-- Compose, pair, and branch functions mixing plain space, tidy space, and plain time
+/-- Compose, pair, and branch functions mixing plain space and plain time
 certificates; missing certificates fail cleanly; and a time bound alone suffices for fpt time. -/
 example {α β γ : Type} (enc : α ↪ List Bool) {encA : α ↪ List Bool} {encB : β ↪ List Bool}
     {encC : γ ↪ List Bool} {f : α → β} {g : β → γ} {g' h : α → γ} {c : α → Bool}
     (_u : List Bool → Bool)
     (hf : ComputableInPolySpace f encA encB) (hg : ComputableInPolySpace g encB encC)
-    (hg' : ComputableTidilyInPolySpace g' encA encC)
+    (hg' : ComputableInPolySpace g' encA encC)
     (hh : ComputableInPolyTime h encA encC) (hc : ComputableInPolyTime c encA encBool)
     (κ : List Bool → ℕ) :
     ComputableInPolySpace (id : α → α) enc enc ∧
@@ -191,8 +234,8 @@ example (κ : List Bool → ℕ) : single ∈ PSPACE encBits ∧ single ∈ FPT 
 
 /-! ### From library certificates to plain ones -/
 
-/-- Tidy library certificates (`Prod.fst`, `polytime` list folds, `TQBF`, and `SAT`) give plain
-certificates and compose with plain preprocessing. -/
+/-- Projection certificates, `polytime` list folds, and the plain deciders for `TQBF` and `SAT`
+compose with plain preprocessing. -/
 example {α : Type} {enc : α ↪ List Bool} {f : α → Logic.PL.QBF ℕ}
     (hf : ComputableInPolyTime f enc encQBF) :
     ComputableInO Prod.fst (encPair encBits encBits) encBits
@@ -212,8 +255,8 @@ example {α : Type} {enc : α ↪ List Bool} {f : α → Logic.PL.QBF ℕ}
   obtain ⟨g, hg, hSAT⟩ := mem_FPT_iff_computableInFPTTime.mp SAT_mem_FPT
   exact ⟨.of_tidy (ComputableTidilyInO.fst encBits encBits),
     (ComputableTidilyInSpace.fst encBits encBits).computableInSpace,
-    computableInPolySpace_iff_computableTidilyInPolySpace.mpr (.of_polyTime (by polytime)),
-    ⟨dec, .of_tidy hdec.tidy, hA⟩,
+    ComputableInPolySpace.of_polyTime (by polytime),
+    ⟨dec, hdec, hA⟩,
     mem_PSPACE_iff_computableInPolySpace.mpr ⟨_, hcomp, fun a => hA (f a)⟩,
     ⟨g, hg, hSAT⟩⟩
 

@@ -22,7 +22,9 @@ unknown `t`. Boyer, Brassard, Høyer and Tapp choose the number of iterations at
 the query model of `Cslib.Quantum.run`, the resulting fixed-budget search algorithm, and an
 algorithm computing `OR_N` with error `1/3` and `O(√N)` queries.
 
-**Grover's algorithm with `t` marked items.** Let `θ = searchAngle N t`, so `sin² θ = t / N`.
+**Shared Grover analysis.** The general marked-weight analysis is provided by
+`Complexity.Computability.QueryComplexity.Quantum.Grover`. Let `θ = searchAngle N t`, so
+`sin² θ = t / N`.
 After `k` queries every marked item has amplitude `sin((2k + 1) θ) / √t` and every other item
 `cos((2k + 1) θ) / √(N - t)` (`Cslib.Quantum.run_grover_of_weight`), so a marked item is measured
 with probability `sin²((2k + 1) θ)` (`Cslib.Quantum.sum_regProb_run_grover`).
@@ -73,7 +75,6 @@ not from the source; they are original here.
 
 ## Main definitions
 
-* `Cslib.Quantum.searchAngle`: the angle `θ` with `sin² θ = t / N`.
 * `Cslib.Quantum.randomGrover`, `Cslib.Quantum.randomGroverInit`: search with a random number of
   Grover iterations below `m`.
 * `Cslib.Quantum.orSearch`, `Cslib.Quantum.orSearchInit`, `Cslib.Quantum.orAccept`: the decision
@@ -81,7 +82,6 @@ not from the source; they are original here.
 
 ## Main results
 
-* `Cslib.Quantum.run_grover_of_weight`: the state of Grover's algorithm with `t` marked items.
 * `Cslib.Quantum.sum_regProb_run_grover`: its success probability `sin²((2k + 1) θ)`.
 * `Cslib.Quantum.two_mul_sin_mul_sum_cos`, `Cslib.Quantum.sum_sin_sq_div`,
   `Cslib.Quantum.le_sum_sin_sq`: Lemmas 1 and 2 of [Boyer, Brassard, Høyer,
@@ -106,164 +106,6 @@ namespace Cslib.Quantum
 open Finset Real BitString
 
 variable {N : ℕ}
-
-/-! ### Grover's algorithm with several marked items -/
-
-/-- The angle `θ ∈ [0, π / 2]` with `sin² θ = t / N`. -/
-noncomputable def searchAngle (N t : ℕ) : ℝ := Real.arcsin (Real.sqrt (t / N))
-
-private theorem div_le_one_of_le' {t : ℕ} (ht : t ≤ N) : (t : ℝ) / N ≤ 1 := by
-  rcases Nat.eq_zero_or_pos N with rfl | hN
-  · simp
-  · rw [div_le_one (by exact_mod_cast hN)]
-    exact_mod_cast ht
-
-theorem sin_searchAngle {t : ℕ} (ht : t ≤ N) :
-    Real.sin (searchAngle N t) = Real.sqrt (t / N) := by
-  refine Real.sin_arcsin (by linarith [Real.sqrt_nonneg ((t : ℝ) / N)]) ?_
-  rw [Real.sqrt_le_one]
-  exact div_le_one_of_le' ht
-
-theorem cos_searchAngle (t : ℕ) :
-    Real.cos (searchAngle N t) = Real.sqrt (1 - t / N) := by
-  rw [searchAngle, Real.cos_arcsin, Real.sq_sqrt (by positivity)]
-
-theorem searchAngle_nonneg (N t : ℕ) : 0 ≤ searchAngle N t :=
-  Real.arcsin_nonneg.mpr (Real.sqrt_nonneg _)
-
-theorem searchAngle_self (hN : 0 < N) : searchAngle N N = π / 2 := by
-  rw [searchAngle, div_self (by exact_mod_cast hN.ne'), Real.sqrt_one, Real.arcsin_one]
-
-theorem searchAngle_zero (N : ℕ) : searchAngle N 0 = 0 := by
-  simp [searchAngle]
-
-/-- **Grover's algorithm with any number of marked items** [Boyer, Brassard, Høyer,
-Tapp][BoyerBrassardHoyerTapp1998]: on an input with `t` marked items, after `k` queries, with
-control bit `1`, every marked item has amplitude `sin((2k + 1) θ) / √t` and every other item
-`cos((2k + 1) θ) / √(N - t)`, where `sin² θ = t / N`; with control bit `0`, every amplitude is
-`0`. -/
-theorem run_grover_of_weight (hN : 0 < N) (x : Fin N → Bool) (k : ℕ) (p : Fin N × Bool × Unit) :
-    (run (grover N) (uniform N) x k).ofLp p =
-      if p.2.1 then ((if x p.1 then
-          Real.sin ((2 * k + 1) * searchAngle N (weight x)) / Real.sqrt (weight x)
-        else Real.cos ((2 * k + 1) * searchAngle N (weight x)) / Real.sqrt (N - weight x) : ℝ) :
-          ℂ) else 0 := by
-  set t := weight x with ht_def
-  have htN : t ≤ N := weight_le_length x
-  have hN0 : (0 : ℝ) < N := by exact_mod_cast hN
-  have htN' : (t : ℝ) ≤ N := by exact_mod_cast htN
-  set θ := searchAngle N t
-  set sN := Real.sqrt N
-  set st := Real.sqrt t
-  set su := Real.sqrt (N - t)
-  have hsN : 0 < sN := Real.sqrt_pos.mpr hN0
-  have hsN2 : sN ^ 2 = N := Real.sq_sqrt hN0.le
-  have hst2 : st ^ 2 = t := Real.sq_sqrt (Nat.cast_nonneg t)
-  have hsu2 : su ^ 2 = N - t := Real.sq_sqrt (by linarith)
-  have hs : Real.sin θ = st / sN := by
-    rw [sin_searchAngle htN, Real.sqrt_div' _ hN0.le]
-  have hc : Real.cos θ = su / sN := by
-    rw [cos_searchAngle, show (1 : ℝ) - t / N = (N - t) / N by field_simp,
-      Real.sqrt_div' _ hN0.le]
-  -- A marked item exists only if `t ≠ 0`, and an unmarked one only if `t ≠ N`.
-  have hmarked : ∀ i, x i = true → st ≠ 0 := by
-    intro i hi
-    refine (Real.sqrt_pos.mpr ?_).ne'
-    have : 0 < t := card_pos.mpr ⟨i, by simp [hi]⟩
-    exact_mod_cast this
-  have hunmarked : ∀ i, x i = false → su ≠ 0 := by
-    intro i hi
-    refine (Real.sqrt_pos.mpr ?_).ne'
-    have h1 : 0 < #{j | x j = false} := card_pos.mpr ⟨i, by simp [hi]⟩
-    have h2 := card_filter_eq_false_eq_card_sub_weight x
-    rw [Fintype.card_fin] at h2
-    have : t < N := by omega
-    have : (t : ℝ) < N := by exact_mod_cast this
-    linarith
-  induction k generalizing p with
-  | zero =>
-    obtain ⟨i, c, u⟩ := p
-    simp only [run, grover, LinearIsometry.id_apply, uniform, PiLp.toLp_apply, Nat.cast_zero,
-      mul_zero, zero_add, one_mul]
-    cases c
-    · rfl
-    simp only [ite_true]
-    congr 1
-    cases hi : x i
-    · simp only [Bool.false_eq_true, ite_false, hc]
-      field_simp [hunmarked i hi]
-      rfl
-    · simp only [ite_true, hs]
-      field_simp [hmarked i hi]
-      rfl
-  | succ k ih =>
-    set S := Real.sin ((2 * k + 1) * θ) with hS
-    set C := Real.cos ((2 * k + 1) * θ) with hC
-    -- The total control-`1` amplitude after the oracle.
-    have hta : (t : ℝ) * (S / st) = st * S := by
-      by_cases h : st = 0
-      · have : (t : ℝ) = 0 := by rw [← hst2, h]; ring
-        simp [h, this]
-      · field_simp
-        rw [← hst2]
-        ring
-    have hub : ((N : ℝ) - t) * (C / su) = su * C := by
-      by_cases h : su = 0
-      · have : (N : ℝ) - t = 0 := by rw [← hsu2, h]; ring
-        simp [h, this]
-      · field_simp
-        rw [← hsu2]
-        ring
-    have hsum : ∑ q : Fin N × Bool × Unit, (if q.2.1 then (phaseOracle x
-        (run (grover N) (uniform N) x k)).ofLp q else 0) = ((-(st * S) + su * C : ℝ) : ℂ) := by
-      simp only [phaseOracle_apply, ih, Fintype.sum_prod_type, Fintype.univ_unit, sum_singleton,
-        Fintype.sum_bool, ite_true, Bool.true_and, Bool.false_eq_true, ite_false, add_zero]
-      have hterm : ∀ i : Fin N, (if x i = true then (-1 : ℂ) else 1) *
-          ((if x i = true then S / st else C / su : ℝ) : ℂ) =
-            if x i = true then ((-(S / st) : ℝ) : ℂ) else ((C / su : ℝ) : ℂ) := by
-        intro i
-        by_cases h : x i = true <;> simp [h]
-      rw [sum_congr rfl fun i _ => hterm i, sum_ite, sum_const, sum_const]
-      have hcardT : #(univ.filter fun i : Fin N => x i = true) = t := rfl
-      have hcardF : #(univ.filter fun i : Fin N => ¬x i = true) = N - t := by
-        simpa [Fintype.card_fin] using card_filter_eq_false_eq_card_sub_weight x
-      rw [hcardT, hcardF, nsmul_eq_mul, nsmul_eq_mul, Nat.cast_sub htN]
-      rw [← hta, ← hub]
-      push_cast
-      ring
-    have harg : (2 * ((k + 1 : ℕ) : ℝ) + 1) * θ = (2 * k + 1) * θ + 2 * θ := by
-      push_cast
-      ring
-    simp only [run, grover, LinearIsometryEquiv.coe_toLinearIsometry]
-    rw [diffusion_apply hN, hsum, phaseOracle_apply, ih]
-    obtain ⟨i, c, u⟩ := p
-    cases c
-    · simp
-    simp only [Bool.true_and, ite_true]
-    cases hi : x i
-    · have hsu0 := hunmarked i hi
-      have hreal : 2 * ((N : ℝ)⁻¹ * (-(st * S) + su * C)) - C / su =
-          Real.cos ((2 * ((k + 1 : ℕ) : ℝ) + 1) * θ) / su := by
-        rw [harg, Real.cos_add, Real.sin_two_mul, Real.cos_two_mul, hs, hc, ← hS, ← hC]
-        field_simp
-        rw [← hsN2]
-        ring
-      simp only [Bool.false_eq_true, ite_false]
-      rw [← hreal]
-      push_cast
-      ring
-    · have hst0 := hmarked i hi
-      have hreal : 2 * ((N : ℝ)⁻¹ * (-(st * S) + su * C)) + S / st =
-          Real.sin ((2 * ((k + 1 : ℕ) : ℝ) + 1) * θ) / st := by
-        have hrel : sN ^ 2 = st ^ 2 + su ^ 2 := by rw [hsN2, hst2, hsu2]; ring
-        rw [harg, Real.sin_add, Real.sin_two_mul, Real.cos_two_mul, hs, hc, ← hS, ← hC]
-        field_simp
-        rw [← hsN2]
-        linear_combination (2 * S * sN ^ 2) * hrel
-      simp only [ite_true]
-      rw [← hreal]
-      push_cast
-      ring
 
 /-- **The success probability of Grover's algorithm with any number of marked items** [Boyer,
 Brassard, Høyer, Tapp][BoyerBrassardHoyerTapp1998]: after `k` queries, a marked item is measured

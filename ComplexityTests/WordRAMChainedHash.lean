@@ -8,16 +8,16 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Algorithms.WordRAM.Dictionary.ChainedHash
+public import Complexity.DataStructure.Dictionary.WordRAM.ChainedHash
 
 /-!
 # Tests for Chained Hash Table on the Randomized Word RAM
 
-Verifies `Cslib.Algorithms.WordRAM.Dictionary.ChainedHash`:
+Verifies `Cslib.DataStructure.Dictionary.WordRAM.ChainedHash`:
 * concrete table parameters (`bucketBits`, `numBuckets`, `hashBits`, `space`, `space_le`);
 * concrete hash collisions (`u₁ ≠ u₂` mapping to the same `multiplyShift` bucket), in-place key
   updates at full capacity `n_max`, and absent-key misses via `opCode_spec`;
-* `subroutineDS`, `subroutineDSStandard`, `initFresh_exec`, `initClear_exec`, `call_rename`, and
+* `impl`, `implStandard`, `initFresh_exec`, `initClear_exec`, `call_rename`, and
   `seq_expected_amortized` across a multi-operation sequence containing hash collisions, an
   in-place overwrite at full capacity `n_max`, and present/absent lookups.
 -/
@@ -26,11 +26,12 @@ Verifies `Cslib.Algorithms.WordRAM.Dictionary.ChainedHash`:
 
 namespace ComplexityTests.WordRAMChainedHash
 
-open Cslib Cslib.WordRAM Cslib.WordRAM.Randomized
-open Cslib.Algorithms.Lean
-open Cslib.Algorithms.WordRAM.Dictionary
-open Cslib.Algorithms.WordRAM.Dictionary.ChainedHash
-open Cslib.Algorithms.WordRAM.Dictionary.ChainedHash.Reg
+open Cslib Cslib.WordRAM
+open Cslib.DataStructure Cslib.DataStructure.Dictionary
+open Cslib.DataStructure.Dictionary.WordRAM
+open Cslib.DataStructure.WordRAM Cslib.DataStructure.WordRAM.Randomized
+open Cslib.DataStructure.Dictionary.WordRAM.ChainedHash
+open Cslib.DataStructure.Dictionary.WordRAM.ChainedHash.Reg
 open Cslib.Probability
 open scoped ENNReal
 
@@ -120,7 +121,7 @@ at full capacity `n_max = 2`, the two present-key lookups (`some 30` and `some 2
 absent-key lookup (`none`). -/
 theorem concrete_collision_update_and_miss_exec {x : Data rHash}
     (hr₀ : Rep 16 100 2 16 10 seed₀ s₀ x) :
-    let C := subroutineDS 16 100 2 16 10 hw_test hS_test hV_test
+    let C := impl 16 100 2 16 10 hw_test hS_test hV_test
     ∃ z₁ z₂ z₃ z₄ z₅ z₆ : Data rHash,
       ExecWithin 16 (opCode 16 2) (C.toDynamicProgram.prepare (.insert u₁ 10) x) z₁
         (55 + 9 * collCount 2 s₀ u₁ seed₀) ∧
@@ -173,19 +174,20 @@ theorem concrete_collision_update_and_miss_exec {x : Data rHash}
     he₅, hdec₅.trans (congrArg some hs₃_u₂),
     he₆, hdec₆.trans (congrArg some hs₃_u₃)⟩
 
-/-! ## 3. `SubroutineDS`, `toStandard`, `initClear_exec`, `call_rename`, `seq_expected_amortized` -/
+/-! ## 3. `StateTransitionImpl`, `toStandard`, `initClear_exec`, `call_rename`,
+`seq_expected_amortized` -/
 
-/-- Concrete `SubroutineDS` instance over `Basis.exact`. -/
+/-- Concrete `StateTransitionImpl` instance over `Basis.exact`. -/
 noncomputable abbrev testDS :
-    Randomized.SubroutineDS (subroutineCode 16 2) (Dictionary.spec 16 100 2)
+    Randomized.StateTransitionImpl (subroutineCode 16 2) (Dictionary.spec 16 100 2)
       16 10 Fin.elim0 (Dictionary.empty 16) :=
-  subroutineDS 16 100 2 16 10 hw_test hS_test hV_test
+  impl 16 100 2 16 10 hw_test hS_test hV_test
 
-/-- Concrete `SubroutineDS` instance over `Basis.standard`. -/
+/-- Concrete `StateTransitionImpl` instance over `Basis.standard`. -/
 noncomputable abbrev testDSStandard :
-    Randomized.SubroutineDS (subroutineCode 16 2).toStandard (Dictionary.spec 16 100 2)
+    Randomized.StateTransitionImpl (subroutineCode 16 2).toStandard (Dictionary.spec 16 100 2)
       16 10 Fin.elim0 (Dictionary.empty 16) :=
-  subroutineDSStandard 16 100 2 16 10 hw_test hS_test hV_test
+  implStandard 16 100 2 16 10 hw_test hS_test hV_test
 
 /-- End-to-end expected-time guarantee for `ops6` from zeroed memory: total expected instruction
 count of `initFresh` (`16` steps) followed by `ops6` (`6` operations) is at most
