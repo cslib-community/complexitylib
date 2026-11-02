@@ -185,7 +185,7 @@ theorem exists_secure_choice {pair : SamplablePair} {gap : ℕ → ℝ}
       (∀ᶠ n in atTop, choose n < size (saved.length n) (densityBound n)) ∧
       ∀ test : ℕ → ℕ → List Bool → ProbComp Bool,
         IsPPTOn (encPair (encPair encUnary encUnary) encBits)
-          encBool (fun input => test input.1.1 input.1.2 input.2) →
+          encBool (fun ((n, i), word) => test n i word) →
         Negligible (fun n => Game.advantage
           (((uniformList (seedLength n (saved.length n) (observationBound n) (densityBound n)
             (choose n))).map (generate n (saved.length n) (observationBound n) (densityBound n)
