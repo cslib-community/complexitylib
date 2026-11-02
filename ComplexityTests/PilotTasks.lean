@@ -3,7 +3,7 @@ Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
-import Complexity.Foundations.Probability.PilotTasks
+import Complexity.Foundations.Probability.CorrectionRowTasks
 import Complexity.Foundations.Probability.HierarchySampling
 import Complexity.Probability.PairwiseIndependentHash.DetectorChannels
 import Mathlib.Tactic.NormNum.Prime
@@ -145,7 +145,7 @@ private theorem detector_rank (P : FourthRootHierarchyParams 2 1 2 2 4) : 3 < P.
   linarith
 
 -- The true target in the affine sampling example is positive, rather than a zero-atom identity.
-example (P : FourthRootHierarchyParams 2 1 2 2 4) :
+private theorem correction_pos (P : FourthRootHierarchyParams 2 1 2 2 4) :
     0 < P.toHierarchyParams.correctionIter retains retains (1 / 3) C 1 0 1 := by
   have hJ : Fintype.card (ZMod 3) < P.J := by simpa only [ZMod.card] using detector_rank P
   have hmax := PilotTask.value_maximum_eq_zero P.toHierarchyParams retains retains
@@ -181,5 +181,78 @@ example (P : FourthRootHierarchyParams 2 1 2 2 4) (i : ℕ) (hi : i < P.k)
   have hd := channels.dens_X x
   rw [hz] at hd
   norm_num at hd
+
+-- The preparation and the final pilot are actual dependencies of the normalized row.
+example : (CorrectionRowTask.preparation 2).rank 4 <
+    (CorrectionRowTask.normalized 2).rank 4 ∧
+    (CorrectionRowTask.pilot (.maximum 4)).rank 4 <
+      (CorrectionRowTask.normalized 2).rank 4 := by
+  constructor <;> apply CorrectionRowTask.rank_lt_of_mem_children <;>
+    simp [CorrectionRowTask.children]
+
+private noncomputable def sampler (P : FourthRootHierarchyParams 2 1 2 2 4) :=
+  HierarchyParams.CorrectionSampling.ofChannels P retains retains channels channels
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) C_nonneg C_row P.k_pos
+    (fun _ _ => 0) (fun _ => 1) (fun _ => 1) 0
+    (fun _ _ => rfl) (fun _ => zero_le_one) (fun _ => le_rfl) (le_refl _)
+    (fun _ _ => rfl) (fun _ _ _ => rfl)
+
+private theorem source_nonempty (x : ZMod 3) : ({s | retains s x} : Finset Seed).Nonempty := by
+  apply dens_ne_zero.mp
+  intro hz
+  have hd := channels.dens_X x
+  rw [hz] at hd
+  norm_num at hd
+
+-- A positive target and a zero target force the normalized affine row to be nonconstant.
+-- This exercises the complete recipe, not a supplied mean certificate.
+example (P : FourthRootHierarchyParams 2 1 2 2 4) :
+    ∃ σ : Seed × Seed, (sampler P).value (.normalized 0) σ 0 1 ≠
+      (sampler P).value (.normalized 0) σ 0 0 := by
+  let A := sampler P
+  have hQ0 : P.Q 0 = 0 := le_antisymm (by
+    have h := P.Q_le 0
+    simpa only [zero_sub, max_eq_right (neg_nonpos.mpr P.θ_pos.le)] using h) (P.Q_nonneg 0)
+  have hinput : P.toHierarchyParams.correctionInput retains retains (1 / 3) C 0 = C := by
+    simp [HierarchyParams.correctionInput, HierarchyParams.correctionIter, cutoffCorrectionIter]
+  have hzero (σ : Seed × Seed) : A.value (.normalized 0) σ 0 0 = 0 := by
+    simp only [HierarchyParams.CorrectionSampling.value,
+      HierarchyParams.CorrectionSampling.normalizedRecipe, hinput, C]
+    norm_num [hQ0]
+  have hmean := A.expect_normalizedRecipe (by norm_num) C_nonneg C_row (source_nonempty 0) 1
+  have hpos := correction_pos P
+  by_contra hn
+  have heq : ∀ σ : Seed × Seed, A.value (.normalized 0) σ 0 1 = 0 := by
+    intro σ
+    have he : A.value (.normalized 0) σ 0 1 = A.value (.normalized 0) σ 0 0 := by
+      by_contra hne
+      exact hn ⟨σ, hne⟩
+    rw [he, hzero]
+  change (𝔼 σ ∈ ({s | retains s 0} : Finset Seed) ×ˢ (univ : Finset Seed),
+    ((1 / 3) / A.π) * A.value (.normalized 0) σ 0 1) = _ at hmean
+  simp only [heq, mul_zero, expect_const_zero] at hmean
+  linarith
+
+-- Replacing the preparatory child changes normalization before the outer sample mean.
+example (P : FourthRootHierarchyParams 2 1 2 2 4) (σ : Seed × Seed) (x y : ZMod 3) :
+    (sampler P).normalizedRecipe C (fun _ _ _ => 0) (fun _ => 0) σ x y =
+      2 * (sampler P).normalizedRecipe C (fun _ _ _ => 1) (fun _ => 0) σ x y := by
+  have hS := (source_nonempty x).product ((sampler P).usage_nonempty y)
+  simp only [HierarchyParams.CorrectionSampling.normalizedRecipe,
+    HierarchyParams.CorrectionSampling.normalizerRecipe, expect_const hS]
+  norm_num
+  split_ifs <;> ring
+
+-- The preparation child receives the same inherited channel functions (including fixed suffixes).
+-- Different source and terminal suffixes select different draws; neither may be silently reset.
+example :
+    HierarchyParams.CorrectionSampling.normalizerRecipe
+      ((fun (suffix : Bool) (s x : Bool) => s = (x != suffix)) true)
+      ((fun (suffix : Bool) (t y : Bool) => t = (y != suffix)) false)
+      (fun (σ : Bool × Bool) (x y : Bool) => if σ = (false, true) ∧ x = true ∧ y = true
+        then (7 : ℝ) else 0) true true = 7 := by
+  norm_num [HierarchyParams.CorrectionSampling.normalizerRecipe,
+    Finset.expect_eq_sum_div_card, Fintype.sum_bool, Finset.filter_insert,
+    Finset.filter_empty, Finset.filter_singleton]
 
 end ComplexityTests.PilotTasks
