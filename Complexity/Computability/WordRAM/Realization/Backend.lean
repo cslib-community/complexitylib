@@ -448,7 +448,7 @@ theorem Implements.prod {w : ℕ} {S : Backend D C} {S' : Backend D' C'}
 
 /-- The backend with the tags of a second family added, such as a realized allocation's
 (`Backend.Allocation`). Every operation selects the body it selects in `S`. -/
-def extend (C' : ι' → Certificate B) : Backend D (Sum.elim C C') where
+@[expose] def extend (C' : ι' → Certificate B) : Backend D (Sum.elim C C') where
   tag o := .inl (S.tag o)
   arg := S.arg
   answer := S.answer
@@ -467,7 +467,7 @@ variable [Fintype ι]
 
 /-- Install the selected program's arguments in its argument registers. Installation is
 uncharged and leaves memory and the frontier unchanged. -/
-def prepare (o : D.Op) (x : Data (registers C)) : Data (registers C) :=
+@[expose] def prepare (o : D.Op) (x : Data (registers C)) : Data (registers C) :=
   install C (S.tag o) (S.arg o) x
 
 /-- An operation runs the body of its tag from the prepared data, in the counted number of
