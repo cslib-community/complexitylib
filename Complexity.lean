@@ -2993,6 +2993,7 @@ public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.Backend
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.Encoding
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.Extract
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.Initialize
+public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.Program
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.Read
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.SiftDown
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.SiftUp
