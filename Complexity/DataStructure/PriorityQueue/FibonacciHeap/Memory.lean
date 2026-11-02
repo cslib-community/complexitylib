@@ -9,6 +9,7 @@ module
 
 public import Complexity.DataStructure.Memory.Frame
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.ExtractMin
+public import Mathlib.Order.Interval.Finset.Nat
 
 /-!
 # The Fibonacci heap as an amortized refinement over memory

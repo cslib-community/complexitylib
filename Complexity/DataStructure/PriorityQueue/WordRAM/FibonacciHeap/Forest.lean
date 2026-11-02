@@ -23,6 +23,9 @@ This file lifts the single-tree model of `Trees.lean` to the full multi-root for
   proving `IndexedMinPQ.findMin` agreement (`FibRawInv.findMin_eq_some`) and scalar bounds.
 * **Transient cut invariant (`CutInv`):** Loop invariant for cascading cuts during `decreaseKey`,
   allowing a single `pending` ancestor whose child was just severed.
+* **Lowering a key (`ValidSubtree.lower_key_no_cut`, `CutInv.to_fibRawInv`):** a lowered key keeps
+  a subtree valid while it does not precede its parent, and `CutInv` without a pending node
+  becomes `FibRawInv` once `minRoot` is updated.
 * **Consolidation table invariant (`SlotInv`):** the trees stored in `cons[0..maxDeg]` while
   consolidating at most `sz` nodes, with pairwise-distinct degrees,
   `maxDeg ≤ 2 * Nat.log 2 sz + 1`, and every unoccupied entry `cons[d]` (`d ≤ n`) zero.
@@ -1029,5 +1032,163 @@ theorem SlotInv.done_of_cleared {n sz maxDeg : ℕ} {st : RawState n} {slotTrees
       exact absurd rfl (hcleared T.deg hle T List.mem_cons_self)
   subst hnil
   exact ⟨rfl, fun d hd => hemp d hd fun _ h => absurd h List.not_mem_nil⟩
+
+/-! ## Lemmas for `decreaseKey` -/
+
+/-- Inside a valid root tree `T` with `Nodup` nodes, `st.par u = 0` holds iff `u = T.root`. -/
+theorem ValidRoot.par_eq_zero_iff_root {n : ℕ} {st : RawState n} {pending : Option (Fin n)}
+    {T : FHTree n} (hT : ValidRoot st pending T) {u : Fin n} (hu : u ∈ T.nodes) :
+    st.par u = 0 ↔ u = T.root := by
+  constructor
+  · intro hp0
+    rw [T.nodes_eq] at hu
+    rcases List.mem_cons.mp hu with rfl | hdesc
+    · rfl
+    · obtain ⟨q, _, hpq⟩ := hT.1.par_of_mem_children u hdesc
+      omega
+  · rintro rfl
+    exact hT.2.1
+
+/-- In a valid subtree with `Nodup` nodes, no strict descendant `v` is its own parent. -/
+theorem ValidSubtree.par_ne_self {n : ℕ} {st : RawState n} {pending : Option (Fin n)}
+    {U : FHTree n} (hU : ValidSubtree st pending U) (hnd : U.nodes.Nodup) {v : Fin n}
+    (hv : v ∈ forestNodes U.children) : st.par v ≠ v.val + 1 :=
+  match U, hU with
+  | .node u cs, .mk _ _ _ _ hpar _ _ hsub => by
+    intro hpv
+    have hu_not : u ∉ forestNodes cs := (List.nodup_cons.mp hnd).1
+    obtain ⟨c, hc, hv_c⟩ := mem_forestNodes_iff.mp hv
+    rw [c.nodes_eq] at hv_c
+    rcases List.mem_cons.mp hv_c with hvc_eq | hv_desc_c
+    · have hpc := hpar c hc
+      rw [← hvc_eq] at hpc
+      have huv : u = v := Fin.ext (by omega)
+      exact hu_not (huv ▸ hv)
+    · exact (hsub c hc).par_ne_self (forestNodes_nodup_tree (List.nodup_cons.mp hnd).2 hc)
+        hv_desc_c hpv
+
+/-- Lowering `key[v]` to `k ≤ st.key v` preserves `ValidSubtree st' none T` whenever `v = T.root` or
+`v` has parent `p` (`st.par v = p.val + 1`) with `¬IndexedMinPQ.PrioLT (v, k) (p, st.key p)`. -/
+theorem ValidSubtree.lower_key_no_cut {n : ℕ} {st st' : RawState n} {T : FHTree n}
+    (hT : ValidSubtree st none T) (hnd : T.nodes.Nodup) {v : Fin n} {k : ℕ}
+    (hv : v ∈ T.nodes) (hle : k ≤ st.key v)
+    (hk_v : st'.key v = k) (hk_other : ∀ x ∈ T.nodes, x ≠ v → st'.key x = st.key x)
+    (hunch : ∀ x ∈ T.nodes,
+      st'.inHeap x = st.inHeap x ∧ st'.mark x = st.mark x ∧ st'.deg x = st.deg x ∧
+      st'.child x = st.child x)
+    (hptr : ∀ x ∈ forestNodes T.children,
+      st'.par x = st.par x ∧ st'.left x = st.left x ∧ st'.right x = st.right x)
+    (hord : v = T.root ∨ ∃ p : Fin n, st.par v = p.val + 1 ∧
+      ¬IndexedMinPQ.PrioLT (v, k) (p, st.key p)) :
+    ValidSubtree st' none T := by
+  induction hT with
+  | @mk u cs hin hmark hdeg hchild hpar hprio hrank hsub ih =>
+    have hu_in : u ∈ (FHTree.node u cs).nodes := List.mem_cons_self
+    have hu := hunch u hu_in
+    have hnd_u : u ∉ forestNodes cs := (List.nodup_cons.mp hnd).1
+    have hnd_cs : (forestNodes cs).Nodup := (List.nodup_cons.mp hnd).2
+    have hc_desc : ∀ c ∈ cs, c.root ∈ forestNodes cs := fun c hc =>
+      mem_forestNodes_iff.mpr ⟨c, hc, c.root_mem_nodes⟩
+    refine ⟨hu.1.trans_ne hin, hu.2.1 ▸ hmark, hu.2.2.1.trans hdeg, ?_, ?_, ?_, ?_, ?_⟩
+    · rcases hchild with ⟨rfl, hc0⟩ | ⟨h, tail, hcu, hcirc, hperm⟩
+      · exact Or.inl ⟨rfl, hu.2.2.2.trans hc0⟩
+      · refine Or.inr ⟨h, tail, hu.2.2.2.trans hcu, hcirc.frame fun x hx => ?_, hperm⟩
+        obtain ⟨c, hc, rfl⟩ := List.mem_map.mp (hperm.subset hx)
+        have hp := hptr c.root (hc_desc c hc)
+        exact ⟨hp.2.1, hp.2.2⟩
+    · intro c hc
+      exact (hptr c.root (hc_desc c hc)).1.trans (hpar c hc)
+    · intro c hc
+      have hcr_in : c.root ∈ (FHTree.node u cs).nodes := List.mem_cons_of_mem u (hc_desc c hc)
+      have hu_ne_cr : u ≠ c.root := fun e => hnd_u (e ▸ hc_desc c hc)
+      by_cases hvu : v = u
+      · subst hvu
+        rw [hk_v, hk_other c.root hcr_in hu_ne_cr.symm]
+        exact IndexedMinPQ.PrioLT.of_le_of_lt
+          (by dsimp only [IndexedMinPQ.PrioLE]; omega) (hprio c hc)
+      · rw [hk_other u hu_in (Ne.symm hvu)]
+        by_cases hv_cr : c.root = v
+        · rw [hv_cr, hk_v]
+          rcases hord with hroot | ⟨p, hpv, hnlt⟩
+          · exact absurd hroot hvu
+          · have hp_c := hpar c hc
+            rw [hv_cr, hpv] at hp_c
+            have hup : u = p := Fin.ext (by omega)
+            subst hup
+            have hu_ne_v : u ≠ v := hv_cr ▸ hu_ne_cr
+            exact (IndexedMinPQ.prioLT_or_prioLT_of_ne hu_ne_v (st.key u) k).resolve_right hnlt
+        · rw [hk_other c.root hcr_in hv_cr]
+          exact hprio c hc
+    · intro i hi
+      have hmem : cs[i] ∈ cs := List.getElem_mem hi
+      have hci := hunch (cs[i]).root (List.mem_cons_of_mem u (hc_desc cs[i] hmem))
+      rw [hci.2.2.1, hci.2.1]
+      exact hrank i hi
+    · intro c hc
+      have hnd_c : c.nodes.Nodup := forestNodes_nodup_tree hnd_cs hc
+      have sub_in : ∀ x ∈ c.nodes, x ∈ (FHTree.node u cs).nodes := fun x hx =>
+        List.mem_cons_of_mem u (mem_forestNodes_iff.mpr ⟨c, hc, hx⟩)
+      by_cases hvc : v ∈ c.nodes
+      · refine ih c hc hnd_c hvc (fun x hx => hk_other x (sub_in x hx))
+          (fun x hx => hunch x (sub_in x hx))
+          (fun x hx => hptr x
+            (mem_forestNodes_iff.mpr ⟨c, hc, c.nodes_eq ▸ List.mem_cons_of_mem c.root hx⟩)) ?_
+        by_cases hvr : v = c.root
+        · exact Or.inl hvr
+        · rcases hord with hroot | hp_ord
+          · rw [FHTree.root_node] at hroot
+            subst hroot
+            exact absurd hvc (fun hm => hnd_u (mem_forestNodes_iff.mpr ⟨c, hc, hm⟩))
+          · exact Or.inr hp_ord
+      · refine (hsub c hc).frame (fun x hx => ?_) (fun x hx => ?_)
+        · have hx_ne : x ≠ v := fun e => hvc (e ▸ hx)
+          have hxn := hunch x (sub_in x hx)
+          exact ⟨hxn.1, hxn.2.1, hxn.2.2.1, hxn.2.2.2, hk_other x (sub_in x hx) hx_ne⟩
+        · have hxp := hptr x
+            (mem_forestNodes_iff.mpr ⟨c, hc, c.nodes_eq ▸ List.mem_cons_of_mem c.root hx⟩)
+          exact ⟨hxp.1, hxp.2.1, hxp.2.2, Iff.rfl⟩
+
+/-- Once cascading cuts finish (`pending = none`) and `minRoot` is updated against `(v, st.key v)`,
+`CutInv` upgrades back to `FibRawInv`. -/
+theorem CutInv.to_fibRawInv {n K_max : ℕ} {s : IndexedMinPQ.State n} {st st' : RawState n}
+    {v m : Fin n} (h : CutInv n K_max s st v m none)
+    (heq : st'.key = st.key ∧ st'.par = st.par ∧ st'.child = st.child ∧
+      st'.left = st.left ∧ st'.right = st.right ∧ st'.deg = st.deg ∧
+      st'.mark = st.mark ∧ st'.inHeap = st.inHeap ∧ st'.cons = st.cons ∧
+      st'.numRoots = st.numRoots ∧ st'.numMarked = st.numMarked ∧ st'.sz = st.sz)
+    (hmin : (IndexedMinPQ.PrioLT (v, st.key v) (m, st.key m) ∧ st'.minRoot = v.val + 1) ∨
+      (¬IndexedMinPQ.PrioLT (v, st.key v) (m, st.key m) ∧ st'.minRoot = m.val + 1)) :
+    FibRawInv n K_max s st' := by
+  obtain ⟨ts, hts, hnd, hdom, hin, hkeys, hsz, hnr, hnm, hcons,
+    ⟨rtail, _, hcirc, hperm⟩, ⟨T_v, hTv, hTv_r⟩, hmin_other⟩ := h
+  rcases heq with ⟨hk, hp, hch, hl, hr, hd, hmk, hinh, hco, hnrr, hnmr, hszr⟩
+  have hts' : ∀ T ∈ ts, ValidRoot st' none T := fun T hT => by
+    have hT0 := hts T hT
+    exact ⟨hT0.1.frame
+      (fun x _ => ⟨by rw [hinh], by rw [hmk], by rw [hd], by rw [hch], by rw [hk]⟩)
+      (fun x _ => ⟨by rw [hp], by rw [hl], by rw [hr], Iff.rfl⟩),
+      by rw [hp]; exact hT0.2.1, by rw [hmk]; exact hT0.2.2⟩
+  have hm_cnt : markedCount st' = markedCount st :=
+    markedCount_congr fun u => by rw [hinh, hmk]
+  refine ⟨ts, hts', hnd, hdom,
+    fun x => by rw [hinh]; exact hin x,
+    fun x kx hsx => by rw [hk]; exact hkeys x kx hsx,
+    hszr.trans hsz, hnrr.trans hnr, hnmr.trans (hnm.trans hm_cnt.symm),
+    fun d hdn => by rw [hco]; exact hcons d hdn, ?_⟩
+  rw [hl, hr]
+  rcases hmin with ⟨hlt, hmin_v⟩ | ⟨hnlt, hmin_m⟩
+  · have hv_map : v ∈ ts.map FHTree.root := hTv_r ▸ List.mem_map_of_mem hTv
+    have hv_mr : v ∈ m :: rtail := hperm.symm.subset hv_map
+    obtain ⟨vtail, hcirc_v, hperm_v⟩ := hcirc.exists_head hv_mr
+    refine Or.inr ⟨v, vtail, hmin_v, hcirc_v, hperm_v.trans hperm, fun T hT => ?_⟩
+    rw [hk]
+    by_cases hTr : T.root = v
+    · rw [hTr]; exact IndexedMinPQ.PrioLE.refl _
+    · exact (IndexedMinPQ.PrioLT.le hlt).trans (hmin_other T hT hTr)
+  · refine Or.inr ⟨m, rtail, hmin_m, hcirc, hperm, fun T hT => ?_⟩
+    rw [hk]
+    by_cases hTr : T.root = v
+    · rw [hTr]; exact IndexedMinPQ.not_prioLT_iff_prioLE.mp hnlt
+    · exact hmin_other T hT hTr
 
 end Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap
