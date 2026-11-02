@@ -185,6 +185,12 @@ index links to canonical definitions rather than keeping a second set.
   machine's own steps, noninteger polynomial degrees, a word-RAM hierarchy by direct
   diagonalization with a smaller gap, and sharp nondeterministic and alternating time
   hierarchies with certified simulators.
+- **Probabilistic time hierarchies** ([#2084]): the hierarchy for promise problems
+  (`PromiseBPTIME`), by delayed diagonalization following He (ECCC TR25-004), and the
+  one-bit-advice hierarchy for languages of van Melkebeek and Pervyshev. `PromiseBPTIME` and its
+  explicit-time sample-and-verify characterization are in place (`Classes/Promise/Time` and
+  `Classes/Promise/Time/Verifier`). The advice-free hierarchy for `BPTIME` itself is open and is
+  not a target.
 - The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
   its input.
 - **Space:** Savitch bounds for general space-constructible functions.
@@ -784,3 +790,4 @@ not planned, not as proved.
 [#2019]: https://github.com/cslib-community/complexitylib/issues/2019
 [#2062]: https://github.com/cslib-community/complexitylib/issues/2062
 [#2063]: https://github.com/cslib-community/complexitylib/issues/2063
+[#2084]: https://github.com/cslib-community/complexitylib/issues/2084
