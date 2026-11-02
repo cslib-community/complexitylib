@@ -82,6 +82,8 @@ length `n` that starts with `u` satisfies `f x = y`. -/
 def preimagePrefix (f : List Bool → List Bool) : Set (ℕ × List Bool × List Bool) :=
   {(n, y, u) : ℕ × List Bool × List Bool | ∃ x : List Bool, x.length = n ∧ u <+: x ∧ f x = y}
 
+/-- Membership in `preimagePrefix f`: `(n, y, u) ∈ preimagePrefix f` iff `y` has an `n`-bit
+preimage under `f` with prefix `u`. -/
 @[simp] theorem mem_preimagePrefix {f : List Bool → List Bool} {n : ℕ} {y u : List Bool} :
     (n, y, u) ∈ preimagePrefix f ↔ ∃ x : List Bool, x.length = n ∧ u <+: x ∧ f x = y := by
   simp [preimagePrefix]

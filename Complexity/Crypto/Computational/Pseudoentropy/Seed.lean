@@ -211,9 +211,8 @@ theorem isPPTOn_sampleWithSeed : IsPPTOn encUnary
 
 /-- The efficient program exactly realizes the finite joint experiment with its retained seed. -/
 theorem eval_sampleWithSeed (n : ℕ) : ProbComp.eval (seed.sampleWithSeed n) =
-    (seed.jointWithSeed n).map (fun result =>
-      let obs := result.1
-      ((pair.encode n obs.1, obs.2), List.ofFn result.2)) := by
+    (seed.jointWithSeed n).map (fun ((obs, label), bits) =>
+      ((pair.encode n obs, label), List.ofFn bits)) := by
   simp only [sampleWithSeed, bind_pure_comp, ProbComp.eval_map, jointWithSeed, PMF.map_comp,
     Function.comp_def, seed.encode_output]
   simp only [BitString.eval_sampleList, BitString.uniformList, PMF.map_comp, Function.comp_def]

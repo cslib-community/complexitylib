@@ -467,10 +467,7 @@ noncomputable def naorReingoldToDDHDistinguisher (inLen : ℕ → ℕ)
   let m := inLen n
   let k ← ProbComp.sampleDyadicIndex m
   if k < m then do
-    let d := input.1
-    let u := ddhU input.2
-    let v := ddhV input.2
-    let w := ddhW input.2
+    let (d, u, v, w) := input
     let αs ← OracleComp.replicate (m - (k + 1)) (F.sampleNaorReingoldExp n d)
     Prod.fst <$> (OracleComp.interpret
       (OracleComp.sumHandler (fun r => StateT.lift (ProbComp.unifFin r))

@@ -58,7 +58,7 @@ abbrev rawModulus (d : ℕ × ℕ × ℕ) : ℕ := d.1
 abbrev rawOrder (d : ℕ × ℕ × ℕ) : ℕ := d.2.1
 
 /-- The subgroup generator residue `g` of a raw Schnorr-group description `(p, q, g)`. -/
-abbrev rawGenerator (d : ℕ × ℕ × ℕ) : ℕ := d.2.2
+abbrev rawGeneratorResidue (d : ℕ × ℕ × ℕ) : ℕ := d.2.2
 
 /-- A valid description `(p, q, g)` of a Schnorr group: `p` and `q` are prime, and the residue
 `g` satisfies `1 < g < p` and `g ^ q ≡ 1 (mod p)`. -/
@@ -68,11 +68,11 @@ structure Valid (d : ℕ × ℕ × ℕ) : Prop where
   /-- The group order is prime. -/
   prime_order : (rawOrder d).Prime
   /-- The generator is not `0` or `1`. -/
-  one_lt_generator : 1 < rawGenerator d
+  one_lt_generator : 1 < rawGeneratorResidue d
   /-- The generator is a reduced residue. -/
-  generator_lt : rawGenerator d < rawModulus d
+  generator_lt : rawGeneratorResidue d < rawModulus d
   /-- The generator has order dividing `q`. -/
-  generator_pow : rawGenerator d ^ rawOrder d % rawModulus d = 1
+  generator_pow : rawGeneratorResidue d ^ rawOrder d % rawModulus d = 1
 
 /-- Valid Schnorr-group descriptions. -/
 abbrev Desc : Type := {d : ℕ × ℕ × ℕ // Valid d}
@@ -84,11 +84,11 @@ abbrev Desc.modulus (d : Desc) : ℕ := rawModulus d.val
 abbrev Desc.order (d : Desc) : ℕ := rawOrder d.val
 
 /-- The subgroup generator residue `g` of a valid Schnorr-group description `(p, q, g)`. -/
-abbrev Desc.generator (d : Desc) : ℕ := rawGenerator d.val
+abbrev Desc.generatorResidue (d : Desc) : ℕ := rawGeneratorResidue d.val
 
 /-- The generator as a unit modulo `p`. -/
 def generatorUnit (d : Desc) : (ZMod d.modulus)ˣ :=
-  ZMod.unitOfCoprime d.generator ((Nat.coprime_comm.mp
+  ZMod.unitOfCoprime d.generatorResidue ((Nat.coprime_comm.mp
     ((d.2.prime_modulus.coprime_iff_not_dvd).mpr
       (Nat.not_dvd_of_pos_of_lt (by have := d.2.one_lt_generator; lia) d.2.generator_lt))))
 
@@ -173,7 +173,7 @@ theorem smul_encode (d : Desc) (a : ℕ) (x : Carrier d) :
   rw [← ZMod.val_natCast, Nat.cast_pow, ZMod.natCast_zmod_val]
 
 /-- The encoded generator is the binary digits of `g`. -/
-theorem encode_generator (d : Desc) : encode d (generator d) = d.generator.bits := by
+theorem encode_generator (d : Desc) : encode d (generator d) = d.generatorResidue.bits := by
   change (((generatorUnit d : (ZMod d.1.1)ˣ) : ZMod d.1.1).val).bits = _
   rw [generatorUnit, ZMod.coe_unitOfCoprime, ZMod.val_natCast,
     Nat.mod_eq_of_lt d.2.generator_lt]
@@ -199,7 +199,7 @@ theorem computableInPolyTime_order :
 theorem computableInPolyTime_generator :
     ComputableInPolyTime (fun d => encode d (generator d)) encDesc encBits := by
   have := computableInPolyTime_val
-  simp only [encode_generator, Desc.generator, rawGenerator]
+  simp only [encode_generator, Desc.generatorResidue, rawGeneratorResidue]
   fun_prop
 
 /-- Multiplication modulo `p` is computable in polynomial time. -/

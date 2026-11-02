@@ -43,15 +43,6 @@ variable (F : PrimeOrderGroupFamily)
 
 /-! ### Fixed-$u$ DDH random self-reduction and Multi-DDH (I) (Exercises 10.8 & 10.11) -/
 
-/-- The first element `u` of a candidate Diffie–Hellman triple `(u, v, w)`. -/
-abbrev ddhU {G : Type*} (t : G × G × G) : G := t.1
-
-/-- The second element `v` of a candidate Diffie–Hellman triple `(u, v, w)`. -/
-abbrev ddhV {G : Type*} (t : G × G × G) : G := t.2.1
-
-/-- The third element `w` of a candidate Diffie–Hellman triple `(u, v, w)`. -/
-abbrev ddhW {G : Type*} (t : G × G × G) : G := t.2.2
-
 /-- Fixed-$u$ DDH rerandomization ([BonehShoup2023], Section 10.11, Exercise 10.8, p. 425):
 given `(u, v, w)` and exponents `σ, τ : ZMod (F.order d)`, output
 `(v*, w*) = (σ • g + τ • v, σ • u + τ • w)`. -/
@@ -296,10 +287,10 @@ theorem advantage_multiDDH_le (d : F.Desc) (ι : Type*) [Fintype ι] [DecidableE
       ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
         (F.multiDDHIdealTupleLaw d ι).bind (test (α • F.generator d))) ≤
     Game.advantage
-      ((F.ddhRealTupleLaw d).bind fun t =>
-        (F.multiDDHRerandomizeLaw d ι (ddhU t) (ddhV t) (ddhW t)).bind (test (ddhU t)))
-      ((F.ddhIdealTupleLaw d).bind fun t =>
-        (F.multiDDHRerandomizeLaw d ι (ddhU t) (ddhV t) (ddhW t)).bind (test (ddhU t))) +
+      ((F.ddhRealTupleLaw d).bind fun (u, v, w) =>
+        (F.multiDDHRerandomizeLaw d ι u v w).bind (test u))
+      ((F.ddhIdealTupleLaw d).bind fun (u, v, w) =>
+        (F.multiDDHRerandomizeLaw d ι u v w).bind (test u)) +
       (F.order d : ℝ≥0)⁻¹ := by
   have hreal :
       ((F.ddhRealTupleLaw d).bind fun t =>
