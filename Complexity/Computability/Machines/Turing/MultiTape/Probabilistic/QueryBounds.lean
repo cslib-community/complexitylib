@@ -59,7 +59,7 @@ theorem query_bounds_runFrom (machine : MultiTapePTM k Symbol Control Operation)
       (fun _ : Query => List Symbol)) (output : List Symbol)
     (htranscript : ∀ entry ∈ transcript, size entry.1 ≤ bound)
     (h : (output, s', transcript') ∈ ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
         (OracleComp.withTranscript oracle))
       (machine.runFrom (ProbOracleComp.sample (ProbComp.uniform Bool))
         (fun op word => ProbOracleComp.query (request op word)) fuel cfg)).run
@@ -127,7 +127,7 @@ theorem query_bounds_runOracle (machine : MultiTapePTM k Symbol Control Operatio
       (s s' : State) (output : List Symbol)
       (transcript : OracleComp.Transcript (fun _ : Operation × List Symbol => List Symbol))
       (h : (output, s', transcript) ∈ ((OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
           (OracleComp.withTranscript oracle)) (machine.runOracle fuel input)).run
             (s, [])).support) :
       transcript.length ≤ fuel ∧ ∀ entry ∈ transcript, entry.1.2.length ≤ fuel := by

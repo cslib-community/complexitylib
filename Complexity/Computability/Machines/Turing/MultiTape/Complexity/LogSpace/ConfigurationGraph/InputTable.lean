@@ -43,11 +43,11 @@ open CounterProgram Instr Expr MultiTapeTM
 ten, and count assignment at fifteen. Labels sixteen through twenty-one emit its two bits;
 twenty-two halts. Registers hold length, row, column and symbol/count scratch. -/
 @[expose] def inputCountTableProgram (bound query value : Expr) : CounterProgram where
-  code :=
-    Words.headerCode ++ forCode 4 1 bound 7 22 ++ forCode 7 2 bound 10 6 ++
-    readSymbolCode 10 3 15 (reg 0) query ++ [assign 3 value 16] ++
+  code := List.flatten [
+    Words.headerCode, forCode 4 1 bound 7 22, forCode 7 2 bound 10 6,
+    readSymbolCode 10 3 15 (reg 0) query, [assign 3 value 16],
     [lt (const 0) (reg 3) 17 18, emit true 19, emit false 19,
-     lt (const 1) (reg 3) 20 21, emit true 9, emit false 9, halt []]
+     lt (const 1) (reg 3) 20 21, emit true 9, emit false 9, halt []]]
   registers := 4
 
 variable {bound query value : Expr} {w : List Bool} {N S : ℕ} {count : ℕ → ℕ → ℕ}
@@ -69,9 +69,7 @@ private theorem reachesOut_count {u v y : ℕ}
       (10, [w.length, u, v, y]) (16, [w.length, u, v, count u v]) [] := by
   let P := inputCountTableProgram bound query value
   let sym := symbolCode w[query.eval [w.length, u, v, y]]?
-  have hcode : P.CodeAt 10 (readSymbolCode 10 3 15 (reg 0) query) := by
-    simp only [readSymbolCode, codeAt_cons, codeAt_nil, and_true]
-    exact ⟨rfl, rfl, rfl, rfl, rfl⟩
+  have hcode : P.CodeAt 10 (readSymbolCode 10 3 15 (reg 0) query) := codeAt_of_prefix ⟨_, rfl⟩
   have hr : P.ReachesOut (frame w) (P.Active S)
       (10, [w.length, u, v, y]) (15, [w.length, u, v, sym]) [] := by
     simpa [sym] using reachesOut_readSymbolCode hcode rfl hregs
@@ -119,9 +117,7 @@ private theorem reachesOut_row (hL : w.length ≤ S) (hN : N ≤ S) (h2 : 2 ≤ 
       (7, [w.length, u, x, y]) (6, [w.length, u, N, y'])
       ((List.range N).flatMap fun v => [decide (0 < count u v), decide (1 < count u v)]) := by
   have hcode : (inputCountTableProgram bound query value).CodeAt 7
-      (forCode 7 2 bound 10 6) := by
-    simp only [forCode, codeAt_cons, codeAt_nil, and_true]
-    exact ⟨rfl, rfl, rfl⟩
+      (forCode 7 2 bound 10 6) := codeAt_of_prefix ⟨_, rfl⟩
   obtain ⟨regs', hreach, y', rfl, -, hy'⟩ := reachesOut_forCode (w := frame w)
     (o := fun v => [decide (0 < count u v), decide (1 < count u v)]) (N := N) hcode
     (fun v regs => ∃ y, regs = [w.length, u, v, y] ∧ v ≤ N ∧ y ≤ 2) hN
@@ -147,9 +143,7 @@ private theorem reachesOut_table (hL : w.length ≤ S) (hN : N ≤ S) (h2 : 2 �
       (4, [w.length, 0, 0, 0]) (22, regs) (List.twoBitTable N count) ∧
       ∀ r ∈ regs, r ≤ S := by
   have hcode : (inputCountTableProgram bound query value).CodeAt 4
-      (forCode 4 1 bound 7 22) := by
-    simp only [forCode, codeAt_cons, codeAt_nil, and_true]
-    exact ⟨rfl, rfl, rfl⟩
+      (forCode 4 1 bound 7 22) := codeAt_of_prefix ⟨_, rfl⟩
   obtain ⟨regs', hreach, x, y, rfl, -, hx, hy⟩ := reachesOut_forCode (w := frame w)
     (o := fun u => (List.range N).flatMap fun v =>
       [decide (0 < count u v), decide (1 < count u v)]) (N := N) hcode
@@ -178,9 +172,8 @@ theorem reachesOut_inputCountTableProgram
       ((inputCountTableProgram bound query value).Active S)
       (inputCountTableProgram bound query value).init
       (22, regs) (List.twoBitTable N count) ∧ ∀ r ∈ regs, r ≤ S := by
-  have hcode : (inputCountTableProgram bound query value).CodeAt 0 Words.headerCode := by
-    simp only [Words.headerCode, codeAt_cons, codeAt_nil, and_true]
-    exact ⟨rfl, rfl, rfl, rfl⟩
+  have hcode : (inputCountTableProgram bound query value).CodeAt 0 Words.headerCode :=
+    codeAt_of_prefix ⟨_, rfl⟩
   have hh := Words.reachesOut_header (w := w) (k := 0) hcode (by
     simpa only [length_frame, Nat.add_zero] using hinput)
   simp only [List.replicate_zero, List.append_nil] at hh

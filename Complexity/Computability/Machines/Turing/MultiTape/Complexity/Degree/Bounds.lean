@@ -45,6 +45,22 @@ public theorem of_bounds {t s : α → ℕ}
     ComputableInDegree f encIn encOut d d :=
   ⟨⟨t, s, ht, hs, hf⟩, ht.mono hf.length_le⟩
 
+/-- Degree one is exactly one uniform machine with common linear time/workspace bounds.
+Independent constants can be enlarged to a common constant. The same machine's runtime bounds
+its output; output length is not charged to workspace. -/
+theorem one_one_iff : ComputableInDegree f encIn encOut 1 1 ↔
+    ∃ c, ComputableInTimeAndSpace f encIn encOut
+      (fun a => c * ((encIn a).length + 1)) (fun a => c * ((encIn a).length + 1)) := by
+  constructor
+  · rintro ⟨⟨t, s, ⟨ct, ht⟩, ⟨cs, hs⟩, hm⟩, _⟩
+    refine ⟨ct + cs, hm.mono (fun a => ?_) (fun a => ?_)⟩
+    · simpa only [pow_one] using (ht a).trans
+        (Nat.mul_le_mul_right _ (Nat.le_add_right ct cs))
+    · simpa only [pow_one] using (hs a).trans
+        (Nat.mul_le_mul_right _ (Nat.le_add_left cs ct))
+  · rintro ⟨c, hm⟩
+    exact of_bounds ⟨c, fun _ => by simp⟩ ⟨c, fun _ => by simp⟩ hm
+
 /-- Fixed time and workspace degrees give plain polynomial-time computability, including degree
 zero. Encoded output is bounded separately and is not charged to workspace. -/
 public theorem computableInPolyTime (h : ComputableInDegree f encIn encOut d e) :

@@ -92,7 +92,7 @@ interacts with `P` starting from the prover state `s`. Private coins are fresh f
 noncomputable def run (program : WordOracleComp Operation α) (s : P.State) :
     PMF (α × P.State) :=
   (OracleComp.interpret
-    (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) P.respond)
+    (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) P.respond)
       program).run s
 
 /-- `Prover.run` is the run against the prover as a stateful oracle with word queries and
