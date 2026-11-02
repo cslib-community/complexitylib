@@ -20,8 +20,10 @@ next-free address must fit even for an empty input; this is not a width-zero ini
 
 ## Main results
 
-* `Realizes.exists_standard_init_program_state`: one flat program with the exact whole-memory,
-  frontier and all encoded result words at its fixed halting location.
+* `Realizes.exists_standard_init_program_state_from_words`: one flat program for independent
+  raw memory and register arguments, related by their input prefix.
+* `Realizes.exists_standard_init_program_state`: the argument-indexed specialization, retaining
+  the exact whole-memory, frontier and all encoded result words at its fixed halting location.
 * `Realizes.exists_standard_init_program`: the scalar `Executes` projection of that same run.
 
 The observed coordinate is static, as in the existing scalar export. Zero-output Unit clients
@@ -89,6 +91,61 @@ variable {k l : ℕ} {δ α : Type} {p : δ → Memory.Prog α}
 
 /-- One statically laid-out flat program includes charged input installation and its halt.
 The witnessed native state is the actual final state of the flat run, retaining the entire
+source memory and frontier and every result coordinate. The raw input words vary independently
+of the register-encoded argument: only their input prefix must agree. All witnesses precede
+both kinds of runtime data. -/
+theorem exists_standard_init_program_state_from_words
+    (h : Realizes .exact p input output safe work) (i : Fin l) :
+    ∃ r C pc : ℕ, ∃ prog : Program .exact r,
+      ∃ frontier : Fin r, ∃ out : Fin l → Fin r,
+      ∀ w d words, (∀ j : Fin k, words.getD j.val 0 = input d j) →
+        k ≤ words.length → Fits w (words.length + 1) → InputFits w words →
+        safe w d (inputState words) →
+        (Memory.spec w).ValidHistory (inputState words)
+          ((Memory.spec w).clientHistory (inputState words) (p d)) →
+        ∃ y n, Runs w prog (State.init words) ⟨pc, y⟩ n ∧
+          step w prog ⟨pc, y⟩ =
+            .halt (output ((Memory.spec w).clientResult (inputState words) (p d)) i) ∧
+          memoryState frontier y = (Memory.spec w).clientState (inputState words) (p d) ∧
+          (∀ j, y.regs (out j) =
+            output ((Memory.spec w).clientResult (inputState words) (p d)) j) ∧
+          n + 1 ≤ C * (memoryCost (p d) (inputState words) +
+            work d (inputState words) + 1) + 1 := by
+  obtain ⟨n, C, emit, he⟩ := h
+  let r := registers k l n
+  let frontier : Fin r := standardFrontier
+  let src : Fin k → Fin r := standardInput
+  let tmp : Fin (l + n + 1) → Fin r := standardScratch
+  obtain ⟨hsrc, htmp, hd, hf, hs⟩ := standardPlacement k l n
+  let code := Code.seq (inputPrefix frontier (tmp (Fin.last (l + n))) src)
+    (emit frontier src tmp)
+  let prog := code.program (tmp (Fin.castAdd (n + 1) i))
+  refine ⟨r, C + (2 * k + 5), code.size, prog, frontier,
+    (fun j => tmp (Fin.castAdd (n + 1) j)), ?_⟩
+  intro w d words hlayout hk hw hin hsafe hv
+  obtain ⟨x, ex, hx, hm, hwords, _⟩ := inputPrefix_exec frontier (tmp (Fin.last (l + n)))
+    src words hsrc (hf _) (fun j => hd j _) hs hk hw hin
+  have harg : x.regs ∘ src = input d := by
+    funext j
+    exact (hwords j).trans (hlayout j)
+  obtain ⟨y, ey, hmem, hout, _⟩ := (he frontier src tmp htmp hd hf hs).2 w d x hx harg
+    (hm.symm ▸ hsafe) (hm.symm ▸ hv)
+  rw [hm] at ey hmem hout
+  obtain ⟨steps, hsteps, erun⟩ := ex.seq ey
+  have hr := erun.runs (pc := 0) (p := prog) (Program.Contains.self _).append_left
+  refine ⟨y, steps, ?_, ?_, hmem, hout, ?_⟩
+  · simpa only [Nat.zero_add, State.init, code] using hr
+  · rw [← hout i]
+    exact step_halt (by simp [prog, Code.program])
+  · have hpos : 1 ≤ memoryCost (p d) (inputState words) +
+        work d (inputState words) + 1 := by omega
+    have hover := Nat.mul_le_mul_left (2 * k + 5) hpos
+    simp only [Nat.mul_one] at hover
+    rw [Nat.add_mul]
+    omega
+
+/-- One statically laid-out flat program includes charged input installation and its halt.
+The witnessed native state is the actual final state of the flat run, retaining the entire
 source memory and frontier and every result coordinate. All witnesses precede runtime data. -/
 theorem exists_standard_init_program_state (h : Realizes .exact p input output safe work)
     (raw : δ → List ℕ) (hlayout : ∀ d (i : Fin k), (raw d).getD i.val 0 = input d i)
@@ -107,38 +164,9 @@ theorem exists_standard_init_program_state (h : Realizes .exact p input output s
             output ((Memory.spec w).clientResult (inputState (raw d)) (p d)) j) ∧
           n + 1 ≤ C * (memoryCost (p d) (inputState (raw d)) +
             work d (inputState (raw d)) + 1) + 1 := by
-  obtain ⟨n, C, emit, he⟩ := h
-  let r := registers k l n
-  let frontier : Fin r := standardFrontier
-  let src : Fin k → Fin r := standardInput
-  let tmp : Fin (l + n + 1) → Fin r := standardScratch
-  obtain ⟨hsrc, htmp, hd, hf, hs⟩ := standardPlacement k l n
-  let code := Code.seq (inputPrefix frontier (tmp (Fin.last (l + n))) src)
-    (emit frontier src tmp)
-  let prog := code.program (tmp (Fin.castAdd (n + 1) i))
-  refine ⟨r, C + (2 * k + 5), code.size, prog, frontier,
-    (fun j => tmp (Fin.castAdd (n + 1) j)), ?_⟩
-  intro w d hk hw hin hsafe hv
-  obtain ⟨x, ex, hx, hm, hwords, _⟩ := inputPrefix_exec frontier (tmp (Fin.last (l + n)))
-    src (raw d) hsrc (hf _) (fun j => hd j _) hs hk hw hin
-  have harg : x.regs ∘ src = input d := by
-    funext j
-    exact (hwords j).trans (hlayout d j)
-  obtain ⟨y, ey, hmem, hout, _⟩ := (he frontier src tmp htmp hd hf hs).2 w d x hx harg
-    (hm.symm ▸ hsafe) (hm.symm ▸ hv)
-  rw [hm] at ey hmem hout
-  obtain ⟨steps, hsteps, erun⟩ := ex.seq ey
-  have hr := erun.runs (pc := 0) (p := prog) (Program.Contains.self _).append_left
-  refine ⟨y, steps, ?_, ?_, hmem, hout, ?_⟩
-  · simpa only [Nat.zero_add, State.init, code] using hr
-  · rw [← hout i]
-    exact step_halt (by simp [prog, Code.program])
-  · have hpos : 1 ≤ memoryCost (p d) (inputState (raw d)) +
-        work d (inputState (raw d)) + 1 := by omega
-    have hover := Nat.mul_le_mul_left (2 * k + 5) hpos
-    simp only [Nat.mul_one] at hover
-    rw [Nat.add_mul]
-    omega
+  obtain ⟨r, C, pc, prog, frontier, out, he⟩ :=
+    h.exists_standard_init_program_state_from_words i
+  exact ⟨r, C, pc, prog, frontier, out, fun w d => he w d (raw d) (hlayout d)⟩
 
 /-- The canonical initialized export requires no caller-written register layout. Its bound
 includes the actual prefix, body and final halt, with code fixed before every width and input. -/

@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (canonical initialized flat-program clients)
 
+public import Complexity.Algorithms.WordRAM.Dijkstra.ListEncode
 public import Complexity.Computability.WordRAM.Realization.Bind
 public import Complexity.Computability.WordRAM.Realization.Glue
 public import Complexity.Computability.WordRAM.Realization.Primitive
@@ -94,6 +95,58 @@ theorem emptyInput_native : ∃ r C : ℕ, ∃ prog : Program .exact r,
   refine ⟨r, C, prog, ?_⟩
   intro w h1
   exact he w () (by decide) h1 ⟨fits_zero w, by simp⟩ trivial (by trivial)
+
+private theorem readHeader_realizes :
+    Realizes .exact (fun _ : Unit => Memory.read 1) unitWords word
+      (fun w _ _ => Fits w 1) (fun _ _ => 2) := by
+  have h := (Realizes.glue unitWords (GlueComputes.const (B := .exact)
+    (P := fun _ => True) (bound := fun _ => 1) 1 (fun _ _ => le_rfl))).bind
+      (Realizes.read (appendWords unitWords word) 0)
+  exact h.consequence (fun _ _ _ _ _ hfit => ⟨⟨trivial, hfit⟩, trivial⟩)
+    (fun _ _ => le_rfl)
+
+/-- The graph is runtime memory, while the register argument is only Unit. One fixed program
+reads its first header word for every adjacency-list instance, preserving all input memory. -/
+theorem graphHeader_native : ∃ r C pc : ℕ, ∃ prog : Program .exact r,
+    ∃ frontier result : Fin r,
+    ∀ w (G : Cslib.Algorithms.WordRAM.Dijkstra.ListInstance),
+      Fits w (G.encode.length + 1) → InputFits w G.encode →
+      ∃ y n, Runs w prog (State.init G.encode) ⟨pc, y⟩ n ∧
+        step w prog ⟨pc, y⟩ = .halt G.n ∧
+        y.mem = (Data.init G.encode : Data 0).mem ∧
+        y.regs frontier = G.encode.length + 1 ∧ y.regs result = G.n ∧
+        n + 1 ≤ C * 4 + 1 := by
+  obtain ⟨r, C, pc, prog, frontier, out, he⟩ :=
+    readHeader_realizes.exists_standard_init_program_state_from_words 0
+  refine ⟨r, C, pc, prog, frontier, out 0, ?_⟩
+  intro w G hw hin
+  have hvalid : (Memory.spec w).ValidHistory (inputState G.encode)
+      ((Memory.spec w).clientHistory (inputState G.encode) (Memory.read 1)) := by
+    change 1 < G.encode.length + 1 ∧ True
+    rw [G.encode_length]
+    exact ⟨by omega, trivial⟩
+  obtain ⟨y, n, hr, hh, hm, hout, hn⟩ := he w () G.encode
+    (fun j => Fin.elim0 j) (Nat.zero_le _) hw hin (hw.of_le (by omega)) hvalid
+  exact ⟨y, n, hr, hh, congrArg Memory.State.mem hm,
+    congrArg Memory.State.frontier hm, hout 0, hn⟩
+
+private def isolatedVertex : Cslib.Algorithms.WordRAM.Dijkstra.ListInstance :=
+  ⟨1, fun _ => [], 0⟩
+
+private def maximumEdge : Cslib.Algorithms.WordRAM.Dijkstra.ListInstance :=
+  ⟨2, fun u => if u.val = 0 then [(1, 15)] else [], 0⟩
+
+-- Two different graph memories share one program; the maximum fitting edge weight survives.
+example : ∃ r pc : ℕ, ∃ prog : Program .exact r, ∃ y₁ y₂ : Data r, ∃ n₁ n₂ : ℕ,
+    Runs 4 prog (State.init isolatedVertex.encode) ⟨pc, y₁⟩ n₁ ∧
+      Runs 4 prog (State.init maximumEdge.encode) ⟨pc, y₂⟩ n₂ ∧
+      step 4 prog ⟨pc, y₁⟩ = .halt 1 ∧ step 4 prog ⟨pc, y₂⟩ = .halt 2 ∧
+      y₂.mem 7 = 15 := by
+  obtain ⟨r, _, pc, prog, _, _, he⟩ := graphHeader_native
+  obtain ⟨y₁, n₁, hr₁, hh₁, _⟩ := he 4 isolatedVertex (by decide) (by decide)
+  obtain ⟨y₂, n₂, hr₂, hh₂, hm₂, _⟩ := he 4 maximumEdge (by decide) (by decide)
+  exact ⟨r, pc, prog, y₁, y₂, n₁, n₂, hr₁, hr₂, hh₁, hh₂,
+    congrFun hm₂ 7⟩
 
 -- No initialized width-zero instance is claimed, even on empty input.
 example : ¬Fits 0 (([] : List ℕ).length + 1) := by decide
