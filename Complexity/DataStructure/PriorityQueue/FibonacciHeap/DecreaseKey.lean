@@ -35,8 +35,8 @@ Each cascading cut costs at most `22` record operations and turns a marked non-r
 unmarked root, which releases `credit = 24`, so the cascade is paid by the potential and
 `decreaseKey` costs at most `104` operations amortized.
 
-The module adapts Renfei Zhou's native formalization (`WordRAM/FibonacciHeap/Cut.lean`) to the
-record level: his cut (`cutNodeCode_raw`, `cutNode_forest`, with its circular-list uniqueness
+The module adapts Renfei Zhou's native formalization (`WordRAM/FibonacciHeap`, its `Cut.lean`) to
+the record level: his cut (`cutNodeCode_raw`, `cutNode_forest`, with its circular-list uniqueness
 argument) and cascading-cut development become `cut`, `CutsNode.cascading`,
 `IsCircList.tail_unique` and `cascade`, and his forest lemmas are reused unchanged.
 
