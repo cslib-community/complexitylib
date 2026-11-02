@@ -34,6 +34,7 @@ public section
 namespace Cslib.DataStructure.PriorityQueue.FibonacciHeap.Native
 
 open Cslib.WordRAM Cslib.WordRAM.Realization
+open Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap
 
 /-- Compilation conditions for the original root attachment. A nonempty child list must have
 its original positive pointer; no extra assumption is made in the empty-child branch. -/
@@ -160,5 +161,31 @@ theorem realizes_link : Realizes .exact
       ((layout (d 0) (d 1)).methods 0) (FibonacciHeap.link (d 2) (d 3)))
     (.refl _) (WordEncoding.encode (α := ℕ)) linkSafe (fun _ _ => 0) :=
   realizes_linkBody.congr linkBody_eq
+
+/-- A real source root has the positive child pointer needed by the native attachment branch. -/
+theorem linkAsSafe_of_validRoot {n w base : ℕ} {mem : Memory.State} {T : FHTree n}
+    (x : Fin n) (hfit : Fits w (base + (9 * n + 5)))
+    (h : ValidRoot (view n ((layout n base).abs mem)) none T) :
+    linkAsSafe w ![n, base, T.root.val, x.val] mem := by
+  change Fits w (base + (9 * n + 5)) ∧ T.root.val < n ∧ x.val < n ∧ _
+  refine ⟨hfit, T.root.isLt, x.isLt, ?_⟩
+  intro hd
+  change mem.mem (base + 5 * n + T.root.val) ≠ 0 at hd
+  have hd' : (view n ((layout n base).abs mem)).deg T.root ≠ 0 := by
+    simpa only [view, Record.Layout.abs, Cell.ok, T.root.isLt, ite_true, layout] using hd
+  obtain ⟨c, _, hc, _⟩ := ValidSubtree.exists_child h.1 hd'
+  have hc' : mem.mem (base + 2 * n + T.root.val) = c.val + 1 := by
+    simpa only [view, Record.Layout.abs, Cell.ok, T.root.isLt, ite_true, layout] using hc
+  change 1 ≤ mem.mem (base + 2 * n + T.root.val)
+  omega
+
+/-- The individual source roots supply both native attachment domains. Disjointness and equal
+degrees belong to the source consolidation theorem, not to this compiler-domain fact. -/
+theorem linkSafe_of_validRoots {n w base : ℕ} {mem : Memory.State} {T S : FHTree n}
+    (hfit : Fits w (base + (9 * n + 5)))
+    (hT : ValidRoot (view n ((layout n base).abs mem)) none T)
+    (hS : ValidRoot (view n ((layout n base).abs mem)) none S) :
+    linkSafe w ![n, base, T.root.val, S.root.val] mem :=
+  ⟨linkAsSafe_of_validRoot S.root hfit hT, linkAsSafe_of_validRoot T.root hfit hS⟩
 
 end Cslib.DataStructure.PriorityQueue.FibonacciHeap.Native
