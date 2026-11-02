@@ -124,7 +124,7 @@ theorem HasGap.eventually_indexed_error_ge {pair : SamplablePair} {gap : ℕ →
     (hgap : pair.HasGap gap) (predict : ℕ → ℕ → List Bool → ProbComp Bool)
     (hpredict : IsPPTOn
       (encPair (encPair encUnary encUnary) encBits) encBool
-      (fun x => predict x.1.1 x.1.2 x.2))
+      (fun ((n, i), word) => predict n i word))
     {count inverseTolerance : ℕ → ℕ}
     (hcount : ComputableInPolyTime count encUnary encUnary)
     (htolerance : ComputableInPolyTime inverseTolerance encUnary encUnary)

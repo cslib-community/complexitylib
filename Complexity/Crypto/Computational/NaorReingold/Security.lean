@@ -467,12 +467,13 @@ noncomputable def naorReingoldToDDHDistinguisher (inLen : ℕ → ℕ)
   let m := inLen n
   let k ← ProbComp.sampleDyadicIndex m
   if k < m then do
-    let αs ← OracleComp.replicate (m - (k + 1)) (F.sampleNaorReingoldExp n input.1)
+    let (d, u, v, w) := input
+    let αs ← OracleComp.replicate (m - (k + 1)) (F.sampleNaorReingoldExp n d)
     Prod.fst <$> (OracleComp.interpret
       (OracleComp.sumHandler (fun r => StateT.lift (ProbComp.unifFin r))
-        (fun request => F.naorReingoldFrontierOracle n m k input.1
-          input.2.1 input.2.2.1 input.2.2.2 αs request.2))
-      (adversary n (F.encDesc input.1))).run []
+        (fun request => F.naorReingoldFrontierOracle n m k d
+          u v w αs request.2))
+      (adversary n (F.encDesc d))).run []
   else pure false
 
 private theorem isPPTOn_sampleNaorReingoldPair (F : PrimeOrderGroupFamily)

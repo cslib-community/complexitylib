@@ -33,7 +33,7 @@ the FHE industrial context, the first-order design decisions and the repository'
 
 Priorities live in this list and in the tiers of [#897].
 
-1. [Goldreich–Micali–Wigderson zero knowledge in full](#cryptographic-landmarks)
+1. [Goldreich–Micali–Wigderson zero knowledge in full](#cryptographic-landmarks) ([#2316])
 2. [Rompel's signature theorem](#cryptographic-landmarks) ([#1001])
 3. [Completeness of oblivious transfer](#cryptographic-landmarks)
 4. [Håstad's optimal MAX-E3SAT hardness](#approximation-and-pcp) ([#886])
@@ -47,7 +47,7 @@ Priorities live in this list and in the tiers of [#897].
 
 ### Cryptographic landmarks
 
-- **Goldreich–Micali–Wigderson zero knowledge in full.** If one-way functions exist, every
+- **Goldreich–Micali–Wigderson zero knowledge in full** ([#2316]). If one-way functions exist, every
   language in NP has a computational zero-knowledge proof in Goldreich's sense (Def. 4.3.10):
   for every `x ∈ L` and arbitrary auxiliary input `z`, against probabilistic polynomial-time
   verifiers. This needs a bridge between the security premise and a clock independent of an
@@ -201,9 +201,14 @@ index links to canonical definitions rather than keeping a second set.
   schedule with endpointwise telescoping and summable available-scale precision payments.
   Actual correction iterates now supply product entry/row-mass bounds and their scheduled
   omitted-product norm sum. Product-seed correction/reward samples have proved true means,
-  reaching the next actual hierarchy reward. The full task family remains to be assembled:
-  routed direct bins, pilot rows, preparatory/normalized rows, detector vectors, estimated copy/reward
-  multipliers and the complete scheduled mean-prefix bound with dependency ranks. Paired raw
+  reaching the next actual hierarchy reward. The local pilot and actual-correction
+  preparation/normalization families now share an expanded dependency order, including
+  normalized children and an actual copy/reward projection client. Ranks are computed from
+  finite iteration bounds; role/rate/suffix requests preserve the inherited source or reset it
+  to the midpoint. Pilot steps use the current maximum; actual corrections and copy weights
+  use the final pilot maximum. The previous reward is still a local leaf. Cross-stage/global
+  role tuple assembly, routed direct bins, and the complete scheduled mean-prefix bound remain
+  open; range/true means do not establish root regularity or the error recurrence. Paired raw
   differences, full-coordinate conditional walks, summed noise, compression, strong recursive
   induction and native logarithmic workspace/class equality remain required.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
@@ -830,3 +835,4 @@ not planned, not as proved.
 [#2145]: https://github.com/cslib-community/complexitylib/issues/2145
 [#2146]: https://github.com/cslib-community/complexitylib/issues/2146
 [#2084]: https://github.com/cslib-community/complexitylib/issues/2084
+[#2316]: https://github.com/cslib-community/complexitylib/issues/2316
