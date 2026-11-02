@@ -17,6 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Sum
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListLookup
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives
 import Complexity.Logics.Propositional.CNF.PolyTime
 import Complexity.Logics.Propositional.CNF.ThreeCNF.PolyTime
@@ -164,8 +165,8 @@ private theorem computableInPolyTime_to3CNFAssignment :
           (encPair (encPair (encPair encCNF encBits)
             (encSum encNat (encPair encUnary encUnary))) (encPair encUnary encUnary))
           encUnary := by fun_prop
-      exact .of_tidy (ComputableTidilyInPolyTime.listDropWithInput
-        (ComputableInPolyTime.listGetDWithInput hφ hi []).tidy hk.tidy)
+      exact (ComputableInPolyTime.dropUnary (encA := encPair encNat encBool)).comp
+        ((ComputableInPolyTime.listGetDWithInput hφ hi []).prod hk)
     exact SAT.computableInPolyTime_clause.comp
       (((ComputableInPolyTime.fst _ _).comp (.fst _ _)).prod hclause)
   · fun_prop [SAT.assignment]
