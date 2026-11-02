@@ -104,7 +104,7 @@ theorem exists_secure_amplified_choice {pair : SamplablePair} {gap : ℕ → ℝ
       (∀ᶠ n in atTop, choose n < size (saved.length n) (densityBound n)) ∧
       ∀ test : ℕ → ℕ → List Bool → ProbComp Bool,
         IsPPTOn (encPair (encPair encUnary encUnary) encBits)
-          encBool (fun input => test input.1.1 input.1.2 input.2) →
+          encBool (fun ((n, i), word) => test n i word) →
         Negligible (fun n => Game.advantage
           (((uniformList (common n)).map (amplifiedGenerate n (saved.length n)
             (observationBound n) (densityBound n) (common n) (choose n) (saved.evaluate n))).bind

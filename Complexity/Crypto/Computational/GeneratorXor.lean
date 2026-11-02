@@ -257,7 +257,7 @@ theorem indistinguishable {generator : ℕ → ℕ → List Bool → List Bool}
     (hchoose : ∀ᶠ n in Filter.atTop, choose n < count n)
     (hsecure : ∀ adversary : ℕ → ℕ → List Bool → ProbComp Bool,
       IsPPTOn (encPair (encPair encUnary encUnary) encBits)
-        encBool (fun input => adversary input.1.1 input.1.2 input.2) →
+        encBool (fun ((n, i), word) => adversary n i word) →
       Negligible (fun n => Game.advantage
         (((uniformList (seedBits n)).map (generator n (choose n))).bind
           (fun word => ProbComp.eval (adversary n (choose n) word)))

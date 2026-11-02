@@ -73,7 +73,7 @@ open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.Memory Cslib.DataStru
 
 /-- Two bounded stacks of capacity `C` at word size `w`. -/
 abbrev boundedStacks (w C : ℕ) : StateTransitionSpec :=
-  product (Stack.WordRAM.spec w C) (Stack.WordRAM.spec w C)
+  product (Stack.spec w C) (Stack.spec w C)
 
 /-- A FIFO list within capacity `C` whose entries fit a `w`-bit word. -/
 structure Inv (w C : ℕ) (q : List ℕ) : Prop where

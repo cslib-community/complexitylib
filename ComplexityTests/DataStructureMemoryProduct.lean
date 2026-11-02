@@ -27,7 +27,7 @@ namespace ComplexityTests.DataStructureMemoryProduct
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.Memory Cslib.DataStructure.Queue
 
 /-- A bounded stack of capacity `2` at word size `8`. -/
-abbrev S : StateTransitionSpec := Stack.WordRAM.spec 8 2
+abbrev S : StateTransitionSpec := Stack.spec 8 2
 
 /-- The layout of stack `i`: its count cell at `3 i`, its items at `3 i + 1` and `3 i + 2`. -/
 def layout (i : ℕ) : Stack.Memory.Layout := ⟨⟨3 * i, 1⟩, ⟨3 * i + 1, 2⟩⟩

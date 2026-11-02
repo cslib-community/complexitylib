@@ -9,12 +9,12 @@ module
 
 public import Complexity.Probability.PairwiseIndependentHash
 public import Mathlib.Basic.Real.Basic
+public import Mathlib.Data.Fintype.Pi
 import Complexity.Foundations.Data.Finset.Expect
 import Complexity.Probability.Uniform
 import Mathlib.Algebra.BigOperators.Balance
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Algebra.Order.BigOperators.Ring.Finset
-import Mathlib.Data.Fintype.Pi
 
 /-!
 # `k`-wise independent hash families
@@ -63,6 +63,8 @@ tuples gives a better constant.
   to sets of at most `k` points are onto is `k`-wise independent.
 * `Cslib.Probability.isKWiseIndependentHash_id`: a uniformly random function is `k`-wise
   independent for every `k`.
+* `Cslib.Probability.card_filter_card_image_le`: cardinality bound for tuples with at most `m`
+  distinct entries.
 * `Cslib.Probability.IsKWiseIndependentHash.expect_sum_pow_le`: the `2 m`-th moment bound.
 * `Cslib.Probability.IsKWiseIndependentHash.dens_filter_le_abs_sum`,
   `Cslib.Probability.IsKWiseIndependentHash.dens_filter_le_abs_sum_sub_expect`: the tail bounds for
@@ -295,7 +297,7 @@ theorem _root_.Cslib.Probability.isKWiseIndependentHash_two_iff :
 
 /-- Tuples of `n` elements of `S` with at most `m ≤ n` distinct entries factor through `Fin m`, so
 there are at most `m ^ n * #S ^ m` of them. -/
-private theorem card_filter_card_image_le [DecidableEq X] (S : Finset X) {m n : ℕ}
+theorem _root_.Cslib.Probability.card_filter_card_image_le [DecidableEq X] (S : Finset X) {m n : ℕ}
     (hmn : m ≤ n) :
     #{t ∈ piFinset fun _ : Fin n => S | #(univ.image t) ≤ m} ≤ m ^ n * #S ^ m := by
   classical
