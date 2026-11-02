@@ -3363,7 +3363,8 @@ theorem OneWay.exists_condEPPRG {f : List Bool → List Bool} (hf : OneWay f) (�
     let D_inv := (2 * d + γ_core + 2) + 3 + (E + 1) + 2 + 2 + E * δ
     have hinv_ppt : IsPPT encBits
         (condInverter g imgLen evaluate d γ_core γ c_eval d_eval deg) :=
-      isPPT_condInverter hg.polyTime.tidy himgLen_poly.tidy hevaluate d γ_core γ c_eval d_eval deg
+      isPPT_condInverter hg.polyTime.tidy himgLen_poly.tidy hevaluate.tidy d γ_core γ c_eval d_eval
+        deg
     have hinv_neg :=
       (hg.inversion_negligible _ hinv_ppt).eventually_le_inv_polynomial
         (p := fun k => (k + 1) ^ D_inv) (by fun_prop) (fun k => by positivity)

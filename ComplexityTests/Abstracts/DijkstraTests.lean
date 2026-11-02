@@ -1,12 +1,13 @@
 /-
-Copyright (c) 2026 Renfei Zhou. All rights reserved.
+Copyright (c) 2026 Renfei Zhou, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Renfei Zhou
+Authors: Renfei Zhou, Samuel Schlesinger
 -/
 
 -- upstream: local-only (formal abstract tests)
 
 import ComplexityAbstracts.DijkstraAbstract
+import Lean
 
 /-!
 # Non-vacuity tests for `ComplexityAbstracts.DijkstraAbstract`
@@ -14,6 +15,12 @@ import ComplexityAbstracts.DijkstraAbstract
 Instantiates both `dijkstra_logLinear` and `dijkstra_fibonacci` on a concrete weighted directed
 graph with parallel edges and checks the encoded source distance and concrete instruction bounds.
 -/
+
+-- The real abstract import graph must not activate proof-only realization syntax.
+run_cmd do
+  match Lean.Parser.runParserCategory (← Lean.getEnv) `tactic "realize" with
+  | .error _ => pure ()
+  | .ok _ => throwError "the Dijkstra abstract imports activated `realize` outside its scope"
 
 namespace ComplexityTests.Abstracts.DijkstraTests
 

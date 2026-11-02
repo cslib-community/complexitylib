@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Renfei Zhou. All rights reserved.
+Copyright (c) 2026 Renfei Zhou, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Renfei Zhou
+Authors: Renfei Zhou, Samuel Schlesinger
 -/
 
 module
@@ -32,14 +32,14 @@ breaking equal-key ties toward smaller handle indices so `extractMin` determinis
 
 ## Main definitions
 
-* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.space`: footprint size `3 * N + 1`.
-* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.stateOfMem`: abstract `IndexedMinPQ.State N`
+* `Cslib.DataStructure.PriorityQueue.BinaryHeap.space`: footprint size `3 * N + 1`.
+* `Cslib.DataStructure.PriorityQueue.BinaryHeap.stateOfMem`: abstract `IndexedMinPQ.State N`
   represented in memory.
-* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.HeapShape`,
-  `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.HeapInv`: structural and lexicographic heap
+* `Cslib.DataStructure.PriorityQueue.BinaryHeap.HeapShape`,
+  `Cslib.DataStructure.PriorityQueue.BinaryHeap.HeapInv`: structural and lexicographic heap
   invariants.
-* `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.UpOrdered`,
-  `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap.DownOrdered`: single-defect invariants
+* `Cslib.DataStructure.PriorityQueue.BinaryHeap.UpOrdered`,
+  `Cslib.DataStructure.PriorityQueue.BinaryHeap.DownOrdered`: single-defect invariants
   during
   `siftUp` and `siftDown`.
 
@@ -51,7 +51,7 @@ breaking equal-key ties toward smaller handle indices so `extractMin` determinis
 
 @[expose] public section
 
-namespace Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
+namespace Cslib.DataStructure.PriorityQueue.BinaryHeap
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 
@@ -128,17 +128,18 @@ section InvariantLemmas
 
 variable {N base S : ℕ} {mem : ℕ → ℕ}
 
-/-- `HeapInv` depends only on memory cells inside `(Block.mk base (space N)).footprint`. -/
+/-- Equality on the array block except its unused heap position zero preserves `HeapInv`.
+The cell at `base + N` may change, for example when it stores the size field. -/
 theorem HeapInv.congr_mem {m₂ : ℕ → ℕ} (h : HeapInv N base S mem)
-    (hm : ∀ a ∈ (Block.mk base (space N)).footprint, m₂ a = mem a) :
+    (hm : ∀ a ∈ (Block.mk base (space N)).footprint, a ≠ base + N → m₂ a = mem a) :
     HeapInv N base S m₂ := by
   have hSN := h.size_le
   have hk (v : ℕ) (hv : v < N) : m₂ (base + v) = mem (base + v) :=
-    hm _ (by rw [Block.mem_footprint]; dsimp only [Block.Owns, space]; omega)
+    hm _ (by rw [Block.mem_footprint]; dsimp only [Block.Owns, space]; omega) (by omega)
   have hh (i : ℕ) (h1 : 1 ≤ i) (h2 : i ≤ S) : m₂ (base + N + i) = mem (base + N + i) :=
-    hm _ (by rw [Block.mem_footprint]; dsimp only [Block.Owns, space]; omega)
+    hm _ (by rw [Block.mem_footprint]; dsimp only [Block.Owns, space]; omega) (by omega)
   have hp (v : ℕ) (hv : v < N) : m₂ (base + 2 * N + 1 + v) = mem (base + 2 * N + 1 + v) :=
-    hm _ (by rw [Block.mem_footprint]; dsimp only [Block.Owns, space]; omega)
+    hm _ (by rw [Block.mem_footprint]; dsimp only [Block.Owns, space]; omega) (by omega)
   have hent (i : ℕ) (h1 : 1 ≤ i) (h2 : i ≤ S) :
       heapEntry N base m₂ i = heapEntry N base mem i := by
     have hv := h.vertex_lt i h1 h2
@@ -422,4 +423,4 @@ theorem HeapInv.extract_one (h : HeapInv N base 1 mem) :
 
 end InvariantLemmas
 
-end Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap
+end Cslib.DataStructure.PriorityQueue.BinaryHeap
