@@ -2901,6 +2901,7 @@ public import Complexity.Crypto.Computational.TreeSignature.Security
 public import Complexity.Crypto.Computational.UniformChoice
 public import Complexity.Crypto.Computational.ZeroKnowledge
 public import Complexity.Crypto.Computational.ZeroKnowledge.AuxClock
+public import Complexity.Crypto.Computational.ZeroKnowledge.Levin
 public import Complexity.Crypto.Game
 public import Complexity.Crypto.Game.Hybrid
 public import Complexity.Crypto.Game.Statistical

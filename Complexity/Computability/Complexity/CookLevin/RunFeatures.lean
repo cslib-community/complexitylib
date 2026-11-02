@@ -53,7 +53,6 @@ variable {k : ℕ} {State : Type}
 /-- The features with finitely many values that hold, given the control, the input symbol read,
 the work symbols read and the view of the output: these four, and the situation of a running
 configuration. -/
-@[expose]
 def finiteFeatures : Option State × Option Bool × (Fin k → Option Bool) × OutView →
     List (Feature k State)
   | (q, s, r, o) => state q :: inRead s :: out o ::
@@ -118,6 +117,7 @@ theorem mem_trueFeatures_iff {w : List Bool} {c : FiniteCfg k Bool State × (Fin
     · rintro ⟨hq, rfl, rfl⟩
       exact ⟨q, hq, rfl, rfl, rfl⟩
 
+/-- A basic feature has its cell, if any, in the window. -/
 theorem inWindow_of_mem_basic {n T : ℕ} {φ : Feature k State} [Fintype State]
     (hφ : φ ∈ basic n T) : InWindow T φ := by
   rcases mem_basic.1 hφ with ⟨_, rfl⟩ | ⟨_, _, rfl⟩ | ⟨_, _, _, rfl⟩ | ⟨_, _, _, hz, rfl⟩ | ⟨_, rfl⟩

@@ -74,6 +74,9 @@ variable {enc : α ↪ List Bool} (R : NPRelation enc)
 def IsWitness (a : α) (w : List Bool) : Prop :=
   w.length = R.certLength.eval (enc a).length ∧ R.verifier (a, w) = true
 
+instance (a : α) (w : List Bool) : Decidable (R.IsWitness a w) :=
+  inferInstanceAs (Decidable (_ ∧ _))
+
 theorem isWitness_iff {a : α} {w : List Bool} :
     R.IsWitness a w ↔ w.length = R.certLength.eval (enc a).length ∧ R.verifier (a, w) = true :=
   Iff.rfl

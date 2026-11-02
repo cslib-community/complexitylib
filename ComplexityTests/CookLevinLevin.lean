@@ -52,4 +52,13 @@ example {α : Type} {enc : α ↪ List Bool} (R : NPRelation enc) {k : ℕ} {Sta
       (encCNF (CookLevin.reduce tm R.certLength c d enc a)).length :=
   (SAT.isWitness_npRelation_iff.1 (CookLevin.isWitness_forwardWitness hrun h)).1
 
+/-- `RunsVerifier` is constructed in a downstream module, from the machine behind the verifier's
+polynomial-time certificate, exactly as `CookLevin.SAT_levinHard` does. -/
+example {α : Type} {enc : α ↪ List Bool} (R : NPRelation enc) :
+    ∃ (k : ℕ) (State : Type) (tm : Turing.MultiTapeTM k Bool State) (c d : ℕ),
+      Finite State ∧ CookLevin.RunsVerifier R tm c d := by
+  obtain ⟨t, _, ht, -, k, State, hfin, tm, htm⟩ := R.computableInPolyTime_verifier
+  obtain ⟨c, d, ht⟩ := Cslib.polynomiallyBounded_iff_le.mp ht
+  exact ⟨k, State, tm, c, d, hfin, fun a w _ => (htm (a, w)).runFrom_of_le (ht _)⟩
+
 end ComplexityTests.CookLevinLevin

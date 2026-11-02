@@ -55,9 +55,10 @@ are what a prover for `SAT` or `ThreeSAT` needs to run on the witnesses of the o
 
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09], Section 2.3.
 * [O. Goldreich, *Computational Complexity: A Conceptual Perspective*][Goldreich2008], Theorem 2.22
-  (the relation of SAT is `PC`-complete) and the remark on 3SAT after it, with the augmented
-  reductions of Exercise 2.28 (numbering of the author's online draft of 30 December 2006); the
-  proof here is the tableau reduction of Arora and Barak, not Goldreich's route through CSAT.
+  (the relation of SAT is `PC`-complete), with the augmented reductions of Exercise 2.28, from which
+  the witness-preserving form for 3SAT also comes (numbering of the author's online draft of
+  30 December 2006); the proof here is the tableau reduction of Arora and Barak, not Goldreich's
+  route through CSAT.
 * [L. A. Levin, *Universal sequential search problems*][Levin1973]
 -/
 

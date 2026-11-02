@@ -58,7 +58,6 @@ variable {k : ℕ} {State : Type}
 
 /-- One step of `tm` on finite storage, tracking the absolute positions of the work heads. A
 halted configuration is left unchanged. -/
-@[expose]
 noncomputable def trackedStep (tm : MultiTapeTM k Bool State)
     (c : FiniteCfg k Bool State × (Fin k → ℤ)) : FiniteCfg k Bool State × (Fin k → ℤ) :=
   match c.1.state with
@@ -69,7 +68,6 @@ noncomputable def trackedStep (tm : MultiTapeTM k Bool State)
 
 /-- The tracked run: `x.2` steps of `tm` from the initial configuration on the input `x.1`, with
 all work heads starting at position `0`. -/
-@[expose]
 noncomputable def trackedRun (tm : MultiTapeTM k Bool State) (x : List Bool × ℕ) :
     FiniteCfg k Bool State × (Fin k → ℤ) :=
   (trackedStep tm)^[x.2] (FiniteCfg.init tm.q₀ x.1, fun _ => 0)
@@ -116,6 +114,8 @@ theorem read_sub (h : TrackedAgrees c cfg) (i : Fin k) (z : ℤ) :
 
 end TrackedAgrees
 
+/-- The initial finite storage, with every work head at position `0`, describes the initial native
+configuration. -/
 theorem trackedAgrees_init (tm : MultiTapeTM k Bool State) (w : List Bool) :
     TrackedAgrees (FiniteCfg.init tm.q₀ w, fun _ => 0) (tm.initCfg w) :=
   ⟨rfl, rfl, rfl, rfl, fun _ => BiTape.represents_nil _, rfl⟩
