@@ -61,6 +61,8 @@ tuples gives a better constant.
   surjective additive group homomorphisms.
 * `Cslib.Probability.isKWiseIndependentHash_of_surjective`: an additive family whose restrictions
   to sets of at most `k` points are onto is `k`-wise independent.
+* `Cslib.Probability.isKWiseIndependentHash_id`: a uniformly random function is `k`-wise
+  independent for every `k`.
 * `Cslib.Probability.IsKWiseIndependentHash.expect_sum_pow_le`: the `2 m`-th moment bound.
 * `Cslib.Probability.IsKWiseIndependentHash.dens_filter_le_abs_sum`,
   `Cslib.Probability.IsKWiseIndependentHash.dens_filter_le_abs_sum_sub_expect`: the tail bounds for
@@ -442,5 +444,47 @@ theorem isKWiseIndependentHash_of_surjective {k : ℕ} [AddGroup ι] [AddGroup Y
       rfl) y
     rw [Fintype.card_fun, Fintype.card_coe, Nat.cast_pow] at h
     convert h
+
+/-- **A uniformly random function is `k`-wise independent for every `k`.** The identity family
+`id : (X → Y) → X → Y`, whose seed is the whole function, restricts uniformly to every finite set
+of points. -/
+theorem isKWiseIndependentHash_id [Fintype X] [DecidableEq X] [Nonempty Y] (k : ℕ) :
+    IsKWiseIndependentHash k (id : (X → Y) → X → Y) where
+  dens_filter_restrict_eq {T} _ y := by
+    let e : (X → Y) ≃ (T → Y) × ({x : X // x ∉ T} → Y) :=
+      { toFun := fun f => (T.restrict f, fun x => f x.1)
+        invFun := fun p x => if hx : x ∈ T then p.1 ⟨x, hx⟩ else p.2 ⟨x, hx⟩
+        left_inv := fun f => by
+          funext x
+          dsimp only
+          split_ifs <;> rfl
+        right_inv := fun ⟨p₁, p₂⟩ => by
+          ext ⟨x, hx⟩
+          · simp [Finset.restrict, hx]
+          · simp [hx] }
+    have hcard_filter :
+        #{f : X → Y | T.restrict f = y} = Fintype.card ({x : X // x ∉ T} → Y) := by
+      rw [← Finset.card_univ]
+      refine Finset.card_nbij' (fun f => (e f).2) (fun g => e.symm (y, g)) ?_ ?_ ?_ ?_
+      · intro _ _; exact Finset.mem_univ _
+      · intro g _
+        simp only [Finset.mem_coe, Finset.mem_filter, Finset.mem_univ, true_and]
+        exact congrArg Prod.fst (e.apply_symm_apply (y, g))
+      · intro f hf
+        simp only [Finset.mem_coe, Finset.mem_filter, Finset.mem_univ, true_and] at hf
+        have h1 : (e f).1 = y := hf
+        calc e.symm (y, (e f).2) = e.symm ((e f).1, (e f).2) := by rw [h1]
+          _ = f := e.symm_apply_apply f
+      · intro g _
+        exact congrArg Prod.snd (e.apply_symm_apply (y, g))
+    have hcard_all :
+        Fintype.card (X → Y) =
+          Fintype.card Y ^ #T * Fintype.card ({x : X // x ∉ T} → Y) := by
+      rw [Fintype.card_congr e, Fintype.card_prod, Fintype.card_fun, Fintype.card_coe]
+    have hrest_ne : (Fintype.card ({x : X // x ∉ T} → Y) : ℚ≥0) ≠ 0 :=
+      Nat.cast_ne_zero.mpr Fintype.card_ne_zero
+    dsimp only [id_eq]
+    rw [Finset.dens_eq_card_div_card, hcard_filter, hcard_all, Nat.cast_mul, Nat.cast_pow,
+      div_mul_cancel_right₀ hrest_ne]
 
 end Cslib.Probability
