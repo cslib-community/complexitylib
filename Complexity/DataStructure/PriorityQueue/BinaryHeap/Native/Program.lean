@@ -198,6 +198,78 @@ theorem code_input_argument (i : Fin 4) : code.input (argument (i.castAdd 2)) = 
     have hi := i.isLt
     omega
 
+private theorem method_src_eq_argument (i : Fin 5) (j : Fin (certificates i).k) (a : Fin 6)
+    (he : j.val = a.val) : Backend.src family (.inl i) j = argument a :=
+  Backend.src_eq_of_val_eq family (.inl i) (.inl 2) he
+
+/-- The existing PQ calling convention delivers the actual selected body's live words; layouts
+and operation payloads are runtime values in the same fixed bank. No prepare step is assumed. -/
+theorem method_arguments {n K : ℕ} (L : Memory.Layout n) (x : Data registers)
+    (o : IndexedMinPQ.Op n)
+    (hl : ∀ i : Fin 4, x.regs (argument (i.castAdd 2)) = layoutWords ⟨n, L⟩ i)
+    (ha : PQCode.argMatch code o x.regs) :
+    x.regs ∘ Backend.src family (.inl ((backend n K L).tag o)) =
+      (certificates ((backend n K L).tag o)).input ((backend n K L).arg o) := by
+  cases o with
+  | isEmpty =>
+    change x.regs ∘ Backend.src family (.inl 0) = layoutWords ⟨n, L⟩
+    funext j
+    change Fin 4 at j
+    fin_cases j <;>
+      first
+      | exact (congrArg x.regs (method_src_eq_argument 0 _ (0 : Fin 6) rfl)).trans (hl 0)
+      | exact (congrArg x.regs (method_src_eq_argument 0 _ (1 : Fin 6) rfl)).trans (hl 1)
+      | exact (congrArg x.regs (method_src_eq_argument 0 _ (2 : Fin 6) rfl)).trans (hl 2)
+      | exact (congrArg x.regs (method_src_eq_argument 0 _ (3 : Fin 6) rfl)).trans (hl 3)
+  | getKey v =>
+    rcases ha with ⟨_, _, _, hv⟩
+    change x.regs ∘ Backend.src family (.inl 1) = indexWords (⟨n, L⟩, v.val)
+    funext j
+    change Fin 5 at j
+    fin_cases j <;>
+      first
+      | exact (congrArg x.regs (method_src_eq_argument 1 _ (0 : Fin 6) rfl)).trans (hl 0)
+      | exact (congrArg x.regs (method_src_eq_argument 1 _ (1 : Fin 6) rfl)).trans (hl 1)
+      | exact (congrArg x.regs (method_src_eq_argument 1 _ (2 : Fin 6) rfl)).trans (hl 2)
+      | exact (congrArg x.regs (method_src_eq_argument 1 _ (3 : Fin 6) rfl)).trans (hl 3)
+      | exact (congrArg x.regs (method_src_eq_argument 1 _ (4 : Fin 6) rfl)).trans (hv)
+  | insert v k =>
+    rcases ha with ⟨_, _, _, hv, hk⟩
+    change x.regs ∘ Backend.src family (.inl 2) = updateWords ((⟨n, L⟩, v.val), k)
+    funext j
+    change Fin 6 at j
+    fin_cases j <;>
+      first
+      | exact (congrArg x.regs (method_src_eq_argument 2 _ (0 : Fin 6) rfl)).trans (hl 0)
+      | exact (congrArg x.regs (method_src_eq_argument 2 _ (1 : Fin 6) rfl)).trans (hl 1)
+      | exact (congrArg x.regs (method_src_eq_argument 2 _ (2 : Fin 6) rfl)).trans (hl 2)
+      | exact (congrArg x.regs (method_src_eq_argument 2 _ (3 : Fin 6) rfl)).trans (hl 3)
+      | exact (congrArg x.regs (method_src_eq_argument 2 _ (4 : Fin 6) rfl)).trans (hv)
+      | exact (congrArg x.regs (method_src_eq_argument 2 _ (5 : Fin 6) rfl)).trans (hk)
+  | decreaseKey v k =>
+    rcases ha with ⟨_, _, _, hv, hk⟩
+    change x.regs ∘ Backend.src family (.inl 3) = updateWords ((⟨n, L⟩, v.val), k)
+    funext j
+    change Fin 6 at j
+    fin_cases j <;>
+      first
+      | exact (congrArg x.regs (method_src_eq_argument 3 _ (0 : Fin 6) rfl)).trans (hl 0)
+      | exact (congrArg x.regs (method_src_eq_argument 3 _ (1 : Fin 6) rfl)).trans (hl 1)
+      | exact (congrArg x.regs (method_src_eq_argument 3 _ (2 : Fin 6) rfl)).trans (hl 2)
+      | exact (congrArg x.regs (method_src_eq_argument 3 _ (3 : Fin 6) rfl)).trans (hl 3)
+      | exact (congrArg x.regs (method_src_eq_argument 3 _ (4 : Fin 6) rfl)).trans (hv)
+      | exact (congrArg x.regs (method_src_eq_argument 3 _ (5 : Fin 6) rfl)).trans (hk)
+  | extractMin =>
+    change x.regs ∘ Backend.src family (.inl 4) = layoutWords ⟨n, L⟩
+    funext j
+    change Fin 4 at j
+    fin_cases j <;>
+      first
+      | exact (congrArg x.regs (method_src_eq_argument 4 _ (0 : Fin 6) rfl)).trans (hl 0)
+      | exact (congrArg x.regs (method_src_eq_argument 4 _ (1 : Fin 6) rfl)).trans (hl 1)
+      | exact (congrArg x.regs (method_src_eq_argument 4 _ (2 : Fin 6) rfl)).trans (hl 2)
+      | exact (congrArg x.regs (method_src_eq_argument 4 _ (3 : Fin 6) rfl)).trans (hl 3)
+
 private theorem reserve_layout :
     Function.Injective reserveScratch ∧
       (∀ (_i : Fin 1) j, argument 0 ≠ reserveScratch j) ∧

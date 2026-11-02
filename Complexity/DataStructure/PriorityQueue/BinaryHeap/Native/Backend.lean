@@ -48,7 +48,7 @@ open Cslib.DataStructure.Memory Cslib.DataStructure.PriorityQueue.WordRAM.Binary
     ⟨realizes_decreaseKey⟩, ⟨realizes_extractMin⟩]
 
 /-- Constructor selection, runtime arguments and typed observation for the indexed-PQ methods. -/
-def backend (n K : ℕ) (L : Memory.Layout n) :
+@[expose] def backend (n K : ℕ) (L : Memory.Layout n) :
     Backend (indexedMinPQSpec n K) certificates where
   tag
     | .isEmpty => 0
