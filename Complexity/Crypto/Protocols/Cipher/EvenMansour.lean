@@ -1674,7 +1674,7 @@ theorem run_idealLazyHandler_good_le_realLazyHandler {α : Type}
     (program : OracleComp (EvenMansourSpec G) α) (P : α → Prop) (k : G × G)
     {c_e c_π c : Cache G} (hrel : CacheRel k c_e c_π c) :
     ((OracleComp.interpret idealLazyHandler program).run (c_e, c_π)).toOuterMeasure
-      {res | P res.1 ∧ isBadEvenMansourKey res.2.1 res.2.2 k = false} ≤
+      {res | P res.1 ∧ isBadEvenMansourKey (Prod.fst res.2) (Prod.snd res.2) k = false} ≤
     ((OracleComp.interpret (realLazyHandler k) program).run c).toOuterMeasure
       {res | P res.1} := by
   induction program generalizing c_e c_π c with

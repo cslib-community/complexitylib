@@ -94,15 +94,16 @@ theorem computableInPolyTime_decodeLyubashevskyExtractInput :
 /-- Compute `z-z′` first, then the SIGNED challenge difference `c′-c`. The unary dimensions
 control both output segments; optional responses default to zero coordinatewise. -/
 def lyubashevskyExtractList (input : LyubashevskyExtractInput) : List ℤ :=
-  ((List.range input.1.1).map fun i =>
-    (input.2.1.2.getD []).getD i 0 - (input.2.2.2.getD []).getD i 0) ++
-  ((List.range input.1.2).map fun i =>
-    (if input.2.2.1.getD i false then (1 : ℤ) else 0) -
-      (if input.2.1.1.getD i false then (1 : ℤ) else 0))
+  ((List.range (Prod.fst input.1)).map fun i =>
+    ((Prod.snd (Prod.fst input.2)).getD []).getD i 0 -
+      ((Prod.snd (Prod.snd input.2)).getD []).getD i 0) ++
+  ((List.range (Prod.snd input.1)).map fun i =>
+    (if (Prod.fst (Prod.snd input.2)).getD i false then (1 : ℤ) else 0) -
+      (if (Prod.fst (Prod.fst input.2)).getD i false then (1 : ℤ) else 0))
 
 /-- Extraction always writes the two declared segments, even on malformed-length inputs. -/
 @[simp] theorem length_lyubashevskyExtractList (input : LyubashevskyExtractInput) :
-    (lyubashevskyExtractList input).length = input.1.1 + input.1.2 := by
+    (lyubashevskyExtractList input).length = Prod.fst input.1 + Prod.snd input.1 := by
   simp [lyubashevskyExtractList]
 
 /-- One native extractor handles runtime dimensions and all binary integer magnitudes. -/

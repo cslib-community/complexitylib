@@ -171,7 +171,7 @@ def twoPartyMulOutput (i : Fin 2)
     (st : ((Bool × Bool) × Fin.cases Bool (fun _ => Unit) i) ×
       (Round.oracle (spec := ot14Spec) () (Function.Embedding.refl (Fin 2))).Received i) : Bool :=
   Fin.cases
-    (fun (st : ((Bool × Bool) × Bool) × _) => st.1.2)
+    (fun (st : ((Bool × Bool) × Bool) × _) => Prod.snd st.1)
     (fun j st => st.2 j.succ rfl) i st
 
 /-- Construction 7.3.7 (p. 643): 2-party shared multiplication in the `ot14Spec`-hybrid model.
@@ -304,7 +304,7 @@ abbrev OrderedPair (m : ℕ) : Type :=
 /-- Embedding of `Fin 2` into `Fin m` sending `0 ↦ p.1.1` and `1 ↦ p.1.2` for an ordered pair
 `p : OrderedPair m`. -/
 def pairEmbedding {m : ℕ} (p : OrderedPair m) : Fin 2 ↪ Fin m where
-  toFun := Fin.cases p.1.1 (fun _ => p.1.2)
+  toFun := Fin.cases p.val.1 (fun _ => p.val.2)
   inj' a b h := by
     fin_cases a <;> fin_cases b
     · rfl
@@ -313,10 +313,10 @@ def pairEmbedding {m : ℕ} (p : OrderedPair m) : Fin 2 ↪ Fin m where
     · rfl
 
 @[simp] theorem pairEmbedding_zero {m : ℕ} (p : OrderedPair m) :
-    pairEmbedding p 0 = p.1.1 := rfl
+    pairEmbedding p 0 = p.val.1 := rfl
 
 @[simp] theorem pairEmbedding_one {m : ℕ} (p : OrderedPair m) :
-    pairEmbedding p 1 = p.1.2 := rfl
+    pairEmbedding p 1 = p.val.2 := rfl
 
 /-- Joint 2-party shared-multiplication oracle round for `p : OrderedPair m`. -/
 @[reducible] def pairRound {m : ℕ} (p : OrderedPair m) : Round m (sharedMulSpec 2) :=
@@ -325,7 +325,7 @@ def pairEmbedding {m : ℕ} (p : OrderedPair m) : Fin 2 ↪ Fin m where
 /-- A party `i` that is neither `p.1.1` nor `p.1.2` receives a subsingleton record in
 `pairRound p`. -/
 theorem subsingleton_received_pairRound {m : ℕ} (p : OrderedPair m) {i : Fin m}
-    (h1 : i ≠ p.1.1) (h2 : i ≠ p.1.2) : Subsingleton ((pairRound p).Received i) := by
+    (h1 : i ≠ p.val.1) (h2 : i ≠ p.val.2) : Subsingleton ((pairRound p).Received i) := by
   refine ⟨fun r₁ r₂ => Round.received_oracle_ext fun s hs => ?_⟩
   fin_cases s
   · exact (h1 hs.symm).elim
@@ -351,9 +351,9 @@ def orderedPairs (m : ℕ) : List (OrderedPair m) :=
 two participating parties `p.1.1` or `p.1.2`). -/
 def extractPairShare {m : ℕ} (p : OrderedPair m) (i : Fin m)
     (r : (pairRound p).Received i) : Bool :=
-  if h0 : p.1.1 = i then
+  if h0 : p.val.1 = i then
     r 0 h0
-  else if h1 : p.1.2 = i then
+  else if h1 : p.val.2 = i then
     r 1 h1
   else
     0
@@ -369,8 +369,8 @@ def pairsSteps {m : ℕ} :
   | p :: L =>
     .oracle (op := ()) (parties := pairEmbedding p)
       (fun _ st => st.1)
-      ((pairsSteps L).mapState fun i st =>
-        (st.1.1, st.1.2 + extractPairShare p i st.2))
+      ((pairsSteps L).mapState fun i (st : ((Bool × Bool) × Bool) × (pairRound p).Received i) =>
+        (Prod.fst st.1, Prod.snd st.1 + extractPairShare p i st.2))
 
 /-- Construction 7.5.8 (p. 704): `m`-party shared multiplication in the 2-ary
 `sharedMulSpec 2`-hybrid model, invoking `sharedMulSpec 2` once for each pair `i < j`.
@@ -383,7 +383,7 @@ def multiPartyMulProtocol (m : ℕ) :
   sampleCoins _ := pure ()
   steps :=
     (pairsSteps (orderedPairs m)).mapState fun _ st =>
-      (st.1, m • (st.1.1 * st.1.2))
+      (st.1, m • (Prod.fst st.1 * Prod.snd st.1))
 
 namespace MultiPartyMul
 
@@ -414,7 +414,7 @@ theorem outputOfView_multiPartyMulProtocol {m : ℕ} (i : Fin m)
 pairwise shares `row_i : Fin m → Bool`. -/
 def receivedPairOfRow {m : ℕ} (p : OrderedPair m) (i : Fin m) (row_i : Fin m → Bool) :
     (pairRound p).Received i :=
-  fun s _ => Fin.cases (row_i p.1.2) (fun _ => row_i p.1.1) s
+  fun s _ => Fin.cases (row_i p.val.2) (fun _ => row_i p.val.1) s
 
 /-- Construct party `i`'s received transcript along `pairsSchedule L` from party `i`'s row of
 pairwise shares `row_i : Fin m → Bool`. -/
@@ -426,8 +426,8 @@ def receivedScheduleOfRow {m : ℕ} (i : Fin m) (row_i : Fin m → Bool) :
 theorem extractPairShare_receivedPairOfRow {m : ℕ} (p : OrderedPair m) (i : Fin m)
     (row_i : Fin m → Bool) :
     extractPairShare p i (receivedPairOfRow p i row_i) =
-      (if p.1.1 = i then row_i p.1.2 else 0) +
-        (if p.1.2 = i then row_i p.1.1 else 0) := by
+      (if p.val.1 = i then row_i p.val.2 else 0) +
+        (if p.val.2 = i then row_i p.val.1 else 0) := by
   dsimp [extractPairShare, receivedPairOfRow]
   by_cases h0 : p.1.1 = i
   · have h1 : p.1.2 ≠ i := fun h => ne_of_lt p.2 (h0.trans h.symm)
@@ -644,7 +644,7 @@ def viewOfRow {m : ℕ} (i : Fin m) (xi : Bool × Bool) (row_i : Fin m → Bool)
 /-- 2-party oracle answer tuple for pair `p` on input `x` and coin `b : Bool`. -/
 def pairAnswer {m : ℕ} (x : Fin m → Bool × Bool) (p : OrderedPair m) (b : Bool) :
     Fin 2 → Bool :=
-  completeShares 2 (pairTarget x p.1.1 p.1.2) (fun _ => b)
+  completeShares 2 (pairTarget x p.val.1 p.val.2) (fun _ => b)
 
 theorem deliverOracle_pairAnswer_eq_receivedPairOfRow {m : ℕ}
     (x : Fin m → Bool × Bool) (r : OrderedPair m → Bool) (p : OrderedPair m) (i : Fin m) :
@@ -797,17 +797,17 @@ theorem evalWith_multiPartyMulProtocol (m : ℕ) (x : Fin m → Bool × Bool) :
 
 /-- Coin adjustment supported on pairs incident to the pivot party `ℓ : Fin m`. -/
 def delta {m : ℕ} (ℓ : Fin m) (w : Fin m → Bool) (p : OrderedPair m) : Bool :=
-  if p.1.1 = ℓ then w p.1.2
-  else if p.1.2 = ℓ then w p.1.1
+  if p.val.1 = ℓ then w p.val.2
+  else if p.val.2 = ℓ then w p.val.1
   else 0
 
 /-- Restriction-based presentation of `delta ℓ` depending only on `Finset.univ.erase ℓ`. -/
 def deltaErase {m : ℕ} (ℓ : Fin m) (u : (i : Finset.univ.erase ℓ) → Bool)
     (p : OrderedPair m) : Bool :=
-  if h1 : p.1.1 = ℓ then
-    u ⟨p.1.2, Finset.mem_erase.mpr ⟨ne_of_gt (h1 ▸ p.2), Finset.mem_univ _⟩⟩
-  else if h2 : p.1.2 = ℓ then
-    u ⟨p.1.1, Finset.mem_erase.mpr ⟨ne_of_lt (h2 ▸ p.2), Finset.mem_univ _⟩⟩
+  if h1 : p.val.1 = ℓ then
+    u ⟨p.val.2, Finset.mem_erase.mpr ⟨ne_of_gt (h1 ▸ p.2), Finset.mem_univ _⟩⟩
+  else if h2 : p.val.2 = ℓ then
+    u ⟨p.val.1, Finset.mem_erase.mpr ⟨ne_of_lt (h2 ▸ p.2), Finset.mem_univ _⟩⟩
   else 0
 
 theorem delta_eq_deltaErase_restrict {m : ℕ} (ℓ : Fin m) (w : Fin m → Bool) :
@@ -912,8 +912,8 @@ def extendOut {m : ℕ} (I : Finset (Fin m)) (yI : (i : I) → Bool) (j : Fin m)
 `matrixOfCoins (extendIn I (I.restrict x)) r i` for all `i ∈ I`. -/
 def sigmaShift {m : ℕ} (I : Finset (Fin m)) (x : Fin m → Bool × Bool)
     (p : OrderedPair m) : Bool :=
-  if p.1.2 ∈ I then
-    pairTarget x p.1.2 p.1.1 + pairTarget (extendIn I (I.restrict x)) p.1.2 p.1.1
+  if p.val.2 ∈ I then
+    pairTarget x p.val.2 p.val.1 + pairTarget (extendIn I (I.restrict x)) p.val.2 p.val.1
   else
     0
 

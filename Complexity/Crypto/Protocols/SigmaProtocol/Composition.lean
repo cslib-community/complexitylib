@@ -176,15 +176,16 @@ noncomputable def orProof (P₀ : SigmaProtocol X₀ Y₀ T₀ C Z₀) (P₁ : S
   respond _ y s c := match s with
     | .inl (x, s₀, c₁, z₁) => (c - c₁, P₀.respond x y.1 s₀ (c - c₁), z₁)
     | .inr (x, s₁, c₀, z₀) => (c₀, z₀, P₁.respond x y.2 s₁ (c - c₀))
-  verify y t c z := P₀.verify y.1 t.1 z.1 z.2.1 && P₁.verify y.2 t.2 (c - z.1) z.2.2
+  verify y t c z :=
+    P₀.verify y.1 t.1 z.1 (Prod.fst z.2) && P₁.verify y.2 t.2 (c - z.1) (Prod.snd z.2)
 
 /-- The OR extractor uses the first side when the first side's challenges differ, and the
 second side otherwise. -/
 def orExtract [DecidableEq C] (extract₀ : Y₀ → T₀ → C → Z₀ → C → Z₀ → X₀)
     (extract₁ : Y₁ → T₁ → C → Z₁ → C → Z₁ → X₁) (y : Y₀ × Y₁) (t : T₀ × T₁) (c : C)
     (z : C × Z₀ × Z₁) (c' : C) (z' : C × Z₀ × Z₁) : X₀ ⊕ X₁ :=
-  if z.1 = z'.1 then .inr (extract₁ y.2 t.2 (c - z.1) z.2.2 (c' - z'.1) z'.2.2)
-  else .inl (extract₀ y.1 t.1 z.1 z.2.1 z'.1 z'.2.1)
+  if z.1 = z'.1 then .inr (extract₁ y.2 t.2 (c - z.1) (Prod.snd z.2) (c' - z'.1) (Prod.snd z'.2))
+  else .inl (extract₀ y.1 t.1 z.1 (Prod.fst z.2) z'.1 (Prod.fst z'.2))
 
 /-- The OR simulator splits the challenge uniformly and simulates both sides. -/
 noncomputable def orSimulate (simulate₀ : Y₀ → C → PMF (T₀ × Z₀))
@@ -203,7 +204,7 @@ variable {P₀ : SigmaProtocol X₀ Y₀ T₀ C Z₀} {P₁ : SigmaProtocol X₁
 side accepts at `c₀` and the second at `c - c₀`. -/
 @[simp] theorem orProof_accepts_iff {y : Y₀ × Y₁} {t : T₀ × T₁} {c : C} {z : C × Z₀ × Z₁} :
     (orProof P₀ P₁ simulate₀ simulate₁).Accepts y t c z ↔
-      P₀.Accepts y.1 t.1 z.1 z.2.1 ∧ P₁.Accepts y.2 t.2 (c - z.1) z.2.2 := by
+      P₀.Accepts y.1 t.1 z.1 (Prod.fst z.2) ∧ P₁.Accepts y.2 t.2 (c - z.1) (Prod.snd z.2) := by
   simp only [Accepts, orProof, Bool.and_eq_true]
 
 /-- With a witness for the first statement, the OR prover simulates the second side at a

@@ -219,7 +219,7 @@ noncomputable def encryptThenMAC (E : SymmetricCipher) (M : MACScheme)
       none
   keyGen_ppt := by
     have hpost : ComputableInPolyTime
-        (fun p : (ℕ × List Bool) × List Bool => encPair encBits encBits (p.1.2, p.2))
+        (fun p : (ℕ × List Bool) × List Bool => encPair encBits encBits (Prod.snd p.1, p.2))
         (encPair (encPair encUnary encBits) encBits) encBits :=
       ComputableInPolyTime.encoding_comp
         (((ComputableInPolyTime.snd encUnary encBits).comp
@@ -240,7 +240,7 @@ noncomputable def encryptThenMAC (E : SymmetricCipher) (M : MACScheme)
       (ComputableInPolyTime.snd I encBits)
     have hpost : ComputableInPolyTime
         (fun p : ((ℕ × List Bool × List Bool) × List Bool) × List Bool =>
-          encPair encBits encBits (p.1.2, p.2))
+          encPair encBits encBits (Prod.snd p.1, p.2))
         (encPair (encPair I encBits) encBits) encBits :=
       ComputableInPolyTime.encoding_comp
         (((ComputableInPolyTime.snd I encBits).comp
@@ -2117,12 +2117,12 @@ noncomputable def prfCipher (family : List Bool → List Bool → List Bool)
   decrypt_polyTime := by
     have hfamTidy := hpoly.tidy
     have hcond : ComputableTidilyInPolyTime
-        (fun p : ℕ × List Bool × List Bool => p.2.2.length == 2 * p.1)
+        (fun p : ℕ × List Bool × List Bool => (Prod.snd p.2).length == 2 * p.1)
         (encPair encUnary (encPair encBits encBits)) encBool := by polytime
     have hyes : ComputableTidilyInPolyTime
         (fun p : ℕ × List Bool × List Bool =>
-          (some (List.zipWith xor (family p.2.1 (p.2.2.take p.1)) (p.2.2.drop p.1)) :
-            Option (List Bool)))
+          (some (List.zipWith xor (family (Prod.fst p.2) ((Prod.snd p.2).take p.1))
+            ((Prod.snd p.2).drop p.1)) : Option (List Bool)))
         (encPair encUnary (encPair encBits encBits)) (encOption encBits) := by polytime
     have hno : ComputableTidilyInPolyTime
         (fun _ : ℕ × List Bool × List Bool => (none : Option (List Bool)))

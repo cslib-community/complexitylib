@@ -77,7 +77,7 @@ noncomputable def acceptedTranscript (x : X) (y : Y) (c : C) : PMF (Option (T ×
 /-- An honest conversation with a uniform challenge, or `none` if the prover aborts. -/
 noncomputable def acceptedConversation [Fintype C] [Nonempty C] (x : X) (y : Y) :
     PMF (Option (T × C × Z)) :=
-  (P.conversation x y).map fun tcz => tcz.2.2.map fun z => (tcz.1, tcz.2.1, z)
+  (P.conversation x y).map fun tcz => (Prod.snd tcz.2).map fun z => (tcz.1, Prod.fst tcz.2, z)
 
 /-- Completeness up to aborts: for every witness-statement pair in `R` and every challenge,
 every honest transcript in which the prover does not abort is accepting. -/
