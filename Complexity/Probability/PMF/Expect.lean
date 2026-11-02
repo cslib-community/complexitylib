@@ -29,6 +29,7 @@ into the vocabulary of `Finset.expect` (`𝔼`) and `Finset.dens`.
 
 * `Cslib.Probability.PMF.sum_le_affine`: average pointwise affine bounds.
 * `Cslib.Probability.PMF.sum_map_mul`, `.sum_bind_mul`: average deterministic and random scores.
+* `Cslib.Probability.PMF.tsum_pure_mul`: the expectation under a point mass.
 * `Cslib.Probability.PMF.tsum_map_mul`, `.tsum_bind_mul`: the same laws for extended
   nonnegative scores over arbitrary types.
 
@@ -62,6 +63,12 @@ theorem tsum_bind_mul {α β : Type*} (p : PMF α) (f : α → PMF β) (k : β �
     (∑' b, (p.bind f) b * k b) = ∑' a, p a * ∑' b, f a b * k b := by
   simp only [PMF.bind_apply, ← ENNReal.tsum_mul_right, ← ENNReal.tsum_mul_left, mul_assoc]
   exact tsum_comm
+
+/-- Expectation of `k : β → ℝ≥0∞` under a point mass is its value there. -/
+theorem tsum_pure_mul {β : Type*} (b : β) (k : β → ℝ≥0∞) :
+    (∑' x, PMF.pure b x * k x) = k b := by
+  rw [tsum_eq_single b fun x hx => by rw [PMF.pure_apply, ite_eq_right hx, zero_mul],
+    PMF.pure_apply_self, one_mul]
 
 /-- Averaging a score after a deterministic map averages its composite with that map.
 Adapted from the cslib `crypto` branch at `5ff69ca`. -/
