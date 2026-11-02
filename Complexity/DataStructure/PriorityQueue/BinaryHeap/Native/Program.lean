@@ -57,6 +57,13 @@ def argument (i : Fin 6) : Fin registers := Backend.src family (.inl 2) i
 noncomputable def bank (i : Fin 4) : Fin registers :=
   Backend.tmp family (.inr 1) ⟨i.val, by have := i.isLt; change i.val < 3 + _ + 1; omega⟩
 
+private theorem argument_source_aux (i : Fin 6) :
+    argument i = Backend.src family (.inl 2) i := rfl
+
+/-- The persistent/payload ABI uses the existing common Backend source positions. -/
+theorem argument_source (i : Fin 6) : argument i = Backend.src family (.inl 2) i :=
+  argument_source_aux i
+
 private theorem argument_injective : Function.Injective argument := by
   intro i j h
   exact Backend.src_injective family (.inl 2) h
