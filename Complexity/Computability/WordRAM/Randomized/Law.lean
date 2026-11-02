@@ -56,7 +56,7 @@ variable {B : Basis} {r : ℕ} {α β : Type}
 /-- `ExecRandLaw w c x P T R f μ`: at word size `w`, running `c` from `x` terminates cleanly on
 every path, makes at most `R` `rand` calls on every path, every supported outcome `(y, n)`
 satisfies `P y` and `n ≤ T`, and the observation `f y` of the final data has law `μ`. -/
-def ExecRandLaw (w : ℕ) (c : Code B r) (x : Data r) (P : Data r → Prop) (T R : ℕ)
+@[expose] def ExecRandLaw (w : ℕ) (c : Code B r) (x : Data r) (P : Data r → Prop) (T R : ℕ)
     (f : Data r → α) (μ : PMF α) : Prop :=
   ∃ m, ExecRand w c x m ∧ m.IsQueryBounded R ∧ (∀ z ∈ m.support, P z.1 ∧ z.2 ≤ T) ∧
     ((fun z => f z.1) <$> m).eval = μ
