@@ -10,20 +10,22 @@ module
 public import Complexity.Computability.WordRAM.Realization.Bind
 public import Complexity.Computability.WordRAM.Realization.Branch
 public import Complexity.Computability.WordRAM.Realization.GlueVector
+public import Complexity.Computability.WordRAM.Realization.Loop
 public import Complexity.Computability.WordRAM.Realization.Primitive
 
 /-!
-# Realization rules with absorbed constant local work
+# Realization rules with absorbed local work
 
 `Realizes` bounds native instructions by `C * (memory charge + local work + 1)` with one
-existential exchange factor `C`. Local work bounded by a constant multiple of another grading can
-therefore be traded for a larger factor (`Realizes.mono_mul`). In particular, a loop-free
-composition of glue, binds and branches has the same certificate with local work `0`: its native
-cost is `O(memory charge + 1)`. Loop work grows with the iteration count, so loops keep their
+existential exchange factor `C`. Local work within a constant multiple of the memory charge plus
+another grading can therefore be traded for a larger factor (`Realizes.mono_mul`). In particular,
+a composition of glue, binds and branches has the same certificate with local work `0`: its native
+cost is `O(memory charge + 1)`. So does a runtime-bounded loop whose body begins with a query,
+because that query's charge pays each iteration's control unit; a query-free loop keeps its
 graded charge.
 
-The rules below are the C2 rules `bind`, `branch` and `glueVector` with that absorption applied.
-They are the target shapes of the `realize` tactic. Scalar and finite-vector glue takes
+The rules below are the C2 rules `bind`, `branch`, `glueVector` and `iterateRuntime` with that
+absorption applied. They are the target shapes of the `realize` tactic. Glue takes
 `GlueComputable` certificates, whose instruction budgets stay hidden.
 
 ## Main definitions
@@ -32,11 +34,13 @@ They are the target shapes of the `realize` tactic. Scalar and finite-vector glu
 
 ## Main results
 
-* `Realizes.mono_mul`: absorb a local-work grading dominated by a constant multiple.
+* `Realizes.mono_mul`: absorb local work dominated by a constant multiple of the memory charge
+  plus another grading.
 * `Realizes.congr`: transport a certificate along pointwise equal programs.
 * `Realizes.bind₀`, `Realizes.branch₀`: sequencing and branching with absorbed control work.
 * `Realizes.pure₀`: finite-result glue from `GlueComputable` coordinates, with a visible domain
   and an explicit word-fit obligation.
+* `Realizes.iterate₀`, `iterate_comap`: loops whose body begins with a query.
 
 These are derived rules over the existing realization kernel; no execution semantics or
 certificate is added.
@@ -64,6 +68,11 @@ instance : WordEncoding (Option ℕ) := ⟨2, optionWords⟩
 
 instance : WordEncoding Bool := ⟨2, boolWords⟩
 
+/-- A pair is encoded by its two encodings, first component first. -/
+instance {α β : Type} [WordEncoding α] [WordEncoding β] : WordEncoding (α × β) :=
+  ⟨_, ((WordEncoding.encode (α := α)).prodMap (WordEncoding.encode (α := β))).trans
+    (Fin.appendEquiv _ _).toEmbedding⟩
+
 variable {B : Basis} {δ α β : Type} {k l m : ℕ}
 
 namespace Realizes
@@ -71,10 +80,10 @@ namespace Realizes
 variable {p : δ → Memory.Prog α} {input : δ ↪ (Fin k → ℕ)} {output : α ↪ (Fin l → ℕ)}
   {safe : ℕ → δ → Memory.State → Prop} {work work' : δ → Memory.State → ℕ}
 
-/-- A local-work grading within a constant multiple of another is absorbed by the exchange
-factor. The new factor is `C * (K + 1)`; the emitter and scratch are unchanged. -/
+/-- Local work within a constant multiple of the memory charge plus another grading is absorbed
+by the exchange factor. The new factor is `C * (K + 1)`; the emitter and scratch are unchanged. -/
 theorem mono_mul (h : Realizes B p input output safe work) (K : ℕ)
-    (hwork : ∀ d s, work d s ≤ K * (work' d s + 1)) :
+    (hwork : ∀ d s, work d s ≤ K * (memoryCost (p d) s + work' d s + 1)) :
     Realizes B p input output safe work' := by
   obtain ⟨n, C, emit, he⟩ := h
   refine ⟨n, C * (K + 1), emit, fun frontier src tmp hi hd hf hs => ?_⟩
@@ -87,8 +96,7 @@ theorem mono_mul (h : Realizes B p input output safe work) (K : ℕ)
   apply Nat.mul_le_mul_left
   have hexpand : (K + 1) * (memoryCost (p d) (memoryState frontier x) +
       work' d (memoryState frontier x) + 1) =
-      K * (work' d (memoryState frontier x) + 1) +
-        K * memoryCost (p d) (memoryState frontier x) +
+      K * (memoryCost (p d) (memoryState frontier x) + work' d (memoryState frontier x) + 1) +
         (memoryCost (p d) (memoryState frontier x) + work' d (memoryState frontier x) + 1) := by
     ring
   omega
@@ -109,7 +117,7 @@ theorem bind₀ (hP : Realizes B p input answer safeP (fun _ _ => 0))
       (fun w d s => safeP w d s ∧
         safeQ w (d, (Memory.spec 0).clientResult s (p d)) ((Memory.spec 0).clientState s (p d)))
       (fun _ _ => 0) :=
-  (hP.bind hQ).mono_mul 1 (fun _ _ => le_refl _)
+  (hP.bind hQ).mono_mul 1 (fun _ _ => by omega)
 
 /-- Branching with the test and jump absorbed. Only the selected alternative's domain is
 required. -/
@@ -118,7 +126,7 @@ theorem branch₀ {pos neg : δ → Memory.Prog α} {safePos safeNeg : ℕ → �
     (hn : Realizes B neg input output safeNeg (fun _ _ => 0)) :
     Realizes B (fun d => if test c (input d) then pos d else neg d) input output
       (fun w d s => if test c (input d) then safePos w d s else safeNeg w d s) (fun _ _ => 0) :=
-  (branch c hp hn).mono_mul 2 (fun _ _ => by split <;> simp)
+  (branch c hp hn).mono_mul 2 (fun _ _ => by split <;> omega)
 
 /-- Return a computed finite result. Each coordinate has a `GlueComputable` certificate over the
 live words with a common domain `P` and value envelope `bound`; `need` is any condition that,
@@ -135,7 +143,65 @@ theorem pure₀ (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → ℕ
   refine ((glueVector input output f g (fun _ => bound) time hresult htime).consequence
     (fun w d _ hwords _ h => ⟨h.1, fun _ => hneed w _ hwords h.1 h.2⟩)
     (fun _ _ => le_rfl)).mono_mul ((∑ i, time i) + l) (fun _ _ => ?_)
-  simp
+  exact Nat.le_mul_of_pos_right _ (by omega)
+
+end Realizes
+
+/-! ### Loops whose body issues a query -/
+
+/-- A client that begins with a query has memory charge at least one. -/
+theorem one_le_memoryCost_liftBind (o : Memory.Op) (k : o.Result → Memory.Prog α)
+    (s : Memory.State) : 1 ≤ memoryCost (PFunctor.FreeM.liftBind o k) s := by
+  change 1 ≤ Memory.charge s o + _
+  cases o <;> simp only [Memory.charge] <;> omega
+
+/-- When every body issues a query, the loop's control work is at most its memory charge. -/
+theorem iterationWork_zero_le {σ : Type} (body : δ × σ → Memory.Prog σ)
+    (hquery : ∀ x s, 1 ≤ memoryCost (body x) s) (d : δ) (n : ℕ) (a : σ) (s : Memory.State) :
+    iterationWork body (fun _ _ => 0) d n a s ≤ memoryCost (iterate body d n a) s := by
+  induction n generalizing a s with
+  | zero => simp [iterationWork]
+  | succ n ih =>
+    have h := iteration_charge_succ body (fun _ _ => 0) d n a s
+    have h₁ := hquery (d, a) s
+    have h₂ := ih ((Memory.spec 0).clientResult s (body (d, a)))
+      ((Memory.spec 0).clientState s (body (d, a)))
+    simp only [iterationWork] at h ⊢
+    omega
+
+/-- A loop may receive any function of its environment: it is the loop over the whole
+environment whose body applies that function. -/
+theorem iterate_comap {ε σ : Type} (g : ε → δ) (body : δ × σ → Memory.Prog σ) (e : ε) (n : ℕ)
+    (a : σ) : iterate body (g e) n a = iterate (fun x : ε × σ => body (g x.1, x.2)) e n a := by
+  induction n generalizing a with
+  | zero => rfl
+  | succ n ih => exact congrArg (fun k => (body (g e, a)).bind k) (funext ih)
+
+/-- With trivial body domains, every iteration's domain holds. -/
+@[simp] theorem iterationSafe_true {σ : Type} (body : δ × σ → Memory.Prog σ) (w : ℕ) (d : δ)
+    (n : ℕ) (a : σ) (s : Memory.State) :
+    iterationSafe body (fun _ _ _ => True) w d n a s := by
+  induction n generalizing a s with
+  | zero => trivial
+  | succ n ih => exact ⟨trivial, ih _ _⟩
+
+namespace Realizes
+
+/-- A runtime-bounded loop whose body begins with a query has local work `0`: each iteration's
+control unit is paid by that query's memory charge. -/
+theorem iterate₀ {σ : Type} (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ (Fin l → ℕ))
+    {body : δ × σ → Memory.Prog σ} {safe : ℕ → (δ × σ) → Memory.State → Prop}
+    (h : Realizes .exact body ((input.prodMap output).trans (Fin.appendEquiv k l).toEmbedding)
+      output safe (fun _ _ => 0))
+    (hquery : ∀ x s, 1 ≤ memoryCost (body x) s) :
+    Realizes .exact (fun d : (δ × σ) × ℕ => iterate body d.1.1 d.2 d.1.2)
+      ((((input.prodMap output).trans (Fin.appendEquiv k l).toEmbedding).prodMap
+        (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding).trans
+          (Fin.appendEquiv (k + l) 1).toEmbedding) output
+      (fun w d s => iterationSafe body safe w d.1.1 d.2 d.1.2 s) (fun _ _ => 0) :=
+  (iterateRuntime input output h).mono_mul 1 fun d s => by
+    have := iterationWork_zero_le body hquery d.1.1 d.2 d.1.2 s
+    omega
 
 end Realizes
 

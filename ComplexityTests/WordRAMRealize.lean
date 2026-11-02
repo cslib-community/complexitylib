@@ -8,7 +8,7 @@ import Complexity.Computability.WordRAM.Realization.Client.MemoryStack
 import Complexity.DataStructure.Queue.Memory
 import Complexity.Tactic.Realize
 
-/-! `realize` on the memory-oracle stack and queue.
+/-! `realize` on the memory-oracle stack and queue, matches, loops and failures.
 
 The three stack statements are exactly those of `Realization.MemoryStack` (#2246), including
 their local-work gradings; `realize` replaces the hand-assembled bind trees and leaves only the
@@ -100,6 +100,38 @@ example : Realizes .standard scaled
   · exact h.1
   · exact h.2
 
+/-! ## Loops -/
+
+/-- Two words. -/
+abbrev pairWords : ℕ × ℕ ↪ (Fin 2 → ℕ) :=
+  ((Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding.prodMap
+    (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding).trans (Fin.appendEquiv 1 1).toEmbedding
+
+/-- Follow `n` pointers from `start`. -/
+def chase (d : ℕ × ℕ) : Memory.Prog ℕ :=
+  iterate (fun x : ℕ × ℕ => Memory.read x.2) d.1 d.2 d.1
+
+/-- The loop receives a component of the environment; its domains are trivial. -/
+example : Realizes .exact chase pairWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
+    (fun _ _ _ => True) (fun _ _ => 0) := by
+  realize
+
+/-- Add the cell at `base + i` and advance. -/
+def sumStep (x : ℕ × (ℕ × ℕ)) : Memory.Prog (ℕ × ℕ) := do
+  let v ← Memory.read (x.1 + x.2.1)
+  pure (x.2.1 + 1, x.2.2 + v)
+
+/-- Sum `n` cells from `base`, returning the final index and the sum. -/
+def sumCells (d : ℕ × ℕ) : Memory.Prog (ℕ × ℕ) := iterate sumStep d.1 d.2 (0, 0)
+
+/-- The loop's domain is the step's fit conditions along the iterations. -/
+example : Realizes .exact sumCells pairWords pairWords
+    (fun w d s => iterationSafe (fun x => sumStep (x.1.1, x.2))
+      (fun w x s => Fits w (x.1.1 + x.2.1) ∧ Fits w (x.2.1 + 1) ∧
+        Fits w (x.2.2 + s.mem (x.1.1 + x.2.1))) w d d.2 (0, 0) s) (fun _ _ => 0) := by
+  realize
+  exact h
+
 /-! ## Failure messages -/
 
 /-- A power has no glue rule. -/
@@ -143,6 +175,20 @@ and needs a loop rule.
 #guard_msgs in
 example : Realizes .exact readMany (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
     (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding (fun _ _ _ => True) (fun _ _ => 0) := by
+  realize
+
+/-- A loop without a query has no memory charge to pay for its iterations. -/
+def countUp (d : ℕ × ℕ) : Memory.Prog ℕ :=
+  iterate (fun x : (ℕ × ℕ) × ℕ => pure (x.2 + 1)) d d.2 0
+
+/--
+error: realize: a loop body must begin with a memory query, which pays for the iteration;
+the body begins with
+  PFunctor.FreeM.pure (x.2 + 1)
+-/
+#guard_msgs in
+example : Realizes .exact countUp pairWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
+    (fun _ _ _ => True) (fun _ _ => 0) := by
   realize
 
 /-- Allocation is certified in the exact basis. -/

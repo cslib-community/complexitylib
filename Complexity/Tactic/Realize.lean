@@ -13,33 +13,41 @@ public import Mathlib.Tactic.FinCases
 /-!
 # The `realize` tactic
 
-`realize` proves a goal `Realizes B p input output safe work` for a loop-free memory client `p`.
-It walks the client syntax, unfolding definitions: `bind`, `pure`, the four memory queries and
-`if` on a word equality or comparison. It keeps the argument layout itself: after each bind the
-live words are the previous ones followed by the answer's encoding (`WordEncoding`), and every
-operand is located among them by definitional equality. An operand that is not a live word is
-first computed by an inserted `pure`, which leaves the program unchanged up to definitional
-equality.
+`realize` proves a goal `Realizes B p input output safe work` for a memory client `p`. It walks
+the client syntax, unfolding definitions, with one rule per form:
 
-Each `pure` is certified by a `GlueComputable` proof assembled from the closure rules of
-`Complexity.Computability.WordRAM.Glue`, one rule per syntactic form: projections, constants, and
-the exact- or standard-basis arithmetic and bitwise operations. Exact subtraction, division and
-remainder add their definedness conditions to the visible domain. The common envelope is the
-maximum of every intermediate value; `realize` proves that it fits from the fit of the live
-words, from the domain, and from the fit of the values it cannot derive, which become the visible
-fit conditions. A value is derived when another fitting value dominates it, for example `a - b`
-and `b` by `a`, or the summands by a sum.
+* `bind`: `Realizes.bind₀`. After each bind the live words are the previous ones followed by the
+  answer's encoding (`WordEncoding`); `realize` keeps this layout itself.
+* `pure`: `Realizes.pure₀`, with each result word certified by a `GlueComputable` proof assembled
+  from the closure rules of `Complexity.Computability.WordRAM.Glue`: projections, constants, and
+  the exact- or standard-basis arithmetic and bitwise operations.
+* the four memory queries: `Realizes.read`, `write`, `alloc` and `allocDirty`.
+* `if` on `a = b`, `a < b` or `a > b`: `Realizes.branch₀`.
+* `match` on an optional answer: the client equals the branch on its presence tag
+  (`Realizes.congr`, proved by cases).
+* `iterate step D n a` whose step begins with a query: `Realizes.iterate₀`, after
+  `iterate_comap` moves `D` into the step.
+
+Operands are located among the live words by definitional equality. An operand that is not a
+live word is first computed by an inserted `pure`, which leaves the program unchanged up to
+definitional equality.
+
+Exact subtraction, division and remainder add their definedness conditions to the visible
+domain. The common glue envelope is the maximum of every intermediate value; `realize` proves
+that it fits from the fit of the live words, from the domain, and from the fit of the values it
+cannot derive, which become the visible fit conditions. A value is derived when another fitting
+value dominates it, for example `a - b` and `b` by `a`, or the summands by a sum.
 
 Local work is absorbed (`Realizes.mono_mul`): every certificate built by `realize` has local work
 `0`, so any local-work grading in the goal is accepted. Intermediate domains are stated in the
-client's own terms, with the replies of earlier queries written as `s.mem a`, `s.frontier` and
-updated memories.
+client's own terms, with the replies of earlier queries written as `s.mem a`, `s.frontier`,
+updated memories, or the interpreter's result of a called method; a loop contributes its
+`iterationSafe` domain.
 
 After the composition, `realize` introduces `w d s hwords hmem h`: the word width, the
 environment, the memory, the fit of the input words, memory well-formedness, and the goal's
 domain. It splits the conjunctions and `if`s of the synthesized domain and leaves each remaining
-condition as a goal. There is no search: every form has one rule, and an unsupported form is
-reported with its subterm.
+condition as a goal. There is no search: an unsupported form is reported with its subterm.
 
 ## Main definitions
 
@@ -195,10 +203,6 @@ private inductive ANode
   | const (idx : Nat) (val : Expr) (zero : Bool)
   /-- A binary operation; `dom` numbers its definedness condition, if any. -/
   | bin (idx : Nat) (val : Expr) (op : GOp) (dom : Option Nat) (a b : ANode)
-
-/-- The depth-first number. -/
-private def ANode.idx : ANode → Nat
-  | .reg i .. | .const i .. | .bin i .. => i
 
 /-- The value over the word vector. -/
 private def ANode.val : ANode → Expr
@@ -637,6 +641,17 @@ private def proveSplit (d r ty : Expr) : MetaM Expr := do
   for sg in ← g.cases zs[0]! do sg.mvarId.refl
   instantiateMVars mvar
 
+/-- `∀ x s, 1 ≤ memoryCost (body x) s` for a loop body that begins with a query. -/
+private def proveQuery (body ty : Expr) : MetaM Expr :=
+  withLocalDeclD `x ty fun x => withLocalDeclD `s (mkConst ``Memory.State) fun s => do
+    let b ← whnf (mkApp body x)
+    unless b.isAppOfArity ``PFunctor.FreeM.liftBind 4 do
+      throwError "realize: a loop body must begin with a memory query, which pays for the \
+        iteration;\nthe body begins with{indentExpr b}"
+    let pf ← mkAppM ``one_le_memoryCost_liftBind #[b.getArg! 2, b.getArg! 3, s]
+    let goal ← mkAppM ``LE.le #[mkNatLit 1, ← mkAppM ``memoryCost #[mkApp body x, s]]
+    mkLambdaFVars #[x, s] (← mkExpectedTypeHint pf goal)
+
 mutual
 
 /-- Certify a client `prog : δ → Memory.Prog α` in the environment `env`. -/
@@ -730,6 +745,10 @@ private partial def realizeBody (ctx : Ctx) (env : Env) (d : Expr) (atoms : Arra
         mkLambdaFVars #[w, d, s] (mkApp5 (mkConst ``ite [Level.one]) (mkSort Level.zero) c inst
           (hp.safe.beta #[w, d, s]) (hn.safe.beta #[w, d, s]))
     return { proof, output := out, safe }
+  -- a runtime-bounded loop
+  if body.isAppOfArity ``iterate 6 then
+    return ← realizeIterate ctx env d atoms (body.getArg! 1) (body.getArg! 2) (body.getArg! 3)
+      (body.getArg! 4) (body.getArg! 5) output?
   -- a `match` on an optional answer becomes a test of its presence tag
   let body ← Core.betaReduce body
   if let some r ← optionDiscr? d body then
@@ -762,6 +781,51 @@ private partial def realizeOptionSplit (ctx : Ctx) (env : Env) (d : Expr) (atoms
     out.safe, ← zeroWork env.ty]
   let proof ← mkAppM ``Realizes.congr #[← mkExpectedTypeHint out.proof stmt, eq]
   return { out with proof }
+
+/-- Certify `iterate step D n a`: copy the initial state and the fuel, then run the loop over the
+whole environment (`iterate_comap`). The body must begin with a query (`Realizes.iterate₀`). -/
+private partial def realizeIterate (ctx : Ctx) (env : Env) (d : Expr) (atoms : Array Expr)
+    (σ step D n a : Expr) (output? : Option Expr) : TermElabM Out := do
+  unless ctx.exact do throwError "realize: loops are certified in the exact basis"
+  let out ← match output? with
+    | some o => pure o
+    | none => encodingOf σ
+  let l ← encodingWidth out
+  let envB ← extend env σ out l
+  -- the body over the whole environment
+  let body ← if D == d then pure step else
+    withLocalDeclD `x envB.ty fun x => do
+      let x1 ← mkAppM ``Prod.fst #[x]
+      let x2 ← mkAppM ``Prod.snd #[x]
+      let Dx := (← mkLambdaFVars #[d] D).beta #[x1]
+      mkLambdaFVars #[x] (mkApp step (← mkAppM ``Prod.mk #[Dx, x2]))
+  let hB ← realizeProg ctx envB body (some out)
+  let hq ← proveQuery body envB.ty
+  let hLoop ← mkAppM ``Realizes.iterate₀ #[env.input, out, hB.proof, hq]
+  -- the fuel, after the state
+  let hN ← withLocalDeclD `x envB.ty fun x => do
+    let x1 ← mkAppM ``Prod.fst #[x]
+    let nx := (← mkLambdaFVars #[d] n).beta #[x1]
+    let word ← encodingOf (mkConst ``Nat)
+    let atomsX := envB.atoms.map (·.beta #[x])
+    let o ← realizePure ctx envB x atomsX nx word
+    pure o
+  let hA ← realizePure ctx env d atoms a out
+  let h2 ← mkAppM ``Realizes.bind₀ #[hN.proof, hLoop]
+  let proof ← mkAppM ``Realizes.bind₀ #[hA.proof, h2]
+  let safe ← withLocalDeclD `w (mkConst ``Nat) fun w =>
+    withLocalDeclD `s (mkConst ``Memory.State) fun s => do
+      let pair ← mkAppM ``Prod.mk #[d, a]
+      let sn ← reducePairs (hN.safe.beta #[w, pair, s])
+      let sl ← mkAppM ``iterationSafe #[body, hB.safe, w, d, n, a, s]
+      mkLambdaFVars #[w, d, s] (mkAnd (hA.safe.beta #[w, d, s]) (mkAnd sn sl))
+  let progR ← mkLambdaFVars #[d] (← mkAppM ``iterate #[body, d, n, a])
+  let stmt ← mkAppM ``Realizes #[ctx.basis, progR, env.input, out, safe, ← zeroWork env.ty]
+  let proof ← mkExpectedTypeHint proof stmt
+  if D == d then return { proof, output := out, safe }
+  let g ← mkLambdaFVars #[d] D
+  let eq ← mkLambdaFVars #[d] (← mkEqSymm (← mkAppM ``iterate_comap #[g, step, d, n, a]))
+  return { proof := ← mkAppM ``Realizes.congr #[proof, eq], output := out, safe }
 
 /-- Certify `bind m f`: the first client, then the continuation over the extended environment. -/
 private partial def realizeBind (ctx : Ctx) (env : Env) (d m f : Expr) (output? : Option Expr) :
@@ -813,8 +877,8 @@ private partial def splitDomain (g : MVarId) : MetaM (List MVarId) := g.withCont
 end Cslib.Tactic.Realize
 
 open Lean Meta Elab Tactic Cslib.WordRAM Cslib.WordRAM.Realization Cslib.Tactic.Realize in
-/-- Prove `Realizes B p input output safe work` for a loop-free memory client `p`, leaving the
-genuine fit and domain conditions as goals in the context `w d s hwords hmem h`. -/
+/-- Prove `Realizes B p input output safe work` for a memory client `p`, leaving the genuine fit
+and domain conditions as goals in the context `w d s hwords hmem h`. -/
 elab "realize" : tactic => withMainContext do
   let goal ← getMainGoal
   let target ← instantiateMVars (← whnfR (← goal.getType))
@@ -850,7 +914,8 @@ elab "realize" : tactic => withMainContext do
     let hdecl := (← getLCtx).lastDecl.get!
     g.replaceLocalDeclDefEq hdecl.fvarId (← Core.betaReduce hdecl.type)
   setGoals [g]
-  evalTactic (← `(tactic| try simp only [true_and, and_true, and_self, Nat.add_zero]))
+  evalTactic (← `(tactic|
+    try simp only [true_and, and_true, and_self, Nat.add_zero, iterationSafe_true]))
   let gs ← getGoals
   let gs ← gs.flatMapM fun g => liftMetaM (splitDomain g)
   -- A condition repeated in the same context is proved once.
