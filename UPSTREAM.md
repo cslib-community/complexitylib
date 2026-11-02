@@ -331,8 +331,12 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `ExactTriangle/DyadicCost.lean` (#2145) simplifies actual preparation/product/query charges
   to `n³/g`, absorbs the actual counter-based selector cost using `g^648≤n`, and applies the
   existing selected-prime failed-scan estimate once globally. Its combined component allowance
-  has an explicit logarithmic factor and a `3-1/648` real-power scale; logarithmic factors
-  are not absorbed into that exponent. It does not assert a composed execution theorem.
+  has an explicit logarithmic factor and a `3-1/648` real-power scale.
+  `DyadicCost/Asymptotics.lean` absorbs that factor via Mathlib's existing logarithm-growth
+  theorem: beyond a threshold depending only on the weight exponent, all actual component
+  allowances are at most `4*n^(3-1/1296)`, uniformly over matrices, selected primes and memories.
+  This existential asymptotic threshold is not an algorithm input. Neither result asserts
+  a composed execution theorem or the source's tuned exponent.
   Callable adaptation, small-case solver dispatch (#2146), outer host and #1394 remain open.
   `Algorithms/ExactTriangle/{Splitting,Witnesses}.lean` adapts the complete finite splitting and
   witness recovery component ([#1447](https://github.com/cslib-community/complexitylib/issues/1447)),

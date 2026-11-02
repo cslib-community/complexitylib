@@ -158,6 +158,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.Spread
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.TimeBound
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.Width
 public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicCost
+public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicCost.Asymptotics
 public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters
 public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.Exec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.Input
