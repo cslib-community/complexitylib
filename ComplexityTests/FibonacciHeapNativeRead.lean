@@ -38,6 +38,14 @@ private def insertClient : (indexedMinPQSpec 2 31).Client Unit :=
     ((zeroAllocator (n := 2) (K := 31) (w := 5) (by decide) (by decide)).run
       ((indexedMinPQSpec 2 31).call (.insert 0 31)))
 
+/-- The maximum-key fixture is an actual heap invariant instance, not just a memory pattern. -/
+example : (framed (n := 2) (K := 31) (w := 5) (by decide) (by decide) 2).inv planted := by
+  have hv : (indexedMinPQSpec 2 31).ValidHistory allocator.init
+      ((indexedMinPQSpec 2 31).clientHistory allocator.init insertClient) := by
+    change ((none : Option ℕ) = none ∧ (31 : ℕ) ≤ 31) ∧ True
+    decide
+  exact (allocator.run_correct insertClient (Memory.zeroAbove_init [31]) (by decide) hv).2.2.1
+
 private theorem planted_wellFormed : Memory.WellFormed 5 planted := by
   have hv : (Memory.spec 5).ValidHistory input
       ((Memory.spec 5).clientHistory input (allocator.run insertClient)) := by decide

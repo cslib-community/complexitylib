@@ -7,7 +7,9 @@ Authors: Renfei Zhou, Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.WordRAM.Realization.GlueVector
 public import Complexity.Computability.WordRAM.Realization.Loop
+public import Complexity.Computability.WordRAM.Realization.While
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Memory
 
 /-!
@@ -30,6 +32,8 @@ their reached-state domains.
 * `link_scatterList_eq_iterate`: the existing root-list traversal has the same iteration form.
 * `link_cascade_succ_eq_step`, `link_scatter_succ_eq_step`: memory-level step equations for the
   early-exit recursions, without changing their cutoff behavior.
+* `link_cascade_eq_boundedWhile`: the same finite cascade source in the shared while form;
+  its native realization still needs a nontruncation proof.
 * `gather_iterations_le_memoryCost`, `scatterList_iterations_le_memoryCost`: each fixed iteration
   issues a real query, so the iteration count can pay control work through the memory charge.
 -/
@@ -156,6 +160,34 @@ theorem link_cascade_succ_eq_step {n : ℕ} (L : Record.Layout (Cell.ok n)) (w f
   congr 1
   funext next
   cases next <;> rfl
+
+/-- The existing cascade is exactly the shared finite while source, with an explicit presence
+tag for its pending handle. This preserves cutoff truncation; `whileSafe` is a separate native
+obligation, and a pending handle at zero fuel does not satisfy it. The body begins with the
+original parent query; its absent-state payload is never used because the guard has stopped. -/
+theorem link_cascade_eq_boundedWhile {n : ℕ} (L : Record.Layout (Cell.ok n)) (w fuel z : ℕ) :
+    DataStructure.link (L.methods w) (cascade fuel z) = (do
+      let _ ← Realization.boundedWhile
+        (fun (_ : Unit) (a : Option ℕ) => Realization.optionWords a 0 ≠ 0)
+        (fun a : Unit × Option ℕ =>
+          DataStructure.link (L.methods w) (cascadeStep (Realization.optionWords a.2 1)))
+        () fuel (some z)
+      pure ()) := by
+  induction fuel generalizing z with
+  | zero => rfl
+  | succ fuel ih =>
+    rw [link_cascade_succ_eq_step]
+    simp only [Realization.boundedWhile, Realization.optionWords_some, Matrix.cons_val_zero,
+      Matrix.cons_val_one]
+    erw [ite_eq_left (by decide : (1 : ℕ) ≠ 0)]
+    simp only [bind_assoc]
+    congr 1
+    funext next
+    cases next with
+    | none =>
+      rw [Realization.boundedWhile_of_not _ _ () fuel none (by decide)]
+      rfl
+    | some p => exact ih p
 
 /-- One consolidation step. An empty slot stops with the updated maximum degree; a collision
 keeps the old maximum and continues with exactly the root returned by `link`. -/

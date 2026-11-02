@@ -62,7 +62,7 @@ example :
     ((Memory.spec 5).clientHistory occupied (lower (scatterList 0 false 1 0 31))).length = 1 := by
   decide
 
-/-- A root ends the cascade after the parent read, without reading or changing a mark. -/
+/-- A zero parent ends the source cascade after one read, without changing a mark. -/
 example :
     (Memory.spec 5).clientResult empty (lower (cascadeStep 0)) = none ∧
     ((Memory.spec 5).clientHistory empty (lower (cascadeStep 0))).length = 1 := by decide
@@ -91,6 +91,28 @@ example :
     s.mem 12 = 0 ∧ s.mem 21 = 0 ∧ s.mem 31 = 17 ∧ s.frontier = 23 ∧
       (Memory.spec 5).clientResult marked (lower (scatterList 0 true 1 0 31)) = 31 ∧
       ((Memory.spec 5).clientHistory marked (lower (scatterList 0 true 1 0 31))).length = 6 := by
+  decide
+
+/-- A live presence tag at zero cutoff is genuinely truncated. The source while equation does
+not discharge the native nontruncation condition. -/
+example : ¬Cslib.WordRAM.Realization.whileSafe
+    (fun (_ : Unit) (a : Option ℕ) => Cslib.WordRAM.Realization.optionWords a 0 ≠ 0)
+    (fun a : Unit × Option ℕ =>
+      lower (cascadeStep (Cslib.WordRAM.Realization.optionWords a.2 1)))
+    (fun _ _ _ => True) 5 () 0 (some 0) empty := by
+  simp only [Cslib.WordRAM.Realization.whileSafe]
+  decide
+
+/-- One parent query is enough for this zero-parent case: the tag becomes false before the
+cutoff and the actual source memory history is admissible. -/
+example : Cslib.WordRAM.Realization.whileSafe
+    (fun (_ : Unit) (a : Option ℕ) => Cslib.WordRAM.Realization.optionWords a 0 ≠ 0)
+    (fun a : Unit × Option ℕ =>
+      lower (cascadeStep (Cslib.WordRAM.Realization.optionWords a.2 1)))
+    (fun _ _ _ => True) 5 () 1 (some 0) empty ∧
+    (Memory.spec 5).ValidHistory empty
+      ((Memory.spec 5).clientHistory empty (lower (cascade 1 0))) := by
+  simp only [Cslib.WordRAM.Realization.whileSafe]
   decide
 
 end ComplexityTests.FibonacciHeapNativeSource

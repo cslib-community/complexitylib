@@ -38,7 +38,10 @@ absorption applied. They are the target shapes of the `realize` tactic. Glue tak
 * `Realizes.mono_mul`: absorb local work dominated by a constant multiple of the memory charge
   plus another grading.
 * `Realizes.congr`: transport a certificate along pointwise equal programs.
+* `Realizes.consequence_valid`: strengthen the domain under the client's valid history.
 * `Realizes.bind₀`, `Realizes.branch₀`: sequencing and branching with absorbed control work.
+  `Realizes.bind₀_of_run` states the continuation's domain at a closed form of the first
+  client's reply and next memory.
 * `Realizes.pure₀`: finite-result glue from `GlueComputable` coordinates, with a visible domain
   and an explicit word-fit obligation.
 * `Realizes.iterate₀`, `iterate_comap`: loops whose body begins with a query.
@@ -119,6 +122,19 @@ theorem congr {p' : δ → Memory.Prog α} (h : Realizes B p input output safe w
     (hp : ∀ d, p d = p' d) : Realizes B p' input output safe work :=
   funext hp ▸ h
 
+/-- Strengthen the visible domain using, besides the input fits and memory well-formedness, the
+validity of the client's own history from the entry memory, which every execution supplies. -/
+theorem consequence_valid {safe' : ℕ → δ → Memory.State → Prop}
+    (h : Realizes B p input output safe work)
+    (hsafe : ∀ w d s, (∀ i, Fits w (input d i)) → Memory.WellFormed w s →
+      (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (p d)) →
+      safe' w d s → safe w d s) : Realizes B p input output safe' work := by
+  obtain ⟨n, C, emit, he⟩ := h
+  refine ⟨n, C, emit, fun frontier src tmp hi hd hf hs => ?_⟩
+  obtain ⟨hnw, hrun⟩ := he frontier src tmp hi hd hf hs
+  refine ⟨hnw, fun w d x hx hin hsafe' hv => hrun w d x hx hin ?_ hv⟩
+  exact hsafe w d _ (fun i => congrFun hin i ▸ hx.1 (src i)) (wellFormed_memoryState hx) hv hsafe'
+
 variable {q : δ × α → Memory.Prog β} {answer : α ↪ (Fin l → ℕ)} {output' : β ↪ (Fin m → ℕ)}
   {safeP : ℕ → δ → Memory.State → Prop} {safeQ : ℕ → δ × α → Memory.State → Prop}
 
@@ -131,6 +147,19 @@ theorem bind₀ (hP : Realizes B p input answer safeP (fun _ _ => 0))
         safeQ w (d, (Memory.spec 0).clientResult s (p d)) ((Memory.spec 0).clientState s (p d)))
       (fun _ _ => 0) :=
   (hP.bind hQ).mono_mul 1 (fun _ _ => by omega)
+
+/-- Sequencing with the first client's reply and next memory given in closed form, so that the
+continuation's domain is stated at them rather than at the interpreter's run. -/
+theorem bind₀_of_run (hP : Realizes B p input answer safeP (fun _ _ => 0))
+    (hQ : Realizes B q ((input.prodMap answer).trans (Fin.appendEquiv k l).toEmbedding) output'
+      safeQ (fun _ _ => 0))
+    (reply : δ → Memory.State → α) (next : δ → Memory.State → Memory.State)
+    (hreply : ∀ d s, (Memory.spec 0).clientResult s (p d) = reply d s)
+    (hnext : ∀ d s, (Memory.spec 0).clientState s (p d) = next d s) :
+    Realizes B (fun d => (p d).bind (fun a => q (d, a))) input output'
+      (fun w d s => safeP w d s ∧ safeQ w (d, reply d s) (next d s)) (fun _ _ => 0) :=
+  (bind₀ hP hQ).consequence (fun w d s _ _ h => by rw [hreply, hnext]; exact h)
+    (fun _ _ => le_rfl)
 
 /-- Branching with the test and jump absorbed. Only the selected alternative's domain is
 required. -/
