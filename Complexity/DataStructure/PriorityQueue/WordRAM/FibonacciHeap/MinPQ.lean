@@ -771,17 +771,17 @@ theorem AllocRep.valBase_eq {n_max U V w base : ℕ}
     {s : PriorityQueue.MinPQ.AllocState n_max} {x : Data rMinPQ}
     (hrep : AllocRep n_max U V w base s x) :
     x.regs valBaseReg = base + FibonacciHeap.space n_max :=
-  hrep.2.1.2.1.2.1
+  hrep.2.1.2.1.regs_frontierReg
 
 theorem AllocRep.zeroP_eq {n_max U V w base : ℕ}
     {s : PriorityQueue.MinPQ.AllocState n_max} {x : Data rMinPQ}
     (hrep : AllocRep n_max U V w base s x) : x.regs zeroP = 0 :=
-  hrep.2.1.2.1.2.2.2.2.2.2.2.2.2.2.2.1
+  hrep.2.1.2.1.regs_zeroP
 
 theorem AllocRep.oneP_eq {n_max U V w base : ℕ}
     {s : PriorityQueue.MinPQ.AllocState n_max} {x : Data rMinPQ}
     (hrep : AllocRep n_max U V w base s x) : x.regs oneP = 1 :=
-  hrep.2.1.2.1.2.2.2.2.2.2.2.2.2.2.2.2
+  hrep.2.1.2.1.regs_oneP
 
 theorem isEmptyCode_exec {n_max U V w base : ℕ}
     {s : PriorityQueue.MinPQ.AllocState n_max} {x : Data rMinPQ}
@@ -1318,15 +1318,15 @@ theorem extractMinCode_exec {n_max U V w base : ℕ}
   have hx1_z0 : x1.regs zeroP = 0 := by
     change (x1.comap f42).regs FibonacciHeap.zeroP = 0
     rw [Data.comap_extend f42_injective]
-    exact hinv_fib.2.1.2.2.2.2.2.2.2.2.2.2.2.1
+    exact hinv_fib.2.1.regs_zeroP
   have hx1_o1 : x1.regs oneP = 1 := by
     change (x1.comap f42).regs FibonacciHeap.oneP = 1
     rw [Data.comap_extend f42_injective]
-    exact hinv_fib.2.1.2.2.2.2.2.2.2.2.2.2.2.2
+    exact hinv_fib.2.1.regs_oneP
   have hx1_vb : x1.regs valBaseReg = base + FibonacciHeap.space n_max := by
     change (x1.comap f42).regs FibonacciHeap.frontierReg = base + FibonacciHeap.space n_max
     rw [Data.comap_extend f42_injective]
-    exact hinv_fib.2.1.2.1
+    exact hinv_fib.2.1.regs_frontierReg
   have hx1_fb : x1.regs freeBaseReg = base + FibonacciHeap.space n_max + n_max :=
     (Data.extend_regs_of_notMem y_fib x freeBaseReg_notMem_range).trans hfb
   have hx1_fresh : x1.regs freshReg = s.fresh :=
