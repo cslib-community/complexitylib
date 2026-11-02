@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Crypto.Computational.Nonuniform.ZeroKnowledge
+import Complexity.Crypto.Computational.Stretch
 
 /-! Checked clients of the nonuniform security notions. Existence of a nonuniform one-way
 function or generator is open, so these checks show that the notions are not trivially true
@@ -52,5 +53,20 @@ example {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (h : NonuniformPRG generator length) :
     GMW.AdvicePRG Complexity.encCNF generator length :=
   h.advicePRG _
+
+/-- With empty advice, indistinguishability with advice is uniform indistinguishability, so the
+uniform first-bit separation transfers. -/
+example : ¬ IndistinguishableWithAdvice (fun _ => []) (fun n => PMF.pure (List.replicate n true))
+    (fun n => BitString.uniformList n) := fun h =>
+  not_computationallyIndistinguishable_pure_uniformList _ (Filter.eventually_ge_atTop 1)
+    (computationallyIndistinguishable_iff_indistinguishableWithAdvice_nil.mpr h)
+
+/-- Stretching a nonuniform one-bit PRG to `3 * n + 1` bits, the GMW length, and feeding it to the
+auxiliary-input GMW theorem. -/
+example {generator : List Bool → List Bool} (h : NonuniformPRG generator (fun n => n + 1))
+    {α : Type} {enc : α ↪ List Bool} {A : Set α} (hA : A ∈ Complexity.NP enc) :
+    ∃ zk : ZeroKnowledgeProof enc A, zk.AuxiliaryInputZeroKnowledge :=
+  (h.amplify (fun n => 3 * n + 1) (by fun_prop) (fun n => by omega))
+    |>.exists_auxiliaryInputZeroKnowledge_of_mem_NP (fun _ => le_rfl) hA
 
 end ComplexityTests.Crypto.Nonuniform

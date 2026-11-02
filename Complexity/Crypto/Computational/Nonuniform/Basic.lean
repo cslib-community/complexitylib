@@ -27,8 +27,10 @@ family need not be computable, so it can hard-wire information about every param
 `NonuniformlyIndistinguishable`, `NonuniformOneWay` and `NonuniformPRG` relativize
 `ComputationallyIndistinguishable`, `OneWay` and `PseudorandomGenerator` to this class. Each
 uniform adversary is an advice adversary that ignores empty advice, so every nonuniform notion
-implies its uniform counterpart. Moreover, an advice word may carry a value of any type under
-any encoding (`NonuniformlyIndistinguishable.negligible_encoded`,
+implies its uniform counterpart. `IndistinguishableWithAdvice advice` fixes one advice family;
+with empty advice it is exactly uniform indistinguishability, so a reduction proved relative to a
+fixed family yields both the uniform and the nonuniform theorem. Moreover, an advice word may carry
+a value of any type under any encoding (`IndistinguishableWithAdvice.negligible_encoded`,
 `NonuniformOneWay.inversion_negligible_encoded`): an adversary need not decode its advice, since
 it may run on the encoded word exactly as on the typed value.
 
@@ -36,8 +38,10 @@ These are definitions, not assertions that such primitives exist.
 
 ## Main definitions
 
-* `Cslib.Crypto.NonuniformlyIndistinguishable`: indistinguishability against uniform strict PPT
-  tests given polynomially bounded advice.
+* `Cslib.Crypto.IndistinguishableWithAdvice`: indistinguishability against uniform strict PPT
+  tests given one fixed advice family.
+* `Cslib.Crypto.NonuniformlyIndistinguishable`: indistinguishability with every polynomially
+  bounded advice family.
 * `Cslib.Crypto.NonuniformOneWay`: one-wayness against inverters given polynomially bounded
   advice.
 * `Cslib.Crypto.NonuniformPRG`: a stretching generator whose output is nonuniformly
@@ -52,7 +56,10 @@ These are definitions, not assertions that such primitives exist.
 * `Cslib.Crypto.NonuniformlyIndistinguishable.computationallyIndistinguishable`,
   `Cslib.Crypto.NonuniformOneWay.toOneWay`, `Cslib.Crypto.NonuniformPRG.toPRG`: nonuniform
   security implies uniform security.
-* `Cslib.Crypto.NonuniformlyIndistinguishable.negligible_encoded`,
+* `Cslib.Crypto.computationallyIndistinguishable_iff_indistinguishableWithAdvice_nil`: uniform
+  indistinguishability is indistinguishability with empty advice.
+* `Cslib.Crypto.IndistinguishableWithAdvice.map`: efficient postprocessing.
+* `Cslib.Crypto.IndistinguishableWithAdvice.negligible_encoded`,
   `Cslib.Crypto.NonuniformOneWay.inversion_negligible_encoded`: advice of any encoded type.
 * `Cslib.Crypto.not_computationallyIndistinguishable_pure_uniformList`,
   `Cslib.Crypto.not_nonuniformlyIndistinguishable_pure_uniformList`: fixed words are
@@ -78,18 +85,59 @@ private theorem isPPTOn_dropAdvice {β : Type} {output : β ↪ List Bool}
   h.on.preprocess (input := encPair (encPair encUnary encBits) encBits)
     (prepare := fun input : (ℕ × List Bool) × List Bool => (input.1.1, input.2)) (by fun_prop)
 
-/-- Two ensembles are **nonuniformly indistinguishable** when, for every polynomially bounded
-advice family, each uniform strict PPT test reading the parameter, the advice word and a sample
-has negligible advantage. The test's clock is polynomial in the length of its whole input,
-including the sample, as for `ComputationallyIndistinguishable`: for ensembles of superpolynomial
-sample length the test gets more than `poly(n)` time, unlike a polynomial-size circuit. -/
+/-- Two ensembles are **indistinguishable with advice** `advice` when each uniform strict PPT
+test reading the parameter `n`, the advice word `advice n` and a sample has negligible advantage.
+The advice family is not bounded here; its length is charged to the test's clock, which is
+polynomial in the length of its whole input, including the advice and the sample, as for
+`ComputationallyIndistinguishable`: for ensembles of superpolynomial sample length the test gets
+more than `poly(n)` time, unlike a polynomial-size circuit. With empty advice this is uniform
+computational indistinguishability
+(`computationallyIndistinguishable_iff_indistinguishableWithAdvice_nil`). -/
+def IndistinguishableWithAdvice (advice : ℕ → List Bool) (X Y : ℕ → PMF (List Bool)) : Prop :=
+  Game.Indistinguishable
+    (fun (test : (ℕ × List Bool) × List Bool → ProbComp Bool) n =>
+      distinguishingGame (X n) (fun word => test ((n, advice n), word)))
+    (fun test n => distinguishingGame (Y n) (fun word => test ((n, advice n), word)))
+    (IsPPTOn (encPair (encPair encUnary encBits) encBits) encBool)
+
+/-- Two ensembles are **nonuniformly indistinguishable** when they are indistinguishable with
+every polynomially bounded advice family. -/
 def NonuniformlyIndistinguishable (X Y : ℕ → PMF (List Bool)) : Prop :=
   ∀ advice : ℕ → List Bool, PolynomiallyBounded (fun n => (advice n).length) →
-    Game.Indistinguishable
-      (fun (test : (ℕ × List Bool) × List Bool → ProbComp Bool) n =>
-        distinguishingGame (X n) (fun word => test ((n, advice n), word)))
-      (fun test n => distinguishingGame (Y n) (fun word => test ((n, advice n), word)))
-      (IsPPTOn (encPair (encPair encUnary encBits) encBits) encBool)
+    IndistinguishableWithAdvice advice X Y
+
+/-- **Uniform indistinguishability is the empty-advice case.** A uniform test is an advice test
+that ignores its advice, and an advice test run on empty advice is a uniform test. -/
+theorem computationallyIndistinguishable_iff_indistinguishableWithAdvice_nil
+    {X Y : ℕ → PMF (List Bool)} :
+    ComputationallyIndistinguishable X Y ↔ IndistinguishableWithAdvice (fun _ => []) X Y := by
+  constructor
+  · intro h test htest
+    have hprepare : ComputableInPolyTime (fun input : ℕ × List Bool => ((input.1, []), input.2))
+        (encPair encUnary encBits) (encPair (encPair encUnary encBits) encBits) := by fun_prop
+    exact h (fun n word => test ((n, []), word)) (htest.preprocess hprepare)
+  · intro h adversary hadversary
+    have hneg := h (fun input => adversary input.1.1 input.2) (isPPTOn_dropAdvice hadversary)
+    simpa only using hneg
+
+/-- Efficient parameter-dependent deterministic postprocessing preserves indistinguishability
+with advice. -/
+theorem IndistinguishableWithAdvice.map {advice : ℕ → List Bool} {X Y : ℕ → PMF (List Bool)}
+    (h : IndistinguishableWithAdvice advice X Y) {f : ℕ → List Bool → List Bool}
+    (hf : ComputableInPolyTime (fun (n, word) => f n word) (encPair encUnary encBits) encBits) :
+    IndistinguishableWithAdvice advice (fun n => (X n).map (f n)) (fun n => (Y n).map (f n)) := by
+  intro test htest
+  have hprepare : ComputableInPolyTime
+      (fun input : (ℕ × List Bool) × List Bool => (input.1, f input.1.1 input.2))
+      (encPair (encPair encUnary encBits) encBits)
+      (encPair (encPair encUnary encBits) encBits) := by
+    have hpair : ComputableInPolyTime (fun input : (ℕ × List Bool) × List Bool =>
+        (input.1.1, input.2)) (encPair (encPair encUnary encBits) encBits)
+        (encPair encUnary encBits) := by fun_prop
+    exact (ComputableInPolyTime.fst _ _).prod (hf.comp hpair)
+  have hneg := h (fun input => test (input.1, f input.1.1 input.2)) (htest.preprocess hprepare)
+  simpa only [distinguishingGame, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def]
+    using hneg
 
 /-- Every ensemble is nonuniformly indistinguishable from itself. -/
 theorem NonuniformlyIndistinguishable.refl (X : ℕ → PMF (List Bool)) :
@@ -110,21 +158,20 @@ theorem NonuniformlyIndistinguishable.trans {X Y Z : ℕ → PMF (List Bool)}
 empty advice. -/
 theorem NonuniformlyIndistinguishable.computationallyIndistinguishable
     {X Y : ℕ → PMF (List Bool)} (h : NonuniformlyIndistinguishable X Y) :
-    ComputationallyIndistinguishable X Y := by
-  intro adversary hadversary
-  have hneg := h (fun _ => []) (PolynomiallyBounded.const 0)
-    (fun input => adversary input.1.1 input.2) (isPPTOn_dropAdvice hadversary)
-  simpa only using hneg
+    ComputationallyIndistinguishable X Y :=
+  computationallyIndistinguishable_iff_indistinguishableWithAdvice_nil.mpr
+    (h _ (PolynomiallyBounded.const 0))
 
-/-- **Advice of any encoded type.** Under nonuniform indistinguishability, a uniform strict PPT
-test may read an advice value of an arbitrary type `γ`, under an arbitrary encoding with
-polynomially bounded lengths. The test need not be able to decode the advice word: the proof runs
-its machine on that word (`Cslib.Probability.IsPPTOn.exists_extension`). -/
-theorem NonuniformlyIndistinguishable.negligible_encoded {X Y : ℕ → PMF (List Bool)}
-    (h : NonuniformlyIndistinguishable X Y) {γ : Type} {encAdvice : γ ↪ List Bool}
+/-- **Advice of any encoded type.** Indistinguishability with the advice words
+`encAdvice (advice n)` covers every uniform strict PPT test that reads the advice value
+`advice n` itself, of an arbitrary type `γ` under an arbitrary encoding. The test need not be able
+to decode the advice word: the proof runs its machine on that word
+(`Cslib.Probability.IsPPTOn.exists_extension`). -/
+theorem IndistinguishableWithAdvice.negligible_encoded {X Y : ℕ → PMF (List Bool)}
+    {γ : Type} {encAdvice : γ ↪ List Bool} {advice : ℕ → γ}
+    (h : IndistinguishableWithAdvice (fun n => encAdvice (advice n)) X Y)
     {test : (ℕ × γ) × List Bool → ProbComp Bool}
-    (htest : IsPPTOn (encPair (encPair encUnary encAdvice) encBits) encBool test)
-    {advice : ℕ → γ} (hadvice : PolynomiallyBounded (fun n => (encAdvice (advice n)).length)) :
+    (htest : IsPPTOn (encPair (encPair encUnary encAdvice) encBits) encBool test) :
     Negligible (fun n => Game.advantage
       (distinguishingGame (X n) (fun word => test ((n, advice n), word)))
       (distinguishingGame (Y n) (fun word => test ((n, advice n), word)))) := by
@@ -137,8 +184,7 @@ theorem NonuniformlyIndistinguishable.negligible_encoded {X Y : ℕ → PMF (Lis
       ProbComp.eval (extension (encPair (encPair encUnary encBits) encBits
         ((n, encAdvice (advice n)), word))) = ProbComp.eval (test ((n, advice n), word)) :=
     heq ((n, advice n), word)
-  simpa only [distinguishingGame, hkey] using
-    h (fun n => encAdvice (advice n)) hadvice _ hword
+  simpa only [distinguishingGame, hkey] using h _ hword
 
 /-- **Fixed words are distinguishable from uniform words**, already by a uniform test: the first
 bit of `PMF.pure (target n)` is constant, while that of a uniform word of positive length is a fair

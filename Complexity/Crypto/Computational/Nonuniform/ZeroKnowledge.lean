@@ -66,7 +66,7 @@ theorem NonuniformPRG.advicePRG {generator : List Bool → List Bool} {length : 
       (encAdvice (a (m - 7), w (m - 7), z (m - 7))).length) := by
     simp only [encAdvice, length_encPair, encBits, Function.Embedding.coe_refl, id]
     fun_prop
-  have hneg := (h.secure.negligible_encoded hshift hadvice).shift 7
+  have hneg := ((h.secure _ hadvice).negligible_encoded hshift).shift 7
   refine hneg.congr' (Filter.Eventually.of_forall fun n => ?_)
   simp only [Nat.add_sub_cancel, eval_bind_eq_distinguishingGame, ProbComp.eval_map,
     BitString.eval_sampleList, generatorEnsemble]
