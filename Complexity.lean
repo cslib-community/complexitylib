@@ -2861,6 +2861,7 @@ public import Complexity.Crypto.Computational.PseudorandomFunction.Coins
 public import Complexity.Crypto.Computational.PseudorandomFunction.RandomOracle
 public import Complexity.Crypto.Computational.PseudorandomFunction.TruthTable
 public import Complexity.Crypto.Computational.PseudorandomGenerator
+public import Complexity.Crypto.Computational.PseudorandomPermutation
 public import Complexity.Crypto.Computational.SIS.Basic
 public import Complexity.Crypto.Computational.SchnorrIdentification
 public import Complexity.Crypto.Computational.SchnorrProtocol
@@ -3630,6 +3631,7 @@ public import Complexity.Languages.Probabilistic.LinearHash
 public import Complexity.Languages.Probabilistic.Memoize
 public import Complexity.Languages.Probabilistic.Notation
 public import Complexity.Languages.Probabilistic.Oracle
+public import Complexity.Languages.Probabilistic.Oracle.CoinFixing
 public import Complexity.Languages.Probabilistic.Oracle.Interaction
 public import Complexity.Languages.Probabilistic.Oracle.QueryCount
 public import Complexity.Languages.Probabilistic.Oracle.Simulation
