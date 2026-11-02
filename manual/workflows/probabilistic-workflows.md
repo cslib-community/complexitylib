@@ -83,6 +83,55 @@ Use `adaptive_isOraclePPTOn.query_bounds` to obtain polynomial bounds on externa
 
 When replacing the external handler with an implementation, open [Oracle/Substitution.lean](../../Complexity/Computability/Probabilistic/Oracle/Substitution.lean). The plain-certificate variant `IsOraclePPTOn.run_interpret_preprocess_open'` requires efficient preparation, initialization and handling, plus an invariant and bounds on reply length and added encoded state. Its `hresources` premise also certifies a uniform unary computation of the resource allowance from the original caller and request; an abstract polynomial bound alone does not supply this certificate. Repeated state doubling explains why “each call is polynomial time” is insufficient.
 
+## Connect a randomized RAM loop to its answer law
+
+Use this route when a randomized Word-RAM loop already exists and you want to derive its answer
+distribution from an oracle specification. First choose the observed value, a supported-state
+postcondition and explicit instruction and random-call budgets. Import
+[Randomized/LoopSegmentLaw.lean](../../Complexity/Computability/WordRAM/Randomized/LoopSegmentLaw.lean).
+`LoopSegmentLaw` retains the existing `LoopSegment` execution witness and bounds every supported
+path. Its exact equality describes the chosen observation's PMF; its instruction budget is an
+upper bound, not an assertion that every run takes the same time.
+Random-call budgets use the existing [randomized RAM convention](../algorithms-and-memory/wordram-and-bridges.md),
+which gives finite-interval sampling its own instruction and resource semantics.
+
+From the repository root, open the complete
+[WordRAMLoopSegmentLaw client](../../ComplexityTests/WordRAMLoopSegmentLaw.lean), including its
+import, namespace and concrete starting state. Follow three steps:
+
+1. Prove the body's `ExecRandLaw`, including its supported-state postcondition and budgets.
+   `LoopSegmentLaw.single` requires the active guard and adds two instructions for loop control.
+2. For several segments, use `LoopSegmentLaw.trans`. Supply the next law for **every** state
+   satisfying the preceding postcondition; instruction and random-call budgets add.
+3. Use `LoopSegmentLaw.finish` after proving the guard false on the entire final postcondition.
+   It adds two instructions for the exit check and yields the existing `ExecRandLaw`.
+
+The linked one-bit fixture sets a register to one and exits. Its budget is five instructions:
+one body instruction, two control instructions and two exit instructions, with zero random calls.
+From a configured checkout, check that client and the specification-law examples with:
+
+```bash
+scripts/build.sh --wfail --iofail ComplexityTests.WordRAMLoopSegmentLaw ComplexityTests.KargerFastCutLaw
+```
+
+A successful build checks the paid loop and the triangle, recursive seven-vertex and zero-cut
+graph cases. If composition fails, compare the continuation law's observation and postcondition
+with the preceding segment. If finishing fails, prove the exit condition for all supported
+states. A query-count bound alone does not supply either instruction bound.
+
+For the larger application, follow
+[KargerFastCutLaw](../../ComplexityTests/KargerFastCutLaw.lean) into
+[Lean/Karger/FastCut](../../Complexity/Algorithms/Lean/Karger/FastCut.lean), then
+[KargerStein](../../Complexity/Algorithms/WordRAM/KargerStein.lean). The specification restarts
+both recursive branches from the same parent graph and interprets their replies independently.
+Its success statements concern a minimum-cut **value**, with the stated positive-minimum-cut
+hypothesis; cut support also covers the zero-cut fixture. The native laws retain their word-fit,
+frame and supported-path resource premises. To pass from a code observation to a halted cut
+answer, [Karger/OutputLaw](../../Complexity/Algorithms/WordRAM/Karger/OutputLaw.lean)'s
+`program_of_law` additionally requires fitting input words, cut support and allowance for the
+final halt. This specification bridge leaves the memory-oracle contraction realization and
+recursive frame-stack migration open.
+
 ## Carry the certificate into a security proof
 
 Keep efficiency and security as separate goals. In [Crypto/Computational/Basic.lean](../../Complexity/Crypto/Computational/Basic.lean), computational indistinguishability quantifies over certified strict-PPT distinguishers. It does not require the compared PMF ensembles to be efficiently sampleable or polynomially bounded in length. Check those properties separately when the intended construction needs them.

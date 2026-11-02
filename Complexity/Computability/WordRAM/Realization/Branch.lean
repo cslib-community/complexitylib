@@ -22,6 +22,7 @@ The two-instruction allowance includes the jump on the negative path.
 
 ## Main results
 
+* `test_rename`: a renamed native condition tests the words in its source registers.
 * `Realizes.branch`: compose two realizations using an actual native conditional.
 -/
 
@@ -40,7 +41,9 @@ instance (c : Cond k) (v : Fin k → ℕ) : Decidable (test c v) := by
   unfold test
   infer_instance
 
-private theorem test_rename {r : ℕ} (c : Cond k) (src : Fin k → Fin r)
+/-- A renamed condition holds of native data exactly when it holds of the words in its source
+registers. -/
+theorem test_rename {r : ℕ} (c : Cond k) (src : Fin k → Fin r)
     (x : Data r) (v : Fin k → ℕ) (h : x.regs ∘ src = v) :
     (c.rename src).Holds x ↔ test c v := by
   cases c <;> simp only [Cond.rename, Cond.Holds, test] <;>
