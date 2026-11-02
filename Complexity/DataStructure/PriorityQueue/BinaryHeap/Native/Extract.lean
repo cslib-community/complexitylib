@@ -121,6 +121,15 @@ theorem extractMin_observation (d : HeapLayout) :
   rw [h]
   exact PFunctor.FreeM.id_map _
 
+/-- The actual encoded extraction result is the original typed answer with only the `Fin`
+proof forgotten. In particular, every returned natural handle still satisfies its source bound. -/
+theorem extractMin_result (w : ℕ) (d : HeapLayout) (s : Memory.State) :
+    (Memory.spec w).clientResult s
+        ((Memory.extractMin d.2).map (Option.map fun a => (a.1.val, a.2))) =
+      ((Memory.spec w).clientResult s (Memory.extractMin d.2)).map
+        (fun a => (a.1.val, a.2)) :=
+  congrArg Prod.fst (runClient_map w (Memory.extractMin d.2) eraseResult s)
+
 /-- The erased result transports the full interpreter run, including its state and history.
 This is the actual observation contract needed by the uniform Backend. -/
 theorem extractMin_run (w : ℕ) (d : HeapLayout) (s : Memory.State) :
