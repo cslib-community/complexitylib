@@ -114,6 +114,8 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Ada
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Admission
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Copy
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Core
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.DyadicCost
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.DyadicExecution
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Exec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Flat
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Header
@@ -2630,9 +2632,14 @@ public import Complexity.Computability.WordRAM.Realization.Basic
 public import Complexity.Computability.WordRAM.Realization.Bind
 public import Complexity.Computability.WordRAM.Realization.Branch
 public import Complexity.Computability.WordRAM.Realization.Glue
+public import Complexity.Computability.WordRAM.Realization.Grade
 public import Complexity.Computability.WordRAM.Realization.Loop
+public import Complexity.Computability.WordRAM.Realization.MemoryBackend
+public import Complexity.Computability.WordRAM.Realization.Module
 public import Complexity.Computability.WordRAM.Realization.Primitive
 public import Complexity.Computability.WordRAM.Realization.Program
+public import Complexity.Computability.WordRAM.Realization.Result
+public import Complexity.Computability.WordRAM.Realization.Witness
 public import Complexity.Computability.WordRAM.RegisterFrame
 public import Complexity.Computability.WordRAM.Sequence
 public import Complexity.Computability.WordRAM.Signed.Arithmetic
@@ -2982,6 +2989,7 @@ public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Order
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Basic
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.DecreaseKey
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.ExtractMin
+public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Memory
 public import Complexity.DataStructure.PriorityQueue.Spec
 public import Complexity.DataStructure.PriorityQueue.WordRAM.Basic
 public import Complexity.DataStructure.PriorityQueue.WordRAM.BinaryHeap

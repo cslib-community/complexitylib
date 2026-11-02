@@ -544,8 +544,13 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   charge iterations even without a query. The initialized flat-program projection installs
   live inputs in `2*k+5` instructions and includes the final halt; Unit observation additionally
   writes a real zero word. Input layout, bounded words and safe domains remain explicit.
-  Generic memory and local-ADT adapter endpoints remain separate work. This adds no
-  abstract-catalogue headline.
+  The operation-level memory backend uses four fixed constructor bodies and the generic
+  implementation interface; its delivered-argument preparation is explicit and uncharged, so
+  its body bounds are not whole-client clocks. The upper local-ADT adapter reuses the existing
+  initialization/locality bundle and semantic module; its argument map instantiates one global
+  emitter rather than selecting code after runtime layouts. Combined cost takes the program and
+  an explicit work grading, with a separately proved envelope before dropping local work.
+  The full framed queue/faithful allocation client remains separate. No abstract headline is added.
   Karger–Stein's specification-law bridge (#2289) reuses the existing contraction client and
   native execution model. `LoopSegmentLaw` packages the existing finite loop segments with an
   exact observation law and strict pathwise instruction/query bounds; the two-branch recurrence
