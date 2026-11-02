@@ -3025,10 +3025,11 @@ public import Complexity.DataStructure.SearchTree.Impl
 public import Complexity.DataStructure.SplayTree.AccessLemma
 public import Complexity.DataStructure.SplayTree.Basic
 public import Complexity.DataStructure.SplayTree.Impl
+public import Complexity.DataStructure.Stack.Controller
 public import Complexity.DataStructure.Stack.Doubling
 public import Complexity.DataStructure.Stack.Memory
-public import Complexity.DataStructure.Stack.WordRAM.Basic
-public import Complexity.DataStructure.Stack.WordRAM.Controller
+public import Complexity.DataStructure.Stack.Native
+public import Complexity.DataStructure.Stack.Spec
 public import Complexity.DataStructure.StateTransition
 public import Complexity.DataStructure.StateTransition.Amortized
 public import Complexity.DataStructure.StateTransition.Composition
