@@ -35,8 +35,9 @@ import Complexity.Tactic.PPT
 
 A keyed hash family `H` with key-length schedule `keyLen : ℕ → ℕ` is **target collision-resistant**
 (equivalently, a **universal one-way hash family**, UOWHF; [NaorYung1989], Section 2;
-[BonehShoup2023], Section 8.11.2; [Goldreich2004], Section 6.4.3) if no uniform strict PPT two-stage
-adversary `A = (choose, find)` can win the following game with non-negligible probability:
+[BonehShoup2023], Section 8.11.2, Attack Game 8.5 and Definition 8.7; [Goldreich2004],
+Section 6.4.3) if no uniform strict PPT two-stage adversary `A = (choose, find)` can win the
+following game with non-negligible probability:
 
 1. Given `1^n`, `A.choose n` selects a target input `m₀` and saved state `st` *before* the hash key
    is sampled;
@@ -46,10 +47,12 @@ adversary `A = (choose, find)` can win the following game with non-negligible pr
    `H n k m₀ = H n k m₁`.
 
 Unlike full collision resistance (`CollisionResistantOn`), where a single key `k` can be reused
-across every Merkle–Damgård step, domain extension for target collision resistance requires
-independent keys per tree level so that the reduction can compute the target compression input at a
-guessed level before receiving the challenge key at that level ([NaorYung1989], Section 3.2;
-[BonehShoup2023], Section 8.11.2; [Goldreich2004], Theorem 6.4.25).
+across every Merkle–Damgård step, domain extension for target collision resistance uses independent
+keys across stages so that the reduction can compute the target compression input at a guessed stage
+before receiving the challenge key at that stage ([NaorYung1989], March 13, 1995 manuscript
+revision, Section 2.3; [BonehShoup2023], Section 8.11.3, pp. 339–340; [Goldreich2004],
+Section 6.4.3.2, June 2003 chapter draft Constructions 6.4.24 and 6.4.26, Propositions 6.4.25 and
+6.4.27).
 
 We formalize:
 1. Two-stage target-collision adversaries (`TargetCollisionFinder`, `TargetCollisionFinder.IsPPT`),
@@ -64,6 +67,30 @@ We formalize:
    target collision-resistant `KeyedCompressionFamily` to an unrestricted target collision-resistant
    `KeyedHashFamily` on all `List Bool` using `(n + 1) * keyLen n`-bit keys
    (`KeyedCompressionFamily.treeHash`, `KeyedCompressionFamily.targetCollisionResistant_treeHash`).
+
+### Source mapping and finite-parameter boundary
+
+Whereas [BonehShoup2023], Section 8.11.3 presents a linear per-step-key chain (with a pointer to
+logarithmic-key tree hashing on p. 340) and the Naor–Yung (1995 revision, Section 2.3) and Goldreich
+(June 2003 draft, Section 6.4.3.2) tree constructions hash fixed-length block sequences before
+composing with length disambiguation, `uowhfTreeHash` adapts level-keyed binary-tree hashing into a
+single total function on `List Bool`:
+* `uowhfLeaves` encodes each bit of `msg` as a zero-padded `M`-bit leaf block (`[0^M]` when
+  `msg = []`), where `M = blockLen n` satisfies `n ≤ M`;
+* `uowhfTreeLevels` folds `n` fixed binary-tree halving levels under independent subkeys
+  `k_0, ..., k_{n-1}`, and `top.headD []` selects the first resulting block;
+* a final `(n + 1)`-st compression under `k_n` combines that block with
+  `BitString.lowBits M msg.length` (`msg.length mod 2^M`).
+
+At any fixed parameter `n`, messages with `msg.length > 2 ^ n` exceed the `n`-level tree capacity:
+`top` has multiple blocks and `top.headD []` discards the extra roots (for example, at `n = 1`,
+`[false, false, false]` and `[false, false, true]` produce identical digests for every `h`, `K`,
+`keyLen`, and `blockLen`). The arbitrary-input security theorem
+`KeyedCompressionFamily.targetCollisionResistant_treeHash` holds asymptotically because strict-PPT
+admissibility bounds the output lengths of both `adversary.choose` and `adversary.find` by
+polynomials in `n`; for all sufficiently large `n`, every supported `m₀` and `m₁` satisfies
+`length < 2 ^ n ≤ 2 ^ M`, within the injective tree and length-block regime where `top` is a
+singleton and `lowBits M` records `msg.length` injectively.
 
 ## Main definitions
 
@@ -98,11 +125,13 @@ We formalize:
 ## References
 
 * [M. Naor, M. Yung, *Universal One-Way Hash Functions and their Cryptographic
-  Applications*][NaorYung1989], Sections 2 and 3.2.
+  Applications*][NaorYung1989], Section 2 (and Section 2.3 of the March 13, 1995 manuscript
+  revision).
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*, Version 0.6][BonehShoup2023],
-  Section 8.11.2.
+  Sections 8.11.2–8.11.3 (pp. 337–340).
 * [O. Goldreich, *Foundations of Cryptography: Volume 2, Basic Applications*][Goldreich2004],
-  Section 6.4.3.
+  Sections 6.4.3 and 6.4.3.2 (Constructions 6.4.24 and 6.4.26, Propositions 6.4.25 and 6.4.27 in
+  the June 2003 chapter draft).
 -/
 
 public section
@@ -115,9 +144,9 @@ open scoped NNReal
 /-! ### Two-stage target collision resistance ([NaorYung1989], Section 2) -/
 
 /-- A two-stage target-collision adversary ([NaorYung1989], Section 2; [BonehShoup2023],
-Section 8.11.2; [Goldreich2004], Section 6.4.3): `choose` selects a target message and saved state
-from `1^n` before the hash key is sampled, and `find` produces a second message after receiving the
-sampled key. -/
+Section 8.11.2, Attack Game 8.5 and Definition 8.7; [Goldreich2004], Section 6.4.3): `choose`
+selects a target message and saved state from `1^n` before the hash key is sampled, and `find`
+produces a second message after receiving the sampled key. -/
 structure TargetCollisionFinder where
   /-- Select `(m₀, state)` given unary `n` before the hash key is chosen. -/
   choose : ℕ → ProbComp (List Bool × List Bool)
@@ -134,9 +163,9 @@ structure TargetCollisionFinder.IsPPT (adversary : TargetCollisionFinder) : Prop
     (fun ⟨n, state, key⟩ => adversary.find n state key)
 
 /-- The two-stage target-collision experiment ([NaorYung1989], Section 2; [BonehShoup2023],
-Section 8.11.2): run `adversary.choose n` to obtain `(m₀, state)`, sample a uniform `keyLen n`-bit
-key `k`, run `adversary.find n state k` to obtain `m₁`, and accept iff `isCollision (H n) valid n k
-m₀ m₁` holds. -/
+Section 8.11.2, Attack Game 8.5): run `adversary.choose n` to obtain `(m₀, state)`, sample a
+uniform `keyLen n`-bit key `k`, run `adversary.find n state k` to obtain `m₁`, and accept iff
+`isCollision (H n) valid n k m₀ m₁` holds. -/
 @[expose]
 noncomputable def targetCollisionGame
     (keyLen : ℕ → ℕ) (H : ℕ → List Bool → List Bool → List Bool)
@@ -182,7 +211,7 @@ theorem isPPT_targetCollisionGame
 
 /-- Target collision resistance (universal one-wayness) of `H` with key-length schedule `keyLen` on
 `valid` against every uniform strict PPT `TargetCollisionFinder` ([NaorYung1989], Section 2;
-[BonehShoup2023], Section 8.11.2; [Goldreich2004], Section 6.4.3). -/
+[BonehShoup2023], Section 8.11.2, Definition 8.7; [Goldreich2004], Section 6.4.3). -/
 @[expose]
 def TargetCollisionResistantOn
     (keyLen : ℕ → ℕ) (H : ℕ → List Bool → List Bool → List Bool)
@@ -427,7 +456,7 @@ theorem HashFamily.targetCollisionResistant_toKeyedHashFamily
     hH.toKeyedHashFamily.TargetCollisionResistant :=
   hH.collisionResistant.targetCollisionResistantOn
 
-/-! ### Level-keyed binary-tree + length-block domain extension ([NaorYung1989], Section 3.2) -/
+/-! ### Level-keyed binary-tree + length-block domain extension -/
 
 /-- Encode `msg` into a nonempty list of `M`-bit leaf blocks: `[0^M]` when `msg` is empty, and one
 `M`-bit block `padOrTake M [b]` (`b :: 0^{M-1}` for `M ≥ 1`) per bit `b` of `msg` otherwise. -/
@@ -716,11 +745,17 @@ theorem computableInPolyTime_uowhfTreeLevels
   exact (length_encList_le encBits state hstate_elem).trans
     (Nat.mul_le_mul_right (2 * elemCap a + 1) hstate_len)
 
-/-- **Level-keyed binary-tree + length-block hash** ([NaorYung1989], Section 3.2; [BonehShoup2023],
-Section 8.11.2): split `K` into `n` level subkeys `k_0, ..., k_{n-1}` of width `keyLen n` plus one
-final subkey `k_n` of width `keyLen n`, fold `uowhfTreeStep` across `k_0, ..., k_{n-1}` starting
-from `uowhfLeaves (blockLen n) msg`, and compress
-`root ++ BitString.lowBits (blockLen n) msg.length` under `k_n`. -/
+/-- **Level-keyed binary-tree + length-block hash**: total fixed-depth adaptation of level-keyed
+tree hashing ([NaorYung1989], 1995 revision, Section 2.3; [Goldreich2004], Section 6.4.3.2, June
+2003 draft Constructions 6.4.24 and 6.4.26; cf. [BonehShoup2023], Section 8.11.3, p. 340). Split `K`
+into `n` level subkeys `k_0, ..., k_{n-1}` plus one final subkey `k_n` of width `keyLen n`, fold
+`uowhfTreeStep` across `k_0, ..., k_{n-1}` starting from the one-bit-per-leaf encoding
+`uowhfLeaves (blockLen n) msg`, take `root := padOrTake (blockLen n) (top.headD [])`, and compress
+`root ++ BitString.lowBits (blockLen n) msg.length` (`msg.length mod 2^{blockLen n}`) under `k_n`.
+
+At fixed `n`, messages with `msg.length > 2 ^ n` leave multiple blocks in `top` and `top.headD []`
+discards the extra roots; for `msg.length < 2 ^ n ≤ 2 ^ blockLen n`, `top` is a singleton and
+`lowBits` records `msg.length` injectively. -/
 @[expose]
 def uowhfTreeHash (h : ℕ → List Bool → List Bool → List Bool)
     (keyLen blockLen : ℕ → ℕ) (n : ℕ) (K msg : List Bool) : List Bool :=
@@ -1352,7 +1387,10 @@ theorem succProbability_targetCollisionGame_uowhfTreeHash_le
 
 /-- Extend any `KeyedCompressionFamily` `C` (`2 * C.blockLen n → C.blockLen n` under
 `C.keyLen n`-bit keys) to an unrestricted `KeyedHashFamily` on `List Bool` with
-`(n + 1) * C.keyLen n`-bit keys and `C.blockLen n`-bit digests via `uowhfTreeHash`. -/
+`(n + 1) * C.keyLen n`-bit keys and `C.blockLen n`-bit digests via `uowhfTreeHash`. Note that at
+fixed `n`, `uowhfTreeHash` has injective tree capacity `< 2 ^ n` bits and discards extra roots
+beyond `2 ^ n` via `List.headD`; asymptotic security on all `List Bool` relies on strict-PPT
+adversary output-length bounds. -/
 @[expose]
 def KeyedCompressionFamily.treeHash (C : KeyedCompressionFamily) : KeyedHashFamily where
   keyLen := fun n => (n + 1) * C.keyLen n
@@ -1366,10 +1404,13 @@ def KeyedCompressionFamily.treeHash (C : KeyedCompressionFamily) : KeyedHashFami
   le_digestLen := C.le_blockLen
   length_eq := fun n K msg _ => length_uowhfTreeHash C.eval C.keyLen C.blockLen n K msg
 
-/-- **Domain extension for target collision resistance** ([NaorYung1989], Section 3.2;
-[BonehShoup2023], Section 8.11.2; [Goldreich2004], Theorem 6.4.25): if `C` is target
-collision-resistant on `2 * C.blockLen n`-bit inputs, then `C.treeHash` is unrestrictedly target
-collision-resistant on all `List Bool`. -/
+/-- **Domain extension for target collision resistance** (adapting [NaorYung1989], 1995 revision,
+Section 2.3 and [Goldreich2004], Section 6.4.3.2, June 2003 draft Constructions 6.4.24 and 6.4.26,
+Propositions 6.4.25 and 6.4.27; cf. [BonehShoup2023], Section 8.11.3, pp. 339–340): if `C` is
+target collision-resistant on `2 * C.blockLen n`-bit inputs, then `C.treeHash` is unrestrictedly
+target collision-resistant on all `List Bool`. Strict-PPT admissibility bounds the output lengths of
+both `adversary.choose` and `adversary.find` by polynomials in `n`, placing every supported `m₀` and
+`m₁` strictly below `2 ^ n ≤ 2 ^ C.blockLen n` for all sufficiently large `n`. -/
 theorem KeyedCompressionFamily.targetCollisionResistant_treeHash
     {C : KeyedCompressionFamily} (hC : C.TargetCollisionResistant) :
     C.treeHash.TargetCollisionResistant := by

@@ -191,6 +191,15 @@ theorem not_targetCollisionResistant_xorKeyedCompression :
       BitString.eval_sampleList, ProbComp.eval_pure, PMF.bind_const]
   rw [Game.succProbability, heval, PMF.pure_apply_self, ENNReal.toNNReal_one]
 
+-- Finite-parameter boundary check: at `n = 1` (`2^1 = 2`-bit tree capacity), 3-bit messages
+-- sharing their first pair and length collide regardless of `h`, `keyLen`, `blockLen`, and `K`
+-- because `top.headD []` discards the second root.
+example (h : ℕ → List Bool → List Bool → List Bool) (keyLen blockLen : ℕ → ℕ) (K : List Bool) :
+    uowhfTreeHash h keyLen blockLen 1 K [false, false, false] =
+      uowhfTreeHash h keyLen blockLen 1 K [false, false, true] := by
+  simp [uowhfTreeHash, uowhfTreeLevels, uowhfTreeStep, uowhfLeaves, uowhfPairInput,
+    BitString.listRows, List.range_succ]
+
 -- Bridges from `CompressionFamily` / `HashFamily` and `treeHash` security endpoint type-check:
 example {h : List Bool → List Bool → List Bool} (hh : CompressionFamily h) :
     hh.toKeyedCompressionFamily.treeHash.TargetCollisionResistant :=
