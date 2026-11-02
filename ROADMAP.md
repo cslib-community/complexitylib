@@ -637,9 +637,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   complete memory and frontier, and its instruction currency adds local work to memory charges.
   Bounded runtime loops also charge local computation and every iteration, including query-free
   iterations. Fixed flat programs include the actual input-installation prefix and final halt,
-  with explicit input layout, fits and safe-domain hypotheses. Remaining: operation-level memory
-  implementation, framed upper-ADT adapters and the representative queue transfer. The full
-  C2/M1b objective remains open; arbitrary host continuations do not acquire machine-time bounds.
+  with explicit input layout, fits and safe-domain hypotheses. A separate operation-level
+  memory implementation exposes body-only costs under delivered arguments. Existing framed
+  Word-RAM certificates can be derived from semantic modules after discharging their local
+  initialization, footprint and ABI conditions; a one-cell ADT checks that boundary. Remaining:
+  the representative framed queue and its faithful whole-memory allocation/native-client path.
+  The full C2/M1b objective remains open; arbitrary host continuations do not acquire runtime bounds.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
