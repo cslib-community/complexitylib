@@ -527,6 +527,11 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   values use a tag and unshifted payload, including maximal fitting words. The actual
   `Stack.Memory` size/push/pop clients reuse those rules over faithfully encoded runtime layouts,
   with visible layout/representation/spare-capacity conditions and local work 0/10/19.
+  The product leaf (#2261) reuses the existing dynamic `Memory.Framed.prod` and allocator
+  contracts. Its Sum dispatcher charges native control, and its execution/frame theorem requires
+  a reserved block containing both the current footprint and every permitted future allocation.
+  The semantic observation equation supplies no executable work. A general all-operations
+  product `StateTransitionImpl` remains separate; no C4 adapter replacement is introduced.
   The full framed queue/faithful allocation client remains separate. No abstract headline is added.
   `DataStructure/OrderedSet` and `DataStructure/OrderedSet/*` provide neutral
   optional-minimum contracts, a typed finite-set interface including deletion, and adaptive

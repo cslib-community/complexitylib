@@ -644,6 +644,9 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   glue preserves full-word Option payloads, and the actual memory-stack size/push/pop methods
   have uniform native certificates over runtime layouts, with local work 0/10/19. Remaining:
   the representative framed queue and its faithful whole-memory allocation/native-client path.
+  The bounded product realization milestone ([#2261]) adds charged Sum dispatch and native
+  framing under explicit containment of dynamic footprints and reserved future room. A general
+  all-operations product adapter and arbitrary-client realization remain separate.
   The full C2/M1b objective remains open; arbitrary host continuations do not acquire runtime bounds.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
@@ -790,3 +793,4 @@ not planned, not as proved.
 [#2063]: https://github.com/cslib-community/complexitylib/issues/2063
 [#2205]: https://github.com/cslib-community/complexitylib/issues/2205
 [#2213]: https://github.com/cslib-community/complexitylib/issues/2213
+[#2261]: https://github.com/cslib-community/complexitylib/issues/2261
