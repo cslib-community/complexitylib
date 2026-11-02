@@ -14,6 +14,7 @@ public import Complexity.Algorithms.ExactTriangle.Weights
 public import Complexity.Algorithms.ExactTriangle.Witnesses
 public import Complexity.Algorithms.Lean.Dijkstra.Client
 public import Complexity.Algorithms.Lean.Dijkstra.Cost
+public import Complexity.Algorithms.Lean.Dijkstra.Memory
 public import Complexity.Algorithms.Lean.Huffman.Basic
 public import Complexity.Algorithms.Lean.Huffman.Kraft
 public import Complexity.Algorithms.Lean.Huffman.Optimality
@@ -161,6 +162,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.Spread
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.TimeBound
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.Width
 public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicCost
+public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicCost.Asymptotics
 public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters
 public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.Exec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.Input
@@ -2884,6 +2886,7 @@ public import Complexity.Crypto.Protocols.Signature.RandomOracle
 public import Complexity.DataStructure.AVLTree.Basic
 public import Complexity.DataStructure.AVLTree.Erase
 public import Complexity.DataStructure.AVLTree.Impl
+public import Complexity.DataStructure.AdjacencyList.Memory
 public import Complexity.DataStructure.AdjacencyList.Spec
 public import Complexity.DataStructure.CountMin.Basic
 public import Complexity.DataStructure.CountMin.LinearHash
@@ -2891,6 +2894,7 @@ public import Complexity.DataStructure.CountMin.Probability
 public import Complexity.DataStructure.CountMin.Program
 public import Complexity.DataStructure.Dictionary.CuckooHashing
 public import Complexity.DataStructure.Dictionary.DoubleHashing
+public import Complexity.DataStructure.Dictionary.Memory
 public import Complexity.DataStructure.Dictionary.Spec
 public import Complexity.DataStructure.Dictionary.UniformProbing
 public import Complexity.DataStructure.Dictionary.WordRAM.ChainedHash
@@ -2949,6 +2953,7 @@ public import Complexity.DataStructure.HashFamily.WordRAM.MultiplyShift
 public import Complexity.DataStructure.HashFamily.WordRAM.Tabulation
 public import Complexity.DataStructure.Memory.Field
 public import Complexity.DataStructure.Memory.Frame
+public import Complexity.DataStructure.Memory.Record
 public import Complexity.DataStructure.Memory.Spec
 public import Complexity.DataStructure.Memory.Triple
 public import Complexity.DataStructure.ObliviousSequence
@@ -2965,6 +2970,7 @@ public import Complexity.DataStructure.PrefixSums.WordRAM.Tree
 public import Complexity.DataStructure.PrefixSums.WordRAM.Update
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Memory
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Order
+public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Basic
 public import Complexity.DataStructure.PriorityQueue.Spec
 public import Complexity.DataStructure.PriorityQueue.WordRAM.Basic
 public import Complexity.DataStructure.PriorityQueue.WordRAM.BinaryHeap
