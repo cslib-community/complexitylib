@@ -69,11 +69,10 @@ structure Seeded (S : IndexedSignatureScheme) where
   eval_keyGen : ∀ n length, keyGenBudget n ≤ length →
     ProbComp.eval (S.keyGen n) = (BitString.uniformList length).map (keyGenWith n)
   signWith_polyTime : ComputableInPolyTime
-    (fun (((sk, u, msg), coins) : (List Bool × ℕ × List Bool) × List Bool) =>
-      signWith sk u msg coins)
+    (fun p : (List Bool × ℕ × List Bool) × List Bool => signWith p.1.1 p.1.2.1 p.1.2.2 p.2)
     (encPair (encPair encBits (encPair encUnary encBits)) encBits) encBits
   signBudget_polyTime : ComputableInPolyTime
-    (fun ((sk, u, msg) : List Bool × ℕ × List Bool) => signBudget sk u msg)
+    (fun p : List Bool × ℕ × List Bool => signBudget p.1 p.2.1 p.2.2)
     (encPair encBits (encPair encUnary encBits)) encUnary
   signWith_mem_support : ∀ sk u msg coins,
     signWith sk u msg coins ∈ (ProbComp.eval (S.sign sk u msg)).support

@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Crypto.Computational.Signature
+import Complexity.Crypto.Computational.IndexedSignature.Seeded
 import Complexity.Crypto.Computational.MAC
 import ComplexityTests.PolyTimePlainDriver
 
@@ -16,6 +17,10 @@ open Turing.MultiTapeTM Cslib.Crypto
 run_meta do
   for (certificate, program) in
       [(`Cslib.Crypto.SignatureScheme.verify_polyTime, `Cslib.Crypto.SignatureScheme.verify),
+       (`Cslib.Crypto.IndexedSignatureScheme.Seeded.signWith_polyTime,
+        `Cslib.Crypto.IndexedSignatureScheme.Seeded.signWith),
+       (`Cslib.Crypto.IndexedSignatureScheme.Seeded.signBudget_polyTime,
+        `Cslib.Crypto.IndexedSignatureScheme.Seeded.signBudget),
        (`Cslib.Crypto.MACScheme.verify_polyTime, `Cslib.Crypto.MACScheme.verify)] do
     let type := (← Lean.getConstInfo certificate).type
     let key ← Lean.Meta.forallTelescope type fun _ conclusion =>
