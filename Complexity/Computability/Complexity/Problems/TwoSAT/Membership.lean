@@ -11,7 +11,6 @@ public import Complexity.Computability.Complexity.Problems.TwoSAT
 public import Complexity.Computability.Complexity.Problems.TwoSAT.Routines
 import Complexity.Foundations.Data.List.Lookup
 import Complexity.Foundations.Relation.RelatesWithinSteps
-import Mathlib.Tactic.IntervalCases
 
 /-!
 # The complement of 2SAT in nondeterministic logarithmic space
@@ -72,33 +71,33 @@ phase, the number of steps and the length of the input, registers `8` to `10` th
 guessed clause, registers `11` and `12` the next literal and the other one, and registers `13`
 to `15` cursors. Label `102` accepts and label `103` rejects. -/
 def decider : CounterProgram where
-  code :=
+  code := List.flatten [
     -- 0, 1: count the input; 2: guess the reason
     [read (reg 7) 1 1 2,
      assign 7 (add (reg 7) (const 1)) 0,
      lt (reg 0) (const 1) 3 20,
     -- 3 to 19: a clause of width zero or more than two
      read (reg 1) 4 4 103,
-     lt (reg 0) (const 1) 10 5] ++
-    skipClauseCode 5 1 3 ++
+     lt (reg 0) (const 1) 10 5],
+    skipClauseCode 5 1 3,
     [assign 8 (reg 1) 11,
-     read (reg 8) 12 102 102] ++
-    skipLitCode 12 8 15 ++
-    [read (reg 8) 16 103 103] ++
-    skipLitCode 16 8 19 ++
+     read (reg 8) 12 102 102],
+    skipLitCode 12 8 15,
+    [read (reg 8) 16 103 103],
+    skipLitCode 16 8 19,
     [read (reg 8) 102 103 103,
     -- 20 to 34: the occurrence of the starting variable
      read (reg 1) 21 21 103,
-     lt (reg 0) (const 1) 27 22] ++
-    skipClauseCode 22 1 20 ++
+     lt (reg 0) (const 1) 27 22],
+    skipClauseCode 22 1 20,
     [read (reg 1) 28 103 103,
-     lt (reg 0) (const 1) 32 29] ++
-    skipLitCode 29 1 27 ++
+     lt (reg 0) (const 1) 32 29],
+    skipLitCode 29 1 27,
     [assign 2 (reg 1) 33,
      assign 3 (reg 1) 34,
-     assign 4 (const 1) 35] ++
+     assign 4 (const 1) 35],
     -- 35 to 51: the end of a half of the walk, and the number of steps
-    cmpVarCode 35 3 2 13 14 45 50 ++
+    cmpVarCode 35 3 2 13 14 45 50,
     [lt (reg 4) (const 1) 46 47,
      lt (reg 5) (const 1) 48 50,
      lt (reg 5) (const 1) 50 102,
@@ -109,34 +108,34 @@ def decider : CounterProgram where
     -- 52 to 78: a clause and its literals
      assign 1 (const 0) 53,
      read (reg 1) 54 54 103,
-     lt (reg 0) (const 1) 60 55] ++
-    skipClauseCode 55 1 53 ++
+     lt (reg 0) (const 1) 60 55],
+    skipClauseCode 55 1 53,
     [assign 8 (reg 1) 61,
      read (reg 8) 62 103 103,
-     assign 9 (reg 8) 63] ++
-    skipLitCode 63 9 66 ++
+     assign 9 (reg 8) 63],
+    skipLitCode 63 9 66,
     [read (reg 9) 69 67 67,
      assign 11 (reg 8) 68,
      assign 12 (reg 8) 79,
-     assign 10 (reg 9) 70] ++
-    skipLitCode 70 10 73 ++
+     assign 10 (reg 9) 70],
+    skipLitCode 70 10 73,
     [read (reg 10) 103 74 74,
      lt (reg 0) (const 1) 75 77,
      assign 11 (reg 8) 76,
      assign 12 (reg 9) 79,
      assign 11 (reg 9) 78,
-     assign 12 (reg 8) 79] ++
+     assign 12 (reg 8) 79],
     -- 79 to 101: the arc, and the move
-    cmpVarCode 79 12 3 13 14 89 103 ++
-    signCode 89 12 15 93 94 ++
+    cmpVarCode 79 12 3 13 14 89 103,
+    signCode 89 12 15 93 94,
     [lt (reg 4) (const 1) 95 103,
      lt (reg 4) (const 1) 103 95,
-     assign 3 (reg 11) 96] ++
-    signCode 96 11 15 100 101 ++
+     assign 3 (reg 11) 96],
+    signCode 96 11 15 100 101,
     [assign 4 (const 1) 35,
      assign 4 (const 0) 35,
      accept,
-     reject]
+     reject]]
   registers := 16
 
 theorem length_code_decider : decider.code.length = 104 := rfl
@@ -286,18 +285,11 @@ theorem ab_step_reject {Q : Config → Prop} {l : ℕ} {st : St} (hB : st.Bounde
 
 /-! ### Code placement -/
 
-theorem codeAt_skipClause₅ : decider.CodeAt 5 (skipClauseCode 5 1 3) := fun i hi => by
-  simp only [skipClauseCode, skipLitCode, List.length_append, List.length_cons,
-    List.length_nil] at hi
-  interval_cases i <;> rfl
+theorem codeAt_skipClause₅ : decider.CodeAt 5 (skipClauseCode 5 1 3) := codeAt_of_prefix ⟨_, rfl⟩
 
-theorem codeAt_skipLit₁₂ : decider.CodeAt 12 (skipLitCode 12 8 15) := fun i hi => by
-  simp only [skipLitCode, List.length_cons, List.length_nil] at hi
-  interval_cases i <;> rfl
+theorem codeAt_skipLit₁₂ : decider.CodeAt 12 (skipLitCode 12 8 15) := codeAt_of_prefix ⟨_, rfl⟩
 
-theorem codeAt_skipLit₁₆ : decider.CodeAt 16 (skipLitCode 16 8 19) := fun i hi => by
-  simp only [skipLitCode, List.length_cons, List.length_nil] at hi
-  interval_cases i <;> rfl
+theorem codeAt_skipLit₁₆ : decider.CodeAt 16 (skipLitCode 16 8 19) := codeAt_of_prefix ⟨_, rfl⟩
 
 /-! ### A clause of width zero or more than two -/
 
@@ -502,14 +494,10 @@ variable (φ) in
 /-- The measure of the walk: the steps left, the first phase counting double. -/
 def measure (st : St) : ℕ := (1 - st.phase) * ((encCNF φ).length + 1) + (st.len - st.steps)
 
-theorem codeAt_skipClause₂₂ : decider.CodeAt 22 (skipClauseCode 22 1 20) := fun i hi => by
-  simp only [skipClauseCode, skipLitCode, List.length_append, List.length_cons,
-    List.length_nil] at hi
-  interval_cases i <;> rfl
+theorem codeAt_skipClause₂₂ : decider.CodeAt 22 (skipClauseCode 22 1 20) :=
+  codeAt_of_prefix ⟨_, rfl⟩
 
-theorem codeAt_skipLit₂₉ : decider.CodeAt 29 (skipLitCode 29 1 27) := fun i hi => by
-  simp only [skipLitCode, List.length_cons, List.length_nil] at hi
-  interval_cases i <;> rfl
+theorem codeAt_skipLit₂₉ : decider.CodeAt 29 (skipLitCode 29 1 27) := codeAt_of_prefix ⟨_, rfl⟩
 
 /-- The chosen occurrence becomes the starting one and the current one, with polarity `1`. -/
 theorem reaches_pick {p : ℕ} {st : St} (hp : st.p = p) (hB : st.Bounded (bnd φ)) :
@@ -608,17 +596,12 @@ theorem ab_start : ∀ (cs : CNF ℕ) {p : ℕ} {st : St}, (∀ c ∈ cs, c ∈ 
         rw [length_clauseBits, ← Nat.add_assoc] at hrest
         exact hrest) rfl (by bounded_tac) hph hst hlen b) b
 
-theorem codeAt_cmpVar₇₉ : decider.CodeAt 79 (cmpVarCode 79 12 3 13 14 89 103) := fun i hi => by
-  simp only [cmpVarCode, List.length_cons, List.length_nil] at hi
-  interval_cases i <;> rfl
+theorem codeAt_cmpVar₇₉ : decider.CodeAt 79 (cmpVarCode 79 12 3 13 14 89 103) :=
+  codeAt_of_prefix ⟨_, rfl⟩
 
-theorem codeAt_sign₈₉ : decider.CodeAt 89 (signCode 89 12 15 93 94) := fun i hi => by
-  simp only [signCode, List.length_cons, List.length_nil] at hi
-  interval_cases i <;> rfl
+theorem codeAt_sign₈₉ : decider.CodeAt 89 (signCode 89 12 15 93 94) := codeAt_of_prefix ⟨_, rfl⟩
 
-theorem codeAt_sign₉₆ : decider.CodeAt 96 (signCode 96 11 15 100 101) := fun i hi => by
-  simp only [signCode, List.length_cons, List.length_nil] at hi
-  interval_cases i <;> rfl
+theorem codeAt_sign₉₆ : decider.CodeAt 96 (signCode 96 11 15 100 101) := codeAt_of_prefix ⟨_, rfl⟩
 
 /-- Checking at labels `93` and `94` whether the read polarity `b` is opposite to `st.sgn`. -/
 private theorem reaches_check_polarity {st : St} (hsgn : st.sgn ≤ 1)
@@ -756,18 +739,12 @@ theorem ab_check {st : St} {c : Clause ℕ} (hcφ : c ∈ φ) {v : ℕ} {b₁ : 
     · exact .inr rfl
   · exact ab_reject hB' b
 
-theorem codeAt_skipLit₆₃ : decider.CodeAt 63 (skipLitCode 63 9 66) := fun i hi => by
-  simp only [skipLitCode, List.length_cons, List.length_nil] at hi
-  interval_cases i <;> rfl
+theorem codeAt_skipLit₆₃ : decider.CodeAt 63 (skipLitCode 63 9 66) := codeAt_of_prefix ⟨_, rfl⟩
 
-theorem codeAt_skipLit₇₀ : decider.CodeAt 70 (skipLitCode 70 10 73) := fun i hi => by
-  simp only [skipLitCode, List.length_cons, List.length_nil] at hi
-  interval_cases i <;> rfl
+theorem codeAt_skipLit₇₀ : decider.CodeAt 70 (skipLitCode 70 10 73) := codeAt_of_prefix ⟨_, rfl⟩
 
-theorem codeAt_skipClause₅₅ : decider.CodeAt 55 (skipClauseCode 55 1 53) := fun i hi => by
-  simp only [skipClauseCode, skipLitCode, List.length_append, List.length_cons,
-    List.length_nil] at hi
-  interval_cases i <;> rfl
+theorem codeAt_skipClause₅₅ : decider.CodeAt 55 (skipClauseCode 55 1 53) :=
+  codeAt_of_prefix ⟨_, rfl⟩
 
 variable (φ) in
 /-- The registers at label `79`: the walk unchanged, and the occurrences of two literals `ℓ'` and
@@ -1075,9 +1052,8 @@ theorem ab_walk {st : St} (hinv : LoopInv φ st) (b : Bool) :
   · simp only [measure, hph', hph, hst', hst, hln', hln, st₁, stepSt]
     omega
 
-theorem codeAt_cmpVar₃₅ : decider.CodeAt 35 (cmpVarCode 35 3 2 13 14 45 50) := fun i hi => by
-  simp only [cmpVarCode, List.length_cons, List.length_nil] at hi
-  interval_cases i <;> rfl
+theorem codeAt_cmpVar₃₅ : decider.CodeAt 35 (cmpVarCode 35 3 2 13 14 45 50) :=
+  codeAt_of_prefix ⟨_, rfl⟩
 
 /-- The invariant does not depend on the cursors. -/
 theorem LoopInv.cursors {st : St} (h : LoopInv φ st) {x y : ℕ} (hx : x ≤ bnd φ)
