@@ -197,6 +197,29 @@ theorem toInstance_maxWeight_le : G.toInstance.maxWeight ≤ G.maxWeight := by
   | none => simp
   | some c => exact G.le_maxWeight ((G.lightest_eq_some_iff.mp h).1)
 
+/-- The original adjacency-list input fits whenever the advertised Dijkstra word envelope fits. -/
+theorem inputFits_encode (G : ListInstance) {w : ℕ}
+    (hw_in : Fits w (8 * (G.n + G.m + 2) * (G.maxWeight + 2))) :
+    InputFits w G.encode := by
+  refine ⟨?_, ?_⟩
+  · rw [G.encode_length]
+    exact hw_in.of_le (by nlinarith)
+  · intro x hx
+    simp only [ListInstance.encode, List.mem_cons, List.mem_append, List.mem_map, List.mem_range,
+      List.mem_flatMap, List.mem_finRange, true_and] at hx
+    rcases hx with rfl | rfl | ⟨⟨i, hi, rfl⟩ | ⟨u, ⟨v, c⟩, he, hx⟩⟩
+    · exact hw_in.of_le (by nlinarith)
+    · have := G.source.isLt
+      exact hw_in.of_le (by nlinarith)
+    · have hle : G.offset i ≤ G.m := G.offset_n ▸ G.offset_mono (by omega)
+      exact hw_in.of_le (by nlinarith)
+    · simp only [List.not_mem_nil, or_false] at hx
+      rcases hx with rfl | rfl
+      · have := v.isLt
+        exact hw_in.of_le (by nlinarith)
+      · have hc := G.le_maxWeight he
+        exact hw_in.of_le (by nlinarith)
+
 end ListInstance
 
 /-- The relaxation of the distance word `d` through an edge of weight `c` from a vertex with
