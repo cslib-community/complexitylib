@@ -34,6 +34,8 @@ their reached-state domains.
   early-exit recursions, without changing their cutoff behavior.
 * `link_cascade_eq_boundedWhile`: the same finite cascade source in the shared while form;
   its native realization still needs a nontruncation proof.
+* `link_scatter_eq_boundedWhile`: the finite consolidation source in while form, preserving
+  both its pending root and its maximum degree, including truncation.
 * `gather_iterations_le_memoryCost`, `scatterList_iterations_le_memoryCost`: each fixed iteration
   issues a real query, so the iteration count can pay control work through the memory charge.
 -/
@@ -229,6 +231,38 @@ theorem link_scatter_succ_eq_step {n : ℕ} (L : Record.Layout (Cell.ok n)) (w f
   funext a
   rcases a with ⟨next, md'⟩
   cases next <;> rfl
+
+/-- Consolidation has the same finite while form with a pending root and an unchanged
+maximum-degree accumulator. A live handle at the cutoff remains truncated; this equality
+does not prove the separate native `whileSafe` obligation. Every body begins with the original
+degree query, and the absent-state payload is unused because its guard has stopped. -/
+theorem link_scatter_eq_boundedWhile {n : ℕ} (L : Record.Layout (Cell.ok n))
+    (w fuel u md : ℕ) :
+    DataStructure.link (L.methods w) (scatter fuel u md) = (do
+      let a ← Realization.boundedWhile
+        (fun (_ : Unit) (a : Option ℕ × ℕ) => Realization.optionWords a.1 0 ≠ 0)
+        (fun a : Unit × (Option ℕ × ℕ) => DataStructure.link (L.methods w)
+          (scatterStep (Realization.optionWords a.2.1 1, a.2.2)))
+        () fuel (some u, md)
+      pure a.2) := by
+  induction fuel generalizing u md with
+  | zero => rfl
+  | succ fuel ih =>
+    rw [link_scatter_succ_eq_step]
+    simp only [Realization.boundedWhile, Realization.optionWords_some, Matrix.cons_val_zero,
+      Matrix.cons_val_one]
+    erw [ite_eq_left (by decide : (1 : ℕ) ≠ 0)]
+    simp only [bind_assoc]
+    congr 1
+    funext next
+    rcases next with ⟨next, md'⟩
+    cases next with
+    | none =>
+      rw [Realization.boundedWhile_of_not _ _ () fuel (none, md') (by
+        change ¬(0 : ℕ) ≠ 0
+        decide)]
+      rfl
+    | some u' => exact ih u' md'
 
 /-- Every consolidation-table scan reads its slot, even when that slot is empty. This is a
 lower bound on the oracle charge, not an instruction bound or an admissibility assertion. -/

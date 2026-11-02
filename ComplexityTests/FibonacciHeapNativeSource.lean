@@ -115,4 +115,26 @@ example : Cslib.WordRAM.Realization.whileSafe
   simp only [Cslib.WordRAM.Realization.whileSafe]
   decide
 
+/-- Handle zero is still a live optional root. No finite cutoff of zero certifies its exit. -/
+example : ¬Cslib.WordRAM.Realization.whileSafe
+    (fun (_ : Unit) (a : Option ℕ × ℕ) => Cslib.WordRAM.Realization.optionWords a.1 0 ≠ 0)
+    (fun a : Unit × (Option ℕ × ℕ) =>
+      lower (scatterStep (Cslib.WordRAM.Realization.optionWords a.2.1 1, a.2.2)))
+    (fun _ _ _ => True) 5 () 0 (some 0, 31) occupied := by
+  simp only [Cslib.WordRAM.Realization.whileSafe]
+  decide
+
+/-- One empty-slot body clears the pending tag and preserves the maximum-word accumulator.
+The original three-query history is admissible and does not touch the dirty outside cell. -/
+example : Cslib.WordRAM.Realization.whileSafe
+    (fun (_ : Unit) (a : Option ℕ × ℕ) => Cslib.WordRAM.Realization.optionWords a.1 0 ≠ 0)
+    (fun a : Unit × (Option ℕ × ℕ) =>
+      lower (scatterStep (Cslib.WordRAM.Realization.optionWords a.2.1 1, a.2.2)))
+    (fun _ _ _ => True) 5 () 1 (some 0, 31) empty ∧
+    (Memory.spec 5).ValidHistory empty
+      ((Memory.spec 5).clientHistory empty (lower (scatter 1 0 31))) ∧
+    ((Memory.spec 5).clientState empty (lower (scatter 1 0 31))).mem 31 = 17 := by
+  simp only [Cslib.WordRAM.Realization.whileSafe]
+  decide
+
 end ComplexityTests.FibonacciHeapNativeSource
