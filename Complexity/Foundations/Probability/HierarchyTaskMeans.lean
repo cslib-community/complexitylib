@@ -10,6 +10,7 @@ module
 public import Complexity.Foundations.Probability.HierarchyTaskData
 public import Complexity.Foundations.Probability.DetectedHierarchy
 public import Complexity.Foundations.Probability.TrueSampleMeans
+public import Complexity.Foundations.Probability.CorrectionRowRecipe
 
 /-!
 # Actual correction tasks and reward sample means
@@ -26,8 +27,10 @@ reward update, including a nonprimary copy's weight. This is the correction/rewa
 finite identity, independent of the choice of fourth or eighth moments. Estimates may later
 share coordinates, but that does not replace this product-seed true-mean argument.
 
-Preparatory and normalized pilot tasks, routed direct bins, the complete scheduled mean bound,
-raw differences, conditional noise, compression and strong recursion remain separate work.
+The local pilot preparation/normalization family is in
+`Complexity/Foundations/Probability/PilotRowTasks.lean`. Routed direct bins, the common global
+task order, complete scheduled mean bound, raw differences, conditional noise, compression and
+strong recursion remain separate work.
 -/
 
 public section
@@ -47,55 +50,9 @@ variable {q cπ Cπ Cpair Cvar : ℝ} (P : Matrix.HierarchyParams q cπ Cπ Cpai
 
 /-- Primitive sampling/gate conditions for an actual correction task. The row bound used in
 normalization is `i + 1`, derived from the concrete iteration rather than supplied here. -/
-structure CorrectionSampling where
-  /-- Auxiliary incoming score. -/
-  I : ℝ → ℝ → ℝ
-  /-- Incoming gate. -/
-  τ : ℝ → ℝ
-  /-- Preparatory support cutoff. -/
-  h : ℝ → ℝ
-  /-- Row gate. -/
-  ρ : ℝ → ℝ
-  /-- Row rank used by the row gate. -/
-  K : ℕ
-  /-- Incoming rank used by the incoming gate. -/
-  Kc : ℕ
-  /-- Safe threshold for the row gate. -/
-  η : ℝ
-  /-- Safe threshold for the incoming gate. -/
-  τ₀ : ℝ
-  /-- Auxiliary-score support threshold. -/
-  e : ℝ
-  /-- Terminal pair-count constant. -/
-  c : ℝ
-  /-- Source pair-count constant. -/
-  p : ℝ
-  /-- Incoming-count bound on the support of the pilot multiplier. -/
-  R : ℝ
-  /-- Actual uniform midpoint density, not a nominal rate. -/
-  π : ℝ
-  π_pos : 0 < π
-  density : ∀ z, (dens {t | Zt t z} : ℝ) = π
-  Q_support : ∀ v, P.Q v ≠ 0 → h v = 1
-  ρ_nonneg : ∀ r, 0 ≤ ρ r
-  ρ_le_one : ∀ r, ρ r ≤ 1
-  η_pos : 0 < η
-  ρ_one : ∀ r, r ≤ η → ρ r = 1
-  τ_nonneg : ∀ r, 0 ≤ τ r
-  τ_le_one : ∀ r, τ r ≤ 1
-  τ₀_nonneg : 0 ≤ τ₀
-  τ_one : ∀ r, r ≤ τ₀ → τ r = 1
-  I_zero : ∀ v r, v ≤ e → I v r = 0
-  c_nonneg : 0 ≤ c
-  row_rank : 4 * (1 + c * ((i : ℝ) + 1) / η) ≤ K
-  terminal_pair : ∀ z w, w ≠ z →
-    (#{t | Zt t z ∧ Z t w} : ℝ) ≤ c * f * #{t | Zt t z}
-  p_nonneg : 0 ≤ p
-  source_pair : ∀ x w, w ≠ x →
-    (#{s | Xs s x ∧ Xs s w} : ℝ) ≤ p * #{s | Xs s x}
-  incoming_count : ∀ z, P.γ (P.pilot X Y f C z) ≠ 0 →
-    p * #({w | e < P.correctionInput X Y f C i w z / f} : Finset V) ≤ R
-  incoming_rank : 4 * (1 + R) ≤ Kc
+structure CorrectionSampling extends
+    CorrectionSamplingLaws P.Q (P.correctionInput X Y f C i)
+      (fun z => P.γ (P.pilot X Y f C z)) Xs Z Zt f ((i : ℝ) + 1)
 
 variable {P X Y Xs Z Zt f C i}
 
@@ -117,28 +74,18 @@ retains the old source; the correction child is evaluated at its sampled midpoin
 include A in
 /-- Positive actual density supplies every midpoint conditioning slice. -/
 theorem usage_nonempty (z : V) : ({t | Zt t z} : Finset Ζ).Nonempty := by
-  apply dens_ne_zero.mp
-  intro he
-  have hπ := A.density z
-  rw [he] at hπ
-  exact A.π_pos.ne' (by simpa using hπ.symm)
+  exact A.toCorrectionSamplingLaws.usage_nonempty z
 
 /-- Normalization is proved from the gates on the actual correction input. -/
 theorem expect_atom (hf : 0 < f) (hC : ∀ x y, 0 ≤ C x y) (hC1 : C *ᵥ 1 ≤ 1)
     {x : V} (hx : ({s | Xs s x} : Finset Γ).Nonempty) (z : V) :
     𝔼 σ ∈ ({s | Xs s x} : Finset Γ) ×ˢ (univ : Finset Ζ),
       (f / A.π) * A.atom σ x z = P.correctionIter X Y f C (i + 1) x z := by
-  have hz := A.usage_nonempty z
   have hseq := P.isCorrectionSeq_correctionIter (X := X) (Y := Y) hf hC
-  have hm := expect_correctionAtom_unconditioned
-    (G := P.correctionInput X Y f C i) (g₀ := fun z => P.γ (P.pilot X Y f C z)) hx hz
-    A.Q_support A.ρ_nonneg A.ρ_le_one
-    A.η_pos A.ρ_one A.τ_nonneg A.τ_le_one A.τ₀_nonneg A.τ_one A.I_zero hf
-    (hseq.input_nonneg hC i x) (hseq.sum_input_le hC1 i x).1 A.c_nonneg A.row_rank
-    (A.terminal_pair z) A.p_nonneg (A.source_pair x) (A.incoming_count z) A.incoming_rank
-  simp only [atom]
-  rw [← mul_expect, hm, A.density, P.correctionIter_succ_apply]
-  field_simp [A.π_pos.ne']
+  have hm := A.toCorrectionSamplingLaws.expect_atom_unconditioned hf
+    (hseq.input_nonneg hC i) (fun x => (hseq.sum_input_le hC1 i x).1) hx z
+  rw [P.correctionIter_succ_apply]
+  exact hm
 
 /-- The reward sample's true conditional mean is the actual correction update.
 No conditional mean is assumed as a field of `CorrectionSampling`. -/

@@ -16,11 +16,16 @@ mathematics. See [Contributing](CONTRIBUTING.md) to propose, implement, or revie
 
 ## Start here
 
-The [guide](https://www.cslib.io/complexitylib/guide/) introduces the library through checked Lean
-examples. For setup or a particular task, start below.
+The [Operator's Manual](manual/README.md) covers using the codebase by hand or with an agent:
+setup, worked examples, tactics, models, design patterns and troubleshooting. The short
+[Agent Operator's Manual](manual/AGENT_OPERATORS.md) explains how humans direct agents, choose
+roles and manage review and handoffs. The [guide](https://www.cslib.io/complexitylib/guide/)
+provides checked Lean tutorials. For a particular task, start below.
 
 | I want to… | Start with… |
 | --- | --- |
+| Learn to use the library from the beginning | [Operator's Manual](manual/README.md) |
+| Direct agents working in the library | [Agent Operator's Manual](manual/AGENT_OPERATORS.md) |
 | Use Complexitylib in another Lean project | [Add a pinned dependency](#use-from-another-lean-project) |
 | Build or edit this repository | [Build a checkout](#build-a-checkout) |
 | Compare selected proofs with independently stated contracts | [Comparator suites](comparator/README.md) |
