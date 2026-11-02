@@ -42,9 +42,10 @@ recipe remains bounded without a true-mean claim. The gate and preparatory cutof
 explicit primitive contracts. The shared atom law uses quarter-failure budgets sufficient for
 exact means, without claiming the source's stronger `3/4` denominator margin. Range bounds do not
 establish root regularity or error recurrence.
-The global stage order, routed bins, copy/reward multipliers, mean prefixes, noise/compression,
-strong recursion and native workspace/class equality remain open. Exact finite means are
-independent of the fourth/eighth moment choice; precision clients retain the integer rate grid.
+The global stage order, routed bins, cross-stage copy/reward assembly, mean prefixes,
+noise/compression, strong recursion and native workspace/class equality remain open.
+Exact finite means are independent of the fourth/eighth moment choice; precision clients
+retain the integer rate grid.
 
 ## Main definitions
 
@@ -120,6 +121,21 @@ theorem rank_lt_of_mem_children {parent child : PilotRowTask} (h : child ∈ par
   | normalized i =>
     simp only [children, List.mem_cons, List.not_mem_nil, or_false] at h
     rcases h with rfl | rfl | rfl <;> simp only [rank, PilotTask.rank] <;> omega
+
+/-- Expanded tasks have a fixed number of slots per finite pilot iteration. -/
+@[expose] def iteration : PilotRowTask → ℕ
+  | .pilot t => t.iteration
+  | .preparation i | .normalized i => i
+
+/-- Bound computed from the original finite iteration count, including stochastic children. -/
+theorem rank_le {t : PilotRowTask} {k : ℕ} (h : t.iteration ≤ k) :
+    t.rank ≤ 15 * k + 20 := by
+  cases t with
+  | pilot t =>
+    have := PilotTask.rank_le h
+    simp only [rank]
+    omega
+  | preparation i | normalized i => simp only [iteration, rank] at *; omega
 
 /-- The original rank is preserved up to a fixed factor on deterministic tasks. -/
 theorem rank_pilot (t : PilotTask) : (pilot t).rank = 3 * t.rank := rfl
@@ -218,6 +234,24 @@ theorem maximum_mem_Icc (previous current : V → ℝ) (y : V) :
     maximum previous current y ∈ Set.Icc 0 1 :=
   ⟨le_min zero_le_one (le_max_left _ _), min_le_left _ _⟩
 
+/-- Interpret the expanded family with shared preparation and normalization recipes.
+The recipes are functions of whole child tables; their sampling laws are separate. -/
+@[expose] noncomputable def value
+    {q cπ Cπ Cpair Cvar : ℝ} (P : HierarchyParams q cπ Cπ Cpair Cvar)
+    {V κ Γ Ζ : Type u} {ι : Type*} [Fintype V] [Fintype ι] [Fintype κ]
+    (X : ι → V → Prop) (Y : κ → V → Prop)
+    [∀ s v, Decidable (X s v)] [∀ t v, Decidable (Y t v)]
+    (f : ℝ) (C : Matrix V V ℝ)
+    (prepare : Matrix V V ℝ → Γ × Ζ → Matrix V V ℝ)
+    (normalize : Matrix V V ℝ → (Γ × Ζ → Matrix V V ℝ) →
+      (V → ℝ) → Γ × Ζ → Matrix V V ℝ) :
+    (t : PilotRowTask) → t.Value V κ Γ Ζ
+  | .pilot t => PilotTask.value P X Y f C t
+  | .preparation j => prepare (PilotTask.value P X Y f C (.input j))
+  | .normalized j => normalize (PilotTask.value P X Y f C (.input j))
+      (prepare (PilotTask.value P X Y f C (.input j)))
+      (PilotTask.value P X Y f C (.maximum (j + 1)))
+
 end PilotRowRecipe
 
 variable {q cπ Cπ Cpair Cvar : ℝ} (P : HierarchyParams q cπ Cπ Cpair Cvar)
@@ -302,12 +336,8 @@ theorem card_filter_normalizedRecipe_col_ne_zero_lt (input : Matrix V V ℝ)
       (fun h0 => hv (P.atomCutoff_eq_zero_of_Q_eq_zero h0)) hr) hg hτ
 
 /-- Values of the complete local family use the existing pilot at every deterministic task. -/
-@[expose] noncomputable def value : (t : PilotRowTask) → t.Value V κ Γ Ζ
-  | .pilot t => PilotTask.value P X Y f C t
-  | .preparation j => A.preparationRecipe (PilotTask.value P X Y f C (.input j))
-  | .normalized j => A.normalizedRecipe (PilotTask.value P X Y f C (.input j))
-      (A.preparationRecipe (PilotTask.value P X Y f C (.input j)))
-      (PilotTask.value P X Y f C (.maximum (j + 1)))
+@[expose] noncomputable def value : (t : PilotRowTask) → t.Value V κ Γ Ζ :=
+  PilotRowRecipe.value P X Y f C A.preparationRecipe A.normalizedRecipe
 
 /-- Raw input calls the right base row at the midpoint, releasing the old source. -/
 theorem value_input (j : ℕ) : A.value (.pilot (.input j)) =
@@ -397,7 +427,8 @@ theorem normalizedRecipe_eq_atom (hf : 0 < f) (hC : ∀ x y, 0 ≤ C x y)
     apply (div_le_iff₀ hf).mpr
     exact (hseq.input_le_mul hCf hf.le hC1 i x y).trans
       (mul_le_mul_of_nonneg_right (by exact_mod_cast Nat.add_le_add_right hi 1) hf.le)
-  simp only [value, normalizedRecipe, CorrectionRowRecipe.normalized, correctionAtom,
+  simp only [value, PilotRowRecipe.value, normalizedRecipe, CorrectionRowRecipe.normalized,
+    correctionAtom,
     P.atomCutoff_eq hd0 hdk]
   rfl
 
@@ -411,7 +442,8 @@ theorem expect_normalizedRecipe (hf : 0 < f) (hC : ∀ x y, 0 ≤ C x y)
   rw [← mul_expect, A.toCorrectionSamplingLaws.expect_atom hf
     (PilotTask.value_input_bounds P X Y f C hf hC hC1 i).1
     (PilotTask.value_input_bounds P X Y f C hf hC hC1 i).2 hx y]
-  rw [value, PilotTask.value_correction_succ]
+  simp only [value, PilotRowRecipe.value]
+  rw [PilotTask.value_correction_succ]
   ring
 
 /-- The actual deterministic correction constructor is the mean of its earlier normalized child.

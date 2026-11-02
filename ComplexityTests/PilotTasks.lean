@@ -191,7 +191,7 @@ example (P : FourthRootHierarchyParams 2 1 2 2 4) (i : ℕ) (hi : i < P.k)
 -- The preparation and the final pilot are actual dependencies of the normalized row.
 example : (CorrectionRowTask.preparation 2).rank 4 <
     (CorrectionRowTask.normalized 2).rank 4 ∧
-    (CorrectionRowTask.pilot (.maximum 4)).rank 4 <
+    (CorrectionRowTask.pilot (.pilot (.maximum 4))).rank 4 <
       (CorrectionRowTask.normalized 2).rank 4 := by
   constructor <;> apply CorrectionRowTask.rank_lt_of_mem_children <;>
     simp [CorrectionRowTask.children]
@@ -213,12 +213,12 @@ private theorem source_nonempty (x : ZMod 3) : ({s | retains s x} : Finset Seed)
 -- A positive target and a zero target force the normalized affine row to be nonconstant.
 -- This exercises the complete recipe, not a supplied mean certificate.
 example (P : FourthRootHierarchyParams 2 1 2 2 4) :
-    ∃ σ : Seed × Seed, (sampler P).value (.normalized 0) σ 0 1 ≠
-      (sampler P).value (.normalized 0) σ 0 0 := by
+    ∃ σ : Seed × Seed, (sampler P).value 0 (.normalized 0) σ 0 1 ≠
+      (sampler P).value 0 (.normalized 0) σ 0 0 := by
   let A := sampler P
   have hinput : P.toHierarchyParams.correctionInput retains retains (1 / 3) C 0 = C := by
     simp [HierarchyParams.correctionInput, HierarchyParams.correctionIter, cutoffCorrectionIter]
-  have hzero (σ : Seed × Seed) : A.value (.normalized 0) σ 0 0 = 0 := by
+  have hzero (σ : Seed × Seed) : A.value 0 (.normalized 0) σ 0 0 = 0 := by
     simp only [HierarchyParams.CorrectionSampling.value,
       HierarchyParams.CorrectionSampling.normalizedRecipe,
     CorrectionRowRecipe.normalized, hinput, C]
@@ -227,14 +227,14 @@ example (P : FourthRootHierarchyParams 2 1 2 2 4) :
     (Nat.zero_le _) (source_nonempty 0) 1
   have hpos := correction_pos P
   by_contra hn
-  have heq : ∀ σ : Seed × Seed, A.value (.normalized 0) σ 0 1 = 0 := by
+  have heq : ∀ σ : Seed × Seed, A.value 0 (.normalized 0) σ 0 1 = 0 := by
     intro σ
-    have he : A.value (.normalized 0) σ 0 1 = A.value (.normalized 0) σ 0 0 := by
+    have he : A.value 0 (.normalized 0) σ 0 1 = A.value 0 (.normalized 0) σ 0 0 := by
       by_contra hne
       exact hn ⟨σ, hne⟩
     rw [he, hzero]
   change (𝔼 σ ∈ ({s | retains s 0} : Finset Seed) ×ˢ (univ : Finset Seed),
-    ((1 / 3) / A.π) * A.value (.normalized 0) σ 0 1) = _ at hmean
+    ((1 / 3) / A.π) * A.value 0 (.normalized 0) σ 0 1) = _ at hmean
   simp only [heq, mul_zero, expect_const_zero] at hmean
   linarith
 
@@ -313,7 +313,7 @@ private theorem oversized_estimates (P : FourthRootHierarchyParams 2 1 2 2 4) :
 -- The bounded recursive-task constructor retains its exact affine true mean.
 example (P : FourthRootHierarchyParams 2 1 2 2 4) (x y : ZMod 3) :
     (𝔼 σ ∈ ({s | retains s x} : Finset Seed) ×ˢ (univ : Finset Seed),
-      ((1 / 3) / (sampler P).π) * (sampler P).value (.normalized 0) σ x y) =
+      ((1 / 3) / (sampler P).π) * (sampler P).value 0 (.normalized 0) σ x y) =
       P.toHierarchyParams.correctionIter retains retains (1 / 3) C 1 x y :=
   (sampler P).expect_normalizedRecipe (by norm_num) C_nonneg C_row C_le
     (Nat.zero_le _) (source_nonempty x) y
@@ -464,5 +464,49 @@ example (P : FourthRootHierarchyParams 2 1 2 2 4) :
   constructor
   · exact pilotCorrection_zero
   · exact pilotMax_zero
+
+-- The pilot normalization edge survives embedding in the actual family. This was absent
+-- from the old deterministic-only pilot embedding.
+example : (CorrectionRowTask.pilot (.normalized 2)).rank 4 <
+    (CorrectionRowTask.pilot (.pilot (.correction 3))).rank 4 :=
+  CorrectionRowTask.rank_lt_of_mem_children (by
+    simp [CorrectionRowTask.children, PilotRowTask.children])
+
+-- Identical primitive recipe choices interpret the embedded stochastic pilot exactly as
+-- its standalone family; each family's mean proof still uses its own input-specific laws.
+example (P : FourthRootHierarchyParams 2 1 2 2 4) :
+    (sampler P).value 0 (.pilot (.normalized 0)) =
+      (pilotSampler P).value (.normalized 0) :=
+  (sampler P).value_pilot 0 (pilotSampler P) rfl rfl (.normalized 0)
+
+-- Finite iteration bounds include preparation and normalization, not only the old tasks.
+example : (PilotRowTask.normalized 4).rank ≤ 15 * 4 + 20 :=
+  PilotRowTask.rank_le (by decide)
+
+-- The copy/reward client's real requests keep inherited suffixes and reset the right
+-- reward call to the midpoint role/rate/suffix. No endpoint value is a task parameter.
+private noncomputable def inherited : CorrectionRowTask.Channel Bool (List ℕ) :=
+  ⟨false, 1 / 16, [7, 9]⟩
+private noncomputable def broad : CorrectionRowTask.Channel Bool (List ℕ) := ⟨false, 1 / 4, [7, 9]⟩
+private noncomputable def midpoint : CorrectionRowTask.Channel Bool (List ℕ) :=
+  ⟨true, 1 / 4, [3, 9]⟩
+
+example : (CorrectionRowTask.rewardRequests inherited broad midpoint 2)[3]?.map
+    (fun r => (r.source.role, r.source.rate, r.source.suffix)) =
+      some (true, (1 / 4 : ℝ), [3, 9]) := by rfl
+
+example (M d : ℕ) :
+    binNormCost 4 0 * (2 : ℝ) ^ (Real.logb 2 ((1 / 4) / (1 / 16)) / 4) *
+        (2 : ℝ) ^ (-precision 16 2 (lastBudget M d 1 0)
+          (CorrectionRowTask.previousReward.rank 4) (1 / 4) (1 / 4)) ≤
+      (2 : ℝ) ^ (-precision 16 2 M (CorrectionRowTask.projectedReward 3 |>.rank 4)
+        (1 / 4) (1 / 16) - 2 + (d : ℝ) / 16 + 1 / 16) * scaleMajorant 0 := by
+  have h := CorrectionRowTask.reward_request_cost_le (k := 4)
+    (r := ⟨.previousReward, midpoint, none, none⟩)
+    (source := inherited) (broadSource := broad) (midpoint := midpoint) (i := 2) (f := 1 / 4)
+    (by simp [CorrectionRowTask.rewardRequests]) (by rfl) (by rfl)
+    (A := 2) (by norm_num) M d 1 (by decide)
+    (by norm_num) (by norm_num [inherited]) (by norm_num [inherited])
+  simpa only [midpoint, inherited, Nat.cast_one, mul_one] using h
 
 end ComplexityTests.PilotTasks
