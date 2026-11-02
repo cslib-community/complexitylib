@@ -12,7 +12,6 @@ public import Complexity.Computability.Complexity.Problems.TwoSAT
 public import Complexity.Computability.Complexity.Problems.TwoSAT.Layout
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Output
 import Complexity.Foundations.Data.List.Lookup
-import Mathlib.Tactic.IntervalCases
 
 /-!
 # Unreachability as 2SAT
@@ -288,20 +287,20 @@ of the matrix; register `5` holds the number whose digits are written. Labels `0
 header, labels `6` to `53` write the unit clauses, the nested loops at labels `54` and `57` write
 the clause of every arc, and label `108` halts. -/
 def writer : CounterProgram where
-  code :=
+  code := List.flatten [
     [read (reg 0) 1 2 2,
      assign 0 (add (reg 0) (const 1)) 0,
      read (add (add (reg 0) (const 1)) (reg 1)) 3 4 4,
      assign 1 (add (reg 1) (const 1)) 2,
      read (add (add (add (add (reg 0) (const 1)) (reg 1)) (const 1)) (reg 2)) 5 6 6,
-     assign 2 (add (reg 2) (const 1)) 4] ++
-    literalCode 6 1 true 29 ++ [emit false 30] ++
-    literalCode 30 2 false 53 ++ [emit false 54] ++
-    forCode 54 3 (reg 0) 57 108 ++ forCode 57 4 (reg 0) 60 56 ++
+     assign 2 (add (reg 2) (const 1)) 4],
+    literalCode 6 1 true 29, [emit false 30],
+    literalCode 30 2 false 53, [emit false 54],
+    forCode 54 3 (reg 0) 57 108, forCode 57 4 (reg 0) 60 56,
     [read (add (add (add (add (reg 0) (reg 1)) (reg 2)) (const 3))
-      (add (mul (reg 3) (reg 0)) (reg 4))) 61 59 59] ++
-    literalCode 61 3 false 84 ++ literalCode 84 4 true 107 ++
-    [emit false 59, halt []]
+      (add (mul (reg 3) (reg 0)) (reg 4))) 61 59 59],
+    literalCode 61 3 false 84, literalCode 84 4 true 107,
+    [emit false 59, halt []]]
   registers := 6
 
 variable (I : STCONInstance) {B : ℕ}
@@ -388,10 +387,6 @@ private theorem reachesOut_header (hB : I.n ≤ B) :
     ((reachesOut_header_s I hB 0 (Nat.zero_le _)).trans
       (reachesOut_header_t I hB 0 (Nat.zero_le _)))).of_eq rfl
 
-private theorem codeAt_literal {b r exit : ℕ} {sign : Bool}
-    (h : ∀ i (hi : i < 23), writer.instr (b + i) = (literalCode b r sign exit)[i]'hi) :
-    writer.CodeAt b (literalCode b r sign exit) := fun i hi => h i hi
-
 /-- Writing the clause for entry `(u, v)` of the adjacency matrix when `arc I u v` holds. -/
 private theorem reachesOut_entry (hB : I.n ≤ B) {u v : ℕ} (hu : u < I.n) (hv : v < I.n) :
     writer.ReachesOut I.encode (writer.Active B)
@@ -402,10 +397,8 @@ private theorem reachesOut_entry (hB : I.n ≤ B) {u v : ℕ} (hu : u < I.n) (hv
   have ht := I.t.isLt
   have hb : ∀ z ∈ [I.n, (I.s : ℕ), (I.t : ℕ), u, v, 0], z ≤ B :=
     bounded6 hB (by omega) (by omega) (hu.le.trans hB) (hv.le.trans hB) (Nat.zero_le _)
-  have hlit₁ : writer.CodeAt 61 (literalCode 61 3 false 84) := codeAt_literal fun i hi => by
-    interval_cases i <;> rfl
-  have hlit₂ : writer.CodeAt 84 (literalCode 84 4 true 107) := codeAt_literal fun i hi => by
-    interval_cases i <;> rfl
+  have hlit₁ : writer.CodeAt 61 (literalCode 61 3 false 84) := codeAt_of_prefix ⟨_, rfl⟩
+  have hlit₂ : writer.CodeAt 84 (literalCode 84 4 true 107) := codeAt_of_prefix ⟨_, rfl⟩
   refine ReachesOut.read (show writer.instr 60 = _ from rfl) hb ?_
   simp only [eval_add, eval_mul, eval_reg, eval_const, List.getD_cons_zero,
     List.getD_cons_succ, I.getElem?_encode_matrix hu hv]
@@ -437,12 +430,8 @@ private theorem reachesOut_rows (hB : I.n ≤ B) {i₀ : ℕ} (hi₀ : i₀ ≤ 
   have hreg : ∀ {u v y : ℕ}, u ≤ I.n → v ≤ I.n → y ≤ I.n →
       ∀ z ∈ [I.n, (I.s : ℕ), (I.t : ℕ), u, v, y], z ≤ B := fun hu hv hy =>
     bounded6 hB (by omega) (by omega) (hu.trans hB) (hv.trans hB) (hy.trans hB)
-  have hcode₁ : writer.CodeAt 54 (forCode 54 3 (reg 0) 57 108) := by
-    simp only [forCode, codeAt_cons, codeAt_nil, and_true]
-    exact ⟨rfl, rfl, rfl⟩
-  have hcode₂ : writer.CodeAt 57 (forCode 57 4 (reg 0) 60 56) := by
-    simp only [forCode, codeAt_cons, codeAt_nil, and_true]
-    exact ⟨rfl, rfl, rfl⟩
+  have hcode₁ : writer.CodeAt 54 (forCode 54 3 (reg 0) 57 108) := codeAt_of_prefix ⟨_, rfl⟩
+  have hcode₂ : writer.CodeAt 57 (forCode 57 4 (reg 0) 60 56) := codeAt_of_prefix ⟨_, rfl⟩
   obtain ⟨regs, hreach, x, rfl, -, hx⟩ := reachesOut_forCode (w := I.encode) (N := I.n)
     (o := fun u => (List.range I.n).flatMap fun v =>
       if arc I u v then literalBits u false ++ literalBits v true ++ [false] else []) hcode₁
@@ -479,10 +468,8 @@ theorem computableInLogSpace_reachabilityFormula :
   have hB : I.n ≤ I.encode.length + 1 := by omega
   have hs := I.s.isLt
   have ht := I.t.isLt
-  have hlit₁ : writer.CodeAt 6 (literalCode 6 1 true 29) := codeAt_literal fun i hi => by
-    interval_cases i <;> rfl
-  have hlit₂ : writer.CodeAt 30 (literalCode 30 2 false 53) := codeAt_literal fun i hi => by
-    interval_cases i <;> rfl
+  have hlit₁ : writer.CodeAt 6 (literalCode 6 1 true 29) := codeAt_of_prefix ⟨_, rfl⟩
+  have hlit₂ : writer.CodeAt 30 (literalCode 30 2 false 53) := codeAt_of_prefix ⟨_, rfl⟩
   have hb : ∀ x ∈ [I.n, (I.s : ℕ), (I.t : ℕ), 0, 0, 0], x ≤ I.encode.length + 1 :=
     bounded6 hB (by omega) (by omega) (Nat.zero_le _) (Nat.zero_le _) (Nat.zero_le _)
   have h₁ := reachesOut_literalCode (w := I.encode) hlit₁ (by simp) hb

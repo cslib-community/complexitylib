@@ -420,7 +420,7 @@ theorem binary_and : ComputableInPolyTime (fun p : ℕ × ℕ => p.1 &&& p.2)
 @[fun_prop, program_certificate]
 theorem binary_or : ComputableInPolyTime (fun p : ℕ × ℕ => p.1 ||| p.2)
     (encPair encNat encNat) encNat :=
-  (ComputableInO.of_linear ComputableInLinearTimeAndSpace.natOr).computableInPolyTime
+  (ComputableInO.of_linear ComputableInDegree.natOr).computableInPolyTime
     (PolyBounded.of_forall_le 1 1 (fun _ => by simp))
     (PolyBounded.of_forall_le 1 1 (fun _ => by simp))
 

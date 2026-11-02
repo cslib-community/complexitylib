@@ -178,6 +178,11 @@ listed in a module docstring's "Main …" sections must exist, and a new test fi
 than restate signatures with `example … := name`. CI runs both. On pull requests CI also runs
 `python3 scripts/parallel_defs.py`, an advisory notice (it never fails) that lists new or changed
 public definitions sharing a large anonymized subterm with an existing one, or merely renaming one.
+With `--theorems` it lists new or changed theorems, private ones included, whose statement another
+library theorem or a Lean core, Batteries, Mathlib or cslib theorem already has, up to binder names,
+universe levels, the order of hypotheses and instance arguments, and the notations `≥`, `>`, `≠`;
+CI runs that notice too. `--all` examines the whole library: `python3 scripts/parallel_defs.py
+--theorems --all --limit 1000` lists every such group, the candidates of #949 item A.2.
 
 The helper hard-links package sources by default, copies root and dependency build caches with
 independent files (including symlink targets), isolates dependency `.git` directories and pointer
