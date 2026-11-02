@@ -70,12 +70,9 @@ theorem implements {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w C) :
       obtain ⟨hlen, hv⟩ := hv
       change (Stack.Memory.abs L e).length < C at hlen
       rw [Stack.Memory.length_abs] at hlen
-      refine ⟨?_, (hC ▸ hL : L.Valid w L.items.length), hi,
-        (by omega : e.mem L.count.base < L.items.length)⟩
-      change ∀ j : Fin (4 + 1), Fits w (pushWords (L, v) j)
-      refine Fin.addCases (fun j => ?_) (fun j => ?_)
-      · simpa [pushWords, appendWords, Fin.appendEquiv] using layoutWords_fits hw hi j
-      · simpa [pushWords, appendWords, Fin.appendEquiv] using hv
+      exact ⟨fits_appendWords (d := L) (a := v) layoutWords
+        (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding (layoutWords_fits hw hi) fun _ => hv,
+        hC ▸ hL, hi, (by omega : e.mem L.count.base < L.items.length)⟩
     | pop => exact ⟨layoutWords_fits hw hi, hC ▸ hL, hi⟩
     | size => exact ⟨layoutWords_fits hw hi, trivial⟩
 
@@ -123,6 +120,13 @@ example {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w C) {vs : List ℕ}
         (memoryState (Backend.frontier certificates) x) (Stack.Memory.methods L w C o) :=
   ⟨((implementation hL).correct_ofFn hr hv he).1,
     Backend.exec_memoryState (implements hL) hr hv he⟩
+
+-- An empty stack of capacity two at address three, held in zero memory with the frontier at six,
+-- is represented by the native data holding that memory state.
+example : (implementation (Stack.Memory.valid_allocLayout (w := 4) (f := 3) (C := 2)
+    (by decide))).rep [] (Backend.data certificates ⟨fun _ => 0, 6⟩) :=
+  Backend.rep_data _ ⟨by decide, fun _ => fits_zero 4⟩ ⟨le_of_lt (by decide), le_rfl, by simp⟩
+    (by simp [Stack.Memory.refinement, Stack.Memory.abs])
 
 -- Two stacks with disjoint layouts: product operations select tags of `Tag ⊕ Tag`.
 example {w C : ℕ} {L₁ L₂ : Stack.Memory.Layout} (h₁ : L₁.Valid w C) (h₂ : L₂.Valid w C)
