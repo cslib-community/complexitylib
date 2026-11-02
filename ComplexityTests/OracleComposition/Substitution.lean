@@ -54,7 +54,7 @@ private theorem cached_isOraclePPTOn : IsOraclePPTOn
 private noncomputable def twoLevel (n : ℕ) :
     WordOracleComp Unit (List Bool × List (List Bool × List Bool)) :=
   (OracleComp.interpret
-    (ProbOracleComp.handler (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
+    (OracleComp.sumHandler (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
       (cached n)) (client n)).run []
 
 -- The two-level client is strict oracle PPT, returning its result and the final cache. The local
@@ -87,7 +87,7 @@ private theorem run_firstOnes (request : Unit × List Bool) (calls : ℕ) :
 -- third result is the cached first reply rather than a fresh one.
 example :
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) firstOnes)
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) firstOnes)
         (twoLevel 3)).run 0 =
       PMF.pure (([false, false, false, true, true, true],
         [([true, true, true], [false, false, false]), ([], [true, true, true])]), 2) := by
@@ -120,7 +120,7 @@ private theorem run_copyReply (n : ℕ) (request : Unit × List Bool) (state : L
 -- though the client keeps one bit; such a handler has no strict oracle PPT certificate.
 example : ¬ IsOraclePPTOn encUnary (encPair encBits encBits) (fun n =>
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
         (copyReply n)) (requestHead n)).run []) := by
   intro h
   obtain ⟨c, d, hbound⟩ := h.length_le
@@ -165,13 +165,13 @@ example : IsOraclePPTOn encUnary encBits repeatHead := by
 -- additive allowance bounds its state growth.
 example : ¬ IsOraclePPTOn encUnary (encPair encBits encBits) (fun n =>
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
         (double n)) (repeatHead n)).run [true]) := by
   intro h
   obtain ⟨c, d, hbound⟩ := h.length_le
   obtain ⟨n, hn⟩ := not_two_pow_le c d
   have hiterate (m : ℕ) (word : List Bool) : (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
         (double n)) (OracleComp.iterate m
           (fun _ => List.take 1 <$> ProbOracleComp.query ((), [])) word)).run [true] =
       pure (if m = 0 then word else [], List.replicate (2 ^ m) true) := by
