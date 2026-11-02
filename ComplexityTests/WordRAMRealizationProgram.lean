@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Computability.WordRAM.Realization.Program
+import Complexity.Computability.WordRAM.Realization.Program.Standard
 
 /-! Nonvacuous flat-program projections with uniform code and clock constants, for both
 already installed arguments and an actually charged native list-input prefix. The former
@@ -99,47 +99,19 @@ example : ∃ (r C : ℕ) (p : Program .exact r),
 example : ∃ (r C : ℕ) (p : Program .exact r),
     ∀ w d, Fits w 2 → Fits w d →
       ∃ t, Executes w p (State.init [d]) d t ∧ t ≤ C + 1 := by
-  obtain ⟨n, C, emit, he⟩ := copy_realizes.exists_init_program (fun d => [d]) (by
+  obtain ⟨r, C, prog, he⟩ := copy_realizes.exists_standard_init_program (fun d => [d]) (by
     intro d i
     have hi : i = 0 := Fin.eq_zero i
     subst i
-    rfl)
-  let m := 1 + n + 1
-  let r := m + 2
-  let frontier : Fin r := ⟨1, by dsimp [r, m]; omega⟩
-  let src : Fin 1 → Fin r := fun _ => ⟨0, by dsimp [r, m]; omega⟩
-  let tmp : Fin (1 + n + 1) → Fin r := fun j => ⟨j.val + 2, by dsimp [r, m]; omega⟩
-  have hi : Function.Injective tmp := by
-    intro a b h
-    apply Fin.ext
-    have := congrArg Fin.val h
-    dsimp [tmp] at this
-    omega
-  have hd : ∀ i j, src i ≠ tmp j := by
-    intro i j h
-    have := congrArg Fin.val h
-    change 0 = j.val + 2 at this
-    omega
-  have hf : ∀ j, tmp j ≠ frontier := by
-    intro j h
-    have := congrArg Fin.val h
-    change j.val + 2 = 1 at this
-    omega
-  have hs : ∀ i, src i ≠ frontier := by
-    intro i h
-    have := congrArg Fin.val h
-    change 0 = 1 at this
-    omega
-  refine ⟨r, C, (Code.seq (inputPrefix frontier (tmp (Fin.last (1 + n))) src)
-    (emit frontier src tmp)).program (tmp (Fin.castAdd (n + 1) (0 : Fin 1))), ?_⟩
+    rfl) 0
+  refine ⟨r, C, prog, ?_⟩
   intro w d h2 hfit
   have hin : InputFits w [d] := by
     refine ⟨h2.of_le (by simp), ?_⟩
     intro v hv
     simp only [List.mem_singleton] at hv
     exact hv.symm ▸ hfit
-  obtain ⟨t, ht, htime⟩ := he frontier src tmp (fun _ _ _ => Subsingleton.elim _ _) hi
-    hd hf hs 0 w d (by simp) h2 hin trivial (by trivial)
+  obtain ⟨t, ht, htime⟩ := he w d (by simp) h2 hin trivial (by trivial)
   change t ≤ C * (0 + 0 + 1) + 1 at htime
   exact ⟨t, ht, by simpa using htime⟩
 
