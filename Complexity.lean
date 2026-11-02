@@ -2017,6 +2017,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Poly
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryLog
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Choose
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Factorial
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Fin
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Gcd
@@ -2868,6 +2869,7 @@ public import Complexity.Crypto.Computational.Pseudoentropy.WordReduction
 public import Complexity.Crypto.Computational.Pseudoentropy.WordSeedExtraction
 public import Complexity.Crypto.Computational.PseudorandomFunction
 public import Complexity.Crypto.Computational.PseudorandomFunction.Coins
+public import Complexity.Crypto.Computational.PseudorandomFunction.MultiKey
 public import Complexity.Crypto.Computational.PseudorandomFunction.RandomOracle
 public import Complexity.Crypto.Computational.PseudorandomFunction.TruthTable
 public import Complexity.Crypto.Computational.PseudorandomGenerator

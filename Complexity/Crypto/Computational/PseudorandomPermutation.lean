@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Crypto.Computational.PseudorandomFunction
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import Complexity.Computability.Probabilistic.Oracle.Substitution
 import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Sampling
@@ -84,9 +85,6 @@ word-oracle adversaries (`advantage_prpIdealGame_randomFunctionIdealGame_le`). C
   Section 4.1 (printed p. 96), Attack Game 4.1 (p. 97), Definition 4.1 (p. 98), Section 4.1.3
   (p. 101), Section 4.1.5 (p. 106) with Section 2.3, Theorem 4.4 (p. 134), Corollary 4.5 (p. 135)
   and Exercise 4.9 (p. 169).
-
-Ported from the unmerged branch `feat/luby-rackoff-computational-748` at `608fc9ac7` by
-`worker-jetski-9b4ecce4`, updated to explicit security parameters and the current oracle API.
 -/
 
 public section
@@ -136,10 +134,10 @@ structure BlockCipher where
   encrypt_decrypt : ∀ n key block, key.length = keyLen n → block.length = blockLen n →
     encrypt n key (decrypt n key block) = block
 
-/-- Read a permutation of `m`-bit blocks, answering other words with `[]`. -/
+/-- Read a permutation of `m`-bit blocks as a table, answering other words with `[]`. -/
 @[expose] def randomPermOracle (m : ℕ) (π : Equiv.Perm (BitString m)) (query : List Bool) :
     List Bool :=
-  if query.length = m then List.ofFn (π (BitString.ofList m query)) else []
+  randomFunctionOracle m π query
 
 /-- Read a permutation of `m`-bit blocks in both directions (`false` for `π`, `true` for
 `π.symm`), answering other words with `[]`. -/
@@ -258,11 +256,11 @@ theorem prpOracle_eq_randomPermOracle {n : ℕ} {key : List Bool} (hkey : key.le
     (query : List Bool) :
     E.prpOracle n key query = randomPermOracle (E.blockLen n) (E.permEquiv n key hkey) query := by
   by_cases hq : query.length = E.blockLen n
-  · simp only [prpOracle, randomPermOracle, hq, ↓reduceIte]
+  · simp only [prpOracle, randomPermOracle, randomFunctionOracle, hq, ↓reduceIte]
     change E.encrypt n key query = List.ofFn (BitString.ofList (E.blockLen n)
       (E.encrypt n key (List.ofFn (BitString.ofList (E.blockLen n) query))))
     rw [BitString.ofFn_ofList hq, BitString.ofFn_ofList (E.length_encrypt n key query hkey hq)]
-  · simp [prpOracle, randomPermOracle, hq]
+  · simp [prpOracle, randomPermOracle, randomFunctionOracle, hq]
 
 /-- A valid key answers encryption and decryption queries as its induced permutation. -/
 theorem strongPRPOracle_eq_strongRandomPermOracle {n : ℕ} {key : List Bool}
@@ -360,8 +358,7 @@ private theorem isPPTOn_keyedOracleGame {Operation : Type} [DecidableEq Operatio
     (initial := fun _ => ())
     (resources := fun caller _ => bound caller.1)
     (by polytime) hreply.isPPTOn (by polytime) (fun _ _ => True) (fun _ => trivial)
-    (show ComputableInPolyTime (fun pair : (ℕ × List Bool) × List Bool => bound pair.1.1)
-      (encPair caller encBits) encUnary from hbound.comp (by polytime)).tidy
+    (by polytime)
     (fun caller request _ _ result hresult => by
       simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hresult
       subst result
@@ -396,28 +393,6 @@ namespace BlockCipher
 
 variable (E : BlockCipher)
 
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_blockLen_comp {γ : Type} {input : γ ↪ List Bool}
-    {n : γ → ℕ} (hn : ComputableTidilyInPolyTime n input encUnary) :
-    ComputableTidilyInPolyTime (fun a => E.blockLen (n a)) input encUnary :=
-  E.blockLen_polyTime.tidy.comp hn
-
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_encrypt_comp {γ : Type} {input : γ ↪ List Bool}
-    {n : γ → ℕ} {key block : γ → List Bool} (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hkey : ComputableTidilyInPolyTime key input encBits)
-    (hblock : ComputableTidilyInPolyTime block input encBits) :
-    ComputableTidilyInPolyTime (fun a => E.encrypt (n a) (key a) (block a)) input encBits :=
-  E.encrypt_polyTime.tidy.comp (hn.prod (hkey.prod hblock))
-
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_decrypt_comp {γ : Type} {input : γ ↪ List Bool}
-    {n : γ → ℕ} {key block : γ → List Bool} (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hkey : ComputableTidilyInPolyTime key input encBits)
-    (hblock : ComputableTidilyInPolyTime block input encBits) :
-    ComputableTidilyInPolyTime (fun a => E.decrypt (n a) (key a) (block a)) input encBits :=
-  E.decrypt_polyTime.tidy.comp (hn.prod (hkey.prod hblock))
-
 /-- The real chosen-plaintext experiment is uniformly strict PPT for every oracle-PPT
 adversary. -/
 theorem isPPTOn_prpRealGame {adversary : OracleDistinguisher}
@@ -425,7 +400,7 @@ theorem isPPTOn_prpRealGame {adversary : OracleDistinguisher}
     IsPPTOn encUnary encBool (E.prpRealGame adversary) :=
   isPPTOn_keyedOracleGame hadversary E.keyLen_polyTime E.blockLen_polyTime
     (fun n key request => E.prpOracle n key request.2)
-    (ComputableInPolyTime.of_tidy (by unfold prpOracle; fun_prop))
+    (by unfold prpOracle; polytime)
     (fun n key request hkey => by
       unfold prpOracle
       split_ifs with hq
@@ -439,7 +414,7 @@ theorem isPPTOn_strongPRPRealGame {adversary : StrongPRPDistinguisher}
     IsPPTOn encUnary encBool (E.strongPRPRealGame adversary) :=
   isPPTOn_keyedOracleGame hadversary E.keyLen_polyTime E.blockLen_polyTime
     (fun n key request => E.strongPRPOracle n key request)
-    (ComputableInPolyTime.of_tidy (by unfold strongPRPOracle; fun_prop))
+    (by unfold strongPRPOracle; polytime)
     (fun n key request hkey => by
       obtain ⟨inverse, query⟩ := request
       simp only [strongPRPOracle]
@@ -565,7 +540,8 @@ theorem eval_strongPRPIdealGame_liftForwardDistinguisher (blockLen : ℕ → ℕ
   rw [eval_interpret_liftForwardDistinguisher]
   congr 2
   funext request
-  simp only [strongRandomPermOracle, randomPermOracle, Bool.false_eq_true, ↓reduceIte]
+  simp only [strongRandomPermOracle, randomPermOracle, randomFunctionOracle, Bool.false_eq_true,
+    ↓reduceIte]
   split_ifs
   · rw [List.take_of_length_le List.length_ofFn.le]
   · simp
@@ -580,16 +556,6 @@ theorem BlockCipher.StrongPRP.prp {E : BlockCipher} (h : E.StrongPRP) : E.PRP :=
     eval_strongPRPIdealGame_liftForwardDistinguisher]
 
 /-! ### The PRP/PRF switching lemma -/
-
-/-- The finite-domain adapter makes at most one external query. -/
-theorem isQueryBounded_randomFunctionQuery (m : ℕ) (query : List Bool) :
-    (randomFunctionQuery m query).IsQueryBounded 1 := by
-  unfold randomFunctionQuery
-  split_ifs
-  · simpa only [map_eq_bind_pure_comp, Function.comp_def, Nat.add_zero] using
-      (ProbOracleComp.IsQueryBounded.query (BitString.ofList m query)).bind fun _ =>
-        OracleComp.IsCostBounded.pure _ 0
-  · exact OracleComp.IsCostBounded.pure [] 1
 
 /-- **PRP/PRF switching lemma** ([BonehShoup2023], Theorem 4.4): a randomized word-oracle
 adversary making at most `Q` queries distinguishes a uniform permutation of `blockLen n`-bit blocks
