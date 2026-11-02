@@ -63,6 +63,25 @@ example : Realizes .exact countdownNe word word (fun w b _ => Fits w (b + 1)) (f
   change r - 1 < r
   omega
 
+/-- Count up to `b`, reading `b` on every step: the guard and the step capture the environment,
+and the loop's own environment is `()`. -/
+def countUp (b : ℕ) : Memory.Prog ℕ :=
+  boundedWhile (fun _ r => r < b) (fun ((_ : Unit), r) => do
+    let _ ← Memory.read b
+    pure (r + 1)) () b 0
+
+/-- The distance to `b` is the rank. -/
+example : Realizes .exact countUp word word (fun w b _ => Fits w (b + 1)) (fun _ _ => 0) := by
+  realize
+  intro hv
+  refine whileSafe_of_measure _ _ _ w _ (fun r _ => r ≤ d) (fun r _ => d - r)
+    (fun r _ _ hr hg => by omega) (fun r t hi hg _ => ⟨h.of_le (by omega), ?_, ?_⟩)
+    (Nat.zero_le _) (by omega) hv
+  · change r + 1 ≤ d
+    omega
+  · change d - (r + 1) < d - r
+    omega
+
 /-! ## The queue's transfer, counted down by the items left -/
 
 /-- Front and rear stack layouts. -/
