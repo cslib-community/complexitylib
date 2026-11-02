@@ -395,7 +395,9 @@ theorem wp_extractMin {K : ℕ} {g : Cell → ℕ} (hI : Inv n K g) (hfit : Fits
       detachState (view n g) m := by
     simp only [view_update_inHeap, view_update_sz]; rfl
   refine Record.wp_mono ?_ (wp_scatterList hfit true (Nat.lt_succ_self n) cs.length
-    (by rw [hv₁]; exact hD.scatterChildren) rfl hD.child)
+    (by rw [hv₁]; exact hD.scatterChildren) rfl fun y hy => by
+      change (view n g).child m - 1 = y.val
+      rw [hD.child y hy, Nat.add_sub_cancel])
   rintro md₁ g₂ t₁ ⟨slots₁, hc₁, ht₁⟩
   rw [hv₁] at hc₁
   rw [Record.wp_bind]

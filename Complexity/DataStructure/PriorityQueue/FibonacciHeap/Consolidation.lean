@@ -715,7 +715,7 @@ structure Detached (n K : ℕ) (s : IndexedMinPQ.State n) (st : RawState n) (m :
   mark : st.mark m = 0
   deg : st.deg m = cs.length
   numRoots : st.numRoots = E.length + 1
-  child : ∀ y ∈ (cs.map FHTree.root).head?, st.child m - 1 = y.val
+  child : ∀ y ∈ (cs.map FHTree.root).head?, st.child m = y.val + 1
   right : ∀ y ∈ (E.map FHTree.root).head?, st.right m = y.val
   chainChildren : RightChain st.right (cs.map FHTree.root)
   chainRoots : RightChain st.right (E.map FHTree.root)
@@ -747,7 +747,7 @@ theorem FibRawInv.detach {K : ℕ} {s : IndexedMinPQ.State n} {st : RawState n}
     simp
   -- The children, in sibling-list order.
   obtain ⟨cs, hcs, hhead, hchain⟩ : ∃ cs : List (FHTree n), cs.Perm T.children ∧
-      (∀ y ∈ (cs.map FHTree.root).head?, st.child m - 1 = y.val) ∧
+      (∀ y ∈ (cs.map FHTree.root).head?, st.child m = y.val + 1) ∧
         RightChain st.right (cs.map FHTree.root) := by
     rcases ValidSubtree.child_root (hts T hT).1 with ⟨hnil, -⟩ | ⟨c, tail, hc, hcircC, hpermC⟩
     · exact ⟨[], by simp [hnil], by simp, trivial⟩
