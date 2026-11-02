@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.Karger.Graph
 public import Complexity.DataStructure.StateTransition.Randomized
+public import Complexity.Languages.Probabilistic.Iteration
 
 /-!
 # Karger's contraction algorithm as a randomized client
@@ -34,25 +35,35 @@ and answers half their total weight, the weight of the cut between them.
 All probability is proved here, on the specification. Contracting from `t + s` down to `t`
 supervertices preserves a fixed minimum cut with probability at least
 `t (t - 1) / ((t + s) (t + s - 1))` (`survives_contractTimes`), so `karger` answers the minimum cut
-weight with probability at least `2 / (n (n - 1))` (`two_div_le_toOuterMeasure_karger`), and never
-less than it (`minCut_le_of_mem_support_karger`). Every call it makes is admissible
+weight with probability at least `2 / (n (n - 1))` (`two_div_le_toOuterMeasure_karger`), and every
+answer is the weight of a non-trivial cut (`exists_cut_of_mem_support_answerLaw`), never less than
+the minimum (`minCut_le_of_mem_support_karger`). Every call it makes is admissible
 (`demonicValid_karger`). The combinatorics and the one-step bound are `Karger.Graph`'s
 (`isContractionOf_contract`, `pullbackCut_contractCut`, `step_survival_prob_ge`,
 `telescope_survival_step`), used unchanged, and the composition of the stages is
 `Probability.PMF.toOuterMeasure_bind_ge_mul_ennreal`.
 
+Amplification is a client of a trial oracle whose one call answers one run of `karger`:
+`minRuns R` makes `R` calls and keeps the least answer, one `minStep` per call after the first.
+Answered by independent runs, `OracleComp.evalWith (fun _ => answerLaw G)`, it misses the minimum
+cut weight with probability at most `(1 - 2 / (n (n - 1))) ^ R` (`minRuns_ne_minCut_le`), since
+the least answer misses it only when every run does (`minRuns_ne_le`, for any trial).
+
 No register, address or instruction count appears here. The word-RAM loop
 `Cslib.Algorithms.WordRAM.Karger.contractDownTo` simulates `contractTimes`: the graph it holds has
 the law of the client's final state (`Cslib.Algorithms.WordRAM.Karger.contractDownTo_law`), so its
-survival bound is `survives_contractTimes`. An implementation of `spec` over the memory oracle is a
-separate, deterministic hop, and `Refinement.toRandomized` with `RandomizedRefinement.withCoins`
-carries the law of the client through it.
+survival bound is `survives_contractTimes`. The programs of `Cslib.Algorithms.WordRAM.KargerMinCut`
+simulate `karger` and `minRuns` in the same way. An implementation of `spec` over the memory
+oracle is a separate, deterministic hop, and `Refinement.toRandomized` with
+`RandomizedRefinement.withCoins` carries the law of the client through it.
 
 ## Main definitions
 
 * `Graph`, `Op`, `step`, `valid`, `spec`: the contraction structure.
 * `sampledPair`, `contractGraph`: the pair sampled at an offset, and contraction.
 * `contractStep`, `contractTimes`, `karger`: the algorithm as a client with coins.
+* `answerLaw`: the law of the answer of one run of `karger`.
+* `minStep`, `minRuns`: amplification, as a client of a trial oracle.
 * `Survives`: a cut of the input survives in a contracted graph.
 
 ## Main results
@@ -61,8 +72,15 @@ carries the law of the client through it.
   step that an implementation simulates.
 * `survives_contractTimes`: the survival bound.
 * `two_div_le_toOuterMeasure_karger`: Karger's success probability.
-* `isContractionOf_of_mem_support_contractTimes`, `minCut_le_of_mem_support_karger`: every
-  outcome is a contraction, so the answer is never below the minimum cut weight.
+* `isContractionOf_of_mem_support_contractTimes`, `exists_cut_of_mem_support_answerLaw`,
+  `minCut_le_of_mem_support_karger`: every outcome is a contraction, so the answer is the weight
+  of a non-trivial cut, never below the minimum.
+* `answerLaw_eq`: the answer is half the total weight of the graph left by `n - 2` contractions.
+* `minRuns_ne_minCut_le`: amplified Karger, `R` independent runs miss with probability at most
+  `(1 - 2 / (n (n - 1))) ^ R`.
+* `mem_support_iterate_minStep`, `mem_support_minRuns`: every amplified answer is the answer of
+  one of the runs.
+* `minRuns_ne_le`: amplification of any trial whose answers are at least `m`.
 * `isCostBounded_contractStep`, `isCostBounded_contractTimes`: each contraction makes one coin
   call and at most four calls of the structure.
 * `demonicValid_contractTimes`, `demonicValid_karger`: every call is admissible.
@@ -305,15 +323,15 @@ theorem isContractionOf_of_mem_support_contractTimes {n t : ℕ} (ht : 1 ≤ t)
       rw [sampledPair_eq hsamp, contractGraph_fin] at hx
       exact ih (isContractionOf_contract hC (isSampledPair_ne hC.multigraph hsamp)) hx
 
-/-- Running `karger` from `n = 2 + s` supervertices contracts `s` times, then answers half the
-total weight. -/
-private theorem run_karger {s : ℕ} (W : Fin (2 + s) → Fin (2 + s) → ℕ) :
-    spec.toRandomized.withCoins.run karger ⟨2 + s, W⟩ =
-      (spec.toRandomized.withCoins.run (contractTimes s) ⟨2 + s, W⟩).bind fun x =>
+/-- Running `karger` from `n` supervertices contracts `n - 2` times, then answers half the total
+weight. -/
+private theorem run_karger {n : ℕ} (W : Fin n → Fin n → ℕ) :
+    spec.toRandomized.withCoins.run karger ⟨n, W⟩ =
+      (spec.toRandomized.withCoins.run (contractTimes (n - 2)) ⟨n, W⟩).bind fun x =>
         PMF.pure (totalDoubledWeight x.2.weight / 2, x.2) := by
   rw [karger, StateTransitionSpec.run_withCoins_query_bind]
   dsimp only [StateTransitionSpec.stepFn, step]
-  rw [Nat.add_sub_cancel_left, RandomizedSpec.run_bind]
+  rw [RandomizedSpec.run_bind]
   exact congrArg _ (funext fun ⟨_, G⟩ =>
     StateTransitionSpec.run_withCoins_query_bind (D := spec) Op.total (fun S => pure (S / 2)) G)
 
@@ -331,7 +349,7 @@ theorem two_div_le_toOuterMeasure_karger {n : ℕ} (hn : 2 ≤ n) {W₀ : Fin n 
   have hsurv := survives_contractTimes le_rfl hmin s (isContractionOf_id hW₀) hC
     (by rw [hid, hCmin])
   rw [hid] at hsurv
-  rw [run_karger, show (2 : ℝ≥0∞) / ((2 + s) * (2 + s - 1) : ℕ) =
+  rw [run_karger, Nat.add_sub_cancel_left, show (2 : ℝ≥0∞) / ((2 + s) * (2 + s - 1) : ℕ) =
     ((2 * (2 - 1) : ℕ) : ℝ≥0∞) / ((2 + s) * (2 + s - 1) : ℕ) * 1 by norm_num]
   refine Probability.PMF.toOuterMeasure_bind_ge_mul_ennreal _ _ _ _ hsurv
     fun x _ ⟨W', part', B', hx, hC', hpb⟩ => ?_
@@ -343,24 +361,146 @@ theorem two_div_le_toOuterMeasure_karger {n : ℕ} (hn : 2 ≤ n) {W₀ : Fin n 
   rw [totalDoubledWeight_fin_two hC'.multigraph, ← hcut]
   omega
 
+/-- The law of the answer of one run of `karger` on `G`. -/
+noncomputable def answerLaw (G : Graph) : PMF ℕ :=
+  (spec.toRandomized.withCoins.run karger G).map Prod.fst
+
+/-- The answer of `karger` is half the total weight of the graph that `n - 2` contractions leave. -/
+theorem answerLaw_eq {n : ℕ} (W : Fin n → Fin n → ℕ) :
+    answerLaw ⟨n, W⟩ = ((spec.toRandomized.withCoins.run (contractTimes (n - 2)) ⟨n, W⟩).map
+      Prod.snd).map fun G => totalDoubledWeight G.weight / 2 := by
+  rw [answerLaw, run_karger, PMF.map_comp, PMF.map_bind]
+  simp only [PMF.pure_map]
+  exact PMF.bind_pure_comp _ _
+
+/-- Every answer of `karger` on a multigraph with `n ≥ 2` vertices is the weight of a non-trivial
+cut. -/
+theorem exists_cut_of_mem_support_answerLaw {n : ℕ} (hn : 2 ≤ n) {W₀ : Fin n → Fin n → ℕ}
+    (hW₀ : IsMultigraph W₀) {v : ℕ} (hv : v ∈ (answerLaw ⟨n, W₀⟩).support) :
+    ∃ C : Finset (Fin n), IsNonTrivialCut C ∧ v = cutWeight W₀ C := by
+  obtain ⟨s, rfl⟩ : ∃ s, n = 2 + s := ⟨n - 2, by omega⟩
+  rw [answerLaw_eq, PMF.map_comp, PMF.mem_support_map_iff, Nat.add_sub_cancel_left] at hv
+  obtain ⟨x, hx, rfl⟩ := hv
+  obtain ⟨W', part', hx', hC'⟩ :=
+    isContractionOf_of_mem_support_contractTimes (t := 2) (by norm_num) s
+      (isContractionOf_id hW₀) hx
+  obtain ⟨hnt, hcw, -⟩ := two_vertex_contraction_output hC'
+  refine ⟨_, hnt, ?_⟩
+  change totalDoubledWeight x.2.weight / 2 = _
+  rw [hx']
+  change totalDoubledWeight W' / 2 = _
+  rw [totalDoubledWeight_fin_two hC'.multigraph, ← hcw]
+  omega
+
 /-- **One-sided error.** Every answer of `karger` on a multigraph with `n ≥ 2` vertices is the
 weight of a non-trivial cut, so it is never below the minimum cut weight. -/
 theorem minCut_le_of_mem_support_karger {n : ℕ} (hn : 2 ≤ n) {W₀ : Fin n → Fin n → ℕ}
     (hW₀ : IsMultigraph W₀) {x : ℕ × Graph}
     (hx : x ∈ (spec.toRandomized.withCoins.run karger ⟨n, W₀⟩).support) : minCut W₀ ≤ x.1 := by
-  obtain ⟨s, rfl⟩ : ∃ s, n = 2 + s := ⟨n - 2, by omega⟩
-  rw [run_karger, PMF.mem_support_bind_iff] at hx
-  obtain ⟨y, hy, hx⟩ := hx
-  obtain ⟨W', part', hy', hC'⟩ :=
-    isContractionOf_of_mem_support_contractTimes (t := 2) (by norm_num) s
-      (isContractionOf_id hW₀) hy
-  obtain rfl := (PMF.mem_support_pure_iff _ _).mp hx
-  obtain ⟨-, hcw, hle⟩ := two_vertex_contraction_output hC'
-  change minCut W₀ ≤ totalDoubledWeight y.2.weight / 2
-  rw [hy']
-  change minCut W₀ ≤ totalDoubledWeight W' / 2
-  rw [totalDoubledWeight_fin_two hC'.multigraph]
-  omega
+  obtain ⟨C, hC, hx⟩ := exists_cut_of_mem_support_answerLaw hn hW₀
+    ((PMF.mem_support_map_iff _ _ _).mpr ⟨x, hx, rfl⟩)
+  exact hx ▸ minCut_le_cutWeight W₀ hC
+
+/-! ## Amplification -/
+
+/-- One more run of a trial, keeping the least answer `b` so far. The trial is an oracle whose one
+call `()` answers one run of `karger`. -/
+def minStep (b : ℕ) : OracleComp (fun _ : Unit => ℕ) ℕ := do
+  let v ← OracleComp.query ()
+  pure (min v b)
+
+/-- **Amplification** [Karger1993]: make `R` runs of a trial and answer the least answer, or `0`
+when `R = 0`. Answering each call by an independent run of `karger` on `G`, with
+`OracleComp.evalWith (fun _ => answerLaw G)`, gives the law of `R` independent runs. -/
+def minRuns : ℕ → OracleComp (fun _ : Unit => ℕ) ℕ
+  | 0 => pure 0
+  | R + 1 => do
+    let v ← OracleComp.query ()
+    OracleComp.iterate R minStep v
+
+/-- After the least answer `b` of earlier runs, `R` more runs answer at most `b`: either `b` or the
+answer of one of them. -/
+theorem mem_support_iterate_minStep {μ : PMF ℕ} {R b v : ℕ}
+    (hv : v ∈ (OracleComp.evalWith (fun _ => μ) (OracleComp.iterate R minStep b)).support) :
+    v ≤ b ∧ (v = b ∨ v ∈ μ.support) := by
+  rw [OracleComp.support_evalWith] at hv
+  refine OracleComp.iterate_invariant (fun _ v => v ≤ b ∧ (v = b ∨ v ∈ μ.support))
+    ⟨le_rfl, .inl rfl⟩ (fun _ c _ ⟨hcb, hc⟩ next hnext => ?_) v hv
+  obtain ⟨u, hu, hnext⟩ := OracleComp.mem_supportWith_bind_iff.mp hnext
+  obtain rfl := OracleComp.eq_of_mem_supportWith_pure hnext
+  rw [OracleComp.supportWith_query] at hu
+  refine ⟨(min_le_right u c).trans hcb, ?_⟩
+  rcases min_choice u c with h | h <;> rw [h]
+  · exact .inr hu
+  · exact hc
+
+/-- With `R ≥ 1` runs, every answer of `minRuns R` is the answer of one of the runs. -/
+theorem mem_support_minRuns {μ : PMF ℕ} {R v : ℕ} (hR : R ≠ 0)
+    (hv : v ∈ (OracleComp.evalWith (fun _ => μ) (minRuns R)).support) : v ∈ μ.support := by
+  obtain ⟨R, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hR
+  rw [minRuns, OracleComp.evalWith_bind, OracleComp.evalWith_query, PMF.mem_support_bind_iff] at hv
+  obtain ⟨u, hu, hv⟩ := hv
+  obtain ⟨-, rfl | hv⟩ := mem_support_iterate_minStep hv
+  exacts [hu, hv]
+
+/-- **Amplification.** If every answer of a run is at least `m` and a run misses `m` with
+probability at most `q`, then `R` independent runs all miss it, so `minRuns R` misses it, with
+probability at most `q ^ R`. -/
+theorem minRuns_ne_le {μ : PMF ℕ} {m : ℕ} {q : ℝ≥0∞} (hge : ∀ v ∈ μ.support, m ≤ v)
+    (hmiss : μ.toOuterMeasure {v | v ≠ m} ≤ q) (R : ℕ) :
+    (OracleComp.evalWith (fun _ => μ) (minRuns R)).toOuterMeasure {v | v ≠ m} ≤ q ^ R := by
+  have hstep (b : ℕ) :
+      OracleComp.evalWith (fun _ => μ) (minStep b) = μ.map fun v => min v b := by
+    simp only [minStep, OracleComp.evalWith_bind, OracleComp.evalWith_query,
+      OracleComp.evalWith_pure]
+    exact PMF.bind_pure_comp _ _
+  -- Once a run hits `m`, the least answer stays there.
+  have hstay (R : ℕ) :
+      (OracleComp.evalWith (fun _ => μ) (OracleComp.iterate R minStep m)).toOuterMeasure
+        {v | v ≠ m} = 0 := by
+    refine (PMF.toOuterMeasure_apply_eq_zero_iff _ _).mpr
+      (Set.disjoint_left.mpr fun v hv hne => hne ?_)
+    obtain ⟨hle, rfl | hv⟩ := mem_support_iterate_minStep hv
+    · rfl
+    · exact le_antisymm hle (hge v hv)
+  -- After a least answer of at least `m`, each further run misses independently.
+  have hfrom (R : ℕ) : ∀ b, m ≤ b →
+      (OracleComp.evalWith (fun _ => μ) (OracleComp.iterate R minStep b)).toOuterMeasure
+        {v | v ≠ m} ≤ q ^ R := by
+    induction R with
+    | zero => exact fun _ _ => (Probability.PMF.toOuterMeasure_le_one _ _).trans (by rw [pow_zero])
+    | succ R ih =>
+      intro b hb
+      rw [OracleComp.iterate_succ_bind, OracleComp.evalWith_bind, pow_succ']
+      refine Probability.PMF.toOuterMeasure_bind_le_mul_ennreal _ _ {c | c ≠ m} _ ?_
+        (fun c hc _ => ih c ?_) fun c _ hc => by rw [not_not.mp hc]; exact hstay R
+      · rw [hstep, PMF.toOuterMeasure_map_apply]
+        refine (PMF.toOuterMeasure_mono _ ?_).trans hmiss
+        rintro v ⟨hv, -⟩ rfl
+        exact hv (min_eq_left hb)
+      · rw [hstep, PMF.mem_support_map_iff] at hc
+        obtain ⟨v, hv, rfl⟩ := hc
+        exact le_min (hge v hv) hb
+  cases R with
+  | zero => exact (Probability.PMF.toOuterMeasure_le_one _ _).trans (by rw [pow_zero])
+  | succ R =>
+    rw [minRuns, OracleComp.evalWith_bind, OracleComp.evalWith_query, pow_succ']
+    exact Probability.PMF.toOuterMeasure_bind_le_mul_ennreal _ _ {v | v ≠ m} _ hmiss
+      (fun v hv _ => hfrom R v (hge v hv)) fun v _ hv => by rw [not_not.mp hv]; exact hstay R
+
+/-- **Amplification of Karger's algorithm** [Karger1993]. On a connected multigraph with `n ≥ 2`
+vertices, `R` independent runs of `karger` all miss the minimum cut weight, so `minRuns R` misses
+it, with probability at most `(1 - 2 / (n (n - 1))) ^ R`. -/
+theorem minRuns_ne_minCut_le {n : ℕ} (hn : 2 ≤ n) {W₀ : Fin n → Fin n → ℕ}
+    (hW₀ : IsMultigraph W₀) (hmin : 0 < minCut W₀) (R : ℕ) :
+    (OracleComp.evalWith (fun _ => answerLaw ⟨n, W₀⟩) (minRuns R)).toOuterMeasure
+        {v | v ≠ minCut W₀} ≤ (1 - 2 / ((n * (n - 1) : ℕ) : ℝ≥0∞)) ^ R := by
+  refine minRuns_ne_le (fun v hv => ?_) (Probability.PMF.toOuterMeasure_compl_le_one_sub _
+    {v | v = minCut W₀} ?_) R
+  · obtain ⟨C, hC, rfl⟩ := exists_cut_of_mem_support_answerLaw hn hW₀ hv
+    exact minCut_le_cutWeight W₀ hC
+  · rw [answerLaw, PMF.toOuterMeasure_map_apply]
+    exact two_div_le_toOuterMeasure_karger hn hW₀ hmin
 
 /-! ## Calls -/
 
