@@ -642,8 +642,10 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   Word-RAM certificates can be derived from semantic modules after discharging their local
   initialization, footprint and ABI conditions; a one-cell ADT checks that boundary. Multiword
   glue preserves full-word Option payloads, and the actual memory-stack size/push/pop methods
-  have uniform native certificates over runtime layouts, with local work 0/10/19. Remaining:
-  the representative framed queue and its faithful whole-memory allocation/native-client path.
+  have uniform native certificates over runtime layouts, with local work 0/10/19. The exact
+  queue transfer and dequeue dispatch also have native certificates; bounded transfer charges
+  inactive iterations after early stop, and valid transfer fuel has memory cost 6*n and local
+  work 40*n+1. Remaining: the complete framed queue and faithful allocation/native-client path.
   The full C2/M1b objective remains open; arbitrary host continuations do not acquire runtime bounds.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
