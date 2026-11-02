@@ -3646,6 +3646,7 @@ public import Complexity.Foundations.Probability.RootMetric.ConditionalWalk
 public import Complexity.Foundations.Probability.RootMetric.Conditioning
 public import Complexity.Foundations.Probability.RootMetric.Minkowski
 public import Complexity.Foundations.Probability.RootMetric.Slices
+public import Complexity.Foundations.Probability.RoutedHierarchyBins
 public import Complexity.Foundations.Probability.SamplerPrefix
 public import Complexity.Foundations.Probability.ScheduledFineProductMean
 public import Complexity.Foundations.Probability.ScheduledProductMean
