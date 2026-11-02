@@ -527,6 +527,10 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   values use a tag and unshifted payload, including maximal fitting words. The actual
   `Stack.Memory` size/push/pop clients reuse those rules over faithfully encoded runtime layouts,
   with visible layout/representation/spare-capacity conditions and local work 0/10/19.
+  The exact source queue transfer is realized by an active-flag bounded loop, with inactive
+  tails still charged. Dequeue stages its test zero and full runtime transfer arguments; its
+  local work is 28 on the direct path or 40*rearCount+69 on fallback. Static reindexing rewires
+  existing input words without free computation or new continuation assertions.
   The full framed queue/faithful allocation client remains separate. No abstract headline is added.
   `DataStructure/OrderedSet` and `DataStructure/OrderedSet/*` provide neutral
   optional-minimum contracts, a typed finite-set interface including deletion, and adaptive
