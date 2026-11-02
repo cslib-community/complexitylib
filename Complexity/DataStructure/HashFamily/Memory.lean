@@ -46,6 +46,8 @@ bookkeeping. Every operation makes at most `2 * U` calls, and `eval` exactly one
 * `Cslib.DataStructure.HashFamily.RandomTable.run_eq`: the law of a client run from allocation.
 * `Cslib.DataStructure.HashFamily.RandomTable.run_obliviousClient`: its oblivious transcripts are
   `evalOps`.
+* `Cslib.DataStructure.HashFamily.RandomTable.kWiseSpec_contract_run`: they meet the `kWiseSpec`
+  contract for every `k`.
 * `Cslib.DataStructure.HashFamily.RandomTable.demonicValid_run`: every memory call is admissible.
 * `Cslib.DataStructure.HashFamily.RandomTable.expectedAmortized`,
   `Cslib.DataStructure.HashFamily.RandomTable.isQueryBounded_run`: call counts.
@@ -321,6 +323,18 @@ theorem run_obliviousClient (hb : b ≤ w) {U : ℕ} (ops : List (HashFamily.Op 
         (fun θ u => θ u) ops := by
   rw [run_eq hb, HashFamily.evalOps]
   exact congrArg _ (funext fun θ => run_obliviousClient_seedSpec _ _ θ ops)
+
+/-- **The `kWiseSpec` contract over memory.** A uniform table is `k`-wise independent for every
+`k` (`Probability.isKWiseIndependentHash_id`). So on every oblivious operation sequence with at
+most `k` distinct keys per epoch, the transcript law of the run from allocation meets
+`HashFamily.kWiseSpec`: it is the ideal transcript law. -/
+theorem kWiseSpec_contract_run (hb : b ≤ w) {k U : ℕ} {ops : List (HashFamily.Op U)}
+    (hv : HashFamily.BoundedEpochKeys k ops) (s : Memory.State) :
+    (HashFamily.kWiseSpec k U (2 ^ b)).Contract ops
+      (((Memory.spec w).toRandomized.withCoins.run
+        (run b U ((tableSpec U b).obliviousClient ops)) s).map Prod.fst) := by
+  rw [run_obliviousClient hb]
+  exact HashFamily.kWiseSpec_contract_evalOps (Probability.isKWiseIndependentHash_id k) hv
 
 /-- Every memory call of the run is admissible when the table and `b`-bit words fit. -/
 theorem demonicValid_run (hb : b ≤ w) {U : ℕ} {α : Type}
