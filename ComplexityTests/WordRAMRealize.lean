@@ -206,6 +206,84 @@ theorem roundTrip_program : ∃ n C : ℕ,
     (hc.of_le (by simp [inputState]; omega)) hvalid
   exact ⟨t, ht, hle.trans (by rfl)⟩
 
+/-! ## Performance guards
+
+Each certificate is stated for the client form as written, with its domain in the client's
+terms, so the cost of `realize` follows the client's size. Before that, the domains of nested
+binds were compared by unfolding the interpreter's runs. A bind whose first client ends in a
+`match` then took about 800k heartbeats, and the adaptive stack controller about 212k. The
+budgets below include the side conditions. -/
+
+/-- Pop, reading an empty stack as zero. -/
+def popWord (L : Stack.Memory.Layout) : Memory.Prog ℕ := do
+  match ← Stack.Memory.pop L with
+  | none => pure 0
+  | some v => pure v
+
+/-- Push `v` and pop it through `popWord`; on zero, push one and pop again. Both pops are binds
+whose first client ends in a `match`. -/
+def bounce (d : Stack.Memory.Layout × ℕ) : Memory.Prog ℕ := do
+  Stack.Memory.push d.1 d.2
+  let v ← popWord d.1
+  if v = 0 then do
+    Stack.Memory.push d.1 1
+    popWord d.1
+  else pure v
+
+set_option maxHeartbeats 40000 in
+-- Performance guard: about 8k heartbeats are needed; `realize` alone once took about 800k.
+example : Realizes .exact bounce pushWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
+    (fun w d s => d.1.Valid w 1 ∧ Stack.Memory.Inv d.1 s ∧ s.mem d.1.count.base = 0)
+    (fun _ _ => 0) := by
+  realize
+  all_goals
+    obtain ⟨hL, hI, h0⟩ := h
+    have hne : d.1.items.base ≠ d.1.count.base := fun he =>
+      hL.count_not_owns (he ▸ Block.owns_add (i := 0) (by rw [hL.items_length]; omega))
+    have hlt : Fits w d.1.items.base := hmem.fits_of_lt_frontier (by
+      simpa using hI.item_lt (i := 0) (by rw [hL.items_length]; omega))
+    try simp only [popWord, ← PFunctor.FreeM.bind_eq_bind, StateTransitionSpec.runClient_bind,
+      StateTransitionSpec.clientState, StateTransitionSpec.clientResult,
+      StateTransitionSpec.runClient_pure', Stack.Memory.runClient_push,
+      Stack.Memory.runClient_pop_of_pos, h0, Nat.add_zero, Nat.zero_add, Nat.sub_self, ne_eq,
+      Nat.one_ne_zero, not_false_eq_true, Function.update_self, Function.update_of_ne hne,
+      Function.update_idem] at *
+    first | exact hlt | exact hL.capacity_fits | exact le_rfl
+
+/-- The adaptive stack controller: allocate a stack of capacity one, push `n` and pop; on a zero
+answer push one and pop again. -/
+def controller (n : ℕ) : Memory.Prog ℕ := do
+  let L ← Stack.Memory.allocLayout 1
+  Stack.Memory.push L n
+  match ← Stack.Memory.pop L with
+  | none => pure 0
+  | some v =>
+    if v = 0 then
+      (do
+        Stack.Memory.push L 1
+        match ← Stack.Memory.pop L with
+        | none => pure 0
+        | some u => pure u)
+    else pure v
+
+set_option maxHeartbeats 40000 in
+-- Performance guard: about 11k heartbeats are needed; `realize` alone once took about 212k.
+example : Realizes .exact controller (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
+    (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding (fun w _ s => Fits w (s.frontier + 2))
+    (fun _ _ => 0) := by
+  realize
+  all_goals
+    try simp only [show (Memory.spec 0).clientResult s (Stack.Memory.allocLayout 1) =
+        ⟨⟨s.frontier, 1⟩, ⟨s.frontier + 1, 1⟩⟩ from rfl,
+      show (Memory.spec 0).clientState s (Stack.Memory.allocLayout 1) =
+        ⟨clear s.mem s.frontier 1, s.frontier + 1 + 1⟩ from rfl,
+      clear_of_owns (show (Block.mk s.frontier 1).Owns s.frontier from ⟨le_rfl, by simp⟩),
+      StateTransitionSpec.clientState, StateTransitionSpec.clientResult,
+      Stack.Memory.runClient_push, Stack.Memory.runClient_pop_of_pos, Nat.zero_add,
+      Nat.add_zero, Nat.sub_self, ne_eq, Nat.one_ne_zero, not_false_eq_true,
+      Function.update_self, optionWords_some, Matrix.cons_val_zero, Matrix.cons_val_one] at *
+    first | exact le_rfl | exact h.of_le (by omega)
+
 /-! ## Failure messages -/
 
 /-- A power has no glue rule. -/
