@@ -153,7 +153,7 @@ theorem product_exec {B : Basis} {δ α : Type} {r k l w : ℕ}
     (hi : Function.Injective tmp) (hd : ∀ i j, src i ≠ tmp j)
     (hf : ∀ j, tmp j ≠ frontier) (hs : ∀ i, src i ≠ frontier)
     (d : δ) (x : Data r) (o : (product D₁ D₂).Op) (answer : α → (product D₁ D₂).Result o)
-    (source : (p d).bind (fun a => pure (answer a)) = (M₁.prod M₂).methods o)
+    (source : (do let a ← p d; pure (answer a)) = (M₁.prod M₂).methods o)
     (hx : x.Bounded w) (hin : x.regs ∘ src = input d)
     (hsafe : safe w d (memoryState frontier x))
     (hinv : (M₁.prod M₂).inv (memoryState frontier x))
@@ -183,19 +183,16 @@ theorem product_exec {B : Basis} {δ α : Type} {r k l w : ℕ}
   have hresult : (Memory.spec w).clientResult s (F.methods o) =
       answer ((Memory.spec w).clientResult s (p d)) := by
     rw [← source]
-    change (Memory.spec w).clientResult s (p d >>= fun a => pure (answer a)) = _
     rw [StateTransitionSpec.clientResult_bind]
     rfl
   have hstate : (Memory.spec w).clientState s (F.methods o) =
       (Memory.spec w).clientState s (p d) := by
     rw [← source]
-    change (Memory.spec w).clientState s (p d >>= fun a => pure (answer a)) = _
     rw [StateTransitionSpec.clientState_bind]
     rfl
   have hhistory : (Memory.spec w).clientHistory s (F.methods o) =
       (Memory.spec w).clientHistory s (p d) := by
     rw [← source]
-    change (Memory.spec w).clientHistory s (p d >>= fun a => pure (answer a)) = _
     rw [StateTransitionSpec.clientHistory_bind]
     exact List.append_nil _
   have hvF := ((Memory.spec w).demonicValid_iff_validHistory_runClient _ _).mp
