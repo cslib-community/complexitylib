@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 
-import Complexity.Foundations.Probability.RoutedHierarchyBins
+import Complexity.Foundations.Probability.SignedResidualBins
 import all Complexity.Foundations.Probability.DetectedHierarchy
 import all Complexity.Foundations.LinearAlgebra.Matrix.CorrectionHierarchy
 import Mathlib.Tactic.FinCases
@@ -423,5 +423,74 @@ example : (𝔼 s ∈ ({s | Cslib.Probability.affineRetains 17 1 7 s (padded 0)}
     affineBin.direct affineInput s 1 0) = 0 := by
   rw [affineBin.expect_direct (by norm_num) affineInput_nonneg affineInput_mass]
   norm_num [affineInput, routedBinCutoff, Cslib.binWeight, copyFraction]
+
+-- Bounded stochastic preparation and normalization of the actual stage-one residual.
+-- This feeds the same hierarchy used above to construct stage TWO; no residual/mass
+-- certificate is postulated. The fixed top scale is one and all zero entries are covered.
+example (P : HierarchyParams 2 1 1 1 0) (i : ℕ) (x y : V P 1) :
+    let b : ℕ → ℝ := fun j => (1 / 2) ^ j
+    let r := fun w => copyFraction (P.copyCutoff ((2 : ℝ)⁻¹ ^ 1)) P.m w 0
+    let A := denseLaws (W := V P 1)
+      (boundedRoutedBinCutoff (fun d => min 1 (max 0 (2 * d - 1))) b
+        ((P.k : ℝ) + 2) i r) (b i) 1 (by positivity)
+    let base := fun _ : Unit × Bool => H P 1
+    let corr := fun _ : Unit × Bool =>
+      P.correction (full (α := Unit)) (full (α := Unit)) ((2 : ℝ)⁻¹ ^ 1) (H P 1)
+    let prep := ResidualBinTask.value (fun d => min 1 (max 0 (2 * d - 1))) b
+      ((P.k : ℝ) + 2) i r A.h A.ρ A.K full full hit base corr corr base base .preparation
+    (𝔼 σ ∈ (univ : Finset Unit) ×ˢ (univ : Finset Bool),
+      (b i * ((dens (univ : Finset Bool) : ℝ) / dens {s | hit s y})) *
+        ResidualBinTask.value (fun d => min 1 (max 0 (2 * d - 1))) b
+          ((P.k : ℝ) + 2) i r A.h A.ρ A.K full full hit base corr corr base prep
+            .normalized σ x y) =
+      b i * routedBinCutoff (fun d => min 1 (max 0 (2 * d - 1))) b i r (D P x y / b i) := by
+  dsimp only
+  simpa only [full, filter_true] using
+    ResidualBinTask.expect_value_true P (full (α := Unit)) (full (α := Unit)) (H P 1)
+      (by norm_num) (by norm_num) (invariant_one P).2.1 (invariant_one P).2.2.2
+      (invariant_one P).2.2.1 (fun d => min 1 (max 0 (2 * d - 1)))
+      (fun j => (1 / 2 : ℝ) ^ j) (fun _ => by positivity) (by norm_num) i
+      (fun w => copyFraction (P.copyCutoff ((2 : ℝ)⁻¹ ^ 1)) P.m w 0)
+      (full (α := Unit)) (full (α := Bool)) full hit (denseLaws _ _ _ (by positivity))
+      x y (by simp [full])
+
+-- Negative correction is sampled with its OWN terminal usage slice, not the midpoint factor.
+example (P : HierarchyParams 2 1 1 1 0) (x y : V P 1) :
+    (𝔼 σ ∈ (univ : Finset Unit) ×ˢ (univ : Finset Bool),
+      CorrectionSampling.negativeRecipe (f := (2 : ℝ)⁻¹ ^ 1) full hit
+        (sampling P 1).atom σ x y) =
+      -P.correctionIter (full (α := Unit)) (full (α := Unit))
+        ((2 : ℝ)⁻¹ ^ 1) (H P 1) ((P.k - 1) + 1) x y := by
+  simpa only [full, filter_true] using (sampling P 1).expect_negativeRecipe
+    (Ya := full) (by norm_num) (invariant_one P).2.1 (invariant_one P).2.2.1
+    (fun _ _ _ => trivial) x y (by simp [full])
+
+-- The actual signed sampler on the same multi-stage hierarchy recovers D, including -E.
+example (P : HierarchyParams 2 1 1 1 0) (hkpos : 0 < P.k) (x y : V P 1) :
+    let B := denseLaws (W := V P 1) id 1 1 (by norm_num)
+    (𝔼 draw ∈ ((univ : Finset Unit) ×ˢ (univ : Finset Bool)) ×ˢ (univ : Finset Bool),
+      (sampling P 1).residualSample full hit hit 1 (sampling P 1).atom
+        (B.atom (H P 1)) (sampling P 1).atom draw x y) = D P x y := by
+  dsimp only
+  have hm := (sampling P 1).expect_residualSample
+    (denseLaws (W := V P 1) id 1 1 (by norm_num)) (sampling P 1)
+    (by norm_num) (by norm_num) (invariant_one P).2.1 (invariant_one P).2.2.1
+    (fun _ _ _ => trivial) x y (by simp [full])
+  have hk : P.k - 1 + 1 = P.k := by omega
+  simp only [full, filter_true, hk, P.correctionIter_last, id_eq, div_one, one_mul] at hm
+  rw [hm]
+  change _ = P.residual (full (α := Unit)) (full (α := Unit))
+    ((2 : ℝ)⁻¹ ^ 1) (H P 1) x y
+  rw [P.residual_eq]
+  simp only [Matrix.sub_apply, Matrix.add_apply, Matrix.mul_apply]
+  ring
+
+-- Negative and midpoint calls preserve different endpoint roles and usage slices.
+example : HierarchyTask.residualRequests (k := 0) 1 src mid dst (1 / 8) =
+    [⟨.row 1 .base, src, ⟨2, 1 / 8, [9]⟩, ⟨2, 1 / 8, [9]⟩⟩,
+     ⟨.row 1 (.correction 0), src, mid, mid⟩,
+     ⟨.row 1 .base, mid, ⟨2, 1 / 8, [9]⟩, ⟨2, 1 / 8, [9]⟩⟩,
+     ⟨.row 1 (.correction 0), src, ⟨2, 1 / 2, [9]⟩, dst⟩] := by
+  norm_num [HierarchyTask.residualRequests, src, mid, dst]
 
 end ComplexityTests.HierarchyTasks

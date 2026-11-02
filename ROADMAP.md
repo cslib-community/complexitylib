@@ -211,9 +211,13 @@ index links to canonical definitions rather than keeping a second set.
   computed decreasing global rank and nonconstant two-stage regression. Routed direct/residual
   bins now have a finite partition/true-mean client into the actual next matrix, primitive
   affine sampling instances, native copy-symbol suffix laws and whole-function role/rate/usage
-  requests with computed rank payments. Residual raw estimation, estimated routing-fraction
-  comparisons, stochastic bin preparation/access integration into the task evaluator, and the
-  complete scheduled mean-prefix bound remain open; range/true means do not establish root
+  requests with computed rank payments. Signed residual evaluation now separates the negative
+  endpoint correction from the midpoint product correction, with actual tuple-dependent sample
+  means. Bounded top-bin routing and dense preparation/normalization accept arbitrary child
+  functions, retain raw ranks, and agree with actual hierarchy bounds in a two-stage client.
+  The residual-bin phase order is local; full global stochastic preparation/access enumeration,
+  finite-accuracy ports, estimated copy/routing-fraction comparisons, and the complete scheduled
+  mean-prefix bound remain open; range/true means do not establish root
   regularity or the error recurrence. Paired raw differences, full-coordinate conditional walks, summed noise, compression, strong recursive
   induction and native logarithmic workspace/class equality remain required.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
