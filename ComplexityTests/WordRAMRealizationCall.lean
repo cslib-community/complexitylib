@@ -57,6 +57,45 @@ example (extract : ℕ → ℕ → Memory.Prog (Option (ℕ × ℕ)))
   realize
   exact h
 
+-- A small faithful dependent-index fixture pins the actual staged-call failure.
+private def indexedWords : (Σ n : ℕ, Fin n) ↪ (Fin 2 → ℕ) where
+  toFun d := ![d.1, d.2.val]
+  inj' := by
+    rintro ⟨n, i⟩ ⟨m, j⟩ h
+    have hn : n = m := congrFun h 0
+    subst m
+    have hi : i = j := Fin.ext (congrFun h 1)
+    cases hi
+    rfl
+
+private abbrev IndexedArgument := ((Σ n : ℕ, Fin n) × ℕ) × ℕ
+private abbrev indexedInput : IndexedArgument ↪ (Fin 4 → ℕ) :=
+  appendWords (appendWords indexedWords word) word
+
+-- The implicit index must be solved before its dependent argument after charged pair staging.
+example (m : {n : ℕ} → Fin n → ℕ → ℕ → Memory.Prog Unit)
+    (P : ℕ → IndexedArgument → Memory.State → Prop)
+    (hm : Realizes .exact (fun d : IndexedArgument => m d.1.1.2 d.1.2 d.2)
+      indexedInput unitWords P (fun _ _ => 0)) :
+    Realizes .exact (fun d : IndexedArgument => do
+      let a ← pure (d.1.2, d.2)
+      m d.1.1.2 a.1 a.2) indexedInput unitWords P (fun _ _ => 0) := by
+  realize
+  exact h
+
+-- Scalar staging also charges the subtraction and constant before entering the method domain.
+example (m : {n : ℕ} → Fin n → ℕ → ℕ → Memory.Prog Unit)
+    (P : ℕ → IndexedArgument → Memory.State → Prop)
+    (hm : Realizes .exact (fun d : IndexedArgument => m d.1.1.2 d.1.2 d.2)
+      indexedInput unitWords P (fun _ _ => 0)) :
+    Realizes .exact (fun d : IndexedArgument => do
+      let size ← pure (d.1.2 - 1)
+      let start ← pure 1
+      m d.1.1.2 size start) indexedInput unitWords
+      (fun w d s => 1 ≤ d.1.2 ∧ P w ((d.1.1, d.1.2 - 1), 1) s)
+      (fun _ _ => 0) := by
+  realize <;> first | exact h.1 | exact h.2 | exact (hwords 2).of_le h.1
+
 -- Input registers need not be distinct: the existing reindex rule permits aliasing.
 example (m : ℕ × ℕ → Memory.Prog ℕ) (P : ℕ → ℕ × ℕ → Memory.State → Prop)
     (hm : Realizes .exact m pairWords word P (fun _ _ => 0)) :

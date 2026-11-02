@@ -754,7 +754,14 @@ private def tryRealizeCall (ctx : Ctx) (env : Env) (d : Expr) (atoms : Array Exp
       unless ← withReducible (isDefEq args[9]! (← zeroWork args[2]!)) do
         throwError "realize: a called certificate must have absorbed local work"
       let arg ← callArgument args[2]!
-      unless ← withReducible (isDefEq (mkApp args[5]! arg) body) do
+      let called := (mkApp args[5]! arg).headBeta
+      -- Solve dependent arguments in binder order without unfolding a matching method head.
+      let matched ← if called.getAppFn == body.getAppFn &&
+          called.getAppNumArgs == body.getAppNumArgs then
+          (called.getAppArgs.zip body.getAppArgs).allM fun (a, b) => do
+            withReducible (isDefEq (← whnfR a) (← whnfR b))
+        else withReducible (isDefEq called body)
+      unless matched do
         throwError "realize: the method does not match"
       let arg ← instantiateMVars arg
       if arg.hasMVar then throwError "realize: the method argument is undetermined"
