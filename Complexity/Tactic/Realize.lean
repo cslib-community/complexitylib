@@ -918,13 +918,13 @@ elab "realize" : tactic => withMainContext do
     try simp only [true_and, and_true, and_self, Nat.add_zero, iterationSafe_true]))
   let gs ← getGoals
   let gs ← gs.flatMapM fun g => liftMetaM (splitDomain g)
-  -- A condition repeated in the same context is proved once.
+  -- A condition repeated in the same local context is proved once.
   let mut kept : Array MVarId := #[]
   for g in gs do
     let t ← instantiateMVars (← g.getType)
     let lctx := (← g.getDecl).lctx
     let dup? ← kept.findM? fun g' => do
-      return (← g'.getDecl).lctx.decls.size == lctx.decls.size &&
+      return (← g'.getDecl).lctx.getFVarIds == lctx.getFVarIds &&
         (← instantiateMVars (← g'.getType)) == t
     match dup? with
     | some g' => g.assign (mkMVar g')

@@ -31,6 +31,7 @@ absorption applied. They are the target shapes of the `realize` tactic. Glue tak
 ## Main definitions
 
 * `WordEncoding`: the word encoding `realize` uses for an intermediate answer type.
+* `blockWords`: a block as its base address and length.
 
 ## Main results
 
@@ -53,7 +54,7 @@ namespace Cslib.WordRAM.Realization
 open Cslib.DataStructure
 
 /-- The faithful word encoding `realize` uses when a bind passes an answer of type `α` to its
-continuation. Instances cover words, unit, optional words and Booleans. -/
+continuation. Instances cover words, unit, optional words, Booleans, blocks and pairs. -/
 class WordEncoding (α : Type) where
   /-- The number of words. -/
   width : ℕ
@@ -67,6 +68,18 @@ instance : WordEncoding Unit := ⟨0, (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEm
 instance : WordEncoding (Option ℕ) := ⟨2, optionWords⟩
 
 instance : WordEncoding Bool := ⟨2, boolWords⟩
+
+/-- A block is encoded by its base address and its length. -/
+def blockWords : Block ↪ (Fin 2 → ℕ) where
+  toFun b := ![b.base, b.length]
+  inj' := by
+    rintro ⟨a, b⟩ ⟨a', b'⟩ h
+    have ha := congrFun h 0
+    have hb := congrFun h 1
+    simp only [Matrix.cons_val_zero, Matrix.cons_val_one] at ha hb
+    rw [ha, hb]
+
+instance : WordEncoding Block := ⟨2, blockWords⟩
 
 /-- A pair is encoded by its two encodings, first component first. -/
 instance {α β : Type} [WordEncoding α] [WordEncoding β] : WordEncoding (α × β) :=

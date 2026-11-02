@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.WordRAM.Realization.Client.MemoryStack
+import Complexity.Computability.WordRAM.Realization.Program
 import Complexity.DataStructure.Queue.Memory
 import Complexity.Tactic.Realize
 
@@ -131,6 +132,78 @@ example : Realizes .exact sumCells pairWords pairWords
         Fits w (x.2.2 + s.mem (x.1.1 + x.2.1))) w d d.2 (0, 0) s) (fun _ _ => 0) := by
   realize
   exact h
+
+/-! ## A whole stack client, to a flat Word-RAM program
+
+The client allocates a stack, pushes and pops. `realize` certifies it, allocation included; the
+only work left is evaluating the allocation. `exists_init_program` then gives a flat program on the
+native list input whose output is the encoding of `some v`, within a constant number of steps.
+No instruction is stepped by hand. -/
+
+/-- The four layout words, for a bind that returns a layout. -/
+instance : WordEncoding Stack.Memory.Layout := ⟨4, layoutWords⟩
+
+/-- Allocate a stack of capacity `c`, push `v`, and pop. -/
+def roundTrip (d : ℕ × ℕ) : Memory.Prog (Option ℕ) := do
+  let L ← Stack.Memory.allocLayout d.1
+  Stack.Memory.push L d.2
+  Stack.Memory.pop L
+
+/-- The certificate. -/
+theorem roundTrip_realizes : Realizes .exact roundTrip pairWords optionWords
+    (fun w d s => Fits w (s.frontier + 1 + d.1)) (fun _ _ => 0) := by
+  realize
+  all_goals
+    try simp only [show (Memory.spec 0).clientResult s (Stack.Memory.allocLayout d.1) =
+        ⟨⟨s.frontier, 1⟩, ⟨s.frontier + 1, d.1⟩⟩ from rfl,
+      show (Memory.spec 0).clientState s (Stack.Memory.allocLayout d.1) =
+        ⟨clear s.mem s.frontier 1, s.frontier + 1 + d.1⟩ from rfl,
+      StateTransitionSpec.clientState, Stack.Memory.runClient_push,
+      clear_of_owns (show (Block.mk s.frontier 1).Owns s.frontier from ⟨le_rfl, by simp⟩),
+      Function.update_self] at *
+  all_goals first | exact h.of_le (by omega) | omega
+
+/-- From `State.init [c, v]`, the flat program outputs the encoding of `some v` within
+`10 C + 1` steps, for one exchange factor `C`. -/
+theorem roundTrip_program : ∃ n C : ℕ,
+    ∃ emit : ∀ {r : ℕ}, (frontier : Fin r) → (Fin 2 → Fin r) → (Fin (2 + n + 1) → Fin r) →
+      Code .exact r,
+      ∀ {r : ℕ} (frontier : Fin r) (src : Fin 2 → Fin r) (tmp : Fin (2 + n + 1) → Fin r),
+        Function.Injective src → Function.Injective tmp → (∀ i j, src i ≠ tmp j) →
+        (∀ j, tmp j ≠ frontier) → (∀ i, src i ≠ frontier) →
+        ∀ (i : Fin 2) (w c v : ℕ), 1 ≤ c → Fits w (c + 4) → Fits w v →
+          ∃ t, Executes w ((Code.seq (inputPrefix frontier (tmp (Fin.last (2 + n))) src)
+              (emit frontier src tmp)).program (tmp (Fin.castAdd (n + 1) i)))
+            (State.init [c, v]) (optionWords (some v) i) t ∧ t ≤ C * 10 + 1 := by
+  obtain ⟨n, C, emit, he⟩ := roundTrip_realizes.exists_init_program (fun d => [d.1, d.2])
+    (by intro d i; fin_cases i <;> rfl)
+  refine ⟨n, C, emit, fun frontier src tmp hsrc htmp hd hf hs i w c v hc1 hc hv => ?_⟩
+  have h3 : Fits w 3 := hc.of_le (by omega)
+  have hvalid : (Memory.spec w).ValidHistory (inputState [c, v])
+      ((Memory.spec w).clientHistory (inputState [c, v]) (roundTrip (c, v))) := by
+    change (Memory.spec w).ValidHistory (inputState [c, v])
+      [.alloc 1, .allocDirty c, .read 3, .write 4 v, .write 3 1, .read 3, .read 4, .write 3 0]
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, trivial⟩
+    · change Fits w (3 + 1)
+      exact hc.of_le (by omega)
+    · change Fits w (3 + 1 + c)
+      exact hc.of_le (by omega)
+    · change 3 < 3 + 1 + c
+      omega
+    · exact ⟨show 4 < 3 + 1 + c by omega, hv⟩
+    · exact ⟨show 3 < 3 + 1 + c by omega, h3.of_le (by omega)⟩
+    · change 3 < 3 + 1 + c
+      omega
+    · change 4 < 3 + 1 + c
+      omega
+    · exact ⟨show 3 < 3 + 1 + c by omega, fits_zero w⟩
+  obtain ⟨t, ht, hle⟩ := he frontier src tmp hsrc htmp hd hf hs i w (c, v) le_rfl h3
+    ⟨h3.of_le (by simp), fun x hx => by
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
+      rcases hx with rfl | rfl
+      exacts [hc.of_le (by omega), hv]⟩
+    (hc.of_le (by simp [inputState]; omega)) hvalid
+  exact ⟨t, ht, hle.trans (by rfl)⟩
 
 /-! ## Failure messages -/
 
