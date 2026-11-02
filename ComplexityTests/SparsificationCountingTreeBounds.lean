@@ -73,10 +73,10 @@ example : Heavy (2 ^ ·) flower2 2 {(0, true)} ∧ ¬ Sparse (2 ^ ·) flower2 :=
 -- `mem_countingLeafWords_iff_isLeafWord`) on `flower2`.
 example :
     countingLeaves (2 ^ ·) flower2 =
-      (countingLeafWords (2 ^ ·) flower2).map ((countingTreeRule (2 ^ ·)).walk flower2) ∧
+      (countingLeafWords (2 ^ ·) flower2).map ((countingTreeRule (2 ^ ·)).tree.walk flower2) ∧
     (countingLeafWords (2 ^ ·) flower2).Nodup ∧
     (∀ w, w ∈ countingLeafWords (2 ^ ·) flower2 ↔
-      (countingTreeRule (2 ^ ·)).IsLeafWord flower2 w) := by
+      (countingTreeRule (2 ^ ·)).tree.IsLeafWord flower2 w) := by
   have hθ : ∀ j, 1 ≤ j → 2 ≤ 2 ^ j := fun j hj =>
     by simpa only [pow_one] using Nat.pow_le_pow_right (by decide : 0 < 2) hj
   exact ⟨countingLeaves_eq_map_walk_countingLeafWords (2 ^ ·) flower2,
