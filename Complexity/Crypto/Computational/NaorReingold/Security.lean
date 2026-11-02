@@ -2327,8 +2327,9 @@ private theorem advantage_naorReingoldHashedIdeal_at_le (F : PrimeOrderGroupFami
                   F.encode d (B (BitString.ofList m request.2) • F.generator d)) =
               List.ofFn (hashSeed seed
                 (F.paddedGeneratorMultiple bound d (B (BitString.ofList m request.2)))) := by
-            simp only [linearHashKDF, ← hpad, Cslib.BitString.LinearHash.wordHash_eq_ofFn,
-              Cslib.BitString.ofList_ofFn, Cslib.BitString.blocksEquiv_apply, hashSeed]
+            simp only [linearHashKDF, SeededDesc.seed, ← hpad,
+              Cslib.BitString.LinearHash.wordHash_eq_ofFn, Cslib.BitString.ofList_ofFn,
+              Cslib.BitString.blocksEquiv_apply, hashSeed]
           rw [hhash]
         · simp [hq]
     rw [htable, run_eager_bitStringTable_eq_presample (hQ seed) (source.map (hashSeed seed))]

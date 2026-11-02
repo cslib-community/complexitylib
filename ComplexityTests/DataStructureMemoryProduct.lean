@@ -36,10 +36,27 @@ def layout (i : ℕ) : Stack.Memory.Layout := ⟨⟨3 * i, 1⟩, ⟨3 * i + 1, 2
 theorem valid (i : ℕ) (hi : i < 3) : (layout i).Valid 8 2 :=
   Stack.Memory.valid_allocLayout (f := 3 * i) (Fits.of_le (show Fits 8 9 by decide) (by omega))
 
-/-- Nested products need their transition function named. -/
-instance : (product (product S S) S).HasStepFn
-    (productStepFn _ _ (productStepFn S S (stack ℕ).stepFn (stack ℕ).stepFn) (stack ℕ).stepFn) :=
-  instHasStepFnProduct _ _
+/-- Nested products find their transition function by instance search, at any depth. -/
+example : (product (product S S) (product S (product S S))).HasStepFn
+    (productStepFn _ _ (productStepFn S S (stack ℕ).stepFn (stack ℕ).stepFn)
+      (productStepFn _ _ (stack ℕ).stepFn
+        (productStepFn S S (stack ℕ).stepFn (stack ℕ).stepFn))) :=
+  inferInstance
+
+/-- So do nested products of arbitrary deterministic specifications. -/
+example (D E F : StateTransitionSpec)
+    {fD : (s : D.State) → (o : D.Op) → D.State × D.Result o}
+    {fE : (s : E.State) → (o : E.Op) → E.State × E.Result o}
+    {fF : (s : F.State) → (o : F.Op) → F.State × F.Result o}
+    [D.HasStepFn fD] [E.HasStepFn fE] [F.HasStepFn fF] :
+    (product D (product E F)).HasStepFn (productStepFn _ _ fD (productStepFn _ _ fE fF)) :=
+  inferInstance
+
+/-- Totality and determinism of nested products of relational specifications. -/
+example (D E F : StateTransitionSpec) [D.Total] [E.Total] [F.Total] [D.Deterministic]
+    [E.Deterministic] [F.Deterministic] :
+    (product (product D E) F).Total ∧ (product (product D E) F).Deterministic :=
+  ⟨inferInstance, inferInstance⟩
 
 /-- Stack `i`, framed by its layout. -/
 abbrev stackAt (i : ℕ) (hi : i < 3) : Framed S 8 := Stack.Memory.framed (valid i hi)
