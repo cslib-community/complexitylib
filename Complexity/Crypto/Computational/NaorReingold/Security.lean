@@ -468,14 +468,14 @@ noncomputable def naorReingoldToDDHDistinguisher (inLen : ℕ → ℕ)
   let k ← ProbComp.sampleDyadicIndex m
   if k < m then do
     let d := input.1
-    let uvw := input.2
-    let u := uvw.1
-    let vw := uvw.2
+    let u := ddhU input.2
+    let v := ddhV input.2
+    let w := ddhW input.2
     let αs ← OracleComp.replicate (m - (k + 1)) (F.sampleNaorReingoldExp n d)
     Prod.fst <$> (OracleComp.interpret
       (ProbOracleComp.handler (fun r => StateT.lift (ProbComp.unifFin r))
         (fun request => F.naorReingoldFrontierOracle n m k d
-          u vw.1 vw.2 αs request.2))
+          u v w αs request.2))
       (adversary n (F.encDesc d))).run []
   else pure false
 
@@ -2013,10 +2013,8 @@ theorem computableInPolyTime_naorReingoldHashedWordEval {bound : F.Desc → ℕ}
     (hbound : ComputableInPolyTime bound F.encDesc encUnary) :
     ComputableInPolyTime
       (fun input : ℕ × F.Desc × List Bool × ℕ × List ℕ × List Bool =>
-        F.naorReingoldHashedWordEval input.1 bound (Prod.fst input.2) (Prod.fst (Prod.snd input.2))
-          (Prod.fst (Prod.snd (Prod.snd input.2)))
-          (Prod.fst (Prod.snd (Prod.snd (Prod.snd input.2))))
-          (Prod.snd (Prod.snd (Prod.snd (Prod.snd input.2)))))
+        F.naorReingoldHashedWordEval input.1 bound input.2.1 input.2.2.1 input.2.2.2.1
+          input.2.2.2.2.1 input.2.2.2.2.2)
       (encPair encUnary
         (encPair F.encDesc
           (encPair encBits (encPair encNat (encPair (encList encNat) encBits)))))

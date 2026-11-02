@@ -128,10 +128,7 @@ deriving DecidableEq, Fintype
 /-- A trial is its four random choices. -/
 def Trial.equivProd : Trial ℓ m ≃ Fin m × (Fin ℓ → Bool) × Bool × (Fin m → Bool) where
   toFun t := (t.pos, t.seed, t.bit, t.pad)
-  invFun p :=
-    let rest := p.2
-    let bp := rest.2
-    ⟨p.1, rest.1, bp.1, bp.2⟩
+  invFun := fun (pos, seed, bit, pad) => ⟨pos, seed, bit, pad⟩
 
 instance [NeZero m] : Nonempty (Trial ℓ m) :=
   ⟨⟨0, fun _ => false, false, fun _ => false⟩⟩

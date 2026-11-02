@@ -82,8 +82,7 @@ theorem eval_extractWordLabels (count outputBits : ℕ) (samples : List (List Bo
         (fun seed bits => LinearHash.hash (blocksEquiv (m := outputBits) (k := count) seed)
           (ofList count bits))
           samples)).map (fun result =>
-            let sd := result.2
-            (result.1, List.ofFn sd.1, List.ofFn sd.2)) := by
+            (result.1, List.ofFn (extractedSeed result), List.ofFn (extractedDigest result))) := by
   exact eval_extractMatrixLabels count outputBits id samples
 
 /-- The ideal word program agrees with the finite ideal distribution and retains the full seed. -/
@@ -92,8 +91,7 @@ theorem eval_extractWordLabelsIdeal (source : ProbComp (List Bool)) (count outpu
       (extractLabelsIdeal (Output := BitString outputBits) source count
         (ProbComp.uniform (BitString (outputBits * count)))).map
           (fun result =>
-            let sd := result.2
-            (result.1, List.ofFn sd.1, List.ofFn sd.2)) := by
+            (result.1, List.ofFn (extractedSeed result), List.ofFn (extractedDigest result))) := by
   exact eval_extractMatrixLabelsIdeal source count count outputBits
 
 /-- An ordinary word test after extraction gives the finite test required by the security
@@ -113,8 +111,8 @@ theorem isPPTOn_extractedWordTest {α : Type} {input : α ↪ List Bool} {count 
           (fun seed bits => LinearHash.hash
             (blocksEquiv (m := outputBits input.1) (k := count input.1) seed)
             (ofList (count input.1) bits)) input.2
-        let sd := result.2
-        test input.1 (result.1, List.ofFn sd.1, List.ofFn sd.2)) := by
+        test input.1
+          (result.1, List.ofFn (extractedSeed result), List.ofFn (extractedDigest result))) := by
   have hword : IsPPTOn (encPair input
       (encList (encPair encBits encBool))) encBool
       (fun input => extractWordLabels (count input.1) (outputBits input.1) input.2 >>=
@@ -150,7 +148,7 @@ theorem SamplablePair.HasGap.extract_indexed_word_labels {pair : SamplablePair} 
     (test : ℕ → ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool)
     (htest : IsPPTOn (encPair (encPair encUnary encUnary)
       (encPair (encList encBits) (encPair encBits encBits)))
-      encBool (fun input => test (Prod.fst input.1) (Prod.snd input.1) input.2)) :
+      encBool (fun input => test input.1.1 input.1.2 input.2)) :
     let count := fun n => ExtractionSchedule.count n (realization.length n) (inverseSlack n)
     Negligible (fun n => Game.advantage
       (ProbComp.eval (do
