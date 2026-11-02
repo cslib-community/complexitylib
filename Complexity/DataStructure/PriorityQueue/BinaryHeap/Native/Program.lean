@@ -198,6 +198,48 @@ theorem code_input_argument (i : Fin 4) : code.input (argument (i.castAdd 2)) = 
     have hi := i.isLt
     omega
 
+private theorem clear_nodup_aux :
+    [code.curReg, code.zeroReg, code.oneReg, code.baseReg, code.frontierReg].Nodup := by
+  change [bank 0, bank 1, bank 2, argument 3, Backend.frontier family].Nodup
+  have h01 : bank 0 ≠ bank 1 := bank_injective.ne (by decide)
+  have h02 : bank 0 ≠ bank 2 := bank_injective.ne (by decide)
+  have h12 : bank 1 ≠ bank 2 := bank_injective.ne (by decide)
+  simp only [List.nodup_cons, List.mem_cons, not_or, List.not_mem_nil, List.nodup_nil,
+    not_false_eq_true, and_true]
+  exact ⟨⟨h01, h02, bank_ne_argument 0 3, bank_ne_frontier 0⟩,
+    ⟨⟨h12, bank_ne_argument 1 3, bank_ne_frontier 1⟩,
+      ⟨⟨bank_ne_argument 2 3, bank_ne_frontier 2⟩, argument_ne_frontier 3⟩⟩⟩
+
+/-- The existing generic zero-fill routine has five distinct registers on this ABI. -/
+theorem clear_nodup :
+    [code.curReg, code.zeroReg, code.oneReg, code.baseReg, code.frontierReg].Nodup :=
+  clear_nodup_aux
+
+private theorem params_not_clear_aux (i : Fin 1) :
+    code.initParams i ∉ [code.curReg, code.zeroReg, code.oneReg] := by
+  have hi : i = 0 := Subsingleton.elim _ _
+  subst i
+  change argument 0 ∉ [bank 0, bank 1, bank 2]
+  simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+  exact ⟨(bank_ne_argument 0 0).symm, (bank_ne_argument 1 0).symm,
+    (bank_ne_argument 2 0).symm⟩
+
+/-- Generic zero-fill retains the runtime dimension parameter. -/
+theorem params_not_clear (i : Fin 1) :
+    code.initParams i ∉ [code.curReg, code.zeroReg, code.oneReg] := params_not_clear_aux i
+
+private theorem incCur_eval_aux {w : ℕ} {x : Data registers}
+    (hone : x.regs code.oneReg = 1) (hfit : Fits w (x.regs code.curReg + 1)) :
+    code.incCur.eval w x = some (x.set code.curReg (x.regs code.curReg + 1)) := by
+  dsimp only [code] at hone hfit ⊢
+  simp only [Op.eval_exactBin, BinOp.evalExact, hone, Option.bind_some, Data.put_of_fits hfit]
+
+/-- The generic clear loop's increment is the original exact addition, under its visible fit. -/
+theorem incCur_eval {w : ℕ} {x : Data registers} (hone : x.regs code.oneReg = 1)
+    (hfit : Fits w (x.regs code.curReg + 1)) :
+    code.incCur.eval w x = some (x.set code.curReg (x.regs code.curReg + 1)) :=
+  incCur_eval_aux hone hfit
+
 private theorem method_src_eq_argument (i : Fin 5) (j : Fin (certificates i).k) (a : Fin 6)
     (he : j.val = a.val) : Backend.src family (.inl i) j = argument a :=
   Backend.src_eq_of_val_eq family (.inl i) (.inl 2) he
