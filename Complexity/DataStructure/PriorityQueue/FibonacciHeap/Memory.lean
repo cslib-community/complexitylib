@@ -193,12 +193,14 @@ def framed (hn : Fits w n) (hK : Fits w K) (base : ℕ) :
         rw [habs])
     (fun {s} o hs hv b _ hb => (layout n base).mem_clientState_link _ hs.1
       (wp_methods hn hK hs.2 o hv) b fun i hi e => hb (e ▸ addr_mem_footprint hi))
+    (fun {s} o hs hv => (layout n base).frontier_clientState_link _ hs.1
+      (wp_methods hn hK hs.2 o hv))
 
 /-- The framed heap's potential reads only its footprint, as `Memory.Framed.amortized_prod`
 needs. -/
 theorem potential_local (hn : Fits w n) (hK : Fits w K) (base : ℕ) :
     (framed hn hK base).Local fun m => potential n ((layout n base).abs m) + 0 :=
-  fun _ h _ => by dsimp only; rw [layout_abs_congr h]
+  fun _ h _ _ => by dsimp only; rw [layout_abs_congr h]
 
 /-- The framed heap's amortized costs are those of `mem_amortized`. -/
 theorem framed_amortized (hn : Fits w n) (hK : Fits w K) (base : ℕ) :
