@@ -210,6 +210,10 @@ def framed (hL : L.Valid n) : Memory.Framed (AdjacencyList.spec n) w :=
       obtain ⟨-, -, -, hs'⟩ := ops_run (w := w) hL hs o hv
       change ((Memory.spec w).clientState _ (ops L o)).mem b = _
       rw [hs'])
+    (fun o hs hv => by
+      obtain ⟨-, -, -, hs'⟩ := ops_run (w := w) hL hs o hv
+      change ((Memory.spec w).clientState _ (ops L o)).frontier = _
+      rw [hs'])
 
 /-- The footprint of the arrays is their two fields. -/
 @[simp] theorem framed_footprint (hL : L.Valid n) (s : Memory.State) :
