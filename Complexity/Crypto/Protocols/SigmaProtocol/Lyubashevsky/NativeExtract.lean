@@ -94,16 +94,25 @@ theorem computableInPolyTime_decodeLyubashevskyExtractInput :
 /-- Compute `z-z′` first, then the SIGNED challenge difference `c′-c`. The unary dimensions
 control both output segments; optional responses default to zero coordinatewise. -/
 def lyubashevskyExtractList (input : LyubashevskyExtractInput) : List ℤ :=
-  ((List.range (Prod.fst input.1)).map fun i =>
-    ((Prod.snd (Prod.fst input.2)).getD []).getD i 0 -
-      ((Prod.snd (Prod.snd input.2)).getD []).getD i 0) ++
-  ((List.range (Prod.snd input.1)).map fun i =>
-    (if (Prod.fst (Prod.snd input.2)).getD i false then (1 : ℤ) else 0) -
-      (if (Prod.fst (Prod.fst input.2)).getD i false then (1 : ℤ) else 0))
+  let ((m, k), (c, z), (c', z')) := input
+  ((List.range m).map fun i =>
+    (z.getD []).getD i 0 - (z'.getD []).getD i 0) ++
+  ((List.range k).map fun i =>
+    (if c'.getD i false then (1 : ℤ) else 0) -
+      (if c.getD i false then (1 : ℤ) else 0))
+
+/-- First unary dimension `m` (response dimension) of a `LyubashevskyExtractInput`. -/
+abbrev extractDimM (input : LyubashevskyExtractInput) : ℕ :=
+  input.1.1
+
+/-- Second unary dimension `k` (challenge dimension) of a `LyubashevskyExtractInput`. -/
+abbrev extractDimK (input : LyubashevskyExtractInput) : ℕ :=
+  input.1.2
 
 /-- Extraction always writes the two declared segments, even on malformed-length inputs. -/
 @[simp] theorem length_lyubashevskyExtractList (input : LyubashevskyExtractInput) :
-    (lyubashevskyExtractList input).length = Prod.fst input.1 + Prod.snd input.1 := by
+    (lyubashevskyExtractList input).length = extractDimM input + extractDimK input := by
+  rcases input with ⟨⟨m, k⟩, ⟨c, z⟩, ⟨c', z'⟩⟩
   simp [lyubashevskyExtractList]
 
 /-- One native extractor handles runtime dimensions and all binary integer magnitudes. -/
@@ -112,7 +121,15 @@ theorem computableInPolyTime_lyubashevskyExtractList :
     ComputableInPolyTime lyubashevskyExtractList encLyubashevskyExtractInput
       (encList encIntBin) := by
   apply ComputableInPolyTime.of_tidy
-  unfold lyubashevskyExtractList encLyubashevskyExtractInput
+  change ComputableTidilyInPolyTime
+    (fun input : LyubashevskyExtractInput =>
+      ((List.range input.1.1).map fun i =>
+        (input.2.1.2.getD []).getD i 0 - (input.2.2.2.getD []).getD i 0) ++
+      ((List.range input.1.2).map fun i =>
+        (if input.2.2.1.getD i false then (1 : ℤ) else 0) -
+          (if input.2.1.1.getD i false then (1 : ℤ) else 0)))
+    encLyubashevskyExtractInput (encList encIntBin)
+  unfold encLyubashevskyExtractInput
   fun_prop
 
 private theorem getD_optional_ofFn {m : ℕ} (z : Option (Fin m → ℤ)) (i : Fin m) :

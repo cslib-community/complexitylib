@@ -113,7 +113,7 @@ theorem INDCPAOf.indcpaOn {Msg : Type} {encMsg : Msg ↪ List Bool}
     {encrypt : ℕ → List Bool → Msg → ProbComp (List Bool)}
     (h : INDCPAOf encMsg keyGen encrypt)
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun (n, pk, m₀, m₁) => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool) :
     INDCPAOn valid encMsg keyGen encrypt := by
   intro adversary hadversary

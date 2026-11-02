@@ -148,7 +148,8 @@ and applying `finish` at `.done`. -/
     .message (sender := p.1) (receiver := p.2)
       (fun st => st.1 p.2)
       ((msgStepsWith finish L).mapState fun i st =>
-        (Prod.fst st.1, Prod.snd st.1 + extractMsg p i st.2))
+        let (toSend, acc) := st.1
+        (toSend, acc + extractMsg p i st.2))
 
 /-- All-to-all message exchange: party `s` sends `toSend s r` to party `r`, and party `i` applies
 `finish i` to the vector `fun s => toSend s i` of received messages. -/
@@ -642,13 +643,13 @@ applying `finish` at `.done`. -/
     (r : Fin m) (finish : (i : Fin m) → State i → Bool → Out i) :
     (S : List (Fin m)) →
       Steps (fun i => State i × Bool × Bool) Out (gatherSchedule m (spec := spec) r S)
-  | [] => .done (fun i st => finish i st.1 (Prod.snd st.2))
+  | [] => .done (fun i (state, _, acc) => finish i state acc)
   | s :: S =>
     .message (sender := s) (receiver := r)
-      (fun st => Prod.fst st.2)
+      (fun (_, myShare, _) => myShare)
       ((gatherStepsWith r finish S).mapState fun i st =>
-        (Prod.fst st.1, Prod.fst (Prod.snd st.1),
-          Prod.snd (Prod.snd st.1) + extractBitFor s r i st.2))
+        let (state, myShare, acc) := st.1
+        (state, myShare, acc + extractBitFor s r i st.2))
 
 /-- Sum of party `i`'s received bits along `gatherSchedule m r S`. -/
 @[expose] def sumGatherBits {m : ℕ} {spec : MultiOracleSpec} (r : Fin m) :

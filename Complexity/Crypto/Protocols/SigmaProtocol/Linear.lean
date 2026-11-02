@@ -217,28 +217,36 @@ noncomputable def chaumPedersen (g : G) : SigmaProtocol (ZMod q) (G × G × G) (
   linear (fun s => (LinearMap.toSpanSingleton (ZMod q) G g).prod
     (LinearMap.toSpanSingleton (ZMod q) G s.1)) Prod.snd ι
 
+/-- First group element `v` of a Chaum–Pedersen statement `(u, v, w)`. -/
+abbrev cpStatementV {G : Type*} (s : G × G × G) : G :=
+  s.2.1
+
+/-- Second group element `w` of a Chaum–Pedersen statement `(u, v, w)`. -/
+abbrev cpStatementW {G : Type*} (s : G × G × G) : G :=
+  s.2.2
+
 /-- The Chaum–Pedersen verification equations `z • g = t₁ + c • v` and `z • u = t₂ + c • w`
 ([BonehShoup2023], Section 19.5.2). -/
 @[simp] theorem chaumPedersen_accepts_iff {s : G × G × G} {t : G × G} {c : C} {z : ZMod q} :
     (chaumPedersen ι g).Accepts s t c z ↔
-      z • g = t.1 + ι c • Prod.fst s.2 ∧ z • s.1 = t.2 + ι c • Prod.snd s.2 := by
+      z • g = t.1 + ι c • cpStatementV s ∧ z • s.1 = t.2 + ι c • cpStatementW s := by
   simp [chaumPedersen, Prod.ext_iff]
 
 /-- Theorem 19.10 of [BonehShoup2023]: completeness. -/
 theorem chaumPedersen_complete :
-    (chaumPedersen ι g).Complete fun β s => β • g = Prod.fst s.2 ∧ β • s.1 = Prod.snd s.2 :=
+    (chaumPedersen ι g).Complete fun β (u, v, w) => β • g = v ∧ β • u = w :=
   (linear_complete _ _ ι).mono fun _ _ h => by simpa [Prod.ext_iff] using h
 
 /-- Theorem 19.10 of [BonehShoup2023]: special soundness. -/
 theorem chaumPedersen_specialSoundness [Fact q.Prime] :
     (chaumPedersen ι g).SpecialSoundness
-      (fun β s => β • g = Prod.fst s.2 ∧ β • s.1 = Prod.snd s.2)
+      (fun β (u, v, w) => β • g = v ∧ β • u = w)
       (linearExtract ι) :=
   (linear_specialSoundness _ _ ι).mono fun _ _ h => by simpa [Prod.ext_iff] using h
 
 /-- Theorem 19.10 of [BonehShoup2023]: special honest-verifier zero knowledge. -/
 theorem chaumPedersen_specialHVZK :
-    (chaumPedersen ι g).SpecialHVZK (fun β s => β • g = Prod.fst s.2 ∧ β • s.1 = Prod.snd s.2)
+    (chaumPedersen ι g).SpecialHVZK (fun β (u, v, w) => β • g = v ∧ β • u = w)
       (linearSimulate (fun s => (LinearMap.toSpanSingleton (ZMod q) G g).prod
         (LinearMap.toSpanSingleton (ZMod q) G s.1)) Prod.snd ι) :=
   (linear_specialHVZK _ _ ι).mono fun _ _ h => by simpa [Prod.ext_iff] using h

@@ -80,7 +80,7 @@ are certified on their complete inputs. -/
 theorem isPPT_keyDistinguisher
     {encrypt : ℕ → List Bool → Bool → ProbComp (List Bool)} {adversary : Adversary}
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun input => encrypt input.1 input.2.1 input.2.2))
+      (fun (n, pk, m) => encrypt n pk m))
     (hadversary : adversary.IsPPT) : IsPPT encBool (keyDistinguisher encrypt adversary) := by
   let choiceEncoding := encPair (encPair encBool encBool) encBits
   let baseEncoding := encPair encUnary encBits

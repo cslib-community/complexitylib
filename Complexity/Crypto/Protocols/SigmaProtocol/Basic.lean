@@ -188,11 +188,19 @@ theorem conversation_eq_bind_transcript [Fintype C] [Nonempty C] (x : X) (y : Y)
 
 variable {P}
 
+/-- Challenge component `c` of a conversation transcript `(t, c, z)`. -/
+abbrev convChallenge {T C Z : Type*} (tcz : T × C × Z) : C :=
+  tcz.2.1
+
+/-- Response component `z` of a conversation transcript `(t, c, z)`. -/
+abbrev convResponse {T C Z : Type*} (tcz : T × C × Z) : Z :=
+  tcz.2.2
+
 /-- Every honest conversation is accepting: the verifier always accepts the honest prover. -/
 theorem Complete.accepts_of_mem_support_conversation [Fintype C] [Nonempty C]
     (h : P.Complete R) {x : X} {y : Y} (hxy : R x y) {tcz : T × C × Z}
     (htcz : tcz ∈ (P.conversation x y).support) :
-    P.Accepts y tcz.1 (Prod.fst tcz.2) (Prod.snd tcz.2) := by
+    P.Accepts y tcz.1 (convChallenge tcz) (convResponse tcz) := by
   rw [conversation_eq_bind_transcript] at htcz
   simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff,
     PMF.mem_support_pure_iff] at htcz
