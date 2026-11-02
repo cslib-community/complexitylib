@@ -8,6 +8,15 @@
 
 A client charge sums explicitly chosen operation weights. Pure Lean work in the continuation is uncharged. An abstract client bound therefore measures interaction with the supplied backend, not total machine time. Refinement packages an invariant, abstract-state map and lower-level method programs; composition transports correctness and cost bounds. [Complexity/DataStructure/StateTransition/Amortized.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/DataStructure/StateTransition/Amortized.lean) adds potential-based telescoping.
 
+For deterministic methods, import `Complexity.DataStructure.StateTransition.LinkCongr` to
+use `StateTransitionSpec.runClient_link_congr` when replacing methods under an adaptive client.
+Its premise equates each complete method run at every starting state and operation: answer,
+final state and lower-operation history. The linked client retains all three. This transports
+semantics; native call and argument-staging costs need their own realization. Open the complete
+[linked-run clients](../../ComplexityTests/StateTransitionLinkCongr.lean): `linked_write_read`
+preserves changed memory and history, while an extra-read counterexample shows why equal
+answers and final states alone do not preserve the charged history.
+
 ## Randomized and oblivious interfaces
 
 [RandomizedSpec](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/DataStructure/StateTransition/Randomized.lean#L98) supplies a PMF stateful handler. Support induces the relational specification, while `withCoins` allows clients their own samples. `RandomizedRefinement` requires the exact output/state law, not just a relation between possible outcomes. `run_link` transports this law through adaptive clients. `ExpectedAmortized.client` and `.comp` telescope expected lower-level costs plus potential and compose refinement layers. Until-bad rules transport explicit error bounds when exact equality is unavailable.
