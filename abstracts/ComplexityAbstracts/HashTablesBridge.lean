@@ -46,10 +46,10 @@ open ComplexityAbstracts.HashFamiliesBridge.HFPresentation (WordBounded Unchange
 `HashTablesAbstract.lean`. -/
 structure DictPresentation (S : Presentation) where
   DictOp : ℕ → Type
-  get {U : ℕ} : Fin U → DictOp U
+  query {U : ℕ} : Fin U → DictOp U
   insert {U : ℕ} : Fin U → ℕ → DictOp U
   dictOp_induction {U : ℕ} {motive : DictOp U → Prop} :
-    (∀ u, motive (get u)) → (∀ u v, motive (insert u v)) → ∀ o, motive o
+    (∀ u, motive (query u)) → (∀ u v, motive (insert u v)) → ∀ o, motive o
   stepDict {U : ℕ} : (Fin U → Option ℕ) → DictOp U → (Fin U → Option ℕ)
   validDictOp {U : ℕ} : ℕ → ℕ → (Fin U → Option ℕ) → DictOp U → Prop
   ValidDictHistory {U : ℕ} : ℕ → ℕ → (Fin U → Option ℕ) → List (DictOp U) → Prop
@@ -99,7 +99,7 @@ def ExecProgramDist {r : ℕ} (w : ℕ) (p : List (S.Instr r)) (outReg : Fin r)
 
 /-- Translate a library dictionary operation `Dictionary.Op U` to `P.DictOp U`. -/
 def dictOpOf {U : ℕ} : Dictionary.Op U → P.DictOp U
-  | .get u => P.get u
+  | .query u => P.query u
   | .insert u v => P.insert u v
 
 /-- Translate a library `Data r` state to `P.RegMem r`. -/
@@ -122,12 +122,12 @@ end DictPresentation
 
 /-- Equational specification for a dictionary presentation `P : DictPresentation S`. -/
 structure DictLaws (S : Presentation) (P : DictPresentation S) : Prop where
-  stepDict_get : ∀ {U : ℕ} (s : Fin U → Option ℕ) (u : Fin U),
-    P.stepDict s (P.get u) = s
+  stepDict_query : ∀ {U : ℕ} (s : Fin U → Option ℕ) (u : Fin U),
+    P.stepDict s (P.query u) = s
   stepDict_insert : ∀ {U : ℕ} (s : Fin U → Option ℕ) (u : Fin U) (v : ℕ),
     P.stepDict s (P.insert u v) = Function.update s u (some v)
-  validDictOp_get : ∀ {U : ℕ} (V n_max : ℕ) (s : Fin U → Option ℕ) (u : Fin U),
-    P.validDictOp V n_max s (P.get u) ↔ True
+  validDictOp_query : ∀ {U : ℕ} (V n_max : ℕ) (s : Fin U → Option ℕ) (u : Fin U),
+    P.validDictOp V n_max s (P.query u) ↔ True
   validDictOp_insert : ∀ {U : ℕ} (V n_max : ℕ) (s : Fin U → Option ℕ) (u : Fin U) (v : ℕ),
     P.validDictOp V n_max s (P.insert u v) ↔
       ((Finset.univ.filter fun u' => (s u').isSome).card < n_max ∨ (s u).isSome) ∧ v < V
@@ -151,9 +151,9 @@ structure DictLaws (S : Presentation) (P : DictPresentation S) : Prop where
     P.csMem (P.coupledState θ reg mem) = mem
   coupledState_eta : ∀ {Seed : Type} {r : ℕ} (p : P.CoupledState Seed r),
     P.coupledState (P.csSeed p) (P.csReg p) (P.csMem p) = p
-  prepareDictRegs_get : ∀ {r U : ℕ} (clearScratch : Bool) (baseReg tagReg keyReg valReg : Fin r)
+  prepareDictRegs_query : ∀ {r U : ℕ} (clearScratch : Bool) (baseReg tagReg keyReg valReg : Fin r)
     (u : Fin U) (reg : Fin r → ℕ) (i : Fin r),
-    P.prepareDictRegs clearScratch baseReg tagReg keyReg valReg (P.get u) reg i =
+    P.prepareDictRegs clearScratch baseReg tagReg keyReg valReg (P.query u) reg i =
       if i = tagReg then 0
       else if i = keyReg then u.val
       else if i = valReg then 0
@@ -167,9 +167,9 @@ structure DictLaws (S : Presentation) (P : DictPresentation S) : Prop where
       else if i = valReg then v
       else if clearScratch && decide (i ≠ baseReg) then 0
       else reg i
-  opOutputCorrect_get : ∀ {r U : ℕ} (outReg : Fin r) (s : Fin U → Option ℕ)
+  opOutputCorrect_query : ∀ {r U : ℕ} (outReg : Fin r) (s : Fin U → Option ℕ)
     (u : Fin U) (reg : Fin r → ℕ),
-    P.OpOutputCorrect outReg s (P.get u) reg ↔
+    P.OpOutputCorrect outReg s (P.query u) reg ↔
       (if reg outReg = 0 then none else some (reg outReg - 1)) = s u
   opOutputCorrect_insert : ∀ {r U : ℕ} (outReg : Fin r) (s : Fin U → Option ℕ)
     (u : Fin U) (v : ℕ) (reg : Fin r → ℕ),
@@ -210,7 +210,7 @@ private theorem pmf_le_map_apply {α β : Type*} (ν : PMF α) (f : α → β) (
 private theorem dictOpOf_surjective {S : Presentation} (P : DictPresentation S) {U : ℕ}
     (o : P.DictOp U) : ∃ o_lib : Dictionary.Op U, P.dictOpOf o_lib = o :=
   P.dictOp_induction (motive := fun o => ∃ o_lib, P.dictOpOf o_lib = o)
-    (fun u => ⟨.get u, rfl⟩) (fun u v => ⟨.insert u v, rfl⟩) o
+    (fun u => ⟨.query u, rfl⟩) (fun u v => ⟨.insert u v, rfl⟩) o
 
 private theorem ops_surjective {S : Presentation} (P : DictPresentation S) {U : ℕ}
     (ops : List (P.DictOp U)) :
@@ -227,14 +227,14 @@ private theorem stepDict_dictOpOf {S : Presentation} {P : DictPresentation S} (h
     {U V n_max : ℕ} (s : Fin U → Option ℕ) (o : Dictionary.Op U) :
     P.stepDict s (P.dictOpOf o) = ((Dictionary.spec U V n_max).stepFn s o).1 := by
   cases o with
-  | get u => exact hP.stepDict_get s u
+  | query u => exact hP.stepDict_query s u
   | insert u v => exact hP.stepDict_insert s u v
 
 private theorem validDictOp_dictOpOf {S : Presentation} {P : DictPresentation S} (hP : DictLaws S P)
     {U V n_max : ℕ} (s : Fin U → Option ℕ) (o : Dictionary.Op U) :
     P.validDictOp V n_max s (P.dictOpOf o) ↔ (Dictionary.spec U V n_max).valid s o := by
   cases o with
-  | get u => exact hP.validDictOp_get V n_max s u
+  | query u => exact hP.validDictOp_query V n_max s u
   | insert u v => exact hP.validDictOp_insert V n_max s u v
 
 private theorem validDictHistory_map_dictOpOf {S : Presentation} {P : DictPresentation S}
@@ -547,9 +547,9 @@ theorem chainedHashing (S : Presentation) (hS : Laws S)
         (fun o d => ?_) (fun s o regs hdec => ?_) hex_steps
       · funext i
         cases o with
-        | get u =>
+        | query u =>
           dsimp only [DictPresentation.dictOpOf]
-          rw [hP.prepareDictRegs_get]
+          rw [hP.prepareDictRegs_query]
           change (if decide (i ≠ ⟨5, by decide⟩) then
             if i = ⟨7, by decide⟩ then 0 else if i = ⟨8, by decide⟩ then u.val else 0
           else d.regs i) = _
@@ -564,9 +564,9 @@ theorem chainedHashing (S : Presentation) (hS : Laws S)
           else d.regs i) = _
           fin_cases i <;> rfl
       · cases o with
-        | get u =>
+        | query u =>
           dsimp only [DictPresentation.dictOpOf]
-          rw [hP.opOutputCorrect_get]
+          rw [hP.opOutputCorrect_query]
           change (if regs ⟨10, by decide⟩ = 0 then some none
             else some (some (regs ⟨10, by decide⟩ - 1))) = some (s u) at hdec
           split_ifs at hdec ⊢ with h0 <;> simp_all
@@ -806,9 +806,9 @@ theorem linearProbing (S : Presentation) (hS : Laws S)
         (fun o d => by
           funext i
           cases o with
-          | get u =>
+          | query u =>
             dsimp only [DictPresentation.dictOpOf]
-            rw [hP.prepareDictRegs_get]
+            rw [hP.prepareDictRegs_query]
             change (if decide (i = ⟨1, by decide⟩ ∨ i = ⟨22, by decide⟩ ∨ i = ⟨23, by decide⟩) then
               if i = ⟨1, by decide⟩ then u.val else 0
             else d.regs i) = _
@@ -824,9 +824,9 @@ theorem linearProbing (S : Presentation) (hS : Laws S)
             fin_cases i <;> rfl)
         (fun s o regs hdec => by
           cases o with
-          | get u =>
+          | query u =>
             dsimp only [DictPresentation.dictOpOf]
-            rw [hP.opOutputCorrect_get]
+            rw [hP.opOutputCorrect_query]
             change some (if regs ⟨2, by decide⟩ = 0 then none
               else some (regs ⟨2, by decide⟩ - 1)) = some (s u) at hdec
             exact Option.some.inj hdec
@@ -988,9 +988,9 @@ theorem uniformProbing (S : Presentation) (hS : Laws S)
         (fun o d => by
           funext i
           cases o with
-          | get u =>
+          | query u =>
             dsimp only [DictPresentation.dictOpOf]
-            rw [hP.prepareDictRegs_get]
+            rw [hP.prepareDictRegs_query]
             change (if decide (i ≠ ⟨0, by decide⟩) then
               if i = ⟨12, by decide⟩ then 0 else if i = ⟨13, by decide⟩ then u.val else 0
             else d.regs i) = _
@@ -1006,9 +1006,9 @@ theorem uniformProbing (S : Presentation) (hS : Laws S)
             fin_cases i <;> rfl)
         (fun s o regs hdec => by
           cases o with
-          | get u =>
+          | query u =>
             dsimp only [DictPresentation.dictOpOf]
-            rw [hP.opOutputCorrect_get]
+            rw [hP.opOutputCorrect_query]
             change some (if regs ⟨12, by decide⟩ = 0 then none
               else some (regs ⟨12, by decide⟩ - 1)) = some (s u) at hdec
             exact Option.some.inj hdec
@@ -1057,8 +1057,8 @@ structure CuckooPresentation where
   cuckooResampleSingleSteps : ℕ → ℕ
   cuckooInitSteps : ℕ → ℕ → ℕ
   cuckooEvalHashBound : ℕ
-  cuckooGetStepsBound : ℕ
-  cuckooGetCharge : ℕ
+  cuckooQueryStepsBound : ℕ
+  cuckooQueryCharge : ℕ
   cuckooEvictIterBound : ℕ
   cuckooInsertBaseBound : ℕ
   cuckooResampleAtBaseFactor : ℕ
@@ -1108,10 +1108,10 @@ structure CuckooLaws (K : CuckooPresentation) : Prop where
     K.cuckooEvalHashBound =
       max (((11 * 100 + 12) * 100 + 30) * K.cuckooKBound + 19)
         (K.doubleTabEvalSteps 8 64) + 4
-  cuckooGetStepsBound_def :
-    K.cuckooGetStepsBound = 2 * (K.cuckooEvalHashBound + 36) + 31
-  cuckooGetCharge_def :
-    K.cuckooGetCharge = K.cuckooGetStepsBound + 2
+  cuckooQueryStepsBound_def :
+    K.cuckooQueryStepsBound = 2 * (K.cuckooEvalHashBound + 36) + 31
+  cuckooQueryCharge_def :
+    K.cuckooQueryCharge = K.cuckooQueryStepsBound + 2
   cuckooEvictIterBound_def :
     K.cuckooEvictIterBound = 2 * (K.cuckooEvalHashBound + 54) + 59
   cuckooInsertBaseBound_def :
@@ -1245,14 +1245,14 @@ theorem cuckooEvalHashBound_eq :
   rw [hK.cuckooEvalHashBound_def, K.cuckooKBound_eq hK, hK.doubleTabEvalSteps_def]
   rfl
 
-theorem cuckooGetStepsBound_eq :
-    K.cuckooGetStepsBound = CuckooHashing.getStepsBound 4 := by
-  rw [hK.cuckooGetStepsBound_def, K.cuckooEvalHashBound_eq hK]
+theorem cuckooQueryStepsBound_eq :
+    K.cuckooQueryStepsBound = CuckooHashing.queryStepsBound 4 := by
+  rw [hK.cuckooQueryStepsBound_def, K.cuckooEvalHashBound_eq hK]
   rfl
 
-theorem cuckooGetCharge_eq :
-    K.cuckooGetCharge = CuckooHashing.getChargeBound 4 := by
-  rw [hK.cuckooGetCharge_def, K.cuckooGetStepsBound_eq hK]
+theorem cuckooQueryCharge_eq :
+    K.cuckooQueryCharge = CuckooHashing.queryChargeBound 4 := by
+  rw [hK.cuckooQueryCharge_def, K.cuckooQueryStepsBound_eq hK]
   rfl
 
 theorem cuckooEvictIterBound_eq :
@@ -1326,27 +1326,27 @@ theorem cuckooSpace_le
 hashing is at most `cuckooInsertCharge`. -/
 theorem cuckooOpCharge_le
     (DictOp : ℕ → Type)
-    (get : ∀ {U : ℕ}, Fin U → DictOp U)
+    (query : ∀ {U : ℕ}, Fin U → DictOp U)
     (insert : ∀ {U : ℕ}, Fin U → ℕ → DictOp U)
     (dictOp_induction : ∀ {U : ℕ} {motive : DictOp U → Prop},
-      (∀ u, motive (get u)) → (∀ u v, motive (insert u v)) → ∀ o, motive o)
-    (cuckooEvalHashBound' cuckooGetStepsBound' cuckooGetCharge'
+      (∀ u, motive (query u)) → (∀ u v, motive (insert u v)) → ∀ o, motive o)
+    (cuckooEvalHashBound' cuckooQueryStepsBound' cuckooQueryCharge'
       cuckooEvictIterBound' cuckooInsertBaseBound' cuckooRehashAmortizedBound'
       cuckooInsertCharge' : ℕ)
-    (hGetSteps : cuckooGetStepsBound' = 2 * (cuckooEvalHashBound' + 36) + 31)
-    (hGetCharge : cuckooGetCharge' = cuckooGetStepsBound' + 2)
+    (hQuerySteps : cuckooQueryStepsBound' = 2 * (cuckooEvalHashBound' + 36) + 31)
+    (hQueryCharge : cuckooQueryCharge' = cuckooQueryStepsBound' + 2)
     (hInsBase : cuckooInsertBaseBound' = 2 * (cuckooEvalHashBound' + 35) + 78)
     (hInsCharge : cuckooInsertCharge' =
       2 * (cuckooInsertBaseBound' + 3 + 3 * cuckooEvictIterBound' +
         4 * cuckooRehashAmortizedBound'))
     (cuckooOpCharge : ∀ {U : ℕ}, DictOp U → ℕ)
-    (hGet : ∀ {U : ℕ} (u : Fin U), cuckooOpCharge (get u) = cuckooGetCharge')
+    (hQuery : ∀ {U : ℕ} (u : Fin U), cuckooOpCharge (query u) = cuckooQueryCharge')
     (hIns : ∀ {U : ℕ} (u : Fin U) (v : ℕ), cuckooOpCharge (insert u v) = cuckooInsertCharge')
     {U : ℕ} (o : DictOp U) :
     cuckooOpCharge o ≤ cuckooInsertCharge' :=
   @dictOp_induction U (fun o => cuckooOpCharge o ≤ cuckooInsertCharge')
     (fun u => by
-      rw [hGet]
+      rw [hQuery]
       omega)
     (fun u v => by
       rw [hIns])
@@ -1355,7 +1355,7 @@ theorem cuckooOpCharge_le
 private theorem totalCost_cuckoo {S : Presentation} (P : DictPresentation S)
     (K : CuckooPresentation) (hK : CuckooLaws K)
     (cuckooOpCharge : ∀ {U : ℕ}, P.DictOp U → ℕ)
-    (hGet : ∀ {U : ℕ} (u : Fin U), cuckooOpCharge (P.get u) = K.cuckooGetCharge)
+    (hQuery : ∀ {U : ℕ} (u : Fin U), cuckooOpCharge (P.query u) = K.cuckooQueryCharge)
     (hIns : ∀ {U : ℕ} (u : Fin U) (v : ℕ), cuckooOpCharge (P.insert u v) = K.cuckooInsertCharge)
     {U V n_max : ℕ} (s : Dictionary.State U) (ops : List (Dictionary.Op U)) :
     (Dictionary.spec U V n_max).totalCost (CuckooHashing.expectedOpCharge 4) s ops =
@@ -1370,9 +1370,9 @@ private theorem totalCost_cuckoo {S : Presentation} (P : DictPresentation S)
     rw [ih]
     congr 1
     cases o with
-    | get u =>
+    | query u =>
       dsimp only [CuckooHashing.expectedOpCharge, DictPresentation.dictOpOf]
-      rw [hGet, K.cuckooGetCharge_eq hK]
+      rw [hQuery, K.cuckooQueryCharge_eq hK]
     | insert u v =>
       dsimp only [CuckooHashing.expectedOpCharge, DictPresentation.dictOpOf]
       rw [hIns, K.cuckooInsertCharge_eq hK]
@@ -1380,7 +1380,7 @@ private theorem totalCost_cuckoo {S : Presentation} (P : DictPresentation S)
 private theorem sum_map_cuckooOpCharge_le {S : Presentation} (P : DictPresentation S)
     (K : CuckooPresentation) (hK : CuckooLaws K)
     (cuckooOpCharge : ∀ {U : ℕ}, P.DictOp U → ℕ)
-    (hGet : ∀ {U : ℕ} (u : Fin U), cuckooOpCharge (P.get u) = K.cuckooGetCharge)
+    (hQuery : ∀ {U : ℕ} (u : Fin U), cuckooOpCharge (P.query u) = K.cuckooQueryCharge)
     (hIns : ∀ {U : ℕ} (u : Fin U) (v : ℕ), cuckooOpCharge (P.insert u v) = K.cuckooInsertCharge)
     {U : ℕ} (ops : List (P.DictOp U)) :
     (ops.map cuckooOpCharge).sum ≤ ops.length * K.cuckooInsertCharge := by
@@ -1388,13 +1388,13 @@ private theorem sum_map_cuckooOpCharge_le {S : Presentation} (P : DictPresentati
   | nil => simp
   | cons o os ih =>
     have hle : cuckooOpCharge o ≤ K.cuckooInsertCharge :=
-      cuckooOpCharge_le P.DictOp P.get P.insert P.dictOp_induction
-        K.cuckooEvalHashBound K.cuckooGetStepsBound K.cuckooGetCharge
+      cuckooOpCharge_le P.DictOp P.query P.insert P.dictOp_induction
+        K.cuckooEvalHashBound K.cuckooQueryStepsBound K.cuckooQueryCharge
         K.cuckooEvictIterBound K.cuckooInsertBaseBound K.cuckooRehashAmortizedBound
         K.cuckooInsertCharge
-        hK.cuckooGetStepsBound_def hK.cuckooGetCharge_def
+        hK.cuckooQueryStepsBound_def hK.cuckooQueryCharge_def
         hK.cuckooInsertBaseBound_def hK.cuckooInsertCharge_def
-        cuckooOpCharge hGet hIns o
+        cuckooOpCharge hQuery hIns o
     simp only [List.map_cons, List.sum_cons, List.length_cons]
     calc cuckooOpCharge o + (os.map cuckooOpCharge).sum
       _ ≤ K.cuckooInsertCharge + os.length * K.cuckooInsertCharge := Nat.add_le_add hle ih
@@ -1530,7 +1530,7 @@ theorem cuckooHashing (S : Presentation) (hS : Laws S)
     (cuckooSpaceFactor' : ℕ)
     (cuckooResampleSingleSteps' : ℕ → ℕ)
     (cuckooInitSteps' : ℕ → ℕ → ℕ)
-    (cuckooEvalHashBound' cuckooGetStepsBound' cuckooGetCharge'
+    (cuckooEvalHashBound' cuckooQueryStepsBound' cuckooQueryCharge'
       cuckooEvictIterBound' cuckooInsertBaseBound' cuckooResampleAtBaseFactor'
       cuckooRehashAmortizedBound' cuckooInsertCharge' : ℕ)
     (hRegime : regimeThreshold' = 2 ^ 320000)
@@ -1563,8 +1563,8 @@ theorem cuckooHashing (S : Presentation) (hS : Laws S)
     (hEvalBound : cuckooEvalHashBound' =
       max (((11 * 100 + 12) * 100 + 30) * cuckooKBound' + 19)
         (doubleTabEvalSteps' 8 64) + 4)
-    (hGetSteps : cuckooGetStepsBound' = 2 * (cuckooEvalHashBound' + 36) + 31)
-    (hGetCharge : cuckooGetCharge' = cuckooGetStepsBound' + 2)
+    (hQuerySteps : cuckooQueryStepsBound' = 2 * (cuckooEvalHashBound' + 36) + 31)
+    (hQueryCharge : cuckooQueryCharge' = cuckooQueryStepsBound' + 2)
     (hEvictIter : cuckooEvictIterBound' = 2 * (cuckooEvalHashBound' + 54) + 59)
     (hInsBase : cuckooInsertBaseBound' = 2 * (cuckooEvalHashBound' + 35) + 78)
     (hResFactor : cuckooResampleAtBaseFactor' =
@@ -1575,7 +1575,7 @@ theorem cuckooHashing (S : Presentation) (hS : Laws S)
       2 * (cuckooInsertBaseBound' + 3 + 3 * cuckooEvictIterBound' +
         4 * cuckooRehashAmortizedBound'))
     (cuckooOpCharge : ∀ {U : ℕ}, P.DictOp U → ℕ)
-    (hGet : ∀ {U : ℕ} (u : Fin U), cuckooOpCharge (P.get u) = cuckooGetCharge')
+    (hQuery : ∀ {U : ℕ} (u : Fin U), cuckooOpCharge (P.query u) = cuckooQueryCharge')
     (hIns : ∀ {U : ℕ} (u : Fin U) (v : ℕ), cuckooOpCharge (P.insert u v) = cuckooInsertCharge') :
     ∀ (n_max : ℕ),
       ∃ (p_init p_op : List (S.Instr 19)),
@@ -1617,11 +1617,11 @@ theorem cuckooHashing (S : Presentation) (hS : Laws S)
       doubleTabSpace', doubleTabResampleSteps', doubleTabEvalSteps', cuckooMaxEvictions',
       cuckooK', cuckooKBound', cuckooSingleHashSpace', cuckooHashPairSpace', cuckooSpace',
       cuckooSpaceFactor', cuckooResampleSingleSteps', cuckooInitSteps', cuckooEvalHashBound',
-      cuckooGetStepsBound', cuckooGetCharge', cuckooEvictIterBound', cuckooInsertBaseBound',
+      cuckooQueryStepsBound', cuckooQueryCharge', cuckooEvictIterBound', cuckooInsertBaseBound',
       cuckooResampleAtBaseFactor', cuckooRehashAmortizedBound', cuckooInsertCharge'⟩
   have hK : CuckooLaws K :=
     ⟨hRegime, hChar, hBits, hSize, hKW, hKWInit, hDT, hDTRes, hDTEval, hEv, hCk, hKB,
-      hSingle, hPair, hSpace, hFactor, hResSingle, hInit, hEvalBound, hGetSteps, hGetCharge,
+      hSingle, hPair, hSpace, hFactor, hResSingle, hInit, hEvalBound, hQuerySteps, hQueryCharge,
       hEvictIter, hInsBase, hResFactor, hRehashBound, hInsCharge⟩
   intro n_max
   let Sub := CuckooHashing.cuckooCode 4 n_max
@@ -1664,7 +1664,7 @@ theorem cuckooHashing (S : Presentation) (hS : Laws S)
     have hbound : (K.cuckooInitSteps n_max U : ℝ≥0∞) + T_ops ≤
         ((K.cuckooInitSteps n_max U +
           ((ops_lib.map P.dictOpOf).map cuckooOpCharge).sum : ℕ) : ℝ≥0∞) := by
-      rw [hinit_c, totalCost_cuckoo P K hK cuckooOpCharge hGet hIns, ← Nat.cast_add] at hamort
+      rw [hinit_c, totalCost_cuckoo P K hK cuckooOpCharge hQuery hIns, ← Nat.cast_add] at hamort
       exact hamort
     refine ⟨ν_final.map (P.coupledStateOf (r := 19)), T_ops, ?_, ?_, ?_⟩
     · rw [hSpace_eq]
@@ -1673,9 +1673,9 @@ theorem cuckooHashing (S : Presentation) (hS : Laws S)
         (fun o d => by
           funext i
           cases o with
-          | get u =>
+          | query u =>
             dsimp only [DictPresentation.dictOpOf]
-            rw [hP.prepareDictRegs_get]
+            rw [hP.prepareDictRegs_query]
             change (if decide (0 < i.val) then
               if i = ⟨2, by decide⟩ then 0 else if i = ⟨3, by decide⟩ then u.val else 0
             else d.regs i) = _
@@ -1691,9 +1691,9 @@ theorem cuckooHashing (S : Presentation) (hS : Laws S)
             fin_cases i <;> rfl)
         (fun s o regs hdec => by
           cases o with
-          | get u =>
+          | query u =>
             dsimp only [DictPresentation.dictOpOf]
-            rw [hP.opOutputCorrect_get, ← decodeOptionNat_eq_ite]
+            rw [hP.opOutputCorrect_query, ← decodeOptionNat_eq_ite]
             change some (CuckooHashing.decodeOptionNat (regs ⟨2, by decide⟩)) = some (s u) at hdec
             exact Option.some.inj hdec
           | insert u v =>
@@ -1704,6 +1704,6 @@ theorem cuckooHashing (S : Presentation) (hS : Laws S)
     · exact hbound
     · refine hbound.trans ?_
       exact Nat.cast_le.mpr (Nat.add_le_add_left
-        (sum_map_cuckooOpCharge_le P K hK cuckooOpCharge hGet hIns _) _)
+        (sum_map_cuckooOpCharge_le P K hK cuckooOpCharge hQuery hIns _) _)
 
 end ComplexityAbstracts.HashTablesBridge

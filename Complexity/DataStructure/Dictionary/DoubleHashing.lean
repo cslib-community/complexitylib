@@ -261,7 +261,7 @@ theorem orderedTableRep_runTableFrom {U V n_max m : ℕ} (hm : 0 < m) (hcap : n_
     have hs' : (Dictionary.dom ((Dictionary.spec U V n_max).stepFn s o).1).card ≤ n_max :=
       Dictionary.card_dom_step_le_of_valid hs hvh.1
     cases o with
-    | get u =>
+    | query u =>
       exact ih hrep hs' hvh.2
     | insert u v =>
       have hO : (otherOccupiedSlots T u).card < m :=
