@@ -317,7 +317,7 @@ noncomputable def eufCmaGame (M : MACScheme) (adversary : Forger) (n : ℕ) :
     ProbComp Bool := do
   let sk ← M.keyGen n
   let out ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
       (M.signingOracle sk)) (adversary n [])).run []
   let (msg, tag) := out.1
   return (msg.length == M.msgLen n) && !out.2.contains msg &&
@@ -342,7 +342,7 @@ theorem isPPTOn_eufCmaGame (M : MACScheme) {adversary : Forger}
       (encPair (encPair encBits encBits) (encList encBits))
       (fun caller : ℕ × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
             (M.signingOracle caller.2)) (adversary caller.1 [])).run []) := by
     apply hadversary.run_interpret_preprocess
       (prepare := fun caller : ℕ × List Bool => (caller.1, ([] : List Bool)))
@@ -422,7 +422,7 @@ noncomputable def eufOneTimeGame (M : MACScheme) (adversary : Forger) (n : ℕ) 
     ProbComp Bool := do
   let sk ← M.keyGen n
   let out ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
       (M.oneTimeSigningOracle sk)) (adversary n [])).run []
   let (msg, tag) := out.1
   return (msg.length == M.msgLen n) && !out.2.contains msg &&
@@ -437,7 +437,7 @@ theorem isPPTOn_run_oneTimeSigningOracle (M : MACScheme) {adversary : Forger}
       (encPair (encPair encBits encBits) (encList encBits))
       (fun caller : ℕ × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
             (M.oneTimeSigningOracle caller.2)) (adversary caller.1 [])).run []) := by
   obtain ⟨c, d, hlen⟩ := M.sign_ppt.length_le
   have hhandler : IsPPTOn
@@ -524,15 +524,15 @@ private theorem run_limitToOneQuery_eq_oneTimeSigningOracle (M : MACScheme)
       tag.length ≤ bound n msg.length)
     (prog : WordOracleComp Unit (List Bool × List Bool)) :
     ProbComp.eval (Prod.map Prod.fst id <$> ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (M.signingOracle sk))
       ((OracleComp.interpret
-        (ProbOracleComp.handler
+        (OracleComp.sumHandler
           (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
           (SignatureScheme.oneTimeFilterHandler bound (n, [])))
         prog).run false)).run [])) =
     ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (M.oneTimeSigningOracle sk)) prog).run []) := by
   rw [ProbComp.eval_map, ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret,
     ProbOracleComp.run_interpret_run_interpret, PMF.map_comp]
@@ -541,7 +541,7 @@ private theorem run_limitToOneQuery_eq_oneTimeSigningOracle (M : MACScheme)
     (oracle := fun q s => ProbComp.eval (M.oneTimeSigningOracle sk q s))
     (oracle' := fun q (state : Bool × List (List Bool)) =>
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
+        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
           (fun q s => ProbComp.eval (M.signingOracle sk q s)))
         ((SignatureScheme.oneTimeFilterHandler bound (n, []) q).run state.1)).run state.2).map
           (fun result => (result.1.1, result.1.2, result.2)))
@@ -601,14 +601,14 @@ theorem EUFCMA.oneTimeEUFCMA {M : MACScheme} (h : M.EUFCMA) : M.OneTimeEUFCMA :=
   have hrun := run_limitToOneQuery_eq_oneTimeSigningOracle M bound n sk htagBound
     (adversary n [])
   have hmap : ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (M.signingOracle sk))
       (SignatureScheme.limitToOneQuery bound adversary n [])).run []) =
     Prod.map Prod.fst id <$> ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (M.signingOracle sk))
       ((OracleComp.interpret
-        (ProbOracleComp.handler
+        (OracleComp.sumHandler
           (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
           (SignatureScheme.oneTimeFilterHandler bound (n, [])))
         (adversary n [])).run false)).run []) := by
@@ -640,7 +640,7 @@ noncomputable def sufCmaGame (M : MACScheme) (adversary : Forger) (n : ℕ) :
     ProbComp Bool := do
   let sk ← M.keyGen n
   let out ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
       (M.signingPairOracle sk)) (adversary n [])).run []
   let (msg, tag) := out.1
   return (msg.length == M.msgLen n) && !out.2.contains out.1 &&
@@ -655,7 +655,7 @@ theorem isPPTOn_run_signingPairOracle (M : MACScheme) {adversary : Forger}
       (encPair (encPair encBits encBits) (encList (encPair encBits encBits)))
       (fun caller : ℕ × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
             (M.signingPairOracle caller.2)) (adversary caller.1 [])).run []) := by
   obtain ⟨c, d, hlen⟩ := M.sign_ppt.length_le
   have hhandler : IsPPTOn
@@ -788,10 +788,10 @@ messages. -/
 theorem eval_run_signingOracle_eq_map_fst_signingPairOracle (M : MACScheme)
     (sk : List Bool) (prog : WordOracleComp Unit (List Bool × List Bool)) :
     ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (M.signingOracle sk)) prog).run []) =
     (ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (M.signingPairOracle sk)) prog).run [])).map
       (fun (a, s') => (a, s'.map Prod.fst)) := by
   rw [ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret]
@@ -812,7 +812,7 @@ theorem eval_eufCmaGame_eq_signingPairOracle (M : MACScheme)
       ProbComp.eval (do
         let sk ← M.keyGen n
         let out ← (OracleComp.interpret
-          (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
             (M.signingPairOracle sk)) (adversary n [])).run []
         let (msg, tag) := out.1
         return (msg.length == M.msgLen n) && !(out.2.map Prod.fst).contains msg &&
@@ -876,7 +876,7 @@ private theorem mem_support_signingPairOracle (M : MACScheme) (sk : List Bool)
     (prog : WordOracleComp Unit (List Bool × List Bool))
     (result : List Bool × List Bool) (queriedPairs : List (List Bool × List Bool))
     (hmem : (result, queriedPairs) ∈ (ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (M.signingPairOracle sk)) prog).run [])).support) :
     ∀ pair ∈ queriedPairs, pair.2 ∈ (ProbComp.eval (M.sign sk pair.1)).support := by
   rw [ProbOracleComp.eval_run_interpret] at hmem
@@ -978,7 +978,7 @@ noncomputable def sufOneTimeGame (M : MACScheme) (adversary : Forger) (n : ℕ) 
     ProbComp Bool := do
   let sk ← M.keyGen n
   let out ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
       (M.oneTimeSigningPairOracle sk)) (adversary n [])).run []
   let (msg, tag) := out.1
   return (msg.length == M.msgLen n) && !out.2.contains out.1 &&
@@ -993,7 +993,7 @@ theorem isPPTOn_run_oneTimeSigningPairOracle (M : MACScheme) {adversary : Forger
       (encPair (encPair encBits encBits) (encList (encPair encBits encBits)))
       (fun caller : ℕ × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
             (M.oneTimeSigningPairOracle caller.2)) (adversary caller.1 [])).run []) := by
   obtain ⟨c, d, hlen⟩ := M.sign_ppt.length_le
   have hhandler : IsPPTOn
@@ -1134,15 +1134,15 @@ private theorem run_limitToOneQuery_eq_oneTimeSigningPairOracle (M : MACScheme)
       tag.length ≤ bound n msg.length)
     (prog : WordOracleComp Unit (List Bool × List Bool)) :
     ProbComp.eval (Prod.map Prod.fst id <$> ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (M.signingPairOracle sk))
       ((OracleComp.interpret
-        (ProbOracleComp.handler
+        (OracleComp.sumHandler
           (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
           (SignatureScheme.oneTimeFilterHandler bound (n, [])))
         prog).run false)).run [])) =
     ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (M.oneTimeSigningPairOracle sk)) prog).run []) := by
   rw [ProbComp.eval_map, ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret,
     ProbOracleComp.run_interpret_run_interpret, PMF.map_comp]
@@ -1150,7 +1150,7 @@ private theorem run_limitToOneQuery_eq_oneTimeSigningPairOracle (M : MACScheme)
     (oracle := fun q s => ProbComp.eval (M.oneTimeSigningPairOracle sk q s))
     (oracle' := fun q (state : Bool × List (List Bool × List Bool)) =>
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
+        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
           (fun q s => ProbComp.eval (M.signingPairOracle sk q s)))
         ((SignatureScheme.oneTimeFilterHandler bound (n, []) q).run state.1)).run state.2).map
           (fun result => (result.1.1, result.1.2, result.2)))
@@ -1211,14 +1211,14 @@ theorem SUFCMA.oneTimeSUFCMA {M : MACScheme} (h : M.SUFCMA) : M.OneTimeSUFCMA :=
   have hrun := run_limitToOneQuery_eq_oneTimeSigningPairOracle M bound n sk htagBound
     (adversary n [])
   have hmap : ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (M.signingPairOracle sk))
       (SignatureScheme.limitToOneQuery bound adversary n [])).run []) =
     Prod.map Prod.fst id <$> ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (M.signingPairOracle sk))
       ((OracleComp.interpret
-        (ProbOracleComp.handler
+        (OracleComp.sumHandler
           (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
           (SignatureScheme.oneTimeFilterHandler bound (n, [])))
         (adversary n [])).run false)).run []) := by
@@ -1236,10 +1236,10 @@ messages. -/
 theorem eval_run_oneTimeSigningOracle_eq_map_fst_oneTimeSigningPairOracle (M : MACScheme)
     (sk : List Bool) (prog : WordOracleComp Unit (List Bool × List Bool)) :
     ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (M.oneTimeSigningOracle sk)) prog).run []) =
     (ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (M.oneTimeSigningPairOracle sk)) prog).run [])).map
       (fun (a, s') => (a, s'.map Prod.fst)) := by
   rw [ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret]
@@ -1262,7 +1262,7 @@ theorem eval_eufOneTimeGame_eq_oneTimeSigningPairOracle (M : MACScheme)
       ProbComp.eval (do
         let sk ← M.keyGen n
         let out ← (OracleComp.interpret
-          (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
             (M.oneTimeSigningPairOracle sk)) (adversary n [])).run []
         let (msg, tag) := out.1
         return (msg.length == M.msgLen n) && !(out.2.map Prod.fst).contains msg &&
@@ -1309,7 +1309,7 @@ private theorem mem_support_oneTimeSigningPairOracle (M : MACScheme) (sk : List 
     (prog : WordOracleComp Unit (List Bool × List Bool))
     (result : List Bool × List Bool) (queriedPairs : List (List Bool × List Bool))
     (hmem : (result, queriedPairs) ∈ (ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (M.oneTimeSigningPairOracle sk)) prog).run [])).support) :
     ∀ pair ∈ queriedPairs, pair.2 ∈ (ProbComp.eval (M.sign sk pair.1)).support := by
   rw [ProbOracleComp.eval_run_interpret] at hmem
@@ -1626,7 +1626,7 @@ the PRF security game [Boneh and Shoup, Section 6.3, Theorem 6.2][BonehShoup2023
 def macToPrfDistinguisher (adversary : Forger) : OracleDistinguisher :=
   fun n _ => do
     let out ← (OracleComp.interpret
-      (ProbOracleComp.handler
+      (OracleComp.sumHandler
         (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
         (macLogHandler n))
       (adversary n [])).run []
@@ -1659,7 +1659,7 @@ theorem isOraclePPT_macToPrfDistinguisher {adversary : Forger}
       (encPair (encPair encBits encBits) (encList encBits))
       (fun caller : ℕ × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler
+          (OracleComp.sumHandler
             (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
             (macLogHandler caller.1))
           (adversary caller.1 [])).run []) := by
@@ -1671,8 +1671,8 @@ theorem isOraclePPT_macToPrfDistinguisher {adversary : Forger}
       (fun _ _ => True) (fun _ => trivial) (by polytime)
     intro caller request queried _ result hresult
     unfold macLogHandler at hresult
-    obtain ⟨tag, htag, rfl⟩ := ProbOracleComp.mem_support_map hresult
-    obtain ⟨rawTag, _, rfl⟩ := ProbOracleComp.mem_support_map htag
+    obtain ⟨tag, htag, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
+    obtain ⟨rawTag, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp htag
     refine ⟨trivial, ?_, ?_⟩
     · exact (List.length_take_le _ _).trans (by lia)
     · simp only [encList_cons, List.length_append, length_frame, encBits_apply]
@@ -1708,20 +1708,20 @@ private theorem run_macLogHandler_eq_signingOracle
     (n : ℕ) (sk : List Bool) (hsk : sk.length = n)
     (prog : WordOracleComp Unit (List Bool × List Bool)) :
     ProbComp.eval (OracleComp.interpret
-      (ProbOracleComp.handler ProbComp.unifFin (fun request =>
+      (OracleComp.sumHandler ProbComp.unifFin (fun request =>
         pure (prfOracle family n sk request.2)))
       ((OracleComp.interpret
-        (ProbOracleComp.handler
+        (OracleComp.sumHandler
           (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
           (macLogHandler n))
         prog).run [])) =
     ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         ((prfMAC family hpoly).signingOracle sk)) prog).run []) := by
   have hread := ProbOracleComp.run_interpret_readOnly
     (fun request (_ : Unit) => PMF.pure (prfOracle family n sk request.2))
     ((OracleComp.interpret
-      (ProbOracleComp.handler
+      (OracleComp.sumHandler
         (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
         (macLogHandler n))
       prog).run []) ()
@@ -1734,7 +1734,7 @@ private theorem run_macLogHandler_eq_signingOracle
   have hsim := ProbOracleComp.run_interpret_map_state
     (oracle := fun q (state : List (List Bool) × Unit) =>
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
+        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
           (fun request (u : Unit) => (PMF.pure (prfOracle family n sk request.2)).map (·, u)))
         ((macLogHandler n q).run state.1)).run state.2).map
           (fun result => (result.1.1, result.1.2, result.2)))
@@ -1744,7 +1744,7 @@ private theorem run_macLogHandler_eq_signingOracle
       intro ⟨⟨⟩, msg⟩ ⟨queried, ⟨⟩⟩
       change PMF.map (fun (a, s') => (a, s'.1))
           (((OracleComp.interpret
-            (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
+            (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
               (fun request (u : Unit) => (PMF.pure (prfOracle family n sk request.2)).map (·, u)))
             (macLogHandler n ((), msg) queried)).run ()).map
               (fun result => (result.1.1, result.1.2, result.2))) =
@@ -1828,26 +1828,26 @@ theorem succProbability_prfIdealGame_macToPrfDistinguisher_le (adversary : Forge
         PMF (List Bool) :=
     fun q state =>
       ((OracleComp.interpret
-        (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
+        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
           (fun request => lazyRandomFunctionOracle n request.2))
         ((macLogHandler n q).run state.1)).run state.2).map
           (fun result => (result.1.1, result.1.2, result.2))
   let phase1 := ((OracleComp.interpret
-    (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k)) combinedOracle)
+    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k)) combinedOracle)
     (adversary n [])).run ([], fun _ => none))
   let phase2 : ((List Bool × List Bool) × List (List Bool) ×
       RandomOracle.Cache (fun _ : BitString n => BitString n)) → PMF Bool :=
     fun ⟨out, queried, cache⟩ =>
       if (out.1.length == n) && !queried.contains out.1 then
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
+          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
             (fun request => lazyRandomFunctionOracle n request.2))
           ((· == out.2) <$> (List.take n <$> ProbOracleComp.query ((), out.1)))).run cache).map
             Prod.fst
       else
         PMF.pure false
   have hgame : ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
         (fun request => lazyRandomFunctionOracle n request.2))
       (macToPrfDistinguisher adversary n [])).run (fun _ => none)).map Prod.fst =
       phase1.bind phase2 := by
@@ -2304,7 +2304,7 @@ noncomputable def sufCmaGame (M : NonceMACScheme) (adversary : NonceMACForger) (
     ProbComp Bool := do
   let sk ← M.keyGen n
   let out ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
       (M.signingPairOracle sk)) (adversary n [])).run []
   let ((msg, nonce), tag) := out.1
   return (msg.length == M.msgLen n) && (nonce.length == M.nonceLen n) &&
@@ -2318,7 +2318,7 @@ noncomputable def eufCmaGame (M : NonceMACScheme) (adversary : NonceMACForger) (
     ProbComp Bool := do
   let sk ← M.keyGen n
   let out ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
       (M.signingPairOracle sk)) (adversary n [])).run []
   let ((msg, nonce), tag) := out.1
   return (msg.length == M.msgLen n) && (nonce.length == M.nonceLen n) &&
@@ -2336,7 +2336,7 @@ theorem isPPTOn_run_signingPairOracle (M : NonceMACScheme) {adversary : NonceMAC
         (encList (encPair (encPair encBits encBits) encBits)))
       (fun caller : ℕ × List Bool =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
             (M.signingPairOracle caller.2)) (adversary caller.1 [])).run []) := by
   obtain ⟨c, d, hlen⟩ := M.sign_ppt.length_le
   have hhandler : IsPPTOn
@@ -2558,7 +2558,7 @@ private theorem mem_support_signingPairOracle (M : NonceMACScheme) (sk : List Bo
     (result : (List Bool × List Bool) × List Bool)
     (queriedTriples : List ((List Bool × List Bool) × List Bool))
     (hmem : (result, queriedTriples) ∈ (ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (M.signingPairOracle sk)) prog).run [])).support) :
     ∀ triple ∈ queriedTriples,
       triple.2 ∈ (ProbComp.eval (M.sign sk triple.1.1 triple.1.2)).support := by
@@ -2593,7 +2593,7 @@ theorem eval_sufCmaGame_eq_freshPair_of_unique_tag (M : NonceMACScheme)
       ProbComp.eval (do
         let sk ← M.keyGen n
         let out ← (OracleComp.interpret
-          (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
             (M.signingPairOracle sk)) (adversary n [])).run []
         let (pair, tag) := out.1
         let (msg, nonce) := pair

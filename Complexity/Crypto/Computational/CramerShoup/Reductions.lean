@@ -532,7 +532,7 @@ private theorem isPPTOn_run_cramerShoupPhase1Oracle
     IsPPTOn encIn
       (encPair (encPair (encPair (encPair encMsg encMsg) encAD) encBits) (encFinEnum Unit))
       (fun a => (OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
           (F.cramerShoupPhase1Oracle hasAD H isElem (d a) (sk a)))
         (adversary.choose (n a) (pk a))).run ()) := by
   have hp1 := ComputableTidilyInPolyTime.fst encIn encBits
@@ -576,7 +576,7 @@ private theorem isPPTOn_run_cramerShoupPhase2Oracle
     (had : ComputableTidilyInPolyTime ad encIn encBits) :
     IsPPTOn encIn (encPair encBool (encFinEnum Unit))
       (fun a => (OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
           (F.cramerShoupPhase2Oracle hasAD H isElem (d a) (sk a) (ct a) (ad a)))
         (adversary.guess (n a) (state a) (ct a))).run ()) := by
   have hp1 := ComputableTidilyInPolyTime.fst encIn encBits
@@ -623,7 +623,7 @@ private theorem isPPTOn_run_cramerShoupCollisionPhase2Oracle
     (had : ComputableTidilyInPolyTime ad encIn encBits) :
     IsPPTOn encIn (encPair encBool (encOption encBits))
       (fun a => (OracleComp.interpret
-        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
           (F.cramerShoupCollisionPhase2Oracle hasAD H isElem (d a) (sk a) (ct a) (ad a)))
         (adversary.guess (n a) (state a) (ct a))).run none) := by
   have hp1 := ComputableTidilyInPolyTime.fst encIn encBits
@@ -695,7 +695,7 @@ noncomputable def cramerShoupMsgToDDHDistinguisher
   F.sampleCramerShoupSK n input.1 >>= fun sk =>
     let pk := F.encodeCramerShoupPublicKey input.1 (csDdhU input) sk
     ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
         (F.cramerShoupPhase1Oracle hasAD H isElem input.1 sk))
       (adversary.choose n pk)).run ()) >>= fun choiceOut =>
       let choice := choiceOut.1
@@ -706,7 +706,7 @@ noncomputable def cramerShoupMsgToDDHDistinguisher
         let m := if bit then m₁ else m₀
         let ct := F.encodeCramerShoupChallenge H input.1 sk (csDdhV input) (csDdhW input) m ad
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (F.cramerShoupPhase2Oracle hasAD H isElem input.1 sk ct ad))
           (adversary.guess n choice.2 ct)).run ()) >>= fun guessOut =>
           pure guessOut.1
@@ -837,7 +837,7 @@ noncomputable def cramerShoupMsgToCollisionFinder
         let w := F.smul (d, csExpC abc, gen)
         let pk := F.encodeCramerShoupPublicKey d u sk
         ((OracleComp.interpret
-          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
           (adversary.choose n pk)).run ()) >>= fun choiceOut =>
           let choice := choiceOut.1
@@ -848,7 +848,7 @@ noncomputable def cramerShoupMsgToCollisionFinder
             let m := if bit then m₁ else m₀
             let ct := F.encodeCramerShoupChallenge H d sk v w m ad
             ((OracleComp.interpret
-              (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+              (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
                 (F.cramerShoupCollisionPhase2Oracle hasAD H isElem d sk ct ad))
               (adversary.guess n choice.2 ct)).run none) >>= fun out =>
               let target := extractCramerShoupTuple ct ad

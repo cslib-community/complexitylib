@@ -404,7 +404,7 @@ theorem PWithSharpPOracle_subset_PWithPPOracle : PWithSharpPOracle enc ⊆ PWith
       fun a State oracle s => ?_
     congr 2
     rw [OracleComp.interpret_interpret, OracleComp.interpret_interpret]
-    have hH : (fun q : Unit × List Bool => OracleComp.interpret (ProbOracleComp.handler
+    have hH : (fun q : Unit × List Bool => OracleComp.interpret (OracleComp.sumHandler
         (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
         (fun (q : Unit × List Bool) (_ : Unit) => (fun reply => (reply, ())) <$>
           OracleComp.interpret ProbOracleComp.query (bitQuery r q)))

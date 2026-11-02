@@ -136,7 +136,7 @@ theorem memoize_cache_size_le {α Key Value : Type} [BEq Key]
       (keyEncoding entry.1).length ≤ maxKey ∧ (valueEncoding entry.2).length ≤ maxValue)
     (result : α)
     (h : (result, cache') ∈ ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
         (memoize distribution)) program).run cache).support) :
     (encList (encPair keyEncoding valueEncoding) cache').length ≤
       (cache.length + calls) * (4 * maxKey + 2 * maxValue + 3) := by
