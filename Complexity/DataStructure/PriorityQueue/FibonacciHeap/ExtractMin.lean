@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Renfei Zhou, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Renfei Zhou, Samuel Schlesinger
 -/
 
 module
@@ -42,6 +42,12 @@ Each link costs `14` operations and removes a tree; each scattered root costs at
 each table slot costs at most `13`. With `credit = 24` per root, the roots' credits pay for
 their scattering, and the amortized cost is at most `92 * (log₂ m + 1)` on a queue of `m`
 handles (`extractCharge`), by the Fibonacci degree bound.
+
+The module adapts Renfei Zhou's native formalization (`WordRAM/FibonacciHeap`, its
+`Program.lean` and `Consolidate.lean`) to the record level: his extraction and consolidation
+programs (`extractMinCode`, the scattering and gathering loops) and their forest and table
+reasoning become the programs and loop lemmas here, and his table invariant `SlotInv` and its
+lemmas are reused unchanged.
 
 ## Main definitions
 
