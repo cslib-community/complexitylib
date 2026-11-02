@@ -39,6 +39,8 @@ absorption applied. They are the target shapes of the `realize` tactic. Glue tak
   plus another grading.
 * `Realizes.congr`: transport a certificate along pointwise equal programs.
 * `Realizes.bind₀`, `Realizes.branch₀`: sequencing and branching with absorbed control work.
+  `Realizes.bind₀_of_run` states the continuation's domain at a closed form of the first
+  client's reply and next memory.
 * `Realizes.pure₀`: finite-result glue from `GlueComputable` coordinates, with a visible domain
   and an explicit word-fit obligation.
 * `Realizes.iterate₀`, `iterate_comap`: loops whose body begins with a query.
@@ -131,6 +133,19 @@ theorem bind₀ (hP : Realizes B p input answer safeP (fun _ _ => 0))
         safeQ w (d, (Memory.spec 0).clientResult s (p d)) ((Memory.spec 0).clientState s (p d)))
       (fun _ _ => 0) :=
   (hP.bind hQ).mono_mul 1 (fun _ _ => by omega)
+
+/-- Sequencing with the first client's reply and next memory given in closed form, so that the
+continuation's domain is stated at them rather than at the interpreter's run. -/
+theorem bind₀_of_run (hP : Realizes B p input answer safeP (fun _ _ => 0))
+    (hQ : Realizes B q ((input.prodMap answer).trans (Fin.appendEquiv k l).toEmbedding) output'
+      safeQ (fun _ _ => 0))
+    (reply : δ → Memory.State → α) (next : δ → Memory.State → Memory.State)
+    (hreply : ∀ d s, (Memory.spec 0).clientResult s (p d) = reply d s)
+    (hnext : ∀ d s, (Memory.spec 0).clientState s (p d) = next d s) :
+    Realizes B (fun d => (p d).bind (fun a => q (d, a))) input output'
+      (fun w d s => safeP w d s ∧ safeQ w (d, reply d s) (next d s)) (fun _ _ => 0) :=
+  (bind₀ hP hQ).consequence (fun w d s _ _ h => by rw [hreply, hnext]; exact h)
+    (fun _ _ => le_rfl)
 
 /-- Branching with the test and jump absorbed. Only the selected alternative's domain is
 required. -/
