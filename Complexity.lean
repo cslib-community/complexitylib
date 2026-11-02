@@ -1463,11 +1463,14 @@ public import Complexity.Computability.Complexity.CookLevin.Completeness
 public import Complexity.Computability.Complexity.CookLevin.Correctness
 public import Complexity.Computability.Complexity.CookLevin.Counting
 public import Complexity.Computability.Complexity.CookLevin.Encoding
+public import Complexity.Computability.Complexity.CookLevin.Levin
 public import Complexity.Computability.Complexity.CookLevin.Parameters
 public import Complexity.Computability.Complexity.CookLevin.Parsimonious
 public import Complexity.Computability.Complexity.CookLevin.PolyTime
 public import Complexity.Computability.Complexity.CookLevin.Reduction
+public import Complexity.Computability.Complexity.CookLevin.RunFeatures
 public import Complexity.Computability.Complexity.CookLevin.Tableau
+public import Complexity.Computability.Complexity.CookLevin.Witness
 public import Complexity.Computability.Complexity.Fagin.Converse
 public import Complexity.Computability.Complexity.Fagin.Layout
 public import Complexity.Computability.Complexity.Fagin.Ordered
@@ -2281,6 +2284,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Space
 public import Complexity.Computability.Machines.Turing.MultiTape.StepMachine.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.StepMachine.Comp
 public import Complexity.Computability.Machines.Turing.MultiTape.TapeLemmas
+public import Complexity.Computability.Machines.Turing.MultiTape.TrackedRun
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bit
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bound
