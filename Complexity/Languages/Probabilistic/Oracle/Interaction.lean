@@ -21,11 +21,11 @@ and the final oracle state, with fresh fair samples for the private coins, and
 A prover of an interactive proof is such an oracle; `Cslib.Complexity.Prover.run` is the case of
 word queries and replies (`Cslib.Complexity.Prover.run_eq_runWith`).
 
-`runWith` is the instance of the generic `OracleComp.runWith` whose handler draws private samples
-freshly and answers external calls by `oracle`; that handler is the sum of the lifted uniform
-handler and `oracle` (`runWith_eq_runWith_sumHandler`). Against a memoryless oracle it is
-`OracleComp.evalWith` of the sum of the uniform handler and the oracle, with the state unchanged
-(`runWith_lift`). Its structural rules are those of `OracleComp.runWith`.
+`runWith` is the instance of the generic `OracleComp.runWith` whose handler is the sum
+`OracleComp.sumHandler` of fresh uniform draws for private samples, which keep the state, and
+`oracle` for external calls. Against a memoryless oracle it is `OracleComp.evalWith` of the sum of
+the uniform handler and the oracle, with the state unchanged (`runWith_lift`). Its structural
+rules are those of `OracleComp.runWith`.
 
 ## Main definitions
 
@@ -34,8 +34,8 @@ handler and `oracle` (`runWith_eq_runWith_sumHandler`). Against a memoryless ora
 
 ## Main results
 
-* `Cslib.ProbOracleComp.runWith_eq_runWith_sumHandler`, `Cslib.ProbOracleComp.runWith_lift`,
-  `Cslib.ProbOracleComp.acceptProbWith_lift`: the instances of the generic semantics.
+* `Cslib.ProbOracleComp.runWith_lift`, `Cslib.ProbOracleComp.acceptProbWith_lift`: against a
+  memoryless oracle, the instances of `OracleComp.evalWith`.
 * `Cslib.ProbOracleComp.runWith_pure`, `Cslib.ProbOracleComp.runWith_bind`,
   `Cslib.ProbOracleComp.runWith_map`, `Cslib.ProbOracleComp.runWith_query`,
   `Cslib.ProbOracleComp.runWith_sample`: structural rules for `runWith`.
@@ -56,23 +56,15 @@ variable {Query : Type} {spec : Query → Type} {State α β : Type}
   (oracle : (q : Query) → StateT State PMF (spec q))
 
 /-- The joint law of the result of `program` and the final state of the oracle answering its
-external calls, starting from the state `s`. Private samples are fresh. -/
+external calls, starting from the state `s`. Private samples are fresh. This is the generic
+stateful run `OracleComp.runWith` of the sum handler. -/
 noncomputable def runWith (program : ProbOracleComp spec α) (s : State) : PMF (α × State) :=
-  (OracleComp.interpret
-    (handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle) program).run s
+  OracleComp.runWith
+    (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle) program s
 
 /-- The probability that `program` returns `true` against the oracle from the state `s`. -/
 noncomputable def acceptProbWith (program : ProbOracleComp spec Bool) (s : State) : ℝ≥0∞ :=
   (runWith oracle program s).map Prod.fst true
-
-/-- The run is the generic stateful run whose handler answers private samples by fresh uniform
-draws, keeping the state, and external calls by `oracle`. -/
-theorem runWith_eq_runWith_sumHandler (program : ProbOracleComp spec α) (s : State) :
-    runWith oracle program s =
-      OracleComp.runWith (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
-        oracle) program s := by
-  rw [runWith, handler_eq_sumHandler]
-  rfl
 
 /-- Against a memoryless oracle, the run is `OracleComp.evalWith` of the uniform handler on the
 sampling side and the oracle on the other, with the state unchanged. -/
@@ -85,7 +77,7 @@ theorem runWith_lift (h : (q : Query) → PMF (spec q)) (program : ProbOracleCom
       fun q => StateT.lift (OracleComp.sumHandler ProbComp.unifOracle h q) := by
     funext q
     cases q <;> rfl
-  rw [runWith_eq_runWith_sumHandler, hlift, OracleComp.runWith_lift]
+  rw [runWith, hlift, OracleComp.runWith_lift]
 
 /-- Against a memoryless oracle, the acceptance probability is the probability of `true` under
 `OracleComp.evalWith` of the uniform handler and the oracle. -/
