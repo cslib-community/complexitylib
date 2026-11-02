@@ -54,9 +54,9 @@ example : kilianVerify idHash toyVerifier key x (kilianCommit idHash toyVerifier
     challenges (kilianRespond idHash toyVerifier key x [true, true] challenges) = true := by
   decide
 
--- The same, from the completeness theorem, which also covers a table shorter than the address
--- table: missing entries read as `false`, so `[true]` is not a witness, but `[true, true, false]`
--- is (its padding is never read).
+-- The same, from the completeness theorem, which also covers a table longer than the address
+-- table: `[true, true, false]` is a witness, since its padding is never read. A shorter table is
+-- read with `false` for the missing entries, so `[true]` is not a witness.
 example : kilianVerify idHash toyVerifier key x
     (kilianCommit idHash toyVerifier key x [true, true, false]) challenges
     (kilianRespond idHash toyVerifier key x [true, true, false] challenges) = true :=

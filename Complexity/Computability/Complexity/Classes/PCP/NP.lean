@@ -10,7 +10,6 @@ module
 public import Complexity.Computability.Complexity.Classes.PCP
 public import Complexity.Foundations.Data.BitString.Enumeration
 public import Mathlib.Data.Nat.Log
-public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Unary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Complexity.Foundations.Data.Nat.PolynomialBound.Log
@@ -34,8 +33,6 @@ in the soundness argument, never by the polynomial-time verifier.
 * `PCPVerifier.isPolyTime_queryTable`: the complete address table is computable in polynomial
   time under the logarithmic coin bound.
 * `PCPVerifier.isPolyTime_tableVerifier`: uniform efficiency, including malformed tables.
-* `PCPVerifier.computableInPolyTime_coins_unary`: logarithmically many random bits are computable
-  in unary.
 * `PCPVerifier.mem_queryTable`: the table records every address queried on a valid random word.
 * `PCPVerifier.tableVerifier_complete`, `PCPVerifier.tableVerifier_sound`: exact proof transfer.
 * `Cslib.Complexity.PCP_log_subset_NP`: logarithmic-randomness PCP is contained in NP.
@@ -66,8 +63,7 @@ def tableVerifier (input : α × List Bool) : Bool :=
 
 variable {V} {enc : α ↪ List Bool} {c : ℕ}
 
-/-- Under a logarithmic coin bound, the number of random bits is computable in unary. -/
-theorem computableInPolyTime_coins_unary (hV : V.PolyTime enc)
+private theorem coins_unary (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
     ComputableInPolyTime V.coins enc encUnary :=
   .binary_to_unary_bounded hV.1 (by fun_prop) hcoins
@@ -76,7 +72,7 @@ private theorem enum_coins (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
     ComputableInPolyTime (fun a => BitString.enumList (V.coins a))
       enc (encList encBits) := by
-  apply ComputableInPolyTime.bitsEnumList (computableInPolyTime_coins_unary hV hcoins)
+  apply ComputableInPolyTime.bitsEnumList (coins_unary hV hcoins)
     (size := fun n => 2 ^ (c * (Nat.log 2 n + 1)) * (2 * (c * (Nat.log 2 n + 1)) + 1))
   · have hpow := polynomiallyBounded_two_pow_mul_log c
     fun_prop
