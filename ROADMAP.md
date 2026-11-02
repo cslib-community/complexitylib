@@ -206,10 +206,12 @@ index links to canonical definitions rather than keeping a second set.
   normalized children and an actual copy/reward projection client. Ranks are computed from
   finite iteration bounds; role/rate/suffix requests preserve the inherited source or reset it
   to the midpoint. Pilot steps use the current maximum; actual corrections and copy weights
-  use the final pilot maximum. The previous reward is still a local leaf. Cross-stage/global
-  role tuple assembly, routed direct bins, and the complete scheduled mean-prefix bound remain
-  open; range/true means do not establish root regularity or the error recurrence. Paired raw
-  differences, full-coordinate conditional walks, summed noise, compression, strong recursive
+  use the final pilot maximum. A bounded cross-stage hierarchy/reward client now connects
+  the previous-reward and base-matrix leaves to actual earlier-stage constructors, with a
+  computed decreasing global rank and nonconstant two-stage regression. Routed direct/residual
+  bin tables, copy-symbol suffix extension and their cross-stage role/rate tuples, and the
+  complete scheduled mean-prefix bound remain open; range/true means do not establish root
+  regularity or the error recurrence. Paired raw differences, full-coordinate conditional walks, summed noise, compression, strong recursive
   induction and native logarithmic workspace/class equality remain required.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
   logspace reduction.

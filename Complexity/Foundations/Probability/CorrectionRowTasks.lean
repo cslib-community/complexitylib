@@ -47,9 +47,10 @@ as actual channel predicates and proves the mean and computed dependency decreas
 `expect_hierarchyTaskReward` connects this local recipe to the existing `DetectedHierarchy` reward,
 including nonprimary copy weights computed from the final pilot vector.
 
-This completes the unified local families and copy/reward client. The previous reward remains a
-local leaf, and raw direct/routed-bin recursion, cross-stage/global role tuple assembly and the
-scheduled mean-prefix theorem remain open. Range and exact means do not prove root regularity
+This completes the unified local families and copy/reward client. `HierarchyTasks` connects the
+local previous-reward and base-matrix leaves to bounded earlier-stage constructors. Raw
+direct/routed-bin recursion, cross-stage role tuple assembly and the scheduled mean-prefix
+theorem remain open. Range and exact means do not prove root regularity
 or the full error recurrence. Primitive cutoffs retain the explicit contracts
 of `CorrectionSampling`. Mean identities are exact finite identities, independent of the source's
 eighth versus our fourth moments; no new real-valued rate schedule is asserted.
