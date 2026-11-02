@@ -101,7 +101,7 @@ namespace Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation
 
 open Cslib.WordRAM Cslib.Probability
 open Cslib.DataStructure Cslib.DataStructure.WordRAM.Randomized
-open Cslib.Algorithms.WordRAM.ExactLog
+open Cslib.WordRAM.ExactLog
 open scoped ENNReal BigOperators
 
 /-! ## Section 1: Flat memory layout, seed representations, and slice equivalences -/

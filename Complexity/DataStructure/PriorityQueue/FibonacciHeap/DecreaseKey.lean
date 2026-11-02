@@ -16,17 +16,18 @@ public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Basic
 root list, and `cascade` walks up the ancestors: a marked ancestor is cut in turn, the first
 unmarked one is marked [Fredman and Tarjan][FredmanTarjan1987]
 [Cormen et al., Section 19.3][CLRS2009]. Then `setKey` stores the key and makes `v` the minimum
-root if it precedes it. Cutting before storing the key keeps every tree valid throughout, so no
-pre-decrease copy of the state is needed, unlike the hand-stepped `cutNode_forest`.
+root if it precedes it. Cutting before storing the key keeps every tree valid throughout. (The
+hand-stepped `decreaseKeyCode` stores the key first; its proof reads the forest with the old keys,
+through `CutsNode.withKey`.)
 
 The proof splits as in `Basic.lean`:
 
 * program evaluation: `wp_unlink`, `wp_toRoot` and `wp_cut` produce the effect `CutsNode` of one
-  cut on the raw view (the facts of the hand-stepped `cutNodeCode_raw`); `wp_cascade` runs the
+  cut on the raw view (as the hand-stepped `cutNodeCode_raw` does); `wp_cascade` runs the
   cascade by induction on its fuel, which exceeds the number of marks; `wp_setKey` and
   `wp_decreaseKey` assemble the three cases (root, no cut, cut);
 * forest mathematics on `RawState n` alone: `cutsNode_cutState` (pointer surgery of one cut),
-  `CutsNode.cascading` (a cut keeps the forest `Cascading`, the content of `cutNode_forest`),
+  `CutsNode.cascading` (a cut keeps the forest `Cascading`),
   `Cascading.clear_root` and `Cascading.mark` (the cascade stops), `Cascading.lowerRootKey` and
   `FibRawInv.lowerKey_noCut` (storing the key), with the existing `ValidSubtree.exists_cut`,
   `ValidSubtree.mark_pending`, `ValidSubtree.lower_key_no_cut` and `CutInv.to_fibRawInv`.
@@ -36,9 +37,10 @@ unmarked root, which releases `credit = 24`, so the cascade is paid by the poten
 `decreaseKey` costs at most `104` operations amortized.
 
 The module adapts Renfei Zhou's native formalization (`WordRAM/FibonacciHeap`, its `Cut.lean`) to
-the record level: his cut (`cutNodeCode_raw`, `cutNode_forest`, with its circular-list uniqueness
-argument) and cascading-cut development become `cut`, `CutsNode.cascading`,
-`IsCircList.tail_unique` and `cascade`, and his forest lemmas are reused unchanged.
+the record level: his cut (`cutNodeCode_raw` and its forest transition, with its circular-list
+uniqueness argument) and cascading-cut development become `cut`, `CutsNode.cascading`,
+`IsCircList.tail_unique` and `cascade`, and his forest lemmas are reused unchanged. The
+hand-stepped proofs in turn now cite these lemmas.
 
 ## Main definitions
 
@@ -277,6 +279,39 @@ theorem cutsNode_cutState {n : ℕ} {st : RawState n} {cur p m : Fin n} {rtail :
       Function.update_of_ne (hroot_ne m List.mem_cons_self x hpx),
       Function.update_of_ne (hroot_ne r' hr'_roots x hpx)]
 
+/-- A cut does not read or write keys: it has the same effect on states with other keys. -/
+theorem CutsNode.withKey {n : ℕ} {st st' : RawState n} {cur p m : Fin n} {rtail : List (Fin n)}
+    (h : CutsNode st cur p m rtail st') (key : Fin n → ℕ) :
+    CutsNode { st with key := key } cur p m rtail { st' with key := key } :=
+  { h with key := rfl }
+
+/-- After `cur` is unlinked from its parent `p`, the minimum root `m` still has a right neighbour:
+unlinking changes sibling pointers only among `p`'s children. -/
+theorem exists_right_min_of_unlink {n : ℕ} {st : RawState n} {cur p m : Fin n}
+    {rtail : List (Fin n)}
+    (hdp2 : 2 ≤ st.deg p → ∃ (h : Fin n) (tail : List (Fin n)),
+      st.child p = h.val + 1 ∧ IsCircList st.left st.right (h :: tail) ∧
+      cur ∈ h :: tail ∧ 2 ≤ (h :: tail).length ∧ ∀ u ∈ h :: tail, st.par u = p.val + 1)
+    (hcirc_r : IsCircList st.left st.right (m :: rtail))
+    (hroots_par0 : ∀ u ∈ m :: rtail, st.par u = 0)
+    {left₁ right₁ : Fin n → ℕ} {child₁ : ℕ}
+    (hunlink : (st.deg p = 1 ∧ child₁ = 0 ∧ left₁ = st.left ∧ right₁ = st.right) ∨
+      (2 ≤ st.deg p ∧ ∃ r l : Fin n, st.right cur = r.val ∧ st.left cur = l.val ∧
+        child₁ = r.val + 1 ∧ left₁ = Function.update st.left r l.val ∧
+        right₁ = Function.update st.right l r.val)) :
+    ∃ r' : Fin n, right₁ m = r'.val := by
+  obtain ⟨r', hr', -⟩ := hcirc_r.right_head
+  rcases hunlink with ⟨-, -, -, rfl⟩ | ⟨h2, r, l, -, hl, -, -, rfl⟩
+  · exact ⟨r', hr'⟩
+  · obtain ⟨h, tail, -, hcirc, hcur, hlen, hpar⟩ := hdp2 h2
+    obtain ⟨r₂, l₂, -, -, hl₂, -, hl₂m, -⟩ := hcirc.remove hcur hlen
+    obtain rfl : l₂ = l := Fin.ext (hl₂.symm.trans hl)
+    have hml : m ≠ l₂ := fun e => by
+      have := hroots_par0 m List.mem_cons_self
+      rw [e, hpar l₂ hl₂m] at this
+      omega
+    exact ⟨r', by rw [Function.update_of_ne hml]; exact hr'⟩
+
 /-! ## Forest mathematics of cascading cuts -/
 
 /-- The forest during cascading cuts from `v`: `FibRawInv` with one `pending` ancestor that may
@@ -338,8 +373,7 @@ theorem ValidSubtree.deg_lt_length {n : ℕ} {st : RawState n} {pending : Option
       omega
 
 /-- **A cut keeps the forest `Cascading`**, with the parent `p` now pending. The cut node `cur`
-becomes the root of a new tree; its old tree loses that subtree. This is the forest part of the
-hand-stepped `cutNode_forest`. -/
+becomes the root of a new tree; its old tree loses that subtree. -/
 theorem CutsNode.cascading {n K : ℕ} {s : IndexedMinPQ.State n} {st st' : RawState n}
     {cur p v m : Fin n} {pending : Option (Fin n)} {ts : List (FHTree n)} {rtail : List (Fin n)}
     (h : Cascading n K s st v m pending ts) (hperm_r : (m :: rtail).Perm (ts.map FHTree.root))
@@ -767,20 +801,7 @@ theorem wp_cut {g : Cell → ℕ} {cur p m : Fin n} {rtail : List (Fin n)}
     Record.wp (Cell.ok n) w (cut cur p) Q g := by
   rw [cut, Record.wp_bind]
   refine wp_unlink hdp_pos hdp2 hdp_le hfit fun g₁ t₁ ht₁ left₁ right₁ child₁ hunlink hg₁ => ?_
-  -- The minimum root's right neighbour, after unlinking.
-  have hr₁ : ∃ r' : Fin n, right₁ m = r'.val := by
-    obtain ⟨r', hr', -⟩ := hcirc_r.right_head
-    rcases hunlink with ⟨-, -, -, rfl⟩ | ⟨h2, r, l, -, hl, -, -, rfl⟩
-    · exact ⟨r', hr'⟩
-    · obtain ⟨h, tail, -, hcirc, hcur, hlen, hpar⟩ := hdp2 h2
-      obtain ⟨r₂, l₂, -, -, hl₂, -, hl₂m, -⟩ := hcirc.remove hcur hlen
-      obtain rfl : l₂ = l := Fin.ext (hl₂.symm.trans hl)
-      have hml : m ≠ l₂ := fun e => by
-        have := hroots_par0 m List.mem_cons_self
-        rw [e, hpar l₂ hl₂m] at this
-        omega
-      exact ⟨r', by rw [Function.update_of_ne hml]; exact hr'⟩
-  obtain ⟨r', hr'⟩ := hr₁
+  obtain ⟨r', hr'⟩ := exists_right_min_of_unlink hdp2 hcirc_r hroots_par0 hunlink
   refine wp_toRoot (by rw [hg₁]; exact hmin) (by rw [hg₁]; exact hr') hfit
     (by rw [hg₁]; exact hnr) (by rw [hg₁]; exact hnm) fun g₂ hg₂ => hQ _ _ (by omega) ?_
   rw [hg₂, hg₁]
