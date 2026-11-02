@@ -2874,8 +2874,8 @@ public import Complexity.DataStructure.HashFamily.WordRAM.KWise
 public import Complexity.DataStructure.HashFamily.WordRAM.MultiplyShift
 public import Complexity.DataStructure.HashFamily.WordRAM.Tabulation
 public import Complexity.DataStructure.Memory.Field
-public import Complexity.DataStructure.Memory.Record
 public import Complexity.DataStructure.Memory.Frame
+public import Complexity.DataStructure.Memory.Record
 public import Complexity.DataStructure.Memory.Spec
 public import Complexity.DataStructure.ObliviousSequence
 public import Complexity.DataStructure.Online.Basic
