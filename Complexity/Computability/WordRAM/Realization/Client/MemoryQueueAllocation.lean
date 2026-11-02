@@ -48,10 +48,6 @@ open Cslib.DataStructure
 
 private abbrev word : ℕ ↪ (Fin 1 → ℕ) := (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
 
-private def append {δ α : Type} {k l : ℕ} (input : δ ↪ (Fin k → ℕ))
-    (answer : α ↪ (Fin l → ℕ)) : δ × α ↪ (Fin (k + l) → ℕ) :=
-  (input.prodMap answer).trans (Fin.appendEquiv k l).toEmbedding
-
 private theorem copyResult {δ α : Type} {k l : ℕ} (input : δ ↪ (Fin k → ℕ))
     (output : α ↪ (Fin l → ℕ)) (f : δ → α) (ix : Fin l → Fin k)
     (hf : ∀ d i, output (f d) i = input d (ix i)) :
@@ -88,9 +84,9 @@ The staged one and all four returned layout coordinates are charged. -/
 theorem realizes_allocLayout :
     Realizes .exact Stack.Memory.allocLayout (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
       MemoryStack.layoutWords (fun w C s => Fits w (s.frontier + 1 + C)) (fun _ _ => 12) := by
-  let e₁ := append word word
-  let e₂ := append e₁ word
-  let e₃ := append e₂ word
+  let e₁ := appendWords word word
+  let e₂ := appendWords e₁ word
+  let e₃ := appendWords e₂ word
   have hone := Realizes.glue word
     (GlueComputes.const (B := .exact) (P := fun _ => True) (bound := fun _ => 1)
       1 (fun _ _ => le_rfl))
@@ -122,8 +118,8 @@ independent of the item capacity. No item cell is cleared by this initialization
 theorem realizes_allocPair :
     Realizes .exact allocPair (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding MemoryQueue.layoutWords
       (fun w C s => Fits w (s.frontier + 2 * (C + 1))) (fun _ _ => 42) := by
-  let e₁ := append word MemoryStack.layoutWords
-  let e₂ := append e₁ MemoryStack.layoutWords
+  let e₁ := appendWords word MemoryStack.layoutWords
+  let e₂ := appendWords e₁ MemoryStack.layoutWords
   have hsecond := realizes_allocLayout.reindex (fun d : ℕ × Stack.Memory.Layout => d.1)
     e₁ ![0] (by intro d i; fin_cases i; rfl)
   have hreturn := copyResult e₂ MemoryQueue.layoutWords
@@ -283,8 +279,8 @@ theorem realizes_roundTrip (sourceWidth : ℕ) :
       Queue.Memory.run sourceWidth d.1 (roundTrip sourceWidth d.1 d.2))
       roundTripWords optionWords
       (fun w d s => 1 ≤ d.1 ∧ Fits w (s.frontier + 2 * (d.1 + 1))) (fun _ _ => 163) := by
-  let e₁ := append roundTripWords MemoryQueue.layoutWords
-  let e₂ := append e₁ (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
+  let e₁ := appendWords roundTripWords MemoryQueue.layoutWords
+  let e₂ := appendWords e₁ (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
   have halloc := realizes_allocPair.reindex (fun d : ℕ × ℕ => d.1) roundTripWords ![0]
     (by intro d i; fin_cases i; rfl)
   have henqueue := (MemoryQueueDispatch.realizes_enqueue 0 0).reindex
