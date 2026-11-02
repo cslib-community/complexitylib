@@ -13,6 +13,9 @@ public import Complexity.Computability.WordRAM.Realization.Reindex
 /-!
 # The `realize` tactic
 
+The tactic is available inside `Cslib.WordRAM`, or after `open Cslib.WordRAM` or
+`open scoped Cslib.WordRAM`. Importing this module alone does not activate its syntax.
+
 `realize` proves a goal `Realizes B p input output safe work` for a memory client `p`. It walks
 the client syntax, unfolding definitions, with one rule per form:
 
@@ -1188,10 +1191,12 @@ private partial def splitDomain (g : MVarId) : MetaM (List MVarId) := g.withCont
 
 end Cslib.Tactic.Realize
 
+namespace Cslib.WordRAM
+
 open Lean Meta Elab Tactic Cslib.WordRAM Cslib.WordRAM.Realization Cslib.Tactic.Realize in
 /-- Prove `Realizes B p input output safe work` for a memory client `p`, leaving the genuine fit
 and domain conditions as goals in the context `w d s hwords hmem h`. -/
-elab "realize" : tactic => withMainContext do
+scoped elab "realize" : tactic => withMainContext do
   let goal ← getMainGoal
   let target ← instantiateMVars (← whnfR (← goal.getType))
   unless target.isAppOfArity ``Realizes 10 do
@@ -1238,3 +1243,5 @@ elab "realize" : tactic => withMainContext do
     | some g' => g.assign (mkMVar g')
     | none => kept := kept.push g
   setGoals kept.toList
+
+end Cslib.WordRAM
