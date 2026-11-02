@@ -72,7 +72,7 @@ theorem step_eq_run_interpret (machine : MultiTapePTM k Bool Control Operation)
     (a : α) (pair : FiniteConfig k Bool Control Operation × State) :
     step machine handler a pair =
       (OracleComp.interpret
-        (ProbOracleComp.handler
+        (OracleComp.sumHandler
           (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n))) (handler a))
         (machine.finiteStep
           (fun choices => choices <$> ProbOracleComp.sample (ProbComp.uniform Bool))
@@ -174,7 +174,7 @@ theorem isOraclePPTOn_run [Finite Operation] {input : α ↪ List Bool}
           resources ((input a).length + request.2.length)) :
     IsOraclePPTOn input (encPair encBits stateEncoding) (fun a =>
       (OracleComp.interpret
-        (ProbOracleComp.handler
+        (OracleComp.sumHandler
           (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n))) (handler a))
         (machine.runOracle (count a) (word a))).run (initial a)) := by
   have hword := hword.tidy

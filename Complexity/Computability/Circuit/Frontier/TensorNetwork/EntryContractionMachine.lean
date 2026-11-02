@@ -14,6 +14,8 @@ import Complexity.Computability.Circuit.Frontier.TensorNetwork.RowsFirstPolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.SqrtLog
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryPrimitives
@@ -44,7 +46,9 @@ passes it (`EntryContraction.guard_of_entryAdmissible`), since
 **The root and the clock.** The root call (`EntryContraction.rootCall`) has scale `m`, depth `0`,
 edge bound `m + 1`, precision `P`, modulus `fl`, `r` rows and the network
 `FastContraction.rootNet G`. The clock (`EntryContraction.clock`) is
-`2 ^ (K₀ (m + P) / √⌊log₂ (m + P)⌋)`, as for explicit networks. On guarded inputs the root is
+`2 ^ (K₀ (m + q) / √⌊log₂ (m + q)⌋)`, where `q = P / (⌊log₂ m⌋ + 1)`.
+The logarithmic normalization uses the schedule's larger precision allowance without charging
+an extra logarithm in the exponential clock. On guarded inputs the root is
 well-formed (`EntryContraction.wf_rootCall`), and it has no packets
 (`EntryContraction.packetShape_rootCall`).
 
@@ -175,9 +179,16 @@ precision `P`, modulus `fl`, `r` rows and the descriptors of `G`. -/
 @[expose] def rootCall : ℕ × List ℕ × ℕ × DescribedNetwork T → Call T
   | (P, fl, r, G) => ((G.numEdges, 0, G.numEdges + 1, P, fl, r), rootNet G)
 
-/-- **The clock** of an input `(P, fl, r, G)`: `2 ^ (K₀ (m + P) / √⌊log₂ (m + P)⌋)`. -/
+/-- The precision charged to the clock: the schedule absorbs `⌊log₂ m⌋ + 1` precision bits
+for each unit of its root bound. -/
+@[expose] def normalizedPrecision (m P : ℕ) : ℕ := P / (Nat.log 2 m + 1)
+
+/-- **The clock** of an input `(P, fl, r, G)`: `2 ^ (K₀ (m + q) / √⌊log₂ (m + q)⌋)`, where
+`q = normalizedPrecision m P`. -/
 @[expose] def clock : ℕ × List ℕ × ℕ × DescribedNetwork T → ℕ
-  | (P, _, _, G) => 2 ^ (fuelConst * (G.numEdges + P) / Nat.sqrt (Nat.log 2 (G.numEdges + P)))
+  | (P, _, _, G) =>
+      2 ^ (fuelConst * (G.numEdges + normalizedPrecision G.numEdges P) /
+        Nat.sqrt (Nat.log 2 (G.numEdges + normalizedPrecision G.numEdges P)))
 
 /-- **The root call is polynomial-time.** -/
 theorem rootCall_polyTime :
@@ -196,9 +207,15 @@ theorem rootCall_polyTime :
     ((FastContraction.rootNet_polyTime encT).comp network_polyTime)
 
 /-- **The clock is polynomial-time.** -/
-theorem clock_polyTime : ComputableInPolyTime (clock (T := T)) (encInput encT) encNat :=
-  (ComputableInPolyTime.unary_two_pow_div_sqrt_log_two fuelConst).comp
-    (ComputableInPolyTime.unary_add' numEdges_polyTime (ComputableInPolyTime.fst _ _))
+theorem clock_polyTime : ComputableInPolyTime (clock (T := T)) (encInput encT) encNat := by
+  have hm := numEdges_polyTime (encT := encT)
+  have hlog := ComputableInPolyTime.binary_log_two.comp
+    (ComputableInPolyTime.unary_to_binary.comp hm)
+  have hq := ComputableInPolyTime.unary_div.comp
+    ((ComputableInPolyTime.fst _ _).prod
+      (ComputableInPolyTime.unary_add' hlog (ComputableInPolyTime.const 1)))
+  exact (ComputableInPolyTime.unary_two_pow_div_sqrt_log_two fuelConst).comp
+    (ComputableInPolyTime.unary_add' hm hq)
 
 /-- **Guarded roots are well-formed**: the modulus is irreducible modulo `2`, and the descriptors
 of `G` keep its rows-first ports. -/

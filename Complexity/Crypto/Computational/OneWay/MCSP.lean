@@ -215,7 +215,7 @@ theorem tableInstance_map_tableQueries (oracle : List Bool → List Bool) (n m :
 /-- Against a deterministic oracle, the distinguisher runs the decider on the truth table of the
 oracle's restriction. -/
 theorem interpret_mcspDistinguisher (d : ℕ) (oracle : List Bool → List Bool) (n : ℕ) :
-    OracleComp.interpret (ProbOracleComp.handler ProbComp.unifFin
+    OracleComp.interpret (OracleComp.sumHandler ProbComp.unifFin
       fun request => pure (oracle request.2)) (mcspDistinguisher p V d n []) =
       mcspRun p V ⟨tableArity d n, MCSP.truthTable (tableArity d n)
         (restriction oracle n (tableArity d n)), 2 ^ tableArity d n / (5 * tableArity d n)⟩ := by
