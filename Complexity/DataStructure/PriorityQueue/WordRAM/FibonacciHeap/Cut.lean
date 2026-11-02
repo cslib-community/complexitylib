@@ -418,12 +418,17 @@ theorem cutNodeCode_raw {n base w : ℕ} {x : Data rFib}
   have hcur_not_roots : cur ∉ m :: rtail := fun hm_in => by
     have hp0 := hroots_par0 cur hm_in
     omega
-  obtain ⟨x4, he4, hbr4, hmod4, ⟨r_rt, hr_rt_eq, hr_rt_mem, hst4⟩, hcirc4_r⟩ :=
-    insertIntoNonEmptyList_exec (x := x2.set s1 m.val) (hReg := s1) (uReg := zReg)
-      (hb2.set (hfit _ (by omega))) (hbr2.set_non_base (by decide) _) (by decide) (by decide)
-      (by decide) (by decide) (by wram_simp) (by wram_simp [hx2_z])
-      (by rwa [ofData_set_scratch _ (by decide : 17 ≤ s1.val)]) hcur_not_roots
-  rw [ofData_set_scratch _ (by decide : 17 ≤ s1.val)] at hr_rt_eq hst4
+  obtain ⟨r_rt, hr_rt_eq, hr_rt_mem⟩ := hcirc2_r.right_head
+  obtain ⟨x4, he4, hbr4, hmod4, hst4⟩ :=
+    insertIntoNonEmptyList_exec (x := x2.set s1 m.val) (hReg := s1) (uReg := zReg) (h := m)
+      (u := cur) (r := r_rt) (hb2.set (hfit _ (by omega))) (hbr2.set_non_base (by decide) _)
+      (by decide) (by decide) (by decide) (by decide) (by wram_simp) (by wram_simp [hx2_z])
+      (by rwa [ofData_set_scratch _ (by decide : 17 ≤ s1.val)])
+  rw [ofData_set_scratch _ (by decide : 17 ≤ s1.val)] at hst4
+  have hcirc4_r : IsCircList (RawState.ofData n base x4).left (RawState.ofData n base x4).right
+      (m :: cur :: rtail) := by
+    rw [hst4]
+    exact hcirc2_r.insertAfter hcur_not_roots hr_rt_eq
   refine WP.of_execWithin he4 ?_
   have hx4_reg (r : Fin rFib) (h0 : r ≠ s0) (h1 : r ≠ s1) (h2 : r ≠ s2) (h3 : r ≠ s3)
       (h4 : r ≠ s4) : x4.regs r = x.regs r := by
