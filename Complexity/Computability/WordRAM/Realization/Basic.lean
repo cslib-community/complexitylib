@@ -70,6 +70,33 @@ theorem runClient_width (w : ℕ) (p : Memory.Prog α) (s : Memory.State) :
     exact congrArg (fun t : α × Memory.State × List Memory.Op => (t.1, t.2.1, o :: t.2.2))
       (ih (Memory.step s o).2 (Memory.step s o).1)
 
+/-- The result of the memory interpreter is independent of the admissibility width. -/
+theorem clientResult_width (w : ℕ) (p : Memory.Prog α) (s : Memory.State) :
+    (Memory.spec w).clientResult s p = (Memory.spec 0).clientResult s p :=
+  congrArg Prod.fst (runClient_width w p s)
+
+/-- The final memory/frontier state is independent of the admissibility width. -/
+theorem clientState_width (w : ℕ) (p : Memory.Prog α) (s : Memory.State) :
+    (Memory.spec w).clientState s p = (Memory.spec 0).clientState s p :=
+  congrArg (fun t => t.2.1) (runClient_width w p s)
+
+/-- Admissible sequential histories split at the actual returned value and memory state. -/
+theorem validHistory_bind (w : ℕ) {α β : Type} (p : Memory.Prog α)
+    (q : α → Memory.Prog β) (s : Memory.State) :
+    (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (p.bind q)) ↔
+      (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s p) ∧
+      (Memory.spec w).ValidHistory ((Memory.spec w).clientState s p)
+        ((Memory.spec w).clientHistory ((Memory.spec w).clientState s p)
+          (q ((Memory.spec w).clientResult s p))) := by
+  simp only [StateTransitionSpec.clientHistory, StateTransitionSpec.runClient_bind]
+  rw [StateTransitionSpec.validHistory_append, StateTransitionSpec.run_runClient]
+
+/-- Faithfully append a returned word vector to the original input environment.
+This is static register wiring; it performs no native computation or copies. -/
+def appendWords (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → ℕ)) :
+    δ × α ↪ (Fin (k + l) → ℕ) :=
+  (input.prodMap output).trans (Fin.appendEquiv k l).toEmbedding
+
 /-- A semantic return issues no memory operation. Its native glue is charged separately. -/
 @[simp] theorem memoryCost_pure (a : α) (s : Memory.State) :
     memoryCost (pure a) s = 0 := rfl

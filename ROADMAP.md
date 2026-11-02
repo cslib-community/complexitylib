@@ -635,10 +635,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   all four memory queries, register-word glue, native branches and binds with one fixed
   continuation emitter for all runtime replies. Its functional representation retains the
   complete memory and frontier, and its instruction currency adds local work to memory charges.
-  Remaining: bounded runtime loops, charged input installation and flat programs, operation-level
-  memory implementation and framed upper-ADT adapters. The full C2/M1b and queue transfer
-  objectives remain open; this foundation does not turn arbitrary host continuations into
-  machine-time certificates.
+  Bounded runtime loops also charge local computation and every iteration, including query-free
+  iterations. Fixed flat programs include the actual input-installation prefix and final halt,
+  with explicit input layout, fits and safe-domain hypotheses. Remaining: operation-level memory
+  implementation, framed upper-ADT adapters and the representative queue transfer. The full
+  C2/M1b objective remains open; arbitrary host continuations do not acquire machine-time bounds.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
