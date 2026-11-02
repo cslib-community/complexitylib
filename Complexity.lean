@@ -16,6 +16,10 @@ public import Complexity.Algorithms.Lean.Dijkstra.Client
 public import Complexity.Algorithms.Lean.Dijkstra.Cost
 public import Complexity.Algorithms.Lean.Dijkstra.Memory
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Binary
+public import Complexity.Algorithms.Lean.Dijkstra.Native.Domain
+public import Complexity.Algorithms.Lean.Dijkstra.Native.Fibonacci
+public import Complexity.Algorithms.Lean.Dijkstra.Native.Fibonacci.Cost
+public import Complexity.Algorithms.Lean.Dijkstra.Native.Fibonacci.Memory
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Source
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Word
 public import Complexity.Algorithms.Lean.Huffman.Basic
@@ -102,7 +106,6 @@ public import Complexity.Algorithms.WordRAM.Deduplicate.Model
 public import Complexity.Algorithms.WordRAM.Deduplicate.Program
 public import Complexity.Algorithms.WordRAM.Dijkstra.Fibonacci
 public import Complexity.Algorithms.WordRAM.Dijkstra.FibonacciStatement
-public import Complexity.Algorithms.WordRAM.Dijkstra.GenericPQ
 public import Complexity.Algorithms.WordRAM.Dijkstra.HeapStatement
 public import Complexity.Algorithms.WordRAM.Dijkstra.Invariant
 public import Complexity.Algorithms.WordRAM.Dijkstra.ListEncode

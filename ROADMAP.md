@@ -669,9 +669,14 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   not acquire runtime bounds.
   The Fibonacci method family ([#2290]) realizes all five original memory methods with one fixed
   native factor, exact typed-source/history transport and the existing nonzero amortized
-  potential. This body-only adapter leaves paid initialization/calling conventions, both
-  Dijkstra/MinPQ migrations and their legacy-core removal open; it does not settle the abstract
-  space contract.
+  potential. The Fibonacci Dijkstra consumer now reserves the original zero tail without clearing,
+  derives its reached callee domains from the shared framed history, and pays the nonzero heap
+  potential through the existing amortized telescope. One actual initialized native program
+  retains the original word envelope and sharper reachable-vertex bound, including its prefix,
+  control and halt and the entire final memory/frontier. The old Dijkstra executor and its
+  implementation-specific coefficient 640 are superseded; the original existential endpoints
+  are unchanged. MinPQ migration and the execution core it still uses remain open, as do generic
+  whole-client transfer and the abstract-space decision.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
