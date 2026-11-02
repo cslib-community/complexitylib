@@ -40,6 +40,7 @@ Adapts the cslib `crypto` branch's state simulation API at
 namespace Cslib.ProbOracleComp
 
 open Probability
+open OracleComp (sumHandler)
 
 variable {Query α State State' : Type} {spec : Query → Type}
 
@@ -47,18 +48,19 @@ variable {Query α State State' : Type} {spec : Query → Type}
 theorem run_interpret_readOnly (oracle : (q : Query) → State → PMF (spec q))
     (program : ProbOracleComp spec α) (s : State) :
     (OracleComp.interpret
-      (handler (fun n => StateT.lift (ProbComp.unifOracle n))
+      (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
         (fun q state => (oracle q state).map (·, state))) program).run s =
       (OracleComp.interpret
-        (handler ProbComp.unifOracle (fun q => oracle q s)) program).map (·, s) := by
-  have hhandler : handler (fun n => StateT.lift (ProbComp.unifOracle n))
+        (sumHandler ProbComp.unifOracle (fun q => oracle q s)) program).map (·, s) := by
+  have hhandler : sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
       (fun q state => (oracle q state).map (·, state)) =
-      fun q state => (handler ProbComp.unifOracle (fun q => oracle q state) q).map (·, state) := by
+      fun q state =>
+        (sumHandler ProbComp.unifOracle (fun q => oracle q state) q).map (·, state) := by
     funext q state
     cases q <;> rfl
   rw [hhandler]
   exact OracleComp.run_interpret_readOnly
-    (fun q state => handler ProbComp.unifOracle (fun q => oracle q state) q) program s
+    (fun q state => sumHandler ProbComp.unifOracle (fun q => oracle q state) q) program s
 
 /-- An external oracle's invariant is unaffected by the client's private sampling. -/
 theorem run_interpret_invariant (oracle : (q : Query) → StateT State PMF (spec q))
@@ -66,7 +68,7 @@ theorem run_interpret_invariant (oracle : (q : Query) → StateT State PMF (spec
     (step : ∀ q s, invariant s → ∀ a s', (a, s') ∈ (oracle q s).support → invariant s')
     (program : ProbOracleComp spec α) (s : State) (hs : invariant s) (result : α) (s' : State)
     (h : (result, s') ∈ ((OracleComp.interpret
-      (handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle) program).run s).support) :
+      (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle) program).run s).support) :
     invariant s' := by
   apply OracleComp.run_interpret_invariant _ invariant ?_ program s hs result s' h
   intro q state hstate value next hnext
@@ -83,10 +85,11 @@ theorem run_interpret_simulation (oracle : (q : Query) → StateT State PMF (spe
     (step : ∀ q s, (oracle q s).bind (fun (a, s') => (relate s').map (a, ·)) =
       (relate s).bind (oracle' q)) (program : ProbOracleComp spec α) (s : State) :
     ((OracleComp.interpret
-      (handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle) program).run s).bind
+      (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle) program).run s).bind
         (fun (a, s') => (relate s').map (a, ·)) =
       (relate s).bind (fun state => (OracleComp.interpret
-        (handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle') program).run state) := by
+        (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle') program).run
+          state) := by
   apply OracleComp.run_interpret_simulation
   intro q state
   cases q with
@@ -108,10 +111,10 @@ theorem run_interpret_map_state_of_invariant
       (oracle q s).map (fun (a, s') => (a, represent s')) = oracle' q (represent s))
     (program : ProbOracleComp spec α) (s : State) (hs : invariant s) :
     ((OracleComp.interpret
-      (handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle) program).run s).map
+      (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle) program).run s).map
         (fun (a, s') => (a, represent s')) =
       (OracleComp.interpret
-        (handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle') program).run
+        (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle') program).run
           (represent s) := by
   apply OracleComp.run_interpret_map_state_of_invariant _ _ represent invariant ?_ ?_ program s hs
   · intro q state hstate value next hnext
@@ -136,10 +139,10 @@ theorem run_interpret_map_state (oracle : (q : Query) → StateT State PMF (spec
     (step : ∀ q s, (oracle q s).map (fun (a, s') => (a, represent s')) =
       oracle' q (represent s)) (program : ProbOracleComp spec α) (s : State) :
     ((OracleComp.interpret
-      (handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle) program).run s).map
+      (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle) program).run s).map
         (fun (a, s') => (a, represent s')) =
       (OracleComp.interpret
-        (handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle') program).run
+        (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle') program).run
           (represent s) := by
   exact run_interpret_map_state_of_invariant oracle oracle' represent (fun _ => True)
     (by simp) (fun q state _ => step q state) program s trivial
@@ -153,21 +156,21 @@ theorem run_interpret_map_response_state {spec' : Query → Type}
     (step : ∀ q s, (oracle q s).map (fun (a, s') => (response q a, represent s')) =
       oracle' q (represent s)) (program : ProbOracleComp spec' α) (s : State) :
     ((OracleComp.interpret
-      (handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-      (OracleComp.interpret (handler (fun n => sample (ProbComp.unifFin n))
+      (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (OracleComp.interpret (sumHandler (fun n => sample (ProbComp.unifFin n))
         (fun q => response q <$> query q)) program)).run s).map
         (fun (a, s') => (a, represent s')) =
       (OracleComp.interpret
-        (handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle') program).run
+        (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle') program).run
           (represent s) := by
   let response' : (q : ℕ ⊕ Query) → probOracleSpec spec q → probOracleSpec spec' q
     | .inl _ => id
     | .inr q => response q
   have hadapter : (fun q => response' q <$> OracleComp.query q) =
-      handler (fun n => sample (ProbComp.unifFin n)) (fun q => response q <$> query q) := by
+      sumHandler (fun n => sample (ProbComp.unifFin n)) (fun q => response q <$> query q) := by
     funext q
     cases q with
-    | inl n => simp [response', handler, sample, ProbComp.unifFin]
+    | inl n => simp [response', sumHandler, sample, ProbComp.unifFin]
     | inr q => rfl
   rw [← hadapter]
   apply OracleComp.run_interpret_map_response_state
@@ -187,12 +190,12 @@ theorem run_interpret_run_interpret {Query' : Type} {spec' : Query' → Type}
     (inner : (q : Query) → StateT Hidden (ProbOracleComp spec') (spec q))
     (oracle : (q : Query') → StateT External PMF (spec' q))
     (program : ProbOracleComp spec α) (hidden : Hidden) (external : External) :
-    (OracleComp.interpret (handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-      ((OracleComp.interpret (handler (fun n => StateT.lift (sample (ProbComp.unifFin n))) inner)
+    (OracleComp.interpret (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      ((OracleComp.interpret (sumHandler (fun n => StateT.lift (sample (ProbComp.unifFin n))) inner)
         program).run hidden)).run external =
-    ((OracleComp.interpret (handler (fun n => StateT.lift (ProbComp.unifOracle n))
+    ((OracleComp.interpret (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
       (fun q state => ((OracleComp.interpret
-        (handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           ((inner q).run state.1)).run state.2).map
             (fun ⟨⟨a, b⟩, c⟩ => (a, b, c)))) program).run
         (hidden, external)).map
@@ -207,7 +210,7 @@ theorem run_interpret_run_interpret {Query' : Type} {spec' : Query' → Type}
     simp only [StateT.run_lift, OracleComp.interpret_bind, OracleComp.interpret_pure,
       StateT.run_bind, StateT.run_pure, interpret_sample, ProbComp.unifFin,
       OracleComp.interpret_query]
-    simp [handler, StateT.lift, PMF.map, Function.comp_def]
+    simp [sumHandler, StateT.lift, PMF.map, Function.comp_def]
   | inr q => rfl
 
 end Cslib.ProbOracleComp

@@ -87,4 +87,18 @@ example (C D : ℕ) : ∃ K : ℕ, ∀ (s P ℓ r : ℕ) (G : DescribedNetwork (
           K * ((encTrunc (encList encNat) (P, ℓ, r, G)).length + 1) ^ K :=
   tableTruncAlgorithm.bound C D
 
+-- The same machine's bound covers precision and order both beyond the old `D * s` range.
+example : ∃ K : ℕ,
+    tableTruncAlgorithm.certificate.time (4, 8, 1, twoEdges) ≤
+        K * ((encTrunc (encList encNat) (4, 8, 1, twoEdges)).length + 1) ^ K *
+          2 ^ (K * 2 / Nat.sqrt (Nat.log 2 2)) ∧
+      tableTruncAlgorithm.certificate.space (4, 8, 1, twoEdges) ≤
+        K * ((encTrunc (encList encNat) (4, 8, 1, twoEdges)).length + 1) ^ K := by
+  obtain ⟨C, hC1, hC⟩ := exists_entryAdmissible_twoEdges
+  obtain ⟨K, hK⟩ := tableTruncAlgorithm.bound_polynomial C 1 3
+  refine ⟨K, hK 2 4 8 1 twoEdges (by norm_num) (by norm_num) (by decide)
+    (by norm_num) (by norm_num) ⟨hC, ?_⟩⟩
+  simp only [List.length_cons, List.length_nil]
+  omega
+
 end ComplexityTests.TensorNetworkTruncatedEntry
