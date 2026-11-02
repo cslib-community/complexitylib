@@ -722,6 +722,13 @@ theorem methods_frame (hL : L.Valid w K) {s : Memory.State} (hs : Inv L s)
   obtain ⟨-, -, -, -, -, h⟩ := methods_run hL hs o hv
   exact h
 
+/-- An operation leaves the frontier where it was. -/
+theorem methods_frontier (hL : L.Valid w K) {s : Memory.State} (hs : Inv L s)
+    (o : IndexedMinPQ.Op n) (hv : IndexedMinPQ.valid K (abs L s) o) :
+    ((Memory.spec w).clientState s (ops L o)).frontier = s.frontier := by
+  obtain ⟨-, -, -, -, h, -⟩ := methods_run hL hs o hv
+  exact h
+
 /-! ## The refinement and its frame -/
 
 /-- The binary heap implements the indexed min-priority queue with keys at most `K`. -/
@@ -764,6 +771,7 @@ def framed (hL : L.Valid w K) : Memory.Framed (indexedMinPQSpec n K) w :=
   .ofStatic (refinement hL) L.footprint (fun hs ha => hs.lt_frontier hL ha)
     (fun hs h hf => ⟨hs.congr hL h hf, abs_congr h⟩)
     (fun o hs hv b _ hb => methods_frame hL hs o hv b hb)
+    (fun o hs hv => methods_frontier hL hs o hv)
 
 /-- The footprint of a heap is its layout's cells. -/
 @[simp] theorem framed_footprint (hL : L.Valid w K) (s : Memory.State) :
