@@ -25,6 +25,7 @@ true tag still requires the visible word-fit condition for `1`.
 
 ## Main definitions
 
+* `optionWordsWith`: a presence tag over any faithful payload-word encoding.
 * `optionWords`: a faithful tag/payload encoding of optional natural words.
 * `boolWords`: a Boolean tag with a retained zero slot for native comparisons.
 
@@ -44,25 +45,46 @@ open Cslib.DataStructure
 
 variable {B : Basis} {δ α : Type} {k l r : ℕ}
 
-/-- A presence tag and unshifted payload distinguish `none` from every `some v`. -/
-def optionWords : Option ℕ ↪ (Fin 2 → ℕ) where
+/-- Prefix a faithful payload encoding by a presence tag. Missing payload words are zero;
+present payload words retain their values. No decoder or payload-fit bound is implicit. -/
+def optionWordsWith (payload : α ↪ (Fin l → ℕ)) : Option α ↪ (Fin (l + 1) → ℕ) where
   toFun
-    | none => ![0, 0]
-    | some v => ![1, v]
+    | none => Fin.cases 0 (fun _ => 0)
+    | some a => Fin.cases 1 (payload a)
   inj' := by
     intro a b h
     cases a with
     | none =>
       cases b with
       | none => rfl
-      | some v => have hh := congrFun h 0; simp at hh
-    | some u =>
+      | some b => have hh := congrFun h 0; change 0 = 1 at hh; omega
+    | some a =>
       cases b with
-      | none => have hh := congrFun h 0; simp at hh
-      | some v => exact congrArg some (congrFun h 1)
+      | none => have hh := congrFun h 0; change 1 = 0 at hh; omega
+      | some b =>
+        apply congrArg some
+        apply payload.injective
+        funext i
+        exact congrFun h i.succ
 
-@[simp] theorem optionWords_none : optionWords none = ![0, 0] := rfl
-@[simp] theorem optionWords_some (v : ℕ) : optionWords (some v) = ![1, v] := rfl
+@[simp] theorem optionWordsWith_none (payload : α ↪ (Fin l → ℕ)) :
+    optionWordsWith payload none = Fin.cases 0 (fun _ => 0) := rfl
+
+@[simp] theorem optionWordsWith_some (payload : α ↪ (Fin l → ℕ)) (a : α) :
+    optionWordsWith payload (some a) = Fin.cases 1 (payload a) := rfl
+
+/-- A presence tag and one unshifted word distinguish `none` from every `some v`.
+This is the scalar specialization of `optionWordsWith`. -/
+def optionWords : Option ℕ ↪ (Fin 2 → ℕ) :=
+  optionWordsWith (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
+
+@[simp] theorem optionWords_none : optionWords none = ![0, 0] := by
+  funext i
+  fin_cases i <;> rfl
+
+@[simp] theorem optionWords_some (v : ℕ) : optionWords (some v) = ![1, v] := by
+  funext i
+  fin_cases i <;> rfl
 
 /-- A Boolean tag with a retained zero slot supports native comparisons without immediates. -/
 def boolWords : Bool ↪ (Fin 2 → ℕ) where
