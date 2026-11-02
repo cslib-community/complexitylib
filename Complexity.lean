@@ -20,6 +20,7 @@ public import Complexity.Algorithms.Lean.Karger.Contraction
 public import Complexity.Algorithms.Lean.Karger.Memory
 public import Complexity.Algorithms.Lean.Karger.Memory.Contract
 public import Complexity.Algorithms.Lean.Karger.Memory.Layout
+public import Complexity.Algorithms.Lean.Karger.Memory.Loops
 public import Complexity.Algorithms.Lean.Kruskal.Basic
 public import Complexity.Algorithms.Lean.Kruskal.SimpleGraph
 public import Complexity.Algorithms.Lean.Matroid.Greedy
