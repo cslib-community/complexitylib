@@ -42,10 +42,6 @@ private abbrev Layouts := Stack.Memory.Layout × Stack.Memory.Layout
 private abbrev word : ℕ ↪ (Fin 1 → ℕ) := (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
 private abbrev unitWords : Unit ↪ (Fin 0 → ℕ) := (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
 
-private def append {δ α : Type} {k l : ℕ} (input : δ ↪ (Fin k → ℕ))
-    (answer : α ↪ (Fin l → ℕ)) : δ × α ↪ (Fin (k + l) → ℕ) :=
-  (input.prodMap answer).trans (Fin.appendEquiv k l).toEmbedding
-
 /-- Both complete runtime layouts precede the unshifted payload. -/
 def enqueueWords : ((Stack.Memory.Layout × Stack.Memory.Layout) × ℕ) ↪ (Fin 9 → ℕ) :=
   (MemoryQueue.layoutWords.prodMap (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding).trans
@@ -97,11 +93,11 @@ theorem realizes_enqueue (w C : ℕ) :
     (by intro d i; fin_cases i <;> rfl)
   simpa only [MemoryQueue.memMethods_enqueue] using h
 
-private def replyInput := append MemoryQueue.layoutWords optionWords
-private def zeroInput := append replyInput word
-private def fuelInput := append zeroInput word
-private def stagedInput := append fuelInput (MemoryQueue.transferWords MemoryQueue.layoutWords)
-private def lastInput := append stagedInput unitWords
+private def replyInput := appendWords MemoryQueue.layoutWords optionWords
+private def zeroInput := appendWords replyInput word
+private def fuelInput := appendWords zeroInput word
+private def stagedInput := appendWords fuelInput (MemoryQueue.transferWords MemoryQueue.layoutWords)
+private def lastInput := appendWords stagedInput unitWords
 
 private theorem returnZero {δ : Type} {k : ℕ} (input : δ ↪ (Fin k → ℕ)) :
     Realizes .exact (fun _ => pure 0) input word
