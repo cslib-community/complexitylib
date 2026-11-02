@@ -312,6 +312,64 @@ theorem method_arguments {n K : ℕ} (L : Memory.Layout n) (x : Data registers)
       | exact (congrArg x.regs (method_src_eq_argument 4 _ (2 : Fin 6) rfl)).trans (hl 2)
       | exact (congrArg x.regs (method_src_eq_argument 4 _ (3 : Fin 6) rfl)).trans (hl 3)
 
+private noncomputable def finish {n : ℕ} (o : IndexedMinPQ.Op n)
+    (y : Data registers) : Data registers :=
+  match o with
+  | .getKey _ => y.set (bank 2) (y.regs (bank 1))
+  | _ => y
+
+private theorem staged_zero_cond (x : Data registers) (i : Fin 4) (hi : i ≠ 3) :
+    (.eq (bank i) (bank 3) : Cond registers).Holds (x.set (bank 3) 0) ↔
+      x.regs (bank i) = 0 := by
+  have hn := bank_injective.ne hi
+  simp [Cond.Holds, Data.set_regs, hn]
+
+/-- Only the ABI wrapper is charged here: the actual zero staging, existing conditional rules,
+and lookup key copy. The supplied body execution is not replaced or hand-stepped. -/
+private theorem dispatch_exec {w n K : ℕ} (L : Memory.Layout n) (x : Data registers)
+    (o : IndexedMinPQ.Op n) (ha : PQCode.argMatch code o x.regs)
+    {y : Data registers} {N : ℕ}
+    (he : ExecWithin w (Backend.code family (.inl ((backend n K L).tag o)))
+      (x.set (bank 3) 0) y N) :
+    ExecWithin w code.code x (finish o y) (N + 6) := by
+  have hc := ExecWithin.const (B := Basis.exact) (x := x) (d := bank 3) (fits_zero w)
+  have hp0 := (staged_zero_cond x 0 (by decide))
+  have hp1 := (staged_zero_cond x 1 (by decide))
+  have hp2 := (staged_zero_cond x 2 (by decide))
+  cases o with
+  | isEmpty =>
+    rcases ha with ⟨h2, h1, h0⟩
+    have h : ExecWithin w code.code x y (1 + (N + 1 + 1 + 1)) :=
+      hc.seq (ExecWithin.branch_pos (hp0.mpr h2)
+        (ExecWithin.branch_pos (hp1.mpr h1) (ExecWithin.branch_pos (hp2.mpr h0) he)))
+    exact h.mono (by omega)
+  | getKey v =>
+    rcases ha with ⟨h2, h1, h0, _⟩
+    have hget := he.seq (ExecWithin.copy (x := y) (d := bank 2) (s := bank 1))
+    have h : ExecWithin w code.code x (finish (.getKey v) y) (1 + (N + 1 + 2 + 1 + 1)) :=
+      hc.seq (ExecWithin.branch_pos (hp0.mpr h2)
+        (ExecWithin.branch_pos (hp1.mpr h1)
+          (ExecWithin.branch_neg (fun h => h0 (hp2.mp h)) hget)))
+    exact h.mono (by omega)
+  | insert v k =>
+    rcases ha with ⟨h2, h1, h0, _, _⟩
+    have h : ExecWithin w code.code x y (1 + (N + 1 + 2 + 1)) :=
+      hc.seq (ExecWithin.branch_pos (hp0.mpr h2)
+        (ExecWithin.branch_neg (fun h => h1 (hp1.mp h))
+          (ExecWithin.branch_pos (hp2.mpr h0) he)))
+    exact h.mono (by omega)
+  | decreaseKey v k =>
+    rcases ha with ⟨h2, h1, h0, _, _⟩
+    have h : ExecWithin w code.code x y (1 + (N + 2 + 2 + 1)) :=
+      hc.seq (ExecWithin.branch_pos (hp0.mpr h2)
+        (ExecWithin.branch_neg (fun h => h1 (hp1.mp h))
+          (ExecWithin.branch_neg (fun h => h0 (hp2.mp h)) he)))
+    exact h.mono (by omega)
+  | extractMin =>
+    have h : ExecWithin w code.code x y (1 + (N + 2)) :=
+      hc.seq (ExecWithin.branch_neg (fun h => ha (hp0.mp h)) he)
+    exact h.mono (by omega)
+
 private theorem reserve_layout :
     Function.Injective reserveScratch ∧
       (∀ (_i : Fin 1) j, argument 0 ≠ reserveScratch j) ∧
