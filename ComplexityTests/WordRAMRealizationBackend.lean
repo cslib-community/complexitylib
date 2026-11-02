@@ -6,100 +6,22 @@ Authors: Samuel Schlesinger
 
 -- upstream: candidate
 
-import Complexity.Computability.WordRAM.Realization.Backend
-import Complexity.Computability.WordRAM.Realization.Client.MemoryStack
+import Complexity.DataStructure.Stack.Native
 import Complexity.Computability.WordRAM.Realization.Function
 
-/-! The per-constructor backend on the array stack. Three tags select the bodies of
-`MemoryStack.realizes_push`, `realizes_pop` and `realizes_size`. The push carries a value and
+/-! The per-constructor backend on the array stack, `Stack.Native`. Three tags select the bodies
+of `MemoryStack.realizes_push`, `realizes_pop` and `realizes_size`. The push carries a value and
 answers `()`; its result encoding has no words, so the value is not echoed. The layout is a
-runtime argument of every tag. Correctness and a constant instruction bound come from
-`Stack.Memory.refinement` and `Stack.Memory.amortized`. -/
+runtime argument of every tag. -/
 
 open Cslib Cslib.DataStructure Cslib.WordRAM Cslib.WordRAM.Realization
-  Cslib.WordRAM.Realization.MemoryStack Cslib.DataStructure.Queue
+  Cslib.DataStructure.Queue Cslib.DataStructure.Stack.Native
 
 namespace ComplexityTests.WordRAMRealizationBackend
 
-/-- The stack's operation constructors. -/
-inductive Tag
-  | push
-  | pop
-  | size
-  deriving DecidableEq
-
-instance : Fintype Tag := Fintype.ofList [.push, .pop, .size] fun t => by cases t <;> simp
-
-/-- One realization per constructor. -/
-noncomputable def certificates : Tag → Certificate .exact
-  | .push => ⟨realizes_push⟩
-  | .pop => ⟨realizes_pop⟩
-  | .size => ⟨realizes_size⟩
-
-/-- The stack on layout `L`: the push value and the layout are the only arguments. -/
-noncomputable def backend (w C : ℕ) (L : Stack.Memory.Layout) :
-    Backend (Stack.WordRAM.spec w C) certificates where
-  tag
-    | .push _ => .push
-    | .pop => .pop
-    | .size => .size
-  arg
-    | .push v => (L, v)
-    | .pop => L
-    | .size => L
-  answer
-    | .push _ => id
-    | .pop => id
-    | .size => id
-
-theorem layoutWords_fits {w : ℕ} {L : Stack.Memory.Layout} {e : Memory.State}
-    (hw : Memory.WellFormed w e) (hi : Stack.Memory.Inv L e) (j : Fin 4) :
-    Fits w (layoutWords L j) := by
-  have h₁ : L.count.base + L.count.length ≤ e.frontier := hi.count_allocated
-  have h₂ : L.items.base + L.items.length ≤ e.frontier := hi.items_allocated
-  refine hw.frontier_fits.of_le ?_
-  fin_cases j <;> simp [layoutWords] <;> omega
-
-theorem implements {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w C) :
-    (backend w C L).Implements (Stack.Memory.refinement hL) where
-  run o s := by cases o <;> rfl
-  entry {e} o hw hi hv := by
-    have hC := hL.items_length
-    cases o with
-    | push v =>
-      obtain ⟨hlen, hv⟩ := hv
-      change (Stack.Memory.abs L e).length < C at hlen
-      rw [Stack.Memory.length_abs] at hlen
-      exact ⟨fits_appendWords (d := L) (a := v) layoutWords
-        (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding (layoutWords_fits hw hi) fun _ => hv,
-        hC ▸ hL, hi, (by omega : e.mem L.count.base < L.items.length)⟩
-    | pop => exact ⟨layoutWords_fits hw hi, hC ▸ hL, hi⟩
-    | size => exact ⟨layoutWords_fits hw hi, trivial⟩
-
-/-- The native stack on layout `L`. -/
-noncomputable def implementation {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w C) :
-    StateTransitionImpl (Stack.WordRAM.spec w C) ((backend w C L).exec w) :=
-  Backend.implementation (implements hL)
-
-/-- One constant bounds every operation, before every width, capacity and layout. -/
-theorem instruction_bound : ∃ K, ∀ {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w C),
-    Bound (implementation hL) id fun _ _ => K :=
-  ⟨Backend.factor certificates * 23, fun hL =>
-    Backend.bound (implements hL) (Stack.Memory.amortized hL) 19 fun o _ _ => by
-      cases o <;> exact Nat.le_of_ble_eq_true rfl⟩
-
-/-- Adaptive clients run one operation at a time, within `K` instructions per operation. -/
-theorem run_client : ∃ K, ∀ {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w C) {α : Type}
-    (p : (Stack.WordRAM.spec w C).Client α) {vs : List ℕ}
-    {x : Data (Backend.registers certificates)},
-    (implementation hL).rep vs x →
-    (Stack.WordRAM.spec w C).ValidHistory vs ((Stack.WordRAM.spec w C).clientHistory vs p) →
-    ∃ y traces, Executes ((backend w C L).exec w) p x
-        ((Stack.WordRAM.spec w C).clientResult vs p) y traces ∧
-      (implementation hL).rep ((Stack.WordRAM.spec w C).clientState vs p) y ∧
-      total id traces ≤ ((Stack.WordRAM.spec w C).clientHistory vs p).length * K := by
-  obtain ⟨K, hK⟩ := instruction_bound
-  exact ⟨K, fun hL _ p _ _ hr hv => Bound.exists_executes_const (hK hL) p hr hv⟩
+-- A full stack rejects another push, while the largest fitting word remains a valid value.
+example : ¬(Stack.spec 4 2).valid [4, 7] (.push 2) ∧ (Stack.spec 4 2).valid [] (.push 15) := by
+  decide
 
 -- The push value never selects code: every push runs the body of the `push` tag.
 example (w C : ℕ) (L : Stack.Memory.Layout) :
@@ -110,23 +32,47 @@ example (w C : ℕ) (L : Stack.Memory.Layout) :
 example : (certificates .push).l = 0 := rfl
 
 -- Every native execution from a represented stack takes the specified step, and its memory is
--- the method's final memory.
+-- the method's final memory, so it writes only the layout's cells.
 example {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w C) {vs : List ℕ}
     {x y : Data (Backend.registers certificates)} {o : StackOp ℕ}
-    {a : (Stack.WordRAM.spec w C).Result o} {n : ℕ} (hr : (implementation hL).rep vs x)
-    (hv : (Stack.WordRAM.spec w C).valid vs o) (he : (backend w C L).exec w x o a y n) :
-    a = ((Stack.WordRAM.spec w C).stepFn vs o).2 ∧
-      memoryState (Backend.frontier certificates) y = (Memory.spec w).clientState
-        (memoryState (Backend.frontier certificates) x) (Stack.Memory.methods L w C o) :=
-  ⟨((implementation hL).correct_ofFn hr hv he).1,
-    Backend.exec_memoryState (implements hL) hr hv he⟩
+    {a : (Stack.spec w C).Result o} {n : ℕ} (hr : (implementation hL).rep vs x)
+    (hv : (Stack.spec w C).valid vs o) (he : (backend w C L).exec w x o a y n) :
+    a = ((Stack.spec w C).stepFn vs o).2 ∧ Modifies L.footprint x.mem y.mem := by
+  refine ⟨((implementation hL).correct_ofFn hr hv he).1, ?_⟩
+  have hm : memoryState (Backend.frontier certificates) y = (Memory.spec w).clientState
+      (memoryState (Backend.frontier certificates) x) (Stack.Memory.methods L w C o) :=
+    Backend.exec_memoryState (implements hL) hr hv he
+  rw [← ((Backend.rep_iff _ _ _).mp hr).2.1] at hv
+  have hmem := (Stack.Memory.modifies_methods hL o hv).1
+  rw [← hm] at hmem
+  exact hmem
 
--- An empty stack of capacity two at address three, held in zero memory with the frontier at six,
--- is represented by the native data holding that memory state.
-example : (implementation (Stack.Memory.valid_allocLayout (w := 4) (f := 3) (C := 2)
+/-- An empty stack of capacity two at address three, held in zero memory with the frontier at
+six: the native data holding that memory state represents it. -/
+theorem empty_rep : (implementation (Stack.Memory.valid_allocLayout (w := 4) (f := 3) (C := 2)
     (by decide))).rep [] (Backend.data certificates ⟨fun _ => 0, 6⟩) :=
   Backend.rep_data _ ⟨by decide, fun _ => fits_zero 4⟩ ⟨le_of_lt (by decide), le_rfl, by simp⟩
     (by simp [Stack.Memory.refinement, Stack.Memory.abs])
+
+/-- An adaptive client chooses whether to pop from the observed size. -/
+def stackClient : (Stack.spec 4 2).Client (Option ℕ × ℕ) :=
+  .liftBind (.push 7) fun _ =>
+    .liftBind .size fun (n : ℕ) =>
+      if n = 1 then
+        .liftBind .pop fun v => .liftBind .size fun (m : ℕ) => .pure (v, m)
+      else .pure (none, n)
+
+-- The native stack runs the client from the empty stack, one operation at a time: it pops the
+-- pushed value, ends empty, and spends at most the constant `K` on each of its four calls.
+example : ∃ K, ∃ y traces,
+    Executes ((backend 4 2 ⟨⟨3, 1⟩, ⟨4, 2⟩⟩).exec 4) stackClient
+        (Backend.data certificates ⟨fun _ => 0, 6⟩) (some 7, 0) y traces ∧
+      total id traces ≤ 4 * K := by
+  obtain ⟨K, hK⟩ := instruction_bound
+  obtain ⟨y, traces, he, -, hb⟩ := Bound.exists_executes_const (hK _) stackClient empty_rep (by
+    change (0 < 2 ∧ Fits 4 7) ∧ True ∧ True ∧ True ∧ True
+    decide)
+  exact ⟨K, y, traces, he, hb⟩
 
 -- Two stacks with disjoint layouts: product operations select tags of `Tag ⊕ Tag`.
 example {w C : ℕ} {L₁ L₂ : Stack.Memory.Layout} (h₁ : L₁.Valid w C) (h₂ : L₂.Valid w C) :

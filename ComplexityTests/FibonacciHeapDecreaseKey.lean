@@ -8,6 +8,7 @@ module
 -- upstream: local-only (test driver)
 
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.DecreaseKey
+public import Mathlib.Tactic.FinCases
 
 /-!
 # The record Fibonacci heap's `decreaseKey` on a concrete heap

@@ -64,6 +64,9 @@ so `memoryCost`, which is taken at width zero, is the charge that refinements st
   depend on the word width.
 * `fits_appendWords`: appended argument words fit when both parts do.
 * `Backend.exists_exec`: the body of one tag runs its program on installed arguments.
+* `Backend.exists_exec_frame`, `Backend.exists_exec_live`: retain the register frame and run
+  directly from arguments already live in the source bank.
+* `Backend.install_eq_self`: installation is the identity on actual live arguments.
 * `Backend.Implements.prod`: side-by-side backends run a product of refinements.
 * `Backend.exec_iff`, `Backend.rep_iff`: the execution relation and representation, unfolded.
 * `Backend.rep_data`: the data holding an invariant state represents its abstraction.
@@ -182,6 +185,61 @@ noncomputable def tmp (i : ι) (j : Fin ((C i).l + (C i).realizes.scratchSize + 
     unfold registers scratchWords at *
     omega⟩
 
+/-- Distinct argument coordinates use distinct source registers. -/
+theorem src_injective (i : ι) : Function.Injective (src C i) := by
+  intro a b h
+  apply Fin.ext
+  have := congrArg Fin.val h
+  simp only [src] at this
+  omega
+
+/-- Distinct result/scratch coordinates use distinct registers. -/
+theorem tmp_injective (i : ι) : Function.Injective (tmp C i) := by
+  intro a b h
+  apply Fin.ext
+  have := congrArg Fin.val h
+  simp only [tmp] at this
+  omega
+
+/-- Source coordinates at the same position agree across tags. -/
+theorem src_eq_of_val_eq (i i' : ι) {a : Fin (C i).k} {b : Fin (C i').k}
+    (h : a.val = b.val) : src C i a = src C i' b := by
+  apply Fin.ext
+  simp only [src, h]
+
+/-- Result/scratch coordinates at the same position agree across tags. -/
+theorem tmp_eq_of_val_eq (i i' : ι)
+    {a : Fin ((C i).l + (C i).realizes.scratchSize + 1)}
+    {b : Fin ((C i').l + (C i').realizes.scratchSize + 1)}
+    (h : a.val = b.val) : tmp C i a = tmp C i' b := by
+  apply Fin.ext
+  simp only [tmp, h]
+
+/-- No tag's argument register is used by any tag's result/scratch bank. -/
+theorem src_ne_tmp (i i' : ι) (a : Fin (C i).k)
+    (b : Fin ((C i').l + (C i').realizes.scratchSize + 1)) : src C i a ≠ tmp C i' b := by
+  intro h
+  have hk := Finset.le_sup (f := fun i => (C i).k) (Finset.mem_univ i)
+  have ha := a.isLt
+  have := congrArg Fin.val h
+  simp only [src, tmp, argWords] at this
+  omega
+
+/-- Argument installation never uses the frontier register. -/
+theorem src_ne_frontier (i : ι) (a : Fin (C i).k) : src C i a ≠ frontier C := by
+  intro h
+  have := congrArg Fin.val h
+  simp only [src, frontier] at this
+  omega
+
+/-- Native result/scratch writes never use the frontier register. -/
+theorem tmp_ne_frontier (i : ι) (a : Fin ((C i).l + (C i).realizes.scratchSize + 1)) :
+    tmp C i a ≠ frontier C := by
+  intro h
+  have := congrArg Fin.val h
+  simp only [tmp, frontier] at this
+  omega
+
 /-- The static body of tag `i`. -/
 noncomputable def code (i : ι) : Code B (registers C) :=
   (C i).realizes.code (frontier C) (src C i) (tmp C i)
@@ -237,6 +295,29 @@ private theorem install_src (i : ι) (d : (C i).Arg) (x : Data (registers C)) :
   funext j
   simp [install, src]
 
+/-- Installing arguments already present in their source registers changes nothing.
+This identity requires actual live words; it supplies no native argument-staging code. -/
+theorem install_eq_self (i : ι) (d : (C i).Arg) (x : Data (registers C))
+    (hin : x.regs ∘ src C i = (C i).input d) : install C i d x = x := by
+  apply Data.ext
+  · funext j
+    by_cases hj : 0 < j.val ∧ j.val ≤ (C i).k
+    · let a : Fin (C i).k := ⟨j.val - 1, by omega⟩
+      have hsrc : src C i a = j := by
+        apply Fin.ext
+        simp only [src, a]
+        omega
+      change (if h : 0 < j.val ∧ j.val ≤ (C i).k then
+        (C i).input d ⟨j.val - 1, by omega⟩ else x.regs j) = _
+      rw [dite_eq_left hj]
+      have h := congrFun hin a
+      change x.regs (src C i a) = (C i).input d a at h
+      exact h.symm.trans (congrArg x.regs hsrc)
+    · change (if h : 0 < j.val ∧ j.val ≤ (C i).k then
+        (C i).input d ⟨j.val - 1, by omega⟩ else x.regs j) = _
+      rw [dite_eq_right hj]
+  · rfl
+
 private theorem install_bounded {w : ℕ} (i : ι) (d : (C i).Arg) {x : Data (registers C)}
     (hx : x.Bounded w) (hin : ∀ j, Fits w ((C i).input d j)) : (install C i d x).Bounded w := by
   refine ⟨fun j => ?_, hx.2⟩
@@ -244,6 +325,34 @@ private theorem install_bounded {w : ℕ} (i : ι) (d : (C i).Arg) {x : Data (re
   split
   · exact hin _
   · exact hx.1 j
+
+/-- The selected body's complete execution guarantee, including its register frame.
+Only the frontier and its result/scratch bank may change relative to installed arguments. -/
+theorem exists_exec_frame {w : ℕ} (i : ι) (d : (C i).Arg) {x : Data (registers C)}
+    (hx : x.Bounded w)
+    (hin : ∀ j, Fits w ((C i).input d j)) (hsafe : (C i).safe w d (memoryState (frontier C) x))
+    (hv : (Memory.spec w).ValidHistory (memoryState (frontier C) x)
+      ((Memory.spec w).clientHistory (memoryState (frontier C) x) ((C i).prog d))) :
+    ∃ y n, Exec w (code C i) (install C i d x) y n ∧
+      n ≤ factor C * (memoryCost ((C i).prog d) (memoryState (frontier C) x) +
+        (C i).work d (memoryState (frontier C) x) + 1) ∧
+      memoryState (frontier C) y =
+        (Memory.spec w).clientState (memoryState (frontier C) x) ((C i).prog d) ∧
+      (∀ j, y.regs (tmp C i (Fin.castAdd ((C i).realizes.scratchSize + 1) j)) =
+        (C i).output ((Memory.spec w).clientResult (memoryState (frontier C) x) ((C i).prog d))
+          j) ∧
+      y.Bounded w ∧
+      ∀ j, j ≠ frontier C → (∀ a, tmp C i a ≠ j) →
+        y.regs j = (install C i d x).regs j := by
+  have hb := install_bounded C i d hx hin
+  have hm := memoryState_install C i d x
+  obtain ⟨hi', hd, hf, hs⟩ := layout C i
+  obtain ⟨y, ⟨n, hn, he⟩, hm', hout, hframe⟩ :=
+    ((C i).realizes.code_spec (frontier C) (src C i) (tmp C i) hi' hd hf hs).2 w d _ hb
+      (install_src C i d x) (hm ▸ hsafe) (hm ▸ hv)
+  rw [hm] at hn hm' hout
+  exact ⟨y, n, he, hn.trans (Nat.mul_le_mul_right _ (factor_le C i)), hm', hout,
+    he.bounded hb, hframe⟩
 
 /-- **The body of one tag.** From bounded data, with arguments that fit words, inside the tag's
 domain and with an admissible memory history, the body of tag `i` runs its program on the
@@ -262,14 +371,30 @@ theorem exists_exec {w : ℕ} (i : ι) (d : (C i).Arg) {x : Data (registers C)} 
         (C i).output ((Memory.spec w).clientResult (memoryState (frontier C) x) ((C i).prog d))
           j) ∧
       y.Bounded w := by
-  have hb := install_bounded C i d hx hin
-  have hm := memoryState_install C i d x
-  obtain ⟨hi', hd, hf, hs⟩ := layout C i
-  obtain ⟨y, ⟨n, hn, he⟩, hm', hout, -⟩ :=
-    ((C i).realizes.code_spec (frontier C) (src C i) (tmp C i) hi' hd hf hs).2 w d _ hb
-      (install_src C i d x) (hm ▸ hsafe) (hm ▸ hv)
-  rw [hm] at hn hm' hout
-  exact ⟨y, n, he, hn.trans (Nat.mul_le_mul_right _ (factor_le C i)), hm', hout, he.bounded hb⟩
+  obtain ⟨y, n, he, hn, hm, hout, hb, -⟩ := exists_exec_frame C i d hx hin hsafe hv
+  exact ⟨y, n, he, hn, hm, hout, hb⟩
+
+/-- Run the same fixed body directly from bounded data whose input words are already live.
+No installation or loader is executed. Safety and valid history remain explicit, and the
+register frame is relative to the actual initial data. -/
+theorem exists_exec_live {w : ℕ} (i : ι) (d : (C i).Arg) {x : Data (registers C)} (hx : x.Bounded w)
+    (hin : x.regs ∘ src C i = (C i).input d) (hsafe : (C i).safe w d (memoryState (frontier C) x))
+    (hv : (Memory.spec w).ValidHistory (memoryState (frontier C) x)
+      ((Memory.spec w).clientHistory (memoryState (frontier C) x) ((C i).prog d))) :
+    ∃ y n, Exec w (code C i) x y n ∧
+      n ≤ factor C * (memoryCost ((C i).prog d) (memoryState (frontier C) x) +
+        (C i).work d (memoryState (frontier C) x) + 1) ∧
+      memoryState (frontier C) y =
+        (Memory.spec w).clientState (memoryState (frontier C) x) ((C i).prog d) ∧
+      (∀ j, y.regs (tmp C i (Fin.castAdd ((C i).realizes.scratchSize + 1) j)) =
+        (C i).output ((Memory.spec w).clientResult (memoryState (frontier C) x) ((C i).prog d))
+          j) ∧
+      y.Bounded w ∧
+      ∀ j, j ≠ frontier C → (∀ a, tmp C i a ≠ j) →
+        y.regs j = x.regs j := by
+  have hfit j : Fits w ((C i).input d j) := congrFun hin j ▸ hx.1 (src C i j)
+  simpa only [install_eq_self C i d x hin] using
+    exists_exec_frame C i d hx hfit hsafe hv
 
 end Registers
 
@@ -323,7 +448,7 @@ theorem Implements.prod {w : ℕ} {S : Backend D C} {S' : Backend D' C'}
 
 /-- The backend with the tags of a second family added, such as a realized allocation's
 (`Backend.Allocation`). Every operation selects the body it selects in `S`. -/
-def extend (C' : ι' → Certificate B) : Backend D (Sum.elim C C') where
+@[expose] def extend (C' : ι' → Certificate B) : Backend D (Sum.elim C C') where
   tag o := .inl (S.tag o)
   arg := S.arg
   answer := S.answer
@@ -342,7 +467,7 @@ variable [Fintype ι]
 
 /-- Install the selected program's arguments in its argument registers. Installation is
 uncharged and leaves memory and the frontier unchanged. -/
-def prepare (o : D.Op) (x : Data (registers C)) : Data (registers C) :=
+@[expose] def prepare (o : D.Op) (x : Data (registers C)) : Data (registers C) :=
   install C (S.tag o) (S.arg o) x
 
 /-- An operation runs the body of its tag from the prepared data, in the counted number of

@@ -517,7 +517,7 @@ theorem isPPTOn_runTwoRound {α Caller : Type} {enc : α ↪ List Bool} {input :
     {reply1 reply2 : Caller × List Bool → List Bool}
     {bound : Caller → ℕ}
     (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun p => Vstar p.1 p.2.1 p.2.2))
+      (fun (n, a, z) => Vstar n a z))
     (hprep : ComputableInPolyTime prepare input (encPair encUnary (encPair enc encBits)))
     (hr1 : ComputableInPolyTime reply1 (encPair input encBits) encBits)
     (hr2 : ComputableInPolyTime reply2 (encPair input encBits) encBits)
@@ -578,7 +578,7 @@ theorem isPPTOn_runTwoRound_prover {α Caller : Type} {enc : α ↪ List Bool}
     {openFlags bits ch_guess : Caller → List Bool}
     {seeds pads : Caller → List (List Bool)}
     (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun p => Vstar p.1 p.2.1 p.2.2))
+      (fun (n, a, z) => Vstar n a z))
     (hg : ComputableInPolyTime generator encBits encBits)
     (hn : ComputableInPolyTime n input encUnary)
     (hs : ComputableInPolyTime s input encUnary)
@@ -666,11 +666,11 @@ noncomputable def gmwSimWithPads (generator : List Bool → List Bool) (s m : �
     ProbComp (List Bool) := do
   let ch_guess ← BitString.sampleList 3
   let coins ← gmwSampleSimCoins s φ ch_guess
-  let p ← runTwoRound
+  let (view, _, challenge) ← runTwoRound
     (fun r => proverReply1 generator m r (allOpenFlags φ ch_guess coins.1) coins.1 coins.2 pads)
     (fun _ => proverReply2 s φ ch_guess coins.1 coins.2)
     prog (0, [false, false, false])
-  return if p.2.2 == ch_guess then true :: p.1 else []
+  return if challenge == ch_guess then true :: view else []
 
 /-- One attempt of the GMW zero-knowledge simulator (without any witness). -/
 noncomputable def gmwSimAttempt (generator : List Bool → List Bool) (s m : ℕ) (φ : CNF ℕ)
@@ -693,7 +693,7 @@ private theorem isPPTOn_gmwSimWithPads {α : Type} {enc : α ↪ List Bool}
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableTidilyInPolyTime f enc encCNF)
     (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun p => Vstar p.1 p.2.1 p.2.2)) :
+      (fun (n, a, z) => Vstar n a z)) :
     IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) (encList encBits)) encBits
       (fun p : (ℕ × α × List Bool) × List (List Bool) =>
         gmwSimWithPads generator (p.1.1 + 7) (length (p.1.1 + 7))
@@ -719,7 +719,7 @@ private theorem isPPTOn_gmwSimAttempt {α : Type} {enc : α ↪ List Bool}
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableTidilyInPolyTime f enc encCNF)
     (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun p => Vstar p.1 p.2.1 p.2.2)) :
+      (fun (n, a, z) => Vstar n a z)) :
     IsPPTOn (encPair encUnary (encPair enc encBits)) encBits
       (fun p : ℕ × α × List Bool =>
         gmwSimAttempt generator (p.1 + 7) (length (p.1 + 7))
@@ -742,10 +742,10 @@ theorem isPPTOn_gmwSimulator {α : Type} {enc : α ↪ List Bool}
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableInPolyTime f enc encCNF)
     (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun p => Vstar p.1 p.2.1 p.2.2)) :
+      (fun (n, a, z) => Vstar n a z)) :
     IsPPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun p : ℕ × α × List Bool =>
-        gmwSimulator generator length f Vstar p.1 p.2.1 p.2.2) := by
+      (fun (n, a, z) =>
+        gmwSimulator generator length f Vstar n a z) := by
   have hg := hg.tidy
   have hf := hf.tidy
   have hattempt := isPPTOn_gmwSimAttempt hg hlen hf hV
@@ -794,7 +794,7 @@ private theorem isPPTOn_runTwoRound_honest {α Caller : Type} {enc : α ↪ List
     {n s m : Caller → ℕ} {a : Caller → α} {z : Caller → List Bool}
     {φ : Caller → CNF ℕ} {coins : Caller → List Bool × List (List Bool)}
     (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun p => Vstar p.1 p.2.1 p.2.2))
+      (fun (n, a, z) => Vstar n a z))
     (hg : ComputableTidilyInPolyTime generator encBits encBits)
     (hn : ComputableTidilyInPolyTime n input encUnary)
     (hs : ComputableTidilyInPolyTime s input encUnary)
@@ -827,11 +827,15 @@ theorem isPPTOn_gmwInteract {α : Type} {enc : α ↪ List Bool}
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableInPolyTime f enc encCNF)
     (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun p => Vstar p.1 p.2.1 p.2.2)) :
+      (fun (n, a, z) => Vstar n a z)) :
     IsPPTOn (encPair encUnary (encPair enc (encPair encBits encBits))) encBits
-      (fun p : ℕ × α × List Bool × List Bool =>
-        gmwInteract generator (p.1 + 7) (length (p.1 + 7)) (f p.2.1) p.2.2.1
-          (Vstar p.1 p.2.1 p.2.2.2)) := by
+      (fun (n, a, w, z) =>
+        gmwInteract generator (n + 7) (length (n + 7)) (f a) w
+          (Vstar n a z)) := by
+  change IsPPTOn (encPair encUnary (encPair enc (encPair encBits encBits))) encBits
+    (fun p : ℕ × α × List Bool × List Bool =>
+      gmwInteract generator (p.1 + 7) (length (p.1 + 7)) (f p.2.1) p.2.2.1
+        (Vstar p.1 p.2.1 p.2.2.2))
   have hgPlain := hg
   have hfPlain := hf
   have hg := hg.tidy

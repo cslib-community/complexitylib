@@ -128,7 +128,7 @@ deriving DecidableEq, Fintype
 /-- A trial is its four random choices. -/
 def Trial.equivProd : Trial ℓ m ≃ Fin m × (Fin ℓ → Bool) × Bool × (Fin m → Bool) where
   toFun t := (t.pos, t.seed, t.bit, t.pad)
-  invFun p := ⟨p.1, p.2.1, p.2.2.1, p.2.2.2⟩
+  invFun := fun (pos, seed, bit, pad) => ⟨pos, seed, bit, pad⟩
 
 instance [NeZero m] : Nonempty (Trial ℓ m) :=
   ⟨⟨0, fun _ => false, false, fun _ => false⟩⟩
@@ -165,7 +165,8 @@ theorem trialAgreement_le_one (t : Trial ℓ m) : trialAgreement D f test t ≤ 
 /-- Averaging over a uniform trial averages over its four random choices in turn. -/
 private theorem expect_trial {M : Type*} [AddCommMonoid M] [Module ℚ≥0 M] (g : Trial ℓ m → M) :
     𝔼 t, g t = 𝔼 i, 𝔼 w, 𝔼 r, 𝔼 u, g ⟨i, w, r, u⟩ := by
-  rw [Fintype.expect_equiv Trial.equivProd g (fun p => g ⟨p.1, p.2.1, p.2.2.1, p.2.2.2⟩)
+  rw [Fintype.expect_equiv Trial.equivProd g
+    (fun (pos, seed, bit, pad) => g ⟨pos, seed, bit, pad⟩)
     fun _ => rfl]
   simp only [Fintype.expect_prod_type]
 

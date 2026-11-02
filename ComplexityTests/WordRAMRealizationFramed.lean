@@ -22,7 +22,7 @@ open Cslib Cslib.DataStructure Cslib.WordRAM Cslib.WordRAM.Realization
 
 namespace ComplexityTests.WordRAMRealizationFramed
 
-open ComplexityTests.WordRAMRealizationBackend (Tag certificates backend implements)
+open Cslib.DataStructure.Stack.Native (Tag certificates backend implements)
 
 /-- The stack's operations implement the framed stack. -/
 theorem implements_framed {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w C) :
@@ -34,9 +34,9 @@ theorem implements_framed {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w 
 /-- **Modifies.** A native stack operation writes only its layout's cells. -/
 theorem modifies {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w C) {vs : List ℕ}
     {x y : Data (Backend.registers certificates)} {o : StackOp ℕ}
-    {a : (Stack.WordRAM.spec w C).Result o} {n : ℕ}
+    {a : (Stack.spec w C).Result o} {n : ℕ}
     (hr : (Backend.implementation (implements_framed hL)).rep vs x)
-    (hv : (Stack.WordRAM.spec w C).valid vs o) (he : (backend w C L).exec w x o a y n) :
+    (hv : (Stack.spec w C).valid vs o) (he : (backend w C L).exec w x o a y n) :
     Modifies L.footprint x.mem y.mem := by
   have h := Backend.modifies (implements_framed hL) hr hv he
   rwa [Memory.Framed.region_eq_footprint _ rfl, Stack.Memory.framed_footprint] at h
@@ -44,9 +44,9 @@ theorem modifies {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w C) {vs : 
 /-- **Frame.** A native stack operation keeps every assertion on cells outside its layout. -/
 theorem frame {w C : ℕ} {L : Stack.Memory.Layout} (hL : L.Valid w C) {vs : List ℕ}
     {x y : Data (Backend.registers certificates)} {o : StackOp ℕ}
-    {a : (Stack.WordRAM.spec w C).Result o} {n : ℕ}
+    {a : (Stack.spec w C).Result o} {n : ℕ}
     (hr : (Backend.implementation (implements_framed hL)).rep vs x)
-    (hv : (Stack.WordRAM.spec w C).valid vs o) (he : (backend w C L).exec w x o a y n)
+    (hv : (Stack.spec w C).valid vs o) (he : (backend w C L).exec w x o a y n)
     {Q : HeapAssertion} (hQ : Q.holds x.mem) (hd : Disjoint Q.footprint L.footprint) :
     Q.holds y.mem :=
   HeapAssertion.frame hQ hd (modifies hL hr hv he)
@@ -70,7 +70,7 @@ noncomputable abbrev withAlloc : Tag ⊕ Unit → Certificate .exact :=
 
 /-- The stack on layout `L`, with the allocation tag. -/
 noncomputable def allocated (w C : ℕ) (L : Stack.Memory.Layout) :
-    Backend (Stack.WordRAM.spec w C) withAlloc :=
+    Backend (Stack.spec w C) withAlloc :=
   (backend w C L).extend allocCertificate
 
 /-- The allocation tag allocates a stack of capacity `C` and returns its layout. -/
@@ -126,13 +126,13 @@ arbitrary bounded data with room, the allocation and `m` operations take at most
 instructions. -/
 theorem run_allocated : ∃ K₀ K, ∀ {w C : ℕ} {x : Data (Backend.registers withAlloc)},
     x.Bounded w → Fits w (x.regs (Backend.frontier withAlloc) + 1 + C) → ∀ {α : Type}
-    (p : (Stack.WordRAM.spec w C).Client α),
-    (Stack.WordRAM.spec w C).ValidHistory [] ((Stack.WordRAM.spec w C).clientHistory [] p) →
+    (p : (Stack.spec w C).Client α),
+    (Stack.spec w C).ValidHistory [] ((Stack.spec w C).clientHistory [] p) →
     ∃ ready y n traces,
       Exec w (Backend.code withAlloc (.inr ())) (Backend.install withAlloc (.inr ()) C x) ready n ∧
       Executes ((allocated w C (layoutAt (x.regs (Backend.frontier withAlloc)) C)).exec w) p ready
-        ((Stack.WordRAM.spec w C).clientResult [] p) y traces ∧
-      n + total id traces ≤ K₀ + ((Stack.WordRAM.spec w C).clientHistory [] p).length * K := by
+        ((Stack.spec w C).clientResult [] p) y traces ∧
+      n + total id traces ≤ K₀ + ((Stack.spec w C).clientHistory [] p).length * K := by
   obtain ⟨K₀, h₀⟩ := allocate
   obtain ⟨K, hK⟩ := instruction_bound
   refine ⟨K₀, K, fun {w C x} hx hroom {α} p hv => ?_⟩
@@ -154,9 +154,9 @@ theorem implements_pair {w C : ℕ} {L₁ L₂ : Stack.Memory.Layout} (h₁ : L�
 theorem modifies_left {w C : ℕ} {L₁ L₂ : Stack.Memory.Layout} (h₁ : L₁.Valid w C)
     (h₂ : L₂.Valid w C) {vs₁ vs₂ : List ℕ}
     {x y : Data (Backend.registers (Sum.elim certificates certificates))} {o : StackOp ℕ}
-    {a : (Stack.WordRAM.spec w C).Result o} {n : ℕ}
+    {a : (Stack.spec w C).Result o} {n : ℕ}
     (hr : (Backend.implementation (implements_pair h₁ h₂)).rep (vs₁, vs₂) x)
-    (hv : (Stack.WordRAM.spec w C).valid vs₁ o)
+    (hv : (Stack.spec w C).valid vs₁ o)
     (he : ((backend w C L₁).sum (backend w C L₂)).exec w x (.inl o) a y n) :
     Modifies L₁.footprint x.mem y.mem := by
   have h := Backend.modifies_inl (implements_framed h₁) (implements_framed h₂) hr hv he
@@ -166,10 +166,10 @@ theorem modifies_left {w C : ℕ} {L₁ L₂ : Stack.Memory.Layout} (h₁ : L₁
 theorem modifies_pair {w C : ℕ} {L₁ L₂ : Stack.Memory.Layout} (h₁ : L₁.Valid w C)
     (h₂ : L₂.Valid w C) {vs : List ℕ × List ℕ}
     {x y : Data (Backend.registers (Sum.elim certificates certificates))}
-    {o : (product (Stack.WordRAM.spec w C) (Stack.WordRAM.spec w C)).Op}
-    {a : (product (Stack.WordRAM.spec w C) (Stack.WordRAM.spec w C)).Result o} {n : ℕ}
+    {o : (product (Stack.spec w C) (Stack.spec w C)).Op}
+    {a : (product (Stack.spec w C) (Stack.spec w C)).Result o} {n : ℕ}
     (hr : (Backend.implementation (implements_pair h₁ h₂)).rep vs x)
-    (hv : (product (Stack.WordRAM.spec w C) (Stack.WordRAM.spec w C)).valid vs o)
+    (hv : (product (Stack.spec w C) (Stack.spec w C)).valid vs o)
     (he : ((backend w C L₁).sum (backend w C L₂)).exec w x o a y n) :
     Modifies (L₁.footprint ∪ L₂.footprint) x.mem y.mem := by
   have h := Backend.modifies (implements_pair h₁ h₂) hr hv he
@@ -188,7 +188,7 @@ theorem instruction_bound_pair : ∃ K, ∀ {w C : ℕ} {L₁ L₂ : Stack.Memor
       (Stack.Memory.amortized h₂) (Memory.Framed.Local.const _ 0) (Memory.Framed.Local.const _ 0)
     rwa [productCharge_const] at A
   have hwork : ∀ {e} o, ((Stack.Memory.framed h₁).prod (Stack.Memory.framed h₂)).inv e →
-      (product (Stack.WordRAM.spec _ _) (Stack.WordRAM.spec _ _)).valid
+      (product (Stack.spec _ _) (Stack.spec _ _)).valid
         (((Stack.Memory.framed h₁).prod (Stack.Memory.framed h₂)).abs e) o →
       (Sum.elim certificates certificates (((backend _ _ L₁).sum (backend _ _ L₂)).tag o)).work
         (((backend _ _ L₁).sum (backend _ _ L₂)).arg o) e ≤ 19 := by
@@ -225,7 +225,7 @@ noncomputable abbrev pairWithAlloc : (Tag ⊕ Tag) ⊕ Unit → Certificate .exa
 /-- Two stacks on a pair of layouts, with the allocation tag. -/
 noncomputable def pairAllocated (w C : ℕ) :
     Stack.Memory.Layout × Stack.Memory.Layout →
-      Backend (product (Stack.WordRAM.spec w C) (Stack.WordRAM.spec w C)) pairWithAlloc
+      Backend (product (Stack.spec w C) (Stack.spec w C)) pairWithAlloc
   | (L₁, L₂) => ((backend w C L₁).sum (backend w C L₂)).extend pairAllocCertificate
 
 /-- The allocation tag allocates both stacks. -/

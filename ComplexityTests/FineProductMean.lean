@@ -1,9 +1,9 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Christian Reitwiessner, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
-import Complexity.Foundations.Probability.FineProductMean
+import Complexity.Foundations.Probability.FineOmission
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.NormNum
@@ -170,5 +170,124 @@ example : meanError ≤ 524288 * (rootDistPow 4 3 1 X middle F F' +
 -- Positive terminal densities do not require the source slice to be nonempty.
 example (x y : Fin 3) : conditionalTableMean (fun (_ : Bool × Fin 4) _ => False) Ya E x y = 0 := by
   simp [conditionalTableMean]
+
+
+open LogSpaceEstimation
+
+private theorem child_left : rootDistPow 4 3 1 X middle F F' ≤ 1 := by
+  norm_num [rootDistPow, rowNormPow, F, F', X, middle, source, expect_eq_sum_div_card,
+    sum_filter, Fintype.sum_prod_type, Fintype.sum_bool, Fin.sum_univ_four, Fin.sum_univ_three]
+private theorem child_right : rootDistPow 4 3 1 middle Yb B B' ≤ 1 := by
+  norm_num [rootDistPow, rowNormPow, B, B', middle, Yb, fine, expect_eq_sum_div_card,
+    sum_filter, Fintype.sum_prod_type, Fintype.sum_bool, Fin.sum_univ_four, Fin.sum_univ_three]
+
+-- The nominal rates are half the actual hit densities, and both estimated factors share
+-- the same seed. The zero last budget is legal for the comparison (inactive bounds).
+example : meanError ≤ 8388608 *
+    ((2 : ℝ) ^ (-precision 16 0 0 1 (1 / 4) 1 + 1 / 16) * scaleMajorant (-1)) ^ 4 := by
+  have scale : Real.logb 2 ((1 / 8 : ℝ) / (1 / 4)) = ((-1 : ℤ) : ℝ) := by
+    norm_num [Real.logb_div]
+  have child (r : ℝ) (hr : 0 < r) (hr1 : r ≤ 1) :
+      1 ≤ ((1 : ℝ) * 2 ^ (-precision 16 0 (lastBudget 0 0 1 (-1)) 0 r 1)) ^ 4 := by
+    have hp := precision_zero_nonpos (K := 16) (A := 0) (by norm_num) hr hr1
+      (by norm_num : (0 : ℝ) < 1) (by norm_num : (1 : ℝ) ≤ 1) 0
+    have he : (1 : ℝ) ≤ 2 ^ (-precision 16 0 0 0 r 1) := by
+      calc
+        1 = (2 : ℝ) ^ (0 : ℝ) := by simp
+        _ ≤ _ := Real.rpow_le_rpow_of_exponent_le (by norm_num) (neg_nonneg.mpr hp)
+    simpa only [lastBudget, Nat.zero_sub, one_mul, one_pow] using
+      pow_le_pow_left₀ (by norm_num : (0 : ℝ) ≤ 1) he 4
+  have h := LogSpaceEstimation.scheduled_fineProductMean_le source broad fine middle
+    (N := 3) (u := 1) (a := 1 / 4) (b := 1 / 8) (f := 1)
+    (πa := 1 / 2) (πb := 1 / 4) (πf := 1) (Ca := 2) (cb := 2)
+    (CF := 1) (CB := 1) (Kf := 1) (Kr := 1) (Kc := 1)
+    (F := F) (F' := F') (B := B) (B' := B')
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) broad_density fine_density fine_sub
+    (by norm_num) (by norm_num)
+    (fun _ _ _ => by unfold F; split_ifs <;> norm_num)
+    (fun _ _ _ => by unfold F'; split_ifs <;> norm_num)
+    (fun _ _ _ => by unfold B; split_ifs <;> norm_num)
+    (fun _ _ _ => by unfold B'; split_ifs <;> norm_num)
+    (fun _ _ _ => by unfold F; split_ifs <;> norm_num)
+    (fun _ _ _ => by unfold F'; split_ifs <;> norm_num)
+    (fun _ _ _ => by unfold B; split_ifs <;> norm_num)
+    (fun _ _ _ => by unfold B'; split_ifs <;> norm_num)
+    (fun _ _ _ => cap _ 1 fun z hz => by simp [F, hz])
+    (fun _ _ _ => cap _ 1 fun z hz => by simp [F', hz])
+    (fun _ _ _ => cap _ 2 fun y hy => by simp [B, hy])
+    (fun _ _ _ => cap _ 0 fun x hx => by simp [F', hx])
+    (fun _ _ _ h => by simp [B, h]) (fun _ _ _ h => by simp [B', h])
+    (A := 0) (C := 1) (c₁ := 1) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) 0 0 1 1 0 0 (by decide) (-1) (by decide)
+    (by decide) (by decide) scale (by simpa only [Nat.cast_one, mul_one] using
+      (child_left.trans (child (1 : ℝ) (by norm_num) (by norm_num))))
+    (by simpa only [Nat.cast_one, mul_one] using
+      (child_right.trans (child (1 / 8 : ℝ) (by norm_num) (by norm_num))))
+  norm_num [meanError, X, Ya, Yb, source, broad, E, middle, ← mul_assoc] at h ⊢
+  convert h using 1
+  · simp [rowNormPow, conditionalTableMean, X, Ya, E, source, broad]
+  · ring
+
+-- True mass is nonconstant in both endpoints; source slices may also be empty.
+example : rowNormPow 4 3 1 X Ya
+    (fun _ x y => (if x = 0 ∧ y = 2 then (1 / 8 : ℝ) else 0) / (1 / 4)) ≤ 1 / 32 := by
+  have h := rowNormPow_fine_omission_le source broad
+    (N := 3) (u := 1) (a := 1 / 4) (b := 1 / 8)
+    (Cu := 1) (Ca := 2) (Cb := 1) (R := 1 / 8)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (fun _ => by norm_num [source, dens_eq_card_div_card])
+    (fun y => by rw [broad_density]; norm_num)
+    (fun x y => if x = 0 ∧ y = 2 then (1 / 8 : ℝ) else 0)
+    (fun _ _ => by split_ifs <;> norm_num)
+    (fun _ _ => by split_ifs <;> norm_num)
+    (fun x => by by_cases hx : x = 0 <;> norm_num [hx, Fin.sum_univ_three])
+  simpa only [X, Ya, source] using (show _ ≤ (1 / 32 : ℝ) by norm_num at h ⊢; exact h)
+
+-- The exact mass is smaller than the uniform all-row bound above.
+example : rowNormPow 4 3 1 X Ya
+    (fun _ x y => (if x = 0 ∧ y = 2 then (1 / 8 : ℝ) else 0) / (1 / 4)) = 1 / 96 := by
+  norm_num [rowNormPow, X, Ya, source, broad, expect_eq_sum_div_card, sum_filter,
+    Fintype.sum_prod_type, Fintype.sum_bool, Fin.sum_univ_four, Fin.sum_univ_three]
+
+example : binNormCost 4 ((-1 : ℤ) : ℝ) ≤
+    (2 : ℝ) ^ (1 / 2 - (2 : ℝ) / (2 * 1)) * scaleMajorant (-1) := by
+  simpa using omitted_fine_cost_le 2 1 (by decide) (-1) (by decide) (by decide)
+
+example : lastBudget 2 1 1 (-1) = 0 ∧ scaleCutoff 1 (-1) = 2 := by decide
+
+example : (∑ h ∈ (∅ : Finset ℤ), binNormCost 4 (h : ℝ)) ≤
+    (2 : ℝ) ^ (1 / 2 - (0 : ℝ) / (2 * 1)) *
+      (2 / (1 - (2 : ℝ) ^ (-(1 : ℝ) / 8)) - 1) :=
+  by simpa using sum_omitted_fine_cost_le 0 1 (by decide) ∅ (by simp) (by simp)
+
+-- A nonempty omission family supplies the actual true tables, not a norm hypothesis.
+example :
+    (∑ _h ∈ ({-1} : Finset ℤ), (rowNormPow 4 1 1
+      (fun (_ : Unit × Unit) (_ : Fin 1) => True) (fun _ _ => True)
+      (fun _ _ _ => (1 / 2 : ℝ) / 1)) ^ (4⁻¹ : ℝ)) ≤
+    (2 : ℝ) ^ (1 / 2 - (2 : ℝ) / (2 * 1)) *
+      (2 / (1 - (2 : ℝ) ^ (-(1 : ℝ) / 8)) - 1) := by
+  have h := sum_fine_omission_norm_le
+    (fun (_ : Unit) (_ : Fin 1) => True) (fun (_ : Unit) (_ : Fin 1) => True)
+    (N := 1) (u := 1) (a := 1) (Cu := 1) (Ca := 1) (Cb := 1) (R := 1) (K := 1)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (fun _ => by norm_num [dens_eq_card_div_card])
+    (fun _ => by norm_num [dens_eq_card_div_card])
+    2 1 (by decide) {-1} (fun _ => 1 / 2) (fun _ _ _ => 1 / 2)
+    (by simp) (by simp) (by intro h hh; simp only [mem_singleton] at hh; subst h; decide)
+    (by intro h hh; simp only [mem_singleton] at hh; subst h; norm_num [Real.logb_div])
+    (by simp) (by simp) (by norm_num)
+  simpa only [Nat.cast_one, Nat.cast_ofNat, one_mul] using h
+
+example : (2 : ℝ) ^ (1 / 2 - (64 : ℝ) / 2) ≤
+    (2 : ℝ) ^ (-precision 16 1 64 1 1 1 - 1) := by
+  simpa only [Nat.cast_one, Nat.cast_ofNat, mul_one] using
+    omission_tail_le_parent (A := 1) (a := 1) (u := 1) 64 1 1
+      (by decide) (by norm_num) (by decide) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num) (by norm_num [precision])
 
 end ComplexityTests.FineProductMean
