@@ -527,6 +527,12 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   representation from the standard input. `WordRAM/Function` gives separate nonuniform and
   uniform RAM function-time predicates, with named-certificate reuse by `polytime`. Arbitrary continuation
   synthesis, iterative clients and a Turing-machine simulation remain open.
+  The bounded `WordRAM/Realization` foundation (#2213, under #2205) reuses the memory
+  oracle and the same native `Code`/`ExecWithin` semantics. Its explicit faithful register
+  encodings support all four memory queries, certified word glue, branches and uniform
+  reply-dependent bind, charging local work as well as memory operations. Query arguments are
+  already in live registers; whole-input installation, final halt, bounded-loop and local-ADT
+  adapter endpoints remain separate work. This adds no abstract-catalogue headline.
   `DataStructure/OrderedSet` and `DataStructure/OrderedSet/*` provide neutral
   optional-minimum contracts, a typed finite-set interface including deletion, and adaptive
   minimum extraction, with no tree or cost dependency. Bounded-key implementations may specialize

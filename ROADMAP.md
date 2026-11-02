@@ -630,6 +630,14 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   cost factor. The dyadic parameter kernel computes geometry-compatible values and explicitly
   classifies the small regime; it does not prove the tuned aggregate exponent or dispatch a solver.
   Global solver/host composition and the full endpoint remain separate.
+- **Memory-oracle realization** ([#2205], [#2213]): the foundational graded kernel certifies
+  all four memory queries, register-word glue, native branches and binds with one fixed
+  continuation emitter for all runtime replies. Its functional representation retains the
+  complete memory and frontier, and its instruction currency adds local work to memory charges.
+  Remaining: bounded runtime loops, charged input installation and flat programs, operation-level
+  memory implementation and framed upper-ADT adapters. The full C2/M1b and queue transfer
+  objectives remain open; this foundation does not turn arbitrary host continuations into
+  machine-time certificates.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
@@ -784,3 +792,5 @@ not planned, not as proved.
 [#2019]: https://github.com/cslib-community/complexitylib/issues/2019
 [#2062]: https://github.com/cslib-community/complexitylib/issues/2062
 [#2063]: https://github.com/cslib-community/complexitylib/issues/2063
+[#2205]: https://github.com/cslib-community/complexitylib/issues/2205
+[#2213]: https://github.com/cslib-community/complexitylib/issues/2213
