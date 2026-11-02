@@ -54,7 +54,9 @@ Mathlib's standard linter set already enforces the mechanical part; reviews enfo
 4. **Automation as API.** Curate `simp`, `grind` and `fun_prop` sets so routine facts follow
    without unfolding; a fact that repeatedly needs plumbing signals a missing lemma or interface.
 5. **Definitions and proofs.** Definitions are terms where possible. Proofs keep their logical
-   progression visible: `simp only` mid-proof, and no large terminal `simpa` hiding the argument.
+   progression visible: `simp only` mid-proof (a `simp` closed at once by `omega`, `linarith` or
+   a similar finishing tactic counts as terminal), and no large terminal `simpa` hiding the
+   argument.
 6. **Placement.** No duplicates; small topic modules; clients import what they use.
 7. **Documentation.** Definitions and theorems are documented, citing sources; module docstrings
    list the actual public API; each area has a chapter in the guide.
@@ -79,7 +81,19 @@ preference:
 
 The rewritten form should stay definitionally equal to the old one, so that clients and automation
 (`fun_prop`, `@[program_certificate]`) keep working. Single projections (`p.1`) and
-destructuring inside proofs (`obtain ⟨⟨d, x⟩, c⟩ := s`) are fine.
+destructuring inside proofs (`obtain ⟨⟨d, x⟩, c⟩ := s`) are fine. "Composed projections" means
+point-free composition such as `Prod.fst ∘ Prod.snd`; respelling `p.2.1` as `Prod.fst (Prod.snd p)`
+or naming a tail with `let rest := p.2` does not name anything.
+
+Two places keep projections, as standing exceptions:
+
+- **Conclusions that automation looks up by head.** Destructuring turns the function into a
+  `match` auxiliary, so `@[program_certificate]` and efficiency-key lookups no longer find the
+  certificate. Keep the projection form there.
+- **Section `variable` hypotheses in `module` files.** On the current toolchain a destructuring
+  lambda in a section `variable` of a `public section` elaborates to `sorry`, with only a warning
+  ([#1764](https://github.com/cslib-community/complexitylib/issues/1764)). Use projections there,
+  or bind the hypothesis in the theorem's own signature.
 
 Improving an interface never weakens the mathematics: keep the models, encodings, independent
 resource bounds and nonvacuity of the results it touches.
@@ -178,6 +192,11 @@ listed in a module docstring's "Main …" sections must exist, and a new test fi
 than restate signatures with `example … := name`. CI runs both. On pull requests CI also runs
 `python3 scripts/parallel_defs.py`, an advisory notice (it never fails) that lists new or changed
 public definitions sharing a large anonymized subterm with an existing one, or merely renaming one.
+With `--theorems` it lists new or changed theorems, private ones included, whose statement another
+library theorem or a Lean core, Batteries, Mathlib or cslib theorem already has, up to binder names,
+universe levels, the order of hypotheses and instance arguments, and the notations `≥`, `>`, `≠`;
+CI runs that notice too. `--all` examines the whole library: `python3 scripts/parallel_defs.py
+--theorems --all --limit 1000` lists every such group, the candidates of #949 item A.2.
 
 The helper hard-links package sources by default, copies root and dependency build caches with
 independent files (including symlink targets), isolates dependency `.git` directories and pointer

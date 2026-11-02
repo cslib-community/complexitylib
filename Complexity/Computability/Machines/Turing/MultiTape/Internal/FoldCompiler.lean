@@ -92,7 +92,7 @@ private theorem roundMachine [hLE : ListEncoding encA encL] [hBA : PairEncoding 
         (c * ((encO o).length + roundCost step a₀ b₀ encS ss o + 1)) := by
   have hlist := hSE.fst.comp (hOE.getD ([], b₀))
   have htail := hLE.tail.comp hlist
-  have harg : ComputableInLinearTimeAndSpace (arg a₀ b₀) encO encBA :=
+  have harg : ComputableInDegree (arg a₀ b₀) encO encBA 1 1 :=
     (hSE.snd.comp (hOE.getD ([], b₀))).pair ((hLE.headD a₀).comp hlist)
   obtain ⟨ca, ka, Qa, _, tma, ha⟩ := Internal.NormalForm.linear harg
   let A := 6 * ca + 6 * max ka ks + 30
@@ -125,7 +125,7 @@ private theorem roundMachine [hLE : ListEncoding encA encL] [hBA : PairEncoding 
     all_goals dsimp [C]; ring_nf; omega
   obtain ⟨ce, ke, Qe, _, tme, he⟩ := Internal.NormalForm.linear (hLE.isEmpty.comp hlist)
   obtain ⟨cz, kz, Qz, _, tmz, hz⟩ := Internal.NormalForm.linear
-    (ComputableInLinearTimeAndSpace.const (encIn := encO) (encMid := encO)
+    (ComputableInDegree.const (encIn := encO) (encMid := encO)
       (none : Option (List α × β)))
   obtain ⟨ci, k, Q, hfinite, tm, htm⟩ := Internal.conditional
     (encIn := encO) (encOut := encO) (encC := encBool)

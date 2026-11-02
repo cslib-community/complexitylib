@@ -19,8 +19,10 @@ The instance of the contraction interface for entry procedures
 `EntryContraction.fastCore` (milestone E1.3 of #1538): for every native certificate `ce` of an
 entry procedure, `CountingSimulation.entryContractionAlgorithm ce` contracts the networks admissible
 for `ce` (`Cslib.Circuits.Frontier.EntryAdmissible`) in time `poly(n) 2 ^ O(s / √⌊log₂ s⌋)` and
-polynomial space. This is Theorem D.1 of [OpenAI2026ETH] (p. 53) at truncation order `1`, with
-the entries given by procedures.
+polynomial space. This includes Theorem D.1 of [OpenAI2026ETH] (p. 53) at truncation order `1`,
+with the entries given by procedures, and extends its root precision to
+`P ≤ D s (⌊log₂ s⌋ + 1)` for each fixed `D`. The schedule absorbs the extra logarithm in
+(D.11), while the clock charges `P / (⌊log₂ m⌋ + 1)` at `m` edges.
 
 The analysis follows the one for explicit networks (`CountingSimulation.FastAnalysis`,
 `CountingSimulation.fastSizes`, `CountingSimulation.fastLeaves`), with the root call of
@@ -80,28 +82,59 @@ theorem length_parts_le_encInput (P : ℕ) (fl : List ℕ) (r : ℕ) (G : Descri
   omega
 
 /-- **Guarded roots are on the schedule**, for every constant `C ≥ 1` with precision at most
-`C m`. -/
-theorem onSchedule_rootCall {P C r : ℕ} {G : DescribedNetwork T}
+`C m (⌊log₂ m⌋ + 1)`. -/
+theorem onSchedule_rootCall_logPrecision {P C r : ℕ} {G : DescribedNetwork T}
     (hg : EntryContraction.guard (P, modulus G.numEdges, r, G) = true) (hC : 1 ≤ C)
-    (hp : P ≤ C * G.numEdges) :
+    (hp : P ≤ C * G.numEdges * (Nat.log 2 G.numEdges + 1)) :
     OnSchedule C G.numEdges (rootCall (P, modulus G.numEdges, r, G)) := by
   have hdeg : ∀ v ∈ G.vertices, v.1.length ≤ degreeBound G.numEdges := by
     simp only [EntryContraction.guard, decide_eq_true_eq] at hg
     exact hg.2.2
-  refine FastContraction.onSchedule_root hC rfl rfl rfl (wf_rootCall hg) (fun v hv => ?_) rfl rfl
-    hp
+  refine FastContraction.onSchedule_root_logPrecision hC rfl rfl rfl (wf_rootCall hg)
+    (fun v hv => ?_) rfl rfl hp
   simp only [rootCall, FastContraction.rootNet, List.mem_map] at hv
   obtain ⟨w, hw, rfl⟩ := hv
   exact hdeg w hw
 
+/-- Linear root precision is also allowed. -/
+theorem onSchedule_rootCall {P C r : ℕ} {G : DescribedNetwork T}
+    (hg : EntryContraction.guard (P, modulus G.numEdges, r, G) = true) (hC : 1 ≤ C)
+    (hp : P ≤ C * G.numEdges) :
+    OnSchedule C G.numEdges (rootCall (P, modulus G.numEdges, r, G)) :=
+  onSchedule_rootCall_logPrecision hg hC
+    (hp.trans (Nat.le_mul_of_pos_right _ (Nat.succ_pos _)))
+
+/-- Dividing the precision by the logarithmic allowance restores a linear root bound. -/
+theorem normalizedPrecision_le {m s P D : ℕ} (hsm : s ≤ m)
+    (hP : P ≤ D * s * (Nat.log 2 s + 1)) : normalizedPrecision m P ≤ D * s := by
+  have hlog : Nat.log 2 s + 1 ≤ Nat.log 2 m + 1 := Nat.add_le_add_right
+    (Nat.log_mono_right hsm) 1
+  have hp := hP.trans (Nat.mul_le_mul_left (D * s) hlog)
+  have h := Nat.div_le_div_right (c := Nat.log 2 m + 1) hp
+  rw [Nat.mul_div_cancel _ (Nat.succ_pos _)] at h
+  exact h
+
+/-- The integer constant read from normalized precision bounds the original precision. -/
+theorem le_normalizedPrecision_root {m P : ℕ} (hm : 0 < m) :
+    P ≤ (normalizedPrecision m P / m + 1) * m * (Nat.log 2 m + 1) := by
+  have hp : P ≤ (normalizedPrecision m P + 1) * (Nat.log 2 m + 1) := by
+    have h := (Nat.lt_div_mul_add (a := P) (b := Nat.log 2 m + 1) (Nat.succ_pos _)).le
+    simpa only [normalizedPrecision, add_mul, one_mul] using h
+  have hq : normalizedPrecision m P + 1 ≤ (normalizedPrecision m P / m + 1) * m := by
+    have h := Nat.lt_div_mul_add (a := normalizedPrecision m P) (b := m) hm
+    rw [add_mul, one_mul]
+    omega
+  exact hp.trans (Nat.mul_le_mul_right _ hq)
+
 /-- **The clock is subexponential on admissible inputs**: with `s ≤ m ≤ C s` edges and precision
-`P ≤ D s`, it is at most `2 ^ (K₀ (C + D) s / √⌊log₂ s⌋)`. -/
+`P ≤ D s (⌊log₂ s⌋ + 1)`, it is at most `2 ^ (K₀ (C + D) s / √⌊log₂ s⌋)`. -/
 theorem clock_le {C D s P r : ℕ} {fl : List ℕ} {G : DescribedNetwork T} (hs : 2 ≤ s)
-    (hsm : s ≤ G.numEdges) (hmC : G.numEdges ≤ C * s) (hP : P ≤ D * s) :
+    (hsm : s ≤ G.numEdges) (hmC : G.numEdges ≤ C * s) (hP : P ≤ D * s * (Nat.log 2 s + 1)) :
     clock (P, fl, r, G) ≤ 2 ^ (fuelConst * (C + D) * s / Nat.sqrt (Nat.log 2 s)) := by
   simp only [clock]
   refine Nat.pow_le_pow_right (by norm_num) ?_
-  set y := G.numEdges + P
+  set y := G.numEdges + normalizedPrecision G.numEdges P
+  have hqP := normalizedPrecision_le hsm hP
   have hy : y ≤ (C + D) * s := by rw [add_mul]; omega
   have hsy : s ≤ y := by omega
   have hq : 1 ≤ Nat.sqrt (Nat.log 2 s) := Nat.one_le_sqrt_log_two hs
@@ -209,10 +242,11 @@ theorem entry_length_le_of_reach {x : ℕ × List ℕ × ℕ × DescribedNetwork
 
 /-- **The facts at the reached calls that the leaf bounds use.** For all constants `C` and `D`
 there is `s₀` such that on every guarded input at the modulus with `s ≤ m ≤ C s` edges and
-precision `P ≤ D s`, every reached call has scale `m`, at most `2 m` edges, and, from `s₀` on,
+precision `P ≤ D s (⌊log₂ s⌋ + 1)`, every reached call has scale `m`, at most `2 m` edges and,
+from `s₀` on,
 precision at most `m ^ 4`, and at most `leafSize m` edges if the machine treats it as a leaf. -/
 theorem entry_reach_facts (C D : ℕ) : ∃ s₀, ∀ (s P r : ℕ) (G : DescribedNetwork T), 2 ≤ s →
-    P ≤ D * s → s ≤ G.numEdges → G.numEdges ≤ C * s →
+    P ≤ D * s * (Nat.log 2 s + 1) → s ≤ G.numEdges → G.numEdges ≤ C * s →
     EntryContraction.guard (P, modulus G.numEdges, r, G) = true →
     ∀ y, Reach nativeMk (rootCall (P, modulus G.numEdges, r, G)) y →
       y.scale = G.numEdges ∧ y.edges ≤ 2 * y.scale ∧
@@ -220,7 +254,11 @@ theorem entry_reach_facts (C D : ℕ) : ∃ s₀, ∀ (s P r : ℕ) (G : Describ
   obtain ⟨sA, hsA⟩ := exists_activeBounds_le D
   refine ⟨max sA (D + 81), fun s P r G hs hPD hsm hmC hg y hy => ?_⟩
   set m := G.numEdges with hm
-  have hp₀ : P ≤ D * m := hPD.trans (Nat.mul_le_mul_left _ hsm)
+  have hp₀ : P ≤ D * m * (Nat.log 2 m + 1) :=
+    hPD.trans (Nat.mul_le_mul (Nat.mul_le_mul_left _ hsm)
+      (Nat.add_le_add_right (Nat.log_mono_right hsm) 1))
+  have hq₀ : normalizedPrecision m P ≤ D * m :=
+    (normalizedPrecision_le hsm hPD).trans (Nat.mul_le_mul_left _ hsm)
   have hsh := FastContraction.Reach.shape (x₀ := rootCall (P, modulus m, r, G)) rfl rfl
     (wf_rootCall hg) hy
   have hsc : y.scale = m := hsh.scale_eq
@@ -229,9 +267,15 @@ theorem entry_reach_facts (C D : ℕ) : ∃ s₀, ∀ (s P r : ℕ) (G : Describ
     change y.bound + y.depth ≤ (m + 1) + 0 at hbd
     have hprec : y.prec ≤ P + y.depth * (40 * m ^ 2) := hsh.prec_le
     have : y.depth * (40 * m ^ 2) ≤ (m + 1) * (40 * m ^ 2) := Nat.mul_le_mul_right _ (by omega)
-    have h4 : D * m + (m + 1) * (40 * m ^ 2) ≤ m ^ 4 := by
+    have hlog : Nat.log 2 m + 1 ≤ m := Nat.log_lt_self 2 (by omega)
+    have hp₂ : P ≤ D * m ^ 2 := hp₀.trans (by
+      calc D * m * (Nat.log 2 m + 1) ≤ D * m * m := Nat.mul_le_mul_left _ hlog
+        _ = D * m ^ 2 := by ring)
+    have h4 : D * m ^ 2 + (m + 1) * (40 * m ^ 2) ≤ m ^ 4 := by
       have hm81 : D + 81 ≤ m := by omega
-      have h1 : D * m ≤ m * m := Nat.mul_le_mul_right _ (by omega)
+      have h1 : D * m ^ 2 ≤ m ^ 3 := by
+        calc D * m ^ 2 ≤ m * m ^ 2 := Nat.mul_le_mul_right _ (by omega)
+          _ = m ^ 3 := by ring
       have h2 : 81 * m ^ 3 ≤ m ^ 4 := by
         rw [pow_succ m 3, mul_comm (m ^ 3) m]
         exact Nat.mul_le_mul_right _ (by omega)
@@ -243,14 +287,13 @@ theorem entry_reach_facts (C D : ℕ) : ∃ s₀, ∀ (s P r : ℕ) (G : Describ
     rw [hsc]
     omega
   · have hm2 : D + 2 ≤ m := by omega
-    have hC1 : P / m + 1 ≤ D + 1 := by
-      have := Nat.div_le_div_right (c := m) hp₀
+    have hC1 : normalizedPrecision m P / m + 1 ≤ D + 1 := by
+      have := Nat.div_le_div_right (c := m) hq₀
       rw [Nat.mul_div_cancel _ (by omega)] at this
       omega
-    have hB := hsA m (by omega) (P / m + 1) hC1
-    have hpC : P ≤ (P / m + 1) * m :=
-      (Nat.lt_div_mul_add (a := P) (b := m) (by omega)).le.trans (by rw [add_mul, one_mul])
-    have h := hy.onSchedule hB (onSchedule_rootCall hg (Nat.le_add_left 1 _) hpC)
+    have hB := hsA m (by omega) (normalizedPrecision m P / m + 1) hC1
+    have hpC := le_normalizedPrecision_root (P := P) (by omega : 0 < m)
+    have h := hy.onSchedule hB (onSchedule_rootCall_logPrecision hg (Nat.le_add_left 1 _) hpC)
     rw [hsc]
     exact h.edges_le_leafSize hB hl
 
@@ -269,7 +312,8 @@ private theorem two_pow_mul_ceilNineTenths_le {C s₁ : ℕ}
 
 /-- **The leaf bounds on admissible inputs**: for a native certificate `ce` of the entry procedure
 and all constants `C` and `D` there is `K` such that on every input at the modulus admissible at
-size `s ≥ 2` with constant `C` and with precision `1 ≤ P ≤ D s`, direct summation at every reached
+size `s ≥ 2` with constant `C` and precision `1 ≤ P ≤ D s (⌊log₂ s⌋ + 1)`, direct summation
+at every reached
 call that the machine treats as a leaf takes time at most `K (n + 1) ^ K 2 ^ (K s / √⌊log₂ s⌋)` and
 space at most `K (n + 1) ^ K`. The root entries take time at most
 `C (s + L + 1) ^ C 2 ^ (C ⌈s ^ (9/10)⌉)` at every reached leaf
@@ -278,7 +322,7 @@ space at most `K (n + 1) ^ K`. The root entries take time at most
 theorem exists_entryLeaves_le
     (ce : NativeCertificate (fun q : T × List Bool => entry q.1 q.2) (encPair encT encBits)
       (encList encNat)) (C D : ℕ) :
-    ∃ K : ℕ, ∀ (s P r : ℕ) (G : DescribedNetwork T), 2 ≤ s → 1 ≤ P → P ≤ D * s →
+    ∃ K : ℕ, ∀ (s P r : ℕ) (G : DescribedNetwork T), 2 ≤ s → 1 ≤ P → P ≤ D * s * (Nat.log 2 s + 1) →
       EntryAdmissible ce C s (r, G) →
       ∀ y, Reach nativeMk (rootCall (P, modulus G.numEdges, r, G)) y → active y = false →
         (leafCertificate ce nativeMk).time y ≤
@@ -377,7 +421,8 @@ theorem exists_entryLeaves_le
 
 /-- **The resource analysis of the recursion on admissible inputs.** For a native certificate `ce`
 of the entry procedure and all constants `C` and `D` there are `K` and `s₀` such that on every input
-at the modulus admissible at size `s ≥ 2` with constant `C` and with precision `1 ≤ P ≤ D s`, the
+at the modulus admissible at size `s ≥ 2` with constant `C` and precision
+`1 ≤ P ≤ D s (⌊log₂ s⌋ + 1)`, the
 root call has a derivation whose nodes, frames and values are at most `F` long, whose leaves take
 time at most `TL` and space at most `SL`, with `H` open calls, such that
 `H + F + SL ≤ K (n + 1) ^ K` and `TL ≤ K (n + 1) ^ K 2 ^ (K s / √⌊log₂ s⌋)` for the input length
@@ -385,7 +430,8 @@ time at most `TL` and space at most `SL`, with `H` open calls, such that
 theorem exists_entryAnalysis
     (ce : NativeCertificate (fun q : T × List Bool => entry q.1 q.2) (encPair encT encBits)
       (encList encNat)) (C D : ℕ) :
-    ∃ K s₀ : ℕ, ∀ (s P r : ℕ) (G : DescribedNetwork T), 2 ≤ s → 1 ≤ P → P ≤ D * s →
+    ∃ K s₀ : ℕ, ∀ (s P r : ℕ) (G : DescribedNetwork T), 2 ≤ s → 1 ≤ P →
+      P ≤ D * s * (Nat.log 2 s + 1) →
       EntryAdmissible ce C s (r, G) →
       ∃ N H F TL SL : ℕ,
         (scheme entry nativeMk).Eval
@@ -420,23 +466,23 @@ theorem exists_entryAnalysis
   have hmv := DescribedNetwork.length_numEdges_vertices_le (encT := encT) G
   rw [← hx, ← hn] at hparts
   have hmn : m ≤ n := by omega
-  have hp₀ : P ≤ D * m := hPD.trans (Nat.mul_le_mul_left _ hsm)
+  have hq₀ : normalizedPrecision m P ≤ D * m :=
+    (normalizedPrecision_le hsm hPD).trans (Nat.mul_le_mul_left _ hsm)
   -- The derivation.
   obtain ⟨N, H, he, hN, hH⟩ : ∃ N H, (scheme entry nativeMk).Eval (reachInv entry nativeMk x₀) x₀
       (0, value entry nativeMk x₀) N H ∧ (max sA (D + 2) ≤ s → 2 * N - 1 ≤ clock x) ∧
         H ≤ m + 1 := by
     by_cases hs₀ : max sA (D + 2) ≤ s
     · have hm2 : D + 2 ≤ m := by omega
-      have hC1 : P / m + 1 ≤ D + 1 := by
-        have := Nat.div_le_div_right (c := m) hp₀
+      have hC1 : normalizedPrecision m P / m + 1 ≤ D + 1 := by
+        have := Nat.div_le_div_right (c := m) hq₀
         rw [Nat.mul_div_cancel _ (by omega)] at this
         omega
-      have hB := hsA m (by omega) (P / m + 1) hC1
-      have hpC : P ≤ (P / m + 1) * m :=
-        (Nat.lt_div_mul_add (a := P) (b := m) (by omega)).le.trans (by rw [add_mul, one_mul])
+      have hB := hsA m (by omega) (normalizedPrecision m P / m + 1) hC1
+      have hpC := le_normalizedPrecision_root (P := P) (by omega : 0 < m)
       obtain ⟨N, H, he, hN, hH⟩ := FastContraction.exists_eval_onSchedule entry hB
-        (onSchedule_rootCall hg (Nat.le_add_left 1 _) hpC) rfl (by omega)
-      exact ⟨N, H, he, fun _ => two_mul_sub_one_le_fuel hm2 hp₀ hN,
+        (onSchedule_rootCall_logPrecision hg (Nat.le_add_left 1 _) hpC) rfl (by omega)
+      exact ⟨N, H, he, fun _ => two_mul_sub_one_le_fuel hm2 hq₀ hN,
         hH.trans ((Nat.log_lt_self 2 (by omega)).le.trans (Nat.le_succ _))⟩
     · obtain ⟨N, H, he, hH⟩ := FastContraction.exists_eval_reachInv (ev := entry) (mk := nativeMk)
         (x₀ := x₀) rfl
@@ -470,14 +516,15 @@ theorem exists_entryAnalysis
 
 /-- **The machine within the interface's bounds.** For a native certificate `ce` of the entry
 procedure and all constants `C` and `D` there is `K` such that on every input at the modulus
-admissible at size `s ≥ 2` with constant `C` and with precision `1 ≤ P ≤ D s`, the machine
+admissible at size `s ≥ 2` with constant `C` and precision `1 ≤ P ≤ D s (⌊log₂ s⌋ + 1)`,
+the machine
 `EntryContraction.fastCore ce` takes time at most `K (n + 1) ^ K 2 ^ (K s / √⌊log₂ s⌋)` and space at
 most `K (n + 1) ^ K`. Admissible inputs pass the guard; from some size on the clocked run returns
 the root's value, and below it direct summation costs a constant factor. -/
 theorem exists_fastCore_le
     (ce : NativeCertificate (fun q : T × List Bool => entry q.1 q.2) (encPair encT encBits)
       (encList encNat)) (C D : ℕ) :
-    ∃ K : ℕ, ∀ (s P r : ℕ) (G : DescribedNetwork T), 2 ≤ s → 1 ≤ P → P ≤ D * s →
+    ∃ K : ℕ, ∀ (s P r : ℕ) (G : DescribedNetwork T), 2 ≤ s → 1 ≤ P → P ≤ D * s * (Nat.log 2 s + 1) →
       EntryAdmissible ce C s (r, G) →
       (fastCore ce).time (P, modulus G.numEdges, r, G) ≤
           K * ((encInput encT (P, modulus G.numEdges, r, G)).length + 1) ^ K *
@@ -562,7 +609,8 @@ theorem exists_fastCore_le
 
 /-! ### The contraction algorithm -/
 
-/-- **Theorem D.1 for entry procedures** ([OpenAI2026ETH], p. 53, at truncation order `1`): for
+/-- **Theorem D.1 for entry procedures with logarithmic root precision.** Extending
+[OpenAI2026ETH], p. 53, at truncation order `1`: for
 every native certificate `ce` of an entry procedure, the guarded native recursion with direct
 summation as the fallback (`EntryContraction.fastCore ce`) is a contraction algorithm for the
 networks admissible for `ce`, in time `poly(n) 2 ^ O(s / √⌊log₂ s⌋)` and polynomial space. -/
@@ -573,6 +621,6 @@ noncomputable def entryContractionAlgorithm
   core := coreValue entry
   certificate := fastCore ce
   val_core := val_coreValue
-  bound C D := exists_fastCore_le ce C D
+  bound_logPrecision C D := exists_fastCore_le ce C D
 
 end Cslib.Complexity.CountingSimulation
