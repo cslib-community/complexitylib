@@ -73,6 +73,18 @@ example : (spec 8).clientResult empty (run 8 3 client) =
 example : (spec 8).totalCost charge empty ((spec 8).clientHistory empty (run 8 3 client)) ≤ 69 :=
   run_cost client room client_valid
 
+/-- Glue of two units after each memory operation: the 47 operations add 94 units to the 49
+memory units, within the bound `(2 · 1 + 1) · 69` for `K = 1`. -/
+example : (spec 8).totalCost (fun s o => charge s o + 2) empty
+    ((spec 8).clientHistory empty (run 8 3 client)) = 143 := by
+  decide
+
+example : (spec 8).totalCost (fun s o => charge s o + 2) empty
+    ((spec 8).clientHistory empty (run 8 3 client)) ≤ 3 * 69 :=
+  run_cost_glue client room client_valid (K := 1) fun s o => by
+    have := one_le_charge s o
+    omega
+
 /-- A memory with too little room: the second stack would end past the 4-bit word range. -/
 example : ¬Fits 4 (empty.frontier + 2 * (7 + 1)) := by decide
 
