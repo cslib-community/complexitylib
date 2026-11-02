@@ -46,7 +46,7 @@ assuming that the original function is length-preserving, injective or regular.
 
 Adapted from Crypto/Computational/OneWay/Normalize.lean on the cslib `crypto` branch at
 `5ff69ca93402e7c947208dc56396d6d86203ccd8`. This is the word-encoding reduction to the write-up's
-fixed-output-width setting, using the shared tidy machine calculus and nonnegative game API.
+fixed-output-width setting, using plain polynomial-time certificates and the nonnegative game API.
 -/
 
 @[expose] public section

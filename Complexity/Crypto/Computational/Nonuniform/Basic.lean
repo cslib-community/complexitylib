@@ -226,8 +226,9 @@ theorem not_nonuniformlyIndistinguishable_pure_uniformList (target : ℕ → Lis
 
 /-- **Inversion of `f` is hard with advice** `advice` when each uniform strict PPT inverter
 reading the parameter `n`, the advice word `advice n` and the image of a uniform `n`-bit input has
-negligible probability of finding any preimage. With empty advice this is the security condition of
-`OneWay` (`oneWay_iff_inversionHardWithAdvice_nil`). -/
+negligible probability of finding any preimage. The advice family is not bounded here; its length
+is charged to the inverter's clock. With empty advice this is the security condition of `OneWay`
+(`oneWay_iff_inversionHardWithAdvice_nil`). -/
 def InversionHardWithAdvice (f : List Bool → List Bool) (advice : ℕ → List Bool) : Prop :=
   Game.Indistinguishable
     (fun (adversary : (ℕ × List Bool) × List Bool → ProbComp (List Bool)) n =>
