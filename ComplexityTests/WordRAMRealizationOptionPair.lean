@@ -28,6 +28,9 @@ private abbrev word : ℕ ↪ (Fin 1 → ℕ) := WordEncoding.encode
 private abbrev pairWords : ℕ × ℕ ↪ (Fin 2 → ℕ) := WordEncoding.encode
 private abbrev optionalWords : Option (ℕ × ℕ) ↪ (Fin 3 → ℕ) := WordEncoding.encode
 
+-- The scalar instance keeps its original definitional encoding.
+example : WordEncoding.encode (α := Option ℕ) = optionWords := rfl
+
 example : optionalWords none = ![0, 0, 0] := by
   funext i
   fin_cases i <;> rfl
@@ -143,8 +146,12 @@ theorem same_body_zero_and_max : ∃ r C, ∃ code : Code .exact r, ∃ result :
   obtain ⟨_, hrun⟩ := he frontier src tmp hi hd hf hs
   obtain ⟨y₀, hy₀, hm₀, ho₀, _⟩ := hrun 0 none x₀ hx₀ hin₀ trivial (by trivial)
   obtain ⟨y₁, hy₁, hm₁, ho₁, _⟩ := hrun 8 (some (255, 255)) x₁ hx₁ hin₁ trivial (by trivial)
-  refine ⟨r, C, emit frontier src tmp, result, x₀, y₀, x₁, y₁, hx₀, hx₁, hy₀, ?_,
-    congrArg Memory.State.mem hm₀, hy₁, ?_, congrArg Memory.State.mem hm₁⟩
+  have hy₀' : ExecWithin 0 (emit frontier src tmp) x₀ y₀ C := by
+    simpa only [memoryCost_pure, Nat.zero_add, Nat.add_zero, Nat.mul_one] using hy₀
+  have hy₁' : ExecWithin 8 (emit frontier src tmp) x₁ y₁ C := by
+    simpa only [memoryCost_pure, Nat.zero_add, Nat.add_zero, Nat.mul_one] using hy₁
+  refine ⟨r, C, emit frontier src tmp, result, x₀, y₀, x₁, y₁, hx₀, hx₁, hy₀', ?_,
+    congrArg Memory.State.mem hm₀, hy₁', ?_, congrArg Memory.State.mem hm₁⟩
   · intro i
     have h := ho₀ i
     change y₀.regs (result i) = _ at h

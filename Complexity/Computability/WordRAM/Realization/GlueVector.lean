@@ -73,18 +73,34 @@ def optionWordsWith (payload : α ↪ (Fin l → ℕ)) : Option α ↪ (Fin (l +
 @[simp] theorem optionWordsWith_some (payload : α ↪ (Fin l → ℕ)) (a : α) :
     optionWordsWith payload (some a) = Fin.cases 1 (payload a) := rfl
 
-/-- A presence tag and one unshifted word distinguish `none` from every `some v`.
-This is the scalar specialization of `optionWordsWith`. -/
-def optionWords : Option ℕ ↪ (Fin 2 → ℕ) :=
-  optionWordsWith (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
+/-- A presence tag and unshifted payload distinguish `none` from every `some v`. -/
+def optionWords : Option ℕ ↪ (Fin 2 → ℕ) where
+  toFun
+    | none => ![0, 0]
+    | some v => ![1, v]
+  inj' := by
+    intro a b h
+    cases a with
+    | none =>
+      cases b with
+      | none => rfl
+      | some v => have hh := congrFun h 0; simp at hh
+    | some u =>
+      cases b with
+      | none => have hh := congrFun h 0; simp at hh
+      | some v => exact congrArg some (congrFun h 1)
 
-@[simp] theorem optionWords_none : optionWords none = ![0, 0] := by
-  funext i
-  fin_cases i <;> rfl
+@[simp] theorem optionWords_none : optionWords none = ![0, 0] := rfl
+@[simp] theorem optionWords_some (v : ℕ) : optionWords (some v) = ![1, v] := rfl
 
-@[simp] theorem optionWords_some (v : ℕ) : optionWords (some v) = ![1, v] := by
+/-- The legacy scalar encoding is the one-word instance of `optionWordsWith`. Its original
+vector presentation is retained for existing definitional and simplification clients. -/
+theorem optionWords_eq_optionWordsWith :
+    optionWords = optionWordsWith (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding := by
+  apply DFunLike.ext
+  intro a
   funext i
-  fin_cases i <;> rfl
+  cases a <;> fin_cases i <;> rfl
 
 /-- A Boolean tag with a retained zero slot supports native comparisons without immediates. -/
 def boolWords : Bool ↪ (Fin 2 → ℕ) where

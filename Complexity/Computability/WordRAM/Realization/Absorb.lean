@@ -68,8 +68,11 @@ instance : WordEncoding ℕ := ⟨1, (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedd
 
 instance : WordEncoding Unit := ⟨0, (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding⟩
 
-/-- Optional values use a presence tag followed by their unshifted payload words. -/
-instance {α : Type} [WordEncoding α] : WordEncoding (Option α) :=
+instance : WordEncoding (Option ℕ) := ⟨2, optionWords⟩
+
+/-- Optional values use a presence tag followed by their unshifted payload words.
+The scalar instance retains its legacy vector normal form. -/
+instance (priority := 100) {α : Type} [WordEncoding α] : WordEncoding (Option α) :=
   ⟨_, optionWordsWith (WordEncoding.encode (α := α))⟩
 
 instance : WordEncoding Bool := ⟨2, boolWords⟩
