@@ -651,8 +651,14 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   have uniform native certificates over runtime layouts, with local work 0/10/19. Backends of
   framed refinements export their frame (`modifies`, `frame`), run products over one memory,
   and allocate from arbitrary memory through `Memory.Allocator` (`Backend.Allocation`); the stack
-  and a pair of stacks check all three. Remaining: the queue and binary-heap migrations onto them,
-  and the full C2/M1b objective; arbitrary host continuations do not acquire runtime bounds.
+  and a pair of stacks check all three. The binary heap now realizes its original memory methods
+  and allocator, retains compact local-zero initialization and a genuine linear dirty clear, and
+  supplies the original log-linear Dijkstra endpoint through an actual initialized native program.
+  The graph encoding and word envelope stay unchanged; one factor precedes all graphs and widths,
+  and the clock includes the prefix, control and halt. The old hand-stepped binary execution is
+  retired, while its pure model/order lemmas and source credit remain. Remaining: the queue and
+  Fibonacci execution migrations and the full C2/M1b objective; arbitrary host continuations do
+  not acquire runtime bounds.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and

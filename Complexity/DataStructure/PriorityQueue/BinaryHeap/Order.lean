@@ -18,11 +18,9 @@ heap shape (`HeapShape.swap`), and a swap with the parent or with the child of h
 moves a single order defect one level (`UpOrdered.swap`, `DownOrdered.swap`) until it disappears
 (`UpOrdered.ordered`, `DownOrdered.ordered`).
 
-They are the private order lemmas of
-`Complexity/DataStructure/PriorityQueue/WordRAM/BinaryHeap/Sift.lean`, copied unchanged apart from
-docstrings so that implementations over the memory oracle can use them without importing word-RAM
-code. They extend the namespace of `BinaryHeap.Model`, whose definitions they are about. The
-private originals go when the word-RAM heap is migrated (#2205).
+These are the machine-free lemmas extracted from Renfei Zhou's original native heap proof.
+The memory programs and their native realizations share them without importing a separate
+execution proof. They extend the namespace of `BinaryHeap.Model`, whose definitions they use.
 
 ## Main definitions
 

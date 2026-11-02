@@ -39,8 +39,8 @@ by its layout (`framed`) and composes with other structures in the same memory
 (`Memory.Framed.prod`). Allocated in memory that is zero above the frontier, the heap starts empty
 at a cost of two memory units (`allocLayout_bind`, `inv_allocated`).
 
-The word-RAM counterpart is `Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap`, a hand-stepped
-dispatcher over the same memory layout.
+`BinaryHeap.Native` realizes these same memory programs as one fixed word-RAM program, with
+their exact source state and history preserved and native arithmetic and control charged.
 
 ## Main definitions
 

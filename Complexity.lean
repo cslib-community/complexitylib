@@ -3018,9 +3018,6 @@ public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.ExtractMin
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Memory
 public import Complexity.DataStructure.PriorityQueue.Spec
 public import Complexity.DataStructure.PriorityQueue.WordRAM.Basic
-public import Complexity.DataStructure.PriorityQueue.WordRAM.BinaryHeap
-public import Complexity.DataStructure.PriorityQueue.WordRAM.BinaryHeap.Program
-public import Complexity.DataStructure.PriorityQueue.WordRAM.BinaryHeap.Sift
 public import Complexity.DataStructure.PriorityQueue.WordRAM.Decode
 public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap
 public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.BasicOps

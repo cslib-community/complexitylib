@@ -23,13 +23,10 @@ and proves its black-box correctness and amortized instruction-count specificati
 `Cslib.DataStructure.PriorityQueue.WordRAM.PQPackage` (supporting arbitrary concrete potentials
 `potential : Data r_pq → ℕ`).
 
-Instantiating `dijkstra_of_pq_spec` with:
-* `PriorityQueue.WordRAM.BinaryHeap.pkg` (`potential = 0`) yields `LogLinearSpec` and
-  `LogLinearStatement`
-  (`O((m + 1) (⌊log₂ n⌋ + 1))`);
-* any amortized `PQPackage` with `O(1)` `insert`/`decreaseKey` and `O(log n + 1)` `extractMin`
-  (such as a Fibonacci heap) directly yields `O(m + min(n, m + 1) (⌊log₂ n⌋ + 1))` and
-  `O(m + n (⌊log₂ n⌋ + 1))` with zero duplication of Dijkstra's graph logic.
+An amortized `PQPackage` with `O(1)` `insert`/`decreaseKey` and `O(log n + 1)` `extractMin`
+directly yields `O(m + min(n, m + 1) (⌊log₂ n⌋ + 1))` and `O(m + n (⌊log₂ n⌋ + 1))`.
+The Fibonacci-heap implementation still consumes this interface. Binary-heap Dijkstra instead
+uses the realized memory client in `Algorithms.Lean.Dijkstra.Native.Binary`.
 
 ## Main definitions
 

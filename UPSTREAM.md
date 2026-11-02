@@ -555,6 +555,15 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `Stack.Memory` size/push/pop clients reuse those rules over faithfully encoded runtime layouts,
   with visible layout/representation/spare-capacity conditions and local work 0/10/19.
   The full framed queue/faithful allocation client remains separate. No abstract headline is added.
+  `PriorityQueue/BinaryHeap/Native` realizes the original memory heap methods, with exact source
+  state/history transport and a single code family before runtime layouts, dimensions and widths.
+  Its raw interface retains the compact `3n+1` fit/local-zero domain and uses the shared linear
+  clear for dirty storage; the original two-query `3n+2` allocator stays unchanged for allocated
+  clients. The pure model and order lemmas retain Renfei Zhou's source credit outside `WordRAM`.
+  The native Dijkstra client preserves the original adjacency-list encoding, word envelope and
+  log-linear endpoint, including the actual input prefix and final halt, with one existential
+  uniform factor. The old hand-stepped binary-heap execution and its fixed clock/register
+  constants are retired; no reduction in source size, space or instruction count is asserted.
   `DataStructure/OrderedSet` and `DataStructure/OrderedSet/*` provide neutral
   optional-minimum contracts, a typed finite-set interface including deletion, and adaptive
   minimum extraction, with no tree or cost dependency. Bounded-key implementations may specialize
