@@ -12,6 +12,7 @@ public import Complexity.Algorithms.ExactTriangle.Weights
 public import Complexity.Algorithms.ExactTriangle.Witnesses
 public import Complexity.Algorithms.Lean.Dijkstra.Client
 public import Complexity.Algorithms.Lean.Dijkstra.Cost
+public import Complexity.Algorithms.Lean.Dijkstra.Memory
 public import Complexity.Algorithms.Lean.Huffman.Basic
 public import Complexity.Algorithms.Lean.Huffman.Kraft
 public import Complexity.Algorithms.Lean.Huffman.Optimality
@@ -2815,6 +2816,7 @@ public import Complexity.Crypto.Protocols.Signature.RandomOracle
 public import Complexity.DataStructure.AVLTree.Basic
 public import Complexity.DataStructure.AVLTree.Erase
 public import Complexity.DataStructure.AVLTree.Impl
+public import Complexity.DataStructure.AdjacencyList.Memory
 public import Complexity.DataStructure.AdjacencyList.Spec
 public import Complexity.DataStructure.CountMin.Basic
 public import Complexity.DataStructure.CountMin.LinearHash
@@ -2822,6 +2824,7 @@ public import Complexity.DataStructure.CountMin.Probability
 public import Complexity.DataStructure.CountMin.Program
 public import Complexity.DataStructure.Dictionary.CuckooHashing
 public import Complexity.DataStructure.Dictionary.DoubleHashing
+public import Complexity.DataStructure.Dictionary.Memory
 public import Complexity.DataStructure.Dictionary.Spec
 public import Complexity.DataStructure.Dictionary.UniformProbing
 public import Complexity.DataStructure.Dictionary.WordRAM.ChainedHash
