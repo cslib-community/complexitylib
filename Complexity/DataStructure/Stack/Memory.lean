@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.DataStructure.Memory.Field
-public import Complexity.DataStructure.Memory.Frame
+public import Complexity.DataStructure.Memory.Alloc
 public import Complexity.DataStructure.Stack.WordRAM.Basic
 
 /-!
@@ -25,7 +25,8 @@ Every operation costs at most three memory units, with no potential (`amortized`
 write only the layout's cells and never allocate (`modifies_methods`), and the abstraction and
 invariant depend only on those cells (`abs_congr`, `Inv.congr`). So the stack is framed by its
 layout (`framed`), and stacks with disjoint layouts share one memory through the generic product
-`Memory.Framed.prod`.
+`Memory.Framed.prod`. `allocator` packages the allocation of an empty stack (`allocLayout`) with
+the framed stack it sets up, so that clients allocate stacks through `Memory.Allocator`.
 
 This is the same specification that `Stack.WordRAM` implements by a hand-stepped nine-register
 dispatcher. Here no register or instruction count appears. Word fit enters only through the
@@ -40,6 +41,7 @@ admissibility of `Memory.spec w` and one static fact of the layout, that the cap
 * `refinement`: the array stack as a `Refinement` of the bounded stack.
 * `framed`: the same refinement, framed by the layout's cells.
 * `allocLayout`: allocate an empty stack.
+* `allocator`: allocation and the framed stack, as a `Memory.Allocator`.
 
 ## Main results
 
@@ -47,8 +49,9 @@ admissibility of `Memory.spec w` and one static fact of the layout, that the cap
 * `runClient_push`, `runClient_pop_of_eq_zero`, `runClient_pop_of_pos`, `runClient_size`: the
   operations evaluate definitionally.
 * `modifies_methods`, `abs_congr`, `Inv.congr`, `Inv.lt_frontier`: the frame of a stack.
-* `runClient_allocLayout_bind`, `valid_allocLayout`, `inv_allocLayout`: allocation yields a
-  well-formed empty stack in three memory units.
+* `runClient_allocLayout_bind`, `runClient_allocLayout`, `valid_allocLayout`,
+  `inv_allocLayout`: allocation yields a well-formed empty stack in three memory units.
+* `amortized_allocator`: the allocator's cost certificate, three units per operation.
 
 ## References
 
@@ -318,6 +321,7 @@ def framed (hL : L.Valid w C) : Memory.Framed (Stack.WordRAM.spec w C) w :=
   .ofStatic (refinement hL) L.footprint (fun hs ha => Inv.lt_frontier hs ha)
     (fun hs h hf => ⟨hs.congr hL h hf, abs_congr hL hs h⟩)
     (fun o _ hv b _ hb => (modifies_methods hL o hv).1 b hb)
+    (fun o _ hv => (modifies_methods hL o hv).2)
 
 /-- Every operation costs at most three memory units, so the stack needs no potential. -/
 theorem amortized (hL : L.Valid w C) :
@@ -384,5 +388,52 @@ theorem inv_allocLayout (s : Memory.State) :
     rw [h0]
     exact Nat.zero_le C
   · simp [abs, h0]
+
+/-- Allocation returns the layout at the frontier, clears the count cell, and advances the
+frontier past the items. -/
+theorem runClient_allocLayout (C : ℕ) (s : Memory.State) :
+    (Memory.spec w).runClient s (allocLayout C) =
+      (⟨⟨s.frontier, 1⟩, ⟨s.frontier + 1, C⟩⟩, ⟨clear s.mem s.frontier 1, s.frontier + 1 + C⟩,
+        [.alloc 1, .allocDirty C]) := rfl
+
+/-- **The array stack as an allocator**: allocate an empty stack of capacity `C` in `C + 1`
+cells, at a memory cost of three units. -/
+def allocator (w C : ℕ) : Allocator (Stack.WordRAM.spec w C) w where
+  Handle := Layout
+  alloc := allocLayout C
+  methods L := methods L w C
+  init := []
+  room := C + 1
+  cost := 3
+  framed s _ hroom := framed (valid_allocLayout (f := s.frontier) (hroom.of_le (by omega)))
+  allocates s _ hroom := by
+    obtain ⟨hinv, habs⟩ := inv_allocLayout (C := C) s
+    refine
+      { validHistory := ?_, cost_le := ?_, mem_eq := ?_, methods_eq := rfl, inv := ?_,
+        abs_eq := ?_, of_mem_footprint := ?_, room_le := ?_ } <;>
+      simp only [StateTransitionSpec.clientHistory, StateTransitionSpec.clientState,
+        runClient_allocLayout]
+    · simp only [StateTransitionSpec.validHistory_cons, StateTransitionSpec.stepFn, step_alloc,
+        valid_alloc, valid_allocDirty]
+      exact ⟨hroom.of_le (by omega), hroom.of_le (by omega), trivial⟩
+    · simp
+    · exact fun a ha => clear_of_not_owns (by simp only [Block.Owns]; omega)
+    · exact hinv
+    · exact habs
+    · intro a ha
+      simp only [framed_footprint, Layout.footprint, Finset.mem_union, Block.mem_footprint,
+        Block.Owns] at ha
+      right
+      omega
+    · simp only [framed, Memory.Framed.ofStatic]
+      omega
+
+/-- The allocated stack is empty. -/
+@[simp] theorem init_allocator (w C : ℕ) : (allocator w C).init = [] := rfl
+
+/-- Every stack operation costs at most three memory units, and allocation leaves no
+potential. -/
+theorem amortized_allocator : (allocator w C).Amortized (fun _ _ => 3) 0 :=
+  fun _ _ _ => ⟨fun _ => 0, amortized _, Memory.Framed.Local.const _ 0, le_rfl⟩
 
 end Cslib.DataStructure.Stack.Memory
