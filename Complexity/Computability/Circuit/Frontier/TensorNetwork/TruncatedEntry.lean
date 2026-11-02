@@ -24,15 +24,16 @@ algorithm for the original entries. It instantiates the assembly
 
 **Admissible networks** (`Cslib.Circuits.Frontier.TruncEntryAdmissible`). The hypotheses of
 Theorem D.1 as in `Cslib.Circuits.Frontier.EntryAdmissible`, plus **at most `C s` vertices**. The
-precision and the truncation order are bounded by `P, ℓ ≤ D s` in the interface itself.
+precision is bounded by `D s (⌊log₂ s⌋ + 1)` and the truncation order by `D (s + 1) ^ d`, for
+fixed `D` and `d`, in the interface itself.
 
 *Narrowing against Theorem D.1.* The theorem asks only that the number of vertices be bounded by
 a fixed polynomial in `s`. The bound `k ≤ C s` is what the assembly needs: the reduction of
 truncation order `ℓ` to `A_P` interpolates at `(ℓ - 1) k + 1` points, which must fit in the
-residues of the modulus `FastContraction.modulus m`, more than `m ^ 4 / 16` of them for `m` edges.
-With `k ≤ C s` and `ℓ ≤ D s` they fit once `s ≥ 4 (C D + 1)`
-(`Cslib.Circuits.Frontier.truncGuard_of_le`), and below that size direct summation costs a constant
-factor. The applications satisfy the narrower bound: the network of Lemma D.2 (p. 56) has
+residues of the modulus `FastContraction.modulus m`. These eventually outnumber every fixed
+polynomial in `m` (`FastContraction.pow_le_card_modulus`), so polynomial truncation passes the
+guard beyond a constant size. Below that size direct summation costs a constant factor.
+The applications satisfy the linear vertex bound: the network of Lemma D.2 (p. 56) has
 `2 J = 2 ⌈n ^ (1/4)⌉` vertices at size `s = n ν`, and that of the fixed-density bound (§D.2,
 p. 54) has `O_k(n + m)` vertices at size `s = n + m`.
 
@@ -265,15 +266,16 @@ entries (`specEntry entry`, with the certificate `specEntryCertificate entry ce`
 admissible for them. Then the assembly `TruncatedContractionAlgorithm.ofCore` around `A` is a
 truncated contraction algorithm for the networks admissible for `ce` with at most `C s` vertices
 (`TruncEntryAdmissible ce`): it computes the contraction in `B_{P,ℓ}` in time
-`poly(n) 2 ^ O(s / √⌊log₂ s⌋)` and polynomial space, for `1 ≤ P, ℓ ≤ D s`. -/
+`poly(n) 2 ^ O(s / √⌊log₂ s⌋)` and polynomial space, for
+`1 ≤ P ≤ D s (⌊log₂ s⌋ + 1)` and `1 ≤ ℓ ≤ D (s + 1) ^ d`, for fixed `D`, `d`. -/
 noncomputable def TruncatedContractionAlgorithm.ofEntry
     (ce : NativeCertificate (fun q : T × List Bool => entry q.1 q.2) (encPair encT encBits)
       (encList encNat))
     (A : EntryContractionAlgorithm (encSpecDesc encT) (specEntry entry)
       (EntryAdmissible (specEntryCertificate entry ce))) :
     TruncatedContractionAlgorithm encT entry (TruncEntryAdmissible ce) :=
-  ofCore (core := A.core) A.certificate A.val_core A.bound
-    (fun C _ => by
+  ofCore (core := A.core) A.certificate A.val_core A.bound_logPrecision
+    (fun C _ _ => by
       obtain ⟨C', hC'⟩ := EntryContraction.exists_entryAdmissible_specNet ce C
       exact ⟨C', fun s P ℓ r _ G _ _ _ _ _ hA => hC' s P ℓ r _ _ G hA.1⟩)
     ce

@@ -109,11 +109,11 @@ theorem isOraclePPTOn_queryTable : IsOraclePPTOn (encList encBits) encBits query
     cases words with
     | nil =>
       simp only [queryTableStep, List.isEmpty_nil, ite_true] at hnext
-      rw [ProbOracleComp.eq_of_mem_support_pure hnext]
+      rw [OracleComp.eq_of_mem_supportWith_pure hnext]
       simp
     | cons word words =>
       simp only [queryTableStep, List.isEmpty_cons, Bool.false_eq_true, ite_false] at hnext
-      obtain ⟨reply, -, rfl⟩ := ProbOracleComp.mem_support_map hnext
+      obtain ⟨reply, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext
       simp only [length_encPair, encBits_apply, List.length_append, List.length_singleton,
         List.tail_cons, length_encList, List.map_cons, List.sum_cons]
       omega
@@ -122,10 +122,10 @@ theorem isOraclePPTOn_queryTable : IsOraclePPTOn (encList encBits) encBits query
 theorem interpret_queryTable {m : Type → Type*} [Monad m] [LawfulMonad m]
     (random : (n : ℕ) → m (Fin (n + 1))) (oracle : List Bool → List Bool)
     (words : List (List Bool)) :
-    OracleComp.interpret (ProbOracleComp.handler random fun request => pure (oracle request.2))
+    OracleComp.interpret (OracleComp.sumHandler random fun request => pure (oracle request.2))
       (queryTable words) = pure (words.map fun word => (oracle word).headD false) := by
   have key : ∀ (words : List (List Bool)) (acc : List Bool),
-      OracleComp.interpret (ProbOracleComp.handler random fun request => pure (oracle request.2))
+      OracleComp.interpret (OracleComp.sumHandler random fun request => pure (oracle request.2))
         (OracleComp.iterate words.length queryTableStep (words, acc)) =
         pure ([], acc ++ words.map fun word => (oracle word).headD false) := by
     intro words
@@ -135,7 +135,7 @@ theorem interpret_queryTable {m : Type → Type*} [Monad m] [LawfulMonad m]
       intro acc
       rw [List.length_cons, OracleComp.iterate_succ_bind, OracleComp.interpret_bind]
       have hstep : OracleComp.interpret
-          (ProbOracleComp.handler random fun request => pure (oracle request.2))
+          (OracleComp.sumHandler random fun request => pure (oracle request.2))
           (queryTableStep (word :: words, acc)) =
             pure (words, acc ++ [(oracle word).headD false]) := by
         simp only [queryTableStep, List.isEmpty_cons, Bool.false_eq_true, ite_false,

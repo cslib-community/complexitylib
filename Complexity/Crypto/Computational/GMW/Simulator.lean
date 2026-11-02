@@ -90,7 +90,7 @@ private theorem runTwoRound_query_inl {α β : Type} (reply1 reply2 : List Bool 
     f <$> runTwoRound reply1 reply2 (OracleComp.query (Sum.inl n) >>= k) s =
       (ProbComp.unifFin n >>= fun u => f <$> runTwoRound reply1 reply2 (k u) s) := by
   simp only [runTwoRound, OracleComp.interpret_bind, OracleComp.interpret_query,
-    ProbOracleComp.handler, StateT.run_bind, StateT.run_lift, bind_assoc, pure_bind, map_bind]
+    OracleComp.sumHandler, StateT.run_bind, StateT.run_lift, bind_assoc, pure_bind, map_bind]
 
 private theorem runTwoRound_query_inr {α β : Type} (reply1 reply2 : List Bool → List Bool)
     (q : Unit × List Bool) (k : List Bool → WordOracleComp Unit α) (s : ℕ × List Bool)
@@ -99,7 +99,7 @@ private theorem runTwoRound_query_inr {α β : Type} (reply1 reply2 : List Bool 
       let step := twoRoundStep reply1 reply2 q.2 s
       f <$> runTwoRound reply1 reply2 (k step.1) step.2 := by
   simp only [runTwoRound, OracleComp.interpret_bind, OracleComp.interpret_query,
-    ProbOracleComp.handler, StateT.run_bind]
+    OracleComp.sumHandler, StateT.run_bind]
   rfl
 
 private theorem length_snd_mem_support_runTwoRound {α : Type} (r1 r2 : List Bool → List Bool)

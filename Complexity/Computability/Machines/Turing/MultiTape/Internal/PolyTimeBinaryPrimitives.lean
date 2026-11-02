@@ -43,7 +43,7 @@ theorem binary_add : ComputableInPolyTime (fun p : ℕ × ℕ => p.1 + p.2)
 @[fun_prop]
 theorem binary_lt : ComputableInPolyTime (fun p : ℕ × ℕ => decide (p.1 < p.2))
     (encPair encNat encNat) encBool :=
-  (ComputableInO.of_linear ComputableInLinearTimeAndSpace.natLt).computableInPolyTime
+  (ComputableInO.of_linear ComputableInDegree.natLt).computableInPolyTime
     (PolyBounded.of_forall_le 1 1 (fun _ => by simp))
     (PolyBounded.of_forall_le 1 1 (fun _ => by simp))
 
@@ -60,7 +60,7 @@ theorem binary_mul' {α : Type} {input : α ↪ List Bool} {left right : α → 
 computed-operand rule `binary_le'`. -/
 theorem binary_le : ComputableInPolyTime (fun p : ℕ × ℕ => decide (p.1 ≤ p.2))
     (encPair encNat encNat) encBool :=
-  (ComputableInO.of_linear ComputableInLinearTimeAndSpace.natLe).computableInPolyTime
+  (ComputableInO.of_linear ComputableInDegree.natLe).computableInPolyTime
     (PolyBounded.of_forall_le 1 1 (fun _ => by simp))
     (PolyBounded.of_forall_le 1 1 (fun _ => by simp))
 

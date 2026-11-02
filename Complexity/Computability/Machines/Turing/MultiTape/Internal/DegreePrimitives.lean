@@ -8,41 +8,34 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.Primitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pair
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeClosure
 
-/-!
-# Direct degree bounds from encoding machines
+/-! # Direct degree bounds from encoding capabilities
 
-Pair projections unpack the encoding capability's machine witness directly. The temporary
-linear encoding fields are used only as machine constructors; no higher tidy degree or
-polynomial-time calculus is used. Both cost and output retain degree one.
+Pair projections reuse the degree certificates supplied by the encoding capability.
 -/
 
 @[expose] public section
 namespace Turing.MultiTapeTM.ComputableInDegree
 universe u
 
-/-- The first framed component is computable with linear cost and output growth. -/
+/-- The first component of a standard framed pair. -/
 theorem fst {β₁ β₂ : Type u} (enc₁ : β₁ ↪ List Bool) (enc₂ : β₂ ↪ List Bool) :
-    ComputableInDegree Prod.fst (encPair enc₁ enc₂) enc₁ 1 1 := by
-  obtain ⟨c, k, State, hfin, tm, htm⟩ :=
-    PairEncoding.fst (enc₁ := enc₁) (enc₂ := enc₂) (enc := encPair enc₁ enc₂)
-  refine ⟨⟨fun p => c * ((encPair enc₁ enc₂ p).length + 1),
-    fun p => c * ((encPair enc₁ enc₂ p).length + 1),
-    ⟨c, fun _ => by simp⟩, ⟨c, fun _ => by simp⟩,
-    k, State, hfin, tm, fun p => htm p⟩,
-    ⟨c, fun p => ?_⟩⟩
-  simpa using (htm p).length_output_le
+    ComputableInDegree Prod.fst (encPair enc₁ enc₂) enc₁ 1 1 := PairEncoding.fst enc₂
 
-/-- The second framed component is computable with linear cost and output growth. -/
+/-- The second component of a standard framed pair. -/
 theorem snd {β₁ β₂ : Type u} (enc₁ : β₁ ↪ List Bool) (enc₂ : β₂ ↪ List Bool) :
-    ComputableInDegree Prod.snd (encPair enc₁ enc₂) enc₂ 1 1 := by
-  obtain ⟨c, k, State, hfin, tm, htm⟩ :=
-    PairEncoding.snd (enc₁ := enc₁) (enc₂ := enc₂) (enc := encPair enc₁ enc₂)
-  refine ⟨⟨fun p => c * ((encPair enc₁ enc₂ p).length + 1),
-    fun p => c * ((encPair enc₁ enc₂ p).length + 1),
-    ⟨c, fun _ => by simp⟩, ⟨c, fun _ => by simp⟩,
-    k, State, hfin, tm, fun p => htm p⟩,
-    ⟨c, fun p => ?_⟩⟩
-  simpa using (htm p).length_output_le
+    ComputableInDegree Prod.snd (encPair enc₁ enc₂) enc₂ 1 1 := PairEncoding.snd enc₁
+
+variable {d₁ e₁ d₂ e₂ : ℕ}
+
+/-- Framed pairing retains the independent encoded-output degrees. -/
+theorem prod {α β₁ β₂ : Type u} {encIn : α ↪ List Bool}
+    {enc₁ : β₁ ↪ List Bool} {enc₂ : β₂ ↪ List Bool}
+    {f : α → β₁} {g : α → β₂} (hf : ComputableInDegree f encIn enc₁ d₁ e₁)
+    (hg : ComputableInDegree g encIn enc₂ d₂ e₂) :
+    ComputableInDegree (fun x => (f x, g x)) encIn (encPair enc₁ enc₂) (max d₁ d₂)
+      (max e₁ e₂) :=
+  ⟨(hf.pair hg).1, (((hf.2.smul 2).add_const 1).add_max hg.2).mono fun x => by simp⟩
 
 end Turing.MultiTapeTM.ComputableInDegree

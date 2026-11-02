@@ -369,15 +369,15 @@ private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
   set st := RawState.ofData n base a with hst_def
   have hfit_stop := hbr.fits_stop hb
   have hfit_n1 : Fits w (n + 1) := hfit_stop.of_le (by simp only [space]; omega)
-  have hz0 : a.regs zeroP = 0 := hbr.2.2.2.2.2.2.2.2.2.2.2.1
-  have ho1 : a.regs oneP = 1 := hbr.2.2.2.2.2.2.2.2.2.2.2.2
-  have hbb : a.regs baseReg = base := hbr.2.2.1
-  have hpb : a.regs parBase = base + n := hbr.2.2.2.1
-  have hcb : a.regs childBase = base + 2 * n := hbr.2.2.2.2.1
-  have hlb : a.regs leftBase = base + 3 * n := hbr.2.2.2.2.2.1
-  have hrb : a.regs rightBase = base + 4 * n := hbr.2.2.2.2.2.2.1
-  have hdb : a.regs degBase = base + 5 * n := hbr.2.2.2.2.2.2.2.1
-  have hconsb : a.regs consBase = base + 8 * n := hbr.2.2.2.2.2.2.2.2.2.2.1
+  have hz0 : a.regs zeroP = 0 := hbr.regs_zeroP
+  have ho1 : a.regs oneP = 1 := hbr.regs_oneP
+  have hbb : a.regs baseReg = base := hbr.regs_baseReg
+  have hpb : a.regs parBase = base + n := hbr.regs_parBase
+  have hcb : a.regs childBase = base + 2 * n := hbr.regs_childBase
+  have hlb : a.regs leftBase = base + 3 * n := hbr.regs_leftBase
+  have hrb : a.regs rightBase = base + 4 * n := hbr.regs_rightBase
+  have hdb : a.regs degBase = base + 5 * n := hbr.regs_degBase
+  have hconsb : a.regs consBase = base + 8 * n := hbr.regs_consBase
   -- Degree bound `curD + 2 ≤ n` from `z ∈ otherNodes` disjoint from `T_cur.nodes`:
   have hnd_cur_rest := List.nodup_append.mp hnd
   have hz_in_ro : z ∈ forestNodes slotTrees ++ otherNodes := List.mem_append_right _ hz_mem
@@ -520,7 +520,7 @@ private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
       IndexedMinPQ.PrioLT (T₁.root, st.key T₁.root) (T₂.root, st.key T₂.root) ∧
       (T₁.nodes ++ T₂.nodes).Perm (T_cur.nodes ++ T_slot.nodes) ∧
       a3.regs s4 = T₁.root.val ∧ a3.regs s5 = T₂.root.val := by
-    have hz_a2 : a2.regs zeroP = 0 := hbr2.2.2.2.2.2.2.2.2.2.2.2.1
+    have hz_a2 : a2.regs zeroP = 0 := hbr2.regs_zeroP
     have hs4_a2 : a2.regs s4 = u4.val := ha_s4
     have hs5_a2 : a2.regs s5 = u5.val := by
       simp only [a2, Data.set_regs, Function.update_of_ne (by decide : s5 ≠ s6), ha2_s5]
@@ -617,13 +617,13 @@ private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
   let a4 := ((((a3.set s1 (w1.val + 1)).set s0 (base + n + w2.val)).write
     (base + n + w2.val) (w1.val + 1)).set s0 (base + 5 * n + w1.val)).set s1 curD
   have e4_1 : ExecWithin w (.op (.exactBin .add s1 s4 oneP)) a3 (a3.set s1 (w1.val + 1)) 1 := by
-    have ho_3 : a3.regs oneP = 1 := hbr3.2.2.2.2.2.2.2.2.2.2.2.2
+    have ho_3 : a3.regs oneP = 1 := hbr3.regs_oneP
     simpa only [ha3_s4, ho_3, w1] using
       execWithin_exactAdd (x := a3) (d := s1) (i := s4) (j := oneP)
         (by rw [ha3_s4, ho_3]; exact hfit_n1.of_le (by omega))
   have e4_2 : ExecWithin w (.op (.exactBin .add s0 parBase s5)) (a3.set s1 (w1.val + 1))
       ((a3.set s1 (w1.val + 1)).set s0 (base + n + w2.val)) 1 := by
-    have hp_3 : (a3.set s1 (w1.val + 1)).regs parBase = base + n := hbr3.2.2.2.1
+    have hp_3 : (a3.set s1 (w1.val + 1)).regs parBase = base + n := hbr3.regs_parBase
     have hs5_3 : (a3.set s1 (w1.val + 1)).regs s5 = w2.val := by
       simp only [Data.set_regs, Function.update_of_ne (by decide : s5 ≠ s1), ha3_s5, w2]
     simpa only [hp_3, hs5_3] using
@@ -646,7 +646,7 @@ private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
       ((((a3.set s1 (w1.val + 1)).set s0 (base + n + w2.val)).write
         (base + n + w2.val) (w1.val + 1)).set s0 (base + 5 * n + w1.val)) 1 := by
     have hd_3 : (((a3.set s1 (w1.val + 1)).set s0 (base + n + w2.val)).write
-        (base + n + w2.val) (w1.val + 1)).regs degBase = base + 5 * n := hbr3.2.2.2.2.2.2.2.1
+        (base + n + w2.val) (w1.val + 1)).regs degBase = base + 5 * n := hbr3.regs_degBase
     have hs4_3 : (((a3.set s1 (w1.val + 1)).set s0 (base + n + w2.val)).write
         (base + n + w2.val) (w1.val + 1)).regs s4 = w1.val := by
       simp only [Data.write_regs, Data.set_regs, Function.update_of_ne (by decide : s4 ≠ s0),
@@ -751,12 +751,12 @@ private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
        ∀ u, u ∉ T₁.nodes ++ T₂.nodes →
          st5.par u = st.par u ∧ st5.child u = st.child u ∧
          st5.left u = st.left u ∧ st5.right u = st.right u ∧ st5.deg u = st.deg u) := by
-    have hz_4 : a4.regs zeroP = 0 := hbr4.2.2.2.2.2.2.2.2.2.2.2.1
-    have ho_4 : a4.regs oneP = 1 := hbr4.2.2.2.2.2.2.2.2.2.2.2.2
-    have hcb_4 : a4.regs childBase = base + 2 * n := hbr4.2.2.2.2.1
-    have hlb_4 : a4.regs leftBase = base + 3 * n := hbr4.2.2.2.2.2.1
-    have hrb_4 : a4.regs rightBase = base + 4 * n := hbr4.2.2.2.2.2.2.1
-    have hdb_4 : a4.regs degBase = base + 5 * n := hbr4.2.2.2.2.2.2.2.1
+    have hz_4 : a4.regs zeroP = 0 := hbr4.regs_zeroP
+    have ho_4 : a4.regs oneP = 1 := hbr4.regs_oneP
+    have hcb_4 : a4.regs childBase = base + 2 * n := hbr4.regs_childBase
+    have hlb_4 : a4.regs leftBase = base + 3 * n := hbr4.regs_leftBase
+    have hrb_4 : a4.regs rightBase = base + 4 * n := hbr4.regs_rightBase
+    have hdb_4 : a4.regs degBase = base + 5 * n := hbr4.regs_degBase
     have ho_cw1 := owns_arr_addr (base := base) (k := 2) (by decide) hw1_lt
     have ho_dw1 := owns_arr_addr (base := base) (k := 5) (by decide) hw1_lt
     by_cases hd0 : curD = 0
@@ -975,14 +975,14 @@ private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
       let a5 := ((q2.set s1 (curD + 1)).set s0 (base + 5 * n + w1.val)).write
         (base + 5 * n + w1.val) (curD + 1)
       have t5 : ExecWithin w (.op (.exactBin .add s1 s1 oneP)) q2 (q2.set s1 (curD + 1)) 1 := by
-        have ho_q2 : q2.regs oneP = 1 := hbr_q2.2.2.2.2.2.2.2.2.2.2.2.2
+        have ho_q2 : q2.regs oneP = 1 := hbr_q2.regs_oneP
         simpa only [hq2_s1, ho_q2] using
           execWithin_exactAdd (x := q2) (d := s1) (i := s1) (j := oneP)
             (by rw [hq2_s1, ho_q2]; exact hfit_n1.of_le (by omega))
       have t6 : ExecWithin w (.op (.exactBin .add s0 degBase s4)) (q2.set s1 (curD + 1))
           ((q2.set s1 (curD + 1)).set s0 (base + 5 * n + w1.val)) 1 := by
         have hd_q2 : (q2.set s1 (curD + 1)).regs degBase = base + 5 * n :=
-          hbr_q2.2.2.2.2.2.2.2.1
+          hbr_q2.regs_degBase
         have hs4_q2 : (q2.set s1 (curD + 1)).regs s4 = w1.val := by
           simp only [Data.set_regs, Function.update_of_ne (by decide : s4 ≠ s1), hq2_s4]
         simpa only [hd_q2, hs4_q2] using
@@ -1080,7 +1080,7 @@ private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
     ((RawState.ofData n base a5).cons (curD + 1))
   have e6_1 : ExecWithin w (.op (.exactBin .add curDReg curDReg oneP)) a5
       (a5.set curDReg (curD + 1)) 1 := by
-    have ho_5 : a5.regs oneP = 1 := hbr5.2.2.2.2.2.2.2.2.2.2.2.2
+    have ho_5 : a5.regs oneP = 1 := hbr5.regs_oneP
     simpa only [ha5_curD, ho_5] using
       execWithin_exactAdd (x := a5) (d := curDReg) (i := curDReg) (j := oneP)
         (by rw [ha5_curD, ho_5]; exact hfit_n1.of_le (by omega))
@@ -1088,7 +1088,7 @@ private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
       (a5.set curDReg (curD + 1))
       ((a5.set curDReg (curD + 1)).set s0 (base + 8 * n + (curD + 1))) 1 := by
     have hcb_5 : (a5.set curDReg (curD + 1)).regs consBase = base + 8 * n :=
-      hbr5.2.2.2.2.2.2.2.2.2.2.1
+      hbr5.regs_consBase
     have hcd_5 : (a5.set curDReg (curD + 1)).regs curDReg = curD + 1 := by
       simp only [Data.set_regs, Function.update_self]
     simpa only [hcb_5, hcd_5] using
@@ -1298,7 +1298,7 @@ theorem scatterRootCode_exec {n sz base w maxDeg₀ : ℕ} {x : Data rFib}
       (ExecWithin.copy (B := .exact) (w := w) (x := x) (d := s4) (s := iterCur))
   have p2 : ExecWithin w (.op (.exactBin .add s0 degBase s4)) (x.set s4 u0.val)
       ((x.set s4 u0.val).set s0 (base + 5 * n + u0.val)) 1 := by
-    have hdb : (x.set s4 u0.val).regs degBase = base + 5 * n := hbr.2.2.2.2.2.2.2.1
+    have hdb : (x.set s4 u0.val).regs degBase = base + 5 * n := hbr.regs_degBase
     have hs4 : (x.set s4 u0.val).regs s4 = u0.val := by
       simp only [Data.set_regs, Function.update_self]
     simpa only [hdb, hs4] using
@@ -1316,7 +1316,7 @@ theorem scatterRootCode_exec {n sz base w maxDeg₀ : ℕ} {x : Data rFib}
       ((((x.set s4 u0.val).set s0 (base + 5 * n + u0.val)).set curDReg d0).set s0
         (base + 8 * n + d0)) 1 := by
     have hcb : (((x.set s4 u0.val).set s0 (base + 5 * n + u0.val)).set curDReg d0).regs
-        consBase = base + 8 * n := hbr.2.2.2.2.2.2.2.2.2.2.1
+        consBase = base + 8 * n := hbr.regs_consBase
     have hcd : (((x.set s4 u0.val).set s0 (base + 5 * n + u0.val)).set curDReg d0).regs
         curDReg = d0 := by simp only [Data.set_regs, Function.update_self]
     simpa only [hcb, hcd] using
@@ -1378,7 +1378,7 @@ theorem scatterRootCode_exec {n sz base w maxDeg₀ : ℕ} {x : Data rFib}
   rw [hdeg_f] at hdf_bds
   have hdf_le_n : curD_f ≤ n := by omega
   have hcons_f_zero : st_lp.cons curD_f = 0 := by
-    have hz0_lp : z_lp.regs zeroP = 0 := hbrz.2.2.2.2.2.2.2.2.2.2.2.1
+    have hz0_lp : z_lp.regs zeroP = 0 := hbrz.regs_zeroP
     rw [Cond.Holds, hz0_lp, hs3_lp] at hnc_lp
     omega
   have hnone_f : ∀ R ∈ slotTrees_f, R.deg ≠ curD_f := by
@@ -1391,14 +1391,14 @@ theorem scatterRootCode_exec {n sz base w maxDeg₀ : ℕ} {x : Data rFib}
   let z2 := ((z_lp.set s1 (uf.val + 1)).set s0 (base + 8 * n + curD_f)).write
     (base + 8 * n + curD_f) (uf.val + 1)
   have q1 : ExecWithin w (.op (.exactBin .add s1 s4 oneP)) z_lp (z_lp.set s1 (uf.val + 1)) 1 := by
-    have ho_z : z_lp.regs oneP = 1 := hbrz.2.2.2.2.2.2.2.2.2.2.2.2
+    have ho_z : z_lp.regs oneP = 1 := hbrz.regs_oneP
     simpa only [hs4_lp, ho_z] using
       execWithin_exactAdd (x := z_lp) (d := s1) (i := s4) (j := oneP)
         (by rw [hs4_lp, ho_z]; exact hfit_n1.of_le (by omega))
   have q2 : ExecWithin w (.op (.exactBin .add s0 consBase curDReg)) (z_lp.set s1 (uf.val + 1))
       ((z_lp.set s1 (uf.val + 1)).set s0 (base + 8 * n + curD_f)) 1 := by
     have hcb_z : (z_lp.set s1 (uf.val + 1)).regs consBase = base + 8 * n :=
-      hbrz.2.2.2.2.2.2.2.2.2.2.1
+      hbrz.regs_consBase
     have hcd_z : (z_lp.set s1 (uf.val + 1)).regs curDReg = curD_f := hcd_lp
     simpa only [hcb_z, hcd_z] using
       execWithin_exactAdd (x := z_lp.set s1 (uf.val + 1)) (d := s0) (i := consBase) (j := curDReg)
@@ -1420,7 +1420,7 @@ theorem scatterRootCode_exec {n sz base w maxDeg₀ : ℕ} {x : Data rFib}
       ofData_set_scratch _ (by decide : 17 ≤ s1.val), ← hst_lp_def]
   have hz2_md : z2.regs maxDegReg = maxDeg₀ := hmd_lp
   have hz2_cd : z2.regs curDReg = curD_f := hcd_lp
-  have hz2_z0 : z2.regs zeroP = 0 := hbr_z2.2.2.2.2.2.2.2.2.2.2.2.1
+  have hz2_z0 : z2.regs zeroP = 0 := hbr_z2.regs_zeroP
   have hmax_step : ∃ y,
       ExecWithin (B := .exact) w
         (.branch (.lt maxDegReg curDReg) (.op (.copy maxDegReg curDReg)) (.op (.copy s0 zeroP)))
@@ -1579,7 +1579,7 @@ private theorem scatterChildrenLoop_exec {n sz base w : ℕ}
   induction c_order with
   | nil =>
     intro a c_trees slotTrees fixedNodes z maxDeg hb hbr _ hnd _ hs _ hperm _ hrem hmd hnm _
-    have hz0 : a.regs zeroP = 0 := hbr.2.2.2.2.2.2.2.2.2.2.2.1
+    have hz0 : a.regs zeroP = 0 := hbr.regs_zeroP
     have hc : ¬(Cond.lt zeroP remReg).Holds a := by
       simp only [Cond.Holds, hz0, hrem, List.length_nil, Nat.lt_irrefl, not_false_eq_true]
     have hct_nil : c_trees = [] := by
@@ -1598,11 +1598,11 @@ private theorem scatterChildrenLoop_exec {n sz base w : ℕ}
       hmd hnm hic
     set st := RawState.ofData n base a with hst_def
     have hfit_stop := hbr.fits_stop hb
-    have hz0 : a.regs zeroP = 0 := hbr.2.2.2.2.2.2.2.2.2.2.2.1
-    have ho1 : a.regs oneP = 1 := hbr.2.2.2.2.2.2.2.2.2.2.2.2
-    have hpb : a.regs parBase = base + n := hbr.2.2.2.1
-    have hrb : a.regs rightBase = base + 4 * n := hbr.2.2.2.2.2.2.1
-    have hmkb : a.regs markBase = base + 6 * n := hbr.2.2.2.2.2.2.2.2.1
+    have hz0 : a.regs zeroP = 0 := hbr.regs_zeroP
+    have ho1 : a.regs oneP = 1 := hbr.regs_oneP
+    have hpb : a.regs parBase = base + n := hbr.regs_parBase
+    have hrb : a.regs rightBase = base + 4 * n := hbr.regs_rightBase
+    have hmkb : a.regs markBase = base + 6 * n := hbr.regs_markBase
     have hc : (Cond.lt zeroP remReg).Holds a := by
       simp only [Cond.Holds, hz0, hrem, List.length_cons]; omega
     have hu_ic : a.regs iterCur = u.val := hic u c_tl rfl
@@ -1728,8 +1728,8 @@ private theorem scatterChildrenLoop_exec {n sz base w : ℕ}
         Function.update_self]
     have ha1_s1 : a1.regs s1 = st.mark u := by
       simp only [a1, Data.set_regs, Function.update_self]
-    have ha1_z0 : a1.regs zeroP = 0 := hbr1.2.2.2.2.2.2.2.2.2.2.2.1
-    have ha1_o1 : a1.regs oneP = 1 := hbr1.2.2.2.2.2.2.2.2.2.2.2.2
+    have ha1_z0 : a1.regs zeroP = 0 := hbr1.regs_zeroP
+    have ha1_o1 : a1.regs oneP = 1 := hbr1.regs_oneP
     have ha1_nm : a1.regs numMarkedReg = st.numMarked := rfl
     -- Step 2 (`a1 → a_mid`, 3 steps): clear `mark[u]` and decrement `numMarkedReg` if `0 < mark[u]`
     have hmark_step : ∃ a_mid,
@@ -1895,7 +1895,7 @@ private theorem scatterChildrenLoop_exec {n sz base w : ℕ}
     have s4_2 : ExecWithin w (.op (.exactBin .sub remReg remReg oneP))
         (a_sc.set iterCur nxtVal) a_next 1 := by
       have hrem_w : (a_sc.set iterCur nxtVal).regs remReg = c_tl.length + 1 := hsc_rem
-      have ho1_w : (a_sc.set iterCur nxtVal).regs oneP = 1 := hbr_sc.2.2.2.2.2.2.2.2.2.2.2.2
+      have ho1_w : (a_sc.set iterCur nxtVal).regs oneP = 1 := hbr_sc.regs_oneP
       simpa only [hrem_w, ho1_w, Nat.add_sub_cancel] using
         execWithin_exactSub (x := a_sc.set iterCur nxtVal) (d := remReg) (i := remReg) (j := oneP)
           (by rw [hrem_w, ho1_w]; omega)
@@ -2064,7 +2064,7 @@ private theorem scatterRootsLoop_exec {n sz base w : ℕ}
   induction r_order with
   | nil =>
     intro a r_trees slotTrees fixedNodes _ maxDeg hb hbr _ hnd _ hs _ hperm _ hrem hmd _
-    have hz0 : a.regs zeroP = 0 := hbr.2.2.2.2.2.2.2.2.2.2.2.1
+    have hz0 : a.regs zeroP = 0 := hbr.regs_zeroP
     have hc : ¬(Cond.lt zeroP remReg).Holds a := by
       simp only [Cond.Holds, hz0, hrem, List.length_nil, Nat.lt_irrefl, not_false_eq_true]
     have hrt_nil : r_trees = [] := by
@@ -2083,8 +2083,8 @@ private theorem scatterRootsLoop_exec {n sz base w : ℕ}
       hmd hic
     set st := RawState.ofData n base a with hst_def
     have hfit_stop := hbr.fits_stop hb
-    have hz0 : a.regs zeroP = 0 := hbr.2.2.2.2.2.2.2.2.2.2.2.1
-    have hrb : a.regs rightBase = base + 4 * n := hbr.2.2.2.2.2.2.1
+    have hz0 : a.regs zeroP = 0 := hbr.regs_zeroP
+    have hrb : a.regs rightBase = base + 4 * n := hbr.regs_rightBase
     have hc : (Cond.lt zeroP remReg).Holds a := by
       simp only [Cond.Holds, hz0, hrem, List.length_cons]; omega
     have hu_ic : a.regs iterCur = u.val := hic u r_tl rfl
@@ -2154,7 +2154,7 @@ private theorem scatterRootsLoop_exec {n sz base w : ℕ}
     have s3_2 : ExecWithin w (.op (.exactBin .sub remReg remReg oneP))
         (a_sc.set iterCur nxtVal) a_next 1 := by
       have hrem_w : (a_sc.set iterCur nxtVal).regs remReg = r_tl.length + 1 := hsc_rem
-      have ho1_w : (a_sc.set iterCur nxtVal).regs oneP = 1 := hbr_sc.2.2.2.2.2.2.2.2.2.2.2.2
+      have ho1_w : (a_sc.set iterCur nxtVal).regs oneP = 1 := hbr_sc.regs_oneP
       simpa only [hrem_w, ho1_w, Nat.add_sub_cancel] using
         execWithin_exactSub (x := a_sc.set iterCur nxtVal) (d := remReg) (i := remReg) (j := oneP)
           (by rw [hrem_w, ho1_w]; omega)
@@ -2308,8 +2308,8 @@ private theorem addRootIterCur_lr_frame {n base w : ℕ} {x y : Data rFib}
       (RawState.ofData n base y).left v = (RawState.ofData n base x).left v ∧
       (RawState.ofData n base y).right v = (RawState.ofData n base x).right v := by
   have hfit_stop := hbr.fits_stop hb
-  have hz0 : x.regs zeroP = 0 := hbr.2.2.2.2.2.2.2.2.2.2.2.1
-  have ho1 : x.regs oneP = 1 := hbr.2.2.2.2.2.2.2.2.2.2.2.2
+  have hz0 : x.regs zeroP = 0 := hbr.regs_zeroP
+  have ho1 : x.regs oneP = 1 := hbr.regs_oneP
   have hu_lt := u.isLt
   obtain ⟨_, _, he_ex⟩ := he
   unfold addRootAndUpdateMin at he_ex
@@ -2322,8 +2322,8 @@ private theorem addRootIterCur_lr_frame {n base w : ℕ} {x y : Data rFib}
       cases hb_ex with
       | branch_neg hc' _ => exact absurd hc hc'
       | branch_pos _ hp_ex =>
-        have hl_base : x.regs leftBase = base + 3 * n := hbr.2.2.2.2.2.1
-        have hr_base : x.regs rightBase = base + 4 * n := hbr.2.2.2.2.2.2.1
+        have hl_base : x.regs leftBase = base + 3 * n := hbr.regs_leftBase
+        have hr_base : x.regs rightBase = base + 4 * n := hbr.regs_rightBase
         let x1 := (x.set s0 (base + 3 * n + u.val)).write (base + 3 * n + u.val) u.val
         let x2 := (x1.set s0 (base + 4 * n + u.val)).write (base + 4 * n + u.val) u.val
         let x3 := x2.set minRootReg (u.val + 1)
@@ -2523,9 +2523,9 @@ private theorem gatherSlotsLoop_exec {n sz base w maxDeg : ℕ} (hn_pos : 1 ≤ 
     intro a curD slotTrees accRoots z hsum hb hbr hcurD hmaxD hs hcleared hnd hacc hnr hrl
     set st := RawState.ofData n base a with hst_def
     have hfit_stop := hbr.fits_stop hb
-    have hz0 : a.regs zeroP = 0 := hbr.2.2.2.2.2.2.2.2.2.2.2.1
-    have ho1 : a.regs oneP = 1 := hbr.2.2.2.2.2.2.2.2.2.2.2.2
-    have hconsb : a.regs consBase = base + 8 * n := hbr.2.2.2.2.2.2.2.2.2.2.1
+    have hz0 : a.regs zeroP = 0 := hbr.regs_zeroP
+    have ho1 : a.regs oneP = 1 := hbr.regs_oneP
+    have hconsb : a.regs consBase = base + 8 * n := hbr.regs_consBase
     have hmd_le_n : maxDeg + 1 ≤ n := by
       rcases hs.2.2.2.2.2 with h0 | h2 <;> omega
     have hd_le_n : curD ≤ n := by omega
@@ -2561,7 +2561,7 @@ private theorem gatherSlotsLoop_exec {n sz base w maxDeg : ℕ} (hn_pos : 1 ≤ 
         ⟨idx, hidx, hslot_deg, hcons_eq, _, hno_other⟩
     · -- Unoccupied slot (`st.cons curD = 0`)
       have hc_br : ¬(Cond.lt zeroP s3).Holds a1 := by
-        simp only [Cond.Holds, hbr1.2.2.2.2.2.2.2.2.2.2.2.1, ha1_s3, hc0, Nat.lt_irrefl,
+        simp only [Cond.Holds, hbr1.regs_zeroP, ha1_s3, hc0, Nat.lt_irrefl,
           not_false_eq_true]
       let a2 := a1.set s0 0
       let a3 := a2.set curDReg (curD + 1)
@@ -2571,7 +2571,7 @@ private theorem gatherSlotsLoop_exec {n sz base w maxDeg : ℕ} (hn_pos : 1 ≤ 
              .seq (.op (.exactBin .sub iterCur s3 oneP)) (addRootAndUpdateMin iterCur))
             (.op (.copy s0 zeroP))) a1 a2 3 :=
         ExecWithin.branch_neg hc_br (by
-          simpa only [hbr1.2.2.2.2.2.2.2.2.2.2.2.1] using
+          simpa only [hbr1.regs_zeroP] using
             (ExecWithin.copy (B := .exact) (w := w) (x := a1) (d := s0) (s := zeroP)))
       have ha2_curD : a2.regs curDReg = curD := by
         simp only [a2, a1, Data.set_regs, Function.update_of_ne (by decide : curDReg ≠ s0),
@@ -2623,16 +2623,16 @@ private theorem gatherSlotsLoop_exec {n sz base w maxDeg : ℕ} (hn_pos : 1 ≤ 
       let u := T_hit.root
       let slotRest := slotTrees.eraseIdx idx
       have hc_br : (Cond.lt zeroP s3).Holds a1 := by
-        simp only [Cond.Holds, hbr1.2.2.2.2.2.2.2.2.2.2.2.1, ha1_s3, hcons_eq]; omega
+        simp only [Cond.Holds, hbr1.regs_zeroP, ha1_s3, hcons_eq]; omega
       have ho_cons := owns_cons_addr (base := base) hd_le_n
       let a2 := a1.write (base + 8 * n + curD) 0
       let a3 := a2.set iterCur u.val
       have s_st0 : ExecWithin (B := .exact) w (.op (.store s0 zeroP)) a1 a2 1 := by
-        simpa only [ha1_s0, hbr1.2.2.2.2.2.2.2.2.2.2.2.1] using
+        simpa only [ha1_s0, hbr1.regs_zeroP] using
           (ExecWithin.store (B := .exact) (w := w) (x := a1) (a := s0) (s := zeroP))
       have ha2_s3 : a2.regs s3 = u.val + 1 := by
         simp only [a2, Data.write_regs, ha1_s3, hcons_eq]; rfl
-      have ha2_o1 : a2.regs oneP = 1 := hbr1.2.2.2.2.2.2.2.2.2.2.2.2
+      have ha2_o1 : a2.regs oneP = 1 := hbr1.regs_oneP
       have s_sub0 : ExecWithin w (.op (.exactBin .sub iterCur s3 oneP)) a2 a3 1 := by
         have := u.isLt
         simpa only [ha2_s3, ha2_o1, Nat.add_sub_cancel] using
@@ -2689,7 +2689,7 @@ private theorem gatherSlotsLoop_exec {n sz base w maxDeg : ℕ} (hn_pos : 1 ≤ 
           Function.update_of_ne (by decide : curDReg ≠ iterCur),
           Function.update_of_ne (by decide : curDReg ≠ s3),
           Function.update_of_ne (by decide : curDReg ≠ s0), hcurD]
-      have ha4_o1 : a4.regs oneP = 1 := hbr4.2.2.2.2.2.2.2.2.2.2.2.2
+      have ha4_o1 : a4.regs oneP = 1 := hbr4.regs_oneP
       have he_inc : ExecWithin w (.op (.exactBin .add curDReg curDReg oneP)) a4 a5 1 := by
         simpa only [ha4_cd, ha4_o1] using
           execWithin_exactAdd (x := a4) (d := curDReg) (i := curDReg) (j := oneP)
@@ -2817,8 +2817,8 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
   obtain ⟨hb, hbr, hraw⟩ := hinv
   set st := RawState.ofData n base x with hst_def
   have hfit_stop := hbr.fits_stop hb
-  have hz0 : x.regs zeroP = 0 := hbr.2.2.2.2.2.2.2.2.2.2.2.1
-  have ho1 : x.regs oneP = 1 := hbr.2.2.2.2.2.2.2.2.2.2.2.2
+  have hz0 : x.regs zeroP = 0 := hbr.regs_zeroP
+  have ho1 : x.regs oneP = 1 := hbr.regs_oneP
   by_cases hm0 : st.minRoot = 0
   · -- Empty heap (`minRoot = 0`)
     have hc : (Cond.eq minRootReg zeroP).Holds x := by
@@ -2896,11 +2896,11 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
         rw [List.cons_append] at hnd_split
         exact (List.nodup_cons.mp hnd_split).1
       -- Preamble (`x → x_pre`, 13 instructions)
-      have hbb : x.regs baseReg = base := hbr.2.2.1
-      have hcb : x.regs childBase = base + 2 * n := hbr.2.2.2.2.1
-      have hrb : x.regs rightBase = base + 4 * n := hbr.2.2.2.2.2.2.1
-      have hdb : x.regs degBase = base + 5 * n := hbr.2.2.2.2.2.2.2.1
-      have hinb : x.regs inBase = base + 7 * n := hbr.2.2.2.2.2.2.2.2.2.1
+      have hbb : x.regs baseReg = base := hbr.regs_baseReg
+      have hcb : x.regs childBase = base + 2 * n := hbr.regs_childBase
+      have hrb : x.regs rightBase = base + 4 * n := hbr.regs_rightBase
+      have hdb : x.regs degBase = base + 5 * n := hbr.regs_degBase
+      have hinb : x.regs inBase = base + 7 * n := hbr.regs_inBase
       have ho_in_z := owns_arr_addr (base := base) (k := 7) (by decide) hz_lt
       let p1 := x.set zReg z.val
       let p2 := (p1.set outFlag 1).set outV z.val
@@ -3122,7 +3122,7 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
              st'.par v = st.par v ∧ st'.child v = st.child v ∧
              st'.left v = st.left v ∧ st'.right v = st.right v ∧
              st'.deg v = st.deg v ∧ st'.mark v = st.mark v) := by
-        have hz_pre0 : x_pre.regs zeroP = 0 := hbr_pre.2.2.2.2.2.2.2.2.2.2.2.1
+        have hz_pre0 : x_pre.regs zeroP = 0 := hbr_pre.regs_zeroP
         have hrem_pre : x_pre.regs remReg = st.deg z := by
           simp only [x_pre, Data.set_regs, Function.update_self]
         rcases hchild_z with ⟨rfl, _⟩ | ⟨h_c, c_tail, hcz, hcirc_c, hperm_c⟩
@@ -3178,9 +3178,9 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
               Function.update_of_ne (by decide : zReg ≠ outFlag), Function.update_self]
           have s_ca : ExecWithin w (.op (.exactBin .add s0 childBase zReg)) x_pre
               (x_pre.set s0 (base + 2 * n + z.val)) 1 := by
-            simpa only [hbr_pre.2.2.2.2.1, hz_pre] using
+            simpa only [hbr_pre.regs_childBase, hz_pre] using
               execWithin_exactAdd (x := x_pre) (d := s0) (i := childBase) (j := zReg)
-                (by rw [hbr_pre.2.2.2.2.1, hz_pre]
+                (by rw [hbr_pre.regs_childBase, hz_pre]
                     exact hfit_stop.of_le (by simp only [space]; omega))
           have s_cl : ExecWithin (B := .exact) w (.op (.load s1 s0))
               (x_pre.set s0 (base + 2 * n + z.val))
@@ -3280,10 +3280,10 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
           (x_A1.set remReg rtail.length) 1 := by
         have hnr_le_n : st.numRoots ≤ n := hraw_copy.bounds.2.1
         have hr_le : rtail.length + 1 ≤ n := by omega
-        simpa only [hnr_xA1, hbr_A1.2.2.2.2.2.2.2.2.2.2.2.2, Nat.add_sub_cancel] using
+        simpa only [hnr_xA1, hbr_A1.regs_oneP, Nat.add_sub_cancel] using
           execWithin_exactSub (x := x_A1) (d := remReg) (i := numRootsReg) (j := oneP)
-            (by rw [hnr_xA1, hbr_A1.2.2.2.2.2.2.2.2.2.2.2.2]; omega)
-            (by rw [hnr_xA1, hbr_A1.2.2.2.2.2.2.2.2.2.2.2.2]
+            (by rw [hnr_xA1, hbr_A1.regs_oneP]; omega)
+            (by rw [hnr_xA1, hbr_A1.regs_oneP]
                 exact hfit_stop.of_le (by simp only [space]; omega))
       have etr2 : ExecWithin (B := .exact) w (.op (.copy iterCur pReg))
           (x_A1.set remReg rtail.length) x_tr 1 := by
@@ -3357,11 +3357,11 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
         (maxDeg_2 + 1)).set curDReg 0
       have eb1 : ExecWithin (B := .exact) w (.op (.copy minRootReg zeroP)) x_A2
           (x_A2.set minRootReg 0) 1 := by
-        simpa only [hbr_A2.2.2.2.2.2.2.2.2.2.2.2.1] using
+        simpa only [hbr_A2.regs_zeroP] using
           (ExecWithin.copy (B := .exact) (w := w) (x := x_A2) (d := minRootReg) (s := zeroP))
       have eb2 : ExecWithin (B := .exact) w (.op (.copy numRootsReg zeroP))
           (x_A2.set minRootReg 0) ((x_A2.set minRootReg 0).set numRootsReg 0) 1 := by
-        have hz_b : (x_A2.set minRootReg 0).regs zeroP = 0 := hbr_A2.2.2.2.2.2.2.2.2.2.2.2.1
+        have hz_b : (x_A2.set minRootReg 0).regs zeroP = 0 := hbr_A2.regs_zeroP
         simpa only [hz_b] using
           (ExecWithin.copy (B := .exact) (w := w) (x := x_A2.set minRootReg 0)
             (d := numRootsReg) (s := zeroP))
@@ -3372,7 +3372,7 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
           simp only [Data.set_regs, Function.update_of_ne (by decide : maxDegReg ≠ numRootsReg),
             Function.update_of_ne (by decide : maxDegReg ≠ minRootReg), hmd_A2]
         have ho1_b : ((x_A2.set minRootReg 0).set numRootsReg 0).regs oneP = 1 :=
-          hbr_A2.2.2.2.2.2.2.2.2.2.2.2.2
+          hbr_A2.regs_oneP
         simpa only [hmd_b, ho1_b] using
           execWithin_exactAdd (x := (x_A2.set minRootReg 0).set numRootsReg 0)
             (d := maxDegReg) (i := maxDegReg) (j := oneP)
@@ -3380,7 +3380,7 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
       have eb4 : ExecWithin (B := .exact) w (.op (.copy curDReg zeroP))
           (((x_A2.set minRootReg 0).set numRootsReg 0).set maxDegReg (maxDeg_2 + 1)) x_B0 1 := by
         have hz_b : (((x_A2.set minRootReg 0).set numRootsReg 0).set maxDegReg
-            (maxDeg_2 + 1)).regs zeroP = 0 := hbr_A2.2.2.2.2.2.2.2.2.2.2.2.1
+            (maxDeg_2 + 1)).regs zeroP = 0 := hbr_A2.regs_zeroP
         simpa only [x_B0, hz_b] using
           (ExecWithin.copy (B := .exact) (w := w)
             (x := ((x_A2.set minRootReg 0).set numRootsReg 0).set maxDegReg (maxDeg_2 + 1))
