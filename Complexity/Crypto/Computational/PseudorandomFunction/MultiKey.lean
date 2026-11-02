@@ -25,7 +25,9 @@ import Complexity.Tactic.PPT
 # Several independent keys of a pseudorandom function
 
 A pseudorandom function stays pseudorandom when an adversary may query `t` independently keyed
-copies at once ([BonehShoup2023], Exercise 4.26). The real game `prfMultiRealGame` samples one
+copies at once, for every fixed number `t` of keys. [BonehShoup2023], Exercise 4.26, allows any
+polynomially bounded number of keys; the asymptotic statement here covers only constant `t`, while
+the concrete bound holds for every `t`. The real game `prfMultiRealGame` samples one
 `t * n`-bit key and answers channel `i : Fin t` with the family under the `i`-th `n`-bit block
 `keyBlock n i key`; the ideal game `prfMultiIdealGame` answers the channels with `t` independent
 uniform random functions.
@@ -58,8 +60,10 @@ advantage is at most the sum of the `t` PRF advantages
 ## References
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*, Version 0.6][BonehShoup2023],
-  Exercise 4.26 (printed p. 174), the `n`-wise parallel composition of a PRF, which the proof of
-  Theorem 4.9 (p. 144, equations (4.24) and (4.25)) uses for the three Feistel round keys.
+  Exercise 4.26 (printed pp. 174–175), the `n`-wise parallel composition of a PRF for
+  polynomially bounded `n`, which the proof of Theorem 4.9 (equation (4.24) on p. 144 and
+  equation (4.25) on p. 145) uses for the three Feistel round keys. Only constant `t` is covered
+  asymptotically here.
 -/
 
 public section
@@ -586,8 +590,9 @@ theorem advantage_prfMultiRealGame_prfMultiIdealGame_le (hfamily : PseudorandomF
   rw [eval_prfRealGame_prfMultiReduction hfamily hj, eval_prfIdealGame_prfMultiReduction hfamily hj]
 
 /-- **Independently keyed copies of a pseudorandom function are pseudorandom**
-([BonehShoup2023], Exercise 4.26): for every fixed number `t` of keys, no oracle-PPT adversary
-distinguishes `t` keyed copies from `t` independent uniform random functions. -/
+([BonehShoup2023], Exercise 4.26, for a constant number of keys): for every fixed number `t` of
+keys, no oracle-PPT adversary distinguishes `t` keyed copies from `t` independent uniform random
+functions. The exercise allows a polynomially bounded number of keys; this statement does not. -/
 theorem PseudorandomFunction.multiKey (hfamily : PseudorandomFunction family) (t : ℕ) :
     Game.Indistinguishable
       (fun adversary n => ProbComp.eval (prfMultiRealGame family t adversary n))
