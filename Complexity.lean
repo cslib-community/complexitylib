@@ -2627,7 +2627,9 @@ public import Complexity.Computability.WordRAM.Realization.Basic
 public import Complexity.Computability.WordRAM.Realization.Bind
 public import Complexity.Computability.WordRAM.Realization.Branch
 public import Complexity.Computability.WordRAM.Realization.Glue
+public import Complexity.Computability.WordRAM.Realization.Loop
 public import Complexity.Computability.WordRAM.Realization.Primitive
+public import Complexity.Computability.WordRAM.Realization.Program
 public import Complexity.Computability.WordRAM.RegisterFrame
 public import Complexity.Computability.WordRAM.Sequence
 public import Complexity.Computability.WordRAM.Signed.Arithmetic
@@ -2954,6 +2956,7 @@ public import Complexity.DataStructure.HashFamily.WordRAM.KWise
 public import Complexity.DataStructure.HashFamily.WordRAM.MultiplyShift
 public import Complexity.DataStructure.HashFamily.WordRAM.Tabulation
 public import Complexity.DataStructure.Memory.Alloc
+public import Complexity.DataStructure.Memory.Copy
 public import Complexity.DataStructure.Memory.Field
 public import Complexity.DataStructure.Memory.Frame
 public import Complexity.DataStructure.Memory.Record
@@ -2975,6 +2978,7 @@ public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Memory
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Order
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Basic
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.DecreaseKey
+public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.ExtractMin
 public import Complexity.DataStructure.PriorityQueue.Spec
 public import Complexity.DataStructure.PriorityQueue.WordRAM.Basic
 public import Complexity.DataStructure.PriorityQueue.WordRAM.BinaryHeap
@@ -3003,6 +3007,7 @@ public import Complexity.DataStructure.SearchTree.Impl
 public import Complexity.DataStructure.SplayTree.AccessLemma
 public import Complexity.DataStructure.SplayTree.Basic
 public import Complexity.DataStructure.SplayTree.Impl
+public import Complexity.DataStructure.Stack.Doubling
 public import Complexity.DataStructure.Stack.Memory
 public import Complexity.DataStructure.Stack.WordRAM.Basic
 public import Complexity.DataStructure.Stack.WordRAM.Controller
