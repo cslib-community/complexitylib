@@ -38,8 +38,8 @@ machine.
 
 ## Syntax in the imports
 
-The native binary-heap theorem realizes the existing memory client; the Fibonacci-heap theorem
-still uses the shared word-RAM priority-queue interface. Both import the word-RAM syntax of
+Both native heap theorems realize the existing Dijkstra client over framed memory refinements.
+They import the word-RAM syntax of
 `Complexity/Computability/WordRAM/Notation.lean` and its exact-basis variant
 `Complexity/Computability/WordRAM/ExactNotation.lean`. Their syntax rules, `macro_rules` and
 tactics are scoped to `Cslib.WordRAM`. Only the syntax category `wramStmt` and the syntax

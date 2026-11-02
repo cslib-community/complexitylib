@@ -685,6 +685,16 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   framed queue/faithful-allocation client, generic stateful and whole-client composition, Fibonacci
   execution migration and the full C2/M1b objective; arbitrary host continuations do not acquire
   runtime bounds.
+  The Fibonacci method family ([#2290]) realizes all five original memory methods with one fixed
+  native factor, exact typed-source/history transport and the existing nonzero amortized
+  potential. The Fibonacci Dijkstra consumer now reserves the original zero tail without clearing,
+  derives its reached callee domains from the shared framed history, and pays the nonzero heap
+  potential through the existing amortized telescope. One actual initialized native program
+  retains the original word envelope and sharper reachable-vertex bound, including its prefix,
+  control and halt and the entire final memory/frontier. The old Dijkstra executor and its
+  implementation-specific coefficient 640 are superseded; the original existential endpoints
+  are unchanged. MinPQ migration and the execution core it still uses remain open, as do generic
+  whole-client transfer and the abstract-space decision.
   The Karger–Stein specification bridge ([#2289]) gives the existing recursive native code the
   exact answer law of its contraction-oracle client, preserving pathwise instruction/random-call
   bounds, word fits and memory frames. Probability and amplification are proved at the
@@ -854,3 +864,4 @@ not planned, not as proved.
 [#2146]: https://github.com/cslib-community/complexitylib/issues/2146
 [#2084]: https://github.com/cslib-community/complexitylib/issues/2084
 [#2316]: https://github.com/cslib-community/complexitylib/issues/2316
+[#2290]: https://github.com/cslib-community/complexitylib/issues/2290
