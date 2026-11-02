@@ -198,32 +198,24 @@ theorem bitsReverse : ComputableInPolyTime List.reverse encBits encBits := by
 /-- Drop one symbol of an arbitrary word, reusing the existing word-codec machine. -/
 @[fun_prop]
 theorem bitsTail : ComputableInPolyTime List.tail encBits encBits := by
-  obtain ⟨c, k, Q, hfinite, tm, htm⟩ := ListEncoding.tail (enc₁ := encBool) (enc := encBits)
-  exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-    k, Q, hfinite, tm, fun word => htm word⟩
+  exact (ListEncoding.tail (enc₁ := encBool) (enc := encBits)).computableInPolyTime
 
 /-- Test whether the complete raw word is empty, with the Boolean result encoding fixed. -/
 @[fun_prop]
 theorem bitsIsEmpty : ComputableInPolyTime List.isEmpty encBits encBool := by
-  obtain ⟨c, k, Q, hfinite, tm, htm⟩ := ListEncoding.isEmpty (enc₁ := encBool) (enc := encBits)
-  exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-    k, Q, hfinite, tm, fun word => htm word⟩
+  exact (ListEncoding.isEmpty (enc₁ := encBool) (enc := encBits)).computableInPolyTime
 
 /-- Drop the head of a list in any list encoding, reusing the encoding's linear-time machine. -/
 @[fun_prop]
 theorem tail {α : Type} {encA : α ↪ List Bool} {encL : List α ↪ List Bool}
     [ListEncoding encA encL] : ComputableInPolyTime (List.tail (α := α)) encL encL := by
-  obtain ⟨c, k, Q, hfinite, tm, htm⟩ := ListEncoding.tail (enc₁ := encA) (enc := encL)
-  exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-    k, Q, hfinite, tm, fun word => htm word⟩
+  exact (ListEncoding.tail (enc₁ := encA) (enc := encL)).computableInPolyTime
 
 /-- Test a list in any list encoding for emptiness, reusing the encoding's linear-time machine. -/
 @[fun_prop]
 theorem listIsEmpty {α : Type} {encA : α ↪ List Bool} {encL : List α ↪ List Bool}
     [ListEncoding encA encL] : ComputableInPolyTime (List.isEmpty (α := α)) encL encBool := by
-  obtain ⟨c, k, Q, hfinite, tm, htm⟩ := ListEncoding.isEmpty (enc₁ := encA) (enc := encL)
-  exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-    k, Q, hfinite, tm, fun word => htm word⟩
+  exact (ListEncoding.isEmpty (enc₁ := encA) (enc := encL)).computableInPolyTime
 
 private theorem rangeStepCertificate :
     ComputableInPolyTime (fun p : RangeState × Bool => rangeStep p.1 p.2)

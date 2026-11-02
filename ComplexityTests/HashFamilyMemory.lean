@@ -124,7 +124,6 @@ noncomputable def wasteful : RandomizedRefinement (tableSpec 2 1) (tableSpec 2 1
             (OracleComp.query (spec := probOracleSpec _)
               (.inr (.resample : HashFamily.Op 2))) θ) = _
           rw [PMF.bind_const, RandomizedSpec.run_query]
-          rfl
         rw [h]
         exact PMF.map_id _
       | eval u =>

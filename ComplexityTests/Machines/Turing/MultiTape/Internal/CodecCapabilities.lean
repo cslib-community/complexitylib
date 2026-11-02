@@ -44,16 +44,16 @@ example [ListEncoding encA encL] [OptionEncoding encA encO] [PairEncoding encA e
     (d : α) {f : γ → α} {g : γ → β} {t₁ s₁ t₂ s₂ : γ → ℕ}
     (hf : ComputableInTimeAndSpace f encIn encA t₁ s₁)
     (hg : ComputableInTimeAndSpace g encIn encB t₂ s₂)
-    (_hfLin : ComputableInLinearTimeAndSpace f encIn encA) :
-    ComputableInLinearTimeAndSpace (fun xs : List α => xs.tail.headD d) encL encA ∧
-    ComputableInLinearTimeAndSpace (fun xs : List α => xs.tail.isEmpty) encL encBool ∧
-    ComputableInLinearTimeAndSpace (fun a : α => (some a).getD d) encA encA ∧
+    (_hfLin : ComputableInDegree f encIn encA 1 1) :
+    ComputableInDegree (fun xs : List α => xs.tail.headD d) encL encA 1 1 ∧
+    ComputableInDegree (fun xs : List α => xs.tail.isEmpty) encL encBool 1 1 ∧
+    ComputableInDegree (fun a : α => (some a).getD d) encA encA 1 1 ∧
     encO none = [] ∧
     (∃ c, ComputableInTimeAndSpace (fun x => (f x, g x)) encIn encP
       (fun x => c * (t₁ x + t₂ x + 1))
       (fun x => c * (s₁ x + s₂ x + (encP (f x, g x)).length + 1))) := by
   fail_if_success
-    have : ComputableInLinearTimeAndSpace (fun x => (f x, g x)) encIn encP :=
+    have : ComputableInDegree (fun x => (f x, g x)) encIn encP 1 1 :=
       _hfLin.pair (by assumption)
   exact ⟨(ListEncoding.headD d).comp (ListEncoding.tail (enc₁ := encA)),
     (ListEncoding.isEmpty (enc₁ := encA)).comp (ListEncoding.tail (enc₁ := encA)),
