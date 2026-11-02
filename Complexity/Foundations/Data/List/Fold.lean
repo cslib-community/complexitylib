@@ -20,6 +20,7 @@ public import Mathlib.Data.List.Basic
   component and folds over the second.
 * `List.foldr_ite_eq_of_mem`: a chain of equality tests selects the branch of a contained tag,
   regardless of duplicates or fallback. Used by finite-control certificates.
+* `List.foldl_or_eq`: folding a disjunction is `List.any`.
 
 ## References
 
@@ -67,3 +68,10 @@ theorem List.foldr_ite_eq_of_mem {Tag Value : Type*} [DecidableEq Tag]
     · simp [heq]
     · simp only [List.foldr_cons, heq, ↓reduceIte]
       exact ih (List.mem_cons.mp h |>.resolve_left heq)
+
+/-- Folding a disjunction over a list adds whether some element satisfies the test. -/
+theorem List.foldl_or_eq {α : Type*} (f : α → Bool) (b : Bool) (l : List α) :
+    l.foldl (fun acc x => acc || f x) b = (b || l.any f) := by
+  induction l generalizing b with
+  | nil => simp
+  | cons x l ih => simp [ih, Bool.or_assoc]

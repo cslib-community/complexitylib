@@ -10,6 +10,8 @@ public import Complexity.Algorithms.ExactTriangle.PieceBounds
 public import Complexity.Algorithms.ExactTriangle.Splitting
 public import Complexity.Algorithms.ExactTriangle.Weights
 public import Complexity.Algorithms.ExactTriangle.Witnesses
+public import Complexity.Algorithms.Lean.Dijkstra.Client
+public import Complexity.Algorithms.Lean.Dijkstra.Cost
 public import Complexity.Algorithms.Lean.Huffman.Basic
 public import Complexity.Algorithms.Lean.Huffman.Kraft
 public import Complexity.Algorithms.Lean.Huffman.Optimality
@@ -2813,6 +2815,7 @@ public import Complexity.Crypto.Protocols.Signature.RandomOracle
 public import Complexity.DataStructure.AVLTree.Basic
 public import Complexity.DataStructure.AVLTree.Erase
 public import Complexity.DataStructure.AVLTree.Impl
+public import Complexity.DataStructure.AdjacencyList.Spec
 public import Complexity.DataStructure.CountMin.Basic
 public import Complexity.DataStructure.CountMin.LinearHash
 public import Complexity.DataStructure.CountMin.Probability
@@ -2932,6 +2935,7 @@ public import Complexity.DataStructure.StateTransition.Module
 public import Complexity.DataStructure.StateTransition.Oracle
 public import Complexity.DataStructure.StateTransition.Refinement
 public import Complexity.DataStructure.StateTransition.Resource
+public import Complexity.DataStructure.StateTransition.TotalCost
 public import Complexity.DataStructure.VanEmdeBoas.Basic
 public import Complexity.DataStructure.VanEmdeBoas.Elements
 public import Complexity.DataStructure.VanEmdeBoas.Erase
@@ -3155,6 +3159,7 @@ public import Complexity.Foundations.Control.Monad.IsMonadHom.StateT
 public import Complexity.Foundations.Control.Monad.Memoize
 public import Complexity.Foundations.Data.BiTape
 public import Complexity.Foundations.Data.BiTape.OfCells
+public import Complexity.Foundations.Data.BinaryBranching
 public import Complexity.Foundations.Data.BitString.Affine
 public import Complexity.Foundations.Data.BitString.AffineSubspace
 public import Complexity.Foundations.Data.BitString.Agree
@@ -3522,7 +3527,10 @@ public import Complexity.Logics.FirstOrder.Operator.Definability
 public import Complexity.Logics.FirstOrder.Operator.Definability.Polarity
 public import Complexity.Logics.FirstOrder.Operator.LeastFixedPoint
 public import Complexity.Logics.FirstOrder.Operator.LeastFixedPoint.Definability
+public import Complexity.Logics.FirstOrder.Operator.LeastFixedPoint.Tuple
+public import Complexity.Logics.FirstOrder.Operator.LeastFixedPoint.Tuple.Semantics
 public import Complexity.Logics.FirstOrder.Operator.Polarity
+public import Complexity.Logics.FirstOrder.Operator.Quantifiers
 public import Complexity.Logics.FirstOrder.Operator.Relabel
 public import Complexity.Logics.FirstOrder.Operator.TransitiveClosure
 public import Complexity.Logics.FirstOrder.Operator.TransitiveClosure.Definability
@@ -3536,10 +3544,13 @@ public import Complexity.Logics.FirstOrder.Ordered.DomainInterpretation
 public import Complexity.Logics.FirstOrder.Ordered.DomainInterpretation.Certificate
 public import Complexity.Logics.FirstOrder.Ordered.DomainInterpretation.Composition
 public import Complexity.Logics.FirstOrder.Ordered.DomainInterpretation.Encoding
+public import Complexity.Logics.FirstOrder.Ordered.Encoding
 public import Complexity.Logics.FirstOrder.Ordered.FullTuple
 public import Complexity.Logics.FirstOrder.Ordered.FullTuple.Composition
 public import Complexity.Logics.FirstOrder.Ordered.FullTuple.DomainInterpretation
 public import Complexity.Logics.FirstOrder.Ordered.FullTuple.Encoding
+public import Complexity.Logics.FirstOrder.Ordered.FullTuple.LeastFixedPoint
+public import Complexity.Logics.FirstOrder.Ordered.FullTuple.Power
 public import Complexity.Logics.FirstOrder.Ordered.Interpretation
 public import Complexity.Logics.FirstOrder.Ordered.LeastFixedPoint
 public import Complexity.Logics.FirstOrder.Ordered.Multiplication
@@ -3554,6 +3565,7 @@ public import Complexity.Logics.FirstOrder.Ordered.Radix.Conversion
 public import Complexity.Logics.FirstOrder.Ordered.Radix.Decode
 public import Complexity.Logics.FirstOrder.Ordered.Radix.Multiplication
 public import Complexity.Logics.FirstOrder.Ordered.Reduction
+public import Complexity.Logics.FirstOrder.Ordered.StrictOrder
 public import Complexity.Logics.FirstOrder.Ordered.Tuple
 public import Complexity.Logics.FirstOrder.Ordered.Tuple.Flatten
 public import Complexity.Logics.FirstOrder.Ordered.TupleBit
@@ -3649,7 +3661,6 @@ public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingU
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.List
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Path
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.PolyTime
-public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Search
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Step
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Tree
 public import Complexity.Logics.Propositional.ClauseSet.SubcubeFree
