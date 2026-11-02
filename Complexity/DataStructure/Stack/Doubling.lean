@@ -10,12 +10,12 @@ module
 public import Complexity.DataStructure.Memory.Alloc
 public import Complexity.DataStructure.Memory.Copy
 public import Complexity.DataStructure.Memory.Field
-public import Complexity.DataStructure.Stack.WordRAM.Basic
+public import Complexity.DataStructure.Stack.Spec
 
 /-!
 # A stack in a doubling array over the memory oracle
 
-The bounded stack `Stack.WordRAM.spec w C` is implemented by a growing array: a dynamic array
+The bounded stack `Stack.spec w C` is implemented by a growing array: a dynamic array
 used as a stack. A header of three cells at `hdr` holds the number of items, the capacity, and the
 base address of the item array. A push into a full array first allocates an array of twice the
 capacity, copies the items into it and switches the header to it (`grow`). The old array is
@@ -148,7 +148,7 @@ def pop : Prog (Option ℕ) := do
 def size : Prog ℕ := read hdr
 
 /-- The stack operations as memory programs. -/
-def methods (w C : ℕ) : Methods (Stack.WordRAM.spec w C) (Memory.spec w)
+def methods (w C : ℕ) : Methods (Stack.spec w C) (Memory.spec w)
   | .push v => push hdr v
   | .pop => pop hdr
   | .size => size hdr
@@ -164,22 +164,23 @@ def grown (n : ℕ) (s : State) : State :=
 
 /-- Growing moves the items to a fresh array of twice the size. -/
 theorem clientState_grow (n : ℕ) (s : State) (h : base hdr s + n ≤ s.frontier) :
-    (spec w).clientState s (grow hdr n) = grown hdr n s := by
-  change (spec w).clientState ⟨s.mem, s.frontier + 2 * n⟩
+    (Memory.spec w).clientState s (grow hdr n) = grown hdr n s := by
+  change (Memory.spec w).clientState ⟨s.mem, s.frontier + 2 * n⟩
       (copy (s.mem (hdr + 2)) s.frontier n >>= fun _ =>
         write (hdr + 2) s.frontier >>= fun _ => write (hdr + 1) (2 * n)) = _
-  rw [(spec w).clientState_bind,
+  rw [(Memory.spec w).clientState_bind,
     clientState_copy (s.mem (hdr + 2)) s.frontier n ⟨s.mem, s.frontier + 2 * n⟩ (.inl h)]
   rfl
 
 /-- Growing costs `4 + 2 n` memory units. -/
 theorem totalCost_grow (n : ℕ) (s : State) :
-    (spec w).totalCost charge s ((spec w).clientHistory s (grow hdr n)) = 4 + 2 * n := by
-  change 1 + (1 + (spec w).totalCost charge ⟨s.mem, s.frontier + 2 * n⟩
-      ((spec w).clientHistory ⟨s.mem, s.frontier + 2 * n⟩
+    (Memory.spec w).totalCost charge s ((Memory.spec w).clientHistory s (grow hdr n)) =
+      4 + 2 * n := by
+  change 1 + (1 + (Memory.spec w).totalCost charge ⟨s.mem, s.frontier + 2 * n⟩
+      ((Memory.spec w).clientHistory ⟨s.mem, s.frontier + 2 * n⟩
         (copy (s.mem (hdr + 2)) s.frontier n >>= fun _ =>
           write (hdr + 2) s.frontier >>= fun _ => write (hdr + 1) (2 * n)))) = _
-  rw [(spec w).clientHistory_bind, StateTransitionSpec.totalCost_append, totalCost_copy]
+  rw [(Memory.spec w).clientHistory_bind, StateTransitionSpec.totalCost_append, totalCost_copy]
   change 1 + (1 + (2 * n + 2)) = _
   omega
 
@@ -188,13 +189,13 @@ fits a word. -/
 theorem validHistory_grow (n : ℕ) (s : State) (hh : hdr + 3 ≤ s.frontier)
     (h : base hdr s + n ≤ s.frontier) (hfit : Fits w (s.frontier + 2 * n))
     (hitems : ∀ i < n, Fits w (s.mem (base hdr s + i))) :
-    (spec w).ValidHistory s ((spec w).clientHistory s (grow hdr n)) := by
+    (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (grow hdr n)) := by
   change hdr + 2 < s.frontier ∧ Fits w (s.frontier + 2 * n) ∧
-    (spec w).ValidHistory ⟨s.mem, s.frontier + 2 * n⟩
-      ((spec w).clientHistory ⟨s.mem, s.frontier + 2 * n⟩
+    (Memory.spec w).ValidHistory ⟨s.mem, s.frontier + 2 * n⟩
+      ((Memory.spec w).clientHistory ⟨s.mem, s.frontier + 2 * n⟩
         (copy (s.mem (hdr + 2)) s.frontier n >>= fun _ =>
           write (hdr + 2) s.frontier >>= fun _ => write (hdr + 1) (2 * n)))
-  rw [(spec w).clientHistory_bind, StateTransitionSpec.validHistory_append,
+  rw [(Memory.spec w).clientHistory_bind, StateTransitionSpec.validHistory_append,
     StateTransitionSpec.run_runClient,
     clientState_copy (s.mem (hdr + 2)) s.frontier n ⟨s.mem, s.frontier + 2 * n⟩ (.inl h)]
   refine ⟨by omega, hfit, validHistory_copy _ _ _ ⟨s.mem, s.frontier + 2 * n⟩ (.inl h)
@@ -206,13 +207,13 @@ theorem validHistory_grow (n : ℕ) (s : State) (hh : hdr + 3 ≤ s.frontier)
 
 /-- Appending reads the base, writes the item and the new count. -/
 theorem runClient_append (n v : ℕ) (s : State) :
-    (spec w).runClient s (append hdr n v) =
+    (Memory.spec w).runClient s (append hdr n v) =
       ((), ⟨Function.update (Function.update s.mem (base hdr s + n) v) hdr (n + 1), s.frontier⟩,
         [.read (hdr + 2), .write (base hdr s + n) v, .write hdr (n + 1)]) := rfl
 
 /-- A push into an array with room reads the count and capacity, then appends. -/
 theorem runClient_push_not_full (v : ℕ) (s : State) (h : count hdr s ≠ capacity hdr s) :
-    (spec w).runClient s (push hdr v) =
+    (Memory.spec w).runClient s (push hdr v) =
       ((), ⟨Function.update (Function.update s.mem (base hdr s + count hdr s) v) hdr
           (count hdr s + 1), s.frontier⟩,
         [.read hdr, .read (hdr + 1), .read (hdr + 2), .write (base hdr s + count hdr s) v,
@@ -226,32 +227,33 @@ theorem runClient_push_not_full (v : ℕ) (s : State) (h : count hdr s ≠ capac
 
 /-- A push into a full array grows it, then appends. -/
 theorem push_full_eq (v : ℕ) (s : State) (h : count hdr s = capacity hdr s) :
-    (spec w).clientState s (push hdr v) =
-        (spec w).clientState s (grow hdr (count hdr s) >>= fun _ => append hdr (count hdr s) v) ∧
-      (spec w).clientHistory s (push hdr v) =
+    (Memory.spec w).clientState s (push hdr v) =
+        (Memory.spec w).clientState s (grow hdr (count hdr s) >>= fun _ =>
+          append hdr (count hdr s) v) ∧
+      (Memory.spec w).clientHistory s (push hdr v) =
         .read hdr :: .read (hdr + 1) ::
-          (spec w).clientHistory s (grow hdr (count hdr s) >>= fun _ =>
+          (Memory.spec w).clientHistory s (grow hdr (count hdr s) >>= fun _ =>
             append hdr (count hdr s) v) := by
   have he : ensure hdr (count hdr s) (capacity hdr s) = grow hdr (count hdr s) := by
     simp only [ensure, h, ↓reduceIte]
   exact ⟨by
-    change (spec w).clientState s (ensure hdr (count hdr s) (capacity hdr s) >>= fun _ =>
+    change (Memory.spec w).clientState s (ensure hdr (count hdr s) (capacity hdr s) >>= fun _ =>
       append hdr (count hdr s) v) = _
     rw [he], by
-    change _ :: _ :: (spec w).clientHistory s (ensure hdr (count hdr s) (capacity hdr s) >>=
+    change _ :: _ :: (Memory.spec w).clientHistory s (ensure hdr (count hdr s) (capacity hdr s) >>=
       fun _ => append hdr (count hdr s) v) = _
     rw [he]⟩
 
 /-- A pop from an empty stack reads the count only. -/
 theorem runClient_pop_of_eq_zero (s : State) (h : count hdr s = 0) :
-    (spec w).runClient s (pop hdr) = (none, s, [.read hdr]) := by
+    (Memory.spec w).runClient s (pop hdr) = (none, s, [.read hdr]) := by
   simp only [count] at h
   simp [pop, h]
 
 /-- A pop from a nonempty stack reads the count, the base and the top item, and writes the new
 count. -/
 theorem runClient_pop_of_ne_zero (s : State) (h : count hdr s ≠ 0) :
-    (spec w).runClient s (pop hdr) =
+    (Memory.spec w).runClient s (pop hdr) =
       (some (s.mem (base hdr s + (count hdr s - 1))),
         ⟨Function.update s.mem hdr (count hdr s - 1), s.frontier⟩,
         [.read hdr, .read (hdr + 2), .read (base hdr s + (count hdr s - 1)),
@@ -264,7 +266,7 @@ theorem runClient_pop_of_ne_zero (s : State) (h : count hdr s ≠ 0) :
 
 /-- A size query reads the count. -/
 theorem runClient_size (s : State) :
-    (spec w).runClient s (size hdr) = (count hdr s, s, [.read hdr]) := rfl
+    (Memory.spec w).runClient s (size hdr) = (count hdr s, s, [.read hdr]) := rfl
 
 
 /-! ## The operations' effects -/
@@ -296,13 +298,13 @@ theorem abs_push {s s' : State} (hn : count hdr s' = count hdr s + 1)
 /-- A push into an array with room writes the item and the count, and keeps the rest. -/
 theorem push_not_full {s : State} (hs : Inv hdr w C s) (h : count hdr s ≠ capacity hdr s)
     (v : ℕ) :
-    count hdr ((spec w).clientState s (push hdr v)) = count hdr s + 1 ∧
-      capacity hdr ((spec w).clientState s (push hdr v)) = capacity hdr s ∧
-      base hdr ((spec w).clientState s (push hdr v)) = base hdr s ∧
-      ((spec w).clientState s (push hdr v)).frontier = s.frontier ∧
-      ((spec w).clientState s (push hdr v)).mem (base hdr s + count hdr s) = v ∧
+    count hdr ((Memory.spec w).clientState s (push hdr v)) = count hdr s + 1 ∧
+      capacity hdr ((Memory.spec w).clientState s (push hdr v)) = capacity hdr s ∧
+      base hdr ((Memory.spec w).clientState s (push hdr v)) = base hdr s ∧
+      ((Memory.spec w).clientState s (push hdr v)).frontier = s.frontier ∧
+      ((Memory.spec w).clientState s (push hdr v)).mem (base hdr s + count hdr s) = v ∧
       ∀ a, a ≠ hdr → a ≠ base hdr s + count hdr s →
-        ((spec w).clientState s (push hdr v)).mem a = s.mem a := by
+        ((Memory.spec w).clientState s (push hdr v)).mem a = s.mem a := by
   have hb := hs.header_le
   simp only [StateTransitionSpec.clientState, runClient_push_not_full hdr v s h, count, capacity,
     base] at hb ⊢
@@ -321,18 +323,19 @@ theorem base_grown (n : ℕ) (s : State) : base hdr (grown hdr n s) = s.frontier
 frontier, writes the item and the count, and keeps every other allocated cell. -/
 theorem push_full {s : State} (hs : Inv hdr w C s) (h : count hdr s = capacity hdr s)
     (v : ℕ) :
-    count hdr ((spec w).clientState s (push hdr v)) = count hdr s + 1 ∧
-      capacity hdr ((spec w).clientState s (push hdr v)) = 2 * count hdr s ∧
-      base hdr ((spec w).clientState s (push hdr v)) = s.frontier ∧
-      ((spec w).clientState s (push hdr v)).frontier = s.frontier + 2 * count hdr s ∧
-      ((spec w).clientState s (push hdr v)).mem (s.frontier + count hdr s) = v ∧
+    count hdr ((Memory.spec w).clientState s (push hdr v)) = count hdr s + 1 ∧
+      capacity hdr ((Memory.spec w).clientState s (push hdr v)) = 2 * count hdr s ∧
+      base hdr ((Memory.spec w).clientState s (push hdr v)) = s.frontier ∧
+      ((Memory.spec w).clientState s (push hdr v)).frontier = s.frontier + 2 * count hdr s ∧
+      ((Memory.spec w).clientState s (push hdr v)).mem (s.frontier + count hdr s) = v ∧
       (∀ i < count hdr s,
-        ((spec w).clientState s (push hdr v)).mem (s.frontier + i) = s.mem (base hdr s + i)) ∧
+        ((Memory.spec w).clientState s (push hdr v)).mem (s.frontier + i) =
+          s.mem (base hdr s + i)) ∧
       ∀ a < s.frontier, a ≠ hdr → a ≠ hdr + 1 → a ≠ hdr + 2 →
-        ((spec w).clientState s (push hdr v)).mem a = s.mem a := by
+        ((Memory.spec w).clientState s (push hdr v)).mem a = s.mem a := by
   have hb := hs.header_le
   have hi := hs.items_le
-  rw [(push_full_eq hdr v s h).1, (spec w).clientState_bind,
+  rw [(push_full_eq hdr v s h).1, (Memory.spec w).clientState_bind,
     clientState_grow hdr _ s (by rw [h]; exact hi)]
   simp only [StateTransitionSpec.clientState, runClient_append, base_grown]
   simp only [grown, count, capacity, base] at hb hi h ⊢
@@ -344,9 +347,10 @@ theorem push_full {s : State} (hs : Inv hdr w C s) (h : count hdr s = capacity h
 
 /-- A push into a full array of `n` items costs `9 + 2 n` memory units. -/
 theorem totalCost_push_full {s : State} (h : count hdr s = capacity hdr s) (v : ℕ) :
-    (spec w).totalCost charge s ((spec w).clientHistory s (push hdr v)) = 9 + 2 * count hdr s := by
-  rw [(push_full_eq hdr v s h).2, (spec w).clientHistory_bind]
-  change 1 + (1 + (spec w).totalCost charge s (_ ++ _)) = _
+    (Memory.spec w).totalCost charge s ((Memory.spec w).clientHistory s (push hdr v)) =
+      9 + 2 * count hdr s := by
+  rw [(push_full_eq hdr v s h).2, (Memory.spec w).clientHistory_bind]
+  change 1 + (1 + (Memory.spec w).totalCost charge s (_ ++ _)) = _
   rw [StateTransitionSpec.totalCost_append, totalCost_grow, StateTransitionSpec.run_runClient]
   change 1 + (1 + (4 + 2 * count hdr s + 3)) = _
   omega
@@ -355,15 +359,15 @@ theorem totalCost_push_full {s : State} (h : count hdr s = capacity hdr s) (v : 
 theorem validHistory_push_full {s : State} (hs : Inv hdr w C s)
     (h : count hdr s = capacity hdr s) {v : ℕ} (hv : Fits w v)
     (hroom : 2 * count hdr s ≤ room hdr C s) :
-    (spec w).ValidHistory s ((spec w).clientHistory s (push hdr v)) := by
+    (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (push hdr v)) := by
   have hb := hs.header_le
   have hi := hs.items_le
   have h1 := hs.one_le_capacity
   have hfit : Fits w (s.frontier + 2 * count hdr s) := hs.fits_room.of_le (by omega)
-  rw [(push_full_eq hdr v s h).2, (spec w).clientHistory_bind]
+  rw [(push_full_eq hdr v s h).2, (Memory.spec w).clientHistory_bind]
   refine ⟨by simp only [valid_read, base] at hb hi ⊢; omega,
     by simp only [StateTransitionSpec.stepFn, step_read, valid_read, base] at hb hi ⊢; omega, ?_⟩
-  change (spec w).ValidHistory s (_ ++ _)
+  change (Memory.spec w).ValidHistory s (_ ++ _)
   rw [StateTransitionSpec.validHistory_append, StateTransitionSpec.run_runClient,
     clientState_grow hdr _ s (by rw [h]; exact hi)]
   refine ⟨validHistory_grow hdr _ s (by omega) (by rw [h]; exact hi) hfit
@@ -377,11 +381,11 @@ theorem validHistory_push_full {s : State} (hs : Inv hdr w C s)
 
 /-- A pop from a nonempty stack decrements the count and keeps the rest. -/
 theorem pop_of_ne_zero {s : State} (h : count hdr s ≠ 0) :
-    count hdr ((spec w).clientState s (pop hdr)) = count hdr s - 1 ∧
-      capacity hdr ((spec w).clientState s (pop hdr)) = capacity hdr s ∧
-      base hdr ((spec w).clientState s (pop hdr)) = base hdr s ∧
-      ((spec w).clientState s (pop hdr)).frontier = s.frontier ∧
-      ∀ a, a ≠ hdr → ((spec w).clientState s (pop hdr)).mem a = s.mem a := by
+    count hdr ((Memory.spec w).clientState s (pop hdr)) = count hdr s - 1 ∧
+      capacity hdr ((Memory.spec w).clientState s (pop hdr)) = capacity hdr s ∧
+      base hdr ((Memory.spec w).clientState s (pop hdr)) = base hdr s ∧
+      ((Memory.spec w).clientState s (pop hdr)).frontier = s.frontier ∧
+      ∀ a, a ≠ hdr → ((Memory.spec w).clientState s (pop hdr)).mem a = s.mem a := by
   simp only [StateTransitionSpec.clientState, runClient_pop_of_ne_zero hdr s h, count, capacity,
     base]
   exact ⟨by simp, Function.update_of_ne (by omega) _ _, Function.update_of_ne (by omega) _ _,
@@ -401,14 +405,14 @@ theorem Inv.fits_frontier {s : State} (hs : Inv hdr w C s) : Fits w s.frontier :
 /-- The stack before a pop is the popped item on top of the stack after it. -/
 theorem abs_of_ne_zero {s : State} (hs : Inv hdr w C s) (h : count hdr s ≠ 0) :
     abs hdr s = s.mem (base hdr s + (count hdr s - 1)) ::
-      abs hdr ((spec w).clientState s (pop hdr)) := by
+      abs hdr ((Memory.spec w).clientState s (pop hdr)) := by
   obtain ⟨hn, -, hb, -, hmem⟩ := pop_of_ne_zero (w := w) h
   have hh := hs.header_le
   refine abs_push (by omega) (fun i _ => ?_) (by rw [hn])
   rw [hb, hmem _ (by omega)]
 
 /-- **The doubling array implements the bounded stack.** -/
-def refinement (hdr w C : ℕ) : Refinement (Stack.WordRAM.spec w C) (Memory.spec w) :=
+def refinement (hdr w C : ℕ) : Refinement (Stack.spec w C) (Memory.spec w) :=
   Refinement.ofFn (methods hdr w C) (Inv hdr w C) (abs hdr)
     (by
       intro s o hs hv
@@ -455,7 +459,7 @@ def refinement (hdr w C : ℕ) : Refinement (Stack.WordRAM.spec w C) (Memory.spe
         by_cases heq : count hdr s = capacity hdr s
         · obtain ⟨hn, hcap, hbase, hfr, hv', hcopy, -⟩ := push_full hs heq v
           refine ⟨?_, ⟨by omega, by omega, by omega, by omega, ?_, fun i hi' => ?_⟩⟩
-          · change (v :: abs hdr s, ()) = (abs hdr ((spec w).clientState s (push hdr v)), ())
+          · change (v :: abs hdr s, ()) = (abs hdr ((Memory.spec w).clientState s (push hdr v)), ())
             rw [abs_push hn (fun i hi' => by rw [hbase, hcopy i hi']) (by rw [hbase, hv'])]
           · rw [hfr]
             exact hs.fits_room.of_le (by simp only [room] at *; omega)
@@ -466,12 +470,12 @@ def refinement (hdr w C : ℕ) : Refinement (Stack.WordRAM.spec w C) (Memory.spe
             · rwa [hv']
         · obtain ⟨hn, hcap, hbase, hfr, hv', hmem⟩ := push_not_full hs heq v
           have hlt : count hdr s < capacity hdr s := Nat.lt_of_le_of_ne hc heq
-          have hold : ∀ i < count hdr s, ((spec w).clientState s (push hdr v)).mem
+          have hold : ∀ i < count hdr s, ((Memory.spec w).clientState s (push hdr v)).mem
               (base hdr s + i) = s.mem (base hdr s + i) := fun i hi' => hmem _ (by omega) (by omega)
           refine ⟨?_, ⟨by omega, by omega, by omega, by omega, ?_, fun i hi' => ?_⟩⟩
-          · change (v :: abs hdr s, ()) = (abs hdr ((spec w).clientState s (push hdr v)), ())
+          · change (v :: abs hdr s, ()) = (abs hdr ((Memory.spec w).clientState s (push hdr v)), ())
             rw [abs_push hn (fun i hi' => by rw [hbase]; exact hold i hi') (by rw [hbase, hv'])]
-          · rw [hfr, show room hdr C ((spec w).clientState s (push hdr v)) =
+          · rw [hfr, show room hdr C ((Memory.spec w).clientState s (push hdr v)) =
               room hdr C s by simp only [room]; rw [hcap]]
             exact hs.fits_room
           · rw [hbase]
@@ -492,7 +496,7 @@ def refinement (hdr w C : ℕ) : Refinement (Stack.WordRAM.spec w C) (Memory.spe
           · rw [abs_of_ne_zero hs h0]
             simp only [StateTransitionSpec.clientResult, runClient_pop_of_ne_zero hdr s h0]
             rfl
-          · rw [hfr, show room hdr C ((spec w).clientState s (pop hdr)) = room hdr C s by
+          · rw [hfr, show room hdr C ((Memory.spec w).clientState s (pop hdr)) = room hdr C s by
               simp only [room]; rw [hcap]]
             exact hs.fits_room
           · rw [hbase, hmem _ (by omega)]
@@ -536,13 +540,13 @@ theorem congr {s s' : State} (hs : Inv hdr w C s)
 /-- Each admissible operation changes no allocated cell outside the footprint, grows the
 footprint only into fresh cells, and advances the frontier by at most the room it gives up. -/
 theorem modifies_methods {s : State} (hs : Inv hdr w C s) (o : StackOp ℕ)
-    (hv : (Stack.WordRAM.spec w C).valid (abs hdr s) o) :
+    (hv : (Stack.spec w C).valid (abs hdr s) o) :
     (∀ b < s.frontier, b ∉ footprint hdr s →
-        ((spec w).clientState s (methods hdr w C o)).mem b = s.mem b) ∧
-      (∀ b ∈ footprint hdr ((spec w).clientState s (methods hdr w C o)),
+        ((Memory.spec w).clientState s (methods hdr w C o)).mem b = s.mem b) ∧
+      (∀ b ∈ footprint hdr ((Memory.spec w).clientState s (methods hdr w C o)),
         b ∈ footprint hdr s ∨ s.frontier ≤ b) ∧
-      ((spec w).clientState s (methods hdr w C o)).frontier +
-          room hdr C ((spec w).clientState s (methods hdr w C o)) ≤
+      ((Memory.spec w).clientState s (methods hdr w C o)).frontier +
+          room hdr C ((Memory.spec w).clientState s (methods hdr w C o)) ≤
         s.frontier + room hdr C s := by
   have hc := hs.count_le
   cases o with
@@ -571,7 +575,7 @@ theorem modifies_methods {s : State} (hs : Inv hdr w C s) (o : StackOp ℕ)
   | pop =>
     simp only [methods]
     by_cases h0 : count hdr s = 0
-    · have hs' : (spec w).clientState s (pop hdr) = s := by
+    · have hs' : (Memory.spec w).clientState s (pop hdr) = s := by
         simp only [StateTransitionSpec.clientState, runClient_pop_of_eq_zero hdr s h0]
       rw [hs']
       exact ⟨fun _ _ _ => rfl, fun _ hb => .inl hb, le_rfl⟩
@@ -584,7 +588,7 @@ theorem modifies_methods {s : State} (hs : Inv hdr w C s) (o : StackOp ℕ)
 
 /-- **The doubling stack, framed** by its header and current array, with the room its growth may
 still allocate. -/
-def framed (hdr w C : ℕ) : Memory.Framed (Stack.WordRAM.spec w C) w where
+def framed (hdr w C : ℕ) : Memory.Framed (Stack.spec w C) w where
   toRefinement := refinement hdr w C
   footprint := footprint hdr
   room := room hdr C
@@ -594,7 +598,7 @@ def framed (hdr w C : ℕ) : Memory.Framed (Stack.WordRAM.spec w C) w where
     rcases mem_footprint.mp ha with ha | ha <;> omega
   congr hs h hf hr := congr hs h hf hr
   modifies {s} o {a s' tr} hs hv hrun := by
-    obtain ⟨_, _, rfl, _⟩ := ((spec w).clientRun_iff_runClient _ _ _ _ _).mp hrun
+    obtain ⟨_, _, rfl, _⟩ := ((Memory.spec w).clientRun_iff_runClient _ _ _ _ _).mp hrun
     exact modifies_methods hs o hv
 
 /-- The potential reads only the header. -/
@@ -613,8 +617,8 @@ theorem amortized : (framed hdr w C).Amortized charge (fun _ _ => 13) (potential
   have hc := hs.count_le
   cases o with
   | push v =>
-    change (spec w).totalCost charge s ((spec w).clientHistory s (push hdr v)) +
-      potential hdr ((spec w).clientState s (push hdr v)) ≤ 13 + potential hdr s
+    change (Memory.spec w).totalCost charge s ((Memory.spec w).clientHistory s (push hdr v)) +
+      potential hdr ((Memory.spec w).clientState s (push hdr v)) ≤ 13 + potential hdr s
     by_cases heq : count hdr s = capacity hdr s
     · obtain ⟨hn, hcap, -⟩ := push_full hs heq v
       rw [totalCost_push_full heq]
@@ -628,8 +632,8 @@ theorem amortized : (framed hdr w C).Amortized charge (fun _ _ => 13) (potential
         StateTransitionSpec.totalCost_nil]
       omega
   | pop =>
-    change (spec w).totalCost charge s ((spec w).clientHistory s (pop hdr)) +
-      potential hdr ((spec w).clientState s (pop hdr)) ≤ 13 + potential hdr s
+    change (Memory.spec w).totalCost charge s ((Memory.spec w).clientHistory s (pop hdr)) +
+      potential hdr ((Memory.spec w).clientState s (pop hdr)) ≤ 13 + potential hdr s
     by_cases h0 : count hdr s = 0
     · simp [StateTransitionSpec.clientHistory, StateTransitionSpec.clientState,
         runClient_pop_of_eq_zero hdr s h0]
@@ -640,8 +644,8 @@ theorem amortized : (framed hdr w C).Amortized charge (fun _ _ => 13) (potential
         StateTransitionSpec.totalCost_nil]
       omega
   | size =>
-    change (spec w).totalCost charge s ((spec w).clientHistory s (size hdr)) +
-      potential hdr ((spec w).clientState s (size hdr)) ≤ 13 + potential hdr s
+    change (Memory.spec w).totalCost charge s ((Memory.spec w).clientHistory s (size hdr)) +
+      potential hdr ((Memory.spec w).clientState s (size hdr)) ≤ 13 + potential hdr s
     simp [StateTransitionSpec.clientHistory, StateTransitionSpec.clientState, runClient_size]
 
 
@@ -658,7 +662,7 @@ def create : Prog ℕ := do
 
 /-- Creation allocates the header at the frontier and the array of one cell above it. -/
 theorem runClient_create (s : State) :
-    (spec w).runClient s create =
+    (Memory.spec w).runClient s create =
       (s.frontier, ⟨Function.update (Function.update (clear s.mem s.frontier 3) (s.frontier + 1) 1)
           (s.frontier + 2) (s.frontier + 3), s.frontier + 3 + 1⟩,
         [.alloc 3, .allocDirty 1, .write (s.frontier + 1) 1,
@@ -666,9 +670,9 @@ theorem runClient_create (s : State) :
 
 /-- The header of a created stack: no items, capacity one, and the array just above. -/
 theorem create_header (s : State) :
-    count s.frontier ((spec w).clientState s create) = 0 ∧
-      capacity s.frontier ((spec w).clientState s create) = 1 ∧
-      base s.frontier ((spec w).clientState s create) = s.frontier + 3 := by
+    count s.frontier ((Memory.spec w).clientState s create) = 0 ∧
+      capacity s.frontier ((Memory.spec w).clientState s create) = 1 ∧
+      base s.frontier ((Memory.spec w).clientState s create) = s.frontier + 3 := by
   simp only [StateTransitionSpec.clientState, runClient_create, count, capacity, base]
   refine ⟨?_, ?_, ?_⟩
   · rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega),
@@ -678,7 +682,7 @@ theorem create_header (s : State) :
 
 /-- **The doubling stack as an allocator**: an empty stack in four cells at a memory cost of
 seven units, reserving `4 C + 4` cells for itself and its growth to capacity `2 C`. -/
-def allocator (w C : ℕ) : Allocator (Stack.WordRAM.spec w C) w where
+def allocator (w C : ℕ) : Allocator (Stack.spec w C) w where
   Handle := ℕ
   alloc := create
   methods hdr := methods hdr w C
@@ -688,7 +692,7 @@ def allocator (w C : ℕ) : Allocator (Stack.WordRAM.spec w C) w where
   framed s _ _ := framed s.frontier w C
   allocates s _ hroom := by
     obtain ⟨hn, hcap, hbase⟩ := create_header (w := w) s
-    have hfr : ((spec w).clientState s create).frontier = s.frontier + 3 + 1 := rfl
+    have hfr : ((Memory.spec w).clientState s create).frontier = s.frontier + 3 + 1 := rfl
     refine
       { validHistory := ?_, cost_le := ?_, mem_eq := ?_, methods_eq := rfl, inv := ?_,
         abs_eq := ?_, of_mem_footprint := ?_, room_le := ?_ }
@@ -711,8 +715,8 @@ def allocator (w C : ℕ) : Allocator (Stack.WordRAM.spec w C) w where
       change a ∈ footprint _ _ at ha
       right
       rcases mem_footprint.mp ha with ha | ha <;> omega
-    · change ((spec w).clientState s create).frontier +
-        room s.frontier C ((spec w).clientState s create) ≤ s.frontier + (4 * C + 4)
+    · change ((Memory.spec w).clientState s create).frontier +
+        room s.frontier C ((Memory.spec w).clientState s create) ≤ s.frontier + (4 * C + 4)
       simp only [room, hcap, hfr]
       omega
 
@@ -725,7 +729,7 @@ theorem amortized_allocator : (allocator w C).Amortized (fun _ _ => 13) 0 := by
   intro s _ _
   obtain ⟨hn, hcap, -⟩ := create_header (w := w) s
   refine ⟨potential s.frontier, amortized, local_potential, ?_⟩
-  change potential s.frontier ((spec w).clientState s create) ≤ 0
+  change potential s.frontier ((Memory.spec w).clientState s create) ≤ 0
   simp only [potential, hn, hcap]
   omega
 

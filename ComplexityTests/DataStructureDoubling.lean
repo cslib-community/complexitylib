@@ -38,7 +38,7 @@ def nothing : State := ⟨fun _ => 0, 0⟩
 /-! ## One doubling stack -/
 
 /-- A bounded stack of capacity `8` at word size `8`. -/
-abbrev S : StateTransitionSpec := Stack.WordRAM.spec 8 8
+abbrev S : StateTransitionSpec := Stack.spec 8 8
 
 /-- Push `1, …, 8`, pop three times, and read the size. -/
 def client : S.Client (List (Option ℕ) × ℕ) := do
@@ -82,7 +82,7 @@ example : (spec 8).totalCost charge nothing ((spec 8).clientHistory nothing
 /-! ## Two doubling stacks in one memory -/
 
 /-- Two bounded stacks of capacity `4`. -/
-abbrev T : StateTransitionSpec := product (Stack.WordRAM.spec 8 4) (Stack.WordRAM.spec 8 4)
+abbrev T : StateTransitionSpec := product (Stack.spec 8 4) (Stack.spec 8 4)
 
 /-- Two doubling stacks, allocated one after the other. -/
 abbrev twoStacks : Allocator T 8 :=
