@@ -123,7 +123,7 @@ public section
 
 namespace Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing
 
-open Cslib.WordRAM Cslib.Algorithms.WordRAM
+open Cslib.WordRAM
 open Cslib.WordRAM.Randomized
 open Cslib.Probability
 open Cslib.Probability.PMF

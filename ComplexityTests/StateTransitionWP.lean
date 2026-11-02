@@ -26,7 +26,7 @@ open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.StateTransitionSpec
   Cslib.DataStructure.Queue
 
 /-- A bounded stack of capacity `2` at word size `8`. -/
-abbrev S : StateTransitionSpec := Stack.WordRAM.spec 8 2
+abbrev S : StateTransitionSpec := Stack.spec 8 2
 
 /-- Push `1` and `2`, then pop. -/
 def client : S.Client (Option ℕ) := do
