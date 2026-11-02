@@ -30,7 +30,16 @@ representation is functional yields an `Amortized` certificate of the realized m
 (`Refinement.Amortized.realize`).
 
 Products of refinements over one lower interface (`Refinement.prod`) need non-interference: the
-methods of each side leave the other side's abstraction, invariant and potential unchanged.
+methods of each side leave the other side's abstraction, invariant and potential unchanged. A
+joint invariant, such as the disjointness of the memory the two sides use, may be part of the
+product's invariant. `Memory.Framed.prod` discharges these obligations from footprints.
+
+**Glue.** A realization charges, besides each lower call, the glue code that consumes its answer.
+In a free-monad program every bind follows exactly one call, so glue charged per bind is a
+further charge per lower call, and `Refinement.Amortized.glue` absorbs it at a constant rate when
+it is at most proportional to the call's charge plus one. Work not attached to a lower call, such
+as a loop iteration that makes no call, is charged per call one level up and added with
+`Refinement.Amortized.add`.
 
 ## Main definitions
 
@@ -40,12 +49,13 @@ methods of each side leave the other side's abstraction, invariant and potential
 * `Refinement.toModule`: the underlying relational module.
 * `Refinement.id`, `Refinement.comp`, `Refinement.prod`: identity, composition, and products under
   non-interference.
+* `Methods.prod`: the methods of both sides of a product.
 * `Refinement.Amortized`: per-method amortized cost refinement with a potential on lower states.
 * `productCharge`: componentwise charges of a product specification.
 
-The two transcript-cost lemmas `StateTransitionSpec.totalCostTranscript_mono` and
-`StateTransitionSpec.totalCostTranscript_mul_left` sit here, beside their only clients, rather
-than in the widely imported `StateTransition` module.
+The transcript-cost lemmas `StateTransitionSpec.totalCostTranscript_mono`,
+`StateTransitionSpec.totalCostTranscript_mul_left` and `StateTransitionSpec.totalCostTranscript_add`
+sit here, beside their only clients, rather than in the widely imported `StateTransition` module.
 
 ## Main results
 
@@ -58,12 +68,15 @@ than in the widely imported `StateTransition` module.
 * `Refinement.Amortized.prod`: potentials add across non-interfering products.
 * `Refinement.Amortized.realize`: an amortized certificate for the realized module.
 * `Refinement.Amortized.id`: the identity refinement passes charges through.
-* `Refinement.Amortized.mono`, `Refinement.Amortized.mul_left`: weaken charges, and exchange
-  both currencies at a constant rate.
+* `Refinement.Amortized.mono`, `Refinement.Amortized.mul_left`, `Refinement.Amortized.add`:
+  weaken charges, exchange both currencies at a constant rate, and add certificates.
+* `Refinement.Amortized.glue`, `Refinement.Amortized.glue_of_one_le`: absorb glue charged per
+  lower call.
+* `StateTransitionSpec.totalCost_glue_le`: the same on a history.
 * `productCharge_const`: equal constant charges on a product.
 * `StateTransitionSpec.totalCostTranscript_mono`,
-  `StateTransitionSpec.totalCostTranscript_mul_left`: monotonicity and scaling of transcript
-  costs.
+  `StateTransitionSpec.totalCostTranscript_mul_left`, `StateTransitionSpec.totalCostTranscript_add`:
+  monotonicity, scaling and additivity of transcript costs.
 * `Refinement.Amortized.chargeBound`, `Refinement.Amortized.of_chargeBound`: with zero
   potential, the existing worst-case `Module.ChargeBound`.
 
@@ -96,6 +109,11 @@ structure Refinement (D E : StateTransitionSpec.{u, v, w}) where
   correct : ∀ {e} o {a e' tr}, inv e → D.valid (abs e) o →
     E.ClientRun e (methods o) a e' tr → D.step (abs e) o (abs e') a ∧ inv e'
 
+/-- The methods of both sides of a product, over one lower interface. -/
+def Methods.prod (m₁ : Methods D₁ E) (m₂ : Methods D₂ E) : Methods (product D₁ D₂) E
+  | .inl o => m₁ o
+  | .inr o => m₂ o
+
 /-- Componentwise charges of a product specification. -/
 def productCharge (c₁ : D₁.State → D₁.Op → ℕ) (c₂ : D₂.State → D₂.Op → ℕ) :
     (product D₁ D₂).State → (product D₁ D₂).Op → ℕ
@@ -126,6 +144,36 @@ theorem StateTransitionSpec.totalCostTranscript_mul_left (K : ℕ) (c : D.State 
   | nil => simp
   | cons st tr ih =>
     simp only [StateTransitionSpec.totalCostTranscript_cons, ih, Nat.mul_add]
+
+/-- Charges add along a transcript. -/
+theorem StateTransitionSpec.totalCostTranscript_add (c c' : D.State → D.Op → ℕ) (s : D.State)
+    (tr : D.Transcript) :
+    D.totalCostTranscript (fun s o => c s o + c' s o) s tr =
+      D.totalCostTranscript c s tr + D.totalCostTranscript c' s tr := by
+  induction tr generalizing s with
+  | nil => simp
+  | cons st tr ih =>
+    simp only [StateTransitionSpec.totalCostTranscript_cons, ih]
+    omega
+
+/-- **Glue on a history.** Glue charged with each operation at most `K` times its charge plus `K`
+costs, together with the charges, at most `2 K + 1` times the charges, when every operation
+costs at least one unit. -/
+theorem StateTransitionSpec.totalCost_glue_le
+    {fD : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn fD]
+    {lower glue : D.State → D.Op → ℕ} {K : ℕ} (hone : ∀ s o, 1 ≤ lower s o)
+    (hglue : ∀ s o, glue s o ≤ K * (lower s o + 1)) (s : D.State) (os : List D.Op) :
+    D.totalCost (fun s o => lower s o + glue s o) s os ≤ (2 * K + 1) * D.totalCost lower s os := by
+  induction os generalizing s with
+  | nil => simp
+  | cons o os ih =>
+    simp only [StateTransitionSpec.totalCost_cons]
+    have h := ih (D.stepFn s o).1
+    have hg := hglue s o
+    have h1 := Nat.mul_le_mul_left K (hone s o)
+    rw [Nat.mul_add] at hg ⊢
+    rw [Nat.add_mul, Nat.mul_assoc, Nat.one_mul] at ⊢
+    omega
 
 namespace Refinement
 
@@ -230,32 +278,33 @@ theorem link_comp (M : Refinement D E) (N : Refinement E F) (p : D.Client α) :
   (DataStructure.link_comp M.methods N.methods p).symm
 
 /-- Two refinements over one lower interface implement the product of their specifications,
-provided the methods of each leave the other's abstraction and invariant unchanged. -/
-def prod (M₁ : Refinement D₁ E) (M₂ : Refinement D₂ E)
-    (frame₁ : ∀ {e} o {a e' tr}, M₁.inv e → M₂.inv e → D₁.valid (M₁.abs e) o →
-      E.ClientRun e (M₁.methods o) a e' tr → M₂.abs e' = M₂.abs e ∧ M₂.inv e')
-    (frame₂ : ∀ {e} o {a e' tr}, M₁.inv e → M₂.inv e → D₂.valid (M₂.abs e) o →
-      E.ClientRun e (M₂.methods o) a e' tr → M₁.abs e' = M₁.abs e ∧ M₁.inv e') :
+provided the methods of each leave the other's abstraction and invariant unchanged. The joint
+invariant `J` holds of the shared lower state and is preserved by both sides; it records what
+keeps them apart, such as the disjointness of the memory each one uses. -/
+def prod (M₁ : Refinement D₁ E) (M₂ : Refinement D₂ E) (J : E.State → Prop)
+    (frame₁ : ∀ {e} o {a e' tr}, M₁.inv e → M₂.inv e → J e → D₁.valid (M₁.abs e) o →
+      E.ClientRun e (M₁.methods o) a e' tr → M₂.abs e' = M₂.abs e ∧ M₂.inv e' ∧ J e')
+    (frame₂ : ∀ {e} o {a e' tr}, M₁.inv e → M₂.inv e → J e → D₂.valid (M₂.abs e) o →
+      E.ClientRun e (M₂.methods o) a e' tr → M₁.abs e' = M₁.abs e ∧ M₁.inv e' ∧ J e') :
     Refinement (product D₁ D₂) E where
-  methods
-    | .inl o => M₁.methods o
-    | .inr o => M₂.methods o
-  inv e := M₁.inv e ∧ M₂.inv e
+  methods := Methods.prod M₁.methods M₂.methods
+  inv e := M₁.inv e ∧ M₂.inv e ∧ J e
   abs e := (M₁.abs e, M₂.abs e)
   valid {_} o hi hv := by
     cases o with
     | inl o => exact M₁.valid o hi.1 hv
-    | inr o => exact M₂.valid o hi.2 hv
+    | inr o => exact M₂.valid o hi.2.1 hv
   correct {_} o {_ _ _} hi hv hrun := by
+    obtain ⟨hi₁, hi₂, hJ⟩ := hi
     cases o with
     | inl o =>
-      obtain ⟨hstep, hi₁⟩ := M₁.correct o hi.1 hv hrun
-      obtain ⟨habs, hi₂⟩ := frame₁ o hi.1 hi.2 hv hrun
-      exact ⟨⟨hstep, habs⟩, hi₁, hi₂⟩
+      obtain ⟨hstep, hi₁'⟩ := M₁.correct o hi₁ hv hrun
+      obtain ⟨habs, hi₂', hJ'⟩ := frame₁ o hi₁ hi₂ hJ hv hrun
+      exact ⟨⟨hstep, habs⟩, hi₁', hi₂', hJ'⟩
     | inr o =>
-      obtain ⟨hstep, hi₂⟩ := M₂.correct o hi.2 hv hrun
-      obtain ⟨habs, hi₁⟩ := frame₂ o hi.1 hi.2 hv hrun
-      exact ⟨⟨habs, hstep⟩, hi₁, hi₂⟩
+      obtain ⟨hstep, hi₂'⟩ := M₂.correct o hi₂ hv hrun
+      obtain ⟨habs, hi₁', hJ'⟩ := frame₂ o hi₁ hi₂ hJ hv hrun
+      exact ⟨⟨habs, hstep⟩, hi₁', hi₂', hJ'⟩
 
 /-! ## Amortized costs -/
 
@@ -307,6 +356,58 @@ theorem Amortized.mul_left (A : M.Amortized lower upper potential) (K : ℕ) :
   refine ⟨fun {e} o {a e' tr} hi hv hrun => ?_⟩
   rw [E.totalCostTranscript_mul_left, ← Nat.mul_add, ← Nat.mul_add]
   exact Nat.mul_le_mul_left K (A.step o hi hv hrun)
+
+/-- Two certificates of one refinement add: their lower charges, upper charges and potentials. -/
+theorem Amortized.add (A : M.Amortized lower upper potential)
+    {lower' : E.State → E.Op → ℕ} {upper' : D.State → D.Op → ℕ} {potential' : E.State → ℕ}
+    (B : M.Amortized lower' upper' potential') :
+    M.Amortized (fun e o => lower e o + lower' e o) (fun s o => upper s o + upper' s o)
+      (fun e => potential e + potential' e) := by
+  refine ⟨fun {e} o {a e' tr} hi hv hrun => ?_⟩
+  have h := A.step o hi hv hrun
+  have h' := B.step o hi hv hrun
+  rw [E.totalCostTranscript_add]
+  omega
+
+/-- **Glue charges.** A realization of the lower interface charges, besides each lower call, the
+glue that consumes its answer: in a free-monad program every bind follows exactly one call. If
+the glue charged with a call is at most `K` times the call's charge plus `K`, a certificate for
+the charges and one for the number of calls give a certificate for the combined charge. Work that
+is not attached to a lower call, such as the iterations of a loop that makes no call, is a
+further per-call charge of the upper interface, added with `Amortized.add` one level up. -/
+theorem Amortized.glue (A : M.Amortized lower upper potential)
+    {calls : D.State → D.Op → ℕ} {Ψ : E.State → ℕ} (B : M.Amortized (fun _ _ => 1) calls Ψ)
+    {glue : E.State → E.Op → ℕ} {K : ℕ} (hglue : ∀ e o, glue e o ≤ K * (lower e o + 1)) :
+    M.Amortized (fun e o => lower e o + glue e o)
+      (fun s o => (K + 1) * upper s o + K * calls s o)
+      (fun e => (K + 1) * potential e + K * Ψ e) :=
+  ((A.mul_left (K + 1)).add (B.mul_left K)).mono
+    (fun e o => calc
+      lower e o + glue e o ≤ lower e o + K * (lower e o + 1) := Nat.add_le_add_left (hglue e o) _
+      _ = (K + 1) * lower e o + K * 1 := by rw [Nat.mul_add, Nat.add_mul]; omega)
+    fun _ _ _ => le_rfl
+
+/-- **Glue charges, when every call costs at least one unit**, as every memory operation does:
+then the calls are paid for by their charges, and the combined charge is amortized at `2 K + 1`
+times the upper charge. -/
+theorem Amortized.glue_of_one_le (A : M.Amortized lower upper potential)
+    (hone : ∀ e o, 1 ≤ lower e o) {glue : E.State → E.Op → ℕ} {K : ℕ}
+    (hglue : ∀ e o, glue e o ≤ K * (lower e o + 1)) :
+    M.Amortized (fun e o => lower e o + glue e o) (fun s o => (2 * K + 1) * upper s o)
+      (fun e => (2 * K + 1) * potential e) := by
+  have h := A.glue (A.mono hone fun _ _ _ => le_rfl) hglue
+  have hu : (fun s o => (K + 1) * upper s o + K * upper s o) =
+      fun s o => (2 * K + 1) * upper s o := by
+    funext s o
+    rw [Nat.add_mul, Nat.add_mul, Nat.mul_assoc]
+    omega
+  have hp : (fun e => (K + 1) * potential e + K * potential e) =
+      fun e => (2 * K + 1) * potential e := by
+    funext e
+    rw [Nat.add_mul, Nat.add_mul, Nat.mul_assoc]
+    omega
+  rw [hu, hp] at h
+  exact h
 
 /-- Potentials telescope along any run of a linked admissible client. -/
 theorem Amortized.demonic (A : M.Amortized lower upper potential) (p : D.Client α)
@@ -366,31 +467,32 @@ theorem Amortized.comp {N : Refinement E F} {lower : F.State → F.Op → ℕ}
 
 /-- **Potentials add across non-interfering products**, provided the methods of each side leave
 the other side's potential unchanged. -/
-theorem Amortized.prod {M₁ : Refinement D₁ E} {M₂ : Refinement D₂ E}
-    {frame₁ : ∀ {e} o {a e' tr}, M₁.inv e → M₂.inv e → D₁.valid (M₁.abs e) o →
-      E.ClientRun e (M₁.methods o) a e' tr → M₂.abs e' = M₂.abs e ∧ M₂.inv e'}
-    {frame₂ : ∀ {e} o {a e' tr}, M₁.inv e → M₂.inv e → D₂.valid (M₂.abs e) o →
-      E.ClientRun e (M₂.methods o) a e' tr → M₁.abs e' = M₁.abs e ∧ M₁.inv e'}
+theorem Amortized.prod {M₁ : Refinement D₁ E} {M₂ : Refinement D₂ E} {J : E.State → Prop}
+    {frame₁ : ∀ {e} o {a e' tr}, M₁.inv e → M₂.inv e → J e → D₁.valid (M₁.abs e) o →
+      E.ClientRun e (M₁.methods o) a e' tr → M₂.abs e' = M₂.abs e ∧ M₂.inv e' ∧ J e'}
+    {frame₂ : ∀ {e} o {a e' tr}, M₁.inv e → M₂.inv e → J e → D₂.valid (M₂.abs e) o →
+      E.ClientRun e (M₂.methods o) a e' tr → M₁.abs e' = M₁.abs e ∧ M₁.inv e' ∧ J e'}
     {upper₁ : D₁.State → D₁.Op → ℕ} {upper₂ : D₂.State → D₂.Op → ℕ}
     {Φ₁ Φ₂ : E.State → ℕ}
     (A₁ : M₁.Amortized lower upper₁ Φ₁) (A₂ : M₂.Amortized lower upper₂ Φ₂)
-    (potential₁ : ∀ {e} o {a e' tr}, M₁.inv e → M₂.inv e → D₁.valid (M₁.abs e) o →
+    (potential₁ : ∀ {e} o {a e' tr}, M₁.inv e → M₂.inv e → J e → D₁.valid (M₁.abs e) o →
       E.ClientRun e (M₁.methods o) a e' tr → Φ₂ e' = Φ₂ e)
-    (potential₂ : ∀ {e} o {a e' tr}, M₁.inv e → M₂.inv e → D₂.valid (M₂.abs e) o →
+    (potential₂ : ∀ {e} o {a e' tr}, M₁.inv e → M₂.inv e → J e → D₂.valid (M₂.abs e) o →
       E.ClientRun e (M₂.methods o) a e' tr → Φ₁ e' = Φ₁ e) :
-    (M₁.prod M₂ frame₁ frame₂).Amortized lower (productCharge upper₁ upper₂)
+    (M₁.prod M₂ J frame₁ frame₂).Amortized lower (productCharge upper₁ upper₂)
       (fun e => Φ₁ e + Φ₂ e) := by
   refine ⟨fun {e} o {a e' tr} hi hv hrun => ?_⟩
+  obtain ⟨hi₁, hi₂, hJ⟩ := hi
   cases o with
   | inl o =>
-    have h := A₁.step o hi.1 hv hrun
-    have hΦ := potential₁ o hi.1 hi.2 hv hrun
+    have h := A₁.step o hi₁ hv hrun
+    have hΦ := potential₁ o hi₁ hi₂ hJ hv hrun
     change E.totalCostTranscript lower e tr + (Φ₁ e' + Φ₂ e') ≤
       upper₁ (M₁.abs e) o + (Φ₁ e + Φ₂ e)
     omega
   | inr o =>
-    have h := A₂.step o hi.2 hv hrun
-    have hΦ := potential₂ o hi.1 hi.2 hv hrun
+    have h := A₂.step o hi₂ hv hrun
+    have hΦ := potential₂ o hi₁ hi₂ hJ hv hrun
     change E.totalCostTranscript lower e tr + (Φ₁ e' + Φ₂ e') ≤
       upper₂ (M₂.abs e) o + (Φ₁ e + Φ₂ e)
     omega

@@ -189,7 +189,7 @@ theorem runWithAnswers_run_interpret_invariant {ι σ β : Type} {spec : ι → 
 private theorem eval_run_withSampleList (default : H)
     (program : OracleComp (fun _ : Query => H) α) (answers : List H) :
     ProbComp.eval ((fun (result, next, _) => (result, next)) <$>
-      (interpret (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
+      (interpret (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
         (withSampleList default fun v _ s => (pure (v, s) : ProbComp (H × Unit))))
           (interpret (fun q => ProbOracleComp.query (spec := fun _ : Query => H) q)
             program)).run ((), answers)) =
@@ -203,7 +203,7 @@ private theorem eval_run_withSampleList (default : H)
 /-- Answering lifted queries uniformly as they come is answering them uniformly. -/
 private theorem eval_run_uniform [Fintype H] [Nonempty H]
     (program : OracleComp (fun _ : Query => H) α) :
-    ProbComp.eval ((interpret (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
+    ProbComp.eval ((interpret (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
         (fun _ s => do
           let value ← ProbComp.uniform H
           (pure (value, s) : ProbComp (H × Unit))))
@@ -268,7 +268,7 @@ list. -/
 private theorem eval_run_withSampleList_count (default : H)
     (program : OracleComp (fun _ : Query => H) α) (count : ℕ) (answers : List H) :
     ProbComp.eval ((fun (result, next, _) => (result, next)) <$>
-      (interpret (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
+      (interpret (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
         (withSampleList default fun v _ n => (pure (v, n + 1) : ProbComp (H × ℕ))))
           (interpret (fun q => ProbOracleComp.query (spec := fun _ : Query => H) q)
             program)).run (count, answers)) =
@@ -287,7 +287,7 @@ private theorem eval_run_withSampleList_count (default : H)
 /-- Answering lifted queries uniformly as they come, counting them, is `countingUniform`. -/
 private theorem eval_run_counting [Fintype H] [Nonempty H]
     (program : OracleComp (fun _ : Query => H) α) (count : ℕ) :
-    ProbComp.eval ((interpret (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
+    ProbComp.eval ((interpret (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n))
         (fun _ n => do
           let value ← ProbComp.uniform H
           (pure (value, n + 1) : ProbComp (H × ℕ))))

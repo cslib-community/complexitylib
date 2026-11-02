@@ -72,7 +72,7 @@ public instance : PairEncoding enc₁ enc₂ (encPair enc₁ enc₂) where
       (show ComputableInBigO g encIn enc₂ t s from
         ⟨1, hg.mono (fun _ => by omega) (fun _ => by omega)⟩)
     obtain ⟨c₀, k₀, Q₀, _, tm₀, h₀⟩ := Internal.NormalForm.linear
-      (ComputableInLinearTimeAndSpace.of_frame (f := id)
+      (ComputableInDegree.of_frame (f := id)
         (encIn := enc₁) (encMid := encFramed enc₁) fun _ => rfl)
     let overhead := 6 * max k₁ k₀ + 20 + 2 * max (max k₁ k₀ + 2) k₂
     let ct := c₁ + c₂ + (c₀ + 4) * c₁ + c₀ + 9
