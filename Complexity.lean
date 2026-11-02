@@ -17,6 +17,8 @@ public import Complexity.Algorithms.Lean.Huffman.TwoQueue
 public import Complexity.Algorithms.Lean.KMP.Basic
 public import Complexity.Algorithms.Lean.KMP.Search
 public import Complexity.Algorithms.Lean.Karger.Contraction
+public import Complexity.Algorithms.Lean.Karger.Memory
+public import Complexity.Algorithms.Lean.Karger.Memory.Contract
 public import Complexity.Algorithms.Lean.Karger.Memory.Layout
 public import Complexity.Algorithms.Lean.Kruskal.Basic
 public import Complexity.Algorithms.Lean.Kruskal.SimpleGraph

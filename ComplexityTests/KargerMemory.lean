@@ -7,14 +7,15 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (test driver)
 
-public import Complexity.Algorithms.Lean.Karger.Memory.Layout
+public import Complexity.Algorithms.Lean.Karger.Memory
 
 /-!
 # Karger's contraction structure over memory on a triangle
 
 The unit-weight triangle is laid out at address `0` with capacity `3`: size `3`, total `6`,
 degrees `2, 2, 2`, then the matrix row by row. The tests check that this memory state satisfies
-the invariant, and evaluate the sampling query on it against `sampledPair`.
+the invariant, evaluate the sampling query against `sampledPair` and a contraction against the
+specification, and run a short client through the refinement.
 -/
 
 @[expose] public section
@@ -55,5 +56,46 @@ example (r : ℕ) (hr : r < 6) :
   have h := wp_pairAt triangleMem_holds.2 (r := r) (by rw [triangleMem_holds.1]; decide +revert)
   rw [triangleMem_holds.1] at h
   exact h
+
+/-- Contracting `1` into `0` leaves two supervertices joined by weight `2`, of total `4`. -/
+example :
+    let s := (DataStructure.Memory.spec 8).clientState triangleMem (contract L 0 1)
+    s.mem 0 = 2 ∧ s.mem 1 = 4 ∧ L.mat s.mem 0 1 = 2 ∧ L.mat s.mem 1 0 = 2 ∧
+      L.mat s.mem 0 0 = 0 ∧ s.mem 2 = 2 ∧ s.mem 3 = 2 := by
+  decide
+
+/-- That contraction costs at most `7 · 3 + 7` memory units. -/
+example : (DataStructure.Memory.spec 8).totalCost DataStructure.Memory.charge triangleMem
+    ((DataStructure.Memory.spec 8).clientHistory triangleMem (contract L 0 1)) ≤ 28 := by
+  decide
+
+/-- Contract `1` into `0`, then read the total. -/
+noncomputable def client : spec.Client ℕ := do
+  let _ ← spec.call (.contract 0 1)
+  spec.call .total
+
+/-- The client is admissible on the triangle. -/
+theorem validHistory_client :
+    spec.ValidHistory ⟨3, triangle⟩ (spec.clientHistory ⟨3, triangle⟩ client) := by
+  change valid ⟨3, triangle⟩ (.contract 0 1) ∧ valid (contractGraph ⟨3, triangle⟩ 0 1) .total ∧
+    True
+  exact ⟨⟨by decide, by decide, by decide⟩, trivial, trivial⟩
+
+/-- Over memory, the client answers as on the specification. -/
+example : (DataStructure.Memory.spec 8).clientResult triangleMem
+    (link (refinement L 8).methods client) = spec.clientResult ⟨3, triangle⟩ client := by
+  obtain ⟨-, h, -, -⟩ := (refinement L 8).simulates_client client triangleMem_holds.2
+    (by rw [refinement_abs, triangleMem_holds.1]; exact validHistory_client)
+  rwa [refinement_abs, triangleMem_holds.1] at h
+
+/-- Over memory, it costs at most `(7 · 3 + 7) + 1` units. -/
+example : (DataStructure.Memory.spec 8).totalCost DataStructure.Memory.charge triangleMem
+    ((DataStructure.Memory.spec 8).clientHistory triangleMem
+      (link (refinement L 8).methods client)) ≤ 29 := by
+  have h := (amortized L 8).client client triangleMem_holds.2
+    (by rw [refinement_abs, triangleMem_holds.1]; exact validHistory_client)
+  rw [refinement_abs, triangleMem_holds.1] at h
+  refine (Nat.le_add_right _ _).trans (h.trans ?_)
+  decide
 
 end ComplexityTests.KargerMemory
