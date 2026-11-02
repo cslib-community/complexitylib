@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Crypto.Computational.ZeroKnowledge.AuxClock
+import Complexity.Computability.Complexity.Classes.IP.Repetition
+import Complexity.Crypto.Computational.ZeroKnowledge.Soundness
 import Complexity.Tactic.PPT
 
 /-! Tests for Naor's bit commitment scheme and the Goldreich–Micali–Wigderson
@@ -279,5 +280,49 @@ example {generator : List Bool → List Bool} {length : ℕ → ℕ}
       (hG.zeroKnowledgeProofThreeSAT hstretch).InstanceAuxiliaryInputZeroKnowledge :=
   let hzk := hG.auxiliaryInputZeroKnowledge_zeroKnowledgeProofThreeSAT hstretch hAdv
   ⟨hzk.unboundedAuxiliaryInputZeroKnowledge, hzk.instanceAuxiliaryInputZeroKnowledge⟩
+
+-- Polynomial-count sequential repetition of any strict oracle PPT verifier is strict oracle PPT.
+example {round : ℕ × List Bool → WordOracleComp Unit Bool}
+    (hround : IsOraclePPTOn (encPair encUnary encBits) encBool round) :
+    IsOraclePPTOn (encPair encUnary encBits) encBool
+      (fun (n, a) => sequentialRepeat (n + 1) (round (n, a))) :=
+  hround.sequentialRepeat_count (by fun_prop)
+
+-- Sequentially repeating `emptyZeroKnowledgeProof`'s verifier `n + 1` times yields a `ZKProof`
+-- with soundness `(1 / 3) ^ (n + 1)` and `NegligibleSoundness`.
+private noncomputable def amplifiedEmptyZKProof :
+    ZKProof encBits (∅ : Set (List Bool)) (fun n => (1 / 3 : ENNReal) ^ (n + 1)) where
+  verifier n a := sequentialRepeat (n + 1) (emptyZeroKnowledgeProof.verifier n a)
+  prover := emptyZeroKnowledgeProof.prover
+  isWitness := emptyZeroKnowledgeProof.isWitness
+  polyTime_isWitness := emptyZeroKnowledgeProof.polyTime_isWitness
+  mem_iff_exists_witness := emptyZeroKnowledgeProof.mem_iff_exists_witness
+  isOraclePPT_verifier :=
+    emptyZeroKnowledgeProof.isOraclePPT_verifier.sequentialRepeat_count (by fun_prop)
+  interact := emptyZeroKnowledgeProof.interact
+  eval_interact := emptyZeroKnowledgeProof.eval_interact
+  isPPT_interact := emptyZeroKnowledgeProof.isPPT_interact
+  complete _ _ _ hw := Bool.noConfusion hw
+  sound n a ha P :=
+    acceptProb_sequentialRepeat_le (emptyZeroKnowledgeProof.sound n a ha) (n + 1) P
+  zero_knowledge := emptyZeroKnowledgeProof.zero_knowledge
+
+example : amplifiedEmptyZKProof.NegligibleSoundness :=
+  amplifiedEmptyZKProof.negligibleSoundness_one_third_pow (fun n => Nat.le_succ n)
+
+example (a : ℕ → List Bool) (P : ℕ → Prover Unit) :
+    Negligible (fun n => (acceptProb (amplifiedEmptyZKProof.verifier n (a n)) (P n)).toNNReal) :=
+  (amplifiedEmptyZKProof.negligibleSoundness_one_third_pow
+    (fun n => Nat.le_succ n)).acceptProb_toNNReal_negligible (fun _ => Set.notMem_empty _) P
+
+example : (∅ : Set (List Bool)) ∈ IP encBits :=
+  (amplifiedEmptyZKProof.negligibleSoundness_one_third_pow (fun n => Nat.le_succ n)).mem_IP
+
+-- Negative guard: constant `1 / 3` soundness (`toZKProof`) is not `NegligibleSoundness`.
+example : ¬ univZeroKnowledgeProof.toZKProof.NegligibleSoundness := by
+  intro h
+  refine not_negligible_const (c := ((1 / 3 : ENNReal).toNNReal)) ?_ h.2
+  rw [ENNReal.toNNReal_div, ENNReal.toNNReal_one, ENNReal.toNNReal_ofNat]
+  norm_num
 
 end ComplexityTests.Crypto.ZeroKnowledge
