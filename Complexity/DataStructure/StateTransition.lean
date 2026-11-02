@@ -1136,9 +1136,17 @@ state. -/
     (s : D.State × E.State) (o : E.Op) :
     (product D E).valid s (.inr o) ↔ E.valid s.2 o := Iff.rfl
 
+/-! ### Instances on products
+
+`product` is an `abbrev`, so an instance stated on `product D E` would be indexed by the unfolded
+structure, whose state type is the projection `D.State × E.State`. A nested product such as
+`product (product D E) F` has state type `(D.State × E.State) × F.State` after unfolding, which
+that index does not match. The product instances therefore index their specification with
+`no_index`, and products of any depth find them by unification. -/
+
 /-- Product of two total specifications is total. -/
 instance instTotalProduct (D E : StateTransitionSpec.{u, v, w}) [D.Total] [E.Total] :
-    (product D E).Total where
+    (no_index (product D E)).Total where
   step_total
     | s, .inl o, hv => by
       obtain ⟨s₁', a, hstep⟩ := D.exists_step hv
@@ -1150,7 +1158,7 @@ instance instTotalProduct (D E : StateTransitionSpec.{u, v, w}) [D.Total] [E.Tot
 /-- Product of two deterministic specifications is deterministic. -/
 instance instDeterministicProduct (D E : StateTransitionSpec.{u, v, w})
     [D.Deterministic] [E.Deterministic] :
-    (product D E).Deterministic where
+    (no_index (product D E)).Deterministic where
   step_deterministic {_ o _ _ _ _} h₁ h₂ := by
     cases o with
     | inl o =>
@@ -1173,11 +1181,13 @@ abbrev productStepFn (D E : StateTransitionSpec.{u, v, w})
   | .inl o => let r := fD s.1 o; ((r.1, s.2), r.2)
   | .inr o => let r := fE s.2 o; ((s.1, r.1), r.2)
 
+/-- A product of deterministic specifications is deterministic with the componentwise transition
+function, at any nesting depth. -/
 instance instHasStepFnProduct (D E : StateTransitionSpec.{u, v, w})
     {fD : (s : D.State) → (o : D.Op) → D.State × D.Result o}
     {fE : (s : E.State) → (o : E.Op) → E.State × E.Result o}
     [D.HasStepFn fD] [E.HasStepFn fE] :
-    (product D E).HasStepFn (productStepFn D E fD fE) where
+    (no_index (product D E)).HasStepFn (productStepFn D E fD fE) where
   step_iff
     | ⟨s₁, s₂⟩, .inl o, ⟨s'₁, s'₂⟩, (a : D.Result o) => by
       simp only [productStepFn, StateTransitionSpec.HasStepFn.step_iff, Prod.ext_iff, and_assoc]
@@ -1185,6 +1195,8 @@ instance instHasStepFnProduct (D E : StateTransitionSpec.{u, v, w})
     | ⟨s₁, s₂⟩, .inr o, ⟨s'₁, s'₂⟩, (a : E.Result o) => by
       simp [productStepFn, StateTransitionSpec.HasStepFn.step_iff, Prod.ext_iff, and_assoc]
 
+/-- The product of two `ofFn` specifications, with their transition functions named. It is tried
+before `instHasStepFnProduct`, so such products keep this form of the transition function. -/
 instance instHasStepFnProductOfFn
     {State₁ : Type u} {Op₁ : Type v} {Result₁ : Op₁ → Type w}
     {State₂ : Type u} {Op₂ : Type v} {Result₂ : Op₂ → Type w}
