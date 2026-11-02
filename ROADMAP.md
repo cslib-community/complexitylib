@@ -202,10 +202,13 @@ index links to canonical definitions rather than keeping a second set.
   Actual correction iterates now supply product entry/row-mass bounds and their scheduled
   omitted-product norm sum. Product-seed correction/reward samples have proved true means,
   reaching the next actual hierarchy reward. The local pilot and actual-correction
-  preparation/normalization families have computed child ranks, bounded child-function recipes and primitive-channel-derived true means. Pilot steps use
-  the current maximum; actual corrections use the final pilot maximum. A common global stage
-  order connecting these indices, routed direct bins, all role/rate/suffix calls, estimated
-  copy/reward multipliers and the complete scheduled mean-prefix bound remain open. Paired raw
+  preparation/normalization families now share an expanded dependency order, including
+  normalized children and an actual copy/reward projection client. Ranks are computed from
+  finite iteration bounds; role/rate/suffix requests preserve the inherited source or reset it
+  to the midpoint. Pilot steps use the current maximum; actual corrections and copy weights
+  use the final pilot maximum. The previous reward is still a local leaf. Cross-stage/global
+  role tuple assembly, routed direct bins, and the complete scheduled mean-prefix bound remain
+  open; range/true means do not establish root regularity or the error recurrence. Paired raw
   differences, full-coordinate conditional walks, summed noise, compression, strong recursive
   induction and native logarithmic workspace/class equality remain required.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
