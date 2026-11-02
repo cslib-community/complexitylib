@@ -19,8 +19,8 @@ Behavioral checks for `Complexity.Crypto.Computational.TreeSignature.CoinHybrid`
 2. A coin-consuming toy indexed scheme `seededToy` (`keyGenBudget _ = 2`, `signBudget _ _ _ = 1`)
    whose keys equal their 2-bit seed (`pk = sk`):
    - `cheatForger` recovers `rootPk = rootSk` at depth `1` and forges on `0^n` with zero queries,
-     achieving exact success probability `1` in `coinRealGame`, `coinIdealGame` and `treeIdealGame`
-     at every parameter `n`, while scoring `0` at out-of-range PRF parameter `M = 5`.
+     achieving exact success probability `1` in `coinRealGame` at every parameter `n`, while
+     scoring `0` in `coinIdealGame` at out-of-range PRF parameter `M = 5`.
    - `replayForger` queries `0^n` and replays the returned signature on `0^n`, achieving exact
      success probability `0` because `!queried.contains msg` rejects queried messages.
    - `exists_negligible_treeGame_coinParam_le` instantiates end-to-end on `seededToy`.
@@ -175,8 +175,8 @@ example : Game.succProbability (ProbComp.eval
   have h5 : coinParam oscBudget (coinParamInv oscBudget 5) ≠ 5 := by decide
   simp [coinIdealGame, treeCoinAdversary, h5, Game.succProbability]
 
--- At every `N n = coinParam oscBudget n`, `cheatForger` wins both `coinRealGame` and
--- `coinIdealGame` with exact probability `1`.
+-- At every `N n = coinParam oscBudget n`, `cheatForger` wins `coinRealGame` with exact
+-- probability `1`.
 example (n : ℕ) : Game.succProbability (ProbComp.eval
     (coinRealGame maskFamily (treeCoinAdversary seededToy seededToySeeded (fun _ => 1)
       (coinParam oscBudget) (coinParamInv oscBudget) cheatForger)
