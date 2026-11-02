@@ -15,11 +15,13 @@ import Complexity.Tactic.Realize
 /-!
 # Compact heap initialization primitives
 
-Two existing realization rules reserve the original three-array span and compute three layout
+Existing realization rules reserve the original three-array span and compute three layout
 words. Reservation preserves the complete physical memory; a separately supplied local-zero
 block gives the existing compact empty invariant. Metadata staging is actual charged scalar
 glue and copies, leaving both input words and every memory cell intact.
 
+The separate canonical allocator certificate preserves `Memory.allocLayout`'s two dirty queries
+and larger `3*n+2` span, wrapping its final layout in the existing faithful sigma encoding.
 These primitives do not replace `Memory.allocLayout`, instantiate a local-zero generic
 allocator, choose the final caller ABI or claim the legacy eleven-instruction initializer.
 Code, scratch and exchange constants are uniform before all runtime sizes, bases and widths.
@@ -29,6 +31,7 @@ Code, scratch and exchange constants are uniform before all runtime sizes, bases
 * `realizes_reserve`, `reserve_exec`: reserve exactly `space n`, returning the old frontier.
 * `realizes_metadata`, `metadata_exec`: compute `[n,base+n,1]` with charged native glue.
 * `reserve_empty`: the actual reservation gives the existing compact empty heap under local zero.
+* `realizes_allocLayout`, `allocLayout_exec`: certify the unchanged allocator used by Dijkstra.
 -/
 
 @[expose] public section
@@ -143,5 +146,63 @@ theorem metadata_exec {r : ℕ} (frontier : Fin r) (src : Fin 2 → Fin r)
   · simpa only [memoryCost_pure, Nat.zero_add, Nat.mul_one] using hy
   · funext i
     exact (hframe (src i) (hs i) (fun j => (hd i j).symm)).trans (congrFun hin i)
+
+/-- The canonical source allocator keeps its two dirty queries and its extra count word.
+Only its result is placed in the existing fixed Sigma carrier for uniform native code. -/
+theorem allocLayout_run (w n : ℕ) (s : Memory.State) :
+    (Memory.spec w).runClient s
+      (do let L ← BinaryHeap.Memory.allocLayout n; pure (⟨n, L⟩ : HeapLayout)) =
+      (⟨n, BinaryHeap.Memory.allocated n s.frontier⟩,
+        ⟨s.mem, s.frontier + 1 + space n⟩, [.allocDirty 1, .allocDirty (space n)]) := rfl
+
+/-- Realize the unchanged canonical allocator. This is the `3*n+2` source used by Dijkstra,
+not the compact reserve-only primitive; no global zero claim is hidden in its native domain. -/
+theorem realizes_allocLayout : Realizes .exact
+    (fun n : ℕ => do let L ← BinaryHeap.Memory.allocLayout n; pure (⟨n, L⟩ : HeapLayout))
+    (WordEncoding.encode (α := ℕ)) layoutWords
+    (fun w n s => Fits w (s.frontier + 1 + space n)) (fun _ _ => 0) := by
+  have h : Realizes .exact
+      (fun n : ℕ => do
+        let size ← Memory.allocBlockDirty 1
+        let arrays ← Memory.allocBlockDirty ((n + n) + n + 1)
+        pure (⟨n, ⟨size, arrays.base⟩⟩ : HeapLayout))
+      (WordEncoding.encode (α := ℕ)) layoutWords
+      (fun w n s => Fits w (s.frontier + 1 + space n)) (fun _ _ => 0) := by
+    realize
+    all_goals exact h.of_le (by unfold space; omega)
+  exact h.congr (fun n => by
+    simp only [BinaryHeap.Memory.allocLayout, space_add, bind_assoc, pure_bind])
+
+/-- One selected code before all runtime sizes/frontiers/widths runs the actual two-query
+allocator. Memory is literally unchanged; the original allocated layout is really staged in
+four output words, and the source's two memory charges give the native `3*factor` bound. -/
+theorem allocLayout_exec {r : ℕ} (frontier : Fin r) (src : Fin 1 → Fin r)
+    (tmp : Fin (4 + realizes_allocLayout.scratchSize + 1) → Fin r)
+    (hi : Function.Injective tmp) (hd : ∀ i j, src i ≠ tmp j)
+    (hf : ∀ j, tmp j ≠ frontier) (hs : ∀ i, src i ≠ frontier)
+    {w n : ℕ} (x : Data r) (hx : x.Bounded w)
+    (hin : x.regs ∘ src = WordEncoding.encode (α := ℕ) n)
+    (hfit : Fits w (x.regs frontier + 1 + space n)) :
+    ∃ y, ExecWithin w (realizes_allocLayout.code frontier src tmp) x y
+        (3 * realizes_allocLayout.factor) ∧ y.Bounded w ∧ y.mem = x.mem ∧
+      y.regs frontier = x.regs frontier + 1 + space n ∧
+      (∀ i : Fin 4,
+        y.regs (tmp (Fin.castAdd (realizes_allocLayout.scratchSize + 1) i)) =
+          layoutWords ⟨n, BinaryHeap.Memory.allocated n (x.regs frontier)⟩ i) ∧
+      ∀ i, i ≠ frontier → (∀ j, tmp j ≠ i) → y.regs i = x.regs i := by
+  have hv : (Memory.spec w).ValidHistory (memoryState frontier x)
+      ((Memory.spec w).clientHistory (memoryState frontier x)
+        (do let L ← BinaryHeap.Memory.allocLayout n; pure (⟨n, L⟩ : HeapLayout))) := by
+    change Fits w (x.regs frontier + 1) ∧
+      Fits w (x.regs frontier + 1 + space n) ∧ True
+    exact ⟨hfit.of_le (by omega), hfit, trivial⟩
+  obtain ⟨y, hy, hm, ho, hframe⟩ :=
+    (realizes_allocLayout.code_spec frontier src tmp hi hd hf hs).2 w n x hx hin hfit hv
+  have hc : memoryCost
+      (do let L ← BinaryHeap.Memory.allocLayout n; pure (⟨n, L⟩ : HeapLayout))
+      (memoryState frontier x) = 2 := rfl
+  refine ⟨y, ?_, hy.bounded hx, congrArg Memory.State.mem hm,
+    congrArg Memory.State.frontier hm, ho, hframe⟩
+  simpa only [hc, Nat.add_zero, Nat.mul_comm] using hy
 
 end Cslib.DataStructure.PriorityQueue.BinaryHeap.Native.Initialize

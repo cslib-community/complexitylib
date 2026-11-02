@@ -214,6 +214,147 @@ example : ¬BinaryHeap.Memory.Inv (BinaryHeap.Memory.compactLayout 1 3)
   have hp := h.heap.pos_le 0 (by decide)
   norm_num [BinaryHeap.Memory.compactLayout, dirtyMem] at hp
 
+
+namespace CanonicalAllocator
+
+open Cslib.DataStructure.PriorityQueue.BinaryHeap.Native
+
+private abbrev slots := 4 + realizes_allocLayout.scratchSize + 1
+private abbrev regCount := 1 + slots + 1
+private def cursor : Fin regCount := Fin.last (1 + slots)
+private def source (i : Fin 1) : Fin regCount := (Fin.castAdd slots i).castSucc
+private def temporary (i : Fin slots) : Fin regCount := (Fin.natAdd 1 i).castSucc
+
+private def data (n base : ℕ) (mem : ℕ → ℕ) : Data regCount :=
+  ⟨Fin.lastCases base
+    (Fin.append (WordEncoding.encode (α := ℕ) n) (fun _ => 1)), mem⟩
+
+private theorem temporary_injective : Function.Injective temporary := by
+  intro i j h
+  apply Fin.ext
+  have := congrArg Fin.val h
+  simpa [temporary] using this
+
+private theorem source_temporary : ∀ i j, source i ≠ temporary j := by
+  intro i j h
+  have hh := congrArg Fin.val h
+  dsimp only [source, temporary, Fin.val_castSucc, Fin.val_castAdd, Fin.val_natAdd] at hh
+  have := i.isLt
+  omega
+
+private theorem temporary_cursor : ∀ j, temporary j ≠ cursor := by
+  intro j h
+  have hh := congrArg Fin.val h
+  dsimp only [temporary, cursor, Fin.val_castSucc, Fin.val_natAdd, Fin.val_last] at hh
+  have := j.isLt
+  omega
+
+private theorem source_cursor : ∀ i, source i ≠ cursor := by
+  intro i h
+  have hh := congrArg Fin.val h
+  dsimp only [source, cursor, Fin.val_castSucc, Fin.val_castAdd, Fin.val_last] at hh
+  have := i.isLt
+  omega
+
+private theorem data_bounded {w n base : ℕ} (mem : ℕ → ℕ) (h1 : Fits w 1)
+    (hn : Fits w n) (hb : Fits w base) (hm : ∀ a, Fits w (mem a)) :
+    (data n base mem).Bounded w := by
+  refine ⟨?_, hm⟩
+  intro i
+  refine Fin.lastCases ?_ (fun i => ?_) i
+  · simpa only [data, Fin.lastCases_last] using hb
+  · simp only [data, Fin.lastCases_castSucc]
+    refine Fin.addCases (fun j => ?_) (fun j => ?_) i
+    · simp only [Fin.append_left]
+      exact hn
+    · simp only [Fin.append_right]
+      exact h1
+
+private theorem native {w n base : ℕ} (mem : ℕ → ℕ) (h1 : Fits w 1)
+    (hn : Fits w n) (hb : Fits w base) (hm : ∀ a, Fits w (mem a))
+    (hfit : Fits w (base + 1 + space n)) :
+    ∃ y, ExecWithin w (realizes_allocLayout.code cursor source temporary) (data n base mem) y
+        (3 * realizes_allocLayout.factor) ∧ y.mem = mem ∧
+      y.regs cursor = base + 1 + space n ∧
+      (∀ i : Fin 4,
+        y.regs (temporary (Fin.castAdd (realizes_allocLayout.scratchSize + 1) i)) =
+          layoutWords ⟨n, BinaryHeap.Memory.allocated n base⟩ i) := by
+  have hin : (data n base mem).regs ∘ source = WordEncoding.encode (α := ℕ) n := by
+    funext i
+    simp [data, source]
+  have hf : (data n base mem).regs cursor = base := by simp [data, cursor]
+  have hfit' : Fits w ((data n base mem).regs cursor + 1 + space n) := by
+    rw [hf]
+    exact hfit
+  obtain ⟨y, hy, _, hym, hyf, ho, _⟩ := allocLayout_exec cursor source temporary
+    temporary_injective source_temporary temporary_cursor source_cursor (data n base mem)
+    (data_bounded mem h1 hn hb hm) hin hfit'
+  rw [hf] at hyf ho
+  exact ⟨y, hy, hym, hyf, ho⟩
+
+-- Only the result is wrapped: the source's actual two dirty queries and exact cost stay fixed.
+example (w n : ℕ) (s : Memory.State) :
+    (Memory.spec w).clientHistory s
+      (do let L ← BinaryHeap.Memory.allocLayout n; pure (⟨n, L⟩ : HeapLayout)) =
+      [.allocDirty 1, .allocDirty (space n)] :=
+  congrArg (fun t => t.2.2) (allocLayout_run w n s)
+
+example (n : ℕ) (s : Memory.State) : memoryCost
+    (do let L ← BinaryHeap.Memory.allocLayout n; pure (⟨n, L⟩ : HeapLayout)) s = 2 := rfl
+
+-- This is the original larger allocator, NOT the compact one-bit reserve endpoint above.
+example : ¬Fits 1 (0 + 1 + space 0) ∧ Fits 2 (0 + 1 + space 0) := by decide
+
+example : ∃ y, ExecWithin 2 (realizes_allocLayout.code cursor source temporary)
+      (data 0 0 zeroMem) y (3 * realizes_allocLayout.factor) ∧
+    y.mem = zeroMem ∧ y.regs cursor = 2 ∧
+    (∀ i : Fin 4,
+      y.regs (temporary (Fin.castAdd (realizes_allocLayout.scratchSize + 1) i)) =
+        ![0, 0, 1, 1] i) := by
+  have hm (a : ℕ) : Fits 2 (zeroMem a) := (zero_fits a).mono (by decide)
+  obtain ⟨y, hy, hyMem, hf, ho⟩ := native (n := 0) (base := 0) zeroMem
+    (by decide) (by decide) (by decide) hm (by decide)
+  exact ⟨y, hy, hyMem, hf, ho⟩
+
+-- Same emitted code at nonzero frontier; arbitrary dirty outside memory is literally retained.
+example : ∃ y, ExecWithin 4 (realizes_allocLayout.code cursor source temporary)
+      (data 1 3 dirtyMem) y (3 * realizes_allocLayout.factor) ∧
+    y.mem = dirtyMem ∧ y.regs cursor = 8 ∧
+    (∀ i : Fin 4,
+      y.regs (temporary (Fin.castAdd (realizes_allocLayout.scratchSize + 1) i)) =
+        ![1, 3, 1, 4] i) := by
+  have hm (a : ℕ) : Fits 4 (dirtyMem a) := (dirty_fits a).mono (by decide)
+  obtain ⟨y, hy, hyMem, hf, ho⟩ := native (n := 1) (base := 3) dirtyMem
+    (by decide) (by decide) (by decide) hm (by decide)
+  exact ⟨y, hy, hyMem, hf, ho⟩
+
+private def freshMem (a : ℕ) : ℕ := if a = 0 then 7 else 0
+
+-- The original global-zero invariant endpoint is still the one invoked for the canonical layout.
+example : ∃ y, ExecWithin 4 (realizes_allocLayout.code cursor source temporary)
+      (data 1 3 freshMem) y (3 * realizes_allocLayout.factor) ∧ y.mem = freshMem ∧
+    BinaryHeap.Memory.Inv (BinaryHeap.Memory.allocated 1 3) (memoryState cursor y) ∧
+    BinaryHeap.Memory.abs (BinaryHeap.Memory.allocated 1 3) (memoryState cursor y) =
+      IndexedMinPQ.empty 1 := by
+  have hm (a : ℕ) : Fits 4 (freshMem a) := by unfold freshMem; split <;> decide
+  have hz : Memory.ZeroAbove ⟨freshMem, 3⟩ := by
+    intro a ha
+    change 3 ≤ a at ha
+    simp only [freshMem]
+    split <;> omega
+  obtain ⟨y, hy, hyMem, hf, _⟩ := native (n := 1) (base := 3) freshMem
+    (by decide) (by decide) (by decide) hm (by decide)
+  have hstate : memoryState cursor y = ⟨freshMem, 3 + 1 + space 1⟩ := by
+    apply Memory.State.ext
+    · exact hyMem
+    · exact hf
+  obtain ⟨hi, habs⟩ := BinaryHeap.Memory.inv_allocated (n := 1) hz
+  refine ⟨y, hy, hyMem, ?_, ?_⟩ <;> rw [hstate]
+  · exact hi
+  · exact habs
+
+end CanonicalAllocator
+
 end
 
 end ComplexityTests.WordRAMBinaryHeapInitialize
