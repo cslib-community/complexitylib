@@ -72,7 +72,7 @@ example : {b : Bool | b = true} ∈ BPP encBool :=
 
 -- Against a deterministic oracle, `queryTable` collects the first reply bits, `false` for an
 -- empty reply.
-example : OracleComp.interpret (ProbOracleComp.handler ProbComp.unifFin
+example : OracleComp.interpret (OracleComp.sumHandler ProbComp.unifFin
     fun request => pure (List.reverse request.2))
       (KabanetsCai.queryTable [[true, false], [], [false, true]]) = pure [false, false, true] := by
   rw [KabanetsCai.interpret_queryTable]
