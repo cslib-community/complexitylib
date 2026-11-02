@@ -754,7 +754,7 @@ private theorem initial_loop_safe (G : Algorithms.WordRAM.Dijkstra.ListInstance)
       ((Memory.spec 0).clientState
         ⟨Function.update (Memory.State.init G.encode).mem
           ((Memory.State.init G.encode).frontier + G.source.val) 1,
-          (Memory.State.init G.encode).frontier + G.n + 1 + WordRAM.BinaryHeap.space G.n⟩
+          (Memory.State.init G.encode).frontier + G.n + 1 + BinaryHeap.space G.n⟩
         (BinaryHeap.Memory.insert
           (BinaryHeap.Memory.allocated G.n ((Memory.State.init G.encode).frontier + G.n))
           G.source.val 0)) := by
@@ -767,14 +767,14 @@ private theorem initial_loop_safe (G : Algorithms.WordRAM.Dijkstra.ListInstance)
     ⟨rfl, hfit.of_le (by nlinarith)⟩
   let M := Memory.framed hH hT (A := Memory.inputGraph G.n G.m) ⟨rfl⟩ G.adj
   let s0 : Memory.State := ⟨(Memory.State.init G.encode).mem,
-    f + G.n + 1 + WordRAM.BinaryHeap.space G.n⟩
+    f + G.n + 1 + BinaryHeap.space G.n⟩
   have hfront : f = G.n + 2 * G.m + 4 := by simp only [f, Memory.State.init, G.encode_length]
   obtain ⟨hi, habs⟩ := Memory.inv_input G hH hT ⟨rfl⟩
     (hfit.of_le (by
       change Fits w (8 * (G.n + G.m + 2) * (G.maxWeight + 2)) at hfit
-      change f + G.n + 1 + WordRAM.BinaryHeap.space G.n ≤ _
+      change f + G.n + 1 + BinaryHeap.space G.n ≤ _
       rw [hfront]
-      unfold WordRAM.BinaryHeap.space
+      unfold BinaryHeap.space
       nlinarith))
   let p : (spec G.n (G.n * G.maxWeight) (G.n * G.maxWeight + 1)).Client Unit := do
     setDist G.source 0
@@ -810,12 +810,12 @@ private theorem initial_loop_safe (G : Algorithms.WordRAM.Dijkstra.ListInstance)
   have hs : (Memory.spec w).clientState s0 (link M.methods p) =
       (Memory.spec 0).clientState
         ⟨Function.update (Memory.State.init G.encode).mem (f + G.source.val) 1,
-          f + G.n + 1 + WordRAM.BinaryHeap.space G.n⟩
+          f + G.n + 1 + BinaryHeap.space G.n⟩
         (BinaryHeap.Memory.insert H G.source.val 0) := by
     rw [hpeq, StateTransitionSpec.clientState_bind]
     change (Memory.spec w).clientState
         ⟨Function.update (Memory.State.init G.encode).mem (f + G.source.val) 1,
-          f + G.n + 1 + WordRAM.BinaryHeap.space G.n⟩
+          f + G.n + 1 + BinaryHeap.space G.n⟩
         (BinaryHeap.Memory.insert H G.source.val 0) = _
     exact clientState_width _ _ _
   rw [hs] at hinv hstate
@@ -836,7 +836,7 @@ private theorem initial_insert_safe (G : ListInstance) {w : ℕ}
         ((Memory.State.init G.encode).frontier + G.n)⟩, G.source.val), 0)
       ⟨Function.update (Memory.State.init G.encode).mem
         ((Memory.State.init G.encode).frontier + G.source.val) 1,
-        (Memory.State.init G.encode).frontier + G.n + 1 + WordRAM.BinaryHeap.space G.n⟩ := by
+        (Memory.State.init G.encode).frontier + G.n + 1 + BinaryHeap.space G.n⟩ := by
   let H := BinaryHeap.Memory.allocated G.n ((Memory.State.init G.encode).frontier + G.n)
   have hL : H.Valid w (G.n * G.maxWeight) :=
     BinaryHeap.Memory.valid_allocated (hfit.of_le (by nlinarith))
@@ -856,7 +856,7 @@ private theorem initial_insert_safe (G : ListInstance) {w : ℕ}
   change BinaryHeap.Memory.abs H _ G.source = none ∧ 0 ≤ G.n * G.maxWeight
   rw [BinaryHeap.Memory.abs_congr
     (s := ⟨(Memory.State.init G.encode).mem,
-      (Memory.State.init G.encode).frontier + G.n + 1 + WordRAM.BinaryHeap.space G.n⟩) hframe]
+      (Memory.State.init G.encode).frontier + G.n + 1 + BinaryHeap.space G.n⟩) hframe]
   exact ⟨congrFun ha G.source, Nat.zero_le _⟩
 
 private theorem word_run_realizes : Realizes .exact
@@ -890,11 +890,11 @@ private theorem word_run_realizes : Realizes .exact
   case hsafe.right.right.right.left =>
     rcases h with ⟨G, rfl, hfit⟩
     change Fits w ((Memory.State.init G.encode).frontier + G.n + 1 +
-      WordRAM.BinaryHeap.space G.n)
+      BinaryHeap.space G.n)
     have hf : (Memory.State.init G.encode).frontier = G.n + 2 * G.m + 4 := by
       simp only [Memory.State.init, G.encode_length]
     rw [hf]
-    exact hfit.of_le (by unfold WordRAM.BinaryHeap.space; nlinarith)
+    exact hfit.of_le (by unfold BinaryHeap.space; nlinarith)
   case hsafe.right.right.right.right.isTrue.left.left =>
     rcases h with ⟨G, rfl, hfit⟩
     change Fits w ((Memory.State.init G.encode).frontier + G.source.val)
