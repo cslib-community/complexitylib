@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.WordRAM.Realization.Absorb
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Memory
+import Complexity.DataStructure.Memory.RecordLink
 import Complexity.Computability.WordRAM.Realization.Reindex
 import Complexity.Tactic.Realize
 
@@ -41,14 +42,6 @@ namespace Cslib.DataStructure.PriorityQueue.FibonacciHeap.Native
 
 open Cslib.WordRAM Cslib.WordRAM.Realization
 
-private theorem lift_read {ok : Cell → Prop} (L : Record.Layout ok) (i : Cell) :
-    (PFunctor.FreeM.liftM (L.methods 0) (Record.read i) : Memory.Prog ℕ) =
-      Memory.read (L.addr i) := rfl
-
-private theorem lift_write {ok : Cell → Prop} (L : Record.Layout ok) (i : Cell) (k : ℕ) :
-    (PFunctor.FreeM.liftM (L.methods 0) (Record.write i k) : Memory.Prog Unit) =
-      Memory.write (L.addr i) k := rfl
-
 /-- Compile the existing lexicographic priority predicate as native word comparisons. The
 same normalization applies to record and memory source branches. -/
 theorem priority_if {α : Type} (u ku p kp : ℕ) (yes no : α) :
@@ -56,14 +49,6 @@ theorem priority_if {α : Type} (u ku p kp : ℕ) (yes no : α) :
       if ku < kp then yes else if ku = kp then if u < p then yes else no else no := by
   change (if ku < kp ∨ ku = kp ∧ u < p then yes else no) = _
   rw [ite_or, ite_and]
-
--- Specializing distribution avoids permuting nested conditionals with an unrestricted
--- `apply_ite` simp rule.
-private theorem lift_if (interp : (o : Record.Op Cell) → Memory.Prog (Record.Op.Result o))
-    (P : Prop) [Decidable P] (yes no : Prog Unit) :
-    (PFunctor.FreeM.liftM interp (if P then yes else no) : Memory.Prog Unit) =
-      if P then PFunctor.FreeM.liftM interp yes else PFunctor.FreeM.liftM interp no :=
-  apply_ite _ _ _ _
 
 private theorem bind_if (P : Prop) [Decidable P] (yes no : Prog Unit) (k : Unit → Prog Unit) :
     (if P then yes else no) >>= k = if P then yes >>= k else no >>= k :=
@@ -90,9 +75,10 @@ private theorem realizes_addRoot_history : Realizes .exact
     ext d
     simp only [DataStructure.link, rd, wr, Record.read, Record.write,
       PFunctor.FreeM.bind_eq_bind, PFunctor.FreeM.liftM_bind, PFunctor.FreeM.liftM_lift,
-      PFunctor.FreeM.liftM_pure, pure_bind, lift_if, bind_if, Record.Layout.methods, layout]
+      PFunctor.FreeM.liftM_pure, pure_bind, Record.lift_ite, bind_if, Record.Layout.methods, layout]
   realize
-  all_goals try simp only [lift_read, lift_write, StateTransitionSpec.clientResult,
+  all_goals try simp only [Record.Layout.lift_read, Record.Layout.lift_write,
+      StateTransitionSpec.clientResult,
     StateTransitionSpec.clientState,
     StateTransitionSpec.runClient_lift, StateTransitionSpec.runClient_lift_bind',
     Memory.read, Memory.write, Memory.step_read, Memory.step_write] at *
@@ -102,7 +88,8 @@ private theorem realizes_addRoot_history : Realizes .exact
   all_goals
     have hv := h.2.2
     simp only [DataStructure.link, addRoot, spliceAfter, rd, wr,
-      PFunctor.FreeM.liftM_bind, lift_read, lift_write, lift_if, priority_if, layout] at hv
+      PFunctor.FreeM.liftM_bind, Record.Layout.lift_read, Record.Layout.lift_write,
+      Record.lift_ite, priority_if, layout] at hv
     simp only [StateTransitionSpec.clientHistory, bind_assoc,
       StateTransitionSpec.runClient_lift_bind', Memory.read, Memory.write,
       StateTransitionSpec.validHistory_cons, StateTransitionSpec.stepFn, Memory.step_read,
@@ -215,10 +202,11 @@ private theorem realizes_unlink_history : Realizes .exact
     arg 2
     ext d
     simp only [DataStructure.link, unlink, rd, wr, Record.read, Record.write,
-      PFunctor.FreeM.liftM_bind, PFunctor.FreeM.liftM_lift, lift_if,
+      PFunctor.FreeM.liftM_bind, PFunctor.FreeM.liftM_lift, Record.lift_ite,
       Record.Layout.methods, layout]
   realize
-  all_goals try simp only [lift_read, lift_write, StateTransitionSpec.clientResult,
+  all_goals try simp only [Record.Layout.lift_read, Record.Layout.lift_write,
+      StateTransitionSpec.clientResult,
     StateTransitionSpec.clientState, StateTransitionSpec.runClient_lift, Memory.read, Memory.write,
     Memory.step_read, Memory.step_write] at *
   all_goals try first
@@ -230,7 +218,7 @@ private theorem realizes_unlink_history : Realizes .exact
     have hdeg := h.1.2.2.2
     clear h
     simp only [DataStructure.link, unlink, rd, wr, PFunctor.FreeM.liftM_bind,
-      lift_read, lift_write, lift_if, layout] at hv
+      Record.Layout.lift_read, Record.Layout.lift_write, Record.lift_ite, layout] at hv
     simp_all only [StateTransitionSpec.clientHistory, StateTransitionSpec.runClient_lift_bind',
       StateTransitionSpec.runClient_lift, StateTransitionSpec.validHistory_cons,
       StateTransitionSpec.validHistory_nil, StateTransitionSpec.stepFn, Memory.read,
@@ -271,11 +259,12 @@ private theorem realizes_setKey_history : Realizes .exact
     ext d
     simp only [DataStructure.link, rd, wr, Record.read, Record.write,
       PFunctor.FreeM.liftM_bind, PFunctor.FreeM.liftM_lift, PFunctor.FreeM.liftM_pure,
-      lift_if, Record.Layout.methods, layout]
+      Record.lift_ite, Record.Layout.methods, layout]
   realize
   all_goals
     have haddr : d 1 + 9 * d 0 + 1 ≠ d 1 + d 2 := by have := h.1.2.1; omega
-    try simp only [lift_read, lift_write, StateTransitionSpec.clientResult,
+    try simp only [Record.Layout.lift_read, Record.Layout.lift_write,
+      StateTransitionSpec.clientResult,
       StateTransitionSpec.clientState, StateTransitionSpec.runClient_lift,
       Memory.read, Memory.write, Memory.step_read, Memory.step_write,
       Function.update_of_ne haddr] at *
@@ -287,8 +276,9 @@ private theorem realizes_setKey_history : Realizes .exact
     have hv := h.2
     clear h
     simp only [DataStructure.link, setKey, rd, wr, priority_if,
-      PFunctor.FreeM.liftM_bind, PFunctor.FreeM.liftM_pure, lift_read, lift_write,
-      lift_if, layout] at hv
+      PFunctor.FreeM.liftM_bind, PFunctor.FreeM.liftM_pure, Record.Layout.lift_read,
+      Record.Layout.lift_write,
+      Record.lift_ite, layout] at hv
     simp_all only [StateTransitionSpec.clientHistory, StateTransitionSpec.runClient_lift_bind',
       StateTransitionSpec.validHistory_cons, StateTransitionSpec.stepFn, Memory.read,
       Memory.write, Memory.step_read, Memory.step_write, Memory.valid,
@@ -329,7 +319,8 @@ private theorem realizes_toRoot_history : Realizes .exact
   realize
   all_goals
     rcases h with ⟨⟨hfit, hz, hmpos, hmn, hr, hmark⟩, hv⟩
-    try simp only [lift_read, lift_write, StateTransitionSpec.clientResult,
+    try simp only [Record.Layout.lift_read, Record.Layout.lift_write,
+      StateTransitionSpec.clientResult,
       StateTransitionSpec.clientState, StateTransitionSpec.runClient_lift,
       StateTransitionSpec.runClient_lift_bind', Memory.read, Memory.write,
       Memory.step_read, Memory.step_write] at *
@@ -341,7 +332,7 @@ private theorem realizes_toRoot_history : Realizes .exact
     | omega
   all_goals
     simp only [DataStructure.link, toRoot, spliceAfter, rd, wr, PFunctor.FreeM.liftM_bind,
-      lift_read, lift_write, layout] at hv
+      Record.Layout.lift_read, Record.Layout.lift_write, layout] at hv
     simp (disch := omega) only [StateTransitionSpec.clientHistory, bind_assoc,
       StateTransitionSpec.runClient_lift_bind', StateTransitionSpec.runClient_lift,
       StateTransitionSpec.validHistory_cons, StateTransitionSpec.validHistory_nil,

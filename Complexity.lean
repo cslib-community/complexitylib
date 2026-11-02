@@ -2977,6 +2977,7 @@ public import Complexity.DataStructure.Memory.Copy
 public import Complexity.DataStructure.Memory.Field
 public import Complexity.DataStructure.Memory.Frame
 public import Complexity.DataStructure.Memory.Record
+public import Complexity.DataStructure.Memory.RecordLink
 public import Complexity.DataStructure.Memory.Region
 public import Complexity.DataStructure.Memory.Spec
 public import Complexity.DataStructure.Memory.Triple
@@ -3004,6 +3005,7 @@ public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Cascad
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Decrease
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Domain
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Initialize
+public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Link
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Read
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Source
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Native.Update
