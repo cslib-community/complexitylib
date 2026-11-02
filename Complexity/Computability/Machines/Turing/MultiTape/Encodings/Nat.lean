@@ -34,7 +34,7 @@ once and uses no work tape:
 * `Turing.MultiTapeTM.computableInTimeAndSpace_succ`, `computableInTimeAndSpace_pred`,
   `computableInTimeAndSpace_isZero`: the operations are computable within
   `2 * (encNat n).length + 3` steps and zero work space.
-* `Turing.MultiTapeTM.ComputableInLinearTimeAndSpace.natSucc`, `.natPred`, `.natIsZero`: their
+* `Turing.MultiTapeTM.ComputableInDegree.natSucc`, `.natPred`, `.natIsZero`: their
   linear forms.
 -/
 namespace Turing.MultiTapeTM
@@ -126,10 +126,9 @@ end NatPred
 private theorem ComputableInTimeAndSpace.linear {β : Type} {encOut : β ↪ List Bool} {f : ℕ → β}
     (h : ComputableInTimeAndSpace f encNat encOut (fun n => 2 * (encNat n).length + 3)
       (fun _ => 0)) :
-    ComputableInLinearTimeAndSpace f encNat encOut :=
-  let ⟨k, Q, hQ, tm, h⟩ := h
-  ⟨3, k, Q, hQ, tm, fun n =>
-    ⟨(h n).1, (h n).2.1.mono (by dsimp; omega), (h n).2.2.mono (Nat.zero_le _)⟩⟩
+    ComputableInDegree f encNat encOut 1 1 :=
+  ComputableInDegree.of_bounds ⟨3, fun _ => by simp only [pow_one]; omega⟩
+    (DegreeBounded.const 0) h
 
 open NatSucc in
 /-- **Binary successor in linear time and zero work space.** One streaming transducer computes
@@ -142,8 +141,8 @@ public theorem computableInTimeAndSpace_succ :
     exact succTransducer.computesInTimeAndSpace_toTM n.bits⟩
 
 /-- Binary successor in linear time and work space, from `computableInTimeAndSpace_succ`. -/
-public theorem ComputableInLinearTimeAndSpace.natSucc :
-    ComputableInLinearTimeAndSpace (· + 1) encNat encNat :=
+public theorem ComputableInDegree.natSucc :
+    ComputableInDegree (· + 1) encNat encNat 1 1 :=
   computableInTimeAndSpace_succ.linear
 
 open NatPred in
@@ -158,8 +157,8 @@ public theorem computableInTimeAndSpace_pred :
     exact predTransducer.computesInTimeAndSpace_toTM n.bits⟩
 
 /-- Binary predecessor in linear time and work space, from `computableInTimeAndSpace_pred`. -/
-public theorem ComputableInLinearTimeAndSpace.natPred :
-    ComputableInLinearTimeAndSpace (· - 1) encNat encNat :=
+public theorem ComputableInDegree.natPred :
+    ComputableInDegree (· - 1) encNat encNat 1 1 :=
   computableInTimeAndSpace_pred.linear
 
 open NatPred in
@@ -176,8 +175,8 @@ public theorem computableInTimeAndSpace_isZero :
     exact isZeroTransducer.computesInTimeAndSpace_toTM n.bits⟩
 
 /-- Binary zero test in linear time and work space, from `computableInTimeAndSpace_isZero`. -/
-public theorem ComputableInLinearTimeAndSpace.natIsZero :
-    ComputableInLinearTimeAndSpace (fun n => decide (n = 0)) encNat encBool :=
+public theorem ComputableInDegree.natIsZero :
+    ComputableInDegree (fun n => decide (n = 0)) encNat encBool 1 1 :=
   computableInTimeAndSpace_isZero.linear
 
 end Turing.MultiTapeTM
