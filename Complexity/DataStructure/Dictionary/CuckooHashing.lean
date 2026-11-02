@@ -382,48 +382,6 @@ private theorem card_filter_prod_equationChain_eq {Θ₁ Θ₂ : Type*} [Fintype
           rw [card_filter_equationChain_eq hm hh₁ hv₁ hc₁,
             card_filter_equationChain_eq hm hh₂ hv₂ hc₂]
 
-/-- The identity hash family `id : (X → Y) → X → Y` (representing a uniformly random function
-`f : X → Y`) is `k`-wise independent for every `k : ℕ`. -/
-private theorem isKWiseIndependentHash_id {X Y : Type*} [Fintype X] [DecidableEq X]
-    [Fintype Y] [DecidableEq Y] [Nonempty Y] (k : ℕ) :
-    IsKWiseIndependentHash k (id : (X → Y) → X → Y) where
-  dens_filter_restrict_eq {T} _ y := by
-    let e : (X → Y) ≃ (T → Y) × ({x : X // x ∉ T} → Y) :=
-      { toFun := fun f => (T.restrict f, fun x => f x.1)
-        invFun := fun p x => if hx : x ∈ T then p.1 ⟨x, hx⟩ else p.2 ⟨x, hx⟩
-        left_inv := fun f => by
-          funext x
-          dsimp only
-          split_ifs <;> rfl
-        right_inv := fun ⟨p₁, p₂⟩ => by
-          ext ⟨x, hx⟩
-          · simp [Finset.restrict, hx]
-          · simp [hx] }
-    have hcard_filter :
-        #{f : X → Y | T.restrict f = y} = Fintype.card ({x : X // x ∉ T} → Y) := by
-      rw [← Finset.card_univ]
-      refine Finset.card_nbij' (fun f => (e f).2) (fun g => e.symm (y, g)) ?_ ?_ ?_ ?_
-      · intro _ _; exact Finset.mem_univ _
-      · intro g _
-        simp only [Finset.mem_coe, Finset.mem_filter, Finset.mem_univ, true_and]
-        exact congrArg Prod.fst (e.apply_symm_apply (y, g))
-      · intro f hf
-        simp only [Finset.mem_coe, Finset.mem_filter, Finset.mem_univ, true_and] at hf
-        have h1 : (e f).1 = y := hf
-        calc e.symm (y, (e f).2) = e.symm ((e f).1, (e f).2) := by rw [h1]
-          _ = f := e.symm_apply_apply f
-      · intro g _
-        exact congrArg Prod.snd (e.apply_symm_apply (y, g))
-    have hcard_all :
-        Fintype.card (X → Y) =
-          Fintype.card Y ^ #T * Fintype.card ({x : X // x ∉ T} → Y) := by
-      rw [Fintype.card_congr e, Fintype.card_prod, Fintype.card_fun, Fintype.card_coe]
-    have hrest_ne : (Fintype.card ({x : X // x ∉ T} → Y) : ℚ≥0) ≠ 0 :=
-      Nat.cast_ne_zero.mpr Fintype.card_ne_zero
-    dsimp only [id_eq]
-    rw [Finset.dens_eq_card_div_card, hcard_filter, hcard_all, Nat.cast_mul, Nat.cast_pow,
-      div_mul_cancel_right₀ hrest_ne]
-
 /-! ## Section 1B: Index-level equation chains for alternating paths and bicyclic prefixes -/
 
 /-- Index-level equation chain on `Fin N`: at each `(a, b) :: rest`, `a ≠ b` and `a` does not
