@@ -43,6 +43,7 @@ namespace ComplexityAbstracts.KargerMinCutBridge
 open scoped ENNReal
 open Cslib
 open Cslib.WordRAM
+open Cslib.WeightedCut
 open Cslib.Algorithms.WordRAM.Karger
 open ComplexityAbstracts.RandomizedWordRAMBridge
 
@@ -928,20 +929,20 @@ private theorem ampLoop_exact {w sb n R : ℕ} {W : Fin n → Fin n → ℕ} {me
     have hc : (Cond.lt trialIdx numTrials).Holds x := by
       simp [Cond.holds_lt, hinv.regs_trialIdx, hinv.regs_numTrials, hiR]
     obtain ⟨m_b, hm_b, _, hsup_b, _⟩ :=
-      ampTrialBody_spec hn hW hiR h1 hdEnd hR_fit htot hinv
+      ampTrialBody_law hn hW hiR h1 hdEnd hR_fit htot hinv
     have hm_b_ex := ampTrialBody_toExact hn hW hiR h1 hdEnd hR_fit htot hinv hm_b
     let ml (d : Data 22) := codeComp (B := .standard) w ampLoop d
     refine ⟨_, ExecRand.loop_iter hc hm_b (ml := ml) ?_,
       ExecRand.loop_iter hc hm_b_ex (ml := ml) ?_⟩
     · intro z hz
       obtain ⟨m_r, hm_r⟩ := ampLoop_exact hn hW h1 hdEnd hR_fit htot r (i + 1) z.1
-        (by omega) (hsup_b z hz).2.1
+        (by omega) (hsup_b z hz).1
       dsimp only [ml]
       rw [hm_r.1.codeComp_eq]
       exact hm_r.1
     · intro z hz
       obtain ⟨m_r, hm_r⟩ := ampLoop_exact hn hW h1 hdEnd hR_fit htot r (i + 1) z.1
-        (by omega) (hsup_b z hz).2.1
+        (by omega) (hsup_b z hz).1
       dsimp only [ml]
       rw [hm_r.1.codeComp_eq]
       exact hm_r.2
@@ -986,7 +987,7 @@ private theorem ampCore_exact {w sb n R : ℕ} {W : Fin n → Fin n → ℕ} {x 
   have e5 : Exec (B := .standard) w ram[trialIdx ← #0] s₄ s₅ 1 := Exec.const (fits_zero w)
   have e6 : Exec (B := .standard) w ram[bestVal ← #0] s₅ s₆ 1 := Exec.const (fits_zero w)
   have hinv₀ : AmpInv w sb n R 0 W x.mem s₆ := by
-    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, hsrc_mat, Modifies.refl _ _, fun h0 => absurd h0 (by omega)⟩
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, hsrc_mat, Modifies.refl _ _⟩
     · exact (set_regs_ne _ _ _ _ (by decide)).trans ((set_regs_ne _ _ _ _ (by decide)).trans
         ((set_regs_ne _ _ _ _ (by decide)).trans ((set_regs_ne _ _ _ _ (by decide)).trans
           ((set_regs_ne _ _ _ _ (by decide)).trans ((set_regs_ne _ _ _ _ (by decide)).trans hsb)))))
@@ -2256,10 +2257,11 @@ private theorem singleExactProgram_runRand_eq {n w : ℕ} {W : Fin n → Fin n �
         (.running (.init (n :: flattenMatrix W))) =
       Cslib.WordRAM.runRand w singleProgram (singleTime n)
         (.running (.init (n :: flattenMatrix W))) := by
-  obtain ⟨m, hm_std, _, hsup, _⟩ := singleCode_spec hn hW hw htot
+  obtain ⟨m, hm_std, _, hsup, _⟩ := singleCode_law hn hW hw htot
   have hm_ex := singleCode_toExact hn hW hw htot hm_std
-  exact (hm_ex.runRand_program Reg.val1 fun z hz => (hsup z hz).1).trans
-    (hm_std.runRand_program Reg.val1 fun z hz => (hsup z hz).1).symm
+  have hT : ∀ z ∈ m.support, z.2 + 1 ≤ singleTime n := fun z hz =>
+    Nat.add_le_add_right (hsup z hz).2 1
+  exact (hm_ex.runRand_program Reg.val1 hT).trans (hm_std.runRand_program Reg.val1 hT).symm
 
 private theorem amplifiedExactProgram_runRand_eq {R n w : ℕ} {W : Fin n → Fin n → ℕ}
     (hR : 1 ≤ R) (hn : 2 ≤ n) (hW : IsMultigraph W) (hw : logWidth 3 n ≤ w)
@@ -2268,10 +2270,12 @@ private theorem amplifiedExactProgram_runRand_eq {R n w : ℕ} {W : Fin n → Fi
         (.running (.init (R :: n :: flattenMatrix W))) =
       Cslib.WordRAM.runRand w amplifiedProgram (amplifiedTime R n)
         (.running (.init (R :: n :: flattenMatrix W))) := by
-  obtain ⟨m, hm_std, _, hsup, _⟩ := amplifiedCode_spec hR hn hW hw hR_fit htot
+  obtain ⟨m, hm_std, _, hsup, _⟩ := amplifiedCode_law hR hn hW hw hR_fit htot
   have hm_ex := amplifiedCode_toExact hn hW hw hR_fit htot hm_std
-  exact (hm_ex.runRand_program AmpReg.bestVal fun z hz => (hsup z hz).1).trans
-    (hm_std.runRand_program AmpReg.bestVal fun z hz => (hsup z hz).1).symm
+  have hT : ∀ z ∈ m.support, z.2 + 1 ≤ amplifiedTime R n := fun z hz =>
+    Nat.add_le_add_right (hsup z hz).2 1
+  exact (hm_ex.runRand_program AmpReg.bestVal hT).trans
+    (hm_std.runRand_program AmpReg.bestVal hT).symm
 
 private theorem highProbExactProgram_runRand_eq {n w : ℕ} {W : Fin n → Fin n → ℕ}
     (hn : 2 ≤ n) (hW : IsMultigraph W) (hw : logWidth 3 n ≤ w)
@@ -2280,10 +2284,12 @@ private theorem highProbExactProgram_runRand_eq {n w : ℕ} {W : Fin n → Fin n
         (.running (.init (n :: flattenMatrix W))) =
       Cslib.WordRAM.runRand w highProbProgram (highProbTime n)
         (.running (.init (n :: flattenMatrix W))) := by
-  obtain ⟨m, hm_std, _, hsup, _⟩ := highProbCode_spec hn hW hw htot
+  obtain ⟨m, hm_std, _, hsup, _⟩ := highProbCode_law hn hW hw htot
   have hm_ex := highProbCode_toExact hn hW hw htot hm_std
-  exact (hm_ex.runRand_program AmpReg.bestVal fun z hz => (hsup z hz).1).trans
-    (hm_std.runRand_program AmpReg.bestVal fun z hz => (hsup z hz).1).symm
+  have hT : ∀ z ∈ m.support, z.2 + 1 ≤ highProbTime n := fun z hz =>
+    (Nat.add_le_add_right (hsup z hz).2 1).trans (highProbTime_bound hn)
+  exact (hm_ex.runRand_program AmpReg.bestVal hT).trans
+    (hm_std.runRand_program AmpReg.bestVal hT).symm
 
 private theorem init_mem_eq {r : ℕ} (input : List ℕ) :
     (Data.init (r := r) input).mem = Presentation.initMem input := by

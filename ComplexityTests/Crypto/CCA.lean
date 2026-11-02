@@ -10,23 +10,25 @@ import ComplexityTests.Crypto.Encryption
 import Mathlib.Algebra.Field.ZMod
 
 /-!
-# Tests for public-key 1CCA (`INDCCA2`) and setup-parameterized collision resistance
+# Tests for public-key 1CCA / multi-challenge CCA (`INDCCA2`, `INDCCA2Multi`) and CRHFs
 
 Two-sided nonvacuity and regression tests for `Complexity.Crypto.Computational.Encryption.CCA` and
 `Complexity.Crypto.Computational.CollisionResistant`:
-1. **Satisfiable `INDCCA2` and `WordINDCCA2` instances**: a constant-ciphertext scheme satisfies
-   `INDCCA2`, and a length-only word scheme satisfies `WordINDCCA2` (and hence `WordINDCPA` via
-   `WordINDCCA2.wordINDCPA`) while violating unrestricted `INDCCA2Of encBits encOut` via
-   `INDCCA2Of.indcpaOf`.
-2. **Refutable `INDCCA2` instance**: the plaintext-leaking scheme from
-   `ComplexityTests.Crypto.Encryption` violates `INDCCA2` via `INDCCA2.indcpa`.
-3. **Concrete `cca2Phase2Oracle` and `CCA2AdversaryOf.IsPPT` checks**: `cca2Phase2Oracle` returns
-   `[]` on the challenge ciphertext and `encOption encBool (decrypt …)` otherwise, and
-   `CCA2AdversaryOf.isPPT_ofCPA` and `CCA2AdversaryOf.IsPPT.restrict` construct concrete strict
-   oracle PPT 1CCA adversaries.
-4. **Live Phase-2 decryption-oracle test**: for a scheme whose decryption ignores trailing bits
+1. **Satisfiable `INDCCA2`, `INDCCA2Multi`, `WordINDCCA2`, and `WordINDCCA2Multi` instances**: a
+   constant-ciphertext scheme satisfies `INDCCA2` and `INDCCA2Multi`, and a length-only word scheme
+   satisfies `WordINDCCA2` and `WordINDCCA2Multi` while violating unrestricted `INDCCA2Of encBits`
+   and `INDCCA2MultiOf encBits`.
+2. **Refutable `INDCCA2` and `INDCCA2Multi` instances**: the plaintext-leaking scheme from
+   `ComplexityTests.Crypto.Encryption` violates both `INDCCA2` and `INDCCA2Multi`.
+3. **Concrete `cca2Phase2Oracle`, `cca2MultiPhase2Oracle`, `CCA2AdversaryOf.IsPPT`, and
+   `MultiCCA2AdversaryOf.IsPPT` checks**: `cca2Phase2Oracle` and `cca2MultiPhase2Oracle` reject
+   challenge ciphertexts with `[]` and return `encOption encBool (decrypt …)` otherwise, and
+   `CCA2AdversaryOf.isPPT_ofCPA`, `CCA2AdversaryOf.isPPT_toMulti`, and `.restrict` construct
+   concrete strict oracle PPT 1CCA and multi-challenge CCA adversaries.
+4. **Live Phase-2 decryption-oracle tests**: for a scheme whose decryption ignores trailing bits
    (`decrypt _ _ ct := ct.head?`), a Phase-2 adversary querying `ct ++ [true] ≠ ct` bypasses the
-   challenge-ciphertext guard and recovers the challenge bit with probability `1`.
+   challenge-ciphertext guard and recovers the challenge bit with probability `1` in both `cca2Game`
+   and `cca2MultiGame`.
 5. **Refutable `CollisionResistantFor` instance over `ZMod 11`**: a constant `ZMod 11`-valued hash
    family is refuted by `not_collisionResistantForOn_of_le_succProbability`.
 -/
@@ -52,6 +54,14 @@ are identical. -/
 theorem indcca2_const : INDCCA2 constKeyGen constEncrypt constDecrypt := by
   intro adversary _
   simpa only [cca2Game, cca2GameOn, constEncrypt, Game.advantage_self] using negligible_zero
+
+/-- By `INDCCA2.indcca2Multi` (Theorem 12.1), `constKeyGen`/`constEncrypt`/`constDecrypt` also
+satisfies multi-challenge `INDCCA2Multi`. -/
+theorem indcca2Multi_const : INDCCA2Multi constKeyGen constEncrypt constDecrypt :=
+  indcca2_const.indcca2Multi
+    ((ComputableInPolyTime.const ([], [])).isPPTOn)
+    ((ComputableInPolyTime.const []).isPPTOn)
+    (ComputableInPolyTime.const none)
 
 /-- Length-only word encryption (`ct = List.replicate msg.length false`). -/
 def lenEncrypt (_ : ℕ) (_ : List Bool) (msg : List Bool) : ProbComp (List Bool) :=
@@ -123,6 +133,32 @@ theorem not_indcca2Of_lenEncrypt {Out : Type} (encOut : Out ↪ List Bool)
     ¬ INDCCA2Of encBits encOut constKeyGen lenEncrypt decrypt :=
   fun hCCA => not_indcpaOf_lenEncrypt hCCA.indcpaOf
 
+/-- By `WordINDCCA2.wordINDCCA2Multi` (Theorem 12.1), `lenEncrypt` satisfies multi-challenge
+`WordINDCCA2Multi`, while by `INDCCA2MultiOf.indcca2Of` it violates unrestricted
+`INDCCA2MultiOf encBits encOut`. -/
+theorem wordINDCCA2Multi_lenEncrypt : WordINDCCA2Multi constKeyGen lenEncrypt lenDecrypt :=
+  wordINDCCA2_lenEncrypt.wordINDCCA2Multi
+    ((ComputableInPolyTime.const ([], [])).isPPTOn)
+    (by
+      have h : ComputableInPolyTime
+          (fun p : ℕ × List Bool × List Bool => List.replicate p.2.2.length false)
+          (encPair encUnary (encPair encBits encBits)) encBits := by polytime
+      exact h.isPPTOn)
+    (ComputableInPolyTime.const none)
+
+theorem not_indcca2MultiOf_lenEncrypt {Out : Type} (encOut : Out ↪ List Bool)
+    (decrypt : ℕ → List Bool → List Bool → Option Out) :
+    ¬ INDCCA2MultiOf encBits encOut constKeyGen lenEncrypt decrypt :=
+  fun hMulti => not_indcca2Of_lenEncrypt encOut decrypt hMulti.indcca2Of
+
+/-- Concrete witness for `WordMultiCCA2Adversary.IsPPT` via `CCA2AdversaryOf.isPPT_toMulti` and
+`MultiCCA2AdversaryOf.IsPPT.restrict`. -/
+example :
+    (((CCA2AdversaryOf.ofCPA lenAdversary).toMulti).restrict
+      (fun _ _ (m₀ m₁ : List Bool) => m₀.length == m₁.length)).IsPPT encBits :=
+  (CCA2AdversaryOf.isPPT_toMulti (CCA2AdversaryOf.isPPT_ofCPA lenAdversary_isPPT)).restrict
+    (by polytime)
+
 /-- Concrete witness for `WordCCA2Adversary.IsPPT` via `CCA2AdversaryOf.isPPT_ofCPA` and
 `CCA2AdversaryOf.IsPPT.restrict`. -/
 example :
@@ -138,6 +174,13 @@ theorem not_indcca2_leaking (decrypt : ℕ → List Bool → List Bool → Optio
     ¬ INDCCA2 ComplexityTests.Crypto.Encryption.keyGen
         ComplexityTests.Crypto.Encryption.encrypt decrypt :=
   fun hCCA => ComplexityTests.Crypto.Encryption.not_indCPA hCCA.indcpa
+
+/-- By `INDCCA2Multi.indcca2`, the plaintext-leaking scheme also violates multi-challenge
+`INDCCA2Multi` for every decryption function. -/
+theorem not_indcca2Multi_leaking (decrypt : ℕ → List Bool → List Bool → Option Bool) :
+    ¬ INDCCA2Multi ComplexityTests.Crypto.Encryption.keyGen
+        ComplexityTests.Crypto.Encryption.encrypt decrypt :=
+  fun hMulti => not_indcca2_leaking decrypt hMulti.indcca2
 
 /-- Concrete witness for `CCA2Adversary.IsPPT` via `CCA2Adversary.isPPT_ofCPA`. -/
 example : (CCA2Adversary.ofCPA ComplexityTests.Crypto.Encryption.adversary).IsPPT :=
@@ -156,6 +199,21 @@ example :
     ProbComp.eval (cca2Phase2Oracle encBool headDecrypt 4 [] [true] ((), [false]) ()) =
       PMF.pure ([true, false], ()) := by
   constructor <;> simp [cca2Phase2Oracle, headDecrypt, encOption, encBool_apply]
+
+/-- `cca2MultiPhase2Oracle` rejects every challenge ciphertext in `cts = [[true], [false, true]]`
+with `[]` and decrypts `[false]` to `[true, false]`. -/
+example :
+    ProbComp.eval
+      (cca2MultiPhase2Oracle encBool headDecrypt 4 [] [[true], [false, true]] ((), [true]) ()) =
+      PMF.pure ([], ()) ∧
+    ProbComp.eval
+      (cca2MultiPhase2Oracle encBool headDecrypt 4 [] [[true], [false, true]]
+        ((), [false, true]) ()) =
+      PMF.pure ([], ()) ∧
+    ProbComp.eval
+      (cca2MultiPhase2Oracle encBool headDecrypt 4 [] [[true], [false, true]] ((), [false]) ()) =
+      PMF.pure ([true, false], ()) := by
+  refine ⟨?_, ?_, ?_⟩ <;> simp [cca2MultiPhase2Oracle, headDecrypt, encOption, encBool_apply]
 
 /-- Malleable encryption scheme: `encrypt` outputs `[b]`, while `headDecrypt` ignores trailing
 bits so `ct ++ [true]` decrypts to `some b`. -/
@@ -181,6 +239,44 @@ theorem eval_cca2Game_phase2Mallory (bit : Bool) (n : ℕ) :
     · simp [cca2Game, cca2GameOn, constKeyGen, malleableEncrypt, phase2Mallory,
         StateT.run_pure, StateT.run_map]
       simp [StateT.run, cca2Phase2Oracle, headDecrypt, encOption, encBool_apply]
+
+/-- Embedded into `cca2MultiGame` via `CCA2Adversary.toMulti`, `phase2Mallory` also recovers the
+challenge bit with probability `1`. -/
+theorem eval_cca2MultiGame_phase2Mallory_toMulti (bit : Bool) (n : ℕ) :
+    ProbComp.eval
+      (cca2MultiGame encBool constKeyGen malleableEncrypt headDecrypt
+        phase2Mallory.toMulti bit n) =
+      PMF.pure bit := by
+  rw [eval_cca2MultiGame_toMulti]
+  exact eval_cca2Game_phase2Mallory bit n
+
+/-- A two-challenge-pair `MultiCCA2Adversary` that submits two opposite challenge pairs
+`[(false, true), (true, false)]` in Phase 1, then in Phase 2 queries both challenge ciphertexts
+`cts[0]` and `cts[1]` directly (both rejected with `[]` by `cca2MultiPhase2Oracle`) before
+querying the malleable modification `cts[0] ++ [true]` to recover `bit`. -/
+def twoChallengeMallory : MultiCCA2Adversary where
+  choose _ _ := pure ([(false, true), (true, false)], [])
+  guess _ _ cts := do
+    let r₀ ← ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool)
+      ((), cts.headD [])
+    let r₁ ← ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool)
+      ((), cts.getD 1 [])
+    let resp ← ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool)
+      ((), cts.headD [] ++ [true])
+    return (r₀.isEmpty && r₁.isEmpty && List.getD resp 1 false)
+
+/-- In `cca2MultiGame`, `twoChallengeMallory` exercises `mapM` encryption across two challenge
+pairs (`cts = [[bit], [!bit]]`), verifies that both challenge ciphertexts are rejected with `[]`
+in Phase 2, and recovers `bit` with probability `1` via `cts[0] ++ [true] ∉ cts`. -/
+theorem eval_cca2MultiGame_twoChallengeMallory (bit : Bool) (n : ℕ) :
+    ProbComp.eval
+      (cca2MultiGame encBool constKeyGen malleableEncrypt headDecrypt
+        twoChallengeMallory bit n) =
+      PMF.pure bit := by
+  cases bit <;>
+    · simp [cca2MultiGame, cca2MultiGameOn, constKeyGen, malleableEncrypt, twoChallengeMallory,
+        StateT.run_pure, StateT.run_bind, StateT.run_map]
+      simp [StateT.run, cca2MultiPhase2Oracle, headDecrypt, encOption, encBool_apply]
 
 /-! ### 4. Refutable `CollisionResistantFor` instance over `ZMod 11` -/
 

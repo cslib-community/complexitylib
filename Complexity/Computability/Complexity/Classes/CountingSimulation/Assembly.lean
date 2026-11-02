@@ -35,9 +35,11 @@ network and an accumulator (`Cslib.Complexity.CountingSimulation.exists_computab
 With the clock `t = c * T n` of a time-constructible `T n ≥ max n 2`, the schedules number
 `3 ^ O(T / log T)`, so the total time is `2 ^ O(T / √(log T))` in the natural-number scale of
 `Nat.exists_three_pow_mul_le_two_pow_div_sqrt_log_two`, and the space is polynomial in `T`
-(`Cslib.Complexity.CountingSimulation.exists_computableInO_count`). The result may be any
-polynomial-time function of the padded time, in unary, and the count, such as a comparison
-deciding acceptance.
+(`Cslib.Complexity.CountingSimulation.exists_computableInO_count`). The counting core first
+returns the exact count and its padded clock
+(`Cslib.Complexity.CountingSimulation.exists_computableInO_countPair`). Polynomial-time
+postprocessing, including the comparisons deciding acceptance, is derived from that core by
+`Cslib.Complexity.CountingSimulation.exists_computableInO_countWith`.
 
 ## Main definitions
 
@@ -50,9 +52,11 @@ deciding acceptance.
 * `Cslib.Complexity.CountingSimulation.simulate_eq`: the simulation computes the count.
 * `Cslib.Complexity.CountingSimulation.exists_computableInO_simulate`: its time and space bounds in
   terms of the clock.
-* `Cslib.Complexity.CountingSimulation.exists_computableInO_count`: from a time-constructible bound,
-  the count at the padded clock, or any polynomial-time function of it and the padded time, within
-  time `2 ^ (C * T n / √⌊log₂ (T n)⌋)` and space `T n ^ d`.
+* `Cslib.Complexity.CountingSimulation.exists_computableInO_countPair`: the exact count and
+  padded clock within the claimed joint bounds.
+* `Cslib.Complexity.CountingSimulation.exists_computableInO_count`: the exact count alone.
+* `Cslib.Complexity.CountingSimulation.exists_computableInO_countWith`: polynomial-time
+  postprocessing of the clock and count within the same resource scale.
 -/
 
 public section
@@ -309,24 +313,22 @@ theorem exists_computableInO_simulate (F : NetworkFamily encN value Admissible c
       (Nat.div_le_div_right (Nat.mul_le_mul_right _ (by omega)))
   exact (htime c).trans (Nat.mul_le_mul (Nat.mul_le_mul_right _ (hVk c)) hEk)
 
-/-- **The count within time `2 ^ O(T / √(log T))` and polynomial space** (conditional on the
-interfaces). Let `T` be time-constructible with `max n 2 ≤ T n`, let `c ≥ 1`, and let `rule` be a
-polynomial-time function of a padded time, in unary, and a count, in binary. Given a network family
-for `count`, with `count x τ ≤ 2 ^ τ`, and a contraction algorithm, the function sending `x` to
-`rule` of the padded clock `τ = paddedTime (c * T |x|)` and of `count x τ` is computable within
-time `2 ^ (C * T n / √⌊log₂ (T n)⌋)` and space `T n ^ d` on inputs of length `n`, for constants `C`
-and `d`. -/
-theorem exists_computableInO_count (F : NetworkFamily encN value Admissible count)
+/-- **Exact counting within time `2 ^ O(T / √(log T))` and polynomial space** (conditional on
+both interfaces). The result contains the padded clock in unary and the exact count in binary.
+No decision rule or postprocessing function is part of this theorem. -/
+theorem exists_computableInO_countPair (F : NetworkFamily encN value Admissible count)
     (A : ContractionAlgorithm encN value Admissible) (hcount : ∀ x τ, count x τ ≤ 2 ^ τ)
-    {T : ℕ → ℕ} (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n) {c : ℕ} (hc : 1 ≤ c)
-    {β : Type} {encβ : β ↪ List Bool} {rule : ℕ × ℕ → β}
-    (hrule : ComputableInPolyTime rule (encPair encUnary encNat) encβ) :
+    {T : ℕ → ℕ} (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n) {c : ℕ} (hc : 1 ≤ c) :
     ∃ C d : ℕ, ComputableInO
       (fun x : List Bool =>
-        rule (paddedTime (c * T x.length), count x (paddedTime (c * T x.length))))
-      encBits encβ
+        (paddedTime (c * T x.length), count x (paddedTime (c * T x.length))))
+      encBits (encPair encUnary encNat)
       (fun x => 2 ^ (C * T x.length / Nat.sqrt (Nat.log 2 (T x.length))))
       (fun x => T x.length ^ d) := by
+  let encβ := encPair encUnary encNat
+  let rule : ℕ × ℕ → ℕ × ℕ := id
+  have hrule : ComputableInPolyTime rule (encPair encUnary encNat) encβ :=
+    .of_eq fun _ => rfl
   obtain ⟨k, hsim⟩ := exists_computableInO_simulate F A
   -- Preparing the context `(x, c * T |x|)`, with the clock in unary.
   have hmul : ComputableInPolyTime (fun n : ℕ => c * n) encUnary encUnary := by fun_prop
@@ -429,6 +431,7 @@ theorem exists_computableInO_count (F : NetworkFamily encN value Admissible coun
       ((le_max_right _ _).trans (hTn _)).trans (Nat.le_mul_of_pos_left _ hc)
     simp only [Function.comp_apply]
     rw [simulate_eq F hnt h2t (hcount x _)]
+    rfl
   · set n := x.length
     have h2T : 2 ≤ T n := (le_max_right _ _).trans (hTn n)
     have hcostT := (hcost x).1
@@ -459,5 +462,86 @@ theorem exists_computableInO_count (F : NetworkFamily encN value Admissible coun
       _ ≤ a * (c * (T n + 1)) ^ e := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hct _)
       _ = a * c ^ e * (T n + 1) ^ e + 0 := by rw [mul_pow, Nat.mul_assoc, add_zero]
       _ ≤ T n ^ (a * c ^ e + 0 + 2 * e) := Nat.mul_add_one_pow_add_le_pow h2T
+
+/-- Any polynomial-time function of the exact count and its padded clock has the same
+subexponential time and polynomial-space scale. This is postprocessing of
+`exists_computableInO_countPair`, rather than an additional counting algorithm. -/
+theorem exists_computableInO_countWith (F : NetworkFamily encN value Admissible count)
+    (A : ContractionAlgorithm encN value Admissible) (hcount : ∀ x τ, count x τ ≤ 2 ^ τ)
+    {T : ℕ → ℕ} (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n) {c : ℕ} (hc : 1 ≤ c)
+    {β : Type} {encβ : β ↪ List Bool} {rule : ℕ × ℕ → β}
+    (hrule : ComputableInPolyTime rule (encPair encUnary encNat) encβ) :
+    ∃ C d : ℕ, ComputableInO
+      (fun x : List Bool =>
+        rule (paddedTime (c * T x.length), count x (paddedTime (c * T x.length))))
+      encBits encβ
+      (fun x => 2 ^ (C * T x.length / Nat.sqrt (Nat.log 2 (T x.length))))
+      (fun x => T x.length ^ d) := by
+  obtain ⟨C, d, h⟩ := exists_computableInO_countPair F A hcount hT hTn hc
+  have hlength := h
+  obtain ⟨K, -, hlen⟩ := hlength
+  let g : List Bool → ℕ × ℕ := fun x =>
+    (paddedTime (c * T x.length), count x (paddedTime (c * T x.length)))
+  let cg : NativeCertificate g encBits (encPair encUnary encNat) := ⟨_, _, h⟩
+  let cr := NativeCertificate.ofPolyTime hrule
+  let ctotal := cr.comp cg
+  obtain ⟨p, hp, mp, bp⟩ := exists_mono_poly_cert hrule
+  let P : ℕ → ℕ := fun n => n ^ d + p (K * (n ^ d + 1))
+  have hP : Cslib.PolynomiallyBounded P := by fun_prop
+  obtain ⟨a, e, hPe⟩ := Cslib.polynomiallyBounded_iff_le.mp hP
+  obtain ⟨C', hC'⟩ := Nat.exists_three_pow_mul_le_two_pow_div_sqrt_log_two 0 1 e C
+  refine ⟨(a + 2) * (C' + 1), a + 2 * e, ctotal.computes.mono_le (fun x => ?_) fun x => ?_⟩
+  · have h2 : 2 ≤ T x.length := (le_max_right _ _).trans (hTn _)
+    have hpost := (bp (g x)).1.trans (mp (hlen x))
+    have hpoly := hPe (T x.length)
+    have hpost' : cr.time (g x) ≤ a * (T x.length + 1) ^ e :=
+      hpost.trans ((Nat.le_add_left _ _).trans hpoly)
+    have hmain := hC' (T x.length) h2
+    simp only [Nat.zero_mul, pow_zero, Nat.one_mul] at hmain
+    have hpow : 1 ≤ (T x.length + 1) ^ e := Nat.one_le_pow _ _ (by omega)
+    have hE : 1 ≤ 2 ^ (C * T x.length / Nat.sqrt (Nat.log 2 (T x.length))) :=
+      Nat.one_le_two_pow
+    have hfirst : 2 ^ (C * T x.length / Nat.sqrt (Nat.log 2 (T x.length))) ≤
+        (T x.length + 1) ^ e *
+          2 ^ (C * T x.length / Nat.sqrt (Nat.log 2 (T x.length))) :=
+      Nat.le_mul_of_pos_left _ hpow
+    have hsecond : a * (T x.length + 1) ^ e ≤
+        a * ((T x.length + 1) ^ e *
+          2 ^ (C * T x.length / Nat.sqrt (Nat.log 2 (T x.length)))) :=
+      Nat.mul_le_mul_left _ (Nat.le_mul_of_pos_right _ hE)
+    calc ctotal.time x = 2 ^ (C * T x.length / Nat.sqrt (Nat.log 2 (T x.length))) +
+          cr.time (g x) := rfl
+      _ ≤ (a + 1) * ((T x.length + 1) ^ e *
+          2 ^ (C * T x.length / Nat.sqrt (Nat.log 2 (T x.length)))) := by
+        have := Nat.add_le_add hfirst (hpost'.trans hsecond)
+        nlinarith only [this]
+      _ ≤ (a + 1) * 2 ^ (C' * T x.length / Nat.sqrt (Nat.log 2 (T x.length))) :=
+        Nat.mul_le_mul_left _ hmain
+      _ ≤ 2 ^ ((a + 2) * (C' + 1) * T x.length /
+          Nat.sqrt (Nat.log 2 (T x.length))) := by
+        have := Nat.mul_two_pow_div_sqrt_log_two_add_le
+          (a := a + 1) (b := 0) (C := C') h2
+        simpa only [Nat.add_zero, Nat.add_assoc] using this
+  · have h2 : 2 ≤ T x.length := (le_max_right _ _).trans (hTn _)
+    have hpost := (bp (g x)).2.trans (mp (hlen x))
+    have hpoly := hPe (T x.length)
+    calc ctotal.space x = T x.length ^ d + cr.space (g x) := rfl
+      _ ≤ a * (T x.length + 1) ^ e :=
+        (Nat.add_le_add_left hpost _).trans hpoly
+      _ ≤ T x.length ^ (a + 2 * e) := by
+        have := Nat.mul_add_one_pow_add_le_pow (a := a) (b := 0) (d := e) h2
+        simpa only [Nat.add_zero] using this
+
+/-- The exact count at the padded clock, with binary output, inherits the counting core's
+subexponential time and polynomial workspace. -/
+theorem exists_computableInO_count (F : NetworkFamily encN value Admissible count)
+    (A : ContractionAlgorithm encN value Admissible) (hcount : ∀ x τ, count x τ ≤ 2 ^ τ)
+    {T : ℕ → ℕ} (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n) {c : ℕ} (hc : 1 ≤ c) :
+    ∃ C d : ℕ, ComputableInO
+      (fun x : List Bool => count x (paddedTime (c * T x.length))) encBits encNat
+      (fun x => 2 ^ (C * T x.length / Nat.sqrt (Nat.log 2 (T x.length))))
+      (fun x => T x.length ^ d) :=
+  exists_computableInO_countWith F A hcount hT hTn hc
+    (rule := Prod.snd) (by fun_prop)
 
 end Cslib.Complexity.CountingSimulation

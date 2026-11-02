@@ -42,7 +42,7 @@ example : acceptGap [(true, 0, []), (true, 0, [])] [true] = 4 := by decide
 
 -- The count agrees with the quantum acceptance probability of `hadamardOnce`.
 example : acceptProb 1 [(true, 0, [])] [] = 1 / 2 := by
-  rw [acceptProb_eq_acceptGap (by norm_num) _ (by decide)]
+  rw [acceptProb_eq_acceptGap _ (by decide)]
   have : List.ofFn (inputState 1 []) = [false] := by decide
   rw [this, show acceptGap [(true, 0, [])] [false] = 1 by decide]
   norm_num

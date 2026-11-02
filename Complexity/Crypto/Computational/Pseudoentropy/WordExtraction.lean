@@ -148,7 +148,7 @@ theorem SamplablePair.HasGap.extract_indexed_word_labels {pair : SamplablePair} 
     (test : ℕ → ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool)
     (htest : IsPPTOn (encPair (encPair encUnary encUnary)
       (encPair (encList encBits) (encPair encBits encBits)))
-      encBool (fun input => test input.1.1 input.1.2 input.2)) :
+      encBool (fun ((n, i), result) => test n i result)) :
     let count := fun n => ExtractionSchedule.count n (realization.length n) (inverseSlack n)
     Negligible (fun n => Game.advantage
       (ProbComp.eval (do

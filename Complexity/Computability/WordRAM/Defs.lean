@@ -7,6 +7,7 @@ Authors: Erik Demaine, Samuel Schlesinger
 module
 -- upstream: candidate (based on edemaine/lean-trominoes @6d5b36c1)
 
+public import Complexity.Computability.GenericRAM.Defs
 public import Complexity.Computability.WordRAM.Basis
 public import Cslib.Foundations.Relation.RelatesInSteps
 public import Mathlib.Data.Fin.VecNotation
@@ -95,6 +96,11 @@ The definitions are adapted from the Lean formalization accompanying
   the complexity predicates additionally bound code length independently of word size.
 * Data instructions have one semantics, `Cslib.WordRAM.Op.eval`, shared by flat and structured
   programs; runs are counted with cslib's `Relation.RelatesInSteps`.
+* Every basis determines a model of the generic RAM interpreter (`Cslib.WordRAM.Basis.genericModel`)
+  that represents word-RAM programs and states exactly (`Cslib.WordRAM.step_toGeneric`). The
+  interpreter properties of runs, such as `Cslib.WordRAM.executes_iff_exists_run_eq` and
+  `Cslib.WordRAM.Executes.unique`, are those of `Cslib.GenericRAM` transported along this
+  representation, so they are proved once for both models.
 
 Compared with the source formalization, words are unsigned rather than two's-complement integers;
 the operations form a basis, whose standard instance adds bitwise operations, shifts and the word
@@ -133,14 +139,21 @@ convention.
 * `Cslib.WordRAM.Instr.IsRandFree`, `Cslib.WordRAM.Program.IsRandFree`: predicates for
   programs that do not use `Instr.rand`.
 * `Cslib.WordRAM.run`: a computable interpreter with a step budget.
+* `Cslib.WordRAM.Basis.genericModel`: the generic RAM model of a basis.
+* `Cslib.WordRAM.Data.toGeneric`, `Cslib.WordRAM.State.toGeneric`, `Cslib.WordRAM.Cond.toGeneric`,
+  `Cslib.WordRAM.Op.toGeneric`, `Cslib.WordRAM.Instr.toGeneric`, `Cslib.WordRAM.Program.toGeneric`,
+  `Cslib.WordRAM.Outcome.toGeneric`: the exact representation in that model.
 
 ## Main results
 
+* `Cslib.WordRAM.step_toGeneric`, `Cslib.WordRAM.run_toGeneric`,
+  `Cslib.WordRAM.executes_toGeneric_iff`: the generic representation has the identical steps,
+  faults, interpreter results and halting executions, with exact instruction counts.
 * `Cslib.WordRAM.executes_iff_exists_run_eq`: the interpreter computes exactly the halting runs.
 * `Cslib.WordRAM.Executes.unique`: output and instruction count are determined by the program,
   the word size and the state.
-* `Cslib.WordRAM.Runs.bounded_init`: from an input that fits, every reachable register and memory
-  cell holds a `w`-bit word.
+* `Cslib.WordRAM.Runs.bounded_init`, `Cslib.WordRAM.Executes.fits_init`: from an input that fits,
+  every reachable register and memory cell, and the output, holds a `w`-bit word.
 * `Cslib.WordRAM.Executes.mono_width`: a program that does not read the word size halts in the
   same way at every larger word size.
 
@@ -498,7 +511,7 @@ def run (w : ℕ) (p : Program B r) : ℕ → State r → Option (ℕ × ℕ)
 
 section Executes
 
-variable {w : ℕ} {p : Program B r} {s t u : State r} {v v' m n n' : ℕ}
+variable {w : ℕ} {p : Program B r} {s t : State r} {v m n : ℕ}
 
 /-- A state that immediately halts executes in `1` instruction. -/
 theorem Executes.halt (h : step w p s = .halt v) : Executes w p s v 1 :=
@@ -527,67 +540,211 @@ theorem run_succ :
       | .halt v => some (v, 1)
       | .fault => none := rfl
 
-/-- The interpreter only finds halting runs. -/
-theorem Executes.of_run {fuel : ℕ} (h : run w p fuel s = some (v, n)) : Executes w p s v n := by
-  induction fuel generalizing s n with
-  | zero => simp [run] at h
+end Executes
+
+/-! ## The generic RAM representation
+
+Every basis determines a `GenericRAM.Model`. Values, addresses, constants and the configuration
+are natural numbers, with the configuration interpreted as word width. Operations use the original
+basis; equality and unsigned comparison are the tests. Only constants and operation results check
+word fit, exactly as in `Op.eval`; existing values and control labels remain unchecked. Address
+extraction is the identity, including on arbitrary initial states.
+
+The representation preserves each step, including faults, and every fuel-bounded result and exact
+instruction count. It imposes no validity assumptions on word-RAM states. The interpreter
+properties of `run` and `Executes` are proved once, for `GenericRAM`, and transported along it. -/
+
+/-- Natural word values and addresses, with exactly the existing word-RAM checking policy.
+The test symbols are `some false` for equality, `some true` for unsigned comparison, and `none`
+for an unconditionally faulting nullary test used to translate `Instr.rand` under deterministic
+execution. -/
+abbrev Basis.genericModel (B : Basis) : GenericRAM.Model where
+  Value := ℕ
+  Address := ℕ
+  Config := ℕ
+  Const := ℕ
+  operations := B.toSignature
+  tests := ⟨Option Bool, fun | some _ => 2 | none => 0⟩
+  constant _ c := some c
+  evalOp w f args := B.interp w f args
+  evalTest _
+    | some f, args => some (if f then decide (args 0 < args 1) else decide (args 0 = args 1))
+    | none, _ => none
+  admissible w v := decide (Fits w v)
+  address _ v := some v
+  validMove _ _ := true
+  validPC _ _ := true
+
+/-- Identical registers and memory in the generic representation. -/
+def Data.toGeneric (B : Basis) (x : Data r) : GenericRAM.Data B.genericModel r :=
+  ⟨x.regs, x.mem⟩
+
+/-- Identical control label, registers and memory in the generic representation. -/
+def State.toGeneric (B : Basis) (s : State r) : GenericRAM.State B.genericModel r :=
+  ⟨s.pc, s.data.toGeneric B⟩
+
+/-- Translate an equality or comparison test. -/
+def Cond.toGeneric (B : Basis) : Cond r → GenericRAM.Cond B.genericModel r
+  | .eq i j => .test (some false) ![i, j]
+  | .lt i j => .test (some true) ![i, j]
+
+/-- Translate a data instruction without changing its registers or operation. -/
+def Op.toGeneric : Op B r → GenericRAM.Op B.genericModel r
+  | .const d v => .const d v
+  | .copy d s => .copy d s
+  | .alu f d args => .alu f d args
+  | .load d a => .load d a
+  | .store a s => .store a s
+
+/-- Translate an instruction without changing its control labels. -/
+def Instr.toGeneric : Instr B r → GenericRAM.Instr B.genericModel r
+  | .op o => .op o.toGeneric
+  | .jump t => .jump t
+  | .branch c t => .branch (c.toGeneric B) t
+  | .halt i => .halt i
+  | .rand _ _ => .branch (.test none Fin.elim0) 0
+
+/-- Instruction-for-instruction translation to the generic core. -/
+def Program.toGeneric (p : Program B r) : GenericRAM.Program B.genericModel r :=
+  p.map Instr.toGeneric
+
+/-- Translation preserves the number of instructions. -/
+theorem Program.length_toGeneric (p : Program B r) : p.toGeneric.length = p.length :=
+  List.length_map _
+
+/-- Translate a step outcome without changing its meaning. -/
+def Outcome.toGeneric (B : Basis) : Outcome r → GenericRAM.Outcome B.genericModel r
+  | .next s => .next (s.toGeneric B)
+  | .halt v => .halt v
+  | .fault => .fault
+
+/-- Data instructions preserve success and failure, even on unbounded initial data. -/
+theorem Op.eval_toGeneric (o : Op B r) (w : ℕ) (x : Data r) :
+    o.toGeneric.eval w (x.toGeneric B) = (o.eval w x).map (Data.toGeneric B) := by
+  cases o with
+  | alu f d args =>
+    change (B.interp w f (x.regs ∘ args)).bind _ = ((B.interp w f (x.regs ∘ args)).bind _).map _
+    cases B.interp w f (x.regs ∘ args) with
+    | none => rfl
+    | some v =>
+      by_cases h : Fits w v <;> simp [Basis.genericModel, GenericRAM.Data.put, Data.put, h,
+        Data.toGeneric, Data.set, GenericRAM.Data.set]
+  | _ =>
+    simp [Op.toGeneric, GenericRAM.Op.eval, Basis.genericModel, GenericRAM.Data.put,
+      GenericRAM.Data.move, Op.eval, Data.put, Data.toGeneric, Data.set, Data.write,
+      GenericRAM.Data.set, GenericRAM.Data.write]
+
+/-- Tests have precisely the original truth value and never fail. -/
+theorem Cond.eval_toGeneric (c : Cond r) (w : ℕ) (x : Data r) :
+    (c.toGeneric B).eval w (x.toGeneric B) = some (decide (c.Holds x)) := by
+  cases c <;> rfl
+
+/-- **Exact step correspondence**, including faults and arbitrary initial states. -/
+theorem step_toGeneric (w : ℕ) (p : Program B r) (s : State r) :
+    GenericRAM.step w p.toGeneric (s.toGeneric B) = (step w p s).toGeneric B := by
+  simp only [GenericRAM.step, State.toGeneric, Basis.genericModel,
+    ↓reduceIte, Program.toGeneric, List.getElem?_map]
+  cases hp : p[s.pc]? with
+  | none => simp [step, hp, Outcome.toGeneric]
+  | some i =>
+    cases i with
+    | op o =>
+      simp only [Option.map_some, Instr.toGeneric, Op.eval_toGeneric]
+      cases ho : o.eval w s.data <;>
+        simp [step, hp, ho, GenericRAM.Outcome.continue, Basis.genericModel, Outcome.toGeneric,
+          State.toGeneric]
+    | jump t =>
+      simp [Instr.toGeneric, step, hp, GenericRAM.Outcome.continue, Basis.genericModel,
+        Outcome.toGeneric, State.toGeneric]
+    | branch c t =>
+      simp [Instr.toGeneric, Cond.eval_toGeneric, step, hp, GenericRAM.Outcome.continue,
+        Basis.genericModel, Outcome.toGeneric, State.toGeneric]
+    | halt i => simp [Instr.toGeneric, step, hp, Outcome.toGeneric, Data.toGeneric]
+    | rand _ _ =>
+      simp [Instr.toGeneric, step, hp, GenericRAM.Cond.eval, Basis.genericModel, Outcome.toGeneric]
+
+/-- The interpreter returns exactly the original output and instruction count at every fuel. -/
+theorem run_toGeneric (w : ℕ) (p : Program B r) (fuel : ℕ) (s : State r) :
+    GenericRAM.run w p.toGeneric fuel (s.toGeneric B) = run w p fuel s := by
+  induction fuel generalizing s with
+  | zero => rfl
   | succ fuel ih =>
-    rw [run_succ] at h
-    split at h
-    · next t ht =>
-      obtain ⟨⟨v', k⟩, hk, hvn⟩ := Option.map_eq_some_iff.1 h
-      simp only [Prod.mk.injEq] at hvn
-      obtain ⟨rfl, rfl⟩ := hvn
-      exact (ih hk).head ht
-    · next v' hv =>
-      simp only [Option.some.injEq, Prod.mk.injEq] at h
-      obtain ⟨rfl, rfl⟩ := h
-      exact .halt hv
-    · simp at h
+    rw [GenericRAM.run_succ, step_toGeneric, run_succ]
+    cases hs : step w p s <;> simp [Outcome.toGeneric, ih]
+
+/-- Distinct states have distinct generic representations. -/
+theorem State.toGeneric_injective (B : Basis) : Function.Injective (State.toGeneric (r := r) B) :=
+  fun ⟨_, _, _⟩ ⟨_, _, _⟩ h => by
+    simp only [State.toGeneric, Data.toGeneric, GenericRAM.State.mk.injEq,
+      GenericRAM.Data.mk.injEq] at h
+    obtain ⟨rfl, rfl, rfl⟩ := h
+    rfl
+
+/-- A single transition corresponds exactly. -/
+theorem next_toGeneric_iff {w : ℕ} {p : Program B r} {s t : State r} :
+    GenericRAM.Next w p.toGeneric (s.toGeneric B) (t.toGeneric B) ↔ Next w p s t := by
+  unfold GenericRAM.Next Next
+  rw [step_toGeneric]
+  cases step w p s with
+  | next u =>
+    exact ⟨fun h => congrArg Outcome.next (State.toGeneric_injective B
+      (GenericRAM.Outcome.next.inj h)), fun h => by rw [Outcome.next.inj h]; rfl⟩
+  | halt => exact ⟨nofun, nofun⟩
+  | fault => exact ⟨nofun, nofun⟩
+
+/-- Runs correspond exactly, with the same number of steps. Every generic state of the model is
+the representation of a word-RAM state with the same fields. -/
+theorem runs_toGeneric_iff {w : ℕ} {p : Program B r} {s t : State r} {m : ℕ} :
+    GenericRAM.Runs w p.toGeneric (s.toGeneric B) (t.toGeneric B) m ↔ Runs w p s t m :=
+  ⟨fun h => h.map (fun g : GenericRAM.State B.genericModel r =>
+      (⟨g.pc, ⟨g.data.regs, g.data.mem⟩⟩ : State r)) fun _ _ hg => next_toGeneric_iff.1 hg,
+    fun h => h.map (State.toGeneric B) fun _ _ => next_toGeneric_iff.2⟩
+
+/-- Halting executions agree in both directions, with the exact same instruction count. -/
+theorem executes_toGeneric_iff {w : ℕ} {p : Program B r} {s : State r} {v n : ℕ} :
+    GenericRAM.Executes w p.toGeneric (s.toGeneric B) v n ↔ Executes w p s v n := by
+  have halt_iff (t : State r) :
+      GenericRAM.step w p.toGeneric (t.toGeneric B) = .halt v ↔ step w p t = .halt v := by
+    rw [step_toGeneric]
+    cases step w p t <;> simp [Outcome.toGeneric]
+  constructor
+  · rintro ⟨g, m, hr, hg, rfl⟩
+    exact ⟨⟨g.pc, ⟨g.data.regs, g.data.mem⟩⟩, m, runs_toGeneric_iff.1 hr, (halt_iff _).1 hg, rfl⟩
+  · rintro ⟨t, m, hr, ht, rfl⟩
+    exact ⟨t.toGeneric B, m, runs_toGeneric_iff.2 hr, (halt_iff t).2 ht, rfl⟩
+
+section Executes
+
+variable {w : ℕ} {p : Program B r} {s : State r} {v v' n n' : ℕ}
+
+/-- The interpreter computes exactly the halting runs. -/
+theorem executes_iff_exists_run_eq : Executes w p s v n ↔ ∃ fuel, run w p fuel s = some (v, n) := by
+  rw [← executes_toGeneric_iff, GenericRAM.executes_iff_exists_run_eq]
+  simp only [run_toGeneric]
+
+/-- The interpreter only finds halting runs. -/
+theorem Executes.of_run {fuel : ℕ} (h : run w p fuel s = some (v, n)) : Executes w p s v n :=
+  executes_iff_exists_run_eq.2 ⟨fuel, h⟩
 
 /-- A halting run of `n` instructions is found by the interpreter with `n` steps of fuel. -/
-theorem Executes.run_eq (h : Executes w p s v n) : run w p n s = some (v, n) := by
-  obtain ⟨t, m, hr, ht, rfl⟩ := h
-  induction hr using Relation.RelatesInSteps.head_induction_on with
-  | hrefl => simp [run_succ, ht]
-  | hhead hsc _ ih =>
-    rw [run_succ, show step w p _ = .next _ from hsc]
-    dsimp only
-    rw [ih]
-    rfl
+theorem Executes.run_eq (h : Executes w p s v n) : run w p n s = some (v, n) :=
+  run_toGeneric w p n s ▸ (executes_toGeneric_iff.2 h).run_eq
 
 /-- More fuel does not change a result of the interpreter. -/
 theorem run_mono {fuel fuel' : ℕ} {vn : ℕ × ℕ} (h : run w p fuel s = some vn)
     (hle : fuel ≤ fuel') : run w p fuel' s = some vn := by
-  induction fuel generalizing s fuel' vn with
-  | zero => simp [run] at h
-  | succ fuel ih =>
-    obtain ⟨fuel', rfl⟩ : ∃ k, fuel' = k + 1 := ⟨fuel' - 1, by omega⟩
-    rw [run_succ] at h ⊢
-    split at h
-    · obtain ⟨vn', hk, rfl⟩ := Option.map_eq_some_iff.1 h
-      rw [ih hk (by omega)]
-      rfl
-    · exact h
-    · simp at h
-
-/-- The interpreter computes exactly the halting runs. -/
-theorem executes_iff_exists_run_eq : Executes w p s v n ↔ ∃ fuel, run w p fuel s = some (v, n) :=
-  ⟨fun h => ⟨n, h.run_eq⟩, fun ⟨_, h⟩ => .of_run h⟩
+  rw [← run_toGeneric] at h ⊢
+  exact GenericRAM.run_mono h hle
 
 /-- A halting run is determined by the program, the word size and the state: its output and its
 number of instructions are unique. -/
 theorem Executes.unique (h : Executes w p s v n) (h' : Executes w p s v' n') :
-    v = v' ∧ n = n' := by
-  have := (run_mono h.run_eq (le_max_left n n')).symm.trans (run_mono h'.run_eq (le_max_right n n'))
-  simpa using this
+    v = v' ∧ n = n' :=
+  (executes_toGeneric_iff.2 h).unique (executes_toGeneric_iff.2 h')
 
 /-- A state from which the step faults has no halting run. -/
-theorem not_executes_of_fault (h : step w p s = .fault) : ¬Executes w p s v n := by
-  intro he
-  have hr := he.run_eq
-  obtain ⟨k, rfl⟩ := Nat.exists_eq_succ_of_ne_zero he.pos.ne'
-  simp [run_succ, h] at hr
+theorem not_executes_of_fault (h : step w p s = .fault) : ¬Executes w p s v n := fun he =>
+  GenericRAM.not_executes_of_fault (by rw [step_toGeneric, h]; rfl) (executes_toGeneric_iff.2 he)
 
 end Executes
 
@@ -629,6 +786,11 @@ instance (w : ℕ) (input : List ℕ) : Decidable (InputFits w input) :=
 theorem InputFits.mono {w w' : ℕ} {input : List ℕ} (h : InputFits w input) (hw : w ≤ w') :
     InputFits w' input :=
   ⟨h.1.mono hw, fun v hv => (h.2 v hv).mono hw⟩
+
+/-- The input convention is an explicit generic initialization, with no charged work. -/
+theorem Data.toGeneric_init (B : Basis) (input : List ℕ) :
+    (Data.init input : Data r).toGeneric B = GenericRAM.Data.init (M := B.genericModel) 0
+      (fun a => if a = 0 then input.length else input.getD (a - 1) 0) := rfl
 
 /-! ## Word bounds
 
@@ -703,6 +865,21 @@ theorem Runs.bounded {w : ℕ} {p : Program B r} {s t : State r} {n : ℕ} (h : 
 theorem Runs.bounded_init {w : ℕ} {p : Program B r} {input : List ℕ} {t : State r} {n : ℕ}
     (h : Runs w p (State.init input) t n) (hi : InputFits w input) : t.data.Bounded w :=
   h.bounded (Data.Bounded.init hi)
+
+/-- A halting run from an input that fits returns a `w`-bit word. -/
+theorem Executes.fits_init {w : ℕ} {p : Program B r} {input : List ℕ} {v n : ℕ}
+    (h : Executes w p (State.init input) v n) (hi : InputFits w input) : Fits w v := by
+  obtain ⟨t, m, hr, ht, rfl⟩ := h
+  have hb := hr.bounded_init hi
+  cases hpc : p[t.pc]? with
+  | none => simp [step, hpc] at ht
+  | some i =>
+    cases i with
+    | op o => simp only [step, hpc] at ht; split at ht <;> cases ht
+    | jump => simp [step_jump hpc] at ht
+    | branch => simp [step_branch hpc] at ht
+    | halt i => rw [step_halt hpc] at ht; cases ht; exact hb.1 i
+    | rand => simp [step_rand hpc] at ht
 
 /-! ## Larger word sizes
 

@@ -419,7 +419,7 @@ theorem replace_indexed_labels {pair : SamplablePair} {gap : ℕ → ℝ} (hpair
     adversary n i (front ++ suffix)
   have htest : IsPPTOn (encPair (encPair encUnary encUnary)
       (encPair (encList encBits) (encPair encBits encBits)))
-      encBool (fun input => test input.1.1 input.1.2 input.2) := by
+      encBool (fun ((n, i), middle) => test n i middle) := by
     dsimp only [test]
     apply IsPPTOn.bind_with (left := encBits) (by fun_prop)
     apply IsPPTOn.bind_with (left := encBits) (by fun_prop)
@@ -488,7 +488,7 @@ theorem SamplablePair.HasGap.extract_indexed_three {pair : SamplablePair} {gap :
             conditionalEntropy (pair.joint n)))
     (test : ℕ → ℕ → List Bool → ProbComp Bool)
     (htest : IsPPTOn (encPair (encPair encUnary encUnary) encBits)
-      encBool (fun input => test input.1.1 input.1.2 input.2)) :
+      encBool (fun ((n, i), word) => test n i word)) :
     let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
     Negligible (fun n => Game.advantage
       (ProbComp.eval (ThreeSource.extract (count n) (saved.length n) (bound n)

@@ -111,7 +111,8 @@ theorem eval_extractMatrixLabels {Observation Label : Type} (inputBits outputBit
         (fun seed labels => LinearHash.hash (blocksEquiv (m := outputBits) (k := inputBits) seed)
           (ofList inputBits (prepare labels))) samples)).map
             (fun result =>
-              (result.1, List.ofFn (extractedSeed result), List.ofFn (extractedDigest result))) := by
+              (result.1, List.ofFn (extractedSeed result),
+                List.ofFn (extractedDigest result))) := by
   have hrow (word : List Bool) : listRow inputBits 0 word =
       List.ofFn (ofList inputBits word) :=
     listRow_eq_ofFn inputBits (0 : Fin 1) word

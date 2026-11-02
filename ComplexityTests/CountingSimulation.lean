@@ -130,6 +130,16 @@ theorem max_le_two_pow_two_pow (n : ℕ) : max n 2 ≤ 2 ^ 2 ^ n :=
       _ ≤ 2 ^ 2 ^ n :=
         Nat.pow_le_pow_right (by norm_num) (Nat.pow_le_pow_right (by norm_num) (Nat.zero_le n)))
 
+/-- The central theorem returns both the exact padded clock and the full count, before any
+comparison or other postprocessing. -/
+example : ∃ C d : ℕ, ComputableInO
+    (fun x : List Bool => (paddedTime (1 * 2 ^ 2 ^ x.length),
+      2 ^ paddedTime (1 * 2 ^ 2 ^ x.length))) encBits (encPair encUnary encNat)
+    (fun x => 2 ^ (C * 2 ^ 2 ^ x.length / Nat.sqrt (Nat.log 2 (2 ^ 2 ^ x.length))))
+    (fun x => (2 ^ 2 ^ x.length) ^ d) :=
+  exists_computableInO_countPair toyFamily toyContraction (fun _ _ => le_rfl)
+    Cslib.Complexity.timeConstructible_two_pow_two_pow max_le_two_pow_two_pow le_rfl
+
 /-- With the toy interfaces and the time-constructible `T n = 2 ^ 2 ^ n ≥ max n 2`, the count at
 the padded clock is computable within time `2 ^ O(T / √(log T))` and space `T ^ O(1)`. -/
 example : ∃ C d : ℕ, ComputableInO
@@ -139,7 +149,7 @@ example : ∃ C d : ℕ, ComputableInO
   exists_computableInO_count toyFamily toyContraction (fun _ _ => le_rfl)
     Cslib.Complexity.timeConstructible_two_pow_two_pow
     max_le_two_pow_two_pow
-    le_rfl (rule := Prod.snd) (by fun_prop)
+    le_rfl
 
 /-- The strict-majority comparison `2 ^ τ < 2 * count` used for `BPTIME` and `PPTIME` is a
 polynomial-time rule because the padded time is passed in unary. On the toy family every string
@@ -149,7 +159,7 @@ example : ∃ C d : ℕ, ComputableInO
       2 * 2 ^ paddedTime (1 * 2 ^ 2 ^ x.length))) encBits encBool
     (fun x => 2 ^ (C * 2 ^ 2 ^ x.length / Nat.sqrt (Nat.log 2 (2 ^ 2 ^ x.length))))
     (fun x => (2 ^ 2 ^ x.length) ^ d) :=
-  exists_computableInO_count toyFamily toyContraction (fun _ _ => le_rfl)
+  exists_computableInO_countWith toyFamily toyContraction (fun _ _ => le_rfl)
     Cslib.Complexity.timeConstructible_two_pow_two_pow
     max_le_two_pow_two_pow
     le_rfl (rule := fun p => decide (2 ^ p.1 < 2 * p.2)) (by fun_prop)

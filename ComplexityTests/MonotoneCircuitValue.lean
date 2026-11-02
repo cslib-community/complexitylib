@@ -55,9 +55,9 @@ example : ComputableInLogSpace id (encFramed encBits) encBits := by
     omega
   refine copySpec.computableInLogSpace (fun w => by
     simp [CircuitValue.WriterSpec.output, copySpec])
-    (.of_tidy (ComputableTidilyInSpace.budget_const (encB := encNat) 0 hin))
-    (.of_tidy (ComputableTidilyInSpace.budget_const (encB := encBits) [] hin))
-    (.of_tidy (ComputableTidilyInSpace.budget_const (encB := encBits) [] hin)) ?_
+    (ComputableInSpace.budget_const (encB := encNat) 0 hin)
+    (ComputableInSpace.budget_const (encB := encBits) [] hin)
+    (ComputableInSpace.budget_const (encB := encBits) [] hin) ?_
   change PolynomiallyBounded fun _ : ℕ => 0
   fun_prop
 

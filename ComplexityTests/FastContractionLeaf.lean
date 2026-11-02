@@ -53,10 +53,11 @@ def ctx : PacketCtx where
   ζ := [0]
 
 /-- A packet vertex with a row port in slot `0` and a column port in slot `1`. -/
-def packetVertex : List ℕ × VertexDesc := ([0, 1], .inr (ctx, [(true, 0), (false, 1)], [0, 0]))
+def packetVertex : List ℕ × VertexDesc (List ℕ) :=
+  ([0, 1], .inr (ctx, [(true, 0), (false, 1)], [0, 0]))
 
 /-- A call at scale `4` and precision `1` whose network is the packet vertex alone. -/
-def packetCall : Call := ((4, 1, 3, 1, [1], 0), ⟨2, [packetVertex]⟩)
+def packetCall : Call (List ℕ) := ((4, 1, 3, 1, [1], 0), ⟨2, [packetVertex]⟩)
 
 -- The packet vertex has one row port, and at most `2 ⬝ 1` target modes.
 example : packetVertex.2.rowPorts [true, false] = 1 := by decide

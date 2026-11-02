@@ -281,8 +281,8 @@ theorem mem_varGroupList_iff_mem_varGroup {n Q r : ℕ} {varSchedules : List (Li
 `c_e = copyIdx` and `u_e = y`. -/
 def copyEmbedExec {K : Type*} [AddCommMonoid K] (placements : List (ℕ × ℕ)) (incVars : List ℕ)
     (x : ℕ → K) (copyIdx y : ℕ) : K :=
-  ((placements.zip incVars).map fun item =>
-    if item.1.1 = copyIdx ∧ item.1.2 = y then x item.2 else 0).sum
+  ((placements.zip incVars).map fun ((c, u), v) =>
+    if c = copyIdx ∧ u = y then x v else 0).sum
 
 /-- Pull back a single auxiliary measurement row `auxRow : List ℤ` in copy `copyIdx` to a length-`n`
 integer row over the original variables (`(π_{copyIdx} ι)^⊤ auxRow`), pairing `placements` with
@@ -290,8 +290,8 @@ integer row over the original variables (`(π_{copyIdx} ι)^⊤ auxRow`), pairin
 def pullbackMeasurementRow (n : ℕ) (placements : List (ℕ × ℕ)) (incVars : List ℕ)
     (copyIdx : ℕ) (auxRow : List ℤ) : List ℤ :=
   (List.range n).map fun v =>
-    ((placements.zip incVars).map fun item =>
-      if item.1.1 = copyIdx ∧ item.2 = v then auxRow.getD item.1.2 0 else 0).sum
+    ((placements.zip incVars).map fun ((c, u), v') =>
+      if c = copyIdx ∧ v' = v then auxRow.getD u 0 else 0).sum
 
 /-- Pull back a block measurement matrix `blockMeas : List (List ℤ)` across `h` copies to form the
 `(h * blockMeas.length) × n` integer matrix `Ĉ = C̃ ι` of equation `(4.15)` in [OpenAI2026ETH]. -/
@@ -317,8 +317,8 @@ def pullbackReplacementRow (n R : ℕ) (placements : List (ℕ × ℕ)) (incVars
   let pe := placements.getD e (0, 0)
   let uRow := blockRepl.getD pe.2 []
   Cslib.tabulateTable n R fun v k =>
-    ((placements.zip incVars).map fun item =>
-      if item.1.1 = pe.1 ∧ item.2 = v then Cslib.rowEntry uRow item.1.2 k else 0).sum
+    ((placements.zip incVars).map fun ((c, u), v') =>
+      if c = pe.1 ∧ v' = v then Cslib.rowEntry uRow u k else 0).sum
 
 /-! ### Dimensions, `IsTableShape` certificates, slices, and sum-over-zip helpers -/
 
@@ -496,7 +496,7 @@ theorem sum_pullbackMeasurementRow_mul {K : Type*} [CommRing K]
             then (auxRow.getD (placements.getD e (0, 0)).2 0 : K) * x v else 0 := by
       rw [pullbackMeasurementRow, List.getD_map_range _ 0 (Finset.mem_range.mp hv),
         Int.cast_list_sum, List.map_map, Function.comp_def, sum_map_zip (0, 0) 0, Finset.sum_mul]
-      exact Finset.sum_congr rfl fun e _ => by split_ifs <;> simp
+      exact Finset.sum_congr rfl fun e _ => by dsimp only; split_ifs <;> simp
     rw [Finset.sum_congr rfl hterm, Finset.sum_comm]; refine Finset.sum_congr rfl fun e he => ?_
     rw [Finset.sum_eq_single (incVars.getD e 0)
       (fun _ _ hne => ite_eq_right fun ⟨_, hv_eq⟩ => hne hv_eq.symm)
@@ -512,7 +512,7 @@ theorem sum_pullbackMeasurementRow_mul {K : Type*} [CommRing K]
             (placements.getD e (0, 0)).2 = y then
             (auxRow.getD y 0 : K) * x (incVars.getD e 0) else 0 := by
       rw [copyEmbedExec, sum_map_zip (0, 0) 0, Finset.mul_sum]
-      exact Finset.sum_congr rfl fun _ _ => by split_ifs <;> simp
+      exact Finset.sum_congr rfl fun _ _ => by dsimp only; split_ifs <;> simp
     rw [Finset.sum_congr rfl hterm, Finset.sum_comm]; refine Finset.sum_congr rfl fun e he => ?_
     rw [Finset.sum_eq_single (placements.getD e (0, 0)).2
       (fun _ _ hne => ite_eq_right fun ⟨_, hy_eq⟩ => hne hy_eq.symm)
@@ -645,13 +645,13 @@ theorem getD_zero_pullbackReplacementRow {n R : ℕ} {placements : List (ℕ × 
       if v = incVars.getD e 0 then d_den else 0 := by
   rw [pullbackReplacementRow, Cslib.rowEntry_tabulateTable_of_lt _ hv hR, sum_map_zip (0, 0) 0,
     Finset.sum_eq_single e]
-  · rw [hzero _ (getD_mem_of_lt (0, 0) (Nat.lt_min.mp he).1)]
+  · dsimp only; rw [hzero _ (getD_mem_of_lt (0, 0) (Nat.lt_min.mp he).1)]
     by_cases hv_eq : v = incVars.getD e 0
     · subst hv_eq; simp
     · rw [ite_eq_right (fun h => hv_eq h.2.symm), ite_eq_right hv_eq]
   · intro i hi hne
     have hi_pl := (Nat.lt_min.mp (Finset.mem_range.mp hi)).1; have he_pl := (Nat.lt_min.mp he).1
-    rw [hzero _ (getD_mem_of_lt (0, 0) hi_pl)]
+    dsimp only; rw [hzero _ (getD_mem_of_lt (0, 0) hi_pl)]
     split_ifs with hc hu
     · have heq_p : placements.getD i (0, 0) = placements.getD e (0, 0) := Prod.ext hc.1 hu.symm
       rw [List.getD_eq_getElem _ _ hi_pl, List.getD_eq_getElem _ _ he_pl] at heq_p
@@ -717,7 +717,7 @@ theorem sum_abs_pullbackMeasurementRow_le {n D : ℕ} {placements : List (ℕ ×
       rw [pullbackMeasurementRow, List.getD_map_range _ 0 (Finset.mem_range.mp hv),
         sum_map_zip (0, 0) 0]
       exact (Finset.abs_sum_le_sum_abs _ _).trans
-        (le_of_eq (Finset.sum_congr rfl fun _ _ => by split_ifs <;> simp))
+        (le_of_eq (Finset.sum_congr rfl fun _ _ => by dsimp only; split_ifs <;> simp))
     refine (Finset.sum_le_sum hv_le).trans ?_; rw [Finset.sum_comm]
     refine Finset.sum_le_sum fun e _ => ?_
     rcases lt_or_ge (incVars.getD e 0) n with hv_lt | hv_ge
@@ -958,6 +958,7 @@ theorem copyEmbedExec_eq_zero_of_ne_group {K : Type*} [AddCommMonoid K]
   rw [copyEmbedExec, sum_map_zip (0, 0) 0]
   refine Finset.sum_eq_zero fun e he => ?_
   have he' := Finset.mem_range.mp he
+  dsimp only
   split_ifs with hmatch
   · exact hsupp _ (hinc _ (getD_mem_of_lt 0 (Nat.lt_min.mp he').2)) fun hmem =>
       hne ((hcompat e he' (Prod.ext hmatch.1 hmatch.2)).symm.trans (mem_varGroupList.mp hmem).2)
@@ -1018,13 +1019,14 @@ theorem copyEmbedExec_ofFn_eq_copyProj_copyEmbed {M n h Q r : ℕ} {K : Type*} [
     {code : Cslib.LinearAlgebra.AuxLabel Q r → ℕ} (hcode : Function.Injective code)
     (x : Fin n → K) (xExec : ℕ → K) (hx : ∀ v : Fin n, xExec v.1 = x v)
     (c : Fin h) (u : Cslib.LinearAlgebra.AuxLabel Q r) :
-    copyEmbedExec (List.ofFn fun e => ((place e).1.1, code (place e).2))
+    copyEmbedExec (List.ofFn fun e => ((place e).1.val, code (place e).2))
         (List.ofFn fun e => (varOf e).1) xExec c.1 (code u) =
       Cslib.LinearAlgebra.copyProj c (Cslib.LinearAlgebra.copyEmbed place varOf x) u := by
   classical
   rw [copyEmbedExec, sum_map_zip_ofFn (0, 0) 0, Cslib.LinearAlgebra.copyProj,
     Cslib.LinearAlgebra.copyEmbed, Finset.sum_filter]
   refine Finset.sum_congr rfl fun e _ => ?_
+  dsimp only
   have hiff : ((place e).1.1 = c.1 ∧ code (place e).2 = code u) ↔ place e = (c, u) := by
     rw [Prod.ext_iff, Fin.ext_iff, hcode.eq_iff]
   by_cases hp : place e = (c, u)
@@ -1041,13 +1043,14 @@ theorem getD_pullbackMeasurementRow_ofFn_eq_varMeasurementMatrix {M n h Q r A₀
     (hrow : ∀ u : Cslib.LinearAlgebra.AuxLabel Q r,
       auxRow.getD (code u) 0 = Cslib.LinearAlgebra.measurementMatrix Q r A₀ R ℤ β u)
     (v : Fin n) :
-    (pullbackMeasurementRow n (List.ofFn fun e => ((place e).1.1, code (place e).2))
+    (pullbackMeasurementRow n (List.ofFn fun e => ((place e).1.val, code (place e).2))
         (List.ofFn fun e => (varOf e).1) c.1 auxRow).getD v.1 0 =
       Cslib.LinearAlgebra.varMeasurementMatrix Q r A₀ R ℤ place varOf (c, β) v := by
   classical
   rw [pullbackMeasurementRow, List.getD_map_range _ 0 v.2, sum_map_zip_ofFn (0, 0) 0,
     Cslib.LinearAlgebra.varMeasurementMatrix, Finset.sum_filter]
   refine Finset.sum_congr rfl fun e _ => ?_
+  dsimp only
   have hiff : ((place e).1.1 = c.1 ∧ (varOf e).1 = v.1) ↔ ((place e).1 = c ∧ varOf e = v) := by
     simp only [Fin.ext_iff]
   by_cases hm : (place e).1 = c ∧ varOf e = v
@@ -1066,7 +1069,7 @@ theorem getD_pullbackReplacementRow_ofFn_eq_coeffsBelow_varReplacementRowScaledI
       Cslib.rowEntry (blockRepl.getD (code (place e).2) []) (code y) k =
         (Cslib.LinearAlgebra.auxReplacementRowScaledInt Q r A₀ R (place e).2 y).coeff k)
     (v : Fin n) :
-    (pullbackReplacementRow n R (List.ofFn fun i => ((place i).1.1, code (place i).2))
+    (pullbackReplacementRow n R (List.ofFn fun i => ((place i).1.val, code (place i).2))
         (List.ofFn fun i => (varOf i).1) e.1 blockRepl).getD v.1 [] =
       (Cslib.LinearAlgebra.varReplacementRowScaledInt Q r A₀ R place varOf e v).coeffsBelow R := by
   classical
@@ -1079,6 +1082,7 @@ theorem getD_pullbackReplacementRow_ofFn_eq_coeffsBelow_varReplacementRowScaledI
   rw [sum_map_zip_ofFn (0, 0) 0, Cslib.LinearAlgebra.varReplacementRowScaledInt,
     Polynomial.finsetSum_coeff, Finset.sum_filter]
   refine Finset.sum_congr rfl fun i _ => ?_
+  dsimp only
   have hiff : ((place i).1.1 = (place e).1.1 ∧ (varOf i).1 = v.1) ↔
       ((place i).1 = (place e).1 ∧ varOf i = v) := by simp only [Fin.ext_iff]
   by_cases hm : (place i).1 = (place e).1 ∧ varOf i = v
@@ -1098,7 +1102,7 @@ theorem ofCoeffList_pullbackReplacementRow_ofFn_eq_varReplacementRowScaledInt
         (Cslib.LinearAlgebra.auxReplacementRowScaledInt Q r A₀ R (place e).2 y).coeff k)
     (v : Fin n) :
     Polynomial.ofCoeffList
-        ((pullbackReplacementRow n R (List.ofFn fun i => ((place i).1.1, code (place i).2))
+        ((pullbackReplacementRow n R (List.ofFn fun i => ((place i).1.val, code (place i).2))
           (List.ofFn fun i => (varOf i).1) e.1 blockRepl).getD v.1 []) =
       Cslib.LinearAlgebra.varReplacementRowScaledInt Q r A₀ R place varOf e v := by
   rw [getD_pullbackReplacementRow_ofFn_eq_coeffsBelow_varReplacementRowScaledInt place varOf code
@@ -1182,7 +1186,8 @@ private theorem cp_intBin_sum : ComputableInPolyTime List.sum (encList encIntBin
 
 /-- `varGroupList` is computable in polynomial time on `(varSchedules, (t, g))`. -/
 @[fun_prop] theorem computableInPolyTime_varGroupList :
-    ComputableInPolyTime (fun p : List (List ℕ) × (ℕ × ℕ) => varGroupList p.1 p.2.1 p.2.2)
+    ComputableInPolyTime
+      (fun ((varSchedules, t, g) : List (List ℕ) × (ℕ × ℕ)) => varGroupList varSchedules t g)
       (encPair (encList (encList encNat)) (encPair encNat encNat)) (encList encNat) := by fun_prop
 
 private theorem ite_eq_and_intBin {Q : Type} {encQ : Q ↪ List Bool} {a₁ a₂ b₁ b₂ : Q → ℕ}
@@ -1224,8 +1229,9 @@ private theorem ite_eq_and_intBin {Q : Type} {encQ : Q ↪ List Bool} {a₁ a₂
 /-- `pullbackMeasurementRow` is computable in polynomial time with `n` in `encUnary`. -/
 @[fun_prop] theorem computableInPolyTime_pullbackMeasurementRow :
     ComputableInPolyTime
-      (fun p : ℕ × (List (ℕ × ℕ) × (List ℕ × (ℕ × List ℤ))) =>
-        pullbackMeasurementRow p.1 p.2.1 p.2.2.1 p.2.2.2.1 p.2.2.2.2)
+      (fun ((n, placements, incVars, copyIdx, auxRow) :
+          ℕ × (List (ℕ × ℕ) × (List ℕ × (ℕ × List ℤ)))) =>
+        pullbackMeasurementRow n placements incVars copyIdx auxRow)
       (encPair encUnary (encPair (encList (encPair encNat encNat))
         (encPair (encList encNat) (encPair encNat (encList encIntBin)))))
       (encList encIntBin) := by fun_prop
@@ -1254,8 +1260,9 @@ unary). -/
 /-- `pullbackMeasurementMatrix` is computable in polynomial time with `(n, h)` in `encUnary`. -/
 @[fun_prop] theorem computableInPolyTime_pullbackMeasurementMatrix :
     ComputableInPolyTime
-      (fun p : (ℕ × ℕ) × (List (ℕ × ℕ) × (List ℕ × List (List ℤ))) =>
-        pullbackMeasurementMatrix p.1.1 p.1.2 p.2.1 p.2.2.1 p.2.2.2)
+      (fun (((n, h), placements, incVars, blockMeas) :
+          (ℕ × ℕ) × (List (ℕ × ℕ) × (List ℕ × List (List ℤ)))) =>
+        pullbackMeasurementMatrix n h placements incVars blockMeas)
       (encPair (encPair encUnary encUnary) (encPair (encList (encPair encNat encNat))
         (encPair (encList encNat) (encList (encList encIntBin)))))
       (encList (encList encIntBin)) := by fun_prop
@@ -1315,8 +1322,9 @@ unary). -/
 /-- `pullbackReplacementRow` is computable in polynomial time with `(n, R)` in `encUnary`. -/
 @[fun_prop] theorem computableInPolyTime_pullbackReplacementRow :
     ComputableInPolyTime
-      (fun p : (ℕ × ℕ) × (List (ℕ × ℕ) × (List ℕ × (ℕ × List (List (List ℤ))))) =>
-        pullbackReplacementRow p.1.1 p.1.2 p.2.1 p.2.2.1 p.2.2.2.1 p.2.2.2.2)
+      (fun (((n, R), placements, incVars, e, blockRepl) :
+          (ℕ × ℕ) × (List (ℕ × ℕ) × (List ℕ × (ℕ × List (List (List ℤ)))))) =>
+        pullbackReplacementRow n R placements incVars e blockRepl)
       (encPair (encPair encUnary encUnary) (encPair (encList (encPair encNat encNat))
         (encPair (encList encNat) (encPair encNat (encList (encList (encList encIntBin)))))))
       (encList (encList encIntBin)) := by fun_prop

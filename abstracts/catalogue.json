@@ -70,6 +70,20 @@
       "namespace": "ComplexityTests.Abstracts.USTCONAbstract"
     },
     {
+      "id": "primes",
+      "title": "Agrawal–Kayal–Saxena: PRIMES is in P",
+      "module": "ComplexityAbstracts.PrimesAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.PrimesAbstract.primes_mem_P"
+      ],
+      "summary": "Primality of a natural number given in binary is decidable in deterministic polynomial time.",
+      "scope": "Binary digits least significant first, and native multi-tape P with polynomial time and space; the library decider is the AKS algorithm with integer thresholds on the word RAM, simulated by a Turing machine; no exponent is stated.",
+      "foundations": [
+        "ComplexityAbstracts.Encoding",
+        "ComplexityAbstracts.Computation"
+      ]
+    },
+    {
       "id": "immerman-szelepcsenyi",
       "title": "Immerman–Szelepcsényi: nondeterministic space is closed under complement",
       "module": "ComplexityAbstracts.ImmermanSzelepcsenyiAbstract",
@@ -104,6 +118,20 @@
       "summary": "Every problem in the polynomial hierarchy is decidable in polynomial time with an exact counting oracle.",
       "scope": "Witness counts and oracle bit answers are explicit; correctness holds for every extension of valid oracle answers.",
       "namespace": "ComplexityTests.Abstracts.TodaAbstract",
+      "foundations": [
+        "ComplexityAbstracts.Encoding",
+        "ComplexityAbstracts.Computation"
+      ]
+    },
+    {
+      "id": "bqp-pp",
+      "title": "Adleman–DeMarrais–Huang: BQP is contained in PP",
+      "module": "ComplexityAbstracts.BQPAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.BQPAbstract.BQP_subset_PP"
+      ],
+      "summary": "Every problem decided with bounded error by a polynomial-time uniform family of quantum circuits is decided by a polynomial-time strict-majority vote over random strings.",
+      "scope": "Explicit amplitude semantics for the fixed gate set {Hadamard, NOT, CNOT, Toffoli}, acceptance by measuring qubit 0 from the zero-padded input, uniformity in polynomial time from n in unary, and native multi-tape PP; equivalence to textbook BQP over arbitrary elementary gates (universality and Solovay–Kitaev) is a cited, unformalized remark.",
       "foundations": [
         "ComplexityAbstracts.Encoding",
         "ComplexityAbstracts.Computation"
@@ -253,6 +281,16 @@
       ],
       "summary": "Two independent weak random sources whose min-entropies add up to more than the string length give a nearly fair bit through the inner product modulo two.",
       "scope": "Arbitrary sources with real min-entropy bounds, the exact bias bound 2^((n - k1 - k2)/2)/2 and its strong form, and sharpness at k1 + k2 = n; information-theoretic, with no running time asserted."
+    },
+    {
+      "id": "schoening",
+      "title": "Schöning: 3-SAT in time (4/3)^n on the randomized word RAM",
+      "module": "ComplexityAbstracts.SchoeningAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.SchoeningAbstract.schoening3SAT"
+      ],
+      "summary": "One fixed randomized word-RAM program runs R = ⌈(3n + 1)(4/3)^n⌉·c independent trials of Schöning's local search on a CNF formula with n variables. It never errs on unsatisfiable formulas, fails with probability exactly (1 - p)^R for the success probability p of one restated trial, and fails on satisfiable 3-CNFs with probability at most e^(-c).",
+      "scope": "Unit-cost randomized word RAM over the standard basis (truncated subtraction, x / 0 = 0, x % 0 = x; unit-cost uniform rand), restated in the abstract, with words of O(log(n + L + c)) bits for input length L. Worst-case time ⌊900 (n + L + 4)^3 (4/3)^n (c + 1)⌋ = O((n + L)^3 (4/3)^n (c + 1)) on every random path. Explicit word encoding of CNF formulas; exact output law; one-sided error. The source's O*((4/3)^n) bound with an explicit polynomial factor, not the PPSZ improvement."
     },
     {
       "id": "subexponential-sat",

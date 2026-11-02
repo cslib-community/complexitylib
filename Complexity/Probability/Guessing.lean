@@ -50,7 +50,7 @@ theorem score_le_uniform_guess (real : PMF (Seed × (Prefix × Suffix))) (seed :
     (score : Seed → Prefix × Suffix → ℝ)
     (hscore : ∀ s z, 0 ≤ score s z ∧ score s z ≤ 1) :
     (∑ pair, (real pair).toReal * score pair.1 pair.2) ≤
-      2 * dist (real.map (fun pair => (pair.1, pair.2.1)))
+      2 * dist (real.map (fun (s, p, _) => (s, p)))
         (seed.bind (fun s => (PMF.uniformOfFintype Prefix).map (s, ·))) +
       Fintype.card Suffix *
         ∑ s, (seed s).toReal * ∑ z,
@@ -65,8 +65,11 @@ theorem score_le_uniform_guess (real : PMF (Seed × (Prefix × Suffix))) (seed :
     (Classical.choose_spec (Finset.exists_max_image Finset.univ
       (fun suffix => score s (initial, suffix)) Finset.univ_nonempty)).2 suffix (Finset.mem_univ _)
   let ideal := seed.bind (fun s => (PMF.uniformOfFintype Prefix).map (s, ·))
+  have hmap : (fun pair : Seed × (Prefix × Suffix) => (pair.1, pair.2.1)) =
+      fun (s, p, _) => (s, p) :=
+    funext fun ⟨_, _, _⟩ => rfl
   have hchange := abs_sum_mul_sub_le
-    (real.map (fun pair => (pair.1, pair.2.1))) ideal best
+    (real.map (fun (s, p, _) => (s, p))) ideal best
     (bound := 1) (fun pair => by
       rw [abs_of_nonneg (hscore _ _).1]
       exact (hscore _ _).2)
@@ -92,8 +95,9 @@ theorem score_le_uniform_guess (real : PMF (Seed × (Prefix × Suffix))) (seed :
     _ ≤ ∑ pair, (real pair).toReal * best (pair.1, pair.2.1) :=
       Finset.sum_le_sum (fun pair _ =>
         mul_le_mul_of_nonneg_left (hbest _ _ _) ENNReal.toReal_nonneg)
-    _ = ∑ pair, ((real.map (fun pair => (pair.1, pair.2.1))) pair).toReal * best pair :=
-      (sum_map_mul _ _ _).symm
+    _ = ∑ pair, ((real.map (fun (s, p, _) => (s, p))) pair).toReal * best pair := by
+      rw [← hmap]
+      exact (sum_map_mul _ _ _).symm
     _ ≤ (∑ pair, (ideal pair).toReal * best pair) + 2 * dist _ ideal := by
       have h := (le_abs_self _).trans hchange
       linarith

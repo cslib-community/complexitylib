@@ -141,8 +141,8 @@ theorem acceptGap_mem_GapP (F : UniformCircuitFamily) :
   have hinner := GapP.sum_bits_mem hT (r := fun p : α × List Bool => h p.1) (by fun_prop)
   have houter := GapP.sum_bits_mem hinner hh
   convert houter using 2 with a
-  rw [ofFn_inputState (F.le_width _)]
-  rfl
+  rw [ofFn_inputState (F.le_width _), acceptGap, onesGap]
+  exact Finset.sum_congr rfl fun π _ => Finset.sum_congr rfl fun π' _ => onesTerm_zero _ _ _ _
 
 /-- **`BQP ⊆ AWPP`** [Fortnow, Rogers][FortnowRogers1999]: the acceptance probability of a uniform
 family is a `GapP` function divided by `2^h`, with `h` computed in polynomial time. -/
@@ -154,8 +154,7 @@ theorem BQP_subset_AWPP : BQP enc ⊆ AWPP enc := by
       have := F.computableInPolyTime_gates
       simp only [hadamardCount_eq_countP]
       fun_prop) (fun a => ?_)
-  have hp := acceptProb_eq_acceptGap (F.width_pos (enc a).length) _
-    (F.wellFormed (enc a).length) (enc a)
+  have hp := acceptProb_eq_acceptGap _ (F.wellFormed (enc a).length) (enc a)
   set g := acceptGap (F.gates (enc a).length)
     (List.ofFn (inputState (F.width (enc a).length) (enc a)))
   set r := hadamardCount (F.gates (enc a).length)

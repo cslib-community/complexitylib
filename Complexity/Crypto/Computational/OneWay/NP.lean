@@ -139,7 +139,8 @@ theorem computableInPolyTime_preimagePrefixVerifier
       encBool := by
   change ComputableInPolyTime
     (fun p : (ℕ × List Bool × List Bool) × List Bool =>
-      decide (p.1.2.2.length ≤ p.1.1) && f (p.1.2.2 ++ p.2.take (p.1.1 - p.1.2.2.length)) == p.1.2.1)
+      decide (p.1.2.2.length ≤ p.1.1) &&
+        f (p.1.2.2 ++ p.2.take (p.1.1 - p.1.2.2.length)) == p.1.2.1)
     (encPair encPreimagePrefix encBits) encBool
   fun_prop
 
@@ -207,7 +208,6 @@ theorem apply_preimageSearch {D : ℕ × List Bool × List Bool → Bool}
         (by rw [length_iterate_preimageSearchStep]; omega)
   obtain ⟨x', hx', hpre, hfx'⟩ := mem_preimagePrefix.mp (hmem x.length le_rfl)
   have heq := hpre.eq_of_length (by rw [length_iterate_preimageSearchStep]; exact hx'.symm)
-  dsimp only at heq hfx'
   change f ((preimageSearchStep D (x.length, f x))^[x.length] []) = f x
   rw [heq]
   exact hfx'

@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.FineGrained.CountingNativeModelCount
 public import Complexity.Computability.Complexity.FineGrained.CountingEndpoint
 public import Complexity.Computability.PolyTime.CSP.ToCNF
+public import Complexity.Computability.PolyTime.CSP.Vars
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -77,23 +78,6 @@ variable {Rel V : Type}
 
 open Cslib.Logic.PL.CSP ComputableInPolyTime
 
-/-- Extracting the variable-occurrence list `CSP.vars` is computable in polynomial time. -/
-@[fun_prop]
-theorem computableInPolyTime_vars (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool) :
-    ComputableInPolyTime (CSP.vars (Rel := Rel) (V := V))
-      (encCSP encRel encV) (encList encV) := by
-  unfold CSP.vars
-  fun_prop
-
-/-- Constructing the auxiliary positive-clause CNF `CSP.varCNF` is computable in polynomial
-time. -/
-@[fun_prop]
-theorem computableInPolyTime_varCNF (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool) :
-    ComputableInPolyTime (CSP.varCNF (Rel := Rel) (V := V))
-      (encCSP encRel encV) (encList (encList (encPair encV encBool))) := by
-  unfold CSP.varCNF
-  fun_prop
-
 /-- Listing the distinct occurring variables `CSP.distinctVars` in order of first occurrence is
 computable in polynomial time. -/
 @[fun_prop]
@@ -132,25 +116,7 @@ theorem computableInPolyTime_denseRelabel [DecidableEq V] (encRel : Rel ↪ List
       (encCSP encRel encV) (encCSP encRel encUnary) := by
     unfold CSP.denseRelabel CSP.relabel Constraint.relabel
     fun_prop
-  have hbin : ComputableInPolyTime
-      (CSP.relabel (Rel := Rel) (V := ℕ) (W := ℕ) (fun n => n))
-      (encCSP encRel encUnary) (encCSP encRel encNat) := by
-    unfold CSP.relabel Constraint.relabel
-    fun_prop
-  have heq : (CSP.denseRelabel (Rel := Rel) (V := V)) =
-      fun F => (CSP.denseRelabel F).relabel (fun n => n) := by
-    have hid : ∀ G : CSP Rel ℕ, G.relabel (fun n => n) = G := by
-      intro G
-      induction G with
-      | nil => rfl
-      | cons c G ih =>
-        rcases c with ⟨r, vs⟩
-        simp only [CSP.relabel, List.map_cons, Constraint.relabel, List.map_id']
-        exact congrArg ((r, vs) :: ·) ih
-    funext F
-    exact (hid F.denseRelabel).symm
-  rw [heq]
-  exact hbin.comp hunary
+  exact (computableInPolyTime_unary_to_binary encRel).comp hunary
 
 private theorem computableInPolyTime_validDeclaredCSP (encRel : Rel ↪ List Bool) (k : ℕ) :
     ComputableInPolyTime

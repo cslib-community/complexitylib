@@ -28,7 +28,7 @@ configuration count of `Turing.MultiTapeTM.haltsAt_le_card`.
 ## References
 
 * [M. Sipser, *Introduction to the Theory of Computation*, Section 8.4][Sipser2013]
-* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 4.3][AroraBarak09]
+* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 4.1][AroraBarak09]
 -/
 
 @[expose] public section

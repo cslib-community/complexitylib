@@ -723,6 +723,7 @@ structure PacketCtx where
   cols : List (ℕ × Bool)
   /-- The interpolation value. -/
   ζ : List ℕ
+  deriving Inhabited
 
 namespace PacketCtx
 

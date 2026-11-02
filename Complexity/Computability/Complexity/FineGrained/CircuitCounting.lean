@@ -20,6 +20,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Ba
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Sum
 
 /-!
 # Subexponential `#Circuit-SAT` and circuit satisfiability over bounded-arity Boolean signatures
@@ -119,12 +120,6 @@ section PolyTimeCompiler
 open ComputableInPolyTime
 
 variable {σ : Signature}
-
-private theorem computableInPolyTime_sumInl {α β : Type}
-    (left : α ↪ List Bool) (right : β ↪ List Bool) :
-    ComputableInPolyTime (Sum.inl (α := α) (β := β)) left (encSum left right) :=
-  ((const false).bitsCons
-    (of_eq (f := left) (encIn := left) (encOut := encBits) fun _ => rfl)).of_enc_eq fun _ => rfl
 
 private theorem computableInPolyTime_zipIdx {α : Type} (enc : α ↪ List Bool) :
     ComputableInPolyTime (fun list : List α => list.zipIdx)
@@ -297,7 +292,7 @@ private theorem computableInPolyTime_toCSPRaw (encOp : σ.Op ↪ List Bool) (m :
         (fun p : RawCode σ × ((σ.Op × List ℕ) × ℕ) =>
           (Sum.inl p.2.1.1 : Compiler.CircuitRel σ m))
         encRG (encCircuitRel encOp m) :=
-      (computableInPolyTime_sumInl encOp (encFinEnum (Fin m))).comp
+      (ComputableInPolyTime.sumInl encOp (encFinEnum (Fin m))).comp
         ((fst encOp (encList encNat)).comp
           ((fst (Circuit.encGate encOp) encUnary).comp (snd (encRaw encOp) encGJ)))
     have hargs : ComputableInPolyTime

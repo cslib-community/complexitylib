@@ -59,14 +59,16 @@ block position (`div_mod_wire`, `exists_wire_eq`).
   `Cslib.Circuits.Boolean.Tableau.argsOf`: numerical layout and wire resolution.
 * `Cslib.Circuits.Boolean.Tableau.symOf`, `Cslib.Circuits.Boolean.Tableau.ScanQ.ofIdx`,
   `Cslib.Circuits.Boolean.Tableau.ScanLoc.ofIdx`, `Cslib.Circuits.Boolean.Tableau.GlobLoc.ofIdx`,
-  `Cslib.Circuits.Boolean.Tableau.GFeat.ofIdx`, `Cslib.Circuits.Boolean.Tableau.ColFeat.ofIdx`:
-  arithmetic decoders for block offsets.
+  `Cslib.Circuits.Boolean.Tableau.GFeat.ofIdx`, `Cslib.Circuits.Boolean.Tableau.ColFeat.ofIdx`,
+  `Cslib.Circuits.Boolean.Tableau.posOf`: arithmetic decoders for block offsets.
 
 ## Main results
 
 * `Cslib.Circuits.Boolean.Tableau.Loc.offset_lt`: every admissible position lies within its block.
 * `Cslib.Circuits.Boolean.Tableau.div_mod_wire`: dividing and reducing a wire index modulo
   `blockSize` recovers its time block and intra-block offset.
+* `Cslib.Circuits.Boolean.Tableau.posOf_offset`: decoding the offset of a position recovers its
+  column and the position.
 * `Cslib.Circuits.Boolean.Tableau.exists_wire_eq`: every gate index after the two constants is the
   wire of an admissible block position.
 
@@ -425,6 +427,19 @@ def gadgetB (m : ℕ) : Bool := decide (8 ≤ m % 16)
 /-- The term of the gate at a position within the gates of a feature. -/
 def gadgetJ (m : ℕ) : Fin 8 := ⟨m % 8, Nat.mod_lt _ (by norm_num)⟩
 
+/-- **The column and the position at an offset `r` of a block**: the scan, global gate, global
+feature or column feature whose region contains `r`. It inverts `Loc.offset` (`posOf_offset`). -/
+noncomputable def posOf (T r : ℕ) : ℕ × Loc k State :=
+  if r < globStart k T then (r / scanWidth k, .scan (ScanLoc.ofIdx (r % scanWidth k)))
+  else if r < gfStart k State T then (0, .glob (GlobLoc.ofIdx (r - globStart k T)))
+  else if r < colStart k State T then
+    (0, .gf (GFeat.ofIdx ((r - gfStart k State T) / 16)) (gadgetB (r - gfStart k State T))
+      (gadgetJ (r - gfStart k State T)))
+  else ((r - colStart k State T) / colWidth k,
+    .col (ColFeat.ofIdx ((r - colStart k State T) % colWidth k / 16))
+      (gadgetB ((r - colStart k State T) % colWidth k))
+      (gadgetJ ((r - colStart k State T) % colWidth k)))
+
 /-! ### Decoding inverts the layout -/
 
 private theorem symOf_symIdx (s : Option Bool) : symOf (symIdx s) = s := by
@@ -680,6 +695,48 @@ theorem div_mod_wire {n T t : ℕ} {l : Loc k State} {c : ℕ} (hl : l.ColOK T c
     l.offset T c + t * blockSize k State T by omega]
   exact ⟨Nat.add_mul_div_of_lt t h,
     by rw [Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt h]⟩
+
+/-- **Decoding the offset of a position** gives its column and the position. -/
+theorem posOf_offset {c : ℕ} {l : Loc k State} (hl : l.ColOK T c) :
+    posOf T (l.offset T c) = (c, l) := by
+  have hgs : globStart k T ≤ gfStart k State T := Nat.le_add_right _ _
+  have hgc : gfStart k State T ≤ colStart k State T := Nat.le_add_right _ _
+  rcases l with l | l | ⟨f, b, j⟩ | ⟨f, b, j⟩ <;> simp only [Loc.ColOK] at hl <;>
+    simp only [Loc.offset, posOf]
+  · have hi := l.idx_lt
+    have h₁ : c * scanWidth k + l.idx < globStart k T := scan_offset_lt_globStart hl l
+    have h₂ : (c * scanWidth k + l.idx) / scanWidth k = c := Nat.mul_add_div_of_lt c hi
+    have h₃ : (c * scanWidth k + l.idx) % scanWidth k = l.idx := by
+      rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hi]
+    simp only [h₁, ↓reduceIte, h₂, h₃, ScanLoc.ofIdx_idx]
+  · have hi := l.idx_lt
+    subst hl
+    have h₁ : ¬ globStart k T + l.idx < globStart k T := by omega
+    have h₂ : globStart k T + l.idx < gfStart k State T := by simp only [gfStart]; omega
+    simp only [h₁, h₂, ↓reduceIte, Nat.add_sub_cancel_left, GlobLoc.ofIdx_idx]
+  · subst hl
+    have := gfStart_add_gadgetIdx_lt (k := k) (T := T) f b j
+    have h₁ : ¬ gfStart k State T + gadgetIdx f.idx b j < globStart k T := by omega
+    have h₂ : ¬ gfStart k State T + gadgetIdx f.idx b j < gfStart k State T := by omega
+    simp only [h₁, h₂, this, ↓reduceIte, Nat.add_sub_cancel_left, gadgetIdx_div,
+      GFeat.ofIdx_idx, gadgetB_gadgetIdx, gadgetJ_gadgetIdx]
+  · have h₁ := gadgetIdx_lt f.idx b j
+    have h₂ := f.idx_lt
+    have hw : gadgetIdx f.idx b j < colWidth k := by simp only [colWidth]; omega
+    have h₃ : ¬ colStart k State T + c * colWidth k + gadgetIdx f.idx b j < globStart k T := by
+      omega
+    have h₄ : ¬ colStart k State T + c * colWidth k + gadgetIdx f.idx b j < gfStart k State T := by
+      omega
+    have h₅ : ¬ colStart k State T + c * colWidth k + gadgetIdx f.idx b j <
+        colStart k State T := by omega
+    have h₆ : colStart k State T + c * colWidth k + gadgetIdx f.idx b j - colStart k State T =
+        gadgetIdx f.idx b j + c * colWidth k := by omega
+    have h₇ : (gadgetIdx f.idx b j + c * colWidth k) / colWidth k = c :=
+      Nat.add_mul_div_of_lt c hw
+    have h₈ : (gadgetIdx f.idx b j + c * colWidth k) % colWidth k = gadgetIdx f.idx b j := by
+      rw [Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hw]
+    simp only [h₃, h₄, h₅, ↓reduceIte, h₆, h₇, h₈, gadgetIdx_div, ColFeat.ofIdx_idx,
+      gadgetB_gadgetIdx, gadgetJ_gadgetIdx]
 
 /-! ### Every gate sits at a position -/
 

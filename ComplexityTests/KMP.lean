@@ -27,7 +27,8 @@ set_option linter.hashCommand false
 
 private def clrsPat : Array Char := "ababaca".toList.toArray
 
--- `[CLRS2009]`, Figure 32.10(c): π for "ababaca" is [0, 0, 1, 2, 3, 0, 1].
+-- `[CLRS2009]`, Figure 32.11(a): π for "ababaca" is [0, 0, 1, 2, 3, 0, 1]
+-- (Figure 32.10(c) shows π[5] = 3).
 #guard computePrefix clrsPat = #[0, 0, 1, 2, 3, 0, 1]
 #guard (computePrefixM clrsPat).time ≤ 2 * (clrsPat.size - 1)
 

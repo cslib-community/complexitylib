@@ -154,7 +154,7 @@ theorem computableInPolyTime_wordObservation {α : Type} {encode : α ↪ List B
 /-- Encode a finite public observation using the chosen image representation. -/
 def encodeObservation {n count : ℕ} {Image : Type*} (encodeImage : Image → List Bool)
     (observation : Observation n count Image) : List Bool :=
-  let (pos, (matrix, query), image, digest) := observation
+  let ⟨pos, (matrix, query), image, digest⟩ := observation
   wordObservation (encodeImage image) pos.val
     (List.ofFn matrix) (List.ofFn digest)
     (List.ofFn query)

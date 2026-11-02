@@ -13,6 +13,7 @@ public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Algebra.Order.Monoid.Defs
 public import Mathlib.Combinatorics.Matroid.Basic
 public import Mathlib.Data.List.Sort
+import Complexity.Foundations.Data.List.EraseDups
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Algebra.Order.BigOperators.Group.List
 import Mathlib.Combinatorics.Matroid.IndepAxioms
@@ -510,30 +511,6 @@ theorem card_eq_greedySelect_card_of_isBasis' {M : Matroid α} {indep : Finset �
 
 /-! ## Deduplication invariance (retaining first occurrences) -/
 
-/-- Keep the first occurrence of each element of `xs`, preserving left-to-right order. -/
-private def dedupFirst : List α → List α
-  | [] => []
-  | x :: xs => x :: (dedupFirst xs).filter (· ≠ x)
-
-private theorem mem_dedupFirst {xs : List α} {y : α} : y ∈ dedupFirst xs ↔ y ∈ xs := by
-  induction xs with
-  | nil => rfl
-  | cons x rest ih =>
-    simp only [dedupFirst, List.mem_cons, List.mem_filter, ih]
-    by_cases hyx : y = x <;> simp [hyx]
-
-private theorem dedupFirst_sublist (xs : List α) : (dedupFirst xs).Sublist xs := by
-  induction xs with
-  | nil => exact .slnil
-  | cons x rest ih => exact .cons_cons x (List.filter_sublist.trans ih)
-
-private theorem nodup_dedupFirst (xs : List α) : (dedupFirst xs).Nodup := by
-  induction xs with
-  | nil => exact List.nodup_nil
-  | cons x rest ih =>
-    rw [dedupFirst, List.nodup_cons]
-    exact ⟨by simp, ih.filter _⟩
-
 private theorem foldl_greedyStep_filter_ne {M : Matroid α} {indep : Finset α → Bool}
     (hM : ∀ S : Finset α, indep S = true ↔ M.Indep (S : Set α))
     (x : α) (ys : List α) (acc : Finset α)
@@ -563,16 +540,17 @@ private theorem foldl_greedyStep_filter_ne {M : Matroid α} {indep : Finset α �
         rw [Finset.coe_insert, Finset.coe_insert]
         exact Set.insert_subset_insert (Finset.coe_subset.mpr (subset_greedyStep indep acc y))
 
-private theorem foldl_greedyStep_dedupFirst {M : Matroid α} {indep : Finset α → Bool}
-    (hM : ∀ S : Finset α, indep S = true ↔ M.Indep (S : Set α))
-    (xs : List α) (acc : Finset α) :
-    xs.foldl (greedyStep indep) acc = (dedupFirst xs).foldl (greedyStep indep) acc := by
-  induction xs generalizing acc with
-  | nil => rfl
-  | cons x rest ih =>
-    simp only [dedupFirst, List.foldl_cons]
-    rw [ih (greedyStep indep acc x)]
-    refine foldl_greedyStep_filter_ne hM x (dedupFirst rest) (greedyStep indep acc x) ?_
+private theorem foldl_greedyStep_eraseDups {M : Matroid α} {indep : Finset α → Bool}
+    (hM : ∀ S : Finset α, indep S = true ↔ M.Indep (S : Set α)) :
+    ∀ (xs : List α) (acc : Finset α),
+      xs.foldl (greedyStep indep) acc = xs.eraseDups.foldl (greedyStep indep) acc
+  | [], _ => rfl
+  | x :: rest, acc => by
+    have hfilter : (rest.filter fun b => !b == x) = rest.filter (· ≠ x) :=
+      List.filter_congr fun b _ => by by_cases hb : b = x <;> simp [hb]
+    rw [List.eraseDups_cons, List.foldl_cons, List.foldl_cons, hfilter,
+      ← foldl_greedyStep_eraseDups hM (rest.filter (· ≠ x))]
+    refine foldl_greedyStep_filter_ne hM x rest (greedyStep indep acc x) ?_
     cases hbool : indep (insert x acc)
     · right
       simp only [greedyStep, hbool]
@@ -581,12 +559,14 @@ private theorem foldl_greedyStep_dedupFirst {M : Matroid α} {indep : Finset α 
       simp [hbool] at htrue
     · left
       simp [greedyStep, hbool]
+termination_by xs => xs.length
+decreasing_by exact Nat.lt_add_one_of_le (List.length_filter_le _ rest)
 
 /-- Under a matroid independence test, duplicate elements in `xs` do not affect `greedySelect`. -/
-private theorem greedySelect_eq_dedupFirst {M : Matroid α} {indep : Finset α → Bool}
+private theorem greedySelect_eq_eraseDups {M : Matroid α} {indep : Finset α → Bool}
     (hM : ∀ S : Finset α, indep S = true ↔ M.Indep (S : Set α)) (xs : List α) :
-    greedySelect indep xs = greedySelect indep (dedupFirst xs) :=
-  foldl_greedyStep_dedupFirst hM xs ∅
+    greedySelect indep xs = greedySelect indep xs.eraseDups :=
+  foldl_greedyStep_eraseDups hM xs ∅
 
 /-! ## Gale's pointwise dominance theorem -/
 
@@ -781,12 +761,13 @@ theorem sum_le_greedySelect_of_isBasis' [AddCommMonoid β] [Preorder β] [IsOrde
     (w : α → β) {xs : List α} (hsorted : xs.Pairwise (fun a b => w b ≤ w a))
     {I : Finset α} (hI : M.IsBasis' (I : Set α) {x | x ∈ xs}) :
     ∑ x ∈ I, w x ≤ ∑ x ∈ greedySelect indep xs, w x := by
-  rw [greedySelect_eq_dedupFirst hM xs]
-  set ys := dedupFirst xs
-  have hys_nodup : ys.Nodup := nodup_dedupFirst xs
-  have hys_sorted : ys.Pairwise (fun a b => w b ≤ w a) := hsorted.sublist (dedupFirst_sublist xs)
+  rw [greedySelect_eq_eraseDups hM xs]
+  set ys := xs.eraseDups
+  have hys_nodup : ys.Nodup := List.nodup_eraseDups xs
+  have hys_sorted : ys.Pairwise (fun a b => w b ≤ w a) :=
+    hsorted.sublist (List.eraseDups_sublist xs)
   have hset_eq : {x | x ∈ ys} = {x | x ∈ xs} := by
-    ext x; exact mem_dedupFirst
+    ext x; exact List.mem_eraseDups
   have hI' : M.IsBasis' (I : Set α) {x | x ∈ ys} := hset_eq.symm ▸ hI
   set G := greedySelect indep ys
   have hGsub : (G : Set α) ⊆ {x | x ∈ ys} := fun x hx => mem_of_mem_greedySelect hx
@@ -827,12 +808,13 @@ theorem sum_le_greedySelect_of_indep [AddCommMonoid β] [Preorder β] [IsOrdered
     (hnonneg : ∀ x ∈ xs, 0 ≤ w x)
     {I : Finset α} (hI : M.Indep (I : Set α)) (hIsub : (I : Set α) ⊆ {x | x ∈ xs}) :
     ∑ x ∈ I, w x ≤ ∑ x ∈ greedySelect indep xs, w x := by
-  rw [greedySelect_eq_dedupFirst hM xs]
-  set ys := dedupFirst xs
-  have hys_nodup : ys.Nodup := nodup_dedupFirst xs
-  have hys_sorted : ys.Pairwise (fun a b => w b ≤ w a) := hsorted.sublist (dedupFirst_sublist xs)
+  rw [greedySelect_eq_eraseDups hM xs]
+  set ys := xs.eraseDups
+  have hys_nodup : ys.Nodup := List.nodup_eraseDups xs
+  have hys_sorted : ys.Pairwise (fun a b => w b ≤ w a) :=
+    hsorted.sublist (List.eraseDups_sublist xs)
   have hset_eq : {x | x ∈ ys} = {x | x ∈ xs} := by
-    ext x; exact mem_dedupFirst
+    ext x; exact List.mem_eraseDups
   have hIsub' : (I : Set α) ⊆ {x | x ∈ ys} := hset_eq.symm ▸ hIsub
   set G := greedySelect indep ys
   have hGsub : (G : Set α) ⊆ {x | x ∈ ys} := fun x hx => mem_of_mem_greedySelect hx
@@ -856,7 +838,7 @@ theorem sum_le_greedySelect_of_indep [AddCommMonoid β] [Preorder β] [IsOrdered
     obtain ⟨x, hx_drop, rfl⟩ := List.mem_map.mp hv
     have hx_G : x ∈ G_list := List.mem_of_mem_drop hx_drop
     have hx_ys : x ∈ ys := (List.mem_filter.mp hx_G).1
-    exact hnonneg x (mem_dedupFirst.mp hx_ys)
+    exact hnonneg x (List.mem_eraseDups.mp hx_ys)
   exact le_add_of_le_of_nonneg hle_prefix hdrop_nonneg
 
 /-! ### Unsorted weighted entrypoints (`greedyMaxBasis`, `greedyMinBasis`, `greedyMaxIndep`) -/

@@ -31,7 +31,8 @@ The native child of group `g` of an active call of the contraction recursion of 
 computable in polynomial time over the encodings of the native recursion. The counts are unary,
 the node `t` is in binary sign-magnitude form, and the lists are binary, except the exponents
 `β`, which are unary as in a packet descriptor. The parent is encoded by
-`DescribedNetwork.encDescribed VertexDesc.enc` and its packing by
+`DescribedNetwork.encDescribed (VertexDesc.enc encT)`, for any encoding `encT` of the root
+descriptors, and its packing by
 `PacketPacking.encNativePacking`.
 
 The theorems are stated in composition form, for components computed from any input. Besides the
@@ -79,6 +80,8 @@ public section
 namespace Cslib.Circuits.Frontier.NativeChild
 
 open Turing.MultiTapeTM ChildNumbering NativePacket
+
+variable {T : Type} {encT : T ↪ List Bool}
 
 /-- **The rank of a port without a loop over the port**: the edges before `e` with an end in group
 `g`, the edges past the list counting as `(0, 0)`. -/
@@ -275,9 +278,9 @@ private theorem count_polyTime (hgroups : ComputableInPolyTime groups encIn (enc
   congr 2
 
 /-- **The retained vertices**: the vertices of group `g` with their renumbered ports. -/
-private theorem retained_polyTime {r : δ → ℕ} {V : δ → List (List ℕ × VertexDesc)}
+private theorem retained_polyTime {r : δ → ℕ} {V : δ → List (List ℕ × VertexDesc T)}
     (hr : ComputableInPolyTime r encIn encNat)
-    (hV : ComputableInPolyTime V encIn (encList (encPair (encList encNat) VertexDesc.enc)))
+    (hV : ComputableInPolyTime V encIn (encList (encPair (encList encNat) (VertexDesc.enc encT))))
     (hgroups : ComputableInPolyTime groups encIn (encList encNat))
     (hg : ComputableInPolyTime g encIn encNat)
     (hends : ComputableInPolyTime ends encIn (encList (encPair encNat encNat))) :
@@ -285,7 +288,7 @@ private theorem retained_polyTime {r : δ → ℕ} {V : δ → List (List ℕ ×
       ((List.range (V x).length).filter fun v => decide ((groups x).getD v 0 = g x)).map fun v =>
         (((V x).getD v defaultVertex).1.map (childEdgeOf (r x) (groups x) (g x) (ends x) v),
           ((V x).getD v defaultVertex).2))
-      encIn (encList (encPair (encList encNat) VertexDesc.enc)) := by
+      encIn (encList (encPair (encList encNat) (VertexDesc.enc encT))) := by
   let e₁ := encPair encIn encUnary
   have hx : ComputableInPolyTime (fun p : δ × ℕ => p.1) e₁ encIn := ComputableInPolyTime.fst _ _
   have hy : ComputableInPolyTime (fun p : δ × ℕ => p.2) e₁ encUnary :=
@@ -298,9 +301,9 @@ private theorem retained_polyTime {r : δ → ℕ} {V : δ → List (List ℕ ×
         ((ComputableInPolyTime.listGetD (encA := encNat) (encL := encList encNat) 0).comp
           ((hgroups.comp hx).prod hy)) (hg.comp hx))
   have hvtx : ComputableInPolyTime (fun p : δ × ℕ => (V p.1).getD p.2 defaultVertex) e₁
-      (encPair (encList encNat) VertexDesc.enc) :=
-    (ComputableInPolyTime.listGetD (encA := encPair (encList encNat) VertexDesc.enc)
-      (encL := encList (encPair (encList encNat) VertexDesc.enc)) defaultVertex).comp
+      (encPair (encList encNat) (VertexDesc.enc encT)) :=
+    (ComputableInPolyTime.listGetD (encA := encPair (encList encNat) (VertexDesc.enc encT))
+      (encL := encList (encPair (encList encNat) (VertexDesc.enc encT))) defaultVertex).comp
       ((hV.comp hx).prod hy)
   have hxx : ComputableInPolyTime (fun q : (δ × ℕ) × ℕ => q.1.1) (encPair e₁ encNat) encIn :=
     hx.comp (ComputableInPolyTime.fst _ _)
@@ -332,7 +335,7 @@ private theorem retained_polyTime {r : δ → ℕ} {V : δ → List (List ℕ ×
     hfilter (hports.prod ((ComputableInPolyTime.snd _ _).comp hvtx))
 
 variable {fl ζ β : δ → List ℕ} {a i pt r : δ → ℕ} {t : δ → ℤ}
-  {D : δ → DescribedNetwork VertexDesc}
+  {D : δ → DescribedNetwork (VertexDesc T)}
   {pk : δ → (List (List ℕ) × List (List ℕ)) × ℕ × List (ℕ × ℕ)}
 
 /-- **The context of a packet** is polynomial-time, with the packet in unary. -/
@@ -394,8 +397,8 @@ private theorem packetVertices_polyTime {P : δ → ℕ} {cedges : δ → List (
           (childPorts (cedges x) ((groups x).count (g x) + q)).map fun j =>
             (decide (j < (portEdges (groups x) (g x) (ends x) Prod.fst).length),
               ((place x).getD (parentEdge (groups x) (g x) (ends x) j) (0, 0)).2),
-          betaSlice (i x) (pt x) (β x) q) : VertexDesc)))
-      encIn (encList (encPair (encList encNat) VertexDesc.enc)) := by
+          betaSlice (i x) (pt x) (β x) q) : VertexDesc T)))
+      encIn (encList (encPair (encList encNat) (VertexDesc.enc encT))) := by
   let e₁ := encPair encIn encUnary
   have hx : ComputableInPolyTime (fun p : δ × ℕ => p.1) e₁ encIn := ComputableInPolyTime.fst _ _
   have hy : ComputableInPolyTime (fun p : δ × ℕ => p.2) e₁ encUnary :=
@@ -466,7 +469,7 @@ private theorem packing_parts (hpk : ComputableInPolyTime pk encIn PacketPacking
 /-- **The number of rows of the native child is polynomial-time.** -/
 theorem computableInPolyTime_childRows (hr : ComputableInPolyTime r encIn encNat)
     (hi : ComputableInPolyTime i encIn encUnary)
-    (hD : ComputableInPolyTime D encIn (DescribedNetwork.encDescribed VertexDesc.enc))
+    (hD : ComputableInPolyTime D encIn (DescribedNetwork.encDescribed (VertexDesc.enc encT)))
     (hpk : ComputableInPolyTime pk encIn PacketPacking.encNativePacking)
     (hg : ComputableInPolyTime g encIn encNat) :
     ComputableInPolyTime (fun x => childRows (r x) (i x) (D x) (pk x) (g x)) encIn encNat :=
@@ -486,17 +489,17 @@ theorem computableInPolyTime_nativeChild (hfl : ComputableInPolyTime fl encIn (e
     (hpt : ComputableInPolyTime pt encIn encUnary) (ht : ComputableInPolyTime t encIn encIntBin)
     (hζ : ComputableInPolyTime ζ encIn (encList encNat))
     (hr : ComputableInPolyTime r encIn encNat)
-    (hD : ComputableInPolyTime D encIn (DescribedNetwork.encDescribed VertexDesc.enc))
+    (hD : ComputableInPolyTime D encIn (DescribedNetwork.encDescribed (VertexDesc.enc encT)))
     (hpk : ComputableInPolyTime pk encIn PacketPacking.encNativePacking)
     (hP : ComputableInPolyTime (fun x => (pk x).2.1) encIn encUnary)
     (hβ : ComputableInPolyTime β encIn (encList encUnary))
     (hg : ComputableInPolyTime g encIn encNat) :
     ComputableInPolyTime (fun x =>
       nativeChild (fl x) (a x) (i x) (pt x) (t x) (ζ x) (r x) (D x) (pk x) (β x) (g x))
-      encIn (DescribedNetwork.encDescribed VertexDesc.enc) := by
+      encIn (DescribedNetwork.encDescribed (VertexDesc.enc encT)) := by
   obtain ⟨hwords, hplace⟩ := packing_parts hpk
   have hV := DescribedNetwork.vertices_polyTime.comp hD
-  have hends := (DescribedNetwork.computableInPolyTime_edgeEnds VertexDesc.enc).comp hD
+  have hends := (DescribedNetwork.computableInPolyTime_edgeEnds (VertexDesc.enc encT)).comp hD
   have hgroups := computableInPolyTime_groupsOf hr hi
     ((ComputableInPolyTime.length_list _).comp hV) hwords
   have hpackets : ComputableInPolyTime (fun x => (pk x).2.2.map Prod.fst) encIn
@@ -510,9 +513,9 @@ theorem computableInPolyTime_nativeChild (hfl : ComputableInPolyTime fl encIn (e
   have hpair := ((ComputableInPolyTime.length_list _).comp hcedges).prod
     (ComputableInPolyTime.listAppend' (retained_polyTime hr hV hgroups hg hends)
       (packetVertices_polyTime hfl ha hL hi hT hpt ht hζ hβ hg hgroups hends hP hcedges hplace))
-  have hsymm : ComputableInPolyTime (DescribedNetwork.equivProd (T := VertexDesc)).symm
-      (encPair encUnary (encList (encPair (encList encNat) VertexDesc.enc)))
-      (DescribedNetwork.encDescribed VertexDesc.enc) :=
+  have hsymm : ComputableInPolyTime (DescribedNetwork.equivProd (T := VertexDesc T)).symm
+      (encPair encUnary (encList (encPair (encList encNat) (VertexDesc.enc encT))))
+      (DescribedNetwork.encDescribed (VertexDesc.enc encT)) :=
     ComputableInPolyTime.of_eq fun y => by
       rw [DescribedNetwork.encDescribed, encOfEquiv_apply, Equiv.apply_symm_apply]
   exact (hsymm.comp hpair).of_enc_eq fun x => by
@@ -534,7 +537,7 @@ private theorem foldl_max_le {l : List ℕ} {m n : ℕ} (hm : m ≤ n) (hl : ∀
 /-- **At most `M (2 ^ a) ^ 12` packets**: the native parent packing of a network with `M` edges
 has at most one block of `2 ^ a` slots per edge, times the `4096 ^ a` words of pairs of
 symbols. -/
-theorem numPackets_nativeParentPacking_le (r a : ℕ) (D : DescribedNetwork VertexDesc) :
+theorem numPackets_nativeParentPacking_le (r a : ℕ) (D : DescribedNetwork (VertexDesc T)) :
     (nativeParentPacking r a D).2.1 ≤ D.numEdges * (2 ^ a) ^ 12 := by
   set pairs := PacketPacking.edgeWordPairs (PacketPacking.labelWords r (D.vertices.length - r) a 64
     (D.edgeEnds.map fun e => (e.1, e.2 - r))).1 (PacketPacking.labelWords r
@@ -576,16 +579,16 @@ theorem numPackets_nativeParentPacking_le (r a : ℕ) (D : DescribedNetwork Vert
 section PolyTime
 
 variable {δ : Type} {encIn : δ ↪ List Bool} {fl ζ β : δ → List ℕ} {a i pt r g : δ → ℕ}
-  {t : δ → ℤ} {D : δ → DescribedNetwork VertexDesc}
+  {t : δ → ℤ} {D : δ → DescribedNetwork (VertexDesc T)}
 
 /-- **The native parent packing is polynomial-time**, with the number of rows and `a` in
 unary. -/
 theorem computableInPolyTime_nativeParentPacking (hr : ComputableInPolyTime r encIn encUnary)
     (ha : ComputableInPolyTime a encIn encUnary)
-    (hD : ComputableInPolyTime D encIn (DescribedNetwork.encDescribed VertexDesc.enc)) :
+    (hD : ComputableInPolyTime D encIn (DescribedNetwork.encDescribed (VertexDesc.enc encT))) :
     ComputableInPolyTime (fun x => nativeParentPacking (r x) (a x) (D x)) encIn
       PacketPacking.encNativePacking := by
-  have hends := (DescribedNetwork.computableInPolyTime_edgeEnds VertexDesc.enc).comp hD
+  have hends := (DescribedNetwork.computableInPolyTime_edgeEnds (VertexDesc.enc encT)).comp hD
   have hrb := ComputableInPolyTime.unary_to_binary.comp hr
   have hshift : ComputableInPolyTime (fun x => (D x).edgeEnds.map fun e => (e.1, e.2 - r x))
       encIn (encList (encPair encNat encNat)) :=
@@ -610,7 +613,7 @@ and `2 ^ a` in unary. -/
 theorem computableInPolyTime_numPackets_nativeParentPacking
     (hr : ComputableInPolyTime r encIn encUnary) (ha : ComputableInPolyTime a encIn encUnary)
     (hL : ComputableInPolyTime (fun x => 2 ^ a x) encIn encUnary)
-    (hD : ComputableInPolyTime D encIn (DescribedNetwork.encDescribed VertexDesc.enc)) :
+    (hD : ComputableInPolyTime D encIn (DescribedNetwork.encDescribed (VertexDesc.enc encT))) :
     ComputableInPolyTime (fun x => (nativeParentPacking (r x) (a x) (D x)).2.1) encIn
       encUnary := by
   have hpk : ComputableInPolyTime (fun x => nativeParentPacking (r x) (a x) (D x)) encIn
@@ -634,12 +637,12 @@ theorem computableInPolyTime_nativeChild_nativeParentPacking
     (hpt : ComputableInPolyTime pt encIn encUnary) (ht : ComputableInPolyTime t encIn encIntBin)
     (hζ : ComputableInPolyTime ζ encIn (encList encNat))
     (hr : ComputableInPolyTime r encIn encUnary)
-    (hD : ComputableInPolyTime D encIn (DescribedNetwork.encDescribed VertexDesc.enc))
+    (hD : ComputableInPolyTime D encIn (DescribedNetwork.encDescribed (VertexDesc.enc encT)))
     (hβ : ComputableInPolyTime β encIn (encList encUnary))
     (hg : ComputableInPolyTime g encIn encNat) :
     ComputableInPolyTime (fun x => nativeChild (fl x) (a x) (i x) (pt x) (t x) (ζ x) (r x) (D x)
       (nativeParentPacking (r x) (a x) (D x)) (β x) (g x))
-      encIn (DescribedNetwork.encDescribed VertexDesc.enc) :=
+      encIn (DescribedNetwork.encDescribed (VertexDesc.enc encT)) :=
   computableInPolyTime_nativeChild hfl ha hL hi hT hpt ht hζ
     (ComputableInPolyTime.unary_to_binary.comp hr) hD
     (computableInPolyTime_nativeParentPacking hr ha hD)
@@ -649,7 +652,7 @@ theorem computableInPolyTime_nativeChild_nativeParentPacking
 theorem computableInPolyTime_childRows_nativeParentPacking
     (hr : ComputableInPolyTime r encIn encUnary) (ha : ComputableInPolyTime a encIn encUnary)
     (hi : ComputableInPolyTime i encIn encUnary)
-    (hD : ComputableInPolyTime D encIn (DescribedNetwork.encDescribed VertexDesc.enc))
+    (hD : ComputableInPolyTime D encIn (DescribedNetwork.encDescribed (VertexDesc.enc encT)))
     (hg : ComputableInPolyTime g encIn encNat) :
     ComputableInPolyTime (fun x => childRows (r x) (i x) (D x)
       (nativeParentPacking (r x) (a x) (D x)) (g x)) encIn encNat :=
@@ -662,7 +665,8 @@ end PolyTime
 
 section Shape
 
-variable (fl : List ℕ) (a i pt : ℕ) (t : ℤ) (ζ : List ℕ) (r : ℕ) (D : DescribedNetwork VertexDesc)
+variable (fl : List ℕ) (a i pt : ℕ) (t : ℤ) (ζ : List ℕ) (r : ℕ)
+  (D : DescribedNetwork (VertexDesc T))
   (pk : (List (List ℕ) × List (List ℕ)) × ℕ × List (ℕ × ℕ)) (β : List ℕ) (g : ℕ)
 
 /-- **The child has at most twice as many edges as the parent**: one per end of a parent edge in
@@ -701,7 +705,7 @@ theorem length_vertices_nativeChild :
 either a parent vertex with renumbered ports, with the same descriptor and the same number of
 ports, or the vertex of a packet `q`, whose descriptor is its context, tags of its ports with
 slots from the packing (or `0`), and its slice of `β`. -/
-theorem mem_vertices_nativeChild {v : List ℕ × VertexDesc}
+theorem mem_vertices_nativeChild {v : List ℕ × VertexDesc T}
     (hv : v ∈ (nativeChild fl a i pt t ζ r D pk β g).vertices) :
     (∃ w ∈ D.vertices, v.2 = w.2 ∧ v.1.length = w.1.length) ∨
       ∃ q < pk.2.1, ∃ tags : List (Bool × ℕ),

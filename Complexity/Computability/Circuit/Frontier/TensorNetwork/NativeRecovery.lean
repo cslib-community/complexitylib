@@ -1052,10 +1052,6 @@ private theorem singletonPolyTime' {c : α → List ℕ}
     ComputableInPolyTime (fun x => [c x]) encIn (encList (encList encNat)) :=
   ComputableInPolyTime.cons' hc (ComputableInPolyTime.const [])
 
-private theorem polyBounded_unary {n : α → ℕ} (hn : ComputableInPolyTime n encIn encUnary) :
-    PolyBounded (fun x => (encIn x).length) n := by
-  simpa using ComputableInPolyTime.polyBounded_length hn
-
 /-- The length of a polynomial with `J` small coefficients is polynomially bounded. -/
 private theorem polyBounded_polyLength {p J : α → ℕ} {fl : α → List ℕ}
     (hp : ComputableInPolyTime p encIn encUnary)
@@ -1063,11 +1059,12 @@ private theorem polyBounded_polyLength {p J : α → ℕ} {fl : α → List ℕ}
     (hJ : ComputableInPolyTime J encIn encUnary) :
     PolyBounded (fun x => (encIn x).length)
       (fun x => J x * (2 * ((fl x).length * (2 * (p x + 1) + 1)) + 1)) := by
-  have hpl := polyBounded_unary hp
+  have hpl := ComputableInPolyTime.polyBounded hp
   have hfll : PolyBounded (fun x => (encIn x).length) fun x => (fl x).length :=
     (lengthPolyTime hfl).polyBounded_length.mono fun x => by simp
-  exact (polyBounded_unary hJ).mul (((PolyBounded.const 2).mul (hfll.mul (((PolyBounded.const 2).mul
-    (hpl.add (PolyBounded.const 1))).add (PolyBounded.const 1)))).add (PolyBounded.const 1))
+  exact (ComputableInPolyTime.polyBounded hJ).mul (((PolyBounded.const 2).mul
+    (hfll.mul (((PolyBounded.const 2).mul (hpl.add (PolyBounded.const 1))).add
+      (PolyBounded.const 1)))).add (PolyBounded.const 1))
 
 private theorem length_encList_mul_le (N : ℕ) (fl c d : List ℕ) :
     (encList encNat (mul N fl c d)).length ≤ fl.length * (2 * N + 1) :=
@@ -1151,7 +1148,8 @@ theorem computableInPolyTime_multSum {a u h k : α → ℕ}
     ⟨computableInPolyTime_others hL hk, ComputableInPolyTime.unary_add' hs
       (computableInPolyTime_mult (ha.comp hx) (hL.comp hx) (hu.comp hx) (hh.comp hx) hk'),
       inferInstance, inferInstance⟩
-    ⟨(polyBounded_unary hh).mul (polyBounded_unary hu), fun x s k' _ => by
+    ⟨(ComputableInPolyTime.polyBounded hh).mul (ComputableInPolyTime.polyBounded hu),
+      fun x s k' _ => by
       have : mult (a x) (u x) (h x) k' ≤ h x * u x :=
         Nat.mul_le_mul_left _ (Nat.sub_le _ _)
       simp only [encUnary_apply, List.length_replicate]

@@ -52,7 +52,8 @@ namespace Cslib.Circuits.Frontier.NativeChild
 
 open Finset ChildNumbering
 
-variable {r a i : ℕ} {D : DescribedNetwork VertexDesc} (hD : D.IsRowsFirstBipartite r)
+variable {T : Type} {r a i : ℕ} {D : DescribedNetwork (VertexDesc T)}
+  (hD : D.IsRowsFirstBipartite r)
 
 /-- The group of a vertex of the parent in coordinate `i < a` of its packing. -/
 noncomputable abbrev parentGroup (a : ℕ) {i : ℕ} (hia : i < a) :
@@ -97,7 +98,7 @@ theorem numEdges_nativeChild_eq (hK : 64 ^ a ≤ D.numEdges) (hia : i < a) (fl :
 
 /-- A row of a rows-first network is the row of at most as many edges as it has ports. -/
 theorem card_rowOfP_le (v : Fin r) :
-    #{e | rowOfP hD e = v} ≤ (D.vertices.getD v ([], .inl [])).1.length := by
+    #{e | rowOfP hD e = v} ≤ (D.vertices.getD v defaultVertex).1.length := by
   by_cases hv : (v : ℕ) < D.vertices.length
   · rw [List.getD_eq_getElem _ _ hv]
     calc #{e | rowOfP hD e = v}
@@ -118,7 +119,7 @@ theorem card_rowOfP_le (v : Fin r) :
 
 /-- A column of a rows-first network is the column of at most as many edges as it has ports. -/
 theorem card_colOfP_le (w : Fin (D.vertices.length - r)) :
-    #{e | colOfP hD e = w} ≤ (D.vertices.getD (r + w) ([], .inl [])).1.length := by
+    #{e | colOfP hD e = w} ≤ (D.vertices.getD (r + w) defaultVertex).1.length := by
   have hv : r + (w : ℕ) < D.vertices.length := by have := w.2; omega
   rw [List.getD_eq_getElem _ _ hv]
   calc #{e | colOfP hD e = w}
@@ -142,7 +143,7 @@ theorem sixteen_mul_numEdges_nativeChild_le (hK : 64 ^ a ≤ D.numEdges) (hia : 
     (fl : List ℕ) (pt : ℕ) (t : ℤ) (ζ β : List ℕ) (g : Fin 64) :
     16 * (nativeChild fl a i pt t ζ r D (nativeParentPacking r a D) β g).numEdges ≤
       D.numEdges := by
-  have hdeg' (v : ℕ) : (D.vertices.getD v ([], .inl [])).1.length ≤ Δ := by
+  have hdeg' (v : ℕ) : (D.vertices.getD v defaultVertex).1.length ≤ Δ := by
     by_cases hv : v < D.vertices.length
     · rw [List.getD_eq_getElem _ _ hv]
       exact hdeg _ (List.getElem_mem hv)
@@ -185,7 +186,7 @@ theorem numPackets_nativeParentPacking_mul_le (hK : 64 ^ a ≤ D.numEdges) {Δ :
     (hdeg : ∀ v ∈ D.vertices, v.1.length ≤ Δ) (hM : 2 * Δ * (64 ^ (2 * a)) ^ 2 ≤ D.numEdges)
     (hL : 2 ^ a * 64 ^ (2 * a) ≤ D.numEdges) :
     (nativeParentPacking r a D).2.1 * 2 ^ a ≤ 3 * D.numEdges := by
-  have hdeg' (v : ℕ) : (D.vertices.getD v ([], .inl [])).1.length ≤ Δ := by
+  have hdeg' (v : ℕ) : (D.vertices.getD v defaultVertex).1.length ≤ Δ := by
     by_cases hv : v < D.vertices.length
     · rw [List.getD_eq_getElem _ _ hv]
       exact hdeg _ (List.getElem_mem hv)
@@ -223,7 +224,7 @@ ports, and a packet vertex has one port per end in group `g` of an edge of its p
 there are at most `2 ^ a`. -/
 theorem length_le_of_mem_vertices_nativeChild (hK : 64 ^ a ≤ D.numEdges) (hia : i < a) {Δ : ℕ}
     (hdeg : ∀ v ∈ D.vertices, v.1.length ≤ Δ) (hL : 2 * 2 ^ a ≤ Δ) (fl : List ℕ) (pt : ℕ) (t : ℤ)
-    (ζ β : List ℕ) (g : Fin 64) {v : List ℕ × VertexDesc}
+    (ζ β : List ℕ) (g : Fin 64) {v : List ℕ × VertexDesc T}
     (hv : v ∈ (nativeChild fl a i pt t ζ r D (nativeParentPacking r a D) β g).vertices) :
     v.1.length ≤ Δ := by
   rw [nativeChild_nativeParentPacking_eq hD hK hia] at hv

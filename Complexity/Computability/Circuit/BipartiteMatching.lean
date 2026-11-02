@@ -20,8 +20,11 @@ import Mathlib.Combinatorics.Hall.Finite
 A bipartite graph with `n` left and `n` right vertices is a subgraph of the complete bipartite
 graph `K_{n,n}`, given by the indicator of its edges, one bit for each pair `(i, j)` of a left
 vertex `i` and a right vertex `j` (`Cslib.Circuits.BipartiteMatching.graph`, numbering the pairs by
-`finProdFinEquiv`). It has a *perfect matching* when some bijection `σ` from the left to the right
-vertices uses only edges, `(i, σ i)` for every `i` (`BipartiteMatching.HasPerfectMatching`). The
+`finProdFinEquiv`), which contains a set of edges when it has each of them
+(`BipartiteMatching.Contains`). A set of edges is a *matching* when no two of them share an
+endpoint (`BipartiteMatching.IsMatching`). A graph has a *perfect matching* when some bijection `σ`
+from the left to the right vertices uses only edges, `(i, σ i)` for every `i`
+(`BipartiteMatching.HasPerfectMatching`). The
 bipartite perfect matching function `Cslib.Circuits.bipartitePerfectMatching n` of the `n * n`
 possible edges says whether the graph has a perfect matching. It is monotone
 (`monotone_bipartitePerfectMatching`): adding edges keeps a perfect matching.
@@ -39,6 +42,8 @@ when every set of left vertices has at least as many neighbours
 * `Cslib.Circuits.BipartiteMatching.HasPerfectMatching`: a bipartite graph on `V × V` has a
   perfect matching.
 * `Cslib.Circuits.BipartiteMatching.graph`: the bipartite graph of an input.
+* `Cslib.Circuits.BipartiteMatching.IsMatching`: a set of edges is a matching.
+* `Cslib.Circuits.BipartiteMatching.Contains`: an input contains all edges of a set.
 * `Cslib.Circuits.bipartitePerfectMatching`: the bipartite perfect matching function.
 
 ## Main results
@@ -112,12 +117,43 @@ theorem HasPerfectMatching.mono {G H : V × V → Bool} (hG : HasPerfectMatching
   obtain ⟨σ, hσ⟩ := hG
   exact ⟨σ, fun v => Bool.eq_true_of_true_le (hσ v ▸ h (v, σ v))⟩
 
+/-- A set of edges of a bipartite graph is a *matching* when two of its edges sharing an endpoint
+are equal. -/
+def IsMatching (E : Finset (V × W)) : Prop :=
+  ∀ e ∈ E, ∀ e' ∈ E, (e.1 = e'.1 ∨ e.2 = e'.2) → e = e'
+
+/-- Whether a set of edges is a matching is decidable. -/
+instance [DecidableEq V] [DecidableEq W] (E : Finset (V × W)) : Decidable (IsMatching E) :=
+  inferInstanceAs (Decidable (∀ e ∈ E, ∀ e' ∈ E, (e.1 = e'.1 ∨ e.2 = e'.2) → e = e'))
+
+/-- A subset of a matching is a matching. -/
+theorem IsMatching.mono {E F : Finset (V × W)} (hE : IsMatching E) (hFE : F ⊆ E) :
+    IsMatching F :=
+  fun e he e' he' h => hE e (hFE he) e' (hFE he') h
+
+/-- A single edge is a matching. -/
+theorem isMatching_singleton (e : V × W) : IsMatching ({e} : Finset (V × W)) := by
+  simp [IsMatching]
+
 variable {n : ℕ}
 
 /-- The bipartite graph of an input: the left vertex `i` and the right vertex `j` are adjacent when
 the bit numbered `finProdFinEquiv (i, j)` is one. -/
 def graph (x : BitString (n * n)) : Fin n × Fin n → Bool :=
   fun e => x (finProdFinEquiv e)
+
+/-- The input `x` contains all edges of `E`. -/
+def Contains (x : BitString (n * n)) (E : Finset (Fin n × Fin n)) : Prop :=
+  ∀ e ∈ E, graph x e = true
+
+/-- Whether an input contains all edges of a set is decidable. -/
+instance (x : BitString (n * n)) (E : Finset (Fin n × Fin n)) : Decidable (Contains x E) :=
+  inferInstanceAs (Decidable (∀ e ∈ E, graph x e = true))
+
+/-- An input containing all edges of a set contains all edges of its subsets. -/
+theorem Contains.mono {x : BitString (n * n)} {E F : Finset (Fin n × Fin n)} (h : Contains x E)
+    (hFE : F ⊆ E) : Contains x F :=
+  fun e he => h e (hFE he)
 
 end BipartiteMatching
 

@@ -26,6 +26,9 @@ coordinates gives `√deg(f) ≤ s(f)` (`QueryComplexity.sqrt_degree_le_sensitiv
 
 ## Main results
 
+* `Cslib.BitString.exists_two_pow_lt_two_mul_card_forall_isSensitiveCoord`: a nonzero Fourier
+  coefficient on `S` gives a set of more than half of the points whose edges in the directions of
+  `S` are all sensitive.
 * `Cslib.BitString.sqrt_card_le_sensitivity_of_fourierCoeff_ne_zero`: a nonzero Fourier
   coefficient on `S` forces sensitivity at least `√|S|`.
 * `Cslib.QueryComplexity.degree_le_sensitivity_sq`: **Huang's sensitivity theorem**,
@@ -49,11 +52,15 @@ variable {n : ℕ}
 
 namespace BitString
 
-/-- **A nonzero Fourier coefficient forces sensitivity**: if `f`, read as signs, has a nonzero
-Fourier coefficient on `S`, then `f` has at least `√|S|` sensitive coordinates at some input. -/
-theorem sqrt_card_le_sensitivity_of_fourierCoeff_ne_zero {f : BooleanFunction n}
+/-- **A nonzero Fourier coefficient gives a large fiber of sensitive edges**: if `f`, read as signs,
+has a nonzero Fourier coefficient on `S`, then some set `V` of more than half of the points of the
+cube has every edge inside `V` in a direction of `S` sensitive for `f`. The set is a fiber of the
+twist `f ⊕ parity_S` of `f` by the parity on `S`, which the coefficient makes unbalanced
+[GotsmanLinial1992]. -/
+theorem exists_two_pow_lt_two_mul_card_forall_isSensitiveCoord {f : BooleanFunction n}
     {S : Finset (Fin n)} (h : fourierCoeff (fun x => signVal (f x)) S ≠ 0) :
-    √(#S : ℝ) ≤ sensitivity f := by
+    ∃ V : Finset (BitString n), 2 ^ n < 2 * #V ∧
+      ∀ x ∈ V, ∀ i ∈ S, update x i (!x i) ∈ V → IsSensitiveCoord f x i := by
   -- `f` twisted by the parity on `S`
   set g : BitString n → Bool := fun x => f x ^^ parityOn S x with hg
   have hf (y : BitString n) : f y = (g y ^^ parityOn S y) := by
@@ -75,16 +82,25 @@ theorem sqrt_card_le_sensitivity_of_fourierCoeff_ne_zero {f : BooleanFunction n}
       simp only [Bool.not_eq_true] at hcard hlt
       omega
     · exact ⟨true, by omega⟩
-  obtain ⟨x, hx, hS⟩ := exists_mem_sqrt_card_le_card_update_mem
-    (by rwa [Fintype.card_fin]) S
-  refine hS.trans ?_
   -- along the directions of `S` inside the fiber, `g` is constant and `f` flips
-  refine Nat.cast_le.2 (card_le_sensitivity_of_forall_isSensitiveCoord (x := x) fun i hi => ?_)
-  obtain ⟨hiS, hiV⟩ := mem_filter.1 hi
+  refine ⟨_, hc, fun x hx i hiS hiV => ?_⟩
   have hgx : g x = c := (mem_filter.1 hx).2
   have hgi : g (update x i (!x i)) = c := (mem_filter.1 hiV).2
   rw [IsSensitiveCoord, hf, hf x, hgi, hgx, parityOn_update_not hiS]
   cases c <;> cases parityOn S x <;> decide
+
+/-- **A nonzero Fourier coefficient forces sensitivity**: if `f`, read as signs, has a nonzero
+Fourier coefficient on `S`, then `f` has at least `√|S|` sensitive coordinates at some input. -/
+theorem sqrt_card_le_sensitivity_of_fourierCoeff_ne_zero {f : BooleanFunction n}
+    {S : Finset (Fin n)} (h : fourierCoeff (fun x => signVal (f x)) S ≠ 0) :
+    √(#S : ℝ) ≤ sensitivity f := by
+  obtain ⟨V, hV, hsens⟩ := exists_two_pow_lt_two_mul_card_forall_isSensitiveCoord h
+  obtain ⟨x, hx, hS⟩ := exists_mem_sqrt_card_le_card_update_mem
+    (by rwa [Fintype.card_fin]) S
+  refine hS.trans (Nat.cast_le.2
+    (card_le_sensitivity_of_forall_isSensitiveCoord (x := x) fun i hi => ?_))
+  obtain ⟨hiS, hiV⟩ := mem_filter.1 hi
+  exact hsens x hx i hiS hiV
 
 end BitString
 

@@ -174,13 +174,30 @@ theorem computableInPolyTime_rowEntry {rows : α → List (List ℤ)} {i j : α 
     (((ComputableInPolyTime.listGetD (encA := encList encIntBin) []).comp
       (hrows.prod hi)).prod hj))
 
+/-- Input triple `((x, i), j)` for `computableInPolyTime_tabulateTable`: outer context `x`, row
+index `i`, and column index `j`. -/
+abbrev TableIndex (α : Type) : Type := (α × ℕ) × ℕ
+
+/-- Context-and-row pair `(x, i)` of a `TableIndex`. -/
+abbrev TableIndex.rowCtx (p : TableIndex α) : α × ℕ := p.1
+
+/-- Outer context `x` of a `TableIndex`. -/
+abbrev TableIndex.ctx (p : TableIndex α) : α := p.rowCtx.1
+
+/-- Row index `i` of a `TableIndex`. -/
+abbrev TableIndex.row (p : TableIndex α) : ℕ := p.rowCtx.2
+
+/-- Column index `j` of a `TableIndex`. -/
+abbrev TableIndex.col (p : TableIndex α) : ℕ := p.2
+
 /-- Tabulating an `r × c` table of binary integers from unary dimensions `(r, c)` is computable
 in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_tabulateTable {r c : α → ℕ} {g : α → ℕ → ℕ → ℤ}
     (hr : ComputableInPolyTime r encIn encUnary)
     (hc : ComputableInPolyTime c encIn encUnary)
-    (hg : ComputableInPolyTime (fun p : (α × ℕ) × ℕ => g p.1.1 p.1.2 p.2)
+    (hg : ComputableInPolyTime
+      (fun p : TableIndex α => g p.ctx p.row p.col)
       (encPair (encPair encIn encUnary) encUnary) encIntBin) :
     ComputableInPolyTime (fun x => tabulateTable (r x) (c x) (g x))
       encIn (encList (encList encIntBin)) :=

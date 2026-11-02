@@ -11,6 +11,7 @@ public import Complexity.Init
 public import Complexity.Algorithms.Lean.Query.Submodular.ValueQuery
 public import Complexity.Algorithms.Lean.Submodular.Greedy
 public import Cslib.Algorithms.Lean.Query.Bounds
+import Complexity.Foundations.Data.List.EraseDups
 
 /-!
 # Value-Oracle Query Complexity of Submodular Greedy Maximization
@@ -172,9 +173,9 @@ theorem countQueries_submodularGreedyQuery_eq
     (oracle : {ι : Type} → ValueQuery α β ι → ι) (xs : List α) (k : ℕ) :
     (submodularGreedyQuery xs k).countQueries oracle =
       ∑ t ∈ Finset.range k, (xs.toFinset.card - t) := by
-  have h := countQueries_submodularGreedyLoopM_eq oracle (nodup_dedupFirst xs) k
-    (Finset.empty_subset (dedupFirst xs).toFinset)
-  simpa [submodularGreedyQuery, submodularGreedyM, length_dedupFirst] using h
+  have h := countQueries_submodularGreedyLoopM_eq oracle (List.nodup_eraseDups xs) k
+    (Finset.empty_subset xs.eraseDups.toFinset)
+  simpa [submodularGreedyQuery, submodularGreedyM, List.length_eraseDups] using h
 
 @[simp] theorem countQueries_submodularGreedyQuery_zero
     (oracle : {ι : Type} → ValueQuery α β ι → ι) (xs : List α) :

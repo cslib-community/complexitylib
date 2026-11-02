@@ -8,7 +8,9 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Basic
-public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Compose
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bit
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bound
+import Mathlib.Tactic.Ring
 
 /-!
 # Building an input prefix into a description
