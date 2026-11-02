@@ -96,41 +96,23 @@ public def positive (n : ℕ) : ℕ := max n 1
 
 local instance : WordEncoding Stack.Memory.Layout := ⟨4, layoutWords⟩
 
-private theorem realizes_alloc : Realizes .exact (fun _ : ℕ => Stack.Memory.allocLayout 1)
-    (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding layoutWords
-    (fun w _ s => Fits w (s.frontier + 2)) (fun _ _ => 0) := by
-  realize
-  exact h.of_le (by omega)
-
-private theorem realizes_run : Realizes .exact (fun d : ℕ × Stack.Memory.Layout => run d.2 d.1)
-    (((Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding.prodMap layoutWords).trans
-      (Fin.appendEquiv 1 4).toEmbedding) (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
-    (fun w d s => d.2.Valid w 1 ∧ Stack.Memory.Inv d.2 s ∧ s.mem d.2.count.base = 0)
-    (fun _ _ => 0) := by
-  realize
-  all_goals
-    obtain ⟨hL, hI, h0⟩ := h
-    have h1 : Fits w 1 := hL.capacity_fits
-    have hne : d.2.items.base ≠ d.2.count.base := fun he =>
-      hL.count_not_owns (he ▸ Block.owns_add (i := 0) (by rw [hL.items_length]; omega))
-    have hlt : Fits w d.2.items.base := hmem.fits_of_lt_frontier (by
-      simpa using hI.item_lt (i := 0) (by rw [hL.items_length]; omega))
-    simp only [StateTransitionSpec.clientState, StateTransitionSpec.clientResult,
-      Stack.Memory.runClient_push, h0, Nat.add_zero, Nat.zero_add, Function.update_self,
-      Function.update_of_ne hne, ne_eq, Nat.one_ne_zero,
-      not_false_eq_true, Stack.Memory.runClient_pop_of_pos, Nat.sub_self, optionWords_some,
-      Matrix.cons_val_zero, Matrix.cons_val_one] at *
-  all_goals first | exact hlt | exact h1 | exact le_rfl
-
 /-- **The native certificate.** One uniform emitter, chosen before every width, input and
 memory, runs `program` from any memory whose frontier leaves room for the stack. -/
 public theorem realizes_program : Realizes .exact program
     (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
-    (fun w _ s => Fits w (s.frontier + 2)) (fun _ _ => 1) := by
-  refine (Realizes.bind realizes_alloc realizes_run).consequence ?_ (fun _ _ => le_rfl)
-  intro w n s _ _ hf
-  refine ⟨hf, Stack.Memory.valid_allocLayout hf, (Stack.Memory.inv_allocLayout s).1, ?_⟩
-  exact clear_of_owns ⟨le_rfl, Nat.lt_add_one _⟩
+    (fun w _ s => Fits w (s.frontier + 2)) (fun _ _ => 0) := by
+  realize
+  all_goals
+    try simp only [show (Memory.spec 0).clientResult s (Stack.Memory.allocLayout 1) =
+        ⟨⟨s.frontier, 1⟩, ⟨s.frontier + 1, 1⟩⟩ from rfl,
+      show (Memory.spec 0).clientState s (Stack.Memory.allocLayout 1) =
+        ⟨clear s.mem s.frontier 1, s.frontier + 1 + 1⟩ from rfl,
+      clear_of_owns (show (Block.mk s.frontier 1).Owns s.frontier from ⟨le_rfl, by simp⟩),
+      StateTransitionSpec.clientState, StateTransitionSpec.clientResult,
+      Stack.Memory.runClient_push, Stack.Memory.runClient_pop_of_pos, Nat.zero_add,
+      Nat.add_zero, Nat.sub_self, ne_eq, Nat.one_ne_zero, not_false_eq_true,
+      Function.update_self, optionWords_some, Matrix.cons_val_zero, Matrix.cons_val_one] at *
+    first | exact le_rfl | exact h.of_le (by omega)
 
 /-- The abstract client is admissible when its two values fit. -/
 private theorem validHistory_client {w n : ℕ} (h1 : Fits w 1) (hn : Fits w n) :
@@ -194,11 +176,12 @@ every width of at least three bits per input bit. -/
 @[fun_prop, program_certificate]
 public theorem positive_polytime :
     UniformComputableInPolyTime .standard positive (fun _ n => [n]) id :=
-  realizes_program.uniformComputableInPolyTime .exactStandard 0 (.const 16) 3 (by decide)
+  realizes_program.uniformComputableInPolyTime .exactStandard 0 (.const 15) 3 (by decide)
     (fun _ _ j => by fin_cases j; rfl) fun n w hw hin => by
       have h4 : Fits w 4 := (show Fits 3 4 by decide).mono (le_trans (by simp [logWidth]) hw)
       have hroom : Fits w ((inputState [n]).frontier + 2) := h4.of_le (by simp [inputState])
-      obtain ⟨hres, hvalid, hcost⟩ := program_spec hroom (hin.2 n (by simp))
-      exact ⟨by simp, h4.of_le (by simp), hroom, hvalid, hres, by omega⟩
+      have hp := program_spec hroom (hin.2 n (by simp))
+      refine ⟨by simp, h4.of_le (by simp), hroom, hp.2.1, ?_, by have := hp.2.2; omega⟩
+      simpa only [Equiv.coe_toEmbedding, Equiv.funUnique_symm_apply, uniqueElim_const] using hp.1
 
 end Cslib.DataStructure.Stack.Controller
