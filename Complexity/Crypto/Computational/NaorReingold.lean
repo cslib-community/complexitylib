@@ -602,8 +602,9 @@ rerandomize it into a `BitString k`-indexed family via `multiDDHRerandomizeLaw` 
 noncomputable def naorReingoldLevelDDHDistinguisher (d : F.Desc) {n : ℕ} (k : ℕ) (hk : k < n)
     (adv : OracleComp (fun _ : BitString n => F.Carrier d) Bool)
     (t : F.Carrier d × F.Carrier d × F.Carrier d) : PMF Bool :=
-  (F.multiDDHRerandomizeLaw d (BitString k) t.1 t.2.1 t.2.2).bind
-    (F.naorReingoldLevelTest d k hk adv t.1)
+  let (u, v, w) := t
+  (F.multiDDHRerandomizeLaw d (BitString k) u v w).bind
+    (F.naorReingoldLevelTest d k hk adv u)
 
 /-- Under `multiDDHRealTupleLaw`, `naorReingoldLevelTest` reproduces `naorReingoldHybridGame` at
 depth `k`. -/
