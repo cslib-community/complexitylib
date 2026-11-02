@@ -2627,6 +2627,7 @@ public import Complexity.Computability.WordRAM.Randomized.Structured
 public import Complexity.Computability.WordRAM.Randomized.UniformLoopExit
 public import Complexity.Computability.WordRAM.Realization.Absorb
 public import Complexity.Computability.WordRAM.Realization.Backend
+public import Complexity.Computability.WordRAM.Realization.BackendFrame
 public import Complexity.Computability.WordRAM.Realization.Basic
 public import Complexity.Computability.WordRAM.Realization.Bind
 public import Complexity.Computability.WordRAM.Realization.Branch
@@ -2974,6 +2975,7 @@ public import Complexity.DataStructure.Memory.Copy
 public import Complexity.DataStructure.Memory.Field
 public import Complexity.DataStructure.Memory.Frame
 public import Complexity.DataStructure.Memory.Record
+public import Complexity.DataStructure.Memory.Region
 public import Complexity.DataStructure.Memory.Spec
 public import Complexity.DataStructure.Memory.Triple
 public import Complexity.DataStructure.ObliviousSequence
