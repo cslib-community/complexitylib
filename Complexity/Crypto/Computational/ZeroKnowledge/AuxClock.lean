@@ -24,15 +24,25 @@ polynomially bounded.
 When `Vstar` is instead clocked in the primary input `(1^n, a)` (or in the instance `x` alone) via
 `IsOraclePPTWithAux`, input-tape prefix locality (`IsOraclePPTWithAux.exists_run_interpret_take`)
 shows that `Vstar` reads at most a polynomial prefix `z.take (T_V n a)` of `z` during its run
-against any stateful prover `Prover Unit`. Truncating the simulator `S₀` supplied by
-`AuxiliaryInputZeroKnowledge` to that prefix (`S n a z := S₀ n a (z.take (T_V n a))`) therefore
-yields a primary-input-clocked simulator (`IsPPTWithAux`) that works for **arbitrary, unbounded**
-auxiliary inputs `z` against any distinguisher clocked in the primary input and view
-(`IsPPTWithAux`) that receives the full untruncated `z`, both in the security-parameter-indexed
-family form (`UnboundedAuxiliaryInputZeroKnowledge`) and in the Goldreich-style instance-indexed
-(`x`-indexed) form (`InstanceAuxiliaryInputZeroKnowledge`) where the security parameter is
-`(enc x).length` and the simulator is chosen once per `Vstar` before the distinguisher, instance
-`x`, valid witness `w`, and unbounded auxiliary input `z`.
+against any stateful prover `Prover Unit`. Applying `AuxiliaryInputZeroKnowledge` to the
+prefix-truncated verifier `Vstar' n a z := Vstar n a (z.take (T_V n a))` and setting
+`S n a z := S₀ n a (z.take (T_V n a))` yields a primary-input-clocked simulator (`IsPPTWithAux`)
+that works for **arbitrary, unbounded** auxiliary inputs `z` against any distinguisher clocked in
+the primary input and view (`IsPPTWithAux`) that receives the full untruncated `z`, both in the
+security-parameter-indexed family form (`UnboundedAuxiliaryInputZeroKnowledge`) and in the
+Goldreich-style instance-indexed (`x`-indexed) form (`InstanceAuxiliaryInputZeroKnowledge`) where
+the security parameter is `(enc x).length` and the simulator is chosen once per `Vstar` before the
+distinguisher, instance `x`, valid witness `w`, and unbounded auxiliary input `z`.
+
+Because the distinguisher `adversary` is chosen after `S` and may read a longer polynomial prefix
+`T_V n a + T_A n a` of `z` than `Vstar` does, the bridge evaluates `AuxiliaryInputZeroKnowledge` on
+the combined prefix `z' n := (z n).take (T_V n (a n) + T_A n (a n))` and uses the exact verifier-
+congruence clause `Vstar' n a z₁ = Vstar' n a z₂ → S₀ n a z₁ = S₀ n a z₂` of
+`AuxiliaryInputZeroKnowledge` to equate `S₀ n (a n) (z' n)` with `S n (a n) (z n)`. That syntactic
+congruence condition is an additional sufficient condition beyond Goldreich's auxiliary-input
+definition (early Chapter 4 draft `part4N.pdf`, §4.3.3, Definition 4.3.8, printed pp. 151–153), and
+is satisfied by `rfl` for `GMW.gmwSimulator` and the unconditional `univZeroKnowledgeProof` test
+instance.
 
 ## Main definitions
 
@@ -216,7 +226,8 @@ theorem UnboundedAuxiliaryInputZeroKnowledge.computationallyIndistinguishable
   exact hS_zk a w z ha hw hw_sat (fun n _ _ view => adversary n view) htest
 
 /-- **Clock bridge for family auxiliary-input zero knowledge.**
-Every system satisfying `AuxiliaryInputZeroKnowledge` also satisfies
+Every system satisfying `AuxiliaryInputZeroKnowledge` (including its exact verifier-congruence
+condition `Vstar n a z₁ = Vstar n a z₂ → S n a z₁ = S n a z₂`) also satisfies
 `UnboundedAuxiliaryInputZeroKnowledge` against verifiers clocked in `(1^n, a)`. -/
 theorem AuxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
     {prover : ℕ → α → List Bool → Prover Unit} {isWitness : α → List Bool → Bool}
