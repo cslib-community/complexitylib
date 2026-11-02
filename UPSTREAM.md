@@ -531,7 +531,13 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   tails still charged. Dequeue stages its test zero and full runtime transfer arguments; its
   local work is 28 on the direct path or 40*rearCount+69 on fallback. Static reindexing rewires
   existing input words without free computation or new continuation assertions.
-  The full framed queue/faithful allocation client remains separate. No abstract headline is added.
+  One global typed-method emitter handles runtime layouts and either queue operation, retaining
+  the complete operation/result label. Separate six/seven-instruction register kernels reserve
+  the span and install layouts at an arbitrary runtime base without changing memory. Queue-method
+  footprint and representation-congruence lemmas reuse the existing memory methods and `Modifies`.
+  These support the framed boundary; they do not replace storage initialization or faithful source
+  allocation. The full framed queue/faithful allocation client remains separate. No abstract
+  headline is added.
   `DataStructure/OrderedSet` and `DataStructure/OrderedSet/*` provide neutral
   optional-minimum contracts, a typed finite-set interface including deletion, and adaptive
   minimum extraction, with no tree or cost dependency. Bounded-key implementations may specialize

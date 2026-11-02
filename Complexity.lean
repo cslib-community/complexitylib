@@ -2561,6 +2561,9 @@ public import Complexity.Computability.WordRAM.Realization.Bind
 public import Complexity.Computability.WordRAM.Realization.Branch
 public import Complexity.Computability.WordRAM.Realization.Client.MemoryQueue
 public import Complexity.Computability.WordRAM.Realization.Client.MemoryQueueDispatch
+public import Complexity.Computability.WordRAM.Realization.Client.MemoryQueueFrame
+public import Complexity.Computability.WordRAM.Realization.Client.MemoryQueueInit
+public import Complexity.Computability.WordRAM.Realization.Client.MemoryQueueMethod
 public import Complexity.Computability.WordRAM.Realization.Client.MemoryStack
 public import Complexity.Computability.WordRAM.Realization.Glue
 public import Complexity.Computability.WordRAM.Realization.GlueVector
