@@ -536,8 +536,14 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   the span and install layouts at an arbitrary runtime base without changing memory. Queue-method
   footprint and representation-congruence lemmas reuse the existing memory methods and `Modifies`.
   These support the framed boundary; they do not replace storage initialization or faithful source
-  allocation. The full framed queue/faithful allocation client remains separate. No abstract
-  headline is added.
+  allocation. The complete framed queue instantiates the existing local certificate, with one
+  program before runtime base/capacity/width and space `2*(C+1)`. Its actual work envelope
+  `G <= 7*M+80` scales the original memory potential to `48*factor*rearCount` and amortized
+  native-body charge `153*factor`; each flat call's halt is separate. Fresh initialization costs
+  13 body instructions under the zero-block premise; dirty clearing costs `4*space+19` and can
+  change unused item cells. Delivered arguments follow the existing calling convention. Faithful
+  source allocation and a complete allocated-client clock remain separate. No abstract headline
+  or legacy size/space/step improvement is claimed.
   `DataStructure/OrderedSet` and `DataStructure/OrderedSet/*` provide neutral
   optional-minimum contracts, a typed finite-set interface including deletion, and adaptive
   minimum extraction, with no tree or cost dependency. Bounded-key implementations may specialize
