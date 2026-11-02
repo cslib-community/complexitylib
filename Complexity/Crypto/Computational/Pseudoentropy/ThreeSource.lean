@@ -58,11 +58,17 @@ namespace Cslib.Crypto.Pseudoentropy.ThreeSource
 
 open Probability BitString Turing.MultiTapeTM
 
+/-- The observation word of a labeled seeded sample `((observation, label), seed)`. -/
+abbrev sampleObservation {Obs Label Seed : Type*} (s : (Obs × Label) × Seed) : Obs := s.1.1
+
+/-- The label of a labeled seeded sample `((observation, label), seed)`. -/
+abbrev sampleLabel {Obs Label Seed : Type*} (s : (Obs × Label) × Seed) : Label := s.1.2
+
 /-- Finish the first two components by hashing observations and retaining the label hash. -/
 noncomputable def finish (bound observationBits : ℕ)
     (middle : List (List Bool) × List Bool × List Bool) : ProbComp (List Bool) := do
   let first ← extractWordObservations bound observationBits middle.1
-  return first ++ (middle.2.1 ++ middle.2.2)
+  return first ++ (extractedSeed middle ++ extractedDigest middle)
 
 /-- The last observation hash composes with a certified intermediate result. -/
 theorem isPPTOn_finish {α : Type} {input : α ↪ List Bool} {bound observationBits : α → ℕ}
@@ -72,7 +78,7 @@ theorem isPPTOn_finish {α : Type} {input : α ↪ List Bool} {bound observation
     (hmiddle : ComputableInPolyTime middle input
       (encPair (encList encBits) (encPair encBits encBits))) :
     IsPPTOn input encBits (fun a => finish (bound a) (observationBits a) (middle a)) := by
-  unfold finish
+  unfold finish extractedSeed extractedDigest
   ppt
 
 attribute [program_certificate] isPPTOn_finish
@@ -84,7 +90,7 @@ noncomputable def extract (count seedBits bound observationBits labelBits remain
   let third ← extractWordSeeds count seedBits remainingBits samples
   let middle ← extractWordLabels count labelBits third.1
   let front ← finish bound observationBits middle
-  return front ++ (third.2.1 ++ third.2.2)
+  return front ++ (extractedSeed third ++ extractedDigest third)
 
 /-- The complete three-component program is PPT from ordinary sampler and size certificates. -/
 theorem isPPTOn_extract {α : Type} {input : α ↪ List Bool}
@@ -177,7 +183,7 @@ def outputLength (count seedBits bound observationBits labelBits remainingBits :
 The statement also covers zero-sized components and malformed retained seeds. -/
 theorem length_extract (count seedBits bound observationBits labelBits remainingBits : ℕ)
     (source : ProbComp ((List Bool × Bool) × List Bool))
-    (hbound : ∀ sample ∈ (ProbComp.eval source).support, sample.1.1.length ≤ bound)
+    (hbound : ∀ sample ∈ (ProbComp.eval source).support, (sampleObservation sample).length ≤ bound)
     {output : List Bool} (houtput : output ∈ (ProbComp.eval
       (extract count seedBits bound observationBits labelBits remainingBits source)).support) :
     output.length = outputLength count seedBits bound observationBits labelBits remainingBits := by
@@ -255,7 +261,7 @@ theorem eval_ideal_remaining
       let third ← extractMatrixLabelsIdeal source count (count * seedBits) remainingBits
       let middle ← extractWordLabels count labelBits third.1
       let front ← finish bound observationBits middle
-      return front ++ (third.2.1 ++ third.2.2)) =
+      return front ++ (extractedSeed third ++ extractedDigest third)) =
       ProbComp.eval (withoutSeeds count seedBits bound observationBits labelBits remainingBits
         source) := by
   simpa only [withoutSeeds, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
@@ -413,7 +419,7 @@ theorem replace_indexed_labels {pair : SamplablePair} {gap : ℕ → ℝ} (hpair
     adversary n i (front ++ suffix)
   have htest : IsPPTOn (encPair (encPair encUnary encUnary)
       (encPair (encList encBits) (encPair encBits encBits)))
-      encBool (fun input => test input.1.1 input.1.2 input.2) := by
+      encBool (fun ((n, i), middle) => test n i middle) := by
     dsimp only [test]
     apply IsPPTOn.bind_with (left := encBits) (by fun_prop)
     apply IsPPTOn.bind_with (left := encBits) (by fun_prop)
@@ -482,7 +488,7 @@ theorem SamplablePair.HasGap.extract_indexed_three {pair : SamplablePair} {gap :
             conditionalEntropy (pair.joint n)))
     (test : ℕ → ℕ → List Bool → ProbComp Bool)
     (htest : IsPPTOn (encPair (encPair encUnary encUnary) encBits)
-      encBool (fun input => test input.1.1 input.1.2 input.2)) :
+      encBool (fun ((n, i), word) => test n i word)) :
     let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
     Negligible (fun n => Game.advantage
       (ProbComp.eval (ThreeSource.extract (count n) (saved.length n) (bound n)

@@ -63,8 +63,8 @@ theorem HasGap.indexed_extracted_advantage_negligible {pair : SamplablePair} {ga
     (test : ∀ n i, List (List Bool) × Seed n i × Output n i → ProbComp Bool)
     (htest : IsPPTOn (encPair (encPair encUnary encUnary)
       (encList (encPair encBits encBool))) encBool
-        (fun input => extractLabels (seed input.1.1 input.1.2) (hash input.1.1 input.1.2)
-          input.2 >>= test input.1.1 input.1.2))
+        (fun ((n, i), samples) => extractLabels (seed n i) (hash n i)
+          samples >>= test n i))
     {candidates count densityBound : ℕ → ℕ} {numerator : ℕ → ℕ → ℕ} {slack : ℕ → ℝ}
     (hcandidates : ComputableInPolyTime candidates encUnary encUnary)
     (hcount : ComputableInPolyTime count encUnary encUnary)
@@ -134,8 +134,9 @@ theorem HasGap.indexed_extracted_advantage_negligible {pair : SamplablePair} {ga
   refine ⟨2, Filter.eventually_map.mpr ?_⟩
   filter_upwards [hmasks, hmass, hchoose, hvalid,
     (herror' degree).eventually_le_const (by norm_num : (0 : ℝ) < 1)] with
-    n hmask hmass hindex hn hsmall
-  obtain ⟨mask, hdense, hpositive, hdistinguish⟩ := hmask (choose n) hindex hn.1 hn.2.1 hn.2.2
+    n hmask hmass hindex ⟨hnumPos, hnumLe, hnumRatio⟩ hsmall
+  obtain ⟨mask, hdense, hpositive, hdistinguish⟩ :=
+    hmask (choose n) hindex hnumPos hnumLe hnumRatio
   have hclose := maskedSample_extract_dist_bind_le (pair.latentSample n)
     (fun value => pair.encode n value.1) Prod.snd mask (count n) (realization.length n + n + 2)
     (hmass mask (fun value _ => hpositive value)) (seed n (choose n)) (hash n (choose n))
@@ -178,8 +179,8 @@ theorem HasGap.extract_indexed_labels {pair : SamplablePair} {gap : ℕ → ℝ}
     (test : ∀ n i, List (List Bool) × Seed n i × BitString (outputBits n i) → ProbComp Bool)
     (htest : IsPPTOn (encPair (encPair encUnary encUnary)
       (encList (encPair encBits encBool))) encBool
-        (fun input => extractLabels (seed input.1.1 input.1.2) (hash input.1.1 input.1.2)
-          input.2 >>= test input.1.1 input.1.2))
+        (fun ((n, i), samples) => extractLabels (seed n i) (hash n i)
+          samples >>= test n i))
     (hcandidates : ComputableInPolyTime candidates encUnary encUnary)
     (hslack : ComputableInPolyTime inverseSlack encUnary encUnary)
     {numerator : ℕ → ℕ → ℕ} {densityBound : ℕ → ℕ}

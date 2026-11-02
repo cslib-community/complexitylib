@@ -493,7 +493,7 @@ theorem CollisionResistantOn.of_extract
     (hCR : CollisionResistantOn H₂ valid₂)
     (extract : ℕ → List Bool → List Bool → List Bool → List Bool × List Bool)
     (hextract : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool × List Bool => extract p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ((n, k, m₁, m₂) : ℕ × List Bool × List Bool × List Bool) => extract n k m₁ m₂)
       (encPair encUnary (encPair encBits (encPair encBits encBits)))
       (encPair encBits encBits))
     (himp : ∀ᶠ n in Filter.atTop, ∀ k, k.length = n → ∀ m₁ m₂,
