@@ -2795,6 +2795,8 @@ public import Complexity.Crypto.Computational.IndexedSignature
 public import Complexity.Crypto.Computational.IndexedSignature.Counter
 public import Complexity.Crypto.Computational.IndexedSignature.Seeded
 public import Complexity.Crypto.Computational.Kilian
+public import Complexity.Crypto.Computational.Kilian.NP
+public import Complexity.Crypto.Computational.Kilian.Soundness
 public import Complexity.Crypto.Computational.LWE.Basic
 public import Complexity.Crypto.Computational.MAC
 public import Complexity.Crypto.Computational.MerkleDamgard
@@ -3944,6 +3946,7 @@ public import Complexity.Probability.RankDecoder.Native
 public import Complexity.Probability.RejectionSampling
 public import Complexity.Probability.Resilience
 public import Complexity.Probability.Rewinding
+public import Complexity.Probability.Rewinding.Consistency
 public import Complexity.Probability.Shearer
 public import Complexity.Probability.SmallBias
 public import Complexity.Probability.SmallBias.Powering
