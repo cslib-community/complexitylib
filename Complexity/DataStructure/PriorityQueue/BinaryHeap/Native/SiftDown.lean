@@ -12,6 +12,7 @@ public import Complexity.Computability.WordRAM.Realization.Reindex
 public import Complexity.Computability.WordRAM.Realization.Witness
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.Encoding
 import Complexity.Tactic.Realize
+import Complexity.Computability.WordRAM.Realization.Backend
 
 /-!
 # Source-faithful native sift-down
@@ -444,20 +445,7 @@ theorem exec_siftDown {r : ℕ} (frontier : Fin r) (src : Fin 6 → Fin r)
   obtain ⟨y, hy, hm, _, hframe⟩ :=
     (realizes_siftDown.code_spec frontier src tmp hi hd hf hs).2 w ((⟨n, L⟩, S), k) x
       hx hin hI hv
-  have hwidth (os : List Memory.Op) (s : Memory.State) :
-      (Memory.spec w).totalCost Memory.charge s os =
-        (Memory.spec 0).totalCost Memory.charge s os := by
-    induction os generalizing s with
-    | nil => rfl
-    | cons o os ih => exact congrArg (Memory.charge s o + ·) (ih _)
-  have hist : (Memory.spec w).clientHistory (memoryState frontier x)
-      (BinaryHeap.Memory.siftDown L S k) = (Memory.spec 0).clientHistory (memoryState frontier x)
-      (BinaryHeap.Memory.siftDown L S k) :=
-    congrArg (fun t => t.2.2)
-      (runClient_width w (BinaryHeap.Memory.siftDown L S k) (memoryState frontier x))
-  rw [hwidth, hist] at hc
-  change memoryCost (BinaryHeap.Memory.siftDown L S k) (memoryState frontier x) ≤
-    10 * (Nat.log 2 S - Nat.log 2 k) + 6 at hc
+  rw [← memoryCost_eq_totalCost] at hc
   have hlog := Nat.log_mono_right (b := 2) hshape.size_le
   have hbound : realizes_siftDown.factor *
       (memoryCost (BinaryHeap.Memory.siftDown L S k) (memoryState frontier x) + 0 + 1) ≤
