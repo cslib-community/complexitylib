@@ -134,7 +134,7 @@ theorem mem_support_runConfigFrom_pure {σ : Type} (machine : MultiTapePTM k Sym
     (cfg : Config k Symbol State Oracle input) :
     (OracleComp.interpret (m := Id) answer (machine.runConfigFrom (pure bit)
         (fun oracle word => OracleComp.query (oracle, word)) fuel cfg), s) ∈
-      ((OracleComp.interpret (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
+      ((OracleComp.interpret (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
           (fun q s => PMF.pure (answer q, s)))
         (machine.runConfigFrom (ProbOracleComp.sample (ProbComp.uniform Bool))
           (fun oracle word => ProbOracleComp.query (oracle, word)) fuel cfg)).run s).support := by

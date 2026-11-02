@@ -45,30 +45,30 @@ open Spec
 
 /-- The law of a program without external oracles: its private coins are fair. -/
 noncomputable def plainLaw {α : Type} (p : ProbOracleComp OracleSpec.empty α) : PMF α :=
-  OracleComp.interpret (ProbOracleComp.handler ProbComp.unifOracle fun e => e.elim) p
+  OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle fun e => e.elim) p
 
 /-- The law of a joint program in the plain model. -/
 private noncomputable def runLaw {α : Type}
     (p : ProbOracleComp (OracleSpec.empty ⊕ₒ OracleSpec.empty) α) : PMF α :=
-  OracleComp.interpret (ProbOracleComp.handler ProbComp.unifOracle
+  OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
     (OracleComp.sumHandler (fun e => e.elim) fun e => e.elim)) p
 
 private theorem plain_eval {α : Type}
     (p : ProbOracleComp (OracleSpec.empty ⊕ₒ OracleSpec.empty) α) :
     World.plain.eval p = runLaw p := by
   have h := OracleComp.run_interpret_stateless (m := PMF) (State := Unit)
-    (ProbOracleComp.handler ProbComp.unifOracle
+    (OracleComp.sumHandler ProbComp.unifOracle
       (OracleComp.sumHandler (fun e => e.elim) fun e => e.elim)) p ()
-  have hh : (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
+  have hh : (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
       World.plain.impl) =
-      fun q s => (fun a => (a, s)) <$> ProbOracleComp.handler ProbComp.unifOracle
+      fun q s => (fun a => (a, s)) <$> OracleComp.sumHandler ProbComp.unifOracle
         (OracleComp.sumHandler (fun e => e.elim) fun e => e.elim) q := by
     funext q s
     rcases q with n | e | e
     · rfl
     · exact e.elim
     · exact e.elim
-  unfold World.eval ProbOracleComp.runWith
+  unfold World.eval ProbOracleComp.runWith OracleComp.runWith
   erw [hh, h]
   exact (PMF.map_comp _ _ _).trans (PMF.map_id _)
 
@@ -78,7 +78,7 @@ private theorem runLaw_liftProver {α : Type} (p : ProbOracleComp OracleSpec.emp
   congr 1
   funext q
   rcases q with n | e
-  · simp [ProbOracleComp.handler]
+  · simp [OracleComp.sumHandler]
   · exact e.elim
 
 
