@@ -570,10 +570,15 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   a balanced tree or machine-time certificate.
   `WordRAM/Dynamic` separately connects
   fixed bounded-word operation programs and faithful memory transcripts to those contracts.
-  The direct shared-heap queue uses the existing FIFO operation signature and native operation
-  traces, with a hidden two-stack representation, a concrete-register potential, framed storage,
-  and separately charged initialization. Its `2 * capacity` reservation is explicit; external
-  client computation and argument delivery are not charged by the operation-history bound.
+  The direct shared-heap queue realizes physical-array memory programs through one fixed
+  finite Backend family and the existing dynamic certificate. Count words remain in registers;
+  one native dispatcher, charged metadata copies and a scaled rear potential give uniform
+  amortized instruction bounds, including halt. Initialization uses six register instructions
+  from arbitrary bounded dirty data, preserving every memory cell. The original `2 * capacity`
+  reservation and end-fit domain are retained. The shared register count and exchange factor are
+  fixed before widths, layouts, values and clients; the removed hand-code's literal instruction
+  constants are not asserted. External client computation and tag/payload delivery remain outside
+  the operation-history bound; no generic stateful memory-only Backend instance is claimed.
   Coordinate placement and overlap with Srinivas's #685 and the merged #401 (`Algorithms/Lean/Query`)
   before upstream submission; #685 is not copied here. This is a prototype of composition and
   refinement, not a replacement for their query models or a general cell-probe lower-bound semantics.
