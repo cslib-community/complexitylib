@@ -21,6 +21,8 @@ import Complexity.Probability.PMF.Bind
 * `Cslib.Probability.PMF.uniformOfFintype_map_apply`: uniform image masses from fiber sizes.
 * `Cslib.Probability.PMF.bind_map_prodMk_apply`: point masses of a pairing bind.
 * `Cslib.Probability.PMF.map_injective`: injective encodings preserve equality of distributions.
+* `Cslib.Probability.PMF.map_apply_of_support`: the weight of an outcome whose image no other
+  supported outcome shares.
 
 ## References
 
@@ -92,5 +94,16 @@ theorem map_injective {f : α → β} (hf : Function.Injective f) :
   intro p q h
   ext a
   simpa only [PMF.map_apply, hf.eq_iff, tsum_ite_eq'] using congrArg (fun law => law (f a)) h
+
+/-- A map keeps the weight of an outcome that no other outcome of positive probability shares
+its image with. -/
+theorem map_apply_of_support {p : PMF α} {f : α → β} {a : α}
+    (h : ∀ x ∈ p.support, f x = f a → x = a) : (p.map f) (f a) = p a := by
+  rw [PMF.map_apply, tsum_eq_single a fun x hx => ?_, ite_eq_left rfl]
+  by_cases hf : f a = f x
+  · rw [ite_eq_left hf]
+    by_contra hp
+    exact hx (h x ((PMF.mem_support_iff _ _).mpr hp) hf.symm)
+  · exact ite_eq_right hf
 
 end Cslib.Probability.PMF
