@@ -50,6 +50,7 @@ so `memoryCost`, which is taken at width zero, is the charge that refinements st
 * `Certificate`: a realization certificate with its program, encodings, domain and work.
 * `Backend.registers`, `Backend.frontier`, `Backend.code`, `Backend.factor`: the register file,
   the body of each tag and one exchange factor.
+* `Backend.data`: the native data holding a memory state.
 * `Backend`: the tag, arguments and answer of each operation.
 * `Backend.Implements`: a backend runs the methods of a refinement.
 * `Backend.sum`: two backends side by side, for a product specification.
@@ -59,8 +60,10 @@ so `memoryCost`, which is taken at width zero, is the charge that refinements st
 
 * `totalCost_width`, `clientHistory_width`, `memoryCost_eq_totalCost`: memory charges do not
   depend on the word width.
+* `fits_appendWords`: appended argument words fit when both parts do.
 * `Backend.Implements.prod`: side-by-side backends run a product of refinements.
 * `Backend.exec_iff`, `Backend.rep_iff`: the execution relation and representation, unfolded.
+* `Backend.rep_data`: the data holding an invariant state represents its abstraction.
 * `Backend.exec_memoryState`: an operation leaves its method's final memory.
 * `Backend.amortized`, `Backend.bound`: amortized and worst-case instruction bounds.
 -/
@@ -92,6 +95,13 @@ theorem memoryCost_eq_totalCost {α : Type} (w : ℕ) (p : Memory.Prog α) (s : 
       (Memory.spec w).totalCost Memory.charge s ((Memory.spec w).clientHistory s p) := by
   rw [totalCost_width, clientHistory_width]
   rfl
+
+/-- Appended argument words fit when both parts do. -/
+theorem fits_appendWords {δ α : Type} {k l w : ℕ} (input : δ ↪ (Fin k → ℕ))
+    (output : α ↪ (Fin l → ℕ)) {d : δ} {a : α} (h₁ : ∀ i, Fits w (input d i))
+    (h₂ : ∀ i, Fits w (output a i)) : ∀ i, Fits w (appendWords input output (d, a) i) :=
+  Fin.addCases (fun i => by simpa [appendWords, Fin.appendEquiv] using h₁ i)
+    (fun i => by simpa [appendWords, Fin.appendEquiv] using h₂ i)
 
 /-! ## Certificates and backends -/
 
@@ -179,6 +189,25 @@ noncomputable def factor : ℕ := Finset.univ.sup fun i => (C i).realizes.factor
 /-- Each tag's exchange factor is at most the common one. -/
 theorem factor_le (i : ι) : (C i).realizes.factor ≤ factor C :=
   Finset.le_sup (f := fun i => (C i).realizes.factor) (Finset.mem_univ i)
+
+/-- The native data holding the memory state `s`: its cells, the frontier in its register, and
+zero in every other register. A calling-convention state, not an allocation. -/
+noncomputable def data (s : Memory.State) : Data (registers C) where
+  regs i := if i = frontier C then s.frontier else 0
+  mem := s.mem
+
+/-- The data holding `s` abstracts to `s`. -/
+@[simp] theorem memoryState_data (s : Memory.State) : memoryState (frontier C) (data C s) = s :=
+  Memory.State.ext rfl (by simp [memoryState, data])
+
+/-- The data holding a well-formed memory state is word-bounded. -/
+theorem bounded_data {w : ℕ} {s : Memory.State} (hs : Memory.WellFormed w s) :
+    (data C s).Bounded w := by
+  refine ⟨fun i => ?_, hs.mem_fits⟩
+  simp only [data]
+  split
+  · exact hs.frontier_fits
+  · exact fits_zero w
 
 private theorem layout (i : ι) :
     Function.Injective (tmp C i) ∧ (∀ a b, src C i a ≠ tmp C i b) ∧
@@ -356,6 +385,13 @@ noncomputable def implementation (hS : S.Implements R) : StateTransitionImpl D (
 theorem rep_iff (hS : S.Implements R) (s : D.State) (x : Data (registers C)) :
     (implementation hS).rep s x ↔ R.inv (memoryState (frontier C) x) ∧
       R.abs (memoryState (frontier C) x) = s ∧ x.Bounded w := Iff.rfl
+
+/-- The data holding a well-formed memory state that satisfies the invariant represents its
+abstraction. -/
+theorem rep_data (hS : S.Implements R) {e : Memory.State} {s : D.State}
+    (hw : Memory.WellFormed w e) (hi : R.inv e) (ha : R.abs e = s) :
+    (implementation hS).rep s (data C e) := by
+  refine (rep_iff hS s _).mpr ⟨?_, ?_, bounded_data C hw⟩ <;> rw [memoryState_data] <;> assumption
 
 /-- An operation leaves the memory and frontier of its method. -/
 theorem exec_memoryState (hS : S.Implements R) {s : D.State} {x y : Data (registers C)}
