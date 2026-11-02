@@ -41,8 +41,8 @@ input-tape prefix-locality theorem (`runOracle_append_take` / `runClosed_append_
 
 ## Main results
 
-* `Cslib.Probability.IsTidyOraclePPTOn.runOracle_of_clock`: any finite-control oracle machine run
-  under a polynomial-time computable clock `clock : List Bool → ℕ` is a clean phase.
+* `Cslib.Probability.IsOraclePPTOn.runOracle_of_clock`: any finite-control oracle machine run
+  under a polynomial-time computable clock `clock : List Bool → ℕ` is `IsOraclePPTOn`.
 * `Cslib.Probability.IsPPTWithAux.of_machine`,
   `Cslib.Probability.IsOraclePPTWithAux.of_machine`: explicit finite-control machine constructors.
 * `Cslib.Probability.IsOraclePPTWithAux.isOraclePPTOn`,
@@ -75,9 +75,7 @@ private theorem pmf_eq_of_map_eq {γ δ : Type*} {f : γ → δ} (hf : Function.
   have hfx := congrFun (congrArg DFunLike.coe h) (f x)
   simpa [PMF.map_apply, hiff] using hfx
 
-/-- Every clocked run of a finite-control oracle machine under a polynomial-time computable clock
-`clock : List Bool → ℕ` is a clean phase. -/
-theorem IsTidyOraclePPTOn.runOracle_of_clock {k : ℕ} {Control : Type}
+private theorem runOracle_of_clock_tidy {k : ℕ} {Control : Type}
     [Finite Operation] [Finite Control]
     (machine : _root_.Turing.MultiTapePTM k Bool Control Operation)
     {clock : List Bool → ℕ} (hclock : ComputableInPolyTime clock encBits encUnary) :
@@ -131,6 +129,16 @@ theorem IsTidyOraclePPTOn.runOracle_of_clock {k : ℕ} {Control : Type}
     encFiniteConfig encBits)).congr fun word State oracle s => ?_
   rw [← finiteRunFrom_take_runOracle]
   rfl
+
+/-- Every clocked run of a finite-control oracle machine under a polynomial-time computable clock
+`clock : List Bool → ℕ` is `IsOraclePPTOn`. -/
+theorem IsOraclePPTOn.runOracle_of_clock {k : ℕ} {Control : Type}
+    [Finite Operation] [Finite Control]
+    (machine : _root_.Turing.MultiTapePTM k Bool Control Operation)
+    {clock : List Bool → ℕ} (hclock : ComputableInPolyTime clock encBits encUnary) :
+    IsOraclePPTOn encBits encBits
+      (fun word : List Bool => machine.runOracle (clock word) word) :=
+  (runOracle_of_clock_tidy machine hclock).isOraclePPTOn
 
 /-- **Closed uniform strict PPT clocked in the primary input.** One finite fair-coin machine runs
 on the pair encoding `encPair input encBits (a, z) = frame (input a) ++ z`, clocked by a polynomial
@@ -217,7 +225,7 @@ theorem IsOraclePPTWithAux.isOraclePPTOn {program : α → List Bool → WordOra
     fun_prop
   have htidy : IsTidyOraclePPTOn (encPair input encBits) encBits
       (fun (a, z) => output <$> program a z) := by
-    refine ((IsTidyOraclePPTOn.runOracle_of_clock machine hclock).preprocess
+    refine ((runOracle_of_clock_tidy machine hclock).preprocess
       (ComputableInPolyTime.of_eq (encOut := encBits)
         (f := encPair input encBits) fun _ => rfl)).congr fun (a, z) State oracle s => ?_
     have hunframe : clock (encPair input encBits (a, z)) = c * ((input a).length + 1) ^ d := by
