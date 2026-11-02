@@ -70,8 +70,8 @@ theorem prioLTFlag_exec {n base w : ℕ} {x : Data rFib} (hbr : BaseRegs n base 
     let bval := if ltProp then 1 else 0
     ExecWithin w (prioLTFlag uReg kuReg vReg kvReg flagReg) x (x.set flagReg bval) 6 := by
   intro ltProp bval
-  have hz0 : x.regs zeroP = 0 := hbr.2.2.2.2.2.2.2.2.2.2.2.1
-  have ho1 : x.regs oneP = 1 := hbr.2.2.2.2.2.2.2.2.2.2.2.2
+  have hz0 : x.regs zeroP = 0 := hbr.regs_zeroP
+  have ho1 : x.regs oneP = 1 := hbr.regs_oneP
   unfold prioLTFlag
   by_cases hku : x.regs kuReg < x.regs kvReg
   · have hc : (Cond.lt kuReg kvReg).Holds x := hku
@@ -133,8 +133,8 @@ theorem insertIntoNonEmptyList_exec {n base w : ℕ} {x : Data rFib}
       IsCircList (RawState.ofData n base y).left (RawState.ofData n base y).right
         (h :: u :: tail) := by
   have hfit_stop := hbr.fits_stop hb
-  have hl_base : x.regs leftBase = base + 3 * n := hbr.2.2.2.2.2.1
-  have hr_base : x.regs rightBase = base + 4 * n := hbr.2.2.2.2.2.2.1
+  have hl_base : x.regs leftBase = base + 3 * n := hbr.regs_leftBase
+  have hr_base : x.regs rightBase = base + 4 * n := hbr.regs_rightBase
   let st := RawState.ofData n base x
   obtain ⟨r, hr_eq, hr_mem⟩ := hcirc.right_head
   have hr_mem_x : x.mem (base + 4 * n + h.val) = r.val := hr_eq
@@ -337,8 +337,8 @@ theorem addRootAndUpdateMin_exec {n base w : ℕ} {x : Data rFib}
   have hfit_stop := hbr.fits_stop hb
   have hfn_le : (T_u :: ts).length ≤ n :=
     (forestNodes_length_ge (T_u :: ts)).trans (by simpa using hnd.length_le_card)
-  have hz0 : x.regs zeroP = 0 := hbr.2.2.2.2.2.2.2.2.2.2.2.1
-  have ho1 : x.regs oneP = 1 := hbr.2.2.2.2.2.2.2.2.2.2.2.2
+  have hz0 : x.regs zeroP = 0 := hbr.regs_zeroP
+  have ho1 : x.regs oneP = 1 := hbr.regs_oneP
   obtain ⟨hu0, hu1, hu2, hu3, hu4, hu5, hum, hunr⟩ := hu_sc
   have hpres_add : ∀ r : Fin rFib, r ≠ s0 → r ≠ s1 → r ≠ s2 → r ≠ s3 → r ≠ s4 → r ≠ s5 →
       r ≠ minRootReg → r ≠ numRootsReg → (addRootAndUpdateMin uReg).Preserves r :=
@@ -347,8 +347,8 @@ theorem addRootAndUpdateMin_exec {n base w : ℕ} {x : Data rFib}
   · -- Empty root list (`minRoot = 0`)
     have hc : (Cond.eq minRootReg zeroP).Holds x := by
       simp only [Cond.Holds, hz0]; exact hmin0
-    have hl_base : x.regs leftBase = base + 3 * n := hbr.2.2.2.2.2.1
-    have hr_base : x.regs rightBase = base + 4 * n := hbr.2.2.2.2.2.2.1
+    have hl_base : x.regs leftBase = base + 3 * n := hbr.regs_leftBase
+    have hr_base : x.regs rightBase = base + 4 * n := hbr.regs_rightBase
     have ho_lu := owns_arr_addr (base := base) (k := 3) (by decide) u.isLt
     have ho_ru := owns_arr_addr (base := base) (k := 4) (by decide) u.isLt
     let x1 := (x.set s0 (base + 3 * n + u.val)).write (base + 3 * n + u.val) u.val
@@ -506,7 +506,7 @@ theorem addRootAndUpdateMin_exec {n base w : ℕ} {x : Data rFib}
       (he_ins.regs_eq (insertIntoNonEmptyList_preserves hu0 hu2)).trans hx1_u
     have hx2_s1 : x2.regs s1 = m.val :=
       (he_ins.regs_eq (insertIntoNonEmptyList_preserves (by decide) (by decide))).trans hx1_s1
-    have hbase2 : x2.regs baseReg = base := hbr2.2.2.1
+    have hbase2 : x2.regs baseReg = base := hbr2.regs_baseReg
     have hku_mem : x2.mem (base + u.val) = st.key u := by
       have : (RawState.ofData n base x2).key u = st.key u := by rw [hst2]
       exact this
@@ -571,8 +571,8 @@ theorem addRootAndUpdateMin_exec {n base w : ℕ} {x : Data rFib}
       (ofData_set_scratch x4 (by decide : 17 ≤ s5.val) bval).trans hst4
     have hx5_u : x5.regs uReg = u.val := by
       simp only [x5, Data.set_regs, Function.update_of_ne hu5, hx4_u]
-    have hx5_z : x5.regs zeroP = 0 := hbr5.2.2.2.2.2.2.2.2.2.2.2.1
-    have hx5_o : x5.regs oneP = 1 := hbr5.2.2.2.2.2.2.2.2.2.2.2.2
+    have hx5_z : x5.regs zeroP = 0 := hbr5.regs_zeroP
+    have hx5_o : x5.regs oneP = 1 := hbr5.regs_oneP
     -- ValidRoot preservation across x2 (only left/right of roots u, m, r changed!)
     have hvalid_all : ∀ (st_f : RawState n),
         st_f.key = st.key → st_f.par = st.par → st_f.child = st.child →
@@ -975,8 +975,8 @@ theorem isEmptyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x : 
       Modifies (Block.mk base (space n)).footprint x.mem y.mem ∧
       t + potential y ≤ 3 + potential x := by
   obtain ⟨hb, hbr, hraw⟩ := hinv
-  have hz0 : x.regs zeroP = 0 := hbr.2.2.2.2.2.2.2.2.2.2.2.1
-  have ho1 : x.regs oneP = 1 := hbr.2.2.2.2.2.2.2.2.2.2.2.2
+  have hz0 : x.regs zeroP = 0 := hbr.regs_zeroP
+  have ho1 : x.regs oneP = 1 := hbr.regs_oneP
   by_cases hm : x.regs minRootReg = 0
   · have hc : (Cond.eq minRootReg zeroP).Holds x := by simp only [Cond.Holds, hz0, hm]
     let y := x.set outFlag 1
@@ -1031,9 +1031,9 @@ theorem getKeyCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x : D
       t + potential y ≤ 7 + potential x := by
   obtain ⟨hb, hbr, hraw⟩ := hinv
   have hfit_stop := hbr.fits_stop hb
-  have hin_b : x.regs inBase = base + 7 * n := hbr.2.2.2.2.2.2.2.2.2.1
-  have hb_b : x.regs baseReg = base := hbr.2.2.1
-  have hz0 : x.regs zeroP = 0 := hbr.2.2.2.2.2.2.2.2.2.2.2.1
+  have hin_b : x.regs inBase = base + 7 * n := hbr.regs_inBase
+  have hb_b : x.regs baseReg = base := hbr.regs_baseReg
+  have hz0 : x.regs zeroP = 0 := hbr.regs_zeroP
   let st := RawState.ofData n base x
   have hraw' : FibRawInv n K_max s st := hraw
   rcases hraw with ⟨_, _, _, _, hin_spec, hkey_spec, _, _, _, _, _⟩
@@ -1140,14 +1140,14 @@ theorem insertCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x : D
   have hfit_stop := hbr.fits_stop hb
   let st := RawState.ofData n base x
   obtain ⟨ts, hts, hnd, hdom, hin_spec, hkey_spec, hsz, hnr, hnm, hcons, hrl⟩ := hraw
-  have hb0 : x.regs baseReg = base := hbr.2.2.1
-  have hb1 : x.regs parBase = base + n := hbr.2.2.2.1
-  have hb2 : x.regs childBase = base + 2 * n := hbr.2.2.2.2.1
-  have hb5 : x.regs degBase = base + 5 * n := hbr.2.2.2.2.2.2.2.1
-  have hb6 : x.regs markBase = base + 6 * n := hbr.2.2.2.2.2.2.2.2.1
-  have hb7 : x.regs inBase = base + 7 * n := hbr.2.2.2.2.2.2.2.2.2.1
-  have hz0 : x.regs zeroP = 0 := hbr.2.2.2.2.2.2.2.2.2.2.2.1
-  have ho1 : x.regs oneP = 1 := hbr.2.2.2.2.2.2.2.2.2.2.2.2
+  have hb0 : x.regs baseReg = base := hbr.regs_baseReg
+  have hb1 : x.regs parBase = base + n := hbr.regs_parBase
+  have hb2 : x.regs childBase = base + 2 * n := hbr.regs_childBase
+  have hb5 : x.regs degBase = base + 5 * n := hbr.regs_degBase
+  have hb6 : x.regs markBase = base + 6 * n := hbr.regs_markBase
+  have hb7 : x.regs inBase = base + 7 * n := hbr.regs_inBase
+  have hz0 : x.regs zeroP = 0 := hbr.regs_zeroP
+  have ho1 : x.regs oneP = 1 := hbr.regs_oneP
   have ho_k := owns_arr_addr (base := base) (k := 0) (by decide) v.isLt
   have ho_p := owns_arr_addr (base := base) (k := 1) (by decide) v.isLt
   have ho_c := owns_arr_addr (base := base) (k := 2) (by decide) v.isLt
@@ -1319,7 +1319,7 @@ theorem insertCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x : D
   have hx7_sz : x7.regs szReg = st.sz := by
     change (RawState.ofData n base x7).sz = st.sz
     rw [hsz7, hst6]
-  have hx7_o : x7.regs oneP = 1 := hbr7.2.2.2.2.2.2.2.2.2.2.2.2
+  have hx7_o : x7.regs oneP = 1 := hbr7.regs_oneP
   have he_sz : ExecWithin w (.op (.exactBin .add szReg szReg oneP)) x7 y 1 := by
     simpa only [hx7_sz, hx7_o] using
       execWithin_exactAdd (x := x7) (d := szReg) (i := szReg) (j := oneP)

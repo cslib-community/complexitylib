@@ -8,8 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OPrimitives
-public import Complexity.Computability.Machines.Turing.MultiTape.Internal.LinearPairPrimitives
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Bounds
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreePrimitives
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelAppend
 import Cslib.Computability.Machines.Turing.MultiTape.Combinators.AlmostConstant
 import Mathlib.Tactic.Ring
@@ -38,11 +38,9 @@ theorem length_le_time {f : α → β} (h : ComputableInO f encIn encMid T S) :
   ⟨c, fun a => (htm a).length_output_le⟩
 
 /-- A common linear certificate includes the output bound through its actual clock. -/
-theorem of_linear {f : α → β} (h : ComputableInLinearTimeAndSpace f encIn encMid) :
-    ComputableInO f encIn encMid (fun a => (encIn a).length) (fun a => (encIn a).length) := by
-  obtain ⟨c, k, State, hfinite, tm, htm⟩ := Internal.NormalForm.linear h
-  exact ⟨c, ⟨k, State, hfinite, tm, fun a => (htm a).computesInTimeAndSpace⟩,
-    fun a => (htm a).length_output_le⟩
+theorem of_linear {f : α → β} {e : ℕ} (h : ComputableInDegree f encIn encMid 1 e) :
+    ComputableInO f encIn encMid (fun a => (encIn a).length) (fun a => (encIn a).length) :=
+  h.inO_one
 
 /-- A linear outer computation preserves both independent bounds of the inner certificate. -/
 theorem comp_linear {f : β → γ} {g : α → β}
