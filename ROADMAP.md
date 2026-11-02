@@ -42,7 +42,6 @@ Priorities live in this list and in the tiers of [#897].
 7. [The Kabanets–Impagliazzo theorem](#circuits-and-algebraic-complexity) ([#891])
 8. [MIP = NEXP](#interactive-proofs) ([#892])
 9. [Regev's worst-case to average-case reduction](#cryptographic-landmarks)
-10. [The Immerman–Vardi theorem](#descriptive-complexity-and-first-order-reductions)
 
 ## Cryptography
 
@@ -302,12 +301,8 @@ universe size, not supplied as unverified input tables. In dependency order:
   domain need not be first-order definable.
 - Order-free: SAT-to-3SAT, graph-property hardness, and bridges to the separately encoded
   problems.
-- **The Immerman–Vardi theorem:** on ordered finite structures, first-order logic with least
-  fixed points defines exactly the polynomial-time properties, with the machine side proved for
-  actual native algorithms in both directions. Build on the scoped FO(LFP) syntax and finite-stage
-  semantics: certify a fixed-formula evaluator with explicitly charged relation tables, then prove
-  the native-machine-to-positive-LFP converse. Extend the synthesis rules to nested operator bodies
-  and give regular-language quantifiers their ordered characteristic-word semantics.
+- Extend the synthesis rules to nested operator bodies and give regular-language quantifiers
+  their ordered characteristic-word semantics.
 - Further logical characterizations on ordered structures: FO(TC) = NL and FO(DTC) = L,
   SO-Horn = P (Grädel), and DLOGTIME-uniform AC⁰ = FO(≤, BIT) (Barrington–Immerman–Straubing);
   then order-invariant and fixed-point queries and uniform translations between syntax,
@@ -621,16 +616,17 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   expected-time rules for unbounded almost-surely terminating structured loops; random-tape
   equivalence and BPP/RP/ZPP simulation bridges for the randomized word RAM ([#1124]); transfer
   of cell-probe lower bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
-- **Direct 3SUM adaptation** ([#1394]): global parameter and prime selection, using the
-  concrete native cyclic-Strassen modular counter ([#1701]); unrestricted small geometry; the aggregate
+- **Direct 3SUM adaptation** ([#1394]): global parameter selection, using the concrete
+  native cyclic-Strassen modular counter ([#1701]) and minimum-count prime selector ([#2098]); unrestricted small geometry; the aggregate
   subcubic Exact Triangle bound and source exponent; and the unconditional ordinary-3SUM
   input/time/width/asymptotic composition, including the improved Section 4 route to exponent
   1.9992. These build on the native Chan–He preprocessing, queried thin products, fixed-prime
   Exact Triangle solving and the conditional Convolution-3SUM host. The counter computes its
   own residues, padding/table, seven-product recursion and exact raw modular count, within
   `3704*(p+1)²*(n+1)^2.81` instructions including halt. Its source-regime admission and
-  width-independent prefix bounds are proved; selecting the actual minimum-count prime and
-  the global endpoint remain separate.
+  width-independent prefix bounds are proved. The selector computes the actual attained window
+  minimum with native trial division and real counter calls, preserving the explicit window
+  cost factor. Global parameter choices and the full endpoint remain separate.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
@@ -698,8 +694,19 @@ and credited.
   `ContractionCounting.exists_modelCounter_fixedDensity` proves the fixed-density bound
   `2^{O_{k,D}(n / √log n)}` by tensor contraction (Theorem D.1 with `ℓ = 1`), and
   `DensityBranchCounting.exists_modelCounter` combines it with the interpolation-scale counter in
-  one machine. The arbitrary-density bound `2^{O_k(n log log n / √log n)}` still needs Theorem D.1
-  with truncation order `ℓ = n + 1` and Lemma D.2.
+  one machine. `CountingSimulation.truncEntryContractionAlgorithm` now supplies polynomial
+  truncation order and precision `O(s log s)`, with a linear vertex bound. The arbitrary-density
+  bound `2^{O_k(n log log n / √log n)}` still needs the Lemma D.2 construction and its native
+  application to this interface; #1538 remains open.
+- **Exact optimization and large weights:** `MaxSAT.exists_histogram_algorithm` and
+  `MaxSAT.exists_optimum_algorithm` compute the complete score distribution and optimum value in
+  contraction time measured by literal occurrences plus clauses. Their sparse fixed-width
+  specializations give `2^{O_{k,c}(n / √log n)}` time and polynomial space.
+  `BinaryWeights.certificate` contracts natural tensor tables exactly when their bit lengths are
+  polynomial in the structural size; `BinaryWeightedCounting.exists_partitionFunctionCounter`
+  supplies the native weighted-CSP application. Remaining extensions are native optimizing
+  assignment extraction and signed or rational weight interfaces. A variable-count rate for
+  dense exact MAX-SAT is not established by these results or by ordinary SAT sparsification.
 
 ## Documentation and repository
 
