@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.WordRAM.Realization.Absorb
 public import Complexity.DataStructure.PriorityQueue.FibonacciHeap.Memory
+import Complexity.Computability.WordRAM.Realization.Reindex
 import Complexity.Tactic.Realize
 
 /-!
@@ -23,6 +24,7 @@ clients. These blocks do not constitute a complete native method family.
 ## Main results
 
 * `realizes_addRoot`: a uniform runtime `[capacity, base, handle]` root insertion certificate.
+* `realizes_insert`: the original complete insertion from `[capacity, base, handle, key]`.
 -/
 
 public section
@@ -161,5 +163,29 @@ private theorem realizes_incrementSize : Realizes .exact incrementSize
     (.refl _) (WordEncoding.encode (α := Unit))
     (fun w d _ => Fits w (d 1 + (9 * d 0 + 5)) ∧ d 2 < d 0) (fun _ _ => 0) :=
   realizes_incrementSize_history.consequence_valid (fun _ _ _ _ _ hv h => ⟨h, hv⟩)
+
+/-- Compose the existing node writes, root-list insertion and size increment. Runtime words
+select data and addresses, while one emitter precedes all capacities, widths and memories. -/
+theorem realizes_insert : Realizes .exact
+    (fun d : Fin 4 → ℕ => DataStructure.link (E := Memory.spec 0)
+      ((layout (d 0) (d 1)).methods 0) (insert (d 2) (d 3)))
+    (.refl _) (WordEncoding.encode (α := Unit))
+    (fun w d _ => Fits w (d 1 + (9 * d 0 + 5)) ∧ d 2 < d 0) (fun _ _ => 0) := by
+  have hr := realizes_addRoot.reindex
+    (fun d : (Fin 4 → ℕ) × Unit => ![d.1 0, d.1 1, d.1 2])
+    (appendWords (.refl _) (WordEncoding.encode (α := Unit)))
+    ![0, 1, 2] (by intro d i; fin_cases i <;> rfl)
+  have hs := realizes_incrementSize.reindex
+    (fun d : (Fin 4 → ℕ) × Unit => d.1)
+    (appendWords (.refl _) (WordEncoding.encode (α := Unit)))
+    ![0, 1, 2, 3] (by intro d i; fin_cases i <;> rfl)
+  refine ((realizes_insertPrefix.bind₀ hr).bind₀ hs).congr (fun d => ?_) |>.consequence ?_
+    (fun _ _ => le_rfl)
+  · simp only [insertPrefix, incrementSize, DataStructure.link, insert,
+      PFunctor.FreeM.liftM_bind, PFunctor.FreeM.bind_eq_bind, bind_assoc,
+      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
+      Matrix.head_cons, Matrix.tail_cons]
+  · intro w d s _ _ h
+    exact ⟨⟨h, h⟩, h⟩
 
 end Cslib.DataStructure.PriorityQueue.FibonacciHeap.Native
