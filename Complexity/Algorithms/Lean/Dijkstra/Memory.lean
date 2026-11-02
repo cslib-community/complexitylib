@@ -48,6 +48,7 @@ file does not provide.
 
 * `dijkstra_eq`: the client does not depend on the key and value bounds of its interfaces.
 * `holds_inputGraph`: the input holds the graph in the adjacency arrays.
+* `inv_input`: after allocation, the structures represent the initial state.
 * `run_spec`: admissibility, distances and memory cost of `run`.
 * `exists_run_logLinear`: the same with an `O((m + 1) log n)` cost function.
 
@@ -172,6 +173,49 @@ theorem holds_inputGraph (G : ListInstance) :
       2 * (G.offset u + i) + G.n + 5 by omega]
     exact G.init_weight (r := 0) u hi
 
+/-- **The structures after allocation.** Past the input of `G`, a distance table and then a heap,
+allocated without clearing, together with the adjacency arrays of the input, represent the
+initial state of Dijkstra's algorithm on `G`: an empty queue, an empty distance map and the
+graph. -/
+theorem inv_input (G : ListInstance) {w K V : ℕ}
+    (hH : (BinaryHeap.Memory.allocated G.n ((Memory.State.init G.encode).frontier + G.n)).Valid
+      w K)
+    (hT : Dictionary.Memory.Valid ⟨(Memory.State.init G.encode).frontier, G.n⟩ w G.n V)
+    (hA : (inputGraph G.n G.m).Valid G.n) :
+    (framed hH hT hA G.adj).inv ⟨(Memory.State.init G.encode).mem,
+        (Memory.State.init G.encode).frontier + G.n + 1 +
+          PriorityQueue.WordRAM.BinaryHeap.space G.n⟩ ∧
+      (framed hH hT hA G.adj).abs ⟨(Memory.State.init G.encode).mem,
+        (Memory.State.init G.encode).frontier + G.n + 1 +
+          PriorityQueue.WordRAM.BinaryHeap.space G.n⟩ = init G := by
+  set s₀ := Memory.State.init G.encode with hs₀
+  have hf₀ : s₀.frontier = G.n + 2 * G.m + 4 := by
+    simp only [s₀, Memory.State.init, G.encode_length]
+  have hz : ZeroAbove s₀ := zeroAbove_init _
+  set f := s₀.frontier with hf
+  have hf₁ : (Memory.State.init G.encode).frontier = G.n + 2 * G.m + 4 := hf₀
+  obtain ⟨hHinv, hHabs⟩ := BinaryHeap.Memory.inv_allocated (s := ⟨s₀.mem, f + G.n⟩)
+    (hz.allocDirty G.n)
+  obtain ⟨hTinv, hTabs⟩ := Dictionary.Memory.inv_alloc (U := G.n) hz
+  have hsp : PriorityQueue.WordRAM.BinaryHeap.space G.n = 3 * G.n + 1 := rfl
+  refine ⟨⟨hHinv, ⟨Block.Allocated.mono hTinv (by simp only; omega),
+    ⟨by simp only [inputGraph, Block.Allocated]; omega,
+      by simp only [inputGraph, Block.Allocated]; omega, holds_inputGraph G⟩, ?_⟩, ?_⟩,
+    Prod.ext hHabs (Prod.ext hTabs rfl)⟩
+  · simp only [Dictionary.Memory.framed_footprint, AdjacencyList.Memory.framed_footprint]
+    rw [Finset.disjoint_left]
+    intro a ha hb
+    simp only [Block.mem_footprint, Block.Owns, AdjacencyList.Memory.Layout.footprint,
+      inputGraph, Finset.mem_union] at ha hb
+    omega
+  · simp only [Memory.Framed.prod_footprint, BinaryHeap.Memory.framed_footprint,
+      Dictionary.Memory.framed_footprint, AdjacencyList.Memory.framed_footprint]
+    rw [Finset.disjoint_left]
+    intro a ha hb
+    simp only [Block.mem_footprint, Block.Owns, AdjacencyList.Memory.Layout.footprint,
+      BinaryHeap.Memory.Layout.footprint, inputGraph, Finset.mem_union, hsp] at ha hb
+    omega
+
 /-- A cell whose decoded value is `some d` exactly when the distance `D` is `d` holds the encoded
 distance. -/
 private theorem eq_encodeDist {x : ℕ} {D : ℕ∞}
@@ -255,30 +299,7 @@ theorem run_triple (G : ListInstance) {w : ℕ}
   have hT : Dictionary.Memory.Valid ⟨f, G.n⟩ w G.n (K + 1) := ⟨rfl, hVf⟩
   have hA : (inputGraph G.n G.m).Valid G.n := ⟨rfl⟩
   set M := framed hH hT hA G.adj with hM
-  obtain ⟨hHinv, hHabs⟩ := BinaryHeap.Memory.inv_allocated (s := ⟨s₀.mem, f + G.n⟩)
-    (hz.allocDirty G.n)
-  obtain ⟨hTinv, hTabs⟩ := Dictionary.Memory.inv_alloc (U := G.n) hz
-  have hsp : PriorityQueue.WordRAM.BinaryHeap.space G.n = 3 * G.n + 1 := rfl
-  have hinv : M.inv ⟨s₀.mem, f + G.n + 1 + PriorityQueue.WordRAM.BinaryHeap.space G.n⟩ := by
-    refine ⟨hHinv, ⟨Block.Allocated.mono hTinv (by simp only; omega),
-      ⟨by simp only [inputGraph, Block.Allocated]; omega,
-        by simp only [inputGraph, Block.Allocated]; omega, holds_inputGraph G⟩, ?_⟩, ?_⟩
-    · simp only [Dictionary.Memory.framed_footprint, AdjacencyList.Memory.framed_footprint]
-      rw [Finset.disjoint_left]
-      intro a ha hb
-      simp only [Block.mem_footprint, Block.Owns, AdjacencyList.Memory.Layout.footprint,
-        inputGraph, Finset.mem_union] at ha hb
-      omega
-    · simp only [Memory.Framed.prod_footprint, BinaryHeap.Memory.framed_footprint,
-        Dictionary.Memory.framed_footprint, AdjacencyList.Memory.framed_footprint]
-      rw [Finset.disjoint_left]
-      intro a ha hb
-      simp only [Block.mem_footprint, Block.Owns, AdjacencyList.Memory.Layout.footprint,
-        BinaryHeap.Memory.Layout.footprint, inputGraph, Finset.mem_union, hsp] at ha hb
-      omega
-  have habs : M.abs ⟨s₀.mem, f + G.n + 1 + PriorityQueue.WordRAM.BinaryHeap.space G.n⟩ =
-      init G := by
-    exact Prod.ext hHabs (Prod.ext hTabs rfl)
+  obtain ⟨hinv, habs⟩ := inv_input G hH hT hA
   obtain ⟨hvalid, hdist⟩ := dijkstra_correct (K := K) (V := K + 1) G le_rfl (by omega)
   rw [← habs] at hvalid hdist
   obtain ⟨hvE, -, hstate, -⟩ := M.simulates_client (dijkstra G.source) hinv hvalid
