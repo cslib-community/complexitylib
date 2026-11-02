@@ -7,8 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.WordRAM.Realization.Basic
-public import Complexity.Computability.WordRAM.Glue
+public import Complexity.Computability.WordRAM.Realization.Glue
 
 /-!
 # Certified finite-result word glue
@@ -31,6 +30,8 @@ true tag still requires the visible word-fit condition for `1`.
 ## Main results
 
 * `Realizes.glueVector`: realize a finite result using certified scalar coordinate computations.
+* `Realizes.addWords`, `Realizes.increment`, `Realizes.decrement`: charged scalar word arithmetic.
+* `Realizes.returnNone`, `Realizes.returnSome`: charged optional-word results.
 
 This is a realization rule over the existing memory client and structured native code, not an
 additional program syntax or execution judgment.
@@ -209,6 +210,71 @@ theorem glueVector (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → 
     · exact hyf frontier (fun _ => hf _) (fun _ _ => hf _)
   · intro i hif htmp
     exact hyf i (fun _ => htmp _) (fun _ _ => htmp _)
+
+/-- Add two input words when their sum fits; both projections and the addition are charged. -/
+theorem addWords {δ : Type} {k : ℕ} (input : δ ↪ (Fin k → ℕ)) (i j : Fin k) :
+    Realizes .exact (fun d => pure (input d i + input d j)) input
+      (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
+      (fun w d _ => Fits w (input d i + input d j)) (fun _ _ => 3) := by
+  have ha : GlueComputes .exact (fun _ : Fin k → ℕ => True) (fun v => v i)
+      (fun v => v i + v j) 1 := GlueComputes.proj i (fun _ _ => Nat.le_add_right _ _)
+  have hb : GlueComputes .exact (fun _ : Fin k → ℕ => True) (fun v => v j)
+      (fun v => v i + v j) 1 := GlueComputes.proj j (fun _ _ => Nat.le_add_left _ _)
+  have h := Realizes.glue input (ha.bin_exact hb .add (fun _ _ => rfl) (fun _ _ => le_rfl))
+  exact h.consequence (fun _ _ _ _ _ hf => ⟨trivial, hf⟩) (fun _ _ => le_rfl)
+
+/-- Increment an input word with an explicit successor-fit condition and three local units. -/
+theorem increment {δ : Type} {k : ℕ} (input : δ ↪ (Fin k → ℕ)) (i : Fin k) :
+    Realizes .exact (fun d => pure (input d i + 1)) input
+      (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
+      (fun w d _ => Fits w (input d i + 1)) (fun _ _ => 3) := by
+  have ha : GlueComputes .exact (fun _ : Fin k → ℕ => True) (fun v => v i)
+      (fun v => v i + 1) 1 := GlueComputes.proj i (fun _ _ => Nat.le_add_right _ _)
+  have hb : GlueComputes .exact (fun _ : Fin k → ℕ => True) (fun _ => 1)
+      (fun v => v i + 1) 1 := GlueComputes.const 1 (fun _ _ => by omega)
+  have h := Realizes.glue input (ha.bin_exact hb .add (fun _ _ => rfl) (fun _ _ => le_rfl))
+  exact h.consequence (fun _ _ _ _ _ hf => ⟨trivial, hf⟩) (fun _ _ => le_rfl)
+
+/-- Defined subtraction of one keeps positivity and the input-word envelope explicit. -/
+theorem decrement {δ : Type} {k : ℕ} (input : δ ↪ (Fin k → ℕ)) (i : Fin k) :
+    Realizes .exact (fun d => pure (input d i - 1)) input
+      (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
+      (fun w d _ => 1 ≤ input d i ∧ Fits w (input d i)) (fun _ _ => 3) := by
+  have ha : GlueComputes .exact (fun v : Fin k → ℕ => 1 ≤ v i) (fun v => v i)
+      (fun v => v i) 1 := GlueComputes.proj i (fun _ _ => le_rfl)
+  have hb : GlueComputes .exact (fun v : Fin k → ℕ => 1 ≤ v i) (fun _ => 1)
+      (fun v => v i) 1 := GlueComputes.const 1 (fun _ h => h)
+  exact Realizes.glue input (ha.bin_exact hb .sub
+    (fun v h => by simp [h]) (fun _ _ => Nat.sub_le _ _))
+
+/-- Return the two zero words encoding `none`, charging both constants and output copies. -/
+theorem returnNone {δ : Type} {k : ℕ} (input : δ ↪ (Fin k → ℕ)) :
+    Realizes .exact (fun _ => pure none) input optionWords
+      (fun _ _ _ => True) (fun _ _ => 4) := by
+  have h := Realizes.glueVector (B := .exact) input optionWords (fun _ => none)
+    (fun _ _ => 0) (fun _ _ => 0) (fun _ => 1)
+    (fun _ i => by fin_cases i <;> rfl)
+    (P := fun _ => True) (fun _ => GlueComputes.const 0 (fun _ _ => le_rfl))
+  exact h.consequence (fun w _ _ _ _ _ => ⟨trivial, fun _ => fits_zero w⟩)
+    (fun _ _ => by simp)
+
+/-- Return a presence tag and unshifted input payload, with both word fits explicit. -/
+theorem returnSome {δ : Type} {k : ℕ} (input : δ ↪ (Fin k → ℕ)) (j : Fin k) :
+    Realizes .exact (fun d => pure (some (input d j))) input optionWords
+      (fun w d _ => Fits w 1 ∧ Fits w (input d j)) (fun _ _ => 4) := by
+  let g : Fin 2 → (Fin k → ℕ) → ℕ := fun i v => if i = 0 then 1 else v j
+  have hc (i : Fin 2) : GlueComputes .exact (fun _ : Fin k → ℕ => True) (g i) (g i) 1 := by
+    fin_cases i
+    · exact GlueComputes.const 1 (fun _ _ => le_rfl)
+    · exact GlueComputes.proj j (fun _ _ => le_rfl)
+  have h := Realizes.glueVector input optionWords (fun d => some (input d j)) g g
+    (fun _ => 1) (fun _ i => by fin_cases i <;> rfl) hc
+  apply h.consequence (hwork := fun _ _ => by simp)
+  intro w d s _ _ ⟨h1, hv⟩
+  refine ⟨trivial, fun i => ?_⟩
+  fin_cases i
+  · exact h1
+  · exact hv
 
 end Realizes
 end Cslib.WordRAM.Realization
