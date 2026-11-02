@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: local-only (uniform typed-label queue method regressions)
+-- upstream: local-only (uniform observed-answer queue method regressions)
 
 public import Complexity.Computability.WordRAM.Realization.Client.MemoryQueueMethod
 import Complexity.Computability.WordRAM.Realization.Witness
@@ -15,8 +15,9 @@ import Complexity.Computability.WordRAM.Realization.Witness
 
 These clients share one selected global method emitter. They vary the operation, payload and
 both layout base addresses, exercise immediate/transfer/empty dequeue, and retain an inaccessible
-memory cell and a live caller control register. Label coordinates include the operation itself;
-no result or payload is supplied by free host computation.
+memory cell and a live caller control register. Output words contain only the common optional
+answer, without operation/payload echo.
+All changed output words and native control remain charged.
 -/
 
 public section
@@ -100,19 +101,22 @@ private theorem safe_shifted : methodSafe 4 ((front 6, rear 6), .enqueue 15) shi
   change (rear 6).Valid 4 2 ∧ Stack.Memory.Inv (rear 6) shiftedEmpty ∧ 0 < 2
   exact ⟨rear_valid 6, inv_rear (by decide), by decide⟩
 
-/-- Typed labels distinguish enqueue payloads from dequeue results even when values coincide. -/
-theorem label_enqueue_ne_dequeue : labelWords ⟨.enqueue 1, ()⟩ ≠
-    labelWords ⟨.dequeue, some 1⟩ := by decide
+/-- Observation can collapse different faithfully encoded common results for a Unit answer. -/
+theorem enqueue_answer_not_injective (v : ℕ) :
+    ¬Function.Injective (answer (.enqueue v)) := by
+  intro hi
+  have h : (none : Option ℕ) = some 0 := hi rfl
+  cases h
 
 private noncomputable def registers : ℕ := realizes_method.scratchSize + 22
 private noncomputable def src (i : Fin 11) : Fin registers :=
   ⟨i.val, by have := i.isLt; unfold registers; omega⟩
 private noncomputable def frontier : Fin registers := ⟨11, by unfold registers; omega⟩
 private noncomputable def control : Fin registers := ⟨12, by unfold registers; omega⟩
-private noncomputable def scratch (i : Fin (4 + realizes_method.scratchSize + 1)) : Fin registers :=
+private noncomputable def scratch (i : Fin (2 + realizes_method.scratchSize + 1)) : Fin registers :=
   ⟨16 + i.val, by have := i.isLt; unfold registers; omega⟩
 private noncomputable def code := realizes_method.code frontier src scratch
-private noncomputable def out (i : Fin 4) :=
+private noncomputable def out (i : Fin 2) :=
   scratch (Fin.castAdd (realizes_method.scratchSize + 1) i)
 
 private noncomputable def data
@@ -130,8 +134,8 @@ private theorem execution
     ∃ y, ExecWithin 4 code (data d s) y
         (realizes_method.factor * (memoryCost (method d) s + methodWork d s + 1)) ∧
       memoryState frontier y = (Memory.spec 4).clientState s (method d) ∧
-      (∀ i : Fin 4, y.regs (out i) =
-        labelWords ((Memory.spec 4).clientResult s (method d)) i) ∧
+      (∀ i : Fin 2, y.regs (out i) =
+        optionWords ((Memory.spec 4).clientResult s (method d)) i) ∧
       y.regs control = 9 := by
   have hi : Function.Injective scratch := by
     intro i j h
@@ -184,8 +188,8 @@ private theorem execution
 
 -- Runtime enqueue and shifted layout bases use the very same code as every dequeue below.
 example : ∃ y, ExecWithin 4 code (data ((front 6, rear 6), .enqueue 15) shiftedEmpty) y
-      (realizes_method.factor * 25) ∧
-    (∀ i : Fin 4, y.regs (out i) = ![0, 15, 0, 0] i) ∧
+      (realizes_method.factor * 21) ∧
+    (∀ i : Fin 2, y.regs (out i) = ![0, 0] i) ∧
     y.mem 9 = 1 ∧ y.mem 10 = 15 ∧ y.mem 100 = 9 ∧ y.regs control = 9 := by
   obtain ⟨y, he, hm, hout, hc⟩ := execution ((front 6, rear 6), .enqueue 15) shiftedEmpty
     (state_wf (by decide) (by decide) (by decide) (by decide))
@@ -196,8 +200,8 @@ example : ∃ y, ExecWithin 4 code (data ((front 6, rear 6), .enqueue 15) shifte
   · exact congrArg (fun s : Memory.State => s.mem 100) hm
 
 example : ∃ y, ExecWithin 4 code (data ((front 0, rear 0), .dequeue) immediate) y
-      (realizes_method.factor * 43) ∧
-    (∀ i : Fin 4, y.regs (out i) = ![1, 0, 1, 1] i) ∧
+      (realizes_method.factor * 34) ∧
+    (∀ i : Fin 2, y.regs (out i) = ![1, 1] i) ∧
     y.mem 0 = 0 ∧ y.mem 3 = 1 ∧ y.mem 100 = 9 ∧ y.regs control = 9 := by
   obtain ⟨y, he, hm, hout, hc⟩ := execution ((front 0, rear 0), .dequeue) immediate
     (state_wf (by decide) (by decide) (by decide) (by decide))
@@ -208,8 +212,8 @@ example : ∃ y, ExecWithin 4 code (data ((front 0, rear 0), .dequeue) immediate
   · exact congrArg (fun s : Memory.State => s.mem 100) hm
 
 example : ∃ y, ExecWithin 4 code (data ((front 0, rear 0), .dequeue) fallback) y
-      (realizes_method.factor * 178) ∧
-    (∀ i : Fin 4, y.regs (out i) = ![1, 0, 1, 15] i) ∧
+      (realizes_method.factor * 169) ∧
+    (∀ i : Fin 2, y.regs (out i) = ![1, 15] i) ∧
     y.mem 0 = 1 ∧ y.mem 3 = 0 ∧ y.mem 100 = 9 ∧ y.regs control = 9 := by
   obtain ⟨y, he, hm, hout, hc⟩ := execution ((front 0, rear 0), .dequeue) fallback
     (state_wf (by decide) (by decide) (by decide) (by decide))
@@ -220,8 +224,8 @@ example : ∃ y, ExecWithin 4 code (data ((front 0, rear 0), .dequeue) fallback)
   · exact congrArg (fun s : Memory.State => s.mem 100) hm
 
 example : ∃ y, ExecWithin 4 code (data ((front 0, rear 0), .dequeue) empty) y
-      (realizes_method.factor * 84) ∧
-    (∀ i : Fin 4, y.regs (out i) = ![1, 0, 0, 0] i) ∧
+      (realizes_method.factor * 75) ∧
+    (∀ i : Fin 2, y.regs (out i) = ![0, 0] i) ∧
     y.mem 100 = 9 ∧ y.regs control = 9 := by
   obtain ⟨y, he, hm, hout, hc⟩ := execution ((front 0, rear 0), .dequeue) empty
     (state_wf (by decide) (by decide) (by decide) (by decide))

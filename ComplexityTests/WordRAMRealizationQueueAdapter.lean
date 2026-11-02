@@ -51,7 +51,7 @@ example :
       (∃ out, step 4 program.initFreshProg ⟨pc, x₀⟩ = .halt out) ∧
       I.RunsOps I.prepareRegs [] x₀ ops expected [15] z t_ops ∧
       I.rep [15] z ∧ z.mem 100 = 9 ∧ z.mem 0 = 7 ∧ t_init ≤ 13 ∧
-      t_ops ≤ 3 * (153 * MemoryQueueMethod.realizes_method.factor + 1) := by
+      t_ops ≤ 3 * (144 * MemoryQueueMethod.realizes_method.factor + 1) := by
   let I := implementation 4 5 2 (by norm_num [space, Fits])
   have hb : (fresh 2).Bounded 4 := by
     constructor
@@ -89,13 +89,13 @@ example :
     simp [Block.mem_footprint, Block.Owns]
   have hprefix : z.mem 0 = 7 := ((runsOps_modifies (capacity := 2) hro) 0 hPrefixOutside).trans
     ((hm 0 hPrefixOutside).trans (by rfl))
-  have htime : nativeSteps ≤ 3 * (153 * MemoryQueueMethod.realizes_method.factor + 1) := by
+  have htime : nativeSteps ≤ 3 * (144 * MemoryQueueMethod.realizes_method.factor + 1) := by
     have hbound := hto
-    have hc : ∀ q o, I.charge q o = 153 * MemoryQueueMethod.realizes_method.factor :=
+    have hc : ∀ q o, I.charge q o = 144 * MemoryQueueMethod.realizes_method.factor :=
       fun q o => implementation_charge 4 5 2 _ q o
     have hp : I.initPotential = 0 := implementation_initPotential 4 5 2 _
     simp only [hc, hp, StateTransitionSpec.totalCostTranscript_const] at hbound
-    change nativeSteps + _ ≤ 3 * (153 * MemoryQueueMethod.realizes_method.factor + 1) + 0 at hbound
+    change nativeSteps + _ ≤ 3 * (144 * MemoryQueueMethod.realizes_method.factor + 1) + 0 at hbound
     omega
   have hiTime : I.initTime = 13 := implementation_initTime 4 5 2 _
   rw [hiTime] at hti
@@ -109,7 +109,7 @@ example :
       Runs 4 program.initFreshProg ⟨0, fresh 0⟩ ⟨pc, x₀⟩ ti ∧
       I.RunsOps I.prepareRegs [] x₀ [.dequeue] [⟨.dequeue, none, []⟩] [] z t ∧
       I.rep [] z ∧ z.mem 100 = 9 ∧ ti ≤ 13 ∧
-      t ≤ 153 * MemoryQueueMethod.realizes_method.factor + 1 := by
+      t ≤ 144 * MemoryQueueMethod.realizes_method.factor + 1 := by
   let I := implementation 4 5 0 (by norm_num [space, Fits])
   have hb : (fresh 0).Bounded 4 := by
     constructor
@@ -145,12 +145,12 @@ example :
     norm_num [Block.mem_footprint, Block.Owns, space]
   have hfinal : z.mem 100 = 9 := ((runsOps_modifies (capacity := 0) hro) 100 hOutside).trans
     ((hm 100 hOutside).trans (by rfl))
-  have htime : t ≤ 153 * MemoryQueueMethod.realizes_method.factor + 1 := by
-    have hc : ∀ q o, I.charge q o = 153 * MemoryQueueMethod.realizes_method.factor :=
+  have htime : t ≤ 144 * MemoryQueueMethod.realizes_method.factor + 1 := by
+    have hc : ∀ q o, I.charge q o = 144 * MemoryQueueMethod.realizes_method.factor :=
       fun q o => implementation_charge 4 5 0 _ q o
     have hp : I.initPotential = 0 := implementation_initPotential 4 5 0 _
     simp only [hc, hp, StateTransitionSpec.totalCostTranscript_const] at hto
-    change t + _ ≤ 1 * (153 * MemoryQueueMethod.realizes_method.factor + 1) + 0 at hto
+    change t + _ ≤ 1 * (144 * MemoryQueueMethod.realizes_method.factor + 1) + 0 at hto
     omega
   have hiTime : I.initTime = 13 := implementation_initTime 4 5 0 _
   rw [hiTime] at hti
