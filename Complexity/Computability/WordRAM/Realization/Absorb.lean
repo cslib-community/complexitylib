@@ -70,6 +70,11 @@ instance : WordEncoding Unit := ⟨0, (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEm
 
 instance : WordEncoding (Option ℕ) := ⟨2, optionWords⟩
 
+/-- Optional values use a presence tag followed by their unshifted payload words.
+The scalar instance retains its legacy vector normal form. -/
+instance (priority := 100) {α : Type} [WordEncoding α] : WordEncoding (Option α) :=
+  ⟨_, optionWordsWith (WordEncoding.encode (α := α))⟩
+
 instance : WordEncoding Bool := ⟨2, boolWords⟩
 
 /-- A block is encoded by its base address and its length. -/

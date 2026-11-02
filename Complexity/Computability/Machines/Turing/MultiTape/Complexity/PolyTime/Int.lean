@@ -32,6 +32,7 @@ indices in a computation tableau.
   unit shifts and sign tests.
 * `Turing.MultiTapeTM.ComputableInPolyTime.int_toNat`, `.int_natAbs`, `.int_equivNat`:
   nonnegative truncation, absolute value and the standard numbering of integers, in unary.
+* `Turing.MultiTapeTM.ComputableInPolyTime.int_sub`: subtraction of signed unary integers.
 * `Turing.MultiTapeTM.ComputableInPolyTime.int_sub_sign`, `.int_abs_le_nat`:
   fixed tape moves and membership in a unary-bounded window.
 * `Turing.MultiTapeTM.ComputableInPolyTime.int_abs_le_nat'`:
@@ -130,6 +131,28 @@ theorem int_natAbs : ComputableInPolyTime Int.natAbs encInt encUnary := by
   convert h using 1
   funext z
   cases z <;> simp [intTail]
+
+/-- The negative part of a signed unary integer, in unary. -/
+private theorem int_neg_toNat : ComputableInPolyTime (fun z : ℤ => (-z).toNat) encInt encUnary := by
+  have h := int_neg.ite' int_natAbs (const 0)
+  convert h using 1
+  funext z
+  split_ifs with hz <;> simp_all only [decide_eq_true_eq] <;> lia
+
+/-- Subtract two signed unary integers. -/
+@[fun_prop]
+theorem int_sub : ComputableInPolyTime (fun p : ℤ × ℤ => p.1 - p.2)
+    (encPair encInt encInt) encInt := by
+  have h := int_natCast_sub.comp
+    ((unary_add.comp ((int_toNat.comp (fst encInt encInt)).prod
+        (int_neg_toNat.comp (snd encInt encInt)))).prod
+      (unary_add.comp ((int_toNat.comp (snd encInt encInt)).prod
+        (int_neg_toNat.comp (fst encInt encInt)))))
+  convert h using 1
+  funext p
+  simp only [Function.comp_apply]
+  push_cast
+  lia
 
 /-- Subtract a fixed tape direction from a signed unary position. -/
 @[fun_prop]

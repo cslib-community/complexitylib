@@ -183,13 +183,13 @@ theorem inv_input (G : ListInstance) {w K V : ℕ}
     (hT : Dictionary.Memory.Valid ⟨(Memory.State.init G.encode).frontier, G.n⟩ w G.n V)
     (hA : (inputGraph G.n G.m).Valid G.n)
     (hfit : Fits w ((Memory.State.init G.encode).frontier + G.n + 1 +
-      PriorityQueue.WordRAM.BinaryHeap.space G.n)) :
+      PriorityQueue.BinaryHeap.space G.n)) :
     (framed hH hT hA G.adj).inv ⟨(Memory.State.init G.encode).mem,
         (Memory.State.init G.encode).frontier + G.n + 1 +
-          PriorityQueue.WordRAM.BinaryHeap.space G.n⟩ ∧
+          PriorityQueue.BinaryHeap.space G.n⟩ ∧
       (framed hH hT hA G.adj).abs ⟨(Memory.State.init G.encode).mem,
         (Memory.State.init G.encode).frontier + G.n + 1 +
-          PriorityQueue.WordRAM.BinaryHeap.space G.n⟩ = init G := by
+          PriorityQueue.BinaryHeap.space G.n⟩ = init G := by
   set s₀ := Memory.State.init G.encode with hs₀
   have hf₀ : s₀.frontier = G.n + 2 * G.m + 4 := by
     simp only [s₀, Memory.State.init, G.encode_length]
@@ -199,7 +199,7 @@ theorem inv_input (G : ListInstance) {w K V : ℕ}
   obtain ⟨hHinv, hHabs⟩ := BinaryHeap.Memory.inv_allocated (s := ⟨s₀.mem, f + G.n⟩)
     (hz.allocDirty G.n)
   obtain ⟨hTinv, hTabs⟩ := Dictionary.Memory.inv_alloc (U := G.n) hz
-  have hsp : PriorityQueue.WordRAM.BinaryHeap.space G.n = 3 * G.n + 1 := rfl
+  have hsp : PriorityQueue.BinaryHeap.space G.n = 3 * G.n + 1 := rfl
   refine ⟨⟨hHinv, ⟨Block.Allocated.mono hTinv (by simp only; omega),
     ⟨by simp only [inputGraph, Block.Allocated]; omega,
       by simp only [inputGraph, Block.Allocated]; omega, holds_inputGraph G⟩, ?_⟩, ?_⟩,
@@ -293,7 +293,7 @@ theorem run_triple (G : ListInstance) {w : ℕ}
   rw [hm]
   refine Triple.allocBlockDirty_bind (hfit.of_le (by nlinarith)) ?_
   refine BinaryHeap.Memory.allocLayout_bind
-    (hfit.of_le (by simp only [PriorityQueue.WordRAM.BinaryHeap.space]; nlinarith)) ?_
+    (hfit.of_le (by simp only [PriorityQueue.BinaryHeap.space]; nlinarith)) ?_
   rw [dite_eq_left G.source.isLt]
   dsimp only
   -- The three structures, at the bounds `K` and `K + 1`, on the memory after allocation.
@@ -304,7 +304,7 @@ theorem run_triple (G : ListInstance) {w : ℕ}
   have hA : (inputGraph G.n G.m).Valid G.n := ⟨rfl⟩
   set M := framed hH hT hA G.adj with hM
   obtain ⟨hinv, habs⟩ := inv_input G hH hT hA
-    (hfit.of_le (by simp only [PriorityQueue.WordRAM.BinaryHeap.space]; nlinarith))
+    (hfit.of_le (by simp only [PriorityQueue.BinaryHeap.space]; nlinarith))
   obtain ⟨hvalid, hdist⟩ := dijkstra_correct (K := K) (V := K + 1) G le_rfl (by omega)
   rw [← habs] at hvalid hdist
   obtain ⟨hvE, -, hstate, -⟩ := M.simulates_client (dijkstra G.source) hinv hvalid

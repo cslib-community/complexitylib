@@ -558,6 +558,24 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   to one flat program through `realize`; the hand-stepped stack dispatcher survives only inside
   Chan–He traversal (`Traversal.WordStack`), which steps it with exact counts.
   The full framed queue/faithful allocation client remains separate. No abstract headline is added.
+  `PriorityQueue/BinaryHeap/Native` realizes the original memory heap methods, with exact source
+  state/history transport and a single code family before runtime layouts, dimensions and widths.
+  Its raw interface retains the compact `3n+1` fit/local-zero domain and uses the shared linear
+  clear for dirty storage; the original two-query `3n+2` allocator stays unchanged for allocated
+  clients. The pure model and order lemmas retain Renfei Zhou's source credit outside `WordRAM`.
+  The native Dijkstra client preserves the original adjacency-list encoding, word envelope and
+  log-linear endpoint, including the actual input prefix and final halt, with one existential
+  uniform factor. The old hand-stepped binary-heap execution and its fixed clock/register
+  constants are retired; no reduction in source size, space or instruction count is asserted.
+  The bounded two-stack queue migration landed in #2303; the generic framed/allocation/whole-client
+  and Fibonacci objectives remain open.
+  Karger–Stein's specification-law bridge (#2289) reuses the existing contraction client and
+  native execution model. `LoopSegmentLaw` packages the existing finite loop segments with an
+  exact observation law and strict pathwise instruction/query bounds; the two-branch recurrence
+  lives at the PMF layer, and compiled cut-output transport is shared with basic Karger.
+  The exact-basis abstract bridge keeps its existing compatibility statements and source.
+  This refactor does not supply the later memory-oracle contraction/frame-stack realization
+  under #2205 or introduce a new curated headline.
   `DataStructure/OrderedSet` and `DataStructure/OrderedSet/*` provide neutral
   optional-minimum contracts, a typed finite-set interface including deletion, and adaptive
   minimum extraction, with no tree or cost dependency. Bounded-key implementations may specialize
@@ -570,10 +588,15 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   a balanced tree or machine-time certificate.
   `WordRAM/Dynamic` separately connects
   fixed bounded-word operation programs and faithful memory transcripts to those contracts.
-  The direct shared-heap queue uses the existing FIFO operation signature and native operation
-  traces, with a hidden two-stack representation, a concrete-register potential, framed storage,
-  and separately charged initialization. Its `2 * capacity` reservation is explicit; external
-  client computation and argument delivery are not charged by the operation-history bound.
+  The direct shared-heap queue realizes physical-array memory programs through one fixed
+  finite Backend family and the existing dynamic certificate. Count words remain in registers;
+  one native dispatcher, charged metadata copies and a scaled rear potential give uniform
+  amortized instruction bounds, including halt. Initialization uses six register instructions
+  from arbitrary bounded dirty data, preserving every memory cell. The original `2 * capacity`
+  reservation and end-fit domain are retained. The shared register count and exchange factor are
+  fixed before widths, layouts, values and clients; the removed hand-code's literal instruction
+  constants are not asserted. External client computation and tag/payload delivery remain outside
+  the operation-history bound; no generic stateful memory-only Backend instance is claimed.
   Coordinate placement and overlap with Srinivas's #685 and the merged #401 (`Algorithms/Lean/Query`)
   before upstream submission; #685 is not copied here. This is a prototype of composition and
   refinement, not a replacement for their query models or a general cell-probe lower-bound semantics.
