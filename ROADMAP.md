@@ -648,7 +648,9 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   Word-RAM certificates can be derived from semantic modules after discharging their local
   initialization, footprint and ABI conditions; a one-cell ADT checks that boundary. Multiword
   glue preserves full-word Option payloads, and the actual memory-stack size/push/pop methods
-  have uniform native certificates over runtime layouts, with local work 0/10/19. Backends of
+  have uniform native certificates over runtime layouts, with local work 0/10/19. The stack is
+  migrated: `Stack.Native` and `Stack.Controller` replace its hand-stepped dispatcher, which
+  remains only as the stepped component of Chan–He traversal (`Traversal.WordStack`). Backends of
   framed refinements export their frame (`modifies`, `frame`), run products over one memory,
   and allocate from arbitrary memory through `Memory.Allocator` (`Backend.Allocation`); the stack
   and a pair of stacks check all three. Remaining: the queue and binary-heap migrations onto them,
@@ -662,7 +664,7 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   predecessor for van Emde Boas sets; and deallocation,
   shrinking and compiled client controllers for the doubling array.
 - **A typed-call evaluator** for fixed-program Word-RAM clients, returning the typed observation,
-  final state and halt-inclusive instruction cost, so the prefix-sum and stack clients no longer
+  final state and halt-inclusive instruction cost, so the prefix-sum clients no longer
   assemble preparation, evaluation and halt accounting by hand.
 - **Priority-queue and shortest-path consolidation** ([#949]): lift operation-count helpers
   (`numQueries`, `numInserts`, `numDecreaseKeys`, `numExtractMins`) to `IndexedMinPQ`, parameterize
