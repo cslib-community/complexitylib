@@ -110,27 +110,6 @@ theorem copyBank_exec (src dst : Fin k → Fin r) (idle : Fin r)
       rw [hframe j (fun i => hj i.succ)]
       exact Function.update_of_ne (hj 0).symm _ _
 
-/-- The result of the memory interpreter is independent of the admissibility width. -/
-theorem clientResult_width (w : ℕ) (p : Memory.Prog σ) (s : Memory.State) :
-    (Memory.spec w).clientResult s p = (Memory.spec 0).clientResult s p :=
-  congrArg Prod.fst (runClient_width w p s)
-
-/-- The final memory/frontier state is independent of the admissibility width. -/
-theorem clientState_width (w : ℕ) (p : Memory.Prog σ) (s : Memory.State) :
-    (Memory.spec w).clientState s p = (Memory.spec 0).clientState s p :=
-  congrArg (fun t => t.2.1) (runClient_width w p s)
-
-/-- Admissible sequential histories split at the actual returned value and memory state. -/
-theorem validHistory_bind (w : ℕ) {α β : Type} (p : Memory.Prog α)
-    (q : α → Memory.Prog β) (s : Memory.State) :
-    (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (p.bind q)) ↔
-      (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s p) ∧
-      (Memory.spec w).ValidHistory ((Memory.spec w).clientState s p)
-        ((Memory.spec w).clientHistory ((Memory.spec w).clientState s p)
-          (q ((Memory.spec w).clientResult s p))) := by
-  simp only [StateTransitionSpec.clientHistory, StateTransitionSpec.runClient_bind]
-  rw [StateTransitionSpec.validHistory_append, StateTransitionSpec.run_runClient]
-
 /-- Memory cost and certified local work decompose at each actual iteration. -/
 theorem iteration_charge_succ (body : δ × σ → Memory.Prog σ)
     (work : (δ × σ) → Memory.State → ℕ) (d : δ) (n : ℕ) (a : σ) (s : Memory.State) :
@@ -255,13 +234,13 @@ theorem iterateRuntime (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ (Fin l 
     {safe : ℕ → (δ × σ) → Memory.State → Prop}
     {work : (δ × σ) → Memory.State → ℕ}
     (h : Realizes .exact body
-      ((input.prodMap output).trans (Fin.appendEquiv k l).toEmbedding) output safe work) :
-    Realizes .exact (fun d : (δ × σ) × ℕ => iterate body d.1.1 d.2 d.1.2)
-      ((((input.prodMap output).trans (Fin.appendEquiv k l).toEmbedding).prodMap
+      (appendWords input output) output safe work) :
+    Realizes .exact (fun ((d, a), fuel) => iterate body d fuel a)
+      (((appendWords input output).prodMap
         (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding).trans
           (Fin.appendEquiv (k + l) 1).toEmbedding) output
-      (fun w d s => iterationSafe body safe w d.1.1 d.2 d.1.2 s)
-      (fun d s => iterationWork body work d.1.1 d.2 d.1.2 s) := by
+      (fun w ((d, a), fuel) s => iterationSafe body safe w d fuel a s)
+      (fun ((d, a), fuel) s => iterationWork body work d fuel a s) := by
   obtain ⟨n, C, emit, he⟩ := h
   refine ⟨l + n + 3, C + 2 * l + 8, loopEmit emit, ?_⟩
   intro r frontier src tmp hi hd hf hs
@@ -338,7 +317,8 @@ theorem iterateRuntime (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ (Fin l 
     let s₀ := memoryState frontier x
     have henv (i : Fin k) : x.regs (env i) = input d₀ i := by
       have hh : x.regs (src (Fin.castAdd 1 (Fin.castAdd l i))) = input d₀ i := by
-        simpa [d₀, Fin.appendEquiv] using congrFun hin (Fin.castAdd 1 (Fin.castAdd l i))
+        simpa [d₀, appendWords, Fin.appendEquiv] using
+          congrFun hin (Fin.castAdd 1 (Fin.castAdd l i))
       have hidx : Fin.castAdd 1 (Fin.castAdd l i) = (⟨i.val, by omega⟩ : Fin (k + l + 1)) := by
         apply Fin.ext
         rfl
@@ -346,7 +326,8 @@ theorem iterateRuntime (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ (Fin l 
       exact hh
     have hstate (i : Fin l) : x.regs (src ⟨k + i.val, by omega⟩) = output a₀ i := by
       have hh : x.regs (src (Fin.castAdd 1 (Fin.natAdd k i))) = output a₀ i := by
-        simpa [a₀, Fin.appendEquiv] using congrFun hin (Fin.castAdd 1 (Fin.natAdd k i))
+        simpa [a₀, appendWords, Fin.appendEquiv] using
+          congrFun hin (Fin.castAdd 1 (Fin.natAdd k i))
       have hidx : Fin.castAdd 1 (Fin.natAdd k i) =
           (⟨k + i.val, by omega⟩ : Fin (k + l + 1)) := by
         apply Fin.ext
@@ -419,11 +400,11 @@ theorem iterateRuntime (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ (Fin l 
       have hvparts := (validHistory_bind w (body (d₀, q.1))
         (iterate body d₀ j) q.2).mp hyv
       have hinbody : y.regs ∘ bs =
-          ((input.prodMap output).trans (Fin.appendEquiv k l).toEmbedding) (d₀, q.1) := by
+          (appendWords input output) (d₀, q.1) := by
         funext i
         refine Fin.addCases (fun i => ?_) (fun i => ?_) i
-        · simpa [bs, Fin.appendEquiv] using hye i
-        · simpa [bs, Fin.appendEquiv] using hys i
+        · simpa [bs, appendWords, Fin.appendEquiv] using hye i
+        · simpa [bs, appendWords, Fin.appendEquiv] using hys i
       obtain ⟨u, hu, hum, huo, huf⟩ := hrun w (d₀, q.1) y hyb hinbody
         (hym ▸ hysafe.1) (hym ▸ hvparts.1)
       rw [hym] at hu hum huo
