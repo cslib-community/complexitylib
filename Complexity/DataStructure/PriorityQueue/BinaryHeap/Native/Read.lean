@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.WordRAM.Realization.Absorb
+public import Complexity.Computability.WordRAM.Realization.Reindex
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.Encoding
 import Complexity.Tactic.Realize
 
@@ -22,7 +23,8 @@ No key is shifted to encode absence, so a maximum fitting key remains representa
 ## Main results
 
 * `realizes_isEmpty`: the original one-query emptiness test.
-* `realizes_getKey`: the original at-most-two-query optional key lookup.
+* `realizes_getKeyWord`, `realizes_getKey`: the same at-most-two-query lookup for a runtime
+  handle word with a visible bound, or for the typed indexed-PQ client.
 
 These certificates assume arguments installed in registers. They neither load an external heap
 nor initialize its representation. The heap's existing source correctness remains separate.
@@ -50,19 +52,30 @@ theorem realizes_isEmpty :
     funext S
     by_cases hz : S = 0 <;> simp [hz]
 
-/-- The original optional lookup. A typed handle supplies the array-index bound; the key itself
-is returned unshifted, including the largest fitting word. -/
-theorem realizes_getKey :
-    Realizes .exact (fun d : HandleArgument => Memory.getKey d.2.1 d.2.2) handleWords optionWords
-      (fun _ d s => d.2.1.arrays.Allocated s) (fun _ _ => 0) := by
+/-- The original optional lookup on a runtime handle word. The bound is part of the explicit
+entry domain; it is not an input-dependent choice of code or an extra native check. -/
+theorem realizes_getKeyWord :
+    Realizes .exact (fun d : HeapLayout × ℕ => Memory.getKey d.1.2 d.2) indexWords optionWords
+      (fun _ d s => d.2 < d.1.1 ∧ d.1.2.arrays.Allocated s) (fun _ _ => 0) := by
   realize
   all_goals
     first
-    | exact hmem.fits_of_lt_frontier (Memory.pos_lt h d.2.2.isLt)
-    | exact hmem.fits_of_lt_frontier (Memory.key_lt h d.2.2.isLt)
+    | exact hmem.fits_of_lt_frontier (Memory.pos_lt h.2 h.1)
+    | exact hmem.fits_of_lt_frontier (Memory.key_lt h.2 h.1)
     | apply hmem.fits_of_lt_frontier
-      have hv := d.2.2.isLt
-      change d.2.1.base + (3 * d.1 + 1) ≤ s.frontier at h
+      have hv := h.1
+      have hA := h.2
+      change d.1.2.base + (3 * d.1.1 + 1) ≤ s.frontier at hA
       omega
+
+/-- The typed indexed-PQ client reuses the word-body certificate by static wiring. Its key is
+returned unshifted, including the largest fitting word. -/
+theorem realizes_getKey :
+    Realizes .exact (fun d : HandleArgument => Memory.getKey d.2.1 d.2.2) handleWords optionWords
+      (fun _ d s => d.2.1.arrays.Allocated s) (fun _ _ => 0) := by
+  have h := realizes_getKeyWord.reindex
+    (fun d : HandleArgument => ((⟨d.1, d.2.1⟩ : HeapLayout), d.2.2.val)) handleWords
+    (fun i => i) (by intro d i; rfl)
+  exact h.consequence (fun _ d _ _ _ h => ⟨d.2.2.isLt, h⟩) (fun _ _ => le_rfl)
 
 end Cslib.DataStructure.PriorityQueue.BinaryHeap.Native

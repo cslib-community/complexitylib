@@ -200,8 +200,9 @@ def isEmpty : Prog Bool := do
   let S ← L.size.get 0
   pure (decide (S = 0))
 
-/-- The key of handle `v`: absent when its position is `0`. -/
-def getKey (v : Fin n) : Prog (Option ℕ) := do
+/-- The key of handle `v`: absent when its position is `0`. Correctness is stated for `v < n`
+through the typed indexed-PQ operations; the program accepts the runtime index word directly. -/
+def getKey (v : ℕ) : Prog (Option ℕ) := do
   let p ← L.pos.get v
   if p = 0 then pure none else do
     let k ← L.key.get v
@@ -209,7 +210,7 @@ def getKey (v : Fin n) : Prog (Option ℕ) := do
 
 /-- Insert the absent handle `v` with key `k`: store the key, append `v` at the end of the heap,
 and sift it up. -/
-def insert (v : Fin n) (k : ℕ) : Prog Unit := do
+def insert (v : ℕ) (k : ℕ) : Prog Unit := do
   let S ← L.size.get 0
   L.size.set 0 (S + 1)
   L.key.set v k
@@ -218,7 +219,7 @@ def insert (v : Fin n) (k : ℕ) : Prog Unit := do
   siftUp L (S + 1)
 
 /-- Lower the key of the present handle `v` to `k`, and sift it up from its position. -/
-def decreaseKey (v : Fin n) (k : ℕ) : Prog Unit := do
+def decreaseKey (v : ℕ) (k : ℕ) : Prog Unit := do
   let p ← L.pos.get v
   L.key.set v k
   siftUp L p

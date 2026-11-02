@@ -49,7 +49,7 @@ example : ¬ZeroAbove initial := by
 -- The original general source-correctness theorem now applies to the compact local instance.
 example : Triple 3 initial (insert layout 0 3) (8 * Nat.log 2 1 + 9)
     (Post layout initial (.insert 0 3)) := by
-  apply insert_triple valid empty_inv.1
+  apply insert_triple valid empty_inv.1 (v := 0) (k := 3)
   rw [empty_inv.2]
   simp [IndexedMinPQ.valid, IndexedMinPQ.empty]
 
