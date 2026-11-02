@@ -478,20 +478,19 @@ theorem amortized_prod {lower : State → Op → ℕ} {upper₁ : D₁.State →
 
 /-- Setting up a product from structures allocated one after the other: `M₁` holds at `s`; a
 run from `s` to `s'` leaves the cells below `s.frontier` unchanged; `M₂` holds at `s'` on a
-footprint at or above `s.frontier`; and the frontier plus both rooms fits. Then the product holds
-at `s'`, with `M₁`'s abstraction, footprint and room unchanged. -/
+footprint disjoint from `M₁`'s, such as one at or above `s.frontier`; and the frontier plus both
+rooms fits. Then the product holds at `s'`, with `M₁`'s abstraction, footprint and room
+unchanged. -/
 theorem prod_of_fresh {s s' : State} (h₁ : M₁.inv s)
     (hmem : ∀ a < s.frontier, s'.mem a = s.mem a) (hf : s.frontier ≤ s'.frontier)
-    (h₂ : M₂.inv s') (hfp : ∀ a ∈ M₂.footprint s', s.frontier ≤ a)
+    (h₂ : M₂.inv s') (hd : Disjoint (M₁.footprint s) (M₂.footprint s'))
     (hroom : Fits w (s'.frontier + (M₁.room s + M₂.room s'))) :
     (M₁.prod M₂).inv s' ∧ (M₁.prod M₂).abs s' = (M₁.abs s, M₂.abs s') ∧
       (M₁.prod M₂).footprint s' = M₁.footprint s ∪ M₂.footprint s' ∧
       (M₁.prod M₂).room s' = M₁.room s + M₂.room s' := by
   obtain ⟨h₁', habs, hfp₁, hr₁⟩ := M₁.of_fresh h₁ hmem hf (hroom.of_le (by omega))
-  refine ⟨⟨h₁', h₂, Finset.disjoint_left.mpr fun a ha ha' => ?_, by rwa [hr₁]⟩,
-    by rw [prod_abs, habs], by rw [prod_footprint, hfp₁], by rw [prod_room, hr₁]⟩
-  rw [hfp₁] at ha
-  exact absurd (M₁.lt_frontier h₁ ha) (Nat.not_lt.mpr (hfp a ha'))
+  exact ⟨⟨h₁', h₂, by rwa [hfp₁], by rwa [hr₁]⟩, by rw [prod_abs, habs],
+    by rw [prod_footprint, hfp₁], by rw [prod_room, hr₁]⟩
 
 end Framed
 

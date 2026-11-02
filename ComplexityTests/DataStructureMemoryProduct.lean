@@ -160,6 +160,11 @@ example : (spec 8).totalCost charge nothing ((spec 8).clientHistory nothing
     (allocated.run client')) = 9 + 17 := by
   decide
 
+/-- The three stacks are allocated from scratch, so nothing is needed of the memory besides
+room. -/
+theorem pre_allocated (s : State) : allocated.Pre s :=
+  ⟨trivial, ⟨trivial, trivial, Finset.disjoint_empty_left _⟩, Finset.disjoint_empty_left _⟩
+
 /-- The client is admissible for the three bounded stacks. -/
 theorem client'_valid : (product S (product S S)).ValidHistory allocated.init
     ((product S (product S S)).clientHistory allocated.init client') :=
@@ -178,13 +183,13 @@ theorem amortized_allocated : allocated.Amortized (fun _ _ => 3) 0 := by
 example : (spec 8).clientResult nothing (allocated.run client') =
     (product S (product S S)).clientResult allocated.init client' :=
   have ⟨_, hres, _⟩ :=
-    allocated.run_correct client' ⟨trivial, trivial, trivial⟩ (by decide) client'_valid
+    allocated.run_correct client' (pre_allocated _) (by decide) client'_valid
   hres
 
 /-- The generic cost theorem: nine units to allocate, and three per operation. -/
 example : (spec 8).totalCost charge nothing ((spec 8).clientHistory nothing
     (allocated.run client')) ≤ 9 + 0 + 3 * 7 :=
-  Allocator.run_cost_le amortized_allocated client' ⟨trivial, trivial, trivial⟩ (by decide)
+  Allocator.run_cost_le amortized_allocated client' (pre_allocated _) (by decide)
     client'_valid
 
 end ComplexityTests.DataStructureMemoryProduct
