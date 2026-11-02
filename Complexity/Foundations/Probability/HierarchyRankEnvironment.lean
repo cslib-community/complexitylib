@@ -357,8 +357,11 @@ theorem copy_retains (D : ℕ) (ch : Channel P J) (σ : Environment P J)
 
 /-- A fixed independent role product, reused unchanged at every stage. -/
 structure RoleProfile (J : ℕ) where
+  /-- Rank coordinate conditioning the source vertex. -/
   source : Fin J
+  /-- Independent rank coordinate used at product midpoints. -/
   midpoint : Fin J
+  /-- Rank coordinate conditioning the terminal vertex. -/
   terminal : Fin J
   source_midpoint : source ≠ midpoint
   source_terminal : source ≠ terminal
@@ -548,6 +551,7 @@ noncomputable def denseLaws (D : ZMod P) (hD : D ≠ 0) (role : Fin J)
 /-- Explicit rational polynomial cutoff and row gate for an actual dense client.
 These are fully exposed arithmetic formulas, not opaque functions from a witness. -/
 @[expose] noncomputable def cutoff (d : ℝ) : ℝ := polynomialSwitch4 (1 / 2) 1 d
+/-- Explicit polynomial row gate, full through rank one and closed from rank two. -/
 @[expose] noncomputable def gate (r : ℝ) : ℝ := 1 - polynomialSwitch4 1 2 r
 
 /-- The polynomial row gate is nonnegative. -/
