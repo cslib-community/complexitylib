@@ -15,7 +15,9 @@ public import Complexity.Algorithms.Lean.Karger.Memory
 The unit-weight triangle is laid out at address `0` with capacity `3`: size `3`, total `6`,
 degrees `2, 2, 2`, then the matrix row by row. The tests check that this memory state satisfies
 the invariant, evaluate the sampling query against `sampledPair` and a contraction against the
-specification, and run a short client through the refinement.
+specification, and run a short client through the refinement. They instantiate the transferred
+success bound `1 / 3`, the one-sided error and the cost bounds of Karger's algorithm over memory,
+so that none of their hypotheses is vacuous.
 -/
 
 @[expose] public section
@@ -30,6 +32,9 @@ open Cslib Cslib.WeightedCut Cslib.DataStructure Cslib.Algorithms.Lean.Karger
 def triangle : Fin 3 → Fin 3 → ℕ := fun i j => if i = j then 0 else 1
 
 theorem isMultigraph_triangle : IsMultigraph triangle := ⟨by decide, by decide⟩
+
+theorem minCut_triangle : 0 < minCut triangle :=
+  (minCut_pos_iff (by simp) _).mpr (by unfold IsNonTrivialCut; decide)
 
 /-- The layout at address `0` for at most three supervertices. -/
 def L : Layout := ⟨0, 3⟩
@@ -97,5 +102,42 @@ example : (DataStructure.Memory.spec 8).totalCost DataStructure.Memory.charge tr
   rw [refinement_abs, triangleMem_holds.1] at h
   refine (Nat.le_add_right _ _).trans (h.trans ?_)
   decide
+
+/-- Karger's algorithm over memory finds the minimum cut of the triangle with probability at
+least `1 / 3`. -/
+example : (2 : ℝ≥0∞) / ((3 * (3 - 1) : ℕ) : ℝ≥0∞) ≤
+    ((DataStructure.Memory.spec 8).toRandomized.withCoins.run (kargerProg L 8)
+      triangleMem).toOuterMeasure {x | x.1 = minCut triangle} :=
+  two_div_le_toOuterMeasure_kargerProg triangleMem_holds.2 triangleMem_holds.1 (by norm_num)
+    isMultigraph_triangle minCut_triangle
+
+/-- Every answer is at least the minimum cut weight. -/
+example {x : ℕ × DataStructure.Memory.State}
+    (hx : x ∈ ((DataStructure.Memory.spec 8).toRandomized.withCoins.run (kargerProg L 8)
+      triangleMem).support) :
+    minCut triangle ≤ x.1 :=
+  minCut_le_of_mem_support_kargerProg triangleMem_holds.2 triangleMem_holds.1 (by norm_num)
+    isMultigraph_triangle hx
+
+/-- The expected memory cost is at most `1 · (1 + 4 · 28) + 2 · 28 = 169` units. -/
+example : (DataStructure.Memory.spec 8).toRandomized.withCoins.expectedCost
+    ((DataStructure.Memory.spec 8).toRandomized.coinCharge (fun _ => 1) DataStructure.Memory.charge)
+    (kargerProg L 8) triangleMem ≤ (169 : ℕ) :=
+  expectedCost_kargerProg_le triangleMem_holds.2 triangleMem_holds.1 (by norm_num)
+    isMultigraph_triangle
+
+/-- It draws at most one coin in expectation. -/
+example : (DataStructure.Memory.spec 8).toRandomized.withCoins.expectedCost
+    ((DataStructure.Memory.spec 8).toRandomized.coinCharge (fun _ => 1) fun _ _ => 0)
+    (kargerProg L 8) triangleMem ≤ (1 : ℕ) :=
+  expectedCoins_kargerProg_le triangleMem_holds.2 triangleMem_holds.1 (by norm_num)
+    isMultigraph_triangle
+
+/-- The exported bound applies to the triangle. -/
+example : ∃ F : ℕ → ℕ, (DataStructure.Memory.spec 8).toRandomized.withCoins.expectedCost
+    ((DataStructure.Memory.spec 8).toRandomized.coinCharge (fun _ => 1) DataStructure.Memory.charge)
+    (kargerProg L 8) triangleMem ≤ (F 3 : ℝ≥0∞) :=
+  let ⟨F, _, hF⟩ := exists_expectedCost_kargerProg_isBigO
+  ⟨F, hF triangleMem_holds.2 triangleMem_holds.1 rfl (by norm_num) isMultigraph_triangle⟩
 
 end ComplexityTests.KargerMemory
