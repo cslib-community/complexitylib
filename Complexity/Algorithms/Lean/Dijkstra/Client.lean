@@ -229,6 +229,44 @@ private theorem runClient_bind' {α β : Type} (s : (spec n K V).State) (p : (sp
             (k ((spec n K V).clientResult s p))) :=
   StateTransitionSpec.runClient_bind p k s
 
+/-! One call of each kind, followed by a continuation. Their answer types are the declared ones
+(`Option ℕ`, `Fin n × ℕ`, …), so these equations apply where the generic
+`StateTransitionSpec.runClient_lift_bind'` would have to unfold `Sum.elim` in the answer types of
+`product`. -/
+
+private theorem runClient_insert_bind {α : Type} (s : (spec n K V).State) (v : Fin n) (d : ℕ)
+    (k : Unit → (spec n K V).Client α) :
+    (spec n K V).runClient s ((queue (.insert v d) : (spec n K V).Client Unit) >>= k) =
+      let (r, s', os) := (spec n K V).runClient (Function.update s.1 v (some d), s.2) (k ())
+      (r, s', .inl (.insert v d) :: os) := rfl
+
+private theorem runClient_insert (s : (spec n K V).State) (v : Fin n) (d : ℕ) :
+    (spec n K V).runClient (α := Unit) s (queue (.insert v d)) =
+      ((), (Function.update s.1 v (some d), s.2), [.inl (.insert v d)]) := rfl
+
+private theorem runClient_decreaseKey (s : (spec n K V).State) (v : Fin n) (d : ℕ) :
+    (spec n K V).runClient (α := Unit) s (queue (.decreaseKey v d)) =
+      ((), (Function.update s.1 v (some d), s.2), [.inl (.decreaseKey v d)]) := rfl
+
+private theorem runClient_getDist_bind {α : Type} (s : (spec n K V).State) (v : Fin n)
+    (k : Option ℕ → (spec n K V).Client α) :
+    (spec n K V).runClient s (getDist v >>= k) =
+      let (r, s', os) := (spec n K V).runClient s (k (s.2.1 v))
+      (r, s', .inr (.inl (.get v)) :: os) := rfl
+
+private theorem runClient_setDist_bind {α : Type} (s : (spec n K V).State) (v : Fin n) (d : ℕ)
+    (k : Unit → (spec n K V).Client α) :
+    (spec n K V).runClient s (setDist v d >>= k) =
+      let (r, s', os) :=
+        (spec n K V).runClient (s.1, Function.update s.2.1 v (some d), s.2.2) (k ())
+      (r, s', .inr (.inl (.insert v d)) :: os) := rfl
+
+private theorem runClient_edge_bind {α : Type} (s : (spec n K V).State) (u : Fin n) (i : ℕ)
+    (k : Fin n × ℕ → (spec n K V).Client α) :
+    (spec n K V).runClient s (edge u i >>= k) =
+      let (r, s', os) := (spec n K V).runClient s (k (AdjacencyList.step s.2.2 (.edge u i)).2)
+      (r, s', .inr (.inr (.edge u i)) :: os) := rfl
+
 private theorem Runs.bind {s s₁ s₂ : (spec n K V).State} {p q : (spec n K V).Client Unit}
     {b₁ b₂ : ℕ} (h₁ : Runs rate pU pQ s p s₁ b₁) (h₂ : Runs rate pU pQ s₁ q s₂ b₂) :
     Runs rate pU pQ s (p >>= fun _ => q) s₂ (b₁ + b₂) := by
@@ -327,9 +365,8 @@ private theorem relaxEdge_runs (T : Finset (Fin n)) (dm : Dictionary.State n)
         ((), (Function.update (syncQ T dm) v (some (du + c)), Function.update dm v (some (du + c)),
           adj), [.inr (.inr (.edge u i)), .inr (.inl (.get v)), .inr (.inl (.insert v (du + c))),
             .inl (.insert v (du + c))]) := by
-      simp only [relaxEdge, StateTransitionSpec.runClient_lift_bind',
-        StateTransitionSpec.stepFn, AdjacencyList.step_edge _ _ hi, hvc, hdm, IndexedMinPQ.step,
-        StateTransitionSpec.runClient_lift]
+      simp only [relaxEdge, runClient_edge_bind, AdjacencyList.step_edge _ _ hi, hvc,
+        runClient_getDist_bind, hdm, runClient_setDist_bind, runClient_insert]
     have hq : (IndexedMinPQ.dom (syncQ T (Function.update dm v (some (du + c))))).card =
         (IndexedMinPQ.dom (syncQ T dm)).card + 1 := by
       rw [← syncQ_update hvT, IndexedMinPQ.dom_insert, Finset.card_insert_of_notMem]
@@ -355,9 +392,9 @@ private theorem relaxEdge_runs (T : Finset (Fin n)) (dm : Dictionary.State n)
             Function.update dm v (some (du + c)), adj),
             [.inr (.inr (.edge u i)), .inr (.inl (.get v)), .inr (.inl (.insert v (du + c))),
               .inl (.decreaseKey v (du + c))]) := by
-        simp only [relaxEdge, StateTransitionSpec.runClient_lift_bind',
-          StateTransitionSpec.stepFn, AdjacencyList.step_edge _ _ hi, hvc, hdm, IndexedMinPQ.step,
-          StateTransitionSpec.runClient_lift, hlt, ite_true]
+        simp only [relaxEdge, runClient_edge_bind, AdjacencyList.step_edge _ _ hi, hvc,
+          runClient_getDist_bind, hdm, hlt, ite_true, runClient_setDist_bind,
+          runClient_decreaseKey]
       have hq : (IndexedMinPQ.dom (syncQ T (Function.update dm v (some (du + c))))).card =
           (IndexedMinPQ.dom (syncQ T dm)).card := by
         rw [← syncQ_update hvT, IndexedMinPQ.dom_decreaseKey]
@@ -377,8 +414,8 @@ private theorem relaxEdge_runs (T : Finset (Fin n)) (dm : Dictionary.State n)
         omega
     · have hrun : (spec n K V).runClient (syncQ T dm, dm, adj) (relaxEdge u du i) =
           ((), (syncQ T dm, dm, adj), [.inr (.inr (.edge u i)), .inr (.inl (.get v))]) := by
-        simp only [relaxEdge, StateTransitionSpec.runClient_lift_bind',
-          StateTransitionSpec.stepFn, AdjacencyList.step_edge _ _ hi, hvc, hdm, hlt, ite_false]
+        simp only [relaxEdge, runClient_edge_bind, AdjacencyList.step_edge _ _ hi, hvc,
+          runClient_getDist_bind, hdm, hlt, ite_false]
         rfl
       have hmin : Function.update dm v (relaxOpt (du + c) (some dv)) = dm := by
         rw [relaxOpt, min_eq_right (Nat.le_of_not_lt hlt), ← hdm, Function.update_eq_self]
@@ -755,8 +792,8 @@ private theorem dijkstra_runs (G : ListInstance) (hK : G.n * G.maxWeight ≤ K)
         (spec G.n K V).clientState (syncQ ∅ dm₀, dm₀, G.adj) (loop G.n),
         [.inr (.inl (.insert G.source 0)), .inl (.insert G.source 0)] ++
           (spec G.n K V).clientHistory (syncQ ∅ dm₀, dm₀, G.adj) (loop G.n)) := by
-    simp only [dijkstra, init, StateTransitionSpec.runClient_lift_bind', IndexedMinPQ.step]
-    rw [← hdm₀, hq₀]
+    simp only [dijkstra, init, runClient_setDist_bind]
+    rw [runClient_insert_bind, ← hdm₀, hq₀]
     rfl
   have hunr : unreached dm₀ + 1 = unreached (Dictionary.empty G.n) :=
     unreached_update_of_none rfl 0

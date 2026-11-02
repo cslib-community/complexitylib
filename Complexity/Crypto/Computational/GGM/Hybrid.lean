@@ -73,7 +73,7 @@ noncomputable def frontierOracle (generator : List Bool → List Bool) (n depth 
 noncomputable def hybridGame (generator : List Bool → List Bool) (adversary : OracleDistinguisher)
     (n depth : ℕ) : ProbComp Bool :=
   Prod.fst <$> (OracleComp.interpret
-    (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
       (fun request => frontierOracle generator n depth request.2)) (adversary n [])).run []
 
 /-- At level zero, all valid queries share one root label. Sampling that label on demand agrees
@@ -182,7 +182,7 @@ theorem isPPTOn_hybridGame {generator : List Bool → List Bool}
   have hgenerator := hgenerator.tidy
   have hrun : IsPPTOn (encPair encUnary encUnary) (encPair encBool cacheEncoding)
       (fun pair : ℕ × ℕ => (OracleComp.interpret
-        (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
           (fun request => frontierOracle generator pair.1 pair.2 request.2))
             (adversary pair.1 [])).run []) := by
     apply hadversary.run_interpret_preprocess (operationEncoding := encFinEnum Unit)
