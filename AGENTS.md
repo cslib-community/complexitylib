@@ -180,6 +180,10 @@ concrete and the change is small; otherwise record a specific follow-up with dec
 consumers, and a proposed home. Apply the migration policy below when changing public interfaces.
 Do not expand a bounded PR into an unbounded architectural cleanup.
 
+Do not prove a lemma that the library, Mathlib or core already has, even privately: use it, or make
+a private original public. After a build, `python3 scripts/parallel_defs.py --theorems` lists the
+theorems a change adds or modifies whose statement already exists; CI posts the same notice.
+
 "Lowest suitable" does not mean the most widely imported file. Adding a public declaration changes
 a module's public interface and can invalidate downstream build artifacts, even for clients that do
 not use the new declaration. Prefer a small topic module imported by its consumers over appending
@@ -333,13 +337,23 @@ the pin past it and remove the superseded local copy together. Record unresolved
 
 ## Proof hygiene
 
+These rules exist for readability and robustness. When following one would make a particular
+proof or statement worse (longer, harder to read, or working against the automation), deviate,
+say why in the PR, and propose amending the rule. Reviewers judge a deviation by the rule's
+purpose, not its letter.
+
 - No `sorry` on `main`, no custom `axiom`, no `native_decide`.
 - `set_option maxHeartbeats` / `maxRecDepth` overrides need a justifying comment. A
   `maxHeartbeats` above the 200000 default, or zero (unlimited), also needs a reviewed entry in
   `scripts/heartbeat_allowlist.txt`, which `scripts/check_hygiene.py` enforces and keeps
   shrinking; prefer reducing the proof's cost.
 - Never put `[simp]` on machine step functions or transition tables (goals explode).
-- Non-terminal `simp` only as `simp only`; definitions as terms, not `by` blocks, where possible.
+- Non-terminal `simp` only as `simp only`, so that later steps do not depend on the shape of a
+  `simp` normal form, which changes as simp sets grow. A `simp` whose result is closed by a
+  finishing tactic that does not depend on that shape (`omega`, `linarith`, `nlinarith`,
+  `norm_num`, `ring`, `grind`, `tauto`), as in `simp [h]; omega`, counts as terminal, as in
+  Mathlib's flexible-tactic linter.
+- Definitions as terms, not `by` blocks, where possible.
 - Prefer `do` notation for sequential monadic computations, including probabilistic experiments
   in theorem statements. Keep explicit `bind` in laws about bind and proof steps that use those
   laws directly, and for operations such as `PMF.bind` between different universes that the standard

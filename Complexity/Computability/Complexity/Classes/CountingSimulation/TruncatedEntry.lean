@@ -18,7 +18,8 @@ The instance of the interface of Theorem D.1 at truncation order `ℓ`
 computed by procedures: for every native certificate `ce` of an entry procedure,
 `CountingSimulation.truncEntryContractionAlgorithm ce` computes the contraction in
 `B_{P,ℓ} = (ℤ / 2 ^ P)[V] / (V ^ ℓ)` of the networks admissible for `ce` with at most `C s` vertices
-(`Cslib.Circuits.Frontier.TruncEntryAdmissible`), for `1 ≤ P, ℓ ≤ D s`, in time
+(`Cslib.Circuits.Frontier.TruncEntryAdmissible`), for
+`1 ≤ P ≤ D s (⌊log₂ s⌋ + 1)` and `1 ≤ ℓ ≤ D (s + 1) ^ d`, for fixed `D`, `d`, in time
 `poly(n) 2 ^ O(s / √⌊log₂ s⌋)` and polynomial space.
 
 It combines the reduction of truncation order `ℓ` to `A_P = (ℤ / 2 ^ P)[U] / (f)`
@@ -26,7 +27,8 @@ It combines the reduction of truncation order `ℓ` to `A_P = (ℤ / 2 ^ P)[U] /
 for entry procedures (`CountingSimulation.entryContractionAlgorithm`), applied to the specialized
 entries.
 
-This is Theorem D.1 of [OpenAI2026ETH] (p. 53) with one narrowing: the theorem asks for at most
+This includes the linear precision and truncation range of Theorem D.1 of [OpenAI2026ETH]
+(p. 53), and proves the stated larger ranges. There is one narrowing: the theorem asks for at most
 polynomially many vertices in `s`, and admissibility here asks for at most `C s`. The networks of
 Lemma D.2 (p. 56) and of the fixed-density bound (§D.2, p. 54) have that many. As for all the
 interfaces of this development, admissibility also asks for at least `s` edges, which a caller
@@ -55,7 +57,8 @@ networks with at most `C s` vertices): for every native certificate `ce` of an e
 the reduction of truncation order `ℓ` to `A_P` around the contraction algorithm for the
 specialized entries is a truncated contraction algorithm for the networks admissible for `ce` with
 at most `C s` vertices. It computes the contraction in `B_{P,ℓ}` from `(P, ℓ, r, G)` on every
-input, and on admissible inputs with `1 ≤ P, ℓ ≤ D s` in time `poly(n) 2 ^ O(s / √⌊log₂ s⌋)` and
+input, and on admissible inputs with `1 ≤ P ≤ D s (⌊log₂ s⌋ + 1)` and
+`1 ≤ ℓ ≤ D (s + 1) ^ d`, for fixed `D`, `d`, in time `poly(n) 2 ^ O(s / √⌊log₂ s⌋)` and
 polynomial space. -/
 noncomputable def truncEntryContractionAlgorithm
     (ce : NativeCertificate (fun q : T × List Bool => entry q.1 q.2) (encPair encT encBits)

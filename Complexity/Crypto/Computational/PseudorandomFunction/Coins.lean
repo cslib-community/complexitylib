@@ -144,7 +144,7 @@ def randomCoinOracle (N : ℕ) (table : BitString N → BitString N) (request : 
 noncomputable def coinRealGame (adversary : OracleDistinguisher) (N : ℕ) : ProbComp Bool := do
   let key ← BitString.sampleList N
   OracleComp.interpret
-    (ProbOracleComp.handler ProbComp.unifFin (fun request =>
+    (OracleComp.sumHandler ProbComp.unifFin (fun request =>
       pure (coinOracle family key request.2))) (adversary N [])
 
 /-- The ideal coin game: a uniform random function on `N` bits answers every request at its
@@ -152,7 +152,7 @@ padding, cut to the requested count. -/
 noncomputable def coinIdealGame (adversary : OracleDistinguisher) (N : ℕ) : ProbComp Bool := do
   let table ← ProbComp.uniform (BitString N → BitString N)
   OracleComp.interpret
-    (ProbOracleComp.handler ProbComp.unifFin (fun request =>
+    (OracleComp.sumHandler ProbComp.unifFin (fun request =>
       pure (randomCoinOracle N table request.2))) (adversary N [])
 
 /-! ### The reduction to the PRF games -/
@@ -165,19 +165,19 @@ def coinQuery (N : ℕ) (request : Unit × List Bool) : WordOracleComp Unit (Lis
 /-- The PRF distinguisher built from a coin adversary: run it, answering through `coinQuery`. -/
 def coinDistinguisher (adversary : OracleDistinguisher) : OracleDistinguisher := fun N aux =>
   OracleComp.interpret
-    (ProbOracleComp.handler (fun k => ProbOracleComp.sample (ProbComp.unifFin k)) (coinQuery N))
+    (OracleComp.sumHandler (fun k => ProbOracleComp.sample (ProbComp.unifFin k)) (coinQuery N))
     (adversary N aux)
 
 /-- Interpreting the forwarded program against a stateless word oracle is interpreting the
 original program against that oracle composed with `coinQuery`. -/
 private theorem interpret_coinDistinguisher (oracle : Unit × List Bool → ProbComp (List Bool))
     (adversary : OracleDistinguisher) (N : ℕ) (aux : List Bool) :
-    OracleComp.interpret (ProbOracleComp.handler ProbComp.unifFin oracle)
+    OracleComp.interpret (OracleComp.sumHandler ProbComp.unifFin oracle)
       (coinDistinguisher adversary N aux) =
-    OracleComp.interpret (ProbOracleComp.handler ProbComp.unifFin (fun request =>
+    OracleComp.interpret (OracleComp.sumHandler ProbComp.unifFin (fun request =>
       List.take (coinRequestDecoder.decode request.2).2 <$>
         oracle ((), padRequest N (coinRequestDecoder.decode request.2).1))) (adversary N aux) := by
-  simp only [coinDistinguisher, OracleComp.interpret_interpret, ProbOracleComp.interpret_handler,
+  simp only [coinDistinguisher, OracleComp.interpret_interpret, OracleComp.interpret_sumHandler,
     ProbOracleComp.interpret_sample, coinQuery, OracleComp.interpret_map,
     ProbOracleComp.interpret_query]
   congr 1
@@ -191,7 +191,7 @@ theorem eval_coinRealGame (adversary : OracleDistinguisher) (N : ℕ) :
   have hlen := BitString.length_of_mem_support_uniformList hkey
   rw [interpret_coinDistinguisher]
   refine congrArg (fun h => ProbComp.eval (OracleComp.interpret
-    (ProbOracleComp.handler ProbComp.unifFin h) (adversary N []))) (funext fun request => ?_)
+    (OracleComp.sumHandler ProbComp.unifFin h) (adversary N []))) (funext fun request => ?_)
   simp only [map_pure, coinOracle, prfCoins, prfOracle, length_padRequest, hlen, ite_true]
 
 /-- The ideal coin game is the ideal PRF game of the forwarded adversary. -/
@@ -202,7 +202,7 @@ theorem eval_coinIdealGame (adversary : OracleDistinguisher) (N : ℕ) :
   refine PMF.bind_congr_on_support _ _ _ fun table _ => ?_
   rw [interpret_coinDistinguisher]
   refine congrArg (fun h => ProbComp.eval (OracleComp.interpret
-    (ProbOracleComp.handler ProbComp.unifFin h) (adversary N []))) (funext fun request => ?_)
+    (OracleComp.sumHandler ProbComp.unifFin h) (adversary N []))) (funext fun request => ?_)
   simp only [map_pure, randomCoinOracle]
 
 /-- `coinQuery` as a handler with trivial state, for the open substitution rule. -/
@@ -244,10 +244,10 @@ theorem isOraclePPT_coinDistinguisher {adversary : OracleDistinguisher}
     (fun _ => trivial) (by polytime) ?_
   · refine (hrun.map' (ComputableInPolyTime.fst encBool (encFinEnum Unit))).congr
       fun c External oracle e => ?_
-    have hlift : ProbOracleComp.handler
+    have hlift : OracleComp.sumHandler
         (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
         (fun q => coinHandler c.1 q) =
-      fun q => StateT.lift (σ := Unit) (ProbOracleComp.handler
+      fun q => StateT.lift (σ := Unit) (OracleComp.sumHandler
         (fun n => ProbOracleComp.sample (ProbComp.unifFin n)) (coinQuery c.1) q) := by
       funext q
       cases q with
@@ -256,7 +256,7 @@ theorem isOraclePPT_coinDistinguisher {adversary : OracleDistinguisher}
         funext u
         exact map_eq_pure_bind _ _
     have h : Prod.fst <$> (OracleComp.interpret
-        (ProbOracleComp.handler
+        (OracleComp.sumHandler
           (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
           (fun q => coinHandler c.1 q)) (adversary c.1 c.2)).run () =
         coinDistinguisher adversary c.1 c.2 := by
@@ -264,8 +264,8 @@ theorem isOraclePPT_coinDistinguisher {adversary : OracleDistinguisher}
       exact id_map _
     rw [h]
   · intro c request u _ result hresult
-    obtain ⟨reply, hreply, rfl⟩ := ProbOracleComp.mem_support_map hresult
-    obtain ⟨raw, -, rfl⟩ := ProbOracleComp.mem_support_map hreply
+    obtain ⟨reply, hreply, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
+    obtain ⟨raw, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hreply
     refine ⟨trivial, (List.length_take_le _ _).trans ?_, le_add_right le_rfl⟩
     exact length_dropFrame_le request.2
 
