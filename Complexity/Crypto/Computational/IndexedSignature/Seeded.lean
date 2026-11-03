@@ -102,7 +102,7 @@ theorem exists_keyGenWith (S : IndexedSignatureScheme) :
         ProbComp.eval (S.keyGen n) = (BitString.uniformList length).map (keyGenWith n) := by
   obtain ⟨c, d, evaluate, hpoly, hsupport, hlaw⟩ :=
     IsPPTOn.exists_total_seeded_evaluator S.keyGen_ppt
-  exact ⟨evaluate, fun n => c * ((encUnary n).length + 1) ^ d, .of_tidy hpoly,
+  exact ⟨evaluate, fun n => c * ((encUnary n).length + 1) ^ d, hpoly,
     computableInPolyTime_coinBudget encUnary c d, hsupport, hlaw⟩
 
 /-- Every indexed scheme has seeded signing with a polynomial-time budget. -/
@@ -122,7 +122,7 @@ theorem exists_signWith (S : IndexedSignatureScheme) :
   obtain ⟨c, d, evaluate, hpoly, hsupport, hlaw⟩ :=
     IsPPTOn.exists_total_seeded_evaluator S.sign_ppt
   exact ⟨evaluate, fun a => c * ((encPair encBits (encPair encUnary encBits) a).length + 1) ^ d,
-    .of_tidy hpoly, computableInPolyTime_coinBudget _ c d, hsupport, hlaw⟩
+    hpoly, computableInPolyTime_coinBudget _ c d, hsupport, hlaw⟩
 
 /-- The seeded algorithms of any indexed scheme, read off its strict-PPT certificates. -/
 noncomputable def seeded (S : IndexedSignatureScheme) : S.Seeded :=

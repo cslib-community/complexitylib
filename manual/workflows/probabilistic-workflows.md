@@ -83,6 +83,136 @@ Use `adaptive_isOraclePPTOn.query_bounds` to obtain polynomial bounds on externa
 
 When replacing the external handler with an implementation, open [Oracle/Substitution.lean](../../Complexity/Computability/Probabilistic/Oracle/Substitution.lean). The plain-certificate variant `IsOraclePPTOn.run_interpret_preprocess_open'` requires efficient preparation, initialization and handling, plus an invariant and bounds on reply length and added encoded state. Its `hresources` premise also certifies a uniform unary computation of the resource allowance from the original caller and request; an abstract polynomial bound alone does not supply this certificate. Repeated state doubling explains why “each call is polynomial time” is insufficient.
 
+## Connect a randomized RAM loop to its answer law
+
+Use this route when a randomized Word-RAM loop already exists and you want to derive its answer
+distribution from an oracle specification. First choose the observed value, a supported-state
+postcondition and explicit instruction and random-call budgets. Import
+[Randomized/LoopSegmentLaw.lean](../../Complexity/Computability/WordRAM/Randomized/LoopSegmentLaw.lean).
+`LoopSegmentLaw` retains the existing `LoopSegment` execution witness and bounds every supported
+path. Its exact equality describes the chosen observation's PMF; its instruction budget is an
+upper bound, not an assertion that every run takes the same time.
+Random-call budgets use the existing [randomized RAM convention](../algorithms-and-memory/wordram-and-bridges.md),
+which gives finite-interval sampling its own instruction and resource semantics.
+
+From the repository root, open the complete
+[WordRAMLoopSegmentLaw client](../../ComplexityTests/WordRAMLoopSegmentLaw.lean), including its
+import, namespace and concrete starting state. Follow three steps:
+
+1. Prove the body's `ExecRandLaw`, including its supported-state postcondition and budgets.
+   `LoopSegmentLaw.single` requires the active guard and adds two instructions for loop control.
+2. For several segments, use `LoopSegmentLaw.trans`. Supply the next law for **every** state
+   satisfying the preceding postcondition; instruction and random-call budgets add.
+3. Use `LoopSegmentLaw.finish` after proving the guard false on the entire final postcondition.
+   It adds two instructions for the exit check and yields the existing `ExecRandLaw`.
+
+The linked one-bit fixture sets a register to one and exits. Its budget is five instructions:
+one body instruction, two control instructions and two exit instructions, with zero random calls.
+From a configured checkout, check that client and the specification-law examples with:
+
+```bash
+scripts/build.sh --wfail --iofail ComplexityTests.WordRAMLoopSegmentLaw ComplexityTests.KargerFastCutLaw
+```
+
+A successful build checks the paid loop and the triangle, recursive seven-vertex and zero-cut
+graph cases. If composition fails, compare the continuation law's observation and postcondition
+with the preceding segment. If finishing fails, prove the exit condition for all supported
+states. A query-count bound alone does not supply either instruction bound.
+
+For the larger application, follow
+[KargerFastCutLaw](../../ComplexityTests/KargerFastCutLaw.lean) into
+[Lean/Karger/FastCut](../../Complexity/Algorithms/Lean/Karger/FastCut.lean), then
+[KargerStein](../../Complexity/Algorithms/WordRAM/KargerStein.lean). The specification restarts
+both recursive branches from the same parent graph and interprets their replies independently.
+Its success statements concern a minimum-cut **value**, with the stated positive-minimum-cut
+hypothesis; cut support also covers the zero-cut fixture. The native laws retain their word-fit,
+frame and supported-path resource premises. To pass from a code observation to a halted cut
+answer, [Karger/OutputLaw](../../Complexity/Algorithms/WordRAM/Karger/OutputLaw.lean)'s
+`program_of_law` additionally requires fitting input words, cut support and allowance for the
+final halt. This specification bridge leaves the memory-oracle contraction realization and
+recursive frame-stack migration open.
+
+## Use the bounded H4 hierarchy clients
+
+For selected correction/pilot cutoffs, import
+[HierarchyCutoffs](../../Complexity/Foundations/Probability/HierarchyCutoffs.lean).
+Supply a `FourthRootHierarchyParams 16 1 16 32 8` witness and both ordered retention laws;
+`correctionSampling` and `pilotSampling` derive the incoming count from the existing detector.
+Their public projection equations let ordinary imports inspect recipe parameters without
+unfolding opaque constructors. `correction_col_support` and `pilot_col_support` apply to
+arbitrary raw, preparation and maximum children. The support margins use the actual Q/ρ gates.
+
+For finite prime frame environments, start with
+[HierarchyRankCutoffs](../../Complexity/Foundations/Probability/HierarchyRankCutoffs.lean)
+and its [complete regression client](../../ComplexityTests/HierarchyCutoffs.lean).
+The constructor examples use H=4, P=5 and horizon zero on a positive singleton matrix.
+These constructors have two independent full-environment seeds. For the genuine mean of
+one actual environment, import
+[HierarchyCorrectionMean](../../Complexity/Foundations/Probability/HierarchyCorrectionMean.lean)
+and follow its [complete regression client](../../ComplexityTests/HierarchyCorrectionMean.lean).
+`terminalSplit` retains every spectator coordinate. Use `genuine_request_mean_usage` for
+an independent usage grid rate, including narrower usage; the same-rate specialization is
+`genuine_request_mean_density`. Both transport the source-conditioned average through the
+split and derive source nonemptiness and the actual usage density. Supply a nonzero padding
+multiplier, injective identifiers, an admissible request, a finite prime rank horizon, equal
+true source/terminal stage rates, and a nonnegative substochastic matrix C bounded entrywise
+by that rate. The usage exponent need not belong to the rank horizon: its box has positive
+side at every finite exponent. The children are the existing raw input, its genuine joint
+source/usage preparation and the final pilot maximum. The target remains the existing
+correction iterate on the true split channels. `CorrectionSampling.withUsage` reuses all gates
+and source/incoming laws, replacing only the measured usage marginal and terminal pair bound.
+
+The P=5 client has different nonempty source and terminal copy suffixes and a genuine final
+pilot proved zero from its detector rank. Its narrower-usage example fixes source/rank exponent
+1 and uses usage exponent 2, with actual densities 81/625 and 16/625 and a strictly positive
+complete request mean. Thus the usage change is observable in the actual environment.
+
+For a sampling source narrower than the true stage, import
+[HierarchySourceSampling](../../Complexity/Foundations/Probability/HierarchySourceSampling.lean)
+and use `source_request_mean`; follow its
+[complete regression client](../../ComplexityTests/HierarchySourceSampling.lean).
+Supply source exponent `s`, stage exponent `k`, `k ≤ s`, and a horizon containing `s`.
+The true `stageSource` retains the source role and suffix at the terminal stage rate.
+`stageRaw` and `stageMaximum` use these genuine stage channels. `sourcePreparation`
+uses the actual sampling source for its incoming gate. `source_normalizer` identifies its
+joint actual source/usage mean on the same environment, and `stage_atomCutoff_eq`
+preserves the true cutoff. `CorrectionSampling.withSource` changes only the sampling-source
+pair law, preserving the true input, final pilot, gates and incoming budget. The common
+`correctionRequest_eq_split` avoids rebuilding the split transport for each choice of children.
+
+The P=5 regression has source/stage/usage exponents 2/1/3, actual densities
+16/625, 81/625 and 1/625, different nonempty copy suffixes, and a free spectator role.
+It proves a positive complete actual request mean with the genuine final pilot. Usage
+exponent 3 is outside the required source/stage horizon 2.
+
+To discharge the raw input fourth moment for a positive-iteration residual, import
+[HierarchyRawMoment](../../Complexity/Foundations/Probability/HierarchyRawMoment.lean)
+and apply `rawIncomingNormalized_noise_le_lower`. Supply positive N, u, row rank K and
+incoming rank Kc. The selected cutoff laws derive the actual left correction child's
+range `CA = 2 * Q(atomCap)`, row support K and incoming support Kc, for arbitrary raw,
+preparatory and pilot children. Its source-released product costs
+`K^3 * CA^4 * Kc * (rate(km) / u)` times the weighted right-child fourth moment.
+`incomingMomentBudget` adds the actual weighted direct and negative child moments, with
+a conservative factor 64 for the signed sum. The right child includes the exact usage
+ratio and midpoint marginal divisor from `rawSample`; it never takes the old source as
+an extra argument. All children may share every rank coordinate.
+
+The [checked examples](../../ComplexityTests/HierarchyRawMoment.lean) include a complete
+P=5 residual with input moment one and positive correction product, different nonempty
+copy suffixes and a spectator. A correlated two-factor example has exact moment 257/2.
+An identity family with one nonzero per row and column has moment n at N=u=1, so support
+and range caps alone do not imply a width-independent unnormalized moment. The new client
+requires lower-child moments to be paid by a later induction; it assumes no final raw or
+noise certificate. Zero correction remains literal; the moment/noise bridge here treats
+positive iterations. Pilot/copy paths, quantitative lower-child budgets, summation and
+recursive/native correctness remain open.
+
+For a coarser source, `source_incoming_cost_le` quantifies the generic incoming cost as
+`32 * R * (sourceRate / stageRate)`; the fixed incoming rank is not proved to pay that
+inflated budget. Arbitrary coarser sampling sources, a fully assembled recursive hierarchy,
+lower-child budget induction, native realization and RL=L remain in
+[issue #1721](https://github.com/cslib-community/complexitylib/issues/1721).
+
 ## Carry the certificate into a security proof
 
 Keep efficiency and security as separate goals. In [Crypto/Computational/Basic.lean](../../Complexity/Crypto/Computational/Basic.lean), computational indistinguishability quantifies over certified strict-PPT distinguishers. It does not require the compared PMF ensembles to be efficiently sampleable or polynomially bounded in length. Check those properties separately when the intended construction needs them.

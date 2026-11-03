@@ -20,7 +20,7 @@ cluster analysis in `Complexity.DataStructure.Dictionary.WordRAM.LinearProbing.F
 * multi-key linear-probe cluster collisions when distinct keys share the same home bucket, forcing
   sequential probing across contiguous occupied runs;
 * in-place key updates at full capacity `(Dictionary.dom s).card = n_max`;
-* absent-key misses (`get u` halting at the first empty slot `used[pos] = 0` and decoding to
+* absent-key misses (`query u` halting at the first empty slot `used[pos] = 0` and decoding to
   `none`);
 * deterministic step-bounded Word-RAM execution `opCode_execWithin` across inserts, cluster
   collisions, in-place updates at capacity, hits, and misses;
@@ -82,8 +82,8 @@ def sampleOps : List (Dictionary.Op 16) :=
   , .insert k3 20
   , .insert k4 30
   , .insert k3 25
-  , .get k3
-  , .get k2 ]
+  , .query k3
+  , .query k2 ]
 
 /-- Abstract states along `sampleOps`:
 - `s1`: `{k1 ↦ 10}` (size `1 < 3`);
@@ -274,8 +274,8 @@ theorem sampleOps_seq_expected_amortized :
     hx₀ hfr hz sampleOps sampleOps_validHistory
 
 /-- Direct deterministic execution test of `opCode_execWithin` for an in-place update at full
-capacity `n_max = 3`, followed by a hit lookup (`get k3 = some 25`) and an absent-key miss lookup
-(`get k2 = none`), each completing within `KWise.evalSteps 3 16 (tableLog 3) 5 + 12 * 3 + 27`
+capacity `n_max = 3`, followed by a hit lookup (`query k3 = some 25`) and an absent-key miss lookup
+(`query k2 = none`), each completing within `KWise.evalSteps 3 16 (tableLog 3) 5 + 12 * 3 + 27`
 deterministic instructions on every seed. -/
 theorem opCode_update_hit_miss_from_rep (θ : Seed 16 3) (x : Data rLP)
     (hrep : Rep 16 100 3 64 32 θ s3 x) :
@@ -284,10 +284,10 @@ theorem opCode_update_hit_miss_from_rep (θ : Seed 16 3) (x : Data rLP)
     ∃ y_upd y_hit y_miss : Data rLP,
       ExecWithin 64 (opCode 3) x_upd y_upd B ∧
       Rep 16 100 3 64 32 θ s4 y_upd ∧
-      ExecWithin 64 (opCode 3) (sampleDS.toDynamicProgram.prepare (.get k3) y_upd) y_hit B ∧
-      decodeOp (V := 100) (n_max := 3) (.get k3) y_hit.regs = some (some 25) ∧
-      ExecWithin 64 (opCode 3) (sampleDS.toDynamicProgram.prepare (.get k2) y_hit) y_miss B ∧
-      decodeOp (V := 100) (n_max := 3) (.get k2) y_miss.regs = some none := by
+      ExecWithin 64 (opCode 3) (sampleDS.toDynamicProgram.prepare (.query k3) y_upd) y_hit B ∧
+      decodeOp (V := 100) (n_max := 3) (.query k3) y_hit.regs = some (some 25) ∧
+      ExecWithin 64 (opCode 3) (sampleDS.toDynamicProgram.prepare (.query k2) y_hit) y_miss B ∧
+      decodeOp (V := 100) (n_max := 3) (.query k2) y_miss.regs = some none := by
   intro x_upd B
   have hrep_upd_in : Rep 16 100 3 64 32 θ s3 x_upd :=
     sampleDS.prepare_rep hrep valid_update_k3_at_capacity
@@ -300,32 +300,32 @@ theorem opCode_update_hit_miss_from_rep (θ : Seed 16 3) (x : Data rLP)
   have hle1 : hrep_upd_in.table_inv.probeLen (opKey (.insert k3 25))
       (hashFn 16 3 θ (opKey (.insert k3 25))) ≤ 3 :=
     hrep_upd_in.table_inv.probeLen_le_n_max _ _
-  let x_hit := sampleDS.toDynamicProgram.prepare (.get k3) y_upd
+  let x_hit := sampleDS.toDynamicProgram.prepare (.query k3) y_upd
   have hrep_hit_in : Rep 16 100 3 64 32 θ s4 x_hit :=
     sampleDS.prepare_rep hrep_upd trivial
-  have harg_hit : argMatchOp (.get k3) x_hit.regs :=
-    sampleDS.prepare_argMatch (.get k3) y_upd
+  have harg_hit : argMatchOp (.query k3) x_hit.regs :=
+    sampleDS.prepare_argMatch (.query k3) y_upd
   obtain ⟨y_hit, ⟨n2, hn2, hex_hit⟩, hdec_hit, hrep_hit, _⟩ :=
     opCode_execWithin hw_example hfit_space_example hfit_V_example
-      hrep_hit_in (.get k3) trivial harg_hit
+      hrep_hit_in (.query k3) trivial harg_hit
   change Rep 16 100 3 64 32 θ s4 y_hit at hrep_hit
-  have hle2 : hrep_hit_in.table_inv.probeLen (opKey (.get k3))
-      (hashFn 16 3 θ (opKey (.get k3))) ≤ 3 :=
+  have hle2 : hrep_hit_in.table_inv.probeLen (opKey (.query k3))
+      (hashFn 16 3 θ (opKey (.query k3))) ≤ 3 :=
     hrep_hit_in.table_inv.probeLen_le_n_max _ _
-  let x_miss := sampleDS.toDynamicProgram.prepare (.get k2) y_hit
+  let x_miss := sampleDS.toDynamicProgram.prepare (.query k2) y_hit
   have hrep_miss_in : Rep 16 100 3 64 32 θ s4 x_miss :=
     sampleDS.prepare_rep hrep_hit trivial
-  have harg_miss : argMatchOp (.get k2) x_miss.regs :=
-    sampleDS.prepare_argMatch (.get k2) y_hit
+  have harg_miss : argMatchOp (.query k2) x_miss.regs :=
+    sampleDS.prepare_argMatch (.query k2) y_hit
   obtain ⟨y_miss, ⟨n3, hn3, hex_miss⟩, hdec_miss, _, _⟩ :=
     opCode_execWithin hw_example hfit_space_example hfit_V_example
-      hrep_miss_in (.get k2) trivial harg_miss
-  have hle3 : hrep_miss_in.table_inv.probeLen (opKey (.get k2))
-      (hashFn 16 3 θ (opKey (.get k2))) ≤ 3 :=
+      hrep_miss_in (.query k2) trivial harg_miss
+  have hle3 : hrep_miss_in.table_inv.probeLen (opKey (.query k2))
+      (hashFn 16 3 θ (opKey (.query k2))) ≤ 3 :=
     hrep_miss_in.table_inv.probeLen_le_n_max _ _
-  have hhit_val : ((Dictionary.spec 16 100 3).stepFn s4 (.get k3)).2 = some 25 :=
+  have hhit_val : ((Dictionary.spec 16 100 3).stepFn s4 (.query k3)).2 = some 25 :=
     s4_lookup_hit_and_miss.1
-  have hmiss_val : ((Dictionary.spec 16 100 3).stepFn s4 (.get k2)).2 = none :=
+  have hmiss_val : ((Dictionary.spec 16 100 3).stepFn s4 (.query k2)).2 = none :=
     s4_lookup_hit_and_miss.2
   rw [hhit_val] at hdec_hit
   rw [hmiss_val] at hdec_miss
