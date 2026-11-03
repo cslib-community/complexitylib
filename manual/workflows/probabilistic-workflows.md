@@ -132,6 +132,27 @@ answer, [Karger/OutputLaw](../../Complexity/Algorithms/WordRAM/Karger/OutputLaw.
 final halt. This specification bridge leaves the memory-oracle contraction realization and
 recursive frame-stack migration open.
 
+## Use the bounded H4 hierarchy clients
+
+For selected correction/pilot cutoffs, import
+[HierarchyCutoffs](../../Complexity/Foundations/Probability/HierarchyCutoffs.lean).
+Supply a `FourthRootHierarchyParams 16 1 16 32 8` witness and both ordered retention laws;
+`correctionSampling` and `pilotSampling` derive the incoming count from the existing detector.
+Their public projection equations let ordinary imports inspect recipe parameters without
+unfolding opaque constructors. `correction_col_support` and `pilot_col_support` apply to
+arbitrary raw, preparation and maximum children. The support margins use the actual Q/ρ gates.
+
+For finite prime frame environments, start with
+[HierarchyRankCutoffs](../../Complexity/Foundations/Probability/HierarchyRankCutoffs.lean)
+and its [complete regression client](../../ComplexityTests/HierarchyCutoffs.lean).
+The constructor examples use H=4, P=5 and horizon zero on a positive singleton matrix.
+These constructors have two independent full-environment seeds. The actual request support
+and conditional-walk noise theorems instead use one environment's terminal-coordinate split;
+the noise bound retains the raw input fourth moment. Supply the stated horizon and injective
+identifiers before applying them. These results do not establish a recursive estimator,
+a native implementation, resource bounds or RL=L; the remaining objective is
+[issue #1721](https://github.com/cslib-community/complexitylib/issues/1721).
+
 ## Carry the certificate into a security proof
 
 Keep efficiency and security as separate goals. In [Crypto/Computational/Basic.lean](../../Complexity/Crypto/Computational/Basic.lean), computational indistinguishability quantifies over certified strict-PPT distinguishers. It does not require the compared PMF ensembles to be efficiently sampleable or polynomially bounded in length. Check those properties separately when the intended construction needs them.
