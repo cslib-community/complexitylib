@@ -107,6 +107,21 @@ check off-usage rank closure, unbounded-loss failure and positive output after a
 from zero. These are deterministic prerequisites; integrated moments and recursive/native
 RL remain open.
 
+For sharp no-overflow and first-overflow comparisons, import
+[NormalizedAtomRows/Sharp](../../Complexity/Foundations/Probability/NormalizedAtomRows/Sharp.lean).
+`fixed_shape` supplies positive shape and denominator scales. Choose those first, then
+use `sharp_noOverflow` or `sharp_firstOverflow`: final/tail coefficients precede the later
+positive dyadic floor, while the weighted preloss coefficient may depend on it.
+`sharp_compression` keeps the complementary false-first-overflow exclusion explicit.
+[RequestSharp](../../Complexity/Foundations/Probability/NormalizedAtomRows/RequestSharp.lean)
+applies both comparisons to the existing single-environment request; its first-overflow
+client derives the preparation mean range from bounded preparation values, even on empty
+slices. The [positive-floor exact-increment client](../../ComplexityTests/NormalizedAtomSharp.lean)
+starts from zero, allows arbitrary nonnegative first magnitude and obtains zero root error
+from exact raw prefixes. Run `scripts/build.sh --wfail --iofail ComplexityTests.NormalizedAtomSharp`
+from a configured checkout. Nonzero raw-prefix moments, false-overflow payments and recursive
+reserve choices still need their own proofs; these comparisons do not establish them.
+
 ## Read abstracts, bridges and comparison contracts
 
 For a named headline such as Fagin's theorem, locate its entry in `abstracts/catalogue.json`, then read [FaginAbstract.lean](../../abstracts/ComplexityAbstracts/FaginAbstract.lean). Follow `FaginBridge.fagin` to the library result in [Fagin/Converse.lean](../../Complexity/Computability/Complexity/Fagin/Converse.lean). The presentation exposes finite relational vocabularies, unary cardinality, framed relation tables and malformed-input rejection. The library theorem `Cslib.Logic.ESO.definable_iff_queryLanguage_mem_NP` takes an isomorphism-closure hypothesis; its adjacent theorem packages that hypothesis into the equivalence. Choose the form matching your goal and the [finite-model representation](../circuits-logic-and-other-models/finite-model-logic.md).
