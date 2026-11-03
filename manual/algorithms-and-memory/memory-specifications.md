@@ -88,6 +88,57 @@ This client is a header-read demonstration, not a Dijkstra execution or shortest
 
 ## Footprints, traces, and memory windows
 
+### Call fixed code in a disjoint register bank
+
+Import `Complexity.Computability.WordRAM.Call` when the callee already has a native execution
+proof and the caller must prepare arguments and consume the result. `ExecWithin.call` takes
+an injective register embedding, a charged preparation, the callee's execution and
+postcondition, and a charged continuation. The continuation sees the callee postcondition
+on its register bank and equality of every register outside that bank. Memory assertions
+refer to the actual returned memory. The total allowance is `tPrep+tCall+tCont`; register
+renaming emits no instructions.
+
+The complete [fixed-call client](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/ComplexityTests/WordRAMCall.lean)
+delivers an argument, calls a routine that increments it and writes memory, then retrieves the
+result in five charged instructions. It proves that an unrelated register and other memory
+cells survive, even when unused old words exceed the physical word bound. This rule does not
+add a whole-state boundedness or finite-footprint premise to the supplied callee theorem.
+If a call proof fails, check the embedding's injectivity, the callee's actual preconditions,
+and the registers the continuation needs to preserve. A memory frame belongs in the callee's
+postcondition; register disjointness alone says nothing about its writes.
+
+From a checkout containing this API, check the client with
+`scripts/build.sh --wfail --iofail ComplexityTests.WordRAMCall`.
+The [ordinary 3SUM call proof](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/Complexity/Algorithms/WordRAM/ThreeSum/Decision/Body.lean)
+uses the same rule for its Convolution host and retained controller registers.
+
+### Transfer a fixed record through a native stack
+
+Import `Complexity.Algorithms.WordRAM.Stack.Record` and open `Cslib.WordRAM`.
+`Stack.pushRecord` and `Stack.popRecord` use the existing nine-register bounded stack
+dispatcher. Supply its injective embedding, a disjoint record bank and a register for the
+terminal self-copy. Prove `Stack.Rep`, the capacity/address fit and `Fits w 2`; pushing also
+needs room and fitting source values. Popping needs distinct destination registers and the
+record at the live stack top. Repeated source registers are allowed when pushing.
+
+`Stack.pushRecord_exec` puts `List.ofFn` of the source words at the top in forward order
+and costs exactly `9*n+1` instructions. `Stack.popRecord_exec` restores that order in exactly
+`14*n+1` instructions. Both counts include argument delivery and exclude a final program
+halt. A zero-length transfer is one self-copy. Memory outside the reserved stack and registers
+outside the relevant banks are preserved; unused stack cells can be dirty and popped cells
+are not cleared.
+
+The [record client](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/ComplexityTests/WordRAMStackRecord.lean)
+pushes two words and pops them into a different bank, checking their order, a live tail and
+outside sentinels. Its interpreter checks include the charged halt and insufficient fuel.
+Run `scripts/build.sh --wfail --iofail ComplexityTests.WordRAMStackRecord` from the API checkout.
+For capacity failures, check `n+vs.length <= capacity`; for register-frame failures, check
+disjointness from the dispatcher and injectivity of the pop destination bank.
+The Chan–He traversal specializes this API to its seven-word record, retaining its exact
+64-instruction push and 99-instruction pop.
+
+### Use an explicit memory frame
+
 [HeapAssertion](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Heap.lean#L62) records a finite support and a predicate on total memory. Separating conjunction uses disjoint supports; `Modifies` records agreement outside an allowed write set. This is an explicit-footprint frame calculus inspired by separation logic, not a replacement semantics in which inaccessible cells disappear [reynolds02][reynolds02].
 
 [Complexity/Computability/WordRAM/Trace.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Trace.lean) decorates actual executions with address/value reads and writes. `TraceExec.exec` erases the trace; `Exec.exists_trace` supplies one for every ordinary execution; trace length is bounded by instructions. These are access costs of a fixed RAM computation. They are not a general cell-probe model allowing arbitrary uncharged local computation.
