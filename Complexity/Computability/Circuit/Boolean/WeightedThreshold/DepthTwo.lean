@@ -296,4 +296,80 @@ theorem two_mul_sum_card_finset (b : ℕ) :
     _ = ∑ _S : Finset (Fin b), b := sum_congr rfl fun S _ => by simp [card_add_card_compl]
     _ = b * 2 ^ b := by simp [mul_comm]
 
+/-! ### Linear threshold functions on general finite domains and depth-one gate decomposition -/
+
+/-- Linear threshold function `decide (θ ≤ ∑ i : ι, a i * (w i).toNat)` on `ι → Bool`. -/
+noncomputable def ltfEval {ι : Type*} [Fintype ι] (a : ι → ℝ) (θ : ℝ) (w : ι → Bool) : Bool :=
+  decide (θ ≤ ∑ i : ι, a i * (w i).toNat)
+
+/-- Evaluating `op : WeightedThreshold.Op` under `WeightedThreshold.interpretation` is `ltfEval`. -/
+theorem interpretation_eq_ltfEval (op : Op) (w : Fin op.arity → Bool) :
+    interpretation op w = ltfEval op.weight op.threshold w :=
+  rfl
+
+/-- The active coordinate support `{i : ι | a i ≠ 0}` of a weight vector `a : ι → ℝ`. -/
+noncomputable def ltfSupport {ι : Type*} [Fintype ι] (a : ι → ℝ) : Finset ι :=
+  univ.filter fun i : ι => a i ≠ 0
+
+@[simp]
+theorem mem_ltfSupport {ι : Type*} [Fintype ι] (a : ι → ℝ) (i : ι) :
+    i ∈ ltfSupport a ↔ a i ≠ 0 := by
+  simp [ltfSupport]
+
+/-- The weight rank `k_i = #{j ∈ ltfSupport a | |a i| ≤ |a j|}` of coordinate `i` in `ltfSupport a`
+(counting nonzero weights of magnitude at least `|a i|`). -/
+noncomputable def ltfWeightRank {ι : Type*} [Fintype ι] (a : ι → ℝ) (i : ι) : ℕ :=
+  #{j ∈ ltfSupport a | |a i| ≤ |a j|}
+
+/-- For every `i ∈ ltfSupport a`, `1 ≤ ltfWeightRank a i`. -/
+theorem one_le_ltfWeightRank {ι : Type*} [Fintype ι] {a : ι → ℝ} {i : ι}
+    (hi : i ∈ ltfSupport a) : 1 ≤ ltfWeightRank a i :=
+  card_pos.mpr ⟨i, mem_filter.mpr ⟨hi, le_rfl⟩⟩
+
+/-- If `|a i| ≤ |a j|`, then `ltfWeightRank a j ≤ ltfWeightRank a i`. -/
+theorem ltfWeightRank_le_of_abs_le {ι : Type*} [Fintype ι] (a : ι → ℝ) {i j : ι}
+    (hij : |a i| ≤ |a j|) : ltfWeightRank a j ≤ ltfWeightRank a i :=
+  card_le_card fun _ hl => mem_filter.mpr ⟨(mem_filter.mp hl).1, hij.trans (mem_filter.mp hl).2⟩
+
+/-- The active coordinate support of `inputWeight p gate` is `inputSupport p gate`. -/
+@[simp]
+theorem ltfSupport_inputWeight_eq_inputSupport {n g : ℕ} (p : Program signature n g)
+    (gate : Fin g) :
+    ltfSupport (inputWeight p gate) = inputSupport p gate :=
+  rfl
+
+/-- Any gate of depth at most `1` in a weighted threshold program has zero aggregated weight from
+every gate `k : Fin g`. -/
+theorem gateWeight_eq_zero_of_depths_le_one {n g : ℕ} (p : Program signature n g) {gate : Fin g}
+    (hd : p.depths gate ≤ 1) (k : Fin g) :
+    gateWeight p gate k = 0 := by
+  dsimp only [gateWeight, lineWeight]
+  refine sum_eq_zero fun i hi => ?_
+  exfalso
+  have hw : (p.lines gate).wires i = Wire.gate k := (mem_filter.mp hi).2
+  have hlt := p.wireDepths_lines_lt gate i
+  rw [hw] at hlt
+  change p.depths k < p.depths gate at hlt
+  have hpos := p.depths_pos k
+  omega
+
+/-- Any gate of depth at most `1` in a weighted threshold program has empty `gateSupport`. -/
+theorem gateSupport_eq_empty_of_depths_le_one {n g : ℕ} (p : Program signature n g) {gate : Fin g}
+    (hd : p.depths gate ≤ 1) :
+    gateSupport p gate = ∅ := by
+  ext k
+  simp [gateSupport, gateWeight_eq_zero_of_depths_le_one p hd k]
+
+/-- Any gate of depth at most `1` in a weighted threshold program evaluates as the linear threshold
+function `ltfEval (inputWeight p gate) (p.lines gate).op.threshold` on the primary inputs `x`. -/
+theorem eval_eq_ltfEval_inputWeight_of_depths_le_one {n g : ℕ} (p : Program signature n g)
+    (x : Fin n → Bool) {gate : Fin g} (hd : p.depths gate ≤ 1) :
+    p.eval interpretation x gate =
+      ltfEval (inputWeight p gate) (p.lines gate).op.threshold x := by
+  rw [eval_gate_eq, ltfEval]
+  have hgate_zero :
+      (∑ k : Fin g, gateWeight p gate k * (p.eval interpretation x k).toNat) = 0 :=
+    sum_eq_zero fun k _ => by simp [gateWeight_eq_zero_of_depths_le_one p hd k]
+  rw [hgate_zero, add_zero]
+
 end Cslib.Circuits.Boolean.WeightedThreshold

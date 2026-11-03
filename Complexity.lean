@@ -84,6 +84,7 @@ public import Complexity.Algorithms.Reachability.Savitch
 public import Complexity.Algorithms.Sorting.Counting
 public import Complexity.Algorithms.ThreeSum.ArrayPacking
 public import Complexity.Algorithms.ThreeSum.ChanHe.Collisions
+public import Complexity.Algorithms.ThreeSum.ChanHe.ConvolutionSizes
 public import Complexity.Algorithms.ThreeSum.ChanHe.Defs
 public import Complexity.Algorithms.ThreeSum.ChanHe.FromNumbers
 public import Complexity.Algorithms.ThreeSum.ChanHe.Recursion
@@ -195,6 +196,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.Instances
 public import Complexity.Algorithms.WordRAM.ExactTriangle.MatrixSpec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Admission
+public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Asymptotics
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Callee
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Delivery
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Exec
@@ -562,6 +564,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Body
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Boundary
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Call
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Controls
+public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.DyadicCost
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Execute
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Input
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Intermediates
@@ -570,6 +573,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Program
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Registers
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Reserve
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Scalar
+public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Subquadratic
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Width
 public import Complexity.Algorithms.WordRAM.ThreeSum.Fill
 public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend
@@ -896,6 +900,7 @@ public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.InnerPr
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Menus
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.PendingBias
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Potential
+public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.RandomRestriction
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ScalarActivity
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.SupportBound
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.SupportBoundAsymptotics
@@ -2843,6 +2848,7 @@ public import Complexity.Crypto.Computational.InaccessibleEntropy.OneWay
 public import Complexity.Crypto.Computational.InaccessibleEntropy.Repetition
 public import Complexity.Crypto.Computational.IndexedSignature
 public import Complexity.Crypto.Computational.IndexedSignature.Counter
+public import Complexity.Crypto.Computational.IndexedSignature.Double
 public import Complexity.Crypto.Computational.IndexedSignature.Seeded
 public import Complexity.Crypto.Computational.Kilian
 public import Complexity.Crypto.Computational.Kilian.NP
@@ -2857,6 +2863,7 @@ public import Complexity.Crypto.Computational.MerkleTree.Binding
 public import Complexity.Crypto.Computational.NaorReingold
 public import Complexity.Crypto.Computational.NaorReingold.PRF
 public import Complexity.Crypto.Computational.NaorReingold.Security
+public import Complexity.Crypto.Computational.NaorYung
 public import Complexity.Crypto.Computational.Nonuniform.Basic
 public import Complexity.Crypto.Computational.Nonuniform.ZeroKnowledge
 public import Complexity.Crypto.Computational.OneWay
@@ -2929,6 +2936,7 @@ public import Complexity.Crypto.Computational.SchnorrProtocol
 public import Complexity.Crypto.Computational.Signature
 public import Complexity.Crypto.Computational.Stretch
 public import Complexity.Crypto.Computational.Stretch.Quantitative
+public import Complexity.Crypto.Computational.TCRSignature
 public import Complexity.Crypto.Computational.TargetCollisionResistant
 public import Complexity.Crypto.Computational.TreeSignature
 public import Complexity.Crypto.Computational.TreeSignature.CoinHybrid
@@ -2940,6 +2948,7 @@ public import Complexity.Crypto.Computational.ZeroKnowledge.AuxClock
 public import Complexity.Crypto.Computational.ZeroKnowledge.Levin
 public import Complexity.Crypto.Computational.ZeroKnowledge.Soundness
 public import Complexity.Crypto.Game
+public import Complexity.Crypto.Game.CloseTo
 public import Complexity.Crypto.Game.Hybrid
 public import Complexity.Crypto.Game.Statistical
 public import Complexity.Crypto.Game.UntilBad
@@ -2966,6 +2975,7 @@ public import Complexity.Crypto.Protocols.MPC.SharedMul
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort
 public import Complexity.Crypto.Protocols.SigmaProtocol.Basic
 public import Complexity.Crypto.Protocols.SigmaProtocol.Composition
+public import Complexity.Crypto.Protocols.SigmaProtocol.Computational
 public import Complexity.Crypto.Protocols.SigmaProtocol.Efficient
 public import Complexity.Crypto.Protocols.SigmaProtocol.FiatShamir
 public import Complexity.Crypto.Protocols.SigmaProtocol.Identification
@@ -2980,6 +2990,13 @@ public import Complexity.DataStructure.AVLTree.Erase
 public import Complexity.DataStructure.AVLTree.Impl
 public import Complexity.DataStructure.AdjacencyList.Memory
 public import Complexity.DataStructure.AdjacencyList.Spec
+public import Complexity.DataStructure.ApproximateMembership.QuotientFilter.Basic
+public import Complexity.DataStructure.ApproximateMembership.QuotientFilter.Operations
+public import Complexity.DataStructure.ApproximateMembership.QuotientFilter.Probability
+public import Complexity.DataStructure.ApproximateMembership.Spec
+public import Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFilter
+public import Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.Cluster
+public import Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.SlotArray
 public import Complexity.DataStructure.CountMin.Basic
 public import Complexity.DataStructure.CountMin.LinearHash
 public import Complexity.DataStructure.CountMin.Probability
@@ -3358,6 +3375,7 @@ public import Complexity.Foundations.Combinatorics.LineCode.Line
 public import Complexity.Foundations.Combinatorics.LineCode.Menu
 public import Complexity.Foundations.Combinatorics.LineCode.Menu.Collision
 public import Complexity.Foundations.Combinatorics.LineCode.Menu.Counting
+public import Complexity.Foundations.Combinatorics.LittlewoodOfford
 public import Complexity.Foundations.Combinatorics.MajorityTree
 public import Complexity.Foundations.Combinatorics.MajorityVote
 public import Complexity.Foundations.Combinatorics.MajorityVote.Weighted
@@ -3537,6 +3555,7 @@ public import Complexity.Foundations.Data.Nat.Factorial
 public import Complexity.Foundations.Data.Nat.Fields
 public import Complexity.Foundations.Data.Nat.IntermediateValue
 public import Complexity.Foundations.Data.Nat.Log
+public import Complexity.Foundations.Data.Nat.LogRpow
 public import Complexity.Foundations.Data.Nat.Morton
 public import Complexity.Foundations.Data.Nat.OddMulMod
 public import Complexity.Foundations.Data.Nat.OfDigits
@@ -3665,6 +3684,7 @@ public import Complexity.Foundations.Probability.ConditionalProductMean
 public import Complexity.Foundations.Probability.CorrectionAtom
 public import Complexity.Foundations.Probability.CorrectionRowRecipe
 public import Complexity.Foundations.Probability.CorrectionRowTasks
+public import Complexity.Foundations.Probability.DenseRowRecipes
 public import Complexity.Foundations.Probability.DetectedHierarchy
 public import Complexity.Foundations.Probability.DetectedStage
 public import Complexity.Foundations.Probability.EfronStein
@@ -3679,6 +3699,7 @@ public import Complexity.Foundations.Probability.Gaussian.Sheppard
 public import Complexity.Foundations.Probability.HeavyCount
 public import Complexity.Foundations.Probability.HeavyCountRarity
 public import Complexity.Foundations.Probability.HeavyCountTail
+public import Complexity.Foundations.Probability.HierarchyAccess
 public import Complexity.Foundations.Probability.HierarchyAtomCutoff
 public import Complexity.Foundations.Probability.HierarchyParams
 public import Complexity.Foundations.Probability.HierarchySampling

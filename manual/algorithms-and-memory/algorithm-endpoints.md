@@ -113,6 +113,12 @@ The initializer and operation programs are independent of runtime word width and
 
 Across capacities the stated space is at most `(k+9232)*(capacity+1)` words, evaluation at most `111230*k+6862` instructions, and resampling at most `(5*k+46096)*(capacity+1)`. These constants are theorem bounds, not measured runtime or a practical implementation recommendation. The large-regime construction adapts Thorup's double-tabulation work; its fixed-k error statement is explicitly different from the source's original growing-independence asymptotic formulation [thorup13][thorup13].
 
+## Approximate membership filters
+
+Import `Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFilter` ([Complexity/DataStructure/ApproximateMembership/WordRAM/QuotientFilter.lean](../../Complexity/DataStructure/ApproximateMembership/WordRAM/QuotientFilter.lean)) and construct `QuotientFilter.implOfEps` (for target error `ε ≠ 0` via `epsLog ε`) or `QuotientFilter.impl` (for dyadic error `(1 / 2) ^ k`); see [ComplexityTests/WordRAMQuotientFilter.lean](../../ComplexityTests/WordRAMQuotientFilter.lean) for a complete checked client and [abstracts/ComplexityAbstracts/ApproximateMembershipAbstract.lean](../../abstracts/ComplexityAbstracts/ApproximateMembershipAbstract.lean) for the self-contained formal abstract.
+
+The specification `ApproximateMembership.spec U n ε` enforces strict set validity on active set `S` (`insert u` requires `u ∉ S ∧ #S < n`; `delete u` requires `u ∈ S`; `query u` is always valid) and guarantees zero false negatives on every random branch together with per-absent-query false-positive probability at most `ε` across any fixed valid operation sequence. The constructors require key bit-width `0 < w₀`, word width `2 * w₀ ≤ w` (needed to bit-pack remainders and derive `quotBits w₀ n < w`), universe bound `U ≤ 2 ^ w₀`, memory fit `base + QuotientFilter.space w w₀ n (epsLog ε) < 2 ^ w`, and zeroed owned memory `[base, base + QuotientFilter.space w w₀ n (epsLog ε))` with `qfReg 240 = base`. The single allocated block uses `QuotientFilter.space w w₀ n (epsLog ε) ≤ 640 * ((n * epsLog ε + w - 1) / w + 1)` words, and initialization takes `QuotientFilter.setupSteps w₀ n` expected body instructions. The randomized hash (`ReducedKWise`) and pure bit-packed layout accessors (`SlotArray`) are implemented as low-level primitives. The deterministic cluster navigation, scan, and shift phases in [Complexity/DataStructure/ApproximateMembership/WordRAM/QuotientFilter/Cluster.lean](../../Complexity/DataStructure/ApproximateMembership/WordRAM/QuotientFilter/Cluster.lean) are authored as `QuotientFilter.clusterOpProg : ClusterInput → Memory.Prog ℕ` and lowered via the `realize` tactic (`realizes_clusterOp.code`). Each operation charges at most `QuotientFilter.charge = opStepBound 290 = O(1)` expected executed body instructions, excluding the final `halt` step and caller argument delivery in `qfReg 1` and `qfReg 247`. Compiled programs `p_init` and `p_op` depend on `(w, w₀, n, ε)` with no static code-size bound.
+
 ## Global minimum cut
 
 [abstracts/ComplexityAbstracts/KargerMinCutAbstract.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/KargerMinCutAbstract.lean) treats weighted undirected multigraphs, `n≥2`, fitted total doubled edge weight and word widths sufficient for workspace/trial counters. A single contraction trial is one fixed 16-register program: `42*n²+12*n+21` worst-case instructions and at most `n-2` random calls, always returning a genuine nontrivial cut value. When minimum cut is positive, it succeeds with probability at least `2/(n*(n-1))`.
@@ -167,6 +173,42 @@ This is standard unit-instruction Word-RAM execution for signed integer matrices
 bit-time or arbitrary-real theorem. The large-family client is a checked symbolic run, not an
 enormous interpreter benchmark. This conservative automatic component is distinct from the
 later box-backed ordinary 1.9992 endpoint in [PR #2358](https://github.com/cslib-community/complexitylib/pull/2358).
+
+## Conservative ordinary integer 3SUM
+
+Import `Complexity.Algorithms.WordRAM.ThreeSum.Decision.Subquadratic`. In namespace
+`Cslib.Algorithms.WordRAM.ThreeSum.Decision`, apply `exists_subquadratic_runs κ` to the actual
+ordinary host with `ParameterSelecting.callee`. The complete
+[checked client](https://github.com/cslib-community/complexitylib/blob/2f6fb39d034b8a27ddcd56dd7779b67ef9a236b9/ComplexityTests/WordRAMSubquadraticThreeSum.lean)
+includes imports, positive repeated-zero inputs, negative all-one/all-minus-one inputs, and
+rejection of two zeros because the positions must be distinct. From an endpoint checkout:
+
+```bash
+scripts/build.sh --wfail --iofail ComplexityTests.WordRAMSubquadraticThreeSum
+```
+
+Fix a natural magnitude exponent `κ`. For `input : List ℤ` of length n, prove each
+`|z| <= (n+2)^κ` and supply `Decision.width κ 123357 n <= W`. The starting state is
+`State.init (input.map Signed.encode)`: address 0 holds n, signed input words start at 1,
+and remaining memory is zero. If application fails, check the signed encoding, original list
+length, magnitude bound, width and import against the complete client.
+
+One fixed 848-register standard Word-RAM program per κ returns one exactly for a zero sum at
+three distinct original positions; repeated values are allowed. Correctness holds at every
+length and every admitted wider width. The actual halt and prehalt prefix share a final state.
+For each κ, one positive C and threshold N precede all inputs and physical widths; for n >= N,
+charged steps are at most `C*n^(2-1/5184)`. Actual preprocessing, parameters, prime selection,
+matrix construction, solver calls, control and halt are included in `Decision.cost`. No solver,
+prime, layout, run or time law is supplied. Initial input placement/output extraction follow
+the model convention. These clients consume checked run theorems; they are not VM benchmarks.
+
+Every reachable prefix has register/memory words below
+`(n+2)^(2*Decision.widthCoefficient κ 123357)` and memory zero at or above that address envelope;
+final data also satisfy the physical width bound. Time counts standard unit instructions,
+including multiplication, division, bitwise operations and shifts, with overflow faults.
+This is polynomially bounded integer Word-RAM time, not bit/Turing time or arbitrary-real
+3SUM. Its conservative exponent is `2-1/5184`; the sharper box-backed 1.9992 theorem is the
+separate [PR #2358](https://github.com/cslib-community/complexitylib/pull/2358).
 
 ## Tree Evaluation
 
