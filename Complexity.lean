@@ -2815,8 +2815,11 @@ public import Complexity.Crypto.Computational.Homomorphic.Leveled.Security
 public import Complexity.Crypto.Computational.Homomorphic.Refresh
 public import Complexity.Crypto.Computational.Hybrid.SavedPrediction
 public import Complexity.Crypto.Computational.Hybrid.Sequence
+public import Complexity.Crypto.Computational.InaccessibleEntropy.Amplify
 public import Complexity.Crypto.Computational.InaccessibleEntropy.Basic
+public import Complexity.Crypto.Computational.InaccessibleEntropy.EntropyReduction
 public import Complexity.Crypto.Computational.InaccessibleEntropy.OneWay
+public import Complexity.Crypto.Computational.InaccessibleEntropy.Repetition
 public import Complexity.Crypto.Computational.IndexedSignature
 public import Complexity.Crypto.Computational.IndexedSignature.Counter
 public import Complexity.Crypto.Computational.IndexedSignature.Seeded

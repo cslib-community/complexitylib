@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Crypto.Computational.InaccessibleEntropy.OneWay
+import Complexity.Crypto.Computational.InaccessibleEntropy.Amplify
 import Complexity.Probability.Collision
 import Complexity.Tactic.PPT
 
@@ -21,7 +21,11 @@ Checks concrete unconditional instances of:
 3. Concrete unconditional instantiations of `isPPT_rompelBaseInverter`,
    `rompelBase_escape_le_four_mul_inversion`, and `rompelBase_accessible_le_conditionalEntropy_sub`
    on `g = id` at security parameter `n = 2`.
-4. The `OneWay.exists_inaccessibleEntropyFamily` endpoint under `OneWay f`.
+4. Parallel repetition (`repHashFin`, `repAccessibleSet`, `repEscapeInverter`), two-universal
+   input/output entropy reduction (`shrunkHashOutLen_add_one`, `card_image_inputHashFin_le`,
+   `shrunkHashFin_false_positive_le`, `shrunkHash_randomCollision_le`), and the candidate-grid
+   amplification endpoints (`InaccessibleEntropyFamily.exists_shrinkingCollisionGrid`,
+   `OneWay.exists_shrinkingCollisionGrid`).
 -/
 
 namespace ComplexityTests.Crypto.InaccessibleEntropy
@@ -174,9 +178,79 @@ theorem rompelBase_id_two_entropy_gap :
   norm_num at hgap ⊢
   exact hgap
 
-/-! ### 4. Endpoint check under `OneWay f` -/
+/-! ### 4. Parallel repetition, entropy reduction, and candidate-grid endpoints -/
 
-example {f : List Bool → List Bool} (hf : OneWay f) : Nonempty InaccessibleEntropyFamily :=
-  hf.exists_inaccessibleEntropyFamily
+/-- At `t = 2` repetitions of `firstBitProj`, `realSampleEntropy` of `0` doubles from `1` bit to
+`2` bits while singleton accessible log-cardinality remains `0`. -/
+theorem repHashFin_two_firstBitProj_gap :
+    realSampleEntropy (repHashFin 2 firstBitProj) (fun _ => (0 : BitString 2)) = 2 ∧
+      Real.logb 2 #(repAccessibleSet 2 (fun x : BitString 2 => ({x} : Finset (BitString 2)))
+        (fun _ => 0)) = 0 := by
+  have hfib0 : #(fiberSet firstBitProj (firstBitProj 0)) = 2 := by decide
+  constructor
+  · rw [realSampleEntropy_repHashFin, Fin.sum_univ_two]
+    simp only [realSampleEntropy, hfib0, Nat.cast_ofNat,
+      Real.logb_self_eq_one (by norm_num : (1 : ℝ) < 2)]
+    norm_num
+  · rw [logb_card_repAccessibleSet 2 (fun x => singleton_nonempty x), Fin.sum_univ_two]
+    simp only [card_singleton, Nat.cast_one, Real.logb_one, add_zero]
+
+example :
+    IsPPT encBits
+      (repEscapeInverter id id (fun n _ => pure (List.replicate (n * n) false))) :=
+  isPPT_repEscapeInverter .id' .id' (by ppt)
+
+example (A : ℕ → List Bool → ProbComp (List Bool)) (n : ℕ) :
+    (Game.succProbability (ProbComp.eval
+      (accessibleEscapeGame
+        (fun k => repEvalWord k k id)
+        (fun k => k * k)
+        (fun k => repBitAccessibleSet k k (fun z => {z})) A n)) : ℝ) ≤
+      (dyadicSize n : ℝ) *
+        (Game.succProbability (ProbComp.eval
+          (accessibleEscapeGame (fun _ => id) id (fun _ z => {z})
+            (repEscapeInverter id id A) n)) : ℝ) :=
+  repEscape_le_dyadicSize_mul_escape id id id (fun _ => id) (fun _ z => {z}) A n (fun _ hw => hw)
+
+/-- Concrete `1`-bit shrinkage check on `shrunkHashOutLen 4 2`: `4 + 16 = 20` inner input bits,
+`19` outer hash rows of width `2 + 16 + 4 = 22`, giving `19 * 22 + 19 = 437` output bits vs.
+`20 + 19 * 22 = 438` input bits. -/
+example : shrunkHashOutLen 4 2 + 1 = shrunkHashInLen 4 2 ∧ shrunkHashOutLen 4 2 = 437 :=
+  ⟨shrunkHashOutLen_add_one (by decide : 1 ≤ 4) 2, rfl⟩
+
+example :
+    IsPPT encBits
+      (shrunkHashEscapeInverter (fun n => n + 1) id (fun _ _ => pure [])) :=
+  isPPT_shrunkHashEscapeInverter (by fun_prop) .id' (by ppt)
+
+example (A : ℕ → List Bool → ProbComp (List Bool)) (n : ℕ) :
+    let f₁ := wordToFinMap (n + 1) (n + 1) id
+    (Game.succProbability (ProbComp.eval
+      (randomCollisionGame
+        (fun k => shrunkHashEvalWord (k + 1) (k + 1) id 1)
+        (fun k => shrunkHashInLen (k + 1) (k + 1)) A n)) : ℝ) ≤
+      (Game.succProbability (ProbComp.eval
+        (accessibleEscapeGame (fun _ => id) (fun k => k + 1) (fun _ z => {z})
+          (shrunkHashEscapeInverter (fun k => k + 1) (fun k => k + 1) A) n)) : ℝ) +
+      ((PMF.uniformOfFintype (BitString (n + 1))).toOuterMeasure
+        {z | (0 : ℝ) ≤ Real.logb 2 #({z} : Finset (BitString (n + 1)))}).toReal +
+      (2 : ℝ) ^ ((0 : ℝ) - min ((1 : ℕ) : ℝ) ((n + 1 : ℕ) : ℝ)) +
+      2 * (((PMF.uniformOfFintype (BitString (n + 1))).toOuterMeasure
+          {z | realSampleEntropy f₁ z ≤ 0}).toReal +
+        (2 : ℝ) ^ (min ((1 : ℕ) : ℝ) ((n + 1 : ℕ) : ℝ) - 0)) :=
+  shrunkHash_randomCollision_le (fun k => k + 1) (fun k => k + 1) (fun _ => 1)
+    (fun _ => id) (fun _ z => {z}) A n (by omega) (fun _ hw => hw) 0 0
+
+example (G : ShrinkingCollisionGrid) (n q : ℕ) (raw : List Bool) :
+    G.outLen n + 1 = G.inLen n ∧ n + 1 ≤ G.outLen n ∧ 1 ≤ G.gridCount n ∧
+      (G.evalGrid n q raw).length = G.outLen n :=
+  ⟨G.outLen_add_one n, G.le_outLen n, G.gridCount_pos n, G.length_evalGrid n q raw⟩
+
+example (F : InaccessibleEntropyFamily) : Nonempty ShrinkingCollisionGrid :=
+  F.exists_shrinkingCollisionGrid
+
+example {f : List Bool → List Bool} (hf : OneWay f) :
+    Nonempty InaccessibleEntropyFamily ∧ Nonempty ShrinkingCollisionGrid :=
+  ⟨hf.exists_inaccessibleEntropyFamily, hf.exists_shrinkingCollisionGrid⟩
 
 end ComplexityTests.Crypto.InaccessibleEntropy
