@@ -362,8 +362,11 @@ example :
 /-- Concrete exercised client of `NonuniformOneWay.exists_nonuniformPRG`,
 `NonuniformOneWay.exists_nonuniformPRG_three_mul`,
 `NonuniformOneWay.exists_auxiliaryInputZeroKnowledge_of_mem_NP` (chained to
-`UnboundedAuxiliaryInputZeroKnowledge` and `InstanceAuxiliaryInputZeroKnowledge`), and
-`NonuniformOneWay.exists_auxiliaryInputZeroKnowledge_of_npRelation` on `ThreeSAT`. -/
+`UnboundedAuxiliaryInputZeroKnowledge` and `InstanceAuxiliaryInputZeroKnowledge`),
+`NonuniformOneWay.exists_auxiliaryInputZeroKnowledge_of_npRelation`, and the soundness-amplified
+(`(1 / 3) ^ (n + 1)`, `ZKProof.NegligibleSoundness`) landmark theorems
+`NonuniformOneWay.exists_zkProof_of_mem_NP` and
+`NonuniformOneWay.exists_zkProof_of_npRelation` on `ThreeSAT`. -/
 example {f : List Bool → List Bool} (hf : NonuniformOneWay f) :
     (∃ g₁ : List Bool → List Bool, NonuniformPRG g₁ (fun n => n + 1)) ∧
     (∃ g₃ : List Bool → List Bool, NonuniformPRG g₃ (fun n => 3 * n + 1)) ∧
@@ -373,11 +376,34 @@ example {f : List Bool → List Bool} (hf : NonuniformOneWay f) :
       zk.InstanceAuxiliaryInputZeroKnowledge) ∧
     (∃ zk : ZeroKnowledgeProof Complexity.encCNF Complexity.ThreeSAT.npRelation.language,
       (∀ a w, zk.isWitness a w = true ↔ Complexity.ThreeSAT.npRelation.IsWitness a w) ∧
-      zk.AuxiliaryInputZeroKnowledge) := by
+      zk.AuxiliaryInputZeroKnowledge) ∧
+    (∃ zk : ZKProof Complexity.encCNF Complexity.ThreeSAT
+        (fun n => (1 / 3 : ENNReal) ^ (n + 1)),
+      zk.NegligibleSoundness ∧
+      zk.AuxiliaryInputZeroKnowledge ∧
+      zk.UnboundedAuxiliaryInputZeroKnowledge ∧
+      zk.InstanceAuxiliaryInputZeroKnowledge) ∧
+    (∃ zk : ZKProof Complexity.encCNF Complexity.ThreeSAT.npRelation.language
+        (fun n => (1 / 3 : ENNReal) ^ (n + 1)),
+      (∀ a w, zk.isWitness a w = true ↔ Complexity.ThreeSAT.npRelation.IsWitness a w) ∧
+      zk.NegligibleSoundness ∧
+      zk.AuxiliaryInputZeroKnowledge ∧
+      zk.UnboundedAuxiliaryInputZeroKnowledge ∧
+      zk.InstanceAuxiliaryInputZeroKnowledge) := by
   obtain ⟨zk, hzk⟩ :=
     hf.exists_auxiliaryInputZeroKnowledge_of_mem_NP Complexity.ThreeSAT.mem_NP
+  obtain ⟨zkSeq, hnegSeq, hzkSeq⟩ :=
+    hf.exists_zkProof_of_mem_NP Complexity.ThreeSAT.mem_NP
+  obtain ⟨zkRel, hwRel, hnegRel, hzkRel⟩ :=
+    hf.exists_zkProof_of_npRelation Complexity.ThreeSAT.npRelation
   exact ⟨hf.exists_nonuniformPRG, hf.exists_nonuniformPRG_three_mul,
     ⟨zk, hzk, hzk.unboundedAuxiliaryInputZeroKnowledge, hzk.instanceAuxiliaryInputZeroKnowledge⟩,
-    hf.exists_auxiliaryInputZeroKnowledge_of_npRelation Complexity.ThreeSAT.npRelation⟩
+    hf.exists_auxiliaryInputZeroKnowledge_of_npRelation Complexity.ThreeSAT.npRelation,
+    ⟨zkSeq, hnegSeq, hzkSeq,
+      hzkSeq.unboundedAuxiliaryInputZeroKnowledge,
+      hzkSeq.instanceAuxiliaryInputZeroKnowledge⟩,
+    ⟨zkRel, hwRel, hnegRel, hzkRel,
+      hzkRel.unboundedAuxiliaryInputZeroKnowledge,
+      hzkRel.instanceAuxiliaryInputZeroKnowledge⟩⟩
 
 end ComplexityTests.Crypto.Nonuniform

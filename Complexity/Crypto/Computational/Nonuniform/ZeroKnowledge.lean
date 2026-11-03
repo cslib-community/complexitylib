@@ -10,14 +10,16 @@ module
 public import Complexity.Crypto.Computational.Nonuniform.Basic
 public import Complexity.Crypto.Computational.ZeroKnowledge
 public import Complexity.Crypto.Computational.ZeroKnowledge.Levin
+public import Complexity.Crypto.Computational.ZeroKnowledge.Amplification
 import Complexity.Tactic.PPT
 
 /-!
 # Auxiliary-input zero knowledge from a nonuniform generator or one-way function
 
 `GMW.AdvicePRG enc generator length` is the security premise of the auxiliary-input
-Goldreich–Micali–Wigderson theorem
-`PseudorandomGenerator.exists_auxiliaryInputZeroKnowledge_of_mem_NP`: a test reading an instance,
+Goldreich–Micali–Wigderson theorems
+`PseudorandomGenerator.exists_auxiliaryInputZeroKnowledge_of_mem_NP` and
+`PseudorandomGenerator.exists_auxiliaryInputZKProof_of_mem_NP`: a test reading an instance,
 a witness and an auxiliary input from arbitrary polynomially bounded families cannot distinguish
 the generator's output at seed length `n + 7` from uniform. A nonuniform pseudorandom generator
 satisfies it: the three families form one advice value under the pair encoding, which the test
@@ -26,28 +28,37 @@ reads without decoding, and the parameter shift by `7` is polynomial-time prepro
 Composing this bridge with `NonuniformOneWay.exists_nonuniformPRG_three_mul` derives
 auxiliary-input zero knowledge (`AuxiliaryInputZeroKnowledge`, and hence the unbounded-`z` and
 instance-indexed forms in `Complexity.Crypto.Computational.ZeroKnowledge.AuxClock`) for every
-language and relation in `NP` from any nonuniform one-way function, at the single-round GMW
-soundness error `1 / 3` of `ZeroKnowledgeProof`.
+language and relation in `NP` from any nonuniform one-way function, both at the single-session GMW
+soundness error `1 / 3` (`ZeroKnowledgeProof`) and at negligible soundness `(1 / 3) ^ (n + 1)` via
+`(n + 1)`-fold sequential repetition (`ZKProof`, `ZKProof.NegligibleSoundness`).
 
 ## Main results
 
 * `Cslib.Crypto.NonuniformPRG.advicePRG`: a nonuniform PRG satisfies `GMW.AdvicePRG`.
-* `Cslib.Crypto.NonuniformPRG.exists_auxiliaryInputZeroKnowledge_of_mem_NP`: given a nonuniform
-  PRG with stretch at least `3 * k + 1`, every language in `NP` has an auxiliary-input
-  zero-knowledge proof system.
-* `Cslib.Crypto.NonuniformPRG.exists_auxiliaryInputZeroKnowledge_of_npRelation`: the corresponding
-  Levin-reduced statement preserving the NP relation's own witnesses.
-* `Cslib.Crypto.NonuniformOneWay.exists_auxiliaryInputZeroKnowledge_of_mem_NP`: every nonuniform
-  one-way function yields an auxiliary-input zero-knowledge proof system for every language in
-  `NP` (including the unbounded-`z` and instance-indexed forms via `AuxClock`).
-* `Cslib.Crypto.NonuniformOneWay.exists_auxiliaryInputZeroKnowledge_of_npRelation`: every
-  nonuniform one-way function yields an auxiliary-input zero-knowledge proof system for every NP
-  relation using the relation's own witnesses.
+* `Cslib.Crypto.NonuniformPRG.exists_auxiliaryInputZeroKnowledge_of_mem_NP`,
+  `Cslib.Crypto.NonuniformPRG.exists_auxiliaryInputZeroKnowledge_of_npRelation`: single-session
+  auxiliary-input zero knowledge from a nonuniform PRG with stretch `3 * k + 1`.
+* `Cslib.Crypto.NonuniformOneWay.exists_auxiliaryInputZeroKnowledge_of_mem_NP`,
+  `Cslib.Crypto.NonuniformOneWay.exists_auxiliaryInputZeroKnowledge_of_npRelation`: single-session
+  auxiliary-input zero knowledge from any nonuniform one-way function.
+* `Cslib.Crypto.NonuniformPRG.exists_zkProof_of_mem_NP`,
+  `Cslib.Crypto.NonuniformPRG.exists_zkProof_of_npRelation`: soundness-amplified
+  (`(1 / 3) ^ (n + 1)`, `ZKProof.NegligibleSoundness`) auxiliary-input zero knowledge from a
+  nonuniform PRG.
+* `Cslib.Crypto.NonuniformOneWay.exists_zkProof_of_mem_NP`,
+  `Cslib.Crypto.NonuniformOneWay.exists_zkProof_of_npRelation`: **Goldreich–Micali–Wigderson
+  theorem in full** — every nonuniform one-way function yields an auxiliary-input zero-knowledge
+  proof system with negligible soundness `(1 / 3) ^ (n + 1)` for every language in `NP` and for
+  every NP relation using the relation's own witnesses (and hence
+  `ZKProof.UnboundedAuxiliaryInputZeroKnowledge` and
+  `ZKProof.InstanceAuxiliaryInputZeroKnowledge`).
 
 ## References
 
 * [O. Goldreich, S. Micali, A. Wigderson, *Proofs that Yield Nothing but Their Validity or All
   Languages in NP Have Zero-Knowledge Proof Systems*][GoldreichMicaliWigderson1991]
+* [O. Goldreich, *Foundations of Cryptography: Volume 1, Basic Tools*][Goldreich2001],
+  Sections 4.3–4.4.
 
 [#2316]: https://github.com/cslib-community/complexitylib/issues/2316
 -/
@@ -57,6 +68,7 @@ soundness error `1 / 3` of `ZeroKnowledgeProof`.
 namespace Cslib.Crypto
 
 open Probability Complexity Turing.MultiTapeTM
+open scoped ENNReal
 
 /-- A **nonuniform PRG satisfies the GMW advice premise** for every instance encoding: the
 instance, witness and auxiliary-input families together are one polynomially bounded advice
@@ -69,7 +81,10 @@ theorem NonuniformPRG.advicePRG {generator : List Bool → List Bool} {length : 
   have hshift : IsPPTOn (encPair (encPair encUnary encAdvice) encBits) encBool
       (fun input : (ℕ × (α × (List Bool × List Bool))) × List Bool =>
         test ((input.1.1 - 7, input.1.2), input.2)) :=
-    htest.preprocess (by dsimp only [encAdvice]; fun_prop)
+    htest.preprocess
+      (prepare := fun input : (ℕ × (α × (List Bool × List Bool))) × List Bool =>
+        ((input.1.1 - 7, input.1.2), input.2))
+      (by dsimp only [encAdvice]; fun_prop)
   have hsub : PolynomiallyBounded (fun m => m - 7) := PolynomiallyBounded.id.tsub _
   have ha' := ha.comp hsub
   have hw' := hw.comp hsub
@@ -134,5 +149,66 @@ theorem NonuniformOneWay.exists_auxiliaryInputZeroKnowledge_of_npRelation
       (∀ a w, zk.isWitness a w = true ↔ R.IsWitness a w) ∧ zk.AuxiliaryInputZeroKnowledge := by
   obtain ⟨generator, hgenerator⟩ := hf.exists_nonuniformPRG_three_mul
   exact hgenerator.exists_auxiliaryInputZeroKnowledge_of_npRelation (fun _ => le_rfl) R
+
+/-- **Soundness-amplified auxiliary-input GMW zero knowledge from a nonuniform PRG.** Given a
+nonuniform pseudorandom generator with stretch at least `3 * m + 1`, every language `A ∈ NP enc`
+has a computational zero-knowledge interactive proof system with negligible soundness
+`(1 / 3) ^ (n + 1)` (`ZKProof.NegligibleSoundness`) and general auxiliary-input zero knowledge
+(`ZKProof.AuxiliaryInputZeroKnowledge`, and hence `ZKProof.UnboundedAuxiliaryInputZeroKnowledge` and
+`ZKProof.InstanceAuxiliaryInputZeroKnowledge`). -/
+theorem NonuniformPRG.exists_zkProof_of_mem_NP
+    {α : Type} {enc : α ↪ List Bool} {A : Set α}
+    {generator : List Bool → List Bool} {length : ℕ → ℕ}
+    (h : NonuniformPRG generator length) (hstretch : ∀ m, 3 * m + 1 ≤ length m)
+    (hA : A ∈ NP enc) :
+    ∃ zk : ZKProof enc A (fun n => (1 / 3 : ENNReal) ^ (n + 1)),
+      zk.NegligibleSoundness ∧ zk.AuxiliaryInputZeroKnowledge :=
+  h.toPRG.exists_auxiliaryInputZKProof_of_mem_NP hstretch (h.advicePRG enc) hA
+
+/-- **Soundness-amplified auxiliary-input GMW zero knowledge for NP relations from a nonuniform
+PRG.** Given a nonuniform pseudorandom generator with stretch at least `3 * m + 1`, every NP
+relation `R` has a computational zero-knowledge interactive proof system with negligible soundness
+`(1 / 3) ^ (n + 1)` and general auxiliary-input zero knowledge whose honest prover uses `R`'s own
+witnesses. -/
+theorem NonuniformPRG.exists_zkProof_of_npRelation
+    {α : Type} {enc : α ↪ List Bool}
+    {generator : List Bool → List Bool} {length : ℕ → ℕ}
+    (h : NonuniformPRG generator length) (hstretch : ∀ m, 3 * m + 1 ≤ length m)
+    (R : NPRelation enc) :
+    ∃ zk : ZKProof enc R.language (fun n => (1 / 3 : ENNReal) ^ (n + 1)),
+      (∀ a w, zk.isWitness a w = true ↔ R.IsWitness a w) ∧
+      zk.NegligibleSoundness ∧ zk.AuxiliaryInputZeroKnowledge :=
+  h.toPRG.exists_auxiliaryInputZKProof_of_npRelation hstretch (h.advicePRG enc) R
+
+/-- **Goldreich–Micali–Wigderson theorem in full (from a nonuniform one-way function).** If a
+nonuniform one-way function exists, every language `A ∈ NP enc` has a computational zero-knowledge
+interactive proof system with negligible soundness `(1 / 3) ^ (n + 1)` against computationally
+unbounded stateful provers (`ZKProof.NegligibleSoundness`) and general auxiliary-input zero
+knowledge (`ZKProof.AuxiliaryInputZeroKnowledge`, and hence
+`ZKProof.UnboundedAuxiliaryInputZeroKnowledge` and
+`ZKProof.InstanceAuxiliaryInputZeroKnowledge`). -/
+theorem NonuniformOneWay.exists_zkProof_of_mem_NP
+    {α : Type} {enc : α ↪ List Bool} {A : Set α}
+    {f : List Bool → List Bool} (hf : NonuniformOneWay f) (hA : A ∈ NP enc) :
+    ∃ zk : ZKProof enc A (fun n => (1 / 3 : ENNReal) ^ (n + 1)),
+      zk.NegligibleSoundness ∧ zk.AuxiliaryInputZeroKnowledge := by
+  obtain ⟨generator, hgenerator⟩ := hf.exists_nonuniformPRG_three_mul
+  exact hgenerator.exists_zkProof_of_mem_NP (fun _ => le_rfl) hA
+
+/-- **Goldreich–Micali–Wigderson theorem in full for NP relations (from a nonuniform one-way
+function).** If a nonuniform one-way function exists, every NP relation `R` has a computational
+zero-knowledge interactive proof system whose honest prover uses `R`'s own witnesses, with
+negligible soundness `(1 / 3) ^ (n + 1)` (`ZKProof.NegligibleSoundness`) and general auxiliary-input
+zero knowledge (`ZKProof.AuxiliaryInputZeroKnowledge`, and hence
+`ZKProof.UnboundedAuxiliaryInputZeroKnowledge` and
+`ZKProof.InstanceAuxiliaryInputZeroKnowledge`). -/
+theorem NonuniformOneWay.exists_zkProof_of_npRelation
+    {α : Type} {enc : α ↪ List Bool}
+    {f : List Bool → List Bool} (hf : NonuniformOneWay f) (R : NPRelation enc) :
+    ∃ zk : ZKProof enc R.language (fun n => (1 / 3 : ENNReal) ^ (n + 1)),
+      (∀ a w, zk.isWitness a w = true ↔ R.IsWitness a w) ∧
+      zk.NegligibleSoundness ∧ zk.AuxiliaryInputZeroKnowledge := by
+  obtain ⟨generator, hgenerator⟩ := hf.exists_nonuniformPRG_three_mul
+  exact hgenerator.exists_zkProof_of_npRelation (fun _ => le_rfl) R
 
 end Cslib.Crypto
