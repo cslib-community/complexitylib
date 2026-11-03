@@ -3212,8 +3212,10 @@ public import Complexity.Foundations.Analysis.RowCompression.BoundedCap
 public import Complexity.Foundations.Analysis.RowCompression.ClippedError
 public import Complexity.Foundations.Analysis.RowCompression.FalseOverflow
 public import Complexity.Foundations.Analysis.RowCompression.Floors
+public import Complexity.Foundations.Analysis.RowCompression.FourthMoment
 public import Complexity.Foundations.Analysis.RowCompression.GateClosure
 public import Complexity.Foundations.Analysis.RowCompression.Iteration
+public import Complexity.Foundations.Analysis.RowCompression.MomentSchedule
 public import Complexity.Foundations.Analysis.RowCompression.NoiseDecay
 public import Complexity.Foundations.Analysis.RowCompression.OverflowBudget
 public import Complexity.Foundations.Analysis.RowCompression.OverflowNoise
@@ -3716,10 +3718,14 @@ public import Complexity.Foundations.Probability.HierarchyTaskData
 public import Complexity.Foundations.Probability.HierarchyTaskMeans
 public import Complexity.Foundations.Probability.HierarchyTasks
 public import Complexity.Foundations.Probability.NormalizedAtomRows.BoundedLoss
+public import Complexity.Foundations.Probability.NormalizedAtomRows.ClippedTail
+public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanEvent
+public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanTail
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Output
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Request
 public import Complexity.Foundations.Probability.NormalizedAtomRows.RequestSharp
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Sharp
+public import Complexity.Foundations.Probability.NormalizedAtomRows.TwoMask
 public import Complexity.Foundations.Probability.PilotRowTasks
 public import Complexity.Foundations.Probability.PilotTasks
 public import Complexity.Foundations.Probability.PolynomialAtomCompression
