@@ -28,14 +28,19 @@ import Complexity.Tactic.PPT
 
 Given any uniform `OneWay` function `f`, output-length normalization
 (`OneWay.exists_fixedOutputLength`) produces a one-way function `g` sending `n`-bit inputs to
-`m(n)`-bit outputs. Following `[HHRVW2020]`, Section 4.2, Theorem 4.5 (pp. 21–25), we combine `g`
+`m(n)`-bit outputs. Adapting `[HHRVW2020]`, Section 4.2, Theorem 4.5 (pp. 21–25), we combine `g`
 with the constructible `3`-wise independent Boolean affine hash family `affineHash` on `m(n)`-bit
-strings (`isThreeWiseIndependentHash_affineHash`) and a saturating `(Nat.log 2 n + 1)`-bit prefix
-length `r ≤ n`:
+strings (`isThreeWiseIndependentHash_affineHash`) and a dyadic `(Nat.log 2 n + 1)`-bit prefix
+index `r` truncated at `min r n`:
 $$F_0(x, A, b, r) = \bigl(A, b, r, \mathrm{zeroPadPrefix}\;n\;r\;(A\,g(x) + b)\bigr).$$
 
-Defining the light-image set `rompelLightImages gFin y₀ r` by `{y₀} ∪ {y | 4 * |g⁻¹(y)| ≤ 2^(n-r)}`
-and the accessible preimage set `L₀(x, A, b, r)` as the `F₀`-fiber restricted to light images:
+Whereas `[HHRVW2020]`, Theorem 4.5 (p. 21) uses a polynomial light-image threshold
+$2^{n - i} / n^c$ over $i \in [n]$ to obtain an entropy gap of $d \log n / n$ for every constant
+$d > 0$ under Definition 3.9 (p. 15), this module formalizes a weaker constant-threshold
+adaptation: we fix one adversary-independent family `rompelAccessibleSet` using the constant
+light-image threshold `rompelLightImages gFin y₀ r = {y₀} ∪ {y | 4 * |g⁻¹(y)| ≤ 2^(n - min r n)}`
+(`2^(n - min r n) / 4` in place of `2^(n - i) / n^c`) against uniform strict-PPT adversaries,
+obtaining the smaller inverse-linear gap `1 / (64 * (n + 1))`:
 
 1. **Claim 4.6** (`rompelBase_escape_le_four_mul_inversion`, pp. 21–22): sampling a prefix-colliding
    affine seed via `adjustAffineSeed` (`toReal_map_adjustAffineSeed_eq`) turns any adversary `A`
@@ -50,9 +55,9 @@ and the accessible preimage set `L₀(x, A, b, r)` as the `F₀`-fiber restricte
    siblings from `L₀`, giving an unconditional finite-`n` gap of
    `(1 - collisionProbability) / (16 * 2 ^ (Nat.log 2 n + 1))` and at least `1 / (64 * (n + 1))`
    whenever `collisionProbability ≤ 1 / 2`.
-4. **Theorem 4.5** (`OneWay.exists_inaccessibleEntropyFamily`, p. 21): combining
-   `OneWay.exists_fixedOutputLength` and `OneWay.output_collision_negligible` constructs an
-   `InaccessibleEntropyFamily` with gap denominator `denom n = 64 * (n + 1)`.
+4. **Constant-threshold adaptation of Theorem 4.5** (`OneWay.exists_inaccessibleEntropyFamily`,
+   p. 21): combining `OneWay.exists_fixedOutputLength` and `OneWay.output_collision_negligible`
+   constructs an `InaccessibleEntropyFamily` with gap denominator `denom n = 64 * (n + 1)`.
 
 ## Main definitions
 
@@ -75,9 +80,10 @@ and the accessible preimage set `L₀(x, A, b, r)` as the `F₀`-fiber restricte
   `rompelBaseInverter`.
 * `Cslib.Crypto.rompelBase_escape_le_four_mul_inversion`: Claim 4.6 (`[HHRVW2020]`, pp. 21–22).
 * `Cslib.Crypto.rompelBase_heavy_sibling_prob_ge`: Claim 4.8 (`[HHRVW2020]`, p. 23).
-* `Cslib.Crypto.rompelBase_accessible_le_conditionalEntropy_sub`: Claim 4.7 (`[HHRVW2020]`,
-  pp. 21, 23–25).
-* `Cslib.Crypto.OneWay.exists_inaccessibleEntropyFamily`: Theorem 4.5 (`[HHRVW2020]`, p. 21).
+* `Cslib.Crypto.rompelBase_accessible_le_conditionalEntropy_sub`: constant-threshold Claim 4.7
+  (`[HHRVW2020]`, pp. 21, 23–25).
+* `Cslib.Crypto.OneWay.exists_inaccessibleEntropyFamily`: constant-threshold adaptation of
+  Theorem 4.5 (`[HHRVW2020]`, p. 21), giving inverse-linear gap `1 / (64 * (n + 1))`.
 
 ## References
 
@@ -430,8 +436,8 @@ theorem computableInPolyTime_rompelBaseEvalWord {g : List Bool → List Bool} {o
 
 /-- Light sibling images
 $\widetilde{L}(y_0, r) = \{y_0\} \cup \{y \mid 4 |g^{-1}(y)| \le 2^{n - \min(r, n)}\}$
-(`[HHRVW2020]`, Section 4.2, Theorem 4.5, p. 21, instantiated with polynomial parameter $c = 2$
-scaled to constant $4$). -/
+(constant-threshold adaptation of `[HHRVW2020]`, Section 4.2, Theorem 4.5, p. 21, replacing the
+source threshold $2^{n - i} / n^c$ by $2^{n - \min(r, n)} / 4$). -/
 @[expose] def rompelLightImages {n m : ℕ} (gFin : BitString n → BitString m)
     (y₀ : BitString m) (r : ℕ) : Finset (BitString m) :=
   insert y₀ (univ.filter fun y => 4 * #(fiberSet gFin y) ≤ 2 ^ (n - min r n))
@@ -1583,11 +1589,18 @@ theorem rompelBase_accessible_le_conditionalEntropy_sub (g : List Bool → List 
   rw [hacc, hcond]
   linarith
 
-/-! ### Theorem 4.5: Inaccessible average max-entropy from any one-way function -/
+/-! ### Constant-threshold adaptation of Theorem 4.5 -/
 
-/-- **`[HHRVW2020]`, Section 4.2, Theorem 4.5 (p. 21)**: every uniform `OneWay` function yields a
-uniform polynomial-time `InaccessibleEntropyFamily` with gap denominator
-`denom n = 64 * (n + 1)`. -/
+/-- **Constant-threshold adaptation of `[HHRVW2020]`, Section 4.2, Theorem 4.5 (p. 21)**: every
+uniform `OneWay` function yields a uniform polynomial-time `InaccessibleEntropyFamily` with gap
+denominator `denom n = 64 * (n + 1)`.
+
+Whereas `[HHRVW2020]`, Theorem 4.5 (p. 21) uses light-image threshold $2^{n - i} / n^c$ to achieve
+gap $d \log n / n$ for every constant $d > 0$ under Definition 3.9 (p. 15), this adaptation uses a
+single adversary-independent accessible-set family (`rompelAccessibleSet`), dyadic
+`(Nat.log 2 n + 1)`-bit saturating prefix encoding, and the constant threshold
+$2^{n - \min(r, n)} / 4$ (`rompelLightImages`), yielding the smaller inverse-linear gap
+$1 / (64 (n + 1))$ against uniform strict-PPT adversaries. -/
 theorem OneWay.exists_inaccessibleEntropyFamily {f : List Bool → List Bool} (hf : OneWay f) :
     Nonempty InaccessibleEntropyFamily := by
   obtain ⟨g, outLen, hg, hlen, houtLen⟩ := hf.exists_fixedOutputLength

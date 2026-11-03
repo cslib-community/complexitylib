@@ -28,13 +28,13 @@ $X \leftarrow \alpha$ equals the conditional Shannon entropy $H(X \mid F(X))$
 An **$F$-collision-finder** (`IsCollisionFinder F A`) is a randomized mapping supported on the
 preimage fiber $F^{-1}(F(x))$ (`[HHRVW2020]`, Definition 3.3, p. 12); any randomized mapping is
 canonically sanitized to an $F$-collision-finder by falling back to $x$ on non-colliding outputs
-(`sanitizeCollisionFinder`, `[HHRVW2020]`, Remark 3.6, p. 13).
+(`sanitizeCollisionFinder`, `[HHRVW2020]`, Definition 3.3 and fallback discussion, p. 12).
 
-A family of subsets $L(x) \subseteq F^{-1}(F(x))$ with $x \in L(x)$ witnesses **accessible average
-max-entropy** at most $\mathbb{E}_{X}[\log_2 |L(X)|]$ (`accessibleSetExpectation L`,
-`[HHRVW2020]`, Definition 3.9, p. 15) when every uniform strict-PPT adversary has negligible
-probability of outputting a colliding preimage outside $L(X)$ (`accessibleEscapeGame`,
-`InaccessibleEntropyFamily`). The elementary inequality $-\log_2(1 - \alpha) \ge \alpha$ for
+A single family of subsets $L(x) \subseteq F^{-1}(F(x))$ with $x \in L(x)$ witnesses **accessible
+average max-entropy** at most $\mathbb{E}_{X}[\log_2 |L(X)|]$ (`accessibleSetExpectation L`; cf.
+`[HHRVW2020]`, Definition 3.9, p. 15, which allows $L$ to depend on the collision-finder, whereas
+`InaccessibleEntropyFamily` fixes one family `accSet n` against all uniform strict-PPT adversaries
+in `accessibleEscapeGame`). The elementary inequality $-\log_2(1 - \alpha) \ge \alpha$ for
 $\alpha \in [0, 1)$ lower-bounds the entropy gap $H(X \mid F(X)) - \mathbb{E}[\log_2 |L(X)|]$ by the
 expected fraction of fiber elements outside $L(X)$
 (`conditionalEntropy_sub_accessibleSetExpectation_ge`, `[HHRVW2020]`, Section 4.2, p. 24).
@@ -63,8 +63,8 @@ expected fraction of fiber elements outside $L(X)$
 ## References
 
 * [I. Haitner, T. Holenstein, O. Reingold, S. Vadhan, H. Wee, *Inaccessible Entropy II: IE
-  Functions and Universal One-Way Hashing*, Section 3 (Definitions 3.1, 3.3, 3.9, Remark 3.6,
-  pp. 11–15) and Section 4.2 (Theorem 4.5, p. 21)][HHRVW2020]
+  Functions and Universal One-Way Hashing*, Section 3 (Definitions 3.1, 3.3, 3.9, pp. 11–15)
+  and Section 4.2 (Theorem 4.5, p. 21)][HHRVW2020]
 -/
 
 public section
@@ -155,7 +155,7 @@ $F^{-1}(F(x))$ (`[HHRVW2020]`, Section 3.1, Definition 3.3, p. 12). -/
   ∀ x x', x' ∈ (A x).support → F x' = F x
 
 /-- Canonical fallback sanitization replacing any non-colliding output of `A x` by `x` itself
-(`[HHRVW2020]`, Section 3.1, Remark 3.6, p. 13). -/
+(`[HHRVW2020]`, Section 3.1, Definition 3.3 and fallback discussion, p. 12). -/
 @[expose] noncomputable def sanitizeCollisionFinder {α β : Type*} [DecidableEq β]
     (F : α → β) (A : α → PMF α) (x : α) : PMF α :=
   (A x).map fun x' => if F x' = F x then x' else x
@@ -266,10 +266,10 @@ preimage of `evalWord n` outside the accessible set `accSet n`. -/
   let z' := BitString.ofList (inLen n) raw
   return decide (raw.length = inLen n ∧ evalWord n raw = evalWord n zWord ∧ z' ∉ accSet n z)
 
-/-- A uniform polynomial-time fixed-width function family exhibiting an eventual `1 / denom n` gap
-between real conditional Shannon entropy $H(Z \mid F(Z))$ and accessible average max-entropy
-$\mathbb{E}[\log_2 |L(Z)|]$ against all uniform strict-PPT adversaries (`[HHRVW2020]`,
-Section 3.2, Definition 3.9, p. 15, and Section 4.2, Theorem 4.5, p. 21). -/
+/-- A uniform polynomial-time fixed-width function family with one adversary-independent
+accessible-set family `accSet n` exhibiting an eventual `1 / denom n` gap between real conditional
+Shannon entropy $H(Z \mid F(Z))$ and $\mathbb{E}[\log_2 |L(Z)|]$ against all uniform strict-PPT
+adversaries (cf. `[HHRVW2020]`, Section 3.2, Definition 3.9, p. 15). -/
 structure InaccessibleEntropyFamily where
   /-- Input bit width $n_0(n)$ at security parameter $n$. -/
   inLen : ℕ → ℕ
