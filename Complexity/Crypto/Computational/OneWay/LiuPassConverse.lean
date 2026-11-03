@@ -675,7 +675,7 @@ theorem weakOneWay_reindex_liuPassCore
   obtain ⟨cA, dA, evalA, hevalA, _, hlawA⟩ := hA.on.exists_total_seeded_evaluator
   let H (y : List Bool) : ProbComp ℕ :=
     heuristicCand t evalA y <$> BitString.sampleList (coinBudget cA dA y.length)
-  have hH_ppt : IsPPTOn encBits encNat H := isPPTOn_heuristic ht_comp.tidy hevalA
+  have hH_ppt : IsPPTOn encBits encNat H := isPPTOn_heuristic ht_comp.tidy hevalA.tidy
   filter_upwards [hK_hard H hH_ppt] with n hn_H
   let B := coinBudget cA dA n
   let distH : PMF Bool :=
