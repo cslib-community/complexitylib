@@ -558,6 +558,30 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   to one flat program through `realize`; the hand-stepped stack dispatcher survives only inside
   Chan–He traversal (`Traversal.WordStack`), which steps it with exact counts.
   The full framed queue/faithful allocation client remains separate. No abstract headline is added.
+  `PriorityQueue/BinaryHeap/Native` realizes the original memory heap methods, with exact source
+  state/history transport and a single code family before runtime layouts, dimensions and widths.
+  Its raw interface retains the compact `3n+1` fit/local-zero domain and uses the shared linear
+  clear for dirty storage; the original two-query `3n+2` allocator stays unchanged for allocated
+  clients. The pure model and order lemmas retain Renfei Zhou's source credit outside `WordRAM`.
+  The native Dijkstra client preserves the original adjacency-list encoding, word envelope and
+  log-linear endpoint, including the actual input prefix and final halt, with one existential
+  uniform factor. The old hand-stepped binary-heap execution and its fixed clock/register
+  constants are retired; no reduction in source size, space or instruction count is asserted.
+  The bounded two-stack queue migration landed in #2303; the generic framed/allocation/whole-client
+  objectives remain open. The native Fibonacci Dijkstra consumer uses the same framed source
+  interface and generic history/key/domain lemmas, retains the original nonzero heap potential,
+  and reserves the original `9n+5` layout in the input's zero tail without a clearing pass. Its
+  flat program retains the original word hypothesis and sharper reachable-vertex clock, pays
+  actual prefix/body/halt and preserves the complete source memory/frontier. It supersedes only
+  the old Dijkstra executor and fixed-640 implementation helpers, not the MinPQ-used Fibonacci
+  execution core or the unresolved abstract-space contract.
+  Karger–Stein's specification-law bridge (#2289) reuses the existing contraction client and
+  native execution model. `LoopSegmentLaw` packages the existing finite loop segments with an
+  exact observation law and strict pathwise instruction/query bounds; the two-branch recurrence
+  lives at the PMF layer, and compiled cut-output transport is shared with basic Karger.
+  The exact-basis abstract bridge keeps its existing compatibility statements and source.
+  This refactor does not supply the later memory-oracle contraction/frame-stack realization
+  under #2205 or introduce a new curated headline.
   `DataStructure/OrderedSet` and `DataStructure/OrderedSet/*` provide neutral
   optional-minimum contracts, a typed finite-set interface including deletion, and adaptive
   minimum extraction, with no tree or cost dependency. Bounded-key implementations may specialize

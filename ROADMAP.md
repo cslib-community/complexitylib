@@ -33,7 +33,7 @@ the FHE industrial context, the first-order design decisions and the repository'
 
 Priorities live in this list and in the tiers of [#897].
 
-1. [Goldreich–Micali–Wigderson zero knowledge in full](#cryptographic-landmarks)
+1. [Goldreich–Micali–Wigderson zero knowledge in full](#cryptographic-landmarks) ([#2316])
 2. [Rompel's signature theorem](#cryptographic-landmarks) ([#1001])
 3. [Completeness of oblivious transfer](#cryptographic-landmarks)
 4. [Håstad's optimal MAX-E3SAT hardness](#approximation-and-pcp) ([#886])
@@ -47,7 +47,7 @@ Priorities live in this list and in the tiers of [#897].
 
 ### Cryptographic landmarks
 
-- **Goldreich–Micali–Wigderson zero knowledge in full.** If one-way functions exist, every
+- **Goldreich–Micali–Wigderson zero knowledge in full** ([#2316]). If one-way functions exist, every
   language in NP has a computational zero-knowledge proof in Goldreich's sense (Def. 4.3.10):
   for every `x ∈ L` and arbitrary auxiliary input `z`, against probabilistic polynomial-time
   verifiers. This needs a bridge between the security premise and a clock independent of an
@@ -201,10 +201,24 @@ index links to canonical definitions rather than keeping a second set.
   schedule with endpointwise telescoping and summable available-scale precision payments.
   Actual correction iterates now supply product entry/row-mass bounds and their scheduled
   omitted-product norm sum. Product-seed correction/reward samples have proved true means,
-  reaching the next actual hierarchy reward. The full task family remains to be assembled:
-  routed direct bins, pilot rows, preparatory/normalized rows, detector vectors, estimated copy/reward
-  multipliers and the complete scheduled mean-prefix bound with dependency ranks. Paired raw
-  differences, full-coordinate conditional walks, summed noise, compression, strong recursive
+  reaching the next actual hierarchy reward. The local pilot and actual-correction
+  preparation/normalization families now share an expanded dependency order, including
+  normalized children and an actual copy/reward projection client. Ranks are computed from
+  finite iteration bounds; role/rate/suffix requests preserve the inherited source or reset it
+  to the midpoint. Pilot steps use the current maximum; actual corrections and copy weights
+  use the final pilot maximum. A bounded cross-stage hierarchy/reward client now connects
+  the previous-reward and base-matrix leaves to actual earlier-stage constructors, with a
+  computed decreasing global rank and nonconstant two-stage regression. Routed direct/residual
+  bins now have a finite partition/true-mean client into the actual next matrix, primitive
+  affine sampling instances, native copy-symbol suffix laws and whole-function role/rate/usage
+  requests with computed rank payments. Signed residual evaluation now separates the negative
+  endpoint correction from the midpoint product correction, with actual tuple-dependent sample
+  means. Bounded top-bin routing and dense preparation/normalization accept arbitrary child
+  functions, retain raw ranks, and agree with actual hierarchy bounds in a two-stage client.
+  The residual-bin phase order is local; full global stochastic preparation/access enumeration,
+  finite-accuracy ports, estimated copy/routing-fraction comparisons, and the complete scheduled
+  mean-prefix bound remain open; range/true means do not establish root
+  regularity or the error recurrence. Paired raw differences, full-coordinate conditional walks, summed noise, compression, strong recursive
   induction and native logarithmic workspace/class equality remain required.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
   logspace reduction.
@@ -666,9 +680,31 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   and a pair of stacks check all three. Queue operation calls now use one fixed native
   dispatcher over physical-array memory programs, with resident count words and paid commits.
   Its dynamic certificate preserves the original two-array space, dirty six-instruction
-  initialization and adaptive-call bounds. Remaining are the binary-heap migration, the full
-  framed queue/faithful-allocation client and generic stateful composition, and the full C2/M1b
-  objective; arbitrary host continuations do not acquire runtime bounds.
+  initialization and adaptive-call bounds. The binary heap now realizes its original memory methods
+  and allocator, retains compact local-zero initialization and a genuine linear dirty clear, and
+  supplies the original log-linear Dijkstra endpoint through an actual initialized native program.
+  The graph encoding and word envelope stay unchanged; one factor precedes all graphs and widths,
+  and the clock includes the prefix, control and halt. The old hand-stepped binary execution is
+  retired, while its pure model/order lemmas and source credit remain. Remaining are the full
+  framed queue/faithful-allocation client, generic stateful and whole-client composition, Fibonacci
+  execution migration and the full C2/M1b objective; arbitrary host continuations do not acquire
+  runtime bounds.
+  The Fibonacci method family ([#2290]) realizes all five original memory methods with one fixed
+  native factor, exact typed-source/history transport and the existing nonzero amortized
+  potential. The Fibonacci Dijkstra consumer now reserves the original zero tail without clearing,
+  derives its reached callee domains from the shared framed history, and pays the nonzero heap
+  potential through the existing amortized telescope. One actual initialized native program
+  retains the original word envelope and sharper reachable-vertex bound, including its prefix,
+  control and halt and the entire final memory/frontier. The old Dijkstra executor and its
+  implementation-specific coefficient 640 are superseded; the original existential endpoints
+  are unchanged. MinPQ migration and the execution core it still uses remain open, as do generic
+  whole-client transfer and the abstract-space decision.
+  The Karger–Stein specification bridge ([#2289]) gives the existing recursive native code the
+  exact answer law of its contraction-oracle client, preserving pathwise instruction/random-call
+  bounds, word fits and memory frames. Probability and amplification are proved at the
+  specification layer. This does not complete its memory-oracle native realization: the
+  randomized realization adapters, contraction implementation and recursive frame-stack
+  migration remain part of [#2205].
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
@@ -825,8 +861,11 @@ not planned, not as proved.
 [#2063]: https://github.com/cslib-community/complexitylib/issues/2063
 [#2205]: https://github.com/cslib-community/complexitylib/issues/2205
 [#2213]: https://github.com/cslib-community/complexitylib/issues/2213
+[#2289]: https://github.com/cslib-community/complexitylib/issues/2289
 [#2098]: https://github.com/cslib-community/complexitylib/issues/2098
 [#2127]: https://github.com/cslib-community/complexitylib/issues/2127
 [#2145]: https://github.com/cslib-community/complexitylib/issues/2145
 [#2146]: https://github.com/cslib-community/complexitylib/issues/2146
 [#2084]: https://github.com/cslib-community/complexitylib/issues/2084
+[#2316]: https://github.com/cslib-community/complexitylib/issues/2316
+[#2290]: https://github.com/cslib-community/complexitylib/issues/2290

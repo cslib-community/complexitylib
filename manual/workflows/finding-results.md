@@ -55,6 +55,43 @@ The obligations are availability of every gate input, availability of the select
 
 The [circuit reference](../circuits-logic-and-other-models/circuits-and-formulas.md) explains other bases and measures before you transfer the recipe.
 
+## Compare compressed row outputs
+
+For deterministic two-signal compression comparisons, import
+[RowCompression/SaturatedRoot](../../Complexity/Foundations/Analysis/RowCompression/SaturatedRoot.lean)
+and open `Cslib.RowCompression`. `exists_iterate_root_bound` compares the actual schedule with
+a zero-increment reference sharing its initial loss. Supply first-signal saturation, rank-gate
+closure, a uniform output-root range and global root regularity in both signals and the padded
+rank. The theorem retains the second signal; it requires a positive horizon, nonnegative true
+first entries, small true second entries and bounded common losses. Its constant is uniform in
+the schedule and true first-entry magnitudes. The rank uses the full retained set and actual
+default, so agreement on a smaller usage set does not suffice.
+
+For the scalar upper-cap step, use
+[RowCompression/BoundedCap](../../Complexity/Foundations/Analysis/RowCompression/BoundedCap.lean)'s
+`abs_min_add_sub_min_add_le`: relative error at most `1/2` gives capped absolute error
+`(4 * θ + 5) * ε` when the common loss has magnitude at most `θ`. This bounds a scalar comparison;
+it does not truncate stored states. For the concrete polynomial family, keep importing
+[PolynomialAtomRows/Relative](../../Complexity/Foundations/Probability/PolynomialAtomRows/Relative.lean)
+or [ClippedError](../../Complexity/Foundations/Probability/PolynomialAtomRows/ClippedError.lean);
+their public theorem contracts are unchanged and discharge the scalar assumptions themselves.
+
+Open the complete
+[two-signal regression client](../../ComplexityTests/RowCompressionSaturatedRoot.lean) for the
+imports, concrete output, proved scalar contracts and a positive-output fixture. It also checks
+that the second coordinate affects the output, arbitrarily large off-usage truth changes the
+actual rank gate, and unbounded common loss invalidates the scalar estimate. From a configured
+checkout, run:
+
+```sh
+scripts/build.sh --wfail --iofail ComplexityTests.RowCompressionSaturatedRoot ComplexityTests.PolynomialAtomRelative ComplexityTests.PolynomialAtomCompression
+```
+
+A successful build checks these comparisons and the existing polynomial clients. If the bound
+does not apply, check the horizon, loss and small-second-signal hypotheses before changing the
+rank domain or adding a cap. These deterministic lemmas do not supply integrated normalized-output
+moments, recursive estimator budgets or a native class endpoint.
+
 ## Read abstracts, bridges and comparison contracts
 
 For a named headline such as Fagin's theorem, locate its entry in `abstracts/catalogue.json`, then read [FaginAbstract.lean](../../abstracts/ComplexityAbstracts/FaginAbstract.lean). Follow `FaginBridge.fagin` to the library result in [Fagin/Converse.lean](../../Complexity/Computability/Complexity/Fagin/Converse.lean). The presentation exposes finite relational vocabularies, unary cardinality, framed relation tables and malformed-input rejection. The library theorem `Cslib.Logic.ESO.definable_iff_queryLanguage_mem_NP` takes an isomorphism-closure hypothesis; its adjacent theorem packages that hypothesis into the equivalence. Choose the form matching your goal and the [finite-model representation](../circuits-logic-and-other-models/finite-model-logic.md).

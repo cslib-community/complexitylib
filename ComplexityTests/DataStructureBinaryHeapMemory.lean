@@ -23,7 +23,7 @@ namespace ComplexityTests.DataStructureBinaryHeapMemory
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.Memory Cslib.DataStructure.PriorityQueue
   Cslib.DataStructure.PriorityQueue.BinaryHeap.Memory
-open Cslib.DataStructure.PriorityQueue.WordRAM.BinaryHeap (space)
+open Cslib.DataStructure.PriorityQueue.BinaryHeap (space)
 
 /-- The queue on four handles with keys at most `9`. -/
 abbrev Q : StateTransitionSpec := indexedMinPQSpec 4 9

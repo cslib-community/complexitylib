@@ -45,7 +45,7 @@ variable {α : Type} [LinearOrder α]
 inductive Op (α : Type) where
   | contains (key : α)
   | insert (key : α)
-  | erase (key : α)
+  | delete (key : α)
   | minimum
   | successor (key : α)
   deriving DecidableEq
@@ -54,7 +54,7 @@ inductive Op (α : Type) where
 abbrev Op.Result {α : Type} : Op α → Type
   | .contains _ => Bool
   | .insert _ => Unit
-  | .erase _ => Unit
+  | .delete _ => Unit
   | .minimum => Option α
   | .successor _ => Option α
 
@@ -62,7 +62,7 @@ abbrev Op.Result {α : Type} : Op α → Type
 abbrev step (s : Finset α) : (o : Op α) → Finset α × o.Result
   | .contains x => (s, decide (x ∈ s))
   | .insert x => (Insert.insert x s, ())
-  | .erase x => (s.erase x, ())
+  | .delete x => (s.erase x, ())
   | .minimum => (s, least s)
   | .successor x => (s, least (s.filter (x < ·)))
 

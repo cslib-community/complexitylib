@@ -606,7 +606,7 @@ theorem familyInversionGame_parallelCore_negligible {f : List Bool → List Bool
       ComputableTidilyInPolyTime.unary_mul.comp ((ht.comp hn).prod (hseedLen.comp hn))
     have hfst2 := ComputableTidilyInPolyTime.fst (encPair encUnary encBits) encBits
     have hsnd2 := ComputableTidilyInPolyTime.snd (encPair encUnary encBits) encBits
-    have hrun := computableTidily_runTrials hk hw ht hseedLen hweak.polyTime.tidy hevalA
+    have hrun := computableTidily_runTrials hk hw ht hseedLen hweak.polyTime.tidy hevalA.tidy
       (hn.comp hfst2) (hsnd.comp hfst2) hsnd2
     exact IsPPTOn.map_with (ComputableInPolyTime.of_tidy hsample_len).sampleList (.of_tidy hrun)
   have hweak_w : ∀ᶠ n in atTop,
