@@ -42,28 +42,6 @@ namespace ComplexityTests.UnboundedSimulators
 open Cslib Cslib.Interactive Spec
 open scoped ENNReal
 
-/-! ### Statistical closeness -/
-
-theorem toOuterMeasure_add_compl {α : Type} (μ : PMF α) (E : Set α) :
-    μ.toOuterMeasure E + μ.toOuterMeasure Eᶜ = 1 := by
-  rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply, ← tsum_add]
-  simp only [Set.indicator_self_add_compl_apply]
-  exact PMF.tsum_coe _
-
-/-- Statistical closeness is symmetric. -/
-theorem closeTo_symm {α : Type} {μ ν : PMF α} {ε : ℝ≥0∞} (h : CloseTo μ ν ε) :
-    CloseTo ν μ ε := fun E => by
-  have hc := h Eᶜ
-  have hne : ν.toOuterMeasure Eᶜ ≠ ⊤ :=
-    ne_top_of_le_ne_top ENNReal.one_ne_top (le_add_self.trans_eq (toOuterMeasure_add_compl ν E))
-  refine WithTop.le_of_add_le_add_right hne ?_
-  calc ν.toOuterMeasure E + ν.toOuterMeasure Eᶜ = 1 := toOuterMeasure_add_compl ν E
-    _ = μ.toOuterMeasure E + μ.toOuterMeasure Eᶜ := (toOuterMeasure_add_compl μ E).symm
-    _ ≤ μ.toOuterMeasure E + (ν.toOuterMeasure Eᶜ + ε) := add_le_add le_rfl hc
-    _ = μ.toOuterMeasure E + ε + ν.toOuterMeasure Eᶜ := by rw [add_comm _ ε, add_assoc]
-
-theorem closeTo_refl {α : Type} (μ : PMF α) : CloseTo μ μ 0 := fun _ => by rw [add_zero]
-
 /-! ### Interactive HVZK -/
 
 /-- A prover-side program without oracles, as a closed probabilistic program. -/
@@ -130,7 +108,7 @@ theorem closeTo_of_hvzk
   have h₁ := h x w hw
   have h₂ := h x w' hw'
   rw [map_fst_eval_run] at h₁ h₂
-  exact CloseTo.trans h₁ (closeTo_symm h₂)
+  exact CloseTo.trans h₁ h₂.symm
 
 /-- **With unique witnesses, every plain reduction is perfectly HVZK**, for the choice
 simulator; for instance one whose prover sends its witness. -/
@@ -138,7 +116,7 @@ theorem hvzk_of_unique [Nonempty WitIn]
     (R : Reduction OracleSpec.empty OracleSpec.empty s StmtIn WitIn StmtOut WitOut)
     {relIn : StmtIn → WitIn → Prop} (huniq : ∀ x w w', relIn x w → relIn x w' → w = w') :
     R.HVZK relIn (choiceSim R relIn) 0 :=
-  hvzk_choiceSim fun x w w' hw hw' => huniq x w w' hw hw' ▸ closeTo_refl _
+  hvzk_choiceSim fun x w w' hw hw' => huniq x w w' hw hw' ▸ CloseTo.refl _
 
 /-! ### Sigma protocols -/
 
