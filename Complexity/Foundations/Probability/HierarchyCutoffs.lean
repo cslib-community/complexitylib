@@ -173,6 +173,10 @@ variable
 theorem selected_pi : (P.correctionSampling X Y hXY hYX hf hπ hC hC1 hi).π = π := by
   simp only [correctionSampling, HierarchyParams.CorrectionSampling.ofChannels_π]
 
+/-- The selected sampler's incoming budget is based on the true stage source rate. -/
+theorem selected_p : (P.correctionSampling X Y hXY hYX hf hπ hC hC1 hi).p = 32 * f := by
+  simp only [correctionSampling, HierarchyParams.CorrectionSampling.ofChannels_p]
+
 /-- The selected sampler retains the frame terminal pair constant. -/
 theorem selected_c : (P.correctionSampling X Y hXY hYX hf hπ hC hC1 hi).c = 32 := by
   simp only [correctionSampling, HierarchyParams.CorrectionSampling.ofChannels_c]

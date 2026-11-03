@@ -34,7 +34,7 @@ variable {P J : ℕ} [Fact P.Prime] {V : Type} [Fintype V]
 abbrev Spectators (P J : ℕ) (t : Fin J) := {j : Fin J // j ≠ t} → FrameChannel P 4 1
 
 /-- The actual Ω is equivalent to Γ×Ζ, not Ω×Ω. -/
-def terminalSplit (t : Fin J) : Environment P J ≃ Spectators P J t × FrameChannel P 4 1 :=
+@[expose] def terminalSplit (t : Fin J) : Environment P J ≃ Spectators P J t × FrameChannel P 4 1 :=
   (Equiv.piSplitAt t (fun _ : Fin J => FrameChannel P 4 1)).trans (Equiv.prodComm _ _)
 
 omit [Fintype V] in
@@ -71,15 +71,15 @@ variable (HP : FourthRootHierarchyParams 16 1 16 32 8)
   {n : ℕ} (r : HierarchyTask.Request n (Fin J) (ZMod P)) (hr : Admissible r)
 
 /-- Inherited source coordinate on Γ, with its actual copy suffix. -/
-def splitSource (rest : Spectators P J r.terminal.role) (v : V) : Prop :=
+@[expose] def splitSource (rest : Spectators P J r.terminal.role) (v : V) : Prop :=
   coordinate D r.source (rest ⟨r.source.role, hr.1⟩) (ident v)
 
 /-- Terminal coordinate on Ζ, with its actual copy suffix. -/
-def splitTerminal (A : FrameChannel P 4 1) (v : V) : Prop :=
+@[expose] def splitTerminal (A : FrameChannel P 4 1) (v : V) : Prop :=
   coordinate D r.terminal A (ident v)
 
 /-- Usage coordinate on the same terminal frame, at its own rate. -/
-def splitUsage (A : FrameChannel P 4 1) (v : V) : Prop :=
+@[expose] def splitUsage (A : FrameChannel P 4 1) (v : V) : Prop :=
   coordinate D r.usage A (ident v)
 
 omit [Fintype V] in
@@ -148,6 +148,28 @@ def genuineMaximum (C : Matrix V V ℝ) : V → ℝ :=
   PilotTask.value HP.toHierarchyParams (splitSource D ident r hr) (splitTerminal D ident r)
     r.terminal.rate C (.maximum HP.k)
 
+/-- Transport arbitrary fixed raw and pilot children and a preparatory function through
+all spectator coordinates. Its denominator is the joint source/usage mean on this split. -/
+theorem correctionRequest_eq_split (raw : Matrix V V ℝ)
+    (prep : Spectators P J r.terminal.role × FrameChannel P 4 1 → Matrix V V ℝ)
+    (maximum : V → ℝ) (σ : Environment P J) (x y : V) :
+    correctionRequest D ident r (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff HP.ρ
+      HP.toHierarchyParams.atomCutoff HP.γ HP.K ⌈4 * (1 + 32 * HP.R)⌉₊
+      (fun _ => raw) (fun σ => prep (terminalSplit r.terminal.role σ))
+      (fun _ => maximum) σ x y =
+    CorrectionRowRecipe.normalized (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff HP.ρ
+      HP.toHierarchyParams.atomCutoff HP.γ HP.K ⌈4 * (1 + 32 * HP.R)⌉₊ r.terminal.rate
+      (splitSource D ident r hr) (splitTerminal D ident r) (splitUsage D ident r)
+      raw prep maximum (terminalSplit r.terminal.role σ) x y := by
+  simp only [correctionRequest, dite_eq_left hr]
+  have hprep : (fun p => prep (terminalSplit r.terminal.role
+      ((Equiv.piSplitAt r.terminal.role (fun _ : Fin J => FrameChannel P 4 1)).symm (p.2, p.1)))) =
+      prep := by
+    funext p
+    simp [terminalSplit]
+  rw [hprep]
+  rfl
+
 /-- Pointwise actual-request identification, including the exact split, padding and usage.
 Source and usage rates are independent of the terminal rank rate. -/
 theorem genuine_request_eq
@@ -164,16 +186,7 @@ theorem genuine_request_eq
         (polynomialPrepCutoff4 HP.θ) HP.ρ HP.K ⌈4 * (1 + 32 * HP.R)⌉₊ r.terminal.rate
         (splitSource D ident r hr) (splitTerminal D ident r) (genuineRaw HP D ident r hr C i))
       (genuineMaximum HP D ident r hr C) (terminalSplit r.terminal.role σ) x y := by
-  simp only [correctionRequest, dite_eq_left hr]
-  have hprep : (fun p => genuinePrep HP D ident r hr C i
-      ((Equiv.piSplitAt r.terminal.role (fun _ : Fin J => FrameChannel P 4 1)).symm (p.2, p.1))) =
-      CorrectionRowRecipe.preparation (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff
-        (polynomialPrepCutoff4 HP.θ) HP.ρ HP.K ⌈4 * (1 + 32 * HP.R)⌉₊ r.terminal.rate
-        (splitSource D ident r hr) (splitTerminal D ident r) (genuineRaw HP D ident r hr C i) := by
-    funext p
-    simp [genuinePrep, terminalSplit]
-  rw [hprep]
-  rfl
+  exact correctionRequest_eq_split HP D ident r hr _ _ _ σ x y
 
 /-- Same-rate genuine actual correction requests have the true correction-iterate mean
 on ONE environment. The incoming count and normalizer laws come from the frame channel
