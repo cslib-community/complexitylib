@@ -3713,7 +3713,9 @@ public import Complexity.Foundations.Probability.HierarchyCutoffs
 public import Complexity.Foundations.Probability.HierarchyParams
 public import Complexity.Foundations.Probability.HierarchyRankCutoffs
 public import Complexity.Foundations.Probability.HierarchyRankEnvironment
+public import Complexity.Foundations.Probability.HierarchyRawMoment
 public import Complexity.Foundations.Probability.HierarchySampling
+public import Complexity.Foundations.Probability.HierarchySourceSampling
 public import Complexity.Foundations.Probability.HierarchyTaskData
 public import Complexity.Foundations.Probability.HierarchyTaskMeans
 public import Complexity.Foundations.Probability.HierarchyTasks
@@ -3724,6 +3726,10 @@ public import Complexity.Foundations.Probability.NormalizedAtomRows.Integrated
 public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanEvent
 public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanTail
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Moment
+public import Complexity.Foundations.Probability.NormalizedAtomRows.BoundedLoss
+public import Complexity.Foundations.Probability.NormalizedAtomRows.ClippedTail
+public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanEvent
+public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanTail
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Output
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Request
 public import Complexity.Foundations.Probability.NormalizedAtomRows.RequestSharp
@@ -3743,6 +3749,7 @@ public import Complexity.Foundations.Probability.PolynomialAtomRows.RootError
 public import Complexity.Foundations.Probability.PolynomialAtomRows.Saturation
 public import Complexity.Foundations.Probability.ProductDensity
 public import Complexity.Foundations.Probability.ProductError
+public import Complexity.Foundations.Probability.RawProductMoment
 public import Complexity.Foundations.Probability.RootMetric
 public import Complexity.Foundations.Probability.RootMetric.ConditionalWalk
 public import Complexity.Foundations.Probability.RootMetric.Conditioning

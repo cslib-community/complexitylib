@@ -109,6 +109,16 @@ theorem withUsage_π : (A.withUsage U π hπ hd hp).π = π := by
 
 end UsageProjections
 
+/-- Replace the conditioning source while keeping the true channels, ranks and incoming
+budget. Only its conditional pair count must fit the existing source constant. The exposed
+record update lets concrete recipe clients reduce its unchanged gate projections. -/
+@[expose] def withSource (S : Γ → V → Prop) [∀ s v, Decidable (S s v)]
+    (hp : ∀ x w, w ≠ x →
+      (#{s | S s x ∧ S s w} : ℝ) ≤ A.p * #{s | S s x}) :
+    P.CorrectionSampling X Y S Z Zt f C i where
+  toCorrectionSamplingLaws := { A.toCorrectionSamplingLaws with source_pair := hp }
+
+
 /-- The normalized stochastic correction, built from this actual hierarchy input and its
 final pilot multiplier. The usage mask is the midpoint channel. -/
 @[expose] noncomputable def atom (σ : Γ × Ζ) (x z : V) : ℝ :=
