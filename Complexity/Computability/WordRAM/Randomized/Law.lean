@@ -42,7 +42,11 @@ with `f` (`Cslib.WordRAM.ExecRandLaw.program`).
 * `Cslib.WordRAM.ExecRandLaw.seq`, `Cslib.WordRAM.ExecRandLaw.branch_pos`,
   `Cslib.WordRAM.ExecRandLaw.branch_neg`, `Cslib.WordRAM.ExecRandLaw.loop_exit`,
   `Cslib.WordRAM.ExecRandLaw.loop_iter`: composition rules.
+* `Cslib.WordRAM.ExecRandLaw.rename`: renaming registers.
 * `Cslib.WordRAM.ExecRandLaw.execRandWithin`: forgetting the law.
+* `Cslib.WordRAM.ExecRandLaw.map`, `Cslib.WordRAM.ExecRandLaw.withBounded`,
+  `Cslib.WordRAM.ExecRandLaw.withSupport`: mapping the observation, and the boundedness and the
+  support of every final observation.
 * `Cslib.WordRAM.ExecRandLaw.program`: the compiled program halts within the bound, respects the
   call budget and the postcondition, and has the law `μ`.
 -/
@@ -56,7 +60,7 @@ variable {B : Basis} {r : ℕ} {α β : Type}
 /-- `ExecRandLaw w c x P T R f μ`: at word size `w`, running `c` from `x` terminates cleanly on
 every path, makes at most `R` `rand` calls on every path, every supported outcome `(y, n)`
 satisfies `P y` and `n ≤ T`, and the observation `f y` of the final data has law `μ`. -/
-def ExecRandLaw (w : ℕ) (c : Code B r) (x : Data r) (P : Data r → Prop) (T R : ℕ)
+@[expose] def ExecRandLaw (w : ℕ) (c : Code B r) (x : Data r) (P : Data r → Prop) (T R : ℕ)
     (f : Data r → α) (μ : PMF α) : Prop :=
   ∃ m, ExecRand w c x m ∧ m.IsQueryBounded R ∧ (∀ z ∈ m.support, P z.1 ∧ z.2 ≤ T) ∧
     ((fun z => f z.1) <$> m).eval = μ
@@ -82,11 +86,45 @@ theorem congr_law {μ' : PMF α} (h : ExecRandLaw w c x P T R f μ) (hμ : μ = 
     ExecRandLaw w c x P T R f μ' :=
   hμ ▸ h
 
+/-- Post-composing the observation with `g` maps the law by `g`. -/
+theorem map (h : ExecRandLaw w c x P T R f μ) (g : α → β) :
+    ExecRandLaw w c x P T R (fun y => g (f y)) (μ.map g) := by
+  obtain ⟨m, hm, hq, hsup, hlaw⟩ := h
+  refine ⟨m, hm, hq, hsup, ?_⟩
+  rw [← hlaw, ProbComp.eval_map, ProbComp.eval_map, PMF.map_comp]
+  rfl
+
+/-- Strengthening the postcondition with word-boundedness, from bounded initial data. -/
+theorem withBounded (h : ExecRandLaw w c x P T R f μ) (hx : x.Bounded w) :
+    ExecRandLaw w c x (fun y => P y ∧ y.Bounded w) T R f μ := by
+  obtain ⟨m, hm, hq, hsup, hlaw⟩ := h
+  exact ⟨m, hm, hq, fun z hz => ⟨⟨(hsup z hz).1, hm.bounded hx hz⟩, (hsup z hz).2⟩, hlaw⟩
+
+/-- Strengthening the postcondition: every final observation lies in the support of the law. -/
+theorem withSupport (h : ExecRandLaw w c x P T R f μ) :
+    ExecRandLaw w c x (fun y => P y ∧ f y ∈ μ.support) T R f μ := by
+  obtain ⟨m, hm, hq, hsup, hlaw⟩ := h
+  refine ⟨m, hm, hq, fun z hz => ⟨⟨(hsup z hz).1, ?_⟩, (hsup z hz).2⟩, hlaw⟩
+  rw [← hlaw, ProbComp.eval_map, PMF.support_map, ProbComp.support_eval]
+  exact ⟨z, hz, rfl⟩
+
 /-- Strengthening the postcondition with a register that `c` never writes. -/
 theorem withPreserves {i : Fin r} (h : ExecRandLaw w c x P T R f μ) (hi : c.Preserves i) :
     ExecRandLaw w c x (fun y => P y ∧ y.regs i = x.regs i) T R f μ := by
   obtain ⟨m, hm, hq, hsup, hlaw⟩ := h
   exact ⟨m, hm, hq, fun z hz => ⟨⟨(hsup z hz).1, hm.regs_eq hi hz⟩, (hsup z hz).2⟩, hlaw⟩
+
+/-- Renaming along an injective register map `ρ`: the renamed code observes the registers that `ρ`
+chooses and keeps the others. -/
+theorem rename {r' : ℕ} {ρ : Fin r → Fin r'} (hρ : ρ.Injective) {x' : Data r'}
+    (h : ExecRandLaw w c (x'.comap ρ) P T R f μ) :
+    ExecRandLaw w (c.rename ρ) x' (fun y' => ∃ y, P y ∧ y' = y.extend ρ x') T R
+      (fun y' => f (y'.comap ρ)) μ := by
+  obtain ⟨m, hm, hq, hsup, hlaw⟩ := h
+  refine ⟨_, hm.rename hρ, (OracleComp.isCostBounded_map_iff _ _ _).mpr hq, fun z hz => ?_, ?_⟩
+  · obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
+    exact ⟨⟨z₀.1, (hsup z₀ hz₀).1, rfl⟩, (hsup z₀ hz₀).2⟩
+  · simpa only [Functor.map_map, Data.comap_extend hρ] using hlaw
 
 /-- Deterministic code reaching `y` has the point law at the observation of `y`. -/
 theorem of_execWithin {y : Data r} (h : ExecWithin w c x y T) (hy : P y) :

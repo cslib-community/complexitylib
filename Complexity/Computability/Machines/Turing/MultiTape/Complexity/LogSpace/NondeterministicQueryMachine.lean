@@ -313,48 +313,48 @@ open MultiTapeTM
 /-- Fixing the native choice preserves linear-space computability of the transition routine. -/
 theorem next_withChoice_inSpace {σ : Type} {encS : σ ↪ List Bool}
     {M : NondeterministicQueryMachine σ}
-    (hnext : ComputableTidilyInSpace M.next
+    (hnext : ComputableInSpace M.next
       (encPair encS (encPair (encOption encBool) encBool)) encS
       fun p => (encPair encS (encPair (encOption encBool) encBool) p).length)
     (choice : Bool) :
-    ComputableTidilyInSpace (M.withChoice choice).next
+    ComputableInSpace (M.withChoice choice).next
       (encPair encS (encOption encBool)) encS
       fun p => (encPair encS (encOption encBool) p).length := by
-  apply ComputableTidilyInSpace.budget_comp_linear hnext
-  exact ComputableTidilyInSpace.budget_prod (.fst _ _)
-    (ComputableTidilyInSpace.budget_prod (.snd _ _)
-      (ComputableTidilyInSpace.budget_const choice (.refl _)))
+  apply ComputableInSpace.budget_comp_linear hnext
+  exact ComputableInSpace.budget_prod (.fst _ _)
+    (ComputableInSpace.budget_prod (.snd _ _)
+      (ComputableInSpace.budget_const choice (.refl _)))
 
 /-- The input-scan callback is the deterministic one and does not depend on the choice. -/
 theorem passNext_inSpace {σ : Type} {encS : σ ↪ List Bool}
     {M : NondeterministicQueryMachine σ}
-    (hquery : ComputableTidilyInSpace M.query encS encNat fun s => (encS s).length)
+    (hquery : ComputableInSpace M.query encS encNat fun s => (encS s).length)
     (choice : Bool) :
-    ComputableTidilyInSpace (QueryMachine.Simulation.passNext (M.withChoice choice))
+    ComputableInSpace (QueryMachine.Simulation.passNext (M.withChoice choice))
       (encPair (QueryMachine.Simulation.encPass encS) encBool)
       (QueryMachine.Simulation.encPass encS)
       fun p => (encPair (QueryMachine.Simulation.encPass encS) encBool p).length :=
   QueryMachine.Simulation.passNext_inSpace hquery
 
-/-- Either end-of-pass routine is tidily computable in space linear in the encoded pass state. -/
+/-- Either end-of-pass routine is computable in space linear in the encoded pass state. -/
 theorem passEnd_inSpace {σ : Type} {encS : σ ↪ List Bool}
     {M : NondeterministicQueryMachine σ}
-    (hnext : ComputableTidilyInSpace M.next
+    (hnext : ComputableInSpace M.next
       (encPair encS (encPair (encOption encBool) encBool)) encS
       fun p => (encPair encS (encPair (encOption encBool) encBool) p).length)
-    (hhalted : ComputableTidilyInSpace M.halted encS encBool fun s => (encS s).length)
+    (hhalted : ComputableInSpace M.halted encS encBool fun s => (encS s).length)
     (choice : Bool) :
-    ComputableTidilyInSpace (QueryMachine.Simulation.passEnd (M.withChoice choice))
+    ComputableInSpace (QueryMachine.Simulation.passEnd (M.withChoice choice))
       (QueryMachine.Simulation.encPass encS) (QueryMachine.Simulation.encPass encS)
       fun p => (QueryMachine.Simulation.encPass encS p).length :=
   QueryMachine.Simulation.passEnd_inSpace (next_withChoice_inSpace hnext choice) hhalted
 
-/-- The pass continuation test is tidily computable in linear space. -/
+/-- The pass continuation test is computable in linear space. -/
 theorem passCont_inSpace {σ : Type} {encS : σ ↪ List Bool}
     {M : NondeterministicQueryMachine σ}
-    (hhalted : ComputableTidilyInSpace M.halted encS encBool fun s => (encS s).length)
+    (hhalted : ComputableInSpace M.halted encS encBool fun s => (encS s).length)
     (choice : Bool) :
-    ComputableTidilyInSpace (QueryMachine.Simulation.passCont (M.withChoice choice))
+    ComputableInSpace (QueryMachine.Simulation.passCont (M.withChoice choice))
       (QueryMachine.Simulation.encPass encS) encBool
       fun p => (QueryMachine.Simulation.encPass encS p).length :=
   QueryMachine.Simulation.passCont_inSpace hhalted
@@ -362,9 +362,9 @@ theorem passCont_inSpace {σ : Type} {encS : σ ↪ List Bool}
 /-- The finalizer emits exactly the acceptance bit, with linear-space computation. -/
 theorem passFinish_inSpace {σ : Type} {encS : σ ↪ List Bool}
     {M : NondeterministicQueryMachine σ}
-    (haccept : ComputableTidilyInSpace M.accept encS encBool fun s => (encS s).length)
+    (haccept : ComputableInSpace M.accept encS encBool fun s => (encS s).length)
     (choice : Bool) :
-    ComputableTidilyInSpace (QueryMachine.Simulation.passFinish (M.withChoice choice))
+    ComputableInSpace (QueryMachine.Simulation.passFinish (M.withChoice choice))
       (QueryMachine.Simulation.encPass encS) encBits
       fun p => (QueryMachine.Simulation.encPass encS p).length :=
   QueryMachine.Simulation.passFinish_inSpace (haccept.of_enc_eq fun _ => rfl)

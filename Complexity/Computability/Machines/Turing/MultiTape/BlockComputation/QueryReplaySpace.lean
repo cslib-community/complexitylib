@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplay
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pi
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Pi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Pi
 import Complexity.Foundations.Data.List.Fold
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
@@ -47,12 +48,13 @@ variable {k : ℕ} {Q : Type}
 variable [Finite Q]
 
 /-- Binary numeric fields and explicit fixed families of local work cells. -/
-noncomputable def encConfig : Config k Q ↪ List Bool :=
+@[expose] noncomputable def encConfig : Config k Q ↪ List Bool :=
   encOfEquiv Config.equivProd (encPair encNat (encPair encNat (encPair encNat
     (encPair encNat (encPair (encFinite (Option Q)) (encPair (encPi encNat)
       (encPair (encPi (encList encNat)) (encFinite OutputTrack))))))))
 
-private theorem config_parts : ComputableInSpace (Config.equivProd (k := k) (Q := Q))
+/-- Read all named replay fields through their defining product encoding in native space. -/
+theorem equivProd_inSpace : ComputableInSpace (Config.equivProd (k := k) (Q := Q))
     encConfig (encPair encNat (encPair encNat (encPair encNat
       (encPair encNat (encPair (encFinite (Option Q)) (encPair (encPi encNat)
         (encPair (encPi (encList encNat)) (encFinite OutputTrack))))))))
@@ -61,19 +63,19 @@ private theorem config_parts : ComputableInSpace (Config.equivProd (k := k) (Q :
 
 /-- The runtime input length can be read in linear encoded-state space. -/
 theorem inputLength_inSpace : ComputableInSpace (Config.inputLength (k := k) (Q := Q))
-    encConfig encNat (fun s => (encConfig s).length) := config_parts.fst'
+    encConfig encNat (fun s => (encConfig s).length) := equivProd_inSpace.fst'
 
 /-- The runtime block width can be read in linear encoded-state space. -/
 theorem width_inSpace : ComputableInSpace (Config.width (k := k) (Q := Q))
-    encConfig encNat (fun s => (encConfig s).length) := config_parts.snd'.fst'
+    encConfig encNat (fun s => (encConfig s).length) := equivProd_inSpace.snd'.fst'
 
 /-- The remaining replay duration can be read in linear encoded-state space. -/
 theorem remaining_inSpace : ComputableInSpace (Config.remaining (k := k) (Q := Q))
-    encConfig encNat (fun s => (encConfig s).length) := config_parts.snd'.snd'.fst'
+    encConfig encNat (fun s => (encConfig s).length) := equivProd_inSpace.snd'.snd'.fst'
 
 /-- The original input pointer can be read in linear encoded-state space. -/
 theorem inputPos_inSpace : ComputableInSpace (Config.inputPos (k := k) (Q := Q))
-    encConfig encNat (fun s => (encConfig s).length) := config_parts.snd'.snd'.snd'.fst'
+    encConfig encNat (fun s => (encConfig s).length) := equivProd_inSpace.snd'.snd'.snd'.fst'
 
 /-- Native original-input query component. -/
 theorem machine_query_inSpace (M : MultiTapeTM k Bool Q) :
@@ -158,16 +160,6 @@ private theorem finiteCases {α β Tag : Type} [Finite Tag]
     simpa only [List.foldr_ite_eq_of_mem, Finset.mem_toList, Finset.mem_univ] using
       hselect (Finset.univ.toList : List Tag)
 
-private theorem piLinear {α Index Value : Type} [Fintype Index]
-    {input : α ↪ List Bool} {enc : Value ↪ List Bool} {values : α → Index → Value}
-    (hvalues : ∀ i, ComputableInSpace (fun a => values a i) input enc
-      (fun a => (input a).length)) :
-    ComputableInSpace values input (encPi enc) (fun a => (input a).length) := by
-  classical
-  choose T hT using fun i => (hvalues i).exists_inO
-  refine (of_inO (ComputableInO.pi hT)).weaken ?_
-  exact ⟨Fintype.card Index + 1, fun a => by simp; nlinarith⟩
-
 private theorem piApplyLinear {Index Value : Type} [Fintype Index]
     (enc : Value ↪ List Bool) (i : Index) :
     ComputableInSpace (fun q : Index → Value => q i) (encPi enc) enc
@@ -176,19 +168,19 @@ private theorem piApplyLinear {Index Value : Type} [Fintype Index]
 
 private theorem control_inSpace : ComputableInSpace (Config.control (k := k) (Q := Q))
     encConfig (encFinite (Option Q)) (fun s => (encConfig s).length) :=
-  config_parts.snd'.snd'.snd'.snd'.fst'
+  equivProd_inSpace.snd'.snd'.snd'.snd'.fst'
 
 private theorem heads_inSpace : ComputableInSpace (Config.heads (k := k) (Q := Q))
     encConfig (encPi encNat) (fun s => (encConfig s).length) :=
-  config_parts.snd'.snd'.snd'.snd'.snd'.fst'
+  equivProd_inSpace.snd'.snd'.snd'.snd'.snd'.fst'
 
 private theorem cells_inSpace : ComputableInSpace (Config.cells (k := k) (Q := Q))
     encConfig (encPi (encList encNat)) (fun s => (encConfig s).length) :=
-  config_parts.snd'.snd'.snd'.snd'.snd'.snd'.fst'
+  equivProd_inSpace.snd'.snd'.snd'.snd'.snd'.snd'.fst'
 
 private theorem track_inSpace : ComputableInSpace (Config.track (k := k) (Q := Q))
     encConfig (encFinite OutputTrack) (fun s => (encConfig s).length) :=
-  config_parts.snd'.snd'.snd'.snd'.snd'.snd'.snd'
+  equivProd_inSpace.snd'.snd'.snd'.snd'.snd'.snd'.snd'
 
 private theorem cellOfCode_inSpace : ComputableInSpace cellOfCode encNat
     (encFinite (Option Bool)) (fun n => (encNat n).length) := by
@@ -205,7 +197,7 @@ private theorem cellOfCode_inSpace : ComputableInSpace cellOfCode encNat
 /-- Reading the symbols uses finite tuples only for the fixed number of tapes. -/
 theorem symbols_inSpace : ComputableInSpace (symbols (k := k) (Q := Q)) encConfig
     (encPi (encFinite (Option Bool))) (fun s => (encConfig s).length) := by
-  refine piLinear fun h => ?_
+  refine pi_linear fun h => ?_
   have hh := budget_comp_linear (piApplyLinear encNat h) (heads_inSpace (k := k) (Q := Q))
   have hc := budget_comp_linear (piApplyLinear (encList encNat) h) (cells_inSpace (k := k) (Q := Q))
   have hread := budget_comp_lin getD (linear_mul 8) (budget_prod hc hh)
@@ -253,7 +245,7 @@ private theorem fixedActionTick_inSpace (a : Option (Action k Bool Q)) :
     have hh : ComputableInSpace (fun s : Config k Q =>
         fun h => move (s.heads h) (a.workTapes h).2) encConfig (encPi encNat)
         (fun s => (encConfig s).length) := by
-      refine piLinear fun h => ?_
+      refine pi_linear fun h => ?_
       have hhead := budget_comp_linear (piApplyLinear encNat h)
         (heads_inSpace (k := k) (Q := Q))
       cases (a.workTapes h).2 with
@@ -265,7 +257,7 @@ private theorem fixedActionTick_inSpace (a : Option (Action k Bool Q)) :
         | none => s.cells h
         | some b => (s.cells h).set (s.heads h) (symbolCode b))
         encConfig (encPi (encList encNat)) (fun s => (encConfig s).length) := by
-      refine piLinear fun h => ?_
+      refine pi_linear fun h => ?_
       have hcell := budget_comp_linear (piApplyLinear (encList encNat) h)
         (cells_inSpace (k := k) (Q := Q))
       have hhead := budget_comp_linear (piApplyLinear encNat h)

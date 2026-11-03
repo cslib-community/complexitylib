@@ -139,7 +139,7 @@ theorem transcript_cost_le {cost : Query → ℕ} {program : ProbOracleComp spec
     (oracle : (q : Query) → StateT State PMF (spec q)) {s s' : State} {result : α}
     {transcript : Transcript spec}
     (hmem : (result, s', transcript) ∈ ((OracleComp.interpret
-      (handler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
+      (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
         program).run (s, [])).support) :
     (transcript.map fun entry => cost entry.1).sum ≤ n := by
   induction h generalizing s s' result transcript with
@@ -154,14 +154,14 @@ theorem transcript_cost_le {cost : Query → ℕ} {program : ProbOracleComp spec
     obtain ⟨⟨a, middle, seen⟩, hfirst, hrest⟩ := hmem
     cases q with
     | inl k =>
-      simp only [handler, StateT.run_lift, Probability.PMF.monad_bind_eq_bind,
+      simp only [sumHandler, StateT.run_lift, Probability.PMF.monad_bind_eq_bind,
         Probability.PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff,
         PMF.mem_support_pure_iff] at hfirst
       obtain ⟨_, -, heq⟩ := hfirst
       cases heq
       simpa using ih a hrest
     | inr q =>
-      simp only [handler, StateT.run, withTranscript, PMF.mem_support_map_iff] at hfirst
+      simp only [sumHandler, StateT.run, withTranscript, PMF.mem_support_map_iff] at hfirst
       obtain ⟨⟨answer, next⟩, -, heq⟩ := hfirst
       cases heq
       rw [run_interpret_withTranscript_append, PMF.mem_support_map_iff] at hrest
@@ -180,7 +180,7 @@ theorem isCostBounded_of_transcript_cost_le [hne : ∀ q, Nonempty (spec q)] {co
     (h : ∀ (State : Type) (oracle : (q : Query) → StateT State PMF (spec q)) (s s' : State)
       (result : α) (transcript : Transcript spec),
       (result, s', transcript) ∈ ((OracleComp.interpret
-        (handler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
+        (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
           program).run (s, [])).support →
       (transcript.map fun entry => cost entry.1).sum ≤ n) :
     IsCostBounded (Sum.elim (fun _ => 0) cost) program n := by
@@ -190,11 +190,11 @@ theorem isCostBounded_of_transcript_cost_le [hne : ∀ q, Nonempty (spec q)] {co
   | liftBind q cont ih =>
     have hrun (State : Type) (oracle : (q : Query) → StateT State PMF (spec q)) (s : State) :
         ((OracleComp.interpret
-          (handler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
+          (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
             (PFunctor.FreeM.liftBind q cont)).run (s, [])) =
-          ((handler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle) q).run
+          ((sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle) q).run
             (s, [])).bind fun first => (OracleComp.interpret
-              (handler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
+              (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
                 (cont first.1)).run first.2 := rfl
     cases q with
     | inl k =>
@@ -204,14 +204,14 @@ theorem isCostBounded_of_transcript_cost_le [hne : ∀ q, Nonempty (spec q)] {co
         transcript ?_
       rw [hrun, PMF.mem_support_bind_iff]
       refine ⟨(a, s, []), ?_, hmem⟩
-      simp [handler, ProbComp.unifOracle]
+      simp [sumHandler, ProbComp.unifOracle]
     | inr q =>
       -- Every supported run of a continuation, with the first call answered as chosen, is part
       -- of a supported run of the whole program.
       have key (a : spec q) (State : Type) (oracle : (q : Query) → StateT State PMF (spec q))
           (s s' : State) (result : α) (transcript : Transcript spec)
           (hmem : (result, s', transcript) ∈ ((OracleComp.interpret
-            (handler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
+            (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
               (cont a)).run (s, [])).support) :
           (transcript.map fun entry => cost entry.1).sum + cost q ≤ n := by
         let first (q' : Query) : spec q' :=
@@ -237,7 +237,7 @@ theorem isCostBounded_of_transcript_cost_le [hne : ∀ q, Nonempty (spec q)] {co
       let default (q' : Query) : StateT Unit PMF (spec q') := fun _ =>
         PMF.pure (Classical.choice (hne q'), ())
       obtain ⟨⟨result, s', transcript⟩, hmem⟩ := PMF.support_nonempty ((OracleComp.interpret
-        (handler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript default))
+        (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript default))
           (cont (Classical.choice (hne q)))).run ((), []))
       have hle : cost q ≤ n := by
         have := key _ Unit _ () s' result transcript hmem
@@ -256,7 +256,7 @@ theorem isCostBounded_iff_transcript_cost_le [∀ q, Nonempty (spec q)] {cost : 
       ∀ (State : Type) (oracle : (q : Query) → StateT State PMF (spec q)) (s s' : State)
         (result : α) (transcript : Transcript spec),
         (result, s', transcript) ∈ ((OracleComp.interpret
-          (handler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
+          (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
             program).run (s, [])).support →
         (transcript.map fun entry => cost entry.1).sum ≤ n :=
   ⟨fun h _ oracle _ _ _ _ hmem => transcript_cost_le h oracle hmem,
@@ -268,7 +268,7 @@ theorem IsQueryBounded.length_transcript_le {program : ProbOracleComp spec α} {
     (oracle : (q : Query) → StateT State PMF (spec q)) {s s' : State} {result : α}
     {transcript : Transcript spec}
     (hmem : (result, s', transcript) ∈ ((OracleComp.interpret
-      (handler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
+      (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
         program).run (s, [])).support) :
     transcript.length ≤ n := by
   simpa using transcript_cost_le h oracle hmem
@@ -280,7 +280,7 @@ theorem QueriesSatisfy.forall_mem_transcript {p : Query → Prop}
     (oracle : (q : Query) → StateT State PMF (spec q)) {s s' : State} {result : α}
     {transcript : Transcript spec}
     (hmem : (result, s', transcript) ∈ ((OracleComp.interpret
-      (handler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
+      (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
         program).run (s, [])).support) :
     ∀ entry ∈ transcript, p entry.1 := by
   classical
@@ -301,7 +301,7 @@ theorem isQueryBounded_of_length_transcript_le [∀ q, Nonempty (spec q)]
     (h : ∀ (State : Type) (oracle : (q : Query) → StateT State PMF (spec q)) (s s' : State)
       (result : α) (transcript : Transcript spec),
       (result, s', transcript) ∈ ((OracleComp.interpret
-        (handler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
+        (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
           program).run (s, [])).support →
       transcript.length ≤ n) :
     program.IsQueryBounded n :=
@@ -315,7 +315,7 @@ theorem queriesSatisfy_of_forall_mem_transcript [∀ q, Nonempty (spec q)] {p : 
     (h : ∀ (State : Type) (oracle : (q : Query) → StateT State PMF (spec q)) (s s' : State)
       (result : α) (transcript : Transcript spec),
       (result, s', transcript) ∈ ((OracleComp.interpret
-        (handler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
+        (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
           program).run (s, [])).support →
       ∀ entry ∈ transcript, p entry.1) :
     program.QueriesSatisfy p := by
