@@ -740,7 +740,6 @@ theorem fits_bucketBits_and_mask {U V w₀ n_max h_space w base : ℕ}
 /-- Feistel-dispatched `query` in `Memory.Prog` (`d = ((base, u), h_q)`): computes
 `b = (h_q &&& (2 ^ b_bits - 1)) ^^^ (u &&& (2 ^ b_bits - 1))`, `q = u >>> b_bits`, and
 `m = h_q >>> b_bits`, then runs `queryBodyProg`. -/
-@[expose]
 def queryWithHashProg (U V w₀ n_max : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog (Option ℕ) := do
   let b_bits ← pure (bucketBits n_max)
   let b_mask ← pure (2 ^ bucketBits n_max - 1)
@@ -752,7 +751,6 @@ def queryWithHashProg (U V w₀ n_max : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.
   queryBodyProg U V w₀ n_max (hashSpace U w₀ n_max) (((d.1.1, b), q), m)
 
 /-- Precondition for `queryWithHashProg` in `Realizes`. -/
-@[expose]
 def QueryWithHashPre (U V w₀ n_max w : ℕ) (d : (ℕ × ℕ) × ℕ) (s : Memory.State) : Prop :=
   let b := (d.2 &&& (2 ^ bucketBits n_max - 1)) ^^^ (d.1.2 &&& (2 ^ bucketBits n_max - 1))
   let q := d.1.2 >>> bucketBits n_max
@@ -801,7 +799,6 @@ theorem validProg_queryWithHash {U V w n_max : ℕ}
   exact validProg_queryBody hpre.1.1 hpre.2.2.2
 
 /-- Feistel-dispatched `insert` in `Memory.Prog` (`d = (((base, u), v_new), h_q)`). -/
-@[expose]
 def insertWithHashProg (U V w₀ n_max : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit := do
   let b_bits ← pure (bucketBits n_max)
   let b_mask ← pure (2 ^ bucketBits n_max - 1)
@@ -813,7 +810,6 @@ def insertWithHashProg (U V w₀ n_max : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ)
   insertBodyProg U V w₀ n_max (hashSpace U w₀ n_max) ((((d.1.1.1, b), q), d.1.2), m)
 
 /-- Precondition for `insertWithHashProg` in `Realizes`. -/
-@[expose]
 def InsertWithHashPre (U V w₀ n_max w : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) : Prop :=
   let b := (d.2 &&& (2 ^ bucketBits n_max - 1)) ^^^ (d.1.1.2 &&& (2 ^ bucketBits n_max - 1))
   let q := d.1.1.2 >>> bucketBits n_max
@@ -863,7 +859,6 @@ theorem validProg_insertWithHash {U V w n_max : ℕ}
 
 /-- Phase 1 of Feistel-dispatched `delete` in `Memory.Prog` (`d = ((base, u), h_q)`):
 computes `(b, q, m)` from `(u, h_q)` and runs `deletePrepProg`. -/
-@[expose]
 def deletePrepWithHashProg (U V w₀ n_max : ℕ) (d : (ℕ × ℕ) × ℕ) :
     Memory.Prog (((ℕ × ℕ) × ℕ) × ℕ) := do
   let b_bits ← pure (bucketBits n_max)
@@ -917,7 +912,6 @@ theorem validProg_deletePrepWithHash {U V w n_max : ℕ}
 (`d = ((((base, u), h_q), ((found, j_del), phys_del)), h_q_last)`):
 computes `(b, m)` from `(u, h_q)` and `m_last = h_q_last >>> bucketBits n_max`, then runs
 `deleteFinishProg`. -/
-@[expose]
 def deleteFinishWithHashProg (U V w₀ n_max : ℕ)
     (d : (((ℕ × ℕ) × ℕ) × ((ℕ × ℕ) × ℕ)) × ℕ) : Memory.Prog Unit := do
   let b_bits ← pure (bucketBits n_max)
@@ -931,7 +925,6 @@ def deleteFinishWithHashProg (U V w₀ n_max : ℕ)
     (((((d.1.1.1.1, b), d.1.2.1), d.1.2.2), m), m_last)
 
 /-- Precondition for `deleteFinishWithHashProg` in `Realizes`. -/
-@[expose]
 def DeleteFinishWithHashPre (U V w₀ n_max w : ℕ)
     (d : (((ℕ × ℕ) × ℕ) × ((ℕ × ℕ) × ℕ)) × ℕ) (s : Memory.State) : Prop :=
   let b := (d.1.1.2 &&& (2 ^ bucketBits n_max - 1)) ^^^ (d.1.1.1.2 &&& (2 ^ bucketBits n_max - 1))
@@ -1128,6 +1121,10 @@ theorem insertWithHashProg_dict_spec {U V w₀ n_max w base : ℕ}
     dsimp only [b, q, m, h1, gm₀] at hcost hprobe ⊢
     omega
 
+private theorem exists_quad_eq (x : ((ℕ × ℕ) × ℕ) × ℕ) :
+    ∃ found j_del phys_del q_last : ℕ, x = (((found, j_del), phys_del), q_last) :=
+  ⟨x.1.1.1, x.1.1.2, x.1.2, x.2, rfl⟩
+
 /-- Dictionary-level specification of the two-phase `delete` (`deletePrepWithHashProg` followed by
 `deleteFinishWithHashProg`): establishes both preconditions, preserves `DictStateInv` for
 `Function.update s_abs u none`, preserves memory outside the dictionary table arrays, and bounds the
@@ -1140,26 +1137,28 @@ theorem deleteWithHashProg_dict_spec {U V w₀ n_max w base : ℕ}
     let h_q := hValOfSeed U n_max θ (keyQuotient (bucketBits n_max) u.val)
     let d_prep := ((base, u.val), h_q)
     let prog_prep := deletePrepWithHashProg U V w₀ n_max d_prep
-    let prep := (Memory.spec 0).clientResult s prog_prep
-    let h_q_last := hValOfSeed U n_max θ prep.2
-    let d_fin := ((((base, u.val), h_q), prep.1), h_q_last)
-    let prog_fin := deleteFinishWithHashProg U V w₀ n_max d_fin
-    let s' := (Memory.spec 0).clientState s prog_fin
-    let gm₀ := gmAt base U V w₀ n_max (hashSpace U w₀ n_max) s.mem
-    let gm' := gmAt base U V w₀ n_max (hashSpace U w₀ n_max) s'.mem
-    QueryWithHashPre U V w₀ n_max w d_prep s ∧
-    (Memory.spec 0).clientState s prog_prep = s ∧
-    prep.2 < 2 ^ quotientBits U n_max ∧
-    DeleteFinishWithHashPre U V w₀ n_max w d_fin s ∧
-    s'.frontier = s.frontier ∧
-    (∀ a, ¬(base + offQuot (hashSpace U w₀ n_max) ≤ a ∧
-        a < base + space U V w₀ n_max) → s'.mem a = s.mem a) ∧
-    DictStateInv U V w₀ n_max base θ (Function.update s_abs u none) s' ∧
-    memoryCost prog_prep s + memoryCost prog_fin s + 66 * slotPotential n_max gm' ≤
-      66 * slotPotential n_max gm₀ + 270 +
-        8 * probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
-          (Dynamic.dom s_abs) u := by
-  intro h_q d_prep prog_prep prep h_q_last d_fin prog_fin s' gm₀ gm'
+    ∃ found j_del phys_del q_last : ℕ,
+      let prep := (((found, j_del), phys_del), q_last)
+      let h_q_last := hValOfSeed U n_max θ q_last
+      let d_fin := ((((base, u.val), h_q), ((found, j_del), phys_del)), h_q_last)
+      let prog_fin := deleteFinishWithHashProg U V w₀ n_max d_fin
+      let s' := (Memory.spec 0).clientState s prog_fin
+      let gm₀ := gmAt base U V w₀ n_max (hashSpace U w₀ n_max) s.mem
+      let gm' := gmAt base U V w₀ n_max (hashSpace U w₀ n_max) s'.mem
+      (Memory.spec 0).clientResult s prog_prep = prep ∧
+      QueryWithHashPre U V w₀ n_max w d_prep s ∧
+      (Memory.spec 0).clientState s prog_prep = s ∧
+      q_last < 2 ^ quotientBits U n_max ∧
+      DeleteFinishWithHashPre U V w₀ n_max w d_fin s ∧
+      s'.frontier = s.frontier ∧
+      (∀ a, ¬(base + offQuot (hashSpace U w₀ n_max) ≤ a ∧
+          a < base + space U V w₀ n_max) → s'.mem a = s.mem a) ∧
+      DictStateInv U V w₀ n_max base θ (Function.update s_abs u none) s' ∧
+      memoryCost prog_prep s + memoryCost prog_fin s + 66 * slotPotential n_max gm' ≤
+        66 * slotPotential n_max gm₀ + 270 +
+          8 * probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2
+            (Dynamic.dom s_abs) u := by
+  intro h_q d_prep prog_prep
   obtain ⟨L, hb_inv⟩ := hinv.hbucket
   let h1 := hValOfSeed U n_max θ
   let b := feistelBucket (bucketBits n_max) h1 u.val
@@ -1183,36 +1182,39 @@ theorem deleteWithHashProg_dict_spec {U V w₀ n_max w base : ℕ}
         u.val >>> bucketBits n_max), h_q >>> bucketBits n_max) = _
     rw [hb_eq, hq_eq, hm_eq]
   have hprep_spec := deletePrepProg_bucket_spec hb_inv henv hb_lt (q_target := q) (m := m) rfl hm_lt
-  have hfin_eq : prog_fin =
-      deleteFinishProg U V w₀ n_max (hashSpace U w₀ n_max)
-        (((((base, b), prep.1.1), prep.1.2), m), mOfSeed U n_max θ prep.2) := by
-    change deleteFinishProg U V w₀ n_max (hashSpace U w₀ n_max)
-      (((((base, (h_q &&& (2 ^ bucketBits n_max - 1)) ^^^ (u.val &&& (2 ^ bucketBits n_max - 1))),
-        prep.1.1), prep.1.2), h_q >>> bucketBits n_max), h_q_last >>> bucketBits n_max) = _
-    rw [hb_eq, hm_eq]
-    rfl
   have hfin_spec := deleteFinishProg_bucket_spec hwf.1 hb_inv henv hb_lt (q_target := q) (m := m)
     rfl hm_lt (fun q' _ => mOfSeed_lt U n_max θ q')
-  have hprep_res_eq : prep =
-      (Memory.spec 0).clientResult s
-        (deletePrepProg U V w₀ n_max (hashSpace U w₀ n_max) (((base, b), q), m)) :=
-    congrArg ((Memory.spec 0).clientResult s) hprep_eq
-  rw [← hprep_res_eq] at hfin_spec
+  obtain ⟨found, j_del, phys_del, q_last, hprep_val⟩ :=
+    exists_quad_eq ((Memory.spec 0).clientResult s
+      (deletePrepProg U V w₀ n_max (hashSpace U w₀ n_max) (((base, b), q), m)))
+  dsimp only at hprep_spec hfin_spec
+  rw [hprep_val] at hprep_spec hfin_spec
+  dsimp only at hprep_spec hfin_spec
+  refine ⟨found, j_del, phys_del, q_last, ?_⟩
+  intro prep h_q_last d_fin prog_fin s' gm₀ gm'
+  have hfin_eq : prog_fin =
+      deleteFinishProg U V w₀ n_max (hashSpace U w₀ n_max)
+        (((((base, b), (found, j_del)), phys_del), m), mOfSeed U n_max θ q_last) := by
+    change deleteFinishProg U V w₀ n_max (hashSpace U w₀ n_max)
+      (((((base, (h_q &&& (2 ^ bucketBits n_max - 1)) ^^^ (u.val &&& (2 ^ bucketBits n_max - 1))),
+        (found, j_del)), phys_del), h_q >>> bucketBits n_max), h_q_last >>> bucketBits n_max) = _
+    rw [hb_eq, hm_eq]
+    rfl
   obtain ⟨hpre_fin_inner, hf, hout, ⟨L', hinv'⟩, htot', hcost_fin⟩ := hfin_spec
   rw [bucketMapOfState_update hwf.2.1 h1 s_abs u none] at hinv'
   have hpre_fin : DeleteFinishWithHashPre U V w₀ n_max w d_fin s := by
-    refine ⟨hwf, hValOfSeed_lt U n_max θ q, hValOfSeed_lt U n_max θ prep.2, ?_⟩
+    refine ⟨hwf, hValOfSeed_lt U n_max θ q, hValOfSeed_lt U n_max θ q_last, ?_⟩
     dsimp only [d_fin]
     rw [hb_eq, hm_eq]
     exact hpre_fin_inner
   have hs'_eq : s' = (Memory.spec 0).clientState s
       (deleteFinishProg U V w₀ n_max (hashSpace U w₀ n_max)
-        (((((base, b), prep.1.1), prep.1.2), m), mOfSeed U n_max θ prep.2)) :=
+        (((((base, b), (found, j_del)), phys_del), m), mOfSeed U n_max θ q_last)) :=
     congrArg ((Memory.spec 0).clientState s) hfin_eq
   have hgm'_eq : gm' = gmAt base U V w₀ n_max (hashSpace U w₀ n_max)
       ((Memory.spec 0).clientState s
         (deleteFinishProg U V w₀ n_max (hashSpace U w₀ n_max)
-          (((((base, b), prep.1.1), prep.1.2), m), mOfSeed U n_max θ prep.2))).mem := by
+          (((((base, b), (found, j_del)), phys_del), m), mOfSeed U n_max θ q_last))).mem := by
     dsimp only [gm']
     rw [hs'_eq]
   have hcost_prep_eq : memoryCost prog_prep s =
@@ -1220,7 +1222,7 @@ theorem deleteWithHashProg_dict_spec {U V w₀ n_max w base : ℕ}
     congrArg (memoryCost · s) hprep_eq
   have hcost_fin_eq : memoryCost prog_fin s =
       memoryCost (deleteFinishProg U V w₀ n_max (hashSpace U w₀ n_max)
-        (((((base, b), prep.1.1), prep.1.2), m), mOfSeed U n_max θ prep.2)) s :=
+        (((((base, b), (found, j_del)), phys_del), m), mOfSeed U n_max θ q_last)) s :=
     congrArg (memoryCost · s) hfin_eq
   have hB_eq : bucketMapOfState U n_max h1 s_abs b q = s_abs u :=
     bucketMapOfState_feistelBucket hwf.2.1 h1 s_abs u
@@ -1233,10 +1235,10 @@ theorem deleteWithHashProg_dict_spec {U V w₀ n_max w base : ℕ}
       rw [ite_eq_right his, Dynamic.card_dom_delete_eq_of_eq_none hnone]
   have hprobe := (chain_and_overflow_le_probeExcess θ hb_inv u).2.2
   have hcost_prep := hprep_spec.2.1
-  refine ⟨hpre_prep, ?_, ?_, hpre_fin, ?_, ?_, ⟨⟨L', ?_⟩, htot_dom⟩, ?_⟩
+  refine ⟨(congrArg ((Memory.spec 0).clientResult s) hprep_eq).trans hprep_val,
+    hpre_prep, ?_, hprep_spec.2.2.1, hpre_fin, ?_, ?_, ⟨⟨L', ?_⟩, htot_dom⟩, ?_⟩
   · rw [congrArg ((Memory.spec 0).clientState s) hprep_eq]
     exact hprep_spec.1
-  · rw [hprep_res_eq]; exact hprep_spec.2.2.1
   · rw [hs'_eq]; exact hf
   · intro a ha
     rw [hs'_eq]
