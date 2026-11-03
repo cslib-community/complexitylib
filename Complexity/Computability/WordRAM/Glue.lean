@@ -13,17 +13,19 @@ public import Complexity.Computability.WordRAM.Glue.Basic
 # Compositional certificates and `fun_prop` automation for register-word glue
 
 This module re-exports `Complexity.Computability.WordRAM.Glue.Basic` and provides the staged
-comparison-operand selection combinators (`GlueComputes.stage_pair`, `GlueComputes.ite_eq`,
-`GlueComputes.ite_lt`) together with the `@[fun_prop]` closure rules on `GlueComputable`.
+comparison-operand selection combinators (`GlueComputes.stage_pair`, `GlueComputes.ite_eq_staged`,
+`GlueComputes.ite_lt_staged`) together with the `@[fun_prop]` closure rules on `GlueComputable`.
 
 ## Main results
 
-* `GlueComputes.stage_pair`, `GlueComputes.ite_eq`, `GlueComputes.ite_lt`: staged-operand selection
-  with explicit guard and branch costs.
+* `GlueComputes.stage_pair`, `GlueComputes.ite_eq_staged`, `GlueComputes.ite_lt_staged`:
+  staged-operand selection with explicit guard and branch costs.
 * `GlueComputable.proj`, `GlueComputable.const`, `GlueComputable.comp`, `GlueComputable.comp_many`:
   register projections, constants, and scalar/vector composition.
 * `GlueComputable.ite_eq`, `GlueComputable.ite_lt`: lazy branch selection on equality and `<`
-  between arbitrary certified computed operands.
+  between input registers, which stages nothing and so imposes no envelope obligation on them.
+* `GlueComputable.ite_eq_staged`, `GlueComputable.ite_lt_staged`: lazy branch selection on
+  equality and `<` between arbitrary certified computed operands.
 * `GlueComputable.add`, `GlueComputable.sub`, `GlueComputable.mul`, `GlueComputable.div`,
   `GlueComputable.mod`, `GlueComputable.and`, `GlueComputable.or`, `GlueComputable.xor`,
   `GlueComputable.shiftLeft`, `GlueComputable.shiftRight` (and `*_standard`): exact- and
@@ -162,7 +164,7 @@ theorem stage_pair {lhs rhs : (Fin k → ℕ) → ℕ} {Q : (Fin (k + 2) → ℕ
 
 /-- Select between two computations by equality of two computed words. Both guard operands are
 staged once before the branch, and only the selected branch is executed. -/
-theorem ite_eq {lhs rhs f g : (Fin k → ℕ) → ℕ} {tl tr tf tg : ℕ}
+theorem ite_eq_staged {lhs rhs f g : (Fin k → ℕ) → ℕ} {tl tr tf tg : ℕ}
     (hl : GlueComputes B P lhs bound tl) (hr : GlueComputes B P rhs bound tr)
     (hf : GlueComputes B (fun v => P v ∧ lhs v = rhs v) f bound tf)
     (hg : GlueComputes B (fun v => P v ∧ ¬lhs v = rhs v) g bound tg) :
@@ -195,7 +197,7 @@ theorem ite_eq {lhs rhs f g : (Fin k → ℕ) → ℕ} {tl tr tf tg : ℕ}
 
 /-- Select between two computations by unsigned comparison of two computed words. Both guard
 operands are staged once before the branch, and only the selected branch is executed. -/
-theorem ite_lt {lhs rhs f g : (Fin k → ℕ) → ℕ} {tl tr tf tg : ℕ}
+theorem ite_lt_staged {lhs rhs f g : (Fin k → ℕ) → ℕ} {tl tr tf tg : ℕ}
     (hl : GlueComputes B P lhs bound tl) (hr : GlueComputes B P rhs bound tr)
     (hf : GlueComputes B (fun v => P v ∧ lhs v < rhs v) f bound tf)
     (hg : GlueComputes B (fun v => P v ∧ ¬lhs v < rhs v) g bound tg) :
@@ -298,9 +300,29 @@ theorem select (cond : Cond k)
   obtain ⟨tg, hg⟩ := hg
   exact (GlueComputes.select cond hf hg).computable
 
-/-- Select by equality of computed words, without evaluating the unchosen computation. -/
+/-- Select by equality of input words, without evaluating the unchosen computation. The guard
+compares the input registers directly, so the operands need not fit the result envelope. -/
 @[fun_prop]
-theorem ite_eq {lhs rhs : (Fin k → ℕ) → ℕ}
+theorem ite_eq (i j : Fin k)
+    (hf : GlueComputable B f (fun v => P v ∧ v i = v j) bound)
+    (hg : GlueComputable B g (fun v => P v ∧ ¬v i = v j) bound) :
+    GlueComputable B (fun v => if v i = v j then f v else g v) P bound :=
+  select (.eq i j) hf hg
+
+/-- Select by unsigned comparison of input words. The guard compares the input registers
+directly, so the operands need not fit the result envelope. -/
+@[fun_prop]
+theorem ite_lt (i j : Fin k)
+    (hf : GlueComputable B f (fun v => P v ∧ v i < v j) bound)
+    (hg : GlueComputable B g (fun v => P v ∧ ¬v i < v j) bound) :
+    GlueComputable B (fun v => if v i < v j then f v else g v) P bound :=
+  select (.lt i j) hf hg
+
+/-- Select by equality of computed words, without evaluating the unchosen computation. Both
+operands are staged, so each must be certified within the result envelope; `ite_eq` handles
+direct input-register comparisons without that obligation. -/
+@[fun_prop]
+theorem ite_eq_staged {lhs rhs : (Fin k → ℕ) → ℕ}
     (hl : GlueComputable B lhs P bound)
     (hr : GlueComputable B rhs P bound)
     (hf : GlueComputable B f (fun v => P v ∧ lhs v = rhs v) bound)
@@ -310,12 +332,13 @@ theorem ite_eq {lhs rhs : (Fin k → ℕ) → ℕ}
   obtain ⟨tr, hr⟩ := hr
   obtain ⟨tf, hf⟩ := hf
   obtain ⟨tg, hg⟩ := hg
-  exact (GlueComputes.ite_eq hl hr hf hg).computable
+  exact (GlueComputes.ite_eq_staged hl hr hf hg).computable
 
 /-- Select by unsigned comparison of computed words, without evaluating the unchosen
-computation. -/
+computation. Both operands are staged, so each must be certified within the result envelope;
+`ite_lt` handles direct input-register comparisons without that obligation. -/
 @[fun_prop]
-theorem ite_lt {lhs rhs : (Fin k → ℕ) → ℕ}
+theorem ite_lt_staged {lhs rhs : (Fin k → ℕ) → ℕ}
     (hl : GlueComputable B lhs P bound)
     (hr : GlueComputable B rhs P bound)
     (hf : GlueComputable B f (fun v => P v ∧ lhs v < rhs v) bound)
@@ -325,7 +348,7 @@ theorem ite_lt {lhs rhs : (Fin k → ℕ) → ℕ}
   obtain ⟨tr, hr⟩ := hr
   obtain ⟨tf, hf⟩ := hf
   obtain ⟨tg, hg⟩ := hg
-  exact (GlueComputes.ite_lt hl hr hf hg).computable
+  exact (GlueComputes.ite_lt_staged hl hr hf hg).computable
 
 /-- The standard basis's binary operation rule. -/
 theorem bin_standard (hf : GlueComputable .standard f P bound)

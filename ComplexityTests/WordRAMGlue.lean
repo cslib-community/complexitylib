@@ -76,6 +76,18 @@ example : GlueComputable .exact (fun v => if v 0 = v 1 then 0 else 7 / v 0)
     (fun v : Fin 2 → ℕ => v 0 ≤ 100 ∧ v 1 = 0) (fun _ => 100) := by
   fun_prop (disch := intro v hv; have := Nat.div_le_self 7 (v 0); omega)
 
+/-- Direct input-register guards stage nothing, so the compared inputs need not fit the result
+envelope: here the inputs are unbounded although every result fits in `1`. Staging `v 0` and
+`v 1` would require `v 0 ≤ 1` and `v 1 ≤ 1`, which fail at inputs such as `![2, 3]`. -/
+theorem ite_lt_direct_unbounded : GlueComputable .exact
+    (fun v : Fin 2 → ℕ => if v 0 < v 1 then 0 else 1) (fun _ => True) (fun _ => 1) := by
+  fun_prop (disch := intros; omega)
+
+/-- The equality analogue of `ite_lt_direct_unbounded`. -/
+theorem ite_eq_direct_unbounded : GlueComputable .exact
+    (fun v : Fin 2 → ℕ => if v 0 = v 1 then 0 else 1) (fun _ => True) (fun _ => 1) := by
+  fun_prop (disch := intros; omega)
+
 -- Staged computed comparison operands: comparing against a constant or arithmetic subterm needs no
 -- auxiliary input register or manual `comp_many` staging.
 example : GlueComputable .exact (fun v => if v 0 = 0 then 0 else 7 / v 0)
@@ -106,7 +118,7 @@ example : GlueComputes .exact (fun v : Fin 1 → ℕ => v 0 ≤ 100)
       try dsimp [BinOp.eval] at *
       have := Nat.div_le_self 7 (v 0)
       omega
-  exact GlueComputes.ite_eq hl hr hf hg
+  exact GlueComputes.ite_eq_staged hl hr hf hg
 
 example : GlueComputes .exact (fun v : Fin 2 → ℕ => v 0 + 1 ≤ 100 ∧ v 1 ≤ 100)
     (fun v => if v 0 + 1 < v 1 then v 1 - v 0 else v 0 + 1) (fun _ => 100) 10 := by
@@ -131,7 +143,7 @@ example : GlueComputes .exact (fun v : Fin 2 → ℕ => v 0 + 1 ≤ 100 ∧ v 1 
     apply GlueComputes.bin_exact (GlueComputes.proj 0 ?_) (GlueComputes.const 1 ?_) .add
     · intros; rfl
     all_goals intros; (try dsimp [BinOp.eval] at *); omega
-  exact GlueComputes.ite_lt hl hr hf hg
+  exact GlueComputes.ite_lt_staged hl hr hf hg
 
 set_option maxHeartbeats 20000 in
 -- Performance guard: syntax-directed closure on a 6-input mixed arithmetic/bitwise/opaque tree.
