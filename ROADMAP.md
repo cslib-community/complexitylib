@@ -414,9 +414,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   circuit synthesis, entropy and asymptotic activity bounds, and geometric cutting.
 - **Depth-two threshold circuits for Andreev's function** ([#2347]): the exact quadratic
   `4 * 4 ^ b + b * m * 2 ^ b` depth-two weighted threshold upper bound is proved
-  (`WeightedThreshold/Andreev.lean`); the windowed average-case upper bound and tight
-  `Ω(n ^ 2 / log ^ 2 n)` gate and `Ω(n ^ 2.5 / log ^ 3.5 n)` wire lower bounds of Kane and
-  Williams remain open.
+  (`WeightedThreshold/Andreev.lean`); the remaining milestones of [#2347] are the windowed
+  average-case upper bound and the proposed average-case `Ω(ε² n ^ (3 / 2) / log³ n)` gate and
+  `Ω(ε² n ^ (5 / 2) / log ^ (7 / 2) n)` wire lower bounds improving the published
+  `Ω(ε³ n ^ (3 / 2) / log³ n)` gate and `Ω(ε³ n ^ (5 / 2) / log ^ (7 / 2) n)` wire bounds of
+  Kane and Williams (arXiv:1511.07860v1, Theorem 1.1).
 - **Construction runtimes**, certified separately from gate counts: the mass-production
   constructors, with constructive choices of information sets and line menus; the
   iterated-function preprocessing; and the bit complexity of formula evaluation on the rational

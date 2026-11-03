@@ -16,9 +16,13 @@ public import Complexity.Foundations.BooleanAnalysis.Fourier
 
 For all `b, m : ℕ`, Andreev's function `Boolean.andreev b m` on `n = 2 ^ b + b * m` bits is
 computed by an explicit depth-two weighted threshold circuit (`THR ∘ THR`) with
-`4 * 4 ^ b + b * m * 2 ^ b` bottom gates (and one top gate), improving the `O(n ^ 3 / log n)`
-depth-two upper bound of Kane and Williams [KaneWilliams2016] to `4 N ^ 2 + b m N = (5 / 4) n ^ 2`
-at `N = 2 ^ b` and `b * m = N`.
+`4 * 4 ^ b + b * m * 2 ^ b` bottom gates (and one top gate). This general all-`b, m` quadratic
+construction is an original AI-assisted result and proof tracked in
+[#2347](https://github.com/cslib-community/complexitylib/issues/2347). In the balanced
+specialization `b = k`, `N = 2 ^ b = b * m`, `n = 2 * 2 ^ b` (matching the paper's Andreev
+family up to truth-table bit numbering), it uses `4 N ^ 2 + b m N = (5 / 4) n ^ 2` bottom gates,
+improving the published `O(n ^ 3 / log n)` depth-two upper bound of Kane and Williams
+([KaneWilliams2016], `arXiv:1511.07860v1`, Theorem 1.2, printed p. 2).
 
 ## Mathematical construction
 
@@ -63,7 +67,10 @@ with bottom weights in `{-2, -1, 0, 1, 2}` and odd integer top weights bounded b
 ## References
 
 * [D. M. Kane and R. Williams, *Super-Linear Gate and Super-Quadratic Wire Lower Bounds for
-  Depth-Two and Depth-Three Threshold Circuits*][KaneWilliams2016]
+  Depth-Two and Depth-Three Threshold Circuits*][KaneWilliams2016], `arXiv:1511.07860v1`,
+  Theorem 1.2 (printed p. 2) for the prior `O(n ^ 3 / log n)` depth-two upper bound on the
+  balanced specialization; the all-`b, m` quadratic construction formalized here is from
+  [complexitylib#2347](https://github.com/cslib-community/complexitylib/issues/2347).
 -/
 
 @[expose] public section
@@ -167,23 +174,25 @@ private theorem chi_int_eq_one_or_neg_one {ι : Type*} (S : Finset ι) (c : ι �
     chi ℤ S c = 1 ∨ chi ℤ S c = -1 := by
   rw [chi_eq_neg_one_pow_parityOn]; cases parityOn S c <;> simp
 
-private theorem paritySign_chi_int_mul_sign {b : ℕ} (S : Finset (Fin b)) (c : BitString b)
-    (v : Bool) : paritySign (chi ℤ S c * (1 - 2 * (v.toNat : ℤ))) = -1 := by
+private theorem negOnePow_chi_int_mul_sign {b : ℕ} (S : Finset (Fin b)) (c : BitString b)
+    (v : Bool) : (((chi ℤ S c * (1 - 2 * (v.toNat : ℤ))).negOnePow : ℤ)) = -1 := by
   rcases chi_int_eq_one_or_neg_one S c with h | h <;> cases v <;> simp [h]
 
-/-- The parity sign of `X_S(w)` is `(-1) ^ (2 ^ b)`, independent of `S` and `w`. -/
-theorem paritySign_andreevTableScore (b m : ℕ) (S : Finset (Fin b))
+/-- The parity sign `((andreevTableScore b m S w).negOnePow : ℤ)` of `X_S(w)` is `(-1) ^ (2 ^ b)`,
+independent of `S` and `w`. -/
+theorem negOnePow_andreevTableScore (b m : ℕ) (S : Finset (Fin b))
     (w : BitString (2 ^ b + b * m)) :
-    paritySign (andreevTableScore b m S w) = (-1 : ℤ) ^ (2 ^ b) := by
-  rw [andreevTableScore, paritySign_sum]; simp [paritySign_chi_int_mul_sign]
+    ((andreevTableScore b m S w).negOnePow : ℤ) = (-1 : ℤ) ^ (2 ^ b) := by
+  rw [andreevTableScore, negOnePow_sum]; simp [negOnePow_chi_int_mul_sign]
 
-/-- The parity sign of `t_S(w)` is the character `χ_S(andreevParities b m w)`. -/
-theorem paritySign_andreevBlockSum (b m : ℕ) (S : Finset (Fin b))
+/-- The parity sign `((andreevBlockSum b m S w).negOnePow : ℤ)` of `t_S(w)` is the character
+`χ_S(andreevParities b m w)`. -/
+theorem negOnePow_andreevBlockSum (b m : ℕ) (S : Finset (Fin b))
     (w : BitString (2 ^ b + b * m)) :
-    paritySign (andreevBlockSum b m S w) = chi ℤ S (andreevParities b m w) := by
-  rw [andreevBlockSum, paritySign_sum, chi]
+    ((andreevBlockSum b m S w).negOnePow : ℤ) = chi ℤ S (andreevParities b m w) := by
+  rw [andreevBlockSum, negOnePow_sum, chi]
   refine prod_congr rfl fun j _ => ?_
-  rw [paritySign_sum]; simp only [paritySign_toNat]
+  rw [negOnePow_sum]; simp only [Int.coe_negOnePow_natCast]
   simpa [chi, andreevParities, parity] using
     chi_eq_neg_one_pow_parityOn (R := ℤ) (univ : Finset (Fin m))
       (fun t => w (andreevBlockVar b m j t))
@@ -334,7 +343,7 @@ theorem sum_andreevTopWeightInt_sub_threshold (b m : ℕ) (w : BitString (2 ^ b 
   have hminus : andreevLinearForm b m S false w =
       andreevTableScore b m S w - andreevBlockSum b m S w := by
     simp [andreevLinearForm, sub_eq_add_neg]
-  rw [hplus, hminus, ← mul_add, hpol, paritySign_andreevTableScore, paritySign_andreevBlockSum]
+  rw [hplus, hminus, ← mul_add, hpol, negOnePow_andreevTableScore, negOnePow_andreevBlockSum]
   calc -(-1 : ℤ) ^ (2 ^ b) *
         (2 * (-1 : ℤ) ^ (2 ^ b) * andreevTableScore b m S w *
           chi ℤ S (andreevParities b m w))
@@ -407,20 +416,17 @@ theorem eval_andreevCircuit_eq_evalInt (b m : ℕ) (w : BitString (2 ^ b + b * m
 /-- **`andreevCircuit b m` computes `Boolean.andreev b m`.** -/
 theorem computes_andreevCircuit (b m : ℕ) :
     (andreevCircuit b m).Computes interpretation (single (andreev b m)) := by
-  intro w
-  funext o
+  intro w; funext o
   rw [eval_andreevCircuit_eq_evalInt, andreevCircuitEvalInt_eq_andreev, single_apply]
 
 /-- `andreevCircuit b m` has `4 * 4 ^ b + b * m * 2 ^ b` bottom gates and `1` top gate, for
 `4 * 4 ^ b + b * m * 2 ^ b + 1` gates in total. -/
 @[simp]
 theorem size_andreevCircuit (b m : ℕ) :
-    (andreevCircuit b m).size = 4 * 4 ^ b + b * m * 2 ^ b + 1 := by
-  simp [andreevCircuit]
+    (andreevCircuit b m).size = 4 * 4 ^ b + b * m * 2 ^ b + 1 := by simp [andreevCircuit]
 
 /-- `andreevCircuit b m` has depth at most `2`. -/
-theorem depth_andreevCircuit_le (b m : ℕ) :
-    (andreevCircuit b m).depth ≤ 2 :=
+theorem depth_andreevCircuit_le (b m : ℕ) : (andreevCircuit b m).depth ≤ 2 :=
   depth_depthTwo_le _ _ _
 
 /-- The active wire count of `andreevCircuit b m` is at most
@@ -428,8 +434,7 @@ theorem depth_andreevCircuit_le (b m : ℕ) :
 theorem wireCount_andreevCircuit_le (b m : ℕ) :
     (andreevCircuit b m).wireCount ≤ (4 * 4 ^ b + b * m * 2 ^ b) * (2 ^ b + b * m + 1) := by
   refine (wireCount_depthTwo_le _ _ _).trans ?_
-  simp only [andreevTopOp, sum_const, card_univ, Fintype.card_fin, smul_eq_mul]
-  linarith
+  simp only [andreevTopOp, sum_const, card_univ, Fintype.card_fin, smul_eq_mul]; linarith
 
 /-! ### Explicit weight bounds for bottom and top gates -/
 
@@ -465,14 +470,10 @@ theorem abs_weight_andreevBottomOp_le (b m : ℕ) (j : Fin (4 * 4 ^ b + b * m * 
 theorem andreevTopWeightInt_emod_two_ne_zero (b m : ℕ) (idx : AndreevBottomIndex b m) :
     andreevTopWeightInt b m idx % 2 ≠ 0 := by
   rw [andreevTopWeightInt, altLinear_add_one_sub]
-  have hsign1 : (-1 : ℤ) ^ (2 ^ b) = 1 ∨ (-1 : ℤ) ^ (2 ^ b) = -1 :=
-    neg_one_pow_eq_or ℤ (2 ^ b)
-  have hsign2 :
-      paritySign (andreevLowerBound b m idx.1 idx.2.1 + idx.2.2 + 1) = 1 ∨
-        paritySign (andreevLowerBound b m idx.1 idx.2.1 + idx.2.2 + 1) = -1 := by
-    unfold paritySign
-    split_ifs <;> simp
-  rcases hsign1 with h1 | h1 <;> rcases hsign2 with h2 | h2 <;> rw [h1, h2] <;> omega
+  rcases neg_one_pow_eq_or ℤ (2 ^ b) with h1 | h1 <;>
+    rcases Int.units_eq_one_or (andreevLowerBound b m idx.1 idx.2.1 + idx.2.2 + 1).negOnePow with
+      h2 | h2 <;>
+    simp only [h1, h2, Units.val_one, Units.val_neg] <;> omega
 
 /-- Every integer top-gate weight has absolute value at most `2 * (2 ^ b + b * m) - 1`. -/
 theorem abs_andreevTopWeightInt_le (b m : ℕ) (idx : AndreevBottomIndex b m) :
@@ -480,7 +481,7 @@ theorem abs_andreevTopWeightInt_le (b m : ℕ) (idx : AndreevBottomIndex b m) :
   rcases idx with ⟨S, ⟨σ, k⟩⟩
   rw [andreevTopWeightInt, altLinear_add_one_sub]
   have h1 : |(-(-1 : ℤ) ^ (2 ^ b))| = 1 := by simp
-  have h2 : |paritySign (andreevLowerBound b m S σ + k + 1)| = 1 := abs_paritySign _
+  have h2 : |(((andreevLowerBound b m S σ + k + 1).negOnePow : ℤ))| = 1 := Int.abs_negOnePow _
   rw [abs_mul, abs_mul, h1, h2, one_mul, one_mul]
   have hS : #S ≤ b := (card_le_univ S).trans_eq (Fintype.card_fin b)
   have hSm : (#S * m : ℤ) ≤ (b * m : ℤ) := by exact_mod_cast Nat.mul_le_mul_right m hS
@@ -535,12 +536,13 @@ theorem size_andreevCircuit_two_two : (andreevCircuit 2 2).size = 81 := by simp
 theorem wireCount_andreevCircuit_two_two_le : (andreevCircuit 2 2).wireCount ≤ 720 :=
   wireCount_andreevCircuit_le 2 2
 
-/-- Checked evaluation of `andreevCircuitEvalInt 2 2` on the all-false `8`-bit input. -/
-theorem andreevCircuitEvalInt_two_two_false :
-    andreevCircuitEvalInt 2 2 (fun _ => false) = false := by decide
-
-/-- Checked evaluation of `andreevCircuitEvalInt 2 2` on the all-true `8`-bit input. -/
-theorem andreevCircuitEvalInt_two_two_true :
-    andreevCircuitEvalInt 2 2 (fun _ => true) = true := by decide
+/-- Checked evaluation of `andreevCircuitEvalInt 2 2` on mixed truth-table `8`-bit inputs where
+truth-table entries `1` and `2` are `true` (entries `0` and `3` are `false`) and toggling the
+second bit of block `0` flips the selected truth-table address from odd-parity entry `1`/`2`
+(`true`) back to entry `0` (`false`). -/
+theorem andreevCircuitEvalInt_two_two_mixed :
+    andreevCircuitEvalInt 2 2 (fun i => decide (i = 1 ∨ i = 2 ∨ i = 4)) = true ∧
+      andreevCircuitEvalInt 2 2 (fun i => decide (i = 1 ∨ i = 2 ∨ i = 4 ∨ i = 5)) = false := by
+  decide
 
 end Cslib.Circuits.Boolean.WeightedThreshold

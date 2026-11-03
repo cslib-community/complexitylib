@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Cut
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Menus
 public import Complexity.Computability.Circuit.Simulation
+public import Mathlib.Algebra.Ring.NegOnePow
 
 /-!
 # Depth-two weighted threshold circuits and wire counts
@@ -34,9 +35,8 @@ count `p.cost Op.arity`.
   `Cslib.Circuits.Circuit.wireCount`: aggregated direct-input and total wire counts.
 * `Cslib.Circuits.Boolean.WeightedThreshold.depthTwo`: depth-two weighted threshold circuit built
   from `top.arity` bottom threshold gates and a single output threshold gate `top`.
-* `Cslib.Circuits.Boolean.WeightedThreshold.paritySign`,
-  `Cslib.Circuits.Boolean.WeightedThreshold.altLinear`: integer parity sign `(-1) ^ u` and
-  alternating linear function `(-1) ^ u * u` used in depth-two threshold telescoping constructions.
+* `Cslib.Circuits.Boolean.WeightedThreshold.altLinear`: alternating linear function
+  `(u.negOnePow : ℤ) * u` used in depth-two threshold telescoping constructions.
 
 ## Main results
 
@@ -220,79 +220,33 @@ theorem wireCount_depthTwo_le (top : Op) (bottom : Fin top.arity → Op)
   (depthTwo top bottom args).wireCount_le_cost_arity.trans_eq
     (cost_arity_depthTwo top bottom args)
 
-/-! ### Integer parity-sign, alternating linear function, and interval telescoping -/
+/-! ### Alternating linear function and integer interval telescoping -/
 
-/-- The integer parity sign `(-1) ^ u`: `1` when `u` is even and `-1` when `u` is odd. -/
-def paritySign (u : ℤ) : ℤ :=
-  if u % 2 = 0 then 1 else -1
-
-/-- The alternating linear function `φ(u) = (-1) ^ u * u`. -/
+/-- The alternating linear function `φ(u) = (-1) ^ u * u`, defined via `Int.negOnePow`. -/
 def altLinear (u : ℤ) : ℤ :=
-  paritySign u * u
+  (u.negOnePow : ℤ) * u
 
-@[simp]
-theorem paritySign_zero : paritySign 0 = 1 := rfl
-
-@[simp]
-theorem paritySign_one : paritySign 1 = -1 := rfl
-
-@[simp]
-theorem paritySign_neg_one : paritySign (-1) = -1 := rfl
-
-/-- `paritySign` turns integer addition into multiplication. -/
-theorem paritySign_add (u v : ℤ) : paritySign (u + v) = paritySign u * paritySign v := by
-  unfold paritySign
-  split_ifs <;> omega
-
-/-- `paritySign` turns integer subtraction into multiplication. -/
-theorem paritySign_sub (u v : ℤ) : paritySign (u - v) = paritySign u * paritySign v := by
-  unfold paritySign
-  split_ifs <;> omega
-
-/-- `paritySign` is invariant under negation. -/
-@[simp]
-theorem paritySign_neg (u : ℤ) : paritySign (-u) = paritySign u := by
-  unfold paritySign
-  split_ifs <;> omega
-
-/-- Every parity sign squares to `1`. -/
-@[simp]
-theorem paritySign_mul_self (u : ℤ) : paritySign u * paritySign u = 1 := by
-  unfold paritySign
-  split_ifs <;> rfl
-
-/-- Every parity sign has absolute value `1`. -/
-@[simp]
-theorem abs_paritySign (u : ℤ) : |paritySign u| = 1 := by
-  unfold paritySign
-  split_ifs <;> rfl
-
-/-- `paritySign` sends a finite sum of integers to the product of their parity signs. -/
-theorem paritySign_sum {α : Type*} (s : Finset α) (f : α → ℤ) :
-    paritySign (∑ x ∈ s, f x) = ∏ x ∈ s, paritySign (f x) := by
+/-- `Int.negOnePow` sends a finite sum of integers to the product of their powers of `-1`. -/
+theorem negOnePow_sum {α : Type*} (s : Finset α) (f : α → ℤ) :
+    ((∑ x ∈ s, f x).negOnePow : ℤ) = ∏ x ∈ s, ((f x).negOnePow : ℤ) := by
   classical
   induction s using Finset.induction_on with
   | empty => simp
-  | insert a s ha ih => rw [sum_insert ha, paritySign_add, ih, prod_insert ha]
-
-/-- For a Boolean bit `v`, `paritySign (v.toNat : ℤ)` is `(-1) ^ v.toNat`. -/
-theorem paritySign_toNat (v : Bool) : paritySign (v.toNat : ℤ) = (-1 : ℤ) ^ v.toNat := by
-  cases v <;> rfl
+  | insert a s ha ih =>
+    rw [sum_insert ha, Int.negOnePow_add, Units.val_mul, ih, prod_insert ha]
 
 /-- **Alternating linear polarization identity**: for all integers `X` and `t`,
 `φ(X + t) + φ(X - t) = 2 * (-1) ^ X * X * (-1) ^ t`. -/
 theorem altLinear_add_add_altLinear_sub (X t : ℤ) :
-    altLinear (X + t) + altLinear (X - t) = 2 * paritySign X * X * paritySign t := by
-  calc altLinear (X + t) + altLinear (X - t)
-      = paritySign X * paritySign t * (X + t) + paritySign X * paritySign t * (X - t) := by
-          simp only [altLinear, paritySign_add, paritySign_sub]
-    _ = 2 * paritySign X * X * paritySign t := by ring
+    altLinear (X + t) + altLinear (X - t) = 2 * (X.negOnePow : ℤ) * X * (t.negOnePow : ℤ) := by
+  simp only [altLinear, Int.negOnePow_add, Int.negOnePow_sub, Units.val_mul]
+  ring
 
 /-- The discrete derivative of `altLinear` at `u` is `(-1) ^ (u + 1) * (2 * u + 1)`. -/
 theorem altLinear_add_one_sub (u : ℤ) :
-    altLinear (u + 1) - altLinear u = paritySign (u + 1) * (2 * u + 1) := by
-  unfold altLinear paritySign
-  split_ifs <;> omega
+    altLinear (u + 1) - altLinear u = ((u + 1).negOnePow : ℤ) * (2 * u + 1) := by
+  simp only [altLinear, Int.negOnePow_succ, Units.val_neg]
+  ring
 
 /-- **Integer interval telescoping**: any function `f : ℤ → ℤ` on an integer `u ∈ [ℓ, ℓ + L]`
 equals `f ℓ` plus the sum of its step differences weighted by threshold indicators
