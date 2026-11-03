@@ -627,8 +627,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   once, visits its occupied records with dirty-workspace reuse, and returns an original witness
   exactly when a zero triangle exists. At `m=9k`, its aggregate box term is
   `125829120(189k+1)^2(9k+1)D^(-8/125)n³g`, with producer, root/query/controller and one global
-  failed-scan reserve explicit. Global parameter/prime selection still calls the previous consumer;
-  connecting this controller, polynomial-factor absorption and final tuning remain open.
+  failed-scan reserve explicit. Its caller-safe compiled wrapper
+  ([#2355](https://github.com/cslib-community/complexitylib/issues/2355)) uses the existing actual
+  array-copy/sum and computed-modulus setup, preserves the selector bank and original arguments,
+  and establishes initialized verdict/witness, width-independent prefix support and a complete
+  finite charge including every translation and halt. Global parameter/prime selection still
+  calls the previous consumer; connecting this caller, polynomial-factor absorption and final
+  tuning remain open.
   Conservative native ordinary integer 3SUM is proved in
   `WordRAM/ThreeSum/Decision/Subquadratic.lean`: for each fixed polynomial magnitude exponent,
   one fixed 848-register program has charged time `Oκ(n^(2−1/5184))`, logarithmic physical
