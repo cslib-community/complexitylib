@@ -66,12 +66,12 @@ def relaxWord (ins dec : ℕ → ℕ → Memory.Prog Unit) (T : Block)
 
 private theorem relaxTarget_eq {n : ℕ} (ins dec : ℕ → ℕ → Memory.Prog Unit) (T : Block)
     (v : Fin n) (du c : ℕ) : relaxTarget ins dec T v du c = (do
-      match ← Dictionary.Memory.get T v with
+      match ← Dictionary.Memory.query T v with
       | none => Dictionary.Memory.insert T v (du + c); ins v (du + c)
       | some old => if du + c < old then
         Dictionary.Memory.insert T v (du + c)
         dec v (du + c)) := by
-  unfold relaxTarget Dictionary.Memory.get Dictionary.Memory.insert Block.get Block.set
+  unfold relaxTarget Dictionary.Memory.query Dictionary.Memory.insert Block.get Block.set
   simp only [bind_assoc, pure_bind]
   congr 1
   funext x
@@ -83,7 +83,7 @@ private theorem link_relaxEdge {n K V w : ℕ}
     link (Methods.prod pq (Methods.prod (Dictionary.Memory.ops T)
       (AdjacencyList.Memory.ops A))) (relaxEdge (K := K) (V := V) u du i) = (do
       let (v, c) ← AdjacencyList.Memory.edge A u i
-      match ← Dictionary.Memory.get T v with
+      match ← Dictionary.Memory.query T v with
       | none => Dictionary.Memory.insert T v (du + c); pq (.insert v (du + c))
       | some old => if du + c < old then
         Dictionary.Memory.insert T v (du + c)
@@ -93,8 +93,8 @@ private theorem link_relaxEdge {n K V w : ℕ}
   have he : (edge (K := K) (V := V) u i).liftM M = AdjacencyList.Memory.edge A u i :=
     PFunctor.FreeM.liftM_lift (P := (spec n K V).signature) M (.inr (.inr (.edge u i)))
   have hg (v : Fin n) : (getDist (K := K) (V := V) v).liftM M =
-      Dictionary.Memory.get T v :=
-    PFunctor.FreeM.liftM_lift (P := (spec n K V).signature) M (.inr (.inl (.get v)))
+      Dictionary.Memory.query T v :=
+    PFunctor.FreeM.liftM_lift (P := (spec n K V).signature) M (.inr (.inl (.query v)))
   have hs (v : Fin n) (d : ℕ) : (setDist (K := K) (V := V) v d).liftM M =
       Dictionary.Memory.insert T v d :=
     PFunctor.FreeM.liftM_lift (P := (spec n K V).signature) M (.inr (.inl (.insert v d)))

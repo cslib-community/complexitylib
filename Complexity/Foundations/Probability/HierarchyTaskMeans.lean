@@ -18,6 +18,8 @@ public import Complexity.Foundations.Probability.CorrectionRowRecipe
 `CorrectionSampling` records gates and pair-count bounds for sampling a particular actual
 correction input. It contains no mean identity or estimator error certificate. The correction
 input's nonnegativity and row mass come from `HierarchyParams.correctionInput_bounds`.
+`CorrectionSampling.withUsage` replaces the usage slice using its actual marginal and
+cross-rate pair count while preserving the true channels and gates.
 The sample uses two independent seed coordinates; its midpoint mask is part of the actual
 correction atom. Uniform midpoint density cancels its sampling probability.
 
@@ -59,6 +61,63 @@ variable {P X Y Xs Z Zt f C i}
 namespace CorrectionSampling
 
 variable (A : P.CorrectionSampling X Y Xs Z Zt f C i)
+
+/-- Change only the usage channel of an actual correction sampler. Its measured density
+and cross-rate pair bound suffice; true hierarchy channels and all gates stay fixed. -/
+noncomputable def withUsage (U : Ζ → V → Prop) [∀ t v, Decidable (U t v)]
+    (π : ℝ) (hπ : 0 < π) (hd : ∀ z, (dens {t | U t z} : ℝ) = π)
+    (hp : ∀ z w, w ≠ z →
+      (#{t | U t z ∧ Z t w} : ℝ) ≤ A.c * f * #{t | U t z}) :
+    P.CorrectionSampling X Y Xs Z U f C i where
+  toCorrectionSamplingLaws :=
+    { A.toCorrectionSamplingLaws with
+      π := π, π_pos := hπ, density := hd, terminal_pair := hp }
+
+section UsageProjections
+variable (U : Ζ → V → Prop) [∀ t v, Decidable (U t v)]
+    (π : ℝ) (hπ : 0 < π) (hd : ∀ z, (dens {t | U t z} : ℝ) = π)
+    (hp : ∀ z w, w ≠ z →
+      (#{t | U t z ∧ Z t w} : ℝ) ≤ A.c * f * #{t | U t z})
+
+/-- Usage replacement preserves the I parameter. -/
+theorem withUsage_I : (A.withUsage U π hπ hd hp).I = A.I := by
+  rfl
+
+/-- Usage replacement preserves the τ parameter. -/
+theorem withUsage_τ : (A.withUsage U π hπ hd hp).τ = A.τ := by
+  rfl
+
+/-- Usage replacement preserves the h parameter. -/
+theorem withUsage_h : (A.withUsage U π hπ hd hp).h = A.h := by
+  rfl
+
+/-- Usage replacement preserves the ρ parameter. -/
+theorem withUsage_ρ : (A.withUsage U π hπ hd hp).ρ = A.ρ := by
+  rfl
+
+/-- Usage replacement preserves the K parameter. -/
+theorem withUsage_K : (A.withUsage U π hπ hd hp).K = A.K := by
+  rfl
+
+/-- Usage replacement preserves the Kc parameter. -/
+theorem withUsage_Kc : (A.withUsage U π hπ hd hp).Kc = A.Kc := by
+  rfl
+
+/-- Usage replacement uses the supplied measured density. -/
+theorem withUsage_π : (A.withUsage U π hπ hd hp).π = π := by
+  rfl
+
+end UsageProjections
+
+/-- Replace the conditioning source while keeping the true channels, ranks and incoming
+budget. Only its conditional pair count must fit the existing source constant. The exposed
+record update lets concrete recipe clients reduce its unchanged gate projections. -/
+@[expose] def withSource (S : Γ → V → Prop) [∀ s v, Decidable (S s v)]
+    (hp : ∀ x w, w ≠ x →
+      (#{s | S s x ∧ S s w} : ℝ) ≤ A.p * #{s | S s x}) :
+    P.CorrectionSampling X Y S Z Zt f C i where
+  toCorrectionSamplingLaws := { A.toCorrectionSamplingLaws with source_pair := hp }
+
 
 /-- The normalized stochastic correction, built from this actual hierarchy input and its
 final pilot multiplier. The usage mask is the midpoint channel. -/

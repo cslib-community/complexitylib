@@ -494,4 +494,47 @@ noncomputable def ofChannels
     (fun z hg => P.toHierarchyParams.pilotInput_count_le X Y hXY hf hcπ hpair hC hC1 hi (z := z) hg)
     I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI
 
+variable
+    (hXY : Cslib.Probability.RetentionChannels X Y f π cπ Cπ Cpair Cvar)
+    (hYX : Cslib.Probability.RetentionChannels Y X f π cπ Cπ Cpair Cvar)
+    (hf : 0 < f) (hπ : 0 < π) (hcπ : 0 < cπ) (hpair : 0 ≤ Cpair)
+    (hC : ∀ x y, 0 ≤ C x y) (hC1 : C *ᵥ 1 ≤ 1) (hi : i < P.k)
+    (I : ℝ → ℝ → ℝ) (τ h : ℝ → ℝ) (τ₀ : ℝ)
+    (hQ : ∀ v, P.Q v ≠ 0 → h v = 1)
+    (hτ0 : ∀ r, 0 ≤ τ r) (hτ1 : ∀ r, τ r ≤ 1) (hτ₀ : 0 ≤ τ₀)
+    (hτ : ∀ r, r ≤ τ₀ → τ r = 1) (hI : ∀ v r, v ≤ P.δ₁ → I v r = 0)
+
+/-- The channel constructor preserves its `I` parameter. -/
+theorem ofChannels_I :
+    (ofChannels P X Y hXY hYX hf hπ hcπ hpair hC hC1 hi
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).I = I := by
+  unfold ofChannels
+  exact CorrectionSamplingLaws.ofHierarchyChannels_I P X Y hXY hYX hf hπ hpair hi
+    _ I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI
+
+/-- The channel constructor preserves its `τ` parameter. -/
+theorem ofChannels_τ :
+    (ofChannels P X Y hXY hYX hf hπ hcπ hpair hC hC1 hi
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).τ = τ := by
+  unfold ofChannels
+  exact CorrectionSamplingLaws.ofHierarchyChannels_τ P X Y hXY hYX hf hπ hpair hi
+    _ I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI
+
+/-- The channel constructor preserves its `ρ` parameter. -/
+theorem ofChannels_ρ :
+    (ofChannels P X Y hXY hYX hf hπ hcπ hpair hC hC1 hi
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).ρ = P.ρ := by
+  unfold ofChannels
+  exact CorrectionSamplingLaws.ofHierarchyChannels_ρ P X Y hXY hYX hf hπ hpair hi
+    _ I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI
+
+/-- The channel constructor preserves its `Kc` parameter. -/
+theorem ofChannels_Kc :
+    (ofChannels P X Y hXY hYX hf hπ hcπ hpair hC hC1 hi
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).Kc = ⌈4 * (1
+        + Cpair * P.R)⌉₊ := by
+  unfold ofChannels
+  exact CorrectionSamplingLaws.ofHierarchyChannels_Kc P X Y hXY hYX hf hπ hpair hi
+    _ I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI
+
 end Matrix.HierarchyParams.PilotSampling

@@ -7,7 +7,9 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.WordRAM.GhostLoop
 public import Complexity.Computability.WordRAM.Realization.Basic
+public import Complexity.Computability.WordRAM.RegisterCopy
 
 /-!
 # Bounded memory-client loops
@@ -25,8 +27,7 @@ uses one fixed body emitter and static registers for the mutable state and count
 
 ## Main results
 
-* `copyBank_exec`: a static register-bank copy with memory and live-register frames.
-* `loop_invariant_state_charged`: bounded native loops charge local work and control.
+* `iterationSum_eq`: the native grading rule's semantic sum is memory charge plus local work.
 * `Realizes.iterateRuntime`: one uniform body certificate realizes a runtime-bounded loop.
 
 The iteration grading and realization are original infrastructure over the existing free monad
@@ -66,52 +67,6 @@ def iterationSafe (body : δ × σ → Memory.Prog σ)
       ((Memory.spec 0).clientResult s (body (d, a)))
       ((Memory.spec 0).clientState s (body (d, a)))
 
-/-- Native register copies need no word-size or arithmetic side condition. -/
-def copyBank : {k : ℕ} → (Fin k → Fin r) → (Fin k → Fin r) → Fin r → Code B r
-  | 0, _, _, idle => .op (.copy idle idle)
-  | n + 1, src, dst, idle => .seq (.op (.copy (dst 0) (src 0)))
-      (copyBank (fun i : Fin n => src i.succ) (fun i => dst i.succ) idle)
-
-/-- Copying a finite bank does not inspect the word width. -/
-theorem copyBank_not_readsWidth (src dst : Fin k → Fin r) (idle : Fin r) :
-    ¬(copyBank (B := B) src dst idle).ReadsWidth := by
-  induction k with
-  | zero => simp [copyBank, Code.ReadsWidth, Op.ReadsWidth]
-  | succ n ih => simp [copyBank, Code.ReadsWidth, Op.ReadsWidth, ih]
-
-/-- Copy disjoint source words into an injective destination bank, leaving the entire memory and
-all other registers unchanged. A neutral copy supplies the zero-length code case. -/
-theorem copyBank_exec (src dst : Fin k → Fin r) (idle : Fin r)
-    (hi : Function.Injective dst) (hd : ∀ i j, src i ≠ dst j) (w : ℕ) (x : Data r) :
-    ∃ y, ExecWithin w (copyBank (B := B) src dst idle) x y (k + 1) ∧
-      y.mem = x.mem ∧ (∀ i, y.regs (dst i) = x.regs (src i)) ∧
-      ∀ j, (∀ i, dst i ≠ j) → y.regs j = x.regs j := by
-  induction k generalizing x with
-  | zero =>
-    have he : ExecWithin (B := B) w (.op (.copy idle idle)) x x 1 := by
-      convert (ExecWithin.copy (B := B) (w := w) (d := idle) (s := idle) (x := x)) using 1
-      apply Data.ext <;> simp [Data.set]
-    exact ⟨x, he, rfl, fun i => Fin.elim0 i, fun _ _ => rfl⟩
-  | succ n ih =>
-    let a := x.set (dst 0) (x.regs (src 0))
-    obtain ⟨y, hy, hm, hout, hframe⟩ := ih
-      (fun i : Fin n => src i.succ) (fun i => dst i.succ)
-      (fun i j h => Fin.succ_injective _ (hi h))
-      (fun i j => hd i.succ j.succ) a
-    have he : ExecWithin (B := B) w (.op (.copy (dst 0) (src 0))) x a 1 :=
-      ExecWithin.copy
-    refine ⟨y, ?_, hm, ?_, ?_⟩
-    · simpa only [copyBank, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using he.seq hy
-    · intro i
-      refine Fin.cases ?_ (fun j => ?_) i
-      · rw [hframe (dst 0) (fun j h => Fin.succ_ne_zero _ (hi h))]
-        simp [a, Data.set]
-      · rw [hout]
-        exact Function.update_of_ne (hd j.succ 0) _ _
-    · intro j hj
-      rw [hframe j (fun i => hj i.succ)]
-      exact Function.update_of_ne (hj 0).symm _ _
-
 /-- Memory cost and certified local work decompose at each actual iteration. -/
 theorem iteration_charge_succ (body : δ × σ → Memory.Prog σ)
     (work : (δ × σ) → Memory.State → ℕ) (d : δ) (n : ℕ) (a : σ) (s : Memory.State) :
@@ -125,37 +80,6 @@ theorem iteration_charge_succ (body : δ × σ → Memory.Prog σ)
     (body (d, a)).bind (iterate body d n) from rfl, memoryCost_bind]
   simp only [iterationWork]
   omega
-
-/-- Sum a state-dependent charge along a fixed semantic transition. -/
-def iterationSum (next : σ → σ) (charge : σ → ℕ) : ℕ → σ → ℕ
-  | 0, _ => 0
-  | n + 1, s => charge s + iterationSum next charge n (next s)
-
-/-- A bounded native loop may charge variable body work and one unit per iteration without
-issuing a memory query. Its body, register bank and exchange constants are fixed before fuel.
-The remaining-fuel relation also carries arbitrary semantic proof state. -/
-theorem loop_invariant_state_charged {cond : Cond r} {code : Code B r} {w C D : ℕ}
-    (I : ℕ → σ → Data r → Prop) (next : σ → σ) (charge : σ → ℕ)
-    (hexit : ∀ s x, I 0 s x → ¬cond.Holds x)
-    (hbody : ∀ n s x, I (n + 1) s x →
-      cond.Holds x ∧ ∃ y, ExecWithin w code x y (C * (charge s + 1) + D) ∧
-        I n (next s) y)
-    {n : ℕ} {s : σ} {x : Data r} (hx : I n s x) :
-    ∃ y, ExecWithin w (.loop cond code) x y
-        ((C + D + 2) * (iterationSum next charge n s + n + 1)) ∧
-      I 0 ((next^[n]) s) y := by
-  induction n generalizing s x with
-  | zero =>
-    refine ⟨x, (ExecWithin.loop_exit (hexit s x hx)).mono ?_, hx⟩
-    simp only [iterationSum, Nat.zero_add, Nat.mul_one]
-    omega
-  | succ n ih =>
-    obtain ⟨hc, a, ha, hI⟩ := hbody n s x hx
-    obtain ⟨y, hy, hIy⟩ := ih hI
-    refine ⟨y, (ExecWithin.loop_iter hc ha hy).mono ?_, ?_⟩
-    · simp only [iterationSum]
-      nlinarith
-    · simpa only [Function.iterate_succ_apply] using hIy
 
 /-- One semantic iteration updates both the mutable value and the complete memory state. -/
 def iterationStep (body : δ × σ → Memory.Prog σ) (d : δ) (a : σ × Memory.State) :
@@ -480,7 +404,7 @@ theorem iterateRuntime (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ (Fin l 
           rw [Function.update_of_ne (htmp _).symm, Function.update_of_ne (htmp _).symm,
             hvf _ (fun _ => htmp _), huf _ hif (fun _ => htmp _)]
           exact hyframe i hif htmp
-    obtain ⟨y, hy, hIy⟩ := loop_invariant_state_charged I (iterationStep body d₀)
+    obtain ⟨y, hy, hIy⟩ := ExecWithin.loop_invariant_state_charged I (iterationStep body d₀)
       (fun q => memoryCost (body (d₀, q.1)) q.2 + work (d₀, q.1) q.2)
       (fun q y hI => by simp [Cond.Holds, hI.2.2.2.2.1, hI.2.2.2.2.2.1]) hbody hIz
     rw [iterationSum_eq] at hy
