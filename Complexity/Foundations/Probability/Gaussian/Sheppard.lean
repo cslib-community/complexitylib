@@ -18,16 +18,18 @@ import Mathlib.Analysis.SpecialFunctions.Gaussian.GaussianIntegral
 import Mathlib.Analysis.SpecialFunctions.PolarCoord
 
 /-!
-# Sheppard's bound for threshold crossings of correlated Gaussians
+# Sheppard's bound and formula for threshold crossings of correlated Gaussians
 
 Let `X` be a standard Gaussian vector of a finite-dimensional real inner product space, and let
 `u`, `v` be vectors of equal norm at angle `θ`. When the common norm is positive, `⟪u, X⟫` and
 `⟪v, X⟫` are Gaussians of equal variance with correlation `cos θ`. **Sheppard's bound**
 (`measureReal_stdGaussian_mem_uIoc_le_angle`): a threshold `t` lies between `⟪u, X⟫` and
 `⟪v, X⟫` with probability at most `θ / π`. For vectors of positive norm the bound is attained at
-`t = 0`: that is Sheppard's formula [Sheppard1899] for the probability that two correlated
-Gaussians differ in sign. For `u = v = 0` the crossing event is empty while Mathlib's
-`angle 0 0` is `π / 2`, so the bound is then strict. Only the bound is proved here.
+`t = 0`: that is **Sheppard's formula** [Sheppard1899] [O'Donnell, Example 11.19][ODonnell2014]
+for the probability that two correlated Gaussians differ in sign
+(`measureReal_stdGaussian_zero_mem_uIoc_eq_angle`, which needs only `u ≠ 0` and `v ≠ 0`, since
+the signs are unchanged by rescaling). For `u = v = 0` the crossing event is empty while
+Mathlib's `angle 0 0` is `π / 2`, so the bound is then strict.
 
 The proof has four steps.
 
@@ -44,6 +46,10 @@ The proof has four steps.
 4. *The half-angle formula* (`InnerProductGeometry.angle_eq_two_mul_arctan`). For vectors of equal
    norm at angle `θ < π`, the ratio `‖v - u‖ / ‖u + v‖` is `tan (θ / 2)`.
 
+For Sheppard's formula, outside the null event `⟪v, X⟫ = 0`, `⟪u, X⟫` and `⟪v, X⟫` have the same
+sign exactly when `⟪u, X⟫` and `⟪-v, X⟫` differ in sign, so Sheppard's bound at angle
+`angle u (-v) = π - θ` gives the matching lower bound.
+
 The event that `t` lies between `x` and `y`, the lower one strictly below `t`, is
 `t ∈ Set.uIoc x y`.
 
@@ -54,11 +60,14 @@ The event that `t` lies between `x` and `y`, the lower one strictly below `t`, i
   centered Gaussians of any variances.
 * `ProbabilityTheory.measureReal_stdGaussian_mem_uIoc_le_arctan`,
   `ProbabilityTheory.measureReal_stdGaussian_mem_uIoc_le_angle`: Sheppard's bound.
+* `ProbabilityTheory.measureReal_stdGaussian_zero_mem_uIoc_eq_angle`,
+  `ProbabilityTheory.measureReal_stdGaussian_zero_mem_uIoc_eq_arccos`: Sheppard's formula.
 
 ## References
 
 * [W. F. Sheppard, *On the application of the theory of error to cases of normal distribution
   and normal correlation*][Sheppard1899]
+* [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
 -/
 
 @[expose] public section
@@ -314,5 +323,68 @@ theorem measureReal_stdGaussian_mem_uIoc_le_angle {u v : E} (huv : ‖u‖ = ‖
   · rw [InnerProductGeometry.angle_eq_two_mul_arctan huv hne]
     refine (measureReal_stdGaussian_mem_uIoc_le_arctan huv hne t).trans_eq ?_
     ring
+
+/-- If `0` does not lie between `x` and `y ≠ 0`, it lies between `x` and `-y`. -/
+private theorem zero_mem_uIoc_neg_of_notMem {x y : ℝ} (h : (0 : ℝ) ∉ Ι x y) (hy : y ≠ 0) :
+    (0 : ℝ) ∈ Ι x (-y) := by
+  simp only [mem_uIoc, not_or, not_and, not_le] at h ⊢
+  rcases hy.lt_or_gt with hy | hy
+  · exact Or.inl ⟨h.2 hy, by linarith⟩
+  · exact Or.inr ⟨by linarith, not_lt.1 fun hx => (h.1 hx).not_gt hy⟩
+
+/-- Positive rescaling does not change whether `0` lies between two values. -/
+private theorem zero_mem_uIoc_mul_iff {a b x y : ℝ} (ha : 0 < a) (hb : 0 < b) :
+    (0 : ℝ) ∈ Ι (a * x) (b * y) ↔ (0 : ℝ) ∈ Ι x y := by
+  simp only [mem_uIoc, ← smul_eq_mul, smul_neg_iff_of_pos_left ha, smul_neg_iff_of_pos_left hb,
+    smul_nonneg_iff_pos_imp_nonneg, ha, hb, ha.le, hb.le, implies_true, and_true, forall_const]
+
+/-- Sheppard's formula for vectors of equal norm. -/
+private theorem measureReal_stdGaussian_zero_mem_uIoc_eq_angle_of_norm_eq {u v : E}
+    (huv : ‖u‖ = ‖v‖) (hv : v ≠ 0) :
+    (stdGaussian E).real {x | (0 : ℝ) ∈ Ι ⟪u, x⟫ ⟪v, x⟫} = InnerProductGeometry.angle u v / π := by
+  refine le_antisymm (measureReal_stdGaussian_mem_uIoc_le_angle huv 0) ?_
+  have hmeas := measurableSet_setOf_mem_uIoc (Ω := E) (f := fun x => ⟪u, x⟫)
+    (g := fun x => ⟪v, x⟫) (by fun_prop) (by fun_prop) 0
+  have hnull : (stdGaussian E).real {x | ⟪v, x⟫ ∈ ({0} : Set ℝ)} = 0 := by
+    rw [measureReal_def, nonpos_iff_eq_zero.1 ((stdGaussian_inner_mem_le hv
+      (measurableSet_singleton 0)).trans (by simp)), ENNReal.toReal_zero]
+  have hcompl : {x : E | (0 : ℝ) ∈ Ι ⟪u, x⟫ ⟪v, x⟫}ᶜ ⊆
+      {x | (0 : ℝ) ∈ Ι ⟪u, x⟫ ⟪-v, x⟫} ∪ {x | ⟪v, x⟫ ∈ ({0} : Set ℝ)} := fun x hx => by
+    by_cases h0 : ⟪v, x⟫ = 0
+    · exact Or.inr h0
+    · exact Or.inl (by simpa only [mem_ofPred_eq, inner_neg_left] using
+        zero_mem_uIoc_neg_of_notMem hx h0)
+  have h := (measureReal_mono (μ := stdGaussian E) hcompl).trans (measureReal_union_le _ _)
+  rw [probReal_compl_eq_one_sub hmeas, hnull, add_zero] at h
+  have hneg := measureReal_stdGaussian_mem_uIoc_le_angle (huv.trans (norm_neg v).symm) 0
+  rw [InnerProductGeometry.angle_neg_right, sub_div, div_self pi_ne_zero] at hneg
+  linarith
+
+/-- **Sheppard's formula** [Sheppard1899] [O'Donnell, Example 11.19][ODonnell2014]: for nonzero
+`u` and `v` at angle `θ` and a standard Gaussian vector `X`, `⟪u, X⟫` and `⟪v, X⟫` differ in sign
+(`0` lies between them) with probability exactly `θ / π`. Rescaling reduces to `‖u‖ = ‖v‖`; there
+the upper bound is `measureReal_stdGaussian_mem_uIoc_le_angle`, and outside a null set the
+complementary event is the crossing event for `u` and `-v`, at angle `π - θ`. -/
+theorem measureReal_stdGaussian_zero_mem_uIoc_eq_angle {u v : E} (hu : u ≠ 0) (hv : v ≠ 0) :
+    (stdGaussian E).real {x | (0 : ℝ) ∈ Ι ⟪u, x⟫ ⟪v, x⟫} = InnerProductGeometry.angle u v / π := by
+  have hu' := norm_pos_iff.2 hu
+  have hv' := norm_pos_iff.2 hv
+  have hev : {x : E | (0 : ℝ) ∈ Ι ⟪u, x⟫ ⟪v, x⟫} =
+      {x | (0 : ℝ) ∈ Ι ⟪‖v‖ • u, x⟫ ⟪‖u‖ • v, x⟫} := by
+    ext x
+    simp only [mem_ofPred_eq, real_inner_smul_left, zero_mem_uIoc_mul_iff hv' hu']
+  rw [hev, ← InnerProductGeometry.angle_smul_left_of_pos u v hv',
+    ← InnerProductGeometry.angle_smul_right_of_pos _ v hu']
+  exact measureReal_stdGaussian_zero_mem_uIoc_eq_angle_of_norm_eq
+    (by simp only [norm_smul, norm_norm, mul_comm]) (smul_ne_zero hu'.ne' hv)
+
+/-- **Sheppard's formula, correlation form.** For unit vectors `u`, `v` with `⟪u, v⟫ = ρ`, the
+correlated standard Gaussians `⟪u, X⟫` and `⟪v, X⟫` differ in sign with probability
+`arccos ρ / π`. -/
+theorem measureReal_stdGaussian_zero_mem_uIoc_eq_arccos {u v : E} (hu : ‖u‖ = 1)
+    (hv : ‖v‖ = 1) :
+    (stdGaussian E).real {x | (0 : ℝ) ∈ Ι ⟪u, x⟫ ⟪v, x⟫} = arccos ⟪u, v⟫ / π := by
+  rw [measureReal_stdGaussian_zero_mem_uIoc_eq_angle (norm_ne_zero_iff.1 (by simp [hu]))
+    (norm_ne_zero_iff.1 (by simp [hv])), InnerProductGeometry.angle, hu, hv, mul_one, div_one]
 
 end ProbabilityTheory
