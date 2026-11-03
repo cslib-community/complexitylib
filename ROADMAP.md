@@ -413,9 +413,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Weighted threshold representations:** v1's explicit source-reduction family, universal scalar
   circuit synthesis, entropy and asymptotic activity bounds, and geometric cutting.
 - **Depth-two threshold circuits for Andreev's function** ([#2347]): the exact quadratic
-  `4 * 4 ^ b + b * m * 2 ^ b` depth-two weighted threshold upper bound is proved
-  (`WeightedThreshold/Andreev.lean`); the remaining milestones of [#2347] are the windowed
-  average-case upper bound and the proposed average-case `Ω(ε² n ^ (3 / 2) / log³ n)` gate and
+  `4 * 4 ^ b + b * m * 2 ^ b` depth-two weighted threshold upper bound
+  (`WeightedThreshold/Andreev.lean`) and the windowed average-case `(1 - δ)`-agreement and
+  `(1 / 2 + ε)`-correlation depth-two upper bounds (`WeightedThreshold/AndreevWindowed.lean` and
+  `WeightedThreshold/AndreevAverage.lean`) are proved; the remaining milestone of [#2347] is the
+  proposed average-case `Ω(ε² n ^ (3 / 2) / log³ n)` gate and
   `Ω(ε² n ^ (5 / 2) / log ^ (7 / 2) n)` wire lower bounds improving the published
   `Ω(ε³ n ^ (3 / 2) / log³ n)` gate and `Ω(ε³ n ^ (5 / 2) / log ^ (7 / 2) n)` wire bounds of
   Kane and Williams (arXiv:1511.07860v1, Theorem 1.1).
@@ -655,9 +657,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   width-independent prefix bounds are proved. The selector computes the actual attained window
   minimum with native trial division and real counter calls, preserving the explicit window
   cost factor. The dyadic parameter kernel computes geometry-compatible values and explicitly
-  classifies the small regime; it does not prove the tuned aggregate exponent or dispatch a solver.
-  Remaining are native fast/small solver assembly ([#2146]), global asymptotic composition
-  using the component-cost bridge ([#2145]), outer-host execution and the full endpoint.
+  classifies the small regime. The assembled solver ([#2146]) executes actual parameter
+  preparation, selection and the complete fixed-prime solver, or the real exhaustive small
+  branch, restoring the original host arguments. It supplies the concrete host callee and
+  initialized correctness, logarithmic admission and polynomial prefix/support guarantees.
+  Remaining are global asymptotic composition using the component-cost bridge ([#2145]),
+  outer-host execution, the tuned source exponent and the full endpoint.
 - **Memory-oracle realization** ([#2205], [#2213]): the foundational graded kernel certifies
   all four memory queries, register-word glue, native branches and binds with one fixed
   continuation emitter for all runtime replies. Its functional representation retains the

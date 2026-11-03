@@ -123,6 +123,51 @@ The Karger–Stein endpoint uses one fixed 24-register program, `O(n² log n)` w
 
 The source tree also contains native integer arithmetic, multiword circuit evaluation, matrix multiplication, primality/counting, predecessor structures, 3SUM/exact-triangle routines and randomized SAT algorithms. These broaden coverage of the machine library; they should be catalogued through the complete module census without counting each as a new model. In particular, a bounded frontend or a conditional transfer theorem should not be presented as completion of an unresolved fine-grained endpoint. The current `ROADMAP.md` and selected abstracts are better evidence of endpoint disposition than a directory name.
 
+## Automatic native Exact Triangle solver
+
+Import `Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting` and open
+`Cslib.Algorithms.WordRAM.ExactTriangle`. Use `ParameterSelecting.runs_input_uniform` for a
+complete initialized decision. The
+[checked client](https://github.com/cslib-community/complexitylib/blob/233b273f3b0853557cf9dfb43493053e948b70cc/ComplexityTests/WordRAMParameterSelectingInput.lean)
+gives full imports, admitted positive/negative signed cases, empty input, and a symbolic fast
+family with the actual selected-prime conclusion. From a checkout containing this endpoint:
+
+```bash
+scripts/build.sh --wfail --iofail ComplexityTests.WordRAMParameterSelectingInput
+```
+
+Supply `values : List ℤ` of length `3*n²`, in row-major AB, BC, AC order, and prove every
+`z.natAbs <= F`. Initialize with `State.init (CountPrime.inputWords n F values)`: address 0
+holds the input length, addresses 1 and 2 hold n and F, signed matrix words start at address 3,
+and remaining memory is zero. F is an original magnitude bound, not a prime. The theorem
+requires `ParameterSelecting.inputWidth n F values <= W`; it computes geometry, pointers,
+workspace, the prime and the fast/small dispatch itself. If application fails, check the exact
+list length, canonical signed encoding, magnitude bound and width against the linked client.
+
+The fixed 640-register program returns a raw Boolean in `ParameterSelecting.Reg.result`,
+exactly one iff the original matrices contain a zero triangle. The initialized prefix and
+halt share one final state, original arguments 0–5 are restored, and the stated original-array
+and outside-workspace frames are retained. Zero vertices, F=0 and the entire small regime
+are included. Input placement is the initial-state convention; the executed 15-instruction
+header, parameter computation, actual minimum-count prime selection, solver/control and final
+halt are charged. The uniform initialized bound is `ParameterSelecting.callerTime n F`, already including
+the header and halt reserve of 16.
+Its fast body allowance retains all three component budgets plus 26; the small allowance
+uses actual exhaustive code. No supplied solver, run, prime, layout or time law is required.
+
+For an existing ordinary host, `ParameterSelecting.callee` supplies `ThreeSum.Host.Callee 633`:
+633 scratch registers give 640 total, arguments 0–5 are restored and Boolean 6 is returned.
+Its semantic execution permits arbitrary unused old words. Caller prefix-resource rules
+separately require their original raw-word bound; arbitrary old memory is not asserted zero.
+For initialized polynomial magnitudes `F <= (n+2)^κ`, `inputWidth_le_log` gives width at most
+`(12332*(κ+9)+40)*clog₂(n+2)`, and `bounded_reachable_polynomial` bounds every admitted wider
+prefix's words and zero support by `(n+2)^(12332*(κ+9)+41)`.
+
+This is standard unit-instruction Word-RAM execution for signed integer matrices. It is not a
+bit-time or arbitrary-real theorem. The large-family client is a checked symbolic run, not an
+enormous interpreter benchmark. This conservative automatic component is distinct from the
+later box-backed ordinary 1.9992 endpoint in [PR #2358](https://github.com/cslib-community/complexitylib/pull/2358).
+
 ## Tree Evaluation
 
 The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root of an explicitly table-encoded perfect binary tree in native independent workspace `O(log n · log log n)` for positive value length and height. The output is not charged to workspace, and the theorem leaves time existential. The same page distinguishes borrowed-register restoration and fan-in/packed procedure variants.
