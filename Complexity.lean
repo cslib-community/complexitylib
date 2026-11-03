@@ -877,6 +877,7 @@ public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.InnerPr
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Menus
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.PendingBias
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Potential
+public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.RandomRestriction
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ScalarActivity
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.SupportBound
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.SupportBoundAsymptotics
@@ -3337,6 +3338,7 @@ public import Complexity.Foundations.Combinatorics.LineCode.Line
 public import Complexity.Foundations.Combinatorics.LineCode.Menu
 public import Complexity.Foundations.Combinatorics.LineCode.Menu.Collision
 public import Complexity.Foundations.Combinatorics.LineCode.Menu.Counting
+public import Complexity.Foundations.Combinatorics.LittlewoodOfford
 public import Complexity.Foundations.Combinatorics.MajorityTree
 public import Complexity.Foundations.Combinatorics.MajorityVote
 public import Complexity.Foundations.Combinatorics.MajorityVote.Weighted
