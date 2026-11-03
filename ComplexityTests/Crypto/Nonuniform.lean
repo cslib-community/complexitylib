@@ -8,6 +8,7 @@ import Complexity.Crypto.Computational.Nonuniform.ZeroKnowledge
 import Complexity.Crypto.Computational.Stretch
 import Complexity.Crypto.Computational.Pseudoentropy.OneWay
 import Complexity.Crypto.Computational.Pseudoentropy.LabelExtraction
+import Complexity.Crypto.Computational.Pseudoentropy.ThreeSource.Padding
 import Complexity.Languages.Probabilistic.Notation
 import Complexity.Tactic.PPT
 
@@ -180,5 +181,140 @@ example :
     (by rw [fairPair_entropy]; norm_num [dyadicSize])
   refine ⟨mask, by simpa [dyadicSize] using hdense, ?_⟩
   rwa [hbound] at hclose
+
+private noncomputable def saved : fairPair.SeedRealization :=
+  Classical.choice fairPair.exists_seedRealization
+
+private def advisedWordDistinguisher
+    (input : (ℕ × List Bool) × List Bool) : ProbComp Bool :=
+  pure (input.1.2.headD false && input.2.headD false)
+
+/-- The concrete word distinguisher depends on the nonempty advice word: it accepts `[true]` under
+`nonemptyAdvice n` with probability `1` and under empty advice with probability `0`. -/
+example (n : ℕ) :
+    Pr[advisedWordDistinguisher ((n, nonemptyAdvice n), [true])] = 1 ∧
+      Pr[advisedWordDistinguisher ((n, []), [true])] = 0 := by
+  simp [advisedWordDistinguisher, nonemptyAdvice]
+
+/-- Concrete exercised client of `HasGapWithAdvice.extract_three` on `fairPair` with nonempty
+advice `nonemptyAdvice`, positive extracted label output
+`ExtractionSchedule.slack n (saved.length n) 0`, and the advice-dependent distinguisher
+`advisedWordDistinguisher`. -/
+example :
+    let count := fun n => Pseudoentropy.ExtractionSchedule.count n (saved.length n) 0
+    let bits := fun n => Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0
+    Negligible (fun n => Game.advantage
+      (distinguishingGame
+        (ProbComp.eval
+          (Pseudoentropy.ThreeSource.extract (count n) (saved.length n) 2 0 (bits n) 0
+            (saved.sampleWithSeed n)))
+        (fun word => advisedWordDistinguisher ((n, nonemptyAdvice n), word)))
+      (distinguishingGame
+        (BitString.uniformList
+          (Pseudoentropy.ThreeSource.outputLength (count n) (saved.length n) 2 0 (bits n) 0))
+        (fun word => advisedWordDistinguisher ((n, nonemptyAdvice n), word)))) := by
+  have hlength := saved.length_isPolyTime
+  have hind : IndistinguishableWithAdvice nonemptyAdvice
+      (fun n => ProbComp.eval
+        (Pseudoentropy.ThreeSource.extract
+          (Pseudoentropy.ExtractionSchedule.count n (saved.length n) 0)
+          (saved.length n) 2 0
+          (Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0) 0
+          (saved.sampleWithSeed n)))
+      (fun n => BitString.uniformList
+        (Pseudoentropy.ThreeSource.outputLength
+          (Pseudoentropy.ExtractionSchedule.count n (saved.length n) 0)
+          (saved.length n) 2 0
+          (Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0) 0)) := by
+    apply (fairPair_gapWithAdvice nonemptyAdvice).extract_three saved
+      (bound := fun _ => 2) (inverseSlack := fun _ => 0)
+      (observationBits := fun _ => 0) (remainingBits := fun _ => 0)
+      (labelBits := fun n => Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0)
+      (numerator := fun _ => 2) (densityBound := fun _ => 0)
+      (by constructor <;> fun_prop)
+      (by intro n observation _; exact Nat.le_refl 2)
+      (Filter.Eventually.of_forall (by intro n; rw [fairPair_entropy]; norm_num [dyadicSize]))
+      (Filter.Eventually.of_forall (by intro n; exact Or.inl rfl)) ?_
+      (Filter.Eventually.of_forall (by intro n; exact Or.inl rfl))
+    apply Filter.Eventually.of_forall
+    intro n
+    have h := Pseudoentropy.ExtractionSchedule.two_slack_eq n (saved.length n) 0
+    norm_num [dyadicSize] at h ⊢
+    linarith [Nat.cast_nonneg (α := ℝ)
+      (Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0)]
+  exact hind advisedWordDistinguisher (by unfold advisedWordDistinguisher; fun_prop)
+
+/-- Concrete exercised client of `HasGapWithAdvice.extract_indexed_word_labels` on `fairPair` with
+nonempty advice `nonemptyAdvice` and an advice-dependent indexed test. -/
+example (choose : ℕ → ℕ) (hchoose : ∀ n, choose n < n + 1) :
+    let count := fun n => Pseudoentropy.ExtractionSchedule.count n (saved.length n) 0
+    let bits := fun n => Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0
+    let test : ℕ × List Bool → ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool :=
+      fun a i result => pure (a.2.headD false && (result.2.2.headD false ^^ decide (i < a.1)))
+    Negligible (fun n => Game.advantage
+      (ProbComp.eval (OracleComp.replicate (count n) (fairPair.sample n) >>= fun values =>
+        Pseudoentropy.extractWordLabels (count n) (bits n) values >>=
+          test (n, nonemptyAdvice n) (choose n)))
+      (ProbComp.eval
+        (Pseudoentropy.extractWordLabelsIdeal
+          (Prod.fst <$> fairPair.sample n) (count n) (bits n) >>=
+          test (n, nonemptyAdvice n) (choose n)))) := by
+  have hlength := saved.length_isPolyTime
+  apply (fairPair_gapWithAdvice nonemptyAdvice).extract_indexed_word_labels saved choose
+    (candidates := fun n => n + 1) (inverseSlack := fun _ => 0)
+    (outputBits := fun n _ => Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0)
+    (numerator := fun _ _ => 2) (densityBound := fun _ => 0)
+    (by fun_prop)
+    (Pseudoentropy.ExtractionSchedule.isPolyTime_slack (by fun_prop) (by fun_prop) (by fun_prop))
+    (by fun_prop) (by fun_prop) (by fun_prop)
+    (Filter.Eventually.of_forall hchoose)
+    (Filter.Eventually.of_forall (by intro n; rw [fairPair_entropy]; norm_num [dyadicSize]))
+    ?_
+    (fun a i result => pure (a.2.headD false && (result.2.2.headD false ^^ decide (i < a.1))))
+    (by fun_prop)
+  apply Filter.Eventually.of_forall
+  intro n
+  have h := Pseudoentropy.ExtractionSchedule.two_slack_eq n (saved.length n) 0
+  norm_num [dyadicSize] at h ⊢
+  linarith [Nat.cast_nonneg (α := ℝ) (Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0)]
+
+/-- Conditional client of `EntropyGrid.exists_secure_padded_choice_withAdvice` assuming a
+nonuniform one-way function `hf : NonuniformOneWay f` (which supplies a pseudoentropy pair with
+positive gap `1 / (2 * (n + 7))` discharging `4 / dyadicSize (16 * (n + 7)) ≤ gap n`, whereas the
+unconditional `fairPair` fixture has gap `0`), tested with nonempty advice `nonemptyAdvice` and
+`advisedWordDistinguisher`. -/
+example {f : List Bool → List Bool} (hf : NonuniformOneWay f) :
+    ∃ (pair : Pseudoentropy.SamplablePair) (savedPair : pair.SeedRealization)
+      (bound common choose : ℕ → ℕ),
+      (∀ᶠ n in Filter.atTop,
+        choose n < Pseudoentropy.EntropyGrid.size (savedPair.length n) (16 * (n + 7))) ∧
+      Negligible (fun n => Game.advantage
+        (((BitString.uniformList (common n)).map
+          (Pseudoentropy.EntropyGrid.paddedGenerate n (savedPair.length n) (bound n)
+            (16 * (n + 7)) (common n) (choose n) (savedPair.evaluate n))).bind
+          (fun word => ProbComp.eval
+            (advisedWordDistinguisher ((n, nonemptyAdvice n), word))))
+        ((BitString.uniformList (common n + 1)).bind
+          (fun word => ProbComp.eval
+            (advisedWordDistinguisher ((n, nonemptyAdvice n), word))))) := by
+  obtain ⟨pair, hpair⟩ := hf.exists_pseudoentropyPair
+  obtain ⟨savedPair⟩ := pair.exists_seedRealization
+  obtain ⟨bound, hbound, hfits⟩ := pair.exists_observationBound
+  have hdensity : Turing.MultiTapeTM.ComputableInPolyTime
+      (fun n => 16 * (n + 7)) Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encUnary := by
+    fun_prop
+  obtain ⟨common, hcommon, _, _, hsize⟩ :=
+    Pseudoentropy.EntropyGrid.exists_common_seedLength
+      savedPair.length_isPolyTime hbound hdensity
+  have hadvice : PolynomiallyBounded (fun n => (nonemptyAdvice n).length) := by
+    simpa [nonemptyAdvice, Nat.add_comm] using PolynomiallyBounded.id.add (.const 1)
+  obtain ⟨choose, hchoose, hsecure⟩ :=
+    Pseudoentropy.EntropyGrid.exists_secure_padded_choice_withAdvice
+      (hpair nonemptyAdvice hadvice) savedPair
+      ⟨hbound, hdensity, hcommon, hfits, hsize⟩
+      (Filter.Eventually.of_forall Pseudoentropy.EntropyGrid.four_steps_le_owf_gap)
+  refine ⟨pair, savedPair, bound, common, choose, hchoose, ?_⟩
+  exact hsecure (fun a _ word => advisedWordDistinguisher (a, word))
+    (by unfold advisedWordDistinguisher; fun_prop)
 
 end ComplexityTests.Crypto.Nonuniform
