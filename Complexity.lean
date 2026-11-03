@@ -2704,6 +2704,7 @@ public import Complexity.Computability.WordRAM.Realization.Result
 public import Complexity.Computability.WordRAM.Realization.While
 public import Complexity.Computability.WordRAM.Realization.WhileAbsorb
 public import Complexity.Computability.WordRAM.Realization.Witness
+public import Complexity.Computability.WordRAM.RegisterCopy
 public import Complexity.Computability.WordRAM.RegisterFrame
 public import Complexity.Computability.WordRAM.Sequence
 public import Complexity.Computability.WordRAM.Signed.Arithmetic
