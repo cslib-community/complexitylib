@@ -13,8 +13,9 @@ import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 /-!
 # Succinctness of Kilian's protocol
 
-Kilian's protocol is succinct: the honest transcript has a number of bits polylogarithmic in the
-statement ([Kilian1992]; [BarakGoldreich2001], Construction 3.4). This module counts it, in terms
+Kilian's protocol is succinct: the honest transcript has a number of bits polynomial in the
+security parameter and polylogarithmic in the encoded statement length ([Kilian1992];
+[BarakGoldreich2001], Construction 3.4). This module counts it, in terms
 of the PCP verifier's parameters, kept separate from them: `r = V.coins x` random bits and at most
 `q` queries per random string.
 
@@ -30,11 +31,14 @@ of the PCP verifier's parameters, kept separate from them: `r = V.coins x` rando
   of queries, as for the verifier of the PCP theorem, this is `O(n² · (log₂ |enc x| + 1))`
   (`kilianCommunication_honest_le_log`).
 
-Verifier time is certified separately by `computableInPolyTime_kilianVerify`, which is polynomial
-in the encoded verifier input; on honest transcripts that input has length linear in `|enc x|`
-and polynomial in `n` and the PCP parameters (`length_kilianVerifierInput_honest_le`). The
-verifier does not truncate oversized messages, so against a cheating prover its time is
-polynomial in the length of what the prover sends.
+Verifier time is certified separately by `computableInPolyTime_kilianVerify`, assuming a
+polynomial-time hash with key-length digests, `V.PolyTime enc` and logarithmically many random
+bits. Its bound is polynomial in the encoded verifier input; on honest transcripts that input
+has length linear in `|enc x|` and polynomial in `n` and the PCP parameters
+(`length_kilianVerifierInput_honest_le`). With a polynomial query bound (in particular, the
+constant query bound of the PCP-theorem verifier), these hypotheses give polynomial time in
+`n + |enc x|`. The verifier does not truncate oversized messages, so against a cheating prover
+its time is polynomial in the received encoded input length.
 
 ## Main definitions
 
@@ -200,8 +204,10 @@ theorem kilianCommunication_honest_le_log {enc : α ↪ List Bool} {c : ℕ}
 encoded input of `kilianVerify` (the input of `computableInPolyTime_kilianVerify`) has length at
 most `4 * |enc x| + 6 * n + 6 + 2 * n * (2 * r + 1) + n * (2 * q * B + 1)` with
 `B = 2 * (3 + (r + ⌈log₂ q⌉) * (2 * n + 1)) + 1`, linear in the statement and polynomial in `n`
-and the PCP parameters. Hence the verifier runs in time polynomial in `n + |enc x|` on honest
-transcripts. -/
+and the PCP parameters. This is an input-length bound, not a runtime certificate. Combined with
+`computableInPolyTime_kilianVerify` under its polynomial-time hash, digest-length, `V.PolyTime`
+and logarithmic-randomness hypotheses, and a polynomial query bound (constant for the
+PCP-theorem verifier), it gives polynomial time in `n + |enc x|` on honest transcripts. -/
 theorem length_kilianVerifierInput_honest_le {enc : α ↪ List Bool}
     (hlen : ∀ k x, (H k x).length = k.length)
     {n : ℕ} {k : List Bool} (hk : k.length = n) {x : α} {table : List Bool}
