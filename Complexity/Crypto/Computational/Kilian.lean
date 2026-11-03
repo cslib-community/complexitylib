@@ -56,8 +56,9 @@ have plain polynomial-time certificates, and sampling the verifier's challenges 
 (`isPPTOn_kilianChallenges`), for a polynomial-time `V` with `O(log n)` random bits and a
 polynomial-time `H` with `n`-bit digests.
 
-Computational soundness, against cheating provers that choose `x` after seeing the key, is not
-proved here; it is the next milestone of the formalization (#999, M2b).
+Computational soundness, against cheating provers that choose `x` after seeing the key, is in
+`Complexity.Crypto.Computational.Kilian.Soundness`, and the arguments for NP in
+`Complexity.Crypto.Computational.Kilian.NP`.
 
 **Differences from [BarakGoldreich2001], Construction 3.4.** The tree is the one of
 `Complexity.Crypto.Computational.MerkleTree` (hashed leaves, `encPair` pairing, sibling-only

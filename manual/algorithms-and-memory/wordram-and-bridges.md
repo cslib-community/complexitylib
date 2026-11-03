@@ -62,6 +62,51 @@ The extension records worst-case successful halting, fault-freedom, random-call 
 
 [Complexity/Computability/WordRAM/Randomized/Structured.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Randomized/Structured.lean) uses `ExecRand` to certify a finite fault-free structured execution tree with the distribution of final data and exact instruction count. Compilation and random/cost bounds preserve its law.
 
+### Realize memory clients with private coins
+
+Import `Complexity.Computability.WordRAM.Realization.Random` for
+[`RealizesRand`](../../Complexity/Computability/WordRAM/Realization/Random.lean), and
+`Complexity.Computability.WordRAM.Realization.RandomLoop` for runtime-bounded iteration.
+Start with a memory client with private coins, faithful input/output word encodings, a safe
+entry domain, and separate time and random-call budgets. The realization chooses its emitter,
+scratch size and exchange constant before runtime arguments, word widths and initial memories.
+It requires bounded initial data, the encoded argument in its source registers, disjoint
+scratch/frontier placement, the safe-domain premise and demonic admissibility of the client.
+
+[`ExecRandLaw`](../../Complexity/Computability/WordRAM/Randomized/Law.lean) relates the emitted
+code to the **joint** law of encoded result words and the entire memory function and frontier.
+A result-only marginal cannot preserve a later memory-dependent call. The code keeps registers
+outside its scratch bank and frontier, and every path terminates within `C*(time+1)` native
+instructions and the separate random-call budget. Deterministic components enter through an
+existing `Realizes` certificate and `Realizes.toRand`; their time is memory charge plus local
+work and their random-call budget is zero.
+
+`RealizesRand.bind` requires the continuation's domain and uniform time/call bounds for every
+supported intermediate answer and memory. `RealizesRand.iterate` requires the corresponding
+bounds at every supported loop prefix, using one body emitter. Supply those obligations at
+reached memories; a bound only at the initial state, or only in expectation, is insufficient.
+The native rules account for register copies, loop counters, headers and exits.
+
+`RealizesRand.exists_init_program` compiles a selected result coordinate to the existing flat
+program semantics, retaining its joint law with full memory/frontier and exporting both
+`RandHaltsWithin` and `RandCallsBounded`. Keep the raw-input prefix equality, length/fit,
+safe-domain and demonic-admissibility premises. `Data.init` raw-memory placement is an
+**uncharged calling convention**; the charged `2*k+5` native prefix installs the frontier and
+first `k` argument registers, not the whole graph. Its allowance `C*(time+1)+1` includes that
+prefix, the body and trailing halt. The random budget counts primitive inclusive-range calls,
+even `rand(0)`; it does not prove a bounded-cost exact fair-bit sampler.
+
+Open the complete checked
+[WordRAMRealizationRandom clients](../../ComplexityTests/WordRAMRealizationRandom.lean),
+including their imports and encodings. `sample_program` samples an input position, retaining
+repeated values' multiplicity; its input is nonempty and must fit. The runtime-repeat client
+bounds every iteration. `storeSample_result_eq_cell` and `realizesRand_storeSample` retain the
+correlation between the returned sample and the written cell, while preserving other memory
+and the frontier. These are realization clients, not a completed native Karger implementation:
+K2 still needs its method/setup and exact-resource deletion train, and K3 needs recursive
+frame-stack realization. No expected-cost or uniform-word claim becomes a strict fair-coin
+runtime claim through this interface.
+
 ## Expected time and unbounded termination
 
 [expectedTime](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Randomized/Expected.lean#L165) sums, over horizons `t`, the probability that execution is still running. It is valued in extended nonnegative reals. Since both halt and fault are absorbing, this is time until either; concluding almost-sure **successful** halting also requires fault-freedom. `Executes.expectedTime_eq` recovers deterministic instruction counts, and worst-case halting reduces the sum to a finite horizon.

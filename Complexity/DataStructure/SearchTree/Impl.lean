@@ -56,7 +56,7 @@ def step (t : BinaryTree α) (o : Op α) : BinaryTree α × (spec α).Result o �
   match o with
   | .contains x => (t, contains x t, searchVisits x t)
   | .insert x => (insert x t, (), searchVisits x t)
-  | .erase x => (erase x t, (), eraseVisits x t)
+  | .delete x => (erase x t, (), eraseVisits x t)
   | .minimum => (t, minimum t, minimumVisits t)
   | .successor x => (t, successor x t, successorVisits x t)
 
@@ -89,7 +89,7 @@ def impl : StateTransitionImpl (spec α) Exec :=
       | insert x =>
         cases he
         exact ⟨rfl, ordered_insert ht x, elements_insert x t⟩
-      | erase x =>
+      | delete x =>
         cases he
         exact ⟨rfl, ordered_erase ht x, elements_erase ht x⟩
       | minimum =>
@@ -105,7 +105,7 @@ theorem exec_visits_le_height {t t' : BinaryTree α} {o : Op α}
   cases o with
   | contains x => cases he; exact searchVisits_le_height x t
   | insert x => cases he; exact searchVisits_le_height x t
-  | erase x => cases he; exact eraseVisits_le_height x t
+  | delete x => cases he; exact eraseVisits_le_height x t
   | minimum => cases he; exact minimumVisits_le_height t
   | successor x => cases he; exact successorVisits_le_height x t
 

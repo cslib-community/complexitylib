@@ -80,8 +80,8 @@ example (u : Fin 8) :
 /-- Concrete collision, lookup, and in-place key-update check on `U = 8`, `M = 3` (`m = 8`) where
 `h₁ u = ⟨u.val % 4, _⟩` maps distinct keys `k₁ = 1` and `k₂ = 5` to the same initial slot `1`:
 inserting `k₂` after `k₁` takes `probeCount T₁ k₂ (π k₂) = 2 > 1` probes (stepping to slot
-`(1 + 3) % 8 = 4`), `tableGet` recovers both stored values and returns `none` on an absent key, and
-overwriting `k₁` preserves `OrderedTableRep` and updates `tableGet`. -/
+`(1 + 3) % 8 = 4`), `tableQuery` recovers both stored values and returns `none` on an absent key,
+and overwriting `k₁` preserves `OrderedTableRep` and updates `tableQuery`. -/
 example :
     let h₁ : Fin 8 → Fin (2 ^ 3) :=
       fun x => ⟨x.val % 4, Nat.lt_trans (Nat.mod_lt _ (by decide)) (by decide)⟩
@@ -101,11 +101,11 @@ example :
     let T₃ := tableInsert hm π T₂ k₁ 99
     h₁ k₁ = h₁ k₂ ∧
       probeCount T₁ k₂ (π k₂) = 2 ∧
-      tableGet hm π T₂ k₁ = some 10 ∧
-      tableGet hm π T₂ k₂ = some 50 ∧
-      tableGet hm π T₂ k₃ = none ∧
-      tableGet hm π T₃ k₁ = some 99 ∧
-      tableGet hm π T₃ k₂ = some 50 ∧
+      tableQuery hm π T₂ k₁ = some 10 ∧
+      tableQuery hm π T₂ k₂ = some 50 ∧
+      tableQuery hm π T₂ k₃ = none ∧
+      tableQuery hm π T₃ k₁ = some 99 ∧
+      tableQuery hm π T₃ k₂ = some 50 ∧
       OrderedTableRep π s₃ T₃ := by
   intro h₁ h₂ π hm k₁ k₂ k₃ s₀ T₀ s₁ T₁ s₂ T₂ s₃ T₃
   have hrep₀ : OrderedTableRep π s₀ T₀ := OrderedTableRep.empty π
@@ -134,11 +134,11 @@ example :
         true_and]
       decide
   have hpc : probeCount T₁ k₂ (π k₂) = 2 := congrArg (1 + ·) hmp₁
-  have hget₂ (u : Fin 8) : tableGet hm π T₂ u = s₂ u :=
-    hrep₂.toTableRep.tableGet_eq hm u
+  have hget₂ (u : Fin 8) : tableQuery hm π T₂ u = s₂ u :=
+    hrep₂.toTableRep.tableQuery_eq hm u
       (lt_of_le_of_lt (hrep₂.toTableRep.card_otherOccupiedSlots_le u) (by decide))
-  have hget₃ (u : Fin 8) : tableGet hm π T₃ u = s₃ u :=
-    hrep₃.toTableRep.tableGet_eq hm u
+  have hget₃ (u : Fin 8) : tableQuery hm π T₃ u = s₃ u :=
+    hrep₃.toTableRep.tableQuery_eq hm u
       (lt_of_le_of_lt (hrep₃.toTableRep.card_otherOccupiedSlots_le u) (by decide))
   refine ⟨by decide, hpc, ?_, ?_, ?_, ?_, ?_, hrep₃⟩
   · rw [hget₂]; decide

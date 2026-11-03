@@ -108,4 +108,53 @@ example : ∃ (L : Set (List Bool)) (C d : ℕ), [true] ∈ L ∧ [false] ∉ L 
   refine ⟨L, C, d, hyes rfl, ?_, h⟩
   exact Set.disjoint_right.mp hno rfl
 
+universe u
+
+/-- Down embedding from the higher-universe lifted bitstring carrier `ULift.{u} (List Bool)`. -/
+private def encULiftBits : ULift.{u} (List Bool) ↪ List Bool :=
+  ⟨ULift.down, fun _ _ h => ULift.ext h⟩
+
+/-- Genuinely partial promise problem on the higher-universe carrier `ULift.{u} (List Bool)`,
+with `ULift.up []` outside the promise. -/
+private def liftedPartialSingletonBit : PromiseProblem (ULift.{u} (List Bool)) where
+  yes := {ULift.up [true]}
+  no := {ULift.up [false]}
+  disjoint := by simp
+
+/-- The native machine `partialMachine` solves `liftedPartialSingletonBit` with bounded error in
+time `clock (encULiftBits a).length` on the higher-universe carrier `ULift.{u} (List Bool)`. -/
+private theorem partialMachine_solves_liftedPartialSingletonBit :
+    partialMachine.SolvesPromiseWithBoundedErrorInTime encULiftBits.{u}
+      liftedPartialSingletonBit.{u} (fun a => clock (encULiftBits a).length) := by
+  intro a
+  refine ⟨partialMachine_halts_clock a.down, ?_, ?_⟩
+  · intro hyes
+    obtain rfl : a = ULift.up [true] := hyes
+    change 2 / 3 ≤ ProbComp.eval (partialMachine.runClosed (clock [true].length) [true]) [true]
+    rw [MultiTapePTM.eval_runClosed_eq_of_halted partialMachine _
+      (clock_pos _) (partialMachine_halts _), partialMachine_singleton]
+    exact ENNReal.div_le_of_le_mul (by norm_num)
+  · intro hno
+    obtain rfl : a = ULift.up [false] := hno
+    change 2 / 3 ≤ ProbComp.eval (partialMachine.runClosed (clock [false].length) [false]) [false]
+    rw [MultiTapePTM.eval_runClosed_eq_of_halted partialMachine _
+      (clock_pos _) (partialMachine_halts _), partialMachine_singleton]
+    exact ENNReal.div_le_of_le_mul (by norm_num)
+
+/-- Positive higher-universe client: `liftedPartialSingletonBit` belongs to the canonical
+`PromiseBPTIME encULiftBits clock` class and admits a same-clock `PPTIME` completion separating
+`ULift.up [true]` from `ULift.up [false]`, while `ULift.up []` remains an off-promise tie. -/
+example :
+    liftedPartialSingletonBit.{u} ∈ PromiseBPTIME encULiftBits.{u} clock ∧
+      (ULift.up [] : ULift.{u} (List Bool)) ∉ liftedPartialSingletonBit.{u}.promise ∧
+      (∃ L ∈ PPTIME encULiftBits.{u} clock,
+        ULift.up [true] ∈ L ∧ ULift.up [false] ∉ L) := by
+  have hmem : liftedPartialSingletonBit.{u} ∈ PromiseBPTIME encULiftBits.{u} clock := by
+    refine ⟨1, 0, 0, Unit, inferInstance, partialMachine, ?_⟩
+    simpa only [Nat.one_mul, Nat.add_zero] using
+      partialMachine_solves_liftedPartialSingletonBit.{u}
+  obtain ⟨L, hL, hyes, hno⟩ := PromiseBPTIME_subset_promiseClass_PPTIME hmem
+  refine ⟨hmem, by simp [liftedPartialSingletonBit, PromiseProblem.promise],
+    ⟨L, hL, hyes rfl, Set.disjoint_right.mp hno rfl⟩⟩
+
 end ComplexityTests.PromiseCountingSimulation
