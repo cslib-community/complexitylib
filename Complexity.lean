@@ -890,6 +890,7 @@ public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Activit
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ActivityBounds
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Andreev
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevAverage
+public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevLowerBound
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevWindowed
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Capacity
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.CapacityCircuit
@@ -897,6 +898,7 @@ public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Compone
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Cut
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.DepthTwo
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.InnerProduct
+public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.LTF
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Menus
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.PendingBias
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Potential
@@ -904,6 +906,7 @@ public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.RandomR
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ScalarActivity
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.SupportBound
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.SupportBoundAsymptotics
+public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ThresholdCounting
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.TranscriptTree
 public import Complexity.Computability.Circuit.Boolean.Word
 public import Complexity.Computability.Circuit.Boolean.XorLemma
@@ -2703,6 +2706,7 @@ public import Complexity.Computability.WordRAM.Realization.Result
 public import Complexity.Computability.WordRAM.Realization.While
 public import Complexity.Computability.WordRAM.Realization.WhileAbsorb
 public import Complexity.Computability.WordRAM.Realization.Witness
+public import Complexity.Computability.WordRAM.RegisterCopy
 public import Complexity.Computability.WordRAM.RegisterFrame
 public import Complexity.Computability.WordRAM.Sequence
 public import Complexity.Computability.WordRAM.Signed.Arithmetic
@@ -3209,8 +3213,10 @@ public import Complexity.Foundations.Analysis.RowCompression.BoundedCap
 public import Complexity.Foundations.Analysis.RowCompression.ClippedError
 public import Complexity.Foundations.Analysis.RowCompression.FalseOverflow
 public import Complexity.Foundations.Analysis.RowCompression.Floors
+public import Complexity.Foundations.Analysis.RowCompression.FourthMoment
 public import Complexity.Foundations.Analysis.RowCompression.GateClosure
 public import Complexity.Foundations.Analysis.RowCompression.Iteration
+public import Complexity.Foundations.Analysis.RowCompression.MomentSchedule
 public import Complexity.Foundations.Analysis.RowCompression.NoiseDecay
 public import Complexity.Foundations.Analysis.RowCompression.OverflowBudget
 public import Complexity.Foundations.Analysis.RowCompression.OverflowNoise
@@ -3227,6 +3233,7 @@ public import Complexity.Foundations.Analysis.SpecialFunctions.Arccos
 public import Complexity.Foundations.Analysis.SpecialFunctions.PolynomialSwitch
 public import Complexity.Foundations.Analysis.SpecialFunctions.RationalRamp
 public import Complexity.Foundations.Analysis.SpecialFunctions.SmoothSwitch
+public import Complexity.Foundations.Analysis.SpecialFunctions.Sqrt
 public import Complexity.Foundations.BooleanAnalysis.Bernoulli
 public import Complexity.Foundations.BooleanAnalysis.Bonami
 public import Complexity.Foundations.BooleanAnalysis.BucketWeight
@@ -3702,11 +3709,26 @@ public import Complexity.Foundations.Probability.HeavyCountRarity
 public import Complexity.Foundations.Probability.HeavyCountTail
 public import Complexity.Foundations.Probability.HierarchyAccess
 public import Complexity.Foundations.Probability.HierarchyAtomCutoff
+public import Complexity.Foundations.Probability.HierarchyCorrectionMean
+public import Complexity.Foundations.Probability.HierarchyCutoffs
 public import Complexity.Foundations.Probability.HierarchyParams
+public import Complexity.Foundations.Probability.HierarchyRankCutoffs
+public import Complexity.Foundations.Probability.HierarchyRankEnvironment
+public import Complexity.Foundations.Probability.HierarchyRawMoment
 public import Complexity.Foundations.Probability.HierarchySampling
+public import Complexity.Foundations.Probability.HierarchySourceSampling
 public import Complexity.Foundations.Probability.HierarchyTaskData
 public import Complexity.Foundations.Probability.HierarchyTaskMeans
 public import Complexity.Foundations.Probability.HierarchyTasks
+public import Complexity.Foundations.Probability.NormalizedAtomRows.BoundedLoss
+public import Complexity.Foundations.Probability.NormalizedAtomRows.ClippedTail
+public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanEvent
+public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanTail
+public import Complexity.Foundations.Probability.NormalizedAtomRows.Output
+public import Complexity.Foundations.Probability.NormalizedAtomRows.Request
+public import Complexity.Foundations.Probability.NormalizedAtomRows.RequestSharp
+public import Complexity.Foundations.Probability.NormalizedAtomRows.Sharp
+public import Complexity.Foundations.Probability.NormalizedAtomRows.TwoMask
 public import Complexity.Foundations.Probability.PilotRowTasks
 public import Complexity.Foundations.Probability.PilotTasks
 public import Complexity.Foundations.Probability.PolynomialAtomCompression
@@ -3719,7 +3741,9 @@ public import Complexity.Foundations.Probability.PolynomialAtomRows.NoOverflow
 public import Complexity.Foundations.Probability.PolynomialAtomRows.Relative
 public import Complexity.Foundations.Probability.PolynomialAtomRows.RootError
 public import Complexity.Foundations.Probability.PolynomialAtomRows.Saturation
+public import Complexity.Foundations.Probability.ProductDensity
 public import Complexity.Foundations.Probability.ProductError
+public import Complexity.Foundations.Probability.RawProductMoment
 public import Complexity.Foundations.Probability.RootMetric
 public import Complexity.Foundations.Probability.RootMetric.ConditionalWalk
 public import Complexity.Foundations.Probability.RootMetric.Conditioning
