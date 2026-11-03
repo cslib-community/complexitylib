@@ -10,6 +10,7 @@ module
 public import Complexity.Foundations.Combinatorics.Expander.Basic
 public import Mathlib.Analysis.Real.Sqrt
 import Complexity.Foundations.Data.Finset.Expect
+import Complexity.Foundations.Data.Finset.Variance
 import Mathlib.Algebra.BigOperators.Balance
 import Mathlib.Algebra.Order.BigOperators.Expect
 import Mathlib.Tactic.FieldSimp
@@ -79,15 +80,6 @@ variable {V D : Type*} [Fintype V] [Fintype D] (G : RotationMap V D)
 private theorem expect_sub_expect (f : V → ℝ) : 𝔼 v, (f v - 𝔼 w, f w) = 0 :=
   Fintype.expect_balance f
 
-/-- The second moment of the centered function is the variance. -/
-private theorem expect_sub_expect_sq (f : V → ℝ) :
-    𝔼 v, (f v - 𝔼 w, f w) ^ 2 = 𝔼 v, f v ^ 2 - (𝔼 v, f v) ^ 2 := by
-  rcases isEmpty_or_nonempty V with hV | hV
-  · simp
-  · simp only [sub_sq, expect_add_distrib, expect_sub_distrib, ← expect_mul, ← mul_expect,
-      Fintype.expect_const]
-    ring
-
 section Mixing
 
 variable [Nonempty D]
@@ -127,8 +119,8 @@ theorem sq_expect_mul_walk_pow_sub_le (t : ℕ) (f g : V → ℝ) :
     (𝔼 v, f v * (G.walk ^ t) g v - (𝔼 v, f v) * 𝔼 v, g v) ^ 2 ≤
       G.spectralExpansion ^ (2 * t) * (𝔼 v, f v ^ 2 - (𝔼 v, f v) ^ 2) *
         (𝔼 v, g v ^ 2 - (𝔼 v, g v) ^ 2) := by
-  rw [G.expect_mul_walk_pow_eq, add_sub_cancel_left, ← expect_sub_expect_sq,
-    ← expect_sub_expect_sq]
+  rw [G.expect_mul_walk_pow_eq, add_sub_cancel_left, ← Fintype.expect_sub_expect_sq,
+    ← Fintype.expect_sub_expect_sq]
   calc
     _ ≤ (𝔼 v, (f v - 𝔼 w, f w) ^ 2) *
           𝔼 v, (G.walk ^ t) (fun w ↦ g w - 𝔼 u, g u) v ^ 2 :=
@@ -238,7 +230,7 @@ theorem le_card_interedges_compl_of_expect_mul_walk_le {μ : ℝ}
     (fun v ↦ if v ∈ S then 1 else 0)
   rw [pow_one] at hc
   rw [← add_sub_cancel_left ((𝔼 v, if v ∈ S then (1 : ℝ) else 0) * 𝔼 v, if v ∈ S then 1 else 0)
-    (𝔼 v, _ * G.walk _ v), ← hc, expect_sub_expect_sq, expect_boole_mem_mul_walk,
+    (𝔼 v, _ * G.walk _ v), ← hc, Fintype.expect_sub_expect_sq, expect_boole_mem_mul_walk,
     Fintype.expect_boole_mem, Fintype.expect_boole_mem_sq, nnratCast_dens] at h
   have he : (#(G.interedges S S) : ℝ) + #(G.interedges S Sᶜ) = #S * Fintype.card D := by
     exact_mod_cast G.card_interedges_add_card_interedges_compl S S

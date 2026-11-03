@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Problems.SAT
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Machine
-public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Compose
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bit
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Decode
 public import Complexity.Foundations.Data.List.Append
 import Complexity.Foundations.Data.Nat.Bits

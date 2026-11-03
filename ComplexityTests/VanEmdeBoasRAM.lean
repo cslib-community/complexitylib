@@ -7,8 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.VanEmdeBoas.Call
-public import Complexity.Algorithms.Lean.VanEmdeBoas.Insert
+public import Complexity.DataStructure.VanEmdeBoas.WordRAM.Call
+public import Complexity.DataStructure.VanEmdeBoas.Insert
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.IntervalCases
 
@@ -24,8 +24,8 @@ namespace ComplexityTests.VanEmdeBoasRAM
 
 open Cslib
 open Cslib.WordRAM
-open Cslib.Algorithms.Lean.VanEmdeBoas
-open Cslib.Algorithms.WordRAM.VanEmdeBoas
+open Cslib.DataStructure.VanEmdeBoas
+open Cslib.DataStructure Cslib.DataStructure.VanEmdeBoas.WordRAM
 
 /-- The test tree represents exactly the three keys zero, one and three. -/
 def fixtureTree : Tree 1 := (((Tree.empty 1).insert 0).insert 1).insert 3
@@ -246,16 +246,17 @@ theorem sampleAdaptiveClient_run_initialized :
       n_init + 1 ≤ 205 ∧
       Exec 8 initProgram initStart x₀ n_init ∧
       SetRep 1 8 28 8 (∅ : Finset ℕ) x₀ ∧
-      Stateful.Executes ((dynamicProgram 1 8).ExecOp 8) sampleAdaptiveClient x₀
+      DataStructure.Executes ((dynamicProgram 1 8).ExecOp 8) sampleAdaptiveClient x₀
         ((spec 1 8).runClient (∅ : Finset ℕ) sampleAdaptiveClient).1 y traces ∧
       SetRep 1 8 28 8 ((spec 1 8).runClient (∅ : Finset ℕ) sampleAdaptiveClient).2.1 y ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces ≤
+      DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤
         ((spec 1 8).runClient (∅ : Finset ℕ) sampleAdaptiveClient).2.2.length * 152 ∧
       (∀ j, j < 8 ∨ 36 ≤ j → y.mem j = initStart.mem j) :=
   run_initialized (d := 1) (w := 8) (base := 8)
     initStart_bounded (by decide) rfl rfl sampleAdaptiveClient
     (by
-      dsimp only [spec, Stateful.Spec.runClient, Stateful.Spec.ValidHistory,
+      dsimp only [spec, DataStructure.StateTransitionSpec.runClient,
+        DataStructure.StateTransitionSpec.ValidHistory,
         sampleAdaptiveClient, OrderedSet.least]
       refine ⟨by decide, by decide, ?_, by decide, ?_, trivial⟩
       · change 0 < 2 ^ 8; decide

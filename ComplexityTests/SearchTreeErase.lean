@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (test driver)
 
-public import Complexity.Algorithms.Lean.SearchTree.Erase
+public import Complexity.DataStructure.SearchTree.Erase
 public import ComplexityTests.SearchTree
 
 /-!
@@ -23,7 +23,7 @@ is checked by the kernel, with no `native_decide`.
 
 namespace ComplexityTests.SearchTreeErase
 
-open Cslib.Algorithms.Lean.SearchTree ComplexityTests.SearchTree
+open Cslib.DataStructure.SearchTree ComplexityTests.SearchTree
 
 def medianFirst : BinaryTree Nat := build [4, 2, 6, 1, 3, 5, 7]
 def sortedFirst : BinaryTree Nat := build [1, 2, 3, 4, 5, 6, 7]
@@ -66,14 +66,15 @@ example :
   ⟨erase_eq_of_notMem (by decide), rfl, rfl, by decide, by decide⟩
 
 /--
-info: 'Cslib.Algorithms.Lean.SearchTree.eraseVisits_le_height' depends on axioms: [propext, Quot.sound]
+info: 'Cslib.DataStructure.SearchTree.eraseVisits_le_height' depends on axioms:
+[propext, Quot.sound]
 -/
-#guard_msgs in
-#print axioms Cslib.Algorithms.Lean.SearchTree.eraseVisits_le_height
+#guard_msgs (whitespace := lax) in
+#print axioms Cslib.DataStructure.SearchTree.eraseVisits_le_height
 /--
-info: 'Cslib.Algorithms.Lean.SearchTree.height_erase_le' depends on axioms: [propext, Quot.sound]
+info: 'Cslib.DataStructure.SearchTree.height_erase_le' depends on axioms: [propext, Quot.sound]
 -/
 #guard_msgs in
-#print axioms Cslib.Algorithms.Lean.SearchTree.height_erase_le
+#print axioms Cslib.DataStructure.SearchTree.height_erase_le
 
 end ComplexityTests.SearchTreeErase

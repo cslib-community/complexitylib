@@ -53,7 +53,10 @@ def generateKeys (n depth : ℕ) : ProbComp (List (List Bool × List Bool)) :=
 links. -/
 def encryptKeyLinks (n : ℕ) (keys : List (List Bool × List Bool)) :
     ProbComp (List (List (List Bool))) :=
-  (keys.zip keys.tail).mapM (fun adjacent => E.encryptBits n adjacent.2.1 adjacent.1.2)
+  (keys.zip keys.tail).mapM (fun adjacent =>
+    let prev := adjacent.1
+    let next := adjacent.2
+    E.encryptBits n next.1 prev.2)
 
 /-- Sample all key pairs before encrypting their adjacent secret-key links. The result retains
 private secret-key witnesses and is not the public key artifact. -/
@@ -66,7 +69,10 @@ def generateKeyChain (n depth : ℕ) :
 /-- Each link freshly encrypts the preceding secret key under the following public key. -/
 def ValidLinks (n : ℕ) (keys : List (List Bool × List Bool))
     (links : List (List (List Bool))) : Prop :=
-  List.Forall₂ (fun adjacent ek => E.FreshInputs n adjacent.2.1 adjacent.1.2 ek)
+  List.Forall₂ (fun adjacent ek =>
+    let prev := adjacent.1
+    let next := adjacent.2
+    E.FreshInputs n next.1 prev.2 ek)
     (keys.zip keys.tail) links
 
 /-- Sampling the keys fixes their number and requires exactly pointwise key-generation support. -/
