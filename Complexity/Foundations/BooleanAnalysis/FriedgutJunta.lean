@@ -88,7 +88,8 @@ private theorem sq_signVal_sub_signVal_decide_div_four_le (a : Bool) (t : ℝ) :
 
 /-- **Spectral concentration gives a junta**: a Boolean function is at relative Hamming distance
 at most `∑_{S ⊄ J} F̂(S) ^ 2` from a Boolean function of the coordinates in `J`, the sign of its
-average over the other coordinates [O'Donnell, Proposition 3.31][ODonnell2014]. -/
+average over the other coordinates
+[O'Donnell, Proposition 3.31 and Exercise 3.28][ODonnell2014]. -/
 theorem exists_dependsOn_hammingDist_div_le_sum_not_subset_fourierCoeff_sq (f : (ι → Bool) → Bool)
     (J : Finset ι) :
     ∃ g : (ι → Bool) → Bool, DependsOn g (J : Set ι) ∧
@@ -142,7 +143,7 @@ private theorem sum_card_sdiff_mul_one_third_pow_fourierCoeff_sq_le
 
 /-- **The Fourier weight outside the influential coordinates**: if every coordinate outside `J`
 has influence at most `τ` on a Boolean function read as signs `F`, then for every `A > 1`,
-`∑_{S ⊄ J} F̂(S) ^ 2 ≤ log 3 / log A · I[F] + A / 3 · √τ · I[F]`
+`∑_{S ⊄ J} F̂(S) ^ 2 ≤ log 3 / log A · I[F] + A / 3 · √τ · I[F]`, adapting the proof of
 [O'Donnell, Theorem 9.28][ODonnell2014]. -/
 theorem sum_filter_not_subset_fourierCoeff_sq_le (f : (ι → Bool) → Bool) {J : Finset ι} {τ : ℝ}
     (hJ : ∀ i ∉ J, influence i (fun x => signVal (f x)) ≤ τ) {A : ℝ} (hA : 1 < A) :

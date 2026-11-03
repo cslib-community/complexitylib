@@ -235,26 +235,6 @@ variable {Ω V ι κ υ : Type*} [Fintype Ω] [Fintype V] [Fintype ι] [Fintype 
   [∀ t x, Decidable (X t x)] [∀ t z, Decidable (Z t z)] [∀ t z, Decidable (Zt t z)]
   [∀ t y, Decidable (Y t y)] [∀ t y, Decidable (Yt t y)]
 
-private theorem nonneg_correctionAtom {G : Matrix V V ℝ} {g₀ : V → ℝ}
-    (hQ0 : ∀ v, 0 ≤ Q v) (hρ0 : ∀ r, 0 ≤ ρF r) (hτ0 : ∀ r, 0 ≤ τ r)
-    (hg₀ : ∀ z, 0 ≤ g₀ z) (d : ι × κ) (x z : V) :
-    0 ≤ correctionAtom I τ KF Kc f G X Z Zt Q hF ρF g₀ d x z := by
-  rw [correctionAtom]
-  split_ifs
-  · refine mul_nonneg (div_nonneg (mul_nonneg (hQ0 _) (mul_nonneg (hρ0 _) (hτ0 _))) ?_)
-      (hg₀ z)
-    exact le_trans (by norm_num : (0 : ℝ) ≤ 1 / 2) (le_max_left _ _)
-  · exact le_rfl
-
-private theorem nonneg_denseAtom {H : Matrix V V ℝ}
-    (hk0 : ∀ v, 0 ≤ k v) (hρ0 : ∀ r, 0 ≤ ρB r) (t : υ) (z y : V) :
-    0 ≤ denseAtom Y Yt k hB ρB KB b H t z y := by
-  rw [denseAtom]
-  split_ifs
-  · refine div_nonneg (mul_nonneg (hk0 _) (hρ0 _)) ?_
-    exact le_trans (by norm_num : (0 : ℝ) ≤ 1 / 2) (le_max_left _ _)
-  · exact le_rfl
-
 /-- **Product errors for actual correction and dense atoms**. The matrices, multipliers, and
 both seed maps may depend on one shared environment. The bounded cutoffs give `CF = 2 * AF`
 and `CB = 2 * AB`; the actual incoming and row gates give caps `Kc` and `KB`.
@@ -293,10 +273,10 @@ theorem correctionAtom_denseAtom_rootDistPow_le
   classical
   dsimp only
   refine Cslib.rootDistPow_mul_le hs hN hu hf
-    (fun σ => nonneg_correctionAtom hQ0 hρF0 hτ0 (hg0 σ) (drawF σ))
-    (fun σ => nonneg_correctionAtom hQ0 hρF0 hτ0 (hg'0 σ) (drawF σ))
-    (fun σ => nonneg_denseAtom hk0 hρB0 (drawB σ))
-    (fun σ => nonneg_denseAtom hk0 hρB0 (drawB σ))
+    (fun σ => correctionAtom_nonneg hQ0 hρF0 hτ0 (hg0 σ) (drawF σ))
+    (fun σ => correctionAtom_nonneg hQ0 hρF0 hτ0 (hg'0 σ) (drawF σ))
+    (fun σ => denseAtom_nonneg hk0 hρB0 (drawB σ))
+    (fun σ => denseAtom_nonneg hk0 hρB0 (drawB σ))
     (by positivity) (by positivity) ?_ ?_ ?_ ?_
   · intro σ x z
     calc

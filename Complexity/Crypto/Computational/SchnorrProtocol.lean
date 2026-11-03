@@ -9,11 +9,12 @@ module
 
 public import Complexity.Crypto.Computational.DiffieHellman
 public import Complexity.Crypto.Computational.SchnorrIdentification
-public import Complexity.Crypto.Protocols.SigmaProtocol.Efficient
+public import Complexity.Crypto.Protocols.SigmaProtocol.Computational
 public import Complexity.Crypto.Protocols.SigmaProtocol.Linear
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Crypto.Negligible.Basic
 import Complexity.Probability.PMF
 import Complexity.Tactic.PPT
 
@@ -32,6 +33,11 @@ in binary (`schnorrEncoding`).
   simulator samples a uniform response `z` and outputs `(z • g - c • u, z)`. The strict PPT
   program `schnorrSimulateWord` samples `z` with `sampleExp`, which is within statistical
   distance `1 / 2 ^ n` of uniform on `ZMod q`, so it realizes the simulator up to `1 / 2 ^ n`.
+* **Computational special HVZK** (`computationalSpecialHVZK_schnorr`, Definition 20.6): because
+  every output of `schnorrSimulateWord` satisfies `z • g = (z • g - c • u) + c • u` exactly
+  (`accepts_schnorrSimulateWord`, acceptance error `0`), and `1 / 2 ^ n` is negligible along any
+  group-description setup `(setup n).map (n, ·)`, `schnorrSimulateWord` satisfies Definition 20.6
+  with zero acceptance error.
 
 The protocol does not depend on the security parameter; only the simulator's sampling error does.
 
@@ -52,11 +58,14 @@ The protocol does not depend on the security parameter; only the simulator's sam
   program is strict PPT and realizes Boneh and Shoup's simulator up to `1 / 2 ^ n`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.efficientSpecialHVZK_schnorr`: efficient special HVZK with
   statistical error `1 / 2 ^ n`.
+* `Cslib.Crypto.PrimeOrderGroupFamily.accepts_schnorrSimulateWord`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.computationalSpecialHVZK_schnorr`: exact acceptance (`δ = 0`)
+  and computational special HVZK (Definition 20.6).
 
 ## References
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
-  Version 0.6][BonehShoup2023], Examples 19.1–19.3 and Definitions 19.4–19.5.
+  Version 0.6][BonehShoup2023], Examples 19.1–19.3, Definitions 19.4–19.5, and Definition 20.6.
 * [C.-P. Schnorr, *Efficient Signature Generation by Smart Cards*][Schnorr1991]
 -/
 
@@ -156,36 +165,14 @@ theorem efficientSpecialSoundness_schnorr :
 /-! ### Special HVZK -/
 
 open Classical in
-/-- A bound on the advantage of every event test gives statistical closeness. -/
-private theorem closeTo_of_advantage_le {α : Type} {μ ν : PMF α} {ε : ℝ≥0}
-    (h : ∀ E : Set α, Game.advantage (ν.map fun a => decide (a ∈ E))
-      (μ.map fun a => decide (a ∈ E)) ≤ ε) :
-    CloseTo μ ν ε := by
-  intro E
-  have hmap (p : PMF α) : (p.map fun a => decide (a ∈ E)) true = p.toOuterMeasure E := by
-    rw [← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply]
-    congr 1
-    ext a
-    simp
-  have hle : Game.succProbability (μ.map fun a => decide (a ∈ E)) ≤
-      Game.succProbability (ν.map fun a => decide (a ∈ E)) + ε := by
-    refine tsub_le_iff_left.mp (le_trans ?_ (h E))
-    rw [Game.advantage, NNReal.nndist_eq]
-    exact le_max_right _ _
-  have hcoe (p : PMF α) : ((Game.succProbability (p.map fun a => decide (a ∈ E)) : ℝ≥0) :
-      ℝ≥0∞) = p.toOuterMeasure E := by
-    rw [Game.succProbability, ENNReal.coe_toNNReal (PMF.apply_ne_top _ _), hmap]
-  rw [← hcoe μ, ← hcoe ν]
-  exact_mod_cast hle
-
-open Classical in
 /-- An exponent sampled by `sampleExp n d` is within statistical distance `1 / 2 ^ n` of
 uniform on `ZMod q`. -/
-private theorem closeTo_uniform_sampleExp (n : ℕ) (d : F.Desc) :
+theorem closeTo_uniform_sampleExp (n : ℕ) (d : F.Desc) :
     CloseTo (PMF.uniformOfFintype (ZMod (F.order d)))
       ((ProbComp.eval (F.sampleExp n d)).map (Nat.cast : ℕ → ZMod (F.order d)))
       (1 / 2 ^ n : ℝ≥0) := by
-  refine closeTo_of_advantage_le fun E => ?_
+  refine Game.closeTo_of_advantage_decide_le fun E => ?_
+  rw [Game.advantage_comm]
   have h := F.advantage_bind_sampleExp_le n d fun a => PMF.pure (decide (a ∈ E))
   rw [PMF.map_comp, ← PMF.bind_pure_comp, ← PMF.bind_pure_comp]
   exact h
@@ -285,5 +272,42 @@ theorem efficientSpecialHVZK_schnorr :
       (fun i => 1 / 2 ^ i.1) where
   specialHVZK _ := schnorr_specialHVZK
   realized := ⟨_, F.isPPTOn_schnorrSimulateWord, F.simulatorRealizedBy_schnorrSimulateWord⟩
+
+/-- Every output of `schnorrSimulateWord` on an encoded statement and challenge is an encoded
+accepting conversation (acceptance error `0`): for every sampled `z`, `(z • g - c • u) + c • u =
+z • g`. -/
+theorem accepts_schnorrSimulateWord (i : ℕ × F.Desc) (u : F.Carrier i.2)
+    (c : ZMod (F.order i.2)) :
+    1 ≤ (ProbComp.eval (F.schnorrSimulateWord
+      (i, F.schnorrEncoding.statement i u, F.schnorrEncoding.challenge i c))).toOuterMeasure
+      {w | ∃ t z, w = (F.schnorrEncoding.commitment i t, F.schnorrEncoding.response i z) ∧
+        (F.schnorrFamily i).Accepts u t c z} := by
+  have heq : (ProbComp.eval (F.schnorrSimulateWord
+      (i, F.schnorrEncoding.statement i u, F.schnorrEncoding.challenge i c))).toOuterMeasure
+      {w | ∃ t z, w = (F.schnorrEncoding.commitment i t, F.schnorrEncoding.response i z) ∧
+        (F.schnorrFamily i).Accepts u t c z} = 1 := by
+    rw [show (F.schnorrEncoding.statement i) u = F.encode i.2 u from rfl,
+      show (F.schnorrEncoding.challenge i) c = encNat c.val from rfl,
+      eval_schnorrSimulateWord, PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_apply_eq_one_iff]
+    intro z _
+    refine ⟨z • F.generator i.2 - c • u, z, rfl, ?_⟩
+    simp only [schnorrFamily, schnorr_accepts_iff, Function.Embedding.refl_apply, sub_add_cancel]
+  exact heq.ge
+
+/-- **Schnorr's protocol has computational special HVZK** ([BonehShoup2023], Definition 20.6) with
+zero acceptance error (`δ = fun _ => 0`) over any group-description setup `setup : ℕ → PMF F.Desc`
+paired with the security parameter. -/
+theorem computationalSpecialHVZK_schnorr (setup : ℕ → PMF F.Desc) :
+    ComputationalSpecialHVZK F.schnorrFamily (fun i α u => α • F.generator i.2 = u)
+      F.schnorrEncoding (fun i => F.encScalar i.2) (fun n => (setup n).map (n, ·))
+      F.schnorrSimulateWord (fun _ => 0) := by
+  refine F.simulatorRealizedBy_schnorrSimulateWord.computationalSpecialHVZK_of_accepts
+    (fun _ => schnorr_specialHVZK) F.isPPTOn_schnorrSimulateWord
+    (fun i u c => by simpa only [tsub_zero] using F.accepts_schnorrSimulateWord i u c)
+    ⟨fun n => (1 / 2 : ℝ≥0) ^ n, negligible_geometric (by norm_num), fun n i hi => ?_⟩
+  obtain ⟨d, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hi
+  dsimp only
+  rw [one_div_pow, ENNReal.coe_div (pow_ne_zero _ two_ne_zero), ENNReal.coe_one, ENNReal.coe_pow,
+    ENNReal.coe_ofNat]
 
 end Cslib.Crypto.PrimeOrderGroupFamily

@@ -12,6 +12,7 @@ public import Complexity.Computability.Circuit.Boolean.Layered.PolyTime
 public import Complexity.Computability.Circuit.Boolean.DepthTime.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 

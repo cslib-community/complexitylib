@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.WordRAM.Dynamic
-public import Complexity.Foundations.Semantics.Stateful.Hoare
+public import Complexity.DataStructure.StateTransition.Hoare
 
 /-!
 # Machine certificates for stateful controllers
@@ -50,7 +50,7 @@ namespace Cslib.WordRAM
 
 universe u v z a
 
-variable {D : Stateful.Spec.{u, v, z}} {α β : Type a} {B : Basis} {r w : ℕ}
+variable {D : DataStructure.StateTransitionSpec.{u, v, z}} {α β : Type a} {B : Basis} {r w : ℕ}
 
 /-- A fixed machine fragment certifies that the client `p` is demonically admissible
 (`D.DemonicValid`) and implements a permitted `D.ClientRun` and its result/state representation,

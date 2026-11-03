@@ -13,9 +13,8 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.WordPr
 /-!
 # Direct degree certificates for option encoding machines
 
-Construction and fixed-default elimination unpack the existing encoding capability's machine
-witness. The temporary raw-linear encoding fields supply machine constructors only; no higher
-tidy degree, polynomial-time, or linear closure rule is used.
+Construction and fixed-default elimination reuse the encoding capability's degree certificates.
+The Boolean test retains its constant output degree. No higher tidy calculus is used.
 -/
 
 @[expose] public section
@@ -26,21 +25,11 @@ variable {β : Type*} {enc₁ : β ↪ List Bool}
 
 /-- Construct an optional value in an encoding with the option capability. -/
 theorem optionSome {enc : Option β ↪ List Bool} [OptionEncoding enc₁ enc] :
-    ComputableInDegree some enc₁ enc 1 1 := by
-  obtain ⟨c, k, Q, hfin, tm, htm⟩ := OptionEncoding.some (enc₁ := enc₁) (enc := enc)
-  refine ⟨⟨_, _, ⟨c, fun _ => by simp⟩, ⟨c, fun _ => by simp⟩,
-    k, Q, hfin, tm, fun a => htm a⟩,
-    ⟨c, fun a => ?_⟩⟩
-  simpa using (htm a).length_output_le
+    ComputableInDegree some enc₁ enc 1 1 := OptionEncoding.some
 
-/-- Eliminate an optional value using a fixed default, without a nonempty-type assumption. -/
+/-- Eliminate an optional value using a fixed default. -/
 theorem getD {enc : Option β ↪ List Bool} [OptionEncoding enc₁ enc] (d : β) :
-    ComputableInDegree (fun o => o.getD d) enc enc₁ 1 1 := by
-  obtain ⟨c, k, Q, hfin, tm, htm⟩ := OptionEncoding.getD (enc₁ := enc₁) (enc := enc) d
-  refine ⟨⟨_, _, ⟨c, fun _ => by simp⟩, ⟨c, fun _ => by simp⟩,
-    k, Q, hfin, tm, fun a => htm a⟩,
-    ⟨c, fun a => ?_⟩⟩
-  simpa using (htm a).length_output_le
+    ComputableInDegree (fun o => o.getD d) enc enc₁ 1 1 := OptionEncoding.getD d
 
 /-- Whether a standard encoded option holds a value; the Boolean output has degree zero. -/
 theorem isSome (enc : β ↪ List Bool) :

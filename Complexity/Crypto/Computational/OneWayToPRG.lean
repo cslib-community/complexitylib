@@ -7,11 +7,13 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Crypto.Computational.Nonuniform.Basic
 public import Complexity.Crypto.Computational.OneWay
 public import Complexity.Crypto.Computational.PseudorandomGenerator
 import Complexity.Crypto.Computational.Pseudoentropy.Generator
 import Complexity.Crypto.Computational.Pseudoentropy.OneWay
 import Complexity.Crypto.Computational.Pseudoentropy.ThreeSource.Candidates
+import Complexity.Crypto.Computational.Stretch
 import Complexity.Tactic.PolyTime
 
 /-!
@@ -26,6 +28,10 @@ strict PPT, and no entropy estimate or nonuniform advice is an additional hypoth
 
 * `Cslib.Crypto.OneWay.exists_pseudorandomGenerator`: every uniform OWF implies a uniform PRG
   expanding every input by exactly one bit.
+* `Cslib.Crypto.NonuniformOneWay.exists_nonuniformPRG`: every nonuniform OWF implies a nonuniform
+  PRG expanding every input by one bit.
+* `Cslib.Crypto.NonuniformOneWay.exists_nonuniformPRG_three_mul`: every nonuniform OWF implies a
+  length-tripling (`3 * n + 1`) nonuniform PRG.
 
 ## References
 
@@ -56,5 +62,22 @@ theorem OneWay.exists_pseudorandomGenerator {f : List Bool → List Bool} (hf : 
   obtain ⟨pair, hpair⟩ := hf.exists_pseudoentropyPair
   exact hpair.exists_pseudorandomGenerator (densityBound := fun n => 16 * (n + 7))
     (.of_tidy (by polytime)) (Filter.Eventually.of_forall EntropyGrid.four_steps_le_owf_gap)
+
+/-- Every nonuniform one-way function implies a nonuniform pseudorandom generator with one bit of
+stretch at every seed length. -/
+theorem NonuniformOneWay.exists_nonuniformPRG {f : List Bool → List Bool}
+    (hf : NonuniformOneWay f) :
+    ∃ generator : List Bool → List Bool, NonuniformPRG generator (fun n => n + 1) := by
+  obtain ⟨pair, hpair⟩ := hf.exists_pseudoentropyPair
+  exact pair.exists_nonuniformPRG hpair (densityBound := fun n => 16 * (n + 7))
+    (.of_tidy (by polytime)) (Filter.Eventually.of_forall EntropyGrid.four_steps_le_owf_gap)
+
+/-- Every nonuniform one-way function implies a length-tripling nonuniform pseudorandom generator
+at positive seed lengths (`3 * n + 1` at every seed length `n`). -/
+theorem NonuniformOneWay.exists_nonuniformPRG_three_mul {f : List Bool → List Bool}
+    (hf : NonuniformOneWay f) :
+    ∃ generator : List Bool → List Bool, NonuniformPRG generator (fun n => 3 * n + 1) := by
+  obtain ⟨generator, hgenerator⟩ := hf.exists_nonuniformPRG
+  exact ⟨_, hgenerator.amplify (fun n => 3 * n + 1) (by fun_prop) (fun n => by omega)⟩
 
 end Cslib.Crypto

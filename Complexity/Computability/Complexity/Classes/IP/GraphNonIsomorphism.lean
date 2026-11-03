@@ -21,6 +21,7 @@ import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Foundations.Data.List.OfFn
 import Complexity.Probability.BitString.List
+import Complexity.Probability.PMF.Expect
 
 /-!
 # Graph non-isomorphism has an interactive proof
@@ -409,17 +410,6 @@ private theorem card_filter_not_injective_div_le (n : ℕ) :
     ENNReal.le_div_iff_mul_le (Or.inl (by norm_num)) (Or.inl (by norm_num))]
   exact_mod_cast key
 
-/-- Expectations after a deterministic map are expectations of the composite. -/
-private theorem tsum_map_mul {β γ : Type*} (μ : PMF β) (m : β → γ) (f : γ → ENNReal) :
-    ∑' c, μ.map m c * f c = ∑' b, μ b * f (m b) := by
-  simp only [PMF.map_apply, ENNReal.tsum_mul_right.symm]
-  rw [tsum_comm]
-  refine tsum_congr fun b => ?_
-  rw [tsum_eq_single (m b)]
-  · simp
-  · intro c hc
-    simp [hc]
-
 /-- Two deterministic views of a uniform sample that agree up to a relabeling of the sample
 outside a set of bad samples are close: their expectations of `[0, 1]`-valued functions differ by
 at most the probability of a bad sample. -/
@@ -429,7 +419,8 @@ private theorem tsum_uniform_map_le {β γ : Type*} [Fintype β] [Nonempty β] (
     ∑' c, (PMF.uniformOfFintype β).map m₁ c * f c ≤
       ∑' c, (PMF.uniformOfFintype β).map m₀ c * f c +
         (Finset.univ.filter fun b => ¬ good b).card / Fintype.card β := by
-  simp only [tsum_map_mul, tsum_fintype, PMF.uniformOfFintype_apply, ← Finset.mul_sum]
+  simp only [Cslib.Probability.PMF.tsum_map_mul, tsum_fintype, PMF.uniformOfFintype_apply,
+    ← Finset.mul_sum]
   rw [ENNReal.div_eq_inv_mul, ← mul_add]
   gcongr
   rw [← Finset.sum_filter_add_sum_filter_not Finset.univ good]

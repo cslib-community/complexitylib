@@ -12,6 +12,7 @@ public import Complexity.Computability.Complexity.Classes.LogSpace
 public import Complexity.Computability.Circuit.Boolean.Tableau.Correct
 public import Complexity.Computability.Circuit.Boolean.Tableau.Space
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Writer
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Doubled
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Mathlib.Data.List.GetD
 
