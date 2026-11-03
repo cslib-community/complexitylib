@@ -223,8 +223,27 @@ or independence assumption is used. The
 [regressions](../../ComplexityTests/ActualFirstSignal.lean) check nonzero nonconstant
 telescoping prefixes, zero inputs, empty slices and a nonconstant random mean/moment.
 Choosing numerical walk lengths still requires a numerical payment for those child
-moments; arbitrary children have no uniform payment here. The preparatory second signal
-needs its own moment bridge, and recursive induction and native RL=L remain open.
+moments; arbitrary children have no uniform payment here.
+
+For the preparatory second signal, import
+[SecondSignal](../../Complexity/Foundations/Probability/NormalizedAtomRows/SecondSignal.lean).
+`selectedResidualPreparation` applies the selected preparation cutoff and terminal-rank
+gate to the actual lower-child residual. Its children retain all source, midpoint, terminal,
+usage and copy data on the same environment. `actualSelectedSecondSignal_noise` bounds
+its endpoint row noise by `ζ^4 * 32 * lambda^(2*steps(i+1)) * rowNormPow(T_(i+1))`
+on source × usage. Stationarity identifies the actual second noise with
+`|ζ| * |walk_(i+1) - rowSliceMean(T_(i+1))|`. The initial second signal is literally zero,
+and `firstSignalIncrement` retains its existing full-rank first prefix.
+
+The preparation is in [0,1] and has fewer than K nonzero retained rank entries per row.
+The support bound applies before walk averaging. `selectedResidualPreparation_moment`
+pays the input by the exact sum of joint source/usage densities over both vertex indices,
+divided by N*u; it retains width and density factors. It supplies no universal numerical
+recursive payment. The [regressions](../../ComplexityTests/ActualSecondSignal.lean) check
+actual selected preparation, nonconstant spectator dependence, nonzero second noise,
+two-signal prefixes, zero children and empty usage through compression.
+The genuine joint preparation target is unchanged. Numerical recursive payments,
+mean envelopes, recursive induction and native RL=L remain open.
 
 For a coarser source, `source_incoming_cost_le` quantifies the generic incoming cost as
 `32 * R * (sourceRate / stageRate)`; the fixed incoming rank is not proved to pay that
