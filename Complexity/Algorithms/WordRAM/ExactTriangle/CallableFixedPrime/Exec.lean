@@ -35,10 +35,11 @@ The reference memory only indexes existing finite charges; it is not an algorith
   24 * (n * n) + 24669 * Nat.clog 2 (n + D m + g + p + rawTotal n values + 4) + 482 +
     3 * FixedPrime.timeBound (m := m) hn g p values mem
 
-/-- Complete actual native caller execution, with the selector bank and original call arguments
-protected. The original source spans may alias each other and all remaining memory may be dirty.
-No source execution, catalogue, order, solver, witness or time bound is supplied as a premise. -/
-theorem exec {W m n g p b : ℕ} (values : List ℤ)
+/-- Complete actual native caller execution in the existing unrestricted-data semantics.
+No initial whole-data bound is needed to establish execution and semantic/frame guarantees.
+Original-word fits are still necessary for physical-word/prefix bounds: use `exec` or the
+original-admission prefix rules for those claims. No source run or solver contract is assumed. -/
+theorem exec_at {W m n g p b : ℕ} (values : List ℤ)
     (hlen : values.length = 3 * (n * n)) (hD : 16 ≤ D m)
     (hg : 1 ≤ g) (hp : p ∈ Nat.sqrtPrimeWindow (D m)) (hN : D m ^ 18 ≤ n)
     (x : Data 640) (xn : x.regs Reg.n = n) (xD : x.regs Reg.dimension = D m)
@@ -49,7 +50,6 @@ theorem exec {W m n g p b : ℕ} (values : List ℤ)
     (vbc : ∀ q < n * n, x.mem (x.regs Reg.bc + q) = Signed.encode (values.getD (n * n + q) 0))
     (vac : ∀ q < n * n, x.mem (x.regs Reg.ac + q) =
       Signed.encode (values.getD (2 * (n * n) + q) 0))
-    (hx : x.Bounded W)
     (hfit : Fits W (b + 4 * windowSize n (D m) g p (rawTotal n values) + 1024)) :
     let V := fun q => values.getD q 0
     let wAB := fun u v : Fin n => V (pairIndex (u, v))
@@ -61,7 +61,7 @@ theorem exec {W m n g p b : ℕ} (values : List ℤ)
       Instances.Output n (D m) g p V
         (.init (PreparationInput.input n (D m) g p values)) a ∧
       ∃ y, ExecWithin W program x y (timeBound (m := m) hn g p values a.mem) ∧
-        y.Bounded W ∧ (y.regs Reg.found = 0 ∨ y.regs Reg.found = 1) ∧
+        (y.regs Reg.found = 0 ∨ y.regs Reg.found = 1) ∧
         y.regs Reg.scans ≤ falsePositiveCount wAB wBC wAC p + y.regs Reg.found ∧
         (y.regs Reg.found = 1 ↔ HasZeroTriangle wAB wBC wAC) ∧
         (y.regs Reg.found = 1 →
@@ -139,7 +139,7 @@ theorem exec {W m n g p b : ℕ} (values : List ℤ)
     apply (ha'.seq (hs'.seq (hsolve.seq hy))).mono
     dsimp only [timeBound, T]
     exact le_of_eq (by ring)
-  refine ⟨reference, hout, y, he, he.bounded hx, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨reference, hout, y, he, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · simpa only [yF] using zf
   · simpa only [yS, yF] using zs
   · simpa only [yF] using ziff
@@ -149,5 +149,46 @@ theorem exec {W m n g p b : ℕ} (values : List ℤ)
     exact (congrFun ymem q).trans (hf.trans ((congrFun smem q).trans (af q hq)))
   · intro j hj
     exact he.regs_eq (program_preserves j hj)
+
+/-- Complete actual native caller execution, with the selector bank and original call arguments
+protected. The original source spans may alias each other and all remaining memory may be dirty.
+No source execution, catalogue, order, solver, witness or time bound is supplied as a premise. -/
+theorem exec {W m n g p b : ℕ} (values : List ℤ)
+    (hlen : values.length = 3 * (n * n)) (hD : 16 ≤ D m)
+    (hg : 1 ≤ g) (hp : p ∈ Nat.sqrtPrimeWindow (D m)) (hN : D m ^ 18 ≤ n)
+    (x : Data 640) (xn : x.regs Reg.n = n) (xD : x.regs Reg.dimension = D m)
+    (xg : x.regs Reg.groups = g) (xp : x.regs Reg.prime = p) (xb : x.regs Reg.base = b)
+    (hab : x.regs Reg.ab + n * n ≤ b) (hbc : x.regs Reg.bc + n * n ≤ b)
+    (hac : x.regs Reg.ac + n * n ≤ b)
+    (vab : ∀ q < n * n, x.mem (x.regs Reg.ab + q) = Signed.encode (values.getD q 0))
+    (vbc : ∀ q < n * n, x.mem (x.regs Reg.bc + q) = Signed.encode (values.getD (n * n + q) 0))
+    (vac : ∀ q < n * n, x.mem (x.regs Reg.ac + q) =
+      Signed.encode (values.getD (2 * (n * n) + q) 0))
+    (hx : x.Bounded W)
+    (hfit : Fits W (b + 4 * windowSize n (D m) g p (rawTotal n values) + 1024)) :
+    let V := fun q => values.getD q 0
+    let wAB := fun u v : Fin n => V (pairIndex (u, v))
+    let wBC := fun u v : Fin n => V (n * n + pairIndex (u, v))
+    let wAC := fun u v : Fin n => V (2 * (n * n) + pairIndex (u, v))
+    let hn : 0 < n := lt_of_lt_of_le (by omega : 0 < D m)
+      ((Nat.le_self_pow (by decide : 18 ≠ 0) (D m)).trans hN)
+    ∃ a : Data 64,
+      Instances.Output n (D m) g p V
+        (.init (PreparationInput.input n (D m) g p values)) a ∧
+      ∃ y, ExecWithin W program x y (timeBound (m := m) hn g p values a.mem) ∧
+        y.Bounded W ∧ (y.regs Reg.found = 0 ∨ y.regs Reg.found = 1) ∧
+        y.regs Reg.scans ≤ falsePositiveCount wAB wBC wAC p + y.regs Reg.found ∧
+        (y.regs Reg.found = 1 ↔ HasZeroTriangle wAB wBC wAC) ∧
+        (y.regs Reg.found = 1 →
+          y.regs Reg.witnessA < n ∧ y.regs Reg.witnessB < n ∧ y.regs Reg.witnessC < n ∧
+          V (y.regs Reg.witnessA * n + y.regs Reg.witnessB) +
+            V (n * n + (y.regs Reg.witnessB * n + y.regs Reg.witnessC)) +
+            V (2 * (n * n) + (y.regs Reg.witnessA * n + y.regs Reg.witnessC)) = 0) ∧
+        (∀ q, q < b ∨ b + windowSize n (D m) g p (rawTotal n values) ≤ q →
+          y.mem q = x.mem q) ∧
+        ∀ j : Fin 640, j.val < 160 ∨ (600 ≤ j.val ∧ j.val < 608) → y.regs j = x.regs j  := by
+  obtain ⟨a, hout, y, he, yf, ys, yiff, yw, frame, regs⟩ :=
+    exec_at values hlen hD hg hp hN x xn xD xg xp xb hab hbc hac vab vbc vac hfit
+  exact ⟨a, hout, y, he, he.bounded hx, yf, ys, yiff, yw, frame, regs⟩
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime

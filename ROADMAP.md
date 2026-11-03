@@ -657,9 +657,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   width-independent prefix bounds are proved. The selector computes the actual attained window
   minimum with native trial division and real counter calls, preserving the explicit window
   cost factor. The dyadic parameter kernel computes geometry-compatible values and explicitly
-  classifies the small regime; it does not prove the tuned aggregate exponent or dispatch a solver.
-  Remaining are native fast/small solver assembly ([#2146]), global asymptotic composition
-  using the component-cost bridge ([#2145]), outer-host execution and the full endpoint.
+  classifies the small regime. The assembled solver ([#2146]) executes actual parameter
+  preparation, selection and the complete fixed-prime solver, or the real exhaustive small
+  branch, restoring the original host arguments. It supplies the concrete host callee and
+  initialized correctness, logarithmic admission and polynomial prefix/support guarantees.
+  Remaining are global asymptotic composition using the component-cost bridge ([#2145]),
+  outer-host execution, the tuned source exponent and the full endpoint.
 - **Memory-oracle realization** ([#2205], [#2213]): the foundational graded kernel certifies
   all four memory queries, register-word glue, native branches and binds with one fixed
   continuation emitter for all runtime replies. Its functional representation retains the
