@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Andreev
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevAverage
+import Complexity.Computability.Circuit.Boolean.WeightedThreshold.RandomRestriction
 import Complexity.Computability.Circuit.Boolean.Threshold.Parity
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Tactic.FinCases
@@ -228,5 +229,111 @@ example :
       exact (two_mul_card_andreevSubcubeEval_eq_andreev (by decide) 2).trans (by decide),
     card_eval_andreevWindowedCircuit_eq_andreev_ge_sqrt (by decide) 2 9 0
       (by norm_num) (by norm_num)⟩
+
+-- Erdős–Littlewood–Offord anti-concentration and Kane–Williams block-partition gate and wire
+-- random restriction lemmas instantiated on the Andreev block-variable partition
+-- `Boolean.andreevBlockVar 2 2` and a depth-one gate.
+private theorem andreevBlockVar_joint_injective (b m : ℕ) (j₁ : Fin b) (t₁ : Fin m)
+    (j₂ : Fin b) (t₂ : Fin m)
+    (h : Boolean.andreevBlockVar b m j₁ t₁ = Boolean.andreevBlockVar b m j₂ t₂) :
+    j₁ = j₂ ∧ t₁ = t₂ :=
+  Prod.ext_iff.1 (finProdFinEquiv.injective (Fin.natAdd_injective (b * m) (2 ^ b) h))
+
+example :
+    #{w : Fin 4 → Bool |
+      (2 : ℝ) ≤ ∑ i : Fin 4, (1 : ℝ) * (w i).toNat ∧
+        (∑ i : Fin 4, (1 : ℝ) * (w i).toNat) < 2 + 1} ≤ (4 : ℕ).choose (4 / 2) ∧
+    (∀ x : Fin 2 → Bool,
+      ((Boolean.Threshold.parityCircuit 2).mapOp ofThreshold).program.eval interpretation x
+        ⟨0, by decide⟩ =
+        ltfEval
+          (inputWeight ((Boolean.Threshold.parityCircuit 2).mapOp ofThreshold).program
+            ⟨0, by decide⟩)
+          (((Boolean.Threshold.parityCircuit 2).mapOp ofThreshold).program.lines
+            ⟨0, by decide⟩).op.threshold
+          x) ∧
+    (∑ σ : Fin 2 → Fin 2,
+      (#{w : BitString (2 ^ 2 + 2 * 2) |
+        ¬ ForcedToConst
+          (ltfEval (inputWeight (andreevCircuit 2 2).program ⟨0, by decide⟩)
+            ((andreevCircuit 2 2).program.lines ⟨0, by decide⟩).op.threshold)
+          (Cslib.Combinatorics.LittlewoodOfford.blockLiveSet (Boolean.andreevBlockVar 2 2) σ)
+          w} : ℝ)) ≤
+      (Fintype.card (Fin 2 → Fin 2) : ℝ) * (2 : ℝ) ^ Fintype.card (Fin (2 ^ 2 + 2 * 2)) *
+        (4 * (1 / (Fintype.card (Fin 2) : ℝ)) *
+          Real.sqrt #(inputSupport (andreevCircuit 2 2).program ⟨0, by decide⟩)) ∧
+    (∑ σ : Fin 2 → Fin 2,
+      (#{w : BitString (2 ^ 2 + 2 * 2) |
+        ¬ ForcedToAtMostOne
+          (ltfEval (inputWeight (andreevCircuit 2 2).program ⟨0, by decide⟩)
+            ((andreevCircuit 2 2).program.lines ⟨0, by decide⟩).op.threshold)
+          (Cslib.Combinatorics.LittlewoodOfford.blockLiveSet (Boolean.andreevBlockVar 2 2) σ)
+          w} : ℝ)) ≤
+      (Fintype.card (Fin 2 → Fin 2) : ℝ) * (2 : ℝ) ^ Fintype.card (Fin (2 ^ 2 + 2 * 2)) *
+        (4 * (#(inputSupport (andreevCircuit 2 2).program ⟨0, by decide⟩) : ℝ) *
+          (1 / (Fintype.card (Fin 2) : ℝ)) *
+          Real.sqrt (1 / (Fintype.card (Fin 2) : ℝ))) := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · simpa using
+      Cslib.Combinatorics.LittlewoodOfford.card_filter_sum_bool_le_choose_of_forall_le_abs
+        (fun _ : Fin 4 => (1 : ℝ)) (P := fun s => (2 : ℝ) ≤ s ∧ s < 2 + 1) (δ := 1)
+        (fun _ => by norm_num) (fun x y hx hy => by rw [abs_lt]; constructor <;> linarith)
+  · intro x
+    exact eval_eq_ltfEval_inputWeight_of_depths_le_one
+      ((Boolean.Threshold.parityCircuit 2).mapOp ofThreshold).program x (by decide)
+  · simpa [ltfSupport_inputWeight_eq_inputSupport] using
+      sum_card_not_forcedToConst_blockLiveSet_le (Boolean.andreevBlockVar 2 2)
+        (andreevBlockVar_joint_injective 2 2)
+        (inputWeight (andreevCircuit 2 2).program ⟨0, by decide⟩)
+        ((andreevCircuit 2 2).program.lines ⟨0, by decide⟩).op.threshold
+  · simpa [ltfSupport_inputWeight_eq_inputSupport] using
+      sum_card_not_forcedToAtMostOne_blockLiveSet_le (Boolean.andreevBlockVar 2 2)
+        (andreevBlockVar_joint_injective 2 2)
+        (inputWeight (andreevCircuit 2 2).program ⟨0, by decide⟩)
+        ((andreevCircuit 2 2).program.lines ⟨0, by decide⟩).op.threshold
+
+-- OR is constant after fixing the other input true, a nonconstant literal when it is false,
+-- and genuinely depends on two inputs when both are live.
+private theorem ltfEval_or (w : Fin 2 → Bool) :
+    ltfEval (fun _ : Fin 2 => (1 : ℝ)) 1 w = (w 0 || w 1) := by
+  cases h₀ : w 0 <;> cases h₁ : w 1 <;>
+    norm_num [ltfEval, Fin.sum_univ_two, h₀, h₁]
+
+example : ForcedToConst (ltfEval (fun _ : Fin 2 => (1 : ℝ)) 1) {0} (fun _ => true) := by
+  simp only [funext ltfEval_or, ForcedToConst, restrictUpdate]
+  decide
+
+example : ¬ ForcedToConst (ltfEval (fun _ : Fin 2 => (1 : ℝ)) 1) {0}
+    (fun _ => false) := by
+  simp only [funext ltfEval_or, ForcedToConst, restrictUpdate]
+  decide
+
+example : ForcedToAtMostOne (ltfEval (fun _ : Fin 2 => (1 : ℝ)) 1) {0}
+    (fun _ => false) := by
+  simp only [funext ltfEval_or, ForcedToAtMostOne, ForcedToConst, restrictUpdate]
+  decide
+
+example : ¬ ForcedToAtMostOne (ltfEval (fun _ : Fin 2 => (1 : ℝ)) 1) univ
+    (fun _ => false) := by
+  simp only [funext ltfEval_or, ForcedToAtMostOne, ForcedToConst, restrictUpdate]
+  decide
+
+-- The live second coordinate has zero weight: it cannot prevent constancy. With both live,
+-- the first coordinate remains a nonconstant literal, despite the extra zero-weight input.
+private theorem ltfEval_zero_weight (w : Fin 2 → Bool) :
+    ltfEval (fun i : Fin 2 => if i = 0 then (1 : ℝ) else 0) 1 w = w 0 := by
+  cases h : w 0 <;> norm_num [ltfEval, Fin.sum_univ_two, h]
+
+example : ForcedToConst (ltfEval (fun i : Fin 2 => if i = 0 then (1 : ℝ) else 0) 1)
+    {1} (fun _ => false) := by
+  simp only [funext ltfEval_zero_weight, ForcedToConst, restrictUpdate]
+  decide
+
+example : ForcedToAtMostOne (ltfEval (fun i : Fin 2 => if i = 0 then (1 : ℝ) else 0) 1)
+    univ (fun _ => false) ∧
+    ¬ ForcedToConst (ltfEval (fun i : Fin 2 => if i = 0 then (1 : ℝ) else 0) 1)
+      univ (fun _ => false) := by
+  simp only [funext ltfEval_zero_weight, ForcedToAtMostOne, ForcedToConst, restrictUpdate]
+  decide
 
 end WeightedThresholdTests
