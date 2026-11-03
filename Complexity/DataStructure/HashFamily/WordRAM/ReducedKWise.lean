@@ -34,7 +34,7 @@ independent hash family (`Cslib.Probability.reducedPolyHash U w₀ b b' k`) over
    - `[base + 1 + k * L, base + space w w₀ b b' k)` stores the bit-packed carryless multiplication
      table in `tableWords w w₀ b b' = reducedTableWords t w` words.
 3. **`O(1)` worst-case evaluation time for fixed `k` (`evalCode w w₀ b b' k`)**:
-   - Executes in `evalSteps w₀ b b' k ≤ evalBound k = 47250 * k + 545 = O(k)` deterministic
+   - Executes in `evalSteps w₀ b b' k ≤ evalBound k = 47250 * k + 591 = O(k)` deterministic
      instructions completely independent of `w`, `w₀`, `b`, `b'`, and `U`.
 4. **Conditional `k`-wise independence and `HashFamily.WordRAM.Impl` packaging**:
    - Conditioned on any top seed `α ∈ reducedGoodTop U w₀ (3 * b) S` that is injective on
