@@ -39,9 +39,9 @@ implementation of the two-stage universe-reduced `k`-wise independent hash famil
   `3 ^ min t 3 ≤ 27`, `2 * 3 ^ min t 3 ≤ 54`.
 * `Cslib.Probability.reducedTableBits`, `Cslib.Probability.reducedPackShift`,
   `Cslib.Probability.reducedTableWords`: bit-packed Four-Russians table size in bits and words.
-* `Cslib.Probability.getSlice`: extraction of the `e`-th `s`-bit slice from a packed word.
-* `Cslib.Probability.getLimb`, `Cslib.Probability.packLimbsNat`: conversion between natural numbers
-  `< 2 ^ (L * c)` and `L` limbs of `c` bits.
+* `Cslib.Probability.getLimb`, `Cslib.Probability.packLimbs`,
+  `Cslib.Probability.truncLimbs`: conversion between natural numbers `< 2 ^ (L * c)` and `L` limbs
+  of `c` bits.
 
 ## Main results
 

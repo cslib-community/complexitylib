@@ -2911,6 +2911,13 @@ public import Complexity.DataStructure.AVLTree.Erase
 public import Complexity.DataStructure.AVLTree.Impl
 public import Complexity.DataStructure.AdjacencyList.Memory
 public import Complexity.DataStructure.AdjacencyList.Spec
+public import Complexity.DataStructure.ApproximateMembership.QuotientFilter.Basic
+public import Complexity.DataStructure.ApproximateMembership.QuotientFilter.Operations
+public import Complexity.DataStructure.ApproximateMembership.QuotientFilter.Probability
+public import Complexity.DataStructure.ApproximateMembership.Spec
+public import Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFilter
+public import Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.Cluster
+public import Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.SlotArray
 public import Complexity.DataStructure.CountMin.Basic
 public import Complexity.DataStructure.CountMin.LinearHash
 public import Complexity.DataStructure.CountMin.Probability
