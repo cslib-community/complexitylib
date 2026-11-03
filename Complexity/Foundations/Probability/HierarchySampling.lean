@@ -281,6 +281,12 @@ theorem ofChannels_Kc :
         + Cpair * P.R)⌉₊ := by
   rfl
 
+/-- The channel constructor uses the actual terminal pair constant. -/
+theorem ofChannels_c :
+    (ofChannels P X Y hXY hYX hf hπ hcπ hpair hC hC1 hi
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).c = Cpair := by
+  rfl
+
 /-- The channel constructor preserves its `π` parameter. -/
 theorem ofChannels_π :
     (ofChannels P X Y hXY hYX hf hπ hcπ hpair hC hC1 hi

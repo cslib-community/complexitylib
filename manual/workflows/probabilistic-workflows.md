@@ -150,20 +150,28 @@ These constructors have two independent full-environment seeds. For the genuine 
 one actual environment, import
 [HierarchyCorrectionMean](../../Complexity/Foundations/Probability/HierarchyCorrectionMean.lean)
 and follow its [complete regression client](../../ComplexityTests/HierarchyCorrectionMean.lean).
-`terminalSplit` retains every spectator coordinate; `genuine_request_mean_density` transports
-the source-conditioned average through that split, deriving source nonemptiness and the
-actual usage density. Supply a nonzero padding multiplier, injective identifiers, an admissible
-request and finite prime horizon, equal source/terminal/usage grid rates, and a nonnegative
-substochastic matrix C bounded entrywise by the rate. The children are the existing raw input,
-its genuine preparation and the final pilot maximum; the target is the existing correction
-iterate on the split channels. The P=5 horizon-one client has different nonempty copy suffixes,
-source density 81/625 and a zero pilot proved from the actual detector rank.
+`terminalSplit` retains every spectator coordinate. Use `genuine_request_mean_usage` for
+an independent usage grid rate, including narrower usage; the same-rate specialization is
+`genuine_request_mean_density`. Both transport the source-conditioned average through the
+split and derive source nonemptiness and the actual usage density. Supply a nonzero padding
+multiplier, injective identifiers, an admissible request, a finite prime rank horizon, equal
+true source/terminal stage rates, and a nonnegative substochastic matrix C bounded entrywise
+by that rate. The usage exponent need not belong to the rank horizon: its box has positive
+side at every finite exponent. The children are the existing raw input, its genuine joint
+source/usage preparation and the final pilot maximum. The target remains the existing
+correction iterate on the true split channels. `CorrectionSampling.withUsage` reuses all gates
+and source/incoming laws, replacing only the measured usage marginal and terminal pair bound.
 
-The actual request support and conditional-walk noise theorems allow narrower usage; the
-noise bound retains the raw input fourth moment. The genuine mean theorem does not cover
-mixed source/rank rates or narrower usage, nor identify its target with a fully assembled
-recursive hierarchy. Lower-child moments, recursive induction, native realization and RL=L
-remain in [issue #1721](https://github.com/cslib-community/complexitylib/issues/1721).
+The P=5 client has different nonempty source and terminal copy suffixes and a genuine final
+pilot proved zero from its detector rank. Its narrower-usage example fixes source/rank exponent
+1 and uses usage exponent 2, with actual densities 81/625 and 16/625 and a strictly positive
+complete request mean. Thus the usage change is observable in the actual environment.
+
+The request support and conditional-walk noise theorems also allow narrower usage; the noise
+bound retains the raw input fourth moment. Sampling source/rank rates different from the true
+stage, a fully assembled recursive hierarchy, lower-child moments, recursive induction, native
+realization and RL=L remain in
+[issue #1721](https://github.com/cslib-community/complexitylib/issues/1721).
 
 ## Carry the certificate into a security proof
 
