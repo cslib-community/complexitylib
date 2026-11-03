@@ -21,7 +21,7 @@ for a bounded-capacity dynamic dictionary mapping keys from a finite universe `F
 natural-number values bounded by `V`, supporting `query`, `insert` (with in-place value overwrite),
 and `delete`, with at most `n_max` distinct keys present at any point in time.
 
-Unlike the insert-only interface `Cslib.DataStructure.Dictionary.spec` (which provides `get` and
+Unlike the insert-only interface `Cslib.DataStructure.Dictionary.spec` (which provides `query` and
 `insert`), `Cslib.DataStructure.Dictionary.Dynamic.Op` includes key deletion (`delete u`, removing
 `u` if present and acting as a no-op if absent) while sharing the underlying state representation
 `Dictionary.State U = Fin U → Option ℕ`, empty state `Dictionary.empty U`, active key set
