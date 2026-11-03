@@ -98,7 +98,7 @@ on its register bank and equality of every register outside that bank. Memory as
 refer to the actual returned memory. The total allowance is `tPrep+tCall+tCont`; register
 renaming emits no instructions.
 
-The complete [fixed-call client](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/ComplexityTests/WordRAMCall.lean)
+The complete [fixed-call client](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/ComplexityTests/WordRAMCall.lean)
 delivers an argument, calls a routine that increments it and writes memory, then retrieves the
 result in five charged instructions. It proves that an unrelated register and other memory
 cells survive, even when unused old words exceed the physical word bound. This rule does not
@@ -109,8 +109,11 @@ postcondition; register disjointness alone says nothing about its writes.
 
 From a checkout containing this API, check the client with
 `scripts/build.sh --wfail --iofail ComplexityTests.WordRAMCall`.
-The [ordinary 3SUM call proof](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/Complexity/Algorithms/WordRAM/ThreeSum/Decision/Body.lean)
+The [ordinary 3SUM call proof](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/Complexity/Algorithms/WordRAM/ThreeSum/Decision/Body.lean)
 uses the same rule for its Convolution host and retained controller registers.
+For a renamed execution without a surrounding preparation and continuation, use
+`Exec.rename_post` or `ExecWithin.rename_post`. They return the postcondition on the callee
+bank and the unchanged outside registers; the first retains an exact instruction count.
 
 ### Transfer a fixed record through a native stack
 
@@ -128,7 +131,7 @@ halt. A zero-length transfer is one self-copy. Memory outside the reserved stack
 outside the relevant banks are preserved; unused stack cells can be dirty and popped cells
 are not cleared.
 
-The [record client](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/ComplexityTests/WordRAMStackRecord.lean)
+The [record client](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/ComplexityTests/WordRAMStackRecord.lean)
 pushes two words and pops them into a different bank, checking their order, a live tail and
 outside sentinels. Its interpreter checks include the charged halt and insufficient fuel.
 Run `scripts/build.sh --wfail --iofail ComplexityTests.WordRAMStackRecord` from the API checkout.

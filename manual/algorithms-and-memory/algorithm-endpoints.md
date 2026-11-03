@@ -138,7 +138,7 @@ The first fast branch is now at `n = 2^2394`; the old 1296-bit family and its `m
 `g=4^b`, `L=19m` bounds are removed. Inputs between the old and new branch thresholds now use
 the actual exhaustive branch. Recheck finite `timeBound` and geometry/admission premises with
 the current declarations rather than reusing the old finite constants.
-The [parameter client](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/ComplexityTests/WordRAMExactTriangleDyadicParameters.lean)
+The [parameter client](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/ComplexityTests/WordRAMExactTriangleDyadicParameters.lean)
 evaluates actual code at zero, just below the new threshold and at the threshold. The headline
 1.9992 exponent, distinct-position meaning and native resource guarantees below are unchanged.
 
@@ -147,7 +147,7 @@ evaluates actual code at zero, just below the new threshold and at the threshold
 To decide whether three signed integer matrices contain a zero-weight triangle, import
 `Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime` and use
 `FixedPrime.runs_input`. The complete
-[initialized client](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/ComplexityTests/WordRAMExactTriangleBoxFixedPrime.lean)
+[initialized client](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/ComplexityTests/WordRAMExactTriangleBoxFixedPrime.lean)
 includes imports, admission proofs, successful witness recovery and negative exhaustion.
 Use the client on the canonical pipeline revision before adapting it.
 
@@ -185,7 +185,7 @@ Import `Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime`. For an 
 call, use `CallableFixedPrime.runs_input` with the same `PreparationInput.input` layout and
 geometry/prime premises above, and physical width at least
 `CallableFixedPrime.inputWidth n (D m) g p values`. The complete
-[initialized client](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/ComplexityTests/WordRAMCallableBoxFixedPrime.lean)
+[initialized client](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/ComplexityTests/WordRAMCallableBoxFixedPrime.lean)
 checks successful original-coordinate recovery, a same-execution finite charge and negative
 exhaustion. Fourteen executed header/pointer instructions precede the actual caller program;
 input placement itself follows the `State.init` convention above.
@@ -201,7 +201,7 @@ Raw verdict, witness and scans return in 632–636.
 The fixed 640-register program preserves the low 160 selector bank, all eight original argument
 registers and memory outside its stated window. It copies and sums only the original arrays,
 computes its own virtual width, and executes the real box controller in reused dirty memory.
-The [dirty caller client](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/ComplexityTests/WordRAMCallableBoxFixedPrimeCaller.lean)
+The [dirty caller client](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/ComplexityTests/WordRAMCallableBoxFixedPrimeCaller.lean)
 checks aliased spans, nonzero selector registers and dirty words above the virtual modulus.
 
 At `m=9k`, `CallableFixedPrime.timeBound_le` charges the actual copy/setup/return and final
@@ -222,7 +222,7 @@ geometry and selected prime and calls this actual controller. Its register names
 Import `Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting` and open
 `Cslib.Algorithms.WordRAM.ExactTriangle`. Use `ParameterSelecting.runs_input_uniform` for a
 complete initialized decision. The
-[checked client](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/ComplexityTests/WordRAMParameterSelectingInput.lean)
+[checked client](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/ComplexityTests/WordRAMParameterSelectingInput.lean)
 gives full imports, admitted positive/negative signed cases, empty input, and a symbolic fast
 family with the actual selected-prime conclusion. From a checkout containing this endpoint:
 
@@ -268,7 +268,7 @@ enormous interpreter benchmark.
 Import `Complexity.Algorithms.WordRAM.ThreeSum.Decision.Subquadratic`. In namespace
 `Cslib.Algorithms.WordRAM.ThreeSum.Decision`, apply `exists_subquadratic_runs κ` to the actual
 ordinary host with `ParameterSelecting.callee`. The complete
-[checked client](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/ComplexityTests/WordRAMSubquadraticThreeSum.lean)
+[checked client](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/ComplexityTests/WordRAMSubquadraticThreeSum.lean)
 includes imports, positive repeated-zero inputs, negative all-one/all-minus-one inputs, and
 rejection of two zeros because the positions must be distinct. From an endpoint checkout:
 
@@ -315,7 +315,7 @@ is its assembled standard Word-RAM program with 848 registers.
 Use `exists_one9992_runs κ` when you also need the final native state, same-state prehalt
 prefix or polynomial bounds on every prefix. None of these interfaces asks for a solver,
 time law, selected prime or layout certificate. The complete
-[checked client](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/ComplexityTests/ThreeSumOne9992.lean)
+[checked client](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/ComplexityTests/ThreeSumOne9992.lean)
 shows the semantic interfaces, positive and negative inputs, repeated values at distinct
 positions, rejection of an inadmissible magnitude, the charged halt and the same-state
 prehalt prefix. On that source revision, run:
@@ -329,6 +329,12 @@ The native constructor `Decision.program κ solver` accepts only the finite call
 `ParameterSelecting.program`. Correctness and time certificates refer to that same syntax,
 so evaluating it does not require evaluating proof-only resource metadata. There is no
 separate `Decision.Code` import or duplicate `programOfCode` assembly.
+
+For the preprocessing proof, import `Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Preprocessing`
+for initialized execution, readback, width and resources. Import its `PreprocessingExecute`
+companion to use `Preprocessing.afterFrontend_exec` for the suffix after the frontend, in
+namespace `Cslib.Algorithms.WordRAM.ThreeSum.ChanHe`. The setup and iteration companions
+contain private stage proofs; callers need no snapshot, cursor or individual-stage contracts.
 
 Choose a fixed natural magnitude exponent `κ` and an original `input : List ℤ`. Set
 `n = input.length`, prove every `|z| <= (n+2)^κ`, and supply physical width
@@ -350,7 +356,7 @@ that envelope; the final data also satisfy the physical word bound.
 
 The caller places matrix workspace at the final preprocessing heap frontier `H`, copied by an
 executed register instruction. The preprocessing
-[output-layout contract](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/Complexity/Algorithms/WordRAM/ThreeSum/ChanHe/TraversalOutput.lean)
+[output-layout contract](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/Complexity/Algorithms/WordRAM/ThreeSum/ChanHe/TraversalOutput.lean)
 places the pointer-table endpoint and every live payload endpoint at or below `H`.
 Each solver call preserves memory below `H` on return, so the caller can still read every
 remaining instance. The separately computed polynomial envelope bounds signed values and
@@ -359,13 +365,13 @@ Preprocessing may have touched dead temporary scratch above `H`, which the solve
 This layout contract describes live output and a final-state frame, without asserting a ban
 on transient callee writes. The existing polynomial prefix bounds still apply.
 
-The [actual automatic callee](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/Complexity/Algorithms/WordRAM/ExactTriangle/ParameterSelecting/Callee.lean)
+The [actual automatic callee](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/Complexity/Algorithms/WordRAM/ExactTriangle/ParameterSelecting/Callee.lean)
 executes parameter computation, prime selection and the real box-backed calls. Its integer
 parameters and the reason for their constants are explained below; the parameter `n` there
 is the ET dimension, rather than the original 3SUM length.
-The [parameter boundary client](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/ComplexityTests/WordRAMExactTriangleDyadicParameters.lean)
+The [parameter boundary client](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/ComplexityTests/WordRAMExactTriangleDyadicParameters.lean)
 checks the actual VM at zero, below `2^2394` and at `2^2394`;
-the [automatic Exact Triangle client](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/ComplexityTests/WordRAMParameterSelectingInput.lean)
+the [automatic Exact Triangle client](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/ComplexityTests/WordRAMParameterSelectingInput.lean)
 checks symbolic fast-family executions, including the selected-prime conclusion. These huge
 matrix clients are proof witnesses, not execution benchmarks. Small ordinary-input VM checks
 also reject lengths below three. The complete finite ledger charges preprocessing, selector,
@@ -374,7 +380,7 @@ halt. Polynomial logarithmic factors are absorbed before the ordinary reduction 
 
 The intermediate native Exact Triangle bound is `Oκ(n^(3-33/20000)) = Oκ(n^2.99835)`;
 this does not claim the source Exact Triangle exponent 2.9983. The final
-[ordinary theorem and source mapping](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/Complexity/Algorithms/WordRAM/ThreeSum/Decision/One9992.lean)
+[ordinary theorem and source mapping](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/Complexity/Algorithms/WordRAM/ThreeSum/Decision/One9992.lean)
 adapt the 1.9992 target to this library's standard unsigned Word-RAM with canonical signed
 encoding and polynomially bounded integers. Time counts unit native instructions with
 logarithmic admitted word width. This is not a bit-time or arbitrary-real 3SUM theorem;
@@ -394,7 +400,7 @@ The fixed magnitude exponent `κ` may affect constants. The finite account is:
 | ET side `s` | `Oκ(sqrt(n)*ell^2)` | `ChanHe.packed_side_le` |
 | One Convolution call, including outer control | `2*s*T(s,F)+355*s^3` | `Decision.callerTime_add_twelve_le` |
 
-The [runtime module](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/Complexity/Algorithms/WordRAM/ThreeSum/Decision/Runtime.lean)
+The [runtime module](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/Complexity/Algorithms/WordRAM/ThreeSum/Decision/Runtime.lean)
 connects these statements to the actual `Decision.cost`:
 `Pκ(n) + 4*E + 32 + q*(Host.callerTime(...)+12)`, where
 `E = Decision.envelopeExponent κ`. The fixed reserve includes setup and halt; the caller
@@ -426,8 +432,8 @@ input magnitude and physical-width premises described above.
 
 The canonical callee uses `δ = 33/20000`. Both `a = 2499/1250` and the older conservative target
 `a = 2-1/5184` satisfy the strict inequality, so both endpoint proofs reuse this same transfer
-and concrete solver. The [ordinary client](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/ComplexityTests/ThreeSumOne9992.lean)
-and [conservative client](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/ComplexityTests/WordRAMSubquadraticThreeSum.lean)
+and concrete solver. The [ordinary client](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/ComplexityTests/ThreeSumOne9992.lean)
+and [conservative client](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/ComplexityTests/WordRAMSubquadraticThreeSum.lean)
 check the resulting concrete run/resource contracts. From a checkout containing this revision:
 
 ```bash
@@ -451,17 +457,17 @@ Here `n` denotes the ET dimension. The parameters put all components on the comm
 | `g^2 <= sqrt(D)` | Query control |
 | `g^2 <= D^(8/125)` | Product work `n^3*g*D^(-8/125) <= n^3/g` |
 
-The [parameter family](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/Complexity/Algorithms/ExactTriangle/ParameterChoice.lean)
+The [parameter family](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/Complexity/Algorithms/ExactTriangle/ParameterChoice.lean)
 chooses `g=4^(2b)`, `m=63b`, `D=4^m`, and the existing box tensor depth `L=21m`.
 The product balance is the small integer inequality `4*125 <= 63*8`, or `500 <= 504`;
 `63b` also satisfies the box tradeoff's divisibility by nine.
 The stronger reserve `D^19 <= n` requires `2394*b <= floor(log2(n))`, because
 `2394 = 2*63*19`. This gives `b=floor(log2(n)/2394)`.
-The [cost-geometry lemmas](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/Complexity/Algorithms/ExactTriangle/ParameterChoice/CostGeometry.lean)
+The [cost-geometry lemmas](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/Complexity/Algorithms/ExactTriangle/ParameterChoice/CostGeometry.lean)
 prove the conditions and `n^3/g <= 16*n^(3-2/1197)`, retaining integer rounding.
 
 The raw saving `2/1197` is not yet a full runtime exponent. The
-[finite coefficient](https://github.com/cslib-community/complexitylib/blob/ad53ef75938353e6ddd2ef7abff9a6142a82c101/Complexity/Algorithms/WordRAM/ExactTriangle/DyadicCost/Asymptotics.lean)
+[finite coefficient](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/Complexity/Algorithms/WordRAM/ExactTriangle/DyadicCost/Asymptotics.lean)
 retains the product factor `(21m+1)^2*(m+1)`, a linear logarithmic parameter term and the
 global selected-prime scan term proportional to the weight exponent times `log(n)`.
 It is bounded by a constant times `(floor(log2(n))+1)^3`. Absorbing this full coefficient,
