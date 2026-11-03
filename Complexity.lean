@@ -2855,6 +2855,7 @@ public import Complexity.Crypto.Computational.InaccessibleEntropy.Basic
 public import Complexity.Crypto.Computational.InaccessibleEntropy.EntropyReduction
 public import Complexity.Crypto.Computational.InaccessibleEntropy.OneWay
 public import Complexity.Crypto.Computational.InaccessibleEntropy.Repetition
+public import Complexity.Crypto.Computational.InaccessibleEntropy.TargetCollision
 public import Complexity.Crypto.Computational.IndexedSignature
 public import Complexity.Crypto.Computational.IndexedSignature.Counter
 public import Complexity.Crypto.Computational.IndexedSignature.Double
@@ -2941,6 +2942,7 @@ public import Complexity.Crypto.Computational.PseudorandomFunction.RandomOracle
 public import Complexity.Crypto.Computational.PseudorandomFunction.TruthTable
 public import Complexity.Crypto.Computational.PseudorandomGenerator
 public import Complexity.Crypto.Computational.PseudorandomPermutation
+public import Complexity.Crypto.Computational.Rompel
 public import Complexity.Crypto.Computational.SIS.Basic
 public import Complexity.Crypto.Computational.SchnorrIdentification
 public import Complexity.Crypto.Computational.SchnorrProtocol
