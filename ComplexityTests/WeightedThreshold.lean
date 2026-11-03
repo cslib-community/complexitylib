@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Andreev
+import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevAverage
 import Complexity.Computability.Circuit.Boolean.Threshold.Parity
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Tactic.FinCases
@@ -19,7 +20,7 @@ open Cslib Cslib.Circuits
 
 namespace WeightedThresholdTests
 
-open Boolean.WeightedThreshold
+open Boolean.WeightedThreshold Finset
 
 -- Nullary gates use the empty sum (equality is accepted), and a negative coefficient implements
 -- negation without adding a separate operation.
@@ -177,5 +178,55 @@ example :
     exact andreevCircuitEvalInt_two_two_mixed.1
   · rw [eval_andreevCircuit_eq_evalInt]
     exact andreevCircuitEvalInt_two_two_mixed.2
+
+-- Windowed depth-two weighted threshold circuit and subcube correlation at `b = 2, m = 2, r = 1`:
+-- `andreevWindowedCircuit 2 2 1 4` uses `33` gates (`≤ 288` active wires) at depth at most `2`
+-- and matches `Boolean.andreev 2 2` on the mixed concrete truth-table inputs; at `B = 5` (`41`
+-- gates, `≤ 360` active wires), every input lies in-window (`|X_S(w)| ≤ 4` and
+-- `|t_S(w) - (#S * 2) / 2| ≤ 1`), so `andreevWindowedCircuit 2 2 1 5` agrees with
+-- `andreevSubcubeEval 2 2 1` everywhere and matches `Boolean.andreev 2 2` on `192` of the `256`
+-- inputs (`2 * 192 = 384 = 256 + 128`); and at `B = 9, t = 17 / 6` (`3 * t + 1 / 2 = 9 ≤ B`), the
+-- analytic Hoeffding correlation theorem gives a lower bound strictly exceeding `1 / 2`.
+example :
+    (andreevWindowedCircuit 2 2 1 4).size = 33 ∧
+    (andreevWindowedCircuit 2 2 1 4).depth ≤ 2 ∧
+    (andreevWindowedCircuit 2 2 1 4).wireCount ≤ 288 ∧
+    (andreevWindowedCircuit 2 2 1 4).eval interpretation
+      (fun i => decide (i = 1 ∨ i = 4)) 0 = true ∧
+    (andreevWindowedCircuit 2 2 1 4).eval interpretation
+      (fun i => decide (i = 1 ∨ i = 4 ∨ i = 5)) 0 = false ∧
+    (andreevWindowedCircuit 2 2 1 5).size = 41 ∧
+    2 * #{w : BitString (2 ^ 2 + 2 * 2) |
+      (andreevWindowedCircuit 2 2 1 5).eval interpretation w 0 =
+        Boolean.andreev 2 2 w} = 384 ∧
+    (2 ^ (2 ^ 2 + 2 * 2) : ℝ) * (1 / 2 + 1 / (2 * Real.sqrt (2 * 2 ^ (2 - 1)))) -
+      2 ^ 1 * (2 * 2 ^ (2 ^ 2 + 2 * 2)) *
+        (Real.exp (-(2 * (17 / 6 : ℝ) ^ 2 / (2 ^ 2 : ℝ))) +
+          Real.exp (-(2 * (17 / 6 : ℝ) ^ 2 / (2 * 2 : ℝ)))) ≤
+      (#{w : BitString (2 ^ 2 + 2 * 2) |
+        (andreevWindowedCircuit 2 2 1 9).eval interpretation w 0 =
+          Boolean.andreev 2 2 w} : ℝ) := by
+  have hin (w : BitString (2 ^ 2 + 2 * 2)) : andreevInWindow 2 2 1 5 w := by
+    intro S hS σ
+    have hcard : #S ≤ 1 :=
+      (Finset.card_le_card ((mem_andreevPrefixSubsets S).mp hS)).trans
+        (by rw [card_andreevPrefixCoords (by decide : 1 ≤ 2)])
+    have hX := andreevTableScore_bounds 2 2 S w
+    have ht := andreevBlockSum_bounds 2 2 S w
+    cases σ <;>
+      simp only [andreevWindowLower, andreevWindowCenter, andreevLinearForm, ↓reduceIte,
+        Bool.false_eq_true, Nat.cast_mul, Nat.cast_ofNat] <;>
+      omega
+  refine ⟨by rw [size_andreevWindowedCircuit (by decide)]; rfl,
+    depth_andreevWindowedCircuit_le 2 2 1 4,
+    (wireCount_andreevWindowedCircuit_le (by decide) 2 4).trans (by decide),
+    by rw [eval_andreevWindowedCircuit_eq_evalInt]; decide,
+    by rw [eval_andreevWindowedCircuit_eq_evalInt]; decide,
+    by rw [size_andreevWindowedCircuit (by decide)]; rfl,
+    by
+      simp_rw [fun w => eval_andreevWindowedCircuit_eq_subcubeEval_of_inWindow (hin w) 0]
+      exact (two_mul_card_andreevSubcubeEval_eq_andreev (by decide) 2).trans (by decide),
+    card_eval_andreevWindowedCircuit_eq_andreev_ge_sqrt (by decide) 2 9 0
+      (by norm_num) (by norm_num)⟩
 
 end WeightedThresholdTests

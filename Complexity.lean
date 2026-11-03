@@ -866,6 +866,8 @@ public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Activat
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Activity
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ActivityBounds
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Andreev
+public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevAverage
+public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevWindowed
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Capacity
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.CapacityCircuit
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Components
