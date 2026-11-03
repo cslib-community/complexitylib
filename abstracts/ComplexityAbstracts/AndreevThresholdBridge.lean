@@ -119,6 +119,14 @@ theorem weak_agreement_upper_bound {b r : ℕ} (hr : r < b) (m B : ℕ) {t : ℝ
     Cslib.Circuits.Boolean.WeightedThreshold.card_eval_andreevWindowedCircuit_eq_andreev_ge_sqrt
       hr m B 0 ht hB⟩
 
+/-- **Explicit scale bound for `andreevSimultaneousTail`.** At the canonical deviation scale
+`α = (b + 2) * √(2 ^ b)`, the simultaneous union-bound tail over all `q < 2 ^ b` is at most
+`(1 / 2) ^ ((b + 2) ^ 2 + 2)`. -/
+theorem andreevSimultaneousTail_scale_le (b : ℕ) :
+    andreevSimultaneousTail b (((b : ℝ) + 2) * Real.sqrt ((2 : ℝ) ^ b)) ≤
+      (1 / 2 : ℝ) ^ ((b + 2) ^ 2 + 2) :=
+  Cslib.Circuits.Boolean.WeightedThreshold.andreevSimultaneousTail_scale_le b
+
 /-- **Average-case `Omega(ε² n^(3/2) / log³ n)` gate lower bound.** Any depth-two weighted threshold
 circuit agreeing with `andreev b m` on at least a `1/2 + ε` fraction of inputs satisfies the
 explicit quadratic-in-`ε` gate lower bound. -/
@@ -133,6 +141,19 @@ theorem gate_lower_bound {b m : ℕ} (hm : 0 < m)
   Cslib.Circuits.Boolean.WeightedThreshold.size_ge_of_card_eval_eq_andreev_ge
     hm hα htail c hd 0 hcorr
 
+/-- **Parameter-specialized average-case `Omega(ε² n^(3/2) / log³ n)` gate lower bound.** Whenever
+`3 * (b + 2) / √(2 ^ b) ≤ ε`, choosing `α = (b + 2) * √(2 ^ b)` discharges the simultaneous tail
+bound and yields an unconditional quadratic-in-`ε` gate lower bound. -/
+theorem gate_lower_bound_of_le_eps {b m : ℕ} (hm : 0 < m)
+    {ε : ℝ} (hε : 3 * ((b : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ b) ≤ ε)
+    (c : ThrCircuit (2 ^ b + b * m)) (hd : c.depth ≤ 2)
+    (hcorr : (2 : ℝ) ^ (2 ^ b + b * m) * (1 / 2 + ε) ≤
+      ((Finset.univ.filter fun x => evaluate c x = andreev b m x).card : ℝ)) :
+    (m : ℝ) * (2 : ℝ) ^ b * ε ^ 2 ≤
+      12 * ((b : ℝ) + 2) ^ 2 * (c.size : ℝ) * Real.sqrt ((2 ^ b + b * m : ℕ) : ℝ) :=
+  Cslib.Circuits.Boolean.WeightedThreshold.size_ge_of_card_eval_eq_andreev_ge_of_le_eps
+    hm hε c hd 0 hcorr
+
 /-- **Average-case `Omega(ε² n^(5/2) / log^(7/2) n)` wire lower bound.** Any depth-two weighted
 threshold circuit agreeing with `andreev b m` on at least a `1/2 + ε` fraction of inputs satisfies
 the explicit quadratic-in-`ε` active-wire lower bound. -/
@@ -146,6 +167,19 @@ theorem wire_lower_bound {b m : ℕ} (hm : 0 < m)
       4 * α ^ 2 * (wireCount c : ℝ) * (1 / (m : ℝ)) * Real.sqrt (1 / (m : ℝ)) :=
   Cslib.Circuits.Boolean.WeightedThreshold.wireCount_ge_of_card_eval_eq_andreev_ge
     hm hα htail c hd 0 hcorr
+
+/-- **Parameter-specialized average-case `Omega(ε² n^(5/2) / log^(7/2) n)` wire lower bound.**
+Whenever `3 * (b + 2) / √(2 ^ b) ≤ ε`, choosing `α = (b + 2) * √(2 ^ b)` discharges the
+simultaneous tail bound and yields an unconditional quadratic-in-`ε` active-wire lower bound. -/
+theorem wire_lower_bound_of_le_eps {b m : ℕ} (hm : 0 < m)
+    {ε : ℝ} (hε : 3 * ((b : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ b) ≤ ε)
+    (c : ThrCircuit (2 ^ b + b * m)) (hd : c.depth ≤ 2)
+    (hcorr : (2 : ℝ) ^ (2 ^ b + b * m) * (1 / 2 + ε) ≤
+      ((Finset.univ.filter fun x => evaluate c x = andreev b m x).card : ℝ)) :
+    (m : ℝ) * Real.sqrt (m : ℝ) * (2 : ℝ) ^ b * ε ^ 2 ≤
+      12 * ((b : ℝ) + 2) ^ 2 * (wireCount c : ℝ) :=
+  Cslib.Circuits.Boolean.WeightedThreshold.wireCount_ge_of_card_eval_eq_andreev_ge_of_le_eps
+    hm hε c hd 0 hcorr
 
 /-- **Worst-case gate lower bound (`ε = 1/2`).** Any depth-two weighted threshold circuit computing
 `andreev b m` on all inputs has at least `Omega(n^(3/2) / log³ n)` gates. -/

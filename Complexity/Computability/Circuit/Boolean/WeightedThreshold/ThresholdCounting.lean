@@ -15,7 +15,7 @@ public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.RandomR
 
 This module formalizes the threshold-function counting bound and the depth-two circuit
 random-restriction collapse used in the Kane–Williams gate and wire lower bounds for depth-two
-weighted threshold circuits ([KaneWilliams2016], `arXiv:1511.07860v1`, Section 4):
+weighted threshold circuits ([KaneWilliams2016], `arXiv:1511.07860v1`, Theorem 2.3 and Section 4):
 
 1. **Chow moment injectivity and threshold counting (`IsThresholdOver`, `featureMoment`,
    `eq_of_isThresholdOver_of_featureMoment_eq`, `card_isThresholdOver_le`):**

@@ -21,32 +21,43 @@ Andreev's function on a `1 / 2 + ε` fraction of inputs.
 
 This development formalizes four improvements over the bounds of Kane and Williams:
 
-1. **Exact quadratic upper bound (`exact_upper_bound`).** By polarizing each Fourier parity term
-   `2 X_S (-1)^(t_S) = φ(X_S + t_S) + φ(X_S - t_S)` via the alternating linear function
-   `φ(u) = (-1)^u u` and telescoping `φ` into threshold indicators over its exact integer range,
-   Andreev's function is computed exactly by a depth-two threshold circuit with
-   `4 * 4 ^ b + b * m * 2 ^ b` bottom gates and one top gate (`(5 / 4) n ^ 2 + 1` gates at
-   `2 ^ b = b * m`), bottom weights in `{-2, -1, 0, 1, 2}`, and odd integer top weights of absolute
-   value below `2 n`.
-2. **Windowed high-agreement upper bound (`high_agreement_upper_bound`).** Truncating each unary
-   threshold ladder to a window of half-width `B ≥ 3 t + 1 / 2` around its expected center reduces
-   the circuit size to `4 * 2 ^ b * B + 1` while bounding the disagreement fraction by the
-   Hoeffding tail `2 ^ (b + 1) (exp (-2 t ^ 2 / 2 ^ b) + exp (-2 t ^ 2 / (b m)))`, giving
-   `O(n ^ (3 / 2) sqrt(log (n / δ)))` gates and `O(n ^ (5 / 2) sqrt(log (n / δ)))` wires for
-   agreement `1 - δ`.
-3. **Windowed `(1 / 2 + ε)`-correlation upper bound (`weak_agreement_upper_bound`).** Summing only
-   over the `2 ^ r` prefix subsets `S ⊆ {0, ..., r - 1}` (`r < b`) gives the subcube majority vote
-   over `2 ^ (b - r)` truth-table entries, whose exact correlation advantage over `1 / 2` is at
-   least `1 / (2 sqrt(2 · 2 ^ (b - r)))`, yielding `O(ε ^ 2 n ^ (3 / 2) sqrt(log (1 / ε)))` gates
-   and `O(ε ^ 2 n ^ (5 / 2) sqrt(log (1 / ε)))` wires.
-4. **Quadratic-in-`ε` gate and wire lower bounds (`gate_lower_bound`, `wire_lower_bound`).**
-   Replacing Markov's inequality on the surviving gate count in Kane–Williams with a simultaneous
-   high-probability correlation union bound (`andreevSimultaneousTail b α`) over all `q < 2 ^ b` and
-   applying Jensen's inequality (`E[sqrt(Q + 1)] ≤ sqrt(E[Q] + 1)`) eliminates one factor of `ε`,
-   improving the average-case lower bounds to `Omega(ε ^ 2 n ^ (3 / 2) / log ^ 3 n)` gates and
-   `Omega(ε ^ 2 n ^ (5 / 2) / log ^ (7 / 2) n)` active wires (matching the windowed upper bounds up
-   to polylogarithmic factors in both `n` and `ε`). The proofs also repair the Littlewood–Offord
-   anti-concentration and random-restriction counting arguments of Kane and Williams.
+**Exact quadratic upper bound (`exact_upper_bound`).** By polarizing each Fourier parity term
+`2 (-1)^(2^b) X_S (-1)^(t_S) = φ(X_S + t_S) + φ(X_S - t_S)` (where `(-1)^(2^b) = 1` for `b > 0`)
+via the alternating linear function `φ(u) = (-1)^u u` and telescoping `φ` into threshold indicators
+over its exact integer range, Andreev's function is computed exactly by a depth-two threshold
+circuit with `4 * 4 ^ b + b * m * 2 ^ b` bottom gates and one top gate (`(5 / 4) n ^ 2 + 1` gates at
+`2 ^ b = b * m`), bottom weights in `{-2, -1, 0, 1, 2}`, and odd integer top weights of absolute
+value below `2 n`.
+
+**Windowed high-agreement upper bound (`high_agreement_upper_bound`).** Truncating each unary
+threshold ladder to a window of half-width `B ≥ 3 t + 1 / 2` around its expected center reduces
+the circuit size to `4 * 2 ^ b * B + 1` while bounding the disagreement fraction by the Hoeffding
+tail `2 ^ (b + 1) (exp (-2 t ^ 2 / 2 ^ b) + exp (-2 t ^ 2 / (b m)))`, giving
+`O(n ^ (3 / 2) sqrt(log (n / δ)))` gates and `O(n ^ (5 / 2) sqrt(log (n / δ)))` wires for
+agreement `1 - δ`.
+
+**Windowed `(1 / 2 + ε)`-correlation upper bound (`weak_agreement_upper_bound`).** Summing only
+over the `2 ^ r` prefix subsets `S ⊆ {0, ..., r - 1}` (`r < b`) gives the subcube majority vote
+over `2 ^ (b - r)` truth-table entries, whose exact correlation advantage over `1 / 2` is at least
+`1 / (2 sqrt(2 · 2 ^ (b - r)))`, while the union bound over all `2 ^ r` prefix subsets contributes
+normalized window error `2 ^ (r + 1) (exp (-2 t ^ 2 / 2 ^ b) + exp (-2 t ^ 2 / (b m)))`. Choosing
+`2 ^ r = Theta(ε ^ 2 n)` and `B = Theta(sqrt(n log n))` in the balanced regime (`C / sqrt(n) ≤ ε ≤
+1 / 2 - c`) yields `O(ε ^ 2 n ^ (3 / 2) sqrt(log n))` gates and `O(ε ^ 2 n ^ (5 / 2) sqrt(log n))`
+wires.
+
+**Quadratic-in-`ε` gate and wire lower bounds (`gate_lower_bound`, `wire_lower_bound`,
+`gate_lower_bound_of_le_eps`, `wire_lower_bound_of_le_eps`).** Replacing Markov's inequality on the
+surviving gate count in Kane–Williams with a simultaneous high-probability correlation union bound
+(`andreevSimultaneousTail b α`) over all `q < 2 ^ b` and applying Jensen's inequality
+(`E[sqrt(Q + 1)] ≤ sqrt(E[Q] + 1)`) eliminates one factor of `ε`. At the explicit deviation scale
+`α = (b + 2) sqrt(2 ^ b)` (`andreevSimultaneousTail_scale_le`), the simultaneous tail is at most
+`(1 / 2) ^ ((b + 2) ^ 2 + 2)`, so for `3 (b + 2) / sqrt(2 ^ b) ≤ ε ≤ 1 / 2` (`C log n / sqrt(n) ≤
+ε ≤ 1 / 2` in the balanced regime `2 ^ b = b * m`), `gate_lower_bound_of_le_eps` and
+`wire_lower_bound_of_le_eps` discharge the tail bound and yield
+`Omega(ε ^ 2 n ^ (3 / 2) / log ^ 3 n)` gates and `Omega(ε ^ 2 n ^ (5 / 2) / log ^ (7 / 2) n)`
+active wires (matching the windowed upper bounds up to polylogarithmic factors in `n`). The proofs
+also repair the Littlewood–Offord anti-concentration and random-restriction counting arguments of
+Kane and Williams.
 
 **Model.** Circuits are straight-line programs of upstream `Cslib.Circuits.Circuit` with one output
 over `Cslib.Circuits.Boolean.WeightedThreshold.signature`. Each gate `Op` has an arity `m`, a real
@@ -60,7 +71,8 @@ elementary threshold-gate signature and circuit-depth recursion are the two allo
 
 * [D. M. Kane and R. Williams, *Super-Linear Gate and Super-Quadratic Wire Lower Bounds for
   Depth-Two and Depth-Three Threshold Circuits*][KaneWilliams2016], STOC 2016 /
-  `arXiv:1511.07860v1`: Theorem 1.1, Lemma 1.1, Theorem 1.2, Lemma 2.3, Lemma 3.1
+  `arXiv:1511.07860v1`: Theorem 1.1, Lemma 1.1, Theorem 1.2, Theorem 2.3 (Section 2), Lemma 3.1,
+  Section 5
 * [A. E. Andreev, *On a Method for Obtaining More Than Quadratic Effective Lower Bounds for the
   Complexity of π-Schemes*][Andreev1987]
 * [P. Erdős, *On a lemma of Littlewood and Offord*][Erdos1945]
@@ -160,6 +172,14 @@ theorem weak_agreement_upper_bound {b r : ℕ} (hr : r < b) (m B : ℕ) {t : ℝ
         ((Finset.univ.filter fun x => evaluate c x = andreev b m x).card : ℝ) :=
   AndreevThresholdBridge.weak_agreement_upper_bound hr m B ht hB
 
+/-- **Explicit scale bound for `andreevSimultaneousTail`.** At the canonical deviation scale
+`α = (b + 2) * sqrt(2 ^ b)`, the simultaneous union-bound tail over all `q < 2 ^ b` is at most
+`(1 / 2) ^ ((b + 2) ^ 2 + 2)`. -/
+theorem andreevSimultaneousTail_scale_le (b : ℕ) :
+    andreevSimultaneousTail b (((b : ℝ) + 2) * Real.sqrt ((2 : ℝ) ^ b)) ≤
+      (1 / 2 : ℝ) ^ ((b + 2) ^ 2 + 2) :=
+  AndreevThresholdBridge.andreevSimultaneousTail_scale_le b
+
 /-- **Average-case `Omega(ε² n^(3/2) / log³ n)` gate lower bound.** Any depth-two weighted threshold
 circuit agreeing with `andreev b m` on at least a `1/2 + ε` fraction of inputs satisfies the
 explicit quadratic-in-`ε` gate lower bound. -/
@@ -173,6 +193,18 @@ theorem gate_lower_bound {b m : ℕ} (hm : 0 < m)
       4 * α ^ 2 * (c.size : ℝ) * Real.sqrt ((2 ^ b + b * m : ℕ) : ℝ) :=
   AndreevThresholdBridge.gate_lower_bound hm hα htail c hd hcorr
 
+/-- **Parameter-specialized average-case `Omega(ε² n^(3/2) / log³ n)` gate lower bound.** Whenever
+`3 * (b + 2) / sqrt(2 ^ b) ≤ ε`, choosing `α = (b + 2) * sqrt(2 ^ b)` discharges the simultaneous
+tail bound and yields an unconditional quadratic-in-`ε` gate lower bound. -/
+theorem gate_lower_bound_of_le_eps {b m : ℕ} (hm : 0 < m)
+    {ε : ℝ} (hε : 3 * ((b : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ b) ≤ ε)
+    (c : ThrCircuit (2 ^ b + b * m)) (hd : c.depth ≤ 2)
+    (hcorr : (2 : ℝ) ^ (2 ^ b + b * m) * (1 / 2 + ε) ≤
+      ((Finset.univ.filter fun x => evaluate c x = andreev b m x).card : ℝ)) :
+    (m : ℝ) * (2 : ℝ) ^ b * ε ^ 2 ≤
+      12 * ((b : ℝ) + 2) ^ 2 * (c.size : ℝ) * Real.sqrt ((2 ^ b + b * m : ℕ) : ℝ) :=
+  AndreevThresholdBridge.gate_lower_bound_of_le_eps hm hε c hd hcorr
+
 /-- **Average-case `Omega(ε² n^(5/2) / log^(7/2) n)` wire lower bound.** Any depth-two weighted
 threshold circuit agreeing with `andreev b m` on at least a `1/2 + ε` fraction of inputs satisfies
 the explicit quadratic-in-`ε` active-wire lower bound. -/
@@ -185,6 +217,18 @@ theorem wire_lower_bound {b m : ℕ} (hm : 0 < m)
     ((2 : ℝ) ^ b * (ε - andreevSimultaneousTail b α)) ^ 2 - α ^ 2 ≤
       4 * α ^ 2 * (wireCount c : ℝ) * (1 / (m : ℝ)) * Real.sqrt (1 / (m : ℝ)) :=
   AndreevThresholdBridge.wire_lower_bound hm hα htail c hd hcorr
+
+/-- **Parameter-specialized average-case `Omega(ε² n^(5/2) / log^(7/2) n)` wire lower bound.**
+Whenever `3 * (b + 2) / sqrt(2 ^ b) ≤ ε`, choosing `α = (b + 2) * sqrt(2 ^ b)` discharges the
+simultaneous tail bound and yields an unconditional quadratic-in-`ε` active-wire lower bound. -/
+theorem wire_lower_bound_of_le_eps {b m : ℕ} (hm : 0 < m)
+    {ε : ℝ} (hε : 3 * ((b : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ b) ≤ ε)
+    (c : ThrCircuit (2 ^ b + b * m)) (hd : c.depth ≤ 2)
+    (hcorr : (2 : ℝ) ^ (2 ^ b + b * m) * (1 / 2 + ε) ≤
+      ((Finset.univ.filter fun x => evaluate c x = andreev b m x).card : ℝ)) :
+    (m : ℝ) * Real.sqrt (m : ℝ) * (2 : ℝ) ^ b * ε ^ 2 ≤
+      12 * ((b : ℝ) + 2) ^ 2 * (wireCount c : ℝ) :=
+  AndreevThresholdBridge.wire_lower_bound_of_le_eps hm hε c hd hcorr
 
 /-- **Worst-case gate lower bound (`ε = 1/2`).** Any depth-two weighted threshold circuit computing
 `andreev b m` on all inputs has at least `Omega(n^(3/2) / log³ n)` gates. -/
@@ -208,7 +252,7 @@ theorem exact_wire_lower_bound {b m : ℕ} (hm : 0 < m)
       4 * α ^ 2 * (wireCount c : ℝ) * (1 / (m : ℝ)) * Real.sqrt (1 / (m : ℝ)) :=
   AndreevThresholdBridge.exact_wire_lower_bound hm hα htail c hd hcomp
 
-/-- info: abstract audit passed for `ComplexityAbstracts.AndreevThresholdAbstract`: 18 root
+/-- info: abstract audit passed for `ComplexityAbstracts.AndreevThresholdAbstract`: 21 root
 declarations -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.AndreevThresholdAbstract allowing [
