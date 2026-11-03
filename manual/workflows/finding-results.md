@@ -122,6 +122,25 @@ from exact raw prefixes. Run `scripts/build.sh --wfail --iofail ComplexityTests.
 from a configured checkout. Nonzero raw-prefix moments, false-overflow payments and recursive
 reserve choices still need their own proofs; these comparisons do not establish them.
 
+For actual heavy-first-overflow input tails, import
+[NormalizedAtomRows/ClippedTail](../../Complexity/Foundations/Probability/NormalizedAtomRows/ClippedTail.lean)
+and open `Matrix.HierarchyParams.H4RankEnvironment.NormalizedMoments`.
+`integrated_actual_clipped_tail_capacity` uses the actual first-overflow masks at any
+capacity sequence dominating `2^(64*dyadicSlack)`. Supply nonnegative genuine row mass,
+a deterministic clipped conditional-mean envelope and noise-max fourth moments. The first
+channel is conditioned on the full terminal rank set; the second uses the narrower usage
+set. `actual_walk_prefix_support` derives literal second-channel zero extension for
+conditional-walk telescoping increments starting at zero. Heavy-event rarity discounts only
+the deterministic mean term. Correlated noise receives its full moment budget, with no
+independence assumption for the adaptively maximizing endpoint. The resulting tail coefficient
+has the explicit mean factor `(2 + 256*M/η)/63` and noise factor `7/9`.
+
+The [tail regressions](../../ComplexityTests/NormalizedAtomTails.lean) check a nonconstant,
+correlated endpoint moment and a nonzero telescoping prefix. From a configured checkout run
+`scripts/build.sh --wfail --iofail ComplexityTests.NormalizedAtomTails`.
+These are conditional compression input estimates; deriving their lower-child envelopes
+and noise budgets, recursive reserves and native RL remains separate work.
+
 ## Read abstracts, bridges and comparison contracts
 
 For a named headline such as Fagin's theorem, locate its entry in `abstracts/catalogue.json`, then read [FaginAbstract.lean](../../abstracts/ComplexityAbstracts/FaginAbstract.lean). Follow `FaginBridge.fagin` to the library result in [Fagin/Converse.lean](../../Complexity/Computability/Complexity/Fagin/Converse.lean). The presentation exposes finite relational vocabularies, unary cardinality, framed relation tables and malformed-input rejection. The library theorem `Cslib.Logic.ESO.definable_iff_queryLanguage_mem_NP` takes an isomorphism-closure hypothesis; its adjacent theorem packages that hypothesis into the equivalence. Choose the form matching your goal and the [finite-model representation](../circuits-logic-and-other-models/finite-model-logic.md).
