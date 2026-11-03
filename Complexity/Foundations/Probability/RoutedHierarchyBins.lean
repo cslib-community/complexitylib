@@ -23,8 +23,8 @@ The cutoff `routedBinCutoff` is (5.9) of [OpenAI2026LogSpace, Section 5.2], revi
 `denseAtom`. Its direct importance-weighted mean follows from those conditions. Finite bin
 sums use the existing partition of unity; their coverage condition is explicit, including zeros.
 The hierarchy client gives the next actual matrix on each fixed source/destination symbol part.
-This is the exact cutoff on true inputs; a bounded arbitrary-child top-bin extension and its
-preparatory task integration are not supplied here.
+This module supplies true-input means. The shared arbitrary-child cutoffs live in
+`DenseRowRecipes`; global preparatory and normalized requests live in `HierarchyAccess`.
 No parallel routed transition matrix or assumed mean certificate is introduced.
 
 Requests retain whole functions, source/end/usage rates and independent roles. Copy traversal
@@ -45,32 +45,6 @@ open Finset
 open scoped BigOperators
 
 namespace Matrix
-
-/-- The bin in atom units, with destination routing included before the row normalization.
-For an unrouted bin use the routing function constantly equal to one. -/
-@[expose] noncomputable def routedBinCutoff (χ : ℝ → ℝ) (b : ℕ → ℝ) (i : ℕ)
-    (route : ℝ → ℝ) (d : ℝ) : ℝ :=
-  d * Cslib.binWeight χ b i (b i * d) * route (b i * d)
-
-/-- Converting an atom-unit routed cutoff back to matrix units preserves the raw argument. -/
-theorem mul_routedBinCutoff {χ route : ℝ → ℝ} {b : ℕ → ℝ} {i : ℕ}
-    (hb : b i ≠ 0) (w : ℝ) :
-    b i * routedBinCutoff χ b i route (w / b i) =
-      w * Cslib.binWeight χ b i w * route w := by
-  simp only [routedBinCutoff, mul_div_cancel₀ _ hb]
-  field_simp
-
-/-- Finite coverage of the true entry suffices; a zero entry needs no positive lower cutoff. -/
-theorem sum_routedBinCutoff {χ route : ℝ → ℝ} {b : ℕ → ℝ} (n : ℕ)
-    (hb : ∀ i, 0 < b i) (hχ : ∀ t, 1 ≤ t → χ t = 1) {w : ℝ}
-    (hcover : w = 0 ∨ b n ≤ w) :
-    ∑ i ∈ range (n + 1), b i * routedBinCutoff χ b i route (w / b i) = w * route w := by
-  simp_rw [mul_routedBinCutoff (hb _).ne']
-  rw [← sum_mul]
-  congr 1
-  rcases hcover with rfl | hw
-  · simp
-  · exact Cslib.sum_range_mul_binWeight hχ (hb n) hw
 
 variable {V Ω : Type*} [Fintype V] [Fintype Ω]
   (Y Ya Yt : Ω → V → Prop)

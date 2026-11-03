@@ -3664,6 +3664,7 @@ public import Complexity.Foundations.Probability.ConditionalProductMean
 public import Complexity.Foundations.Probability.CorrectionAtom
 public import Complexity.Foundations.Probability.CorrectionRowRecipe
 public import Complexity.Foundations.Probability.CorrectionRowTasks
+public import Complexity.Foundations.Probability.DenseRowRecipes
 public import Complexity.Foundations.Probability.DetectedHierarchy
 public import Complexity.Foundations.Probability.DetectedStage
 public import Complexity.Foundations.Probability.EfronStein
@@ -3678,6 +3679,7 @@ public import Complexity.Foundations.Probability.Gaussian.Sheppard
 public import Complexity.Foundations.Probability.HeavyCount
 public import Complexity.Foundations.Probability.HeavyCountRarity
 public import Complexity.Foundations.Probability.HeavyCountTail
+public import Complexity.Foundations.Probability.HierarchyAccess
 public import Complexity.Foundations.Probability.HierarchyAtomCutoff
 public import Complexity.Foundations.Probability.HierarchyParams
 public import Complexity.Foundations.Probability.HierarchySampling

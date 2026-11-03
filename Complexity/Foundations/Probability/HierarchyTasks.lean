@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Probability.CorrectionRowTasks
+public import Complexity.Foundations.Probability.DenseRowRecipes
 import all Complexity.Foundations.Probability.DetectedHierarchy
 import all Complexity.Foundations.Probability.HierarchyParams
 import all Complexity.Foundations.LinearAlgebra.Matrix.CorrectionHierarchy
@@ -139,17 +139,42 @@ end BoundedRowTask
 inductive HierarchyTask (k : ℕ) where
   | row (stage : ℕ) (task : BoundedRowTask k)
   | nextMatrix (stage : ℕ)
+  | basePreparation (stage bin : ℕ)
+  | baseNormalized (stage bin : ℕ)
+  | residual (stage : ℕ)
+  | residualPreparation (stage bin : ℕ)
+  | residualNormalized (stage bin : ℕ)
   deriving DecidableEq
 
 namespace HierarchyTask
 
 /-- The row bound, one matrix-output slot and one separating slot. -/
-@[expose] def stride (k : ℕ) : ℕ := 20 * k + 28
+@[expose] def stride (k : ℕ) : ℕ := 4 * (20 * k + 28)
 
 /-- Rank computed only from stage, constructor and finite iteration index. -/
 @[expose] def rank {k : ℕ} : HierarchyTask k → ℕ
-  | .row l t => stride k * l + t.localTask.rank k
-  | .nextMatrix l => stride k * l + (20 * k + 27)
+  | .row l t => stride k * l + 4 * t.localTask.rank k
+  | .nextMatrix l => stride k * l + 4 * (20 * k + 27) + 3
+  | .basePreparation l _ => stride k * l + 13
+  | .baseNormalized l _ => stride k * l + 14
+  | .residual l => stride k * l + 4 * (20 * k + 27)
+  | .residualPreparation l _ => stride k * l + 4 * (20 * k + 27) + 1
+  | .residualNormalized l _ => stride k * l + 4 * (20 * k + 27) + 2
+
+/-- Dense-bin edges interleave with the existing finite correction iteration order. -/
+inductive BinDependency {k : ℕ} : HierarchyTask k → HierarchyTask k → Prop where
+  | basePreparation (l i) : BinDependency (.row l .base) (.basePreparation l i)
+  | baseRaw (l i) : BinDependency (.row l .base) (.baseNormalized l i)
+  | baseNormalized (l i) : BinDependency (.basePreparation l i) (.baseNormalized l i)
+  | baseInput (l i) (j : Fin k) : BinDependency (.baseNormalized l i) (.row l (.input j))
+  | basePilotInput (l i) (j : Fin k) :
+      BinDependency (.baseNormalized l i) (.row l (.pilotInput j))
+  | residualRow (l) (t : BoundedRowTask k) : BinDependency (.row l t) (.residual l)
+  | residualPreparation (l i) : BinDependency (.residual l) (.residualPreparation l i)
+  | residualRaw (l i) : BinDependency (.residual l) (.residualNormalized l i)
+  | residualNormalized (l i) :
+      BinDependency (.residualPreparation l i) (.residualNormalized l i)
+  | copy (l i) : BinDependency (.residualNormalized l i) (.nextMatrix l)
 
 /-- Actual dependencies: local recipes, the residual/copy matrix output, and the two
 cross-stage calls replacing the old local leaves. Base-stage leaves read `S` and `e₀`. -/
@@ -160,10 +185,26 @@ inductive Dependency {k : ℕ} : HierarchyTask k → HierarchyTask k → Prop wh
   | matrixBase (l : ℕ) : Dependency (.row l .base) (.nextMatrix l)
   | matrixCorrection (l : ℕ) :
       Dependency (.row l (.correction (Fin.last k))) (.nextMatrix l)
+  | matrixResidual (l : ℕ) : Dependency (.residual l) (.nextMatrix l)
   | matrixWeights (l : ℕ) : Dependency (.row l .weights) (.nextMatrix l)
   | base (l : ℕ) : Dependency (.nextMatrix l) (.row (l + 1) .base)
   | previousReward (l : ℕ) :
       Dependency (.row l (.projectedReward (Fin.last k))) (.row (l + 1) .previousReward)
+  | bin {child parent : HierarchyTask k} (h : BinDependency child parent) :
+      Dependency child parent
+
+/-- All stochastic-bin edges decrease the same constructor-computed global rank. -/
+theorem rank_lt_of_binDependency {k : ℕ} {child parent : HierarchyTask k}
+    (h : BinDependency child parent) : child.rank < parent.rank := by
+  cases h with
+  | residualRow l t =>
+    have := t.rank_le
+    simp only [rank]
+    omega
+  | _ =>
+    simp only [rank, CorrectionRowTask.rank,
+      PilotRowTask.rank, PilotTask.rank]
+    omega
 
 /-- Every finite local row fits strictly before its stage's matrix output. -/
 theorem row_rank_lt_nextMatrix {k : ℕ} (l : ℕ) (t : BoundedRowTask k) :
@@ -176,10 +217,12 @@ theorem row_rank_lt_nextMatrix {k : ℕ} (l : ℕ) (t : BoundedRowTask k) :
 theorem rank_lt_of_dependency {k : ℕ} {child parent : HierarchyTask k}
     (h : Dependency child parent) : child.rank < parent.rank := by
   cases h with
+  | bin h => exact rank_lt_of_binDependency h
   | rowChild h =>
     have := CorrectionRowTask.rank_lt_of_mem_children h
     simp only [rank]
     omega
+  | matrixResidual l => simp only [rank]; omega
   | matrixBase l => exact row_rank_lt_nextMatrix l .base
   | matrixCorrection l => exact row_rank_lt_nextMatrix l (.correction (Fin.last k))
   | matrixWeights l => exact row_rank_lt_nextMatrix l .weights
@@ -200,7 +243,12 @@ zero-iteration corrections and maxima remain local constants. -/
   | .row (l + 1) .base => [.nextMatrix l]
   | .row (l + 1) .previousReward => [.row l (.projectedReward (Fin.last k))]
   | .row l t => t.children.map (.row l)
-  | .nextMatrix l => [.row l .base, .row l (.correction (Fin.last k)), .row l .weights]
+  | .nextMatrix l => [.residual l, .row l .weights]
+  | .basePreparation l _ => [.row l .base]
+  | .baseNormalized l i => [.row l .base, .basePreparation l i]
+  | .residual l => [.row l .base, .row l (.correction (Fin.last k))]
+  | .residualPreparation l _ => [.residual l]
+  | .residualNormalized l i => [.residual l, .residualPreparation l i]
 
 /-- Every listed call belongs to the semantic constructor dependency relation. -/
 theorem dependency_of_mem_children {k : ℕ} {parent child : HierarchyTask k}
@@ -208,10 +256,30 @@ theorem dependency_of_mem_children {k : ℕ} {parent child : HierarchyTask k}
   cases parent with
   | nextMatrix l =>
     simp only [children, List.mem_cons, List.not_mem_nil, or_false] at h
-    rcases h with rfl | rfl | rfl
-    · exact .matrixBase l
-    · exact .matrixCorrection l
+    rcases h with rfl | rfl
+    · exact .matrixResidual l
     · exact .matrixWeights l
+  | basePreparation l i =>
+    simp only [children, List.mem_singleton] at h
+    subst child
+    exact .bin (.basePreparation l i)
+  | baseNormalized l i =>
+    simp only [children, List.mem_cons, List.not_mem_nil, or_false] at h
+    rcases h with rfl | rfl
+    · exact .bin (.baseRaw l i)
+    · exact .bin (.baseNormalized l i)
+  | residual l =>
+    simp only [children, List.mem_cons, List.not_mem_nil, or_false] at h
+    rcases h with rfl | rfl <;> exact .bin (.residualRow l _)
+  | residualPreparation l i =>
+    simp only [children, List.mem_singleton] at h
+    subst child
+    exact .bin (.residualPreparation l i)
+  | residualNormalized l i =>
+    simp only [children, List.mem_cons, List.not_mem_nil, or_false] at h
+    rcases h with rfl | rfl
+    · exact .bin (.residualRaw l i)
+    · exact .bin (.residualNormalized l i)
   | row l t =>
     cases t with
     | base | previousReward =>
@@ -272,6 +340,10 @@ the matrix output lives on the next hierarchy domain. -/
 abbrev hierarchyTaskValueType : HierarchyTask P.k → Type u
   | .row l t => t.localTask.Value P.m (V l) (κ l) (Γ l) (Ζ l)
   | .nextMatrix l => Matrix (V (l + 1)) (V (l + 1)) ℝ
+  | .residual l => Matrix (V l) (V l) ℝ
+  | .basePreparation l _ | .baseNormalized l _ |
+      .residualPreparation l _ | .residualNormalized l _ =>
+    DenseBinRecipe → Γ l × Ζ l → Matrix (V l) (V l) ℝ
 
 /-- Interpret bounded tasks using the actual hierarchy and transported reward. The two
 cross-stage equations below resolve the former local base leaves to earlier constructors. -/
@@ -282,6 +354,116 @@ cross-stage equations below resolve the former local base leaves to earlier cons
       (rewardTransport (hierarchyProj P e X Y S) (hierarchyCorrection P e X Y S) l *ᵥ e₀)
       t.localTask
   | .nextMatrix l => hierarchy P e X Y S (l + 1)
+  | .residual l => P.residual (X l) (Y l) (q⁻¹ ^ l) (hierarchy P e X Y S l)
+  | .basePreparation l i => fun B σ =>
+      DenseRowRecipe.preparation B.h B.ρ B.K (B.scales i) (Z l)
+        (hierarchy P e X Y S l) σ.2
+  | .baseNormalized l i => fun B =>
+      DenseRowRecipe.normalized (boundedRoutedBinCutoff B.χ B.scales B.cap i B.route)
+        B.ρ B.K (B.scales i) (Xs l) (Z l) (Zt l) (hierarchy P e X Y S l)
+        (fun σ => DenseRowRecipe.preparation B.h B.ρ B.K (B.scales i) (Z l)
+          (hierarchy P e X Y S l) σ.2)
+  | .residualPreparation l i => fun B σ =>
+      DenseRowRecipe.preparation B.h B.ρ B.K (B.scales i) (Z l)
+        (P.residual (X l) (Y l) (q⁻¹ ^ l) (hierarchy P e X Y S l)) σ.2
+  | .residualNormalized l i => fun B =>
+      DenseRowRecipe.normalized (boundedRoutedBinCutoff B.χ B.scales B.cap i B.route)
+        B.ρ B.K (B.scales i) (Xs l) (Z l) (Zt l)
+        (P.residual (X l) (Y l) (q⁻¹ ^ l) (hierarchy P e X Y S l))
+        (fun σ => DenseRowRecipe.preparation B.h B.ρ B.K (B.scales i) (Z l)
+          (P.residual (X l) (Y l) (q⁻¹ ^ l) (hierarchy P e X Y S l)) σ.2)
+
+/-- One constructor evaluated on arbitrary whole child functions. This is the structural
+ACCESS assembly, before statistical-budget recursion. Incoming gates in correction recipes
+are computed on completed child matrices. No aggregate mean or error is a parameter. -/
+@[expose] noncomputable def hierarchyTaskRecipe
+    (child : (t : HierarchyTask P.k) →
+      hierarchyTaskValueType P (V := V) (κ := κ) (Γ := Γ) (Ζ := Ζ) t)
+    (t : HierarchyTask P.k) :
+    hierarchyTaskValueType P (V := V) (κ := κ) (Γ := Γ) (Ζ := Ζ) t :=
+  match t with
+  | .row 0 .base => S
+  | .row (l + 1) .base => child (.nextMatrix l)
+  | .row 0 .previousReward => e₀
+  | .row (l + 1) .previousReward => fun a =>
+      child (.row l (.projectedReward (Fin.last P.k))) (e l a)
+  | .row l (.pilotInput i) => CorrectionRowRecipe.input
+      (child (.row l .base)) (child (.row l (.pilotCorrection i.castSucc)))
+      (child (.row l .base))
+  | .row l (.input i) => CorrectionRowRecipe.input
+      (child (.row l .base)) (child (.row l (.correction i.castSucc)))
+      (child (.row l .base))
+  | .row l (.score i) => PilotRowRecipe.score P (Y l) (q⁻¹ ^ l)
+      (child (.row l (.pilotInput i)))
+  | .row l (.detector i) => PilotRowRecipe.detector P (X l) (Y l)
+      (child (.row l (.score i)))
+  | .row l (.maximum i) => Fin.cases 0 (fun j => PilotRowRecipe.maximum
+      (child (.row l (.maximum j.castSucc))) (child (.row l (.detector j)))) i
+  | .row l (.pilotCorrection i) => Fin.cases 0 (fun j => fun x y =>
+      (q⁻¹ ^ l) * P.atomCutoff (child (.row l (.pilotInput j)) x y / (q⁻¹ ^ l)) *
+        P.γ (child (.row l (.maximum j.succ)) y)) i
+  | .row l (.correction i) => Fin.cases 0 (fun j => fun x y =>
+      (q⁻¹ ^ l) * P.atomCutoff (child (.row l (.input j)) x y / (q⁻¹ ^ l)) *
+        P.γ (child (.row l (.maximum (Fin.last P.k))) y)) i
+  | .row l (.pilotPreparation i) => (A l).preparationRecipe
+      (child (.row l (.pilotInput i)))
+  | .row l (.preparation i) => (A l).preparationRecipe (child (.row l (.input i)))
+  | .row l (.pilotNormalized i) => (A l).normalizedRecipe
+      (child (.row l (.pilotInput i))) (child (.row l (.pilotPreparation i)))
+      (child (.row l (.maximum i.succ)))
+  | .row l (.normalized i) => (A l).normalizedRecipe
+      (child (.row l (.input i))) (child (.row l (.preparation i)))
+      (child (.row l (.maximum (Fin.last P.k))))
+  | .row l .weights => detectorWeight P.κ (child (.row l (.maximum (Fin.last P.k))))
+  | .row l (.reward i) => child (.row l .previousReward) +
+      child (.row l (.correction i)) *ᵥ child (.row l .previousReward)
+  | .row l (.projectedReward i) => fun a =>
+      child (.row l .weights) (ofLex a).2 (ofLex a).1 * child (.row l (.reward i)) (ofLex a).1
+  | .residual l => CorrectionRowRecipe.residual (child (.row l .base))
+      (child (.row l (.correction (Fin.last P.k))))
+      (child (.row l (.correction (Fin.last P.k)))) (child (.row l .base))
+  | .nextMatrix l => (copyStage (P.copyCutoff (q⁻¹ ^ l)) P.m
+      (child (.row l .weights)) (child (.residual l))).submatrix
+        (fun a => ofLex (e l a)) (fun b => ofLex (e l b))
+  | .basePreparation l i => fun B σ =>
+      DenseRowRecipe.preparation B.h B.ρ B.K (B.scales i) (Z l)
+        (child (.row l .base)) σ.2
+  | .baseNormalized l i => fun B =>
+      DenseRowRecipe.normalized (boundedRoutedBinCutoff B.χ B.scales B.cap i B.route)
+        B.ρ B.K (B.scales i) (Xs l) (Z l) (Zt l)
+        (child (.row l .base)) (child (.basePreparation l i) B)
+  | .residualPreparation l i => fun B σ =>
+      DenseRowRecipe.preparation B.h B.ρ B.K (B.scales i) (Z l) (child (.residual l)) σ.2
+  | .residualNormalized l i => fun B =>
+      DenseRowRecipe.normalized (boundedRoutedBinCutoff B.χ B.scales B.cap i B.route)
+        B.ρ B.K (B.scales i) (Xs l) (Z l) (Zt l)
+        (child (.residual l)) (child (.residualPreparation l i) B)
+
+/-- True residual substitution uses the actual correction hierarchy equation. -/
+theorem hierarchyTaskRecipe_residual (l : ℕ) :
+    hierarchyTaskRecipe P e X Y S e₀ Xs Z Zt A
+      (hierarchyTaskValue P e X Y S e₀ Xs Z Zt A) (.residual l) =
+      hierarchyTaskValue P e X Y S e₀ Xs Z Zt A (.residual l) := by
+  simp only [hierarchyTaskRecipe, hierarchyTaskValue, CorrectionSampling.value,
+    Fin.val_last, P.correctionIter_last, CorrectionRowRecipe.residual_eq, P.residual_eq]
+  rfl
+
+/-- Both global bin preparations and normalized bins preserve the true hierarchy semantics.
+Preparatory substitution is the actual earlier preparation, rather than an asserted normalizer. -/
+theorem hierarchyTaskRecipe_bins (l i : ℕ) :
+    (hierarchyTaskRecipe P e X Y S e₀ Xs Z Zt A
+      (hierarchyTaskValue P e X Y S e₀ Xs Z Zt A) (.basePreparation l i) =
+      hierarchyTaskValue P e X Y S e₀ Xs Z Zt A (.basePreparation l i)) ∧
+    (hierarchyTaskRecipe P e X Y S e₀ Xs Z Zt A
+      (hierarchyTaskValue P e X Y S e₀ Xs Z Zt A) (.baseNormalized l i) =
+      hierarchyTaskValue P e X Y S e₀ Xs Z Zt A (.baseNormalized l i)) ∧
+    (hierarchyTaskRecipe P e X Y S e₀ Xs Z Zt A
+      (hierarchyTaskValue P e X Y S e₀ Xs Z Zt A) (.residualPreparation l i) =
+      hierarchyTaskValue P e X Y S e₀ Xs Z Zt A (.residualPreparation l i)) ∧
+    (hierarchyTaskRecipe P e X Y S e₀ Xs Z Zt A
+      (hierarchyTaskValue P e X Y S e₀ Xs Z Zt A) (.residualNormalized l i) =
+      hierarchyTaskValue P e X Y S e₀ Xs Z Zt A (.residualNormalized l i)) :=
+  ⟨rfl, rfl, rfl, rfl⟩
 
 /-- At stage zero, the row base is exactly the supplied matrix. -/
 theorem hierarchyTask_base_zero :
