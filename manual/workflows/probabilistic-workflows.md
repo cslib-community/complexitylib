@@ -185,11 +185,32 @@ The P=5 regression has source/stage/usage exponents 2/1/3, actual densities
 It proves a positive complete actual request mean with the genuine final pilot. Usage
 exponent 3 is outside the required source/stage horizon 2.
 
-The request support and conditional-walk noise bounds retain the raw input fourth moment.
+To discharge the raw input fourth moment for a positive-iteration residual, import
+[HierarchyRawMoment](../../Complexity/Foundations/Probability/HierarchyRawMoment.lean)
+and apply `rawIncomingNormalized_noise_le_lower`. Supply positive N, u, row rank K and
+incoming rank Kc. The selected cutoff laws derive the actual left correction child's
+range `CA = 2 * Q(atomCap)`, row support K and incoming support Kc, for arbitrary raw,
+preparatory and pilot children. Its source-released product costs
+`K^3 * CA^4 * Kc * (rate(km) / u)` times the weighted right-child fourth moment.
+`incomingMomentBudget` adds the actual weighted direct and negative child moments, with
+a conservative factor 64 for the signed sum. The right child includes the exact usage
+ratio and midpoint marginal divisor from `rawSample`; it never takes the old source as
+an extra argument. All children may share every rank coordinate.
+
+The [checked examples](../../ComplexityTests/HierarchyRawMoment.lean) include a complete
+P=5 residual with input moment one and positive correction product, different nonempty
+copy suffixes and a spectator. A correlated two-factor example has exact moment 257/2.
+An identity family with one nonzero per row and column has moment n at N=u=1, so support
+and range caps alone do not imply a width-independent unnormalized moment. The new client
+requires lower-child moments to be paid by a later induction; it assumes no final raw or
+noise certificate. Zero correction remains literal; the moment/noise bridge here treats
+positive iterations. Pilot/copy paths, quantitative lower-child budgets, summation and
+recursive/native correctness remain open.
+
 For a coarser source, `source_incoming_cost_le` quantifies the generic incoming cost as
 `32 * R * (sourceRate / stageRate)`; the fixed incoming rank is not proved to pay that
 inflated budget. Arbitrary coarser sampling sources, a fully assembled recursive hierarchy,
-lower-child moments, recursive induction, native realization and RL=L remain in
+lower-child budget induction, native realization and RL=L remain in
 [issue #1721](https://github.com/cslib-community/complexitylib/issues/1721).
 
 ## Carry the certificate into a security proof
