@@ -34,22 +34,27 @@ Completing the construction of universal one-way hash families (target collision
 families) from arbitrary one-way functions (`[Rompel1990]`; `[HHRVW2020]`, Section 5.1,
 Theorem 5.1, STEPS 4–5, Lemmas 5.6 and 5.7, pp. 29–32):
 
-1. **Target shift (`rompelShiftedStep`, `[HHRVW2020]`, Section 5.1.4, Lemma 5.6, pp. 29–30)**:
+1. **Target shift (`rompelShiftedStep`; `[HHRVW2020]`, Section 5.1.4, Lemma 5.6, pp. 29–30, and
+   Section 5.1.5, STEP 4, p. 31)**:
    given a `ShrinkingCollisionGrid` `G` whose `gridCount n` candidates compress `G.inLen n =
    G.outLen n + 1` bits to `G.outLen n` bits, shifting the input of candidate `q` by a `G.inLen n`
    key mask `y` via `w ↦ G.evalGrid n q (listXor (G.inLen n) [w, y])` converts random-input
    collision resistance at `q = goodIdx n` into keyed target collision resistance on `G.inLen n`-bit
    inputs.
 2. **Length-increasing `1`-bit cascade and candidate concatenation (`rompelCascade`,
-   `rompelCandidateEval`, `rompelCompressionEval`, `rompelCompression`; `[HHRVW2020]`,
-   Section 5.1.4, Lemma 5.7, and Section 5.1.5, STEPS 4–5, pp. 30–32)**:
+   `rompelCandidateEval`, `rompelCompressionEval`, `rompelCompression`; adapting `[HHRVW2020]`,
+   Section 5.1.4, Lemma 5.7, p. 30, and Section 5.1.5, STEP 5(ii–iii), p. 32)**:
    iterating `rompelCascadeSteps G n = (2 * G.gridCount n - 1) * G.outLen n` independently masked
    `1`-bit shrinking steps compresses `G.outLen n + rompelCascadeSteps G n =
-   2 * (G.gridCount n * G.outLen n)` bits to `G.outLen n` bits for each `q < G.gridCount n`
-   under a shared key `K` of length `rompelCascadeSteps G n * G.inLen n`. Concatenating all
-   `G.gridCount n` candidate outputs produces a `G.gridCount n * G.outLen n`-bit output, forming a
-   halving `KeyedCompressionFamily` (`rompelCompression G`) with block width
-   `rompelBlockLen G n = G.gridCount n * G.outLen n`.
+   2 * (G.gridCount n * G.outLen n)` bits to `G.outLen n` bits for each `q < G.gridCount n`, and
+   concatenating all `G.gridCount n` candidate outputs produces a halving `KeyedCompressionFamily`
+   (`rompelCompression G`) with block width `rompelBlockLen G n = G.gridCount n * G.outLen n`.
+   Two deliberate adaptations simplify the formalization without claiming Lemma 5.7's compact
+   `O(|y| log t)` key-length bound (proved from `log n`-bit shrinkage): each `1`-bit step consumes
+   its own fresh `G.inLen n`-bit subkey (`rompelKeyLen G n = rompelCascadeSteps G n * G.inLen n`),
+   and that single step-key sequence `K` is shared across all `G.gridCount n` candidates rather than
+   indexing separate candidate keys as in STEP 5(iii) (sound because the reduction only needs key
+   simulation at the single existential `goodIdx n`).
 3. **Single-stage planted-subkey reduction (`rompelCompressionInverter`,
    `succProbability_targetCollisionGame_rompelCompression_le`,
    `ShrinkingCollisionGrid.targetCollisionResistant_rompelCompression`)**:
@@ -62,21 +67,25 @@ Theorem 5.1, STEPS 4–5, Lemmas 5.6 and 5.7, pp. 29–32):
 4. **Domain extension to `List Bool` (`rompelHash`,
    `ShrinkingCollisionGrid.targetCollisionResistant_rompelHash`,
    `OneWay.exists_targetCollisionResistant_keyedHashFamily`)**:
-   composing `rompelCompression G` with `KeyedCompressionFamily.treeHash` (`uowhfTreeHash`, whose
-   fixed `n`-level binary tree hashes inputs of length `< 2 ^ n` injectively at parameter `n`,
-   covering all outputs of strict-PPT adversaries for sufficiently large `n`) yields an unrestricted
-   target collision-resistant `KeyedHashFamily` on `List Bool` from any uniform `OneWay` function.
+   composing `rompelCompression G` with `KeyedCompressionFamily.treeHash` (`uowhfTreeHash`) yields
+   an unrestricted computational target collision-resistant `KeyedHashFamily` on `List Bool` from
+   any uniform `OneWay` function: although the compressed `rompelBlockLen G n`-bit digest cannot be
+   injective on long messages, on inputs of length `< 2 ^ n` at parameter `n` the leaf/length
+   encoding is injective and the fixed `n`-level binary tree reduces all leaves to a single root
+   without discarding extra roots, so any collision among strict-PPT adversary outputs (which have
+   length `< 2 ^ n` for sufficiently large `n`) extracts a compression-step collision.
 
 ## Main definitions
 
-* `Cslib.Crypto.rompelShiftedStep`: XOR-masked `1`-bit shrinking candidate step (Lemma 5.6).
+* `Cslib.Crypto.rompelShiftedStep`: XOR-masked `1`-bit shrinking candidate step (Lemma 5.6, STEP 4).
 * `Cslib.Crypto.rompelCascadeSteps`, `Cslib.Crypto.rompelBlockLen`, `Cslib.Crypto.rompelKeyLen`:
-  step, block, and key-length schedules for `rompelCompression`.
+  step, block, and shared key-length schedules for `rompelCompression`.
 * `Cslib.Crypto.rompelCascadeStep`, `Cslib.Crypto.rompelCascade`,
   `Cslib.Crypto.rompelCandidateEval`, `Cslib.Crypto.rompelCascadeInput`: `1`-bit shrinking cascade
-  and step-`i` compression-input extractor (Lemma 5.7, STEP 4).
+  and step-`i` compression-input extractor (adapting Lemma 5.7 and STEP 5(ii)).
 * `Cslib.Crypto.rompelCompressionEval`, `Cslib.Crypto.rompelCompression`: `gridCount n`-way
-  concatenated `2 * rompelBlockLen G n → rompelBlockLen G n` `KeyedCompressionFamily` (STEP 5).
+  concatenated `2 * rompelBlockLen G n → rompelBlockLen G n` `KeyedCompressionFamily` (adapting
+  STEP 5(iii)).
 * `Cslib.Crypto.rompelCompressionInverter`: uniform strict-PPT reduction from target collisions of
   `rompelCompression G` to `randomCollisionGame` on `G`.
 * `Cslib.Crypto.rompelHash`: unrestricted `KeyedHashFamily` `(rompelCompression G).treeHash`.
@@ -118,20 +127,22 @@ attribute [local program_certificate, local fun_prop]
   ShrinkingCollisionGrid.polyTime_gridCount
   ShrinkingCollisionGrid.polyTime_evalGrid
 
-/-! ### Schedules and XOR-shifted `1`-bit shrinking step (Lemma 5.6) -/
+/-! ### Schedules and XOR-shifted `1`-bit shrinking step (Lemma 5.6, STEP 4) -/
 
 /-- Number of `1`-bit cascade steps `(2 * G.gridCount n - 1) * G.outLen n` used by each candidate in
-`rompelCompression G` (`[HHRVW2020]`, Section 5.1.5, STEP 4, p. 31). -/
+`rompelCompression G` (adapting `[HHRVW2020]`, Section 5.1.5, STEP 5(ii), p. 32). -/
 def rompelCascadeSteps (G : ShrinkingCollisionGrid) (n : ℕ) : ℕ :=
   (2 * G.gridCount n - 1) * G.outLen n
 
 /-- Output (and half-input) block width `G.gridCount n * G.outLen n` of `rompelCompression G`
-(`[HHRVW2020]`, Section 5.1.5, STEP 5, p. 31). -/
+(`[HHRVW2020]`, Section 5.1.5, STEP 5(iii), p. 32). -/
 @[expose]
 def rompelBlockLen (G : ShrinkingCollisionGrid) (n : ℕ) : ℕ :=
   G.gridCount n * G.outLen n
 
-/-- Shared key bit-length `rompelCascadeSteps G n * G.inLen n` of `rompelCompression G`. -/
+/-- Shared key bit-length `rompelCascadeSteps G n * G.inLen n` of `rompelCompression G` (consuming
+one `G.inLen n`-bit subkey per `1`-bit step and sharing that sequence across candidates rather than
+claiming Lemma 5.7's `O(|y| log t)` compact-key bound or STEP 5(iii)'s per-candidate keys). -/
 @[expose]
 def rompelKeyLen (G : ShrinkingCollisionGrid) (n : ℕ) : ℕ :=
   rompelCascadeSteps G n * G.inLen n
@@ -178,8 +189,9 @@ theorem computableInPolyTime_rompelKeyLen (G : ShrinkingCollisionGrid) :
     ComputableInPolyTime (rompelKeyLen G) encUnary encUnary :=
   ComputableInPolyTime.unary_mul' (computableInPolyTime_rompelCascadeSteps G) G.polyTime_inLen
 
-/-- **XOR-shifted `1`-bit shrinking step** (`[HHRVW2020]`, Section 5.1.4, Lemma 5.6, pp. 29–30):
-masks `w` by `y` at width `G.inLen n` and evaluates candidate `q` of `G`. -/
+/-- **XOR-shifted `1`-bit shrinking step** (`[HHRVW2020]`, Section 5.1.4, Lemma 5.6, pp. 29–30;
+Section 5.1.5, STEP 4, p. 31): masks `w` by `y` at width `G.inLen n` and evaluates candidate `q` of
+`G`. -/
 @[expose]
 def rompelShiftedStep (G : ShrinkingCollisionGrid) (n q : ℕ) (y w : List Bool) : List Bool :=
   G.evalGrid n q (BitString.listXor (G.inLen n) [w, y])
@@ -203,7 +215,7 @@ theorem computableInPolyTime_rompelShiftedStep (G : ShrinkingCollisionGrid)
   unfold rompelShiftedStep
   polytime
 
-/-! ### `1`-bit shrinking cascade and step-collision extraction (Lemma 5.7, STEP 4) -/
+/-! ### `1`-bit shrinking cascade and step-collision extraction (adapting Lemma 5.7, STEP 5(ii)) -/
 
 /-- One step of the `1`-bit shrinking cascade for candidate `q`: append the next remaining message
 bit to `acc.1`, apply `rompelShiftedStep G n q y`, and drop that bit from `acc.2`. -/
@@ -212,7 +224,9 @@ def rompelCascadeStep (G : ShrinkingCollisionGrid) (n q : ℕ)
   (rompelShiftedStep G n q y (acc.1 ++ [acc.2.headD false]), acc.2.drop 1)
 
 /-- Fold `rompelCascadeStep G n q` across `subkeys`, starting from `(state, rest)` and returning the
-final `G.outLen n`-bit state (`[HHRVW2020]`, Section 5.1.4, Lemma 5.7, p. 30). -/
+final `G.outLen n`-bit state (adapting `[HHRVW2020]`, Section 5.1.4, Lemma 5.7, p. 30, and
+Section 5.1.5, STEP 5(ii), p. 32 with one fresh subkey per `1`-bit step rather than compact
+`O(|y| log t)` keys). -/
 def rompelCascade (G : ShrinkingCollisionGrid) (n q : ℕ)
     (subkeys : List (List Bool)) (state rest : List Bool) : List Bool :=
   (subkeys.foldl (rompelCascadeStep G n q) (state, rest)).1
@@ -476,11 +490,12 @@ theorem exists_rompelCascadeInput_collision (G : ShrinkingCollisionGrid)
   apply hne
   rw [← List.take_append_drop M x₀, ← List.take_append_drop M x₁, htake_eq, hdrop_eq]
 
-/-! ### `gridCount n`-way candidate concatenation (`[HHRVW2020]`, Section 5.1.5, STEP 5) -/
+/-! ### `gridCount n`-way candidate concatenation (adapting `[HHRVW2020]`, STEP 5(iii), p. 32) -/
 
-/-- **`gridCount n`-way concatenated compression evaluator** (`[HHRVW2020]`, Section 5.1.5, STEP 5,
-pp. 31–32): evaluates `rompelCandidateEval G n q K x` for every `0 ≤ q < G.gridCount n` under the
-shared key `K` and concatenates the `G.outLen n`-bit digests into a `rompelBlockLen G n`-bit block.
+/-- **`gridCount n`-way concatenated compression evaluator** (adapting `[HHRVW2020]`, Section 5.1.5,
+STEP 5(iii), p. 32): evaluates `rompelCandidateEval G n q K x` for every `0 ≤ q < G.gridCount n`
+under the shared key sequence `K` and concatenates the `G.outLen n`-bit digests into a
+`rompelBlockLen G n`-bit block.
 -/
 def rompelCompressionEval (G : ShrinkingCollisionGrid) (n : ℕ) (K x : List Bool) : List Bool :=
   (List.range (G.gridCount n)).flatMap fun q => rompelCandidateEval G n q K x
@@ -532,9 +547,9 @@ theorem computableInPolyTime_rompelCompressionEval (G : ShrinkingCollisionGrid) 
       (encPair encIn encUnary) encBits := by polytime
   exact computableInPolyTime_rompelCandidateEval G hn hq hK hx
 
-/-- **Rompel / HHRVW halving `KeyedCompressionFamily`** (`[HHRVW2020]`, Section 5.1.5, STEP 5,
-pp. 31–32): compresses `2 * rompelBlockLen G n`-bit blocks to `rompelBlockLen G n`-bit blocks under
-`rompelKeyLen G n`-bit keys. -/
+/-- **Rompel / HHRVW halving `KeyedCompressionFamily`** (adapting `[HHRVW2020]`, Section 5.1.5,
+STEP 4 and STEP 5(ii–iii), pp. 31–32): compresses `2 * rompelBlockLen G n`-bit blocks to
+`rompelBlockLen G n`-bit blocks under shared `rompelKeyLen G n`-bit step-key sequences. -/
 @[expose]
 def rompelCompression (G : ShrinkingCollisionGrid) : KeyedCompressionFamily where
   keyLen := rompelKeyLen G
@@ -1003,8 +1018,9 @@ theorem succProbability_targetCollisionGame_rompelCompression_le
       rw [← hval]; exact (PMF.apply_ne_top _ _).lt_top)
   exact ENNReal.toNNReal_mono hsum_ne_top hsum_prod
 
-/-- **`[HHRVW2020]`, Section 5.1.5, STEPS 4–5 (pp. 30–32)**: for any `ShrinkingCollisionGrid` `G`,
-`rompelCompression G` is a target collision-resistant `KeyedCompressionFamily`. -/
+/-- **Adapting `[HHRVW2020]`, Section 5.1.5, STEP 4 and STEP 5(ii–iii) (pp. 31–32)**: for any
+`ShrinkingCollisionGrid` `G`, `rompelCompression G` is a target collision-resistant
+`KeyedCompressionFamily`. -/
 theorem ShrinkingCollisionGrid.targetCollisionResistant_rompelCompression
     (G : ShrinkingCollisionGrid) :
     (rompelCompression G).TargetCollisionResistant := by
