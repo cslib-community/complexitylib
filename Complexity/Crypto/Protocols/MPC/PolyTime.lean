@@ -357,8 +357,9 @@ packed coalition input bits `extendCoalitionBits I xI` and output bits
 def encFamilySimInput {α : Type} (enc : α ↪ List Bool) (m : ℕ) (n k : α → ℕ)
     (I : Finset (Fin m)) : FamilySimInput α m n k I ↪ List Bool where
   toFun inp :=
+    let ⟨a, xI, yI⟩ := inp
     encPair enc (encPair encBits encBits)
-      (inp.1, (extendCoalitionBits I inp.2.1, extendCoalitionBits I inp.2.2))
+      (a, (extendCoalitionBits I xI, extendCoalitionBits I yI))
   inj' := by
     rintro ⟨a₁, x₁, y₁⟩ ⟨a₂, x₂, y₂⟩ h
     obtain ⟨ha, hxy⟩ := Prod.ext_iff.1 ((encPair enc (encPair encBits encBits)).injective h)
@@ -499,13 +500,15 @@ def encGMWPartyView (m coins n k : ℕ)
   let (_, r_out) :=
     splitOTMulCompose (GMWCircuit.progSchedule m D.program)
       (GMWCircuit.outputSchedule m k) i r_prog_out
+  let (preludeCoins, (circuitCoins, _), otSubCoins) := v.coins
   encPair
     (encPair (encPair encBits encBits) (encPair encBits encBits))
     (encPair encBits (encPair encBits encBits))
-    (((List.ofFn v.input, List.ofFn v.coins.1),
+    (((List.ofFn v.input, List.ofFn preludeCoins),
       (List.ofFn
-        ((Cslib.BitString.blocksEquiv (α := Bool) (m := N) (k := m - 1)).symm v.coins.2.1.1),
-       encOTSubCoins _ i v.coins.2.2)),
+        ((Cslib.BitString.blocksEquiv (α := Bool) (m := N) (k := m - 1)).symm
+          circuitCoins),
+       encOTSubCoins _ i otSubCoins)),
      (encPairsMsgReceived i (GMWCircuit.allPairs m) r_in,
       (encOTOracleAnswers _ i v.received,
        encOutCoordsMsgReceived i (GMWCircuit.outCoords m k) r_out)))
@@ -5959,11 +5962,11 @@ theorem isPPTOn_gmwOT14RandomizedSim {α : Type} {enc : α ↪ List Bool}
     (hC : ComputableInPolyTime (fun a => (C a).code) enc Boolean.encCode)
     (I : Finset (Fin m)) :
     Cslib.Probability.IsPPTOn (encFamilySimInput enc m n k I) encBits
-      (fun inp =>
+      (fun ⟨a, xI, yI⟩ =>
         encodeCoalitionView
-          (encGMWPartyView m (coins inp.1) (n inp.1) (k inp.1) (C inp.1)) I <$>
-          gmwOT14RandomizedSim m (coins inp.1) (n inp.1) (k inp.1)
-            (C inp.1) I inp.2.1 inp.2.2) := by
+          (encGMWPartyView m (coins a) (n a) (k a) (C a)) I <$>
+          gmwOT14RandomizedSim m (coins a) (n a) (k a) (C a)
+            I xI yI) := by
   have hD := computableInPolyTime_code_comp_xorPreludeCircuit m hn hcoins hC
   exact (PolyTimeRunner.isPPTOn_simRunWord m I hcoins.tidy hn.tidy hk.tidy hD.tidy).congr
     (PolyTimeRunner.eval_simRunWord_eq_gmwOT14RandomizedSim m coins n k C I)
@@ -6008,11 +6011,11 @@ theorem exists_perfectSemiHonestPrivate_ot14_of_polyTime {α : Type} {enc : α �
             (fun _ y => List.ofFn y) inp.2) ∧
       (∀ (I : Finset (Fin m)), I ≠ Finset.univ →
         Cslib.Probability.IsPPTOn (encFamilySimInput enc m n k I) encBits
-          (fun inp =>
+          (fun ⟨a, xI, yI⟩ =>
             encodeCoalitionView
-              (encGMWPartyView m (coins inp.1) (n inp.1) (k inp.1) (C inp.1)) I <$>
-              gmwOT14RandomizedSim m (coins inp.1) (n inp.1) (k inp.1)
-                (C inp.1) I inp.2.1 inp.2.2)) := by
+              (encGMWPartyView m (coins a) (n a) (k a) (C a)) I <$>
+              gmwOT14RandomizedSim m (coins a) (n a) (k a) (C a)
+                I xI yI)) := by
   have h_in : ComputableInPolyTime (fun a => m * n a + coins a) enc encUnary := by
     have hmn := ComputableTidilyInPolyTime.comp' ComputableTidilyInPolyTime.unary_mul
       ((ComputableTidilyInPolyTime.const m).prod hn.tidy)

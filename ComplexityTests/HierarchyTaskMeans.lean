@@ -3,7 +3,7 @@ Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
-import Complexity.Foundations.Probability.HierarchyTaskMeans
+import Complexity.Foundations.Probability.CorrectionRowTasks
 import Complexity.Foundations.Probability.FourthRootHierarchyParams
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Tactic.FinCases
@@ -144,7 +144,7 @@ private theorem atom_eq (P : HierarchyParams 2 1 1 1 0) (hJ : 3 < P.J)
     correctionPrep, rowGate, incomingGate, full, hit, hγ, input_zero, filter_eq']
 
 -- There is a genuine positive actual correction and the sampled reward is nonconstant.
-example : ∃ P : FourthRootHierarchyParams 2 1 1 1 0,
+private theorem nonconstant_reward : ∃ P : FourthRootHierarchyParams 2 1 1 1 0,
     0 < P.toHierarchyParams.correctionIter (full (α := Unit)) (full (α := Unit)) 1 C 1 0 1 ∧
     (sampling P.toHierarchyParams).rewardSample 1 (fun _ => 1) ((), false) 0 = 1 ∧
     1 < (sampling P.toHierarchyParams).rewardSample 1 (fun _ => 1) ((), true) 0 := by
@@ -246,5 +246,66 @@ example (P : HierarchyParams 2 1 1 1 0) :
     (fun _ _ => C_nonneg) (fun _ _ _ _ => le_rfl)
     (fun _ _ x y => by fin_cases x <;> fin_cases y <;> norm_num [C])
   simpa only [full, div_one, one_mul, Nat.cast_ofNat, Nat.cast_one] using ht
+
+-- The unified constructor reads its earlier normalized task; the existing nonconstant
+-- Boolean sample is preserved for both zero and positive midpoint outcomes.
+private theorem projectedRecipe_primary
+    (P : FourthRootHierarchyParams 2 1 1 1 0) (σ : Unit × Bool) (x : Fin 3) :
+    (sampling P.toHierarchyParams).projectedRewardRecipe (fun _ => 1) σ (toLex (x, 0)) =
+      (sampling P.toHierarchyParams).rewardSample 1 (fun _ => 1) σ x := by
+  rw [(sampling P.toHierarchyParams).projectedRewardRecipe_eq_rewardSample
+    one_pos C_nonneg C_row
+    (fun x y => by fin_cases x <;> fin_cases y <;> norm_num [C]) (Nat.zero_le _)]
+  have hweight : P.toHierarchyParams.weight (full (α := Unit)) (full (α := Unit)) 1 C
+      (0 : Fin (P.m + 1)) x = 1 := by
+    rw [HierarchyParams.weight_eq]
+    simp [detectorWeight]
+  simp only [ofLex_toLex, hweight]
+
+-- The complete normalized-child recipe really varies with its sampled midpoint.
+example : ∃ P : FourthRootHierarchyParams 2 1 1 1 0,
+    (sampling P.toHierarchyParams).projectedRewardRecipe (fun _ => 1)
+      ((), false) (toLex (0, 0)) = 1 ∧
+    1 < (sampling P.toHierarchyParams).projectedRewardRecipe (fun _ => 1)
+      ((), true) (toLex (0, 0)) := by
+  obtain ⟨P, _, hfalse, htrue⟩ := nonconstant_reward
+  exact ⟨P, (projectedRecipe_primary P ((), false) 0).trans hfalse,
+    (projectedRecipe_primary P ((), true) 0).symm ▸ htrue⟩
+
+-- Nonprimary copy multipliers read arbitrary completed pilot values through the shared
+-- weight equation, rather than only appearing as a rank label.
+example (P : HierarchyParams 2 1 1 1 0) (j : Fin (P.m + 1)) (hj : j ≠ 0) (x : Fin 3) :
+    (sampling P).value (fun _ => 1) .weights j x =
+      P.κ ((sampling P).value (fun _ => 1) (.pilot (.pilot (.maximum P.k))) x) := by
+  rw [(sampling P).value_weights]
+  simp only [detectorWeight, ite_eq_right hj]
+
+-- The true copy/reward value is the existing weighted projection of the actual correction.
+example (P : HierarchyParams 2 1 1 1 0) (W : Fin 3 → ℝ) :
+    (sampling P).value W (.projectedReward P.k) =
+      P.proj (full (α := Unit)) (full (α := Unit)) 1 C *ᵥ
+        (W + P.correction (full (α := Unit)) (full (α := Unit)) 1 C *ᵥ W) := by
+  rw [(sampling P).value_projectedReward]
+  simp only [HierarchyParams.CorrectionSampling.value, P.correctionIter_last]
+
+-- A nonconstant earlier reward is consumed as a whole vertex function, with no retained
+-- source argument or right endpoint in the task label.
+example (P : HierarchyParams 2 1 1 1 0) :
+    (sampling P).value (fun x => if x = 0 then 1 else 0) (.projectedReward P.k)
+      (toLex (0, 0)) = 1 ∧
+    (sampling P).value (fun x => if x = 0 then 1 else 0) (.projectedReward P.k)
+      (toLex (2, 0)) = 0 := by
+  have hw (x : Fin 3) : P.weight (full (α := Unit)) (full (α := Unit)) 1 C
+      (0 : Fin (P.m + 1)) x = 1 := by
+    rw [P.weight_eq]
+    simp [detectorWeight]
+  have hC : C.IsStrictUpperTriangular := by
+    intro x y h
+    fin_cases x <;> fin_cases y <;> norm_num [C] at *
+  have htri := (P.isCorrectionSeq_correctionIter (X := full (α := Unit))
+    (Y := full (α := Unit)) one_pos C_nonneg).isStrictUpperTriangular hC P.k
+  have he (x : Fin 3) : P.correctionIter (full (α := Unit)) (full (α := Unit)) 1 C
+      P.k x 0 = 0 := htri (by omega)
+  simp [HierarchyParams.CorrectionSampling.value, mulVec, dotProduct, he, hw]
 
 end ComplexityTests.HierarchyTaskMeans

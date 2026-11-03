@@ -21,6 +21,37 @@ Plain and internal tidy predicates have separate search rules at this snapshot. 
 
 This is a family of focused proof tools, not one universal automatic complexity analyzer. Their common interface makes reusable algorithms easier to recognize without conflating the predicates they prove.
 
+## Certify and reuse memory methods
+
+Import `Complexity.Tactic.Realize` for a memory-client goal
+`Realizes B p input output safe work`. Activate `realize` inside `Cslib.WordRAM`, with
+`open Cslib.WordRAM`, or with `open scoped Cslib.WordRAM`. Importing the module alone leaves
+the syntax inactive; a command-local open ends with that declaration. Open the complete
+[scope clients](../../ComplexityTests/WordRAMRealizeScope.lean) for both activation forms and
+the check that local opens do not leak into later declarations.
+
+Place a callee's zero-local-work `Realizes` certificate in the local context to reuse an opaque
+method before unfolding it. The tactic checks its basis and output encoding and uses existing
+`Realizes.reindex` to wire every encoded argument coordinate to an already live word. The
+complete [method-call clients](../../ComplexityTests/WordRAMRealizationCall.lean) cover
+projections, aliased inputs, curried and dependent arguments, and optional-pair replies.
+Certificates are tried in context order; this does not search for a runtime bound.
+Zero local work is an absorbed grading: the callee still has its certified native allowance
+against memory charge. It does not mean zero machine instructions.
+
+The called method's domain must hold at the memory actually reached by earlier queries.
+The call client after a write demonstrates that obligation explicitly. Computed arguments
+such as `d+1` need an explicit certified `pure` stage and its fit/domain proof; they cannot be
+supplied by static register wiring. The same file contrasts the rejected unstaged call with
+its successful staged version and includes dependent pair/scalar staging.
+
+If `realize` is unavailable, check scope activation. If a method call is unsupported, check the
+certificate's basis, output encoding, zero local work and live input coordinates, then inspect
+the domain at the reached memory. Retain the fit and safety obligations left by the tactic;
+unfolding the method or dropping a resource premise does not supply those proofs. The
+[realization reference](../algorithms-and-memory/memory-specifications.md) explains the uniform
+code and charging contract; the complete clients above supply imports and local context.
+
 ## Circuit construction
 
 [`synthesis_step`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/Synthesis.lean#L13) applies an explicitly supplied synthesis rule and locates its required wires among available values. `Synthesis.Builder` retains earlier wires and accumulates certified cost. Membership search itself adds no gates. Reusing a computed value preserves sharing; invoking a new construction charges its bound. A final budget check verifies the chosen construction fits the target, but does not search globally for an optimal circuit.

@@ -21,9 +21,91 @@ Quickselect receives the index followed by the array; an invalid index has an ex
 
 [abstracts/ComplexityAbstracts/FibonacciHeapAbstract.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/FibonacciHeapAbstract.lean) specifies bounded-capacity handles, bounded key/value ranges, fresh-handle insertion and arbitrary minimum ties. Initializer/operation code is chosen before capacity/key/value/base/width parameters. The amortized total is constant per ordinary operation plus a sum of logarithms of current size for extract-min. Fresh zeroed memory permits constant-time initialization; the reusable-memory version explicitly clears the region and costs linear time. The abstract's fixed operation list is demonic over all allowed results; the shared data-structure layer separately supports fully adaptive clients.
 
+
+### Native binary heap and Dijkstra
+
+Choose the API by the cost contract you need. For standalone operation calls, import
+`Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.Certificate` and use the
+`Cslib.DataStructure.PriorityQueue.BinaryHeap.Native` namespace. `dynamicProgram`, `certificate`,
+`instruction_bound` and `run_client_bound` provide one fixed program, its representation and
+halt-inclusive bounds for admissible calls and adaptive clients. The
+[complete priority-queue client](../../ComplexityTests/WordRAMPriorityQueue.lean) supplies the
+imports, argument-register setup, representation and valid-history proofs. The
+[raw implementation client](../../ComplexityTests/WordRAMBinaryHeapImplementation.lean) also
+checks zero capacity, narrow widths, noncanonical tags and retained outside memory.
+
+Keep initialization separate from those call bounds. Here `n` is capacity, `K` the key bound
+and `base` the owned base; `Fits w a` means `a < 2^w`. The linked clients supply bounded-state,
+argument-matching and representation premises at the points where they are required:
+
+| Route | Storage and prerequisite | Charged initialization |
+|---|---|---|
+| Fresh compact raw heap | `3*n+1` words, `Fits w (base+3*n+1)`, `Fits w K` and an explicitly zero owned block | The native fresh initializer; no clearing is needed under this premise |
+| Dirty compact raw heap | The same `3*n+1`-word region with arbitrary bounded contents | Shared `initClear`: `initTime + 4*space + 6` body instructions, with any final halt separate |
+| Allocated memory-program heap | Original `Memory.allocLayout`, with `Fits w (frontier+3*n+2)` and `3*n+2` reserved words | Two dirty memory queries preserve old contents; heap-invariant construction uses `ZeroAbove` |
+
+The [complete initialization client](../../ComplexityTests/WordRAMBinaryHeapInitialize.lean)
+checks these distinct layouts and width boundaries. The native certificates are in
+[Native/Initialize.lean](../../Complexity/DataStructure/PriorityQueue/BinaryHeap/Native/Initialize.lean).
+The two-query count uses `Memory.charge`; its native realization also pays staging and copying.
+Dirty allocation does not itself make memory zero, and local zero for one raw initialization is
+not a reusable global allocator precondition. If fresh-zero premises are unavailable, retain the
+linear dirty-clear allowance instead of applying the fresh theorem.
+
+Standalone calls leave external argument delivery, result decoding and host continuation work
+uncharged. For the fully compiled binary-heap Dijkstra client, import
+`Complexity.Algorithms.Lean.Dijkstra.Native.Binary`. In its
+`Cslib.Algorithms.Lean.Dijkstra.Native.Binary` namespace, `realizes_run` certifies the original
+allocated `Memory.run`; `exists_program_state` exports one program/register layout/factor before
+all graphs and widths, with full final memory/frontier and the actual prefix, control and halt
+charged. Use the [complete native client](../../ComplexityTests/DijkstraNativeBinary.lean) and
+[headline client](../../ComplexityTests/WordRAMDijkstra.lean) for their imports, fitting hypotheses
+and actual-run conclusions. The encoded graph is still supplied freely in the initial
+`Data.init` memory with its zero tail: graph construction and installing those raw input words
+are not included. The original word condition and `LogLinearStatement`/`dijkstra_logLinear`
+headline are unchanged.
+
+The old `PriorityQueue.WordRAM.BinaryHeap` execution modules and their `Program`/`Sift` imports
+are retired. Pure Model/Order declarations now live under `PriorityQueue.BinaryHeap`; use the
+native route above for execution. Old fixed register/clock constants and the implementation
+helpers with coefficients `200`/`230` are not replacement API guarantees. PQCode and the
+Fibonacci execution core with live MinPQ consumers remain; these native Dijkstra endpoints do
+not complete generic whole-client realization or the remaining heap migration.
+
+### Native Fibonacci heap and Dijkstra
+
+For the full shortest-path client, import
+`Complexity.Algorithms.Lean.Dijkstra.Native.Fibonacci` and use
+`Cslib.Algorithms.Lean.Dijkstra.Native.Fibonacci.realizes_run` or `exists_program_state`.
+The [checked client](../../ComplexityTests/WordRAMDijkstraFibonacci.lean) applies one native
+program to the parallel-edge/multi-hop sample, unreachable vertices and sparse edgeless graphs;
+it retains the whole source memory and exact allocated frontier. The stable
+`fibonacciSpecStatement` and `fibonacciStatement` reader routes in
+`Complexity.Algorithms.WordRAM.Dijkstra.Fibonacci` keep their original types. The sharper clock
+is `C*(m+min(n,m+1)*(floorlog₂(n)+1))`, and the same program also meets the textbook bound.
+
+One program, register layout and factor precede all runtime graphs and widths. The original
+`Fits w (8*(n+m+2)*(W+2))` condition is unchanged. The initialized graph's zero tail permits
+dirty reservations of the distance table and original `9*n+5` heap layout without linear
+clearing; this is not an arbitrary-dirty-memory initialization theorem. The existing disjoint
+framed product composes the heap, mutable distance table and immutable graph; original valid
+remaining histories and key bounds establish reached native-method domains. Its nonzero Fibonacci potential telescopes
+through the existing amortized refinement; a decrease or extraction is not assigned a
+worst-case constant native clock.
+
+The method-level Backend's external argument installation and observation are uncharged. The
+full Dijkstra theorem instead charges actual argument staging, arithmetic, copies, early-exit
+control, initialized register/frontier prefix and halt. Raw graph placement in `Data.init`
+remains free, as in the original specification. The old `fibDijkstra` and its program-specific
+`fibDijkstra_spec`, `fibonacciSpec` and `fibonacciLinearSpec` coefficient-640 helpers are
+superseded, without claiming that the new uniform factor is 640. The unused GenericPQ Dijkstra
+executor is removed, while Model/Trees/Forest, PQCode and the execution core still used by
+MinPQ/FibonacciHeapBridge remain. F2, its abstract-space decision and general whole-client
+transfer remain open; the selected abstract statements are unchanged.
+
 ## Hash families and dictionaries
 
-[abstracts/ComplexityAbstracts/HashTablesAbstract.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/HashTablesAbstract.lean) selects four expected-amortized dictionary implementations: multiply-shift chained hashing, five-wise linear probing, odd-stride uniform probing and cuckoo hashing. Each supports `get` and `insert` with overwrite, up to bounded distinct-key capacity. **Deletion is not included.** The operation list is fixed before initialization randomness; these are oblivious-sequence guarantees.
+[abstracts/ComplexityAbstracts/HashTablesAbstract.lean](../../abstracts/ComplexityAbstracts/HashTablesAbstract.lean) selects four expected-amortized dictionary implementations: multiply-shift chained hashing, five-wise linear probing, odd-stride uniform probing and cuckoo hashing. Each supports `query` and `insert` with overwrite, up to bounded distinct-key capacity. **Deletion is not included.** The operation list is fixed before initialization randomness; these are oblivious-sequence guarantees.
 
 The initializer and operation programs are independent of runtime word width and base address, but their dependence on capacity/universe differs by theorem. The abstract does not bound static program-list length. Executed steps exclude caller argument preparation/dispatch. Universe restrictions include the chosen exponent-four polynomial regime; load-factor assumptions and exact initialization costs are visible. These distinctions prohibit a blanket claim of fully dynamic adaptive constant-time dictionaries.
 
@@ -35,7 +117,7 @@ Across capacities the stated space is at most `(k+9232)*(capacity+1)` words, eva
 
 Import `Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFilter` ([Complexity/DataStructure/ApproximateMembership/WordRAM/QuotientFilter.lean](../../Complexity/DataStructure/ApproximateMembership/WordRAM/QuotientFilter.lean)) and construct `QuotientFilter.implOfEps` (for target error `ε ≠ 0` via `epsLog ε`) or `QuotientFilter.impl` (for dyadic error `(1 / 2) ^ k`); see [ComplexityTests/WordRAMQuotientFilter.lean](../../ComplexityTests/WordRAMQuotientFilter.lean) for a complete checked client and [abstracts/ComplexityAbstracts/ApproximateMembershipAbstract.lean](../../abstracts/ComplexityAbstracts/ApproximateMembershipAbstract.lean) for the self-contained formal abstract.
 
-The specification `ApproximateMembership.spec U n ε` enforces strict set validity on active set `S` (`insert u` requires `u ∉ S ∧ #S < n`; `delete u` requires `u ∈ S`; `query u` is always valid) and guarantees zero false negatives on every random branch together with per-absent-query false-positive probability at most `ε` across any fixed valid operation sequence. The constructors require key bit-width `0 < w₀`, word width `2 * w₀ ≤ w`, universe bound `U ≤ 2 ^ w₀`, memory fit `base + space < 2 ^ w`, and zeroed owned memory `[base, base + space)` with `reg 240 = base`. The single allocated block uses `qfSpaceOfEps w w₀ n ε ≤ 640 * ((n * epsLog ε + w - 1) / w + 1)` words, initialization takes `qfInitSteps w₀ n` expected body instructions, and each operation charges at most `293080` expected executed body instructions (excluding the final `halt` step and caller argument delivery in `reg 1` and `reg 247`; compiled programs `p_init` and `p_op` depend on `(w, w₀, n, ε)` with no static code-size bound). When fitting or initialization hypotheses fail to discharge, check `2 * w₀ ≤ w` (needed to bit-pack remainders and derive `quotBits w₀ n < w`), `base + space < 2 ^ w`, `reg 240 = base`, and that every address in `[base, base + space)` is initially zero.
+The specification `ApproximateMembership.spec U n ε` enforces strict set validity on active set `S` (`insert u` requires `u ∉ S ∧ #S < n`; `delete u` requires `u ∈ S`; `query u` is always valid) and guarantees zero false negatives on every random branch together with per-absent-query false-positive probability at most `ε` across any fixed valid operation sequence. The constructors require key bit-width `0 < w₀`, word width `2 * w₀ ≤ w`, universe bound `U ≤ 2 ^ w₀`, memory fit `base + space < 2 ^ w`, and zeroed owned memory `[base, base + space)` with `reg 240 = base`. The single allocated block uses `qfSpaceOfEps w w₀ n ε ≤ 640 * ((n * epsLog ε + w - 1) / w + 1)` words, and initialization takes `qfInitSteps w₀ n` expected body instructions. Each operation charges at most `293080` expected executed body instructions, excluding the final `halt` step and caller argument delivery in `reg 1` and `reg 247`. Compiled programs `p_init` and `p_op` depend on `(w, w₀, n, ε)` with no static code-size bound. When fitting or initialization hypotheses fail to discharge, check `2 * w₀ ≤ w` (needed to bit-pack remainders and derive `quotBits w₀ n < w`), `base + space < 2 ^ w`, `reg 240 = base`, and that every address in `[base, base + space)` is initially zero.
 
 ## Global minimum cut
 

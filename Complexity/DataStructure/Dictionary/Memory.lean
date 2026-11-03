@@ -27,7 +27,7 @@ in memory that is zero above the frontier, it starts empty at the cost of one me
 ## Main definitions
 
 * `decode`: the value of a cell, `0` for absent.
-* `get`, `insert`, `ops`, `methods`: the operations as memory programs.
+* `query`, `insert`, `ops`, `methods`: the operations as memory programs.
 * `abs`, `Inv`, `Valid`: the abstraction function, the implementation invariant and the static
   well-formedness of the field.
 * `refinement`, `framed`: the table as a refinement of the dictionary, framed by its field.
@@ -62,7 +62,7 @@ def decode : ℕ → Option ℕ
 variable {U : ℕ} (T : Block)
 
 /-- Look up a key: read its cell. -/
-def get (u : Fin U) : Prog (Option ℕ) := do
+def query (u : Fin U) : Prog (Option ℕ) := do
   let x ← T.get u
   pure (decode x)
 
@@ -71,7 +71,7 @@ def insert (u : Fin U) (v : ℕ) : Prog Unit := T.set u (v + 1)
 
 /-- The dictionary operations as memory programs. -/
 def ops : (o : Dictionary.Op U) → Prog o.Result
-  | .get u => get T u
+  | .query u => query T u
   | .insert u v => insert T u v
 
 /-- The operations as methods of `Dictionary.spec U V n_max` over `Memory.spec w`. -/
@@ -119,7 +119,7 @@ def Post (s : Memory.State) (o : Dictionary.Op U) (r : o.Result) (s' : Memory.St
 theorem ops_triple (hT : Valid T w U V) {s : Memory.State} (hs : Inv T s) (o : Dictionary.Op U)
     (hv : (Dictionary.spec U V n_max).valid (abs T s) o) : Triple w s (ops T o) 1 (Post T s o) := by
   cases o with
-  | get u =>
+  | query u =>
     exact Triple.read_bind (cell_lt hT hs u)
       (Triple.pure ⟨rfl, hs, rfl, fun _ _ => rfl⟩)
   | insert u v =>

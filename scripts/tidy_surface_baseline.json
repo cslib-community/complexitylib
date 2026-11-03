@@ -47,7 +47,6 @@
  "Complexity/Computability/Machines/Turing/MultiTape/Universal/PolyTime.lean": 4,
  "Complexity/Computability/Machines/Turing/MultiTape/Universal/SpaceBudget.lean": 2,
  "Complexity/Computability/Probabilistic/Adaptive.lean": 5,
- "Complexity/Computability/Probabilistic/CoinTape.lean": 5,
  "Complexity/Computability/Probabilistic/Oracle.lean": 1,
  "Complexity/Computability/Probabilistic/Oracle/Composition.lean": 12,
  "Complexity/Computability/Probabilistic/Oracle/Iteration.lean": 3,
