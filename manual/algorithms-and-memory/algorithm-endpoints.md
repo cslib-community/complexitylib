@@ -68,13 +68,44 @@ headline are unchanged.
 The old `PriorityQueue.WordRAM.BinaryHeap` execution modules and their `Program`/`Sift` imports
 are retired. Pure Model/Order declarations now live under `PriorityQueue.BinaryHeap`; use the
 native route above for execution. Old fixed register/clock constants and the implementation
-helpers with coefficients `200`/`230` are not replacement API guarantees. GenericPQ/PQCode and
-Fibonacci interfaces with live consumers remain; this binary migration does not complete the
-generic or Fibonacci realization objectives.
+helpers with coefficients `200`/`230` are not replacement API guarantees. PQCode and the
+Fibonacci execution core with live MinPQ consumers remain; these native Dijkstra endpoints do
+not complete generic whole-client realization or the remaining heap migration.
+
+### Native Fibonacci heap and Dijkstra
+
+For the full shortest-path client, import
+`Complexity.Algorithms.Lean.Dijkstra.Native.Fibonacci` and use
+`Cslib.Algorithms.Lean.Dijkstra.Native.Fibonacci.realizes_run` or `exists_program_state`.
+The [checked client](../../ComplexityTests/WordRAMDijkstraFibonacci.lean) applies one native
+program to the parallel-edge/multi-hop sample, unreachable vertices and sparse edgeless graphs;
+it retains the whole source memory and exact allocated frontier. The stable
+`fibonacciSpecStatement` and `fibonacciStatement` reader routes in
+`Complexity.Algorithms.WordRAM.Dijkstra.Fibonacci` keep their original types. The sharper clock
+is `C*(m+min(n,m+1)*(floorlog₂(n)+1))`, and the same program also meets the textbook bound.
+
+One program, register layout and factor precede all runtime graphs and widths. The original
+`Fits w (8*(n+m+2)*(W+2))` condition is unchanged. The initialized graph's zero tail permits
+dirty reservations of the distance table and original `9*n+5` heap layout without linear
+clearing; this is not an arbitrary-dirty-memory initialization theorem. The existing disjoint
+framed product composes the heap, mutable distance table and immutable graph; original valid
+remaining histories and key bounds establish reached native-method domains. Its nonzero Fibonacci potential telescopes
+through the existing amortized refinement; a decrease or extraction is not assigned a
+worst-case constant native clock.
+
+The method-level Backend's external argument installation and observation are uncharged. The
+full Dijkstra theorem instead charges actual argument staging, arithmetic, copies, early-exit
+control, initialized register/frontier prefix and halt. Raw graph placement in `Data.init`
+remains free, as in the original specification. The old `fibDijkstra` and its program-specific
+`fibDijkstra_spec`, `fibonacciSpec` and `fibonacciLinearSpec` coefficient-640 helpers are
+superseded, without claiming that the new uniform factor is 640. The unused GenericPQ Dijkstra
+executor is removed, while Model/Trees/Forest, PQCode and the execution core still used by
+MinPQ/FibonacciHeapBridge remain. F2, its abstract-space decision and general whole-client
+transfer remain open; the selected abstract statements are unchanged.
 
 ## Hash families and dictionaries
 
-[abstracts/ComplexityAbstracts/HashTablesAbstract.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/HashTablesAbstract.lean) selects four expected-amortized dictionary implementations: multiply-shift chained hashing, five-wise linear probing, odd-stride uniform probing and cuckoo hashing. Each supports `get` and `insert` with overwrite, up to bounded distinct-key capacity. **Deletion is not included.** The operation list is fixed before initialization randomness; these are oblivious-sequence guarantees.
+[abstracts/ComplexityAbstracts/HashTablesAbstract.lean](../../abstracts/ComplexityAbstracts/HashTablesAbstract.lean) selects four expected-amortized dictionary implementations: multiply-shift chained hashing, five-wise linear probing, odd-stride uniform probing and cuckoo hashing. Each supports `query` and `insert` with overwrite, up to bounded distinct-key capacity. **Deletion is not included.** The operation list is fixed before initialization randomness; these are oblivious-sequence guarantees.
 
 The initializer and operation programs are independent of runtime word width and base address, but their dependence on capacity/universe differs by theorem. The abstract does not bound static program-list length. Executed steps exclude caller argument preparation/dispatch. Universe restrictions include the chosen exponent-four polynomial regime; load-factor assumptions and exact initialization costs are visible. These distinctions prohibit a blanket claim of fully dynamic adaptive constant-time dictionaries.
 
@@ -91,6 +122,51 @@ The Karger–Stein endpoint uses one fixed 24-register program, `O(n² log n)` w
 ## Other clients and classification
 
 The source tree also contains native integer arithmetic, multiword circuit evaluation, matrix multiplication, primality/counting, predecessor structures, 3SUM/exact-triangle routines and randomized SAT algorithms. These broaden coverage of the machine library; they should be catalogued through the complete module census without counting each as a new model. In particular, a bounded frontend or a conditional transfer theorem should not be presented as completion of an unresolved fine-grained endpoint. The current `ROADMAP.md` and selected abstracts are better evidence of endpoint disposition than a directory name.
+
+## Automatic native Exact Triangle solver
+
+Import `Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting` and open
+`Cslib.Algorithms.WordRAM.ExactTriangle`. Use `ParameterSelecting.runs_input_uniform` for a
+complete initialized decision. The
+[checked client](https://github.com/cslib-community/complexitylib/blob/233b273f3b0853557cf9dfb43493053e948b70cc/ComplexityTests/WordRAMParameterSelectingInput.lean)
+gives full imports, admitted positive/negative signed cases, empty input, and a symbolic fast
+family with the actual selected-prime conclusion. From a checkout containing this endpoint:
+
+```bash
+scripts/build.sh --wfail --iofail ComplexityTests.WordRAMParameterSelectingInput
+```
+
+Supply `values : List ℤ` of length `3*n²`, in row-major AB, BC, AC order, and prove every
+`z.natAbs <= F`. Initialize with `State.init (CountPrime.inputWords n F values)`: address 0
+holds the input length, addresses 1 and 2 hold n and F, signed matrix words start at address 3,
+and remaining memory is zero. F is an original magnitude bound, not a prime. The theorem
+requires `ParameterSelecting.inputWidth n F values <= W`; it computes geometry, pointers,
+workspace, the prime and the fast/small dispatch itself. If application fails, check the exact
+list length, canonical signed encoding, magnitude bound and width against the linked client.
+
+The fixed 640-register program returns a raw Boolean in `ParameterSelecting.Reg.result`,
+exactly one iff the original matrices contain a zero triangle. The initialized prefix and
+halt share one final state, original arguments 0–5 are restored, and the stated original-array
+and outside-workspace frames are retained. Zero vertices, F=0 and the entire small regime
+are included. Input placement is the initial-state convention; the executed 15-instruction
+header, parameter computation, actual minimum-count prime selection, solver/control and final
+halt are charged. The uniform initialized bound is `ParameterSelecting.callerTime n F`, already including
+the header and halt reserve of 16.
+Its fast body allowance retains all three component budgets plus 26; the small allowance
+uses actual exhaustive code. No supplied solver, run, prime, layout or time law is required.
+
+For an existing ordinary host, `ParameterSelecting.callee` supplies `ThreeSum.Host.Callee 633`:
+633 scratch registers give 640 total, arguments 0–5 are restored and Boolean 6 is returned.
+Its semantic execution permits arbitrary unused old words. Caller prefix-resource rules
+separately require their original raw-word bound; arbitrary old memory is not asserted zero.
+For initialized polynomial magnitudes `F <= (n+2)^κ`, `inputWidth_le_log` gives width at most
+`(12332*(κ+9)+40)*clog₂(n+2)`, and `bounded_reachable_polynomial` bounds every admitted wider
+prefix's words and zero support by `(n+2)^(12332*(κ+9)+41)`.
+
+This is standard unit-instruction Word-RAM execution for signed integer matrices. It is not a
+bit-time or arbitrary-real theorem. The large-family client is a checked symbolic run, not an
+enormous interpreter benchmark. This conservative automatic component is distinct from the
+later box-backed ordinary 1.9992 endpoint in [PR #2358](https://github.com/cslib-community/complexitylib/pull/2358).
 
 ## Tree Evaluation
 

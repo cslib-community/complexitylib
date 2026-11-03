@@ -28,7 +28,9 @@ one, preparing later reindexing by the actual seed length.
 
 * `exists_common_seedLength`: one increasing efficient schedule bounds every entry's seed length.
 * `isPolyTime_paddedGenerate`, `length_paddedGenerate`: efficient evaluation with one-bit stretch.
-* `exists_secure_padded_choice`: padding preserves a choice secure against every uniform test.
+* `exists_secure_padded_choice_withAdvice`, `exists_secure_padded_choice`: padding preserves a
+  choice secure against every uniform indexed test, relative to fixed advice and in the uniform
+  case.
 
 ## References
 
@@ -133,6 +135,58 @@ theorem length_paddedGenerate {pair : SamplablePair} (saved : pair.SeedRealizati
   rw [length_generate saved n _ _ _ hfits hseed]
   exact seedLength_lt_outputLength ..
 
+/-- Padding preserves one secure choice relative to fixed advice against every uniform indexed
+test. -/
+theorem exists_secure_padded_choice_withAdvice {pair : SamplablePair} {gap : ℕ → ℝ}
+    {advice : ℕ → List Bool} (hpair : pair.HasGapWithAdvice gap advice)
+    (saved : pair.SeedRealization)
+    {observationBound densityBound common : ℕ → ℕ}
+    (bounds : PaddingBounds saved observationBound densityBound common)
+    (hgap : ∀ᶠ n in atTop, 4 / (dyadicSize (densityBound n) : ℝ) ≤ gap n) :
+    ∃ choose : ℕ → ℕ,
+      (∀ᶠ n in atTop, choose n < size (saved.length n) (densityBound n)) ∧
+      ∀ test : ℕ × List Bool → ℕ → List Bool → ProbComp Bool,
+        IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
+          encBool (fun ((a, i), word) => test a i word) →
+        Negligible (fun n => Game.advantage
+          (((uniformList (common n)).map (paddedGenerate n (saved.length n) (observationBound n)
+            (densityBound n) (common n) (choose n) (saved.evaluate n))).bind
+              (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))
+          ((uniformList (common n + 1)).bind
+            (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))) := by
+  obtain ⟨hobservationPlain, hdensityPlain, hcommonPlain, hfits, hbound⟩ := bounds
+  have hobservation := hobservationPlain.tidy
+  have hdensity := hdensityPlain.tidy
+  have hcommon := hcommonPlain.tidy
+  obtain ⟨choose, hchoose, hsecure⟩ :=
+    exists_secure_choice_withAdvice hpair saved (.of_tidy hobservation) (.of_tidy hdensity)
+      hfits hgap
+  refine ⟨choose, hchoose, fun test htest => ?_⟩
+  have hlength := saved.length_isPolyTime.tidy
+  have hseed : ComputableTidilyInPolyTime
+      (fun input : (ℕ × List Bool) × ℕ =>
+        seedLength input.1.1 (saved.length input.1.1)
+          (observationBound input.1.1) (densityBound input.1.1) input.2)
+      (encPair (encPair encUnary encBits) encUnary) encUnary := by
+    apply ComputableInPolyTime.tidy
+    apply isPolyTime_seedLength <;> exact .of_tidy (by fun_prop)
+  let reduction := fun (a : ℕ × List Bool) index => GeneratorPadding.test
+    (seedLength a.1 (saved.length a.1) (observationBound a.1) (densityBound a.1) index)
+    (common a.1) (test a index)
+  have h := hsecure reduction (by
+    dsimp only [reduction]
+    apply GeneratorPadding.isPPTOn_test
+    · exact .of_tidy (hseed.comp (g := Prod.fst) (by fun_prop))
+    · fun_prop
+    · exact htest.preprocess (prepare := fun p : (((ℕ × List Bool) × ℕ) × List Bool) × List Bool =>
+        (p.1.1, p.2)) (by fun_prop)
+    · fun_prop)
+  apply h.congr'
+  filter_upwards [hchoose] with n hn
+  exact (GeneratorPadding.advantage_eq _ _ (hbound n (choose n) hn)
+    (seedLength_lt_outputLength n (saved.length n) (observationBound n) (densityBound n)
+      (choose n))).symm
+
 /-- Padding preserves one secure choice against every uniform indexed test. -/
 theorem exists_secure_padded_choice {pair : SamplablePair} {gap : ℕ → ℝ}
     (hpair : pair.HasGap gap) (saved : pair.SeedRealization)
@@ -150,34 +204,14 @@ theorem exists_secure_padded_choice {pair : SamplablePair} {gap : ℕ → ℝ}
               (fun word => ProbComp.eval (test n (choose n) word)))
           ((uniformList (common n + 1)).bind
             (fun word => ProbComp.eval (test n (choose n) word)))) := by
-  obtain ⟨hobservationPlain, hdensityPlain, hcommonPlain, hfits, hbound⟩ := bounds
-  have hobservation := hobservationPlain.tidy
-  have hdensity := hdensityPlain.tidy
-  have hcommon := hcommonPlain.tidy
-  obtain ⟨choose, hchoose, hsecure⟩ :=
-    exists_secure_choice hpair saved (.of_tidy hobservation) (.of_tidy hdensity) hfits hgap
+  obtain ⟨choose, hchoose, hsecure⟩ := exists_secure_padded_choice_withAdvice
+    (SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mp hpair) saved bounds hgap
   refine ⟨choose, hchoose, fun test htest => ?_⟩
-  have hlength := saved.length_isPolyTime.tidy
-  have hseed : ComputableTidilyInPolyTime (fun input => seedLength input.1 (saved.length input.1)
-      (observationBound input.1) (densityBound input.1) input.2)
-      (encPair encUnary encUnary) encUnary := by
-    apply ComputableInPolyTime.tidy
-    apply isPolyTime_seedLength <;> exact .of_tidy (by fun_prop)
-  let reduction := fun n index => GeneratorPadding.test
-    (seedLength n (saved.length n) (observationBound n) (densityBound n) index) (common n)
-    (test n index)
-  have h := hsecure reduction (by
-    dsimp only [reduction]
-    apply GeneratorPadding.isPPTOn_test
-    · exact .of_tidy (hseed.comp (g := Prod.fst) (by fun_prop))
-    · fun_prop
-    · exact htest.preprocess (prepare := fun p : ((ℕ × ℕ) × List Bool) × List Bool =>
-        (p.1.1, p.2)) (by fun_prop)
-    · fun_prop)
-  apply h.congr'
-  filter_upwards [hchoose] with n hn
-  exact (GeneratorPadding.advantage_eq _ _ (hbound n (choose n) hn)
-    (seedLength_lt_outputLength n (saved.length n) (observationBound n) (densityBound n)
-      (choose n))).symm
+  have hprepare : ComputableInPolyTime
+      (fun (((n, _), i), word) => ((n, i), word) :
+        ((ℕ × List Bool) × ℕ) × List Bool → (ℕ × ℕ) × List Bool)
+      (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
+      (encPair (encPair encUnary encUnary) encBits) := by fun_prop
+  exact hsecure (fun a i word => test a.1 i word) (htest.preprocess hprepare)
 
 end Cslib.Crypto.Pseudoentropy.EntropyGrid

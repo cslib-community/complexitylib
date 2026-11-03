@@ -337,7 +337,22 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   allowances are at most `4*n^(3-1/1296)`, uniformly over matrices, selected primes and memories.
   This existential asymptotic threshold is not an algorithm input. Neither result asserts
   a composed execution theorem or the source's tuned exponent.
-  Callable adaptation, small-case solver dispatch (#2146), outer host and #1394 remain open.
+  `Algorithms/WordRAM/ExactTriangle/ParameterSelecting/` (#2146) composes actual parameter
+  preparation, the counter-based selector and the complete callable solver in one640-register
+  program. Its computed flag dispatches to the existing exhaustive solver in the small regime.
+  The actual host0–6 ABI restores0–5 and returns a raw Boolean in6; initialized input is raw
+  n,F followed by three canonical-signed arrays with computed pointers. The new
+  `ThreeSum.Host.Slow.exec_at` reuses the private exhaustive proof for individual span bounds,
+  retaining the old callee and code. `CallableFixedPrime.exec_at` separates semantic execution
+  from final-data boundedness; old `exec` keeps its statement and derives boundedness from
+  its original premise. Arbitrary unused old words do not restrict the host correctness law;
+  raw P remains explicit in caller prefix-resource theorems. `ParameterSelecting.callee`
+  discharges the existing host interface with a natural time function of n,F only, using the
+  proved selected-prime allowance plus actual copying/control work. Initialized source
+  admission is logarithmic and every wider prefix has polynomial words/new address support
+  independently of physical width. This native assembly is original glue; it does not import
+  Light execution or assert the tuned source exponent. Outer host, final asymptotic composition
+  and #1394 remain open.
   `Algorithms/ExactTriangle/{Splitting,Witnesses}.lean` adapts the complete finite splitting and
   witness recovery component ([#1447](https://github.com/cslib-community/complexitylib/issues/1447)),
   using the existing matrices, lopsided graph and `Set.EqOn` answer API. Computable integer parameters
@@ -568,7 +583,13 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   uniform factor. The old hand-stepped binary-heap execution and its fixed clock/register
   constants are retired; no reduction in source size, space or instruction count is asserted.
   The bounded two-stack queue migration landed in #2303; the generic framed/allocation/whole-client
-  and Fibonacci objectives remain open.
+  objectives remain open. The native Fibonacci Dijkstra consumer uses the same framed source
+  interface and generic history/key/domain lemmas, retains the original nonzero heap potential,
+  and reserves the original `9n+5` layout in the input's zero tail without a clearing pass. Its
+  flat program retains the original word hypothesis and sharper reachable-vertex clock, pays
+  actual prefix/body/halt and preserves the complete source memory/frontier. It supersedes only
+  the old Dijkstra executor and fixed-640 implementation helpers, not the MinPQ-used Fibonacci
+  execution core or the unresolved abstract-space contract.
   Karger–Stein's specification-law bridge (#2289) reuses the existing contraction client and
   native execution model. `LoopSegmentLaw` packages the existing finite loop segments with an
   exact observation law and strict pathwise instruction/query bounds; the two-branch recurrence
