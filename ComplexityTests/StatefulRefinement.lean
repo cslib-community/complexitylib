@@ -332,7 +332,7 @@ def firstFitExec : Execution TwoSlotAlloc (Bool × Bool) ℕ
     n = 1 ∧ c' = (if i = 0 then (false, c.2) else (c.1, false))
 
 /-- Angelic realization of `TwoSlotAlloc` by `firstFitExec`. -/
-def firstFitRealization : StateTransitionImpl TwoSlotAlloc firstFitExec where
+def firstFitImpl : StateTransitionImpl TwoSlotAlloc firstFitExec where
   rep s c := s = c
   total {s c} o hr _ := by
     subst hr
@@ -361,26 +361,26 @@ def firstFitRealization : StateTransitionImpl TwoSlotAlloc firstFitExec where
       cases a
       exact ⟨if i = 0 then (false, s.2) else (s.1, false), rfl, rfl⟩
 
-/-- Per-operation worst-case bound for `firstFitRealization`. -/
+/-- Per-operation worst-case bound for `firstFitImpl`. -/
 theorem firstFitBound :
-    Bound firstFitRealization id (fun _ _ => 1) := by
+    Bound firstFitImpl id (fun _ _ => 1) := by
   intro s c o a c' n _ _ he
   cases o with
   | alloc => exact Nat.le_of_eq he.1
   | free _ => exact Nat.le_of_eq he.1
 
-/-- Amortized certificate for `firstFitRealization` with zero potential. -/
+/-- Amortized certificate for `firstFitImpl` with zero potential. -/
 theorem firstFitAmortized :
-    Amortized firstFitRealization id (fun _ _ => 0) (fun _ _ => 1) :=
+    Amortized firstFitImpl id (fun _ _ => 0) (fun _ _ => 1) :=
   Amortized.of_worstCase firstFitBound
 
-/-- End-to-end execution of `allocTwoAndFreeFirst` on `firstFitRealization` via
+/-- End-to-end execution of `allocTwoAndFreeFirst` on `firstFitImpl` via
 `Amortized.exists_demonic` and `StateTransitionSpec.CostHoare.realize_amortized`. -/
 theorem firstFit_allocTwoAndFreeFirst_executes :
     ∃ v c' traces s' tr,
       Executes firstFitExec allocTwoAndFreeFirst (false, false) v c' traces ∧
       TwoSlotAlloc.ClientRun (false, false) allocTwoAndFreeFirst v s' tr ∧
-      firstFitRealization.rep s' c' ∧
+      firstFitImpl.rep s' c' ∧
       (v.1 ≠ v.2 ∧ (if v.1 = 0 then s'.1 = false else s'.2 = false)) ∧
       total id traces ≤ 3 := by
   obtain ⟨v, c', traces, _, _, he, _, _, _, _⟩ :=

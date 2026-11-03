@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactLog
+public import Complexity.Computability.WordRAM.ExactLog
 public import Complexity.DataStructure.HashFamily.WordRAM.Tabulation
 public import Complexity.Foundations.FieldTheory.Finite.Trinomial
 public import Complexity.Probability.KWiseIndependent.Trinomial
@@ -110,7 +110,7 @@ public section
 namespace Cslib.DataStructure.HashFamily.WordRAM.KWise
 
 open Cslib.WordRAM Cslib.Probability
-open Cslib.Algorithms.WordRAM.ExactLog
+open Cslib.WordRAM.ExactLog
 open Cslib.DataStructure.HashFamily.WordRAM.Tabulation
 open scoped ENNReal
 
@@ -379,75 +379,6 @@ theorem trinomialStepLoop_exec {w : ℕ} (B : ℕ) {acc : ℕ} {x : Data 4}
         · rfl
       rw [hd, hstep0]
       exact Exec.loop_exit hc
-
-/-- Bitwise decomposition of `idx < 2 ^ (2 * b)` into high `b`-bit chunk `u = idx >>> b` and low
-`b`-bit chunk `v = idx &&& (2 ^ b - 1)`, together with properties of
-`prevIdx = (u <<< b) + (v >>> 1)`. -/
-private theorem clmulTab_index_props {b idx : ℕ} (hidx : idx < 2 ^ (2 * b)) :
-    let u := idx >>> b
-    let v := idx &&& (2 ^ b - 1)
-    let prevIdx := (u <<< b) + (v >>> 1)
-    u < 2 ^ b ∧
-    v < 2 ^ b ∧
-    (u <<< b) + v = idx ∧
-    prevIdx ≤ idx ∧
-    (v ≠ 0 → prevIdx < idx) ∧
-    (v = 0 → prevIdx = idx) ∧
-    prevIdx >>> b = u ∧
-    prevIdx &&& (2 ^ b - 1) = v >>> 1 := by
-  intro u v prevIdx
-  have hpow_pos : 0 < 2 ^ b := Nat.two_pow_pos b
-  have hu_eq : u = idx / 2 ^ b := Nat.shiftRight_eq_div_pow idx b
-  have hv_eq : v = idx % 2 ^ b := Nat.and_two_pow_sub_one_eq_mod idx b
-  have hu_lt : u < 2 ^ b := by
-    rw [hu_eq]
-    apply Nat.div_lt_of_lt_mul
-    rwa [← pow_add, ← two_mul]
-  have hv_lt : v < 2 ^ b := by
-    rw [hv_eq]
-    exact Nat.mod_lt idx hpow_pos
-  have huv_eq : (u <<< b) + v = idx := by
-    rw [Nat.shiftLeft_eq, hu_eq, hv_eq, Nat.div_add_mod' idx (2 ^ b)]
-  have hv_shr : v >>> 1 = v / 2 := Nat.shiftRight_eq_div_pow v 1
-  have hv_shr_lt : v >>> 1 < 2 ^ b := by
-    rw [hv_shr]
-    exact Nat.lt_of_le_of_lt (Nat.div_le_self v 2) hv_lt
-  have hprev_eq : prevIdx = u * 2 ^ b + (v >>> 1) := by
-    dsimp only [prevIdx]
-    rw [Nat.shiftLeft_eq]
-  have hprev_le : prevIdx ≤ idx := by
-    have : v >>> 1 ≤ v := by rw [hv_shr]; exact Nat.div_le_self v 2
-    dsimp only [prevIdx]
-    omega
-  have hprev_lt : v ≠ 0 → prevIdx < idx := by
-    intro hv0
-    have : v >>> 1 < v := by rw [hv_shr]; omega
-    dsimp only [prevIdx]
-    omega
-  have hprev_zero : v = 0 → prevIdx = idx := by
-    intro hv0
-    have : v >>> 1 = 0 := by rw [hv_shr, hv0]
-    dsimp only [prevIdx]
-    omega
-  have hprev_u : prevIdx >>> b = u := by
-    rw [Nat.shiftRight_eq_div_pow, hprev_eq, Nat.add_comm,
-      Nat.add_mul_div_right _ _ hpow_pos, Nat.div_eq_of_lt hv_shr_lt, zero_add]
-  have hprev_v : prevIdx &&& (2 ^ b - 1) = v >>> 1 := by
-    rw [Nat.and_two_pow_sub_one_eq_mod, hprev_eq, Nat.add_comm,
-      Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hv_shr_lt]
-  exact ⟨hu_lt, hv_lt, huv_eq, hprev_le, hprev_lt, hprev_zero, hprev_u, hprev_v⟩
-
-/-- Step recurrence for `clmul u v` in `clmulTabBody`:
-`((v &&& 1) * u) ^^^ (clmul u (v >>> 1) <<< 1)` equals `clmul u v`. -/
-private theorem clmul_eq_bit_mul_xor (u v : ℕ) :
-    ((v &&& 1) * u) ^^^ (clmul u (v >>> 1) <<< 1) = clmul u v := by
-  rw [clmul_step u v]
-  congr 1
-  have hand : v &&& 1 = v % 2 := Nat.and_two_pow_sub_one_eq_mod v 1
-  rw [hand]
-  rcases Nat.mod_two_eq_zero_or_one v with h0 | h1
-  · simp [h0]
-  · simp [h1]
 
 /-- Body of `clmulTabLoop` on `Data 18` (`reg 0 = tabBase`, `reg 1 = idx`, `reg 2 = tabSize`,
 `reg 3 = b`, `reg 4 = 2 ^ b - 1`, `reg 5 = 1`, `reg 6..9` scratch): populates
@@ -1516,18 +1447,6 @@ abbrev regKey : Fin 18 := 1
 /-- Register `2`: holds the output hash value `< 2 ^ M` on exit from `evalCode`. -/
 abbrev regOut : Fin 18 := 2
 
-private theorem and_xor_shiftRight_shiftLeft (a b : ℕ) :
-    (a &&& (2 ^ b - 1)) ^^^ ((a >>> b) <<< b) = a := by
-  apply Nat.eq_of_testBit_eq
-  intro i
-  rw [Nat.testBit_xor, Nat.testBit_and, Nat.testBit_two_pow_sub_one,
-    Nat.testBit_shiftLeft, Nat.testBit_shiftRight]
-  by_cases h : i < b
-  · have hge : ¬ b ≤ i := not_le.mpr h
-    simp [h, hge]
-  · have hge : b ≤ i := le_of_not_gt h
-    simp [h, hge, Nat.add_sub_of_le hge]
-
 private theorem clmul_split_right (x y b : ℕ) :
     clmul x y = clmul x (y &&& (2 ^ b - 1)) ^^^ (clmul x (y >>> b) <<< b) := by
   conv_lhs => rw [← and_xor_shiftRight_shiftLeft y b]
@@ -1537,14 +1456,6 @@ private theorem clmul_split_left (x y b : ℕ) :
     clmul x y = clmul (x &&& (2 ^ b - 1)) y ^^^ (clmul (x >>> b) y <<< b) := by
   conv_lhs => rw [← and_xor_shiftRight_shiftLeft x b]
   rw [clmul_xor_left, clmul_shiftLeft_left]
-
-private theorem xor_shiftLeft_eq (a b k : ℕ) :
-    (a ^^^ b) <<< k = (a <<< k) ^^^ (b <<< k) := by
-  apply Nat.eq_of_testBit_eq
-  intro i
-  rw [Nat.testBit_shiftLeft, Nat.testBit_xor, Nat.testBit_xor,
-    Nat.testBit_shiftLeft, Nat.testBit_shiftLeft]
-  by_cases h : i ≥ k <;> simp [h]
 
 private theorem shiftLeft_xor_parts {u v b : ℕ} (hu : u < 2 ^ b) (hv : v < 2 ^ b) :
     (u <<< b) ^^^ v < 2 ^ (2 * b) ∧
@@ -1791,7 +1702,7 @@ theorem innerClmulLoop_exec {w tabBase b q x_rem sh_x : ℕ}
             rw [show sh_x + (sh_y + b) = b + (sh_x + sh_y) by omega,
               Nat.shiftLeft_add _ b (sh_x + sh_y)]
         _ = (clmul xc yc ^^^ (clmul xc (y_rem >>> b) <<< b)) <<< (sh_x + sh_y) := by
-            rw [← xor_shiftLeft_eq]
+            rw [← Nat.shiftLeft_xor_distrib]
         _ = clmul xc y_rem <<< (sh_x + sh_y) := by
             rw [← clmul_split_right]
     · intro r hr
@@ -2014,7 +1925,7 @@ theorem outerClmulLoop_exec {w tabBase b q L u : ℕ}
           = (clmul xc u <<< sh_x) ^^^ ((clmul (x_rem >>> b) u <<< b) <<< sh_x) := by
             rw [show sh_x + b = b + sh_x by omega, Nat.shiftLeft_add _ b sh_x]
         _ = (clmul xc u ^^^ (clmul (x_rem >>> b) u <<< b)) <<< sh_x := by
-            rw [← xor_shiftLeft_eq]
+            rw [← Nat.shiftLeft_xor_distrib]
         _ = clmul x_rem u <<< sh_x := by
             rw [← clmul_split_left]
     · intro r hr

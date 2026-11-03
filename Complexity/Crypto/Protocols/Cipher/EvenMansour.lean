@@ -1674,9 +1674,17 @@ theorem run_idealLazyHandler_good_le_realLazyHandler {α : Type}
     (program : OracleComp (EvenMansourSpec G) α) (P : α → Prop) (k : G × G)
     {c_e c_π c : Cache G} (hrel : CacheRel k c_e c_π c) :
     ((OracleComp.interpret idealLazyHandler program).run (c_e, c_π)).toOuterMeasure
-      {res | P res.1 ∧ isBadEvenMansourKey res.2.1 res.2.2 k = false} ≤
+      {(r, c_e', c_π') : α × Cache G × Cache G |
+        P r ∧ isBadEvenMansourKey c_e' c_π' k = false} ≤
     ((OracleComp.interpret (realLazyHandler k) program).run c).toOuterMeasure
       {res | P res.1} := by
+  have hset :
+      {(r, c_e', c_π') : α × Cache G × Cache G |
+        P r ∧ isBadEvenMansourKey c_e' c_π' k = false} =
+      {res | P res.1 ∧ isBadEvenMansourKey res.2.1 res.2.2 k = false} := by
+    ext ⟨_, _, _⟩
+    simp
+  rw [hset]
   induction program generalizing c_e c_π c with
   | pure a =>
     change (PMF.pure (a, (c_e, c_π))).toOuterMeasure
@@ -1912,8 +1920,16 @@ private theorem idealGame_apply_le_realGame_add_of_keyDist (keyDist : PMF (G × 
           MeasureTheory.measure_union_le _ _
       _ ≤ ((OracleComp.interpret (realLazyHandler k) program).run []).toOuterMeasure
             (Prod.fst ⁻¹' {b}) +
-          M_ideal.toOuterMeasure {res | isBadEvenMansourKey res.2.1 res.2.2 k = true} :=
-          add_le_add
+          M_ideal.toOuterMeasure {res | isBadEvenMansourKey res.2.1 res.2.2 k = true} := by
+          have hset :
+              {res : Bool × (Cache G × Cache G) |
+                res.1 = b ∧ isBadEvenMansourKey res.2.1 res.2.2 k = false} =
+              {(r, c_e', c_π') : Bool × Cache G × Cache G |
+                r = b ∧ isBadEvenMansourKey c_e' c_π' k = false} := by
+            ext ⟨_, _, _⟩
+            simp
+          rw [hset]
+          exact add_le_add
             (run_idealLazyHandler_good_le_realLazyHandler program (· = b) k (cacheRel_nil k))
             le_rfl
   have hsum_ideal : ∑' k : G × G, keyDist k * evenMansourIdealGame program b =

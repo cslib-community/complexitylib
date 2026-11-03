@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactLog
+public import Complexity.Computability.WordRAM.ExactLog
 public import Complexity.Computability.WordRAM.Randomized.Structured
 public import Complexity.Probability.PairwiseIndependentHash.Shift
 public import Complexity.Probability.Product
@@ -79,7 +79,7 @@ public section
 namespace Cslib.DataStructure.HashFamily.WordRAM.Tabulation
 
 open Cslib.WordRAM Cslib.Probability
-open Cslib.Algorithms.WordRAM.ExactLog
+open Cslib.WordRAM.ExactLog
 open scoped ENNReal
 
 /-! ## Section 1: Uniform random word-slice filler (`randFillLoop`) -/

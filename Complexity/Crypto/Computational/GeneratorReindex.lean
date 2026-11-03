@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Crypto.Computational.GeneratorPadding
+public import Complexity.Crypto.Computational.Nonuniform.Basic
 public import Complexity.Crypto.Computational.PseudorandomGenerator
 public import Mathlib.Data.Nat.Find
 import Complexity.Probability.PMF.Bind
@@ -38,9 +39,11 @@ lengths. No nonuniform choice of a bad length is supplied to the reduction.
 * `Cslib.Crypto.GeneratorReindex.parameter_apply_of_strictMono`: exact parameter recovery on the
   range of a strictly monotone schedule.
 * `Cslib.Crypto.GeneratorReindex.isPolyTime_generate`: uniform machine-backed efficiency.
-* `Cslib.Crypto.GeneratorReindex.indistinguishable`: extending a secure family preserves
-  computational indistinguishability at every seed length.
-* `Cslib.Crypto.GeneratorReindex.pseudorandomGenerator`: one-bit stretch at every seed length.
+* `Cslib.Crypto.GeneratorReindex.indistinguishable`,
+  `Cslib.Crypto.GeneratorReindex.nonuniformIndistinguishable`: extending a secure family preserves
+  uniform and nonuniform computational indistinguishability at every seed length.
+* `Cslib.Crypto.GeneratorReindex.pseudorandomGenerator`,
+  `Cslib.Crypto.GeneratorReindex.nonuniformPRG`: one-bit stretch at every seed length.
 
 ## References
 
@@ -226,5 +229,88 @@ theorem pseudorandomGenerator {length : ℕ → ℕ} {generator : ℕ → List B
   exact .of_indistinguishable (isPolyTime_generate (.of_tidy hlength) (.of_tidy hgenerator))
     (length_generate houtput) (fun _ => Nat.lt_succ_self _)
     (indistinguishable (.of_tidy hlength) hge (.of_tidy hgenerator) hsecure)
+
+open scoped NNReal in
+/-- Extending a uniformly efficient nonuniformly secure family preserves nonuniform security at
+every seed length. For each parameter `n`, the proof passes the worst-case seed length
+`size ≤ length (n + 1)` and its advice word `advice size` as polynomially bounded advice to the
+padding reduction. -/
+theorem nonuniformIndistinguishable {length : ℕ → ℕ} {generator : ℕ → List Bool → List Bool}
+    (hlength : ComputableInPolyTime length encUnary encUnary)
+    (hge : ∀ n, n + 1 ≤ length n)
+    (_hgenerator : ComputableInPolyTime (fun a => generator a.1 a.2)
+      (encPair encUnary encBits) encBits)
+    (hsecure : NonuniformlyIndistinguishable
+      (fun n => (uniformList (length n)).map (generator n))
+      (fun n => uniformList (length n + 1))) :
+    NonuniformlyIndistinguishable (generatorEnsemble (generate length generator))
+      (fun n => uniformList (n + 1)) := by
+  have hlengthTidy := hlength.tidy
+  have hlengthPoly : PolynomiallyBounded length := hlengthTidy.polynomiallyBounded
+  intro advice hadvice adversary hadversary
+  let test (n size : ℕ) (adv : List Bool) (word : List Bool) : ProbComp Bool :=
+    GeneratorPadding.test (length n) size (fun w => adversary ((size, adv), w)) word
+  have htest : IsPPTOn
+      (encPair (encPair encUnary (encPair encUnary encBits)) encBits) encBool
+      (fun input => test input.1.1 input.1.2.1 input.1.2.2 input.2) := by
+    unfold test
+    apply GeneratorPadding.isPPTOn_test
+    · exact hlength.comp (by fun_prop)
+    · fun_prop
+    · exact hadversary.preprocess
+        (prepare := fun p : ((ℕ × (ℕ × List Bool)) × List Bool) × List Bool => (p.1.1.2, p.2))
+        (by fun_prop)
+    · fun_prop
+  let advAt (n size : ℕ) : ℝ≥0 :=
+    Game.advantage
+      (((uniformList (length n)).map (generator n)).bind
+        (fun word => ProbComp.eval (test n size (advice size) word)))
+      ((uniformList (length n + 1)).bind
+        (fun word => ProbComp.eval (test n size (advice size) word)))
+  have hexists (n : ℕ) : ∃ s ≤ length (n + 1), ∀ size ≤ length (n + 1),
+      advAt n size ≤ advAt n s := by
+    obtain ⟨s, hs, hmax⟩ := Finset.exists_max_image (Finset.Iic (length (n + 1))) (advAt n)
+      ⟨0, Finset.mem_Iic.mpr (Nat.zero_le _)⟩
+    exact ⟨s, Finset.mem_Iic.mp hs, fun size hsize => hmax size (Finset.mem_Iic.mpr hsize)⟩
+  obtain ⟨worstSize, hworst⟩ := Classical.axiomOfChoice hexists
+  have hworst_le (n : ℕ) : worstSize n ≤ length (n + 1) := (hworst n).1
+  have hworst_max (n size : ℕ) (hsize : size ≤ length (n + 1)) :
+      advAt n size ≤ advAt n (worstSize n) := (hworst n).2 size hsize
+  have hworstPoly : PolynomiallyBounded worstSize :=
+    (hlengthPoly.comp (PolynomiallyBounded.id.add (.const 1))).mono_of_le hworst_le
+  have hadviceWorst : PolynomiallyBounded (fun n => (advice (worstSize n)).length) :=
+    hadvice.comp hworstPoly
+  have hadvicePair : PolynomiallyBounded
+      (fun n => (encPair encUnary encBits (worstSize n, advice (worstSize n))).length) := by
+    simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
+    exact (((PolynomiallyBounded.const 2).mul hworstPoly).add (.const 1)).add hadviceWorst
+  have hε : Negligible (fun n => advAt n (worstSize n)) := by
+    simpa only [advAt, distinguishingGame, PMF.monad_bind_eq_bind] using
+      (hsecure (fun n => encPair encUnary encBits (worstSize n, advice (worstSize n)))
+        hadvicePair).negligible_encoded htest
+  have hdecay := hε.comp_of_polynomial_bound (parameter_tendsto length)
+    (hlengthPoly.comp (PolynomiallyBounded.id.add (.const 1)))
+    (Eventually.of_forall (fun size => (lt_length_succ_parameter hge size).le))
+  apply negligible_of_eventually_le hdecay
+  filter_upwards [eventually_ge_atTop (length 0)] with size hsize
+  simp only [distinguishingGame, PMF.monad_bind_eq_bind]
+  rw [generate_distribution length generator hsize,
+    GeneratorPadding.advantage_eq _ _ (parameter_fits hsize) (Nat.lt_succ_self _)]
+  exact hworst_max (parameter length size) size (lt_length_succ_parameter hge size).le
+
+/-- A uniformly efficient one-bit expanding nonuniformly secure family on a polynomial schedule
+gives a nonuniform PRG stretching every input by one bit. -/
+theorem nonuniformPRG {length : ℕ → ℕ} {generator : ℕ → List Bool → List Bool}
+    (hlength : ComputableInPolyTime length encUnary encUnary)
+    (hge : ∀ n, n + 1 ≤ length n)
+    (hgenerator : ComputableInPolyTime (fun a => generator a.1 a.2)
+      (encPair encUnary encBits) encBits)
+    (houtput : ∀ n seed, seed.length = length n → (generator n seed).length = length n + 1)
+    (hsecure : NonuniformlyIndistinguishable
+      (fun n => (uniformList (length n)).map (generator n))
+      (fun n => uniformList (length n + 1))) :
+    NonuniformPRG (generate length generator) (fun n => n + 1) :=
+  ⟨isPolyTime_generate hlength hgenerator, length_generate houtput, fun _ => Nat.lt_succ_self _,
+    nonuniformIndistinguishable hlength hge hgenerator hsecure⟩
 
 end Cslib.Crypto.GeneratorReindex

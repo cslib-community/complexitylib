@@ -27,10 +27,15 @@ with clauses of width at most three that is satisfiable exactly when the origina
 * `Cslib.Logic.PL.Clause.splitAux`, `Cslib.Logic.PL.Clause.split3`: the chain of width-three
   clauses for one clause.
 * `Cslib.Logic.PL.CNF.to3CNF`: every clause split, over the variables `V ⊕ (ℕ × ℕ)`.
+* `Cslib.Logic.PL.CNF.to3CNFAssignment`: the explicit extension of an assignment to the auxiliary
+  variables.
 
 ## Main results
 
 * `Cslib.Logic.PL.CNF.length_le_three_of_mem_to3CNF`: every clause has at most three literals.
+* `Cslib.Logic.PL.CNF.eval_to3CNF_to3CNFAssignment`,
+  `Cslib.Logic.PL.CNF.eval_comp_inl_of_eval_to3CNF`: satisfying assignments of the formula and of
+  its split, mapped explicitly in both directions.
 * `Cslib.Logic.PL.CNF.satisfiable_to3CNF`: splitting preserves satisfiability.
 * `Cslib.Logic.PL.CNF.length_to3CNF`,
   `Cslib.Logic.PL.CNF.countUnsat_comp_inl_le_countUnsat_to3CNF`: splitting replaces a clause of
@@ -161,39 +166,62 @@ private theorem Clause.relabel_drop (f : V → W) (c : Clause V) (n : ℕ) :
     (c.relabel f).drop n = Clause.relabel f (c.drop n) :=
   (List.map_drop ..).symm
 
+/-- **Splitting, backward witnesses.** An assignment satisfying the split formula satisfies the
+original formula on the original variables. -/
+theorem CNF.eval_comp_inl_of_eval_to3CNF {φ : CNF V} {τ : V ⊕ (ℕ × ℕ) → Bool}
+    (hτ : φ.to3CNF.eval τ = true) : φ.eval (τ ∘ Sum.inl) = true := by
+  refine (CNF.eval_eq_true_iff _ _).2 fun c hc => ?_
+  obtain ⟨i, hi⟩ := List.mem_iff_getElem.1 hc
+  have hmem : (c, i) ∈ φ.zipIdx := by
+    rw [List.mem_zipIdx_iff_getElem?]; simp [← hi.2]
+  have := (CNF.eval_flatMap_eq_true_iff τ _ _).1 hτ _ hmem
+  simpa using Clause.eval_of_eval_split3 _ _ _ _ this
+
+/-- The explicit extension of an assignment `σ` of `φ` to the variables of `φ.to3CNF`: the
+auxiliary variable `(i, k)` of clause `i` says that one of the literals of clause `i` after
+position `k + 1` holds under `σ` [Arora and Barak, Section 2.3.1][AroraBarak09]. -/
+def CNF.to3CNFAssignment (φ : CNF V) (σ : V → Bool) : V ⊕ (ℕ × ℕ) → Bool :=
+  Sum.elim σ fun (i, k) => Clause.eval σ ((φ.getD i []).drop (k + 2))
+
+@[simp]
+theorem CNF.to3CNFAssignment_inl (φ : CNF V) (σ : V → Bool) (v : V) :
+    φ.to3CNFAssignment σ (.inl v) = σ v :=
+  rfl
+
+@[simp]
+theorem CNF.to3CNFAssignment_inr (φ : CNF V) (σ : V → Bool) (i k : ℕ) :
+    φ.to3CNFAssignment σ (.inr (i, k)) = Clause.eval σ ((φ.getD i []).drop (k + 2)) :=
+  rfl
+
+/-- **Splitting, forward witnesses.** The explicit extension of an assignment satisfying `φ`
+satisfies the split formula. -/
+theorem CNF.eval_to3CNF_to3CNFAssignment {φ : CNF V} {σ : V → Bool} (hσ : φ.eval σ = true) :
+    φ.to3CNF.eval (φ.to3CNFAssignment σ) = true := by
+  refine (CNF.eval_flatMap_eq_true_iff _ _ _).2 fun x hx => ?_
+  obtain ⟨c, i⟩ := x
+  have hci : φ.getD i [] = c := by
+    rw [List.mem_zipIdx_iff_getElem?] at hx
+    simp [List.getD_eq_getElem?_getD, hx]
+  have hmem : c ∈ φ := by
+    rw [List.mem_zipIdx_iff_getElem?] at hx
+    exact List.mem_of_getElem? (by simpa using hx)
+  have hc : c.eval σ = true := (CNF.eval_eq_true_iff _ _).1 hσ c hmem
+  cases c with
+  | nil => simp at hc
+  | cons carry rest =>
+    refine Clause.eval_splitAux (rest := Clause.relabel Sum.inl rest) _ _ 0 _
+      (fun k _ => ?_) ?_
+    · rw [Clause.relabel_drop, Clause.eval_relabel, CNF.to3CNFAssignment_inr, hci,
+        Nat.sub_zero]
+      rfl
+    · change (Clause.relabel Sum.inl (carry :: rest)).eval _ = true
+      rw [Clause.eval_relabel]
+      exact hc
+
 /-- Splitting the clauses of a formula preserves satisfiability. -/
-theorem CNF.satisfiable_to3CNF (φ : CNF V) : φ.to3CNF.Satisfiable ↔ φ.Satisfiable := by
-  constructor
-  · rintro ⟨τ, hτ⟩
-    refine ⟨τ ∘ Sum.inl, (CNF.eval_eq_true_iff _ _).2 fun c hc => ?_⟩
-    obtain ⟨i, hi⟩ := List.mem_iff_getElem.1 hc
-    have hmem : (c, i) ∈ φ.zipIdx := by
-      rw [List.mem_zipIdx_iff_getElem?]; simp [← hi.2]
-    have := (CNF.eval_flatMap_eq_true_iff τ _ _).1 hτ _ hmem
-    simpa using Clause.eval_of_eval_split3 _ _ _ _ this
-  · rintro ⟨σ, hσ⟩
-    let τ : V ⊕ (ℕ × ℕ) → Bool
-      | .inl v => σ v
-      | .inr (i, k) => Clause.eval σ ((φ.getD i []).drop (k + 2))
-    refine ⟨τ, (CNF.eval_flatMap_eq_true_iff τ _ _).2 fun x hx => ?_⟩
-    obtain ⟨c, i⟩ := x
-    have hci : φ.getD i [] = c := by
-      rw [List.mem_zipIdx_iff_getElem?] at hx
-      simp [List.getD_eq_getElem?_getD, hx]
-    have hmem : c ∈ φ := by
-      rw [List.mem_zipIdx_iff_getElem?] at hx
-      exact List.mem_of_getElem? (by simpa using hx)
-    have hc : c.eval σ = true := (CNF.eval_eq_true_iff _ _).1 hσ c hmem
-    cases c with
-    | nil => simp at hc
-    | cons carry rest =>
-      refine Clause.eval_splitAux (rest := Clause.relabel Sum.inl rest) _ τ 0 _ (fun k _ => ?_) ?_
-      · rw [Clause.relabel_drop, Clause.eval_relabel]
-        simp only [τ, hci, Nat.sub_zero]
-        rfl
-      · change (Clause.relabel Sum.inl (carry :: rest)).eval τ = true
-        rw [Clause.eval_relabel]
-        exact hc
+theorem CNF.satisfiable_to3CNF (φ : CNF V) : φ.to3CNF.Satisfiable ↔ φ.Satisfiable :=
+  ⟨fun ⟨_, hτ⟩ => ⟨_, CNF.eval_comp_inl_of_eval_to3CNF hτ⟩,
+    fun ⟨_, hσ⟩ => ⟨_, CNF.eval_to3CNF_to3CNFAssignment hσ⟩⟩
 
 /-- The chain for a clause `carry :: rest` has `rest.length - 1` clauses, and at least one. -/
 private theorem Clause.length_splitAux (fresh : ℕ → W) (j : ℕ) (carry : Literal W)
