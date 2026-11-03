@@ -245,9 +245,8 @@ unconditional total exponent. The zero-weight and constant-257 negative clients 
 symbolic execution witnesses at admitted positive-threshold geometry, not interpreter runs
 or benchmarks.
 
-Global parameter/prime selection still uses the previous backend. Connecting this controller,
-absorbing polynomial factors and proving ordinary 3SUM exponent 1.9992 remain open under
-[#1394](https://github.com/cslib-community/complexitylib/issues/1394).
+The automatic box-backed host and its ordinary 3SUM 1.9992 composition are described below.
+The component theorem above retains its explicit geometry and selected-prime premises.
 
 ### Calling the box controller from another native program
 
@@ -283,9 +282,62 @@ original-input envelope. For arbitrary dirty callers, use `bounded_reachable_cal
 original raw-word bound: memory above the envelope is preserved and need not be zero.
 `CallableFixedPrime.inputWidth_le_log` and `CallableFixedPrime.prefixBound_le_pow` supply the shared numerical
 estimates for polynomial original weights and bounded scalar headers. These are symbolic
-execution guarantees, not interpreter benchmarks. The global parameter/prime-selecting host
-still uses the previous solver; its migration, parameter retuning, polynomial absorption and
-ordinary 3SUM 1.9992 remain open.
+execution guarantees, not interpreter benchmarks. `BoxParameterSelecting.callee` now computes
+its geometry and selected prime and calls this actual controller. It reuses the register names
+from `ParameterSelecting.Reg`; the retuned parameter code reuses `DyadicParameters.Reg`.
+
+## Ordinary integer 3SUM in time n^1.9992
+
+Import `Complexity.Algorithms.WordRAM.ThreeSum.Decision.One9992`. In namespace
+`Cslib.Algorithms.WordRAM.ThreeSum.Decision`, `boxProgram κ` is computable structured code
+and `boxFlatProgram κ` is its assembled standard Word-RAM program with 848 registers.
+Apply `exists_one9992_runs κ`; no solver, time law, selected prime or layout certificate is
+an argument. The complete
+[checked client](https://github.com/cslib-community/complexitylib/blob/c8c4faf3069e3aeccfbe74e433a8594d7d721063/ComplexityTests/ThreeSumOne9992.lean)
+shows positive and negative inputs, repeated values at distinct positions, the charged halt,
+and the same-state prehalt prefix. On that source revision, run:
+
+```bash
+scripts/build.sh --wfail --iofail ComplexityTests.ThreeSumOne9992
+```
+
+Choose a fixed natural magnitude exponent `κ` and an original `input : List ℤ`. Set
+`n = input.length`, prove every `|z| <= (n+2)^κ`, and supply physical width
+`Decision.width κ 123357 n <= W`. The initial state is
+`State.init (input.map Signed.encode)`: address 0 holds the length, canonical signed words
+start at address 1, and the remaining memory is zero. If application fails, check this
+encoding, list length, magnitude premise, width and imported source revision against the
+client. Input placement is the initial-state convention; it does not charge a whole-envelope
+clearing pass.
+
+For each `κ`, the theorem chooses one positive constant `C` and threshold `N` before all
+inputs and physical widths. Correctness holds at every length: the actual halt returns one
+exactly when three distinct input positions sum to zero; equal values at different positions
+are allowed. The same execution has a charged natural step count, at most the concrete host
+cost, and for `n >= N` at most `C * n^(2499/1250)`, where `2499/1250 = 1.9992`. Every admitted
+wider width has the same guarantees. Every reachable prefix has register and memory words
+below `(n+2)^(2 * Decision.widthCoefficient κ 123357)` and memory zero at addresses at least
+that envelope; the final data also satisfy the physical word bound.
+
+The [actual automatic callee](https://github.com/cslib-community/complexitylib/blob/c8c4faf3069e3aeccfbe74e433a8594d7d721063/Complexity/Algorithms/WordRAM/ExactTriangle/BoxParameterSelecting/Callee.lean)
+executes parameter computation, prime selection and the real box-backed calls. Its retuning is
+`b = floor(log2(n)/2394)`, `m = 63b`, `g = 4^(2b)`, `D = 4^m` and `L = 21m`.
+The [parameter boundary client](https://github.com/cslib-community/complexitylib/blob/c8c4faf3069e3aeccfbe74e433a8594d7d721063/ComplexityTests/WordRAMBoxDyadicParameters.lean)
+checks the actual VM at zero, below `2^2394` and at `2^2394`;
+the [automatic Exact Triangle client](https://github.com/cslib-community/complexitylib/blob/c8c4faf3069e3aeccfbe74e433a8594d7d721063/ComplexityTests/WordRAMBoxParameterSelectingInput.lean)
+checks symbolic fast-family executions, including the selected-prime conclusion. These huge
+matrix clients are proof witnesses, not execution benchmarks. Small ordinary-input VM checks
+also reject lengths below three. The complete finite ledger charges preprocessing, selector,
+global original-weight scan reserve, matrix preparation, every box call, outer control and
+halt. Polynomial logarithmic factors are absorbed before the ordinary reduction is applied.
+
+The intermediate native Exact Triangle bound is `Oκ(n^(3-33/20000)) = Oκ(n^2.99835)`;
+this does not claim the source Exact Triangle exponent 2.9983. The final
+[ordinary theorem and source mapping](https://github.com/cslib-community/complexitylib/blob/c8c4faf3069e3aeccfbe74e433a8594d7d721063/Complexity/Algorithms/WordRAM/ThreeSum/Decision/One9992.lean)
+adapt the 1.9992 target to this library's standard unsigned Word-RAM with canonical signed
+encoding and polynomially bounded integers. Time counts unit native instructions with
+logarithmic admitted word width. This is not a bit-time or arbitrary-real 3SUM theorem;
+the source's separate signed modular machine and `SolvedInTime` predicate are not imported.
 
 ## Tree Evaluation
 
