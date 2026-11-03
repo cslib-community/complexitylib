@@ -212,11 +212,10 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   all `2t` instances and a finite solver program in a disjoint register bank. Its initialized run
   theorem connects the actual pre-halt state to the Convolution-3SUM answer and preserves the input.
   The host's source-width threshold is `(20κ+125)clog₂(N+2)`; signed kernels use target width `w+2`.
-  This remains conditional on the supplied solver's native execution/correctness/frame theorem;
-  it does not establish a fast solver. Fast Exact Triangle and its final native backend/asymptotic
-  composition remain in
-  [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
-  Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
+  This host module remains parametric in a concrete solver's execution/correctness/frame theorem;
+  the actual solver and conservative ordinary-host composition are described below. The improved
+  Section 4 route needed for the published exponent 1.9992 remains in
+  [#1394](https://github.com/cslib-community/complexitylib/issues/1394). Anthropic's copyright and attribution
   are retained; the native proofs and representation choices are local.
   Native numeric parameter computation, signed-residue/histogram counting, trial-division prime
   tables, collision-tested least-prime scans and complete two-prime modulus selection also use
@@ -240,11 +239,23 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   logarithmic physical width, polynomial words/space at every admitted-width prefix, and a fully
   charged compositional bound at the actual packed size. `Host.Callee` requires actual finite-code
   execution, matrix correctness, logarithmic width and a protected-prefix frame on arbitrary old
-  scratch memory; `Host.Slow.callee` is a proved exhaustive native instance. This conditional host
-  does not provide a fast solver. The unconditional native solver/backend and final asymptotic
-  composition, including exponent 1.9992, remain #1394. These components do not affect the curated
-  headlines. The caller layout, exhaustive callee and ordinary composition are original; the
-  underlying finite reductions and builder retain their existing Anthropic credit.
+  scratch memory; `Host.Slow.callee` is a proved exhaustive native instance.
+  `ExactTriangle/ParameterSelecting.callee` now provides the actual fast/small-branch solver.
+  Its `Asymptotics` module proves the concrete time field is `Oκ(n^(3−1/1296))` at polynomial
+  original magnitudes, without a selected-prime or running-time hypothesis.
+  `ThreeSum/Decision/Subquadratic.exists_subquadratic_runs` composes that exact callee with the
+  actual ordinary host: one fixed 848-register standard program per magnitude exponent, complete
+  initialized same-state prefix/halt, original distinct-position verdict, logarithmic width,
+  polynomial prefix words/support and charged `Oκ(n^(2−1/5184))` time. Correctness covers every
+  length and repeated values. The theorem concerns polynomially bounded integer inputs and
+  charged Word-RAM instructions, not arbitrary-real or bit/Turing time. No new abstract is
+  selected. The improved Section 4/tuned1.9992 endpoint remains #1394. The native glue and these
+  conservative quantitative estimates are original; existing finite reductions and builder
+  retain their Anthropic credit. `ChanHe/ConvolutionSizes` transfers original magnitudes to the
+  actual packed side; the existing finite and native count proofs share `shifted_count_bound_le`.
+  The small `Foundations/Data/Nat/LogRpow` topic is general mathematics intended for Mathlib:
+  it transports Mathlib's real log little-o theorem to shifted natural logs and is consumed by
+  all three side/count/preprocessing estimates, without adding to a widely imported hub.
 
   Bounded API follow-ups from the traversal/preprocessing reviews: merge the stage proof modules
   `PreprocessingSnapshot`, `PreprocessingPrimes`, `PreprocessingSetup`, `PreprocessingFinish`,
@@ -337,7 +348,22 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   allowances are at most `4*n^(3-1/1296)`, uniformly over matrices, selected primes and memories.
   This existential asymptotic threshold is not an algorithm input. Neither result asserts
   a composed execution theorem or the source's tuned exponent.
-  Callable adaptation, small-case solver dispatch (#2146), outer host and #1394 remain open.
+  `Algorithms/WordRAM/ExactTriangle/ParameterSelecting/` (#2146) composes actual parameter
+  preparation, the counter-based selector and the complete callable solver in one640-register
+  program. Its computed flag dispatches to the existing exhaustive solver in the small regime.
+  The actual host0–6 ABI restores0–5 and returns a raw Boolean in6; initialized input is raw
+  n,F followed by three canonical-signed arrays with computed pointers. The new
+  `ThreeSum.Host.Slow.exec_at` reuses the private exhaustive proof for individual span bounds,
+  retaining the old callee and code. `CallableFixedPrime.exec_at` separates semantic execution
+  from final-data boundedness; old `exec` keeps its statement and derives boundedness from
+  its original premise. Arbitrary unused old words do not restrict the host correctness law;
+  raw P remains explicit in caller prefix-resource theorems. `ParameterSelecting.callee`
+  discharges the existing host interface with a natural time function of n,F only, using the
+  proved selected-prime allowance plus actual copying/control work. Initialized source
+  admission is logarithmic and every wider prefix has polynomial words/new address support
+  independently of physical width. This native assembly is original glue; it does not import
+  Light execution or assert the tuned source exponent. Outer host, final asymptotic composition
+  and #1394 remain open.
   `Algorithms/ExactTriangle/{Splitting,Witnesses}.lean` adapts the complete finite splitting and
   witness recovery component ([#1447](https://github.com/cslib-community/complexitylib/issues/1447)),
   using the existing matrices, lopsided graph and `Set.EqOn` answer API. Computable integer parameters

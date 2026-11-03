@@ -33,28 +33,18 @@ the FHE industrial context, the first-order design decisions and the repository'
 
 Priorities live in this list and in the tiers of [#897].
 
-1. [Goldreich–Micali–Wigderson zero knowledge in full](#cryptographic-landmarks) ([#2316])
-2. [Completeness of oblivious transfer](#cryptographic-landmarks)
-3. [Håstad's optimal MAX-E3SAT hardness](#approximation-and-pcp) ([#886])
-4. [Williams's NEXP ⊄ ACC⁰](#circuits-and-algebraic-complexity) ([#889])
-5. [Valiant's VNP-completeness of the permanent](#circuits-and-algebraic-complexity)
-6. [The Kabanets–Impagliazzo theorem](#circuits-and-algebraic-complexity) ([#891])
-7. [MIP = NEXP](#interactive-proofs) ([#892])
-8. [Regev's worst-case to average-case reduction](#cryptographic-landmarks)
+1. [Completeness of oblivious transfer](#cryptographic-landmarks)
+2. [Håstad's optimal MAX-E3SAT hardness](#approximation-and-pcp) ([#886])
+3. [Williams's NEXP ⊄ ACC⁰](#circuits-and-algebraic-complexity) ([#889])
+4. [Valiant's VNP-completeness of the permanent](#circuits-and-algebraic-complexity)
+5. [The Kabanets–Impagliazzo theorem](#circuits-and-algebraic-complexity) ([#891])
+6. [MIP = NEXP](#interactive-proofs) ([#892])
+7. [Regev's worst-case to average-case reduction](#cryptographic-landmarks)
 
 ## Cryptography
 
 ### Cryptographic landmarks
 
-- **Goldreich–Micali–Wigderson zero knowledge in full** ([#2316]). If one-way functions exist, every
-  language in NP has a computational zero-knowledge proof in Goldreich's sense (Def. 4.3.10):
-  for every `x ∈ L` and arbitrary auxiliary input `z`, against probabilistic polynomial-time
-  verifiers. This needs a bridge between the security premise and a clock independent of an
-  unbounded auxiliary word, witness-level Levin reductions, and sequential soundness
-  amplification to negligible error. State it under nonuniformly one-way functions, as
-  Goldreich does (*Foundations of Cryptography*, Vol. 1, Section 4.4), and derive the
-  nonuniform (advice-secure) PRG premise of the auxiliary-input theorem from that; uniform
-  one-wayness is not known to give such a generator.
 - **Completeness of oblivious transfer.** In the ideal OT-hybrid model, every polynomial-time
   multiparty functionality admits a protocol secure against static malicious corruptions, with
   real/ideal simulation and abort, under the standard communication assumptions.
@@ -416,6 +406,21 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   correctness review of the frontier core.
 - **Weighted threshold representations:** v1's explicit source-reduction family, universal scalar
   circuit synthesis, entropy and asymptotic activity bounds, and geometric cutting.
+- **Depth-two threshold circuits for Andreev's function** ([#2347]): the exact quadratic
+  `4 * 4 ^ b + b * m * 2 ^ b + 1` depth-two weighted threshold upper bound
+  (`WeightedThreshold/Andreev.lean`), the windowed average-case `(1 - δ)`-agreement and
+  `(1 / 2 + ε)`-correlation depth-two upper bounds (`WeightedThreshold/AndreevWindowed.lean` and
+  `WeightedThreshold/AndreevAverage.lean`), Erdős–Littlewood–Offord anti-concentration
+  (`Combinatorics/LittlewoodOfford.lean`) together with the repaired Kane–Williams gate and wire
+  random restriction lemmas (`WeightedThreshold/RandomRestriction.lean`, Lemma 1.1 and Lemma 3.1 of
+  arXiv:1511.07860v1), the `b`-variable LTF and depth-two threshold function counting bounds
+  (`WeightedThreshold/ThresholdCounting.lean`, Theorem 2.3 and Section 4 of arXiv:1511.07860v1), and
+  the fixed-weight quadratic-in-`ε` average-case `Ω(ε² n ^ (3 / 2) / log² n)` gate and
+  `Ω(ε² n ^ (5 / 2) / log ^ (5 / 2) n)` active-wire lower bounds for
+  `3 * (b + 2) / √(2 ^ b) ≤ ε ≤ 1 / 2` in the balanced regime
+  (`WeightedThreshold/AndreevLowerBound.lean`, improving the
+  `ε³` dependence in Theorem 1.1 and Section 5 of arXiv:1511.07860v1) are proved; closing the
+  worst-case depth-two threshold gate gap between `Ω̃(n ^ (3 / 2))` and `O(n ^ 2)` remains open.
 - **Construction runtimes**, certified separately from gate counts: the mass-production
   constructors, with constructive choices of information sets and line menus; the
   iterated-function preprocessing; and the bit complexity of formula evaluation on the rational
@@ -640,21 +645,23 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   expected-time rules for unbounded almost-surely terminating structured loops; random-tape
   equivalence and BPP/RP/ZPP simulation bridges for the randomized word RAM ([#1124]); transfer
   of cell-probe lower bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
-- **Direct 3SUM adaptation** ([#1394]): global parameter/asymptotic composition, using the concrete
-  native cyclic-Strassen counter ([#1701]), minimum-count selector ([#2098]) and conservative
-  computed dyadic parameters ([#2127]); unrestricted small geometry; the aggregate
-  subcubic Exact Triangle bound and source exponent; and the unconditional ordinary-3SUM
-  input/time/width/asymptotic composition, including the improved Section 4 route to exponent
-  1.9992. These build on the native Chan–He preprocessing, queried thin products, fixed-prime
-  Exact Triangle solving and the conditional Convolution-3SUM host. The counter computes its
-  own residues, padding/table, seven-product recursion and exact raw modular count, within
-  `3704*(p+1)²*(n+1)^2.81` instructions including halt. Its source-regime admission and
-  width-independent prefix bounds are proved. The selector computes the actual attained window
-  minimum with native trial division and real counter calls, preserving the explicit window
-  cost factor. The dyadic parameter kernel computes geometry-compatible values and explicitly
-  classifies the small regime; it does not prove the tuned aggregate exponent or dispatch a solver.
-  Remaining are native fast/small solver assembly ([#2146]), global asymptotic composition
-  using the component-cost bridge ([#2145]), outer-host execution and the full endpoint.
+- **Direct 3SUM adaptation** ([#1394]): integrate the improved Section 4 route and native
+  exponent 1.9992 from [#2358](https://github.com/cslib-community/complexitylib/pull/2358).
+  Conservative native ordinary integer 3SUM is proved in
+  `WordRAM/ThreeSum/Decision/Subquadratic.lean`: for each fixed polynomial magnitude exponent,
+  one fixed 848-register program has charged time `Oκ(n^(2−1/5184))`, logarithmic physical
+  admission and polynomial words/support at every wider execution prefix. Correctness includes
+  every length, distinct positions and repeated values; only the time estimate is eventual.
+  This is standard Word-RAM instruction time, not bit/Turing time or arbitrary-real 3SUM.
+  The concrete cyclic-Strassen counter ([#1701]), minimum-count selector ([#2098]) and computed
+  conservative parameters ([#2127]) feed the actual assembled ET callee ([#2146]). Its time
+  field is `Oκ(n^(3−1/1296))` for polynomial weights. The ordinary proof charges native Chan–He
+  preprocessing, actual packed dimensions, all matrix/callee calls, control work and halt;
+  it does not assume a fast solver, prime procedure, layout or time contract. The counter
+  computes residues, padding, seven-product recursion and exact modular counts within
+  `3704*(p+1)²*(n+1)^2.81` instructions. The selected prime is computed by trial division and
+  actual counter calls; the assembled solver runs the real exhaustive branch at smaller
+  geometry. These conservative original estimates do not establish the source's tuned endpoint.
 - **Memory-oracle realization** ([#2205], [#2213]): the foundational graded kernel certifies
   all four memory queries, register-word glue, native branches and binds with one fixed
   continuation emitter for all runtime replies. Its functional representation retains the
@@ -860,5 +867,4 @@ not planned, not as proved.
 [#2145]: https://github.com/cslib-community/complexitylib/issues/2145
 [#2146]: https://github.com/cslib-community/complexitylib/issues/2146
 [#2084]: https://github.com/cslib-community/complexitylib/issues/2084
-[#2316]: https://github.com/cslib-community/complexitylib/issues/2316
 [#2290]: https://github.com/cslib-community/complexitylib/issues/2290

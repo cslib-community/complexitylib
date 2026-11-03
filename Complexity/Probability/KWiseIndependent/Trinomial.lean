@@ -84,7 +84,7 @@ theorem le_two_mul_three_pow_trinomialStepAux (B : ℕ) :
       omega
 
 /-- When `2 < B`, `trinomialStepAux B` is positive and `2 * 3 ^ (trinomialStepAux B - 1) < B`. -/
-private theorem two_mul_three_pow_pred_lt_of_two_lt {B : ℕ} (hB : 2 < B) :
+theorem two_mul_three_pow_pred_lt_of_two_lt {B : ℕ} (hB : 2 < B) :
     0 < trinomialStepAux B ∧ 2 * 3 ^ (trinomialStepAux B - 1) < B := by
   induction B using Nat.strong_induction_on with
   | _ B ih =>

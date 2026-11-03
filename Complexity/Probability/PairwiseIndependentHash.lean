@@ -157,7 +157,7 @@ theorem comp (hh : IsPairwiseIndependentHash h) {X' : Type*} {e : X' → X}
 
 omit [Fintype Y] [DecidableEq Y] in
 /-- Relabelling the seeds by an equivalence does not change densities. -/
-private theorem dens_filter_comp_equiv {ι' : Type*} [Fintype ι'] (e : ι' ≃ ι) (P : ι → Prop)
+theorem dens_filter_comp_equiv {ι' : Type*} [Fintype ι'] (e : ι' ≃ ι) (P : ι → Prop)
     [DecidablePred P] : dens {i' | P (e i')} = dens {i | P i} := by
   rw [dens_eq_card_div_card, dens_eq_card_div_card, Fintype.card_congr e]
   congr 2

@@ -15,7 +15,7 @@ public import Complexity.DataStructure.SplayTree.AccessLemma
 # Self-Adjusting Stateful Ordered-Set Implementation by Splay Trees
 
 This module realizes the shared `Cslib.DataStructure.OrderedSet.spec α` interface (`contains`,
-`insert`, `erase`, `minimum`, `successor`) using annotation-free bottom-up splay trees
+`insert`, `delete`, `minimum`, `successor`) using annotation-free bottom-up splay trees
 ([SleatorTarjan1985b],
 Section 3, pp. 660–665), reusing the shared `Cslib.DataStructure.SearchTree.Rep` representation
 relation (`Ordered t ∧ elements t = s`) and `SearchTree.rep_empty` directly on `BinaryTree α`.
@@ -36,7 +36,7 @@ by telescoping `unitPotential` across any adaptive client execution (`Executes E
 proves a single-tree `OrderedSet.spec α` dictionary specialization/analogue of Sleator and Tarjan's
 **Balance Theorem with Updates** ([SleatorTarjan1985b], Section 3, Theorem 6, p. 665; whereas
 Theorem 6 treats multi-tree sequences of `access`, `insert`, `delete`, `join`, and `split`, here we
-instantiate single-tree `contains`, `insert`, `erase`, `minimum`, and `successor` and count exact
+instantiate single-tree `contains`, `insert`, `delete`, `minimum`, and `successor` and count exact
 edge rotations, with unit-weight `split`/`join` bounds proved in `AccessLemma.lean`):
 * In `ℝ` (`executes_amortized_real_le`), any adaptive client execution from `SearchTree.Rep s t`
   satisfies `(total id ns : ℝ) + unitPotential t' - unitPotential t ≤ realHistoryCost s history`,
@@ -68,7 +68,7 @@ charged as RAM or Turing-machine instructions.
 
 * `exec_unitPotential_amortized_le`: uniform unit-weight single-step rotation bound across all five
   `OrderedSet.Op α` operations (combining the unit-weight specialization of [SleatorTarjan1985b],
-  Section 3, Lemma 2, pp. 663–664 for `contains`, `insert`, and `erase` with the Access-Lemma
+  Section 3, Lemma 2, pp. 663–664 for `contains`, `insert`, and `delete` with the Access-Lemma
   companion bounds for `minimum` and `successor`).
 * `executes_amortized_real_le`, `executes_rotations_le_realHistoryCost_of_empty`: real-valued
   telescoping amortized bounds across arbitrary adaptive `OrderedSet.spec` clients (single-tree
@@ -110,7 +110,7 @@ structure StepResult (α : Type) [LinearOrder α] (o : Op α) where
   | .insert x =>
       let res := insert x t
       ⟨res.tree, (), res.rotations⟩
-  | .erase x =>
+  | .delete x =>
       let res := erase x t
       ⟨res.tree, (), res.rotations⟩
   | .minimum =>
@@ -144,7 +144,7 @@ recording exact rotation counts. -/
       | insert x =>
         cases he
         exact ⟨rfl, ordered_insert ht x, elements_insert x t⟩
-      | erase x =>
+      | delete x =>
         cases he
         exact ⟨rfl, ordered_erase ht x, elements_erase ht x⟩
       | minimum =>
@@ -209,7 +209,7 @@ theorem realHistoryCost_le_totalCost (s : Finset α) (os : List (Op α)) :
 
 /-- Uniform unit-weight amortized rotation bound across all five `OrderedSet.Op α` operations,
 combining the unit-weight specialization of [SleatorTarjan1985b], Section 3, Lemma 2, pp. 663–664
-for `contains`, `insert`, and `erase` with the companion Access-Lemma bounds for `minimum` and
+for `contains`, `insert`, and `delete` with the companion Access-Lemma bounds for `minimum` and
 `successor`. -/
 theorem exec_unitPotential_amortized_le {s : Finset α} {t t' : BinaryTree α} {o : Op α}
     {a : (spec α).Result o} {n : ℕ} (hr : Rep s t) (he : Exec t o a t' n) :
@@ -226,7 +226,7 @@ theorem exec_unitPotential_amortized_le {s : Finset α} {t t' : BinaryTree α} {
   | insert x =>
     cases he
     linarith [insert_unitPotential_amortized_le ht x]
-  | erase x =>
+  | delete x =>
     cases he
     linarith [erase_unitPotential_amortized_le ht x]
   | minimum =>

@@ -247,10 +247,10 @@ example : Reduction.EfficientHVZK (fun _ => sendWitness fun x w : List Bool => w
     (fun _ x w => w = x) wordEncoding (fun _ x => pure (x, ())) (fun _ => 0) (fun _ => 0) where
   hvzk _ x w hxw := by
     rw [sendWitness_transcript, hxw, ProbComp.eval_pure]
-    exact ComplexityTests.UnboundedSimulators.closeTo_refl _
+    exact CloseTo.refl _
   realized := ⟨fun p => pure p.2, (ComputableInPolyTime.snd _ _).isPPTOn, fun _ x => by
     rw [ProbComp.eval_pure, ProbComp.eval_pure, PMF.pure_map]
-    exact ComplexityTests.UnboundedSimulators.closeTo_refl (PMF.pure x)⟩
+    exact CloseTo.refl (PMF.pure x)⟩
 
 end SendWitness
 
