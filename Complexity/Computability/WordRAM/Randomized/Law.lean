@@ -44,6 +44,9 @@ with `f` (`Cslib.WordRAM.ExecRandLaw.program`).
   `Cslib.WordRAM.ExecRandLaw.loop_iter`: composition rules.
 * `Cslib.WordRAM.ExecRandLaw.rename`: renaming registers.
 * `Cslib.WordRAM.ExecRandLaw.execRandWithin`: forgetting the law.
+* `Cslib.WordRAM.ExecRandLaw.map`, `Cslib.WordRAM.ExecRandLaw.withBounded`,
+  `Cslib.WordRAM.ExecRandLaw.withSupport`: mapping the observation, and the boundedness and the
+  support of every final observation.
 * `Cslib.WordRAM.ExecRandLaw.program`: the compiled program halts within the bound, respects the
   call budget and the postcondition, and has the law `μ`.
 -/
@@ -82,6 +85,28 @@ theorem mono (h : ExecRandLaw w c x P T R f μ) (hPQ : ∀ y, P y → Q y) (hT :
 theorem congr_law {μ' : PMF α} (h : ExecRandLaw w c x P T R f μ) (hμ : μ = μ') :
     ExecRandLaw w c x P T R f μ' :=
   hμ ▸ h
+
+/-- Post-composing the observation with `g` maps the law by `g`. -/
+theorem map (h : ExecRandLaw w c x P T R f μ) (g : α → β) :
+    ExecRandLaw w c x P T R (fun y => g (f y)) (μ.map g) := by
+  obtain ⟨m, hm, hq, hsup, hlaw⟩ := h
+  refine ⟨m, hm, hq, hsup, ?_⟩
+  rw [← hlaw, ProbComp.eval_map, ProbComp.eval_map, PMF.map_comp]
+  rfl
+
+/-- Strengthening the postcondition with word-boundedness, from bounded initial data. -/
+theorem withBounded (h : ExecRandLaw w c x P T R f μ) (hx : x.Bounded w) :
+    ExecRandLaw w c x (fun y => P y ∧ y.Bounded w) T R f μ := by
+  obtain ⟨m, hm, hq, hsup, hlaw⟩ := h
+  exact ⟨m, hm, hq, fun z hz => ⟨⟨(hsup z hz).1, hm.bounded hx hz⟩, (hsup z hz).2⟩, hlaw⟩
+
+/-- Strengthening the postcondition: every final observation lies in the support of the law. -/
+theorem withSupport (h : ExecRandLaw w c x P T R f μ) :
+    ExecRandLaw w c x (fun y => P y ∧ f y ∈ μ.support) T R f μ := by
+  obtain ⟨m, hm, hq, hsup, hlaw⟩ := h
+  refine ⟨m, hm, hq, fun z hz => ⟨⟨(hsup z hz).1, ?_⟩, (hsup z hz).2⟩, hlaw⟩
+  rw [← hlaw, ProbComp.eval_map, PMF.support_map, ProbComp.support_eval]
+  exact ⟨z, hz, rfl⟩
 
 /-- Strengthening the postcondition with a register that `c` never writes. -/
 theorem withPreserves {i : Fin r} (h : ExecRandLaw w c x P T R f μ) (hi : c.Preserves i) :

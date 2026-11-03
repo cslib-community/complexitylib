@@ -312,6 +312,9 @@ theorem residual_eq : P.residual X Y f C =
 noncomputable def weight : Fin (P.m + 1) → V → ℝ :=
   detectorWeight P.κ (P.pilot X Y f C)
 
+/-- Copy weights read the completed pilot vector on the whole parent domain. -/
+theorem weight_eq : P.weight X Y f C = detectorWeight P.κ (P.pilot X Y f C) := by rfl
+
 /-- **The next transition matrix** `C⁺`, indexed by the lexicographically ordered copies. -/
 noncomputable def next : Matrix (Lex (V × Fin (P.m + 1))) (Lex (V × Fin (P.m + 1))) ℝ :=
   (copyStage (P.copyCutoff f) P.m (P.weight X Y f C) (P.residual X Y f C)).submatrix ofLex ofLex

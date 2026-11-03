@@ -54,12 +54,19 @@ entries.
 * **General auxiliary-input zero-knowledge (`AuxiliaryInputZeroKnowledge`,
   `ZeroKnowledgeProof.AuxiliaryInputZeroKnowledge`).**
   Quantifies over the same uniform strict oracle PPT malicious verifiers `Vstar` and chooses one
-  efficient witness-free simulator `S` per `Vstar` before the choice of families, then ranges over
-  arbitrary polynomially bounded families of instances `a : ℕ → α`, valid witnesses
+  efficient witness-free simulator `S` per `Vstar` before the choice of families, requiring exact
+  program congruence `S n a z₁ = S n a z₂` whenever `Vstar n a z₁ = Vstar n a z₂`, and then ranges
+  over arbitrary polynomially bounded families of instances `a : ℕ → α`, valid witnesses
   `w : ℕ → List Bool`, and auxiliary inputs `z : ℕ → List Bool` (`PolynomiallyBounded`), against
   all full-input uniform strict PPT distinguishers `adversary` charged for the complete encoded
-  input `((1^n, (a n, z n)), view)`. Every system satisfying `AuxiliaryInputZeroKnowledge`
-  satisfies `GenerableZeroKnowledge` (`AuxiliaryInputZeroKnowledge.generableZeroKnowledge`).
+  input `((1^n, (a n, z n)), view)`. The exact verifier-congruence clause is an additional
+  sufficient condition beyond Goldreich's auxiliary-input definition (early Chapter 4 draft
+  `part4N.pdf`, §4.3.3, Definition 4.3.8, printed pp. 151–153), used by the unbounded-`z` clock
+  bridge in `Complexity.Crypto.Computational.ZeroKnowledge.AuxClock` to equate simulator runs on
+  distinguisher-sized and verifier-sized prefixes of `z` when `Vstar` already truncates `z`;
+  `GMW.gmwSimulator` depends on `z` only through `Vstar n a z` and discharges it by `rfl`. Every
+  system satisfying `AuxiliaryInputZeroKnowledge` satisfies `GenerableZeroKnowledge`
+  (`AuxiliaryInputZeroKnowledge.generableZeroKnowledge`).
   Under the explicit advice-PRG premise `GMW.AdvicePRG`
   (from `GMW.gmwView_negligible_of_advice_prg`), the GMW proof systems satisfy
   `ZeroKnowledgeProof.AuxiliaryInputZeroKnowledge`
@@ -161,12 +168,20 @@ def GenerableZeroKnowledge {α : Type} (enc : α ↪ List Bool)
 valid families.**
 For every uniform strict oracle PPT malicious verifier `Vstar` (charged for its complete encoded
 input `(1^n, (a, z))`), there exists a single uniform strict PPT witness-free simulator `S`
-(chosen before the families and distinguisher, and charged for `(1^n, (a, z))`) such that for all
+(chosen before the families and distinguisher, charged for `(1^n, (a, z))`, and satisfying exact
+verifier congruence `Vstar n a z₁ = Vstar n a z₂ → S n a z₁ = S n a z₂`) such that for all
 arbitrary polynomially bounded families of instances `a : ℕ → α`, valid witnesses
 `w : ℕ → List Bool` (`∀ n, isWitness (a n) (w n) = true`), and auxiliary inputs
 `z : ℕ → List Bool`, and for every uniform strict PPT distinguisher `adversary` (charged for its
 complete encoded input `((1^n, (a, z)), view)`), the distinguishing advantage between the real
-interaction view and the simulated view is negligible. -/
+interaction view and the simulated view is negligible.
+
+The exact congruence clause `Vstar n a z₁ = Vstar n a z₂ → S n a z₁ = S n a z₂` is an additional
+sufficient condition beyond Goldreich's auxiliary-input definition (early Chapter 4 draft
+`part4N.pdf`, §4.3.3, Definition 4.3.8, printed pp. 151–153), used by the unbounded-`z` clock
+bridge (`Complexity.Crypto.Computational.ZeroKnowledge.AuxClock`) to replace a distinguisher-sized
+auxiliary prefix with the verifier-sized prefix when `Vstar` is already truncated;
+`GMW.gmwSimulator` discharges it by `rfl`. -/
 def AuxiliaryInputZeroKnowledge {α : Type} (enc : α ↪ List Bool)
     (prover : ℕ → α → List Bool → Prover Unit)
     (isWitness : α → List Bool → Bool) : Prop :=
@@ -176,6 +191,7 @@ def AuxiliaryInputZeroKnowledge {α : Type} (enc : α ↪ List Bool)
     ∃ S : ℕ → α → List Bool → ProbComp (List Bool),
       IsPPTOn (encPair encUnary (encPair enc encBits)) encBits
         (fun ⟨n, a, z⟩ => S n a z) ∧
+      (∀ n a z₁ z₂, Vstar n a z₁ = Vstar n a z₂ → S n a z₁ = S n a z₂) ∧
       ∀ (a : ℕ → α) (w z : ℕ → List Bool),
         PolynomiallyBounded (fun n => (enc (a n)).length) →
         PolynomiallyBounded (fun n => (w n).length) →
@@ -202,7 +218,7 @@ theorem AuxiliaryInputZeroKnowledge.generableZeroKnowledge {α : Type} {enc : α
     (h : AuxiliaryInputZeroKnowledge enc prover isWitness) :
     GenerableZeroKnowledge enc prover isWitness := by
   intro Vstar hV
-  obtain ⟨S, hS_ppt, hS_zk⟩ := h Vstar hV
+  obtain ⟨S, hS_ppt, _, hS_zk⟩ := h Vstar hV
   refine ⟨S, hS_ppt, fun a w z ha hw hz hw_sat adversary hadversary => ?_⟩
   have ha_poly : PolynomiallyBounded (fun n => (enc (a n)).length) :=
     ((encoding_length enc).comp ha.tidy).polynomiallyBounded
@@ -399,7 +415,7 @@ theorem AuxiliaryInputZeroKnowledge.zero_knowledge_const {zk : ZeroKnowledgeProo
             (distinguishingGame
               (ProbComp.eval (S n a (z n)))
               (adversary n a (z n)))) := by
-  obtain ⟨S, hS_ppt, hS_zk⟩ := h Vstar hV
+  obtain ⟨S, hS_ppt, _, hS_zk⟩ := h Vstar hV
   exact ⟨S, hS_ppt, fun a w z hw hz adversary hadv =>
     hS_zk (fun _ => a) (fun _ => w) z (.const _) (.const _) hz (fun _ => hw) adversary hadv⟩
 
@@ -502,6 +518,7 @@ theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_zeroKnowledgeProofOfRe
   intro Vstar hV
   exact ⟨GMW.gmwSimulator generator length f Vstar,
     GMW.isPPTOn_gmwSimulator hG.polyTime hG.length_eq hf hV,
+    fun _ _ _ _ h => by dsimp only [GMW.gmwSimulator]; rw [h],
     fun _ _ _ ha hw hz hw_sat _ hadv =>
       hAdv.gmwView_negligible hf hV hadv ha hw hz hw_sat⟩
 
