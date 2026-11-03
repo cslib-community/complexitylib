@@ -43,9 +43,10 @@ open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.Memory Cslib.DataStructure.PriorityQueue.BinaryHeap
 
 /-- The five fixed original-source certificates, independent of every runtime heap parameter. -/
-@[expose] def certificates : Fin 5 → Certificate .exact :=
-  ![⟨realizes_isEmpty⟩, ⟨realizes_getKeyWord⟩, ⟨realizes_insert⟩,
-    ⟨realizes_decreaseKey⟩, ⟨realizes_extractMin⟩]
+@[expose] noncomputable def certificates : Fin 5 → Certificate .exact :=
+  ![Certificate.ofRealizes realizes_isEmpty, Certificate.ofRealizes realizes_getKeyWord,
+    Certificate.ofRealizes realizes_insert,
+    Certificate.ofRealizes realizes_decreaseKey, Certificate.ofRealizes realizes_extractMin]
 
 /-- Constructor selection, runtime arguments and typed observation for the indexed-PQ methods. -/
 @[expose] def backend (n K : ℕ) (L : Memory.Layout n) :
