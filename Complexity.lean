@@ -2732,6 +2732,8 @@ public import Complexity.Crypto.Computational.GGM.Reduction
 public import Complexity.Crypto.Computational.GGM.Security
 public import Complexity.Crypto.Computational.GMW.PolyTime
 public import Complexity.Crypto.Computational.GMW.Protocol
+public import Complexity.Crypto.Computational.GMW.Sequential
+public import Complexity.Crypto.Computational.GMW.Sequential.Simulator
 public import Complexity.Crypto.Computational.GMW.Simulator
 public import Complexity.Crypto.Computational.GMW.Soundness
 public import Complexity.Crypto.Computational.GeneratorPadding
@@ -2909,6 +2911,7 @@ public import Complexity.Crypto.Computational.TreeSignature.CoinHybrid
 public import Complexity.Crypto.Computational.TreeSignature.Security
 public import Complexity.Crypto.Computational.UniformChoice
 public import Complexity.Crypto.Computational.ZeroKnowledge
+public import Complexity.Crypto.Computational.ZeroKnowledge.Amplification
 public import Complexity.Crypto.Computational.ZeroKnowledge.AuxClock
 public import Complexity.Crypto.Computational.ZeroKnowledge.Levin
 public import Complexity.Crypto.Computational.ZeroKnowledge.Soundness
