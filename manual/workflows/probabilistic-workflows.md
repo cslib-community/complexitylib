@@ -236,14 +236,30 @@ on source × usage. Stationarity identifies the actual second noise with
 and `firstSignalIncrement` retains its existing full-rank first prefix.
 
 The preparation is in [0,1] and has fewer than K nonzero retained rank entries per row.
-The support bound applies before walk averaging. `selectedResidualPreparation_moment`
-pays the input by the exact sum of joint source/usage densities over both vertex indices,
-divided by N*u; it retains width and density factors. It supplies no universal numerical
-recursive payment. The [regressions](../../ComplexityTests/ActualSecondSignal.lean) check
-actual selected preparation, nonconstant spectator dependence, nonzero second noise,
-two-signal prefixes, zero children and empty usage through compression.
-The genuine joint preparation target is unchanged. Numerical recursive payments,
-mean envelopes, recursive induction and native RL=L remain open.
+For usage exponent kt≥k, `selectedResidualPreparation_support_moment` applies the generic
+sparse-row bound **before walk averaging**. Its payment is
+`K * (N*u)^(-1) * sum_x density(sourceRetains x)`, without independence of the input,
+support or source. `source_density_sum` evaluates the sum as `P * (side(P,ks)/P)^4`,
+including nonempty copy suffixes and D=0. With N=P, u=rate(ks), and ks in the declared
+horizon, `selectedResidualPreparation_moment_le` gives 16K. No sparsity of the averaged
+walk is claimed.
+
+`actualSelectedSecondSignal_noise_le` feeds that input payment into the actual second
+prefix: its noise moment is at most `ζ^4 * 32 * lambda^(2*steps(i+1)) * 16K`.
+For ε>0, `secondSignalWalkLength` is an explicit natural ceiling of a base-lambda logarithm;
+`actualSelectedSecondSignal_noise_le_dyadic` accepts this length or any larger one and
+pays `(ε * 64^(-dyadicSlack(m,i)))^4`. The length uses input budget i+1. The extra 1 in
+its logarithm denominator also handles zero scaling and capacity. ε=0 is excluded from
+this finite-length guarantee: a positive spectral upper bound never vanishes in finitely
+many steps.
+
+The [regressions](../../ComplexityTests/ActualSecondSignal.lean) check positive, nonconstant
+selected preparation, the actual H4 second-prefix client with the
+chosen steps, D=0 with a nonempty suffix, two-signal prefixes, zero children, and empty
+usage through compression. The genuine joint preparation target is unchanged. Mixing
+controls noise around the selected input's own mean; convergence of that mean to the genuine
+target is a separate bias obligation. Lower-child first-signal numerical payments, mean
+envelopes, recursive budget/reserve induction and native RL=L remain open.
 
 For a coarser source, `source_incoming_cost_le` quantifies the generic incoming cost as
 `32 * R * (sourceRate / stageRate)`; the fixed incoming rank is not proved to pay that

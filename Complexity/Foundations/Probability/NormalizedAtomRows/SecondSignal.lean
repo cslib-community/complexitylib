@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstSignal
+public import Mathlib.Analysis.SpecialFunctions.Log.Base
 
 /-!
 # Preparatory second signals on the actual usage slice
@@ -15,14 +16,16 @@ public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstSignal
 The selected preparation is evaluated on the actual incoming-normalized residual from
 lower-child raw, preparation and pilot functions on one full environment. Its rank gate
 uses the terminal rate, while its walk and mean use source × usage. The initial second
-coordinate is literally zero. No desired mean, independence of children or numerical
-recursive payment is assumed. The target remains the existing genuine joint preparation
-mean; convergence of the selected input means to that target is a separate obligation.
+coordinate is literally zero. The selected input's range and rank support pay 16K on an
+admitted source horizon, giving an explicit finite walk length for positive noise tolerance.
+No desired mean or independence of children is assumed. The target remains the existing
+genuine joint preparation mean; convergence of the selected input means to that target
+is a separate obligation.
 
 These are original finite bridges using the existing fourth-moment adaptation of
 [OpenAI2026LogSpace, Lemma 7.8, printed p. 42], revision 7ef5c0cc. Telescoping and support
-proofs reuse Samuel Schlesinger's compression API. Recursive envelopes, parameter payments,
-recursive estimation and native RL remain open.
+proofs reuse Samuel Schlesinger's compression API. Lower-child first-signal payments,
+recursive envelopes, recursive estimation and native RL remain open.
 
 ## Main definitions
 
@@ -33,7 +36,9 @@ recursive estimation and native RL remain open.
 
 * `actualNoiseEntry_secondSignalIncrement`: exact stationary endpoint noise.
 * `actualSecondSignal_noise_le_input`: ROW contraction on the actual H4 usage graph.
-* `selectedResidualPreparation_moment`: explicit finite density payment.
+* `selectedResidualPreparation_moment`: explicit finite joint-density payment.
+* `selectedResidualPreparation_moment_le`: support-based pre-walk payment of 16K.
+* `actualSelectedSecondSignal_noise_le_dyadic`: numerical actual second-prefix budget.
 -/
 
 public section
@@ -123,6 +128,99 @@ theorem selectedResidualPreparation_moment {q : ℕ}
     binCutoff raw prep maximum σ x y
   rw [abs_of_nonneg hr.1]
   exact pow_le_one₀ hr.1 hr.2
+
+/-- Sparsity pays for the selected input before averaging, even when the residual,
+source retention and rank support depend on the same full environment. Usage is narrower
+than rank. Only the source density sum remains; there is no endpoint width factor. -/
+theorem selectedResidualPreparation_support_moment {q : ℕ}
+    (HP : FourthRootHierarchyParams 16 1 16 32 8) (hK : 0 < HP.K)
+    (D : ZMod P) (R : RoleProfile J)
+    (l bin ks km k kb kt : ℕ) (husage : k ≤ kt)
+    (ss sm st : List (ZMod P)) (Kc : ℕ) (binCutoff : ℝ → ℝ)
+    (raw prep : HierarchyTask.Request q (Fin J) (ZMod P) →
+      Environment P J → Matrix (ZMod P) (ZMod P) ℝ)
+    (maximum : HierarchyTask.Request q (Fin J) (ZMod P) →
+      Environment P J → ZMod P → ℝ)
+    {N u : ℝ} (hNu : 0 ≤ N * u) :
+    rowNormPow 4 N u (retainedMask R.source (side P ks) D ss)
+      (retainedMask R.terminal (side P kt) D st)
+      (fun σ x y => selectedResidualPreparation HP D R l bin ks km k kb ss sm st Kc binCutoff
+        raw prep maximum σ x y) ≤
+      HP.K * ((N * u)⁻¹ * ∑ x : ZMod P,
+        (({σ : Environment P J | retainedMask R.source (side P ks) D ss σ x} :
+          Finset _).dens : ℝ)) := by
+  have hside : side P kt ≤ side P k := by
+    rw [side_eq_ceil, side_eq_ceil]
+    exact Nat.ceil_mono (mul_le_mul_of_nonneg_left
+      (inv_anti₀ (by positivity) (pow_le_pow_right₀ (by norm_num) husage)) (by positivity))
+  have hcard (σ : Environment P J) (x : ZMod P) :
+      #{y ∈ ({y | retainedMask R.terminal (side P kt) D st σ y} : Finset (ZMod P)) |
+        selectedResidualPreparation HP D R l bin ks km k kb ss sm st Kc binCutoff
+          raw prep maximum σ x y ≠ 0} ≤ HP.K := by
+    apply (card_le_card ?_).trans
+      (selectedResidualPreparation_support HP hK D R l bin ks km k kb ss sm st Kc binCutoff
+        raw prep maximum σ x).le
+    intro y hy
+    simp only [mem_filter, mem_univ, true_and] at hy ⊢
+    exact ⟨mem_retentionBox.mpr (fun a => (mem_retentionBox.mp hy.1 a).trans_le hside), hy.2⟩
+  have hb := rowNormPow_le_of_card_le
+    (X := retainedMask R.source (side P ks) D ss)
+    (Y := retainedMask R.terminal (side P kt) D st)
+    (Z := fun σ x y => selectedResidualPreparation HP D R l bin ks km k kb ss sm st Kc
+      binCutoff raw prep maximum σ x y) (by decide : 4 ≠ 0) hNu (by norm_num : (0 : ℝ) ≤ 1)
+    (fun σ x y => by
+      rw [abs_of_nonneg (selectedResidualPreparation_range HP D R l bin ks km k kb ss sm st
+        Kc binCutoff raw prep maximum σ x y).1]
+      exact (selectedResidualPreparation_range HP D R l bin ks km k kb ss sm st Kc binCutoff
+        raw prep maximum σ x y).2)
+    (fun σ x _ => hcard σ x)
+  simpa only [one_pow, mul_one, vertexNormPow_one_eq_sum_dens] using hb
+
+/-- Exact source payment, including nonempty copy suffixes and D=0: a single frame
+marginal is uniform at every padded identifier; injectivity is not needed for one point. -/
+lemma source_density_sum (D : ZMod P) (s : Fin J) (ks : ℕ) (ss : List (ZMod P)) :
+    (∑ x : ZMod P, (({σ : Environment P J | retainedMask s (side P ks) D ss σ x} :
+      Finset _).dens : ℝ)) = (P : ℝ) * ((side P ks : ℝ) / P) ^ 4 := by
+  have hd (x : ZMod P) :
+      (({σ : Environment P J | retainedMask s (side P ks) D ss σ x} : Finset _).dens : ℝ) =
+        ((side P ks : ℝ) / P) ^ 4 := by
+    simp only [retainedMask]
+    convert density s (side P ks) (side_le P ks) (CopyPadding.identifier D ss x) using 1
+    congr 2
+    ext σ
+    simp
+  simp_rw [hd]
+  simp only [sum_const, card_univ, ZMod.card, nsmul_eq_mul]
+
+/-- On an admitted source horizon the normalized pre-walk fourth moment is at most 16K.
+Only source exponent ks needs the horizon; no input/support independence is used. -/
+theorem selectedResidualPreparation_moment_le {q : ℕ}
+    (HP : FourthRootHierarchyParams 16 1 16 32 8) (hK : 0 < HP.K)
+    (D : ZMod P) (R : RoleProfile J) (H : Horizon P)
+    (l bin ks km k kb kt : ℕ) (hks : ks ≤ H.maxExponent) (husage : k ≤ kt)
+    (ss sm st : List (ZMod P)) (Kc : ℕ) (binCutoff : ℝ → ℝ)
+    (raw prep : HierarchyTask.Request q (Fin J) (ZMod P) →
+      Environment P J → Matrix (ZMod P) (ZMod P) ℝ)
+    (maximum : HierarchyTask.Request q (Fin J) (ZMod P) →
+      Environment P J → ZMod P → ℝ) :
+    rowNormPow 4 P (rate ks) (retainedMask R.source (side P ks) D ss)
+      (retainedMask R.terminal (side P kt) D st)
+      (fun σ x y => selectedResidualPreparation HP D R l bin ks km k kb ss sm st Kc binCutoff
+        raw prep maximum σ x y) ≤ 16 * HP.K := by
+  have hP : (0 : ℝ) < P := by exact_mod_cast (Fact.out : P.Prime).pos
+  have hr := rate_pos ks
+  have hd := (affineRetains_rates (P := P) (H := 4) (horizon_admissible H hks)
+    (show ((2 : ℝ) ^ ks)⁻¹ ≤ 1 from inv_le_one_of_one_le₀ (one_le_pow₀ (by norm_num)))).2.2.1
+  rw [← side_eq_ceil] at hd
+  norm_num only [show (2 : ℝ) ^ 4 = 16 by norm_num] at hd
+  change ((side P ks : ℝ) / P) ^ 4 ≤ 16 * rate ks at hd
+  have hb := selectedResidualPreparation_support_moment HP hK D R l bin ks km k kb kt
+    husage ss sm st Kc binCutoff raw prep maximum (mul_pos hP hr).le
+  rw [source_density_sum] at hb
+  calc
+    _ ≤ HP.K * ((↑P * rate ks)⁻¹ * (↑P * ((side P ks : ℝ) / P) ^ 4)) := hb
+    _ ≤ HP.K * ((↑P * rate ks)⁻¹ * (↑P * (16 * rate ks))) := by gcongr
+    _ = 16 * HP.K := by field_simp [hP.ne', hr.ne']
 
 /-- Scaled second differences with prior zero at index zero. -/
 @[expose] def secondSignalIncrement
@@ -286,6 +384,114 @@ theorem actualSelectedSecondSignal_noise
         rowNormPow 4 N u (retainedMask R.source (side P ks) D ss)
           (retainedMask R.terminal (side P kt) D st) (T (i + 1))) := by
   exact actualSecondSignal_noise_le_input R ks kt (side P k) D ss st _ F steps k ζ G hNu i
+
+/-- Numerical second-noise payment for the genuine selected residual preparation. The
+support argument applies to T before the walk, never to its possibly dense average. -/
+theorem actualSelectedSecondSignal_noise_le
+    (HP : FourthRootHierarchyParams 16 1 16 32 8) (hK : 0 < HP.K)
+    (D : ZMod P) (R : RoleProfile J) (Horizon : Horizon P)
+    (l bin ks km k kb kt : ℕ) (husage : k ≤ kt) (hks : ks ≤ Horizon.maxExponent)
+    (ss sm st : List (ZMod P)) (Kc : ℕ) (binCutoff : ℝ → ℝ)
+    (raw prep : ∀ j : ℕ, HierarchyTask.Request j (Fin J) (ZMod P) →
+      Environment P J → Matrix (ZMod P) (ZMod P) ℝ)
+    (maximum : ∀ j : ℕ, HierarchyTask.Request j (Fin J) (ZMod P) →
+      Environment P J → ZMod P → ℝ)
+    (F : ℕ → Environment P J → ZMod P → ZMod P → ℝ)
+    (steps : ℕ → ℕ) (ζ : ℝ) (G : Matrix (ZMod P) (ZMod P) ℝ)
+    (i : ℕ) :
+    let T := fun j σ x y => selectedResidualPreparation HP D R l bin ks km k kb ss sm st
+      Kc binCutoff (raw j) (prep j) (maximum j) σ x y
+    let H := fun j => conditionalWalk (retainedMask R.source (side P ks) D ss)
+      (retainedMask R.terminal (side P kt) D st)
+      (graph R.source R.terminal R.source_terminal (side P ks) (side P kt)
+        (side_le P ks) (side_le P kt) (fun x => CopyPadding.identifier D ss x)
+        (fun y => CopyPadding.identifier D st y)) (fun _ _ => steps j) (T j)
+    rowNormPow 4 P (rate ks) (retainedMask R.source (side P ks) D ss)
+      (retainedMask R.terminal (side P kt) D st)
+      (actualNoiseEntry R.source R.terminal (side P ks) (side P k) (side P kt) D ss st k G
+        (firstSignalIncrement F k (secondSignalIncrement H ζ)) (fun _ _ _ _ => 0) 1 i) ≤
+      ζ ^ 4 * (32 * (1 - 1 / (155648 * (J + 1) * (4 : ℝ) ^ 4)) ^ (2 * steps (i + 1)) *
+        (16 * HP.K)) := by
+  have hP : (0 : ℝ) < P := by exact_mod_cast (Fact.out : P.Prime).pos
+  have hb := actualSelectedSecondSignal_noise HP D R l bin ks km k kb kt husage
+    ss sm st Kc binCutoff raw prep maximum F steps ζ G (mul_pos hP (rate_pos ks)).le i
+  exact hb.trans (mul_le_mul_of_nonneg_left
+    (mul_le_mul_of_nonneg_left
+      (selectedResidualPreparation_moment_le HP hK D R Horizon l bin ks km k kb kt hks
+        husage ss sm st Kc binCutoff (raw (i + 1)) (prep (i + 1)) (maximum (i + 1)))
+      (mul_nonneg (by norm_num) (by rw [pow_mul]; positivity))) (by positivity))
+
+/-- A sufficient finite walk length for positive tolerance. The extra 1 in the denominator
+handles zero scaling or zero capacity without a division-by-zero case. This only controls
+noise about the selected input's own mean, not bias from the genuine preparation target. -/
+@[expose] def secondSignalWalkLength (J K : ℕ) (ζ ε : ℝ) (slack : ℕ) : ℕ :=
+  ⌈Real.logb (1 - 1 / (155648 * (J + 1) * (4 : ℝ) ^ 4))
+    ((ε * (64 : ℝ)⁻¹ ^ slack) ^ 4 / (ζ ^ 4 * 512 * K + 1))⌉₊
+
+/-- Every larger walk length pays the fourth-power dyadic noise budget. Positive ε is
+essential for this logarithmic choice; ε=0 supplies no universal finite exact mixing. -/
+lemma secondSignalWalkLength_payment (J K : ℕ) (ζ : ℝ) {ε : ℝ} (hε : 0 < ε)
+    (slack steps : ℕ) (hsteps : secondSignalWalkLength J K ζ ε slack ≤ steps) :
+    ζ ^ 4 * (32 * (1 - 1 / (155648 * (J + 1) * (4 : ℝ) ^ 4)) ^ (2 * steps) *
+      (16 * K)) ≤ (ε * (64 : ℝ)⁻¹ ^ slack) ^ 4 := by
+  let r : ℝ := 1 - 1 / (155648 * (J + 1) * (4 : ℝ) ^ 4)
+  let C : ℝ := ζ ^ 4 * 512 * K
+  let b : ℝ := (ε * (64 : ℝ)⁻¹ ^ slack) ^ 4
+  have hden : (1 : ℝ) < 155648 * (J + 1) * (4 : ℝ) ^ 4 := by
+    have : (0 : ℝ) ≤ J := Nat.cast_nonneg J
+    nlinarith
+  have hr : 0 < r := sub_pos.mpr ((div_lt_one (by linarith)).mpr hden)
+  have hr1 : r < 1 := sub_lt_self _ (by positivity)
+  have hC : 0 ≤ C := by dsimp only [C]; positivity
+  have hb : 0 < b := by dsimp only [b]; positivity
+  have hlog : Real.logb r (b / (C + 1)) ≤ (steps : ℝ) := by
+    exact (Nat.le_ceil _).trans (by exact_mod_cast hsteps)
+  have hpow : r ^ steps ≤ b / (C + 1) := by
+    have := (Real.logb_le_iff_le_rpow_of_base_lt_one hr hr1
+      (div_pos hb (by positivity))).mp hlog
+    rwa [Real.rpow_natCast] at this
+  have hp : r ^ (2 * steps) ≤ b / (C + 1) :=
+    (pow_le_pow_of_le_one hr.le hr1.le (by omega : steps ≤ 2 * steps)).trans hpow
+  have hm := mul_le_mul_of_nonneg_left hp hC
+  have hc : C * (b / (C + 1)) ≤ b := by
+    rw [← mul_div_assoc]
+    apply (div_le_iff₀ (by positivity : 0 < C + 1)).mpr
+    nlinarith [hb.le]
+  calc
+    _ = C * r ^ (2 * steps) := by dsimp only [C, r]; ring
+    _ ≤ C * (b / (C + 1)) := hm
+    _ ≤ b := hc
+
+/-- The logarithmic step choice discharges the actual second-prefix noise budget at i+1.
+First-signal payments and deterministic mean envelopes remain separate obligations. -/
+theorem actualSelectedSecondSignal_noise_le_dyadic
+    (HP : FourthRootHierarchyParams 16 1 16 32 8) (hK : 0 < HP.K)
+    (D : ZMod P) (R : RoleProfile J) (Horizon : Horizon P)
+    (l bin ks km k kb kt : ℕ) (husage : k ≤ kt) (hks : ks ≤ Horizon.maxExponent)
+    (ss sm st : List (ZMod P)) (Kc : ℕ) (binCutoff : ℝ → ℝ)
+    (raw prep : ∀ j : ℕ, HierarchyTask.Request j (Fin J) (ZMod P) →
+      Environment P J → Matrix (ZMod P) (ZMod P) ℝ)
+    (maximum : ∀ j : ℕ, HierarchyTask.Request j (Fin J) (ZMod P) →
+      Environment P J → ZMod P → ℝ)
+    (F : ℕ → Environment P J → ZMod P → ZMod P → ℝ)
+    (steps : ℕ → ℕ) (ζ : ℝ) (G : Matrix (ZMod P) (ZMod P) ℝ)
+    (i m : ℕ) {ε : ℝ} (hε : 0 < ε)
+    (hsteps : secondSignalWalkLength J HP.K ζ ε (dyadicSlack m i) ≤ steps (i + 1)) :
+    let T := fun j σ x y => selectedResidualPreparation HP D R l bin ks km k kb ss sm st
+      Kc binCutoff (raw j) (prep j) (maximum j) σ x y
+    let H := fun j => conditionalWalk (retainedMask R.source (side P ks) D ss)
+      (retainedMask R.terminal (side P kt) D st)
+      (graph R.source R.terminal R.source_terminal (side P ks) (side P kt)
+        (side_le P ks) (side_le P kt) (fun x => CopyPadding.identifier D ss x)
+        (fun y => CopyPadding.identifier D st y)) (fun _ _ => steps j) (T j)
+    rowNormPow 4 P (rate ks) (retainedMask R.source (side P ks) D ss)
+      (retainedMask R.terminal (side P kt) D st)
+      (actualNoiseEntry R.source R.terminal (side P ks) (side P k) (side P kt) D ss st k G
+        (firstSignalIncrement F k (secondSignalIncrement H ζ)) (fun _ _ _ _ => 0) 1 i) ≤
+      (ε * (64 : ℝ)⁻¹ ^ dyadicSlack m i) ^ 4 := by
+  exact (actualSelectedSecondSignal_noise_le HP hK D R Horizon l bin ks km k kb kt husage
+    hks ss sm st Kc binCutoff raw prep maximum F steps ζ G i).trans
+      (secondSignalWalkLength_payment J HP.K ζ hε (dyadicSlack m i) (steps (i + 1)) hsteps)
 
 end
 end Matrix.HierarchyParams.H4RankEnvironment.NormalizedMoments
