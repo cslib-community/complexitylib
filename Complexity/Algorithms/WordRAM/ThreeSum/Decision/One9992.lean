@@ -8,8 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Transfer
-public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Code
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Asymptotics
+public import Complexity.Computability.WordRAM.Time
 
 /-!
 # Ordinary native integer 3SUM in time O(n^1.9992)
@@ -35,6 +35,9 @@ machine and its `SolvedInTime` predicate are not imported.
 
 ## Main results
 
+* `Admissible.inputFits`: every admitted signed input fits its physical word size.
+* `boxFlatProgram_decidesInTime`: the fixed program decides distinct-position integer 3SUM.
+* `uniformDecidableInO_one9992`: uniform decision in time O(n^1.9992).
 * `exists_one9992_runs`: complete initialized charged execution at exponent 1.9992.
 
 ## References
@@ -52,22 +55,30 @@ open Cslib.Algorithms.ThreeSum (HasSolution)
 
 /-- Explicit computable standard native code for the final ordinary 3SUM algorithm. -/
 @[expose] def boxProgram (κ : ℕ) : Code .standard 848 :=
-  programOfCode κ ParameterSelecting.program
+  program κ ParameterSelecting.program
 
 /-- Its actual assembled code with one final raw Boolean halt. -/
 @[expose] def boxFlatProgram (κ : ℕ) : Program .standard 848 :=
-  (boxProgram κ).program (controllerRegisters 633 answer)
+  flatProgram κ ParameterSelecting.program
 
-/-- The executable syntax is the actual code certified by the concrete callee. -/
-theorem boxProgram_eq (κ : ℕ) : boxProgram κ = program κ ParameterSelecting.callee := by
-  simpa only [boxProgram, ParameterSelecting.callee_code] using
-    programOfCode_eq_program κ ParameterSelecting.callee
+/-- The original polynomial magnitude restriction and logarithmic physical-width threshold.
+This admits every width above the threshold, with no dependence on the particular input values. -/
+@[expose] def Admissible (κ : ℕ) (input : List ℤ) (W : ℕ) : Prop :=
+  width κ 123357 input.length ≤ W ∧
+    ∀ z ∈ input, |z| ≤ ((input.length + 2) ^ κ : ℕ)
 
-/-- Both presentations assemble the identical finite native program. -/
-theorem boxFlatProgram_eq (κ : ℕ) :
-    boxFlatProgram κ = flatProgram κ ParameterSelecting.callee := by
-  unfold boxFlatProgram flatProgram
-  rw [boxProgram_eq]
+/-- Admitted input/width pairs satisfy the decision API's separate input-fit condition. -/
+theorem Admissible.inputFits {κ W : ℕ} {input : List ℤ} (h : Admissible κ input W) :
+    InputFits W (input.map Signed.encode) :=
+  ChanHe.Preprocessing.input_fits input
+    ((preprocessing_width_le κ 123357 input.length).trans h.1) h.2
+
+private theorem callee_time_subcubic (ν : ℕ) (hν : 1 ≤ ν) :
+    ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ, ∀ n ≥ N, ∀ F ≤ (n + 2) ^ ν,
+      (ParameterSelecting.callee.time n F : ℝ) ≤
+        C * (n : ℝ) ^ (3 - 33 / 20000 : ℝ) := by
+  obtain ⟨C, hC, N, -, htime⟩ := ParameterSelecting.exists_time_subcubic_bound hν
+  exact ⟨C, hC, N, htime⟩
 
 /-- The fixed native program is correct at every admitted input length; its strict-subquadratic
 step bound is uniform beyond one threshold per original magnitude exponent. Both actual runs
@@ -94,16 +105,48 @@ theorem exists_one9992_runs (κ : ℕ) :
           (∀ i, s.data.regs i < (input.length + 2) ^ (2 * widthCoefficient κ 123357)) ∧
           (∀ a, s.data.mem a < (input.length + 2) ^ (2 * widthCoefficient κ 123357)) ∧
           (∀ a, (input.length + 2) ^ (2 * widthCoefficient κ 123357) ≤ a → s.data.mem a = 0) := by
-  have hcallee : ∀ ν : ℕ, 1 ≤ ν → ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ,
-      ∀ n ≥ N, ∀ F ≤ (n + 2) ^ ν,
-        (ParameterSelecting.callee.time n F : ℝ) ≤
-          C * (n : ℝ) ^ (3 - 33 / 20000 : ℝ) := by
-    intro ν hν
-    obtain ⟨C, hC, N, -, htime⟩ := ParameterSelecting.exists_time_subcubic_bound hν
-    exact ⟨C, hC, N, htime⟩
-  simpa only [← boxProgram_eq κ, ← boxFlatProgram_eq κ,
+  simpa only [boxProgram, boxFlatProgram, ParameterSelecting.callee_code,
     ParameterSelecting.callee_widthCoefficient] using
     exists_runs_of_callee_time ParameterSelecting.callee (δ := 33 / 20000)
-      (a := 2499 / 1250) (by norm_num) (by norm_num) (by norm_num) hcallee κ
+      (a := 2499 / 1250) (by norm_num) (by norm_num) (by norm_num) callee_time_subcubic κ
+
+/-- One coefficient and threshold bound the complete charged cost, independently of physical
+width. Preprocessing, all calls, outer control, and the final halt are included. -/
+theorem exists_one9992_cost_bound (κ : ℕ) :
+    ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ, ∀ n ≥ N,
+      (cost κ ParameterSelecting.callee n : ℝ) ≤
+        C * (n : ℝ) ^ (2499 / 1250 : ℝ) :=
+  exists_cost_bound ParameterSelecting.callee (δ := 33 / 20000)
+    (by norm_num) (by norm_num) (by norm_num) callee_time_subcubic κ
+
+/-- The explicit fixed program decides ordinary integer 3SUM within its complete charged cost
+on every admitted input, including lengths below the asymptotic threshold. -/
+theorem boxFlatProgram_decidesInTime (κ : ℕ) :
+    (boxFlatProgram κ).DecidesInTime (fun _ (input : List ℤ) => input.map Signed.encode)
+      {input | HasSolution (fun i : Fin input.length => input[i])}
+      (fun input _ => cost κ ParameterSelecting.callee input.length) (Admissible κ) := by
+  intro input W h _
+  obtain ⟨_, _, _, _, hrun⟩ := exists_one9992_runs κ
+  obtain ⟨_, y, steps, he, _, ht, _, hbit, hiff, _, _⟩ := hrun input W h.1 h.2
+  exact ⟨y.regs (controllerRegisters 633 answer), steps, he, ht, hbit, hiff⟩
+
+/-- Uniform standard Word-RAM decision in O(n^1.9992) instructions for polynomially bounded
+signed integers. The natural ceiling only expresses the real power in the existing natural-valued
+time API; its coefficient and threshold are shared by all admitted physical widths. -/
+theorem uniformDecidableInO_one9992 (κ : ℕ) :
+    UniformDecidableInO .standard
+      {input : List ℤ | HasSolution (fun i : Fin input.length => input[i])}
+      (fun _ input => input.map Signed.encode) List.length
+      (fun n _ => ⌈(n : ℝ) ^ (2499 / 1250 : ℝ)⌉₊) (Admissible κ) := by
+  obtain ⟨C, hC, N, hcost⟩ := exists_one9992_cost_bound κ
+  refine ⟨fun input _ => cost κ ParameterSelecting.callee input.length,
+    ⟨848, boxFlatProgram κ, boxFlatProgram_decidesInTime κ⟩,
+    ⌈C⌉₊, N, Nat.ceil_pos.mpr hC, ?_⟩
+  intro input W hn _
+  apply (Nat.cast_le (α := ℝ)).mp
+  push_cast
+  exact (hcost input.length hn).trans
+    (mul_le_mul (Nat.le_ceil C) (Nat.le_ceil _) (Real.rpow_nonneg (by positivity) _)
+      (by positivity))
 
 end Cslib.Algorithms.WordRAM.ThreeSum.Decision

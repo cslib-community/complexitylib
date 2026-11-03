@@ -44,14 +44,14 @@ step bound is uniform beyond one threshold per original magnitude exponent. Both
 use the same initialized state and pre-halt witness, with the halt included in steps. -/
 theorem exists_subquadratic_runs (κ : ℕ) :
     ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ,
-      ¬(program κ ParameterSelecting.callee).ReadsWidth ∧ ∀ (input : List ℤ) (W : ℕ),
+      ¬(program κ ParameterSelecting.program).ReadsWidth ∧ ∀ (input : List ℤ) (W : ℕ),
       width κ 123357 input.length ≤ W →
       (∀ z ∈ input, |z| ≤ ((input.length + 2) ^ κ : ℕ)) →
       InputFits W (input.map Signed.encode) ∧ ∃ (y : Data 848) (steps : ℕ),
-        Executes W (flatProgram κ ParameterSelecting.callee)
+        Executes W (flatProgram κ ParameterSelecting.program)
           (State.init (input.map Signed.encode)) (y.regs (controllerRegisters 633 answer)) steps ∧
-        Runs W (flatProgram κ ParameterSelecting.callee)
-          (State.init (input.map Signed.encode)) ⟨(program κ ParameterSelecting.callee).size, y⟩
+        Runs W (flatProgram κ ParameterSelecting.program)
+          (State.init (input.map Signed.encode)) ⟨(program κ ParameterSelecting.program).size, y⟩
           (steps - 1) ∧
         steps ≤ cost κ ParameterSelecting.callee input.length ∧
         (N ≤ input.length → (steps : ℝ) ≤ C * (input.length : ℝ) ^ (2 - 1 / 5184 : ℝ)) ∧
@@ -59,7 +59,7 @@ theorem exists_subquadratic_runs (κ : ℕ) :
         (y.regs (controllerRegisters 633 answer) = 1 ↔
           HasSolution (fun i : Fin input.length => input[i])) ∧ y.Bounded W ∧
         ∀ (s : State 848) (t : ℕ),
-          Runs W (flatProgram κ ParameterSelecting.callee)
+          Runs W (flatProgram κ ParameterSelecting.program)
             (State.init (input.map Signed.encode)) s t →
           (∀ i, s.data.regs i < (input.length + 2) ^ (2 * widthCoefficient κ 123357)) ∧
           (∀ a, s.data.mem a < (input.length + 2) ^ (2 * widthCoefficient κ 123357)) ∧
@@ -71,7 +71,7 @@ theorem exists_subquadratic_runs (κ : ℕ) :
     intro ν hν
     obtain ⟨C, hC, N, -, htime⟩ := ParameterSelecting.exists_time_subcubic_bound hν
     exact ⟨C, hC, N, htime⟩
-  simpa only [ParameterSelecting.callee_widthCoefficient] using
+  simpa only [ParameterSelecting.callee_code, ParameterSelecting.callee_widthCoefficient] using
     exists_runs_of_callee_time ParameterSelecting.callee (δ := 33 / 20000)
       (a := 2 - 1 / 5184) (by norm_num) (by norm_num) (by norm_num) hcallee κ
 

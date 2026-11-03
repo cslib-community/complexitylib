@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Program
+public import Complexity.Computability.WordRAM.Call
 
 /-!
 # Disjoint ordinary-host register banks
@@ -15,8 +16,9 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Program
 ## Main results
 
 * `preprocessing_injective`, `host_injective`, `controller_injective`: actual bank embeddings.
-* `extend_controller`, `extend_host_controller`, `extend_preprocessing_controller`: register
-  readback and frames used by the complete controller.
+* `controller_ne_host`, `controller_ne_preprocessing`: the two callee banks miss outer controls.
+* `extend_controller`, `extend_preprocessing_controller`, `extend_controller_preprocessing`:
+  register readback and frames used by the complete controller.
 
 These finite bank proofs are original.
 -/
@@ -58,48 +60,32 @@ theorem controller_ne_host {r : ℕ} (i : Fin 16) (j : Fin (64 + (r + 7))) :
   dsimp only [controllerRegisters, hostRegisters] at hv
   omega
 
+/-- No outer control aliases a preprocessing register. -/
+theorem controller_ne_preprocessing {r : ℕ} (i : Fin 16) (j : Fin 128) :
+    controllerRegisters r i ≠ preprocessingRegisters r j := by
+  intro h
+  have hv := congrArg Fin.val h
+  have hj := j.isLt
+  dsimp only [controllerRegisters, preprocessingRegisters] at hv
+  omega
+
 /-- Read an embedded controller result. -/
 theorem extend_controller {r : ℕ} (a : Data 16) (x : Data (registerCount r)) (i : Fin 16) :
     (a.extend (controllerRegisters r) x).regs (controllerRegisters r i) = a.regs i :=
   (controller_injective r).extend_apply _ _ i
 
-/-- A host call cannot overwrite any outer control. -/
-theorem extend_host_controller {r : ℕ} (a : Data (64 + (r + 7)))
-    (x : Data (registerCount r)) (i : Fin 16) :
-    (a.extend (hostRegisters r) x).regs (controllerRegisters r i) =
-      x.regs (controllerRegisters r i) := by
-  change Function.extend _ _ _ _ = _
-  apply Function.extend_apply'
-  rintro ⟨j, hj⟩
-  have := congrArg Fin.val hj
-  have := j.isLt
-  dsimp only [hostRegisters, controllerRegisters] at *
-  omega
-
 /-- Preprocessing cannot overwrite the saved length or outer controls. -/
 theorem extend_preprocessing_controller {r : ℕ} (a : Data 128)
     (x : Data (registerCount r)) (i : Fin 16) :
     (a.extend (preprocessingRegisters r) x).regs (controllerRegisters r i) =
-      x.regs (controllerRegisters r i) := by
-  change Function.extend _ _ _ _ = _
-  apply Function.extend_apply'
-  rintro ⟨j, hj⟩
-  have := congrArg Fin.val hj
-  have := j.isLt
-  dsimp only [preprocessingRegisters, controllerRegisters] at *
-  omega
+      x.regs (controllerRegisters r i) :=
+  Data.extend_regs_of_disjoint (fun j i => (controller_ne_preprocessing i j).symm) a x i
 
 /-- Reading the preprocessing bank after a controller-only operation sees the old registers. -/
 theorem extend_controller_preprocessing {r : ℕ} (a : Data 16)
     (x : Data (registerCount r)) (i : Fin 128) :
     (a.extend (controllerRegisters r) x).regs (preprocessingRegisters r i) =
-      x.regs (preprocessingRegisters r i) := by
-  change Function.extend _ _ _ _ = _
-  apply Function.extend_apply'
-  rintro ⟨j, hj⟩
-  have := congrArg Fin.val hj
-  have := i.isLt
-  dsimp only [preprocessingRegisters, controllerRegisters] at *
-  omega
+      x.regs (preprocessingRegisters r i) :=
+  Data.extend_regs_of_disjoint controller_ne_preprocessing a x i
 
 end Cslib.Algorithms.WordRAM.ThreeSum.Decision

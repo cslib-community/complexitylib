@@ -233,8 +233,8 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   preprocessing milestone is #1446. `Algorithms/WordRAM/ThreeSum/Decision.lean` composes that
   actual initialized output with the Convolution host (#1559): raw registers 78/79/116 supply the
   actual pointer table, count and common packed length. The caller-owned host reads each signed
-  payload directly and reserves matrices above twice the preprocessing polynomial word bound,
-  preserving every future instance. One finite program per fixed exponent and certified finite
+  payload directly and places matrices at the final preprocessing heap frontier, preserving
+  every future instance on return. One finite program per fixed exponent and certified finite
   Exact Triangle block returns the existing distinct-position verdict, with derived positive
   logarithmic physical width, polynomial words/space at every admitted-width prefix, and a fully
   charged compositional bound at the actual packed size. `Host.Callee` requires actual finite-code
@@ -262,6 +262,15 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `Foundations/Data/Nat/LogRpow` remains general mathematics intended for Mathlib, transporting
   real log little-o to shifted natural logs for side/count/preprocessing estimates without
   expanding a widely imported hub.
+  The follow-up #2380 extracts `Computability/WordRAM/Call` and
+  `Algorithms/WordRAM/Stack/Record` with migrated ordinary-host and traversal clients.
+  `Traversal.OutputLayout` exports live table/payload endpoints; matrix workspace now copies
+  the final preprocessing heap, independently of the polynomial value envelope. Callee framing
+  preserves this live prefix on return. `Decision.program` takes finite solver code directly,
+  replacing the duplicate `Decision.Code` assembly; `Decision.Initialize` replaces `Reserve`.
+  `One9992` adds admissibility/input fitting and standard uniform decision/time corollaries
+  while retaining the complete initialized-run theorem. The Operator Manual companion documents
+  these APIs and the quantitative account; no selected abstract or agent workflow changes.
 
   Bounded API follow-ups from the traversal/preprocessing reviews: merge the stage proof modules
   `PreprocessingSnapshot`, `PreprocessingPrimes`, `PreprocessingSetup`, `PreprocessingFinish`,

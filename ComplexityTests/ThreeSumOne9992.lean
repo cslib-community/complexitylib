@@ -16,6 +16,8 @@ These clients use the real automatic box callee from original signed lists. Empt
 inputs evaluate the complete program's existing early rejection. Checked kernel fixtures
 then retain the actual prefix and halt for repeated-value success and nonzero/short failures.
 The theorem's uniform eventual charge is carried by the same successful run witness.
+Semantic clients use the standard decision API at arbitrary admitted wider words and discharge
+its input-fit premise from `Admissible`, rather than assuming it separately.
 -/
 
 namespace ComplexityTests.ThreeSumOne9992
@@ -35,6 +37,37 @@ open Cslib.Algorithms.ThreeSum (HasSolution)
 #guard_msgs in
 #eval decide (run 4 (Decision.boxFlatProgram 1) 10
   (State.init [Signed.encode 0, Signed.encode 0]) = some (0, 7))
+
+/-- The compact decision contract accepts repeated values at distinct positions, at every
+admitted wider physical word size. -/
+theorem repeatedValue_answers {W : ℕ} (hW : Decision.width 1 123357 3 ≤ W) :
+    (Decision.boxFlatProgram 1).Answers W
+      (([-2, 1, 1] : List ℤ).map Signed.encode) True
+      (Decision.cost 1 ParameterSelecting.callee 3) := by
+  have ha : Decision.Admissible 1 [-2, 1, 1] W := by
+    refine ⟨hW, ?_⟩
+    intro z hz
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hz
+    rcases hz with rfl | rfl | rfl <;> decide
+  have h := Decision.boxFlatProgram_decidesInTime 1 [-2, 1, 1] W ha ha.inputFits
+  apply h.congr
+  exact iff_true_intro ⟨0, 1, 2, by decide, by decide, by decide, by decide⟩
+
+/-- The same semantic contract rejects an empty list; correctness is not restricted to the
+eventual complexity range. -/
+theorem empty_answers {W : ℕ} (hW : Decision.width 1 123357 0 ≤ W) :
+    (Decision.boxFlatProgram 1).Answers W [] False
+      (Decision.cost 1 ParameterSelecting.callee 0) := by
+  have ha : Decision.Admissible 1 [] W := ⟨hW, by simp⟩
+  have h := Decision.boxFlatProgram_decidesInTime 1 [] W ha ha.inputFits
+  apply h.congr
+  exact iff_false_intro (by rintro ⟨i, _⟩; exact Fin.elim0 i)
+
+-- Polynomial magnitude is an actual input restriction, independently of available width.
+example (W : ℕ) : ¬Decision.Admissible 1 [6, 0, 0] W := by
+  intro h
+  have := h.2 6 (by simp)
+  norm_num at this
 
 private theorem checked_case (input : List ℤ) (bit : ℕ) (hbit : bit ≤ 1)
     (hv : ∀ z ∈ input, |z| ≤ ((input.length + 2) ^ 1 : ℕ))

@@ -52,7 +52,7 @@ theorem exec_readLength {w : ℕ} (x : Data 16) (h3 : Fits w 3) :
 /-- Every admitted empty, singleton or two-entry input follows the actual false-verdict path. -/
 theorem exec_small {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
     (hn : input.length < 3) (h3 : Fits w 3) :
-    ∃ y, ExecWithin w (program κ c) (Data.init (input.map Signed.encode)) y 6 ∧
+    ∃ y, ExecWithin w (program κ c.code) (Data.init (input.map Signed.encode)) y 6 ∧
       y.regs (controllerRegisters r answer) = 0 ∧
       ¬Cslib.Algorithms.ThreeSum.HasSolution (fun i : Fin input.length => input[i]) := by
   let x : Data (registerCount r) := Data.init (input.map Signed.encode)
@@ -79,7 +79,7 @@ theorem exec_small {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
     simpa only [hself] using (ExecWithin.copy (B := .standard) (w := w)
       (x := y) (d := controllerRegisters r answer) (s := controllerRegisters r answer))
   refine ⟨y, ?_, ha, not_hasSolution_of_length_lt_three _ hn⟩
-  have he := hr.seq (hcopy.branch_pos (neg := large κ c) (show
+  have he := hr.seq (hcopy.branch_pos (neg := large κ c.code) (show
       (Cond.lt (controllerRegisters r inputLength) (controllerRegisters r three)).Holds y by
     simpa only [Cond.holds_lt, hlen, ht] using hn))
   simpa only [program] using he

@@ -697,6 +697,7 @@ public import Complexity.Algorithms.WordRAM.Schoening.Trial
 public import Complexity.Algorithms.WordRAM.Schoening.TrialCount
 public import Complexity.Algorithms.WordRAM.Stack
 public import Complexity.Algorithms.WordRAM.Stack.Controller
+public import Complexity.Algorithms.WordRAM.Stack.Record
 public import Complexity.Algorithms.WordRAM.ThreeSum.Cell
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.BucketCounts
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CollisionTest
@@ -769,16 +770,15 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.Decision
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Body
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Boundary
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Call
-public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Code
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Controls
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Execute
+public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Initialize
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Input
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Intermediates
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Loop
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.One9992
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Program
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Registers
-public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Reserve
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Runtime
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Scalar
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Subquadratic
@@ -2668,6 +2668,7 @@ public import Complexity.Computability.WordRAM.Allocation
 public import Complexity.Computability.WordRAM.ArrayAppend
 public import Complexity.Computability.WordRAM.ArrayNormalize
 public import Complexity.Computability.WordRAM.Basis
+public import Complexity.Computability.WordRAM.Call
 public import Complexity.Computability.WordRAM.Compile
 public import Complexity.Computability.WordRAM.Controller
 public import Complexity.Computability.WordRAM.Copy

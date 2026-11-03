@@ -43,10 +43,9 @@ theorem seven_le_cost {r : ℕ} (κ : ℕ) (c : Host.Callee r) (n : ℕ) : 7 ≤
   omega
 
 /-- The fixed ordinary host is independent of physical word width. -/
-theorem not_readsWidth {r : ℕ} (κ : ℕ) (c : Host.Callee r) : ¬(program κ c).ReadsWidth := by
+theorem not_readsWidth {r : ℕ} (κ : ℕ) (c : Host.Callee r) : ¬(program κ c.code).ReadsWidth := by
   have hr : ¬readLength.ReadsWidth := by decide
   have hp : ¬power.ReadsWidth := by decide
-  have hw : ¬reserve.ReadsWidth := by decide
   have hl : ¬loadSource.ReadsWidth := by decide
   have hs : ¬(setup (r := r) κ).ReadsWidth := by
     simp only [setup, Code.ReadsWidth, Op.bin, Op.ReadsWidth, reduceCtorEq,
@@ -57,20 +56,20 @@ theorem not_readsWidth {r : ℕ} (κ : ℕ) (c : Host.Callee r) : ¬(program κ 
     simp only [finish, Code.ReadsWidth, Op.bin, Op.ReadsWidth, reduceCtorEq,
       or_self, not_false_eq_true]
   simp only [program, large, calls, body, Code.ReadsWidth, Code.readsWidth_rename,
-    Op.ReadsWidth, hr, hp, hw, hl, hs, hc, hf, ChanHe.Preprocessing.not_readsWidth κ,
+    Op.ReadsWidth, hr, hp, hl, hs, hc, hf, ChanHe.Preprocessing.not_readsWidth κ,
     c.not_readsWidth_bodyAt, or_false, not_false_eq_true]
 
 /-- Actual execution from initialized signed input, uniformly over all admitted wider words. -/
 theorem exec_input {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
     (hw : width κ c.widthCoefficient input.length ≤ w)
     (hvalues : ∀ z ∈ input, |z| ≤ ((input.length + 2) ^ κ : ℕ)) :
-    ∃ y, ExecWithin w (program κ c) (Data.init (input.map Signed.encode)) y
+    ∃ y, ExecWithin w (program κ c.code) (Data.init (input.map Signed.encode)) y
         (cost κ c input.length - 1) ∧
       y.regs (controllerRegisters r answer) ≤ 1 ∧
       (y.regs (controllerRegisters r answer) = 1 ↔
         HasSolution (fun i : Fin input.length => input[i])) := by
   have hcost := seven_le_cost κ c input.length
-  have h3 : Fits w 3 := (reservation_fits hw).2.2.2
+  have h3 : Fits w 3 := (envelope_fits hw).2.2.2
   by_cases hn : input.length < 3
   · obtain ⟨y, hy, ha, hno⟩ := exec_small (κ := κ) input c hn h3
     refine ⟨y, hy.mono (by omega), by omega, ?_⟩
@@ -110,10 +109,10 @@ theorem runs_input {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
     (hw : width κ c.widthCoefficient input.length ≤ w)
     (hvalues : ∀ z ∈ input, |z| ≤ ((input.length + 2) ^ κ : ℕ)) :
     ∃ (y : Data (registerCount r)) (steps : ℕ),
-      Executes w (flatProgram κ c) (State.init (input.map Signed.encode))
+      Executes w (flatProgram κ c.code) (State.init (input.map Signed.encode))
         (y.regs (controllerRegisters r answer)) steps ∧
-      Runs w (flatProgram κ c) (State.init (input.map Signed.encode))
-        ⟨(program κ c).size, y⟩ (steps - 1) ∧ steps ≤ cost κ c input.length ∧
+      Runs w (flatProgram κ c.code) (State.init (input.map Signed.encode))
+        ⟨(program κ c.code).size, y⟩ (steps - 1) ∧ steps ≤ cost κ c input.length ∧
       y.regs (controllerRegisters r answer) ≤ 1 ∧
       (y.regs (controllerRegisters r answer) = 1 ↔
         HasSolution (fun i : Fin input.length => input[i])) ∧ y.Bounded w := by
@@ -122,7 +121,7 @@ theorem runs_input {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
   refine ⟨y, t + 1, ?_, ?_, by omega, hb, hans, ?_⟩
   · simpa only [flatProgram, State.init] using he.executes (controllerRegisters r answer)
   · simpa only [flatProgram, State.init, Nat.zero_add, Nat.add_sub_cancel] using
-      he.runs (pc := 0) (p := flatProgram κ c) (Program.Contains.self _).append_left
+      he.runs (pc := 0) (p := flatProgram κ c.code) (Program.Contains.self _).append_left
   · exact he.bounded (Data.Bounded.init (ChanHe.Preprocessing.input_fits input
       ((preprocessing_width_le κ c.widthCoefficient input.length).trans hw) hvalues))
 

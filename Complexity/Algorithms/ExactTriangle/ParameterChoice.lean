@@ -15,9 +15,31 @@ import Mathlib.Tactic.Ring
 /-!
 # Integer-block parameters for the native box endpoint
 
-Original arithmetic family reserving nineteen window factors, with a group count giving raw
-saving `2/1197`. This is an original exact dyadic retuning, not the source's fractional-root
-parameter computation. Root composition must still charge actual programs and absorb factors.
+The parameters are chosen to put the different native costs on the common scale `n³/g`.
+Here `n` is the Exact Triangle dimension, `D` the prime-window parameter and `g` the group
+count. Before choosing integer values, the relevant inequalities are:
+
+* `D^18 ≤ n` for the box backend's geometry;
+* `D*g² ≤ n` to bound preparation `n²*D*g` by `n³/g`;
+* `g² ≤ sqrt(D)` to bound query control by the same scale;
+* `g² ≤ D^(8/125)` to turn product work `n³*g*D^(-8/125)` into `n³/g`.
+
+`ParameterChoice.CostGeometry` proves the last three inequalities and their cost consequences.
+The chosen family reserves the stronger `D^19 ≤ n` and uses `g=4^(2b)`, `D=4^(63b)`.
+The product balance becomes `4*125 ≤ 63*8`, or `500 ≤ 504`; `63b` is also a multiple of
+nine as required by the box tradeoff. Reserving nineteen powers of `D` then requires
+`2*63*19*b = 2394*b ≤ log₂ n`, explaining `b = floor(log₂(n)/2394)`.
+The existing box construction uses tensor depth `L=21m` at `m=63b`.
+
+This integer rounding gives `n^(2/1197) < 16*g` and hence the raw cost scale
+`n³/g ≤ 16*n^(3-2/1197)`. It does not remove logarithmic factors: the native finite ledger
+retains `(21m+1)²*(m+1)` and the selected-prime scan term. Their degree-three logarithmic
+coefficient is absorbed later in `WordRAM.ExactTriangle.DyadicCost.Asymptotics`.
+
+`blocks_pos_iff` identifies the exact fast-branch cutoff `n ≥ 2^2394`. Below it the automatic
+solver uses its exhaustive branch. This is a proved feasible family, not an optimal parameter
+choice or a practical crossover estimate. The arithmetic tuning is original; the source's
+fractional-root parameter computation is not implemented by these definitions.
 -/
 
 public section
