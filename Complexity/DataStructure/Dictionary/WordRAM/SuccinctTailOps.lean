@@ -915,9 +915,7 @@ theorem appendTailItemProg_effect {U V w n_max h_space base b : ℕ}
     (htail : TailBijection n_max (gmAt base U V w n_max h_space s.mem)
       (fun b => gmAt base U V w n_max h_space s.mem (gmRIdx b))
       (gmAt base U V w n_max h_space s.mem 1))
-    (hr_lt : gmAt base U V w n_max h_space s.mem (gmRIdx b) < tailCapPerBucket n_max)
-    (htot : gmAt base U V w n_max h_space s.mem 0 * slabSize n_max +
-      gmAt base U V w n_max h_space s.mem 1 + 1 ≤ n_max) :
+    (hr_lt : gmAt base U V w n_max h_space s.mem (gmRIdx b) < tailCapPerBucket n_max) :
     let s' := (Memory.spec 0).clientState s (appendTailItemProg U V w n_max h_space (base, b))
     (Memory.spec 0).clientResult s (appendTailItemProg U V w n_max h_space (base, b)) =
       gmAt base U V w n_max h_space s.mem 1 ∧
@@ -937,6 +935,7 @@ theorem appendTailItemProg_effect {U V w n_max h_space base b : ℕ}
       globalMetaLen n_max := gmTailPtrIdx_lt hb_pos hb hr_lt
   have ht_cap : gm 1 < maxTailItems n_max :=
     ntails_lt_maxTailItems_of_r_lt hb hr_lt htail
+  have hmax_tail_le : maxTailItems n_max ≤ n_max := maxTailItems_le n_max
   have hown_idx_lt : gmTailOwnerBase n_max + gm 1 < globalMetaLen n_max :=
     gmTailOwnerIdx_lt hb_pos ht_cap
   have ht_val_lt : gm 1 < 2 ^ globalPtrBits n_max :=
@@ -1001,9 +1000,7 @@ private theorem appendTailItem_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ 
         (fun b => gmAt d.1 U V w₀ n_max h_space s.mem (gmRIdx b))
         (gmAt d.1 U V w₀ n_max h_space s.mem 1) ∧
       d.2 < numBuckets n_max ∧
-      gmAt d.1 U V w₀ n_max h_space s.mem (gmRIdx d.2) < tailCapPerBucket n_max ∧
-      gmAt d.1 U V w₀ n_max h_space s.mem 0 * slabSize n_max +
-        gmAt d.1 U V w₀ n_max h_space s.mem 1 + 1 ≤ n_max) :
+      gmAt d.1 U V w₀ n_max h_space s.mem (gmRIdx d.2) < tailCapPerBucket n_max) :
     let r_b := (Memory.spec 0).clientResult s
       (readGMProg U V w₀ n_max h_space (d.1, 4 + 3 * d.2 + 1))
     let t_new := (Memory.spec 0).clientResult
@@ -1015,7 +1012,7 @@ private theorem appendTailItem_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ 
     gmTailOwnerBase n_max + t_new < globalMetaLen n_max ∧
     r_b + 1 ≤ globalMetaLen n_max ∧
     t_new + 1 ≤ max n_max 1 := by
-  rcases h with ⟨_, htail, hb, hr_lt, htot⟩
+  rcases h with ⟨_, htail, hb, hr_lt⟩
   have hr_idx : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos hb
   have h1_idx : 1 < globalMetaLen n_max := by unfold globalMetaLen; omega
   have hrb_eq : (Memory.spec 0).clientResult s
@@ -1033,6 +1030,7 @@ private theorem appendTailItem_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ 
       globalMetaLen n_max := gmTailPtrIdx_lt hb_pos hb hr_lt
   have ht_cap : gmAt d.1 U V w₀ n_max h_space s.mem 1 < maxTailItems n_max :=
     ntails_lt_maxTailItems_of_r_lt hb hr_lt htail
+  have hmax_tail_le : maxTailItems n_max ≤ n_max := maxTailItems_le n_max
   have hown_lt : gmTailOwnerBase n_max + gmAt d.1 U V w₀ n_max h_space s.mem 1 <
       globalMetaLen n_max := gmTailOwnerIdx_lt hb_pos ht_cap
   refine ⟨hr_idx, h1_idx, ?_, ?_, ?_, ?_⟩
@@ -1050,9 +1048,7 @@ theorem realizes_appendTailItem {U V w₀ n_max h_space : ℕ}
           (fun b => gmAt d.1 U V w₀ n_max h_space s.mem (gmRIdx b))
           (gmAt d.1 U V w₀ n_max h_space s.mem 1) ∧
         d.2 < numBuckets n_max ∧
-        gmAt d.1 U V w₀ n_max h_space s.mem (gmRIdx d.2) < tailCapPerBucket n_max ∧
-        gmAt d.1 U V w₀ n_max h_space s.mem 0 * slabSize n_max +
-          gmAt d.1 U V w₀ n_max h_space s.mem 1 + 1 ≤ n_max)
+        gmAt d.1 U V w₀ n_max h_space s.mem (gmRIdx d.2) < tailCapPerBucket n_max)
       (fun _ _ => 0) := by
   have hrg := realizes_readGM (U := U) (V := V) (h_space := h_space) hw hnU hU
   have hwg := realizes_writeGM (U := U) (V := V) (h_space := h_space) hw hnU hU

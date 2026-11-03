@@ -93,6 +93,7 @@ theorem memoryCost_gmPushSlabProg_le (U V w n_max h_space : ℕ) (d : ℕ × ℕ
   split_ifs <;> simp only [memoryCost_writeGMProg, memoryCost_pure] <;> omega
 
 /-- Precondition for `gmPushSlabProg`. -/
+@[expose]
 def GmPushSlabPre (U V w₀ n_max h_space w base b : ℕ) (s : Memory.State) : Prop :=
   DictEnv U V w₀ n_max h_space w base ∧
   SlabBijection n_max (gmAt base U V w₀ n_max h_space s.mem)
@@ -367,6 +368,7 @@ theorem memoryCost_gmUnlinkTopSlabProg (U V w n_max h_space : ℕ) (d : ℕ × �
   simp [gmUnlinkTopSlabProg, -bind_pure_comp, ← PFunctor.FreeM.bind_eq_bind, memoryCost_bind]
 
 /-- Precondition for `gmUnlinkTopSlabProg` and `gmPopSlabProg`. -/
+@[expose]
 def GmPopSlabPre (U V w₀ n_max h_space w base b : ℕ) (s : Memory.State) : Prop :=
   DictEnv U V w₀ n_max h_space w base ∧
   SlabBijection n_max (gmAt base U V w₀ n_max h_space s.mem)
@@ -622,6 +624,7 @@ theorem memoryCost_gmRelinkMovedSlabProg_le (U V w n_max h_space : ℕ) (d : (�
   split_ifs <;> simp only [memoryCost_writeGMProg, memoryCost_pure] <;> omega
 
 /-- Pure bounds invariant for `gmRelinkMovedSlabProg` and `gmLinkMovedNeighborsProg`. -/
+@[expose]
 def GmMovedSlabInv (U V w₀ n_max h_space base p_del p_last : ℕ) (s : Memory.State) : Prop :=
   let gm := gmAt base U V w₀ n_max h_space s.mem
   let b_last := gm (gmSlabOwnerBIdx n_max p_last)
@@ -637,6 +640,7 @@ def GmMovedSlabInv (U V w₀ n_max h_space base p_del p_last : ℕ) (s : Memory.
   (s_last + 1 < q_last → abv_last < maxFullSlabs n_max)
 
 /-- Precondition for `gmRelinkMovedSlabProg` and `gmLinkMovedNeighborsProg`. -/
+@[expose]
 def GmMovedSlabPre (U V w₀ n_max h_space w base p_del p_last : ℕ) (s : Memory.State) : Prop :=
   DictEnv U V w₀ n_max h_space w base ∧
   GmMovedSlabInv U V w₀ n_max h_space base p_del p_last s
@@ -1143,6 +1147,7 @@ theorem memoryCost_gmCompactSlabProg_le (U V w n_max h_space : ℕ) (d : ℕ × 
     omega
 
 /-- Pure bounds invariant for `gmCompactSlabProg`. -/
+@[expose]
 def GmCompactSlabInv (U V w₀ n_max h_space base p_del : ℕ) (s : Memory.State) : Prop :=
   let gm := gmAt base U V w₀ n_max h_space s.mem
   let p_last := gm 0 - 1
@@ -1152,6 +1157,7 @@ def GmCompactSlabInv (U V w₀ n_max h_space base p_del : ℕ) (s : Memory.State
   (p_del < p_last → GmMovedSlabInv U V w₀ n_max h_space base p_del p_last s)
 
 /-- Precondition for `gmCompactSlabProg`. -/
+@[expose]
 def GmCompactSlabPre (U V w₀ n_max h_space w base p_del : ℕ) (s : Memory.State) : Prop :=
   let gm := gmAt base U V w₀ n_max h_space s.mem
   let p_last := gm 0 - 1
