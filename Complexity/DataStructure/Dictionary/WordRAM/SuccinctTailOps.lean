@@ -912,7 +912,9 @@ theorem memoryCost_appendTailItemProg (U V w n_max h_space : ℕ) (d : ℕ × �
 theorem appendTailItemProg_effect {U V w n_max h_space base b : ℕ}
     (hw : 0 < w) (hb_pos : 0 < bucketBits n_max) (hb : b < numBuckets n_max)
     (s : Memory.State)
-    (hinv : SlotStoreInv n_max (gmAt base U V w n_max h_space s.mem))
+    (htail : TailBijection n_max (gmAt base U V w n_max h_space s.mem)
+      (fun b => gmAt base U V w n_max h_space s.mem (gmRIdx b))
+      (gmAt base U V w n_max h_space s.mem 1))
     (hr_lt : gmAt base U V w n_max h_space s.mem (gmRIdx b) < tailCapPerBucket n_max)
     (htot : gmAt base U V w n_max h_space s.mem 0 * slabSize n_max +
       gmAt base U V w n_max h_space s.mem 1 + 1 ≤ n_max) :
@@ -934,7 +936,7 @@ theorem appendTailItemProg_effect {U V w n_max h_space base b : ℕ}
   have hptr_idx_lt : gmTailPtrBase n_max + (b * tailCapPerBucket n_max + gm (gmRIdx b)) <
       globalMetaLen n_max := gmTailPtrIdx_lt hb_pos hb hr_lt
   have ht_cap : gm 1 < maxTailItems n_max :=
-    ntails_lt_maxTailItems_of_r_lt hb hr_lt (hinv.multi_tail hb_pos)
+    ntails_lt_maxTailItems_of_r_lt hb hr_lt htail
   have hown_idx_lt : gmTailOwnerBase n_max + gm 1 < globalMetaLen n_max :=
     gmTailOwnerIdx_lt hb_pos ht_cap
   have ht_val_lt : gm 1 < 2 ^ globalPtrBits n_max :=
@@ -995,7 +997,9 @@ theorem appendTailItemProg_effect {U V w n_max h_space base b : ℕ}
 private theorem appendTailItem_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ × ℕ} {s : Memory.State}
     (hb_pos : 0 < bucketBits n_max)
     (h : DictEnv U V w₀ n_max h_space w d.1 ∧
-      SlotStoreInv n_max (gmAt d.1 U V w₀ n_max h_space s.mem) ∧
+      TailBijection n_max (gmAt d.1 U V w₀ n_max h_space s.mem)
+        (fun b => gmAt d.1 U V w₀ n_max h_space s.mem (gmRIdx b))
+        (gmAt d.1 U V w₀ n_max h_space s.mem 1) ∧
       d.2 < numBuckets n_max ∧
       gmAt d.1 U V w₀ n_max h_space s.mem (gmRIdx d.2) < tailCapPerBucket n_max ∧
       gmAt d.1 U V w₀ n_max h_space s.mem 0 * slabSize n_max +
@@ -1011,7 +1015,7 @@ private theorem appendTailItem_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ 
     gmTailOwnerBase n_max + t_new < globalMetaLen n_max ∧
     r_b + 1 ≤ globalMetaLen n_max ∧
     t_new + 1 ≤ max n_max 1 := by
-  rcases h with ⟨_, hinv, hb, hr_lt, htot⟩
+  rcases h with ⟨_, htail, hb, hr_lt, htot⟩
   have hr_idx : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos hb
   have h1_idx : 1 < globalMetaLen n_max := by unfold globalMetaLen; omega
   have hrb_eq : (Memory.spec 0).clientResult s
@@ -1028,7 +1032,7 @@ private theorem appendTailItem_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ 
       (d.2 * tailCapPerBucket n_max + gmAt d.1 U V w₀ n_max h_space s.mem (gmRIdx d.2)) <
       globalMetaLen n_max := gmTailPtrIdx_lt hb_pos hb hr_lt
   have ht_cap : gmAt d.1 U V w₀ n_max h_space s.mem 1 < maxTailItems n_max :=
-    ntails_lt_maxTailItems_of_r_lt hb hr_lt (hinv.multi_tail hb_pos)
+    ntails_lt_maxTailItems_of_r_lt hb hr_lt htail
   have hown_lt : gmTailOwnerBase n_max + gmAt d.1 U V w₀ n_max h_space s.mem 1 <
       globalMetaLen n_max := gmTailOwnerIdx_lt hb_pos ht_cap
   refine ⟨hr_idx, h1_idx, ?_, ?_, ?_, ?_⟩
@@ -1042,7 +1046,9 @@ theorem realizes_appendTailItem {U V w₀ n_max h_space : ℕ}
     Realizes .exact (appendTailItemProg U V w₀ n_max h_space)
       (WordEncoding.encode (α := ℕ × ℕ)) (WordEncoding.encode (α := ℕ))
       (fun w d s => DictEnv U V w₀ n_max h_space w d.1 ∧
-        SlotStoreInv n_max (gmAt d.1 U V w₀ n_max h_space s.mem) ∧
+        TailBijection n_max (gmAt d.1 U V w₀ n_max h_space s.mem)
+          (fun b => gmAt d.1 U V w₀ n_max h_space s.mem (gmRIdx b))
+          (gmAt d.1 U V w₀ n_max h_space s.mem 1) ∧
         d.2 < numBuckets n_max ∧
         gmAt d.1 U V w₀ n_max h_space s.mem (gmRIdx d.2) < tailCapPerBucket n_max ∧
         gmAt d.1 U V w₀ n_max h_space s.mem 0 * slabSize n_max +
@@ -1120,7 +1126,9 @@ theorem memoryCost_removeLastTailItemProg (U V w n_max h_space : ℕ) (d : ℕ �
 theorem removeLastTailItemProg_effect {U V w n_max h_space base b : ℕ}
     (hw : 0 < w) (hb_pos : 0 < bucketBits n_max) (hb : b < numBuckets n_max)
     (s : Memory.State)
-    (hinv : SlotStoreInv n_max (gmAt base U V w n_max h_space s.mem))
+    (htail : TailBijection n_max (gmAt base U V w n_max h_space s.mem)
+      (fun b => gmAt base U V w n_max h_space s.mem (gmRIdx b))
+      (gmAt base U V w n_max h_space s.mem 1))
     (hr_pos : 1 ≤ gmAt base U V w n_max h_space s.mem (gmRIdx b)) :
     let gm := gmAt base U V w n_max h_space s.mem
     let s' := (Memory.spec 0).clientState s (removeLastTailItemProg U V w n_max h_space (base, b))
@@ -1139,8 +1147,7 @@ theorem removeLastTailItemProg_effect {U V w n_max h_space base b : ℕ}
     gmAt base U V w n_max h_space s'.mem = gmRemoveTail n_max gm b := by
   intro gm s'
   change 1 ≤ gm (gmRIdx b) at hr_pos
-  have htail : TailBijection n_max gm (fun b => gm (gmRIdx b)) (gm 1) := hinv.multi_tail hb_pos
-  have htot : gm 0 * slabSize n_max + gm 1 ≤ n_max := hinv.multi_total_le hb_pos
+  have hnt_le : gm 1 ≤ n_max := htail.ntails_le.trans (maxTailItems_le n_max)
   set r_del := gm (gmRIdx b) - 1
   set t_del := gm (gmTailPtrIdx n_max b r_del)
   set t_last := gm 1 - 1
@@ -1260,7 +1267,9 @@ theorem removeLastTailItemProg_effect {U V w n_max h_space base b : ℕ}
 private theorem removeLastTailItem_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ × ℕ}
     {s : Memory.State} (hb_pos : 0 < bucketBits n_max)
     (h : DictEnv U V w₀ n_max h_space w d.1 ∧
-      SlotStoreInv n_max (gmAt d.1 U V w₀ n_max h_space s.mem) ∧
+      TailBijection n_max (gmAt d.1 U V w₀ n_max h_space s.mem)
+        (fun b => gmAt d.1 U V w₀ n_max h_space s.mem (gmRIdx b))
+        (gmAt d.1 U V w₀ n_max h_space s.mem 1) ∧
       d.2 < numBuckets n_max ∧
       1 ≤ gmAt d.1 U V w₀ n_max h_space s.mem (gmRIdx d.2)) :
     let e_rb := (Memory.spec 0).clientResult s
@@ -1291,11 +1300,10 @@ private theorem removeLastTailItem_bounds {U V w₀ n_max h_space w : ℕ} {d : 
     n_max - 1 - e_tdel < n_max ∧
     gmTailPtrBase n_max + e_dlast < globalMetaLen n_max ∧
     gmTailOwnerBase n_max + e_tdel < globalMetaLen n_max := by
-  rcases h with ⟨_, hinv, hb, hr_pos⟩
+  rcases h with ⟨_, htail, hb, hr_pos⟩
   set gm := gmAt d.1 U V w₀ n_max h_space s.mem
   change 1 ≤ gm (gmRIdx d.2) at hr_pos
-  have htail : TailBijection n_max gm (fun b => gm (gmRIdx b)) (gm 1) := hinv.multi_tail hb_pos
-  have htot : gm 0 * slabSize n_max + gm 1 ≤ n_max := hinv.multi_total_le hb_pos
+  have hnt_le : gm 1 ≤ n_max := htail.ntails_le.trans (maxTailItems_le n_max)
   set r_del := gm (gmRIdx d.2) - 1
   set t_del := gm (gmTailPtrIdx n_max d.2 r_del)
   set t_last := gm 1 - 1
@@ -1360,7 +1368,9 @@ theorem realizes_removeLastTailItem {U V w₀ n_max h_space : ℕ}
     Realizes .exact (removeLastTailItemProg U V w₀ n_max h_space)
       (WordEncoding.encode (α := ℕ × ℕ)) (WordEncoding.encode (α := Unit))
       (fun w d s => DictEnv U V w₀ n_max h_space w d.1 ∧
-        SlotStoreInv n_max (gmAt d.1 U V w₀ n_max h_space s.mem) ∧
+        TailBijection n_max (gmAt d.1 U V w₀ n_max h_space s.mem)
+          (fun b => gmAt d.1 U V w₀ n_max h_space s.mem (gmRIdx b))
+          (gmAt d.1 U V w₀ n_max h_space s.mem 1) ∧
         d.2 < numBuckets n_max ∧
         1 ≤ gmAt d.1 U V w₀ n_max h_space s.mem (gmRIdx d.2))
       (fun _ _ => 0) := by
