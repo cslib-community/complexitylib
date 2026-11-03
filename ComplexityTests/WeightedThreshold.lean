@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Christian Reitwiessner
 -/
 
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold
@@ -361,39 +361,13 @@ example (σ : Fin 2 → Fin 2) (w : BitString (2 ^ 2 + 2 * 2)) (u : BitString 2)
     exact isDepthTwoWithGates_eval_embedUpdate (andreevCircuit 2 2)
       (depth_andreevCircuit_le 2 2) 0 (andreevLiveVar_injective 2 2 σ) w
 
-example :
-    andreevSimultaneousTail 14 2048 ≤ 1 / 2 ∧
-    0 < ((2 : ℝ) ^ 14 * (1 / 2 - andreevSimultaneousTail 14 2048)) ^ 2 - (2048 : ℝ) ^ 2 ∧
-    (#{w : BitString (2 ^ 14 + 14 * 1156) |
-      (andreevCircuit 14 1156).eval interpretation w 0 = Boolean.andreev 14 1156 w} : ℝ) ≤
-      (2 : ℝ) ^ (2 ^ 14 + 14 * 1156) *
-        (1 / 2 + (2048 / (2 : ℝ) ^ 14) *
-          Real.sqrt (4 * (1 / (1156 : ℝ)) * ((andreevCircuit 14 1156).size : ℝ) *
-            Real.sqrt ((2 ^ 14 + 14 * 1156 : ℕ) : ℝ) + 1) +
-          andreevSimultaneousTail 14 2048) ∧
-    (1156 : ℝ) * (((2 : ℝ) ^ 14 * (1 / 2 - andreevSimultaneousTail 14 2048)) ^ 2 -
-      (2048 : ℝ) ^ 2) ≤
-      4 * (2048 : ℝ) ^ 2 * ((andreevCircuit 14 1156).size : ℝ) *
-        Real.sqrt ((2 ^ 14 + 14 * 1156 : ℕ) : ℝ) ∧
-    ((2 : ℝ) ^ 14 * (1 / 2 - andreevSimultaneousTail 14 2048)) ^ 2 - (2048 : ℝ) ^ 2 ≤
-      4 * (2048 : ℝ) ^ 2 * ((andreevCircuit 14 1156).wireCount : ℝ) * (1 / (1156 : ℝ)) *
-        Real.sqrt (1 / (1156 : ℝ)) := by
-  have hsqrt14 : Real.sqrt ((2 : ℝ) ^ 14) = 128 :=
-    (Real.sqrt_eq_iff_eq_sq (by norm_num) (by norm_num)).mpr (by norm_num)
-  have hα_eq : (((14 : ℕ) : ℝ) + 2) * Real.sqrt ((2 : ℝ) ^ 14) = 2048 := by
-    rw [hsqrt14]; norm_num
-  have hα : Real.sqrt ((2 : ℝ) ^ 14) / 2 ≤ 2048 := by
-    rw [hsqrt14]; norm_num
-  have hε : 3 * (((14 : ℕ) : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ 14) ≤ (1 / 2 : ℝ) := by
-    rw [hsqrt14]; norm_num
-  obtain ⟨htail, hexcess⟩ := sq_sub_ge_of_three_mul_div_sqrt_le hε
-  rw [hα_eq] at htail hexcess
-  exact ⟨htail, by linarith,
-    card_eval_eq_andreev_le_of_depth_le_two_size (by decide) hα (andreevCircuit 14 1156)
-      (depth_andreevCircuit_le 14 1156) 0,
-    size_ge_of_computes_andreev (by decide) hα htail (andreevCircuit 14 1156)
-      (depth_andreevCircuit_le 14 1156) (computes_andreevCircuit 14 1156),
-    wireCount_ge_of_computes_andreev (by decide) hα htail (andreevCircuit 14 1156)
-      (depth_andreevCircuit_le 14 1156) (computes_andreevCircuit 14 1156)⟩
+/-- A fixed weight vector has at most five threshold behaviours on two bits. -/
+example (β : Fin 2 → ℝ) : #{g : BitString 2 → Bool | IsThresholdShift β g} ≤ 5 := by
+  simpa using card_isThresholdShift_le β
+
+/-- The canonical simultaneous tail is uniformly small, even for the empty weight family. -/
+example : andreevWeightTail 14 1 (andreevWeightScale 14 1)
+    (((14 : ℕ) + 2 : ℝ) * Real.sqrt ((2 : ℝ) ^ 14)) ≤ (1 / 2 : ℝ) ^ 20 :=
+  andreevWeightTail_scale_le 14 (by decide)
 
 end WeightedThresholdTests
