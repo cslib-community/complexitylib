@@ -28,9 +28,10 @@ import Complexity.Tactic.PPT
 /-!
 # Naor–Yung universal one-way hash functions from one-way permutations
 
-Naor and Yung ([NaorYung1989], Section 3; see also [Goldreich2004], Section 6.4.3.2, June 2003
-chapter draft Construction 6.4.20 and Proposition 6.4.21) construct a universal one-way (target
-collision-resistant) hash family from any one-way permutation `f` without collision-free trapdoors.
+Naor and Yung ([NaorYung1989], Section 3; §§2.1–2.3 in the March 13, 1995 manuscript revision;
+see also [Goldreich2004], Section 6.4.3.2, June 2003 chapter draft Construction 6.4.20 and
+Proposition 6.4.21) construct a universal one-way (target collision-resistant) hash family from any
+one-way permutation `f` without collision-free trapdoors.
 Rather than pairing `f` with an `(m - 1) × m` affine/Toeplitz universal hash, this module uses a
 direct `{0, δ}`-coset pivot-deletion quotient on `m`-bit shift keys `δ` so that the single-step
 reduction has exact loss `1` and zero additive error:
@@ -85,7 +86,8 @@ reduction has exact loss `1` and zero additive error:
 ## References
 
 * [M. Naor, M. Yung, *Universal One-Way Hash Functions and their Cryptographic
-  Applications*][NaorYung1989], Section 3 (March 13, 1995 manuscript revision, Sections 2.3 and 3).
+  Applications*][NaorYung1989], Section 3 in the 1989 proceedings; §§2.1–2.3 (Lemma 2.1/Theorem 1,
+  Lemma 2.2, and succinct block hashing) in the March 13, 1995 manuscript revision.
 * [O. Goldreich, *Foundations of Cryptography, Volume 2: Basic Applications*][Goldreich2004],
   Section 6.4.3.2 (Constructions 6.4.20–6.4.26 and Propositions 6.4.21–6.4.27 in the June 2003
   chapter draft).
