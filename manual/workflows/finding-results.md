@@ -104,8 +104,8 @@ only output arguments. For a single full H4 environment,
 `normalizedRequest_eq_output` identifies the existing request, preserving the narrower
 usage mask and full terminal rank. The [actual-output regressions](../../ComplexityTests/NormalizedAtomRows.lean)
 check off-usage rank closure, unbounded-loss failure and positive output after an increment
-from zero. These are deterministic prerequisites; integrated moments and recursive/native
-RL remain open.
+from zero. These deterministic prerequisites feed the conditional moment route below;
+recursive/native RL remains open.
 
 For sharp no-overflow and first-overflow comparisons, import
 [NormalizedAtomRows/Sharp](../../Complexity/Foundations/Probability/NormalizedAtomRows/Sharp.lean).
@@ -140,6 +140,38 @@ correlated endpoint moment and a nonzero telescoping prefix. From a configured c
 `scripts/build.sh --wfail --iofail ComplexityTests.NormalizedAtomTails`.
 These are conditional compression input estimates; deriving their lower-child envelopes
 and noise budgets, recursive reserves and native RL remains separate work.
+
+For the actual normalized-output fourth moment, import
+[NormalizedAtomRows/ActualMoment](../../Complexity/Foundations/Probability/NormalizedAtomRows/ActualMoment.lean)
+and keep the same `NormalizedMoments` namespace open.
+`actual_normalized_fourth_moment_capacity` bounds the row fourth moment of the difference
+of output fourth roots by `C*ε^4`. Its output evaluates the actual compression iterate,
+unchanged initial default, raw increments and dyadic floor; its first rank is full terminal
+rank and its final mask is usage. `genuineNormalizedRecipe_eq_request` identifies the target
+with the existing `normalizedRequest`, including its genuine joint preparation mean and
+inherited suffixes.
+
+Choose the hierarchy and positive signal scales first, then a positive compression floor η.
+The final coefficient may depend on η, but precedes P/J/N/u, row width, positive horizon m
+and the capacity sequence. Supply clipped deterministic mean envelopes, their endpoint row
+fourth moments, strong endpoint row-noise fourth moments on each channel's own mask, and
+actual second-channel zero extension. No true-entry cap or final-output error bound is a
+premise. The proof combines the final/no-overflow term, weighted preloss, heavy first-overflow
+tails and the complementary false-event union charged at prefix `j+1`. Two actual output
+supports give the factor `2K`, without a row-width factor.
+
+The capacities n must satisfy both `K ≤ n i` and `2^(64*dyadicSlack m i) ≤ n i` for i<m.
+`compatibleCapacity K m i = (K+1)*2^(64*dyadicSlack m i)` supplies both for arbitrary fixed K;
+`actual_normalized_fourth_moment_compatible` applies it to the actual output itself. Increasing
+capacity changes the algorithm: event rarity and false-overflow charges are proved at n,
+with no assumed output or event monotonicity. The
+[capacity regression](../../ComplexityTests/NormalizedAtomCapacity.lean) constructs an inhabited
+hierarchy with K beyond 2^64, checks both capacity bounds at every horizon and proves positive
+uncentered output after a nonzero first increment from zero row/default. Run
+`scripts/build.sh --wfail --iofail ComplexityTests.NormalizedAtomCapacity`.
+These fixtures do not instantiate all stochastic premises. Lower-child contracts, the full
+recursive hierarchy estimator and native resources/RL remain open; this conditional result
+is not a headline abstract or a class equality.
 
 ## Read abstracts, bridges and comparison contracts
 
