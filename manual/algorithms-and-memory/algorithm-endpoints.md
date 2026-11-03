@@ -222,7 +222,8 @@ by [PR #2342](https://github.com/cslib-community/complexitylib/pull/2342).
 
 Provide `3*n²` signed weights in row-major AB, BC, AC order, with every absolute value at most
 `A`. `PreparationInput.input n (D m) g p values` supplies the scalar headers and canonical
-signed encoding; `State.init` places those raw words and zeroes other initial memory. The
+signed encoding; `State.init` stores the input length at address 0, places these raw words at
+successive addresses from 1, and zeroes the remaining memory. The
 geometric premises are `D m = 4^m >= 16`, `(D m)^18 <= n`, `g >= 1` and
 `p` in `Nat.sqrtPrimeWindow (D m)`. The physical width must satisfy
 `FixedPrime.admissionWidth n (D m) g p A <= W`. If application fails, check the list length,
