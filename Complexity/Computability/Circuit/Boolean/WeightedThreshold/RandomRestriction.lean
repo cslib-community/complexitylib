@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.DepthTwo
+public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.LTF
 public import Complexity.Foundations.Combinatorics.LittlewoodOfford
 
 /-!

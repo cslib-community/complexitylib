@@ -898,6 +898,7 @@ public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Compone
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Cut
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.DepthTwo
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.InnerProduct
+public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.LTF
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Menus
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.PendingBias
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Potential
