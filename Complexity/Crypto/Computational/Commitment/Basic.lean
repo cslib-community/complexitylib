@@ -108,9 +108,10 @@ noncomputable def CommitmentScheme.hidingForKey {Key : Type}
     (S : CommitmentScheme Key) (k : Key)
     (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ) : Game := do
   let choice ← ProbComp.eval (adversary.choose n (S.encodeKey k))
+  let msgs := choice.1
   let msg := open Classical in
-    if bit ∧ S.ValidMessage k choice.1.1 ∧ S.ValidMessage k choice.1.2 then choice.1.2
-    else choice.1.1
+    if bit ∧ S.ValidMessage k msgs.1 ∧ S.ValidMessage k msgs.2 then msgs.2
+    else msgs.1
   let co ← S.commitDist k msg
   ProbComp.eval (adversary.guess n choice.2 co.1)
 
@@ -185,9 +186,12 @@ theorem CommitmentScheme.StatisticalHiding.computationalHiding {Key : Type}
 openings `(m₀, o₀)` and `(m₁, o₁)` are accepted by `S.verify k` for the commitment string `c`. -/
 def CommitmentScheme.isBindingCollision {Key : Type} (S : CommitmentScheme Key) (k : Key)
     (out : List Bool × (List Bool × List Bool) × (List Bool × List Bool)) : Bool :=
-  decide (out.2.1.1 ≠ out.2.2.1) &&
-    S.verify k out.2.1.1 out.1 out.2.1.2 &&
-    S.verify k out.2.2.1 out.1 out.2.2.2
+  let openings := out.2
+  let open₀ := openings.1
+  let open₁ := openings.2
+  decide (open₀.1 ≠ open₁.1) &&
+    S.verify k open₀.1 out.1 open₀.2 &&
+    S.verify k open₁.1 out.1 open₁.2
 
 /-- The commitment binding experiment ([BonehShoup2023], Section 8.12, p. 344, and
 Definition 8.8): draw `k ← keyDist n`, give `S.encodeKey k` to `adversary`, and accept when the

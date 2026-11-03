@@ -18,6 +18,10 @@ Its source registers append the first computation's answer slots to the original
 Two disjoint static scratch banks preserve that environment without client-written intermediate
 assertions. The continuation's bank already contains the final output slots, so no copy is needed.
 
+## Main definitions
+
+* `bindLeft`, `bindRight`: the two scratch banks inside a sequential composition's bank.
+
 ## Main results
 
 * `Realizes.bind`: sequential realization with additive memory and local-work charges.
@@ -29,10 +33,14 @@ namespace Cslib.WordRAM.Realization
 
 open Cslib.DataStructure
 
-private def bindLeft {m n₂ l n₁ : ℕ} (i : Fin (m + n₂ + 1)) :
+/-- The continuation's scratch bank inside a sequential composition's bank: its first slots, so
+its result slots are the composition's. -/
+def bindLeft {m n₂ l n₁ : ℕ} (i : Fin (m + n₂ + 1)) :
     Fin (m + (n₂ + l + n₁ + 1) + 1) := ⟨i.val, by omega⟩
 
-private def bindRight {m n₂ l n₁ : ℕ} (i : Fin (l + n₁ + 1)) :
+/-- The first computation's scratch bank inside a sequential composition's bank, after the
+continuation's. -/
+def bindRight {m n₂ l n₁ : ℕ} (i : Fin (l + n₁ + 1)) :
     Fin (m + (n₂ + l + n₁ + 1) + 1) := ⟨m + n₂ + 1 + i.val, by omega⟩
 
 namespace Realizes

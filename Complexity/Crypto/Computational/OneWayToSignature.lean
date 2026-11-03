@@ -146,7 +146,7 @@ theorem SignatureScheme.OneTimeEUFCMA.exists_oneWay {S : SignatureScheme}
     hparam_unary.comp ComputableTidilyInPolyTime.length_bits
   have hpk : ComputableTidilyInPolyTime
       (fun seed : List Bool => (evaluate (param seed.length) seed).1) encBits encBits :=
-    (ComputableTidilyInPolyTime.fst encBits encBits).comp (heval.comp (hparam.prod .id'))
+    (ComputableTidilyInPolyTime.fst encBits encBits).comp (heval.tidy.comp (hparam.prod .id'))
   have hf : ComputableTidilyInPolyTime f encBits encBits :=
     (ComputableTidilyInPolyTime.of_eq (encIn := encPair encUnary encBits) (encMid := encBits)
       fun _ => rfl).comp (hparam.prod hpk)
@@ -188,7 +188,7 @@ theorem SignatureScheme.OneTimeEUFCMA.exists_oneWay {S : SignatureScheme}
           (fun r : ((ℕ × List Bool) × ℕ) × List Bool => (r.1.1.1, r.2))
           (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
           (encPair encUnary encBits) := by polytime
-      exact (ComputableTidilyInPolyTime.snd encBits encBits).comp (heval.comp hprep)
+      exact (ComputableTidilyInPolyTime.snd encBits encBits).comp (heval.tidy.comp hprep)
     have hmsg : ComputableTidilyInPolyTime
         (fun r : ((ℕ × List Bool) × ℕ) × List Bool => List.replicate r.1.1.1 false)
         (encPair (encPair (encPair encUnary encBits) encUnary) encBits) encBits := by
@@ -583,7 +583,8 @@ noncomputable def lamportInverter (f : List Bool → List Bool)
     let out ← (OracleComp.interpret
       (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         ((lamportScheme f hf).oneTimeSigningOracle keys.2)) (adversary n keys.1)).run []
-    return (frames out.1.2).getD (j / 2) []
+    let msig := out.1
+    return (frames msig.2).getD (j / 2) []
   else
     return []
 

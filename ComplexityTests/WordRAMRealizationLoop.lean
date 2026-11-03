@@ -190,4 +190,75 @@ example : Memory.WellFormed 2 linkedMemory := by
   change Fits 2 (if a = 0 then 1 else if a = 1 then 2 else 0)
   split_ifs <;> decide
 
+/-- Direct native register-bank copy at zero length and width zero charges one instruction. -/
+example (x : Data 3) :
+    ∃ y, ExecWithin 0
+      (Cslib.WordRAM.copyBank (B := .exact) (Fin.elim0 : Fin 0 → Fin 3) Fin.elim0 0) x y 1 ∧
+      y.mem = x.mem ∧ ∀ j, y.regs j = x.regs j := by
+  obtain ⟨y, hy, hm, _, hf⟩ := Cslib.WordRAM.copyBank_exec (B := .exact)
+    (Fin.elim0 : Fin 0 → Fin 3) Fin.elim0 0 (fun i => Fin.elim0 i) (fun i => Fin.elim0 i) 0 x
+  exact ⟨y, hy, hm, fun j => hf j (fun i => Fin.elim0 i)⟩
+
+/-- Direct two-register copy charges `k + 1 = 3` instructions, copies both slots, and frames memory
+and outside registers without reading the word width. -/
+example (x : Data 5) :
+    ¬(Cslib.WordRAM.copyBank (B := .exact) ![0, 1] ![2, 3] (4 : Fin 5)).ReadsWidth ∧
+    ∃ y, ExecWithin 0 (Cslib.WordRAM.copyBank (B := .exact) ![0, 1] ![2, 3] (4 : Fin 5)) x y 3 ∧
+      y.mem = x.mem ∧ y.regs 2 = x.regs 0 ∧ y.regs 3 = x.regs 1 ∧ y.regs 4 = x.regs 4 := by
+  refine ⟨Cslib.WordRAM.copyBank_not_readsWidth ![0, 1] ![2, 3] 4, ?_⟩
+  have hdst : Function.Injective (![2, 3] : Fin 2 → Fin 5) := by
+    intro i j h
+    fin_cases i <;> fin_cases j <;> revert h <;> decide
+  have hdis : ∀ i j : Fin 2, (![0, 1] : Fin 2 → Fin 5) i ≠ (![2, 3] : Fin 2 → Fin 5) j := by
+    intro i j
+    fin_cases i <;> fin_cases j <;> decide
+  obtain ⟨y, hy, hm, hout, hf⟩ :=
+    Cslib.WordRAM.copyBank_exec (B := .exact) ![0, 1] ![2, 3] 4 hdst hdis 0 x
+  exact ⟨y, hy, hm, hout 0, hout 1, hf 4 (by intro i; fin_cases i <;> decide)⟩
+
+/-- Direct ghost-state varying-charge loop rule sums state-dependent charges along transitions. -/
+example : Cslib.WordRAM.iterationSum (fun s : ℕ => s + 2) (fun s => 3 * s) 3 1 = 27 := rfl
+
+example (x : Data 2) (hx0 : x.regs 0 = 0) (hx1 : x.regs 1 = 0) :
+    ∃ y, ExecWithin 0 (.loop (.lt 0 1) (.op (.copy (B := .exact) 0 0))) x y 4 ∧
+      y.regs 0 = 0 ∧ y.regs 1 = 0 := by
+  let I : ℕ → ℕ → Data 2 → Prop := fun n s z => n = 0 ∧ z.regs 0 = 0 ∧ z.regs 1 = 0 ∧ s = 5
+  obtain ⟨y, hy, hIy⟩ := Cslib.WordRAM.ExecWithin.loop_invariant_state_charged
+    (B := .exact) (cond := .lt 0 1) (code := .op (.copy (B := .exact) 0 0))
+    (w := 0) (C := 1) (D := 1) I (fun s => s + 1) (fun s => s)
+    (fun _ z hI => by simp [Cond.Holds, hI.2.1, hI.2.2.1])
+    (fun n _ _ hI => absurd hI.1 (Nat.succ_ne_zero n))
+    (n := 0) (s := 5) (x := x) ⟨rfl, hx0, hx1, rfl⟩
+  exact ⟨y, hy, hIy.2.1, hIy.2.2.1⟩
+
+/-- Positive-fuel execution of `ExecWithin.loop_invariant_state_charged` with a state-varying
+charge and semantic ghost-state transition `(· + 2)^[n]`. -/
+example (w n s₀ : ℕ) (x : Data 3) (hfit : Fits w n)
+    (hx0 : x.regs 0 = 0) (hx1 : x.regs 1 = n) (hx2 : x.regs 2 = 1) :
+    ∃ y, ExecWithin w (.loop (.lt 0 1) (.op (.exactBin .sub 1 1 2))) x y
+        (3 * (Cslib.WordRAM.iterationSum (fun s => s + 2) (fun s => s) n s₀ + n + 1)) ∧
+      y.regs 0 = 0 ∧ y.regs 1 = 0 ∧ y.regs 2 = 1 ∧
+      ((fun s => s + 2)^[n]) s₀ = s₀ + 2 * n := by
+  let I : ℕ → ℕ → Data 3 → Prop := fun k s z =>
+    Fits w k ∧ z.regs 0 = 0 ∧ z.regs 1 = k ∧ z.regs 2 = 1 ∧
+      s + 2 * k = s₀ + 2 * n
+  obtain ⟨y, hy, hIy⟩ := Cslib.WordRAM.ExecWithin.loop_invariant_state_charged
+    (B := .exact) (cond := .lt 0 1) (code := .op (.exactBin .sub 1 1 2))
+    (w := w) (C := 1) (D := 0) I (fun s => s + 2) (fun s => s)
+    (fun _ z hI => by simp [Cond.Holds, hI.2.1, hI.2.2.1])
+    (fun k s z ⟨hfk, hz0, hz1, hz2, hinv⟩ => by
+      refine ⟨by simp [Cond.Holds, hz0, hz1], z.set 1 k, ?_, ?_⟩
+      · have hstep : ExecWithin w (.op (.exactBin .sub 1 1 2)) z (z.set 1 k) 1 := by
+          apply ExecWithin.op
+          rw [Op.eval_exactBin, hz1, hz2]
+          simp only [BinOp.evalExact, Nat.le_add_left, ↓reduceIte, Nat.add_sub_cancel,
+            Option.bind_some]
+          exact Data.put_of_fits (hfk.of_le (by omega))
+        exact hstep.mono (by omega)
+      · refine ⟨hfk.of_le (by omega), ?_, by simp [Data.set], ?_, by omega⟩
+        · simpa [Data.set] using hz0
+        · simpa [Data.set] using hz2)
+    (n := n) (s := s₀) (x := x) ⟨hfit, hx0, hx1, hx2, rfl⟩
+  exact ⟨y, hy, hIy.2.1, hIy.2.2.1, hIy.2.2.2.1, by simpa using hIy.2.2.2.2⟩
+
 end Cslib.WordRAM.Realization.Tests
