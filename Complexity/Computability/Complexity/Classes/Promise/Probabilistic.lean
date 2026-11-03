@@ -171,7 +171,7 @@ theorem mem_PromiseBPP_iff_exists_isPPTOn : Q ∈ PromiseBPP enc ↔
       linarith
   · rintro ⟨M, hM, hyes, hno⟩
     obtain ⟨c, d, evalM, hevalM, hlaw⟩ := hM.exists_seeded_evaluator
-    refine ⟨Polynomial.C c * (Polynomial.X + 1) ^ d, fun x => evalM x.1 x.2, .of_tidy hevalM,
+    refine ⟨Polynomial.C c * (Polynomial.X + 1) ^ d, fun x => evalM x.1 x.2, hevalM,
       fun a => ⟨fun ha => ?_, fun ha => ?_⟩⟩
     · have hp : (Polynomial.C c * (Polynomial.X + 1) ^ d).eval (enc a).length =
           c * ((enc a).length + 1) ^ d := by simp
@@ -229,7 +229,7 @@ theorem mem_PromiseRP_iff_exists_isPPTOn : Q ∈ PromiseRP enc ↔
       exact Bool.noConfusion hVw
   · rintro ⟨M, hM, hyes, hno⟩
     obtain ⟨c, d, evalM, hevalM, hsupp, hlaw⟩ := hM.exists_total_seeded_evaluator
-    refine ⟨Polynomial.C c * (Polynomial.X + 1) ^ d, fun x => evalM x.1 x.2, .of_tidy hevalM,
+    refine ⟨Polynomial.C c * (Polynomial.X + 1) ^ d, fun x => evalM x.1 x.2, hevalM,
       fun a => ⟨fun ha => ?_, fun ha r => ?_⟩⟩
     · have hp : (Polynomial.C c * (Polynomial.X + 1) ^ d).eval (enc a).length =
           c * ((enc a).length + 1) ^ d := by simp

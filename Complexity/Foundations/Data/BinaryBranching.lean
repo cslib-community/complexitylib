@@ -29,7 +29,8 @@ search (`searchStep`) keeps a stack of states and an accumulator, updated by an 
 at each leaf. Started from a state, it takes fewer than twice as many steps as the state has
 leaves, and its accumulator becomes the fold of the update over a duplicate-free list of all leaf
 words; meanwhile its stack holds at most `h + 1` states of the tree when the leaf words have length
-at most `h` (`exists_iterate_searchStep`).
+at most `h` (`exists_iterate_searchStep`). A function that is additive at inner states sums over
+the leaves to its value at the root (`sum_leafWords_eq`).
 
 The sparsification procedures of Impagliazzo, Paturi and Zane and of counting sparsification are
 binary branchings whose leaves are the sparse clause sets.
@@ -49,6 +50,7 @@ binary branchings whose leaves are the sparse clause sets.
 * `Cslib.BinaryBranching.card_le_sum_choose_of_isLeafWord`: few short leaf words with few `true`
   branches.
 * `Cslib.BinaryBranching.exists_iterate_searchStep`: depth-first search folds over the leaves.
+* `Cslib.BinaryBranching.sum_leafWords_eq`: additive functions sum over the leaves.
 -/
 
 @[expose] public section
@@ -388,6 +390,31 @@ theorem exists_iterate_searchStep (f : α → σ → α) (s : σ) {h : ℕ}
           rfl
         · obtain ⟨w, hw, hwlen, rfl⟩ := hmem t ht
           exact ⟨true :: w, ⟨hs, hw⟩, by simp only [List.length_cons]; omega, rfl⟩
+
+/-- **Additive functions sum over the leaves.** If `g` is the sum of its values at the two
+children of every inner state, then its sum over the leaf words of `s` is its value at `s`. -/
+theorem sum_leafWords_eq {β : Type*} [AddCommMonoid β] {g : σ → β}
+    (hg : ∀ t, ¬ T.IsLeaf t → g t = g (T.next t false) + g (T.next t true)) (s : σ)
+    {W : Finset (List Bool)} (hW : ∀ w, w ∈ W ↔ T.IsLeafWord s w) :
+    ∑ w ∈ W, g (T.walk s w) = g s := by
+  classical
+  have key (s : σ) : ∃ L : List (List Bool), L.Nodup ∧ (∀ w, w ∈ L ↔ T.IsLeafWord s w) ∧
+      (L.map fun w => g (T.walk s w)).sum = g s := by
+    induction s using Terminating.induction hT with
+    | leaf s hs =>
+      refine ⟨[[]], List.nodup_singleton _, fun w => ?_, by simp [walk]⟩
+      exact ⟨fun hw => List.mem_singleton.mp hw ▸ hs,
+        fun hw => hw.eq_nil hs ▸ List.mem_singleton_self _⟩
+    | node s hs ih =>
+      obtain ⟨L₀, hnd₀, hL₀, hs₀⟩ := ih false
+      obtain ⟨L₁, hnd₁, hL₁, hs₁⟩ := ih true
+      obtain ⟨hnd, hL⟩ := nodup_and_mem_iff_isLeafWord hs hnd₀ hnd₁ hL₀ hL₁
+      refine ⟨_, hnd, hL, ?_⟩
+      rw [List.map_append, List.sum_append, List.map_map, List.map_map, hg s hs, ← hs₀, ← hs₁]
+      rfl
+  obtain ⟨L, hnd, hL, hsum⟩ := key s
+  rw [show W = L.toFinset from Finset.ext fun w => by rw [hW, List.mem_toFinset, hL],
+    List.sum_toFinset _ hnd, hsum]
 
 end Terminating
 

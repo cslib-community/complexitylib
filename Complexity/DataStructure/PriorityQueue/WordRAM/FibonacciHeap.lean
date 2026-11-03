@@ -95,7 +95,7 @@ theorem dispatchCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x :
       FibInv n K_max w base ((indexedMinPQSpec n K_max).stepFn s o).1 y ∧
       Modifies (Block.mk base (space n)).footprint x.mem y.mem ∧
       m + potential y ≤ charge n s o + potential x := by
-  have hz0 : x.regs zeroP = 0 := hinv.2.1.2.2.2.2.2.2.2.2.2.2.2.1
+  have hz0 : x.regs zeroP = 0 := hinv.2.1.regs_zeroP
   cases o with
   | isEmpty =>
     obtain ⟨ht2, ht1, ht0⟩ := harg
