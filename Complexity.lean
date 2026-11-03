@@ -2858,6 +2858,7 @@ public import Complexity.Crypto.Computational.MerkleTree.Binding
 public import Complexity.Crypto.Computational.NaorReingold
 public import Complexity.Crypto.Computational.NaorReingold.PRF
 public import Complexity.Crypto.Computational.NaorReingold.Security
+public import Complexity.Crypto.Computational.NaorYung
 public import Complexity.Crypto.Computational.Nonuniform.Basic
 public import Complexity.Crypto.Computational.Nonuniform.ZeroKnowledge
 public import Complexity.Crypto.Computational.OneWay
