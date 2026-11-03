@@ -15,14 +15,20 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.Degree
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeUnaryPrimitives
 
 /-!
-# `fun_prop` rules for linear list, option, number and test operations
+# `fun_prop` rules for list, option, number and test operations
 
-The linear primitives of `Turing.MultiTapeTM.ComputableInDegree`, as `fun_prop` rules for
-`Turing.MultiTapeTM.ComputableInO`, so that a program over these operations is assembled by
-`fun_prop` and its bounds are checked once with `Turing.MultiTapeTM.ComputableInO.mono`. Each
-rule is linear in its encoded argument, and `Turing.MultiTapeTM.ComputableInO.comp'` composes
-them. A test takes the tested value as a premise, since a Boolean does not determine the encoding
-of what it tests, and passes on its bounds unchanged.
+These rules assemble `Turing.MultiTapeTM.ComputableInO` certificates with explicit time and
+charged-space bounds. `fun_prop` composes the primitives through
+`Turing.MultiTapeTM.ComputableInO.comp'`; `Turing.MultiTapeTM.ComputableInO.mono` then compares
+the assembled bounds with the client's target bounds.
+
+The list, option and unary-number primitives are linear in their encoded arguments. The
+registered binary `natSucc` and `natPred` certificates instead have quadratic time and linear
+charged space. General equality `eq'` adds its explicit product-of-lengths time charge and
+encoded-pair space charge; clients enable it locally. Tests against a fixed value of a finite
+type and binary zero retain the tested computation's bounds, whereas `isEmpty'` adds the
+computed list's encoded length to both time and space. A test takes that computation as a
+premise, since its Boolean result does not determine the tested value's encoding.
 
 ## Main results
 
