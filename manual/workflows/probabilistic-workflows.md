@@ -146,12 +146,24 @@ For finite prime frame environments, start with
 [HierarchyRankCutoffs](../../Complexity/Foundations/Probability/HierarchyRankCutoffs.lean)
 and its [complete regression client](../../ComplexityTests/HierarchyCutoffs.lean).
 The constructor examples use H=4, P=5 and horizon zero on a positive singleton matrix.
-These constructors have two independent full-environment seeds. The actual request support
-and conditional-walk noise theorems instead use one environment's terminal-coordinate split;
-the noise bound retains the raw input fourth moment. Supply the stated horizon and injective
-identifiers before applying them. These results do not establish a recursive estimator,
-a native implementation, resource bounds or RL=L; the remaining objective is
-[issue #1721](https://github.com/cslib-community/complexitylib/issues/1721).
+These constructors have two independent full-environment seeds. For the genuine mean of
+one actual environment, import
+[HierarchyCorrectionMean](../../Complexity/Foundations/Probability/HierarchyCorrectionMean.lean)
+and follow its [complete regression client](../../ComplexityTests/HierarchyCorrectionMean.lean).
+`terminalSplit` retains every spectator coordinate; `genuine_request_mean_density` transports
+the source-conditioned average through that split, deriving source nonemptiness and the
+actual usage density. Supply a nonzero padding multiplier, injective identifiers, an admissible
+request and finite prime horizon, equal source/terminal/usage grid rates, and a nonnegative
+substochastic matrix C bounded entrywise by the rate. The children are the existing raw input,
+its genuine preparation and the final pilot maximum; the target is the existing correction
+iterate on the split channels. The P=5 horizon-one client has different nonempty copy suffixes,
+source density 81/625 and a zero pilot proved from the actual detector rank.
+
+The actual request support and conditional-walk noise theorems allow narrower usage; the
+noise bound retains the raw input fourth moment. The genuine mean theorem does not cover
+mixed source/rank rates or narrower usage, nor identify its target with a fully assembled
+recursive hierarchy. Lower-child moments, recursive induction, native realization and RL=L
+remain in [issue #1721](https://github.com/cslib-community/complexitylib/issues/1721).
 
 ## Carry the certificate into a security proof
 
