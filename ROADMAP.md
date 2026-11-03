@@ -33,29 +33,19 @@ the FHE industrial context, the first-order design decisions and the repository'
 
 Priorities live in this list and in the tiers of [#897].
 
-1. [Goldreich–Micali–Wigderson zero knowledge in full](#cryptographic-landmarks) ([#2316])
-2. [Rompel's signature theorem](#cryptographic-landmarks) ([#1001])
-3. [Completeness of oblivious transfer](#cryptographic-landmarks)
-4. [Håstad's optimal MAX-E3SAT hardness](#approximation-and-pcp) ([#886])
-5. [Williams's NEXP ⊄ ACC⁰](#circuits-and-algebraic-complexity) ([#889])
-6. [Valiant's VNP-completeness of the permanent](#circuits-and-algebraic-complexity)
-7. [The Kabanets–Impagliazzo theorem](#circuits-and-algebraic-complexity) ([#891])
-8. [MIP = NEXP](#interactive-proofs) ([#892])
-9. [Regev's worst-case to average-case reduction](#cryptographic-landmarks)
+1. [Rompel's signature theorem](#cryptographic-landmarks) ([#1001])
+2. [Completeness of oblivious transfer](#cryptographic-landmarks)
+3. [Håstad's optimal MAX-E3SAT hardness](#approximation-and-pcp) ([#886])
+4. [Williams's NEXP ⊄ ACC⁰](#circuits-and-algebraic-complexity) ([#889])
+5. [Valiant's VNP-completeness of the permanent](#circuits-and-algebraic-complexity)
+6. [The Kabanets–Impagliazzo theorem](#circuits-and-algebraic-complexity) ([#891])
+7. [MIP = NEXP](#interactive-proofs) ([#892])
+8. [Regev's worst-case to average-case reduction](#cryptographic-landmarks)
 
 ## Cryptography
 
 ### Cryptographic landmarks
 
-- **Goldreich–Micali–Wigderson zero knowledge in full** ([#2316]). If one-way functions exist, every
-  language in NP has a computational zero-knowledge proof in Goldreich's sense (Def. 4.3.10):
-  for every `x ∈ L` and arbitrary auxiliary input `z`, against probabilistic polynomial-time
-  verifiers. This needs a bridge between the security premise and a clock independent of an
-  unbounded auxiliary word, witness-level Levin reductions, and sequential soundness
-  amplification to negligible error. State it under nonuniformly one-way functions, as
-  Goldreich does (*Foundations of Cryptography*, Vol. 1, Section 4.4), and derive the
-  nonuniform (advice-secure) PRG premise of the auxiliary-input theorem from that; uniform
-  one-wayness is not known to give such a generator.
 - **Rompel's signature theorem** ([#1001]). One-way functions imply digital signatures that are
   existentially unforgeable under adaptive chosen-message attacks, for arbitrary
   polynomial-length messages. Authentication trees from one-time signatures and
@@ -209,8 +199,15 @@ index links to canonical definitions rather than keeping a second set.
   use the final pilot maximum. A bounded cross-stage hierarchy/reward client now connects
   the previous-reward and base-matrix leaves to actual earlier-stage constructors, with a
   computed decreasing global rank and nonconstant two-stage regression. Routed direct/residual
-  bin tables, copy-symbol suffix extension and their cross-stage role/rate tuples, and the
-  complete scheduled mean-prefix bound remain open; range/true means do not establish root
+  bins now have a finite partition/true-mean client into the actual next matrix, primitive
+  affine sampling instances, native copy-symbol suffix laws and whole-function role/rate/usage
+  requests with computed rank payments. Signed residual evaluation now separates the negative
+  endpoint correction from the midpoint product correction, with actual tuple-dependent sample
+  means. Bounded top-bin routing and dense preparation/normalization accept arbitrary child
+  functions, retain raw ranks, and agree with actual hierarchy bounds in a two-stage client.
+  The residual-bin phase order is local; full global stochastic preparation/access enumeration,
+  finite-accuracy ports, estimated copy/routing-fraction comparisons, and the complete scheduled
+  mean-prefix bound remain open; range/true means do not establish root
   regularity or the error recurrence. Paired raw differences, full-coordinate conditional walks, summed noise, compression, strong recursive
   induction and native logarithmic workspace/class equality remain required.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
@@ -682,6 +679,16 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   framed queue/faithful-allocation client, generic stateful and whole-client composition, Fibonacci
   execution migration and the full C2/M1b objective; arbitrary host continuations do not acquire
   runtime bounds.
+  The Fibonacci method family ([#2290]) realizes all five original memory methods with one fixed
+  native factor, exact typed-source/history transport and the existing nonzero amortized
+  potential. The Fibonacci Dijkstra consumer now reserves the original zero tail without clearing,
+  derives its reached callee domains from the shared framed history, and pays the nonzero heap
+  potential through the existing amortized telescope. One actual initialized native program
+  retains the original word envelope and sharper reachable-vertex bound, including its prefix,
+  control and halt and the entire final memory/frontier. The old Dijkstra executor and its
+  implementation-specific coefficient 640 are superseded; the original existential endpoints
+  are unchanged. MinPQ migration and the execution core it still uses remain open, as do generic
+  whole-client transfer and the abstract-space decision.
   The Karger–Stein specification bridge ([#2289]) gives the existing recursive native code the
   exact answer law of its contraction-oracle client, preserving pathwise instruction/random-call
   bounds, word fits and memory frames. Probability and amplification are proved at the
@@ -850,4 +857,4 @@ not planned, not as proved.
 [#2145]: https://github.com/cslib-community/complexitylib/issues/2145
 [#2146]: https://github.com/cslib-community/complexitylib/issues/2146
 [#2084]: https://github.com/cslib-community/complexitylib/issues/2084
-[#2316]: https://github.com/cslib-community/complexitylib/issues/2316
+[#2290]: https://github.com/cslib-community/complexitylib/issues/2290

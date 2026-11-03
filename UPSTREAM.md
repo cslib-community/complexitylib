@@ -568,7 +568,13 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   uniform factor. The old hand-stepped binary-heap execution and its fixed clock/register
   constants are retired; no reduction in source size, space or instruction count is asserted.
   The bounded two-stack queue migration landed in #2303; the generic framed/allocation/whole-client
-  and Fibonacci objectives remain open.
+  objectives remain open. The native Fibonacci Dijkstra consumer uses the same framed source
+  interface and generic history/key/domain lemmas, retains the original nonzero heap potential,
+  and reserves the original `9n+5` layout in the input's zero tail without a clearing pass. Its
+  flat program retains the original word hypothesis and sharper reachable-vertex clock, pays
+  actual prefix/body/halt and preserves the complete source memory/frontier. It supersedes only
+  the old Dijkstra executor and fixed-640 implementation helpers, not the MinPQ-used Fibonacci
+  execution core or the unresolved abstract-space contract.
   Karger–Stein's specification-law bridge (#2289) reuses the existing contraction client and
   native execution model. `LoopSegmentLaw` packages the existing finite loop segments with an
   exact observation law and strict pathwise instruction/query bounds; the two-branch recurrence

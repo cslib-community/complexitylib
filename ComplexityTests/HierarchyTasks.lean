@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 
-import Complexity.Foundations.Probability.HierarchyTasks
+import Complexity.Foundations.Probability.SignedResidualBins
 import all Complexity.Foundations.Probability.DetectedHierarchy
 import all Complexity.Foundations.LinearAlgebra.Matrix.CorrectionHierarchy
 import Mathlib.Tactic.FinCases
@@ -276,5 +276,221 @@ example (P : HierarchyParams 2 1 1 1 0) (l : ℕ) :
 example : (HierarchyTask.nextMatrix (k := 0) 4).rank <
     (HierarchyTask.row (k := 0) 5 .base).rank :=
   HierarchyTask.rank_lt_of_dependency (.base 4)
+
+-- The new routed residual client uses the same nonconstant two-stage hierarchy above.
+-- A generous finite gate instance isolates routing/normalization from native rank budgets.
+private noncomputable def denseLaws {W : Type*} [Fintype W] (k : ℝ → ℝ)
+    (b M : ℝ) (hb : 0 < b) :
+    DenseSamplingLaws (full (α := Bool) (V := W)) full hit k b M where
+  h := fun _ => 1
+  ρ := fun _ => 1
+  K := ⌈2 * (1 + b⁻¹ * M)⌉₊
+  η := 1
+  c := b⁻¹
+  usage_subset _ _ _ := trivial
+  usage_nonempty _ := by simp [hit, filter_eq']
+  support _ _ := rfl
+  gate_nonneg _ := zero_le_one
+  gate_le_one _ := le_rfl
+  η_pos := one_pos
+  gate_one _ _ := rfl
+  c_nonneg := inv_nonneg.mpr hb.le
+  rank_bound := by simpa only [div_one] using Nat.le_ceil (2 * (1 + b⁻¹ * M))
+  pair _ _ _ := by simp [hit, full, inv_mul_cancel₀ hb.ne']
+
+private noncomputable abbrev D (P : HierarchyParams 2 1 1 1 0) :=
+  hierarchyResidual P (V := V P) (copies P)
+    (fun _ => full (α := Unit)) (fun _ => full (α := Unit)) (C P) 1
+
+private theorem D_nonneg (P : HierarchyParams 2 1 1 1 0) (x y : V P 1) : 0 ≤ D P x y :=
+  P.residual_nonneg (by norm_num) (invariant_one P).2.1 x y
+
+-- All row-mass bounds are derived from the actual residual; no mean is supplied as data.
+private noncomputable def mass (P : HierarchyParams 2 1 1 1 0) : ℝ := ∑ x, ∑ y, D P x y
+private theorem D_mass (P : HierarchyParams 2 1 1 1 0) (x : V P 1) :
+    ∑ y, D P x y ≤ mass P :=
+  single_le_sum (fun w _ => sum_nonneg (fun y _ => D_nonneg P w y)) (mem_univ x)
+
+-- A fixed-symbol residual bin at stage one is averaged to the actual stage TWO matrix.
+-- This is the complete direct/routed client; the separate residual raw estimator is still open.
+example (P : HierarchyParams 2 1 1 1 0) (a d : V P 2) :
+    let b : ℕ → ℝ := fun _ => if D P (ofLex (copies P 1 a)).1 (ofLex (copies P 1 d)).1 = 0
+      then 1 else D P (ofLex (copies P 1 a)).1 (ofLex (copies P 1 d)).1
+    let A := fun (j : Fin (P.m + 1)) i => denseLaws (W := V P 1)
+      (routedBinCutoff (fun _ => 1) b i
+        (fun w => copyFraction (P.copyCutoff ((2 : ℝ)⁻¹ ^ 1)) P.m w j)) (b i) (mass P)
+        (by
+          dsimp only [b]
+          split_ifs with h
+          · norm_num
+          · exact lt_of_le_of_ne (D_nonneg P _ _) (Ne.symm h))
+    (∑ i ∈ range 1, P.weight (full (α := Unit)) (full (α := Unit)) ((2 : ℝ)⁻¹ ^ 1) (H P 1)
+      (ofLex (copies P 1 a)).2 (ofLex (copies P 1 a)).1 *
+      (𝔼 s ∈ (univ : Finset Bool), (A (ofLex (copies P 1 d)).2 i).direct (D P) s
+        (ofLex (copies P 1 a)).1 (ofLex (copies P 1 d)).1)) = H P 2 a d := by
+  dsimp only
+  have hb : ∀ i : ℕ, 0 < (if D P (ofLex (copies P 1 a)).1 (ofLex (copies P 1 d)).1 = 0
+      then 1 else D P (ofLex (copies P 1 a)).1 (ofLex (copies P 1 d)).1 : ℝ) := by
+    intro i
+    split_ifs with h
+    · norm_num
+    · exact lt_of_le_of_ne (D_nonneg P _ _) (Ne.symm h)
+  simpa only [full, filter_true, Nat.reduceAdd] using
+    sum_expect_hierarchy_routed_bins P (V := V P) (copies P)
+      (fun _ => full (α := Unit)) (fun _ => full (α := Unit)) (C P) 1 0
+      (fun _ => 1) _ hb (fun _ _ => rfl) (fun _ => full) (fun _ => full)
+      (fun _ => hit) a d (mass P)
+      (fun j i => denseLaws _ _ _ (hb i)) (D_nonneg P) (D_mass P)
+      (by
+        change D P _ _ = 0 ∨ (if D P _ _ = 0 then 1 else D P _ _) ≤ D P _ _
+        split_ifs with h
+        · exact Or.inl h
+        · exact Or.inr le_rfl)
+
+-- Two native copy symbols are appended before the inherited suffix, rather than after it.
+example : CopyPadding.identifier (2 : ZMod 17) [1, 0, 1] 1 = 13 := by decide
+example : CopyPadding.identifier (2 : ZMod 17) [0, 1, 1] 1 = 11 := by decide
+
+private noncomputable def src : CorrectionRowTask.Channel (Fin 3) (List ℕ) := ⟨0, 1 / 16, [7]⟩
+private noncomputable def mid : CorrectionRowTask.Channel (Fin 3) (List ℕ) := ⟨1, 1 / 2, [8]⟩
+private noncomputable def dst : CorrectionRowTask.Channel (Fin 3) (List ℕ) := ⟨2, 1 / 4, [9]⟩
+
+-- Distinct roles/rates, a fine usage slice, and genuine midpoint source release.
+example : HierarchyTask.binCopyRequests (k := 0) 1 src mid dst (1 / 8) 2 3 =
+    [⟨.row 1 .base, ⟨0, 1 / 16, [2, 7]⟩, ⟨2, 1 / 8, [3, 9]⟩, ⟨2, 1 / 8, [3, 9]⟩⟩,
+     ⟨.row 1 (.correction 0), ⟨0, 1 / 16, [2, 7]⟩, mid, mid⟩,
+     ⟨.row 1 .base, mid, ⟨2, 1 / 8, [3, 9]⟩, ⟨2, 1 / 8, [3, 9]⟩⟩,
+     ⟨.row 1 .weights, ⟨0, 1 / 2, [2, 7]⟩, ⟨2, 1 / 8, [3, 9]⟩, ⟨2, 1 / 8, [3, 9]⟩⟩] := by
+  norm_num [HierarchyTask.binCopyRequests, HierarchyTask.copyRequests,
+    CorrectionRowTask.Channel.throughCopy, src, mid, dst]
+
+-- A zero entry is reconstructed even when every positive scale exceeds it.
+example : (∑ i ∈ range 4, (1 / 2 : ℝ) * routedBinCutoff (fun t => min 1 t)
+    (fun _ => 1 / 2) i (fun w => copyFraction (fun t => min 1 t) 2 w 1) (0 / (1 / 2))) = 0 := by
+  simpa using sum_routedBinCutoff (χ := fun t => min 1 t)
+    (route := fun w => copyFraction (fun t => min 1 t) 2 w 1) (b := fun _ => 1 / 2) 3
+    (by norm_num) (by intro t ht; exact min_eq_left ht) (w := 0) (Or.inl rfl)
+
+-- Two adjacent bins both contribute at an interior switch value, with nonprimary routing.
+example : (∑ i ∈ range 3, ((1 / 2 : ℝ) ^ i) *
+    routedBinCutoff (fun t => min 1 (max 0 (2 * t - 1))) (fun i => (1 / 2 : ℝ) ^ i) i
+      (fun w => copyFraction (fun _ => 1) 1 w 1) ((3 / 8) / ((1 / 2 : ℝ) ^ i))) = 3 / 16 := by
+  norm_num [sum_range_succ, routedBinCutoff, Cslib.binWeight, copyFraction]
+
+private instance : Fact (Nat.Prime 17) := ⟨by decide⟩
+
+private def padded (x : Fin 3) : ZMod 17 := CopyPadding.identifier 2 [1, 0] x
+private theorem padded_injective : Function.Injective padded := by
+  apply (CopyPadding.identifier_injective (by decide : (2 : ZMod 17) ≠ 0) [1, 0]).comp
+  decide
+
+private noncomputable def affineBin : DenseSamplingLaws
+    (fun s v => Cslib.Probability.affineRetains 17 1 9 s (padded v))
+    (fun s v => Cslib.Probability.affineRetains 17 1 7 s (padded v))
+    (fun s v => Cslib.Probability.affineRetains 17 1 3 s (padded v))
+    (routedBinCutoff (fun d => min 1 (max 0 d)) (fun _ => 1 / 2) 0
+      (fun w => copyFraction (fun _ => 1) 1 w 1)) (1 / 2) 1 := by
+  have hceil : ⌈(17 : ℝ) * (1 / 2)⌉₊ = 9 :=
+    (Nat.ceil_eq_iff (by decide)).mpr (by norm_num)
+  norm_num only [mul_one_div] at hceil
+  simpa only [Nat.cast_ofNat, mul_one_div, hceil, pow_one] using
+    (DenseSamplingLaws.ofAffine (H := 1) padded_injective (a := 1 / 2)
+      (by norm_num) (by norm_num) (Lt := 3) (La := 7)
+      (by norm_num) (by norm_num only [Nat.cast_ofNat]; rw [hceil]; norm_num) (by norm_num)
+      (routedBinCutoff (fun d => min 1 (max 0 d)) (fun _ => 1 / 2) 0
+        (fun w => copyFraction (fun _ => 1) 1 w 1)) (fun _ => 1) (fun _ => 1) 6 1 1
+      (fun _ _ => rfl) (fun _ => zero_le_one) (fun _ => le_rfl) one_pos
+      (fun _ _ => rfl) (by norm_num))
+
+private noncomputable def affineInput : Matrix (Fin 3) (Fin 3) ℝ :=
+  of fun x y => if x = 0 ∧ y = 1 then 1 / 2 else 0
+
+private theorem affineInput_nonneg (x y : Fin 3) : 0 ≤ affineInput x y := by
+  simp only [affineInput, of_apply]
+  split_ifs <;> norm_num
+
+private theorem affineInput_mass (x : Fin 3) : ∑ y, affineInput x y ≤ 1 := by
+  fin_cases x <;> norm_num [affineInput, Fin.sum_univ_three]
+
+-- Real two-rate affine channels, with a two-symbol native suffix: nonzero routing to copy 1.
+example : (𝔼 s ∈ ({s | Cslib.Probability.affineRetains 17 1 7 s (padded 1)} : Finset _),
+    affineBin.direct affineInput s 0 1) = 1 / 4 := by
+  rw [affineBin.expect_direct (by norm_num) affineInput_nonneg affineInput_mass]
+  norm_num [affineInput, routedBinCutoff, Cslib.binWeight, copyFraction]
+
+-- The same whole table also has a true zero entry; the source/endpoint are arguments.
+example : (𝔼 s ∈ ({s | Cslib.Probability.affineRetains 17 1 7 s (padded 0)} : Finset _),
+    affineBin.direct affineInput s 1 0) = 0 := by
+  rw [affineBin.expect_direct (by norm_num) affineInput_nonneg affineInput_mass]
+  norm_num [affineInput, routedBinCutoff, Cslib.binWeight, copyFraction]
+
+-- Bounded stochastic preparation and normalization of the actual stage-one residual.
+-- This feeds the same hierarchy used above to construct stage TWO; no residual/mass
+-- certificate is postulated. The fixed top scale is one and all zero entries are covered.
+example (P : HierarchyParams 2 1 1 1 0) (i : ℕ) (x y : V P 1) :
+    let b : ℕ → ℝ := fun j => (1 / 2) ^ j
+    let r := fun w => copyFraction (P.copyCutoff ((2 : ℝ)⁻¹ ^ 1)) P.m w 0
+    let A := denseLaws (W := V P 1)
+      (boundedRoutedBinCutoff (fun d => min 1 (max 0 (2 * d - 1))) b
+        ((P.k : ℝ) + 2) i r) (b i) 1 (by positivity)
+    let base := fun _ : Unit × Bool => H P 1
+    let corr := fun _ : Unit × Bool =>
+      P.correction (full (α := Unit)) (full (α := Unit)) ((2 : ℝ)⁻¹ ^ 1) (H P 1)
+    let prep := ResidualBinTask.value (fun d => min 1 (max 0 (2 * d - 1))) b
+      ((P.k : ℝ) + 2) i r A.h A.ρ A.K full full hit base corr corr base base .preparation
+    (𝔼 σ ∈ (univ : Finset Unit) ×ˢ (univ : Finset Bool),
+      (b i * ((dens (univ : Finset Bool) : ℝ) / dens {s | hit s y})) *
+        ResidualBinTask.value (fun d => min 1 (max 0 (2 * d - 1))) b
+          ((P.k : ℝ) + 2) i r A.h A.ρ A.K full full hit base corr corr base prep
+            .normalized σ x y) =
+      b i * routedBinCutoff (fun d => min 1 (max 0 (2 * d - 1))) b i r (D P x y / b i) := by
+  dsimp only
+  simpa only [full, filter_true] using
+    ResidualBinTask.expect_value_true P (full (α := Unit)) (full (α := Unit)) (H P 1)
+      (by norm_num) (by norm_num) (invariant_one P).2.1 (invariant_one P).2.2.2
+      (invariant_one P).2.2.1 (fun d => min 1 (max 0 (2 * d - 1)))
+      (fun j => (1 / 2 : ℝ) ^ j) (fun _ => by positivity) (by norm_num) i
+      (fun w => copyFraction (P.copyCutoff ((2 : ℝ)⁻¹ ^ 1)) P.m w 0)
+      (full (α := Unit)) (full (α := Bool)) full hit (denseLaws _ _ _ (by positivity))
+      x y (by simp [full])
+
+-- Negative correction is sampled with its OWN terminal usage slice, not the midpoint factor.
+example (P : HierarchyParams 2 1 1 1 0) (x y : V P 1) :
+    (𝔼 σ ∈ (univ : Finset Unit) ×ˢ (univ : Finset Bool),
+      CorrectionSampling.negativeRecipe (f := (2 : ℝ)⁻¹ ^ 1) full hit
+        (sampling P 1).atom σ x y) =
+      -P.correctionIter (full (α := Unit)) (full (α := Unit))
+        ((2 : ℝ)⁻¹ ^ 1) (H P 1) ((P.k - 1) + 1) x y := by
+  simpa only [full, filter_true] using (sampling P 1).expect_negativeRecipe
+    (Ya := full) (by norm_num) (invariant_one P).2.1 (invariant_one P).2.2.1
+    (fun _ _ _ => trivial) x y (by simp [full])
+
+-- The actual signed sampler on the same multi-stage hierarchy recovers D, including -E.
+example (P : HierarchyParams 2 1 1 1 0) (hkpos : 0 < P.k) (x y : V P 1) :
+    let B := denseLaws (W := V P 1) id 1 1 (by norm_num)
+    (𝔼 draw ∈ ((univ : Finset Unit) ×ˢ (univ : Finset Bool)) ×ˢ (univ : Finset Bool),
+      (sampling P 1).residualSample full hit hit 1 (sampling P 1).atom
+        (B.atom (H P 1)) (sampling P 1).atom draw x y) = D P x y := by
+  dsimp only
+  have hm := (sampling P 1).expect_residualSample
+    (denseLaws (W := V P 1) id 1 1 (by norm_num)) (sampling P 1)
+    (by norm_num) (by norm_num) (invariant_one P).2.1 (invariant_one P).2.2.1
+    (fun _ _ _ => trivial) x y (by simp [full])
+  have hk : P.k - 1 + 1 = P.k := by omega
+  simp only [full, filter_true, hk, P.correctionIter_last, id_eq, div_one, one_mul] at hm
+  rw [hm]
+  change _ = P.residual (full (α := Unit)) (full (α := Unit))
+    ((2 : ℝ)⁻¹ ^ 1) (H P 1) x y
+  rw [P.residual_eq]
+  simp only [Matrix.sub_apply, Matrix.add_apply, Matrix.mul_apply]
+  ring
+
+-- Negative and midpoint calls preserve different endpoint roles and usage slices.
+example : HierarchyTask.residualRequests (k := 0) 1 src mid dst (1 / 8) =
+    [⟨.row 1 .base, src, ⟨2, 1 / 8, [9]⟩, ⟨2, 1 / 8, [9]⟩⟩,
+     ⟨.row 1 (.correction 0), src, mid, mid⟩,
+     ⟨.row 1 .base, mid, ⟨2, 1 / 8, [9]⟩, ⟨2, 1 / 8, [9]⟩⟩,
+     ⟨.row 1 (.correction 0), src, ⟨2, 1 / 2, [9]⟩, dst⟩] := by
+  norm_num [HierarchyTask.residualRequests, src, mid, dst]
 
 end ComplexityTests.HierarchyTasks

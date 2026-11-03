@@ -161,11 +161,10 @@ theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_levinZeroKnowledgeProo
   intro Vstar hV
   exact ⟨GMW.gmwSimulator generator length r.toFun Vstar,
     GMW.isPPTOn_gmwSimulator hG.polyTime hG.length_eq r.computableInPolyTime_toFun hV,
-    fun _ _ _ _ h => by dsimp only [GMW.gmwSimulator]; rw [h],
-    fun _ _ _ ha hw hz hsat _ hadv =>
+    fun _ _ _ _ ha hw hz hz' hsat _ hadv =>
       hAdv.gmwView_negligible r.computableInPolyTime_toFun hV hadv ha
         (by simpa using polynomiallyBounded_length_map r.computableInPolyTime_forwardWitness ha hw)
-        hz fun n => (r.isWitness_forwardWitness _ _ (of_decide_eq_true (hsat n))).2⟩
+        hz hz' fun n => (r.isWitness_forwardWitness _ _ (of_decide_eq_true (hsat n))).2⟩
 
 /-- **GMW for NP relations (from a pseudorandom generator).** Every NP relation has a
 computational zero-knowledge proof system for its language whose bundled witness check is the
