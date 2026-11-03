@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Renfei Zhou, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Renfei Zhou, Samuel Schlesinger
 -/
 
 module
@@ -24,23 +24,50 @@ supplied execution proof, including routines that tolerate arbitrary unused memo
 
 ## Main results
 
-* `Data.extend_regs_of_disjoint`: read back an untouched register bank.
+* `Data.comap_set`, `Data.comap_set_of_forall_ne`: transport register updates through a bank view.
+* `Exec.rename_post`, `ExecWithin.rename_post`: retain postconditions and the caller register frame.
 * `ExecWithin.call`: inline a fixed-code routine with additive instruction accounting.
 
-These composition lemmas are original and use the existing register-renaming semantics.
+These composition lemmas use the existing register-renaming semantics. `Data.comap_set`
+was extracted from the priority-queue calling convention by Renfei Zhou.
 -/
 
 public section
 
 namespace Cslib.WordRAM
 
-/-- Writing back one register bank leaves a disjoint bank unchanged. -/
-theorem Data.extend_regs_of_disjoint {r s t : ℕ} {f : Fin r → Fin t} {g : Fin s → Fin t}
-    (hfg : ∀ i j, f i ≠ g j) (a : Data r) (x : Data t) (j : Fin s) :
-    (a.extend f x).regs (g j) = x.regs (g j) := by
-  apply Function.extend_apply'
-  rintro ⟨i, hi⟩
-  exact hfg i j hi
+/-- Updating an embedded register updates the corresponding register in the bank view. -/
+theorem Data.comap_set {r s : ℕ} {f : Fin r → Fin s} (hf : f.Injective)
+    (x : Data s) (i : Fin r) (v : ℕ) :
+    (x.set (f i) v).comap f = (x.comap f).set i v :=
+  Data.ext (Function.update_comp_eq_of_injective _ hf i v) rfl
+
+/-- A register update outside a bank leaves its entire view unchanged. -/
+theorem Data.comap_set_of_forall_ne {r s : ℕ} {f : Fin r → Fin s}
+    (x : Data s) (i : Fin s) (v : ℕ) (hi : ∀ j, f j ≠ i) :
+    (x.set i v).comap f = x.comap f :=
+  Data.ext (Function.update_comp_eq_of_forall_ne _ v hi) rfl
+
+/-- Run a routine in a larger register file, retaining its entire postcondition and the frame
+outside its bank. Renaming preserves the exact instruction count. -/
+theorem Exec.rename_post {B : Basis} {r s w t : ℕ} {f : Fin r → Fin s}
+    (hf : f.Injective) {c : Code B r} {x : Data s} {Q : Data r → Prop}
+    (h : ∃ y, Exec w c (x.comap f) y t ∧ Q y) :
+    ∃ y, Exec w (c.rename f) x y t ∧ Q (y.comap f) ∧
+      ∀ i, (∀ j, f j ≠ i) → y.regs i = x.regs i := by
+  obtain ⟨y, hy, hQ⟩ := h
+  refine ⟨y.extend f x, hy.rename hf, (Data.comap_extend hf y x).symm ▸ hQ, ?_⟩
+  exact fun i hi => Function.extend_apply' _ _ _ (by rintro ⟨j, hj⟩; exact hi j hj)
+
+/-- Bounded-time version of `Exec.rename_post`. -/
+theorem ExecWithin.rename_post {B : Basis} {r s w t : ℕ} {f : Fin r → Fin s}
+    (hf : f.Injective) {c : Code B r} {x : Data s} {Q : Data r → Prop}
+    (h : ∃ y, ExecWithin w c (x.comap f) y t ∧ Q y) :
+    ∃ y, ExecWithin w (c.rename f) x y t ∧ Q (y.comap f) ∧
+      ∀ i, (∀ j, f j ≠ i) → y.regs i = x.regs i := by
+  obtain ⟨y, ⟨n, hn, hy⟩, hQ⟩ := h
+  obtain ⟨z, hz, hQ, hframe⟩ := Exec.rename_post hf ⟨y, hy, hQ⟩
+  exact ⟨z, hz.within.mono hn, hQ, hframe⟩
 
 /-- Call a routine in an injective register bank and pass its postcondition and register frame to
 the continuation. Preparation, routine execution, and continuation are all charged; renaming
@@ -56,12 +83,8 @@ theorem ExecWithin.call {B : Basis} {r r' w tPrep tCall tCont : ℕ}
       ∃ y, ExecWithin w cont b y tCont ∧ R y) :
     ∃ y, ExecWithin w (.seq prep (.seq (callee.rename f) cont)) x y
       (tPrep + tCall + tCont) ∧ R y := by
-  obtain ⟨b, hb, hQ⟩ := hcallee
-  have hQ' : Q ((b.extend f a).comap f) := by
-    rw [Data.comap_extend hf]
-    exact hQ
-  obtain ⟨y, hy, hR⟩ := hcont (b.extend f a) hQ' (fun i hi =>
-    Function.extend_apply' _ _ _ (by rintro ⟨j, hj⟩; exact hi j hj))
-  exact ⟨y, (hprep.seq ((hb.rename hf).seq hy)).mono (by omega), hR⟩
+  obtain ⟨b, hb, hQ, hframe⟩ := rename_post hf hcallee
+  obtain ⟨y, hy, hR⟩ := hcont b hQ hframe
+  exact ⟨y, (hprep.seq (hb.seq hy)).mono (by omega), hR⟩
 
 end Cslib.WordRAM

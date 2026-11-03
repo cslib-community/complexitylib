@@ -75,27 +75,7 @@ theorem exec_input {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
     refine ⟨y, hy.mono (by omega), by omega, ?_⟩
     simp only [ha, reduceCtorEq, false_iff]
     exact hno
-  let x : Data (registerCount r) := Data.init (input.map Signed.encode)
-  let a := (x.comap (controllerRegisters r)).set address 0
-    |>.set inputLength input.length |>.set three 3 |>.set answer 0
-  let q := a.extend (controllerRegisters r) x
-  have hread : ExecWithin w (readLength.rename (controllerRegisters r)) x q 4 := by
-    apply ExecWithin.rename (controller_injective r)
-    simpa only [Data.comap_mem, x, Data.init_mem_zero, List.length_map] using
-      exec_readLength (x.comap (controllerRegisters r)) h3
-  have hqa : q.regs (controllerRegisters r answer) = 0 := by
-    rw [extend_controller]
-    simp +decide [a, answer, three, inputLength, address]
-  have hqn : q.regs (controllerRegisters r inputLength) = input.length := by
-    rw [extend_controller]
-    simp +decide [a, answer, three, inputLength, address]
-  have hq3 : q.regs (controllerRegisters r three) = 3 := by
-    rw [extend_controller]
-    simp +decide [a, answer, three]
-  have hqpp : q.comap (preprocessingRegisters r) = Data.init (input.map Signed.encode) := by
-    ext i
-    · exact (extend_controller_preprocessing _ _ i).trans rfl
-    · rfl
+  obtain ⟨q, hread, hqa, hqn, hq3, hqpp⟩ := exec_readLength_init (r := r) input h3
   obtain ⟨y, hy, hb, hans⟩ := exec_large input c q hw (by omega) hvalues hqpp hqn hqa
   refine ⟨y, ?_, hb, hans⟩
   unfold program

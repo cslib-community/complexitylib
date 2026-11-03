@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.Stack
+import Complexity.Computability.WordRAM.Call
 import Mathlib.Data.List.OfFn
 import Mathlib.Tactic.FinCases
 
@@ -42,98 +43,6 @@ namespace Cslib.WordRAM.Stack
 
 variable {r n : ℕ}
 
-private def pushWord (reg : Fin 9 → Fin r) (src : Fin r) : Code .standard r :=
-  let tagReg := reg tag
-  let argReg := reg arg
-  .seq (ram[ tagReg ← #0; argReg ← src ]) (program.rename reg)
-
-private def popWord (reg : Fin 9 → Fin r) (dst : Fin r) : Code .standard r :=
-  let tagReg := reg tag
-  let argReg := reg arg
-  .seq (ram[ tagReg ← #1; argReg ← #0 ])
-    (.seq (program.rename reg) (.op (.copy dst (reg out))))
-
-private theorem pushWord_exec (reg : Fin 9 → Fin r) (hi : Function.Injective reg)
-    (src : Fin r) (hd : ∀ j, src ≠ reg j) {w base capacity : ℕ} (x : Data r) (vs : List ℕ)
-    (h2 : Fits w 2) (hcap : Fits w (base + capacity))
-    (hr : Rep w base capacity vs (x.comap reg)) (hw : Fits w (x.regs src))
-    (hv : vs.length < capacity) :
-    ∃ y, Exec w (pushWord reg src) x y 9 ∧
-      Rep w base capacity (x.regs src :: vs) (y.comap reg) ∧
-      Modifies (footprint base capacity) x.mem y.mem ∧
-      ∀ j, (∀ i, j ≠ reg i) → y.regs j = x.regs j := by
-  let q := (x.set (reg tag) 0).set (reg arg) (x.regs src)
-  have hp : Exec (B := .standard) w
-      (.seq (.op (.const (reg tag) 0)) (.op (.copy (reg arg) src))) x q 2 := by
-    ram_eval [q, hd tag]
-  have hq : q.comap reg = (implementation w capacity).prepare (.push (x.regs src))
-      (x.comap reg) := by
-    ext j
-    · fin_cases j <;>
-        simp +decide [q, Data.comap, Data.set, hi.eq_iff, implementation,
-          DynamicProgram.prepare, tag, arg]
-    · rfl
-  obtain ⟨a, ha, _, hra, hframe⟩ := execute h2 hcap hr (.push (x.regs src)) ⟨hv, hw⟩
-  have hcall : Exec w program (q.comap reg) a 7 := by
-    simpa only [hq, bodyCost] using ha
-  let y := a.extend reg q
-  refine ⟨y, hp.seq (hcall.rename hi), ?_, hframe, ?_⟩
-  · simpa only [y, Data.comap_extend hi] using hra
-  · intro j hj
-    rw [show (a.extend reg q).regs j = q.regs j from
-      Function.extend_apply' _ _ _ (by rintro ⟨i, rfl⟩; exact hj i rfl)]
-    simp only [q, Data.set_regs, Function.update_of_ne (hj arg), Function.update_of_ne (hj tag)]
-
-private theorem popWord_exec (reg : Fin 9 → Fin r) (hi : Function.Injective reg)
-    (dst : Fin r) (hd : ∀ j, dst ≠ reg j) {w base capacity : ℕ}
-    (x : Data r) (v : ℕ) (vs : List ℕ) (h2 : Fits w 2) (hcap : Fits w (base + capacity))
-    (hr : Rep w base capacity (v :: vs) (x.comap reg)) :
-    ∃ y, Exec w (popWord reg dst) x y 14 ∧
-      Rep w base capacity vs (y.comap reg) ∧ y.regs dst = v ∧
-      Modifies (footprint base capacity) x.mem y.mem ∧
-      ∀ j, (∀ i, j ≠ reg i) → j ≠ dst → y.regs j = x.regs j := by
-  let q := (x.set (reg tag) 1).set (reg arg) 0
-  have h1 : Fits w 1 := h2.of_le (by decide)
-  have hp : Exec (B := .standard) w
-      (.seq (.op (.const (reg tag) 1)) (.op (.const (reg arg) 0))) x q 2 := by
-    ram_eval [q, h1]
-  have hq : q.comap reg = (implementation w capacity).prepare .pop (x.comap reg) := by
-    ext j
-    · fin_cases j <;>
-        simp +decide [q, Data.comap, Data.set, hi.eq_iff, implementation,
-          DynamicProgram.prepare, tag, arg]
-    · rfl
-  obtain ⟨a, ha, hans, hra, hframe⟩ := execute h2 hcap hr .pop trivial
-  have hcall : Exec w program (q.comap reg) a 11 := by
-    simpa only [hq, bodyCost, List.cons_ne_nil, ↓reduceIte] using ha
-  have hout : a.regs out = v := by
-    change some (if a.regs present = 0 then none else some (a.regs out)) = some (some v) at hans
-    split at hans
-    · cases hans
-    · exact Option.some.inj (Option.some.inj hans)
-  have hread : (a.extend reg q).regs (reg out) = v := by
-    change Function.extend reg a.regs q.regs (reg out) = v
-    rw [hi.extend_apply, hout]
-  let y := (a.extend reg q).set dst v
-  have hcopy : Exec (B := .standard) w
-      (.op (.copy dst (reg out))) (a.extend reg q) y 1 := by
-    simpa only [y, hread] using
-      (Exec.copy (B := Basis.standard) (w := w) (x := a.extend reg q) (d := dst) (s := reg out))
-  have hrep : y.comap reg = a := by
-    ext j
-    · change Function.update (a.extend reg q).regs dst v (reg j) = a.regs j
-      rw [Function.update_of_ne (hd j).symm]
-      exact hi.extend_apply _ _ j
-    · rfl
-  refine ⟨y, hp.seq ((hcall.rename hi).seq hcopy), ?_, Function.update_self .., hframe, ?_⟩
-  · simpa only [hrep, List.tail_cons] using hra
-  · intro j hj hji
-    change Function.update (a.extend reg q).regs dst v j = x.regs j
-    rw [Function.update_of_ne hji,
-      show (a.extend reg q).regs j = q.regs j from
-        Function.extend_apply' _ _ _ (by rintro ⟨i, rfl⟩; exact hj i rfl)]
-    simp only [q, Data.set_regs, Function.update_of_ne (hj arg), Function.update_of_ne (hj tag)]
-
 /-- Push a register bank in reverse order, leaving its words in forward order at the stack top.
 The terminal self-copy preserves the entire state, including for a zero-length record. -/
 @[expose] def pushRecord (reg : Fin 9 → Fin r) :
@@ -161,19 +70,15 @@ The terminal self-copy supplies the zero-length case. -/
 /-- Pushing a fixed record does not inspect the physical word width. -/
 theorem pushRecord_not_readsWidth (reg : Fin 9 → Fin r) (src : Fin n → Fin r) (idle : Fin r) :
     ¬(pushRecord reg src idle).ReadsWidth := by
-  induction n with
-  | zero => simp [pushRecord, Code.ReadsWidth, Op.ReadsWidth]
-  | succ n ih =>
-    simp [pushRecord, Code.ReadsWidth, Op.ReadsWidth, ih, program, Code.rename, Op.rename,
+  induction n <;>
+    simp_all [pushRecord, Code.ReadsWidth, Op.ReadsWidth, program, Code.rename, Op.rename,
       writeAt, readAt, Op.bin]
 
 /-- Popping a fixed record does not inspect the physical word width. -/
 theorem popRecord_not_readsWidth (reg : Fin 9 → Fin r) (dst : Fin n → Fin r) (idle : Fin r) :
     ¬(popRecord reg dst idle).ReadsWidth := by
-  induction n with
-  | zero => simp [popRecord, Code.ReadsWidth, Op.ReadsWidth]
-  | succ n ih =>
-    simp [popRecord, Code.ReadsWidth, Op.ReadsWidth, ih, program, Code.rename, Op.rename,
+  induction n <;>
+    simp_all [popRecord, Code.ReadsWidth, Op.ReadsWidth, program, Code.rename, Op.rename,
       writeAt, readAt, Op.bin]
 
 /-- Push all record words with exact instruction cost, preserving caller registers and memory
@@ -191,21 +96,39 @@ theorem pushRecord_exec (reg : Fin 9 → Fin r) (hi : Function.Injective reg)
   induction n generalizing x vs with
   | zero =>
     have he : Exec (B := .standard) w (.op (.copy idle idle)) x x 1 := by
-      convert (Exec.copy (B := Basis.standard) (w := w) (x := x) (d := idle) (s := idle)) using 1
-      ext j <;> simp [Data.set]
+      simpa [Data.set] using (Exec.copy (B := Basis.standard) (w := w) (x := x)
+        (d := idle) (s := idle))
     exact ⟨x, he, hr, fun _ _ => rfl, fun _ _ => rfl⟩
   | succ n ih =>
-    obtain ⟨z, hz, hrz, hfz, hpz⟩ :=
-      pushWord_exec reg hi (src (Fin.last n)) (hd _) x vs h2 hcap hr (hw _) (by omega)
+    let q := (x.set (reg tag) 0).set (reg arg) (x.regs (src (Fin.last n)))
+    have hp : Exec (B := .standard) w
+        (.seq (.op (.const (reg tag) 0)) (.op (.copy (reg arg) (src (Fin.last n))))) x q 2 := by
+      ram_eval [q, hd (Fin.last n) tag]
+    have hq : q.comap reg = (implementation w capacity).prepare
+        (.push (x.regs (src (Fin.last n)))) (x.comap reg) := by
+      simp only [q, Data.comap_set hi]
+      ext j
+      · fin_cases j <;> rfl
+      · rfl
+    obtain ⟨b, hb, _, hrb, hfb⟩ :=
+      execute h2 hcap hr (.push (x.regs (src (Fin.last n)))) ⟨by omega, hw _⟩
+    have hcall : Exec w program (q.comap reg) b 7 := by
+      simpa only [hq, bodyCost] using hb
+    obtain ⟨z, hz, ⟨hrz, hfz⟩, hpz⟩ := Exec.rename_post hi
+      (Q := fun b => Rep w base capacity (x.regs (src (Fin.last n)) :: vs) b ∧
+        Modifies (footprint base capacity) x.mem b.mem) ⟨b, hcall, hrb, hfb⟩
+    have hframe (j) (hj : ∀ i, j ≠ reg i) : z.regs j = x.regs j := by
+      rw [hpz j (fun i => (hj i).symm)]
+      simp only [q, Data.set_regs, Function.update_of_ne (hj arg), Function.update_of_ne (hj tag)]
     obtain ⟨y, hy, hry, hfy, hpy⟩ := ih (fun i : Fin n => src i.castSucc)
       (fun i => hd i.castSucc) z (x.regs (src (Fin.last n)) :: vs) hrz
-      (fun i => by rw [hpz _ (hd i.castSucc)]; exact hw i.castSucc)
+      (fun i => by rw [hframe _ (hd i.castSucc)]; exact hw i.castSucc)
       (by simp only [List.length_cons]; omega)
-    refine ⟨y, ?_, ?_, ?_, fun j hj => (hpy j hj).trans (hpz j hj)⟩
-    · simpa only [pushRecord, pushWord, Nat.mul_add, Nat.mul_one, Nat.add_assoc, Nat.add_comm,
-        Nat.add_left_comm] using hz.seq hy
+    refine ⟨y, ?_, ?_, ?_, fun j hj => (hpy j hj).trans (hframe j hj)⟩
+    · simpa [pushRecord, Nat.mul_add, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+        (hp.seq hz).seq hy
     · have hslots : (fun i : Fin n => z.regs (src i.castSucc)) =
-          fun i : Fin n => x.regs (src i.castSucc) := funext fun i => hpz _ (hd i.castSucc)
+          fun i : Fin n => x.regs (src i.castSucc) := funext fun i => hframe _ (hd i.castSucc)
       simpa only [hslots, List.ofFn_succ', List.concat_eq_append, List.append_assoc,
         List.singleton_append] using hry
     · intro a ha
@@ -226,27 +149,58 @@ theorem popRecord_exec (reg : Fin 9 → Fin r) (hi : Function.Injective reg)
   induction n generalizing x with
   | zero =>
     have he : Exec (B := .standard) w (.op (.copy idle idle)) x x 1 := by
-      convert (Exec.copy (B := Basis.standard) (w := w) (x := x) (d := idle) (s := idle)) using 1
-      ext j <;> simp [Data.set]
+      simpa [Data.set] using (Exec.copy (B := Basis.standard) (w := w) (x := x)
+        (d := idle) (s := idle))
     exact ⟨x, he, hr, fun i => Fin.elim0 i, fun _ _ => rfl, fun _ _ _ => rfl⟩
   | succ n ih =>
     rw [List.ofFn_succ, List.cons_append] at hr
-    obtain ⟨z, hz, hrz, hout, hfz, hpz⟩ :=
-      popWord_exec reg hi (dst 0) (hd 0) x (a 0) (List.ofFn (fun i => a i.succ) ++ vs)
-        h2 hcap hr
+    let q := (x.set (reg tag) 1).set (reg arg) 0
+    have h1 : Fits w 1 := h2.of_le (by decide)
+    have hp : Exec (B := .standard) w
+        (.seq (.op (.const (reg tag) 1)) (.op (.const (reg arg) 0))) x q 2 := by
+      ram_eval [q, h1]
+    have hq : q.comap reg = (implementation w capacity).prepare .pop (x.comap reg) := by
+      simp only [q, Data.comap_set hi]
+      ext j
+      · fin_cases j <;> rfl
+      · rfl
+    obtain ⟨b, hb, hans, hrb, hfb⟩ := execute h2 hcap hr .pop trivial
+    have hcall : Exec w program (q.comap reg) b 11 := by
+      simpa only [hq, bodyCost, List.cons_ne_nil, ↓reduceIte] using hb
+    have hout : b.regs out = a 0 := by
+      change some (if b.regs present = 0 then none else some (b.regs out)) = some (some (a 0))
+        at hans
+      split at hans
+      · cases hans
+      · exact Option.some.inj (Option.some.inj hans)
+    obtain ⟨z, hz, ⟨hrz, hout, hfz⟩, hpz⟩ :=
+      Exec.rename_post hi
+        (Q := fun b => Rep w base capacity (List.ofFn (fun i : Fin n => a i.succ) ++ vs) b ∧
+          b.regs out = a 0 ∧ Modifies (footprint base capacity) x.mem b.mem)
+        ⟨b, hcall, hrb, hout, hfb⟩
+    change z.regs (reg out) = a 0 at hout
+    let copied := z.set (dst 0) (a 0)
+    have hcopy : Exec (B := .standard) w (.op (.copy (dst 0) (reg out))) z copied 1 := by
+      simpa only [copied, hout] using (Exec.copy (B := Basis.standard) (w := w) (x := z)
+        (d := dst 0) (s := reg out))
+    have hcopied : copied.comap reg = z.comap reg :=
+      Data.comap_set_of_forall_ne z (dst 0) (a 0) (fun j => (hd 0 j).symm)
     obtain ⟨y, hy, hry, hya, hfy, hpy⟩ := ih (fun i : Fin n => dst i.succ)
       (fun i j h => Fin.succ_injective _ (hinj h)) (fun i => hd i.succ)
-      z (fun i => a i.succ) hrz
+      copied (fun i => a i.succ) (by simpa only [hcopied, List.tail_cons] using hrz)
     refine ⟨y, ?_, hry, ?_, ?_, ?_⟩
-    · simpa only [popRecord, popWord, Nat.mul_add, Nat.mul_one, Nat.add_assoc, Nat.add_comm,
-        Nat.add_left_comm] using hz.seq hy
+    · simpa [popRecord, Nat.mul_add, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+        (hp.seq (hz.seq hcopy)).seq hy
     · intro i
       refine Fin.cases ?_ (fun j => hya j) i
       rw [hpy (dst 0) (hd 0) (fun j h => Fin.succ_ne_zero j (hinj h).symm)]
-      exact hout
+      exact Function.update_self ..
     · intro a ha
       exact (hfy a ha).trans (hfz a ha)
     · intro j hj hdst
-      exact (hpy j hj (fun i => hdst i.succ)).trans (hpz j hj (hdst 0))
+      rw [hpy j hj (fun i => hdst i.succ)]
+      change Function.update z.regs (dst 0) (a 0) j = x.regs j
+      rw [Function.update_of_ne (hdst 0), hpz j (fun i => (hj i).symm)]
+      simp only [q, Data.set_regs, Function.update_of_ne (hj arg), Function.update_of_ne (hj tag)]
 
 end Cslib.WordRAM.Stack

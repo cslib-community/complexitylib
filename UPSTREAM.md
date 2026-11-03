@@ -272,13 +272,13 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   while retaining the complete initialized-run theorem. The Operator Manual companion documents
   these APIs and the quantitative account; no selected abstract or agent workflow changes.
 
-  Bounded API follow-ups from the traversal/preprocessing reviews: merge the stage proof modules
-  `PreprocessingSnapshot`, `PreprocessingPrimes`, `PreprocessingSetup`, `PreprocessingFinish`,
-  `PreprocessingInvariant`, `PreprocessingStep` and `PreprocessingLoop` with their controller
-  consumer `PreprocessingExecute`, or use `import all` to make their proof plumbing private.
-  This includes `Saved`, `ForestCursor`, `snapshot_exec`, `primes_exec`, `setupTraversal_exec`,
-  `finish_exec`, `execute_next_root` and `forest_body_exec`; keep the initialized-input, readback,
-  width and resource endpoints available through `Preprocessing`. Separately, move
+  The preprocessing stage proofs are private implementation details: `PreprocessingSetup`
+  contains snapshot, prime-table and reservation setup; `PreprocessingLoop` contains the forest
+  invariant and loop proof. `PreprocessingExecute` uses `import all` for these two companions.
+  Initialized-input, readback, width and resource endpoints remain available through
+  `Preprocessing`.
+
+  Bounded API follow-ups from the traversal/preprocessing reviews: move
   `modulus_bounds_of_candidates` from `SelectorBounds` beside `Collisions`' `modulus_bounds` and
   derive or cross-reference the stronger bound, migrating `TraversalCall` and selector tests.
   Derive `Structured`'s `ExecWithin.loop_invariant` as the `Data`-state case of

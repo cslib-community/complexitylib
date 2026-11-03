@@ -46,15 +46,15 @@ abbrev registerCount (r : ℕ) : ℕ := 128 + (64 + (r + 7)) + 16
 
 /-- The complete original preprocessing bank. -/
 def preprocessingRegisters (r : ℕ) (i : Fin 128) : Fin (registerCount r) :=
-  ⟨i.val, by have := i.isLt; dsimp only [registerCount]; omega⟩
+  (i.castAdd (64 + (r + 7))).castAdd 16
 
 /-- A disjoint bank for the actual Convolution host and supplied finite callee. -/
 def hostRegisters (r : ℕ) (i : Fin (64 + (r + 7))) : Fin (registerCount r) :=
-  ⟨128 + i.val, by have := i.isLt; dsimp only [registerCount]; omega⟩
+  (i.natAdd 128).castAdd 16
 
 /-- Outer controls survive both preprocessing and every Convolution call. -/
 def controllerRegisters (r : ℕ) (i : Fin 16) : Fin (registerCount r) :=
-  ⟨128 + (64 + (r + 7)) + i.val, by have := i.isLt; dsimp only [registerCount]; omega⟩
+  i.natAdd (128 + (64 + (r + 7)))
 
 /-- Saved actual input length. -/
 abbrev inputLength : Fin 16 := 0

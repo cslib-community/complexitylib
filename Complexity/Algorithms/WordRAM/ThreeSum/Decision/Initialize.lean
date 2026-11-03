@@ -47,22 +47,20 @@ theorem exec_initialize {r κ n w tab num N H d : ℕ} (x : Data (registerCount 
   obtain ⟨hV, hE, hB, _⟩ := envelope_fits hw
   obtain ⟨a, ha, hat, hac, hal, hah, has, hav, har, hak, hao, haz, haa, ham⟩ :=
     exec_setup x hn ht hc hl hh hB hE
-  obtain ⟨b, hb, hbV, hb0, hbr, hbm⟩ := exec_power (a.comap (controllerRegisters r))
-    (by omega : 1 ≤ n + 2) has har hav hao haz hV hE
-  let y := b.extend (controllerRegisters r) a
-  have hy (i : Fin 16) : y.regs (controllerRegisters r i) = b.regs i :=
-    extend_controller _ _ i
+  obtain ⟨y, hb, ⟨hbV, _, hbr, hbm⟩, _⟩ :=
+    ExecWithin.rename_post (controller_injective r) (exec_power (a.comap (controllerRegisters r))
+      (by omega : 1 ≤ n + 2) has har hav hao haz hV hE)
   refine ⟨y, ?_, ?_, ?_, ?_, ?_⟩
-  · exact (ha.seq (hb.rename (controller_injective r))).mono (by omega)
+  · exact (ha.seq hb).mono (by omega)
   · constructor
-    · exact (hy _).trans ((hbr _ (by decide) (by decide)).trans hat)
-    · exact (hy _).trans ((hbr _ (by decide) (by decide)).trans hac)
-    · exact (hy _).trans ((hbr _ (by decide) (by decide)).trans hal)
-    · exact (hy _).trans hbV
-    · exact (hy _).trans ((hbr _ (by decide) (by decide)).trans hah)
-    · exact (hy _).trans ((hbr _ (by decide) (by decide)).trans hao)
-  · exact (hy _).trans ((hbr _ (by decide) (by decide)).trans hak)
-  · exact (hy _).trans ((hbr _ (by decide) (by decide)).trans haa)
+    · exact (hbr _ (by decide) (by decide)).trans hat
+    · exact (hbr _ (by decide) (by decide)).trans hac
+    · exact (hbr _ (by decide) (by decide)).trans hal
+    · exact hbV
+    · exact (hbr _ (by decide) (by decide)).trans hah
+    · exact (hbr _ (by decide) (by decide)).trans hao
+  · exact (hbr _ (by decide) (by decide)).trans hak
+  · exact (hbr _ (by decide) (by decide)).trans haa
   · exact hbm.trans ham
 
 end Cslib.Algorithms.WordRAM.ThreeSum.Decision

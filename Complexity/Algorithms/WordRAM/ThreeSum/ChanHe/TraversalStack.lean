@@ -51,12 +51,8 @@ def arrayLength (j : Fin 3) : Fin 128 := slot ⟨2 + 2 * j.val, by omega⟩
 /-- The existing stack's workspace lies above every 64-register node-kernel register. -/
 def registers (i : Fin 9) : Fin 128 := ⟨96 + i.val, by omega⟩
 
-private theorem registers_injective : Function.Injective registers := by
-  intro i j h
-  apply Fin.ext
-  have := congrArg Fin.val h
-  dsimp [registers] at this
-  omega
+private theorem registers_injective : Function.Injective registers :=
+  fun _ _ h => Fin.ext (Nat.add_left_cancel (congrArg Fin.val h))
 
 /-- Caller-owned registers outside the stack dispatcher. -/
 abbrev Outside (i : Fin 128) : Prop := i.val < 96 ∨ 105 ≤ i.val
@@ -105,16 +101,11 @@ theorem popFrame_exec {w base capacity : ℕ} (x : Data 128) (vs : List ℕ) (a 
       (∀ i, y.regs (slot i) = a i) ∧
       Modifies (Stack.footprint base capacity) x.mem y.mem ∧
       ∀ j, Outside j → (j.val < 64 ∨ 71 ≤ j.val) → y.regs j = x.regs j := by
-  have hinj : Function.Injective slot := by
-    intro i j h
-    apply Fin.ext
-    have := congrArg Fin.val h
-    dsimp [slot] at this
-    omega
   have hr' : Stack.Rep w base capacity (List.ofFn a ++ vs) (x.comap registers) := by
     simpa [List.ofFn_succ, Fin.succ] using hr
   obtain ⟨y, hy, hry, hya, hfy, hpy⟩ :=
-    Stack.popRecord_exec registers registers_injective slot (slot 0) hinj
+    Stack.popRecord_exec registers registers_injective slot (slot 0)
+      (fun _ _ h => Fin.ext (Nat.add_left_cancel (congrArg Fin.val h)))
       slot_ne_registers x vs a h2 hcap hr'
   refine ⟨y, hy, hry, hya, hfy, ?_⟩
   intro j hj hj'

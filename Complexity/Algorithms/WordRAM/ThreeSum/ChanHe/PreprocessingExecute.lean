@@ -7,10 +7,10 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingLoop
-public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingPrimes
-public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingFinish
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingEntries
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingWidth
+import all Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingLoop
+import all Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingSetup
 
 /-!
 # Composing every computed native preprocessing root

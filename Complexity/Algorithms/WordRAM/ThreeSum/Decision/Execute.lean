@@ -79,15 +79,13 @@ theorem exec_large {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
     have hr := he.runs (pc := 0) (p := ChanHe.Preprocessing.flatProgram κ)
       (Program.Contains.self _).append_left
     exact ChanHe.Preprocessing.intermediates_polynomial input hppw hvalues hr
-  let q := p.extend (preprocessingRegisters r) x
-  have hq : ExecWithin w ((ChanHe.Preprocessing.program κ).rename (preprocessingRegisters r))
-      x q (ChanHe.Preprocessing.cost κ n - 1) := by
-    apply ExecWithin.rename (preprocessing_injective r)
-    simpa only [hinit] using hp
+  obtain ⟨q, hq, hqp, hframe⟩ := ExecWithin.rename_post (x := x) (Q := fun q => q = p)
+    (preprocessing_injective r) ⟨p, by simpa only [hinit] using hp, rfl⟩
   have hqr (i : Fin 128) : q.regs (preprocessingRegisters r i) = p.regs i :=
-    (preprocessing_injective r).extend_apply _ _ i
+    congrArg (fun q => q.regs i) hqp
+  have hqm : q.mem = p.mem := congrArg Data.mem hqp
   have hqc (i : Fin 16) : q.regs (controllerRegisters r i) = x.regs (controllerRegisters r i) :=
-    extend_preprocessing_controller _ _ i
+    hframe _ (fun j => (controller_ne_preprocessing i j).symm)
   obtain ⟨a, ha, hac, hak, hab, ham⟩ := exec_initialize q hw ((hqc _).trans hlen)
     ((hqr _).trans htab) ((hqr _).trans hnum) ((hqr _).trans hN) (hqr _)
   have hNV : 4 * (2 * m ^ 2) < V := by
@@ -100,7 +98,7 @@ theorem exec_large {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
     convert hac using 1
     dsimp only [m, U, n]
     omega
-  have ham' : a.mem = p.mem := ham
+  have ham' : a.mem = p.mem := ham.trans hqm
   have haStored : ChanHe.Traversal.StoredNodes (2 * U) (2 * m ^ 2)
       (ChanHe.Preprocessing.arena κ n p.mem).table out a.mem := by
     rw [ham']
