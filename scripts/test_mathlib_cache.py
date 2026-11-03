@@ -147,6 +147,37 @@ class MathlibCacheTests(unittest.TestCase):
         self.assertEqual(len(created), 3)
         self.assertTrue(all(p.poll() is not None for p in created))
 
+    def test_wait_errors_and_cancellation_always_stop_the_attempt(self):
+        original = subprocess.Popen
+        for error in (KeyboardInterrupt(), OSError("wait failed"), ValueError("unexpected wait failure")):
+            with self.subTest(error=type(error).__name__):
+                created = []
+                def start(*args, **kwargs):
+                    process = original(*args, **kwargs)
+                    process.wait = Mock(side_effect=error)
+                    created.append(process)
+                    return process
+                with patch.object(cache, "ATTEMPTS", 1), \
+                        patch.object(cache.subprocess, "Popen", side_effect=start), \
+                        patch.object(cache, "stop_attempt", wraps=cache.stop_attempt) as stop:
+                    if isinstance(error, OSError):
+                        self.assertFalse(self.restore(MATHLIB_TEST_MODE="hang"))
+                    else:
+                        with self.assertRaises(type(error)):
+                            self.restore(MATHLIB_TEST_MODE="hang")
+                self.assertEqual(len(created), 1)
+                stop.assert_called_once_with(created[0])
+                self.assertIsNotNone(created[0].poll())
+
+    def test_wait_error_does_not_retry_if_shutdown_is_unconfirmed(self):
+        process = Mock()
+        process.wait.side_effect = OSError("wait failed")
+        with patch.object(cache.subprocess, "Popen", return_value=process) as start, \
+                patch.object(cache, "stop_attempt", return_value=False) as stop:
+            self.assertFalse(self.restore())
+        start.assert_called_once()
+        stop.assert_called_once_with(process)
+
     def test_descendant_cleanup_finishes_before_retry(self):
         with patch.object(cache, "ATTEMPT_SECONDS", .5), \
                 patch.object(cache, "SHUTDOWN_SECONDS", 1):

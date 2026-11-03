@@ -73,16 +73,17 @@ def restore(root, env, lean_action=False):
             try:
                 status = process.wait(timeout=ATTEMPT_SECONDS)
                 reason = f"exit status {status}"
-            except subprocess.TimeoutExpired as error:
+            except (OSError, subprocess.TimeoutExpired) as error:
                 status = None
                 reason = str(error)
-            # Also drain descendants when Lake exits before them, regardless of status.
-            try:
-                stopped = stop_attempt(process)
-            except OSError as error:
-                print(f"warning: could not establish Mathlib cache shutdown: {error}",
-                      file=sys.stderr, flush=True)
-                stopped = False
+            finally:
+                # Also drain descendants when Lake exits before them, regardless of status.
+                try:
+                    stopped = stop_attempt(process)
+                except OSError as error:
+                    print(f"warning: could not establish Mathlib cache shutdown: {error}",
+                          file=sys.stderr, flush=True)
+                    stopped = False
             if not stopped:
                 print("warning: Mathlib cache process group did not disappear; "
                       "skipping remaining attempts", file=sys.stderr, flush=True)
