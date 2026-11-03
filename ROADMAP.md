@@ -602,8 +602,16 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   expected-time rules for unbounded almost-surely terminating structured loops; random-tape
   equivalence and BPP/RP/ZPP simulation bridges for the randomized word RAM ([#1124]); transfer
   of cell-probe lower bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
-- **Direct 3SUM adaptation** ([#1394]): the improved Section 4 route and tuned source exponent
-  1.9992 remain open. The finite cube/box prerequisite ([#2160](https://github.com/cslib-community/complexitylib/issues/2160))
+- **Direct 3SUM adaptation** ([#1394]): the native ordinary 1.9992 endpoint is proved in `WordRAM/ThreeSum/Decision/One9992.lean`: for every fixed polynomial
+  integer-magnitude exponent, one fixed 848-register native program decides distinct-position
+  3SUM at every input length, with charged `Oκ(n^1.9992)` steps, logarithmic physical admission
+  and polynomial every-prefix words/support at every wider width. The explicit computable
+  `boxProgram`/`boxFlatProgram` use the actual automatic box-backed ET callee; no solver,
+  selected prime, layout, run or time law is an endpoint hypothesis. This completes the native
+  ordinary 3SUM exponent objective; integration and its exact-revision validation/review are
+  tracked by the linked PR. Standard Word-RAM instruction time and polynomially bounded integer
+  inputs are explicit; bit/Turing time and arbitrary-real 3SUM are separate models.
+  The finite cube/box prerequisite ([#2160](https://github.com/cslib-community/complexitylib/issues/2160))
   supplies canonical boxes, their disjoint high-order leaf partition, explicit low-order terms,
   exact cardinalities and a signed value recurrence. The native box-table milestone
   ([#2176](https://github.com/cslib-community/complexitylib/issues/2176)) computes one shared
@@ -631,10 +639,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   ([#2355](https://github.com/cslib-community/complexitylib/issues/2355)) uses the existing actual
   array-copy/sum and computed-modulus setup, preserves the selector bank and original arguments,
   and establishes initialized verdict/witness, width-independent prefix support and a complete
-  finite charge including every translation and halt. Global parameter/prime selection still
-  calls the previous consumer; connecting this caller, polynomial-factor absorption and final
-  tuning remain open.
-  Conservative native ordinary integer 3SUM is proved in
+  finite charge including every translation and halt. The automatic `BoxParameterSelecting`
+  host now computes parameters, selects a prime and executes this caller, with polynomial-factor
+  absorption and final tuning proved for that actual program. Its real 2394-bit block
+  program computes `m=63b`, `g=4^(2b)` and `L=21m`; the complete actual ET time is
+  `Oκ(n^(3−33/20000))`. A sharper charged ordinary transfer yields 1.9992. The source's stronger
+  ET 2.9983 number is not claimed by this integer retuning.
+  The earlier conservative native ordinary integer 3SUM result remains in
   `WordRAM/ThreeSum/Decision/Subquadratic.lean`: for each fixed polynomial magnitude exponent,
   one fixed 848-register program has charged time `Oκ(n^(2−1/5184))`, logarithmic physical
   admission and polynomial words/support at every wider execution prefix. Correctness includes
