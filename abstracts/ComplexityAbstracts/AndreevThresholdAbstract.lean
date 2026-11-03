@@ -15,8 +15,9 @@ Andreev's function on `n = 2 ^ b + b * m` bits takes a `2 ^ b`-bit truth table a
 `m`-bit blocks, computes the parity of each block, and outputs the truth-table entry addressed by
 those `b` parities. In the balanced regime `N = 2 ^ b = b * m` (`n = 2 N`), Kane and Williams
 proved an `O(n ^ 3 / log n)` depth-two linear threshold (`THR ∘ THR`) gate upper bound and
-average-case `Ω(ε ^ 3 n ^ (3 / 2) / log ^ 3 n)` gate and `Ω(ε ^ 3 n ^ (5 / 2) / log ^ (7 / 2) n)`
-wire lower bounds for circuits agreeing with Andreev's function on a `1 / 2 + ε` fraction of inputs.
+average-case `Omega(ε ^ 3 n ^ (3 / 2) / log ^ 3 n)` gate and
+`Omega(ε ^ 3 n ^ (5 / 2) / log ^ (7 / 2) n)` wire lower bounds for circuits agreeing with
+Andreev's function on a `1 / 2 + ε` fraction of inputs.
 
 This development formalizes four improvements over the bounds of Kane and Williams:
 
@@ -31,28 +32,28 @@ This development formalizes four improvements over the bounds of Kane and Willia
    threshold ladder to a window of half-width `B ≥ 3 t + 1 / 2` around its expected center reduces
    the circuit size to `4 * 2 ^ b * B + 1` while bounding the disagreement fraction by the
    Hoeffding tail `2 ^ (b + 1) (exp (-2 t ^ 2 / 2 ^ b) + exp (-2 t ^ 2 / (b m)))`, giving
-   `O(n ^ (3 / 2) √(log (n / δ)))` gates and `O(n ^ (5 / 2) √(log (n / δ)))` wires for agreement
-   `1 - δ`.
+   `O(n ^ (3 / 2) sqrt(log (n / δ)))` gates and `O(n ^ (5 / 2) sqrt(log (n / δ)))` wires for
+   agreement `1 - δ`.
 3. **Windowed `(1 / 2 + ε)`-correlation upper bound (`weak_agreement_upper_bound`).** Summing only
    over the `2 ^ r` prefix subsets `S ⊆ {0, ..., r - 1}` (`r < b`) gives the subcube majority vote
    over `2 ^ (b - r)` truth-table entries, whose exact correlation advantage over `1 / 2` is at
-   least `1 / (2 √(2 · 2 ^ (b - r)))`, yielding `O(ε ^ 2 n ^ (3 / 2) √(log (1 / ε)))` gates and
-   `O(ε ^ 2 n ^ (5 / 2) √(log (1 / ε)))` wires.
+   least `1 / (2 sqrt(2 · 2 ^ (b - r)))`, yielding `O(ε ^ 2 n ^ (3 / 2) sqrt(log (1 / ε)))` gates
+   and `O(ε ^ 2 n ^ (5 / 2) sqrt(log (1 / ε)))` wires.
 4. **Quadratic-in-`ε` gate and wire lower bounds (`gate_lower_bound`, `wire_lower_bound`).**
    Replacing Markov's inequality on the surviving gate count in Kane–Williams with a simultaneous
    high-probability correlation union bound (`andreevSimultaneousTail b α`) over all `q < 2 ^ b` and
-   applying Jensen's inequality (`E[√(Q + 1)] ≤ √(E[Q] + 1)`) eliminates one factor of `ε`,
-   improving the average-case lower bounds to `Ω(ε ^ 2 n ^ (3 / 2) / log ^ 3 n)` gates and
-   `Ω(ε ^ 2 n ^ (5 / 2) / log ^ (7 / 2) n)` active wires (matching the windowed upper bounds up to
-   polylogarithmic factors in both `n` and `ε`). The proofs also repair the Littlewood–Offord
+   applying Jensen's inequality (`E[sqrt(Q + 1)] ≤ sqrt(E[Q] + 1)`) eliminates one factor of `ε`,
+   improving the average-case lower bounds to `Omega(ε ^ 2 n ^ (3 / 2) / log ^ 3 n)` gates and
+   `Omega(ε ^ 2 n ^ (5 / 2) / log ^ (7 / 2) n)` active wires (matching the windowed upper bounds up
+   to polylogarithmic factors in both `n` and `ε`). The proofs also repair the Littlewood–Offord
    anti-concentration and random-restriction counting arguments of Kane and Williams.
 
 **Model.** Circuits are straight-line programs of upstream `Cslib.Circuits.Circuit` with one output
 over `Cslib.Circuits.Boolean.WeightedThreshold.signature`. Each gate `Op` has an arity `m`, a real
-weight vector `Fin m → ℝ`, and a real threshold `θ`, outputting `true` when the weighted sum of its
-`{0, 1}`-valued inputs is at least `θ`. `c.size` counts all threshold gates, `c.depth` is the
-longest path of gates from an output to an input, and `wireCount c` sums over all gates the number
-of distinct input or predecessor-gate wires with nonzero aggregated weight in that gate. The
+weight vector `Fin m → ℝ`, and a real threshold, outputting `true` when the weighted sum of its
+`{0, 1}`-valued inputs is at least that threshold. `c.size` counts all threshold gates, `c.depth`
+is the longest path of gates from an output to an input, and `wireCount c` sums over all gates the
+number of distinct input or predecessor-gate wires with nonzero aggregated weight in that gate. The
 elementary threshold-gate signature and circuit-depth recursion are the two allowed model modules.
 
 ## References
@@ -111,7 +112,7 @@ def andreev (b m : ℕ) (x : Fin (2 ^ b + b * m) → Bool) : Bool :=
 /-- Simultaneous Hoeffding-counting union-bound tail over all active bottom-gate counts
 `q < 2 ^ b`, where `(2 ^ b + 1) ^ ((b + 2) * q + b + 1)` bounds the number of functions in
 `IsDepthTwoWithGates q` on `b` bits and `exp (-(2 α ^ 2 (q + 1) / 2 ^ b))` bounds the probability
-that a fixed function in `IsDepthTwoWithGates q` correlates by more than `α * √(q + 1) / 2 ^ b`
+that a fixed function in `IsDepthTwoWithGates q` correlates by more than `α * sqrt(q + 1) / 2 ^ b`
 with a random truth table. -/
 noncomputable def andreevSimultaneousTail (b : ℕ) (α : ℝ) : ℝ :=
   ∑ q ∈ Finset.range (2 ^ b), ((2 ^ b + 1) ^ ((b + 2) * q + b + 1) : ℝ) *
@@ -146,7 +147,7 @@ theorem high_agreement_upper_bound (b m B : ℕ) {t : ℝ} (ht : 0 ≤ t)
 /-- **Correlation (`1/2 + ε`) windowed upper bound.** Summing only over the `2^r` prefix subsets
 `S ⊆ {0, ..., r - 1}` for `r < b` and window half-width `B ≥ 3 t + 1/2` gives a depth-two weighted
 threshold circuit of `4 * 2^r * B + 1` gates achieving correlation advantage
-`1 / (2 √(2 · 2^(b - r)))` minus the Hoeffding window tail. -/
+`1 / (2 sqrt(2 · 2^(b - r)))` minus the Hoeffding window tail. -/
 theorem weak_agreement_upper_bound {b r : ℕ} (hr : r < b) (m B : ℕ) {t : ℝ} (ht : 0 ≤ t)
     (hB : 3 * t + 1 / 2 ≤ (B : ℝ)) :
     ∃ c : ThrCircuit (2 ^ b + b * m),
@@ -159,7 +160,7 @@ theorem weak_agreement_upper_bound {b r : ℕ} (hr : r < b) (m B : ℕ) {t : ℝ
         ((Finset.univ.filter fun x => evaluate c x = andreev b m x).card : ℝ) :=
   AndreevThresholdBridge.weak_agreement_upper_bound hr m B ht hB
 
-/-- **Average-case `Ω(ε² n^(3/2) / log³ n)` gate lower bound.** Any depth-two weighted threshold
+/-- **Average-case `Omega(ε² n^(3/2) / log³ n)` gate lower bound.** Any depth-two weighted threshold
 circuit agreeing with `andreev b m` on at least a `1/2 + ε` fraction of inputs satisfies the
 explicit quadratic-in-`ε` gate lower bound. -/
 theorem gate_lower_bound {b m : ℕ} (hm : 0 < m)
@@ -172,7 +173,7 @@ theorem gate_lower_bound {b m : ℕ} (hm : 0 < m)
       4 * α ^ 2 * (c.size : ℝ) * Real.sqrt ((2 ^ b + b * m : ℕ) : ℝ) :=
   AndreevThresholdBridge.gate_lower_bound hm hα htail c hd hcorr
 
-/-- **Average-case `Ω(ε² n^(5/2) / log^(7/2) n)` wire lower bound.** Any depth-two weighted
+/-- **Average-case `Omega(ε² n^(5/2) / log^(7/2) n)` wire lower bound.** Any depth-two weighted
 threshold circuit agreeing with `andreev b m` on at least a `1/2 + ε` fraction of inputs satisfies
 the explicit quadratic-in-`ε` active-wire lower bound. -/
 theorem wire_lower_bound {b m : ℕ} (hm : 0 < m)
@@ -186,7 +187,7 @@ theorem wire_lower_bound {b m : ℕ} (hm : 0 < m)
   AndreevThresholdBridge.wire_lower_bound hm hα htail c hd hcorr
 
 /-- **Worst-case gate lower bound (`ε = 1/2`).** Any depth-two weighted threshold circuit computing
-`andreev b m` on all inputs has at least `Ω(n^(3/2) / log³ n)` gates. -/
+`andreev b m` on all inputs has at least `Omega(n^(3/2) / log³ n)` gates. -/
 theorem exact_gate_lower_bound {b m : ℕ} (hm : 0 < m)
     {α : ℝ} (hα : Real.sqrt ((2 : ℝ) ^ b) / 2 ≤ α)
     (htail : andreevSimultaneousTail b α ≤ 1 / 2)
@@ -197,7 +198,7 @@ theorem exact_gate_lower_bound {b m : ℕ} (hm : 0 < m)
   AndreevThresholdBridge.exact_gate_lower_bound hm hα htail c hd hcomp
 
 /-- **Worst-case wire lower bound (`ε = 1/2`).** Any depth-two weighted threshold circuit computing
-`andreev b m` on all inputs has at least `Ω(n^(5/2) / log^(7/2) n)` active wires. -/
+`andreev b m` on all inputs has at least `Omega(n^(5/2) / log^(7/2) n)` active wires. -/
 theorem exact_wire_lower_bound {b m : ℕ} (hm : 0 < m)
     {α : ℝ} (hα : Real.sqrt ((2 : ℝ) ^ b) / 2 ≤ α)
     (htail : andreevSimultaneousTail b α ≤ 1 / 2)

@@ -57,7 +57,7 @@ def andreev (b m : ℕ) (x : Fin (2 ^ b + b * m) → Bool) : Bool :=
 /-- Simultaneous Hoeffding-counting union-bound tail over all active bottom-gate counts
 `q < 2 ^ b`, where `(2 ^ b + 1) ^ ((b + 2) * q + b + 1)` bounds the number of functions in
 `IsDepthTwoWithGates q` on `b` bits and `exp (-(2 α ^ 2 (q + 1) / 2 ^ b))` bounds the probability
-that a fixed function in `IsDepthTwoWithGates q` correlates by more than `α * √(q + 1) / 2 ^ b`
+that a fixed function in `IsDepthTwoWithGates q` correlates by more than `α * sqrt(q + 1) / 2 ^ b`
 with a random truth table. -/
 noncomputable def andreevSimultaneousTail (b : ℕ) (α : ℝ) : ℝ :=
   ∑ q ∈ Finset.range (2 ^ b), ((2 ^ b + 1) ^ ((b + 2) * q + b + 1) : ℝ) *
@@ -101,7 +101,7 @@ theorem high_agreement_upper_bound (b m B : ℕ) {t : ℝ} (ht : 0 ≤ t)
 /-- **Correlation (`1/2 + ε`) windowed upper bound.** Summing only over the `2^r` prefix subsets
 `S ⊆ {0, ..., r - 1}` for `r < b` and window half-width `B ≥ 3 t + 1/2` gives a depth-two weighted
 threshold circuit of `4 * 2^r * B + 1` gates achieving correlation advantage
-`1 / (2 √(2 · 2^(b - r)))` minus the Hoeffding window tail. -/
+`1 / (2 sqrt(2 · 2^(b - r)))` minus the Hoeffding window tail. -/
 theorem weak_agreement_upper_bound {b r : ℕ} (hr : r < b) (m B : ℕ) {t : ℝ} (ht : 0 ≤ t)
     (hB : 3 * t + 1 / 2 ≤ (B : ℝ)) :
     ∃ c : ThrCircuit (2 ^ b + b * m),
@@ -119,7 +119,7 @@ theorem weak_agreement_upper_bound {b r : ℕ} (hr : r < b) (m B : ℕ) {t : ℝ
     Cslib.Circuits.Boolean.WeightedThreshold.card_eval_andreevWindowedCircuit_eq_andreev_ge_sqrt
       hr m B 0 ht hB⟩
 
-/-- **Average-case `Ω(ε² n^(3/2) / log³ n)` gate lower bound.** Any depth-two weighted threshold
+/-- **Average-case `Omega(ε² n^(3/2) / log³ n)` gate lower bound.** Any depth-two weighted threshold
 circuit agreeing with `andreev b m` on at least a `1/2 + ε` fraction of inputs satisfies the
 explicit quadratic-in-`ε` gate lower bound. -/
 theorem gate_lower_bound {b m : ℕ} (hm : 0 < m)
@@ -133,7 +133,7 @@ theorem gate_lower_bound {b m : ℕ} (hm : 0 < m)
   Cslib.Circuits.Boolean.WeightedThreshold.size_ge_of_card_eval_eq_andreev_ge
     hm hα htail c hd 0 hcorr
 
-/-- **Average-case `Ω(ε² n^(5/2) / log^(7/2) n)` wire lower bound.** Any depth-two weighted
+/-- **Average-case `Omega(ε² n^(5/2) / log^(7/2) n)` wire lower bound.** Any depth-two weighted
 threshold circuit agreeing with `andreev b m` on at least a `1/2 + ε` fraction of inputs satisfies
 the explicit quadratic-in-`ε` active-wire lower bound. -/
 theorem wire_lower_bound {b m : ℕ} (hm : 0 < m)
@@ -148,7 +148,7 @@ theorem wire_lower_bound {b m : ℕ} (hm : 0 < m)
     hm hα htail c hd 0 hcorr
 
 /-- **Worst-case gate lower bound (`ε = 1/2`).** Any depth-two weighted threshold circuit computing
-`andreev b m` on all inputs has at least `Ω(n^(3/2) / log³ n)` gates. -/
+`andreev b m` on all inputs has at least `Omega(n^(3/2) / log³ n)` gates. -/
 theorem exact_gate_lower_bound {b m : ℕ} (hm : 0 < m)
     {α : ℝ} (hα : Real.sqrt ((2 : ℝ) ^ b) / 2 ≤ α)
     (htail : andreevSimultaneousTail b α ≤ 1 / 2)
@@ -164,7 +164,7 @@ theorem exact_gate_lower_bound {b m : ℕ} (hm : 0 < m)
   exact hcomp x
 
 /-- **Worst-case wire lower bound (`ε = 1/2`).** Any depth-two weighted threshold circuit computing
-`andreev b m` on all inputs has at least `Ω(n^(5/2) / log^(7/2) n)` active wires. -/
+`andreev b m` on all inputs has at least `Omega(n^(5/2) / log^(7/2) n)` active wires. -/
 theorem exact_wire_lower_bound {b m : ℕ} (hm : 0 < m)
     {α : ℝ} (hα : Real.sqrt ((2 : ℝ) ^ b) / 2 ≤ α)
     (htail : andreevSimultaneousTail b α ≤ 1 / 2)
