@@ -412,6 +412,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   correctness review of the frontier core.
 - **Weighted threshold representations:** v1's explicit source-reduction family, universal scalar
   circuit synthesis, entropy and asymptotic activity bounds, and geometric cutting.
+- **Depth-two threshold circuits for Andreev's function** ([#2347]): the exact quadratic
+  `4 * 4 ^ b + b * m * 2 ^ b` depth-two weighted threshold upper bound is proved
+  (`WeightedThreshold/Andreev.lean`); the windowed average-case upper bound and tight
+  `Ω(n ^ 2 / log ^ 2 n)` gate and `Ω(n ^ 2.5 / log ^ 3.5 n)` wire lower bounds of Kane and
+  Williams remain open.
 - **Construction runtimes**, certified separately from gate counts: the mass-production
   constructors, with constructive choices of information sets and line menus; the
   iterated-function preprocessing; and the bit complexity of formula evaluation on the rational
