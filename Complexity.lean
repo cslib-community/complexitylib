@@ -2809,6 +2809,7 @@ public import Complexity.Crypto.Computational.Hybrid.SavedPrediction
 public import Complexity.Crypto.Computational.Hybrid.Sequence
 public import Complexity.Crypto.Computational.IndexedSignature
 public import Complexity.Crypto.Computational.IndexedSignature.Counter
+public import Complexity.Crypto.Computational.IndexedSignature.Double
 public import Complexity.Crypto.Computational.IndexedSignature.Seeded
 public import Complexity.Crypto.Computational.Kilian
 public import Complexity.Crypto.Computational.Kilian.NP
@@ -2896,6 +2897,7 @@ public import Complexity.Crypto.Computational.SchnorrProtocol
 public import Complexity.Crypto.Computational.Signature
 public import Complexity.Crypto.Computational.Stretch
 public import Complexity.Crypto.Computational.Stretch.Quantitative
+public import Complexity.Crypto.Computational.TCRSignature
 public import Complexity.Crypto.Computational.TargetCollisionResistant
 public import Complexity.Crypto.Computational.TreeSignature
 public import Complexity.Crypto.Computational.TreeSignature.CoinHybrid
