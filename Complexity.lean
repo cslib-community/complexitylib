@@ -2850,6 +2850,7 @@ public import Complexity.Crypto.Computational.InaccessibleEntropy.OneWay
 public import Complexity.Crypto.Computational.InaccessibleEntropy.Repetition
 public import Complexity.Crypto.Computational.IndexedSignature
 public import Complexity.Crypto.Computational.IndexedSignature.Counter
+public import Complexity.Crypto.Computational.IndexedSignature.Double
 public import Complexity.Crypto.Computational.IndexedSignature.Seeded
 public import Complexity.Crypto.Computational.Kilian
 public import Complexity.Crypto.Computational.Kilian.NP
@@ -2937,6 +2938,7 @@ public import Complexity.Crypto.Computational.SchnorrProtocol
 public import Complexity.Crypto.Computational.Signature
 public import Complexity.Crypto.Computational.Stretch
 public import Complexity.Crypto.Computational.Stretch.Quantitative
+public import Complexity.Crypto.Computational.TCRSignature
 public import Complexity.Crypto.Computational.TargetCollisionResistant
 public import Complexity.Crypto.Computational.TreeSignature
 public import Complexity.Crypto.Computational.TreeSignature.CoinHybrid
@@ -2948,6 +2950,7 @@ public import Complexity.Crypto.Computational.ZeroKnowledge.AuxClock
 public import Complexity.Crypto.Computational.ZeroKnowledge.Levin
 public import Complexity.Crypto.Computational.ZeroKnowledge.Soundness
 public import Complexity.Crypto.Game
+public import Complexity.Crypto.Game.CloseTo
 public import Complexity.Crypto.Game.Hybrid
 public import Complexity.Crypto.Game.Statistical
 public import Complexity.Crypto.Game.UntilBad
@@ -2974,6 +2977,7 @@ public import Complexity.Crypto.Protocols.MPC.SharedMul
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort
 public import Complexity.Crypto.Protocols.SigmaProtocol.Basic
 public import Complexity.Crypto.Protocols.SigmaProtocol.Composition
+public import Complexity.Crypto.Protocols.SigmaProtocol.Computational
 public import Complexity.Crypto.Protocols.SigmaProtocol.Efficient
 public import Complexity.Crypto.Protocols.SigmaProtocol.FiatShamir
 public import Complexity.Crypto.Protocols.SigmaProtocol.Identification
@@ -2988,6 +2992,13 @@ public import Complexity.DataStructure.AVLTree.Erase
 public import Complexity.DataStructure.AVLTree.Impl
 public import Complexity.DataStructure.AdjacencyList.Memory
 public import Complexity.DataStructure.AdjacencyList.Spec
+public import Complexity.DataStructure.ApproximateMembership.QuotientFilter.Basic
+public import Complexity.DataStructure.ApproximateMembership.QuotientFilter.Operations
+public import Complexity.DataStructure.ApproximateMembership.QuotientFilter.Probability
+public import Complexity.DataStructure.ApproximateMembership.Spec
+public import Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFilter
+public import Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.Cluster
+public import Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.SlotArray
 public import Complexity.DataStructure.CountMin.Basic
 public import Complexity.DataStructure.CountMin.LinearHash
 public import Complexity.DataStructure.CountMin.Probability
@@ -3050,6 +3061,7 @@ public import Complexity.DataStructure.HashFamily.WordRAM.Basic
 public import Complexity.DataStructure.HashFamily.WordRAM.DoubleTabulation
 public import Complexity.DataStructure.HashFamily.WordRAM.KWise
 public import Complexity.DataStructure.HashFamily.WordRAM.MultiplyShift
+public import Complexity.DataStructure.HashFamily.WordRAM.ReducedKWise
 public import Complexity.DataStructure.HashFamily.WordRAM.Tabulation
 public import Complexity.DataStructure.Memory.Alloc
 public import Complexity.DataStructure.Memory.Copy
@@ -4002,6 +4014,8 @@ public import Complexity.Probability.KWiseIndependent
 public import Complexity.Probability.KWiseIndependent.Coupling
 public import Complexity.Probability.KWiseIndependent.DoubleTabulation
 public import Complexity.Probability.KWiseIndependent.Polynomial
+public import Complexity.Probability.KWiseIndependent.Reduced
+public import Complexity.Probability.KWiseIndependent.ReducedLimbs
 public import Complexity.Probability.KWiseIndependent.Restriction
 public import Complexity.Probability.KWiseIndependent.Trinomial
 public import Complexity.Probability.LocalLemma
