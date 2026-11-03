@@ -3726,10 +3726,6 @@ public import Complexity.Foundations.Probability.NormalizedAtomRows.Integrated
 public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanEvent
 public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanTail
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Moment
-public import Complexity.Foundations.Probability.NormalizedAtomRows.BoundedLoss
-public import Complexity.Foundations.Probability.NormalizedAtomRows.ClippedTail
-public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanEvent
-public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanTail
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Output
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Request
 public import Complexity.Foundations.Probability.NormalizedAtomRows.RequestSharp
