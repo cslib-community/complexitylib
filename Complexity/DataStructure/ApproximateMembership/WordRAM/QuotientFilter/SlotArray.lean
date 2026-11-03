@@ -770,7 +770,7 @@ theorem backSlotCode_exec {w b : ℕ} (hb_lt : b < w)
   simp [s5, s4, s3, s2, s1, hj1, hj2, hj3]
 
 /-- Word-RAM program reading `(extractPacked (base + off) b d w x.mem q).val` into `dstReg` from
-`idxReg` (`q.val`) and `reg 0` (`base`), using scratch registers `30..34` in `11` instructions. -/
+`idxReg` (`q.val`) and `reg 0` (`base`), using scratch registers `30..34` in `13` instructions. -/
 @[expose] def readPackedCode (off b d w : ℕ) (idxReg dstReg : Fin rQF) : Code .exact rQF :=
   let p := slotPackShift b d w
   .seq (.op (.const 30 off))
@@ -889,7 +889,7 @@ theorem readPackedCode_exec {base off b d w : ℕ}
     hj1, hj30, hj31, hj32, hj33, hj34]
 
 /-- Word-RAM program writing `val < 2 ^ d` (in `valReg`) into slot `q : Fin (2 ^ b)` (in `idxReg`)
-of the packed array at `base + off`, using scratch registers `30..35` in `16` instructions. -/
+of the packed array at `base + off`, using scratch registers `30..35` in `17` instructions. -/
 @[expose] def writePackedCode (off b d w : ℕ) (idxReg valReg : Fin rQF) : Code .exact rQF :=
   let p := slotPackShift b d w
   .seq (.op (.const 30 off))
@@ -1508,124 +1508,5 @@ theorem writeRemCode_exec {base w w₀ n k : ℕ}
     rcases ha with hlt | hge
     · exact Or.inl (by dsimp only [remBase, runBase, occBase] at hlt ⊢; omega)
     · exact Or.inr (by rw [remBase_add_packedWords_eq]; exact hge)
-
-/-- Loop zeroing `[reg 30, reg 31)` when `reg 32 = 0` and `reg 33 = 1`. -/
-@[expose] def zeroFillLoop : Code .exact rQF :=
-  .loop (.lt 30 31)
-    (.seq (.op (.store 30 32))
-          (.op (.exactBin .add 30 30 33)))
-
-theorem zeroFillLoop_exec {w endAddr : ℕ} (hfit_end : Fits w endAddr) :
-    ∀ (rem ptr : ℕ) (x : Data rQF),
-      ptr + rem = endAddr →
-      x.regs 30 = ptr →
-      x.regs 31 = endAddr →
-      x.regs 32 = 0 →
-      x.regs 33 = 1 →
-      ∃ y : Data rQF,
-        Exec w zeroFillLoop x y (4 * rem + 2) ∧
-        y.regs 0 = x.regs 0 ∧
-        (∀ a, ptr ≤ a → a < endAddr → y.mem a = 0) ∧
-        (∀ a, (a < ptr ∨ endAddr ≤ a) → y.mem a = x.mem a) := by
-  intro rem
-  induction rem with
-  | zero =>
-    intro ptr x hsum h30 h31 _ _
-    have hc : ¬(Cond.lt 30 31).Holds x := by simp [Cond.Holds, h30, h31]; omega
-    exact ⟨x, Exec.loop_exit hc, rfl, fun _ h1 h2 => by omega, fun _ _ => rfl⟩
-  | succ rem ih =>
-    intro ptr x hsum h30 h31 h32 h33
-    have hc : (Cond.lt 30 31).Holds x := by simp [Cond.Holds, h30, h31]; omega
-    have hfit_ptr1 : Fits w (ptr + 1) := hfit_end.of_le (by omega)
-    set s1 := x.write ptr 0
-    have e1 : Exec w (.op (.store 30 32) : Code .exact rQF) x s1 1 := by
-      simpa [s1, h30, h32] using (Exec.store (B := .exact) (w := w) (a := 30) (s := 32) (x := x))
-    set s2 := s1.set 30 (ptr + 1)
-    have e2 : Exec w (.op (.exactBin .add 30 30 33) : Code .exact rQF) s1 s2 1 :=
-      exec_exactBin (by simp +decide [s1, Data.write, h30, h33]) hfit_ptr1
-    obtain ⟨y, hy_exec, hy_0, hy_zero, hy_frame⟩ :=
-      ih (ptr + 1) s2 (by omega)
-        (by simp [s2])
-        (by simp +decide [s2, s1, Data.write, h31])
-        (by simp +decide [s2, s1, Data.write, h32])
-        (by simp +decide [s2, s1, Data.write, h33])
-    have hiter := Exec.loop_iter hc (e1.seq e2) hy_exec
-    refine ⟨y, ?_, ?_, ?_, ?_⟩
-    · simpa only [zeroFillLoop, show (1 + 1) + (4 * rem + 2) + 2 = 4 * (rem + 1) + 2 by omega]
-        using hiter
-    · rw [hy_0]; simp +decide [s2, s1, Data.write]
-    · intro a hle hlt
-      rcases eq_or_lt_of_le hle with rfl | hgt
-      · rw [hy_frame ptr (Or.inl (by omega))]
-        simp [s2, s1, Data.write]
-      · exact hy_zero a hgt hlt
-    · intro a ha
-      rw [hy_frame a (by omega)]
-      have hne : a ≠ ptr := by omega
-      simp [s2, s1, Data.write, Function.update_of_ne hne]
-
-/-- Program zeroing the 4 slot arrays `[fullBase base w w₀ n, base + space w w₀ n k)` from
-`reg 0 = base`. -/
-@[expose] def zeroSlotsCode (w w₀ n k : ℕ) : Code .exact rQF :=
-  .seq (.op (.const 30 (fullOff w w₀ n)))
-  (.seq (.op (.exactBin .add 30 0 30))
-  (.seq (.op (.const 31 (space w w₀ n k)))
-  (.seq (.op (.exactBin .add 31 0 31))
-  (.seq (.op (.const 32 0))
-  (.seq (.op (.const 33 1))
-        zeroFillLoop)))))
-
-/-- Exact step count of `zeroSlotsCode w w₀ n k`. -/
-@[expose] def zeroSlotsSteps (w w₀ n k : ℕ) : ℕ :=
-  4 * (3 * packedWords (quotBits w₀ n) 1 w + packedWords (quotBits w₀ n) (remBits w₀ k) w) + 8
-
-theorem zeroSlotsCode_exec {base w w₀ n k : ℕ}
-    (hfit_space : Fits w (base + space w w₀ n k))
-    {x : Data rQF} (h0 : x.regs 0 = base) :
-    ∃ y : Data rQF,
-      Exec w (zeroSlotsCode w w₀ n k) x y (zeroSlotsSteps w w₀ n k) ∧
-      y.regs 0 = base ∧
-      extractFilterState base w w₀ n k y.mem =
-        FilterState.empty (quotBits w₀ n) (remBits w₀ k) ∧
-      (∀ a, (a < fullBase base w w₀ n ∨ base + space w w₀ n k ≤ a) → y.mem a = x.mem a) := by
-  have hfit_foff : Fits w (fullOff w w₀ n) :=
-    hfit_space.of_le (by dsimp only [fullOff, remSeedOff, space]; omega)
-  have hfit_fbase : Fits w (fullBase base w w₀ n) :=
-    hfit_space.of_le (by dsimp only [fullBase, remSeedAddr, space]; omega)
-  have hfit_sp : Fits w (space w w₀ n k) :=
-    hfit_space.of_le (by omega)
-  have hfit_0 : Fits w 0 := hfit_space.of_le (Nat.zero_le _)
-  have hfit_1 : Fits w 1 := hfit_space.of_le (by dsimp only [space]; omega)
-  set s1 := x.set 30 (fullOff w w₀ n)
-  have e1 : Exec w (.op (.const 30 (fullOff w w₀ n)) : Code .exact rQF) x s1 1 :=
-    Exec.const hfit_foff
-  set s2 := s1.set 30 (fullBase base w w₀ n)
-  have e2 : Exec w (.op (.exactBin .add 30 0 30) : Code .exact rQF) s1 s2 1 :=
-    exec_exactBin (by simp +decide [s1, h0, base_add_fullOff]) hfit_fbase
-  set s3 := s2.set 31 (space w w₀ n k)
-  have e3 : Exec w (.op (.const 31 (space w w₀ n k)) : Code .exact rQF) s2 s3 1 :=
-    Exec.const hfit_sp
-  set s4 := s3.set 31 (base + space w w₀ n k)
-  have e4 : Exec w (.op (.exactBin .add 31 0 31) : Code .exact rQF) s3 s4 1 :=
-    exec_exactBin (by simp +decide [s3, s2, s1, h0]) hfit_space
-  set s5 := s4.set 32 0
-  have e5 : Exec w (.op (.const 32 0) : Code .exact rQF) s4 s5 1 := Exec.const hfit_0
-  set s6 := s5.set 33 1
-  have e6 : Exec w (.op (.const 33 1) : Code .exact rQF) s5 s6 1 := Exec.const hfit_1
-  set rem := 3 * packedWords (quotBits w₀ n) 1 w + packedWords (quotBits w₀ n) (remBits w₀ k) w
-  have hsum : fullBase base w w₀ n + rem = base + space w w₀ n k := by
-    dsimp only [fullBase, remSeedAddr, space, rem]
-    ring
-  obtain ⟨y, hy_exec, hy_0, hy_zero, hy_frame⟩ :=
-    zeroFillLoop_exec hfit_space rem (fullBase base w w₀ n) s6 hsum
-      (by simp +decide [s6, s5, s4, s3, s2])
-      (by simp +decide [s6, s5, s4])
-      (by simp +decide [s6, s5])
-      (by simp +decide [s6])
-  have hall := e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq hy_exec)))))
-  refine ⟨y, ?_, ?_, extractFilterState_of_zero hy_zero, hy_frame⟩
-  · simpa only [zeroSlotsCode, zeroSlotsSteps, rem,
-      show 1 + (1 + (1 + (1 + (1 + (1 + (4 * rem + 2)))))) = 4 * rem + 8 by omega] using hall
-  · rw [hy_0]; simp +decide [s6, s5, s4, s3, s2, s1, h0]
 
 end Cslib.DataStructure.ApproximateMembership.QuotientFilter
