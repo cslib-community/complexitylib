@@ -5,6 +5,8 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Crypto.Computational.Nonuniform.ZeroKnowledge
+import Complexity.Crypto.Computational.ZeroKnowledge.AuxClock
+import Complexity.Crypto.Computational.GeneratorXor
 import Complexity.Crypto.Computational.Stretch
 import Complexity.Crypto.Computational.Pseudoentropy.OneWay
 import Complexity.Crypto.Computational.Pseudoentropy.LabelExtraction
@@ -316,5 +318,66 @@ example {f : List Bool → List Bool} (hf : NonuniformOneWay f) :
   refine ⟨pair, savedPair, bound, common, choose, hchoose, ?_⟩
   exact hsecure (fun a _ word => advisedWordDistinguisher (a, word))
     (by unfold advisedWordDistinguisher; fun_prop)
+
+/-- Unconditional concrete client of `GeneratorXor.indistinguishableWithAdvice`: combining a
+constant-zero candidate (`index = 0`) with an identity candidate (`index = 1`) yields an ensemble
+indistinguishable from `uniformList (n + 1)` under `nonemptyAdvice`, evaluated on the
+advice-dependent distinguisher `advisedWordDistinguisher`. -/
+example :
+    let candidate (n index : ℕ) (seed : List Bool) : List Bool :=
+      if index = 0 then List.replicate (n + 1) false else seed.take (n + 1)
+    Negligible (fun n => Game.advantage
+      (distinguishingGame
+        ((BitString.uniformList (2 * (n + 1))).map
+          (GeneratorXor.generate 2 (n + 1) (n + 1) (candidate n)))
+        (fun word => advisedWordDistinguisher ((n, nonemptyAdvice n), word)))
+      (distinguishingGame
+        (BitString.uniformList (n + 1))
+        (fun word => advisedWordDistinguisher ((n, nonemptyAdvice n), word)))) := by
+  let candidate (n index : ℕ) (seed : List Bool) : List Bool :=
+    if index = 0 then List.replicate (n + 1) false else seed.take (n + 1)
+  have hcand : Turing.MultiTapeTM.ComputableInPolyTime
+      (fun input : (ℕ × ℕ) × List Bool => candidate input.1.1 input.1.2 input.2)
+      (Turing.MultiTapeTM.encPair
+        (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encUnary)
+        Turing.MultiTapeTM.encBits)
+      Turing.MultiTapeTM.encBits := by
+    dsimp only [candidate]
+    fun_prop
+  have hind : IndistinguishableWithAdvice nonemptyAdvice
+      (fun n => (BitString.uniformList (2 * (n + 1))).map
+        (GeneratorXor.generate 2 (n + 1) (n + 1) (candidate n)))
+      (fun n => BitString.uniformList (n + 1)) := by
+    apply GeneratorXor.indistinguishableWithAdvice (choose := fun _ => 1)
+      (by fun_prop) (by fun_prop) (by fun_prop) hcand
+      (Filter.Eventually.of_forall fun _ => by decide)
+    intro adversary _
+    have hid (n : ℕ) :
+        (BitString.uniformList (n + 1)).map (candidate n 1) = BitString.uniformList (n + 1) := by
+      simpa only [candidate, one_ne_zero, ↓reduceIte] using
+        BitString.uniformList_take (le_refl (n + 1))
+    simpa only [hid, Game.advantage_self] using negligible_zero
+  exact hind advisedWordDistinguisher (by unfold advisedWordDistinguisher; fun_prop)
+
+/-- Concrete exercised client of `NonuniformOneWay.exists_nonuniformPRG`,
+`NonuniformOneWay.exists_nonuniformPRG_three_mul`,
+`NonuniformOneWay.exists_auxiliaryInputZeroKnowledge_of_mem_NP` (chained to
+`UnboundedAuxiliaryInputZeroKnowledge` and `InstanceAuxiliaryInputZeroKnowledge`), and
+`NonuniformOneWay.exists_auxiliaryInputZeroKnowledge_of_npRelation` on `ThreeSAT`. -/
+example {f : List Bool → List Bool} (hf : NonuniformOneWay f) :
+    (∃ g₁ : List Bool → List Bool, NonuniformPRG g₁ (fun n => n + 1)) ∧
+    (∃ g₃ : List Bool → List Bool, NonuniformPRG g₃ (fun n => 3 * n + 1)) ∧
+    (∃ zk : ZeroKnowledgeProof Complexity.encCNF Complexity.ThreeSAT,
+      zk.AuxiliaryInputZeroKnowledge ∧
+      zk.UnboundedAuxiliaryInputZeroKnowledge ∧
+      zk.InstanceAuxiliaryInputZeroKnowledge) ∧
+    (∃ zk : ZeroKnowledgeProof Complexity.encCNF Complexity.ThreeSAT.npRelation.language,
+      (∀ a w, zk.isWitness a w = true ↔ Complexity.ThreeSAT.npRelation.IsWitness a w) ∧
+      zk.AuxiliaryInputZeroKnowledge) := by
+  obtain ⟨zk, hzk⟩ :=
+    hf.exists_auxiliaryInputZeroKnowledge_of_mem_NP Complexity.ThreeSAT.mem_NP
+  exact ⟨hf.exists_nonuniformPRG, hf.exists_nonuniformPRG_three_mul,
+    ⟨zk, hzk, hzk.unboundedAuxiliaryInputZeroKnowledge, hzk.instanceAuxiliaryInputZeroKnowledge⟩,
+    hf.exists_auxiliaryInputZeroKnowledge_of_npRelation Complexity.ThreeSAT.npRelation⟩
 
 end ComplexityTests.Crypto.Nonuniform

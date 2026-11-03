@@ -9,10 +9,11 @@ module
 
 public import Complexity.Crypto.Computational.Nonuniform.Basic
 public import Complexity.Crypto.Computational.ZeroKnowledge
+public import Complexity.Crypto.Computational.ZeroKnowledge.Levin
 import Complexity.Tactic.PPT
 
 /-!
-# Auxiliary-input zero knowledge from a nonuniform generator
+# Auxiliary-input zero knowledge from a nonuniform generator or one-way function
 
 `GMW.AdvicePRG enc generator length` is the security premise of the auxiliary-input
 Goldreich–Micali–Wigderson theorem
@@ -22,8 +23,11 @@ the generator's output at seed length `n + 7` from uniform. A nonuniform pseudor
 satisfies it: the three families form one advice value under the pair encoding, which the test
 reads without decoding, and the parameter shift by `7` is polynomial-time preprocessing.
 
-This discharges the premise from `NonuniformPRG`. It does not derive a nonuniform generator from a
-(nonuniform) one-way function; that is milestone M2 of [#2316].
+Composing this bridge with `NonuniformOneWay.exists_nonuniformPRG_three_mul` derives
+auxiliary-input zero knowledge (`AuxiliaryInputZeroKnowledge`, and hence the unbounded-`z` and
+instance-indexed forms in `Complexity.Crypto.Computational.ZeroKnowledge.AuxClock`) for every
+language and relation in `NP` from any nonuniform one-way function, at the single-round GMW
+soundness error `1 / 3` of `ZeroKnowledgeProof`.
 
 ## Main results
 
@@ -31,6 +35,14 @@ This discharges the premise from `NonuniformPRG`. It does not derive a nonunifor
 * `Cslib.Crypto.NonuniformPRG.exists_auxiliaryInputZeroKnowledge_of_mem_NP`: given a nonuniform
   PRG with stretch at least `3 * k + 1`, every language in `NP` has an auxiliary-input
   zero-knowledge proof system.
+* `Cslib.Crypto.NonuniformPRG.exists_auxiliaryInputZeroKnowledge_of_npRelation`: the corresponding
+  Levin-reduced statement preserving the NP relation's own witnesses.
+* `Cslib.Crypto.NonuniformOneWay.exists_auxiliaryInputZeroKnowledge_of_mem_NP`: every nonuniform
+  one-way function yields an auxiliary-input zero-knowledge proof system for every language in
+  `NP` (including the unbounded-`z` and instance-indexed forms via `AuxClock`).
+* `Cslib.Crypto.NonuniformOneWay.exists_auxiliaryInputZeroKnowledge_of_npRelation`: every
+  nonuniform one-way function yields an auxiliary-input zero-knowledge proof system for every NP
+  relation using the relation's own witnesses.
 
 ## References
 
@@ -57,7 +69,7 @@ theorem NonuniformPRG.advicePRG {generator : List Bool → List Bool} {length : 
   have hshift : IsPPTOn (encPair (encPair encUnary encAdvice) encBits) encBool
       (fun input : (ℕ × (α × (List Bool × List Bool))) × List Bool =>
         test ((input.1.1 - 7, input.1.2), input.2)) :=
-    htest.preprocess (by fun_prop)
+    htest.preprocess (by dsimp only [encAdvice]; fun_prop)
   have hsub : PolynomiallyBounded (fun m => m - 7) := PolynomiallyBounded.id.tsub _
   have ha' := ha.comp hsub
   have hw' := hw.comp hsub
@@ -83,5 +95,44 @@ theorem NonuniformPRG.exists_auxiliaryInputZeroKnowledge_of_mem_NP
     (hA : A ∈ NP enc) :
     ∃ zk : ZeroKnowledgeProof enc A, zk.AuxiliaryInputZeroKnowledge :=
   h.toPRG.exists_auxiliaryInputZeroKnowledge_of_mem_NP hstretch (h.advicePRG enc) hA
+
+/-- **Auxiliary-input GMW zero knowledge for NP relations from a nonuniform PRG.** Given a
+nonuniform pseudorandom generator with stretch at least `3 * k + 1`, every NP relation `R` has a
+computational zero-knowledge interactive proof system whose honest prover uses `R`'s own witnesses
+and satisfies auxiliary-input zero knowledge (`ZeroKnowledgeProof.AuxiliaryInputZeroKnowledge`). -/
+theorem NonuniformPRG.exists_auxiliaryInputZeroKnowledge_of_npRelation
+    {α : Type} {enc : α ↪ List Bool}
+    {generator : List Bool → List Bool} {length : ℕ → ℕ}
+    (h : NonuniformPRG generator length) (hstretch : ∀ k, 3 * k + 1 ≤ length k)
+    (R : NPRelation enc) :
+    ∃ zk : ZeroKnowledgeProof enc R.language,
+      (∀ a w, zk.isWitness a w = true ↔ R.IsWitness a w) ∧ zk.AuxiliaryInputZeroKnowledge :=
+  h.toPRG.exists_auxiliaryInputZeroKnowledge_of_npRelation hstretch (h.advicePRG enc) R
+
+/-- **Auxiliary-input GMW zero knowledge from a nonuniform one-way function.** If a nonuniform
+one-way function exists, every language `A ∈ NP enc` has a computational zero-knowledge interactive
+proof system satisfying auxiliary-input zero knowledge
+(`ZeroKnowledgeProof.AuxiliaryInputZeroKnowledge`, and hence
+`ZeroKnowledgeProof.UnboundedAuxiliaryInputZeroKnowledge` and
+`ZeroKnowledgeProof.InstanceAuxiliaryInputZeroKnowledge`). Soundness error is the constant `1 / 3`
+of `ZeroKnowledgeProof`; negligible soundness is established by sequential repetition. -/
+theorem NonuniformOneWay.exists_auxiliaryInputZeroKnowledge_of_mem_NP
+    {α : Type} {enc : α ↪ List Bool} {A : Set α}
+    {f : List Bool → List Bool} (hf : NonuniformOneWay f) (hA : A ∈ NP enc) :
+    ∃ zk : ZeroKnowledgeProof enc A, zk.AuxiliaryInputZeroKnowledge := by
+  obtain ⟨generator, hgenerator⟩ := hf.exists_nonuniformPRG_three_mul
+  exact hgenerator.exists_auxiliaryInputZeroKnowledge_of_mem_NP (fun _ => le_rfl) hA
+
+/-- **Auxiliary-input GMW zero knowledge for NP relations from a nonuniform one-way function.** If
+a nonuniform one-way function exists, every NP relation `R` has a computational zero-knowledge
+interactive proof system whose honest prover uses `R`'s own witnesses and satisfies auxiliary-input
+zero knowledge (`ZeroKnowledgeProof.AuxiliaryInputZeroKnowledge`). -/
+theorem NonuniformOneWay.exists_auxiliaryInputZeroKnowledge_of_npRelation
+    {α : Type} {enc : α ↪ List Bool}
+    {f : List Bool → List Bool} (hf : NonuniformOneWay f) (R : NPRelation enc) :
+    ∃ zk : ZeroKnowledgeProof enc R.language,
+      (∀ a w, zk.isWitness a w = true ↔ R.IsWitness a w) ∧ zk.AuxiliaryInputZeroKnowledge := by
+  obtain ⟨generator, hgenerator⟩ := hf.exists_nonuniformPRG_three_mul
+  exact hgenerator.exists_auxiliaryInputZeroKnowledge_of_npRelation (fun _ => le_rfl) R
 
 end Cslib.Crypto
