@@ -14,7 +14,7 @@ public import Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFil
 # Two-Stage Reduced `k`-Wise Hashing and Quotient Filter Tests
 
 Exercises:
-1. `Cslib.DataStructure.HashFamily.WordRAM.ReducedKWise` (Milestone 1 shared two-stage hash):
+1. `Cslib.DataStructure.HashFamily.WordRAM.ReducedKWise` (shared two-stage hash):
    - concrete parameter, space, and instruction-budget evaluations;
    - `ReducedKWise.space_le` asymptotic sublinear table + `O(k)` seed bound;
    - non-vacuous instantiation of `ReducedKWise.impl` and `ReducedKWise.implStandard` for full
@@ -42,7 +42,7 @@ open Cslib.DataStructure.WordRAM Cslib.DataStructure.WordRAM.Randomized
 open Cslib.DataStructure.ApproximateMembership.QuotientFilter
 open scoped NNReal ENNReal Finset
 
-/-! ## 1. Milestone 1: Shared Two-Stage Reduced `k`-Wise Hash (`ReducedKWise`) -/
+/-! ## 1. Shared Two-Stage Reduced `k`-Wise Hash (`ReducedKWise`) -/
 
 theorem reducedTrinomialStep_32_7_7 : reducedTrinomialStep 32 7 7 = 3 := by
   dsimp only [reducedTrinomialStep, reducedTargetBits]

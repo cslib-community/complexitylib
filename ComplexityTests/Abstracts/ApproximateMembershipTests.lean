@@ -145,7 +145,7 @@ theorem nonvacuous_quotientFilter :
         ⟨1, by decide⟩ ⟨247, by decide⟩ ⟨1, by decide⟩
         0 (qfSpaceOfEps 64 4 4 (1 / 16 : ℝ≥0∞)) qfOpCharge sampleOps
         μ_init μ_final T_ops ∧
-      FilterContract 4 (1 / 16 : ℝ≥0∞) sampleOps (μ_final.map CoupledOutcome.transcript) ∧
+      FilterContract (1 / 16 : ℝ≥0∞) sampleOps (μ_final.map CoupledOutcome.transcript) ∧
       T_ops ≤ ((sampleOps.length * qfOpCharge : ℕ) : ℝ≥0∞) := by
   have hsp : 0 + qfSpaceOfEps 64 4 4 (1 / 16 : ℝ≥0∞) < 2 ^ 64 := by
     rw [qfSpaceOfEps_64_4_4_inv16]

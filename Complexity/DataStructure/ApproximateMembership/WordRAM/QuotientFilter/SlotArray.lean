@@ -1273,7 +1273,7 @@ theorem remEvalCode_exec {base w U w₀ n k : ℕ}
   have hs3_j : s3.regs j = s2.regs j := extend_kwiseMap_regs hj
   simp [s7, s6, s5, s4, hs3_j, s2, s1, hj0, hj3, hj30]
 
-/-! ## Section 5: High-level slot-field accessors and slot-array zeroing -/
+/-! ## Section 5: High-level slot-field accessors -/
 
 theorem extractPacked_one_val_eq_toNat (arrBase b w : ℕ) (mem : ℕ → ℕ) (q : Fin (2 ^ b)) :
     (extractPacked arrBase b 1 w mem q).val = (extractBit arrBase b w mem q).toNat := by

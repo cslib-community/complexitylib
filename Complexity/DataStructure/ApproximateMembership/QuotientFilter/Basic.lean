@@ -489,7 +489,8 @@ private theorem flatMap_taggedRun_split {U b f : ℕ} (S : Finset (Fin U))
     rw [← List.range_add, Nat.add_sub_of_le hm]
   conv_lhs => rw [hr, List.flatMap_append]
 
-private theorem fst_head_nonempty_flatMap_taggedRun {α : Type*} {f : ℕ}
+/-- The first element of any non-empty concatenation of `taggedRun`s has `isRunStart` tag `true`. -/
+theorem fst_head_nonempty_flatMap_taggedRun {α : Type*} {f : ℕ}
     (xs : List α) (g : α → List (Fin (2 ^ f))) {p : Bool × Fin (2 ^ f)}
     {rest : List (Bool × Fin (2 ^ f))}
     (h : xs.flatMap (fun a => taggedRun (g a)) = p :: rest) :

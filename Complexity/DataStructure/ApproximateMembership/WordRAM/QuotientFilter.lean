@@ -38,7 +38,7 @@ restriction `log₂ U ≤ c · log₂ n`.
    at most `193 * ℓ + 224` instructions for a cluster of length `ℓ`. By `tsum_seedClusterBound_le`
    (`𝔼[ℓ] ≤ 290`), the expected instruction count of every operation is at most
    `193 * 290 + 237110 = 293080`.
-3. **Compact space (`space_le`, `spaceOfEps_le`):**
+3. **Compact space (`space_le`, `implOfEps_space_le`):**
    The single contiguous memory block of `space w w₀ n k` words stores the two-stage quotient seed,
    the `o(n)`-bit Four-Russians carryless multiplication table, the remainder seed, and the four
    bit-packed slot arrays (`isFull`, `isOcc`, `isRunStart`, `remAt`), totaling at most

@@ -19,16 +19,17 @@ implementation of the two-stage universe-reduced `k`-wise independent hash famil
 1. **Overflow-free full-word multiply-shift (`halfMulMod`, `oddMulModWord`)**: computes
    `(2 * α + 1) * x % 2 ^ w₀ / 2 ^ (w₀ - R)` for any `0 < w₀ ≤ w` using only `< 2 ^ w₀`
    intermediate products and sums, avoiding any `2 * w₀ ≤ w` restriction.
-2. **Exact limb factorization of `2 * 3 ^ t` (`chunkBits`, `halfLimbs`, `limbCount`)**: decomposes
-   any `2 * 3 ^ t`-bit element of `TrinomialField t` into `limbCount t = 2 * 3 ^ min t 3 ≤ 54`
-   limbs of `chunkBits t = 3 ^ (t - 3)` bits each, with `2 * chunkBits t ≤ w` unconditionally
-   whenever `w₀ ≤ w`, `b' ≤ w`, and `2 ≤ w`, and bit-packed Four-Russians table size
-   `tableBits t ≤ max 8 (2 ^ (b / 2)) = o(2 ^ b)` bits (`tableWords t w ≤ 2 * tableBits t / w + 1`
-   words) whenever `b' ≤ 3 * b`.
-3. **Bit-packed word slices (`getSlice`) and limb-level polynomial multiplication / 4-block
-   trinomial reduction (`packLimbsNat`, `mulLimbs`, `reduceLimbs`)**: proves that limb-by-limb
-   carryless multiplication followed by limb-aligned 4-block XOR reduction computes exact
-   multiplication and addition in `TrinomialField t`.
+2. **Exact limb factorization of `2 * 3 ^ t` (`reducedChunkBits`, `reducedHalfLimbs`,
+   `reducedLimbCount`)**: decomposes any `2 * 3 ^ t`-bit element of `TrinomialField t` into
+   `reducedLimbCount t = 2 * 3 ^ min t 3 ≤ 54` limbs of `reducedChunkBits t = 3 ^ (t - 3)` bits
+   each, with `2 * reducedChunkBits t ≤ w` unconditionally whenever `w₀ ≤ w`, `b' ≤ w`, and
+   `2 ≤ w`, and bit-packed Four-Russians table size
+   `reducedTableBits t ≤ max 8 (2 ^ (b / 2)) = o(2 ^ b)` bits
+   (`reducedTableWords t w ≤ 2 * reducedTableBits t / w + 1` words) whenever `b' ≤ 3 * b`.
+3. **Bit-packed word slices (`getLimb`) and limb-level polynomial multiplication / 4-block
+   trinomial reduction (`packLimbs`, `truncLimbs`)**: proves that limb-by-limb carryless
+   multiplication followed by limb-aligned 4-block XOR reduction computes exact multiplication and
+   addition in `TrinomialField t`.
 
 ## Main definitions
 

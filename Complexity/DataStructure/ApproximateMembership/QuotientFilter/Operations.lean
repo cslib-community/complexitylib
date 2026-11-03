@@ -1168,23 +1168,6 @@ theorem IntervalValid.take_of_runOffset_eq {U b f : ℕ} {S : Finset (Fin U)}
       exact hrun_e.symm
     exact List.append_inj_left hslots hlen_left
 
-private theorem fst_head_flatMap_taggedRun {α : Type*} {f : ℕ}
-    (xs : List α) (g : α → List (Fin (2 ^ f))) {p : Bool × Fin (2 ^ f)}
-    {rest : List (Bool × Fin (2 ^ f))}
-    (h : xs.flatMap (fun a => taggedRun (g a)) = p :: rest) :
-    p.1 = true := by
-  induction xs with
-  | nil => simp at h
-  | cons a xs ih =>
-    simp only [List.flatMap_cons] at h
-    cases hga : g a with
-    | nil =>
-      simp only [hga, taggedRun_nil, List.nil_append] at h
-      exact ih h
-    | cons r rs =>
-      simp only [hga, taggedRun_cons, List.cons_append, List.cons.injEq] at h
-      rw [← h.1]
-
 theorem IntervalValid.deleteCluster_intervalValid {U b f : ℕ} {S : Finset (Fin U)}
     {quot : Fin U → Fin (2 ^ b)} {rem : Fin U → Fin (2 ^ f)}
     {st : FilterState b f} {o : Fin (2 ^ b)} {ℓ : ℕ}
@@ -1347,7 +1330,7 @@ theorem IntervalValid.deleteCluster_intervalValid {U b f : ℕ} {S : Finset (Fin
             omega
           obtain ⟨p, rest, hsuff_cons⟩ := List.exists_cons_of_ne_nil hsuff_ne
           have hp_fst : p.1 = true :=
-            fst_head_flatMap_taggedRun ((List.range (e - (a + 1))).map (a + 1 + ·))
+            fst_head_nonempty_flatMap_taggedRun ((List.range (e - (a + 1))).map (a + 1 + ·))
               (fun j => bucketRun S quot rem (probeSlot b o j)) hsuff_cons
           have hget := congrArg (fun L : List (Bool × Fin (2 ^ f)) => L[s₀ + 1]?) hM_split
           rw [List.getElem?_map, List.getElem?_range hlt, Option.map_some, hxs,

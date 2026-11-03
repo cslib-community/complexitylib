@@ -26,37 +26,39 @@ Four-Russians multiplication table (`ReducedKWise.impl`; `[CarterWegman1979]`,
 
 ## Scope, operation semantics, and cost accounting
 
-- **Dynamic approximate membership with deletions:** The filter supports `insert u`, `delete u`,
-  and `query u` over key universe `Fin U` up to capacity `n ≥ 1` active keys (`ValidFilterSeq n`)
-  across operation sequences `ops : List (FilterOp U)` of any length:
-  - `insert u` is valid when `u ∉ S` and fewer than `n` keys are currently present (`S.card < n`),
-    adding `u` to the active set `S`;
-  - `delete u` is valid when `u` is currently present (`u ∈ S`) and removes `u` from `S`;
-  - `query u` is always valid and leaves `S` unchanged.
-- **Zero false negatives and per-query false-positive bound:** For every valid fixed operation
-  sequence `ops` of any length:
-  - on every random branch in `μ_final.support`, every `query u` at index `i` where
-    `u ∈ activeSetBefore ops i` returns `true` (`NoFalseNegatives ops`);
-  - for every index `i` and absent key `u ∉ activeSetBefore ops i` with
-    `ops[i]? = some (.query u)`, the probability that step `i` returns `true`
-    (`FalsePositiveAt ops i u`) is at most `ε` (`FilterContract n ε ops`), for any `ε ≠ 0`
-    (in particular for all `ε ∈ (0, 1 / 2]`).
-- **Two-stage hash without polynomial universe restriction:** Keys `u < U ≤ 2 ^ w₀` (`w ≥ 2 * w₀`)
-  are first reduced to `min w₀ (3 * b)` bits
-  (`b = qfQuotBits w₀ n = ⌈log₂(max (8 * min n (2 ^ w₀)) 8)⌉`, so `2 ^ b = O(min n (2 ^ w₀))`) by a
-  `2`-universal multiply-shift hash, then mapped to a `b`-bit quotient by a degree-`4` (`5`-wise
-  independent) polynomial over a binary trinomial field of degree `2 * 3 ^ t` evaluated in
-  `L = 2 * 3 ^ min t 3 ≤ 54 = O(1)` limbs using a bit-packed multiplication table of `o(2 ^ b)`
-  bits. An independent multiply-shift hash produces the `min w₀ (epsLog ε + 1)`-bit remainder. Runs
-  are maintained in canonical sorted order so that the set of occupied slots depends only on the
-  current active set `S` (no amortization and no seed conditioning across deletions).
-- **Per-operation `O(1)` expected time and compact single-block space:**
-  - Every individual operation in `ExecFilterOps` executes in at most
-    `qfOpCharge = 293080 = O(1)` expected body instructions (`(∑' p, μ p * T_step p) ≤ qfOpCharge`
-    at every step, not merely amortized over the sequence);
-  - All hash seeds, the bit-packed multiplication table, and the bit-packed `(r + 3)`-bit slot
-    array reside in a single contiguous memory block `[base, base + qfSpaceOfEps w w₀ n ε)` of size
-    `qfSpaceOfEps w w₀ n ε ≤ 640 * ((n * epsLog ε + w - 1) / w + 1)` machine words.
+The filter supports `insert u`, `delete u`, and `query u` over key universe `Fin U` up to capacity
+`n ≥ 1` active keys (`ValidFilterSeq n`) across operation sequences `ops : List (FilterOp U)` of any
+length. Under strict set semantics, `insert u` is valid when `u ∉ S` and fewer than `n` keys are
+currently present (`S.card < n`), adding `u` to the active set `S`; `delete u` is valid when `u` is
+currently present (`u ∈ S`), removing `u` from `S`; and `query u` is always valid and leaves `S`
+unchanged.
+
+For every valid fixed operation sequence `ops` of any length, on every random branch in
+`μ_final.support`, every `query u` at index `i` where `u ∈ activeSetBefore ops i` returns `true`
+(`NoFalseNegatives ops`). For every index `i` and absent key `u ∉ activeSetBefore ops i` with
+`ops[i]? = some (.query u)`, the probability that step `i` returns `true`
+(`FalsePositiveAt ops i u`) is at most `ε` (`FilterContract ε ops`), for any `ε ≠ 0` (in particular
+for all `ε ∈ (0, 1 / 2]`).
+
+To avoid any polynomial universe restriction `log₂ U ≤ c · log₂ n`, keys `u < U ≤ 2 ^ w₀`
+(`2 * w₀ ≤ w`) are first reduced to `min w₀ (3 * b)` bits
+(`b = qfQuotBits w₀ n = ⌈log₂(max (8 * min n (2 ^ w₀)) 8)⌉`, so `2 ^ b = O(min n (2 ^ w₀))`) by a
+`2`-universal multiply-shift hash, then mapped to a `b`-bit quotient by a degree-`4` (`5`-wise
+independent) polynomial over a binary trinomial field of degree `2 * 3 ^ t` evaluated in
+`L = 2 * 3 ^ min t 3 ≤ 54 = O(1)` limbs using a bit-packed multiplication table of `o(2 ^ b)` bits.
+An independent multiply-shift hash produces the `min w₀ (epsLog ε + 1)`-bit remainder. Runs are
+maintained in canonical sorted order so that the set of occupied slots depends only on the current
+active set `S` (no amortization and no seed conditioning across deletions).
+
+The compiled 248-register programs `p_init` and `p_op` are chosen per `(w, w₀, n, ε)` (independent
+of `U` and `base`), with no static code-size bound. The instruction bounds `qfInitSteps w₀ n` and
+`qfOpCharge = 293080 = O(1)` count executed body instructions, excluding the final `halt` step
+(accounted for as `T + 1` in `ExecProgramDist`) and caller argument delivery (`prepareFilterRegs`).
+Every individual operation in `ExecFilterOps` executes in at most `qfOpCharge = 293080` expected
+body instructions (`(∑' p, μ p * T_step p) ≤ qfOpCharge` at every step, not merely amortized over
+the sequence). All hash seeds, the bit-packed multiplication table, and the bit-packed `(r + 3)`-bit
+slot array reside in a single contiguous memory block `[base, base + qfSpaceOfEps w w₀ n ε)` of at
+most `640 * ((n * epsLog ε + w - 1) / w + 1)` machine words.
 
 A reader only needs to inspect the definitions and theorem statements in this file to verify that
 the formalization proves the intended mathematical claims; Lean verifies the proofs through
@@ -279,12 +281,12 @@ def FalsePositiveAt {U : ℕ} (ops : List (FilterOp U)) (i : ℕ) (u : Fin U)
   u ∉ activeSetBefore ops i ∧
   tr[i]? = some (.query u, true)
 
-/-- Distributional correctness contract for a capacity-`n` approximate-membership filter with
-false-positive rate `ε` on an oblivious operation sequence `ops`:
-- every transcript in `μ.support` matches `ops` and has zero false negatives;
-- for every step `i` and absent key `u ∉ activeSetBefore ops i` with `ops[i]? = some (.query u)`,
-  the probability of `FalsePositiveAt ops i u` under `μ` is at most `ε`. -/
-def FilterContract {U : ℕ} (_n : ℕ) (ε : ℝ≥0∞) (ops : List (FilterOp U))
+/-- Distributional correctness contract for an approximate-membership filter with false-positive
+rate `ε` on an oblivious operation sequence `ops`: every transcript in `μ.support` matches `ops` and
+has zero false negatives, and for every step `i` and absent key `u ∉ activeSetBefore ops i` with
+`ops[i]? = some (.query u)`, the probability of `FalsePositiveAt ops i u` under `μ` is at most
+`ε`. -/
+def FilterContract {U : ℕ} (ε : ℝ≥0∞) (ops : List (FilterOp U))
     (μ : PMF (FilterTranscript U)) : Prop :=
   (∀ tr ∈ μ.support, TranscriptMatches ops tr ∧ NoFalseNegatives ops tr) ∧
   ∀ (i : ℕ) (u : Fin U),
@@ -366,16 +368,16 @@ def decodeFilterEntry {r U : ℕ} (outReg : Fin r) (o : FilterOp U)
 
 /-- Sequential multi-operation execution of `ops : List (FilterOp U)` by the Word-RAM operation
 program `p_op : Program r` at word width `w`, with calling-convention registers
-`(keyReg, tagReg, outReg)`, allocated memory block `[base, base + sp)`, and **per-operation**
-expected instruction bound `opCharge`:
-- `nil`: the empty sequence leaves `μ` unchanged with `0` expected operation steps;
-- `cons`: from every supported coupled state `p ∈ μ.support`, running `p_op` after preparing
-  `prepareFilterRegs keyReg tagReg o p.reg` executes with distribution
-  `(μ_step p).map CoupledOutcome.toRegMem` and expected step count `T_step p` (`ExecProgramDist`),
-  every resulting state `q ∈ (μ_step p).support` is `w`-bit word-bounded, appends
-  `decodeFilterEntry outReg o q.reg` to `p.transcript`, and leaves memory outside
-  `[base, base + sp)` unchanged, **and the expected step count of this single operation satisfies
-  `(∑' p, μ p * T_step p) ≤ (opCharge : ℝ≥0∞)`** (per-operation expected time, not amortized). -/
+`(keyReg, tagReg, outReg)`, allocated memory block `[base, base + sp)`, and per-operation expected
+body-instruction bound `opCharge`. The `nil` case leaves `μ` unchanged with `0` expected operation
+steps. In the `cons` case, from every supported coupled state `p ∈ μ.support`, running `p_op` after
+preparing `prepareFilterRegs keyReg tagReg o p.reg` executes with distribution
+`(μ_step p).map CoupledOutcome.toRegMem` and expected body-instruction count `T_step p`
+(`ExecProgramDist`), every resulting state `q ∈ (μ_step p).support` is `w`-bit word-bounded,
+appends `decodeFilterEntry outReg o q.reg` to `p.transcript`, and leaves memory outside
+`[base, base + sp)` unchanged, and the expected body-instruction count of this single operation
+satisfies `(∑' p, μ p * T_step p) ≤ (opCharge : ℝ≥0∞)` (per-operation expected time, not
+amortized). -/
 inductive ExecFilterOps {Seed : Type} {r U : ℕ}
     (w : ℕ) (p_op : Program r) (keyReg tagReg outReg : Fin r) (base sp opCharge : ℕ) :
     List (FilterOp U) →
@@ -521,30 +523,29 @@ cluster slot across expected cluster length `≤ 290`) for each individual `inse
 def qfOpCharge : ℕ :=
   293080
 
-/-- **Two-Stage Quotient Filter with Deletions** (`QuotientFilter.implOfEps` and
-`QuotientFilter.implOfEps_space_le`):
-For every word width `w`, key bit-width `w₀`, capacity `n`, and false-positive target `ε : ℝ≥0∞`,
-there exist 248-register Word-RAM programs `p_init` and `p_op` (independent of `U` and `base`) such
-that for every key universe `U` and base address `base` satisfying `ε ≠ 0` (including all
+/-- Two-Stage Quotient Filter with Deletions (`QuotientFilter.implOfEps` and
+`QuotientFilter.implOfEps_space_le`). For every word width `w`, key bit-width `w₀`, capacity `n`,
+and false-positive target `ε : ℝ≥0∞`, there exist 248-register Word-RAM programs `p_init` and
+`p_op` chosen per `(w, w₀, n, ε)` (independent of `U` and `base`, with no static code-size bound)
+such that for every key universe `U` and base address `base` satisfying `ε ≠ 0` (including all
 `ε ∈ (0, 1 / 2]`), `1 ≤ n`, `0 < w₀`, `2 * w₀ ≤ w`, `U ≤ 2 ^ w₀`, and
 `base + qfSpaceOfEps w w₀ n ε < 2 ^ w`:
-- **Compact single-block space:** the total memory footprint `qfSpaceOfEps w w₀ n ε` (holding all
-  hash seeds, the bit-packed multiplication table, and the bit-packed slot array) is at most
-  `640 * ((n * epsLog ε + w - 1) / w + 1)` machine words;
-- **Initialization:** from any word-bounded initial state `(reg₀, mem₀)` with `reg₀ 240 = base` and
-  zeroed memory in `[base, base + qfSpaceOfEps w w₀ n ε)`, there exists an initial coupled
-  distribution `μ_init` (chosen before any operation sequence `ops`) initialized in
-  `qfInitSteps w₀ n` expected instructions, with `p.reg 0 = base`,
-  `p.reg 240 = base + qfSpaceOfEps w w₀ n ε`, `p.transcript = []`, and memory outside
-  `[base, base + qfSpaceOfEps w w₀ n ε)` unchanged;
-- **Per-operation `O(1)` expected time and distributional correctness across any valid sequence:**
-  for every oblivious operation sequence `ops : List (FilterOp U)` of any length satisfying
-  `ValidFilterSeq n ops`, `p_op` executes `ops` sequentially (`ExecFilterOps`) with:
-  1. expected instruction count at most `qfOpCharge = 293080 = O(1)` **for every individual
-     operation** in `ops` (and total expected operation steps `T_ops ≤ ops.length * 293080`);
-  2. zero false negatives on every branch (`NoFalseNegatives ops`);
-  3. false-positive probability at most `ε` for every query of an absent key
-     (`FilterContract n ε ops`).
+
+The single allocated memory block of `qfSpaceOfEps w w₀ n ε` words (holding all hash seeds, the
+bit-packed multiplication table, and the bit-packed slot array) uses at most
+`640 * ((n * epsLog ε + w - 1) / w + 1)` machine words. From any word-bounded initial state
+`(reg₀, mem₀)` with `reg₀ 240 = base` and zeroed memory in `[base, base + qfSpaceOfEps w w₀ n ε)`,
+there exists an initial coupled distribution `μ_init` (chosen before any operation sequence `ops`)
+initialized in `qfInitSteps w₀ n` expected executed body instructions, with `p.reg 0 = base`,
+`p.reg 240 = base + qfSpaceOfEps w w₀ n ε`, `p.transcript = []`, and memory outside
+`[base, base + qfSpaceOfEps w w₀ n ε)` unchanged.
+
+For every oblivious operation sequence `ops : List (FilterOp U)` of any length satisfying
+`ValidFilterSeq n ops`, `p_op` executes `ops` sequentially (`ExecFilterOps`) with expected executed
+body-instruction count at most `qfOpCharge = 293080 = O(1)` for every individual operation in `ops`
+(and total expected body instructions `T_ops ≤ ops.length * 293080`, excluding final `halt` and
+caller argument delivery), zero false negatives on every branch (`NoFalseNegatives ops`), and
+false-positive probability at most `ε` for every query of an absent key (`FilterContract ε ops`).
 
 References: `[PaghPaghRao2005]` (SODA 2005, pp. 823–829); `[BenderEtAl2012]` (PVLDB 5(11):1627–1637,
 2012); `[PaghPaghRuzic2009]` (*SIAM J. Comput.* 39(3):1107–1120, 2009);
@@ -581,7 +582,7 @@ theorem quotientFilter :
                     ⟨1, by decide⟩ ⟨247, by decide⟩ ⟨1, by decide⟩
                     base (qfSpaceOfEps w w₀ n ε) qfOpCharge ops
                     μ_init μ_final T_ops ∧
-                  FilterContract n ε ops (μ_final.map CoupledOutcome.transcript) ∧
+                  FilterContract ε ops (μ_final.map CoupledOutcome.transcript) ∧
                   T_ops ≤ ((ops.length * qfOpCharge : ℕ) : ℝ≥0∞) :=
   ComplexityAbstracts.ApproximateMembershipBridge.quotientFilter
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
@@ -609,7 +610,7 @@ theorem quotientFilter :
       fun _ => rfl, fun _ _ _ => rfl,
       fun _ _ _ => Iff.rfl, fun _ _ _ => Iff.rfl, fun _ _ _ => Iff.rfl,
       fun _ _ => Iff.rfl, fun _ _ _ _ => Iff.rfl,
-      fun _ _ _ _ => Iff.rfl,
+      fun _ _ _ => Iff.rfl,
       fun _ _ => rfl, fun _ _ => rfl, fun _ => rfl,
       fun _ _ _ _ => rfl, fun _ _ _ _ => rfl, fun _ _ _ _ => rfl,
       fun _ _ _ _ => rfl, fun _ => rfl,

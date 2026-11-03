@@ -23,7 +23,7 @@ instantiated with:
    `Fin U` (`U ≤ 2 ^ w₀`) to `b = tableLog (min n (2 ^ w₀))`-bit quotients (`2 ^ b ≥ 8 * n_eff`,
    where `n_eff = min n (2 ^ w₀)`), and
 2. an independent multiply-shift hash `remHash U w₀ k` mapping keys in `Fin U` to
-   `rBits w₀ k = min w₀ (k + 1)`-bit remainders.
+   `remBits w₀ k = min w₀ (k + 1)`-bit remainders.
 
 ## Main results
 

@@ -58,7 +58,7 @@ structure FilterPresentation (S : Presentation) where
   activeSetFrom {U : ℕ} : Finset (Fin U) → List (FilterOp U) → Finset (Fin U)
   ValidFilterOp {U : ℕ} : ℕ → Finset (Fin U) → FilterOp U → Prop
   ValidFilterSeqFrom {U : ℕ} : ℕ → Finset (Fin U) → List (FilterOp U) → Prop
-  FilterContract {U : ℕ} : ℕ → ℝ≥0∞ → List (FilterOp U) → PMF (List (FilterOp U × Bool)) → Prop
+  FilterContract {U : ℕ} : ℝ≥0∞ → List (FilterOp U) → PMF (List (FilterOp U × Bool)) → Prop
   RegMem : ℕ → Type
   regMem {r : ℕ} : (Fin r → ℕ) → (ℕ → ℕ) → RegMem r
   rmReg {r : ℕ} : RegMem r → Fin r → ℕ
@@ -159,9 +159,9 @@ structure FilterLaws (S : Presentation) (P : FilterPresentation S) : Prop where
     (o : P.FilterOp U) (os : List (P.FilterOp U)),
     P.ValidFilterSeqFrom n A (o :: os) ↔
       P.ValidFilterOp n A o ∧ P.ValidFilterSeqFrom n (P.stepSet A o) os
-  filterContract_iff : ∀ {U : ℕ} (n : ℕ) (ε : ℝ≥0∞) (ops : List (P.FilterOp U))
+  filterContract_iff : ∀ {U : ℕ} (ε : ℝ≥0∞) (ops : List (P.FilterOp U))
     (μ : PMF (List (P.FilterOp U × Bool))),
-    P.FilterContract n ε ops μ ↔
+    P.FilterContract ε ops μ ↔
       ((∀ tr ∈ μ.support,
           (tr.map Prod.fst = ops) ∧
           ∀ (i : ℕ) (u : Fin U),
@@ -372,7 +372,7 @@ private theorem filterContract_of_spec_contract {S : Presentation} {P : FilterPr
     {ops_lib : List (ApproximateMembership.Op U)}
     {μ_lib : PMF (List (ApproximateMembership.Label U))}
     (hcontract : (ApproximateMembership.spec U n ε).Contract ops_lib μ_lib) :
-    P.FilterContract n ε (ops_lib.map P.filterOpOf)
+    P.FilterContract ε (ops_lib.map P.filterOpOf)
       (μ_lib.map fun tr => tr.map P.entryOf) := by
   rw [hP.filterContract_iff]
   obtain ⟨hsupp_lib, hfp_lib⟩ := hcontract
@@ -1009,7 +1009,7 @@ theorem quotientFilter (S : Presentation) (hS : Laws S)
                     ⟨1, by decide⟩ ⟨247, by decide⟩ ⟨1, by decide⟩
                     base (qfSpaceOfEps w w₀ n ε) qfOpCharge ops
                     μ_init μ_final T_ops ∧
-                  P.FilterContract n ε ops (μ_final.map P.coTranscript) ∧
+                  P.FilterContract ε ops (μ_final.map P.coTranscript) ∧
                   T_ops ≤ ((ops.length * qfOpCharge : ℕ) : ℝ≥0∞) := by
   intro w w₀ n ε
   let k := QuotientFilter.epsLog ε
