@@ -124,7 +124,7 @@ inserts two distinct keys `(1, 42)` and `(5, 17)` reaching capacity `2`, then ov
 in-place with `99` (which is valid even at full capacity `(dom s).card = 2` because key `1` is
 already present!), and queries keys `1`, `5`, and `3`. -/
 def sampleDictOps : List (Dictionary.Op 8) :=
-  [.insert 1 42, .insert 5 17, .insert 1 99, .get 1, .get 5, .get 3]
+  [.insert 1 42, .insert 5 17, .insert 1 99, .query 1, .query 5, .query 3]
 
 theorem sampleDictOps_valid_and_run :
     (Dictionary.spec 8 100 2).ValidHistory (Dictionary.empty 8) sampleDictOps ∧
