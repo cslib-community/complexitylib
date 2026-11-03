@@ -168,6 +168,42 @@ bit-time or arbitrary-real theorem. The large-family client is a checked symboli
 enormous interpreter benchmark. This conservative automatic component is distinct from the
 later box-backed ordinary 1.9992 endpoint in [PR #2358](https://github.com/cslib-community/complexitylib/pull/2358).
 
+## Conservative ordinary integer 3SUM
+
+Import `Complexity.Algorithms.WordRAM.ThreeSum.Decision.Subquadratic`. In namespace
+`Cslib.Algorithms.WordRAM.ThreeSum.Decision`, apply `exists_subquadratic_runs κ` to the actual
+ordinary host with `ParameterSelecting.callee`. The complete
+[checked client](https://github.com/cslib-community/complexitylib/blob/2f6fb39d034b8a27ddcd56dd7779b67ef9a236b9/ComplexityTests/WordRAMSubquadraticThreeSum.lean)
+includes imports, positive repeated-zero inputs, negative all-one/all-minus-one inputs, and
+rejection of two zeros because the positions must be distinct. From an endpoint checkout:
+
+```bash
+scripts/build.sh --wfail --iofail ComplexityTests.WordRAMSubquadraticThreeSum
+```
+
+Fix a natural magnitude exponent `κ`. For `input : List ℤ` of length n, prove each
+`|z| <= (n+2)^κ` and supply `Decision.width κ 123357 n <= W`. The starting state is
+`State.init (input.map Signed.encode)`: address 0 holds n, signed input words start at 1,
+and remaining memory is zero. If application fails, check the signed encoding, original list
+length, magnitude bound, width and import against the complete client.
+
+One fixed 848-register standard Word-RAM program per κ returns one exactly for a zero sum at
+three distinct original positions; repeated values are allowed. Correctness holds at every
+length and every admitted wider width. The actual halt and prehalt prefix share a final state.
+For each κ, one positive C and threshold N precede all inputs and physical widths; for n >= N,
+charged steps are at most `C*n^(2-1/5184)`. Actual preprocessing, parameters, prime selection,
+matrix construction, solver calls, control and halt are included in `Decision.cost`. No solver,
+prime, layout, run or time law is supplied. Initial input placement/output extraction follow
+the model convention. These clients consume checked run theorems; they are not VM benchmarks.
+
+Every reachable prefix has register/memory words below
+`(n+2)^(2*Decision.widthCoefficient κ 123357)` and memory zero at or above that address envelope;
+final data also satisfy the physical width bound. Time counts standard unit instructions,
+including multiplication, division, bitwise operations and shifts, with overflow faults.
+This is polynomially bounded integer Word-RAM time, not bit/Turing time or arbitrary-real
+3SUM. Its conservative exponent is `2-1/5184`; the sharper box-backed 1.9992 theorem is the
+separate [PR #2358](https://github.com/cslib-community/complexitylib/pull/2358).
+
 ## Tree Evaluation
 
 The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root of an explicitly table-encoded perfect binary tree in native independent workspace `O(log n · log log n)` for positive value length and height. The output is not charged to workspace, and the theorem leaves time existential. The same page distinguishes borrowed-register restoration and fan-in/packed procedure variants.

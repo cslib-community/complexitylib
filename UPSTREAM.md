@@ -212,11 +212,10 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   all `2t` instances and a finite solver program in a disjoint register bank. Its initialized run
   theorem connects the actual pre-halt state to the Convolution-3SUM answer and preserves the input.
   The host's source-width threshold is `(20κ+125)clog₂(N+2)`; signed kernels use target width `w+2`.
-  This remains conditional on the supplied solver's native execution/correctness/frame theorem;
-  it does not establish a fast solver. Fast Exact Triangle and its final native backend/asymptotic
-  composition remain in
-  [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
-  Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
+  This host module remains parametric in a concrete solver's execution/correctness/frame theorem;
+  the actual solver and conservative ordinary-host composition are described below. The improved
+  Section 4 route needed for the published exponent 1.9992 remains in
+  [#1394](https://github.com/cslib-community/complexitylib/issues/1394). Anthropic's copyright and attribution
   are retained; the native proofs and representation choices are local.
   Native numeric parameter computation, signed-residue/histogram counting, trial-division prime
   tables, collision-tested least-prime scans and complete two-prime modulus selection also use
@@ -240,11 +239,23 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   logarithmic physical width, polynomial words/space at every admitted-width prefix, and a fully
   charged compositional bound at the actual packed size. `Host.Callee` requires actual finite-code
   execution, matrix correctness, logarithmic width and a protected-prefix frame on arbitrary old
-  scratch memory; `Host.Slow.callee` is a proved exhaustive native instance. This conditional host
-  does not provide a fast solver. The unconditional native solver/backend and final asymptotic
-  composition, including exponent 1.9992, remain #1394. These components do not affect the curated
-  headlines. The caller layout, exhaustive callee and ordinary composition are original; the
-  underlying finite reductions and builder retain their existing Anthropic credit.
+  scratch memory; `Host.Slow.callee` is a proved exhaustive native instance.
+  `ExactTriangle/ParameterSelecting.callee` now provides the actual fast/small-branch solver.
+  Its `Asymptotics` module proves the concrete time field is `Oκ(n^(3−1/1296))` at polynomial
+  original magnitudes, without a selected-prime or running-time hypothesis.
+  `ThreeSum/Decision/Subquadratic.exists_subquadratic_runs` composes that exact callee with the
+  actual ordinary host: one fixed 848-register standard program per magnitude exponent, complete
+  initialized same-state prefix/halt, original distinct-position verdict, logarithmic width,
+  polynomial prefix words/support and charged `Oκ(n^(2−1/5184))` time. Correctness covers every
+  length and repeated values. The theorem concerns polynomially bounded integer inputs and
+  charged Word-RAM instructions, not arbitrary-real or bit/Turing time. No new abstract is
+  selected. The improved Section 4/tuned1.9992 endpoint remains #1394. The native glue and these
+  conservative quantitative estimates are original; existing finite reductions and builder
+  retain their Anthropic credit. `ChanHe/ConvolutionSizes` transfers original magnitudes to the
+  actual packed side; the existing finite and native count proofs share `shifted_count_bound_le`.
+  The small `Foundations/Data/Nat/LogRpow` topic is general mathematics intended for Mathlib:
+  it transports Mathlib's real log little-o theorem to shifted natural logs and is consumed by
+  all three side/count/preprocessing estimates, without adding to a widely imported hub.
 
   Bounded API follow-ups from the traversal/preprocessing reviews: merge the stage proof modules
   `PreprocessingSnapshot`, `PreprocessingPrimes`, `PreprocessingSetup`, `PreprocessingFinish`,

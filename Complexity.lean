@@ -84,6 +84,7 @@ public import Complexity.Algorithms.Reachability.Savitch
 public import Complexity.Algorithms.Sorting.Counting
 public import Complexity.Algorithms.ThreeSum.ArrayPacking
 public import Complexity.Algorithms.ThreeSum.ChanHe.Collisions
+public import Complexity.Algorithms.ThreeSum.ChanHe.ConvolutionSizes
 public import Complexity.Algorithms.ThreeSum.ChanHe.Defs
 public import Complexity.Algorithms.ThreeSum.ChanHe.FromNumbers
 public import Complexity.Algorithms.ThreeSum.ChanHe.Recursion
@@ -195,6 +196,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.Instances
 public import Complexity.Algorithms.WordRAM.ExactTriangle.MatrixSpec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Admission
+public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Asymptotics
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Callee
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Delivery
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Exec
@@ -562,6 +564,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Body
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Boundary
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Call
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Controls
+public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.DyadicCost
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Execute
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Input
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Intermediates
@@ -570,6 +573,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Program
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Registers
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Reserve
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Scalar
+public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Subquadratic
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Width
 public import Complexity.Algorithms.WordRAM.ThreeSum.Fill
 public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend
@@ -3539,6 +3543,7 @@ public import Complexity.Foundations.Data.Nat.Factorial
 public import Complexity.Foundations.Data.Nat.Fields
 public import Complexity.Foundations.Data.Nat.IntermediateValue
 public import Complexity.Foundations.Data.Nat.Log
+public import Complexity.Foundations.Data.Nat.LogRpow
 public import Complexity.Foundations.Data.Nat.Morton
 public import Complexity.Foundations.Data.Nat.OddMulMod
 public import Complexity.Foundations.Data.Nat.OfDigits
