@@ -14,7 +14,7 @@ public import Complexity.Computability.Circuit.Boolean.WeightedThreshold
 
 Evaluation, nonzero coordinate support and magnitude ranks for real-weight threshold
 functions on arbitrary finite input types. Restriction and counting arguments can import
-this module without the depth-two circuit constructor or circuit simulation.
+this module without the depth-two circuit constructor.
 
 ## Main definitions
 
