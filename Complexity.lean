@@ -890,6 +890,7 @@ public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Activit
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ActivityBounds
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Andreev
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevAverage
+public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevLowerBound
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevWindowed
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Capacity
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.CapacityCircuit
@@ -904,6 +905,7 @@ public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.RandomR
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ScalarActivity
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.SupportBound
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.SupportBoundAsymptotics
+public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ThresholdCounting
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.TranscriptTree
 public import Complexity.Computability.Circuit.Boolean.Word
 public import Complexity.Computability.Circuit.Boolean.XorLemma
