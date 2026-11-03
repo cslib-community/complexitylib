@@ -11,6 +11,7 @@ import posixpath
 import re
 import shutil
 import sqlite3
+import subprocess
 import tempfile
 import tomllib
 from urllib.parse import unquote, urlsplit
@@ -75,6 +76,58 @@ def require(condition, message):
 LOCKED_KEYS = ("type", "url", "rev", "subDir")
 
 
+def docgen_commit():
+    """An explicit doc-gen4 snapshot opt-in; ordinary matching-tag builds have no record."""
+    record = ROOT / "docbuild/doc-gen4-commit.json"
+    if not record.exists():
+        return None
+    commit = json.loads(record.read_text())
+    require(isinstance(commit, dict) and set(commit) == {"commit", "release"},
+            "doc-gen4 commit record must contain only commit and release")
+    require(all(isinstance(value, str) and re.fullmatch(r"[0-9a-f]{40}", value)
+                for value in commit.values()),
+            "doc-gen4 commit and release must be full lowercase commit SHAs")
+    return commit
+
+
+def check_docgen_checkout():
+    """Check the materialized snapshot before generation, without fetching or changing Git state."""
+    commit = docgen_commit()
+    if commit is None:
+        return
+    checkout = ROOT / ".lake/packages/doc-gen4"
+    require(checkout.is_dir(),
+            "doc-gen4 checkout is missing; run lake -d docbuild resolve-deps first")
+
+    def git(*args):
+        result = subprocess.run(
+            ["git", "--no-optional-locks", "-c", "gc.auto=0", "-c", "maintenance.auto=false",
+             "-C", str(checkout), *args], capture_output=True, text=True, timeout=30)
+        require(result.returncode == 0,
+                "Cannot verify doc-gen4 checkout; a complete locked checkout with release tags "
+                "and history is required: " + (result.stderr.strip() or " ".join(args)))
+        return result.stdout.strip()
+
+    try:
+        require(Path(git("rev-parse", "--show-toplevel")).resolve() == checkout.resolve(),
+                "doc-gen4 must have its own Git checkout")
+        require(git("rev-parse", "HEAD") == commit["commit"],
+                "doc-gen4 checkout differs from the recorded snapshot")
+        require(not git("status", "--porcelain", "--untracked-files=no"),
+                "doc-gen4 checkout has tracked changes")
+        toolchain = (ROOT / "lean-toolchain").read_text().strip()
+        require((checkout / "lean-toolchain").read_text().strip() == toolchain,
+                "doc-gen4 checkout toolchain differs from the library")
+        tag = toolchain.rsplit(":", 1)[-1]
+        require(git("rev-parse", f"refs/tags/{tag}^{{commit}}") == commit["release"],
+                "doc-gen4 release tag differs from the recorded release commit")
+        git("merge-base", "--is-ancestor", commit["release"], commit["commit"])
+    except subprocess.TimeoutExpired as error:
+        raise ValueError("Timed out verifying the doc-gen4 checkout") from error
+    print(f"doc-gen4 snapshot {commit['commit']} matches {toolchain}; "
+          f"release {tag} at {commit['release']} is an ancestor.")
+
+
 def check_project(project, label, generator_name, root_packages, toolchain):
     """Check a documentation project that shares the library's toolchain and package checkouts."""
     lockfile = f"{project}/lake-manifest.json"
@@ -95,10 +148,20 @@ def check_project(project, label, generator_name, root_packages, toolchain):
             f"{label} toolchain differs from the library")
     config = tomllib.loads((ROOT / project / "lakefile.toml").read_text())
     generator = next(p for p in config["require"] if p["name"] == generator_name)
-    require(generator["rev"] == toolchain.rsplit(":", 1)[-1],
-            f"{generator_name} tag must match the Lean version")
-    require(packages[generator_name]["inputRev"] == generator["rev"],
-            f"{label} lockfile has a stale {generator_name} tag")
+    commit = docgen_commit() if generator_name == "doc-gen4" else None
+    if commit is None:
+        require(generator["rev"] == toolchain.rsplit(":", 1)[-1],
+                f"{generator_name} tag must match the Lean version")
+        require(packages[generator_name]["inputRev"] == generator["rev"],
+                f"{label} lockfile has a stale {generator_name} tag")
+    else:
+        locked = packages[generator_name]
+        require(generator["rev"] == locked["inputRev"] == locked["rev"] == commit["commit"],
+                "doc-gen4 configuration, lockfile and commit record must name the same snapshot")
+        require(isinstance(generator.get("git"), str) and bool(generator["git"])
+                and generator["git"] == locked["url"] and locked["type"] == "git"
+                and generator.get("subDir") is None and locked.get("subDir") is None,
+                "doc-gen4 snapshot must use the same explicit Git URL in configuration and lockfile")
     return packages
 
 
@@ -756,6 +819,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config-only", action="store_true",
                         help="check pins before invoking Lake; do not require built documentation")
+    parser.add_argument("--verify-generator-checkout", action="store_true",
+                        help="also verify the resolved doc-gen4 snapshot before generation")
     parser.add_argument("--trim", action="store_true",
                         help="externalize dependency pages and trim declaration data before checking")
     parser.add_argument("--guide", action="store_true",
@@ -763,6 +828,8 @@ def main():
     args = parser.parse_args()
     try:
         check_config()
+        if args.verify_generator_checkout:
+            check_docgen_checkout()
         if args.config_only:
             print("Documentation configuration is consistent.")
         else:

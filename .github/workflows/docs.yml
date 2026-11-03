@@ -42,6 +42,11 @@ jobs:
         continue-on-error: true
         timeout-minutes: 10
         run: scripts/cache/get-missing.sh
+      - name: Verify documentation generator checkout
+        run: |
+          lake -d docbuild resolve-deps
+          git -c gc.auto=0 -c maintenance.auto=false diff --exit-code -- lake-manifest.json docbuild/lake-manifest.json guide/lake-manifest.json
+          python3 -B scripts/check_docs.py --config-only --verify-generator-checkout
       - name: Generate API documentation
         env:
           LEAN_NUM_THREADS: "2"

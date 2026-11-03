@@ -10,6 +10,6 @@ name = "complexitylib"
 path = ".."
 
 [[require]]
-scope = "leanprover"
 name = "doc-gen4"
-rev = "v4.36.0-rc2"
+git = "https://github.com/SamuelSchlesinger/doc-gen4"
+rev = "cf840d8fb97b0cb39238c2f78cb8dd08b9984fcc"

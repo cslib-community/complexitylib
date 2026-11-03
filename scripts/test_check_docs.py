@@ -5,6 +5,7 @@ import io
 import json
 from pathlib import Path
 import sqlite3
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -859,6 +860,139 @@ class CheckConfigTests(unittest.TestCase):
     def test_shared_packages_agree(self):
         self.manifests["guide"][2]["rev"] = "n"
         self.assert_failure("Guide and documentation lockfiles differ for MD4Lean: rev")
+
+
+    def snapshot(self):
+        commit = {"commit": "c" * 40, "release": "d" * 40}
+        (self.root / "docbuild/doc-gen4-commit.json").write_text(json.dumps(commit))
+        url = "https://example.com/reviewed/doc-gen4"
+        (self.root / "docbuild/lakefile.toml").write_text(
+            f'[[require]]\nname = "doc-gen4"\ngit = "{url}"\nrev = "{commit["commit"]}"\n')
+        self.manifests["docbuild"][0].update(
+            rev=commit["commit"], inputRev=commit["commit"], url=url)
+        return commit
+
+    def test_snapshot_requires_exact_coherent_pins_without_changing_verso_policy(self):
+        commit = self.snapshot()
+        self.check()  # Offline configuration checking needs no package checkout.
+        for key in ("rev", "inputRev", "url"):
+            with self.subTest(key=key):
+                package = self.manifests["docbuild"][0]
+                old = package[key]
+                package[key] = "different"
+                with self.assertRaises(ValueError):
+                    self.check()
+                package[key] = old
+        record = self.root / "docbuild/doc-gen4-commit.json"
+        for bad in ("main", "c" * 7):
+            with self.subTest(commit=bad):
+                record.write_text(json.dumps({**commit, "commit": bad}))
+                with self.assertRaisesRegex(ValueError, "full lowercase commit SHAs"):
+                    self.check()
+        record.unlink()
+        self.assert_failure("doc-gen4 tag must match the Lean version")
+        record.write_text(json.dumps(commit))
+        (self.root / "guide/lakefile.toml").write_text(
+            '[[require]]\nname = "verso"\nrev = "' + "c" * 40 + '"\n')
+        self.assert_failure("verso tag must match the Lean version")
+
+    def test_snapshot_checkout_preflight_is_explicit_and_output_checks_need_no_checkout(self):
+        self.snapshot()
+        self.write_manifests()
+        with patch("sys.argv", ["check_docs.py", "--config-only"]), \
+                redirect_stdout(io.StringIO()):
+            check_docs.main()
+        with patch("sys.argv", ["check_docs.py"]), \
+                patch.object(check_docs, "check_output") as output, \
+                patch.object(check_docs, "check_docgen_checkout") as checkout:
+            check_docs.main()
+        output.assert_called_once_with()
+        checkout.assert_not_called()
+        with patch("sys.argv", ["check_docs.py", "--config-only", "--verify-generator-checkout"]), \
+                patch.object(check_docs, "check_output") as output, \
+                patch("sys.stderr", io.StringIO()), self.assertRaises(SystemExit) as error:
+            check_docs.main()
+        self.assertEqual(error.exception.code, 1)
+        output.assert_not_called()
+
+
+class CheckSnapshotCheckoutTests(unittest.TestCase):
+    """Real Git fixtures have independent object databases; no source or dependency builds."""
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory(prefix="check-docgen-commit-")
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        root_patch = patch.object(check_docs, "ROOT", self.root)
+        root_patch.start()
+        self.addCleanup(root_patch.stop)
+        self.toolchain = "leanprover/lean4:v4.36.0-rc1\n"
+        (self.root / "lean-toolchain").write_text(self.toolchain)
+        (self.root / "docbuild").mkdir()
+        self.checkout = self.root / ".lake/packages/doc-gen4"
+        self.checkout.mkdir(parents=True)
+        self.git("init", "--quiet")
+        self.assertTrue((self.checkout / ".git").is_dir())
+        self.assertFalse((self.checkout / ".git/objects/info/alternates").exists())
+        (self.checkout / "lean-toolchain").write_text(self.toolchain)
+        self.git("add", "lean-toolchain")
+        self.git("commit", "--quiet", "-m", "release")
+        self.release = self.git("rev-parse", "HEAD")
+        self.tag = "v4.36.0-rc1"
+        self.git("tag", self.tag)
+        (self.checkout / "lakefile.lean").write_text("-- reviewed scheduling change\n")
+        self.git("add", "lakefile.lean")
+        self.git("commit", "--quiet", "-m", "snapshot")
+        self.commit = self.git("rev-parse", "HEAD")
+        self.record(self.release)
+
+    def git(self, *args):
+        return subprocess.run(
+            ["git", "-c", "gc.auto=0", "-c", "maintenance.auto=false",
+             "-c", "core.hooksPath=/dev/null", "-c", "commit.gpgSign=false",
+             "-c", "user.name=Documentation fixture", "-c", "user.email=fixture@example.invalid",
+             "-C", str(self.checkout), *args],
+            check=True, capture_output=True, text=True).stdout.strip()
+
+    def record(self, release):
+        (self.root / "docbuild/doc-gen4-commit.json").write_text(
+            json.dumps({"commit": self.commit, "release": release}))
+
+    def test_exact_checkout_toolchain_and_clean_source(self):
+        with redirect_stdout(io.StringIO()):
+            check_docs.check_docgen_checkout()
+        self.git("checkout", "--quiet", "--detach", self.release)
+        with self.assertRaisesRegex(ValueError, "differs from the recorded snapshot"):
+            check_docs.check_docgen_checkout()
+        self.git("checkout", "--quiet", "--detach", self.commit)
+        (self.checkout / "lean-toolchain").write_text("wrong toolchain\n")
+        with self.assertRaisesRegex(ValueError, "tracked changes"):
+            check_docs.check_docgen_checkout()
+        (self.checkout / "lean-toolchain").write_text(self.toolchain)
+        (self.root / "lean-toolchain").write_text("leanprover/lean4:v4.36.0-rc2\n")
+        with self.assertRaisesRegex(ValueError, "toolchain differs"):
+            check_docs.check_docgen_checkout()
+
+    def test_recorded_release_must_match_tag_and_be_an_ancestor(self):
+        self.record(self.commit)
+        with self.assertRaisesRegex(ValueError, "release tag differs"):
+            check_docs.check_docgen_checkout()
+        self.record(self.release)
+        self.git("tag", "--delete", self.tag)
+        with self.assertRaisesRegex(ValueError, "release tags and history is required"):
+            check_docs.check_docgen_checkout()
+        self.git("tag", self.tag, self.release)
+        # A sibling commit can have the right toolchain but is not this snapshot's release ancestor.
+        self.git("checkout", "--quiet", "--detach", self.release)
+        (self.checkout / "other-change").write_text("different branch\n")
+        self.git("add", "other-change")
+        self.git("commit", "--quiet", "-m", "sibling")
+        other = self.git("rev-parse", "HEAD")
+        self.git("tag", "--force", self.tag, other)
+        self.git("checkout", "--quiet", "--detach", self.commit)
+        self.record(other)
+        with self.assertRaisesRegex(ValueError, "merge-base --is-ancestor"):
+            check_docs.check_docgen_checkout()
 
 
 if __name__ == "__main__":

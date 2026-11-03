@@ -230,9 +230,15 @@ The [README](README.md#build-and-use) explains how to generate API documentation
 [Verso](https://github.com/leanprover/verso). Their separate `docbuild` and `guide` projects share
 the library's toolchain and dependency checkouts, and `docbuild` its bibliography. After changing
 library dependencies, run `MATHLIB_NO_CACHE_ON_UPDATE=1 lake -d docbuild update complexitylib`
-and the same with `-d guide`. When changing the Lean toolchain, also update the doc-gen4 tag in
-`docbuild/lakefile.toml` and the Verso tag in `guide/lakefile.toml`, both named after the Lean
-version, and run `MATHLIB_NO_CACHE_ON_UPDATE=1 lake -d docbuild update doc-gen4` and
+and the same with `-d guide`. By default, the doc-gen4 tag in `docbuild/lakefile.toml` and the
+Verso tag in `guide/lakefile.toml` are both named after the Lean version. A reviewed doc-gen4
+snapshot can instead use an explicit Git URL and full commit SHA, with the snapshot and
+matching-version release commits recorded in `docbuild/doc-gen4-commit.json`. The configuration
+and lockfile must agree exactly; the resolved checkout must use the same toolchain and descend
+from that recorded release tag. This exception does not apply to Verso or shared dependency pins.
+Record the reason, upstream status and retirement condition in [UPSTREAM.md](UPSTREAM.md#documentation-generator-snapshot).
+When changing the Lean toolchain, update the generator pins and record together, and run
+`MATHLIB_NO_CACHE_ON_UPDATE=1 lake -d docbuild update doc-gen4` and
 `MATHLIB_NO_CACHE_ON_UPDATE=1 lake -d guide update verso`. Commit the refreshed lockfiles and
 run the documentation checks and builds.
 

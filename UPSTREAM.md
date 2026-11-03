@@ -17,6 +17,32 @@ It checks head revisions, not source equality or unrecorded overlaps. Follow
 [CONTRIBUTING.md](CONTRIBUTING.md#upstreaming) for preparing an upstream worktree.
 Do not add a ledger row for an ordinary candidate or repeat its source marker here.
 
+## Documentation generator snapshot
+
+The private #1726 candidate tests doc-gen4
+[`cf840d8`](https://github.com/leanprover/doc-gen4/pull/435), explicitly from
+`SamuelSchlesinger/doc-gen4`; it is not the `v4.36.0-rc2` release tag. The
+[commit record](docbuild/doc-gen4-commit.json) pins that snapshot and the actual release commit
+`20afd4dd`. Both use `leanprover/lean4:v4.36.0-rc2`. The snapshot is three commits after the
+release: the inherited upstream SSH source-URL fix at `b968d967`, then #435's scheduling change
+and regression probe. The release-to-snapshot delta touches Lake configuration and tests,
+with no renderer-code change.
+
+The [source review](https://github.com/leanprover/doc-gen4/pull/435#pullrequestreview-5738873830)
+covers #435's job composition and its cached-marker tradeoff: resolving the source URI now also
+runs for an already-current documentation marker, so a URI failure can fail that build without
+rewriting the marker. This is not evidence that the full API memory failure is fixed.
+Upstream maintainer acceptance and fork CI remain outstanding; no full API/site success or
+deployment approval follows from the snapshot preflight. #1726/#1727 retain their integration hold.
+
+The checker validates exact config/lock agreement offline, then checks the actual checkout,
+matching toolchain, recorded release tag and ancestry in an explicit pre-generation check.
+Artifact/link validation retains its existing contract without package Git history. The checker
+does not fetch or repair dependencies. The [API build instructions](README.md#api-reference)
+show the preflight. Return to a reviewed matching-version upstream release, removing the commit
+record and fork pin together, once it supplies the needed fix and passes the downstream API/site
+checks. Verso and all shared dependency constraints remain unchanged.
+
 ## Coordination before submission
 
 * **Machine calculus.** Build on Christian Reitwiessner's `crei/tidy-universal` branch and its

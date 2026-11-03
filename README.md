@@ -167,6 +167,8 @@ To build searchable API documentation from the module docstrings:
 
 ```bash
 python3 scripts/check_docs.py --config-only
+lake -d docbuild resolve-deps
+python3 scripts/check_docs.py --config-only --verify-generator-checkout
 lake -d docbuild build Complexity:docs
 python3 scripts/check_docs.py
 python3 -m http.server --bind 127.0.0.1 --directory docbuild/.lake/build/doc
@@ -176,6 +178,15 @@ Open `http://localhost:8000` to browse and search. The **API documentation** wor
 `main` to the [API documentation site](https://www.cslib.io/complexitylib/) nightly.
 A manual run on another branch produces an `api-docs` artifact instead; serve it by replacing
 the directory argument above with the extracted artifact directory.
+
+The first check is offline. Resolving dependencies materializes the locked generator sources;
+the preflight then verifies any explicit doc-gen4 snapshot before generation. A missing checkout,
+wrong commit or toolchain, tracked source edit, or missing release ancestry fails the preflight;
+restore the declared dependency checkout rather than bypassing the check. Generated-output and
+link validation do not require the generator's Git history. See
+[the snapshot scope and integration hold](UPSTREAM.md#documentation-generator-snapshot).
+Resolution reuses checkouts already at the locked commit; it does not restore missing tags or
+history in those checkouts. Use a fresh isolated checkout if that metadata is incomplete.
 
 If removing a source module leaves `check_docs.py` reporting obsolete modules, rebuild the
 generated documentation after any documentation build has stopped:
