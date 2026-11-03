@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Christian Reitwiessner
 -/
 
 -- upstream: local-only (formal abstract library)
@@ -45,19 +45,19 @@ normalized window error `2 ^ (r + 1) (exp (-2 t ^ 2 / 2 ^ b) + exp (-2 t ^ 2 / (
 1 / 2 - c`) yields `O(ε ^ 2 n ^ (3 / 2) sqrt(log n))` gates and `O(ε ^ 2 n ^ (5 / 2) sqrt(log n))`
 wires.
 
-**Quadratic-in-`ε` gate and wire lower bounds (`gate_lower_bound`, `wire_lower_bound`,
-`gate_lower_bound_of_le_eps`, `wire_lower_bound_of_le_eps`).** Replacing Markov's inequality on the
-surviving gate count in Kane–Williams with a simultaneous high-probability correlation union bound
-(`andreevSimultaneousTail b α`) over all `q < 2 ^ b` and applying Jensen's inequality
-(`E[sqrt(Q + 1)] ≤ sqrt(E[Q] + 1)`) eliminates one factor of `ε`. At the explicit deviation scale
-`α = (b + 2) sqrt(2 ^ b)` (`andreevSimultaneousTail_scale_le`), the simultaneous tail is at most
-`(1 / 2) ^ ((b + 2) ^ 2 + 2)`, so for `3 (b + 2) / sqrt(2 ^ b) ≤ ε ≤ 1 / 2` (`C log n / sqrt(n) ≤
-ε ≤ 1 / 2` in the balanced regime `2 ^ b = b * m`), `gate_lower_bound_of_le_eps` and
-`wire_lower_bound_of_le_eps` discharge the tail bound and yield
-`Omega(ε ^ 2 n ^ (3 / 2) / log ^ 3 n)` gates and `Omega(ε ^ 2 n ^ (5 / 2) / log ^ (7 / 2) n)`
-active wires (matching the windowed upper bounds up to polylogarithmic factors in `n`). The proofs
-also repair the Littlewood–Offord anti-concentration and random-restriction counting arguments of
-Kane and Williams.
+**Improved gate and wire lower bounds.** A surviving gate retains a weight vector from the
+original circuit; only its threshold changes with the fixed inputs. Counting threshold shifts of
+these fixed vectors, then averaging the square root of the survivor count by Cauchy–Schwarz,
+gives the resource-sensitive bounds `gate_lower_bound` and `wire_lower_bound`. Splitting at
+`2 ^ (3 * b)` removes the logarithm of the circuit resource. For `m ≤ 2 ^ b` and
+`3 (b + 2) / sqrt(2 ^ b) ≤ ε ≤ 1 / 2`, the explicit bounds are
+`m · 2^b · ε² ≤ 144 (b + 2) · size(c) · sqrt(n)` and
+`m · sqrt(m) · 2^b · ε² ≤ 144 (b + 2) · wireCount(c)`.
+At `2 ^ b = b * m` these give `Omega(ε² n^(3/2) / log² n)` gates and
+`Omega(ε² n^(5/2) / log^(5/2) n)` active wires. Exact computation is the case `ε = 1 / 2`.
+These are original improvements to the Kane–Williams bounds, using the repaired restriction
+lemmas and an explicit simultaneous Hoeffding tail. The displayed theorems are finite inequalities;
+no asymptotic-limit theorem is asserted here.
 
 **Model.** Circuits are straight-line programs of upstream `Cslib.Circuits.Circuit` with one output
 over `Cslib.Circuits.Boolean.WeightedThreshold.signature`. Each gate `Op` has an arity `m`, a real
@@ -121,15 +121,6 @@ def blockInput {b m : ℕ} (x : Fin (2 ^ b + b * m) → Bool) (j : Fin b) : Fin 
 def andreev (b m : ℕ) (x : Fin (2 ^ b + b * m) → Bool) : Bool :=
   tableInput x (tableIndex b fun j => parity m (blockInput x j))
 
-/-- Simultaneous Hoeffding-counting union-bound tail over all active bottom-gate counts
-`q < 2 ^ b`, where `(2 ^ b + 1) ^ ((b + 2) * q + b + 1)` bounds the number of functions in
-`IsDepthTwoWithGates q` on `b` bits and `exp (-(2 α ^ 2 (q + 1) / 2 ^ b))` bounds the probability
-that a fixed function in `IsDepthTwoWithGates q` correlates by more than `α * sqrt(q + 1) / 2 ^ b`
-with a random truth table. -/
-noncomputable def andreevSimultaneousTail (b : ℕ) (α : ℝ) : ℝ :=
-  ∑ q ∈ Finset.range (2 ^ b), ((2 ^ b + 1) ^ ((b + 2) * q + b + 1) : ℝ) *
-    Real.exp (-(2 * α ^ 2 * ((q : ℝ) + 1) / (2 : ℝ) ^ b))
-
 /-- **Exact quadratic upper bound.** For all `b, m`, Andreev's function on `n = 2^b + b*m` bits is
 computed by a depth-two weighted threshold circuit with `4 * 4^b + b * m * 2^b + 1` gates
 (`4 * 4^b + b * m * 2^b` bottom gates and one top gate). -/
@@ -172,87 +163,68 @@ theorem weak_agreement_upper_bound {b r : ℕ} (hr : r < b) (m B : ℕ) {t : ℝ
         ((Finset.univ.filter fun x => evaluate c x = andreev b m x).card : ℝ) :=
   AndreevThresholdBridge.weak_agreement_upper_bound hr m B ht hB
 
-/-- **Explicit scale bound for `andreevSimultaneousTail`.** At the canonical deviation scale
-`α = (b + 2) * sqrt(2 ^ b)`, the simultaneous union-bound tail over all `q < 2 ^ b` is at most
-`(1 / 2) ^ ((b + 2) ^ 2 + 2)`. -/
-theorem andreevSimultaneousTail_scale_le (b : ℕ) :
-    andreevSimultaneousTail b (((b : ℝ) + 2) * Real.sqrt ((2 : ℝ) ^ b)) ≤
-      (1 / 2 : ℝ) ^ ((b + 2) ^ 2 + 2) :=
-  AndreevThresholdBridge.andreevSimultaneousTail_scale_le b
-
-/-- **Average-case `Omega(ε² n^(3/2) / log³ n)` gate lower bound.** Any depth-two weighted threshold
-circuit agreeing with `andreev b m` on at least a `1/2 + ε` fraction of inputs satisfies the
-explicit quadratic-in-`ε` gate lower bound. -/
+/-- Resource-sensitive average-case gate lower bound. The fixed-weight count saves one logarithm. -/
 theorem gate_lower_bound {b m : ℕ} (hm : 0 < m)
-    {α ε : ℝ} (hα : Real.sqrt ((2 : ℝ) ^ b) / 2 ≤ α)
-    (htail : andreevSimultaneousTail b α ≤ ε)
-    (c : ThrCircuit (2 ^ b + b * m)) (hd : c.depth ≤ 2)
-    (hcorr : (2 : ℝ) ^ (2 ^ b + b * m) * (1 / 2 + ε) ≤
-      ((Finset.univ.filter fun x => evaluate c x = andreev b m x).card : ℝ)) :
-    (m : ℝ) * (((2 : ℝ) ^ b * (ε - andreevSimultaneousTail b α)) ^ 2 - α ^ 2) ≤
-      4 * α ^ 2 * (c.size : ℝ) * Real.sqrt ((2 ^ b + b * m : ℕ) : ℝ) :=
-  AndreevThresholdBridge.gate_lower_bound hm hα htail c hd hcorr
-
-/-- **Parameter-specialized average-case `Omega(ε² n^(3/2) / log³ n)` gate lower bound.** Whenever
-`3 * (b + 2) / sqrt(2 ^ b) ≤ ε`, choosing `α = (b + 2) * sqrt(2 ^ b)` discharges the simultaneous
-tail bound and yields an unconditional quadratic-in-`ε` gate lower bound. -/
-theorem gate_lower_bound_of_le_eps {b m : ℕ} (hm : 0 < m)
     {ε : ℝ} (hε : 3 * ((b : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ b) ≤ ε)
     (c : ThrCircuit (2 ^ b + b * m)) (hd : c.depth ≤ 2)
     (hcorr : (2 : ℝ) ^ (2 ^ b + b * m) * (1 / 2 + ε) ≤
       ((Finset.univ.filter fun x => evaluate c x = andreev b m x).card : ℝ)) :
     (m : ℝ) * (2 : ℝ) ^ b * ε ^ 2 ≤
-      12 * ((b : ℝ) + 2) ^ 2 * (c.size : ℝ) * Real.sqrt ((2 ^ b + b * m : ℕ) : ℝ) :=
-  AndreevThresholdBridge.gate_lower_bound_of_le_eps hm hε c hd hcorr
+      36 * ((b : ℝ) + 2 + Real.log ((c.size : ℝ) + 1)) * (c.size : ℝ) * Real.sqrt ((2 ^ b + b *
+        m : ℕ) : ℝ) :=
+  AndreevThresholdBridge.gate_lower_bound hm hε c hd hcorr
 
-/-- **Average-case `Omega(ε² n^(5/2) / log^(7/2) n)` wire lower bound.** Any depth-two weighted
-threshold circuit agreeing with `andreev b m` on at least a `1/2 + ε` fraction of inputs satisfies
-the explicit quadratic-in-`ε` active-wire lower bound. -/
-theorem wire_lower_bound {b m : ℕ} (hm : 0 < m)
-    {α ε : ℝ} (hα : Real.sqrt ((2 : ℝ) ^ b) / 2 ≤ α)
-    (htail : andreevSimultaneousTail b α ≤ ε)
+/-- Explicit average-case gate lower bound. The fixed-weight count saves one logarithm. -/
+theorem gate_lower_bound_of_le_eps {b m : ℕ} (hm : 0 < m)
+    (hmN : m ≤ 2 ^ b) {ε : ℝ} (hε : 3 * ((b : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ b) ≤ ε)
+    (hε1 : ε ≤ 1 / 2)
     (c : ThrCircuit (2 ^ b + b * m)) (hd : c.depth ≤ 2)
     (hcorr : (2 : ℝ) ^ (2 ^ b + b * m) * (1 / 2 + ε) ≤
       ((Finset.univ.filter fun x => evaluate c x = andreev b m x).card : ℝ)) :
-    ((2 : ℝ) ^ b * (ε - andreevSimultaneousTail b α)) ^ 2 - α ^ 2 ≤
-      4 * α ^ 2 * (wireCount c : ℝ) * (1 / (m : ℝ)) * Real.sqrt (1 / (m : ℝ)) :=
-  AndreevThresholdBridge.wire_lower_bound hm hα htail c hd hcorr
+    (m : ℝ) * (2 : ℝ) ^ b * ε ^ 2 ≤
+      144 * ((b : ℝ) + 2) * (c.size : ℝ) * Real.sqrt ((2 ^ b + b * m : ℕ) : ℝ) :=
+  AndreevThresholdBridge.gate_lower_bound_of_le_eps hm hmN hε hε1 c hd hcorr
 
-/-- **Parameter-specialized average-case `Omega(ε² n^(5/2) / log^(7/2) n)` wire lower bound.**
-Whenever `3 * (b + 2) / sqrt(2 ^ b) ≤ ε`, choosing `α = (b + 2) * sqrt(2 ^ b)` discharges the
-simultaneous tail bound and yields an unconditional quadratic-in-`ε` active-wire lower bound. -/
-theorem wire_lower_bound_of_le_eps {b m : ℕ} (hm : 0 < m)
+/-- Exact gate lower bound, specializing the improved bound at advantage `1 / 2`. -/
+theorem exact_gate_lower_bound {b m : ℕ} (hm : 0 < m) (hmN : m ≤ 2 ^ b)
+    (hb : 3 * ((b : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ b) ≤ 1 / 2)
+    (c : ThrCircuit (2 ^ b + b * m)) (hd : c.depth ≤ 2)
+    (hcomp : ∀ x, evaluate c x = andreev b m x) :
+    (m : ℝ) * (2 : ℝ) ^ b * (1 / 2) ^ 2 ≤
+      144 * ((b : ℝ) + 2) * (c.size : ℝ) * Real.sqrt ((2 ^ b + b * m : ℕ) : ℝ) :=
+  AndreevThresholdBridge.exact_gate_lower_bound hm hmN hb c hd hcomp
+
+/-- Resource-sensitive average-case wire lower bound. The fixed-weight count saves one logarithm. -/
+theorem wire_lower_bound {b m : ℕ} (hm : 0 < m)
     {ε : ℝ} (hε : 3 * ((b : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ b) ≤ ε)
     (c : ThrCircuit (2 ^ b + b * m)) (hd : c.depth ≤ 2)
     (hcorr : (2 : ℝ) ^ (2 ^ b + b * m) * (1 / 2 + ε) ≤
       ((Finset.univ.filter fun x => evaluate c x = andreev b m x).card : ℝ)) :
     (m : ℝ) * Real.sqrt (m : ℝ) * (2 : ℝ) ^ b * ε ^ 2 ≤
-      12 * ((b : ℝ) + 2) ^ 2 * (wireCount c : ℝ) :=
-  AndreevThresholdBridge.wire_lower_bound_of_le_eps hm hε c hd hcorr
+      36 * ((b : ℝ) + 2 + Real.log ((wireCount c : ℝ) + 1)) * (wireCount c : ℝ) :=
+  AndreevThresholdBridge.wire_lower_bound hm hε c hd hcorr
 
-/-- **Worst-case gate lower bound (`ε = 1/2`).** Any depth-two weighted threshold circuit computing
-`andreev b m` on all inputs has at least `Omega(n^(3/2) / log³ n)` gates. -/
-theorem exact_gate_lower_bound {b m : ℕ} (hm : 0 < m)
-    {α : ℝ} (hα : Real.sqrt ((2 : ℝ) ^ b) / 2 ≤ α)
-    (htail : andreevSimultaneousTail b α ≤ 1 / 2)
+/-- Explicit average-case wire lower bound. The fixed-weight count saves one logarithm. -/
+theorem wire_lower_bound_of_le_eps {b m : ℕ} (hm : 0 < m)
+    (hmN : m ≤ 2 ^ b) {ε : ℝ} (hε : 3 * ((b : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ b) ≤ ε)
+    (hε1 : ε ≤ 1 / 2)
+    (c : ThrCircuit (2 ^ b + b * m)) (hd : c.depth ≤ 2)
+    (hcorr : (2 : ℝ) ^ (2 ^ b + b * m) * (1 / 2 + ε) ≤
+      ((Finset.univ.filter fun x => evaluate c x = andreev b m x).card : ℝ)) :
+    (m : ℝ) * Real.sqrt (m : ℝ) * (2 : ℝ) ^ b * ε ^ 2 ≤
+      144 * ((b : ℝ) + 2) * (wireCount c : ℝ) :=
+  AndreevThresholdBridge.wire_lower_bound_of_le_eps hm hmN hε hε1 c hd hcorr
+
+/-- Exact wire lower bound, specializing the improved bound at advantage `1 / 2`. -/
+theorem exact_wire_lower_bound {b m : ℕ} (hm : 0 < m) (hmN : m ≤ 2 ^ b)
+    (hb : 3 * ((b : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ b) ≤ 1 / 2)
     (c : ThrCircuit (2 ^ b + b * m)) (hd : c.depth ≤ 2)
     (hcomp : ∀ x, evaluate c x = andreev b m x) :
-    (m : ℝ) * (((2 : ℝ) ^ b * (1 / 2 - andreevSimultaneousTail b α)) ^ 2 - α ^ 2) ≤
-      4 * α ^ 2 * (c.size : ℝ) * Real.sqrt ((2 ^ b + b * m : ℕ) : ℝ) :=
-  AndreevThresholdBridge.exact_gate_lower_bound hm hα htail c hd hcomp
+    (m : ℝ) * Real.sqrt (m : ℝ) * (2 : ℝ) ^ b * (1 / 2) ^ 2 ≤
+      144 * ((b : ℝ) + 2) * (wireCount c : ℝ) :=
+  AndreevThresholdBridge.exact_wire_lower_bound hm hmN hb c hd hcomp
 
-/-- **Worst-case wire lower bound (`ε = 1/2`).** Any depth-two weighted threshold circuit computing
-`andreev b m` on all inputs has at least `Omega(n^(5/2) / log^(7/2) n)` active wires. -/
-theorem exact_wire_lower_bound {b m : ℕ} (hm : 0 < m)
-    {α : ℝ} (hα : Real.sqrt ((2 : ℝ) ^ b) / 2 ≤ α)
-    (htail : andreevSimultaneousTail b α ≤ 1 / 2)
-    (c : ThrCircuit (2 ^ b + b * m)) (hd : c.depth ≤ 2)
-    (hcomp : ∀ x, evaluate c x = andreev b m x) :
-    ((2 : ℝ) ^ b * (1 / 2 - andreevSimultaneousTail b α)) ^ 2 - α ^ 2 ≤
-      4 * α ^ 2 * (wireCount c : ℝ) * (1 / (m : ℝ)) * Real.sqrt (1 / (m : ℝ)) :=
-  AndreevThresholdBridge.exact_wire_lower_bound hm hα htail c hd hcomp
-
-/-- info: abstract audit passed for `ComplexityAbstracts.AndreevThresholdAbstract`: 21 root
+/-- info: abstract audit passed for `ComplexityAbstracts.AndreevThresholdAbstract`: 18 root
 declarations -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.AndreevThresholdAbstract allowing [
