@@ -83,22 +83,7 @@ theorem prefix_bounded {W L m t A B : ℕ} (hmL : m ≤ L) (qs : List (OutStr L)
       (∀ p, s.data.mem p < wordBound L m t qs.length A B) ∧
       ∀ p, wordBound L m t qs.length A B ≤ p → s.data.mem p = 0 := by
   obtain ⟨hi, _, _, _, _, halt, _⟩ := runs_wide hmL qs hη a b ha hb le_rfl
-  have low := Runs.prefix_at_smaller_width
-    (Code.not_readsWidth_program program_not_readsWidth Reg.output) hW hr halt
-  have bounded := low.bounded_init hi
-  have hword := pow_admissionWidth_lt_wordBound L m t qs.length A B
-  refine ⟨fun i => (bounded.1 i).trans hword,
-    fun p => (bounded.2 p).trans hword, ?_⟩
-  intro p hp
-  have above : 2 ^ admissionWidth L m t qs.length A B ≤ p := hword.le.trans hp
-  rw [low.mem_above (.init hi) above]
-  cases p with
-  | zero => have := Nat.two_pow_pos (admissionWidth L m t qs.length A B); omega
-  | succ p =>
-    change (input m t qs a b).getD p 0 = 0
-    apply List.getD_eq_default
-    have hlen := hi.1
-    dsimp only [Fits] at hlen
-    omega
+  exact hr.prefix_bounds_init (Code.not_readsWidth_program program_not_readsWidth Reg.output)
+    hW hi halt (pow_admissionWidth_lt_wordBound L m t qs.length A B).le
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxBatch

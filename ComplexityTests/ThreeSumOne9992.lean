@@ -47,7 +47,7 @@ private theorem checked_case (input : List ℤ) (bit : ℕ) (hbit : bit ≤ 1)
         (Decision.boxFlatProgram 1)
         (State.init (input.map Signed.encode))
         ⟨(Decision.boxProgram 1).size, y⟩ (steps - 1) ∧
-      steps ≤ Decision.cost 1 BoxParameterSelecting.callee input.length ∧
+      steps ≤ Decision.cost 1 ParameterSelecting.callee input.length ∧
       (N ≤ input.length → (steps : ℝ) ≤ C * (input.length : ℝ) ^ (2499 / 1250 : ℝ)) ∧
       y.Bounded (Decision.width 1 123357 input.length) := by
   obtain ⟨C, hC, N, -, hrun⟩ := Decision.exists_one9992_runs 1
@@ -69,7 +69,7 @@ example : ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ, ∃ y : Data 848, ∃ steps : ℕ,
     Runs (Decision.width 1 123357 3) (Decision.boxFlatProgram 1)
       (State.init (([-2, 1, 1] : List ℤ).map Signed.encode))
       ⟨(Decision.boxProgram 1).size, y⟩ (steps - 1) ∧
-    steps ≤ Decision.cost 1 BoxParameterSelecting.callee 3 ∧
+    steps ≤ Decision.cost 1 ParameterSelecting.callee 3 ∧
     (N ≤ 3 → (steps : ℝ) ≤ C * (3 : ℝ) ^ (2499 / 1250 : ℝ)) ∧
     y.Bounded (Decision.width 1 123357 3) := by
   apply checked_case [-2, 1, 1] 1 (by decide)
@@ -87,7 +87,7 @@ example : ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ, ∃ y : Data 848, ∃ steps : ℕ,
     Runs (Decision.width 1 123357 3) (Decision.boxFlatProgram 1)
       (State.init (([1, 1, 1] : List ℤ).map Signed.encode))
       ⟨(Decision.boxProgram 1).size, y⟩ (steps - 1) ∧
-    steps ≤ Decision.cost 1 BoxParameterSelecting.callee 3 ∧
+    steps ≤ Decision.cost 1 ParameterSelecting.callee 3 ∧
     (N ≤ 3 → (steps : ℝ) ≤ C * (3 : ℝ) ^ (2499 / 1250 : ℝ)) ∧
     y.Bounded (Decision.width 1 123357 3) := by
   apply checked_case [1, 1, 1] 0 (by decide)

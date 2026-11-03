@@ -9,8 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Transfer
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Code
-public import Complexity.Algorithms.WordRAM.ExactTriangle.BoxParameterSelecting.Asymptotics
-public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Intermediates
+public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Asymptotics
 
 /-!
 # Ordinary native integer 3SUM in time O(n^1.9992)
@@ -53,20 +52,20 @@ open Cslib.Algorithms.ThreeSum (HasSolution)
 
 /-- Explicit computable standard native code for the final ordinary 3SUM algorithm. -/
 @[expose] def boxProgram (κ : ℕ) : Code .standard 848 :=
-  programOfCode κ BoxParameterSelecting.program
+  programOfCode κ ParameterSelecting.program
 
 /-- Its actual assembled code with one final raw Boolean halt. -/
 @[expose] def boxFlatProgram (κ : ℕ) : Program .standard 848 :=
   (boxProgram κ).program (controllerRegisters 633 answer)
 
 /-- The executable syntax is the actual code certified by the concrete callee. -/
-theorem boxProgram_eq (κ : ℕ) : boxProgram κ = program κ BoxParameterSelecting.callee := by
-  simpa only [boxProgram, BoxParameterSelecting.callee_code] using
-    programOfCode_eq_program κ BoxParameterSelecting.callee
+theorem boxProgram_eq (κ : ℕ) : boxProgram κ = program κ ParameterSelecting.callee := by
+  simpa only [boxProgram, ParameterSelecting.callee_code] using
+    programOfCode_eq_program κ ParameterSelecting.callee
 
 /-- Both presentations assemble the identical finite native program. -/
 theorem boxFlatProgram_eq (κ : ℕ) :
-    boxFlatProgram κ = flatProgram κ BoxParameterSelecting.callee := by
+    boxFlatProgram κ = flatProgram κ ParameterSelecting.callee := by
   unfold boxFlatProgram flatProgram
   rw [boxProgram_eq]
 
@@ -84,7 +83,7 @@ theorem exists_one9992_runs (κ : ℕ) :
         Runs W (boxFlatProgram κ)
           (State.init (input.map Signed.encode)) ⟨(boxProgram κ).size, y⟩
           (steps - 1) ∧
-        steps ≤ cost κ BoxParameterSelecting.callee input.length ∧
+        steps ≤ cost κ ParameterSelecting.callee input.length ∧
         (N ≤ input.length → (steps : ℝ) ≤ C * (input.length : ℝ) ^ (2499 / 1250 : ℝ)) ∧
         y.regs (controllerRegisters 633 answer) ≤ 1 ∧
         (y.regs (controllerRegisters 633 answer) = 1 ↔
@@ -97,13 +96,14 @@ theorem exists_one9992_runs (κ : ℕ) :
           (∀ a, (input.length + 2) ^ (2 * widthCoefficient κ 123357) ≤ a → s.data.mem a = 0) := by
   have hcallee : ∀ ν : ℕ, 1 ≤ ν → ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ,
       ∀ n ≥ N, ∀ F ≤ (n + 2) ^ ν,
-        (BoxParameterSelecting.callee.time n F : ℝ) ≤
+        (ParameterSelecting.callee.time n F : ℝ) ≤
           C * (n : ℝ) ^ (3 - 33 / 20000 : ℝ) := by
     intro ν hν
-    obtain ⟨C, hC, N, -, htime⟩ := BoxParameterSelecting.exists_time_subcubic_bound hν
+    obtain ⟨C, hC, N, -, htime⟩ := ParameterSelecting.exists_time_subcubic_bound hν
     exact ⟨C, hC, N, htime⟩
   simpa only [← boxProgram_eq κ, ← boxFlatProgram_eq κ,
-    BoxParameterSelecting.callee_widthCoefficient] using
-    exists_one9992_runs_of_callee_time BoxParameterSelecting.callee hcallee κ
+    ParameterSelecting.callee_widthCoefficient] using
+    exists_runs_of_callee_time ParameterSelecting.callee (δ := 33 / 20000)
+      (a := 2499 / 1250) (by norm_num) (by norm_num) (by norm_num) hcallee κ
 
 end Cslib.Algorithms.WordRAM.ThreeSum.Decision

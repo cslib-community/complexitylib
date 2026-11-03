@@ -602,14 +602,15 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   expected-time rules for unbounded almost-surely terminating structured loops; random-tape
   equivalence and BPP/RP/ZPP simulation bridges for the randomized word RAM ([#1124]); transfer
   of cell-probe lower bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
-- **Direct 3SUM adaptation** ([#1394]): the native ordinary 1.9992 endpoint is proved in `WordRAM/ThreeSum/Decision/One9992.lean`: for every fixed polynomial
+- **Direct 3SUM adaptation** ([#1394]): the native ordinary 1.9992 endpoint is proved in
+  `WordRAM/ThreeSum/Decision/One9992.lean`: for every fixed polynomial
   integer-magnitude exponent, one fixed 848-register native program decides distinct-position
   3SUM at every input length, with charged `Oκ(n^1.9992)` steps, logarithmic physical admission
   and polynomial every-prefix words/support at every wider width. The explicit computable
   `boxProgram`/`boxFlatProgram` use the actual automatic box-backed ET callee; no solver,
   selected prime, layout, run or time law is an endpoint hypothesis. This completes the native
   ordinary 3SUM exponent objective; integration and its exact-revision validation/review are
-  tracked by the linked PR. Standard Word-RAM instruction time and polynomially bounded integer
+  tracked by #1394 and its linked PRs. Standard Word-RAM instruction time and polynomially bounded integer
   inputs are explicit; bit/Turing time and arbitrary-real 3SUM are separate models.
   The finite cube/box prerequisite ([#2160](https://github.com/cslib-community/complexitylib/issues/2160))
   supplies canonical boxes, their disjoint high-order leaf partition, explicit low-order terms,
@@ -639,27 +640,25 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   ([#2355](https://github.com/cslib-community/complexitylib/issues/2355)) uses the existing actual
   array-copy/sum and computed-modulus setup, preserves the selector bank and original arguments,
   and establishes initialized verdict/witness, width-independent prefix support and a complete
-  finite charge including every translation and halt. The automatic `BoxParameterSelecting`
+  finite charge including every translation and halt. The canonical automatic `ParameterSelecting`
   host now computes parameters, selects a prime and executes this caller, with polynomial-factor
   absorption and final tuning proved for that actual program. Its real 2394-bit block
   program computes `m=63b`, `g=4^(2b)` and `L=21m`; the complete actual ET time is
   `Oκ(n^(3−33/20000))`. A sharper charged ordinary transfer yields 1.9992. The source's stronger
   ET 2.9983 number is not claimed by this integer retuning.
-  The earlier conservative native ordinary integer 3SUM result remains in
-  `WordRAM/ThreeSum/Decision/Subquadratic.lean`: for each fixed polynomial magnitude exponent,
-  one fixed 848-register program has charged time `Oκ(n^(2−1/5184))`, logarithmic physical
-  admission and polynomial words/support at every wider execution prefix. Correctness includes
-  every length, distinct positions and repeated values; only the time estimate is eventual.
-  This is standard Word-RAM instruction time, not bit/Turing time or arbitrary-real 3SUM.
-  The concrete cyclic-Strassen counter ([#1701]), minimum-count selector ([#2098]) and computed
-  conservative parameters ([#2127]) feed the actual assembled ET callee ([#2146]). Its time
-  field is `Oκ(n^(3−1/1296))` for polynomial weights. The ordinary proof charges native Chan–He
-  preprocessing, actual packed dimensions, all matrix/callee calls, control work and halt;
-  it does not assume a fast solver, prime procedure, layout or time contract. The counter
-  computes residues, padding, seven-product recursion and exact modular counts within
-  `3704*(p+1)²*(n+1)^2.81` instructions. The selected prime is computed by trial division and
-  actual counter calls; the assembled solver runs the real exhaustive branch at smaller
-  geometry. These conservative original estimates do not establish the source's tuned endpoint.
+  `WordRAM/ThreeSum/Decision/Runtime.lean` now proves the quantitative transfer once for any
+  actual callee with uniform polynomial-weight ET saving `0 < δ ≤ 1`: every ordinary exponent
+  `a > 2-δ/2` is available, with preprocessing, actual packed dimensions/counts, matrix/callee
+  calls, control and halt charged. `Transfer.lean` retains the complete initialized verdict,
+  same-state halt/prefix and polynomial every-wide word/support guarantees. No concrete
+  supplier is imported by those generic layers. `Subquadratic.lean` specializes the same tuned
+  pipeline to the weaker `2-1/5184` bound; the old conservative implementation is removed.
+  Canonical `ParameterChoice` and `DyadicParameters` use the 2394-bit/63b/21m family; the first
+  fast branch is `2^2394`, replacing the old `2^1296` finite regime. The counter and selector
+  remain concrete: actual residues, padding, seven-product recursion and modular counts cost
+  at most `3704*(p+1)²*(n+1)^2.81` instructions, and trial division plus real counter calls select
+  the prime. Native shared representations and quantitative tuning are original adaptations;
+  the finite reductions, tensor identities and box mathematics retain their source credit.
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
