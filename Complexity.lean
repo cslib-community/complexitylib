@@ -865,10 +865,12 @@ public import Complexity.Computability.Circuit.Boolean.WeightedThreshold
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Activation
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Activity
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ActivityBounds
+public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Andreev
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Capacity
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.CapacityCircuit
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Components
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Cut
+public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.DepthTwo
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.InnerProduct
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Menus
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.PendingBias
@@ -2813,8 +2815,11 @@ public import Complexity.Crypto.Computational.Homomorphic.Leveled.Security
 public import Complexity.Crypto.Computational.Homomorphic.Refresh
 public import Complexity.Crypto.Computational.Hybrid.SavedPrediction
 public import Complexity.Crypto.Computational.Hybrid.Sequence
+public import Complexity.Crypto.Computational.InaccessibleEntropy.Amplify
 public import Complexity.Crypto.Computational.InaccessibleEntropy.Basic
+public import Complexity.Crypto.Computational.InaccessibleEntropy.EntropyReduction
 public import Complexity.Crypto.Computational.InaccessibleEntropy.OneWay
+public import Complexity.Crypto.Computational.InaccessibleEntropy.Repetition
 public import Complexity.Crypto.Computational.IndexedSignature
 public import Complexity.Crypto.Computational.IndexedSignature.Counter
 public import Complexity.Crypto.Computational.IndexedSignature.Seeded
