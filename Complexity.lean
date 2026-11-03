@@ -2940,6 +2940,7 @@ public import Complexity.Crypto.Computational.ZeroKnowledge.AuxClock
 public import Complexity.Crypto.Computational.ZeroKnowledge.Levin
 public import Complexity.Crypto.Computational.ZeroKnowledge.Soundness
 public import Complexity.Crypto.Game
+public import Complexity.Crypto.Game.CloseTo
 public import Complexity.Crypto.Game.Hybrid
 public import Complexity.Crypto.Game.Statistical
 public import Complexity.Crypto.Game.UntilBad
@@ -2966,6 +2967,7 @@ public import Complexity.Crypto.Protocols.MPC.SharedMul
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort
 public import Complexity.Crypto.Protocols.SigmaProtocol.Basic
 public import Complexity.Crypto.Protocols.SigmaProtocol.Composition
+public import Complexity.Crypto.Protocols.SigmaProtocol.Computational
 public import Complexity.Crypto.Protocols.SigmaProtocol.Efficient
 public import Complexity.Crypto.Protocols.SigmaProtocol.FiatShamir
 public import Complexity.Crypto.Protocols.SigmaProtocol.Identification
