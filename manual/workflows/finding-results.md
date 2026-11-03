@@ -92,6 +92,21 @@ does not apply, check the horizon, loss and small-second-signal hypotheses befor
 rank domain or adding a cap. These deterministic lemmas do not supply integrated normalized-output
 moments, recursive estimator budgets or a native class endpoint.
 
+For the actual hierarchy decoder, import
+[NormalizedAtomRows/BoundedLoss](../../Complexity/Foundations/Probability/NormalizedAtomRows/BoundedLoss.lean)
+and open `Matrix.FourthRootHierarchyParams.NormalizedRow`. `output HP ζ d v r` uses the
+actual bounded atom cutoff, core rank gate and `clip (v / ζ)`.
+`boundedLoss_root_bound` derives normalized fourth-root error from raw clipped error,
+nonnegative truth on the full rank set and common first loss bounded by `atomCap`.
+There is no upper bound on true first entries. Its exact saturation identities concern
+only output arguments. For a single full H4 environment,
+[NormalizedAtomRows/Request](../../Complexity/Foundations/Probability/NormalizedAtomRows/Request.lean)'s
+`normalizedRequest_eq_output` identifies the existing request, preserving the narrower
+usage mask and full terminal rank. The [actual-output regressions](../../ComplexityTests/NormalizedAtomRows.lean)
+check off-usage rank closure, unbounded-loss failure and positive output after an increment
+from zero. These are deterministic prerequisites; integrated moments and recursive/native
+RL remain open.
+
 ## Read abstracts, bridges and comparison contracts
 
 For a named headline such as Fagin's theorem, locate its entry in `abstracts/catalogue.json`, then read [FaginAbstract.lean](../../abstracts/ComplexityAbstracts/FaginAbstract.lean). Follow `FaginBridge.fagin` to the library result in [Fagin/Converse.lean](../../Complexity/Computability/Complexity/Fagin/Converse.lean). The presentation exposes finite relational vocabularies, unary cardinality, framed relation tables and malformed-input rejection. The library theorem `Cslib.Logic.ESO.definable_iff_queryLanguage_mem_NP` takes an isomorphism-closure hypothesis; its adjacent theorem packages that hypothesis into the equivalence. Choose the form matching your goal and the [finite-model representation](../circuits-logic-and-other-models/finite-model-logic.md).
