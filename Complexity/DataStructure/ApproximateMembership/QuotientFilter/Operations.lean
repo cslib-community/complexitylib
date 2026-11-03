@@ -47,6 +47,7 @@ public section
 namespace Cslib.DataStructure.ApproximateMembership.QuotientFilter
 
 open Finset
+open Cslib.DataStructure.Dictionary.WordRAM.LinearProbing
 
 /-! ## Section 1: Primitive slot updates and shift loops on `FilterState` -/
 
@@ -399,12 +400,19 @@ cluster `[o .. o + ℓ)`. -/
       (runsBefore st o (i + 1) ≤ occBefore st o (a + 1) ∧
         st.remAt (probeSlot b o i) < r))).length
 
+/-- Prefix scan over `m < i` for the stopping offset of the left-shift during `delete` in cluster
+`[o .. o + ℓ)`: the first `m < i` with `a < m` and `occBefore st o m < runsBefore st o (m + 1)`, or
+`ℓ` if none exists in `[0, i)`. -/
+@[expose] def calcDeleteStopPrefix {b f : ℕ} (st : FilterState b f) (o : Fin (2 ^ b))
+    (a ℓ i : ℕ) : ℕ :=
+  (((List.range i).filter fun m =>
+    decide (a < m ∧ occBefore st o m < runsBefore st o (m + 1))).head?).getD ℓ
+
 /-- Computable stopping offset `e ∈ (a, ℓ]` for the left-shift during `delete` in cluster
 `[o .. o + ℓ)`: the first `m > a` (`m < ℓ`) where `occBefore st o m < runsBefore st o (m + 1)`, or
 `ℓ` if none exists. -/
 @[expose] def calcDeleteStop {b f : ℕ} (st : FilterState b f) (o : Fin (2 ^ b)) (a ℓ : ℕ) : ℕ :=
-  (((List.range ℓ).filter fun m =>
-    decide (a < m ∧ occBefore st o m < runsBefore st o (m + 1))).head?).getD ℓ
+  calcDeleteStopPrefix st o a ℓ ℓ
 
 theorem IntervalValid.calcRunStart_eq {U b f : ℕ} {S : Finset (Fin U)}
     {quot : Fin U → Fin (2 ^ b)} {rem : Fin U → Fin (2 ^ f)}
@@ -1645,12 +1653,6 @@ theorem deleteCluster_outside {b f : ℕ} (st : FilterState b f) (o : Fin (2 ^ b
   deleteCluster st (hinv.clusterStart hS_lt (quot u))
     (hinv.backLen hS_lt (quot u)) (hinv.clusterLen hS_lt (quot u)) (rem u)
 
-private theorem if_pos' {α : Type*} {c : Prop} [Decidable c] {a b : α} (h : c) :
-    (if c then a else b) = a := by simp [h]
-
-private theorem if_neg' {α : Type*} {c : Prop} [Decidable c] {a b : α} (h : ¬c) :
-    (if c then a else b) = b := by simp [h]
-
 /-- **Global `FilterInv` preservation under `insert`**: inserting `u ∉ S` (when `#(insert u S) ≤ n`
 and `#(insert u S) < 2 ^ b`) preserves `FilterInv`. -/
 theorem FilterInv.insertState_filterInv {U b f n : ℕ} {S : Finset (Fin U)}
@@ -1697,12 +1699,12 @@ theorem FilterInv.insertState_filterInv {U b f n : ℕ} {S : Finset (Fin U)}
     rw [hst'_def, isOcc_insertCluster, ← hq_eq]
     by_cases hp : p = quot u
     · subst hp
-      rw [if_pos' rfl, bucketRun_insert_self quot rem hu]
+      rw [ite_eq_left rfl, bucketRun_insert_self quot rem hu]
       have hpw := pairwise_le_bucketRun S quot rem (quot u)
       rw [orderedInsert_eq_take_append_drop_of_pairwise (r := rem u) hpw]
       cases List.take (List.countP (· < rem u) (bucketRun S quot rem (quot u)))
         (bucketRun S quot rem (quot u)) <;> rfl
-    · rw [if_neg' hp,
+    · rw [ite_eq_right hp,
         bucketRun_insert_of_ne S quot rem u (Ne.symm hp), hinv.isOcc_eq p]
   refine ⟨hcap, hocc', ?_, ?_, ?_⟩
   · intro p hp_empty
@@ -1710,7 +1712,7 @@ theorem FilterInv.insertState_filterInv {U b f n : ℕ} {S : Finset (Fin U)}
     have hp_ne_end : p ≠ probeSlot b o₀ ℓ₀ := by
       rintro rfl
       simp at hp_empty
-    rw [if_neg' hp_ne_end] at hp_empty
+    rw [ite_eq_right hp_ne_end] at hp_empty
     have hp_outside : ∀ i ≤ ℓ₀, p ≠ probeSlot b o₀ i := by
       intro i hi
       rcases lt_or_eq_of_le hi with hlt | rfl
@@ -1722,7 +1724,7 @@ theorem FilterInv.insertState_filterInv {U b f n : ℕ} {S : Finset (Fin U)}
     have hout := insertCluster_outside st o₀ a ℓ₀ (rem u) p hp_outside
     have hp_ne_a : p ≠ probeSlot b o₀ a := hp_outside a ha_le
     have hocc_p : st'.isOcc p = st.isOcc p := by
-      rw [hst'_def, isOcc_insertCluster, if_neg' hp_ne_a]
+      rw [hst'_def, isOcc_insertCluster, ite_eq_right hp_ne_a]
     rw [hocc_p, hst'_def, hout.1, hout.2]
     exact hinv.empty_slot p hp_empty
   · have hfilter :
@@ -1812,7 +1814,7 @@ theorem FilterInv.insertState_filterInv {U b f n : ℕ} {S : Finset (Fin U)}
             have := hinj_merged (Finset.mem_coe.mpr (Finset.mem_range.mpr (by omega)))
               (Finset.mem_coe.mpr (Finset.mem_range.mpr (by omega))) h_eq
             omega
-          rw [hst'_def, isFull_insertCluster, if_neg' hne_p₁j]
+          rw [hst'_def, isFull_insertCluster, ite_eq_right hne_p₁j]
         · intro j hj
           have hp_out : ∀ i ≤ ℓ₀, probeSlot b p₁ j ≠ probeSlot b o₀ i := by
             intro i hi
@@ -1838,14 +1840,14 @@ theorem FilterInv.insertState_filterInv {U b f n : ℕ} {S : Finset (Fin U)}
           have := hinj_merged (Finset.mem_coe.mpr (Finset.mem_range.mpr (by omega)))
             (Finset.mem_coe.mpr (Finset.mem_range.mpr (by omega))) h1
           omega
-        rw [hst'_def, isFull_insertCluster, if_neg' hne_b, hback_o₀]
+        rw [hst'_def, isFull_insertCluster, ite_eq_right hne_b, hback_o₀]
       have hend'_o₀ : st'.isFull (probeSlot b o₀ ((ℓ₀ + 1) + ℓ₂)) = false := by
         have hne_e : probeSlot b o₀ ((ℓ₀ + 1) + ℓ₂) ≠ probeSlot b o₀ ℓ₀ := by
           intro h_eq
           have := hinj_merged (Finset.mem_coe.mpr (Finset.mem_range.mpr (by omega)))
             (Finset.mem_coe.mpr (Finset.mem_range.mpr (by omega))) h_eq
           omega
-        rw [hst'_def, isFull_insertCluster, if_neg' hne_e,
+        rw [hst'_def, isFull_insertCluster, ite_eq_right hne_e,
           ← probeSlot_add o₀ (ℓ₀ + 1) ℓ₂]
         exact hend_p₁
       rcases maximal_full_eq_or_disjoint st'.isFull hback'_o₀ hend'_o₀ hvalid'_merged.full_of_lt
@@ -1864,17 +1866,17 @@ theorem FilterInv.insertState_filterInv {U b f n : ℕ} {S : Finset (Fin U)}
           rw [← h_eq, hend] at h1
           cases h1
         have hback_st : st.isFull (backSlot b o 1) = false := by
-          rw [hst'_def, isFull_insertCluster, if_neg' hne_back] at hback
+          rw [hst'_def, isFull_insertCluster, ite_eq_right hne_back] at hback
           exact hback
         have hend_st : st.isFull (probeSlot b o ℓ) = false := by
-          rw [hst'_def, isFull_insertCluster, if_neg' hne_end] at hend
+          rw [hst'_def, isFull_insertCluster, ite_eq_right hne_end] at hend
           exact hend
         have hfull_st : ∀ j < ℓ, st.isFull (probeSlot b o j) = true := by
           intro j hj
           have hne_j : probeSlot b o j ≠ probeSlot b o₀ ℓ₀ :=
             (hdisj ℓ₀ (by omega) j hj).symm
           have h1 := hfull j hj
-          rw [hst'_def, isFull_insertCluster, if_neg' hne_j] at h1
+          rw [hst'_def, isFull_insertCluster, ite_eq_right hne_j] at h1
           exact h1
         have hℓ_le_S : ℓ ≤ #S := by
           set A := (Finset.range ℓ).image (probeSlot b o)
@@ -1990,7 +1992,7 @@ theorem FilterInv.deleteState_filterInv {U b f n : ℕ} {S : Finset (Fin U)}
         rfl
       have hend_meta := deleteCluster_at_end st o₀ a ℓ₀ (rem u)
       exact ⟨hocc_end, hend_meta.1, hend_meta.2⟩
-    · rw [if_neg' hp_end] at hp_empty
+    · rw [ite_eq_right hp_end] at hp_empty
       have hp_out : ∀ i < e, p ≠ probeSlot b o₀ i := by
         intro i hi
         rintro rfl
@@ -2044,7 +2046,7 @@ theorem FilterInv.deleteState_filterInv {U b f n : ℕ} {S : Finset (Fin U)}
             have := hinj₀ (Finset.mem_coe.mpr (Finset.mem_range.mpr (by omega)))
               (Finset.mem_coe.mpr (Finset.mem_range.mpr (by omega))) h_eq
             omega
-          rw [hst'_def, isFull_deleteCluster, if_neg' hne_p₂j]
+          rw [hst'_def, isFull_deleteCluster, ite_eq_right hne_p₂j]
         · intro j hj
           have hp_out : ∀ i < e, probeSlot b p₂ j ≠ probeSlot b o₀ i := by
             intro i hi
@@ -2067,9 +2069,9 @@ theorem FilterInv.deleteState_filterInv {U b f n : ℕ} {S : Finset (Fin U)}
           have := hinj₀ (Finset.mem_coe.mpr (Finset.mem_range.mpr (by omega)))
             (Finset.mem_coe.mpr (Finset.mem_range.mpr (by omega))) h1
           omega
-        rw [hst'_def, isFull_deleteCluster, if_neg' hne_b, hback_o₀]
+        rw [hst'_def, isFull_deleteCluster, ite_eq_right hne_b, hback_o₀]
       have hend'_left : st'.isFull (probeSlot b o₀ (e - 1)) = false := by
-        rw [hst'_def, isFull_deleteCluster, if_pos' rfl]
+        rw [hst'_def, isFull_deleteCluster, ite_eq_left rfl]
       have hback'_p₂ : st'.isFull (backSlot b p₂ 1) = false := by
         have h1 : backSlot b p₂ 1 = probeSlot b o₀ (e - 1) := by
           have hp₂ : p₂ = probeSlot b (probeSlot b o₀ (e - 1)) 1 := by
@@ -2087,7 +2089,7 @@ theorem FilterInv.deleteState_filterInv {U b f n : ℕ} {S : Finset (Fin U)}
           have := hinj₀ (Finset.mem_coe.mpr (Finset.mem_range.mpr (by omega)))
             (Finset.mem_coe.mpr (Finset.mem_range.mpr (by omega))) h_eq
           omega
-        rw [h1, hst'_def, isFull_deleteCluster, if_neg' hne_e, hfull_end₀]
+        rw [h1, hst'_def, isFull_deleteCluster, ite_eq_right hne_e, hfull_end₀]
       rcases maximal_full_eq_or_disjoint st'.isFull hback'_o₀ hend'_left hvalid'_left.full_of_lt
         hback hend hfull with ⟨rfl, rfl⟩ | hdisj₁
       · exact hvalid'_left
@@ -2113,7 +2115,7 @@ theorem FilterInv.deleteState_filterInv {U b f n : ℕ} {S : Finset (Fin U)}
             intro j hj
             have hne_j : probeSlot b o j ≠ p_end := (hdisj_all (e - 1) (by omega) j hj).symm
             have h1 := hfull j hj
-            rw [hst'_def, isFull_deleteCluster, if_neg' hne_j] at h1
+            rw [hst'_def, isFull_deleteCluster, ite_eq_right hne_j] at h1
             exact h1
           have hne_end : probeSlot b o ℓ ≠ p_end := by
             intro h_eq
@@ -2140,10 +2142,10 @@ theorem FilterInv.deleteState_filterInv {U b f n : ℕ} {S : Finset (Fin U)}
               rw [hp_end_prev] at h1
               exact hdisj_all (e - 2) (by omega) (ℓ - 1) (by omega) h1.symm
           have hback_st : st.isFull (backSlot b o 1) = false := by
-            rw [hst'_def, isFull_deleteCluster, if_neg' hne_back] at hback
+            rw [hst'_def, isFull_deleteCluster, ite_eq_right hne_back] at hback
             exact hback
           have hend_st : st.isFull (probeSlot b o ℓ) = false := by
-            rw [hst'_def, isFull_deleteCluster, if_neg' hne_end] at hend
+            rw [hst'_def, isFull_deleteCluster, ite_eq_right hne_end] at hend
             exact hend
           have hℓ_le_S : ℓ ≤ #S := hℓ_le.trans Finset.card_erase_le
           have hvalid_o : IntervalValid S quot rem st o ℓ :=

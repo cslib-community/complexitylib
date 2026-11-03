@@ -241,118 +241,7 @@ theorem countP_fst_taggedRun {f : ℕ} (xs : List (Fin (2 ^ f))) :
       | cons x xs ih => simp [ih]
     simp [taggedRun, hzero]
 
-/-! ## Section 2: Cyclic probe geometry and pure filter state -/
-
-/-- Slot probed at offset `d` from starting bucket `q : Fin (2 ^ b)`: `(q.val + d) mod 2 ^ b`. -/
-@[expose] def probeSlot (b : ℕ) (q : Fin (2 ^ b)) (d : ℕ) : Fin (2 ^ b) :=
-  cyclicSlotMod b (q.val + d)
-
-/-- Slot located `a` positions cyclically before `q : Fin (2 ^ b)`: `(q.val - a) mod 2 ^ b`. -/
-@[expose] def backSlot (b : ℕ) (q : Fin (2 ^ b)) (a : ℕ) : Fin (2 ^ b) :=
-  cyclicSlotMod b (q.val + 2 ^ b * (a + 1) - a)
-
-@[simp]
-theorem probeSlot_zero {b : ℕ} (q : Fin (2 ^ b)) : probeSlot b q 0 = q := by
-  apply Fin.ext
-  simp [probeSlot, cyclicSlotMod, Nat.mod_eq_of_lt q.isLt]
-
-theorem probeSlot_add {b : ℕ} (q : Fin (2 ^ b)) (d₁ d₂ : ℕ) :
-     probeSlot b (probeSlot b q d₁) d₂ = probeSlot b q (d₁ + d₂) := by
-  apply Fin.ext
-  simp [probeSlot, cyclicSlotMod, Nat.add_assoc]
-
-theorem probeSlot_backSlot_eq {b : ℕ} (q : Fin (2 ^ b)) (a idx : ℕ) :
-    probeSlot b (backSlot b q a) idx =
-      cyclicSlotMod b (q.val + 2 ^ b * (a + 1) - a + idx) := by
-  apply Fin.ext
-  simp [probeSlot, backSlot, cyclicSlotMod]
-
-theorem cyclicInterval_eq_image_probeSlot {b : ℕ} (q : Fin (2 ^ b)) (a len : ℕ) :
-    cyclicInterval b q a len =
-      (Finset.range len).image (probeSlot b (backSlot b q a)) := by
-  ext y
-  simp [cyclicInterval, probeSlot_backSlot_eq]
-
-theorem probeSlot_backSlot_add {b : ℕ} (q : Fin (2 ^ b)) (a d : ℕ) :
-    probeSlot b (backSlot b q a) (a + d) = probeSlot b q d := by
-  apply Fin.ext
-  simp only [probeSlot, backSlot, cyclicSlotMod]
-  have h1 : a ≤ 2 ^ b * (a + 1) := by
-    have : 1 ≤ 2 ^ b := Nat.one_le_two_pow
-    calc a ≤ 1 * (a + 1) := by omega
-      _ ≤ 2 ^ b * (a + 1) := Nat.mul_le_mul_right (a + 1) this
-  rw [Nat.mod_add_mod, show q.val + 2 ^ b * (a + 1) - a + (a + d) =
-      q.val + d + 2 ^ b * (a + 1) by omega, Nat.add_mul_mod_self_left]
-
-theorem probeSlot_backSlot_sub {b : ℕ} (q : Fin (2 ^ b)) {a idx : ℕ} (hidx : idx ≤ a) :
-    probeSlot b (backSlot b q a) idx = backSlot b q (a - idx) := by
-  apply Fin.ext
-  simp only [probeSlot, backSlot, cyclicSlotMod]
-  have h1 : 1 ≤ 2 ^ b := Nat.one_le_two_pow
-  have ha_le : a ≤ 2 ^ b * (a + 1) := by
-    calc a ≤ 1 * (a + 1) := by omega
-      _ ≤ 2 ^ b * (a + 1) := Nat.mul_le_mul_right (a + 1) h1
-  have hsub_le : a - idx ≤ 2 ^ b * (a - idx + 1) := by
-    calc a - idx ≤ 1 * (a - idx + 1) := by omega
-      _ ≤ 2 ^ b * (a - idx + 1) := Nat.mul_le_mul_right (a - idx + 1) h1
-  have hmul : 2 ^ b * (a + 1) = 2 ^ b * (a - idx + 1) + 2 ^ b * idx := by
-    rw [← Nat.mul_add]
-    congr 1
-    omega
-  rw [Nat.mod_add_mod, show q.val + 2 ^ b * (a + 1) - a + idx =
-      (q.val + 2 ^ b * (a - idx + 1) - (a - idx)) + 2 ^ b * idx by omega,
-    Nat.add_mul_mod_self_left]
-
-theorem backSlot_backSlot {b : ℕ} (q : Fin (2 ^ b)) (a₁ a₂ : ℕ) :
-    backSlot b (backSlot b q a₁) a₂ = backSlot b q (a₁ + a₂) := by
-  apply Fin.ext
-  simp only [backSlot, cyclicSlotMod]
-  have h1 : 1 ≤ 2 ^ b := Nat.one_le_two_pow
-  have ha₁ : a₁ ≤ 2 ^ b * (a₁ + 1) := by
-    calc a₁ ≤ 1 * (a₁ + 1) := by omega
-      _ ≤ 2 ^ b * (a₁ + 1) := Nat.mul_le_mul_right (a₁ + 1) h1
-  have ha₂ : a₂ ≤ 2 ^ b * (a₂ + 1) := by
-    calc a₂ ≤ 1 * (a₂ + 1) := by omega
-      _ ≤ 2 ^ b * (a₂ + 1) := Nat.mul_le_mul_right (a₂ + 1) h1
-  have ha₁₂ : a₁ + a₂ ≤ 2 ^ b * (a₁ + a₂ + 1) := by
-    calc a₁ + a₂ ≤ 1 * (a₁ + a₂ + 1) := by omega
-      _ ≤ 2 ^ b * (a₁ + a₂ + 1) := Nat.mul_le_mul_right (a₁ + a₂ + 1) h1
-  have hmod_le : a₂ ≤ (q.val + 2 ^ b * (a₁ + 1) - a₁) % 2 ^ b + 2 ^ b * (a₂ + 1) := by omega
-  have hmul : 2 ^ b * (a₁ + 1) + 2 ^ b * (a₂ + 1) =
-      2 ^ b * (a₁ + a₂ + 1) + 2 ^ b * 1 := by ring
-  have hsub_mod :
-      ((q.val + 2 ^ b * (a₁ + 1) - a₁) % 2 ^ b + 2 ^ b * (a₂ + 1) - a₂) % 2 ^ b =
-        ((q.val + 2 ^ b * (a₁ + 1) - a₁) % 2 ^ b + (2 ^ b * (a₂ + 1) - a₂)) % 2 ^ b := by
-    congr 1
-    omega
-  rw [hsub_mod, Nat.mod_add_mod,
-    show q.val + 2 ^ b * (a₁ + 1) - a₁ + (2 ^ b * (a₂ + 1) - a₂) =
-      (q.val + 2 ^ b * (a₁ + a₂ + 1) - (a₁ + a₂)) + 2 ^ b * 1 by omega,
-    Nat.add_mul_mod_self_left]
-
-theorem probeSlot_injOn_range {b : ℕ} (q : Fin (2 ^ b)) {len : ℕ} (hlen : len ≤ 2 ^ b) :
-    Set.InjOn (probeSlot b q) (Finset.range len) := by
-  intro i hi j hj hij
-  simp only [Finset.mem_coe, Finset.mem_range] at hi hj
-  have hval : (q.val + i) % 2 ^ b = (q.val + j) % 2 ^ b := congrArg Fin.val hij
-  have hq : q.val < 2 ^ b := q.isLt
-  have hi_mod : (q.val + i) % 2 ^ b =
-      if q.val + i < 2 ^ b then q.val + i else q.val + i - 2 ^ b := by
-    split_ifs with h
-    · exact Nat.mod_eq_of_lt h
-    · rw [Nat.mod_eq_sub_mod (by omega), Nat.mod_eq_of_lt (by omega)]
-  have hj_mod : (q.val + j) % 2 ^ b =
-      if q.val + j < 2 ^ b then q.val + j else q.val + j - 2 ^ b := by
-    split_ifs with h
-    · exact Nat.mod_eq_of_lt h
-    · rw [Nat.mod_eq_sub_mod (by omega), Nat.mod_eq_of_lt (by omega)]
-  rw [hi_mod, hj_mod] at hval
-  split_ifs at hval <;> omega
-
-theorem card_cyclicInterval {b : ℕ} (q : Fin (2 ^ b)) (a : ℕ) {len : ℕ} (hlen : len ≤ 2 ^ b) :
-    #(cyclicInterval b q a len) = len := by
-  rw [cyclicInterval_eq_image_probeSlot,
-    Finset.card_image_of_injOn (probeSlot_injOn_range (backSlot b q a) hlen), Finset.card_range]
+/-! ## Section 2: Pure filter state and cluster invariants -/
 
 /-- Pure slot-level state of a quotient filter with `2 ^ b` slots and `f`-bit remainders. -/
 structure FilterState (b f : ℕ) where
@@ -1003,17 +892,21 @@ theorem FilterInv.clusterLen_sub_one_le_sum_scaleOverload
 
 /-! ## Section 5: Pure membership query and fingerprint-collision characterization -/
 
+/-- Prefix scan over `m < i` checking whether any slot in bucket `a`'s run
+(`occBefore st o a < runsBefore st o (m + 1) ≤ occBefore st o (a + 1)`) stores remainder `r`. -/
+@[expose] def queryAnyPrefix {b f : ℕ} (st : FilterState b f) (o : Fin (2 ^ b))
+    (a i : ℕ) (r : Fin (2 ^ f)) : Bool :=
+  (List.range i).any fun m =>
+    decide (occBefore st o a < runsBefore st o (m + 1) ∧
+      runsBefore st o (m + 1) ≤ occBefore st o (a + 1)) &&
+    decide (st.remAt (probeSlot b o m) = r)
+
 /-- Pure membership query on `st : FilterState b f` for quotient `q` and remainder `r` in a cluster
 starting at `o` with offset `a` (`q = probeSlot b o a`) and length `ℓ`:
-checks `st.isOcc q = true` and whether some slot `i < ℓ` in bucket `a`'s run
-(`occBefore st o a < runsBefore st o (i + 1) ≤ occBefore st o (a + 1)`) stores remainder `r`. -/
+checks `st.isOcc q = true` and `queryAnyPrefix st o a ℓ r`. -/
 @[expose] def queryCluster {b f : ℕ} (st : FilterState b f) (o : Fin (2 ^ b)) (a ℓ : ℕ)
     (r : Fin (2 ^ f)) : Bool :=
-  st.isOcc (probeSlot b o a) &&
-    (List.range ℓ).any fun i =>
-      decide (occBefore st o a < runsBefore st o (i + 1) ∧
-        runsBefore st o (i + 1) ≤ occBefore st o (a + 1)) &&
-      decide (st.remAt (probeSlot b o i) = r)
+  st.isOcc (probeSlot b o a) && queryAnyPrefix st o a ℓ r
 
 /-- In any valid interval `[o .. o + ℓ)` with `a < ℓ`, `queryCluster st o a ℓ r = true` if and only
 if `r ∈ bucketRun S quot rem (probeSlot b o a)`. -/
@@ -1062,7 +955,7 @@ theorem IntervalValid.queryCluster_eq_true_iff {U b f : ℕ} {S : Finset (Fin U)
       List.nil_append, List.take_append_of_le_length le_rfl, List.take_length]
   constructor
   · intro hq
-    simp only [queryCluster, Bool.and_eq_true, List.any_eq_true, List.mem_range,
+    simp only [queryCluster, queryAnyPrefix, Bool.and_eq_true, List.any_eq_true, List.mem_range,
       decide_eq_true_eq] at hq
     obtain ⟨_, i, hi_lt, ⟨hi_gt, hi_le⟩, rfl⟩ := hq
     have hge_Sa : S_a ≤ i := by
@@ -1110,7 +1003,7 @@ theorem IntervalValid.queryCluster_eq_true_iff {U b f : ℕ} {S : Finset (Fin U)
       omega
     have hi_le : runsBefore st o (i + 1) ≤ occBefore st o (a + 1) :=
       (hinv.lt_runOffset_iff hocc ha1 hi_lt).mp hi_lt_Sa1
-    simp only [queryCluster, Bool.and_eq_true, List.any_eq_true, List.mem_range,
+    simp only [queryCluster, queryAnyPrefix, Bool.and_eq_true, List.any_eq_true, List.mem_range,
       decide_eq_true_eq]
     exact ⟨hocc_true, i, hi_lt, ⟨hi_gt, hi_le⟩, hd_eq⟩
 

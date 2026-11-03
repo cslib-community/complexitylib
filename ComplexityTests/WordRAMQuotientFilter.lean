@@ -134,7 +134,9 @@ theorem qf_setupSteps_32_16 : setupSteps 32 16 = 1510 := by
   rw [hq, reducedTrinomialStep_32_7_7]
   decide
 
-example : charge = 293080 := rfl
+example : charge = opStepBound 290 := rfl
+
+example : 248 ≤ rQF := le_rQF
 
 theorem epsLog_inv_16 : epsLog (1 / 16 : ℝ≥0∞) = 4 := by
   dsimp only [epsLog]
@@ -257,7 +259,7 @@ from any initial state distribution `ν₀` satisfying `sampleQFImplOfEps.initIn
 6-operation sequence `sampleFilterOps` produces a final distribution `ν_final` whose transcript
 satisfies `(spec (2 ^ 32) 16 (1 / 16)).Contract sampleFilterOps` (zero false negatives and
 false-positive probability `≤ 1 / 16`) with total expected operation time at most
-`6 * 293080 = 1758480`. -/
+`6 * charge`. -/
 theorem nonvacuous_sampleQFImplOfEps_steps
     (ν₀ : PMF (LatentState (FilterSeed 32 16) rQF))
     (hinv : sampleQFImplOfEps.initInv ν₀) :

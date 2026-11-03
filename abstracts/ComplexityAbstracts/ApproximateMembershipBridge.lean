@@ -646,13 +646,6 @@ theorem qfInitSteps_eq (w₀ n : ℕ) :
   dsimp only
   rw [qfQuotBits_eq, qfReducedInitTableSteps_eq, qfReducedSeedWords_eq]
 
-/-- Uniform `O(1)` per-operation expected instruction bound `293080` (`193 * 290 + 237110`) for
-each `insert`, `delete`, or `query` operation on the two-stage quotient filter. -/
-def qfOpCharge : ℕ :=
-  293080
-
-theorem qfOpCharge_eq : qfOpCharge = QuotientFilter.charge := rfl
-
 /-! ## Part 3: Multi-Operation Execution and Headline Theorem Transfer -/
 
 private theorem execProgramDist_congr {S : Presentation} (P : FilterPresentation S)
@@ -669,7 +662,7 @@ private theorem prepare_regs_eq {S : Presentation} {P : FilterPresentation S}
     (hP : FilterLaws S P) {U w w₀ n k : ℕ} (o : ApproximateMembership.Op U) (d : Data rQF) :
     (((QuotientFilter.subroutineCode w w₀ n k).toDynamicProgram
       QuotientFilter.encode QuotientFilter.decode).prepare o d).regs =
-      P.prepareFilterRegs ⟨1, by decide⟩ ⟨247, by decide⟩ (P.filterOpOf o) d.regs := by
+      P.prepareFilterRegs (qfReg 1) (qfReg 247) (P.filterOpOf o) d.regs := by
   funext i
   cases o with
   | insert u =>
@@ -677,19 +670,25 @@ private theorem prepare_regs_eq {S : Presentation} {P : FilterPresentation S}
     rw [hP.prepareFilterRegs_insert]
     change (if QuotientFilter.inputReg i then QuotientFilter.encode (.insert u) i
       else d.regs i) = _
-    fin_cases i <;> rfl
+    by_cases h1 : i = qfReg 1 <;> by_cases h2 : i = qfReg 247 <;>
+      simp +decide [QuotientFilter.inputReg, QuotientFilter.encode, QuotientFilter.opKey,
+        QuotientFilter.opTag, h1, h2]
   | delete u =>
     dsimp only [FilterPresentation.filterOpOf]
     rw [hP.prepareFilterRegs_delete]
     change (if QuotientFilter.inputReg i then QuotientFilter.encode (.delete u) i
       else d.regs i) = _
-    fin_cases i <;> rfl
+    by_cases h1 : i = qfReg 1 <;> by_cases h2 : i = qfReg 247 <;>
+      simp +decide [QuotientFilter.inputReg, QuotientFilter.encode, QuotientFilter.opKey,
+        QuotientFilter.opTag, h1, h2]
   | query u =>
     dsimp only [FilterPresentation.filterOpOf]
     rw [hP.prepareFilterRegs_query]
     change (if QuotientFilter.inputReg i then QuotientFilter.encode (.query u) i
       else d.regs i) = _
-    fin_cases i <;> rfl
+    by_cases h1 : i = qfReg 1 <;> by_cases h2 : i = qfReg 247 <;>
+      simp +decide [QuotientFilter.inputReg, QuotientFilter.encode, QuotientFilter.opKey,
+        QuotientFilter.opTag, h1, h2]
 
 private theorem coupledOutcome_of_seqOutcome_transfer
     {S : Presentation} (hS : Laws S)
@@ -711,8 +710,8 @@ private theorem coupledOutcome_of_seqOutcome_transfer
     ∃ (ν_final : PMF (SeqOutcome (FilterSeed w₀ n) (@ApproximateMembership.Result U) rQF))
       (T_ops : ℝ≥0∞),
       P.ExecFilterOps w
-        (S.programOf ((QuotientFilter.subroutineCode w w₀ n k).code.program ⟨1, by decide⟩))
-        ⟨1, by decide⟩ ⟨247, by decide⟩ ⟨1, by decide⟩
+        (S.programOf ((QuotientFilter.subroutineCode w w₀ n k).code.program (qfReg 1)))
+        (qfReg 1) (qfReg 247) (qfReg 1)
         base (QuotientFilter.space w w₀ n k) QuotientFilter.charge
         (remOps.map P.filterOpOf) (ν.map toAbs) (ν_final.map toAbs) T_ops ∧
       ν_final.map SeqOutcome.latent = filterSeedLaw w₀ n ∧
@@ -724,7 +723,7 @@ private theorem coupledOutcome_of_seqOutcome_transfer
   induction remOps generalizing prefOps ν with
   | nil =>
     refine ⟨ν, 0, ?_, hseed, fun t ht => ?_, by simp⟩
-    · exact hP.execFilterOps_nil w _ ⟨1, by decide⟩ ⟨247, by decide⟩ ⟨1, by decide⟩
+    · exact hP.execFilterOps_nil w _ (qfReg 1) (qfReg 247) (qfReg 1)
         base (QuotientFilter.space w w₀ n k) QuotientFilter.charge (ν.map toAbs)
     · rw [List.append_nil]
       exact hsupp t ht
@@ -902,7 +901,7 @@ private theorem coupledOutcome_of_seqOutcome_transfer
           hP.coTranscript_mk _ _ _ _
         have hprep_regs :
             (xPrep t).regs =
-              P.prepareFilterRegs ⟨1, by decide⟩ ⟨247, by decide⟩ (P.filterOpOf o)
+              P.prepareFilterRegs (qfReg 1) (qfReg 247) (P.filterOpOf o)
                 (P.coReg (toAbs t)) := by
           rw [hreg_t]
           exact prepare_regs_eq hP o t.data
@@ -928,7 +927,7 @@ private theorem coupledOutcome_of_seqOutcome_transfer
             rw [hnd]
             exact hspec.1
           exact execProgramDist_congr P hprep_regs hprep_mem hmap_rm hT_t
-            (compile_execCodeDist hS hP ⟨1, by decide⟩ (ExecCodeDist.of_execWithin hex_step))
+            (compile_execCodeDist hS hP (qfReg 1) (ExecCodeDist.of_execWithin hex_step))
         · intro q_abs hq_abs
           dsimp only [μ_step_abs] at hq_abs
           rw [PMF.mem_support_pure_iff] at hq_abs
@@ -946,18 +945,17 @@ private theorem coupledOutcome_of_seqOutcome_transfer
             cases o with
             | insert u =>
               dsimp only [FilterPresentation.filterOpOf, FilterPresentation.entryOf]
-              exact (hP.decodeFilterEntry_insert ⟨1, by decide⟩ u _).symm
+              exact (hP.decodeFilterEntry_insert (qfReg 1) u _).symm
             | delete u =>
               dsimp only [FilterPresentation.filterOpOf, FilterPresentation.entryOf]
-              exact (hP.decodeFilterEntry_delete ⟨1, by decide⟩ u _).symm
+              exact (hP.decodeFilterEntry_delete (qfReg 1) u _).symm
             | query u =>
               dsimp only [FilterPresentation.filterOpOf, FilterPresentation.entryOf]
               rw [hP.decodeFilterEntry_query]
-              change some (decide ((nextData t).regs 1 = 1)) =
+              change some (decide ((nextData t).regs (qfReg 1) = 1)) =
                 some (simResult U w₀ n k t.latent A (.query u)) at hdec
               injection hdec with hdec_eq
               rw [← hdec_eq]
-              rfl
           · intro addr haddr
             have haddr' : addr ∉ (Block.mk base (QuotientFilter.space w w₀ n k)).footprint := by
               rw [Block.mem_footprint, Block.Owns, not_and_or, not_le, not_lt]
@@ -979,43 +977,45 @@ private theorem coupledOutcome_of_seqOutcome_transfer
 /-- Headline bridge theorem for the two-stage quotient filter (`QuotientFilter.implOfEps`). -/
 theorem quotientFilter (S : Presentation) (hS : Laws S)
     (P : FilterPresentation S) (hP : FilterLaws S P) :
-    ∀ (w w₀ n : ℕ) (ε : ℝ≥0∞),
-      ∃ (p_init p_op : List (S.Instr 248)),
-        ∀ (U base : ℕ),
-          ε ≠ 0 →
-          1 ≤ n →
-          0 < w₀ →
-          2 * w₀ ≤ w →
-          U ≤ 2 ^ w₀ →
-          base + qfSpaceOfEps w w₀ n ε < 2 ^ w →
-          qfSpaceOfEps w w₀ n ε ≤ 640 * ((n * epsLog ε + w - 1) / w + 1) ∧
-          ∀ (reg₀ : Fin 248 → ℕ) (mem₀ : ℕ → ℕ),
-            WordBounded w reg₀ mem₀ →
-            reg₀ ⟨240, by decide⟩ = base →
-            (∀ a, base ≤ a → a < base + qfSpaceOfEps w w₀ n ε → mem₀ a = 0) →
-            ∃ (Seed : Type) (μ_init : PMF (P.CoupledOutcome Seed U 248)),
-              P.ExecProgramDist w p_init ⟨1, by decide⟩ reg₀ mem₀
-                (μ_init.map P.toRegMem) (qfInitSteps w₀ n) ∧
-              (∀ p ∈ μ_init.support,
-                WordBounded w (P.coReg p) (P.coMem p) ∧
-                P.coReg p ⟨0, by decide⟩ = base ∧
-                P.coReg p ⟨240, by decide⟩ = base + qfSpaceOfEps w w₀ n ε ∧
-                P.coTranscript p = [] ∧
-                UnchangedOutside base (qfSpaceOfEps w w₀ n ε) mem₀ (P.coMem p)) ∧
-              ∀ ops : List (P.FilterOp U),
-                P.ValidFilterSeqFrom n ∅ ops →
-                ∃ (μ_final : PMF (P.CoupledOutcome Seed U 248)) (T_ops : ℝ≥0∞),
-                  P.ExecFilterOps w p_op
-                    ⟨1, by decide⟩ ⟨247, by decide⟩ ⟨1, by decide⟩
-                    base (qfSpaceOfEps w w₀ n ε) qfOpCharge ops
-                    μ_init μ_final T_ops ∧
-                  P.FilterContract ε ops (μ_final.map P.coTranscript) ∧
-                  T_ops ≤ ((ops.length * qfOpCharge : ℕ) : ℝ≥0∞) := by
+    ∃ (r C_op : ℕ) (hr : 248 ≤ r),
+      ∀ (w w₀ n : ℕ) (ε : ℝ≥0∞),
+        ∃ (p_init p_op : List (S.Instr r)),
+          ∀ (U base : ℕ),
+            ε ≠ 0 →
+            1 ≤ n →
+            0 < w₀ →
+            2 * w₀ ≤ w →
+            U ≤ 2 ^ w₀ →
+            base + qfSpaceOfEps w w₀ n ε < 2 ^ w →
+            qfSpaceOfEps w w₀ n ε ≤ 640 * ((n * epsLog ε + w - 1) / w + 1) ∧
+            ∀ (reg₀ : Fin r → ℕ) (mem₀ : ℕ → ℕ),
+              WordBounded w reg₀ mem₀ →
+              reg₀ ⟨240, by omega⟩ = base →
+              (∀ a, base ≤ a → a < base + qfSpaceOfEps w w₀ n ε → mem₀ a = 0) →
+              ∃ (Seed : Type) (μ_init : PMF (P.CoupledOutcome Seed U r)),
+                P.ExecProgramDist w p_init ⟨1, by omega⟩ reg₀ mem₀
+                  (μ_init.map P.toRegMem) (qfInitSteps w₀ n) ∧
+                (∀ p ∈ μ_init.support,
+                  WordBounded w (P.coReg p) (P.coMem p) ∧
+                  P.coReg p ⟨0, by omega⟩ = base ∧
+                  P.coReg p ⟨240, by omega⟩ = base + qfSpaceOfEps w w₀ n ε ∧
+                  P.coTranscript p = [] ∧
+                  UnchangedOutside base (qfSpaceOfEps w w₀ n ε) mem₀ (P.coMem p)) ∧
+                ∀ ops : List (P.FilterOp U),
+                  P.ValidFilterSeqFrom n ∅ ops →
+                  ∃ (μ_final : PMF (P.CoupledOutcome Seed U r)) (T_ops : ℝ≥0∞),
+                    P.ExecFilterOps w p_op
+                      ⟨1, by omega⟩ ⟨247, by omega⟩ ⟨1, by omega⟩
+                      base (qfSpaceOfEps w w₀ n ε) C_op ops
+                      μ_init μ_final T_ops ∧
+                    P.FilterContract ε ops (μ_final.map P.coTranscript) ∧
+                    T_ops ≤ ((ops.length * C_op : ℕ) : ℝ≥0∞) := by
+  refine ⟨rQF, QuotientFilter.charge, le_rQF, ?_⟩
   intro w w₀ n ε
   let k := QuotientFilter.epsLog ε
   let Sub := QuotientFilter.subroutineCode w w₀ n k
-  refine ⟨S.programOf (Sub.initFresh.program ⟨1, by decide⟩),
-    S.programOf (Sub.code.program ⟨1, by decide⟩), ?_⟩
+  refine ⟨S.programOf (Sub.initFresh.program (qfReg 1)),
+    S.programOf (Sub.code.program (qfReg 1)), ?_⟩
   intro U base hε0 hn hw₀_pos hw hU hfit_space
   have hfit_lib : Fits w (base + QuotientFilter.space w w₀ n k) := by
     rwa [← qfSpaceOfEps_eq]
@@ -1050,7 +1050,7 @@ theorem quotientFilter (S : Presentation) (hS : Laws S)
   have hsupp₀ :
       ∀ t ∈ ν₀.support,
         t.data.Bounded w ∧
-        t.data.regs 240 = base + QuotientFilter.space w w₀ n k ∧
+        t.data.regs (qfReg 240) = base + QuotientFilter.space w w₀ n k ∧
         Modifies (Block.mk base (QuotientFilter.space w w₀ n k)).footprint mem₀ t.data.mem :=
     hsupp_raw
   let toAbs (t : SeqOutcome (FilterSeed w₀ n) (@ApproximateMembership.Result U) rQF) :
@@ -1067,7 +1067,7 @@ theorem quotientFilter (S : Presentation) (hS : Laws S)
         SeqOutcome.ofLatentState, FilterPresentation.regMemOf]
       rw [hP.coReg_mk, hP.coMem_mk]
     rw [hmap_rm]
-    exact compile_execCodeDist hS hP ⟨1, by decide⟩ he_init
+    exact compile_execCodeDist hS hP (qfReg 1) he_init
   · intro p_abs hp_abs
     rw [PMF.mem_support_map_iff] at hp_abs
     obtain ⟨t, ht, rfl⟩ := hp_abs
@@ -1103,7 +1103,7 @@ theorem quotientFilter (S : Presentation) (hS : Laws S)
       coupledOutcome_of_seqOutcome_transfer hS hP hw₀_pos hw hU hfit_lib [] ops_lib ν_seq
         (by simp) hv_lib hseed_seq hsupp_seq
     refine ⟨ν_final.map toAbs, T_ops, ?_, ?_, ?_⟩
-    · rw [qfSpaceOfEps_eq, qfOpCharge_eq]
+    · rw [qfSpaceOfEps_eq]
       exact hex_abs
     · have htr_map :
           (ν_final.map toAbs).map P.coTranscript =
@@ -1129,7 +1129,7 @@ theorem quotientFilter (S : Presentation) (hS : Laws S)
           (QuotientFilter.two_pow_neg_epsLog_le hε0)
           (contract_map_simTranscript hw₀_pos hU hv_lib)
       exact filterContract_of_spec_contract hP hcontract_lib
-    · rw [List.length_map, qfOpCharge_eq]
+    · rw [List.length_map]
       exact hcost_abs
 
 end ComplexityAbstracts.ApproximateMembershipBridge

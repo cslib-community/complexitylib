@@ -50,13 +50,14 @@ An independent multiply-shift hash produces the `min w₀ (epsLog ε + 1)`-bit r
 maintained in canonical sorted order so that the set of occupied slots depends only on the current
 active set `S` (no amortization and no seed conditioning across deletions).
 
-The compiled 248-register programs `p_init` and `p_op` are chosen per `(w, w₀, n, ε)` (independent
-of `U` and `base`), with no static code-size bound. The instruction bounds `qfInitSteps w₀ n` and
-`qfOpCharge = 293080 = O(1)` count executed body instructions, excluding the final `halt` step
-(accounted for as `T + 1` in `ExecProgramDist`) and caller argument delivery (`prepareFilterRegs`).
-Every individual operation in `ExecFilterOps` executes in at most `qfOpCharge = 293080` expected
-body instructions (`(∑' p, μ p * T_step p) ≤ qfOpCharge` at every step, not merely amortized over
-the sequence). All hash seeds, the bit-packed multiplication table, and the bit-packed `(r + 3)`-bit
+There exist universal constants `r ≥ 248` (register count) and `C_op : ℕ` (per-operation expected
+instruction budget) such that the compiled `r`-register programs `p_init` and `p_op` are chosen per
+`(w, w₀, n, ε)` (independent of `U` and `base`), with no static code-size bound. The instruction
+bounds `qfInitSteps w₀ n` and `C_op = O(1)` count executed body instructions, excluding the final
+`halt` step (accounted for as `T + 1` in `ExecProgramDist`) and caller argument delivery
+(`prepareFilterRegs`). Every individual operation in `ExecFilterOps` executes in at most `C_op`
+expected body instructions (`(∑' p, μ p * T_step p) ≤ C_op` at every step, not merely amortized over
+the sequence). All hash seeds, the bit-packed multiplication table, and the bit-packed `(f + 3)`-bit
 slot array reside in a single contiguous memory block `[base, base + qfSpaceOfEps w w₀ n ε)` of at
 most `640 * ((n * epsLog ε + w - 1) / w + 1)` machine words.
 
@@ -516,20 +517,14 @@ def qfInitSteps (w₀ n : ℕ) : ℕ :=
   let b := qfQuotBits w₀ n
   3 + (qfReducedInitTableSteps w₀ b b + (5 * qfReducedSeedWords w₀ b b 5 + 13 + 5))
 
-/-- Uniform `O(1)` per-operation expected instruction bound `293080` (`193 * 290 + 237110`: at most
-`237110` instructions for two-stage hash evaluation and dispatch plus `193` instructions per
-cluster slot across expected cluster length `≤ 290`) for each individual `insert`, `delete`, or
-`query` operation on the two-stage quotient filter. -/
-def qfOpCharge : ℕ :=
-  293080
-
 /-- Two-Stage Quotient Filter with Deletions (`QuotientFilter.implOfEps` and
-`QuotientFilter.implOfEps_space_le`). For every word width `w`, key bit-width `w₀`, capacity `n`,
-and false-positive target `ε : ℝ≥0∞`, there exist 248-register Word-RAM programs `p_init` and
-`p_op` chosen per `(w, w₀, n, ε)` (independent of `U` and `base`, with no static code-size bound)
-such that for every key universe `U` and base address `base` satisfying `ε ≠ 0` (including all
-`ε ∈ (0, 1 / 2]`), `1 ≤ n`, `0 < w₀`, `2 * w₀ ≤ w`, `U ≤ 2 ^ w₀`, and
-`base + qfSpaceOfEps w w₀ n ε < 2 ^ w`:
+`QuotientFilter.implOfEps_space_le`). There exist universal constants `r ≥ 248` (register count)
+and `C_op : ℕ` (per-operation expected instruction budget) such that for every word width `w`, key
+bit-width `w₀`, capacity `n`, and false-positive target `ε : ℝ≥0∞`, there exist `r`-register
+Word-RAM programs `p_init` and `p_op` chosen per `(w, w₀, n, ε)` (independent of `U` and `base`,
+with no static code-size bound) such that for every key universe `U` and base address `base`
+satisfying `ε ≠ 0` (including all `ε ∈ (0, 1 / 2]`), `1 ≤ n`, `0 < w₀`, `2 * w₀ ≤ w`,
+`U ≤ 2 ^ w₀`, and `base + qfSpaceOfEps w w₀ n ε < 2 ^ w`:
 
 The single allocated memory block of `qfSpaceOfEps w w₀ n ε` words (holding all hash seeds, the
 bit-packed multiplication table, and the bit-packed slot array) uses at most
@@ -542,48 +537,49 @@ initialized in `qfInitSteps w₀ n` expected executed body instructions, with `p
 
 For every oblivious operation sequence `ops : List (FilterOp U)` of any length satisfying
 `ValidFilterSeq n ops`, `p_op` executes `ops` sequentially (`ExecFilterOps`) with expected executed
-body-instruction count at most `qfOpCharge = 293080 = O(1)` for every individual operation in `ops`
-(and total expected body instructions `T_ops ≤ ops.length * 293080`, excluding final `halt` and
-caller argument delivery), zero false negatives on every branch (`NoFalseNegatives ops`), and
-false-positive probability at most `ε` for every query of an absent key (`FilterContract ε ops`).
+body-instruction count at most `C_op = O(1)` for every individual operation in `ops` (and total
+expected body instructions `T_ops ≤ ops.length * C_op`, excluding final `halt` and caller argument
+delivery), zero false negatives on every branch (`NoFalseNegatives ops`), and false-positive
+probability at most `ε` for every query of an absent key (`FilterContract ε ops`).
 
 References: `[PaghPaghRao2005]` (SODA 2005, pp. 823–829); `[BenderEtAl2012]` (PVLDB 5(11):1627–1637,
 2012); `[PaghPaghRuzic2009]` (*SIAM J. Comput.* 39(3):1107–1120, 2009);
 `[DietzfelbingerHagerupKatajainenPenttonen1997]`; `[CarterWegman1979]`; `[WegmanCarter1981]`;
 `[Vadhan2012]`; `[LidlNiederreiter1997]`. -/
 theorem quotientFilter :
-    ∀ (w w₀ n : ℕ) (ε : ℝ≥0∞),
-      ∃ (p_init p_op : List (Instr 248)),
-        ∀ (U base : ℕ),
-          ε ≠ 0 →
-          1 ≤ n →
-          0 < w₀ →
-          2 * w₀ ≤ w →
-          U ≤ 2 ^ w₀ →
-          base + qfSpaceOfEps w w₀ n ε < 2 ^ w →
-          qfSpaceOfEps w w₀ n ε ≤ 640 * ((n * epsLog ε + w - 1) / w + 1) ∧
-          ∀ (reg₀ : Fin 248 → ℕ) (mem₀ : ℕ → ℕ),
-            WordBounded w reg₀ mem₀ →
-            reg₀ ⟨240, by decide⟩ = base →
-            (∀ a, base ≤ a → a < base + qfSpaceOfEps w w₀ n ε → mem₀ a = 0) →
-            ∃ (Seed : Type) (μ_init : PMF (CoupledOutcome Seed U 248)),
-              ExecProgramDist w p_init ⟨1, by decide⟩ reg₀ mem₀
-                (μ_init.map CoupledOutcome.toRegMem) (qfInitSteps w₀ n) ∧
-              (∀ p ∈ μ_init.support,
-                WordBounded w p.reg p.mem ∧
-                p.reg ⟨0, by decide⟩ = base ∧
-                p.reg ⟨240, by decide⟩ = base + qfSpaceOfEps w w₀ n ε ∧
-                p.transcript = [] ∧
-                UnchangedOutside base (qfSpaceOfEps w w₀ n ε) mem₀ p.mem) ∧
-              ∀ ops : List (FilterOp U),
-                ValidFilterSeq n ops →
-                ∃ (μ_final : PMF (CoupledOutcome Seed U 248)) (T_ops : ℝ≥0∞),
-                  ExecFilterOps w p_op
-                    ⟨1, by decide⟩ ⟨247, by decide⟩ ⟨1, by decide⟩
-                    base (qfSpaceOfEps w w₀ n ε) qfOpCharge ops
-                    μ_init μ_final T_ops ∧
-                  FilterContract ε ops (μ_final.map CoupledOutcome.transcript) ∧
-                  T_ops ≤ ((ops.length * qfOpCharge : ℕ) : ℝ≥0∞) :=
+    ∃ (r C_op : ℕ) (hr : 248 ≤ r),
+      ∀ (w w₀ n : ℕ) (ε : ℝ≥0∞),
+        ∃ (p_init p_op : List (Instr r)),
+          ∀ (U base : ℕ),
+            ε ≠ 0 →
+            1 ≤ n →
+            0 < w₀ →
+            2 * w₀ ≤ w →
+            U ≤ 2 ^ w₀ →
+            base + qfSpaceOfEps w w₀ n ε < 2 ^ w →
+            qfSpaceOfEps w w₀ n ε ≤ 640 * ((n * epsLog ε + w - 1) / w + 1) ∧
+            ∀ (reg₀ : Fin r → ℕ) (mem₀ : ℕ → ℕ),
+              WordBounded w reg₀ mem₀ →
+              reg₀ ⟨240, by omega⟩ = base →
+              (∀ a, base ≤ a → a < base + qfSpaceOfEps w w₀ n ε → mem₀ a = 0) →
+              ∃ (Seed : Type) (μ_init : PMF (CoupledOutcome Seed U r)),
+                ExecProgramDist w p_init ⟨1, by omega⟩ reg₀ mem₀
+                  (μ_init.map CoupledOutcome.toRegMem) (qfInitSteps w₀ n) ∧
+                (∀ p ∈ μ_init.support,
+                  WordBounded w p.reg p.mem ∧
+                  p.reg ⟨0, by omega⟩ = base ∧
+                  p.reg ⟨240, by omega⟩ = base + qfSpaceOfEps w w₀ n ε ∧
+                  p.transcript = [] ∧
+                  UnchangedOutside base (qfSpaceOfEps w w₀ n ε) mem₀ p.mem) ∧
+                ∀ ops : List (FilterOp U),
+                  ValidFilterSeq n ops →
+                  ∃ (μ_final : PMF (CoupledOutcome Seed U r)) (T_ops : ℝ≥0∞),
+                    ExecFilterOps w p_op
+                      ⟨1, by omega⟩ ⟨247, by omega⟩ ⟨1, by omega⟩
+                      base (qfSpaceOfEps w w₀ n ε) C_op ops
+                      μ_init μ_final T_ops ∧
+                    FilterContract ε ops (μ_final.map CoupledOutcome.transcript) ∧
+                    T_ops ≤ ((ops.length * C_op : ℕ) : ℝ≥0∞) :=
   ComplexityAbstracts.ApproximateMembershipBridge.quotientFilter
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,
@@ -619,7 +615,7 @@ theorem quotientFilter :
       @ExecFilterOps.nil, @ExecFilterOps.cons⟩
 
 /--
-info: abstract audit passed for `ComplexityAbstracts.ApproximateMembershipAbstract`: 398 root
+info: abstract audit passed for `ComplexityAbstracts.ApproximateMembershipAbstract`: 401 root
 declarations
 -/
 #guard_msgs (whitespace := lax) in

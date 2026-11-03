@@ -244,25 +244,6 @@ theorem reducedLimbCount_le (t : ℕ) : reducedLimbCount t ≤ 54 := by
   dsimp only [reducedLimbCount]
   omega
 
-private theorem two_mul_three_pow_pred_lt_of_two_lt {B : ℕ} (hB : 2 < B) :
-    0 < trinomialStepAux B ∧ 2 * 3 ^ (trinomialStepAux B - 1) < B := by
-  induction B using Nat.strong_induction_on with
-  | _ B ih =>
-    have hle : ¬ B ≤ 2 := not_le.mpr hB
-    rw [trinomialStepAux, ite_eq_right hle]
-    refine ⟨Nat.succ_pos _, ?_⟩
-    rw [Nat.add_sub_cancel]
-    by_cases hB' : (B + 2) / 3 ≤ 2
-    · have h0 : trinomialStepAux ((B + 2) / 3) = 0 := by
-        rw [trinomialStepAux, ite_eq_left hB']
-      rw [h0]
-      omega
-    · obtain ⟨ht', hlt'⟩ := ih ((B + 2) / 3) (by omega) (not_le.mp hB')
-      have hpow : 3 ^ trinomialStepAux ((B + 2) / 3) =
-          3 ^ (trinomialStepAux ((B + 2) / 3) - 1) * 3 := by
-        conv_lhs => rw [← Nat.sub_add_cancel ht', pow_succ]
-      omega
-
 /-- Whenever `w₀ ≤ w`, `b' ≤ w`, and `2 ≤ w`, `2 * reducedChunkBits (reducedTrinomialStep w₀ b b')`
 fits in a single `w`-bit word (`≤ w`) unconditionally for all `b : ℕ`. -/
 theorem two_mul_reducedChunkBits_le {w₀ b b' w : ℕ} (hw₀ : w₀ ≤ w) (hb' : b' ≤ w) (hw : 2 ≤ w) :
@@ -693,26 +674,6 @@ theorem packLimbs_update_xor {c : ℕ} (hc : 0 < c) {n i v : ℕ} (f : ℕ → �
     rw [getLimb_packLimbs_of_ge c _ hm, getLimb_xor_shiftLeft_of_ne hv hne,
       getLimb_packLimbs_of_ge c f hm]
 
-private theorem and_xor_shiftRight_shiftLeft (a c : ℕ) :
-    (a &&& (2 ^ c - 1)) ^^^ ((a >>> c) <<< c) = a := by
-  apply Nat.eq_of_testBit_eq
-  intro i
-  rw [Nat.testBit_xor, Nat.testBit_and, Nat.testBit_two_pow_sub_one,
-    Nat.testBit_shiftLeft, Nat.testBit_shiftRight]
-  by_cases h : i < c
-  · have hge : ¬ c ≤ i := not_le.mpr h
-    simp [h, hge]
-  · have hge : c ≤ i := le_of_not_gt h
-    simp [h, hge, Nat.add_sub_of_le hge]
-
-private theorem xor_shiftLeft_eq (a b k : ℕ) :
-    (a ^^^ b) <<< k = (a <<< k) ^^^ (b <<< k) := by
-  apply Nat.eq_of_testBit_eq
-  intro i
-  rw [Nat.testBit_shiftLeft, Nat.testBit_xor, Nat.testBit_xor,
-    Nat.testBit_shiftLeft, Nat.testBit_shiftLeft]
-  by_cases h : i ≥ k <;> simp [h]
-
 /-- Updating two consecutive limbs `i` and `i + 1` of `f` by XORing `v &&& (2 ^ c - 1)` and
 `v >>> c` (where `v < 2 ^ (2 * c)`) XORs `packLimbs c n f` with `v <<< (i * c)`. -/
 theorem packLimbs_update_pair {c : ℕ} (hc : 0 < c) {n i v : ℕ} (f : ℕ → ℕ)
@@ -741,7 +702,7 @@ theorem packLimbs_update_pair {c : ℕ} (hc : 0 < c) {n i v : ℕ} (f : ℕ → 
     packLimbs_update_xor hc f (Nat.lt_of_succ_lt hi) hv_lo, Nat.xor_assoc]
   congr 1
   rw [Nat.succ_mul, Nat.add_comm (i * c) c, Nat.shiftLeft_add _ c (i * c),
-    ← xor_shiftLeft_eq, and_xor_shiftRight_shiftLeft]
+    ← Nat.shiftLeft_xor_distrib, and_xor_shiftRight_shiftLeft]
 
 /-- Low-half limb formula (`m < L₀`) for `reduceTrinomialCode t P`. -/
 theorem getLimb_reduceTrinomialCode_low (t P : ℕ) {m : ℕ} (hm : m < reducedHalfLimbs t) :
@@ -840,7 +801,7 @@ theorem clmul_truncLimbs_right_succ (c i m xc x : ℕ) :
     clmul xc (truncLimbs c (m + 1) x) <<< (i * c) =
       (clmul xc (truncLimbs c m x) <<< (i * c)) ^^^
         (clmul xc (getLimb c x m) <<< ((i + m) * c)) := by
-  rw [truncLimbs_succ, clmul_xor_right, clmul_shiftLeft_right, xor_shiftLeft_eq]
+  rw [truncLimbs_succ, clmul_xor_right, clmul_shiftLeft_right, Nat.shiftLeft_xor_distrib]
   congr 1
   rw [Nat.add_mul, Nat.add_comm (i * c) (m * c), Nat.shiftLeft_add]
 

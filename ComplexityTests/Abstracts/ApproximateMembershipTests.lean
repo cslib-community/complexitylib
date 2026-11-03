@@ -36,7 +36,6 @@ example : qfReducedTableWords (qfReducedStep 32 7 7) 64 = 1 := by decide
 example : qfReducedKWiseSpace 64 32 7 7 5 = 272 := by decide
 example : qfSpace 64 32 16 4 = 317 := by decide
 example : qfInitSteps 32 16 = 1513 := by decide
-example : qfOpCharge = 293080 := rfl
 
 example : qfSpace 64 32 16 4 ≤ 640 * ((16 * 4 + 64 - 1) / 64 + 1) :=
   qfSpace_le (by decide) (by decide) (by decide) (by decide) (by decide)
@@ -112,7 +111,7 @@ theorem validFilterSeq_sampleOps : ValidFilterSeq 4 sampleOps := by
 theorem activeSet_sampleOps : activeSet sampleOps = {k5} := by
   decide
 
-lemma wordBounded_zero : WordBounded 64 (fun (_ : Fin 248) => 0) (fun _ => 0) :=
+lemma wordBounded_zero {r : ℕ} : WordBounded 64 (fun (_ : Fin r) => 0) (fun _ => 0) :=
   ⟨fun _ => (by decide : 0 < 2 ^ 64), fun _ => (by decide : 0 < 2 ^ 64)⟩
 
 /-! ## Headline Theorem Non-Vacuity (`(w, w₀, n, ε, U, base) = (64, 4, 4, 1 / 16, 16, 0)`) -/
@@ -124,40 +123,41 @@ theorem qfSpaceOfEps_64_4_4_inv16 :
   decide
 
 /-- Non-vacuity of `quotientFilter` on `sampleOps` at `(w, w₀, n, ε, U, base) =
-(64, 4, 4, 1 / 16, 16, 0)`: produces `p_init`, `p_op`, `Seed`, `μ_init`, `μ_final`, and `T_ops`
-satisfying compact single-block space (`≤ 640 * ((4 * 4 + 64 - 1) / 64 + 1)`), bounded-time
-initialization, per-operation expected time `≤ 293080`, zero false negatives on every branch, and
-false-positive probability `≤ 1 / 16` for every absent-key query. -/
+(64, 4, 4, 1 / 16, 16, 0)`: produces `r`, `C_op`, `p_init`, `p_op`, `Seed`, `μ_init`, `μ_final`,
+and `T_ops` satisfying compact single-block space (`≤ 640 * ((4 * 4 + 64 - 1) / 64 + 1)`),
+bounded-time initialization, per-operation expected time `≤ C_op`, zero false negatives on every
+branch, and false-positive probability `≤ 1 / 16` for every absent-key query. -/
 theorem nonvacuous_quotientFilter :
-    ∃ (p_init p_op : List (Instr 248))
-      (Seed : Type) (μ_init μ_final : PMF (CoupledOutcome Seed 16 248)) (T_ops : ℝ≥0∞),
+    ∃ (r C_op : ℕ) (hr : 248 ≤ r) (p_init p_op : List (Instr r))
+      (Seed : Type) (μ_init μ_final : PMF (CoupledOutcome Seed 16 r)) (T_ops : ℝ≥0∞),
       qfSpaceOfEps 64 4 4 (1 / 16 : ℝ≥0∞) ≤
         640 * ((4 * epsLog (1 / 16 : ℝ≥0∞) + 64 - 1) / 64 + 1) ∧
-      ExecProgramDist 64 p_init ⟨1, by decide⟩ (fun _ => 0) (fun _ => 0)
+      ExecProgramDist 64 p_init ⟨1, by omega⟩ (fun _ => 0) (fun _ => 0)
         (μ_init.map CoupledOutcome.toRegMem) (qfInitSteps 4 4) ∧
       (∀ p ∈ μ_init.support,
         WordBounded 64 p.reg p.mem ∧
-        p.reg ⟨0, by decide⟩ = 0 ∧
-        p.reg ⟨240, by decide⟩ = 0 + qfSpaceOfEps 64 4 4 (1 / 16 : ℝ≥0∞) ∧
+        p.reg ⟨0, by omega⟩ = 0 ∧
+        p.reg ⟨240, by omega⟩ = 0 + qfSpaceOfEps 64 4 4 (1 / 16 : ℝ≥0∞) ∧
         p.transcript = [] ∧
         UnchangedOutside 0 (qfSpaceOfEps 64 4 4 (1 / 16 : ℝ≥0∞)) (fun _ => 0) p.mem) ∧
       ExecFilterOps 64 p_op
-        ⟨1, by decide⟩ ⟨247, by decide⟩ ⟨1, by decide⟩
-        0 (qfSpaceOfEps 64 4 4 (1 / 16 : ℝ≥0∞)) qfOpCharge sampleOps
+        ⟨1, by omega⟩ ⟨247, by omega⟩ ⟨1, by omega⟩
+        0 (qfSpaceOfEps 64 4 4 (1 / 16 : ℝ≥0∞)) C_op sampleOps
         μ_init μ_final T_ops ∧
       FilterContract (1 / 16 : ℝ≥0∞) sampleOps (μ_final.map CoupledOutcome.transcript) ∧
-      T_ops ≤ ((sampleOps.length * qfOpCharge : ℕ) : ℝ≥0∞) := by
+      T_ops ≤ ((sampleOps.length * C_op : ℕ) : ℝ≥0∞) := by
   have hsp : 0 + qfSpaceOfEps 64 4 4 (1 / 16 : ℝ≥0∞) < 2 ^ 64 := by
     rw [qfSpaceOfEps_64_4_4_inv16]
     decide
-  obtain ⟨p_init, p_op, hexec⟩ := quotientFilter 64 4 4 (1 / 16 : ℝ≥0∞)
+  obtain ⟨r, C_op, hr, hqf⟩ := quotientFilter
+  obtain ⟨p_init, p_op, hexec⟩ := hqf 64 4 4 (1 / 16 : ℝ≥0∞)
   obtain ⟨hsp_le, hrun⟩ :=
     hexec 16 0 (by norm_num) (by decide) (by decide) (by decide) (by decide) hsp
   obtain ⟨Seed, μ_init, hinit, hsupp, hseq⟩ :=
     hrun (fun _ => 0) (fun _ => 0) wordBounded_zero rfl (fun _ _ _ => rfl)
   obtain ⟨μ_final, T_ops, hops, hcontract, hbound⟩ :=
     hseq sampleOps validFilterSeq_sampleOps
-  exact ⟨p_init, p_op, Seed, μ_init, μ_final, T_ops,
+  exact ⟨r, C_op, hr, p_init, p_op, Seed, μ_init, μ_final, T_ops,
     hsp_le, hinit, hsupp, hops, hcontract, hbound⟩
 
 end ComplexityTests.Abstracts.ApproximateMembershipTests

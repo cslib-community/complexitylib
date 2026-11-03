@@ -277,78 +277,7 @@ maps `[0, 1, 2, 3, 4, 5] ↦ [3, 4, 5, 6, 7, 0]`. -/
 theorem injective_fillMap240 : Function.Injective fillMap240 := by
   decide
 
-private theorem shiftRight_mono {a b : ℕ} (p : ℕ) (h : a ≤ b) :
-    a >>> p ≤ b >>> p := by
-  rw [Nat.shiftRight_eq_div_pow, Nat.shiftRight_eq_div_pow]
-  exact Nat.div_le_div_right h
-
 /-! ## Section 2: Bit-packed Four-Russians table construction (`initTableCode`) -/
-
-/-- Bitwise decomposition of `idx < 2 ^ (2 * c)` into `u = idx >>> c` and `v = idx &&& (2 ^ c - 1)`,
-together with properties of `prevIdx = (u <<< c) + (v >>> 1)`. -/
-private theorem clmulTab_index_props {c idx : ℕ} (hidx : idx < 2 ^ (2 * c)) :
-    let u := idx >>> c
-    let v := idx &&& (2 ^ c - 1)
-    let prevIdx := (u <<< c) + (v >>> 1)
-    u < 2 ^ c ∧
-    v < 2 ^ c ∧
-    (u <<< c) + v = idx ∧
-    prevIdx ≤ idx ∧
-    (v ≠ 0 → prevIdx < idx) ∧
-    (v = 0 → prevIdx = idx) ∧
-    prevIdx >>> c = u ∧
-    prevIdx &&& (2 ^ c - 1) = v >>> 1 := by
-  intro u v prevIdx
-  have hpow_pos : 0 < 2 ^ c := Nat.two_pow_pos c
-  have hu_eq : u = idx / 2 ^ c := Nat.shiftRight_eq_div_pow idx c
-  have hv_eq : v = idx % 2 ^ c := Nat.and_two_pow_sub_one_eq_mod idx c
-  have hu_lt : u < 2 ^ c := by
-    rw [hu_eq]
-    apply Nat.div_lt_of_lt_mul
-    rwa [← pow_add, ← two_mul]
-  have hv_lt : v < 2 ^ c := by
-    rw [hv_eq]
-    exact Nat.mod_lt idx hpow_pos
-  have huv_eq : (u <<< c) + v = idx := by
-    rw [Nat.shiftLeft_eq, hu_eq, hv_eq, Nat.div_add_mod' idx (2 ^ c)]
-  have hv_shr : v >>> 1 = v / 2 := Nat.shiftRight_eq_div_pow v 1
-  have hv_shr_lt : v >>> 1 < 2 ^ c := by
-    rw [hv_shr]
-    exact Nat.lt_of_le_of_lt (Nat.div_le_self v 2) hv_lt
-  have hprev_eq : prevIdx = u * 2 ^ c + (v >>> 1) := by
-    dsimp only [prevIdx]
-    rw [Nat.shiftLeft_eq]
-  have hprev_le : prevIdx ≤ idx := by
-    have : v >>> 1 ≤ v := by rw [hv_shr]; exact Nat.div_le_self v 2
-    dsimp only [prevIdx]
-    omega
-  have hprev_lt : v ≠ 0 → prevIdx < idx := by
-    intro hv0
-    have : v >>> 1 < v := by rw [hv_shr]; omega
-    dsimp only [prevIdx]
-    omega
-  have hprev_zero : v = 0 → prevIdx = idx := by
-    intro hv0
-    have : v >>> 1 = 0 := by rw [hv_shr, hv0]
-    dsimp only [prevIdx]
-    omega
-  have hprev_u : prevIdx >>> c = u := by
-    rw [Nat.shiftRight_eq_div_pow, hprev_eq, Nat.add_comm,
-      Nat.add_mul_div_right _ _ hpow_pos, Nat.div_eq_of_lt hv_shr_lt, zero_add]
-  have hprev_v : prevIdx &&& (2 ^ c - 1) = v >>> 1 := by
-    rw [Nat.and_two_pow_sub_one_eq_mod, hprev_eq, Nat.add_comm,
-      Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hv_shr_lt]
-  exact ⟨hu_lt, hv_lt, huv_eq, hprev_le, hprev_lt, hprev_zero, hprev_u, hprev_v⟩
-
-private theorem clmul_eq_bit_mul_xor (u v : ℕ) :
-    ((v &&& 1) * u) ^^^ (clmul u (v >>> 1) <<< 1) = clmul u v := by
-  rw [clmul_step u v]
-  congr 1
-  have hand : v &&& 1 = v % 2 := Nat.and_two_pow_sub_one_eq_mod v 1
-  rw [hand]
-  rcases Nat.mod_two_eq_zero_or_one v with h0 | h1
-  · simp [h0]
-  · simp [h1]
 
 /-- 11-instruction setup before `clmulTabLoop` on `Data 240`. -/
 @[expose] def initTableSetupCode (w w₀ b b' k : ℕ) : Code .exact 240 :=
@@ -491,7 +420,10 @@ theorem clmulTabLoop_exec {w tBase t : ℕ}
     set prevSub := prevIdx &&& (2 ^ p - 1)
     set prevSh := prevSub * (2 * c)
     have hwIdx_lt : wIdx < reducedTableWords t w := shiftRight_lt_reducedTableWords hidx_lt
-    have hprevWIdx_le : prevWIdx ≤ wIdx := shiftRight_mono p hprev_le
+    have hprevWIdx_le : prevWIdx ≤ wIdx := by
+      dsimp only [prevWIdx, wIdx]
+      rw [Nat.shiftRight_eq_div_pow, Nat.shiftRight_eq_div_pow]
+      exact Nat.div_le_div_right hprev_le
     have hprevWIdx_lt : prevWIdx < reducedTableWords t w := lt_of_le_of_lt hprevWIdx_le hwIdx_lt
     have hsub_lt : subIdx < 2 ^ p := by
       dsimp only [subIdx]
@@ -812,7 +744,10 @@ theorem clmulTabLoop_exec {w tBase t : ℕ}
           (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + 1)))))))))))))))))))))))))))
           + (31 * rem + 2) + 2 = 31 * (rem + 1) + 2 by omega] using hiter
     · intro a ha
-      have hsh_le : wIdx ≤ (idx + 1) >>> p := shiftRight_mono p (Nat.le_succ idx)
+      have hsh_le : wIdx ≤ (idx + 1) >>> p := by
+        change idx >>> p ≤ (idx + 1) >>> p
+        rw [Nat.shiftRight_eq_div_pow, Nat.shiftRight_eq_div_pow]
+        exact Nat.div_le_div_right (Nat.le_succ idx)
       have ha' : a < tBase + ((idx + 1) >>> p) ∨ tBase + reducedTableWords t w ≤ a := by
         rcases ha with hlt | hge
         · exact Or.inl (lt_of_lt_of_le hlt (Nat.add_le_add_left hsh_le tBase))
@@ -2046,13 +1981,6 @@ private theorem ClmulInv.set_prodReg {base w w₀ b b' k r_val acc_val : ℕ} {x
 @[expose] def zeroProdCode (L : ℕ) : Code .exact 240 :=
   seqAsc (fun d => .op (.const (prodReg d) 0)) (2 * L)
 
-private theorem packLimbs_congr (c n : ℕ) {f g : ℕ → ℕ} (h : ∀ d < n, f d = g d) :
-    packLimbs c n f = packLimbs c n g := by
-  induction n with
-  | zero => rfl
-  | succ n ih =>
-    simp only [packLimbs, ih (fun d hd => h d (Nat.lt_succ_of_lt hd)), h n (Nat.lt_succ_self n)]
-
 private theorem packLimbs_zero_fn (c n : ℕ) : packLimbs c n (fun _ => 0) = 0 := by
   induction n with
   | zero => rfl
@@ -2092,7 +2020,7 @@ private theorem zeroProdCode_exec {base w w₀ b b' k r_val acc_val : ℕ}
   refine ⟨y, hy_exec, hy_inv, fun d hd => ?_, ?_, hy_mem⟩
   · rw [hy_zero d hd]
     exact Nat.two_pow_pos c
-  · rw [packLimbs_congr c (2 * L) (g := fun _ => 0) hy_zero, packLimbs_zero_fn]
+  · rw [packLimbs_congr (g := fun _ => 0) hy_zero, packLimbs_zero_fn]
 
 /-- Inner step `(i, m)` (`13` instructions): looks up `clmul (accLimb i) (xLimb m)` in the
 bit-packed Four-Russians table and XORs its low and high `c`-bit halves into `prodReg (i + m)` and
@@ -2340,7 +2268,7 @@ private theorem innerClmulStep_exec {base w w₀ b b' k r_val acc_val i m : ℕ}
       rcases eq_or_ne d (i + m) with rfl | hne0
       · rw [Function.update_self]; exact hnew0_lt
       · rw [Function.update_of_ne hne0]; exact hprod_lt d hd
-  · rw [packLimbs_congr c (2 * L) hs13_fn]
+  · rw [packLimbs_congr hs13_fn]
     exact packLimbs_update_pair hc_pos f him1_lt hcl_lt
 
 private theorem outerClmulStep_exec {base w w₀ b b' k r_val acc_val i : ℕ}
