@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Andreev
+import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevAverage
 import Complexity.Computability.Circuit.Boolean.Threshold.Parity
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Tactic.FinCases
@@ -19,7 +20,7 @@ open Cslib Cslib.Circuits
 
 namespace WeightedThresholdTests
 
-open Boolean.WeightedThreshold
+open Boolean.WeightedThreshold Finset
 
 -- Nullary gates use the empty sum (equality is accepted), and a negative coefficient implements
 -- negation without adding a separate operation.
@@ -177,5 +178,29 @@ example :
     exact andreevCircuitEvalInt_two_two_mixed.1
   · rw [eval_andreevCircuit_eq_evalInt]
     exact andreevCircuitEvalInt_two_two_mixed.2
+
+-- Windowed depth-two weighted threshold circuit and subcube correlation at `b = 2, m = 2, r = 1`:
+-- `andreevSubcubeEval 2 2 1` agrees with `Boolean.andreev 2 2` on `192` of the `256` inputs
+-- (`2 * 192 = 384 = 256 + 128`), while `andreevWindowedCircuit 2 2 1 4` uses `33` gates (`≤ 288`
+-- active wires) at depth at most `2` and satisfies the Hoeffding window correlation bound.
+example :
+    (andreevWindowedCircuit 2 2 1 4).size = 33 ∧
+    (andreevWindowedCircuit 2 2 1 4).depth ≤ 2 ∧
+    (andreevWindowedCircuit 2 2 1 4).wireCount ≤ 288 ∧
+    2 * #{w : BitString (2 ^ 2 + 2 * 2) |
+      andreevSubcubeEval 2 2 1 w = Boolean.andreev 2 2 w} = 384 ∧
+    (2 ^ (2 ^ 2 + 2 * 2) : ℝ) * (1 / 2 + 1 / (2 * Real.sqrt (2 * 2 ^ (2 - 1)))) -
+      2 ^ 1 * (2 * 2 ^ (2 ^ 2 + 2 * 2)) *
+        (Real.exp (-(2 * (1 : ℝ) ^ 2 / (2 ^ 2 : ℝ))) +
+          Real.exp (-(2 * (1 : ℝ) ^ 2 / (2 * 2 : ℝ)))) ≤
+      (#{w : BitString (2 ^ 2 + 2 * 2) |
+        (andreevWindowedCircuit 2 2 1 4).eval interpretation w 0 =
+          Boolean.andreev 2 2 w} : ℝ) := by
+  refine ⟨by rw [size_andreevWindowedCircuit (by decide)]; rfl,
+    depth_andreevWindowedCircuit_le 2 2 1 4,
+    (wireCount_andreevWindowedCircuit_le (by decide) 2 4).trans (by decide),
+    (two_mul_card_andreevSubcubeEval_eq_andreev (by decide) 2).trans (by decide),
+    card_eval_andreevWindowedCircuit_eq_andreev_ge_sqrt (by decide) 2 4 0
+      (by norm_num) (by norm_num)⟩
 
 end WeightedThresholdTests
