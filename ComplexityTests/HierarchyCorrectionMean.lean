@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 module
--- upstream: local-only (tests of same-rate correction means)
+-- upstream: local-only (tests of genuine correction means)
 
 import Complexity.Foundations.Probability.HierarchyCorrectionMean
 import ComplexityTests.HierarchyCutoffs
@@ -22,11 +22,11 @@ local instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 
 variable (HP : FourthRootHierarchyParams 16 1 16 32 8)
 
-def request (k : ℕ) : HierarchyTask.Request HP.k (Fin 2) (ZMod 5) :=
+def request (k : ℕ) (u : ℕ := k) : HierarchyTask.Request HP.k (Fin 2) (ZMod 5) :=
   ⟨.row 0 (.normalized ⟨0,HP.k_pos⟩), gridChannel 0 k [1],
-    gridChannel 1 k [2,3], gridChannel 1 k [2,3]⟩
+    gridChannel 1 k [2,3], gridChannel 1 u [2,3]⟩
 
-lemma admissible (k : ℕ) : Admissible (request HP k) := by
+lemma admissible (k : ℕ) (u : ℕ := k) : Admissible (request HP k u) := by
   exact ⟨by change (0 : Fin 2) ≠ 1; decide, rfl, rfl⟩
 
 def identifier (_ : Unit) : ZMod 5 := 0
@@ -56,24 +56,24 @@ lemma one_lt_J : 1 < HP.J := by
   nlinarith [mul_le_mul_of_nonneg_left hj HP.δ₀_pos.le]
 
 /-- P=5, H=4, any grid exponent, genuine positive singleton correction target. -/
-theorem positive_target (k : ℕ) :
+theorem positive_target (k : ℕ) (u : ℕ := k) :
     0 < HP.toHierarchyParams.correctionIter
-      (splitSource 1 identifier (request HP k) (admissible HP k))
-      (splitTerminal 1 identifier (request HP k))
-      (request HP k).terminal.rate (fun _ _ => rate k : Matrix Unit Unit ℝ) 1 () () := by
+      (splitSource 1 identifier (request HP k u) (admissible HP k u))
+      (splitTerminal 1 identifier (request HP k u))
+      (request HP k u).terminal.rate (fun _ _ => rate k : Matrix Unit Unit ℝ) 1 () () := by
   erw [HP.toHierarchyParams.correctionIter_succ_apply (i := 0)]
   have hmax := PilotTask.value_maximum_eq_zero HP.toHierarchyParams
-    (splitSource 1 identifier (request HP k) (admissible HP k))
-    (splitTerminal 1 identifier (request HP k))
-    (request HP k).terminal.rate (fun _ _ => rate k)
+    (splitSource 1 identifier (request HP k u) (admissible HP k u))
+    (splitTerminal 1 identifier (request HP k u))
+    (request HP k u).terminal.rate (fun _ _ => rate k)
     (by simpa using one_lt_J HP) HP.k
   erw [PilotTask.value_maximum_last] at hmax
   erw [hmax]
   simp only [Pi.zero_apply, HP.γ_one 0 (by norm_num), mul_one]
   have hraw : HP.toHierarchyParams.correctionInput
-      (splitSource 1 identifier (request HP k) (admissible HP k))
-      (splitTerminal 1 identifier (request HP k))
-      (request HP k).terminal.rate (fun _ _ => rate k) 0 () () = rate k := by
+      (splitSource 1 identifier (request HP k u) (admissible HP k u))
+      (splitTerminal 1 identifier (request HP k u))
+      (request HP k u).terminal.rate (fun _ _ => rate k) 0 () () = rate k := by
     change rate k + ∑ _ : Unit, (0:ℝ)*rate k = rate k
     simp
   rw [hraw]
@@ -155,6 +155,56 @@ example : ∃ HP : FourthRootHierarchyParams 16 1 16 32 8,
   let HP : FourthRootHierarchyParams 16 1 16 32 8 :=
     Classical.choice (FourthRootHierarchyParams.nonempty (by norm_num) (by norm_num))
   exact ⟨HP, positive_target HP 1⟩
+
+/-- Same true source/rank stage, strictly narrower usage, and nonempty copy suffixes. -/
+def narrowRequest : HierarchyTask.Request HP.k (Fin 2) (ZMod 5) :=
+  request HP 1 2
+
+lemma narrow_admissible : Admissible (narrowRequest HP) :=
+  ⟨by change (0 : Fin 2) ≠ 1; decide, rfl, rfl⟩
+
+/-- Both channels are nonconstant, with distinct actual densities. The usage exponent need
+not be in the rank horizon: its marginal only needs a positive box side. -/
+theorem narrow_densities :
+    (dens {σ : Environment 5 2 |
+      (narrowRequest HP).source.retains (channels 1) σ (identifier ())} : ℝ) = 81/625 ∧
+    (dens {σ : Environment 5 2 |
+      (narrowRequest HP).usage.retains (channels 1) σ (identifier ())} : ℝ) = 16/625 ∧
+    (narrowRequest HP).usage.rate < (narrowRequest HP).terminal.rate := by
+  rw [channel_density 1 (narrowRequest HP).source 1 rfl,
+    channel_density 1 (narrowRequest HP).usage 2 rfl]
+  norm_num [narrowRequest, request, gridChannel, side, rate, Nat.ceilDiv_eq_add_pred_div]
+
+/-- Complete genuine request with narrower usage has positive mean, with its exact iterate
+as target. The pilot is the genuine final maximum, not a supplied zero multiplier. -/
+theorem positive_narrow_actual_mean :
+    0 < (𝔼 σ ∈ ({σ : Environment 5 2 |
+      (narrowRequest HP).source.retains (channels 1) σ (identifier ())} : Finset _),
+      ((narrowRequest HP).terminal.rate / (dens {σ : Environment 5 2 |
+        (narrowRequest HP).usage.retains (channels 1) σ (identifier ())} : ℝ)) *
+      correctionRequest 1 identifier (narrowRequest HP) (polynomialAuxCutoff4 HP.θ)
+        HP.incomingCutoff HP.ρ HP.toHierarchyParams.atomCutoff HP.γ HP.K
+        ⌈4 * (1 + 32 * HP.R)⌉₊
+        (fun _ => genuineRaw HP 1 identifier (narrowRequest HP) (narrow_admissible HP)
+          (fun _ _ => rate 1) 0)
+        (genuinePrep HP 1 identifier (narrowRequest HP) (narrow_admissible HP)
+          (fun _ _ => rate 1) 0)
+        (fun _ => genuineMaximum HP 1 identifier (narrowRequest HP) (narrow_admissible HP)
+          (fun _ _ => rate 1)) σ () ()) := by
+  rw [genuine_request_mean_usage HP 1 identifier (narrowRequest HP) (narrow_admissible HP)
+    (by norm_num) identifier_injective oneHorizon (k := 1) (u := 2) (by decide)
+    rfl rfl rfl (fun _ _ => rate 1) (by intros; norm_num [rate])
+    (by intro x; norm_num [Matrix.mulVec, dotProduct, rate])
+    (by intros; norm_num [narrowRequest, request, gridChannel, rate]) HP.k_pos]
+  exact positive_target HP 1 2
+
+/-- The full parameter hypotheses of the narrower-usage mean are inhabited. -/
+example : ∃ HP : FourthRootHierarchyParams 16 1 16 32 8,
+    Admissible (narrowRequest HP) ∧ (narrowRequest HP).usage.rate <
+      (narrowRequest HP).terminal.rate := by
+  let HP : FourthRootHierarchyParams 16 1 16 32 8 :=
+    Classical.choice (FourthRootHierarchyParams.nonempty (by norm_num) (by norm_num))
+  exact ⟨HP, narrow_admissible HP, (narrow_densities HP).2.2⟩
 
 end
 end SingleRegression

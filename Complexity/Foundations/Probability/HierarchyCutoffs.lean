@@ -173,6 +173,40 @@ variable
 theorem selected_pi : (P.correctionSampling X Y hXY hYX hf hπ hC hC1 hi).π = π := by
   simp only [correctionSampling, HierarchyParams.CorrectionSampling.ofChannels_π]
 
+/-- The selected sampler retains the frame terminal pair constant. -/
+theorem selected_c : (P.correctionSampling X Y hXY hYX hf hπ hC hC1 hi).c = 32 := by
+  simp only [correctionSampling, HierarchyParams.CorrectionSampling.ofChannels_c]
+
+/-- The selected sampler uses its prescribed I parameter. -/
+theorem selected_I : (P.correctionSampling X Y hXY hYX hf hπ hC hC1 hi).I =
+    polynomialAuxCutoff4 P.θ := by
+  simp only [correctionSampling, HierarchyParams.CorrectionSampling.ofChannels_I]
+
+/-- The selected sampler uses its prescribed τ parameter. -/
+theorem selected_τ : (P.correctionSampling X Y hXY hYX hf hπ hC hC1 hi).τ =
+    P.incomingCutoff := by
+  simp only [correctionSampling, HierarchyParams.CorrectionSampling.ofChannels_τ]
+
+/-- The selected sampler uses its prescribed h parameter. -/
+theorem selected_h : (P.correctionSampling X Y hXY hYX hf hπ hC hC1 hi).h =
+    polynomialPrepCutoff4 P.θ := by
+  simp only [correctionSampling, HierarchyParams.CorrectionSampling.ofChannels_h]
+
+/-- The selected sampler uses its prescribed ρ parameter. -/
+theorem selected_ρ : (P.correctionSampling X Y hXY hYX hf hπ hC hC1 hi).ρ =
+    P.ρ := by
+  simp only [correctionSampling, HierarchyParams.CorrectionSampling.ofChannels_ρ]
+
+/-- The selected sampler uses its prescribed K parameter. -/
+theorem selected_K : (P.correctionSampling X Y hXY hYX hf hπ hC hC1 hi).K =
+    P.K := by
+  simp only [correctionSampling, HierarchyParams.CorrectionSampling.ofChannels_K]
+
+/-- The selected sampler uses its prescribed Kc parameter. -/
+theorem selected_Kc : (P.correctionSampling X Y hXY hYX hf hπ hC hC1 hi).Kc =
+    ⌈4 * (1 + 32 * P.R)⌉₊ := by
+  simp only [correctionSampling, HierarchyParams.CorrectionSampling.ofChannels_Kc]
+
 /-- Preparation uses precisely the selected cutoffs and detector ranks. -/
 theorem selected_preparation (input : Matrix V V ℝ) :
     (P.correctionSampling X Y hXY hYX hf hπ hC hC1 hi).preparationRecipe input =
