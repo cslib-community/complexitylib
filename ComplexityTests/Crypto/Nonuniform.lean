@@ -278,9 +278,11 @@ example (choose : ℕ → ℕ) (hchoose : ∀ n, choose n < n + 1) :
   norm_num [dyadicSize] at h ⊢
   linarith [Nat.cast_nonneg (α := ℝ) (Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0)]
 
-/-- Concrete exercised client of `EntropyGrid.exists_secure_padded_choice_withAdvice` from a
-nonuniform one-way function with nonempty advice `nonemptyAdvice` and an advice-dependent indexed
-test. -/
+/-- Conditional client of `EntropyGrid.exists_secure_padded_choice_withAdvice` assuming a
+nonuniform one-way function `hf : NonuniformOneWay f` (which supplies a pseudoentropy pair with
+positive gap `2 / (n + 7)` discharging `4 / dyadicSize (16 * (n + 7)) ≤ gap n`, whereas the
+unconditional `fairPair` fixture has gap `0`), tested with nonempty advice `nonemptyAdvice` and
+`advisedWordDistinguisher`. -/
 example {f : List Bool → List Bool} (hf : NonuniformOneWay f) :
     ∃ (pair : Pseudoentropy.SamplablePair) (savedPair : pair.SeedRealization)
       (bound common choose : ℕ → ℕ),
