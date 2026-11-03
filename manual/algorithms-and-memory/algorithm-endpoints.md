@@ -249,6 +249,44 @@ Global parameter/prime selection still uses the previous backend. Connecting thi
 absorbing polynomial factors and proving ordinary 3SUM exponent 1.9992 remain open under
 [#1394](https://github.com/cslib-community/complexitylib/issues/1394).
 
+### Calling the box controller from another native program
+
+Import `Complexity.Algorithms.WordRAM.ExactTriangle.CallableBoxFixedPrime`. For an initialized
+call, use `CallableBoxFixedPrime.runs_input` with the same `PreparationInput.input` layout and
+geometry/prime premises above, and physical width at least
+`CallableFixedPrime.inputWidth n (D m) g p values`. The complete
+[initialized client](https://github.com/cslib-community/complexitylib/blob/5fac7ab39d74c1469366ab03927f1ff83f2a9360/ComplexityTests/WordRAMCallableBoxFixedPrime.lean)
+checks successful original-coordinate recovery, a same-execution finite charge and negative
+exhaustion. Fourteen executed header/pointer instructions precede the actual caller program;
+input placement itself follows the `State.init` convention above.
+
+For an existing caller, `CallableBoxFixedPrime.exec_at` accepts the original raw arguments in
+registers 600–607: n, D, g, p, AB, BC, AC and workspace base. Put the canonical signed arrays below
+that base; the three original spans may alias. Retain the same original-list, geometry and
+prime premises. The physical address/window fit premise is
+`Fits W (base + 4 * CallableFixedPrime.windowSize n (D m) g p (CallableFixedPrime.rawTotal n values) + 1024)`.
+`exec_at` establishes semantic execution and frames without an initial whole-data bound;
+use `exec` with `x.Bounded W`, or the original-admission prefix rules, for physical-word bounds.
+Raw verdict, witness and scans return in 632–636.
+The fixed 640-register program preserves the low 160 selector bank, all eight original argument
+registers and memory outside its stated window. It copies and sums only the original arrays,
+computes its own virtual width, and executes the real box controller in reused dirty memory.
+The [dirty caller client](https://github.com/cslib-community/complexitylib/blob/5fac7ab39d74c1469366ab03927f1ff83f2a9360/ComplexityTests/WordRAMCallableBoxFixedPrimeCaller.lean)
+checks aliased spans, nonzero selector registers and dirty words above the virtual modulus.
+
+At `m=9k`, `CallableBoxFixedPrime.timeBound_le` charges the actual copy/setup/return and final
+halt plus at most three times the complete box-controller ledger. Retain its preparation,
+root/query/controller and global `F(p)+1` scan terms. This bound already includes the caller
+halt; add 14 for the initialized header, as the checked client does. For every wider admitted
+prefix, `bounded_reachable_input` gives polynomial words and zero support above the shared
+original-input envelope. For arbitrary dirty callers, use `bounded_reachable_caller` with the
+original raw-word bound: memory above the envelope is preserved and need not be zero.
+`CallableFixedPrime.inputWidth_le_log` and `CallableFixedPrime.prefixBound_le_pow` supply the shared numerical
+estimates for polynomial original weights and bounded scalar headers. These are symbolic
+execution guarantees, not interpreter benchmarks. The global parameter/prime-selecting host
+still uses the previous solver; its migration, parameter retuning, polynomial absorption and
+ordinary 3SUM 1.9992 remain open.
+
 ## Tree Evaluation
 
 The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root of an explicitly table-encoded perfect binary tree in native independent workspace `O(log n · log log n)` for positive value length and height. The output is not charged to workspace, and the theorem leaves time existential. The same page distinguishes borrowed-register restoration and fan-in/packed procedure variants.
