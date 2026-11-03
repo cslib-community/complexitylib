@@ -292,4 +292,48 @@ example :
         (inputWeight (andreevCircuit 2 2).program ⟨0, by decide⟩)
         ((andreevCircuit 2 2).program.lines ⟨0, by decide⟩).op.threshold
 
+-- OR is constant after fixing the other input true, a nonconstant literal when it is false,
+-- and genuinely depends on two inputs when both are live.
+private theorem ltfEval_or (w : Fin 2 → Bool) :
+    ltfEval (fun _ : Fin 2 => (1 : ℝ)) 1 w = (w 0 || w 1) := by
+  cases h₀ : w 0 <;> cases h₁ : w 1 <;>
+    norm_num [ltfEval, Fin.sum_univ_two, h₀, h₁]
+
+example : ForcedToConst (ltfEval (fun _ : Fin 2 => (1 : ℝ)) 1) {0} (fun _ => true) := by
+  simp only [funext ltfEval_or, ForcedToConst, restrictUpdate]
+  decide
+
+example : ¬ ForcedToConst (ltfEval (fun _ : Fin 2 => (1 : ℝ)) 1) {0}
+    (fun _ => false) := by
+  simp only [funext ltfEval_or, ForcedToConst, restrictUpdate]
+  decide
+
+example : ForcedToAtMostOne (ltfEval (fun _ : Fin 2 => (1 : ℝ)) 1) {0}
+    (fun _ => false) := by
+  simp only [funext ltfEval_or, ForcedToAtMostOne, ForcedToConst, restrictUpdate]
+  decide
+
+example : ¬ ForcedToAtMostOne (ltfEval (fun _ : Fin 2 => (1 : ℝ)) 1) univ
+    (fun _ => false) := by
+  simp only [funext ltfEval_or, ForcedToAtMostOne, ForcedToConst, restrictUpdate]
+  decide
+
+-- The live second coordinate has zero weight: it cannot prevent constancy. With both live,
+-- the first coordinate remains a nonconstant literal, despite the extra zero-weight input.
+private theorem ltfEval_zero_weight (w : Fin 2 → Bool) :
+    ltfEval (fun i : Fin 2 => if i = 0 then (1 : ℝ) else 0) 1 w = w 0 := by
+  cases h : w 0 <;> norm_num [ltfEval, Fin.sum_univ_two, h]
+
+example : ForcedToConst (ltfEval (fun i : Fin 2 => if i = 0 then (1 : ℝ) else 0) 1)
+    {1} (fun _ => false) := by
+  simp only [funext ltfEval_zero_weight, ForcedToConst, restrictUpdate]
+  decide
+
+example : ForcedToAtMostOne (ltfEval (fun i : Fin 2 => if i = 0 then (1 : ℝ) else 0) 1)
+    univ (fun _ => false) ∧
+    ¬ ForcedToConst (ltfEval (fun i : Fin 2 => if i = 0 then (1 : ℝ) else 0) 1)
+      univ (fun _ => false) := by
+  simp only [funext ltfEval_zero_weight, ForcedToAtMostOne, ForcedToConst, restrictUpdate]
+  decide
+
 end WeightedThresholdTests

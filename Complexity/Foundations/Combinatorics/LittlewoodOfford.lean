@@ -20,6 +20,20 @@ binomial upper bound `(m.choose (m / 2) : ℝ) ≤ 2 ^ m / √(m + 1)` and the r
 square-root rank sum bound `∑ i ∈ S, 1 / √(#{j ∈ S | |a i| ≤ |a j|}) ≤ 2 * √(#S)` used in the
 Kane–Williams random restriction lemmas for linear threshold functions (Milestone 3 of
 [#2347](https://github.com/cslib-community/complexitylib/issues/2347)).
+
+The primary source is [Erdos1945], Theorem 1, printed p. 898: for `n` real coefficients of
+absolute value at least one, at most `n.choose (n / 2)` sign sums lie in an open interval of
+length two. For `δ > 0`, put `ε i = 2 * (w i).toNat - 1` and `x i = a i / δ`; then
+`∑ i, ε i * x i = (2 * ∑ i, a i * (w i).toNat - ∑ i, a i) / δ`.
+Thus an open interval of width `δ` for Boolean sums corresponds to an open interval of length
+two for sign sums. The Lean statement uses the more general condition that every pair of
+accepted sums differs by less than `δ`, proved by the same Sperner argument. This includes
+half-open intervals `[t, t + δ)`: each pair has distance less than `δ`, although their diameter
+is `δ`. Subset versions fix the complementary coordinates and count the resulting fibers.
+
+## References
+
+* [P. Erdős, *On a lemma of Littlewood and Offord*][Erdos1945], Theorem 1, p. 898.
 -/
 
 @[expose] public section
@@ -72,7 +86,8 @@ theorem sum_bool_eq_neg_sum_add_sum_abs {ι : Type*} [Fintype ι] [DecidableEq �
     cases w i <;> simp [ha, hlt, abs_of_neg hlt]
 
 /-- **Full-support Erdős–Littlewood–Offord inequality**: if `|a i| ≥ δ` for all `i : ι` and `P` has
-diameter strictly less than `δ` (`∀ x y, P x → P y → |x - y| < δ`), then at most
+the property that every pair of its points differs by less than `δ`
+(`∀ x y, P x → P y → |x - y| < δ`), then at most
 `(Fintype.card ι).choose (Fintype.card ι / 2)` Boolean vectors `w : ι → Bool` satisfy
 `P (∑ i, a i * (w i).toNat)`. -/
 theorem card_filter_sum_bool_le_choose_of_forall_le_abs {ι : Type*} [Fintype ι] [DecidableEq ι]
@@ -108,7 +123,7 @@ theorem card_filter_sum_bool_le_choose_of_forall_le_abs {ι : Type*} [Fintype ι
   exact hanti.sperner
 
 /-- **Erdős–Littlewood–Offord inequality on a subset `S : Finset ι`**: if `|a i| ≥ δ` for all
-`i ∈ S` and `P` has diameter strictly less than `δ`, then at most
+`i ∈ S` and every pair of points satisfying `P` differs by less than `δ`, then at most
 `2 ^ (Fintype.card ι - #S) * (#S).choose (#S / 2)` Boolean vectors `w : ι → Bool` satisfy
 `P (∑ i, a i * (w i).toNat)`. -/
 theorem card_filter_sum_bool_le_of_subset {ι : Type*} [Fintype ι] [DecidableEq ι]
@@ -147,7 +162,7 @@ theorem card_filter_sum_bool_le_of_subset {ι : Type*} [Fintype ι] [DecidableEq
       Fintype.card_coe, smul_eq_mul]
 
 /-- **Quantitative Erdős–Littlewood–Offord bound over `ℝ`**: if `|a i| ≥ δ` for all `i ∈ S` and
-`P` has diameter strictly less than `δ`, then
+every pair of points satisfying `P` differs by less than `δ`, then
 `(#{w : ι → Bool | P (∑ i, a i * (w i).toNat)} : ℝ) ≤
   (2 : ℝ) ^ Fintype.card ι / Real.sqrt (#S + 1)`. -/
 theorem card_filter_sum_bool_le_two_pow_div_sqrt {ι : Type*} [Fintype ι] [DecidableEq ι]
