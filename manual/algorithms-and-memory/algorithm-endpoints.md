@@ -41,6 +41,44 @@ The Karger–Stein endpoint uses one fixed 24-register program, `O(n² log n)` w
 
 The source tree also contains native integer arithmetic, multiword circuit evaluation, matrix multiplication, primality/counting, predecessor structures, 3SUM/exact-triangle routines and randomized SAT algorithms. These broaden coverage of the machine library; they should be catalogued through the complete module census without counting each as a new model. In particular, a bounded frontend or a conditional transfer theorem should not be presented as completion of an unresolved fine-grained endpoint. The current `ROADMAP.md` and selected abstracts are better evidence of endpoint disposition than a directory name.
 
+## Box-backed fixed-prime Exact Triangle
+
+To decide whether three signed integer matrices contain a zero-weight triangle, import
+`Complexity.Algorithms.WordRAM.ExactTriangle.BoxFixedPrime` and use
+`BoxFixedPrime.runs_input`. The complete
+[initialized client](https://github.com/cslib-community/complexitylib/blob/ddcdaef6055c7079c97d47fc121e2d5a7af8d44e/ComplexityTests/WordRAMExactTriangleBoxFixedPrime.lean)
+includes imports, admission proofs, successful witness recovery and negative exhaustion.
+Check that client on the endpoint revision before adapting it; this endpoint is introduced
+by [PR #2342](https://github.com/cslib-community/complexitylib/pull/2342).
+
+Provide `3*n²` signed weights in row-major AB, BC, AC order, with every absolute value at most
+`A`. `PreparationInput.input n (D m) g p values` supplies the scalar headers and canonical
+signed encoding; `State.init` places those raw words and zeroes other initial memory. The
+geometric premises are `D m = 4^m >= 16`, `(D m)^18 <= n`, `g >= 1` and
+`p` in `Nat.sqrtPrimeWindow (D m)`. The physical width must satisfy
+`FixedPrime.admissionWidth n (D m) g p A <= W`. If application fails, check the list length,
+weight bound, prime-window inequalities and width against the complete client; the theorem
+does not select an admissible prime or geometry for you.
+
+The fixed 416-register program executes the producer once, then reuses dirty workspace for
+actual box-product calls and verifies candidates against the original signed weights. Its
+same-state prefix and charged halt return one exactly for an original zero triangle; on
+success, the returned state contains original vertex coordinates. The stated outer memory
+frame and producer registers are preserved. Raw input placement is an initial-state convention;
+the executed producer, controller and final halt are charged.
+
+For `m=9k`, apply `BoxFixedPrime.timeBound_le` to the actual producer memory returned by
+`runs_input`. Its complete finite bound retains preparation, aggregate box charges,
+root/query/controller overhead and **one global** `F(p)+1` original-weight scan reserve.
+The product term is `125829120(189k+1)^2(9k+1)D^(-8/125)n³g`; that saving alone is not an
+unconditional total exponent. The zero-weight and constant-257 negative clients are checked
+symbolic execution witnesses at admitted positive-threshold geometry, not interpreter runs
+or benchmarks.
+
+Global parameter/prime selection still uses the previous backend. Connecting this controller,
+absorbing polynomial factors and proving ordinary 3SUM exponent 1.9992 remain open under
+[#1394](https://github.com/cslib-community/complexitylib/issues/1394).
+
 ## Tree Evaluation
 
 The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root of an explicitly table-encoded perfect binary tree in native independent workspace `O(log n · log log n)` for positive value length and height. The output is not charged to workspace, and the theorem leaves time existential. The same page distinguishes borrowed-register restoration and fan-in/packed procedure variants.
