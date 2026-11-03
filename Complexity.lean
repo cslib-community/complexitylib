@@ -889,6 +889,8 @@ public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Activat
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Activity
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ActivityBounds
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Andreev
+public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevAverage
+public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevWindowed
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Capacity
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.CapacityCircuit
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Components
@@ -2838,8 +2840,11 @@ public import Complexity.Crypto.Computational.Homomorphic.Leveled.Security
 public import Complexity.Crypto.Computational.Homomorphic.Refresh
 public import Complexity.Crypto.Computational.Hybrid.SavedPrediction
 public import Complexity.Crypto.Computational.Hybrid.Sequence
+public import Complexity.Crypto.Computational.InaccessibleEntropy.Amplify
 public import Complexity.Crypto.Computational.InaccessibleEntropy.Basic
+public import Complexity.Crypto.Computational.InaccessibleEntropy.EntropyReduction
 public import Complexity.Crypto.Computational.InaccessibleEntropy.OneWay
+public import Complexity.Crypto.Computational.InaccessibleEntropy.Repetition
 public import Complexity.Crypto.Computational.IndexedSignature
 public import Complexity.Crypto.Computational.IndexedSignature.Counter
 public import Complexity.Crypto.Computational.IndexedSignature.Seeded
@@ -2928,6 +2933,7 @@ public import Complexity.Crypto.Computational.SchnorrProtocol
 public import Complexity.Crypto.Computational.Signature
 public import Complexity.Crypto.Computational.Stretch
 public import Complexity.Crypto.Computational.Stretch.Quantitative
+public import Complexity.Crypto.Computational.TargetCollisionResistant
 public import Complexity.Crypto.Computational.TreeSignature
 public import Complexity.Crypto.Computational.TreeSignature.CoinHybrid
 public import Complexity.Crypto.Computational.TreeSignature.Security
