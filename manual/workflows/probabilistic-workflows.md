@@ -167,10 +167,29 @@ pilot proved zero from its detector rank. Its narrower-usage example fixes sourc
 1 and uses usage exponent 2, with actual densities 81/625 and 16/625 and a strictly positive
 complete request mean. Thus the usage change is observable in the actual environment.
 
-The request support and conditional-walk noise theorems also allow narrower usage; the noise
-bound retains the raw input fourth moment. Sampling source/rank rates different from the true
-stage, a fully assembled recursive hierarchy, lower-child moments, recursive induction, native
-realization and RL=L remain in
+For a sampling source narrower than the true stage, import
+[HierarchySourceSampling](../../Complexity/Foundations/Probability/HierarchySourceSampling.lean)
+and use `source_request_mean`; follow its
+[complete regression client](../../ComplexityTests/HierarchySourceSampling.lean).
+Supply source exponent `s`, stage exponent `k`, `k ≤ s`, and a horizon containing `s`.
+The true `stageSource` retains the source role and suffix at the terminal stage rate.
+`stageRaw` and `stageMaximum` use these genuine stage channels. `sourcePreparation`
+uses the actual sampling source for its incoming gate. `source_normalizer` identifies its
+joint actual source/usage mean on the same environment, and `stage_atomCutoff_eq`
+preserves the true cutoff. `CorrectionSampling.withSource` changes only the sampling-source
+pair law, preserving the true input, final pilot, gates and incoming budget. The common
+`correctionRequest_eq_split` avoids rebuilding the split transport for each choice of children.
+
+The P=5 regression has source/stage/usage exponents 2/1/3, actual densities
+16/625, 81/625 and 1/625, different nonempty copy suffixes, and a free spectator role.
+It proves a positive complete actual request mean with the genuine final pilot. Usage
+exponent 3 is outside the required source/stage horizon 2.
+
+The request support and conditional-walk noise bounds retain the raw input fourth moment.
+For a coarser source, `source_incoming_cost_le` quantifies the generic incoming cost as
+`32 * R * (sourceRate / stageRate)`; the fixed incoming rank is not proved to pay that
+inflated budget. Arbitrary coarser sampling sources, a fully assembled recursive hierarchy,
+lower-child moments, recursive induction, native realization and RL=L remain in
 [issue #1721](https://github.com/cslib-community/complexitylib/issues/1721).
 
 ## Carry the certificate into a security proof

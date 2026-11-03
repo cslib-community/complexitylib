@@ -3712,6 +3712,7 @@ public import Complexity.Foundations.Probability.HierarchyParams
 public import Complexity.Foundations.Probability.HierarchyRankCutoffs
 public import Complexity.Foundations.Probability.HierarchyRankEnvironment
 public import Complexity.Foundations.Probability.HierarchySampling
+public import Complexity.Foundations.Probability.HierarchySourceSampling
 public import Complexity.Foundations.Probability.HierarchyTaskData
 public import Complexity.Foundations.Probability.HierarchyTaskMeans
 public import Complexity.Foundations.Probability.HierarchyTasks
