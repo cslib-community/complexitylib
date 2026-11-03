@@ -51,12 +51,6 @@ variable {Operation α σ : Type} [DecidableEq Operation] {input : α ↪ List B
 
 namespace IsTidyOraclePPTOn
 
-/-- A unary counter computable in polynomial time is polynomially bounded. -/
-private theorem polyBounded_of_unary {count : α → ℕ}
-    (hcount : ComputableInPolyTime count input encUnary) :
-    PolyBounded (fun a => (input a).length) count := by
-  simpa only [encUnary_apply, List.length_replicate] using hcount.polyBounded_length
-
 omit [DecidableEq Operation] in
 /-- Counting down a stored counter commutes the word loop with the state loop. -/
 private theorem iterate_countdown {β : Type} (encode : ℕ × σ → β)
@@ -128,7 +122,7 @@ theorem iterate_spec {initial : α → σ} {count : α → ℕ}
         fun _ => rfl).comp (hcount.prod hinitial))
   let tp (a : α) : ℕ := cp * ((input a).length + 1) ^ dp
   have htp : PolyBounded (fun a => (input a).length) tp := .of_forall_le cp dp fun _ => le_rfl
-  have hcountPoly := polyBounded_of_unary hcount
+  have hcountPoly := Turing.MultiTapeTM.ComputableInPolyTime.polyBounded hcount
   let bound (a : α) : ℕ := 2 * count a + 1 + size a
   let roundTime (a : α) : ℕ := cB * (bound a + 1) ^ dB
   let loopTime (a : α) : ℕ := (count a + 1) * (roundTime a + 10 * bound a + 23) + 8 * bound a + 17
@@ -253,7 +247,8 @@ theorem iterateWith_of_bounded_growth {initial : α → σ} {count : α → ℕ}
   refine (iterateWith_spec hcount hinitial hstep
     (fun a i state => (stateEncoding state).length ≤
       (stateEncoding (initial a)).length + i * growth a)
-    (by simp) ?_ (hinitial.polyBounded_length.add ((polyBounded_of_unary hcount).mul hpoly)) ?_).1
+    (by simp) ?_ (hinitial.polyBounded_length.add
+      ((Turing.MultiTapeTM.ComputableInPolyTime.polyBounded hcount).mul hpoly)) ?_).1
   · intro a i state _ hstate next hnext
     simpa only [Nat.add_mul, Nat.one_mul, Nat.add_assoc] using
       (hgrowth a state next hnext).trans (Nat.add_le_add_right hstate _)

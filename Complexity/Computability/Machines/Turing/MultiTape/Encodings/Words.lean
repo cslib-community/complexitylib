@@ -17,7 +17,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.FrameM
 # Word operations for encodings
 
 The building blocks of concrete encodings of pairs, options and lists, and their plain computability
-in linear time and space (`Turing.MultiTapeTM.ComputableInLinearTimeAndSpace`).
+in linear time and space (`Turing.MultiTapeTM.ComputableInDegree` with degrees `1 1`).
 
 A word `w` is *framed* by writing each symbol `b` as `[true, b]` and appending `[false]`. A framed
 word marks its own end, so it can be followed by any word and still be read back.

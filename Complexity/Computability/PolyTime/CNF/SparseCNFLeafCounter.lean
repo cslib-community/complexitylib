@@ -93,8 +93,9 @@ def IsCompiledSparseSystem (k N maxEqs maxTerms : ℕ) (sys : List (List (List �
 /-- Evaluates `polyCounter (N, compileParitySystemBounded k ψ rows)` when `rows.length ≤ 6 * N`. -/
 def compiledRowCounter (k : ℕ) (polyCounter : ℕ × List (List (List ℕ)) → ℕ)
     (q : (ℕ × CNF ℕ) × List (List Bool)) : ℕ :=
-  if decide (q.2.length ≤ 6 * q.1.1) then
-    polyCounter (q.1.1, compileParitySystemBounded k q.1.2 q.2)
+  let nψ := q.1
+  if decide (q.2.length ≤ 6 * nψ.1) then
+    polyCounter (nψ.1, compileParitySystemBounded k nψ.2 q.2)
   else 0
 
 /-- Deterministic Section 6.3 fast path: initial Tanner rows via `initialTestsRows`, `3 * N` rounds
