@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold
+import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Andreev
 import Complexity.Computability.Circuit.Boolean.Threshold.Parity
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Tactic.FinCases
@@ -157,5 +158,24 @@ example : ∃ x y : Fin 1 → Bool,
     exact gate.val.elim0
   · intro h
     exact Bool.false_ne_true (congrFun h 0)
+
+-- Exact depth-two weighted threshold circuit for Andreev's function at `b = 2, m = 2` (`8` bits):
+-- 80 bottom gates, 81 total gates, depth at most 2, and mixed truth-table evaluation where
+-- changing block parities changes the selected truth-table entry.
+example :
+    (andreevCircuit 2 2).Computes interpretation (single (Boolean.andreev 2 2)) ∧
+    (andreevCircuit 2 2).size = 81 ∧
+    (andreevCircuit 2 2).depth ≤ 2 ∧
+    (andreevCircuit 2 2).wireCount ≤ 720 ∧
+    (andreevCircuit 2 2).eval interpretation
+      (fun i => decide (i = 1 ∨ i = 2 ∨ i = 4)) 0 = true ∧
+    (andreevCircuit 2 2).eval interpretation
+      (fun i => decide (i = 1 ∨ i = 2 ∨ i = 4 ∨ i = 5)) 0 = false := by
+  refine ⟨computes_andreevCircuit 2 2, size_andreevCircuit_two_two, depth_andreevCircuit_le 2 2,
+    wireCount_andreevCircuit_two_two_le, ?_, ?_⟩
+  · rw [eval_andreevCircuit_eq_evalInt]
+    exact andreevCircuitEvalInt_two_two_mixed.1
+  · rw [eval_andreevCircuit_eq_evalInt]
+    exact andreevCircuitEvalInt_two_two_mixed.2
 
 end WeightedThresholdTests

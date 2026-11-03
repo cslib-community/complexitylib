@@ -15,6 +15,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Basic
+import Complexity.Probability.PMF.Map
 
 /-!
 # Probabilistic polynomial-time programs clocked in a designated primary input
@@ -76,14 +77,6 @@ open _root_.Turing _root_.Turing.MultiTapeMachine _root_.Turing.MultiTapeTM
 
 variable {Operation α β : Type} [DecidableEq Operation]
   {input : α ↪ List Bool} {output : β ↪ List Bool}
-
-private theorem pmf_eq_of_map_eq {γ δ : Type*} {f : γ → δ} (hf : Function.Injective f)
-    {p q : PMF γ} (h : p.map f = q.map f) : p = q := by
-  classical
-  ext x
-  have hiff (a : γ) : (f x = f a) ↔ (x = a) := hf.eq_iff
-  have hfx := congrFun (congrArg DFunLike.coe h) (f x)
-  simpa [PMF.map_apply, hiff] using hfx
 
 private theorem runOracle_of_clock_tidy {k : ℕ} {Control : Type}
     [Finite Operation] [Finite Control]
@@ -262,7 +255,6 @@ theorem IsPPTWithAux.isPPTOn {program : α → List Bool → ProbComp β}
 
 /-- Truncating the auxiliary input word `z` to a polynomial in the primary input length
 `(input a).length` is computable in plain polynomial time on `encPair input encBits`. -/
-@[fun_prop]
 theorem computableInPolyTime_take_aux (input : α ↪ List Bool) (c d : ℕ) :
     ComputableInPolyTime
       (fun p : α × List Bool => (p.1, p.2.take (c * ((input p.1).length + 1) ^ d)))
@@ -888,7 +880,7 @@ theorem IsPPTWithAux.exists_eval_take {program : α → List Bool → ProbComp �
       c * ((input a).length + 1) ^ d ≤ m →
       ProbComp.eval (program a (z.take m)) = ProbComp.eval (program a z) := by
   obtain ⟨k, State, hfinite, machine, c, d, h⟩ := h
-  refine ⟨c, d, fun a z {m} hm => pmf_eq_of_map_eq output.injective ?_⟩
+  refine ⟨c, d, fun a z {m} hm => PMF.map_injective output.injective ?_⟩
   rw [h a (z.take m), h a z]
   simp only [encPair_apply, encBits, Function.Embedding.coe_refl, id]
   rw [machine.runClosed_append_take_of_le hm]
@@ -914,7 +906,7 @@ theorem IsOraclePPTWithAux.exists_run_interpret_take
     intro ⟨b₁, s₁⟩ ⟨b₂, s₂⟩ heq
     simp only [Prod.mk.injEq] at heq
     exact Prod.ext (output.injective heq.1) heq.2
-  apply pmf_eq_of_map_eq hinj
+  apply PMF.map_injective hinj
   have h₁ := h a (z.take m) State oracle s
   have h₂ := h a z State oracle s
   simp only [OracleComp.interpret_map, StateT.run_map, PMF.monad_map_eq_map] at h₁ h₂

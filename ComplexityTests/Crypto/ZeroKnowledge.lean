@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.Complexity.Classes.IP.Repetition
-import Complexity.Crypto.Computational.ZeroKnowledge.Soundness
+import Complexity.Crypto.Computational.ZeroKnowledge.Amplification
 import Complexity.Tactic.PPT
 
 /-! Tests for Naor's bit commitment scheme and the Goldreich–Micali–Wigderson
@@ -122,7 +122,7 @@ theorem univZeroKnowledgeProof_auxiliaryInputZeroKnowledge :
   intro Vstar hV
   refine ⟨fun n a z => Prod.fst <$>
     GMW.runTwoRound (fun _ => []) (fun _ => []) (Vstar n a z) (0, [false, false, false]),
-    ?_, fun _ _ _ _ h => by simp only [h], fun a w z _ _ _ _ _ _ => ?_⟩
+    ?_, fun a w z _ _ _ _ _ _ _ _ => ?_⟩
   · have hrun := GMW.isPPTOn_runTwoRound hV
       (input := encPair encUnary (encPair encBits encBits))
       (prepare := fun p : ℕ × List Bool × List Bool => p)
@@ -324,5 +324,44 @@ example : ¬ univZeroKnowledgeProof.toZKProof.NegligibleSoundness := by
   refine not_negligible_const (c := ((1 / 3 : ENNReal).toNNReal)) ?_ h.2
   rw [ENNReal.toNNReal_div, ENNReal.toNNReal_one, ENNReal.toNNReal_ofNat]
   norm_num
+
+-- Concrete completeness and soundness of the sequentially amplified GMW protocol (`gmwSeqVerifier`
+-- and `gmwSeqProver`).
+example (n : ℕ) :
+    acceptProb
+      (GMW.gmwSeqVerifier tripleGen (fun k => 3 * k + 1) id (fun m => m + 1) n satFormula)
+      (GMW.gmwSeqProver tripleGen (n + 7) (3 * (n + 7) + 1) satFormula [true, false] (n + 1)) = 1 :=
+  GMW.acceptProb_gmwSeqVerifier_gmwSeqProver length_tripleGen id (fun m => m + 1) n satFormula
+    satFormula_verified
+
+example (n : ℕ) (P : Prover Unit) :
+    acceptProb
+      (GMW.gmwSeqVerifier tripleGen (fun k => 3 * k + 1) id (fun m => m + 1) n ([[]] : CNF ℕ)) P ≤
+      (1 / 3 : ENNReal) ^ (n + 1) :=
+  GMW.acceptProb_gmwSeqVerifier_le length_tripleGen (fun _ => le_rfl) id (fun m => m + 1) n [[]]
+    unsatFormula_not_mem_ThreeSAT P
+
+-- Soundness-amplified `ZKProof` for `ThreeSAT` and every NP relation from any one-way function or
+-- advice-PRG.
+example {f : List Bool → List Bool} (hf : OneWay f) :
+    (∃ zk : ZKProof encCNF ThreeSAT (fun n => (1 / 3 : ENNReal) ^ (n + 1)),
+      zk.NegligibleSoundness) ∧
+    (∃ zk : ZKProof encCNF ThreeSAT.npRelation.language (fun n => (1 / 3 : ENNReal) ^ (n + 1)),
+      (∀ a w, zk.isWitness a w = true ↔ ThreeSAT.npRelation.IsWitness a w) ∧
+      zk.NegligibleSoundness) :=
+  ⟨hf.exists_zkProof_of_mem_NP ThreeSAT.mem_NP,
+    hf.exists_zkProof_of_npRelation ThreeSAT.npRelation⟩
+
+example {generator : List Bool → List Bool} {length : ℕ → ℕ}
+    (hG : PseudorandomGenerator generator length)
+    (hstretch : ∀ k, 3 * k + 1 ≤ length k)
+    (hAdv : GMW.AdvicePRG encCNF generator length) :
+    (hG.zkProofThreeSAT hstretch).NegligibleSoundness ∧
+    (hG.zkProofThreeSAT hstretch).AuxiliaryInputZeroKnowledge ∧
+    (hG.zkProofThreeSAT hstretch).UnboundedAuxiliaryInputZeroKnowledge ∧
+    (hG.zkProofThreeSAT hstretch).InstanceAuxiliaryInputZeroKnowledge := by
+  have hzk := hG.auxiliaryInputZeroKnowledge_zkProofThreeSAT hstretch hAdv
+  exact ⟨hG.negligibleSoundness_zkProofThreeSAT hstretch,
+    hzk, hzk.unboundedAuxiliaryInputZeroKnowledge, hzk.instanceAuxiliaryInputZeroKnowledge⟩
 
 end ComplexityTests.Crypto.ZeroKnowledge

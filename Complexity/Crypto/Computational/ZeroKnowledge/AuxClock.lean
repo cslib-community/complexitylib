@@ -24,25 +24,22 @@ polynomially bounded.
 When `Vstar` is instead clocked in the primary input `(1^n, a)` (or in the instance `x` alone) via
 `IsOraclePPTWithAux`, input-tape prefix locality (`IsOraclePPTWithAux.exists_run_interpret_take`)
 shows that `Vstar` reads at most a polynomial prefix `z.take (T_V n a)` of `z` during its run
-against any stateful prover `Prover Unit`. Applying `AuxiliaryInputZeroKnowledge` to the
-prefix-truncated verifier `Vstar' n a z := Vstar n a (z.take (T_V n a))` and setting
-`S n a z := S₀ n a (z.take (T_V n a))` yields a primary-input-clocked simulator (`IsPPTWithAux`)
-that works for **arbitrary, unbounded** auxiliary inputs `z` against any distinguisher clocked in
-the primary input and view (`IsPPTWithAux`) that receives the full untruncated `z`, both in the
-security-parameter-indexed family form (`UnboundedAuxiliaryInputZeroKnowledge`) and in the
-Goldreich-style instance-indexed (`x`-indexed) form (`InstanceAuxiliaryInputZeroKnowledge`) where
-the security parameter is `(enc x).length` and the simulator is chosen once per `Vstar` before the
-distinguisher, instance `x`, valid witness `w`, and unbounded auxiliary input `z`.
+against any stateful prover `Prover Unit`. Applying `AuxiliaryInputZeroKnowledge` to `Vstar` and
+setting `S n a z := S₀ n a (z.take (T_V n a))` yields a primary-input-clocked simulator
+(`IsPPTWithAux`) that works for **arbitrary, unbounded** auxiliary inputs `z` against any
+distinguisher clocked in the primary input and view (`IsPPTWithAux`) that receives the full
+untruncated `z`, both in the security-parameter-indexed family form
+(`UnboundedAuxiliaryInputZeroKnowledge`) and in the Goldreich-style instance-indexed (`x`-indexed)
+form (`InstanceAuxiliaryInputZeroKnowledge`) where the security parameter is `(enc x).length` and
+the simulator is chosen once per `Vstar` before the distinguisher, instance `x`, valid witness `w`,
+and unbounded auxiliary input `z`.
 
-Because the distinguisher `adversary` is chosen after `S` and may read a longer polynomial prefix
-`T_V n a + T_A n a` of `z` than `Vstar` does, the bridge evaluates `AuxiliaryInputZeroKnowledge` on
-the combined prefix `z' n := (z n).take (T_V n (a n) + T_A n (a n))` and uses the exact verifier-
-congruence clause `Vstar' n a z₁ = Vstar' n a z₂ → S₀ n a z₁ = S₀ n a z₂` of
-`AuxiliaryInputZeroKnowledge` to equate `S₀ n (a n) (z' n)` with `S n (a n) (z n)`. That syntactic
-congruence condition is an additional sufficient condition beyond Goldreich's auxiliary-input
-definition (early Chapter 4 draft `part4N.pdf`, §4.3.3, Definition 4.3.8, printed pp. 151–153), and
-is satisfied by `rfl` for `GMW.gmwSimulator` and the unconditional `univZeroKnowledgeProof` test
-instance.
+Because `AuxiliaryInputZeroKnowledge` quantifies independently over the polynomially bounded
+verifier auxiliary input `z_V` and distinguisher auxiliary input `z_A`, the bridge passes the
+verifier-sized prefix `z_V n := (z n).take (T_V n (a n))` to `Vstar` and `S₀` (where
+`S₀ n (a n) (z_V n) = S n (a n) (z n)` holds definitionally) and the distinguisher-sized prefix
+`z_A n := (z n).take (T_A n (a n))` to `adversary`, without requiring any syntactic congruence
+condition on `S₀`.
 
 ## Main definitions
 
@@ -226,8 +223,7 @@ theorem UnboundedAuxiliaryInputZeroKnowledge.computationallyIndistinguishable
   exact hS_zk a w z ha hw hw_sat (fun n _ _ view => adversary n view) htest
 
 /-- **Clock bridge for family auxiliary-input zero knowledge.**
-Every system satisfying `AuxiliaryInputZeroKnowledge` (including its exact verifier-congruence
-condition `Vstar n a z₁ = Vstar n a z₂ → S n a z₁ = S n a z₂`) also satisfies
+Every system satisfying `AuxiliaryInputZeroKnowledge` also satisfies
 `UnboundedAuxiliaryInputZeroKnowledge` against verifiers clocked in `(1^n, a)`. -/
 theorem AuxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
     {prover : ℕ → α → List Bool → Prover Unit} {isWitness : α → List Bool → Bool}
@@ -236,16 +232,7 @@ theorem AuxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
   intro Vstar hV
   obtain ⟨c, d, hV_take⟩ := Prover.exists_run_take_of_isOraclePPTWithAux hV
   let T_V (n : ℕ) (a : α) : ℕ := c * ((encPair encUnary enc (n, a)).length + 1) ^ d
-  let Vstar' (n : ℕ) (a : α) (z : List Bool) : WordOracleComp Unit (List Bool) :=
-    Vstar n a (z.take (T_V n a))
-  have hV'_ppt : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun ⟨n, a, z⟩ => Vstar' n a z) := by
-    have hpair : IsOraclePPTOn (encPair (encPair encUnary enc) encBits) encBits
-        (fun (p, z) => (fun p : ℕ × α => Vstar p.1 p.2) p z) :=
-      hV.isOraclePPTOn
-    exact (hpair.take_aux (program := fun p : ℕ × α => Vstar p.1 p.2) c d).preprocess'
-      (prepare := fun p : ℕ × α × List Bool => ((p.1, p.2.1), p.2.2)) (by fun_prop)
-  obtain ⟨S₀, hS₀_ppt, hS₀_congr, hS₀_zk⟩ := h Vstar' hV'_ppt
+  obtain ⟨S₀, hS₀_ppt, hS₀_zk⟩ := h Vstar hV.isOraclePPTOn_triple
   let S (n : ℕ) (a : α) (z : List Bool) : ProbComp (List Bool) :=
     S₀ n a (z.take (T_V n a))
   have hS_aux : IsPPTWithAux (encPair encUnary enc) encBits (fun (n, a) z => S n a z) :=
@@ -262,20 +249,29 @@ theorem AuxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
       c_S * ((encPair encUnary enc (n, x)).length + 1) ^ d_S
     let T_A (n : ℕ) (x : α) : ℕ :=
       c_A * ((2 * (encPair encUnary enc (n, x)).length + 1 + L_view n x) + 1) ^ d_A
-    let z' (n : ℕ) : List Bool := (z n).take (T_V n (a n) + T_A n (a n))
-    have hz'_bound : PolynomiallyBounded
+    let z_V (n : ℕ) : List Bool := (z n).take (T_V n (a n))
+    let z_A (n : ℕ) : List Bool := (z n).take (T_A n (a n))
+    have hz_V_bound : PolynomiallyBounded
+        (fun n => c * ((2 * n + 1 + (enc (a n)).length) + 1) ^ d) := by
+      fun_prop
+    have hz_V : PolynomiallyBounded (fun n => (z_V n).length) := by
+      refine hz_V_bound.mono_of_le fun n => ?_
+      have hlen : (z_V n).length ≤ T_V n (a n) := List.length_take_le _ _
+      have hpair : (encPair encUnary enc (n, a n)).length = 2 * n + 1 + (enc (a n)).length := by
+        simp
+      simpa only [T_V, hpair] using hlen
+    have hz_A_bound : PolynomiallyBounded
         (fun n =>
-          c * ((2 * n + 1 + (enc (a n)).length) + 1) ^ d +
           c_A * ((2 * (2 * n + 1 + (enc (a n)).length) + 1 +
             (c_R * ((2 * n + 1 + (enc (a n)).length) + 1) ^ d_R +
              c_S * ((2 * n + 1 + (enc (a n)).length) + 1) ^ d_S)) + 1) ^ d_A) := by
       fun_prop
-    have hz' : PolynomiallyBounded (fun n => (z' n).length) := by
-      refine hz'_bound.mono_of_le fun n => ?_
-      have hlen : (z' n).length ≤ T_V n (a n) + T_A n (a n) := List.length_take_le _ _
+    have hz_A : PolynomiallyBounded (fun n => (z_A n).length) := by
+      refine hz_A_bound.mono_of_le fun n => ?_
+      have hlen : (z_A n).length ≤ T_A n (a n) := List.length_take_le _ _
       have hpair : (encPair encUnary enc (n, a n)).length = 2 * n + 1 + (enc (a n)).length := by
         simp
-      simpa only [T_V, T_A, L_view, hpair] using hlen
+      simpa only [T_A, L_view, hpair] using hlen
     have hprep1 : ComputableInPolyTime
         (fun p : (ℕ × α × List Bool) × List Bool => (p.1.1, p.1.2.1))
         (encPair (encPair encUnary (encPair enc encBits)) encBits)
@@ -291,25 +287,22 @@ theorem AuxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
         (encPair (encPair (encPair encUnary enc) encBits) encBits) :=
       hprep2.pair (by fun_prop)
     have hadv_on : IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
-        (fun ⟨⟨n, x, z⟩, view⟩ => adversary n x z view) :=
+        (fun ⟨⟨n, x, z'⟩, view⟩ => adversary n x z' view) :=
       hadversary.isPPTOn.preprocess hprep
-    have hneg := hS₀_zk a w z' ha hw hz' hw_sat adversary hadv_on
+    have hneg := hS₀_zk a w z_V z_A ha hw hz_V hz_A hw_sat adversary hadv_on
     have hgame_real (n : ℕ) :
         distinguishingGame
-          (((prover n (a n) (w n)).run (Vstar' n (a n) (z' n))
+          (((prover n (a n) (w n)).run (Vstar n (a n) (z_V n))
             (prover n (a n) (w n)).init).map Prod.fst)
-          (adversary n (a n) (z' n)) =
+          (adversary n (a n) (z_A n)) =
         distinguishingGame
           (((prover n (a n) (w n)).run (Vstar n (a n) (z n))
             (prover n (a n) (w n)).init).map Prod.fst)
           (adversary n (a n) (z n)) := by
-      have hV_eq : Vstar' n (a n) (z' n) = Vstar n (a n) ((z n).take (T_V n (a n))) := by
-        simp only [Vstar', z', List.take_take, Nat.min_eq_left (Nat.le_add_right _ _)]
       have hrun_eq :
-          (prover n (a n) (w n)).run (Vstar' n (a n) (z' n)) (prover n (a n) (w n)).init =
-          (prover n (a n) (w n)).run (Vstar n (a n) (z n)) (prover n (a n) (w n)).init := by
-        rw [hV_eq]
-        exact hV_take (n, a n) (z n) le_rfl (prover n (a n) (w n)) (prover n (a n) (w n)).init
+          (prover n (a n) (w n)).run (Vstar n (a n) (z_V n)) (prover n (a n) (w n)).init =
+          (prover n (a n) (w n)).run (Vstar n (a n) (z n)) (prover n (a n) (w n)).init :=
+        hV_take (n, a n) (z n) le_rfl (prover n (a n) (w n)) (prover n (a n) (w n)).init
       simp only [distinguishingGame, hrun_eq, PMF.monad_bind_eq_bind, PMF.bind_map]
       refine PMF.bind_congr_on_support _ _ _ fun p hp => ?_
       have hview_le : p.1.length ≤ L_view n (a n) := by
@@ -320,7 +313,7 @@ theorem AuxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
         simp only [encBits_apply] at h1
         exact le_trans h1 (Nat.le_add_right _ _)
       have hm : c_A * ((encPair (encPair encUnary enc) encBits ((n, a n), p.1)).length + 1) ^ d_A ≤
-          T_V n (a n) + T_A n (a n) := by
+          T_A n (a n) := by
         have hpair : (encPair encUnary enc (n, a n)).length = 2 * n + 1 + (enc (a n)).length := by
           simp
         have hlen_pair :
@@ -331,21 +324,16 @@ theorem AuxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
             (encPair (encPair encUnary enc) encBits ((n, a n), p.1)).length + 1 ≤
               (2 * (encPair encUnary enc (n, a n)).length + 1 + L_view n (a n)) + 1 := by
           omega
-        exact le_trans
-          (Nat.mul_le_mul_left c_A (Nat.pow_le_pow_left hle_base d_A))
-          (Nat.le_add_left (T_A n (a n)) (T_V n (a n)))
+        exact Nat.mul_le_mul_left c_A (Nat.pow_le_pow_left hle_base d_A)
       exact hadv_take ((n, a n), p.1) (z n) hm
     have hgame_sim (n : ℕ) :
         distinguishingGame
-          (ProbComp.eval (S₀ n (a n) (z' n)))
-          (adversary n (a n) (z' n)) =
+          (ProbComp.eval (S₀ n (a n) (z_V n)))
+          (adversary n (a n) (z_A n)) =
         distinguishingGame
           (ProbComp.eval (S n (a n) (z n)))
           (adversary n (a n) (z n)) := by
-      have hS_eq : S₀ n (a n) (z' n) = S n (a n) (z n) := by
-        apply hS₀_congr
-        simp only [Vstar', z', List.take_take, Nat.min_eq_left (Nat.le_add_right _ _), Nat.min_self]
-      simp only [distinguishingGame, hS_eq, PMF.monad_bind_eq_bind]
+      simp only [distinguishingGame, S, z_V, PMF.monad_bind_eq_bind]
       refine PMF.bind_congr_on_support _ _ _ fun view hview => ?_
       have hview_le : view.length ≤ L_view n (a n) := by
         have h1 : (encBits view).length ≤
@@ -355,7 +343,7 @@ theorem AuxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
         exact le_trans h1 (Nat.le_add_left _ _)
       have hm :
           c_A * ((encPair (encPair encUnary enc) encBits ((n, a n), view)).length + 1) ^ d_A ≤
-            T_V n (a n) + T_A n (a n) := by
+            T_A n (a n) := by
         have hpair : (encPair encUnary enc (n, a n)).length = 2 * n + 1 + (enc (a n)).length := by
           simp
         have hlen_pair :
@@ -366,9 +354,7 @@ theorem AuxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
             (encPair (encPair encUnary enc) encBits ((n, a n), view)).length + 1 ≤
               (2 * (encPair encUnary enc (n, a n)).length + 1 + L_view n (a n)) + 1 := by
           omega
-        exact le_trans
-          (Nat.mul_le_mul_left c_A (Nat.pow_le_pow_left hle_base d_A))
-          (Nat.le_add_left (T_A n (a n)) (T_V n (a n)))
+        exact Nat.mul_le_mul_left c_A (Nat.pow_le_pow_left hle_base d_A)
       exact hadv_take ((n, a n), view) (z n) hm
     simpa only [hgame_real, hgame_sim] using hneg
 
