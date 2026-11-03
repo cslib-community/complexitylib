@@ -7,7 +7,9 @@ Authors: Samuel Schlesinger
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Andreev
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevAverage
+import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevLowerBound
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold.RandomRestriction
+import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ThresholdCounting
 import Complexity.Computability.Circuit.Boolean.Threshold.Parity
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Tactic.FinCases
@@ -233,12 +235,6 @@ example :
 -- Erdős–Littlewood–Offord anti-concentration and Kane–Williams block-partition gate and wire
 -- random restriction lemmas instantiated on the Andreev block-variable partition
 -- `Boolean.andreevBlockVar 2 2` and a depth-one gate.
-private theorem andreevBlockVar_joint_injective (b m : ℕ) (j₁ : Fin b) (t₁ : Fin m)
-    (j₂ : Fin b) (t₂ : Fin m)
-    (h : Boolean.andreevBlockVar b m j₁ t₁ = Boolean.andreevBlockVar b m j₂ t₂) :
-    j₁ = j₂ ∧ t₁ = t₂ :=
-  Prod.ext_iff.1 (finProdFinEquiv.injective (Fin.natAdd_injective (b * m) (2 ^ b) h))
-
 example :
     #{w : Fin 4 → Bool |
       (2 : ℝ) ≤ ∑ i : Fin 4, (1 : ℝ) * (w i).toNat ∧
@@ -335,5 +331,69 @@ example : ForcedToAtMostOne (ltfEval (fun i : Fin 2 => if i = 0 then (1 : ℝ) e
       univ (fun _ => false) := by
   simp only [funext ltfEval_zero_weight, ForcedToAtMostOne, ForcedToConst, restrictUpdate]
   decide
+
+-- Chow-parameter LTF counting, depth-two subcube collapse, and the simultaneous-in-`q`
+-- depth-two gate and wire correlation and lower bounds for Andreev's function (`b = 2, m = 2`).
+open Classical in
+example (σ : Fin 2 → Fin 2) (w : BitString (2 ^ 2 + 2 * 2)) (u : BitString 2) :
+    #(univ.filter (IsLTF (κ := Fin 2))) ≤ 125 ∧
+    #(univ.filter (IsDepthTwoWithGates (κ := Fin 2) 1)) ≤ 78125 ∧
+    Boolean.andreev 2 2 (embedUpdate (andreevLiveVar 2 2 σ) w u) =
+      w (Boolean.andreevTableIndex 2 2
+        (BitString.equivFin 2 (u + andreevResidualParities 2 2 σ w))) ∧
+    IsDepthTwoWithGates
+      (circuitUnforcedConstCount (andreevCircuit 2 2) 0
+        (Cslib.Combinatorics.LittlewoodOfford.blockLiveSet (Boolean.andreevBlockVar 2 2) σ) w)
+      (fun u' : BitString 2 =>
+        (andreevCircuit 2 2).eval interpretation (embedUpdate (andreevLiveVar 2 2 σ) w u') 0) ∧
+    IsDepthTwoWithGates
+      (circuitUnforcedAtMostOneCount (andreevCircuit 2 2) 0
+        (Cslib.Combinatorics.LittlewoodOfford.blockLiveSet (Boolean.andreevBlockVar 2 2) σ) w)
+      (fun u' : BitString 2 =>
+        (andreevCircuit 2 2).eval interpretation (embedUpdate (andreevLiveVar 2 2 σ) w u') 0) := by
+  refine ⟨(card_isLTF_le (κ := Fin 2)).trans (by decide : _ ≤ 125),
+    (card_isDepthTwoWithGates_le (κ := Fin 2) 1).trans (by decide : _ ≤ 78125),
+    andreev_embedUpdate_andreevLiveVar 2 2 σ w u, ?_, ?_⟩
+  · rw [← univ_image_andreevLiveVar_eq_blockLiveSet]
+    exact isDepthTwoWithGates_eval_embedUpdate_const (andreevCircuit 2 2)
+      (depth_andreevCircuit_le 2 2) 0 (andreevLiveVar_injective 2 2 σ) w
+  · rw [← univ_image_andreevLiveVar_eq_blockLiveSet]
+    exact isDepthTwoWithGates_eval_embedUpdate (andreevCircuit 2 2)
+      (depth_andreevCircuit_le 2 2) 0 (andreevLiveVar_injective 2 2 σ) w
+
+example :
+    andreevSimultaneousTail 14 2048 ≤ 1 / 2 ∧
+    0 < ((2 : ℝ) ^ 14 * (1 / 2 - andreevSimultaneousTail 14 2048)) ^ 2 - (2048 : ℝ) ^ 2 ∧
+    (#{w : BitString (2 ^ 14 + 14 * 1156) |
+      (andreevCircuit 14 1156).eval interpretation w 0 = Boolean.andreev 14 1156 w} : ℝ) ≤
+      (2 : ℝ) ^ (2 ^ 14 + 14 * 1156) *
+        (1 / 2 + (2048 / (2 : ℝ) ^ 14) *
+          Real.sqrt (4 * (1 / (1156 : ℝ)) * ((andreevCircuit 14 1156).size : ℝ) *
+            Real.sqrt ((2 ^ 14 + 14 * 1156 : ℕ) : ℝ) + 1) +
+          andreevSimultaneousTail 14 2048) ∧
+    (1156 : ℝ) * (((2 : ℝ) ^ 14 * (1 / 2 - andreevSimultaneousTail 14 2048)) ^ 2 -
+      (2048 : ℝ) ^ 2) ≤
+      4 * (2048 : ℝ) ^ 2 * ((andreevCircuit 14 1156).size : ℝ) *
+        Real.sqrt ((2 ^ 14 + 14 * 1156 : ℕ) : ℝ) ∧
+    ((2 : ℝ) ^ 14 * (1 / 2 - andreevSimultaneousTail 14 2048)) ^ 2 - (2048 : ℝ) ^ 2 ≤
+      4 * (2048 : ℝ) ^ 2 * ((andreevCircuit 14 1156).wireCount : ℝ) * (1 / (1156 : ℝ)) *
+        Real.sqrt (1 / (1156 : ℝ)) := by
+  have hsqrt14 : Real.sqrt ((2 : ℝ) ^ 14) = 128 :=
+    (Real.sqrt_eq_iff_eq_sq (by norm_num) (by norm_num)).mpr (by norm_num)
+  have hα_eq : (((14 : ℕ) : ℝ) + 2) * Real.sqrt ((2 : ℝ) ^ 14) = 2048 := by
+    rw [hsqrt14]; norm_num
+  have hα : Real.sqrt ((2 : ℝ) ^ 14) / 2 ≤ 2048 := by
+    rw [hsqrt14]; norm_num
+  have hε : 3 * (((14 : ℕ) : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ 14) ≤ (1 / 2 : ℝ) := by
+    rw [hsqrt14]; norm_num
+  obtain ⟨htail, hexcess⟩ := sq_sub_ge_of_three_mul_div_sqrt_le hε
+  rw [hα_eq] at htail hexcess
+  exact ⟨htail, by linarith,
+    card_eval_eq_andreev_le_of_depth_le_two_size (by decide) hα (andreevCircuit 14 1156)
+      (depth_andreevCircuit_le 14 1156) 0,
+    size_ge_of_computes_andreev (by decide) hα htail (andreevCircuit 14 1156)
+      (depth_andreevCircuit_le 14 1156) (computes_andreevCircuit 14 1156),
+    wireCount_ge_of_computes_andreev (by decide) hα htail (andreevCircuit 14 1156)
+      (depth_andreevCircuit_le 14 1156) (computes_andreevCircuit 14 1156)⟩
 
 end WeightedThresholdTests
