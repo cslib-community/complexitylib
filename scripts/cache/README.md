@@ -30,7 +30,12 @@ Mathlib downloads are retried in the same checkout by `scripts/cache/get_mathlib
 three ordinary `lake exe cache get` attempts, each limited to three minutes, with two-second
 pauses. Completed archives remain in place, so the pinned Mathlib client retries only missing
 downloads. Exhausted attempts warn and leave the strict build/check commands to compile what is
-missing. Only the attempt's own process group is stopped on timeout on POSIX systems.
+missing. On POSIX, shutdown sends SIGTERM to the attempt's own process group, allowing Git's
+signal handlers to remove their locks, then waits up to five seconds before escalating to
+SIGKILL and waiting up to five more seconds. Parent exit alone does not establish descendant
+exit: retries stop early if the group still exists (including unreaped zombies). On Windows,
+the same bounded terminate/kill sequence applies to the direct child only. The helper never
+removes Git locks; forced termination can still leave one behind.
 
 Lean CI, API docs and Comparator disable only lean-action's built-in Mathlib fetch and call this helper
 with `--lean-action`, preserving that action's URL handling: unset `MATHLIB_CACHE_GET_URL` selects
