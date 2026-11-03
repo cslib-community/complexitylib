@@ -413,17 +413,19 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Weighted threshold representations:** v1's explicit source-reduction family, universal scalar
   circuit synthesis, entropy and asymptotic activity bounds, and geometric cutting.
 - **Depth-two threshold circuits for Andreev's function** ([#2347]): the exact quadratic
-  `4 * 4 ^ b + b * m * 2 ^ b` depth-two weighted threshold upper bound
+  `4 * 4 ^ b + b * m * 2 ^ b + 1` depth-two weighted threshold upper bound
   (`WeightedThreshold/Andreev.lean`), the windowed average-case `(1 - δ)`-agreement and
   `(1 / 2 + ε)`-correlation depth-two upper bounds (`WeightedThreshold/AndreevWindowed.lean` and
-  `WeightedThreshold/AndreevAverage.lean`), and Erdős–Littlewood–Offord anti-concentration
+  `WeightedThreshold/AndreevAverage.lean`), Erdős–Littlewood–Offord anti-concentration
   (`Combinatorics/LittlewoodOfford.lean`) together with the repaired Kane–Williams gate and wire
   random restriction lemmas (`WeightedThreshold/RandomRestriction.lean`, Lemma 1.1 and Lemma 3.1 of
-  arXiv:1511.07860v1) are proved; the remaining milestone of [#2347] is the proposed average-case
-  `Ω(ε² n ^ (3 / 2) / log³ n)` gate and `Ω(ε² n ^ (5 / 2) / log ^ (7 / 2) n)` wire lower bounds
-  improving the published `Ω(ε³ n ^ (3 / 2) / log³ n)` gate and
-  `Ω(ε³ n ^ (5 / 2) / log ^ (7 / 2) n)` wire bounds of Kane and Williams (arXiv:1511.07860v1,
-  Theorem 1.1).
+  arXiv:1511.07860v1), the `b`-variable LTF and depth-two threshold function counting bounds
+  (`WeightedThreshold/ThresholdCounting.lean`, Theorem 2.3 and Section 4 of arXiv:1511.07860v1), and
+  the quadratic-in-`ε` average-case `Ω(ε² n ^ (3 / 2) / log³ n)` gate and
+  `Ω(ε² n ^ (5 / 2) / log ^ (7 / 2) n)` active-wire lower bounds for
+  `3 * (b + 2) / √(2 ^ b) ≤ ε ≤ 1 / 2` (`WeightedThreshold/AndreevLowerBound.lean`, improving the
+  `ε³` dependence in Theorem 1.1 and Section 5 of arXiv:1511.07860v1) are proved; closing the
+  worst-case depth-two threshold gate gap between `Ω̃(n ^ (3 / 2))` and `O(n ^ 2)` remains open.
 - **Construction runtimes**, certified separately from gate counts: the mass-production
   constructors, with constructive choices of information sets and line menus; the
   iterated-function preprocessing; and the bit complexity of formula evaluation on the rational
