@@ -144,6 +144,10 @@ and noise budgets, recursive reserves and native RL remains separate work.
 For the actual normalized-output fourth moment, import
 [NormalizedAtomRows/ActualMoment](../../Complexity/Foundations/Probability/NormalizedAtomRows/ActualMoment.lean)
 and keep the same `NormalizedMoments` namespace open.
+For the first-signal endpoint row-noise premise, the
+[FirstSignal route](probabilistic-workflows.md) derives the bound from genuine
+conditional-walk prefixes and explicit lower-child incoming moments. The second signal
+still needs its separate bridge.
 `actual_normalized_fourth_moment_capacity` bounds the row fourth moment of the difference
 of output fourth roots by `C*ε^4`. Its output evaluates the actual compression iterate,
 unchanged initial default, raw increments and dyadic floor; its first rank is full terminal

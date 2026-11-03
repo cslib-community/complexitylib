@@ -207,6 +207,25 @@ noise certificate. Zero correction remains literal; the moment/noise bridge here
 positive iterations. Pilot/copy paths, quantitative lower-child budgets, summation and
 recursive/native correctness remain open.
 
+For the first compression signal, import
+[FirstSignal](../../Complexity/Foundations/Probability/NormalizedAtomRows/FirstSignal.lean)
+and apply `actualFirstSignal_noise_le_lower`. Its child-budget-indexed inputs are genuine
+`rawIncomingNormalized` samples. `firstSignalIncrement` takes successive conditional-walk
+differences from zero; `actualPrefix_firstSignalIncrement` identifies prefix i with walk
+i+1 divided by `rate k`. Stationarity on the full terminal slice, including empty slices,
+then identifies `actualNoiseEntry` with centered walk noise divided by
+`rate k * (1 + G / rate k)`.
+
+The endpoint row moment is bounded directly by `rate k` to the inverse fourth power,
+times `32 * lambda^(2*steps(i+1))`, times the explicit lower-child
+`incomingMomentBudget` at budget i+1. No maximum-entry conversion, hidden width constant,
+or independence assumption is used. The
+[regressions](../../ComplexityTests/ActualFirstSignal.lean) check nonzero nonconstant
+telescoping prefixes, zero inputs, empty slices and a nonconstant random mean/moment.
+Choosing numerical walk lengths still requires a numerical payment for those child
+moments; arbitrary children have no uniform payment here. The preparatory second signal
+needs its own moment bridge, and recursive induction and native RL=L remain open.
+
 For a coarser source, `source_incoming_cost_le` quantifies the generic incoming cost as
 `32 * R * (sourceRate / stageRate)`; the fixed incoming rank is not proved to pay that
 inflated budget. Arbitrary coarser sampling sources, a fully assembled recursive hierarchy,
