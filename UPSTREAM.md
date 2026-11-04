@@ -414,6 +414,20 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   Mathlib-intended `Foundations/Data/Finset/Lowest` topic module, used by the canonical boxes.
   Native box enumeration/trie construction/query costs and the tuned 1.9992 route remain #1394.
   No curated abstract or rendering changes are needed for this finite prerequisite.
+* **Native shared box tables.** The original native representation in
+  [#2176](https://github.com/cslib-community/complexitylib/issues/2176) reuses the finite boxes
+  and value recurrence above. A one-time directory over `(m-t+1)*10^L` slots computes compact
+  ranks and three-word descriptors. Per-tile code writes one signed value per box, reading
+  only earlier child ranks; lookup reads those stored words. This replaces the primary
+  source's per-tile relative-pointer trie, not its mathematical box notion. Native level zero
+  remains least significant, matching the existing encoders; the source's Horner numbering
+  must not be substituted silently. Shared setup is at most `64*(L+1)^2*10^L` for `m ≤ L`,
+  each tile costs at most `328*B+8`, and valid lookup at most `18*L+32`, with the actual box
+  count `B`. Setup, resident geometry and retained tile storage must all be charged in future
+  global composition; no Corollary 26 or tuned 1.9992 endpoint follows from this component.
+  `Foundations/Data/{Finset/LowestMax,Nat/RadixUpdate}` hold the small general ordered-subset
+  and radix-update facts used by these concrete clients. No curated abstract or rendering
+  changes are needed for this native data-structure prerequisite.
 * **Native pruned-query evaluator.** The explicit-stack pruned-query evaluator ([#1526](https://github.com/cslib-community/complexitylib/issues/1526))
   is original native code, reusing the finite `Pruned.result`, `childSet` and trace/leaf
   quantities from `Sec2/Lemma10.lean`. `PrunedQuery.queryIndex` directly applies the existing
