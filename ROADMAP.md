@@ -23,7 +23,7 @@ the FHE industrial context, the first-order design decisions and the repository'
 | Consolidation: duplicates, accurate statements and docs, less churn | [#949], [#939] |
 | Fully homomorphic encryption: follow-ups to the instantiated bootstrapping theorem, then modern schemes | [#1104] |
 | Boneh–Shoup cryptography tracks; zero-knowledge architecture | [#640], [#643] |
-| Crypto frontier tracks: Kilian's succinct arguments, signatures from one-way functions | [#999], [#1001] |
+| Crypto frontier track: Kilian's succinct arguments | [#999] |
 | OpenAI math TCS results: review Fortnow's rewrites and extract in-scope results | [#1002] |
 | A Verso guide with a chapter per area | [#585] |
 | Randomized Word RAM: broader expected-time rules and simulation bridges | [#1124] |
@@ -33,24 +33,18 @@ the FHE industrial context, the first-order design decisions and the repository'
 
 Priorities live in this list and in the tiers of [#897].
 
-1. [Rompel's signature theorem](#cryptographic-landmarks) ([#1001])
-2. [Completeness of oblivious transfer](#cryptographic-landmarks)
-3. [Håstad's optimal MAX-E3SAT hardness](#approximation-and-pcp) ([#886])
-4. [Williams's NEXP ⊄ ACC⁰](#circuits-and-algebraic-complexity) ([#889])
-5. [Valiant's VNP-completeness of the permanent](#circuits-and-algebraic-complexity)
-6. [The Kabanets–Impagliazzo theorem](#circuits-and-algebraic-complexity) ([#891])
-7. [MIP = NEXP](#interactive-proofs) ([#892])
-8. [Regev's worst-case to average-case reduction](#cryptographic-landmarks)
+1. [Completeness of oblivious transfer](#cryptographic-landmarks)
+2. [Håstad's optimal MAX-E3SAT hardness](#approximation-and-pcp) ([#886])
+3. [Williams's NEXP ⊄ ACC⁰](#circuits-and-algebraic-complexity) ([#889])
+4. [Valiant's VNP-completeness of the permanent](#circuits-and-algebraic-complexity)
+5. [The Kabanets–Impagliazzo theorem](#circuits-and-algebraic-complexity) ([#891])
+6. [MIP = NEXP](#interactive-proofs) ([#892])
+7. [Regev's worst-case to average-case reduction](#cryptographic-landmarks)
 
 ## Cryptography
 
 ### Cryptographic landmarks
 
-- **Rompel's signature theorem** ([#1001]). One-way functions imply digital signatures that are
-  existentially unforgeable under adaptive chosen-message attacks, for arbitrary
-  polynomial-length messages. Authentication trees from one-time signatures and
-  collision-resistant hashing are an intermediate development step; for the theorem itself,
-  universal one-way hash functions replace the collision-resistance assumption.
 - **Completeness of oblivious transfer.** In the ideal OT-hybrid model, every polynomial-time
   multiparty functionality admits a protocol secure against static malicious corruptions, with
   real/ideal simulation and abort, under the standard communication assumptions.
@@ -851,7 +845,6 @@ not planned, not as proved.
 [#939]: https://github.com/cslib-community/complexitylib/issues/939
 [#949]: https://github.com/cslib-community/complexitylib/issues/949
 [#999]: https://github.com/cslib-community/complexitylib/issues/999
-[#1001]: https://github.com/cslib-community/complexitylib/issues/1001
 [#1002]: https://github.com/cslib-community/complexitylib/issues/1002
 [#1104]: https://github.com/cslib-community/complexitylib/issues/1104
 [#1124]: https://github.com/cslib-community/complexitylib/issues/1124
