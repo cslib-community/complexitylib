@@ -24,12 +24,12 @@ public import Mathlib.SetTheory.Cardinal.Finite
 Partitions of a finite type `α` are equivalence relations `Setoid α`, ordered by refinement, so that
 the join `P ⊔ Q` is the finest partition coarser than both and `⊤` is the partition with one block.
 The *join matrix* has rows and columns indexed by the partitions, and entry `1` at `P` and `Q` if
-`P ⊔ Q = ⊤` and `0` otherwise. It is nonsingular over `ℚ` (`rank_joinMatrix`), a theorem of Dowling
-and Wilson for geometric lattices [DowlingWilson1975], here for the partition lattice, which is the
-lattice of flats of the graphic matroid of a complete graph. In the terms of
-[LovaszSaks1993, Theorems 3.4 and 3.6] the join matrix is the span indicator of that matroid, and
-Lindström's diagonalisation by the Möbius function [Lindstrom1969] reduces its rank to the number of
-partitions `x` with `μ(x, ⊤) ≠ 0`, which is all of them.
+`P ⊔ Q = ⊤` and `0` otherwise. It is nonsingular over any field of characteristic zero
+(`rank_joinMatrix`), a theorem of Dowling and Wilson for geometric lattices [DowlingWilson1975],
+here for the partition lattice, which is the lattice of flats of the graphic matroid of a complete
+graph. In the terms of [LovaszSaks1993, Theorems 3.4 and 3.6] the join matrix is the span indicator
+of that matroid, and Lindström's diagonalisation by the Möbius function [Lindstrom1969] reduces its
+rank to the number of partitions `x` with `μ(x, ⊤) ≠ 0`, which is all of them.
 
 The proof writes the join matrix as `Z Δ Zᵀ`, where `Z` is the zeta matrix of the refinement order,
 which is triangular with unit diagonal when the partitions are ordered by their numbers of blocks,
@@ -42,6 +42,12 @@ because both sides count the maps from `α` to `Fin t` that are constant on the 
 grouped on the left by their kernels (`sum_descFactorial_blocks`). This avoids the usual computation
 of the Möbius function through the factorisation of intervals into products of smaller partition
 lattices; `mu_top` identifies the values with Mathlib's `IncidenceAlgebra.mu`.
+
+Partitions are `Setoid α` rather than `Finpartition`, since Mathlib's complete lattice on
+`Setoid α` provides the join, and the proof works with quotients and kernels (`Setoid.ker`);
+`blocks s` is `Nat.card (Quotient s)`. Only a `Finite` instance on `Setoid α` is declared;
+statements that sum over the partitions or take ranks assume `[Fintype (Setoid α)]`, which
+`Fintype.ofFinite` provides, and counts are stated with `Nat.card`.
 
 ## Main definitions
 
@@ -73,16 +79,13 @@ open Finset Polynomial
 
 variable {α : Type*}
 
-/-- There are finitely many partitions of a finite type. -/
+/-- There are finitely many partitions of a finite type. Where a `Fintype (Setoid α)` instance is
+needed, any will do, for example the noncomputable `Fintype.ofFinite`. -/
 instance instFiniteSetoid [Finite α] : Finite (Setoid α) :=
   Finite.of_injective (fun s : Setoid α => (⇑s : α → α → Prop)) fun _ _ h =>
     Setoid.ext fun a b => iff_of_eq (congrFun (congrFun h a) b)
 
-/-- The partitions of a finite type, as a finite type. -/
-noncomputable instance instFintypeSetoid [Finite α] : Fintype (Setoid α) :=
-  Fintype.ofFinite _
-
-/-- The number of blocks of a partition. -/
+/-- The number of blocks of a partition, that is, of its equivalence classes. -/
 noncomputable def blocks (s : Setoid α) : ℕ :=
   Nat.card (Quotient s)
 
@@ -90,38 +93,39 @@ noncomputable def blocks (s : Setoid α) : ℕ :=
 
 section Blocks
 
-variable [Finite α]
+/-- The discrete partition has one block for each element. -/
+theorem blocks_bot : blocks (⊥ : Setoid α) = Nat.card α :=
+  Nat.card_congr Setoid.quotientBotEquiv
 
-theorem blocks_pos [Nonempty α] (s : Setoid α) : 0 < blocks s :=
+/-- A partition of a finite nonempty type has at least one block. -/
+theorem blocks_pos [Finite α] [Nonempty α] (s : Setoid α) : 0 < blocks s :=
   have : Nonempty (Quotient s) := ⟨Quotient.mk s (Classical.arbitrary α)⟩
   Nat.card_pos
 
-omit [Finite α] in
+/-- A partition of a nonempty type has one block exactly when it is the one-block partition `⊤`. -/
 theorem blocks_eq_one_iff [Nonempty α] {s : Setoid α} : blocks s = 1 ↔ s = ⊤ := by
   have : Nonempty (Quotient s) := ⟨Quotient.mk s (Classical.arbitrary α)⟩
   rw [blocks, Nat.card_eq_one_iff_unique, ← Quotient.subsingleton_iff]
   exact ⟨fun h => h.1, fun h => ⟨h, inferInstance⟩⟩
 
-omit [Finite α] in
-/-- The map from the blocks of a finer partition onto those of a coarser one. -/
-def coarsen {r s : Setoid α} (h : r ≤ s) : Quotient r → Quotient s :=
-  Quotient.lift (Quotient.mk s) fun _ _ hab => Quotient.sound (h hab)
+private theorem factor_surjective {r s : Setoid α} (h : r ≤ s) :
+    Function.Surjective (Quot.factor r.r s.r fun _ _ hab => h hab) :=
+  Quot.ind fun a => ⟨Quot.mk _ a, rfl⟩
 
-omit [Finite α] in
-theorem coarsen_surjective {r s : Setoid α} (h : r ≤ s) : Function.Surjective (coarsen h) :=
-  Quotient.ind fun a => ⟨Quotient.mk r a, rfl⟩
-
-theorem blocks_le_of_le {r s : Setoid α} (h : r ≤ s) : blocks s ≤ blocks r :=
-  Nat.card_le_card_of_surjective _ (coarsen_surjective h)
+/-- A coarser partition has at most as many blocks. -/
+theorem blocks_le_of_le [Finite α] {r s : Setoid α} (h : r ≤ s) : blocks s ≤ blocks r :=
+  Nat.card_le_card_of_surjective _ (factor_surjective h)
 
 /-- A partition is determined by any coarser partition with as many blocks. -/
-theorem eq_of_le_of_blocks_eq {r s : Setoid α} (h : r ≤ s) (hb : blocks r = blocks s) : r = s := by
+theorem eq_of_le_of_blocks_eq [Finite α] {r s : Setoid α} (h : r ≤ s)
+    (hb : blocks r = blocks s) : r = s := by
   classical
-  have hinj : Function.Injective (coarsen h) := by
-    have := Fintype.ofFinite (Quotient r)
-    have := Fintype.ofFinite (Quotient s)
-    refine ((Fintype.bijective_iff_surjective_and_card _).mpr ⟨coarsen_surjective h, ?_⟩).1
-    simpa [blocks, Nat.card_eq_fintype_card] using hb
+  have hinj : Function.Injective (Quot.factor r.r s.r fun _ _ hab => h hab) := by
+    have : Fintype (Quot r.r) := Fintype.ofFinite _
+    have : Fintype (Quot s.r) := Fintype.ofFinite _
+    refine ((Fintype.bijective_iff_surjective_and_card _).mpr ⟨factor_surjective h, ?_⟩).1
+    rw [← Nat.card_eq_fintype_card, ← Nat.card_eq_fintype_card]
+    exact hb
   refine le_antisymm h fun a b hab => ?_
   exact Quotient.exact (hinj (Quotient.sound hab : Quotient.mk s a = Quotient.mk s b))
 
@@ -129,13 +133,13 @@ end Blocks
 
 /-! ### A lower bound on the number of partitions -/
 
-section Count
+section Many
 
 /-- The map that is the identity on the first `j` elements of `Fin N` and `f` on the rest. -/
-def extendMap {N j : ℕ} (f : Fin (N - j) → Fin j) (i : Fin N) : Fin j :=
+private def extendMap {N j : ℕ} (f : Fin (N - j) → Fin j) (i : Fin N) : Fin j :=
   if h : (i : ℕ) < j then ⟨i, h⟩ else f ⟨i - j, by omega⟩
 
-theorem extendMap_injective_ker {N j : ℕ} (hj : j ≤ N) :
+private theorem extendMap_injective_ker {N j : ℕ} (hj : j ≤ N) :
     Function.Injective fun f : Fin (N - j) → Fin j => Setoid.ker (extendMap f) := by
   intro f₁ f₂ h
   funext t
@@ -154,21 +158,22 @@ theorem extendMap_injective_ker {N j : ℕ} (hj : j ≤ N) :
 /-- **Many partitions**: `j ^ (N - j) ≤ B_N` for `j ≤ N`, by placing the first `j` elements in
 distinct blocks and each of the others in one of these blocks. -/
 theorem pow_le_card_setoid {N j : ℕ} (hj : j ≤ N) :
-    j ^ (N - j) ≤ Fintype.card (Setoid (Fin N)) := by
+    j ^ (N - j) ≤ Nat.card (Setoid (Fin N)) := by
   classical
+  have := Fintype.ofFinite (Setoid (Fin N))
   have := Fintype.card_le_of_injective _ (extendMap_injective_ker hj)
-  simpa [Fintype.card_fun, Fintype.card_fin] using this
+  simpa [Fintype.card_fun, Fintype.card_fin, Nat.card_eq_fintype_card] using this
 
-end Count
+end Many
 
 /-! ### Counting maps by their kernels -/
 
-section Count
+section Kernels
 
 variable [Finite α] (t : ℕ)
 
 /-- The maps constant on the blocks of `x` are the maps on its blocks. -/
-def constEquiv (x : Setoid α) :
+private def constEquiv (x : Setoid α) :
     {f : α → Fin t // x ≤ Setoid.ker f} ≃ (Quotient x → Fin t) where
   toFun f := Quotient.lift f.1 fun _ _ h => f.2 h
   invFun g := ⟨g ∘ Quotient.mk x, fun _ _ h => by
@@ -177,7 +182,7 @@ def constEquiv (x : Setoid α) :
   right_inv g := funext fun q => Quotient.inductionOn q fun _ => rfl
 
 /-- The maps with kernel `z` are the injective maps on its blocks. -/
-def kerEquiv (z : Setoid α) :
+private def kerEquiv (z : Setoid α) :
     {f : α → Fin t // Setoid.ker f = z} ≃ (Quotient z ↪ Fin t) where
   toFun f := ⟨Quotient.lift f.1 fun a b h => by
       rw [← f.2] at h
@@ -190,12 +195,12 @@ def kerEquiv (z : Setoid α) :
   left_inv _ := rfl
   right_inv e := by ext q; induction q using Quotient.inductionOn; rfl
 
-theorem card_const (x : Setoid α) :
+private theorem card_const (x : Setoid α) :
     Nat.card {f : α → Fin t // x ≤ Setoid.ker f} = t ^ blocks x := by
   rw [Nat.card_congr (constEquiv t x), Nat.card_fun, Nat.card_eq_fintype_card, Fintype.card_fin,
     blocks]
 
-theorem card_ker (z : Setoid α) :
+private theorem card_ker (z : Setoid α) :
     Nat.card {f : α → Fin t // Setoid.ker f = z} = t.descFactorial (blocks z) := by
   classical
   have := Fintype.ofFinite (Quotient z)
@@ -205,7 +210,7 @@ theorem card_ker (z : Setoid α) :
 open Classical in
 /-- Counting the maps constant on the blocks of `x` by their kernels:
 `∑_{z ≥ x} t (t - 1) ⋯ (t - blocks z + 1) = t ^ blocks x`. -/
-theorem sum_descFactorial_blocks (x : Setoid α) :
+theorem sum_descFactorial_blocks [Fintype (Setoid α)] (x : Setoid α) :
     ∑ z ∈ {z | x ≤ z}, t.descFactorial (blocks z) = t ^ blocks x := by
   classical
   have := Fintype.ofFinite α
@@ -221,15 +226,16 @@ theorem sum_descFactorial_blocks (x : Setoid α) :
   simp only [mem_filter, mem_univ, true_and] at hz ⊢
   exact ⟨fun h => ⟨by rw [h]; exact hz, h⟩, fun h => h.2⟩
 
-end Count
+end Kernels
 
 /-! ### The Möbius values -/
 
 /-- The derivative at `0` of the falling factorial `X (X - 1) ⋯ (X - b + 1)`, which is
-`(-1)^(b-1) (b-1)!` for `b ≥ 1`. -/
+`(-1)^(b-1) (b-1)!` for `b ≥ 1` (`derivCoeff_succ`). -/
 noncomputable def derivCoeff (b : ℕ) : ℤ :=
   (derivative (descPochhammer ℤ b)).eval 0
 
+/-- `c(1) = 1`. -/
 theorem derivCoeff_one : derivCoeff 1 = 1 := by
   simp [derivCoeff]
 
@@ -252,16 +258,19 @@ theorem derivCoeff_succ (b : ℕ) : derivCoeff (b + 1) = (-1) ^ b * b.factorial 
     push_cast
     ring
 
+/-- `c(b) ≠ 0` for `b ≥ 1`. -/
 theorem derivCoeff_ne_zero {b : ℕ} (hb : 0 < b) : derivCoeff b ≠ 0 := by
   obtain ⟨b, rfl⟩ := Nat.exists_eq_add_of_lt hb
   rw [zero_add, derivCoeff_succ]
   exact mul_ne_zero (pow_ne_zero _ (by norm_num)) (by exact_mod_cast b.factorial_ne_zero)
 
+section Mobius
+
 variable [Finite α]
 
 open Classical in
 /-- The polynomial identity `∑_{z ≥ x} X (X - 1) ⋯ (X - blocks z + 1) = X ^ blocks x`. -/
-theorem sum_descPochhammer_blocks (x : Setoid α) :
+theorem sum_descPochhammer_blocks [Fintype (Setoid α)] (x : Setoid α) :
     ∑ z ∈ {z | x ≤ z}, descPochhammer ℤ (blocks z) = (X : ℤ[X]) ^ blocks x := by
   refine eq_of_infinite_eval_eq _ _ (Set.infinite_of_injective_forall_mem
     (f := fun t : ℕ => (t : ℤ)) Nat.cast_injective fun t => ?_)
@@ -272,7 +281,7 @@ theorem sum_descPochhammer_blocks (x : Setoid α) :
 open Classical in
 /-- **The Möbius values of the partition lattice**: `∑_{z ≥ x} c(blocks z) = [x = ⊤]`, where
 `c(b) = (-1)^(b-1) (b-1)!` (`derivCoeff`). -/
-theorem sum_derivCoeff_blocks [Nonempty α] (x : Setoid α) :
+theorem sum_derivCoeff_blocks [Fintype (Setoid α)] [Nonempty α] (x : Setoid α) :
     ∑ z ∈ {z | x ≤ z}, derivCoeff (blocks z) = if x = ⊤ then 1 else 0 := by
   have h := congrArg (fun p : ℤ[X] => (derivative p).eval 0) (sum_descPochhammer_blocks x)
   simp only [derivative_sum, eval_finsetSum, derivative_X_pow, eval_mul, eval_C, eval_pow,
@@ -290,6 +299,7 @@ may be any instance, such as `Fintype.toLocallyFiniteOrder`. -/
 theorem mu_top [Nonempty α] [LocallyFiniteOrder (Setoid α)] [DecidableEq (Setoid α)]
     (x : Setoid α) : IncidenceAlgebra.mu ℤ x ⊤ = derivCoeff (blocks x) := by
   classical
+  have := Fintype.ofFinite (Setoid α)
   induction x using WellFoundedGT.induction with
   | _ x ih =>
   by_cases hx : x = ⊤
@@ -306,47 +316,59 @@ theorem mu_top [Nonempty α] [LocallyFiniteOrder (Setoid α)] [DecidableEq (Seto
     sum_congr rfl fun z hz => ih z (mem_Ioc.mp hz).1]
   linarith
 
+end Mobius
+
 /-! ### The join matrix -/
 
 open Classical in
-/-- The join matrix: entry `1` at `P` and `Q` if `P ⊔ Q = ⊤`, and `0` otherwise. -/
-@[expose] noncomputable def joinMatrix (α : Type*) : Matrix (Setoid α) (Setoid α) ℚ :=
+/-- The join matrix over `R`: entry `1` at `P` and `Q` if `P ⊔ Q = ⊤`, and `0` otherwise. -/
+@[expose] noncomputable def joinMatrix (R α : Type*) [Zero R] [One R] :
+    Matrix (Setoid α) (Setoid α) R :=
   Matrix.of fun P Q => if P ⊔ Q = ⊤ then 1 else 0
 
-omit [Finite α] in
 open Classical in
-@[simp] theorem joinMatrix_apply (P Q : Setoid α) :
-    joinMatrix α P Q = if P ⊔ Q = ⊤ then 1 else 0 :=
+@[simp] theorem joinMatrix_apply {R : Type*} [Zero R] [One R] (P Q : Setoid α) :
+    joinMatrix R α P Q = if P ⊔ Q = ⊤ then 1 else 0 :=
   rfl
 
 open Classical in
-/-- The zeta matrix of the refinement order. -/
-@[expose] noncomputable def zetaMatrix (α : Type*) : Matrix (Setoid α) (Setoid α) ℚ :=
+/-- The zeta matrix of the refinement order over `R`, entry `1` at `P` and `z` if `P ≤ z`: the
+matrix of Mathlib's `IncidenceAlgebra.zeta`. -/
+@[expose] noncomputable def zetaMatrix (R α : Type*) [Zero R] [One R] :
+    Matrix (Setoid α) (Setoid α) R :=
   Matrix.of fun P z => if P ≤ z then 1 else 0
 
+section Matrices
+
+variable [Finite α] [Fintype (Setoid α)] {R : Type*}
+
 open Classical in
-theorem joinMatrix_eq [Nonempty α] :
-    joinMatrix α = zetaMatrix α * Matrix.diagonal (fun z => (derivCoeff (blocks z) : ℚ)) *
-      (zetaMatrix α).transpose := by
+/-- **The factorisation `J = Z Δ Zᵀ`** of the join matrix, with `Δ` the diagonal of the Möbius
+values `μ(z, ⊤) = c(blocks z)`. -/
+theorem joinMatrix_eq [CommRing R] [Nonempty α] :
+    joinMatrix R α = zetaMatrix R α * Matrix.diagonal (fun z => (derivCoeff (blocks z) : R)) *
+      (zetaMatrix R α).transpose := by
   ext P Q
   rw [Matrix.mul_apply]
   simp only [joinMatrix, zetaMatrix, Matrix.mul_diagonal, Matrix.of_apply,
     Matrix.transpose_apply, ite_mul, one_mul, zero_mul, mul_ite, mul_one, mul_zero]
-  have h := congrArg (fun k : ℤ => (k : ℚ)) (sum_derivCoeff_blocks (P ⊔ Q))
-  simp only [Int.cast_sum, apply_ite (fun k : ℤ => (k : ℚ)), Int.cast_one, Int.cast_zero] at h
+  have h := congrArg (fun k : ℤ => (k : R)) (sum_derivCoeff_blocks (P ⊔ Q))
+  simp only [Int.cast_sum, apply_ite (fun k : ℤ => (k : R)), Int.cast_one, Int.cast_zero] at h
   rw [← h, sum_filter]
   refine sum_congr rfl fun z _ => ?_
   by_cases hP : P ≤ z <;> by_cases hQ : Q ≤ z <;> simp [hP, hQ, sup_le_iff]
 
 open Classical in
-theorem det_zetaMatrix : (zetaMatrix α).det = 1 := by
-  have hT : (zetaMatrix α).BlockTriangular fun P => OrderDual.toDual (blocks P) := by
+/-- The zeta matrix is unitriangular when the partitions are ordered by their numbers of blocks, so
+its determinant is `1`. -/
+theorem det_zetaMatrix [CommRing R] : (zetaMatrix R α).det = 1 := by
+  have hT : (zetaMatrix R α).BlockTriangular fun P => OrderDual.toDual (blocks P) := by
     intro P z hlt
     have : ¬P ≤ z := fun h => absurd (blocks_le_of_le h) (not_le.mpr hlt)
     simp [zetaMatrix, this]
   rw [hT.det]
   refine prod_eq_one fun b _ => ?_
-  have : (zetaMatrix α).toSquareBlock (fun P => OrderDual.toDual (blocks P)) b = 1 := by
+  have : (zetaMatrix R α).toSquareBlock (fun P => OrderDual.toDual (blocks P)) b = 1 := by
     ext ⟨P, hP⟩ ⟨z, hz⟩
     simp only [Matrix.toSquareBlock_def, Matrix.of_apply, zetaMatrix, Matrix.one_apply,
       Subtype.mk.injEq]
@@ -357,13 +379,24 @@ theorem det_zetaMatrix : (zetaMatrix α).det = 1 := by
       simp [h, hne]
   rw [this, Matrix.det_one]
 
-open Classical in
-/-- **Dowling–Wilson for the partition lattice**: the join matrix has full rank. -/
-theorem rank_joinMatrix [Nonempty α] : (joinMatrix α).rank = Fintype.card (Setoid α) := by
+/-- **Dowling–Wilson for the partition lattice**: over a field of characteristic zero, the join
+matrix has full rank, the number of partitions. -/
+theorem rank_joinMatrix [Field R] [CharZero R] : (joinMatrix R α).rank = Nat.card (Setoid α) := by
   classical
+  rw [Nat.card_eq_fintype_card]
+  rcases isEmpty_or_nonempty α with hα | hα
+  · have : Subsingleton (Setoid α) := ⟨fun _ _ => Setoid.ext fun a => isEmptyElim a⟩
+    have h1 : joinMatrix R α = 1 := by
+      ext P Q
+      obtain rfl : P = Q := Subsingleton.elim _ _
+      have : P = ⊤ := Subsingleton.elim _ _
+      simp [this]
+    rw [h1, Matrix.rank_one]
   refine Matrix.rank_of_isUnit _ ((Matrix.isUnit_iff_isUnit_det _).mpr (isUnit_iff_ne_zero.mpr ?_))
   rw [joinMatrix_eq, Matrix.det_mul, Matrix.det_mul, Matrix.det_transpose, det_zetaMatrix,
     Matrix.det_diagonal, one_mul, mul_one]
   exact prod_ne_zero_iff.mpr fun z _ => Int.cast_ne_zero.mpr (derivCoeff_ne_zero (blocks_pos z))
+
+end Matrices
 
 end Cslib.SetPartition
