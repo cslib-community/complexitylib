@@ -434,6 +434,32 @@ The bounded fixture does not assert the canonical routed-bin mean or recursive r
 A separate actual lower-child conditional-cost client proves that the finite reserve is
 satisfiable at some positive tolerance; it does not claim that tolerance is small.
 
+[ChildRootReserve](../../Complexity/Foundations/Probability/NormalizedAtomRows/ChildRootReserve.lean)
+now pays that cost reserve from actual normalized lower-child rooted moments.
+[RootReserveOutput](../../Complexity/Foundations/Probability/NormalizedAtomRows/RootReserveOutput.lean)
+reuses the same output assembly. Its target is still the genuine canonical residual.
+The cost API retains only the union of actual estimated/canonical left supports. Both left
+children vanish off midpoint usage, so right errors are charged only at their reset source z.
+Left errors use the old source and midpoint terminal. Each lower budget uses its own full
+terminal rank; min-rate usage is proved to lie in that rank, with every suffix unchanged.
+
+The sufficient allocation is deliberately conservative. Put `CA = 2 Q(atomCap)`,
+`CB = 2 max(cap,16)`, `B = max(CA,CB)` and let `A` be `residualCostCoefficient`.
+Its literal formula is `8 ((n+1)^4 sum_i 8 (D_i + 8 P^4 (CA^4+CB^4) T_i) + N)`,
+where `D_i`, `T_i`, and `N` are endpoint sums of the fourth powers of the direct,
+importance-times-midpoint, and once-negative coefficients. Their rounded grid densities
+remain literal. Set `scale = P^2 / (P rate ks) * A` and
+`delta = tolerance^4 / (1 + rate kt^(-4) + amplification)`.
+For each called request r, a rooted row moment at most
+`delta / (1+scale) / (1 + (4 B^(3/4))^4 P r.source.rate card(Environment P J))`
+pays the desired reserve. The full finite environment cardinality is an explicit atom cost;
+this is not a bound uniform in environment size or evidence of useful recursive growth.
+The ordinary-error conversion applies only to bounded normalized estimated and canonical
+outputs, never to the signed raw target divided by a rate. The
+[domain regressions](../../ComplexityTests/ChildRootReserve.lean) check an off-source error
+ignored by the actual product, full-rank masks, two-bin/once-negative coefficients,
+canonical-zero and positive nonconstant normalized outputs.
+
 Deriving small numerical errors from recursive lower-child relative estimates, numerical
 reserves, recursive budget induction, copy routing, parameter/workspace bounds and native RL=L
 remain open. Row mass does not provide a uniform target bound, and clipped relative error

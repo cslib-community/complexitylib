@@ -82,14 +82,10 @@ theorem actualEstimatedResidual_common_envelope_payment
       (graph R.source R.terminal R.source_terminal (side P ks) (side P kt)
         (side_le P ks) (side_le P kt) (fun x => CopyPadding.identifier D ss x)
         (fun y => CopyPadding.identifier D st y)) (fun _ _ => steps j) (input j)
-    let cost := fun j x y => rowSliceMean (retainedMask R.source (side P ks) D ss)
-      (retainedMask R.terminal (side P kt) D st) (fun σ x y =>
-        (∑ i ∈ range (n + 1), HierarchyTask.positiveChildError channelsV
-          l i .residual source mid terminal (rate (kb i))
-          (2 * HP.Q HP.toHierarchyParams.atomCap) (2 * max cap 16)
-          (estimated (j + 1) i σ) (canonical i σ) x y) +
-        HierarchyTask.negativeChildError channelsV l 0 .residual source mid terminal
-          (rate (kb 0)) (estimated (j + 1) 0 σ) (canonical 0 σ) x y) x y
+    let cost := fun j x y => HierarchyTask.conditionalChildCost channelsV (range (n + 1)) l
+      source mid terminal (fun i => rate (kb i))
+      (2 * HP.Q HP.toHierarchyParams.atomCap) (2 * max cap 16)
+      (estimated (j + 1)) canonical x y
     (∀ i < m, rowNormPow 4 P (rate ks) (retainedMask R.source (side P ks) D ss)
       (retainedMask R.terminal (side P kt) D st) (fun _ => cost i) ≤ childBudget) →
     (∀ i < m, 32 * (1 - 1 / (155648 * (J + 1) * (4 : ℝ) ^ 4)) ^ (2 * steps (i + 1)) *
@@ -117,7 +113,8 @@ theorem actualEstimatedResidual_common_envelope_payment
       (raw (j + 1)) (prep (j + 1)) (maximum (j + 1)) x y (fun z => hcover z y)
     dsimp only at he
     convert he using 1 <;>
-      simp only [input, G, cost, channelsV, estimated, canonical, cutoff, bounded, source, mid,
+      simp only [input, G, cost, HierarchyTask.conditionalChildCost, channelsV, estimated,
+        canonical, cutoff, bounded, source, mid,
         terminal, estimatedResidualInput, rowSliceMean, CorrectionRowTask.Channel.retains,
         channels, gridChannel, semanticSide_grid, retainedMask, id_eq]
     congr!
