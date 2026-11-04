@@ -3707,6 +3707,7 @@ public import Complexity.Foundations.Probability.FourthRootHierarchyParams
 public import Complexity.Foundations.Probability.Gaussian.Multivariate
 public import Complexity.Foundations.Probability.Gaussian.Real
 public import Complexity.Foundations.Probability.Gaussian.Sheppard
+public import Complexity.Foundations.Probability.GridRowMoment
 public import Complexity.Foundations.Probability.HeavyCount
 public import Complexity.Foundations.Probability.HeavyCountRarity
 public import Complexity.Foundations.Probability.HeavyCountTail
@@ -3718,6 +3719,7 @@ public import Complexity.Foundations.Probability.HierarchyChildError
 public import Complexity.Foundations.Probability.HierarchyCorrectionMean
 public import Complexity.Foundations.Probability.HierarchyCutoffs
 public import Complexity.Foundations.Probability.HierarchyDenseChildren
+public import Complexity.Foundations.Probability.HierarchyEstimatedInput
 public import Complexity.Foundations.Probability.HierarchyEstimatedMean
 public import Complexity.Foundations.Probability.HierarchyParams
 public import Complexity.Foundations.Probability.HierarchyRankCutoffs

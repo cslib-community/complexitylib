@@ -123,11 +123,8 @@ theorem actualEstimatedResidual_first_mean_le
     let channelsV := fun role b suffix σ v => channels D role b suffix σ (id v)
     let S := ({σ : Environment P J | source.retains (channels D) σ (id x) ∧
       terminal.retains (channels D) σ (id y)} : Finset _)
-    let input := fun precision σ x y =>
-      (∑ i ∈ range (n + 1), HierarchyTask.rawPositiveSample channelsV
-        l i .residual source mid terminal (rate (kb i)) (estimated precision i σ) x y) -
-        HierarchyTask.rawNegativeSample channelsV l 0 .residual source mid terminal
-          (rate (kb 0)) (estimated precision 0 σ) x y
+    let input := estimatedResidualInput HP D id R l ks km kt n ss sm st kb Kc bounded
+      raw prep maximum
     let G := HP.toHierarchyParams.residual (canonicalChannel id (rate km))
       (canonicalChannel id (rate km)) (rate km) C
     let F := fun j => conditionalWalk (retainedMask R.source (side P ks) D ss)
@@ -151,7 +148,8 @@ theorem actualEstimatedResidual_first_mean_le
       hρ0 hρ1 hη hρη hK hχmono hχ0 hχrange hanti hratio hcap hCcap Kc
       (raw (j + 1)) (prep (j + 1)) (maximum (j + 1)) x y hcover
     dsimp only at he
-    simpa only [rowSliceMean, CorrectionRowTask.Channel.retains, channels, gridChannel,
+    simpa only [estimatedResidualInput, rowSliceMean, CorrectionRowTask.Channel.retains,
+      channels, gridChannel,
       semanticSide_grid, retainedMask, id_eq] using he
 
 end Matrix.HierarchyParams.H4RankEnvironment.NormalizedMoments

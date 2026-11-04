@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Probability.NormalizedAtomRows.SecondSignal
+public import Complexity.Foundations.Probability.HierarchyEstimatedInput
 
 /-!
 # Numerical first-signal payments from actual child ranges
@@ -41,23 +42,6 @@ noncomputable section
 attribute [local instance] Classical.propDecidable
 variable {P J : ℕ} [Fact P.Prime]
 
-/-- Arbitrary bin cutoffs need an explicit bound. The clipped denominator doubles it. -/
-theorem normalizedRequest_mem_Icc {q : ℕ}
-    (HP : FourthRootHierarchyParams 16 1 16 32 8) (D : ZMod P)
-    (r : HierarchyTask.Request q (Fin J) (ZMod P)) (binCutoff : ℝ → ℝ)
-    {CB : ℝ} (hCB : 0 ≤ CB) (hbin : ∀ d, binCutoff d ∈ Set.Icc 0 CB)
-    (raw prep : Environment P J → Matrix (ZMod P) (ZMod P) ℝ)
-    (σ : Environment P J) (x y : ZMod P) :
-    normalizedRequest D id r binCutoff HP.ρ HP.K raw prep σ x y ∈ Set.Icc 0 (2 * CB) := by
-  unfold normalizedRequest
-  split_ifs
-  · exact DenseRowRecipe.normalized_mem_Icc _ _ _ _ _ _ _ hCB hbin
-      (fun d => ⟨HP.ρ_nonneg d, HP.ρ_le_one d⟩) _ _ _ _ _
-  · exact ⟨le_rfl, by positivity⟩
-
-/-- Exact grid frame mass; all prime and rounding dependence is visible. -/
-@[expose] def gridMass (P k : ℕ) : ℝ := ((side P k : ℝ) / P) ^ 4
-
 /-- The range-only payment retains width P. It makes no dimension-free recursive claim.
 The two importance ratios and the source-released midpoint divisor are literal marginals. -/
 @[expose] def firstSignalPayment
@@ -70,35 +54,6 @@ The two importance ratios and the source-released midpoint divisor are literal m
   64 * (16 * P * B ^ 4 +
     HP.K ^ 3 * CA ^ 4 * Kc * (rate km / rate ks) * (16 * P * BR ^ 4) +
     16 * P * A ^ 4)
-
-/-- A bounded row pays at most the full width times its source density. The bound applies
-before any walk, with arbitrary dependence of the row on its source mask. -/
-lemma grid_row_moment_le (D : ZMod P) (s : Fin J) (ks : ℕ) (ss : List (ZMod P))
-    (H : Horizon P) (hks : ks ≤ H.maxExponent)
-    (Y : Environment P J → ZMod P → Prop) [∀ σ y, Decidable (Y σ y)]
-    (F : Environment P J → ZMod P → ZMod P → ℝ)
-    {B : ℝ} (hB : 0 ≤ B) (hF : ∀ σ x y, |F σ x y| ≤ B) :
-    rowNormPow 4 P (rate ks) (retainedMask s (side P ks) D ss) Y F ≤ 16 * P * B ^ 4 := by
-  have hP : (0 : ℝ) < P := by exact_mod_cast (Fact.out : P.Prime).pos
-  have hr := rate_pos ks
-  have hd := (affineRetains_rates (P := P) (H := 4) (horizon_admissible H hks)
-    (show ((2 : ℝ) ^ ks)⁻¹ ≤ 1 from inv_le_one_of_one_le₀ (one_le_pow₀ (by norm_num)))).2.2.1
-  rw [← side_eq_ceil] at hd
-  norm_num only [show (2 : ℝ) ^ 4 = 16 by norm_num] at hd
-  change gridMass P ks ≤ 16 * rate ks at hd
-  have hv : vertexNormPow 4 P (rate ks) (retainedMask s (side P ks) D ss)
-      (fun _ _ => 1) ≤ 16 := by
-    rw [vertexNormPow_one_eq_sum_dens, NormalizedMoments.source_density_sum]
-    change (↑P * rate ks)⁻¹ * (↑P * gridMass P ks) ≤ 16
-    calc
-      _ ≤ (↑P * rate ks)⁻¹ * (↑P * (16 * rate ks)) := by gcongr
-      _ = 16 := by field_simp [hP.ne', hr.ne']
-  have hb := rowNormPow_le_of_card_le (X := retainedMask s (side P ks) D ss)
-    (Y := Y) (Z := F) (by decide : 4 ≠ 0) (mul_pos hP hr).le hB hF
-    (K := P) (fun σ x _ => (card_le_card (subset_univ _)).trans_eq (by simp))
-  have hm := mul_le_mul_of_nonneg_left hv
-    (mul_nonneg (Nat.cast_nonneg P) (pow_nonneg hB 4))
-  exact hb.trans (by nlinarith only [hm])
 
 /-- All three lower-child norms are paid by actual fixed output ranges. The right factor
 retains its midpoint-density normalization. No incomingMomentBudget premise is assumed. -/
@@ -283,5 +238,95 @@ theorem actualFirstSignal_noise_le_dyadic {q : ℕ} (hq : 0 < q)
   have hn := actualFirstSignal_noise_le_payment hq HP hK D R Horizon l bin ks km k kb Lt
     hks hkm ss sm st Kc hKc binCutoff hCB hbin raw prep maximum steps G hG second initial hz i
   exact hn.trans (by nlinarith only [hp])
+
+
+/-- Actual first-signal noise for the finite once-negative input. The inverse parent
+rank-rate fourth power is retained in addition to the finite RAW input payment. -/
+theorem actualEstimatedFirstSignal_noise_le_payment
+    (HP : FourthRootHierarchyParams 16 1 16 32 8) (hK : 0 < HP.K)
+    (D : ZMod P) (R : RoleProfile J) (H : Horizon P)
+    (l ks km kt n : ℕ) (hks : ks ≤ H.maxExponent)
+    (ss sm st : List (ZMod P)) (kb : ℕ → ℕ) (Kc : ℕ) (cutoff : ℕ → ℝ → ℝ)
+    (CB : ℕ → ℝ) (hCB : ∀ i, 0 ≤ CB i)
+    (hcut : ∀ i v, cutoff i v ∈ Set.Icc 0 (CB i))
+    (raw prep : ℕ → ℕ → HierarchyTask.Request HP.k (Fin J) (ZMod P) →
+      Environment P J → Matrix (ZMod P) (ZMod P) ℝ)
+    (maximum : ℕ → ℕ → HierarchyTask.Request HP.k (Fin J) (ZMod P) →
+      Environment P J → ZMod P → ℝ) (steps : ℕ → ℕ)
+    (G : Matrix (ZMod P) (ZMod P) ℝ) (hG : ∀ x y, 0 ≤ G x y)
+    (second : Environment P J → ZMod P → ℕ → ZMod P → ℝ)
+    (initial : Environment P J → ZMod P → ZMod P → Fin 2 → ℝ)
+    (hz : ∀ σ x y, initial σ x y 0 = 0) (i : ℕ) :
+    let input := estimatedResidualInput HP D id R l ks km kt n ss sm st kb Kc cutoff
+      raw prep maximum
+    let F := fun j => conditionalWalk (retainedMask R.source (side P ks) D ss)
+      (retainedMask R.terminal (side P kt) D st)
+      (graph R.source R.terminal R.source_terminal (side P ks) (side P kt)
+        (side_le P ks) (side_le P kt) (fun x => CopyPadding.identifier D ss x)
+        (fun y => CopyPadding.identifier D st y)) (fun _ _ => steps j) (input j)
+    rowNormPow 4 P (rate ks) (retainedMask R.source (side P ks) D ss)
+      (retainedMask R.terminal (side P kt) D st)
+      (actualNoiseEntry R.source R.terminal (side P ks) (side P kt) (side P kt) D ss st kt G
+        (firstSignalIncrement F kt second) initial 0 i) ≤
+      (rate kt)⁻¹ ^ 4 * (32 *
+        (1 - 1 / (155648 * (J + 1) * (4 : ℝ) ^ 4)) ^ (2 * steps (i + 1)) *
+        (16 * P * (estimatedResidualBound HP P km kt n kb CB) ^ 4)) := by
+  dsimp only
+  have hn := actualNoiseEntry_firstSignal_row_le R.source R.terminal
+    (side P ks) (side P kt) (side P kt) D ss st
+    (fun _ => graph R.source R.terminal R.source_terminal (side P ks) (side P kt)
+      (side_le P ks) (side_le P kt) (fun x => CopyPadding.identifier D ss x)
+      (fun y => CopyPadding.identifier D st y)) (fun j _ _ => steps j)
+    (estimatedResidualInput HP D id R l ks km kt n ss sm st kb Kc cutoff raw prep maximum)
+    kt G hG second initial hz i (mul_nonneg (Nat.cast_nonneg P) (rate_pos ks).le)
+  exact hn.trans (mul_le_mul_of_nonneg_left
+    (estimatedResidualInput_noise_le HP hK D R H l ks km kt n hks ss sm st kb Kc
+      cutoff CB hCB hcut raw prep maximum (i + 1) (steps (i + 1))) (by positivity))
+
+/-- Positive-tolerance finite first-input noise contract, with fixed structural requests. -/
+theorem actualEstimatedFirstSignal_noise_le_dyadic
+    (HP : FourthRootHierarchyParams 16 1 16 32 8) (hK : 0 < HP.K)
+    (D : ZMod P) (R : RoleProfile J) (H : Horizon P)
+    (l ks km kt n : ℕ) (hks : ks ≤ H.maxExponent)
+    (ss sm st : List (ZMod P)) (kb : ℕ → ℕ) (Kc : ℕ) (cutoff : ℕ → ℝ → ℝ)
+    (CB : ℕ → ℝ) (hCB : ∀ i, 0 ≤ CB i)
+    (hcut : ∀ i v, cutoff i v ∈ Set.Icc 0 (CB i))
+    (raw prep : ℕ → ℕ → HierarchyTask.Request HP.k (Fin J) (ZMod P) →
+      Environment P J → Matrix (ZMod P) (ZMod P) ℝ)
+    (maximum : ℕ → ℕ → HierarchyTask.Request HP.k (Fin J) (ZMod P) →
+      Environment P J → ZMod P → ℝ) (steps : ℕ → ℕ)
+    (G : Matrix (ZMod P) (ZMod P) ℝ) (hG : ∀ x y, 0 ≤ G x y)
+    (second : Environment P J → ZMod P → ℕ → ZMod P → ℝ)
+    (initial : Environment P J → ZMod P → ZMod P → Fin 2 → ℝ)
+    (hz : ∀ σ x y, initial σ x y 0 = 0) (i : ℕ)
+    {ε : ℝ} (hε : 0 < ε) (m : ℕ)
+    (hsteps : spectralWalkLength (1 - 1 / (155648 * (J + 1) * (4 : ℝ) ^ 4))
+      ((rate kt)⁻¹ ^ 4 * 32 * (16 * P * (estimatedResidualBound HP P km kt n kb CB) ^ 4))
+      ε (dyadicSlack m i) ≤ steps (i + 1)) :
+    let input := estimatedResidualInput HP D id R l ks km kt n ss sm st kb Kc cutoff
+      raw prep maximum
+    let F := fun j => conditionalWalk (retainedMask R.source (side P ks) D ss)
+      (retainedMask R.terminal (side P kt) D st)
+      (graph R.source R.terminal R.source_terminal (side P ks) (side P kt)
+        (side_le P ks) (side_le P kt) (fun x => CopyPadding.identifier D ss x)
+        (fun y => CopyPadding.identifier D st y)) (fun _ _ => steps j) (input j)
+    rowNormPow 4 P (rate ks) (retainedMask R.source (side P ks) D ss)
+      (retainedMask R.terminal (side P kt) D st)
+      (actualNoiseEntry R.source R.terminal (side P ks) (side P kt) (side P kt) D ss st kt G
+        (firstSignalIncrement F kt second) initial 0 i) ≤
+      (ε * (64 : ℝ)⁻¹ ^ dyadicSlack m i) ^ 4 := by
+  dsimp only
+  have hden : (1 : ℝ) < 155648 * (J + 1) * (4 : ℝ) ^ 4 := by
+    have : (0 : ℝ) ≤ J := Nat.cast_nonneg J
+    nlinarith
+  have hr : 0 < 1 - 1 / (155648 * (J + 1) * (4 : ℝ) ^ 4) :=
+    sub_pos.mpr ((div_lt_one (by linarith)).mpr hden)
+  have hp := spectralWalkLength_payment hr (sub_lt_self _ (by positivity))
+    (show 0 ≤ (rate kt)⁻¹ ^ 4 * 32 * (16 * P *
+      (estimatedResidualBound HP P km kt n kb CB) ^ 4) from by positivity)
+    hε (dyadicSlack m i) (steps (i + 1)) hsteps
+  exact (actualEstimatedFirstSignal_noise_le_payment HP hK D R H l ks km kt n hks
+    ss sm st kb Kc cutoff CB hCB hcut raw prep maximum steps G hG second initial hz i).trans
+      (by convert hp using 1; ring)
 
 end Matrix.HierarchyParams.H4RankEnvironment.NormalizedMoments

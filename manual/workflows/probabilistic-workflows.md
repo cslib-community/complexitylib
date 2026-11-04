@@ -389,9 +389,26 @@ then pays B1 with the same explicit width and inverse rate. Its mean-error hypot
 absolute, before clipping. For actual finite bins,
 `actualEstimatedResidual_second_envelope_moment` discharges that mean-error step with
 `estimated_residual_bins_mean_error`: positive costs sum and the negative cost is charged once.
-It retains the actual signed input moment and canonical residual at km, with full rank and
-normalization at kt, finite coverage, narrower-source horizon, all suffixes, shared environment,
-importance and midpoint factors. Structural `Request HP.k` is independent of precision.
+The shared [estimated input](../../Complexity/Foundations/Probability/HierarchyEstimatedInput.lean)
+names exactly that positive-bin sum minus one negative request, with fixed `Request HP.k`
+and independent precision. Its pointwise range uses the actual left support at most K,
+zero extension off midpoint usage, and dense ranges `2 * CB_i`: the product costs
+`K * CA * 2 * CB_i`, rather than ambient width P. Here `CA = 2 * Q(atomCap)`,
+`CB_0 = cap` and `CB_i = 16` for fine bounded routed bins. The finite scale sum retains
+all rates, exact rounded-grid importance ratios and the midpoint marginal divisor.
+`estimatedResidualInput_moment_le` pays `16 * P * bound^4` at `N=P, u=rate ks`;
+the second-envelope client uses this payment without a retained raw-input-moment premise.
+The canonical residual remains at km, with full rank and normalization at kt, finite
+coverage, narrower-source horizon, all suffixes and one shared environment.
+
+`actualEstimatedFirstSignal_noise_le_dyadic` pays actual first-prefix row noise using the
+same input and the inverse parent-rate fourth power. For scaled centered RAW noise,
+`estimatedResidualInput_scaled_noise_le_dyadic` feeds `spectralWalkLength` the coefficient
+`amplification * 32 * 16 * P * bound^4`. For B1 the amplification is
+`P * (|ζ| * (Lh + Lρ) / rate kt)^4`; this retains RAW matrix units.
+Positive tolerance is required. The [finite input tests](../../ComplexityTests/HierarchyEstimatedInput.lean)
+include a positive nonconstant two-bin input, exact once-negative arithmetic, independent
+precisions, separate top/fine caps, support versus width, chosen amplified steps and zero/empty edges.
 The [regressions](../../ComplexityTests/SecondEnvelope.lean) check a positive nonconstant
 spectator raw child and B1, exact-zero/empty edges, actual clipped-mean comparison and an exact
 two-endpoint counterexample to dropping width.
