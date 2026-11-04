@@ -104,8 +104,108 @@ only output arguments. For a single full H4 environment,
 `normalizedRequest_eq_output` identifies the existing request, preserving the narrower
 usage mask and full terminal rank. The [actual-output regressions](../../ComplexityTests/NormalizedAtomRows.lean)
 check off-usage rank closure, unbounded-loss failure and positive output after an increment
-from zero. These are deterministic prerequisites; integrated moments and recursive/native
-RL remain open.
+from zero. These deterministic prerequisites feed the conditional moment route below;
+recursive/native RL remains open.
+
+For sharp no-overflow and first-overflow comparisons, import
+[NormalizedAtomRows/Sharp](../../Complexity/Foundations/Probability/NormalizedAtomRows/Sharp.lean).
+`fixed_shape` supplies positive shape and denominator scales. Choose those first, then
+use `sharp_noOverflow` or `sharp_firstOverflow`: final/tail coefficients precede the later
+positive dyadic floor, while the weighted preloss coefficient may depend on it.
+`sharp_compression` keeps the complementary false-first-overflow exclusion explicit.
+[RequestSharp](../../Complexity/Foundations/Probability/NormalizedAtomRows/RequestSharp.lean)
+applies both comparisons to the existing single-environment request; its first-overflow
+client derives the preparation mean range from bounded preparation values, even on empty
+slices. The [positive-floor exact-increment client](../../ComplexityTests/NormalizedAtomSharp.lean)
+starts from zero, allows arbitrary nonnegative first magnitude and obtains zero root error
+from exact raw prefixes. Run `scripts/build.sh --wfail --iofail ComplexityTests.NormalizedAtomSharp`
+from a configured checkout. Nonzero raw-prefix moments, false-overflow payments and recursive
+reserve choices still need their own proofs; these comparisons do not establish them.
+
+For actual heavy-first-overflow input tails, import
+[NormalizedAtomRows/ClippedTail](../../Complexity/Foundations/Probability/NormalizedAtomRows/ClippedTail.lean)
+and open `Matrix.HierarchyParams.H4RankEnvironment.NormalizedMoments`.
+`integrated_actual_clipped_tail_capacity` uses the actual first-overflow masks at any
+capacity sequence dominating `2^(64*dyadicSlack)`. Supply nonnegative genuine row mass,
+a deterministic clipped conditional-mean envelope and noise-max fourth moments. The first
+channel is conditioned on the full terminal rank set; the second uses the narrower usage
+set. `actual_walk_prefix_support` derives literal second-channel zero extension for
+conditional-walk telescoping increments starting at zero. Heavy-event rarity discounts only
+the deterministic mean term. Correlated noise receives its full moment budget, with no
+independence assumption for the adaptively maximizing endpoint. The resulting tail coefficient
+has the explicit mean factor `(2 + 256*M/η)/63` and noise factor `7/9`.
+
+The [tail regressions](../../ComplexityTests/NormalizedAtomTails.lean) check a nonconstant,
+correlated endpoint moment and a nonzero telescoping prefix. From a configured checkout run
+`scripts/build.sh --wfail --iofail ComplexityTests.NormalizedAtomTails`.
+These are conditional compression input estimates; deriving their lower-child envelopes
+and noise budgets, recursive reserves and native RL remains separate work.
+
+For the actual normalized-output fourth moment, import
+[NormalizedAtomRows/ActualMoment](../../Complexity/Foundations/Probability/NormalizedAtomRows/ActualMoment.lean)
+and keep the same `NormalizedMoments` namespace open.
+For the first-signal endpoint row-noise premise, the
+[FirstSignal route](probabilistic-workflows.md) derives the bound from genuine
+conditional-walk prefixes and explicit lower-child incoming moments. The
+[SecondSignal route](probabilistic-workflows.md) constructs the completed-raw selected preparatory
+input from those children and derives usage-slice endpoint ROW noise. Its pre-walk
+support bound pays 16K on an admitted source horizon, and an explicit logarithmic step
+choice discharges the actual second-prefix dyadic budget for positive tolerance. Mixing
+around the selected input mean does not establish its convergence to the genuine target.
+The [MeanBias route](probabilistic-workflows.md) now controls that deterministic discrepancy
+by explicit absolute residual entry and full-rank maximum errors on the same full
+environment, using the actual rho gate and joint source × usage mean. It retains the
+rate divisor and ζ scaling; deriving numerical errors from recursive relative estimates
+remains open.
+For an integrated second deterministic envelope, use
+[SecondEnvelope](../../Complexity/Foundations/Probability/NormalizedAtomRows/SecondEnvelope.lean).
+`secondMeanEnvelope_moment` keeps the width P and inverse rank-rate fourth power;
+`actualEstimatedResidual_second_envelope_moment` pays it from the finite range/support bound on the shared
+`estimatedResidualInput` and finite positive-bin/once-negative child-error costs.
+`estimatedResidualInput_moment_le` retains the scale sum, top/fine caps, exact rounded
+marginals and width P; it needs no final input-moment certificate. The target stays the canonical
+residual at km, while full terminal rank and normalization stay at kt. This is a finite
+absolute error bridge; small recursive errors and numerical reserves remain open.
+The [FirstPayment route](probabilistic-workflows.md) now supplies a finite first-signal
+payment from actual bin/correction ranges, exact importance and midpoint-density factors,
+and an explicit retained width P. Both signal clients use `spectralWalkLength`; its
+positive-tolerance guarantee leaves numerical mean envelopes, recursive budgets/reserves,
+parameter/workspace growth and native RL=L open.
+For the finite conditional output from actual lower-child cost moments, use
+[ReserveOutput](../../Complexity/Foundations/Probability/NormalizedAtomRows/ReserveOutput.lean).
+It constructs the common B by a finite scaled maximum, chooses both actual walk lengths,
+and discharges the compatible-capacity output theorem at the genuine canonical residual.
+The explicit allocation depends on the positive prefix horizon; recursive reserve induction,
+copy routing and parameter/workspace growth remain open. See the
+[probabilistic workflow](probabilistic-workflows.md) for the exact reserve and amplification.
+`actual_normalized_fourth_moment_capacity` bounds the row fourth moment of the difference
+of output fourth roots by `C*ε^4`. Its output evaluates the actual compression iterate,
+unchanged initial default, raw increments and dyadic floor; its first rank is full terminal
+rank and its final mask is usage. `genuineNormalizedRecipe_eq_request` identifies the target
+with the existing `normalizedRequest`, including its genuine joint preparation mean and
+inherited suffixes.
+
+Choose the hierarchy and positive signal scales first, then a positive compression floor η.
+The final coefficient may depend on η, but precedes P/J/N/u, row width, positive horizon m
+and the capacity sequence. Supply clipped deterministic mean envelopes, their endpoint row
+fourth moments, strong endpoint row-noise fourth moments on each channel's own mask, and
+actual second-channel zero extension. No true-entry cap or final-output error bound is a
+premise. The proof combines the final/no-overflow term, weighted preloss, heavy first-overflow
+tails and the complementary false-event union charged at prefix `j+1`. Two actual output
+supports give the factor `2K`, without a row-width factor.
+
+The capacities n must satisfy both `K ≤ n i` and `2^(64*dyadicSlack m i) ≤ n i` for i<m.
+`compatibleCapacity K m i = (K+1)*2^(64*dyadicSlack m i)` supplies both for arbitrary fixed K;
+`actual_normalized_fourth_moment_compatible` applies it to the actual output itself. Increasing
+capacity changes the algorithm: event rarity and false-overflow charges are proved at n,
+with no assumed output or event monotonicity. The
+[capacity regression](../../ComplexityTests/NormalizedAtomCapacity.lean) constructs an inhabited
+hierarchy with K beyond 2^64, checks both capacity bounds at every horizon and proves positive
+uncentered output after a nonzero first increment from zero row/default. Run
+`scripts/build.sh --wfail --iofail ComplexityTests.NormalizedAtomCapacity`.
+These fixtures do not instantiate all stochastic premises. Lower-child contracts, the full
+recursive hierarchy estimator and native resources/RL remain open; this conditional result
+is not a headline abstract or a class equality.
 
 ## Read abstracts, bridges and comparison contracts
 
@@ -114,3 +214,16 @@ For a named headline such as Fagin's theorem, locate its entry in `abstracts/cat
 The abstract is a readable presentation and its bridge proves the connection. The underlying library declaration is normally the reusable API. `#check_abstract` audits dependencies; it does not decide whether the semantics match your application. Likewise, `comparator/` contains selected independently stated contracts and solutions applying library theorems. Its coverage is explicit and limited, so absence from comparator is not a failed theorem check. Read the [assurance reference](../design-and-assurance/assurance.md) when deciding what evidence a result already has, and use the [contribution workflow](contributing.md) for any new proof or representation bridge.
 
 [complexitylib]: ../sources.md#complexitylib
+
+For actual output from per-request rooted moments, use
+[RootReserveOutput](../../Complexity/Foundations/Probability/NormalizedAtomRows/RootReserveOutput.lean)
+and its [child reserve payment](../../Complexity/Foundations/Probability/NormalizedAtomRows/ChildRootReserve.lean).
+The full-environment finite allocation is explicit and conservative; it supplies no recursive
+accuracy or parameter/workspace closure. The source-reset guard and exact coefficients are
+explained in the [probabilistic workflow](probabilistic-workflows.md).
+
+The two reserve-output theorems choose their output constant after the fixed hierarchy,
+ζ, scale and positive floor, before the prime, environment width, horizon, prefix length
+and raw/preparation/maximum families. Select this constant before allocating recursive
+child accuracies. Uniformity of that coefficient does not remove any displayed finite
+allocation or walk-length losses and supplies no recursive accuracy theorem.

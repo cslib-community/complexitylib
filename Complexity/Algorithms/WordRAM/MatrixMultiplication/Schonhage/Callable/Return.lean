@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Callable.Program
 
 /-!
@@ -33,16 +34,13 @@ private theorem exec_normalizeBank {W b n M : ℕ} (x : Data 163)
     ∃ y, ExecWithin W (ArrayNormalize.program.rename normalizeBank) x y (7 * n + 4) ∧
       y.mem = ArrayNormalize.normalizePrefix x.mem b M n ∧ y.regs Reg.result = b ∧
       ∀ i : Fin 163, 7 ≤ i.val → y.regs i = x.regs i := by
-  obtain ⟨a, ha, am, ab, an, aM⟩ := ArrayNormalize.exec (x.comap normalizeBank) hb hn hm hM hfit
-  refine ⟨a.extend normalizeBank x, ha.rename normalizeBank_injective, am,
-    (normalizeBank_injective.extend_apply _ _ ArrayNormalize.base).trans ab, ?_⟩
-  intro i hi
-  have hnot : ¬∃ j, normalizeBank j = i := by
-    rintro ⟨j, hj⟩
-    have h := congrArg (fun k : Fin 163 => k.val) hj
-    change j.val = i.val at h
-    omega
-  exact Function.extend_apply' _ _ _ hnot
+  obtain ⟨y, hy, ⟨hm, hb, _, _⟩, hframe⟩ := ExecWithin.rename_post normalizeBank_injective
+    (ArrayNormalize.exec (x.comap normalizeBank) hb hn hm hM hfit)
+  refine ⟨y, hy, hm, hb, fun i hi => hframe i ?_⟩
+  intro j hj
+  have h := congrArg (fun k : Fin 163 => k.val) hj
+  change j.val = i.val at h
+  omega
 
 /-- Normalize precisely the local original input; high product/caller registers survive. -/
 theorem exec_restoreInput {W b n M : ℕ} (x : Data 163) (hb : x.regs Reg.base = b)

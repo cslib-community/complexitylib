@@ -61,7 +61,8 @@ private noncomputable def child (r : Request 1 ℕ ℕ) : Matrix (Fin 2) (Fin 2)
 
 example : rawSample full 2 3 .residual source midpoint endpoint (1 / 8) child 0 1 =
     -5 / 4 := by
-  norm_num [rawSample, rawRequests, usageRatio, CorrectionRowTask.Channel.retains,
+  norm_num [rawSample, rawPositiveSample, rawNegativeSample, rawRequests, usageRatio,
+    CorrectionRowTask.Channel.retains,
     full, child, source, midpoint, endpoint, Fin.sum_univ_two]
 
 end ComplexityTests.HierarchyAccess

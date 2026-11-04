@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.Quadrant
 
 /-!
@@ -60,25 +61,25 @@ theorem exec_copyForm {w q t : ℕ} (base dst : Fin 64) (x : Data 64)
   have hquarter : t * q + q ≤ 4 * q := by
     have hmul := Nat.mul_le_mul_right q (Nat.succ_le_of_lt ht)
     simpa only [Nat.succ_mul] using hmul
-  obtain ⟨u, hu, hum, _, _, _⟩ := ArrayCopy.exec_of_separated_or_eq (z.comap f)
-    (hw.of_le (by omega))
-    (by rw [hzs, hzl]; exact hw.of_le (by omega))
-    (by rw [hzd, hzl]; exact hw.of_le (by omega))
-    (by
-      rw [hzs, hzd, hzl]
-      rcases hsep with h | h
-      · exact Or.inl (by omega)
-      · exact Or.inr (Or.inl (by omega)))
-  let y := u.extend f z
+  obtain ⟨y, hcopyRaw, ⟨hum, _, _, _⟩, hframe⟩ :=
+    ExecWithin.rename_post (Fin.castLE_injective _) (ArrayCopy.exec_of_separated_or_eq (z.comap f)
+      (hw.of_le (by omega))
+      (by rw [hzs, hzl]; exact hw.of_le (by omega))
+      (by rw [hzd, hzl]; exact hw.of_le (by omega))
+      (by
+        rw [hzs, hzd, hzl]
+        rcases hsep with h | h
+        · exact Or.inl (by omega)
+        · exact Or.inr (Or.inl (by omega))))
   have hcopy : ExecWithin w (ArrayCopy.program.rename f) z y (7 * q + 4) := by
-    simpa only [hzl] using hu.rename (Fin.castLE_injective _)
+    simpa only [hzl] using hcopyRaw
   have he : ExecWithin w (form base dst t 0 0) x y (7 * q + 9) := by
     simpa only [form, ite_true, f] using
       (hs.seq (hargs.seq hcopy)).mono (by omega : 3 + (2 + (7 * q + 4)) ≤ 7 * q + 9)
   have hym : y.mem = ArrayCopy.copyPrefix x.mem (x.regs base + t * q) (x.regs dst) q := by
     rw [hzs, hzd, hzl] at hum
     have hzm : z.mem = x.mem := hsm
-    simpa only [y, Data.extend, Data.comap_mem, hzm] using hum
+    simpa only [Data.comap_mem, hzm] using hum
   refine ⟨y, he, ?_, ?_, ?_⟩
   · intro j hj
     rw [hym]
@@ -88,12 +89,11 @@ theorem exec_copyForm {w q t : ℕ} (base dst : Fin 64) (x : Data 64)
     rw [hym]
     exact ArrayCopy.copyPrefix_outside (by omega)
   · intro i hi htemp
-    have hn : ¬∃ j, f j = i := by
-      rintro ⟨j, hj⟩
+    have hyi : y.regs i = z.regs i := hframe i (by
+      intro j hj
       have hv := congrArg Fin.val hj
       change j.val = i.val at hv
-      omega
-    have hyi : y.regs i = z.regs i := Function.extend_apply' _ _ _ hn
+      omega)
     apply hyi.trans
     have hi1 : i ≠ Reg.copyTarget := by intro h; subst i; contradiction
     have hi2 : i ≠ Reg.copyLength := by intro h; subst i; contradiction
