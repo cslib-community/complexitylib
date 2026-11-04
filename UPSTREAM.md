@@ -428,6 +428,22 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `Foundations/Data/{Finset/LowestMax,Nat/RadixUpdate}` hold the small general ordered-subset
   and radix-update facts used by these concrete clients. No curated abstract or rendering
   changes are needed for this native data-structure prerequisite.
+* **Native sparse box query.** [#2203](https://github.com/cslib-community/complexitylib/issues/2203)
+  reuses the finite `starBelow` partition and actual compact table above. A five-word native
+  task stack enumerates only prefixes of contributing leaves with order at most `t`.
+  Full leaves below the threshold multiply the original signed words; threshold leaves
+  compute the canonical box key and load its stored signed value. Finite frontier mass
+  and potential proofs charge actual expansion, stack traffic, dispatch and signed sums:
+  the reusable query costs at most `258*(L+1)*Σ(d≤t) alpha(m,d)+28` instructions.
+  This prefix traversal is an original alternative to `Sec4/Theorem30`'s bounded-nine-string
+  successor and per-tile trie at the same pinned formal-math source. It preserves the
+  existing bilinear expression, not the source trace or time contract. Level zero remains
+  least significant and the inner `P0` digit is nine. Actual initialized preparation,
+  same-witness prefix/halt and outside frame are proved; a logarithm of original magnitudes
+  and addresses admits all wider machines, with an independent-width polynomial envelope
+  for every prefix. Shared table setup and retained storage remain explicit. Global all-tile
+  reuse, wanted-query construction, Corollary 26/ET integration and the tuned 1.9992 endpoint
+  remain #1394; this milestone changes no curated abstract or rendering.
 * **Native pruned-query evaluator.** The explicit-stack pruned-query evaluator ([#1526](https://github.com/cslib-community/complexitylib/issues/1526))
   is original native code, reusing the finite `Pruned.result`, `childSet` and trace/leaf
   quantities from `Sec2/Lemma10.lean`. `PrunedQuery.queryIndex` directly applies the existing
