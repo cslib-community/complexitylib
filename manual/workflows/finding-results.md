@@ -160,8 +160,10 @@ remains open.
 For an integrated second deterministic envelope, use
 [SecondEnvelope](../../Complexity/Foundations/Probability/NormalizedAtomRows/SecondEnvelope.lean).
 `secondMeanEnvelope_moment` keeps the width P and inverse rank-rate fourth power;
-`actualEstimatedResidual_second_envelope_moment` pays it from the actual raw walk moment
-and finite positive-bin/once-negative child-error costs. The target stays the canonical
+`actualEstimatedResidual_second_envelope_moment` pays it from the finite range/support bound on the shared
+`estimatedResidualInput` and finite positive-bin/once-negative child-error costs.
+`estimatedResidualInput_moment_le` retains the scale sum, top/fine caps, exact rounded
+marginals and width P; it needs no final input-moment certificate. The target stays the canonical
 residual at km, while full terminal rank and normalization stay at kt. This is a finite
 absolute error bridge; small recursive errors and numerical reserves remain open.
 The [FirstPayment route](probabilistic-workflows.md) now supplies a finite first-signal

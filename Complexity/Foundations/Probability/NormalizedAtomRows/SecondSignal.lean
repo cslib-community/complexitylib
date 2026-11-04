@@ -9,6 +9,7 @@ module
 
 public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstSignal
 public import Complexity.Foundations.Probability.SpectralPayment
+public import Complexity.Foundations.Probability.GridRowMoment
 
 /-!
 # Preparatory second signals on the actual usage slice
@@ -176,22 +177,6 @@ theorem selectedPreparation_support_moment
       exact (selectedPreparation_range HP D R st k A σ x y).2)
     (fun σ x _ => hcard σ x)
   simpa only [one_pow, mul_one, vertexNormPow_one_eq_sum_dens] using hb
-
-/-- Exact source payment, including nonempty copy suffixes and D=0: a single frame
-marginal is uniform at every padded identifier; injectivity is not needed for one point. -/
-lemma source_density_sum (D : ZMod P) (s : Fin J) (ks : ℕ) (ss : List (ZMod P)) :
-    (∑ x : ZMod P, (({σ : Environment P J | retainedMask s (side P ks) D ss σ x} :
-      Finset _).dens : ℝ)) = (P : ℝ) * ((side P ks : ℝ) / P) ^ 4 := by
-  have hd (x : ZMod P) :
-      (({σ : Environment P J | retainedMask s (side P ks) D ss σ x} : Finset _).dens : ℝ) =
-        ((side P ks : ℝ) / P) ^ 4 := by
-    simp only [retainedMask]
-    convert density s (side P ks) (side_le P ks) (CopyPadding.identifier D ss x) using 1
-    congr 2
-    ext σ
-    simp
-  simp_rw [hd]
-  simp only [sum_const, card_univ, ZMod.card, nsmul_eq_mul]
 
 /-- On an admitted source horizon the normalized pre-walk fourth moment is at most 16K.
 Only source exponent ks needs the horizon; no input/support independence is used. -/
