@@ -126,6 +126,7 @@ public import Complexity.Algorithms.WordRAM.ElementDistinctness
 public import Complexity.Algorithms.WordRAM.ElementDistinctnessRAM
 public import Complexity.Algorithms.WordRAM.ExactTriangle.BoxRecordWitness.Exec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.BoxRecordWitness.Program
+public import Complexity.Algorithms.WordRAM.ExactTriangle.BoxRecordWitness.Record
 public import Complexity.Algorithms.WordRAM.ExactTriangle.BoxRecordWitness.Width
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Adapt
@@ -203,6 +204,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.SourceBound
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Step
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.TimeBound
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Width
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Window
 public import Complexity.Algorithms.WordRAM.ExactTriangle.InstancePair
 public import Complexity.Algorithms.WordRAM.ExactTriangle.Instances
 public import Complexity.Algorithms.WordRAM.ExactTriangle.MatrixSpec
@@ -277,6 +279,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Prepare
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Producer
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.ProducerQueries
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Program
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.QuerySpan
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.QueryValues
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.RawInput
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Readback
@@ -284,6 +287,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.RecordDa
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.SourceBounds
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.AfterProduct
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.AfterRecordProduct
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Consume
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Entry
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Exec
@@ -306,6 +310,20 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.TimeBoun
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Trace
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Width
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ResidueClasses
+public import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime
+public import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Admission
+public import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Controller
+public import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Cost
+public import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Cursor
+public import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Flat
+public import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Loop
+public import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Program
+public import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Readback
+public import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Record
+public import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Slot
+public import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Source
+public import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.SourceBounds
+public import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Step
 public import Complexity.Algorithms.WordRAM.ExactTriangle.WitnessScan.Cell
 public import Complexity.Algorithms.WordRAM.ExactTriangle.WitnessScan.Exec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.WitnessScan.Finite

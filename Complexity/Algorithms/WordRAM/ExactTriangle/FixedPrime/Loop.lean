@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Step
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Potential
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Window
 
 /-!
 # Complete traversal of the actual prepared catalogue
@@ -57,12 +58,6 @@ private structure Invariant {m n g p : ℕ} (V : ℕ → ℤ) (a : Data 64)
         x.regs (recordBank RecordWitness.Reg.witnessC))) +
       V (2 * (n * n) + (x.regs (recordBank RecordWitness.Reg.witnessA) * n +
         x.regs (recordBank RecordWitness.Reg.witnessC))) = 0
-
-private theorem window_mono {n Q : ℕ} (hQ : Q ≤ n * n) :
-    CallableProduct.windowSize n Q ≤ CallableProduct.windowSize n (n * n) := by
-  unfold CallableProduct.windowSize CallableProduct.sourceWidth
-  exact Nat.pow_le_pow_right (by decide)
-    (Nat.mul_le_mul_left 128 (Nat.clog_mono_right 2 (by omega)))
 
 /-- Run all occupied records, stopping at the first original witness. The original producer
 readback is a caller premise; the initialized theorem constructs it by running the producer

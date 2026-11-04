@@ -31,6 +31,8 @@ or sparse occurrence certificate is supplied as an input hypothesis.
 
 Parameters and the prime remain explicit admitted inputs of this component (`D >= 16`,
 `n >= D^18`, `g >= 1` and the stated prime window). `ParameterSelecting.callee` computes those
-values and calls this actual controller; `ThreeSum.Decision.exists_one9992_runs` composes the
-complete native ordinary 3SUM endpoint. This component does not require a supplied fast solver.
+values and calls the one-slot `StreamingFixedPrime` program through `CallableFixedPrime`.
+That program retains this conservative time envelope; `ThreeSum.Decision.exists_one9992_runs`
+composes the complete native ordinary 3SUM endpoint. Both standalone implementations remain
+available without a supplied fast solver.
 -/

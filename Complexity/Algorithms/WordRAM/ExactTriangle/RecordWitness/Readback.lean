@@ -89,12 +89,7 @@ theorem record_view {n D g p : ℕ} (values : ℕ → ℤ) (initial y : Data 64)
     rw [hheap, hout]
     nlinarith only [hQ, hrho, Nat.zero_le (3 * K),
       Nat.zero_le (K * H * (6 + 2 * (n * D)))]
-  have hfirst : idx.2.2 * pieceSize D g ≤ n := by
-    have hB := pieceSize_pos hD hg
-    by_contra hh
-    have hc : numPieces n D g ≤ idx.2.2 := (Nat.ceilDiv_le_iff hB).mpr (by omega)
-    change idx.2.2 < numPieces n D g at hj
-    omega
+  have hfirst : idx.2.2 * pieceSize D g ≤ n := (piece_start_lt hD hg hj).le
   obtain ⟨hdr, -, -⟩ := PreparationSpec.instance_readback values wAB hp
     (by intro a b; rfl) hD hDn hg h idx hidx
   have hcoord := (RecordProduct.output_query_coordinates values wAB hp (by intro a b; rfl)
