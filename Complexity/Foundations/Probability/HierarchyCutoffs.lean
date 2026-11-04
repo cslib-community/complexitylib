@@ -238,6 +238,33 @@ theorem selected_normalized (input : Matrix V V ℝ) (prep : ι × κ → Matrix
     HierarchyParams.CorrectionSampling.ofChannels_K,
     HierarchyParams.CorrectionSampling.ofChannels_Kc]
 
+/-- Preparation uses precisely the selected cutoffs and detector ranks. -/
+theorem selectedPilot_preparation (input : Matrix V V ℝ) :
+    (P.pilotSampling X Y hXY hYX hf hπ hC hC1 hi).preparationRecipe input =
+      CorrectionRowRecipe.preparation (polynomialAuxCutoff4 P.θ) P.incomingCutoff
+        (polynomialPrepCutoff4 P.θ) P.ρ P.K ⌈4 * (1 + 32 * P.R)⌉₊ f X Y input := by
+  unfold HierarchyParams.PilotSampling.preparationRecipe
+  simp only [pilotSampling, HierarchyParams.PilotSampling.ofChannels_I,
+    HierarchyParams.PilotSampling.ofChannels_τ,
+    HierarchyParams.PilotSampling.ofChannels_h,
+    HierarchyParams.PilotSampling.ofChannels_ρ,
+    HierarchyParams.PilotSampling.ofChannels_K,
+    HierarchyParams.PilotSampling.ofChannels_Kc]
+
+/-- Normalization uses precisely the selected cutoffs and actual bounded atom. -/
+theorem selectedPilot_normalized (input : Matrix V V ℝ) (prep : ι × κ → Matrix V V ℝ)
+    (maximum : V → ℝ) :
+    (P.pilotSampling X Y hXY hYX hf hπ hC hC1 hi).normalizedRecipe input prep maximum =
+      CorrectionRowRecipe.normalized (polynomialAuxCutoff4 P.θ) P.incomingCutoff P.ρ
+        P.toHierarchyParams.atomCutoff P.γ P.K ⌈4 * (1 + 32 * P.R)⌉₊ f X Y Y
+        input prep maximum := by
+  unfold HierarchyParams.PilotSampling.normalizedRecipe
+  simp only [pilotSampling, HierarchyParams.PilotSampling.ofChannels_I,
+    HierarchyParams.PilotSampling.ofChannels_τ,
+    HierarchyParams.PilotSampling.ofChannels_ρ,
+    HierarchyParams.PilotSampling.ofChannels_K,
+    HierarchyParams.PilotSampling.ofChannels_Kc]
+
 /-- The correction client discharges incoming-cap hypotheses on arbitrary children. -/
 theorem correction_col_support
     (input : Matrix V V ℝ) (prep : ι × κ → Matrix V V ℝ) (maximum : V → ℝ)
