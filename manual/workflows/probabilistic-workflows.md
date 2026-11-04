@@ -753,8 +753,19 @@ cutoff vanishes on light inputs, is one wherever the bounded routed numerator is
 and has a globally Lipschitz fourth root. Its constants precede bin scales and routing.
 The [checked instance](../../ComplexityTests/RoutedBinPreparation.lean) uses a nonzero routed
 top bin and checks the zero side; constant-one preparation fails that light-input contract.
-These primitive laws do not yet supply routed-numerator regularity, mean/noise envelopes
-or the general compressed parent-error theorem.
+The [actual unrouted numerator](../../Complexity/Foundations/Probability/UnroutedBinRegularity.lean)
+now has a globally Lipschitz fourth root for the polynomial switch on `[1/2,1]`
+and positive scales with constant adjacent ratio at least two. The constant depends
+only on that ratio and the top cap, before bin indices or child values. The fine-bin
+proof factors the literal switch difference; the top bin retains its actual clipping.
+`DenseBinRecipe.polynomialUnrouted` combines this numerator with the existing polynomial
+preparation and HP row gate. The [checked recipe](../../ComplexityTests/UnroutedBinRegularity.lean)
+uses the geometric ratio-16 grid: top values at and above cap two equal two, fine
+values at 8, 12 and 16 equal 8, 6 and 0, and light/negative values vanish. Its nonempty
+hierarchy witness checks both root bounds, numerator range/support and preparation
+coverage, including `h 0 = 0` and `h 1 = 1`. The old compressed fixture remains
+construction-only. Nonconstant routing regularity, canonical mean/noise envelopes
+and the general compressed parent-error theorem remain open.
 
 The simultaneous all-lower-budget row/vector availability, canonical error, support and range
 invariant is unfinished. The finite compressed-bin consumer above is wired, but its general canonical mean/noise

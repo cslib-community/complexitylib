@@ -3807,6 +3807,7 @@ public import Complexity.Foundations.Probability.SourceRelease
 public import Complexity.Foundations.Probability.SpectralPayment
 public import Complexity.Foundations.Probability.StochasticAtom
 public import Complexity.Foundations.Probability.TrueSampleMeans
+public import Complexity.Foundations.Probability.UnroutedBinRegularity
 public import Complexity.Foundations.Quantum.Measurement
 public import Complexity.Foundations.Quantum.Measurement.Overlap
 public import Complexity.Foundations.Relation.InductiveCounting
