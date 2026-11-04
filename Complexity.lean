@@ -52,7 +52,12 @@ public import Complexity.Algorithms.Lean.Submodular.Greedy
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Alphabets
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.BandBounds
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Batch
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.BoxPartition
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.BoxValues
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Boxes
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.BoxesFromLeaves
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.CoordinateTransform
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Cubes
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Full
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Identity
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Layout
@@ -2858,7 +2863,9 @@ public import Complexity.Crypto.Computational.IndexedSignature.Seeded
 public import Complexity.Crypto.Computational.Kilian
 public import Complexity.Crypto.Computational.Kilian.NP
 public import Complexity.Crypto.Computational.Kilian.Soundness
+public import Complexity.Crypto.Computational.Kilian.Succinct
 public import Complexity.Crypto.Computational.LWE.Basic
+public import Complexity.Crypto.Computational.LubyRackoff
 public import Complexity.Crypto.Computational.MAC
 public import Complexity.Crypto.Computational.MerkleDamgard
 public import Complexity.Crypto.Computational.MerkleSignature
@@ -3486,6 +3493,7 @@ public import Complexity.Foundations.Data.Finset.Expect
 public import Complexity.Foundations.Data.Finset.Finpartition
 public import Complexity.Foundations.Data.Finset.KthLargest
 public import Complexity.Foundations.Data.Finset.KthLargest.Truncation
+public import Complexity.Foundations.Data.Finset.Lowest
 public import Complexity.Foundations.Data.Finset.Markov
 public import Complexity.Foundations.Data.Finset.OrderGlue
 public import Complexity.Foundations.Data.Finset.OrderedFilter
@@ -3723,10 +3731,13 @@ public import Complexity.Foundations.Probability.HierarchySourceSampling
 public import Complexity.Foundations.Probability.HierarchyTaskData
 public import Complexity.Foundations.Probability.HierarchyTaskMeans
 public import Complexity.Foundations.Probability.HierarchyTasks
+public import Complexity.Foundations.Probability.NormalizedAtomRows.ActualMoment
 public import Complexity.Foundations.Probability.NormalizedAtomRows.BoundedLoss
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ClippedTail
+public import Complexity.Foundations.Probability.NormalizedAtomRows.Integrated
 public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanEvent
 public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanTail
+public import Complexity.Foundations.Probability.NormalizedAtomRows.Moment
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Output
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Request
 public import Complexity.Foundations.Probability.NormalizedAtomRows.RequestSharp
