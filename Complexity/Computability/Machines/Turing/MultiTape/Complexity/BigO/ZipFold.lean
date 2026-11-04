@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunProp
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.ListHead
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeOptionPrimitives
@@ -76,53 +76,10 @@ namespace ComputableInO
 variable {encP : π ↪ List Bool} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
   {encC : γ ↪ List Bool} {f : π → α → Option β → Option γ}
 
-/-- The next element of the second list. -/
-private lemma head?_eq (l : List β) [Inhabited β] :
-    l.head? = if l.isEmpty then none else some (l.headD default) := by
-  cases l <;> rfl
-
 /-- The results of a round, as a test on the result of `f`. -/
 private lemma append_toList_eq [Inhabited γ] (o : Option γ) (acc : List γ) :
     acc ++ o.toList = if o.isSome then acc ++ [o.getD default] else acc := by
   cases o <;> simp
-
-private lemma length_head?_le (l : List β) :
-    (encOption encB l.head?).length ≤ (encList encB l).length + 1 := by
-  cases l with
-  | nil => simp
-  | cons b l =>
-    have := length_le_encList_of_mem encB (List.mem_cons_self (a := b) (l := l))
-    simp only [List.head?_cons, encOption_some, List.length_cons]
-    omega
-
-private lemma length_getD_le [Inhabited γ] (o : Option γ) :
-    (encC (o.getD default)).length ≤ (encOption encC o).length + (encC default).length := by
-  cases o with
-  | none => simp
-  | some c => simp; omega
-
-/-- The next element of the second list, in linear time. -/
-private lemma head?_inO [Inhabited β] : ComputableInO (fun l : List β => l.head?) (encList encB)
-    (encOption encB) (fun l => (2 * (encB default).length + 8) * ((encList encB l).length + 1))
-    fun l => (2 * (encB default).length + 8) * ((encList encB l).length + 1) := by
-  have hsome := (ComputableInDegree.optionSome (enc₁ := encB) (enc := encOption encB)).inO_one
-  have h : ComputableInO (fun l : List β => if l.isEmpty then none else some (l.headD default))
-      (encList encB) (encOption encB) _ _ :=
-    (ComputableInDegree.listIsEmpty encB).inO_one.ite (const none)
-      (hsome.comp' (ComputableInDegree.listHeadD encB default).inO_one)
-  refine (h.of_enc_eq fun l => by rw [head?_eq]).mono 4 (fun l => ?_) fun l => ?_
-  all_goals
-    have hd : (encB (l.headD default)).length ≤
-        (encList encB l).length + (encB default).length := by
-      cases l with
-      | nil => simp
-      | cons b l =>
-        have := length_le_encList_of_mem encB (List.mem_cons_self (a := b) (l := l))
-        simp only [List.headD_cons]
-        omega
-    have hmul : (encList encB l).length + (encB default).length + 1 ≤
-        (2 * (encB default).length + 8) * ((encList encB l).length + 1) := by nlinarith
-    split_ifs <;> omega
 
 /-- The argument of `f` in a round is linear in the input of that round. -/
 private lemma length_zipFoldArg_le (p : π) (a : α) (r : List β) (acc : List γ) :
