@@ -301,7 +301,8 @@ def install (i : ι) (d : (C i).Arg) (x : Data (registers C)) : Data (registers 
   apply Memory.State.ext rfl
   simp [memoryState, install, frontier]
 
-private theorem install_src (i : ι) (d : (C i).Arg) (x : Data (registers C)) :
+/-- Installed arguments occupy the selected tag's actual source registers. -/
+theorem install_src (i : ι) (d : (C i).Arg) (x : Data (registers C)) :
     (install C i d x).regs ∘ src C i = (C i).input d := by
   funext j
   simp [install, src]
@@ -329,7 +330,8 @@ theorem install_eq_self (i : ι) (d : (C i).Arg) (x : Data (registers C))
       rw [dite_eq_right hj]
   · rfl
 
-private theorem install_bounded {w : ℕ} (i : ι) (d : (C i).Arg) {x : Data (registers C)}
+/-- Installing fitted argument words preserves bounded data. -/
+theorem install_bounded {w : ℕ} (i : ι) (d : (C i).Arg) {x : Data (registers C)}
     (hx : x.Bounded w) (hin : ∀ j, Fits w ((C i).input d j)) : (install C i d x).Bounded w := by
   refine ⟨fun j => ?_, hx.2⟩
   simp only [install]

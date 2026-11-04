@@ -102,4 +102,73 @@ noncomputable def Witness.ofRealizes (h : Realizes B p input output safe work) :
   code := h.code
   code_spec := h.choose_spec.choose_spec.choose_spec
 
+/-- Strengthen the entry domain or enlarge local work without reselecting any witness data. -/
+def Witness.consequence {safe' : ℕ → δ → Memory.State → Prop}
+    {work' : δ → Memory.State → ℕ} (h : Witness B p input output safe work)
+    (hsafe : ∀ w d s, (∀ i, Fits w (input d i)) → Memory.WellFormed w s →
+      safe' w d s → safe w d s)
+    (hwork : ∀ d s, work d s ≤ work' d s) : Witness B p input output safe' work' where
+  scratchSize := h.scratchSize
+  factor := h.factor
+  code := h.code
+  code_spec := by
+    intro r frontier src tmp hi hd hf hs
+    obtain ⟨hnw, hrun⟩ := h.code_spec frontier src tmp hi hd hf hs
+    refine ⟨hnw, ?_⟩
+    intro w d x hx hin hsafe' hv
+    have hwords (i : Fin k) : Fits w (input d i) := congrFun hin i ▸ hx.1 (src i)
+    obtain ⟨y, hy, hm, hout, hframe⟩ :=
+      hrun w d x hx hin (hsafe w d _ hwords (wellFormed_memoryState hx) hsafe') hv
+    refine ⟨y, hy.mono (Nat.mul_le_mul_left h.factor ?_), hm, hout, hframe⟩
+    have := hwork d (memoryState frontier x)
+    omega
+
+/-- The client's own admissible history can discharge a stronger entry domain. The supplied
+scratch, factor and emitter remain unchanged. -/
+def Witness.consequence_valid {safe' : ℕ → δ → Memory.State → Prop}
+    (h : Witness B p input output safe work)
+    (hsafe : ∀ w d s, (∀ i, Fits w (input d i)) → Memory.WellFormed w s →
+      (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (p d)) →
+      safe' w d s → safe w d s) : Witness B p input output safe' work where
+  scratchSize := h.scratchSize
+  factor := h.factor
+  code := h.code
+  code_spec := by
+    intro r frontier src tmp hi hd hf hs
+    obtain ⟨hnw, hrun⟩ := h.code_spec frontier src tmp hi hd hf hs
+    refine ⟨hnw, fun w d x hx hin hsafe' hv => hrun w d x hx hin ?_ hv⟩
+    exact hsafe w d _ (fun i => congrFun hin i ▸ hx.1 (src i))
+      (wellFormed_memoryState hx) hv hsafe'
+
+/-- Exact source equality changes no witness field or code. -/
+def Witness.congr {p' : δ → Memory.Prog α} (h : Witness B p input output safe work)
+    (hp : ∀ d, p d = p' d) : Witness B p' input output safe work where
+  scratchSize := h.scratchSize
+  factor := h.factor
+  code := h.code
+  code_spec := by
+    intro r frontier src tmp hi hd hf hs
+    simpa only [hp] using h.code_spec frontier src tmp hi hd hf hs
+
+/-- Rewire already live input words by a fixed index map, retaining the supplied resources.
+The pointwise encoding equality charges no new host-side argument computation. -/
+def Witness.reindex {ε : Type} {m : ℕ} (h : Witness B p input output safe work)
+    (f : ε → δ) (env : ε ↪ (Fin m → ℕ)) (ix : Fin k → Fin m)
+    (hw : ∀ e i, input (f e) i = env e (ix i)) :
+    Witness B (fun e => p (f e)) env output
+      (fun w e s => safe w (f e) s) (fun e s => work (f e) s) where
+  scratchSize := h.scratchSize
+  factor := h.factor
+  code := fun frontier src tmp => h.code frontier (src ∘ ix) tmp
+  code_spec := by
+    intro r frontier src tmp hi hd hf hs
+    obtain ⟨hnw, hrun⟩ := h.code_spec frontier (src ∘ ix) tmp hi
+      (fun i j => hd (ix i) j) hf (fun i => hs (ix i))
+    refine ⟨hnw, ?_⟩
+    intro w e x hx hin hsafe hv
+    have hin' : x.regs ∘ (src ∘ ix) = input (f e) := by
+      funext i
+      exact (congrFun hin (ix i)).trans (hw e i).symm
+    exact hrun w (f e) x hx hin' hsafe hv
+
 end Cslib.WordRAM.Realization.Realizes
