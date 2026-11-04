@@ -53,9 +53,38 @@ reads a pointer and then its target using one supplied emitter. Its generic Back
 registers, compared with six for the former disjoint-bank layout, and executes two loads;
 argument installation and halt are separate. The client checks a maximum fitting payload,
 a zero pointer, aliased input registers and an unallocated second address that fails the
-original history condition. This deterministic supplier does not change `RealizesRand.bind`.
+original history condition. For probabilistic clients, use the joint-law data route below.
 For supplying its data to a Backend, follow
 [Retain concrete realization resources](wordram-and-bridges.md#retain-concrete-realization-resources).
+
+### Retain a randomized joint law
+
+Import `Complexity.Computability.WordRAM.Realization.Random` and retain a
+`RealizesRand.Witness` when you need the supplied scratch, factor and code for a client with
+private coins. Its `code_spec` is the same `RealizesRand.Spec` used by the existential
+`RealizesRand` judgment: every supported path obeys the time and draw budgets, and the result
+words together with the entire memory/frontier have the specified joint law. Erasure by
+`Witness.toRealizesRand` supplies the existing judgment but does not identify a later
+classically selected emitter with your supplied one.
+
+Compose `RealizesRand.coinWitness`, deterministic `Realizes.Witness.toRand` and
+`RealizesRand.Witness.bind`. Deterministic entry retains the same code/resources with zero
+draws; a coin uses the existing unit-cost inclusive native `rand` on `[0, upper]`,
+including one charged draw when `upper = 0`. This is not a fair-bit sampler.
+Bind retains the shared bank described above. Its continuation domain and time/draw ceilings
+must hold for **every supported answer and memory state**, and its native contract must handle
+every bounded scratch state. Correlation with predecessor scratch is not a new independence
+premise. Use `code_spec` on the chosen layout to retain its concrete resource evidence.
+
+The complete [supplied randomized client](../../ComplexityTests/WordRAMRealizationRandomWitness.lean)
+samples a word, writes it to a runtime address and reads it back. One six-register emitter
+replaces the disjoint layout's seven registers; its certified body bound is six instructions
+and at most one `rand` call. A four-outcome distribution checks that the returned word and
+written cell are correlated, with the rest of memory/frontier framed. Zero upper bound,
+aliased inputs and invalid continuation history are also checked. Input delivery/installation
+and halt remain separate. The existing existential flat-program export is available for its
+own admitted inputs; this supplier adds no randomized Backend and proves no fixed Karger
+register count or numerical clock.
 
 ### Export a canonical initialized flat program
 
