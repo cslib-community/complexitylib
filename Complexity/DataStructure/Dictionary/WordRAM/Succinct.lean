@@ -26,7 +26,7 @@ reusable `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl` certificat
 Following Bender, Farach-Colton, J. Kuszmaul, and W. Kuszmaul (*"Modern Hashing Made Simple"*,
 SOSA 2024, Sections 3–4):
 1. **One-round Feistel quotienting (`FeistelQuotient`)**: splits each key `u : Fin U` into a
-   `bucketBits n_max`-bit low half and a `quotientBits U n_max`-bit quotient `q`, storing only `q`
+   `bucketBits n_max`-bit low part and a `quotientBits U n_max`-bit quotient `q`, storing only `q`
    and reconstructing `u` injectively within each bucket
    `b = (h₁(q) mod 2 ^ b_bits) ⊕ (u mod 2 ^ b_bits)`. Storing `n_max` quotients of
    `quotientBits U n_max` bits and `n_max` values of `valBits V` bits uses at most
@@ -35,11 +35,12 @@ SOSA 2024, Sections 3–4):
    We assume `n_max ≤ U` because keys are distinct elements of `Fin U` (so at most `U` distinct keys
    can coexist, and `U.choose n_max = 0` when `n_max > U`).
 2. **Slab + tail slot store (`SuccinctSlotInv`, `SuccinctSlabOps`, `SuccinctTailOps`)**:
-   divides the `n_max` physical item slots into full slabs of `slabSize n_max = 2 ^ slabBits n_max`
-   (`(slabScale n_max) ^ 2` when `0 < bucketBits n_max`, else `1`) items plus a tail pool of
-   `maxTailItems n_max` individual slots, with no wasted slots. Per-bucket item counts depend only
-   on the current live set, while the split between full slabs and tail items depends on history.
-   `bucketPotential` pays for the lazy promotions and demotions.
+   stores up to `n_max` active items in a single `n_max`-slot array (`slotOf`), packing full slabs
+   of `slabSize n_max = 2 ^ slabBits n_max` (`(slabScale n_max) ^ 2` when `0 < bucketBits n_max`,
+   else `1`) items from the low end and individual tail items from the high end under
+   `gm 0 * slabSize n_max + gm 1 ≤ n_max` (`SlotStoreInv.multi_total_le`). Per-bucket item counts
+   depend only on the current live set, while the split between full slabs and tail items depends
+   on history. `bucketPotential` pays for the lazy promotions and demotions.
 3. **Two-stage universe-reduced 3-wise quotient hashing (`ReducedKWise`)**: maps quotients into
    `(bucket, local micro-bucket)` pairs using `O(1) + o(n_max) / w` words of seed and bit-packed
    Four-Russians carryless multiplication tables (`hashSpace U w n_max`), without any
