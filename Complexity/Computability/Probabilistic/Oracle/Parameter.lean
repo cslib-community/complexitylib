@@ -68,10 +68,10 @@ theorem IsOraclePPT.congr (h : IsOraclePPT output program)
     (heq : ∀ n input (State : Type)
       (oracle : Operation × List Bool → StateT State PMF (List Bool)) state,
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (program n input)).run state =
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (program' n input)).run state) : IsOraclePPT output program' :=
   h.on.congr (fun input => heq input.1 input.2)
 
@@ -103,7 +103,8 @@ theorem IsOraclePPT.run_interpret_preprocess {Caller State : Type}
     (hprepare : ComputableTidilyInPolyTime prepare input (encPair encUnary encBits))
     (hhandler : IsPPTOn
       (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
-      (encPair encBits stateEncoding) (fun pair => handler pair.1 pair.2.1 pair.2.2))
+      (encPair encBits stateEncoding)
+      (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
     (invariant : Caller → State → Prop) (hinit : ∀ a, invariant a (initial a))
     (hresources : ComputableTidilyInPolyTime (fun pair => resources pair.1 pair.2)
@@ -114,7 +115,7 @@ theorem IsOraclePPT.run_interpret_preprocess {Caller State : Type}
         (stateEncoding result.2).length ≤ (stateEncoding state).length + resources a request.2) :
     IsPPTOn input (encPair output stateEncoding) (fun a =>
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n)) (handler a))
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n)) (handler a))
           (program (prepare a).1 (prepare a).2)).run (initial a)) :=
   hprogram.on.run_interpret_preprocess hprepare hhandler hinitial invariant hinit
     hresources hpreserve
@@ -133,7 +134,8 @@ theorem IsOraclePPT.run_interpret_preprocess_open {External Caller State : Type}
     (hprepare : ComputableTidilyInPolyTime prepare input (encPair encUnary encBits))
     (hhandler : IsOraclePPTOn
       (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
-      (encPair encBits stateEncoding) (fun pair => handler pair.1 pair.2.1 pair.2.2))
+      (encPair encBits stateEncoding)
+      (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
     (invariant : Caller → State → Prop) (hinit : ∀ a, invariant a (initial a))
     (hresources : ComputableTidilyInPolyTime (fun pair => resources pair.1 pair.2)
@@ -144,7 +146,7 @@ theorem IsOraclePPT.run_interpret_preprocess_open {External Caller State : Type}
         (stateEncoding result.2).length ≤ (stateEncoding state).length + resources a request.2) :
     IsOraclePPTOn input (encPair output stateEncoding) (fun a =>
       (OracleComp.interpret
-        (ProbOracleComp.handler
+        (OracleComp.sumHandler
           (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n))) (handler a))
           (program (prepare a).1 (prepare a).2)).run (initial a)) :=
   hprogram.on.run_interpret_preprocess_open hprepare hhandler hinitial invariant hinit
@@ -163,7 +165,8 @@ theorem IsOraclePPT.run_interpret_preprocess_open' {External Caller State : Type
     (hprepare : ComputableInPolyTime prepare input (encPair encUnary encBits))
     (hhandler : IsOraclePPTOn
       (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
-      (encPair encBits stateEncoding) (fun pair => handler pair.1 pair.2.1 pair.2.2))
+      (encPair encBits stateEncoding)
+      (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableInPolyTime initial input stateEncoding)
     (invariant : Caller → State → Prop) (hinit : ∀ a, invariant a (initial a))
     (hresources : ComputableInPolyTime (fun pair => resources pair.1 pair.2)
@@ -174,7 +177,7 @@ theorem IsOraclePPT.run_interpret_preprocess_open' {External Caller State : Type
         (stateEncoding result.2).length ≤ (stateEncoding state).length + resources a request.2) :
     IsOraclePPTOn input (encPair output stateEncoding) (fun a =>
       (OracleComp.interpret
-        (ProbOracleComp.handler
+        (OracleComp.sumHandler
           (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n))) (handler a))
           (program (prepare a).1 (prepare a).2)).run (initial a)) :=
   hprogram.on.run_interpret_preprocess_open' hprepare hhandler hinitial invariant hinit

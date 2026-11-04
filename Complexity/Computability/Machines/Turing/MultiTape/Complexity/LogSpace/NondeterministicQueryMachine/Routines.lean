@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.NondeterministicQueryMachine
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.SpaceNormalForm
 import Mathlib.Data.List.GetD
 
 /-!
@@ -88,12 +89,12 @@ structure Routines {α σ : Type} (M : NondeterministicQueryMachine σ)
 /-- Compile local query-machine callbacks into concrete finite native routines. -/
 theorem exists_routines {α σ : Type} {enc : α ↪ List Bool} {encS : σ ↪ List Bool}
     (M : NondeterministicQueryMachine σ)
-    (hquery : ComputableTidilyInSpace M.query encS encNat fun s => (encS s).length)
-    (hnext : ComputableTidilyInSpace M.next
+    (hquery : ComputableInSpace M.query encS encNat fun s => (encS s).length)
+    (hnext : ComputableInSpace M.next
       (encPair encS (encPair (encOption encBool) encBool)) encS
       fun p => (encPair encS (encPair (encOption encBool) encBool) p).length)
-    (hhalted : ComputableTidilyInSpace M.halted encS encBool fun s => (encS s).length)
-    (haccept : ComputableTidilyInSpace M.accept encS encBool fun s => (encS s).length)
+    (hhalted : ComputableInSpace M.halted encS encBool fun s => (encS s).length)
+    (haccept : ComputableInSpace M.accept encS encBool fun s => (encS s).length)
     (S : α → ℕ) (hlog : ∀ a, Nat.log2 (enc a).length + 1 ≤ S a)
     (hsize : ∃ c, ∀ a choices, (encS (M.run (enc a) choices)).length ≤ c * S a) :
     Nonempty (Routines M enc S) := by
@@ -110,11 +111,11 @@ theorem exists_routines {α σ : Type} {enc : α ↪ List Bool} {encS : σ ↪ L
     (encIn := encPair (encPass encS) encBool) (encOut := encBits) ([] : List Bool)
   obtain ⟨cPE, hPE⟩ := computableInTimeAndSpace_of_const
     (encIn := encPass encS) (encOut := encBits) ([] : List Bool)
-  obtain ⟨TN, cN, hN, -⟩ := passNext_inSpace hquery false
-  have hpns (b : Bool) := passEnd_inSpace hnext hhalted b
+  obtain ⟨TN, cN, hN, -⟩ := Internal.NormalForm.space (passNext_inSpace hquery false)
+  have hpns (b : Bool) := Internal.NormalForm.space (passEnd_inSpace hnext hhalted b)
   choose TPN cPN hPN hlenPN using hpns
-  obtain ⟨TC, cC, hC, -⟩ := passCont_inSpace hhalted false
-  obtain ⟨TF, cF, hF, -⟩ := passFinish_inSpace haccept false
+  obtain ⟨TC, cC, hC, -⟩ := Internal.NormalForm.space (passCont_inSpace hhalted false)
+  obtain ⟨TF, cF, hF, -⟩ := Internal.NormalForm.space (passFinish_inSpace haccept false)
   obtain ⟨cfr, hfr⟩ := ComputableTidilyInLinearTimeAndSpace.of_frame (f := id)
     (encIn := encPass encS) (encOut := encFramed (encPass encS)) fun _ => rfl
   obtain ⟨cuf, huf⟩ := ComputableTidilyInLinearTimeAndSpace.of_unframe (f := id)

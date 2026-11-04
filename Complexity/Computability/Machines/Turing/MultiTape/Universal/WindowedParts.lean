@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Christian Reitwiessner. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Christian Reitwiessner
 -/
 
 module
@@ -328,50 +328,6 @@ theorem half_inO :
 
 /-! ### A windowed step -/
 
-section TapeDegree
-
-private lemma tapeFields_deg : ComputableTidilyInDegree (fun t : Tape => (t.head, t.left, t.right))
-    eTape eTapeFields 1 1 :=
-  ComputableTidilyInDegree.of_eq fun _ => rfl
-
-@[local fun_prop]
-private lemma tapeMk_deg : ComputableTidilyInDegree
-    (fun p : ℤ × List (Option ℕ) × List (Option ℕ) => Tape.mk p.1 p.2.1 p.2.2) eTapeFields eTape
-    1 1 :=
-  ComputableTidilyInDegree.of_eq fun _ => rfl
-
-@[local fun_prop]
-private lemma tapeHead_deg : ComputableTidilyInDegree Tape.head eTape encInt 1 1 :=
-  tapeFields_deg.fst'
-
-@[local fun_prop]
-private lemma tapeLeft_deg : ComputableTidilyInDegree Tape.left eTape (encList eSym) 1 1 :=
-  tapeFields_deg.snd'.fst'
-
-@[local fun_prop]
-private lemma tapeRight_deg : ComputableTidilyInDegree Tape.right eTape (encList eSym) 1 1 :=
-  tapeFields_deg.snd'.snd'
-
-/-- The symbol under the head. -/
-@[local fun_prop]
-private lemma read_deg : ComputableTidilyInDegree Tape.read eTape eSym 1 1 := by
-  unfold Tape.read
-  fun_prop (disch := lia)
-
-/-- A right move. -/
-private lemma movePos_deg :
-    ComputableTidilyInDegree (fun t : Tape => t.move .pos) eTape eTape 1 1 := by
-  simp only [Tape.move]
-  fun_prop (disch := lia)
-
-/-- A left move. -/
-private lemma moveNeg_deg :
-    ComputableTidilyInDegree (fun t : Tape => t.move .neg) eTape eTape 1 1 := by
-  simp only [Tape.move]
-  fun_prop (disch := lia)
-
-end TapeDegree
-
 /-! #### Coded input cells -/
 
 private lemma inPos_eq (c : Option ℕ) : inPos c = if decide (c = some 0) then 0 else 1 := by
@@ -457,8 +413,8 @@ private lemma wFin_inO : ComputableTidilyInO wFin
   have hsucc := ComputableInO.natSucc.tidy
   have hc₁ := (ComputableInO.eq encNat).tidy.comp (hp'.prod (hsucc.comp hp))
   have hc₂ := (ComputableInO.eq encNat).tidy.comp ((hsucc.comp hp').prod hp)
-  have hmv := hc₁.ite (movePos_deg.inO_one.comp_linear ht)
-    (hc₂.ite (moveNeg_deg.inO_one.comp_linear ht) ht)
+  have hmv := hc₁.ite (Universal.movePos_deg.inO_one.tidy.comp_linear ht)
+    (hc₂.ite (Universal.moveNeg_deg.inO_one.tidy.comp_linear ht) ht)
   have hlist := (ComputableTidilyInDegree.cons eTape).inO_one.comp_linear
     (hmv.prod hf.snd'.snd')
   refine (((hf.fst'.prod hlist).prod hy₂.snd').of_enc_eq (g := wFin) fun y => ?_).mono 64
@@ -553,7 +509,7 @@ private lemma wArgs_inO : ComputableTidilyInO
   have hd := fst eDesc eWin
   have hw := snd eDesc eWin
   have hhead := (ComputableTidilyInDegree.listHeadD eTape default).inO_one.comp_linear hw.snd'
-  have hread := read_deg.inO_one.comp_linear hhead
+  have hread := Universal.read_deg.inO_one.tidy.comp_linear hhead
   have hpos := inPos_inO.comp hread
   have hsym := inSym_inO.comp hread
   have htail := (ComputableTidilyInDegree.listTail eTape).inO_one.comp_linear hw.snd'

@@ -379,7 +379,7 @@ theorem exists_evaluator {Param : Type} {input : Param ↪ List Bool} {output : 
             sequenceTest replacement original count (test a) (observation, trial))) := by
   simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime]
   obtain ⟨c, d, raw, hefficient, hrealize⟩ := htest.exists_padded_bool_coin_evaluator
-  refine ⟨c, d, evaluate raw, (isPolyTime_evaluate (.of_tidy hefficient)).tidy, ?_⟩
+  refine ⟨c, d, evaluate raw, (isPolyTime_evaluate hefficient).tidy, ?_⟩
   intro a replacement original count width observation hwidth
   apply eval_sample output (input a) replacement original count c d width (test a) raw
     (fun values budget hbudget => hrealize (a, values) budget hbudget) observation hwidth
