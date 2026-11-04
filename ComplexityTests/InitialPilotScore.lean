@@ -1454,9 +1454,9 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
 
 -- Later RAW boundaries are unproved and remain explicit, even when a short schedule
 -- would otherwise contain only empty groups. They never become dummy zero outputs.
-example (HP : FourthRootHierarchyParams 16 1 16 32 8) (M : ℕ) :
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (hk : 1 < HP.k) (M : ℕ) :
     (budgetData HP).evaluate M
-      { request HP with task := .row 0 (.input ⟨0, HP.k_pos⟩) } = none ∧
+      { request HP with task := .row 0 (.input ⟨1, hk⟩) } = none ∧
     (budgetData HP).evaluate M { request HP with task := .residual 0 } = none := by
   constructor <;> rw [BudgetData.evaluate_eq] <;> rfl
 
