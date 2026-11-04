@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Power.Rename
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Memory
 
 /-!
@@ -70,31 +71,17 @@ theorem exec_powers {w L Q : ℕ} (x : Data registers) (hL : x.regs inputDepth =
   have hx0_depth : (x0.comap powerRegisters).regs Power.exponent = L := by
     simpa +decide [x0, powerRegisters, Power.exponent, inputDepth, nil, two, ten, nine,
       frameWidth] using hL
-  obtain ⟨z, hz, hv, hc, ho, hm, hb', hd'⟩ :=
-    Power.exec 10 L (by decide) (x0.comap powerRegisters) hx0_ten hx0_depth hfit_pow
-  have hpow : ExecWithin w (Power.program.rename powerRegisters) x0
-      (z.extend powerRegisters x0) (4 * L + 5) :=
-    hz.rename powerRegisters_injective
-  let y := z.extend powerRegisters x0
+  obtain ⟨y, hpow, hv, hc, ho, hm, hb', hd', -⟩ :=
+    Power.exec_rename powerRegisters powerRegisters_injective 10 L (by decide) x0
+      hx0_ten hx0_depth hfit_pow
   have he : ExecWithin w powers x y (4 * L + 10) :=
     (hsetup.seq hpow).mono (by omega)
-  have hce := Data.comap_extend powerRegisters_injective z x0
-  refine ⟨y, he, hm, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+  refine ⟨y, he, hm, hd', hv, hc, ?_, ho, ?_, hb', ?_, ?_,
     fun i hi => he.regs_eq (powers_preserves i hi)⟩
-  · have h := congrArg (fun d : Data 5 => d.regs Power.exponent) hce
-    exact h.trans hd'
-  · have h := congrArg (fun d : Data 5 => d.regs Power.value) hce
-    exact h.trans hv
-  · have h := congrArg (fun d : Data 5 => d.regs Power.counter) hce
-    exact h.trans hc
   · simpa +decide [x0, nil, two, ten, nine, frameWidth] using
       hpow.regs_eq (by decide : (Power.program.rename powerRegisters).Preserves nil)
-  · have h := congrArg (fun d : Data 5 => d.regs Power.one) hce
-    exact h.trans ho
   · simpa +decide [x0, nil, two, ten, nine, frameWidth] using
       hpow.regs_eq (by decide : (Power.program.rename powerRegisters).Preserves two)
-  · have h := congrArg (fun d : Data 5 => d.regs Power.base) hce
-    exact h.trans hb'
   · simpa +decide [x0, nil, two, ten, nine, frameWidth] using
       hpow.regs_eq (by decide : (Power.program.rename powerRegisters).Preserves nine)
   · simpa +decide [x0, nil, two, ten, nine, frameWidth] using

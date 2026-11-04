@@ -9,7 +9,6 @@ module
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Input
 public import Complexity.Foundations.Data.Nat.Log
-import Mathlib.Data.List.GetD
 
 /-!
 # Polynomial words and space for every ordinary-host prefix
@@ -21,8 +20,7 @@ all prefixes at every wider admitted width, including all concrete callee scratc
 ## Main results
 
 * `two_pow_width_le`: explicit fixed polynomial word universe.
-* `intermediates_polynomial`: every actual register and memory word stays polynomially bounded.
-* `space_polynomial`: all actual prefix memory is zero beyond that polynomial interval.
+* `prefix_polynomial`: all prefix words and memory support share one polynomial envelope.
 
 These native representation bounds are original and reuse the generic width-prefix theorem.
 -/
@@ -45,44 +43,22 @@ theorem two_pow_width_le (κ d n : ℕ) :
     _ ≤ ((n + 2) ^ 2) ^ widthCoefficient κ d := Nat.pow_le_pow_left hsq _
     _ = _ := by rw [← pow_mul]
 
-/-- All actual prefix words are polynomial, uniformly at every admitted physical width. -/
-theorem intermediates_polynomial {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
+/-- Every prefix has polynomial words and zero memory above the same envelope, uniformly
+at every admitted physical width. -/
+theorem prefix_polynomial {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
     (hw : width κ c.widthCoefficient input.length ≤ w)
     (hvalues : ∀ z ∈ input, |z| ≤ ((input.length + 2) ^ κ : ℕ))
     {s : State (registerCount r)} {steps : ℕ}
-    (hr : Runs w (flatProgram κ c) (State.init (input.map Signed.encode)) s steps) :
+    (hr : Runs w (flatProgram κ c.code) (State.init (input.map Signed.encode)) s steps) :
     (∀ i, s.data.regs i < (input.length + 2) ^ (2 * widthCoefficient κ c.widthCoefficient)) ∧
-      ∀ a, s.data.mem a < (input.length + 2) ^ (2 * widthCoefficient κ c.widthCoefficient) := by
+      (∀ a, s.data.mem a < (input.length + 2) ^ (2 * widthCoefficient κ c.widthCoefficient)) ∧
+      ∀ a, (input.length + 2) ^ (2 * widthCoefficient κ c.widthCoefficient) ≤ a →
+        s.data.mem a = 0 := by
   obtain ⟨_, _, he, _⟩ := runs_input input c le_rfl hvalues
-  have hsmall := Runs.prefix_at_smaller_width
-    (Code.not_readsWidth_program (not_readsWidth κ c) (controllerRegisters r answer)) hw hr he
   have hi := ChanHe.Preprocessing.input_fits input
     (preprocessing_width_le κ c.widthCoefficient input.length) hvalues
-  have hb := hsmall.bounded_init hi
-  have hpoly := two_pow_width_le κ c.widthCoefficient input.length
-  exact ⟨fun i => (hb.1 i).trans_le hpoly, fun a => (hb.2 a).trans_le hpoly⟩
-
-/-- Every actual prefix uses only a fixed polynomial initial interval of memory. -/
-theorem space_polynomial {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
-    (hw : width κ c.widthCoefficient input.length ≤ w)
-    (hvalues : ∀ z ∈ input, |z| ≤ ((input.length + 2) ^ κ : ℕ))
-    {s : State (registerCount r)} {steps a : ℕ}
-    (hr : Runs w (flatProgram κ c) (State.init (input.map Signed.encode)) s steps)
-    (ha : (input.length + 2) ^ (2 * widthCoefficient κ c.widthCoefficient) ≤ a) :
-    s.data.mem a = 0 := by
-  obtain ⟨_, _, he, _⟩ := runs_input input c le_rfl hvalues
-  have hsmall := Runs.prefix_at_smaller_width
-    (Code.not_readsWidth_program (not_readsWidth κ c) (controllerRegisters r answer)) hw hr he
-  have hi := ChanHe.Preprocessing.input_fits input
-    (preprocessing_width_le κ c.widthCoefficient input.length) hvalues
-  have hword := (two_pow_width_le κ c.widthCoefficient input.length).trans ha
-  rw [hsmall.mem_above (Data.Bounded.init hi) hword]
-  have hn : input.length < 2 ^ width κ c.widthCoefficient input.length := by
-    simpa only [Fits, List.length_map] using hi.1
-  have hpos : a ≠ 0 := by omega
-  obtain ⟨k, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hpos
-  change (Data.init (input.map Signed.encode) : Data (registerCount r)).mem (k + 1) = 0
-  rw [Data.init_mem_succ]
-  exact List.getD_eq_default _ _ (by simp only [List.length_map]; omega)
+  exact hr.prefix_bounds_init
+    (Code.not_readsWidth_program (not_readsWidth κ c) (controllerRegisters r answer)) hw
+    hi he (two_pow_width_le κ c.widthCoefficient input.length)
 
 end Cslib.Algorithms.WordRAM.ThreeSum.Decision

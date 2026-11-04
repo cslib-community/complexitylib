@@ -357,15 +357,10 @@ private theorem allPositiveIndices_cert {α γ : Type} {encIn : α ↪ List Bool
       (encPair encCtx encNat) encBool) :
     HasKPolyCert (fun a => allPositiveIndices (width a) (ctx a) (initOk a) test) encIn encBool
       (fun a => 2 ^ width a + 1) := by
-  have hcount : ComputableInPolyTime (fun a => 2 ^ width a) encIn encNat :=
-    ComputableInPolyTime.binary_two_pow.comp hw
+  have hcount : ComputableInPolyTime (fun a => 2 ^ width a) encIn encNat := by fun_prop
   let body := fun p : ℕ × (γ × Bool) => (p.2.1, p.2.2 && (decide (p.1 = 0) || test p.2.1 p.1))
   have hbody : ComputableInPolyTime body
-      (encPair encNat (encPair encCtx encBool)) (encPair encCtx encBool) := by
-    have heq0 : ComputableInPolyTime (fun p : ℕ × (γ × Bool) => decide (p.1 = 0))
-        (encPair encNat (encPair encCtx encBool)) encBool :=
-      ComputableInPolyTime.decide_eq' (ComputableInPolyTime.fst _ _) (.const 0)
-    dsimp only [body]; fun_prop
+      (encPair encNat (encPair encCtx encBool)) (encPair encCtx encBool) := by fun_prop
   refine ((HasKPolyCert.indexFold (K := fun _ => 1) (B := fun a => 2 * (encCtx (ctx a)).length + 2)
     (fun _ => le_rfl) hcount (hctx.prod hinit) (.of_polyTime hbody)
     (((PolyBounded.const 2).mul hctx.polyBounded_length).add (.const 2))
@@ -437,15 +432,12 @@ private theorem searchMatrix_cert {α Q : Type} {encIn : α ↪ List Bool} {encQ
   let encPay := encPair encBool (encList encBits)
   let encSt := encPair encQ encPay; let encFull := encPair encNat encSt
   have hra := hrows.comp hq; have hca := hcols.comp hq
-  have hrcQ : ComputableInPolyTime (fun q => rowsOf q * colsOf q) encQ encUnary :=
-    ComputableInPolyTime.unary_mul' hrows hcols
+  have hrcQ : ComputableInPolyTime (fun q => rowsOf q * colsOf q) encQ encUnary := by fun_prop
   have hcount : ComputableInPolyTime
-      (fun a => 2 ^ (rowsOf (qOf a) * colsOf (qOf a))) encIn encNat :=
-    ComputableInPolyTime.binary_two_pow.comp (hrcQ.comp hq)
+      (fun a => 2 ^ (rowsOf (qOf a) * colsOf (qOf a))) encIn encNat := by fun_prop
   have hinit : ComputableInPolyTime
-      (fun a => (qOf a, (false, listRows (rowsOf (qOf a)) (colsOf (qOf a)) []))) encIn encSt :=
-    hq.prod ((ComputableInPolyTime.const false).prod
-      (ComputableInPolyTime.bitsRowsWithInput hra hca (.const [])))
+      (fun a => (qOf a, (false, listRows (rowsOf (qOf a)) (colsOf (qOf a)) []))) encIn encSt := by
+    fun_prop
   have hpQ : ComputableInPolyTime (fun p : ℕ × Q × Bool × List (List Bool) => p.2.1)
       encFull encQ := by dsimp only [encFull, encSt, encPay]; fun_prop
   have hpPay : ComputableInPolyTime (fun p : ℕ × Q × Bool × List (List Bool) => p.2.2)
@@ -456,8 +448,7 @@ private theorem searchMatrix_cert {α Q : Type} {encIn : α ↪ List Bool} {encQ
   have hSel : ComputableInPolyTime
       (fun x : ((Bool × List (List Bool)) × List (List Bool)) × Bool =>
         if x.1.1.1 then x.1.1 else if x.2 then (true, x.1.2) else x.1.1)
-      (encPair (encPair encPay (encList encBits)) encBool) encPay := by
-    dsimp only [encPay]; fun_prop
+      (encPair (encPair encPay (encList encBits)) encBool) encPay := by fun_prop
   have hPayStep := ((HasKPolyCert.of_polyTime (hpPay.prod hcand)).prod
     (hCheck.comp_polyPre (fun _ => Nat.le_add_left 1 _) (hpQ.prod hcand))).polyPost
     (fun _ => Nat.le_add_right 1 _) hSel
@@ -717,14 +708,7 @@ private theorem checkLocalCodeDistance_cert_aux :
     let w := lowBits q.1.2.1 idx
     !(q.2.all (fun row => !bitDot row w)) || decide (q.1.2.2 ≤ w.count true)
   have htest : ComputableInPolyTime (fun p : LocalQ × ℕ => testFn p.1 p.2)
-      (encPair encLocalQ encNat) encBool := by
-    unfold testFn bitDot
-    have hker : ComputableInPolyTime (fun p : LocalQ × ℕ => p.1.2.all fun row =>
-        !((row.zipWith Bool.and (lowBits p.1.1.2.1 p.2)).foldl Bool.xor false))
-        (encPair encLocalQ encNat) encBool := by
-      apply ComputableInPolyTime.allWithInput (by dsimp only [encLocalQ]; fun_prop)
-      dsimp only [encLocalQ, encLocalHdr]; fun_prop
-    dsimp only [encLocalQ, encLocalHdr]; fun_prop
+      (encPair encLocalQ encNat) encBool := by fun_prop
   exact (allPositiveIndices_cert (fun q => q.1.2.1) id
     (fun q => (q.2.length == q.1.1) && q.2.all (fun row => row.length == q.1.2.1)) testFn
     (by dsimp only [encLocalQ, encLocalHdr]; fun_prop) (.of_eq fun _ => rfl) hshape htest).congr
@@ -1024,13 +1008,7 @@ theorem buildShortenedTannerRows_polyTime {α : Type} {encIn : α ↪ List Bool}
               let sBits := listRow (ell a) 0 ((shifts a).getD port [])
               let endBits := if side then uBits.zipWith Bool.xor sBits else uBits
               if !(endBits.zipWith Bool.xor vBits).any id then aRow.getD port false else false)
-      encIn (encList encBits) := by
-    apply ComputableInPolyTime.flatMapWithInput (ComputableInPolyTime.range.comp hq)
-    apply ComputableInPolyTime.mapWithInput
-      (ComputableInPolyTime.range.comp (hc.comp (by fun_prop)))
-    apply ComputableInPolyTime.mapToBitsWithInput
-      (ComputableInPolyTime.range.comp (hm.comp (by fun_prop)))
-    dsimp only; fun_prop
+      encIn (encList encBits) := by fun_prop
   have happ : ComputableInPolyTime
       (fun p : List (List Bool) × List (List Bool) => p.1 ++ p.2)
       (encPair (encList encBits) (encList encBits)) (encList encBits) := by fun_prop
