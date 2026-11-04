@@ -1208,13 +1208,34 @@ request. The structural charge precedes all request exponents. This is a norm-le
 its entire coefficient must be raised to the fourth power in a moment payment. Its explicit
 window factor has **not** been absorbed by the evaluator's walk allocation.
 
-These local estimates do not replace `initialComputedRelativeMoment` or its existing
-transport charge. The remaining migration must integrate the positive endpoint estimates
-on the child's own masks, preserve the actual fine/coarse signs and correlated prefix sums,
-pay ordinary sampling progress with the scheduled walks, and pay the saturated preparation
-comparison separately. The first clipped mean alone does not supply either missing payment.
-The current `initialFourMaxReserve_le` consumer still uses the existing four-statistic costs;
-no simultaneous changing-request invariant or uniform reserve absorption follows here.
+The own-mask integration is now
+[`positiveSample_initial_compressed_clipped_root`](../../Complexity/Foundations/Probability/HierarchyInitialPerturbation.lean).
+Fubini cancels the actual joint slice densities. Successful compression and canonical
+normalization give equality off the direct child's usage, so its own scalar rooted IH pays
+the integrated mean without an environment-atom penalty or approximate canonical support.
+For terminal exponent $a$ and bin exponent $i$, the coefficient remains
+$512(6\,\mathrm{binCap}+3)^3\,\mathrm{rate}(i)\,
+\mathrm{gridMass}(a)/(\mathrm{gridMass}(\max(a,i))\,\mathrm{rate}(a))$.
+This is a coarse Fubini payment: it retains rounded masses and does **not** prove the
+reference's sharper fine-bin cubic decay.
+
+`pairedSample_initial_compressed_clipped_precision` uses the actual fine/coarse
+`lastBudget` calls, strict lower budgets and each direct request's own precision. Equal
+budgets and zero endpoints have exact zero charges; reset-right must still succeed at
+positive endpoints. `completedGroup_initial_compressed_clipped_mean` preserves means
+through each actual stationary completion. `initial_compressed_prefix_clipped_mean`
+then sums correlated signed group means, retaining the bin and prefix cardinality cubes.
+Positive domination is used before signed pairing; clipping stays after the common mean.
+
+The literal computed first-coordinate consumer is
+[`initial_compressed_precision_clipped_first`](../../Complexity/Foundations/Probability/HierarchyTransportedPreparation.lean).
+It adds the semantic omitted/inactive deficit to the clipped prefix perturbation.
+`initialComputedPrecisionMoment` takes the minimum of that payment and the previous first
+mean cost. The existing precision four-statistic, `actualFourMax`, raw `clippedError` and
+sharp-reserve proofs consume this minimum. Ordinary first sampling noise and saturated
+second preparation retain their previous costs. Their schedule-dependent payment, sharper
+fine-bin allocation, cardinality-cube absorption and the simultaneous changing-request
+invariant remain open; no uniformly paid reserve or native endpoint follows here.
 The [two-atom regression](../../ComplexityTests/InitialTwoPayment.lean) shows why: scalar
 rooted fourth error $1/32$ can coexist with centered normalized fourth error $1$ after
 physical scaling. It also distinguishes clipping after averaging from averaging clipped
@@ -1308,8 +1329,10 @@ cover positive nonconstant canonical inputs, two active adjacent bins, zero targ
 a smaller terminal rate. `initialComputedRelativeMoment` takes the minimum of this
 semantic group payment (plus transported centered child error) and the previous absolute
 first-noise cost. The actual own-precision four-statistic, four-max and sharp-reserve
-consumers now use this minimum. Their other three costs are unchanged. Transported child
-error now pays `initialPerturbationFactor`: the fourth power of the finite sup norm of
+consumers use this noise minimum. `initialComputedPrecisionMoment` additionally sharpens
+the first mean with the own-mask clipped-prefix payment described above. Second mean and
+second noise retain their existing costs. Transported centered child error still pays
+`initialPerturbationFactor`: the fourth power of the finite sup norm of
 $(\mathrm{rate}(k_a)+G(x,y))^{-1}$. The reusable `rowNormPow_mul_le_pi_norm` applies
 this fixed pair weight on the original source/terminal masks. Its input is the executed
 prefix error already derived from strict lower-budget own-request rooted precision,
@@ -1328,10 +1351,10 @@ $1/16$ even though that worst-pair factor is unchanged. Such zero entries are al
 admissible substochastic matrices. The remaining child obligation needs control of
 weighted error on its actual executed support; the existing scalar IH does not supply it.
 The new polynomial semantic payment does not pay this transported error, preparation
-sensitivity or the other three reserve costs. Uniform allocation of all costs and the
-simultaneous changing-request invariant remain open. A future clipped-mean comparison
-would require a corresponding compression/reserve consumer; it cannot replace this
-untruncated weighted-error obligation by itself. No uniform
+sensitivity or the other reserve costs. Uniform allocation of all costs and the
+simultaneous changing-request invariant remain open. The own-mask clipped first-mean
+comparison now has the corresponding computed compression/reserve consumer described
+above; it cannot replace the untruncated sampling payment by itself. No uniform
 positive target floor, free parent accuracy or heavy-event rarity discount is assumed.
 The checked positive budget-two history has nonzero group input but zero centered
 conditional noise: with zero transported error the new first-noise cost vanishes while

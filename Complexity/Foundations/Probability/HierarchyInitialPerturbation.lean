@@ -17,9 +17,10 @@ import Complexity.Foundations.Data.List.Blocks
 Finite payments sum the actual paired rays before their common completion, then the
 executed groups before parent compression. These original finite comparisons retain the
 computed history and its changing budgets. They do not prove the simultaneous child IH
-or replace production dense leaves. The positive carried-child clipped-mean estimate
-proves canonical domination before subtraction, but does not yet migrate the computed
-four-statistic consumer or pay its ordinary sampling and saturated preparation costs.
+or replace production dense leaves. Positive carried-child clipped means integrate onto
+own-request rooted precision before signed pairing and correlated prefix addition. The
+coarse Fubini coefficient retains rounded masses; sharper fine-bin decay, ordinary sampling
+progress and saturated preparation remain separate payments.
 -/
 public section
 noncomputable section
@@ -148,6 +149,263 @@ theorem positiveSample_initial_compressed_clipped_mean
   rw [he] at hlocal
   convert hlocal using 1; ring
 
+/-- Literal positive conditional means integrated onto the direct child's own source
+and usage. Rounded grid masses remain in the linear coefficient. This is the coarse
+Fubini payment; it does not claim the sharper fine-bin cubic decay or pay sampling noise. -/
+theorem positiveSample_initial_compressed_clipped_root
+    (hrate : B.binRate = rate)
+    (hcutoff : B.cutoff = fun i => boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1)
+      rate 1 i (fun _ => 1))
+    (hD : B.padding ≠ 0) (H : Horizon P)
+    (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ)
+    (ζ floor : ℝ) (M m bin : ℕ) (hm : m < M)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (s t : Fin 3) (hst : s ≠ t) (ks ka : ℕ) (ss st : List (ZMod P))
+    (hs : r.source = gridChannel s ks ss) (ht : r.terminal = gridChannel t ka st)
+    (hks : ks ≤ H.maxExponent) (hbin : bin ≤ H.maxExponent)
+    (hprep : ∀ v, B.cutoff bin v ≠ 0 → B.auxiliary bin v = 1)
+    (hC : ∀ x y, 0 ≤ B.base x y) (hC1 : B.base *ᵥ 1 ≤ 1)
+    (hK : 2 * (1 + 32 / HP.η) ≤ HP.K)
+    (D R : Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+    (hd :
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (midpoint r) r.terminal (B.binRate bin)
+      B.compressedBin m bin (exponent Q.direct) ζ floor Q.direct = some D)
+    (hr :
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (midpoint r) r.terminal (B.binRate bin)
+      B.compressedBin m bin (exponent Q.right) ζ floor Q.right = some R) :
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    let C := denseChild B.padding id Q.direct (B.cutoff bin) (B.auxiliary bin)
+      HP.ρ HP.K B.base
+    let Xs := X s (side P ks) (CopyPadding.identifier B.padding ss)
+    let Ya := Y t (side P ka) (CopyPadding.identifier B.padding st)
+    ∃ A, B.positiveSample (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+        else none) m bin (.pilotInput ⟨0, HP.k_pos⟩) r = some A ∧
+      rowNormPow 4 P r.source.rate Xs Ya
+        (fun _ x y => min 1 (|rowSliceMean Xs Ya (A - B.initialSample r bin) x y| /
+          (rate ka + B.base x y))) ≤
+        (512 * (6 * B.binCap + 3) ^ 3) *
+          (rate bin * (gridMass P ka / gridMass P (max ka bin)) / rate ka) *
+        rootDistPow 4 P Q.direct.source.rate
+          (fun σ x => Q.direct.source.retains (channels B.padding) σ x)
+          (fun σ y => Q.direct.usage.retains (channels B.padding) σ y) D C := by
+  dsimp only
+  let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+    r.source (midpoint r) r.terminal (B.binRate bin)
+  let C := denseChild B.padding id Q.direct (B.cutoff bin) (B.auxiliary bin)
+    HP.ρ HP.K B.base
+  let Xs := X s (side P ks) (CopyPadding.identifier B.padding ss)
+  let Ya := Y t (side P ka) (CopyPadding.identifier B.padding st)
+  obtain ⟨A, hA, he⟩ := B.positiveSample_initial_compressed_clipped_mean hrate hcutoff hD H
+    exponent ζ floor M m bin hm r s t hst ks ka ss st hs ht hks hbin hprep hC hC1 hK D R hd hr
+  refine ⟨A, hA, ?_⟩
+  have hratio (y : ZMod P) : HierarchyTask.usageRatio (channels B.padding)
+      r.terminal Q.direct y = gridMass P ka / gridMass P (max ka bin) := by
+    apply usageRatio_grid B.padding r.terminal Q.direct ka (max ka bin) (by rw [ht]; rfl)
+    dsimp only [Q, HierarchyTask.rawRequests]
+    rw [ht, hrate]
+    exact rate_min ka bin
+  have hx : (fun σ x => Q.direct.source.retains (channels B.padding) σ x) = Xs := by
+    funext σ x
+    simp only [Q, HierarchyTask.rawRequests, hs, Xs, gridChannel,
+      CorrectionRowTask.Channel.retains, channels, semanticSide_grid, X]
+  have hru := B.compressedBin_range_usage m bin (exponent Q.direct) ζ floor Q.direct D hd
+  have hNu : 0 ≤ (P : ℝ) * r.source.rate := by
+    rw [hs]; exact mul_nonneg (Nat.cast_nonneg _) (rate_pos ks).le
+  change rowNormPow 4 P r.source.rate Xs Ya _ ≤ _
+  change rowNormPow 4 P r.source.rate Xs Ya _ ≤
+    _ * rootDistPow 4 P r.source.rate
+      (fun σ x => Q.direct.source.retains (channels B.padding) σ x)
+      (fun σ y => Q.direct.usage.retains (channels B.padding) σ y) D C
+  simp only [hx]
+  apply rowNormPow_le_rootDistPow_of_conditional hNu Xs Ya
+    (fun σ y => Q.direct.usage.retains (channels B.padding) σ y) D C _ _ (by
+      have hg : 0 ≤ gridMass P ka / gridMass P (max ka bin) := by unfold gridMass; positivity
+      exact mul_nonneg (by have hcap := B.binCap_nonneg; positivity)
+        (div_nonneg (mul_nonneg (rate_pos bin).le hg)
+        (rate_pos ka).le))
+  · intro σ x y hy
+    rw [hru.2 σ x y hy]
+    exact (normalizedRequest_zero_off_usage B.padding id Q.direct _ _ _ _ _ σ x y hy).symm
+  · intro x y
+    rw [abs_of_nonneg (show 0 ≤ min 1
+      (|rowSliceMean Xs Ya (A - B.initialSample r bin) x y| / (rate ka + B.base x y)) by
+        have hp := rate_pos ka; have hg := hC x y; positivity)]
+    have h := he x y
+    change _ ≤ (512 * (6 * B.binCap + 3) ^ 3) *
+      (B.binRate bin * HierarchyTask.usageRatio (channels B.padding) r.terminal Q.direct y /
+        rate ka) * _ at h
+    rw [hratio y, hrate] at h
+    simpa only [hrate, Q, C, Xs, Ya] using h
+
+/-- Conditional clipped payment for the two actual scheduled endpoints. Equal budgets
+execute zero, and zero endpoints need no child call. Positive endpoints consume strict
+own-request rooted precision and separate reset-right availability. -/
+theorem pairedSample_initial_compressed_clipped_precision
+    (hrate : B.binRate = rate)
+    (hcutoff : B.cutoff = fun i => boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1)
+      rate 1 i (fun _ => 1))
+    (hD : B.padding ≠ 0) (H : Horizon P)
+    (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ)
+    (ζ floor : ℝ) (M d bin : ℕ) (hM : 0 < M)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (s t : Fin 3) (hst : s ≠ t) (ks ka : ℕ) (ss st : List (ZMod P))
+    (hs : r.source = gridChannel s ks ss) (ht : r.terminal = gridChannel t ka st)
+    (hks : ks ≤ H.maxExponent) (hbin : bin ≤ H.maxExponent)
+    (hprep : ∀ v, B.cutoff bin v ≠ 0 → B.auxiliary bin v = 1)
+    (hC : ∀ x y, 0 ≤ B.base x y) (hC1 : B.base *ᵥ 1 ≤ 1)
+    (hK : 2 * (1 + 32 / HP.η) ≤ HP.K)
+    (D : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ) (hzero : D 0 = 0)
+    (coefficient : ℝ)
+    (ih : ∀ n < M, 0 < n →
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (midpoint r) r.terminal (B.binRate bin)
+      B.compressedBin n bin (exponent Q.direct) ζ floor Q.direct = some (D n) ∧
+      rootDistPow 4 P Q.direct.source.rate
+        (fun σ x => Q.direct.source.retains (channels B.padding) σ x)
+        (fun σ y => Q.direct.usage.retains (channels B.padding) σ y) (D n)
+        (denseChild B.padding id Q.direct (B.cutoff bin) (B.auxiliary bin)
+          HP.ρ HP.K B.base) ≤
+        coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision n Q.direct)) ^ 4 ∧
+      ∃ R, B.compressedBin n bin (exponent Q.right) ζ floor Q.right = some R) :
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    let fine := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
+    let coarse := LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
+    let Xs := X s (side P ks) (CopyPadding.identifier B.padding ss)
+    let Ya := Y t (side P ka) (CopyPadding.identifier B.padding st)
+    ∃ A C,
+      B.pairedSample (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+        else none) M d (.pilotInput ⟨0, HP.k_pos⟩) r (some bin) = some A ∧
+      B.pairedSample (fun n q => if n < M then B.evaluate n q else none)
+        M d (.pilotInput ⟨0, HP.k_pos⟩) r (some bin) = some C ∧
+      rowNormPow 4 P r.source.rate Xs Ya
+        (fun _ x y => min 1 (|rowSliceMean Xs Ya (A - C) x y| /
+          (rate ka + B.base x y))) ≤
+        if fine = coarse then 0 else
+        8 * ((512 * (6 * B.binCap + 3) ^ 3) *
+          (rate bin * (gridMass P ka / gridMass P (max ka bin)) / rate ka)) *
+          (B.initialEndpointCharge fine Q.direct coefficient +
+            B.initialEndpointCharge coarse Q.direct coefficient) := by
+  dsimp only
+  let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+    r.source (midpoint r) r.terminal (B.binRate bin)
+  let w := fun y => B.binRate bin *
+    HierarchyTask.usageRatio (channels B.padding) r.terminal Q.direct y
+  let K := (512 * (6 * B.binCap + 3) ^ 3) *
+    (rate bin * (gridMass P ka / gridMass P (max ka bin)) / rate ka)
+  let E : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ :=
+    fun n σ x y => w y * D n σ x y
+  let C := fun n => if n = 0 then 0 else B.initialSample r bin
+  let Xs := X s (side P ks) (CopyPadding.identifier B.padding ss)
+  let Ya := Y t (side P ka) (CopyPadding.identifier B.padding st)
+  let fine := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
+  let coarse := LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
+  have hNu : 0 ≤ (P : ℝ) * r.source.rate := by
+    rw [hs]; exact mul_nonneg (Nat.cast_nonneg _) (rate_pos ks).le
+  have hK0 : 0 ≤ K := by
+    have hcap := B.binCap_nonneg
+    have hmass : 0 ≤ gridMass P ka / gridMass P (max ka bin) := by unfold gridMass; positivity
+    exact mul_nonneg (by positivity) (div_nonneg (mul_nonneg (rate_pos bin).le hmass)
+      (rate_pos ka).le)
+  have hend (n : ℕ) (hn : n < M) :
+      rowNormPow 4 P r.source.rate Xs Ya
+        (fun _ x y => min 1 (|rowSliceMean Xs Ya (E n - C n) x y| /
+          (rate ka + B.base x y))) ≤ K * B.initialEndpointCharge n Q.direct coefficient := by
+    by_cases hz : n = 0
+    · subst n
+      simp [E, C, hzero, rowSliceMean, rowNormPow, initialEndpointCharge]
+    · obtain ⟨hd, he, R, hr⟩ := ih n hn (Nat.pos_of_ne_zero hz)
+      obtain ⟨A, hA, hb⟩ := B.positiveSample_initial_compressed_clipped_root hrate hcutoff hD H
+        exponent ζ floor M n bin hn r s t hst ks ka ss st hs ht hks hbin hprep hC hC1 hK
+        (D n) R hd hr
+      have ha : A = E n := Option.some.inj (hA.symm.trans
+        (B.positiveSample_initial_compressed exponent ζ floor M n bin hn r (D n) R hd hr).1)
+      rw [ha] at hb
+      dsimp only [C]
+      rw [ite_eq_right hz]
+      exact hb.trans (mul_le_mul_of_nonneg_left
+        (by simpa only [initialEndpointCharge, ite_eq_right hz] using he) hK0)
+  by_cases heq : fine = coarse
+  · refine ⟨0, 0, ?_, ?_, ?_⟩
+    · simp only [pairedSample, show LogSpaceEstimation.lastBudget M d B.slack
+        (B.sampleScale r (some bin)) = LogSpaceEstimation.lastBudget M (2*d) B.slack
+          (B.sampleScale r (some bin)) from heq, ↓reduceIte]
+    · simp only [pairedSample, show LogSpaceEstimation.lastBudget M d B.slack
+        (B.sampleScale r (some bin)) = LogSpaceEstimation.lastBudget M (2*d) B.slack
+          (B.sampleScale r (some bin)) from heq, ↓reduceIte]
+    · change _ ≤ if fine = coarse then 0 else _
+      rw [ite_eq_left heq]
+      simp [rowSliceMean, rowNormPow]
+  have hp := B.pairedSample_initial_compressed exponent ζ floor M d bin hM r D hzero
+    (fun n hn hp => ⟨(ih n hn hp).1, (ih n hn hp).2.2⟩)
+  have hp' : B.pairedSample (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+      else none) M d (.pilotInput ⟨0, HP.k_pos⟩) r (some bin) = some (E fine - E coarse) := by
+    rw [hp]
+    congr 1
+    funext σ x y
+    simp only [Pi.sub_apply, Matrix.sub_apply]
+    dsimp only [E, w, fine, coarse, Q]
+    ring
+  refine ⟨E fine - E coarse, C fine - C coarse, hp',
+    B.pairedSample_initial M d hM bin r, ?_⟩
+  have hm : rowSliceMean Xs Ya ((E fine - E coarse) - (C fine - C coarse)) =
+      fun x y => rowSliceMean Xs Ya (E fine - C fine) x y +
+        -rowSliceMean Xs Ya (E coarse - C coarse) x y := by
+    funext x y
+    simp only [rowSliceMean, Pi.sub_apply, Matrix.sub_apply, expect_sub_distrib]
+    ring
+  rw [hm, ite_eq_right heq]
+  have hb := rowNormPow_clipped_add_le hNu Xs Ya
+    (rowSliceMean Xs Ya (E fine - C fine))
+    (fun x y => -rowSliceMean Xs Ya (E coarse - C coarse) x y)
+    (fun x y => rate ka + B.base x y)
+    (fun x y => add_pos_of_pos_of_nonneg (rate_pos ka) (hC x y))
+  simp only [abs_neg] at hb
+  apply hb.trans
+  have hf := hend fine (B.pairedSample_budgets_lt M d hM r (some bin)).1
+  have hc := hend coarse (B.pairedSample_budgets_lt M d hM r (some bin)).2
+  change _ ≤ 8 * K * (_ + _)
+  nlinarith
+
+/-- Actual initial group assembly from its executed paired rays, on the requested grid.
+This identity is shared by ordinary progress and clipped-mean analysis. -/
+theorem completedGroup_initial_of_paired
+    (history : ℕ → HierarchyTask.Request HP.k (Fin 3) (ZMod P) → Option (BudgetValue P))
+    (M d : ℕ) (hbins : B.bins.Nonempty)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (s t : Fin 3) (hst : s ≠ t) (ks ku : ℕ) (ss su : List (ZMod P))
+    (hs : r.source = gridChannel s ks ss) (hu : r.usage = gridChannel t ku su)
+    (T : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+    (hT : ∀ i ∈ B.bins, B.pairedSample history M d (.pilotInput ⟨0, HP.k_pos⟩)
+      r (some i) = some (T i)) :
+    B.completedGroup history M d (.pilotInput ⟨0, HP.k_pos⟩) r =
+      some (conditionalWalk
+        (X s (side P ks) (CopyPadding.identifier B.padding ss))
+        (Y t (side P ku) (CopyPadding.identifier B.padding su))
+        (graph s t hst (side P ks) (side P ku) (side_le P ks) (side_le P ku)
+          (CopyPadding.identifier B.padding ss) (CopyPadding.identifier B.padding su))
+        (fun _ _ => B.steps M r d) (fun σ x y => ∑ i ∈ B.bins, T i σ x y)) := by
+  have he : (B.rays (.pilotInput ⟨0, HP.k_pos⟩)).isEmpty = false := by
+    simp only [rays, List.append_nil, List.isEmpty_map]
+    exact Bool.eq_false_iff.mpr hbins.not_empty_toList
+  unfold completedGroup
+  rw [he]
+  simp only [Bool.false_eq_true, ↓reduceIte, rays, List.append_nil, List.mapM_map]
+  have hm : B.bins.toList.mapM
+      (fun i => B.pairedSample history M d (.pilotInput ⟨0, HP.k_pos⟩) r (some i)) =
+      some (B.bins.toList.map T) := by
+    apply List.mapM_eq_some_iff_forall₂.mpr
+    rw [List.forall₂_map_right_iff, List.forall₂_same]
+    exact fun i hi => hT i (mem_toList.mp hi)
+  simp only [Function.comp_def]
+  rw [hm]
+  simp only [bind, Option.bind_some, List.map_map, Function.comp_def,
+    Finset.sum_map_toList]
+  exact B.complete_grid M r s t hst ks ku ss su hs hu _ d
+
 /-- Sum all actual initial paired rays before completion. Each ray certificate must
 identify the executed compressed history and the executed semantic history at this group's
 budgets. Its error can be supplied by `pairedSample_initial_compressed_root`. The common
@@ -186,29 +444,8 @@ theorem completedGroup_initial_compressed_error
     fun σ x y => ∑ i ∈ B.bins, A i σ x y
   let sumC : Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ :=
     fun σ x y => ∑ i ∈ B.bins, C i σ x y
-  have hrun (history : ℕ → HierarchyTask.Request HP.k (Fin 3) (ZMod P) →
-      Option (BudgetValue P)) (T : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
-      (hT : ∀ i ∈ B.bins, B.pairedSample history M d (.pilotInput ⟨0, HP.k_pos⟩)
-        r (some i) = some (T i)) :
-      B.completedGroup history M d (.pilotInput ⟨0, HP.k_pos⟩) r =
-        some (walk (fun σ x y => ∑ i ∈ B.bins, T i σ x y)) := by
-    have he : (B.rays (.pilotInput ⟨0, HP.k_pos⟩)).isEmpty = false := by
-      simp only [rays, List.append_nil, List.isEmpty_map]
-      exact Bool.eq_false_iff.mpr hbins.not_empty_toList
-    unfold completedGroup
-    rw [he]
-    simp only [Bool.false_eq_true, ↓reduceIte, rays, List.append_nil, List.mapM_map]
-    have hm : B.bins.toList.mapM
-        (fun i => B.pairedSample history M d (.pilotInput ⟨0, HP.k_pos⟩) r (some i)) =
-        some (B.bins.toList.map T) := by
-      apply List.mapM_eq_some_iff_forall₂.mpr
-      rw [List.forall₂_map_right_iff, List.forall₂_same]
-      exact fun i hi => hT i (mem_toList.mp hi)
-    simp only [Function.comp_def]
-    rw [hm]
-    simp only [bind, Option.bind_some, List.map_map, Function.comp_def,
-      Finset.sum_map_toList]
-    exact B.complete_grid M r s t hst ks ku ss su hs hu _ d
+  have hrun := fun history T hT => B.completedGroup_initial_of_paired history M d hbins
+    r s t hst ks ku ss su hs hu T hT
   refine ⟨walk sumA, walk sumC, hrun _ A hA, hrun _ C hC, ?_⟩
   have hNu : 0 ≤ (P : ℝ) * r.source.rate := by
     rw [hs]
@@ -237,6 +474,114 @@ theorem completedGroup_initial_compressed_error
   rw [he]
   apply (rowNormPow_sum_fourth_le B.bins hNu _ _ (fun i => A i - C i)).trans
   exact mul_le_mul_of_nonneg_left (sum_le_sum herr) (by positivity)
+
+/-- Stationarity transfers signed paired clipped means through the actual completion.
+No contraction or independence argument is applied to a clipped sampling error. -/
+theorem completedGroup_initial_compressed_clipped_mean
+    (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ)
+    (ζ floor : ℝ) (M d : ℕ) (hbins : B.bins.Nonempty)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (s t : Fin 3) (hst : s ≠ t) (ks ka : ℕ) (ss st : List (ZMod P))
+    (hs : r.source = gridChannel s ks ss) (hu : r.usage = gridChannel t ka st)
+    (A C : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ) (ε : ℕ → ℝ)
+    (hA : ∀ i ∈ B.bins,
+      B.pairedSample (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+        else none) M d (.pilotInput ⟨0, HP.k_pos⟩) r (some i) = some (A i))
+    (hC : ∀ i ∈ B.bins,
+      B.pairedSample (fun n q => if n < M then B.evaluate n q else none)
+        M d (.pilotInput ⟨0, HP.k_pos⟩) r (some i) = some (C i))
+    (a : ZMod P → ZMod P → ℝ) (ha : ∀ x y, 0 < a x y)
+    (herr : ∀ i ∈ B.bins,
+      rowNormPow 4 P r.source.rate
+        (X s (side P ks) (CopyPadding.identifier B.padding ss))
+        (Y t (side P ka) (CopyPadding.identifier B.padding st))
+        (fun _ x y => min 1 (|rowSliceMean
+          (X s (side P ks) (CopyPadding.identifier B.padding ss))
+          (Y t (side P ka) (CopyPadding.identifier B.padding st)) (A i - C i) x y| /
+          a x y)) ≤ ε i) :
+    let Xs := X s (side P ks) (CopyPadding.identifier B.padding ss)
+    let Ya := Y t (side P ka) (CopyPadding.identifier B.padding st)
+    ∃ F G,
+      B.completedGroup (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+        else none) M d (.pilotInput ⟨0, HP.k_pos⟩) r = some F ∧
+      B.completedGroup (fun n q => if n < M then B.evaluate n q else none)
+        M d (.pilotInput ⟨0, HP.k_pos⟩) r = some G ∧
+      rowNormPow 4 P r.source.rate Xs Ya
+        (fun _ x y => min 1 (|rowSliceMean Xs Ya (F - G) x y| / a x y)) ≤
+        (#B.bins : ℝ) ^ 3 * ∑ i ∈ B.bins, ε i := by
+  dsimp only
+  let Xs := X s (side P ks) (CopyPadding.identifier B.padding ss)
+  let Ya := Y t (side P ka) (CopyPadding.identifier B.padding st)
+  let graphV := graph s t hst (side P ks) (side P ka) (side_le P ks) (side_le P ka)
+    (CopyPadding.identifier B.padding ss) (CopyPadding.identifier B.padding st)
+  let walk := conditionalWalk Xs Ya graphV (fun _ _ => B.steps M r d)
+  let sumA : Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ :=
+    fun σ x y => ∑ i ∈ B.bins, A i σ x y
+  let sumC : Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ :=
+    fun σ x y => ∑ i ∈ B.bins, C i σ x y
+  refine ⟨walk sumA, walk sumC,
+    B.completedGroup_initial_of_paired _ M d hbins r s t hst ks ka ss st hs hu A hA,
+    B.completedGroup_initial_of_paired _ M d hbins r s t hst ks ka ss st hs hu C hC, ?_⟩
+  have he : rowSliceMean Xs Ya (walk sumA - walk sumC) =
+      fun x y => ∑ i ∈ B.bins, rowSliceMean Xs Ya (A i - C i) x y := by
+    funext x y
+    rw [← conditionalWalk_sub, rowSliceMean_conditionalWalk]
+    simp only [rowSliceMean, sumA, sumC, Pi.sub_apply, Matrix.sub_apply,
+      ← sum_sub_distrib, expect_sum_comm]
+  rw [he]
+  have hNu : 0 ≤ (P : ℝ) * r.source.rate := by
+    rw [hs]; exact mul_nonneg (Nat.cast_nonneg _) (rate_pos ks).le
+  apply (rowNormPow_clipped_sum_le B.bins hNu Xs Ya
+    (fun i => rowSliceMean Xs Ya (A i - C i)) a ha).trans
+  exact mul_le_mul_of_nonneg_left (sum_le_sum herr) (by positivity)
+
+/-- Clipped conditional-mean cost at the actual fine/coarse budgets. The rounded-mass
+importance coefficient is linear. Equal and exhausted endpoints retain exact zero charges. -/
+@[expose] def initialClippedRootGroupCharge
+    (M d : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (ka : ℕ) (coefficient : ℝ) : ℝ :=
+  (#B.bins : ℝ) ^ 3 * ∑ bin ∈ B.bins,
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    let fine := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
+    let coarse := LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
+    if fine = coarse then 0 else
+    8 * ((512 * (6 * B.binCap + 3) ^ 3) *
+      (rate bin * (gridMass P ka / gridMass P (max ka bin)) / rate ka)) *
+      (B.initialEndpointCharge fine Q.direct coefficient +
+        B.initialEndpointCharge coarse Q.direct coefficient)
+
+omit [Fact P.Prime] in
+/-- Every own-mask clipped group charge is nonnegative. -/
+lemma initialClippedRootGroupCharge_nonneg (M d : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (ka : ℕ) (coefficient : ℝ) :
+    0 ≤ B.initialClippedRootGroupCharge M d r ka coefficient := by
+  unfold initialClippedRootGroupCharge
+  apply mul_nonneg (by positivity)
+  apply sum_nonneg
+  intro bin _
+  dsimp only
+  split_ifs
+  · exact le_rfl
+  have hcap := B.binCap_nonneg
+  have hmass : 0 ≤ gridMass P ka / gridMass P (max ka bin) := by unfold gridMass; positivity
+  exact mul_nonneg (mul_nonneg (by norm_num)
+    (mul_nonneg (by positivity) (div_nonneg (mul_nonneg (rate_pos bin).le hmass)
+      (rate_pos ka).le)))
+    (add_nonneg (B.initialEndpointCharge_nonneg _ _ _) (B.initialEndpointCharge_nonneg _ _ _))
+
+omit [Fact P.Prime] in
+/-- Exhausted group budgets have zero clipped charge for every request precision. -/
+lemma initialClippedRootGroupCharge_eq_zero_of_le (M d : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (ka : ℕ) (coefficient : ℝ)
+    (hd : M ≤ d) : B.initialClippedRootGroupCharge M d r ka coefficient = 0 := by
+  have hf (bin : ℕ) :
+      LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin)) = 0 :=
+    Nat.sub_eq_zero_of_le (hd.trans (le_max_left _ _))
+  have hc (bin : ℕ) :
+      LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin)) = 0 :=
+    Nat.sub_eq_zero_of_le ((show M ≤ 2 * d by omega).trans (le_max_left _ _))
+  simp only [initialClippedRootGroupCharge, hf, hc, ↓reduceIte, sum_const_zero, mul_zero]
 
 /-- Literal group cost from own-request lower-budget precision. Both endpoint budgets,
 the sharp fourth-power importance sup norm and the bin cube remain explicit. Zero
@@ -417,5 +762,79 @@ theorem initial_compressed_prefix_error
     simp only [div_one]
     exact (rowNormPow_sliceMean_fourth_le hNu _ _ (E p)).trans
       (hpref p (by have h := mem_range.mp hp; omega))
+
+/-- Literal correlated prefixes from clipped group-mean payments. This carries no raw
+sampling or preparation conclusion. The source and terminal conditioning remain joint. -/
+theorem initial_compressed_prefix_clipped_mean
+    (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ)
+    (ζ floor : ℝ) (M : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (hs : 0 ≤ r.source.rate)
+    (A C : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ) (ε : ℕ → ℝ)
+    (hA : ∀ j < Nat.log2 M + 1,
+      B.completedGroup (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+        else none) M (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j)
+        (.pilotInput ⟨0, HP.k_pos⟩) r = some (A j))
+    (hC : ∀ j < Nat.log2 M + 1,
+      B.completedGroup (fun n q => if n < M then B.evaluate n q else none)
+        M (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j)
+        (.pilotInput ⟨0, HP.k_pos⟩) r = some (C j))
+    (a : ZMod P → ZMod P → ℝ) (ha : ∀ x y, 0 < a x y)
+    (herr : ∀ j < Nat.log2 M + 1,
+      rowNormPow 4 P r.source.rate
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (fun σ y => r.usage.retains (channels B.padding) σ y)
+        (fun _ x y => min 1 (|rowSliceMean
+          (fun σ x => r.source.retains (channels B.padding) σ x)
+          (fun σ y => r.usage.retains (channels B.padding) σ y) (A j - C j) x y| /
+          a x y)) ≤ ε j) :
+    let Xs := fun σ x => r.source.retains (channels B.padding) σ x
+    let Ya := fun σ y => r.usage.retains (channels B.padding) σ y
+    ∃ groups reference,
+      (List.range (Nat.log2 M + 1)).mapM (fun j =>
+        B.completedGroup (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+          else none) M (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j)
+          (.pilotInput ⟨0, HP.k_pos⟩) r) = some groups ∧
+      (List.range (Nat.log2 M + 1)).mapM (fun j =>
+        B.completedGroup (fun n q => if n < M then B.evaluate n q else none)
+          M (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j)
+          (.pilotInput ⟨0, HP.k_pos⟩) r) = some reference ∧
+      ∀ p ≤ Nat.log2 M + 1,
+        rowNormPow 4 P r.source.rate Xs Ya
+          (fun _ x y => min 1 (|rowSliceMean Xs Ya
+            (fun σ x y => ((groups.take p).map (fun T => T σ x y)).sum -
+              ((reference.take p).map (fun T => T σ x y)).sum) x y| / a x y)) ≤
+          (p : ℝ) ^ 3 * ∑ j ∈ range p, ε j := by
+  dsimp only
+  refine ⟨(List.range (Nat.log2 M + 1)).map A,
+    (List.range (Nat.log2 M + 1)).map C, ?_, ?_, ?_⟩
+  · apply List.mapM_eq_some_iff_forall₂.mpr
+    rw [List.forall₂_map_right_iff, List.forall₂_same]
+    exact fun j hj => hA j (List.mem_range.mp hj)
+  · apply List.mapM_eq_some_iff_forall₂.mpr
+    rw [List.forall₂_map_right_iff, List.forall₂_same]
+    exact fun j hj => hC j (List.mem_range.mp hj)
+  · intro p hp
+    simp only [← List.map_take, List.take_range, min_eq_left hp, List.map_map,
+      Function.comp_def, List.sum_map_range_eq_sum_range, ← sum_sub_distrib]
+    have hm : rowSliceMean
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (fun σ y => r.usage.retains (channels B.padding) σ y)
+        (fun σ x y => ∑ j ∈ range p, (A j σ x y - C j σ x y)) =
+        fun x y => ∑ j ∈ range p, rowSliceMean
+          (fun σ x => r.source.retains (channels B.padding) σ x)
+          (fun σ y => r.usage.retains (channels B.padding) σ y) (A j - C j) x y := by
+      funext x y
+      simp only [rowSliceMean, expect_sum_comm, Pi.sub_apply, Matrix.sub_apply]
+    rw [hm]
+    apply (rowNormPow_clipped_sum_le (range p) (mul_nonneg (Nat.cast_nonneg P) hs)
+      (fun σ x => r.source.retains (channels B.padding) σ x)
+      (fun σ y => r.usage.retains (channels B.padding) σ y)
+      (fun j => rowSliceMean
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (fun σ y => r.usage.retains (channels B.padding) σ y) (A j - C j)) a ha).trans
+    simp only [card_range]
+    exact mul_le_mul_of_nonneg_left
+      (sum_le_sum fun j hj => herr j ((mem_range.mp hj).trans_le hp)) (by positivity)
+
 
 end Matrix.HierarchyParams.H4RankEnvironment.BudgetData

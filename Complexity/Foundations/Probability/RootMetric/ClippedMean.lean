@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 public import Complexity.Foundations.Probability.ConditionalProductMean
+public import Complexity.Foundations.Probability.RootMetric.WeightedError
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
@@ -25,6 +26,8 @@ OpenAI reference `AffineSampling.lean` at revision `4eaee87548250b2682affda7d05d
 * `Cslib.min_relative_sub_le_root_four`: scalar fidelity with one-sided domination.
 * `Cslib.min_relative_expect_sub_four_le`: a positive conditional-mean moment payment.
 * `Cslib.min_abs_sum_div_le`: signed sums after the positive-summand comparisons.
+* `Cslib.rowNormPow_le_rootDistPow_of_conditional`: own-mask integration of conditional bounds.
+* `Cslib.rowNormPow_clipped_sum_le`: correlated signed sums of clipped payments.
 -/
 public section
 namespace Cslib
@@ -115,5 +118,83 @@ theorem min_relative_expect_sub_four_le {Ω : Type*} (S : Finset Ω)
       gcongr
       exact he.trans hp
     _ = _ := by ring
+
+/-- Integrate a conditional clipped estimate onto the error's own terminal mask.
+The endpoint coefficient is linear, not fourth-powered. Fubini cancels the actual joint
+slice densities; errors and both masks may be correlated. Off-usage equality is essential. -/
+theorem rowNormPow_le_rootDistPow_of_conditional
+    {Ω V : Type*} [Fintype Ω] [Fintype V] {N u : ℝ} (hNu : 0 ≤ N * u)
+    (X Y U : Ω → V → Prop) [∀ σ x, Decidable (X σ x)]
+    [∀ σ y, Decidable (Y σ y)] [∀ σ y, Decidable (U σ y)]
+    (A C : Ω → V → V → ℝ) (e : V → V → ℝ) (c : ℝ) (hc : 0 ≤ c)
+    (hoff : ∀ σ x y, ¬ U σ y → A σ x y = C σ x y)
+    (h : ∀ x y, |e x y| ^ 4 ≤ c *
+      𝔼 σ ∈ ({σ | X σ x ∧ Y σ y} : Finset Ω),
+        |A σ x y ^ (4⁻¹ : ℝ) - C σ x y ^ (4⁻¹ : ℝ)| ^ 4) :
+    rowNormPow 4 N u X Y (fun _ => e) ≤ c * rootDistPow 4 N u X U A C := by
+  let E := fun σ x y => A σ x y ^ (4⁻¹ : ℝ) - C σ x y ^ (4⁻¹ : ℝ)
+  have hj : rowNormPow 4 N u X Y (fun _ => e) ≤ c * rowNormPow 4 N u X Y E := by
+    apply rowNormPow_le_of_conditional_expect_le hNu E (fun _ => e) c
+    intro x y
+    let S : Finset Ω := {σ | X σ x ∧ Y σ y}
+    rcases S.eq_empty_or_nonempty with hs | hs
+    · simp only [show ({σ | X σ x ∧ Y σ y} : Finset Ω) = S from rfl,
+        hs, expect_empty, mul_zero, le_refl]
+    · rw [show (𝔼 σ ∈ ({σ | X σ x ∧ Y σ y} : Finset Ω), |e x y| ^ 4) =
+          |e x y| ^ 4 from expect_const hs _]
+      exact h x y
+  have hm : rowNormPow 4 N u X (fun _ _ => True) E = rowNormPow 4 N u X U E := by
+    have he : (fun σ x y => if U σ y then E σ x y else 0) = E := by
+      funext σ x y
+      split_ifs with hy
+      · rfl
+      · simp only [E, hoff σ x y hy, sub_self]
+    have hh := rowNormPow_usage_mask (N := N) (u := u) (X := X)
+      (Y := fun _ _ => True) (U := U) (fun _ _ _ => True.intro) E
+    rwa [he] at hh
+  apply hj.trans
+  apply mul_le_mul_of_nonneg_left _ hc
+  change rowNormPow 4 N u X Y E ≤ rowNormPow 4 N u X U E
+  rw [← hm]
+  exact rowNormPow_mono_terminal hNu (fun _ _ _ => True.intro) E
+
+/-- The clipped relative triangle inequality at fourth-moment level. The arrays and
+masks can share all their randomness; this does not turn a clipped bound into a raw bound. -/
+theorem rowNormPow_clipped_add_le
+    {Ω V : Type*} [Fintype Ω] [Fintype V] {N u : ℝ} (hNu : 0 ≤ N * u)
+    (X Y : Ω → V → Prop) [∀ σ x, Decidable (X σ x)] [∀ σ y, Decidable (Y σ y)]
+    (e f : V → V → ℝ) (a : V → V → ℝ) (ha : ∀ x y, 0 < a x y) :
+    rowNormPow 4 N u X Y (fun _ x y => min 1 (|e x y + f x y| / a x y)) ≤
+      8 * (rowNormPow 4 N u X Y (fun _ x y => min 1 (|e x y| / a x y)) +
+        rowNormPow 4 N u X Y (fun _ x y => min 1 (|f x y| / a x y))) := by
+  apply le_trans ?_ (rowNormPow_add_le hNu
+    (fun _ x y => min 1 (|e x y| / a x y)) (fun _ x y => min 1 (|f x y| / a x y)))
+  apply (rowNormPow_le_mul hNu (c := 1) ?_).trans_eq (one_mul _)
+  intro σ x y _ _
+  have haxy := ha x y
+  rw [one_mul,
+    abs_of_nonneg (show 0 ≤ min 1 (|e x y + f x y| / a x y) by positivity),
+    abs_of_nonneg (show 0 ≤ min 1 (|e x y| / a x y) + min 1 (|f x y| / a x y) by positivity)]
+  exact pow_le_pow_left₀ (by positivity) (min_abs_add_div_le haxy _ _) 4
+
+/-- Signed, correlated conditional means pay only a finite cardinality cube.
+Each summand is clipped before this comparison; the resulting sum is clipped after addition. -/
+theorem rowNormPow_clipped_sum_le
+    {I Ω V : Type*} [Fintype Ω] [Fintype V] (S : Finset I)
+    {N u : ℝ} (hNu : 0 ≤ N * u)
+    (X Y : Ω → V → Prop) [∀ σ x, Decidable (X σ x)] [∀ σ y, Decidable (Y σ y)]
+    (e : I → V → V → ℝ) (a : V → V → ℝ) (ha : ∀ x y, 0 < a x y) :
+    rowNormPow 4 N u X Y (fun _ x y => min 1 (|∑ i ∈ S, e i x y| / a x y)) ≤
+      (#S : ℝ) ^ 3 * ∑ i ∈ S,
+        rowNormPow 4 N u X Y (fun _ x y => min 1 (|e i x y| / a x y)) := by
+  apply le_trans ?_ (rowNormPow_sum_fourth_le S hNu X Y
+    (fun i _ x y => min 1 (|e i x y| / a x y)))
+  apply (rowNormPow_le_mul hNu (c := 1) ?_).trans_eq (one_mul _)
+  intro σ x y _ _
+  have haxy := ha x y
+  rw [one_mul, abs_of_nonneg (show 0 ≤ min 1 (|∑ i ∈ S, e i x y| / a x y) by positivity),
+    abs_of_nonneg (show 0 ≤ ∑ i ∈ S, min 1 (|e i x y| / a x y) by
+      exact sum_nonneg fun i _ => le_min (by norm_num) (div_nonneg (abs_nonneg _) haxy.le))]
+  exact pow_le_pow_left₀ (by positivity) (min_abs_sum_div_le S (ha x y) _) 4
 
 end Cslib

@@ -107,3 +107,56 @@ example (a : ℝ) (ha : 0 < a) (fine coarse : ℝ) :
 example (a : ℝ) (ha : 0 < a) (e : Fin 3 → ℝ) :
     min 1 (|∑ i, e i| / a) ≤ ∑ i, min 1 (|e i| / a) :=
   min_abs_sum_div_le univ ha e
+
+-- Perfectly correlated source/terminal/usage masks integrate the rooted error without
+-- an inverse atom-density penalty. The approximate child is one at zero target.
+example :
+    rowNormPow 4 1 1 (fun (σ : Fin 2) (_ : Unit) => σ = 0) (fun σ _ => σ = 0)
+      (fun _ _ _ => (1 : ℝ)) ≤
+    1 * rootDistPow 4 1 1 (fun (σ : Fin 2) (_ : Unit) => σ = 0) (fun σ _ => σ = 0)
+      (fun σ _ _ => if σ = 0 then (1 : ℝ) else 0) (fun _ _ _ => 0) := by
+  apply rowNormPow_le_rootDistPow_of_conditional (by norm_num)
+    (fun (σ : Fin 2) (_ : Unit) => σ = 0) (fun σ _ => σ = 0) (fun σ _ => σ = 0)
+    (fun σ _ _ => if σ = 0 then (1 : ℝ) else 0) (fun _ _ _ => 0)
+    (fun _ _ => 1) 1 (by norm_num)
+  · intro σ _ _ hσ
+    simp only [hσ, ↓reduceIte]
+  · intro _ _
+    have hs : ({σ : Fin 2 | σ = 0} : Finset _) = {0} := by ext σ; simp
+    norm_num [hs]
+
+example :
+    rowNormPow 4 1 1 (fun (σ : Fin 2) (_ : Unit) => σ = 0) (fun σ _ => σ = 0)
+      (fun _ _ _ => (1 : ℝ)) = 1 / 2 := by
+  norm_num [rowNormPow, expect_eq_sum_div_card, Fin.sum_univ_two]
+
+-- Rounded mass is retained in fine bins; coarse and equal bins cancel the same mass.
+example :
+    rate 0 * (gridMass 5 1 / gridMass 5 (max 1 0)) / rate 1 = 16 ∧
+    rate 1 * (gridMass 5 0 / gridMass 5 (max 0 1)) / rate 0 = 625 / 1296 ∧
+    rate 1 * (gridMass 5 1 / gridMass 5 (max 1 1)) / rate 1 = 1 ∧
+    gridMass 5 1 ≠ rate 1 := by
+  norm_num [rate, gridMass, show side 5 0 = 5 from rfl,
+    show side 5 1 = 3 from rfl]
+
+-- The signed-prefix estimate applies with identical correlated masks, including exact
+-- cancellation although both individual clipped payments are positive.
+example :
+    rowNormPow 4 1 1 (fun (σ : Fin 2) (_ : Unit) => σ = 0) (fun σ _ => σ = 0)
+      (fun _ _ _ => min 1 (|∑ i : Fin 2, if i = 0 then (17 : ℝ) else -17| / 1)) ≤
+      (2 : ℝ) ^ 3 * ∑ i : Fin 2,
+        rowNormPow 4 1 1 (fun (σ : Fin 2) (_ : Unit) => σ = 0) (fun σ _ => σ = 0)
+          (fun _ _ _ => min 1 (|if i = 0 then (17 : ℝ) else -17| / 1)) := by
+  simpa only [card_univ, Fintype.card_fin, Nat.cast_ofNat] using
+    rowNormPow_clipped_sum_le (univ : Finset (Fin 2)) (by norm_num : (0 : ℝ) ≤ 1 * 1)
+      (fun (σ : Fin 2) (_ : Unit) => σ = 0) (fun σ _ => σ = 0)
+      (fun i _ _ => if i = 0 then (17 : ℝ) else -17) (fun _ _ => 1) (by norm_num)
+
+-- The same fixed structural charge works for exhausted groups at every terminal exponent.
+-- This exact-zero test asserts no positive-budget uniform reserve absorption.
+example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ} [Fact P.Prime]
+    (B : BudgetData HP P) (M d ka : ℕ) (hd : M ≤ d)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) :
+    let B' := {B with rankCharge := 7}
+    B'.initialClippedRootGroupCharge M d r ka 3 = 0 :=
+  BudgetData.initialClippedRootGroupCharge_eq_zero_of_le _ M d r ka 3 hd

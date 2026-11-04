@@ -131,6 +131,27 @@ theorem actualNoiseEntry_firstSignalIncrement {E : Type*} [Fintype E] [Nonempty 
     rowSliceMean_conditionalWalk]
 
 open Classical in
+/-- The actual first clipped statistic in matrix units. Clipping stays after the common
+conditional prefix mean; the second increment is arbitrary. -/
+theorem actualClippedMean_first_prefix_eq
+    (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (s t : Fin J) (Ls La Lt : ℕ) (D : ZMod P) (ss st : List (ZMod P))
+    (F : ℕ → Environment P J → ZMod P → ZMod P → ℝ)
+    (k : ℕ) (G : Matrix (ZMod P) (ZMod P) ℝ) (ζ : ℝ)
+    (second : Environment P J → ZMod P → ℕ → ZMod P → ℝ)
+    (i : ℕ) (x y : ZMod P) :
+    actualClippedMean HP s t Ls La Lt D ss st k G ζ
+      (firstSignalIncrement F k second) 0 0 i x y =
+      min 1 (|rowSliceMean (retainedMask s Ls D ss) (retainedMask t La D st)
+        (F (i + 1)) x y - G x y| / (rate k + G x y)) := by
+  have hr := rate_pos k
+  simp only [actualClippedMean, twoMaskMean, Fin.isValue, ↓reduceIte,
+    actualPrefix_firstSignalIncrement F k second 0 (by intros; rfl),
+    rowSliceMean, ← expect_div, ← sub_div, abs_div, abs_of_pos hr, div_div]
+  congr 2
+  rw [mul_add, mul_one, mul_div_cancel₀ _ hr.ne']
+
+open Classical in
 /-- Conditional first-mean discrepancy in matrix units pays the actual clipped first
 mean after rank-rate normalization. No completion representation of the prefix is needed. -/
 theorem actualClippedMean_first_prefix_row_le

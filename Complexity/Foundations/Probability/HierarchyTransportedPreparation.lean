@@ -19,7 +19,10 @@ without a rarity factor. Every prefix cube and summed group cost remains explici
 
 These original finite bounds consume strict lower-budget own-request rooted precision,
 not a parent accuracy hypothesis. All four moments and the sharp reserve receive explicit
-finite numerical payments. Uniform absorption of the displayed costs, simultaneous
+finite numerical payments. The precision route also consumes an own-mask clipped
+conditional-mean payment for its first coordinate, keeping the previous ordinary-noise
+and preparation costs. The Fubini coefficient does not claim sharp fine-bin cubic decay.
+Uniform absorption of the displayed costs, simultaneous
 changing-request induction and native RL=L remain open.
 
 ## Main results
@@ -31,7 +34,9 @@ changing-request induction and native RL=L remain open.
 * `exists_initial_compressed_fourMax`: the shared sharp reserve on computed histories.
 * `initial_compressed_precision_reserve`: numerical reserve from own-request rooted IH.
 * `initialComputedRelativeMoment_polynomial_firstNoise_le`: actual semantic minimum consumer.
-* `initialComputedRelativeMoment`: sharper costs used by computed statistics and reserve.
+* `initialComputedRelativeMoment`: denominator-retaining semantic first-noise costs.
+* `initialComputedPrecisionMoment`: clipped own-mask first-mean cost in the literal reserve.
+* `initial_compressed_precision_clipped_first`: actual clipped first-coordinate payment.
 * `initialPerturbationFactor`: target-dependent worst-pair transport payment.
 * `initialComputedMoment_final_firstNoise_zero`: exact old absolute-envelope noise cost.
 * `initialComputedMoment_firstNoise_not_uniform`: a uniform envelope obstruction.
@@ -409,6 +414,47 @@ theorem initialComputedNumericalReserve_ge_noise (B : BudgetData HP P) (M n : �
         (B.initialComputedMoment M n r R ks ka ss st ε ζ Lh Lρ j true 0 ^ (4⁻¹ : ℝ) +
           B.initialComputedMoment M n r R ks ka ss st ε ζ Lh Lρ j true 1 ^ (4⁻¹ : ℝ))))
 
+/-- Four computed costs from own-request precision, using clipped mean transport for
+the first coordinate. Ordinary first noise and saturated preparation retain their existing
+payments. This minimum is consumed by the literal four-max and raw clipped-error gates. -/
+@[expose] def initialComputedPrecisionMoment (B : BudgetData HP P) (M n : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
+    (ks ka : ℕ) (ss st : List (ZMod P)) (coefficient ζ Lh Lρ : ℝ)
+    (j : ℕ) (noise : Bool) (ν : Fin 2) : ℝ :=
+  let ε := fun i => B.initialRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
+    { r with usage := r.terminal } coefficient
+  let old := B.initialComputedRelativeMoment M n r R ks ka ss st ε ζ Lh Lρ j noise ν
+  if !noise ∧ ν = 0 then min old
+    (8 * ((((j + 1 : ℕ) : ℝ) ^ 3 * ∑ i ∈ range (j + 1),
+      B.initialClippedRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
+        { r with usage := r.terminal } ka coefficient) +
+      rowNormPow 4 P r.source.rate
+        (retainedMask R.source (side P ks) B.padding ss)
+        (retainedMask R.terminal (side P ka) B.padding st)
+        (fun _ x y => min 1 (|B.initialPolynomialLoss M n j r x y| /
+          (rate ka + B.base x y))))) else old
+
+/-- The new first-mean minimum and all retained costs are nonnegative. -/
+lemma initialComputedPrecisionMoment_nonneg (B : BudgetData HP P) (M n : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (hr : 0 ≤ r.source.rate)
+    (R : RoleProfile 3) (ks ka : ℕ) (ss st : List (ZMod P))
+    (coefficient ζ Lh Lρ : ℝ) (j : ℕ) (noise : Bool) (ν : Fin 2) :
+    0 ≤ B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ j noise ν := by
+  have hold := B.initialComputedRelativeMoment_nonneg M n r hr R ks ka ss st
+    (fun i => B.initialRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
+      { r with usage := r.terminal } coefficient)
+    (fun i => B.initialRootGroupCharge_nonneg M (dyadicSlack (Nat.log2 M + 1) i)
+      { r with usage := r.terminal } coefficient) ζ Lh Lρ j noise ν
+  have hsum := sum_nonneg (fun i (_ : i ∈ range (j + 1)) =>
+    B.initialClippedRootGroupCharge_nonneg M (dyadicSlack (Nat.log2 M + 1) i)
+      { r with usage := r.terminal } ka coefficient)
+  have hrow := rowNormPow_nonneg (s := 4) (mul_nonneg (Nat.cast_nonneg P) hr)
+    (X := retainedMask R.source (side P ks) B.padding ss)
+    (Y := retainedMask R.terminal (side P ka) B.padding st)
+    (fun _ x y => min 1 (|B.initialPolynomialLoss M n j r x y| / (rate ka + B.base x y)))
+  unfold initialComputedPrecisionMoment
+  split_ifs <;> positivity
+
 section Polynomial
 variable (B : BudgetData HP P) (M : ℕ) (hM : 0 < M) (n : ℕ)
   (hbins : B.bins = range (n + 1)) (hrate : B.binRate = rate)
@@ -755,6 +801,157 @@ theorem initial_compressed_four_moments
     · simpa only [initialComputedRelativeMoment, initialComputedMoment, Fin.isValue,
         one_ne_zero, and_false, ↓reduceIte] using hz
 
+/-- The literal computed first clipped coordinate from own-request scalar rooted IH.
+Positive means are compared before signed pairing, then stationary completed group means
+and correlated prefixes are summed. Rounded masses, endpoint guards and precision remain
+explicit. Ordinary progress and the saturated second coordinate are separate payments. -/
+theorem initial_compressed_precision_clipped_first
+    (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ)
+    (ζ floor : ℝ)
+    (D : ℕ → ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+    (hzero : ∀ bin, D bin 0 = 0) (coefficient : ℝ)
+    (ih : ∀ bin ∈ B.bins, ∀ m < M, 0 < m →
+      let q := { r with usage := r.terminal }
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        q.source (midpoint q) q.terminal (B.binRate bin)
+      B.compressedBin m bin (exponent Q.direct) ζ floor Q.direct = some (D bin m) ∧
+      rootDistPow 4 P Q.direct.source.rate
+        (fun σ x => Q.direct.source.retains (channels B.padding) σ x)
+        (fun σ y => Q.direct.usage.retains (channels B.padding) σ y) (D bin m)
+        (denseChild B.padding id Q.direct (B.cutoff bin) (B.auxiliary bin)
+          HP.ρ HP.K B.base) ≤
+        coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision m Q.direct)) ^ 4 ∧
+      ∃ R, B.compressedBin m bin (exponent Q.right) ζ floor Q.right = some R)
+    (Lt : ℕ)
+    (second : Environment P 3 → ZMod P → ℕ → ZMod P → ℝ) :
+    ∃ groups,
+      (List.range (Nat.log2 M + 1)).mapM (fun j =>
+        B.completedGroup (fun m q => if m < M then B.compressedHistory exponent ζ floor m q
+          else none) M (dyadicSlack (Nat.log2 M + 1) j) (.pilotInput ⟨0, HP.k_pos⟩)
+          { r with usage := r.terminal }) = some groups ∧
+      let F := fun p σ x y => ((groups.take p).map (fun T => T σ x y)).sum
+      let Xs := retainedMask R.source (side P ks) B.padding ss
+      let Ya := retainedMask R.terminal (side P ka) B.padding st
+      ∀ j < Nat.log2 M + 1,
+        rowNormPow 4 P r.source.rate Xs Ya
+          (fun _ x y => actualClippedMean HP R.source R.terminal (side P ks) (side P ka)
+            Lt B.padding ss st ka B.base ζ (firstSignalIncrement F ka second) 0 0 j x y) ≤
+        8 * ((((j + 1 : ℕ) : ℝ) ^ 3 * ∑ i ∈ range (j + 1),
+          B.initialClippedRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
+            { r with usage := r.terminal } ka coefficient) +
+          rowNormPow 4 P r.source.rate Xs Ya (fun _ x y =>
+            min 1 (|B.initialPolynomialLoss M n j r x y| / (rate ka + B.base x y)))) := by
+  have hne : B.bins.Nonempty := by rw [hbins]; exact ⟨0, mem_range.mpr (by omega)⟩
+  have hsr : 0 ≤ r.source.rate := by rw [hs]; exact (rate_pos ks).le
+  have hk : 2 * (1 + 32 / HP.η) ≤ HP.K := by
+    have hk1 : (1 : ℝ) ≤ HP.k := by exact_mod_cast HP.k_pos
+    have hdiv := div_le_div_of_nonneg_right
+      (mul_le_mul_of_nonneg_left hk1 (by norm_num : (0 : ℝ) ≤ 32)) HP.η_pos.le
+    have hg := HP.gate
+    norm_num only [mul_one] at hdiv
+    nlinarith [div_nonneg (by norm_num : (0 : ℝ) ≤ 32) HP.η_pos.le]
+  have hprep (bin : ℕ) (v : ℝ) (hv : B.cutoff bin v ≠ 0) : B.auxiliary bin v = 1 := by
+    rw [hcutoff] at hv
+    rw [haux]
+    exact HP.routedBin_prep_eq_one (by norm_num)
+      (fun w hw => polynomialSwitch4_of_le (by norm_num) hw) rate_pos rate_antitone
+      bin (fun _ => 1) hv
+  let q := { r with usage := r.terminal }
+  have hp (j : ℕ) (i : {i // i ∈ B.bins}) :=
+    B.pairedSample_initial_compressed_clipped_precision hrate hcutoff hD H exponent ζ floor
+      M (dyadicSlack (Nat.log2 M + 1) j) i.val hM q R.source R.terminal R.source_terminal
+      ks ka ss st hs ht hks
+      (by have hi : i.val ∈ range (n + 1) := by simpa only [hbins] using i.property
+          have hb := mem_range.mp hi; omega)
+      (hprep i.val) hC hC1 hk (D i.val) (hzero i.val) coefficient (ih i.val i.property)
+  choose A C hA hCrun herr using hp
+  let a := fun j i => if hi : i ∈ B.bins then A j ⟨i, hi⟩ else 0
+  let c := fun j i => if hi : i ∈ B.bins then C j ⟨i, hi⟩ else 0
+  let ε := fun j bin =>
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      q.source (midpoint q) q.terminal (B.binRate bin)
+    let fine := LogSpaceEstimation.lastBudget M (dyadicSlack (Nat.log2 M + 1) j)
+      B.slack (B.sampleScale q (some bin))
+    let coarse := LogSpaceEstimation.lastBudget M (2 * dyadicSlack (Nat.log2 M + 1) j)
+      B.slack (B.sampleScale q (some bin))
+    if fine = coarse then 0 else
+    8 * ((512 * (6 * B.binCap + 3) ^ 3) *
+      (rate bin * (gridMass P ka / gridMass P (max ka bin)) / rate ka)) *
+      (B.initialEndpointCharge fine Q.direct coefficient +
+        B.initialEndpointCharge coarse Q.direct coefficient)
+  have hg (j : ℕ) := B.completedGroup_initial_compressed_clipped_mean exponent ζ floor M
+    (dyadicSlack (Nat.log2 M + 1) j) hne q R.source R.terminal R.source_terminal
+    ks ka ss st hs ht (a j) (c j) (ε j)
+    (fun i hi => by simpa only [a, dite_eq_left hi] using hA j ⟨i, hi⟩)
+    (fun i hi => by simpa only [c, dite_eq_left hi] using hCrun j ⟨i, hi⟩)
+    (fun x y => rate ka + B.base x y)
+    (fun x y => add_pos_of_pos_of_nonneg (rate_pos ka) (hC x y))
+    (fun i hi => by simpa only [a, c, dite_eq_left hi] using herr j ⟨i, hi⟩)
+  choose F G hF hG he using hg
+  have hem (j : ℕ) : rowNormPow 4 P r.source.rate
+      (fun σ x => q.source.retains (channels B.padding) σ x)
+      (fun σ y => q.usage.retains (channels B.padding) σ y)
+      (fun _ x y => min 1 (|rowSliceMean
+        (fun σ x => q.source.retains (channels B.padding) σ x)
+        (fun σ y => q.usage.retains (channels B.padding) σ y) (F j - G j) x y| /
+        (rate ka + B.base x y))) ≤
+      B.initialClippedRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) j) q ka coefficient := by
+    convert he j using 1 <;>
+      simp only [q, hs, ht, gridChannel, CorrectionRowTask.Channel.retains, channels,
+        semanticSide_grid, X, Y, rowNormPow, rowSliceMean,
+        initialClippedRootGroupCharge, ε]
+  obtain ⟨groups, reference, hgroups, href, hprefix⟩ :=
+    B.initial_compressed_prefix_clipped_mean exponent ζ floor M q hsr F G
+      (fun j => B.initialClippedRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) j)
+        q ka coefficient) (fun j _ => hF j) (fun j _ => hG j)
+      (fun x y => rate ka + B.base x y)
+      (fun x y => add_pos_of_pos_of_nonneg (rate_pos ka) (hC x y)) (fun j _ => hem j)
+  let f : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ :=
+    fun p σ x y => ((groups.take p).map (fun T => T σ x y)).sum
+  let g : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ :=
+    fun p σ x y => ((reference.take p).map (fun T => T σ x y)).sum
+  have hgrun : B.initialPrefixes M r = some g := by
+    unfold initialPrefixes
+    rw [href]
+    rfl
+  refine ⟨groups, hgroups, ?_⟩
+  dsimp only
+  intro j hj
+  let Xs := retainedMask R.source (side P ks) B.padding ss
+  let Ya := retainedMask R.terminal (side P ka) B.padding st
+  have hNu : 0 ≤ (P : ℝ) * r.source.rate := mul_nonneg (Nat.cast_nonneg _) hsr
+  have hm (x y : ZMod P) : B.base x y - rowSliceMean Xs Ya (g (j + 1)) x y =
+      B.initialPolynomialLoss M n j r x y := by
+    have h := B.initialPrefix_polynomial_mean M hM n hbins hrate hcutoff haux hD H hn
+      r R.source R.terminal R.source_terminal ks ka ss st hs ht hks hC hC1 g hgrun j hj x y
+    change B.base x y - _ = B.initialPolynomialLoss M n j r x y at h
+    exact h
+  simp_rw [actualClippedMean_first_prefix_eq]
+  have hmean (x y : ZMod P) : rowSliceMean Xs Ya (f (j + 1)) x y - B.base x y =
+      rowSliceMean Xs Ya (f (j + 1) - g (j + 1)) x y +
+        -B.initialPolynomialLoss M n j r x y := by
+    simp only [rowSliceMean, Pi.sub_apply, Matrix.sub_apply, expect_sub_distrib]
+    have h := hm x y
+    unfold rowSliceMean at h
+    linarith
+  change rowNormPow 4 P r.source.rate Xs Ya
+    (fun _ x y => min 1 (|rowSliceMean Xs Ya (f (j + 1)) x y - B.base x y| /
+      (rate ka + B.base x y))) ≤ _
+  simp_rw [hmean]
+  apply (rowNormPow_clipped_add_le hNu Xs Ya
+    (rowSliceMean Xs Ya (f (j + 1) - g (j + 1)))
+    (fun x y => -B.initialPolynomialLoss M n j r x y)
+    (fun x y => rate ka + B.base x y)
+    (fun x y => add_pos_of_pos_of_nonneg (rate_pos ka) (hC x y))).trans
+  simp only [abs_neg]
+  apply mul_le_mul_of_nonneg_left _ (by norm_num : (0 : ℝ) ≤ 8)
+  apply add_le_add _ le_rfl
+  have hp := hprefix (j + 1) (by omega)
+  convert hp using 1;
+    simp only [q, hs, ht, gridChannel, CorrectionRowTask.Channel.retains, channels,
+      semanticSide_grid, retainedMask, Xs, Ya, f, g, rowNormPow, rowSliceMean,
+      Pi.sub_apply]
+
 /-- Literal all-four payment from strict lower-budget own-request rooted precision.
 No parent accuracy or four-max budgets are premises. The child hypothesis is conditional:
 this does not prove simultaneous recursive availability or uniform numerical absorption. -/
@@ -797,27 +994,43 @@ theorem initial_compressed_precision_moments
             (retainedMask R.terminal (if ν = 0 then side P ka else side P ku) B.padding st)
             (fun _ x y => actualClippedMean HP R.source R.terminal (side P ks) (side P ka)
               (side P ku) B.padding ss st ka B.base ζ Δ 0 ν j x y) ≤
-            B.initialComputedRelativeMoment M n r R ks ka ss st (fun i => B.initialRootGroupCharge M
-              (dyadicSlack (Nat.log2 M + 1) i) { r with usage := r.terminal } coefficient)
-              ζ Lh Lρ j false ν ∧
+            B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ j false ν ∧
           rowNormPow 4 P r.source.rate (retainedMask R.source (side P ks) B.padding ss)
             (retainedMask R.terminal (if ν = 0 then side P ka else side P ku) B.padding st)
             (actualNoiseEntry R.source R.terminal (side P ks) (side P ka) (side P ku)
               B.padding ss st ka B.base Δ 0 ν j) ≤
-            B.initialComputedRelativeMoment M n r R ks ka ss st (fun i => B.initialRootGroupCharge M
-              (dyadicSlack (Nat.log2 M + 1) i) { r with usage := r.terminal } coefficient)
-              ζ Lh Lρ j true ν := by
+            B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ j true ν := by
   have hnonempty : B.bins.Nonempty := by rw [hbins]; exact ⟨0, mem_range.mpr (by omega)⟩
   have hg (j : ℕ) := B.completedGroup_initial_compressed_precision exponent ζ floor M
     (dyadicSlack (Nat.log2 M + 1) j) hM hnonempty { r with usage := r.terminal }
     R.source R.terminal R.source_terminal ks ka ss st hs ht D hzero coefficient ih
   choose A C hA hCrun herr using hg
-  exact B.initial_compressed_four_moments M hM n hbins hrate hcutoff haux hD H hn r R ks ka
-    ss st hs ht hks hC hC1 exponent ζ floor A C
+  obtain ⟨groups, hgroups, hrows⟩ := B.initial_compressed_four_moments M hM n hbins hrate
+    hcutoff haux hD H hn r R ks ka ss st hs ht hks hC hC1 exponent ζ floor A C
     (fun i => B.initialRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
       { r with usage := r.terminal } coefficient)
     (fun j _ => hA j) (fun j _ => hCrun j) (fun j _ => herr j)
     bin ku husage hu hLh hLρ hh hρ
+  refine ⟨groups, hgroups, ?_⟩
+  dsimp only
+  intro W hW j hj ν
+  obtain ⟨gmean, hgmean, hmean⟩ := B.initial_compressed_precision_clipped_first M hM n hbins
+    hrate hcutoff haux hD H hn r R ks ka ss st hs ht hks hC hC1 exponent ζ floor D hzero
+    coefficient ih (side P ku)
+    (secondSignalIncrement (fun i σ x y => W[i - 1]?.getD 0 σ x y) ζ)
+  have he := Option.some.inj (hgmean.symm.trans hgroups)
+  subst gmean
+  have hold := hrows W hW j hj ν
+  constructor
+  · by_cases hν : ν = 0
+    · subst ν
+      simp only [initialComputedPrecisionMoment, Bool.not_false,
+        and_self, ↓reduceIte]
+      exact le_min hold.1 (hmean j hj)
+    · simpa only [initialComputedPrecisionMoment, Bool.not_false, Bool.coe_true,
+        hν, and_false, ↓reduceIte] using hold.1
+  · simpa only [initialComputedPrecisionMoment, Bool.not_true, Bool.false_eq_true,
+      false_and, ↓reduceIte] using hold.2
 
 /-- The four literal row maxima are paid from own-request lower-budget rooted precision.
 Minkowski retains all explicit computed costs and their separate masks. -/
@@ -855,10 +1068,9 @@ theorem initial_compressed_precision_fourMax
             (dyadicSlack (Nat.log2 M + 1) i)) = some W →
         let Δ := firstSignalIncrement F ka
           (secondSignalIncrement (fun i σ x y => W[i - 1]?.getD 0 σ x y) ζ)
-        let ε := fun i => B.initialRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
-          { r with usage := r.terminal } coefficient
         let a := fun j noise ν =>
-          B.initialComputedRelativeMoment M n r R ks ka ss st ε ζ Lh Lρ j noise ν ^ (4⁻¹ : ℝ)
+          B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient
+            ζ Lh Lρ j noise ν ^ (4⁻¹ : ℝ)
         ∀ j < Nat.log2 M + 1,
           vertexNormPow 4 P r.source.rate (retainedMask R.source (side P ks) B.padding ss)
             (actualFourMax HP R.source R.terminal (side P ks) (side P ka) (side P ku)
@@ -882,9 +1094,7 @@ theorem initial_compressed_precision_fourMax
   let F := fun p σ x y => ((groups.take p).map (fun T => T σ x y)).sum
   let Δ := firstSignalIncrement F ka
     (secondSignalIncrement (fun i σ x y => W[i - 1]?.getD 0 σ x y) ζ)
-  let ε := fun i => B.initialRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
-    { r with usage := r.terminal } coefficient
-  let cost := B.initialComputedRelativeMoment M n r R ks ka ss st ε ζ Lh Lρ j
+  let cost := B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ j
   have hNu : 0 ≤ (P : ℝ) * r.source.rate := by
     rw [hs]; exact mul_nonneg (Nat.cast_nonneg _) (rate_pos ks).le
   have hnon (noise : Bool) (ν : Fin 2) : 0 ≤ cost noise ν := by
@@ -973,10 +1183,9 @@ theorem initial_compressed_precision_reserve
         (List.range (Nat.log2 M + 1)).mapM (fun i =>
           B.complete M r (B.binPreparation bin r (F (i + 1)))
             (dyadicSlack (Nat.log2 M + 1) i)) = some W →
-        let ε := fun i => B.initialRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
-          { r with usage := r.terminal } coefficient
         let a := fun j noise ν =>
-          B.initialComputedRelativeMoment M n r R ks ka ss st ε ζ Lh Lρ j noise ν ^ (4⁻¹ : ℝ)
+          B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient
+            ζ Lh Lρ j noise ν ^ (4⁻¹ : ℝ)
         B.initialFourMaxReserve M bin ka ζ floor r R ks ku ss st B.base F W cap
           Cdecoder Cpre ≤
           initialNumericalReserve HP M floor cap Cdecoder Cpre
@@ -991,11 +1200,8 @@ theorem initial_compressed_precision_reserve
   apply B.initialFourMaxReserve_le M bin ka ζ floor hfloor r hr R ks ku ss st B.base _ W
     cap Cdecoder Cpre _ (fun j => by
       have hc (noise : Bool) (ν : Fin 2) :=
-        B.initialComputedRelativeMoment_nonneg M n r hr R ks ka ss st
-        (fun i => B.initialRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
-          { r with usage := r.terminal } coefficient)
-        (fun i => B.initialRootGroupCharge_nonneg M (dyadicSlack (Nat.log2 M + 1) i)
-          { r with usage := r.terminal } coefficient) ζ Lh Lρ j noise ν
+        B.initialComputedPrecisionMoment_nonneg M n r hr R ks ka ss st
+          coefficient ζ Lh Lρ j noise ν
       exact add_nonneg
         (add_nonneg (Real.rpow_nonneg (hc false 0) _) (Real.rpow_nonneg (hc false 1) _))
         (add_nonneg (Real.rpow_nonneg (hc true 0) _) (Real.rpow_nonneg (hc true 1) _)))

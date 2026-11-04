@@ -1942,10 +1942,13 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
         2 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) (some 0) = some C ∧
       rowNormPow 4 5 (request HP).source.rate
         (fun σ x => (request HP).source.retains (channels (data HP).padding) σ x)
-        (fun σ y => (request HP).usage.retains (channels (data HP).padding) σ y) (A - C) ≤
-        8 * (‖fun y => (data HP).binRate 0 * HierarchyTask.usageRatio
-          (channels (data HP).padding) (request HP).terminal Q.direct y‖ ^ 4 *
-          (4 * (2 * (data HP).binCap) ^ ((3 : ℝ) / 4)) ^ 4) *
+        (fun σ y => (request HP).usage.retains (channels (data HP).padding) σ y)
+        (fun _ x y => min 1 (|rowSliceMean
+          (fun σ x => (request HP).source.retains (channels (data HP).padding) σ x)
+          (fun σ y => (request HP).usage.retains (channels (data HP).padding) σ y)
+          (A - C) x y| / (rate 0 + base x y))) ≤
+        8 * ((512 * (6 * (data HP).binCap + 3) ^ 3) *
+          (rate 0 * (gridMass 5 0 / gridMass 5 (max 0 0)) / rate 0)) *
           (c ^ 4 * ((2 : ℝ) ^ (-(data HP).requestPrecision 1 Q.direct)) ^ 4) := by
   dsimp only
   let ζ := min HP.η (1 / 10000) / 4
@@ -1994,21 +1997,41 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
         zero_sub, abs_neg, Real.zero_rpow (by norm_num : (4⁻¹ : ℝ) ≠ 0),
         apply_ite (fun t : ℝ => |t ^ (4⁻¹ : ℝ)| ^ 4)]
       norm_num [apply_ite abs, ite_pow]
-    have hp := (data HP).pairedSample_initial_compressed_precision (fun _ => 0)
-      ζ ζ 2 1 0 (by decide) (request HP) (by norm_num [request, gridChannel, rate])
+    have hprep (v : ℝ) (hv : (data HP).cutoff 0 v ≠ 0) :
+        (data HP).auxiliary 0 v = 1 := by
+      exact HP.routedBin_prep_eq_one (by norm_num)
+        (fun w hw => polynomialSwitch4_of_le (by norm_num) hw) rate_pos rate_antitone
+        0 (fun _ => 1) hv
+    have hK : 2 * (1 + 32 / HP.η) ≤ HP.K := by
+      have hk : (1 : ℝ) ≤ HP.k := by exact_mod_cast HP.k_pos
+      have hdiv := div_le_div_of_nonneg_right
+        (mul_le_mul_of_nonneg_left hk (by norm_num : (0 : ℝ) ≤ 32)) HP.η_pos.le
+      have hg := HP.gate
+      norm_num only [mul_one] at hdiv
+      nlinarith [div_nonneg (by norm_num : (0 : ℝ) ≤ 32) HP.η_pos.le]
+    have hp := (data HP).pairedSample_initial_compressed_clipped_precision rfl rfl
+      (by norm_num [data]) (⟨1, 4, by decide, by decide⟩ : Horizon 5)
+      (fun _ => 0) ζ ζ 2 1 0 (by decide) (request HP)
+      0 2 (by decide) 0 0 [1] [2, 3] rfl rfl (by decide) (by decide) hprep
+      (by intro x y; by_cases h : x = y <;> simp [data, base, h]) (by simp [data, base]) hK
       (fun _ => 0) rfl c (fun m hm hmpos => by
         have he : m = 1 := by omega
         subst m
         exact ⟨hd, hroot, right_one_available HP ζ⟩)
-    simpa only [BudgetData.initialEndpointCharge, Nat.one_ne_zero, ↓reduceIte, add_zero,
-      Nat.cast_ofNat, show LogSpaceEstimation.lastBudget 2 1 (data HP).slack
-      ((data HP).sampleScale (request HP) (some 0)) = 1 by
-        norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff,
-          BudgetData.sampleScale, data, request, gridChannel, rate],
-      show LogSpaceEstimation.lastBudget 2 (2 * 1) (data HP).slack
-        ((data HP).sampleScale (request HP) (some 0)) = 0 by
-        norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff,
-          BudgetData.sampleScale, data, request, gridChannel, rate]] using hp
+    have hf : LogSpaceEstimation.lastBudget 2 1 (data HP).slack
+        ((data HP).sampleScale (request HP) (some 0)) = 1 := by
+      norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff,
+        BudgetData.sampleScale, data, request, gridChannel, rate]
+    have hc : LogSpaceEstimation.lastBudget 2 (2 * 1) (data HP).slack
+        ((data HP).sampleScale (request HP) (some 0)) = 0 := by
+      norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff,
+        BudgetData.sampleScale, data, request, gridChannel, rate]
+    simp only [hf, hc, BudgetData.initialEndpointCharge, Nat.one_ne_zero, ↓reduceIte,
+      add_zero] at hp
+    convert hp using 1;
+      simp only [rowNormPow, rowSliceMean, data, request, gridChannel,
+        CorrectionRowTask.Channel.retains, channels, semanticSide_grid, X, Y,
+        Nat.cast_ofNat, ζ, c, Q]
 
 -- Budget one consumes no positive child IH, even after all bins are completed.
 example (HP : FourthRootHierarchyParams 16 1 16 32 8) (coefficient : ℝ) :
@@ -2175,8 +2198,8 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
         base (fun _ => 0) [0] 1 1 1 ≤
       BudgetData.initialNumericalReserve HP 1 ζ 1 1 1
         (fun j =>
-          let a := fun noise ν => (data HP).initialComputedRelativeMoment 1 1 (request HP)
-            threeRoles 0 0 [1] [2, 3] (fun _ => 0) ζ Lh Lρ j noise ν ^ (4⁻¹ : ℝ)
+          let a := fun noise ν => (data HP).initialComputedPrecisionMoment 1 1 (request HP)
+            threeRoles 0 0 [1] [2, 3] 0 ζ Lh Lρ j noise ν ^ (4⁻¹ : ℝ)
           (a false 0 + a false 1) + (a true 0 + a true 1)) := by
   dsimp only
   let ζ := min HP.η (1 / 10000) / 4
@@ -2223,9 +2246,6 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
   subst groups
   dsimp only at hp
   rw [hF] at hp
-  simp only [BudgetData.initialRootGroupCharge, BudgetData.initialEndpointCharge,
-    ite_self, zero_pow (by decide : 4 ≠ 0),
-    zero_mul, add_zero, mul_zero, sum_const_zero] at hp
   have hb := hp [0] (by
     convert hW using 1
     apply congrArg (fun f : ℕ → Option (Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ) =>
