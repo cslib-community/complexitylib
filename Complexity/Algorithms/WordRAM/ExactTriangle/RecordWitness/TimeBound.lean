@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.SourceBounds
+import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.SourceBounds
 
 /-!
 # Charged per-record witness-recovery bound
