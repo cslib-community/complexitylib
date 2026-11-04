@@ -40,15 +40,7 @@ theorem auxScore_stability {I : ℝ → ℝ → ℝ} {L : ℝ} (hL : 0 ≤ L)
     (A B : Matrix V V ℝ) (T : Finset V) (x y : V) :
     |auxScore I K f A T x y - auxScore I K f B T x y| ≤
       L * (|A x y - B x y| + kthLargest 1 T (fun w => |A x w - B x w|)) / f := by
-  have he : 0 ≤ kthLargest 1 T (fun w => |A x w - B x w|) := kthLargest_nonneg
-  have hq : |kthLargest K T (fun w => A x w / f) -
-      kthLargest K T (fun w => B x w / f)| ≤
-      kthLargest 1 T (fun w => |A x w - B x w|) / f := by
-    apply abs_kthLargest_sub_kthLargest_le hK (div_nonneg he hf.le)
-    intro w hw
-    rw [← sub_div, abs_div, abs_of_pos hf]
-    exact div_le_div_of_nonneg_right
-      (abs_le_kthLargest_one T (fun w => A x w - B x w) w hw) hf.le
+  have hq := abs_kthLargest_div_sub_div_le hK hf T (A x) (B x)
   have hi := hI (A x y / f) (kthLargest K T (fun w => A x w / f))
     (B x y / f) (kthLargest K T (fun w => B x w / f))
   rw [← sub_div, abs_div, abs_of_pos hf] at hi

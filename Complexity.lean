@@ -3482,6 +3482,7 @@ public import Complexity.Foundations.Data.Finset.Expect
 public import Complexity.Foundations.Data.Finset.Finpartition
 public import Complexity.Foundations.Data.Finset.KthLargest
 public import Complexity.Foundations.Data.Finset.KthLargest.Moment
+public import Complexity.Foundations.Data.Finset.KthLargest.Stability
 public import Complexity.Foundations.Data.Finset.KthLargest.Truncation
 public import Complexity.Foundations.Data.Finset.Markov
 public import Complexity.Foundations.Data.Finset.OrderGlue
@@ -3726,6 +3727,7 @@ public import Complexity.Foundations.Probability.HierarchyDenseChildren
 public import Complexity.Foundations.Probability.HierarchyEstimatedInput
 public import Complexity.Foundations.Probability.HierarchyEstimatedMean
 public import Complexity.Foundations.Probability.HierarchyParams
+public import Complexity.Foundations.Probability.HierarchyPilotStability
 public import Complexity.Foundations.Probability.HierarchyRankCutoffs
 public import Complexity.Foundations.Probability.HierarchyRankEnvironment
 public import Complexity.Foundations.Probability.HierarchyRawMoment
@@ -3759,6 +3761,7 @@ public import Complexity.Foundations.Probability.NormalizedAtomRows.SecondEnvelo
 public import Complexity.Foundations.Probability.NormalizedAtomRows.SecondSignal
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Sharp
 public import Complexity.Foundations.Probability.NormalizedAtomRows.TwoMask
+public import Complexity.Foundations.Probability.PilotRowStability
 public import Complexity.Foundations.Probability.PilotRowTasks
 public import Complexity.Foundations.Probability.PilotTasks
 public import Complexity.Foundations.Probability.PolynomialAtomCompression

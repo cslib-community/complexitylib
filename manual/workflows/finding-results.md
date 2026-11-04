@@ -245,3 +245,14 @@ original source/full-terminal pairs. Constants are selected at fixed HP before r
 or child tables. The [nonzero fixtures](../../ComplexityTests/HierarchyCorrectionRawStability.lean)
 perturb RAW and PREP separately and jointly, and distinguish row from incoming ranks.
 This supplies a local correction accuracy contract; it does not construct recursive children.
+
+For the pilot's actual score, detector and running maximum local moments, use
+[PilotRowStability](../../Complexity/Foundations/Probability/PilotRowStability.lean).
+It keeps the raw K-rank, pays detector source maxima on the actual finite slices after
+conditional Jensen, and pays both maximum children. The score row payment displays
+one width and inverse rate to the fourth power; detector payments retain their literal
+conditional means and sums. [HierarchyPilotStability](../../Complexity/Foundations/Probability/HierarchyPilotStability.lean)
+feeds the previous/current maximum children into the actual correction contract.
+The [nonzero client](../../ComplexityTests/PilotRowStability.lean) changes a raw rank and
+all three recipe outputs. Allocated recursive calls and full environment/rate/bin
+transport of these payments remain separate from this local layer.
