@@ -3865,6 +3865,7 @@ public import Complexity.Foundations.Probability.HierarchySourceSampling
 public import Complexity.Foundations.Probability.HierarchyTaskData
 public import Complexity.Foundations.Probability.HierarchyTaskMeans
 public import Complexity.Foundations.Probability.HierarchyTasks
+public import Complexity.Foundations.Probability.InitialPilotScore
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ActualMoment
 public import Complexity.Foundations.Probability.NormalizedAtomRows.BoundedLoss
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ChildRootReserve
