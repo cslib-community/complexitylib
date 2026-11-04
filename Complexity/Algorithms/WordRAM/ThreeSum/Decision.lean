@@ -29,9 +29,11 @@ all intermediate and address fits. Every prefix at every wider admitted width ha
 word magnitudes and memory support. `Decision.cost` charges preprocessing, every catalogue and
 loop operation, every matrix builder and every callee instruction at the actual packed size.
 
-This conditional host is not a fast Exact Triangle solver. The unconditional truly subquadratic
-native 3SUM algorithm, its final asymptotic composition and published exponent 1.9992 remain open.
-No curated headline changes here.
+This module re-exports the callee-parametric host rather than a particular fast solver.
+The explicit `ThreeSum.Decision.One9992` module instantiates the canonical actual ET callee and
+proves the native ordinary 1.9992 endpoint, including charged execution and every-wide prefix
+bounds. Import it when that concrete result is needed. Maintainer integration is tracked
+separately; no curated headline selection changes here.
 
 ## Main definitions
 
@@ -47,7 +49,7 @@ This import-only module re-exports these definitions:
 It also re-exports these results:
 
 * `Decision.exec_input`, `Decision.runs_input`: exact initialized native verdict and real run.
-* `Decision.intermediates_polynomial`, `Decision.space_polynomial`: every-wide-prefix bounds.
+* `Decision.prefix_polynomial`: every-wide-prefix bounds.
 
 The finite mathematical reduction and underlying Convolution builder retain their existing
 Anthropic source credit. The caller-owned layout, ordinary native composition and exhaustive

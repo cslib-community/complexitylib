@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.NodeSetup
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.NodeMemory
+import Complexity.Computability.WordRAM.Call
 
 /-!
 # Complete native initialization of a Chan–He node
@@ -34,16 +35,6 @@ private theorem paddingRegisters_injective : Function.Injective paddingRegisters
   apply Fin.ext
   exact congrArg (fun k : Fin 64 => k.val) he
 
-private theorem padding_extend_frame (a : Data 10) (x : Data 64) :
-    Frame x (a.extend paddingRegisters x) := by
-  intro i hi hne
-  change Function.extend paddingRegisters a.regs x.regs i = x.regs i
-  apply Function.extend_apply'
-  rintro ⟨j, hj⟩
-  have := congrArg Fin.val hj
-  dsimp only [paddingRegisters] at this
-  omega
-
 /-- All setup and padding are real instructions, starting from arbitrary old output memory. -/
 theorem exec_initialize {w : ℕ} (x : Data 64) (hfit : Fits w (layout x).budget) :
     ∃ y, ExecWithin w initializeCode x y (12 * (layout x).N + 33) ∧ Parameters x y ∧
@@ -65,15 +56,19 @@ theorem exec_initialize {w : ℕ} (x : Data 64) (hfit : Fits w (layout x).budget
     exact (hfit'.of_le L.bounds.1).of_le (by
       dsimp only [Layout.endpoint, Layout.hist, Layout.scratch]
       omega)
-  obtain ⟨c, hc, hcm, _⟩ := Padding.exec (b.comap paddingRegisters) hf4 hpend
-  let y := c.extend paddingRegisters b
-  have hy : ExecWithin w (Padding.program.rename paddingRegisters) b y (12 * L.N + 5) :=
-    by simpa only [hpn] using hc.rename paddingRegisters_injective
-  have hframe : Frame b y := padding_extend_frame c b
-  refine ⟨y, (ha.seq (hb.seq hy)).mono (by dsimp only [L] at *; omega), hargs.of_frame hframe,
+  obtain ⟨y, hy, ⟨hcm, _⟩, hregs⟩ := ExecWithin.rename_post paddingRegisters_injective
+    (Padding.exec (b.comap paddingRegisters) hf4 hpend)
+  have hframe : Frame b y := by
+    intro i hi hne
+    exact hregs i (by
+      intro j he
+      have := congrArg Fin.val he
+      dsimp only [paddingRegisters] at this
+      omega)
+  refine ⟨y, (ha.seq (hb.seq hy)).mono (by rw [hpn]; dsimp only [L]; omega), hargs.of_frame hframe,
     hready.of_frame hframe, ?_⟩
-  change c.mem = _
-  rw [hcm, Data.comap_mem, hbm, ham, hpd, hpn]
+  simp only [Data.comap_mem] at hcm
+  rw [hcm, hbm, ham, hpd, hpn]
   change Padding.memory x.mem L.packed (b.regs pad0) (b.regs pad1)
     (b.regs pad2) (b.regs pad3) L.N = _
   rw [hbp₀, hbp₁, hbp₂, hbp₃]

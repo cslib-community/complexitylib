@@ -110,7 +110,11 @@ private def encodingWidth (enc : Expr) : MetaM Nat := do
   let ty ← instantiateMVars (← inferType enc)
   let some (_, tgt) := ty.app2? ``Function.Embedding
     | throwError "realize: expected an encoding `α ↪ (Fin l → ℕ)`, got{indentExpr ty}"
-  let n ← instantiateMVars tgt.bindingDomain!.appArg!
+  let .forallE _ dom _ _ ← whnf tgt
+    | throwError "realize: expected an encoding `α ↪ (Fin l → ℕ)`, got{indentExpr ty}"
+  let some n := (← whnf dom).app1? ``Fin
+    | throwError "realize: expected an encoding `α ↪ (Fin l → ℕ)`, got{indentExpr ty}"
+  let n ← instantiateMVars n
   if let some l ← (evalNat n).run then return l
   let some l ← (evalNat (← whnf n)).run
     | throwError "realize: the encoding width is not a numeral in{indentExpr ty}"
