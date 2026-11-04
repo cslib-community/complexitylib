@@ -1094,17 +1094,44 @@ width factor that a preparation moment can carry; the one-width inequality alone
 not do so. `fixed_request_depth_guards` fixes $k_s,k_a,k_u$ and structural rank before
 choosing $n$, and proves eventual guards at $M=128cn$, whose literal depth floor is $n$.
 The source marginal estimate in `grid_vertex_moment_le` is independent of field width;
-`grid_row_moment_le` reuses it and pays the remaining row width. These scalar estimates
-still require assembly with the fixed sensitivity, source/rank rates and positive floor.
+`grid_row_moment_le` reuses it and pays the remaining row width. The complete assembly is in
+[`HierarchyInitialUniform.lean`](../../Complexity/Foundations/Probability/HierarchyInitialUniform.lean).
+`initialGeometricRHS_uniform` chooses a single $D\ge0$ before depth, prime, base matrix,
+request and suffixes and proves
 
-**Remaining parent-error gap:** no theorem yet makes the complete RHS meet arbitrary
-requested accuracy. Fixed depth leaves the positive charge
-$\operatorname{rate}(n)/\operatorname{rate}(k_a)$ at every active later group. Letting
-$k_a=n$ leaves this charge exactly one, as a checked edge case demonstrates; this is a
-limitation of this envelope, not an impossibility theorem for the estimator.
-The slow linear candidate has checked guards and scalar width payments, but the full
-stationary/final envelopes, source/rank/usage costs, sensitivity, fixed floor and reserve
-choices still require a joint allocation theorem. Transport from an invariant covering
+$$
+\operatorname{initialGeometricRHS}\le D\,64^{-n}.
+$$
+
+The fixed parameters are the source/terminal exponents, HP, both sensitivities, zeta,
+positive floor, decoder constants and a uniform primitive bin-cap bound. The estimate is
+uniform over every prime $P\le2^{n+1}$ satisfying the source horizon and every input
+satisfying the actual scale and precision guards. It therefore includes every admissible
+nonnegative substochastic base. No varying-field transport is needed.
+
+The finite bin-rate sum is at most $16/15$. Positive groups have zero inactive charge;
+their row and two-width preparation moments are $O(64^{-n})$. The exceptional first
+moments are at most a fixed constant times $P^2$. Their scheduled stationary floor,
+rarity and raw false weights absorb that growth because $d_0\ge n$ at $M=128cn$.
+Every stationary, final, deterministic-tail, raw false-charge and unconditional-noise
+term of the literal RHS is included. No final accuracy budget is assumed, and neither
+noise receives rarity.
+
+`initialGeometricRHS_uniform_small` proves uniform arbitrary accuracy by geometric
+convergence. `fixed_charge_linear_guards` fixes slack and a structural-charge bound before
+choosing depth and pays both actual precisions and the scale budget.
+`exists_compressedBin_uniform_accuracy` preserves the order $C$, then positive floor,
+then $C_{\rm pre}$, then fixed request constants, requested accuracy and depth. It
+constructs both actual histories and a successful compressed output with error at most
+the requested positive accuracy. The regression chooses bounded primes after depth,
+uses a nonzero identity base, nonempty suffixes and fixed nonzero usage exponent, and
+consumes this existence theorem. This is an initial ratio-16 polynomial-bin result;
+it supplies no general recursive evaluator induction.
+
+**Remaining parent-error gap:** the fixed-request initial compressed-bin allocation is
+paid. Allowing $k_a=n$ instead leaves the active charge exactly one, as the retained edge
+case checks; that varying-request envelope lies outside the fixed-constant theorem.
+Transport from an invariant covering
 ALL actual lower-budget calls is unproved. Heavy-event rarity applies only to deterministic mean envelopes; it must not discount
 correlated noise. Bounded lower-child root-to-ordinary conversion and same-environment
 reset-right-source transport remain to be assembled for general recursive children.

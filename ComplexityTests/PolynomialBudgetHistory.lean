@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of actual polynomial evaluator histories)
-import Complexity.Foundations.Probability.HierarchyInitialGeometric
+import Complexity.Foundations.Probability.HierarchyInitialUniform
 
 /-! A positive identity/full-rate evaluator history with actual ratio-16 bins and polynomial
 preparation. The top bin carries the input, the fine bin vanishes. This exact stationary
@@ -1293,5 +1293,81 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
   obtain ⟨_, _, _, hku, hid, _, hp⟩ := hN n hn
   refine ⟨hku, ?_, exists_bounded_depth_prime n 4 hid⟩
   simpa only [data, mul_one] using hp
+
+-- The full payment can be made small on a family of actual successful outputs. The prime
+-- varies with depth; all structural constants, rates and the positive floor are fixed first.
+private def uniformData (HP : FourthRootHierarchyParams 16 1 16 32 8) (P n : ℕ) :
+    BudgetData HP P where
+  padding := 1
+  base := 1
+  bins := range (n + 1)
+  binRate := rate
+  cutoff := (data HP).cutoff
+  auxiliary := (data HP).auxiliary
+  slack := 1
+  slack_pos := by decide
+  rankCharge := 0
+  binCap := 16
+  binCap_nonneg := by norm_num
+  cutoff_bounds := (data HP).cutoff_bounds
+
+private def uniformRequest (HP : FourthRootHierarchyParams 16 1 16 32 8) (P : ℕ) :
+    HierarchyTask.Request HP.k (Fin 3) (ZMod P) :=
+  ⟨.row 0 (.pilotInput ⟨0, HP.k_pos⟩), gridChannel 0 0 [1],
+    gridChannel 2 0 [2, 3], gridChannel 2 2 [2, 3]⟩
+
+open Cslib.RowCompression NormalizedMoments in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (hscale : HP.η ≤ max (1 : ℝ) 16 / 10000) (ε : ℝ) (hε : 0 < ε) :
+    ∃ N : ℕ, ∀ n ≥ N, ∃ P, ∃ _ : Fact P.Prime,
+      2 ^ n < P ∧ P ≤ 2 ^ (n + 1) ∧ ∃ A,
+      (uniformData HP P n).compressedBin (128 * n) 0 0 (HP.η / 4) (HP.η / 4)
+        (uniformRequest HP P) = some A ∧
+      rootDistPow 4 P (rate 0)
+        (retainedMask threeRoles.source (side P 0) (1 : ZMod P) [1])
+        (retainedMask threeRoles.terminal (side P 0) (1 : ZMod P) [2, 3]) A
+        (denseChild 1 id (uniformRequest HP P) ((uniformData HP P n).cutoff 0)
+          (polynomialPrepCutoff4 HP.θ) HP.ρ HP.K (uniformData HP P n).base) ≤ ε := by
+  have hζ : 0 < HP.η / 4 := by linarith [HP.η_pos]
+  obtain ⟨C, _, hfloor⟩ := BudgetData.exists_compressedBin_uniform_accuracy HP
+    hζ HP.η_pos le_rfl hscale (by linarith)
+  have hf1 : HP.η / 4 ≤ 1 := by norm_num at hscale; linarith
+  obtain ⟨Cp, _, hbound⟩ := hfloor (HP.η / 4) hζ (by linarith) hf1
+  obtain ⟨Lh, Lρ, hLh, hLρ, hh, hρ⟩ := preparation_stability_constants HP
+  obtain ⟨N, hN⟩ := hbound 0 0 1 0 16 Lh Lρ (by decide) (by norm_num) ε hε
+  refine ⟨max 3 N, ?_⟩
+  intro n hn
+  have hn3 : 3 ≤ n := (le_max_left _ _).trans hn
+  have hnN : N ≤ n := (le_max_right _ _).trans hn
+  have hid : 4 < 2 ^ n := (by decide : 4 < 2 ^ 3).trans_le
+    (Nat.pow_le_pow_right (by decide : 0 < 2) hn3)
+  obtain ⟨P, hprime, hlo, hhi, H, he, _⟩ := exists_bounded_depth_prime n 4 hid
+  let : Fact P.Prime := ⟨hprime⟩
+  refine ⟨P, inferInstance, hlo, hhi, ?_⟩
+  have hr : Admissible (uniformRequest HP P) :=
+    ⟨by change (0 : Fin 3) ≠ 2; decide, rfl, rfl⟩
+  have hbase : ∀ x y, 0 ≤ (uniformData HP P n).base x y := by
+    intro x y
+    change 0 ≤ (1 : Matrix (ZMod P) (ZMod P) ℝ) x y
+    simp only [Matrix.one_apply]
+    split_ifs <;> norm_num
+  simpa only [uniformData, mul_one] using
+    hN (uniformData HP P n) n hnN hhi rfl rfl (by norm_num [uniformData]) rfl
+      rfl rfl (by norm_num [uniformData]) H (by omega) (uniformRequest HP P) hr
+      (by norm_num [uniformData]) threeRoles 2 [1] [2, 3] rfl rfl rfl (by omega)
+      (by omega) (by decide) hbase (by simp [uniformData]) 0 hLh hLρ hh hρ
+
+-- A positive structural charge is fixed before the depth; the same guards cover a
+-- nonzero usage exponent without charging it as a terminal exponent.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ∃ N : ℕ, ∀ n ≥ N,
+      2 * (n : ℝ) ≤ ({ data HP with rankCharge := 7 }).requestPrecision
+        (128 * n) (uniformRequest HP 5) := by
+  obtain ⟨N, hN⟩ := BudgetData.fixed_charge_linear_guards (HP := HP) 0 0 1
+    (7 * (uniformRequest HP 5).task.rank) (by decide)
+  refine ⟨N, ?_⟩
+  intro n hn
+  simpa only [mul_one] using
+    (hN 5 n { data HP with rankCharge := 7 } hn rfl (uniformRequest HP 5) rfl rfl le_rfl).2.2.1
 
 end PolynomialBudgetHistory
