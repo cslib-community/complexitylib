@@ -42,9 +42,9 @@ polynomial hashing with a bit-packed Four-Russians multiplication table (`Reduce
   sampled once at initialization (`seedSlack = 1`, no rehash), and no persistent flag is kept to
   latch hash or overflow failures across operations. Each bucket's item count and expected extra
   collision or overflow probes (`probeExcess`) per operation depend only on the current active key
-  set, whereas the physical chain order and the division of a bucket's items between fixed-size full
-  slabs and the shared tail pool under lazy promotion and demotion thresholds depend on operation
-  history. In the `Memory.Prog` model (`SuccinctHash`), `queryWithHashProg_dict_spec`,
+  set. The physical chain order and the division of a bucket's items between fixed-size full slabs
+  and the shared tail pool under lazy promotion and demotion thresholds depend on operation history.
+  In the `Memory.Prog` model (`SuccinctHash`), `queryWithHashProg_dict_spec`,
   `insertWithHashProg_dict_spec`, and `deleteWithHashProg_dict_spec` prove per-seed **amortized**
   `memoryCost` bounds of `26 + 8 * probeExcess`, `184 + 8 * probeExcess`, and
   `270 + 8 * probeExcess` with potential `66 * slotPotential`. In turn,
@@ -65,8 +65,8 @@ polynomial hashing with a bit-packed Four-Russians multiplication table (`Reduce
   dispatch.
 - **Initialization step bound and succinct space:** Initialization from zeroed memory on
   `[base, base + sp)` executes in at most `initBudget ≤ 31 * n_max + 1092` expected body
-  instructions, and the single contiguous memory block of `sp` machine words (holding all hash
-  seeds, the bit-packed multiplication table, and the four bit-packed dictionary arrays) satisfies
+  instructions. The single contiguous memory block of `sp` machine words holds all hash seeds, the
+  bit-packed multiplication table, and the four bit-packed dictionary arrays. It satisfies
   `sp ≤ succinctWords 81 213 U V w n_max =
   ⌈(optBits U V n_max + 81 * n_max * logLogFactor n_max) / w⌉ + 213` for every `w > 0` and
   `n_max ≤ U` with `U < 2 ^ w`, without any polynomial universe restriction

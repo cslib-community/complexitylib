@@ -37,16 +37,16 @@ SOSA 2024, Sections 3–4):
 2. **Slab + tail slot store (`SuccinctSlotInv`, `SuccinctSlabOps`, `SuccinctTailOps`)**:
    divides the `n_max` physical item slots into full slabs of `slabSize n_max = 2 ^ slabBits n_max`
    (`(slabScale n_max) ^ 2` when `0 < bucketBits n_max`, else `1`) items plus a tail pool of
-   `maxTailItems n_max` individual slots, with zero wasted item slots, per-bucket item counts
-   depending only on the current live set, and a history-dependent division between full slabs and
-   tail items under lazy promotion and demotion thresholds paid for by `bucketPotential`.
+   `maxTailItems n_max` individual slots, with no wasted slots. Per-bucket item counts depend only
+   on the current live set, while the split between full slabs and tail items depends on history.
+   `bucketPotential` pays for the lazy promotions and demotions.
 3. **Two-stage universe-reduced 3-wise quotient hashing (`ReducedKWise`)**: maps quotients into
    `(bucket, local micro-bucket)` pairs using `O(1) + o(n_max) / w` words of seed and bit-packed
    Four-Russians carryless multiplication tables (`hashSpace U w n_max`), without any
    `U ≤ poly(n_max)` restriction.
 4. **`Memory.Prog` + `realize` refinement (`SuccinctProg` .. `SuccinctDispatch`)**: all
    deterministic bucket, slab, tail, and micro-chain operations are written as parameter-free
-   `Memory.Prog` subroutines compiled to `WordRAM.Code` via `realize`, receiving the 36 static
+   `Memory.Prog` subroutines compiled to `WordRAM.Code` via `realize`. They receive the 36 static
    parameters in registers loaded by the 36-instruction `loadParamsCode` prefix.
 
 ## Cost model and parameter dependence
@@ -54,7 +54,7 @@ SOSA 2024, Sections 3–4):
 * **Program specialization**: the five generic `Memory.Prog` subroutines do not depend on
   `(U, V, w, n_max)`. The full program `subroutineCode U V w n_max` depends on `(U, V, w, n_max)`
   only through the `space` constant in `allocSpan`, the 36-instruction `loadParamsCode` prefix, and
-  the hash code, and does not depend on `base` (passed in `frontierReg` at initialization).
+  the hash code. It does not depend on `base` (passed in `frontierReg` at initialization).
   No theorem bounds static code size. All time bounds (`initSteps`, `chargeVal`, `charge`) count
   **executed Word-RAM instructions**.
 * **Initialization (`initSteps`)**: `initSteps U n_max ≤ 31 * n_max + 1091 ≤ 1091 * (n_max + 1)`
@@ -70,9 +70,8 @@ SOSA 2024, Sections 3–4):
   `tsum_uniform_probeExcess_reducedPolyHash_le_five` bounds expected `probeExcess` by `5`. Because
   the five generic `Memory.Prog` subroutines (`extractQuotGenProg`, `queryWithHashGenProg`,
   `insertWithHashGenProg`, `deletePrepWithHashGenProg`, `deleteFinishWithHashGenProg`) do not depend
-  on `(U, V, w, n_max)` and receive the 36 static parameters via registers loaded by
-  `loadParamsCode` in `36` instructions, both the register budget `rSuccinct` and the operation
-  charge `chargeVal = 313 * opFactor + 284725` are parameter-free `O(1)` constants across all
+  on `(U, V, w, n_max)`, both the register budget `rSuccinct` and the operation charge
+  `chargeVal = 313 * opFactor + 284725` are parameter-free `O(1)` constants across all
   `(U, V, w, n_max)`, `base`, and `ops.length`.
 
 ## Main definitions
