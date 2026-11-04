@@ -1236,47 +1236,13 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8)
     (hscale : HP.η ≤ max (1 : ℝ) 16 / 10000) :
     ∃ A C Cp Lh Lρ, (data HP).compressedBin 8 0 0 (HP.η / 4) (HP.η / 4)
       (request HP) = some A ∧ 0 ≤ C ∧ 0 ≤ Cp ∧ 0 ≤ Lh ∧ 0 ≤ Lρ ∧
-      let m := Nat.log2 8 + 1
-      let X := retainedMask threeRoles.source (side 5 0) (data HP).padding [1]
-      let Ya := retainedMask threeRoles.terminal (side 5 0) (data HP).padding [2, 3]
-      let q := fun i => (data HP).initialMeanCharge 8 1 i 0 (request HP)
-      let e₀ := (2 : ℝ) ^ (-(data HP).requestPrecision 8
-        { (request HP) with usage := (request HP).terminal }) *
-        (64 / 63) / rate 0
-      let e₁ := |(HP.η / 4)| * (2 : ℝ) ^ (-(data HP).requestPrecision 8 (request HP))
-      let deficit := fun i => rowNormPow 4 5 (rate 0) X Ya
-        (fun _ _ _ => rate 1 + (data HP).initialInactiveCharge 8 i (request HP))
-      let prep := fun i => (5 : ℝ) * (|(HP.η / 4)| * (Lh + Lρ) / rate 0) ^ 4 *
-        (8 * ((e₀ * rate 0 * (1 / 64 : ℝ) ^ dyadicSlack m i) ^ 4 + deficit i))
-      let a := fun i => (vertexNormPow 4 5 (rate 0) X (fun _ _ => q i)) ^ (4⁻¹ : ℝ) +
-        (prep i) ^ (4⁻¹ : ℝ)
-      let row := fun t => rowNormPow 4 5 (rate 0) X Ya (fun _ _ _ => t)
-      let inactive := (data HP).binCap * ∑ bin ∈ (data HP).bins, (data HP).binRate bin
-      let sensitivity := (5 : ℝ) * (|(HP.η / 4)| * (Lh + Lρ) / rate 0) ^ 4 * 8
-      let latePrep := sensitivity * ((e₀ * rate 0 / 64) ^ 4 + row (rate 1))
-      let earlyPrep := sensitivity * ((e₀ * rate 0 / 64) ^ 4 + row (rate 1 + inactive))
-      let lateRow := row (rate 1 / rate 0)
-      let earlyRow := row ((rate 1 + inactive) / rate 0)
-      let rarity₀ := ((2 + 256 / dyadicFloor (HP.η / 4) m 0) /
-        (compatibleCapacity HP.K m 0 : ℝ)) ^ (4⁻¹ : ℝ)
-      let tail := (2 + 256 / (HP.η / 4)) ^ (4⁻¹ : ℝ) *
-        (lateRow ^ (4⁻¹ : ℝ) + latePrep ^ (4⁻¹ : ℝ)) / 63 +
-        rarity₀ * 28 ^ m * (earlyRow ^ (4⁻¹ : ℝ) + earlyPrep ^ (4⁻¹ : ℝ))
-      let radius := (2 * max (1 : ℝ) 16) ^ (4⁻¹ : ℝ)
-      let w := fun i => 64 * (HP.K : ℝ) * radius ^ 4 /
-        ((compatibleCapacity HP.K m i : ℝ) * dyadicFloor (HP.η / 4) m i ^ 4)
-      let c := 64 * (HP.K : ℝ) * radius ^ 4 / (HP.η / 4) ^ 4
-      rootDistPow 4 5 (rate 0) X Ya A
+      rootDistPow 4 5 (rate 0)
+        (retainedMask threeRoles.source (side 5 0) (data HP).padding [1])
+        (retainedMask threeRoles.terminal (side 5 0) (data HP).padding [2, 3]) A
         (denseChild (data HP).padding id (request HP) ((data HP).cutoff 0)
           (polynomialPrepCutoff4 HP.θ) HP.ρ HP.K (data HP).base) ≤
-        128 * (HP.K : ℝ) *
-          (Cp ^ 4 * ((∑ i ∈ range m, dyadicFloor (HP.η / 4) m i * a i) +
-            (HP.η / 4) * (e₀ + e₁) / 511) ^ 4 +
-          C ^ 4 * (a (Nat.log2 8) + (e₀ + e₁) / 64) ^ 4 +
-          C ^ 4 * (tail +
-            (e₀ + e₁) * (7 / 9)) ^ 4) +
-        64 * (c * (lateRow + latePrep) / 63 + w 0 * (earlyRow + earlyPrep) +
-          (c * e₀ ^ 4 / 63 + c * e₁ ^ 4 / 63)) := by
+        (data HP).initialGeometricRHS 8 1 (request HP) threeRoles 0 0 [1] [2, 3]
+          (HP.η / 4) (HP.η / 4) Lh Lρ C Cp := by
   obtain ⟨F, W, A, hF, hW, hA⟩ := available8 HP
   have hζ : 0 < HP.η / 4 := by linarith [HP.η_pos]
   obtain ⟨C, hC, hfloor⟩ := BudgetData.exists_compressedBin_geometric HP
@@ -1294,5 +1260,38 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8)
     (by decide) (by norm_num [data])
     (by intro x y; by_cases h : x = y <;> simp [data, base, h])
     (by simp [data, base]) 0 F hF W (by simpa using hW) A hA Lh Lρ hLh hLρ hh hρ
+
+-- Both width factors are present and nonzero; p=2n is enough at this edge.
+example : (13 : ℝ) ^ 2 * ((2 : ℝ) ^ (-(6 : ℝ))) ^ 4 ≤
+    4 * (1 / 64 : ℝ) ^ 3 :=
+  bounded_width_precision_sq 13 3 (by decide) (by norm_num)
+
+example : (13 : ℝ) * ((2 : ℝ) ^ (-(6 : ℝ))) ^ 4 <
+    (13 : ℝ) ^ 2 * ((2 : ℝ) ^ (-(6 : ℝ))) ^ 4 := by
+  have hp : 0 < ((2 : ℝ) ^ (-(6 : ℝ))) ^ 4 := by positivity
+  nlinarith
+
+-- The raw exceptional weight pays a square width before its nonzero moment is attached.
+open Cslib.RowCompression NormalizedMoments in
+example : (64 * (2 : ℝ) * 1 ^ 4 /
+    ((compatibleCapacity 2 4 0 : ℝ) * dyadicFloor (1 / 8) 4 0 ^ 4)) * (13 : ℝ) ^ 2 ≤
+      (64 * (2 : ℝ) * 1 ^ 4 / (1 / 8) ^ 4) * 4 * (1 / 262144 : ℝ) ^ 3 := by
+  exact compatible_first_false_width (by norm_num) 2 4 13 3 1 (by decide)
+    (by norm_num [dyadicSlack])
+
+-- Fixed nonzero usage exponent and identifiers can be carried into bounded-prime choice.
+-- This consumes eventual guards and Bertrand together; it asserts no output accuracy.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ∃ N : ℕ, ∀ n ≥ N, 2 ≤ n ∧
+      2 * (n : ℝ) ≤ (data HP).requestPrecision (128 * n) (request HP) ∧
+      ∃ P, P.Prime ∧ 2 ^ n < P ∧ P ≤ 2 ^ (n + 1) ∧
+        ∃ H : Horizon P, H.maxExponent = n ∧ H.maxIdentifier = 4 := by
+  obtain ⟨N, hN⟩ := BudgetData.fixed_request_depth_guards (data HP) (request HP)
+    0 0 2 4 rfl rfl rfl
+  refine ⟨N, ?_⟩
+  intro n hn
+  obtain ⟨_, _, _, hku, hid, _, hp⟩ := hN n hn
+  refine ⟨hku, ?_, exists_bounded_depth_prime n 4 hid⟩
+  simpa only [data, mul_one] using hp
 
 end PolynomialBudgetHistory

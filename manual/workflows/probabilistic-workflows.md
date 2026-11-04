@@ -1028,7 +1028,8 @@ false-charge denominators.
 
 The geometric continuation is in
 [`HierarchyInitialGeometric.lean`](../../Complexity/Foundations/Probability/HierarchyInitialGeometric.lean).
-`exists_compressedBin_geometric` consumes that actual successful output and removes the
+`initialGeometricRHS` names the complete computed payment, including stationary, final,
+tail and raw terms. `exists_compressedBin_geometric` returns precisely this payment and removes the
 finite double tail sum and raw mean false-charge sum. It assumes the concrete sufficient
 cutoff inequality $c(1+4(n+k_a))<M$, where $c$ is the actual `slack`.
 For $U(t)=\lVert t\rVert_{row}^4$ with the original full-rank masks, set
@@ -1065,7 +1066,12 @@ In particular, `compatible_first_rarity_decay` proves
 $v_0 28^m\le(2+256/\delta)^{1/4}64^{-2^{\lfloor\log_2 M\rfloor}}$.
 The exceptional false weight also stays literal; its definition is
 $w_0=c_{\rm false}(K+1)^{-1}2^{-24\cdot2^{\lfloor\log_2 M\rfloor}}$.
-These rarity bounds apply to deterministic means, never to correlated centered noise.
+`compatible_false_weight_decay` checks the coarser bound
+$w_j\le c_{\rm false}1048576^{-d_j}$, including the inverse fourth power of the floor.
+For $d_0\ge n$, `compatible_first_false_width` consequently pays both width factors:
+$w_0P^2\le4c_{\rm false}262144^{-n}$. The early moment must still be bounded before
+using this scalar inequality. These rarity bounds apply to deterministic means, never to
+correlated centered noise.
 
 [`HierarchyInitialFeasibility.lean`](../../Complexity/Foundations/Probability/HierarchyInitialFeasibility.lean)
 checks the actual guard constants:
@@ -1081,9 +1087,15 @@ $p\ge M/(64c)\ge2n$. Usage does not change `requestPrecision`; usage-row masks a
 costs nevertheless remain in the analytic statements. If identifiers are already below
 $2^n$, Bertrand supplies a prime $2^n<P\le2^{n+1}$ with the stated depth/identifier
 horizon. No arbitrary future stage or copy growth is provided. The checked scalar bounds
-are $P^2\operatorname{rate}(n)^4\le4\cdot16384^{-n}$ and
-$P(2^{-p})^4\le2\cdot128^{-n}$ for $p\ge2n$. They pay the displayed width factors,
-not inverse source/rank rates or sensitivity constants.
+are $P^2\operatorname{rate}(n)^4\le4\cdot16384^{-n}$,
+$P(2^{-p})^4\le2\cdot128^{-n}$ and, crucially,
+$P^2(2^{-p})^4\le4\cdot64^{-n}$ for $p\ge2n$. The last inequality pays the second
+width factor that a preparation moment can carry; the one-width inequality alone does
+not do so. `fixed_request_depth_guards` fixes $k_s,k_a,k_u$ and structural rank before
+choosing $n$, and proves eventual guards at $M=128cn$, whose literal depth floor is $n$.
+The source marginal estimate in `grid_vertex_moment_le` is independent of field width;
+`grid_row_moment_le` reuses it and pays the remaining row width. These scalar estimates
+still require assembly with the fixed sensitivity, source/rank rates and positive floor.
 
 **Remaining parent-error gap:** no theorem yet makes the complete RHS meet arbitrary
 requested accuracy. Fixed depth leaves the positive charge

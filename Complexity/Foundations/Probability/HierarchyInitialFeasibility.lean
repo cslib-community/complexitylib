@@ -24,9 +24,11 @@ rank and source exponents must be tracked separately when using the omitted-dept
 * `sampleScale_grid`: exact integer scale offset.
 * `retained_scaleCutoff_lt`: every retained cutoff is below a sufficient budget.
 * `slow_depth_guards`: depth M/(128*slack) pays cutoffs and positive precision.
+* `fixed_request_depth_guards`: fix all three exponents before increasing depth.
 * `exists_bounded_depth_prime`: bounded prime admitting the depth and identifier horizon.
 * `bounded_width_omission`: two width factors paid by the omitted fourth moment.
 * `bounded_width_precision`: one width factor paid by the precision fourth moment.
+* `bounded_width_precision_sq`: both preparation width factors paid by precision.
 -/
 
 public section
@@ -111,6 +113,46 @@ theorem slow_depth_guards (B : BudgetData HP P) (M : ℕ)
       nlinarith
     linarith
 
+/-- Fix source, terminal and usage exponents, identifiers and structural rank BEFORE taking
+larger retained depths. The explicit budgets have literal depth floor M/(128*slack)=n.
+This is eventual guard feasibility, not convergence of the complete output payment. -/
+theorem fixed_request_depth_guards (B : BudgetData HP P)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (ks ka ku idMax : ℕ)
+    (hrate : B.binRate = rate) (hs : r.source.rate = rate ks)
+    (ht : r.terminal.rate = rate ka) :
+    ∃ N : ℕ, ∀ n ≥ N,
+      let M := 128 * B.slack * n
+      M / (128 * B.slack) = n ∧ ks ≤ n ∧ ka ≤ n ∧ ku ≤ n ∧ idMax < 2 ^ n ∧
+      (∀ bin ≤ n, LogSpaceEstimation.scaleCutoff B.slack
+        (B.sampleScale r (some bin)) < M) ∧
+      2 * (n : ℝ) ≤ B.requestPrecision M r := by
+  obtain ⟨rankBound, hrank⟩ := exists_nat_gt (B.rankCharge * r.task.rank)
+  refine ⟨max (max 1 (max ks (max ka (max ku rankBound)))) idMax, ?_⟩
+  intro n hn
+  have hid : idMax ≤ n := (le_max_right _ _).trans hn
+  have hn := (le_max_left _ _).trans hn
+  have hn1 : 1 ≤ n := (le_max_left _ _).trans hn
+  have hks : ks ≤ n := (le_max_left _ _).trans ((le_max_right _ _).trans hn)
+  have hka : ka ≤ n := (le_max_left _ _).trans
+    ((le_max_right _ _).trans ((le_max_right _ _).trans hn))
+  have hku : ku ≤ n := (le_max_left _ _).trans
+    ((le_max_right _ _).trans ((le_max_right _ _).trans ((le_max_right _ _).trans hn)))
+  have hrn : rankBound ≤ n := (le_max_right _ _).trans
+    ((le_max_right _ _).trans ((le_max_right _ _).trans ((le_max_right _ _).trans hn)))
+  have hc : 0 < 128 * B.slack := Nat.mul_pos (by decide) B.slack_pos
+  have hdiv : (128 * B.slack * n) / (128 * B.slack) = n :=
+    Nat.mul_div_cancel_left n hc
+  have hg := B.slow_depth_guards (128 * B.slack * n) r ks ka hrate hs ht
+    (by rwa [hdiv]) (by rwa [hdiv]) (by rwa [hdiv])
+    (by rw [hdiv]; exact hrank.le.trans (by exact_mod_cast hrn))
+  refine ⟨hdiv, hks, hka, hku, hid.trans_lt Nat.lt_two_pow_self,
+    by simpa only [hdiv] using hg.1, ?_⟩
+  apply le_trans _ hg.2
+  have hc' : (0 : ℝ) < B.slack := by exact_mod_cast B.slack_pos
+  push_cast
+  field_simp
+  nlinarith
+
 end Matrix.HierarchyParams.H4RankEnvironment.BudgetData
 
 namespace Matrix.HierarchyParams.H4RankEnvironment
@@ -164,6 +206,32 @@ theorem bounded_width_precision (P n : ℕ) {p : ℝ} (hP : P ≤ 2 ^ (n + 1))
         (by positivity) (by positivity)
     _ = _ := by
       rw [show (2 : ℝ) ^ (n + 1) = 2 * (2 : ℝ) ^ n by rw [pow_succ, mul_comm],
+        ← pow_mul, Nat.mul_comm n 4, pow_mul, mul_assoc, ← mul_pow]
+      norm_num
+
+/-- The preparation precision payment has TWO width factors: its sensitivity supplies
+one and the repeated row moment can supply the other. A margin p ≥ 2n pays both. -/
+theorem bounded_width_precision_sq (P n : ℕ) {p : ℝ} (hP : P ≤ 2 ^ (n + 1))
+    (hp : 2 * (n : ℝ) ≤ p) :
+    (P : ℝ) ^ 2 * ((2 : ℝ) ^ (-p)) ^ 4 ≤ 4 * (1 / 64 : ℝ) ^ n := by
+  have hacc : (2 : ℝ) ^ (-p) ≤ (1 / 4 : ℝ) ^ n := by
+    calc
+      _ ≤ (2 : ℝ) ^ ((-2) * (n : ℝ)) :=
+        Real.rpow_le_rpow_of_exponent_le (by norm_num) (by linarith)
+      _ = _ := by
+        rw [Real.rpow_mul_natCast (by norm_num)]
+        norm_num
+  have hP' : (P : ℝ) ≤ (2 : ℝ) ^ (n + 1) := by exact_mod_cast hP
+  calc
+    _ ≤ ((2 : ℝ) ^ (n + 1)) ^ 2 * ((1 / 4 : ℝ) ^ n) ^ 4 :=
+      mul_le_mul (pow_le_pow_left₀ (Nat.cast_nonneg P) hP' 2)
+        (pow_le_pow_left₀ (Real.rpow_pos_of_pos (by norm_num) _).le hacc 4)
+        (by positivity) (by positivity)
+    _ = _ := by
+      rw [show ((2 : ℝ) ^ (n + 1)) ^ 2 = 4 * (4 : ℝ) ^ n by
+        rw [← pow_mul, Nat.add_mul, Nat.one_mul, pow_add, Nat.mul_comm n 2, pow_mul]
+        norm_num
+        ring,
         ← pow_mul, Nat.mul_comm n 4, pow_mul, mul_assoc, ← mul_pow]
       norm_num
 

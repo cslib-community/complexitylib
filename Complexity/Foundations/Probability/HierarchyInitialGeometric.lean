@@ -18,6 +18,10 @@ inactive first group. Both its deterministic rarity tail and its raw false-charg
 horizon-independent coefficients. This is a finite allocation step, not arbitrary requested
 accuracy or the general lower-budget induction.
 
+## Main definitions
+
+* `initialGeometricRHS`: complete computed successful-output payment.
+
 ## Main results
 
 * `initialMeanCharge_geometric`: actual charge sums with the first group isolated.
@@ -201,6 +205,50 @@ theorem initialAllocation_sums_le [Fact P.Prime] (B : BudgetData HP P) (M n ka k
     compatible_false_charge_le hη (add_nonneg (hrow _) hlate) HP.K m _
       (by dsimp only [m]; omega) _ (fun i _ => hraw i)⟩
 
+/-- The complete computed right-hand side of the successful geometric output bound.
+It retains stationary, final, tail and raw false-charge payments and both noises. -/
+@[expose] def initialGeometricRHS [Fact P.Prime] (B : BudgetData HP P) (M n : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (R : RoleProfile 3) (ks ka : ℕ) (ss st : List (ZMod P))
+    (ζ floor Lh Lρ C Cpre : ℝ) : ℝ :=
+  let m := Nat.log2 M + 1
+  let X := retainedMask R.source (side P ks) B.padding ss
+  let Ya := retainedMask R.terminal (side P ka) B.padding st
+  let q := fun i => B.initialMeanCharge M n i ka r
+  let e₀ := (2 : ℝ) ^ (-B.requestPrecision M { r with usage := r.terminal }) *
+    (64 / 63) / rate ka
+  let e₁ := |ζ| * (2 : ℝ) ^ (-B.requestPrecision M r)
+  let deficit := fun i => rowNormPow 4 P (rate ks) X Ya
+    (fun _ _ _ => rate n + B.initialInactiveCharge M i r)
+  let prep := fun i => (P : ℝ) * (|ζ| * (Lh + Lρ) / rate ka) ^ 4 *
+    (8 * ((e₀ * rate ka * (1 / 64 : ℝ) ^ dyadicSlack m i) ^ 4 + deficit i))
+  let a := fun i => (vertexNormPow 4 P (rate ks) X (fun _ _ => q i)) ^ (4⁻¹ : ℝ) +
+    (prep i) ^ (4⁻¹ : ℝ)
+  let row := fun t => rowNormPow 4 P (rate ks) X Ya (fun _ _ _ => t)
+  let inactive := B.binCap * ∑ bin ∈ B.bins, B.binRate bin
+  let sensitivity := (P : ℝ) * (|ζ| * (Lh + Lρ) / rate ka) ^ 4 * 8
+  let latePrep := sensitivity * ((e₀ * rate ka / 64) ^ 4 + row (rate n))
+  let earlyPrep := sensitivity * ((e₀ * rate ka / 64) ^ 4 + row (rate n + inactive))
+  let lateRow := row (rate n / rate ka)
+  let earlyRow := row ((rate n + inactive) / rate ka)
+  let rarity₀ := ((2 + 256 / dyadicFloor floor m 0) /
+    (compatibleCapacity HP.K m 0 : ℝ)) ^ (4⁻¹ : ℝ)
+  let tail := (2 + 256 / floor) ^ (4⁻¹ : ℝ) *
+    (lateRow ^ (4⁻¹ : ℝ) + latePrep ^ (4⁻¹ : ℝ)) / 63 +
+    rarity₀ * 28 ^ m * (earlyRow ^ (4⁻¹ : ℝ) + earlyPrep ^ (4⁻¹ : ℝ))
+  let radius := (2 * max (1 : ℝ) 16) ^ (4⁻¹ : ℝ)
+  let w := fun i => 64 * (HP.K : ℝ) * radius ^ 4 /
+    ((compatibleCapacity HP.K m i : ℝ) * dyadicFloor floor m i ^ 4)
+  let c := 64 * (HP.K : ℝ) * radius ^ 4 / floor ^ 4
+  128 * (HP.K : ℝ) *
+    (Cpre ^ 4 * ((∑ i ∈ range m, dyadicFloor floor m i * a i) +
+      floor * (e₀ + e₁) / 511) ^ 4 +
+    C ^ 4 * (a (Nat.log2 M) + (e₀ + e₁) / 64) ^ 4 +
+    C ^ 4 * (tail +
+      (e₀ + e₁) * (7 / 9)) ^ 4) +
+  64 * (c * (lateRow + latePrep) / 63 + w 0 * (earlyRow + earlyPrep) +
+    (c * e₀ ^ 4 / 63 + c * e₁ ^ 4 / 63))
+
 /-- Successful actual output with both deterministic tails and both raw mean charges
 paid by geometric sums. Width-dependent late envelopes and the exact exceptional first-group
 weights remain explicit. Both centered noises keep their unconditional payments. -/
@@ -229,45 +277,11 @@ theorem exists_compressedBin_geometric (HP : FourthRootHierarchyParams 16 1 16 3
       ∀ Lh Lρ : ℝ, 0 ≤ Lh → 0 ≤ Lρ →
       (∀ a b, |polynomialPrepCutoff4 HP.θ a - polynomialPrepCutoff4 HP.θ b| ≤ Lh * |a - b|) →
       (∀ a b, |HP.ρ a - HP.ρ b| ≤ Lρ * |a - b|) →
-      let m := Nat.log2 M + 1
-      let X := retainedMask R.source (side P ks) B.padding ss
-      let Ya := retainedMask R.terminal (side P ka) B.padding st
-      let q := fun i => B.initialMeanCharge M n i ka r
-      let e₀ := (2 : ℝ) ^ (-B.requestPrecision M { r with usage := r.terminal }) *
-        (64 / 63) / rate ka
-      let e₁ := |ζ| * (2 : ℝ) ^ (-B.requestPrecision M r)
-      let deficit := fun i => rowNormPow 4 P (rate ks) X Ya
-        (fun _ _ _ => rate n + B.initialInactiveCharge M i r)
-      let prep := fun i => (P : ℝ) * (|ζ| * (Lh + Lρ) / rate ka) ^ 4 *
-        (8 * ((e₀ * rate ka * (1 / 64 : ℝ) ^ dyadicSlack m i) ^ 4 + deficit i))
-      let a := fun i => (vertexNormPow 4 P (rate ks) X (fun _ _ => q i)) ^ (4⁻¹ : ℝ) +
-        (prep i) ^ (4⁻¹ : ℝ)
-      let row := fun t => rowNormPow 4 P (rate ks) X Ya (fun _ _ _ => t)
-      let inactive := B.binCap * ∑ bin ∈ B.bins, B.binRate bin
-      let sensitivity := (P : ℝ) * (|ζ| * (Lh + Lρ) / rate ka) ^ 4 * 8
-      let latePrep := sensitivity * ((e₀ * rate ka / 64) ^ 4 + row (rate n))
-      let earlyPrep := sensitivity * ((e₀ * rate ka / 64) ^ 4 + row (rate n + inactive))
-      let lateRow := row (rate n / rate ka)
-      let earlyRow := row ((rate n + inactive) / rate ka)
-      let rarity₀ := ((2 + 256 / dyadicFloor floor m 0) /
-        (compatibleCapacity HP.K m 0 : ℝ)) ^ (4⁻¹ : ℝ)
-      let tail := (2 + 256 / floor) ^ (4⁻¹ : ℝ) *
-        (lateRow ^ (4⁻¹ : ℝ) + latePrep ^ (4⁻¹ : ℝ)) / 63 +
-        rarity₀ * 28 ^ m * (earlyRow ^ (4⁻¹ : ℝ) + earlyPrep ^ (4⁻¹ : ℝ))
-      let radius := (2 * max (1 : ℝ) 16) ^ (4⁻¹ : ℝ)
-      let w := fun i => 64 * (HP.K : ℝ) * radius ^ 4 /
-        ((compatibleCapacity HP.K m i : ℝ) * dyadicFloor floor m i ^ 4)
-      let c := 64 * (HP.K : ℝ) * radius ^ 4 / floor ^ 4
-      rootDistPow 4 P (rate ks) X Ya A
+      rootDistPow 4 P (rate ks)
+        (retainedMask R.source (side P ks) B.padding ss)
+        (retainedMask R.terminal (side P ka) B.padding st) A
         (denseChild B.padding id r (B.cutoff bin) (polynomialPrepCutoff4 HP.θ) HP.ρ HP.K B.base) ≤
-        128 * (HP.K : ℝ) *
-          (Cpre ^ 4 * ((∑ i ∈ range m, dyadicFloor floor m i * a i) +
-            floor * (e₀ + e₁) / 511) ^ 4 +
-          C ^ 4 * (a (Nat.log2 M) + (e₀ + e₁) / 64) ^ 4 +
-          C ^ 4 * (tail +
-            (e₀ + e₁) * (7 / 9)) ^ 4) +
-        64 * (c * (lateRow + latePrep) / 63 + w 0 * (earlyRow + earlyPrep) +
-          (c * e₀ ^ 4 / 63 + c * e₁ ^ 4 / 63)) := by
+        B.initialGeometricRHS M n r R ks ka ss st ζ floor Lh Lρ C Cpre := by
   obtain ⟨C, hC, hfloor⟩ := exists_compressedBin_allocated HP hζ hscl hmargin hcapscale hsmall
   refine ⟨C, hC, ?_⟩
   intro floor hf hfs hf1
@@ -286,6 +300,7 @@ theorem exists_compressedBin_geometric (HP : FourthRootHierarchyParams 16 1 16 3
     ((2 * max (1 : ℝ) 16) ^ (4⁻¹ : ℝ))
   have hout := hbound B M n (by omega) hbins hrate hcutoff haux hD H hn r hr R ks ka ku
     ss st hs ht hu hks hka husage hbase hbase1 bin F hF W hW A hA Lh Lρ hLh hLρ hh hρ
+  unfold initialGeometricRHS
   extract_lets m X Ya q e₀ e₁ deficit prep a row inactive sensitivity latePrep earlyPrep
     lateRow earlyRow rarity₀ tail radius w c
   have hsums :

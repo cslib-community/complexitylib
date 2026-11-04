@@ -68,6 +68,59 @@ theorem compatible_first_rarity_decay {η : ℝ} (hη : 0 < η) (K m : ℕ) (hm 
     have hf := (dyadicFloor_pos hη m 0).le
     positivity) _
 
+/-- The literal false-charge weight retains exponential decay at the first group.
+This estimate pays the inverse fourth power of the floor, before multiplying any moment. -/
+theorem compatible_false_weight_decay {η : ℝ} (hη : 0 < η) (K m j : ℕ) (R : ℝ) :
+    64 * (K : ℝ) * R ^ 4 /
+      ((compatibleCapacity K m j : ℝ) * dyadicFloor η m j ^ 4) ≤
+      (64 * (K : ℝ) * R ^ 4 / η ^ 4) *
+        (1 / 1048576 : ℝ) ^ dyadicSlack m j := by
+  let d := dyadicSlack m j
+  have hn : (0 : ℝ) ≤ 64 * K * R ^ 4 := by positivity
+  have hc : (2 : ℝ) ^ (64 * d) ≤ (compatibleCapacity K m j : ℝ) := by
+    exact_mod_cast (compatibleCapacity_bounds K m j).2
+  have hf := dyadicFloor_pos hη m j
+  have he := false_schedule_identity (ε := 1) η d
+  simp only [one_mul, one_pow] at he
+  calc
+    _ ≤ (64 * (K : ℝ) * R ^ 4) /
+        ((2 : ℝ) ^ (64 * d) * dyadicFloor η m j ^ 4) := by
+      apply div_le_div_of_nonneg_left hn (by positivity)
+      exact mul_le_mul_of_nonneg_right hc (pow_nonneg hf.le 4)
+    _ ≤ (64 * (K : ℝ) * R ^ 4) *
+        ((2 ^ d) ^ 4 / ((2 : ℝ) ^ (64 * d) * dyadicFloor η m j ^ 4)) := by
+      rw [← mul_div_assoc]
+      apply div_le_div_of_nonneg_right _ (by positivity)
+      exact le_mul_of_one_le_right hn (one_le_pow₀ (one_le_pow₀ (by norm_num)))
+    _ = _ := by
+      change (64 * (K : ℝ) * R ^ 4) *
+        ((2 ^ d) ^ 4 / ((2 : ℝ) ^ (64 * d) * (η * (1 / 1024) ^ d) ^ 4)) = _
+      rw [he]
+      ring
+
+/-- Two width factors are paid even for the exceptional false-charge weight, provided
+its first slack dominates the retained depth. The early moment still needs its own bound. -/
+theorem compatible_first_false_width {η : ℝ} (hη : 0 < η) (K m P n : ℕ) (R : ℝ)
+    (hP : P ≤ 2 ^ (n + 1)) (hn : n ≤ dyadicSlack m 0) :
+    (64 * (K : ℝ) * R ^ 4 /
+      ((compatibleCapacity K m 0 : ℝ) * dyadicFloor η m 0 ^ 4)) * (P : ℝ) ^ 2 ≤
+      (64 * (K : ℝ) * R ^ 4 / η ^ 4) * 4 * (1 / 262144 : ℝ) ^ n := by
+  have hc : 0 ≤ 64 * (K : ℝ) * R ^ 4 / η ^ 4 := by positivity
+  have hd : (1 / 1048576 : ℝ) ^ dyadicSlack m 0 ≤ (1 / 1048576 : ℝ) ^ n :=
+    pow_le_pow_of_le_one (by norm_num) (by norm_num) hn
+  have hp : (P : ℝ) ^ 2 ≤ 4 * (4 : ℝ) ^ n := by
+    have hh : (P : ℝ) ≤ (2 : ℝ) ^ (n + 1) := by exact_mod_cast hP
+    apply (pow_le_pow_left₀ (Nat.cast_nonneg P) hh 2).trans_eq
+    rw [← pow_mul, Nat.add_mul, Nat.one_mul, pow_add, Nat.mul_comm n 2, pow_mul]
+    norm_num
+    ring
+  calc
+    _ ≤ ((64 * (K : ℝ) * R ^ 4 / η ^ 4) *
+        (1 / 1048576 : ℝ) ^ n) * (4 * (4 : ℝ) ^ n) := by
+      exact mul_le_mul ((compatible_false_weight_decay hη K m 0 R).trans
+        (mul_le_mul_of_nonneg_left hd hc)) hp (by positivity) (by positivity)
+    _ = _ := by rw [mul_mul_mul_comm, ← mul_pow]; norm_num
+
 /-- A deterministic tail with a single exceptional first prefix. The positive-prefix
 constant has no group-count factor; the first prefix keeps its actual rarity weight. -/
 theorem compatible_mean_tail_le {η a b : ℝ} (hη : 0 < η) (ha : 0 ≤ a)
