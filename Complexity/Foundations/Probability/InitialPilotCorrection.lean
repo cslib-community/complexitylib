@@ -22,8 +22,8 @@ child are distinct: the former applies the bounded cutoff directly, while the la
 has incoming gates and a conditional preparatory denominator. The definitions below
 retain both. The direct constructor has allocated accuracy under the covering single-bin
 hypotheses. The normalized child has allocated accuracy against the original true
-normalized request. Its completed outer walk to the canonical correction and recursive
-closure remain open.
+normalized request. `InitialPilotCompleted` separately completes its outer walk to the
+canonical first correction under common source/rank/usage rates; recursive closure remains open.
 
 ## Main results
 
@@ -637,7 +637,7 @@ set_option backward.isDefEq.respectTransparency false in
 tolerances precede the calls; preparation uses parameter one (two actual graph steps).
 Its joint normalizer is paid by RAW perturbation and conditional Jensen, without a
 pointwise PREP accuracy premise. The target is the original true normalized request;
-identification and payment of its completed outer walk remain separate obligations. -/
+identification and payment of its completed outer walk are in `InitialPilotCompleted`. -/
 theorem initialPilotNormalized_accuracy
     (HP : FourthRootHierarchyParams 16 1 16 32 8) :
     ∃ L Cr Cp Cm Lp : ℝ, 0 ≤ L ∧ 0 ≤ Cr ∧ 0 ≤ Cp ∧ 0 ≤ Cm ∧ 0 ≤ Lp ∧

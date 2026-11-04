@@ -73,6 +73,13 @@ that pair's retention event are zero and are ignored by the integrated row norm.
   if h : σ ∈ ({σ | X σ x ∧ Y σ y} : Finset Ω) then
     ((G x y).walk ^ (2 * t x y)) (fun τ => F τ.val x y) ⟨σ, h⟩ else 0
 
+/-- Conditional completion preserves source rejection for every input and length. -/
+theorem conditionalWalk_eq_zero_of_not_source [Fintype D]
+    (G : ∀ x y, RotationMap (RetainedPairSlice X Y x y) D) (t : V → V → ℕ)
+    (F : Ω → V → V → ℝ) (σ : Ω) (x y : V) (hx : ¬ X σ x) :
+    conditionalWalk X Y G t F σ x y = 0 := by
+  simp [conditionalWalk, hx]
+
 /-- A retained environment is evaluated by its own pair's graph, without changing slices. -/
 theorem conditionalWalk_coe [Fintype D]
     (G : ∀ x y, RotationMap (RetainedPairSlice X Y x y) D) (t : V → V → ℕ)

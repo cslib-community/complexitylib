@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of allocated initial-pilot calls)
-import Complexity.Foundations.Probability.InitialPilotCorrection
+import Complexity.Foundations.Probability.InitialPilotCompleted
 import Complexity.Foundations.Combinatorics.Expander.LowerBound
 
 /-! Actual source-correlated RAW/score calls, including positive allocated walks. -/
@@ -476,10 +476,10 @@ private lemma computed_preparation_mean (HP : FourthRootHierarchyParams 16 1 16 
 
 -- This checks the actual normalized child and its computed conditional normalizer,
 -- rather than supplying a preparation value of one to the algorithm.
-example (HP : FourthRootHierarchyParams 16 1 16 32 8)
-    (rawSteps prepSteps detectorSteps : ℕ) :
+private lemma computed_normalized (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (rawSteps prepSteps detectorSteps : ℕ) (σ : Environment 5 3) (hs : source σ 0) :
     initialPilotNormalized HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
-      base rawSteps prepSteps detectorSteps (seed 0) 0 0 = HP.Q 1 := by
+      base rawSteps prepSteps detectorSteps σ 0 0 = HP.Q 1 := by
   let r : HierarchyTask.Request HP.k (Fin 3) (ZMod 5) :=
     ⟨.row 0 (.pilotNormalized ⟨0, HP.k_pos⟩), gridChannel roles.source 1 [1],
       gridChannel roles.terminal 0 [2, 3], gridChannel roles.terminal 0 [2, 3]⟩
@@ -505,14 +505,14 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8)
     exact computed_preparation_mean HP rawSteps prepSteps
   rw [hm'] at hm
   unfold initialPilotNormalized
-  change correctionRequest 1 id r _ _ _ _ _ _ _ _ _ _ (seed 0) 0 0 = _
+  change correctionRequest 1 id r _ _ _ _ _ _ _ _ _ _ σ 0 0 = _
   simp only [correctionRequest, dite_eq_left hr, CorrectionRowRecipe.normalized, hm]
-  have ht : coordinate (1 : ZMod 5) r.usage (seed 0 r.terminal.role) (id 0) := by
+  have ht : coordinate (1 : ZMod 5) r.usage (σ r.terminal.role) (id 0) := by
     change frameRetains 5 4 (semanticSide 5 (rate 0)) _ _
     rw [semanticSide_grid, show side 5 0 = 5 by norm_num [side]]
     exact full_retains _ _
   simp only [Equiv.piSplitAt_apply] at *
-  rw [ite_eq_left ht, walk_eq, ite_eq_left source_both.1]
+  rw [ite_eq_left ht, walk_eq, ite_eq_left hs]
   unfold rowGate incomingGate
   rw [kthLargest_eq_zero_of_card_lt
     ((card_filter_le _ _).trans_lt (by simpa using large_K HP)),
@@ -527,6 +527,55 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8)
     max_eq_right (by norm_num : (1/2:ℝ) ≤ 1), min_eq_right (by norm_num : (0:ℝ) ≤ 1)]
   rw [HP.γ_one 0 (by norm_num), mul_one, HP.toHierarchyParams.atomCutoff_eq (by norm_num)
     (by have := Nat.cast_nonneg (α := ℝ) HP.k; linarith)]
+
+example (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (rawSteps prepSteps detectorSteps : ℕ) :
+    initialPilotNormalized HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+      base rawSteps prepSteps detectorSteps (seed 0) 0 0 = HP.Q 1 :=
+  computed_normalized HP rawSteps prepSteps detectorSteps (seed 0) source_both.1
+
+-- The completed OUTER walk consumes the actual nested child. Every finite positive
+-- allocation has a nonzero correction on the retained slice; this is an exact-mixing
+-- fixture with zero detector, not evidence of residual mixing error.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (L ε : ℝ) (hε : 0 < ε) :
+    let rawSteps := initialPilotRawSteps HP (1 : ZMod 5) roles 0 1 0 0 [1] [2, 3]
+      binCutoff (fun _ => 1) base ε
+    let detectorSteps := initialPilotSteps HP L (1 : ZMod 5) roles 0 1 0 0 [1] [2, 3]
+      binCutoff (fun _ => 1) base ε
+    let outerSteps := initialPilotOuterSteps HP 5 3 1 ε
+    0 < rawSteps ∧ 0 < detectorSteps ∧ 0 < outerSteps ∧
+    initialPilotCompleted HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+      base rawSteps 1 detectorSteps outerSteps (seed 0) 0 0 = HP.Q 1 ∧
+    0 < initialPilotCompleted HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+      base rawSteps 1 detectorSteps outerSteps (seed 0) 0 0 := by
+  intro rawSteps detectorSteps outerSteps
+  have hs : 0 < outerSteps := lt_of_lt_of_le Nat.zero_lt_one (Nat.le_max_left _ _)
+  have ht : Y roles.terminal (side 5 0) (CopyPadding.identifier 1 [2, 3])
+      (seed 0) 0 := by
+    simpa only [Y, show side 5 0 = 5 by norm_num [side]] using
+      full_retains (seed 0 roles.terminal) _
+  have he : initialPilotCompleted HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+      base rawSteps 1 detectorSteps outerSteps (seed 0) 0 0 = HP.Q 1 := by
+    have hc : (fun τ : RetainedPairSlice
+        (X roles.source (side 5 1) (CopyPadding.identifier 1 [1]))
+        (Y roles.terminal (side 5 0) (CopyPadding.identifier 1 [2, 3])) 0 0 =>
+        initialPilotNormalized HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+          base rawSteps 1 detectorSteps τ.val 0 0) = fun _ => HP.Q 1 := by
+      funext τ
+      exact computed_normalized HP rawSteps 1 detectorSteps τ.val
+        (retainedPairSlice_source _ _ τ)
+    unfold initialPilotCompleted conditionalWalk
+    rw [dite_eq_left (mem_filter.mpr ⟨mem_univ _, source_both.1, ht⟩),
+      hc, RotationMap.walk_pow_const]
+    norm_num [rate]
+  have hr := (initialPilotRaw_allocated HP 1 roles 0 1 0 0 [1] [2, 3]
+    binCutoff (fun _ => 1) base hε).1
+  have hd := initialPilotSteps_pos HP L 1 roles 0 1 0 0 [1] [2, 3]
+    binCutoff (fun _ => 1) base ε
+  refine ⟨hr, hd, hs, he, ?_⟩
+  rw [he]
+  linarith [HP.le_Q 1, HP.θ₂_lt]
 
 -- A nonzero upper correction and nonzero genuinely computed preparatory walk.
 -- Both lengths are positive and every non-source role is preserved by seed_agree.
@@ -623,7 +672,7 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) (ε : ℝ) (hε : 0 < ε) 
   exact he
 
 -- The normalized allocation is nonvacuous on the same nonzero base. The reference
--- is the true normalized request, whose outer-walk canonical mean remains a separate gap.
+-- is the true normalized request; the completed canonical allocation below uses common rates.
 example (HP : FourthRootHierarchyParams 16 1 16 32 8) (ε : ℝ) (hε : 0 < ε) :
     ∃ rawSteps detectorSteps : ℕ, 0 < rawSteps ∧ 0 < detectorSteps ∧
     rootDistPow 4 5 (rate 1) source
@@ -665,8 +714,86 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) (ε : ℝ) (hε : 0 < ε) 
   refine ⟨_, _, hr, hd, ?_⟩
   exact he
 
+-- The completed stochastic accuracy theorem has a concrete nonzero identity-base
+-- client. Here all three rates are zero-exponent (full channels); unequal source
+-- rates above test the computation separately and are not claimed by this theorem.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (ε : ℝ) (hε : 0 < ε) :
+    ∃ rawSteps detectorSteps outerSteps : ℕ,
+      0 < rawSteps ∧ 0 < detectorSteps ∧ 0 < outerSteps ∧
+      rowNormPow 4 5 (rate 0)
+        (X roles.source (side 5 0) (CopyPadding.identifier 1 [1]))
+        (Y roles.terminal (side 5 0) (CopyPadding.identifier 1 [2, 3]))
+        (fun σ x y => initialPilotCompleted HP 1 roles 0 0 0 0 [1] [2, 3]
+          binCutoff (fun _ => 1) base rawSteps 1 detectorSteps outerSteps σ x y -
+          pilotCorrection (HP.toHierarchyParams.cutoff (rate 0)) HP.γ
+            (columnDetector (canonicalChannel id (rate 0)) (canonicalChannel id (rate 0))
+              HP.ϕ HP.ρ HP.J HP.K (rate 0)) base 1 x y) ≤ ε^4 := by
+  have hk : (1 : ℝ) ≤ HP.k := by exact_mod_cast HP.k_pos
+  have hd := div_le_div_of_nonneg_right
+    (mul_le_mul_of_nonneg_left hk (by norm_num : (0 : ℝ) ≤ 32)) HP.η_pos.le
+  have hK : 2 * (1 + 32 / HP.η) ≤ HP.K := by linarith [HP.gate]
+  have hC : ∀ x y, 0 ≤ base x y := by
+    intro x y; simp only [base, Matrix.one_apply]; split_ifs <;> norm_num
+  have hCf : ∀ x y, base x y ≤ rate 0 := by
+    intro x y; simp only [base, Matrix.one_apply]; split_ifs <;> norm_num [rate]
+  obtain ⟨rawSteps, detectorSteps, hr, hd, ho, he⟩ :=
+    initialPilotCompleted_accuracy HP 5 3 1 (by decide) roles horizon 0 0 (by decide)
+      [1] [2, 3] binCutoff (fun _ => 1) base (by intros; rfl) HP.η HP.η_pos HP.ρ_one hK
+      hC (by simp [base]) hCf
+      (by intro x y; simpa only [rate, pow_zero, inv_one, one_pow, div_one, one_mul]
+        using binCutoff_base x y) 1 (by norm_num)
+      (by
+        intro y
+        have ht : ({t : FrameChannel 5 4 1 | frameRetains 5 4 (side 5 0) t
+            (CopyPadding.identifier 1 [2, 3] y)} : Finset _) = univ := by
+          apply filter_true_of_mem
+          intro t _
+          simpa only [show side 5 0 = 5 by norm_num [side]] using full_retains t _
+        rw [ht]
+        norm_num) ε hε
+  exact ⟨rawSteps, detectorSteps, _, hr, hd, ho, he⟩
+
+-- Nonunit matrix units: the joint mean itself is Q(1), while the correction
+-- is rate 1 * Q(1). Dropping the literal factor would give the wrong target.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    rate 1 * rowSliceMean
+      (X roles.source (side 5 1) (CopyPadding.identifier 1 [1]))
+      (Y roles.terminal (side 5 1) (CopyPadding.identifier 1 [2, 3]))
+      (initialTrueNormalized HP 1 roles 1 1 [1] [2, 3] ((rate 1) • base)) 0 0 =
+        rate 1 * HP.Q 1 := by
+  let C : Matrix (ZMod 5) (ZMod 5) ℝ := (rate 1) • base
+  have hC : ∀ x y, 0 ≤ C x y := by
+    intro x y
+    change 0 ≤ rate 1 * (if x = y then 1 else 0)
+    split_ifs
+    · simpa only [mul_one] using (rate_pos 1).le
+    · simp
+  have hCf : ∀ x y, C x y ≤ rate 1 := by
+    intro x y
+    change rate 1 * (if x = y then 1 else 0) ≤ rate 1
+    split_ifs <;> nlinarith [rate_pos 1]
+  have hC1 : C *ᵥ 1 ≤ 1 := by
+    intro x
+    norm_num [C, base, smul_mulVec, rate]
+  rw [initialTrueNormalized_mean HP 1 (by decide) roles horizon 1 (by decide)
+    [1] [2, 3] C hC hC1 hCf]
+  have hz : columnDetector (canonicalChannel (id : ZMod 5 → ZMod 5) (rate 1))
+      (canonicalChannel id (rate 1)) HP.ϕ HP.ρ HP.J HP.K (rate 1) C = 0 := by
+    unfold columnDetector detectorTrial
+    have hr (S : Finset (ZMod 5)) (f : ZMod 5 → ℝ) : kthLargest HP.J S f = 0 :=
+      kthLargest_eq_zero_of_card_lt
+        ((card_le_univ S).trans_lt (by simpa using large_J HP)) f
+    funext y
+    simp [hr]
+  rw [pilotCorrection_succ_apply, pilotMax_succ, pilotMax_zero]
+  simp only [pilotInput, pilotCorrection_zero, zero_mul, add_zero, hz,
+    Pi.sup_apply, Pi.zero_apply, max_self]
+  rw [HP.γ_one 0 (by norm_num), mul_one, HP.toHierarchyParams.cutoff_apply]
+  change rate 1 * HP.Q (rate 1 * 1 / rate 1) = _
+  rw [mul_one, div_self (rate_pos 1).ne']
+
 -- Zero RAW remains a zero normalized output despite its clipped preparatory denominator.
-example (HP : FourthRootHierarchyParams 16 1 16 32 8)
+private lemma zero_normalized (HP : FourthRootHierarchyParams 16 1 16 32 8)
     (rawSteps prepSteps detectorSteps : ℕ) (σ : Environment 5 3) (x y : ZMod 5) :
     initialPilotNormalized HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
       0 rawSteps prepSteps detectorSteps σ x y = 0 := by
@@ -675,6 +802,34 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8)
   · simp only [CorrectionRowRecipe.normalized, zero_walk, zero_div,
       HP.toHierarchyParams.atomCutoff_eq_zero (le_refl 0), zero_mul, zero_div, ite_self]
   · rfl
+
+-- Source rejection is preserved by the outer completion on the same environment.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (rawSteps prepSteps detectorSteps outerSteps : ℕ) :
+    initialPilotCompleted HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+      base rawSteps prepSteps detectorSteps outerSteps (seed 4) 0 0 = 0 ∧
+    ∀ j, j ≠ roles.source → seed 0 j = seed 4 j := by
+  refine ⟨?_, seed_agree 0 4⟩
+  unfold initialPilotCompleted
+  have hx : ¬ X roles.source (side 5 1) (CopyPadding.identifier 1 [1]) (seed 4) 0 :=
+    source_both.2
+  rw [conditionalWalk_eq_zero_of_not_source
+    (X roles.source (side 5 1) (CopyPadding.identifier 1 [1]))
+    (Y roles.terminal (side 5 0) (CopyPadding.identifier 1 [2, 3])) _ _ _ (seed 4) 0 0 hx,
+    mul_zero]
+
+-- Zero remains zero after the actual completed outer walk, including its matrix-unit scale.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (rawSteps prepSteps detectorSteps outerSteps : ℕ) (σ : Environment 5 3) (x y : ZMod 5) :
+    initialPilotCompleted HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+      0 rawSteps prepSteps detectorSteps outerSteps σ x y = 0 := by
+  unfold initialPilotCompleted conditionalWalk
+  split_ifs
+  · have he : initialPilotNormalized HP (1 : ZMod 5) roles 0 1 0 0 [1] [2, 3] binCutoff
+        (fun _ => 1) 0 rawSteps prepSteps detectorSteps = fun _ _ _ => 0 := by
+      funext τ a b; exact zero_normalized HP rawSteps prepSteps detectorSteps τ a b
+    simp only [he, RotationMap.walk_pow_const, mul_zero]
+  · exact mul_zero _
 
 
 -- A bounded PREP input can differ from its walked value even though the joint

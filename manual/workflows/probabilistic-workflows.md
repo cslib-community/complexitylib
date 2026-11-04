@@ -639,24 +639,52 @@ the original clipped denominator and actual source-aware detector/maximum. HP.k 
 constants precede fields, requests and child tables. The same covering single-bin, equal-rate,
 finite-horizon and dense-mean hypotheses remain explicit. No true-PREP oracle is used.
 
-**The completed normalized outer H4 walk is not yet proved accurate against the canonical
-first pilot correction.** Its literal joint mean must be identified using actual correction
-mean laws and dense/bin conditions, then RAW normalizer bias and walk noise must be paid from
-computed input moments or known ranges. No desired mean is assumed, and the target must stay
-the actual true correction. This remains a partial stochastic fragment; it does not close
-#1721/#1444, general bin assembly, later iterations or the recursive estimator.
+The [completed stochastic first pilot correction](../../Complexity/Foundations/Probability/InitialPilotCompleted.lean)
+now averages that actual normalized child on the original source/usage H4 slice.
+`initialTrueNormalized_mean` specializes the existing pilot sampling law through the
+literal terminal split, deriving incoming margins from the canonical detector and frame
+channels. Its target is the genuine first `pilotCorrection`, not a clipped replacement.
+This specialization requires **common source, terminal-rank and usage rates** `f = rate k`,
+nonnegative substochastic `C` with entries at most `f`, a finite horizon, nonzero padding,
+and the fixed injective identifier `id`, with the original copy suffixes. On the joint retained slice,
+the matrix-unit importance factor is **`f`**: `f * mean(trueNormalized) = pilotCorrection 1`.
+The source-only convention instead uses `f / π_usage`; applying that factor to an already
+usage-conditioned mean would introduce an erroneous inverse density.
+
+`initialPilotCompleted` performs the outer walk of the computed normalized child, then
+multiplies by `f`. It keeps all original source, usage and terminal masks and varies the
+full shared environment. Centered walk noise and mean bias are paid separately. The
+normalized range is `B = 2 * HP.Q HP.atomCap`, giving the explicit input-moment bound
+`P^2 / (P * rate ks) * B^4`. Conditional Jensen and root-to-ordinary error conversion pay
+the mean bias by `Kroot * rootDistPow`, where `Kroot = (4 * B^(3/4))^4`. Neither payment
+extracts environment atoms or supplies the desired mean/error as a hypothesis.
+
+`initialPilotCompleted_accuracy` proves **ordinary fourth-moment error at most `ε^4` in
+parent matrix units** under the common-rate and covering-dense-single-bin hypotheses.
+It fixes `payment = 8 * f^4 * (1 + Kroot)` and positive `δ = ε / (1 + payment)`, then chooses
+the positive outer length from the known range, before completing lower calls. The existing
+normalized allocator then fixes positive RAW/detector tolerances before their calls;
+preparation uses parameter one. Its regularity constants are selected at fixed HP before
+the prime, requests or child tables. No pointwise PREP accuracy or independent recursive
+reseeding is used. Finite input-moment allocations carry no effective/native resource claim.
+This completes the bounded first stochastic pilot fragment, while #1721/#1444 remain open.
 
 The checked small-field client computes a positive upper correction `Q(1)` and an actual
-preparatory walk equal to one on the retained diagonal. The normalized child also computes
-`Q(1)`, with its literal conditional denominator derived as one. Changing only the source frame makes
-both zero; a zero base also gives a zero upper correction at positive RAW allocation. The
+preparatory walk equal to one on the retained diagonal. The normalized child and its
+completed outer walk also compute
+`Q(1)`, with the literal conditional denominator derived as one and a positive allocated
+outer length. A separate full-channel identity-base client discharges every hypothesis of
+the completed canonical accuracy theorem. A nonunit-rate joint-mean regression retains
+the factor `rate 1`, so it cannot silently be replaced by one. Changing only the source frame makes
+both zero; a zero base also gives a zero upper correction at positive RAW allocation
+and stays zero after the completed outer walk. The
 actual hierarchy hypotheses imply that its detector rank exceeds five, so its full detector
 is zero. This is an injective small-field, exact-on-slice limit with a nonzero correction;
 it does not supply nonzero detector variation or finite-walk mixing error.
 
 Full well-founded approximate evaluation remains open: later pilot/correction iterations,
 general finite bin sums, recursive closure and growth, copy routing, native workspace and
-RL=L are not supplied by this single-bin initial detector. This partial construction is not
+RL=L are not supplied by this single-bin first-pilot fragment. This partial construction is not
 a selected headline abstract.
 
 The regressions additionally check a correlated detector moment of
