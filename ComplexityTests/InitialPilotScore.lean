@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of allocated initial-pilot calls)
-import Complexity.Foundations.Probability.InitialPilotScore
+import Complexity.Foundations.Probability.InitialPilotDetector
 
 /-! Actual source-correlated RAW/score calls, including positive allocated walks. -/
 set_option linter.privateModule false
@@ -214,7 +214,7 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) (L : ℝ) :
 
 -- Zero base matrices produce a zero computed lower walk and upper score at every
 -- finite walk length, rather than merely satisfying an error-bound signature.
-example (HP : FourthRootHierarchyParams 16 1 16 32 8) (steps : ℕ)
+private lemma zero_score (HP : FourthRootHierarchyParams 16 1 16 32 8) (steps : ℕ)
     (σ : Environment 5 3) (x y : ZMod 5) :
     initialPilotScore HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
       (0 : Matrix (ZMod 5) (ZMod 5) ℝ) steps σ x y = 0 := by
@@ -245,5 +245,98 @@ example : kthLargest 6 (univ : Finset (ZMod 5)) (fun x => -(x.val : ℝ)) = 0 :=
   kthLargest_eq_zero_of_card_lt (by simp) _
 example : kthLargest 1 (∅ : Finset (ZMod 5)) (fun _ => (-7 : ℝ)) = 0 :=
   kthLargest_eq_zero_of_card_lt (by simp) _
+
+-- The old terminal-only child interface cannot represent the ACTUAL allocated score.
+-- These two environments agree at every role except the integrated source.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (L : ℝ) :
+    let steps := initialPilotSteps HP L 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+      base (1 / 4)
+    ¬ ∃ F : FrameChannel 5 4 1 → ℝ, ∀ σ,
+      initialPilotScore HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1) base steps σ 0 0 =
+        F (σ roles.terminal) := by
+  intro steps ⟨F, hF⟩
+  have h0 := hF (seed 0)
+  have h4 := hF (seed 4)
+  obtain ⟨hs0, hs4⟩ := source_both
+  rw [score_eq, ite_eq_left hs0] at h0
+  rw [score_eq, ite_eq_right hs4] at h4
+  have ht := seed_agree 0 4 roles.terminal roles.source_terminal.symm
+  rw [ht] at h0
+  linarith
+
+-- Kernel regression: two original environments, the actual allocated RAW/score,
+-- replicated across enough rank entries. This tests source integration, not an
+-- injective hierarchy instance or a nonzero residual-mixing error fixture.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (L : ℝ) :
+    let steps := initialPilotSteps HP L 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+      base (1 / 4)
+    PilotRowRecipe.sourceDetector HP.toHierarchyParams
+      (fun (_ : Bool) (_ : Fin HP.J) => True) (fun (_ : Unit) (_ : Fin HP.J) => True)
+      (fun b _ _ _ => initialPilotScore HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff
+        (fun _ => 1) base steps (if b then seed 0 else seed 4) 0 0)
+      ⟨0, HP.J_pos⟩ = 1 / 2 := by
+  intro steps
+  have h1 : kthLargest HP.J univ (fun _ : Fin HP.J => (1 : ℝ)) = 1 := by
+    apply le_antisymm (kthLargest_le (by norm_num) (fun _ _ => le_rfl))
+    apply (le_kthLargest_iff HP.J_pos (by norm_num : (0 : ℝ) < 1)).mpr
+    simp
+  have h0 : kthLargest HP.J univ (fun _ : Fin HP.J => (0 : ℝ)) = 0 :=
+    le_antisymm (kthLargest_le le_rfl (fun _ _ => le_rfl)) kthLargest_nonneg
+  obtain ⟨hs0, hs4⟩ := source_both
+  norm_num [PilotRowRecipe.sourceDetector, expect_eq_sum_div_card, Fintype.sum_bool,
+    score_eq, hs0, hs4, h1, h0]
+
+-- The concrete source-aware initial detector is an actual completed child call,
+-- with positive length and its exact width/rate/density payment derived from RAW.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ∃ L : ℝ, 0 ≤ L ∧ ∀ ε : ℝ, 0 < ε →
+    let steps := initialPilotSteps HP L 1 roles 0 0 0 0 [1] [2, 3] binCutoff (fun _ => 1) base ε
+    0 < steps ∧
+    rowNormPow 4 5 (rate 1) source
+      (Y roles.terminal (side 5 0) (CopyPadding.identifier 1 [2, 3]))
+      (fun _ _ y => initialPilotDetector HP 1 roles 0 1 0 0 [1] [2, 3]
+        binCutoff (fun _ => 1) base steps y -
+        initialTrueDetector HP 1 roles 1 0 [1] [2, 3] base y) ≤ 80 * ε ^ 4 := by
+  obtain ⟨L, hL, ha⟩ := initialPilotDetector_allocated HP
+  have hk : (1 : ℝ) ≤ HP.k := by exact_mod_cast HP.k_pos
+  have hd := div_le_div_of_nonneg_right
+    (mul_le_mul_of_nonneg_left hk (by norm_num : (0 : ℝ) ≤ 32)) HP.η_pos.le
+  have hK : 2 * (1 + 32 / HP.η) ≤ HP.K := by linarith [HP.gate]
+  refine ⟨L, hL, fun ε hε => ?_⟩
+  have h := ha 5 3 1 (by decide) roles horizon 0 1 0 (by decide) [1] [2, 3]
+    binCutoff (fun _ => 1) base (by intros; rfl) HP.η HP.η_pos HP.ρ_one hK
+    (by intro x y; simp only [base, Matrix.one_apply]; split_ifs <;> norm_num)
+    (by simp [base]) (by intro x y; simpa only [rate, pow_zero, inv_one, one_pow, div_one, one_mul]
+      using binCutoff_base x y) 1 (by norm_num)
+    (by
+      intro y
+      have ht : ({t : FrameChannel 5 4 1 | frameRetains 5 4 (side 5 0) t
+          (CopyPadding.identifier 1 [2, 3] y)} : Finset _) = univ := by
+        apply filter_true_of_mem
+        intro t _
+        simpa only [show side 5 0 = 5 by norm_num [side]] using full_retains t _
+      rw [ht]
+      norm_num) ε hε
+  norm_num only [rate, pow_zero, pow_one, inv_one, one_pow, mul_one, div_one] at h ⊢
+  exact h
+
+-- Changing the actual computed base to zero changes the kernel output from 1/2
+-- to zero. All supplied score values still come from completed positive RAW calls.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (L : ℝ) :
+    let steps := initialPilotSteps HP L 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+      (0 : Matrix (ZMod 5) (ZMod 5) ℝ) (1 / 4)
+    0 < steps ∧
+    PilotRowRecipe.sourceDetector HP.toHierarchyParams
+      (fun (_ : Bool) (_ : Fin HP.J) => True) (fun (_ : Unit) (_ : Fin HP.J) => True)
+      (fun b _ _ _ => initialPilotScore HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff
+        (fun _ => 1) (0 : Matrix (ZMod 5) (ZMod 5) ℝ) steps
+        (if b then seed 0 else seed 4) 0 0)
+      ⟨0, HP.J_pos⟩ = 0 := by
+  intro steps
+  refine ⟨initialPilotSteps_pos HP L 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1) 0 _, ?_⟩
+  simp only [zero_score, PilotRowRecipe.sourceDetector]
+  have hz : kthLargest HP.J univ (fun _ : Fin HP.J => (0 : ℝ)) = 0 :=
+    le_antisymm (kthLargest_le le_rfl (fun _ _ => le_rfl)) kthLargest_nonneg
+  norm_num [hz]
 
 end InitialPilotScoreRegression

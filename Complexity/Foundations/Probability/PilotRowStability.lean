@@ -26,10 +26,16 @@ The constants for the selected fourth-root hierarchy are chosen before all domai
 rates and child tables. These ordinary fourth moments feed the maximum-error input
 of correction stability; they do not construct approximate recursive child calls.
 
+## Main definitions
+
+* `Matrix.HierarchyParams.PilotRowRecipe.sourceDetector`:
+  retains integrated source dependencies.
+
 ## Main results
 
 * `Matrix.HierarchyParams.PilotRowRecipe.score_row_moment`: explicit width/rate payment.
-* `Matrix.HierarchyParams.PilotRowRecipe.detector_moment`: conditional Jensen and finite maxima.
+* `Matrix.HierarchyParams.PilotRowRecipe.sourceDetector_moment`:
+  conditional Jensen and finite maxima.
 * `Matrix.HierarchyParams.PilotRowRecipe.maximum_row_moment`: both actual child payments.
 * `Matrix.FourthRootHierarchyParams.pilot_score_stability_constants`: fixed-HP constants.
 -/
@@ -59,12 +65,22 @@ theorem score_stability {Lϕ Lρ f : ℝ}
     (fun z => ⟨P.ϕ_nonneg z, P.ϕ_le_one z⟩)
     (fun z => ⟨hρ z, P.ρ_le_one z⟩) hϕ hlρ hLρ hK hf A B _ x y
 
+/-- Evaluate a completed score on its literal source and terminal integration variables.
+The source argument includes every spectator required by the child. -/
+@[expose] def sourceDetector (A : ι → κ → Matrix V V ℝ) (y : V) : ℝ :=
+  min 1 (max 0 (𝔼 s, 𝔼 t ∈ {t | Y t y},
+    kthLargest P.J {x | X s x} (fun x => A s t x y)))
+
+/-- Ignoring the integrated source recovers the original true detector exactly. -/
+theorem sourceDetector_eq_detector (A : κ → Matrix V V ℝ) :
+    sourceDetector P X Y (fun _ => A) = detector P X Y A := rfl
+
 /-- The clipped detector contracts the literal two conditional means of the source-rank
 maximum error. Both score children can depend on every other environment coordinate. -/
-theorem detector_stability (A B : κ → Matrix V V ℝ) (y : V) :
-    |detector P X Y A y - detector P X Y B y| ≤
+theorem sourceDetector_stability (A B : ι → κ → Matrix V V ℝ) (y : V) :
+    |sourceDetector P X Y A y - sourceDetector P X Y B y| ≤
       𝔼 s, 𝔼 t ∈ {t | Y t y},
-        kthLargest 1 {x | X s x} (fun x => |A t x y - B t x y|) := by
+        kthLargest 1 {x | X s x} (fun x => |A s t x y - B s t x y|) := by
   have hclip (a b : ℝ) : |min 1 (max 0 a) - min 1 (max 0 b)| ≤ |a - b| := by
     apply (abs_min_sub_min_le_max _ _ _ _).trans
     apply max_le
@@ -79,20 +95,20 @@ theorem detector_stability (A B : κ → Matrix V V ℝ) (y : V) :
   apply (abs_expect_le _ _).trans
   apply expect_le_expect
   intro t _
-  exact abs_kthLargest_sub_le_kthLargest_one P.J_pos _ (fun x => A t x y) (fun x => B t x y)
+  exact abs_kthLargest_sub_le_kthLargest_one P.J_pos _ (fun x => A s t x y) (fun x => B s t x y)
 
 /-- Conditional Jensen and finite maximum payment for the actual detector, including
 empty source types, empty terminal conditioning and padded source ranks. -/
-theorem detector_moment (A B : κ → Matrix V V ℝ) (y : V) :
-    |detector P X Y A y - detector P X Y B y| ^ 4 ≤
+theorem sourceDetector_moment (A B : ι → κ → Matrix V V ℝ) (y : V) :
+    |sourceDetector P X Y A y - sourceDetector P X Y B y| ^ 4 ≤
       𝔼 s, 𝔼 t ∈ {t | Y t y}, ∑ x ∈ ({x | X s x} : Finset V),
-        |A t x y - B t x y| ^ 4 := by
-  let E := fun s t => kthLargest 1 {x | X s x} (fun x => |A t x y - B t x y|)
+        |A s t x y - B s t x y| ^ 4 := by
+  let E := fun s t => kthLargest 1 {x | X s x} (fun x => |A s t x y - B s t x y|)
   have he (s : ι) (t : κ) : 0 ≤ E s t := kthLargest_nonneg
   have hm (s : ι) : 0 ≤ 𝔼 t ∈ {t | Y t y}, E s t := expect_nonneg fun t _ => he s t
   calc
     _ ≤ (𝔼 s, 𝔼 t ∈ {t | Y t y}, E s t) ^ 4 :=
-      pow_le_pow_left₀ (abs_nonneg _) (detector_stability P X Y A B y) 4
+      pow_le_pow_left₀ (abs_nonneg _) (sourceDetector_stability P X Y A B y) 4
     _ ≤ 𝔼 s, |𝔼 t ∈ {t | Y t y}, E s t| ^ 4 := by
       simpa only [abs_of_nonneg (expect_nonneg fun s _ => hm s)] using
         (abs_expect_pow_le (univ : Finset ι) (by decide : 4 ≠ 0)
@@ -100,7 +116,23 @@ theorem detector_moment (A B : κ → Matrix V V ℝ) (y : V) :
     _ ≤ 𝔼 s, 𝔼 t ∈ {t | Y t y}, |E s t| ^ 4 :=
       expect_le_expect fun s _ => abs_expect_pow_le _ (by decide : 4 ≠ 0) _
     _ ≤ _ := expect_le_expect fun s _ => expect_le_expect fun t _ =>
-      abs_kthLargest_pow_le_sum _ (fun x => A t x y - B t x y) (by decide)
+      abs_kthLargest_pow_le_sum _ (fun x => A s t x y - B s t x y) (by decide)
+
+/-- The clipped detector contracts the literal two conditional means of the source-rank
+maximum error. Both score children can depend on every other environment coordinate. -/
+theorem detector_stability (A B : κ → Matrix V V ℝ) (y : V) :
+    |detector P X Y A y - detector P X Y B y| ≤
+      𝔼 s, 𝔼 t ∈ {t | Y t y},
+        kthLargest 1 {x | X s x} (fun x => |A t x y - B t x y|) :=
+  sourceDetector_stability P X Y (fun _ => A) (fun _ => B) y
+
+/-- Conditional Jensen and finite maximum payment for the actual detector, including
+empty source types, empty terminal conditioning and padded source ranks. -/
+theorem detector_moment (A B : κ → Matrix V V ℝ) (y : V) :
+    |detector P X Y A y - detector P X Y B y| ^ 4 ≤
+      𝔼 s, 𝔼 t ∈ {t | Y t y}, ∑ x ∈ ({x | X s x} : Finset V),
+        |A t x y - B t x y| ^ 4 :=
+  sourceDetector_moment P X Y (fun _ => A) (fun _ => B) y
 
 omit [Fintype V] in
 /-- Clipped running maxima are nonexpansive in the maximum of their two actual child errors. -/

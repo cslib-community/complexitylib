@@ -585,13 +585,35 @@ positive allocated lengths. The two environments agree on every other role, incl
 the terminal frame. This is a nonconstant correlated exact-on-slice case; it does
 not establish nonzero mixing error or later recursive closure.
 
-Full well-founded approximate evaluation remains open. In particular, later pilot/correction
-iterations, general finite bin sums, source-dependent detector children, parameter growth,
-copy routing, native workspace and RL=L are not supplied by this fragment. The existing
-detector transport still accepts a score with no dependence on its internally averaged
-source seed. The new RAW/score fragment retains that dependence and does not feed it through
-the restricted detector interface or reseed it. A later detector client must prove actual
-invariance or retain the needed source coordinates explicitly.
+The [source-aware detector](../../Complexity/Foundations/Probability/InitialPilotDetector.lean)
+now consumes that completed score through the literal source/terminal split. The score request
+resets the source rate to the terminal stage rate while preserving roles and suffixes.
+`environmentDetector` reconstructs the child environment from all source spectators and the
+terminal frame; these are integration variables, not fresh independent seeds for child calls.
+Conditional Jensen and finite Fubini pay the score moment by
+`width * stageRate / (parentSourceRate * terminalDensity)`. The actual padded terminal marginal
+is proved separately. The old terminal-only detector and transport theorems specialize the
+shared proof when their child ignores the source argument.
+
+`initialPilotDetector_allocated` composes that payment with the actual dense RAW allocation
+and score theorem, under the same nonnegative substochastic, equal-rate, covering single-bin
+hypotheses. `initialPilotDetector_accuracy` calibrates the lower tolerance before either call
+to obtain detector error at most `ε^4`. The reference is proved equal to the original canonical
+column detector, retaining its cutoffs and rank. The constant is fixed at HP before field,
+request or children. Allocation uses the finite computed input moment; no efficient allocation
+procedure is claimed.
+
+The regression proves that no terminal-only function represents the actual allocated score.
+A two-environment source-aware kernel evaluates that score to `1/2` using replicated rank
+entries; this tests the new argument dependence, not an injective hierarchy instance.
+The full-frame initial detector has a checked concrete payment `80 * ε^4`. The small-field
+RAW/score fixture remains exact on retained slices and does not show nonzero finite-walk
+mixing error. In particular, a large padded detector rank can erase its score variation.
+
+Full well-founded approximate evaluation remains open: later pilot/correction iterations,
+general finite bin sums, recursive closure and growth, copy routing, native workspace and
+RL=L are not supplied by this single-bin initial detector. This partial construction is not
+a selected headline abstract.
 
 The regressions additionally check a correlated detector moment of
 `1/32`, a distinct child normalization `1/16`, and nonconstant padded frame source/rank
