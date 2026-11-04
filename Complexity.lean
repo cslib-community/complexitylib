@@ -325,6 +325,16 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandR
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandSplit
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandTables
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandThin
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxBatch
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxBatch.Bilinear
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxBatch.Bounds
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxBatch.Exec
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxBatch.Initialized
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxBatch.InputLayout
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxBatch.Prepare
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxBatch.Program
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxBatch.Resources
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxBatch.Width
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxQuery
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxQuery.Bounds
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxQuery.CompleteLeaf
