@@ -19,6 +19,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import Complexity.Computability.Probabilistic.Oracle.Composition
 import Complexity.Computability.Probabilistic.PPT.Capture
+import Complexity.Computability.Probabilistic.PPT.PairCapture
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Languages.Probabilistic.Oracle.Simulation
@@ -271,49 +272,6 @@ def verify (S : SignatureScheme) (H : KeyedHashFamily) (pk : List Bool) (u : ℕ
     S.verify parsedPk.2
       (otsMsg H parsedPk.1 parsedSig.1 (H.eval parsedPk.1 parsedSig.1 msg))
       parsedSig.2
-
-theorem _root_.Cslib.Probability.IsPPTOn.bind_pair {α β γ : Type}
-    {input : α ↪ List Bool} {left : β ↪ List Bool}
-    {right : γ ↪ List Bool} {first : α → ProbComp β} {second : α × β → ProbComp γ}
-    (hfirst : IsPPTOn input left first)
-    (hsecond : IsPPTOn (encPair input left) right second) :
-    IsPPTOn input right (fun a => do
-      let b ← first a
-      second (a, b)) :=
-  hfirst.bind_with (right := right) (second := fun a b => second (a, b)) hsecond
-
-theorem _root_.Cslib.Probability.IsPPTOn.map_pair {α β γ : Type}
-    {input : α ↪ List Bool} {left : β ↪ List Bool}
-    {right : γ ↪ List Bool} {first : α → ProbComp β} {second : α × β → γ}
-    (hfirst : IsPPTOn input left first)
-    (hsecond : ComputableInPolyTime second (encPair input left) right) :
-    IsPPTOn input right (fun a => do
-      let b ← first a
-      pure (second (a, b))) :=
-  hfirst.bind_pair hsecond.isPPTOn
-
-theorem _root_.Cslib.Probability.IsOraclePPTOn.bind_pair {Operation α β γ : Type}
-    [DecidableEq Operation]
-    {input : α ↪ List Bool} {middle : β ↪ List Bool} {output : γ ↪ List Bool}
-    {first : α → WordOracleComp Operation β} {second : α × β → WordOracleComp Operation γ}
-    (hfirst : IsOraclePPTOn input middle first)
-    (hsecond : IsOraclePPTOn (encPair input middle) output second) :
-    IsOraclePPTOn input output (fun a => do
-      let b ← first a
-      second (a, b)) :=
-  hfirst.bind_with (output := output) (second := fun a b => second (a, b)) hsecond
-
-theorem _root_.Cslib.Probability.IsOraclePPTOn.map_pair' {Operation α β γ : Type}
-    [DecidableEq Operation]
-    {input : α ↪ List Bool} {middle : β ↪ List Bool} {output : γ ↪ List Bool}
-    {first : α → WordOracleComp Operation β} {second : α × β → γ}
-    (hfirst : IsOraclePPTOn input middle first)
-    (hsecond : ComputableInPolyTime second (encPair input middle) output) :
-    IsOraclePPTOn input output (fun a => do
-      let b ← first a
-      pure (second (a, b))) := by
-  have := hfirst.1
-  exact hfirst.bind_pair hsecond.isOraclePPTOn
 
 theorem keyGen_ppt (S : SignatureScheme) (H : KeyedHashFamily) :
     IsPPTOn encUnary (encPair encBits encBits) (keyGen S H) := by

@@ -17,6 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Probabilistic.Oracle.Composition
 import Complexity.Computability.Probabilistic.Oracle.Substitution
 import Complexity.Computability.Probabilistic.PPT.Capture
+import Complexity.Computability.Probabilistic.PPT.PairCapture
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Computability.Probabilistic.UniformNat
 import Complexity.Crypto.Game.Hybrid

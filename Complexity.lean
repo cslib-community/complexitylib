@@ -2651,6 +2651,7 @@ public import Complexity.Computability.Probabilistic.PPT.Capture
 public import Complexity.Computability.Probabilistic.PPT.Clock
 public import Complexity.Computability.Probabilistic.PPT.Composition
 public import Complexity.Computability.Probabilistic.PPT.Extension
+public import Complexity.Computability.Probabilistic.PPT.PairCapture
 public import Complexity.Computability.Probabilistic.Parameter
 public import Complexity.Computability.Probabilistic.Presample
 public import Complexity.Computability.Probabilistic.QueryBounds
