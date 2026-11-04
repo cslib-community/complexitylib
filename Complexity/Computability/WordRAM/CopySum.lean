@@ -10,6 +10,8 @@ module
 public import Complexity.Computability.WordRAM.Copy
 public import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Copying an array while accumulating its original words
 
@@ -88,16 +90,15 @@ theorem exec {w : ℕ} (x : Data 8) (h1 : Fits w 1)
     (ht : Fits w (x.regs total + wordSum x.mem (x.regs src) (x.regs len)))
     (hsep : x.regs src + x.regs len ≤ x.regs dst) :
     ∃ y, ExecWithin w program x y (8 * x.regs len + 4) ∧ Post id x y := by
-  let I (y : Data 8) : Prop :=
+  let P (j : ℕ) (y : Data 8) : Prop :=
     y.regs src = x.regs src ∧ y.regs dst = x.regs dst ∧ y.regs len = x.regs len ∧
-    y.regs one = 1 ∧ y.regs idx ≤ x.regs len ∧
-    y.mem = ArrayCopy.copyPrefix x.mem (x.regs src) (x.regs dst) (y.regs idx) ∧
-    y.regs total = x.regs total + wordSum x.mem (x.regs src) (y.regs idx)
-  have hbody (y : Data 8) (hy : I y) (hc : (Cond.lt idx len).Holds y) :
-      ∃ z, ExecWithin w body y z 6 ∧ I z ∧
-        x.regs len - z.regs idx < x.regs len - y.regs idx := by
-    obtain ⟨hys, hyd, hyl, hyo, hyi, hym, hyt⟩ := hy
-    have hi : y.regs idx < x.regs len := by simpa only [Cond.holds_lt, hyl] using hc
+    y.regs one = 1 ∧
+    y.mem = ArrayCopy.copyPrefix x.mem (x.regs src) (x.regs dst) j ∧
+    y.regs total = x.regs total + wordSum x.mem (x.regs src) j
+  have hbody (y : Data 8) (hy : P (y.regs idx) y) (hi : y.regs idx < x.regs len) :
+      ∃ z, ExecWithin w body y z 6 ∧ P (y.regs idx + 1) z ∧
+        z.regs idx = y.regs idx + 1 := by
+    obtain ⟨hys, hyd, hyl, hyo, hym, hyt⟩ := hy
     have hsrc : Fits w (y.regs src + y.regs idx) := by
       rw [hys]; exact hs.of_le (by omega)
     have hdst : Fits w (y.regs dst + y.regs idx) := by
@@ -115,33 +116,27 @@ theorem exec {w : ℕ} (x : Data 8) (h1 : Fits w 1)
       apply ht.of_le
       simpa only [wordSum, Finset.sum_range_succ, Nat.add_assoc] using
         Nat.add_le_add_left hle (x.regs total)
-    refine ⟨?z, ?run, ?inv, ?decrease⟩
+    refine ⟨?z, ?run, ?inv, ?increment⟩
     case run => ram_eval [body, hsrc, hdst, hinc, hsum, hyo]
     case inv =>
-      refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+      refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
       · simpa +decide [Function.update_apply] using hys
       · simpa +decide [Function.update_apply] using hyd
       · simpa +decide [Function.update_apply] using hyl
       · simpa +decide [Function.update_apply] using hyo
-      · simpa [hyo] using Nat.succ_le_of_lt hi
-      · simp only [Data.set_mem, Data.write_mem, Data.set_regs, Function.update_apply]
+      · simp only [Data.set_mem, Data.write_mem]
         rw [hread, hym, hyd, ← ArrayCopy.copyPrefix_succ]
-        rfl
       · simp only [Data.set_regs, Function.update_apply]
         simp only [show (total : Fin 8) ≠ idx by decide, ↓reduceIte]
         rw [hyt, hread]
         simp only [wordSum, Finset.sum_range_succ, Nat.add_assoc]
-    case decrease => simp only [Data.set_regs, Function.update_self]; omega
+    case increment => rfl
   let x₀ := (x.set idx 0).set one 1
-  have hx₀ : I x₀ := by simp +decide [I, x₀, wordSum]
-  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I
-    (fun y => x.regs len - y.regs idx) hbody hx₀
-  obtain ⟨hys, hyd, hyl, hyo, hyi, hym, hyt⟩ := hy
-  have hend : y.regs idx = x.regs len := by
-    simp only [Cond.holds_lt, hyl] at hc
-    omega
-  refine ⟨y, ?_, by simpa only [hend, id] using hym, hys, hyd, hyl,
-    by simpa only [hend, id] using hyt⟩
+  have hx₀ : P (x₀.regs idx) x₀ := by simp +decide [P, x₀, wordSum]
+  obtain ⟨y, he, ⟨hys, hyd, hyl, hyo, hym, hyt⟩, _⟩ := ExecWithin.loop_count P
+    (fun y hy => hy.2.2.1) hbody (by simp +decide [x₀, idx, one]) hx₀
+  refine ⟨y, ?_, by simpa only [id] using hym, hys, hyd, hyl,
+    by simpa only [id] using hyt⟩
   have hinit := (ExecWithin.const (d := idx) (x := x) (fits_zero w)).seq
     ((ExecWithin.const (d := one) h1).seq he)
   convert hinit using 1

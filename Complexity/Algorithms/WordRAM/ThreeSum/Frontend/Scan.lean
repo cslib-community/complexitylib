@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Select
+import Complexity.Computability.WordRAM.CountingLoop
 import Complexity.Computability.WordRAM.MemoryView
 
 /-!
@@ -155,18 +156,17 @@ theorem exec {w : ℕ} (rs : List (ℕ × ℕ)) (x : Data 48)
     (x.regs digit) (x.regs mode) (rs.take i)
   have hselected (i : ℕ) : (selected i).length ≤ min i rs.length :=
     (Math.length_select_le _ _ _ _ _ _).trans_eq List.length_take
-  let I (y : Data 48) : Prop :=
+  let P (j : ℕ) (y : Data 48) : Prop :=
     (∀ j, body.Preserves j → y.regs j = x.regs j) ∧
-    y.regs idx ≤ rs.length ∧ y.regs out = (selected (y.regs idx)).length ∧
+    y.regs out = (selected j).length ∧
     Block.HoldsList (x.regs keys) (rs.map Prod.fst) y.mem ∧
     Block.HoldsList (x.regs counts) (rs.map Prod.snd) y.mem ∧
-    Block.HoldsList (x.regs dst) (selected (y.regs idx)) y.mem ∧
+    Block.HoldsList (x.regs dst) (selected j) y.mem ∧
     Modifies (Block.mk (x.regs dst) rs.length).footprint x.mem y.mem
-  have hbody (y : Data 48) (hy : I y) (ht : (Cond.lt idx len).Holds y) :
-      ∃ z, ExecWithin w body y z 41 ∧ I z ∧
-        rs.length - z.regs idx < rs.length - y.regs idx := by
-    obtain ⟨hr, hle, hout, hkeys, hcounts, hacc, hframe⟩ := hy
-    have hyl := (hr len (by decide)).trans hn
+  have hbody (y : Data 48) (hy : P (y.regs idx) y) (hi : y.regs idx < rs.length) :
+      ∃ z, ExecWithin w body y z 41 ∧ P (y.regs idx + 1) z ∧
+        z.regs idx = y.regs idx + 1 := by
+    obtain ⟨hr, hout, hkeys, hcounts, hacc, hframe⟩ := hy
     have hys := hr keys (by decide)
     have hyc := hr counts (by decide)
     have hyd := hr dst (by decide)
@@ -175,7 +175,6 @@ theorem exec {w : ℕ} (rs : List (ℕ × ℕ)) (x : Data 48)
     have hyb' := hr beta' (by decide)
     have hyv := hr digit (by decide)
     have hym := hr mode (by decide)
-    have hi : y.regs idx < rs.length := by simpa only [Cond.holds_lt, hyl] using ht
     have hgetk : y.mem (y.regs keys + y.regs idx) = rs[y.regs idx].1 := by
       rw [hys]
       exact (hkeys.get (y.regs idx) (by simpa using hi)).trans (List.getElem_map _)
@@ -211,15 +210,15 @@ theorem exec {w : ℕ} (rs : List (ℕ × ℕ)) (x : Data 48)
     have hf (a : ℕ) (hne : a ≠ x.regs dst + y.regs out) : z.mem a = y.mem a := by
       rw [hzm, hyd]
       split_ifs <;> simp only [Function.update_of_ne hne]
-    refine ⟨z, he, ?_, by omega⟩
-    refine ⟨?_, by omega, ?_, ?_, ?_, ?_, ?_⟩
+    refine ⟨z, he, ?_, hzi⟩
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
     · intro j hj
       exact (he.regs_eq hj).trans (hr j hj)
-    · rw [hzi, hsuc, List.length_append, hzo, hout]
+    · rw [hsuc, List.length_append, hzo, hout]
       cases k <;> simp
     · ram_keep hkeys using hf
     · ram_keep hcounts using hf
-    · rw [hzi, hsuc]
+    · rw [hsuc]
       by_cases htake : k = true
       · rw [ite_eq_left htake]
         have hm : z.mem = Function.update y.mem (x.regs dst + (selected (y.regs idx)).length)
@@ -241,22 +240,16 @@ theorem exec {w : ℕ} (rs : List (ℕ × ℕ)) (x : Data 48)
         omega
       exact (hf a hne).trans (hframe a hnot)
   let x₀ := (x.set idx 0).set out 0
-  have hx₀ : I x₀ := by
-    refine ⟨?_, ?_, ?_, hk, hc, ?_, Modifies.refl _ _⟩
+  have hx₀ : P (x₀.regs idx) x₀ := by
+    refine ⟨?_, ?_, hk, hc, ?_, Modifies.refl _ _⟩
     · intro j hj
       have hji : j ≠ idx := by rintro rfl; exact (by decide : ¬body.Preserves idx) hj
       have hjo : j ≠ out := by rintro rfl; exact (by decide : ¬body.Preserves out) hj
       simp only [x₀, Data.set_regs, Function.update_of_ne hji, Function.update_of_ne hjo]
-    · simp +decide [x₀]
     · simp +decide [x₀, selected, Math.select]
     · simpa +decide [x₀, selected, Math.select] using Block.holdsList_nil (x.regs dst) x.mem
-  obtain ⟨y, he, hy, ht⟩ := ExecWithin.loop_invariant I
-    (fun y => rs.length - y.regs idx) hbody hx₀
-  obtain ⟨hr, hle, hout, _, _, hacc, hframe⟩ := hy
-  have hend : y.regs idx = rs.length := by
-    have hyl := (hr len (by decide)).trans hn
-    simp only [Cond.holds_lt, hyl] at ht
-    omega
+  obtain ⟨y, he, ⟨hr, hout, _, _, hacc, hframe⟩, _⟩ := ExecWithin.loop_count P
+    (fun y hy => (hy.1 len (by decide)).trans hn) hbody (by simp +decide [x₀]) hx₀
   have hinit : ExecWithin (B := .standard) w (ram[ idx ← #0; out ← #0 ]) x x₀ 2 := by
     ram_eval [x₀]
   refine ⟨y, ?_, ?_, ?_, hframe, hr⟩
@@ -264,7 +257,7 @@ theorem exec {w : ℕ} (rs : List (ℕ × ℕ)) (x : Data 48)
     · rfl
     · simp +decide only [x₀, Data.set_regs, Function.update_apply, ↓reduceIte, Nat.sub_zero]
       omega
-  · simpa only [hend, selected, List.take_length] using hacc
-  · simpa only [hend, selected, List.take_length] using hout
+  · simpa only [selected, List.take_length] using hacc
+  · simpa only [selected, List.take_length] using hout
 
 end Cslib.Algorithms.WordRAM.ThreeSum.Frontend.Scan
