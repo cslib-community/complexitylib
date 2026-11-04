@@ -39,28 +39,29 @@ polynomial hashing with a bit-packed Four-Russians multiplication table (`Reduce
   the information-theoretic minimum `optBits U V n_max = ⌈log₂ C(U, n_max)⌉ + n_max * ⌈log₂ V⌉` is
   zero whenever `n_max > U`.
 - **Single seed and per-bucket probe/hysteresis accounting:** A single quotient-hash seed is
-  sampled once at initialization (`seedSlack = 1`, no rehash), and no sticky failure flag is kept.
-  Each bucket's item count and expected probe excess per operation depend only on the current
-  active key set, whereas the physical chain order and slab/tail hysteresis split depend on
-  operation history. In the `Memory.Prog` model (`SuccinctHash`), `queryWithHashProg_dict_spec`,
+  sampled once at initialization (`seedSlack = 1`, no rehash), and no persistent flag is kept to
+  latch hash or overflow failures across operations. Each bucket's item count and expected extra
+  collision or overflow probes (`probeExcess`) per operation depend only on the current active key
+  set, whereas the physical chain order and the division of a bucket's items between fixed-size full
+  slabs and the shared tail pool under lazy promotion and demotion thresholds depend on operation
+  history. In the `Memory.Prog` model (`SuccinctHash`), `queryWithHashProg_dict_spec`,
   `insertWithHashProg_dict_spec`, and `deleteWithHashProg_dict_spec` prove per-seed **amortized**
   `memoryCost` bounds of `26 + 8 * probeExcess`, `184 + 8 * probeExcess`, and
   `270 + 8 * probeExcess` with potential `66 * slotPotential`. In turn,
   `tsum_uniform_probeExcess_reducedPolyHash_le_five` bounds expected `probeExcess` by `5`.
 - **Program parameterization and parameter-uniform `O(1)` operation charge:** The five generic
   `Memory.Prog` subroutines (`extractQuotGenProg`, `queryWithHashGenProg`, `insertWithHashGenProg`,
-  `deletePrepWithHashGenProg`, `deleteFinishWithHashGenProg`) are compiled once independent of
-  `(U, V, w, n_max)` and
-  receive the 36 static parameters via registers loaded by `loadParamsCode` in `36` instructions.
-  Consequently, both the register budget `r ≥ 256` (`Succinct.rSuccinct`) and the per-operation
-  charge `C_op` (`Succinct.chargeVal = 313 * Succinct.opFactor + 284725`) are universal `O(1)`
-  constants existentially quantified **outside** `∀ (U V w n_max : ℕ)`, independent of
-  `(U, V, w, n_max)`, `base`, and `ops.length`. For each `(U, V, w, n_max)`, the compiled
-  `r`-register Word-RAM programs `p_init` and `p_op` depend on `(U, V, w, n_max)` and do not depend
-  on `base`, the initial state `(reg₀, mem₀)`, or `ops`. No theorem in this abstract bounds the
-  static code length `p_init.length` or `p_op.length`. All instruction counts
-  (`expectedTime w p s ≤ T + 1`) exclude caller argument preparation (`prepareDynDictRegs`) and
-  dispatch.
+  `deletePrepWithHashGenProg`, `deleteFinishWithHashGenProg`) do not depend on `(U, V, w, n_max)`.
+  The full program `subroutineCode U V w n_max` depends on `(U, V, w, n_max)` only through the
+  36-instruction `loadParamsCode` prefix and the hash code. Consequently, both the register budget
+  `r ≥ 256` (`Succinct.rSuccinct`) and the per-operation charge `C_op`
+  (`Succinct.chargeVal = 313 * Succinct.opFactor + 284725`) are universal `O(1)` constants
+  existentially quantified **outside** `∀ (U V w n_max : ℕ)`, independent of `(U, V, w, n_max)`,
+  `base`, and `ops.length`. For each `(U, V, w, n_max)`, the compiled `r`-register Word-RAM
+  programs `p_init` and `p_op` depend on `(U, V, w, n_max)` and do not depend on `base`, the
+  initial state `(reg₀, mem₀)`, or `ops`. No theorem in this abstract bounds the static code length
+  `p_init.length` or `p_op.length`. All instruction counts (`expectedTime w p s ≤ T + 1`) exclude
+  caller argument preparation (`prepareDynDictRegs`) and dispatch.
 - **Initialization step bound and succinct space:** Initialization from zeroed memory on
   `[base, base + sp)` executes in at most `initBudget ≤ 31 * n_max + 1092` expected body
   instructions, and the single contiguous memory block of `sp` machine words (holding all hash
