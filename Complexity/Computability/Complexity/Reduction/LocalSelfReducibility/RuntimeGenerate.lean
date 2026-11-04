@@ -22,7 +22,7 @@ word consumer. Its bound uses the original word, with no padded input or free he
 The unary cut is a streamed intermediate output, not a unary workspace counter.
 
 These are original implementation lemmas supporting the reconstruction of Definitions 3.1–3.2
-and the storage argument of Lemma 3.3, expanded ECCC TR13-047 (18 March 2013), printed page 6
+and the storage argument of Lemma 3.3, expanded ECCC TR13-047 (18 March 2013), printed pages 6–7
 [GlasserNguyenReitwiessnerSelmanWitek2013]. The cut computation is an explicit ordinary logspace
 premise; this module does not construct the ceiling-logarithmic cut program. Nor does it prove
 answer regeneration, the decreasing suffix loop, adaptive-to-tt conversion or Lemma 3.3.

@@ -22,7 +22,7 @@ Both the header and virtual-length estimates are relative to the caller's actual
 
 This is original implementation infrastructure for the small stored suffix in Definitions
 3.1–3.2 and the proof of Lemma 3.3 of [GlasserNguyenReitwiessnerSelmanWitek2013], expanded
-ECCC TR13-047 (18 March 2013), printed page 6. It supplies no suffix iteration, language oracle,
+ECCC TR13-047 (18 March 2013), printed pages 6–7. It supplies no suffix iteration, language oracle,
 answer-word generator or adaptive-to-tt conversion, and does not establish that lemma.
 -/
 
