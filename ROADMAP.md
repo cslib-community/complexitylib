@@ -250,8 +250,9 @@ index links to canonical definitions rather than keeping a second set.
 - **Logspace autoreducibility of complete sets** ([#2468]): the full expanded 2013 paper of
   Glaßer, Nguyen, Reitwießner, Selman and Witek: native transfer from local self-reducibility
   (Lemma 3.3), including virtual-input/answer regeneration and adaptive-to-tt conversion.
-  Uniform runtime initialization and individual virtual-word reads are certified, but their
-  consumption by the unbounded evaluator and the resource-certified suffix loop remain open;
+  Uniform runtime initialization, virtual-word reads and a two-pass Boolean-state native
+  evaluator are certified; arbitrary logspace query-generator/evaluator consumption, supplied
+  header preparation, answer regeneration and the resource-certified suffix loop remain open;
   bounded and many-one self-reducibility specializations; concrete complete self-reducible
   problems (Theorem 3.5); Section 4
   bounded/logarithmic-query results and
