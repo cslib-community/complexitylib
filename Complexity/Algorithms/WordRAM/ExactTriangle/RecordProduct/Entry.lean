@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.First
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Bounds
 
 /-!
 # Initialized producer-to-adapter composition
@@ -30,17 +31,9 @@ open Cslib.WordRAM Cslib.Algorithms.ExactTriangle Cslib.Matrix
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
 open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage
 
-/-- The complete real producer, using its original low bank. -/
-@[expose] def produce : Code .standard 320 := Instances.program.rename producerBank
-
 /-- One fixed initialized composition; selecting the first record costs one actual instruction. -/
 @[expose] def entryProgram : Code .standard 320 :=
   .seq produce (.seq (.op (.const Reg.ordinal 0)) program)
-
-/-- The unchanged producer's original-header budget, including its standalone halt. -/
-@[expose] def preparationTime (n D g p : ℕ) (values : List ℤ) : ℕ :=
-  let C := fun rho => Nat.count (fun q => (values.getD q 0 % (p : ℤ)).toNat = rho) (n * n)
-  Instances.timeBound n D p (ChunkCatalogue.before C (queryCap n D) p) (numPieces n D g)
 
 private theorem producerBank_injective : Function.Injective producerBank := by
   intro i j h

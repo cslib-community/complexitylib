@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Program
-public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Program
 
 /-!
 # The box product followed by original-weight witness verification

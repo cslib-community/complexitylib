@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime
 public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicCost.Asymptotics
 public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.Exec
+import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Original
 import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity

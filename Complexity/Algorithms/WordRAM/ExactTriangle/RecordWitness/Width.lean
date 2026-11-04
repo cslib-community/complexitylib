@@ -7,7 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Exec
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.NumericBounds
 import Complexity.Computability.WordRAM.Admission
 
 /-!

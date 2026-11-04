@@ -7,7 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Exec
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product.Input
 
 /-!
 # Original raw matrix and coordinate spans

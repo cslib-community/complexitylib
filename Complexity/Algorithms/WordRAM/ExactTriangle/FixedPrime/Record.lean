@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Accounting
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Controller
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Width
+import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Original
 import Complexity.Computability.WordRAM.RegisterFrame
 
 /-!
