@@ -15,7 +15,9 @@ import Complexity.Probability.PMF.Uniform
 import Complexity.Probability.HashIsolation
 import Complexity.Computability.Probabilistic.LinearHash
 import Complexity.Computability.Probabilistic.UniformNat
-import Complexity.Tactic.PPT
+import Complexity.Computability.Probabilistic.PPT.Capture
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import Complexity.Tactic.PolyTime.Init
 
 /-!
 # The hashed parity pair
@@ -71,17 +73,15 @@ theorem hashCount_ge (n : ℕ) : n + 6 ≤ hashCount n := (lt_dyadicSize (n + 6)
 theorem hashCount_le (n : ℕ) : hashCount n ≤ 2 * (n + 7) := dyadicSize_le (n + 6)
 
 /-- Sampling among the enlarged hash lengths requires only a polynomial range. -/
-@[fun_prop] theorem hashCount_polynomiallyBounded : PolynomiallyBounded hashCount := by
-  unfold hashCount
-  fun_prop
+@[fun_prop] theorem hashCount_polynomiallyBounded : PolynomiallyBounded hashCount :=
+  dyadicSize_polynomiallyBounded.comp (PolynomiallyBounded.id.add (.const 6))
 
 /-- Compute the sampling range from an efficiently available unary parameter. -/
 @[fun_prop]
 theorem computableInPolyTime_hashCount {α : Type} {encode : α ↪ List Bool}
     {parameter : α → ℕ} (hparameter : ComputableInPolyTime parameter encode encUnary) :
-    ComputableInPolyTime (fun a => hashCount (parameter a)) encode encUnary := by
-  unfold hashCount
-  fun_prop
+    ComputableInPolyTime (fun a => hashCount (parameter a)) encode encUnary :=
+  (hparameter.unary_add' (.const 6)).trans .unary_dyadicSize
 
 /-- A flat matrix seed and an independent parity query, both retained in the public output. -/
 abbrev Seed (n count : ℕ) := BitString (count * n) × BitString n
@@ -98,7 +98,6 @@ def prefixHash {n count : ℕ} (i : Fin count) (seed : Seed n count) (x : BitStr
 /-- The query can be included in the public seed without changing hash universality. -/
 theorem prefixHash_isTwoUniversal {n count : ℕ} (i : Fin count) :
     IsTwoUniversal (PMF.uniformOfFintype (Seed n count)) (prefixHash i) := by
-  unfold prefixHash
   refine IsUniversalHash.precompose_seed _ Prod.fst (hash := fun matrix =>
     LinearHash.hash (blocksEquiv (m := count) (k := n) matrix ∘
       Fin.castLE (Nat.succ_le_of_lt i.isLt))) ?_
@@ -122,19 +121,18 @@ theorem conditionalEntropy_joint_le {n count : ℕ} [NeZero count]
     {Image : Type*} [Finite Image] (f : BitString n → Image) :
     conditionalEntropy (joint (count := count) f) ≤
       ((∑ x, Real.logb 2 (Nat.card {y // f y = f x})) / (2 : ℝ) ^ n + 2) / count := by
-  have h := conditionalEntropy_random_hash_le count
-    (PMF.uniformOfFintype (Seed n count)) (PMF.uniformOfFintype (BitString n))
-    f prefixHash prefixHash_isTwoUniversal (fun _ seed x => x ⬝ᵥ seed.2)
   simpa only [joint, PMF.uniformOfFintype_apply, Fintype.card_fun, Fintype.card_bool,
     Fintype.card_fin, ENNReal.toReal_inv, ENNReal.toReal_natCast, Nat.cast_pow,
     ENNReal.toReal_pow, ENNReal.toReal_ofNat, Nat.cast_ofNat,
-    ← Finset.mul_sum, ← div_eq_inv_mul, ← Finset.sum_div] using h
+    ← Finset.mul_sum, ← div_eq_inv_mul, ← Finset.sum_div] using
+    conditionalEntropy_random_hash_le count
+      (PMF.uniformOfFintype (Seed n count)) (PMF.uniformOfFintype (BitString n))
+      f prefixHash prefixHash_isTwoUniversal (fun _ seed x => x ⬝ᵥ seed.2)
 
 /-- Self-delimiting encoding of the five public fields. -/
 def wordObservation (image : List Bool) (index : ℕ) (matrix digest query : List Bool) : List Bool :=
-  encPair encBits (encPair encUnary
-    (encPair encBits (encPair encBits encBits)))
-      (image, index, matrix, digest, query)
+  encPair encBits (encPair encUnary (encPair encBits (encPair encBits encBits)))
+    (image, index, matrix, digest, query)
 
 /-- Assemble the public fields using the ordinary tuple encoding. -/
 @[fun_prop]
@@ -146,18 +144,15 @@ theorem computableInPolyTime_wordObservation {α : Type} {encode : α ↪ List B
     (hdigest : ComputableInPolyTime digest encode encBits)
     (hquery : ComputableInPolyTime query encode encBits) :
     ComputableInPolyTime (fun a => wordObservation (image a) (index a)
-      (matrix a) (digest a) (query a)) encode encBits := by
-  unfold wordObservation
-  simp only [encPair_apply, encBits_apply]
-  polytime
+      (matrix a) (digest a) (query a)) encode encBits :=
+  (himage.prod (hindex.prod (hmatrix.prod (hdigest.prod hquery)))).trans (.of_eq fun _ => rfl)
 
 /-- Encode a finite public observation using the chosen image representation. -/
 def encodeObservation {n count : ℕ} {Image : Type*} (encodeImage : Image → List Bool)
     (observation : Observation n count Image) : List Bool :=
   let ⟨pos, (matrix, query), image, digest⟩ := observation
   wordObservation (encodeImage image) pos.val
-    (List.ofFn matrix) (List.ofFn digest)
-    (List.ofFn query)
+    (List.ofFn matrix) (List.ofFn digest) (List.ofFn query)
 
 /-- Encoding loses none of the public information, even though the digest's width varies. -/
 theorem encodeObservation_injective {n count : ℕ} {Image : Type*}
@@ -166,12 +161,9 @@ theorem encodeObservation_injective {n count : ℕ} {Image : Type*}
   rintro ⟨i, ⟨matrix, query⟩, image, digest⟩ ⟨j, ⟨matrix', query'⟩, image', digest'⟩ h
   have hfields := (encPair encBits (encPair encUnary
     (encPair encBits (encPair encBits encBits)))).injective h
-  have hij : i = j := Fin.ext (congrArg (fun fields => fields.2.1) hfields)
-  subst j
-  simp only [Prod.mk.injEq, List.ofFn_inj] at hfields
-  obtain ⟨himage, _, hmatrix, hdigest, hquery⟩ := hfields
-  have himage := encodeImage.injective himage
-  simp_all
+  obtain rfl : i = j := Fin.ext (congrArg (fun fields => fields.2.1) hfields)
+  simp only [Prod.mk.injEq, List.ofFn_inj, encodeImage.injective.eq_iff] at hfields
+  rcases hfields with ⟨rfl, _, rfl, rfl, rfl⟩; rfl
 
 /-- Sample the hashed parity pair using only fair bits and ordinary word operations. -/
 noncomputable def sample (f : List Bool → List Bool) (n : ℕ) : ProbComp (List Bool × Bool) := do
@@ -183,15 +175,26 @@ noncomputable def sample (f : List Bool → List Bool) (n : ℕ) : ProbComp (Lis
     (LinearHash.wordHash (index + 1) matrix input) query,
     (input.zipWith Bool.and query).foldl Bool.xor false)
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The construction is strict PPT whenever the given function is polynomial time. -/
 @[program_certificate]
 theorem isPPTOn_sample (f : List Bool → List Bool)
     (hf : ComputableInPolyTime f encBits encBits) :
-    IsPPTOn encUnary (encPair encBits encBool) (sample f) := by
-  have hf := hf.tidy
-  unfold sample
-  fun_prop
+    IsPPTOn encUnary (encPair encBits encBool) (sample f) :=
+  let e1 := encPair encUnary encUnary; let e2 := encPair e1 encBits; let e3 := encPair e2 encBits
+  let p0 := ComputableInPolyTime.fst e3 encBits; let p1 := p0.trans (.fst e2 encBits)
+  let q0 := ComputableInPolyTime.fst encUnary encUnary
+  let q1 := ComputableInPolyTime.fst e1 encBits
+  let hinput := ComputableInPolyTime.snd e3 encBits; let hquery := p0.trans (.snd e2 encBits)
+  let hmatrix := p1.trans (.snd e1 encBits); let hindex := (p1.trans q1).trans (.snd _ _)
+  (isPPTOn_sampleDyadicIndex (ComputableInPolyTime.id'.unary_add' (.const 6))).bind_with
+    (((computableInPolyTime_hashCount q0).unary_mul' q0).sampleList.bind_with
+      ((q1.trans q0).sampleList.bind_with
+        ((((ComputableInPolyTime.fst e2 encBits).trans q1).trans q0).sampleList.bind_with
+          ((computableInPolyTime_wordObservation (hinput.trans hf) hindex hmatrix
+            (LinearHash.computableInPolyTime_wordHash
+              (hindex.unary_add' (.const 1)) hmatrix hinput) hquery).prod
+            ((hinput.bitsZipWithInput Bool.and hquery).bitsFoldlWithInput
+              Bool.xor (.const false))).isPPTOn)))
 
 /-- The executable observation and hidden bit have exactly the finite joint distribution. -/
 theorem eval_sample {n : ℕ} {Image : Type*} (f : List Bool → List Bool)
@@ -200,22 +203,19 @@ theorem eval_sample {n : ℕ} {Image : Type*} (f : List Bool → List Bool)
     ProbComp.eval (sample f n) =
       (joint (count := hashCount n) finiteFunction).map
         (fun pair => (encodeObservation encodeImage pair.1, pair.2)) := by
-  have hhash (i : Fin (hashCount n)) (matrix : BitString (hashCount n * n))
-      (x : BitString n) :
+  have hhash (i : Fin (hashCount n)) (matrix : BitString (hashCount n * n)) (x : BitString n) :
       LinearHash.wordHash (i.val + 1) (List.ofFn matrix) (List.ofFn x) =
-        List.ofFn (prefixHash i (matrix, 0) x) := by
-    rw [LinearHash.wordHash_eq_ofFn,
-      block_ofList_prefix (Nat.succ_le_of_lt i.isLt), ofList_ofFn]
-    rfl
+        List.ofFn (LinearHash.hash
+          (blocksEquiv matrix ∘ Fin.castLE (Nat.succ_le_of_lt i.isLt)) x) := by
+    rw [LinearHash.wordHash_eq_ofFn, block_ofList_prefix (Nat.succ_le_of_lt i.isLt),
+      ofList_ofFn]; rfl
   have hindex : ProbComp.eval (sampleDyadicIndex (n + 6)) =
       (PMF.uniformOfFintype (Fin (hashCount n))).map Fin.val := eval_sampleDyadicIndex (n + 6)
-  simp only [prefixHash] at hhash
-  simp only [sample, ProbComp.eval_bind, ProbComp.eval_pure,
-    eval_sampleList, hindex,
+  simp only [sample, ProbComp.eval_bind, ProbComp.eval_pure, eval_sampleList, hindex,
     joint, Seed, ← PMF.uniformOfFintype_prod, PMF.bind_map, PMF.map_bind,
     PMF.bind_bind, PMF.map_comp, Function.comp_def, uniformList]
   simp only [Function.comp_def, hf, hhash, encodeObservation, prefixHash,
-    dotProduct_eq_foldl, PMF.map, Function.comp_def]
+    dotProduct_eq_foldl, PMF.map]
 
 /-- Package the efficient sampler with its finite observation type and exact joint law.
 The image representation is needed for entropy bookkeeping, not as an extra algorithmic oracle. -/

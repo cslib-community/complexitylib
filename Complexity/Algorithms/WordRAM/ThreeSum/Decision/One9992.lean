@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Transfer
+public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Admissible
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Asymptotics
 public import Complexity.Computability.WordRAM.Time
 
@@ -60,18 +61,6 @@ open Cslib.Algorithms.ThreeSum (HasSolution)
 /-- Its actual assembled code with one final raw Boolean halt. -/
 @[expose] def boxFlatProgram (κ : ℕ) : Program .standard 848 :=
   flatProgram κ ParameterSelecting.program
-
-/-- The original polynomial magnitude restriction and logarithmic physical-width threshold.
-This admits every width above the threshold, with no dependence on the particular input values. -/
-@[expose] def Admissible (κ : ℕ) (input : List ℤ) (W : ℕ) : Prop :=
-  width κ 123357 input.length ≤ W ∧
-    ∀ z ∈ input, |z| ≤ ((input.length + 2) ^ κ : ℕ)
-
-/-- Admitted input/width pairs satisfy the decision API's separate input-fit condition. -/
-theorem Admissible.inputFits {κ W : ℕ} {input : List ℤ} (h : Admissible κ input W) :
-    InputFits W (input.map Signed.encode) :=
-  ChanHe.Preprocessing.input_fits input
-    ((preprocessing_width_le κ 123357 input.length).trans h.1) h.2
 
 private theorem callee_time_subcubic (ν : ℕ) (hν : 1 ≤ ν) :
     ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ, ∀ n ≥ N, ∀ F ≤ (n + 2) ^ ν,
