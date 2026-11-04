@@ -125,7 +125,7 @@ def Witness.consequence {safe' : ℕ → δ → Memory.State → Prop}
 
 /-- The client's own admissible history can discharge a stronger entry domain. The supplied
 scratch, factor and emitter remain unchanged. -/
-def Witness.consequence_valid {safe' : ℕ → δ → Memory.State → Prop}
+def Witness.consequenceValid {safe' : ℕ → δ → Memory.State → Prop}
     (h : Witness B p input output safe work)
     (hsafe : ∀ w d s, (∀ i, Fits w (input d i)) → Memory.WellFormed w s →
       (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (p d)) →
