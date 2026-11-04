@@ -881,7 +881,22 @@ private def budgetData (HP : FourthRootHierarchyParams 16 1 16 32 8) : BudgetDat
   slack := 1
   slack_pos := by decide
   rankCharge := 0
-  magnitude := fun _ => 16
+  binCap := 1
+  binCap_nonneg := zero_le_one
+  cutoff_bounds := by
+    intro i d
+    have h := boundedRoutedBinCutoff_mem_Icc (χ := polynomialSwitch4 (1 / 2) 1)
+      (b := fun _ => 1) (cap := 1) (B := 1)
+      (by norm_num) (by norm_num) le_rfl
+      (monotone_polynomialSwitch4 (by norm_num))
+      (fun t ht => polynomialSwitch4_of_le (by norm_num) ht)
+      (fun t ht => polynomialSwitch4_of_ge (by norm_num) ht)
+      (fun t => ⟨polynomialSwitch4_nonneg _ _ t, polynomialSwitch4_le_one _ _ t⟩)
+      (fun _ => zero_lt_one) (fun _ _ _ => le_rfl) (fun _ => by norm_num)
+      (fun _ => 1) (fun _ => ⟨zero_le_one, le_rfl⟩) 0 d
+    change binCutoff d / 2 ∈ Set.Icc 0 1
+    change binCutoff d ∈ Set.Icc 0 1 at h
+    constructor <;> linarith [h.1, h.2]
 
 private def budgetRequest (HP : FourthRootHierarchyParams 16 1 16 32 8) :
     HierarchyTask.Request HP.k (Fin 3) (ZMod 5) :=
@@ -899,14 +914,9 @@ private lemma dense_half (HP : FourthRootHierarchyParams 16 1 16 32 8)
     split_ifs <;> ring
   rw [he, dense]
 
-private lemma shared_positive (HP : FourthRootHierarchyParams 16 1 16 32 8)
-    (M : ℕ) (hM : 0 < M) (bin : ℕ) :
-    (budgetData HP).positiveBin
-      (fun m r => if m < M then (budgetData HP).evaluate m r else none)
-      M bin (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP) =
-      some (fun _ x y => base x y / 2) := by
-  rw [BudgetData.positiveBin_initial _ M hM]
-  apply congrArg some
+private lemma shared_initial (HP : FourthRootHierarchyParams 16 1 16 32 8) (bin : ℕ) :
+    (budgetData HP).initialSample (budgetRequest HP) bin =
+      fun _ x y => base x y / 2 := by
   funext σ x y
   let R := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
     (budgetRequest HP).source (BudgetData.midpoint (budgetRequest HP))
@@ -927,35 +937,52 @@ private lemma shared_positive (HP : FourthRootHierarchyParams 16 1 16 32 8)
   rw [hr]
   simpa only [one_mul] using dense_half HP σ x y
 
+private lemma shared_positive (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (M : ℕ) (hM : 1 < M) (bin : ℕ) :
+    (budgetData HP).positiveSample
+      (fun m r => if m < M then (budgetData HP).evaluate m r else none)
+      ((budgetData HP).binBudget M bin (budgetRequest HP))
+      bin (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP) =
+      some (fun _ x y => base x y / 2) := by
+  have hm : 0 < (budgetData HP).binBudget M bin (budgetRequest HP) := by
+    simpa [BudgetData.binBudget, budgetData, budgetRequest, request, gridChannel,
+      LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff, rate] using
+      (Nat.sub_pos_of_lt hM)
+  rw [BudgetData.positiveSample_initial _ M _ hm
+    ((budgetData HP).binBudget_lt (by omega) _ _)]
+  change some ((budgetData HP).initialSample (budgetRequest HP) bin) = _
+  rw [shared_initial]
+
 private lemma shared_raw (HP : FourthRootHierarchyParams 16 1 16 32 8)
-    (M : ℕ) (hM : 0 < M) :
-    (budgetData HP).raw
+    (M : ℕ) (hM : 1 < M) :
+    (budgetData HP).finiteInput
       (fun m r => if m < M then (budgetData HP).evaluate m r else none)
       M (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP) =
-      (budgetData HP).complete M (budgetRequest HP) (fun _ => base) := by
-  have hp (l : List ℕ) : l.mapM (fun i => (budgetData HP).positiveBin
+      some (fun _ => base) := by
+  have hp (l : List ℕ) : l.mapM (fun i => (budgetData HP).positiveSample
       (fun m r => if m < M then (budgetData HP).evaluate m r else none)
-      M i (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP)) =
+      ((budgetData HP).binBudget M i (budgetRequest HP))
+      i (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP)) =
       some (l.map (fun _ => fun (_ : Environment 5 3) x y => base x y / 2)) := by
     induction l with
     | nil => rfl
     | cons i l ih =>
       simp only [List.mapM_cons, shared_positive HP M hM i, ih, List.map_cons]
       rfl
-  unfold BudgetData.raw
+  unfold BudgetData.finiteInput
   rw [hp]
-  change (budgetData HP).complete M (budgetRequest HP)
-    (fun σ x y => (((budgetData HP).bins.toList.map
+  change some (fun σ x y => (((budgetData HP).bins.toList.map
       (fun _ => fun (_ : Environment 5 3) x y => base x y / 2)).map
       (fun A => A σ x y)).sum - 0) = _
-  apply congrArg ((budgetData HP).complete M (budgetRequest HP))
+  apply congrArg some
   funext σ x y
   simp [budgetData]
 
-private lemma shared_complete (HP : FourthRootHierarchyParams 16 1 16 32 8) (M : ℕ) :
-    (budgetData HP).complete M (budgetRequest HP) (fun _ => base) =
-      some (fun σ x y => if source σ x then base x y else 0) := by
-  rw [BudgetData.complete_grid _ M _ 0 2 (by decide) 1 0 [1] [2, 3] rfl rfl]
+private lemma shared_complete_const (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (M : ℕ) (A : Matrix (ZMod 5) (ZMod 5) ℝ) (slack : ℕ := 0) :
+    (budgetData HP).complete M (budgetRequest HP) (fun _ => A) slack =
+      some (fun σ x y => if source σ x then A x y else 0) := by
+  rw [BudgetData.complete_grid _ M _ 0 2 (by decide) 1 0 [1] [2, 3] rfl rfl _ slack]
   apply congrArg some
   funext σ x y
   rw [conditionalWalk_const]
@@ -966,17 +993,76 @@ private lemma shared_complete (HP : FourthRootHierarchyParams 16 1 16 32 8) (M :
 
 -- Both half-bins contribute. Their actual shared completion remains nonconstant
 -- in the source environment, with no new seed or supplied lower-child function.
-example (HP : FourthRootHierarchyParams 16 1 16 32 8) (M : ℕ) (hM : 0 < M) :
-    (budgetData HP).raw
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (M : ℕ) (hM : 1 < M) :
+    ((budgetData HP).finiteInput
       (fun m r => if m < M then (budgetData HP).evaluate m r else none)
-      M (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP) =
+      M (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP)).bind
+      ((budgetData HP).complete M (budgetRequest HP)) =
       some (fun σ x y => if source σ x then base x y else 0) ∧
     (if source (seed 0) 0 then base 0 0 else 0) ≠
       (if source (seed 4) 0 then base 0 0 else 0) := by
   refine ⟨?_, ?_⟩
-  · rw [shared_raw HP M hM, shared_complete]
+  · rw [shared_raw HP M hM, Option.bind_some, shared_complete_const]
   · rw [ite_eq_left source_both.1, ite_eq_right source_both.2]
     norm_num [base]
+
+-- The actual recursive history is sampled at unequal budgets (32 and zero).
+-- Adjacent positive budgets (63 and 62) cancel instead of being completed once.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (bin : ℕ) :
+    (budgetData HP).pairedSample
+      (fun m r => if m < 64 then (budgetData HP).evaluate m r else none)
+      64 32 (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP) (some bin) =
+      some (fun _ x y => base x y / 2) ∧
+    (budgetData HP).pairedSample
+      (fun m r => if m < 64 then (budgetData HP).evaluate m r else none)
+      64 1 (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP) (some bin) = some 0 := by
+  constructor <;>
+    rw [BudgetData.pairedSample_initial _ 64 _ (by decide), shared_initial]
+  all_goals
+    norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff,
+      BudgetData.sampleScale, budgetData, budgetRequest, request, gridChannel, rate]
+
+-- Dense leaf calls at budget zero are explicitly unavailable; the scheduled initial
+-- approximation above uses its certified coarse sample bound instead of making that call.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (budgetData HP).evaluate 0 (request HP) = none := by
+  rw [BudgetData.evaluate_eq]
+  rfl
+
+-- The public RAW route keeps the nonconstant completed row after paired scheduling.
+private lemma shared_scheduled (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (budgetData HP).raw
+      (fun m r => if m < 64 then (budgetData HP).evaluate m r else none)
+      64 (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP) =
+      some (fun σ x y => if source σ x then base x y else 0) := by
+  have hs (bin : ℕ) :
+      (budgetData HP).sampleScale (budgetRequest HP) (some bin) = 0 := by
+    norm_num [BudgetData.sampleScale, budgetData, budgetRequest, request, gridChannel, rate]
+  have hc (a b : ℕ) :
+      ((if a = 0 then 0 else fun (_ : Environment 5 3) x y => base x y / 2) -
+        (if b = 0 then 0 else fun (_ : Environment 5 3) x y => base x y / 2)) =
+      fun (_ : Environment 5 3) x y =>
+        (if a = 0 then 0 else base x y / 2) - (if b = 0 then 0 else base x y / 2) := by
+    funext σ x y
+    split_ifs <;> rfl
+  have hm (l : List ℕ) (f : ℕ → Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ) :
+      l.mapM (fun x => some (f x)) = some (l.map f) := List.mapM_pure
+  unfold BudgetData.raw
+  dsimp only
+  simp only [List.append_nil, List.mapM_map]
+  dsimp only [Function.comp_def]
+  simp_rw [BudgetData.pairedSample_initial _ 64 _ (by decide), shared_initial, hs]
+  simp_rw [hc]
+  simp only [bind, pure, Option.bind_some]
+  simp_rw [shared_complete_const]
+  simp_rw [hm]
+  simp only [Option.bind_some]
+  simp_rw [hm]
+  simp only [Option.bind_some]
+  norm_num [List.range_succ, bind, pure, budgetData,
+    LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff]
+  funext σ x y
+  split_ifs <;> simp_all
 
 -- A concrete active parent budget reaches those two bins through the one evaluator.
 example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
@@ -992,8 +1078,16 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
   have htask : (budgetRequest HP).task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩) := rfl
   rw [BudgetData.evaluate_eq]
   simp only [BudgetData.step, htask, hactive, ↓reduceIte]
-  rw [shared_raw HP 64 (by decide), shared_complete]
+  rw [shared_scheduled HP]
   rfl
+
+-- Later RAW boundaries are unproved and remain explicit, even when a short schedule
+-- would otherwise contain only empty groups. They never become dummy zero outputs.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (M : ℕ) :
+    (budgetData HP).evaluate M
+      { request HP with task := .row 0 (.input ⟨0, HP.k_pos⟩) } = none ∧
+    (budgetData HP).evaluate M { request HP with task := .residual 0 } = none := by
+  constructor <;> rw [BudgetData.evaluate_eq] <;> rfl
 
 -- Unsupported cross-stage calls are unavailable rather than placeholder zero outputs.
 example (HP : FourthRootHierarchyParams 16 1 16 32 8) (M : ℕ) :

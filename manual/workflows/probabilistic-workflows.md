@@ -688,29 +688,43 @@ RL=L are not supplied by this single-bin first-pilot fragment. This partial cons
 a selected headline abstract.
 
 The [shared statistical-budget evaluator](../../Complexity/Foundations/Probability/HierarchyBudgetEvaluator.lean)
-now supplies a partial active stage-zero execution path over the existing `HierarchyTask.Request`.
-`BudgetData.evaluate` keeps HP.k fixed and uses one history for whole rows and vectors on three
-rank roles. Child calls use the existing `lastBudget` schedule, including each bin's logarithmic
-scale cutoff. RAW sums the finite positive bins and subtracts the residual correction once.
-Source-aware detection uses the same extracted `environmentDetector` as the initial client;
-normalized calls recompute their actual RAW, preparation and maximum children on the full
-original environment. `complete_grid` identifies the original H4 graph, and `completion_noise`
-pays centered noise from an explicit uniform magnitude bound, with width and source-rate
-factors shown. The allocator does not certify an arbitrary declared magnitude bound.
+supplies a partial stage-zero path over the existing `HierarchyTask.Request`. It keeps HP.k
+fixed and shares whole row/vector history on the original three-role environment. The unaveraged
+`finiteInput` helper retains finite positive-bin assembly and one residual subtraction. Public RAW
+instead takes both actual last-budget samples of each dyadic slack group and completes their
+difference separately. The residual is one signed ray outside the positive-bin sum. Each group's
+walk length pays its own slack factor; `pairedSample_initial_completion` proves centered fourth
+moment noise at most `(2^(-precision) * 64^(-slack))^4` for every initial bin/group, from actual
+recursive calls and the original H4 graph.
 
-This path is **partial**: exact base/dense leaves and literal iteration-zero constants remain
-available at every budget. Inactive recursive calls, failed graph-frame guards and unsupported constructors
-return `none`; justified global inactive-zero semantics remains open. A checked active
-budget-64 client assembles two nonzero half-bins into an environment-dependent completed row;
-the same fixture's old constant-walk proof now uses `conditionalWalk_const`. Normalized-row
-range, usage rejection and row sparsity and the actual successor-maximum error payment are
-checked local cases. They do **not** establish the requested simultaneous global correctness
-invariant. Justified inactive approximations, RAW compression/reserves and their sparsity,
-incoming-column closure, canonical error summation, later-iteration analytic closure,
-residual preparation/normalization, weights/rewards, cross-stage copy routing and effective
-native resource bounds remain open. The earlier single-bin canonical accuracy result retains
-its stated scope; this evaluator does not generalize that theorem yet. No selected abstract
-or headline claim changes.
+The free per-request magnitude input has been removed. Primitive bin cutoffs have a certified
+uniform cap; allocation uses explicit finite bin, endpoint-rate and density charges. Those
+amplitudes are proved sufficient for all initial paired samples. Their sufficiency for other
+constructors and the total noise/bin payment remain open. These conservative finite charges
+include vertex width and do not establish the intended uniform growth or native workspace bound.
+
+Dense leaves now require positive budget. The initial pilot sample has a zero-budget coarse
+approximation with proved finite bounds against its literal assembled sample and its canonical
+bin in matrix units; the global root-metric coarse-precision payment remains open. Later samples with unproved
+zero boundaries remain `none`; later pilot/main RAW and residual requests are explicitly unavailable
+in the public evaluator until their boundaries are proved. Other inactive recursive calls, invalid frames and unsupported
+constructors are unavailable too. The exact base matrix and literal zero-iteration constants
+retain their existing semantics.
+
+The budget-64 public evaluator regression still computes a nonconstant source-dependent row
+from two nonzero half-bins. Separate regressions check its unequal 32/0 paired budgets and the
+cancellation of its 63/62 group. These initial exact-slice examples do not demonstrate a
+positive-iteration canonical induction or nonzero mixing error. Successful normalized rows have
+budget-independent range/usage/support laws, and successor maxima retain their local error
+payment. Pointwise input sparsity is **not** asserted to survive a walk.
+
+The simultaneous all-lower-budget row/vector availability, canonical error, support and range
+invariant is unfinished. In particular, the scheduled first signal is not yet wired through
+first/second signals, clipped normalization and actual compression/reserve output. Incoming-column
+closure, later-iteration and residual zero boundaries, omitted-bin/mean/noise summation,
+residual preparation/normalization, weights/rewards and positive-stage copy routing remain open.
+The earlier single-bin canonical accuracy result retains its scope. No selected abstract or
+headline claim changes; there is no analytic or native RL=L endpoint here.
 
 The regressions additionally check a correlated detector moment of
 `1/32`, a distinct child normalization `1/16`, and nonconstant padded frame source/rank
