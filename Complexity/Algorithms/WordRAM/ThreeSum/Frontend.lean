@@ -94,10 +94,9 @@ theorem intermediates_polynomial {κ w : ℕ} (input : List ℤ)
     (∀ i, s.data.regs i < (input.length + 2) ^ (160 * κ + 968)) ∧
       ∀ a, s.data.mem a < (input.length + 2) ^ (160 * κ + 968) := by
   obtain ⟨_, _, he, _, _, _, _, _, _, _⟩ := runs_input input le_rfl hvalues
-  have hsmall := Runs.prefix_at_smaller_width
-    (Code.not_readsWidth_program (not_readsWidth κ) descriptorCount) hw hr he
-  have hb := hsmall.bounded_init (input_fits input le_rfl hvalues)
-  have hpoly := two_pow_width_le κ input.length
-  exact ⟨fun i => (hb.1 i).trans_le hpoly, fun a => (hb.2 a).trans_le hpoly⟩
+  obtain ⟨regs, mem, -⟩ := hr.prefix_bounds_init
+    (Code.not_readsWidth_program (not_readsWidth κ) descriptorCount) hw
+    (input_fits input le_rfl hvalues) he (two_pow_width_le κ input.length)
+  exact ⟨regs, mem⟩
 
 end Cslib.Algorithms.WordRAM.ThreeSum.Frontend

@@ -10,27 +10,25 @@ module
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Execute
 public import Complexity.Algorithms.ThreeSum.ChanHe.ConvolutionSizes
 public import Complexity.Foundations.Data.Nat.LogRpow
-public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Asymptotics
 
 /-!
-# Complete conservative runtime composition for the ordinary native host
+# Uniform runtime transfer for the actual ordinary 3SUM host
 
-The original host supplies magnitude `2*(n+2)^E+1` at actual side `sqrt(8*mPar²)+1`.
-Finite dimension bounds transfer this magnitude to a polynomial in that side. The actual
-parameter-selecting callee, native preprocessing, catalogue count, matrix construction and
-all call/control reserves are then charged at those original arguments.
+The existing native reduction retains preprocessing, its packed side and actual catalogue
+count, every matrix/callee invocation and all control reserves. Any actual certified callee
+whose time is uniformly O(n^(3-δ)) at polynomial integer magnitudes gives ordinary cost
+O(n^a) for every a > 2-δ/2, with 0 < δ ≤ 1. Constants and thresholds precede original
+inputs and physical widths. No concrete supplier or execution/time theorem is imported here.
 
 ## Main results
 
-* `packed_side_eventually_le_rpow`: the actual side is below every power above square root.
-* `instanceBound_le_numBound`, `instanceBound_eventually_le_rpow`: polylogarithmic native count.
-* `callerTime_add_twelve_le`: full Convolution caller work plus its outer control reserve.
-* `exists_packed_calleeTime_bound`: the real callee time at actual dimension and magnitude.
-* `exists_cost_subquadratic_bound`: complete charged host budget is `Oκ(n^(2−1/5184))`.
+* `packed_side_eventually_le_rpow`: packed side below every power above square root.
+* `instanceBound_eventually_le_rpow`: every positive power absorbs the actual catalogue bound.
+* `exists_packed_calleeTime_bound`: transfer of polynomial magnitudes to the actual packed side.
+* `preprocessing_eventually_le_rpow`: preprocessing below every exponent above 3/2.
+* `exists_cost_bound`: complete native host cost from a uniform quantitative callee bound.
 
-This original conservative analysis uses the real native callee, not a supplied time law.
-Actual initialized execution is composed in the consumer theorem. It does not prove the
-source's tuned exponent 1.9992.
+This is original quantitative composition of the existing native reductions and cost ledger.
 -/
 
 public section
@@ -38,7 +36,6 @@ public section
 namespace Cslib.Algorithms.WordRAM.ThreeSum.Decision
 
 open Cslib.Algorithms.ThreeSum.ChanHe
-open Cslib.Algorithms.WordRAM.ExactTriangle
 
 open Filter
 
@@ -107,28 +104,26 @@ theorem callerTime_add_twelve_le (N T : ℕ) :
   have hs : Nat.sqrt N ≤ Host.sideLength N := by dsimp only [Host.sideLength]; omega
   nlinarith only [hs, hp, hp1]
 
-/-- The same original input length controls both native packed geometry and its magnitude.
-The coefficient and threshold precede every outer input. No magnitude or time certificate
-is supplied. -/
-theorem exists_packed_calleeTime_bound (κ E : ℕ) :
+/-- Uniform polynomial-weight time bounds transfer to the actual packed side and magnitude. -/
+theorem exists_packed_calleeTime_bound {r : ℕ} (c : Host.Callee r) {e : ℝ}
+    (hc : ∀ κ : ℕ, 1 ≤ κ → ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ,
+      ∀ n ≥ N, ∀ F ≤ (n + 2) ^ κ, (c.time n F : ℝ) ≤ C * (n : ℝ) ^ e) (κ E : ℕ) :
     ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ, ∀ n ≥ N,
       let t := Nat.sqrt (8 * mPar n (2 * (n + 2) ^ κ) ^ 2) + 1
-      (ParameterSelecting.callee.time t (2 * (n + 2) ^ E + 1) : ℝ) ≤
-        C * (t : ℝ) ^ (3 - 1 / 1296 : ℝ) := by
-  obtain ⟨C, hC, N, hN, htime⟩ := ParameterSelecting.exists_time_subcubic_bound
-    (by omega : 1 ≤ 2 * E + 2)
-  refine ⟨C, hC, N ^ 2, ?_⟩
-  intro n hn
-  exact htime _ (le_packed_side_of_sq_le hn _) _ (packed_weight_le κ E n)
+      (c.time t (2 * (n + 2) ^ E + 1) : ℝ) ≤ C * (t : ℝ) ^ e := by
+  obtain ⟨C, hC, N, htime⟩ := hc (2 * E + 2) (by omega)
+  exact ⟨C, hC, N ^ 2, fun n hn =>
+    htime _ (le_packed_side_of_sq_le hn _) _ (packed_weight_le κ E n)⟩
 
-private theorem preprocessing_eventually_le (κ : ℕ) :
+/-- Charged native preprocessing is eventually below every fixed exponent above 3/2. -/
+theorem preprocessing_eventually_le_rpow (κ : ℕ) {a : ℝ} (ha : 3 / 2 < a) :
     ∀ᶠ n : ℕ in atTop,
-      (ChanHe.Preprocessing.cost κ n : ℝ) ≤ (n : ℝ) ^ (2 - 1 / 5184 : ℝ) := by
-  let ε : ℝ := 1 / 65536
+      (ChanHe.Preprocessing.cost κ n : ℝ) ≤ (n : ℝ) ^ a := by
+  let ε : ℝ := (a - 3 / 2) / 4
   let K := 6 * ChanHe.Preprocessing.costCoefficient κ + 1
   have hlog := Nat.eventually_mul_log_add_pow_le_rpow (by decide : 1 < (2 : ℕ))
-    2 1 13 (K := (K : ℝ)) (by dsimp only [K]; positivity) (show 0 < ε by norm_num [ε])
-  filter_upwards [hlog, packed_side_eventually_le_rpow κ (show 0 < ε by norm_num [ε]),
+    2 1 13 (K := (K : ℝ)) (by dsimp only [K]; positivity) (show 0 < ε by dsimp only [ε]; linarith)
+  filter_upwards [hlog, packed_side_eventually_le_rpow κ (show 0 < ε by dsimp only [ε]; linarith),
     eventually_ge_atTop (2 : ℕ)] with n hlog ht hn
   let t := Host.sideLength (instanceLength κ n)
   change (t : ℝ) ≤ (n : ℝ) ^ (1 / 2 + ε : ℝ) at ht
@@ -169,68 +164,77 @@ private theorem preprocessing_eventually_le (κ : ℕ) :
             Real.rpow_add (by positivity) (1 : ℝ) (1 / 2 + ε : ℝ), Real.rpow_one]
         _ = _ := by congr 1; ring
     _ ≤ _ := Real.rpow_le_rpow_of_exponent_le (by exact_mod_cast (by omega : 1 ≤ n))
-      (by norm_num [ε])
+      (by dsimp only [ε]; linarith)
 
-/-- The complete charged ordinary-host budget with the actual parameter-selecting callee
-is strictly subquadratic. The single coefficient and threshold depend only on the original
-fixed weight exponent, not on input data, layout, physical width or selected primes. -/
-theorem exists_cost_subquadratic_bound (κ : ℕ) :
+
+/-- A uniform ET saving δ gives the actual charged ordinary host every exponent above 2-δ/2. -/
+theorem exists_cost_bound {r : ℕ} (c : Host.Callee r) {δ a : ℝ}
+    (hδ : 0 < δ) (hδ1 : δ ≤ 1) (ha : 2 - δ / 2 < a)
+    (hc : ∀ κ : ℕ, 1 ≤ κ → ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ,
+      ∀ n ≥ N, ∀ F ≤ (n + 2) ^ κ,
+        (c.time n F : ℝ) ≤ C * (n : ℝ) ^ (3 - δ)) (κ : ℕ) :
     ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ, ∀ n ≥ N,
-      (cost κ ParameterSelecting.callee n : ℝ) ≤
-        C * (n : ℝ) ^ (2 - 1 / 5184 : ℝ) := by
-  let ε : ℝ := 1 / 65536
+      (cost κ c n : ℝ) ≤
+        C * (n : ℝ) ^ a := by
+  let ε : ℝ := (a - (2 - δ / 2)) / 10
+  have hε : 0 < ε := by dsimp only [ε]; linarith
+  have hgap : 10 * ε = a - (2 - δ / 2) := by dsimp only [ε]; ring
+  have hscaleExp : ε + (1 / 2 + ε) * (4 - δ) ≤ a := by
+    nlinarith [mul_nonneg hε.le hδ.le]
+  have hpre : 3 / 2 < a := by linarith
+  have hpower : 0 ≤ 4 - δ := by linarith
   let E := envelopeExponent κ
-  obtain ⟨C, hC, N, htime⟩ := exists_packed_calleeTime_bound κ E
+  obtain ⟨C, hC, N, htime⟩ := exists_packed_calleeTime_bound c hc κ E
   have hevent : ∀ᶠ n : ℕ in atTop,
-      (cost κ ParameterSelecting.callee n : ℝ) ≤
-        (2 * C + 4 * E + 388) * (n : ℝ) ^ (2 - 1 / 5184 : ℝ) := by
+      (cost κ c n : ℝ) ≤
+        (2 * C + 4 * E + 388) * (n : ℝ) ^ a := by
     filter_upwards [eventually_ge_atTop N, eventually_ge_atTop (2 : ℕ),
-      instanceBound_eventually_le_rpow κ (show 0 < ε by norm_num [ε]),
-      packed_side_eventually_le_rpow κ (show 0 < ε by norm_num [ε]),
-      preprocessing_eventually_le κ] with n hnN hn hq ht hpp
+      instanceBound_eventually_le_rpow κ hε,
+      packed_side_eventually_le_rpow κ hε,
+      preprocessing_eventually_le_rpow κ hpre] with n hnN hn hq ht hpp
     let t := Host.sideLength (instanceLength κ n)
-    let T := ParameterSelecting.callee.time t (2 * (n + 2) ^ E + 1)
+    let T := c.time t (2 * (n + 2) ^ E + 1)
     have ht1 : (1 : ℝ) ≤ t := by
       have h : 1 ≤ t := by dsimp only [t, Host.sideLength]; omega
       exact_mod_cast h
     have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast (by omega : 1 ≤ n)
     have ht0 : (0 : ℝ) < t := by linarith
     change (t : ℝ) ≤ (n : ℝ) ^ (1 / 2 + ε : ℝ) at ht
-    have hb : (T : ℝ) ≤ C * (t : ℝ) ^ (3 - 1 / 1296 : ℝ) := htime n hnN
-    have hpow : (t : ℝ) ^ (4 - 1 / 1296 : ℝ) =
-        (t : ℝ) * (t : ℝ) ^ (3 - 1 / 1296 : ℝ) := by
-      have h : (4 - 1 / 1296 : ℝ) = 1 + (3 - 1 / 1296) := by ring
+    have hb : (T : ℝ) ≤ C * (t : ℝ) ^ (3 - δ) := htime n hnN
+    have hpow : (t : ℝ) ^ (4 - δ) =
+        (t : ℝ) * (t : ℝ) ^ (3 - δ) := by
+      have h : (4 - δ) = 1 + (3 - δ) := by ring
       rw [h, Real.rpow_add ht0, Real.rpow_one]
-    have hT : 2 * (t : ℝ) * T ≤ 2 * C * (t : ℝ) ^ (4 - 1 / 1296 : ℝ) := by
+    have hT : 2 * (t : ℝ) * T ≤ 2 * C * (t : ℝ) ^ (4 - δ) := by
       calc
-        _ ≤ 2 * (t : ℝ) * (C * (t : ℝ) ^ (3 - 1 / 1296 : ℝ)) := by gcongr
+        _ ≤ 2 * (t : ℝ) * (C * (t : ℝ) ^ (3 - δ)) := by gcongr
         _ = _ := by rw [hpow]; ring
-    have hcube : (t : ℝ) ^ 3 ≤ (t : ℝ) ^ (4 - 1 / 1296 : ℝ) := by
+    have hcube : (t : ℝ) ^ 3 ≤ (t : ℝ) ^ (4 - δ) := by
       rw [← Real.rpow_natCast]
-      exact Real.rpow_le_rpow_of_exponent_le ht1 (by norm_num)
+      exact Real.rpow_le_rpow_of_exponent_le ht1 (by norm_num; linarith)
     have hc : ((Host.callerTime (instanceLength κ n) T + 12 : ℕ) : ℝ) ≤
         2 * (t : ℝ) * T + 355 * (t : ℝ) ^ 3 := by
       exact_mod_cast callerTime_add_twelve_le (instanceLength κ n) T
     have hcall : (Host.callerTime (instanceLength κ n) T + 12 : ℕ) ≤
-        (2 * C + 355) * (t : ℝ) ^ (4 - 1 / 1296 : ℝ) := by
+        (2 * C + 355) * (t : ℝ) ^ (4 - δ) := by
       nlinarith only [hc, hT, hcube]
-    have hscale : (n : ℝ) ^ ε * (t : ℝ) ^ (4 - 1 / 1296 : ℝ) ≤
-        (n : ℝ) ^ (2 - 1 / 5184 : ℝ) := by
+    have hscale : (n : ℝ) ^ ε * (t : ℝ) ^ (4 - δ) ≤
+        (n : ℝ) ^ a := by
       calc
-        _ ≤ (n : ℝ) ^ ε * ((n : ℝ) ^ (1 / 2 + ε : ℝ)) ^ (4 - 1 / 1296 : ℝ) := by
+        _ ≤ (n : ℝ) ^ ε * ((n : ℝ) ^ (1 / 2 + ε : ℝ)) ^ (4 - δ) := by
           gcongr
-        _ = (n : ℝ) ^ (ε + (1 / 2 + ε) * (4 - 1 / 1296) : ℝ) := by
+        _ = (n : ℝ) ^ (ε + (1 / 2 + ε) * (4 - δ) : ℝ) := by
           rw [← Real.rpow_mul (by positivity), ← Real.rpow_add (by positivity)]
-        _ ≤ _ := Real.rpow_le_rpow_of_exponent_le hn1 (by norm_num [ε])
+        _ ≤ _ := Real.rpow_le_rpow_of_exponent_le hn1 hscaleExp
     have hprod : (instanceBound κ n : ℝ) * (Host.callerTime (instanceLength κ n) T + 12 : ℕ) ≤
-        (2 * C + 355) * (n : ℝ) ^ (2 - 1 / 5184 : ℝ) := by
+        (2 * C + 355) * (n : ℝ) ^ a := by
       calc
-        _ ≤ (n : ℝ) ^ ε * ((2 * C + 355) * (t : ℝ) ^ (4 - 1 / 1296 : ℝ)) := by gcongr
-        _ = (2 * C + 355) * ((n : ℝ) ^ ε * (t : ℝ) ^ (4 - 1 / 1296 : ℝ)) := by ring
+        _ ≤ (n : ℝ) ^ ε * ((2 * C + 355) * (t : ℝ) ^ (4 - δ)) := by gcongr
+        _ = (2 * C + 355) * ((n : ℝ) ^ ε * (t : ℝ) ^ (4 - δ)) := by ring
         _ ≤ _ := mul_le_mul_of_nonneg_left hscale (by positivity)
-    have hone : (1 : ℝ) ≤ (n : ℝ) ^ (2 - 1 / 5184 : ℝ) := by
+    have hone : (1 : ℝ) ≤ (n : ℝ) ^ a := by
       simpa only [Real.rpow_zero] using
-        (Real.rpow_le_rpow_of_exponent_le hn1 (show (0 : ℝ) ≤ 2 - 1 / 5184 by norm_num))
+        (Real.rpow_le_rpow_of_exponent_le hn1 (show (0 : ℝ) ≤ a by linarith))
     have hconst := mul_le_mul_of_nonneg_left hone (show (0 : ℝ) ≤ 4 * E + 32 by positivity)
     unfold cost
     change ((ChanHe.Preprocessing.cost κ n + 4 * E + 32 +
@@ -239,5 +243,6 @@ theorem exists_cost_subquadratic_bound (κ : ℕ) :
     nlinarith only [hpp, hprod, hconst]
   obtain ⟨M, hM⟩ := eventually_atTop.mp hevent
   exact ⟨2 * C + 4 * E + 388, by positivity, M, hM⟩
+
 
 end Cslib.Algorithms.WordRAM.ThreeSum.Decision

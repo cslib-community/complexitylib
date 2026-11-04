@@ -98,21 +98,8 @@ theorem prefix_bounded {W L m t N A : ℕ} (hm : m ≤ L) (ht : t ≤ m) (bits :
       (∀ p, s.data.mem p < wordBound L m t N qs.length A) ∧
       ∀ p, wordBound L m t N qs.length A ≤ p → s.data.mem p = 0 := by
   obtain ⟨hi, _, _, _, _, halt, _⟩ := runs_wide hm ht bits X Y qs hX hY hbits le_rfl
-  have low := Runs.prefix_at_smaller_width
-    (Code.not_readsWidth_program (not_readsWidth bits) QueriedProduct.Reg.output) hW hr halt
-  have hb := low.bounded_init hi
-  have hw := pow_admissionWidth_lt_wordBound L m t N qs.length A
-  refine ⟨fun i => (hb.1 i).trans hw, fun p => (hb.2 p).trans hw, ?_⟩
-  intro p hp
-  have above : 2 ^ admissionWidth L m t N qs.length A ≤ p := hw.le.trans hp
-  rw [low.mem_above (.init hi) above]
-  cases p with
-  | zero => have := Nat.two_pow_pos (admissionWidth L m t N qs.length A); omega
-  | succ p =>
-    change (input bits L t X Y qs).getD p 0 = 0
-    apply List.getD_eq_default
-    have hlen := hi.1
-    dsimp only [Fits] at hlen
-    omega
+  exact hr.prefix_bounds_init
+    (Code.not_readsWidth_program (not_readsWidth bits) QueriedProduct.Reg.output)
+    hW hi halt (pow_admissionWidth_lt_wordBound L m t N qs.length A).le
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxProduct
