@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (tests of actual polynomial evaluator histories)
 import Complexity.Foundations.Probability.HierarchyEvaluatorInitial
+import Complexity.Foundations.Probability.HierarchyApproximateHistory
 
 /-! A positive identity/full-rate evaluator history with actual ratio-16 bins and polynomial
 preparation. The top bin carries the input, the fine bin vanishes. This exact stationary
@@ -475,6 +476,36 @@ private lemma compressed_value (HP : FourthRootHierarchyParams 16 1 16 32 8) :
         rate_pos rate_antitone hsmall 0 (fun _ => 1)
     simp only [defaultEntry, Fin.isValue, ↓reduceIte, one_ne_zero, hn, zero_div,
       base, Matrix.one_apply_ne hxy]
+
+-- Positive decoder scale with an oversized floor gives a computed child with genuine
+-- nonzero error. This tests transport inputs, not an admissible small-floor allocation.
+open Cslib.RowCompression in
+private lemma compressed_large_floor (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ∃ A, (data HP).compressedBin 2 0 0 1 4096 (request HP) = some A ∧
+      ∀ σ x, |A σ x x - base x x| = 1 := by
+  rw [compressed]
+  refine ⟨_, rfl, ?_⟩
+  intro σ x
+  have hn (j : ℕ) : 5 < NormalizedMoments.compatibleCapacity HP.K 2 j :=
+    (large_K HP).trans_le (NormalizedMoments.compatibleCapacity_bounds HP.K 2 j).1
+  have hf0 : dyadicFloor 4096 2 0 = 1 / 256 := by norm_num [dyadicFloor, dyadicSlack]
+  have hf1 : dyadicFloor 4096 2 1 = 4 := by norm_num [dyadicFloor, dyadicSlack]
+  have hd : (iterate univ (NormalizedMoments.compatibleCapacity HP.K 2) (fun _ => HP.K)
+      (dyadicFloor 4096 2) (increment 1 x) ⟨0, 0⟩ 2).defaultValue = 4 := by
+    simp only [iterate_succ, iterate_zero, hf0, hf1]
+    rw [wide_advance _ _ (hn 0) (large_K HP) (by norm_num) (by norm_num)]
+    rw [wide_advance _ _ (hn 1) (large_K HP) (by norm_num) (by norm_num)]
+  have hk (f : ZMod 5 → ℝ) : kthLargest HP.K univ f = 0 :=
+    kthLargest_eq_zero_of_card_lt (by simpa using large_K HP) f
+  have hη : HP.η₂ ≤ 4 := by
+    have hθ := HP.θ₂_lt
+    norm_num at hθ
+    linarith [HP.η₂_lt, HP.δ₀_lt_δ₁, HP.δ₁_lt, HP.θ_lt_θ₂]
+  dsimp only
+  simp only [firstRank, hk, hd, max_eq_left (by norm_num : (0 : ℝ) ≤ 4),
+    FourthRootHierarchyParams.NormalizedRow.output, HP.ρ_zero 4 hη,
+    mul_zero, zero_div]
+  norm_num [base]
 
 -- Both scheduled groups execute below capacity: this is proved for the actual iterate,
 -- not supplied as a premise of the accuracy check below.

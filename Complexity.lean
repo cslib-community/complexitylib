@@ -3717,6 +3717,7 @@ public import Complexity.Foundations.Probability.HeavyCount
 public import Complexity.Foundations.Probability.HeavyCountRarity
 public import Complexity.Foundations.Probability.HeavyCountTail
 public import Complexity.Foundations.Probability.HierarchyAccess
+public import Complexity.Foundations.Probability.HierarchyApproximateHistory
 public import Complexity.Foundations.Probability.HierarchyAtomCutoff
 public import Complexity.Foundations.Probability.HierarchyBudgetEvaluator
 public import Complexity.Foundations.Probability.HierarchyCanonicalTargets
@@ -3813,6 +3814,7 @@ public import Complexity.Foundations.Probability.RootMetric.FiniteError
 public import Complexity.Foundations.Probability.RootMetric.Minkowski
 public import Complexity.Foundations.Probability.RootMetric.Slices
 public import Complexity.Foundations.Probability.RootMetric.Stationarity
+public import Complexity.Foundations.Probability.RootMetric.WalkPerturbation
 public import Complexity.Foundations.Probability.RoutedBinAgreement
 public import Complexity.Foundations.Probability.RoutedBinPreparation
 public import Complexity.Foundations.Probability.RoutedHierarchyBins

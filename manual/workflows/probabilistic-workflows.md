@@ -701,6 +701,20 @@ most `(2^(-precision) * 64^(-slack))^4` for the assembled initial group, from ac
 calls and the original H4 graph. An empty initial ray list keeps zero without calling history
 or validating a frame; this does not restore unsupported main/residual dispatch.
 
+The [approximate-history transport](../../Complexity/Foundations/Probability/HierarchyApproximateHistory.lean)
+provides an alternative history whose dense inputs execute the actual `compressedBin` at
+their own budgets. Production dense leaves retain their semantic implementation. Successful
+literal direct/left/reset-right calls use the existing support-restricted signed-residual
+error payment. For the initial parent, the actual zero correction annihilates the product,
+so its error is exactly the weighted computed direct-child error. A strict lower-budget
+availability hypothesis constructs both changing-budget initial samples, including the zero
+coarse boundary, before taking their difference. Common completion does not increase the
+uncentered fourth moment; a paired perturbation costs at most eight times the sum of its
+two endpoint moments on the unchanged source/usage masks. The positive-scale, oversized-floor
+regression executes compression and has diagonal error exactly one; it is deliberately outside
+the small-floor accuracy allocation. These results do not yet pay the changing-request rooted
+child moments or assemble the full parent reserve/compression induction.
+
 The free per-request magnitude input has been removed. Primitive bin cutoffs have a certified
 uniform cap; allocation uses explicit finite bin, endpoint-rate and density charges. Those
 amplitudes are proved sufficient for all initial paired samples and their assembled group. Their sufficiency for other
