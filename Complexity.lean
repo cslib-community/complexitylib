@@ -3814,6 +3814,7 @@ public import Complexity.Foundations.Probability.CorrectionAtom
 public import Complexity.Foundations.Probability.CorrectionRowRecipe
 public import Complexity.Foundations.Probability.CorrectionRowTasks
 public import Complexity.Foundations.Probability.DenseRowRecipes
+public import Complexity.Foundations.Probability.DenseRowRecipes.Stability
 public import Complexity.Foundations.Probability.DetectedHierarchy
 public import Complexity.Foundations.Probability.DetectedStage
 public import Complexity.Foundations.Probability.EfronStein
@@ -3847,6 +3848,7 @@ public import Complexity.Foundations.Probability.NormalizedAtomRows.ClippedTail
 public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstPayment
 public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstSignal
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Integrated
+public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanBias
 public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanEvent
 public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanTail
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Moment

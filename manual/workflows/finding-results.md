@@ -152,10 +152,15 @@ input from those children and derives usage-slice endpoint ROW noise. Its pre-wa
 support bound pays 16K on an admitted source horizon, and an explicit logarithmic step
 choice discharges the actual second-prefix dyadic budget for positive tolerance. Mixing
 around the selected input mean does not establish its convergence to the genuine target.
+The [MeanBias route](probabilistic-workflows.md) now controls that deterministic discrepancy
+by explicit absolute residual entry and full-rank maximum errors on the same full
+environment, using the actual rho gate and joint source × usage mean. It retains the
+rate divisor and ζ scaling; deriving numerical errors from recursive relative estimates
+remains open.
 The [FirstPayment route](probabilistic-workflows.md) now supplies a finite first-signal
 payment from actual bin/correction ranges, exact importance and midpoint-density factors,
 and an explicit retained width P. Both signal clients use `spectralWalkLength`; its
-positive-tolerance guarantee leaves mean bias, mean envelopes, recursive budgets/reserves,
+positive-tolerance guarantee leaves numerical mean envelopes, recursive budgets/reserves,
 parameter/workspace growth and native RL=L open.
 `actual_normalized_fourth_moment_capacity` bounds the row fourth moment of the difference
 of output fourth roots by `C*ε^4`. Its output evaluates the actual compression iterate,

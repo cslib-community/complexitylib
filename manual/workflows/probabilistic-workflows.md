@@ -276,11 +276,29 @@ many steps.
 The [regressions](../../ComplexityTests/ActualSecondSignal.lean) check positive, nonconstant
 selected preparation, the actual H4 second-prefix client with the
 chosen steps, D=0 with a nonempty suffix, two-signal prefixes, zero children, and empty
-usage through compression. The genuine joint preparation target is unchanged. Mixing
-controls noise around the selected input's own mean; convergence of that mean to the genuine
-target is a separate bias obligation. Mean envelopes, recursive budget/reserve induction,
-recursive parameter/workspace bounds and native RL=L remain open. Finite noise payments
-do not establish these recursive conclusions.
+usage through compression. Mixing controls noise around the selected input's own mean.
+
+For deterministic preparation bias, import
+[MeanBias](../../Complexity/Foundations/Probability/NormalizedAtomRows/MeanBias.lean).
+`preparation_stability_constants` uses polynomial entry-cutoff regularity and the actual
+hierarchy rho fourth-root regularity. `preparation_sub_genuinePrep_le` compares signed
+residual A to G on the same full terminal rank slice: its bound is
+`(Lh * |A σ x y - G x y| + Lρ * rank₁(fullRank, |A σ x · - G x ·|)) / rate k`.
+`preparationError_le` accepts explicit absolute entry and full-rank envelopes; it needs
+no target-size bound. `preparation_mean_bias_le` averages this error over the actual joint
+source × usage slice against `genuinePrep(G)` and `genuineMean`, including empty slices.
+`actualSelectedSecondSignal_mean_bias_le` applies this to the real incoming-normalized
+lower-child residual and the ζ-scaled telescoping prefix at input budget i+1. The clipped
+second deterministic discrepancy is at most `min 1 (|ζ| * jointMean(preparationError))`.
+All source/copy suffixes, rates, role data and correlations remain present. The first
+coordinate is unchanged. The regressions evaluate a positive nonconstant genuine target,
+a perturbed-residual bias of one, exact-zero perturbation and empty usage.
+
+This controls bias by explicit absolute residual errors. Deriving those errors from
+recursive lower-child relative estimates, numerical mean envelopes, recursive
+budget/reserve induction, recursive parameter/workspace bounds and native RL=L remain
+open. Row mass does not provide a uniform target bound, and clipped relative error
+alone does not provide an absolute residual error.
 
 For a coarser source, `source_incoming_cost_le` quantifies the generic incoming cost as
 `32 * R * (sourceRate / stageRate)`; the fixed incoming rank is not proved to pay that
