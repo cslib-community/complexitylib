@@ -189,4 +189,109 @@ example : rowNormPow 4 1 1 (fun (_ : Unit) (_ : Fin 0) => True)
       maximum (fun _ => 0) (fun _ => 0) y) = 0 := by simp [rowNormPow]
 example : rowNormPow 4 0 1 (fun (_ : Unit) (_ : Unit) => True)
     (fun _ _ => True) (fun _ _ _ => (1 : ℝ)) = 0 := by simp [rowNormPow]
+-- A source seed removes the entire ranked column half the time. The terminal hit
+-- selects the score's nonzero branch, and the same outer bit controls every entry.
+private def halfMask (s : Bool) (_ : Vert HP) : Prop := s = true
+private def correlatedScores (σ t : Bool) : Matrix (Vert HP) (Vert HP) ℝ :=
+  if σ && t then fun _ _ => 1 else fun _ _ => 0
+
+private lemma halfMask_seeds (y : Vert HP) :
+    ({t | halfMask HP t y} : Finset Bool) = {true} := by
+  unfold halfMask
+  ext t
+  simp only [mem_filter, mem_univ, true_and, mem_singleton]
+
+private lemma correlated_detector (σ : Bool) (y : Vert HP) :
+    detector HP.toHierarchyParams (halfMask HP) (halfMask HP)
+      (correlatedScores HP σ) y = if σ then 1/2 else 0 := by
+  have h1 : kthLargest HP.J univ (fun _ : Vert HP => (1 : ℝ)) = 1 := by
+    apply le_antisymm (kthLargest_le (by norm_num) (fun _ _ => le_rfl))
+    apply (le_kthLargest_iff HP.J_pos (by norm_num : (0 : ℝ) < 1)).mpr
+    simp only [le_refl, filter_true, card_univ, Fintype.card_fin]
+    omega
+  have h0 : kthLargest HP.J univ (fun _ : Vert HP => (0 : ℝ)) = 0 :=
+    le_antisymm (kthLargest_le le_rfl (fun _ _ => le_rfl)) kthLargest_nonneg
+  simp only [detector, halfMask_seeds, expect_singleton]
+  have ht : ({x : Vert HP | halfMask HP true x} : Finset _) = univ := by
+    simp only [halfMask, filter_true]
+  have hf : ({x : Vert HP | halfMask HP false x} : Finset _) = ∅ := by
+    simp only [halfMask, Bool.false_eq_true, filter_false]
+  have he (f : Vert HP → ℝ) : kthLargest HP.J ∅ f = 0 := by simp [kthLargest]
+  cases σ <;>
+    norm_num [expect_eq_sum_div_card, Fintype.sum_bool, ht, hf, correlatedScores, h1, h0, he]
+
+example : rowNormPow 4 1 1
+    (fun (_ : Bool) (x : Vert HP) => x = target HP)
+    (fun _ (y : Vert HP) => y = target HP)
+    (fun σ _ y => detector HP.toHierarchyParams (halfMask HP) (halfMask HP)
+      (correlatedScores HP σ) y -
+      detector HP.toHierarchyParams (halfMask HP) (halfMask HP)
+        (correlatedScores HP false) y) = 1/32 := by
+  simp only [correlated_detector]
+  have hs : ({x : Vert HP | x = target HP} : Finset _) = {target HP} := by
+    ext x
+    simp only [mem_filter, mem_univ, true_and, mem_singleton]
+  norm_num [rowNormPow, hs, expect_eq_sum_div_card, Fintype.sum_bool]
+
+-- The new transport consumes correlated scores and retains the source/terminal masks.
+-- The child's normalization is 1/16, distinct from the parent's normalization 1.
+example : rowNormPow 4 1 1
+    (fun (_ : Bool) (x : Vert HP) => x = target HP)
+    (fun _ (y : Vert HP) => y = target HP)
+    (fun σ _ y => detector HP.toHierarchyParams (halfMask HP) (halfMask HP)
+      (correlatedScores HP σ) y -
+      detector HP.toHierarchyParams (halfMask HP) (halfMask HP)
+        (correlatedScores HP false) y) ≤
+    (Fintype.card (Vert HP) : ℝ) / 8 *
+      rowNormPow 4 1 (1/16)
+        (fun (p : Bool × (Bool × Bool)) x => halfMask HP p.2.1 x)
+        (fun p y => halfMask HP p.2.2 y)
+        (fun p x y => correlatedScores HP p.1 p.2.2 x y -
+          correlatedScores HP false p.2.2 x y) := by
+  have h := detector_row_moment_transport HP.toHierarchyParams (halfMask HP) (halfMask HP)
+    (fun (_ : Bool) (x : Vert HP) => x = target HP)
+    (fun _ (y : Vert HP) => y = target HP)
+    (N := 1) (u := 1) (v := 1/16) (π := 1/2)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by
+      intro y
+      norm_num only [dens_eq_card_div_card, halfMask_seeds, card_singleton,
+        Fintype.card_bool, Nat.cast_ofNat, le_refl])
+    (correlatedScores HP) (fun _ => correlatedScores HP false)
+  norm_num only [one_mul, mul_one, div_div, one_div_div] at h
+  convert h using 1; ring
+
+-- No positive-density premise is needed when there are no terminal vertices.
+example : (∑ y : Fin 0, |detector HP.toHierarchyParams
+    (fun (_ : Bool) (_ : Fin 0) => True) (fun (_ : Bool) _ => False)
+    (fun _ _ _ => 7) y| ^ 4) = 0 := by simp
+
+-- Concrete frame channels distinguish inherited sampling from the detector rank reset.
+-- Both source/terminal padding and a free third role survive the terminal split.
+local instance : Fact (Nat.Prime 5) := ⟨by decide⟩
+open Matrix.HierarchyParams.H4RankEnvironment
+private def resetRequest : HierarchyTask.Request HP.k (Fin 3) (ZMod 5) :=
+  ⟨.row 0 (.detector ⟨0, HP.k_pos⟩), gridChannel 0 2 [1],
+    gridChannel 2 1 [2, 3], gridChannel 2 3 [2, 3]⟩
+private lemma reset_admissible : Admissible (resetRequest HP) :=
+  ⟨by change (0 : Fin 3) ≠ 2; decide, rfl, rfl⟩
+
+example :
+    (dens {σ : Environment 5 3 | (resetRequest HP).source.retains (channels 1) σ 0} : ℝ) =
+      16/625 ∧
+    (dens {s | stageSource 1 (fun _ : Unit => 0) (resetRequest HP)
+      (reset_admissible HP) s ()} : ℝ) = 81/625 ∧
+    (dens {t | splitTerminal 1 (fun _ : Unit => 0) (resetRequest HP) t ()} : ℝ) = 81/625 := by
+  have hh := stage_channels 1 (fun _ : Unit => (0 : ZMod 5))
+    (resetRequest HP) (reset_admissible HP) (by norm_num)
+    (fun _ _ _ => Subsingleton.elim _ _)
+    (⟨2, 4, by decide, by decide⟩ : Horizon 5) (k := 1) (by decide) rfl
+  refine ⟨?_, ?_, ?_⟩
+  · rw [channel_density 1 (resetRequest HP).source 2 rfl]
+    norm_num [side, Nat.ceilDiv_eq_add_pred_div]
+  · convert hh.1.dens_X () using 1
+    norm_num [side, Nat.ceilDiv_eq_add_pred_div]
+  · convert hh.1.dens_Y () using 1
+    norm_num [side, Nat.ceilDiv_eq_add_pred_div]
+
 end PilotStabilityRegression
