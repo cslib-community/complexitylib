@@ -160,3 +160,68 @@ example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ} [Fact P.Prime]
     let B' := {B with rankCharge := 7}
     B'.initialClippedRootGroupCharge M d r ka 3 = 0 :=
   BudgetData.initialClippedRootGroupCharge_eq_zero_of_le _ M d r ka 3 hd
+
+-- A supported, nonconstant error is averaged on the broad slice before the fourth
+-- power. Its exact fourth moment is 1/16, against own-usage moment 1/2: density^3.
+example :
+    rowNormPow 4 1 1 (fun (_ : Fin 2) (_ : Unit) => True) (fun _ _ => True)
+      (fun _ => rowSliceMean (fun (_ : Fin 2) (_ : Unit) => True) (fun _ _ => True)
+        (fun σ _ _ => if σ = 0 then (1 : ℝ) else 0)) = 1 / 16 ∧
+    rowNormPow 4 1 1 (fun (_ : Fin 2) (_ : Unit) => True) (fun σ _ => σ = 0)
+      (fun σ _ _ => if σ = 0 then (1 : ℝ) else 0) = 1 / 2 := by
+  norm_num [rowNormPow, rowSliceMean, expect_eq_sum_div_card, Fin.sum_univ_two]
+
+-- The new sharp coefficient keeps the actual rounded masses. P=5 has mass(1)=81/625,
+-- so the fine coefficient is neither its old linear value nor an exact nominal identity.
+example {HP : FourthRootHierarchyParams 16 1 16 32 8} [Fact (Nat.Prime 5)]
+    (B : BudgetData HP 5) (hcap : B.binCap = 16) :
+    B.initialClippedRootCoefficient 1 0 = 512 * (99 : ℝ) ^ 3 * 16 ∧
+    B.initialClippedRootCoefficient 0 1 = 80000 / 81 ∧
+    B.initialClippedRootCoefficient 1 1 = 512 * (99 : ℝ) ^ 3 ∧
+    B.initialClippedRootCoefficient 0 1 <
+      512 * (99 : ℝ) ^ 3 * (625 / 1296) := by
+  norm_num [BudgetData.initialClippedRootCoefficient, hcap, rate, gridMass,
+    show side 5 0 = 5 from rfl, show side 5 1 = 3 from rfl]
+
+-- Fix charge 7 BEFORE arbitrary exponents and budgets. Both nonzero endpoint slacks
+-- use their own actual scheduled request precision; the final window is retained.
+example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ}
+    (B : BudgetData HP P) (hrate : B.binRate = rate) (M d ks ka bin : ℕ) :
+    let B' := {B with rankCharge := 7}
+    let r : HierarchyTask.Request HP.k (Fin 3) (ZMod P) :=
+      ⟨.row 0 (.pilotInput ⟨0, HP.k_pos⟩), gridChannel 0 ks [],
+        gridChannel 2 ka [], gridChannel 2 ka []⟩
+    ∀ δ ∈ ({d, 2 * d} : Finset ℕ),
+    let m := LogSpaceEstimation.lastBudget M δ B'.slack (B'.sampleScale r (some bin))
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (BudgetData.midpoint r) r.terminal (B'.binRate bin)
+    (2 : ℝ) ^ (if bin ≤ ka then (ka : ℝ) - bin else -3 * ((bin : ℝ) - ka)) *
+        (2 : ℝ) ^ (-B'.requestPrecision m Q.direct) ≤
+      (2 : ℝ) ^ (-B'.requestPrecision M r) * (2 : ℝ) ^ (-7 : ℝ) *
+        (2 : ℝ) ^ ((δ : ℝ) / (16 * B'.slack) + 1 / 16 -
+          3 * |(bin : ℝ) - ka| / 4) := by
+  dsimp only
+  intro δ _
+  exact BudgetData.requestPrecision_initial_clipped_adjust {B with rankCharge := 7}
+    (by norm_num) hrate M δ ks ka bin _ rfl rfl rfl
+
+-- The actual coefficient-times-own-precision endpoint payment, with a single fixed
+-- structural charge and no parent accuracy hypothesis. Zero endpoints remain allowed.
+example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ} [Fact P.Prime]
+    (B : BudgetData HP P) (hrate : B.binRate = rate) (H : Horizon P)
+    (M d ks ka bin : ℕ) (ha : ka ≤ H.maxExponent) (hi : bin ≤ H.maxExponent) :
+    let B' := {B with rankCharge := 7}
+    let r : HierarchyTask.Request HP.k (Fin 3) (ZMod P) :=
+      ⟨.row 0 (.pilotInput ⟨0, HP.k_pos⟩), gridChannel 0 ks [],
+        gridChannel 2 ka [], gridChannel 2 ka []⟩
+    let m := LogSpaceEstimation.lastBudget M d B'.slack (B'.sampleScale r (some bin))
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (BudgetData.midpoint r) r.terminal (B'.binRate bin)
+    B'.initialClippedRootCoefficient ka bin * B'.initialEndpointCharge m Q.direct 3 ≤
+      max (512 * (6 * B'.binCap + 3) ^ 3) (32768 * B'.binCap ^ 3) * (3 : ℝ) ^ 4 *
+        ((2 : ℝ) ^ (-B'.requestPrecision M r) * (2 : ℝ) ^ (-7 : ℝ) *
+          (2 : ℝ) ^ ((d : ℝ) / (16 * B'.slack) + 1 / 16 -
+            3 * |(bin : ℝ) - ka| / 4)) ^ 4 := by
+  dsimp only
+  exact BudgetData.initialClippedRootEndpoint_le {B with rankCharge := 7}
+    (by norm_num) hrate H M d ks ka bin ha hi _ rfl rfl rfl 3

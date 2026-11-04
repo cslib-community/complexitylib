@@ -875,8 +875,7 @@ theorem initial_compressed_precision_clipped_first
     let coarse := LogSpaceEstimation.lastBudget M (2 * dyadicSlack (Nat.log2 M + 1) j)
       B.slack (B.sampleScale q (some bin))
     if fine = coarse then 0 else
-    8 * ((512 * (6 * B.binCap + 3) ^ 3) *
-      (rate bin * (gridMass P ka / gridMass P (max ka bin)) / rate ka)) *
+    8 * (B.initialClippedRootCoefficient ka bin) *
       (B.initialEndpointCharge fine Q.direct coefficient +
         B.initialEndpointCharge coarse Q.direct coefficient)
   have hg (j : ℕ) := B.completedGroup_initial_compressed_clipped_mean exponent ζ floor M

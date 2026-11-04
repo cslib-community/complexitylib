@@ -1213,11 +1213,39 @@ The own-mask integration is now
 Fubini cancels the actual joint slice densities. Successful compression and canonical
 normalization give equality off the direct child's usage, so its own scalar rooted IH pays
 the integrated mean without an environment-atom penalty or approximate canonical support.
-For terminal exponent $a$ and bin exponent $i$, the coefficient remains
-$512(6\,\mathrm{binCap}+3)^3\,\mathrm{rate}(i)\,
-\mathrm{gridMass}(a)/(\mathrm{gridMass}(\max(a,i))\,\mathrm{rate}(a))$.
-This is a coarse Fubini payment: it retains rounded masses and does **not** prove the
-reference's sharper fine-bin cubic decay.
+For terminal exponent $a$ and bin exponent $i$,
+[`initialClippedRootCoefficient`](../../Complexity/Foundations/Probability/HierarchyInitialPerturbation.lean)
+uses the coarse coefficient $512(6\,\mathrm{binCap}+3)^3\,\mathrm{rate}(i)/\mathrm{rate}(a)$
+when $i\le a$. For $i>a$ it uses
+$$
+2048\,\mathrm{binCap}^3
+\left(\frac{\mathrm{rate}(i)}{\mathrm{rate}(a)}\right)^4
+\frac{\mathrm{gridMass}(a)}{\mathrm{gridMass}(i)}.
+$$
+The fine proof converts bounded normalized child root error to ordinary error on its own
+usage slice, then changes terminal normalization before Jensen. Three powers of the
+relative usage density remain. Actual masks and child values may be correlated; only the
+separate source and terminal role marginals factor. On the admitted horizon, rounded mass
+comparison bounds the fine coefficient by
+$32768\,\mathrm{binCap}^3(\mathrm{rate}(i)/\mathrm{rate}(a))^3$.
+Thus the rate-16 grid gives norm decay $2^{-3(i-a)}$, not a copied rate/mass identity.
+
+[`requestPrecision_initial_clipped_transfer`](../../Complexity/Foundations/Probability/HierarchyInitialFeasibility.lean)
+combines this piecewise norm scale with the literal direct child's own precision. The
+inherited source cancels and structural rank decreases, leaving $2^{-|i-a|}$ before budget
+loss. `requestPrecision_initial_clipped_scheduled` retains the actual
+$\max(d,\mathrm{scaleCutoff})/(16\,\mathrm{slack})$ loss.
+`requestPrecision_initial_clipped_adjust` uses the literal scale cutoff
+$\mathrm{slack}(1+4|i-a|)$, giving the norm payment
+$$
+2^{-\mathrm{requestPrecision}(M,r)}\,2^{-\mathrm{rankCharge}}\,
+2^{d/(16\,\mathrm{slack})+1/16-3|i-a|/4}.
+$$
+The structural charge is fixed before all source, terminal and bin exponents.
+`initialClippedRootEndpoint_le` raises the whole payment to the fourth power and combines
+it with the rounded coefficient at the actual scheduled endpoint, with zero endpoints
+charged zero. Apply it separately at $d$ and $2d$. This finite allocation retains the prefix
+slack cost; it does not absorb cardinality cubes or ordinary-progress/preparation costs.
 
 `pairedSample_initial_compressed_clipped_precision` uses the actual fine/coarse
 `lastBudget` calls, strict lower budgets and each direct request's own precision. Equal
@@ -1233,8 +1261,8 @@ It adds the semantic omitted/inactive deficit to the clipped prefix perturbation
 `initialComputedPrecisionMoment` takes the minimum of that payment and the previous first
 mean cost. The existing precision four-statistic, `actualFourMax`, raw `clippedError` and
 sharp-reserve proofs consume this minimum. Ordinary first sampling noise and saturated
-second preparation retain their previous costs. Their schedule-dependent payment, sharper
-fine-bin allocation, cardinality-cube absorption and the simultaneous changing-request
+second preparation retain their previous costs. Their schedule-dependent payment,
+cardinality-cube absorption and the simultaneous changing-request
 invariant remain open; no uniformly paid reserve or native endpoint follows here.
 The [two-atom regression](../../ComplexityTests/InitialTwoPayment.lean) shows why: scalar
 rooted fourth error $1/32$ can coexist with centered normalized fourth error $1$ after

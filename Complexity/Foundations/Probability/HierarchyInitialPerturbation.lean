@@ -10,6 +10,8 @@ public import Complexity.Foundations.Probability.RootMetric.FiniteEnvelope
 public import Complexity.Foundations.Probability.RootMetric.ClippedMean
 public import Complexity.Foundations.Probability.HierarchyInitialMean
 import Complexity.Foundations.Data.List.Blocks
+import Complexity.Foundations.Probability.GridRowMoment.Rate
+import Complexity.Foundations.Probability.HierarchyInitialFeasibility
 
 /-!
 # Executed initial group and prefix perturbations
@@ -19,8 +21,9 @@ executed groups before parent compression. These original finite comparisons ret
 computed history and its changing budgets. They do not prove the simultaneous child IH
 or replace production dense leaves. Positive carried-child clipped means integrate onto
 own-request rooted precision before signed pairing and correlated prefix addition. The
-coarse Fubini coefficient retains rounded masses; sharper fine-bin decay, ordinary sampling
-progress and saturated preparation remain separate payments.
+piecewise coefficient retains rounded masses and sharp fine-bin decay. Actual scheduled
+precision pays the endpoint with an explicit slack window. Ordinary sampling progress,
+cardinality-cube absorption and saturated preparation remain separate payments.
 -/
 public section
 noncomputable section
@@ -149,10 +152,90 @@ theorem positiveSample_initial_compressed_clipped_mean
   rw [he] at hlocal
   convert hlocal using 1; ring
 
+/-- Moment coefficient for a positive initial clipped mean. Coarse bins use canonical
+mean domination. Fine bins use bounded ordinary conversion and exact terminal density
+normalization; on the rate-16 grid their norm factor decays cubically in base two. -/
+@[expose] def initialClippedRootCoefficient (ka bin : ℕ) : ℝ :=
+  if bin ≤ ka then
+    (512 * (6 * B.binCap + 3) ^ 3) *
+      (rate bin * (gridMass P ka / gridMass P (max ka bin)) / rate ka)
+  else
+    (2048 * B.binCap ^ 3) *
+      ((rate bin / rate ka) ^ 4 * (gridMass P ka / gridMass P bin))
+
+omit [Fact P.Prime] in
+/-- Both branches of the actual rounded-mass coefficient are nonnegative. -/
+lemma initialClippedRootCoefficient_nonneg (ka bin : ℕ) :
+    0 ≤ B.initialClippedRootCoefficient ka bin := by
+  unfold initialClippedRootCoefficient
+  have hc := B.binCap_nonneg
+  have hm (k : ℕ) : 0 ≤ gridMass P k := by unfold gridMass; positivity
+  split_ifs
+  · exact mul_nonneg (by positivity)
+      (div_nonneg (mul_nonneg (rate_pos bin).le (div_nonneg (hm ka) (hm _))) (rate_pos ka).le)
+  · exact mul_nonneg (by positivity) (mul_nonneg (by positivity) (div_nonneg (hm ka) (hm bin)))
+
+/-- Fine-bin fourth moments decay with the cube of the nominal rate ratio. The factor
+sixteen is the actual rounded-grid comparison, not an assumed rate/mass equality. -/
+lemma initialClippedRootCoefficient_fine_le (H : Horizon P) (ka bin : ℕ)
+    (ha : ka ≤ H.maxExponent) (hi : bin ≤ H.maxExponent) (hf : ka < bin) :
+    B.initialClippedRootCoefficient ka bin ≤
+      (32768 * B.binCap ^ 3) * (rate bin / rate ka) ^ 3 := by
+  rw [initialClippedRootCoefficient, ite_eq_right (not_le.mpr hf)]
+  have hc := B.binCap_nonneg
+  have hm := gridMass_bounds H ha
+  have hn := gridMass_bounds H hi
+  have hratio : gridMass P ka / gridMass P bin ≤ 16 * rate ka / rate bin :=
+    (div_le_div_of_nonneg_left (hm.1.trans' (rate_pos ka).le) (rate_pos bin) hn.1).trans
+      (div_le_div_of_nonneg_right hm.2 (rate_pos bin).le)
+  calc
+    _ ≤ (2048 * B.binCap ^ 3) * ((rate bin / rate ka) ^ 4 *
+        (16 * rate ka / rate bin)) := by
+      gcongr
+    _ = _ := by field_simp [(rate_pos ka).ne', (rate_pos bin).ne']; ring
+
+private lemma rate_ratio_two_rpow (ka bin : ℕ) :
+    rate bin / rate ka = (2 : ℝ) ^ (4 * ((ka : ℝ) - bin)) := by
+  have he (k : ℕ) : rate k = (2 : ℝ) ^ (-4 * (k : ℝ)) := by
+    calc
+      rate k = ((2 : ℝ) ^ (k : ℝ))⁻¹ ^ 4 := by rw [Real.rpow_natCast]; rfl
+      _ = ((2 : ℝ) ^ (-(k : ℝ))) ^ 4 := by rw [Real.rpow_neg (by norm_num : (0 : ℝ) ≤ 2)]
+      _ = (2 : ℝ) ^ (-4 * (k : ℝ)) := by
+        rw [← Real.rpow_natCast, ← Real.rpow_mul (by norm_num : (0 : ℝ) ≤ 2)]
+        congr 1
+        ring
+  rw [he, he, ← Real.rpow_sub (by norm_num : (0 : ℝ) < 2)]
+  congr 1
+  ring
+
+/-- A uniform moment envelope for the actual piecewise coefficient. Its fourth root
+has exponent `a-i` for coarse bins and `-3(i-a)` for fine bins. -/
+lemma initialClippedRootCoefficient_le (H : Horizon P) (ka bin : ℕ)
+    (ha : ka ≤ H.maxExponent) (hi : bin ≤ H.maxExponent) :
+    B.initialClippedRootCoefficient ka bin ≤
+      max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3) *
+        ((2 : ℝ) ^ (if bin ≤ ka then (ka : ℝ) - bin else -3 * ((bin : ℝ) - ka))) ^ 4 := by
+  by_cases hf : bin ≤ ka
+  · rw [ite_eq_left hf, initialClippedRootCoefficient, ite_eq_left hf, max_eq_left hf]
+    have hm : gridMass P ka ≠ 0 := ne_of_gt ((rate_pos ka).trans_le (gridMass_bounds H ha).1)
+    rw [div_self hm, mul_one, rate_ratio_two_rpow,
+      ← Real.rpow_mul_natCast (by norm_num : (0 : ℝ) ≤ 2)]
+    have he : 4 * ((ka : ℝ) - bin) = ((ka : ℝ) - bin) * (4 : ℕ) := by norm_num; ring
+    rw [he]
+    exact mul_le_mul_of_nonneg_right (le_max_left _ _) (by positivity)
+  · apply (B.initialClippedRootCoefficient_fine_le H ka bin ha hi (Nat.lt_of_not_ge hf)).trans
+    rw [ite_eq_right hf, rate_ratio_two_rpow,
+      ← Real.rpow_mul_natCast (by norm_num : (0 : ℝ) ≤ 2),
+      ← Real.rpow_mul_natCast (by norm_num : (0 : ℝ) ≤ 2)]
+    have he : 4 * ((ka : ℝ) - bin) * (3 : ℕ) =
+        -3 * ((bin : ℝ) - ka) * (4 : ℕ) := by norm_num; ring
+    rw [he]
+    exact mul_le_mul_of_nonneg_right (le_max_right _ _) (by positivity)
+
 /-- Literal positive conditional means integrated onto the direct child's own source
 and usage. Rounded grid masses remain in the linear coefficient. This is the coarse
 Fubini payment; it does not claim the sharper fine-bin cubic decay or pay sampling noise. -/
-theorem positiveSample_initial_compressed_clipped_root
+private theorem positiveSample_initial_compressed_clipped_root_coarse
     (hrate : B.binRate = rate)
     (hcutoff : B.cutoff = fun i => boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1)
       rate 1 i (fun _ => 1))
@@ -240,6 +323,298 @@ theorem positiveSample_initial_compressed_clipped_root
     rw [hratio y, hrate] at h
     simpa only [hrate, Q, C, Xs, Ya] using h
 
+/-- Fine bins use bounded ordinary conversion on their own usage slice before
+changing terminal normalization. Rounded masses occur once, rather than to the fourth power. -/
+private theorem positiveSample_initial_compressed_clipped_root_fine
+    (hrate : B.binRate = rate)
+    (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ)
+    (ζ floor : ℝ) (M m bin : ℕ) (hm : m < M)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (s t : Fin 3) (hst : s ≠ t) (ks ka : ℕ) (ss st : List (ZMod P))
+    (hs : r.source = gridChannel s ks ss) (ht : r.terminal = gridChannel t ka st)
+    (hfine : ka ≤ bin) (hC : ∀ x y, 0 ≤ B.base x y)
+    (D R : Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+    (hd :
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (midpoint r) r.terminal (B.binRate bin)
+      B.compressedBin m bin (exponent Q.direct) ζ floor Q.direct = some D)
+    (hr :
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (midpoint r) r.terminal (B.binRate bin)
+      B.compressedBin m bin (exponent Q.right) ζ floor Q.right = some R) :
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    let C := denseChild B.padding id Q.direct (B.cutoff bin) (B.auxiliary bin)
+      HP.ρ HP.K B.base
+    let Xs := X s (side P ks) (CopyPadding.identifier B.padding ss)
+    let Ya := Y t (side P ka) (CopyPadding.identifier B.padding st)
+    ∃ A, B.positiveSample (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+        else none) m bin (.pilotInput ⟨0, HP.k_pos⟩) r = some A ∧
+      rowNormPow 4 P r.source.rate Xs Ya
+        (fun _ x y => min 1 (|rowSliceMean Xs Ya (A - B.initialSample r bin) x y| /
+          (rate ka + B.base x y))) ≤
+        (2048 * B.binCap ^ 3) *
+          ((rate bin / rate ka) ^ 4 * (gridMass P ka / gridMass P bin)) *
+        rootDistPow 4 P Q.direct.source.rate
+          (fun σ x => Q.direct.source.retains (channels B.padding) σ x)
+          (fun σ y => Q.direct.usage.retains (channels B.padding) σ y) D C := by
+  dsimp only
+  let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+    r.source (midpoint r) r.terminal (B.binRate bin)
+  let C := denseChild B.padding id Q.direct (B.cutoff bin) (B.auxiliary bin)
+    HP.ρ HP.K B.base
+  let Xs := X s (side P ks) (CopyPadding.identifier B.padding ss)
+  let Ya := Y t (side P ka) (CopyPadding.identifier B.padding st)
+  let U := Y t (side P bin) (CopyPadding.identifier B.padding st)
+  let q := gridMass P bin / gridMass P ka
+  let b := rate bin * (gridMass P ka / gridMass P bin)
+  have hmpos (k : ℕ) : 0 < gridMass P k := by
+    unfold gridMass
+    exact pow_pos (div_pos (by exact_mod_cast side_pos P k (Fact.out : P.Prime).pos)
+      (by exact_mod_cast (Fact.out : P.Prime).pos)) 4
+  have hq : 0 < q := div_pos (hmpos bin) (hmpos ka)
+  have hb : 0 ≤ b := mul_nonneg (rate_pos bin).le (div_pos (hmpos ka) (hmpos bin)).le
+  have hu : (fun σ y => Q.direct.usage.retains (channels B.padding) σ y) = U := by
+    funext σ y
+    simp only [Q, HierarchyTask.rawRequests, ht, hrate, gridChannel, rate_min,
+      max_eq_right hfine, CorrectionRowTask.Channel.retains, channels, semanticSide_grid, U, Y]
+  have hx : (fun σ x => Q.direct.source.retains (channels B.padding) σ x) = Xs := by
+    funext σ x
+    simp only [Q, HierarchyTask.rawRequests, hs, Xs, gridChannel,
+      CorrectionRowTask.Channel.retains, channels, semanticSide_grid, X]
+  have hratio (y : ZMod P) : HierarchyTask.usageRatio (channels B.padding)
+      r.terminal Q.direct y = gridMass P ka / gridMass P bin := by
+    apply usageRatio_grid B.padding r.terminal Q.direct ka bin (by rw [ht]; rfl)
+    dsimp only [Q, HierarchyTask.rawRequests]
+    rw [ht, hrate]
+    exact (rate_min ka bin).trans (congrArg rate (max_eq_right hfine))
+  obtain ⟨hA, _⟩ := B.positiveSample_initial_compressed exponent ζ floor M m bin hm r D R hd hr
+  let A : Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ := fun σ x y => b * D σ x y
+  refine ⟨A, ?_, ?_⟩
+  · convert hA using 1
+    congr 1
+    change A = (fun σ x y => B.binRate bin *
+      HierarchyTask.usageRatio (channels B.padding) r.terminal Q.direct y * D σ x y)
+    funext σ x y
+    rw [hratio, hrate]
+  have hru := B.compressedBin_range_usage m bin (exponent Q.direct) ζ floor Q.direct D hd
+  have hoff (σ : Environment P 3) (x y : ZMod P) (hy : ¬ U σ y) :
+      D σ x y = C σ x y := by
+    rw [← hu] at hy
+    rw [hru.2 σ x y hy]
+    exact (normalizedRequest_zero_off_usage B.padding id Q.direct _ _ _ _ _ σ x y hy).symm
+  have hside : side P bin ≤ side P ka := by
+    rw [side_eq_ceil, side_eq_ceil]
+    gcongr
+    norm_num
+  have hsub (σ : Environment P 3) (y : ZMod P) : U σ y → Ya σ y := by
+    intro hy
+    apply mem_retentionBox.2
+    exact fun i => ((mem_retentionBox.1 hy) i).trans_le hside
+  have hdens (k : ℕ) (x y : ZMod P) :
+      (({σ | Xs σ x ∧ Y t (side P k) (CopyPadding.identifier B.padding st) σ y} :
+        Finset (Environment P 3)).dens : ℝ) = gridMass P ks * gridMass P k := by
+    dsimp only [Xs, X, Y]
+    have hh := congrArg (fun z : ℚ≥0 => (z : ℝ))
+      (independent (P := P) s t hst.symm (side P ks) (side P k)
+        (CopyPadding.identifier B.padding ss x) (CopyPadding.identifier B.padding st y))
+    have hmarg (j : ℕ) (v : ZMod P) :
+        (dens {a : FrameChannel P 4 1 | frameRetains P 4 (side P j) a v} : ℝ) =
+          gridMass P j := by
+      have hh := congrArg (fun z : ℚ≥0 => (z : ℝ))
+        (dens_eval_mem_retentionBox (P := P) (H := 4) (r := 1)
+          (by decide) (side_le P j) v)
+      push_cast at hh
+      simp only [nnratCast_dens] at hh ⊢
+      convert hh using 1
+      congr 2
+    have hl := hmarg ks (CopyPadding.identifier B.padding ss x)
+    have hr := hmarg k (CopyPadding.identifier B.padding st y)
+    simp only [NNRat.cast_mul, nnratCast_dens] at hh hl hr ⊢
+    convert hh.trans (congrArg₂ (· * ·) hl hr) using 1
+    congr 2
+    apply congrArg Finset.card
+    ext σ
+    simp only [mem_filter, mem_univ, true_and]
+  have hmean (x y : ZMod P) : rowSliceMean Xs Ya (D - C) x y =
+      q * rowSliceMean Xs U (D - C) x y := by
+    let S : Finset (Environment P 3) := {σ | Xs σ x ∧ Ya σ y}
+    let T : Finset (Environment P 3) := {σ | Xs σ x ∧ U σ y}
+    have hT : T.Nonempty := by
+      apply dens_ne_zero.mp
+      have htpos : (0 : ℝ) < T.dens := by
+        change 0 < (({σ | Xs σ x ∧ U σ y} : Finset (Environment P 3)).dens : ℝ)
+        rw [hdens bin]
+        exact mul_pos (hmpos ks) (hmpos bin)
+      exact_mod_cast htpos.ne'
+    have hh := expect_mul_dens_div_of_subset (S := S) (T := T)
+      (by intro σ hσ; simp only [S, T, mem_filter, mem_univ, true_and] at hσ ⊢
+          exact ⟨hσ.1, hsub σ y hσ.2⟩) hT
+      (fun σ => D σ x y - C σ x y)
+      (by intro σ hσ hn
+          have hy : ¬ U σ y := by
+            simp only [S, mem_filter, mem_univ, true_and] at hσ
+            simpa only [T, mem_filter, mem_univ, true_and, hσ.1, true_and] using hn
+          exact sub_eq_zero.mpr (hoff σ x y hy))
+    rw [← mul_expect] at hh
+    have hratio : (S.dens : ℝ) / T.dens = q⁻¹ := by
+      change (({σ | Xs σ x ∧ Ya σ y} : Finset (Environment P 3)).dens : ℝ) /
+        (({σ | Xs σ x ∧ U σ y} : Finset (Environment P 3)).dens : ℝ) = _
+      rw [hdens ka, hdens bin]
+      dsimp only [q]
+      field_simp [(hmpos ks).ne', (hmpos ka).ne', (hmpos bin).ne']
+    rw [hratio] at hh
+    change (𝔼 σ ∈ S, (D σ x y - C σ x y)) = q * (𝔼 σ ∈ T, (D σ x y - C σ x y))
+    rw [← hh, ← mul_assoc, mul_inv_cancel₀ hq.ne', one_mul]
+  have hNu : 0 ≤ (P : ℝ) * r.source.rate := by
+    rw [hs]; exact mul_nonneg (Nat.cast_nonneg _) (rate_pos ks).le
+  have hj := rowNormPow_sliceMean_change_terminal_fourth_le hNu hq.le Xs Ya U (D - C)
+    hmean (by intro x y; rw [hdens ka, hdens bin]; dsimp only [q]; field_simp [(hmpos ka).ne'])
+  have hrange := rowNormPow_sub_le_rootDistPow (s := 4) (by decide) hNu
+    (X := Xs) (Y := U) (H := D) (H' := C) (C := 2 * B.binCap)
+    (fun σ x y _ _ => hru.1 σ x y)
+    (fun σ x y _ _ => normalizedRequest_mem_Icc HP B.padding Q.direct (B.cutoff bin)
+      B.binCap_nonneg (B.cutoff_bounds bin) _ _ σ x y)
+  norm_num only [Nat.cast_ofNat, show ((4 : ℝ) - 1) / 4 = 3 / 4 by norm_num] at hrange
+  have hroot : ((2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4 = (2 * B.binCap) ^ 3 := by
+    rw [← Real.rpow_natCast, ← Real.rpow_mul (mul_nonneg (by norm_num) B.binCap_nonneg)]
+    norm_num
+  have hfactor : (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4 = 2048 * B.binCap ^ 3 := by
+    rw [mul_pow, hroot]
+    ring
+  rw [hfactor] at hrange
+  have heq (x y : ZMod P) : rowSliceMean Xs Ya (A - B.initialSample r bin) x y =
+      b * rowSliceMean Xs Ya (D - C) x y := by
+    simp only [rowSliceMean]
+    rw [mul_expect]
+    apply expect_congr rfl
+    intro σ _
+    change b * D σ x y - B.binRate bin *
+      HierarchyTask.usageRatio (channels B.padding) r.terminal Q.direct y * C σ x y = _
+    rw [hratio, hrate]
+    change b * D σ x y - rate bin * (gridMass P ka / gridMass P bin) * C σ x y =
+      b * (D σ x y - C σ x y)
+    dsimp only [b]
+    ring
+  have hclip : rowNormPow 4 P r.source.rate Xs Ya
+      (fun _ x y => min 1 (|rowSliceMean Xs Ya (A - B.initialSample r bin) x y| /
+        (rate ka + B.base x y))) ≤
+      (b / rate ka) ^ 4 * rowNormPow 4 P r.source.rate Xs Ya
+        (fun _ => rowSliceMean Xs Ya (D - C)) := by
+    apply rowNormPow_le_mul hNu
+    intro σ x y _ _
+    rw [abs_of_nonneg (show 0 ≤ min 1
+      (|rowSliceMean Xs Ya (A - B.initialSample r bin) x y| /
+        (rate ka + B.base x y)) by have := hC x y; have := rate_pos ka; positivity)]
+    rw [← mul_pow]
+    apply pow_le_pow_left₀ (le_min (by norm_num)
+      (div_nonneg (abs_nonneg _) (by linarith [rate_pos ka, hC x y])))
+    apply (min_le_right _ _).trans
+    rw [heq, abs_mul, abs_of_nonneg hb, div_mul_eq_mul_div]
+    exact div_le_div_of_nonneg_left (mul_nonneg hb (abs_nonneg _)) (rate_pos ka)
+      (by linarith [hC x y])
+  change _ ≤ _ * rootDistPow 4 P r.source.rate
+    (fun σ x => Q.direct.source.retains (channels B.padding) σ x)
+    (fun σ y => Q.direct.usage.retains (channels B.padding) σ y) D C
+  simp only [hx, hu]
+  apply hclip.trans
+  have hh := mul_le_mul_of_nonneg_left
+    (hj.trans (mul_le_mul_of_nonneg_left hrange (pow_nonneg hq.le 3)))
+    (pow_nonneg (div_nonneg hb (rate_pos ka).le) 4)
+  convert hh using 1
+  dsimp only [b, q]
+  field_simp [(hmpos ka).ne', (hmpos bin).ne', (rate_pos ka).ne']
+
+/-- Sharp piecewise own-request payment for a literal positive clipped mean. The fine
+branch changes terminal normalization before Jensen, retaining cubic norm decay. This
+controls clipping after the mean and does not pay centered noise or preparation. -/
+theorem positiveSample_initial_compressed_clipped_root
+    (hrate : B.binRate = rate)
+    (hcutoff : B.cutoff = fun i => boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1)
+      rate 1 i (fun _ => 1))
+    (hD : B.padding ≠ 0) (H : Horizon P)
+    (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ)
+    (ζ floor : ℝ) (M m bin : ℕ) (hm : m < M)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (s t : Fin 3) (hst : s ≠ t) (ks ka : ℕ) (ss st : List (ZMod P))
+    (hs : r.source = gridChannel s ks ss) (ht : r.terminal = gridChannel t ka st)
+    (hks : ks ≤ H.maxExponent) (hbin : bin ≤ H.maxExponent)
+    (hprep : ∀ v, B.cutoff bin v ≠ 0 → B.auxiliary bin v = 1)
+    (hC : ∀ x y, 0 ≤ B.base x y) (hC1 : B.base *ᵥ 1 ≤ 1)
+    (hK : 2 * (1 + 32 / HP.η) ≤ HP.K)
+    (D R : Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+    (hd :
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (midpoint r) r.terminal (B.binRate bin)
+      B.compressedBin m bin (exponent Q.direct) ζ floor Q.direct = some D)
+    (hr :
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (midpoint r) r.terminal (B.binRate bin)
+      B.compressedBin m bin (exponent Q.right) ζ floor Q.right = some R) :
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    let C := denseChild B.padding id Q.direct (B.cutoff bin) (B.auxiliary bin)
+      HP.ρ HP.K B.base
+    let Xs := X s (side P ks) (CopyPadding.identifier B.padding ss)
+    let Ya := Y t (side P ka) (CopyPadding.identifier B.padding st)
+    ∃ A, B.positiveSample (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+        else none) m bin (.pilotInput ⟨0, HP.k_pos⟩) r = some A ∧
+      rowNormPow 4 P r.source.rate Xs Ya
+        (fun _ x y => min 1 (|rowSliceMean Xs Ya (A - B.initialSample r bin) x y| /
+          (rate ka + B.base x y))) ≤
+        B.initialClippedRootCoefficient ka bin *
+        rootDistPow 4 P Q.direct.source.rate
+          (fun σ x => Q.direct.source.retains (channels B.padding) σ x)
+          (fun σ y => Q.direct.usage.retains (channels B.padding) σ y) D C := by
+  by_cases hf : bin ≤ ka
+  · simpa only [initialClippedRootCoefficient, ite_eq_left hf] using
+      B.positiveSample_initial_compressed_clipped_root_coarse hrate hcutoff hD H exponent
+        ζ floor M m bin hm r s t hst ks ka ss st hs ht hks hbin hprep hC hC1 hK D R hd hr
+  · simpa only [initialClippedRootCoefficient, ite_eq_right hf] using
+      B.positiveSample_initial_compressed_clipped_root_fine hrate exponent ζ floor M m bin hm
+        r s t hst ks ka ss st hs ht (Nat.le_of_lt (Nat.lt_of_not_ge hf)) hC D R hd hr
+
+/-- The sharp coefficient and an actual scheduled child's own precision pay a parent
+precision with an explicit slack window. Zero children pay zero. This does not absorb
+bin/prefix cubes or the separate ordinary-progress and preparation costs. -/
+theorem initialClippedRootEndpoint_le
+    (hcharge : 0 ≤ B.rankCharge) (hrate : B.binRate = rate) (H : Horizon P)
+    (M d ks ka bin : ℕ) (ha : ka ≤ H.maxExponent) (hi : bin ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩)) (coefficient : ℝ) :
+    let m := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    B.initialClippedRootCoefficient ka bin * B.initialEndpointCharge m Q.direct coefficient ≤
+      max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3) * coefficient ^ 4 *
+        ((2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge) *
+          (2 : ℝ) ^ ((d : ℝ) / (16 * B.slack) + 1 / 16 -
+            3 * |(bin : ℝ) - ka| / 4)) ^ 4 := by
+  dsimp only
+  let m := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
+  let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+    r.source (midpoint r) r.terminal (B.binRate bin)
+  have hc := B.binCap_nonneg
+  by_cases hz : m = 0
+  · simp only [show LogSpaceEstimation.lastBudget M d B.slack
+      (B.sampleScale r (some bin)) = m from rfl, hz, initialEndpointCharge, ↓reduceIte,
+      mul_zero]
+    positivity
+  rw [show LogSpaceEstimation.lastBudget M d B.slack
+    (B.sampleScale r (some bin)) = m from rfl, initialEndpointCharge, ite_eq_right hz]
+  have hp := B.requestPrecision_initial_clipped_adjust hcharge hrate M d ks ka bin r hs ht htask
+  calc
+    _ ≤ (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3) *
+        ((2 : ℝ) ^ (if bin ≤ ka then (ka : ℝ) - bin else -3 * ((bin : ℝ) - ka))) ^ 4) *
+          (coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision m Q.direct)) ^ 4) :=
+      mul_le_mul_of_nonneg_right (B.initialClippedRootCoefficient_le H ka bin ha hi)
+        (by positivity)
+    _ = max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3) * coefficient ^ 4 *
+        ((2 : ℝ) ^ (if bin ≤ ka then (ka : ℝ) - bin else -3 * ((bin : ℝ) - ka)) *
+          (2 : ℝ) ^ (-B.requestPrecision m Q.direct)) ^ 4 := by ring
+    _ ≤ _ := by gcongr
+
 /-- Conditional clipped payment for the two actual scheduled endpoints. Equal budgets
 execute zero, and zero endpoints need no child call. Positive endpoints consume strict
 own-request rooted precision and separate reset-right availability. -/
@@ -285,8 +660,7 @@ theorem pairedSample_initial_compressed_clipped_precision
         (fun _ x y => min 1 (|rowSliceMean Xs Ya (A - C) x y| /
           (rate ka + B.base x y))) ≤
         if fine = coarse then 0 else
-        8 * ((512 * (6 * B.binCap + 3) ^ 3) *
-          (rate bin * (gridMass P ka / gridMass P (max ka bin)) / rate ka)) *
+        8 * (B.initialClippedRootCoefficient ka bin) *
           (B.initialEndpointCharge fine Q.direct coefficient +
             B.initialEndpointCharge coarse Q.direct coefficient) := by
   dsimp only
@@ -294,8 +668,7 @@ theorem pairedSample_initial_compressed_clipped_precision
     r.source (midpoint r) r.terminal (B.binRate bin)
   let w := fun y => B.binRate bin *
     HierarchyTask.usageRatio (channels B.padding) r.terminal Q.direct y
-  let K := (512 * (6 * B.binCap + 3) ^ 3) *
-    (rate bin * (gridMass P ka / gridMass P (max ka bin)) / rate ka)
+  let K := B.initialClippedRootCoefficient ka bin
   let E : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ :=
     fun n σ x y => w y * D n σ x y
   let C := fun n => if n = 0 then 0 else B.initialSample r bin
@@ -305,11 +678,7 @@ theorem pairedSample_initial_compressed_clipped_precision
   let coarse := LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
   have hNu : 0 ≤ (P : ℝ) * r.source.rate := by
     rw [hs]; exact mul_nonneg (Nat.cast_nonneg _) (rate_pos ks).le
-  have hK0 : 0 ≤ K := by
-    have hcap := B.binCap_nonneg
-    have hmass : 0 ≤ gridMass P ka / gridMass P (max ka bin) := by unfold gridMass; positivity
-    exact mul_nonneg (by positivity) (div_nonneg (mul_nonneg (rate_pos bin).le hmass)
-      (rate_pos ka).le)
+  have hK0 : 0 ≤ K := B.initialClippedRootCoefficient_nonneg ka bin
   have hend (n : ℕ) (hn : n < M) :
       rowNormPow 4 P r.source.rate Xs Ya
         (fun _ x y => min 1 (|rowSliceMean Xs Ya (E n - C n) x y| /
@@ -536,7 +905,7 @@ theorem completedGroup_initial_compressed_clipped_mean
   exact mul_le_mul_of_nonneg_left (sum_le_sum herr) (by positivity)
 
 /-- Clipped conditional-mean cost at the actual fine/coarse budgets. The rounded-mass
-importance coefficient is linear. Equal and exhausted endpoints retain exact zero charges. -/
+coefficient uses sharp fine-bin decay. Equal and exhausted endpoints retain exact zero charges. -/
 @[expose] def initialClippedRootGroupCharge
     (M d : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
     (ka : ℕ) (coefficient : ℝ) : ℝ :=
@@ -546,8 +915,7 @@ importance coefficient is linear. Equal and exhausted endpoints retain exact zer
     let fine := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
     let coarse := LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
     if fine = coarse then 0 else
-    8 * ((512 * (6 * B.binCap + 3) ^ 3) *
-      (rate bin * (gridMass P ka / gridMass P (max ka bin)) / rate ka)) *
+    8 * (B.initialClippedRootCoefficient ka bin) *
       (B.initialEndpointCharge fine Q.direct coefficient +
         B.initialEndpointCharge coarse Q.direct coefficient)
 
@@ -563,11 +931,7 @@ lemma initialClippedRootGroupCharge_nonneg (M d : ℕ)
   dsimp only
   split_ifs
   · exact le_rfl
-  have hcap := B.binCap_nonneg
-  have hmass : 0 ≤ gridMass P ka / gridMass P (max ka bin) := by unfold gridMass; positivity
-  exact mul_nonneg (mul_nonneg (by norm_num)
-    (mul_nonneg (by positivity) (div_nonneg (mul_nonneg (rate_pos bin).le hmass)
-      (rate_pos ka).le)))
+  exact mul_nonneg (mul_nonneg (by norm_num) (B.initialClippedRootCoefficient_nonneg ka bin))
     (add_nonneg (B.initialEndpointCharge_nonneg _ _ _) (B.initialEndpointCharge_nonneg _ _ _))
 
 omit [Fact P.Prime] in

@@ -28,6 +28,7 @@ OpenAI reference `AffineSampling.lean` at revision `4eaee87548250b2682affda7d05d
 * `Cslib.min_abs_sum_div_le`: signed sums after the positive-summand comparisons.
 * `Cslib.rowNormPow_le_rootDistPow_of_conditional`: own-mask integration of conditional bounds.
 * `Cslib.rowNormPow_clipped_sum_le`: correlated signed sums of clipped payments.
+* `Cslib.rowNormPow_sliceMean_change_terminal_fourth_le`: exact density-cubed mean transport.
 -/
 public section
 namespace Cslib
@@ -157,6 +158,44 @@ theorem rowNormPow_le_rootDistPow_of_conditional
   change rowNormPow 4 N u X Y E ≤ rowNormPow 4 N u X U E
   rw [← hm]
   exact rowNormPow_mono_terminal hNu (fun _ _ _ => True.intro) E
+
+/-- Changing a terminal conditioning slice before Jensen retains three powers of its
+relative density. The mean and density identities concern the same environment; no
+independence of the error table is assumed. -/
+theorem rowNormPow_sliceMean_change_terminal_fourth_le
+    {Ω V : Type*} [Fintype Ω] [Fintype V] {N u q : ℝ}
+    (hNu : 0 ≤ N * u) (hq : 0 ≤ q)
+    (X Y U : Ω → V → Prop) [∀ σ x, Decidable (X σ x)]
+    [∀ σ y, Decidable (Y σ y)] [∀ σ y, Decidable (U σ y)]
+    (F : Ω → V → V → ℝ)
+    (hmean : ∀ x y, rowSliceMean X Y F x y = q * rowSliceMean X U F x y)
+    (hdens : ∀ x y,
+      (({σ | X σ x ∧ Y σ y} : Finset Ω).dens : ℝ) * q =
+        (({σ | X σ x ∧ U σ y} : Finset Ω).dens : ℝ)) :
+    rowNormPow 4 N u X Y (fun _ => rowSliceMean X Y F) ≤
+      q ^ 3 * rowNormPow 4 N u X U F := by
+  classical
+  have he : rowNormPow 4 N u X Y (fun _ => rowSliceMean X Y F) =
+      q ^ 3 * rowNormPow 4 N u X U (fun _ => rowSliceMean X U F) := by
+    rw [rowNormPow_eq_sum_dens_mul_expect, rowNormPow_eq_sum_dens_mul_expect]
+    have hc (Z : Ω → V → Prop) [∀ σ y, Decidable (Z σ y)]
+        (x y : V) (v : ℝ) :
+        (({σ | X σ x ∧ Z σ y} : Finset Ω).dens : ℝ) *
+          (𝔼 _σ ∈ ({σ | X σ x ∧ Z σ y} : Finset Ω), |v| ^ 4) =
+        (({σ | X σ x ∧ Z σ y} : Finset Ω).dens : ℝ) * |v| ^ 4 := by
+      rcases ({σ | X σ x ∧ Z σ y} : Finset Ω).eq_empty_or_nonempty with h | h
+      · simp only [h, dens_empty, NNRat.cast_zero, zero_mul]
+      · rw [expect_const h]
+    simp_rw [hc, hmean, abs_mul, abs_of_nonneg hq, mul_pow]
+    simp_rw [show ∀ x y, (({σ | X σ x ∧ Y σ y} : Finset Ω).dens : ℝ) *
+        (q ^ 4 * |rowSliceMean X U F x y| ^ 4) =
+        q ^ 3 * ((({σ | X σ x ∧ U σ y} : Finset Ω).dens : ℝ) *
+          |rowSliceMean X U F x y| ^ 4) from fun x y => by rw [← hdens x y]; ring]
+    simp only [← mul_sum]
+    ring
+  rw [he]
+  exact mul_le_mul_of_nonneg_left (rowNormPow_sliceMean_fourth_le hNu X U F)
+    (pow_nonneg hq 3)
 
 /-- The clipped relative triangle inequality at fourth-moment level. The arrays and
 masks can share all their randomness; this does not turn a clipped bound into a raw bound. -/

@@ -301,8 +301,9 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
     · simp [data, base, Matrix.one_apply_ne hxy]
 
 private lemma preparation (HP : FourthRootHierarchyParams 16 1 16 32 8)
-    (A : Matrix (ZMod 5) (ZMod 5) ℝ) (hA : A = 0 ∨ A = base) :
-    (data HP).binPreparation 0 (request HP) (fun _ => A) = fun _ => A := by
+    (A : Matrix (ZMod 5) (ZMod 5) ℝ) (hA : A = 0 ∨ A = base)
+    (task : HierarchyTask HP.k := (request HP).task) :
+    (data HP).binPreparation 0 {request HP with task := task} (fun _ => A) = fun _ => A := by
   funext σ x y
   unfold BudgetData.binPreparation densePreparation DenseRowRecipe.preparation atomPrep
   rw [gate_one, mul_one]
@@ -317,24 +318,25 @@ private lemma preparation (HP : FourthRootHierarchyParams 16 1 16 32 8)
 private def increment (ζ : ℝ) (x : ZMod 5) (j : ℕ) (y : ZMod 5) (ν : Fin 2) : ℝ :=
   if j = 1 then if ν = 0 then base x y else ζ * base x y else 0
 
-private lemma compressed (HP : FourthRootHierarchyParams 16 1 16 32 8) (ζ floor : ℝ) :
-    (data HP).compressedBin 2 0 0 ζ floor (request HP) = some (fun _σ x y =>
+private lemma compressed_task (HP : FourthRootHierarchyParams 16 1 16 32 8) (ζ floor : ℝ)
+    (task : HierarchyTask HP.k) :
+    (data HP).compressedBin 2 0 0 ζ floor {request HP with task := task} = some (fun _σ x y =>
       let a := Cslib.RowCompression.iterate univ
         (NormalizedMoments.compatibleCapacity HP.K 2) (fun _ => HP.K)
         (Cslib.RowCompression.dyadicFloor floor 2) (increment ζ x) ⟨0, 0⟩ 2
       FourthRootHierarchyParams.NormalizedRow.output (numerator 0) HP.ρ ζ
         (a.row y 0) (a.row y 1)
         (Cslib.RowCompression.firstRank univ HP.K a.defaultValue a.row)) := by
-  have hactive : 0 < (data HP).requestPrecision 2 (request HP) := by
+  have hactive : 0 < (data HP).requestPrecision 2 {request HP with task := task} := by
     norm_num [BudgetData.requestPrecision, LogSpaceEstimation.precision, data,
       request, gridChannel, rate]
   unfold BudgetData.compressedBin
   simp only [BudgetData.decodePrefixes]
   rw [ite_eq_right (by simp only [hactive, not_true_eq_false]; norm_num [request, gridChannel])]
-  simp only [prefixes, bind, Option.bind_some]
+  simp only [prefixes_task, bind, Option.bind_some]
   norm_num [List.range_succ, Cslib.RowCompression.dyadicSlack]
-  simp_rw [preparation HP 0 (Or.inl rfl), preparation HP base (Or.inr rfl)]
-  simp_rw [complete_const]
+  simp_rw [preparation HP 0 (Or.inl rfl) task, preparation HP base (Or.inr rfl) task]
+  simp_rw [complete_const_task]
   simp only [Option.bind_some]
   apply congrArg some
   funext σ x y
@@ -351,6 +353,16 @@ private lemma compressed (HP : FourthRootHierarchyParams 16 1 16 32 8) (ζ floor
   interval_cases j <;> fin_cases ν <;>
     norm_num [NormalizedMoments.firstSignalIncrement, NormalizedMoments.secondSignalIncrement,
       increment, rate]
+
+private lemma compressed (HP : FourthRootHierarchyParams 16 1 16 32 8) (ζ floor : ℝ) :
+    (data HP).compressedBin 2 0 0 ζ floor (request HP) = some (fun _σ x y =>
+      let a := Cslib.RowCompression.iterate univ
+        (NormalizedMoments.compatibleCapacity HP.K 2) (fun _ => HP.K)
+        (Cslib.RowCompression.dyadicFloor floor 2) (increment ζ x) ⟨0, 0⟩ 2
+      FourthRootHierarchyParams.NormalizedRow.output (numerator 0) HP.ρ ζ
+        (a.row y 0) (a.row y 1)
+        (Cslib.RowCompression.firstRank univ HP.K a.defaultValue a.row)) :=
+  compressed_task HP ζ floor (request HP).task
 
 open Cslib.RowCompression in
 private lemma wide_advance (n K : ℕ) (hn : 5 < n) (hK : 5 < K)
@@ -439,10 +451,11 @@ private lemma actual_iterate (HP : FourthRootHierarchyParams 16 1 16 32 8)
     linarith [hf 1]
 
 open Cslib.RowCompression in
-private lemma compressed_value (HP : FourthRootHierarchyParams 16 1 16 32 8) :
-    (data HP).compressedBin 2 0 0 (HP.η / 4) (HP.η / 4) (request HP) =
+private lemma compressed_value_task (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (task : HierarchyTask HP.k) :
+    (data HP).compressedBin 2 0 0 (HP.η / 4) (HP.η / 4) {request HP with task := task} =
       some (fun _ => base) := by
-  rw [compressed]
+  rw [compressed_task]
   apply congrArg some
   funext σ x y
   dsimp only
@@ -477,6 +490,12 @@ private lemma compressed_value (HP : FourthRootHierarchyParams 16 1 16 32 8) :
         rate_pos rate_antitone hsmall 0 (fun _ => 1)
     simp only [defaultEntry, Fin.isValue, ↓reduceIte, one_ne_zero, hn, zero_div,
       base, Matrix.one_apply_ne hxy]
+
+open Cslib.RowCompression in
+private lemma compressed_value (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (data HP).compressedBin 2 0 0 (HP.η / 4) (HP.η / 4) (request HP) =
+      some (fun _ => base) :=
+  compressed_value_task HP (request HP).task
 
 -- A positive small-floor computation can have nonzero error at a low budget. Here
 -- both actual scheduled endpoints are zero, while the genuine top-bin diagonal is one.
@@ -2026,7 +2045,8 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
         ((data HP).sampleScale (request HP) (some 0)) = 0 := by
       norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff,
         BudgetData.sampleScale, data, request, gridChannel, rate]
-    simp only [hf, hc, BudgetData.initialEndpointCharge, Nat.one_ne_zero, ↓reduceIte,
+    simp only [hf, hc, BudgetData.initialEndpointCharge,
+      BudgetData.initialClippedRootCoefficient, le_refl, Nat.one_ne_zero, ↓reduceIte,
       add_zero] at hp
     convert hp using 1;
       simp only [rowNormPow, rowSliceMean, data, request, gridChannel,
@@ -2456,5 +2476,13 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
       Real.one_rpow, zero_sub, abs_neg, abs_one, one_pow, hx, hy, and_self, filter_true,
       Fintype.expect_const, mul_one, div_one] at h
     simpa only [show rate 0 = 1 by norm_num [rate]] using h
+
+-- A literal compressed child is nonzero under a small floor; paired transport also
+-- retains the earlier m=1 child with nonzero error, rather than assuming exact children.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ∃ D, (data HP).compressedBin 2 0 0 (HP.η / 4) (HP.η / 4)
+      {request HP with task := .baseNormalized 0 0} = some D ∧
+      ∀ σ x, D σ x x = 1 := by
+  exact ⟨_, compressed_value_task HP (.baseNormalized 0 0), fun _ _ => by simp [base]⟩
 
 end PolynomialBudgetHistory
