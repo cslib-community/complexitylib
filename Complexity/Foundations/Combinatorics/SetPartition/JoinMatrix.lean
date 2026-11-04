@@ -39,9 +39,9 @@ factorisation rests on the identity `∑_{z ≥ x} c(blocks z) = [x = ⊤]`, the
 function of the partition lattice. It follows by differentiating at `0` the polynomial identity
 `∑_{z ≥ x} X (X - 1) ⋯ (X - blocks z + 1) = X ^ blocks x`, which holds at every natural number `t`
 because both sides count the maps from `α` to `Fin t` that are constant on the blocks of `x`,
-grouped on the left by their kernels (`sum_descFactorial_blocks`). This avoids the usual computation
-of the Möbius function through the factorisation of intervals into products of smaller partition
-lattices; `mu_top` identifies the values with Mathlib's `IncidenceAlgebra.mu`.
+grouped on the left by their kernels (`sum_descFactorial_blocks`). This classical counting
+argument avoids factorising intervals into products of smaller partition lattices, which Mathlib
+does not provide; `mu_top` identifies the values with Mathlib's `IncidenceAlgebra.mu`.
 
 Partitions are `Setoid α` rather than `Finpartition`, since Mathlib's complete lattice on
 `Setoid α` provides the join, and the proof works with quotients and kernels (`Setoid.ker`);
@@ -52,14 +52,21 @@ statements that sum over the partitions or take ranks assume `[Fintype (Setoid �
 ## Main definitions
 
 * `Cslib.SetPartition.blocks`: the number of blocks of a partition.
+* `Cslib.SetPartition.derivCoeff`: the coefficient `c(b)`, the derivative at `0` of the falling
+  factorial.
 * `Cslib.SetPartition.joinMatrix`: the join matrix.
+* `Cslib.SetPartition.zetaMatrix`: the zeta matrix of the refinement order.
 
 ## Main results
 
+* `Cslib.SetPartition.pow_le_card_setoid`: `j ^ (N - j) ≤ B_N`.
+* `Cslib.SetPartition.sum_descFactorial_blocks`: counting maps by their kernels.
 * `Cslib.SetPartition.derivCoeff_succ`: `c(b + 1) = (-1)^b b!`.
 * `Cslib.SetPartition.sum_derivCoeff_blocks`: the Möbius values `∑_{z ≥ x} c(blocks z) = [x = ⊤]`.
 * `Cslib.SetPartition.mu_top`: these are the values `μ(x, ⊤)` of Mathlib's Möbius function
   `IncidenceAlgebra.mu`.
+* `Cslib.SetPartition.joinMatrix_eq`: the factorisation `J = Z Δ Zᵀ`.
+* `Cslib.SetPartition.det_zetaMatrix`: the zeta matrix has determinant `1`.
 * `Cslib.SetPartition.rank_joinMatrix`: the join matrix has full rank.
 
 ## References
@@ -327,6 +334,7 @@ open Classical in
   Matrix.of fun P Q => if P ⊔ Q = ⊤ then 1 else 0
 
 open Classical in
+/-- The entries of the join matrix. -/
 @[simp] theorem joinMatrix_apply {R : Type*} [Zero R] [One R] (P Q : Setoid α) :
     joinMatrix R α P Q = if P ⊔ Q = ⊤ then 1 else 0 :=
   rfl
