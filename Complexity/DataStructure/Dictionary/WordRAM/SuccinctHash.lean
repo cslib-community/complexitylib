@@ -656,22 +656,6 @@ theorem chain_and_overflow_le_probeExcess {U V w₀ n_max base : ℕ}
 
 /-! ## Section 4: Feistel-dispatched `Memory.Prog` operations realized via `realize` -/
 
-/-- Helper turning a conditionally proved `Realizes` certificate `P → Realizes B p ...` into an
-unconditional `Realizes B p ... (fun w d s => P ∧ safe w d s) work` whose code, scratch size, and
-exchange factor do not depend on a proof of `P`. -/
-theorem realizes_of_imp {B : Basis} {k l : ℕ} {δ α : Type}
-    {p : δ → Memory.Prog α} {input : δ ↪ (Fin k → ℕ)} {output : α ↪ (Fin l → ℕ)}
-    {P : Prop} {safe : ℕ → δ → Memory.State → Prop} {work : δ → Memory.State → ℕ}
-    (h : P → Realizes B p input output safe work) :
-    Realizes B p input output (fun w d s => P ∧ safe w d s) work := by
-  by_cases hP : P
-  · exact (h hP).consequence (fun _ _ _ _ _ hs => hs.2) (fun _ _ => le_rfl)
-  · refine ⟨0, 0, fun frontier _ _ => .op (.copy frontier frontier), ?_⟩
-    intro r frontier src tmp _ _ _ _
-    refine ⟨by rintro ⟨⟩, ?_⟩
-    intro w d x _ _ hs _
-    exact False.elim (hP hs.1)
-
 /-- Well-formedness condition `0 < w₀ ∧ n_max ≤ U ∧ U < 2 ^ w₀ ∧ V ≤ 2 ^ w₀` on the dictionary
 parameters `(U, V, w₀, n_max)`. -/
 @[expose]
@@ -716,10 +700,6 @@ theorem realizes_extractQuotGen :
       ExtractQuotGenPre
       (fun _ _ => 0) := by
   realize
-
-theorem validProg_extractQuot {n_max w u : ℕ} {s : Memory.State} :
-    ValidProg w (s.frontier) s (extractQuotProg n_max u) :=
-  validProg_pure _
 
 /-- Helper lemma: `(h_q &&& (2 ^ b - 1)) ^^^ (u &&& (2 ^ b - 1)) = (h_q % 2 ^ b) ^^^ keyLow b u`. -/
 theorem and_mask_xor_eq_feistelBucket (b u h_q : ℕ) :

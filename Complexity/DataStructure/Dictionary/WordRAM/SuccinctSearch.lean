@@ -141,14 +141,6 @@ theorem clientState_resolveOvfStepProg (U V w n_max h_space : ℕ)
   · rfl
   · rw [StateTransitionSpec.clientState_bind, clientState_readGMProg]; rfl
 
-theorem memoryCost_resolveOvfStepProg_pos (U V w n_max h_space : ℕ)
-    (d : (ℕ × ℕ) × (ℕ × ℕ)) (s : Memory.State) :
-    1 ≤ memoryCost (resolveOvfStepProg U V w n_max h_space d) s := by
-  unfold resolveOvfStepProg
-  simp only [pure_bind, ← PFunctor.FreeM.bind_eq_bind]
-  rw [memoryCost_bind, memoryCost_readGMProg]
-  omega
-
 theorem memoryCost_resolveOvfStepProg_le (U V w n_max h_space : ℕ)
     (d : (ℕ × ℕ) × (ℕ × ℕ)) (s : Memory.State) :
     memoryCost (resolveOvfStepProg U V w n_max h_space d) s ≤ 4 := by
@@ -478,15 +470,6 @@ theorem clientState_ovfStepProg (U V w n_max h_space : ℕ)
   rw [StateTransitionSpec.clientState_bind, clientState_resolveOvfStepProg,
     StateTransitionSpec.clientState_bind, clientState_readQuotProg]
   split_ifs <;> rfl
-
-theorem memoryCost_ovfStepProg_pos (U V w n_max h_space : ℕ)
-    (x : ((ℕ × ℕ) × ℕ) × ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ)) (s : Memory.State) :
-    1 ≤ memoryCost (ovfStepProg U V w n_max h_space x) s := by
-  unfold ovfStepProg
-  simp only [← PFunctor.FreeM.bind_eq_bind]
-  rw [memoryCost_bind]
-  have := memoryCost_resolveOvfStepProg_pos U V w n_max h_space (x.1.1, x.2.1.1.1) s
-  omega
 
 theorem memoryCost_ovfStepProg_le (U V w n_max h_space : ℕ)
     (x : ((ℕ × ℕ) × ℕ) × ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ)) (s : Memory.State) :

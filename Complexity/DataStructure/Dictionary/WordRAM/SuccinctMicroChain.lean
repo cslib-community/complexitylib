@@ -1701,14 +1701,6 @@ theorem memoryCost_microStepGenProg_pos
     split_ifs <;> simp [readLMGenProg, readPackedGenProg]
   omega
 
-theorem memoryCost_microStepProg_pos (U V w n_max h_space : ℕ)
-    (x : (((ℕ × ℕ) × ℕ) × ℕ) × (((ℕ × ℕ) × ℕ) × ℕ)) (s : Memory.State) :
-    1 ≤ memoryCost (microStepProg U V w n_max h_space x) s := by
-  unfold microStepProg
-  simp only [pure_bind, ← PFunctor.FreeM.bind_eq_bind, memoryCost_bind,
-    memoryCost_readLMNextProg]
-  omega
-
 theorem memoryCost_microStepProg_le (U V w n_max h_space : ℕ)
     (x : (((ℕ × ℕ) × ℕ) × ℕ) × (((ℕ × ℕ) × ℕ) × ℕ)) (s : Memory.State) :
     memoryCost (microStepProg U V w n_max h_space x) s ≤ 8 := by

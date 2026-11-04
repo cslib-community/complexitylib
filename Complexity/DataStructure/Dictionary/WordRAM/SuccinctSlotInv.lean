@@ -323,8 +323,10 @@ structure SlotStoreInv (n_max : ℕ) (gm : ℕ → ℕ) : Prop where
   multi_total_le : 0 < bucketBits n_max →
     gm 0 * slabSize n_max + gm 1 ≤ n_max
 
-/-- Potential function `∑_{b < numBuckets n_max} |r_b - K|` controlling amortized slab promotions
-and demotions (`0` in the single-bucket regime). -/
+/-- Potential function `∑_{b < numBuckets n_max} bucketPotential (slabSize n_max) q_b r_b`
+controlling amortized slab promotions and demotions (`0` in the single-bucket regime), where for
+`K = slabSize n_max`, `q_b = gm (gmQIdx b)`, and `r_b = gm (gmRIdx b)`, each per-bucket term is
+`r_b - K` if `K ≤ r_b`, `K - r_b` if `0 < q_b ∧ r_b < K`, and `0` when `q_b = 0 ∧ r_b < K`. -/
 @[expose]
 def slotPotential (n_max : ℕ) (gm : ℕ → ℕ) : ℕ :=
   if bucketBits n_max = 0 then 0

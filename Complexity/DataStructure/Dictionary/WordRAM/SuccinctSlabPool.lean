@@ -57,12 +57,6 @@ theorem writeGMProg_ite_effect {U V w n_max h_space base idx val : ℕ}
       hw (hidx hP) (hval hP) s
   · exact ⟨rfl, fun _ _ => rfl, rfl, rfl, rfl, rfl⟩
 
-theorem memoryCost_writeGMProg_ite_le (U V w n_max h_space base idx val : ℕ)
-    (P : Prop) [Decidable P] (s : Memory.State) :
-    memoryCost
-      (if P then writeGMProg U V w n_max h_space ((base, idx), val) else pure ()) s ≤ 4 := by
-  split_ifs <;> simp
-
 /-! ## Section 2: `gmPushSlabProg` and `realizes_gmPushSlabGen` -/
 
 /-- Parameter-free `Memory.Prog` operation allocating a new full slab `p_new = gm 0` as the new top
