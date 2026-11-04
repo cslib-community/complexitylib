@@ -1248,8 +1248,27 @@ This follows from the genuine assembled input amplitude; it supplies no rate or 
 cancellation for small targets. `initialComputedRelativeMoment` takes the minimum of this
 semantic group payment (plus transported centered child error) and the previous absolute
 first-noise cost. The actual own-precision four-statistic, four-max and sharp-reserve
-consumers now use this minimum. Their other three costs are unchanged. The transported
-child error still pays inverse rate, and no heavy-event rarity discount applies to noise.
+consumers now use this minimum. Their other three costs are unchanged. Transported child
+error now pays `initialPerturbationFactor`: the fourth power of the finite sup norm of
+$(\mathrm{rate}(k_a)+G(x,y))^{-1}$. The reusable `rowNormPow_mul_le_pi_norm` applies
+this fixed pair weight on the original source/terminal masks. Its input is the executed
+prefix error already derived from strict lower-budget own-request rooted precision,
+including separate reset-right availability; no weighted IH is assumed. For a constant
+positive target $g$, the factor is $(\mathrm{rate}(k_a)+g)^{-4}$ and is strictly smaller
+than inverse fourth rate. The checked nonconstant perturbation and positive substochastic
+target cost client exercise this gain; the actual small-floor nonzero-child and
+zero-boundary reserve clients remain checked.
+
+This is a worst-pair refinement after unweighted child/group/prefix transport. It does
+**not** retain pair weights inside direct/left/reset-right transport or derive a stronger
+pair-weighted rooted IH. If the target vanishes at some pair, the factor can still be the
+old inverse fourth rate. `initialPerturbationFactor_eq_of_zero` proves this equality,
+and a checked actual small-floor child on the identity target has weighted fourth error
+$1/16$ even though that worst-pair factor is unchanged. Such zero entries are allowed for
+admissible substochastic matrices. A useful further improvement needs control of the weighted error on its actual
+support, and normalized literal input moments under a jointly admissible rate/width
+schedule; the existing unweighted IH and magnitude estimate supply neither. No uniform
+positive target floor, free parent accuracy or heavy-event rarity discount is assumed.
 The checked positive budget-two history has nonzero group input but zero centered
 conditional noise: with zero transported error the new first-noise cost vanishes while
 the old envelope is positive. This does not assert zero approximate-child error.

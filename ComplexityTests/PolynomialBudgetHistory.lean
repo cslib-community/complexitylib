@@ -2073,6 +2073,75 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) (ζ Lh Lρ : ℝ)
   · rw [(data HP).initialComputedMoment_final_firstNoise_zero]
     positivity
 
+-- Actual small-floor compression has nonzero error on the diagonal. Its exact
+-- denominator-weighted error improves even though the worst-pair factor below does not.
+-- This is a checked remaining opportunity for support-sensitive child transport.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    let ζ := min HP.η (1 / 10000) / 4
+    ∃ D, (data HP).compressedBin 1 0 0 ζ ζ
+      {request HP with task := .baseNormalized 0 0} = some D ∧
+      rowNormPow 4 5 (request HP).source.rate
+        (fun σ x => (request HP).source.retains (channels (data HP).padding) σ x)
+        (fun σ y => (request HP).usage.retains (channels (data HP).padding) σ y)
+        (fun σ x y => (D σ x y - base x y) / (rate 0 + base x y)) = 1 / 16 := by
+  dsimp only
+  have hζ : 0 < min HP.η (1 / 10000 : ℝ) / 4 := by
+    exact div_pos (lt_min HP.η_pos (by norm_num)) (by norm_num)
+  have hζη : min HP.η (1 / 10000 : ℝ) / 4 ≤ HP.η / 4 :=
+    div_le_div_of_nonneg_right (min_le_left _ _) (by norm_num)
+  refine ⟨0, compressed_one HP (.baseNormalized 0 0) _ hζ hζη, ?_⟩
+  simp only [rowNormPow, request, data, full, filter_true]
+  norm_num [gridChannel, rate, base, Matrix.one_apply, apply_ite abs, ite_pow]
+  have he (x y : ZMod 5) :
+      |(-(if x = y then (1 : ℝ) else 0)) / (1 + if x = y then 1 else 0)| ^ 4 =
+        if x = y then 1 / 16 else 0 := by
+    by_cases h : x = y <;> norm_num [h]
+  simp_rw [he]
+  norm_num
+
+-- The actual identity target has zero off-diagonal entries: its worst-pair payment
+-- retains the old inverse rate, despite the gain on strictly positive targets below.
+example (ka : ℕ) :
+    BudgetData.initialPerturbationFactor ka base = (rate ka)⁻¹ ^ 4 := by
+  apply BudgetData.initialPerturbationFactor_eq_of_zero ka base
+    (by intro x y; by_cases h : x = y <;> simp [base, Matrix.one_apply, h]) 0 1
+  norm_num [base]
+
+-- The actual cost function consumes the worst-pair refinement for a strictly positive
+-- substochastic target. This compares its new branch with the previous relative branch,
+-- without assuming that either charge has been absorbed into parent accuracy.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (ζ Lh Lρ : ℝ) :
+    let B : BudgetData HP 5 := { data HP with base := fun _ _ => 1 / 5 }
+    B.initialComputedRelativeMoment 2 1 (request HP) threeRoles 0 0 [1] [2, 3]
+      (fun _ => 1) ζ Lh Lρ 0 true 0 <
+      8 * (16 * (rate 0)⁻¹ ^ 4 + B.initialRelativeNoiseBudget 2 (request HP)
+        0 2 (by decide) 0 0 [1] [2, 3] B.base 1) := by
+  dsimp only
+  simp only [BudgetData.initialComputedRelativeMoment, Fin.isValue, and_self, ↓reduceIte,
+    Nat.zero_add, Nat.cast_one, one_pow, range_one, sum_singleton, mul_one]
+  apply (min_le_right _ _).trans_lt
+  rw [BudgetData.initialPerturbationFactor_const]
+  norm_num [rate, threeRoles]
+
+-- The new generic payment also covers genuinely nonconstant perturbations, with a
+-- strict gain at positive target and no cancellation or independence hypothesis.
+example :
+    rowNormPow 4 1 1 (fun (_ : Fin 2) (_ : Unit) => True) (fun _ _ => True)
+      (fun σ _ _ => ((if σ = 0 then (2 : ℝ) else 0) - 1) * (1 / 16 + 1)⁻¹) ≤
+      BudgetData.initialPerturbationFactor (P := 5) 1 (fun _ _ => 1) *
+        rowNormPow 4 1 1 (fun (_ : Fin 2) (_ : Unit) => True) (fun _ _ => True)
+          (fun σ _ _ => (if σ = 0 then (2 : ℝ) else 0) - 1) ∧
+      BudgetData.initialPerturbationFactor (P := 5) 1 (fun _ _ => 1) < (rate 1)⁻¹ ^ 4 := by
+  constructor
+  · have hw := rowNormPow_mul_le_pi_norm (by norm_num : (0 : ℝ) ≤ 1 * 1)
+      (fun (_ : Fin 2) (_ : Unit) => True) (fun _ _ => True)
+      (fun σ _ _ => (if σ = 0 then (2 : ℝ) else 0) - 1)
+      (fun (_ : Unit × Unit) => (1 / 16 + 1 : ℝ)⁻¹)
+    norm_num [BudgetData.initialPerturbationFactor_const, rate] at hw ⊢
+    exact hw
+  · rw [BudgetData.initialPerturbationFactor_const]
+    norm_num [rate]
+
 -- Nonconstant, nonzero centered noise pays the fixed-pair target normalization, even
 -- at a small rank rate; replacing the denominator by the rate loses a large factor.
 example :

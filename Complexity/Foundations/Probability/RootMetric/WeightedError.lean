@@ -15,7 +15,8 @@ import Mathlib.Analysis.MeanInequalities
 Bounded normalized root errors pay ordinary errors after an endpoint weight and a change
 of terminal mask. Zero extension preserves the child's actual source and usage slices.
 The coefficient is the fourth power of the finite-function sup norm, with no
-cardinality or environment-atom payment.
+cardinality or environment-atom payment. Fixed pair weights also have a sup-norm
+payment on the unchanged source and terminal conditioning, used for target denominators.
 -/
 public section
 namespace Cslib
@@ -68,6 +69,22 @@ theorem rowNormPow_weighted_sub_le_rootDistPow {Ω V : Type*} [Fintype Ω] [Fint
     _ ≤ _ := by
       rw [mul_assoc]
       exact mul_le_mul_of_nonneg_left hroot (by positivity)
+/-- A fixed pair weight costs its finite sup norm. The weight is independent of the
+sampled environment; source and terminal conditioning are unchanged. -/
+theorem rowNormPow_mul_le_pi_norm {Ω V : Type*} [Fintype Ω] [Fintype V]
+    {N u : ℝ} (hNu : 0 ≤ N * u)
+    (X Y : Ω → V → Prop) [∀ σ x, Decidable (X σ x)] [∀ σ y, Decidable (Y σ y)]
+    (A : Ω → V → V → ℝ) (w : V × V → ℝ) :
+    rowNormPow 4 N u X Y (fun σ x y => A σ x y * w (x, y)) ≤
+      ‖w‖ ^ 4 * rowNormPow 4 N u X Y A := by
+  apply rowNormPow_le_mul hNu
+  intro σ x y _ _
+  rw [abs_mul, mul_pow]
+  have hw : |w (x, y)| ^ 4 ≤ ‖w‖ ^ 4 :=
+    pow_le_pow_left₀ (abs_nonneg _) (by
+      simpa only [Real.norm_eq_abs] using norm_le_pi_norm w (x, y)) 4
+  exact (mul_le_mul_of_nonneg_left hw (by positivity)).trans_eq (mul_comm _ _)
+
 /-- A finite sum pays the sum of actual fourth moments with the cube of its cardinality.
 This includes empty sums and correlated tables on the same environment. -/
 theorem rowNormPow_sum_fourth_le {I Ω V : Type*} [Fintype Ω] [Fintype V]

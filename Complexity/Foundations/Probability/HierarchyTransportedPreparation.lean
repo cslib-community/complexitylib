@@ -31,6 +31,7 @@ changing-request induction and native RL=L remain open.
 * `exists_initial_compressed_fourMax`: the shared sharp reserve on computed histories.
 * `initial_compressed_precision_reserve`: numerical reserve from own-request rooted IH.
 * `initialComputedRelativeMoment`: sharper costs used by computed statistics and reserve.
+* `initialPerturbationFactor`: target-dependent worst-pair transport payment.
 * `initialComputedMoment_final_firstNoise_zero`: exact old absolute-envelope noise cost.
 * `initialComputedMoment_firstNoise_not_uniform`: a uniform envelope obstruction.
 -/
@@ -56,6 +57,41 @@ centered noise and omitted/inactive deficit. No claim that this charge is small 
             rowNormPow 4 P (rate ks) (retainedMask R.source (side P ks) B.padding ss)
               (retainedMask R.terminal (side P ka) B.padding st)
               (fun _ => B.initialPolynomialLoss M n j r)))
+
+/-- Sup norm payment for a fixed-pair inverse denominator. Unlike inverse rate alone,
+this retains the target. It is a worst-pair bound, not a pair-weighted recursive IH. -/
+@[expose] def initialPerturbationFactor (ka : ℕ) (G : Matrix (ZMod P) (ZMod P) ℝ) : ℝ :=
+  ‖fun xy : ZMod P × ZMod P => (rate ka + G xy.1 xy.2)⁻¹‖ ^ 4
+
+/-- The target-dependent factor never exceeds the inverse-rate payment for a
+nonnegative target. A zero target somewhere can still force equality. -/
+lemma initialPerturbationFactor_le (ka : ℕ) (G : Matrix (ZMod P) (ZMod P) ℝ)
+    (hG : ∀ x y, 0 ≤ G x y) :
+    initialPerturbationFactor ka G ≤ (rate ka)⁻¹ ^ 4 := by
+  apply pow_le_pow_left₀ (norm_nonneg _)
+  apply (pi_norm_le_iff_of_nonneg (inv_nonneg.mpr (rate_pos ka).le : 0 ≤ (rate ka)⁻¹)).mpr
+  intro xy
+  rw [Real.norm_eq_abs, abs_of_pos (inv_pos.mpr
+    (add_pos_of_pos_of_nonneg (rate_pos ka) (hG xy.1 xy.2)))]
+  exact inv_anti₀ (rate_pos ka) (le_add_of_nonneg_right (hG xy.1 xy.2))
+
+/-- A single zero target entry makes the worst-pair payment exactly inverse rate.
+This explains why this refinement alone cannot give uniform absorption on sparse targets. -/
+lemma initialPerturbationFactor_eq_of_zero (ka : ℕ) (G : Matrix (ZMod P) (ZMod P) ℝ)
+    (hG : ∀ x y, 0 ≤ G x y) (x y : ZMod P) (hxy : G x y = 0) :
+    initialPerturbationFactor ka G = (rate ka)⁻¹ ^ 4 := by
+  apply le_antisymm (initialPerturbationFactor_le ka G hG)
+  have hw := norm_le_pi_norm (fun xy : ZMod P × ZMod P =>
+    (rate ka + G xy.1 xy.2)⁻¹) (x, y)
+  simp only [hxy, add_zero, Real.norm_eq_abs,
+    abs_of_pos (inv_pos.mpr (rate_pos ka))] at hw
+  exact pow_le_pow_left₀ (inv_nonneg.mpr (rate_pos ka).le) hw 4
+
+/-- Constant positive targets expose a strict gain, without asserting that such a lower
+bound holds for every admissible matrix. -/
+lemma initialPerturbationFactor_const (ka : ℕ) (g : ℝ) :
+    initialPerturbationFactor (P := P) ka (fun _ _ => g) = |(rate ka + g)⁻¹| ^ 4 := by
+  simp [initialPerturbationFactor, Real.norm_eq_abs]
 
 /-- Centered first noise of the literal computed prefixes. The transported perturbation
 is centered at its own conditional mean before adding the semantic completion noise.
@@ -103,7 +139,7 @@ theorem initial_compressed_first_noise
           (retainedMask R.terminal (side P ka) B.padding st)
           (actualNoiseEntry R.source R.terminal (side P ks) (side P ka) Lt B.padding ss st
             ka G (firstSignalIncrement F ka second) 0 0 j) ≤
-          8 * (16 * (rate ka)⁻¹ ^ 4 *
+          8 * (16 * initialPerturbationFactor ka G *
             (((j + 1 : ℕ) : ℝ) ^ 3 * ∑ i ∈ range (j + 1), ε i) +
               B.initialRelativeNoiseBudget M r R.source R.terminal R.source_terminal
                 ks ka ss st G (j + 1)) := by
@@ -169,21 +205,19 @@ theorem initial_compressed_first_noise
         convert hdiff using 1
         congr 8
         exact congrArg (fun c => c.rate) hs
-      apply (rowNormPow_le_mul hNu (c := (rate ka)⁻¹ ^ 4) ?_).trans
-        (mul_le_mul_of_nonneg_left hdifference (by positivity))
-      intro σ x y _ _
-      have hr := rate_pos ka
-      change |F (j + 1) σ x y / _ - G (j + 1) σ x y / _| ^ 4 ≤
-        (rate ka)⁻¹ ^ 4 * |F (j + 1) σ x y - G (j + 1) σ x y| ^ 4
-      rw [← sub_div, abs_div, abs_of_pos
-        (add_pos_of_pos_of_nonneg (rate_pos ka) (htarget x y))]
-      calc
-        _ ≤ (|F (j + 1) σ x y - G (j + 1) σ x y| / rate ka) ^ 4 :=
-          pow_le_pow_left₀ (div_nonneg (abs_nonneg _)
-            (add_pos_of_pos_of_nonneg hr (htarget x y)).le)
-            (div_le_div_of_nonneg_left (abs_nonneg _) (rate_pos ka)
-              (le_add_of_nonneg_right (htarget x y))) 4
-        _ = _ := by simp only [div_eq_mul_inv, mul_pow]; ring
+      have hw := rowNormPow_mul_le_pi_norm hNu
+        (retainedMask R.source (side P ks) B.padding ss)
+        (retainedMask R.terminal (side P ka) B.padding st)
+        (F (j + 1) - G (j + 1))
+        (fun xy : ZMod P × ZMod P => (rate ka + target xy.1 xy.2)⁻¹)
+      have he : normed (F (j + 1)) - normed (G (j + 1)) =
+          (fun σ x y => (F (j + 1) - G (j + 1)) σ x y *
+            (rate ka + target x y)⁻¹) := by
+        funext σ x y
+        dsimp only [normed, Pi.sub_apply, Matrix.sub_apply]
+        ring
+      rw [he]
+      exact hw.trans (mul_le_mul_of_nonneg_left hdifference (by positivity))
     · have href := B.initialPrefix_relative_noise M hM hbins r R.source R.terminal
         R.source_terminal ks ka ss st hs ht G hG target (j + 1)
       simpa only [normed, rowSliceMean, ← expect_div, ← sub_div] using href
@@ -226,14 +260,16 @@ lemma initialComputedMoment_nonneg (B : BudgetData HP P) (M n : ℕ)
 
 /-- Computed four-statistic payment retaining pairwise semantic normalization. Only the
 first noise is sharpened; taking the minimum preserves the previous absolute payment.
-The transported error still pays inverse rate, and no global absorption is claimed. -/
+The transported error pays the target-dependent worst-pair inverse denominator.
+No pair-weighted IH or global absorption is claimed. -/
 @[expose] def initialComputedRelativeMoment (B : BudgetData HP P) (M n : ℕ)
     (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
     (ks ka : ℕ) (ss st : List (ZMod P)) (ε : ℕ → ℝ) (ζ Lh Lρ : ℝ)
     (j : ℕ) (noise : Bool) (ν : Fin 2) : ℝ :=
   let old := B.initialComputedMoment M n r R ks ka ss st ε ζ Lh Lρ j noise ν
   if noise ∧ ν = 0 then min old
-    (8 * (16 * (rate ka)⁻¹ ^ 4 * (((j + 1 : ℕ) : ℝ) ^ 3 * ∑ i ∈ range (j + 1), ε i) +
+    (8 * (16 * initialPerturbationFactor ka B.base *
+      (((j + 1 : ℕ) : ℝ) ^ 3 * ∑ i ∈ range (j + 1), ε i) +
       B.initialRelativeNoiseBudget M r R.source R.terminal R.source_terminal
         ks ka ss st B.base (j + 1))) else old
 
@@ -247,7 +283,7 @@ lemma initialComputedRelativeMoment_nonneg (B : BudgetData HP P) (M n : ℕ)
   have hrel := B.initialRelativeNoiseBudget_nonneg M r hr R.source R.terminal
     R.source_terminal ks ka ss st B.base (j + 1)
   have hsum := sum_nonneg (fun i (_ : i ∈ range (j + 1)) => hε i)
-  unfold initialComputedRelativeMoment
+  unfold initialComputedRelativeMoment initialPerturbationFactor
   split_ifs <;> positivity
 
 /-- Even with no transported child error, the final semantic first-noise payment has
