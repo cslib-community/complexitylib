@@ -61,11 +61,6 @@ open Probability Complexity Logic.PL Turing.MultiTapeTM
 
 /-! ### Polynomial-time certificates for protocol gadgets -/
 
-private theorem bool_or' {α : Type} {input : α ↪ List Bool} {f g : α → Bool}
-    (hf : ComputableInPolyTime f input encBool) (hg : ComputableInPolyTime g input encBool) :
-    ComputableInPolyTime (fun a => f a || g a) input encBool := by
-  exact ComputableInPolyTime.bool_or.comp (hf.prod hg)
-
 private theorem bool_xor' {α : Type} {input : α ↪ List Bool} {f g : α → Bool}
     (hf : ComputableInPolyTime f input encBool) (hg : ComputableInPolyTime g input encBool) :
     ComputableInPolyTime (fun a => f a ^^ g a) input encBool :=
@@ -85,22 +80,34 @@ private theorem computableInPolyTime_clauseLitPol (i : ℕ) {α : Type} {input :
 theorem computableInPolyTime_gmwBit0Of8 {α : Type} {input : α ↪ List Bool} {t : α → ℕ}
     (ht : ComputableInPolyTime t input encUnary) :
     ComputableInPolyTime (fun a => gmwBit0Of8 (t a)) input encBool :=
-  bool_or' (bool_or' (bool_or' (ht.beq (.const 1)) (ht.beq (.const 3)))
-    (ht.beq (.const 5))) (ht.beq (.const 7))
+  ComputableInPolyTime.bool_or.comp
+    ((ComputableInPolyTime.bool_or.comp
+      ((ComputableInPolyTime.bool_or.comp
+        ((ht.beq (.const 1)).prod (ht.beq (.const 3)))).prod
+        (ht.beq (.const 5)))).prod
+      (ht.beq (.const 7)))
 
 @[fun_prop]
 theorem computableInPolyTime_gmwBit1Of8 {α : Type} {input : α ↪ List Bool} {t : α → ℕ}
     (ht : ComputableInPolyTime t input encUnary) :
     ComputableInPolyTime (fun a => gmwBit1Of8 (t a)) input encBool :=
-  bool_or' (bool_or' (bool_or' (ht.beq (.const 2)) (ht.beq (.const 3)))
-    (ht.beq (.const 6))) (ht.beq (.const 7))
+  ComputableInPolyTime.bool_or.comp
+    ((ComputableInPolyTime.bool_or.comp
+      ((ComputableInPolyTime.bool_or.comp
+        ((ht.beq (.const 2)).prod (ht.beq (.const 3)))).prod
+        (ht.beq (.const 6)))).prod
+      (ht.beq (.const 7)))
 
 @[fun_prop]
 theorem computableInPolyTime_gmwBit2Of8 {α : Type} {input : α ↪ List Bool} {t : α → ℕ}
     (ht : ComputableInPolyTime t input encUnary) :
     ComputableInPolyTime (fun a => gmwBit2Of8 (t a)) input encBool :=
-  bool_or' (bool_or' (bool_or' (ht.beq (.const 4)) (ht.beq (.const 5)))
-    (ht.beq (.const 6))) (ht.beq (.const 7))
+  ComputableInPolyTime.bool_or.comp
+    ((ComputableInPolyTime.bool_or.comp
+      ((ComputableInPolyTime.bool_or.comp
+        ((ht.beq (.const 4)).prod (ht.beq (.const 5)))).prod
+        (ht.beq (.const 6)))).prod
+      (ht.beq (.const 7)))
 
 @[fun_prop]
 theorem computableInPolyTime_gmwActiveIdx {α : Type} {input : α ↪ List Bool}
@@ -119,13 +126,14 @@ theorem computableInPolyTime_clauseEvalBits {α : Type} {input : α ↪ List Boo
     (hb₂ : ComputableInPolyTime b₂ input encBool) :
     ComputableInPolyTime (fun a => clauseEvalBits (c a) (b₀ a) (b₁ a) (b₂ a)) input encBool :=
   let hlen := SAT.computableInPolyTime_clause_length hc
-  bool_or' (bool_or'
-    (((ComputableInPolyTime.const 0).unary_lt' hlen).bool_and'
-      (hb₀.beq (computableInPolyTime_clauseLitPol 0 hc)))
-    (((ComputableInPolyTime.const 1).unary_lt' hlen).bool_and'
-      (hb₁.beq (computableInPolyTime_clauseLitPol 1 hc))))
-    (((ComputableInPolyTime.const 2).unary_lt' hlen).bool_and'
-      (hb₂.beq (computableInPolyTime_clauseLitPol 2 hc)))
+  ComputableInPolyTime.bool_or.comp
+    ((ComputableInPolyTime.bool_or.comp
+      ((((ComputableInPolyTime.const 0).unary_lt' hlen).bool_and'
+        (hb₀.beq (computableInPolyTime_clauseLitPol 0 hc))).prod
+      (((ComputableInPolyTime.const 1).unary_lt' hlen).bool_and'
+        (hb₁.beq (computableInPolyTime_clauseLitPol 1 hc))))).prod
+      (((ComputableInPolyTime.const 2).unary_lt' hlen).bool_and'
+        (hb₂.beq (computableInPolyTime_clauseLitPol 2 hc))))
 
 @[fun_prop]
 theorem computableInPolyTime_varBit {α : Type} {input : α ↪ List Bool}
@@ -276,10 +284,11 @@ theorem computableInPolyTime_verifyCopyBits {α : Type} {input : α ↪ List Boo
   hb.ite'
     ((ComputableInPolyTime.unary_range'
       ((ComputableInPolyTime.const 8).unary_mul' (SAT.computableInPolyTime_length hφ))).allWithInput
-      (bool_or' (ComputableInPolyTime.bool_not.comp
+      (ComputableInPolyTime.bool_or.comp
+        ((ComputableInPolyTime.bool_not.comp
           ((computableInPolyTime_activeTableFlags hφ1
-            (computableInPolyTime_vPart hφ1 hcopy1)).bitsGetDWithInput hsnd false))
-        ((computableInPolyTime_tablePart hφ1 hcopy1).bitsGetDWithInput hsnd false)))
+            (computableInPolyTime_vPart hφ1 hcopy1)).bitsGetDWithInput hsnd false)).prod
+        ((computableInPolyTime_tablePart hφ1 hcopy1).bitsGetDWithInput hsnd false))))
     ((computableInPolyTime_tablePart hφ hcopy).beq
       (computableInPolyTime_tableBits hφ (computableInPolyTime_mPart hφ hcopy)))
 
@@ -389,12 +398,12 @@ theorem computableInPolyTime_verifyCommitments {α : Type} {input : α ↪ List 
   let hsnd := ComputableInPolyTime.snd input encUnary
   let hm1 := hm.comp hfst
   (ComputableInPolyTime.unary_range' (computableInPolyTime_totalLen hφ)).allWithInput
-    (bool_or'
-      (ComputableInPolyTime.bool_not.comp ((hflags.comp hfst).bitsGetDWithInput hsnd false))
+    (ComputableInPolyTime.bool_or.comp
+      ((ComputableInPolyTime.bool_not.comp ((hflags.comp hfst).bitsGetDWithInput hsnd false)).prod
       ((computableInPolyTime_naorCommit hg (hm1.bitsRowWithInput (.const 0) (hr.comp hfst))
           ((hopened.comp hfst).bitsGetDWithInput hsnd false)
           ((hs.comp hfst).bitsRowWithInput hsnd (hseeds.comp hfst))).beq
-        (hm1.bitsRowWithInput hsnd (hcommit.comp hfst))))
+        (hm1.bitsRowWithInput hsnd (hcommit.comp hfst)))))
 
 @[fun_prop]
 theorem computableInPolyTime_verifyTranscript {α : Type} {input : α ↪ List Bool}
