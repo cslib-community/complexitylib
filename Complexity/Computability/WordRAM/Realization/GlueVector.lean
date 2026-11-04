@@ -14,7 +14,8 @@ public import Complexity.Computability.WordRAM.Realization.Witness
 # Certified finite-result word glue
 
 A finite family of scalar `GlueComputes` certificates realizes one faithfully encoded result.
-The scalar witnesses are selected before every runtime input and word width. All coordinates
+Supplied scalar witnesses retain their scratch and code before every runtime input and word width.
+The proposition-only frontend selects witnesses by classical choice instead. All coordinates
 reuse a static auxiliary bank disjoint from the output slots, and each computed coordinate is
 copied into its final slot. Both those copies and the empty-vector case are charged.
 
@@ -31,6 +32,7 @@ true tag still requires the visible word-fit condition for `1`.
 
 ## Main results
 
+* `Realizes.Witness.glueVectorOfScalars`: retain supplied scalar code and its maximum bank.
 * `Realizes.Witness.glueVector`, `Realizes.glueVector`: realize a finite result using certified
   scalar coordinate computations, retaining or erasing the witness data.
 * `Realizes.addWords`, `Realizes.increment`, `Realizes.decrement`: charged scalar word arithmetic.
@@ -127,20 +129,21 @@ private theorem coordinateSeq_glue (code : Fin l → Code B r) (idle : Fin r)
 
 namespace Realizes
 
-/-- Compute every output coordinate using actual certified scalar code. The common domain and
-all coordinate envelopes remain visible, while code, exchange constant and scratch are uniform.
+/-- Compute every output coordinate using supplied scalar code and a maximum auxiliary bank.
+The common domain and all coordinate envelopes remain visible, while code, exchange constant
+and scratch are uniform.
 A final neutral copy pays for the empty result without materializing a non-fitting constant. -/
-noncomputable def Witness.glueVector (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → ℕ))
+def Witness.glueVectorOfScalars (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → ℕ))
     (f : δ → α) (g bound : Fin l → (Fin k → ℕ) → ℕ) (time : Fin l → ℕ)
     {P : (Fin k → ℕ) → Prop}
     (hresult : ∀ d i, output (f d) i = g i (input d))
-    (hcoord : ∀ i, GlueComputes B P (g i) (bound i) (time i)) :
+    (scalars : ∀ i, GlueComputes.Witness B P (g i) (bound i) (time i)) :
     Witness B (fun d => pure (f d)) input output
       (fun w d _ => P (input d) ∧ ∀ i, Fits w (bound i (input d)))
       (fun _ _ => (∑ i, time i) + l) :=
-  let n (i : Fin l) := (hcoord i).2.choose
+  let n (i : Fin l) := (scalars i).scratchSize
   let emit (i : Fin l) : ∀ {r : ℕ}, (Fin k → Fin r) →
-      (Fin (n i + 1) → Fin r) → Code B r := (hcoord i).2.choose_spec.choose
+      (Fin (n i + 1) → Fin r) → Code B r := (scalars i).code
   have he (i : Fin l) {r : ℕ} (src : Fin k → Fin r) (tmp : Fin (n i + 1) → Fin r)
       (hi : Function.Injective tmp) (hd : ∀ a b, src a ≠ tmp b) :
       (emit i src tmp).IsGlue ∧
@@ -148,10 +151,10 @@ noncomputable def Witness.glueVector (input : δ ↪ (Fin k → ℕ)) (output : 
         ∃ y, ExecWithin w (emit i src tmp) x y (time i) ∧
           y.regs (tmp 0) = g i (x.regs ∘ src) ∧ y.mem = x.mem ∧
           ∀ j, (∀ a, tmp a ≠ j) → y.regs j = x.regs j :=
-    (hcoord i).2.choose_spec.choose_spec src tmp hi hd
-  let N := ∑ i, n i
+    (scalars i).code_spec src tmp hi hd
+  let N := Finset.univ.sup n
   have hn (i : Fin l) : n i ≤ N :=
-    Finset.single_le_sum (fun j _ => Nat.zero_le (n j)) (Finset.mem_univ i)
+    Finset.le_sup (Finset.mem_univ i)
   { scratchSize := N
     factor := 1
     code := fun _ src tmp => (List.finRange l).foldr
@@ -261,6 +264,20 @@ noncomputable def Witness.glueVector (input : δ ↪ (Fin k → ℕ)) (output : 
         · exact hyf frontier (fun _ => hf _) (fun _ _ => hf _)
       · intro i hif htmp
         exact hyf i (fun _ => htmp _) (fun _ _ => htmp _) }
+
+/-- Existential-only frontend to `Witness.glueVectorOfScalars`. Each scalar witness is
+choice-selected once, before runtime; no concrete scratch identity for that choice is asserted.
+The supplied-data entrypoint avoids this selection and retains its maximum auxiliary bank. -/
+noncomputable def Witness.glueVector (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → ℕ))
+    (f : δ → α) (g bound : Fin l → (Fin k → ℕ) → ℕ) (time : Fin l → ℕ)
+    {P : (Fin k → ℕ) → Prop}
+    (hresult : ∀ d i, output (f d) i = g i (input d))
+    (hcoord : ∀ i, GlueComputes B P (g i) (bound i) (time i)) :
+    Witness B (fun d => pure (f d)) input output
+      (fun w d _ => P (input d) ∧ ∀ i, Fits w (bound i (input d)))
+      (fun _ _ => (∑ i, time i) + l) :=
+  Witness.glueVectorOfScalars input output f g bound time hresult
+    (fun i => GlueComputes.Witness.ofGlueComputes (hcoord i))
 
 /-- The existential realization of the retained explicitly budgeted vector witness. -/
 theorem glueVector (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → ℕ))

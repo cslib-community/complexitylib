@@ -37,6 +37,7 @@ The interface and closure results are original; the underlying model is `WordRAM
 * `Code.IsGlue`: the memory-independent, width-independent finite fragment of existing code.
 * `GlueComputes`: a framed scalar computation with an explicit uniform instruction budget.
 * `GlueComputable`: the same contract with only the instruction budget existentially hidden.
+* `GlueComputes.Witness`: retain specified scalar scratch and code under that same contract.
 
 ## Main results
 
@@ -69,6 +70,20 @@ theorem Code.IsGlue.not_readsWidth {c : Code B r} (h : c.IsGlue) : ¬c.ReadsWidt
     exact fun hc => hc.elim (ha h.1) (hb h.2)
   | loop | rand => exact h.elim
 
+/-- The uniform native contract shared by existential and retained scalar certificates.
+Inputs may alias; only the scratch bank is fresh and injective. No whole-state boundedness
+premise is added to the scalar interface. -/
+@[expose] def GlueComputes.Spec (B : Basis) (P : (Fin k → ℕ) → Prop)
+    (f bound : (Fin k → ℕ) → ℕ) (time n : ℕ)
+    (emit : ∀ {r : ℕ}, (Fin k → Fin r) → (Fin (n + 1) → Fin r) → Code B r) : Prop :=
+  ∀ {r : ℕ} (src : Fin k → Fin r) (tmp : Fin (n + 1) → Fin r),
+    Function.Injective tmp → (∀ i j, src i ≠ tmp j) →
+    (emit src tmp).IsGlue ∧
+    ∀ (w : ℕ) (x : Data r), P (x.regs ∘ src) → Fits w (bound (x.regs ∘ src)) →
+      ∃ y, ExecWithin w (emit src tmp) x y time ∧
+        y.regs (tmp 0) = f (x.regs ∘ src) ∧ y.mem = x.mem ∧
+        ∀ i, (∀ j, tmp j ≠ i) → y.regs i = x.regs i
+
 /-- A scalar register function has a fixed emitter and instruction budget. `bound` is one
 top-level value envelope, and `P` is the fixed admissibility predicate. The scratch bank is
 fresh and injectively placed; input registers may repeat. Output is in scratch slot zero,
@@ -79,13 +94,7 @@ emitter nor the budget may depend on run-time values or the word width. -/
     (time : ℕ) : Prop :=
   (∀ v, P v → f v ≤ bound v) ∧
   ∃ n, ∃ emit : ∀ {r : ℕ}, (Fin k → Fin r) → (Fin (n + 1) → Fin r) → Code B r,
-    ∀ {r : ℕ} (src : Fin k → Fin r) (tmp : Fin (n + 1) → Fin r),
-      Function.Injective tmp → (∀ i j, src i ≠ tmp j) →
-      (emit src tmp).IsGlue ∧
-      ∀ (w : ℕ) (x : Data r), P (x.regs ∘ src) → Fits w (bound (x.regs ∘ src)) →
-        ∃ y, ExecWithin w (emit src tmp) x y time ∧
-          y.regs (tmp 0) = f (x.regs ∘ src) ∧ y.mem = x.mem ∧
-          ∀ i, (∀ j, tmp j ≠ i) → y.regs i = x.regs i
+    GlueComputes.Spec B P f bound time n emit
 
 /-- Syntax-directed automation hides only the uniform budget and emitter witness. The basis,
 admissibility predicate, scalar function and value envelope remain visible parameters. -/
@@ -97,6 +106,32 @@ def GlueComputable (B : Basis) (f : (Fin k → ℕ) → ℕ) (P : (Fin k → ℕ
 namespace GlueComputes
 
 variable {P : (Fin k → ℕ) → Prop} {f bound bound' : (Fin k → ℕ) → ℕ} {time time' : ℕ}
+
+/-- A specified scalar emitter with the same contract as `GlueComputes`. The envelope,
+scratch and code are retained as data before every runtime value, width and register layout. -/
+structure Witness (B : Basis) (P : (Fin k → ℕ) → Prop)
+    (f bound : (Fin k → ℕ) → ℕ) (time : ℕ) where
+  /-- Auxiliary slots, in addition to the scalar result slot. -/
+  scratchSize : ℕ
+  /-- The uniform scalar emitter. -/
+  code : ∀ {r : ℕ}, (Fin k → Fin r) → (Fin (scratchSize + 1) → Fin r) → Code B r
+  /-- The original visible value envelope. -/
+  bound_spec : ∀ v, P v → f v ≤ bound v
+  /-- The original native execution and memory/register-frame contract. -/
+  code_spec : Spec B P f bound time scratchSize code
+
+/-- Forget the specified code and scratch without changing the scalar contract. -/
+theorem Witness.toGlueComputes (h : Witness B P f bound time) : GlueComputes B P f bound time :=
+  ⟨h.bound_spec, h.scratchSize, h.code, h.code_spec⟩
+
+/-- Existential-only fallback. The selected scratch and code need not equal those of any
+particular derivation; use a supplied `Witness` when their identities matter. -/
+noncomputable def Witness.ofGlueComputes (h : GlueComputes B P f bound time) :
+    Witness B P f bound time where
+  scratchSize := h.2.choose
+  code := h.2.choose_spec.choose
+  bound_spec := h.1
+  code_spec := h.2.choose_spec.choose_spec
 
 /-- A checked explicit budget supplies the automation facade. -/
 theorem computable (h : GlueComputes B P f bound time) : GlueComputable B f P bound :=
@@ -144,9 +179,9 @@ theorem mono (h : GlueComputes B P f bound time)
   exact ⟨y, hy.mono ht, ho, hm, hf⟩
 
 /-- Copy one input register. Its bound is checked against the common visible envelope. -/
-theorem proj (i : Fin k) (hb : ∀ v, P v → v i ≤ bound v) :
-    GlueComputes B P (fun v => v i) bound 1 := by
-  refine ⟨hb, 0, fun src tmp => .op (.copy (tmp 0) (src i)), ?_⟩
+@[expose] def Witness.proj (i : Fin k) (hb : ∀ v, P v → v i ≤ bound v) :
+    Witness B P (fun v => v i) bound 1 := by
+  refine ⟨0, fun src tmp => .op (.copy (tmp 0) (src i)), hb, ?_⟩
   intro r src tmp hi hd
   refine ⟨trivial, ?_⟩
   intro w x hx hw
@@ -155,10 +190,15 @@ theorem proj (i : Fin k) (hb : ∀ v, P v → v i ≤ bound v) :
   · intro j hj
     exact Function.update_of_ne (hj 0).symm _ _
 
+/-- Erase the retained projection certificate. -/
+theorem proj (i : Fin k) (hb : ∀ v, P v → v i ≤ bound v) :
+    GlueComputes B P (fun v => v i) bound 1 :=
+  (Witness.proj i hb).toGlueComputes
+
 /-- Write a fitting constant. -/
-theorem const (z : ℕ) (hb : ∀ v, P v → z ≤ bound v) :
-    GlueComputes B P (fun _ => z) bound 1 := by
-  refine ⟨hb, 0, fun _ tmp => .op (.const (tmp 0) z), ?_⟩
+@[expose] def Witness.const (z : ℕ) (hb : ∀ v, P v → z ≤ bound v) :
+    Witness B P (fun _ => z) bound 1 := by
+  refine ⟨0, fun _ tmp => .op (.const (tmp 0) z), hb, ?_⟩
   intro r src tmp hi hd
   refine ⟨trivial, ?_⟩
   intro w x hx hw
@@ -166,6 +206,11 @@ theorem const (z : ℕ) (hb : ∀ v, P v → z ≤ bound v) :
   · simp [Data.set]
   · intro j hj
     exact Function.update_of_ne (hj 0).symm _ _
+
+/-- Erase the retained constant certificate. -/
+theorem const (z : ℕ) (hb : ∀ v, P v → z ≤ bound v) :
+    GlueComputes B P (fun _ => z) bound 1 :=
+  (Witness.const z hb).toGlueComputes
 
 private def left {a b : ℕ} (j : Fin (a + 1)) : Fin (a + b + 3) :=
   ⟨j.val + 1, by omega⟩
@@ -198,19 +243,19 @@ private theorem left_ne_right {a b : ℕ} (i : Fin (a + 1)) (j : Fin (b + 1)) :
 word in its argument vector. Its interpretation and domain are checked explicitly, at every
 width; no totalization of a partial basis operation is used. Intermediate executions share the
 same envelope, and their instruction costs are added without bound search. -/
-theorem binary {f g h : (Fin k → ℕ) → ℕ} {tf tg : ℕ}
-    (hf : GlueComputes B P f bound tf) (hg : GlueComputes B P g bound tg)
+def Witness.binary {f g h : (Fin k → ℕ) → ℕ} {tf tg : ℕ}
+    (hf : Witness B P f bound tf) (hg : Witness B P g bound tg)
     (op : B.Op) (args : Fin (B.Arity op) → Fin 2) (hop : ¬B.ReadsWidth op)
     (heval : ∀ v, P v → ∀ w, B.interp w op (fun i => ![f v, g v] (args i)) = some (h v))
     (hb : ∀ v, P v → h v ≤ bound v) :
-    GlueComputes B P h bound (tf + tg + 1) := by
-  obtain ⟨_, a, ea, ha⟩ := hf
-  obtain ⟨_, b, eb, hg⟩ := hg
+    Witness B P h bound (tf + tg + 1) := by
+  obtain ⟨a, ea, _, ha⟩ := hf
+  obtain ⟨b, eb, _, hg⟩ := hg
   let emit : ∀ {r : ℕ}, (Fin k → Fin r) → (Fin (a + b + 2 + 1) → Fin r) → Code B r :=
     fun src tmp => .seq (ea src (tmp ∘ left))
       (.seq (eb src (tmp ∘ right))
         (.op (.alu op (tmp 0) (fun i => if args i = 0 then tmp (left 0) else tmp (right 0)))))
-  refine ⟨hb, a + b + 2, emit, ?_⟩
+  refine ⟨a + b + 2, emit, hb, ?_⟩
   intro r src tmp hi hd
   obtain ⟨hga, hra⟩ := ha src (tmp ∘ left) (hi.comp left_injective)
     (fun i j => hd i (left j))
@@ -247,6 +292,28 @@ theorem binary {f g h : (Fin k → ℕ) → ℕ} {tf tg : ℕ}
     change Function.update z.regs (tmp 0) (h (x.regs ∘ src)) i = x.regs i
     rw [Function.update_of_ne (hne 0).symm]
     exact (hzf i (fun j => hne (right j))).trans (hyf i (fun j => hne (left j)))
+
+/-- Binary composition retains the two disjoint operand banks and one result slot. -/
+@[simp] theorem Witness.binary_scratchSize {f g h : (Fin k → ℕ) → ℕ} {tf tg : ℕ}
+    (hf : Witness B P f bound tf) (hg : Witness B P g bound tg)
+    (op : B.Op) (args : Fin (B.Arity op) → Fin 2) (hop : ¬B.ReadsWidth op)
+    (heval : ∀ v, P v → ∀ w, B.interp w op (fun i => ![f v, g v] (args i)) = some (h v))
+    (hb : ∀ v, P v → h v ≤ bound v) :
+    (hf.binary hg op args hop heval hb).scratchSize = hf.scratchSize + hg.scratchSize + 2 := by
+  cases hf
+  cases hg
+  rfl
+
+/-- Compose existential certificates using their choice-selected scalar witnesses. For
+specified scratch and code, use `Witness.binary` directly. -/
+theorem binary {f g h : (Fin k → ℕ) → ℕ} {tf tg : ℕ}
+    (hf : GlueComputes B P f bound tf) (hg : GlueComputes B P g bound tg)
+    (op : B.Op) (args : Fin (B.Arity op) → Fin 2) (hop : ¬B.ReadsWidth op)
+    (heval : ∀ v, P v → ∀ w, B.interp w op (fun i => ![f v, g v] (args i)) = some (h v))
+    (hb : ∀ v, P v → h v ≤ bound v) :
+    GlueComputes B P h bound (tf + tg + 1) :=
+  (Witness.binary (Witness.ofGlueComputes hf) (Witness.ofGlueComputes hg)
+    op args hop heval hb).toGlueComputes
 
 /-- Substitute a register map, including a map with repeated inputs. The emitter accepts
 arbitrary input layouts, so this substitution needs no staging copies or injectivity premise. -/
@@ -433,6 +500,26 @@ theorem bin_standard {f g : (Fin k → ℕ) → ℕ} {tf tg : ℕ}
     (op : BinOp) (hb : ∀ v, P v → op.eval (f v) (g v) ≤ bound v) :
     GlueComputes .standard P (fun v => op.eval (f v) (g v)) bound (tf + tg + 1) :=
   binary hf hg (.bin op) id (by simp) (fun _ _ _ => rfl) hb
+
+/-- Retain exact binary code and scratch. Definedness of the partial operation on the fixed
+domain is still required separately from output fit. -/
+@[expose] def Witness.binExact {f g : (Fin k → ℕ) → ℕ} {tf tg : ℕ}
+    (hf : Witness .exact P f bound tf) (hg : Witness .exact P g bound tg)
+    (op : BinOp) (hv : ∀ v, P v → op.evalExact (f v) (g v) = some (op.eval (f v) (g v)))
+    (hb : ∀ v, P v → op.eval (f v) (g v) ≤ bound v) :
+    Witness .exact P (fun v => op.eval (f v) (g v)) bound (tf + tg + 1) :=
+  Witness.binary hf hg (.bin op) id (by simp) (fun v hp _ => hv v hp) hb
+
+/-- Exact binary witnesses retain the original operand-bank accounting without requiring
+clients to unfold the basis-dependent emitter. -/
+@[simp] theorem Witness.binExact_scratchSize {f g : (Fin k → ℕ) → ℕ} {tf tg : ℕ}
+    (hf : Witness .exact P f bound tf) (hg : Witness .exact P g bound tg)
+    (op : BinOp) (hv : ∀ v, P v → op.evalExact (f v) (g v) = some (op.eval (f v) (g v)))
+    (hb : ∀ v, P v → op.eval (f v) (g v) ≤ bound v) :
+    (hf.binExact hg op hv hb).scratchSize = hf.scratchSize + hg.scratchSize + 2 := by
+  cases hf
+  cases hg
+  rfl
 
 /-- Exact binary operations require their interpretation to be defined on the fixed domain.
 Output fit alone cannot discharge underflow or a zero divisor. -/

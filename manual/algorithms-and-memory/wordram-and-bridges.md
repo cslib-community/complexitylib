@@ -102,6 +102,33 @@ randomized constructor. Existing existential Backend clients remain available th
 choice fallback. Fixed-resource Karger endpoints still need their own compatible emitter and
 resource proofs; no selected abstract bound follows from this example.
 
+### Retain scalar code and share its scratch bank
+
+Import `Complexity.Computability.WordRAM.Realization.GlueVector`. For a concrete scalar
+implementation, retain a `GlueComputes.Witness` rather than erase it to `GlueComputes` and
+select again. The `proj`, `const`, `binary` and `binExact` data constructors reuse the original
+scalar execution contract and proofs. Projections and constants have zero auxiliary slots;
+`binary` retains `a+b+2` auxiliary slots for operands with scratch sizes `a` and `b`. Exact
+subtraction and division still require their explicit definedness premises: a fitting output
+alone does not justify underflow or division by zero. Input registers may repeat, and the
+scalar rules require no whole-state boundedness premise.
+
+Pass those supplied scalars directly to `Realizes.Witness.glueVectorOfScalars`. Coordinates run
+sequentially, sharing the **maximum** auxiliary bank while each result gets its own persistent
+output slot. Each output copy and the final neutral copy are charged. The existing
+`Witness.glueVector` and `Realizes.glueVector` proposition-based interfaces remain available,
+but their classical-choice fallback gives no concrete scratch or code identity.
+
+The complete [checked client](../../ComplexityTests/WordRAMScalarWitness.lean) computes
+`(cursor+1, accumulator+value)` with two specified three-instruction scalar additions. Its
+actual supplied Backend has nine registers and a nine-instruction body allowance. Replaying
+the original sum-bank placement on these **same supplied scalar data** gives eleven registers;
+this is not a numerical claim about witnesses selected from old existential proofs. The tests
+check maximum-word output, full dirty-memory/frontier/live-register preservation, actually
+aliased input registers, overflow-domain exclusion and a width-zero projection. Argument
+installation and a caller halt remain separate charges. No sixteen-register Karger endpoint
+or whole-initializer bound follows from this standalone client.
+
 ### Keep native loop overhead additive
 
 When a memory loop already has a retained body witness, keep that data through
