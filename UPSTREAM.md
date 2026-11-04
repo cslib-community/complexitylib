@@ -458,6 +458,20 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   strengthening distinct-set sparsity when inputs repeat. Exact integer comparisons replace
   analytic numerical approximations. Polynomial-factor absorption, ET replacement, parameter
   retuning and tuned ordinary-3SUM 1.9992 remain #1394. No curated abstract or rendering changes.
+* **Callable box products and actual ET records.**
+  [#2335](https://github.com/cslib-community/complexitylib/issues/2335) translates the full routed
+  box product with the existing native memory-window compiler. Original dimensions derive a
+  polynomial virtual window and logarithmic physical admission; no bounded-scratch or source-fit
+  oracle is supplied. Two real instructions extend final normalization to the appended threshold.
+  Actual setup, translations, input/answer normalization and halt retain the finite `D^(-8/125)`
+  bound with explicit depth factors. The new record consumer reuses actual decoding/copies,
+  executes sixteen changed level/length/threshold instructions, and calls that compiled product.
+  Its initialized client runs the genuine original-weight producer and selects an occupied record;
+  readbacks and occurrence sparsity are conclusions of that execution. General correctness uses
+  `L=21*m` and `t=m/9`; the quantitative specialization requires `m=9k`. The complete per-record
+  finite saving charges adapter and halt, with producer work separate. The full ET controller,
+  aggregate bound, native parameter retuning and ordinary 1.9992 remain #1394. Existing suppliers,
+  headline statements, curated abstracts and rendering are unchanged.
 * **Native pruned-query evaluator.** The explicit-stack pruned-query evaluator ([#1526](https://github.com/cslib-community/complexitylib/issues/1526))
   is original native code, reusing the finite `Pruned.result`, `childSet` and trace/leaf
   quantities from `Sec2/Lemma10.lean`. `PrunedQuery.queryIndex` directly applies the existing
