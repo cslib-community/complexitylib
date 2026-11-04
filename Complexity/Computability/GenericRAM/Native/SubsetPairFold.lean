@@ -368,10 +368,8 @@ private theorem foldl_unrankCombStep_eq {N m : ℕ} (hm : m ≤ N) (k r : ℕ) (
     rw [List.range_succ, List.reverse_append, List.reverse_singleton, List.singleton_append,
       List.foldl_cons, unrankCombination]
     have hm_le : m ≤ N := by omega
-    simp only [Internal.unrankCombStep, getD_pascalTable_eq_choose hm_le k]; split_ifs
-    · rw [ih hm_le k r (acc ++ [false]), List.append_assoc, List.singleton_append]
-    · rw [ih hm_le (k - 1) (r - m.choose k) (acc ++ [true]), List.append_assoc,
-        List.singleton_append]
+    simp only [Internal.unrankCombStep, getD_pascalTable_eq_choose hm_le k]
+    split_ifs <;> rw [ih hm_le, List.append_assoc, List.singleton_append]
 
 /-- The table-driven unranker computes `Cslib.BitString.unrankCombination`. -/
 theorem unrankComb_eq_unrankCombination (n k r : ℕ) :
@@ -514,9 +512,9 @@ private theorem unrankPair_injective {n q j₁ j₂ : ℕ}
   obtain ⟨s₁, off₁, hfb₁, _, hoff₁, hj₁_eq⟩ := findBucket_of_lt hj₁
   obtain ⟨s₂, off₂, hfb₂, _, hoff₂, hj₂_eq⟩ := findBucket_of_lt hj₂
   have hr₁ : off₁ / 2 ^ s₁ < n.choose s₁ := by
-    rw [Nat.div_lt_iff_lt_mul (by positivity), Nat.mul_comm]; exact hoff₁
+    rwa [Nat.div_lt_iff_lt_mul (by positivity), Nat.mul_comm]
   have hr₂ : off₂ / 2 ^ s₂ < n.choose s₂ := by
-    rw [Nat.div_lt_iff_lt_mul (by positivity), Nat.mul_comm]; exact hoff₂
+    rwa [Nat.div_lt_iff_lt_mul (by positivity), Nat.mul_comm]
   simp only [unrankSubsetPair, hfb₁, hfb₂, Option.elim_some] at hE hU
   have hs_eq : s₁ = s₂ := by
     simpa only [unrankComb_eq_unrankCombination, count_true_unrankCombination hr₁,
@@ -525,16 +523,12 @@ private theorem unrankPair_injective {n q j₁ j₂ : ℕ}
   have hr_eq : off₁ / 2 ^ s₁ = off₂ / 2 ^ s₁ := by
     simp only [unrankComb_eq_unrankCombination] at hE
     exact unrankCombination_injective hr₁ hr₂ hE
-  have hm₁ : off₁ % 2 ^ s₁ <
+  have hm (off : ℕ) : off % 2 ^ s₁ <
       2 ^ (Internal.unrankComb n s₁ (off₁ / 2 ^ s₁) (pascalTable n)).count true := by
     rw [unrankComb_eq_unrankCombination, count_true_unrankCombination hr₁]
-    exact Nat.mod_lt off₁ (by positivity)
-  have hm₂ : off₂ % 2 ^ s₁ <
-      2 ^ (Internal.unrankComb n s₁ (off₁ / 2 ^ s₁) (pascalTable n)).count true := by
-    rw [unrankComb_eq_unrankCombination, count_true_unrankCombination hr₁]
-    exact Nat.mod_lt off₂ (by positivity)
+    exact Nat.mod_lt off (by positivity)
   rw [← hE] at hU; simp only [scatterMask_eq_pure] at hU
-  have hm_eq := pureScatter_injective hm₁ hm₂ hU
+  have hm_eq := pureScatter_injective (hm off₁) (hm off₂) hU
   have hd₁ := Nat.div_add_mod off₁ (2 ^ s₁); have hd₂ := Nat.div_add_mod off₂ (2 ^ s₁)
   rw [hr_eq, hm_eq] at hd₁; omega
 
@@ -678,7 +672,8 @@ open ComputableInPolyTime
       have hleft := (listGetD (encA := encNat) 0).comp
         (hq_prev.prod (unary_sub.comp (hq_s.prod (const 1))))
       have hright := (listGetD (encA := encNat) 0).comp (hq_prev.prod hq_s)
-      exact (hq_s.beq (const 0)).ite (const 1) (binary_add.comp (hleft.prod hright))
+      have hadd := binary_add.comp (hleft.prod hright)
+      exact (hq_s.beq (const 0)).ite (const 1) hadd
     exact listAppend' (snd encUnary encTab) (hmap.cons' (const []))
   exact iterateWith (par := fun n : ℕ => n + 1) (count := fun n : ℕ => n)
     (init := fun n : ℕ => [1 :: List.replicate n 0]) (step := Internal.pascalStep)
@@ -710,8 +705,9 @@ open ComputableInPolyTime
   have hcnt := unary_add.comp ((humin.comp (hsnd.prod hfst)).prod (const 1))
   have hbsum : ComputableInPolyTime List.sum (encList encNat) encNat := by fun_prop
   refine hbsum.comp (mapWithInput (range.comp hcnt) ?_); have hq_s := snd encParams encUnary
-  exact binary_mul' (binary_two_pow.comp hq_s)
-    ((listGetD (encA := encNat) 0).comp ((hrow.comp (fst encParams encUnary)).prod hq_s))
+  have hpow := binary_two_pow.comp hq_s
+  have hget := (listGetD (encA := encNat) 0).comp ((hrow.comp (fst encParams encUnary)).prod hq_s)
+  exact binary_mul' hpow hget
 
 private theorem length_bucketState_le (rowN : List ℕ) (n j i L : ℕ)
     (hi : i ≤ n + 1) (hj_le : (encNat j).length ≤ L) (hn_le : n ≤ L) :
@@ -1061,9 +1057,10 @@ noncomputable def certificate {encIn : α ↪ List Bool} {dim deg : α → ℕ}
     (ci : NativeCertificate initial encIn encB)
     (cb : NativeCertificate body (encPair encDecodedPair encB) encB) :
     NativeCertificate (fun a => run body (dim a) (deg a) (initial a)) encIn encB :=
+  let cCount := subsetPairCountCertificate.comp (cn.prod cq)
+  let cInit := (cn.prod cq).prod ci
   NativeCertificate.snd (NativeCertificate.snd
-    (IndexFold.certificate (subsetPairCountCertificate.comp (cn.prod cq))
-      ((cn.prod cq).prod ci) (indexBodyCertificate cb)))
+    (IndexFold.certificate cCount cInit (indexBodyCertificate cb)))
 
 end Streaming
 
@@ -1138,7 +1135,9 @@ theorem computableInO {encIn : α ↪ List Bool} {dim deg : α → ℕ}
       (fun a => (encIn a).length + cn.space a + cq.space a + ci.space a +
         decodeOverhead (dim a + deg a) + B a + Q a) := by
   let cCount := subsetPairCountCertificate.comp (cn.prod cq)
-  let cInit := (cn.prod cq).prod ci; let cStep := indexBodyCertificate cb
+  let cInit := (cn.prod cq).prod ci
+  let cStep : NativeCertificate (indexBody body) (encPair encNat (encLoopAcc encB))
+    (encLoopAcc encB) := indexBodyCertificate cb
   let BLoop (a : α) := 4 * (dim a + deg a) + 3 + B a
   let RLoop (a : α) := 4 * (8 * (dim a + deg a) + 6 + B a) + decodeOverhead (dim a + deg a) + R a
   let QLoop (a : α) := 4 * (8 * (dim a + deg a) + 6 + B a) + decodeOverhead (dim a + deg a) + Q a
@@ -1169,11 +1168,7 @@ theorem computableInO {encIn : α ↪ List Bool} {dim deg : α → ℕ}
       SubsetPairQuery.dim, SubsetPairQuery.deg, SubsetPairQuery.index, SubsetPairQuery.params]
     simp only [NativeCertificate.prod_time, NativeCertificate.comp_time, NativeCertificate.fst_time,
       NativeCertificate.snd_time, NativeCertificate.linear_time, runPrefix_index, hparams]
-    rw [show cb.time (unrankSubsetPair (dim a) (deg a) j,
-        (runPrefix body (dim a) (deg a) j (initial a)).2.2) =
-      cb.time (unrankSubsetPair (dim a) (deg a) j,
-        (LoopState.payload (runPrefix body (dim a) (deg a) j (initial a))).2) from rfl]
-    omega
+    linarith
   have hQ_loop : ∀ a j, j ≤ subsetPairCount (dim a) (deg a) →
       cStep.space (runPrefix body (dim a) (deg a) j (initial a)) ≤ QLoop a := by
     intro a j hj; have := hlenP a j hj; have := (hunr_all (dim a) (deg a) j hj).2; have := hQ a j hj
@@ -1182,11 +1177,8 @@ theorem computableInO {encIn : α ↪ List Bool} {dim deg : α → ℕ}
     simp only [NativeCertificate.prod_space, NativeCertificate.comp_space,
       NativeCertificate.fst_space, NativeCertificate.snd_space, NativeCertificate.linear_space,
       runPrefix_index, hparams]
-    rw [show cb.space (unrankSubsetPair (dim a) (deg a) j,
-        (runPrefix body (dim a) (deg a) j (initial a)).2.2) =
-      cb.space (unrankSubsetPair (dim a) (deg a) j,
-        (LoopState.payload (runPrefix body (dim a) (deg a) j (initial a))).2) from rfl]
-    omega
+    linarith
+  clear_value cStep
   have hfold := IndexFold.computableInO cCount cInit cStep RLoop QLoop BLoop hR_loop hQ_loop hB_loop
   have hproj : ComputableInO (fun a => run body (dim a) (deg a) (initial a)) encIn encB _ _ :=
     (ComputableInO.snd encParams encB).comp_linear
@@ -1199,10 +1191,8 @@ theorem computableInO {encIn : α ↪ List Bool} {dim deg : α → ℕ}
     have : dim a + deg a + 1 ≤ (dim a + deg a + 1) ^ 2 := by
       rw [sq]; exact Nat.le_mul_of_pos_right _ (by omega)
     have : ((encNat (subsetPairCount (dim a) (deg a))).length + 1) ^ 2 ≤
-        4 * (dim a + deg a + 1) ^ 2 := by
-      calc ((encNat (subsetPairCount (dim a) (deg a))).length + 1) ^ 2
-          ≤ (2 * (dim a + deg a + 1)) ^ 2 := Nat.pow_le_pow_left (by omega) 2
-        _ = 4 * (dim a + deg a + 1) ^ 2 := by ring
+        4 * (dim a + deg a + 1) ^ 2 :=
+      (Nat.pow_le_pow_left (by omega : _ ≤ 2 * (dim a + deg a + 1)) 2).trans_eq (by ring)
     let L := (encNat (subsetPairCount (dim a) (deg a))).length
     have hstep_le : 2 * L + 1 + (4 * (dim a + deg a) + 3 + B a) + (L + 1) ^ 2 +
         (4 * (8 * (dim a + deg a) + 6 + B a) + decodeOverhead (dim a + deg a) + R a) +

@@ -84,12 +84,7 @@ private theorem computable_incidencePort :
       (encPair (encList encNat) encUnary) (encList encNat) := by fun_prop
   have hc : ComputableInPolyTime (fun p : Graph × ℕ =>
       (p.1.incidenceVertices.take p.2).count (p.1.incidenceVertices.getD p.2 0))
-      (encPair encGraph encUnary) encUnary := by
-    simp only [List.count_eq_countP]
-    have hl := htake.comp ((hiv.comp (.fst _ _)).prod (.snd _ _))
-    have hv := ComputableInPolyTime.listGetDWithInput (hiv.comp (.fst _ _)) (.snd _ _) 0
-    exact ComputableInPolyTime.countPWithInput hl
-      ((ComputableInPolyTime.snd _ _).beq (hv.comp (.fst _ _)))
+      (encPair encGraph encUnary) encUnary := by fun_prop
   exact hmod.comp hc
 
 attribute [local fun_prop] computable_incidencePort
@@ -97,9 +92,7 @@ attribute [local fun_prop] computable_incidencePort
 private theorem computable_canonicalPorts :
     ComputableInPolyTime Graph.canonicalPorts encGraph
       (encList (encPair (encFinEnum (Fin 3)) (encFinEnum (Fin 3)))) := by
-  have hlen : ComputableInPolyTime (fun G : Graph => G.2.length) encGraph encUnary :=
-    (ComputableInPolyTime.length_list (encPair encNat encNat)).comp
-      (by unfold encGraph; fun_prop)
+  have hlen : ComputableInPolyTime (fun G : Graph => G.2.length) encGraph encUnary := by fun_prop
   unfold Graph.canonicalPorts
   exact ComputableInPolyTime.mapWithInput (ComputableInPolyTime.range.comp hlen) (by fun_prop)
 
@@ -151,27 +144,20 @@ private theorem computable_orthogonalRoutes :
     (encPair encUnary (encPair (encFinEnum (Fin 3)) (encFinEnum (Fin 3))))))
   have hp : ComputableInPolyTime (fun p : Graph × ((ℕ × ℕ) × ℕ) =>
       p.1.canonicalPorts.getD p.2.2 (0, 0))
-      (encPair encGraph edgeEncoding) (encPair (encFinEnum (Fin 3)) (encFinEnum (Fin 3))) :=
-    ComputableInPolyTime.listGetDWithInput (computable_canonicalPorts.comp (.fst _ _))
-      (by unfold edgeEncoding; fun_prop) (0, 0)
+      (encPair encGraph edgeEncoding) (encPair (encFinEnum (Fin 3)) (encFinEnum (Fin 3))) := by
+    fun_prop
   have hvlen : ComputableInPolyTime (fun p : Graph × ((ℕ × ℕ) × ℕ) => p.1.1.length)
-      (encPair encGraph edgeEncoding) encUnary :=
-    (ComputableInPolyTime.length_list encNat).comp (by unfold encGraph; fun_prop)
+      (encPair encGraph edgeEncoding) encUnary := by fun_prop
   have hargs : ComputableInPolyTime (fun p : Graph × ((ℕ × ℕ) × ℕ) =>
       (p.1.1.length, p.2.2, p.1.1.idxOf p.2.1.1, p.1.1.idxOf p.2.1.2,
         (p.1.canonicalPorts.getD p.2.2 (0, 0)).1,
         (p.1.canonicalPorts.getD p.2.2 (0, 0)).2))
-      (encPair encGraph edgeEncoding) routeInput := by
-    unfold routeInput edgeEncoding encGraph at *
-    fun_prop
+      (encPair encGraph edgeEncoding) routeInput := by fun_prop
   have hbody := computable_layoutRoute.comp hargs
   have hzip : ComputableInPolyTime (List.zipIdx (α := ℕ × ℕ))
-      (encList (encPair encNat encNat)) (encList edgeEncoding) := by
-    unfold edgeEncoding
-    fun_prop
+      (encList (encPair encNat encNat)) (encList edgeEncoding) := by fun_prop
   have hlist : ComputableInPolyTime (fun G : Graph => G.2.zipIdx) encGraph
-      (encList edgeEncoding) :=
-    hzip.comp (by unfold encGraph; fun_prop)
+      (encList edgeEncoding) := by fun_prop
   simpa only [Graph.orthogonalRoutes, Function.comp_def] using
     ComputableInPolyTime.mapWithInput hlist hbody
 
@@ -182,12 +168,9 @@ attribute [local fun_prop] computable_orthogonalRoutes
 theorem computableInPolyTime_budget : ComputableInPolyTime budget encCNF encUnary := by
   have hg := SAT.computableInPolyTime_incidenceGraph encNat
   have hl1 : ComputableInPolyTime (fun φ : CNF ℕ => (SAT.incidenceGraph φ).1.length)
-      encCNF encUnary :=
-    (ComputableInPolyTime.length_list encNat).comp (by unfold encGraph at hg; exact hg.fst')
+      encCNF encUnary := by fun_prop
   have hl2 : ComputableInPolyTime (fun φ : CNF ℕ => (SAT.incidenceGraph φ).2.length)
-      encCNF encUnary :=
-    (ComputableInPolyTime.length_list (encPair encNat encNat)).comp
-      (by unfold encGraph at hg; exact hg.snd')
+      encCNF encUnary := by fun_prop
   unfold budget
   fun_prop
 
@@ -216,13 +199,9 @@ private theorem computable_endpointColumns :
   unfold endpointColumns
   have hp : ComputableInPolyTime (fun p : Graph × ℕ =>
       p.1.canonicalPorts.getD p.2 (0, 0))
-      (encPair encGraph encUnary) (encPair (encFinEnum (Fin 3)) (encFinEnum (Fin 3))) :=
-    ComputableInPolyTime.listGetDWithInput (computable_canonicalPorts.comp (.fst _ _))
-      (.snd _ _) (0, 0)
+      (encPair encGraph encUnary) (encPair (encFinEnum (Fin 3)) (encFinEnum (Fin 3))) := by fun_prop
   have he : ComputableInPolyTime (fun p : Graph × ℕ => p.1.2.getD p.2 (0, 0))
-      (encPair encGraph encUnary) (encPair encNat encNat) := by
-    unfold encGraph
-    fun_prop
+      (encPair encGraph encUnary) (encPair encNat encNat) := by fun_prop
   unfold Graph.edgeEndpoint Graph.portAt encPoint encGraph at *
   simp only [Bool.false_eq_true, ↓reduceIte]
   fun_prop
@@ -243,12 +222,10 @@ private theorem computable_candidatePair :
   have hleft := hcols.fst'
   have hright := hcols.snd'
   have hvlen : ComputableInPolyTime (fun p : Graph × (ℕ × ℕ) => p.1.1.length)
-      (encPair encGraph (encPair encUnary encUnary)) encUnary :=
-    (ComputableInPolyTime.length_list encNat).comp (by unfold encGraph; fun_prop)
+      (encPair encGraph (encPair encUnary encUnary)) encUnary := by fun_prop
   have htrack : ComputableInPolyTime (fun p : Graph × (ℕ × ℕ) =>
       Layout.track p.1.1.length p.2.1)
-      (encPair encGraph (encPair encUnary encUnary)) encIntBin := by
-    fun_prop
+      (encPair encGraph (encPair encUnary encUnary)) encIntBin := by fun_prop
   unfold candidatePair encPoint at *
   fun_prop
 
@@ -299,8 +276,7 @@ theorem computable_distinctPoints :
       encRoute encRoute := by
   have hrep : ComputableInPolyTime (fun n => List.replicate n true) encUnary encBits :=
     ComputableInPolyTime.of_eq fun _ => rfl
-  have hlen : ComputableInPolyTime (fun l : Route => l.length) encRoute encUnary :=
-    ComputableInPolyTime.length_list encPoint
+  have hlen : ComputableInPolyTime (fun l : Route => l.length) encRoute encUnary := by fun_prop
   unfold encRoute at *
   fun_prop
 
@@ -312,20 +288,16 @@ private theorem computable_crossingPredicate :
   have hg := SAT.computableInPolyTime_incidenceGraph encNat
   have hv : ComputableInPolyTime (fun p : CNF ℕ × Point =>
       (SAT.incidenceGraph p.1).orthogonalPositions)
-      (encPair encCNF encPoint) (encList encPoint) :=
-    (computable_orthogonalPositions.comp hg).comp (ComputableInPolyTime.fst _ _)
+      (encPair encCNF encPoint) (encList encPoint) := by fun_prop
   have hp : ComputableInPolyTime (fun p : CNF ℕ × Point => paths p.1)
-      (encPair encCNF encPoint) (encList (encList encPoint)) :=
-    computableInPolyTime_paths.comp (ComputableInPolyTime.fst _ _)
+      (encPair encCNF encPoint) (encList (encList encPoint)) := by fun_prop
   simp only [List.contains_eq_mem]
   have hf : ComputableInPolyTime
       (fun p : CNF ℕ × Point => (paths p.1).filter fun r => decide (p.2 ∈ r))
-      (encPair encCNF encPoint) (encList (encList encPoint)) :=
-    ComputableInPolyTime.filterWithInput hp (by fun_prop)
+      (encPair encCNF encPoint) (encList (encList encPoint)) := by fun_prop
   have hflen : ComputableInPolyTime
       (fun p : CNF ℕ × Point => ((paths p.1).filter fun r => decide (p.2 ∈ r)).length)
-      (encPair encCNF encPoint) encUnary :=
-    (ComputableInPolyTime.length_list (encList encPoint)).comp hf
+      (encPair encCNF encPoint) encUnary := by fun_prop
   fun_prop
 
 /-- Occupied nonvertex crossing sites can be selected in native polynomial time. -/

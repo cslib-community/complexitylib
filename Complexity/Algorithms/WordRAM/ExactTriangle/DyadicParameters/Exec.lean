@@ -26,11 +26,11 @@ open Cslib.WordRAM
 open Cslib.Algorithms.ExactTriangle
 
 /-- Original-scalar word envelope, including all fixed constants and both power calls. -/
-@[expose] def wordBudget (n : ℕ) : ℕ := 1296 + 32 * (n + 1)
+@[expose] def wordBudget (n : ℕ) : ℕ := 2394 + 32 * (n + 1)
 
 /-- Charged complete caller computation, before the final halt. -/
 @[expose] def timeBound (n : ℕ) : ℕ :=
-  4 * Nat.log 2 n + 4 * ParameterChoice.blocks n + 4 * ParameterChoice.level n + 33
+  4 * Nat.log 2 n + 8 * ParameterChoice.blocks n + 4 * ParameterChoice.level n + 33
 
 private def Ready (n : ℕ) (x : Data 16) : Prop := x.regs Reg.side = n ∧
   x.regs Reg.blocks = ParameterChoice.blocks n ∧ x.regs Reg.level = ParameterChoice.level n ∧
@@ -89,7 +89,8 @@ theorem exec {w n : ℕ} (x : Data 16) (hn : x.regs Reg.side = n)
     (hfit : Fits w (wordBudget n)) :
     ∃ y, ExecWithin w program x y (timeBound n) ∧
       y.regs Reg.side = n ∧ y.regs Reg.blocks = ParameterChoice.blocks n ∧
-      y.regs Reg.level = ParameterChoice.level n ∧ y.regs Reg.window = ParameterChoice.window n ∧
+      y.regs Reg.level = ParameterChoice.level n ∧ y.regs Reg.window =
+        ParameterChoice.window n ∧
       y.regs Reg.groups = ParameterChoice.groups n ∧
       y.regs Reg.tensorDepth = ParameterChoice.tensorDepth n ∧
       y.regs Reg.fast = (if 0 < ParameterChoice.blocks n then 1 else 0) ∧ y.mem = x.mem := by
@@ -97,25 +98,31 @@ theorem exec {w n : ℕ} (x : Data 16) (hn : x.regs Reg.side = n)
     (ParameterChoice.blocks_le_log n).trans (Nat.log_le_self 2 n)
   have hm : ParameterChoice.level n ≤ n :=
     (ParameterChoice.level_le_log n).trans (Nat.log_le_self 2 n)
-  have hL : ParameterChoice.tensorDepth n ≤ 19 * n := Nat.mul_le_mul_left 19 hm
+  have hL : ParameterChoice.tensorDepth n ≤ 21 * n := Nat.mul_le_mul_left 21 hm
   have hg := (ParameterChoice.powers_le n).1
   have hD := (ParameterChoice.powers_le n).2
   have hlog := Nat.log_le_self 2 n
-  have h1296 : Fits w 1296 := hfit.of_le (by unfold wordBudget; omega)
-  have h36 : Fits w 36 := hfit.of_le (by unfold wordBudget; omega)
-  have h19 : Fits w 19 := hfit.of_le (by unfold wordBudget; omega)
+  have h2394 : Fits w 2394 := hfit.of_le (by unfold wordBudget; omega)
+  have h63 : Fits w 63 := hfit.of_le (by unfold wordBudget; omega)
+  have h21 : Fits w 21 := hfit.of_le (by unfold wordBudget; omega)
   have h4 : Fits w 4 := hfit.of_le (by unfold wordBudget; omega)
   have hblocks : Fits w (ParameterChoice.blocks n) := hfit.of_le (by unfold wordBudget; omega)
   have hlevel : Fits w (ParameterChoice.level n) := hfit.of_le (by unfold wordBudget; omega)
-  have hlength : Fits w (ParameterChoice.tensorDepth n) := hfit.of_le (by unfold wordBudget; omega)
-  have htFit : Fits w (Nat.log 2 n / 1296) := hblocks
-  have hmFit : Fits w (36 * (Nat.log 2 n / 1296)) := hlevel
-  have hLFit : Fits w (19 * (36 * (Nat.log 2 n / 1296))) := hlength
-  have hpg : Fits w (4 ^ ParameterChoice.blocks n + ParameterChoice.blocks n + 2) := hfit.of_le (by
-    change ParameterChoice.groups n + ParameterChoice.blocks n + 2 ≤ _
+  have hlength : Fits w (ParameterChoice.tensorDepth n) :=
+    hfit.of_le (by unfold wordBudget; omega)
+  have ht2Fit : Fits w (ParameterChoice.blocks n + ParameterChoice.blocks n) :=
+    hfit.of_le (by unfold wordBudget; omega)
+  have ht2Fit' : Fits w (Nat.log 2 n / 2394 + Nat.log 2 n / 2394) := ht2Fit
+  have htFit : Fits w (Nat.log 2 n / 2394) := hblocks
+  have hmFit : Fits w (63 * (Nat.log 2 n / 2394)) := hlevel
+  have hLFit : Fits w (21 * (63 * (Nat.log 2 n / 2394))) := hlength
+  have hpg : Fits w (4 ^ (2 * ParameterChoice.blocks n) + 2 * ParameterChoice.blocks n +
+    2) := hfit.of_le (by
+    change ParameterChoice.groups n + 2 * ParameterChoice.blocks n + 2 ≤ _
     unfold wordBudget
     omega)
-  have hpD : Fits w (4 ^ ParameterChoice.level n + ParameterChoice.level n + 2) := hfit.of_le (by
+  have hpD : Fits w (4 ^ ParameterChoice.level n + ParameterChoice.level n + 2) :=
+    hfit.of_le (by
     change ParameterChoice.window n + ParameterChoice.level n + 2 ≤ _
     unfold wordBudget
     omega)
@@ -147,22 +154,22 @@ theorem exec {w n : ℕ} (x : Data 16) (hn : x.regs Reg.side = n)
         omega))
     exact frame.trans (by simpa +decide [a, Reg.side, Reg.workValue] using hn)
   have blog' : b.regs Reg.workCount = Nat.log 2 n := blog
-  let c := ((((((((b.set Reg.divisor 1296).set Reg.blocks (ParameterChoice.blocks n)).set
-    Reg.thirtySix 36).set Reg.level (ParameterChoice.level n)).set Reg.nineteen 19).set
+  let c := ((((((((b.set Reg.divisor 2394).set Reg.blocks (ParameterChoice.blocks n)).set
+    (13 : Fin 16) 63).set Reg.level (ParameterChoice.level n)).set (14 : Fin 16) 21).set
     Reg.tensorDepth (ParameterChoice.tensorDepth n)).set Reg.four 4).set Reg.workBase 4).set
-    Reg.workExponent (ParameterChoice.blocks n)
+    Reg.workExponent (2 * ParameterChoice.blocks n)
   have prep : ExecWithin w prepare b c 9 := by
     ram_eval [prepare, c, blog', ParameterChoice.blocks, ParameterChoice.level,
       ParameterChoice.tensorDepth,
-      h1296, h36, h19, h4, htFit, hmFit, hLFit, Reg.divisor, Reg.blocks,
-      Reg.thirtySix, Reg.level, Reg.nineteen, Reg.tensorDepth, Reg.four, Reg.workBase,
+      h2394, h63, h21, h4, htFit, hmFit, hLFit, ht2Fit, ht2Fit', two_mul, Reg.divisor, Reg.blocks,
+      Reg.level, Reg.tensorDepth, Reg.four, Reg.workBase,
       Reg.workExponent, Reg.workCount, Fin.mk.injEq]
   have cReady : Ready n c := by
     refine ⟨?_, rfl, rfl, rfl, rfl⟩
-    simpa +decide [c, Reg.side, Reg.divisor, Reg.blocks, Reg.thirtySix, Reg.level,
-      Reg.nineteen, Reg.tensorDepth, Reg.four, Reg.workBase, Reg.workExponent] using bside
+    simpa +decide [c, Reg.side, Reg.divisor, Reg.blocks, Reg.level, Reg.tensorDepth, Reg.four,
+      Reg.workBase, Reg.workExponent] using bside
   obtain ⟨d, hd, dg, _, _, dmem, _, _, _⟩ := Power.exec_rename powerRegisters pow_inj
-    4 (ParameterChoice.blocks n) (by decide) c (by rfl) (by rfl) hpg
+    4 (2 * ParameterChoice.blocks n) (by decide) c (by rfl) (by rfl) hpg
   have dReady := cReady.after_power hd
   have dg' : d.regs Reg.workValue = ParameterChoice.groups n := dg
   let e := ((d.set Reg.groups (ParameterChoice.groups n)).set Reg.workBase 4).set
@@ -182,7 +189,7 @@ theorem exec {w n : ℕ} (x : Data 16) (hn : x.regs Reg.side = n)
   obtain ⟨y, hy, yD, yflag, ymem, yr⟩ := exec_finish f fReady.2.1 fD hfit
   have full := copy.seq (hb.seq (prep.seq (hd.seq (next.seq (hf.seq hy)))))
   refine ⟨y, full.mono ?_, ?_, ?_, ?_, yD, ?_, ?_, yflag, ?_⟩
-  · change 1 + (4 * Nat.log 2 n + 5 + (9 + (4 * ParameterChoice.blocks n + 5 +
+  · change 1 + (4 * Nat.log 2 n + 5 + (9 + (4 * (2 * ParameterChoice.blocks n) + 5 +
       (3 + (4 * ParameterChoice.level n + 5 + 5))))) ≤ timeBound n
     unfold timeBound
     omega
@@ -194,7 +201,7 @@ theorem exec {w n : ℕ} (x : Data 16) (hn : x.regs Reg.side = n)
   · exact ymem.trans (fmem.trans (dmem.trans bmem))
 
 /-- Actual execution is logarithmic, even using conservative bounds for both power calls. -/
-theorem timeBound_le (n : ℕ) : timeBound n ≤ 12 * Nat.log 2 n + 33 := by
+theorem timeBound_le (n : ℕ) : timeBound n ≤ 16 * Nat.log 2 n + 33 := by
   have ht := ParameterChoice.blocks_le_log n
   have hm := ParameterChoice.level_le_log n
   unfold timeBound

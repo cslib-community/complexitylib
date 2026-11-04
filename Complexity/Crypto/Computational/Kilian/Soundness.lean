@@ -61,7 +61,7 @@ proof of knowledge against non-uniform provers, with a reverse-sampling extracto
 superpolynomial length. Here statements and tables have polynomial length, adversaries are uniform
 (as in `CollisionResistant`), and the bound is computational soundness with an explicit loss; the
 statement and its constants are our own packaging. Succinctness accounting (communication and
-verifier time) is not covered here.
+verifier time) is in `Complexity.Crypto.Computational.Kilian.Succinct`.
 
 ## Main definitions
 
