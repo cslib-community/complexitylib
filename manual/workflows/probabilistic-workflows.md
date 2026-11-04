@@ -823,8 +823,30 @@ statistics API. First-signal weighted stationary noise and overflow-noise tails 
 unconditionally. Multiplying the stationary coefficient by the scheduled floor leaves the
 explicit `36 L floor + 72 L` factor; shrinking the floor alone does not pay the bias.
 
-**Remaining parent-error gap:** deterministic first means still need the canonical bin-cover
-and omitted/inactive-bin payments. Preparation mean/error transport, second-signal noise,
+[`HierarchyInitialMean.lean`](../../Complexity/Foundations/Probability/HierarchyInitialMean.lean)
+now derives each actual initial sample's canonical matrix-unit mean on the original
+source/terminal event, including unequal bin rates. For a nonnegative substochastic base,
+actual polynomial ratio-16 bins through index `n` sum to the entry times the switch at
+`entry / rate n`. `BudgetData.initialPrefix_polynomial_mean` combines this coverage with
+`initialGroupInput_sum`: the prefix mean deficit is exactly omitted fine coverage plus
+inactive fine-bin mass plus the initial coarse boundary. These are separate charges;
+scalar coverage alone does not make a sample's fine budget active.
+
+`BudgetData.initialFirstSignal_clippedMean` identifies the actual first predecoder statistic
+with the clipping at one of that deficit divided by `rankRate + baseEntry`.
+`BudgetData.initial_requestSignals_envelope` supplies a post-increment raw-prefix envelope
+for the actual bin-preparation target: deterministic first deficit, centered first noise,
+and the remaining second discrepancy. It preserves the initial canonical base target,
+not a residual-specific mean. Apply the existing first-noise payments separately; preparation
+and second-signal payments must still be proved before using the full integrated output bound.
+The [actual-history regression](../../ComplexityTests/PolynomialBudgetHistory.lean) checks
+early inactive loss and its final disappearance, a nonzero fine-bin mean at rate `1/16`,
+and a positive omitted entry of size `1/256`. The unequal-rate examples check successful
+histories and their conditional means; they do not claim final compressed accuracy.
+
+**Remaining parent-error gap:** the first deterministic envelope retains explicit losses;
+their global scheduled payment is not established. Preparation mean/error transport,
+second-signal noise,
 combined false-event raw-prefix moments at j+1, and the resulting no-overflow/final and heavy
 mean-tail budgets have not been paid from an invariant covering ALL actual lower-budget
 calls. Heavy-event rarity applies only to deterministic mean envelopes; it must not discount

@@ -3733,6 +3733,7 @@ public import Complexity.Foundations.Probability.HierarchyDetector
 public import Complexity.Foundations.Probability.HierarchyEstimatedInput
 public import Complexity.Foundations.Probability.HierarchyEstimatedMean
 public import Complexity.Foundations.Probability.HierarchyInitialHistory
+public import Complexity.Foundations.Probability.HierarchyInitialMean
 public import Complexity.Foundations.Probability.HierarchyParams
 public import Complexity.Foundations.Probability.HierarchyPilotStability
 public import Complexity.Foundations.Probability.HierarchyRankCutoffs

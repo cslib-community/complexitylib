@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of actual polynomial evaluator histories)
-import Complexity.Foundations.Probability.HierarchyInitialHistory
+import Complexity.Foundations.Probability.HierarchyInitialMean
 
 /-! A positive identity/full-rate evaluator history with actual ratio-16 bins and polynomial
 preparation. The top bin carries the input, the fine bin vanishes. This exact stationary
@@ -191,10 +191,20 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
     split_ifs <;> norm_num
   · simp [base]
   · intro x y
+    have hC (x y : ZMod 5) : 0 ≤ (data HP).base x y := by
+      simp only [data, base, Matrix.one_apply]
+      split_ifs <;> norm_num
+    have hC1 : (data HP).base *ᵥ 1 ≤ 1 := by simp [data, base]
+    have hc := BudgetData.initialBins_polynomial_sum (data HP) 1
+      (by ext i; simp only [data, mem_insert, mem_singleton, mem_range]; omega) rfl rfl hC hC1 x y
+    change (∑ i ∈ (data HP).bins,
+      (data HP).binRate i * (data HP).cutoff i ((data HP).base x y / (data HP).binRate i)) = _
+    rw [hc]
     by_cases hxy : x = y
     · subst y
-      norm_num [data, base, rate, numerator_values]
-    · norm_num [data, base, Matrix.one_apply_ne hxy, numerator_values]
+      norm_num [data, base, rate, polynomialSwitch4, polynomialTransition4,
+        transitionPolynomial4]
+    · simp [data, base, Matrix.one_apply_ne hxy]
 
 private lemma preparation (HP : FourthRootHierarchyParams 16 1 16 32 8)
     (A : Matrix (ZMod 5) (ZMod 5) ℝ) (hA : A = 0 ∨ A = base) :
@@ -400,5 +410,122 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
     exact top_dense HP σ x y
   rw [hd]
   simp [rootDistPow, rowNormPow]
+
+private lemma mean_loss (HP : FourthRootHierarchyParams 16 1 16 32 8) (j : ℕ)
+    (hj : j < 2) (x y : ZMod 5) :
+    let F := fun j (_ : Environment 5 3) => if 2 ≤ j then base else 0
+    NormalizedMoments.actualClippedMean HP 0 2 (side 5 0) (side 5 0) (side 5 0)
+      1 [1] [2, 3] 0 base (HP.η / 4)
+      (NormalizedMoments.firstSignalIncrement F 0 (fun _ _ _ _ => 0)) 0 0 j x y =
+      min 1 ((data HP).initialPolynomialLoss 2 1 j (request HP) x y /
+        (rate 0 + base x y)) := by
+  have hC (x y : ZMod 5) : 0 ≤ (data HP).base x y := by
+    simp only [data, base, Matrix.one_apply]
+    split_ifs <;> norm_num
+  exact BudgetData.initialFirstSignal_clippedMean (data HP) 2 (by decide) 1
+    (by ext i; simp only [data, mem_insert, mem_singleton, mem_range]; omega)
+    rfl rfl rfl (by norm_num [data])
+    (⟨1, 4, by decide, by decide⟩ : Horizon 5) (by decide)
+    (request HP) 0 2 (by decide) 0 0 [1] [2, 3] rfl rfl (by decide)
+    hC (by simp [data, base]) _ (prefixes HP) j (by simpa using hj)
+    (side 5 0) (HP.η / 4) (fun _ _ _ _ => 0) x y
+
+-- A nonzero deterministic loss at the first actual prefix is not erased by scalar
+-- coverage. At the next prefix it vanishes. The initial coarse boundary is checked too.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (x : ZMod 5) :
+    (data HP).initialFineLoss 2 2 0 (request HP) x x = 1 ∧
+    (data HP).initialFineLoss 2 2 1 (request HP) x x = 0 ∧
+    (data HP).initialCoarseLoss 2 2 (request HP) x x = 0 := by
+  norm_num [BudgetData.initialFineLoss, BudgetData.initialCoarseLoss,
+    BudgetData.sampleScale, data, request, gridChannel, rate, base, numerator,
+    boundedRoutedBinCutoff, routedBinCutoff, binWeight, polynomialSwitch4,
+    polynomialTransition4, transitionPolynomial4, Cslib.RowCompression.dyadicSlack,
+    LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff]
+
+-- Exact actual predecoder mean statistics: early inactive mass costs 1/2, and the
+-- completed history costs zero. The target stays the canonical initial base.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (x : ZMod 5) :
+    let F := fun j (_ : Environment 5 3) => if 2 ≤ j then base else 0
+    let μ := fun j => NormalizedMoments.actualClippedMean HP 0 2 (side 5 0) (side 5 0)
+      (side 5 0) 1 [1] [2, 3] 0 base (HP.η / 4)
+      (NormalizedMoments.firstSignalIncrement F 0 (fun _ _ _ _ => 0)) 0 0 j x x
+    μ 0 = 1 / 2 ∧ μ 1 = 0 := by
+  dsimp only
+  rw [mean_loss HP 0 (by decide), mean_loss HP 1 (by decide)]
+  norm_num [BudgetData.initialPolynomialLoss, BudgetData.initialFineLoss,
+    BudgetData.initialCoarseLoss, BudgetData.sampleScale, data, request, gridChannel,
+    rate, base, numerator, boundedRoutedBinCutoff, routedBinCutoff, binWeight,
+    polynomialSwitch4, polynomialTransition4, transitionPolynomial4,
+    Cslib.RowCompression.dyadicSlack, LogSpaceEstimation.lastBudget,
+    LogSpaceEstimation.scaleCutoff]
+
+private def scaledData (HP : FourthRootHierarchyParams 16 1 16 32 8) (w : ℝ) :
+    BudgetData HP 5 := {data HP with base := w • base}
+
+-- Both the nonzero fine-bin case and the omitted-fine case use a successful actual
+-- history. This checks canonical means at unequal bin/terminal rates, not only scalar sums.
+private lemma scaledHistory_mean (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (w : ℝ) (hw : w = 1 / 16 ∨ w = 1 / 256) (x : ZMod 5) :
+    ∃ F, (scaledData HP w).initialPrefixes 8 (request HP) = some F ∧
+      rowSliceMean (X 0 (side 5 0) (CopyPadding.identifier (1 : ZMod 5) [1]))
+        (Y 2 (side 5 0) (CopyPadding.identifier (1 : ZMod 5) [2, 3])) (F 4) x x =
+        if w = 1 / 16 then w else 0 := by
+  let B := scaledData HP w
+  have hbins : B.bins.Nonempty := by simp [B, scaledData, data]
+  obtain ⟨hgrid, _⟩ := B.initialPrefixes_grid 8 (by decide) hbins
+    (request HP) 0 2 (by decide) 0 0 [1] [2, 3] rfl rfl
+  dsimp only at hgrid
+  obtain ⟨F, hF⟩ : ∃ F, B.initialPrefixes 8 (request HP) = some F := ⟨_, hgrid⟩
+  have hw0 : 0 ≤ w := by rcases hw with rfl | rfl <;> norm_num
+  have hw1 : w ≤ 1 := by rcases hw with rfl | rfl <;> norm_num
+  have hC (v z : ZMod 5) : 0 ≤ B.base v z := by
+    change 0 ≤ w * base v z
+    apply mul_nonneg hw0
+    simp only [base, Matrix.one_apply]
+    split_ifs <;> norm_num
+  have hC1 : B.base *ᵥ 1 ≤ 1 := by
+    intro v
+    simpa [B, scaledData, data, base, Matrix.smul_mulVec] using hw1
+  have hm := B.initialPrefix_polynomial_mean 8 (by decide) 1
+    (by ext i; simp only [B, scaledData, data, mem_insert, mem_singleton, mem_range]; omega)
+    rfl rfl rfl (by norm_num [B, scaledData, data])
+    (⟨1, 4, by decide, by decide⟩ : Horizon 5) (by decide)
+    (request HP) 0 2 (by decide) 0 0 [1] [2, 3] rfl rfl (by decide)
+    hC hC1 F hF 3 (by decide) x x
+  dsimp only at hm
+  refine ⟨F, hF, ?_⟩
+  have hscale : Real.logb 2 (16 : ℝ) = 4 := by
+    rw [show (16 : ℝ) = (2 : ℝ) ^ (4 : ℕ) by norm_num, Real.logb_pow]
+    norm_num
+  rcases hw with rfl | rfl <;>
+    norm_num [B, scaledData, data, base, request, gridChannel,
+      BudgetData.initialFineLoss, BudgetData.initialCoarseLoss, BudgetData.sampleScale,
+      numerator, boundedRoutedBinCutoff, routedBinCutoff, binWeight, rate,
+      polynomialSwitch4, polynomialTransition4, transitionPolynomial4,
+      Cslib.RowCompression.dyadicSlack, LogSpaceEstimation.lastBudget,
+      LogSpaceEstimation.scaleCutoff, hscale] at hm ⊢ <;> linarith
+
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (x : ZMod 5) :
+    ∃ F, (scaledData HP (1 / 16)).initialPrefixes 8 (request HP) = some F ∧
+      rowSliceMean (X 0 (side 5 0) (CopyPadding.identifier (1 : ZMod 5) [1]))
+        (Y 2 (side 5 0) (CopyPadding.identifier (1 : ZMod 5) [2, 3])) (F 4) x x = 1 / 16 := by
+  simpa using scaledHistory_mean HP (1 / 16) (Or.inl rfl) x
+
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (x : ZMod 5) :
+    ∃ F, (scaledData HP (1 / 256)).initialPrefixes 8 (request HP) = some F ∧
+      rowSliceMean (X 0 (side 5 0) (CopyPadding.identifier (1 : ZMod 5) [1]))
+        (Y 2 (side 5 0) (CopyPadding.identifier (1 : ZMod 5) [2, 3])) (F 4) x x = 0 := by
+  simpa using scaledHistory_mean HP (1 / 256) (Or.inr rfl) x
+
+-- At this positive omitted entry every retained-bin mass is zero; the entire canonical
+-- deficit remains explicit even after all scheduled groups have executed.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (x : ZMod 5) :
+    (scaledData HP (1 / 256)).initialPolynomialLoss 8 1 3 (request HP) x x = 1 / 256 ∧
+    (scaledData HP (1 / 256)).initialFineLoss 8 4 3 (request HP) x x = 0 ∧
+    (scaledData HP (1 / 256)).initialCoarseLoss 8 4 (request HP) x x = 0 := by
+  norm_num [BudgetData.initialPolynomialLoss, BudgetData.initialFineLoss,
+    BudgetData.initialCoarseLoss, scaledData, data, base, numerator,
+    boundedRoutedBinCutoff, routedBinCutoff, binWeight, rate, polynomialSwitch4,
+    polynomialTransition4, transitionPolynomial4]
 
 end PolynomialBudgetHistory
