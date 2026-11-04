@@ -84,7 +84,7 @@ private theorem actual_mean :
     SingleRegression.identifier] at hm ⊢
   convert hm using 1
   dsimp only [E, base]
-  norm_num only [rate, pow_one, pow_zero, inv_pow, one_pow, one_div] 
+  norm_num only [rate, pow_one, pow_zero, inv_pow, one_pow, one_div]
   ring
 
 -- The genuine final correction is positive; the signed negative and product are present.
