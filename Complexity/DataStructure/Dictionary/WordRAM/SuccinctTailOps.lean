@@ -7,7 +7,6 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.DataStructure.Dictionary.WordRAM.SuccinctSlotStore
 public import Complexity.DataStructure.Dictionary.WordRAM.SuccinctProg
 import Complexity.Tactic.Realize
 

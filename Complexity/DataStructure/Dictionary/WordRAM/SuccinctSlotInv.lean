@@ -10,12 +10,11 @@ module
 public import Complexity.DataStructure.Dictionary.WordRAM.SuccinctLayout
 
 /-!
-# Working-Register Combinators and Slab/Tail Slot-Store Invariant
+# Slab/Tail Slot-Store Invariant for Succinct Dictionaries
 
-This module defines the functional working-register view (`wRegs`), primitive arithmetic and
-bit-packed array combinators on working registers, the `GlobalMeta` index map, and the bijection
-invariants (`TailBijection`, `SlabBijection`, `SlotStoreInv`) governing physical slot allocation
-in the fixed-capacity succinct dictionary.
+This module defines the `GlobalMeta` index map and the bijection invariants
+(`TailBijection`, `SlabBijection`, `SlotStoreInv`) governing physical slot allocation in the
+fixed-capacity succinct dictionary.
 -/
 
 public section
@@ -32,433 +31,17 @@ open Cslib.Probability
 open Finset
 open scoped BigOperators ENNReal
 
-/-! ### Working-register functional view (`wRegs`) and instruction combinators -/
+/-! ## `GlobalMeta` layout, `SlotStoreInv`, and physical slot injectivity -/
 
-/-- Functional view `ℕ → ℕ` of the 19 working registers `wReg r_hash 0 .. wReg r_hash 18`. -/
-@[expose]
-def wRegs {r_hash : ℕ} (x : Data (numRegs r_hash)) (i : ℕ) : ℕ :=
-  if hi : i < 19 then x.regs (wReg r_hash i hi) else 0
+theorem max_n_one_lt_two_pow_w {w U n_max : ℕ} (hw : 0 < w) (hnU : n_max ≤ U) (hU : U < 2 ^ w) :
+    Fits w (max n_max 1) :=
+  max_lt (lt_of_le_of_lt hnU hU) (Nat.one_lt_pow (by omega) (by decide))
 
-@[simp]
-theorem wRegs_apply {r_hash : ℕ} (x : Data (numRegs r_hash)) (i : ℕ) (hi : i < 19) :
-    wRegs x i = x.regs (wReg r_hash i hi) := by
-  unfold wRegs
-  simp only [hi, ↓reduceDIte]
-
-theorem wRegs_lt_of_bounded {r_hash w : ℕ} {x : Data (numRegs r_hash)}
-    (hbdd : x.Bounded w) (i : ℕ) :
-    wRegs x i < 2 ^ w := by
-  unfold wRegs
-  split_ifs with hi
-  · exact hbdd.1 (wReg r_hash i hi)
-  · positivity
-
-theorem wRegs_set {r_hash : ℕ} (x : Data (numRegs r_hash)) (i : ℕ) (hi : i < 19) (v : ℕ) :
-    wRegs (x.set (wReg r_hash i hi) v) = Function.update (wRegs x) i v := by
-  funext j
-  unfold wRegs
-  by_cases hj : j = i
-  · subst hj
-    simp only [hi, ↓reduceDIte, Function.update_self]
-    dsimp only [Data.set]
-    rw [Function.update_self]
-  · rw [Function.update_of_ne hj]
-    split_ifs with hj_lt
-    · dsimp only [Data.set]
-      rw [Function.update_of_ne
-        (by intro h; have := congrArg Fin.val h; dsimp [wReg] at this; omega)]
-    · rfl
-
-/-- Machine execution invariant: word bounds hold and register `0` (`rBase`) holds `base`. -/
-structure MachCtx {r_hash : ℕ} (w base : ℕ) (x : Data (numRegs r_hash)) : Prop where
-  bdd : x.Bounded w
-  base_reg : x.regs (rBase r_hash) = base
-
-/-- Load constant `v` into working register `i_dst`. -/
-def wConstCode (r_hash i_dst v : ℕ) (hdst : i_dst < 19 := by omega) :
-    Code .exact (numRegs r_hash) :=
-  .op (.const (wReg r_hash i_dst hdst) v)
-
-theorem wConstCode_execWithin {r_hash w base : ℕ} (i_dst v : ℕ) (hdst : i_dst < 19)
-    (x : Data (numRegs r_hash)) (hctx : MachCtx w base x) (hfit : Fits w v) :
-    ∃ y : Data (numRegs r_hash),
-      ExecWithin w (wConstCode r_hash i_dst v hdst) x y 1 ∧
-      MachCtx w base y ∧
-      y.mem = x.mem ∧
-      wRegs y = Function.update (wRegs x) i_dst v := by
-  let y := x.set (wReg r_hash i_dst hdst) v
-  have hex : ExecWithin (B := .exact) w (wConstCode r_hash i_dst v hdst) x y 1 :=
-    ExecWithin.const hfit
-  refine ⟨y, hex, ⟨hex.bounded hctx.bdd, ?_⟩, rfl, wRegs_set x i_dst hdst v⟩
-  dsimp only [y, Data.set]
-  rw [Function.update_of_ne
-    (by intro h; have := congrArg Fin.val h; dsimp [rBase, wReg] at this; omega)]
-  exact hctx.base_reg
-
-/-- Copy working register `i_src` into `i_dst`. -/
-def wCopyCode (r_hash i_dst i_src : ℕ)
-    (hdst : i_dst < 19 := by omega) (hsrc : i_src < 19 := by omega) :
-    Code .exact (numRegs r_hash) :=
-  .op (.copy (wReg r_hash i_dst hdst) (wReg r_hash i_src hsrc))
-
-theorem wCopyCode_execWithin {r_hash w base : ℕ} (i_dst i_src : ℕ)
-    (hdst : i_dst < 19) (hsrc : i_src < 19)
-    (x : Data (numRegs r_hash)) (hctx : MachCtx w base x) :
-    ∃ y : Data (numRegs r_hash),
-      ExecWithin w (wCopyCode r_hash i_dst i_src hdst hsrc) x y 1 ∧
-      MachCtx w base y ∧
-      y.mem = x.mem ∧
-      wRegs y = Function.update (wRegs x) i_dst (wRegs x i_src) := by
-  let y := x.set (wReg r_hash i_dst hdst) (x.regs (wReg r_hash i_src hsrc))
-  have hex : ExecWithin (B := .exact) w (wCopyCode r_hash i_dst i_src hdst hsrc) x y 1 :=
-    ExecWithin.copy
-  refine ⟨y, hex, ⟨hex.bounded hctx.bdd, ?_⟩, rfl, ?_⟩
-  · dsimp only [y, Data.set]
-    rw [Function.update_of_ne
-      (by intro h; have := congrArg Fin.val h; dsimp [rBase, wReg] at this; omega)]
-    exact hctx.base_reg
-  · change wRegs (x.set (wReg r_hash i_dst hdst) (x.regs (wReg r_hash i_src hsrc))) = _
-    rw [← wRegs_apply x i_src hsrc]
-    exact wRegs_set x i_dst hdst (wRegs x i_src)
-
-/-- Exact binary operation `f` on working registers `i_a` and `i_b`, storing into `i_dst`. -/
-def wBinCode (r_hash : ℕ) (f : BinOp) (i_dst i_a i_b : ℕ)
-    (hdst : i_dst < 19 := by omega) (ha : i_a < 19 := by omega) (hb : i_b < 19 := by omega) :
-    Code .exact (numRegs r_hash) :=
-  .op (.exactBin f (wReg r_hash i_dst hdst) (wReg r_hash i_a ha) (wReg r_hash i_b hb))
-
-theorem wBinCode_execWithin {r_hash w base : ℕ} (f : BinOp) (i_dst i_a i_b : ℕ)
-    (hdst : i_dst < 19) (ha : i_a < 19) (hb : i_b < 19)
-    (x : Data (numRegs r_hash)) (hctx : MachCtx w base x) {v : ℕ}
-    (hev : f.evalExact (wRegs x i_a) (wRegs x i_b) = some v) (hfit : Fits w v) :
-    ∃ y : Data (numRegs r_hash),
-      ExecWithin w (wBinCode r_hash f i_dst i_a i_b hdst ha hb) x y 1 ∧
-      MachCtx w base y ∧
-      y.mem = x.mem ∧
-      wRegs y = Function.update (wRegs x) i_dst v := by
-  rw [wRegs_apply x i_a ha, wRegs_apply x i_b hb] at hev
-  let y := x.set (wReg r_hash i_dst hdst) v
-  have hex : ExecWithin w (wBinCode r_hash f i_dst i_a i_b hdst ha hb) x y 1 :=
-    (ExactLog.exec_exactBin hev hfit).within
-  refine ⟨y, hex, ⟨hex.bounded hctx.bdd, ?_⟩, rfl, wRegs_set x i_dst hdst v⟩
-  dsimp only [y, Data.set]
-  rw [Function.update_of_ne
-    (by intro h; have := congrArg Fin.val h; dsimp [rBase, wReg] at this; omega)]
-  exact hctx.base_reg
-
-theorem wAdd_execWithin {r_hash w base : ℕ} (i_dst i_a i_b : ℕ)
-    (hdst : i_dst < 19) (ha : i_a < 19) (hb : i_b < 19)
-    (x : Data (numRegs r_hash)) (hctx : MachCtx w base x)
-    (hfit : Fits w (wRegs x i_a + wRegs x i_b)) :
-    ∃ y : Data (numRegs r_hash),
-      ExecWithin w (wBinCode r_hash .add i_dst i_a i_b hdst ha hb) x y 1 ∧
-      MachCtx w base y ∧
-      y.mem = x.mem ∧
-      wRegs y = Function.update (wRegs x) i_dst (wRegs x i_a + wRegs x i_b) :=
-  wBinCode_execWithin .add i_dst i_a i_b hdst ha hb x hctx rfl hfit
-
-theorem wSub_execWithin {r_hash w base : ℕ} (i_dst i_a i_b : ℕ)
-    (hdst : i_dst < 19) (ha : i_a < 19) (hb : i_b < 19)
-    (x : Data (numRegs r_hash)) (hctx : MachCtx w base x)
-    (hle : wRegs x i_b ≤ wRegs x i_a) :
-    ∃ y : Data (numRegs r_hash),
-      ExecWithin w (wBinCode r_hash .sub i_dst i_a i_b hdst ha hb) x y 1 ∧
-      MachCtx w base y ∧
-      y.mem = x.mem ∧
-      wRegs y = Function.update (wRegs x) i_dst (wRegs x i_a - wRegs x i_b) := by
-  have hev : BinOp.sub.evalExact (wRegs x i_a) (wRegs x i_b) =
-      some (wRegs x i_a - wRegs x i_b) := by
-    simp [BinOp.evalExact, hle]
-  have hfit : Fits w (wRegs x i_a - wRegs x i_b) := by
-    have hlt : Fits w (wRegs x i_a) := by
-      rw [wRegs_apply x i_a ha]
-      exact hctx.bdd.1 _
-    exact hlt.of_le (Nat.sub_le _ _)
-  exact wBinCode_execWithin .sub i_dst i_a i_b hdst ha hb x hctx hev hfit
-
-theorem wMul_execWithin {r_hash w base : ℕ} (i_dst i_a i_b : ℕ)
-    (hdst : i_dst < 19) (ha : i_a < 19) (hb : i_b < 19)
-    (x : Data (numRegs r_hash)) (hctx : MachCtx w base x)
-    (hfit : Fits w (wRegs x i_a * wRegs x i_b)) :
-    ∃ y : Data (numRegs r_hash),
-      ExecWithin w (wBinCode r_hash .mul i_dst i_a i_b hdst ha hb) x y 1 ∧
-      MachCtx w base y ∧
-      y.mem = x.mem ∧
-      wRegs y = Function.update (wRegs x) i_dst (wRegs x i_a * wRegs x i_b) :=
-  wBinCode_execWithin .mul i_dst i_a i_b hdst ha hb x hctx rfl hfit
-
-theorem wDiv_execWithin {r_hash w base : ℕ} (i_dst i_a i_b : ℕ)
-    (hdst : i_dst < 19) (ha : i_a < 19) (hb : i_b < 19)
-    (x : Data (numRegs r_hash)) (hctx : MachCtx w base x)
-    (hpos : 0 < wRegs x i_b) :
-    ∃ y : Data (numRegs r_hash),
-      ExecWithin w (wBinCode r_hash .div i_dst i_a i_b hdst ha hb) x y 1 ∧
-      MachCtx w base y ∧
-      y.mem = x.mem ∧
-      wRegs y = Function.update (wRegs x) i_dst (wRegs x i_a / wRegs x i_b) := by
-  have hne : wRegs x i_b ≠ 0 := by omega
-  have hev : BinOp.div.evalExact (wRegs x i_a) (wRegs x i_b) =
-      some (wRegs x i_a / wRegs x i_b) := by
-    simp [BinOp.evalExact, hne]
-  have hfit : Fits w (wRegs x i_a / wRegs x i_b) := by
-    have hlt : Fits w (wRegs x i_a) := by
-      rw [wRegs_apply x i_a ha]
-      exact hctx.bdd.1 _
-    exact hlt.of_le (Nat.div_le_self _ _)
-  exact wBinCode_execWithin .div i_dst i_a i_b hdst ha hb x hctx hev hfit
-
-theorem wMod_execWithin {r_hash w base : ℕ} (i_dst i_a i_b : ℕ)
-    (hdst : i_dst < 19) (ha : i_a < 19) (hb : i_b < 19)
-    (x : Data (numRegs r_hash)) (hctx : MachCtx w base x)
-    (hpos : 0 < wRegs x i_b) :
-    ∃ y : Data (numRegs r_hash),
-      ExecWithin w (wBinCode r_hash .mod i_dst i_a i_b hdst ha hb) x y 1 ∧
-      MachCtx w base y ∧
-      y.mem = x.mem ∧
-      wRegs y = Function.update (wRegs x) i_dst (wRegs x i_a % wRegs x i_b) := by
-  have hne : wRegs x i_b ≠ 0 := by omega
-  have hev : BinOp.mod.evalExact (wRegs x i_a) (wRegs x i_b) =
-      some (wRegs x i_a % wRegs x i_b) := by
-    simp [BinOp.evalExact, hne]
-  have hfit : Fits w (wRegs x i_a % wRegs x i_b) := by
-    have hlt : Fits w (wRegs x i_a) := by
-      rw [wRegs_apply x i_a ha]
-      exact hctx.bdd.1 _
-    exact hlt.of_le (Nat.mod_le _ _)
-  exact wBinCode_execWithin .mod i_dst i_a i_b hdst ha hb x hctx hev hfit
-
-theorem readGMCode_wRegs {r_hash w base U V n_max h_space : ℕ} [NeZero r_hash]
-    (hw : 0 < w) (hnU : n_max ≤ U) (hU : U < 2 ^ w)
-    (hspace : Fits w (base + totalSpace U V w n_max h_space))
-    (i_idx i_out : ℕ) (hidx : i_idx < 19) (hout : i_out < 19)
-    (x : Data (numRegs r_hash)) (hctx : MachCtx w base x)
-    (hidx_lt : wRegs x i_idx < globalMetaLen n_max) :
-    ∃ y : Data (numRegs r_hash),
-      ExecWithin w (readGMCode r_hash U V w n_max h_space i_idx i_out hidx hout) x y 38 ∧
-      MachCtx w base y ∧
-      y.mem = x.mem ∧
-      wRegs y = Function.update (wRegs x) i_out
-        (gmAt base U V w n_max h_space x.mem (wRegs x i_idx)) := by
-  rw [wRegs_apply x i_idx hidx] at hidx_lt ⊢
-  obtain ⟨y, hex, hbdd, hmem, hbase, hout', hregs'⟩ :=
-    readGMCode_execWithin hw hnU hU hspace i_idx i_out hidx hout x hctx.bdd hctx.base_reg hidx_lt
-  refine ⟨y, hex, ⟨hbdd, hbase⟩, hmem, ?_⟩
-  funext j
-  by_cases hj : j = i_out
-  · subst hj
-    rw [wRegs_apply y j hout, Function.update_self, hout']
-  · rw [Function.update_of_ne hj]
-    unfold wRegs
-    split_ifs with hj_lt
-    · exact hregs' j hj_lt hj
-    · rfl
-
-theorem writeGMCode_wRegs {r_hash w base U V n_max h_space : ℕ} [NeZero r_hash]
-    (hw : 0 < w) (hnU : n_max ≤ U) (hU : U < 2 ^ w)
-    (hspace : Fits w (base + totalSpace U V w n_max h_space))
-    (i_idx i_val : ℕ) (hidx : i_idx < 19) (hval : i_val < 19)
-    (x : Data (numRegs r_hash)) (hctx : MachCtx w base x)
-    (hidx_lt : wRegs x i_idx < globalMetaLen n_max)
-    (hval_lt : wRegs x i_val < 2 ^ globalPtrBits n_max) :
-    ∃ y : Data (numRegs r_hash),
-      ExecWithin w (writeGMCode r_hash U V w n_max h_space i_idx i_val hidx hval) x y 49 ∧
-      MachCtx w base y ∧
-      wRegs y = wRegs x ∧
-      (∀ a, ¬(base + offGM U V w n_max h_space ≤ a ∧
-          a < base + totalSpace U V w n_max h_space) →
-        y.mem a = x.mem a) ∧
-      quotAt base U w n_max h_space y.mem = quotAt base U w n_max h_space x.mem ∧
-      valAt base U V w n_max h_space y.mem = valAt base U V w n_max h_space x.mem ∧
-      lmAt base U V w n_max h_space y.mem = lmAt base U V w n_max h_space x.mem ∧
-      gmAt base U V w n_max h_space y.mem =
-        Function.update (gmAt base U V w n_max h_space x.mem)
-          (wRegs x i_idx) (wRegs x i_val) := by
-  rw [wRegs_apply x i_idx hidx] at hidx_lt ⊢
-  rw [wRegs_apply x i_val hval] at hval_lt ⊢
-  obtain ⟨y, hex, hbdd, hbase, hregs', hout, hq, hv, hlm, hgm⟩ :=
-    writeGMCode_execWithin hw hnU hU hspace i_idx i_val hidx hval x
-      hctx.bdd hctx.base_reg hidx_lt hval_lt
-  refine ⟨y, hex, ⟨hbdd, hbase⟩, ?_, hout, hq, hv, hlm, hgm⟩
-  funext j
-  unfold wRegs
-  split_ifs with hj_lt
-  · exact hregs' j hj_lt
-  · rfl
-
-theorem readQuotCode_wRegs {r_hash w base U V n_max h_space : ℕ} [NeZero r_hash]
-    (hw : 0 < w) (hU : U ≤ 2 ^ w)
-    (hspace : Fits w (base + totalSpace U V w n_max h_space))
-    (i_idx i_out : ℕ) (hidx : i_idx < 19) (hout : i_out < 19)
-    (x : Data (numRegs r_hash)) (hctx : MachCtx w base x)
-    (hidx_lt : wRegs x i_idx < n_max) :
-    ∃ y : Data (numRegs r_hash),
-      ExecWithin w (readQuotCode r_hash U w n_max h_space i_idx i_out hidx hout) x y 38 ∧
-      MachCtx w base y ∧
-      y.mem = x.mem ∧
-      wRegs y = Function.update (wRegs x) i_out
-        (quotAt base U w n_max h_space x.mem (wRegs x i_idx)) := by
-  rw [wRegs_apply x i_idx hidx] at hidx_lt ⊢
-  obtain ⟨y, hex, hbdd, hmem, hbase, hout', hregs'⟩ :=
-    readQuotCode_execWithin hw hU hspace i_idx i_out hidx hout x hctx.bdd hctx.base_reg hidx_lt
-  refine ⟨y, hex, ⟨hbdd, hbase⟩, hmem, ?_⟩
-  funext j
-  by_cases hj : j = i_out
-  · subst hj
-    rw [wRegs_apply y j hout, Function.update_self, hout']
-  · rw [Function.update_of_ne hj]
-    unfold wRegs
-    split_ifs with hj_lt
-    · exact hregs' j hj_lt hj
-    · rfl
-
-theorem writeQuotCode_wRegs {r_hash w base U V n_max h_space : ℕ} [NeZero r_hash]
-    (hw : 0 < w) (hU : U ≤ 2 ^ w)
-    (hspace : Fits w (base + totalSpace U V w n_max h_space))
-    (i_idx i_val : ℕ) (hidx : i_idx < 19) (hval : i_val < 19)
-    (x : Data (numRegs r_hash)) (hctx : MachCtx w base x)
-    (hidx_lt : wRegs x i_idx < n_max)
-    (hval_lt : wRegs x i_val < 2 ^ quotientBits U n_max) :
-    ∃ y : Data (numRegs r_hash),
-      ExecWithin w (writeQuotCode r_hash U w n_max h_space i_idx i_val hidx hval) x y 49 ∧
-      MachCtx w base y ∧
-      wRegs y = wRegs x ∧
-      (∀ a, ¬(base + offQuot h_space ≤ a ∧ a < base + offVal U w n_max h_space) →
-        y.mem a = x.mem a) ∧
-      quotAt base U w n_max h_space y.mem =
-        Function.update (quotAt base U w n_max h_space x.mem)
-          (wRegs x i_idx) (wRegs x i_val) ∧
-      valAt base U V w n_max h_space y.mem = valAt base U V w n_max h_space x.mem ∧
-      lmAt base U V w n_max h_space y.mem = lmAt base U V w n_max h_space x.mem ∧
-      gmAt base U V w n_max h_space y.mem = gmAt base U V w n_max h_space x.mem := by
-  rw [wRegs_apply x i_idx hidx] at hidx_lt ⊢
-  rw [wRegs_apply x i_val hval] at hval_lt ⊢
-  obtain ⟨y, hex, hbdd, hbase, hregs', hout, hq, hv, hlm, hgm⟩ :=
-    writeQuotCode_execWithin hw hU hspace i_idx i_val hidx hval x
-      hctx.bdd hctx.base_reg hidx_lt hval_lt
-  refine ⟨y, hex, ⟨hbdd, hbase⟩, ?_, hout, hq, hv, hlm, hgm⟩
-  funext j
-  unfold wRegs
-  split_ifs with hj_lt
-  · exact hregs' j hj_lt
-  · rfl
-
-theorem readValCode_wRegs {r_hash w base U V n_max h_space : ℕ} [NeZero r_hash]
-    (hw : 0 < w) (hV : V ≤ 2 ^ w)
-    (hspace : Fits w (base + totalSpace U V w n_max h_space))
-    (i_idx i_out : ℕ) (hidx : i_idx < 19) (hout : i_out < 19)
-    (x : Data (numRegs r_hash)) (hctx : MachCtx w base x)
-    (hidx_lt : wRegs x i_idx < n_max) :
-    ∃ y : Data (numRegs r_hash),
-      ExecWithin w (readValCode r_hash U V w n_max h_space i_idx i_out hidx hout) x y 38 ∧
-      MachCtx w base y ∧
-      y.mem = x.mem ∧
-      wRegs y = Function.update (wRegs x) i_out
-        (valAt base U V w n_max h_space x.mem (wRegs x i_idx)) := by
-  rw [wRegs_apply x i_idx hidx] at hidx_lt ⊢
-  obtain ⟨y, hex, hbdd, hmem, hbase, hout', hregs'⟩ :=
-    readValCode_execWithin hw hV hspace i_idx i_out hidx hout x hctx.bdd hctx.base_reg hidx_lt
-  refine ⟨y, hex, ⟨hbdd, hbase⟩, hmem, ?_⟩
-  funext j
-  by_cases hj : j = i_out
-  · subst hj
-    rw [wRegs_apply y j hout, Function.update_self, hout']
-  · rw [Function.update_of_ne hj]
-    unfold wRegs
-    split_ifs with hj_lt
-    · exact hregs' j hj_lt hj
-    · rfl
-
-theorem writeValCode_wRegs {r_hash w base U V n_max h_space : ℕ} [NeZero r_hash]
-    (hw : 0 < w) (hV : V ≤ 2 ^ w)
-    (hspace : Fits w (base + totalSpace U V w n_max h_space))
-    (i_idx i_val : ℕ) (hidx : i_idx < 19) (hval : i_val < 19)
-    (x : Data (numRegs r_hash)) (hctx : MachCtx w base x)
-    (hidx_lt : wRegs x i_idx < n_max)
-    (hval_lt : wRegs x i_val < 2 ^ valBits V) :
-    ∃ y : Data (numRegs r_hash),
-      ExecWithin w (writeValCode r_hash U V w n_max h_space i_idx i_val hidx hval) x y 49 ∧
-      MachCtx w base y ∧
-      wRegs y = wRegs x ∧
-      (∀ a, ¬(base + offVal U w n_max h_space ≤ a ∧ a < base + offLM U V w n_max h_space) →
-        y.mem a = x.mem a) ∧
-      quotAt base U w n_max h_space y.mem = quotAt base U w n_max h_space x.mem ∧
-      valAt base U V w n_max h_space y.mem =
-        Function.update (valAt base U V w n_max h_space x.mem)
-          (wRegs x i_idx) (wRegs x i_val) ∧
-      lmAt base U V w n_max h_space y.mem = lmAt base U V w n_max h_space x.mem ∧
-      gmAt base U V w n_max h_space y.mem = gmAt base U V w n_max h_space x.mem := by
-  rw [wRegs_apply x i_idx hidx] at hidx_lt ⊢
-  rw [wRegs_apply x i_val hval] at hval_lt ⊢
-  obtain ⟨y, hex, hbdd, hbase, hregs', hout, hq, hv, hlm, hgm⟩ :=
-    writeValCode_execWithin hw hV hspace i_idx i_val hidx hval x
-      hctx.bdd hctx.base_reg hidx_lt hval_lt
-  refine ⟨y, hex, ⟨hbdd, hbase⟩, ?_, hout, hq, hv, hlm, hgm⟩
-  funext j
-  unfold wRegs
-  split_ifs with hj_lt
-  · exact hregs' j hj_lt
-  · rfl
-
-theorem readLMCode_wRegs {r_hash w base U V n_max h_space c : ℕ} [NeZero r_hash]
-    (hw : 0 < w) (hnU : n_max ≤ U) (hU : U < 2 ^ w)
-    (hspace : Fits w (base + totalSpace U V w n_max h_space))
-    (hc : c < 9)
-    (i_idx i_out : ℕ) (hidx : i_idx < 19) (hout : i_out < 19)
-    (x : Data (numRegs r_hash)) (hctx : MachCtx w base x)
-    (hidx_lt : wRegs x i_idx < totalMicroBuckets n_max) :
-    ∃ y : Data (numRegs r_hash),
-      ExecWithin w (readLMCode r_hash U V w n_max h_space c i_idx i_out hidx hout) x y 38 ∧
-      MachCtx w base y ∧
-      y.mem = x.mem ∧
-      wRegs y = Function.update (wRegs x) i_out
-        (lmAt base U V w n_max h_space x.mem (c, wRegs x i_idx)) := by
-  rw [wRegs_apply x i_idx hidx] at hidx_lt ⊢
-  obtain ⟨y, hex, hbdd, hmem, hbase, hout', hregs'⟩ :=
-    readLMCode_execWithin hw hnU hU hspace hc i_idx i_out hidx hout x hctx.bdd hctx.base_reg hidx_lt
-  refine ⟨y, hex, ⟨hbdd, hbase⟩, hmem, ?_⟩
-  funext j
-  by_cases hj : j = i_out
-  · subst hj
-    rw [wRegs_apply y j hout, Function.update_self, hout']
-  · rw [Function.update_of_ne hj]
-    unfold wRegs
-    split_ifs with hj_lt
-    · exact hregs' j hj_lt hj
-    · rfl
-
-theorem writeLMCode_wRegs {r_hash w base U V n_max h_space c : ℕ} [NeZero r_hash]
-    (hw : 0 < w) (hnU : n_max ≤ U) (hU : U < 2 ^ w)
-    (hspace : Fits w (base + totalSpace U V w n_max h_space))
-    (hc : c < 9)
-    (i_idx i_val : ℕ) (hidx : i_idx < 19) (hval : i_val < 19)
-    (x : Data (numRegs r_hash)) (hctx : MachCtx w base x)
-    (hidx_lt : wRegs x i_idx < totalMicroBuckets n_max)
-    (hval_lt : wRegs x i_val < 2 ^ effBucketPosBits n_max) :
-    ∃ y : Data (numRegs r_hash),
-      ExecWithin w (writeLMCode r_hash U V w n_max h_space c i_idx i_val hidx hval) x y 49 ∧
-      MachCtx w base y ∧
-      wRegs y = wRegs x ∧
-      (∀ a, ¬(base + offLM U V w n_max h_space ≤ a ∧ a < base + offGM U V w n_max h_space) →
-        y.mem a = x.mem a) ∧
-      quotAt base U w n_max h_space y.mem = quotAt base U w n_max h_space x.mem ∧
-      valAt base U V w n_max h_space y.mem = valAt base U V w n_max h_space x.mem ∧
-      lmAt base U V w n_max h_space y.mem =
-        Function.update (lmAt base U V w n_max h_space x.mem)
-          (c, wRegs x i_idx) (wRegs x i_val) ∧
-      gmAt base U V w n_max h_space y.mem = gmAt base U V w n_max h_space x.mem := by
-  rw [wRegs_apply x i_idx hidx] at hidx_lt ⊢
-  rw [wRegs_apply x i_val hval] at hval_lt ⊢
-  obtain ⟨y, hex, hbdd, hbase, hregs', hout, hq, hv, hlm, hgm⟩ :=
-    writeLMCode_execWithin hw hnU hU hspace hc i_idx i_val hidx hval x
-      hctx.bdd hctx.base_reg hidx_lt hval_lt
-  refine ⟨y, hex, ⟨hbdd, hbase⟩, ?_, hout, hq, hv, hlm, hgm⟩
-  funext j
-  unfold wRegs
-  split_ifs with hj_lt
-  · exact hregs' j hj_lt
-  · rfl
-
-/-! ## Section 3: `GlobalMeta` layout, `SlotStoreInv`, and slab/tail slot operations -/
+theorem one_le_n_max_of_bucketBits_pos {n_max : ℕ} (hb : 0 < bucketBits n_max) : 1 ≤ n_max := by
+  by_contra h
+  have h0 : n_max = 0 := by omega
+  subst h0
+  simp [bucketBits] at hb
 
 /-- `GlobalMeta` index `4 + 3 * b` holding `q_b` (number of full slabs in bucket `b`). -/
 @[expose]
@@ -933,5 +516,51 @@ theorem slotOf_lt_and_injective {n_max : ℕ} {gm : ℕ → ℕ} (hinv : SlotSto
             j₂ - gm (gmQIdx b₁) * slabSize n_max := by omega
         exact ⟨rfl, by omega⟩
 
+theorem r_le_ntails_of_tailBijection {n_max : ℕ} {gm r_fn : ℕ → ℕ} {n_tails : ℕ}
+    (htail : TailBijection n_max gm r_fn n_tails) {b : ℕ} (hb : b < numBuckets n_max) :
+    r_fn b ≤ n_tails := by
+  have hcard : (Finset.range (r_fn b)).card ≤ (Finset.range n_tails).card := by
+    refine Finset.card_le_card_of_injOn (fun r => gm (gmTailPtrIdx n_max b r)) ?_ ?_
+    · intro r hr
+      simp only [Finset.mem_coe, Finset.mem_range] at hr ⊢
+      exact htail.ptr_lt b hb r hr
+    · intro r₁ hr₁ r₂ hr₂ heq
+      simp only [Finset.mem_coe, Finset.mem_range] at hr₁ hr₂
+      have hown := congrArg (gm ∘ gmTailOwnerIdx n_max) heq
+      dsimp only [Function.comp_apply] at hown
+      rw [htail.owner_ptr b hb r₁ hr₁, htail.owner_ptr b hb r₂ hr₂] at hown
+      omega
+  simpa using hcard
+
+theorem q_le_nslabs_of_slabBijection {n_max : ℕ} {gm q_fn : ℕ → ℕ} {n_slabs : ℕ}
+    (hslab : SlabBijection n_max gm q_fn n_slabs) {b : ℕ} (hb : b < numBuckets n_max) :
+    q_fn b ≤ n_slabs := by
+  have hcard : (Finset.range (q_fn b)).card ≤ (Finset.range n_slabs).card := by
+    refine Finset.card_le_card_of_injOn (fun s => slabPtrOf n_max gm b s) ?_ ?_
+    · intro s hs
+      simp only [Finset.mem_coe, Finset.mem_range] at hs ⊢
+      exact hslab.ptr_lt b hb s hs
+    · intro s₁ hs₁ s₂ hs₂ heq
+      simp only [Finset.mem_coe, Finset.mem_range] at hs₁ hs₂
+      have hown := congrArg (gm ∘ gmSlabOwnerSIdx n_max) heq
+      dsimp only [Function.comp_apply] at hown
+      rw [hslab.ownerS_ptr b hb s₁ hs₁, hslab.ownerS_ptr b hb s₂ hs₂] at hown
+      exact hown
+  simpa using hcard
+
+theorem bCount_le_n_max {n_max : ℕ} {gm : ℕ → ℕ} (hinv : SlotStoreInv n_max gm) (b : ℕ) :
+    bCount n_max gm b ≤ n_max := by
+  unfold bCount
+  split_ifs with hb0 hb_lt hb_lt
+  · exact hinv.single_valid hb0
+  · exact Nat.zero_le _
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hb0
+    have hq := q_le_nslabs_of_slabBijection (hinv.multi_slab hb_pos) hb_lt
+    have hr := r_le_ntails_of_tailBijection (hinv.multi_tail hb_pos) hb_lt
+    have htot := hinv.multi_total_le hb_pos
+    have hqK : gm (gmQIdx b) * slabSize n_max ≤ gm 0 * slabSize n_max :=
+      Nat.mul_le_mul_right _ hq
+    omega
+  · exact Nat.zero_le _
 
 end Cslib.DataStructure.Dictionary.WordRAM.Succinct

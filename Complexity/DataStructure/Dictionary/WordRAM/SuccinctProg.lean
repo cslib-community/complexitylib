@@ -14,7 +14,7 @@ public import Complexity.Computability.WordRAM.Realization.Primitive
 public import Complexity.Computability.WordRAM.Realization.Reindex
 public import Complexity.Computability.WordRAM.Realization.While
 public import Complexity.Computability.WordRAM.Realization.Witness
-public import Complexity.DataStructure.Dictionary.WordRAM.SuccinctSlotStore
+public import Complexity.DataStructure.Dictionary.WordRAM.SuccinctSlotInv
 import Complexity.Tactic.Realize
 
 /-!
