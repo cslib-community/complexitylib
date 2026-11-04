@@ -51,11 +51,14 @@ Sections 5.2 and 6.1, Lemma 24][BenderFarachColtonKuszmaulKuszmaulLiu2022]):
    `tsum_uniform_probeExcess_twoStage_le`):**
    A single 3-wise independent hash family `H : ι → Q → Fin (2 ^ totalMicroBits n_max)` provides
    both the combined `(bucket, microBucket)` hash `feistelMicroHash` and (by bit-prefix projection
-   `projLowBits`) the 3-wise independent bucket hash `feistelBucketHash`. For any state `s` with
-   `#(dom s) ≤ n_max` and any key `u`, the expected number of micro-bucket collisions with keys in
-   `(dom s).erase u` is at most `2` and the expected bucket overflow above `effBucketCap n_max` is
-   at most `1`, giving at most `3` expected excess probes per operation across operation sequences
-   of arbitrary length without sticky collision flags or seed resampling.
+   `projLowBits`) the 3-wise independent bucket hash `feistelBucketHash`. For any key set `S` and
+   key `u` with `#(S.erase u) ≤ n_max`, when the first stage `qOf` is quotient-injective on
+   `insert u (S.erase u)`, `expect_probeExcess_le_three_on` bounds the expected micro-bucket
+   collisions with keys in `S.erase u` by `2` and the expected bucket overflow above
+   `effBucketCap n_max` by `1`, giving at most `3` expected excess probes. For a two-stage hash
+   family whose first stage has collision bound `C_bad`, `tsum_uniform_probeExcess_twoStage_le`
+   bounds expected excess probes by `3 + C_bad` whenever `#(S.erase u) ≤ n_max`, across operation
+   sequences of arbitrary length without sticky collision flags or seed resampling.
 
 ## Main definitions
 
@@ -536,7 +539,7 @@ theorem numBuckets_mul_globalPtrBits_le_of_pos {n : ℕ} (hb : 0 < bucketBits n)
   have h := two_mul_numBuckets_mul_globalPtrBits_le_of_pos hb
   omega
 
-/-! ## Section 2: Hysteresis slab potential (`bucketPotential`, `tablePotential`) -/
+/-! ## Section 2: Hysteresis slab potential (`bucketPotential`) -/
 
 /-- Per-bucket slab hysteresis potential `ϕ(K, q, r)` for slab size `K`:
 * `r - K` when `K ≤ r` (accumulating potential toward a slab promotion at `r = 2 * K`);
