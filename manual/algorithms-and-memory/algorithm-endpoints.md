@@ -168,6 +168,14 @@ occurrence. The concrete original and box endpoints discharge this premise inter
 their public statements do not acquire a solver assumption. Keep their `19*m` and `21*m`
 geometry, threshold instructions and admission proofs separate.
 
+For a reused slot, use `RecordWitness.exec_after_record_product` from
+`RecordWitness.AfterRecordProduct`, or the concrete box specialization
+`BoxRecordWitness.exec_at_record` from `BoxRecordWitness.Record`. Supply the actual physical
+descriptor, query span, matrix pair and protected original arrays. Its physical ordinal is
+independent of the logical chunk/piece index; an all-record `Instances.Output` is neither
+required nor asserted for that slot. The old `exec_after_product` specializes this boundary
+for genuine standalone producer outputs.
+
 The [pure readback client](../../ComplexityTests/WordRAMExactTriangleRecordReadback.lean)
 checks duplicate occurrence order with dirty unused memory. The
 [consumer client](../../ComplexityTests/WordRAMExactTriangleRecordWitness.lean) checks
