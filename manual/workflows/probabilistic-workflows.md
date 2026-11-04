@@ -610,6 +610,35 @@ The full-frame initial detector has a checked concrete payment `80 * ε^4`. The 
 RAW/score fixture remains exact on retained slices and does not show nonzero finite-walk
 mixing error. In particular, a large padded detector rank can erase its score variation.
 
+The [first positive direct pilot constructor](../../Complexity/Foundations/Probability/InitialPilotCorrection.lean)
+now consumes the actual completed RAW table and the initial clipped maximum of zero and that
+source-aware detector. Its fixed-HP root constants precede the field and requests. The RAW
+length uses the computed dense input moment; the detector uses the existing source-aware
+allocation. Both positive tolerances are calibrated before the calls, and the resulting direct
+constructor has root error at most `ε^4` under the same covering-single-bin and finite-horizon
+hypotheses. On nonnegative inputs bounded by the stage rate, its reference is the canonical
+first `pilotCorrection`, with the original Q, rate and gamma multiplier.
+
+The direct constructor in `hierarchyTaskEval` differs from the stochastic normalized child.
+The latter is also constructed here: preparation is recomputed from the completed RAW table,
+then averaged by the actual conditional H4 walk. `initialPilotNormalized` consumes that walk,
+the unmodified RAW ranks and the completed maximum through the original source/usage
+normalizer. Its local root bound instantiates the changing-RAW/PREP and running-maximum
+estimates on these literal computed children, with the explicit width squared and inverse
+terminal-rate fourth-power RAW cost. No true-value preparation oracle is supplied.
+**General allocated accuracy for
+this normalized child, and its conditional walk to the pilot correction mean, remain open.**
+Consequently the direct-constructor accuracy result does not close the requested first
+stochastic correction fragment or the recursive estimator.
+
+The checked small-field client computes a positive upper correction `Q(1)` and an actual
+preparatory walk equal to one on the retained diagonal. The normalized child also computes
+`Q(1)`, with its literal conditional denominator derived as one. Changing only the source frame makes
+both zero; a zero base also gives a zero upper correction at positive RAW allocation. The
+actual hierarchy hypotheses imply that its detector rank exceeds five, so its full detector
+is zero. This is an injective small-field, exact-on-slice limit with a nonzero correction;
+it does not supply nonzero detector variation or finite-walk mixing error.
+
 Full well-founded approximate evaluation remains open: later pilot/correction iterations,
 general finite bin sums, recursive closure and growth, copy routing, native workspace and
 RL=L are not supplied by this single-bin initial detector. This partial construction is not

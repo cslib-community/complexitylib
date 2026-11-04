@@ -52,6 +52,14 @@ variable {Ω V D : Type*} [Fintype Ω]
 /-- The actual retained source/endpoint environment, possibly empty. -/
 abbrev RetainedPairSlice (x y : V) := ↥({σ | X σ x ∧ Y σ y} : Finset Ω)
 
+/-- Membership in the actual walk state retains its source coordinate. -/
+theorem retainedPairSlice_source {x y : V} (σ : RetainedPairSlice X Y x y) : X σ.val x :=
+  (Finset.mem_filter.mp σ.property).2.1
+
+/-- Membership in the actual walk state retains its terminal coordinate. -/
+theorem retainedPairSlice_terminal {x y : V} (σ : RetainedPairSlice X Y x y) : Y σ.val y :=
+  (Finset.mem_filter.mp σ.property).2.2
+
 /-- Uniform mean on the actual retained-pair slice, with zero mean on an empty slice. -/
 @[expose] noncomputable def rowSliceMean (F : Ω → V → V → ℝ) (x y : V) : ℝ :=
   𝔼 σ ∈ ({σ | X σ x ∧ Y σ y} : Finset Ω), F σ x y

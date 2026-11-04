@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of allocated initial-pilot calls)
-import Complexity.Foundations.Probability.InitialPilotDetector
+import Complexity.Foundations.Probability.InitialPilotCorrection
 
 /-! Actual source-correlated RAW/score calls, including positive allocated walks. -/
 set_option linter.privateModule false
@@ -214,9 +214,9 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) (L : ℝ) :
 
 -- Zero base matrices produce a zero computed lower walk and upper score at every
 -- finite walk length, rather than merely satisfying an error-bound signature.
-private lemma zero_score (HP : FourthRootHierarchyParams 16 1 16 32 8) (steps : ℕ)
+private lemma zero_walk (HP : FourthRootHierarchyParams 16 1 16 32 8) (steps : ℕ)
     (σ : Environment 5 3) (x y : ZMod 5) :
-    initialPilotScore HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+    initialPilotWalk HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
       (0 : Matrix (ZMod 5) (ZMod 5) ℝ) steps σ x y = 0 := by
   have hc : binCutoff 0 = 0 := by
     norm_num [binCutoff, boundedRoutedBinCutoff, routedBinCutoff]
@@ -229,14 +229,17 @@ private lemma zero_score (HP : FourthRootHierarchyParams 16 1 16 32 8) (steps : 
     · simp only [DenseRowRecipe.normalized, Matrix.zero_apply, zero_div, hc, zero_mul]
       split_ifs <;> simp only [mul_zero]
     · simp only [mul_zero]
-  have hw (a b : ZMod 5) :
-      initialPilotWalk HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
-        (0 : Matrix (ZMod 5) (ZMod 5) ℝ) steps σ a b = 0 := by
-    unfold initialPilotWalk conditionalWalk
-    split_ifs
-    · simp_rw [hr]
-      simp only [← Pi.zero_def, map_zero, Pi.zero_apply]
-    · rfl
+  unfold initialPilotWalk conditionalWalk
+  split_ifs
+  · simp_rw [hr]
+    simp only [← Pi.zero_def, map_zero, Pi.zero_apply]
+  · rfl
+
+private lemma zero_score (HP : FourthRootHierarchyParams 16 1 16 32 8) (steps : ℕ)
+    (σ : Environment 5 3) (x y : ZMod 5) :
+    initialPilotScore HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+      (0 : Matrix (ZMod 5) (ZMod 5) ℝ) steps σ x y = 0 := by
+  have hw := zero_walk HP steps σ
   unfold initialPilotScore PilotRowRecipe.score atomPrep
   rw [hw, zero_div, HP.ϕ_zero 0 HP.δ₀_pos.le, zero_mul]
 
@@ -338,5 +341,284 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) (L : ℝ) :
   have hz : kthLargest HP.J univ (fun _ : Fin HP.J => (0 : ℝ)) = 0 :=
     le_antisymm (kthLargest_le le_rfl (fun _ _ => le_rfl)) kthLargest_nonneg
   norm_num [hz]
+
+set_option backward.isDefEq.respectTransparency false
+
+private lemma large_J (HP : FourthRootHierarchyParams 16 1 16 32 8) : 5 < HP.J := by
+  have hk : (1:ℝ) ≤ HP.k := by exact_mod_cast HP.k_pos
+  have hm : (1:ℝ) ≤ HP.m := by
+    have hc := HP.copies
+    have hm0 := Nat.cast_nonneg (α := ℝ) HP.m
+    rw [div_le_iff₀ (by linarith : (0:ℝ) < HP.m + 1)] at hc
+    norm_num only at hc
+    linarith
+  have hl : (64:ℝ) ≤ 2 * 16 * HP.m * HP.k * (HP.k + 1) := by
+    calc
+      (64:ℝ) = 2 * 16 * 1 * 1 * (1+1) := by norm_num
+      _ ≤ _ := by gcongr
+  have hδ : HP.δ₀ < 1 := by
+    linarith [HP.δ₀_lt_δ₁, HP.δ₁_lt, HP.θ_lt_θ₂, HP.θ₂_lt]
+  have hr := HP.rank
+  have hj : (0:ℝ) < HP.J := by exact_mod_cast HP.J_pos
+  have hJ : (5:ℝ) < HP.J := by nlinarith [mul_lt_mul_of_pos_right hδ hj]
+  exact_mod_cast hJ
+
+-- The actual hierarchy detector is zero on this small-field fixture because its
+-- padded rank exceeds the width. No injectivity claim is made for a replicated rank.
+private lemma computed_detector_zero (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (hJ : 5 < HP.J) (steps : ℕ) :
+    initialPilotDetector HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1) base steps = 0 := by
+  unfold initialPilotDetector environmentDetector PilotRowRecipe.sourceDetector
+  have hz (S : Finset (ZMod 5)) (f : ZMod 5 → ℝ) : kthLargest HP.J S f = 0 :=
+    kthLargest_eq_zero_of_card_lt ((card_le_univ S).trans_lt (by simpa using hJ)) f
+  funext y
+  simp only [hz, Fintype.expect_const]
+  norm_num
+
+private lemma large_Kc (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    5 < ⌈4 * (1 + 32 * HP.R)⌉₊ := by
+  have hr := HP.R_rank
+  have hj : (1:ℝ) ≤ HP.J := by exact_mod_cast HP.J_pos
+  have hc := Nat.le_ceil (4 * (1 + 32 * HP.R))
+  norm_num only [one_mul] at hr
+  have : (5:ℝ) < ⌈4 * (1 + 32 * HP.R)⌉₊ := by linarith
+  exact_mod_cast this
+
+-- Incoming preparation really reads the completed, source-dependent RAW table.
+private lemma computed_preparation (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (steps : ℕ) (σ : Environment 5 3) (x y : ZMod 5) :
+    initialPilotPreparation HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+      base steps σ x y = if source σ x then base x y else 0 := by
+  have he := walk_eq HP steps σ
+  unfold initialPilotPreparation correctionPrep rowGate incomingGate
+  simp only [he, show rate 0 = 1 by norm_num [rate], div_one]
+  rw [kthLargest_eq_zero_of_card_lt
+    ((card_filter_le _ _).trans_lt (by simpa using large_K HP)),
+    kthLargest_eq_zero_of_card_lt
+      ((card_filter_le _ _).trans_lt (by simpa using large_Kc HP))]
+  rw [HP.ρ_one 0 HP.η_pos.le,
+    HP.incomingCutoff_one (by rw [HP.τ₀_eq]; norm_num)]
+  simp only [mul_one]
+  have hθ : HP.θ < 1 := by linarith [HP.θ_lt_θ₂, HP.θ₂_lt]
+  by_cases hs : source σ x
+  · rw [ite_eq_left hs]
+    by_cases hxy : x = y
+    · subst y
+      simp only [base, Matrix.one_apply_eq]
+      exact polynomialPrepCutoff4_eq_one HP.θ_pos (by linarith)
+    · simp only [base, Matrix.one_apply_ne hxy]
+      exact polynomialPrepCutoff4_eq_zero HP.θ_pos (by linarith [HP.θ_pos])
+  · rw [ite_eq_right hs]
+    exact polynomialPrepCutoff4_eq_zero HP.θ_pos (by linarith [HP.θ_pos])
+
+private lemma computed_preparation_walk (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (rawSteps prepSteps : ℕ) (σ : Environment 5 3) (x y : ZMod 5) :
+    initialPilotPreparationWalk HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+      base rawSteps prepSteps σ x y = if source σ x then base x y else 0 := by
+  unfold initialPilotPreparationWalk conditionalWalk
+  have ht (τ : Environment 5 3) (w : ZMod 5) :
+      Y roles.terminal (side 5 0) (CopyPadding.identifier 1 [2, 3]) τ w := by
+    simpa only [Y, show side 5 0 = 5 by norm_num [side]] using full_retains (τ roles.terminal) _
+  simp only [mem_filter, mem_univ, true_and, ht, and_true]
+  change (if _h : source σ x then _ else 0) = _
+  split_ifs with hs
+  · have he : (fun τ : RetainedPairSlice
+        (X roles.source (side 5 1) (CopyPadding.identifier 1 [1]))
+        (Y roles.terminal (side 5 0) (CopyPadding.identifier 1 [2, 3])) x y =>
+        initialPilotPreparation HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+          base rawSteps τ.val x y) = fun _ => base x y := by
+      funext τ
+      exact (computed_preparation HP rawSteps τ.val x y).trans
+        (ite_eq_left (retainedPairSlice_source _ _ τ))
+    rw [he, RotationMap.walk_pow_const]
+  · rfl
+
+private lemma event_nonempty {Ω : Type*} [Fintype Ω] (A B : Ω → Prop)
+    [DecidablePred A] [DecidablePred B] (σ : Ω) (ha : A σ) (hb : B σ) :
+    ({τ | A τ ∧ B τ} : Finset Ω).Nonempty :=
+  ⟨σ, mem_filter.mpr ⟨mem_univ _, ha, hb⟩⟩
+
+private lemma retained_mean {Ω V : Type*} [Fintype Ω] (A B : Ω → V → Prop)
+    [∀ σ v, Decidable (A σ v)] [∀ σ v, Decidable (B σ v)]
+    (C : Matrix V V ℝ) (x y : V)
+    (hn : ({σ | A σ x ∧ B σ y} : Finset Ω).Nonempty) :
+    rowSliceMean A B (fun σ x y => if A σ x then C x y else 0) x y = C x y := by
+  unfold rowSliceMean
+  calc
+    _ = 𝔼 _σ ∈ ({σ | A σ x ∧ B σ y} : Finset Ω), C x y := by
+      apply expect_congr rfl
+      intro σ hσ
+      exact ite_eq_left (mem_filter.mp hσ).2.1
+    _ = C x y := expect_const hn _
+
+private lemma computed_preparation_mean (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (rawSteps prepSteps : ℕ) :
+    rowSliceMean (X roles.source (side 5 1) (CopyPadding.identifier 1 [1]))
+      (Y roles.terminal (side 5 0) (CopyPadding.identifier 1 [2, 3]))
+      (initialPilotPreparationWalk HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+        base rawSteps prepSteps) 0 0 = 1 := by
+  have ht (σ : Environment 5 3) :
+      Y roles.terminal (side 5 0) (CopyPadding.identifier 1 [2, 3]) σ 0 := by
+    simpa only [Y, show side 5 0 = 5 by norm_num [side]] using
+      full_retains (σ roles.terminal) _
+  have hn : ({σ : Environment 5 3 | source σ 0 ∧
+      Y roles.terminal (side 5 0) (CopyPadding.identifier 1 [2, 3]) σ 0} : Finset _).Nonempty :=
+    event_nonempty (fun σ => source σ 0) _ (seed 0) source_both.1 (ht _)
+  have he : initialPilotPreparationWalk HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff
+      (fun _ => 1) base rawSteps prepSteps =
+      (fun σ x y => if source σ x then base x y else 0) := by
+    funext σ x y
+    exact computed_preparation_walk HP rawSteps prepSteps σ x y
+  rw [he]
+  exact retained_mean (fun σ v => source σ v)
+    (Y roles.terminal (side 5 0) (CopyPadding.identifier 1 [2, 3])) base 0 0 hn
+
+-- This checks the actual normalized child and its computed conditional normalizer,
+-- rather than supplying a preparation value of one to the algorithm.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (rawSteps prepSteps detectorSteps : ℕ) :
+    initialPilotNormalized HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+      base rawSteps prepSteps detectorSteps (seed 0) 0 0 = HP.Q 1 := by
+  let r : HierarchyTask.Request HP.k (Fin 3) (ZMod 5) :=
+    ⟨.row 0 (.pilotNormalized ⟨0, HP.k_pos⟩), gridChannel roles.source 1 [1],
+      gridChannel roles.terminal 0 [2, 3], gridChannel roles.terminal 0 [2, 3]⟩
+  have hr : Admissible r := ⟨roles.source_terminal, rfl, rfl⟩
+  have hm := normalizer_full 1 id r hr
+    (initialPilotPreparationWalk HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+      base rawSteps prepSteps) 0 0
+  dsimp only at hm
+  have hm' : rowSliceMean (fun σ v => r.source.retains (channels 1) σ (id v))
+      (fun σ v => r.usage.retains (channels 1) σ (id v))
+      (initialPilotPreparationWalk HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+        base rawSteps prepSteps) 0 0 = 1 := by
+    have he : ({σ : Environment 5 3 | r.source.retains (channels 1) σ (id 0) ∧
+        r.usage.retains (channels 1) σ (id 0)} : Finset _) =
+        ({σ : Environment 5 3 | X roles.source (side 5 1)
+          (CopyPadding.identifier 1 [1]) σ 0 ∧
+          Y roles.terminal (side 5 0) (CopyPadding.identifier 1 [2, 3]) σ 0} : Finset _) := by
+      ext σ
+      simp only [mem_filter, mem_univ, true_and, r, gridChannel,
+        CorrectionRowTask.Channel.retains, channels, semanticSide_grid, X, Y, id_eq]
+    unfold rowSliceMean
+    rw [he]
+    exact computed_preparation_mean HP rawSteps prepSteps
+  rw [hm'] at hm
+  unfold initialPilotNormalized
+  change correctionRequest 1 id r _ _ _ _ _ _ _ _ _ _ (seed 0) 0 0 = _
+  simp only [correctionRequest, dite_eq_left hr, CorrectionRowRecipe.normalized, hm]
+  have ht : coordinate (1 : ZMod 5) r.usage (seed 0 r.terminal.role) (id 0) := by
+    change frameRetains 5 4 (semanticSide 5 (rate 0)) _ _
+    rw [semanticSide_grid, show side 5 0 = 5 by norm_num [side]]
+    exact full_retains _ _
+  simp only [Equiv.piSplitAt_apply] at *
+  rw [ite_eq_left ht, walk_eq, ite_eq_left source_both.1]
+  unfold rowGate incomingGate
+  rw [kthLargest_eq_zero_of_card_lt
+    ((card_filter_le _ _).trans_lt (by simpa using large_K HP)),
+    kthLargest_eq_zero_of_card_lt
+      ((card_filter_le _ _).trans_lt (by simpa using large_Kc HP))]
+  rw [HP.ρ_one 0 HP.η_pos.le,
+    HP.incomingCutoff_one (by rw [HP.τ₀_eq]; norm_num)]
+  simp only [initialPilotMaximum, computed_detector_zero HP (large_J HP),
+    PilotRowRecipe.maximum, Pi.zero_apply, max_self]
+  norm_num only [base, Matrix.one_apply_eq, r, gridChannel, rate, pow_zero, inv_one,
+    one_pow, div_one, mul_one, min_self,
+    max_eq_right (by norm_num : (1/2:ℝ) ≤ 1), min_eq_right (by norm_num : (0:ℝ) ≤ 1)]
+  rw [HP.γ_one 0 (by norm_num), mul_one, HP.toHierarchyParams.atomCutoff_eq (by norm_num)
+    (by have := Nat.cast_nonneg (α := ℝ) HP.k; linarith)]
+
+-- A nonzero upper correction and nonzero genuinely computed preparatory walk.
+-- Both lengths are positive and every non-source role is preserved by seed_agree.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (rawSteps prepSteps detectorSteps : ℕ)
+    (hr : 0 < rawSteps) (hp : 0 < prepSteps) (hd : 0 < detectorSteps) :
+    initialPilotCorrection HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+      base rawSteps detectorSteps (seed 0) 0 0 = HP.Q 1 ∧
+    0 < HP.Q 1 ∧
+    initialPilotPreparationWalk HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+      base rawSteps prepSteps (seed 0) 0 0 = 1 ∧
+    initialPilotPreparationWalk HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+      base rawSteps prepSteps (seed 4) 0 0 = 0 := by
+  have _ := hr; have _ := hp; have _ := hd
+  have ht : (1:ℝ) ≤ (HP.k:ℝ) + 1 := by have := Nat.cast_nonneg (α := ℝ) HP.k; linarith
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · unfold initialPilotCorrection initialPilotMaximum
+    rw [walk_eq, ite_eq_left source_both.1, computed_detector_zero HP (large_J HP)]
+    norm_num only [base, Matrix.one_apply_eq, rate, pow_zero, inv_one, one_pow,
+      div_one, one_mul, PilotRowRecipe.maximum, Pi.zero_apply, max_self,
+      max_eq_right (by norm_num : (0:ℝ) ≤ 0), min_eq_right (by norm_num : (0:ℝ) ≤ 1)]
+    rw [HP.γ_one 0 (by norm_num), mul_one, HP.toHierarchyParams.atomCutoff_eq (by norm_num) ht]
+  · have h := HP.le_Q 1
+    have ht := HP.θ₂_lt
+    linarith
+  · rw [computed_preparation_walk, ite_eq_left source_both.1]
+    rfl
+  · rw [computed_preparation_walk, ite_eq_right source_both.2]
+
+-- The upper direct correction has the actual zero edge on the rejected source,
+-- while the terminal and every spectator agree with the nonzero run.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (rawSteps detectorSteps : ℕ) :
+    initialPilotCorrection HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+      base rawSteps detectorSteps (seed 4) 0 0 = 0 ∧
+    ∀ j, j ≠ roles.source → seed 0 j = seed 4 j := by
+  constructor
+  · unfold initialPilotCorrection
+    rw [walk_eq, ite_eq_right source_both.2, zero_div,
+      HP.toHierarchyParams.atomCutoff_eq_zero (le_refl 0), mul_zero, zero_mul]
+  · exact seed_agree 0 4
+
+-- Zero input still receives a positive genuine RAW allocation and produces a zero
+-- upper correction for every source frame, independently of the detector's value.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (ε : ℝ) (hε : 0 < ε)
+    (detectorSteps : ℕ) (σ : Environment 5 3) (x y : ZMod 5) :
+    let steps := initialPilotRawSteps HP (1 : ZMod 5) roles 0 1 0 0 [1] [2, 3]
+      binCutoff (fun _ => 1) 0 ε
+    0 < steps ∧ initialPilotCorrection HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff
+      (fun _ => 1) 0 steps detectorSteps σ x y = 0 := by
+  intro steps
+  refine ⟨(initialPilotRaw_allocated HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff
+    (fun _ => 1) 0 hε).1, ?_⟩
+  unfold initialPilotCorrection
+  rw [zero_walk, zero_div, HP.toHierarchyParams.atomCutoff_eq_zero (le_refl 0),
+    mul_zero, zero_mul]
+
+-- All accuracy hypotheses hold on an actual nonzero base. The returned lengths
+-- run the computed algorithm, and the reference is the original canonical pilot.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (ε : ℝ) (hε : 0 < ε) :
+    ∃ rawSteps detectorSteps : ℕ, 0 < rawSteps ∧ 0 < detectorSteps ∧
+    rootDistPow 4 5 (rate 1) source
+      (Y roles.terminal (side 5 0) (CopyPadding.identifier 1 [2, 3]))
+      (initialPilotCorrection HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+        base rawSteps detectorSteps)
+      (fun _ x y => pilotCorrection (HP.toHierarchyParams.cutoff (rate 0)) HP.γ
+        (columnDetector (canonicalChannel id (rate 0)) (canonicalChannel id (rate 0))
+          HP.ϕ HP.ρ HP.J HP.K (rate 0)) base 1 x y) ≤ ε ^ 4 := by
+  obtain ⟨L, Lq, Lg, _, _, _, ha⟩ := initialPilotCorrection_accuracy HP
+  have hk : (1 : ℝ) ≤ HP.k := by exact_mod_cast HP.k_pos
+  have hd := div_le_div_of_nonneg_right
+    (mul_le_mul_of_nonneg_left hk (by norm_num : (0 : ℝ) ≤ 32)) HP.η_pos.le
+  have hK : 2 * (1 + 32 / HP.η) ≤ HP.K := by linarith [HP.gate]
+  have hC : ∀ x y, 0 ≤ base x y := by
+    intro x y; simp only [base, Matrix.one_apply]; split_ifs <;> norm_num
+  have hCf : ∀ x y, base x y ≤ rate 0 := by
+    intro x y; simp only [base, Matrix.one_apply]; split_ifs <;> norm_num [rate]
+  obtain ⟨hr, hd, he⟩ := ha 5 3 1 (by decide) roles horizon 0 1 0 (by decide) (by decide)
+    [1] [2, 3] binCutoff (fun _ => 1) base (by intros; rfl) HP.η HP.η_pos HP.ρ_one hK
+    hC (by simp [base])
+    (by intro x y; simpa only [rate, pow_zero, inv_one, one_pow, div_one, one_mul]
+      using binCutoff_base x y) 1 (by norm_num)
+    (by
+      intro y
+      have ht : ({t : FrameChannel 5 4 1 | frameRetains 5 4 (side 5 0) t
+          (CopyPadding.identifier 1 [2, 3] y)} : Finset _) = univ := by
+        apply filter_true_of_mem
+        intro t _
+        simpa only [show side 5 0 = 5 by norm_num [side]] using full_retains t _
+      rw [ht]
+      norm_num) ε hε
+  refine ⟨_, _, hr, hd, ?_⟩
+  simp_rw [initialTrueCorrection_eq_canonical HP 1 (by decide) roles 1 0 [1] [2, 3]
+    base hC hCf] at he
+  exact he
 
 end InitialPilotScoreRegression
