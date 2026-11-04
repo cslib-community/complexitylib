@@ -97,6 +97,9 @@ method before unfolding it. The tactic checks its basis and output encoding and 
 `Realizes.reindex` to wire every encoded argument coordinate to an already live word. The
 complete [method-call clients](../../ComplexityTests/WordRAMRealizationCall.lean) cover
 projections, aliased inputs, curried and dependent arguments, and optional-pair replies.
+Word-vector type abbreviations in the callee's input and output encodings are accepted without
+restating their literal `Fin` widths; the [encoding-alias clients](../../ComplexityTests/WordRAMRealizeAliases.lean)
+include a nine-word input, six-word result and empty-vector methods.
 Certificates are tried in context order; this does not search for a runtime bound.
 Zero local work is an absorbed grading: the callee still has its certified native allowance
 against memory charge. It does not mean zero machine instructions.
