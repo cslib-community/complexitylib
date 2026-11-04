@@ -225,13 +225,8 @@ theorem actualFirstSignal_noise_le_payment
     (initial : Environment P J → ZMod P → ZMod P → Fin 2 → ℝ)
     (hz : ∀ σ x y, initial σ x y 0 = 0)
     (i : ℕ) :
-    let input := fun j => rawIncomingNormalized HP D id R l bin ks km k kb ss sm st
-      (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff Kc binCutoff (raw j) (prep j) (maximum j)
-    let H := graph R.source R.terminal R.source_terminal (side P ks) (side P k)
-      (side_le P ks) (side_le P k) (fun x => CopyPadding.identifier D ss x)
-      (fun y => CopyPadding.identifier D st y)
-    let F := fun j => conditionalWalk (retainedMask R.source (side P ks) D ss)
-      (retainedMask R.terminal (side P k) D st) H (fun _ _ => steps j) (input j)
+    let F := fun j σ x y => completedRawChild HP D R l bin ks km k kb ss sm st Kc
+      binCutoff (raw j) (prep j) (maximum j) (steps j) σ x y
     rowNormPow 4 P (rate ks) (retainedMask R.source (side P ks) D ss)
       (retainedMask R.terminal (side P k) D st)
       (actualNoiseEntry R.source R.terminal (side P ks) (side P k) Lt D ss st k G
@@ -267,13 +262,8 @@ theorem actualFirstSignal_noise_le_dyadic
     (hsteps : spectralWalkLength (1 - 1 / (155648 * (J + 1) * (4 : ℝ) ^ 4))
       ((rate k)⁻¹ ^ 4 * 32 * firstSignalPayment HP P Kc ks km k kb CB)
       ε (dyadicSlack m i) ≤ steps (i + 1)) :
-    let input := fun j => rawIncomingNormalized HP D id R l bin ks km k kb ss sm st
-      (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff Kc binCutoff (raw j) (prep j) (maximum j)
-    let H := graph R.source R.terminal R.source_terminal (side P ks) (side P k)
-      (side_le P ks) (side_le P k) (fun x => CopyPadding.identifier D ss x)
-      (fun y => CopyPadding.identifier D st y)
-    let F := fun j => conditionalWalk (retainedMask R.source (side P ks) D ss)
-      (retainedMask R.terminal (side P k) D st) H (fun _ _ => steps j) (input j)
+    let F := fun j σ x y => completedRawChild HP D R l bin ks km k kb ss sm st Kc
+      binCutoff (raw j) (prep j) (maximum j) (steps j) σ x y
     rowNormPow 4 P (rate ks) (retainedMask R.source (side P ks) D ss)
       (retainedMask R.terminal (side P k) D st)
       (actualNoiseEntry R.source R.terminal (side P ks) (side P k) Lt D ss st k G

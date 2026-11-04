@@ -147,7 +147,7 @@ and keep the same `NormalizedMoments` namespace open.
 For the first-signal endpoint row-noise premise, the
 [FirstSignal route](probabilistic-workflows.md) derives the bound from genuine
 conditional-walk prefixes and explicit lower-child incoming moments. The
-[SecondSignal route](probabilistic-workflows.md) constructs the actual selected preparatory
+[SecondSignal route](probabilistic-workflows.md) constructs the completed-raw selected preparatory
 input from those children and derives usage-slice endpoint ROW noise. Its pre-walk
 support bound pays 16K on an admitted source horizon, and an explicit logarithmic step
 choice discharges the actual second-prefix dyadic budget for positive tolerance. Mixing

@@ -12,7 +12,8 @@ public import Complexity.Foundations.Probability.DenseRowRecipes.Stability
 /-!
 # Actual preparation mean bias from absolute residual errors
 
-The selected preparation uses the actual incoming-normalized signed lower-child residual.
+The selected preparation uses a supplied completed raw child. The actual wiring client
+uses the conditional-walk-smoothed incoming-normalized signed lower-child residual.
 Its comparison target is `genuinePrep`, with the same full terminal rank slice on the same
 full environment. Conditional averaging uses source × usage, preserving correlations and
 inherited copy suffixes. Stationarity identifies the selected input mean of the ζ-scaled
@@ -52,6 +53,22 @@ slice, never the narrower usage slice. Signed entries and empty ranks are allowe
     (G : Matrix (ZMod P) (ZMod P) ℝ) (σ : Environment P J) (x y : ZMod P) : ℝ :=
   (Lh * |A σ x y - G x y| + Lρ * kthLargest 1
     {w | retainedMask R.terminal (side P k) D st σ w} (fun w => |A σ x w - G x w|)) / rate k
+
+/-- The completed raw-child error is exactly the absolute first-prefix error times its
+rate. The maximum still ranges over the full terminal slice, including empty ranks.
+This identity makes no inference from a clipped relative-error bound. -/
+lemma preparationError_eq_firstPrefix
+    (R : RoleProfile J) (D : ZMod P) (st : List (ZMod P)) (k : ℕ) (Lh Lρ : ℝ)
+    (F : ℕ → Environment P J → ZMod P → ZMod P → ℝ)
+    (second : Environment P J → ZMod P → ℕ → ZMod P → ℝ)
+    (G : Matrix (ZMod P) (ZMod P) ℝ) (i : ℕ) (σ : Environment P J) (x y : ZMod P) :
+    preparationError R D st k Lh Lρ (fun τ a b => F (i + 1) τ a b) G σ x y =
+      (Lh * (rate k * |actualPrefix (firstSignalIncrement F k second)
+        (fun _ _ _ _ => 0) i σ x y 0 - G x y / rate k|) +
+      Lρ * kthLargest 1 {w | retainedMask R.terminal (side P k) D st σ w}
+        (fun w => rate k * |actualPrefix (firstSignalIncrement F k second)
+          (fun _ _ _ _ => 0) i σ x w 0 - G x w / rate k|)) / rate k := by
+  simp only [preparationError, firstSignal_raw_error F k second G i]
 
 /-- Explicit absolute entry/rank envelopes bound the actual preparation error. No bound
 on the true row is required. The rank envelope is nonnegative also for an empty rank. -/
@@ -150,17 +167,14 @@ lemma actualClippedMean_second_eq {E : Type*} [Fintype E] [Nonempty E]
   rw [rowSliceMean_conditionalWalk, ← mul_sub, abs_mul]
   rfl
 
-/-- Actual lower-child residuals pay the clipped second deterministic mean discrepancy.
+/-- Completed raw-child errors pay the clipped second deterministic mean discrepancy.
 All child requests and their correlations survive in A; the envelope is an average of
 absolute residual errors, with the full-rank maximum and the rate divisor explicit. -/
 theorem actualSelectedSecondSignal_mean_bias_le {E : Type*} [Fintype E] [Nonempty E]
     (HP : FourthRootHierarchyParams 16 1 16 32 8) (hK : 0 < HP.K)
-    (D : ZMod P) (R : RoleProfile J) (l bin ks km k kb kt : ℕ) (_husage : k ≤ kt)
-    (ss sm st : List (ZMod P)) (Kc : ℕ) (binCutoff : ℝ → ℝ)
-    (raw prep : ∀ j : ℕ, HierarchyTask.Request j (Fin J) (ZMod P) →
-      Environment P J → Matrix (ZMod P) (ZMod P) ℝ)
-    (maximum : ∀ j : ℕ, HierarchyTask.Request j (Fin J) (ZMod P) →
-      Environment P J → ZMod P → ℝ)
+    (D : ZMod P) (R : RoleProfile J) (ks k kt : ℕ) (_husage : k ≤ kt)
+    (ss st : List (ZMod P))
+    (A : ℕ → Environment P J → Matrix (ZMod P) (ZMod P) ℝ)
     (graphs : ℕ → ∀ x y, RotationMap
       (RetainedPairSlice (retainedMask R.source (side P ks) D ss)
         (retainedMask R.terminal (side P kt) D st) x y) E)
@@ -170,10 +184,7 @@ theorem actualSelectedSecondSignal_mean_bias_le {E : Type*} [Fintype E] [Nonempt
     (hh : ∀ a b, |polynomialPrepCutoff4 HP.θ a - polynomialPrepCutoff4 HP.θ b| ≤ Lh * |a - b|)
     (hρ : ∀ a b, |HP.ρ a - HP.ρ b| ≤ Lρ * |a - b|)
     (ζ : ℝ) (G : Matrix (ZMod P) (ZMod P) ℝ) (i : ℕ) (x y : ZMod P) :
-    let A := fun j σ => rawIncomingNormalized HP D id R l bin ks km k kb ss sm st
-      (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff Kc binCutoff (raw j) (prep j) (maximum j) σ
-    let T := fun j σ x y => selectedResidualPreparation HP D R l bin ks km k kb ss sm st
-      Kc binCutoff (raw j) (prep j) (maximum j) σ x y
+    let T := fun j σ x y => selectedPreparation HP D R st k (A j) σ x y
     let H := fun j => conditionalWalk (retainedMask R.source (side P ks) D ss)
       (retainedMask R.terminal (side P kt) D st) (graphs j) (times j) (T j)
     actualClippedMean HP R.source R.terminal (side P ks) (side P k) (side P kt) D ss st k G ζ
@@ -186,6 +197,41 @@ theorem actualSelectedSecondSignal_mean_bias_le {E : Type*} [Fintype E] [Nonempt
   apply min_le_min_left
   apply mul_le_mul_of_nonneg_left _ (abs_nonneg ζ)
   exact preparation_mean_bias_le HP hK R D ss st ks k kt hLρ hh hρ _ G x y
+
+/-- Actual recursive preparation wiring: cutoff after the full-rank raw H4 child walk,
+then the source × usage preparation walk. Bias is charged to that completed raw child
+minus G, with full-rank maximum and inverse rate explicit in preparationError. -/
+theorem actualCompletedSecondSignal_mean_bias_le {E : Type*} [Fintype E] [Nonempty E]
+    (HP : FourthRootHierarchyParams 16 1 16 32 8) (hK : 0 < HP.K)
+    (D : ZMod P) (R : RoleProfile J) (ks k kt : ℕ) (_husage : k ≤ kt)
+    (ss st : List (ZMod P))
+    (l bin km kb : ℕ) (sm : List (ZMod P)) (Kc : ℕ) (binCutoff : ℝ → ℝ)
+    (raw prep : ∀ j : ℕ, HierarchyTask.Request j (Fin J) (ZMod P) →
+      Environment P J → Matrix (ZMod P) (ZMod P) ℝ)
+    (maximum : ∀ j : ℕ, HierarchyTask.Request j (Fin J) (ZMod P) →
+      Environment P J → ZMod P → ℝ)
+    (rawSteps : ℕ → ℕ)
+    (graphs : ℕ → ∀ x y, RotationMap
+      (RetainedPairSlice (retainedMask R.source (side P ks) D ss)
+        (retainedMask R.terminal (side P kt) D st) x y) E)
+    (times : ℕ → ZMod P → ZMod P → ℕ)
+    {Lh Lρ : ℝ} (hLρ : 0 ≤ Lρ)
+    (hh : ∀ a b, |polynomialPrepCutoff4 HP.θ a - polynomialPrepCutoff4 HP.θ b| ≤ Lh * |a - b|)
+    (hρ : ∀ a b, |HP.ρ a - HP.ρ b| ≤ Lρ * |a - b|)
+    (ζ : ℝ) (G : Matrix (ZMod P) (ZMod P) ℝ) (i : ℕ) (x y : ZMod P) :
+    let A := fun j σ x y => completedRawChild HP D R l bin ks km k kb ss sm st Kc
+      binCutoff (raw j) (prep j) (maximum j) (rawSteps j) σ x y
+    let T := fun j σ x y => selectedPreparation HP D R st k (A j) σ x y
+    let H := fun j => conditionalWalk (retainedMask R.source (side P ks) D ss)
+      (retainedMask R.terminal (side P kt) D st) (graphs j) (times j) (T j)
+    actualClippedMean HP R.source R.terminal (side P ks) (side P k) (side P kt) D ss st k G ζ
+      (firstSignalIncrement A k (secondSignalIncrement H ζ)) (fun _ _ _ _ => 0) 1 i x y ≤
+      min 1 (|ζ| * rowSliceMean (retainedMask R.source (side P ks) D ss)
+        (retainedMask R.terminal (side P kt) D st)
+        (preparationError R D st k Lh Lρ (A (i + 1)) G) x y) := by
+  dsimp only
+  exact actualSelectedSecondSignal_mean_bias_le HP hK D R ks k kt _husage ss st _
+    graphs times _ hLρ hh hρ ζ G i x y
 
 end
 end Matrix.HierarchyParams.H4RankEnvironment.NormalizedMoments

@@ -35,6 +35,24 @@ open scoped BigOperators
 
 variable {P J : ℕ} [Fact P.Prime]
 
+open Classical in
+/-- Completed raw child used by the first signal: the actual full-terminal H4 walk
+of the signed incoming sample. No preparation cutoff is applied inside this walk. -/
+@[expose] noncomputable def completedRawChild {q : ℕ}
+    (HP : FourthRootHierarchyParams 16 1 16 32 8) (D : ZMod P) (R : RoleProfile J)
+    (l bin ks km k kb : ℕ) (ss sm st : List (ZMod P)) (Kc : ℕ) (binCutoff : ℝ → ℝ)
+    (raw prep : HierarchyTask.Request q (Fin J) (ZMod P) →
+      Environment P J → Matrix (ZMod P) (ZMod P) ℝ)
+    (maximum : HierarchyTask.Request q (Fin J) (ZMod P) → Environment P J → ZMod P → ℝ)
+    (steps : ℕ) (σ : Environment P J) (x y : ZMod P) : ℝ :=
+  conditionalWalk (retainedMask R.source (side P ks) D ss)
+    (retainedMask R.terminal (side P k) D st)
+    (graph R.source R.terminal R.source_terminal (side P ks) (side P k)
+      (side_le P ks) (side_le P k) (fun x => CopyPadding.identifier D ss x)
+      (fun y => CopyPadding.identifier D st y)) (fun _ _ => steps)
+    (rawIncomingNormalized HP D id R l bin ks km k kb ss sm st
+      (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff Kc binCutoff raw prep maximum) σ x y
+
 /-- Genuine differences of successive first signals, starting from zero.
 The second signal is left unchanged. -/
 @[expose] noncomputable def firstSignalIncrement
@@ -58,6 +76,19 @@ theorem actualPrefix_firstSignalIncrement
     rw [uncompressedRow_succ, ih]
     simp only [firstSignalIncrement, Fin.isValue, ↓reduceIte, Nat.succ_ne_zero]
     ring
+
+omit [Fact P.Prime] in
+/-- Recover the matrix-unit child from the normalized first prefix. Preparing the prefix
+without this factor would divide by the rate twice. Literal-zero initialization is retained. -/
+lemma firstSignal_raw_error
+    (F : ℕ → Environment P J → ZMod P → ZMod P → ℝ) (k : ℕ)
+    (second : Environment P J → ZMod P → ℕ → ZMod P → ℝ)
+    (G : Matrix (ZMod P) (ZMod P) ℝ) (i : ℕ) (σ : Environment P J) (x y : ZMod P) :
+    |F (i + 1) σ x y - G x y| = rate k *
+      |actualPrefix (firstSignalIncrement F k second) (fun _ _ _ _ => 0) i σ x y 0 -
+        G x y / rate k| := by
+  rw [actualPrefix_firstSignalIncrement _ _ _ _ (by intros; rfl), ← sub_div, abs_div,
+    abs_of_pos (rate_pos k), mul_div_cancel₀ _ (rate_pos k).ne']
 
 open Classical in
 /-- Exact centered-noise identity for actual full-terminal-rank walk prefixes. -/
@@ -138,13 +169,8 @@ theorem actualFirstSignal_noise_le_lower
     (initial : Environment P J → ZMod P → ZMod P → Fin 2 → ℝ)
     (hz : ∀ σ x y, initial σ x y 0 = 0)
     {N u : ℝ} (hN : 0 < N) (hu : 0 < u) (i : ℕ) :
-    let input := fun j => rawIncomingNormalized HP D id R l bin ks km k kb ss sm st
-      (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff Kc binCutoff (raw j) (prep j) (maximum j)
-    let H := graph R.source R.terminal R.source_terminal (side P ks) (side P k)
-      (side_le P ks) (side_le P k) (fun x => CopyPadding.identifier D ss x)
-      (fun y => CopyPadding.identifier D st y)
-    let F := fun j => conditionalWalk (retainedMask R.source (side P ks) D ss)
-      (retainedMask R.terminal (side P k) D st) H (fun _ _ => steps j) (input j)
+    let F := fun j σ x y => completedRawChild HP D R l bin ks km k kb ss sm st Kc
+      binCutoff (raw j) (prep j) (maximum j) (steps j) σ x y
     rowNormPow 4 N u (retainedMask R.source (side P ks) D ss)
       (retainedMask R.terminal (side P k) D st)
       (actualNoiseEntry R.source R.terminal (side P ks) (side P k) Lt D ss st k G
