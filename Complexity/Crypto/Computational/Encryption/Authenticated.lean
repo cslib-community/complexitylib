@@ -264,33 +264,6 @@ noncomputable def cpaGame (E : SymmetricCipher) (adversary : OracleDistinguisher
       (E.cpaEncryptionOracle n k bit)) (adversary n [])).run ()
   return out.1
 
-private theorem computableTidilyInPolyTime_pairLenEq {α : Type} {enc : α ↪ List Bool}
-    {req : α → List Bool} {n : α → ℕ}
-    (hreq : ComputableTidilyInPolyTime req enc encBits)
-    (hn : ComputableTidilyInPolyTime n enc encUnary) :
-    ComputableTidilyInPolyTime
-      (fun a => ((unframe (req a)).length == n a) && ((dropFrame (req a)).length == n a))
-      enc encBool :=
-  ComputableTidilyInPolyTime.bool_and.comp
-    ((ComputableTidilyInPolyTime.unary_beq
-      (ComputableTidilyInPolyTime.length_bits.comp
-        (ComputableTidilyInPolyTime.unframe.comp hreq)) hn).prod
-      (ComputableTidilyInPolyTime.unary_beq
-        (ComputableTidilyInPolyTime.length_bits.comp
-          (ComputableTidilyInPolyTime.dropFrame.comp hreq)) hn))
-
-private theorem computableTidilyInPolyTime_and_pairLenEq {α : Type} {enc : α ↪ List Bool}
-    {b : α → Bool} {req : α → List Bool} {n : α → ℕ}
-    (hb : ComputableTidilyInPolyTime b enc encBool)
-    (hreq : ComputableTidilyInPolyTime req enc encBits)
-    (hn : ComputableTidilyInPolyTime n enc encUnary) :
-    ComputableTidilyInPolyTime
-      (fun a => b a && ((unframe (req a)).length == n a) && ((dropFrame (req a)).length == n a))
-      enc encBool := by
-  simpa only [Bool.and_assoc, Function.comp_def] using
-    ComputableTidilyInPolyTime.bool_and.comp
-      (hb.prod (computableTidilyInPolyTime_pairLenEq hreq hn))
-
 private theorem computableTidilyInPolyTime_contains_bits {α : Type} {enc : α ↪ List Bool}
     {list : α → List (List Bool)} {elem : α → List Bool}
     (hlist : ComputableTidilyInPolyTime list enc (encList encBits))
@@ -330,20 +303,27 @@ theorem isPPTOn_run_cpaEncryptionOracle (E : SymmetricCipher) {adversary : Oracl
   obtain ⟨c, d, hlen⟩ := E.encrypt_ppt.length_le
   let EIn := encPair (encPair encUnary encBits)
     (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
+  have hreq : ComputableTidilyInPolyTime
+      (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Unit) => p.2.1.2)
+      EIn encBits := by
+    dsimp only [EIn]; fun_prop
+  have hn : ComputableTidilyInPolyTime
+      (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Unit) => p.1.1)
+      EIn encUnary := by
+    dsimp only [EIn]; fun_prop
   have hm0 : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Unit) => unframe p.2.1.2)
       EIn encBits :=
-    ComputableTidilyInPolyTime.unframe.comp (by dsimp only [EIn]; fun_prop)
+    ComputableTidilyInPolyTime.unframe.comp hreq
   have hm1 : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Unit) => dropFrame p.2.1.2)
       EIn encBits :=
-    ComputableTidilyInPolyTime.dropFrame.comp (by dsimp only [EIn]; fun_prop)
+    ComputableTidilyInPolyTime.dropFrame.comp hreq
   have hcond : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Unit) =>
         ((unframe p.2.1.2).length == p.1.1) && ((dropFrame p.2.1.2).length == p.1.1))
-      EIn encBool :=
-    computableTidilyInPolyTime_pairLenEq
-      (by dsimp only [EIn]; fun_prop) (by dsimp only [EIn]; fun_prop)
+      EIn encBool := by
+    fun_prop
   have hmsg : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Unit) =>
         if bit then dropFrame p.2.1.2 else unframe p.2.1.2)
@@ -353,7 +333,7 @@ theorem isPPTOn_run_cpaEncryptionOracle (E : SymmetricCipher) {adversary : Oracl
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Unit) =>
         (p.1.1, p.1.2, if bit then dropFrame p.2.1.2 else unframe p.2.1.2))
       EIn (encPair encUnary (encPair encBits encBits)) :=
-    ComputableTidilyInPolyTime.prod (by dsimp only [EIn]; fun_prop)
+    ComputableTidilyInPolyTime.prod hn
       (ComputableTidilyInPolyTime.prod (by dsimp only [EIn]; fun_prop) hmsg)
   have hyes : IsPPTOn EIn (encPair encBits (encFinEnum Unit))
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Unit) => do
@@ -467,21 +447,31 @@ theorem isPPTOn_run_oneTimeCPAEncryptionOracle (E : SymmetricCipher)
   obtain ⟨c, d, hlen⟩ := E.encrypt_ppt.length_le
   let EIn := encPair (encPair encUnary encBits)
     (encPair (encPair (encFinEnum Unit) encBits) encBool)
+  have hreq : ComputableTidilyInPolyTime
+      (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) => p.2.1.2)
+      EIn encBits := by
+    dsimp only [EIn]; fun_prop
+  have hn : ComputableTidilyInPolyTime
+      (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) => p.1.1)
+      EIn encUnary := by
+    dsimp only [EIn]; fun_prop
+  have hstate : ComputableTidilyInPolyTime
+      (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) => p.2.2)
+      EIn encBool := by
+    dsimp only [EIn]; fun_prop
   have hm0 : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) => unframe p.2.1.2)
       EIn encBits :=
-    ComputableTidilyInPolyTime.unframe.comp (by dsimp only [EIn]; fun_prop)
+    ComputableTidilyInPolyTime.unframe.comp hreq
   have hm1 : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) => dropFrame p.2.1.2)
       EIn encBits :=
-    ComputableTidilyInPolyTime.dropFrame.comp (by dsimp only [EIn]; fun_prop)
+    ComputableTidilyInPolyTime.dropFrame.comp hreq
   have hcond : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) =>
         !p.2.2 && ((unframe p.2.1.2).length == p.1.1) && ((dropFrame p.2.1.2).length == p.1.1))
-      EIn encBool :=
-    computableTidilyInPolyTime_and_pairLenEq (enc := EIn)
-      (by dsimp only [EIn]; fun_prop) (by dsimp only [EIn]; fun_prop)
-      (by dsimp only [EIn]; fun_prop)
+      EIn encBool := by
+    fun_prop
   have hmsg : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) =>
         if bit then dropFrame p.2.1.2 else unframe p.2.1.2)
@@ -491,7 +481,7 @@ theorem isPPTOn_run_oneTimeCPAEncryptionOracle (E : SymmetricCipher)
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) =>
         (p.1.1, p.1.2, if bit then dropFrame p.2.1.2 else unframe p.2.1.2))
       EIn (encPair encUnary (encPair encBits encBits)) :=
-    ComputableTidilyInPolyTime.prod (by dsimp only [EIn]; fun_prop)
+    ComputableTidilyInPolyTime.prod hn
       (ComputableTidilyInPolyTime.prod (by dsimp only [EIn]; fun_prop) hmsg)
   have hyes : IsPPTOn EIn (encPair encBits encBool)
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) => do
@@ -502,8 +492,7 @@ theorem isPPTOn_run_oneTimeCPAEncryptionOracle (E : SymmetricCipher)
         (ComputableTidilyInPolyTime.const true)).isPPTOn)
   have hno : IsPPTOn EIn (encPair encBits encBool)
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) => pure ([], p.2.2)) :=
-    (ComputableTidilyInPolyTime.prod (ComputableTidilyInPolyTime.const [])
-      (by dsimp only [EIn]; fun_prop)).isPPTOn
+    (ComputableTidilyInPolyTime.prod (ComputableTidilyInPolyTime.const []) hstate).isPPTOn
   have hhandler : IsPPTOn EIn (encPair encBits encBool)
       (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × Bool) =>
         E.oneTimeCPAEncryptionOracle pair.1.1 pair.1.2 bit pair.2.1 pair.2.2) := by
@@ -598,27 +587,37 @@ theorem isOraclePPT_cpaLimitToOneQuery {ctBound : ℕ → ℕ}
     IsOraclePPT encBool (cpaLimitToOneQuery ctBound adversary) := by
   let EIn := encPair (encPair encUnary encBits)
     (encPair (encPair (encFinEnum Unit) encBits) encBool)
+  have hreq : ComputableTidilyInPolyTime
+      (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) => p.2.1.2)
+      EIn encBits := by
+    dsimp only [EIn]; fun_prop
+  have hn : ComputableTidilyInPolyTime
+      (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) => p.1.1)
+      EIn encUnary := by
+    dsimp only [EIn]; fun_prop
+  have hstate : ComputableTidilyInPolyTime
+      (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) => p.2.2)
+      EIn encBool := by
+    dsimp only [EIn]; fun_prop
   have hcond : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) =>
         !p.2.2 && ((unframe p.2.1.2).length == p.1.1) && ((dropFrame p.2.1.2).length == p.1.1))
       EIn encBool :=
-    (computableTidilyInPolyTime_and_pairLenEq (enc := EIn)
-      (by dsimp only [EIn]; fun_prop) (by dsimp only [EIn]; fun_prop)
-      (by dsimp only [EIn]; fun_prop)).computableInPolyTime
+    (by fun_prop : ComputableTidilyInPolyTime _ EIn encBool).computableInPolyTime
   have hlimit : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) => ctBound p.1.1)
       EIn encUnary :=
-    hctBound.comp (by dsimp only [EIn]; fun_prop)
+    hctBound.comp hn.computableInPolyTime
   have hquery : IsOraclePPTOn EIn (encPair encBits encBool)
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) =>
         (fun ct => (ct, true)) <$>
           (List.take (ctBound p.1.1) <$> ProbOracleComp.query ((), p.2.1.2))) :=
-    (IsOraclePPTOn.query_take' () (by dsimp only [EIn]; fun_prop) hlimit).map'
+    (IsOraclePPTOn.query_take' () hreq.computableInPolyTime hlimit).map'
       (ComputableInPolyTime.prod (by fun_prop) (ComputableInPolyTime.const true))
   have hnoReply : IsOraclePPTOn EIn (encPair encBits encBool)
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) => pure ([], p.2.2)) :=
     (ComputableInPolyTime.prod (ComputableInPolyTime.const [])
-      (by dsimp only [EIn]; fun_prop)).isOraclePPTOn (Operation := Unit)
+      hstate.computableInPolyTime).isOraclePPTOn (Operation := Unit)
   have hhandler : IsOraclePPTOn EIn (encPair encBits encBool)
       (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × Bool) =>
         cpaOneTimeFilterHandler pair.1.1 (ctBound pair.1.1) pair.2.1 pair.2.2) := by
@@ -1508,20 +1507,27 @@ theorem isPPTOn_run_ccaOracle (E : SymmetricCipher) {adversary : CCAAdversary}
           pure (encOption encBits (E.decrypt p.1.1 p.1.2 p.2.1.2), p.2.2)) :=
     IsPPTOn.cond hcontains hnoReply
       ((ComputableTidilyInPolyTime.prod hdecWord (by dsimp only [EIn]; fun_prop)).isPPTOn)
+  have hreq : ComputableTidilyInPolyTime
+      (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) => p.2.1.2)
+      EIn encBits := by
+    dsimp only [EIn]; fun_prop
+  have hn : ComputableTidilyInPolyTime
+      (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) => p.1.1)
+      EIn encUnary := by
+    dsimp only [EIn]; fun_prop
   have hm0 : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) => unframe p.2.1.2)
       EIn encBits :=
-    ComputableTidilyInPolyTime.unframe.comp (by dsimp only [EIn]; fun_prop)
+    ComputableTidilyInPolyTime.unframe.comp hreq
   have hm1 : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) => dropFrame p.2.1.2)
       EIn encBits :=
-    ComputableTidilyInPolyTime.dropFrame.comp (by dsimp only [EIn]; fun_prop)
+    ComputableTidilyInPolyTime.dropFrame.comp hreq
   have hencCond : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) =>
         ((unframe p.2.1.2).length == p.1.1) && ((dropFrame p.2.1.2).length == p.1.1))
-      EIn encBool :=
-    computableTidilyInPolyTime_pairLenEq
-      (by dsimp only [EIn]; fun_prop) (by dsimp only [EIn]; fun_prop)
+      EIn encBool := by
+    fun_prop
   have hmsg : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) =>
         if bit then dropFrame p.2.1.2 else unframe p.2.1.2)
@@ -1531,7 +1537,7 @@ theorem isPPTOn_run_ccaOracle (E : SymmetricCipher) {adversary : CCAAdversary}
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) =>
         (p.1.1, p.1.2, if bit then dropFrame p.2.1.2 else unframe p.2.1.2))
       EIn (encPair encUnary (encPair encBits encBits)) :=
-    ComputableTidilyInPolyTime.prod (by dsimp only [EIn]; fun_prop)
+    ComputableTidilyInPolyTime.prod hn
       (ComputableTidilyInPolyTime.prod (by dsimp only [EIn]; fun_prop) hmsg)
   have hencYes : IsPPTOn EIn (encPair encBits (encList encBits))
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) => do
@@ -1716,22 +1722,32 @@ theorem isPPTOn_run_oneTimeCCAOracle (E : SymmetricCipher) {adversary : CCAAdver
           pure (encOption encBits (E.decrypt p.1.1 p.1.2 p.2.1.2), p.2.2)) :=
     IsPPTOn.cond hcontains hnoReply
       ((ComputableTidilyInPolyTime.prod hdecWord (by dsimp only [EIn]; fun_prop)).isPPTOn)
+  have hreq : ComputableTidilyInPolyTime
+      (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) => p.2.1.2)
+      EIn encBits := by
+    dsimp only [EIn]; fun_prop
+  have hn : ComputableTidilyInPolyTime
+      (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) => p.1.1)
+      EIn encUnary := by
+    dsimp only [EIn]; fun_prop
+  have hempty : ComputableTidilyInPolyTime
+      (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) => p.2.2.isEmpty)
+      EIn encBool := by
+    dsimp only [EIn]; fun_prop
   have hm0 : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) => unframe p.2.1.2)
       EIn encBits :=
-    ComputableTidilyInPolyTime.unframe.comp (by dsimp only [EIn]; fun_prop)
+    ComputableTidilyInPolyTime.unframe.comp hreq
   have hm1 : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) => dropFrame p.2.1.2)
       EIn encBits :=
-    ComputableTidilyInPolyTime.dropFrame.comp (by dsimp only [EIn]; fun_prop)
+    ComputableTidilyInPolyTime.dropFrame.comp hreq
   have hencCond : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) =>
         p.2.2.isEmpty && ((unframe p.2.1.2).length == p.1.1) &&
           ((dropFrame p.2.1.2).length == p.1.1))
-      EIn encBool :=
-    computableTidilyInPolyTime_and_pairLenEq (enc := EIn)
-      (by dsimp only [EIn]; fun_prop) (by dsimp only [EIn]; fun_prop)
-      (by dsimp only [EIn]; fun_prop)
+      EIn encBool := by
+    fun_prop
   have hmsg : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) =>
         if bit then dropFrame p.2.1.2 else unframe p.2.1.2)
@@ -1741,7 +1757,7 @@ theorem isPPTOn_run_oneTimeCCAOracle (E : SymmetricCipher) {adversary : CCAAdver
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) =>
         (p.1.1, p.1.2, if bit then dropFrame p.2.1.2 else unframe p.2.1.2))
       EIn (encPair encUnary (encPair encBits encBits)) :=
-    ComputableTidilyInPolyTime.prod (by dsimp only [EIn]; fun_prop)
+    ComputableTidilyInPolyTime.prod hn
       (ComputableTidilyInPolyTime.prod (by dsimp only [EIn]; fun_prop) hmsg)
   have hencYes : IsPPTOn EIn (encPair encBits (encList encBits))
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) => do
@@ -1885,21 +1901,31 @@ theorem isOraclePPT_ccaLimitToOneEncryptionQuery {ctBound : ℕ → ℕ}
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × Bool) => p.2.1.1)
       EIn encBool := by
     dsimp only [EIn]; fun_prop
+  have hreq : ComputableTidilyInPolyTime
+      (fun p : (ℕ × List Bool) × ((Bool × List Bool) × Bool) => p.2.1.2)
+      EIn encBits := by
+    dsimp only [EIn]; fun_prop
+  have hn : ComputableTidilyInPolyTime
+      (fun p : (ℕ × List Bool) × ((Bool × List Bool) × Bool) => p.1.1)
+      EIn encUnary := by
+    dsimp only [EIn]; fun_prop
+  have hstate : ComputableTidilyInPolyTime
+      (fun p : (ℕ × List Bool) × ((Bool × List Bool) × Bool) => p.2.2)
+      EIn encBool := by
+    dsimp only [EIn]; fun_prop
   have hencCond : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × Bool) =>
         !p.2.2 && ((unframe p.2.1.2).length == p.1.1) && ((dropFrame p.2.1.2).length == p.1.1))
       EIn encBool :=
-    (computableTidilyInPolyTime_and_pairLenEq (enc := EIn)
-      (by dsimp only [EIn]; fun_prop) (by dsimp only [EIn]; fun_prop)
-      (by dsimp only [EIn]; fun_prop)).computableInPolyTime
+    (by fun_prop : ComputableTidilyInPolyTime _ EIn encBool).computableInPolyTime
   have hctLimit : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × Bool) => ctBound p.1.1)
       EIn encUnary :=
-    hctBound.comp (by dsimp only [EIn]; fun_prop)
+    hctBound.comp hn.computableInPolyTime
   have hdecArg : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × Bool) => (p.1.1, p.2.1.2))
-      EIn (encPair encUnary encBits) := by
-    dsimp only [EIn]; fun_prop
+      EIn (encPair encUnary encBits) :=
+    hn.computableInPolyTime.prod hreq.computableInPolyTime
   have hdecLimit : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × Bool) => decBound p.1.1 p.2.1.2)
       EIn encUnary :=
@@ -2151,21 +2177,28 @@ theorem isOraclePPT_ccaToCPAAdversary {ctBound : ℕ → ℕ}
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × Unit) => p.2.1.1)
       EIn encBool := by
     dsimp only [EIn]; fun_prop
+  have hreq : ComputableTidilyInPolyTime
+      (fun p : (ℕ × List Bool) × ((Bool × List Bool) × Unit) => p.2.1.2)
+      EIn encBits := by
+    dsimp only [EIn]; fun_prop
+  have hn : ComputableTidilyInPolyTime
+      (fun p : (ℕ × List Bool) × ((Bool × List Bool) × Unit) => p.1.1)
+      EIn encUnary := by
+    dsimp only [EIn]; fun_prop
   have hencCond : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × Unit) =>
         ((unframe p.2.1.2).length == p.1.1) && ((dropFrame p.2.1.2).length == p.1.1))
       EIn encBool :=
-    (computableTidilyInPolyTime_pairLenEq
-      (by dsimp only [EIn]; fun_prop) (by dsimp only [EIn]; fun_prop)).computableInPolyTime
+    (by fun_prop : ComputableTidilyInPolyTime _ EIn encBool).computableInPolyTime
   have hlimit : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × Unit) => ctBound p.1.1)
       EIn encUnary :=
-    hctBound.comp (by dsimp only [EIn]; fun_prop)
+    hctBound.comp hn.computableInPolyTime
   have hquery : IsOraclePPTOn EIn (encPair encBits (encFinEnum Unit))
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × Unit) =>
         (fun ct => (ct, ())) <$>
           (List.take (ctBound p.1.1) <$> ProbOracleComp.query ((), p.2.1.2))) :=
-    (IsOraclePPTOn.query_take' () (by dsimp only [EIn]; fun_prop) hlimit).map'
+    (IsOraclePPTOn.query_take' () hreq.computableInPolyTime hlimit).map'
       (ComputableInPolyTime.prod (by fun_prop) (ComputableInPolyTime.const ()))
   have hnoReply : IsOraclePPTOn EIn (encPair encBits (encFinEnum Unit))
       (fun _ => pure ([], ())) :=
@@ -2391,23 +2424,31 @@ theorem isOraclePPT_ccaToCIAdversary {ctBound Q : ℕ → ℕ}
         p.2.1.1)
       EIn encBool := by
     dsimp only [EIn, ECaller, EState]; fun_prop
+  have hreq : ComputableTidilyInPolyTime
+      (fun p : ((ℕ × List Bool) × ℕ) × ((Bool × List Bool) × (ℕ × (Bool × List Bool))) =>
+        p.2.1.2)
+      EIn encBits := by
+    dsimp only [EIn]; fun_prop
+  have hn : ComputableTidilyInPolyTime
+      (fun p : ((ℕ × List Bool) × ℕ) × ((Bool × List Bool) × (ℕ × (Bool × List Bool))) =>
+        p.1.1.1)
+      EIn encUnary := by
+    dsimp only [EIn, ECaller]; fun_prop
   have hencCond : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × ℕ) × ((Bool × List Bool) × (ℕ × (Bool × List Bool))) =>
         ((unframe p.2.1.2).length == p.1.1.1) && ((dropFrame p.2.1.2).length == p.1.1.1))
       EIn encBool :=
-    (computableTidilyInPolyTime_pairLenEq
-      (by dsimp only [EIn]; fun_prop)
-      (by dsimp only [EIn, ECaller]; fun_prop)).computableInPolyTime
+    (by fun_prop : ComputableTidilyInPolyTime _ EIn encBool).computableInPolyTime
   have hm0 : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × ℕ) × ((Bool × List Bool) × (ℕ × (Bool × List Bool))) =>
         unframe p.2.1.2)
       EIn encBits :=
-    ComputableInPolyTime.unframe.comp (by dsimp only [EIn, ECaller, EState]; fun_prop)
+    (ComputableTidilyInPolyTime.unframe.comp hreq).computableInPolyTime
   have hm1 : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × ℕ) × ((Bool × List Bool) × (ℕ × (Bool × List Bool))) =>
         dropFrame p.2.1.2)
       EIn encBits :=
-    ComputableInPolyTime.dropFrame.comp (by dsimp only [EIn, ECaller, EState]; fun_prop)
+    (ComputableTidilyInPolyTime.dropFrame.comp hreq).computableInPolyTime
   have hmsg : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × ℕ) × ((Bool × List Bool) × (ℕ × (Bool × List Bool))) =>
         if bit then dropFrame p.2.1.2 else unframe p.2.1.2)

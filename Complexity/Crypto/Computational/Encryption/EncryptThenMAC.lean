@@ -327,21 +327,6 @@ noncomputable def etmToMACForger (E : SymmetricCipher) (M : MACScheme) (tagBound
           (etmToMACHandler E n (tagBound n) ke))
         (adversary n [])).run ()
 
-private theorem computableTidilyInPolyTime_pairLenEq {α : Type} {enc : α ↪ List Bool}
-    {req : α → List Bool} {n : α → ℕ}
-    (hreq : ComputableTidilyInPolyTime req enc encBits)
-    (hn : ComputableTidilyInPolyTime n enc encUnary) :
-    ComputableTidilyInPolyTime
-      (fun a => ((unframe (req a)).length == n a) && ((dropFrame (req a)).length == n a))
-      enc encBool :=
-  ComputableTidilyInPolyTime.bool_and.comp
-    ((ComputableTidilyInPolyTime.unary_beq
-      (ComputableTidilyInPolyTime.length_bits.comp
-        (ComputableTidilyInPolyTime.unframe.comp hreq)) hn).prod
-      (ComputableTidilyInPolyTime.unary_beq
-        (ComputableTidilyInPolyTime.length_bits.comp
-          (ComputableTidilyInPolyTime.dropFrame.comp hreq)) hn))
-
 private theorem computableTidilyInPolyTime_etmMACPost {S : Type} (encS : S ↪ List Bool)
     (E : SymmetricCipher) (M : MACScheme) :
     ComputableTidilyInPolyTime
@@ -1232,24 +1217,27 @@ private theorem isOraclePPTOn_etmToCPAHandler (M : MACScheme) :
   let ECaller := encPair (encPair encUnary encBits) encBits
   let EIn := encPair ECaller (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
   unfold etmToCPAHandler
+  have hqReqTidy : ComputableTidilyInPolyTime
+      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) => p.2.1.2)
+      EIn encBits := by
+    dsimp only [EIn]; fun_prop
+  have hnTidy : ComputableTidilyInPolyTime
+      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) => p.1.1.1)
+      EIn encUnary := by
+    dsimp only [EIn, ECaller]; fun_prop
   have hcond : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) =>
         ((unframe p.2.1.2).length == p.1.1.1) && ((dropFrame p.2.1.2).length == p.1.1.1))
       EIn encBool :=
-    (computableTidilyInPolyTime_pairLenEq
-      (by dsimp only [EIn]; fun_prop)
-      (by dsimp only [EIn, ECaller]; fun_prop)).computableInPolyTime
+    (by fun_prop : ComputableTidilyInPolyTime _ EIn encBool).computableInPolyTime
   have hqReq : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) => p.2.1.2)
-      EIn encBits := by
-    dsimp only [EIn, ECaller]; fun_prop
+      EIn encBits :=
+    hqReqTidy.computableInPolyTime
   have hqLim : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) => M.msgLen p.1.1.1)
       EIn encUnary :=
-    M.computableInPolyTime_msgLen_comp
-      ((ComputableInPolyTime.fst encUnary encBits).comp
-        ((ComputableInPolyTime.fst (encPair encUnary encBits) encBits).comp
-          (ComputableInPolyTime.fst ECaller _)))
+    M.computableInPolyTime_msgLen_comp hnTidy.computableInPolyTime
   have hq : IsOraclePPTOn (Operation := Unit) EIn encBits
       (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) =>
         List.take (M.msgLen p.1.1.1) <$> ProbOracleComp.query ((), p.2.1.2)) :=
@@ -1548,32 +1536,31 @@ private theorem isOraclePPTOn_etmToOneTimeCPAHandler (M : MACScheme) :
   let ECaller := encPair (encPair encUnary encBits) encBits
   let EIn := encPair ECaller (encPair (encPair (encFinEnum Unit) encBits) encBool)
   unfold etmToOneTimeCPAHandler
+  have hqReqTidy : ComputableTidilyInPolyTime
+      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) => p.2.1.2)
+      EIn encBits := by
+    dsimp only [EIn]; fun_prop
+  have hnTidy : ComputableTidilyInPolyTime
+      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) => p.1.1.1)
+      EIn encUnary := by
+    dsimp only [EIn, ECaller]; fun_prop
+  have hstateTidy : ComputableTidilyInPolyTime
+      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) => p.2.2)
+      EIn encBool := by
+    dsimp only [EIn]; fun_prop
   have hcond : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) =>
         !p.2.2 && ((unframe p.2.1.2).length == p.1.1.1) && ((dropFrame p.2.1.2).length == p.1.1.1))
-      EIn encBool := by
-    have hnot : ComputableTidilyInPolyTime
-        (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) => !p.2.2)
-        EIn encBool :=
-      ComputableTidilyInPolyTime.bool_not.comp (by dsimp only [EIn]; fun_prop)
-    have hpair := computableTidilyInPolyTime_pairLenEq (enc := EIn)
-      (req := fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) => p.2.1.2)
-      (n := fun p => p.1.1.1)
-      (by dsimp only [EIn]; fun_prop)
-      (by dsimp only [EIn, ECaller]; fun_prop)
-    simpa only [Bool.and_assoc, Function.comp_def] using
-      (ComputableTidilyInPolyTime.bool_and.comp (hnot.prod hpair)).computableInPolyTime
+      EIn encBool :=
+    (by fun_prop : ComputableTidilyInPolyTime _ EIn encBool).computableInPolyTime
   have hqReq : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) => p.2.1.2)
-      EIn encBits := by
-    dsimp only [EIn, ECaller]; fun_prop
+      EIn encBits :=
+    hqReqTidy.computableInPolyTime
   have hqLim : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) => M.msgLen p.1.1.1)
       EIn encUnary :=
-    M.computableInPolyTime_msgLen_comp
-      ((ComputableInPolyTime.fst encUnary encBits).comp
-        ((ComputableInPolyTime.fst (encPair encUnary encBits) encBits).comp
-          (ComputableInPolyTime.fst ECaller _)))
+    M.computableInPolyTime_msgLen_comp hnTidy.computableInPolyTime
   have hq : IsOraclePPTOn (Operation := Unit) EIn encBits
       (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) =>
         List.take (M.msgLen p.1.1.1) <$> ProbOracleComp.query ((), p.2.1.2)) :=
@@ -2202,18 +2189,23 @@ private theorem isOraclePPTOn_cpaToPrfHandler (bit : Bool) :
   let ECaller := encPair encUnary encBits
   let EIn := encPair ECaller (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
   unfold cpaToPrfHandler
+  have hqReqTidy : ComputableTidilyInPolyTime
+      (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Unit) => p.2.1.2)
+      EIn encBits := by
+    dsimp only [EIn]; fun_prop
+  have hnTidy : ComputableTidilyInPolyTime
+      (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Unit) => p.1.1)
+      EIn encUnary := by
+    dsimp only [EIn, ECaller]; fun_prop
   have hcond : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Unit) =>
         ((unframe p.2.1.2).length == p.1.1) && ((dropFrame p.2.1.2).length == p.1.1))
       EIn encBool :=
-    (computableTidilyInPolyTime_pairLenEq
-      (by dsimp only [EIn]; fun_prop)
-      (by dsimp only [EIn, ECaller]; fun_prop)).computableInPolyTime
+    (by fun_prop : ComputableTidilyInPolyTime _ EIn encBool).computableInPolyTime
   have hr : IsOraclePPTOn (Operation := Unit) EIn encBits
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Unit) =>
         ProbOracleComp.sample (BitString.sampleList p.1.1)) :=
-    (ComputableInPolyTime.sampleList
-      (by dsimp only [EIn, ECaller]; fun_prop)).isOraclePPTOn (Operation := Unit)
+    (ComputableInPolyTime.sampleList hnTidy.computableInPolyTime).isOraclePPTOn (Operation := Unit)
   have hqReq : ComputableInPolyTime
       (fun q : ((ℕ × List Bool) × ((Unit × List Bool) × Unit)) × List Bool => q.2)
       (encPair EIn encBits) encBits := by
