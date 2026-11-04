@@ -294,4 +294,21 @@ example :
   · convert hh.1.dens_Y () using 1
     norm_num [side, Nat.ceilDiv_eq_add_pred_div]
 
+-- Source-aware children preserve empty/zero conventions and exactly specialize
+-- the existing terminal-only algorithm when their source argument is ignored.
+example (A : Unit → Matrix (Vert HP) (Vert HP) ℝ) :
+    sourceDetector HP.toHierarchyParams (mask HP) (mask HP) (fun _ => A) =
+      detector HP.toHierarchyParams (mask HP) (mask HP) A := rfl
+example : sourceDetector HP.toHierarchyParams
+    (fun (_ : Fin 0) (_ : Vert HP) => True) (mask HP)
+    (fun _ _ _ _ => 7) (target HP) = 0 := by simp [sourceDetector]
+example : sourceDetector HP.toHierarchyParams (mask HP)
+    (fun (_ : Unit) (_ : Vert HP) => False)
+    (fun _ _ _ _ => 7) (target HP) = 0 := by simp [sourceDetector]
+example : sourceDetector HP.toHierarchyParams (mask HP) (mask HP)
+    (fun _ _ _ _ => -1000) (target HP) = 0 := by
+  have hr : kthLargest HP.J univ (fun _ : Vert HP => (-1000 : ℝ)) = 0 :=
+    le_antisymm (kthLargest_le (by norm_num) (fun _ _ => by norm_num)) kthLargest_nonneg
+  norm_num [sourceDetector, mask, hr]
+
 end PilotStabilityRegression
