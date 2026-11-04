@@ -25,20 +25,24 @@ The theorems below state this guarantee on the word RAM over the exact basis of 
 caller-chosen contiguous block `[base, base + 11 * n_max + 1)` of `11 * n_max + 1` words:
 
 * `fibonacciHeap_amortized` initializes an empty heap on zeroed `[base, base + 11 * n_max + 1)` in
-  `O(1)` instructions and executes any admissible sequence `ops` of `m_q` queries, `m_ins`
-  insertions, `m_dec` key decreases, and `m_ext` minimum extractions in
-  `O(m_q + m_ins + m_dec + ∑ (log n_t + 1))` total instructions, where `n_t = size q_t` is the
-  number of stored elements immediately before the `t`-th `extractMin` (bounded in turn by
-  `m_ext * (log n_max + 1)`);
+  `O(1)` instructions and executes any admissible adaptive client `c`, producing its realized
+  operation trace `ops` of `m_q` queries, `m_ins` insertions, `m_dec` key decreases, and `m_ext`
+  minimum extractions in `O(m_q + m_ins + m_dec + ∑ (log n_t + 1))` total instructions across
+  `p_op` calls, where `n_t = size q_t` is the number of stored elements immediately before the
+  `t`-th `extractMin` (bounded in turn by `m_ext * (log n_max + 1)`);
 * `fibonacciHeap_amortized_reusable` initializes an empty heap on arbitrary `w`-bit memory in
   `O(n_max + 1)` instructions and achieves the same amortized operation bound.
 
 In both theorems, neither initialization nor any operation modifies memory outside
-`[base, base + 11 * n_max + 1)`. Every concept in the statements—the priority queue, its relational
-transition specification, admissible operation sequences, the exact word RAM, the register calling
-convention and memory confinement—is defined from scratch in this file. Lean checks the proofs
-through `FibonacciHeapBridge`, and `#check_abstract` verifies mechanically that no definition or
-theorem statement here depends on implementation modules.
+`[base, base + 11 * n_max + 1)`. Each operation call charges every word-RAM instruction executed by
+`p_op` (including its `halt`), while external caller work between calls—writing argument registers,
+decoding output registers, and evaluating the pure continuation `k res`—is uncharged. Every concept
+in the statements—the priority queue, its relational transition specification, adaptive clients and
+demonic admissibility, the exact word RAM, the register calling convention and memory
+confinement—is defined from scratch in this file. A reader only needs to inspect the definitions and
+theorem statements in this file to verify that the formalization proves the intended mathematical
+claim; Lean checks the proofs through `FibonacciHeapBridge`, and `#check_abstract` verifies
+mechanically that no definition or theorem statement here depends on implementation modules.
 
 ## References
 
@@ -57,9 +61,11 @@ A priority-queue state `q : Queue n_max` maps each handle `h : Fin n_max` to `no
 currently unused and to `some (u, v)` when `h` is present with key `u` and satellite value `v`. The
 current number of stored elements is `size q`. Because the data structure chooses which unused
 handle to allocate on `insert u v` and which minimum-key entry to remove on `extractMin` when keys
-tie, transitions are specified relationally by `StepRel`. An operation sequence is admissible
-(`ValidSeq U V`) when every operation is valid in the current state and the remaining suffix is
-admissible after every valid relational outcome.
+tie, transitions are specified relationally by `StepRel`. An adaptive client (`Client n_max`) issues
+operations sequentially and selects its next continuation from each operation's returned observation
+(such as the handle returned by `insert` or the entry returned by `extractMin`); it is admissible
+(`ValidClient U V`) when every issued operation is valid in the current state and its continuation
+is admissible after every valid relational outcome.
 -/
 
 /-- Operations on a min-priority queue with capacity `n_max`, natural-number keys, and
@@ -117,12 +123,20 @@ def ValidOp {n_max : ℕ} (U V : ℕ) (q : Queue n_max) : Op n_max → Prop
   | .insert u v => size q < n_max ∧ u < U ∧ v < V
   | .decreaseKey h u' => ∃ u₀ v, q h = some (u₀, v) ∧ u' ≤ u₀
 
-/-- Sequential admissibility of an operation list starting from queue `q`: each operation is valid
-in the current state, and the remaining suffix is valid after every relational transition `StepRel`
-that the operation may take. -/
-def ValidSeq {n_max : ℕ} (U V : ℕ) : Queue n_max → List (Op n_max) → Prop
-  | _, [] => True
-  | q, o :: ops => ValidOp U V q o ∧ ∀ q' res, StepRel q o q' res → ValidSeq U V q' ops
+/-- Adaptive client interaction tree on a priority queue of capacity `n_max`: either finish
+(`.done`) or issue an operation `o` and choose the remaining client `k res` from `o`'s returned
+observation `res : OpResult o` (for example, passing the handle `h` returned by `insert u v` into a
+subsequent `get h` or `decreaseKey h u'`). -/
+inductive Client (n_max : ℕ) : Type
+  | done : Client n_max
+  | step (o : Op n_max) (k : OpResult o → Client n_max) : Client n_max
+
+/-- Demonic admissibility of an adaptive client `c` starting from queue `q`: each issued operation
+is valid in the current state, and the continuation `k res` is admissible after every relational
+transition `StepRel q o q' res` that the operation may take. -/
+def ValidClient {n_max : ℕ} (U V : ℕ) : Queue n_max → Client n_max → Prop
+  | _, .done => True
+  | q, .step o k => ValidOp U V q o ∧ ∀ q' res, StepRel q o q' res → ValidClient U V q' (k res)
 
 /-- Number of `isEmpty` and `get` queries in `ops`. -/
 def numQueries {n_max : ℕ} : List (Op n_max) → ℕ
@@ -174,11 +188,12 @@ holds a `w`-bit word (`< 2 ^ w`). Initialization (`p_init`) starts at `pc = 0` w
 `R[1] = base`, and `0` in all other registers (`initRegs`). Each subsequent operation call (`p_op`)
 starts at `pc = 0` after writing the 3-bit operation tag, handle/key arguments into `R[17..21]`, and
 satellite value argument into `R[46]` while leaving all other registers unchanged (`prepareRegs`),
-runs to a `halt` instruction, and returns its observation in `R[22..24]` and `R[47]`
+runs to a `halt` instruction, and returns its observation `res` in `R[22..24]` and `R[47]`
 (`decodeResult`), leaving every memory cell outside `[base, base + 11 * n_max + 1)` unchanged
-(`UnchangedOutside`). Every instruction costs one unit of time, each `halt` included. The appendix
-defines the exact word RAM (`Program`, `State`, `step`, `Runs`) and the register and memory
-conventions.
+(`UnchangedOutside`) before passing `res` to the client's continuation. Every instruction executed
+by `p_init` or `p_op` costs one unit of time, each `halt` included; external argument preparation,
+output decoding, and continuation selection between calls are uncharged. The appendix defines the
+exact word RAM (`Program`, `State`, `step`, `Runs`) and the register and memory conventions.
 -/
 
 /-! ## Representation details
@@ -322,60 +337,65 @@ def decodeResult {n_max : ℕ} : (o : Op n_max) → (Fin r → ℕ) → Option (
 def UnchangedOutside (base len : ℕ) (m m' : ℕ → ℕ) : Prop :=
   ∀ a, a < base ∨ base + len ≤ a → m' a = m a
 
-/-! ## Multi-operation execution and main theorems -/
+/-! ## Adaptive client execution and main theorems -/
 
-/-- `RunsOps w p base len q reg mem ops q' reg' mem' total extLog`: starting from abstract queue
-`q`, registers `reg`, and memory `mem`, executing `ops` sequentially by preparing `R[17..21]` and
-`R[46]` (`prepareRegs`), running `p` from `pc = 0` to `halt`, advancing `q` to some next queue state
-`q₁` with return value `res` satisfying `StepRel q o q₁ res` and `decodeResult o t.reg = some res`,
-and modifying memory only within `[base, base + len)` (`UnchangedOutside`) reaches final queue `q'`,
-registers `reg'`, and memory `mem'` in `total` instructions (each operation's `halt` included) with
-cumulative extraction log cost `extLog` (the sum of `Nat.log 2 (size q_t) + 1` over all `extractMin`
-steps along the execution). -/
-inductive RunsOps {n_max : ℕ} (w : ℕ) (p : Program r) (base len : ℕ) :
-    Queue n_max → (Fin r → ℕ) → (ℕ → ℕ) → List (Op n_max) →
+/-- `RunsClient w p base len q reg mem c ops q' reg' mem' total extLog`: starting from abstract
+queue `q`, registers `reg`, and memory `mem`, executing adaptive client `c` sequentially by
+preparing `R[17..21]` and `R[46]` (`prepareRegs`) for each issued operation `o`, running `p` from
+`pc = 0` to `halt`, advancing `q` to some next queue state `q₁` with return value `res` satisfying
+`StepRel q o q₁ res` and `decodeResult o t.reg = some res`, modifying memory only within
+`[base, base + len)` (`UnchangedOutside`), and continuing with `k res` records realized operation
+trace `ops` and reaches final queue `q'`, registers `reg'`, and memory `mem'` in `total`
+instructions (each operation's `halt` included) with cumulative extraction log cost `extLog` (the
+sum of `Nat.log 2 (size q_t) + 1` over all `extractMin` steps along `ops`). -/
+inductive RunsClient {n_max : ℕ} (w : ℕ) (p : Program r) (base len : ℕ) :
+    Queue n_max → (Fin r → ℕ) → (ℕ → ℕ) → Client n_max → List (Op n_max) →
       Queue n_max → (Fin r → ℕ) → (ℕ → ℕ) → ℕ → ℕ → Prop
-  | nil {q reg mem} : RunsOps w p base len q reg mem [] q reg mem 0 0
-  | cons {q q₁ q' reg mem o res ops t reg' mem' steps rest extRest} :
+  | done {q reg mem} :
+      RunsClient w p base len q reg mem .done [] q reg mem 0 0
+  | step {q q₁ q' reg mem o k res ops t reg' mem' steps rest extRest} :
       Runs w p ⟨0, prepareRegs o reg, mem⟩ t steps →
       (∃ out, step w p t = .halt out) →
       StepRel q o q₁ res →
       decodeResult o t.reg = some res →
       UnchangedOutside base len mem t.mem →
-      RunsOps w p base len q₁ t.reg t.mem ops q' reg' mem' rest extRest →
-      RunsOps w p base len q reg mem (o :: ops) q' reg' mem'
+      RunsClient w p base len q₁ t.reg t.mem (k res) ops
+        q' reg' mem' rest extRest →
+      RunsClient w p base len q reg mem (.step o k) (o :: ops) q' reg' mem'
         ((steps + 1) + rest) (extractStepLog q o + extRest)
 
-/-- **Fibonacci heap (`O(1)` fresh initialization).** There exist a register count `r`, flat
+/-- **Fibonacci heap (fresh initialization).** In `O(1)` fresh initialization on zeroed memory,
+there exist a register count `r`, flat
 programs `p_init` and `p_op` over `r` registers on the exact word RAM, and a constant `K` such that
 for all `n_max`, `U`, `V`, `base`, `w`, `w`-bit memory `mem₀` zeroed on
 `[base, base + 11 * n_max + 1)` with `base + (11 * n_max + 1) < 2 ^ w`, `U < 2 ^ w`, `V < 2 ^ w`,
-and every admissible sequence `ops` starting from `emptyQueue n_max`: `p_init` halts in
+and every admissible adaptive client `c` starting from `emptyQueue n_max`: `p_init` halts in
 `t_init + 1 ≤ K` instructions without modifying memory outside `[base, base + 11 * n_max + 1)`, and
-`p_op` executes `ops` (with `m_q = numQueries ops`, `m_ins = numInserts ops`,
-`m_dec = numDecreaseKeys ops`, and `m_ext = numExtractMins ops`) in
+`p_op` executes `c` along some realized operation trace `ops` (with `m_q = numQueries ops`,
+`m_ins = numInserts ops`, `m_dec = numDecreaseKeys ops`, and `m_ext = numExtractMins ops`) in
 `t_ops ≤ K * (m_q + m_ins + m_dec + extLog)` total instructions, where `extLog` is the sum of
 `Nat.log 2 (size q_t) + 1` in the current number of stored elements `size q_t` over all `extractMin`
 steps (satisfying `extLog ≤ m_ext * (Nat.log 2 n_max + 1)`), while producing valid relational
 `StepRel` results and leaving memory outside `[base, base + 11 * n_max + 1)` unchanged. -/
 theorem fibonacciHeap_amortized :
     ∃ r, ∃ p_init p_op : Program r, ∃ K,
-      ∀ (n_max U V base w : ℕ) (mem₀ : ℕ → ℕ) (ops : List (Op n_max)),
+      ∀ (n_max U V base w : ℕ) (mem₀ : ℕ → ℕ) (c : Client n_max),
         base + (11 * n_max + 1) < 2 ^ w →
         U < 2 ^ w →
         V < 2 ^ w →
         (∀ a, mem₀ a < 2 ^ w) →
         (∀ a, base ≤ a → a < base + (11 * n_max + 1) → mem₀ a = 0) →
-        ValidSeq U V (emptyQueue n_max) ops →
-        ∃ t₀ t_init q_f reg_f mem_f t_ops extLog,
+        ValidClient U V (emptyQueue n_max) c →
+        ∃ t₀ t_init ops q_f reg_f mem_f t_ops extLog,
           Runs w p_init ⟨0, initRegs n_max base, mem₀⟩ t₀ t_init ∧
           (∃ out, step w p_init t₀ = .halt out) ∧
           UnchangedOutside base (11 * n_max + 1) mem₀ t₀.mem ∧
-          RunsOps w p_op base (11 * n_max + 1) (emptyQueue n_max) t₀.reg t₀.mem ops
-            q_f reg_f mem_f t_ops extLog ∧
+          RunsClient w p_op base (11 * n_max + 1) (emptyQueue n_max)
+            t₀.reg t₀.mem c ops q_f reg_f mem_f t_ops extLog ∧
           t_init + 1 ≤ K ∧
           t_ops ≤
-            K * (numQueries ops + numInserts ops + numDecreaseKeys ops + extLog) ∧
+            K * (numQueries ops + numInserts ops +
+              numDecreaseKeys ops + extLog) ∧
           extLog ≤ numExtractMins ops * (Nat.log 2 n_max + 1) :=
   FibonacciHeapBridge.amortized_fresh
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr, @AluOp.rec, AluOp.eval,
@@ -386,73 +406,80 @@ theorem fibonacciHeap_amortized :
       fun _ _ => True⟩
     (by constructor <;>
       simp_all [step, ComplexityTests.Abstracts.WordRAMBridge.haltsVia, AluOp.eval])
-    ⟨Op, .isEmpty, .get, .insert, .decreaseKey, .extractMin, @Op.rec, @size, @extractStepLog,
-      fun q o q' => ∃ res, StepRel q o q' res,
-      fun q o q' reg => ∃ res, StepRel q o q' res ∧ decodeResult o reg = some res,
-      @ValidOp, @ValidSeq, @numQueries, @numInserts, @numDecreaseKeys, @numExtractMins, @initRegs,
-      @prepareRegs 48, @State.reg, @State.mem, @RunsOps⟩
-    ⟨fun _ => rfl,
+    ⟨Op, @OpResult, .isEmpty, .get, .insert, .decreaseKey, .extractMin, @Op.rec, @Op.rec,
+      fun b => b, fun _ r => r, fun _ _ r => r, fun _ _ r => r, fun r => r,
+      Client, .done, .step, @Client.rec, @Client.rec,
+      @size, @extractStepLog, @StepRel,
+      fun q o q' res reg => StepRel q o q' res ∧ decodeResult o reg = some res,
+      @ValidOp, @ValidClient, @numQueries, @numInserts, @numDecreaseKeys, @numExtractMins,
+      @initRegs, @prepareRegs 48, @State.reg, @State.mem, @RunsClient⟩
+    ⟨fun _ _ _ _ _ => rfl, fun _ _ _ _ _ _ => rfl, fun _ _ _ _ _ _ _ => rfl,
+      fun _ _ _ _ _ _ _ => rfl, fun _ _ _ _ _ => rfl,
+      fun _ _ => rfl, fun _ _ _ _ => rfl,
+      fun _ => rfl,
       fun _ => rfl, fun _ _ => rfl, fun _ _ _ => rfl, fun _ _ _ => rfl, fun _ => rfl,
-      fun _ => ⟨_, rfl, rfl⟩,
-      fun _ _ => ⟨_, rfl, rfl⟩,
-      fun _ _ _ h hnone => ⟨some h, h, hnone, rfl, rfl⟩,
-      fun _ _ _ u₀ v hq => ⟨(), ⟨u₀, v, hq, rfl⟩, rfl⟩,
-      fun _ hemp => ⟨none, Or.inl ⟨hemp, rfl, rfl⟩⟩,
-      fun _ h u v hq hmin => ⟨some (u, v, h), Or.inr ⟨h, u, v, ⟨hq, hmin⟩, rfl, rfl⟩⟩,
-      fun q _ h => ⟨decide (∀ h, q h = none), ⟨rfl, rfl⟩, congrArg some (decide_eq_decide.mpr h)⟩,
-      fun q h _ hd => ⟨q h, ⟨rfl, rfl⟩, hd⟩,
+      fun _ => ⟨rfl, rfl⟩,
+      fun _ _ => ⟨rfl, rfl⟩,
+      fun _ _ _ h hnone => ⟨h, hnone, rfl, rfl⟩,
+      fun _ _ _ u₀ v hq => ⟨⟨u₀, v, hq, rfl⟩, rfl⟩,
+      fun _ hemp => Or.inl ⟨hemp, rfl, rfl⟩,
+      fun _ h u v hq hmin => Or.inr ⟨h, u, v, ⟨hq, hmin⟩, rfl, rfl⟩,
+      fun _ _ h => ⟨⟨rfl, rfl⟩, congrArg some (decide_eq_decide.mpr h)⟩,
+      fun _ _ _ hd => ⟨⟨rfl, rfl⟩, hd⟩,
       fun _ _ _ h _ hnone hv =>
-        ⟨some h, ⟨h, hnone, rfl, rfl⟩, by
+        ⟨⟨h, hnone, rfl, rfl⟩, by
           simp only [decodeResult, regAt, show (23 : ℕ) < 48 by decide, ↓reduceDIte, hv,
             Fin.is_lt, Fin.eta]⟩,
-      fun _ _ _ u₀ v _ hq => ⟨(), ⟨⟨u₀, v, hq, rfl⟩, rfl⟩, rfl⟩,
+      fun _ _ _ u₀ v _ hq => ⟨⟨⟨u₀, v, hq, rfl⟩, rfl⟩, rfl⟩,
       fun _ _ hemp hflag =>
-        ⟨none, Or.inl ⟨hemp, rfl, rfl⟩, by
+        ⟨Or.inl ⟨hemp, rfl, rfl⟩, by
           simp only [decodeResult, regAt, show (22 : ℕ) < 48 by decide, ↓reduceDIte, hflag,
             ↓reduceIte]⟩,
       fun _ h u v _ hq hmin hflag hv hk hval =>
-        ⟨some (u, v, h), Or.inr ⟨h, u, v, ⟨hq, hmin⟩, rfl, rfl⟩, by
+        ⟨Or.inr ⟨h, u, v, ⟨hq, hmin⟩, rfl, rfl⟩, by
           simp only [decodeResult, regAt, show (22 : ℕ) < 48 by decide,
             show (23 : ℕ) < 48 by decide, show (24 : ℕ) < 48 by decide,
             show (47 : ℕ) < 48 by decide, ↓reduceDIte, hflag, ↓reduceIte,
             hv, hk, hval, Fin.is_lt, Fin.eta]⟩,
       fun _ _ _ h => h,
       fun _ _ _ h => h,
-      fun _ _ _ h => ⟨h.1, fun q' hex => hex.elim fun res hstep => h.2 q' res hstep⟩,
+      fun _ _ _ h => h,
       fun _ => rfl, fun _ _ => rfl, fun _ _ _ => rfl, fun _ _ _ => rfl, fun _ => rfl, rfl,
       fun _ => rfl, fun _ _ => rfl, fun _ _ _ => rfl, fun _ _ _ => rfl, fun _ => rfl, rfl,
       fun _ => rfl, fun _ _ => rfl, fun _ _ _ => rfl, fun _ _ _ => rfl, fun _ => rfl, rfl,
       fun _ => rfl, fun _ _ => rfl, fun _ _ _ => rfl, fun _ _ _ => rfl, fun _ => rfl, rfl,
       fun _ _ _ => rfl, fun _ _ => rfl, fun _ _ _ => rfl, fun _ _ _ _ => rfl,
       fun _ _ _ _ => rfl, fun _ _ => rfl, fun _ _ _ => rfl, fun _ _ _ => rfl,
-      RunsOps.nil,
-      fun hr hh hd hmod hrest => hd.elim fun _ hsd => RunsOps.cons hr hh hsd.1 hsd.2 hmod hrest⟩
+      RunsClient.done,
+      fun hr hh hd hmod hrest => RunsClient.step hr hh hd.1 hd.2 hmod hrest⟩
 
-/-- **Fibonacci heap (`O(n_max + 1)` reusable initialization on arbitrary memory).** Under the same
+/-- **Fibonacci heap (reusable initialization on arbitrary memory).** In `O(n_max + 1)` reusable
+initialization under the same
 word-size conditions (`base + (11 * n_max + 1) < 2 ^ w`, `U < 2 ^ w`, `V < 2 ^ w`, and every cell of
 `mem₀` below `2 ^ w`), without assuming `[base, base + 11 * n_max + 1)` is initially zeroed,
 `p_init` clears the block and initializes an empty heap in `t_init + 1 ≤ K * (n_max + 1)`
-instructions, and `p_op` executes `ops` in
-`t_ops ≤ K * (numQueries ops + numInserts ops + numDecreaseKeys ops + extLog)` instructions with
-`extLog ≤ numExtractMins ops * (Nat.log 2 n_max + 1)` while preserving memory outside
-`[base, base + 11 * n_max + 1)`. -/
+instructions, and `p_op` executes any admissible adaptive client `c` along some realized operation
+trace `ops` in `t_ops ≤ K * (numQueries ops + numInserts ops + numDecreaseKeys ops + extLog)`
+instructions with `extLog ≤ numExtractMins ops * (Nat.log 2 n_max + 1)` while preserving memory
+outside `[base, base + 11 * n_max + 1)`. -/
 theorem fibonacciHeap_amortized_reusable :
     ∃ r, ∃ p_init p_op : Program r, ∃ K,
-      ∀ (n_max U V base w : ℕ) (mem₀ : ℕ → ℕ) (ops : List (Op n_max)),
+      ∀ (n_max U V base w : ℕ) (mem₀ : ℕ → ℕ) (c : Client n_max),
         base + (11 * n_max + 1) < 2 ^ w →
         U < 2 ^ w →
         V < 2 ^ w →
         (∀ a, mem₀ a < 2 ^ w) →
-        ValidSeq U V (emptyQueue n_max) ops →
-        ∃ t₀ t_init q_f reg_f mem_f t_ops extLog,
+        ValidClient U V (emptyQueue n_max) c →
+        ∃ t₀ t_init ops q_f reg_f mem_f t_ops extLog,
           Runs w p_init ⟨0, initRegs n_max base, mem₀⟩ t₀ t_init ∧
           (∃ out, step w p_init t₀ = .halt out) ∧
           UnchangedOutside base (11 * n_max + 1) mem₀ t₀.mem ∧
-          RunsOps w p_op base (11 * n_max + 1) (emptyQueue n_max) t₀.reg t₀.mem ops
-            q_f reg_f mem_f t_ops extLog ∧
+          RunsClient w p_op base (11 * n_max + 1) (emptyQueue n_max)
+            t₀.reg t₀.mem c ops q_f reg_f mem_f t_ops extLog ∧
           t_init + 1 ≤ K * (n_max + 1) ∧
           t_ops ≤
-            K * (numQueries ops + numInserts ops + numDecreaseKeys ops + extLog) ∧
+            K * (numQueries ops + numInserts ops +
+              numDecreaseKeys ops + extLog) ∧
           extLog ≤ numExtractMins ops * (Nat.log 2 n_max + 1) :=
   FibonacciHeapBridge.amortized_reusable
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr, @AluOp.rec, AluOp.eval,
@@ -463,50 +490,55 @@ theorem fibonacciHeap_amortized_reusable :
       fun _ _ => True⟩
     (by constructor <;>
       simp_all [step, ComplexityTests.Abstracts.WordRAMBridge.haltsVia, AluOp.eval])
-    ⟨Op, .isEmpty, .get, .insert, .decreaseKey, .extractMin, @Op.rec, @size, @extractStepLog,
-      fun q o q' => ∃ res, StepRel q o q' res,
-      fun q o q' reg => ∃ res, StepRel q o q' res ∧ decodeResult o reg = some res,
-      @ValidOp, @ValidSeq, @numQueries, @numInserts, @numDecreaseKeys, @numExtractMins, @initRegs,
-      @prepareRegs 48, @State.reg, @State.mem, @RunsOps⟩
-    ⟨fun _ => rfl,
+    ⟨Op, @OpResult, .isEmpty, .get, .insert, .decreaseKey, .extractMin, @Op.rec, @Op.rec,
+      fun b => b, fun _ r => r, fun _ _ r => r, fun _ _ r => r, fun r => r,
+      Client, .done, .step, @Client.rec, @Client.rec,
+      @size, @extractStepLog, @StepRel,
+      fun q o q' res reg => StepRel q o q' res ∧ decodeResult o reg = some res,
+      @ValidOp, @ValidClient, @numQueries, @numInserts, @numDecreaseKeys, @numExtractMins,
+      @initRegs, @prepareRegs 48, @State.reg, @State.mem, @RunsClient⟩
+    ⟨fun _ _ _ _ _ => rfl, fun _ _ _ _ _ _ => rfl, fun _ _ _ _ _ _ _ => rfl,
+      fun _ _ _ _ _ _ _ => rfl, fun _ _ _ _ _ => rfl,
+      fun _ _ => rfl, fun _ _ _ _ => rfl,
+      fun _ => rfl,
       fun _ => rfl, fun _ _ => rfl, fun _ _ _ => rfl, fun _ _ _ => rfl, fun _ => rfl,
-      fun _ => ⟨_, rfl, rfl⟩,
-      fun _ _ => ⟨_, rfl, rfl⟩,
-      fun _ _ _ h hnone => ⟨some h, h, hnone, rfl, rfl⟩,
-      fun _ _ _ u₀ v hq => ⟨(), ⟨u₀, v, hq, rfl⟩, rfl⟩,
-      fun _ hemp => ⟨none, Or.inl ⟨hemp, rfl, rfl⟩⟩,
-      fun _ h u v hq hmin => ⟨some (u, v, h), Or.inr ⟨h, u, v, ⟨hq, hmin⟩, rfl, rfl⟩⟩,
-      fun q _ h => ⟨decide (∀ h, q h = none), ⟨rfl, rfl⟩, congrArg some (decide_eq_decide.mpr h)⟩,
-      fun q h _ hd => ⟨q h, ⟨rfl, rfl⟩, hd⟩,
+      fun _ => ⟨rfl, rfl⟩,
+      fun _ _ => ⟨rfl, rfl⟩,
+      fun _ _ _ h hnone => ⟨h, hnone, rfl, rfl⟩,
+      fun _ _ _ u₀ v hq => ⟨⟨u₀, v, hq, rfl⟩, rfl⟩,
+      fun _ hemp => Or.inl ⟨hemp, rfl, rfl⟩,
+      fun _ h u v hq hmin => Or.inr ⟨h, u, v, ⟨hq, hmin⟩, rfl, rfl⟩,
+      fun _ _ h => ⟨⟨rfl, rfl⟩, congrArg some (decide_eq_decide.mpr h)⟩,
+      fun _ _ _ hd => ⟨⟨rfl, rfl⟩, hd⟩,
       fun _ _ _ h _ hnone hv =>
-        ⟨some h, ⟨h, hnone, rfl, rfl⟩, by
+        ⟨⟨h, hnone, rfl, rfl⟩, by
           simp only [decodeResult, regAt, show (23 : ℕ) < 48 by decide, ↓reduceDIte, hv,
             Fin.is_lt, Fin.eta]⟩,
-      fun _ _ _ u₀ v _ hq => ⟨(), ⟨⟨u₀, v, hq, rfl⟩, rfl⟩, rfl⟩,
+      fun _ _ _ u₀ v _ hq => ⟨⟨⟨u₀, v, hq, rfl⟩, rfl⟩, rfl⟩,
       fun _ _ hemp hflag =>
-        ⟨none, Or.inl ⟨hemp, rfl, rfl⟩, by
+        ⟨Or.inl ⟨hemp, rfl, rfl⟩, by
           simp only [decodeResult, regAt, show (22 : ℕ) < 48 by decide, ↓reduceDIte, hflag,
             ↓reduceIte]⟩,
       fun _ h u v _ hq hmin hflag hv hk hval =>
-        ⟨some (u, v, h), Or.inr ⟨h, u, v, ⟨hq, hmin⟩, rfl, rfl⟩, by
+        ⟨Or.inr ⟨h, u, v, ⟨hq, hmin⟩, rfl, rfl⟩, by
           simp only [decodeResult, regAt, show (22 : ℕ) < 48 by decide,
             show (23 : ℕ) < 48 by decide, show (24 : ℕ) < 48 by decide,
             show (47 : ℕ) < 48 by decide, ↓reduceDIte, hflag, ↓reduceIte,
             hv, hk, hval, Fin.is_lt, Fin.eta]⟩,
       fun _ _ _ h => h,
       fun _ _ _ h => h,
-      fun _ _ _ h => ⟨h.1, fun q' hex => hex.elim fun res hstep => h.2 q' res hstep⟩,
+      fun _ _ _ h => h,
       fun _ => rfl, fun _ _ => rfl, fun _ _ _ => rfl, fun _ _ _ => rfl, fun _ => rfl, rfl,
       fun _ => rfl, fun _ _ => rfl, fun _ _ _ => rfl, fun _ _ _ => rfl, fun _ => rfl, rfl,
       fun _ => rfl, fun _ _ => rfl, fun _ _ _ => rfl, fun _ _ _ => rfl, fun _ => rfl, rfl,
       fun _ => rfl, fun _ _ => rfl, fun _ _ _ => rfl, fun _ _ _ => rfl, fun _ => rfl, rfl,
       fun _ _ _ => rfl, fun _ _ => rfl, fun _ _ _ => rfl, fun _ _ _ _ => rfl,
       fun _ _ _ _ => rfl, fun _ _ => rfl, fun _ _ _ => rfl, fun _ _ _ => rfl,
-      RunsOps.nil,
-      fun hr hh hd hmod hrest => hd.elim fun _ hsd => RunsOps.cons hr hh hsd.1 hsd.2 hmod hrest⟩
+      RunsClient.done,
+      fun hr hh hd hmod hrest => RunsClient.step hr hh hd.1 hd.2 hmod hrest⟩
 
 /--
-info: abstract audit passed for `ComplexityAbstracts.FibonacciHeapAbstract`: 303 root
+info: abstract audit passed for `ComplexityAbstracts.FibonacciHeapAbstract`: 328 root
 declarations
 -/
 #guard_msgs (whitespace := lax) in
