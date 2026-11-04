@@ -213,3 +213,71 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) (σ : Environment 5 3) :
     (fun _ _ _ => (⟨id, fun _ => rfl⟩ : RotationMap _ Unit)) (fun j _ _ => j)
     (fun _ τ x y => selected HP randomBit τ x y) (fun _ _ _ _ => 7) 0 3
     σ 0 0 hy).2 univ (fun _ => 1) (fun _ => 1) (fun _ => 1) 3
+
+private def smallHorizon : Horizon 5 := ⟨0, 0, by decide, by decide⟩
+
+-- A positive, nonconstant actual selected preparation pays the narrower kt=1 usage
+-- moment while its rank cutoff stays at k=0; all children share the same environment.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    rowNormPow 4 5 (rate 0) (retainedMask (0 : Fin 3) (side 5 0) 1 [1])
+      (retainedMask 2 (side 5 1) 1 [3]) (selected HP randomBit) ≤ 16 * HP.K ∧
+      selected HP randomBit envLow 0 0 = 1 ∧ selected HP randomBit envHigh 0 0 = 0 := by
+  constructor
+  · exact selectedResidualPreparation_moment_le HP (by have := bigK HP; omega) 1 threeRoles
+      smallHorizon 0 0 0 0 0 0 1 (by decide) (by decide) [1] [2] [3] 2 id
+      (fun _ => child randomBit) (fun _ => prepChild) (fun _ _ _ => 9)
+  · simp [selected_eq, child, randomBit, envLow, envHigh]
+
+-- A nonempty suffix and degenerate D=0 still use the exact one-point frame marginal.
+example : (∑ x : ZMod 5, (({σ : Environment 5 3 |
+    retainedMask (0 : Fin 3) (side 5 0) 0 [1, 2] σ x} : Finset _).dens : ℝ)) = 5 := by
+  rw [source_density_sum]
+  norm_num [side]
+
+-- This is the genuine i=2 second-prefix noise client, using the H4 graph and input
+-- budget 3. Its first signal is nonzero, its children use the nonconstant spectator, and
+-- the steps depend on the requested ε and dyadic slack rather than an assumed noise bound.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) {ε : ℝ} (hε : 0 < ε) :
+    let steps := fun j => secondSignalWalkLength 3 HP.K 3 ε (dyadicSlack 4 (j - 1))
+    let T := fun j σ x y => selectedResidualPreparation HP 1 threeRoles
+      0 0 0 0 0 0 [1] [2] [3] 2 id
+      (fun (_ : HierarchyTask.Request j (Fin 3) (ZMod 5)) => child randomBit)
+      (fun _ => prepChild) (fun _ _ _ => 9) σ x y
+    let H := fun j => conditionalWalk (retainedMask (0 : Fin 3) (side 5 0) 1 [1])
+      (retainedMask 2 (side 5 0) 1 [3])
+      (graph (0 : Fin 3) 2 (by decide) (side 5 0) (side 5 0)
+        (side_le 5 0) (side_le 5 0) (fun x => CopyPadding.identifier 1 [1] x)
+        (fun y => CopyPadding.identifier 1 [3] y)) (fun _ _ => steps j) (T j)
+    rowNormPow 4 5 (rate 0) (retainedMask (0 : Fin 3) (side 5 0) 1 [1])
+      (retainedMask 2 (side 5 0) 1 [3])
+      (actualNoiseEntry (0 : Fin 3) 2 (side 5 0) (side 5 0) (side 5 0) 1 [1] [3] 0
+        (fun _ _ => 0) (firstSignalIncrement (fun j _ _ _ => j + 7) 0
+          (secondSignalIncrement H 3)) (fun _ _ _ _ => 0) 1 2) ≤
+      (ε * (64 : ℝ)⁻¹ ^ dyadicSlack 4 2) ^ 4 := by
+  exact actualSelectedSecondSignal_noise_le_dyadic HP (by have := bigK HP; omega)
+    1 threeRoles smallHorizon 0 0 0 0 0 0 0 (by decide) (by decide) [1] [2] [3] 2 id
+    (fun _ _ => child randomBit) (fun _ _ => prepChild) (fun _ _ _ _ => 9)
+    (fun j _ _ _ => j + 7) _ 3 (fun _ _ => 0) 2 4 hε (by rfl)
+
+-- Zero scaling gives exact zero actual noise, including the ε=0 boundary.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (i : ℕ)
+    (σ : Environment 5 3) (x y : ZMod 5) :
+    actualNoiseEntry (0 : Fin 3) 2 5 5 5 1 [1] [3] 0 (fun _ _ => 0)
+      (firstSignalIncrement (fun _ _ _ _ => 7) 0
+        (secondSignalIncrement (walk HP randomBit) 0)) (fun _ _ _ _ => 0) 1 i σ x y = 0 := by
+  simp [actualNoiseEntry, twoMaskMean, actualPrefix_twoSignal_second, rowSliceMean]
+
+-- The logarithmic sufficient-length lemma permits zero capacity with arbitrary scaling.
+example (ζ : ℝ) {ε : ℝ} (hε : 0 < ε) (slack : ℕ) :
+    ζ ^ 4 * (32 * (1 - 1 / (155648 * ((3 : ℕ) + 1 : ℝ) * (4 : ℝ) ^ 4)) ^
+      (2 * secondSignalWalkLength 3 0 ζ ε slack) * (16 * (0 : ℕ))) ≤
+      (ε * (64 : ℝ)⁻¹ ^ slack) ^ 4 :=
+  secondSignalWalkLength_payment 3 0 ζ hε slack _ le_rfl
+
+-- At ε=0 a positive spectral upper bound never becomes exactly zero in finite time.
+example (n : ℕ) : ¬((1 : ℝ) ^ 4 *
+    (32 * (1 - 1 / (155648 * (3 + 1) * (4 : ℝ) ^ 4)) ^ (2 * n) * (16 * 1)) ≤ 0) := by
+  have h : (0 : ℝ) < (1 : ℝ) ^ 4 *
+      (32 * (1 - 1 / (155648 * (3 + 1) * (4 : ℝ) ^ 4)) ^ (2 * n) * (16 * 1)) := by
+    positivity
+  exact not_le.mpr h

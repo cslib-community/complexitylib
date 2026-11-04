@@ -148,8 +148,11 @@ For the first-signal endpoint row-noise premise, the
 [FirstSignal route](probabilistic-workflows.md) derives the bound from genuine
 conditional-walk prefixes and explicit lower-child incoming moments. The
 [SecondSignal route](probabilistic-workflows.md) constructs the actual selected preparatory
-input from those children and derives usage-slice endpoint ROW noise, retaining its honest
-finite density/width payment. Numerical recursive payments and mean envelopes remain open.
+input from those children and derives usage-slice endpoint ROW noise. Its pre-walk
+support bound pays 16K on an admitted source horizon, and an explicit logarithmic step
+choice discharges the actual second-prefix dyadic budget for positive tolerance. Mixing
+around the selected input mean does not establish its convergence to the genuine target.
+First-signal numerical payments, mean envelopes and recursive induction remain open.
 `actual_normalized_fourth_moment_capacity` bounds the row fourth moment of the difference
 of output fourth roots by `C*ε^4`. Its output evaluates the actual compression iterate,
 unchanged initial default, raw increments and dyadic floor; its first rank is full terminal
