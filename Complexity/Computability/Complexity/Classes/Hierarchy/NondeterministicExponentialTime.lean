@@ -10,7 +10,7 @@ module
 public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Complexity.Classes.Hierarchy.Time
 public import Complexity.Foundations.Data.BitString.Enumeration
-import Complexity.Computability.Complexity.Classes.Hierarchy.NondeterministicTime
+import Complexity.Computability.Complexity.Classes.Hierarchy.LazyDiagonalBounds
 import Complexity.Computability.Complexity.Classes.Time.BoundedExists
 import Complexity.Computability.Complexity.Classes.Time.Verifier
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible

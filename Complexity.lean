@@ -1398,6 +1398,7 @@ public import Complexity.Computability.Complexity.Classes.FunctionTime.Bounds
 public import Complexity.Computability.Complexity.Classes.FunctionTime.Decide
 public import Complexity.Computability.Complexity.Classes.FunctionTime.WordRAM
 public import Complexity.Computability.Complexity.Classes.Hierarchy
+public import Complexity.Computability.Complexity.Classes.Hierarchy.LazyDiagonalBounds
 public import Complexity.Computability.Complexity.Classes.Hierarchy.LogClock
 public import Complexity.Computability.Complexity.Classes.Hierarchy.Nondeterministic
 public import Complexity.Computability.Complexity.Classes.Hierarchy.NondeterministicExponentialTime
