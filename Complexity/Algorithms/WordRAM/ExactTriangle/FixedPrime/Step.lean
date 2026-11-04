@@ -10,7 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Record
 
 /-!
-# Charged ordinal delivery, concrete call and native return
+# Box-backed charged ordinal delivery, concrete call and native return
 
 This internal step theorem composes the actual copy, unchanged full record computation and
 native scan/flag/counter return. The selected finite index is proved from the runtime ordinal;
@@ -116,7 +116,7 @@ theorem exec_step {w m n g p A i : ℕ} (values : List ℤ)
   have yflag : y.regs Reg.found = r.regs (recordBank RecordWitness.Reg.found) := yf
   have ylow (j : Fin 400) : y.regs (recordBank j) = r.regs (recordBank j) :=
     ypres _ (Or.inl (by change j.val < 400; exact j.isLt))
-  let T := RecordProduct.timeBound (m := m)
+  let T := RecordBoxProduct.timeBound (m := m)
     (RecordProduct.decodedQueries hn a.mem (RecordProduct.recordQueries n (D m) p idx)
       (RecordProduct.recordQueryCount n (D m) p V idx)) +
     5 * Nat.sqrt (D m) + 8 * RecordProduct.recordQueryCount n (D m) p V idx +

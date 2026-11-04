@@ -25,7 +25,8 @@ open Cslib Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.Queue.WordRAM.RegisterMetadata
 
 /-- The same globally fixed certificate family is used by every width/layout/value case. -/
-noncomputable abbrev certificates (_ : Unit) : Certificate .standard := ⟨realizes_transfer_standard⟩
+noncomputable abbrev certificates (_ : Unit) : Certificate .standard :=
+  Certificate.ofRealizes realizes_transfer_standard
 
 noncomputable def result (i : Fin 2) : Fin (Backend.registers certificates) :=
   Backend.tmp certificates () (Fin.castAdd ((certificates ()).realizes.scratchSize + 1) i)
@@ -41,8 +42,9 @@ theorem native_body {w : ℕ} {d : Input} {s : Memory.State}
   have hi := transfer_invariant hw h
   obtain ⟨y, n, he, hn, hm, hout, _⟩ := Backend.exists_exec certificates () d
     (Backend.bounded_data certificates hw) hwords
-    (by simpa only [Backend.memoryState_data] using h)
-    (by simpa only [Backend.memoryState_data] using hi.1)
+    (by simpa only [certificates, Certificate.ofRealizes, Backend.memoryState_data] using h)
+    (by simpa only [certificates, Certificate.ofRealizes, Backend.memoryState_data] using hi.1)
+  dsimp only [certificates, Certificate.ofRealizes] at hn hm hout
   have hcost := hi.2.2.2.2.1
   change memoryCost (transfer d) s = 2 * d 1 at hcost
   have hresult : (Memory.spec w).clientResult s (transfer d) = (d 0 + d 1, 0) :=

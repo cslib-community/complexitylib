@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Computability.WordRAM.Notation
 public import Mathlib.Data.Nat.Log
 
@@ -102,10 +103,7 @@ theorem exec_rename {r w : ℕ} (f : Fin 4 → Fin r) (hf : f.Injective) (x : Da
     ∃ y, ExecWithin w (program.rename f) x y (4 * Nat.log 2 (x.regs (f arg)) + 5) ∧
       y.regs (f result) = Nat.log 2 (x.regs (f arg)) ∧ y.mem = x.mem ∧
       y.regs (f one) = 1 ∧ y.regs (f two) = 2 := by
-  obtain ⟨a, ha, hr, hm, ho, ht⟩ := exec (x.comap f) h2 hn hout
-  refine ⟨a.extend f x, ha.rename hf, ?_, hm, ?_, ?_⟩
-  · exact (hf.extend_apply _ _ result).trans hr
-  · exact (hf.extend_apply _ _ one).trans ho
-  · exact (hf.extend_apply _ _ two).trans ht
+  obtain ⟨y, hy, hpost, -⟩ := ExecWithin.rename_post hf (exec (x.comap f) h2 hn hout)
+  exact ⟨y, hy, hpost⟩
 
 end Cslib.Algorithms.WordRAM.NatLog

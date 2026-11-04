@@ -7,6 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Init
 public import Complexity.Algorithms.Lean.Karger.Contraction
 public import Complexity.Computability.WordRAM.Heap
@@ -2825,11 +2826,6 @@ def computeDegreesAndTotalAt {r : ℕ} (hr : 16 ≤ r) : Code .standard r :=
 def contractDownToAt {r : ℕ} (hr : 16 ≤ r) : Code .standard r :=
   contractDownTo.rename (Fin.castLE hr)
 
-private theorem extend_castLE_regs_lt {r : ℕ} (hr : 16 ≤ r) (y : Data 16) (x : Data r)
-    (i : Fin 16) :
-    (y.extend (Fin.castLE hr) x).regs (Fin.castLE hr i) = y.regs i :=
-  (Fin.castLE_injective hr).extend_apply y.regs x.regs i
-
 private theorem extend_castLE_regs_ge {r : ℕ} (hr : 16 ≤ r) (y : Data 16) (x : Data r)
     (j : Fin r) (hj : 16 ≤ j.val) :
     (y.extend (Fin.castLE hr) x).regs j = x.regs j :=
@@ -2857,17 +2853,15 @@ theorem computeDegreesAndTotalAt_exec {r w wb db str k : ℕ} (hr : 16 ≤ r)
       y.regs (Fin.castLE hr targetT) = x.regs (Fin.castLE hr targetT) ∧
       y.regs (Fin.castLE hr totS) = totalDoubledWeight W ∧
       ∀ j : Fin r, 16 ≤ j.val → y.regs j = x.regs j := by
-  obtain ⟨y₀, hy₀_exec, hy₀_ws, hy₀_mod, _, _, hy₀_wb, hy₀_db, hy₀_str, hy₀_k, hy₀_t, hy₀_tot⟩ :=
-    computeDegreesAndTotal_exec (x := x.comap (Fin.castLE hr))
-      hwBase hdBase hstride hactiveK hstr hdisj h1 hwEnd hdEnd htot hmat
-  refine ⟨y₀.extend (Fin.castLE hr) x, hy₀_exec.rename (Fin.castLE_injective hr),
-    hy₀_ws, hy₀_mod, ?_, ?_, ?_, ?_, ?_, ?_, fun j hj => extend_castLE_regs_ge hr y₀ x j hj⟩
-  · rw [extend_castLE_regs_lt, hy₀_wb]
-  · rw [extend_castLE_regs_lt, hy₀_db]
-  · rw [extend_castLE_regs_lt, hy₀_str]
-  · rw [extend_castLE_regs_lt, hy₀_k]
-  · rw [extend_castLE_regs_lt, hy₀_t]; rfl
-  · rw [extend_castLE_regs_lt, hy₀_tot]
+  obtain ⟨y, hy, ⟨hws, hmod, _, _, hwb, hdb, hstr, hk, ht, htot⟩, hframe⟩ :=
+    ExecWithin.rename_post (Fin.castLE_injective hr)
+      (computeDegreesAndTotal_exec (x := x.comap (Fin.castLE hr))
+        hwBase hdBase hstride hactiveK hstr hdisj h1 hwEnd hdEnd htot hmat)
+  refine ⟨y, hy, hws, hmod, hwb, hdb, hstr, hk, ht, htot, fun j hj => hframe j ?_⟩
+  intro i hi
+  have hv := congrArg Fin.val hi
+  change i.val = j.val at hv
+  omega
 
 /-- `contractDownToAt hr` simulates `k - t` contractions of `Lean.Karger.spec` on any `r`-register
 file (`16 ≤ r`), as `contractDownTo_law` does, and preserves all caller registers with index

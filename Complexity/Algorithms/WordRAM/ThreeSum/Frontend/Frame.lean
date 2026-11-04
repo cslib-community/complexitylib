@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Layout
+import Complexity.Computability.WordRAM.MemoryView
 
 /-!
 # Preserving complete frontend output
@@ -41,10 +42,9 @@ theorem Output.frame {l : Layout} {U : ℕ} {rs : List (ℕ × ℕ)} {before aft
       _ = l.pointer (j + 1) := (l.pointer_succ j).symm
       _ ≤ l.pointer l.arrays := l.pointer_mono (by omega)
   have hdesc := l.descriptor_before hj j
-  refine ⟨?_, ?_, (h j hj).2.2.frame ?_⟩
+  refine ⟨?_, ?_, ?_⟩
   · exact (hp _ (by omega)).trans (h j hj).1
   · exact (hp _ (by omega)).trans (h j hj).2.1
-  · intro p _ hlt
-    exact hp p (by omega)
+  · ram_keep (h j hj).2.2 using hp
 
 end Cslib.Algorithms.WordRAM.ThreeSum.Frontend
