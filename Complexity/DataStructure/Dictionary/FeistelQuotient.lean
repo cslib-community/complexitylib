@@ -58,8 +58,8 @@ Given a universe bound `U`, capacity `n ≤ U`, and bucket bit-width
 
 ## Main results
 
-* `bucketBits_le_keyBits`, `quotientBits_add_bucketBits`: `bucketBits n ≤ keyBits U` for all
-  `n ≤ U`.
+* `bucketBits_le_keyBits`, `quotientBits_add_bucketBits`: `bucketBits n ≤ keyBits U` and
+  `quotientBits U n + bucketBits n = keyBits U` for all `n ≤ U`.
 * `feistelReconstruct_feistelBucket`, `eq_of_feistelBucket_eq_of_keyQuotient_eq`,
   `feistelBucket_ne_of_keyQuotient_eq_of_ne`: exact invertibility of Feistel quotienting.
 * `pow_le_pow_mul_choose`: `U ^ n ≤ n ^ n * U.choose n` for all `n ≤ U`.
