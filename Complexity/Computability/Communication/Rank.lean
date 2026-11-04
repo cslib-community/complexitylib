@@ -46,7 +46,8 @@ rectangle `A × B` bounds the rank of the corresponding submatrix
 
 The *log-rank conjecture* of Lovász and Saks asserts the converse up to a polynomial: the
 communication complexity of every Boolean function is at most polynomial in the logarithm of the
-rank of its communication matrix over the reals (`LogRankConjecture`) [LovaszSaks1988]. It is open.
+rank of its communication matrix over the reals (`LogRankConjecture`) [LovaszSaks1993, Problem 2.7].
+It is open.
 
 ## Main definitions
 
@@ -78,8 +79,8 @@ rank of its communication matrix over the reals (`LogRankConjecture`) [LovaszSak
 
 * [K. Mehlhorn and E. M. Schmidt, *Las Vegas is better than determinism in VLSI and distributed
   computing*][MehlhornSchmidt1982]
-* [L. Lovász and M. Saks, *Lattices, Möbius functions and communication
-  complexity*][LovaszSaks1988]
+* [L. Lovász and M. Saks, *Communication complexity and combinatorial lattice
+  theory*][LovaszSaks1993]
 * [E. Kushilevitz and N. Nisan, *Communication Complexity*][KushilevitzNisan1997]
 -/
 
@@ -231,10 +232,10 @@ theorem clog_rank_le_ecomplexity [Fintype Y] (R : Type*) [CommSemiring R]
     exact_mod_cast Nat.clog_le_of_le_pow
       (Protocol.rank_communicationMatrix_le_two_pow (Protocol.solves_univ_iff.mp hp))
 
-/-- **The log-rank conjecture** [LovaszSaks1988]: for some constant `c`, every Boolean function
-`f` on finite sets has communication complexity at most `c (⌊log₂ r⌋ + 1) ^ c`, where `r` is the
-rank of its communication matrix over `ℝ`. The rank bound `clog_rank_le_ecomplexity` is the converse
-inequality up to rounding; the conjecture is open. -/
+/-- **The log-rank conjecture** [LovaszSaks1993, Problem 2.7]: for some constant `c`, every
+Boolean function `f` on finite sets has communication complexity at most `c (⌊log₂ r⌋ + 1) ^ c`,
+where `r` is the rank of its communication matrix over `ℝ`. The rank bound
+`clog_rank_le_ecomplexity` is the converse inequality up to rounding; the conjecture is open. -/
 def LogRankConjecture : Prop :=
   ∃ c : ℕ, ∀ (X Y : Type) [Fintype X] [Fintype Y] (f : X → Y → Bool),
     Protocol.ecomplexity (fun x y b => f x y = b) Set.univ Set.univ ≤
