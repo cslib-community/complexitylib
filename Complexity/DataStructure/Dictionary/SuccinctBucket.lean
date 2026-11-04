@@ -861,7 +861,7 @@ def probeExcess {U : ℕ} (n_max : ℕ) (qOf : Fin U → Q)
 
 /-- Localized form of `expect_microCollCount_le_two`: requires quotient injectivity of `qOf` only
 on `insert u (S.erase u)`. -/
-theorem expect_microCollCount_le_two_on [Nonempty ι] {U n_max : ℕ}
+theorem expect_microCollCount_le_two_on {U n_max : ℕ}
     {qOf : Fin U → Q}
     {H : ι → Q → Fin (2 ^ totalMicroBits n_max)} (hh : IsPairwiseIndependentHash H)
     (S : Finset (Fin U)) (u : Fin U) (hS : #(S.erase u) ≤ n_max)
@@ -885,7 +885,7 @@ theorem expect_microCollCount_le_two_on [Nonempty ι] {U n_max : ℕ}
 /-- **Expected micro-bucket collision bound:** under a pairwise-independent hash `H`, for any
 `S : Finset (Fin U)` with `#(S.erase u) ≤ n_max`, the expected number of keys in `S.erase u`
 landing in `u`'s micro-bucket is at most `2`. -/
-theorem expect_microCollCount_le_two [Nonempty ι] {U n_max : ℕ}
+theorem expect_microCollCount_le_two {U n_max : ℕ}
     {qOf : Fin U → Q}
     (hq : ∀ u₁ u₂ : Fin U, qOf u₁ = qOf u₂ →
       keyQuotient (bucketBits n_max) u₁.val = keyQuotient (bucketBits n_max) u₂.val)

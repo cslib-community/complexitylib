@@ -303,7 +303,6 @@ def lastSlotOfProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog �
       (d.1, gmTailPtrBase n_max + (d.2 * tailCapPerBucket n_max + (r_b - 1)))
     pure ((n_max - 1) - t_last)
 
-@[simp]
 theorem clientState_lastSlotOfProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (lastSlotOfProg U V w n_max h_space d) = s := by
   unfold lastSlotOfProg

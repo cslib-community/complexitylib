@@ -51,8 +51,8 @@ open scoped BigOperators ENNReal
 
 /-- A Word-RAM hash family implementation mapping quotients in `Fin (2 ^ quotientBits U n_max)` to
 `Fin (2 ^ totalMicroBits n_max)`, using register `0` as base register, register `1` as key
-register, and register `2` as output register, with expected `probeExcess` bounded by `C_probe` on
-every active set `S` of size at most `n_max`. -/
+register, and register `2` as output register, with expected `probeExcess` bounded by `probeConst`
+on every active set `S` of size at most `n_max`. -/
 structure QuotientHashImpl (r_hash : ℕ) [NeZero r_hash] (w base U n_max : ℕ) : Type 1 where
   /-- Underlying Word-RAM hash family implementation on quotients. -/
   impl : Impl .exact r_hash 0 w base (2 ^ quotientBits U n_max) (2 ^ totalMicroBits n_max) Fin.elim0
@@ -72,12 +72,12 @@ structure QuotientHashImpl (r_hash : ℕ) [NeZero r_hash] (w base U n_max : ℕ)
     impl.seedRep s mem₁ → impl.seedRep s mem₂
   /-- Expected `probeExcess` constant (`3` for exact 9-wise hashing, `4` for two-stage
   universe-reduced 9-wise hashing). -/
-  C_probe : ℕ
+  probeConst : ℕ
   /-- For every active set `S` of size at most `n_max` and every query key `u : Fin U`, the sum of
-  `probeExcess` over all seeds `s : impl.Seed` is at most `C_probe * Fintype.card impl.Seed`. -/
+  `probeExcess` over all seeds `s : impl.Seed` is at most `probeConst * Fintype.card impl.Seed`. -/
   sum_probeExcess_le : ∀ (S : Finset (Fin U)), S.card ≤ n_max → ∀ u : Fin U,
     (∑ s : impl.Seed, probeExcess n_max (quotientFin U n_max) impl.eval s S u) ≤
-      C_probe * Fintype.card impl.Seed
+      probeConst * Fintype.card impl.Seed
 
 /-- Word offset of `Quotients` relative to `base`. -/
 @[expose]

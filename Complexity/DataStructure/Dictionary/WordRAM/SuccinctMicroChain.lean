@@ -96,7 +96,6 @@ def readLMHeadProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memor
 def writeLMHeadProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
   writeLMProg U V w n_max h_space 0 ((d.1.1.1, d.1.1.2 * numMicroPerBucket n_max + d.1.2), d.2)
 
-@[simp]
 theorem clientState_readLMHeadProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (readLMHeadProg U V w n_max h_space d) = s := rfl
 
@@ -203,19 +202,16 @@ def readLMNextProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memor
 def writeLMNextProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
   writeLMMod4Prog U V w n_max h_space 5 d
 
-@[simp]
 theorem clientState_readLMMod4Prog (U V w n_max h_space c_base : ℕ) (d : (ℕ × ℕ) × ℕ)
     (s : Memory.State) :
     (Memory.spec 0).clientState s (readLMMod4Prog U V w n_max h_space c_base d) = s := by
   simp only [readLMMod4Prog, pure_bind]
   split_ifs <;> rfl
 
-@[simp]
 theorem clientState_readLMPrevProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (readLMPrevProg U V w n_max h_space d) = s :=
   clientState_readLMMod4Prog U V w n_max h_space 1 d s
 
-@[simp]
 theorem clientState_readLMNextProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (readLMNextProg U V w n_max h_space d) = s :=
   clientState_readLMMod4Prog U V w n_max h_space 5 d s
@@ -1491,7 +1487,6 @@ def microStepProg (U V w n_max h_space : ℕ)
   else
     return (((next_ptr, z0), x.2.1.2), x.2.2)
 
-@[simp]
 theorem clientState_microStepProg (U V w n_max h_space : ℕ)
     (x : (((ℕ × ℕ) × ℕ) × ℕ) × (((ℕ × ℕ) × ℕ) × ℕ)) (s : Memory.State) :
     (Memory.spec 0).clientState s (microStepProg U V w n_max h_space x) = s := by

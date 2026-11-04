@@ -84,7 +84,6 @@ def resolveOvfStepProg (U V w n_max h_space : ℕ)
     let phys ← pure ((n_max - 1) - t)
     pure (phys, d.2.2)
 
-@[simp]
 theorem clientState_resolveOvfStepProg (U V w n_max h_space : ℕ)
     (d : (ℕ × ℕ) × (ℕ × ℕ)) (s : Memory.State) :
     (Memory.spec 0).clientState s (resolveOvfStepProg U V w n_max h_space d) = s := by
@@ -375,7 +374,6 @@ def ovfStepProg (U V w n_max h_space : ℕ)
   else
     pure ((((j1, pair.2), x.2.1.1.2), x.2.1.2), x.2.2)
 
-@[simp]
 theorem clientState_ovfStepProg (U V w n_max h_space : ℕ)
     (x : ((ℕ × ℕ) × ℕ) × ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ)) (s : Memory.State) :
     (Memory.spec 0).clientState s (ovfStepProg U V w n_max h_space x) = s := by
@@ -673,7 +671,6 @@ def initOvfSearchProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog
   else
     pure (z0, z0)
 
-@[simp]
 theorem clientState_initOvfSearchProg (U V w n_max h_space : ℕ)
     (d : ℕ × ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (initOvfSearchProg U V w n_max h_space d) = s := by

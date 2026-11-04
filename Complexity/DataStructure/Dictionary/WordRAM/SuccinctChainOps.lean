@@ -455,7 +455,6 @@ def readTotalSlotsProg (U V w n_max h_space : ℕ) (base : ℕ) : Memory.Prog �
     let n_tails ← readGMProg U V w n_max h_space (base, i1)
     pure (n_slabs * slabSize n_max + n_tails)
 
-@[simp]
 theorem clientState_readTotalSlotsProg (U V w n_max h_space : ℕ) (base : ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (readTotalSlotsProg U V w n_max h_space base) = s := by
   unfold readTotalSlotsProg
