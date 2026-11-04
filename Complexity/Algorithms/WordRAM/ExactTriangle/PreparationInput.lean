@@ -328,20 +328,6 @@ theorem bounded_reachable {n D g p A W : ℕ} (values : List ℤ)
       (∀ a, s.data.mem a < wordBound n D g p A) ∧
       ∀ a, wordBound n D g p A ≤ a → s.data.mem a = 0 := by
   obtain ⟨_, _, _, _, he, _, hi, -⟩ := runs_input values hlen hD hDn hg hp hv le_rfl
-  have hlow := Runs.prefix_at_smaller_width flatProgram_fixed.2 hw hr he
-  have hs := Runs.bounded hlow (Data.Bounded.init hi)
-  have hword := pow_width_lt n D g p A
-  refine ⟨fun i => (hs.1 i).trans hword, fun a => (hs.2 a).trans hword, ?_⟩
-  intro a ha
-  have habove : 2 ^ width n D g p A ≤ a := hword.le.trans ha
-  rw [hlow.mem_above (Data.Bounded.init hi) habove]
-  cases a with
-  | zero => have := Nat.two_pow_pos (width n D g p A); omega
-  | succ a =>
-    change (input n D g p values).getD a 0 = 0
-    apply List.getD_eq_default
-    have hlenFit := hi.1
-    dsimp only [Fits] at hlenFit
-    omega
+  exact hr.prefix_bounds_init flatProgram_fixed.2 hw hi he (pow_width_lt n D g p A).le
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.PreparationInput
