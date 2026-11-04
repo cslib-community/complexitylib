@@ -1195,6 +1195,7 @@ private lemma compressed_sixtyfour_eq (HP : FourthRootHierarchyParams 16 1 16 32
           (a.row y 0) (a.row y 1)
           (Cslib.RowCompression.firstRank S HP.K a.defaultValue a.row)) := by
   unfold BudgetData.compressedBin
+  simp only [BudgetData.decodePrefixes]
   have hactive : 0 < (budgetData HP).requestPrecision 64 (budgetRequest HP) := by
     have hlog : Real.logb 2 (rate 1) = -4 := by
       simp only [rate, pow_one]

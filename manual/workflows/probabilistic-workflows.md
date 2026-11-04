@@ -1186,8 +1186,30 @@ The returned lists are identified with the literal computed-history executions, 
 the changing budgets, rather than independent prefix families. Conditional Jensen and
 the existing finite-envelope API also pay one common deterministic mean-error envelope
 over all executed prefixes, including prefix zero, by the sum of those prefix payments.
-These are finite transport
-payments, not a proof that their allocations satisfy the parent compression reserves.
+The [computed-prefix preparation payment](../../Complexity/Foundations/Probability/HierarchyTransportedPreparation.lean)
+combines these transported moments with the semantic history's actual omitted/inactive deficit
+and centered first noise. `BudgetData.initialTransportMoment` keeps the prefix cube and sum
+of group costs explicit; those group costs retain the bin cube and own-request importance
+sums. `initial_compressed_prefix_absolute` returns the literal computed group list and bounds
+its absolute error before preparation. `initial_compressed_mean_moment` separately combines
+the conditional-mean perturbation with the semantic deficit, without charging semantic
+centered noise to that deterministic payment. `initial_compressed_preparation` applies the polynomial
+cutoff and full-terminal rank-gate sensitivity to those prefixes, with the explicit usage
+payment $P(|\zeta|(L_h+L_\rho)/\mathrm{rate}(k_a))^4$. It also identifies the actual clipped
+second mean and pays centered preparation-walk noise on usage without a rarity discount.
+
+`BudgetData.decodePrefixes` is the shared pure decoding step now used by `compressedBin`.
+`exists_initial_compressed_fourMax` accepts the literal computed-history group execution and
+successful preparation walks, then applies the same sharp parent comparison. Its
+`initialFourMaxReserve` retains stationary preloss, final no-overflow error, deterministic
+heavy-tail selection and raw false-overflow charges at prefix $j+1$. Constants keep their
+order: decoder coefficient, positive floor, preloss coefficient, then width and executions.
+This is an honest finite conditional bound; the preparation moments have not yet been
+allocated through every four-max/reserve term. No parent-accuracy premise supplies the gap.
+The [complete checked clients](../../ComplexityTests/PolynomialBudgetHistory.lean) include a
+budget-two parent pair whose actual budget-one compressed child has diagonal error one with
+valid scalar small-floor parameters, a separately executed reset-right child, and a literal
+zero-boundary history consuming preparation sensitivity and the sharp reserve.
 
 **Remaining parent-error gap:** the fixed-request initial compressed-bin allocation is
 paid. Allowing $k_a=n$ instead leaves the active charge exactly one, as the retained edge

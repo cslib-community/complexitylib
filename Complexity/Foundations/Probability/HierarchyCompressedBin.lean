@@ -56,6 +56,26 @@ The numerator's corresponding bin preparation is retained, including the full te
     Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ :=
   fun σ => densePreparation B.padding id r (B.auxiliary bin) HP.ρ HP.K (A σ) σ
 
+/-- Shared pure compression/decoding of executed first prefixes and preparation walks.
+Both semantic and transported histories use this same two-signal iterate. Execution and
+accuracy certificates belong to its callers; this function supplies neither. -/
+@[expose] def decodePrefixes (M bin k : ℕ) (ζ floor : ℝ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (F : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+    (walks : List (Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)) :
+    Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ :=
+  let m := Nat.log2 M + 1
+  let W := fun j σ x y => (walks[j - 1]?.getD 0) σ x y
+  let Δ := firstSignalIncrement F k (secondSignalIncrement W ζ)
+  fun σ x y =>
+    let S : Finset (ZMod P) := {z | r.terminal.retains (channels B.padding) σ z}
+    let a := iterate S (compatibleCapacity HP.K m) (fun _ => HP.K)
+      (dyadicFloor floor m) (Δ σ x) ⟨0, 0⟩ m
+    if r.usage.retains (channels B.padding) σ y then
+      FourthRootHierarchyParams.NormalizedRow.output (B.cutoff bin) HP.ρ ζ
+        (a.row y 0) (a.row y 1) (firstRank S HP.K a.defaultValue a.row)
+    else 0
+
 /-- Actual paired-group first prefixes, computed preparatory second prefixes and compression.
 The positive-budget guard preserves the unavailable coarse boundary. The return scope is the
 selected dense normalized bin; no incoming or maximum gate is added. -/
@@ -67,16 +87,7 @@ selected dense normalized bin; no incoming or maximum gate is added. -/
     let m := Nat.log2 M + 1
     let walks ← (List.range m).mapM fun j =>
       B.complete M r (B.binPreparation bin r (F (j + 1))) (dyadicSlack m j)
-    let W := fun j σ x y => (walks[j - 1]?.getD 0) σ x y
-    let Δ := firstSignalIncrement F k (secondSignalIncrement W ζ)
-    pure fun σ x y =>
-      let S : Finset (ZMod P) := {z | r.terminal.retains (channels B.padding) σ z}
-      let a := iterate S (compatibleCapacity HP.K m) (fun _ => HP.K)
-        (dyadicFloor floor m) (Δ σ x) ⟨0, 0⟩ m
-      if r.usage.retains (channels B.padding) σ y then
-        FourthRootHierarchyParams.NormalizedRow.output (B.cutoff bin) HP.ρ ζ
-          (a.row y 0) (a.row y 1) (firstRank S HP.K a.defaultValue a.row)
-      else 0
+    pure (B.decodePrefixes M bin k ζ floor r F walks)
 
 /-- Every successful compressed bin has the bounded normalized range and literal usage
 support, independently of the additional cutoff hypotheses needed for rank sparsity. -/
@@ -87,6 +98,7 @@ theorem compressedBin_range_usage (M bin k : ℕ) (ζ floor : ℝ)
     (∀ σ x y, A σ x y ∈ Set.Icc 0 (2 * B.binCap)) ∧
     (∀ σ x y, ¬ r.usage.retains (channels B.padding) σ y → A σ x y = 0) := by
   unfold compressedBin at hA
+  simp only [decodePrefixes] at hA
   split at hA
   · contradiction
   · cases hF : B.initialPrefixes M r with
@@ -126,6 +138,7 @@ theorem compressedBin_bounds (M bin k : ℕ) (ζ floor : ℝ)
       A σ x y ≠ 0} < HP.K := by
   have hru := B.compressedBin_range_usage M bin k ζ floor r A hA
   unfold compressedBin at hA
+  simp only [decodePrefixes] at hA
   split at hA
   · contradiction
   · cases hF : B.initialPrefixes M r with
@@ -244,6 +257,7 @@ theorem exists_compressedBin_root_bound (HP : FourthRootHierarchyParams 16 1 16 
       exact (mul_le_of_le_one_right hζ.le hm.2).trans hsmall
     · simp only [mul_zero, abs_zero]; linarith
   unfold compressedBin at hA
+  simp only [decodePrefixes] at hA
   split at hA
   · contradiction
   · cases hF : B.initialPrefixes M r with
@@ -361,6 +375,7 @@ theorem exists_compressedBin_sharp_noOverflow (HP : FourthRootHierarchyParams 16
     simp only [truth, requestSignals, Fin.isValue, ↓reduceIte, hrate]
     exact div_nonneg (hG x z) (rate_pos k).le
   unfold compressedBin at hA
+  simp only [decodePrefixes] at hA
   split at hA
   · contradiction
   · cases hF : B.initialPrefixes M r with
@@ -397,6 +412,47 @@ theorem exists_compressedBin_sharp_noOverflow (HP : FourthRootHierarchyParams 16
             mul_nonneg (dyadicFloor_nonneg hfloor.le _ _) (hε i (mem_range.mp hi))))
             (mul_nonneg hCf hεfinal)
 
+/-- The shared decoder's usage-masked error is bounded by its full-terminal error.
+This algebraic bridge applies to either history; it supplies no execution certificate. -/
+theorem decodePrefixes_rootDistPow_le (M bin k : ℕ) {ζ floor N u : ℝ}
+    (hζ : 0 < ζ) (hNu : 0 ≤ N * u)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (hr : Admissible r)
+    (G : Matrix (ZMod P) (ZMod P) ℝ)
+    (F : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+    (W : List (Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)) :
+    let X := fun σ x => r.source.retains (channels B.padding) σ x
+    let Y := fun σ y => r.terminal.retains (channels B.padding) σ y
+    let Δ := firstSignalIncrement F k
+      (secondSignalIncrement (fun j σ x y => W[j - 1]?.getD 0 σ x y) ζ)
+    let truth := requestSignals ζ B.padding id r (fun _ => G)
+      (B.binPreparation bin r (fun _ => G))
+    let S := fun σ => ({y | Y σ y} : Finset (ZMod P))
+    let actual := fun σ x => iterate (S σ) (compatibleCapacity HP.K (Nat.log2 M + 1))
+      (fun _ => HP.K) (dyadicFloor floor (Nat.log2 M + 1)) (Δ σ x) ⟨0, 0⟩ (Nat.log2 M + 1)
+    rootDistPow 4 N u X Y (B.decodePrefixes M bin k ζ floor r F W)
+      (denseChild B.padding id r (B.cutoff bin) (B.auxiliary bin) HP.ρ HP.K G) ≤
+      rowNormPow 4 N u X Y (fun σ x y => stateRootError
+        (FourthRootHierarchyParams.NormalizedRow.output (B.cutoff bin) HP.ρ ζ)
+        (S σ) HP.K (actual σ x) ⟨0, truth σ x⟩ y) := by
+  dsimp only [decodePrefixes]
+  unfold rootDistPow rowNormPow
+  apply mul_le_mul_of_nonneg_left _ (inv_nonneg.mpr hNu)
+  apply expect_le_expect
+  intro σ _
+  apply sum_le_sum
+  intro x _
+  apply sum_le_sum
+  intro y _
+  dsimp only
+  rw [denseChild, normalizedRequest_eq_output (B.cutoff bin) HP.ρ HP.K hζ B.padding id r hr]
+  change |(if r.usage.retains (channels B.padding) σ y then _ else 0) ^ (4⁻¹ : ℝ) -
+    (if r.usage.retains (channels B.padding) σ y then _ else 0) ^ (4⁻¹ : ℝ)| ^ 4 ≤ _
+  split_ifs
+  · exact le_rfl
+  · rw [sub_self, abs_zero, zero_pow (by decide : 4 ≠ 0)]
+    positivity
+
+
 /-- The executed compressed bin's usage-masked error is bounded by its full-terminal
 prefix decoder error against the genuine dense preparation target on the same environment. -/
 theorem compressedBin_rootDistPow_le (M bin k : ℕ) {ζ floor N u : ℝ}
@@ -426,28 +482,129 @@ theorem compressedBin_rootDistPow_le (M bin k : ℕ) {ζ floor N u : ℝ}
         (FourthRootHierarchyParams.NormalizedRow.output (B.cutoff bin) HP.ρ ζ)
         (S σ) HP.K (actual σ x) ⟨0, truth σ x⟩ y) := by
   unfold compressedBin at hA
+  simp only [decodePrefixes] at hA
   split at hA
   · contradiction
   · simp only [hF, bind, Option.bind_some, hW, pure] at hA
     have heq := Option.some.inj hA
     subst A
-    dsimp only
-    unfold rootDistPow rowNormPow
-    apply mul_le_mul_of_nonneg_left _ (inv_nonneg.mpr hNu)
-    apply expect_le_expect
-    intro σ _
-    apply sum_le_sum
-    intro x _
-    apply sum_le_sum
-    intro y _
-    dsimp only
-    rw [denseChild, normalizedRequest_eq_output (B.cutoff bin) HP.ρ HP.K hζ B.padding id r hr]
-    change |(if r.usage.retains (channels B.padding) σ y then _ else 0) ^ (4⁻¹ : ℝ) -
-      (if r.usage.retains (channels B.padding) σ y then _ else 0) ^ (4⁻¹ : ℝ)| ^ 4 ≤ _
+    exact B.decodePrefixes_rootDistPow_le M bin k hζ hNu r hr G F W
+
+/-- Integrated comparison for the shared decoder, independent of the origin of its inputs.
+The masks, rank and canonical joint mean are literal request data. Polynomial preparation
+proves the light-entry annihilation needed by false-overflow payment. Error envelopes
+still require payment from the lower-budget invariant; this is a conditional analytic kernel. -/
+theorem exists_decodePrefixes_integrated (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    {cap ζ scale : ℝ} (hcap : 0 ≤ cap) (hζ : 0 < ζ) (hs : 0 < scale)
+    (hmargin : scale ≤ HP.η) (hcapscale : scale ≤ max cap 16 / 10000)
+    (hsmall : ζ ≤ scale / 2) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ floor : ℝ, 0 < floor → floor ≤ scale → floor ≤ 1 →
+      ∃ Cpre : ℝ, 0 ≤ Cpre ∧ ∀ {P : ℕ} [Fact P.Prime] (B : BudgetData HP P)
+      (b : ℕ → ℝ), (∀ i, 0 < b i) → (∀ i, b i = 16 * b (i + 1)) →
+      ∀ (M bin k : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)),
+      Admissible r → r.terminal.rate = rate k →
+      B.cutoff bin = boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1) b cap bin
+        (fun _ => 1) → B.auxiliary bin = polynomialPrepCutoff4 HP.θ →
+      ∀ (G : Matrix (ZMod P) (ZMod P) ℝ), (∀ x y, 0 ≤ G x y) →
+      ∀ (F : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+        (W : List (Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)),
+      ∀ N u : ℝ, 0 ≤ N * u →
+      let m := Nat.log2 M + 1
+      let n := compatibleCapacity HP.K m
+      let X := fun σ x => r.source.retains (channels B.padding) σ x
+      let Y := fun σ y => r.terminal.retains (channels B.padding) σ y
+      let Δ := firstSignalIncrement F k
+        (secondSignalIncrement (fun j σ x y => W[j - 1]?.getD 0 σ x y) ζ)
+      let raw : Environment P 3 → ZMod P → ZMod P → Fin 2 → ℝ := 0
+      let truth := requestSignals ζ B.padding id r (fun _ => G)
+        (B.binPreparation bin r (fun _ => G))
+      ∀ (ε : ℕ → Environment P 3 → ZMod P → ℝ) (εfinal : Environment P 3 → ZMod P → ℝ),
+        (∀ i < m, ∀ σ x, X σ x → 0 ≤ ε i σ x) →
+        (∀ σ x, X σ x → 0 ≤ εfinal σ x) →
+        (∀ i < m, ∀ σ x y, X σ x → Y σ y →
+          clippedError (truth σ x y 0) (truth σ x y 1)
+            (uncompressedRow (Δ σ x) (raw σ x) (i + 1) y) ≤ ε i σ x) →
+        (∀ σ x y, X σ x → Y σ y →
+          clippedError (truth σ x y 0) (truth σ x y 1)
+            (uncompressedRow (Δ σ x) (raw σ x) m y) ≤ εfinal σ x) →
+        let S := fun σ => ({y | Y σ y} : Finset (ZMod P))
+        let Pre := fun σ x => ∑ i ∈ range m, dyadicFloor floor m i * ε i σ x
+        let No := fun σ x => if ∀ i < m,
+          stepThreshold (S σ) n (fun _ => HP.K) (dyadicFloor floor m) (Δ σ x) ⟨0, raw σ x⟩ i ≤
+            dyadicFloor floor m i then εfinal σ x else 0
+        let Tail := fun σ x => ∑ j ∈ range m,
+          if IsFirstOverflow (S σ) n (fun _ => HP.K) (dyadicFloor floor m) (Δ σ x) ⟨0, raw σ x⟩ j ∧
+            heavyCountEvent Y univ (fun y => truth σ x y 0) (dyadicFloor floor m j) (n j) σ then
+              ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i σ x else 0
+        rootDistPow 4 N u X Y (B.decodePrefixes M bin k ζ floor r F W)
+          (denseChild B.padding id r (B.cutoff bin) (polynomialPrepCutoff4 HP.θ) HP.ρ HP.K G) ≤
+          128 * (HP.K : ℝ) * (Cpre ^ 4 * vertexNormPow 4 N u X Pre +
+            C ^ 4 * vertexNormPow 4 N u X No + C ^ 4 * vertexNormPow 4 N u X Tail) +
+          ∑ j ∈ range m, (64 * (HP.K : ℝ) * ((2 * max cap 16) ^ (4⁻¹ : ℝ)) ^ 4 / ((n j : ℝ) *
+            dyadicFloor floor m j ^ 4)) *
+            rowNormPow 4 N u X Y (fun σ x y => clippedError (truth σ x y 0) (truth σ x y 1)
+              (uncompressedRow (Δ σ x) (raw σ x) (j + 1) y)) := by
+  obtain ⟨C, hC, hscales⟩ := DenseBinRecipe.exists_polynomialUnrouted_rowNormPow_le
+    HP hcap hζ hs hmargin hcapscale
+  refine ⟨C, hC, ?_⟩
+  intro floor hfloor hfs hf1
+  obtain ⟨Cp, hCp, hbound⟩ := hscales floor hfloor hfs hf1
+  refine ⟨Cp, hCp, ?_⟩
+  intro P _ B b hb hstep M bin k r hr hrate hcut haux G hG F W N u hNu
+  dsimp only
+  intro ε εfinal hε hεfinal herr herrfinal
+  rw [← haux]
+  refine (B.decodePrefixes_rootDistPow_le M bin k hζ hNu r hr G F W).trans ?_
+  rw [hcut]
+  apply hbound b hb hstep bin N u hNu
+    (fun σ x => r.source.retains (channels B.padding) σ x)
+    (fun σ y => r.terminal.retains (channels B.padding) σ y)
+    (compatibleCapacity HP.K (Nat.log2 M + 1)) (Nat.log2 M + 1)
+    (fun i _ => (compatibleCapacity_bounds HP.K _ i).1)
+    (firstSignalIncrement F k
+      (secondSignalIncrement (fun j σ x y => W[j - 1]?.getD 0 σ x y) ζ)) 0
+    (requestSignals ζ B.padding id r (fun _ => G)
+      (B.binPreparation bin r (fun _ => G)))
+  · intro σ x y _ _
+    simp only [requestSignals, Fin.isValue, ↓reduceIte, hrate]
+    exact div_nonneg (hG x y) (rate_pos k).le
+  · intro σ x y _ _
+    let T : Finset (Environment P 3) :=
+      {τ | r.source.retains (channels B.padding) τ x ∧
+        r.usage.retains (channels B.padding) τ y}
+    have hp (τ : Environment P 3) := B.binPreparation_mem_Icc bin
+      (fun d => by rw [haux]; exact ⟨polynomialPrepCutoff4_nonneg _ _,
+        polynomialPrepCutoff4_le_one _ _⟩) r (fun _ => G) τ x y
+    have hm : (𝔼 τ ∈ T, B.binPreparation bin r (fun _ => G) τ x y) ∈ Set.Icc 0 1 := by
+      constructor
+      · exact expect_nonneg fun τ _ => (hp τ).1
+      · rcases T.eq_empty_or_nonempty with h | h
+        · rw [h]; norm_num
+        · exact expect_le h fun τ _ => (hp τ).2
+    simp only [requestSignals, Fin.isValue, one_ne_zero, ↓reduceIte]
     split_ifs
-    · exact le_rfl
-    · rw [sub_self, abs_zero, zero_pow (by decide : 4 ≠ 0)]
-      positivity
+    · rw [abs_mul, abs_of_pos hζ]
+      change ζ * |𝔼 τ ∈ T, B.binPreparation bin r (fun _ => G) τ x y| ≤ scale / 2
+      rw [abs_of_nonneg hm.1]
+      exact (mul_le_of_le_one_right hζ.le hm.2).trans hsmall
+    · simp only [mul_zero, abs_zero]; linarith
+  · intro j _ σ x y _ _ hd
+    have hd' : G x y / r.terminal.rate ≤ HP.θ / 2 := by
+      simp only [requestSignals, Fin.isValue, ↓reduceIte] at hd
+      have hf := dyadicFloor_le_scale_div hfloor.le (Nat.log2 M + 1) j
+      have hm := FourthRootHierarchyParams.NormalizedRow.threshold_margin HP
+      linarith [HP.η_lt_η₂, HP.η_pos]
+    have hz (τ : Environment P 3) : B.binPreparation bin r (fun _ => G) τ x y = 0 := by
+      change B.auxiliary bin (G x y / r.terminal.rate) * _ = 0
+      rw [haux, polynomialPrepCutoff4_eq_zero HP.θ_pos hd', zero_mul]
+    simp only [requestSignals, Fin.isValue, one_ne_zero, ↓reduceIte]
+    split_ifs
+    · simp only [rowSliceMean, hz, expect_const_zero, mul_zero]
+    · exact mul_zero _
+  · exact hε
+  · exact hεfinal
+  · exact herr
+  · exact herrfinal
 
 /-- Integrated truth comparison for the actual successful prefix/preparation history.
 The masks, rank and canonical joint mean are literal request data. Polynomial preparation
@@ -506,66 +663,19 @@ theorem exists_compressedBin_integrated (HP : FourthRootHierarchyParams 16 1 16 
             dyadicFloor floor m j ^ 4)) *
             rowNormPow 4 N u X Y (fun σ x y => clippedError (truth σ x y 0) (truth σ x y 1)
               (uncompressedRow (Δ σ x) (raw σ x) (j + 1) y)) := by
-  obtain ⟨C, hC, hscales⟩ := DenseBinRecipe.exists_polynomialUnrouted_rowNormPow_le
-    HP hcap hζ hs hmargin hcapscale
+  obtain ⟨C, hC, hscales⟩ := exists_decodePrefixes_integrated HP hcap hζ hs hmargin
+    hcapscale hsmall
   refine ⟨C, hC, ?_⟩
-  intro floor hfloor hfs hf1
-  obtain ⟨Cp, hCp, hbound⟩ := hscales floor hfloor hfs hf1
+  intro floor hf hfs hf1
+  obtain ⟨Cp, hCp, hbound⟩ := hscales floor hf hfs hf1
   refine ⟨Cp, hCp, ?_⟩
   intro P _ B b hb hstep M bin k r hr hrate hcut haux G hG F hF W hW A hA N u hNu
-  dsimp only
-  intro ε εfinal hε hεfinal herr herrfinal
-  rw [← haux]
-  refine (B.compressedBin_rootDistPow_le M bin k hζ hNu r hr G F hF W hW A hA).trans ?_
-  rw [hcut]
-  apply hbound b hb hstep bin N u hNu
-    (fun σ x => r.source.retains (channels B.padding) σ x)
-    (fun σ y => r.terminal.retains (channels B.padding) σ y)
-    (compatibleCapacity HP.K (Nat.log2 M + 1)) (Nat.log2 M + 1)
-    (fun i _ => (compatibleCapacity_bounds HP.K _ i).1)
-    (firstSignalIncrement F k
-      (secondSignalIncrement (fun j σ x y => W[j - 1]?.getD 0 σ x y) ζ)) 0
-    (requestSignals ζ B.padding id r (fun _ => G)
-      (B.binPreparation bin r (fun _ => G)))
-  · intro σ x y _ _
-    simp only [requestSignals, Fin.isValue, ↓reduceIte, hrate]
-    exact div_nonneg (hG x y) (rate_pos k).le
-  · intro σ x y _ _
-    let T : Finset (Environment P 3) :=
-      {τ | r.source.retains (channels B.padding) τ x ∧
-        r.usage.retains (channels B.padding) τ y}
-    have hp (τ : Environment P 3) := B.binPreparation_mem_Icc bin
-      (fun d => by rw [haux]; exact ⟨polynomialPrepCutoff4_nonneg _ _,
-        polynomialPrepCutoff4_le_one _ _⟩) r (fun _ => G) τ x y
-    have hm : (𝔼 τ ∈ T, B.binPreparation bin r (fun _ => G) τ x y) ∈ Set.Icc 0 1 := by
-      constructor
-      · exact expect_nonneg fun τ _ => (hp τ).1
-      · rcases T.eq_empty_or_nonempty with h | h
-        · rw [h]; norm_num
-        · exact expect_le h fun τ _ => (hp τ).2
-    simp only [requestSignals, Fin.isValue, one_ne_zero, ↓reduceIte]
-    split_ifs
-    · rw [abs_mul, abs_of_pos hζ]
-      change ζ * |𝔼 τ ∈ T, B.binPreparation bin r (fun _ => G) τ x y| ≤ scale / 2
-      rw [abs_of_nonneg hm.1]
-      exact (mul_le_of_le_one_right hζ.le hm.2).trans hsmall
-    · simp only [mul_zero, abs_zero]; linarith
-  · intro j _ σ x y _ _ hd
-    have hd' : G x y / r.terminal.rate ≤ HP.θ / 2 := by
-      simp only [requestSignals, Fin.isValue, ↓reduceIte] at hd
-      have hf := dyadicFloor_le_scale_div hfloor.le (Nat.log2 M + 1) j
-      have hm := FourthRootHierarchyParams.NormalizedRow.threshold_margin HP
-      linarith [HP.η_lt_η₂, HP.η_pos]
-    have hz (τ : Environment P 3) : B.binPreparation bin r (fun _ => G) τ x y = 0 := by
-      change B.auxiliary bin (G x y / r.terminal.rate) * _ = 0
-      rw [haux, polynomialPrepCutoff4_eq_zero HP.θ_pos hd', zero_mul]
-    simp only [requestSignals, Fin.isValue, one_ne_zero, ↓reduceIte]
-    split_ifs
-    · simp only [rowSliceMean, hz, expect_const_zero, mul_zero]
-    · exact mul_zero _
-  · exact hε
-  · exact hεfinal
-  · exact herr
-  · exact herrfinal
+  unfold compressedBin at hA
+  split at hA
+  · contradiction
+  · simp only [hF, bind, Option.bind_some, hW, pure] at hA
+    have he := Option.some.inj hA
+    subst A
+    exact hbound B b hb hstep M bin k r hr hrate hcut haux G hG F W N u hNu
 
 end Matrix.HierarchyParams.H4RankEnvironment.BudgetData

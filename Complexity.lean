@@ -3758,6 +3758,7 @@ public import Complexity.Foundations.Probability.HierarchySourceSampling
 public import Complexity.Foundations.Probability.HierarchyTaskData
 public import Complexity.Foundations.Probability.HierarchyTaskMeans
 public import Complexity.Foundations.Probability.HierarchyTasks
+public import Complexity.Foundations.Probability.HierarchyTransportedPreparation
 public import Complexity.Foundations.Probability.InitialPilotCompleted
 public import Complexity.Foundations.Probability.InitialPilotCorrection
 public import Complexity.Foundations.Probability.InitialPilotCorrectionMean

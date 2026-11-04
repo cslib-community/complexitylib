@@ -37,6 +37,141 @@ attribute [local instance] Classical.propDecidable
 attribute [local implicit_reducible] Matrix
 set_option backward.isDefEq.respectTransparency false
 
+/-- Literal sharp reserve of the shared decoder: stationary preloss, no-overflow final,
+heavy first-overflow tail and raw false-overflow charges. No smallness is asserted. -/
+@[expose] def initialFourMaxReserve {P : ℕ} [Fact P.Prime]
+    {HP : FourthRootHierarchyParams 16 1 16 32 8} (B : BudgetData HP P)
+    (M bin k : ℕ) (ζ floor : ℝ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
+    (ks ku : ℕ) (ss st : List (ZMod P))
+    (G : Matrix (ZMod P) (ZMod P) ℝ)
+    (F : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+    (W : List (Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ))
+    (cap C Cpre : ℝ) : ℝ :=
+  let m := Nat.log2 M + 1
+  let n := compatibleCapacity HP.K m
+  let X := fun σ x => r.source.retains (channels B.padding) σ x
+  let Y := fun σ y => r.terminal.retains (channels B.padding) σ y
+  let Δ := firstSignalIncrement F k
+    (secondSignalIncrement (fun j σ x y => W[j - 1]?.getD 0 σ x y) ζ)
+  let raw : Environment P 3 → ZMod P → ZMod P → Fin 2 → ℝ := 0
+  let truth := requestSignals ζ B.padding id r (fun _ => G)
+    (B.binPreparation bin r (fun _ => G))
+  let ε := actualFourMax HP R.source R.terminal (side P ks) (side P k) (side P ku)
+    B.padding ss st k G ζ Δ raw
+  let εfinal := ε (Nat.log2 M)
+  let S := fun σ => ({y | Y σ y} : Finset (ZMod P))
+  let Pre := fun σ x => ∑ i ∈ range m, dyadicFloor floor m i * ε i σ x
+  let No := fun σ x => if ∀ i < m,
+      stepThreshold (S σ) n (fun _ => HP.K) (dyadicFloor floor m) (Δ σ x) ⟨0, raw σ x⟩ i ≤
+        dyadicFloor floor m i then εfinal σ x else 0
+  let Tail := fun σ x => ∑ j ∈ range m,
+      if IsFirstOverflow (S σ) n (fun _ => HP.K) (dyadicFloor floor m) (Δ σ x) ⟨0, raw σ x⟩ j ∧
+        heavyCountEvent Y univ (fun y => truth σ x y 0) (dyadicFloor floor m j) (n j) σ then
+          ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i σ x else 0
+  128 * (HP.K : ℝ) * (Cpre ^ 4 * vertexNormPow 4 P r.source.rate X Pre +
+    C ^ 4 * vertexNormPow 4 P r.source.rate X No +
+    C ^ 4 * vertexNormPow 4 P r.source.rate X Tail) +
+  ∑ j ∈ range m, (64 * (HP.K : ℝ) * ((2 * max cap 16) ^ (4⁻¹ : ℝ)) ^ 4 / ((n j : ℝ) *
+    dyadicFloor floor m j ^ 4)) *
+    rowNormPow 4 P r.source.rate X Y (fun σ x y =>
+      clippedError (truth σ x y 0) (truth σ x y 1)
+      (uncompressedRow (Δ σ x) (raw σ x) (j + 1) y))
+
+/-- Shared decoding against the genuine dense bin using literal four-max statistics.
+Actual preparation executions retain their usage noise and full-terminal first rank.
+The remaining moments on the RHS are allocation obligations, not assumed budgets. -/
+theorem exists_decodePrefixes_fourMax (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    {cap ζ scale : ℝ} (hcap : 0 ≤ cap) (hζ : 0 < ζ) (hs : 0 < scale)
+    (hmargin : scale ≤ HP.η) (hcapscale : scale ≤ max cap 16 / 10000)
+    (hsmall : ζ ≤ scale / 2) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ floor : ℝ, 0 < floor → floor ≤ scale → floor ≤ 1 →
+      ∃ Cpre : ℝ, 0 ≤ Cpre ∧ ∀ {P : ℕ} [Fact P.Prime] (B : BudgetData HP P)
+      (b : ℕ → ℝ), (∀ i, 0 < b i) → (∀ i, b i = 16 * b (i + 1)) →
+      ∀ (M bin k : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)),
+      Admissible r → r.terminal.rate = rate k →
+      B.cutoff bin = boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1) b cap bin
+        (fun _ => 1) → B.auxiliary bin = polynomialPrepCutoff4 HP.θ →
+      ∀ (G : Matrix (ZMod P) (ZMod P) ℝ), (∀ x y, 0 ≤ G x y) →
+      ∀ (F : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ) W,
+      (List.range (Nat.log2 M + 1)).mapM (fun j =>
+        B.complete M r (B.binPreparation bin r (F (j + 1)))
+          (dyadicSlack (Nat.log2 M + 1) j)) = some W →
+      ∀ (R : RoleProfile 3) (ks ku : ℕ) (ss st : List (ZMod P)),
+      r.source = gridChannel R.source ks ss →
+      r.terminal = gridChannel R.terminal k st →
+      r.usage = gridChannel R.terminal ku st →
+      let m := Nat.log2 M + 1
+      let n := compatibleCapacity HP.K m
+      let X := fun σ x => r.source.retains (channels B.padding) σ x
+      let Y := fun σ y => r.terminal.retains (channels B.padding) σ y
+      let Δ := firstSignalIncrement F k
+        (secondSignalIncrement (fun j σ x y => W[j - 1]?.getD 0 σ x y) ζ)
+      let raw : Environment P 3 → ZMod P → ZMod P → Fin 2 → ℝ := 0
+      let truth := requestSignals ζ B.padding id r (fun _ => G)
+        (B.binPreparation bin r (fun _ => G))
+      let ε := actualFourMax HP R.source R.terminal (side P ks) (side P k) (side P ku)
+        B.padding ss st k G ζ Δ raw
+      let εfinal := ε (Nat.log2 M)
+        let S := fun σ => ({y | Y σ y} : Finset (ZMod P))
+        let Pre := fun σ x => ∑ i ∈ range m, dyadicFloor floor m i * ε i σ x
+        let No := fun σ x => if ∀ i < m,
+          stepThreshold (S σ) n (fun _ => HP.K) (dyadicFloor floor m) (Δ σ x) ⟨0, raw σ x⟩ i ≤
+            dyadicFloor floor m i then εfinal σ x else 0
+        let Tail := fun σ x => ∑ j ∈ range m,
+          if IsFirstOverflow (S σ) n (fun _ => HP.K) (dyadicFloor floor m) (Δ σ x) ⟨0, raw σ x⟩ j ∧
+            heavyCountEvent Y univ (fun y => truth σ x y 0) (dyadicFloor floor m j) (n j) σ then
+              ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i σ x else 0
+        rootDistPow 4 P r.source.rate X Y (B.decodePrefixes M bin k ζ floor r F W)
+          (denseChild B.padding id r (B.cutoff bin) (polynomialPrepCutoff4 HP.θ) HP.ρ HP.K G) ≤
+          128 * (HP.K : ℝ) * (Cpre ^ 4 * vertexNormPow 4 P r.source.rate X Pre +
+            C ^ 4 * vertexNormPow 4 P r.source.rate X No +
+            C ^ 4 * vertexNormPow 4 P r.source.rate X Tail) +
+          ∑ j ∈ range m, (64 * (HP.K : ℝ) * ((2 * max cap 16) ^ (4⁻¹ : ℝ)) ^ 4 / ((n j : ℝ) *
+            dyadicFloor floor m j ^ 4)) *
+            rowNormPow 4 P r.source.rate X Y (fun σ x y =>
+              clippedError (truth σ x y 0) (truth σ x y 1)
+              (uncompressedRow (Δ σ x) (raw σ x) (j + 1) y)) := by
+  obtain ⟨C, hC, hscales⟩ := exists_decodePrefixes_integrated HP hcap hζ hs hmargin hcapscale hsmall
+  refine ⟨C, hC, ?_⟩
+  intro floor hf hfs hf1
+  obtain ⟨Cp, hCp, hbound⟩ := hscales floor hf hfs hf1
+  refine ⟨Cp, hCp, ?_⟩
+  intro P _ B b hb hstep M bin k r hr hrate hcut haux G hG F W hW R ks ku ss st
+    hsource hterminal husage
+  dsimp only
+  let Δ := firstSignalIncrement F k
+    (secondSignalIncrement (fun j σ x y => W[j - 1]?.getD 0 σ x y) ζ)
+  let ε := actualFourMax HP R.source R.terminal (side P ks) (side P k) (side P ku)
+    B.padding ss st k G ζ Δ 0
+  have hNu : 0 ≤ (P : ℝ) * r.source.rate := by
+    rw [hsource]; exact mul_nonneg (Nat.cast_nonneg _) (rate_pos ks).le
+  have he (i : ℕ) (σ : Environment P 3) (x : ZMod P) : 0 ≤ ε i σ x :=
+    actualFourMax_nonneg HP _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+  have htgt := B.requestSignals_eq_genuineTarget bin k ku r R ks ss st hsource hterminal
+    husage haux G ζ
+  have herr (i : ℕ) (hi : i < Nat.log2 M + 1) (σ : Environment P 3) (x y : ZMod P)
+      (_hx : r.source.retains (channels B.padding) σ x)
+      (hy : r.terminal.retains (channels B.padding) σ y) :
+      clippedError
+        (requestSignals ζ B.padding id r (fun _ => G)
+          (B.binPreparation bin r (fun _ => G)) σ x y 0)
+        (requestSignals ζ B.padding id r (fun _ => G)
+          (B.binPreparation bin r (fun _ => G)) σ x y 1)
+        (uncompressedRow (Δ σ x) 0 (i + 1) y) ≤ ε i σ x := by
+    rw [htgt]
+    have hy' : retainedMask R.terminal (side P k) B.padding st σ y := by
+      simpa only [hterminal, gridChannel, CorrectionRowTask.Channel.retains, channels,
+        semanticSide_grid, retainedMask] using hy
+    exact actual_clipped_le_fourMax HP R.source R.terminal (side P ks) (side P k)
+      (side P ku) B.padding ss st k G hG ζ Δ 0 i
+      (B.preparationPrefix_zero_off M bin k ku r R ks ss st hsource husage F W hW ζ i hi)
+      σ x y hy'
+  exact hbound B b hb hstep M bin k r hr hrate hcut haux G hG F W
+    P r.source.rate hNu ε (ε (Nat.log2 M))
+    (fun i _ σ x _ => he i σ x) (fun σ x _ => he _ σ x) herr
+    (fun σ x y hx hy => herr (Nat.log2 M) (by omega) σ x y hx hy)
+
 /-- Actual successful compressed output against the genuine dense bin, using the four
 executed row maxima. There is no supplied final accuracy or replacement signal family.
 The remaining moments on the RHS are allocation obligations, not assumed budgets. -/
@@ -92,45 +227,21 @@ theorem exists_compressedBin_fourMax (HP : FourthRootHierarchyParams 16 1 16 32 
             rowNormPow 4 P r.source.rate X Y (fun σ x y =>
               clippedError (truth σ x y 0) (truth σ x y 1)
               (uncompressedRow (Δ σ x) (raw σ x) (j + 1) y)) := by
-  obtain ⟨C, hC, hscales⟩ := exists_compressedBin_integrated HP hcap hζ hs hmargin hcapscale hsmall
+  obtain ⟨C, hC, hscales⟩ := exists_decodePrefixes_fourMax HP hcap hζ hs hmargin hcapscale hsmall
   refine ⟨C, hC, ?_⟩
   intro floor hf hfs hf1
   obtain ⟨Cp, hCp, hbound⟩ := hscales floor hf hfs hf1
   refine ⟨Cp, hCp, ?_⟩
   intro P _ B b hb hstep M bin k r hr hrate hcut haux G hG F hF W hW A hA R ks ku ss st
     hsource hterminal husage
-  dsimp only
-  let Δ := firstSignalIncrement F k
-    (secondSignalIncrement (fun j σ x y => W[j - 1]?.getD 0 σ x y) ζ)
-  let ε := actualFourMax HP R.source R.terminal (side P ks) (side P k) (side P ku)
-    B.padding ss st k G ζ Δ 0
-  have hNu : 0 ≤ (P : ℝ) * r.source.rate := by
-    rw [hsource]; exact mul_nonneg (Nat.cast_nonneg _) (rate_pos ks).le
-  have he (i : ℕ) (σ : Environment P 3) (x : ZMod P) : 0 ≤ ε i σ x :=
-    actualFourMax_nonneg HP _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
-  have htgt := B.requestSignals_eq_genuineTarget bin k ku r R ks ss st hsource hterminal
-    husage haux G ζ
-  have herr (i : ℕ) (hi : i < Nat.log2 M + 1) (σ : Environment P 3) (x y : ZMod P)
-      (_hx : r.source.retains (channels B.padding) σ x)
-      (hy : r.terminal.retains (channels B.padding) σ y) :
-      clippedError
-        (requestSignals ζ B.padding id r (fun _ => G)
-          (B.binPreparation bin r (fun _ => G)) σ x y 0)
-        (requestSignals ζ B.padding id r (fun _ => G)
-          (B.binPreparation bin r (fun _ => G)) σ x y 1)
-        (uncompressedRow (Δ σ x) 0 (i + 1) y) ≤ ε i σ x := by
-    rw [htgt]
-    have hy' : retainedMask R.terminal (side P k) B.padding st σ y := by
-      simpa only [hterminal, gridChannel, CorrectionRowTask.Channel.retains, channels,
-        semanticSide_grid, retainedMask] using hy
-    exact actual_clipped_le_fourMax HP R.source R.terminal (side P ks) (side P k)
-      (side P ku) B.padding ss st k G hG ζ Δ 0 i
-      (B.preparationPrefix_zero_off M bin k ku r R ks ss st hsource husage F W hW ζ i hi)
-      σ x y hy'
-  exact hbound B b hb hstep M bin k r hr hrate hcut haux G hG F hF W hW A hA
-    P r.source.rate hNu ε (ε (Nat.log2 M))
-    (fun i _ σ x _ => he i σ x) (fun σ x _ => he _ σ x) herr
-    (fun σ x y hx hy => herr (Nat.log2 M) (by omega) σ x y hx hy)
+  unfold compressedBin at hA
+  split at hA
+  · contradiction
+  · simp only [hF, bind, Option.bind_some, hW, pure] at hA
+    have he := Option.some.inj hA
+    subst A
+    exact hbound B b hb hstep M bin k r hr hrate hcut haux G hG F W hW R ks ku ss st
+      hsource hterminal husage
 
 variable {P : ℕ} [Fact P.Prime] {HP : FourthRootHierarchyParams 16 1 16 32 8}
 
