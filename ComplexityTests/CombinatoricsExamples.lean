@@ -142,7 +142,7 @@ example :
     9 ^ 1 * (univ.filter fun ω : Fin (2 * 1) → Fin 3 =>
       (univ.filter fun i => ω i ∈ ({0, 1} : Finset (Fin 3))).card ≤ 1).card ≤
       8 ^ 1 * Fintype.card (Fin 3) ^ (2 * 1) :=
-  ⟨by decide, centralBinom_sq_mul_le 3,
+  ⟨by decide, Nat.centralBinom_sq_mul_le 3,
     by decide, choose_half_sq_mul_le 5,
     by simpa using ten_mul_card_filter_card_le_le 99 0 (by norm_num),
     sum_card_inter_powersetCard (range_subset_range.2 (by norm_num)) (by norm_num),
@@ -162,7 +162,7 @@ example (m : ℕ) (hm : 12 ≤ m) : 5 * m.centralBinom ≤ 4 ^ m := by
   refine (Nat.pow_le_pow_iff_left (n := 2) (by norm_num)).1 ?_
   calc (5 * m.centralBinom) ^ 2 = m.centralBinom ^ 2 * 25 := by ring
     _ ≤ m.centralBinom ^ 2 * (2 * m + 1) := Nat.mul_le_mul_left _ (by omega)
-    _ ≤ 16 ^ m := centralBinom_sq_mul_le m
+    _ ≤ 16 ^ m := Nat.centralBinom_sq_mul_le m
     _ = (4 ^ m) ^ 2 := by rw [← pow_mul, mul_comm, pow_mul]; norm_num
 
 /-! ### Rotation maps and the expander mixing lemma -/

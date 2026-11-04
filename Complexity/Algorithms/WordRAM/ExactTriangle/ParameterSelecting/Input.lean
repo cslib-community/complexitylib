@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.InputProgram
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Exec
 
@@ -35,17 +36,9 @@ theorem exec_entryHeader {W n F : ℕ} (x : Data 640) (hn : x.mem 1 = n) (hF : x
   have inj : Function.Injective bank := by
     intro i j h
     exact Fin.ext (congrArg (fun k : Fin 640 => k.val) h)
-  obtain ⟨s, hs, sm, sn, sF, sa, sb, sc, sf⟩ :=
-    CountPrime.exec_header (x.comap bank) hn hF hfit
-  let a := s.extend bank x
-  have ha : ExecWithin W (CountPrime.input.rename bank) x a 9 := hs.rename inj
-  have reg (i : Fin 128) : a.regs (bank i) = s.regs i := inj.extend_apply _ _ _
-  have an := (reg CountPrime.Reg.side).trans sn
-  have aF := (reg CountPrime.Reg.modulus).trans sF
-  have aa := (reg CountPrime.Reg.inputAB).trans sa
-  have ab := (reg CountPrime.Reg.inputBC).trans sb
-  have ac := (reg CountPrime.Reg.inputAC).trans sc
-  have af := (reg CountPrime.Reg.scratch).trans sf
+  obtain ⟨a, ha, ⟨sm, an, aF, aa, ab, ac, af⟩, -⟩ :=
+    ExecWithin.rename_post inj (CountPrime.exec_header (x.comap bank) hn hF hfit)
+  simp only [Data.comap_regs] at an aF aa ab ac af
   let y := a.set Reg.side n |>.set Reg.bound F |>.set Reg.ab 3
     |>.set Reg.bc (3 + n * n) |>.set Reg.ac (3 + 2 * (n * n))
     |>.set Reg.free (3 + 3 * (n * n))

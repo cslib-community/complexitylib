@@ -7,6 +7,7 @@ Authors: Renfei Zhou, Samuel Schlesinger
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.Karger.Graph
 public import Complexity.Algorithms.WordRAM.Karger.Contract
@@ -309,16 +310,14 @@ theorem ksCopyCode_exec {w sb db k : ℕ} {W : Fin k → Fin k → ℕ} {x : Dat
     change x.regs uReg + x.regs rem ≤ x.regs wBase
     rw [hsb, hlen, hdb]
     exact hdisj
-  obtain ⟨y₀, hy₀_exec, hy₀_mem, _, _, _⟩ :=
-    ArrayCopy.exec (x.comap ksCopyRegMap) h1 hs_fit hd_fit hdisj'
+  obtain ⟨y, hy₀_exec, ⟨hy₀_mem, _, _, _⟩, -⟩ := ExecWithin.rename_post ksCopyRegMap_injective
+    (ArrayCopy.exec (x.comap ksCopyRegMap) h1 hs_fit hd_fit hdisj')
   have hsrc_c : (x.comap ksCopyRegMap).regs ArrayCopy.src = sb := hsb
   have hdst_c : (x.comap ksCopyRegMap).regs ArrayCopy.dst = db := hdb
   have hlen_c : (x.comap ksCopyRegMap).regs ArrayCopy.len = k * k := hlen
   rw [hlen_c] at hy₀_exec
   rw [hsrc_c, hdst_c, hlen_c] at hy₀_mem
-  let y := y₀.extend ksCopyRegMap x
-  have hex : ExecWithin w ksCopyCode x y (7 * (k * k) + 4) :=
-    hy₀_exec.rename ksCopyRegMap_injective
+  have hex : ExecWithin w ksCopyCode x y (7 * (k * k) + 4) := hy₀_exec
   have hym : y.mem = ArrayCopy.copyPrefix x.mem sb db (k * k) := hy₀_mem
   have ⟨_, _, he⟩ := hex
   have hpres : ∀ j : Fin 24, ksCopyCode.Preserves j → y.regs j = x.regs j :=

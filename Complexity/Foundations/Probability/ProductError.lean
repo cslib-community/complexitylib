@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Christian Reitwiessner. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Christian Reitwiessner
 -/
 
 module
@@ -34,6 +34,7 @@ No final-estimator or machine-space contract is assumed.
 
 ## Main results
 
+* `Cslib.abs_sum_mul_sub_mul_le`: absolute error with separate estimated/true ranges.
 * `Cslib.rootDistPow_mul_le`: a coupled product-table estimate with row and incoming caps.
 * `Matrix.correctionAtom_denseAtom_rootDistPow_le`: the actual atom specialization, deriving
   both support caps from the incoming and row gates.
@@ -50,6 +51,25 @@ open Finset
 open scoped BigOperators
 
 namespace Cslib
+
+/-- Absolute coupled product errors, splitting through estimated-left times canonical-right.
+The first range bounds estimated left; the second bounds canonical right. All four tables
+can depend on the same environment, fixed before this finite comparison. -/
+theorem abs_sum_mul_sub_mul_le {α : Type*} (T : Finset α)
+    (a a' b b' : α → ℝ) {CA CB : ℝ}
+    (ha : ∀ z ∈ T, |a z| ≤ CA) (hb' : ∀ z ∈ T, |b' z| ≤ CB) :
+    |(∑ z ∈ T, a z * b z) - ∑ z ∈ T, a' z * b' z| ≤
+      ∑ z ∈ T, (CA * |b z - b' z| + |a z - a' z| * CB) := by
+  rw [← sum_sub_distrib]
+  apply (abs_sum_le_sum_abs _ _).trans
+  apply sum_le_sum
+  intro z hz
+  rw [show a z * b z - a' z * b' z =
+    a z * (b z - b' z) + (a z - a' z) * b' z by ring]
+  exact (abs_add_le _ _).trans (by
+    rw [abs_mul, abs_mul]
+    exact add_le_add (mul_le_mul_of_nonneg_right (ha z hz) (abs_nonneg _))
+      (mul_le_mul_of_nonneg_left (hb' z hz) (abs_nonneg _)))
 
 private theorem root_mul_sub_pow_le {s : ℕ} (hs : s ≠ 0) {a a' b b' : ℝ}
     (ha : 0 ≤ a) (ha' : 0 ≤ a') (hb : 0 ≤ b) (hb' : 0 ≤ b') :
