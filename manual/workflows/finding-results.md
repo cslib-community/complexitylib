@@ -227,3 +227,10 @@ The two reserve-output theorems choose their output constant after the fixed hie
 and raw/preparation/maximum families. Select this constant before allocating recursive
 child accuracies. Uniformity of that coefficient does not remove any displayed finite
 allocation or walk-length losses and supplies no recursive accuracy theorem.
+
+For changes to the completed pilot maximum with raw and preparation children fixed,
+[HierarchyCorrectionStability](../../Complexity/Foundations/Probability/HierarchyCorrectionStability.lean)
+gives a pointwise fourth-root bound and an integrated actual-request contract. Its
+[regressions](../../ComplexityTests/HierarchyCorrectionStability.lean) check a nonzero request,
+pilot plateaus, a dyadic change of maximum estimate and an empty vertex domain. These are
+local sensitivity tests, not a two-level recursive approximate estimator.
