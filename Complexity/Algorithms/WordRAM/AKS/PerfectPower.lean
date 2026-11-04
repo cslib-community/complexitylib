@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.NatLog
 public import Complexity.Algorithms.WordRAM.NatNthRoot
 public import Complexity.Foundations.NumberTheory.AKS.PerfectPower
@@ -270,9 +271,7 @@ theorem exec_rename {r w : ℕ} (f : Fin 14 → Fin r) (hf : f.Injective) (x : D
     ∃ y, ExecWithin w (program.rename f) x y (time (x.regs (f n))) ∧
       y.regs (f flag) = (if Cslib.AKS.IsPerfectPower (x.regs (f n)) then 1 else 0) ∧
       y.regs (f n) = x.regs (f n) ∧ y.mem = x.mem := by
-  obtain ⟨y, hy, hfl, hyn, hym⟩ := exec (x.comap f) hn hfit
-  refine ⟨y.extend f x, hy.rename hf, ?_, ?_, hym⟩
-  · exact (hf.extend_apply _ _ flag).trans hfl
-  · exact (hf.extend_apply _ _ n).trans hyn
+  obtain ⟨y, hy, hpost, -⟩ := ExecWithin.rename_post hf (exec (x.comap f) hn hfit)
+  exact ⟨y, hy, hpost⟩
 
 end Cslib.Algorithms.WordRAM.AKS.PerfectPower

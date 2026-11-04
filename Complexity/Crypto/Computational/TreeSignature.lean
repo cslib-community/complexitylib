@@ -14,10 +14,13 @@ public import Complexity.Languages.Probabilistic.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Probabilistic.Oracle.Composition
+import Complexity.Computability.Probabilistic.PPT.Capture
+import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Probability.PMF.Bind
-import Complexity.Tactic.PolyTime
-import Complexity.Tactic.PPT
 
 /-!
 # Stateless tree signatures from an indexed signature scheme
@@ -270,6 +273,22 @@ section Efficiency
 local notation "encCertState" =>
   encPair encBits (encPair (encPair encBits encBits) (encList (encPair encBits encBits)))
 
+@[local fun_prop] private theorem verify_fp {α : Type} {enc : α ↪ List Bool}
+    {pk : α → List Bool} {u : α → ℕ} {msg sig : α → List Bool}
+    (hpk : ComputableInPolyTime pk enc encBits) (hu : ComputableInPolyTime u enc encUnary)
+    (hmsg : ComputableInPolyTime msg enc encBits) (hsig : ComputableInPolyTime sig enc encBits) :
+    ComputableInPolyTime (fun x => S.verify (pk x) (u x) (msg x) (sig x)) enc encBool :=
+  S.verify_polyTime.comp (hpk.prod (hu.prod (hmsg.prod hsig)))
+@[local fun_prop] private theorem getLastD_fp {α : Type} {enc : α ↪ List Bool}
+    {l : α → List Bool} (d : Bool) (hl : ComputableInPolyTime l enc encBits) :
+    ComputableInPolyTime (fun x => (l x).getLastD d) enc encBool := by
+  have heq : (fun x => (l x).getLastD d) = fun x => (l x).getD ((l x).length - 1) d := by
+    funext x; rw [List.getLastD_eq_getLast?, List.getLast?_eq_getElem?, List.getD_eq_getElem?_getD]
+  rw [heq]; fun_prop
+
+attribute [local fun_prop] ComputableInPolyTime.bool_and' ComputableInPolyTime.sampleList
+  IndexedSignatureScheme.Seeded.keyGenBudget_polyTime
+
 variable (hcoins : ComputableInPolyTime
     (fun p : List Bool × List Bool × ℕ => coins p.1 p.2.1 p.2.2)
     (encPair encBits (encPair encBits encUnary)) encBits)
@@ -280,10 +299,12 @@ theorem computableInPolyTime_nodeKey :
     ComputableInPolyTime
       (fun (((n, k), path) : (ℕ × List Bool) × List Bool) => nodeKey S T coins n k path)
       (encPair (encPair encUnary encBits) encBits) (encPair encBits encBits) := by
-  have hkg := T.keyGenWith_polyTime
-  have hbudget := T.keyGenBudget_polyTime
-  unfold nodeKey keyInput
-  polytime
+  have h1 : ComputableInPolyTime
+      (fun x : (ℕ × List Bool) × List Bool => (x.1.2, keyInput x.2, T.keyGenBudget x.1.1))
+      (encPair (encPair encUnary encBits) encBits)
+      (encPair encBits (encPair encBits encUnary)) := by unfold keyInput; fun_prop
+  exact T.keyGenWith_polyTime.comp
+    ((ComputableInPolyTime.fst' (ComputableInPolyTime.fst' .id')).prod (hcoins.comp h1))
 
 include hcoins in
 /-- Node signatures are computable in polynomial time. -/
@@ -292,10 +313,35 @@ theorem computableInPolyTime_signAt :
       (fun (((k, path, sk), u, msg) : (List Bool × List Bool × List Bool) × ℕ × List Bool) =>
         signAt S T coins k path sk u msg)
       (encPair (encPair encBits (encPair encBits encBits)) (encPair encUnary encBits)) encBits := by
-  have hsg := T.signWith_polyTime
-  have hbudget := T.signBudget_polyTime
-  unfold signAt signInput
-  polytime
+  have h2 : ComputableInPolyTime
+      (fun x : (List Bool × List Bool × List Bool) × ℕ × List Bool => (x.1.2.2, x.2.1, x.2.2))
+      (encPair (encPair encBits (encPair encBits encBits)) (encPair encUnary encBits))
+      (encPair encBits (encPair encUnary encBits)) := by fun_prop
+  have h1 : ComputableInPolyTime
+      (fun x : (List Bool × List Bool × List Bool) × ℕ × List Bool =>
+        (x.1.1, signInput x.1.2.1 x.2.1, T.signBudget x.1.2.2 x.2.1 x.2.2))
+      (encPair (encPair encBits (encPair encBits encBits)) (encPair encUnary encBits))
+      (encPair encBits (encPair encBits encUnary)) := by unfold signInput; fun_prop
+  exact T.signWith_polyTime.comp (h2.prod (hcoins.comp h1))
+
+include hcoins in
+@[local fun_prop] private theorem nodeKey_fp {α : Type} {enc : α ↪ List Bool}
+    {n : α → ℕ} {k path : α → List Bool} (hn : ComputableInPolyTime n enc encUnary)
+    (hk : ComputableInPolyTime k enc encBits) (hpath : ComputableInPolyTime path enc encBits) :
+    ComputableInPolyTime (fun x => nodeKey S T coins (n x) (k x) (path x))
+      enc (encPair encBits encBits) :=
+  (computableInPolyTime_nodeKey (T := T) hcoins).comp ((hn.prod hk).prod hpath)
+
+include hcoins in
+@[local fun_prop] private theorem signAt_fp {α : Type} {enc : α ↪ List Bool}
+    {k path sk : α → List Bool} {u : α → ℕ} {msg : α → List Bool}
+    (hk : ComputableInPolyTime k enc encBits) (hpath : ComputableInPolyTime path enc encBits)
+    (hsk : ComputableInPolyTime sk enc encBits) (hu : ComputableInPolyTime u enc encUnary)
+    (hmsg : ComputableInPolyTime msg enc encBits) :
+    ComputableInPolyTime (fun x => signAt S T coins (k x) (path x) (sk x) (u x) (msg x))
+      enc encBits :=
+  (computableInPolyTime_signAt (T := T) hcoins).comp
+    ((hk.prod (hpath.prod hsk)).prod (hu.prod hmsg))
 
 include hcoins in
 /-- One chain step is computable in polynomial time. -/
@@ -304,10 +350,8 @@ theorem computableInPolyTime_certifyStep :
       (fun ((((n, k), state), a) : ((ℕ × List Bool) × CertState) × Bool) =>
         certifyStep S T coins n k state a)
       (encPair (encPair (encPair encUnary encBits) encCertState) encBool) encCertState := by
-  have hnode := computableInPolyTime_nodeKey (T := T) hcoins
-  have hsign := computableInPolyTime_signAt (T := T) hcoins
-  unfold certifyStep
-  polytime
+  dsimp only [certifyStep]
+  fun_prop
 
 /-- The encoding of the chain's input: the parameter, the secret and the path. -/
 private abbrev encChainInput : (ℕ × List Bool) × List Bool ↪ List Bool :=
@@ -327,11 +371,10 @@ theorem computableInPolyTime_certify :
     ComputableInPolyTime
       (fun (((n, k), bits) : (ℕ × List Bool) × List Bool) => certify S T coins n k bits)
       (encPair (encPair encUnary encBits) encBits) encCertState := by
-  have hnode := computableInPolyTime_nodeKey (T := T) hcoins
-  have hsign := computableInPolyTime_signAt (T := T) hcoins
-  obtain ⟨ck, dk, hnodeLen⟩ := hnode.polyBounded_length.exists_le
-  obtain ⟨cs, ds, hsignLen⟩ := hsign.polyBounded_length.exists_le
-  -- bounds on node key words and on node signatures along a prefix of the path
+  obtain ⟨ck, dk, hnodeLen⟩ :=
+    (computableInPolyTime_nodeKey (T := T) hcoins).polyBounded_length.exists_le
+  obtain ⟨cs, ds, hsignLen⟩ :=
+    (computableInPolyTime_signAt (T := T) hcoins).polyBounded_length.exists_le
   let Bk (x : (ℕ × List Bool) × List Bool) : ℕ := ck * ((encChainInput x).length + 1) ^ dk
   let Bs (x : (ℕ × List Bool) × List Bool) : ℕ :=
     cs * (8 * (encChainInput x).length + 3 * Bk x + 11) ^ ds
@@ -345,8 +388,7 @@ theorem computableInPolyTime_certify :
       (nodeKey S T coins x.1.1 x.1.2 path).1.length ≤ Bk x ∧
         (nodeKey S T coins x.1.1 x.1.2 path).2.length ≤ Bk x := by
     have hle : (encChainInput (x.1, path)).length ≤ (encChainInput x).length := by
-      simp only [encChainInput, length_encPair, encBits_apply]
-      omega
+      simp only [encChainInput, length_encPair, encBits_apply]; omega
     have h := (hnodeLen (x.1, path)).trans
       (Nat.mul_le_mul_left ck (Nat.pow_le_pow_left (Nat.add_le_add_right hle 1) dk))
     exact ⟨(length_le_encPair_left encBits encBits _).trans h,
@@ -358,15 +400,14 @@ theorem computableInPolyTime_certify :
     have h := hsignLen ((x.1.2, path, sk), u, msg)
     simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate] at h
     have hx := length_le_encChainInput x
-    refine h.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left ?_ ds))
-    omega
+    exact h.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (by omega) ds))
   refine ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.foldlWith_spec
     (encP := encPair encUnary encBits) (encA := encBool) (encL := encBits)
     (par := fun x : (ℕ × List Bool) × List Bool => x.1) (list := fun x => x.2)
     (init := fun x => (([], nodeKey S T coins x.1.1 x.1.2 [], []) : CertState))
     (step := fun par state a => certifyStep S T coins par.1 par.2 state a)
     (ComputableTidilyInPolyTime.fst _ _) (ComputableTidilyInPolyTime.snd _ _)
-    (by apply ComputableInPolyTime.tidy; polytime)
+    (by apply ComputableInPolyTime.tidy; fun_prop)
     (computableInPolyTime_certifyStep (T := T) hcoins).tidy
     (fun x consumed state => state.1 = consumed ∧
       state.2.1 = nodeKey S T coins x.1.1 x.1.2 consumed ∧
@@ -376,22 +417,20 @@ theorem computableInPolyTime_certify :
     (size := fun x => 2 * x.2.length + 6 * Bk x + 5 + x.2.length * (4 * Bk x + 2 * Bs x + 3))
     ?_ ?_).1
   · rintro x consumed ⟨path, key, certs⟩ a hprefix ⟨hpath, hkey, hlen, hcerts⟩
-    have hconsumed : consumed.length + 1 ≤ x.2.length := by
-      simpa using hprefix.length_le
-    simp only at hpath hkey hlen
-    subst hpath hkey
-    refine ⟨rfl, rfl, by simp [certifyStep, hlen], ?_⟩
-    intro e he
+    have hconsumed : consumed.length + 1 ≤ x.2.length := by simpa using hprefix.length_le
+    simp only at hpath hkey hlen; subst hpath hkey
+    refine ⟨rfl, rfl, by simp [certifyStep, hlen], fun e he => ?_⟩
     simp only [certifyStep, List.mem_append, List.mem_singleton] at he
     rcases he with he | rfl
     · exact hcerts e he
     · exact ⟨(hkeyLe x (by simp; omega)).1,
         hsigLe x (by omega) (hkeyLe x (by omega)).2 (by cases a <;> simp)
           (hkeyLe x (by simp; omega)).1⟩
-  · exact ((((PolyBounded.const 2).mul (PolyBounded.self.mono fun x =>
-      (length_le_encChainInput x).2.2)).add ((PolyBounded.const 6).mul hBk)).add
-      (.const 5)).add ((PolyBounded.self.mono fun x => (length_le_encChainInput x).2.2).mul
-        ((((PolyBounded.const 4).mul hBk).add ((PolyBounded.const 2).mul hBs)).add (.const 3)))
+  · have hx2 : PolyBounded (fun x => (encChainInput x).length) fun x => x.2.length :=
+      PolyBounded.self.mono fun x => (length_le_encChainInput x).2.2
+    exact ((((PolyBounded.const 2).mul hx2).add ((PolyBounded.const 6).mul hBk)).add (.const 5)).add
+      (hx2.mul ((((PolyBounded.const 4).mul hBk).add ((PolyBounded.const 2).mul hBs)).add
+        (.const 3)))
   · rintro x consumed ⟨path, key, certs⟩ hprefix ⟨hpath, hkey, hlen, hcerts⟩
     simp only at hpath hkey hlen
     have hconsumed : consumed.length ≤ x.2.length := hprefix.length_le
@@ -399,20 +438,19 @@ theorem computableInPolyTime_certify :
     have hlist : (encList (encPair encBits encBits) certs).length ≤
         certs.length * (2 * (2 * Bk x + 1 + Bs x) + 1) :=
       length_encList_le _ _ fun e he => by
-        have := hcerts e he
-        simp only [length_encPair, encBits_apply]
-        omega
+        have := hcerts e he; simp only [length_encPair, encBits_apply]; omega
     simp only [length_encPair, encBits_apply, hpath, hkey]
     rw [hlen] at hlist
-    have hmul : consumed.length * (2 * (2 * Bk x + 1 + Bs x) + 1) ≤
-        x.2.length * (4 * Bk x + 2 * Bs x + 3) :=
-      Nat.mul_le_mul hconsumed (by omega)
+    have := Nat.mul_le_mul hconsumed
+      (show 2 * (2 * Bk x + 1 + Bs x) + 1 ≤ 4 * Bk x + 2 * Bs x + 3 by omega)
     omega
 
-omit hcoins in
-private theorem getLastD_eq_getD (l : List Bool) (d : Bool) :
-    l.getLastD d = l.getD (l.length - 1) d := by
-  rw [List.getLastD_eq_getLast?, List.getLast?_eq_getElem?, List.getD_eq_getElem?_getD]
+include hcoins in
+@[local fun_prop] private theorem certify_fp {α : Type} {enc : α ↪ List Bool}
+    {n : α → ℕ} {k bits : α → List Bool} (hn : ComputableInPolyTime n enc encUnary)
+    (hk : ComputableInPolyTime k enc encBits) (hb : ComputableInPolyTime bits enc encBits) :
+    ComputableInPolyTime (fun x => certify S T coins (n x) (k x) (bits x)) enc encCertState :=
+  (computableInPolyTime_certify (T := T) hcoins).comp ((hn.prod hk).prod hb)
 
 include hcoins in
 /-- Signing at a given leaf is computable in polynomial time. -/
@@ -421,34 +459,23 @@ theorem computableInPolyTime_signWithLeaf :
       (fun (((n, k), leaf, msg) : (ℕ × List Bool) × List Bool × List Bool) =>
         signWithLeaf S T coins n k leaf msg)
       (encPair (encPair encUnary encBits) (encPair encBits encBits)) encBits := by
-  have hcert := computableInPolyTime_certify (T := T) hcoins
-  have hsign := computableInPolyTime_signAt (T := T) hcoins
-  have htoNat : ComputableInPolyTime Bool.toNat encBool encUnary :=
-    .of_tidy ComputableTidilyInPolyTime.bool_toUnary
-  have heq : (fun p : (ℕ × List Bool) × List Bool × List Bool =>
-      signWithLeaf S T coins p.1.1 p.1.2 p.2.1 p.2.2) = fun p =>
-        encodeSignature p.2.1
-          (certify S T coins p.1.1 p.1.2 (p.2.1.take (p.2.1.length - 1))).2.2
-          (signAt S T coins p.1.2
-            (certify S T coins p.1.1 p.1.2 (p.2.1.take (p.2.1.length - 1))).1
-            (certify S T coins p.1.1 p.1.2 (p.2.1.take (p.2.1.length - 1))).2.1.2
-            (p.2.1.getD (p.2.1.length - 1) false).toNat p.2.2) := by
-    funext p
-    simp only [signWithLeaf, List.dropLast_eq_take, getLastD_eq_getD]
-  rw [heq]
-  have hprefix : ComputableInPolyTime
-      (fun p : (ℕ × List Bool) × List Bool × List Bool => (p.1, p.2.1.take (p.2.1.length - 1)))
-      (encPair (encPair encUnary encBits) (encPair encBits encBits))
-      (encPair (encPair encUnary encBits) encBits) := by
-    polytime
-  have hc := hcert.comp hprefix
-  have hpath := (ComputableInPolyTime.fst encBits _).comp hc
-  have hrest := (ComputableInPolyTime.snd encBits _).comp hc
-  have hsk := (ComputableInPolyTime.snd encBits encBits).comp
-    ((ComputableInPolyTime.fst (encPair encBits encBits) _).comp hrest)
-  have hcerts := (ComputableInPolyTime.snd (encPair encBits encBits) _).comp hrest
-  unfold encodeSignature
-  polytime
+  unfold signWithLeaf encodeSignature
+  simpa only [List.dropLast_eq_take] using (by fun_prop :
+    ComputableInPolyTime
+      (fun p : (ℕ × List Bool) × List Bool × List Bool =>
+        let c := certify S T coins p.1.1 p.1.2 (p.2.1.take (p.2.1.length - 1))
+        encPair encBits (encPair (encList (encPair encBits encBits)) encBits)
+          (p.2.1, c.2.2, signAt S T coins p.1.2 c.1 c.2.1.2 (p.2.1.getLastD false).toNat p.2.2))
+      (encPair (encPair encUnary encBits) (encPair encBits encBits)) encBits)
+
+include hcoins in
+@[local fun_prop] private theorem signWithLeaf_fp {α : Type} {enc : α ↪ List Bool}
+    {n : α → ℕ} {k leaf msg : α → List Bool} (hn : ComputableInPolyTime n enc encUnary)
+    (hk : ComputableInPolyTime k enc encBits) (hl : ComputableInPolyTime leaf enc encBits)
+    (hm : ComputableInPolyTime msg enc encBits) :
+    ComputableInPolyTime (fun x => signWithLeaf S T coins (n x) (k x) (leaf x) (msg x))
+      enc encBits :=
+  (computableInPolyTime_signWithLeaf (T := T) hcoins).comp ((hn.prod hk).prod (hl.prod hm))
 
 variable (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
   (hdepth : ComputableInPolyTime depth encUnary encUnary)
@@ -457,41 +484,22 @@ include hcoins hkeyLen in
 /-- Key generation is uniformly strict PPT. -/
 theorem isPPTOn_keyGen :
     IsPPTOn encUnary (encPair encBits encBits) (keyGen S T coins keyLen) := by
-  have hnode := computableInPolyTime_nodeKey (T := T) hcoins
-  have hpost : ComputableInPolyTime
-      (fun q : ℕ × List Bool =>
-        (encPair encUnary encBits (q.1, (nodeKey S T coins q.1 q.2 []).1),
-          encPair encUnary encBits (q.1, q.2)))
-      (encPair encUnary encBits) (encPair encBits encBits) := by
-    polytime
-  exact hkeyLen.sampleList.bind_with hpost.isPPTOn
+  unfold keyGen; fun_prop
 
 include hcoins hdepth in
 /-- Signing is uniformly strict PPT. -/
 theorem isPPTOn_sign :
     IsPPTOn (encPair encBits encBits) encBits
       (fun p => sign S T coins depth p.1 p.2) := by
-  have hleaf := computableInPolyTime_signWithLeaf (T := T) hcoins
-  have hdecode := keyDecoder.computableInPolyTime
-  have hcount : ComputableInPolyTime
-      (fun p : List Bool × List Bool => depth (keyDecoder.decode p.1).1)
-      (encPair encBits encBits) encUnary := by
-    polytime
-  have hpost : ComputableInPolyTime
-      (fun q : (List Bool × List Bool) × List Bool =>
-        signWithLeaf S T coins (keyDecoder.decode q.1.1).1 (keyDecoder.decode q.1.1).2 q.2 q.1.2)
-      (encPair (encPair encBits encBits) encBits) encBits := by
-    polytime
   have hyes : IsPPTOn (encPair encBits encBits) encBits
       (fun p : List Bool × List Bool => do
         let leaf ← BitString.sampleList (depth (keyDecoder.decode p.1).1)
         return signWithLeaf S T coins (keyDecoder.decode p.1).1 (keyDecoder.decode p.1).2 leaf
-          p.2) :=
-    hcount.sampleList.bind_with hpost.isPPTOn
+          p.2) := by fun_prop
   apply IsOraclePPTOn.isPPTOn
   simpa only [sign, apply_ite] using IsOraclePPTOn.ite'
     (condition := fun p : List Bool × List Bool => p.2.length = (keyDecoder.decode p.1).1)
-    (by polytime) (hyes.isOraclePPTOn (Operation := Empty))
+    (by fun_prop) (hyes.isOraclePPTOn (Operation := Empty))
     (((ComputableInPolyTime.const []).isPPTOn).isOraclePPTOn (Operation := Empty))
 
 variable (S) in
@@ -507,42 +515,19 @@ private theorem computableInPolyTime_chainCheck :
         chainCheck S q.1 q.2.1 q.2.2)
       (encPair encBits (encPair encBits (encList (encPair encBits encBits))))
       (encPair encBool encBits) := by
-  have hverify := S.verify_polyTime
-  have htoNat : ComputableInPolyTime Bool.toNat encBool encUnary :=
-    .of_tidy ComputableTidilyInPolyTime.bool_toUnary
   let encIn := encPair encBits (encPair encBits (encList (encPair encBits encBits)))
-  have hstep : ComputableInPolyTime
-      (fun q : (Bool × List Bool) × (Bool × (List Bool × List Bool)) => verifyStep S q.1 q.2)
-      (encPair (encPair encBool encBits) (encPair encBool (encPair encBits encBits)))
-      (encPair encBool encBits) := by
-    unfold verifyStep
-    polytime
   have hzip : ComputableInPolyTime
       (fun q : List Bool × List Bool × List (List Bool × List Bool) =>
         (q.2.1.take (q.2.1.length - 1)).zip q.2.2)
-      encIn (encList (encPair encBool (encPair encBits encBits))) := by
-    have htake : ComputableInPolyTime
-        (fun q : List Bool × List Bool × List (List Bool × List Bool) =>
-          q.2.1.take (q.2.1.length - 1)) encIn encBits := by
-      polytime
-    have hcerts : ComputableInPolyTime
-        (fun q : List Bool × List Bool × List (List Bool × List Bool) => q.2.2)
-        encIn (encList (encPair encBits encBits)) := by
-      polytime
-    exact .of_tidy ((ComputableTidilyInPolyTime.zip encBool (encPair encBits encBits)).comp
-      ((ComputableInPolyTime.bitsToList.comp htake).tidy.prod hcerts.tidy))
-  have hinit : ComputableInPolyTime
-      (fun q : List Bool × List Bool × List (List Bool × List Bool) =>
-        ((true, q.1) : Bool × List Bool)) encIn (encPair encBool encBits) := by
-    polytime
+      encIn (encList (encPair encBool (encPair encBits encBits))) :=
+    (ComputableInPolyTime.zip encBool (encPair encBits encBits)).comp
+      ((ComputableInPolyTime.bitsToList.comp (by fun_prop)).prod (by fun_prop))
   have hstep' : ComputableInPolyTime
       (fun p : (Bool × (Bool × List Bool)) × (Bool × (List Bool × List Bool)) =>
         verifyStep S p.1.2 p.2)
       (encPair (encPair encBool (encPair encBool encBits))
         (encPair encBool (encPair encBits encBits)))
-      (encPair encBool encBits) :=
-    hstep.comp (((ComputableInPolyTime.snd encBool (encPair encBool encBits)).comp
-      (ComputableInPolyTime.fst _ _)).prod (ComputableInPolyTime.snd _ _))
+      (encPair encBool encBits) := by dsimp only [verifyStep]; fun_prop
   refine ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.foldlWith_of_bounded_growth
     (encP := encBool) (encA := encPair encBool (encPair encBits encBits))
     (encL := encList (encPair encBool (encPair encBits encBits)))
@@ -551,17 +536,25 @@ private theorem computableInPolyTime_chainCheck :
       (q.2.1.take (q.2.1.length - 1)).zip q.2.2)
     (init := fun q => (true, q.1))
     (step := fun _ state e => verifyStep S state e)
-    (.const false) hzip.tidy hinit.tidy hstep'.tidy
+    (.const false) hzip.tidy (by apply ComputableInPolyTime.tidy; fun_prop) hstep'.tidy
     (growth := fun q => (encIn q).length + 3)
     (PolyBounded.self.add (.const 3)) ?_)
   intro q state e he
   have hmem := length_le_encList_of_mem (encPair encBits encBits) (List.of_mem_zip he).2
   have hle : (encList (encPair encBits encBits) q.2.2).length ≤ (encIn q).length := by
-    simp only [encIn, length_encPair]
-    omega
+    simp only [encIn, length_encPair]; omega
   simp only [verifyStep, length_encPair, encBits_apply, encBool_apply, List.length_singleton]
     at hmem ⊢
   omega
+
+omit hcoins in
+@[local fun_prop] private theorem chainCheck_fp {α : Type} {enc : α ↪ List Bool}
+    {root leaf : α → List Bool} {certs : α → List (List Bool × List Bool)}
+    (hr : ComputableInPolyTime root enc encBits) (hl : ComputableInPolyTime leaf enc encBits)
+    (hc : ComputableInPolyTime certs enc (encList (encPair encBits encBits))) :
+    ComputableInPolyTime (fun x => chainCheck S (root x) (leaf x) (certs x))
+      enc (encPair encBool encBits) :=
+  (computableInPolyTime_chainCheck (S := S)).comp (hr.prod (hl.prod hc))
 
 omit hcoins in
 include hdepth in
@@ -570,27 +563,16 @@ theorem computableInPolyTime_verify :
     ComputableInPolyTime
       (fun ((pk, msg, sig) : List Bool × List Bool × List Bool) => verify S depth pk msg sig)
       (encPair encBits (encPair encBits encBits)) encBool := by
-  have hverify := S.verify_polyTime
-  have hkey := keyDecoder.computableInPolyTime
-  have hsig := signatureDecoder.computableInPolyTime
-  have hchain := computableInPolyTime_chainCheck (S := S)
-  have htoNat : ComputableInPolyTime Bool.toNat encBool encUnary :=
-    .of_tidy ComputableTidilyInPolyTime.bool_toUnary
-  have heq : (fun p : List Bool × List Bool × List Bool => verify S depth p.1 p.2.1 p.2.2) =
-      fun p =>
-        ((signatureDecoder.decode p.2.2).1.length == depth (keyDecoder.decode p.1).1) &&
-          ((signatureDecoder.decode p.2.2).2.1.length + 1 == depth (keyDecoder.decode p.1).1) &&
-          (chainCheck S (keyDecoder.decode p.1).2 (signatureDecoder.decode p.2.2).1
-            (signatureDecoder.decode p.2.2).2.1).1 &&
-          S.verify (chainCheck S (keyDecoder.decode p.1).2 (signatureDecoder.decode p.2.2).1
-            (signatureDecoder.decode p.2.2).2.1).2
-            ((signatureDecoder.decode p.2.2).1.getD
-              ((signatureDecoder.decode p.2.2).1.length - 1) false).toNat p.2.1
-            (signatureDecoder.decode p.2.2).2.2 := by
-    funext p
-    simp only [verify, chainCheck, List.dropLast_eq_take, getLastD_eq_getD]
-  rw [heq]
-  polytime
+  dsimp only [verify]
+  simpa only [chainCheck, List.dropLast_eq_take] using (by fun_prop :
+    ComputableInPolyTime
+      (fun p : List Bool × List Bool × List Bool =>
+        let (n, root) := keyDecoder.decode p.1
+        let (leaf, certs, lastSig) := signatureDecoder.decode p.2.2
+        let (ok, cur) := chainCheck S root leaf certs
+        (leaf.length == depth n) && (certs.length + 1 == depth n) && ok &&
+          S.verify cur (leaf.getLastD false).toNat p.2.1 lastSig)
+      (encPair encBits (encPair encBits encBits)) encBool)
 
 end Efficiency
 

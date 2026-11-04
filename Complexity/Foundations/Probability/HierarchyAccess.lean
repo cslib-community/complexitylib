@@ -63,6 +63,22 @@ normalized child of its preceding finite iteration. -/
   Fin.cases (.row l (if pilot then .pilotCorrection 0 else .correction 0))
     (fun j => .row l (if pilot then .pilotNormalized j else .normalized j)) i
 
+/-- The final positive correction dispatches to the last normalized child, whose
+zero-based index is the preceding iterate. This structural index is not a precision. -/
+@[simp] theorem correctionAtomTask_last_succ (h l : ℕ) :
+    correctionAtomTask (k := h + 1) l false (Fin.last (h + 1)) =
+      .row l (.normalized (Fin.last h)) := by
+  unfold correctionAtomTask
+  rw [show Fin.last (h + 1) = (Fin.last h).succ from rfl, Fin.cases_succ]
+  rfl
+
+/-- Positive structural size selects its own last normalized index. -/
+theorem correctionAtomTask_last {q : ℕ} (hq : 0 < q) (l : ℕ) :
+    correctionAtomTask (k := q) l false (Fin.last q) =
+      .row l (.normalized ⟨q - 1, Nat.sub_lt hq (by decide)⟩) := by
+  obtain ⟨h, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (Nat.ne_of_gt hq)
+  exact correctionAtomTask_last_succ h l
+
 /-- Four distinct whole-function requests; the negative term is present only for residuals. -/
 structure RawRequests (k : ℕ) (Role Symbol : Type*) where
   /-- Direct normalized base bin. -/
@@ -177,20 +193,34 @@ variable {k : ℕ} {Role Symbol V Ω : Type*} [Fintype V] [Fintype Ω]
   (dens {σ | endpoint.retains channels σ y} : ℝ) /
     dens {σ | r.usage.retains channels σ y}
 
-/-- Equations (7.1)–(7.2), with a distinct special negative term for residuals.
-The child oracle returns arbitrary completed whole matrices on this draw. Midpoints are
-function arguments and not parameters stored by the right child. -/
-@[expose] noncomputable def rawSample (l bin : ℕ) (t : RawTask k)
+/-- Positive direct and shared-midpoint product contribution of one raw bin. Keeping
+this separate lets bin assembly include the special negative correction only once. -/
+@[expose] noncomputable def rawPositiveSample (l bin : ℕ) (t : RawTask k)
     (source midpoint endpoint : Channel Role (List Symbol)) (b : ℝ)
     (child : Request k Role Symbol → Matrix V V ℝ) (x y : V) : ℝ :=
   let R := rawRequests l bin t source midpoint endpoint b
   b * usageRatio channels endpoint R.direct y * child R.direct x y +
     b * usageRatio channels endpoint R.right y *
       (midpoint.rate / (dens {σ | midpoint.retains channels σ y} : ℝ)) *
-      ∑ z, child R.left x z * child R.right z y -
-    match R.negative with
-    | none => 0
-    | some r => midpoint.rate * usageRatio channels endpoint r y * child r x y
+      ∑ z, child R.left x z * child R.right z y
+
+/-- Special endpoint correction at scale f. It is absent for non-residual raw tasks;
+residual bin assembly subtracts this contribution once, separately from positive bins. -/
+@[expose] noncomputable def rawNegativeSample (l bin : ℕ) (t : RawTask k)
+    (source midpoint endpoint : Channel Role (List Symbol)) (b : ℝ)
+    (child : Request k Role Symbol → Matrix V V ℝ) (x y : V) : ℝ :=
+  match (rawRequests l bin t source midpoint endpoint b).negative with
+  | none => 0
+  | some r => midpoint.rate * usageRatio channels endpoint r y * child r x y
+
+/-- Equations (7.1)–(7.2), with a distinct special negative term for residuals.
+The child oracle returns arbitrary completed whole matrices on this draw. Midpoints are
+function arguments and not parameters stored by the right child. -/
+@[expose] noncomputable def rawSample (l bin : ℕ) (t : RawTask k)
+    (source midpoint endpoint : Channel Role (List Symbol)) (b : ℝ)
+    (child : Request k Role Symbol → Matrix V V ℝ) (x y : V) : ℝ :=
+  rawPositiveSample channels l bin t source midpoint endpoint b child x y -
+    rawNegativeSample channels l bin t source midpoint endpoint b child x y
 
 /-- Equation (7.3) on a fixed copy-symbol part. The routing fraction is already included
 in the supplied residual bin, rather than applied to its conditional mean. -/

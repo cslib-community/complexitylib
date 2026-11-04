@@ -33,7 +33,8 @@ true tag still requires the visible word-fit condition for `1`.
 ## Main results
 
 * `Realizes.Witness.glueVectorOfScalars`: retain supplied scalar code and its maximum bank.
-* `Realizes.glueVector`: realize a finite result using certified scalar coordinate computations.
+* `Realizes.Witness.glueVector`, `Realizes.glueVector`: realize a finite result using certified
+  scalar coordinate computations, retaining or erasing the witness data.
 * `Realizes.addWords`, `Realizes.increment`, `Realizes.decrement`: charged scalar word arithmetic.
 * `Realizes.returnNone`, `Realizes.returnSome`: charged optional-word results.
 

@@ -277,11 +277,15 @@ theorem computableInPolyTime_step : ComputableInPolyTime step encState encState 
   rw [show step = _ from funext step_eq]
   refine ite (optionIsSome value_pt) (ite (by fun_prop) id' ?_)
     (ite (by fun_prop) (by fun_prop) ?_)
-  · exact finite_cases (tagEncoding := encPair encKind encBool)
+  · refine finite_cases (tagEncoding := encPair encKind encBool)
       (tag := fun s => (s.top.token.1, s.top.first.isSome))
-      (branch := fun t => retStep t.1 t.2) (by fun_prop) fun t => retStep_pt t.1 t.2
-  · exact finite_cases (tagEncoding := encKind) (tag := fun s => s.head.1) (branch := readStep)
-      (by fun_prop) readStep_pt
+      (branch := fun t => retStep t.1 t.2) ?_ ?_
+    · fun_prop
+    · intro t; exact retStep_pt t.1 t.2
+  · refine finite_cases (tagEncoding := encKind) (tag := fun s => s.head.1)
+      (branch := readStep) ?_ ?_
+    · fun_prop
+    · exact readStep_pt
 
 /-- The initial state is polynomial-time: its encoding frames the encoded formula. -/
 private lemma init_pt : ComputableInPolyTime init encQBF encState := by

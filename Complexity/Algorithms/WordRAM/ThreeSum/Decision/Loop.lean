@@ -14,7 +14,8 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Body
 
 The invariant records exactly the processed entries of the existing emitted-node list. Every
 pointer and signed cell is read from its actual represented block; all future entries survive
-because the matrix/callee workspace is above twice the preprocessing word envelope.
+because the matrix/callee workspace starts at the independently supplied live allocation frontier.
+The word envelope is used only to bound values and physical width.
 
 ## Main results
 
@@ -33,35 +34,32 @@ open Cslib.Algorithms.ThreeSum (Convolution)
 open Cslib.Algorithms.ThreeSum.ChanHe (Node)
 
 /-- Execute all actual pointers, retaining every packed input and catalogue cell. -/
-theorem exec_calls {r κ n w tab U G : ℕ} (c : Host.Callee r)
+theorem exec_calls {r κ n w tab U G H : ℕ} (c : Host.Callee r)
     (out : List (ℕ × Node)) (x : Data (registerCount r))
     (hw : width κ c.widthCoefficient n ≤ w)
     (hN : 4 * G < (n + 2) ^ envelopeExponent κ)
-    (htab : tab < (n + 2) ^ envelopeExponent κ)
-    (hnum : out.length < (n + 2) ^ envelopeExponent κ)
+    (hH : H ≤ (n + 2) ^ envelopeExponent κ)
     (hwords : ∀ p, x.mem p < (n + 2) ^ envelopeExponent κ)
     (hstored : ChanHe.Traversal.StoredNodes U G tab out x.mem)
-    (hc : Controls tab out.length (4 * G) ((n + 2) ^ envelopeExponent κ) x)
+    (hlayout : ChanHe.Traversal.OutputLayout G tab H out)
+    (hc : Controls tab out.length (4 * G) ((n + 2) ^ envelopeExponent κ) H x)
     (hk : x.regs (controllerRegisters r current) = 0)
     (hb : x.regs (controllerRegisters r answer) = 0) :
-    ∃ y, ExecWithin w (calls c) x y
+    ∃ y, ExecWithin w (calls c.code) x y
         (out.length * (Host.callerTime (4 * G)
           (c.time (Host.sideLength (4 * G)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 12) + 2) ∧
       y.regs (controllerRegisters r answer) ≤ 1 ∧
       (y.regs (controllerRegisters r answer) = 1 ↔
         ∃ i : Fin out.length, Convolution (4 * G) (out[i.val].2.oneArray U)) ∧
-      ∀ p < 2 * (n + 2) ^ envelopeExponent κ, y.mem p = x.mem p := by
+      ∀ p < H, y.mem p = x.mem p := by
   let V := (n + 2) ^ envelopeExponent κ
   let I (z : Data (registerCount r)) : Prop :=
     z.regs (controllerRegisters r current) ≤ out.length ∧
-    Controls tab out.length (4 * G) V z ∧ z.regs (controllerRegisters r answer) ≤ 1 ∧
+    Controls tab out.length (4 * G) V H z ∧ z.regs (controllerRegisters r answer) ≤ 1 ∧
     (z.regs (controllerRegisters r answer) = 1 ↔ ∃ i : Fin out.length,
       i.val < z.regs (controllerRegisters r current) ∧
         Convolution (4 * G) (out[i.val].2.oneArray U)) ∧
-    ∀ p < 2 * V, z.mem p = x.mem p
-  have hptr (i : Fin out.length) : x.mem (tab + i.val) = out[i.val].1 := by
-    simpa using
-      hstored.pointers.get i.val (by simpa only [List.length_map] using i.isLt)
+    ∀ p < H, z.mem p = x.mem p
   have hval (i : Fin out.length) (u : ℕ) (hu : u < 4 * G) :
       |out[i.val].2.oneArray U u| ≤ (V : ℤ) := by
     have hm := hstored.cells i ⟨u, hu⟩
@@ -75,7 +73,7 @@ theorem exec_calls {r κ n w tab U G : ℕ} (c : Host.Callee r)
     exact_mod_cast hmag
   have hbody (z : Data (registerCount r)) (hz : I z)
       (hlt : (Cond.lt (controllerRegisters r current) (controllerRegisters r count)).Holds z) :
-      ∃ y, ExecWithin w (body c) z y
+      ∃ y, ExecWithin w (body c.code) z y
           (Host.callerTime (4 * G)
             (c.time (Host.sideLength (4 * G)) (2 * V + 1)) + 10) ∧
         I y ∧ out.length - y.regs (controllerRegisters r current) <
@@ -84,15 +82,17 @@ theorem exec_calls {r κ n w tab U G : ℕ} (c : Host.Callee r)
     have hzklt : z.regs (controllerRegisters r current) < out.length := by
       simpa only [Cond.holds_lt, hzc.count] using hlt
     let i : Fin out.length := ⟨z.regs (controllerRegisters r current), hzklt⟩
-    have hp : z.mem (tab + i.val) = out[i.val].1 :=
-      (hzm _ (by omega)).trans (hptr i)
-    have hpbound : out[i.val].1 < V := by rw [← hptr i]; exact hwords _
+    have hzstored := hstored.frame hlayout hzm
+    have hp : z.mem (tab + i.val) = out[i.val].1 := by
+      simpa using hzstored.pointers.get i.val (by simpa only [List.length_map] using i.isLt)
+    have hpend := hlayout.payload_end i
     have hmem (u : ℕ) (hu : u < 4 * G) :
         z.mem (z.mem (tab + i.val) + u) = Signed.encode (out[i.val].2.oneArray U u) := by
-      rw [hp, hzm _ (by omega)]
-      exact hstored.cells i ⟨u, hu⟩
+      rw [hp]
+      exact hzstored.cells i ⟨u, hu⟩
     obtain ⟨y, he, hyc, hyk, hyb, hya, hym⟩ := exec_body c z (out[i.val].2.oneArray U)
-      hw hN htab hnum hzklt hzc rfl rfl hzb (by rw [hp]; exact hpbound) (hval i) hmem
+      hw hN hH hlayout.table_end hzklt hzc rfl rfl hzb
+      (by rw [hp]; exact hpend) (hval i) hmem
     change y.regs (controllerRegisters r current) = z.regs (controllerRegisters r current) + 1
       at hyk
     refine ⟨y, he, ⟨by omega, hyc, hyb, ?_, ?_⟩, ?_⟩

@@ -28,7 +28,9 @@ uses one fixed body emitter and static registers for the mutable state and count
 ## Main results
 
 * `iterationSum_eq`: the native grading rule's semantic sum is memory charge plus local work.
-* `Realizes.iterateRuntime`: one uniform body certificate realizes a runtime-bounded loop.
+* `Realizes.Witness.loopEmit_spec`: the loop emitter with additive per-iteration overhead.
+* `Realizes.Witness.iterateRuntime`, `Realizes.iterateRuntime`: one uniform body witness or
+  certificate realizes a runtime-bounded loop.
 
 The iteration grading and realization are original infrastructure over the existing free monad
 and structured Word-RAM code. No additional program syntax or memory model is introduced.
