@@ -5,6 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 
+import Complexity.Foundations.Probability.RootMetric.ConditionalWalk
 import Complexity.Foundations.Probability.SignedResidualBins
 import all Complexity.Foundations.Probability.DetectedHierarchy
 import all Complexity.Foundations.LinearAlgebra.Matrix.CorrectionHierarchy
@@ -492,5 +493,49 @@ example : HierarchyTask.residualRequests (k := 0) 1 src mid dst (1 / 8) =
      ⟨.row 1 .base, mid, ⟨2, 1 / 8, [9]⟩, ⟨2, 1 / 8, [9]⟩⟩,
      ⟨.row 1 (.correction 0), src, ⟨2, 1 / 2, [9]⟩, dst⟩] := by
   norm_num [HierarchyTask.residualRequests, src, mid, dst]
+
+-- A completed raw child is a genuine conditional-walk average. The existing hierarchy
+-- evaluator must read it before applying the nonlinear preparation gate.
+open Cslib in
+private def rawGraph (P : HierarchyParams 2 1 1 1 0) (x y : V P 0) :
+    RotationMap (RetainedPairSlice (full (α := Bool)) full x y) Bool :=
+  ⟨fun p => (⟨p.2, by simp [full]⟩, p.1.val), by
+    intro p
+    rcases p with ⟨⟨v, hv⟩, d⟩
+    rfl⟩
+
+open Cslib in
+private noncomputable def rawWalk (P : HierarchyParams 2 1 1 1 0) :
+    Bool → Matrix (V P 0) (V P 0) ℝ :=
+  conditionalWalk (full (α := Bool)) full (rawGraph P) (fun _ _ => 1)
+    (fun b x y => if b then C P x y else 0)
+
+open Cslib in
+private lemma rawWalk_eq (P : HierarchyParams 2 1 1 1 0) (b : Bool) (x y : V P 0) :
+    rawWalk P b x y = C P x y / 2 := by
+  norm_num [rawWalk, conditionalWalk, full, pow_succ, Module.End.mul_apply,
+    RotationMap.walk_apply, RotationMap.neighbor, rawGraph,
+    Fintype.expect_eq_sum_div_card, Fintype.sum_bool, smul_eq_mul, div_eq_mul_inv, mul_comm]
+  change (1 / 2 : ℚ) • (C P x y) = (1 / 2 : ℝ) * C P x y
+  norm_num [Rat.smul_def]
+
+example (P : HierarchyParams 2 1 1 1 0) (b : Bool) :
+    let child := Function.update (value P) (.residual 0) (rawWalk P b)
+    let B : DenseBinRecipe := ⟨id, fun _ => 1, 1, id, id, fun _ => 1, 1⟩
+    hierarchyTaskRecipe P (copies P) (fun _ => full) (fun _ => full) (C P)
+      (fun x => if x = 0 then 1 else 0) (fun _ => full) (fun _ => full) (fun _ => hit)
+      (sampling P) child (.residualPreparation 0 0) B ((), true) 0 1 = 1 / 4 ∧
+    hierarchyTaskRecipe P (copies P) (fun _ => full) (fun _ => full) (C P)
+      (fun x => if x = 0 then 1 else 0) (fun _ => full) (fun _ => full) (fun _ => hit)
+      (sampling P) child (.residualPreparation 0 0) B ((), true) 0 0 = 0 := by
+  dsimp only
+  have he := hierarchyTaskRecipe_residualPreparation P (copies P)
+    (fun _ => full) (fun _ => full) (C P) (fun x => if x = 0 then 1 else 0)
+    (fun _ => full) (fun _ => full) (fun _ => hit) (sampling P)
+    (fun b => Function.update (value P) (.residual 0) (rawWalk P b)) 0 0
+    (rawWalk P) (by intro b; simp)
+    (⟨id, fun _ => 1, 1, id, id, fun _ => 1, 1⟩ : DenseBinRecipe) b ((), true)
+  rw [he]
+  norm_num [DenseRowRecipe.preparation, atomPrep, rowGate, rawWalk_eq, C, V]
 
 end ComplexityTests.HierarchyTasks
