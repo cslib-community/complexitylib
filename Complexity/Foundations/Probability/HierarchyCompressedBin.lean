@@ -247,4 +247,122 @@ theorem exists_compressedBin_root_bound (HP : FourthRootHierarchyParams 16 1 16 
         · rw [sub_self, abs_zero]
           exact mul_nonneg hC (prefixErrorBudget_nonneg hε)
 
+/-- Sharp conditional comparison for the constructed zero-start compressed consumer.
+The truth is the deterministic dense polynomial-preparation bin, with the actual terminal
+rank and source/usage slice mean. The no-overflow premise concerns the executed history.
+Only post-increment clipped errors and the final error are assumed: no prefix-zero accuracy
+or supplied initial truth is required. Weighted mean/noise and recursive IH payments remain open. -/
+theorem exists_compressedBin_sharp_noOverflow (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    {cap ζ : ℝ} (hcap : 0 ≤ cap) (hζ : 0 < ζ) :
+    ∃ Cfinal : ℝ, 0 ≤ Cfinal ∧ ∀ floor : ℝ, 0 < floor → floor ≤ HP.η →
+      floor ≤ max cap 16 → ∃ Cpre : ℝ, 0 ≤ Cpre ∧ ∀ {P : ℕ} [Fact P.Prime] (B : BudgetData HP P)
+      (b : ℕ → ℝ), (∀ i, 0 < b i) → (∀ i, b i = 16 * b (i + 1)) →
+      ∀ (M bin k : ℕ)
+        (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)), Admissible r →
+      r.terminal.rate = rate k →
+      B.cutoff bin = boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1) b cap bin
+        (fun _ => 1) → B.auxiliary bin = polynomialPrepCutoff4 HP.θ →
+      ∀ (G : Matrix (ZMod P) (ZMod P) ℝ), (∀ x y, 0 ≤ G x y) →
+      (∀ F, B.initialPrefixes M r = some F → ∀ W,
+        (List.range (Nat.log2 M + 1)).mapM (fun j =>
+          B.complete M r (B.binPreparation bin r (F (j + 1)))
+            (dyadicSlack (Nat.log2 M + 1) j)) = some W →
+        ∀ σ x i, i < Nat.log2 M + 1 →
+          stepThreshold {z | r.terminal.retains (channels B.padding) σ z}
+            (compatibleCapacity HP.K (Nat.log2 M + 1)) (fun _ => HP.K)
+            (dyadicFloor floor (Nat.log2 M + 1))
+            (firstSignalIncrement F k
+              (secondSignalIncrement (fun j σ x y => W[j - 1]?.getD 0 σ x y) ζ) σ x)
+            ⟨0, 0⟩ i ≤ dyadicFloor floor (Nat.log2 M + 1) i) →
+      ∀ (ε : ℕ → ℝ), (∀ i < Nat.log2 M + 1, 0 ≤ ε (i + 1)) →
+      (∀ F, B.initialPrefixes M r = some F → ∀ W,
+        (List.range (Nat.log2 M + 1)).mapM (fun j =>
+          B.complete M r (B.binPreparation bin r (F (j + 1)))
+            (dyadicSlack (Nat.log2 M + 1) j)) = some W →
+        ∀ i < Nat.log2 M + 1, ∀ σ x y,
+          r.terminal.retains (channels B.padding) σ y →
+          floor / 2 ≤ requestSignals ζ B.padding id r (fun _ => G)
+            (B.binPreparation bin r (fun _ => G)) σ x y 0 →
+          clippedError
+            (requestSignals ζ B.padding id r (fun _ => G)
+              (B.binPreparation bin r (fun _ => G)) σ x y 0)
+            (requestSignals ζ B.padding id r (fun _ => G)
+              (B.binPreparation bin r (fun _ => G)) σ x y 1)
+            (uncompressedRow
+              (firstSignalIncrement F k
+                (secondSignalIncrement (fun j σ x y => W[j - 1]?.getD 0 σ x y) ζ) σ x)
+              0 (i + 1) y) ≤ ε (i + 1)) →
+      ∀ εfinal : ℝ, 0 ≤ εfinal →
+      (∀ F, B.initialPrefixes M r = some F → ∀ W,
+        (List.range (Nat.log2 M + 1)).mapM (fun j =>
+          B.complete M r (B.binPreparation bin r (F (j + 1)))
+            (dyadicSlack (Nat.log2 M + 1) j)) = some W →
+        ∀ σ x y,
+          r.terminal.retains (channels B.padding) σ y →
+          clippedError
+            (requestSignals ζ B.padding id r (fun _ => G)
+              (B.binPreparation bin r (fun _ => G)) σ x y 0)
+            (requestSignals ζ B.padding id r (fun _ => G)
+              (B.binPreparation bin r (fun _ => G)) σ x y 1)
+            (uncompressedRow
+              (firstSignalIncrement F k
+                (secondSignalIncrement (fun j σ x y => W[j - 1]?.getD 0 σ x y) ζ) σ x)
+              0 (Nat.log2 M + 1) y) ≤ εfinal) →
+      ∀ A, B.compressedBin M bin k ζ floor r = some A → ∀ σ x y,
+        r.terminal.retains (channels B.padding) σ y →
+        |A σ x y ^ (4⁻¹ : ℝ) -
+          denseChild B.padding id r (B.cutoff bin) (polynomialPrepCutoff4 HP.θ)
+            HP.ρ HP.K G σ x y ^ (4⁻¹ : ℝ)| ≤
+          Cpre * ∑ i ∈ range (Nat.log2 M + 1), dyadicFloor floor (Nat.log2 M + 1) i * ε (i + 1) +
+          Cfinal * εfinal := by
+  obtain ⟨Cf, hCf, hf⟩ := DenseBinRecipe.exists_polynomialUnrouted_sharp_noOverflow HP hcap hζ
+  refine ⟨Cf, hCf, ?_⟩
+  intro floor hfloor hmargin hfloorT
+  obtain ⟨Cp, hCp, hc⟩ := hf floor hfloor hmargin hfloorT
+  refine ⟨Cp, hCp, ?_⟩
+  intro P _ B b hb hstep M bin k r hr hrate hcut haux G hG hno ε hε herr
+    εfinal hεfinal herrfinal A hA σ x y hy
+  let truth := requestSignals ζ B.padding id r (fun _ => G)
+    (B.binPreparation bin r (fun _ => G)) σ x
+  have htfirst (z : ZMod P) (_hz : r.terminal.retains (channels B.padding) σ z) :
+      0 ≤ truth z 0 := by
+    simp only [truth, requestSignals, Fin.isValue, ↓reduceIte, hrate]
+    exact div_nonneg (hG x z) (rate_pos k).le
+  unfold compressedBin at hA
+  split at hA
+  · contradiction
+  · cases hF : B.initialPrefixes M r with
+    | none => simp [hF] at hA
+    | some F =>
+      simp only [hF, bind, Option.bind_some] at hA
+      cases hW : (List.range (Nat.log2 M + 1)).mapM (fun j =>
+          B.complete M r (B.binPreparation bin r (F (j + 1)))
+            (dyadicSlack (Nat.log2 M + 1) j)) with
+      | none => simp [hW] at hA
+      | some W =>
+        simp only [hW, Option.bind_some, pure] at hA
+        have ha := Option.some.inj hA
+        subst A
+        dsimp only
+        rw [denseChild, ← haux]
+        rw [normalizedRequest_eq_output (B.cutoff bin) HP.ρ HP.K hζ B.padding id r hr]
+        change |(if r.usage.retains (channels B.padding) σ y then _ else 0) ^ (4⁻¹ : ℝ) -
+          (if r.usage.retains (channels B.padding) σ y then _ else 0) ^ (4⁻¹ : ℝ)| ≤ _
+        split_ifs with hu
+        · rw [hcut]
+          exact hc b hb hstep bin {z | r.terminal.retains (channels B.padding) σ z}
+            (compatibleCapacity HP.K (Nat.log2 M + 1))
+            (firstSignalIncrement F k
+              (secondSignalIncrement (fun j σ x y => W[j - 1]?.getD 0 σ x y) ζ) σ x)
+            truth 0 (Nat.log2 M + 1) (hno F hF W hW σ x)
+            (fun z hz => htfirst z (mem_filter.mp hz).2) (fun i => ε (i + 1)) hε
+            (fun i hi z hz hd => herr F hF W hW i hi σ x z (mem_filter.mp hz).2 hd)
+            εfinal hεfinal
+            (fun z hz => herrfinal F hF W hW σ x z (mem_filter.mp hz).2)
+            y (mem_filter.mpr ⟨mem_univ _, hy⟩)
+        · rw [sub_self, abs_zero]
+          exact add_nonneg (mul_nonneg hCp (sum_nonneg fun i hi =>
+            mul_nonneg (dyadicFloor_nonneg hfloor.le _ _) (hε i (mem_range.mp hi))))
+            (mul_nonneg hCf hεfinal)
+
 end Matrix.HierarchyParams.H4RankEnvironment.BudgetData

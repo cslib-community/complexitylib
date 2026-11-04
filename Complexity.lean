@@ -3211,6 +3211,7 @@ public import Complexity.Foundations.Analysis.RowCompression
 public import Complexity.Foundations.Analysis.RowCompression.BoundedCap
 public import Complexity.Foundations.Analysis.RowCompression.ClippedError
 public import Complexity.Foundations.Analysis.RowCompression.Decoder
+public import Complexity.Foundations.Analysis.RowCompression.DecoderSharp
 public import Complexity.Foundations.Analysis.RowCompression.FalseOverflow
 public import Complexity.Foundations.Analysis.RowCompression.Floors
 public import Complexity.Foundations.Analysis.RowCompression.FourthMoment

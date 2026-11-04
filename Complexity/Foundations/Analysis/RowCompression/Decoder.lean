@@ -30,24 +30,23 @@ open scoped BigOperators
 
 /-- Common-loss comparison with arbitrary nonnegative truth and bounded first loss.
 Only the decoder is saturated; raw signals and compression defaults retain their units. -/
-theorem exists_boundedLoss_decoder_bound (H : ℝ → ℝ → ℝ → ℝ) {T R : ℝ}
+theorem boundedLoss_decoder_bound (H : ℝ → ℝ → ℝ → ℝ) {T R : ℝ}
     (hT : 0 < T) (hR : 0 ≤ R)
     (hsat : ∀ d v r, H d v r = H (min T d) v (min T r))
     (hrange : ∀ d v r, 0 ≤ H d v r ^ (4⁻¹ : ℝ) ∧ H d v r ^ (4⁻¹ : ℝ) ≤ R)
-    (hdist : ∃ L : ℝ, 0 ≤ L ∧ ∀ d v r d' v' r',
+    {L : ℝ} (hL : 0 ≤ L) (hroot : ∀ d v r d' v' r',
       |H d v r ^ (4⁻¹ : ℝ) - H d' v' r' ^ (4⁻¹ : ℝ)| ≤
         L * (|d - d'| + |v - v'| + |r - r'|))
     {K : ℕ} (hK : 0 < K) :
-    ∃ C : ℝ, 0 ≤ C ∧ ∀ {ι : Type*} (s : Finset ι) (z : ℝ)
+    ∀ {ι : Type*} (s : Finset ι) (z : ℝ)
       (truth raw loss : ι → Fin 2 → ℝ),
       (∀ y ∈ s, 0 ≤ truth y 0) → (∀ y ∈ s, |loss y 0| ≤ T) →
       ∀ ε : ℝ, 0 ≤ ε →
       (∀ y ∈ s, clippedError (truth y 0) (truth y 1) (raw y) ≤ ε) →
-      ∀ y ∈ s, |stateRootError H s K ⟨z, raw + loss⟩ ⟨z, truth + loss⟩ y| ≤ C * ε := by
-  obtain ⟨L, hL, hroot⟩ := hdist
+      ∀ y ∈ s, |stateRootError H s K ⟨z, raw + loss⟩ ⟨z, truth + loss⟩ y| ≤
+        (4 * R + L * (2 * (4 * T + 5) + 1)) * ε := by
   let B := 4*T+5
   have hB : 0 ≤ B := by dsimp only [B]; positivity
-  refine ⟨4*R+L*(2*B+1), by positivity, ?_⟩
   intro ι s z truth raw loss hfirst hloss ε hε herr y hy
   by_cases hs : ε ≤ 1/2
   · have he (x : ι) (hx : x ∈ s) := abs_sub_le_of_clippedError_le
@@ -80,6 +79,25 @@ theorem exists_boundedLoss_decoder_bound (H : ℝ → ℝ → ℝ → ℝ) {T R 
     apply hh.trans
     have he : 1/2 < ε := not_le.mp hs
     nlinarith [mul_nonneg (by positivity : 0 ≤ L*(2*B+1)) hε]
+
+/-- Existential form of the explicit common-loss decoder coefficient. -/
+theorem exists_boundedLoss_decoder_bound (H : ℝ → ℝ → ℝ → ℝ) {T R : ℝ}
+    (hT : 0 < T) (hR : 0 ≤ R)
+    (hsat : ∀ d v r, H d v r = H (min T d) v (min T r))
+    (hrange : ∀ d v r, 0 ≤ H d v r ^ (4⁻¹ : ℝ) ∧ H d v r ^ (4⁻¹ : ℝ) ≤ R)
+    (hdist : ∃ L : ℝ, 0 ≤ L ∧ ∀ d v r d' v' r',
+      |H d v r ^ (4⁻¹ : ℝ) - H d' v' r' ^ (4⁻¹ : ℝ)| ≤
+        L * (|d - d'| + |v - v'| + |r - r'|))
+    {K : ℕ} (hK : 0 < K) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ {ι : Type*} (s : Finset ι) (z : ℝ)
+      (truth raw loss : ι → Fin 2 → ℝ),
+      (∀ y ∈ s, 0 ≤ truth y 0) → (∀ y ∈ s, |loss y 0| ≤ T) →
+      ∀ ε : ℝ, 0 ≤ ε →
+      (∀ y ∈ s, clippedError (truth y 0) (truth y 1) (raw y) ≤ ε) →
+      ∀ y ∈ s, |stateRootError H s K ⟨z, raw + loss⟩ ⟨z, truth + loss⟩ y| ≤ C * ε := by
+  obtain ⟨L, hL, hroot⟩ := hdist
+  exact ⟨4 * R + L * (2 * (4 * T + 5) + 1), by positivity,
+    boundedLoss_decoder_bound H hT hR hsat hrange hL hroot hK⟩
 
 /-- Accuracy against the uncompressed truth from all actual raw-prefix clipped errors.
 The decoder constant precedes the scale, schedule, horizon and input rows. Stationary

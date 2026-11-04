@@ -778,13 +778,26 @@ for arbitrary defaults and second signals, without assuming sparse walk inputs.
 against the genuine dense normalized recipe on a deterministic canonical matrix, with polynomial
 preparation, full terminal rank and the original source/usage conditional mean.
 
-This remains conditional on clipped-error bounds for every executed raw prefix, **including
-prefix zero**. The zero prefix is not free for a nonzero canonical matrix, so this bound alone
-does not give decreasing parent error as the budget grows. The new iterate regression starts
-from a supplied nonzero truth row; it is not an evaluator-history or parent-induction fixture.
-The positive constant-one compressed fixture has not been migrated to polynomial preparation.
-Generalizing the sharp/integrated moment payments, deriving mean/noise envelopes from ALL
-actual lower-budget errors, and a validated positive compressed consumer remain open, as do
+The older all-prefix comparison still charges prefix zero. The
+[sharp shared kernel](../../Complexity/Foundations/Analysis/RowCompression/DecoderSharp.lean)
+now avoids that charge: `BudgetData.exists_compressedBin_sharp_noOverflow` compares the actual
+zero-start `compressedBin` with the same dense polynomial-preparation target, conditional on
+no overflow and post-increment clipped errors. Its bound is a weighted sum of those errors plus
+the final raw error. The final coefficient is chosen before the compression floor, scales, bin,
+prime and rows. The stationary coefficient is explicitly `36 L + 72 L / δ`; reducing δ alone
+does not pay the earlier errors. The actual scheduled envelopes must pay the weighted sum.
+The shared first-overflow tail also chooses its coefficient before δ and starts errors at the
+already-added overflow input. Fixed-HP stationary, no-overflow and tail clients specialize these
+shared proofs. The actual-bin tail currently compares against its stationary continuation;
+its truth decomposition and integrated moment payment remain to be connected.
+
+The zero-start regression uses the actual ratio-16 top/fine numerator and polynomial preparation,
+with nonzero truth and a provably inaccurate prefix zero, then checks zero discrepancy after an
+exact increment. This is a deterministic decoder regression, not an evaluator-history accuracy
+fixture. The positive constant-one compressed fixture has not been migrated to polynomial
+preparation; its half-bin geometry is not the polynomial recipe. Deriving mean/noise envelopes
+and their weighted payments from ALL actual lower-budget errors, the false-overflow/heavy-event
+payments, and a validated positive polynomial-preparation compressed consumer remain open, as do
 nonconstant routing and the general compressed parent-error theorem.
 
 The simultaneous all-lower-budget row/vector availability, canonical error, support and range
