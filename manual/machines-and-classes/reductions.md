@@ -128,7 +128,32 @@ suffix offset and reads false in the intervening gap; virtual-word reconstructio
 only for valid cuts. Large parameters retain the general charged-header bound.
 [Runtime clients](../../ComplexityTests/VirtualWordRuntime.lean) check a nonconstant parameter
 family, native certificates, boundaries and invalid data. These results initialize and execute
-an individual read; they do not yet feed a certified evaluator or regenerate its answers.
+an individual read. For a whole-word consumer, import
+`Complexity.Computability.Complexity.Reduction.LocalSelfReducibility.RuntimeEvaluator`.
+`Turing.VirtualWord.Evaluator.machine δ` loads the same supplied header, then scans all
+`cut + suffix.length` virtual positions twice with a saved Boolean transition state. Its counter
+is binary, each read goes back to the original input, and it never stores the reconstructed
+word. A zero-length virtual word halts after initialization. For valid cuts,
+`value_word` identifies every transition with the corresponding virtual bit and
+`evaluate_word` gives the ordinary finite-state fold of two copies of the virtual word;
+`LocalSelfReductionQuery.runtime_evaluate` identifies actual output with the fold of two complete
+passes over the exact reconstructed query.
+
+`Evaluator.evaluate_inSpace` supplies a native program with shared constants and charges the
+actual header plus a logarithmic encoded-input counter. `evaluate_inOriginalLogSpace` uses the
+same admissibility conditions as the accessor; physical consumer states have length at most
+$816(\log_2 n+1)$ against the original length $n$, before a fixed compiler factor.
+The header's address field is used only by initialization's discarded read; the evaluator
+computes its own addresses. Invalid cuts retain the accessor's declared-offset/false-gap
+behavior and general charged-header bound. The
+[complete checked client](../../ComplexityTests/VirtualWordEvaluator.lean) runs nonconstant OR
+and NAND-state consumers, changing runtime families, empty and length-one words, non-power-of-two
+lengths, oversized suffixes and invalid cuts. `family_terminates` certifies the read loop for
+unbounded lengths, rather than only those finite executions.
+
+This consumer is restricted to two passes and one Boolean of saved state. General native
+logspace predicate substitution, generating the supplied header from a query generator and
+regenerating an answer word remain open.
 
 **The transfer lemma remains open**: native virtual-input/answer regeneration for the unbounded
 evaluator and the adaptive-to-tt conversion still need proofs. No desired autoreduction is
