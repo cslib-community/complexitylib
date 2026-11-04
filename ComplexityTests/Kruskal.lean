@@ -32,7 +32,7 @@ public section
 namespace ComplexityTests.Kruskal
 
 open Cslib.Algorithms.Lean.Kruskal
-open Cslib.Algorithms.Lean.DisjointSet
+open Cslib.DataStructure.DisjointSet
 
 /-! ### 1. Boundary cases (`n = 0`, `n = 1`, self-loops) -/
 

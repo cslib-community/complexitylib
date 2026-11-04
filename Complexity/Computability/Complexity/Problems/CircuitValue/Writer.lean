@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Classes.LogSpace
 public import Complexity.Computability.Machines.ReadMachine.Tidy
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Doubled
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import Mathlib.Data.List.GetD

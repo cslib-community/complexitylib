@@ -52,6 +52,10 @@ class CacheBootstrapTests(unittest.TestCase):
             path = self.root / name
             path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(REPO / name, path)
+        # These mini-checkouts exercise cache dispatch with only a Demo library. The real
+        # manual preflight and its failure behavior are covered in test_quick_check.py.
+        for name in ("scripts/check_operator_manual.py", "scripts/test_operator_manual.py"):
+            self.write(name, "raise SystemExit(0)\n")
         self.write("scripts/cache/get.sh", FAKE_FETCH).chmod(0o755)
         self.write(".gitignore", ".lake/\n")
         self.write("lean-toolchain", "leanprover/lean4:v4.36.0-rc1\n")

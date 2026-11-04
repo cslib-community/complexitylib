@@ -282,6 +282,8 @@ variable {V ι κ : Type*} [Fintype V] [Fintype ι] [Fintype κ]
 /-- The correction cutoff `t ↦ f Q (t / f)` at rate `f`. -/
 noncomputable def cutoff (t : ℝ) : ℝ := f * P.Q (t / f)
 
+theorem cutoff_apply (t : ℝ) : P.cutoff f t = f * P.Q (t / f) := by rfl
+
 /-- The copy cutoff `t ↦ χ (t / f)` at rate `f`. -/
 noncomputable def copyCutoff (t : ℝ) : ℝ := P.χ (t / f)
 
@@ -289,9 +291,15 @@ noncomputable def copyCutoff (t : ℝ) : ℝ := P.χ (t / f)
 noncomputable def pilot : V → ℝ :=
   pilotMax (P.cutoff f) P.γ (columnDetector X Y P.ϕ P.ρ P.J P.K f) C P.k
 
+theorem pilot_eq : P.pilot X Y f C =
+    pilotMax (P.cutoff f) P.γ (columnDetector X Y P.ϕ P.ρ P.J P.K f) C P.k := by rfl
+
 /-- The actual correction `E = E_(k*)` with the column multipliers `γ (M y)`. -/
 noncomputable def correction : Matrix V V ℝ :=
   cutoffCorrectionIter (fun y t => P.cutoff f t * P.γ (P.pilot X Y f C y)) C P.k
+
+theorem correction_eq : P.correction X Y f C =
+    cutoffCorrectionIter (fun y t => P.cutoff f t * P.γ (P.pilot X Y f C y)) C P.k := by rfl
 
 /-- The corrected residual `D = C - E + E C`. -/
 noncomputable def residual : Matrix V V ℝ :=
@@ -304,6 +312,9 @@ theorem residual_eq : P.residual X Y f C =
 noncomputable def weight : Fin (P.m + 1) → V → ℝ :=
   detectorWeight P.κ (P.pilot X Y f C)
 
+/-- Copy weights read the completed pilot vector on the whole parent domain. -/
+theorem weight_eq : P.weight X Y f C = detectorWeight P.κ (P.pilot X Y f C) := by rfl
+
 /-- **The next transition matrix** `C⁺`, indexed by the lexicographically ordered copies. -/
 noncomputable def next : Matrix (Lex (V × Fin (P.m + 1))) (Lex (V × Fin (P.m + 1))) ℝ :=
   (copyStage (P.copyCutoff f) P.m (P.weight X Y f C) (P.residual X Y f C)).submatrix ofLex ofLex
@@ -311,6 +322,13 @@ noncomputable def next : Matrix (Lex (V × Fin (P.m + 1))) (Lex (V × Fin (P.m +
 /-- **The projection** `P_r` from the copies to their parents, weighted by the copy weights. -/
 noncomputable def proj [DecidableEq V] : Matrix (Lex (V × Fin (P.m + 1))) V ℝ :=
   (copyWeight (P.weight X Y f C)).submatrix ofLex id
+
+/-- Apply the copy projection by reading its parent and multiplying by its copy weight. -/
+theorem proj_mulVec [DecidableEq V] (v : V → ℝ) (a : Lex (V × Fin (P.m + 1))) :
+    (P.proj X Y f C *ᵥ v) a =
+      P.weight X Y f C (ofLex a).2 (ofLex a).1 * v (ofLex a).1 := by
+  change (copyWeight (P.weight X Y f C) *ᵥ v) (ofLex a) = _
+  exact copyWeight_mulVec _ _ _
 
 variable {X Y f C}
 
