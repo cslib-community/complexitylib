@@ -296,12 +296,12 @@ private def evalSignedMeasJet (dc : SubsetPairFold.DecodedPair × SubsetStepCtx)
   let measCtx : MeasStepCtx :=
     (dc.2.1, dc.2.2.2.1, dc.2.2.2.2.1, dc.2.2.2.2.2.1, (dc.1.1, dc.1.2.1), dc.2.2.2.2.2.2)
   let measJet := (MeasurementFold.run measurementStepBody dc.2.2.1
-    (measCtx, zeroJet dc.2.2.2.1.1 dc.2.2.2.1.2.1)).2.2.2
-  if dc.1.2.2 then smulJet dc.2.2.2.1.1 dc.2.2.2.1.2.1 (-1) measJet else measJet
+    (measCtx, zeroJet dc.2.jetOrder dc.2.precision)).2.2.2
+  if dc.1.2.2 then smulJet dc.2.jetOrder dc.2.precision (-1) measJet else measJet
 
 private theorem subsetPairStepBody_eq
     (inp : SubsetPairFold.DecodedPair × (SubsetStepCtx × JetRows)) :
-    subsetPairStepBody inp = (inp.2.1, addJet inp.2.1.2.2.1.1 inp.2.1.2.2.1.2.1 inp.2.2
+    subsetPairStepBody inp = (inp.2.1, addJet inp.2.1.jetOrder inp.2.1.precision inp.2.2
       (evalSignedMeasJet (inp.1, inp.2.1))) := rfl
 
 private theorem exists_computableInO_signedMeasJet :
@@ -310,7 +310,8 @@ private theorem exists_computableInO_signedMeasJet :
       ComputableInO evalSignedMeasJet
         (encPair SubsetPairFold.encDecodedPair encSubsetStepCtx) encJet
         (fun dc => ((2 * dc.2.2.1.2 + 1) ^ dc.2.2.1.1 + 1) *
-          (dc.2.1.2.1 * (2 ^ maxGroupDim dc.2.1.1 dc.2.1.2.1 dc.2.2.2.2.2.1.1 + 1) + 1) * P dc)
+          (dc.2.numGroups * (2 ^ maxGroupDim dc.2.numVars dc.2.numGroups dc.2.varGroups + 1) + 1) *
+            P dc)
         P := by
   obtain ⟨P₁, hP₁_pb, hPay⟩ := exists_computableInO_measPayload
   let eWC := encPair (encList encIntBin) encMeasStepCtx
@@ -322,14 +323,14 @@ private theorem exists_computableInO_signedMeasJet :
     (fst _ eAcc).snd'.prod (snd _ eAcc).fst'
   have haddM : PolyT
       (fun q : (((ℕ × ℕ) × List ℤ) × (MeasStepCtx × JetRows)) × JetRows =>
-        (q.1.2.1, addJet q.1.2.1.2.1.1 q.1.2.1.2.1.2.1 q.1.2.2 q.2))
+        (q.1.2.1, addJet q.1.2.1.jetOrder q.1.2.1.precision q.1.2.2 q.2))
       (encPair eMIn encJet) eAcc := by
     have hq1 := fst eMIn encJet; have hq2 := snd eMIn encJet
     have hctx := hq1.snd'.fst'; have hacc := hq1.snd'.snd'
-    have hJ : PolyT (fun q : _ × JetRows => q.1.2.1.2.1.1)
+    have hJ : PolyT (fun q : _ × JetRows => q.1.2.1.jetOrder)
         (encPair eMIn encJet) encUnary := by
       unfold encMeasStepCtx at hctx; exact hctx.snd'.fst'.fst'
-    have hℓ : PolyT (fun q : _ × JetRows => q.1.2.1.2.1.2.1)
+    have hℓ : PolyT (fun q : _ × JetRows => q.1.2.1.precision)
         (encPair eMIn encJet) encUnary := by
       unfold encMeasStepCtx at hctx; exact hctx.snd'.fst'.snd'.fst'
     exact hctx.prod (computableInPolyTime_addJet hJ hℓ hacc hq2)
@@ -415,9 +416,9 @@ private theorem exists_computableInO_signedMeasJet :
   have hparDC : PolyT (fun dc : _ × SubsetStepCtx => dc.2.2.1) eDC
       (encPair encUnary encNat) := by
     unfold eDC encSubsetStepCtx; exact (snd _ _).snd'.fst'
-  have hJ_dc : PolyT (fun dc : _ × SubsetStepCtx => dc.2.2.2.1.1) eDC encUnary := by
+  have hJ_dc : PolyT (fun dc : _ × SubsetStepCtx => dc.2.jetOrder) eDC encUnary := by
     unfold eDC encSubsetStepCtx; exact (snd _ _).snd'.snd'.fst'.fst'
-  have hℓ_dc : PolyT (fun dc : _ × SubsetStepCtx => dc.2.2.2.1.2.1) eDC encUnary := by
+  have hℓ_dc : PolyT (fun dc : _ × SubsetStepCtx => dc.2.precision) eDC encUnary := by
     unfold eDC encSubsetStepCtx; exact (snd _ _).snd'.snd'.fst'.snd'.fst'
   have hinitDC := hparDC.prod (hmkMCtx.prod (computableInPolyTime_zeroJet hJ_dc hℓ_dc))
   have hc_pb := ((fst encUnary encNat).comp hparDC).polyBounded
@@ -438,7 +439,7 @@ private theorem exists_computableInO_signedMeasJet :
   let L_opt (dc : SubsetPairFold.DecodedPair × SubsetStepCtx) := co1 * (L_wc dc + 1) ^ do1
   have hLopt_pb := NativeCertificate.polyBounded_pow_of_polyBounded hLwc_pb co1 do1
   let B_jet (dc : SubsetPairFold.DecodedPair × SubsetStepCtx) :=
-    dc.2.2.2.1.1 * (2 * (dc.2.2.2.1.2.1 *
+    dc.2.jetOrder * (2 * (dc.2.precision *
     (2 * ((dc.2.2.1.1 * ((dc.2.2.1.2).size + 1) + 1) + (L_opt dc + 1)) + 3)) + 1)
   have hBjet_pb : PolyBounded (fun dc => (eDC dc).length) B_jet :=
     hJ_dc.polyBounded.mul (((PolyBounded.const 2).mul (hℓ_dc.polyBounded.mul
@@ -453,17 +454,17 @@ private theorem exists_computableInO_signedMeasJet :
         ((PolyBounded.const 2).mul hBjet_pb)).add (.const 1)))).add (.const 1)
   have hrun_eq (dc : SubsetPairFold.DecodedPair × SubsetStepCtx) (j : ℕ) :
       (IndexFold.run (MeasurementFold.visit measurementStepBody) j
-        (dc.2.2.1, (mkMCtx dc, zeroJet dc.2.2.2.1.1 dc.2.2.2.1.2.1))).2 =
+        (dc.2.2.1, (mkMCtx dc, zeroJet dc.2.jetOrder dc.2.precision))).2 =
       (dc.2.2.1, (mkMCtx dc, (List.range j).foldl
         (fun acc i => (evalMeasPayload
           (Cslib.Radix.measurementValues dc.2.2.1.1 dc.2.2.1.2 i, mkMCtx dc)).elim acc
-          (fun y => addJet dc.2.2.2.1.1 dc.2.2.2.1.2.1 acc y))
-        (zeroJet dc.2.2.2.1.1 dc.2.2.2.1.2.1))) := by
+          (fun y => addJet dc.2.jetOrder dc.2.precision acc y))
+        (zeroJet dc.2.jetOrder dc.2.precision))) := by
     refine Prod.ext (MeasurementFold.prefix_parameters _ _ _ _) ?_
     rw [show (IndexFold.run (MeasurementFold.visit measurementStepBody) j
-        (dc.2.2.1, (mkMCtx dc, zeroJet dc.2.2.2.1.1 dc.2.2.2.1.2.1))).2.2 =
+        (dc.2.2.1, (mkMCtx dc, zeroJet dc.2.jetOrder dc.2.precision))).2.2 =
         (MeasurementFold.runPrefix measurementStepBody dc.2.2.1 j
-          (mkMCtx dc, zeroJet dc.2.2.2.1.1 dc.2.2.2.1.2.1)).2.2 from rfl,
+          (mkMCtx dc, zeroJet dc.2.jetOrder dc.2.precision)).2.2 from rfl,
       MeasurementFold.prefix_accumulator]
     simp only [measurementStepBody_eq]
     have hfn : (fun (acc : MeasStepCtx × JetRows) (i : ℕ) =>
@@ -477,13 +478,14 @@ private theorem exists_computableInO_signedMeasJet :
       (fun (m : MeasStepCtx) (acc : JetRows) (i : ℕ) =>
         (evalMeasPayload (Cslib.Radix.measurementValues dc.2.2.1.1 dc.2.2.1.2 i, m)).elim acc
           (fun y => addJet m.2.1.1 m.2.1.2.1 acc y))
-      (mkMCtx dc) (List.range j) (zeroJet dc.2.2.2.1.1 dc.2.2.2.1.2.1)
+      (mkMCtx dc) (List.range j) (zeroJet dc.2.jetOrder dc.2.precision)
   have hB : ∀ dc j, j ≤ MeasurementFold.count dc.2.2.1 →
       (encPair (encPair encUnary encNat) eAcc
         (IndexFold.run (MeasurementFold.visit measurementStepBody) j
-          (dc.2.2.1, (mkMCtx dc, zeroJet dc.2.2.2.1.1 dc.2.2.2.1.2.1))).2).length ≤ B_outer dc := by
+          (dc.2.2.1, (mkMCtx dc, zeroJet dc.2.jetOrder dc.2.precision))).2).length ≤
+        B_outer dc := by
     intro dc j hj; rw [hrun_eq dc j]
-    have hf_le := length_encJetRows_foldl_optAddJet_le (J := dc.2.2.2.1.1) (ℓ := dc.2.2.2.1.2.1)
+    have hf_le := length_encJetRows_foldl_optAddJet_le (J := dc.2.jetOrder) (ℓ := dc.2.precision)
       (N := MeasurementFold.count dc.2.2.1) (M := 2 ^ L_opt dc)
       (f := fun i => evalMeasPayload
         (Cslib.Radix.measurementValues dc.2.2.1.1 dc.2.2.1.2 i, mkMCtx dc))
@@ -505,8 +507,8 @@ private theorem exists_computableInO_signedMeasJet :
     have hjet_le : (encJet ((List.range j).foldl
         (fun acc i => (evalMeasPayload
           (Cslib.Radix.measurementValues dc.2.2.1.1 dc.2.2.1.2 i, mkMCtx dc)).elim acc
-          (fun y => addJet dc.2.2.2.1.1 dc.2.2.2.1.2.1 acc y))
-        (zeroJet dc.2.2.2.1.1 dc.2.2.2.1.2.1))).length ≤ B_jet dc :=
+          (fun y => addJet dc.2.jetOrder dc.2.precision acc y))
+        (zeroJet dc.2.jetOrder dc.2.precision))).length ≤ B_jet dc :=
       hf_le.trans (Nat.mul_le_mul_left _ (Nat.add_le_add_right (Nat.mul_le_mul_left 2
         (Nat.mul_le_mul_left _ (Nat.add_le_add_right (Nat.mul_le_mul_left 2
           (Nat.add_le_add hN_sz hM_sz)) 3))) 1))
@@ -525,10 +527,11 @@ private theorem exists_computableInO_signedMeasJet :
   have hPcb_pb := NativeCertificate.polyBounded_pow_of_polyBounded hSst_pb cv dv
   obtain ⟨P_loop, hPloop_pb, hloop⟩ := computableInO_snd_indexFold cCnt (.ofPolyTime hinitDC)
     cVisit hcCnt (NativeCertificate.ofPolyTime_isPolynomial hinitDC) hcVisit_sp hBout_pb hB
-    (fun dc => (dc.2.1.2.1 * (2 ^ maxGroupDim dc.2.1.1 dc.2.1.2.1 dc.2.2.2.2.2.1.1 + 1) + 1) *
-      (2 * P_pay dc)) P_cb hPcb_pb fun dc j hj hst_len => by
+    (fun dc =>
+      (dc.2.numGroups * (2 ^ maxGroupDim dc.2.numVars dc.2.numGroups dc.2.varGroups + 1) + 1) *
+        (2 * P_pay dc)) P_cb hPcb_pb fun dc j hj hst_len => by
       set st := IndexFold.run (MeasurementFold.visit measurementStepBody) j
-        (dc.2.2.1, (mkMCtx dc, zeroJet dc.2.2.2.1.1 dc.2.2.2.1.2.1))
+        (dc.2.2.1, (mkMCtx dc, zeroJet dc.2.jetOrder dc.2.precision))
       have hov := (hv_le st).trans
         (Nat.mul_le_mul_left cv (Nat.pow_le_pow_left (Nat.add_le_add_right hst_len 1) dv))
       have hw_len := MeasurementFold.length_values_le dc.2.2.1.1 dc.2.2.1.2 j
@@ -538,7 +541,7 @@ private theorem exists_computableInO_signedMeasJet :
       have hwc_len : (eWC (Cslib.Radix.measurementValues dc.2.2.1.1 dc.2.2.1.2 j,
           mkMCtx dc)).length ≤ L_wc dc := by simp only [eWC, length_encPair, L_wc]; omega
       have hpay_t : cPay.time (Cslib.Radix.measurementValues st.2.1.1 st.2.1.2 st.1, st.2.2.1) ≤
-          (dc.2.1.2.1 * (2 ^ maxGroupDim dc.2.1.1 dc.2.1.2.1 dc.2.2.2.2.2.1.1 + 1) + 1) *
+          (dc.2.numGroups * (2 ^ maxGroupDim dc.2.numVars dc.2.numGroups dc.2.varGroups + 1) + 1) *
             P_pay dc := by
         rw [hwc_eq]; exact Nat.mul_le_mul_left _ ((hp1_le _).trans
           (Nat.mul_le_mul_left cp1 (Nat.pow_le_pow_left (Nat.add_le_add_right hwc_len 1) dp1)))
@@ -550,7 +553,7 @@ private theorem exists_computableInO_signedMeasJet :
     (⟨_, _, hloop⟩ : Cert _ eDC (encPair (encPair encUnary encNat) eAcc)))
   have hsign : PolyT
       (fun p : (SubsetPairFold.DecodedPair × SubsetStepCtx) × JetRows =>
-        if p.1.1.2.2 then smulJet p.1.2.2.2.1.1 p.1.2.2.2.1.2.1 (-1) p.2 else p.2)
+        if p.1.1.2.2 then smulJet p.1.2.jetOrder p.1.2.precision (-1) p.2 else p.2)
       (encPair eDC encJet) encJet := by
     have hp1 := fst eDC encJet; have hp2 := snd eDC encJet
     have hodd : PolyT (fun p : _ × JetRows => p.1.1.2.2) (encPair eDC encJet) encBool := by
@@ -564,7 +567,7 @@ private theorem exists_computableInO_signedMeasJet :
   have hspDCM : HasPolySpace (cIdDC.prod cMeasJet) := hasPolySpace_prod .self hPloop_pb
   let measFn (dc : SubsetPairFold.DecodedPair × SubsetStepCtx) : JetRows :=
     (MeasurementFold.run measurementStepBody dc.2.2.1
-      (mkMCtx dc, zeroJet dc.2.2.2.1.1 dc.2.2.2.1.2.1)).2.2.2
+      (mkMCtx dc, zeroJet dc.2.jetOrder dc.2.precision)).2.2.2
   let P_out (dc : SubsetPairFold.DecodedPair × SubsetStepCtx) :=
     2 * P_pay dc + P_loop dc + (eDC dc).length + cSign.time (dc, measFn dc) + cFinal.space dc
   have hPout_pb : PolyBounded (fun dc => (eDC dc).length) P_out :=
@@ -574,7 +577,7 @@ private theorem exists_computableInO_signedMeasJet :
   refine ⟨P_out, hPout_pb, (cFinal.computes.of_enc_eq fun _ => rfl).mono_le (fun dc => ?_)
     fun dc => by dsimp only [P_out]; omega⟩
   set M_cnt := (2 * dc.2.2.1.2 + 1) ^ dc.2.2.1.1 + 1
-  set G_cnt := dc.2.1.2.1 * (2 ^ maxGroupDim dc.2.1.1 dc.2.1.2.1 dc.2.2.2.2.2.1.1 + 1) + 1
+  set G_cnt := dc.2.numGroups * (2 ^ maxGroupDim dc.2.numVars dc.2.numGroups dc.2.varGroups + 1) + 1
   have hMG : 1 ≤ M_cnt * G_cnt := Nat.mul_pos (Nat.succ_pos _) (Nat.succ_pos _)
   have hcnt_eq : MeasurementFold.count dc.2.2.1 + 1 = M_cnt := rfl
   let ovDC := (eDC dc).length + cSign.time (dc, measFn dc)
@@ -600,12 +603,13 @@ private theorem exists_computableInO_nodeJet :
       PolyBounded (fun qs => (encPair encUnary encSubsetStepCtx qs).length) P ∧
       ComputableInO
         (fun qs : ℕ × SubsetStepCtx =>
-          (SubsetPairFold.run subsetPairStepBody qs.2.1.1 qs.1
-            (qs.2, zeroJet qs.2.2.2.1.1 qs.2.2.2.1.2.1)).2)
+          (SubsetPairFold.run subsetPairStepBody qs.2.numVars qs.1
+            (qs.2, zeroJet qs.2.jetOrder qs.2.precision)).2)
         (encPair encUnary encSubsetStepCtx) encJet
-        (fun qs => (SubsetPairFold.subsetPairCount qs.2.1.1 qs.1 + 1) *
+        (fun qs => (SubsetPairFold.subsetPairCount qs.2.numVars qs.1 + 1) *
           ((2 * qs.2.2.1.2 + 1) ^ qs.2.2.1.1 + 1) *
-          (qs.2.1.2.1 * (2 ^ maxGroupDim qs.2.1.1 qs.2.1.2.1 qs.2.2.2.2.2.1.1 + 1) + 1) * P qs)
+          (qs.2.numGroups * (2 ^ maxGroupDim qs.2.numVars qs.2.numGroups qs.2.varGroups + 1) + 1) *
+            P qs)
         P := by
   obtain ⟨P₂, hP₂_pb, hSignM⟩ := exists_computableInO_signedMeasJet
   let eDC := encPair SubsetPairFold.encDecodedPair encSubsetStepCtx
@@ -617,14 +621,14 @@ private theorem exists_computableInO_nodeJet :
       eSubIn eDC := (fst _ eSubAcc).prod (snd _ eSubAcc).fst'
   have haddSub : PolyT
       (fun q : (SubsetPairFold.DecodedPair × (SubsetStepCtx × JetRows)) × JetRows =>
-        (q.1.2.1, addJet q.1.2.1.2.2.1.1 q.1.2.1.2.2.1.2.1 q.1.2.2 q.2))
+        (q.1.2.1, addJet q.1.2.1.jetOrder q.1.2.1.precision q.1.2.2 q.2))
       (encPair eSubIn encJet) eSubAcc := by
     have hq1 := fst eSubIn encJet; have hq2 := snd eSubIn encJet
     have hctx := hq1.snd'.fst'; have hacc := hq1.snd'.snd'
-    have hJ : PolyT (fun q : _ × JetRows => q.1.2.1.2.2.1.1)
+    have hJ : PolyT (fun q : _ × JetRows => q.1.2.1.jetOrder)
         (encPair eSubIn encJet) encUnary := by
       unfold encSubsetStepCtx at hctx; exact hctx.snd'.snd'.fst'.fst'
-    have hℓ : PolyT (fun q : _ × JetRows => q.1.2.1.2.2.1.2.1)
+    have hℓ : PolyT (fun q : _ × JetRows => q.1.2.1.precision)
         (encPair eSubIn encJet) encUnary := by
       unfold encSubsetStepCtx at hctx; exact hctx.snd'.snd'.fst'.snd'.fst'
     exact hctx.prod (computableInPolyTime_addJet hJ hℓ hacc hq2)
@@ -643,19 +647,19 @@ private theorem exists_computableInO_nodeJet :
     (hcAddSub.1.comp (polyBounded_length_of_hasPolySpace hspSubP))).exists_le
   obtain ⟨cs, ds, hs_le⟩ := (hasPolySpace_comp hcAddSub.2 hspSubP).exists_le
   let eQS := encPair encUnary encSubsetStepCtx
-  have hn_qs : PolyT (fun qs : ℕ × SubsetStepCtx => qs.2.1.1) eQS encUnary := by
+  have hn_qs : PolyT (fun qs : ℕ × SubsetStepCtx => qs.2.numVars) eQS encUnary := by
     unfold eQS encSubsetStepCtx; exact (snd encUnary _).fst'.fst'
   have hq_qs : PolyT (fun qs : ℕ × SubsetStepCtx => qs.1) eQS encUnary :=
     fst encUnary encSubsetStepCtx
-  have hJ_qs : PolyT (fun qs : ℕ × SubsetStepCtx => qs.2.2.2.1.1) eQS encUnary := by
+  have hJ_qs : PolyT (fun qs : ℕ × SubsetStepCtx => qs.2.jetOrder) eQS encUnary := by
     unfold eQS encSubsetStepCtx; exact (snd encUnary _).snd'.snd'.fst'.fst'
-  have hℓ_qs : PolyT (fun qs : ℕ × SubsetStepCtx => qs.2.2.2.1.2.1) eQS encUnary := by
+  have hℓ_qs : PolyT (fun qs : ℕ × SubsetStepCtx => qs.2.precision) eQS encUnary := by
     unfold eQS encSubsetStepCtx; exact (snd encUnary _).snd'.snd'.fst'.snd'.fst'
   have hinitQS := (snd encUnary encSubsetStepCtx).prod (computableInPolyTime_zeroJet hJ_qs hℓ_qs)
   have hn_pb := hn_qs.polyBounded
   have hctx_pb := (snd encUnary encSubsetStepCtx).polyBounded_length
   let L_dc (qs : ℕ × SubsetStepCtx) :=
-    2 * (6 * qs.2.1.1 + 7) + 2 * (encSubsetStepCtx qs.2).length + 1
+    2 * (6 * qs.2.numVars + 7) + 2 * (encSubsetStepCtx qs.2).length + 1
   have hLdc_pb : PolyBounded (fun qs => (eQS qs).length) L_dc :=
     (((PolyBounded.const 2).mul (((PolyBounded.const 6).mul hn_pb).add (.const 7))).add
       ((PolyBounded.const 2).mul hctx_pb)).add (.const 1)
@@ -665,7 +669,8 @@ private theorem exists_computableInO_nodeJet :
   let P_sm (qs : ℕ × SubsetStepCtx) := cp2 * (L_dc qs + 1) ^ dp2
   have hPsm_pb := NativeCertificate.polyBounded_pow_of_polyBounded hLdc_pb cp2 dp2
   let B_jet (qs : ℕ × SubsetStepCtx) :=
-    qs.2.2.2.1.1 * (2 * (qs.2.2.2.1.2.1 * (2 * ((2 * qs.2.1.1 + 1) + (M_entry qs + 1)) + 3)) + 1)
+    qs.2.jetOrder *
+      (2 * (qs.2.precision * (2 * ((2 * qs.2.numVars + 1) + (M_entry qs + 1)) + 3)) + 1)
   have hBjet_pb : PolyBounded (fun qs => (eQS qs).length) B_jet :=
     hJ_qs.polyBounded.mul (((PolyBounded.const 2).mul (hℓ_qs.polyBounded.mul
       (((PolyBounded.const 2).mul ((((PolyBounded.const 2).mul hn_pb).add (.const 1)).add
@@ -680,22 +685,23 @@ private theorem exists_computableInO_nodeJet :
     rw [length_encPair, length_encPair, encBits_apply, encBits_apply, encBool_apply,
       List.length_singleton, SubsetPairFold.length_fst_unrankSubsetPair,
       SubsetPairFold.length_snd_unrankSubsetPair]; omega
-  have hB : ∀ qs j, j ≤ SubsetPairFold.subsetPairCount qs.2.1.1 qs.1 →
-      (eSubAcc (SubsetPairFold.runPrefix subsetPairStepBody qs.2.1.1 qs.1 j
-        (qs.2, zeroJet qs.2.2.2.1.1 qs.2.2.2.1.2.1)).2.2).length ≤ B_sub qs := by
+  have hB : ∀ qs j, j ≤ SubsetPairFold.subsetPairCount qs.2.numVars qs.1 →
+      (eSubAcc (SubsetPairFold.runPrefix subsetPairStepBody qs.2.numVars qs.1 j
+        (qs.2, zeroJet qs.2.jetOrder qs.2.precision)).2.2).length ≤ B_sub qs := by
     intro qs j hj; rw [SubsetPairFold.runPrefix_acc]; simp only [subsetPairStepBody_eq]
     rw [List.foldl_keep_fst (fun (s : SubsetStepCtx) (acc : JetRows) (i : ℕ) =>
-      addJet s.2.2.1.1 s.2.2.1.2.1 acc
-        (evalSignedMeasJet (SubsetPairFold.unrankSubsetPair qs.2.1.1 qs.1 i, s)))]
-    have hf_le := length_encJetRows_foldl_optAddJet_le (J := qs.2.2.2.1.1) (ℓ := qs.2.2.2.1.2.1)
-      (N := SubsetPairFold.subsetPairCount qs.2.1.1 qs.1) (M := 2 ^ M_entry qs)
+      addJet s.jetOrder s.precision acc
+        (evalSignedMeasJet (SubsetPairFold.unrankSubsetPair qs.2.numVars qs.1 i, s)))]
+    have hf_le := length_encJetRows_foldl_optAddJet_le (J := qs.2.jetOrder) (ℓ := qs.2.precision)
+      (N := SubsetPairFold.subsetPairCount qs.2.numVars qs.1) (M := 2 ^ M_entry qs)
       (f := fun i =>
-        some (evalSignedMeasJet (SubsetPairFold.unrankSubsetPair qs.2.1.1 qs.1 i, qs.2)))
+        some (evalSignedMeasJet (SubsetPairFold.unrankSubsetPair qs.2.numVars qs.1 i, qs.2)))
       hj fun i _ y hy j' _ u' _ => by
         cases hy; refine hM_le qs _ ?_ j' u'
-        have hdp := hdp_len qs.2.1.1 qs.1 i
+        have hdp := hdp_len qs.2.numVars qs.1 i
         dsimp only [eDC, L_dc]; rw [length_encPair]; dsimp only; omega
-    have hN_sz : (SubsetPairFold.subsetPairCount qs.2.1.1 qs.1).size ≤ 2 * qs.2.1.1 + 1 := by
+    have hN_sz :
+        (SubsetPairFold.subsetPairCount qs.2.numVars qs.1).size ≤ 2 * qs.2.numVars + 1 := by
       rw [← Nat.size_eq_bits_len, ← encNat_apply]
       exact SubsetPairFold.length_encNat_subsetPairCount_le _ _
     have hM_sz : (2 ^ M_entry qs).size ≤ M_entry qs + 1 := by rw [Nat.size_pow]
@@ -704,7 +710,7 @@ private theorem exists_computableInO_nodeJet :
         (Nat.mul_le_mul_left 2 (Nat.add_le_add hN_sz hM_sz)) 3))) 1))
     simp only [Option.elim_some] at hjet_le
     dsimp only [eSubAcc, B_sub, B_jet] at hjet_le ⊢; rw [length_encPair]; dsimp only; omega
-  let L_sub (qs : ℕ × SubsetStepCtx) := 2 * (6 * qs.2.1.1 + 7) + 2 * B_sub qs + 1
+  let L_sub (qs : ℕ × SubsetStepCtx) := 2 * (6 * qs.2.numVars + 7) + 2 * B_sub qs + 1
   have hLsub_pb : PolyBounded (fun qs => (eQS qs).length) L_sub :=
     (((PolyBounded.const 2).mul (((PolyBounded.const 6).mul hn_pb).add (.const 7))).add
       ((PolyBounded.const 2).mul hBsub_pb)).add (.const 1)
@@ -718,14 +724,14 @@ private theorem exists_computableInO_nodeJet :
   have hcq := NativeCertificate.ofPolyTime_isPolynomial hq_qs
   have hci := NativeCertificate.ofPolyTime_isPolynomial hinitQS
   let R_sub (qs : ℕ × SubsetStepCtx) := ((2 * qs.2.2.1.2 + 1) ^ qs.2.2.1.1 + 1) *
-    (qs.2.1.2.1 * (2 ^ maxGroupDim qs.2.1.1 qs.2.1.2.1 qs.2.2.2.2.2.1.1 + 1) + 1) *
+    (qs.2.numGroups * (2 ^ maxGroupDim qs.2.numVars qs.2.numGroups qs.2.varGroups + 1) + 1) *
     P_sm qs + Ov_sub qs
   have hsp_run := SubsetPairFold.computableInO cn cq ci cbSub R_sub Q_sub B_sub
     (fun qs j hj => by
-      set inp := (SubsetPairFold.unrankSubsetPair qs.2.1.1 qs.1 j,
-        (SubsetPairFold.runPrefix subsetPairStepBody qs.2.1.1 qs.1 j
-          (qs.2, zeroJet qs.2.2.2.1.1 qs.2.2.2.1.2.1)).2.2)
-      have hdp := hdp_len qs.2.1.1 qs.1 j; have hb := hB qs j hj
+      set inp := (SubsetPairFold.unrankSubsetPair qs.2.numVars qs.1 j,
+        (SubsetPairFold.runPrefix subsetPairStepBody qs.2.numVars qs.1 j
+          (qs.2, zeroJet qs.2.jetOrder qs.2.precision)).2.2)
+      have hdp := hdp_len qs.2.numVars qs.1 j; have hb := hB qs j hj
       have hinp_len : (eSubIn inp).length ≤ L_sub qs := by
         dsimp only [eSubIn, inp, L_sub]; rw [length_encPair]; dsimp only; omega
       have hov := (ho_le inp).trans
@@ -733,12 +739,12 @@ private theorem exists_computableInO_nodeJet :
       have hfst_eq : inp.2.1 = qs.2 := by
         dsimp only [inp]; rw [SubsetPairFold.runPrefix_acc]; simp only [subsetPairStepBody_eq]
         rw [List.foldl_keep_fst (fun (s : SubsetStepCtx) (acc : JetRows) (i : ℕ) =>
-          addJet s.2.2.1.1 s.2.2.1.2.1 acc
-            (evalSignedMeasJet (SubsetPairFold.unrankSubsetPair qs.2.1.1 qs.1 i, s)))]
+          addJet s.jetOrder s.precision acc
+            (evalSignedMeasJet (SubsetPairFold.unrankSubsetPair qs.2.numVars qs.1 i, s)))]
       have hdc_len : (eDC (inp.1, inp.2.1)).length ≤ L_dc qs := by
         rw [hfst_eq]; dsimp only [eDC, inp, L_dc]; rw [length_encPair]; dsimp only; omega
       have hsm_t : cSignM.time (inp.1, inp.2.1) ≤ ((2 * qs.2.2.1.2 + 1) ^ qs.2.2.1.1 + 1) *
-          (qs.2.1.2.1 * (2 ^ maxGroupDim qs.2.1.1 qs.2.1.2.1 qs.2.2.2.2.2.1.1 + 1) + 1) *
+          (qs.2.numGroups * (2 ^ maxGroupDim qs.2.numVars qs.2.numGroups qs.2.varGroups + 1) + 1) *
             P_sm qs := by
         dsimp only [cSignM, eDC] at hdc_len ⊢; rw [hfst_eq] at hdc_len ⊢
         exact Nat.mul_le_mul_left _ ((hp2_le _).trans
@@ -748,10 +754,10 @@ private theorem exists_computableInO_nodeJet :
         NativeCertificate.linear_time, Function.comp_apply] at hov hsm_t ⊢
       linarith)
     (fun qs j hj => by
-      have hb := hB qs j hj; have hdp := hdp_len qs.2.1.1 qs.1 j
-      have hinp_len : (eSubIn (SubsetPairFold.unrankSubsetPair qs.2.1.1 qs.1 j,
-          (SubsetPairFold.runPrefix subsetPairStepBody qs.2.1.1 qs.1 j
-            (qs.2, zeroJet qs.2.2.2.1.1 qs.2.2.2.1.2.1)).2.2)).length ≤ L_sub qs := by
+      have hb := hB qs j hj; have hdp := hdp_len qs.2.numVars qs.1 j
+      have hinp_len : (eSubIn (SubsetPairFold.unrankSubsetPair qs.2.numVars qs.1 j,
+          (SubsetPairFold.runPrefix subsetPairStepBody qs.2.numVars qs.1 j
+            (qs.2, zeroJet qs.2.jetOrder qs.2.precision)).2.2)).length ≤ L_sub qs := by
         dsimp only [eSubIn, L_sub]; rw [length_encPair]; dsimp only; omega
       exact (hs_le _).trans
         (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (Nat.add_le_add_right hinp_len 1) ds)))
@@ -759,7 +765,7 @@ private theorem exists_computableInO_nodeJet :
   have hS_pb :=
     SubsetPairFold.polyBounded_space_of_polyBounded cn cq ci hcn hcq hci hBsub_pb hQsub_pb
   let cSubRun : Cert _ eQS eSubAcc := ⟨_, _, hsp_run⟩
-  let hd_ov (qs : ℕ × SubsetStepCtx) := SubsetPairFold.decodeOverhead (qs.2.1.1 + qs.1)
+  let hd_ov (qs : ℕ × SubsetStepCtx) := SubsetPairFold.decodeOverhead (qs.2.numVars + qs.1)
   have hhd_pb : PolyBounded (fun qs => (eQS qs).length) hd_ov := hS_pb.mono fun qs => by
     dsimp only [hd_ov]; omega
   let P_out (qs : ℕ × SubsetStepCtx) := P_sm qs + Ov_sub qs + hd_ov qs + B_sub qs +
@@ -770,9 +776,9 @@ private theorem exists_computableInO_nodeJet :
       ((((PolyBounded.self.add hcn.1).add hcq.1).add hci.1).add hhd_pb)).add hS_pb)
   refine ⟨P_out, hPout_pb, (NativeCertificate.snd cSubRun).computes.mono_le (fun qs => ?_)
     fun qs => by dsimp only [P_out, NativeCertificate.snd_space, cSubRun]; omega⟩
-  set S_cnt := SubsetPairFold.subsetPairCount qs.2.1.1 qs.1 + 1
+  set S_cnt := SubsetPairFold.subsetPairCount qs.2.numVars qs.1 + 1
   set M_cnt := (2 * qs.2.2.1.2 + 1) ^ qs.2.2.1.1 + 1
-  set G_cnt := qs.2.1.2.1 * (2 ^ maxGroupDim qs.2.1.1 qs.2.1.2.1 qs.2.2.2.2.2.1.1 + 1) + 1
+  set G_cnt := qs.2.numGroups * (2 ^ maxGroupDim qs.2.numVars qs.2.numGroups qs.2.varGroups + 1) + 1
   have hMG : 1 ≤ M_cnt * G_cnt := Nat.mul_pos (Nat.succ_pos _) (Nat.succ_pos _)
   have hstep1 := Nat.mul_le_mul_left S_cnt
     (absorb_step_add (M_cnt * G_cnt) (P_sm qs) (hd_ov qs + B_sub qs + Ov_sub qs) hMG)
@@ -782,12 +788,13 @@ private theorem exists_computableInO_nodeJet :
   dsimp only [NativeCertificate.snd_time, cSubRun, R_sub, hd_ov, P_out] at hov1 hstep1 ⊢
   have hsum := (Nat.add_le_add hov1 hstep1).trans_eq (by ring :
     S_cnt * (M_cnt * G_cnt) * ((eQS qs).length + cn.time qs + cq.time qs + ci.time qs +
-      SubsetPairFold.decodeOverhead (qs.2.1.1 + qs.1)) +
-    S_cnt * ((M_cnt * G_cnt) * (P_sm qs + (SubsetPairFold.decodeOverhead (qs.2.1.1 + qs.1) +
+      SubsetPairFold.decodeOverhead (qs.2.numVars + qs.1)) +
+    S_cnt * ((M_cnt * G_cnt) * (P_sm qs + (SubsetPairFold.decodeOverhead (qs.2.numVars + qs.1) +
       B_sub qs + Ov_sub qs))) =
-    S_cnt * M_cnt * G_cnt * (P_sm qs + Ov_sub qs + SubsetPairFold.decodeOverhead (qs.2.1.1 + qs.1) +
-      B_sub qs + ((eQS qs).length + cn.time qs + cq.time qs + ci.time qs +
-        SubsetPairFold.decodeOverhead (qs.2.1.1 + qs.1))))
+    S_cnt * M_cnt * G_cnt *
+      (P_sm qs + Ov_sub qs + SubsetPairFold.decodeOverhead (qs.2.numVars + qs.1) + B_sub qs +
+        ((eQS qs).length + cn.time qs + cq.time qs + ci.time qs +
+          SubsetPairFold.decodeOverhead (qs.2.numVars + qs.1))))
   refine le_trans ?_ (hsum.trans (Nat.mul_le_mul_left _ (by omega)))
   dsimp only [S_cnt, M_cnt, G_cnt]; exact le_of_eq (by ring)
 
@@ -860,17 +867,17 @@ private theorem computableInPolyTime_branchClamped :
   have hRu : PolyT branchR_u encBranchEvalInput encUnary := binary_min_unary' hn' hR
   have hru : PolyT branchr_u encBranchEvalInput encUnary := binary_min_unary' hn' hr
   have hA₀u : PolyT branchA₀_u encBranchEvalInput encUnary :=
-    binary_min_unary' (bi_unary_add.comp (hn'.prod (const 1))) hA₀
+    binary_min_unary' (unary_add.comp (hn'.prod (const 1))) hA₀
   have hpow : PolyT (fun inp : BranchEvalInput => branchr_u inp ^ (2 * branchQ_u inp))
       encBranchEvalInput encNat :=
     (binary_pow.comp
-      ((unary_to_binary.comp hru).prod (bi_unary_add.comp (hQu.prod hQu)))).of_enc_eq
+      ((unary_to_binary.comp hru).prod (unary_add.comp (hQu.prod hQu)))).of_enc_eq
       fun inp => by congr 1; dsimp only [Function.comp_apply]; congr 1; omega
   have hDcap : PolyT branchD_cap encBranchEvalInput encUnary := binary_min_unary' hn' hpow
-  have hnum := bi_unary_mul.comp
-    ((bi_unary_mul.comp (hk'.prod (unary_sub.comp (hRu.prod (const 1))))).prod
-    (bi_unary_add.comp (((length_list (encList (encList encNat))).comp heqs).prod
-      (bi_unary_add.comp (hn'.prod hn')))))
+  have hnum := unary_mul.comp
+    ((unary_mul.comp (hk'.prod (unary_sub.comp (hRu.prod (const 1))))).prod
+    (unary_add.comp (((length_list (encList (encList encNat))).comp heqs).prod
+      (unary_add.comp (hn'.prod hn')))))
   have hdiv := binary_div.comp ((unary_to_binary.comp hnum).prod
     (unary_to_binary.comp (bi_unary_max.comp ((const 1).prod hQu))))
   have hq : PolyT branchTruncQ encBranchEvalInput encUnary := by
@@ -987,8 +994,8 @@ private def evalDesignStageCore (idPair : BranchEvalInput × ReplacementDesignDa
   let eqRowTables := buildEqRowTables idPair.1.1.1 idPair.1.2.2.2 idPair.2
   let nodeJets := (List.range (branchQ_u idPair.1)).map fun t =>
     let qs := mkNodeSubIn ((idPair, eqRowTables), t)
-    (SubsetPairFold.run subsetPairStepBody qs.2.1.1 qs.1
-      (qs.2, zeroJet qs.2.2.2.1.1 qs.2.2.2.1.2.1)).2
+    (SubsetPairFold.run subsetPairStepBody qs.2.numVars qs.1
+      (qs.2, zeroJet qs.2.jetOrder qs.2.precision)).2
   finalizeDesignStage (idPair, nodeJets)
 
 private def evalDesignStage (idPair : BranchEvalInput × ReplacementDesignData) : ℕ :=
@@ -1028,19 +1035,19 @@ private theorem exists_boundedIncidenceBranch_cert :
     have hn_p := hn'.comp hinp; have hk_p := hk'.comp hinp; have heqs_p := heqs.comp hinp
     have hru_p := hru.comp hinp; have hDcap_p := hDcap.comp hinp; have hq_p := hq.comp hinp
     have hJ_p : PolyT (fun p : _ × ℕ => branchTruncQ p.1.1.1 + 1) eIn encUnary :=
-      bi_unary_add.comp (hq_p.prod (const 1))
+      unary_add.comp (hq_p.prod (const 1))
     have hℓ_p : PolyT (fun p : _ × ℕ => p.1.1.1.1.1 + 1) eIn encUnary :=
-      bi_unary_add.comp (hn_p.prod (const 1))
+      unary_add.comp (hn_p.prod (const 1))
     have hm_rows : PolyT (fun p : _ × ℕ => p.1.1.2.measurementMatrix.length) eIn encUnary :=
       (length_list (encList encIntBin)).comp (computableInPolyTime_measurementMatrix hdat)
     have hmeq_p := (length_list (encList (encList encNat))).comp heqs_p
-    have hc_cap := bi_unary_mul.comp ((bi_unary_mul.comp ((const 4).prod hℓ_p)).prod
-      (bi_unary_add.comp ((bi_unary_add.comp ((bi_unary_mul.comp (hmeq_p.prod hn_p)).prod
+    have hc_cap := unary_mul.comp ((unary_mul.comp ((const 4).prod hℓ_p)).prod
+      (unary_add.comp ((unary_add.comp ((unary_mul.comp (hmeq_p.prod hn_p)).prod
         hn_p)).prod (const 1))))
     have hc_meas : PolyT
         (fun p : _ × ℕ => min (4 * (p.1.1.1.1.1 + 1) * (p.1.1.1.2.2.2.length * p.1.1.1.1.1 +
           p.1.1.1.1.1 + 1)) (branchr_u p.1.1.1 * p.1.1.2.measurementMatrix.length)) eIn encUnary :=
-      bi_unary_min.comp (hc_cap.prod (bi_unary_mul.comp (hru_p.prod hm_rows)))
+      bi_unary_min.comp (hc_cap.prod (unary_mul.comp (hru_p.prod hm_rows)))
     have hnode : PolyT (fun p : _ × ℕ => ((p.2 : ℤ) + 1)) eIn encIntBin :=
       bi_intBin_add' (intBin_natCast.comp (unary_to_binary.comp ht)) (const 1)
     have hvgt := (listGetD (encA := encList (encList encNat)) []).comp
@@ -1071,11 +1078,11 @@ private theorem exists_boundedIncidenceBranch_cert :
     have hn_f := hn'.comp hp1; have hk_f := hk'.comp hp1
     have heqs_f := heqs.comp hp1; have hQu_f := hQu.comp hp1; have hq_f := hq.comp hp1
     have hℓ_f : PolyT (fun p : _ × List JetRows => p.1.1.1.1 + 1) eF encUnary :=
-      bi_unary_add.comp (hn_f.prod (const 1))
+      unary_add.comp (hn_f.prod (const 1))
     have hJ_f : PolyT (fun p : _ × List JetRows => branchTruncQ p.1.1 + 1) eF encUnary :=
-      bi_unary_add.comp (hq_f.prod (const 1))
+      unary_add.comp (hq_f.prod (const 1))
     have h2ℓ_sub1 : PolyT (fun p : _ × List JetRows => 2 * (p.1.1.1.1 + 1) - 1) eF encUnary :=
-      unary_sub.comp ((bi_unary_mul.comp ((const 2).prod hℓ_f)).prod (const 1))
+      unary_sub.comp ((unary_mul.comp ((const 2).prod hℓ_f)).prod (const 1))
     have hmeq_f : PolyT (fun p : _ × List JetRows => p.1.1.2.2.2.length) eF encUnary :=
       (length_list (encList (encList encNat))).comp heqs_f
     have hnode_fn : PolyT (fun q : (_ × List JetRows) × ℕ => ((q.2 : ℤ) + 1))
@@ -1103,7 +1110,7 @@ private theorem exists_boundedIncidenceBranch_cert :
           hnodes hJ_f hℓ_f hΩ hnj)
     have h2pow : PolyT (fun p : _ × List JetRows => 2 ^ p.1.1.1.1) eF encNat :=
       binary_two_pow.comp hn_f
-    refine ((bi_binary_le' h2pow hrec_nat).ite' h2pow hrec_nat).of_enc_eq fun p =>
+    refine ((binary_le' h2pow hrec_nat).ite' h2pow hrec_nat).of_enc_eq fun p =>
       congrArg encNat ?_
     simp only [finalizeDesignStage, Nat.min_def, decide_eq_true_eq]
   obtain ⟨P_nj, hPnj_pb, hNJ⟩ := exists_computableInO_nodeJet
@@ -1177,8 +1184,8 @@ private theorem exists_boundedIncidenceBranch_cert :
   let fnOut (idPair : BranchEvalInput × ReplacementDesignData) :=
     (idPair, (List.range (branchQ_u idPair.1)).map fun t =>
       let qs := mkNodeSubIn ((idPair, buildEqRowTables idPair.1.1.1 idPair.1.2.2.2 idPair.2), t)
-      (SubsetPairFold.run subsetPairStepBody qs.2.1.1 qs.1
-        (qs.2, zeroJet qs.2.2.2.1.1 qs.2.2.2.1.2.1)).2)
+      (SubsetPairFold.run subsetPairStepBody qs.2.numVars qs.1
+        (qs.2, zeroJet qs.2.jetOrder qs.2.precision)).2)
   let P_stg2 (idPair : BranchEvalInput × ReplacementDesignData) : ℕ :=
     Pn_iter idPair + Pm_nodes idPair +
       (cGuard2.time idPair + (eID idPair).length + cFin.time (fnOut idPair))

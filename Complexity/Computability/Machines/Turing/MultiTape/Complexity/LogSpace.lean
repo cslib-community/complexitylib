@@ -11,14 +11,13 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Poly
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
-public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Compose
 public import Cslib.Computability.Machines.Turing.MultiTape.ConfigBound
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
+import Complexity.Computability.Machines.Turing.MultiTape.HaltsAt
 import Complexity.Foundations.Data.Nat.Log
 import Complexity.Foundations.Data.Nat.PolynomialBound.Log
 import Cslib.Computability.Machines.Turing.MultiTape.Combinators.AlmostConstant
 import Cslib.Computability.Machines.Turing.MultiTape.Combinators.Id
-import Mathlib.Data.Nat.Size
 
 /-!
 # Logarithmic space on deterministic machines
@@ -46,11 +45,10 @@ and have polynomially long values
 inclusion `DSPACE(s) ⊆ DTIME(2 ^ O(s))` of cslib pull request #767
 (`ComputesInTimeAndSpace.truncate` there), stated for the current machine API.
 
-Logspace functions compose without storing the intermediate value
-(`Turing.MultiTapeTM.ComputableInLogSpace.comp`): Christian Reitwiessner's composition within
-small space (`Turing.MultiTapeTM.ComputableInTimeAndSpace.comp_space`) recomputes each symbol of
-the intermediate value when the second machine reads it, and stores only the two machines' work
-tapes and counters of logarithmic length [Sipser, Section 8.5][Sipser2013].
+Composition is in
+`Complexity/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/Composition/Recompute.lean`.
+It is kept apart because its machine is built from the universal machine; this file does not
+depend on that machine.
 
 ## Main definitions
 
@@ -64,7 +62,6 @@ tapes and counters of logarithmic length [Sipser, Section 8.5][Sipser2013].
   polynomial time.
 * `Turing.MultiTapeTM.ComputableInLogSpace.polyBounded_length`: logspace functions have
   polynomially long values.
-* `Turing.MultiTapeTM.ComputableInLogSpace.comp`: logspace functions compose.
 * `Turing.MultiTapeTM.ComputableInLogSpace.id`, `Turing.MultiTapeTM.ComputableInLogSpace.const`,
   `Turing.MultiTapeTM.ComputableInLogSpace.of_finite`,
   `Turing.MultiTapeTM.ComputableInLogSpace.congr`,
@@ -72,21 +69,16 @@ tapes and counters of logarithmic length [Sipser, Section 8.5][Sipser2013].
 * `Turing.MultiTapeTM.ComputableInLogSpace.computableInPolyTime`,
   `Turing.MultiTapeTM.ComputableInLogSpace.computableTidilyInPolyTime`: logspace functions are
   computable in polynomial time.
-* `Turing.MultiTapeTM.ComputableInLogSpace.comp'`,
-  `Turing.MultiTapeTM.ComputableInLogSpace.bool_not`: composition and negation in the form used by
-  `fun_prop`, for which `ComputableInLogSpace` is registered, with the inclusion in polynomial time
-  as a one-way transition.
+* `ComputableInLogSpace` is registered with `fun_prop`, with the inclusion in polynomial time as
+  a one-way transition.
 * `Turing.MultiTapeTM.Transducer.computableInLogSpace`: functions computed by finite-state
   transducers are computable in logarithmic space.
 * `Turing.MultiTapeTM.polyBounded_log`: logarithmic bounds are polynomially bounded.
-* `Turing.MultiTapeTM.doubled_inSpace`: doubling bits uses linear work space.
-* `Turing.MultiTapeTM.doubled_flatten`, `Turing.MultiTapeTM.doubled_doubled_replicate`:
-  doubling a concatenation or a replicated word.
 * `Turing.MultiTapeTM.computableInLogSpace_frame`: framing an encoded input uses zero work space.
 
 ## References
 
-* [M. Sipser, *Introduction to the Theory of Computation*, Sections 8.4 and 8.5][Sipser2013]
+* [M. Sipser, *Introduction to the Theory of Computation*, Section 8.4][Sipser2013]
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 4.3][AroraBarak09]
 -/
 
@@ -242,53 +234,6 @@ theorem ComputableInLogSpace.computableInPolyTime {f : α → β}
   let ⟨_, _, ⟨t, ht, htb⟩, ⟨s, hs, hsb⟩, h⟩ := h.computableTidilyInPolyTime
   ⟨t, s, ht, hs, (h.mono htb hsb).computableInTimeAndSpace⟩
 
-/-- The binary length of `m + 1` is at least `log₂ m + 1`. -/
-private theorem log2_succ_le_length_encNat (m : ℕ) : Nat.log2 m + 1 ≤ (encNat (m + 1)).length := by
-  rw [encNat_apply, Nat.size_eq_bits_len, Nat.succ_le_iff, Nat.lt_size]
-  rcases Nat.eq_zero_or_pos m with rfl | hm
-  · simp
-  · exact (Nat.log2_self_le hm.ne').trans (Nat.le_succ m)
-
-/-- The binary length of `m + 1` is logarithmic in `n` when `m` is polynomial in `n`. -/
-private theorem length_encNat_succ_le {m n C d : ℕ} (h : m ≤ C * (n + 1) ^ d) :
-    (encNat (m + 1)).length ≤ (Nat.size (C + 1) + d) * (Nat.log2 n + 1) := by
-  rw [encNat_apply, Nat.size_eq_bits_len, Nat.size_le]
-  have hpos : 0 < (n + 1) ^ d := Nat.pow_pos (Nat.succ_pos n)
-  have hn : (n + 1) ^ d ≤ 2 ^ (d * (Nat.log2 n + 1)) := by
-    rw [mul_comm, pow_mul]
-    exact Nat.pow_le_pow_left Nat.lt_log2_self d
-  calc m + 1 ≤ (C + 1) * (n + 1) ^ d := by nlinarith
-    _ < 2 ^ Nat.size (C + 1) * 2 ^ (d * (Nat.log2 n + 1)) :=
-        Nat.mul_lt_mul_of_lt_of_le (Nat.lt_size_self _) hn (Nat.two_pow_pos _)
-    _ = 2 ^ (Nat.size (C + 1) + d * (Nat.log2 n + 1)) := (pow_add ..).symm
-    _ ≤ 2 ^ ((Nat.size (C + 1) + d) * (Nat.log2 n + 1)) :=
-        Nat.pow_le_pow_right (by norm_num) (by nlinarith)
-
-/-- **Logspace functions compose**, without storing the intermediate value: each of its symbols is
-recomputed when the second machine reads it (`ComputableInTimeAndSpace.comp_space`). The
-counters for positions in the input and in the intermediate value have logarithmic length, since
-the intermediate value is polynomially long. -/
-theorem ComputableInLogSpace.comp {g : β → γ} {f : α → β}
-    (hg : ComputableInLogSpace g encMid encOut) (hf : ComputableInLogSpace f encIn encMid) :
-    ComputableInLogSpace (g ∘ f) encIn encOut := by
-  obtain ⟨C, d, hlen⟩ := hf.polyBounded_length.exists_le
-  obtain ⟨tf, cf, hf⟩ := hf
-  obtain ⟨tg, cg, hg⟩ := hg
-  obtain ⟨c, h⟩ := hf.comp_space hg
-  obtain ⟨K, hK⟩ : ∃ K, Nat.size (C + 1) + d = K := ⟨_, rfl⟩
-  refine ⟨_, c * (cf + cg * K + Nat.size 2 + 1 + K + 1), h.mono (fun _ => le_rfl) fun a => ?_⟩
-  have hm := hK ▸ length_encNat_succ_le (hlen a)
-  have hn := length_encNat_succ_le (m := (encIn a).length) (n := (encIn a).length) (C := 1)
-    (d := 1) (by simp)
-  have hg' := Nat.mul_le_mul_left cg ((log2_succ_le_length_encNat (encMid (f a)).length).trans hm)
-  rw [mul_assoc]
-  refine Nat.mul_le_mul_left c ?_
-  have hL : 1 ≤ Nat.log2 (encIn a).length + 1 := Nat.le_add_left _ _
-  generalize Nat.log2 (encIn a).length + 1 = L at *
-  generalize (encNat ((encIn a).length + 1)).length = A at *
-  generalize (encNat ((encMid (f a)).length + 1)).length = B at *
-  nlinarith
-
 /-- The identity is computable in logarithmic space, indeed in zero space. -/
 theorem ComputableInLogSpace.id : ComputableInLogSpace (fun a : α => a) encIn encIn :=
   ⟨_, 0, computableInTimeAndSpace_id.mono (fun _ => le_rfl) fun _ => Nat.zero_le _⟩
@@ -329,8 +274,11 @@ theorem ComputableInLogSpace.of_finite [Finite α] (f : α → β) :
 
 /-! ### Automation
 
-`ComputableInLogSpace` is a `fun_prop` predicate. The identity, constants and composition are its
-core rules; pairing, projections, case distinctions and word operations are registered in
+`ComputableInLogSpace` is a `fun_prop` predicate. The identity and constants are its core rules
+here. Its composition rule is registered in
+`Complexity/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/Composition/Recompute.lean`,
+so `fun_prop` needs that module to decompose a goal; pairing, projections, case distinctions and
+word operations are registered in
 `Complexity/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/Words.lean`, and the
 counter-program primitives in
 `Complexity/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/CounterProgram/Words.lean`.
@@ -339,53 +287,6 @@ plain polynomial-time goal, and there is no rule back, so the search has no cycl
 
 attribute [fun_prop] ComputableInLogSpace ComputableInLogSpace.id ComputableInLogSpace.const
   ComputableInLogSpace.computableInPolyTime
-
-/-- Composition, in the form used by `fun_prop`. -/
-@[fun_prop]
-theorem ComputableInLogSpace.comp' {g : β → γ} {f : α → β}
-    (hg : ComputableInLogSpace g encMid encOut) (hf : ComputableInLogSpace f encIn encMid) :
-    ComputableInLogSpace (fun a => g (f a)) encIn encOut :=
-  hg.comp hf
-
-/-- Negating a computed Boolean, in the form used by `fun_prop`. -/
-@[fun_prop]
-theorem ComputableInLogSpace.bool_not {c : α → Bool} (hc : ComputableInLogSpace c encIn encBool) :
-    ComputableInLogSpace (fun a => !c a) encIn encBool :=
-  (ComputableInLogSpace.of_finite (encIn := encBool) not).comp' hc
-
-/-- Doubling one false bit gives its marker followed by `false`. -/
-@[simp] theorem doubled_false : doubled [false] = [true, false] := rfl
-
-/-- Doubling commutes with concatenating a list of words. -/
-theorem doubled_flatten (L : List (List Bool)) :
-    doubled L.flatten = (L.map doubled).flatten := by
-  induction L with
-  | nil => rfl
-  | cons l L ih => simp [ih]
-
-/-- Two layers of doubling turn each true bit into four true bits. -/
-theorem doubled_doubled_replicate (n : ℕ) :
-    doubled (doubled (List.replicate n true)) =
-      (List.replicate n [true, true, true, true]).flatten := by
-  induction n with
-  | zero => rfl
-  | succ n ih => simp [List.replicate_succ, doubled, ← ih]
-
-private def doubledTransducer : Transducer Bool Unit :=
-  { Encodings.frameT with final := fun _ => [], length_final_le := fun _ => by simp }
-
-private theorem doubledTransducer_run (l : List Bool) :
-    doubledTransducer.run () l = doubled l := by
-  induction l with
-  | nil => rfl
-  | cons b l ih => exact congrArg (true :: b :: ·) ih
-
-/-- Doubling the bits with framing markers uses linear work space. -/
-theorem doubled_inSpace :
-    ComputableTidilyInSpace doubled encBits encBits fun l => (encBits l).length :=
-  ComputableTidilyInSpace.of_inO (.of_linear
-    (doubledTransducer.computableTidilyInLinearTimeAndSpace fun l =>
-      (doubledTransducer_run l).symm))
 
 /-- **A function computed by a finite-state transducer is computable in logarithmic space**: the
 transducer runs without work tapes. -/

@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 -- upstream: local-only (formal abstract library)
 
 import ComplexityAbstracts.WordRAMBridge
-import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap
 
 /-!
 # Bridge for the Fibonacci-heap formal abstract
@@ -17,7 +17,8 @@ scratch, together with its own exact word-RAM presentation, register calling con
 memory-confinement predicate and multi-operation execution relation `RunsOps`. This file proves, for
 every word-RAM presentation `S` satisfying `WordRAMBridge.Laws S` and every priority-queue
 presentation `P` satisfying `PQLaws S P`, that the compiled library programs `initFreshProg`,
-`initClearProg` and `opProg` of `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.MinPQ` realize
+`initClearProg` and `opProg` of `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.MinPQ`
+realize
 `RunsOps` within the claimed `O(1)` / `O(n_max + 1)` initialization bounds and
 `O(m_q + m_ins + m_dec + ∑ (log n_t + 1))` amortized operation bound in the current number of
 stored elements `n_t`.
@@ -45,8 +46,7 @@ syntax abbreviation `wramBlock` are global, since Lean cannot scope syntax categ
 namespace ComplexityAbstracts.FibonacciHeapBridge
 
 open Cslib.WordRAM
-open Cslib.Algorithms.Lean
-open Cslib.Algorithms.WordRAM.PriorityQueue
+open Cslib.DataStructure Cslib.DataStructure.PriorityQueue Cslib.DataStructure.PriorityQueue.WordRAM
 open ComplexityTests.Abstracts
 open WordRAMBridge
 
@@ -297,8 +297,8 @@ theorem extractStepLog_eq {n_max : ℕ} (q : Fin n_max → Option (ℕ × ℕ)) 
     rw [opOf, hP.extractStepLog_extractMin, size_eq_lib hP]
 
 theorem stepState_of_lib {n_max U V : ℕ} {q q' : Fin n_max → Option (ℕ × ℕ)}
-    {g : MinPQ.Op n_max} {a : (MinPQ.spec n_max U V).Result g}
-    (hs : (MinPQ.spec n_max U V).step q g q' a) :
+    {g : MinPQ.Op n_max} {a : (minPQSpec n_max U V).Result g}
+    (hs : (minPQSpec n_max U V).step q g q' a) :
     P.StepState q (P.opOf g) q' := by
   cases g with
   | isEmpty =>
@@ -325,13 +325,13 @@ theorem stepState_of_lib {n_max U V : ℕ} {q q' : Fin n_max → Option (ℕ × 
       exact hP.stepState_extractMin_some q h u v hq hmin
 
 theorem stepDecoded_of_lib {n_max U V : ℕ} {q q' : Fin n_max → Option (ℕ × ℕ)}
-    {g : MinPQ.Op n_max} {a : (MinPQ.spec n_max U V).Result g} {reg : Fin 48 → ℕ}
-    (hs : (MinPQ.spec n_max U V).step q g q' a)
+    {g : MinPQ.Op n_max} {a : (minPQSpec n_max U V).Result g} {reg : Fin 48 → ℕ}
+    (hs : (minPQSpec n_max U V).step q g q' a)
     (hd : FibonacciHeap.MinPQ.decode (n_max := n_max) (U := U) (V := V) g reg = some a) :
     P.StepDecoded q (P.opOf g) q' reg := by
   cases g with
   | isEmpty =>
-    dsimp only [MinPQ.spec, MinPQ.Op.Result] at a hs hd
+    dsimp only [minPQSpec, MinPQ.Op.Result] at a hs hd
     rcases hs with ⟨hqq, rfl⟩
     subst q'
     apply hP.decodes_isEmpty
@@ -339,13 +339,13 @@ theorem stepDecoded_of_lib {n_max U V : ℕ} {q q' : Fin n_max → Option (ℕ �
     have hd' : decide (reg ⟨22, _⟩ ≠ 0) = decide (MinPQ.dom q = ∅) := Option.some.inj hd
     exact (decide_eq_decide.mp hd').trans (forall_none_iff_dom_empty q).symm
   | get h =>
-    dsimp only [MinPQ.spec, MinPQ.Op.Result] at a hs hd
+    dsimp only [minPQSpec, MinPQ.Op.Result] at a hs hd
     rcases hs with ⟨hqq, rfl⟩
     subst q'
     apply hP.decodes_get
     exact hd
   | insert u v =>
-    dsimp only [MinPQ.spec, MinPQ.Op.Result] at a hs hd
+    dsimp only [minPQSpec, MinPQ.Op.Result] at a hs hd
     rcases hs with ⟨h, hnone, hqq, rfl⟩
     subst q'
     dsimp only [FibonacciHeap.MinPQ.decode, FibonacciHeap.MinPQ.outV] at hd
@@ -361,7 +361,7 @@ theorem stepDecoded_of_lib {n_max U V : ℕ} {q q' : Fin n_max → Option (ℕ �
     subst q'
     exact hP.decodes_decreaseKey q h u' u₀ v reg hq
   | extractMin =>
-    dsimp only [MinPQ.spec, MinPQ.Op.Result] at a hs hd
+    dsimp only [minPQSpec, MinPQ.Op.Result] at a hs hd
     dsimp only [FibonacciHeap.MinPQ.decode, FibonacciHeap.MinPQ.outFlag,
       FibonacciHeap.MinPQ.outV, FibonacciHeap.MinPQ.outK,
       FibonacciHeap.MinPQ.outValReg] at hd
@@ -439,7 +439,7 @@ theorem prepareRegs_eq {n_max : ℕ} (g : MinPQ.Op n_max) (reg : Fin 48 → ℕ)
 
 theorem validSeq_to_lib {n_max U V : ℕ} :
     ∀ (gs : List (MinPQ.Op n_max)) (q : Fin n_max → Option (ℕ × ℕ)),
-      P.ValidSeq U V q (gs.map P.opOf) → (MinPQ.spec n_max U V).ValidOpSeq q gs
+      P.ValidSeq U V q (gs.map P.opOf) → (minPQSpec n_max U V).ValidOpSeq q gs
   | [], _, _ => trivial
   | g :: gs, q, hv => by
     obtain ⟨hv_g, hv_gs⟩ := hP.validSeq_cons q (P.opOf g) (gs.map P.opOf) hv
@@ -498,7 +498,7 @@ theorem numExtractMins_eq {n_max : ℕ} :
 
 theorem runsOps_map (hS : WordRAMBridge.Laws S) {n_max U V w base : ℕ} :
     ∀ {q q' : Fin n_max → Option (ℕ × ℕ)} {x z : Data 48} {gs : List (MinPQ.Op n_max)}
-      {tr : (MinPQ.spec n_max U V).Transcript} {total : ℕ},
+      {tr : (minPQSpec n_max U V).Transcript} {total : ℕ},
       FibonacciHeap.MinPQ.RunsOps (U := U) (V := V) w base q x gs tr q' z total →
       P.RunsOps w (S.programOf FibonacciHeap.MinPQ.opProg) base (11 * n_max + 1) q x.regs x.mem
         (gs.map P.opOf) q' z.regs z.mem total (FibonacciHeap.MinPQ.extractLogSum q tr)
