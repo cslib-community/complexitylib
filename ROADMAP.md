@@ -651,11 +651,9 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   expected-time rules for unbounded almost-surely terminating structured loops; random-tape
   equivalence and BPP/RP/ZPP simulation bridges for the randomized word RAM ([#1124]); transfer
   of cell-probe lower bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
-- **Direct 3SUM adaptation** ([#1394]): the native ordinary 1.9992 endpoint is proved in
-  `WordRAM/ThreeSum/Decision/One9992.lean` (standard Word-RAM instruction time, polynomially
-  bounded integer inputs). The source's sharper Exact Triangle exponent 2.9983 is not claimed by
-  this integer retuning and remains open.
-  `Subquadratic.lean` specializes the same tuned pipeline to the weaker `2−1/5184` bound.
+- **Sharper native Exact Triangle exponent** ([#2423]): the automatic box-backed Exact Triangle
+  host runs in `Oκ(n^(3−33/20000))` (exponent 2.99835) after integer retuning; reaching the
+  source's stated 2.9983 under the same native conventions remains open.
 - **Memory-oracle realization** ([#2205], [#2213]): the foundational graded kernel certifies
   all four memory queries, register-word glue, native branches and binds with one fixed
   continuation emitter for all runtime replies. Its functional representation retains the
@@ -845,7 +843,6 @@ not planned, not as proved.
 [#1124]: https://github.com/cslib-community/complexitylib/issues/1124
 [#1155]: https://github.com/cslib-community/complexitylib/issues/1155
 [#1351]: https://github.com/cslib-community/complexitylib/issues/1351
-[#1394]: https://github.com/cslib-community/complexitylib/issues/1394
 [#1539]: https://github.com/cslib-community/complexitylib/issues/1539
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
 [#1817]: https://github.com/cslib-community/complexitylib/issues/1817
@@ -859,3 +856,4 @@ not planned, not as proved.
 [#2145]: https://github.com/cslib-community/complexitylib/issues/2145
 [#2084]: https://github.com/cslib-community/complexitylib/issues/2084
 [#2290]: https://github.com/cslib-community/complexitylib/issues/2290
+[#2423]: https://github.com/cslib-community/complexitylib/issues/2423
