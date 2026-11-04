@@ -137,6 +137,16 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.BoxFixedPrime.TimeBoun
 public import Complexity.Algorithms.WordRAM.ExactTriangle.BoxRecordWitness.Exec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.BoxRecordWitness.Program
 public import Complexity.Algorithms.WordRAM.ExactTriangle.BoxRecordWitness.Width
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableBoxFixedPrime
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableBoxFixedPrime.Core
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableBoxFixedPrime.Exec
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableBoxFixedPrime.Flat
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableBoxFixedPrime.Input
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableBoxFixedPrime.Prefix
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableBoxFixedPrime.Program
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableBoxFixedPrime.Properties
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableBoxFixedPrime.Source
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableBoxFixedPrime.TimeBound
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Adapt
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Admission
