@@ -844,8 +844,30 @@ early inactive loss and its final disappearance, a nonzero fine-bin mean at rate
 and a positive omitted entry of size `1/256`. The unequal-rate examples check successful
 histories and their conditional means; they do not claim final compressed accuracy.
 
-**Remaining parent-error gap:** the first deterministic envelope retains explicit losses;
-their global scheduled payment is not established. Preparation mean/error transport,
+[`HierarchyInitialMeanPayment.lean`](../../Complexity/Foundations/Probability/HierarchyInitialMeanPayment.lean)
+pays the finite first-mean charges without assuming output accuracy. The chosen horizon makes
+the initial coarse boundary zero, including at budget zero. Omitted coverage costs at most
+`rate n`; inactive mass is bounded by the primitive bin cap times the sum of actual inactive
+bin rates, with inactivity determined by `lastBudget` and `sampleScale`. Division retains
+`rankRate + baseEntry` before the uniform bound divides by rank rate.
+
+If every retained scale cutoff is strictly below `M > 1`, only group zero can remain inactive.
+The actual first clipped mean's final bound is `rate n / rankRate`. Its stationary preloss is
+bounded by `36 L δ + 72 L` times the sum of `rate n / (1023 * rankRate)` and the initial cap/rate
+charge times `(1/1024)^(2^log2 M)`. The first floor pays this initial loss; reducing δ alone
+does not remove the surviving coefficient. The real predecoder consumer permits a different
+maximizing retained endpoint at every prefix. The deterministic heavy-tail consumer uses the
+actual base's heavy event and retains the integrated row norm of a uniform finite charge.
+That coarse norm is explicit and need not shrink; it is not a proved reserve allocation.
+No noise is discounted using heavy-event rarity.
+
+The actual-history regressions consume the final payment for nonzero fine and omitted-positive
+entries at budget eight, check the full four-group stationary charge, and retain a positive
+uniform charge at budget two, where the fine scale cutoff does not fit. These are first-mean
+payments, not final compressed-output accuracy or a nonconstant mixing example.
+
+**Remaining parent-error gap:** choosing global rates and reserves so the explicit finite
+payments meet the requested accuracy remains open. Preparation mean/error transport,
 second-signal noise,
 combined false-event raw-prefix moments at j+1, and the resulting no-overflow/final and heavy
 mean-tail budgets have not been paid from an invariant covering ALL actual lower-budget

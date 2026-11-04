@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of actual polynomial evaluator histories)
-import Complexity.Foundations.Probability.HierarchyInitialMean
+import Complexity.Foundations.Probability.HierarchyInitialMeanPayment
 
 /-! A positive identity/full-rate evaluator history with actual ratio-16 bins and polynomial
 preparation. The top bin carries the input, the fine bin vanishes. This exact stationary
@@ -527,5 +527,91 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) (x : ZMod 5) :
     BudgetData.initialCoarseLoss, scaledData, data, base, numerator,
     boundedRoutedBinCutoff, routedBinCutoff, binWeight, rate, polynomialSwitch4,
     polynomialTransition4, transitionPolynomial4]
+
+private lemma scale_cutoffs (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ∀ bin ∈ (data HP).bins, LogSpaceEstimation.scaleCutoff (data HP).slack
+      ((data HP).sampleScale { (request HP) with usage := (request HP).terminal }
+        (some bin)) < 8 := by
+  have hscale : Real.logb 2 (16 : ℝ) = 4 := by
+    rw [show (16 : ℝ) = (2 : ℝ) ^ (4 : ℕ) by norm_num, Real.logb_pow]
+    norm_num
+  have hsmall : Real.logb 2 (1 / 16 : ℝ) = -4 := by
+    rw [one_div, Real.logb_inv, hscale]
+  intro bin hi
+  have hi' : bin = 0 ∨ bin = 1 := by simpa only [data, mem_insert, mem_singleton] using hi
+  rcases hi' with rfl | rfl <;>
+    norm_num [BudgetData.sampleScale, LogSpaceEstimation.scaleCutoff, data, request,
+      gridChannel, rate, Real.logb_inv, hscale, hsmall]
+
+-- A successful actual history consumes the new final deterministic payment. The positive
+-- fine-bin and wholly omitted-entry cases both satisfy the actual scale allocation.
+-- This controls the first clipped mean only, not preparation or compressed output.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (w : ℝ) (hw : w = 1 / 16 ∨ w = 1 / 256) (x : ZMod 5) :
+    ∃ F, (scaledData HP w).initialPrefixes 8 (request HP) = some F ∧
+      NormalizedMoments.actualClippedMean HP 0 2 (side 5 0) (side 5 0) (side 5 0)
+        1 [1] [2, 3] 0 (w • base) (HP.η / 4)
+        (NormalizedMoments.firstSignalIncrement F 0 (fun _ _ _ _ => 0)) 0 0 3 x x ≤ 1 / 16 := by
+  obtain ⟨F, hF, _⟩ := scaledHistory_mean HP w hw x
+  have hw0 : 0 ≤ w := by rcases hw with rfl | rfl <;> norm_num
+  have hw1 : w ≤ 1 := by rcases hw with rfl | rfl <;> norm_num
+  have hC (v z : ZMod 5) : 0 ≤ (scaledData HP w).base v z := by
+    change 0 ≤ w * base v z
+    apply mul_nonneg hw0
+    simp only [base, Matrix.one_apply]
+    split_ifs <;> norm_num
+  have hC1 : (scaledData HP w).base *ᵥ 1 ≤ 1 := by
+    intro v
+    simpa [scaledData, data, base, Matrix.smul_mulVec] using hw1
+  refine ⟨F, hF, ?_⟩
+  have hp := BudgetData.initialFirstSignal_clippedMean_final (scaledData HP w) 8 (by decide)
+    1 (by ext i; simp only [scaledData, data, mem_insert, mem_singleton, mem_range]; omega)
+    rfl rfl rfl (by norm_num [scaledData, data])
+    (⟨1, 4, by decide, by decide⟩ : Horizon 5) (by decide)
+    (request HP) 0 2 (by decide) 0 0 [1] [2, 3] rfl rfl (by decide)
+    hC hC1 F hF (by decide) (scale_cutoffs HP) (side 5 0) (HP.η / 4)
+    (fun _ _ _ _ => 0) x x
+  norm_num [scaledData, data, rate] at hp ⊢
+  exact hp
+
+-- At budget eight only the initial group is inactive; its charge is paid by the tiny
+-- first floor. Every later inactive charge is zero, including at an omitted positive entry.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (i : ℕ) (hi : 0 < i) :
+    (data HP).initialInactiveCharge 8 i (request HP) = 0 :=
+  BudgetData.initialInactiveCharge_eq_zero_of_pos (data HP) 8 i (by decide) hi
+    (request HP) (scale_cutoffs HP)
+
+-- The stationary charge is global over all four executed groups. Shrinking the floor
+-- does not remove the 72 L coefficient; omitted coverage and the initial charge survive.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) {δ L : ℝ}
+    (hδ : 0 < δ) (hL : 0 ≤ L) :
+    (36 * L + 72 * L / δ) * (∑ i ∈ range 4,
+      Cslib.RowCompression.dyadicFloor δ 4 i *
+        (data HP).initialMeanCharge 8 1 i 0 (request HP)) ≤
+      (36 * L * δ + 72 * L) *
+        (1 / 16 / 1023 + 17 * (1 / 1024 : ℝ) ^ 8) := by
+  have hp := BudgetData.initialMeanCharge_preloss (data HP) 8 1 0 (by decide)
+    (request HP) (by intro bin; exact (rate_pos bin).le) (scale_cutoffs HP) hδ hL
+  norm_num [data, rate] at hp ⊢
+  exact hp
+
+-- The edge budget does not satisfy the allocation premise: the fine-bin cutoff is five.
+-- Therefore the final uniform charge remains positive, even though the identity fixture's
+-- actual fine-bin mass is zero. No arbitrary target is capped to erase this distinction.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (data HP).initialMeanCharge 2 1 1 0 (request HP) = 17 / 16 := by
+  have hscale : Real.logb 2 (16 : ℝ) = 4 := by
+    rw [show (16 : ℝ) = (2 : ℝ) ^ (4 : ℕ) by norm_num, Real.logb_pow]
+    norm_num
+  have hsmall : Real.logb 2 (1 / 16 : ℝ) = -4 := by
+    rw [one_div, Real.logb_inv, hscale]
+  norm_num [BudgetData.initialMeanCharge, BudgetData.initialInactiveCharge,
+    BudgetData.sampleScale, LogSpaceEstimation.scaleCutoff, data, request, gridChannel,
+    rate, Cslib.RowCompression.dyadicSlack, Real.logb_inv, hscale, hsmall]
+
+-- The coarse boundary vanishes even at zero budget, without a successful-history premise.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (x y : ZMod 5) :
+    (data HP).initialCoarseLoss 0 1 (request HP) x y = 0 := by
+  simpa using BudgetData.initialCoarseLoss_eq_zero (data HP) 0 (request HP) x y
 
 end PolynomialBudgetHistory
