@@ -1231,6 +1231,30 @@ $\sum_j (\sum_{i\ge j}28^{m-i}a_i)^4$, without an outer group-count cube. The
 literal heavy events remain in `initialFourMaxReserve`; the numerical comparison
 still supplies no rarity discount.
 
+For the same executed prefixes, `initial_compressed_first_noise` now also returns a
+pairwise normalized payment. `initialRelativeNoiseBudget` sums the scheduled conditional
+group contractions, retaining the joint slice density and the actual centered input
+fourth moment divided by $(\mathrm{rate}(k_a)+G(x,y))^4$. The literal
+`initialGroupInput` retains bin importance weights and fine/coarse availability; correlated
+groups pay the cube of the number of included groups. Empty slices contribute zero.
+`initialGroupInput_relative_fourth_le` derives the finite input/target relation
+$$
+\mathbb E_{\sigma\mid x,y}
+\left|\frac{A_d(\sigma,x,y)-\mathbb E[A_d\mid x,y]}
+{\mathrm{rate}(k_a)+G(x,y)}\right|^4
+\le \left(\frac{2\,\mathrm{magnitude}(r)}{\mathrm{rate}(k_a)+G(x,y)}\right)^4.
+$$
+This follows from the genuine assembled input amplitude; it supplies no rate or width
+cancellation for small targets. `initialComputedRelativeMoment` takes the minimum of this
+semantic group payment (plus transported centered child error) and the previous absolute
+first-noise cost. The actual own-precision four-statistic, four-max and sharp-reserve
+consumers now use this minimum. Their other three costs are unchanged. The transported
+child error still pays inverse rate, and no heavy-event rarity discount applies to noise.
+The checked positive budget-two history has nonzero group input but zero centered
+conditional noise: with zero transported error the new first-noise cost vanishes while
+the old envelope is positive. This does not assert zero approximate-child error.
+A separate nonconstant example checks a strictly positive normalized fourth moment.
+
 Uniform absorption does not follow by increasing the budget in this envelope.
 `initialComputedMoment_final_firstNoise_zero` computes the final semantic first-noise
 charge, even with zero transported child error, as
@@ -1239,9 +1263,13 @@ $$
 $$
 `initialComputedMoment_firstNoise_not_uniform` chooses a terminal exponent before
 all budgets and requests at which this exceeds any proposed uniform coefficient times
-that precision fourth power. `initialComputedNumericalReserve_ge_noise` shows the
-same factor survives the final reserve summand, multiplied by $128KC^4$. These are
-lower bounds on the **numerical envelope**, not on actual noise or estimator error.
+that precision fourth power. Its exponent is independent of `r.terminal`; there are no
+admissibility, horizon/prime-bound or successful-execution guards. For fixed prime it
+includes exponents beyond admissible horizons, so this is not a valid-call counterexample.
+`initialComputedNumericalReserve_ge_noise` shows the
+same factor survives the final reserve summand built from the **old absolute costs**,
+multiplied by $128KC^4$. This lower bound does not apply to the new minimum payment.
+These are lower bounds on the old **numerical envelope**, not on actual noise or estimator error.
 The preparation sensitivity still contains $P(|\zeta|(L_h+L_\rho)/\mathrm{rate}(k_a))^4$,
 and the raw false-event coefficient contains inverse fourth powers of the floor.
 Bin/prefix costs and the inner $28^{m-i}$ tail weights also remain. A uniform argument

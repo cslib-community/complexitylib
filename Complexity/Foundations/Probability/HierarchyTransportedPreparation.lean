@@ -30,7 +30,8 @@ changing-request induction and native RL=L remain open.
 * `initial_compressed_preparation`: full-rank sensitivity and actual usage-walk noise.
 * `exists_initial_compressed_fourMax`: the shared sharp reserve on computed histories.
 * `initial_compressed_precision_reserve`: numerical reserve from own-request rooted IH.
-* `initialComputedMoment_final_firstNoise_zero`: exact nondecaying normalized noise cost.
+* `initialComputedRelativeMoment`: sharper costs used by computed statistics and reserve.
+* `initialComputedMoment_final_firstNoise_zero`: exact old absolute-envelope noise cost.
 * `initialComputedMoment_firstNoise_not_uniform`: a uniform envelope obstruction.
 -/
 public section
@@ -58,7 +59,8 @@ centered noise and omitted/inactive deficit. No claim that this charge is small 
 
 /-- Centered first noise of the literal computed prefixes. The transported perturbation
 is centered at its own conditional mean before adding the semantic completion noise.
-Both payments are unconditional; no heavy-event rarity factor is applied to noise. -/
+Both payments are unconditional; no heavy-event rarity factor is applied to noise.
+Returns the absolute payment and a denominator-retaining semantic group payment. -/
 theorem initial_compressed_first_noise
     (B : BudgetData HP P) (M : ℕ) (hM : 0 < M) (hbins : B.bins.Nonempty)
     (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ) (ζ floor : ℝ)
@@ -95,7 +97,16 @@ theorem initial_compressed_first_noise
           (rate ka)⁻¹ ^ 4 * (8 * (16 *
             (((j + 1 : ℕ) : ℝ) ^ 3 * ∑ i ∈ range (j + 1), ε i) +
             (((2 : ℝ) ^ (-B.requestPrecision M {r with usage := r.terminal}) * (64 / 63)) *
-              (1 / 64 : ℝ) ^ dyadicSlack (Nat.log2 M + 1) j) ^ 4)) := by
+              (1 / 64 : ℝ) ^ dyadicSlack (Nat.log2 M + 1) j) ^ 4)) ∧
+        rowNormPow 4 P r.source.rate
+          (retainedMask R.source (side P ks) B.padding ss)
+          (retainedMask R.terminal (side P ka) B.padding st)
+          (actualNoiseEntry R.source R.terminal (side P ks) (side P ka) Lt B.padding ss st
+            ka G (firstSignalIncrement F ka second) 0 0 j) ≤
+          8 * (16 * (rate ka)⁻¹ ^ 4 *
+            (((j + 1 : ℕ) : ℝ) ^ 3 * ∑ i ∈ range (j + 1), ε i) +
+              B.initialRelativeNoiseBudget M r R.source R.terminal R.source_terminal
+                ks ka ss st G (j + 1)) := by
   have hsr : 0 ≤ r.source.rate := by rw [hs]; exact (rate_pos ks).le
   obtain ⟨groups, reference, hgroups, href, hpref, _⟩ :=
     B.initial_compressed_prefix_error exponent ζ floor M { r with usage := r.terminal }
@@ -125,16 +136,57 @@ theorem initial_compressed_first_noise
   have hn := actualNoiseEntry_first_prefix_row_le R.source R.terminal
     (side P ks) (side P ka) Lt B.padding ss st F ka target htarget second 0
     (by intros; rfl) j hNu
-  apply hn.trans
-  apply mul_le_mul_of_nonneg_left _ (by positivity)
-  apply hb.trans
-  apply mul_le_mul_of_nonneg_left _ (by norm_num : (0 : ℝ) ≤ 8)
-  apply add_le_add
-  · apply mul_le_mul_of_nonneg_left _ (by norm_num : (0 : ℝ) ≤ 16)
-    convert hdiff using 1
-    congr 8
-    exact congrArg (fun c => c.rate) hs
-  · convert hnoise using 1; congr 8
+  constructor
+  · apply hn.trans
+    apply mul_le_mul_of_nonneg_left _ (by positivity)
+    apply hb.trans
+    apply mul_le_mul_of_nonneg_left _ (by norm_num : (0 : ℝ) ≤ 8)
+    apply add_le_add
+    · apply mul_le_mul_of_nonneg_left _ (by norm_num : (0 : ℝ) ≤ 16)
+      convert hdiff using 1
+      congr 8
+      exact congrArg (fun c => c.rate) hs
+    · convert hnoise using 1; congr 8
+  · rw [actualNoiseEntry_first_prefix_row_eq R.source R.terminal
+      (side P ks) (side P ka) Lt B.padding ss st F ka target htarget second 0
+      (by intros; rfl) j P r.source.rate]
+    let normed := fun (T : Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ) σ x y =>
+      T σ x y / (rate ka + target x y)
+    have hc := rowNormPow_centered_fourth_le hNu
+      (retainedMask R.source (side P ks) B.padding ss)
+      (retainedMask R.terminal (side P ka) B.padding st)
+      (normed (F (j + 1))) (normed (G (j + 1)))
+    apply hc.trans
+    apply mul_le_mul_of_nonneg_left _ (by norm_num : (0 : ℝ) ≤ 8)
+    apply add_le_add
+    · rw [mul_assoc]
+      apply mul_le_mul_of_nonneg_left _ (by norm_num : (0 : ℝ) ≤ 16)
+      have hdifference : rowNormPow 4 P r.source.rate
+          (retainedMask R.source (side P ks) B.padding ss)
+          (retainedMask R.terminal (side P ka) B.padding st)
+          (F (j + 1) - G (j + 1)) ≤
+          ((j + 1 : ℕ) : ℝ) ^ 3 * ∑ i ∈ range (j + 1), ε i := by
+        convert hdiff using 1
+        congr 8
+        exact congrArg (fun c => c.rate) hs
+      apply (rowNormPow_le_mul hNu (c := (rate ka)⁻¹ ^ 4) ?_).trans
+        (mul_le_mul_of_nonneg_left hdifference (by positivity))
+      intro σ x y _ _
+      have hr := rate_pos ka
+      change |F (j + 1) σ x y / _ - G (j + 1) σ x y / _| ^ 4 ≤
+        (rate ka)⁻¹ ^ 4 * |F (j + 1) σ x y - G (j + 1) σ x y| ^ 4
+      rw [← sub_div, abs_div, abs_of_pos
+        (add_pos_of_pos_of_nonneg (rate_pos ka) (htarget x y))]
+      calc
+        _ ≤ (|F (j + 1) σ x y - G (j + 1) σ x y| / rate ka) ^ 4 :=
+          pow_le_pow_left₀ (div_nonneg (abs_nonneg _)
+            (add_pos_of_pos_of_nonneg hr (htarget x y)).le)
+            (div_le_div_of_nonneg_left (abs_nonneg _) (rate_pos ka)
+              (le_add_of_nonneg_right (htarget x y))) 4
+        _ = _ := by simp only [div_eq_mul_inv, mul_pow]; ring
+    · have href := B.initialPrefix_relative_noise M hM hbins r R.source R.terminal
+        R.source_terminal ks ka ss st hs ht G hG target (j + 1)
+      simpa only [normed, rowSliceMean, ← expect_div, ← sub_div] using href
 
 /-- Four explicit row-moment costs for computed initial history: deterministic first
 mean/deficit, preparation mean, centered first noise, and usage noise. Bin importance
@@ -172,6 +224,32 @@ lemma initialComputedMoment_nonneg (B : BudgetData HP P) (M n : ℕ)
   unfold initialComputedMoment initialTransportMoment
   split_ifs <;> positivity
 
+/-- Computed four-statistic payment retaining pairwise semantic normalization. Only the
+first noise is sharpened; taking the minimum preserves the previous absolute payment.
+The transported error still pays inverse rate, and no global absorption is claimed. -/
+@[expose] def initialComputedRelativeMoment (B : BudgetData HP P) (M n : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
+    (ks ka : ℕ) (ss st : List (ZMod P)) (ε : ℕ → ℝ) (ζ Lh Lρ : ℝ)
+    (j : ℕ) (noise : Bool) (ν : Fin 2) : ℝ :=
+  let old := B.initialComputedMoment M n r R ks ka ss st ε ζ Lh Lρ j noise ν
+  if noise ∧ ν = 0 then min old
+    (8 * (16 * (rate ka)⁻¹ ^ 4 * (((j + 1 : ℕ) : ℝ) ^ 3 * ∑ i ∈ range (j + 1), ε i) +
+      B.initialRelativeNoiseBudget M r R.source R.terminal R.source_terminal
+        ks ka ss st B.base (j + 1))) else old
+
+/-- Nonnegative input payments give nonnegative sharpened costs. -/
+lemma initialComputedRelativeMoment_nonneg (B : BudgetData HP P) (M n : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (hr : 0 ≤ r.source.rate)
+    (R : RoleProfile 3) (ks ka : ℕ) (ss st : List (ZMod P)) (ε : ℕ → ℝ)
+    (hε : ∀ i, 0 ≤ ε i) (ζ Lh Lρ : ℝ) (j : ℕ) (noise : Bool) (ν : Fin 2) :
+    0 ≤ B.initialComputedRelativeMoment M n r R ks ka ss st ε ζ Lh Lρ j noise ν := by
+  have hold := B.initialComputedMoment_nonneg M n r R ks ka ss st ε hε ζ Lh Lρ j noise ν
+  have hrel := B.initialRelativeNoiseBudget_nonneg M r hr R.source R.terminal
+    R.source_terminal ks ka ss st B.base (j + 1)
+  have hsum := sum_nonneg (fun i (_ : i ∈ range (j + 1)) => hε i)
+  unfold initialComputedRelativeMoment
+  split_ifs <;> positivity
+
 /-- Even with no transported child error, the final semantic first-noise payment has
 this exact coefficient relative to its own parent precision. Increasing `M` alone does
 not shrink the ratio: `rate ka = 2^(-4*ka)` leaves a factor `2^(16*ka)`.
@@ -189,8 +267,10 @@ theorem initialComputedMoment_final_firstNoise_zero (B : BudgetData HP P) (M n :
 
 /-- No statistical-budget threshold absorbs this envelope by one coefficient uniform
 in the terminal exponent. The exponent is chosen before the budget and request; no
-changing-request IH is assumed or refuted. Sharper actual conditional-noise analysis is
-needed to use this route for the simultaneous invariant. -/
+changing-request IH is assumed or refuted. Here `ka` is independent of `r.terminal`:
+there is no admissibility, horizon/prime bound or successful-execution guard. This does
+not give a counterexample on valid recursive calls. Sharper actual conditional-noise
+analysis is needed to use this route for the simultaneous invariant. -/
 theorem initialComputedMoment_firstNoise_not_uniform (B : BudgetData HP P) (A : ℝ) :
     ∃ ka : ℕ, ∀ (M n : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
       (R : RoleProfile 3) (ks : ℕ) (ss st : List (ZMod P)) (ζ Lh Lρ : ℝ),
@@ -535,12 +615,12 @@ theorem initial_compressed_four_moments
             (retainedMask R.terminal (if ν = 0 then side P ka else side P ku) B.padding st)
             (fun _ x y => actualClippedMean HP R.source R.terminal (side P ks) (side P ka)
               (side P ku) B.padding ss st ka B.base ζ Δ 0 ν j x y) ≤
-            B.initialComputedMoment M n r R ks ka ss st ε ζ Lh Lρ j false ν ∧
+            B.initialComputedRelativeMoment M n r R ks ka ss st ε ζ Lh Lρ j false ν ∧
           rowNormPow 4 P r.source.rate (retainedMask R.source (side P ks) B.padding ss)
             (retainedMask R.terminal (if ν = 0 then side P ka else side P ku) B.padding st)
             (actualNoiseEntry R.source R.terminal (side P ks) (side P ka) (side P ku)
               B.padding ss st ka B.base Δ 0 ν j) ≤
-            B.initialComputedMoment M n r R ks ka ss st ε ζ Lh Lρ j true ν := by
+            B.initialComputedRelativeMoment M n r R ks ka ss st ε ζ Lh Lρ j true ν := by
   obtain ⟨groups, hgroups, hprep⟩ := B.initial_compressed_preparation M hM n hbins hrate
     hcutoff haux hD H hn r R ks ka ss st hs ht hks hC hC1 exponent ζ floor A C ε hA hCrun herr
     bin ku husage hu hLh hLρ hh hρ
@@ -565,14 +645,16 @@ theorem initial_compressed_four_moments
         (fun p σ x y => ((groups.take p).map (fun T => T σ x y)).sum) ka B.base hC ζ
         (secondSignalIncrement (fun i σ x y => W[i - 1]?.getD 0 σ x y) ζ) j hNu
       apply hb.trans
-      simp only [initialComputedMoment, Bool.false_eq_true, ↓reduceIte, Fin.isValue]
+      simp only [initialComputedRelativeMoment, initialComputedMoment, Bool.false_eq_true,
+        ↓reduceIte, Fin.isValue]
       apply mul_le_mul_of_nonneg_left _ (by positivity)
       convert hmean j hj using 1
       congr 8
       exact congrArg (fun c => c.rate) hs
-    · simpa only [initialComputedMoment, ↓reduceIte, Fin.isValue] using
-        hnoise j hj B.base hC (side P ku)
-          (secondSignalIncrement (fun i σ x y => W[i - 1]?.getD 0 σ x y) ζ)
+    · have hz := hnoise j hj B.base hC (side P ku)
+        (secondSignalIncrement (fun i σ x y => W[i - 1]?.getD 0 σ x y) ζ)
+      simpa only [initialComputedRelativeMoment, initialComputedMoment, ↓reduceIte,
+        Fin.isValue, and_self] using le_min hz.1 hz.2
   · obtain ⟨hp, hz⟩ := (hprep j hj).2 W hW
     constructor
     · have hb : rowNormPow 4 P r.source.rate
@@ -600,9 +682,10 @@ theorem initial_compressed_four_moments
         rw [one_mul, abs_of_nonneg hnon]
         exact pow_le_pow_left₀ (by positivity) ((hp x y).trans (le_abs_self _)) 4
       apply hb.trans
-      simpa only [initialComputedMoment, Bool.false_eq_true, Fin.isValue, one_ne_zero,
-        ↓reduceIte, hs, gridChannel] using (hprep j hj).1
-    · simpa only [initialComputedMoment, Fin.isValue, one_ne_zero, ↓reduceIte] using hz
+      simpa only [initialComputedRelativeMoment, initialComputedMoment, Bool.false_eq_true,
+        Fin.isValue, one_ne_zero, and_false, ↓reduceIte, hs, gridChannel] using (hprep j hj).1
+    · simpa only [initialComputedRelativeMoment, initialComputedMoment, Fin.isValue,
+        one_ne_zero, and_false, ↓reduceIte] using hz
 
 /-- Literal all-four payment from strict lower-budget own-request rooted precision.
 No parent accuracy or four-max budgets are premises. The child hypothesis is conditional:
@@ -646,14 +729,14 @@ theorem initial_compressed_precision_moments
             (retainedMask R.terminal (if ν = 0 then side P ka else side P ku) B.padding st)
             (fun _ x y => actualClippedMean HP R.source R.terminal (side P ks) (side P ka)
               (side P ku) B.padding ss st ka B.base ζ Δ 0 ν j x y) ≤
-            B.initialComputedMoment M n r R ks ka ss st (fun i => B.initialRootGroupCharge M
+            B.initialComputedRelativeMoment M n r R ks ka ss st (fun i => B.initialRootGroupCharge M
               (dyadicSlack (Nat.log2 M + 1) i) { r with usage := r.terminal } coefficient)
               ζ Lh Lρ j false ν ∧
           rowNormPow 4 P r.source.rate (retainedMask R.source (side P ks) B.padding ss)
             (retainedMask R.terminal (if ν = 0 then side P ka else side P ku) B.padding st)
             (actualNoiseEntry R.source R.terminal (side P ks) (side P ka) (side P ku)
               B.padding ss st ka B.base Δ 0 ν j) ≤
-            B.initialComputedMoment M n r R ks ka ss st (fun i => B.initialRootGroupCharge M
+            B.initialComputedRelativeMoment M n r R ks ka ss st (fun i => B.initialRootGroupCharge M
               (dyadicSlack (Nat.log2 M + 1) i) { r with usage := r.terminal } coefficient)
               ζ Lh Lρ j true ν := by
   have hnonempty : B.bins.Nonempty := by rw [hbins]; exact ⟨0, mem_range.mpr (by omega)⟩
@@ -707,7 +790,7 @@ theorem initial_compressed_precision_fourMax
         let ε := fun i => B.initialRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
           { r with usage := r.terminal } coefficient
         let a := fun j noise ν =>
-          B.initialComputedMoment M n r R ks ka ss st ε ζ Lh Lρ j noise ν ^ (4⁻¹ : ℝ)
+          B.initialComputedRelativeMoment M n r R ks ka ss st ε ζ Lh Lρ j noise ν ^ (4⁻¹ : ℝ)
         ∀ j < Nat.log2 M + 1,
           vertexNormPow 4 P r.source.rate (retainedMask R.source (side P ks) B.padding ss)
             (actualFourMax HP R.source R.terminal (side P ks) (side P ka) (side P ku)
@@ -733,7 +816,7 @@ theorem initial_compressed_precision_fourMax
     (secondSignalIncrement (fun i σ x y => W[i - 1]?.getD 0 σ x y) ζ)
   let ε := fun i => B.initialRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
     { r with usage := r.terminal } coefficient
-  let cost := B.initialComputedMoment M n r R ks ka ss st ε ζ Lh Lρ j
+  let cost := B.initialComputedRelativeMoment M n r R ks ka ss st ε ζ Lh Lρ j
   have hNu : 0 ≤ (P : ℝ) * r.source.rate := by
     rw [hs]; exact mul_nonneg (Nat.cast_nonneg _) (rate_pos ks).le
   have hnon (noise : Bool) (ν : Fin 2) : 0 ≤ cost noise ν := by
@@ -786,8 +869,9 @@ theorem initial_compressed_precision_fourMax
 
 /-- The literal decoded-history sharp reserve is paid by explicit numerical costs of
 strict lower-budget own-request rooted hypotheses. No parent accuracy, supplied four-max
-budget or desired reserve is assumed. Uniform absorption of this conservative finite
-charge, and the simultaneous IH, are separate obligations. -/
+budget or desired reserve is assumed. The first noise uses the minimum of the absolute
+and pairwise conditional payments. Uniform absorption of this finite charge, and the
+simultaneous IH, are separate obligations. -/
 theorem initial_compressed_precision_reserve
     (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ)
     (ζ floor : ℝ)
@@ -824,7 +908,7 @@ theorem initial_compressed_precision_reserve
         let ε := fun i => B.initialRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
           { r with usage := r.terminal } coefficient
         let a := fun j noise ν =>
-          B.initialComputedMoment M n r R ks ka ss st ε ζ Lh Lρ j noise ν ^ (4⁻¹ : ℝ)
+          B.initialComputedRelativeMoment M n r R ks ka ss st ε ζ Lh Lρ j noise ν ^ (4⁻¹ : ℝ)
         B.initialFourMaxReserve M bin ka ζ floor r R ks ku ss st B.base F W cap
           Cdecoder Cpre ≤
           initialNumericalReserve HP M floor cap Cdecoder Cpre
@@ -838,7 +922,8 @@ theorem initial_compressed_precision_reserve
   have hr : 0 ≤ r.source.rate := by rw [hs]; exact (rate_pos ks).le
   apply B.initialFourMaxReserve_le M bin ka ζ floor hfloor r hr R ks ku ss st B.base _ W
     cap Cdecoder Cpre _ (fun j => by
-      have hc (noise : Bool) (ν : Fin 2) := B.initialComputedMoment_nonneg M n r R ks ka ss st
+      have hc (noise : Bool) (ν : Fin 2) :=
+        B.initialComputedRelativeMoment_nonneg M n r hr R ks ka ss st
         (fun i => B.initialRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
           { r with usage := r.terminal } coefficient)
         (fun i => B.initialRootGroupCharge_nonneg M (dyadicSlack (Nat.log2 M + 1) i)

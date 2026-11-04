@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Probability.HierarchyCompressedBin
+public import Complexity.Foundations.Probability.RootMetric.WeightedError
 
 /-!
 # Payments for literal initial evaluator histories
@@ -21,6 +22,8 @@ preparation transport and the simultaneous lower-budget accuracy invariant remai
 
 * `initialPrefixes_grid`: actual groups with distinct scheduled walk lengths.
 * `initialPrefix_mean` and `initialGroupInput_sum`: literal means and budget boundaries.
+* `initialPrefix_relative_noise`: denominator-retaining conditional group payment.
+* `initialGroupInput_relative_fourth_le`: finite actual input/target moment relation.
 * `initial_actualNoiseEntry`: full-rank noise payment in the shared predecoder API.
 * `initialFirstSignal_preloss`: weighted stationary noise, with inverse-floor cancellation.
 * `initialFirstSignal_overflowNoise`: unconditional correlated-noise tail payment.
@@ -76,6 +79,82 @@ theorem initialPrefixes_grid (B : BudgetData HP P) (M : ℕ) (hM : 0 < M)
   · intro i _
     simpa only [q, one_div] using (hg i).2
 
+/-- Exact centered input/target payment for correlated initial groups. Literal paired
+amplitudes and bin importance remain inside `initialGroupInput`; no heavy rarity factor
+or uniform absolute input envelope is substituted. The prefix cube pays correlation. -/
+@[expose] def initialRelativeNoiseBudget (B : BudgetData HP P) (M : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (s t : Fin 3) (hst : s ≠ t) (ks ka : ℕ) (ss st : List (ZMod P))
+    (G : Matrix (ZMod P) (ZMod P) ℝ) (j : ℕ) : ℝ :=
+  let Xs := retainedMask s (side P ks) B.padding ss
+  let Ya := retainedMask t (side P ka) B.padding st
+  let graphV := graph s t hst (side P ks) (side P ka) (side_le P ks) (side_le P ka)
+    (CopyPadding.identifier B.padding ss) (CopyPadding.identifier B.padding st)
+  let q := { r with usage := r.terminal }
+  let m := Nat.log2 M + 1
+  (min j m : ℕ) ^ (3 : ℕ) *
+    ∑ i ∈ range (min j m), ((P : ℝ) * r.source.rate)⁻¹ * ∑ x, ∑ y,
+      (({σ | Xs σ x ∧ Ya σ y} : Finset (Environment P 3)).dens : ℝ) *
+        (2 * (graphV x y).spectralExpansion ^ (2 * B.steps M q (dyadicSlack m i)) *
+          𝔼 σ ∈ ({σ | Xs σ x ∧ Ya σ y} : Finset (Environment P 3)),
+            |(B.initialGroupInput M (dyadicSlack m i) q σ x y -
+              rowSliceMean Xs Ya (B.initialGroupInput M (dyadicSlack m i) q) x y) /
+                (rate ka + G x y)| ^ 4)
+
+/-- A derived finite input/target relation for each literal paired group. The genuine
+amplitude (including importance weights) is divided by the same fixed-pair denominator.
+This supplies no uniform rate or width absorption when the target is small. -/
+theorem initialGroupInput_relative_fourth_le (B : BudgetData HP P) (M d : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (s t : Fin 3) (ks ka : ℕ) (ss st : List (ZMod P))
+    (G : Matrix (ZMod P) (ZMod P) ℝ) (hG : ∀ x y, 0 ≤ G x y) (x y : ZMod P) :
+    let Xs := retainedMask s (side P ks) B.padding ss
+    let Ya := retainedMask t (side P ka) B.padding st
+    (𝔼 σ ∈ ({σ | Xs σ x ∧ Ya σ y} : Finset (Environment P 3)),
+      |(B.initialGroupInput M d r σ x y -
+        rowSliceMean Xs Ya (B.initialGroupInput M d r) x y) / (rate ka + G x y)| ^ 4) ≤
+        (2 * B.magnitude r / (rate ka + G x y)) ^ 4 := by
+  dsimp only
+  let S := ({σ | retainedMask s (side P ks) B.padding ss σ x ∧
+    retainedMask t (side P ka) B.padding st σ y} : Finset (Environment P 3))
+  have hd := add_pos_of_pos_of_nonneg (rate_pos ka) (hG x y)
+  rcases S.eq_empty_or_nonempty with he | he
+  · change (𝔼 σ ∈ S, _) ≤ _
+    rw [he, expect_empty]
+    positivity
+  have hmean : |rowSliceMean (retainedMask s (side P ks) B.padding ss)
+      (retainedMask t (side P ka) B.padding st) (B.initialGroupInput M d r) x y| ≤
+      B.magnitude r :=
+    (abs_expect_le S _).trans (expect_le he (fun σ _ => B.initialGroupInput_bound M d r σ x y))
+  apply expect_le he
+  intro σ _
+  apply pow_le_pow_left₀ (by positivity) _ 4
+  rw [abs_div, abs_of_pos hd]
+  apply div_le_div_of_nonneg_right _ hd.le
+  calc
+    _ ≤ |B.initialGroupInput M d r σ x y| + |rowSliceMean _ _ _ x y| := abs_sub _ _
+    _ ≤ B.magnitude r + B.magnitude r := add_le_add (B.initialGroupInput_bound M d r σ x y) hmean
+    _ = _ := by ring
+
+/-- Nonnegativity needs only the source normalization, not a positive target. -/
+lemma initialRelativeNoiseBudget_nonneg (B : BudgetData HP P) (M : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (hr : 0 ≤ r.source.rate)
+    (s t : Fin 3) (hst : s ≠ t) (ks ka : ℕ) (ss st : List (ZMod P))
+    (G : Matrix (ZMod P) (ZMod P) ℝ) (j : ℕ) :
+    0 ≤ B.initialRelativeNoiseBudget M r s t hst ks ka ss st G j := by
+  unfold initialRelativeNoiseBudget
+  apply mul_nonneg (by positivity)
+  apply sum_nonneg
+  intro i _
+  apply mul_nonneg (inv_nonneg.mpr (mul_nonneg (Nat.cast_nonneg _) hr))
+  apply sum_nonneg
+  intro x _
+  apply sum_nonneg
+  intro y _
+  exact mul_nonneg (by positivity) (mul_nonneg
+    (mul_nonneg (by norm_num) (pow_nonneg (RotationMap.spectralExpansion_nonneg _) _))
+    (expect_nonneg fun _ _ => by positivity))
+
 /-- The literal paired inputs telescope bin by bin. Both remaining budget cutoffs are
 shown: inactive fine samples and the initial coarse sample are not silently discarded. -/
 theorem initialGroupInput_sum (B : BudgetData HP P) (M m j : ℕ) (hj : j < m)
@@ -120,6 +199,44 @@ theorem initialPrefix_mean (B : BudgetData HP P) (M : ℕ) (hM : 0 < M)
   apply sum_congr rfl
   intro i _
   exact rowSliceMean_conditionalWalk _ _ _ _ _ x y
+
+/-- Literal semantic prefixes retain their fixed-pair denominator through each scheduled
+contraction. This bounds actual relative centered noise and does not assume independence. -/
+theorem initialPrefix_relative_noise (B : BudgetData HP P) (M : ℕ) (hM : 0 < M)
+    (hbins : B.bins.Nonempty) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (s t : Fin 3) (hst : s ≠ t) (ks ka : ℕ) (ss st : List (ZMod P))
+    (hs : r.source = gridChannel s ks ss) (ht : r.terminal = gridChannel t ka st)
+    (F : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+    (hF : B.initialPrefixes M r = some F)
+    (G : Matrix (ZMod P) (ZMod P) ℝ) (j : ℕ) :
+    let Xs := retainedMask s (side P ks) B.padding ss
+    let Ya := retainedMask t (side P ka) B.padding st
+    rowNormPow 4 P r.source.rate Xs Ya (fun σ x y =>
+      (F j σ x y - rowSliceMean Xs Ya (F j) x y) / (rate ka + G x y)) ≤
+        B.initialRelativeNoiseBudget M r s t hst ks ka ss st G j := by
+  obtain ⟨hgrid, _⟩ := B.initialPrefixes_grid M hM hbins r s t hst ks ka ss st hs ht
+  have hmean := B.initialPrefix_mean M hM hbins r s t hst ks ka ss st hs ht F hF j
+  rw [hF] at hgrid
+  have he := Option.some.inj hgrid
+  dsimp only at he hmean ⊢
+  change rowNormPow 4 P r.source.rate
+    (X s (side P ks) (CopyPadding.identifier B.padding ss))
+    (Y t (side P ka) (CopyPadding.identifier B.padding st))
+    (fun σ x y => (F j σ x y - rowSliceMean
+      (X s (side P ks) (CopyPadding.identifier B.padding ss))
+      (Y t (side P ka) (CopyPadding.identifier B.padding st)) (F j) x y) /
+        (rate ka + G x y)) ≤ _
+  simp_rw [hmean]
+  rw [he]
+  simp_rw [← sum_sub_distrib, sum_div]
+  have hNu : 0 ≤ (P : ℝ) * r.source.rate := by
+    rw [hs]; exact mul_nonneg (Nat.cast_nonneg _) (rate_pos ks).le
+  apply (rowNormPow_sum_fourth_le _ hNu _ _ _).trans
+  simp only [card_range, initialRelativeNoiseBudget]
+  apply mul_le_mul_of_nonneg_left _ (by positivity)
+  apply sum_le_sum
+  intro i _
+  exact rowNormPow_conditionalWalk_div_le_sum _ _ hNu _ _ _ _
 
 /-- Literal full-rank first-prefix noise is the sum of correlated group noises. Individual
 scheduled payments give a finite Minkowski payment, with the actual scheduled amplitudes.

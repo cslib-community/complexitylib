@@ -2028,6 +2028,59 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) (coefficient : ℝ) :
   simpa only [(data HP).initialRootGroupCharge_eq_zero_of_le 1 1 (request HP)
     coefficient le_rfl, Nat.cast_ofNat] using h
 
+-- A positive full-rate history has nonzero literal group amplitude, but its exact
+-- normalized conditional input noise is zero. The conservative absolute envelope is positive.
+open NormalizedMoments in
+private lemma relative_budget_two (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (data HP).initialRelativeNoiseBudget 2 (request HP) 0 2 (by decide) 0 0 [1] [2, 3]
+      base 2 = 0 := by
+  have hx (σ : Environment 5 3) (x : ZMod 5) :
+      retainedMask 0 (side 5 0) (1 : ZMod 5) [1] σ x := by
+    simpa only [retainedMask, show side 5 0 = 5 by norm_num [side]] using full_retains (σ 0) _
+  have hy (σ : Environment 5 3) (y : ZMod 5) :
+      retainedMask 2 (side 5 0) (1 : ZMod 5) [2, 3] σ y := by
+    simpa only [retainedMask, show side 5 0 = 5 by norm_num [side]] using full_retains (σ 2) _
+  have hq : {request HP with usage := (request HP).terminal} = request HP := rfl
+  have hg (d : ℕ) : (data HP).initialGroupInput 2 d (request HP) = fun _ x y =>
+      (if LogSpaceEstimation.lastBudget 2 d 1 0 = 0 then 0 else base x y) -
+      (if LogSpaceEstimation.lastBudget 2 (2 * d) 1 0 = 0 then 0 else base x y) :=
+    group_input HP d
+  simp only [BudgetData.initialRelativeNoiseBudget, hq, hg]
+  simp [rowSliceMean, show (data HP).padding = 1 from rfl, hx, hy]
+
+-- With zero transported error, the semantic term is strictly sharper on this positive
+-- history. The actual approximate-child error is tested separately above.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (ζ Lh Lρ : ℝ)
+    (σ : Environment 5 3) :
+    (data HP).initialGroupInput 2 1 (request HP) σ 0 0 = 1 ∧
+    (data HP).initialComputedRelativeMoment 2 1 (request HP) threeRoles 0 0 [1] [2, 3]
+      (fun _ => 0) ζ Lh Lρ (Nat.log2 2) true 0 = 0 ∧
+    0 < (data HP).initialComputedMoment 2 1 (request HP) threeRoles 0 0 [1] [2, 3]
+      (fun _ => 0) ζ Lh Lρ (Nat.log2 2) true 0 := by
+  constructor
+  · have hg := congrFun (congrFun (congrFun (group_input HP 1) σ) 0) 0
+    norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff, base] at hg
+    exact hg
+  constructor
+  · have hnon := (data HP).initialComputedMoment_nonneg 2 1 (request HP) threeRoles
+      0 0 [1] [2, 3] (fun _ => 0) (by intro; rfl) ζ Lh Lρ (Nat.log2 2) true 0
+    simp only [BudgetData.initialComputedRelativeMoment, ↓reduceIte, Fin.isValue, and_self,
+      sum_const_zero, mul_zero, zero_add, show Nat.log2 2 + 1 = 2 by decide,
+      show (threeRoles : RoleProfile 3).source = 0 from rfl,
+      show (threeRoles : RoleProfile 3).terminal = 2 from rfl,
+      show (data HP).base = base from rfl, relative_budget_two, mul_zero]
+    exact min_eq_right hnon
+  · rw [(data HP).initialComputedMoment_final_firstNoise_zero]
+    positivity
+
+-- Nonconstant, nonzero centered noise pays the fixed-pair target normalization, even
+-- at a small rank rate; replacing the denominator by the rate loses a large factor.
+example :
+    rowNormPow 4 1 1 (fun (_ : Fin 2) (_ : Unit) => True) (fun _ _ => True)
+      (fun σ _ _ => ((if σ = 0 then (2 : ℝ) else 0) - 1) / (1 / 16 + 1)) =
+        (16 / 17 : ℝ) ^ 4 ∧ (16 / 17 : ℝ) ^ 4 < 16 ^ 4 := by
+  norm_num [rowNormPow, Fin.sum_univ_two, expect_eq_sum_div_card]
+
 -- Centered transport keeps a nonconstant correlated perturbation centered at its own mean.
 example :
     rowNormPow 4 1 1 (fun (_ : Fin 2) (_ : Unit) => True) (fun _ _ => True)
@@ -2053,7 +2106,7 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
         base (fun _ => 0) [0] 1 1 1 ≤
       BudgetData.initialNumericalReserve HP 1 ζ 1 1 1
         (fun j =>
-          let a := fun noise ν => (data HP).initialComputedMoment 1 1 (request HP)
+          let a := fun noise ν => (data HP).initialComputedRelativeMoment 1 1 (request HP)
             threeRoles 0 0 [1] [2, 3] (fun _ => 0) ζ Lh Lρ j noise ν ^ (4⁻¹ : ℝ)
           (a false 0 + a false 1) + (a true 0 + a true 1)) := by
   dsimp only

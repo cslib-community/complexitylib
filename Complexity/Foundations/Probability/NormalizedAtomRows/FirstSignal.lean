@@ -165,6 +165,37 @@ theorem actualClippedMean_first_prefix_row_le
     _ = _ := by rw [div_eq_mul_inv, mul_pow]; ring
 
 open Classical in
+/-- Exact relative centered prefix in matrix units. Pairwise normalization stays inside
+both the row moment and conditional mean; no inverse-rate bound is used. -/
+theorem actualNoiseEntry_first_prefix_row_eq
+    (s t : Fin J) (Ls La Lt : ℕ) (D : ZMod P) (ss st : List (ZMod P))
+    (F : ℕ → Environment P J → ZMod P → ZMod P → ℝ)
+    (k : ℕ) (G : Matrix (ZMod P) (ZMod P) ℝ) (hG : ∀ x y, 0 ≤ G x y)
+    (second : Environment P J → ZMod P → ℕ → ZMod P → ℝ)
+    (raw : Environment P J → ZMod P → ZMod P → Fin 2 → ℝ)
+    (hz : ∀ σ x y, raw σ x y 0 = 0) (i : ℕ) (N u : ℝ) :
+    let Xs := retainedMask s Ls D ss
+    let Ya := retainedMask t La D st
+    let A := fun σ x y => F (i + 1) σ x y / (rate k + G x y)
+    rowNormPow 4 N u Xs Ya
+      (actualNoiseEntry s t Ls La Lt D ss st k G (firstSignalIncrement F k second) raw 0 i) =
+      rowNormPow 4 N u Xs Ya (fun σ x y => A σ x y - rowSliceMean Xs Ya A x y) := by
+  dsimp only
+  unfold rowNormPow
+  congr 3
+  funext σ
+  apply sum_congr rfl
+  intro x _
+  apply sum_congr rfl
+  intro y _
+  rw [actualNoiseEntry_first_prefix s t Ls La Lt D ss st F k G second raw hz]
+  have hd : 0 < rate k + G x y := add_pos_of_pos_of_nonneg (rate_pos k) (hG x y)
+  have he : rate k * (1 + G x y / rate k) = rate k + G x y := by
+    rw [mul_add, mul_one, mul_div_cancel₀ _ (rate_pos k).ne']
+  simp only [rowSliceMean, ← expect_div, ← sub_div, abs_div, he,
+    abs_of_pos hd, abs_of_nonneg (div_nonneg (abs_nonneg _) hd.le)]
+
+open Classical in
 /-- Relative first noise for arbitrary literal prefix families costs only the explicit
 inverse fourth power of the rank rate. No width or environment-atom factor is introduced. -/
 theorem actualNoiseEntry_first_prefix_row_le

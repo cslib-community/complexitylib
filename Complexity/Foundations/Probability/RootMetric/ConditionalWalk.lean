@@ -32,6 +32,7 @@ remain model obligations. This does not construct the recursive estimator or its
 * `Cslib.conditionalWalk_list_sum`: common graph completion commutes with finite assembly.
 * `Cslib.expect_conditionalWalk_sub_mean_pow_four_le`: actual conditional graph contraction.
 * `Cslib.rowNormPow_conditionalWalk_le_sum`: nonuniform gaps retain exact densities.
+* `Cslib.rowNormPow_conditionalWalk_div_le_sum`: fixed-pair input normalization.
 * `Cslib.rowNormPow_conditionalWalk_le_raw`: uniform contraction from raw input moments.
 
 ## References
@@ -169,6 +170,25 @@ theorem rowNormPow_conditionalWalk_le_sum [Fintype D] [Nonempty D] {N u : ℝ}
               |F σ x y - rowSliceMean X Y F x y| ^ 4) :=
   rowNormPow_le_sum_conditional_budgets hNu _ _
     (expect_conditionalWalk_sub_mean_pow_four_le X Y G t F)
+
+/-- Pairwise normalization retains the centered input moment, actual graph contraction
+and joint slice density. The denominator is fixed on each pair, including empty slices. -/
+theorem rowNormPow_conditionalWalk_div_le_sum [Fintype D] [Nonempty D] {N u : ℝ}
+    (hNu : 0 ≤ N * u) (G : ∀ x y, RotationMap (RetainedPairSlice X Y x y) D)
+    (t : V → V → ℕ) (F : Ω → V → V → ℝ) (den : V → V → ℝ) :
+    rowNormPow 4 N u X Y (fun σ x y =>
+      (conditionalWalk X Y G t F σ x y - rowSliceMean X Y F x y) / den x y) ≤
+      (N * u)⁻¹ * ∑ x, ∑ y,
+        (({σ | X σ x ∧ Y σ y} : Finset Ω).dens : ℝ) *
+          (2 * (G x y).spectralExpansion ^ (2 * t x y) *
+            𝔼 σ ∈ ({σ | X σ x ∧ Y σ y} : Finset Ω),
+              |(F σ x y - rowSliceMean X Y F x y) / den x y| ^ 4) := by
+  apply rowNormPow_le_sum_conditional_budgets hNu
+  intro x y
+  have h := expect_conditionalWalk_sub_mean_pow_four_le X Y G t F x y
+  have hd : 0 ≤ |den x y| ^ 4 := pow_nonneg (abs_nonneg _) _
+  have hscale := div_le_div_of_nonneg_right h hd
+  simpa only [abs_div, div_pow, ← expect_div, mul_div_assoc] using hscale
 
 /-- A uniform spectral bound contracts the centered integrated row moment directly, even
 when the pair slices have unequal densities or are empty. -/
