@@ -1841,6 +1841,7 @@ public import Complexity.Computability.Complexity.Reduction.Autoreducibility
 public import Complexity.Computability.Complexity.Reduction.Isomorphism
 public import Complexity.Computability.Complexity.Reduction.Levin
 public import Complexity.Computability.Complexity.Reduction.LocalSelfReducibility
+public import Complexity.Computability.Complexity.Reduction.LocalSelfReducibility.VirtualWord
 public import Complexity.Computability.Complexity.Reduction.LogSpaceAutoreducibility
 public import Complexity.Computability.Complexity.Reduction.LogSpaceBoundedAutoreducibility
 public import Complexity.Computability.Complexity.Reduction.LogSpaceBoundedTruthTable
@@ -1947,6 +1948,7 @@ public import Complexity.Computability.MCSP.SuccinctNP.Words
 public import Complexity.Computability.Machines.ReadMachine.Basic
 public import Complexity.Computability.Machines.ReadMachine.StepMachine
 public import Complexity.Computability.Machines.ReadMachine.Tidy
+public import Complexity.Computability.Machines.ReadMachine.VirtualWord
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Game
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.GuessVerify
