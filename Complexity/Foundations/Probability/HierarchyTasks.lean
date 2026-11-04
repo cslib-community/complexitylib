@@ -439,6 +439,20 @@ are computed on completed child matrices. No aggregate mean or error is a parame
         B.ρ B.K (B.scales i) (Xs l) (Z l) (Zt l)
         (child (.residual l)) (child (.residualPreparation l i) B)
 
+omit [∀ l, LinearOrder (V l)] in
+/-- The existing residual-preparation evaluator reads a completed raw child before
+applying the nonlinear preparation recipe. The child may depend on the full environment;
+this equation also applies when it is a conditional-walk average. -/
+theorem hierarchyTaskRecipe_residualPreparation {Ω : Type*}
+    (child : Ω → (t : HierarchyTask P.k) →
+      hierarchyTaskValueType P (V := V) (κ := κ) (Γ := Γ) (Ζ := Ζ) t)
+    (l i : ℕ) (raw : Ω → Matrix (V l) (V l) ℝ)
+    (hchild : ∀ ω, child ω (.residual l) = raw ω)
+    (B : DenseBinRecipe) (ω : Ω) (σ : Γ l × Ζ l) :
+    hierarchyTaskRecipe P e X Y S e₀ Xs Z Zt A (child ω) (.residualPreparation l i) B σ =
+      DenseRowRecipe.preparation B.h B.ρ B.K (B.scales i) (Z l) (raw ω) σ.2 := by
+  simp only [hierarchyTaskRecipe, hchild]
+
 /-- True residual substitution uses the actual correction hierarchy equation. -/
 theorem hierarchyTaskRecipe_residual (l : ℕ) :
     hierarchyTaskRecipe P e X Y S e₀ Xs Z Zt A

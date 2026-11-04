@@ -2,6 +2,38 @@
 
 The automation layer searches for proofs of explicit mathematical contracts. It generally reuses named certificates and compositional rules; it is not a compiler that can assign a polynomial bound to an arbitrary Lean program. In particular, a short tactic call hides a checked derivation, but the model, algorithm and invariant still have to be right. [complexitylib][complexitylib]
 
+## Assemble joint time and space bounds
+
+Import `Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists`
+and work in `Turing.MultiTapeTM`. Build one `ComputableInO` certificate for the whole
+function with `fun_prop`, then use `ComputableInO.mono` to compare its assembled time and
+space bounds with the desired bounds. Keep the input and output encodings explicit. The
+complete [FunPropLists clients](../../ComplexityTests/Machines/Turing/MultiTape/FunPropLists.lean)
+show this pattern for a list operation, finite tests, a binary-number branch and options,
+including the separate arithmetic comparisons after automation succeeds.
+
+The encoding determines which rule applies. `take'` and `drop'` require the computed count
+to have encoding `encUnary`; binary numbers use `encNat`. Changing between those encodings
+needs a certificate, not just a different annotation. The registered binary `natSucc` and
+`natPred` rules carry quadratic time and linear charged space in encoded length. The
+unary successor/predecessor rules have linear bounds. Space includes encoded output and
+intermediate values; it is not an uncharged-output or scratch-only convention.
+
+Tests against a fixed finite value (`decideEq'`) and binary zero (`natIsZero'`) retain the
+tested computation's premise bounds. Testing a computed list with `isEmpty'` instead adds
+that list's encoded length to both time and space. For equality of two computed values,
+enable `ComputableInO.eq'` locally as a `fun_prop` rule when needed. It adds the explicit
+time term `(La + 1) * (La + Lb + 1)`, where `La` and `Lb` are their encoded lengths, and
+the encoded-pair space charge to the premise bounds. It is deliberately not a global rule,
+so cheaper constant-test rules remain available.
+
+If `fun_prop` cannot assemble the certificate, check the import, function's argument type,
+encodings and available callback certificates; use the named compositional rule to inspect
+the missing premise. If it succeeds but `mono` fails, inspect the intermediate/output
+encoding lengths and prove the remaining growth inequalities. The tactic does not infer
+those bounds or supply missing callback certificates. The [deterministic workflow](../workflows/deterministic-workflows.md)
+explains the joint certificate and charged-space convention in context.
+
 ## Named certificates and polynomial time
 
 [`program_certificate`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/PolyTime/Init.lean#L17) indexes a theorem by its efficiency predicate and the head constant of its program, with an encoding flag. The predicate index prevents a RAM certificate from accidentally solving a Turing-machine goal. Looking up a named routine before unfolding its body keeps clients abstract and controls search. The same annotation registers with `fun_prop`, reusing an existing registration when present; parameterized `IsPPT` certificates are normalized to `IsPPTOn` for the shared encoded-input interface.

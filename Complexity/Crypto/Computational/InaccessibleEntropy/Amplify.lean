@@ -47,8 +47,10 @@ formalizes STEPS 1–3 of `[HHRVW2020]`, Section 5.1.5, Proof of Theorem 5.1 (pp
    $j^*(n) = q^*(n) \Delta(n)$ strictly inside $[t a_0 + 2 \Delta, t k_0 - 3 \Delta]$, making
    candidate $q^*(n)$ collision-resistant on random inputs against all uniform strict-PPT
    adversaries (note that neither `shrunkHashEscapeInverter` nor `repEscapeInverter` reads $q^*$).
-   Target shifts, chain domain extension, and $\kappa(n)$-way concatenation for full target
-   collision resistance and Rompel's signature theorem remain downstream work in `#1001`.
+   Target shifts, length-increasing cascades, and $\kappa(n)$-way concatenation for target
+   collision resistance and Rompel's signature theorem build on `ShrinkingCollisionGrid` in
+   `Complexity.Crypto.Computational.InaccessibleEntropy.TargetCollision` and
+   `Complexity.Crypto.Computational.Rompel`.
 
 ## Main definitions
 

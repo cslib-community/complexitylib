@@ -225,7 +225,7 @@ theorem uniform_moment_capacity {scale : ℝ} (hs : 0 < scale) (hmargin : scale 
   have herr (i : ℕ) (σ : Ω) (x y : V) (hy : Y σ y) :
       clippedError (truth σ x y 0) (truth σ x y 1) (uncompressedRow (Δ σ x) (raw σ x) (i + 1) y) ≤
         e i σ x := by
-    have hh := abs_le_rowMax (S σ)
+    have hh := abs_le_kthLargest_one (S σ)
       (fun y => clippedError (truth σ x y 0) (truth σ x y 1) (uncompressedRow (Δ σ x) (raw σ x) (i
  + 1) y))
       y (mem_filter.mpr ⟨mem_univ _, hy⟩)

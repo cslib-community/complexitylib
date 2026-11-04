@@ -165,20 +165,63 @@ theorem isPPTOn_run_counterSigningOracle {adversary : Forger}
         S.counterSigningOracle pair.1.1 pair.1.2.2 pair.2.1 pair.2.2) := by
     unfold counterSigningOracle
     apply IsPPTOn.ite
-    · polytime
+    · exact (ComputableInPolyTime.unary_lt'
+        ((ComputableInPolyTime.snd _ _).snd'.fst')
+        (hcap.comp (ComputableInPolyTime.fst _ _).fst')).tidy
     · refine (S.sign_ppt.preprocess (prepare := fun pair :
           (ℕ × (List Bool × List Bool)) × ((Unit × List Bool) × (ℕ × List (List Bool))) =>
-          (pair.1.2.2, pair.2.2.1, pair.2.1.2)) ?_).bind_with ?_
-      · polytime
+          (pair.1.2.2, pair.2.2.1, pair.2.1.2))
+        (((ComputableInPolyTime.fst _ _).snd'.snd').prod
+          (((ComputableInPolyTime.snd _ _).snd'.fst').prod
+            ((ComputableInPolyTime.snd _ _).fst'.snd')))).bind_with ?_
       · apply ComputableInPolyTime.isPPTOn
-        polytime
+        exact (ComputableInPolyTime.encoding_comp (output := encPair encUnary encBits)
+          (((ComputableInPolyTime.fst _ _).snd'.snd'.fst').prod
+            (ComputableInPolyTime.snd _ _))).prod
+          ((((ComputableInPolyTime.fst _ _).snd'.snd'.fst').unary_add' (.const 1)).prod
+            (ComputableInPolyTime.cons'
+              ((ComputableInPolyTime.fst _ _).snd'.fst'.snd')
+              ((ComputableInPolyTime.fst _ _).snd'.snd'.snd')))
     · ppt
+  have hn : ComputableInPolyTime
+      (fun pair : (ℕ × (List Bool × List Bool)) × List Bool => pair.1.1)
+      (encPair (encPair encUnary (encPair encBits encBits)) encBits) encUnary :=
+    (ComputableInPolyTime.fst _ _).fst'
+  have hskLen : ComputableInPolyTime
+      (fun pair : (ℕ × (List Bool × List Bool)) × List Bool => pair.1.2.2.length)
+      (encPair (encPair encUnary (encPair encBits encBits)) encBits) encUnary :=
+    ComputableInPolyTime.length_bits.comp (ComputableInPolyTime.fst _ _).snd'.snd'
+  have hqLen : ComputableInPolyTime
+      (fun pair : (ℕ × (List Bool × List Bool)) × List Bool => pair.2.length)
+      (encPair (encPair encUnary (encPair encBits encBits)) encBits) encUnary :=
+    ComputableInPolyTime.length_bits.comp (ComputableInPolyTime.snd _ _)
+  have hcap : ComputableInPolyTime
+      (fun pair : (ℕ × (List Bool × List Bool)) × List Bool => S.capacity pair.1.1)
+      (encPair (encPair encUnary (encPair encBits encBits)) encBits) encUnary :=
+    S.capacity_polyTime.comp hn
+  have hinner : ComputableInPolyTime
+      (fun pair : (ℕ × (List Bool × List Bool)) × List Bool =>
+        2 * pair.1.2.2.length + 2 * S.capacity pair.1.1 + pair.2.length + 3)
+      (encPair (encPair encUnary (encPair encBits encBits)) encBits) encUnary :=
+    ((((ComputableInPolyTime.const 2).unary_mul' hskLen).unary_add'
+      ((ComputableInPolyTime.const 2).unary_mul' hcap)).unary_add' hqLen).unary_add' (.const 3)
+  have hpow : ComputableInPolyTime
+      (fun pair : (ℕ × (List Bool × List Bool)) × List Bool =>
+        (2 * pair.1.2.2.length + 2 * S.capacity pair.1.1 + pair.2.length + 3) ^ d)
+      (encPair (encPair encUnary (encPair encBits encBits)) encBits) encUnary :=
+    (ComputableInPolyTime.unary_pow d).comp hinner
+  have hterm1 : ComputableInPolyTime
+      (fun pair : (ℕ × (List Bool × List Bool)) × List Bool =>
+        c * (2 * pair.1.2.2.length + 2 * S.capacity pair.1.1 + pair.2.length + 3) ^ d)
+      (encPair (encPair encUnary (encPair encBits encBits)) encBits) encUnary :=
+    (ComputableInPolyTime.const c).unary_mul' hpow
   have hresources : ComputableInPolyTime
       (fun pair : (ℕ × (List Bool × List Bool)) × List Bool =>
         c * (2 * pair.1.2.2.length + 2 * S.capacity pair.1.1 + pair.2.length + 3) ^ d +
           2 * S.capacity pair.1.1 + 2 * pair.2.length + 4)
-      (encPair (encPair encUnary (encPair encBits encBits)) encBits) encUnary := by
-    polytime
+      (encPair (encPair encUnary (encPair encBits encBits)) encBits) encUnary :=
+    (((hterm1.unary_add' ((ComputableInPolyTime.const 2).unary_mul' hcap)).unary_add'
+      ((ComputableInPolyTime.const 2).unary_mul' hqLen)).unary_add' (.const 4))
   apply hadversary.run_interpret_preprocess
     (prepare := fun caller : ℕ × (List Bool × List Bool) => (caller.1, caller.2.1))
     (initial := fun _ => ((0, []) : ℕ × List (List Bool)))
@@ -450,7 +493,9 @@ private theorem isOraclePPTOn_counterHandler {bound : ℕ → ℕ → ℕ}
       (encPair (encPair encUnary encBits) (encPair (encPair (encFinEnum Unit) encBits) encUnary))
       encUnary :=
     hboundPoly.comp (g := fun pair : (ℕ × List Bool) × ((Unit × List Bool) × ℕ) =>
-      (pair.1.1, pair.2.1.2.length)) (by polytime)
+      (pair.1.1, pair.2.1.2.length))
+      (((ComputableInPolyTime.fst _ _).fst').prod
+        (ComputableInPolyTime.length_bits.comp (ComputableInPolyTime.snd _ _).fst'.snd'))
   have heq : (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × ℕ) =>
       S.counterHandler pair.1.1 bound pair.2.1 pair.2.2) =
     fun pair => if pair.2.2 < S.capacity pair.1.1 then
@@ -461,11 +506,19 @@ private theorem isOraclePPTOn_counterHandler {bound : ℕ → ℕ → ℕ}
       pure ([], pair.2.2) := rfl
   rw [heq]
   refine IsOraclePPTOn.ite' ?_ ?_ ?_
-  · polytime
+  · exact ComputableInPolyTime.unary_lt'
+      ((ComputableInPolyTime.snd _ _).snd')
+      (hcap.comp (ComputableInPolyTime.fst _ _).fst')
   · refine (IsOraclePPTOn.query_take' () ?_ hb).map_with' ?_
-    · polytime
-    · polytime
-  · exact ComputableInPolyTime.isOraclePPTOn (by polytime)
+    · exact (ComputableInPolyTime.encoding_comp (output := encPair encUnary encBits)
+        (((ComputableInPolyTime.snd _ _).snd').prod
+          ((ComputableInPolyTime.snd _ _).fst'.snd')))
+    · exact (ComputableInPolyTime.encoding_comp (output := encPair encUnary encBits)
+        (((ComputableInPolyTime.fst _ _).snd'.snd').prod
+          (ComputableInPolyTime.snd _ _))).prod
+        (((ComputableInPolyTime.fst _ _).snd'.snd').unary_add' (.const 1))
+  · exact ComputableInPolyTime.isOraclePPTOn
+      ((ComputableInPolyTime.const []).prod ((ComputableInPolyTime.snd _ _).snd'))
 
 /-- The counter handler's reply and counter growth are bounded by the truncation bound and the
 capacity, whatever the external oracle answers. -/
@@ -499,12 +552,14 @@ theorem isOraclePPT_counterForger {bound : ℕ → ℕ → ℕ}
       (fun pair : (ℕ × List Bool) × List Bool => bound pair.1.1 pair.2.length)
       (encPair (encPair encUnary encBits) encBits) encUnary :=
     hboundPoly.comp (g := fun pair : (ℕ × List Bool) × List Bool => (pair.1.1, pair.2.length))
-      (by polytime)
+      (((ComputableInPolyTime.fst _ _).fst').prod
+        (ComputableInPolyTime.length_bits.comp (ComputableInPolyTime.snd _ _)))
   have hresources : ComputableInPolyTime
       (fun pair : (ℕ × List Bool) × List Bool =>
         bound pair.1.1 pair.2.length + 2 * S.capacity pair.1.1 + 1)
-      (encPair (encPair encUnary encBits) encBits) encUnary := by
-    polytime
+      (encPair (encPair encUnary encBits) encBits) encUnary :=
+    (hb.unary_add' ((ComputableInPolyTime.const 2).unary_mul'
+      (hcap.comp (ComputableInPolyTime.fst _ _).fst'))).unary_add' (.const 1)
   have hrun : IsOraclePPTOn (encPair encUnary encBits)
       (encPair (encPair encBits encBits) encUnary)
       (fun c : ℕ × List Bool =>
@@ -541,12 +596,33 @@ theorem IndexedEUFCMA.counterEUFCMA (h : S.IndexedEUFCMA) : S.CounterEUFCMA := b
   obtain ⟨ck, dk, hlenk⟩ := S.keyGen_ppt.length_le
   obtain ⟨cs, ds, hlens⟩ := S.sign_ppt.length_le
   have hcap := S.capacity_polyTime
+  have hn : ComputableInPolyTime (fun p : ℕ × ℕ => p.1) (encPair encUnary encUnary) encUnary :=
+    ComputableInPolyTime.fst _ _
+  have hL : ComputableInPolyTime (fun p : ℕ × ℕ => p.2) (encPair encUnary encUnary) encUnary :=
+    ComputableInPolyTime.snd _ _
+  have hkey : ComputableInPolyTime (fun p : ℕ × ℕ => 2 * (ck * (p.1 + 1) ^ dk))
+      (encPair encUnary encUnary) encUnary :=
+    (ComputableInPolyTime.const 2).unary_mul'
+      ((ComputableInPolyTime.const ck).unary_mul'
+        ((ComputableInPolyTime.unary_pow dk).comp (hn.unary_add' (.const 1))))
+  have hcapTerm : ComputableInPolyTime (fun p : ℕ × ℕ => 2 * S.capacity p.1)
+      (encPair encUnary encUnary) encUnary :=
+    (ComputableInPolyTime.const 2).unary_mul' (hcap.comp hn)
+  have hsum : ComputableInPolyTime
+      (fun p : ℕ × ℕ => 2 * (ck * (p.1 + 1) ^ dk) + 2 * S.capacity p.1 + p.2 + 3)
+      (encPair encUnary encUnary) encUnary :=
+    (((hkey.unary_add' hcapTerm).unary_add' hL).unary_add' (.const 3))
+  have hboundPoly : ComputableInPolyTime
+      (fun p : ℕ × ℕ => cs * (2 * (ck * (p.1 + 1) ^ dk) + 2 * S.capacity p.1 + p.2 + 3) ^ ds)
+      (encPair encUnary encUnary) encUnary :=
+    (ComputableInPolyTime.const cs).unary_mul'
+      ((ComputableInPolyTime.unary_pow ds).comp hsum)
   obtain ⟨bound, hboundPoly, hbound⟩ : ∃ bound : ℕ → ℕ → ℕ,
       ComputableInPolyTime (fun p : ℕ × ℕ => bound p.1 p.2) (encPair encUnary encUnary) encUnary ∧
       ∀ n, ∀ x ∈ (ProbComp.eval (S.keyGen n)).support, ∀ j < S.capacity n, ∀ msg,
         ∀ σ ∈ (ProbComp.eval (S.sign x.2 j msg)).support, σ.length ≤ bound n msg.length := by
     refine ⟨fun n L => cs * (2 * (ck * (n + 1) ^ dk) + 2 * S.capacity n + L + 3) ^ ds,
-      by polytime, fun n x hx j hj msg σ hσ => ?_⟩
+      hboundPoly, fun n x hx j hj msg σ hσ => ?_⟩
     have hkeyLen := hlenk n x hx
     simp only [encUnary_apply, List.length_replicate, length_encPair, encBits_apply] at hkeyLen
     have hσLen := hlens (x.2, j, msg) σ hσ
