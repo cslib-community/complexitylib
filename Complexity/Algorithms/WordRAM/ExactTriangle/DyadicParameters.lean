@@ -10,25 +10,15 @@ module
 public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.SourceBounds
 
 /-!
-# Concrete native dyadic parameter preparation
+# Computed integer parameters for the native box solver
 
-From original n, one fixed 16-register standard program computes
-`t = floor(log₂(n)/1296)`, `m = 36t`, `D = 4^m`, `g = 4^t` and `L = 19m` using actual
-logarithm and power loops. Its raw flag is one exactly in the positive-t regime. The original
-dimension and every memory word are preserved.
-
-## Main results
-
-* `exec`: actual caller computation from n and one derived numerical admission.
-* `runs_input`: original State.init prefix and halt, at most `12*log₂(n)+36` instructions.
-* `admissionWidth_le_log`: positive sufficient width at most `12*clog₂(n+2)`.
-* `bounded_reachable_polynomial`: all admitted wider prefixes have words/support below
-  `(n+2)^13`, independently of physical width.
-
-The original mathematical choices satisfy `g^36 = D` and `D^18 ≤ n` for positive n. The fast
-flag is one exactly when `2^1296 ≤ n`, which implies `D ≥ 16`. Zero/small inputs are classified;
-this program does not yet dispatch a solver. These are deliberately coarse original choices,
-not Anthropic's tuned parameters or the final 1.9992 theorem. Selected-prime/fixed-prime/outer
-host composition and the full 3SUM endpoint remain open. The fixed program includes halt in
-its 128-slot bound and never reads physical width.
+One fixed sixteen-register program computes 2394-bit logarithm blocks, matrix level 63b,
+groups 4^(2b), window 4^(63b), depth 21m and the exact small/fast flag. Actual initialized runs,
+charges, original-memory preservation and logarithmic width/polynomial prefixes are proved.
+The first fast input size is `2^2394`; smaller inputs are marked for exhaustive solving.
+This canonical family replaces the former 1296-bit/36b/19m family. Reusing an old finite bound
+requires checking its actual parameter and branch hypotheses. Physical register names and
+embeddings remain the `DyadicParameters.Reg` API.
+These original integer parameters support the complete 1.9992 composition; this module only
+computes them and does not decide a triangle problem by itself.
 -/

@@ -47,7 +47,8 @@ theorem exec_input {W n : ℕ} (hW : admissionWidth n ≤ W) :
     InputFits W [n] ∧
     ∃ y, ExecWithin W entryProgram (.init [n]) y (timeBound n + 2) ∧
       y.regs Reg.side = n ∧ y.regs Reg.blocks = ParameterChoice.blocks n ∧
-      y.regs Reg.level = ParameterChoice.level n ∧ y.regs Reg.window = ParameterChoice.window n ∧
+      y.regs Reg.level = ParameterChoice.level n ∧
+      y.regs Reg.window = ParameterChoice.window n ∧
       y.regs Reg.groups = ParameterChoice.groups n ∧
       y.regs Reg.tensorDepth = ParameterChoice.tensorDepth n ∧
       y.regs Reg.fast = (if 0 < ParameterChoice.blocks n then 1 else 0) ∧
@@ -72,11 +73,12 @@ theorem exec_input {W n : ℕ} (hW : admissionWidth n ≤ W) :
 All instructions, including input loading and halt, have logarithmic total charge. -/
 theorem runs_input {W n : ℕ} (hW : admissionWidth n ≤ W) :
     InputFits W [n] ∧
-    ∃ y t, t + 1 ≤ 12 * Nat.log 2 n + 36 ∧
+    ∃ y t, t + 1 ≤ 16 * Nat.log 2 n + 36 ∧
       Runs W (entryProgram.program Reg.fast) (State.init [n]) ⟨entryProgram.size, y⟩ t ∧
       Executes W (entryProgram.program Reg.fast) (State.init [n]) (y.regs Reg.fast) (t + 1) ∧
       y.regs Reg.side = n ∧ y.regs Reg.blocks = ParameterChoice.blocks n ∧
-      y.regs Reg.level = ParameterChoice.level n ∧ y.regs Reg.window = ParameterChoice.window n ∧
+      y.regs Reg.level = ParameterChoice.level n ∧
+      y.regs Reg.window = ParameterChoice.window n ∧
       y.regs Reg.groups = ParameterChoice.groups n ∧
       y.regs Reg.tensorDepth = ParameterChoice.tensorDepth n ∧
       y.regs Reg.fast = (if 0 < ParameterChoice.blocks n then 1 else 0) ∧
@@ -97,19 +99,6 @@ theorem bounded_reachable {W n : ℕ} (hW : admissionWidth n ≤ W)
       (∀ a, s.data.mem a < 2 ^ admissionWidth n) ∧
       ∀ a, 2 ^ admissionWidth n ≤ a → s.data.mem a = 0 := by
   obtain ⟨hi, _, _, _, _, halt, _⟩ := runs_input (n := n) le_rfl
-  have low := Runs.prefix_at_smaller_width entryProgram_fixed.2 hW hr halt
-  have bounded := low.bounded_init hi
-  refine ⟨bounded.1, bounded.2, ?_⟩
-  intro a ha
-  rw [low.mem_above (.init hi) ha]
-  cases a with
-  | zero => have := Nat.two_pow_pos (admissionWidth n); omega
-  | succ a =>
-    change ([n] : List ℕ).getD a 0 = 0
-    apply List.getD_eq_default
-    have hl := hi.1
-    dsimp only [Fits] at hl
-    simp only [List.length_singleton] at hl ⊢
-    omega
+  exact hr.prefix_bounds_init entryProgram_fixed.2 hW hi halt le_rfl
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.DyadicParameters
