@@ -13,9 +13,9 @@ public import Complexity.Computability.WordRAM.Power.Rename
 public import Complexity.Computability.WordRAM.Compile
 
 /-!
-# Native coarse ExactTriangle parameter computation
+# Native integer-block ExactTriangle parameter computation
 
-The fixed program computes the original parameter family from raw n using the existing
+The fixed program computes the tuned integer-block parameter family from raw n using the existing
 binary logarithm and two actual power calls. It leaves memory and the original dimension
 unchanged. The flag explicitly separates the fast geometry from the small regime; no solver
 or asymptotic endpoint is asserted by computing these parameters.
@@ -54,10 +54,10 @@ abbrev workExponent : Fin 16 := 10
 abbrev workOne : Fin 16 := 11
 /-- Logarithm block divisor. -/
 abbrev divisor : Fin 16 := 12
-/-- Constant 36. -/
-abbrev thirtySix : Fin 16 := 13
-/-- Constant 19. -/
-abbrev nineteen : Fin 16 := 14
+/-- Matrix-level multiplier. -/
+abbrev levelFactor : Fin 16 := 13
+/-- Tensor-depth multiplier. -/
+abbrev depthFactor : Fin 16 := 14
 /-- Constant four. -/
 abbrev four : Fin 16 := 15
 end Reg
@@ -70,11 +70,11 @@ end Reg
 
 /-- Compute the integer exponents from the actual logarithm and deliver the first power call. -/
 @[expose] def prepare : Code .standard 16 := ram[
-  Reg.divisor ← #1296; Reg.blocks ← Reg.workCount / Reg.divisor;
-  Reg.thirtySix ← #36; Reg.level ← Reg.thirtySix * Reg.blocks;
-  Reg.nineteen ← #19; Reg.tensorDepth ← Reg.nineteen * Reg.level;
+  Reg.divisor ← #2394; Reg.blocks ← Reg.workCount / Reg.divisor;
+  Reg.levelFactor ← #63; Reg.level ← Reg.levelFactor * Reg.blocks;
+  Reg.depthFactor ← #21; Reg.tensorDepth ← Reg.depthFactor * Reg.level;
   Reg.four ← #4; Reg.workBase ← Reg.four;
-  Reg.workExponent ← Reg.blocks ]
+  Reg.workExponent ← Reg.blocks + Reg.blocks ]
 
 /-- Preserve g and deliver the second actual power call. -/
 @[expose] def nextPower : Code .standard 16 := ram[

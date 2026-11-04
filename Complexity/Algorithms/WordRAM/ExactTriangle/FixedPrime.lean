@@ -11,28 +11,26 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.SourceBound
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.TimeBound
 
 /-!
-# Complete native ExactTriangle decision at a fixed admitted prime
+# Complete box-backed native Exact Triangle decision at a fixed prime
 
-`FixedPrime.runs_input` executes one concrete 416-register standard-native program from the
-original signed input, with actual preparation once, all computed catalogue records and
-original-weight witness verification. Its same-state prefix/halt verdict is equivalent to
-original `HasZeroTriangle`; a successful state retains the original coordinates.
+`FixedPrime.runs_input` executes the actual producer once and traverses its occupied
+records with `RecordBoxProduct`, followed by the existing original-weight verifier. The
+same-state prefix and halt return one exactly for `HasZeroTriangle`, and retain original
+witness coordinates. Calls reuse dirty workspace and preserve the producer catalogue.
 
-`FixedPrime.timeBound_le` derives all-instance queried-product charges and one global
-false-positive scan budget. Preparation costs at most `690n²Dg`, product charges at most
-`138412032(19m+1)n³g/D^(1/18)`, with explicit additional root/query/controller and original
-scan terms. The total actual scans satisfy `S ≤ F(p)+returnedFlag`: empty/failed records do
-not each receive a successful-scan allowance. The runtime order is the producer's actual
-chunk-major order, without a precomputed record list or a clean-workspace premise.
+For `m = 9k`, `FixedPrime.timeBound_le` bounds aggregate product charges by
+`125829120 (189k+1)^2 (9k+1) D^(-8/125) n^3 g`, with the actual producer, roots, queries,
+controller and one global `F(p)+1` original-weight scan reserve stated separately. Correctness
+also holds for general `m`, using the executable threshold `m/9`.
 
-All initialized results require `D=4^m≥16`, `n≥D^18`, `g≥1`, the stated prime window and the
-original signed magnitude bound. The original-input threshold is positive, logarithmic for
-polynomial weights and bounded scalar headers, and works at every wider physical width.
-`FixedPrime.bounded_reachable_original` derives polynomial words and zero support above an
-original-input envelope independent of that larger width. The code never reads word width,
-has at most 133152 flat slots including halt, and performs no whole-window clear or snapshot.
+The concrete program uses 416 registers, at most 133152 flat slots including halt, and never
+reads physical width. It shares `FixedPrime.admissionWidth` and `FixedPrime.wordBound`:
+logarithmic admission and polynomial prefix words/support follow from original scalar bounds
+and polynomial original weight magnitude. No solver, intermediate execution, clean workspace
+or sparse occurrence certificate is supplied as an input hypothesis.
 
-Global parameter/prime selection, unrestricted small geometry and the complete aggregate
-source exponent remain separate. This component does not complete ordinary 3SUM 1.9992.
-The stage execution lemmas in the submodules are internal implementation interfaces.
+Parameters and the prime remain explicit admitted inputs of this component (`D >= 16`,
+`n >= D^18`, `g >= 1` and the stated prime window). `ParameterSelecting.callee` computes those
+values and calls this actual controller; `ThreeSum.Decision.exists_one9992_runs` composes the
+complete native ordinary 3SUM endpoint. This component does not require a supplied fast solver.
 -/

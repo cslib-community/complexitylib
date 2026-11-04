@@ -7,6 +7,7 @@ Authors: Anthropic, PBC, Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Loop
 public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Width
 public import Complexity.Computability.WordRAM.Compile
@@ -117,22 +118,16 @@ theorem runs_input {κ w r T : ℕ} (input : List ℤ) (solver : Code .standard 
   have hf := layout_fits hw
   have hbudget : Fits (w + 2) (ChanHe.Parameters.Math.budget N U) :=
     ChanHe.Parameters.budget_fits hpw
-  obtain ⟨p, hp, hpp, hpi, hpf, hpm⟩ := exec_prepare κ (x.comap hostRegisters)
-    (by simpa only [x, Data.comap_mem, Data.init_mem_zero, List.length_map] using hbudget)
-    (by simpa only [x, Data.comap_mem, Data.init_mem_zero, List.length_map] using
-      hf.1.mono (show w ≤ w + 2 by omega))
-    (by simpa only [x, Data.comap_mem, Data.init_mem_zero, List.length_map] using
-      hf.2.mono (show w ≤ w + 2 by omega))
-  simp only [Data.comap_mem, x, Data.init_mem_zero, List.length_map] at hp hpp
-  let a := p.extend hostRegisters x
-  have ha := hp.rename (hostRegisters_injective (r := r + 7))
-  have hac : a.comap hostRegisters = p := Data.comap_extend hostRegisters_injective _ _
-  have hap : Parameters N U (a.comap hostRegisters) := by rw [hac]; exact hpp
-  have hai : a.regs (hostRegisters inst) = 0 :=
-    hostRegisters_injective.extend_apply _ _ _ |>.trans hpi
-  have haf : a.regs (hostRegisters found) = 0 :=
-    hostRegisters_injective.extend_apply _ _ _ |>.trans hpf
-  have ham : a.mem = x.mem := hpm
+  obtain ⟨a, ha, ⟨hap, hai, haf, ham⟩, -⟩ :=
+    ExecWithin.rename_post (hostRegisters_injective (r := r + 7))
+      (exec_prepare κ (x.comap hostRegisters)
+      (by simpa only [x, Data.comap_mem, Data.init_mem_zero, List.length_map] using hbudget)
+      (by simpa only [x, Data.comap_mem, Data.init_mem_zero, List.length_map] using
+        hf.1.mono (show w ≤ w + 2 by omega))
+      (by simpa only [x, Data.comap_mem, Data.init_mem_zero, List.length_map] using
+        hf.2.mono (show w ≤ w + 2 by omega)))
+  simp only [Data.comap_mem, x, Data.init_mem_zero, List.length_map] at ha hap
+  simp only [Data.comap_mem] at ham
   have hinput : ∀ i < N, a.mem (1 + i) = encode (μ i) := by
     intro i hi
     rw [ham]

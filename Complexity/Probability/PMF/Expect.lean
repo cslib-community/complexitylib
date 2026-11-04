@@ -31,10 +31,8 @@ into the vocabulary of `Finset.expect` (`𝔼`) and `Finset.dens`.
 * `Cslib.Probability.PMF.sum_map_mul`, `.sum_bind_mul`: average deterministic and random scores.
 * `Cslib.Probability.PMF.tsum_map_mul`, `.tsum_bind_mul`: the same laws for extended
   nonnegative scores over arbitrary types.
-
 * `Cslib.Probability.PMF.sq_tsum_le_tsum_sq`: Jensen's inequality `E[g]² ≤ E[g²]` for a
   `[0, 1]`-valued score.
-
 * `Cslib.Probability.PMF.toReal_uniformOfFintype_bind_apply`: a uniform first stage averages the
   second stages.
 * `Cslib.Probability.PMF.toReal_uniformOfFintype_map_apply`: output probabilities are densities.

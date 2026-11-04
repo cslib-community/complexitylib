@@ -43,13 +43,18 @@ def body : Code .standard 5 := ram[ value ← value * base; counter ← counter 
 def program : Code .standard 5 :=
   .seq (ram[ value ← #1; counter ← #0; one ← #1 ]) (.loop (.lt counter exponent) body)
 
+/-- Output value, loop counters, input readback and memory after exponentiation. -/
+def Post (b n : ℕ) (x y : Data 5) : Prop :=
+  y.regs value = b ^ n ∧
+  y.regs counter = n ∧ y.regs one = 1 ∧ y.mem = x.mem ∧
+  y.regs base = b ∧ y.regs exponent = n
+
 /-- The routine is uniform in its arguments and preserves memory and both input registers.
 Every multiplication fit follows from the final power and exponent bound. -/
 theorem exec {w : ℕ} (b n : ℕ) (hb : 1 ≤ b) (x : Data 5)
     (hx : x.regs base = b) (hn : x.regs exponent = n) (hfit : Fits w (b ^ n + n + 2)) :
-    ∃ y, ExecWithin w program x y (4 * n + 5) ∧ y.regs value = b ^ n ∧
-      y.regs counter = n ∧ y.regs one = 1 ∧ y.mem = x.mem ∧
-      y.regs base = b ∧ y.regs exponent = n := by
+    ∃ y, ExecWithin w program x y (4 * n + 5) ∧ Post b n x y := by
+  unfold Post
   have h0 : Fits w 0 := hfit.of_le (Nat.zero_le _)
   have h1 : Fits w 1 := hfit.of_le (by omega)
   let start := ((x.set value 1).set counter 0).set one 1
