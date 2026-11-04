@@ -3733,6 +3733,7 @@ public import Complexity.Foundations.Probability.HierarchyDetector
 public import Complexity.Foundations.Probability.HierarchyEstimatedInput
 public import Complexity.Foundations.Probability.HierarchyEstimatedMean
 public import Complexity.Foundations.Probability.HierarchyInitialHistory
+public import Complexity.Foundations.Probability.HierarchyInitialIntegrated
 public import Complexity.Foundations.Probability.HierarchyInitialMean
 public import Complexity.Foundations.Probability.HierarchyInitialMeanPayment
 public import Complexity.Foundations.Probability.HierarchyInitialPreparation
@@ -3763,6 +3764,7 @@ public import Complexity.Foundations.Probability.NormalizedAtomRows.FiniteEnvelo
 public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstMeanError
 public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstPayment
 public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstSignal
+public import Complexity.Foundations.Probability.NormalizedAtomRows.FourMax
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Integrated
 public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanBias
 public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanEvent

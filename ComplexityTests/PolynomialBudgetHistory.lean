@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of actual polynomial evaluator histories)
-import Complexity.Foundations.Probability.HierarchyInitialSecondNoise
+import Complexity.Foundations.Probability.HierarchyInitialIntegrated
 
 /-! A positive identity/full-rate evaluator history with actual ratio-16 bins and polynomial
 preparation. The top bin carries the input, the fine bin vanishes. This exact stationary
@@ -883,5 +883,89 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
       0 base (-3) 0 (by decide)
     norm_num only [abs_neg, abs_of_nonneg (by norm_num : (0 : ℝ) ≤ 3)] at hn
     exact hn
+
+
+-- This consumer supplies actual successful executions, and no clipped-error or final
+-- budget premise. The small-floor restriction is exactly the decoder scale requirement.
+open Cslib.RowCompression NormalizedMoments in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (hscale : HP.η ≤ max (1 : ℝ) 16 / 10000) :
+    ∃ C Cpre : ℝ, 0 ≤ C ∧ 0 ≤ Cpre ∧
+      let m := Nat.log2 2 + 1
+      let n := compatibleCapacity HP.K m
+      let X := fun σ x => (request HP).source.retains (channels (data HP).padding) σ x
+      let Y := fun σ y => (request HP).terminal.retains (channels (data HP).padding) σ y
+      let F := fun j (_ : Environment 5 3) => if 2 ≤ j then base else 0
+      let W : List (Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ) := [0, fun _ => base]
+      let Δ := firstSignalIncrement F 0
+        (secondSignalIncrement (fun j σ x y => W[j - 1]?.getD 0 σ x y) (HP.η / 4))
+      let raw : Environment 5 3 → ZMod 5 → ZMod 5 → Fin 2 → ℝ := 0
+      let truth := requestSignals (HP.η / 4) (data HP).padding id (request HP) (fun _ => base)
+        ((data HP).binPreparation 0 (request HP) (fun _ => base))
+      let ε := actualFourMax HP threeRoles.source threeRoles.terminal
+        (side 5 0) (side 5 0) (side 5 0)
+        (data HP).padding [1] [2, 3] 0 base (HP.η / 4) Δ raw
+      let εfinal := ε (Nat.log2 2)
+        let S := fun σ => ({y | Y σ y} : Finset (ZMod 5))
+        let Pre := fun σ x => ∑ i ∈ range m, dyadicFloor (HP.η / 4) m i * ε i σ x
+        let No := fun σ x => if ∀ i < m,
+          stepThreshold (S σ) n (fun _ => HP.K) (dyadicFloor (HP.η / 4) m) (Δ σ x) ⟨0, raw σ x⟩ i ≤
+            dyadicFloor (HP.η / 4) m i then εfinal σ x else 0
+        let Tail := fun σ x => ∑ j ∈ range m,
+          if IsFirstOverflow (S σ) n (fun _ => HP.K) (dyadicFloor (HP.η / 4) m)
+              (Δ σ x) ⟨0, raw σ x⟩ j ∧
+            heavyCountEvent Y univ (fun y => truth σ x y 0)
+              (dyadicFloor (HP.η / 4) m j) (n j) σ then
+              ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i σ x else 0
+        rootDistPow 4 5 (request HP).source.rate X Y (fun _ => base)
+          (denseChild (data HP).padding id (request HP) ((data HP).cutoff 0)
+            (polynomialPrepCutoff4 HP.θ) HP.ρ HP.K base) ≤
+          128 * (HP.K : ℝ) * (Cpre ^ 4 * vertexNormPow 4 5 (request HP).source.rate X Pre +
+            C ^ 4 * vertexNormPow 4 5 (request HP).source.rate X No +
+            C ^ 4 * vertexNormPow 4 5 (request HP).source.rate X Tail) +
+          ∑ j ∈ range m, (64 * (HP.K : ℝ) * ((2 * max 1 16) ^ (4⁻¹ : ℝ)) ^ 4 / ((n j : ℝ) *
+            dyadicFloor (HP.η / 4) m j ^ 4)) *
+            rowNormPow 4 5 (request HP).source.rate X Y (fun σ x y =>
+              clippedError (truth σ x y 0) (truth σ x y 1)
+              (uncompressedRow (Δ σ x) (raw σ x) (j + 1) y)) := by
+  have hζ : 0 < HP.η / 4 := by linarith [HP.η_pos]
+  obtain ⟨C, hC, hfloor⟩ := BudgetData.exists_compressedBin_fourMax HP
+    (by norm_num : (0 : ℝ) ≤ 1) hζ HP.η_pos le_rfl hscale (by linarith)
+  have hf1 : HP.η / 4 ≤ 1 := by norm_num at hscale; linarith
+  obtain ⟨Cp, hCp, hbound⟩ := hfloor (HP.η / 4) hζ (by linarith) hf1
+  refine ⟨C, Cp, hC, hCp, ?_⟩
+  have hr : Admissible (request HP) := ⟨by change (0 : Fin 3) ≠ 2; decide, rfl, rfl⟩
+  exact hbound (data HP) rate rate_pos (fun i => by
+    simp only [rate, pow_succ, _root_.mul_inv_rev]; ring) 2 0 0 (request HP) hr rfl rfl rfl
+    base (by intro x y; by_cases h : x = y <;> simp [base, Matrix.one_apply, h]) _ (prefixes HP) _
+    (preparation_walks HP) _ (compressed_value HP) threeRoles 0 0 [1] [2, 3] rfl rfl rfl
+
+-- Zero zeta kills the actual usage signal; the positive early first-mean error remains
+-- in the concrete Minkowski budget instead of being assumed away.
+open Cslib.RowCompression NormalizedMoments in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    let F := fun j (_ : Environment 5 3) => if 2 ≤ j then base else 0
+    let W : List (Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ) := [0, fun _ => base]
+    let Δ := firstSignalIncrement F 0
+      (secondSignalIncrement (fun i σ x y => W[i - 1]?.getD 0 σ x y) 0)
+    let X := retainedMask (0 : Fin 3) (side 5 0) (1 : ZMod 5) [1]
+    let a := fun ν => vertexNormPow 4 5 (request HP).source.rate X
+      (actualMeanMax HP 0 2 (side 5 0) (side 5 0) (side 5 0) 1 [1] [2, 3]
+        0 base 0 Δ 0 ν 0) ^ (4⁻¹ : ℝ)
+    vertexNormPow 4 5 (request HP).source.rate X
+      (actualFourMax HP 0 2 (side 5 0) (side 5 0) (side 5 0) 1 [1] [2, 3]
+        0 base 0 Δ 0 0) ≤
+      ((a 0 + a 1) +
+        ((2 : ℝ) ^ (-(data HP).requestPrecision 2
+          {(request HP) with usage := (request HP).terminal}) * (64 / 63) / rate 0) *
+          (1 / 64 : ℝ) ^ dyadicSlack (Nat.log2 2 + 1) 0) ^ 4 := by
+  have h := BudgetData.initialFourMax_moment (data HP) 2 0 0 (by decide)
+    (by simp [data])
+    (fun d => ⟨polynomialPrepCutoff4_nonneg _ _, polynomialPrepCutoff4_le_one _ _⟩)
+    (request HP) threeRoles 0 0 [1] [2, 3] rfl rfl rfl _ (prefixes HP) _
+    (preparation_walks HP) base
+    (by intro x y; by_cases h : x = y <;> simp [base, Matrix.one_apply, h]) 0 0
+    (by decide)
+  simpa only [threeRoles, data, Nat.cast_ofNat, abs_zero, zero_mul, add_zero] using h
 
 end PolynomialBudgetHistory

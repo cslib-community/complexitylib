@@ -921,13 +921,51 @@ positive final preparation. A separate nonconstant supplied history
 checks two different preparation values and the actual allocated usage-walk bound with ζ=-3;
 it does not establish positive residual noise or a nonconstant evaluator induction case.
 
+For the finite four-max assembly, import
+[`HierarchyInitialIntegrated.lean`](../../Complexity/Foundations/Probability/HierarchyInitialIntegrated.lean).
+`NormalizedMoments.actualMeanMax` takes the first deterministic discrepancy on full terminal
+rank and the second on usage. `NormalizedMoments.actualFourMax` adds these to the two actual
+centered noise maxima. `BudgetData.exists_compressedBin_fourMax` supplies those literal
+maxima to the integrated decoder using successful first-history, preparation-list and
+compressed-output executions. Callers no longer supply clipped-error envelopes or a final
+accuracy hypothesis. The preparation support and genuine-target identities are shared with
+the earlier deterministic-envelope consumer.
+
+Write `a(j,ν)` for the fourth root of the actual deterministic mean-maximum moment,
+`e₀ = 2^(-requestPrecision M {r with usage := r.terminal}) * (64/63) / rate ka`,
+and `e₁ = |ζ| * 2^(-requestPrecision M r)`.
+`BudgetData.initialFourMax_moment` pays the four-max moment by
+`(a(j,0) + a(j,1) + (e₀+e₁)*64^(-dyadicSlack(m,j)))^4`.
+`BudgetData.initialFourMax_preloss` pays its weighted stationary moment by
+`(sum_j floor_j*(a(j,0)+a(j,1)) + floor*(e₀+e₁)/511)^4`, using finite Minkowski
+without counting prefixes. The decoder's stationary coefficient still multiplies this
+payment; its inverse-floor term is not removed.
+
+`BudgetData.initialFourMax_tail` leaves the fourth root of the **deterministic** selected
+heavy mean-tail moment, plus `(e₀+e₁)*7/9`, inside the fourth power. Both noises are paid
+unconditionally; only the deterministic tail norm can receive a later rarity discount.
+`BudgetData.initialSignals_falseBudget` consumes the existing two-noise charge payment:
+with `w_j = 64 K radius^4/(capacity_j*floor_j^4)` and
+`c = 64 K radius^4/floor^4`, its RHS is
+`64*(sum_j w_j*(meanMoment(j,0)+meanMoment(j,1)) + c*e₀^4/63 + c*e₁^4/63)`.
+This uses raw postincrement moments on the respective masks and requires usage to be
+contained in terminal rank. The shared `NormalizedMoments.raw_prefix_four_budget` permits
+four distinct budgets; the prior uniform raw-prefix client now specializes it.
+
+The actual-history regression consumes the successful positive stationary compressed output
+with the four-max decoder bound under its small-scale condition, and checks the zero-zeta
+moment payment on the genuine early history. The latter keeps the positive early first-mean
+deficit. These clients do not demonstrate nonconstant evaluator mixing or global induction.
+The decoder bound still displays its preloss/final/tail and raw false-event moments; the
+separate payments above have not been packaged as one globally allocated output budget.
+
 **Remaining parent-error gap:** choosing global rates and reserves so the explicit finite
 payments meet the requested accuracy remains open. The initial preparation transport above
 still retains its unpaid deficit norm and width/rate costs. Although both centered noises
-and their summed false charges are paid above, combined deterministic/noise false-event
-raw-prefix moments at j+1 and the resulting no-overflow/final and heavy
-mean-tail budgets have not been paid from an invariant covering ALL actual lower-budget
-calls. Heavy-event rarity applies only to deterministic mean envelopes; it must not discount
+and their combined raw false-event moments are now split and paid above, deterministic
+mean norms, the weighted mean preloss, final mean and selected heavy mean-tail norm remain.
+Substituting the separate payments into the actual decoder comparison and allocating them
+from an invariant covering ALL actual lower-budget calls remain open. Heavy-event rarity applies only to deterministic mean envelopes; it must not discount
 correlated noise. Bounded lower-child root-to-ordinary conversion and same-environment
 reset-right-source transport remain to be assembled for general recursive children.
 The general initial multi-bin and noninitial parent steps, nonconstant routing, and the

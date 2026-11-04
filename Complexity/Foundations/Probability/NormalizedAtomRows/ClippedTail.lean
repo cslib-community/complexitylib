@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Probability.NormalizedAtomRows.TwoMask
+public import Complexity.Foundations.Probability.NormalizedAtomRows.FourMax
 
 /-!
 # Integrated actual full-rank clipped tails
@@ -42,6 +42,48 @@ open Classical in
         (actualPrefix Δ raw i σ x y)) else 0
 
 open Classical in
+lemma fourMax_tail_le_envelope
+    (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (s t : Fin J) (Ls Lt : ℕ) (D : ZMod P) (sourceSuffix suffix : List (ZMod P))
+    (k m : ℕ) (η : ℝ) (G : Matrix (ZMod P) (ZMod P) ℝ)
+    (ζ : ℝ) (n K : ℕ → ℕ)
+    (Δ : Environment P J → ZMod P → ℕ → ZMod P → Fin 2 → ℝ)
+    (raw : Environment P J → ZMod P → ZMod P → Fin 2 → ℝ)
+    (σ : Environment P J) (x : ZMod P) :
+    let mt := fun ν => ∑ j ∈ range m,
+      if meanFirstEvent t D suffix k m j η G n K Δ raw σ x then
+        meanRowTail t (if ν = 0 then side P k else Lt) D suffix m j
+          (actualClippedMean HP s t Ls (side P k) Lt D sourceSuffix suffix k G ζ Δ raw ν) σ x else 0
+    let zt := fun ν => firstOverflowNoiseTail {y | retainedMask t (side P k) D suffix σ y}
+      n K (dyadicFloor η m) (Δ σ x) ⟨0, raw σ x⟩ m (fun i => (28 : ℝ) ^ (m - i))
+      (fun i => actualNoiseMax s t Ls (side P k) Lt D sourceSuffix suffix k G Δ raw ν i σ x)
+    (∑ j ∈ range m, if meanFirstEvent t D suffix k m j η G n K Δ raw σ x then
+      ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) *
+        actualFourMax HP s t Ls (side P k) Lt D sourceSuffix suffix k G ζ Δ raw i σ x
+      else 0) ≤
+      (mt 0 + mt 1) + (zt 0 + zt 1) := by
+  dsimp only
+  unfold meanRowTail firstOverflowNoiseTail
+  rw [←sum_add_distrib, ←sum_add_distrib, ←sum_add_distrib]
+  apply sum_le_sum
+  intro j _
+  by_cases he : meanFirstEvent t D suffix k m j η G n K Δ raw σ x
+  · have ho := he.1
+    simp only [he, ho, ↓reduceIte, Fin.isValue, one_ne_zero]
+    rw [←sum_add_distrib, ←sum_add_distrib, ←sum_add_distrib]
+    apply sum_le_sum
+    intro i _
+    simp only [actualFourMax, actualMeanMax, Fin.isValue, one_ne_zero, ↓reduceIte]
+    exact le_of_eq (by ring)
+  · simp only [he, ↓reduceIte, zero_add]
+    apply add_nonneg <;> split_ifs
+    all_goals first
+      | exact le_rfl
+      | exact sum_nonneg fun i _ => mul_nonneg (by positivity) kthLargest_nonneg
+
+
+open Classical in
+/-- Actual clipped tails reuse the four-max tail comparison on the same overflow events. -/
 lemma actual_tail_le_envelope
     (HP : FourthRootHierarchyParams 16 1 16 32 8)
     (s t : Fin J) (Ls Lt : ℕ) (D : ZMod P) (sourceSuffix suffix : List (ZMod P))
@@ -61,43 +103,84 @@ lemma actual_tail_le_envelope
     actualClippedTail HP s t Ls Lt D sourceSuffix suffix k m η G ζ n K Δ raw σ x ≤
       (mt 0 + mt 1) + (zt 0 + zt 1) := by
   dsimp only
-  unfold actualClippedTail meanRowTail firstOverflowNoiseTail
-  rw [←sum_add_distrib, ←sum_add_distrib, ←sum_add_distrib]
+  apply le_trans _ (fourMax_tail_le_envelope HP s t Ls Lt D sourceSuffix suffix k m η
+    G ζ n K Δ raw σ x)
+  unfold actualClippedTail
   apply sum_le_sum
   intro j _
-  by_cases he : meanFirstEvent t D suffix k m j η G n K Δ raw σ x
-  · have ho := he.1
-    simp only [he, ho, ↓reduceIte, Fin.isValue, one_ne_zero]
-    rw [←sum_add_distrib, ←sum_add_distrib, ←sum_add_distrib]
-    apply sum_le_sum
+  split_ifs
+  · apply sum_le_sum
     intro i _
-    have hh := actual_two_mask_row_max HP s t Ls (side P k) Lt D sourceSuffix suffix k G hG ζ
-      (actualPrefix Δ raw i) (hz i) σ x
-    dsimp only at hh
-    have hd (y : ZMod P) : 0 ≤ G x y / rate k := div_nonneg (hG x y) (rate_pos k).le
-    have hden (y : ZMod P) : |1 + G x y / rate k| = 1 + G x y / rate k :=
-      abs_of_pos (by linarith [hd y])
-    have hh' : kthLargest 1 {y | retainedMask t (side P k) D suffix σ y}
-        (fun y => clippedError (G x y / rate k)
-          (genuineTarget HP s t Ls Lt D sourceSuffix suffix k G ζ σ x y 1)
-          (actualPrefix Δ raw i σ x y)) ≤
-      kthLargest 1 {y | retainedMask t (side P k) D suffix σ y}
-        (fun y => |actualClippedMean HP s t Ls (side P k) Lt D sourceSuffix suffix k G ζ Δ raw 0 i
-          x y|) +
-      kthLargest 1 {y | retainedMask t Lt D suffix σ y}
-        (fun y => |actualClippedMean HP s t Ls (side P k) Lt D sourceSuffix suffix k G ζ Δ raw 1 i
-          x y|) +
-      actualNoiseMax s t Ls (side P k) Lt D sourceSuffix suffix k G Δ raw 0 i σ x +
-      actualNoiseMax s t Ls (side P k) Lt D sourceSuffix suffix k G Δ raw 1 i σ x := by
-      simpa only [actualClippedMean, actualNoiseMax, Fin.isValue, one_ne_zero, ↓reduceIte,
-        div_one, abs_div, abs_abs, hden] using hh
-    have hm := mul_le_mul_of_nonneg_left hh' (by positivity : 0 ≤ (28 : ℝ) ^ (m - i))
-    linarith
-  · simp only [he, ↓reduceIte, zero_add]
-    apply add_nonneg <;> split_ifs
-    all_goals first
-      | exact le_rfl
-      | exact sum_nonneg fun i _ => mul_nonneg (by positivity) kthLargest_nonneg
+    exact mul_le_mul_of_nonneg_left
+      (actual_row_max_le_fourMax HP s t Ls (side P k) Lt D sourceSuffix suffix
+        k G hG ζ Δ raw i (hz i) σ x) (by positivity)
+  · exact le_rfl
+
+open Classical in
+/-- Only the deterministic mean tail stays unpaid; correlated overflow noise is charged
+unconditionally. The overflow may be selected using the entire shared environment. -/
+theorem fourMax_tail_budget
+    (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (s t : Fin J) (Ls Lt : ℕ) (D : ZMod P) (sourceSuffix suffix : List (ZMod P))
+    (k m : ℕ) (η : ℝ) (G : Matrix (ZMod P) (ZMod P) ℝ)
+    (ζ : ℝ) (n K : ℕ → ℕ)
+    (Δ : Environment P J → ZMod P → ℕ → ZMod P → Fin 2 → ℝ)
+    (raw : Environment P J → ZMod P → ZMod P → Fin 2 → ℝ)
+    {N u : ℝ} (hNu : 0 ≤ N * u) (e : Fin 2 → ℝ) (he : ∀ ν, 0 ≤ e ν)
+    (hn : ∀ ν i, i < m → vertexNormPow 4 N u (retainedMask s Ls D sourceSuffix)
+      (actualNoiseMax s t Ls (side P k) Lt D sourceSuffix suffix k G Δ raw ν i) ≤
+      (e ν * (1 / 64 : ℝ) ^ dyadicSlack m i) ^ 4) :
+    let X := retainedMask s Ls D sourceSuffix
+    let Mean := fun σ x => ∑ j ∈ range m,
+      if meanFirstEvent t D suffix k m j η G n K Δ raw σ x then
+        meanRowTail t (side P k) D suffix m j
+          (actualClippedMean HP s t Ls (side P k) Lt D sourceSuffix suffix k G ζ Δ raw 0) σ x +
+        meanRowTail t Lt D suffix m j
+          (actualClippedMean HP s t Ls (side P k) Lt D sourceSuffix suffix k G ζ Δ raw 1) σ x
+      else 0
+    vertexNormPow 4 N u X (fun σ x => ∑ j ∈ range m,
+      if meanFirstEvent t D suffix k m j η G n K Δ raw σ x then
+        ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) *
+          actualFourMax HP s t Ls (side P k) Lt D sourceSuffix suffix k G ζ Δ raw i σ x
+      else 0) ≤
+      (vertexNormPow 4 N u X Mean ^ (4⁻¹ : ℝ) + (e 0 + e 1) * (7 / 9)) ^ 4 := by
+  extract_lets X Mean
+  let Noise := fun σ x => firstOverflowNoiseTail
+    {y | retainedMask t (side P k) D suffix σ y} n K (dyadicFloor η m)
+    (Δ σ x) ⟨0, raw σ x⟩ m (fun i => (28 : ℝ) ^ (m - i))
+    (fun i => actualNoiseMax s t Ls (side P k) Lt D sourceSuffix suffix k G Δ raw 0 i σ x) +
+    firstOverflowNoiseTail {y | retainedMask t (side P k) D suffix σ y}
+      n K (dyadicFloor η m) (Δ σ x) ⟨0, raw σ x⟩ m (fun i => (28 : ℝ) ^ (m - i))
+      (fun i => actualNoiseMax s t Ls (side P k) Lt D sourceSuffix suffix k G Δ raw 1 i σ x)
+  have hb := integrated_two_mask_noise s t Ls Lt D sourceSuffix suffix k m η n K G Δ raw
+    hNu e he hn
+  have hm : vertexNormPow 4 N u X Mean ≤
+      (vertexNormPow 4 N u X Mean ^ (4⁻¹ : ℝ)) ^ 4 := by
+    exact (Real.rpow_inv_natCast_pow (n := 4)
+      (vertexNormPow_nonneg (s := 4) hNu Mean) (by decide)).ge
+  refine le_trans (vertex_mono_nonneg X hNu _ (fun σ x => Mean σ x + Noise σ x) ?_ ?_)
+    (vertex_add_budget X hNu (Real.rpow_nonneg (vertexNormPow_nonneg hNu _) _)
+      (mul_nonneg (add_nonneg (he 0) (he 1)) (by norm_num)) _ _ hm hb)
+  · intro σ x
+    apply sum_nonneg
+    intro j _
+    split_ifs
+    · exact sum_nonneg fun i _ => mul_nonneg (by positivity)
+        (actualFourMax_nonneg HP _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _)
+    · exact le_rfl
+  · intro σ x
+    have h := fourMax_tail_le_envelope HP s t Ls Lt D sourceSuffix suffix k m η G ζ n K
+      Δ raw σ x
+    dsimp only at h
+    simp only [Fin.isValue, one_ne_zero, ↓reduceIte] at h
+    convert h using 1
+    dsimp only [Mean, Noise]
+    rw [← sum_add_distrib]
+    congr 1
+    apply sum_congr rfl
+    intro j _
+    split_ifs <;> ring
+
 
 end Matrix.HierarchyParams.H4RankEnvironment.NormalizedMoments
 namespace Matrix.HierarchyParams.H4RankEnvironment.NormalizedMoments

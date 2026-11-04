@@ -152,6 +152,70 @@ theorem initialSecondSignal_clippedMean_le (B : BudgetData HP P) (M bin ka ku : 
   rw [B.binPreparation_eq_selected bin r R ka st ht haux]
   convert hb using 1; congr 8
 
+/-- A successful literal preparation entry vanishes outside its actual usage mask. -/
+theorem preparationPrefix_zero_off (B : BudgetData HP P) (M bin ka ku : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
+    (ks : ℕ) (ss st : List (ZMod P))
+    (hs : r.source = gridChannel R.source ks ss)
+    (hu : r.usage = gridChannel R.terminal ku st)
+    (F : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+    (W : List (Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ))
+    (hW : (List.range (Nat.log2 M + 1)).mapM (fun i =>
+      B.complete M r (B.binPreparation bin r (F (i + 1)))
+        (dyadicSlack (Nat.log2 M + 1) i)) = some W)
+    (ζ : ℝ) (j : ℕ) (hj : j < Nat.log2 M + 1)
+    (σ : Environment P 3) (x y : ZMod P)
+    (hy : ¬retainedMask R.terminal (side P ku) B.padding st σ y) :
+    actualPrefix (firstSignalIncrement F ka
+      (secondSignalIncrement (fun i σ x y => W[i - 1]?.getD 0 σ x y) ζ))
+      (fun _ _ _ _ => 0) j σ x y 1 = 0 := by
+  rw [actualPrefix_twoSignal_second]
+  simp only [Nat.add_sub_cancel]
+  rw [B.preparationWalks_get M bin r R ks ku ss st hs hu F W hW j hj]
+  have hzero := conditionalWalk_zero_off
+    (X R.source (side P ks) (CopyPadding.identifier B.padding ss))
+    (Y R.terminal (side P ku) (CopyPadding.identifier B.padding st))
+    (graph R.source R.terminal R.source_terminal (side P ks) (side P ku)
+      (side_le P ks) (side_le P ku) (CopyPadding.identifier B.padding ss)
+      (CopyPadding.identifier B.padding st))
+    (fun _ _ => B.steps M r (dyadicSlack (Nat.log2 M + 1) j))
+    (B.binPreparation bin r (F (j + 1))) σ x y hy
+  rw [hzero, mul_zero]
+
+/-- The actual request truth is the genuine two-mask target on the original environment.
+The rank gate uses terminal, while the preparatory mean uses usage. -/
+theorem requestSignals_eq_genuineTarget (B : BudgetData HP P) (bin ka ku : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
+    (ks : ℕ) (ss st : List (ZMod P))
+    (hs : r.source = gridChannel R.source ks ss)
+    (ht : r.terminal = gridChannel R.terminal ka st)
+    (hu : r.usage = gridChannel R.terminal ku st)
+    (haux : B.auxiliary bin = polynomialPrepCutoff4 HP.θ)
+    (G : Matrix (ZMod P) (ZMod P) ℝ) (ζ : ℝ) :
+    requestSignals ζ B.padding id r (fun _ => G)
+      (B.binPreparation bin r (fun _ => G)) =
+      genuineTarget HP R.source R.terminal (side P ks) (side P ku)
+        B.padding ss st ka G ζ := by
+  have hr : Admissible r := by
+    simp only [Admissible, hs, ht, hu, gridChannel]
+    exact ⟨R.source_terminal, trivial, trivial⟩
+  have hbp : B.binPreparation bin r (fun _ => G) =
+      NormalizedMoments.genuinePrep HP r.terminal.role B.padding
+        r.terminal.suffix ka G := by
+    rw [B.binPreparation_eq_selected bin r R ka st ht haux]
+    rw [ht]
+    unfold selectedPreparation NormalizedMoments.genuinePrep
+    funext τ a b
+    simp only [DenseRowRecipe.preparation, gridChannel, retainedMask]
+  rw [hbp]
+  funext τ a b ν
+  simp only [requestSignals, genuineTarget, id_eq]
+  rw [request_genuineMean_eq HP B.padding r hr ks ku ka
+    (by rw [hs]; rfl) (by rw [hu]; rfl)]
+  simp only [hs, ht, hu, gridChannel, CorrectionRowTask.Channel.retains, channels,
+    semanticSide_grid, retainedMask]
+  congr 8
+
 section Polynomial
 variable (B : BudgetData HP P) (M : ℕ) (hM : 0 < M) (n : ℕ)
   (hbins : B.bins = range (n + 1)) (hrate : B.binRate = rate)
@@ -251,21 +315,7 @@ theorem initial_requestSignals_two_envelopes (bin ku : ℕ)
           B.padding ss st ka B.base Δ 0 1 j σ x y else 0) := by
   let Δ := firstSignalIncrement F ka
     (secondSignalIncrement (fun i σ x y => W[i - 1]?.getD 0 σ x y) ζ)
-  have hz (τ : Environment P 3) (a b : ZMod P)
-      (hb : ¬retainedMask R.terminal (side P ku) B.padding st τ b) :
-      actualPrefix Δ (fun _ _ _ _ => 0) j τ a b 1 = 0 := by
-    rw [actualPrefix_twoSignal_second]
-    simp only [Nat.add_sub_cancel]
-    rw [B.preparationWalks_get M bin r R ks ku ss st hs hu F W hW j hj]
-    have hzero := conditionalWalk_zero_off
-      (X R.source (side P ks) (CopyPadding.identifier B.padding ss))
-      (Y R.terminal (side P ku) (CopyPadding.identifier B.padding st))
-      (graph R.source R.terminal R.source_terminal (side P ks) (side P ku)
-        (side_le P ks) (side_le P ku) (CopyPadding.identifier B.padding ss)
-        (CopyPadding.identifier B.padding st))
-      (fun _ _ => B.steps M r (dyadicSlack (Nat.log2 M + 1) j))
-      (B.binPreparation bin r (F (j + 1))) τ a b hb
-    rw [hzero, mul_zero]
+  have hz := B.preparationPrefix_zero_off M bin ka ku r R ks ss st hs hu F W hW ζ j hj
   have he := actual_two_mask_clipped_split HP R.source R.terminal (side P ks) (side P ka)
     (side P ku) B.padding ss st ka B.base hC ζ (actualPrefix Δ (fun _ _ _ _ => 0) j)
     hz σ x y
@@ -274,29 +324,8 @@ theorem initial_requestSignals_two_envelopes (bin ku : ℕ)
     (side P ku) ζ (secondSignalIncrement (fun i σ x y => W[i - 1]?.getD 0 σ x y) ζ) x y
   have hp := B.initialSecondSignal_clippedMean_le M bin ka ku r R ks ss st hs ht hu
     (congrFun haux bin) F W hW hLρ hh hρ ζ j hj x y
-  have htgt : requestSignals ζ B.padding id r (fun _ => B.base)
-      (B.binPreparation bin r (fun _ => B.base)) =
-      genuineTarget HP R.source R.terminal (side P ks) (side P ku)
-        B.padding ss st ka B.base ζ := by
-    have hr : Admissible r := by
-      simp only [Admissible, hs, ht, hu, gridChannel]
-      exact ⟨R.source_terminal, trivial, trivial⟩
-    have hbp : B.binPreparation bin r (fun _ => B.base) =
-        NormalizedMoments.genuinePrep HP r.terminal.role B.padding
-          r.terminal.suffix ka B.base := by
-      rw [B.binPreparation_eq_selected bin r R ka st ht (congrFun haux bin)]
-      rw [ht]
-      unfold selectedPreparation NormalizedMoments.genuinePrep
-      funext τ a b
-      simp only [DenseRowRecipe.preparation, gridChannel, retainedMask]
-    rw [hbp]
-    funext τ a b ν
-    simp only [requestSignals, genuineTarget, id_eq]
-    rw [request_genuineMean_eq HP B.padding r hr ks ku ka
-      (by rw [hs]; rfl) (by rw [hu]; rfl)]
-    simp only [hs, ht, hu, gridChannel, CorrectionRowTask.Channel.retains, channels,
-      semanticSide_grid, retainedMask]
-    congr 8
+  have htgt := B.requestSignals_eq_genuineTarget bin ka ku r R ks ss st hs ht hu
+    (congrFun haux bin) B.base ζ
   dsimp only at he ⊢
   rw [htgt]
   apply he.trans
