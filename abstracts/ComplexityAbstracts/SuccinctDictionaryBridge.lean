@@ -15,9 +15,10 @@ import Complexity.DataStructure.Dictionary.WordRAM.Succinct
 `SuccinctDictionaryAbstract.lean` states the self-contained formal abstract for the fixed-capacity
 succinct dynamic dictionary with deletions on the randomized Word-RAM
 (`Complexity/DataStructure/Dictionary/WordRAM/Succinct.lean`), following
-`[BenderFarachColtonKuszmaulKuszmaul2024]` (SOSA 2024, Sections 3–4) and
-`[BenderConwayFarachColtonKuszmaulTagliavini2023]` (J. ACM 2023 / `arXiv:2111.00602`, Lemma 24 and
-`arXiv:2109.04548`, Appendix A) combined with two-stage multiply-shift reduction and `3`-wise
+`[BenderFarachColtonKuszmaulKuszmaul2024]` (SOSA 2024, Sections 3–4),
+`[BenderConwayFarachColtonKuszmaulTagliavini2023]` (*J. ACM* 70(6):40, 2023;
+`arXiv:2109.04548`, Appendix A), and `[BenderFarachColtonKuszmaulKuszmaulLiu2022]` (STOC 2022;
+`arXiv:2111.00602`, Lemma 24) combined with two-stage multiply-shift reduction and `3`-wise
 independent polynomial hashing with bit-packed multiplication tables (`ReducedKWise.lean`).
 
 This bridge connects the self-contained dynamic dictionary specification, multi-operation
@@ -465,19 +466,6 @@ theorem compile_execStepsOfFn {S : Presentation} (hS : Laws S)
 
 /-! ## Part 2: Succinct Dynamic Dictionary Resource Functions and Headline Bridge Theorem -/
 
-/-- Information-theoretic minimum bit-length `⌈log₂ C(U, n_max)⌉ + n_max * ⌈log₂ V⌉`. -/
-def optBits (U V n_max : ℕ) : ℕ :=
-  Nat.clog 2 (U.choose n_max) + n_max * Nat.clog 2 V
-
-/-- Doubly-logarithmic additive per-item bit factor `⌈log₂ ⌈log₂ (max n_max 4)⌉⌉`. -/
-def logLogFactor (n_max : ℕ) : ℕ :=
-  Nat.clog 2 (Nat.clog 2 (max n_max 4))
-
-/-- Succinct word-space bound
-`⌈(optBits U V n_max + C * n_max * logLogFactor n_max) / w⌉ + C₀`. -/
-def succinctWords (C C₀ U V w n_max : ℕ) : ℕ :=
-  (optBits U V n_max + C * n_max * logLogFactor n_max + w - 1) / w + C₀
-
 /-- Exact initialization instruction budget `Succinct.initSteps U n_max + 1`. -/
 def succinctInitBudget (U n_max : ℕ) : ℕ :=
   Succinct.initSteps U n_max + 1
@@ -489,18 +477,6 @@ theorem succinctInitBudget_le (U n_max : ℕ) :
   have h := Succinct.initSteps_le U n_max
   omega
 
-private theorem totalCost_charge (U V w n_max : ℕ) (s₀ : Dynamic.State U)
-    (ops : List (Dynamic.Op U)) :
-    (Dynamic.spec U V n_max).totalCost (Succinct.charge U V w n_max) s₀ ops =
-      ops.length * Succinct.chargeVal U V w n_max := by
-  induction ops generalizing s₀ with
-  | nil => simp
-  | cons o os ih =>
-    rw [StateTransitionSpec.totalCost_cons, ih]
-    unfold Succinct.charge
-    simp only [List.length_cons]
-    ring
-
 /-- Headline bridge theorem for the fixed-capacity succinct dynamic dictionary
 (`Succinct.seq_expected_amortized`). -/
 theorem succinctDynamicDictionary (S : Presentation) (hS : Laws S)
@@ -509,7 +485,7 @@ theorem succinctDynamicDictionary (S : Presentation) (hS : Laws S)
       ∃ (r C_op sp initBudget : ℕ) (hr : 256 ≤ r) (p_init p_op : List (S.Instr r)),
         initBudget ≤ 31 * n_max + 1092 ∧
         (0 < w → n_max ≤ U → U < 2 ^ w →
-          sp ≤ succinctWords 81 213 U V w n_max) ∧
+          sp ≤ Dynamic.succinctWords 81 213 U V w n_max) ∧
         ∀ (base : ℕ),
           0 < w →
           n_max ≤ U →
@@ -659,7 +635,7 @@ theorem succinctDynamicDictionary (S : Presentation) (hS : Laws S)
           (Dynamic.spec U V n_max).totalCost (Succinct.charge U V w n_max)
             (Dynamic.empty U) ops_lib =
             ops_lib.length * Succinct.chargeVal U V w n_max :=
-        totalCost_charge U V w n_max (Dynamic.empty U) ops_lib
+        Succinct.totalCost_charge_eq U V w n_max (Dynamic.empty U) ops_lib
       change T_ops + ∑' q, ν_final q * (C.potential q.1 q.2 : ℝ≥0∞) ≤
         ((Dynamic.spec U V n_max).totalCost (Succinct.charge U V w n_max)
           (Dynamic.empty U) ops_lib : ℝ≥0∞) +

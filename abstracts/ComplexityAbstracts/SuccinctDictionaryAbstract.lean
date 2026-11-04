@@ -18,9 +18,10 @@ import Mathlib.Data.Nat.Log
 This self-contained file states the formal specification and expected-amortized multi-operation
 time and succinct space theorems for the fixed-capacity succinct dynamic dictionary with deletions
 on the randomized Word-RAM (`Succinct.impl` and `Succinct.seq_expected_amortized`), following
-`[BenderFarachColtonKuszmaulKuszmaul2024]` (SOSA 2024, Sections 3–4) and
-`[BenderConwayFarachColtonKuszmaulTagliavini2023]` (J. ACM 2023 / `arXiv:2111.00602`, Lemma 24 and
-`arXiv:2109.04548`, Appendix A), combined with two-stage universe-reduced `3`-wise independent
+`[BenderFarachColtonKuszmaulKuszmaul2024]` (SOSA 2024, Sections 3–4),
+`[BenderConwayFarachColtonKuszmaulTagliavini2023]` (*J. ACM* 70(6):40, 2023;
+`arXiv:2109.04548`, Appendix A), and `[BenderFarachColtonKuszmaulKuszmaulLiu2022]` (STOC 2022;
+`arXiv:2111.00602`, Lemma 24), combined with two-stage universe-reduced `3`-wise independent
 polynomial hashing with a bit-packed Four-Russians multiplication table (`ReducedKWise.impl`;
 `[CarterWegman1979]`, `[WegmanCarter1981]`, `[PaghPaghRuzic2009]`, `[Vadhan2012]`,
 `[LidlNiederreiter1997]`, and `[DietzfelbingerHagerupKatajainenPenttonen1997]`).
@@ -407,8 +408,9 @@ of `base`, with no static code-size bound) such that:
      (excluding final `halt` and caller argument preparation/dispatch).
 
 References: `[BenderFarachColtonKuszmaulKuszmaul2024]` (SOSA 2024, Sections 3–4);
-`[BenderConwayFarachColtonKuszmaulTagliavini2023]` (J. ACM 70(5):31:1–31:56, 2023;
-`arXiv:2111.00602`, Lemma 24; `arXiv:2109.04548`, Appendix A); `[PaghPaghRuzic2009]`;
+`[BenderConwayFarachColtonKuszmaulTagliavini2023]` (*J. ACM* 70(6):40, 2023;
+`arXiv:2109.04548`, Appendix A); `[BenderFarachColtonKuszmaulKuszmaulLiu2022]` (STOC 2022;
+`arXiv:2111.00602`, Lemma 24); `[PaghPaghRuzic2009]`;
 `[DietzfelbingerHagerupKatajainenPenttonen1997]`; `[CarterWegman1979]`; `[WegmanCarter1981]`;
 `[Vadhan2012]`; `[LidlNiederreiter1997]`. -/
 theorem succinctDynamicDictionary :

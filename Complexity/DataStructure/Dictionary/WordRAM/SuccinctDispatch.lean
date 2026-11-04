@@ -636,7 +636,9 @@ noncomputable def potential (U V w n_max base : ℕ) (_θ : QuotHashSeed U n_max
   (66 * opFactor U V w n_max) *
     slotPotential n_max (gmAt base U V w n_max (hashSpace U w n_max) x.mem)
 
-/-- Constant `O(1)` per-operation instruction charge `313 * opFactor U V w n_max + 284689`. -/
+/-- Per-operation amortized instruction charge `313 * opFactor U V w n_max + 284689`
+(independent of operation-sequence length and `base`, depending on `(U, V, w, n_max)` through
+`opFactor`). -/
 @[expose]
 noncomputable def chargeVal (U V w n_max : ℕ) : ℕ :=
   313 * opFactor U V w n_max + 284689

@@ -68,8 +68,9 @@ dictionary in `w`-bit words. -/
 def space (U V w n_max : ℕ) : ℕ :=
   totalSpace U V w n_max (hashSpace U w n_max)
 
-/-- Exact initialization instruction count: `2` instructions to load `base` and compute `frontier`,
-plus `ReducedKWise.initTableSteps` and `ReducedKWise.resampleSteps`. -/
+/-- Initialization instruction budget (`2` plus `ReducedKWise.initTableSteps` and
+`ReducedKWise.resampleSteps`; with `3` allocation instructions in `allocSpan`, the total
+initialization time is `initTime = initSteps U n_max + 1`). -/
 @[expose]
 def initSteps (U n_max : ℕ) : ℕ :=
   2 + ReducedKWise.initTableSteps (qBits U n_max) (hashB n_max) (totalMicroBits n_max) +

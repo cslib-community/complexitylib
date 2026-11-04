@@ -29,7 +29,7 @@ SOSA 2024, Sections 3–4][BenderFarachColtonKuszmaulKuszmaul2024] combined with
 quotienting ([Arbitman, Naor and Segev, FOCS 2010, Claim 5.7][ArbitmanNaorSegev2010];
 [Bender, Conway, Farach-Colton, Kuszmaul and Tagliavini, *J. ACM* 2023,
 Section 7][BenderConwayFarachColtonKuszmaulTagliavini2023]) and zero-wasted-slot full-slab /
-tail-item storage ([Bender, Farach-Colton, J. Kuszmaul, W. Kuszmaul and Liu, *J. ACM* 2024,
+tail-item storage ([Bender, Farach-Colton, J. Kuszmaul, W. Kuszmaul and M. Liu, STOC 2022,
 Sections 5.2 and 6.1, Lemma 24][BenderFarachColtonKuszmaulKuszmaulLiu2022]):
 
 1. **Unified bucket and micro-bucket decomposition (`totalMicroBits_eq_log`):**
@@ -40,7 +40,7 @@ Sections 5.2 and 6.1, Lemma 24][BenderFarachColtonKuszmaulKuszmaulLiu2022]):
    Thus the total number of `(bucket, microBucket)` chains across the entire table is
    `totalMicroBuckets n_max = 2 ^ ⌊log₂ n_max⌋ ∈ (n_max / 2, max n_max 1]`, and each bucket
    indexes up to `effBucketCap n_max = 4 * 2 ^ microBits n_max` local slots using
-   `effBucketPosBits n_max = microBits n_max + 3 ≤ 6 * logLogFactor n_max` bits per pointer.
+   `effBucketPosBits n_max ≤ microBits n_max + 3 ≤ 6 * logLogFactor n_max` bits per pointer.
 2. **Pointwise hysteresis slab potential (`bucketPotential`, `tablePotential`):**
    When `0 < bucketBits n_max`, each bucket partitions its `c_b = q_b * K + r_b` items into `q_b`
    full slabs of `K = slabSize n_max = (slabScale n_max)^2` items and `r_b < 2 * K` tail items
@@ -85,7 +85,7 @@ Sections 5.2 and 6.1, Lemma 24][BenderFarachColtonKuszmaulKuszmaulLiu2022]):
 
 * [M. A. Bender, M. Farach-Colton, J. Kuszmaul and W. Kuszmaul, *Modern Hashing Made Simple*,
   Sections 3–4][BenderFarachColtonKuszmaulKuszmaul2024]
-* [M. A. Bender, M. Farach-Colton, J. Kuszmaul, W. Kuszmaul and J. Liu, *On the Optimal
+* [M. A. Bender, M. Farach-Colton, J. Kuszmaul, W. Kuszmaul and M. Liu, *On the Optimal
   Time/Space Tradeoff for Hash Tables*, Sections 5.2 and 6.1,
   Lemma 24][BenderFarachColtonKuszmaulKuszmaulLiu2022]
 * [M. A. Bender, A. Conway, M. Farach-Colton, W. Kuszmaul and G. Tagliavini, *Iceberg Hashing:

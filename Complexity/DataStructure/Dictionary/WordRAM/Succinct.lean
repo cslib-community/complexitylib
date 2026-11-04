@@ -34,9 +34,10 @@ SOSA 2024, Sections 3–4):
    We assume `n_max ≤ U` because keys are distinct elements of `Fin U` (so at most `U` distinct keys
    can coexist, and `U.choose n_max = 0` when `n_max > U`).
 2. **Non-sticky slab + tail slot store (`SuccinctSlotInv`, `SuccinctSlabOps`, `SuccinctTailOps`)**:
-   divides the `n_max` physical item slots into full slabs of `slabSize n_max = ⌈(log₂ n_max) / 2⌉`
-   items plus a tail pool of `maxTailItems n_max` individual slots, with zero wasted item slots and
-   non-sticky bucket capacities depending only on the current live set.
+   divides the `n_max` physical item slots into full slabs of `slabSize n_max = 2 ^ slabBits n_max`
+   (`(slabScale n_max) ^ 2` when `0 < bucketBits n_max`, else `1`) items plus a tail pool of
+   `maxTailItems n_max` individual slots, with zero wasted item slots and non-sticky bucket
+   capacities depending only on the current live set.
 3. **Two-stage universe-reduced 3-wise quotient hashing (`ReducedKWise`)**: maps quotients into
    `(bucket, local micro-bucket)` pairs using `O(1) + o(n_max) / w` words of seed and bit-packed
    Four-Russians carryless multiplication tables (`hashSpace U w n_max`), without any
@@ -56,9 +57,11 @@ SOSA 2024, Sections 3–4):
   quotient hash seed once with `seedSlack = 1` and `initPotential = 0`.
 * **Space (`space`)**: `space U V w n_max ≤ Dynamic.succinctWords 81 213 U V w n_max` words
   (`space_le_succinctWords`) for every `0 < w` and `n_max ≤ U` with `Fits w U` (`U < 2 ^ w`).
-* **Expected amortized operation time (`seq_expected_amortized`)**: `query` runs in `O(1)` expected
-  instructions (`potential` is unchanged), and `insert`/`delete` run in `O(1)` expected
-  **amortized** instructions (`chargeVal U V w n_max`) across any valid oblivious operation sequence
+* **Expected amortized operation time (`seq_expected_amortized`)**: for fixed `(U, V, w, n_max)`,
+  each `query`, `insert`, and `delete` charges `chargeVal U V w n_max = 313 * opFactor U V w n_max +
+  284689` expected **amortized** instructions (`potential` is unchanged on `query`, and `chargeVal`
+  depends on `(U, V, w, n_max)` through the `Realizes.factor` witness `opFactor U V w n_max`,
+  independently of `base` and `ops.length`) across any valid oblivious operation sequence
   `ops : List (Dynamic.Op U)` of arbitrary length.
 
 ## Main definitions
@@ -80,7 +83,8 @@ SOSA 2024, Sections 3–4):
 * [M. A. Bender, M. Farach-Colton, J. Kuszmaul, W. Kuszmaul,
   *Modern Hashing Made Simple*][BenderFarachColtonKuszmaulKuszmaul2024]
 * [M. A. Bender, A. Conway, M. Farach-Colton, W. Kuszmaul, G. Tagliavini,
-  *Tiny Pointers*][BenderConwayFarachColtonKuszmaulTagliavini2023]
+  *Iceberg Hashing: Optimizing Many Hash-Table Criteria at
+  Once*][BenderConwayFarachColtonKuszmaulTagliavini2023]
 -/
 
 public section
@@ -103,7 +107,6 @@ open scoped BigOperators ENNReal
 theorem span_exec_succinct {U V w n_max base : ℕ}
     (hfit : Fits w (base + space U V w n_max))
     {x : Data (rSuccinct U V w n_max)}
-    (hx : x.Bounded w)
     (hfr : x.regs (frontierReg U V w n_max) = base) :
     ∃ x₁ : Data (rSuccinct U V w n_max),
       ExecWithin w (subroutineCode U V w n_max).allocSpan x x₁ 3 ∧
@@ -111,7 +114,6 @@ theorem span_exec_succinct {U V w n_max base : ℕ}
       x₁.regs (baseReg U V w n_max) = base ∧
       x₁.regs (frontierReg U V w n_max) = base + space U V w n_max ∧
       (∀ j : Fin 0, x₁.regs ((subroutineCode U V w n_max).initParams j) = Fin.elim0 j) := by
-  have _ := hx
   have hfit_sp : Fits w (space U V w n_max) := hfit.of_le (Nat.le_add_left _ _)
   let s₁ := x.set (baseReg U V w n_max) (x.regs (frontierReg U V w n_max))
   let s₂ := s₁.set (curReg U V w n_max) (space U V w n_max)
@@ -472,7 +474,7 @@ noncomputable def impl {U V w n_max base : ℕ}
         (oneReg U V w n_max)).eval w x = _
       rw [Op.eval_exactBin, h1]
       exact Data.put_of_fits hfit_inc)
-    (span_exec := fun hx hfr _ => span_exec_succinct hfit hx hfr)
+    (span_exec := fun _ hfr _ => span_exec_succinct hfit hfr)
     (setup_exec := fun hx₁ hbase hfr _ hz => setup_exec_succinct hwf hfit hx₁ hbase hfr hz)
     (step_exec := by
       classical
@@ -615,7 +617,7 @@ theorem initTime_impl_le {U V w n_max base : ℕ}
   unfold initSteps
   omega
 
-private theorem totalCost_charge_eq (U V w n_max : ℕ) (s₀ : Dynamic.State U)
+theorem totalCost_charge_eq (U V w n_max : ℕ) (s₀ : Dynamic.State U)
     (ops : List (Dynamic.Op U)) :
     (Dynamic.spec U V n_max).totalCost (charge U V w n_max) s₀ ops =
       ops.length * chargeVal U V w n_max := by
