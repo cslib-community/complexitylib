@@ -17,6 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Probabilistic.Oracle.Composition
 import Complexity.Computability.Probabilistic.Oracle.Substitution
 import Complexity.Computability.Probabilistic.PPT.Capture
+import Complexity.Computability.Probabilistic.PPT.PairCapture
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Computability.Probabilistic.UniformNat
 import Complexity.Crypto.Game.Hybrid
@@ -231,14 +232,7 @@ private theorem isOraclePPTOn_manyTimeHandler (H : KeyedHashFamily) {sigBound : 
       have hpair := (((ComputableInPolyTime.fst encMid encBits).trans hmK).prod
         (ComputableInPolyTime.snd encMid encBits)).trans henc
       exact hpair.prod (.const ())
-    exact hsampleK.bind_with
-      (second := fun (pair : HIn) k => do
-        let ots ← List.take (sigBound pair.1.1) <$>
-          ProbOracleComp.query ((), otsMsg H pair.1.1 k (H.eval pair.1.1 k pair.2.1.2))
-        return (encPair encBits encBits (k, ots), ()))
-      (hquery.bind_with
-        (second := fun (q : Mid) ots => pure (encPair encBits encBits (q.2, ots), ()))
-        hpack.isOraclePPTOn)
+    exact hsampleK.bind_pair (hquery.map_pair' hpack)
   refine hhandlerProj.congr fun ⟨caller, request, state⟩ _ _ _ => ?_
   dsimp only
 
@@ -348,20 +342,12 @@ theorem isOraclePPT_manyTimeForger (H : KeyedHashFamily) {sigBound : ℕ → ℕ
     ComputableInPolyTime.unary_eq' ((computableInPolyTime_otsParam H).comp hnIn) hM
   have hrunIn := (isOraclePPTOn_run_manyTimeHandler H hsigBound hadversary).preprocess'
     (hnIn.prod hotvk)
-  have hactive := hrunIn.map_with'
-    (f := fun (p : In) out =>
-      let n := otsParamInv H p.1
-      let parsedSig := sigDecoder.decode out.1.2
-      (otsMsg H n parsedSig.1 (H.eval n parsedSig.1 out.1.1), parsedSig.2))
-    (computableInPolyTime_manyTimePost H)
+  have hactive := hrunIn.map_pair' (computableInPolyTime_manyTimePost H)
   have hempty : IsOraclePPTOn (Operation := Unit) encIn (encPair encBits encBits)
       (fun _ : In => pure ([], [])) :=
     (ComputableInPolyTime.const (encIn := encIn) (encOut := encPair encBits encBits)
       ([], [])).isOraclePPTOn
-  refine (IsOraclePPTOn.ite' hcond hactive hempty).congr fun p _ _ _ => ?_
-  dsimp only [manyTimeForger]
-  by_cases h : otsParam H (otsParamInv H p.1) = p.1 <;>
-    simp only [h, ↓reduceIte, bind_pure_comp]
+  exact IsOraclePPTOn.ite' hcond hactive hempty
 
 /-! ### Deterministic step replay and bounded-growth trace sampling (`tcrMultiAdversary`) -/
 
@@ -433,52 +419,16 @@ private theorem computableInPolyTime_replayStep {k : ℕ} {Control : Type} [Fini
   have hstep : ComputableInPolyTime (fun q : Q => q.2) encQ encTraceStep :=
     ComputableInPolyTime.snd _ _
   have hcoin : ComputableInPolyTime (fun q : Q => q.2.1) encQ encBool := hstep.fst'
-  have hpairBits : ComputableInPolyTime
-      (fun q : Q => encPair encBits encBits (q.2.2.1, q.2.2.2)) encQ encBits := by
-    have henc : ComputableInPolyTime (encPair encBits encBits)
-        (encPair encBits encBits) encBits := .of_eq fun _ => rfl
-    exact (hstep.snd'.trans henc).of_enc_eq fun _ => rfl
+  have henc : ComputableInPolyTime (encPair encBits encBits)
+      (encPair encBits encBits) encBits := .of_eq fun _ => rfl
   have hreply : ComputableInPolyTime
       (fun q : Q => (encPair encBits encBits (q.2.2.1, q.2.2.2)).take q.1.1) encQ encBits :=
-    ComputableInPolyTime.bitsTakeWithInput hpairBits hlimit
-  have htapes := computableInPolyTime_finiteConfig_tapes.comp hcfg
-  let Tag := Option Control × Option Bool × (Fin k → Option Bool) × (Unit → Option Bool) × Bool
-  let encTag : Tag ↪ List Bool :=
-    encPair (encFinite (Option Control))
-      (encPair (encFinEnum (Option Bool))
-        (encPair (encFinEnum (Fin k → Option Bool))
-          (encPair (encFinite (Unit → Option Bool)) encBool)))
-  have htag : ComputableInPolyTime
-      (fun q : Q =>
-        (q.1.2.tapes.state, q.1.2.tapes.inputSymbol, q.1.2.tapes.workTapeSymbols,
-          q.1.2.answerSymbols, q.2.1))
-      encQ encTag :=
-    (ComputableInPolyTime.finiteCfg_state.comp htapes).prod
-      ((ComputableInPolyTime.finiteCfg_inputSymbol.comp htapes).prod
-        ((ComputableInPolyTime.finiteCfg_workTapeSymbols.comp htapes).prod
-          ((computableInPolyTime_finiteConfig_answerSymbols.comp hcfg).prod hcoin)))
-  let branch (choice : Tag) (q : Q) : FiniteConfig k Bool Control Unit :=
-    match choice.1 with
-    | none => q.1.2
-    | some state =>
-      match machine.tr state choice.2.1 choice.2.2.1 choice.2.2.2.1 choice.2.2.2.2 with
-      | .step action symbol move => q.1.2.step action symbol move
-      | .query () next =>
-        q.1.2.receive () next ((encPair encBits encBits (q.2.2.1, q.2.2.2)).take q.1.1)
-  have hbranch : ∀ choice : Tag,
-      ComputableInPolyTime (branch choice) encQ encFiniteConfig := by
-    rintro ⟨stOpt, inSym, workSyms, ansSyms, coinVal⟩
-    cases stOpt with
-    | none => exact hcfg
-    | some state =>
-      dsimp only [branch]
-      cases machine.tr state inSym workSyms ansSyms coinVal with
-      | step action symbol move =>
-        exact (computableInPolyTime_finiteConfig_step action symbol move).comp hcfg
-      | query ch next =>
-        cases ch
-        exact computableInPolyTime_finiteConfig_receive hcfg hreply () next
-  exact (htag.finite_cases hbranch).of_enc_eq fun _ => rfl
+    ComputableInPolyTime.bitsTakeWithInput ((hstep.snd'.trans henc).of_enc_eq fun _ => rfl) hlimit
+  exact (computableInPolyTime_finiteConfig_cases machine hcfg hcoin hcfg
+    (fun action symbol move =>
+      (computableInPolyTime_finiteConfig_step action symbol move).comp hcfg)
+    (fun next =>
+      computableInPolyTime_finiteConfig_receive hcfg hreply () next)).of_enc_eq fun _ => rfl
 
 private theorem computableInPolyTime_replayCfg_raw {k : ℕ} {Control : Type} [Finite Control]
     (machine : MultiTapePTM k Bool Control Unit) :
@@ -508,7 +458,11 @@ private theorem computableInPolyTime_replayCfg_raw {k : ℕ} {Control : Type} [F
     dsimp only [P, encP, size]
     rw [length_encPair, length_encPair]
     simp only [encUnary_apply, List.length_replicate, encBits_apply, pow_one]
-    nlinarith
+    calc cCfg * (w.length + (encList encTraceStep tr).length + lim + 1)
+        ≤ (cCfg + 1) * (w.length + (encList encTraceStep tr).length + lim + 1) :=
+          Nat.mul_le_mul_right _ (Nat.le_succ _)
+      _ ≤ (cCfg + 1) * (2 * lim + 1 + (2 * w.length + 1 + (encList encTraceStep tr).length) + 1) :=
+          Nat.mul_le_mul_left _ (by omega)
   exact (ComputableInPolyTime.foldlWith_spec
     (encA := encTraceStep) (encL := encList encTraceStep) (encB := encFiniteConfig)
     (par := fun p : P => p.1) (list := fun p : P => p.2.2)
@@ -559,46 +513,12 @@ private theorem computableInPolyTime_queryOf_comp {k : ℕ} {Control α : Type} 
     (hcfg : ComputableInPolyTime cfg input encFiniteConfig)
     (hcoin : ComputableInPolyTime coin input encBool) :
     ComputableInPolyTime (fun a => queryOf machine (cfg a) (coin a))
-      input (encOption encBits) := by
-  have htapes := computableInPolyTime_finiteConfig_tapes.comp hcfg
-  let Tag := Option Control × Option Bool × (Fin k → Option Bool) × (Unit → Option Bool) × Bool
-  let encTag : Tag ↪ List Bool :=
-    encPair (encFinite (Option Control))
-      (encPair (encFinEnum (Option Bool))
-        (encPair (encFinEnum (Fin k → Option Bool))
-          (encPair (encFinite (Unit → Option Bool)) encBool)))
-  have htag : ComputableInPolyTime
-      (fun a =>
-        ((cfg a).tapes.state, (cfg a).tapes.inputSymbol, (cfg a).tapes.workTapeSymbols,
-          (cfg a).answerSymbols, coin a))
-      input encTag :=
-    (ComputableInPolyTime.finiteCfg_state.comp htapes).prod
-      ((ComputableInPolyTime.finiteCfg_inputSymbol.comp htapes).prod
-        ((ComputableInPolyTime.finiteCfg_workTapeSymbols.comp htapes).prod
-          ((computableInPolyTime_finiteConfig_answerSymbols.comp hcfg).prod hcoin)))
-  let branch (choice : Tag) (a : α) : Option (List Bool) :=
-    match choice.1 with
-    | none => none
-    | some state =>
-      match machine.tr state choice.2.1 choice.2.2.1 choice.2.2.2.1 choice.2.2.2.2 with
-      | .step _ _ _ => none
-      | .query () _ => some ((cfg a).channels ()).1
-  have hbranch : ∀ choice : Tag,
-      ComputableInPolyTime (branch choice) input (encOption encBits) := by
-    rintro ⟨stOpt, inSym, workSyms, ansSyms, coinVal⟩
-    cases stOpt with
-    | none => exact .const none
-    | some state =>
-      dsimp only [branch]
-      cases machine.tr state inSym workSyms ansSyms coinVal with
-      | step _ _ _ => exact .const none
-      | query ch _ =>
-        cases ch
-        have hreq : ComputableInPolyTime (fun a => ((cfg a).channels ()).1) input encBits :=
-          ((ComputableInPolyTime.pi_apply (encPair encBits (encBiTape encBool)) ()).comp
-            (computableInPolyTime_finiteConfig_channels.comp hcfg)).fst'
-        exact (ComputableInPolyTime.optionSome encBits).comp hreq
-  exact (htag.finite_cases hbranch).of_enc_eq fun _ => rfl
+      input (encOption encBits) :=
+  (computableInPolyTime_finiteConfig_cases machine hcfg hcoin (.const none)
+    (fun _ _ _ => .const none)
+    (fun _ =>
+      (ComputableInPolyTime.optionSome encBits).comp
+        (computableInPolyTime_finiteConfig_reqWord hcfg))).of_enc_eq fun _ => rfl
 
 /-- Sample one local simulation step on `trace`, appending `(b, k, [])` when step `trace.length`
 does not query and `(b, k, ots)` (with `ots ← S.sign otsk (otsMsg H n k (H.eval n k msg))`) when
@@ -696,9 +616,7 @@ private theorem isPPTOn_iterate_sampleStep {k : ℕ} {Control α : Type} [Finite
         (encPair encMid encBits) encTraceStep :=
       (huMid.trans hmB).prod ((huMid.trans hmK).prod huOts)
     exact (huMid.trans hmTr).listAppend' (hitem.cons' (.const []))
-  have hbranchSome := hsign.bind_with
-    (second := fun (r : Mid) ots => pure (r.1.1.2 ++ [(r.1.2, r.2, ots)]))
-    hpostSome.isPPTOn
+  have hbranchSome := hsign.map_pair hpostSome
   have hcondMid : ComputableInPolyTime
       (fun r : Mid => decide
         ((queryOf machine (replayCfg machine (limit r.1.1.1) (word r.1.1.1) r.1.1.2)
@@ -721,24 +639,8 @@ private theorem isPPTOn_iterate_sampleStep {k : ℕ} {Control α : Type} [Finite
     | some msg => simp only [Option.isSome_some, ↓reduceIte, Option.getD_some]
   have hstep : IsPPTOn encSIn (encList encTraceStep)
       (fun p : SIn =>
-        sampleStep S H machine (n p.1) (otsk p.1) (limit p.1) (word p.1) p.2) := by
-    refine (hb.bind_with
-      (second := fun (p : SIn) b => do
-        let hashKey ← BitString.sampleList (H.keyLen (n p.1))
-        match queryOf machine (replayCfg machine (limit p.1) (word p.1) p.2) b with
-        | none => return p.2 ++ [(b, hashKey, [])]
-        | some msg =>
-          let ots ← S.sign (otsk p.1) (otsMsg H (n p.1) hashKey (H.eval (n p.1) hashKey msg))
-          return p.2 ++ [(b, hashKey, ots)])
-      (hk.bind_with
-        (second := fun (q : SIn × Bool) hashKey =>
-          match queryOf machine (replayCfg machine (limit q.1.1) (word q.1.1) q.1.2) q.2 with
-          | none => pure (q.1.2 ++ [(q.2, hashKey, [])])
-          | some msg => do
-            let ots ← S.sign (otsk q.1.1)
-              (otsMsg H (n q.1.1) hashKey (H.eval (n q.1.1) hashKey msg))
-            return q.1.2 ++ [(q.2, hashKey, ots)])
-        hmatch)).congr fun _ => rfl
+        sampleStep S H machine (n p.1) (otsk p.1) (limit p.1) (word p.1) p.2) :=
+    (hb.bind_pair (hk.bind_pair hmatch)).congr fun _ => rfl
   obtain ⟨csg, dsg, hsgLen⟩ := S.sign_ppt.length_le
   let sigGrowth (a : α) : ℕ :=
     csg * (2 * (otsk a).length + otsParam H (n a) + 2) ^ dsg
@@ -758,32 +660,28 @@ private theorem isPPTOn_iterate_sampleStep {k : ℕ} {Control α : Type} [Finite
     PMF.mem_support_bind_iff] at hnext
   obtain ⟨b, _, k, hk, hrest⟩ := hnext
   have hkLen : k.length = H.keyLen (n a) := BitString.length_of_mem_support_uniformList hk
-  cases hq : queryOf machine (replayCfg machine (limit a) (word a) tr) b with
-  | none =>
-    rw [hq] at hrest
-    simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hrest
-    subst hrest
-    rw [encList_append]
-    simp only [List.length_append, encList_cons, encList_nil, List.append_nil, length_frame,
-      encTraceStep, length_encPair, encBool_apply, encBits_apply, List.length_singleton,
-      List.length_nil, hkLen, growth]
-    omega
-  | some msg =>
-    rw [hq] at hrest
-    simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
-      PMF.mem_support_pure_iff] at hrest
-    obtain ⟨ots, hots, rfl⟩ := hrest
-    have hotsLen : ots.length ≤ sigGrowth a := by
+  have ⟨ots, hnextEq, hotsLen⟩ : ∃ ots, next = tr ++ [(b, k, ots)] ∧ ots.length ≤ sigGrowth a := by
+    cases hq : queryOf machine (replayCfg machine (limit a) (word a) tr) b with
+    | none =>
+      rw [hq] at hrest
+      simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hrest
+      exact ⟨[], hrest, Nat.zero_le _⟩
+    | some msg =>
+      rw [hq] at hrest
+      simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
+        PMF.mem_support_pure_iff] at hrest
+      obtain ⟨ots, hots, rfl⟩ := hrest
       have hs := hsgLen (otsk a, otsMsg H (n a) k (H.eval (n a) k msg)) ots hots
       simp only [length_encPair, encBits_apply, length_otsMsg] at hs
       have hle : 2 * (otsk a).length + 1 + otsParam H (n a) + 1 ≤
           2 * (otsk a).length + otsParam H (n a) + 2 := by omega
-      exact hs.trans (Nat.mul_le_mul_left csg (Nat.pow_le_pow_left hle dsg))
-    rw [encList_append]
-    simp only [List.length_append, encList_cons, encList_nil, List.append_nil, length_frame,
-      encTraceStep, length_encPair, encBool_apply, encBits_apply, List.length_singleton,
-      hkLen, growth]
-    omega
+      exact ⟨ots, rfl, hs.trans (Nat.mul_le_mul_left csg (Nat.pow_le_pow_left hle dsg))⟩
+  subst hnextEq
+  rw [encList_append]
+  simp only [List.length_append, encList_cons, encList_nil, List.append_nil, length_frame,
+    encTraceStep, length_encPair, encBool_apply, encBits_apply, List.length_singleton,
+    hkLen, growth]
+  omega
 
 /-- Uniform polynomial upper bound on the machine clock `c * ((wordOf n otvk).length + 1) ^ d`
 across all `otvk` of length at most `ckg * (otsParam H n + 1) ^ dkg`. -/
@@ -869,291 +767,234 @@ noncomputable def tcrMultiAdversary {k : ℕ} {Control : Type}
     else
       pure []
 
+private theorem isPPTOn_tcrMultiAdversary_choose {k : ℕ} {Control : Type} [Finite Control]
+    (S : SignatureScheme) (H : KeyedHashFamily)
+    (machine : MultiTapePTM k Bool Control Unit) (ckg dkg c d : ℕ) :
+    IsPPTOn encUnary (encPair encBits encBits)
+      (tcrMultiAdversary S H machine ckg dkg c d).choose := by
+  have hkg : IsPPTOn encUnary (encPair encBits encBits)
+      (fun n => S.keyGen (otsParam H n)) :=
+    S.isPPTOn_keyGen_comp (computableInPolyTime_otsParam H)
+  let KIn := ℕ × (List Bool × List Bool)
+  let encKIn : KIn ↪ List Bool := encPair encUnary (encPair encBits encBits)
+  have hkN : ComputableInPolyTime (fun p : KIn => p.1) encKIn encUnary :=
+    ComputableInPolyTime.fst _ _
+  have hslot : IsPPTOn encKIn encUnary
+      (fun p : KIn => sampleDyadicIndex (fuelUpper H ckg dkg c d p.1)) :=
+    isPPTOn_sampleDyadicIndex ((computableInPolyTime_fuelUpper H ckg dkg c d).comp hkN)
+  let SIn := KIn × ℕ
+  let encSIn : SIn ↪ List Bool := encPair encKIn encUnary
+  have hsN : ComputableInPolyTime (fun q : SIn => q.1.1) encSIn encUnary :=
+    (ComputableInPolyTime.fst _ _).fst'
+  have hsKeys : ComputableInPolyTime (fun q : SIn => q.1.2) encSIn (encPair encBits encBits) :=
+    (ComputableInPolyTime.fst _ _).snd'
+  have hsSlot : ComputableInPolyTime (fun q : SIn => q.2) encSIn encUnary :=
+    ComputableInPolyTime.snd _ _
+  have hsWord := computableInPolyTime_wordOf hsN hsKeys.fst'
+  have hsFuel := computableInPolyTime_fuelOf c d hsN hsKeys.fst'
+  have hsCond : ComputableInPolyTime (fun q : SIn => decide (q.2 <
+      c * ((encPair encUnary encBits
+        (q.1.1, encPair encUnary encBits (q.1.1, q.1.2.1))).length + 1) ^ d))
+      encSIn encBool :=
+    ComputableInPolyTime.unary_lt.comp (hsSlot.prod hsFuel)
+  have hpreLoop := isPPTOn_iterate_sampleStep S H machine hsSlot hsN hsKeys.snd'
+    hsFuel hsWord (.const [])
+  let LIn := SIn × List TraceStep
+  let encLIn : LIn ↪ List Bool := encPair encSIn (encList encTraceStep)
+  have hlCoin : IsPPTOn encLIn encBool (fun _ : LIn => ProbComp.uniform Bool) :=
+    isPPTOn_uniform_bool encLIn
+  have hencState : ComputableInPolyTime encTcrSavedState encTcrSavedState encBits :=
+    .of_eq fun _ => rfl
+  have hpostActive : ComputableInPolyTime
+      (fun u : LIn × Bool =>
+        let n := u.1.1.1.1
+        let keys := u.1.1.1.2
+        let slot := u.1.1.2
+        let preTrace := u.1.2
+        let b := u.2
+        let word := encPair encUnary encBits (n, encPair encUnary encBits (n, keys.1))
+        let fuel := c * (word.length + 1) ^ d
+        let cfg := replayCfg machine fuel word preTrace
+        ((queryOf machine cfg b).getD [],
+          encTcrSavedState (true, keys, b, fuel - 1 - slot, preTrace)))
+      (encPair encLIn encBool) (encPair encBits encBits) := by
+    let U := LIn × Bool
+    let encU : U ↪ List Bool := encPair encLIn encBool
+    have huSIn : ComputableInPolyTime (fun u : U => u.1.1) encU encSIn :=
+      (ComputableInPolyTime.fst _ _).fst'
+    have huTr : ComputableInPolyTime (fun u : U => u.1.2) encU (encList encTraceStep) :=
+      (ComputableInPolyTime.fst _ _).snd'
+    have huB : ComputableInPolyTime (fun u : U => u.2) encU encBool :=
+      ComputableInPolyTime.snd _ _
+    have huKeys := huSIn.trans hsKeys
+    have huSlot := huSIn.trans hsSlot
+    have huWord := huSIn.trans hsWord
+    have huFuel := huSIn.trans hsFuel
+    have huCfg := computableInPolyTime_replayCfg_comp machine huFuel huWord huTr
+    have huQOpt := computableInPolyTime_queryOf_comp machine huCfg huB
+    have huTarget := huQOpt.optionGetDWithInput (.const [])
+    have huRem := ComputableInPolyTime.unary_sub.comp
+      ((ComputableInPolyTime.unary_sub.comp (huFuel.prod (.const 1))).prod huSlot)
+    have huSaved : ComputableInPolyTime
+        (fun u : U =>
+          (true, u.1.1.1.2, u.2,
+            c * ((encPair encUnary encBits
+              (u.1.1.1.1, encPair encUnary encBits (u.1.1.1.1, u.1.1.1.2.1))).length + 1) ^ d -
+              1 - u.1.1.2,
+            u.1.2))
+        encU encTcrSavedState :=
+      (ComputableInPolyTime.const true).prod
+        (huKeys.prod (huB.prod (huRem.prod huTr)))
+    exact (huTarget.prod (huSaved.trans hencState)).of_enc_eq fun _ => rfl
+  have hyes := hpreLoop.bind_pair (hlCoin.map_pair hpostActive)
+  have hno : IsPPTOn encSIn (encPair encBits encBits)
+      (fun q : SIn => pure ([], encTcrSavedState (false, q.1.2, false, 0, []))) := by
+    have hsavedFalse : ComputableInPolyTime
+        (fun q : SIn => (false, q.1.2, false, 0, ([] : List TraceStep)))
+        encSIn encTcrSavedState :=
+      (ComputableInPolyTime.const false).prod
+        (hsKeys.prod ((ComputableInPolyTime.const false).prod
+          ((ComputableInPolyTime.const 0).prod (.const []))))
+    exact ((ComputableInPolyTime.const []).prod (hsavedFalse.trans hencState)).isPPTOn
+  have hite := IsPPTOn.ite' hsCond hyes hno
+  exact (hkg.bind_pair (hslot.bind_pair hite)).congr fun _ => rfl
+
+private theorem isPPTOn_tcrMultiAdversary_find {k : ℕ} {Control : Type} [Finite Control]
+    (S : SignatureScheme) (H : KeyedHashFamily)
+    (machine : MultiTapePTM k Bool Control Unit) (ckg dkg c d : ℕ) :
+    IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
+      (fun ⟨n, stateWord, hashKey⟩ =>
+        (tcrMultiAdversary S H machine ckg dkg c d).find n stateWord hashKey) := by
+  let FIn := ℕ × List Bool × List Bool
+  let encFIn : FIn ↪ List Bool := encPair encUnary (encPair encBits encBits)
+  have hn : ComputableInPolyTime (fun p : FIn => p.1) encFIn encUnary :=
+    ComputableInPolyTime.fst _ _
+  have hstateWord : ComputableInPolyTime (fun p : FIn => p.2.1) encFIn encBits :=
+    (ComputableInPolyTime.snd _ _).fst'
+  have hhashKey : ComputableInPolyTime (fun p : FIn => p.2.2) encFIn encBits :=
+    (ComputableInPolyTime.snd _ _).snd'
+  have hsaved := hstateWord.trans tcrStateDecoder.computableInPolyTime
+  have hactive : ComputableInPolyTime
+      (fun p : FIn => decide ((tcrStateDecoder.decode p.2.1).1 = true)) encFIn encBool :=
+    hsaved.fst'.of_enc_eq fun _ => rfl
+  have hkeys := hsaved.snd'.fst'
+  have hb := hsaved.snd'.snd'.fst'
+  have hrem := hsaved.snd'.snd'.snd'.fst'
+  have hpre := hsaved.snd'.snd'.snd'.snd'
+  have hword := computableInPolyTime_wordOf hn hkeys.fst'
+  have hfuel := computableInPolyTime_fuelOf c d hn hkeys.fst'
+  have hcfg := computableInPolyTime_replayCfg_comp machine hfuel hword hpre
+  have hqOpt := computableInPolyTime_queryOf_comp machine hcfg hb
+  have hmidNone : IsPPTOn encFIn (encList encTraceStep)
+      (fun p : FIn =>
+        let s := tcrStateDecoder.decode p.2.1
+        pure (s.2.2.2.2 ++ [(s.2.2.1, p.2.2, [])])) := by
+    have hitem : ComputableInPolyTime
+        (fun p : FIn => ((tcrStateDecoder.decode p.2.1).2.2.1, p.2.2, ([] : List Bool)))
+        encFIn encTraceStep :=
+      hb.prod (hhashKey.prod (.const []))
+    exact (hpre.listAppend' (hitem.cons' (.const []))).isPPTOn
+  have hmsg := hqOpt.optionGetDWithInput (.const [])
+  have hdig := (hn.prod (hhashKey.prod hmsg)).trans H.polyTime
+  have hM := computableInPolyTime_otsMsg_comp H hn hhashKey hdig
+  have hsign := S.isPPTOn_sign_comp (hkeys.snd'.of_enc_eq fun _ => rfl)
+    (hM.of_enc_eq fun _ => rfl)
+  have hpostMidSome : ComputableInPolyTime
+      (fun q : FIn × List Bool =>
+        let s := tcrStateDecoder.decode q.1.2.1
+        s.2.2.2.2 ++ [(s.2.2.1, q.1.2.2, q.2)])
+      (encPair encFIn encBits) (encList encTraceStep) := by
+    have hqFIn := ComputableInPolyTime.fst encFIn encBits
+    have hqOts := ComputableInPolyTime.snd encFIn encBits
+    have hitem : ComputableInPolyTime
+        (fun q : FIn × List Bool =>
+          ((tcrStateDecoder.decode q.1.2.1).2.2.1, q.1.2.2, q.2))
+        (encPair encFIn encBits) encTraceStep :=
+      (hqFIn.trans hb).prod ((hqFIn.trans hhashKey).prod hqOts)
+    exact (hqFIn.trans hpre).listAppend' (hitem.cons' (.const []))
+  have hmidSome := hsign.map_pair hpostMidSome
+  have hcondQ : ComputableInPolyTime
+      (fun p : FIn =>
+        let s := tcrStateDecoder.decode p.2.1
+        let word := encPair encUnary encBits (p.1, encPair encUnary encBits (p.1, s.2.1.1))
+        let fuel := c * (word.length + 1) ^ d
+        decide ((queryOf machine (replayCfg machine fuel word s.2.2.2.2) s.2.2.1).isSome = true))
+      encFIn encBool :=
+    hqOpt.optionIsSome.of_enc_eq fun _ => rfl
+  have hmid : IsPPTOn encFIn (encList encTraceStep)
+      (fun p : FIn =>
+        let s := tcrStateDecoder.decode p.2.1
+        let word := encPair encUnary encBits (p.1, encPair encUnary encBits (p.1, s.2.1.1))
+        let fuel := c * (word.length + 1) ^ d
+        match queryOf machine (replayCfg machine fuel word s.2.2.2.2) s.2.2.1 with
+        | none => pure (s.2.2.2.2 ++ [(s.2.2.1, p.2.2, [])])
+        | some msg => do
+          let ots ← S.sign s.2.1.2 (otsMsg H p.1 p.2.2 (H.eval p.1 p.2.2 msg))
+          return s.2.2.2.2 ++ [(s.2.2.1, p.2.2, ots)]) := by
+    refine (IsPPTOn.ite' hcondQ hmidSome hmidNone).congr fun p => ?_
+    dsimp only
+    cases queryOf machine
+        (replayCfg machine
+          (c * ((encPair encUnary encBits
+            (p.1, encPair encUnary encBits (p.1, (tcrStateDecoder.decode p.2.1).2.1.1))).length +
+            1) ^ d)
+          (encPair encUnary encBits
+            (p.1, encPair encUnary encBits (p.1, (tcrStateDecoder.decode p.2.1).2.1.1)))
+          (tcrStateDecoder.decode p.2.1).2.2.2.2)
+        (tcrStateDecoder.decode p.2.1).2.2.1 with
+    | none => rfl
+    | some msg => simp only [Option.isSome_some, ↓reduceIte, Option.getD_some]
+  let MIn := FIn × List TraceStep
+  let encMIn : MIn ↪ List Bool := encPair encFIn (encList encTraceStep)
+  have hmFIn := ComputableInPolyTime.fst encFIn (encList encTraceStep)
+  have hmMid := ComputableInPolyTime.snd encFIn (encList encTraceStep)
+  have hpostLoop := isPPTOn_iterate_sampleStep S H machine
+    (hmFIn.trans hrem) (hmFIn.trans hn) (hmFIn.trans hkeys.snd')
+    (hmFIn.trans hfuel) (hmFIn.trans hword) hmMid
+  have hpostOut : ComputableInPolyTime
+      (fun r : MIn × List TraceStep =>
+        let s := tcrStateDecoder.decode r.1.1.2.1
+        let pk := encPair encUnary encBits (r.1.1.1, s.2.1.1)
+        let word := encPair encUnary encBits (r.1.1.1, pk)
+        let fuel := c * (word.length + 1) ^ d
+        let finalCfg := replayCfg machine fuel word r.2
+        (msgSigDecoder.decode finalCfg.tapes.output).1)
+      (encPair encMIn (encList encTraceStep)) encBits := by
+    have hrMIn := ComputableInPolyTime.fst encMIn (encList encTraceStep)
+    have hrFull := ComputableInPolyTime.snd encMIn (encList encTraceStep)
+    have hrCfg := computableInPolyTime_replayCfg_comp machine
+      ((hrMIn.trans hmFIn).trans hfuel) ((hrMIn.trans hmFIn).trans hword) hrFull
+    have hrTapes := computableInPolyTime_finiteConfig_tapes.comp hrCfg
+    have hrOut := ComputableInPolyTime.finiteCfg_output.comp hrTapes
+    exact ((hrOut.trans msgSigDecoder.computableInPolyTime).fst').of_enc_eq fun _ => rfl
+  have hyes := hmid.bind_pair (hpostLoop.map_pair hpostOut)
+  have hno : IsPPTOn encFIn encBits (fun _ : FIn => pure []) :=
+    (ComputableInPolyTime.const []).isPPTOn
+  refine (IsPPTOn.ite' hactive hyes hno).congr fun ⟨n, stateWord, hashKey⟩ => ?_
+  dsimp only [tcrMultiAdversary]
+  cases (tcrStateDecoder.decode stateWord).1 with
+  | false => simp only [Bool.false_eq_true, ↓reduceIte]
+  | true =>
+    simp only [↓reduceIte]
+    cases queryOf machine
+        (replayCfg machine
+          (c * ((encPair encUnary encBits
+            (n, encPair encUnary encBits (n, (tcrStateDecoder.decode stateWord).2.1.1))).length +
+            1) ^ d)
+          (encPair encUnary encBits
+            (n, encPair encUnary encBits (n, (tcrStateDecoder.decode stateWord).2.1.1)))
+          (tcrStateDecoder.decode stateWord).2.2.2.2)
+        (tcrStateDecoder.decode stateWord).2.2.1 with
+    | none => rfl
+    | some msg => simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind]
+
 /-- Both stages of `tcrMultiAdversary` are uniformly strict PPT. -/
 theorem isPPT_tcrMultiAdversary {k : ℕ} {Control : Type} [Finite Control]
     (S : SignatureScheme) (H : KeyedHashFamily)
     (machine : MultiTapePTM k Bool Control Unit) (ckg dkg c d : ℕ) :
     (tcrMultiAdversary S H machine ckg dkg c d).IsPPT where
-  choose := by
-    have hkg : IsPPTOn encUnary (encPair encBits encBits)
-        (fun n => S.keyGen (otsParam H n)) :=
-      S.isPPTOn_keyGen_comp (computableInPolyTime_otsParam H)
-    let KIn := ℕ × (List Bool × List Bool)
-    let encKIn : KIn ↪ List Bool := encPair encUnary (encPair encBits encBits)
-    have hkN : ComputableInPolyTime (fun p : KIn => p.1) encKIn encUnary :=
-      ComputableInPolyTime.fst _ _
-    have hslot : IsPPTOn encKIn encUnary
-        (fun p : KIn => sampleDyadicIndex (fuelUpper H ckg dkg c d p.1)) :=
-      isPPTOn_sampleDyadicIndex ((computableInPolyTime_fuelUpper H ckg dkg c d).comp hkN)
-    let SIn := KIn × ℕ
-    let encSIn : SIn ↪ List Bool := encPair encKIn encUnary
-    have hsN : ComputableInPolyTime (fun q : SIn => q.1.1) encSIn encUnary :=
-      (ComputableInPolyTime.fst _ _).fst'
-    have hsKeys : ComputableInPolyTime (fun q : SIn => q.1.2) encSIn (encPair encBits encBits) :=
-      (ComputableInPolyTime.fst _ _).snd'
-    have hsSlot : ComputableInPolyTime (fun q : SIn => q.2) encSIn encUnary :=
-      ComputableInPolyTime.snd _ _
-    have hsWord := computableInPolyTime_wordOf hsN hsKeys.fst'
-    have hsFuel := computableInPolyTime_fuelOf c d hsN hsKeys.fst'
-    have hsCond : ComputableInPolyTime (fun q : SIn => decide (q.2 <
-        c * ((encPair encUnary encBits
-          (q.1.1, encPair encUnary encBits (q.1.1, q.1.2.1))).length + 1) ^ d))
-        encSIn encBool :=
-      ComputableInPolyTime.unary_lt.comp (hsSlot.prod hsFuel)
-    have hpreLoop := isPPTOn_iterate_sampleStep S H machine hsSlot hsN hsKeys.snd'
-      hsFuel hsWord (.const [])
-    let LIn := SIn × List TraceStep
-    let encLIn : LIn ↪ List Bool := encPair encSIn (encList encTraceStep)
-    have hlCoin : IsPPTOn encLIn encBool (fun _ : LIn => ProbComp.uniform Bool) :=
-      isPPTOn_uniform_bool encLIn
-    have hencState : ComputableInPolyTime encTcrSavedState encTcrSavedState encBits :=
-      .of_eq fun _ => rfl
-    have hpostActive : ComputableInPolyTime
-        (fun u : LIn × Bool =>
-          let n := u.1.1.1.1
-          let keys := u.1.1.1.2
-          let slot := u.1.1.2
-          let preTrace := u.1.2
-          let b := u.2
-          let word := encPair encUnary encBits (n, encPair encUnary encBits (n, keys.1))
-          let fuel := c * (word.length + 1) ^ d
-          let cfg := replayCfg machine fuel word preTrace
-          ((queryOf machine cfg b).getD [],
-            encTcrSavedState (true, keys, b, fuel - 1 - slot, preTrace)))
-        (encPair encLIn encBool) (encPair encBits encBits) := by
-      let U := LIn × Bool
-      let encU : U ↪ List Bool := encPair encLIn encBool
-      have huSIn : ComputableInPolyTime (fun u : U => u.1.1) encU encSIn :=
-        (ComputableInPolyTime.fst _ _).fst'
-      have huTr : ComputableInPolyTime (fun u : U => u.1.2) encU (encList encTraceStep) :=
-        (ComputableInPolyTime.fst _ _).snd'
-      have huB : ComputableInPolyTime (fun u : U => u.2) encU encBool :=
-        ComputableInPolyTime.snd _ _
-      have huKeys := huSIn.trans hsKeys
-      have huSlot := huSIn.trans hsSlot
-      have huWord := huSIn.trans hsWord
-      have huFuel := huSIn.trans hsFuel
-      have huCfg := computableInPolyTime_replayCfg_comp machine huFuel huWord huTr
-      have huQOpt := computableInPolyTime_queryOf_comp machine huCfg huB
-      have huTarget := huQOpt.optionGetDWithInput (.const [])
-      have huRem := ComputableInPolyTime.unary_sub.comp
-        ((ComputableInPolyTime.unary_sub.comp (huFuel.prod (.const 1))).prod huSlot)
-      have huSaved : ComputableInPolyTime
-          (fun u : U =>
-            (true, u.1.1.1.2, u.2,
-              c * ((encPair encUnary encBits
-                (u.1.1.1.1, encPair encUnary encBits (u.1.1.1.1, u.1.1.1.2.1))).length + 1) ^ d -
-                1 - u.1.1.2,
-              u.1.2))
-          encU encTcrSavedState :=
-        (ComputableInPolyTime.const true).prod
-          (huKeys.prod (huB.prod (huRem.prod huTr)))
-      exact (huTarget.prod (huSaved.trans hencState)).of_enc_eq fun _ => rfl
-    have hyes := hpreLoop.bind_with
-      (second := fun (q : SIn) preTrace => do
-        let n := q.1.1
-        let keys := q.1.2
-        let slot := q.2
-        let word := encPair encUnary encBits (n, encPair encUnary encBits (n, keys.1))
-        let fuel := c * (word.length + 1) ^ d
-        let b ← ProbComp.uniform Bool
-        let cfg := replayCfg machine fuel word preTrace
-        return ((queryOf machine cfg b).getD [],
-          encTcrSavedState (true, keys, b, fuel - 1 - slot, preTrace)))
-      (hlCoin.bind_with
-        (second := fun (v : LIn) b =>
-          let n := v.1.1.1
-          let keys := v.1.1.2
-          let slot := v.1.2
-          let preTrace := v.2
-          let word := encPair encUnary encBits (n, encPair encUnary encBits (n, keys.1))
-          let fuel := c * (word.length + 1) ^ d
-          let cfg := replayCfg machine fuel word preTrace
-          pure ((queryOf machine cfg b).getD [],
-            encTcrSavedState (true, keys, b, fuel - 1 - slot, preTrace)))
-        hpostActive.isPPTOn)
-    have hno : IsPPTOn encSIn (encPair encBits encBits)
-        (fun q : SIn => pure ([], encTcrSavedState (false, q.1.2, false, 0, []))) := by
-      have hsavedFalse : ComputableInPolyTime
-          (fun q : SIn => (false, q.1.2, false, 0, ([] : List TraceStep)))
-          encSIn encTcrSavedState :=
-        (ComputableInPolyTime.const false).prod
-          (hsKeys.prod ((ComputableInPolyTime.const false).prod
-            ((ComputableInPolyTime.const 0).prod (.const []))))
-      exact ((ComputableInPolyTime.const []).prod (hsavedFalse.trans hencState)).isPPTOn
-    have hite := IsPPTOn.ite' hsCond hyes hno
-    refine (hkg.bind_with
-      (second := fun n keys => do
-        let slot ← sampleDyadicIndex (fuelUpper H ckg dkg c d n)
-        let pk := encPair encUnary encBits (n, keys.1)
-        let word := encPair encUnary encBits (n, pk)
-        let fuel := c * (word.length + 1) ^ d
-        if slot < fuel then do
-          let preTrace ← OracleComp.iterate slot (sampleStep S H machine n keys.2 fuel word) []
-          let b ← ProbComp.uniform Bool
-          let cfg := replayCfg machine fuel word preTrace
-          return ((queryOf machine cfg b).getD [],
-            encTcrSavedState (true, keys, b, fuel - 1 - slot, preTrace))
-        else
-          return ([], encTcrSavedState (false, keys, false, 0, [])))
-      (hslot.bind_with
-        (second := fun (p : KIn) slot =>
-          let pk := encPair encUnary encBits (p.1, p.2.1)
-          let word := encPair encUnary encBits (p.1, pk)
-          let fuel := c * (word.length + 1) ^ d
-          if slot < fuel then do
-            let preTrace ←
-              OracleComp.iterate slot (sampleStep S H machine p.1 p.2.2 fuel word) []
-            let b ← ProbComp.uniform Bool
-            let cfg := replayCfg machine fuel word preTrace
-            return ((queryOf machine cfg b).getD [],
-              encTcrSavedState (true, p.2, b, fuel - 1 - slot, preTrace))
-          else
-            pure ([], encTcrSavedState (false, p.2, false, 0, [])))
-        hite)).congr fun _ => rfl
-  find := by
-    let FIn := ℕ × List Bool × List Bool
-    let encFIn : FIn ↪ List Bool := encPair encUnary (encPair encBits encBits)
-    have hn : ComputableInPolyTime (fun p : FIn => p.1) encFIn encUnary :=
-      ComputableInPolyTime.fst _ _
-    have hstateWord : ComputableInPolyTime (fun p : FIn => p.2.1) encFIn encBits :=
-      (ComputableInPolyTime.snd _ _).fst'
-    have hhashKey : ComputableInPolyTime (fun p : FIn => p.2.2) encFIn encBits :=
-      (ComputableInPolyTime.snd _ _).snd'
-    have hsaved := hstateWord.trans tcrStateDecoder.computableInPolyTime
-    have hactive : ComputableInPolyTime
-        (fun p : FIn => decide ((tcrStateDecoder.decode p.2.1).1 = true)) encFIn encBool :=
-      hsaved.fst'.of_enc_eq fun _ => rfl
-    have hkeys := hsaved.snd'.fst'
-    have hb := hsaved.snd'.snd'.fst'
-    have hrem := hsaved.snd'.snd'.snd'.fst'
-    have hpre := hsaved.snd'.snd'.snd'.snd'
-    have hword := computableInPolyTime_wordOf hn hkeys.fst'
-    have hfuel := computableInPolyTime_fuelOf c d hn hkeys.fst'
-    have hcfg := computableInPolyTime_replayCfg_comp machine hfuel hword hpre
-    have hqOpt := computableInPolyTime_queryOf_comp machine hcfg hb
-    have hmidNone : IsPPTOn encFIn (encList encTraceStep)
-        (fun p : FIn =>
-          let s := tcrStateDecoder.decode p.2.1
-          pure (s.2.2.2.2 ++ [(s.2.2.1, p.2.2, [])])) := by
-      have hitem : ComputableInPolyTime
-          (fun p : FIn => ((tcrStateDecoder.decode p.2.1).2.2.1, p.2.2, ([] : List Bool)))
-          encFIn encTraceStep :=
-        hb.prod (hhashKey.prod (.const []))
-      exact (hpre.listAppend' (hitem.cons' (.const []))).isPPTOn
-    have hmsg := hqOpt.optionGetDWithInput (.const [])
-    have hdig := (hn.prod (hhashKey.prod hmsg)).trans H.polyTime
-    have hM := computableInPolyTime_otsMsg_comp H hn hhashKey hdig
-    have hsign := S.isPPTOn_sign_comp (hkeys.snd'.of_enc_eq fun _ => rfl)
-      (hM.of_enc_eq fun _ => rfl)
-    have hpostMidSome : ComputableInPolyTime
-        (fun q : FIn × List Bool =>
-          let s := tcrStateDecoder.decode q.1.2.1
-          s.2.2.2.2 ++ [(s.2.2.1, q.1.2.2, q.2)])
-        (encPair encFIn encBits) (encList encTraceStep) := by
-      have hqFIn := ComputableInPolyTime.fst encFIn encBits
-      have hqOts := ComputableInPolyTime.snd encFIn encBits
-      have hitem : ComputableInPolyTime
-          (fun q : FIn × List Bool =>
-            ((tcrStateDecoder.decode q.1.2.1).2.2.1, q.1.2.2, q.2))
-          (encPair encFIn encBits) encTraceStep :=
-        (hqFIn.trans hb).prod ((hqFIn.trans hhashKey).prod hqOts)
-      exact (hqFIn.trans hpre).listAppend' (hitem.cons' (.const []))
-    have hmidSome := hsign.bind_with
-      (second := fun (p : FIn) ots =>
-        let s := tcrStateDecoder.decode p.2.1
-        pure (s.2.2.2.2 ++ [(s.2.2.1, p.2.2, ots)]))
-      hpostMidSome.isPPTOn
-    have hcondQ : ComputableInPolyTime
-        (fun p : FIn =>
-          let s := tcrStateDecoder.decode p.2.1
-          let word := encPair encUnary encBits (p.1, encPair encUnary encBits (p.1, s.2.1.1))
-          let fuel := c * (word.length + 1) ^ d
-          decide ((queryOf machine (replayCfg machine fuel word s.2.2.2.2) s.2.2.1).isSome = true))
-        encFIn encBool :=
-      hqOpt.optionIsSome.of_enc_eq fun _ => rfl
-    have hmid : IsPPTOn encFIn (encList encTraceStep)
-        (fun p : FIn =>
-          let s := tcrStateDecoder.decode p.2.1
-          let word := encPair encUnary encBits (p.1, encPair encUnary encBits (p.1, s.2.1.1))
-          let fuel := c * (word.length + 1) ^ d
-          match queryOf machine (replayCfg machine fuel word s.2.2.2.2) s.2.2.1 with
-          | none => pure (s.2.2.2.2 ++ [(s.2.2.1, p.2.2, [])])
-          | some msg => do
-            let ots ← S.sign s.2.1.2 (otsMsg H p.1 p.2.2 (H.eval p.1 p.2.2 msg))
-            return s.2.2.2.2 ++ [(s.2.2.1, p.2.2, ots)]) := by
-      refine (IsPPTOn.ite' hcondQ hmidSome hmidNone).congr fun p => ?_
-      dsimp only
-      cases queryOf machine
-          (replayCfg machine
-            (c * ((encPair encUnary encBits
-              (p.1, encPair encUnary encBits (p.1, (tcrStateDecoder.decode p.2.1).2.1.1))).length +
-              1) ^ d)
-            (encPair encUnary encBits
-              (p.1, encPair encUnary encBits (p.1, (tcrStateDecoder.decode p.2.1).2.1.1)))
-            (tcrStateDecoder.decode p.2.1).2.2.2.2)
-          (tcrStateDecoder.decode p.2.1).2.2.1 with
-      | none => rfl
-      | some msg => simp only [Option.isSome_some, ↓reduceIte, Option.getD_some]
-    let MIn := FIn × List TraceStep
-    let encMIn : MIn ↪ List Bool := encPair encFIn (encList encTraceStep)
-    have hmFIn := ComputableInPolyTime.fst encFIn (encList encTraceStep)
-    have hmMid := ComputableInPolyTime.snd encFIn (encList encTraceStep)
-    have hpostLoop := isPPTOn_iterate_sampleStep S H machine
-      (hmFIn.trans hrem) (hmFIn.trans hn) (hmFIn.trans hkeys.snd')
-      (hmFIn.trans hfuel) (hmFIn.trans hword) hmMid
-    have hpostOut : ComputableInPolyTime
-        (fun r : MIn × List TraceStep =>
-          let s := tcrStateDecoder.decode r.1.1.2.1
-          let pk := encPair encUnary encBits (r.1.1.1, s.2.1.1)
-          let word := encPair encUnary encBits (r.1.1.1, pk)
-          let fuel := c * (word.length + 1) ^ d
-          let finalCfg := replayCfg machine fuel word r.2
-          (msgSigDecoder.decode finalCfg.tapes.output).1)
-        (encPair encMIn (encList encTraceStep)) encBits := by
-      have hrMIn := ComputableInPolyTime.fst encMIn (encList encTraceStep)
-      have hrFull := ComputableInPolyTime.snd encMIn (encList encTraceStep)
-      have hrCfg := computableInPolyTime_replayCfg_comp machine
-        ((hrMIn.trans hmFIn).trans hfuel) ((hrMIn.trans hmFIn).trans hword) hrFull
-      have hrTapes := computableInPolyTime_finiteConfig_tapes.comp hrCfg
-      have hrOut := ComputableInPolyTime.finiteCfg_output.comp hrTapes
-      exact ((hrOut.trans msgSigDecoder.computableInPolyTime).fst').of_enc_eq fun _ => rfl
-    have hyes := hmid.bind_with
-      (second := fun (p : FIn) midTrace => do
-        let s := tcrStateDecoder.decode p.2.1
-        let word := encPair encUnary encBits (p.1, encPair encUnary encBits (p.1, s.2.1.1))
-        let fuel := c * (word.length + 1) ^ d
-        let fullTrace ← OracleComp.iterate s.2.2.2.1
-          (sampleStep S H machine p.1 s.2.1.2 fuel word) midTrace
-        let finalCfg := replayCfg machine fuel word fullTrace
-        return (msgSigDecoder.decode finalCfg.tapes.output).1)
-      (hpostLoop.bind_with
-        (second := fun (q : MIn) fullTrace =>
-          let s := tcrStateDecoder.decode q.1.2.1
-          let word := encPair encUnary encBits (q.1.1, encPair encUnary encBits (q.1.1, s.2.1.1))
-          let fuel := c * (word.length + 1) ^ d
-          let finalCfg := replayCfg machine fuel word fullTrace
-          pure (msgSigDecoder.decode finalCfg.tapes.output).1)
-        hpostOut.isPPTOn)
-    have hno : IsPPTOn encFIn encBits (fun _ : FIn => pure []) :=
-      (ComputableInPolyTime.const []).isPPTOn
-    refine (IsPPTOn.ite' hactive hyes hno).congr fun ⟨n, stateWord, hashKey⟩ => ?_
-    dsimp only [tcrMultiAdversary]
-    cases (tcrStateDecoder.decode stateWord).1 with
-    | false => simp only [Bool.false_eq_true, ↓reduceIte]
-    | true =>
-      simp only [↓reduceIte]
-      cases queryOf machine
-          (replayCfg machine
-            (c * ((encPair encUnary encBits
-              (n, encPair encUnary encBits (n, (tcrStateDecoder.decode stateWord).2.1.1))).length +
-              1) ^ d)
-            (encPair encUnary encBits
-              (n, encPair encUnary encBits (n, (tcrStateDecoder.decode stateWord).2.1.1)))
-            (tcrStateDecoder.decode stateWord).2.2.2.2)
-          (tcrStateDecoder.decode stateWord).2.2.1 with
-      | none => rfl
-      | some msg => simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind]
+  choose := isPPTOn_tcrMultiAdversary_choose S H machine ckg dkg c d
+  find := isPPTOn_tcrMultiAdversary_find S H machine ckg dkg c d
 
 /-! ### Exact trace coupling and Boneh–Shoup Theorem 13.2 security proof -/
 
@@ -1312,32 +1153,27 @@ private theorem mem_support_iterate_sampleStep_props {k : ℕ} {Control : Type}
     PMF.mem_support_bind_iff] at hnext
   obtain ⟨b, _, hashKey, hk, hrest⟩ := hnext
   have hkLen : hashKey.length = H.keyLen n := BitString.length_of_mem_support_uniformList hk
-  cases hq : queryOf machine (replayCfg machine limit word tr) b with
-  | none =>
-    rw [hq] at hrest
-    simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hrest
-    subst hrest
-    refine ⟨hpre.trans (List.prefix_append tr _), ?_, fun h0 item hitem => ?_⟩
-    · simp only [List.length_append, List.length_singleton, hlen]
-      omega
-    · rcases List.mem_append.mp hitem with htr | hsing
-      · exact hkeys h0 item htr
-      · simp only [List.mem_singleton] at hsing
-        rw [hsing]
-        exact hkLen
-  | some msg =>
-    rw [hq] at hrest
-    simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
-      PMF.mem_support_pure_iff] at hrest
-    obtain ⟨ots, _, rfl⟩ := hrest
-    refine ⟨hpre.trans (List.prefix_append tr _), ?_, fun h0 item hitem => ?_⟩
-    · simp only [List.length_append, List.length_singleton, hlen]
-      omega
-    · rcases List.mem_append.mp hitem with htr | hsing
-      · exact hkeys h0 item htr
-      · simp only [List.mem_singleton] at hsing
-        rw [hsing]
-        exact hkLen
+  have ⟨ots, hnextEq⟩ : ∃ ots, next = tr ++ [(b, hashKey, ots)] := by
+    cases hq : queryOf machine (replayCfg machine limit word tr) b with
+    | none =>
+      rw [hq] at hrest
+      simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hrest
+      exact ⟨[], hrest⟩
+    | some msg =>
+      rw [hq] at hrest
+      simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
+        PMF.mem_support_pure_iff] at hrest
+      obtain ⟨ots, _, hEq⟩ := hrest
+      exact ⟨ots, hEq⟩
+  subst hnextEq
+  refine ⟨hpre.trans (List.prefix_append tr _), ?_, fun h0 item hitem => ?_⟩
+  · simp only [List.length_append, List.length_singleton, hlen]
+    omega
+  · rcases List.mem_append.mp hitem with htr | hsing
+    · exact hkeys h0 item htr
+    · simp only [List.mem_singleton] at hsing
+      rw [hsing]
+      exact hkLen
 
 private theorem exists_slot_of_mem_replayPairs {k : ℕ} {Control : Type}
     (machine : MultiTapePTM k Bool Control Unit) (limit : ℕ) (word : List Bool)
@@ -1407,6 +1243,208 @@ private theorem finset_sum_tsum {ι α : Type*} (s : Finset ι) (f : ι → α �
   simp only [Finset.sum_insert hi, ih,
     ← Summable.tsum_add CompleteLattice.summable CompleteLattice.summable]
 
+private theorem succProbability_map_le_add_sum {α ι : Type*} [Fintype ι] (μ : PMF α)
+    (f g : α → Bool) (h : ι → α → Bool)
+    (hfg : ∀ x ∈ μ.support, f x = true → g x = true ∨ ∃ i, h i x = true) :
+    Game.succProbability (μ.map f) ≤
+      Game.succProbability (μ.map g) + ∑ i, ((μ.map (h i)) true).toNNReal := by
+  have hsum_ennreal : (μ.map f) true ≤ (μ.map g) true + ∑ i, (μ.map (h i)) true := by
+    simp only [PMF.map_apply]
+    rw [finset_sum_tsum, ← Summable.tsum_add CompleteLattice.summable CompleteLattice.summable]
+    refine tsum_le_tsum fun sample => ?_
+    by_cases hs : sample ∈ μ.support
+    · by_cases hw : f sample = true
+      · rcases hfg sample hs hw with h1 | ⟨i₀, hi₀⟩
+        · simp only [hw, h1, ↓reduceIte]
+          exact le_self_add
+        · simp only [hw, ↓reduceIte]
+          refine le_trans ?_ le_add_self
+          refine le_trans ?_ (Finset.single_le_sum (fun _ _ => zero_le) (Finset.mem_univ i₀))
+          simp [hi₀]
+      · simp [Bool.eq_false_iff.mpr hw]
+    · simp [(PMF.apply_eq_zero_iff μ sample).mpr hs]
+  have hsumNeTop : (μ.map g) true + ∑ i, (μ.map (h i)) true ≠ ⊤ :=
+    ENNReal.add_ne_top.mpr
+      ⟨PMF.apply_ne_top _ _, ENNReal.sum_ne_top.mpr fun _ _ => PMF.apply_ne_top _ _⟩
+  have hmono := ENNReal.toNNReal_mono hsumNeTop hsum_ennreal
+  rwa [ENNReal.toNNReal_add (PMF.apply_ne_top _ _)
+    (ENNReal.sum_ne_top.mpr fun _ _ => PMF.apply_ne_top _ _),
+    ENNReal.toNNReal_sum fun _ _ => PMF.apply_ne_top _ _] at hmono
+
+private def simPkOf (n : ℕ) (otvk : List Bool) : List Bool :=
+  encPair encUnary encBits (n, otvk)
+
+private def simWordOf (n : ℕ) (otvk : List Bool) : List Bool :=
+  encPair encUnary encBits (n, simPkOf n otvk)
+
+private def simFuelOf (c d n : ℕ) (otvk : List Bool) : ℕ :=
+  c * ((simWordOf n otvk).length + 1) ^ d
+
+private noncomputable def traceSamplePMF {k : ℕ} {Control : Type}
+    (S : SignatureScheme) (H : KeyedHashFamily)
+    (machine : MultiTapePTM k Bool Control Unit) (c d n : ℕ) :
+    PMF ((List Bool × List Bool) × List TraceStep) :=
+  (ProbComp.eval (S.keyGen (otsParam H n))).bind fun keys =>
+    (ProbComp.eval (OracleComp.iterate (simFuelOf c d n keys.1)
+      (sampleStep S H machine n keys.2 (simFuelOf c d n keys.1) (simWordOf n keys.1)) [])).map
+      fun trace => (keys, trace)
+
+private def winTcrAt {k : ℕ} {Control : Type}
+    (H : KeyedHashFamily) (machine : MultiTapePTM k Bool Control Unit)
+    (c d n slot : ℕ) (sample : (List Bool × List Bool) × List TraceStep) : Bool :=
+  let keys := sample.1
+  let trace := sample.2
+  let B := simFuelOf c d n keys.1
+  decide (slot < B) &&
+    let stepJ := trace.getD slot (false, [], [])
+    let cfgJ := replayCfg machine B (simWordOf n keys.1) (trace.take slot)
+    match queryOf machine cfgJ stepJ.1 with
+    | none => false
+    | some mJ =>
+      let finalCfg := replayCfg machine B (simWordOf n keys.1) trace
+      let mOut := (msgSigDecoder.decode finalCfg.tapes.output).1
+      isCollision (H.eval n) (fun _ _ => true) n stepJ.2.1 mJ mOut
+
+private noncomputable def tcrSlotTrial {k : ℕ} {Control : Type}
+    (S : SignatureScheme) (H : KeyedHashFamily)
+    (machine : MultiTapePTM k Bool Control Unit) (c d n slot : ℕ) : Game :=
+  (ProbComp.eval (S.keyGen (otsParam H n))).bind fun keys =>
+    let B := simFuelOf c d n keys.1
+    let word := simWordOf n keys.1
+    if slot < B then
+      (ProbComp.eval (OracleComp.iterate slot
+        (sampleStep S H machine n keys.2 B word) [])).bind fun preTrace =>
+        (PMF.uniformOfFintype Bool).bind fun b =>
+          let cfg := replayCfg machine B word preTrace
+          let mTarget := (queryOf machine cfg b).getD []
+          (BitString.uniformList (H.keyLen n)).bind fun kStar =>
+            let midComp : ProbComp (List TraceStep) :=
+              match queryOf machine cfg b with
+              | none => pure (preTrace ++ [(b, kStar, [])])
+              | some msg => do
+                let ots ← S.sign keys.2 (otsMsg H n kStar (H.eval n kStar msg))
+                pure (preTrace ++ [(b, kStar, ots)])
+            (ProbComp.eval midComp).bind fun midTrace =>
+              (ProbComp.eval (OracleComp.iterate (B - 1 - slot)
+                (sampleStep S H machine n keys.2 B word) midTrace)).map fun fullTrace =>
+                  let finalCfg := replayCfg machine B word fullTrace
+                  let mOut := (msgSigDecoder.decode finalCfg.tapes.output).1
+                  isCollision (H.eval n) (fun _ _ => true) n kStar mTarget mOut
+    else
+      (BitString.uniformList (H.keyLen n)).map fun kStar =>
+        isCollision (H.eval n) (fun _ _ => true) n kStar [] []
+
+private theorem eval_targetCollisionGame_tcrMultiAdversary {k : ℕ} {Control : Type}
+    (S : SignatureScheme) (H : KeyedHashFamily)
+    (machine : MultiTapePTM k Bool Control Unit) (ckg dkg c d n : ℕ) :
+    have : NeZero (dyadicSize (fuelUpper H ckg dkg c d n)) := ⟨(dyadicSize_pos _).ne'⟩
+    ProbComp.eval
+      (targetCollisionGame H.keyLen H.eval (fun _ _ => true)
+        (tcrMultiAdversary S H machine ckg dkg c d) n) =
+      (PMF.uniformOfFintype (Fin (dyadicSize (fuelUpper H ckg dkg c d n)))).bind fun i =>
+        tcrSlotTrial S H machine c d n i.val := by
+  intro _
+  simp only [targetCollisionGame, tcrMultiAdversary, ProbComp.eval_bind,
+    eval_sampleDyadicIndex, BitString.eval_sampleList, PMF.bind_bind, PMF.bind_map,
+    Function.comp_def]
+  rw [PMF.bind_comm]
+  congr 1; funext i
+  congr 1; funext keys
+  by_cases hlt : i.val < simFuelOf c d n keys.1
+  · dsimp only [tcrSlotTrial, simFuelOf, simWordOf, simPkOf] at hlt ⊢
+    simp only [hlt, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
+      ProbComp.eval_uniform, PMF.bind_bind, PMF.pure_bind, tcrStateDecoder.decode_enc,
+      _root_.PMF.map, Function.comp_def]
+    congr 1; funext preTrace
+    congr 1; funext b
+    congr 1; funext kStar
+    let w := encPair encUnary encBits (n, encPair encUnary encBits (n, keys.1))
+    cases queryOf machine (replayCfg machine (c * (w.length + 1) ^ d) w preTrace) b <;>
+      simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
+  · dsimp only [tcrSlotTrial, simFuelOf, simWordOf, simPkOf] at hlt ⊢
+    simp only [hlt, ↓reduceIte, ProbComp.eval_pure, PMF.pure_bind,
+      tcrStateDecoder.decode_enc, Bool.false_eq_true, _root_.PMF.map, Function.comp_def]
+
+private theorem succProbability_winTcrAt_le_trial {k : ℕ} {Control : Type}
+    (S : SignatureScheme) (H : KeyedHashFamily)
+    (machine : MultiTapePTM k Bool Control Unit) (c d n slot : ℕ) :
+    (((traceSamplePMF S H machine c d n).map (winTcrAt H machine c d n slot)) true).toNNReal ≤
+      Game.succProbability (tcrSlotTrial S H machine c d n slot) := by
+  refine ENNReal.toNNReal_mono (PMF.apply_ne_top _ _) ?_
+  simp only [traceSamplePMF, tcrSlotTrial, PMF.map_bind]
+  refine PMF.bind_apply_mono_on_support _ true fun keys _ => ?_
+  let B := simFuelOf c d n keys.1
+  let word := simWordOf n keys.1
+  let stepFn := sampleStep S H machine n keys.2 B word
+  by_cases hlt : slot < B
+  · simp only [B] at hlt
+    simp only [hlt, ↓reduceIte, PMF.map_comp]
+    have hsplit : B = slot + 1 + (B - 1 - slot) := by omega
+    have hiter :
+        ProbComp.eval (OracleComp.iterate B stepFn []) =
+          (ProbComp.eval (OracleComp.iterate slot stepFn [])).bind fun preTrace =>
+            (PMF.uniformOfFintype Bool).bind fun b =>
+              (BitString.uniformList (H.keyLen n)).bind fun kStar =>
+                let midComp : ProbComp (List TraceStep) :=
+                  match queryOf machine (replayCfg machine B word preTrace) b with
+                  | none => pure (preTrace ++ [(b, kStar, [])])
+                  | some msg => do
+                    let ots ← S.sign keys.2 (otsMsg H n kStar (H.eval n kStar msg))
+                    pure (preTrace ++ [(b, kStar, ots)])
+                (ProbComp.eval midComp).bind fun midTrace =>
+                  ProbComp.eval (OracleComp.iterate (B - 1 - slot) stepFn midTrace) := by
+      conv_lhs => rw [hsplit, iterate_add_prob, OracleComp.iterate_succ]
+      simp only [ProbComp.eval_bind, PMF.bind_bind]
+      congr 1; funext preTrace
+      simp only [stepFn, sampleStep, ProbComp.eval_bind, ProbComp.eval_uniform,
+        BitString.eval_sampleList, PMF.bind_bind]
+    change ((ProbComp.eval (OracleComp.iterate B stepFn [])).map
+        (fun trace => winTcrAt H machine c d n slot (keys, trace))) true ≤ _
+    rw [hiter]
+    simp only [PMF.map_bind]
+    refine PMF.bind_apply_mono_on_support _ true fun preTrace hpreSupp => ?_
+    have hpreLen : preTrace.length = slot := by
+      simpa using (mem_support_iterate_sampleStep_props S H machine n keys.2 B word
+        slot [] hpreSupp).2.1
+    refine PMF.bind_apply_mono_on_support _ true fun b _ => ?_
+    refine PMF.bind_apply_mono_on_support _ true fun kStar _ => ?_
+    refine PMF.bind_apply_mono_on_support _ true fun midTrace hmidSupp => ?_
+    refine PMF.map_true_mono _ fun fullTrace hfullSupp hwin => ?_
+    obtain ⟨postTrace, rfl⟩ :=
+      (mem_support_iterate_sampleStep_props S H machine n keys.2 B word
+        (B - 1 - slot) midTrace hfullSupp).1
+    obtain ⟨ots, rfl⟩ : ∃ ots, midTrace = preTrace ++ [(b, kStar, ots)] := by
+      cases hq : queryOf machine (replayCfg machine B word preTrace) b with
+      | none =>
+        rw [hq] at hmidSupp
+        simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hmidSupp
+        exact ⟨[], hmidSupp⟩
+      | some msg =>
+        rw [hq] at hmidSupp
+        simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
+          PMF.mem_support_pure_iff] at hmidSupp
+        obtain ⟨ots, _, hEq⟩ := hmidSupp
+        exact ⟨ots, hEq⟩
+    have hassoc : (preTrace ++ [(b, kStar, ots)]) ++ postTrace =
+        preTrace ++ ((b, kStar, ots) :: postTrace) := by simp
+    have htake : ((preTrace ++ [(b, kStar, ots)]) ++ postTrace).take slot = preTrace := by
+      rw [hassoc, List.take_append_of_le_length (by rw [hpreLen]), ← hpreLen, List.take_length]
+    have hget :
+        ((preTrace ++ [(b, kStar, ots)]) ++ postTrace).getD slot (false, [], []) =
+          (b, kStar, ots) := by
+      have hltFull : slot < (preTrace ++ ((b, kStar, ots) :: postTrace)).length := by
+        simp [hpreLen]
+      rw [hassoc, List.getD_eq_getElem _ _ hltFull,
+        List.getElem_append_right (by rw [hpreLen])]
+      simp only [hpreLen, Nat.sub_self, List.getElem_cons_zero]
+    dsimp only [winTcrAt, B, word] at hwin ⊢
+    simp only [decide_eq_true hlt, Bool.true_and, htake, hget] at hwin
+    cases hq : queryOf machine
+        (replayCfg machine (simFuelOf c d n keys.1) (simWordOf n keys.1) preTrace) b with
+    | none => simp [hq] at hwin
+    | some mJ => simpa [hq] using hwin
+  · simp [B, hlt, PMF.map_comp, PMF.map_apply, winTcrAt]
+
 end MultiSimulator
 
 /-! ### Concrete and asymptotic security theorems ([BonehShoup2023], Theorem 13.2) -/
@@ -1447,17 +1485,13 @@ theorem succProbability_wordScheme_eufCmaGame_le_of_machine {k : ℕ} {Control :
           (ProbComp.eval
             (targetCollisionGame H.keyLen H.eval (fun _ _ => true)
               (tcrMultiAdversary S H machine ckg dkg c d) n)) := by
-  let pkOf (otvk : List Bool) : List Bool := encPair encUnary encBits (n, otvk)
-  let wordOf (otvk : List Bool) : List Bool := encPair encUnary encBits (n, pkOf otvk)
-  let fuelOf (otvk : List Bool) : ℕ := c * ((wordOf otvk).length + 1) ^ d
+  let pkOf := simPkOf n
+  let wordOf := simWordOf n
+  let fuelOf := simFuelOf c d n
   let D : ℕ := dyadicSize (fuelUpper H ckg dkg c d n)
   have hDpos : 0 < D := dyadicSize_pos _
   have : NeZero D := ⟨hDpos.ne'⟩
-  let μ : PMF ((List Bool × List Bool) × List TraceStep) :=
-    (ProbComp.eval (S.keyGen (otsParam H n))).bind fun keys =>
-      (ProbComp.eval (OracleComp.iterate (fuelOf keys.1)
-        (sampleStep S H machine n keys.2 (fuelOf keys.1) (wordOf keys.1)) [])).map fun trace =>
-          (keys, trace)
+  let μ := traceSamplePMF S H machine c d n
   have hrunPair : ∀ keys : List Bool × List Bool,
       ((OracleComp.interpret
         (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
@@ -1474,8 +1508,8 @@ theorem succProbability_wordScheme_eufCmaGame_le_of_machine {k : ℕ} {Control :
       simp only [Functor.map_map, msgSigDecoder.decode_enc]
       exact (id_map _).symm
     rw [hdecode, OracleComp.interpret_map, StateT.run_map, _root_.PMF.monad_map_eq_map,
-      hmachine (n, pkOf keys.1) _ _ [],
-      ← machine.finiteRunFrom_take_runOracle (fuelOf keys.1) (wordOf keys.1)]
+      hmachine (n, pkOf keys.1) _ _ []]
+    erw [← machine.finiteRunFrom_take_runOracle (fuelOf keys.1) (wordOf keys.1)]
     simp only [finiteRunFrom, OracleComp.interpret_map, StateT.run_map,
       _root_.PMF.monad_map_eq_map, PMF.map_comp]
     rw [iterate_finiteStep_pairSigningOracle S H machine n keys.2 (fuelOf keys.1) (wordOf keys.1)
@@ -1500,24 +1534,11 @@ theorem succProbability_wordScheme_eufCmaGame_le_of_machine {k : ℕ} {Control :
     let queriedS := res.2.map fun p => otsMsg H n p.2 (H.eval n p.2 p.1)
     (MStar.length == otsParam H n) && !queriedS.contains MStar &&
       S.verify keys.1 MStar parsedSig.2
-  let winTcrAt (i : Fin D) (sample : (List Bool × List Bool) × List TraceStep) : Bool :=
-    let keys := sample.1
-    let trace := sample.2
-    let B := fuelOf keys.1
-    decide (i.val < B) &&
-      let stepJ := trace.getD i.val (false, [], [])
-      let cfgJ := replayCfg machine B (wordOf keys.1) (trace.take i.val)
-      match queryOf machine cfgJ stepJ.1 with
-      | none => false
-      | some mJ =>
-        let finalCfg := replayCfg machine B (wordOf keys.1) trace
-        let mOut := (msgSigDecoder.decode finalCfg.tapes.output).1
-        isCollision (H.eval n) (fun _ _ => true) n stepJ.2.1 mJ mOut
   have hwordEq :
       ProbComp.eval ((wordScheme S H).eufCmaGame adversary n) = μ.map winGame := by
     simp only [WordSignatureScheme.eufCmaGame, wordScheme_keyGen, wordScheme_verify, keyGen,
       ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret, PMF.bind_bind,
-      PMF.pure_bind, μ, PMF.map_bind]
+      PMF.pure_bind, μ, traceSamplePMF, PMF.map_bind]
     congr 1
     funext keys
     have hsim := ProbOracleComp.run_interpret_map_state
@@ -1528,18 +1549,21 @@ theorem succProbability_wordScheme_eufCmaGame_le_of_machine {k : ℕ} {Control :
       (step := by
         intro ⟨⟨⟩, msg⟩ pairs
         simp only [pairSigningOracle, WordSignatureScheme.signingOracle, wordScheme_sign, sign,
-          pkOf, keyDecoder.decode_enc, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
+          pkOf, simPkOf, keyDecoder.decode_enc, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
           BitString.eval_sampleList, Function.comp_def, _root_.PMF.map,
           PMF.bind_bind, PMF.pure_bind, List.map_cons])
       (adversary n (pkOf keys.1)) []
-    simp only [List.map_nil, pkOf] at hsim
-    rw [← hsim, hrunPair keys]
-    simp only [_root_.PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def, winGame, pkOf]
+    have hrun := hrunPair keys
+    simp only [List.map_nil, pkOf, simPkOf] at hsim hrun
+    rw [← hsim, hrun]
+    simp only [_root_.PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def, winGame, pkOf,
+      wordOf, fuelOf, simPkOf]
   have hsigEq :
       ProbComp.eval (S.eufCmaGame (manyTimeForger H sigBound adversary) (otsParam H n)) =
         μ.map winSig := by
     simp only [SignatureScheme.eufCmaGame, manyTimeForger, otsParamInv_otsParam, ↓reduceIte,
-      ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret, μ, PMF.map_bind]
+      ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret, μ,
+      traceSamplePMF, PMF.map_bind]
     refine PMF.bind_congr_on_support _ _ _ fun keys hkeys => ?_
     simp only [OracleComp.interpret_bind, OracleComp.interpret_pure, StateT.run_bind,
       StateT.run_pure, Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
@@ -1578,180 +1602,16 @@ theorem succProbability_wordScheme_eufCmaGame_le_of_machine {k : ℕ} {Control :
               (length_otsMsg H n hashKey _) ots hots)
         simp only [htake])
       (adversary n (pkOf keys.1)) []
-    simp only [List.map_nil, pkOf] at hsim
-    rw [← hsim, hrunPair keys]
-    simp only [_root_.PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def, winSig]
-  let trial (slot : ℕ) : Game :=
-    (ProbComp.eval (S.keyGen (otsParam H n))).bind fun keys =>
-      let B := fuelOf keys.1
-      let word := wordOf keys.1
-      if slot < B then
-        (ProbComp.eval (OracleComp.iterate slot
-          (sampleStep S H machine n keys.2 B word) [])).bind fun preTrace =>
-          (PMF.uniformOfFintype Bool).bind fun b =>
-            let cfg := replayCfg machine B word preTrace
-            let mTarget := (queryOf machine cfg b).getD []
-            (BitString.uniformList (H.keyLen n)).bind fun kStar =>
-              let midComp : ProbComp (List TraceStep) :=
-                match queryOf machine cfg b with
-                | none => pure (preTrace ++ [(b, kStar, [])])
-                | some msg => do
-                  let ots ← S.sign keys.2 (otsMsg H n kStar (H.eval n kStar msg))
-                  pure (preTrace ++ [(b, kStar, ots)])
-              (ProbComp.eval midComp).bind fun midTrace =>
-                (ProbComp.eval (OracleComp.iterate (B - 1 - slot)
-                  (sampleStep S H machine n keys.2 B word) midTrace)).map fun fullTrace =>
-                    let finalCfg := replayCfg machine B word fullTrace
-                    let mOut := (msgSigDecoder.decode finalCfg.tapes.output).1
-                    isCollision (H.eval n) (fun _ _ => true) n kStar mTarget mOut
-      else
-        (BitString.uniformList (H.keyLen n)).map fun kStar =>
-          isCollision (H.eval n) (fun _ _ => true) n kStar [] []
-  have htcrDecomp :
-      ProbComp.eval
-        (targetCollisionGame H.keyLen H.eval (fun _ _ => true)
-          (tcrMultiAdversary S H machine ckg dkg c d) n) =
-        (PMF.uniformOfFintype (Fin D)).bind fun i => trial i.val := by
-    simp only [targetCollisionGame, tcrMultiAdversary, ProbComp.eval_bind,
-      eval_sampleDyadicIndex, BitString.eval_sampleList, PMF.bind_bind, PMF.bind_map,
-      Function.comp_def, D]
-    rw [PMF.bind_comm]
-    congr 1
-    funext i
-    congr 1
-    funext keys
-    by_cases hlt : i.val < fuelOf keys.1
-    · dsimp only [trial, fuelOf, wordOf, pkOf] at hlt ⊢
-      simp only [hlt, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
-        ProbComp.eval_uniform, PMF.bind_bind, PMF.pure_bind, tcrStateDecoder.decode_enc,
-        _root_.PMF.map, Function.comp_def]
-      congr 1; funext preTrace
-      congr 1; funext b
-      congr 1; funext kStar
-      let w := encPair encUnary encBits (n, encPair encUnary encBits (n, keys.1))
-      cases queryOf machine (replayCfg machine (c * (w.length + 1) ^ d) w preTrace) b <;>
-        simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
-    · dsimp only [trial, fuelOf, wordOf, pkOf] at hlt ⊢
-      simp only [hlt, ↓reduceIte, ProbComp.eval_pure, PMF.pure_bind,
-        tcrStateDecoder.decode_enc, Bool.false_eq_true, _root_.PMF.map, Function.comp_def]
-  have htrialGe : ∀ i : Fin D,
-      ((μ.map (winTcrAt i)) true).toNNReal ≤ Game.succProbability (trial i.val) := by
-    intro i
-    refine ENNReal.toNNReal_mono (PMF.apply_ne_top _ _) ?_
-    simp only [μ, trial, PMF.map_bind, PMF.bind_apply]
-    refine tsum_le_tsum fun keys => mul_le_mul_right ?_ _
-    let B := fuelOf keys.1
-    let word := wordOf keys.1
-    let stepFn := sampleStep S H machine n keys.2 B word
-    by_cases hlt : i.val < B
-    · simp only [B] at hlt
-      simp only [hlt, ↓reduceIte, PMF.map_comp]
-      have hsplit : B = i.val + 1 + (B - 1 - i.val) := by omega
-      have hiter :
-          ProbComp.eval (OracleComp.iterate B stepFn []) =
-            (ProbComp.eval (OracleComp.iterate i.val stepFn [])).bind fun preTrace =>
-              (PMF.uniformOfFintype Bool).bind fun b =>
-                (BitString.uniformList (H.keyLen n)).bind fun kStar =>
-                  let midComp : ProbComp (List TraceStep) :=
-                    match queryOf machine (replayCfg machine B word preTrace) b with
-                    | none => pure (preTrace ++ [(b, kStar, [])])
-                    | some msg => do
-                      let ots ← S.sign keys.2 (otsMsg H n kStar (H.eval n kStar msg))
-                      pure (preTrace ++ [(b, kStar, ots)])
-                  (ProbComp.eval midComp).bind fun midTrace =>
-                    ProbComp.eval (OracleComp.iterate (B - 1 - i.val) stepFn midTrace) := by
-        conv_lhs => rw [hsplit, iterate_add_prob, OracleComp.iterate_succ]
-        simp only [ProbComp.eval_bind, PMF.bind_bind]
-        congr 1; funext preTrace
-        simp only [stepFn, sampleStep, ProbComp.eval_bind, ProbComp.eval_uniform,
-          BitString.eval_sampleList, PMF.bind_bind]
-      change ((ProbComp.eval (OracleComp.iterate B stepFn [])).map
-          (fun trace => winTcrAt i (keys, trace))) true ≤ _
-      rw [hiter]
-      simp only [PMF.map_bind, PMF.bind_apply]
-      refine tsum_le_tsum fun preTrace => ?_
-      by_cases hpreSupp : preTrace ∈ (ProbComp.eval (OracleComp.iterate i.val stepFn [])).support
-      · have hpreProps := mem_support_iterate_sampleStep_props S H machine n keys.2 B word
-          i.val [] hpreSupp
-        have hpreLen : preTrace.length = i.val := by simpa using hpreProps.2.1
-        refine mul_le_mul_right ?_ _
-        refine tsum_le_tsum fun b => mul_le_mul_right ?_ _
-        refine tsum_le_tsum fun kStar => mul_le_mul_right ?_ _
-        refine tsum_le_tsum fun midTrace => ?_
-        let midComp : ProbComp (List TraceStep) :=
-          match queryOf machine (replayCfg machine B word preTrace) b with
-          | none => pure (preTrace ++ [(b, kStar, [])])
-          | some msg => do
-            let ots ← S.sign keys.2 (otsMsg H n kStar (H.eval n kStar msg))
-            pure (preTrace ++ [(b, kStar, ots)])
-        by_cases hmidSupp : midTrace ∈ (ProbComp.eval midComp).support
-        · refine mul_le_mul_right ?_ _
-          simp only [PMF.map_apply]
-          refine tsum_le_tsum fun fullTrace => ?_
-          by_cases hfullSupp :
-              fullTrace ∈ (ProbComp.eval (OracleComp.iterate (B - 1 - i.val) stepFn
-                midTrace)).support
-          · have hfullPre := (mem_support_iterate_sampleStep_props S H machine n keys.2 B word
-              (B - 1 - i.val) midTrace hfullSupp).1
-            obtain ⟨ots, rfl⟩ : ∃ ots, midTrace = preTrace ++ [(b, kStar, ots)] := by
-              dsimp only [midComp] at hmidSupp
-              cases hq : queryOf machine (replayCfg machine B word preTrace) b with
-              | none =>
-                rw [hq] at hmidSupp
-                simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hmidSupp
-                exact ⟨[], hmidSupp⟩
-              | some msg =>
-                rw [hq] at hmidSupp
-                simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
-                  PMF.mem_support_pure_iff] at hmidSupp
-                obtain ⟨ots, _, hEq⟩ := hmidSupp
-                exact ⟨ots, hEq⟩
-            obtain ⟨postTrace, rfl⟩ := hfullPre
-            have hassoc : (preTrace ++ [(b, kStar, ots)]) ++ postTrace =
-                preTrace ++ ((b, kStar, ots) :: postTrace) := by simp
-            have htake : ((preTrace ++ [(b, kStar, ots)]) ++ postTrace).take i.val = preTrace := by
-              rw [hassoc, List.take_append_of_le_length (by rw [hpreLen]), ← hpreLen,
-                List.take_length]
-            have hget :
-                ((preTrace ++ [(b, kStar, ots)]) ++ postTrace).getD i.val (false, [], []) =
-                  (b, kStar, ots) := by
-              have hltFull : i.val < (preTrace ++ ((b, kStar, ots) :: postTrace)).length := by
-                simp [hpreLen]
-              rw [hassoc, List.getD_eq_getElem _ _ hltFull,
-                List.getElem_append_right (by rw [hpreLen])]
-              simp only [hpreLen, Nat.sub_self, List.getElem_cons_zero]
-            dsimp only [winTcrAt, B, word, stepFn]
-            simp only [decide_eq_true hlt, Bool.true_and, htake, hget]
-            cases hq : queryOf machine
-              (replayCfg machine (fuelOf keys.1) (wordOf keys.1) preTrace) b with
-            | none => simp
-            | some mJ =>
-              simp only [Option.getD_some]
-              simp
-          · have hz : (ProbComp.eval (OracleComp.iterate (B - 1 - i.val) stepFn midTrace))
-                fullTrace = 0 := (PMF.apply_eq_zero_iff _ _).mpr hfullSupp
-            simp [hz]
-        · have hz : (ProbComp.eval midComp) midTrace = 0 := (PMF.apply_eq_zero_iff _ _).mpr hmidSupp
-          dsimp only [B, word]
-          dsimp only [midComp, B, word] at hz
-          rw [hz]
-          simp
-      · have hz : (ProbComp.eval (OracleComp.iterate i.val stepFn [])) preTrace = 0 :=
-          (PMF.apply_eq_zero_iff _ _).mpr hpreSupp
-        simp [hz]
-    · simp only [B] at hlt
-      simp only [hlt, ↓reduceIte, PMF.map_comp]
-      have hfalse : ∀ trace : List TraceStep, winTcrAt i (keys, trace) = false := by
-        intro trace
-        dsimp only [winTcrAt]
-        simp only [decide_eq_false hlt, Bool.false_and]
-      simp only [PMF.map_apply, Function.comp_def, hfalse]
-      simp
+    have hrun := hrunPair keys
+    simp only [List.map_nil, pkOf, simPkOf] at hsim hrun
+    rw [← hsim, hrun]
+    simp only [_root_.PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def, winSig,
+      wordOf, fuelOf]
   have hpointwise : ∀ sample ∈ μ.support,
       winGame sample = true →
-        winSig sample = true ∨ ∃ i : Fin D, winTcrAt i sample = true := by
+        winSig sample = true ∨ ∃ i : Fin D, winTcrAt H machine c d n i.val sample = true := by
     rintro ⟨keys, trace⟩ hsupp hwin
-    simp only [μ, PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at hsupp
+    simp only [μ, traceSamplePMF, PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at hsupp
     obtain ⟨keys', hkeys, trace', htrace, heqPair⟩ := hsupp
     rcases Prod.mk.inj heqPair.symm with ⟨rfl, rfl⟩
     have hpkLen : keys.1.length ≤ ckg * (otsParam H n + 1) ^ dkg :=
@@ -1759,7 +1619,7 @@ theorem succProbability_wordScheme_eufCmaGame_le_of_machine {k : ℕ} {Control :
     have hfuelLe : fuelOf keys.1 ≤ fuelUpper H ckg dkg c d n := by
       have hwLen : (wordOf keys.1).length + 1 ≤
           4 * n + ckg * (otsParam H n + 1) ^ dkg + 3 := by
-        dsimp only [wordOf, pkOf]
+        dsimp only [wordOf, pkOf, simWordOf, simPkOf]
         simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
         omega
       exact Nat.mul_le_mul_left c (Nat.pow_le_pow_left hwLen d)
@@ -1779,7 +1639,7 @@ theorem succProbability_wordScheme_eufCmaGame_le_of_machine {k : ℕ} {Control :
     let MStar := otsMsg H n parsedSig.1 (H.eval n parsedSig.1 msig.1)
     change (!(res.2.map Prod.fst).contains msig.1 &&
         verify S H (pkOf keys.1) 0 msig.1 msig.2) = true at hwin
-    dsimp only [pkOf] at hwin
+    dsimp only [pkOf, simPkOf] at hwin
     simp only [Bool.and_eq_true, Bool.not_eq_true', verify, keyDecoder.decode_enc,
       beq_self_eq_true, Bool.true_and, beq_iff_eq] at hwin
     change (res.2.map Prod.fst).contains msig.1 = false ∧
@@ -1812,7 +1672,7 @@ theorem succProbability_wordScheme_eufCmaGame_le_of_machine {k : ℕ} {Control :
           List.contains_iff_mem.mpr hmemFst
         exact Bool.false_ne_true (hnotQueried.symm.trans hcontTrue)
       refine ⟨⟨j, hjD⟩, ?_⟩
-      dsimp only [winTcrAt]
+      dsimp only [winTcrAt, fuelOf, wordOf] at hjFuel hqJ hresFst ⊢
       simp only [decide_eq_true hjFuel, Bool.true_and, hqJ, hkJEq]
       rw [← hresFst]
       dsimp only [msig] at hdEq hmNe
@@ -1825,48 +1685,27 @@ theorem succProbability_wordScheme_eufCmaGame_le_of_machine {k : ℕ} {Control :
         S.verify keys.1 MStar parsedSig.2) = true
       simp only [MStar, length_otsMsg, beq_self_eq_true, hcontFalse, Bool.not_false,
         hverifyS, Bool.and_self]
-  have hsum_ennreal :
-      (μ.map winGame) true ≤
-        (μ.map winSig) true + ∑ i : Fin D, (μ.map (winTcrAt i)) true := by
-    simp only [PMF.map_apply]
-    rw [finset_sum_tsum, ← Summable.tsum_add CompleteLattice.summable CompleteLattice.summable]
-    refine tsum_le_tsum fun sample => ?_
-    by_cases hs : sample ∈ μ.support
-    · by_cases hw : winGame sample = true
-      · rcases hpointwise sample hs hw with h1 | ⟨i₀, hi₀⟩
-        · simp only [hw, h1, ↓reduceIte]
-          exact le_self_add
-        · simp only [hw, ↓reduceIte]
-          refine le_trans ?_ le_add_self
-          refine le_trans ?_ (Finset.single_le_sum (fun _ _ => zero_le) (Finset.mem_univ i₀))
-          simp [hi₀]
-      · have hwf : winGame sample = false := Bool.eq_false_iff.mpr hw
-        simp [hwf]
-    · have hz : μ sample = 0 := (PMF.apply_eq_zero_iff μ sample).mpr hs
-      simp [hz]
-  have hsumNeTop :
-      (μ.map winSig) true + ∑ i : Fin D, (μ.map (winTcrAt i)) true ≠ ⊤ :=
-    ENNReal.add_ne_top.mpr
-      ⟨PMF.apply_ne_top _ _, ENNReal.sum_ne_top.mpr fun i _ => PMF.apply_ne_top _ _⟩
-  have hmono := ENNReal.toNNReal_mono hsumNeTop hsum_ennreal
-  rw [ENNReal.toNNReal_add (PMF.apply_ne_top _ _)
-    (ENNReal.sum_ne_top.mpr fun i _ => PMF.apply_ne_top _ _),
-    ENNReal.toNNReal_sum fun i _ => PMF.apply_ne_top _ _] at hmono
-  rw [hwordEq, hsigEq, htcrDecomp]
+  rw [hwordEq, hsigEq, eval_targetCollisionGame_tcrMultiAdversary S H machine ckg dkg c d n]
   have hDposNN : (0 : ℝ≥0) < D := by exact_mod_cast hDpos
   have havg : (D : ℝ≥0) *
-      Game.succProbability ((PMF.uniformOfFintype (Fin D)).bind fun i => trial i.val) =
-      ∑ i : Fin D, Game.succProbability (trial i.val) := by
+      Game.succProbability ((PMF.uniformOfFintype (Fin D)).bind fun i =>
+        tcrSlotTrial S H machine c d n i.val) =
+      ∑ i : Fin D, Game.succProbability (tcrSlotTrial S H machine c d n i.val) := by
     rw [Game.succProbability_uniform, Fintype.card_fin, mul_div_cancel₀ _ hDposNN.ne']
   calc
     Game.succProbability (μ.map winGame)
       ≤ Game.succProbability (μ.map winSig) +
-          ∑ i : Fin D, ((μ.map (winTcrAt i)) true).toNNReal := hmono
-    _ ≤ Game.succProbability (μ.map winSig) + ∑ i : Fin D, Game.succProbability (trial i.val) :=
-        add_le_add le_rfl (Finset.sum_le_sum fun i _ => htrialGe i)
+          ∑ i : Fin D, ((μ.map (winTcrAt H machine c d n i.val)) true).toNNReal :=
+        succProbability_map_le_add_sum μ winGame winSig
+          (fun i : Fin D => winTcrAt H machine c d n i.val) hpointwise
+    _ ≤ Game.succProbability (μ.map winSig) +
+          ∑ i : Fin D, Game.succProbability (tcrSlotTrial S H machine c d n i.val) :=
+        add_le_add le_rfl (Finset.sum_le_sum fun i _ =>
+          succProbability_winTcrAt_le_trial S H machine c d n i.val)
     _ = Game.succProbability (μ.map winSig) +
           (D : ℝ≥0) *
-            Game.succProbability ((PMF.uniformOfFintype (Fin D)).bind fun i => trial i.val) := by
+            Game.succProbability ((PMF.uniformOfFintype (Fin D)).bind fun i =>
+              tcrSlotTrial S H machine c d n i.val) := by
         rw [havg]
 
 /-- **Existential many-query reduction for `TCRSignature.wordScheme`** ([BonehShoup2023], Section
@@ -1888,39 +1727,7 @@ theorem exists_reduction_wordScheme_eufCmaGame_le (S : SignatureScheme) (H : Key
               (ProbComp.eval
                 (targetCollisionGame H.keyLen H.eval (fun _ _ => true) tcrAdv n)) := by
   obtain ⟨_, k, Control, hfinite, machine, c, d, hmachine⟩ := hadversary.on
-  obtain ⟨ckg, dkg, hkgLen⟩ := S.keyGen_ppt.length_le
-  obtain ⟨csg, dsg, hsgLen⟩ := S.sign_ppt.length_le
-  let sigBound (n : ℕ) : ℕ :=
-    let M := otsParam H n
-    csg * (2 * (ckg * (M + 1) ^ dkg) + M + 2) ^ dsg
-  have hsigBoundPoly : ComputableInPolyTime sigBound encUnary encUnary := by
-    have hM := computableInPolyTime_otsParam H
-    have hkgPow := (ComputableInPolyTime.unary_pow dkg).comp (hM.unary_add' (.const 1))
-    have hkgTerm := (ComputableInPolyTime.const 2).unary_mul'
-      ((ComputableInPolyTime.const ckg).unary_mul' hkgPow)
-    have hinner := (hkgTerm.unary_add' hM).unary_add' (.const 2)
-    exact (ComputableInPolyTime.const csg).unary_mul'
-      ((ComputableInPolyTime.unary_pow dsg).comp hinner)
-  have hpkBoundLe : ∀ n pk sk,
-      (pk, sk) ∈ (ProbComp.eval (S.keyGen (otsParam H n))).support →
-        pk.length ≤ ckg * (otsParam H n + 1) ^ dkg := by
-    intro n pk sk hkeys
-    have hkPair := hkgLen (otsParam H n) (pk, sk) hkeys
-    simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate] at hkPair
-    omega
-  have hsigBoundLe : ∀ n pk sk,
-      (pk, sk) ∈ (ProbComp.eval (S.keyGen (otsParam H n))).support →
-      ∀ msg, msg.length = otsParam H n →
-      ∀ ots ∈ (ProbComp.eval (S.sign sk msg)).support, ots.length ≤ sigBound n := by
-    intro n pk sk hkeys msg hmsg ots hots
-    have hkPair := hkgLen (otsParam H n) (pk, sk) hkeys
-    simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate] at hkPair
-    have hskLen : sk.length ≤ ckg * (otsParam H n + 1) ^ dkg := by omega
-    have hsPair := hsgLen (sk, msg) ots hots
-    simp only [length_encPair, encBits_apply, hmsg] at hsPair
-    have hbaseLe : 2 * sk.length + 1 + otsParam H n + 1 ≤
-        2 * (ckg * (otsParam H n + 1) ^ dkg) + otsParam H n + 2 := by omega
-    exact hsPair.trans (Nat.mul_le_mul_left csg (Nat.pow_le_pow_left hbaseLe dsg))
+  obtain ⟨ckg, dkg, sigBound, hsigBoundPoly, hpkBoundLe, hsigBoundLe⟩ := exists_ots_bounds S H
   have hlossPoly : PolynomiallyBounded (fun n => dyadicSize (fuelUpper H ckg dkg c d n)) :=
     (ComputableInPolyTime.unary_dyadicSize.comp
       (computableInPolyTime_fuelUpper H ckg dkg c d)).polynomiallyBounded
@@ -1930,8 +1737,9 @@ theorem exists_reduction_wordScheme_eufCmaGame_le (S : SignatureScheme) (H : Key
     isOraclePPT_manyTimeForger H hsigBoundPoly hadversary,
     isPPT_tcrMultiAdversary S H machine ckg dkg c d,
     hlossPoly,
-    succProbability_wordScheme_eufCmaGame_le_of_machine S H ckg dkg hpkBoundLe sigBound
-      hsigBoundLe adversary machine c d hmachine⟩
+    succProbability_wordScheme_eufCmaGame_le_of_machine S H ckg dkg
+      (fun n pk sk h => hpkBoundLe n (pk, sk) h) sigBound
+      (fun n pk sk h => hsigBoundLe n (pk, sk) h) adversary machine c d hmachine⟩
 
 end TCRSignature
 
@@ -1947,17 +1755,13 @@ theorem SignatureScheme.EUFCMA.eufCMA_wordScheme
   intro adversary hadversary
   obtain ⟨sigForger, tcrAdv, loss, hsigPPT, htcrPPT, hlossPoly, hbound⟩ :=
     TCRSignature.exists_reduction_wordScheme_eufCmaGame_le S H hadversary
-  have hsigNeg : Negligible
-      (fun n => Game.succProbability
-        (ProbComp.eval (S.eufCmaGame sigForger (TCRSignature.otsParam H n)))) :=
+  have hsigNeg :=
     (hS.negligible sigForger hsigPPT).comp_of_polynomial_bound
       (bound := id)
       (Filter.tendsto_atTop_mono (TCRSignature.le_otsParam H) Filter.tendsto_id)
       PolynomiallyBounded.id
       (Filter.Eventually.of_forall (TCRSignature.le_otsParam H))
-  have htcrNeg : Negligible
-      (fun n => (loss n : ℝ≥0) * Game.succProbability
-        (ProbComp.eval (targetCollisionGame H.keyLen H.eval (fun _ _ => true) tcrAdv n))) :=
+  have htcrNeg :=
     (hH.negligible tcrAdv htcrPPT).polynomiallyBounded_mul hlossPoly
   exact negligible_of_le (hsigNeg.add htcrNeg) hbound
 
