@@ -241,8 +241,10 @@ recursive/native correctness remain open.
 
 For the first compression signal, import
 [FirstSignal](../../Complexity/Foundations/Probability/NormalizedAtomRows/FirstSignal.lean)
-and apply `actualFirstSignal_noise_le_lower`. Its child-budget-indexed inputs are genuine
-`rawIncomingNormalized` samples. `firstSignalIncrement` takes successive conditional-walk
+and apply `actualFirstSignal_noise_le_lower`. Its precision-indexed inputs are genuine
+`rawIncomingNormalized` samples on one fixed positive structural `Request q`.
+For a genuine hierarchy use `q = HP.k` and `HP.k_pos`; precision j changes child
+estimates and walk lengths, not the request type or final correction index. `firstSignalIncrement` takes successive conditional-walk
 differences from zero; `actualPrefix_firstSignalIncrement` identifies prefix i with walk
 i+1 divided by `rate k`. Stationarity on the full terminal slice, including empty slices,
 then identifies `actualNoiseEntry` with centered walk noise divided by
@@ -325,7 +327,8 @@ residual A to G on the same full terminal rank slice: its bound is
 no target-size bound. `preparation_mean_bias_le` averages this error over the actual joint
 source × usage slice against `genuinePrep(G)` and `genuineMean`, including empty slices.
 `actualSelectedSecondSignal_mean_bias_le` accepts any completed raw child.
-`actualCompletedSecondSignal_mean_bias_le` instantiates it with the actual raw H4 walk
+`actualCompletedSecondSignal_mean_bias_le` keeps that same structural q at every precision
+and instantiates it with the actual raw H4 walk
 and the ζ-scaled preparation prefix at input budget i+1. `firstSignal_raw_error` and
 `preparationError_eq_firstPrefix` identify its absolute errors with the actual first-prefix
 errors, retaining rate(k) and the full-rank maximum. The first prefix is F_j/rate(k);
