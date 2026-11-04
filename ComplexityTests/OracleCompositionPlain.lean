@@ -36,12 +36,12 @@ private theorem run_constant (k : ℕ) (request : Unit × List Bool) (calls : �
 
 -- The zero branch makes no call; a nonzero input truncates a longer reply and makes one call.
 example : (OracleComp.interpret
-    (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) (constant 5))
+    (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (constant 5))
       (askUnlessZero 0)).run 0 = PMF.pure ([], 0) := by
   simp [askUnlessZero]
 
 example : (OracleComp.interpret
-    (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) (constant 5))
+    (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (constant 5))
       (askUnlessZero 2)).run 0 = PMF.pure ([true, true], 1) := by
   simp [askUnlessZero, run_constant]
 

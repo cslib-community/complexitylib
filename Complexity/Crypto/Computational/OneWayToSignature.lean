@@ -146,7 +146,7 @@ theorem SignatureScheme.OneTimeEUFCMA.exists_oneWay {S : SignatureScheme}
     hparam_unary.comp ComputableTidilyInPolyTime.length_bits
   have hpk : ComputableTidilyInPolyTime
       (fun seed : List Bool => (evaluate (param seed.length) seed).1) encBits encBits :=
-    (ComputableTidilyInPolyTime.fst encBits encBits).comp (heval.comp (hparam.prod .id'))
+    (ComputableTidilyInPolyTime.fst encBits encBits).comp (heval.tidy.comp (hparam.prod .id'))
   have hf : ComputableTidilyInPolyTime f encBits encBits :=
     (ComputableTidilyInPolyTime.of_eq (encIn := encPair encUnary encBits) (encMid := encBits)
       fun _ => rfl).comp (hparam.prod hpk)
@@ -188,7 +188,7 @@ theorem SignatureScheme.OneTimeEUFCMA.exists_oneWay {S : SignatureScheme}
           (fun r : ((ℕ × List Bool) × ℕ) × List Bool => (r.1.1.1, r.2))
           (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
           (encPair encUnary encBits) := by polytime
-      exact (ComputableTidilyInPolyTime.snd encBits encBits).comp (heval.comp hprep)
+      exact (ComputableTidilyInPolyTime.snd encBits encBits).comp (heval.tidy.comp hprep)
     have hmsg : ComputableTidilyInPolyTime
         (fun r : ((ℕ × List Bool) × ℕ) × List Bool => List.replicate r.1.1.1 false)
         (encPair (encPair (encPair encUnary encBits) encUnary) encBits) encBits := by
@@ -581,9 +581,10 @@ noncomputable def lamportInverter (f : List Bool → List Bool)
   if j < 2 * n then do
     let keys ← lamportSimKeys f n j y
     let out ← (OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         ((lamportScheme f hf).oneTimeSigningOracle keys.2)) (adversary n keys.1)).run []
-    return (frames out.1.2).getD (j / 2) []
+    let msig := out.1
+    return (frames msig.2).getD (j / 2) []
   else
     return []
 
@@ -602,7 +603,7 @@ theorem isPPT_lamportInverter {f : List Bool → List Bool}
       encBits
       (fun r : ((ℕ × List Bool) × ℕ) × (List Bool × List Bool) => do
         let out ← (OracleComp.interpret
-          (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
             ((lamportScheme f (.of_tidy hf)).oneTimeSigningOracle r.2.2))
           (adversary r.1.1.1 r.2.1)).run []
         return (frames out.1.2).getD (r.1.2 / 2) []) := by
@@ -645,7 +646,7 @@ theorem isPPT_lamportInverter {f : List Bool → List Bool}
         if q.2 < 2 * q.1.1 then do
           let keys ← lamportSimKeys f q.1.1 q.2 q.1.2
           let out ← (OracleComp.interpret
-            (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+            (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
               ((lamportScheme f (.of_tidy hf)).oneTimeSigningOracle keys.2))
             (adversary q.1.1 keys.1)).run []
           return (frames out.1.2).getD (q.2 / 2) []
@@ -691,7 +692,7 @@ theorem OneWay.oneTimeEUFCMA_lamport {f : List Bool → List Bool} (hf : OneWay 
     encList encBits (w.take j ++ [] :: w.drop (j + 1))
   let runWith (pk sk : List Bool) : PMF ((List Bool × List Bool) × List (List Bool)) :=
     ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (S.oneTimeSigningOracle sk)) (adversary n pk)).run [])
   let win (w : List (List Bool)) (out : (List Bool × List Bool) × List (List Bool)) : Bool :=
     (out.1.1.length == n) && !out.2.contains out.1.1 &&
@@ -703,7 +704,7 @@ theorem OneWay.oneTimeEUFCMA_lamport {f : List Bool → List Bool} (hf : OneWay 
     if j < 2 * n then do
       let keys ← lamportSimKeys f n j y
       let out ← (OracleComp.interpret
-        (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
           (S.oneTimeSigningOracle keys.2)) (adversary n keys.1)).run []
       return (frames out.1.2).getD (j / 2) []
     else
