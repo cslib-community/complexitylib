@@ -46,13 +46,15 @@ SOSA 2024, Sections 3–4):
    `U ≤ poly(n_max)` restriction.
 4. **`Memory.Prog` + `realize` refinement (`SuccinctProg` .. `SuccinctDispatch`)**: all
    deterministic bucket, slab, tail, and micro-chain operations are written as parameter-free
-   `Memory.Prog` subroutines compiled to `WordRAM.Code` via `realize`, with specialization to
-   `(U, V, w, n_max)` supplied by the 36-instruction `loadParamsCode` prefix.
+   `Memory.Prog` subroutines compiled to `WordRAM.Code` via `realize`, receiving the 36 static
+   parameters in registers loaded by the 36-instruction `loadParamsCode` prefix.
 
 ## Cost model and parameter dependence
 
-* **Program specialization**: `subroutineCode U V w n_max` is specialized to the static parameters
-  `(U, V, w, n_max)` and does not depend on `base` (passed in `frontierReg` at initialization).
+* **Program specialization**: the five generic `Memory.Prog` subroutines do not depend on
+  `(U, V, w, n_max)`. The full program `subroutineCode U V w n_max` depends on `(U, V, w, n_max)`
+  only through the `space` constant in `allocSpan`, the 36-instruction `loadParamsCode` prefix, and
+  the hash code, and does not depend on `base` (passed in `frontierReg` at initialization).
   No theorem bounds static code size. All time bounds (`initSteps`, `chargeVal`, `charge`) count
   **executed Word-RAM instructions**.
 * **Initialization (`initSteps`)**: `initSteps U n_max ≤ 31 * n_max + 1091 ≤ 1091 * (n_max + 1)`
@@ -67,9 +69,9 @@ SOSA 2024, Sections 3–4):
   `66 * slotPotential` (unchanged on `query`). In turn,
   `tsum_uniform_probeExcess_reducedPolyHash_le_five` bounds expected `probeExcess` by `5`. Because
   the five generic `Memory.Prog` subroutines (`extractQuotGenProg`, `queryWithHashGenProg`,
-  `insertWithHashGenProg`, `deletePrepWithHashGenProg`, `deleteFinishWithHashGenProg`) are compiled
-  once independent of `(U, V, w, n_max)` and receive the 36 static parameters via registers loaded
-  by `loadParamsCode` in `36` instructions, both the register budget `rSuccinct` and the operation
+  `insertWithHashGenProg`, `deletePrepWithHashGenProg`, `deleteFinishWithHashGenProg`) do not depend
+  on `(U, V, w, n_max)` and receive the 36 static parameters via registers loaded by
+  `loadParamsCode` in `36` instructions, both the register budget `rSuccinct` and the operation
   charge `chargeVal = 313 * opFactor + 284725` are parameter-free `O(1)` constants across all
   `(U, V, w, n_max)`, `base`, and `ops.length`.
 

@@ -53,15 +53,16 @@ polynomial hashing with a bit-packed Four-Russians multiplication table (`Reduce
   `Memory.Prog` subroutines (`extractQuotGenProg`, `queryWithHashGenProg`, `insertWithHashGenProg`,
   `deletePrepWithHashGenProg`, `deleteFinishWithHashGenProg`) do not depend on `(U, V, w, n_max)`.
   The full program `subroutineCode U V w n_max` depends on `(U, V, w, n_max)` only through the
-  36-instruction `loadParamsCode` prefix and the hash code. Consequently, both the register budget
-  `r ≥ 256` (`Succinct.rSuccinct`) and the per-operation charge `C_op`
-  (`Succinct.chargeVal = 313 * Succinct.opFactor + 284725`) are universal `O(1)` constants
-  existentially quantified **outside** `∀ (U V w n_max : ℕ)`, independent of `(U, V, w, n_max)`,
-  `base`, and `ops.length`. For each `(U, V, w, n_max)`, the compiled `r`-register Word-RAM
-  programs `p_init` and `p_op` depend on `(U, V, w, n_max)` and do not depend on `base`, the
-  initial state `(reg₀, mem₀)`, or `ops`. No theorem in this abstract bounds the static code length
-  `p_init.length` or `p_op.length`. All instruction counts (`expectedTime w p s ≤ T + 1`) exclude
-  caller argument preparation (`prepareDynDictRegs`) and dispatch.
+  `space` constant in `allocSpan`, the 36-instruction `loadParamsCode` prefix, and the hash code.
+  Consequently, both the register budget `r ≥ 256` (`Succinct.rSuccinct`) and the per-operation
+  charge `C_op` (`Succinct.chargeVal = 313 * Succinct.opFactor + 284725`) are universal `O(1)`
+  constants existentially quantified **outside** `∀ (U V w n_max : ℕ)`, independent of
+  `(U, V, w, n_max)`, `base`, and `ops.length`. For each `(U, V, w, n_max)`, the compiled
+  `r`-register Word-RAM programs `p_init` and `p_op` depend on `(U, V, w, n_max)` and do not depend
+  on `base`, the initial state `(reg₀, mem₀)`, or `ops`. No theorem in this abstract bounds the
+  static code length `p_init.length` or `p_op.length`. All instruction counts
+  (`expectedTime w p s ≤ T + 1`) exclude caller argument preparation (`prepareDynDictRegs`) and
+  dispatch.
 - **Initialization step bound and succinct space:** Initialization from zeroed memory on
   `[base, base + sp)` executes in at most `initBudget ≤ 31 * n_max + 1092` expected body
   instructions, and the single contiguous memory block of `sp` machine words (holding all hash
