@@ -679,10 +679,10 @@ def DictParamsWf (U V w₀ n_max : ℕ) : Prop :=
   0 < w₀ ∧ n_max ≤ U ∧ U < 2 ^ w₀ ∧ V ≤ 2 ^ w₀
 
 /-- Parameter-free pure `Memory.Prog` extracting the key quotient `keyQuotient (bucketBits n_max) u`
-via right shift `d.2 >>> p_bucketBits d.1`. -/
+via right shift `d.2 >>> dpBucketBits d.1`. -/
 @[expose]
 def extractQuotGenProg (d : DictParams × ℕ) : Memory.Prog ℕ :=
-  pure (d.2 >>> p_bucketBits d.1)
+  pure (d.2 >>> dpBucketBits d.1)
 
 /-- Pure `Memory.Prog` extracting the key quotient `keyQuotient (bucketBits n_max) u` via right
 shift `u >>> bucketBits n_max`. -/
@@ -702,7 +702,7 @@ def ExtractQuotPre (n_max w u : ℕ) (_s : Memory.State) : Prop :=
 /-- Parameter-free precondition for `extractQuotGenProg`. -/
 @[expose]
 def ExtractQuotGenPre (w : ℕ) (d : DictParams × ℕ) (s : Memory.State) : Prop :=
-  ExtractQuotPre (p_nMax d.1) w d.2 s
+  ExtractQuotPre (dpNMax d.1) w d.2 s
 
 @[simp]
 theorem extractQuotGenPre_mk (U V w₀ n_max h_space w u : ℕ) (s : Memory.State) :
@@ -743,8 +743,8 @@ theorem fits_bucketBits_and_mask {U V w₀ n_max h_space w base : ℕ}
 /-- Parameter-free Feistel-dispatched `query` in `Memory.Prog` (`d = (dp, ((base, u), h_q))`). -/
 @[expose]
 def queryWithHashGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog (Option ℕ) := do
-  let b_bits ← pure (p_bucketBits d.1)
-  let b_mask ← pure (p_bucketMask d.1)
+  let b_bits ← pure (dpBucketBits d.1)
+  let b_mask ← pure (dpBucketMask d.1)
   let u_low ← pure (d.2.1.2 &&& b_mask)
   let h_low ← pure (d.2.2 &&& b_mask)
   let b ← pure (h_low ^^^ u_low)
@@ -787,12 +787,12 @@ def QueryWithHashPre (U V w₀ n_max w : ℕ) (d : (ℕ × ℕ) × ℕ) (s : Mem
 /-- Parameter-free precondition for `queryWithHashGenProg` in `Realizes`. -/
 @[expose]
 def QueryWithHashGenPre (w : ℕ) (d : DictParams × ((ℕ × ℕ) × ℕ)) (s : Memory.State) : Prop :=
-  let b := (d.2.2 &&& p_bucketMask d.1) ^^^ (d.2.1.2 &&& p_bucketMask d.1)
-  let q := d.2.1.2 >>> p_bucketBits d.1
-  let m := d.2.2 >>> p_bucketBits d.1
-  DictParamsWf (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) ∧
-  d.2.1.2 < p_U d.1 ∧
-  d.2.2 < 2 ^ totalMicroBits (p_nMax d.1) ∧
+  let b := (d.2.2 &&& dpBucketMask d.1) ^^^ (d.2.1.2 &&& dpBucketMask d.1)
+  let q := d.2.1.2 >>> dpBucketBits d.1
+  let m := d.2.2 >>> dpBucketBits d.1
+  DictParamsWf (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) ∧
+  d.2.1.2 < dpU d.1 ∧
+  d.2.2 < 2 ^ totalMicroBits (dpNMax d.1) ∧
   SearchMicroChainGenPre w (d.1, (((d.2.1.1, b), q), m)) s
 
 @[simp]
@@ -833,8 +833,8 @@ theorem validProg_queryWithHash {U V w n_max : ℕ}
 (`d = (dp, (((base, u), v_new), h_q))`). -/
 @[expose]
 def insertWithHashGenProg (d : DictParams × (((ℕ × ℕ) × ℕ) × ℕ)) : Memory.Prog Unit := do
-  let b_bits ← pure (p_bucketBits d.1)
-  let b_mask ← pure (p_bucketMask d.1)
+  let b_bits ← pure (dpBucketBits d.1)
+  let b_mask ← pure (dpBucketMask d.1)
   let u_low ← pure (d.2.1.1.2 &&& b_mask)
   let h_low ← pure (d.2.2 &&& b_mask)
   let b ← pure (h_low ^^^ u_low)
@@ -875,12 +875,12 @@ def InsertWithHashPre (U V w₀ n_max w : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ
 /-- Parameter-free precondition for `insertWithHashGenProg` in `Realizes`. -/
 @[expose]
 def InsertWithHashGenPre (w : ℕ) (d : DictParams × (((ℕ × ℕ) × ℕ) × ℕ)) (s : Memory.State) : Prop :=
-  let b := (d.2.2 &&& p_bucketMask d.1) ^^^ (d.2.1.1.2 &&& p_bucketMask d.1)
-  let q := d.2.1.1.2 >>> p_bucketBits d.1
-  let m := d.2.2 >>> p_bucketBits d.1
-  DictParamsWf (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) ∧
-  d.2.1.1.2 < p_U d.1 ∧
-  d.2.2 < 2 ^ totalMicroBits (p_nMax d.1) ∧
+  let b := (d.2.2 &&& dpBucketMask d.1) ^^^ (d.2.1.1.2 &&& dpBucketMask d.1)
+  let q := d.2.1.1.2 >>> dpBucketBits d.1
+  let m := d.2.2 >>> dpBucketBits d.1
+  DictParamsWf (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) ∧
+  d.2.1.1.2 < dpU d.1 ∧
+  d.2.2 < 2 ^ totalMicroBits (dpNMax d.1) ∧
   InsertBodyGenPre w (d.1, ((((d.2.1.1.1, b), q), d.2.1.2), m)) s
 
 @[simp]
@@ -922,8 +922,8 @@ theorem validProg_insertWithHash {U V w n_max : ℕ}
 @[expose]
 def deletePrepWithHashGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) :
     Memory.Prog (((ℕ × ℕ) × ℕ) × ℕ) := do
-  let b_bits ← pure (p_bucketBits d.1)
-  let b_mask ← pure (p_bucketMask d.1)
+  let b_bits ← pure (dpBucketBits d.1)
+  let b_mask ← pure (dpBucketMask d.1)
   let u_low ← pure (d.2.1.2 &&& b_mask)
   let h_low ← pure (d.2.2 &&& b_mask)
   let b ← pure (h_low ^^^ u_low)
@@ -986,8 +986,8 @@ theorem validProg_deletePrepWithHash {U V w n_max : ℕ}
 @[expose]
 def deleteFinishWithHashGenProg
     (d : DictParams × ((((ℕ × ℕ) × ℕ) × ((ℕ × ℕ) × ℕ)) × ℕ)) : Memory.Prog Unit := do
-  let b_bits ← pure (p_bucketBits d.1)
-  let b_mask ← pure (p_bucketMask d.1)
+  let b_bits ← pure (dpBucketBits d.1)
+  let b_mask ← pure (dpBucketMask d.1)
   let u_low ← pure (d.2.1.1.1.2 &&& b_mask)
   let h_low ← pure (d.2.1.1.2 &&& b_mask)
   let b ← pure (h_low ^^^ u_low)
@@ -1038,12 +1038,12 @@ def DeleteFinishWithHashPre (U V w₀ n_max w : ℕ)
 @[expose]
 def DeleteFinishWithHashGenPre (w : ℕ)
     (d : DictParams × ((((ℕ × ℕ) × ℕ) × ((ℕ × ℕ) × ℕ)) × ℕ)) (s : Memory.State) : Prop :=
-  let b := (d.2.1.1.2 &&& p_bucketMask d.1) ^^^ (d.2.1.1.1.2 &&& p_bucketMask d.1)
-  let m := d.2.1.1.2 >>> p_bucketBits d.1
-  let m_last := d.2.2 >>> p_bucketBits d.1
-  DictParamsWf (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) ∧
-  d.2.1.1.2 < 2 ^ totalMicroBits (p_nMax d.1) ∧
-  d.2.2 < 2 ^ totalMicroBits (p_nMax d.1) ∧
+  let b := (d.2.1.1.2 &&& dpBucketMask d.1) ^^^ (d.2.1.1.1.2 &&& dpBucketMask d.1)
+  let m := d.2.1.1.2 >>> dpBucketBits d.1
+  let m_last := d.2.2 >>> dpBucketBits d.1
+  DictParamsWf (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) ∧
+  d.2.1.1.2 < 2 ^ totalMicroBits (dpNMax d.1) ∧
+  d.2.2 < 2 ^ totalMicroBits (dpNMax d.1) ∧
   DeleteFinishGenPre w
     (d.1, (((((d.2.1.1.1.1, b), d.2.1.2.1), d.2.1.2.2), m), m_last)) s
 

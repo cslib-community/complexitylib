@@ -295,14 +295,14 @@ theorem demoteSlabProg_tot_eq {U V w n_max h_space base b : ℕ}
 `slotOf n_max gm b (bCount n_max gm b - 1)` of the last item in a non-empty bucket `b = d.2.2`
 at `base = d.2.1` (`1 ≤ bCount n_max gm b`). -/
 def lastSlotOfGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ :=
-  if p_bucketBits d.1 = 0 then do
+  if dpBucketBits d.1 = 0 then do
     let c ← readGMGenProg (d.1, (d.2.1, 0))
     pure (c - 1)
   else do
     let r_b ← readGMGenProg (d.1, (d.2.1, 4 + 3 * d.2.2 + 1))
     let t_last ← readGMGenProg
-      (d.1, (d.2.1, p_gmTailPtrBase d.1 + (d.2.2 * p_tailCap d.1 + (r_b - 1))))
-    pure (p_nMaxSubOne d.1 - t_last)
+      (d.1, (d.2.1, dpGmTailPtrBase d.1 + (d.2.2 * dpTailCap d.1 + (r_b - 1))))
+    pure (dpNMaxSubOne d.1 - t_last)
 
 /-- `Memory.Prog` operation resolving the physical slot `slotOf n_max gm b (bCount n_max gm b - 1)`
 of the last item in a non-empty bucket `b = d.2` at `base = d.1` (`1 ≤ bCount n_max gm b`). -/
@@ -325,11 +325,11 @@ def lastSlotOfProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog �
 /-- Parameter-free precondition for `lastSlotOfGenProg`. -/
 @[expose]
 def LastSlotOfGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Memory.State) : Prop :=
-  let gm := gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem
+  let gm := gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem
   DictEnvGen w d.1 d.2.1 ∧
-  SlotStoreInv (p_nMax d.1) gm ∧
-  d.2.2 < numBuckets (p_nMax d.1) ∧
-  1 ≤ bCount (p_nMax d.1) gm d.2.2
+  SlotStoreInv (dpNMax d.1) gm ∧
+  d.2.2 < numBuckets (dpNMax d.1) ∧
+  1 ≤ bCount (dpNMax d.1) gm d.2.2
 
 @[simp] theorem lastSlotOfGenPre_mk (U V w₀ n_max h_space w : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     LastSlotOfGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
@@ -402,18 +402,18 @@ theorem realizes_lastSlotOfGen :
   have hrg := realizes_readGMGen
   refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) => do
       let z ← pure 0
-      if p_bucketBits d.1 = z then
+      if dpBucketBits d.1 = z then
         let c ← readGMGenProg (d.1, (d.2.1, z))
         pure (c - 1)
       else
         let r_idx ← pure (4 + 3 * d.2.2 + 1)
         let r_b ← readGMGenProg (d.1, (d.2.1, r_idx))
-        let ptr_idx ← pure (p_gmTailPtrBase d.1 + (d.2.2 * p_tailCap d.1 + (r_b - 1)))
+        let ptr_idx ← pure (dpGmTailPtrBase d.1 + (d.2.2 * dpTailCap d.1 + (r_b - 1)))
         let t_last ← readGMGenProg (d.1, (d.2.1, ptr_idx))
-        pure (p_nMaxSubOne d.1 - t_last)) ?_
+        pure (dpNMaxSubOne d.1 - t_last)) ?_
     (fun d => by
       simp only [lastSlotOfGenProg, ← PFunctor.FreeM.bind_eq_bind, pure_bind])
-  realize_dict [lastSlotOfGenPre_mk]
+  realizeDictWith [lastSlotOfGenPre_mk]
   · exact h.1
   · unfold globalMetaLen; omega
   · have hd2 : d.2 = 0 := by
@@ -482,7 +482,7 @@ def pushBackTailWriteGenProg (d : ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ) 
   let q_val := d.1.2
   let v_val := d.2
   let t_new ← appendTailItemGenProg (dp, (base, b))
-  let g_new := p_nMaxSubOne dp - t_new
+  let g_new := dpNMaxSubOne dp - t_new
   writeQuotGenProg (dp, ((base, g_new), q_val))
   writeValGenProg (dp, ((base, g_new), v_val))
   readGMGenProg (dp, (base, 4 + 3 * b + 1))
@@ -681,13 +681,13 @@ def PushBackSlotGenPre (w : ℕ) (d : ((DictParams × (ℕ × ℕ)) × ℕ) × �
   let b := d.1.1.2.2
   let q_val := d.1.2
   let v_val := d.2
-  let gm := gmAt base (p_U dp) (p_V dp) (p_w dp) (p_nMax dp) (p_hSpace dp) s.mem
+  let gm := gmAt base (dpU dp) (dpV dp) (dpW dp) (dpNMax dp) (dpHSpace dp) s.mem
   DictEnvGen w dp base ∧
-  SlotStoreInv (p_nMax dp) gm ∧
-  b < numBuckets (p_nMax dp) ∧
-  totalSlots (p_nMax dp) gm < p_nMax dp ∧
-  q_val < 2 ^ quotientBits (p_U dp) (p_nMax dp) ∧
-  v_val < 2 ^ valBits (p_V dp)
+  SlotStoreInv (dpNMax dp) gm ∧
+  b < numBuckets (dpNMax dp) ∧
+  totalSlots (dpNMax dp) gm < dpNMax dp ∧
+  q_val < 2 ^ quotientBits (dpU dp) (dpNMax dp) ∧
+  v_val < 2 ^ valBits (dpV dp)
 
 @[simp] theorem pushBackSlotGenPre_mk (U V w₀ n_max h_space w : ℕ)
     (d1 : ℕ × ℕ) (d2 d3 : ℕ) (s : Memory.State) :
@@ -698,7 +698,7 @@ def PushBackSlotGenPre (w : ℕ) (d : ((DictParams × (ℕ × ℕ)) × ℕ) × �
 @[expose]
 def PushBackTailWriteGenPre (w : ℕ) (d : ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ)
     (s : Memory.State) : Prop :=
-  PushBackSlotGenPre w d s ∧ 0 < bucketBits (p_nMax d.1.1.1)
+  PushBackSlotGenPre w d s ∧ 0 < bucketBits (dpNMax d.1.1.1)
 
 @[simp] theorem pushBackTailWriteGenPre_mk (U V w₀ n_max h_space w : ℕ)
     (d1 : ℕ × ℕ) (d2 d3 : ℕ) (s : Memory.State) :
@@ -749,7 +749,7 @@ theorem realizes_pushBackTailWriteGen :
   have hrg := realizes_readGMGen
   refine Realizes.congr (p := fun d : ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ => do
       let t_new ← appendTailItemGenProg d.1.1
-      let g_new ← pure (p_nMaxSubOne d.1.1.1 - t_new)
+      let g_new ← pure (dpNMaxSubOne d.1.1.1 - t_new)
       writeQuotGenProg (d.1.1.1, ((d.1.1.2.1, g_new), d.1.2))
       writeValGenProg (d.1.1.1, ((d.1.1.2.1, g_new), d.2))
       let r_idx ← pure (4 + 3 * d.1.1.2.2 + 1)
@@ -788,7 +788,7 @@ theorem realizes_pushBackTailWriteGen :
 /-- Parameter-free `Memory.Prog` operation appending `(q_val, v_val) = (d.1.2, d.2)` at logical
 slot `bCount n_max gm b` of bucket `b = d.1.1.2.2` at `base = d.1.1.2.1`. -/
 def pushBackSlotGenProg (d : ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ) : Memory.Prog Unit :=
-  if p_bucketBits d.1.1.1 = 0 then do
+  if dpBucketBits d.1.1.1 = 0 then do
     let dp := d.1.1.1
     let base := d.1.1.2.1
     let q_val := d.1.2
@@ -799,7 +799,7 @@ def pushBackSlotGenProg (d : ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ) : Mem
     writeGMGenProg (dp, ((base, 0), c + 1))
   else do
     let r_b_new ← pushBackTailWriteGenProg d
-    if r_b_new = p_twoSlabSize d.1.1.1 then
+    if r_b_new = dpTwoSlabSize d.1.1.1 then
       promoteSlabGenProg d.1.1
     else
       pure ()
@@ -1109,7 +1109,7 @@ theorem realizes_pushBackSlotGen :
   have hprom := realizes_promoteSlabGen
   refine Realizes.congr (p := fun d : ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ => do
       let i0 ← pure 0
-      if p_bucketBits d.1.1.1 = i0 then
+      if dpBucketBits d.1.1.1 = i0 then
         let c ← readGMGenProg (d.1.1.1, (d.1.1.2.1, i0))
         writeQuotGenProg (d.1.1.1, ((d.1.1.2.1, c), d.1.2))
         writeValGenProg (d.1.1.1, ((d.1.1.2.1, c), d.2))
@@ -1117,7 +1117,7 @@ theorem realizes_pushBackSlotGen :
         writeGMGenProg (d.1.1.1, ((d.1.1.2.1, i0), c1))
       else
         let r_b_new ← pushBackTailWriteGenProg d
-        if r_b_new = p_twoSlabSize d.1.1.1 then
+        if r_b_new = dpTwoSlabSize d.1.1.1 then
           promoteSlabGenProg d.1.1
         else
           pure ()) ?_
@@ -1178,7 +1178,7 @@ theorem realizes_pushBackSlotGen :
 /-- Parameter-free `Memory.Prog` operation removing the last logical slot `bCount n_max gm b - 1`
 of a non-empty bucket `b = d.2.2` at `base = d.2.1`. -/
 def popBackSlotGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Unit :=
-  if p_bucketBits d.1 = 0 then do
+  if dpBucketBits d.1 = 0 then do
     let c ← readGMGenProg (d.1, (d.2.1, 0))
     writeGMGenProg (d.1, ((d.2.1, 0), c - 1))
   else do
@@ -1232,11 +1232,11 @@ def PopBackSlotPre (U V w₀ n_max h_space w : ℕ) (d : ℕ × ℕ) (s : Memory
 /-- Parameter-free precondition for `popBackSlotGenProg`. -/
 @[expose]
 def PopBackSlotGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Memory.State) : Prop :=
-  let gm := gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem
+  let gm := gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem
   DictEnvGen w d.1 d.2.1 ∧
-  SlotStoreInv (p_nMax d.1) gm ∧
-  d.2.2 < numBuckets (p_nMax d.1) ∧
-  1 ≤ bCount (p_nMax d.1) gm d.2.2
+  SlotStoreInv (dpNMax d.1) gm ∧
+  d.2.2 < numBuckets (dpNMax d.1) ∧
+  1 ≤ bCount (dpNMax d.1) gm d.2.2
 
 @[simp] theorem popBackSlotGenPre_mk (U V w₀ n_max h_space w : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     PopBackSlotGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
@@ -1552,7 +1552,7 @@ theorem realizes_popBackSlotGen :
   have hdem := realizes_demoteSlabGen
   refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) => do
       let z ← pure 0
-      if p_bucketBits d.1 = z then
+      if dpBucketBits d.1 = z then
         let c ← readGMGenProg (d.1, (d.2.1, z))
         let c_sub ← pure (c - 1)
         writeGMGenProg (d.1, ((d.2.1, z), c_sub))
@@ -1571,7 +1571,7 @@ theorem realizes_popBackSlotGen :
           pure ()) ?_
     (fun d => by
       simp only [popBackSlotGenProg, ← PFunctor.FreeM.bind_eq_bind, pure_bind])
-  realize_dict [popBackSlotGenPre_mk, removeLastTailItemGenPre_mk, removeLastTailItemGenProg_mk,
+  realizeDictWith [popBackSlotGenPre_mk, removeLastTailItemGenPre_mk, removeLastTailItemGenProg_mk,
     demoteSlabGenPre_mk, demoteSlabGenProg_mk]
   · exact h.1
   · unfold globalMetaLen; omega

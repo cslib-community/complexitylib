@@ -215,7 +215,7 @@ Input `d = (dp, ((((base, b), q_target), v_new), m))`. -/
 def insertNewGenProg
     (d : DictParams × ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ)) : Memory.Prog Unit := do
   let tot ← readTotalSlotsGenProg (d.1, d.2.1.1.1.1)
-  let cap ← pure (p_nMax d.1)
+  let cap ← pure (dpNMax d.1)
   if tot < cap then do
     let j_new ← readBucketCountGenProg (d.1, d.2.1.1.1)
     pushBackSlotGenProg (((d.1, d.2.1.1.1), d.2.1.1.2), d.2.1.2)
@@ -263,15 +263,15 @@ def InsertNewPre (U V w₀ n_max h_space w : ℕ)
 def InsertNewGenPre (w : ℕ)
     (d : DictParams × ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ)) (s : Memory.State) : Prop :=
   DictEnvGen w d.1 d.2.1.1.1.1 ∧
-  d.2.1.1.1.2 < numBuckets (p_nMax d.1) ∧
-  d.2.2 < numMicroPerBucket (p_nMax d.1) ∧
-  d.2.1.1.2 < 2 ^ quotientBits (p_U d.1) (p_nMax d.1) ∧
-  d.2.1.2 < 2 ^ valBits (p_V d.1) ∧
-  SlotStoreInv (p_nMax d.1)
-    (gmAt d.2.1.1.1.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem) ∧
-  lmHead (p_nMax d.1)
-    (lmAt d.2.1.1.1.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem)
-    d.2.1.1.1.2 d.2.2 ≤ effBucketCap (p_nMax d.1)
+  d.2.1.1.1.2 < numBuckets (dpNMax d.1) ∧
+  d.2.2 < numMicroPerBucket (dpNMax d.1) ∧
+  d.2.1.1.2 < 2 ^ quotientBits (dpU d.1) (dpNMax d.1) ∧
+  d.2.1.2 < 2 ^ valBits (dpV d.1) ∧
+  SlotStoreInv (dpNMax d.1)
+    (gmAt d.2.1.1.1.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem) ∧
+  lmHead (dpNMax d.1)
+    (lmAt d.2.1.1.1.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem)
+    d.2.1.1.1.2 d.2.2 ≤ effBucketCap (dpNMax d.1)
 
 @[simp]
 theorem insertNewGenPre_mk (U V w₀ n_max h_space w : ℕ)
@@ -289,7 +289,7 @@ theorem realizes_insertNewGen :
   have hbc := realizes_readBucketCountGen
   have hpb := realizes_pushBackSlotGen
   have hpr := realizes_prependIfIndexedGen
-  realize_dict [insertNewGenPre_mk, InsertNewPre, readTotalSlotsGenProg_mk,
+  realizeDictWith [insertNewGenPre_mk, InsertNewPre, readTotalSlotsGenProg_mk,
     pushBackSlotGenPre_mk, PushBackSlotPre, pushBackSlotGenProg_mk,
     prependIfIndexedGenPre_mk, PrependIfIndexedPre, prependIfIndexedGenProg_mk]
   · exact h.1
@@ -356,8 +356,8 @@ def InsertBodyPre (U V w₀ n_max h_space w : ℕ)
 def InsertBodyGenPre (w : ℕ)
     (d : DictParams × ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ)) (s : Memory.State) : Prop :=
   SearchMicroChainGenPre w (d.1, (d.2.1.1, d.2.2)) s ∧
-  d.2.1.1.2 < 2 ^ quotientBits (p_U d.1) (p_nMax d.1) ∧
-  d.2.1.2 < 2 ^ valBits (p_V d.1)
+  d.2.1.1.2 < 2 ^ quotientBits (dpU d.1) (dpNMax d.1) ∧
+  d.2.1.2 < 2 ^ valBits (dpV d.1)
 
 @[simp]
 theorem insertBodyGenPre_mk (U V w₀ n_max h_space w : ℕ)

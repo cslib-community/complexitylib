@@ -42,14 +42,14 @@ def promoteStepGenProg (x : (DictParams × (ℕ × ℕ)) × ℕ) : Memory.Prog �
   let base := x.1.2.1
   let b := x.1.2.2
   let k := x.2
-  let u := p_slabSizeSubOne dp - k
-  let r_top := p_slabSize dp + u
-  let t_u ← readGMGenProg (dp, (base, p_gmTailPtrBase dp + (b * p_tailCap dp + u)))
-  let t_top ← readGMGenProg (dp, (base, p_gmTailPtrBase dp + (b * p_tailCap dp + r_top)))
+  let u := dpSlabSizeSubOne dp - k
+  let r_top := dpSlabSize dp + u
+  let t_u ← readGMGenProg (dp, (base, dpGmTailPtrBase dp + (b * dpTailCap dp + u)))
+  let t_top ← readGMGenProg (dp, (base, dpGmTailPtrBase dp + (b * dpTailCap dp + r_top)))
   let p_new ← readGMGenProg (dp, (base, 0))
-  let g_u := p_nMaxSubOne dp - t_u
-  let g_top := p_nMaxSubOne dp - t_top
-  let g_slab := p_new * p_slabSize dp + k
+  let g_u := dpNMaxSubOne dp - t_u
+  let g_top := dpNMaxSubOne dp - t_top
+  let g_slab := p_new * dpSlabSize dp + k
   let q_u ← readQuotGenProg (dp, (base, g_u))
   let v_u ← readValGenProg (dp, (base, g_u))
   let q_top ← readQuotGenProg (dp, (base, g_top))
@@ -133,9 +133,9 @@ def PromoteStepPre (U V w₀ n_max h_space w base b k : ℕ) (s : Memory.State) 
 @[expose]
 def PromoteStepGenPre (w : ℕ) (x : (DictParams × (ℕ × ℕ)) × ℕ) (s : Memory.State) : Prop :=
   DictEnvGen w x.1.1 x.1.2.1 ∧
-  PromoteStepInv (p_U x.1.1) (p_V x.1.1) (p_w x.1.1) (p_nMax x.1.1) (p_hSpace x.1.1)
+  PromoteStepInv (dpU x.1.1) (dpV x.1.1) (dpW x.1.1) (dpNMax x.1.1) (dpHSpace x.1.1)
     x.1.2.1 x.1.2.2 x.2 s ∧
-  0 < bucketBits (p_nMax x.1.1)
+  0 < bucketBits (dpNMax x.1.1)
 
 @[simp] theorem promoteStepGenPre_mk (U V w₀ n_max h_space w : ℕ) (d1 : ℕ × ℕ) (d2 : ℕ)
     (s : Memory.State) :
@@ -390,17 +390,17 @@ theorem realizes_promoteStepGen :
   have hwv := realizes_writeValGen
   have hrem := realizes_removeLastTailItemGen
   refine Realizes.congr (p := fun d : (DictParams × (ℕ × ℕ)) × ℕ => do
-      let u ← pure (p_slabSizeSubOne d.1.1 - d.2)
-      let r_top ← pure (p_slabSize d.1.1 + u)
-      let ptr_u_idx ← pure (p_gmTailPtrBase d.1.1 + (d.1.2.2 * p_tailCap d.1.1 + u))
+      let u ← pure (dpSlabSizeSubOne d.1.1 - d.2)
+      let r_top ← pure (dpSlabSize d.1.1 + u)
+      let ptr_u_idx ← pure (dpGmTailPtrBase d.1.1 + (d.1.2.2 * dpTailCap d.1.1 + u))
       let t_u ← readGMGenProg (d.1.1, (d.1.2.1, ptr_u_idx))
-      let ptr_top_idx ← pure (p_gmTailPtrBase d.1.1 + (d.1.2.2 * p_tailCap d.1.1 + r_top))
+      let ptr_top_idx ← pure (dpGmTailPtrBase d.1.1 + (d.1.2.2 * dpTailCap d.1.1 + r_top))
       let t_top ← readGMGenProg (d.1.1, (d.1.2.1, ptr_top_idx))
       let i0 ← pure 0
       let p_new ← readGMGenProg (d.1.1, (d.1.2.1, i0))
-      let g_u ← pure (p_nMaxSubOne d.1.1 - t_u)
-      let g_top ← pure (p_nMaxSubOne d.1.1 - t_top)
-      let g_slab ← pure (p_new * p_slabSize d.1.1 + d.2)
+      let g_u ← pure (dpNMaxSubOne d.1.1 - t_u)
+      let g_top ← pure (dpNMaxSubOne d.1.1 - t_top)
+      let g_slab ← pure (p_new * dpSlabSize d.1.1 + d.2)
       let q_u ← readQuotGenProg (d.1.1, (d.1.2.1, g_u))
       let v_u ← readValGenProg (d.1.1, (d.1.2.1, g_u))
       let q_top ← readQuotGenProg (d.1.1, (d.1.2.1, g_top))
@@ -856,7 +856,7 @@ theorem realizes_promoteLoopGen :
 /-- Parameter-free `Memory.Prog` operation promoting `K = slabSize n_max` tail items of bucket
 `b = d.2.2` at `base = d.2.1` into a new full slab. -/
 def promoteSlabGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Unit := do
-  let _ ← promoteLoopGenProg ((d, 0), p_slabSize d.1)
+  let _ ← promoteLoopGenProg ((d, 0), dpSlabSize d.1)
   gmPushSlabGenProg d
 
 /-- `Memory.Prog` operation promoting `K = slabSize n_max` tail items of bucket `b = d.2` at
@@ -896,8 +896,8 @@ def PromoteSlabPre (U V w₀ n_max h_space w base b : ℕ) (s : Memory.State) : 
 @[expose]
 def PromoteSlabGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Memory.State) : Prop :=
   DictEnvGen w d.1 d.2.1 ∧
-  PromoteSlabInv (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) d.2.1 d.2.2 s ∧
-  0 < bucketBits (p_nMax d.1)
+  PromoteSlabInv (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) d.2.1 d.2.2 s ∧
+  0 < bucketBits (dpNMax d.1)
 
 @[simp] theorem promoteSlabGenPre_mk (U V w₀ n_max h_space w : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     PromoteSlabGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
@@ -1160,10 +1160,10 @@ theorem realizes_promoteSlabGen :
   have hpush := realizes_gmPushSlabGen
   refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) => do
       let k0 ← pure 0
-      let _ ← promoteLoopGenProg ((d, k0), p_slabSize d.1)
+      let _ ← promoteLoopGenProg ((d, k0), dpSlabSize d.1)
       gmPushSlabGenProg d) ?_
     (fun d => by simp only [promoteSlabGenProg, pure_bind])
-  realize_dict [promoteSlabGenPre_mk, iterationSafe_promoteStepGenProg_mk,
+  realizeDictWith [promoteSlabGenPre_mk, iterationSafe_promoteStepGenProg_mk,
     promoteLoopGenProg_mk, gmPushSlabGenPre_mk, gmPushSlabGenProg_mk]
   · exact (iterate_promoteStepProg_spec hw h.2.2 (slabSize n_max) 0 s
       (by omega) (promoteLoopInv_zero h.2.1)).2.2 h.1

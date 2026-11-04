@@ -112,7 +112,7 @@ theorem realizes_deletePrepGen :
   have hsb := realizes_searchBucketGen
   have hl := realizes_lastSlotOfGen
   have hrq := realizes_readQuotGen
-  realize_dict [searchMicroChainGenPre_mk, SearchMicroChainPre, searchBucketGenProg_mk,
+  realizeDictWith [searchMicroChainGenPre_mk, SearchMicroChainPre, searchBucketGenProg_mk,
     lastSlotOfGenPre_mk, lastSlotOfGenProg_mk]
   · exact h
   · exact fits_const_of_dictEnv h.1 (by decide)
@@ -313,18 +313,18 @@ def DeleteSwapPre (U V w₀ n_max h_space w : ℕ)
 @[expose]
 def DeleteSwapGenPre (w : ℕ)
     (d : DictParams × ((((ℕ × ℕ) × ℕ) × ℕ) × (ℕ × ℕ))) (s : Memory.State) : Prop :=
-  let gm := gmAt d.2.1.1.1.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem
-  let lm := lmAt d.2.1.1.1.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem
+  let gm := gmAt d.2.1.1.1.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem
+  let lm := lmAt d.2.1.1.1.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem
   DictEnvGen w d.1 d.2.1.1.1.1 ∧
-  SlotStoreInv (p_nMax d.1) gm ∧
-  d.2.1.1.1.2 < numBuckets (p_nMax d.1) ∧
-  d.2.2.1 < numMicroPerBucket (p_nMax d.1) ∧
-  1 ≤ bCount (p_nMax d.1) gm d.2.1.1.1.2 ∧
-  d.2.1.2 < p_nMax d.1 ∧
-  d.2.2.2 < p_nMax d.1 ∧
+  SlotStoreInv (dpNMax d.1) gm ∧
+  d.2.1.1.1.2 < numBuckets (dpNMax d.1) ∧
+  d.2.2.1 < numMicroPerBucket (dpNMax d.1) ∧
+  1 ≤ bCount (dpNMax d.1) gm d.2.1.1.1.2 ∧
+  d.2.1.2 < dpNMax d.1 ∧
+  d.2.2.2 < dpNMax d.1 ∧
   ∃ L : ℕ → ℕ → List ℕ,
-    AllChainsValid (p_nMax d.1) lm L ∧
-    (d.2.2.2 < effBucketCap (p_nMax d.1) → d.2.2.2 ∈ L d.2.1.1.1.2 d.2.2.1)
+    AllChainsValid (dpNMax d.1) lm L ∧
+    (d.2.2.2 < effBucketCap (dpNMax d.1) → d.2.2.2 ∈ L d.2.1.1.1.2 d.2.2.1)
 
 @[simp]
 theorem deleteSwapGenPre_mk (U V w₀ n_max h_space w : ℕ)
@@ -341,7 +341,7 @@ theorem realizes_deleteSwapGen :
   have hu := realizes_unlinkIfIndexedGen
   have hc := realizes_copyLastPayloadGen
   have hp := realizes_prependIfIndexedGen
-  realize_dict [deleteSwapGenPre_mk, DeleteSwapPre,
+  realizeDictWith [deleteSwapGenPre_mk, DeleteSwapPre,
     unlinkIfIndexedGenPre_mk, UnlinkIfIndexedPre, unlinkIfIndexedGenProg_mk,
     copyLastPayloadGenPre_mk, CopyLastPayloadPre, copyLastPayloadGenProg_mk,
     prependIfIndexedGenPre_mk, PrependIfIndexedPre, prependIfIndexedGenProg_mk]
@@ -446,20 +446,20 @@ def DeleteFoundGenPre (w : ℕ)
   let phys_del := d.2.1.2
   let m := d.2.2.1
   let m_last := d.2.2.2
-  let gm := gmAt base (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem
-  let lm := lmAt base (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem
+  let gm := gmAt base (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem
+  let lm := lmAt base (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem
   DictEnvGen w d.1 base ∧
-  SlotStoreInv (p_nMax d.1) gm ∧
-  b < numBuckets (p_nMax d.1) ∧
-  m < numMicroPerBucket (p_nMax d.1) ∧
-  m_last < numMicroPerBucket (p_nMax d.1) ∧
-  j_del < bCount (p_nMax d.1) gm b ∧
-  phys_del < p_nMax d.1 ∧
+  SlotStoreInv (dpNMax d.1) gm ∧
+  b < numBuckets (dpNMax d.1) ∧
+  m < numMicroPerBucket (dpNMax d.1) ∧
+  m_last < numMicroPerBucket (dpNMax d.1) ∧
+  j_del < bCount (dpNMax d.1) gm b ∧
+  phys_del < dpNMax d.1 ∧
   ∃ L : ℕ → ℕ → List ℕ,
-    AllChainsValid (p_nMax d.1) lm L ∧
-    (j_del < effBucketCap (p_nMax d.1) → j_del ∈ L b m) ∧
-    (bCount (p_nMax d.1) gm b - 1 < effBucketCap (p_nMax d.1) →
-      bCount (p_nMax d.1) gm b - 1 ∈ L b m_last)
+    AllChainsValid (dpNMax d.1) lm L ∧
+    (j_del < effBucketCap (dpNMax d.1) → j_del ∈ L b m) ∧
+    (bCount (dpNMax d.1) gm b - 1 < effBucketCap (dpNMax d.1) →
+      bCount (dpNMax d.1) gm b - 1 ∈ L b m_last)
 
 @[simp]
 theorem deleteFoundGenPre_mk (U V w₀ n_max h_space w : ℕ)
@@ -477,7 +477,7 @@ theorem realizes_deleteFoundGen :
   have hbc := realizes_readBucketCountGen
   have hsw := realizes_deleteSwapGen
   have hpop := realizes_popBackSlotGen
-  realize_dict [deleteFoundGenPre_mk, DeleteFoundPre,
+  realizeDictWith [deleteFoundGenPre_mk, DeleteFoundPre,
     unlinkIfIndexedGenPre_mk, UnlinkIfIndexedPre, unlinkIfIndexedGenProg_mk,
     deleteSwapGenPre_mk, DeleteSwapPre, deleteSwapGenProg_mk,
     popBackSlotGenPre_mk, PopBackSlotPre, popBackSlotGenProg_mk]
@@ -655,7 +655,7 @@ theorem realizes_deleteFinishGen :
       DeleteFinishGenPre
       (fun _ _ => 0) := by
   have hdf := realizes_deleteFoundGen
-  realize_dict [deleteFinishGenPre_mk, DeleteFinishPre,
+  realizeDictWith [deleteFinishGenPre_mk, DeleteFinishPre,
     deleteFoundGenPre_mk, DeleteFoundPre, deleteFoundGenProg_mk]
   · exact fits_const_of_dictEnv h.1 (by decide)
   · exact h.2 hc

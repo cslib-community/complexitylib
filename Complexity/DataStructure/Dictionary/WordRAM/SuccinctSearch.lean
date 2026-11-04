@@ -62,15 +62,15 @@ def resolveOvfStepGenProg
     (d : (DictParams × (ℕ × ℕ)) × (ℕ × ℕ)) : Memory.Prog (ℕ × ℕ) := do
   let q_idx ← pure (4 + 3 * d.1.2.2)
   let q_b ← readGMGenProg (d.1.1, (d.1.2.1, q_idx))
-  let qK ← pure (q_b * p_slabSize d.1.1)
+  let qK ← pure (q_b * dpSlabSize d.1.1)
   if d.2.1 < qK then do
-    let off ← pure (p_slabSizeSubOne d.1.1 - d.2.1 % p_slabSize d.1.1)
-    let phys ← pure (d.2.2 * p_slabSize d.1.1 + off)
+    let off ← pure (dpSlabSizeSubOne d.1.1 - d.2.1 % dpSlabSize d.1.1)
+    let phys ← pure (d.2.2 * dpSlabSize d.1.1 + off)
     let z0 ← pure 0
     if off = z0 then do
       let j1 ← pure (d.2.1 + 1)
       if j1 < qK then do
-        let abv_idx ← pure (p_gmSlabMetaBase d.1.1 + 4 * d.2.2 + 3)
+        let abv_idx ← pure (dpGmSlabMetaBase d.1.1 + 4 * d.2.2 + 3)
         let p_next ← readGMGenProg (d.1.1, (d.1.2.1, abv_idx))
         pure (phys, p_next)
       else
@@ -79,9 +79,9 @@ def resolveOvfStepGenProg
       pure (phys, d.2.2)
   else do
     let r ← pure (d.2.1 - qK)
-    let t_idx ← pure (p_gmTailPtrBase d.1.1 + (d.1.2.2 * p_tailCap d.1.1 + r))
+    let t_idx ← pure (dpGmTailPtrBase d.1.1 + (d.1.2.2 * dpTailCap d.1.1 + r))
     let t ← readGMGenProg (d.1.1, (d.1.2.1, t_idx))
-    let phys ← pure (p_nMaxSubOne d.1.1 - t)
+    let phys ← pure (dpNMaxSubOne d.1.1 - t)
     pure (phys, d.2.2)
 
 /-- Single-step overflow slot resolver (`d = ((base, b), (j, p_cur))`), returning
@@ -178,14 +178,14 @@ def ResolveOvfStepPre (U V w₀ n_max h_space w : ℕ)
 /-- Parameter-free precondition for `resolveOvfStepGenProg`. -/
 def ResolveOvfStepGenPre (w : ℕ)
     (d : (DictParams × (ℕ × ℕ)) × (ℕ × ℕ)) (s : Memory.State) : Prop :=
-  let gm := gmAt d.1.2.1 (p_U d.1.1) (p_V d.1.1) (p_w d.1.1) (p_nMax d.1.1) (p_hSpace d.1.1) s.mem
+  let gm := gmAt d.1.2.1 (dpU d.1.1) (dpV d.1.1) (dpW d.1.1) (dpNMax d.1.1) (dpHSpace d.1.1) s.mem
   DictEnvGen w d.1.1 d.1.2.1 ∧
-  d.1.2.2 < numBuckets (p_nMax d.1.1) ∧
-  d.2.1 < bCount (p_nMax d.1.1) gm d.1.2.2 ∧
-  SlotStoreInv (p_nMax d.1.1) gm ∧
-  (d.2.1 < gm (gmQIdx d.1.2.2) * slabSize (p_nMax d.1.1) →
-    d.2.2 = slabPtrOf (p_nMax d.1.1) gm d.1.2.2 (d.2.1 / slabSize (p_nMax d.1.1))) ∧
-  0 < bucketBits (p_nMax d.1.1)
+  d.1.2.2 < numBuckets (dpNMax d.1.1) ∧
+  d.2.1 < bCount (dpNMax d.1.1) gm d.1.2.2 ∧
+  SlotStoreInv (dpNMax d.1.1) gm ∧
+  (d.2.1 < gm (gmQIdx d.1.2.2) * slabSize (dpNMax d.1.1) →
+    d.2.2 = slabPtrOf (dpNMax d.1.1) gm d.1.2.2 (d.2.1 / slabSize (dpNMax d.1.1))) ∧
+  0 < bucketBits (dpNMax d.1.1)
 
 @[simp]
 theorem resolveOvfStepGenPre_mk (U V w₀ n_max h_space w : ℕ)
@@ -817,17 +817,17 @@ def initOvfSearchGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog (ℕ × 
   let q_b ← readGMGenProg (d.1, (d.2.1, q_idx))
   let r_idx ← pure (q_idx + 1)
   let r_b ← readGMGenProg (d.1, (d.2.1, r_idx))
-  let qK ← pure (q_b * p_slabSize d.1)
+  let qK ← pure (q_b * dpSlabSize d.1)
   let c ← pure (qK + r_b)
-  let cap ← pure (p_minCap d.1)
+  let cap ← pure (dpMinCap d.1)
   let z0 ← pure 0
   if cap < c then do
     let fuel ← pure (c - cap)
     if cap < qK then do
-      let dir_idx ← pure (p_gmSlabDirBase d.1 + d.2.2 * p_dirSlabs d.1 +
-        p_dirSlabsSubOne d.1)
+      let dir_idx ← pure (dpGmSlabDirBase d.1 + d.2.2 * dpDirSlabs d.1 +
+        dpDirSlabsSubOne d.1)
       let p_prev ← readGMGenProg (d.1, (d.2.1, dir_idx))
-      let abv_idx ← pure (p_gmSlabMetaBase d.1 + 4 * p_prev + 3)
+      let abv_idx ← pure (dpGmSlabMetaBase d.1 + 4 * p_prev + 3)
       let p_init ← readGMGenProg (d.1, (d.2.1, abv_idx))
       pure (p_init, fuel)
     else
@@ -974,13 +974,13 @@ theorem realizes_initOvfSearchGen :
       (WordEncoding.encode (α := DictParams × (ℕ × ℕ)))
       (WordEncoding.encode (α := ℕ × ℕ))
       (fun w d s => DictEnvGen w d.1 d.2.1 ∧
-        d.2.2 < numBuckets (p_nMax d.1) ∧
-        SlotStoreInv (p_nMax d.1)
-          (gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem) ∧
-        0 < bucketBits (p_nMax d.1))
+        d.2.2 < numBuckets (dpNMax d.1) ∧
+        SlotStoreInv (dpNMax d.1)
+          (gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem) ∧
+        0 < bucketBits (dpNMax d.1))
       (fun _ _ => 0) := by
   have hrg := realizes_readGMGen
-  realize_dict [initOvfSearchGenProg_mk]
+  realizeDictWith [initOvfSearchGenProg_mk]
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2 hw hnU hU (le_of_lt (gmQIdx_lt h.2.2.2 h.2.1))
   · exact fits_const_of_dictEnv h.1 (by decide)
   · exact h.1
@@ -1091,12 +1091,12 @@ theorem realizes_initOvfSearchGen :
 `q_target = d.2.2`, returning `((found, j_found), phys_found)`. -/
 def searchOverflowGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) :
     Memory.Prog ((ℕ × ℕ) × ℕ) :=
-  if p_bucketBits d.1 = 0 then do
+  if dpBucketBits d.1 = 0 then do
     let z0 ← pure 0
     pure ((z0, z0), z0)
   else do
     let init ← initOvfSearchGenProg (d.1, d.2.1)
-    let j0 ← pure (p_minCap d.1)
+    let j0 ← pure (dpMinCap d.1)
     let z0 ← pure 0
     let res ← ovfLoopGenProg
       (((d.1, d.2), ((((j0, init.1), z0), z0), z0)), init.2)
@@ -1136,9 +1136,9 @@ def SearchOverflowPre (U V w₀ n_max h_space w : ℕ)
 def SearchOverflowGenPre (w : ℕ)
     (d : DictParams × ((ℕ × ℕ) × ℕ)) (s : Memory.State) : Prop :=
   DictEnvGen w d.1 d.2.1.1 ∧
-  d.2.1.2 < numBuckets (p_nMax d.1) ∧
-  SlotStoreInv (p_nMax d.1)
-    (gmAt d.2.1.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem)
+  d.2.1.2 < numBuckets (dpNMax d.1) ∧
+  SlotStoreInv (dpNMax d.1)
+    (gmAt d.2.1.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem)
 
 @[simp]
 theorem searchOverflowGenPre_mk (U V w₀ n_max h_space w : ℕ)
@@ -1298,16 +1298,16 @@ theorem realizes_searchOverflowGen :
   have hloop := realizes_ovfLoopGen
   refine Realizes.congr (p := fun d : DictParams × ((ℕ × ℕ) × ℕ) => do
       let z0 ← pure 0
-      if p_bucketBits d.1 = z0 then
+      if dpBucketBits d.1 = z0 then
         pure ((z0, z0), z0)
       else
         let init ← initOvfSearchGenProg (d.1, d.2.1)
-        let j0 ← pure (p_minCap d.1)
+        let j0 ← pure (dpMinCap d.1)
         let res ← ovfLoopGenProg
           (((d.1, d.2), ((((j0, init.1), z0), z0), z0)), init.2)
         pure ((res.1.1.2, res.1.2), res.2)) ?_
     (fun d => by simp only [searchOverflowGenProg, ← PFunctor.FreeM.bind_eq_bind, pure_bind])
-  realize_dict [searchOverflowGenPre_mk, SearchOverflowPre,
+  realizeDictWith [searchOverflowGenPre_mk, SearchOverflowPre,
     initOvfSearchGenProg_mk, ovfLoopGenProg_mk, iterationSafe_ovfStepGenProg_mk]
   · exact h.1
   · exact h.2.1
@@ -1486,7 +1486,7 @@ theorem realizes_searchBucketGen :
       (fun _ _ => 0) := by
   have hm := realizes_searchMicroChainGen
   have ho := realizes_searchOverflowGen
-  realize_dict [searchMicroChainGenPre_mk, SearchMicroChainPre, searchMicroChainGenProg_mk,
+  realizeDictWith [searchMicroChainGenPre_mk, SearchMicroChainPre, searchMicroChainGenProg_mk,
     searchOverflowGenPre_mk, SearchOverflowPre, searchOverflowGenProg_mk]
   · exact h
   · exact fits_const_of_dictEnv h.1 (by decide)
@@ -1656,7 +1656,7 @@ theorem realizes_queryBodyGen :
       (fun _ _ => 0) := by
   have hsb := realizes_searchBucketGen
   have hrv := realizes_readValGen
-  realize_dict [searchMicroChainGenPre_mk, SearchMicroChainPre, searchBucketGenProg_mk]
+  realizeDictWith [searchMicroChainGenPre_mk, SearchMicroChainPre, searchBucketGenProg_mk]
   · exact h
   · exact fits_const_of_dictEnv h.1 (by decide)
   · exact h.1

@@ -44,18 +44,18 @@ def demoteStepGenProg (x : (DictParams × (ℕ × ℕ)) × ℕ) : Memory.Prog �
   let base := x.1.2.1
   let b := x.1.2.2
   let k := x.2
-  let u := p_slabSizeSubOne dp - k
+  let u := dpSlabSizeSubOne dp - k
   let p_del ← readGMGenProg (dp, (base, 4 + 3 * b + 2))
   let n_slabs ← readGMGenProg (dp, (base, 0))
   let p_last := n_slabs - 1
-  let g_del := p_del * p_slabSize dp + u
-  let g_last := p_last * p_slabSize dp + u
+  let g_del := p_del * dpSlabSize dp + u
+  let g_last := p_last * dpSlabSize dp + u
   let q_del ← readQuotGenProg (dp, (base, g_del))
   let v_del ← readValGenProg (dp, (base, g_del))
   let q_last ← readQuotGenProg (dp, (base, g_last))
   let v_last ← readValGenProg (dp, (base, g_last))
   let t_new ← appendTailItemGenProg (dp, (base, b))
-  let g_tail := p_nMaxSubOne dp - t_new
+  let g_tail := dpNMaxSubOne dp - t_new
   writeQuotGenProg (dp, ((base, g_del), q_last))
   writeValGenProg (dp, ((base, g_del), v_last))
   writeQuotGenProg (dp, ((base, g_tail), q_del))
@@ -134,9 +134,9 @@ def DemoteStepPre (U V w₀ n_max h_space w base b k : ℕ) (s : Memory.State) :
 @[expose]
 def DemoteStepGenPre (w : ℕ) (x : (DictParams × (ℕ × ℕ)) × ℕ) (s : Memory.State) : Prop :=
   DictEnvGen w x.1.1 x.1.2.1 ∧
-  DemoteStepInv (p_U x.1.1) (p_V x.1.1) (p_w x.1.1) (p_nMax x.1.1) (p_hSpace x.1.1)
+  DemoteStepInv (dpU x.1.1) (dpV x.1.1) (dpW x.1.1) (dpNMax x.1.1) (dpHSpace x.1.1)
     x.1.2.1 x.1.2.2 x.2 s ∧
-  0 < bucketBits (p_nMax x.1.1)
+  0 < bucketBits (dpNMax x.1.1)
 
 @[simp] theorem demoteStepGenPre_mk (U V w₀ n_max h_space w : ℕ) (d1 : ℕ × ℕ) (d2 : ℕ)
     (s : Memory.State) :
@@ -404,20 +404,20 @@ theorem realizes_demoteStepGen :
   have hwv := realizes_writeValGen
   have happ := realizes_appendTailItemGen
   refine Realizes.congr (p := fun d : (DictParams × (ℕ × ℕ)) × ℕ => do
-      let u ← pure (p_slabSizeSubOne d.1.1 - d.2)
+      let u ← pure (dpSlabSizeSubOne d.1.1 - d.2)
       let top_idx ← pure (4 + 3 * d.1.2.2 + 2)
       let p_del ← readGMGenProg (d.1.1, (d.1.2.1, top_idx))
       let i0 ← pure 0
       let n_slabs ← readGMGenProg (d.1.1, (d.1.2.1, i0))
       let p_last ← pure (n_slabs - 1)
-      let g_del ← pure (p_del * p_slabSize d.1.1 + u)
-      let g_last ← pure (p_last * p_slabSize d.1.1 + u)
+      let g_del ← pure (p_del * dpSlabSize d.1.1 + u)
+      let g_last ← pure (p_last * dpSlabSize d.1.1 + u)
       let q_del ← readQuotGenProg (d.1.1, (d.1.2.1, g_del))
       let v_del ← readValGenProg (d.1.1, (d.1.2.1, g_del))
       let q_last ← readQuotGenProg (d.1.1, (d.1.2.1, g_last))
       let v_last ← readValGenProg (d.1.1, (d.1.2.1, g_last))
       let t_new ← appendTailItemGenProg (d.1.1, d.1.2)
-      let g_tail ← pure (p_nMaxSubOne d.1.1 - t_new)
+      let g_tail ← pure (dpNMaxSubOne d.1.1 - t_new)
       writeQuotGenProg (d.1.1, ((d.1.2.1, g_del), q_last))
       writeValGenProg (d.1.1, ((d.1.2.1, g_del), v_last))
       writeQuotGenProg (d.1.1, ((d.1.2.1, g_tail), q_del))
@@ -841,7 +841,7 @@ theorem realizes_demoteLoopGen :
 /-- Parameter-free `Memory.Prog` operation demoting the top full slab of bucket `b = d.2.2` at
 `base = d.2.1` into `K = slabSize n_max` tail items. -/
 def demoteSlabGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Unit := do
-  let _ ← demoteLoopGenProg ((d, 0), p_slabSize d.1)
+  let _ ← demoteLoopGenProg ((d, 0), dpSlabSize d.1)
   gmPopSlabGenProg d
 
 /-- `Memory.Prog` operation demoting the top full slab of bucket `b = d.2` at `base = d.1`
@@ -882,8 +882,8 @@ def DemoteSlabPre (U V w₀ n_max h_space w base b : ℕ) (s : Memory.State) : P
 @[expose]
 def DemoteSlabGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Memory.State) : Prop :=
   DictEnvGen w d.1 d.2.1 ∧
-  DemoteSlabInv (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) d.2.1 d.2.2 s ∧
-  0 < bucketBits (p_nMax d.1)
+  DemoteSlabInv (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) d.2.1 d.2.2 s ∧
+  0 < bucketBits (dpNMax d.1)
 
 @[simp] theorem demoteSlabGenPre_mk (U V w₀ n_max h_space w : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     DemoteSlabGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
@@ -1158,10 +1158,10 @@ theorem realizes_demoteSlabGen :
   have hpop := realizes_gmPopSlabGen
   refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) => do
       let k0 ← pure 0
-      let _ ← demoteLoopGenProg ((d, k0), p_slabSize d.1)
+      let _ ← demoteLoopGenProg ((d, k0), dpSlabSize d.1)
       gmPopSlabGenProg d) ?_
     (fun d => by simp only [demoteSlabGenProg, pure_bind])
-  realize_dict [demoteSlabGenPre_mk, iterationSafe_demoteStepGenProg_mk,
+  realizeDictWith [demoteSlabGenPre_mk, iterationSafe_demoteStepGenProg_mk,
     demoteLoopGenProg_mk, gmPopSlabGenPre_mk, gmPopSlabGenProg_mk]
   · exact (iterate_demoteStepProg_spec hw h.2.2 (slabSize n_max) 0 s
       (by omega) (demoteLoopInv_zero h.2.1)).2.2 h.1

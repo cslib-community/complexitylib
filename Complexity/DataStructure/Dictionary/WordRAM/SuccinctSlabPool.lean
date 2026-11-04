@@ -71,15 +71,15 @@ def gmPushSlabGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Unit := do
   let q_b ← readGMGenProg (d.1, (d.2.1, 4 + 3 * d.2.2))
   let p_new ← readGMGenProg (d.1, (d.2.1, 0))
   let top_old ← readGMGenProg (d.1, (d.2.1, 4 + 3 * d.2.2 + 2))
-  writeGMGenProg (d.1, ((d.2.1, p_gmSlabMetaBase d.1 + 4 * p_new), d.2.2))
-  writeGMGenProg (d.1, ((d.2.1, p_gmSlabMetaBase d.1 + 4 * p_new + 1), q_b))
-  writeGMGenProg (d.1, ((d.2.1, p_gmSlabMetaBase d.1 + 4 * p_new + 2), top_old))
+  writeGMGenProg (d.1, ((d.2.1, dpGmSlabMetaBase d.1 + 4 * p_new), d.2.2))
+  writeGMGenProg (d.1, ((d.2.1, dpGmSlabMetaBase d.1 + 4 * p_new + 1), q_b))
+  writeGMGenProg (d.1, ((d.2.1, dpGmSlabMetaBase d.1 + 4 * p_new + 2), top_old))
   (if 0 < q_b then
-    writeGMGenProg (d.1, ((d.2.1, p_gmSlabMetaBase d.1 + 4 * top_old + 3), p_new))
+    writeGMGenProg (d.1, ((d.2.1, dpGmSlabMetaBase d.1 + 4 * top_old + 3), p_new))
   else pure ()) >>= fun _ => do
-  (if q_b < p_dirSlabs d.1 then
+  (if q_b < dpDirSlabs d.1 then
     writeGMGenProg (d.1,
-      ((d.2.1, p_gmSlabDirBase d.1 + d.2.2 * p_dirSlabs d.1 + q_b), p_new))
+      ((d.2.1, dpGmSlabDirBase d.1 + d.2.2 * dpDirSlabs d.1 + q_b), p_new))
   else pure ()) >>= fun _ => do
   writeGMGenProg (d.1, ((d.2.1, 4 + 3 * d.2.2 + 2), p_new))
   writeGMGenProg (d.1, ((d.2.1, 4 + 3 * d.2.2), q_b + 1))
@@ -131,15 +131,15 @@ def GmPushSlabPre (U V w₀ n_max h_space w base b : ℕ) (s : Memory.State) : P
 @[expose]
 def GmPushSlabGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Memory.State) : Prop :=
   DictEnvGen w d.1 d.2.1 ∧
-  SlabBijection (p_nMax d.1)
-    (gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem)
-    (fun b' => gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1)
+  SlabBijection (dpNMax d.1)
+    (gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem)
+    (fun b' => gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1)
       s.mem (gmQIdx b'))
-    (gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem 0) ∧
-  d.2.2 < numBuckets (p_nMax d.1) ∧
-  gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem 0 <
-    maxFullSlabs (p_nMax d.1) ∧
-  0 < bucketBits (p_nMax d.1)
+    (gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem 0) ∧
+  d.2.2 < numBuckets (dpNMax d.1) ∧
+  gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem 0 <
+    maxFullSlabs (dpNMax d.1) ∧
+  0 < bucketBits (dpNMax d.1)
 
 @[simp] theorem gmPushSlabGenPre_mk (U V w₀ n_max h_space w : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     GmPushSlabGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
@@ -331,18 +331,18 @@ theorem realizes_gmPushSlabGen :
       let p_new ← readGMGenProg (d.1, (d.2.1, i0))
       let top_idx ← pure (4 + 3 * d.2.2 + 2)
       let top_old ← readGMGenProg (d.1, (d.2.1, top_idx))
-      let ownB_idx ← pure (p_gmSlabMetaBase d.1 + 4 * p_new)
+      let ownB_idx ← pure (dpGmSlabMetaBase d.1 + 4 * p_new)
       writeGMGenProg (d.1, ((d.2.1, ownB_idx), d.2.2))
-      let ownS_idx ← pure (p_gmSlabMetaBase d.1 + 4 * p_new + 1)
+      let ownS_idx ← pure (dpGmSlabMetaBase d.1 + 4 * p_new + 1)
       writeGMGenProg (d.1, ((d.2.1, ownS_idx), q_b))
-      let bel_idx ← pure (p_gmSlabMetaBase d.1 + 4 * p_new + 2)
+      let bel_idx ← pure (dpGmSlabMetaBase d.1 + 4 * p_new + 2)
       writeGMGenProg (d.1, ((d.2.1, bel_idx), top_old))
       (if i0 < q_b then do
-        let abv_idx ← pure (p_gmSlabMetaBase d.1 + 4 * top_old + 3)
+        let abv_idx ← pure (dpGmSlabMetaBase d.1 + 4 * top_old + 3)
         writeGMGenProg (d.1, ((d.2.1, abv_idx), p_new))
       else pure ()) >>= fun _ => do
-      (if q_b < p_dirSlabs d.1 then do
-        let dir_idx ← pure (p_gmSlabDirBase d.1 + d.2.2 * p_dirSlabs d.1 + q_b)
+      (if q_b < dpDirSlabs d.1 then do
+        let dir_idx ← pure (dpGmSlabDirBase d.1 + d.2.2 * dpDirSlabs d.1 + q_b)
         writeGMGenProg (d.1, ((d.2.1, dir_idx), p_new))
       else pure ()) >>= fun _ => do
       writeGMGenProg (d.1, ((d.2.1, top_idx), p_new))
@@ -351,7 +351,7 @@ theorem realizes_gmPushSlabGen :
       let p_next ← pure (p_new + 1)
       writeGMGenProg (d.1, ((d.2.1, i0), p_next))) ?_
     (fun d => by simp only [gmPushSlabGenProg, pure_bind])
-  realize_dict [gmPushSlabGenPre_mk]
+  realizeDictWith [gmPushSlabGenPre_mk]
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
       (le_of_lt (gmPushSlab_bounds h).1)
   · exact fits_const_of_dictEnv h.1 (by omega)
@@ -392,7 +392,7 @@ theorem realizes_gmPushSlabGen :
 def gmUnlinkTopSlabGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ := do
   let q_b ← readGMGenProg (d.1, (d.2.1, 4 + 3 * d.2.2))
   let p_del ← readGMGenProg (d.1, (d.2.1, 4 + 3 * d.2.2 + 2))
-  let bel_del ← readGMGenProg (d.1, (d.2.1, p_gmSlabMetaBase d.1 + 4 * p_del + 2))
+  let bel_del ← readGMGenProg (d.1, (d.2.1, dpGmSlabMetaBase d.1 + 4 * p_del + 2))
   writeGMGenProg (d.1, ((d.2.1, 4 + 3 * d.2.2 + 2), bel_del))
   let _ ← writeGMGenProg (d.1, ((d.2.1, 4 + 3 * d.2.2), q_b - 1))
   pure p_del
@@ -431,14 +431,14 @@ def GmPopSlabPre (U V w₀ n_max h_space w base b : ℕ) (s : Memory.State) : Pr
 @[expose]
 def GmPopSlabGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Memory.State) : Prop :=
   DictEnvGen w d.1 d.2.1 ∧
-  SlabBijection (p_nMax d.1)
-    (gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem)
-    (fun b' => gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1)
+  SlabBijection (dpNMax d.1)
+    (gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem)
+    (fun b' => gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1)
       s.mem (gmQIdx b'))
-    (gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem 0) ∧
-  d.2.2 < numBuckets (p_nMax d.1) ∧
-  1 ≤ gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem (gmQIdx d.2.2) ∧
-  0 < bucketBits (p_nMax d.1)
+    (gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem 0) ∧
+  d.2.2 < numBuckets (dpNMax d.1) ∧
+  1 ≤ gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem (gmQIdx d.2.2) ∧
+  0 < bucketBits (dpNMax d.1)
 
 @[simp] theorem gmPopSlabGenPre_mk (U V w₀ n_max h_space w : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     GmPopSlabGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
@@ -555,14 +555,14 @@ theorem realizes_gmUnlinkTopSlabGen :
       let q_b ← readGMGenProg (d.1, (d.2.1, q_idx))
       let top_idx ← pure (4 + 3 * d.2.2 + 2)
       let p_del ← readGMGenProg (d.1, (d.2.1, top_idx))
-      let bel_idx ← pure (p_gmSlabMetaBase d.1 + 4 * p_del + 2)
+      let bel_idx ← pure (dpGmSlabMetaBase d.1 + 4 * p_del + 2)
       let bel_del ← readGMGenProg (d.1, (d.2.1, bel_idx))
       writeGMGenProg (d.1, ((d.2.1, top_idx), bel_del))
       let q_prev ← pure (q_b - 1)
       let _ ← writeGMGenProg (d.1, ((d.2.1, q_idx), q_prev))
       pure p_del) ?_
     (fun d => by simp only [gmUnlinkTopSlabGenProg, pure_bind])
-  realize_dict [gmPopSlabGenPre_mk]
+  realizeDictWith [gmPopSlabGenPre_mk]
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
       (le_of_lt (gmUnlinkTopSlab_bounds h).1)
   · exact fits_const_of_dictEnv h.1 (by omega)
@@ -669,12 +669,12 @@ def gmRelinkMovedSlabGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.
   let base := d.2.1.1
   let p_del := d.2.1.2
   let p_last := d.2.2
-  let b_last ← readGMGenProg (d.1, (base, p_gmSlabMetaBase d.1 + 4 * p_last))
-  let s_last ← readGMGenProg (d.1, (base, p_gmSlabMetaBase d.1 + 4 * p_last + 1))
+  let b_last ← readGMGenProg (d.1, (base, dpGmSlabMetaBase d.1 + 4 * p_last))
+  let s_last ← readGMGenProg (d.1, (base, dpGmSlabMetaBase d.1 + 4 * p_last + 1))
   let q_last ← readGMGenProg (d.1, (base, 4 + 3 * b_last))
-  (if s_last < p_dirSlabs d.1 then
+  (if s_last < dpDirSlabs d.1 then
     writeGMGenProg (d.1,
-      ((base, p_gmSlabDirBase d.1 + b_last * p_dirSlabs d.1 + s_last), p_del))
+      ((base, dpGmSlabDirBase d.1 + b_last * dpDirSlabs d.1 + s_last), p_del))
   else pure ()) >>= fun _ => do
     if s_last + 1 = q_last then
       writeGMGenProg (d.1, ((base, 4 + 3 * b_last + 2), p_del))
@@ -735,7 +735,7 @@ def GmMovedSlabPre (U V w₀ n_max h_space w base p_del p_last : ℕ) (s : Memor
 @[expose]
 def GmMovedSlabGenPre (w : ℕ) (d : DictParams × ((ℕ × ℕ) × ℕ)) (s : Memory.State) : Prop :=
   DictEnvGen w d.1 d.2.1.1 ∧
-  GmMovedSlabInv (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1)
+  GmMovedSlabInv (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1)
     d.2.1.1 d.2.1.2 d.2.2 s
 
 @[simp] theorem gmMovedSlabGenPre_mk (U V w₀ n_max h_space w : ℕ) (d : (ℕ × ℕ) × ℕ)
@@ -863,14 +863,14 @@ theorem realizes_gmRelinkMovedSlabGen :
   have hrg := realizes_readGMGen
   have hwg := realizes_writeGMGen
   refine Realizes.congr (p := fun d : DictParams × ((ℕ × ℕ) × ℕ) => do
-      let ownB_idx ← pure (p_gmSlabMetaBase d.1 + 4 * d.2.2)
+      let ownB_idx ← pure (dpGmSlabMetaBase d.1 + 4 * d.2.2)
       let b_last ← readGMGenProg (d.1, (d.2.1.1, ownB_idx))
-      let ownS_idx ← pure (p_gmSlabMetaBase d.1 + 4 * d.2.2 + 1)
+      let ownS_idx ← pure (dpGmSlabMetaBase d.1 + 4 * d.2.2 + 1)
       let s_last ← readGMGenProg (d.1, (d.2.1.1, ownS_idx))
       let q_idx ← pure (4 + 3 * b_last)
       let q_last ← readGMGenProg (d.1, (d.2.1.1, q_idx))
-      (if s_last < p_dirSlabs d.1 then do
-        let dir_idx ← pure (p_gmSlabDirBase d.1 + b_last * p_dirSlabs d.1 + s_last)
+      (if s_last < dpDirSlabs d.1 then do
+        let dir_idx ← pure (dpGmSlabDirBase d.1 + b_last * dpDirSlabs d.1 + s_last)
         writeGMGenProg (d.1, ((d.2.1.1, dir_idx), d.2.1.2))
       else pure ()) >>= fun _ => do
         let s_next ← pure (s_last + 1)
@@ -879,7 +879,7 @@ theorem realizes_gmRelinkMovedSlabGen :
           writeGMGenProg (d.1, ((d.2.1.1, top_idx), d.2.1.2))
         else pure ()) ?_
     (fun d => by simp only [gmRelinkMovedSlabGenProg, pure_bind])
-  realize_dict [gmMovedSlabGenPre_mk]
+  realizeDictWith [gmMovedSlabGenPre_mk]
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
       (le_of_lt (gmRelinkMovedSlab_bounds h).1)
   · exact fits_const_of_dictEnv h.1 (by omega)
@@ -910,21 +910,21 @@ def gmLinkMovedNeighborsGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memo
   let base := d.2.1.1
   let p_del := d.2.1.2
   let p_last := d.2.2
-  let b_last ← readGMGenProg (d.1, (base, p_gmSlabMetaBase d.1 + 4 * p_last))
-  let s_last ← readGMGenProg (d.1, (base, p_gmSlabMetaBase d.1 + 4 * p_last + 1))
-  let bel_last ← readGMGenProg (d.1, (base, p_gmSlabMetaBase d.1 + 4 * p_last + 2))
-  let abv_last ← readGMGenProg (d.1, (base, p_gmSlabMetaBase d.1 + 4 * p_last + 3))
+  let b_last ← readGMGenProg (d.1, (base, dpGmSlabMetaBase d.1 + 4 * p_last))
+  let s_last ← readGMGenProg (d.1, (base, dpGmSlabMetaBase d.1 + 4 * p_last + 1))
+  let bel_last ← readGMGenProg (d.1, (base, dpGmSlabMetaBase d.1 + 4 * p_last + 2))
+  let abv_last ← readGMGenProg (d.1, (base, dpGmSlabMetaBase d.1 + 4 * p_last + 3))
   let q_last ← readGMGenProg (d.1, (base, 4 + 3 * b_last))
   (if 0 < s_last then
-    writeGMGenProg (d.1, ((base, p_gmSlabMetaBase d.1 + 4 * bel_last + 3), p_del))
+    writeGMGenProg (d.1, ((base, dpGmSlabMetaBase d.1 + 4 * bel_last + 3), p_del))
   else pure ()) >>= fun _ => do
     (if s_last + 1 < q_last then
-      writeGMGenProg (d.1, ((base, p_gmSlabMetaBase d.1 + 4 * abv_last + 2), p_del))
+      writeGMGenProg (d.1, ((base, dpGmSlabMetaBase d.1 + 4 * abv_last + 2), p_del))
     else pure ()) >>= fun _ => do
-      writeGMGenProg (d.1, ((base, p_gmSlabMetaBase d.1 + 4 * p_del), b_last))
-      writeGMGenProg (d.1, ((base, p_gmSlabMetaBase d.1 + 4 * p_del + 1), s_last))
-      writeGMGenProg (d.1, ((base, p_gmSlabMetaBase d.1 + 4 * p_del + 2), bel_last))
-      writeGMGenProg (d.1, ((base, p_gmSlabMetaBase d.1 + 4 * p_del + 3), abv_last))
+      writeGMGenProg (d.1, ((base, dpGmSlabMetaBase d.1 + 4 * p_del), b_last))
+      writeGMGenProg (d.1, ((base, dpGmSlabMetaBase d.1 + 4 * p_del + 1), s_last))
+      writeGMGenProg (d.1, ((base, dpGmSlabMetaBase d.1 + 4 * p_del + 2), bel_last))
+      writeGMGenProg (d.1, ((base, dpGmSlabMetaBase d.1 + 4 * p_del + 3), abv_last))
 
 /-- `Memory.Prog` helper performing `gmLinkMovedNeighbors` for `d = ((base, p_del), p_last)`. -/
 def gmLinkMovedNeighborsProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit := do
@@ -1156,36 +1156,36 @@ theorem realizes_gmLinkMovedNeighborsGen :
   have hrg := realizes_readGMGen
   have hwg := realizes_writeGMGen
   refine Realizes.congr (p := fun d : DictParams × ((ℕ × ℕ) × ℕ) => do
-      let ownB_last_idx ← pure (p_gmSlabMetaBase d.1 + 4 * d.2.2)
+      let ownB_last_idx ← pure (dpGmSlabMetaBase d.1 + 4 * d.2.2)
       let b_last ← readGMGenProg (d.1, (d.2.1.1, ownB_last_idx))
-      let ownS_last_idx ← pure (p_gmSlabMetaBase d.1 + 4 * d.2.2 + 1)
+      let ownS_last_idx ← pure (dpGmSlabMetaBase d.1 + 4 * d.2.2 + 1)
       let s_last ← readGMGenProg (d.1, (d.2.1.1, ownS_last_idx))
-      let bel_last_idx ← pure (p_gmSlabMetaBase d.1 + 4 * d.2.2 + 2)
+      let bel_last_idx ← pure (dpGmSlabMetaBase d.1 + 4 * d.2.2 + 2)
       let bel_last ← readGMGenProg (d.1, (d.2.1.1, bel_last_idx))
-      let abv_last_idx ← pure (p_gmSlabMetaBase d.1 + 4 * d.2.2 + 3)
+      let abv_last_idx ← pure (dpGmSlabMetaBase d.1 + 4 * d.2.2 + 3)
       let abv_last ← readGMGenProg (d.1, (d.2.1.1, abv_last_idx))
       let q_last_idx ← pure (4 + 3 * b_last)
       let q_last ← readGMGenProg (d.1, (d.2.1.1, q_last_idx))
       let i0 ← pure 0
       (if i0 < s_last then do
-        let abv_bel_idx ← pure (p_gmSlabMetaBase d.1 + 4 * bel_last + 3)
+        let abv_bel_idx ← pure (dpGmSlabMetaBase d.1 + 4 * bel_last + 3)
         writeGMGenProg (d.1, ((d.2.1.1, abv_bel_idx), d.2.1.2))
       else pure ()) >>= fun _ => do
         let s_last_next ← pure (s_last + 1)
         (if s_last_next < q_last then do
-          let bel_abv_idx ← pure (p_gmSlabMetaBase d.1 + 4 * abv_last + 2)
+          let bel_abv_idx ← pure (dpGmSlabMetaBase d.1 + 4 * abv_last + 2)
           writeGMGenProg (d.1, ((d.2.1.1, bel_abv_idx), d.2.1.2))
         else pure ()) >>= fun _ => do
-          let ownB_del_idx ← pure (p_gmSlabMetaBase d.1 + 4 * d.2.1.2)
+          let ownB_del_idx ← pure (dpGmSlabMetaBase d.1 + 4 * d.2.1.2)
           writeGMGenProg (d.1, ((d.2.1.1, ownB_del_idx), b_last))
-          let ownS_del_idx ← pure (p_gmSlabMetaBase d.1 + 4 * d.2.1.2 + 1)
+          let ownS_del_idx ← pure (dpGmSlabMetaBase d.1 + 4 * d.2.1.2 + 1)
           writeGMGenProg (d.1, ((d.2.1.1, ownS_del_idx), s_last))
-          let bel_del_idx ← pure (p_gmSlabMetaBase d.1 + 4 * d.2.1.2 + 2)
+          let bel_del_idx ← pure (dpGmSlabMetaBase d.1 + 4 * d.2.1.2 + 2)
           writeGMGenProg (d.1, ((d.2.1.1, bel_del_idx), bel_last))
-          let abv_del_idx ← pure (p_gmSlabMetaBase d.1 + 4 * d.2.1.2 + 3)
+          let abv_del_idx ← pure (dpGmSlabMetaBase d.1 + 4 * d.2.1.2 + 3)
           writeGMGenProg (d.1, ((d.2.1.1, abv_del_idx), abv_last))) ?_
     (fun d => by simp only [gmLinkMovedNeighborsGenProg, pure_bind])
-  realize_dict [gmMovedSlabGenPre_mk]
+  realizeDictWith [gmMovedSlabGenPre_mk]
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
       (le_of_lt (gmLinkMovedNeighbors_bounds h).1)
   · exact fits_const_of_dictEnv h.1 (by omega)
@@ -1301,11 +1301,11 @@ def GmCompactSlabPre (U V w₀ n_max h_space w base p_del : ℕ) (s : Memory.Sta
 /-- Parameter-free precondition for `gmCompactSlabGenProg`. -/
 @[expose]
 def GmCompactSlabGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Memory.State) : Prop :=
-  let gm := gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem
+  let gm := gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem
   let p_last := gm 0 - 1
   DictEnvGen w d.1 d.2.1 ∧
   1 ≤ gm 0 ∧
-  gm 0 ≤ maxFullSlabs (p_nMax d.1) ∧
+  gm 0 ≤ maxFullSlabs (dpNMax d.1) ∧
   d.2.2 < gm 0 ∧
   (d.2.2 < p_last → GmMovedSlabGenPre w (d.1, (d.2, p_last)) s)
 
@@ -1429,7 +1429,7 @@ theorem realizes_gmCompactSlabGen :
       else
         writeGMGenProg (d.1, ((d.2.1, i0), p_last))) ?_
     (fun d => by simp only [gmCompactSlabGenProg, pure_bind])
-  realize_dict [gmCompactSlabGenPre_mk, gmMovedSlabGenPre_mk,
+  realizeDictWith [gmCompactSlabGenPre_mk, gmMovedSlabGenPre_mk,
     gmRelinkMovedSlabGenProg_mk, gmLinkMovedNeighborsGenProg_mk]
   · exact h.1
   · unfold globalMetaLen; omega
@@ -1584,7 +1584,7 @@ theorem realizes_gmPopSlabGen :
   have hunl := realizes_gmUnlinkTopSlabGen
   have hcmp := realizes_gmCompactSlabGen
   unfold gmPopSlabGenProg
-  realize_dict [gmPopSlabGenPre_mk, gmCompactSlabGenPre_mk, gmUnlinkTopSlabGenProg_mk]
+  realizeDictWith [gmPopSlabGenPre_mk, gmCompactSlabGenPre_mk, gmUnlinkTopSlabGenProg_mk]
   · exact h
   · exact gmCompactSlabPre_of_gmPopSlabPre hw h
 

@@ -895,9 +895,9 @@ theorem ntails_lt_maxTailItems_of_r_lt {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ
 def appendTailItemGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ := do
   let r_b ← readGMGenProg (d.1, (d.2.1, 4 + 3 * d.2.2 + 1))
   let t_new ← readGMGenProg (d.1, (d.2.1, 1))
-  let d_new := d.2.2 * p_tailCap d.1 + r_b
-  writeGMGenProg (d.1, ((d.2.1, p_gmTailPtrBase d.1 + d_new), t_new))
-  writeGMGenProg (d.1, ((d.2.1, p_gmTailOwnerBase d.1 + t_new), d_new))
+  let d_new := d.2.2 * dpTailCap d.1 + r_b
+  writeGMGenProg (d.1, ((d.2.1, dpGmTailPtrBase d.1 + d_new), t_new))
+  writeGMGenProg (d.1, ((d.2.1, dpGmTailOwnerBase d.1 + t_new), d_new))
   writeGMGenProg (d.1, ((d.2.1, 4 + 3 * d.2.2 + 1), r_b + 1))
   let _ ← writeGMGenProg (d.1, ((d.2.1, 1), t_new + 1))
   pure t_new
@@ -1023,15 +1023,15 @@ def AppendTailItemPre (U V w₀ n_max h_space w base b : ℕ) (s : Memory.State)
 @[expose]
 def AppendTailItemGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Memory.State) : Prop :=
   DictEnvGen w d.1 d.2.1 ∧
-  TailBijection (p_nMax d.1)
-    (gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem)
-    (fun b' => gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1)
+  TailBijection (dpNMax d.1)
+    (gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem)
+    (fun b' => gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1)
       s.mem (gmRIdx b'))
-    (gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem 1) ∧
-  d.2.2 < numBuckets (p_nMax d.1) ∧
-  gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem (gmRIdx d.2.2) <
-    tailCapPerBucket (p_nMax d.1) ∧
-  0 < bucketBits (p_nMax d.1)
+    (gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem 1) ∧
+  d.2.2 < numBuckets (dpNMax d.1) ∧
+  gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem (gmRIdx d.2.2) <
+    tailCapPerBucket (dpNMax d.1) ∧
+  0 < bucketBits (dpNMax d.1)
 
 @[simp] theorem appendTailItemGenPre_mk (U V w₀ n_max h_space w : ℕ) (d : ℕ × ℕ)
     (s : Memory.State) :
@@ -1090,10 +1090,10 @@ theorem realizes_appendTailItemGen :
       let r_b ← readGMGenProg (d.1, (d.2.1, r_idx))
       let i1 ← pure 1
       let t_new ← readGMGenProg (d.1, (d.2.1, i1))
-      let d_new ← pure (d.2.2 * p_tailCap d.1 + r_b)
-      let ptr_idx ← pure (p_gmTailPtrBase d.1 + d_new)
+      let d_new ← pure (d.2.2 * dpTailCap d.1 + r_b)
+      let ptr_idx ← pure (dpGmTailPtrBase d.1 + d_new)
       writeGMGenProg (d.1, ((d.2.1, ptr_idx), t_new))
-      let own_idx ← pure (p_gmTailOwnerBase d.1 + t_new)
+      let own_idx ← pure (dpGmTailOwnerBase d.1 + t_new)
       writeGMGenProg (d.1, ((d.2.1, own_idx), d_new))
       let r_b1 ← pure (r_b + 1)
       writeGMGenProg (d.1, ((d.2.1, r_idx), r_b1))
@@ -1101,7 +1101,7 @@ theorem realizes_appendTailItemGen :
       writeGMGenProg (d.1, ((d.2.1, i1), t_new1))
       pure t_new) ?_
     (fun d => by simp [appendTailItemGenProg, ← PFunctor.FreeM.bind_eq_bind])
-  realize_dict [appendTailItemGenPre_mk]
+  realizeDictWith [appendTailItemGenPre_mk]
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
       (le_of_lt (appendTailItem_bounds h).1)
   · exact fits_const_of_dictEnv h.1 (by omega)
@@ -1127,18 +1127,18 @@ def removeLastTailItemGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Uni
   let r_b ← readGMGenProg (d.1, (d.2.1, 4 + 3 * d.2.2 + 1))
   let r_del := r_b - 1
   let t_del ← readGMGenProg (d.1,
-    (d.2.1, p_gmTailPtrBase d.1 + (d.2.2 * p_tailCap d.1 + r_del)))
+    (d.2.1, dpGmTailPtrBase d.1 + (d.2.2 * dpTailCap d.1 + r_del)))
   let n_tails ← readGMGenProg (d.1, (d.2.1, 1))
   let t_last := n_tails - 1
-  let d_last ← readGMGenProg (d.1, (d.2.1, p_gmTailOwnerBase d.1 + t_last))
-  let g_last := p_nMaxSubOne d.1 - t_last
-  let g_del := p_nMaxSubOne d.1 - t_del
+  let d_last ← readGMGenProg (d.1, (d.2.1, dpGmTailOwnerBase d.1 + t_last))
+  let g_last := dpNMaxSubOne d.1 - t_last
+  let g_del := dpNMaxSubOne d.1 - t_del
   let q_move ← readQuotGenProg (d.1, (d.2.1, g_last))
   writeQuotGenProg (d.1, ((d.2.1, g_del), q_move))
   let v_move ← readValGenProg (d.1, (d.2.1, g_last))
   writeValGenProg (d.1, ((d.2.1, g_del), v_move))
-  writeGMGenProg (d.1, ((d.2.1, p_gmTailPtrBase d.1 + d_last), t_del))
-  writeGMGenProg (d.1, ((d.2.1, p_gmTailOwnerBase d.1 + t_del), d_last))
+  writeGMGenProg (d.1, ((d.2.1, dpGmTailPtrBase d.1 + d_last), t_del))
+  writeGMGenProg (d.1, ((d.2.1, dpGmTailOwnerBase d.1 + t_del), d_last))
   writeGMGenProg (d.1, ((d.2.1, 4 + 3 * d.2.2 + 1), r_del))
   writeGMGenProg (d.1, ((d.2.1, 1), t_last))
 
@@ -1332,14 +1332,14 @@ def RemoveLastTailItemPre (U V w₀ n_max h_space w base b : ℕ) (s : Memory.St
 @[expose]
 def RemoveLastTailItemGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Memory.State) : Prop :=
   DictEnvGen w d.1 d.2.1 ∧
-  TailBijection (p_nMax d.1)
-    (gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem)
-    (fun b' => gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1)
+  TailBijection (dpNMax d.1)
+    (gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem)
+    (fun b' => gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1)
       s.mem (gmRIdx b'))
-    (gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem 1) ∧
-  d.2.2 < numBuckets (p_nMax d.1) ∧
-  1 ≤ gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem (gmRIdx d.2.2) ∧
-  0 < bucketBits (p_nMax d.1)
+    (gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem 1) ∧
+  d.2.2 < numBuckets (dpNMax d.1) ∧
+  1 ≤ gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem (gmRIdx d.2.2) ∧
+  0 < bucketBits (dpNMax d.1)
 
 @[simp] theorem removeLastTailItemGenPre_mk (U V w₀ n_max h_space w : ℕ) (d : ℕ × ℕ)
     (s : Memory.State) :
@@ -1454,27 +1454,27 @@ theorem realizes_removeLastTailItemGen :
       let r_idx ← pure (4 + 3 * d.2.2 + 1)
       let r_b ← readGMGenProg (d.1, (d.2.1, r_idx))
       let r_del ← pure (r_b - 1)
-      let ptr_del_idx ← pure (p_gmTailPtrBase d.1 + (d.2.2 * p_tailCap d.1 + r_del))
+      let ptr_del_idx ← pure (dpGmTailPtrBase d.1 + (d.2.2 * dpTailCap d.1 + r_del))
       let t_del ← readGMGenProg (d.1, (d.2.1, ptr_del_idx))
       let i1 ← pure 1
       let n_tails ← readGMGenProg (d.1, (d.2.1, i1))
       let t_last ← pure (n_tails - 1)
-      let own_last_idx ← pure (p_gmTailOwnerBase d.1 + t_last)
+      let own_last_idx ← pure (dpGmTailOwnerBase d.1 + t_last)
       let d_last ← readGMGenProg (d.1, (d.2.1, own_last_idx))
-      let g_last ← pure (p_nMaxSubOne d.1 - t_last)
-      let g_del ← pure (p_nMaxSubOne d.1 - t_del)
+      let g_last ← pure (dpNMaxSubOne d.1 - t_last)
+      let g_del ← pure (dpNMaxSubOne d.1 - t_del)
       let q_move ← readQuotGenProg (d.1, (d.2.1, g_last))
       writeQuotGenProg (d.1, ((d.2.1, g_del), q_move))
       let v_move ← readValGenProg (d.1, (d.2.1, g_last))
       writeValGenProg (d.1, ((d.2.1, g_del), v_move))
-      let ptr_last_idx ← pure (p_gmTailPtrBase d.1 + d_last)
+      let ptr_last_idx ← pure (dpGmTailPtrBase d.1 + d_last)
       writeGMGenProg (d.1, ((d.2.1, ptr_last_idx), t_del))
-      let own_del_idx ← pure (p_gmTailOwnerBase d.1 + t_del)
+      let own_del_idx ← pure (dpGmTailOwnerBase d.1 + t_del)
       writeGMGenProg (d.1, ((d.2.1, own_del_idx), d_last))
       writeGMGenProg (d.1, ((d.2.1, r_idx), r_del))
       writeGMGenProg (d.1, ((d.2.1, i1), t_last))) ?_
     (fun d => by simp [removeLastTailItemGenProg, ← PFunctor.FreeM.bind_eq_bind])
-  realize_dict [removeLastTailItemGenPre_mk]
+  realizeDictWith [removeLastTailItemGenPre_mk]
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
       (le_of_lt (removeLastTailItem_bounds h).1)
   · exact fits_const_of_dictEnv h.1 (by omega)

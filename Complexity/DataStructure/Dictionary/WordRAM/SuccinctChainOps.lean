@@ -239,7 +239,7 @@ theorem lmUnlinkProg_allChainsValid {U V w n_max h_space base b m j_del : ℕ}
 `j_new < min n_max (effBucketCap n_max)`. -/
 @[expose]
 def prependIfIndexedGenProg (d : (DictParams × ((ℕ × ℕ) × ℕ)) × ℕ) : Memory.Prog Unit := do
-  let cap ← pure (p_minCap d.1.1)
+  let cap ← pure (dpMinCap d.1.1)
   if d.2 < cap then
     lmPrependGenProg (d.1.1, (d.1.2, d.2))
   else
@@ -285,11 +285,11 @@ def PrependIfIndexedPre (U V w₀ n_max h_space w : ℕ)
 def PrependIfIndexedGenPre (w : ℕ)
     (d : (DictParams × ((ℕ × ℕ) × ℕ)) × ℕ) (s : Memory.State) : Prop :=
   DictEnvGen w d.1.1 d.1.2.1.1 ∧
-  d.1.2.1.2 < numBuckets (p_nMax d.1.1) ∧
-  d.1.2.2 < numMicroPerBucket (p_nMax d.1.1) ∧
-  lmHead (p_nMax d.1.1)
-    (lmAt d.1.2.1.1 (p_U d.1.1) (p_V d.1.1) (p_w d.1.1) (p_nMax d.1.1) (p_hSpace d.1.1) s.mem)
-    d.1.2.1.2 d.1.2.2 ≤ effBucketCap (p_nMax d.1.1)
+  d.1.2.1.2 < numBuckets (dpNMax d.1.1) ∧
+  d.1.2.2 < numMicroPerBucket (dpNMax d.1.1) ∧
+  lmHead (dpNMax d.1.1)
+    (lmAt d.1.2.1.1 (dpU d.1.1) (dpV d.1.1) (dpW d.1.1) (dpNMax d.1.1) (dpHSpace d.1.1) s.mem)
+    d.1.2.1.2 d.1.2.2 ≤ effBucketCap (dpNMax d.1.1)
 
 @[simp]
 theorem prependIfIndexedGenPre_mk (U V w₀ n_max h_space w : ℕ)
@@ -391,7 +391,7 @@ theorem prependIfIndexedProg_allChainsValid {U V w n_max h_space base b m j_new 
 `j_del < min n_max (effBucketCap n_max)`. -/
 @[expose]
 def unlinkIfIndexedGenProg (d : (DictParams × ((ℕ × ℕ) × ℕ)) × ℕ) : Memory.Prog Unit := do
-  let cap ← pure (p_minCap d.1.1)
+  let cap ← pure (dpMinCap d.1.1)
   if d.2 < cap then
     lmUnlinkGenProg (d.1.1, (d.1.2, d.2))
   else
@@ -438,13 +438,13 @@ def UnlinkIfIndexedPre (U V w₀ n_max h_space w : ℕ)
 @[expose]
 def UnlinkIfIndexedGenPre (w : ℕ)
     (d : (DictParams × ((ℕ × ℕ) × ℕ)) × ℕ) (s : Memory.State) : Prop :=
-  let lm := lmAt d.1.2.1.1 (p_U d.1.1) (p_V d.1.1) (p_w d.1.1) (p_nMax d.1.1) (p_hSpace d.1.1) s.mem
+  let lm := lmAt d.1.2.1.1 (dpU d.1.1) (dpV d.1.1) (dpW d.1.1) (dpNMax d.1.1) (dpHSpace d.1.1) s.mem
   DictEnvGen w d.1.1 d.1.2.1.1 ∧
-  d.1.2.1.2 < numBuckets (p_nMax d.1.1) ∧
-  d.1.2.2 < numMicroPerBucket (p_nMax d.1.1) ∧
-  (d.2 < effBucketCap (p_nMax d.1.1) →
-    lmPrev (p_nMax d.1.1) lm d.1.2.1.2 d.2 ≤ effBucketCap (p_nMax d.1.1) ∧
-    lmNext (p_nMax d.1.1) lm d.1.2.1.2 d.2 ≤ effBucketCap (p_nMax d.1.1))
+  d.1.2.1.2 < numBuckets (dpNMax d.1.1) ∧
+  d.1.2.2 < numMicroPerBucket (dpNMax d.1.1) ∧
+  (d.2 < effBucketCap (dpNMax d.1.1) →
+    lmPrev (dpNMax d.1.1) lm d.1.2.1.2 d.2 ≤ effBucketCap (dpNMax d.1.1) ∧
+    lmNext (dpNMax d.1.1) lm d.1.2.1.2 d.2 ≤ effBucketCap (dpNMax d.1.1))
 
 @[simp]
 theorem unlinkIfIndexedGenPre_mk (U V w₀ n_max h_space w : ℕ)
@@ -529,7 +529,7 @@ theorem unlinkIfIndexedProg_allChainsValid {U V w n_max h_space base b m j_del :
 /-- Parameter-free `Memory.Prog` reader returning `totalSlots n_max gm` at `base = d.2`. -/
 @[expose]
 def readTotalSlotsGenProg (d : DictParams × ℕ) : Memory.Prog ℕ :=
-  if p_bucketBits d.1 = 0 then do
+  if dpBucketBits d.1 = 0 then do
     let i0 ← pure 0
     readGMGenProg (d.1, (d.2, i0))
   else do
@@ -537,7 +537,7 @@ def readTotalSlotsGenProg (d : DictParams × ℕ) : Memory.Prog ℕ :=
     let i1 ← pure 1
     let n_slabs ← readGMGenProg (d.1, (d.2, i0))
     let n_tails ← readGMGenProg (d.1, (d.2, i1))
-    pure (n_slabs * p_slabSize d.1 + n_tails)
+    pure (n_slabs * dpSlabSize d.1 + n_tails)
 
 /-- `Memory.Prog` reader returning `totalSlots n_max gm` at `base`. -/
 @[expose]
@@ -594,21 +594,21 @@ theorem realizes_readTotalSlotsGen :
     Realizes .exact readTotalSlotsGenProg
       (WordEncoding.encode (α := DictParams × ℕ)) (WordEncoding.encode (α := ℕ))
       (fun w d s => DictEnvGen w d.1 d.2 ∧
-        SlotStoreInv (p_nMax d.1)
-          (gmAt d.2 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem))
+        SlotStoreInv (dpNMax d.1)
+          (gmAt d.2 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem))
       (fun _ _ => 0) := by
   have hrg := realizes_readGMGen
   refine Realizes.congr (p := fun d : DictParams × ℕ => do
       let i0 ← pure 0
-      if p_bucketBits d.1 = i0 then
+      if dpBucketBits d.1 = i0 then
         readGMGenProg (d.1, (d.2, i0))
       else
         let i1 ← pure 1
         let n_slabs ← readGMGenProg (d.1, (d.2, i0))
         let n_tails ← readGMGenProg (d.1, (d.2, i1))
-        pure (n_slabs * p_slabSize d.1 + n_tails)) ?_
+        pure (n_slabs * dpSlabSize d.1 + n_tails)) ?_
     (fun d => by simp only [readTotalSlotsGenProg, ← PFunctor.FreeM.bind_eq_bind, pure_bind])
-  realize_dict
+  realizeDict
   · exact h.1
   · unfold globalMetaLen; omega
   · exact fits_const_of_dictEnv h.1 (by decide)
@@ -674,12 +674,12 @@ def CopyLastPayloadPre (U V w₀ n_max h_space w : ℕ)
 @[expose]
 def CopyLastPayloadGenPre (w : ℕ)
     (d : DictParams × ((ℕ × ℕ) × ℕ)) (s : Memory.State) : Prop :=
-  let gm := gmAt d.2.1.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem
+  let gm := gmAt d.2.1.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem
   DictEnvGen w d.1 d.2.1.1 ∧
-  SlotStoreInv (p_nMax d.1) gm ∧
-  d.2.1.2 < numBuckets (p_nMax d.1) ∧
-  1 ≤ bCount (p_nMax d.1) gm d.2.1.2 ∧
-  d.2.2 < p_nMax d.1
+  SlotStoreInv (dpNMax d.1) gm ∧
+  d.2.1.2 < numBuckets (dpNMax d.1) ∧
+  1 ≤ bCount (dpNMax d.1) gm d.2.1.2 ∧
+  d.2.2 < dpNMax d.1
 
 @[simp]
 theorem copyLastPayloadGenPre_mk (U V w₀ n_max h_space w : ℕ)
@@ -698,7 +698,7 @@ theorem realizes_copyLastPayloadGen :
   have hrv := realizes_readValGen
   have hwq := realizes_writeQuotGen
   have hwv := realizes_writeValGen
-  realize_dict [copyLastPayloadGenPre_mk, CopyLastPayloadPre,
+  realizeDictWith [copyLastPayloadGenPre_mk, CopyLastPayloadPre,
     lastSlotOfGenPre_mk, lastSlotOfGenProg_mk]
   · exact ⟨h.1, h.2.1, h.2.2.1, h.2.2.2.1⟩
   · exact h.1
