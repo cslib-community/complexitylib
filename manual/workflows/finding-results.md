@@ -171,6 +171,13 @@ payment from actual bin/correction ranges, exact importance and midpoint-density
 and an explicit retained width P. Both signal clients use `spectralWalkLength`; its
 positive-tolerance guarantee leaves numerical mean envelopes, recursive budgets/reserves,
 parameter/workspace growth and native RL=L open.
+For the finite conditional output from actual lower-child cost moments, use
+[ReserveOutput](../../Complexity/Foundations/Probability/NormalizedAtomRows/ReserveOutput.lean).
+It constructs the common B by a finite scaled maximum, chooses both actual walk lengths,
+and discharges the compatible-capacity output theorem at the genuine canonical residual.
+The explicit allocation depends on the positive prefix horizon; recursive reserve induction,
+copy routing and parameter/workspace growth remain open. See the
+[probabilistic workflow](probabilistic-workflows.md) for the exact reserve and amplification.
 `actual_normalized_fourth_moment_capacity` bounds the row fourth moment of the difference
 of output fourth roots by `C*ε^4`. Its output evaluates the actual compression iterate,
 unchanged initial default, raw increments and dyadic floor; its first rank is full terminal

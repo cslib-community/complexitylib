@@ -3735,6 +3735,8 @@ public import Complexity.Foundations.Probability.HierarchyTasks
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ActualMoment
 public import Complexity.Foundations.Probability.NormalizedAtomRows.BoundedLoss
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ClippedTail
+public import Complexity.Foundations.Probability.NormalizedAtomRows.CommonEnvelope
+public import Complexity.Foundations.Probability.NormalizedAtomRows.FiniteEnvelopePayment
 public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstMeanError
 public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstPayment
 public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstSignal
@@ -3746,6 +3748,7 @@ public import Complexity.Foundations.Probability.NormalizedAtomRows.Moment
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Output
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Request
 public import Complexity.Foundations.Probability.NormalizedAtomRows.RequestSharp
+public import Complexity.Foundations.Probability.NormalizedAtomRows.ReserveOutput
 public import Complexity.Foundations.Probability.NormalizedAtomRows.SecondEnvelope
 public import Complexity.Foundations.Probability.NormalizedAtomRows.SecondSignal
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Sharp
@@ -3769,6 +3772,7 @@ public import Complexity.Foundations.Probability.RootMetric
 public import Complexity.Foundations.Probability.RootMetric.AbsoluteError
 public import Complexity.Foundations.Probability.RootMetric.ConditionalWalk
 public import Complexity.Foundations.Probability.RootMetric.Conditioning
+public import Complexity.Foundations.Probability.RootMetric.FiniteEnvelope
 public import Complexity.Foundations.Probability.RootMetric.Minkowski
 public import Complexity.Foundations.Probability.RootMetric.Slices
 public import Complexity.Foundations.Probability.RootMetric.Stationarity

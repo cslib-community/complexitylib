@@ -413,6 +413,27 @@ The [regressions](../../ComplexityTests/SecondEnvelope.lean) check a positive no
 spectator raw child and B1, exact-zero/empty edges, actual clipped-mean comparison and an exact
 two-endpoint counterexample to dropping width.
 
+[ReserveOutput](../../Complexity/Foundations/Probability/NormalizedAtomRows/ReserveOutput.lean)
+assembles the actual finite output from explicit lower-child conditional-error-cost fourth
+moments. `actualEstimatedResidual_output_from_cost_reserves` derives common deterministic B
+matrices by finite maxima of the actual first/B1 envelopes divided by `2^dyadicSlack`.
+The first payment uses absolute mean error over `rate kt + G`; the second retains
+`A = P * (|ζ| * (Lh + Lρ) / rate kt)^4`. At horizon m its uniform child-cost reserve is
+`tolerance^4 / (1 + rate kt^(-4) + A)`, where `tolerance = ε / (2 * (m + 1))`.
+This finite allocation pays both common-B moments without claiming growth independent of m.
+RAW steps are the maximum of the actual first-noise requirement and the fully amplified
+`(1 + A)` RAW requirement. Preparation steps use the existing 16K payment. The target is
+`genuineNormalizedRecipe` at the canonical residual, identified with `normalizedRequest`
+by `genuineNormalizedRecipe_eq_request`; capacities are actually `(K+1)*2^(64*slack)`.
+The theorem derives nonnegativity, row mass and zero extension, with finite cover,
+narrower-source horizon, gate/cutoff/cap and routing agreements still explicit.
+The [new regressions](../../ComplexityTests/ReserveOutput.lean) evaluate a positive,
+nonconstant full-matrix input with a free spectator, show the once-negative arithmetic,
+compute nonzero common B and check the actual completed prefix at index zero.
+The bounded fixture does not assert the canonical routed-bin mean or recursive reserves.
+A separate actual lower-child conditional-cost client proves that the finite reserve is
+satisfiable at some positive tolerance; it does not claim that tolerance is small.
+
 Deriving small numerical errors from recursive lower-child relative estimates, numerical
 reserves, recursive budget induction, copy routing, parameter/workspace bounds and native RL=L
 remain open. Row mass does not provide a uniform target bound, and clipped relative error
