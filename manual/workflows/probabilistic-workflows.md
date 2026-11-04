@@ -626,8 +626,8 @@ the unmodified RAW ranks and the completed maximum through the original source/u
 normalizer. Same-slice stationarity proves that the preparatory walk preserves this
 literal normalizer exactly; pointwise PREP need not converge to pointwise true preparation.
 The decoder's reusable stability API therefore accepts the normalizer difference directly.
-The former pointwise PREP moment estimate is retained as an optional coarse bound, not the
-allocation route.
+The unused coarse pointwise PREP moment estimate has been removed; the stationary
+normalizer contract supplies the allocation route.
 
 The actual pre-walk incoming preparation responds to RAW perturbations through the original
 row, incoming-column and source-by-terminal ranks. Conditional Jensen and the full rectangle
@@ -686,6 +686,31 @@ Full well-founded approximate evaluation remains open: later pilot/correction it
 general finite bin sums, recursive closure and growth, copy routing, native workspace and
 RL=L are not supplied by this single-bin first-pilot fragment. This partial construction is not
 a selected headline abstract.
+
+The [shared statistical-budget evaluator](../../Complexity/Foundations/Probability/HierarchyBudgetEvaluator.lean)
+now supplies a partial active stage-zero execution path over the existing `HierarchyTask.Request`.
+`BudgetData.evaluate` keeps HP.k fixed and uses one history for whole rows and vectors on three
+rank roles. Child calls use the existing `lastBudget` schedule, including each bin's logarithmic
+scale cutoff. RAW sums the finite positive bins and subtracts the residual correction once.
+Source-aware detection uses the same extracted `environmentDetector` as the initial client;
+normalized calls recompute their actual RAW, preparation and maximum children on the full
+original environment. `complete_grid` identifies the original H4 graph, and `completion_noise`
+pays centered noise from an explicit uniform magnitude bound, with width and source-rate
+factors shown. The allocator does not certify an arbitrary declared magnitude bound.
+
+This path is **partial**: exact base/dense leaves and literal iteration-zero constants remain
+available at every budget. Inactive recursive calls, failed graph-frame guards and unsupported constructors
+return `none`; justified global inactive-zero semantics remains open. A checked active
+budget-64 client assembles two nonzero half-bins into an environment-dependent completed row;
+the same fixture's old constant-walk proof now uses `conditionalWalk_const`. Normalized-row
+range, usage rejection and row sparsity and the actual successor-maximum error payment are
+checked local cases. They do **not** establish the requested simultaneous global correctness
+invariant. Justified inactive approximations, RAW compression/reserves and their sparsity,
+incoming-column closure, canonical error summation, later-iteration analytic closure,
+residual preparation/normalization, weights/rewards, cross-stage copy routing and effective
+native resource bounds remain open. The earlier single-bin canonical accuracy result retains
+its stated scope; this evaluator does not generalize that theorem yet. No selected abstract
+or headline claim changes.
 
 The regressions additionally check a correlated detector moment of
 `1/32`, a distinct child normalization `1/16`, and nonconstant padded frame source/rank

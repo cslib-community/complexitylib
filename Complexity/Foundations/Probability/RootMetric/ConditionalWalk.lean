@@ -28,6 +28,7 @@ remain model obligations. This does not construct the recursive estimator or its
 
 ## Main results
 
+* `Cslib.conditionalWalk_const`: constant samples retain their actual pair guard.
 * `Cslib.expect_conditionalWalk_sub_mean_pow_four_le`: actual conditional graph contraction.
 * `Cslib.rowNormPow_conditionalWalk_le_sum`: nonuniform gaps retain exact densities.
 * `Cslib.rowNormPow_conditionalWalk_le_raw`: uniform contraction from raw input moments.
@@ -72,6 +73,18 @@ that pair's retention event are zero and are ignored by the integrated row norm.
     (F : Ω → V → V → ℝ) (σ : Ω) (x y : V) : ℝ :=
   if h : σ ∈ ({σ | X σ x ∧ Y σ y} : Finset Ω) then
     ((G x y).walk ^ (2 * t x y)) (fun τ => F τ.val x y) ⟨σ, h⟩ else 0
+
+/-- A sample constant in the environment remains constant on each retained pair.
+The source and endpoint guards still supply the actual zero extension. -/
+theorem conditionalWalk_const [Fintype D] [Nonempty D]
+    (G : ∀ x y, RotationMap (RetainedPairSlice X Y x y) D) (t : V → V → ℕ)
+    (A : V → V → ℝ) (σ : Ω) (x y : V) :
+    conditionalWalk X Y G t (fun _ => A) σ x y =
+      if X σ x ∧ Y σ y then A x y else 0 := by
+  simp only [conditionalWalk, mem_filter, mem_univ, true_and]
+  split_ifs
+  · rw [RotationMap.walk_pow_const]
+  · rfl
 
 /-- Conditional completion preserves source rejection for every input and length. -/
 theorem conditionalWalk_eq_zero_of_not_source [Fintype D]

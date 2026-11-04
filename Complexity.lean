@@ -3715,6 +3715,7 @@ public import Complexity.Foundations.Probability.HeavyCountRarity
 public import Complexity.Foundations.Probability.HeavyCountTail
 public import Complexity.Foundations.Probability.HierarchyAccess
 public import Complexity.Foundations.Probability.HierarchyAtomCutoff
+public import Complexity.Foundations.Probability.HierarchyBudgetEvaluator
 public import Complexity.Foundations.Probability.HierarchyCanonicalTargets
 public import Complexity.Foundations.Probability.HierarchyChannelTransport
 public import Complexity.Foundations.Probability.HierarchyChildError
@@ -3724,6 +3725,7 @@ public import Complexity.Foundations.Probability.HierarchyCorrectionRawStability
 public import Complexity.Foundations.Probability.HierarchyCorrectionStability
 public import Complexity.Foundations.Probability.HierarchyCutoffs
 public import Complexity.Foundations.Probability.HierarchyDenseChildren
+public import Complexity.Foundations.Probability.HierarchyDetector
 public import Complexity.Foundations.Probability.HierarchyEstimatedInput
 public import Complexity.Foundations.Probability.HierarchyEstimatedMean
 public import Complexity.Foundations.Probability.HierarchyParams
