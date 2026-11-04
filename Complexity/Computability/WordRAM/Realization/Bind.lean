@@ -56,7 +56,13 @@ variable {B : Basis} {δ α β : Type} {k l m : ℕ}
   {safeP : ℕ → δ → Memory.State → Prop} {safeQ : ℕ → δ × α → Memory.State → Prop}
   {workP : δ → Memory.State → ℕ} {workQ : δ × α → Memory.State → ℕ}
 
-private theorem bind_run (hP : Witness B p input answer safeP workP)
+/-- Tighten the native budgets of the supplied component runs without changing code, domain
+or semantic postconditions. The continuation receives the predecessor's derived encoded answer,
+exact intermediate memory, boundedness, safety and valid history. Both stages receive their
+derived layout premises. Only execution bounds are
+supplied by the callbacks; the complete frame/input/memory proof is shared with `Witness.bind`.
+The resulting bound is additive on the same retained sequential emitter. -/
+theorem Witness.bind_execWithin (hP : Witness B p input answer safeP workP)
     (hQ : Witness B q (appendWords input answer) output safeQ workQ) :
   let n₁ := hP.scratchSize
   let n₂ := hQ.scratchSize
@@ -108,16 +114,9 @@ private theorem bind_run (hP : Witness B p input answer safeP workP)
           ∀ i, i ≠ frontier → (∀ j, tmp j ≠ i) → y.regs i = x.regs i := by
   let n₁ := hP.scratchSize
   let n₂ := hQ.scratchSize
-  let C₁ := hP.factor
-  let C₂ := hQ.factor
   let N := l + max n₁ n₂
   let left : Fin (m + n₂ + 1) → Fin (m + N + 1) := bindSharedLeft
   let right : Fin (l + n₁ + 1) → Fin (m + N + 1) := bindSharedRight
-  let emit : ∀ {r : ℕ}, (frontier : Fin r) → (Fin k → Fin r) →
-      (Fin (m + N + 1) → Fin r) → Code B r := fun frontier src tmp =>
-    .seq (hP.code frontier src (tmp ∘ right))
-      (hQ.code frontier
-        (Fin.append src (fun i => tmp (right (Fin.castAdd (n₁ + 1) i)))) (tmp ∘ left))
   dsimp only
   intro r frontier src tmp hi hd hf hs
   have hleft : Function.Injective (tmp ∘ left) := by
@@ -244,7 +243,7 @@ def Witness.bind (hP : Witness B p input answer safeP workP)
         (Fin.append src (fun i => tmp (right (Fin.castAdd (n₁ + 1) i)))) (tmp ∘ left))
   ⟨N, C, emit, by
     intro r frontier src tmp hi hd hf hs
-    have h := bind_run hP hQ frontier src tmp hi hd hf hs
+    have h := Witness.bind_execWithin hP hQ frontier src tmp hi hd hf hs
     refine ⟨h.1, fun w d x hx hin hsafe hv => ?_⟩
     let s := memoryState frontier x
     let a := (Memory.spec 0).clientResult s (p d)
@@ -270,61 +269,6 @@ def Witness.bind (hP : Witness B p input answer safeP workP)
         congr 1
         dsimp only [a, s']
         omega⟩
-
-/-- Tighten the native budgets of the supplied component runs without changing code, domain
-or semantic postconditions. The continuation receives the predecessor's derived encoded answer,
-exact intermediate memory, boundedness, safety and valid history. Both stages receive their
-derived layout premises. Only execution bounds are
-supplied by the callbacks; the complete frame/input/memory proof is shared with `Witness.bind`.
-The resulting bound is additive on the same retained sequential emitter. -/
-theorem Witness.bind_execWithin (hP : Witness B p input answer safeP workP)
-    (hQ : Witness B q (appendWords input answer) output safeQ workQ) :
-  let n₁ := hP.scratchSize
-  let n₂ := hQ.scratchSize
-  let C₁ := hP.factor
-  let C₂ := hQ.factor
-  let N := l + max n₁ n₂
-  let left : Fin (m + n₂ + 1) → Fin (m + N + 1) := bindSharedLeft
-  let right : Fin (l + n₁ + 1) → Fin (m + N + 1) := bindSharedRight
-  let emit : ∀ {r : ℕ}, (frontier : Fin r) → (Fin k → Fin r) →
-      (Fin (m + N + 1) → Fin r) → Code B r := (Witness.bind hP hQ).code
-  ∀ {r : ℕ} (frontier : Fin r) (src : Fin k → Fin r) (tmp : Fin (m + N + 1) → Fin r),
-    Function.Injective tmp → (∀ i j, src i ≠ tmp j) →
-    (∀ j, tmp j ≠ frontier) → (∀ i, src i ≠ frontier) →
-    ¬(emit frontier src tmp).ReadsWidth ∧
-    ∀ (w : ℕ) (d : δ) (x : Data r),
-      let s := memoryState frontier x
-      let a := (Memory.spec 0).clientResult s (p d)
-      let s' := (Memory.spec 0).clientState s (p d)
-      let nextSrc := Fin.append src (fun i => tmp (right (Fin.castAdd (n₁ + 1) i)))
-      x.Bounded w → x.regs ∘ src = input d → (safeP w d s ∧ safeQ w (d, a) s') →
-      (Memory.spec w).ValidHistory s
-        ((Memory.spec w).clientHistory s ((p d).bind fun a => q (d, a))) →
-      ∀ TP TQ : ℕ,
-        (Function.Injective (tmp ∘ right) →
-          (∀ i j, src i ≠ (tmp ∘ right) j) → (∀ j, (tmp ∘ right) j ≠ frontier) →
-          (∀ i, src i ≠ frontier) →
-          (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (p d)) →
-          ∀ z, ExecWithin w (hP.code frontier src (tmp ∘ right)) x z
-          (C₁ * (memoryCost (p d) s + workP d s + 1)) →
-            ExecWithin w (hP.code frontier src (tmp ∘ right)) x z TP) →
-        (∀ z, Function.Injective (tmp ∘ left) →
-          (∀ i j, nextSrc i ≠ (tmp ∘ left) j) → (∀ j, (tmp ∘ left) j ≠ frontier) →
-          (∀ i, nextSrc i ≠ frontier) →
-          z.Bounded w → z.regs ∘ nextSrc = appendWords input answer (d, a) →
-          memoryState frontier z = s' → safeQ w (d, a) (memoryState frontier z) →
-          (Memory.spec w).ValidHistory (memoryState frontier z)
-            ((Memory.spec w).clientHistory (memoryState frontier z) (q (d, a))) →
-          ∀ y, ExecWithin w (hQ.code frontier nextSrc (tmp ∘ left)) z y
-            (C₂ * (memoryCost (q (d, a)) (memoryState frontier z) +
-              workQ (d, a) (memoryState frontier z) + 1)) →
-            ExecWithin w (hQ.code frontier nextSrc (tmp ∘ left)) z y TQ) →
-        ∃ y, ExecWithin w (emit frontier src tmp) x y (TP + TQ) ∧
-          memoryState frontier y = (Memory.spec w).clientState s ((p d).bind fun a => q (d, a)) ∧
-          (∀ i : Fin m, y.regs (tmp (Fin.castAdd (N + 1) i)) =
-            output ((Memory.spec w).clientResult s ((p d).bind fun a => q (d, a))) i) ∧
-          ∀ i, i ≠ frontier → (∀ j, tmp j ≠ i) → y.regs i = x.regs i :=
-  bind_run hP hQ
 
 /-- One uniform continuation emitter consumes the original environment and the first runtime
 answer. Its domain and work charge are evaluated at the deterministic intermediate state.
