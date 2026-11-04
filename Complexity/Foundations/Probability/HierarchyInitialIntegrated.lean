@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Probability.HierarchyInitialSecondNoise
+import Complexity.Foundations.Probability.RootMetric.WeightedError
 
 /-!
 # Concrete four-max inputs to the executed compressed-bin decoder
@@ -80,7 +81,8 @@ heavy first-overflow tail and raw false-overflow charges. No smallness is assert
       (uncompressedRow (Δ σ x) (raw σ x) (j + 1) y))
 
 /-- Numerical sufficient charge for the literal sharp initial reserve. This keeps
-floor, capacity and prefix-weight costs explicit, with no stochastic hypotheses. -/
+floor, capacity and prefix-weight costs explicit. Mutually exclusive first overflows
+pay a sum of fourth moments, without a cube in the number of possible overflows. -/
 @[expose] def initialNumericalReserve (HP : FourthRootHierarchyParams 16 1 16 32 8)
     (M : ℕ) (floor cap C Cpre : ℝ) (a : ℕ → ℝ) : ℝ :=
   let m := Nat.log2 M + 1
@@ -88,14 +90,37 @@ floor, capacity and prefix-weight costs explicit, with no stochastic hypotheses.
   128 * (HP.K : ℝ) *
     (Cpre ^ 4 * (∑ i ∈ range m, dyadicFloor floor m i * a i) ^ 4 +
       C ^ 4 * a (Nat.log2 M) ^ 4 +
-      C ^ 4 * (∑ j ∈ range m, ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * a i) ^ 4) +
+      C ^ 4 * ∑ j ∈ range m, (∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * a i) ^ 4) +
     ∑ j ∈ range m,
       (64 * (HP.K : ℝ) * ((2 * max cap 16) ^ (4⁻¹ : ℝ)) ^ 4 /
         ((n j : ℝ) * dyadicFloor floor m j ^ 4)) * a j ^ 4
 
+/-- The final statistic is an unavoidable summand of this numerical envelope.
+This does not give a lower bound on the actual sharp reserve or actual output error. -/
+theorem initialNumericalReserve_ge_final (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (M : ℕ) (floor cap C Cpre : ℝ) (a : ℕ → ℝ) :
+    128 * (HP.K : ℝ) * C ^ 4 * a (Nat.log2 M) ^ 4 ≤
+      initialNumericalReserve HP M floor cap C Cpre a := by
+  unfold initialNumericalReserve
+  dsimp only
+  calc
+    _ = 128 * (HP.K : ℝ) * (C ^ 4 * a (Nat.log2 M) ^ 4) := by ring
+    _ ≤ 128 * (HP.K : ℝ) *
+        (Cpre ^ 4 * (∑ i ∈ range (Nat.log2 M + 1),
+          dyadicFloor floor (Nat.log2 M + 1) i * a i) ^ 4 +
+          C ^ 4 * a (Nat.log2 M) ^ 4 +
+          C ^ 4 * ∑ j ∈ range (Nat.log2 M + 1),
+            (∑ i ∈ Ico j (Nat.log2 M + 1),
+              (28 : ℝ) ^ (Nat.log2 M + 1 - i) * a i) ^ 4) := by
+      apply mul_le_mul_of_nonneg_left _ (by positivity)
+      exact (le_add_of_nonneg_left (by positivity)).trans (le_add_of_nonneg_right
+        (by positivity))
+    _ ≤ _ := le_add_of_nonneg_right (by positivity)
+
 /-- A finite numerical allocation for the sharp reserve. This conservative payment
 keeps every stationary, final, heavy-selected and raw false-event coefficient. Dropping
-heavy selection here gains no rarity factor and never discounts correlated noise. -/
+heavy selection here gains no rarity factor and never discounts correlated noise.
+First-overflow disjointness removes the outer Minkowski cardinality loss. -/
 theorem initialFourMaxReserve_le {P : ℕ} [Fact P.Prime]
     {HP : FourthRootHierarchyParams 16 1 16 32 8} (B : BudgetData HP P)
     (M bin k : ℕ) (ζ floor : ℝ) (hf : 0 ≤ floor)
@@ -178,11 +203,18 @@ theorem initialFourMaxReserve_le {P : ℕ} [Fact P.Prime]
         (fun i => (28 : ℝ) ^ (m - i)) a (fun i _ => by positivity)
         (fun i _ => ha i) (fun i hi => hb i (mem_Ico.mp hi).2)
   have htail : vertexNormPow 4 P r.source.rate X Tail ≤
-      (∑ j ∈ range m, ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * a i) ^ 4 := by
-    have h := vertexNormPow_sum_le_pow_sum (by decide : 4 ≠ 0) hNu (range m) tail
-      (fun _ => 1) budget (fun _ _ => by norm_num)
-      (fun j _ => sum_nonneg fun i _ => mul_nonneg (by positivity) (ha i)) (fun j _ => ht j)
-    simpa only [one_mul, Tail, tail, budget] using h
+      ∑ j ∈ range m, (∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * a i) ^ 4 := by
+    have he := vertexNormPow_sum_ite (range m) 4 (by decide : 4 ≠ 0)
+      (P : ℝ) r.source.rate X
+      (fun j σ x => IsFirstOverflow (S σ) n (fun _ => HP.K)
+        (dyadicFloor floor m) (Δ σ x) ⟨0, raw σ x⟩ j ∧
+        heavyCountEvent Y univ (fun y => truth σ x y 0) (dyadicFloor floor m j) (n j) σ)
+      (fun σ x i j hi hj => hi.1.unique hj.1)
+      (fun j σ x => ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i σ x)
+    change vertexNormPow 4 P r.source.rate X Tail =
+      ∑ j ∈ range m, vertexNormPow 4 P r.source.rate X (tail j) at he
+    rw [he]
+    exact sum_le_sum (fun j _ => ht j)
   apply add_le_add
   · apply mul_le_mul_of_nonneg_left _ (by positivity)
     exact add_le_add (add_le_add

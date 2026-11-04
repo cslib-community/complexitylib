@@ -1190,7 +1190,7 @@ The [computed-prefix preparation payment](../../Complexity/Foundations/Probabili
 combines these transported moments with the semantic history's actual omitted/inactive deficit
 and centered first noise. `BudgetData.initialTransportMoment` keeps the prefix cube and sum
 of group costs explicit; those group costs retain the bin cube and own-request importance
-sums. `initial_compressed_prefix_absolute` returns the literal computed group list and bounds
+sup norms. `initial_compressed_prefix_absolute` returns the literal computed group list and bounds
 its absolute error before preparation. `initial_compressed_mean_moment` separately combines
 the conditional-mean perturbation with the semantic deficit, without charging semantic
 centered noise to that deterministic payment. `initial_compressed_preparation` applies the polynomial
@@ -1218,10 +1218,36 @@ clipped error from those four moments. `initial_compressed_precision_reserve` th
 the literal `initialFourMaxReserve` by `initialNumericalReserve`. This scalar expression
 retains the floor, capacity, stationary coefficient, final prefix, all weighted tail
 prefixes, and raw false-event coefficients. It conservatively drops heavy selection,
-without giving either noise a rarity discount. Bin/prefix cubes, importance sums,
+without giving either noise a rarity discount. Bin/prefix cubes, importance sup norms,
 width/rank-rate sensitivity, actual child precision and slack remain explicit numerical
-costs. The finite charge has not been proved uniformly absorbable into the parent's
-requested accuracy. No parent-accuracy or supplied four-max budget supplies that gap.
+costs. The endpoint payment `initialEndpointCharge` is exactly zero at budget zero;
+empty paired groups also cost zero, including equal positive endpoint budgets. The
+importance multiplier uses the finite-function sup norm: the existing max row norm
+needs only $\|w\|_\infty^4$, rather than $\sum_y |w(y)|^4$. This removes an unnecessary
+factor of $P$ for constant weights while retaining the actual importance ratios.
+`Cslib.vertexNormPow_sum_ite` uses mutually exclusive first overflows to pay the sum
+of their fourth moments. Thus the tail term is
+$\sum_j (\sum_{i\ge j}28^{m-i}a_i)^4$, without an outer group-count cube. The
+literal heavy events remain in `initialFourMaxReserve`; the numerical comparison
+still supplies no rarity discount.
+
+Uniform absorption does not follow by increasing the budget in this envelope.
+`initialComputedMoment_final_firstNoise_zero` computes the final semantic first-noise
+charge, even with zero transported child error, as
+$$
+\frac{8}{63^4}2^{16k_a}\left(2^{-p(M,\{r\text{ with usage}=r.terminal\})}\right)^4.
+$$
+`initialComputedMoment_firstNoise_not_uniform` chooses a terminal exponent before
+all budgets and requests at which this exceeds any proposed uniform coefficient times
+that precision fourth power. `initialComputedNumericalReserve_ge_noise` shows the
+same factor survives the final reserve summand, multiplied by $128KC^4$. These are
+lower bounds on the **numerical envelope**, not on actual noise or estimator error.
+The preparation sensitivity still contains $P(|\zeta|(L_h+L_\rho)/\mathrm{rate}(k_a))^4$,
+and the raw false-event coefficient contains inverse fourth powers of the floor.
+Bin/prefix costs and the inner $28^{m-i}$ tail weights also remain. A uniform argument
+needs sharper actual conditional-noise/sensitivity payments and a jointly chosen
+parameter schedule; a fixed-request depth threshold or a renamed small-reserve premise
+cannot discharge it. No parent-accuracy or supplied four-max budget supplies that gap.
 The [complete checked clients](../../ComplexityTests/PolynomialBudgetHistory.lean) include a
 budget-two parent pair whose actual budget-one compressed child has diagonal error one with
 valid scalar small-floor parameters, a separately executed reset-right child, and a literal

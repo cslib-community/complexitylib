@@ -205,8 +205,8 @@ theorem positiveSample_initial_compressed_root
         (fun σ x => r.source.retains (channels B.padding) σ x)
         (fun σ y => r.usage.retains (channels B.padding) σ y)
         (fun σ x y => A σ x y - B.initialSample r bin σ x y) ≤
-      (∑ y, |B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
-        r.terminal Q.direct y| ^ 4) * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4 *
+      ‖fun y => B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
+        r.terminal Q.direct y‖ ^ 4 * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4 *
       rootDistPow 4 P Q.direct.source.rate
         (fun σ x => Q.direct.source.retains (channels B.padding) σ x)
         (fun σ y => Q.direct.usage.retains (channels B.padding) σ y) D C := by
@@ -324,15 +324,15 @@ theorem pairedSample_initial_compressed_root
       rowNormPow 4 P r.source.rate
         (fun σ x => r.source.retains (channels B.padding) σ x)
         (fun σ y => r.usage.retains (channels B.padding) σ y) (A - C) ≤
-        8 * ((∑ y, |B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
-          r.terminal Q.direct y| ^ 4) * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4) *
+        8 * (‖fun y => B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
+          r.terminal Q.direct y‖ ^ 4 * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4) *
           (ε fine + ε coarse) := by
   dsimp only
   let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
     r.source (midpoint r) r.terminal (B.binRate bin)
   let w := fun y => B.binRate bin *
     HierarchyTask.usageRatio (channels B.padding) r.terminal Q.direct y
-  let K := (∑ y, |w y| ^ 4) * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4
+  let K := ‖w‖ ^ 4 * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4
   let E : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ :=
     fun n σ x y => w y * D n σ x y
   let C := fun n => if n = 0 then 0 else B.initialSample r bin
@@ -388,6 +388,20 @@ theorem pairedSample_initial_compressed_root
   unfold rowNormPow at hf hc
   linarith
 
+/-- A zero endpoint executes no child, so its perturbation charge is exactly zero.
+Positive endpoints retain the direct child's actual request precision. -/
+@[expose] def initialEndpointCharge (m : ℕ)
+    (q : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (coefficient : ℝ) : ℝ :=
+  if m = 0 then 0 else coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision m q)) ^ 4
+
+omit [Fact P.Prime] in
+/-- The exact zero-boundary payment is nonnegative at every actual budget. -/
+lemma initialEndpointCharge_nonneg (m : ℕ)
+    (q : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (coefficient : ℝ) :
+    0 ≤ B.initialEndpointCharge m q coefficient := by
+  unfold initialEndpointCharge
+  split_ifs <;> positivity
+
 /-- Actual scheduled endpoints consume strict lower-budget rooted hypotheses at their
 own request precision. The coefficient is fixed across these calls; neither a parent
 accuracy certificate nor an independently chosen endpoint error budget is accepted. -/
@@ -421,14 +435,26 @@ theorem pairedSample_initial_compressed_precision
       rowNormPow 4 P r.source.rate
         (fun σ x => r.source.retains (channels B.padding) σ x)
         (fun σ y => r.usage.retains (channels B.padding) σ y) (A - C) ≤
-        8 * ((∑ y, |B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
-          r.terminal Q.direct y| ^ 4) * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4) *
-          (coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision fine Q.direct)) ^ 4 +
-            coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision coarse Q.direct)) ^ 4) := by
-  exact B.pairedSample_initial_compressed_root exponent ζ floor M d bin hM r hs D hzero
-    (fun n => (coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision n
-        (HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
-      r.source (midpoint r) r.terminal (B.binRate bin)).direct)) ^ 4)) (fun _ => by positivity) ih
+        if fine = coarse then 0 else
+        8 * (‖fun y => B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
+          r.terminal Q.direct y‖ ^ 4 * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4) *
+          (B.initialEndpointCharge fine Q.direct coefficient +
+            B.initialEndpointCharge coarse Q.direct coefficient) := by
+  dsimp only
+  by_cases he : LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin)) =
+      LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
+  · refine ⟨0, 0, ?_, ?_, ?_⟩
+    · simp only [pairedSample, he, ↓reduceIte]
+    · simp only [pairedSample, he, ↓reduceIte]
+    · simp [rowNormPow, he]
+  rw [ite_eq_right he]
+  apply B.pairedSample_initial_compressed_root exponent ζ floor M d bin hM r hs D hzero
+    (fun n => B.initialEndpointCharge n
+      (HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (midpoint r) r.terminal (B.binRate bin)).direct coefficient)
+    (fun n => B.initialEndpointCharge_nonneg n _ coefficient)
+  intro n hn hp
+  simpa only [initialEndpointCharge, ite_eq_right (Nat.ne_of_gt hp)] using ih n hn hp
 
 /-- Completion transports the literal paired-history difference through the same graph,
 length, source and usage suffixes. It introduces no canonical-equality assumption. -/

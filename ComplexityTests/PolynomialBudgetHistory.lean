@@ -1943,11 +1943,10 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
       rowNormPow 4 5 (request HP).source.rate
         (fun σ x => (request HP).source.retains (channels (data HP).padding) σ x)
         (fun σ y => (request HP).usage.retains (channels (data HP).padding) σ y) (A - C) ≤
-        8 * ((∑ y, |(data HP).binRate 0 * HierarchyTask.usageRatio
-          (channels (data HP).padding) (request HP).terminal Q.direct y| ^ 4) *
+        8 * (‖fun y => (data HP).binRate 0 * HierarchyTask.usageRatio
+          (channels (data HP).padding) (request HP).terminal Q.direct y‖ ^ 4 *
           (4 * (2 * (data HP).binCap) ^ ((3 : ℝ) / 4)) ^ 4) *
-          (c ^ 4 * ((2 : ℝ) ^ (-(data HP).requestPrecision 1 Q.direct)) ^ 4 +
-            c ^ 4 * ((2 : ℝ) ^ (-(data HP).requestPrecision 0 Q.direct)) ^ 4) := by
+          (c ^ 4 * ((2 : ℝ) ^ (-(data HP).requestPrecision 1 Q.direct)) ^ 4) := by
   dsimp only
   let ζ := min HP.η (1 / 10000) / 4
   let Q := HierarchyTask.rawRequests 0 0 (.pilotInput ⟨0, HP.k_pos⟩)
@@ -2001,7 +2000,8 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
         have he : m = 1 := by omega
         subst m
         exact ⟨hd, hroot, right_one_available HP ζ⟩)
-    simpa only [Nat.cast_ofNat, show LogSpaceEstimation.lastBudget 2 1 (data HP).slack
+    simpa only [BudgetData.initialEndpointCharge, Nat.one_ne_zero, ↓reduceIte, add_zero,
+      Nat.cast_ofNat, show LogSpaceEstimation.lastBudget 2 1 (data HP).slack
       ((data HP).sampleScale (request HP) (some 0)) = 1 by
         norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff,
           BudgetData.sampleScale, data, request, gridChannel, rate],
@@ -2011,7 +2011,7 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
           BudgetData.sampleScale, data, request, gridChannel, rate]] using hp
 
 -- Budget one consumes no positive child IH, even after all bins are completed.
-example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (coefficient : ℝ) :
     ∃ F G,
       (data HP).completedGroup (fun n q => if n < 1 then
         (data HP).compressedHistory (fun _ => 0) (HP.η / 4) (HP.η / 4) n q else none)
@@ -2023,10 +2023,10 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
         (fun σ y => (request HP).usage.retains (channels (data HP).padding) σ y) (F - G) ≤ 0 := by
   have h := (data HP).completedGroup_initial_compressed_precision (fun _ => 0)
     (HP.η / 4) (HP.η / 4) 1 1 (by decide) (by simp [data]) (request HP)
-    0 2 (by decide) 0 0 [1] [2, 3] rfl rfl (fun _ _ => 0) (fun _ => rfl) 0
+    0 2 (by decide) 0 0 [1] [2, 3] rfl rfl (fun _ _ => 0) (fun _ => rfl) coefficient
     (fun _ _ n hn hnpos => by omega)
-  simpa only [BudgetData.initialRootGroupCharge, zero_pow (by decide : 4 ≠ 0),
-    zero_mul, add_zero, mul_zero, sum_const_zero, Nat.cast_ofNat] using h
+  simpa only [(data HP).initialRootGroupCharge_eq_zero_of_le 1 1 (request HP)
+    coefficient le_rfl, Nat.cast_ofNat] using h
 
 -- Centered transport keeps a nonconstant correlated perturbation centered at its own mean.
 example :
@@ -2101,7 +2101,8 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
   subst groups
   dsimp only at hp
   rw [hF] at hp
-  simp only [BudgetData.initialRootGroupCharge, zero_pow (by decide : 4 ≠ 0),
+  simp only [BudgetData.initialRootGroupCharge, BudgetData.initialEndpointCharge,
+    ite_self, zero_pow (by decide : 4 ≠ 0),
     zero_mul, add_zero, mul_zero, sum_const_zero] at hp
   have hb := hp [0] (by
     convert hW using 1
@@ -2112,5 +2113,41 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
       (([0] : List (Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ)).take (j + 1) |>.map
         (fun T => T σ x y)).sum) = 0 from congrFun hF (j + 1)])
   convert hb using 1; congr 8
+
+-- A constant weight costs its own fourth power, rather than five copies of that cost.
+example : ‖fun _ : Fin 5 => (3 : ℝ)‖ ^ 4 = 81 ∧
+    (∑ _ : Fin 5, |(3 : ℝ)| ^ 4) = 405 := by
+  norm_num
+
+-- Two exclusive events may be fully correlated with the values: there is no factor eight.
+example :
+    vertexNormPow 4 1 1 (fun (_ : Fin 2) (_ : Unit) => True)
+      (fun σ _ => ∑ j : Fin 2, if j = σ then (2 : ℝ) else 0) = 16 ∧
+    vertexNormPow 4 1 1 (fun (_ : Fin 2) (_ : Unit) => True)
+      (fun σ _ => ∑ j : Fin 2, if j = σ then (2 : ℝ) else 0) =
+      ∑ j : Fin 2, vertexNormPow 4 1 1 (fun (_ : Fin 2) (_ : Unit) => True)
+        (fun σ _ => if j = σ then (2 : ℝ) else 0) := by
+  constructor
+  · norm_num [vertexNormPow, Fin.sum_univ_two, expect_eq_sum_div_card]
+  · exact vertexNormPow_sum_ite univ 4 (by decide) 1 1 (fun _ _ => True)
+      (fun j σ _ => j = σ) (fun _ _ _ _ hi hj => hi.trans hj.symm) (fun _ _ _ => 2)
+
+-- The final-noise envelope already exceeds the requested fourth power at terminal exponent
+-- two, for every statistical budget. This tests an envelope obstruction, not actual error.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (M : ℕ) (R : RoleProfile 3) :
+    let r := {request HP with
+      terminal := gridChannel 2 2 [2, 3]
+      usage := gridChannel 2 2 [2, 3]}
+    ((2 : ℝ) ^ (-(data HP).requestPrecision M r)) ^ 4 <
+      (data HP).initialComputedMoment M 1 r R 0 2 [1] [2, 3]
+        (fun _ => 0) (HP.η / 4) 0 0 (Nat.log2 M) true 0 := by
+  dsimp only
+  rw [(data HP).initialComputedMoment_final_firstNoise_zero]
+  have hp : 0 < ((2 : ℝ) ^ (-(data HP).requestPrecision M
+      {request HP with
+        terminal := gridChannel 2 2 [2, 3]
+        usage := gridChannel 2 2 [2, 3]})) ^ 4 := by positivity
+  norm_num
+  linarith
 
 end PolynomialBudgetHistory

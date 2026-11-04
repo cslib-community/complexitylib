@@ -119,7 +119,8 @@ theorem completedGroup_initial_compressed_error
   exact mul_le_mul_of_nonneg_left (sum_le_sum herr) (by positivity)
 
 /-- Literal group cost from own-request lower-budget precision. Both endpoint budgets,
-the fourth-power importance sum and the bin cube are retained for numerical allocation. -/
+the sharp fourth-power importance sup norm and the bin cube remain explicit. Zero
+endpoints carry zero cost, independently of the coefficient. -/
 @[expose] def initialRootGroupCharge
     (M d : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (coefficient : ℝ) : ℝ :=
   (#B.bins : ℝ) ^ 3 * ∑ bin ∈ B.bins,
@@ -127,10 +128,11 @@ the fourth-power importance sum and the bin cube are retained for numerical allo
       r.source (midpoint r) r.terminal (B.binRate bin)
     let fine := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
     let coarse := LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
-    8 * ((∑ y, |B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
-      r.terminal Q.direct y| ^ 4) * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4) *
-      (coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision fine Q.direct)) ^ 4 +
-        coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision coarse Q.direct)) ^ 4)
+    if fine = coarse then 0 else
+    8 * (‖fun y => B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
+      r.terminal Q.direct y‖ ^ 4 * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4) *
+      (B.initialEndpointCharge fine Q.direct coefficient +
+        B.initialEndpointCharge coarse Q.direct coefficient)
 
 /-- Every literal own-precision group charge is nonnegative, including zero endpoints. -/
 lemma initialRootGroupCharge_nonneg (M d : ℕ)
@@ -140,7 +142,24 @@ lemma initialRootGroupCharge_nonneg (M d : ℕ)
   apply mul_nonneg (by positivity)
   apply sum_nonneg
   intro bin _
-  positivity
+  dsimp only
+  split_ifs
+  · exact le_rfl
+  exact mul_nonneg (by positivity) (add_nonneg
+    (B.initialEndpointCharge_nonneg _ _ _) (B.initialEndpointCharge_nonneg _ _ _))
+
+/-- All endpoints vanish when the group slack exhausts the parent budget. This holds
+for every coefficient and every request, without an accuracy hypothesis. -/
+lemma initialRootGroupCharge_eq_zero_of_le (M d : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (coefficient : ℝ) (hd : M ≤ d) :
+    B.initialRootGroupCharge M d r coefficient = 0 := by
+  have hf (bin : ℕ) :
+      LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin)) = 0 :=
+    Nat.sub_eq_zero_of_le (hd.trans (le_max_left _ _))
+  have hc (bin : ℕ) :
+      LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin)) = 0 :=
+    Nat.sub_eq_zero_of_le ((show M ≤ 2 * d by omega).trans (le_max_left _ _))
+  simp only [initialRootGroupCharge, hf, hc, ↓reduceIte, sum_const_zero, mul_zero]
 
 /-- All actual initial rays are paid directly by a strict lower-budget own-request
 rooted IH at actual precision. Reset-right availability is required on its own request.
@@ -185,10 +204,11 @@ theorem completedGroup_initial_compressed_precision
       r.source (midpoint r) r.terminal (B.binRate bin)
     let fine := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
     let coarse := LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
-    8 * ((∑ y, |B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
-      r.terminal Q.direct y| ^ 4) * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4) *
-      (coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision fine Q.direct)) ^ 4 +
-        coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision coarse Q.direct)) ^ 4)
+    if fine = coarse then 0 else
+    8 * (‖fun y => B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
+      r.terminal Q.direct y‖ ^ 4 * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4) *
+      (B.initialEndpointCharge fine Q.direct coefficient +
+        B.initialEndpointCharge coarse Q.direct coefficient)
   exact B.completedGroup_initial_compressed_error exponent ζ floor M d hbins r s t hst
     ks ku ss su hs hu a c ε
     (fun i hi => by simpa only [a, dite_eq_left hi] using hA ⟨i, hi⟩)

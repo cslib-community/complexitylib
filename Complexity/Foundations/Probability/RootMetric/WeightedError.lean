@@ -14,14 +14,15 @@ import Mathlib.Analysis.MeanInequalities
 
 Bounded normalized root errors pay ordinary errors after an endpoint weight and a change
 of terminal mask. Zero extension preserves the child's actual source and usage slices.
-The coefficient is a finite sum of fourth powers, with no environment-atom payment.
+The coefficient is the fourth power of the finite-function sup norm, with no
+cardinality or environment-atom payment.
 -/
 public section
 namespace Cslib
 open Finset
 open scoped BigOperators
 
-/-- An endpoint weight and arbitrary parent terminal mask cost the sum of fourth powers
+/-- An endpoint weight and arbitrary parent terminal mask cost the fourth power of the sup norm
 of the weights. Both normalized tables vanish outside the child's usage; no inclusion
 between the parent terminal mask and child usage, or independence, is needed. -/
 theorem rowNormPow_weighted_sub_le_rootDistPow {Ω V : Type*} [Fintype Ω] [Fintype V]
@@ -33,7 +34,7 @@ theorem rowNormPow_weighted_sub_le_rootDistPow {Ω V : Type*} [Fintype Ω] [Fint
     (hA' : ∀ σ x y, A' σ x y ∈ Set.Icc 0 B)
     (hoff : ∀ σ x y, ¬ U σ y → A σ x y = A' σ x y) :
     rowNormPow 4 N u X Y (fun σ x y => w y * (A σ x y - A' σ x y)) ≤
-      (∑ y, |w y| ^ 4) * (4 * B ^ ((3 : ℝ) / 4)) ^ 4 *
+      ‖w‖ ^ 4 * (4 * B ^ ((3 : ℝ) / 4)) ^ 4 *
         rootDistPow 4 N u X U A A' := by
   classical
   let E := fun σ x y => A σ x y - A' σ x y
@@ -42,10 +43,11 @@ theorem rowNormPow_weighted_sub_le_rootDistPow {Ω V : Type*} [Fintype Ω] [Fint
     split_ifs with h
     · rfl
     · exact (sub_eq_zero.mpr (hoff σ x y h)).symm
-  have hw (y : V) : |w y| ^ 4 ≤ ∑ z, |w z| ^ 4 :=
-    single_le_sum (f := fun z => |w z| ^ 4) (fun _ _ => by positivity) (mem_univ y)
+  have hw (y : V) : |w y| ^ 4 ≤ ‖w‖ ^ 4 :=
+    pow_le_pow_left₀ (abs_nonneg _) (by
+      simpa only [Real.norm_eq_abs] using norm_le_pi_norm w y) 4
   have hmul : rowNormPow 4 N u X (fun _ _ => True) (fun σ x y => w y * E σ x y) ≤
-      (∑ y, |w y| ^ 4) * rowNormPow 4 N u X (fun _ _ => True) E := by
+      ‖w‖ ^ 4 * rowNormPow 4 N u X (fun _ _ => True) E := by
     apply rowNormPow_le_mul hNu
     intro σ x y _ _
     rw [abs_mul, mul_pow]
@@ -62,10 +64,10 @@ theorem rowNormPow_weighted_sub_le_rootDistPow {Ω V : Type*} [Fintype Ω] [Fint
   calc
     _ ≤ rowNormPow 4 N u X (fun _ _ => True) (fun σ x y => w y * E σ x y) :=
       rowNormPow_mono_terminal hNu (fun _ _ _ => True.intro) _
-    _ ≤ (∑ y, |w y| ^ 4) * rowNormPow 4 N u X U E := by rw [← hmask]; exact hmul
+    _ ≤ ‖w‖ ^ 4 * rowNormPow 4 N u X U E := by rw [← hmask]; exact hmul
     _ ≤ _ := by
       rw [mul_assoc]
-      exact mul_le_mul_of_nonneg_left hroot (sum_nonneg fun _ _ => by positivity)
+      exact mul_le_mul_of_nonneg_left hroot (by positivity)
 /-- A finite sum pays the sum of actual fourth moments with the cube of its cardinality.
 This includes empty sums and correlated tables on the same environment. -/
 theorem rowNormPow_sum_fourth_le {I Ω V : Type*} [Fintype Ω] [Fintype V]
@@ -93,6 +95,36 @@ theorem rowNormPow_sum_fourth_le {I Ω V : Type*} [Fintype Ω] [Fintype V]
         sum_comm (s := ({x | X _ x} : Finset V)) (t := S)]
       rw [← mul_expect, expect_sum_comm]
       ring
+
+/-- Mutually exclusive events pay a sum of moments, without a cardinality loss.
+The events may depend on the same environment and vertex as the values. -/
+theorem vertexNormPow_sum_ite {I Ω V : Type*} [Fintype Ω] [Fintype V]
+    (S : Finset I) (s : ℕ) (hs : s ≠ 0) (N u : ℝ)
+    (X : Ω → V → Prop) [∀ σ x, Decidable (X σ x)]
+    (E : I → Ω → V → Prop) [∀ i σ x, Decidable (E i σ x)]
+    (hE : ∀ σ x i j, E i σ x → E j σ x → i = j)
+    (f : I → Ω → V → ℝ) :
+    vertexNormPow s N u X (fun σ x => ∑ i ∈ S, if E i σ x then f i σ x else 0) =
+      ∑ i ∈ S, vertexNormPow s N u X (fun σ x => if E i σ x then f i σ x else 0) := by
+  classical
+  have hpoint (σ : Ω) (x : V) :
+      |∑ i ∈ S, if E i σ x then f i σ x else 0| ^ s =
+        ∑ i ∈ S, |if E i σ x then f i σ x else 0| ^ s := by
+    by_cases he : ∃ i ∈ S, E i σ x
+    · obtain ⟨i, hi, hei⟩ := he
+      have hz (j : I) (_hj : j ∈ S) (hne : j ≠ i) : ¬ E j σ x :=
+        fun hej => hne (hE σ x j i hej hei)
+      rw [sum_eq_single i (fun j hj hne => ite_eq_right (hz j hj hne))
+        (fun h => (h hi).elim)]
+      rw [sum_eq_single i (fun j hj hne => by
+        rw [ite_eq_right (hz j hj hne), abs_zero, zero_pow hs]) (fun h => (h hi).elim)]
+    · have hz (i : I) (hi : i ∈ S) : ¬ E i σ x := fun hei => he ⟨i, hi, hei⟩
+      rw [sum_eq_zero (fun i hi => ite_eq_right (hz i hi)), abs_zero, zero_pow hs]
+      exact (sum_eq_zero (fun i hi => by
+        rw [ite_eq_right (hz i hi), abs_zero, zero_pow hs])).symm
+  unfold vertexNormPow
+  simp_rw [hpoint, sum_comm (s := ({x | X _ x} : Finset V)) (t := S)]
+  rw [expect_sum_comm, mul_sum]
 
 /-- Centering a perturbation preserves its conditional mean subtraction on the same
 slice. Conditional Jensen pays the mean perturbation; no target or independence is used. -/

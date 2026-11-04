@@ -30,6 +30,8 @@ changing-request induction and native RL=L remain open.
 * `initial_compressed_preparation`: full-rank sensitivity and actual usage-walk noise.
 * `exists_initial_compressed_fourMax`: the shared sharp reserve on computed histories.
 * `initial_compressed_precision_reserve`: numerical reserve from own-request rooted IH.
+* `initialComputedMoment_final_firstNoise_zero`: exact nondecaying normalized noise cost.
+* `initialComputedMoment_firstNoise_not_uniform`: a uniform envelope obstruction.
 -/
 public section
 noncomputable section
@@ -169,6 +171,95 @@ lemma initialComputedMoment_nonneg (B : BudgetData HP P) (M n : ℕ)
     (mul_nonneg (Nat.cast_nonneg P) hr.le) (fun _ => B.initialPolynomialLoss M n j r)
   unfold initialComputedMoment initialTransportMoment
   split_ifs <;> positivity
+
+/-- Even with no transported child error, the final semantic first-noise payment has
+this exact coefficient relative to its own parent precision. Increasing `M` alone does
+not shrink the ratio: `rate ka = 2^(-4*ka)` leaves a factor `2^(16*ka)`.
+This is an identity for the numerical envelope, not a lower bound on actual noise. -/
+theorem initialComputedMoment_final_firstNoise_zero (B : BudgetData HP P) (M n : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
+    (ks ka : ℕ) (ss st : List (ZMod P)) (ζ Lh Lρ : ℝ) :
+    B.initialComputedMoment M n r R ks ka ss st (fun _ => 0) ζ Lh Lρ
+      (Nat.log2 M) true 0 =
+      (8 / 63 ^ 4 : ℝ) * ((2 : ℝ) ^ ka) ^ 16 *
+        ((2 : ℝ) ^ (-B.requestPrecision M { r with usage := r.terminal })) ^ 4 := by
+  simp only [initialComputedMoment, sum_const_zero, mul_zero, ↓reduceIte,
+    dyadicSlack_last, pow_one, zero_add, rate, inv_pow, inv_inv]
+  ring
+
+/-- No statistical-budget threshold absorbs this envelope by one coefficient uniform
+in the terminal exponent. The exponent is chosen before the budget and request; no
+changing-request IH is assumed or refuted. Sharper actual conditional-noise analysis is
+needed to use this route for the simultaneous invariant. -/
+theorem initialComputedMoment_firstNoise_not_uniform (B : BudgetData HP P) (A : ℝ) :
+    ∃ ka : ℕ, ∀ (M n : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+      (R : RoleProfile 3) (ks : ℕ) (ss st : List (ZMod P)) (ζ Lh Lρ : ℝ),
+      A * ((2 : ℝ) ^ (-B.requestPrecision M { r with usage := r.terminal })) ^ 4 <
+        B.initialComputedMoment M n r R ks ka ss st (fun _ => 0) ζ Lh Lρ
+          (Nat.log2 M) true 0 := by
+  obtain ⟨ka, hk⟩ := pow_unbounded_of_one_lt (A / (8 / 63 ^ 4))
+    (by norm_num : (1 : ℝ) < 2 ^ 16)
+  rw [div_lt_iff₀ (by norm_num : (0 : ℝ) < 8 / 63 ^ 4)] at hk
+  rw [← pow_mul, Nat.mul_comm 16 ka, pow_mul] at hk
+  refine ⟨ka, ?_⟩
+  intro M n r R ks ss st ζ Lh Lρ
+  rw [B.initialComputedMoment_final_firstNoise_zero]
+  exact mul_lt_mul_of_pos_right (by simpa only [mul_comm] using hk) (by positivity)
+
+/-- Nonnegative transported costs can only increase the final semantic noise charge.
+Its parent-normalized coefficient is independent of the statistical budget. -/
+theorem initialComputedMoment_final_firstNoise_ge (B : BudgetData HP P) (M n : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
+    (ks ka : ℕ) (ss st : List (ZMod P)) (ε : ℕ → ℝ) (hε : ∀ i, 0 ≤ ε i)
+    (ζ Lh Lρ : ℝ) :
+    (8 / 63 ^ 4 : ℝ) * ((2 : ℝ) ^ ka) ^ 16 *
+        ((2 : ℝ) ^ (-B.requestPrecision M { r with usage := r.terminal })) ^ 4 ≤
+      B.initialComputedMoment M n r R ks ka ss st ε ζ Lh Lρ (Nat.log2 M) true 0 := by
+  rw [← B.initialComputedMoment_final_firstNoise_zero M n r R ks ka ss st ζ Lh Lρ]
+  have hsum := sum_nonneg (fun i (_ : i ∈ range (Nat.log2 M + 1)) => hε i)
+  simp only [initialComputedMoment, sum_const_zero, mul_zero, ↓reduceIte, zero_add]
+  apply mul_le_mul_of_nonneg_left _ (by positivity)
+  apply mul_le_mul_of_nonneg_left _ (by norm_num : (0 : ℝ) ≤ 8)
+  exact le_add_of_nonneg_left (by positivity)
+
+/-- This scalar envelope retains a nondecaying final-noise coefficient even after all
+three sharp repairs. In particular a depth-only fixed-request limit cannot establish a
+single recursive constant for unbounded terminal exponents. This is an envelope lower
+bound; actual error might be much smaller. The raw/width/tail terms are still present. -/
+theorem initialComputedNumericalReserve_ge_noise (B : BudgetData HP P) (M n : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
+    (ks ka : ℕ) (ss st : List (ZMod P)) (ε : ℕ → ℝ) (hε : ∀ i, 0 ≤ ε i)
+    (ζ Lh Lρ floor cap C Cpre : ℝ) :
+    let a := fun j noise ν =>
+      B.initialComputedMoment M n r R ks ka ss st ε ζ Lh Lρ j noise ν ^ (4⁻¹ : ℝ)
+    128 * (HP.K : ℝ) * C ^ 4 *
+        ((8 / 63 ^ 4 : ℝ) * ((2 : ℝ) ^ ka) ^ 16 *
+          ((2 : ℝ) ^ (-B.requestPrecision M { r with usage := r.terminal })) ^ 4) ≤
+      initialNumericalReserve HP M floor cap C Cpre
+        (fun j => (a j false 0 + a j false 1) + (a j true 0 + a j true 1)) := by
+  dsimp only
+  let cost := B.initialComputedMoment M n r R ks ka ss st ε ζ Lh Lρ (Nat.log2 M)
+  have hc (noise : Bool) (ν : Fin 2) : 0 ≤ cost noise ν :=
+    B.initialComputedMoment_nonneg M n r R ks ka ss st ε hε ζ Lh Lρ _ noise ν
+  have ha (noise : Bool) (ν : Fin 2) : 0 ≤ cost noise ν ^ (4⁻¹ : ℝ) :=
+    Real.rpow_nonneg (hc noise ν) _
+  have hpow : cost true 0 ≤
+      ((cost false 0 ^ (4⁻¹ : ℝ) + cost false 1 ^ (4⁻¹ : ℝ)) +
+        (cost true 0 ^ (4⁻¹ : ℝ) + cost true 1 ^ (4⁻¹ : ℝ))) ^ 4 := by
+    calc
+      _ = (cost true 0 ^ (4⁻¹ : ℝ)) ^ 4 :=
+        (Real.rpow_inv_natCast_pow (hc true 0) (by decide : 4 ≠ 0)).symm
+      _ ≤ _ := pow_le_pow_left₀ (ha true 0)
+        (by linarith [ha false 0, ha false 1, ha true 1]) 4
+  exact (mul_le_mul_of_nonneg_left
+    ((B.initialComputedMoment_final_firstNoise_ge M n r R ks ka ss st ε hε ζ Lh Lρ).trans
+      hpow) (by positivity)).trans
+    (initialNumericalReserve_ge_final HP M floor cap C Cpre
+      (fun j =>
+        (B.initialComputedMoment M n r R ks ka ss st ε ζ Lh Lρ j false 0 ^ (4⁻¹ : ℝ) +
+          B.initialComputedMoment M n r R ks ka ss st ε ζ Lh Lρ j false 1 ^ (4⁻¹ : ℝ)) +
+        (B.initialComputedMoment M n r R ks ka ss st ε ζ Lh Lρ j true 0 ^ (4⁻¹ : ℝ) +
+          B.initialComputedMoment M n r R ks ka ss st ε ζ Lh Lρ j true 1 ^ (4⁻¹ : ℝ))))
 
 section Polynomial
 variable (B : BudgetData HP P) (M : ℕ) (hM : 0 < M) (n : ℕ)
