@@ -55,7 +55,7 @@ syntax (name := encLen) "enc_len" (" [" (simpStar <|> simpErase <|> simpLemma),*
   (location)? : tactic
 
 elab_rules : tactic
-  | `(tactic| enc_len $[[$args,*]]? $[$loc]?) => do
+  | `(tactic| enc_len $[[$args,*]]? $[$loc]?) => focus do
     let args := (args.map (·.getElems)).getD #[]
     try
       evalTactic (← `(tactic| simp only [length_encPair, length_frame, encUnary_apply,

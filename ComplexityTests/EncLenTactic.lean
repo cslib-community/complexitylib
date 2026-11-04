@@ -70,6 +70,15 @@ example (a : α) (b : β) (k T : ℕ) (hk : k * (encPair eA eB (a, b)).length �
 example (n : ℕ) : (encUnary n).length = n := by
   enc_len
 
+-- Closing the original goal by expansion must leave its sibling pending; focusing the caller
+-- would hide the regression.
+set_option linter.style.multiGoal false in
+example (n : ℕ) :
+    (encUnary n).length = n ∧ Nonempty ℕ := by
+  constructor
+  enc_len
+  exact ⟨0⟩
+
 /-! Failures. -/
 
 /--
