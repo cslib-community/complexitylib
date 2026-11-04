@@ -7,6 +7,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Probability.UnroutedBinRegularity
+public import Complexity.Foundations.Probability.CompressionIntegrated
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Output
 public import Complexity.Foundations.Analysis.RowCompression.DecoderSharp
 
@@ -21,8 +22,10 @@ rather than substituting the hierarchy atom cutoff for the bin numerator.
 
 The general iterate comparison assumes all raw-prefix errors, including prefix zero.
 The sharp no-overflow comparison charges only post-increment errors and a final raw error;
-the first-overflow tail starts at the already-added overflow input. Its coefficient is fixed
-before the later floor. None derives mean/noise envelopes from lower-budget evaluator errors.
+the first-overflow tail starts at the already-added overflow input. Tail-to-truth assembly
+adds stationary preloss, with its tail coefficient fixed before the later floor. The integrated
+specialization reuses supported-decoder moments and charges false overflow at prefix j+1.
+None derives mean/noise envelopes or their weighted payments from lower-budget evaluator errors.
 The preparation of `DenseBinRecipe.polynomialUnrouted` remains the existing polynomial
 preparation; its support and covering laws are in `RoutedBinPreparation`.
 -/
@@ -30,7 +33,7 @@ preparation; its support and covering laws are in `RoutedBinPreparation`.
 public section
 universe u
 namespace Matrix.DenseBinRecipe
-open Finset Cslib Cslib.RowCompression FourthRootHierarchyParams.NormalizedRow
+open Finset Cslib Cslib.RowCompression Cslib.Probability FourthRootHierarchyParams.NormalizedRow
 
 /-- Uniform scalar contracts for the actual ratio-16 decoder. The root coefficient
 is selected before scales and bin; saturation uses top clipping or fine upper vanishing. -/
@@ -256,6 +259,127 @@ theorem exists_polynomialUnrouted_firstOverflow
       linarith [HP.η_pos, HP.η_lt_η₂]
     simp only [output, HP.ρ_zero r (hη.trans hr), mul_zero, zero_div]
 
+/-- Actual-bin tail-to-truth comparison. The pre-overflow stationary loss and the
+preloaded tail are charged separately; Ctail is selected before δ and all bin data. -/
+theorem exists_polynomialUnrouted_sharp_firstOverflow
+    (HP : FourthRootHierarchyParams 16 1 16 32 8) {cap ζ scale : ℝ}
+    (hcap : 0 ≤ cap) (hζ : 0 < ζ) (hs : 0 < scale) (hmargin : scale ≤ HP.η)
+    (hcapscale : scale ≤ max cap 16 / 10000) :
+    ∃ Ctail : ℝ, 0 ≤ Ctail ∧ ∀ δ : ℝ, 0 < δ → δ ≤ scale →
+      ∃ Cpre : ℝ, 0 ≤ Cpre ∧ ∀ (b : ℕ → ℝ), (∀ i, 0 < b i) →
+      (∀ i, b i = 16 * b (i + 1)) → ∀ bin : ℕ, ∀ {ι : Type u} (s : Finset ι) (n : ℕ → ℕ)
+      (Δ : ℕ → ι → Fin 2 → ℝ) (raw truth : ι → Fin 2 → ℝ) (m j : ℕ), j < m →
+      IsFirstOverflow s n (fun _ => HP.K) (dyadicFloor δ m) Δ ⟨0, raw⟩ j →
+      (∀ y ∈ s, 0 ≤ truth y 0) →
+      (∀ y ∈ s, |truth y 1| ≤ scale / 2) →
+      (∀ i, j ≤ i → i < m → HP.K ≤ n i) →
+      ∀ ε : ℕ → ℝ, (∀ i < m, 0 ≤ ε i) →
+      (∀ i < j, ∀ y ∈ s, δ / 2 ≤ truth y 0 →
+        clippedError (truth y 0) (truth y 1) (uncompressedRow Δ raw (i + 1) y) ≤ ε i) →
+      (∀ i, j ≤ i → i < m → ∀ y ∈ s,
+        clippedError (truth y 0) (truth y 1) (uncompressedRow Δ raw (i + 1) y) ≤ ε i) →
+      ∀ y ∈ s, |stateRootError (output (boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1) b
+        cap bin (fun _ => 1)) HP.ρ ζ) s HP.K
+        (iterate s n (fun _ => HP.K) (dyadicFloor δ m) Δ ⟨0, raw⟩ m) ⟨0, truth⟩ y| ≤
+        Cpre*∑ i ∈ range j, dyadicFloor δ m i * ε i + Ctail*∑ i ∈ Ico j m, 28^(m - i) * ε i := by
+  obtain ⟨Ct, hCt, htail⟩ := exists_polynomialUnrouted_firstOverflow HP hcap hζ hs hcapscale
+  obtain ⟨L, hL, laws⟩ := exists_polynomialUnrouted_decoder_laws HP hcap hζ
+  refine ⟨Ct, hCt, ?_⟩
+  intro δ hδ hδs
+  refine ⟨3 * L * (12 * (1 + δ / 2) / (δ / 2)), by positivity, ?_⟩
+  intro b hb hstep bin ι s n Δ raw truth m j hj hover hfirst hsecond hn ε hε
+    herrpre herrtail y hy
+  let H := output
+    (boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1) b cap bin (fun _ => 1)) HP.ρ ζ
+  obtain ⟨_, _, hroot, hentry⟩ := laws b hb hstep bin
+  have hδθ : δ ≤ HP.θ := by
+    have h := threshold_margin HP
+    linarith [HP.η_lt_η₂, HP.η_pos]
+  let a := iterate s n (fun _ => HP.K) (dyadicFloor δ m) Δ ⟨0, raw⟩ m
+  let ref := stationaryState s n (fun _ => HP.K) (dyadicFloor δ m) Δ ⟨0, raw⟩ truth j
+  let c := stationaryContinuation s n HP.K (dyadicFloor δ m) Δ ⟨0, raw⟩ truth j (m - j)
+  have ht := htail b hb hstep bin s n Δ raw truth δ hδ hδs m j hj hover hfirst hsecond hn ε
+    (fun i _ hi => hε i hi) herrtail y hy
+  have hp := stationary_decoder_bound H hL hδ
+    (fun d v r hd => hentry d v r (hd.trans hδθ))
+    (fun d v q r hq hr => by simp only [H, output,
+      HP.ρ_one q (hq.trans (hδs.trans hmargin)), HP.ρ_one r (hr.trans (hδs.trans hmargin))])
+    hroot (rank_pos HP) s n Δ raw truth m j hj.le hover.1 ε
+    (fun i hi => hε i (hi.trans hj)) herrpre y hy
+  have hc := stationary_decoder_continuation H hs
+    (hmargin.trans_lt HP.η_lt_η₂) (threshold_margin HP) hentry
+    (fun d v r hr => by simp only [H, output, HP.ρ_zero r hr, mul_zero, zero_div])
+    (fun d v q r hq hr => by simp only [H, output,
+      HP.ρ_one q (hq.trans hmargin), HP.ρ_one r (hr.trans hmargin)])
+    (rank_pos HP) s n Δ raw truth hδ hδs m j (m - j) (by omega)
+    hover.1 hfirst hsecond hn y hy
+  change H (c.row y 0) (c.row y 1) (firstRank s HP.K
+    c.defaultValue c.row) =
+    H (ref.row y 0) (ref.row y 1) (firstRank s HP.K
+      ref.defaultValue ref.row) at hc
+  have href : stateRootError H s HP.K c ⟨0, truth⟩
+    y = stateRootError H
+    s HP.K ref ⟨0, truth⟩ y := by
+    unfold stateRootError
+    rw [hc]
+  calc
+    _ ≤ |stateRootError H s HP.K a c y| +
+      |stateRootError H s HP.K c
+      ⟨0, truth⟩ y| := abs_sub_le _ _ _
+    _ ≤ Ct * ∑ i ∈ Ico j m, 28^(m - i) * ε i +
+        (3 * L * (12 * (1 + δ / 2) / (δ / 2))) *
+          ∑ i ∈ range j, dyadicFloor δ m i * ε i :=
+      add_le_add ht (by rw [href]; exact hp)
+    _ = _ := add_comm _ _
+
+
+
+
+open Classical in
+/-- The actual-bin sharp truth comparison outside false overflow events. Final and tail
+coefficients precede δ, scales and bin; the stationary coefficient alone depends on δ. -/
+theorem exists_polynomialUnrouted_sharp_compression
+    (HP : FourthRootHierarchyParams 16 1 16 32 8) {cap ζ scale : ℝ}
+    (hcap : 0 ≤ cap) (hζ : 0 < ζ) (hs : 0 < scale) (hmargin : scale ≤ HP.η)
+    (hcapscale : scale ≤ max cap 16 / 10000) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ η : ℝ, 0 < η → η ≤ scale →
+      ∃ A : ℝ, 0 ≤ A ∧ ∀ (b : ℕ → ℝ), (∀ i, 0 < b i) →
+        (∀ i, b i = 16 * b (i + 1)) → ∀ bin : ℕ, ∀ {ι : Type u} (S : Finset ι) (n : ℕ → ℕ)
+        (Δ : ℕ → ι → Fin 2 → ℝ) (raw truth : ι → Fin 2 → ℝ)
+        (m : ℕ) (heavy : ℕ → Prop),
+        (∀ y ∈ S, 0 ≤ truth y 0) →
+        (∀ y ∈ S, |truth y 1| ≤ scale / 2) →
+        (∀ i < m, HP.K ≤ n i) → ∀ (ε : ℕ → ℝ),
+        (∀ i < m, 0 ≤ ε i) →
+        (∀ i < m, ∀ y ∈ S,
+          clippedError (truth y 0) (truth y 1) (uncompressedRow Δ raw (i + 1) y) ≤ ε i) →
+        ∀ εfinal : ℝ, 0 ≤ εfinal →
+        (∀ y ∈ S,
+          clippedError (truth y 0) (truth y 1) (uncompressedRow Δ raw m y) ≤ εfinal) →
+        (¬ ∃ j < m, IsFirstOverflow S n (fun _ => HP.K) (dyadicFloor η m) Δ ⟨0, raw⟩ j ∧ ¬heavy j) →
+        ∀ y ∈ S,
+        |stateRootError (output (boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1) b cap bin
+          (fun _ => 1)) HP.ρ ζ) S HP.K
+          (iterate S n (fun _ => HP.K) (dyadicFloor η m) Δ ⟨0, raw⟩ m) ⟨0, truth⟩ y| ≤
+          A * (∑ i ∈ range m, dyadicFloor η m i * ε i) +
+          C * (if ∀ i < m, stepThreshold S n (fun _ => HP.K) (dyadicFloor η m) Δ ⟨0, raw⟩ i ≤
+            dyadicFloor η m i then εfinal else 0) + C * (∑ j ∈ range m,
+            if IsFirstOverflow S n (fun _ => HP.K) (dyadicFloor η m) Δ ⟨0, raw⟩ j ∧ heavy j then
+              ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i else 0) := by
+  classical
+  obtain ⟨Cf, hCf, hno⟩ := exists_polynomialUnrouted_sharp_noOverflow HP hcap hζ
+  obtain ⟨Ct, hCt, hover⟩ := exists_polynomialUnrouted_sharp_firstOverflow HP hcap hζ hs hmargin
+    hcapscale
+  refine ⟨max Cf Ct, le_trans hCf (le_max_left _ _), ?_⟩
+  intro η hη hηs
+  obtain ⟨An, hAn, hn⟩ := hno η hη (hηs.trans hmargin) (by have h := le_max_right cap 16; linarith)
+  obtain ⟨At, hAt, ht⟩ := hover η hη hηs
+  refine ⟨max An At, le_trans hAn (le_max_left _ _), ?_⟩
+  intro b hb hstep bin
+  exact sharp_compression_of_bounds _ HP.K hη hCf hCt hAn hAt
+    (fun s n Δ raw truth => hn b hb hstep bin s n Δ truth raw) (ht b hb hstep bin)
+
+
 /-- Actual polynomial-bin support after compression, for arbitrary defaults and second
 signals. This is a decoder property; no sparsity hypothesis on walk inputs is used. -/
 theorem polynomialUnrouted_support
@@ -275,5 +399,70 @@ theorem polynomialUnrouted_support
     _ HP.ρ_zero
   intro d hd
   exact (polynomialUnrouted_numerator_laws HP hb hstep hcap bin d).2 (hd.trans hθ)
+
+open Classical in
+/-- Integrated actual-bin truth error with post-increment false-overflow payment.
+This conditional bound retains the weighted mean/noise and heavy-tail budgets; it is
+not a recursive evaluator accuracy certificate. -/
+theorem exists_polynomialUnrouted_rowNormPow_le
+    (HP : FourthRootHierarchyParams 16 1 16 32 8) {cap ζ scale : ℝ}
+    (hcap : 0 ≤ cap) (hζ : 0 < ζ) (hs : 0 < scale) (hmargin : scale ≤ HP.η)
+    (hcapscale : scale ≤ max cap 16 / 10000) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ η : ℝ, 0 < η → η ≤ scale → η ≤ 1 →
+      ∃ A : ℝ, 0 ≤ A ∧ ∀ (b : ℕ → ℝ), (∀ i, 0 < b i) →
+        (∀ i, b i = 16 * b (i + 1)) → ∀ bin : ℕ, ∀ {Ω V : Type u} [Fintype Ω] [Fintype V]
+        (N u : ℝ), 0 ≤ N * u → ∀ (X Y : Ω → V → Prop)
+        [∀ σ x, Decidable (X σ x)] [∀ σ y, Decidable (Y σ y)]
+        (n : ℕ → ℕ) (m : ℕ), (∀ i < m, HP.K ≤ n i) →
+        ∀ (Δ : Ω → V → ℕ → V → Fin 2 → ℝ) (raw : Ω → V → V → Fin 2 → ℝ)
+        (truth : Ω → V → V → Fin 2 → ℝ),
+        (∀ σ x y, X σ x → Y σ y → 0 ≤ truth σ x y 0) →
+        (∀ σ x y, X σ x → Y σ y → |truth σ x y 1| ≤ scale / 2) →
+        (∀ j < m, ∀ σ x y, X σ x → Y σ y →
+          truth σ x y 0 ≤ dyadicFloor η m j / 4 → truth σ x y 1 = 0) →
+        ∀ (ε : ℕ → Ω → V → ℝ) (εfinal : Ω → V → ℝ),
+        (∀ i < m, ∀ σ x, X σ x → 0 ≤ ε i σ x) →
+        (∀ σ x, X σ x → 0 ≤ εfinal σ x) →
+        (∀ i < m, ∀ σ x y, X σ x → Y σ y →
+          clippedError (truth σ x y 0) (truth σ x y 1)
+            (uncompressedRow (Δ σ x) (raw σ x) (i + 1) y) ≤ ε i σ x) →
+        (∀ σ x y, X σ x → Y σ y →
+          clippedError (truth σ x y 0) (truth σ x y 1)
+            (uncompressedRow (Δ σ x) (raw σ x) m y) ≤ εfinal σ x) →
+        let S := fun σ => ({y | Y σ y} : Finset V)
+        let actual := fun σ x => iterate (S σ) n (fun _ => HP.K)
+          (dyadicFloor η m) (Δ σ x) ⟨0, raw σ x⟩ m
+        let Pre := fun σ x => ∑ i ∈ range m, dyadicFloor η m i * ε i σ x
+        let No := fun σ x => if ∀ i < m,
+          stepThreshold (S σ) n (fun _ => HP.K) (dyadicFloor η m) (Δ σ x) ⟨0, raw σ x⟩ i ≤
+            dyadicFloor η m i then εfinal σ x else 0
+        let Tail := fun σ x => ∑ j ∈ range m,
+          if IsFirstOverflow (S σ) n (fun _ => HP.K) (dyadicFloor η m) (Δ σ x) ⟨0, raw σ x⟩ j ∧
+            heavyCountEvent Y univ (fun y => truth σ x y 0) (dyadicFloor η m j) (n j) σ then
+              ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i σ x else 0
+        rowNormPow 4 N u X Y (fun σ x y =>
+          stateRootError (output
+            (boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1) b cap bin (fun _ => 1)) HP.ρ ζ)
+              (S σ) HP.K (actual σ x)
+            ⟨0, truth σ x⟩ y) ≤
+          128 * (HP.K : ℝ) * (A ^ 4 * vertexNormPow 4 N u X Pre +
+            C ^ 4 * vertexNormPow 4 N u X No + C ^ 4 * vertexNormPow 4 N u X Tail) +
+          ∑ j ∈ range m, (64 * (HP.K : ℝ) * ((2 * max cap 16) ^ (4⁻¹ : ℝ)) ^ 4 / ((n j : ℝ) *
+            dyadicFloor η m j ^ 4)) *
+            rowNormPow 4 N u X Y (fun σ x y => clippedError (truth σ x y 0) (truth σ x y 1)
+              (uncompressedRow (Δ σ x) (raw σ x) (j + 1) y)) := by
+  obtain ⟨C, hC, hscales⟩ := exists_polynomialUnrouted_sharp_compression
+    HP hcap hζ hs hmargin hcapscale
+  refine ⟨C, hC, ?_⟩
+  intro η hη hηs hη1
+  obtain ⟨A, hA, hbound⟩ := hscales η hη hηs
+  refine ⟨A, hA, ?_⟩
+  intro b hb hstep bin
+  obtain ⟨_, _, laws⟩ := exists_polynomialUnrouted_decoder_laws HP hcap hζ
+  exact Cslib.RowCompression.compression_rowNormPow_le
+    (output (boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1) b cap bin (fun _ => 1)) HP.ρ ζ)
+    HP.K ((2 * max cap 16) ^ (4⁻¹ : ℝ)) (Real.rpow_nonneg (by positivity) _)
+    (fun S a => polynomialUnrouted_support HP hcap hb hstep bin S a ζ)
+    (laws b hb hstep bin).2.1 (rank_pos HP) hη hη1 hC hA (hbound b hb hstep bin)
 
 end Matrix.DenseBinRecipe

@@ -258,4 +258,123 @@ theorem stationary_decoder_continuation (H : ℝ → ℝ → ℝ → ℝ) {scale
 
 
 
+open Classical in
+/-- Assemble sharp no-overflow and first-overflow truth comparisons outside false events.
+The event predicates may depend on the same inputs as the errors. -/
+theorem sharp_compression_of_bounds (H : ℝ → ℝ → ℝ → ℝ) (K : ℕ)
+    {scale η Cf Ct An At : ℝ} (hη : 0 < η)
+    (hCf : 0 ≤ Cf) (hCt : 0 ≤ Ct) (_hAn : 0 ≤ An) (hAt : 0 ≤ At)
+    (hn : ∀ {ι : Type u} (s : Finset ι) (n : ℕ → ℕ)
+      (Δ : ℕ → ι → Fin 2 → ℝ) (raw truth : ι → Fin 2 → ℝ) (m : ℕ),
+      (∀ i < m, stepThreshold s n (fun _ => K) (dyadicFloor η m) Δ ⟨0, raw⟩ i ≤ dyadicFloor η
+        m i) →
+      (∀ y ∈ s, 0 ≤ truth y 0) →
+      ∀ ε : ℕ → ℝ, (∀ i < m, 0 ≤ ε i) →
+      (∀ i < m, ∀ y ∈ s, η / 2 ≤ truth y 0 →
+        clippedError (truth y 0) (truth y 1) (uncompressedRow Δ raw (i + 1) y) ≤ ε i) →
+      ∀ εfinal : ℝ, 0 ≤ εfinal →
+      (∀ y ∈ s, clippedError (truth y 0) (truth y 1) (uncompressedRow Δ raw m y) ≤ εfinal) →
+        ∀ y ∈ s, |stateRootError H s K
+        (iterate s n (fun _ => K) (dyadicFloor η m) Δ ⟨0, raw⟩ m) ⟨0, truth⟩ y| ≤
+        An * ∑ i ∈ range m, dyadicFloor η m i * ε i + Cf * εfinal)
+    (ht : ∀ {ι : Type u} (s : Finset ι) (n : ℕ → ℕ)
+      (Δ : ℕ → ι → Fin 2 → ℝ) (raw truth : ι → Fin 2 → ℝ) (m j : ℕ), j < m →
+      IsFirstOverflow s n (fun _ => K) (dyadicFloor η m) Δ ⟨0, raw⟩ j →
+      (∀ y ∈ s, 0 ≤ truth y 0) →
+      (∀ y ∈ s, |truth y 1| ≤ scale / 2) →
+      (∀ i, j ≤ i → i < m → K ≤ n i) →
+      ∀ ε : ℕ → ℝ, (∀ i < m, 0 ≤ ε i) →
+      (∀ i < j, ∀ y ∈ s, η / 2 ≤ truth y 0 →
+        clippedError (truth y 0) (truth y 1) (uncompressedRow Δ raw (i + 1) y) ≤ ε i) →
+      (∀ i, j ≤ i → i < m → ∀ y ∈ s,
+        clippedError (truth y 0) (truth y 1) (uncompressedRow Δ raw (i + 1) y) ≤ ε i) →
+      ∀ y ∈ s, |stateRootError H s K
+        (iterate s n (fun _ => K) (dyadicFloor η m) Δ ⟨0, raw⟩ m) ⟨0, truth⟩ y| ≤
+        At*∑ i ∈ range j, dyadicFloor η m i * ε i + Ct*∑ i ∈ Ico j m, 28^(m - i) * ε i) :
+    ∀ {ι : Type u} (S : Finset ι) (n : ℕ → ℕ)
+        (Δ : ℕ → ι → Fin 2 → ℝ) (raw truth : ι → Fin 2 → ℝ)
+        (m : ℕ) (heavy : ℕ → Prop),
+        (∀ y ∈ S, 0 ≤ truth y 0) →
+        (∀ y ∈ S, |truth y 1| ≤ scale / 2) →
+        (∀ i < m, K ≤ n i) → ∀ (ε : ℕ → ℝ),
+        (∀ i < m, 0 ≤ ε i) →
+        (∀ i < m, ∀ y ∈ S,
+          clippedError (truth y 0) (truth y 1) (uncompressedRow Δ raw (i + 1) y) ≤ ε i) →
+        ∀ εfinal : ℝ, 0 ≤ εfinal →
+        (∀ y ∈ S,
+          clippedError (truth y 0) (truth y 1) (uncompressedRow Δ raw m y) ≤ εfinal) →
+        (¬ ∃ j < m, IsFirstOverflow S n (fun _ => K) (dyadicFloor η m) Δ ⟨0, raw⟩ j ∧ ¬heavy j) →
+        ∀ y ∈ S,
+        |stateRootError H S K
+          (iterate S n (fun _ => K) (dyadicFloor η m) Δ ⟨0, raw⟩ m) ⟨0, truth⟩ y| ≤
+          (max An At) * (∑ i ∈ range m, dyadicFloor η m i * ε i) +
+          (max Cf Ct) * (if ∀ i < m, stepThreshold S n (fun _ => K) (dyadicFloor η m) Δ ⟨0, raw⟩ i ≤
+            dyadicFloor η m i then εfinal else 0) + (max Cf Ct) * (∑ j ∈ range m,
+            if IsFirstOverflow S n (fun _ => K) (dyadicFloor η m) Δ ⟨0, raw⟩ j ∧ heavy j then
+              ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i else 0) := by
+  classical
+  intro ι S n Δ raw truth m heavy hfirst hsecond hcapacity ε hε herr
+    εfinal hεfinal herrfinal hfalse y hy
+  have hpre0 : 0 ≤ ∑ i ∈ range m, dyadicFloor η m i * ε i :=
+    sum_nonneg fun i hi => mul_nonneg (dyadicFloor_nonneg hη.le _ _) (hε i (mem_range.mp hi))
+  have htail0 : 0 ≤ ∑ j ∈ range m,
+      if IsFirstOverflow S n (fun _ => K) (dyadicFloor η m) Δ ⟨0, raw⟩ j ∧ heavy j then
+        ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i else 0 := by
+    refine sum_nonneg fun j _ => ?_
+    split_ifs
+    · exact sum_nonneg fun i hi => mul_nonneg (by positivity) (hε i (mem_Ico.mp hi).2)
+    · exact le_rfl
+  by_cases hnone : ∀ i < m, stepThreshold S n (fun _ => K) (dyadicFloor η m) Δ ⟨0, raw⟩ i ≤
+      dyadicFloor η m i
+  · rw [ite_eq_left hnone]
+    have hbound := hn S n Δ raw truth m hnone hfirst ε hε
+      (fun i hi z hz _ => herr i hi z hz) εfinal hεfinal herrfinal y hy
+    have hp := mul_le_mul_of_nonneg_right (le_max_left An At) hpre0
+    have hf := mul_le_mul_of_nonneg_right (le_max_left Cf Ct) hεfinal
+    have htail := mul_nonneg (hCf.trans (le_max_left Cf Ct)) htail0
+    linarith
+  · have hex : ∃ j, j < m ∧ dyadicFloor η m j <
+        stepThreshold S n (fun _ => K) (dyadicFloor η m) Δ ⟨0, raw⟩ j := by
+      push Not at hnone
+      exact hnone
+    let j := Nat.find hex
+    have hj := Nat.find_spec hex
+    have hjm : j < m := hj.1
+    have hjover : IsFirstOverflow S n (fun _ => K) (dyadicFloor η m) Δ ⟨0, raw⟩ j := by
+      refine ⟨?_, hj.2⟩
+      intro i hi
+      exact le_of_not_gt fun h => Nat.find_min hex hi ⟨by omega, h⟩
+    have hheavy : heavy j := by
+      by_contra h
+      exact hfalse ⟨j, hjm, hjover, h⟩
+    have hbound := ht S n Δ raw truth m j hjm hjover hfirst hsecond
+      (fun i _ hi => hcapacity i hi) ε hε
+      (fun i hi z hz _ => herr i (hi.trans hjm) z hz)
+      (fun i _ hi z hz => herr i hi z hz) y hy
+    have hprefix : (∑ i ∈ range j, dyadicFloor η m i * ε i) ≤
+        ∑ i ∈ range m, dyadicFloor η m i * ε i := by
+      apply sum_le_sum_of_subset_of_nonneg (range_mono hjm.le)
+      intro i hi _
+      exact mul_nonneg (dyadicFloor_nonneg hη.le _ _) (hε i (mem_range.mp hi))
+    have hselected : (∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i) ≤
+        ∑ j ∈ range m,
+          if IsFirstOverflow S n (fun _ => K) (dyadicFloor η m) Δ ⟨0, raw⟩ j ∧ heavy j then
+            ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i else 0 := by
+      have h := single_le_sum (s := range m)
+        (f := fun j => if IsFirstOverflow S n (fun _ => K) (dyadicFloor η m) Δ ⟨0, raw⟩ j ∧
+          heavy j then ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i else 0)
+        (fun i _ => by
+          split_ifs
+          · exact sum_nonneg fun z hz => mul_nonneg (by positivity) (hε z (mem_Ico.mp hz).2)
+          · exact le_rfl) (mem_range.mpr hjm)
+      simpa only [hjover, hheavy, and_self, ↓reduceIte] using h
+    rw [ite_eq_right hnone, mul_zero, add_zero]
+    have hp := (mul_le_mul_of_nonneg_left hprefix hAt).trans
+      (mul_le_mul_of_nonneg_right (le_max_right An At) hpre0)
+    have htail := (mul_le_mul_of_nonneg_left hselected hCt).trans
+      (mul_le_mul_of_nonneg_right (le_max_right Cf Ct) htail0)
+    linarith
+
+
+
 end Cslib.RowCompression

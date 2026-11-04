@@ -324,3 +324,111 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) {scale : ℝ}
     (fun _ _ _ => le_rfl) (fun _ => 0) (fun _ _ _ => le_rfl) he 0 (mem_univ _)
   simp only [mul_zero, sum_const_zero] at hb
   exact abs_nonpos_iff.mp hb
+
+-- The integrated theorem also starts at zero against nonzero polynomial-preparation truth.
+-- Both masks and increments live on the same Bool environment; no seed is factored out.
+open Finset Cslib.RowCompression Matrix.FourthRootHierarchyParams.NormalizedRow in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) {scale : ℝ}
+    (hs : 0 < scale) (hsmall : scale ≤ (16 : ℝ) / 10000) (hmargin : scale ≤ HP.η)
+    (hscale1 : scale ≤ 1) (bin : ℕ) :
+    let ζ := scale / 4
+    let w : Unit → Fin 2 → ℝ := fun _ ν =>
+      if ν = 0 then 1 else ζ * polynomialPrepCutoff4 HP.θ 1
+    let a := iterate univ (fun _ => HP.K) (fun _ => HP.K) (dyadicFloor scale 1)
+      (fun _ => w) ⟨0, 0⟩ 1
+    rowNormPow 4 1 1 (fun (_ : Bool) (_ : Unit) => True) (fun _ _ => True)
+      (fun _ _ y => stateRootError (output (numerator bin) HP.ρ ζ) univ HP.K a ⟨0, w⟩ y) = 0 := by
+  classical
+  intro ζ w a
+  have hζ : 0 < ζ := by dsimp only [ζ]; positivity
+  obtain ⟨C, _, hC⟩ := DenseBinRecipe.exists_polynomialUnrouted_rowNormPow_le HP
+    (cap := 2) (by norm_num) hζ hs hmargin
+    (by simpa only [max_eq_right (by norm_num : (2 : ℝ) ≤ 16)] using hsmall)
+  obtain ⟨A, _, hA⟩ := hC scale hs le_rfl hscale1
+  have he (i : ℕ) (hi : i < 1) (y : Unit) :
+      clippedError (w y 0) (w y 1) (uncompressedRow (fun _ => w) 0 (i + 1) y) = 0 := by
+    have hi0 : i = 0 := by omega
+    subst i
+    have hw : uncompressedRow (fun _ => w) 0 1 y = w y := by
+      funext ν
+      simp only [uncompressedRow, sum_range_one, Pi.zero_apply, zero_add]
+    rw [hw, clippedError_self (w y 0) (w y 1) (w y) rfl rfl]
+  have hb := hA scales scales_pos scales_step bin (Ω := Bool) (V := Unit) 1 1 (by norm_num)
+    (fun _ _ => True) (fun _ _ => True) (fun _ => HP.K) 1 (by intros; rfl)
+    (fun _ _ _ => w) 0 (fun _ _ => w)
+    (by intros; norm_num [w])
+    (by
+      intros
+      change |ζ * polynomialPrepCutoff4 HP.θ 1| ≤ scale / 2
+      rw [abs_of_nonneg (mul_nonneg hζ.le (polynomialPrepCutoff4_nonneg _ _))]
+      have := mul_le_of_le_one_right hζ.le (polynomialPrepCutoff4_le_one HP.θ 1)
+      dsimp only [ζ] at *
+      linarith)
+    (by
+      intro j _ σ x y _ _ hd
+      have hf := dyadicFloor_le_scale_div hs.le 1 j
+      change 1 ≤ dyadicFloor scale 1 j / 4 at hd
+      linarith)
+    (fun _ _ _ => 0) (fun _ _ => 0) (by intros; rfl) (by intros; rfl)
+    (fun i hi _ _ y _ _ => (he i hi y).le)
+    (fun _ _ y _ _ => (he 0 (by decide) y).le)
+  dsimp only at hb
+  simp only [sum_range_one, Pi.zero_apply, he 0 (by decide), mul_zero, ite_self,
+    vertexNormPow, abs_zero, zero_pow (by decide : (4 : ℕ) ≠ 0), sum_const_zero,
+    expect_const_zero, add_zero, rowNormPow] at hb
+  have hn := rowNormPow_nonneg (s := 4) (N := 1) (u := 1)
+    (X := fun (_ : Bool) (_ : Unit) => True) (Y := fun _ _ => True) (by norm_num)
+    (fun _ _ y => stateRootError (output (numerator bin) HP.ρ ζ) univ HP.K a ⟨0, w⟩ y)
+  unfold numerator at hn ⊢
+  exact le_antisymm (by simpa only [rowNormPow, filter_true, a] using hb) hn
+
+-- Tail-to-truth also handles first overflow at group zero, with no preloss term.
+-- The previous regression retains its stationary-continuation check separately.
+open Finset Cslib.RowCompression Matrix.FourthRootHierarchyParams.NormalizedRow in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) {scale : ℝ}
+    (hs : 0 < scale) (hscale : scale ≤ (16 : ℝ) / 10000)
+    (hmargin : scale ≤ HP.η) (bin : ℕ) :
+    let ζ := scale / 4
+    let w : Fin (HP.K + 1) → Fin 2 → ℝ := fun _ ν => if ν = 0 then 1 else 0
+    let a := iterate univ (fun _ => HP.K) (fun _ => HP.K) (dyadicFloor scale 1)
+      (fun _ => w) ⟨0, 0⟩ 1
+    IsFirstOverflow univ (fun _ => HP.K) (fun _ => HP.K) (dyadicFloor scale 1)
+      (fun _ => w) ⟨0, 0⟩ 0 ∧
+      stateRootError (output (numerator bin) HP.ρ ζ) univ HP.K a ⟨0, w⟩ 0 = 0 := by
+  classical
+  intro ζ w a
+  have hf : dyadicFloor scale 1 0 < 1 :=
+    (dyadicFloor_le_scale_div hs.le 1 0).trans_lt (by linarith)
+  have hrank : dyadicFloor scale 1 0 < kthLargest HP.K univ (fun y => entrySize (w y)) := by
+    apply (lt_kthLargest_iff (rank_pos HP) (dyadicFloor_nonneg hs.le 1 0)).mpr
+    have hw (y : Fin (HP.K + 1)) : entrySize (w y) = 1 := by norm_num [entrySize, w]
+    simp only [hw, hf, filter_true, card_univ, Fintype.card_fin]
+    omega
+  have hover : IsFirstOverflow univ (fun _ => HP.K) (fun _ => HP.K)
+      (dyadicFloor scale 1) (fun _ => w) (⟨0, 0⟩ : State (Fin (HP.K + 1))) 0 := by
+    refine ⟨fun i hi => by omega, ?_⟩
+    simp only [stepThreshold, inputRow, iterate_zero, zero_add, threshold]
+    exact hrank.trans_le ((le_max_right _ _).trans (le_max_right _ _))
+  refine ⟨hover, ?_⟩
+  obtain ⟨Ct, _, htail⟩ := DenseBinRecipe.exists_polynomialUnrouted_sharp_firstOverflow HP
+    (cap := 2) (by norm_num) (show 0 < ζ by dsimp only [ζ]; positivity) hs hmargin
+    (by simpa only [max_eq_right (by norm_num : (2 : ℝ) ≤ 16)] using hscale)
+  obtain ⟨Cp, _, ht⟩ := htail scale hs le_rfl
+  have he (i : ℕ) (_h0 : 0 ≤ i) (hi : i < 1) (y : Fin (HP.K + 1)) (_hy : y ∈ univ) :
+      clippedError (w y 0) (w y 1) (uncompressedRow (fun _ => w) 0 (i + 1) y) ≤ 0 := by
+    have hi0 : i = 0 := by omega
+    subst i
+    have hw : uncompressedRow (fun _ => w) 0 1 y = w y := by
+      funext ν
+      simp only [uncompressedRow, sum_range_one, Pi.zero_apply, zero_add]
+    rw [hw, clippedError_self (w y 0) (w y 1) (w y) rfl rfl]
+  have hb := ht scales scales_pos scales_step bin univ (fun _ => HP.K) (fun _ => w)
+    0 w 1 0 (by omega) hover
+    (fun _ _ => by norm_num [w]) (fun _ _ => by
+      change |(0 : ℝ)| ≤ scale / 2
+      rw [abs_zero]
+      linarith)
+    (fun _ _ _ => le_rfl) (fun _ => 0) (fun _ _ => le_rfl)
+    (fun i hi => by omega) he 0 (mem_univ _)
+  simp only [range_zero, mul_zero, sum_const_zero, add_zero] at hb
+  exact abs_nonpos_iff.mp hb

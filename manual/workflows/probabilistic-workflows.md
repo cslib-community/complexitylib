@@ -788,16 +788,31 @@ prime and rows. The stationary coefficient is explicitly `36 L + 72 L / δ`; red
 does not pay the earlier errors. The actual scheduled envelopes must pay the weighted sum.
 The shared first-overflow tail also chooses its coefficient before δ and starts errors at the
 already-added overflow input. Fixed-HP stationary, no-overflow and tail clients specialize these
-shared proofs. The actual-bin tail currently compares against its stationary continuation;
-its truth decomposition and integrated moment payment remain to be connected.
+shared proofs. The actual-bin tail now compares against truth by combining its preloaded
+comparison with preserved stationary continuation and the weighted pre-overflow loss.
+The [shared integrated proof](../../Complexity/Foundations/Probability/CompressionIntegrated.lean)
+serves both fixed-HP atoms and the ratio-16 numerator. It uses actual postcompression support,
+keeps heavy first-overflow tails explicit, and pays false overflow with the raw-prefix fourth
+moment at `j + 1`. It assumes no independence between masks, errors and events.
+`BudgetData.exists_compressedBin_integrated` consumes successful actual prefix and preparation
+executions and bounds the executed compressed output against `denseChild` with polynomial
+preparation on canonical G. Its second signal keeps the genuine joint source/usage mean;
+polynomial preparation supplies range and light-entry annihilation. The first signal and its
+rank mask remain full-terminal; the second signal and final output remain usage-masked.
 
 The zero-start regression uses the actual ratio-16 top/fine numerator and polynomial preparation,
 with nonzero truth and a provably inaccurate prefix zero, then checks zero discrepancy after an
-exact increment. This is a deterministic decoder regression, not an evaluator-history accuracy
-fixture. The positive constant-one compressed fixture has not been migrated to polynomial
+exact increment. The integrated regression uses the same Bool environment for masks and increments and checks
+zero fourth moment without a prefix-zero accuracy premise. First overflow at group zero is
+also checked against truth. These are decoder regressions, not evaluator-history accuracy
+fixtures. The positive constant-one compressed fixture has not been migrated to polynomial
 preparation; its half-bin geometry is not the polynomial recipe. Deriving mean/noise envelopes
-and their weighted payments from ALL actual lower-budget errors, the false-overflow/heavy-event
-payments, and a validated positive polynomial-preparation compressed consumer remain open, as do
+and their weighted payments from ALL actual lower-budget errors remain open. The integrated
+false-overflow charge still needs its raw-prefix moment paid, and the heavy-tail budget still
+needs a split into deterministic conditional-mean rarity and correlated noise. Rarity cannot
+be applied directly to noise. Actual bounded-prefix root-difference conversion and conditional
+Jensen on the original environment, an initial multi-bin valid setup with sufficient budget,
+and a positive polynomial-preparation evaluator-history accuracy fixture remain open, as do
 nonconstant routing and the general compressed parent-error theorem.
 
 The simultaneous all-lower-budget row/vector availability, canonical error, support and range
