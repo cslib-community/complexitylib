@@ -158,17 +158,18 @@ private lemma output_root (cutoff gate : ℝ → ℝ)
 
 /-- Fourth-root regularity of the clipped decoder for the actual numerator and gate.
 The numerator bound is in fourth-root units. No preparation identity is assumed. -/
-lemma root_dist_of_bounds (cutoff gate : ℝ → ℝ) {scale cap Lq Lr : ℝ}
+lemma root_dist_le_of_bounds (cutoff gate : ℝ → ℝ) {scale cap Lq Lr : ℝ}
     (hs : 0 < scale) (hcap : 0 ≤ cap) (hLq : 0 ≤ Lq) (hLr : 0 ≤ Lr)
     (hcut0 : ∀ x, 0 ≤ cutoff x) (hgate0 : ∀ q, 0 ≤ gate q)
     (hgate1 : ∀ q, gate q ≤ 1)
     (hbound : ∀ x, |cutoff x ^ (4⁻¹ : ℝ)| ≤ cap)
     (hq : ∀ x x', |cutoff x ^ (4⁻¹ : ℝ) - cutoff x' ^ (4⁻¹ : ℝ)| ≤ Lq * |x - x'|)
     (hgate : ∀ q q', |gate q ^ (4⁻¹ : ℝ) - gate q' ^ (4⁻¹ : ℝ)| ≤ Lr * |q - q'|) :
-    ∃ L : ℝ, 0 ≤ L ∧ ∀ x v q x' v' q',
+    ∀ x v q x' v' q',
       |output cutoff gate scale x v q ^ (4⁻¹ : ℝ) -
         output cutoff gate scale x' v' q' ^ (4⁻¹ : ℝ)| ≤
-        L * (|x - x'| + |v - v'| + |q - q'|) := by
+        (2 * Lq + 4 * cap / scale + 2 * cap * Lr) *
+          (|x - x'| + |v - v'| + |q - q'|) := by
   let B := cap
   have hB : 0 ≤ B := hcap
   have hrbound (q : ℝ) : |gate q ^ (4⁻¹ : ℝ)| ≤ 1 := by
@@ -177,7 +178,6 @@ lemma root_dist_of_bounds (cutoff gate : ℝ → ℝ) {scale cap Lq Lr : ℝ}
   have hc (v : ℝ) : |denominatorRoot (v/scale)| ≤ 2 :=
     (abs_of_nonneg (by linarith [denominatorRoot_bounds (v/scale)])).trans_le
       (denominatorRoot_bounds _).2
-  refine ⟨2*Lq + 4*B/scale + 2*B*Lr, by positivity, ?_⟩
   intro x v q x' v' q'
   rw [output_root cutoff gate hcut0 hgate0, output_root cutoff gate hcut0 hgate0]
   let a := cutoff x ^ (4⁻¹ : ℝ)
@@ -218,6 +218,22 @@ lemma root_dist_of_bounds (cutoff gate : ℝ → ℝ) {scale cap Lq Lr : ℝ}
   have hn2 : 0 ≤ 2*B*(Lr:ℝ) := by positivity
   have hn3 : 0 ≤ 4*B/scale := by positivity
   nlinarith [abs_nonneg (x-x'), abs_nonneg (v-v'), abs_nonneg (q-q')]
+
+/-- Fourth-root regularity of the clipped decoder for the actual numerator and gate.
+The numerator bound is in fourth-root units. No preparation identity is assumed. -/
+lemma root_dist_of_bounds (cutoff gate : ℝ → ℝ) {scale cap Lq Lr : ℝ}
+    (hs : 0 < scale) (hcap : 0 ≤ cap) (hLq : 0 ≤ Lq) (hLr : 0 ≤ Lr)
+    (hcut0 : ∀ x, 0 ≤ cutoff x) (hgate0 : ∀ q, 0 ≤ gate q)
+    (hgate1 : ∀ q, gate q ≤ 1)
+    (hbound : ∀ x, |cutoff x ^ (4⁻¹ : ℝ)| ≤ cap)
+    (hq : ∀ x x', |cutoff x ^ (4⁻¹ : ℝ) - cutoff x' ^ (4⁻¹ : ℝ)| ≤ Lq * |x - x'|)
+    (hgate : ∀ q q', |gate q ^ (4⁻¹ : ℝ) - gate q' ^ (4⁻¹ : ℝ)| ≤ Lr * |q - q'|) :
+    ∃ L : ℝ, 0 ≤ L ∧ ∀ x v q x' v' q',
+      |output cutoff gate scale x v q ^ (4⁻¹ : ℝ) -
+        output cutoff gate scale x' v' q' ^ (4⁻¹ : ℝ)| ≤
+        L * (|x - x'| + |v - v'| + |q - q'|) := by
+  refine ⟨2 * Lq + 4 * cap / scale + 2 * cap * Lr, by positivity, ?_⟩
+  exact root_dist_le_of_bounds cutoff gate hs hcap hLq hLr hcut0 hgate0 hgate1 hbound hq hgate
 
 /-- Global fourth-root regularity for the hierarchy's atom numerator and core gate. -/
 lemma root_dist {scale : ℝ} (hs : 0 < scale) :

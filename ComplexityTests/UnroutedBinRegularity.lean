@@ -6,7 +6,8 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Probability.UnroutedBinRegularity
+public import Complexity.Foundations.Probability.UnroutedBinDecoder
+import Complexity.Foundations.Data.Finset.KthLargest.Stability
 
 /-! Nonzero actual top/fine numerators on the ratio-16 grid with valid preparation.
 The existing constant-one compressed fixture remains a construction-only fixture. -/
@@ -112,3 +113,69 @@ theorem valid_unrouted_recipe :
   · obtain ⟨L, hL, hroot⟩ := exists_boundedRoutedBinCutoff_root_lipschitz
       (cap := 2) (by norm_num : (2 : ℝ) ≤ 16)
     exact ⟨L, hL, hroot scales scales_pos scales_step⟩
+
+-- The accuracy kernel is exercised on an actual finite compression iterate, including
+-- arbitrary positive horizons and floors. The initial row is supplied here; this test
+-- does not claim that the public evaluator's zero-start history already satisfies it.
+open Finset Cslib.RowCompression Matrix.FourthRootHierarchyParams.NormalizedRow in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) {scale : ℝ}
+    (hs : 0 < scale) (hsmall : scale ≤ (16 : ℝ) / 10000) (hmarg : scale ≤ HP.η)
+    (m : ℕ) (hm : 0 < m) (n : ℕ → ℕ) (hn : ∀ i < m, HP.K ≤ n i)
+    (floors : ℕ → ℝ) (hf : ∀ i < m, floors i ≤ scale) (bin : ℕ) :
+    let ζ := scale / 4
+    let truth : Unit → Fin 2 → ℝ := fun _ ν => if ν = 0 then 1 else ζ
+    let a := iterate {()} n (fun _ => HP.K) floors (fun _ => 0) ⟨0, truth⟩ m
+    output (numerator bin) HP.ρ ζ (a.row () 0) (a.row () 1)
+      (firstRank {()} HP.K a.defaultValue a.row) = numerator bin 1 := by
+  intro ζ truth a
+  obtain ⟨C, _, hc⟩ := DenseBinRecipe.exists_polynomialUnrouted_iterate_bound HP
+    (cap := 2) (by norm_num) (show 0 < ζ by dsimp only [ζ]; positivity)
+  have herr (i : ℕ) : uncompressedRow (fun _ => 0) truth i = truth := by
+    induction i with
+    | zero => exact uncompressedRow_zero
+    | succ i ih =>
+      funext y ν
+      simp only [uncompressedRow_succ, ih, Pi.zero_apply, add_zero]
+  have hb := hc scales scales_pos scales_step bin {()} n floors (fun _ => 0)
+    truth truth scale m hs
+    (by rw [max_eq_right (by norm_num : (2 : ℝ) ≤ 16)]; exact hsmall) hmarg hm hn hf
+    (fun _ _ => by norm_num [truth])
+    (fun _ _ => by
+      simp only [truth, Fin.isValue, one_ne_zero, ↓reduceIte]
+      rw [abs_of_pos (show 0 < ζ by dsimp only [ζ]; positivity)]
+      dsimp only [ζ]
+      linarith)
+    (fun _ => 0) (fun _ _ => le_rfl)
+    (fun i _ _ _ => by rw [herr i]; exact le_of_eq (clippedError_self _ _ _ rfl rfl))
+    () (by simp)
+  have hzero : prefixErrorBudget (fun _ => 0) m = 0 := by simp [prefixErrorBudget]
+  rw [hzero, mul_zero, abs_nonpos_iff] at hb
+  have hrank : firstRank {()} HP.K 0 truth = 0 := by
+    simp only [firstRank]
+    rw [kthLargest_eq_zero_of_card_lt (by simpa using rank_gt_one HP)]
+    norm_num
+  unfold stateRootError at hb
+  rw [hrank] at hb
+  have htruth : output (numerator bin) HP.ρ ζ (truth () 0) (truth () 1) 0 =
+      numerator bin 1 := by
+    simp only [truth, Fin.isValue, ↓reduceIte, one_ne_zero, output,
+      HP.ρ_one 0 HP.η_pos.le, mul_one, clip, div_self (ne_of_gt (show 0 < ζ by
+        dsimp only [ζ]; positivity))]
+    norm_num
+  have hroot : output (numerator bin) HP.ρ ζ (a.row () 0) (a.row () 1)
+      (firstRank {()} HP.K a.defaultValue a.row) ^ (4⁻¹ : ℝ) =
+      numerator bin 1 ^ (4⁻¹ : ℝ) := by
+    change _ - _ = 0 at hb
+    exact (sub_eq_zero.mp hb).trans (congrArg (fun z : ℝ => z ^ (4⁻¹ : ℝ)) htruth)
+  have hc0 := (DenseBinRecipe.polynomialUnrouted_numerator_laws HP scales_pos scales_step
+    (by norm_num : (0 : ℝ) ≤ 2) bin 1).1.1
+  have hout : 0 ≤ output (numerator bin) HP.ρ ζ (a.row () 0) (a.row () 1)
+      (firstRank {()} HP.K a.defaultValue a.row) := by
+    exact (output_mem_Icc _ _ (by norm_num : (0 : ℝ) ≤ 16)
+      (fun d => by
+        have h := (DenseBinRecipe.polynomialUnrouted_numerator_laws HP
+          scales_pos scales_step (by norm_num : (0 : ℝ) ≤ 2) bin d).1
+        rw [max_eq_right (by norm_num : (2 : ℝ) ≤ 16)] at h
+        exact h)
+      (fun q => ⟨HP.ρ_nonneg q, HP.ρ_le_one q⟩) _ _ _ _).1
+  exact (Real.rpow_left_inj hout hc0 (show (4⁻¹ : ℝ) ≠ 0 by norm_num)).mp hroot

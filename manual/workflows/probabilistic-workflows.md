@@ -764,8 +764,28 @@ uses the geometric ratio-16 grid: top values at and above cap two equal two, fin
 values at 8, 12 and 16 equal 8, 6 and 0, and light/negative values vanish. Its nonempty
 hierarchy witness checks both root bounds, numerator range/support and preparation
 coverage, including `h 0 = 0` and `h 1 = 1`. The old compressed fixture remains
-construction-only. Nonconstant routing regularity, canonical mean/noise envelopes
-and the general compressed parent-error theorem remain open.
+construction-only.
+
+The [shared decoder kernel](../../Complexity/Foundations/Analysis/RowCompression/Decoder.lean)
+now extracts the common-loss comparison used by the fixed-HP client and combines the existing
+saturated iterate comparison with stationary-reference preservation. Its explicit coefficients
+let the [unrouted decoder](../../Complexity/Foundations/Probability/UnroutedBinDecoder.lean)
+choose one accuracy constant before scales, bin index, rows and schedules. Top clipping and fine
+upper vanishing give saturation at `max cap 16`; numerator monotonicity is not required.
+The actual decoder also has fewer than `HP.K` nonzero terminal entries after compression,
+for arbitrary defaults and second signals, without assuming sparse walk inputs.
+`BudgetData.exists_compressedBin_root_bound` consumes this kernel for the actual `compressedBin`
+against the genuine dense normalized recipe on a deterministic canonical matrix, with polynomial
+preparation, full terminal rank and the original source/usage conditional mean.
+
+This remains conditional on clipped-error bounds for every executed raw prefix, **including
+prefix zero**. The zero prefix is not free for a nonzero canonical matrix, so this bound alone
+does not give decreasing parent error as the budget grows. The new iterate regression starts
+from a supplied nonzero truth row; it is not an evaluator-history or parent-induction fixture.
+The positive constant-one compressed fixture has not been migrated to polynomial preparation.
+Generalizing the sharp/integrated moment payments, deriving mean/noise envelopes from ALL
+actual lower-budget errors, and a validated positive compressed consumer remain open, as do
+nonconstant routing and the general compressed parent-error theorem.
 
 The simultaneous all-lower-budget row/vector availability, canonical error, support and range
 invariant is unfinished. The finite compressed-bin consumer above is wired, but its general canonical mean/noise

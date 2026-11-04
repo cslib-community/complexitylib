@@ -146,10 +146,15 @@ variable (R : ℝ) (hR : 0 ≤ R)
   (hgate : ∀ d v r, θ ≤ r → H d v r = 0)
 include hR hrange hrootExists hgate
 
+omit hrootExists in
 /-- Relative fourth-root comparison for a saturated output with a closed rank gate.
-The input scalar contracts are independent of all schedules and entry magnitudes. -/
-theorem exists_iterate_root_bound (hθ : 0 < θ) :
-    ∃ C : ℝ, 0 ≤ C ∧ ∀ {ι : Type u} (s : Finset ι) (n : ℕ → ℕ) (ρ : ℕ → ℝ)
+The displayed coefficient depends only on the saturation threshold, range and scalar
+root constant, before schedules and entry magnitudes. -/
+theorem iterate_root_bound (hθ : 0 < θ) {A : ℝ} (hA : 0 ≤ A)
+    (hroot : ∀ d v r d' v' r',
+      |H d v r ^ (4⁻¹ : ℝ) - H d' v' r' ^ (4⁻¹ : ℝ)| ≤
+        A * (|d - d'| + |v - v'| + |r - r'|)) :
+    ∀ {ι : Type u} (s : Finset ι) (n : ℕ → ℕ) (ρ : ℕ → ℝ)
       (Δ : ℕ → ι → Fin 2 → ℝ) (truth raw₀ loss : ι → Fin 2 → ℝ) (z η : ℝ) (K : ℕ),
       0 < η → η ≤ θ / 10000 → z ≤ η → 0 < K →
       ∀ (m : ℕ), 0 < m → (∀ i < m, K ≤ n i) → (∀ i < m, ρ i ≤ η) →
@@ -162,14 +167,12 @@ theorem exists_iterate_root_bound (hθ : 0 < θ) :
       |stateRootError H s K
         (iterate s n (fun _ => K) ρ Δ ⟨z, raw₀ + loss⟩ m)
         (iterate s n (fun _ => K) ρ (fun _ => 0) ⟨z, truth + loss⟩ m) y| ≤
-        C * prefixErrorBudget ε m := by
+        ((8 * R + 3 * A) * (1 + 16 * (16 * (θ + 1) + 1))) * prefixErrorBudget ε m := by
   classical
-  obtain ⟨A, hA, hroot⟩ := hrootExists
   let L := 16 * (16 * (θ + 1) + 1)
   let c := 1 + L
   have hc1 : 1 ≤ c := by dsimp only [c, L]; linarith
   have hc0 : 0 ≤ c := by linarith
-  refine ⟨(8 * R + 3 * A) * c, mul_nonneg (by positivity) hc0, ?_⟩
   intro ι s n ρ Δ truth raw₀ loss z η K hη hmargin hz hK m hm hKn hρ
     hfirst hsecond hloss ε hε herr y hy
   let a : State ι := ⟨z, raw₀ + loss⟩
@@ -265,5 +268,26 @@ theorem exists_iterate_root_bound (hθ : 0 < θ) :
     have hlarge := not_le.mp hsmall
     have hpositive := mul_nonneg hA (mul_nonneg hc0 hE0)
     nlinarith
+
+/-- Relative fourth-root comparison for a saturated output with a closed rank gate.
+The input scalar contracts are independent of all schedules and entry magnitudes. -/
+theorem exists_iterate_root_bound (hθ : 0 < θ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ {ι : Type u} (s : Finset ι) (n : ℕ → ℕ) (ρ : ℕ → ℝ)
+      (Δ : ℕ → ι → Fin 2 → ℝ) (truth raw₀ loss : ι → Fin 2 → ℝ) (z η : ℝ) (K : ℕ),
+      0 < η → η ≤ θ / 10000 → z ≤ η → 0 < K →
+      ∀ (m : ℕ), 0 < m → (∀ i < m, K ≤ n i) → (∀ i < m, ρ i ≤ η) →
+      (∀ y ∈ s, 0 ≤ truth y 0) → (∀ y ∈ s, |truth y 1| ≤ η / 2) →
+      (∀ y ∈ s, ∀ ν, |loss y ν| ≤ η / 2) →
+      ∀ (ε : ℕ → ℝ), (∀ i ≤ m, 0 ≤ ε i) →
+      (∀ i ≤ m, ∀ y ∈ s,
+        clippedError (truth y 0) (truth y 1) (uncompressedRow Δ raw₀ i y) ≤ ε i) →
+      ∀ y ∈ s,
+      |stateRootError H s K
+        (iterate s n (fun _ => K) ρ Δ ⟨z, raw₀ + loss⟩ m)
+        (iterate s n (fun _ => K) ρ (fun _ => 0) ⟨z, truth + loss⟩ m) y| ≤
+        C * prefixErrorBudget ε m := by
+  obtain ⟨A, hA, hroot⟩ := hrootExists
+  refine ⟨(8 * R + 3 * A) * (1 + 16 * (16 * (θ + 1) + 1)), by positivity, ?_⟩
+  exact iterate_root_bound H hsaturate R hR hrange hgate hθ hA hroot
 
 end Cslib.RowCompression
