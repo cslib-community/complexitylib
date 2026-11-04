@@ -646,8 +646,8 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   classes over arbitrary value domains with weighted or bit costs; simulations between instances;
   the typed core proposed in [CSLib #1158](https://github.com/leanprover/cslib/pull/1158).
 - **Word RAM:** an AC⁰ basis; wider-fragment and Turing-machine simulations;
-  transfer of Anthropic's modular machine and 3SUM/APSP algorithms, with the direct 3SUM
-  adaptation below; size-based width selection with an input-fit guarantee and explicit overhead;
+  transfer of Anthropic's modular machine and 3SUM/APSP algorithms; size-based width selection
+  with an input-fit guarantee and explicit overhead;
   expected-time rules for unbounded almost-surely terminating structured loops; random-tape
   equivalence and BPP/RP/ZPP simulation bridges for the randomized word RAM ([#1124]); transfer
   of cell-probe lower bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
