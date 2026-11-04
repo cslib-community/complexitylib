@@ -74,7 +74,7 @@ theorem hashCount_le (n : ℕ) : hashCount n ≤ 2 * (n + 7) := dyadicSize_le (n
 
 /-- Sampling among the enlarged hash lengths requires only a polynomial range. -/
 @[fun_prop] theorem hashCount_polynomiallyBounded : PolynomiallyBounded hashCount :=
-  ((ComputableInPolyTime.id'.unary_add' (.const 6)).trans .unary_dyadicSize).tidy.polynomiallyBounded
+  dyadicSize_polynomiallyBounded.comp (PolynomiallyBounded.id.add (.const 6))
 
 /-- Compute the sampling range from an efficiently available unary parameter. -/
 @[fun_prop]
@@ -182,10 +182,10 @@ theorem isPPTOn_sample (f : List Bool → List Bool)
     IsPPTOn encUnary (encPair encBits encBool) (sample f) :=
   let e1 := encPair encUnary encUnary; let e2 := encPair e1 encBits; let e3 := encPair e2 encBits
   let p0 := ComputableInPolyTime.fst e3 encBits; let p1 := p0.trans (.fst e2 encBits)
-  let q0 := ComputableInPolyTime.fst encUnary encUnary; let q1 := ComputableInPolyTime.fst e1 encBits
+  let q0 := ComputableInPolyTime.fst encUnary encUnary
+  let q1 := ComputableInPolyTime.fst e1 encBits
   let hinput := ComputableInPolyTime.snd e3 encBits; let hquery := p0.trans (.snd e2 encBits)
-  let hmatrix := p1.trans (.snd e1 encBits)
-  let hindex := (p1.trans q1).trans (.snd encUnary encUnary)
+  let hmatrix := p1.trans (.snd e1 encBits); let hindex := (p1.trans q1).trans (.snd _ _)
   (isPPTOn_sampleDyadicIndex (ComputableInPolyTime.id'.unary_add' (.const 6))).bind_with
     (((computableInPolyTime_hashCount q0).unary_mul' q0).sampleList.bind_with
       ((q1.trans q0).sampleList.bind_with
@@ -207,7 +207,8 @@ theorem eval_sample {n : ℕ} {Image : Type*} (f : List Bool → List Bool)
       LinearHash.wordHash (i.val + 1) (List.ofFn matrix) (List.ofFn x) =
         List.ofFn (LinearHash.hash
           (blocksEquiv matrix ∘ Fin.castLE (Nat.succ_le_of_lt i.isLt)) x) := by
-    rw [LinearHash.wordHash_eq_ofFn, block_ofList_prefix (Nat.succ_le_of_lt i.isLt), ofList_ofFn]; rfl
+    rw [LinearHash.wordHash_eq_ofFn, block_ofList_prefix (Nat.succ_le_of_lt i.isLt),
+      ofList_ofFn]; rfl
   have hindex : ProbComp.eval (sampleDyadicIndex (n + 6)) =
       (PMF.uniformOfFintype (Fin (hashCount n))).map Fin.val := eval_sampleDyadicIndex (n + 6)
   simp only [sample, ProbComp.eval_bind, ProbComp.eval_pure, eval_sampleList, hindex,

@@ -79,12 +79,11 @@ theorem isPPTOn_predictionGame {sample : ℕ → ProbComp (List Bool × Bool)}
     (hsample : IsPPTOn encUnary (encPair encBits encBool) sample) {adversary : Distinguisher}
     (hadversary : IsPPT encBool adversary) :
     IsPPTOn encUnary encBool (predictionGame sample adversary) :=
-  let e1 := encPair encUnary (encPair encBits encBool)
-  let p0 := ComputableInPolyTime.fst encUnary (encPair encBits encBool)
-  let p1 := ComputableInPolyTime.snd encUnary (encPair encBits encBool)
-  hsample.bind_with ((hadversary.on.preprocess (p0.prod (p1.trans (.fst encBits encBool)))).bind_with
-    ((ComputableInPolyTime.snd e1 encBool).beq
-      (((ComputableInPolyTime.fst e1 encBool).trans p1).trans (.snd encBits encBool))).isPPTOn)
+  let e0 := encPair encBits encBool; let e1 := encPair encUnary e0
+  let p0 := ComputableInPolyTime.fst encUnary e0; let p1 := ComputableInPolyTime.snd encUnary e0
+  let hpred := hadversary.on.preprocess (p0.prod (p1.trans (.fst encBits encBool)))
+  hsample.bind_with (hpred.bind_with ((ComputableInPolyTime.snd e1 encBool).beq
+    (((ComputableInPolyTime.fst e1 encBool).trans p1).trans (.snd encBits encBool))).isPPTOn)
 
 /-- A finite joint law together with its exact strict PPT word sampler. -/
 structure SamplablePair where
