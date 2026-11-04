@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (tests of allocated initial-pilot calls)
 import Complexity.Foundations.Probability.InitialPilotCorrection
+import Complexity.Foundations.Combinatorics.Expander.LowerBound
 
 /-! Actual source-correlated RAW/score calls, including positive allocated walks. -/
 set_option linter.privateModule false
@@ -620,5 +621,97 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) (ε : ℝ) (hε : 0 < ε) 
   simp_rw [initialTrueCorrection_eq_canonical HP 1 (by decide) roles 1 0 [1] [2, 3]
     base hC hCf] at he
   exact he
+
+-- The normalized allocation is nonvacuous on the same nonzero base. The reference
+-- is the true normalized request, whose outer-walk canonical mean remains a separate gap.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (ε : ℝ) (hε : 0 < ε) :
+    ∃ rawSteps detectorSteps : ℕ, 0 < rawSteps ∧ 0 < detectorSteps ∧
+    rootDistPow 4 5 (rate 1) source
+      (Y roles.terminal (side 5 0) (CopyPadding.identifier 1 [2, 3]))
+      (initialPilotNormalized HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+        base rawSteps 1 detectorSteps)
+      (correctionRequest 1 id
+        ⟨.row 0 (.pilotNormalized ⟨0, HP.k_pos⟩), gridChannel roles.source 1 [1],
+          gridChannel roles.terminal 0 [2, 3], gridChannel roles.terminal 0 [2, 3]⟩
+        (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff HP.ρ HP.toHierarchyParams.atomCutoff
+        HP.γ HP.K ⌈4 * (1 + 32 * HP.R)⌉₊ (fun _ => base)
+        (fun σ => correctionPrep (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff HP.K
+          ⌈4 * (1 + 32 * HP.R)⌉₊ (rate 0) base (polynomialPrepCutoff4 HP.θ) HP.ρ
+          {x | source σ x}
+          {y | Y roles.terminal (side 5 0) (CopyPadding.identifier 1 [2, 3]) σ y})
+        (fun _ => PilotRowRecipe.maximum 0 (initialTrueDetector HP 1 roles 1 0 [1] [2, 3] base)))
+        ≤ ε ^ 4 := by
+  obtain ⟨L, Cr, Cp, Cm, Lp, _, _, _, _, _, ha⟩ := initialPilotNormalized_accuracy HP
+  have hk : (1 : ℝ) ≤ HP.k := by exact_mod_cast HP.k_pos
+  have hd := div_le_div_of_nonneg_right
+    (mul_le_mul_of_nonneg_left hk (by norm_num : (0 : ℝ) ≤ 32)) HP.η_pos.le
+  have hK : 2 * (1 + 32 / HP.η) ≤ HP.K := by linarith [HP.gate]
+  have hC : ∀ x y, 0 ≤ base x y := by
+    intro x y; simp only [base, Matrix.one_apply]; split_ifs <;> norm_num
+  obtain ⟨hr, hd, he⟩ := ha 5 3 1 (by decide) roles horizon 0 1 0 (by decide) (by decide)
+    [1] [2, 3] binCutoff (fun _ => 1) base (by intros; rfl) HP.η HP.η_pos HP.ρ_one hK
+    hC (by simp [base])
+    (by intro x y; simpa only [rate, pow_zero, inv_one, one_pow, div_one, one_mul]
+      using binCutoff_base x y) 1 (by norm_num)
+    (by
+      intro y
+      have ht : ({t : FrameChannel 5 4 1 | frameRetains 5 4 (side 5 0) t
+          (CopyPadding.identifier 1 [2, 3] y)} : Finset _) = univ := by
+        apply filter_true_of_mem
+        intro t _
+        simpa only [show side 5 0 = 5 by norm_num [side]] using full_retains t _
+      rw [ht]
+      norm_num) ε hε
+  refine ⟨_, _, hr, hd, ?_⟩
+  exact he
+
+-- Zero RAW remains a zero normalized output despite its clipped preparatory denominator.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (rawSteps prepSteps detectorSteps : ℕ) (σ : Environment 5 3) (x y : ZMod 5) :
+    initialPilotNormalized HP 1 roles 0 1 0 0 [1] [2, 3] binCutoff (fun _ => 1)
+      0 rawSteps prepSteps detectorSteps σ x y = 0 := by
+  unfold initialPilotNormalized correctionRequest
+  split_ifs
+  · simp only [CorrectionRowRecipe.normalized, zero_walk, zero_div,
+      HP.toHierarchyParams.atomCutoff_eq_zero (le_refl 0), zero_mul, zero_div, ite_self]
+  · rfl
+
+
+-- A bounded PREP input can differ from its walked value even though the joint
+-- normalizer is exactly stationary. This complete graph is an exact mixing limit.
+private def fullMask (_ : Bool) (_ : Unit) : Prop := True
+private abbrev FullSlice := RetainedPairSlice fullMask fullMask () ()
+private instance : Nonempty FullSlice := ⟨⟨false, by simp [fullMask]⟩⟩
+private def varyingPrep (σ : Bool) (_ _ : Unit) : ℝ := if σ then 1 else 0
+private def averagedPrep := conditionalWalk fullMask fullMask
+  (fun _ _ => RotationMap.complete FullSlice) (fun _ _ => 1) varyingPrep
+
+private theorem averagedPrep_false : averagedPrep false () () = 1 / 2 := by
+  have hw (f : FullSlice → ℝ) (σ : FullSlice) :
+      (RotationMap.complete FullSlice).walk f σ = 𝔼 τ : FullSlice, f τ := by
+    simp only [RotationMap.walk_apply, RotationMap.neighbor_complete]
+  have hh := conditionalWalk_coe fullMask fullMask
+    (fun _ _ => RotationMap.complete FullSlice) (fun _ _ => 1) varyingPrep () ()
+    (⟨false, by simp [fullMask]⟩ : FullSlice)
+  change averagedPrep false () () = _ at hh
+  rw [show 2 * (1:ℕ) = 2 by norm_num, pow_two, Module.End.mul_apply, hw] at hh
+  simp only [hw, Fintype.expect_const] at hh
+  have he := expect_retainedPairSlice fullMask fullMask () ()
+    (fun σ => varyingPrep σ () ())
+  change (𝔼 τ : FullSlice, varyingPrep τ.val () ()) = _ at he
+  rw [he] at hh
+  simpa [fullMask, varyingPrep, Finset.expect_eq_sum_div_card] using hh
+
+example : (∀ σ, varyingPrep σ () () ∈ Set.Icc (0:ℝ) 1) ∧
+    averagedPrep false () () ≠ varyingPrep false () () ∧
+    rowSliceMean fullMask fullMask averagedPrep () () =
+      rowSliceMean fullMask fullMask varyingPrep () () := by
+  refine ⟨?_, ?_, ?_⟩
+  · intro σ
+    cases σ <;> norm_num [varyingPrep]
+  · rw [averagedPrep_false]
+    norm_num [varyingPrep]
+  · exact rowSliceMean_conditionalWalk fullMask fullMask
+      (fun _ _ => RotationMap.complete FullSlice) (fun _ _ => 1) varyingPrep () ()
 
 end InitialPilotScoreRegression

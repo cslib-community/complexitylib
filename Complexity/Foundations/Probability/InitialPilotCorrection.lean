@@ -21,11 +21,16 @@ The deterministic `pilotCorrection` constructor and its stochastic `pilotNormali
 child are distinct: the former applies the bounded cutoff directly, while the latter
 has incoming gates and a conditional preparatory denominator. The definitions below
 retain both. The direct constructor has allocated accuracy under the covering single-bin
-hypotheses. Accuracy of the normalized child and recursive closure remain open.
+hypotheses. The normalized child has allocated accuracy against the original true
+normalized request. Its completed outer walk to the canonical correction and recursive
+closure remain open.
 
 ## Main results
 
-* `initialPilotNormalized_root_moment`: actual RAW/PREP/detector error payments.
+* `initialPilotNormalized_accuracy`: allocated normalized-child accuracy.
+* `initialPilotPreparationWalk_mean`: exact stationarity of its original normalizer.
+* `initialPilotNormalized_raw_detector_moment`: RAW and detector payments without PREP noise.
+* `initialPilotNormalized_root_moment`: pre-walk preparation perturbation bound.
 * `initialPilotCorrection_accuracy`: allocated accuracy from genuine completed lower calls.
 * `initialTrueCorrection_eq_canonical`: canonical target of the first direct correction.
 
@@ -72,6 +77,22 @@ Its input is the recipe of the computed RAW table, rather than preparation of a 
       (CopyPadding.identifier D st)) (fun _ _ => prepSteps)
     (initialPilotPreparation HP D R bin ks kt kb ss st cutoff h C rawSteps)
 
+/-- The actual preparation walk preserves the original joint source/usage normalizer.
+This is stationarity on the same full environment, without a pointwise PREP limit. -/
+theorem initialPilotPreparationWalk_mean
+    (HP : FourthRootHierarchyParams 16 1 16 32 8) (D : ZMod P) (R : RoleProfile J)
+    (bin ks kt kb : ℕ) (ss st : List (ZMod P))
+    (cutoff h : ℝ → ℝ) (C : Matrix (ZMod P) (ZMod P) ℝ) (rawSteps prepSteps : ℕ)
+    (x y : ZMod P) :
+    rowSliceMean (X R.source (side P ks) (CopyPadding.identifier D ss))
+      (Y R.terminal (side P kt) (CopyPadding.identifier D st))
+      (initialPilotPreparationWalk HP D R bin ks kt kb ss st cutoff h C rawSteps prepSteps)
+      x y =
+    rowSliceMean (X R.source (side P ks) (CopyPadding.identifier D ss))
+      (Y R.terminal (side P kt) (CopyPadding.identifier D st))
+      (initialPilotPreparation HP D R bin ks kt kb ss st cutoff h C rawSteps) x y :=
+  rowSliceMean_conditionalWalk _ _ _ _ _ x y
+
 /-- Initial maximum, after the actual source-aware detector has completed.
 The detector's RAW allocation may differ from that of the parent RAW child. -/
 @[expose] def initialPilotMaximum
@@ -98,10 +119,44 @@ literal conditional source/usage normalizer. Usage equals the stage rate in this
     (fun _ => initialPilotMaximum HP D R bin ks kt kb ss st cutoff h C detectorSteps)
 
 set_option backward.isDefEq.respectTransparency false in
-/-- The normalized child pays its literal computed RAW/PREP errors and the actual
-source-aware detector error. This is an explicit local bound, not allocated PREP accuracy.
-No final child-error certificate or independently reseeded child is an argument. -/
-theorem initialPilotNormalized_root_moment
+/-- Walking preparation changes no value of the actual normalized child: the request
+uses only its stationary source/usage mean. The walk itself is still computed. -/
+theorem initialPilotNormalized_eq_unwalked
+    (HP : FourthRootHierarchyParams 16 1 16 32 8) (D : ZMod P) (R : RoleProfile J)
+    (bin ks kt kb : ℕ) (ss st : List (ZMod P))
+    (cutoff h : ℝ → ℝ) (C : Matrix (ZMod P) (ZMod P) ℝ)
+    (rawSteps prepSteps detectorSteps : ℕ) (σ : Environment P J) (x y : ZMod P) :
+    let r : HierarchyTask.Request HP.k (Fin J) (ZMod P) :=
+      ⟨.row 0 (.pilotNormalized ⟨0, HP.k_pos⟩), gridChannel R.source ks ss,
+        gridChannel R.terminal kt st, gridChannel R.terminal kt st⟩
+    initialPilotNormalized HP D R bin ks kt kb ss st cutoff h C
+      rawSteps prepSteps detectorSteps σ x y =
+    correctionRequest D id r (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff HP.ρ
+      HP.toHierarchyParams.atomCutoff HP.γ HP.K ⌈4 * (1 + 32 * HP.R)⌉₊
+      (initialPilotWalk HP D R bin ks kt kb ss st cutoff h C rawSteps)
+      (initialPilotPreparation HP D R bin ks kt kb ss st cutoff h C rawSteps)
+      (fun _ => initialPilotMaximum HP D R bin ks kt kb ss st cutoff h C detectorSteps)
+      σ x y := by
+  intro r
+  apply correctionRequest_congr_normalizer D id r ⟨R.source_terminal, rfl, rfl⟩
+  have hm := initialPilotPreparationWalk_mean HP D R bin ks kt kb ss st cutoff h C
+    rawSteps prepSteps x y
+  have he : ({σ : Environment P J | r.source.retains (channels D) σ (id x) ∧
+      r.usage.retains (channels D) σ (id y)} : Finset _) =
+      ({σ | X R.source (side P ks) (CopyPadding.identifier D ss) σ x ∧
+        Y R.terminal (side P kt) (CopyPadding.identifier D st) σ y} : Finset _) := by
+    ext σ
+    simp only [mem_filter, mem_univ, true_and, r, gridChannel,
+      CorrectionRowTask.Channel.retains, channels, semanticSide_grid, X, Y, id_eq]
+  unfold rowSliceMean at hm ⊢
+  rw [he]
+  exact hm
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Optional coarse bound using the walked preparation error. Its pointwise PREP
+moment need not decay; `initialPilotNormalized_accuracy` instead uses exact normalizer
+stationarity and pays only the pre-walk RAW perturbation. -/
+theorem initialPilotNormalized_root_moment_coarse
     (HP : FourthRootHierarchyParams 16 1 16 32 8) :
     ∃ Cr Cp Cm : ℝ, 0 ≤ Cr ∧ 0 ≤ Cp ∧ 0 ≤ Cm ∧
     ∀ (P J : ℕ) [Fact P.Prime] (D : ZMod P) (R : RoleProfile J)
@@ -157,6 +212,140 @@ theorem initialPilotNormalized_root_moment
   rw [hz, zero_add] at hp
   simpa only [initialPilotNormalized, initialPilotMaximum, X, Y, r, gridChannel,
     ← Pi.zero_def] using hp
+
+set_option backward.isDefEq.respectTransparency false in
+/-- The normalized child pays only the pre-walk preparation perturbation.
+Stationarity removes preparation-walk noise from the normalizer exactly. This local
+bound is suitable for RAW allocation; the coarse pointwise PREP bound is optional. -/
+theorem initialPilotNormalized_root_moment
+    (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ∃ Cr Cp Cm : ℝ, 0 ≤ Cr ∧ 0 ≤ Cp ∧ 0 ≤ Cm ∧
+    ∀ (P J : ℕ) [Fact P.Prime] (D : ZMod P) (R : RoleProfile J)
+      (bin ks kt kb : ℕ) (ss st : List (ZMod P))
+      (cutoff h : ℝ → ℝ) (C : Matrix (ZMod P) (ZMod P) ℝ)
+      (rawSteps prepSteps detectorSteps : ℕ),
+    let r : HierarchyTask.Request HP.k (Fin J) (ZMod P) :=
+      ⟨.row 0 (.pilotNormalized ⟨0, HP.k_pos⟩), gridChannel R.source ks ss,
+        gridChannel R.terminal kt st, gridChannel R.terminal kt st⟩
+    let X := fun σ v => r.source.retains (channels D) σ (id v)
+    let Y := fun σ v => r.terminal.retains (channels D) σ (id v)
+    let truePrep := fun σ => correctionPrep (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff
+      HP.K ⌈4 * (1 + 32 * HP.R)⌉₊ (rate kt) C (polynomialPrepCutoff4 HP.θ) HP.ρ
+      {v | X σ v} {v | Y σ v}
+    rootDistPow 4 P (rate ks) X Y
+      (initialPilotNormalized HP D R bin ks kt kb ss st cutoff h C
+        rawSteps prepSteps detectorSteps)
+      (correctionRequest D id r (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff HP.ρ
+        HP.toHierarchyParams.atomCutoff HP.γ HP.K ⌈4 * (1 + 32 * HP.R)⌉₊
+        (fun _ => C) truePrep
+        (fun _ => PilotRowRecipe.maximum 0 (initialTrueDetector HP D R ks kt ss st C))) ≤
+    64 * (((Cr / rate kt) ^ 4 * (P : ℝ) ^ 2) *
+      rowNormPow 4 P (rate ks) X Y (fun σ x y =>
+        initialPilotWalk HP D R bin ks kt kb ss st cutoff h C rawSteps σ x y - C x y) +
+      Cp ^ 4 * rowNormPow 4 P (rate ks) X Y (fun σ x y =>
+        initialPilotPreparation HP D R bin ks kt kb ss st cutoff h C
+          rawSteps σ x y - truePrep σ x y) +
+      Cm ^ 4 * rowNormPow 4 P (rate ks) X Y (fun _ _ y =>
+        initialPilotDetector HP D R bin ks kt kb ss st cutoff h C detectorSteps y -
+          initialTrueDetector HP D R ks kt ss st C y)) := by
+  obtain ⟨Cr, Cp, Cm, hCr, hCp, hCm, hc⟩ := correctionRequest_pilot_children_root_moment HP
+  refine ⟨Cr, Cp, Cm, hCr, hCp, hCm, ?_⟩
+  intro P J inst D R bin ks kt kb ss st cutoff h C rawSteps prepSteps detectorSteps r X Y truePrep
+  have hr : Admissible r := ⟨R.source_terminal, rfl, rfl⟩
+  have hKc : 0 < ⌈4 * (1 + 32 * HP.R)⌉₊ := by
+    have hj : (0:ℝ) < HP.J := by exact_mod_cast HP.J_pos
+    have hR := HP.R_rank
+    norm_num only [one_mul] at hR
+    apply Nat.ceil_pos.mpr
+    linarith
+  have hp := hc P J (ZMod P) HP.k D id r hr (rate_pos kt) _ hKc
+    (initialPilotWalk HP D R bin ks kt kb ss st cutoff h C rawSteps) (fun _ => C)
+    (initialPilotPreparation HP D R bin ks kt kb ss st cutoff h C rawSteps)
+    truePrep (fun _ _ => 0)
+    (fun _ => initialPilotDetector HP D R bin ks kt kb ss st cutoff h C detectorSteps)
+    (fun _ _ => 0) (fun _ => initialTrueDetector HP D R ks kt ss st C)
+    P (rate ks) (mul_nonneg (Nat.cast_nonneg _) (rate_pos ks).le) (fun _ _ hy => hy)
+  have hz : rowNormPow 4 P (rate ks)
+      (fun σ v => r.source.retains (channels D) σ (id v))
+      (fun σ v => r.terminal.retains (channels D) σ (id v)) (fun _ _ _ => (0:ℝ)) = 0 := by
+    simp [rowNormPow]
+  simp only [sub_self, ZMod.card] at hp
+  rw [hz, zero_add] at hp
+  have heq : initialPilotNormalized HP D R bin ks kt kb ss st cutoff h C
+      rawSteps prepSteps detectorSteps =
+      correctionRequest D id r (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff HP.ρ
+        HP.toHierarchyParams.atomCutoff HP.γ HP.K ⌈4 * (1 + 32 * HP.R)⌉₊
+        (initialPilotWalk HP D R bin ks kt kb ss st cutoff h C rawSteps)
+        (initialPilotPreparation HP D R bin ks kt kb ss st cutoff h C rawSteps)
+        (fun _ => initialPilotMaximum HP D R bin ks kt kb ss st cutoff h C detectorSteps) := by
+    funext σ x y
+    exact initialPilotNormalized_eq_unwalked HP D R bin ks kt kb ss st cutoff h C
+      rawSteps prepSteps detectorSteps σ x y
+  rw [heq]
+  simpa only [initialPilotMaximum, X, Y, r, gridChannel, ← Pi.zero_def] using hp
+
+set_option backward.isDefEq.respectTransparency false in
+/-- The actual normalized child is paid only by its computed RAW and detector errors.
+Preparation is removed by same-slice stationarity and its actual RAW perturbation;
+conditional Jensen and rectangle maxima pay explicit width/rate costs. -/
+theorem initialPilotNormalized_raw_detector_moment
+    (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ∃ Cr Cp Cm Lp : ℝ, 0 ≤ Cr ∧ 0 ≤ Cp ∧ 0 ≤ Cm ∧ 0 ≤ Lp ∧
+    ∀ (P J : ℕ) [Fact P.Prime] (D : ZMod P) (R : RoleProfile J)
+      (bin ks kt kb : ℕ) (ss st : List (ZMod P))
+      (cutoff h : ℝ → ℝ) (C : Matrix (ZMod P) (ZMod P) ℝ)
+      (rawSteps prepSteps detectorSteps : ℕ),
+    let r : HierarchyTask.Request HP.k (Fin J) (ZMod P) :=
+      ⟨.row 0 (.pilotNormalized ⟨0, HP.k_pos⟩), gridChannel R.source ks ss,
+        gridChannel R.terminal kt st, gridChannel R.terminal kt st⟩
+    let X := fun σ v => r.source.retains (channels D) σ (id v)
+    let Y := fun σ v => r.terminal.retains (channels D) σ (id v)
+    let truePrep := fun σ => correctionPrep (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff
+      HP.K ⌈4 * (1 + 32 * HP.R)⌉₊ (rate kt) C (polynomialPrepCutoff4 HP.θ) HP.ρ
+      {v | X σ v} {v | Y σ v}
+    rootDistPow 4 P (rate ks) X Y
+      (initialPilotNormalized HP D R bin ks kt kb ss st cutoff h C
+        rawSteps prepSteps detectorSteps)
+      (correctionRequest D id r (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff HP.ρ
+        HP.toHierarchyParams.atomCutoff HP.γ HP.K ⌈4 * (1 + 32 * HP.R)⌉₊
+        (fun _ => C) truePrep
+        (fun _ => PilotRowRecipe.maximum 0 (initialTrueDetector HP D R ks kt ss st C))) ≤
+    64 * ((((Cr / rate kt) ^ 4 + Cp ^ 4 * (Lp / rate kt) ^ 4) * (P : ℝ) ^ 2) *
+      rowNormPow 4 P (rate ks) X Y (fun σ x y =>
+        initialPilotWalk HP D R bin ks kt kb ss st cutoff h C rawSteps σ x y - C x y) +
+      Cm ^ 4 * rowNormPow 4 P (rate ks) X Y (fun _ _ y =>
+        initialPilotDetector HP D R bin ks kt kb ss st cutoff h C detectorSteps y -
+          initialTrueDetector HP D R ks kt ss st C y)) := by
+  obtain ⟨Cr, Cp, Cm, hCr, hCp, hCm, hc⟩ := initialPilotNormalized_root_moment HP
+  obtain ⟨Lp, hLp, hp⟩ := HP.correction_preparation_row_moment
+  refine ⟨Cr, Cp, Cm, Lp, hCr, hCp, hCm, hLp, ?_⟩
+  intro P J inst D R bin ks kt kb ss st cutoff h C rawSteps prepSteps detectorSteps r X Y truePrep
+  have hKc : 0 < ⌈4 * (1 + 32 * HP.R)⌉₊ := by
+    have hj : (0:ℝ) < HP.J := by exact_mod_cast HP.J_pos
+    have hR := HP.R_rank
+    norm_num only [one_mul] at hR
+    apply Nat.ceil_pos.mpr
+    linarith
+  have hprep := hp (Environment P J) (ZMod P)
+    (H4RankEnvironment.X R.source (side P ks) (CopyPadding.identifier D ss))
+    (H4RankEnvironment.Y R.terminal (side P kt) (CopyPadding.identifier D st))
+    _ hKc _ (rate_pos kt)
+    (initialPilotWalk HP D R bin ks kt kb ss st cutoff h C rawSteps) (fun _ => C)
+    P (rate ks) (mul_nonneg (Nat.cast_nonneg _) (rate_pos ks).le)
+  have hprep' : rowNormPow 4 P (rate ks) X Y (fun σ x y =>
+      initialPilotPreparation HP D R bin ks kt kb ss st cutoff h C rawSteps σ x y -
+        truePrep σ x y) ≤
+      (Lp / rate kt) ^ 4 * (P : ℝ) ^ 2 *
+        rowNormPow 4 P (rate ks) X Y (fun σ x y =>
+          initialPilotWalk HP D R bin ks kt kb ss st cutoff h C rawSteps σ x y - C x y) := by
+    simpa only [rowNormPow, initialPilotPreparation, truePrep, X, Y, r, gridChannel,
+      CorrectionRowTask.Channel.retains, channels, semanticSide_grid, id_eq, ZMod.card,
+      H4RankEnvironment.X, H4RankEnvironment.Y] using hprep
+  apply (hc P J D R bin ks kt kb ss st cutoff h C rawSteps prepSteps detectorSteps).trans
+  apply (mul_le_mul_of_nonneg_left
+    (add_le_add (add_le_add le_rfl (mul_le_mul_of_nonneg_left hprep' (pow_nonneg hCp 4)))
+      le_rfl) (by norm_num : (0:ℝ) ≤ 64)).trans_eq
+  ring
 
 /-- The deterministic first positive pilot constructor, in matrix units. This is the
 literal direct constructor of `hierarchyTaskEval`, distinct from its normalized child. -/
@@ -442,6 +631,108 @@ theorem initialPilotCorrection_accuracy
     |>.trans_eq (by dsimp only [payment]; ring)
   apply hb.trans
   exact calibrated_fourth_moment hp0 hε
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Allocated root accuracy for the genuine normalized child. Positive RAW/detector
+tolerances precede the calls; preparation uses parameter one (two actual graph steps).
+Its joint normalizer is paid by RAW perturbation and conditional Jensen, without a
+pointwise PREP accuracy premise. The target is the original true normalized request;
+identification and payment of its completed outer walk remain separate obligations. -/
+theorem initialPilotNormalized_accuracy
+    (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ∃ L Cr Cp Cm Lp : ℝ, 0 ≤ L ∧ 0 ≤ Cr ∧ 0 ≤ Cp ∧ 0 ≤ Cm ∧ 0 ≤ Lp ∧
+    ∀ (P J : ℕ) [Fact P.Prime] (D : ZMod P), D ≠ 0 →
+    ∀ (R : RoleProfile J) (H : Horizon P) (bin ks kt : ℕ),
+    ks ≤ H.maxExponent → kt ≤ H.maxExponent →
+    ∀ (ss st : List (ZMod P)) (cutoff h : ℝ → ℝ)
+      (C : Matrix (ZMod P) (ZMod P) ℝ),
+    (∀ v, cutoff v ≠ 0 → h v = 1) →
+    ∀ η : ℝ, 0 < η → (∀ v, v ≤ η → HP.ρ v = 1) →
+    2 * (1 + 32 / η) ≤ HP.K →
+    (∀ x y, 0 ≤ C x y) → C *ᵥ 1 ≤ 1 →
+    (∀ x y, rate kt * cutoff (C x y / rate kt) = C x y) →
+    ∀ π : ℝ, 0 < π →
+    (∀ y, π ≤ (dens {t : FrameChannel P 4 1 | frameRetains P 4 (side P kt) t
+      (CopyPadding.identifier D st y)} : ℝ)) →
+    ∀ ε : ℝ, 0 < ε →
+    let payment := 64 * ((((Cr / rate kt) ^ 4 + Cp ^ 4 * (Lp / rate kt) ^ 4) *
+      (P : ℝ) ^ 2) + Cm ^ 4)
+    let tolerance := ε / (1 + payment)
+    let detectorPayment := (P : ℝ) * rate kt / (rate ks * π)
+    let rawSteps := initialPilotRawSteps HP D R bin ks kt kt ss st cutoff h C tolerance
+    let detectorSteps := initialPilotSteps HP L D R bin kt kt kt ss st cutoff h C
+      (tolerance / (1 + detectorPayment))
+    let r : HierarchyTask.Request HP.k (Fin J) (ZMod P) :=
+      ⟨.row 0 (.pilotNormalized ⟨0, HP.k_pos⟩), gridChannel R.source ks ss,
+        gridChannel R.terminal kt st, gridChannel R.terminal kt st⟩
+    let truePrep := fun σ => correctionPrep (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff
+      HP.K ⌈4 * (1 + 32 * HP.R)⌉₊ (rate kt) C (polynomialPrepCutoff4 HP.θ) HP.ρ
+      {x | X R.source (side P ks) (CopyPadding.identifier D ss) σ x}
+      {y | Y R.terminal (side P kt) (CopyPadding.identifier D st) σ y}
+    0 < rawSteps ∧ 0 < detectorSteps ∧
+    rootDistPow 4 P (rate ks)
+      (X R.source (side P ks) (CopyPadding.identifier D ss))
+      (Y R.terminal (side P kt) (CopyPadding.identifier D st))
+      (initialPilotNormalized HP D R bin ks kt kt ss st cutoff h C rawSteps 1 detectorSteps)
+      (correctionRequest D id r (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff HP.ρ
+        HP.toHierarchyParams.atomCutoff HP.γ HP.K ⌈4 * (1 + 32 * HP.R)⌉₊
+        (fun _ => C) truePrep
+        (fun _ => PilotRowRecipe.maximum 0 (initialTrueDetector HP D R ks kt ss st C))) ≤
+      ε ^ 4 := by
+  obtain ⟨L, hL, hd⟩ := initialPilotDetector_accuracy HP
+  obtain ⟨Cr, Cp, Cm, Lp, hCr, hCp, hCm, hLp, hc⟩ :=
+    initialPilotNormalized_raw_detector_moment HP
+  refine ⟨L, Cr, Cp, Cm, Lp, hL, hCr, hCp, hCm, hLp, ?_⟩
+  intro P J inst D hD R H bin ks kt hks hkt ss st cutoff h C hkh η hη hρη hK hC hC1
+    hcover π hπ hY ε hε payment tolerance detectorPayment rawSteps detectorSteps r truePrep
+  have hp0 : 0 ≤ payment := by dsimp only [payment]; positivity
+  have ht : 0 < tolerance := div_pos hε (by linarith : 0 < 1 + payment)
+  obtain ⟨hrs, hr⟩ := initialPilotRaw_allocated HP D R bin ks kt kt ss st cutoff h C ht
+  have hm : rowSliceMean
+      (X R.source (side P ks) (CopyPadding.identifier D ss))
+      (Y R.terminal (side P kt) (CopyPadding.identifier D st))
+      (initialPilotRaw HP D R bin ks kt kt ss st cutoff h C) = C := by
+    funext x y
+    exact (initialPilotRaw_mean HP D hD R H bin ks kt hks hkt ss st cutoff h C hkh hη
+      hρη hK hC hC1 x y).trans (hcover x y)
+  rw [hm] at hr
+  obtain ⟨hds, he⟩ := hd P J D hD R H bin ks kt hkt ss st cutoff h C hkh η hη hρη hK
+    hC hC1 hcover π hπ hY tolerance ht
+  have hb := hc P J D R bin ks kt kt ss st cutoff h C rawSteps 1 detectorSteps
+  dsimp only at hb
+  have hb' : rootDistPow 4 P (rate ks)
+      (X R.source (side P ks) (CopyPadding.identifier D ss))
+      (Y R.terminal (side P kt) (CopyPadding.identifier D st))
+      (initialPilotNormalized HP D R bin ks kt kt ss st cutoff h C rawSteps 1 detectorSteps)
+      (correctionRequest D id r (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff HP.ρ
+        HP.toHierarchyParams.atomCutoff HP.γ HP.K ⌈4 * (1 + 32 * HP.R)⌉₊
+        (fun _ => C) truePrep
+        (fun _ => PilotRowRecipe.maximum 0 (initialTrueDetector HP D R ks kt ss st C))) ≤
+        payment * tolerance ^ 4 := by
+    have hr' : rowNormPow 4 P (rate ks)
+        (fun σ v => r.source.retains (channels D) σ (id v))
+        (fun σ v => r.terminal.retains (channels D) σ (id v))
+        (fun σ x y => initialPilotWalk HP D R bin ks kt kt ss st cutoff h C
+          rawSteps σ x y - C x y) ≤ tolerance ^ 4 := by
+      simpa only [rowNormPow, r, gridChannel, CorrectionRowTask.Channel.retains,
+        channels, semanticSide_grid, X, Y, id_eq] using hr
+    have he' : rowNormPow 4 P (rate ks)
+        (fun σ v => r.source.retains (channels D) σ (id v))
+        (fun σ v => r.terminal.retains (channels D) σ (id v))
+        (fun _ _ y => initialPilotDetector HP D R bin ks kt kt ss st cutoff h C
+          detectorSteps y - initialTrueDetector HP D R ks kt ss st C y) ≤ tolerance ^ 4 := by
+      simpa only [rowNormPow, r, gridChannel, CorrectionRowTask.Channel.retains,
+        channels, semanticSide_grid, X, Y, id_eq] using he
+    have hp := hb.trans (mul_le_mul_of_nonneg_left
+      (add_le_add (mul_le_mul_of_nonneg_left hr' (by positivity))
+        (mul_le_mul_of_nonneg_left he' (pow_nonneg hCm 4)))
+        (by norm_num : (0:ℝ) ≤ 64))
+    simpa only [rootDistPow, rowNormPow, r, truePrep, gridChannel,
+      CorrectionRowTask.Channel.retains, channels, semanticSide_grid, X, Y, id_eq,
+      show 64 * (((Cr / rate kt) ^ 4 + Cp ^ 4 * (Lp / rate kt) ^ 4) * (P:ℝ)^2 *
+        tolerance^4 + Cm^4 * tolerance^4) = payment * tolerance^4 by
+          dsimp only [payment]; ring] using hp
+  exact ⟨hrs, hds, hb'.trans (calibrated_fourth_moment hp0 hε)⟩
 
 /-- The genuine first correction target is the canonical pilot correction, including
 its actual stage rate and newly completed maximum. -/

@@ -28,6 +28,10 @@ and closure, parameter/workspace growth and native RL=L remain open.
 
 * `Matrix.FourthRootHierarchyParams.correction_preparation_stability_constants`:
   changing completed RAW children in actual incoming preparation.
+* `Matrix.FourthRootHierarchyParams.correction_preparation_row_moment`:
+  pre-walk preparation payment from the actual RAW moment.
+* `Matrix.FourthRootHierarchyParams.normalized_raw_normalizer_root_stability`:
+  decoder stability charged directly to its joint normalizer.
 * `Matrix.HierarchyParams.H4RankEnvironment.correctionRequest_children_root_stability`:
   pointwise changes to RAW, PREP and maximum children.
 * `Matrix.HierarchyParams.H4RankEnvironment.correctionRequest_children_root_moment`:
@@ -110,6 +114,68 @@ theorem correction_preparation_stability_constants
       (fun z => ⟨HP.incomingCutoff_nonneg z, HP.incomingCutoff_le_one z⟩) hτ)
     hh hρ (NormalizedRow.rank_pos HP) hKc hf A B S T x y hEc hEr hc hr
 
+/-- The pre-walk incoming preparation is paid entirely by actual RAW error.
+A full source by terminal maximum incurs the explicit width squared and inverse-rate
+fourth power. No environment atom or pointwise convergence of walked PREP is used. -/
+theorem correction_preparation_row_moment
+    (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ∃ L : ℝ, 0 ≤ L ∧
+    ∀ (Ω V : Type*) [Fintype Ω] [Fintype V]
+      (X Y : Ω → V → Prop) [∀ σ x, Decidable (X σ x)] [∀ σ y, Decidable (Y σ y)]
+      (Kc : ℕ), 0 < Kc → ∀ f : ℝ, 0 < f →
+    ∀ (A B : Ω → Matrix V V ℝ) (N u : ℝ), 0 ≤ N * u →
+    rowNormPow 4 N u X Y (fun σ x y =>
+      correctionPrep (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff HP.K Kc f (A σ)
+        (polynomialPrepCutoff4 HP.θ) HP.ρ {z | X σ z} {w | Y σ w} x y -
+      correctionPrep (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff HP.K Kc f (B σ)
+        (polynomialPrepCutoff4 HP.θ) HP.ρ {z | X σ z} {w | Y σ w} x y) ≤
+      (L / f) ^ 4 * (Fintype.card V : ℝ) ^ 2 *
+        rowNormPow 4 N u X Y (fun σ x y => A σ x y - B σ x y) := by
+  obtain ⟨Lh, Lρ, LI, Lτ, hh, hρ, hi, ht, h⟩ :=
+    HP.correction_preparation_stability_constants
+  let L := Lh + Lρ + 2 * Lτ * LI
+  have hL : 0 ≤ L := by dsimp only [L]; positivity
+  refine ⟨L, hL, ?_⟩
+  intro Ω V instΩ instV X Y instX instY Kc hKc f hf A B N u hNu
+  classical
+  let E := fun σ => kthLargest 1 {z | X σ z} (fun z =>
+    kthLargest 1 {w | Y σ w} (fun w => |A σ z w - B σ z w|))
+  have hE (σ : Ω) : 0 ≤ E σ := kthLargest_nonneg
+  have he (σ : Ω) (z : V) (hz : X σ z) :
+      kthLargest 1 {w | Y σ w} (fun w => |A σ z w - B σ z w|) ≤ E σ := by
+    have hh := abs_le_kthLargest_one {z | X σ z}
+      (fun z => kthLargest 1 {w | Y σ w} (fun w => |A σ z w - B σ z w|)) z
+      (mem_filter.mpr ⟨mem_univ _, hz⟩)
+    simpa only [abs_of_nonneg (kthLargest_nonneg (k := 1))] using hh
+  have hb (σ : Ω) (x y : V) (hx : X σ x) (hy : Y σ y) :
+      |correctionPrep (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff HP.K Kc f (A σ)
+          (polynomialPrepCutoff4 HP.θ) HP.ρ {z | X σ z} {w | Y σ w} x y -
+        correctionPrep (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff HP.K Kc f (B σ)
+          (polynomialPrepCutoff4 HP.θ) HP.ρ {z | X σ z} {w | Y σ w} x y| ≤
+        (L / f) * E σ := by
+    have hc (z : V) (hz : X σ z) : |A σ z y - B σ z y| ≤ E σ :=
+      (abs_le_kthLargest_one {w | Y σ w} (fun w => A σ z w - B σ z w) y
+        (mem_filter.mpr ⟨mem_univ _, hy⟩)).trans (he σ z hz)
+    have hp := h V Kc hKc f hf (A σ) (B σ) {z | X σ z} {w | Y σ w}
+      x y (E σ) (E σ) (hE σ) (hE σ)
+      (fun z hz => hc z (mem_filter.mp hz).2)
+      (fun z hz => he σ z (mem_filter.mp hz).2)
+    apply hp.trans
+    calc
+      _ ≤ (Lh * E σ + Lρ * E σ) / f + Lτ * (LI * (E σ + E σ) / f) := by
+        gcongr
+        · exact hc x hx
+        · exact he σ x hx
+      _ = _ := by dsimp only [L]; ring
+  have hp := rowNormPow_le_mul (X := X) (Y := Y) (s := 4) hNu
+    (c := (L / f) ^ 4) (Z' := fun σ _ _ => E σ) (fun σ x y hx hy => by
+      have hh := pow_le_pow_left₀ (abs_nonneg _) (hb σ x y hx hy) 4
+      simpa only [mul_pow, abs_of_nonneg (hE σ)] using hh)
+  exact hp.trans ((mul_le_mul_of_nonneg_left
+    (rowNormPow_rectangle_max_le (X := X) (Y := Y) hNu
+      (fun σ x y => A σ x y - B σ x y)) (pow_nonneg (div_nonneg hL hf.le) 4)).trans_eq
+        (by ring))
+
 private lemma root_product_dist {a a' b b' c B : ℝ}
     (ha' : a' ∈ Set.Icc 0 B) (hb : b ∈ Set.Icc 0 1)
     (hc : c ∈ Set.Icc 0 1) :
@@ -122,10 +188,10 @@ private lemma root_product_dist {a a' b b' c B : ℝ}
   exact add_le_add (mul_le_of_le_one_right (abs_nonneg _) hb.2)
     (mul_le_mul_of_nonneg_right ha'.2 (abs_nonneg _))
 
-/-- Changing actual raw and preparatory children in a normalized correction. The mean
-error is on the same joint source/usage slice, and the raw row and incoming ranks retain
-both original finite rank sets. The maximum is fixed only in this two-child estimate. -/
-theorem normalized_raw_prep_root_stability
+/-- Changing RAW and the literal joint normalizer in a normalized correction.
+Only the difference of conditional means is charged; no pointwise PREP approximation
+is needed. The original incoming ranks and clipped denominator are preserved. -/
+theorem normalized_raw_normalizer_root_stability
     (HP : FourthRootHierarchyParams 16 1 16 32 8) :
     ∃ C LI Lτ : ℝ, 0 ≤ C ∧ 0 ≤ LI ∧ 0 ≤ Lτ ∧
     ∀ (V Γ Ζ : Type*) [Fintype V] [Fintype Γ] [Fintype Ζ]
@@ -146,8 +212,8 @@ theorem normalized_raw_prep_root_stability
         HP.toHierarchyParams.atomCutoff HP.γ HP.K Kc f Xs Z Zt B prep' maximum σ x y ^
         (4⁻¹ : ℝ)| ≤
     C * (|A x y - B x y| / f +
-      (𝔼 p ∈ ({s | Xs s x} : Finset Γ) ×ˢ ({t | Zt t y} : Finset Ζ),
-        |prep p x y - prep' p x y|) +
+      |CorrectionRowRecipe.normalizer Xs Zt prep x y -
+        CorrectionRowRecipe.normalizer Xs Zt prep' x y| +
       kthLargest 1 {w | Z σ.2 w} (fun w => |A x w - B x w|) / f) +
     (2 * HP.Q HP.toHierarchyParams.atomCap) ^ (4⁻¹ : ℝ) *
       (Lτ * (LI * (Ec + Er) / f)) := by
@@ -177,9 +243,8 @@ theorem normalized_raw_prep_root_stability
       abs_kthLargest_div_sub_div_le (NormalizedRow.rank_pos HP) hf T (A x) (B x)
     have hd := hdist (A x y / f) mA qA (B x y / f) mB qB
     rw [← sub_div, abs_div, abs_of_pos hf] at hd
-    have hm := CorrectionRowRecipe.normalizer_stability Xs Zt prep prep' x y
     have hd' := hd.trans (mul_le_mul_of_nonneg_left
-      (add_le_add (add_le_add le_rfl hm) hq) hC)
+      (add_le_add le_rfl hq) hC)
     rw [CorrectionRowRecipe.normalized_factorization HP _ _ _ _ _ _ _ _ _ _ _ _ _ hy,
       CorrectionRowRecipe.normalized_factorization HP _ _ _ _ _ _ _ _ _ _ _ _ _ hy]
     change |(OA * IA * HP.γ (maximum y)) ^ (4⁻¹ : ℝ) -
@@ -196,13 +261,49 @@ theorem normalized_raw_prep_root_stability
       (hi V Kc hKc f hf A B S T y Ec Er hEc hEr hc hr)
       (Real.rpow_nonneg (mul_nonneg (by norm_num) (HP.Q_nonneg _)) _))
   · simp only [CorrectionRowRecipe.normalized, hy, ↓reduceIte, sub_self, abs_zero]
-    have hm : 0 ≤ (𝔼 p ∈ ({s | Xs s x} : Finset Γ) ×ˢ
-        ({t | Zt t y} : Finset Ζ), |prep p x y - prep' p x y|) :=
-      expect_nonneg (fun _ _ => abs_nonneg _)
     have hq : 0 ≤ kthLargest 1 {w | Z σ.2 w} (fun w => |A x w - B x w|) :=
       kthLargest_nonneg
     have hB := HP.Q_nonneg HP.toHierarchyParams.atomCap
     positivity
+
+/-- Optional coarse corollary charging mean pointwise preparation differences.
+Use `normalized_raw_normalizer_root_stability` when only the joint mean matters;
+walked preparation need not approach its true input pointwise. -/
+theorem normalized_raw_prep_root_stability
+    (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ∃ C LI Lτ : ℝ, 0 ≤ C ∧ 0 ≤ LI ∧ 0 ≤ Lτ ∧
+    ∀ (V Γ Ζ : Type*) [Fintype V] [Fintype Γ] [Fintype Ζ]
+      (Xs : Γ → V → Prop) (Z Zt : Ζ → V → Prop)
+      [∀ s v, Decidable (Xs s v)] [∀ t v, Decidable (Z t v)]
+      [∀ t v, Decidable (Zt t v)]
+      (Kc : ℕ), 0 < Kc → ∀ (f : ℝ), 0 < f →
+    ∀ (A B : Matrix V V ℝ) (prep prep' : Γ × Ζ → Matrix V V ℝ)
+      (maximum : V → ℝ) (σ : Γ × Ζ) (x y : V) (Ec Er : ℝ),
+    0 ≤ Ec → 0 ≤ Er →
+    (∀ z ∈ ({w | Xs σ.1 w} : Finset V), |A z y - B z y| ≤ Ec) →
+    (∀ z ∈ ({w | Xs σ.1 w} : Finset V),
+      kthLargest 1 {w | Z σ.2 w} (fun w => |A z w - B z w|) ≤ Er) →
+    |CorrectionRowRecipe.normalized (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff HP.ρ
+        HP.toHierarchyParams.atomCutoff HP.γ HP.K Kc f Xs Z Zt A prep maximum σ x y ^
+        (4⁻¹ : ℝ) -
+      CorrectionRowRecipe.normalized (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff HP.ρ
+        HP.toHierarchyParams.atomCutoff HP.γ HP.K Kc f Xs Z Zt B prep' maximum σ x y ^
+        (4⁻¹ : ℝ)| ≤
+    C * (|A x y - B x y| / f +
+      (𝔼 p ∈ ({s | Xs s x} : Finset Γ) ×ˢ ({t | Zt t y} : Finset Ζ),
+        |prep p x y - prep' p x y|) +
+      kthLargest 1 {w | Z σ.2 w} (fun w => |A x w - B x w|) / f) +
+    (2 * HP.Q HP.toHierarchyParams.atomCap) ^ (4⁻¹ : ℝ) *
+      (Lτ * (LI * (Ec + Er) / f)) := by
+  obtain ⟨C, LI, Lτ, hC, hLI, hLτ, h⟩ := HP.normalized_raw_normalizer_root_stability
+  refine ⟨C, LI, Lτ, hC, hLI, hLτ, ?_⟩
+  intro V Γ Ζ instV instΓ instΖ Xs Z Zt instXs instZ instZt Kc hKc f hf
+    A B prep prep' maximum σ x y Ec Er hEc hEr hc hr
+  have hb := h V Γ Ζ Xs Z Zt Kc hKc f hf A B prep prep' maximum σ x y
+    Ec Er hEc hEr hc hr
+  have hm := CorrectionRowRecipe.normalizer_stability Xs Zt prep prep' x y
+  exact hb.trans (add_le_add (mul_le_mul_of_nonneg_left
+    (add_le_add (add_le_add le_rfl hm) le_rfl) hC) le_rfl)
 
 end Matrix.FourthRootHierarchyParams
 

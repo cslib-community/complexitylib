@@ -22,6 +22,7 @@ normalization and bounded-range arguments retain Samuel Schlesinger's credit.
 
 ## Main results
 
+* `correctionRequest_congr_normalizer`: preparation substitution using only joint means.
 * `correctionRequest_multiplier`: exact factorization of the pilot multiplier.
 * `correctionRequest_maximum_root_stability`: uniform pointwise fourth-root sensitivity.
 * `correctionRequest_maximum_root_moment`: integrated sensitivity on the original masks.
@@ -32,6 +33,24 @@ namespace Matrix.HierarchyParams.H4RankEnvironment
 open Finset Cslib Cslib.Probability
 attribute [local instance] Classical.propDecidable
 variable {P J : ℕ} [Fact P.Prime] {V : Type*} [Fintype V]
+
+/-- A correction reads its preparation only through the literal joint source/usage
+normalizer. Equal means suffice even when the preparatory functions differ pointwise. -/
+theorem correctionRequest_congr_normalizer {k : ℕ}
+    (D : ZMod P) (ident : V → ZMod P)
+    (r : HierarchyTask.Request k (Fin J) (ZMod P)) (hr : Admissible r)
+    (I : ℝ → ℝ → ℝ) (τ ρ Q γ : ℝ → ℝ) (K Kc : ℕ)
+    (raw prep prep' : Environment P J → Matrix V V ℝ)
+    (maximum : Environment P J → V → ℝ) (x y : V)
+    (hm : rowSliceMean (fun σ v => r.source.retains (channels D) σ (ident v))
+      (fun σ v => r.usage.retains (channels D) σ (ident v)) prep x y =
+      rowSliceMean (fun σ v => r.source.retains (channels D) σ (ident v))
+        (fun σ v => r.usage.retains (channels D) σ (ident v)) prep' x y)
+    (σ : Environment P J) :
+    correctionRequest D ident r I τ ρ Q γ K Kc raw prep maximum σ x y =
+      correctionRequest D ident r I τ ρ Q γ K Kc raw prep' maximum σ x y := by
+  simp only [correctionRequest, dite_eq_left hr, CorrectionRowRecipe.normalized]
+  rw [normalizer_full D ident r hr prep, normalizer_full D ident r hr prep', hm]
 
 /-- Factor the completed pilot multiplier out of the actual request, keeping the original
 raw ranks, incoming gate, usage mask and source/usage preparatory mean. -/

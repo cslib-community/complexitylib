@@ -623,13 +623,28 @@ The direct constructor in `hierarchyTaskEval` differs from the stochastic normal
 The latter is also constructed here: preparation is recomputed from the completed RAW table,
 then averaged by the actual conditional H4 walk. `initialPilotNormalized` consumes that walk,
 the unmodified RAW ranks and the completed maximum through the original source/usage
-normalizer. Its local root bound instantiates the changing-RAW/PREP and running-maximum
-estimates on these literal computed children, with the explicit width squared and inverse
-terminal-rate fourth-power RAW cost. No true-value preparation oracle is supplied.
-**General allocated accuracy for
-this normalized child, and its conditional walk to the pilot correction mean, remain open.**
-Consequently the direct-constructor accuracy result does not close the requested first
-stochastic correction fragment or the recursive estimator.
+normalizer. Same-slice stationarity proves that the preparatory walk preserves this
+literal normalizer exactly; pointwise PREP need not converge to pointwise true preparation.
+The decoder's reusable stability API therefore accepts the normalizer difference directly.
+The former pointwise PREP moment estimate is retained as an optional coarse bound, not the
+allocation route.
+
+The actual pre-walk incoming preparation responds to RAW perturbations through the original
+row, incoming-column and source-by-terminal ranks. Conditional Jensen and the full rectangle
+maximum pay this response with explicit width squared and inverse terminal-rate fourth power,
+without an environment-cardinality or atom penalty. `initialPilotNormalized_accuracy` chooses
+RAW and detector tolerances before either call, uses preparation parameter one (two graph steps),
+and proves root error at most `ε^4` against the original true normalized request. It retains
+the original clipped denominator and actual source-aware detector/maximum. HP.k stays fixed;
+constants precede fields, requests and child tables. The same covering single-bin, equal-rate,
+finite-horizon and dense-mean hypotheses remain explicit. No true-PREP oracle is used.
+
+**The completed normalized outer H4 walk is not yet proved accurate against the canonical
+first pilot correction.** Its literal joint mean must be identified using actual correction
+mean laws and dense/bin conditions, then RAW normalizer bias and walk noise must be paid from
+computed input moments or known ranges. No desired mean is assumed, and the target must stay
+the actual true correction. This remains a partial stochastic fragment; it does not close
+#1721/#1444, general bin assembly, later iterations or the recursive estimator.
 
 The checked small-field client computes a positive upper correction `Q(1)` and an actual
 preparatory walk equal to one on the retained diagonal. The normalized child also computes
