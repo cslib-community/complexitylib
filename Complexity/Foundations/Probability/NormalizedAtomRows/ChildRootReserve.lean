@@ -28,7 +28,7 @@ variable {P J : ℕ} [Fact P.Prime]
 set_option backward.isDefEq.respectTransparency false in
 /-- Actual bounded normalized children pay the conditional reserve from their own rooted
 row moments. Usage-to-rank transport, midpoint/reset transport and both ranges are derived.
-The finite atom allocation retains its explicit environment-cardinality cost. -/
+The integrated allocation retains explicit vertex, call-count and source-rate costs. -/
 theorem actual_conditionalChildCost_le_of_root_budgets
     (HP : FourthRootHierarchyParams 16 1 16 32 8) (D : ZMod P) (R : RoleProfile J)
     (l ks km kt n : ℕ) (ss sm st : List (ZMod P)) (kb : ℕ → ℕ)
@@ -68,7 +68,9 @@ theorem actual_conditionalChildCost_le_of_root_budgets
         (fun σ => estimated i σ r) (fun σ => canonical i σ r) ≤
       (δ / (1 + scale)) /
         (1 + (4 * B ^ ((3 : ℝ) / 4)) ^ 4 *
-          ((P : ℝ) * r.source.rate * Fintype.card (Environment P J)))) →
+          ((P : ℝ) * r.source.rate)) /
+        (1 + #(HierarchyTask.residualErrorCalls (k := HP.k) (range (n + 1)) l
+          source mid terminal (fun i => rate (kb i))))) →
     rowNormPow 4 P (rate ks)
       (fun σ x => source.retains channelsV σ x) (fun σ y => terminal.retains channelsV σ y)
       (fun _ => HierarchyTask.conditionalChildCost channelsV (range (n + 1)) l source mid

@@ -14,7 +14,9 @@ import Complexity.Foundations.Data.Finset.Expect
 
 A bounded nonnegative pair of tables admits an explicit root-to-ordinary error payment
 at each retained atom. This conservative payment retains the full environment cardinality.
-A second estimate integrates conditional Jensen on the same full environment.
+The integrated envelope and conditional Jensen estimates avoid extracting atoms.
+The actual child reserve uses these integrated estimates; the atom lemmas remain independent
+finite-domain tools for clients that explicitly need entrywise control.
 These original finite inequalities use Samuel Schlesinger's integrated row normalization.
 -/
 public section
@@ -93,6 +95,35 @@ theorem bounded_sub_fourth_le_of_root_budget
     nlinarith
   · simp only [hoff σ x y hy, sub_self, abs_zero, zero_pow (by decide : 4 ≠ 0)]
     exact hq
+
+/-- An environment-dependent envelope integrates without extracting any atom. Repeating
+it across retained source/terminal pairs costs only the square of the vertex width. -/
+theorem rowNormPow_fourth_le_expect_envelope {N u : ℝ} (hNu : 0 ≤ N * u)
+    (X Y : Ω → V → Prop) [∀ σ x, Decidable (X σ x)] [∀ σ y, Decidable (Y σ y)]
+    (F : Ω → V → V → ℝ) (q : Ω → ℝ) (hq : ∀ σ, 0 ≤ q σ)
+    (hF : ∀ σ x y, X σ x → Y σ y → |F σ x y| ^ 4 ≤ q σ) :
+    rowNormPow 4 N u X Y F ≤ (Fintype.card V : ℝ) ^ 2 / (N * u) * 𝔼 σ, q σ := by
+  unfold rowNormPow
+  have hsum (σ : Ω) :
+      (∑ x ∈ ({x | X σ x} : Finset V), ∑ y ∈ ({y | Y σ y} : Finset V), |F σ x y| ^ 4) ≤
+        (Fintype.card V : ℝ) ^ 2 * q σ := by
+    calc
+      _ ≤ ∑ x ∈ ({x | X σ x} : Finset V), ∑ y ∈ ({y | Y σ y} : Finset V), q σ :=
+        sum_le_sum fun x hx => sum_le_sum fun y hy =>
+          hF σ x y (mem_filter.mp hx).2 (mem_filter.mp hy).2
+      _ ≤ (Fintype.card V : ℝ) ^ 2 * q σ := by
+        simp only [sum_const, nsmul_eq_mul]
+        have hx : (#({x | X σ x} : Finset V) : ℝ) ≤ Fintype.card V :=
+          by exact_mod_cast card_le_card (filter_subset _ _)
+        have hy : (#({y | Y σ y} : Finset V) : ℝ) ≤ Fintype.card V :=
+          by exact_mod_cast card_le_card (filter_subset _ _)
+        have hm := mul_le_mul_of_nonneg_right
+          (mul_le_mul hx hy (by positivity) (by positivity)) (hq σ)
+        nlinarith only [hm]
+  calc
+    _ ≤ (N * u)⁻¹ * 𝔼 σ, (Fintype.card V : ℝ) ^ 2 * q σ :=
+      mul_le_mul_of_nonneg_left (expect_le_expect fun σ _ => hsum σ) (inv_nonneg.mpr hNu)
+    _ = _ := by rw [← mul_expect]; ring
 
 /-- Conditional Jensen on the same full environment, with no independence requirement.
 The fourth moment of the deterministic slice mean is at most the original row moment. -/

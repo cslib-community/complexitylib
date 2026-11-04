@@ -451,14 +451,24 @@ importance-times-midpoint, and once-negative coefficients. Their rounded grid de
 remain literal. Set `scale = P^2 / (P rate ks) * A` and
 `delta = tolerance^4 / (1 + rate kt^(-4) + amplification)`.
 For each called request r, a rooted row moment at most
-`delta / (1+scale) / (1 + (4 B^(3/4))^4 P r.source.rate card(Environment P J))`
-pays the desired reserve. The full finite environment cardinality is an explicit atom cost;
-this is not a bound uniform in environment size or evidence of useful recursive growth.
+`delta / (1+scale) / (1 + (4 B^(3/4))^4 P r.source.rate) / (1 + #calls)`
+pays the desired reserve, where `calls = residualErrorCalls` contains the direct/left/right
+requests per positive bin and the special negative request once. In particular
+`#calls ≤ 3(n+1)+1`; it counts requests, not environment atoms. The proof keeps a sum
+of child ordinary errors on their own source/usage domains for each environment, applies
+conditional Jensen to the actual cost, and swaps finite sums with expectation. Bounded
+root-to-ordinary conversion then pays each integrated child moment. Repeating this sum
+over parent pairs costs the explicit `P²`; child source normalization costs `P r.source.rate`.
+There is no environment-cardinality or inverse minimum-atom-probability factor, and no
+independence assumption on children. Exact midpoint density and importance factors remain
+in `A`. This finite transport does not establish useful recursive parameter growth.
 The ordinary-error conversion applies only to bounded normalized estimated and canonical
 outputs, never to the signed raw target divided by a rate. The
 [domain regressions](../../ComplexityTests/ChildRootReserve.lean) check an off-source error
 ignored by the actual product, full-rank masks, two-bin/once-negative coefficients,
-canonical-zero and positive nonconstant normalized outputs.
+canonical-zero and positive nonconstant normalized outputs. A sparse, mask-sensitive
+normalized-child regression also checks an integrated budget that permits a unit error at
+a retained atom; the corresponding per-atom allowance would be strictly less than one.
 
 Deriving small numerical errors from recursive lower-child relative estimates, numerical
 reserves, recursive budget induction, copy routing, parameter/workspace bounds and native RL=L

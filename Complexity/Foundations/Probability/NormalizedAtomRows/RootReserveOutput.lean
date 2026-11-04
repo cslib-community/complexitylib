@@ -13,7 +13,8 @@ public import Complexity.Foundations.Probability.NormalizedAtomRows.ChildRootRes
 
 This discharges the conditional cost premise of `ReserveOutput` using bounded normalized
 lower-child rooted moments on their own source and full terminal rank. The finite sufficient
-allocation displays its environment cardinality, width, bin, rate and density costs.
+allocation displays its vertex width, call-count, bin, rate and density costs.
+There is no environment-cardinality or minimum-atom-probability payment.
 It does not prove recursive accuracy, copy routing, parameter/workspace growth or RL=L.
 The underlying row/normalization assembly is adapted from Samuel Schlesinger.
 -/
@@ -111,7 +112,9 @@ theorem actualEstimatedResidual_output_from_root_budgets
             source mid terminal (fun i => rate (kb i))
             (2 * HP.Q HP.toHierarchyParams.atomCap) (2 * max cap 16))) /
         (1 + (4 * (max (2 * HP.Q HP.toHierarchyParams.atomCap) (2 * max cap 16)) ^
-          ((3 : ℝ) / 4)) ^ 4 * ((P : ℝ) * r.source.rate * Fintype.card (Environment P J)))) →
+          ((3 : ℝ) / 4)) ^ 4 * ((P : ℝ) * r.source.rate)) /
+        (1 + #(HierarchyTask.residualErrorCalls (k := HP.k) (range (n + 1)) l
+          source mid terminal (fun i => rate (kb i))))) →
     rowNormPow 4 P (rate ks) (retainedMask R.source (side P ks) D ss)
       (retainedMask R.terminal (side P ku) D st)
       (fun σ x y => actualNormalizedCompatible HP ζ floor R.terminal (side P ku) D st kt m
