@@ -357,14 +357,6 @@ theorem initialPilotDetector_accuracy
   obtain ⟨hs, he⟩ := ha P J D hD R H bin ks kt hkt ss st cutoff h C hkh η hη hρη hK hC hC1
     hcover π hπ hY tolerance ht
   refine ⟨hs, he.trans ?_⟩
-  have hte : tolerance ≤ ε := (div_le_iff₀ hden).mpr (by nlinarith)
-  have hce : payment * tolerance ≤ ε := by
-    dsimp only [tolerance]
-    rw [← mul_div_assoc, div_le_iff₀ hden]
-    nlinarith
-  calc
-    payment * tolerance ^ 4 = (payment * tolerance) * tolerance ^ 3 := by ring
-    _ ≤ ε * ε ^ 3 := mul_le_mul hce (pow_le_pow_left₀ ht.le hte 3) (by positivity) hε.le
-    _ = ε ^ 4 := by ring
+  exact calibrated_fourth_moment hc hε
 
 end Matrix.HierarchyParams.H4RankEnvironment

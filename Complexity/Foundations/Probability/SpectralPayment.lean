@@ -58,4 +58,19 @@ theorem spectralWalkLength_payment {r C ε : ℝ} (hr : 0 < r) (hr1 : r < 1)
       apply (div_le_iff₀ (by positivity : 0 < C + 1)).mpr
       nlinarith [hb.le]
 
+/-- Calibrate a fourth-moment tolerance by any explicit nonnegative payment. -/
+theorem calibrated_fourth_moment {payment ε : ℝ} (hp : 0 ≤ payment) (hε : 0 < ε) :
+    payment * (ε / (1 + payment)) ^ 4 ≤ ε ^ 4 := by
+  have hden : 0 < 1 + payment := by linarith
+  have ht : 0 < ε / (1 + payment) := div_pos hε hden
+  have hte : ε / (1 + payment) ≤ ε := (div_le_iff₀ hden).mpr (by nlinarith)
+  have hce : payment * (ε / (1 + payment)) ≤ ε := by
+    rw [← mul_div_assoc, div_le_iff₀ hden]
+    nlinarith
+  calc
+    payment * (ε / (1 + payment)) ^ 4 =
+      (payment * (ε / (1 + payment))) * (ε / (1 + payment)) ^ 3 := by ring
+    _ ≤ ε * ε ^ 3 := mul_le_mul hce (pow_le_pow_left₀ ht.le hte 3) (by positivity) hε.le
+    _ = ε ^ 4 := by ring
+
 end Cslib.Probability

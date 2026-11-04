@@ -3880,6 +3880,9 @@ public import Complexity.Foundations.Probability.HierarchySourceSampling
 public import Complexity.Foundations.Probability.HierarchyTaskData
 public import Complexity.Foundations.Probability.HierarchyTaskMeans
 public import Complexity.Foundations.Probability.HierarchyTasks
+public import Complexity.Foundations.Probability.InitialPilotCompleted
+public import Complexity.Foundations.Probability.InitialPilotCorrection
+public import Complexity.Foundations.Probability.InitialPilotCorrectionMean
 public import Complexity.Foundations.Probability.InitialPilotDetector
 public import Complexity.Foundations.Probability.InitialPilotScore
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ActualMoment
