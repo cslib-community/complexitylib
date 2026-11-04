@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Computability.WordRAM.Power
 
 /-!
@@ -30,14 +31,8 @@ theorem exec_rename {r w : ℕ} (f : Fin 5 → Fin r) (hf : Function.Injective f
       y.regs (f value) = b ^ n ∧ y.regs (f counter) = n ∧ y.regs (f one) = 1 ∧
       y.mem = x.mem ∧ y.regs (f base) = b ∧ y.regs (f exponent) = n ∧
       ∀ i, (∀ j, f j ≠ i) → y.regs i = x.regs i := by
-  obtain ⟨a, he, hv, hc, ho, hm, hb', hn'⟩ := exec b n hb (x.comap f) hx hn hfit
-  refine ⟨a.extend f x, he.rename hf, ?_, ?_, ?_, hm, ?_, ?_, ?_⟩
-  · exact (hf.extend_apply _ _ value).trans hv
-  · exact (hf.extend_apply _ _ counter).trans hc
-  · exact (hf.extend_apply _ _ one).trans ho
-  · exact (hf.extend_apply _ _ base).trans hb'
-  · exact (hf.extend_apply _ _ exponent).trans hn'
-  · intro i hi
-    exact Function.extend_apply' _ _ i (by rintro ⟨j, hj⟩; exact hi j hj)
+  obtain ⟨y, hy, ⟨hv, hc, ho, hm, hb', hn'⟩, hframe⟩ :=
+    ExecWithin.rename_post hf (exec b n hb (x.comap f) hx hn hfit)
+  exact ⟨y, hy, hv, hc, ho, hm, hb', hn', hframe⟩
 
 end Cslib.WordRAM.Power

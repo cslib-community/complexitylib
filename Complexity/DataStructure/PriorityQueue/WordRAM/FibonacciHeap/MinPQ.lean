@@ -13,6 +13,7 @@ public import Complexity.DataStructure.WordRAM.StateTransition
 public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.BasicOps
 public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Cut
 public import Complexity.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Consolidate
+import Complexity.Computability.WordRAM.Call
 
 /-!
 # Fibonacci Heap with Handles and Satellite Values
@@ -606,23 +607,12 @@ theorem allocSpan_exec {n_max w base : ℕ} (hS : Fits w (base + space n_max))
     fin_cases j
     change x0.regs nReg = n_max
     simp only [x0, Data.set_regs, Function.update_of_ne (by decide : nReg ≠ valBaseReg), hn]
-  obtain ⟨y_fib, he_fib, hm_fib, hb_fib, hfr_fib, hpar_fib⟩ :=
-    FibonacciHeap.allocSpan_exec hS_fib hx0_b hx0_fr hx0_par
-  let x1 := y_fib.extend f42 x0
-  have e1 : ExecWithin w (FibonacciHeap.allocSpan.rename f42) x0 x1 12 :=
-    he_fib.rename f42_injective
-  have hx1_vb : x1.regs valBaseReg = base + FibonacciHeap.space n_max := by
-    change (x1.comap f42).regs FibonacciHeap.frontierReg = base + FibonacciHeap.space n_max
-    rw [Data.comap_extend f42_injective]
-    exact hfr_fib
-  have hx1_b : x1.regs baseReg = base := by
-    change (x1.comap f42).regs FibonacciHeap.baseReg = base
-    rw [Data.comap_extend f42_injective]
-    exact hb_fib
-  have hx1_n : x1.regs nReg = n_max := by
-    change (x1.comap f42).regs FibonacciHeap.nReg = n_max
-    rw [Data.comap_extend f42_injective]
-    exact hpar_fib 0
+  obtain ⟨x1, e1, ⟨hm_fib, hb_fib, hfr_fib, hpar_fib⟩, _⟩ :=
+    ExecWithin.rename_post f42_injective
+      (FibonacciHeap.allocSpan_exec hS_fib hx0_b hx0_fr hx0_par)
+  have hx1_vb : x1.regs valBaseReg = base + FibonacciHeap.space n_max := hfr_fib
+  have hx1_b : x1.regs baseReg = base := hb_fib
+  have hx1_n : x1.regs nReg = n_max := hpar_fib 0
   let x2 := x1.set freeBaseReg (base + FibonacciHeap.space n_max + n_max)
   have e2 : ExecWithin w (.op (.exactBin .add freeBaseReg valBaseReg nReg)) x1 x2 1 := by
     simpa only [hx1_vb, hx1_n] using
@@ -719,16 +709,15 @@ theorem initSetup_exec {n_max U V w base : ℕ} {x₁ : Data rMinPQ}
   have hz_fib : ∀ a ∈ (Block.mk base (FibonacciHeap.space n_max)).footprint,
       (s4.comap f42).mem a = 0 :=
     fun a ha => hz a (fib_footprint_subset ha)
-  obtain ⟨y_fib, he_fib, hfr_fib, hinv_fib, hpot_fib, hmod_fib⟩ :=
-    FibonacciHeap.initSetup_exec (K_max := U) (hs4_b.comap f42) hs4_base hs4_fr hs4_par hz_fib
-  let y := y_fib.extend f42 s4
-  have e5 : ExecWithin w (FibonacciHeap.initSetup.rename f42) s4 y 14 :=
-    he_fib.rename f42_injective
+  obtain ⟨y, e5, ⟨hfr_fib, hinv_fib, hpot_fib, hmod_fib⟩, hregs⟩ :=
+    ExecWithin.rename_post f42_injective
+      (FibonacciHeap.initSetup_exec (K_max := U) (hs4_b.comap f42)
+        hs4_base hs4_fr hs4_par hz_fib)
   have he : ExecWithin w initSetup x₁ y 18 := by
     unfold initSetup
     exact (e1.seq (e2.seq (e3.seq (e4.seq e5)))).mono (by omega)
   have hy_ofr : y.regs outerFrontierReg = base + space n_max := by
-    rw [Data.extend_regs_of_notMem y_fib s4 outerFrontierReg_notMem_range]
+    rw [hregs _ (fun j hj => outerFrontierReg_notMem_range ⟨j, hj⟩)]
     simp only [s4, s3, s2, s1, Data.set_regs,
       Function.update_of_ne (by decide : outerFrontierReg ≠ freeTopReg),
       Function.update_of_ne (by decide : outerFrontierReg ≠ freshReg),
@@ -741,23 +730,21 @@ theorem initSetup_exec {n_max U V w base : ℕ} {x₁ : Data rMinPQ}
       hy_ofr, ?_, ?_, ?_, ?_,
       fun _ hi => absurd hi (Nat.not_lt_zero _)⟩,
     ?_, modifies_of_fib hmod_fib⟩
-  · rw [Data.comap_extend f42_injective]
-    exact hinv_fib
-  · rw [Data.extend_regs_of_notMem y_fib s4 freeBaseReg_notMem_range]
+  · exact hinv_fib
+  · rw [hregs _ (fun j hj => freeBaseReg_notMem_range ⟨j, hj⟩)]
     simp only [s4, s3, s2, Data.set_regs,
       Function.update_of_ne (by decide : freeBaseReg ≠ freeTopReg),
       Function.update_of_ne (by decide : freeBaseReg ≠ freshReg),
       Function.update_of_ne (by decide : freeBaseReg ≠ valBaseReg), hs1_fb]
-  · rw [Data.extend_regs_of_notMem y_fib s4 freshReg_notMem_range]
+  · rw [hregs _ (fun j hj => freshReg_notMem_range ⟨j, hj⟩)]
     simp only [s4, s3, Data.set_regs,
       Function.update_of_ne (by decide : freshReg ≠ freeTopReg), Function.update_self]
     rfl
-  · rw [Data.extend_regs_of_notMem y_fib s4 freeTopReg_notMem_range]
+  · rw [hregs _ (fun j hj => freeTopReg_notMem_range ⟨j, hj⟩)]
     simp only [s4, Data.set_regs, Function.update_self]
     rfl
   · rintro _ _ _ ⟨⟩
   · unfold potential
-    rw [Data.comap_extend f42_injective]
     exact hpot_fib
 
 /-! ## Operation specifications: `isEmptyCode`, `getCode`, `insertCode` -/

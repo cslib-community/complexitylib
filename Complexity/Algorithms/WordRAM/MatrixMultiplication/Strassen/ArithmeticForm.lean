@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.Quadrant
 public import Complexity.Computability.WordRAM.Signed.ArrayArithmetic.Exec
 
@@ -84,45 +85,41 @@ theorem exec_arithmeticForm {w q t₁ t₂ A : ℕ} (base dst : Fin 64) (sign : 
     simpa only [Nat.succ_mul] using hmul
   have hq₁ := hquarter t₁ ht₁
   have hq₂ := hquarter t₂ ht₂
-  obtain ⟨v, hv, values, frame, _⟩ := Signed.ArrayArithmetic.exec
-    (decide (sign < 0)) (z.comap f) (fun j => u (t₁ * q + j)) (fun j => u (t₂ * q + j))
-    hzl hbound
-    (fun j hj => hu _ (by omega)) (fun j hj => hu _ (by omega))
-    (by intro j hj; rw [hzm, hza, Nat.add_assoc]; exact hinput _ (by omega))
-    (by intro j hj; rw [hzm, hzb, Nat.add_assoc]; exact hinput _ (by omega))
-    (by rw [hza]; exact hw.of_le (by omega))
-    (by rw [hzb]; exact hw.of_le (by omega))
-    (by rw [hzo]; exact hw.of_le (by omega))
-    (by
-      rw [hza, hzo]
-      rcases hsep with h | h
-      · exact Or.inl (by omega)
-      · exact Or.inr (Or.inl (by omega)))
-    (by
-      rw [hzb, hzo]
-      rcases hsep with h | h
-      · exact Or.inl (by omega)
-      · exact Or.inr (Or.inl (by omega)))
-  let y := v.extend f z
-  have hvector : ExecWithin (w + 2)
-      ((Signed.ArrayArithmetic.program (decide (sign < 0))).rename f) z y (26 * q + 4) :=
-    hv.rename (Fin.castLE_injective _)
+  obtain ⟨y, hvector, ⟨values, frame, _⟩, hframe⟩ :=
+    ExecWithin.rename_post (Fin.castLE_injective _) (Signed.ArrayArithmetic.exec
+      (decide (sign < 0)) (z.comap f) (fun j => u (t₁ * q + j)) (fun j => u (t₂ * q + j))
+      hzl hbound
+      (fun j hj => hu _ (by omega)) (fun j hj => hu _ (by omega))
+      (by intro j hj; rw [hzm, hza, Nat.add_assoc]; exact hinput _ (by omega))
+      (by intro j hj; rw [hzm, hzb, Nat.add_assoc]; exact hinput _ (by omega))
+      (by rw [hza]; exact hw.of_le (by omega))
+      (by rw [hzb]; exact hw.of_le (by omega))
+      (by rw [hzo]; exact hw.of_le (by omega))
+      (by
+        rw [hza, hzo]
+        rcases hsep with h | h
+        · exact Or.inl (by omega)
+        · exact Or.inr (Or.inl (by omega)))
+      (by
+        rw [hzb, hzo]
+        rcases hsep with h | h
+        · exact Or.inl (by omega)
+        · exact Or.inr (Or.inl (by omega))))
   have he : ExecWithin (w + 2) (form base dst t₁ t₂ sign) x y (26 * q + 12) := by
     simpa only [form, ite_eq_right hsign, f] using
       (hr.seq (hs.seq (hargs.seq hvector))).mono
         (by omega : 3 + (3 + (2 + (26 * q + 4))) ≤ 26 * q + 12)
   refine ⟨y, he, ?_, ?_, ?_⟩
   · intro j hj
-    simpa only [y, Data.extend, hzo, decide_eq_true_eq] using values j hj
+    simpa only [Data.comap_mem, hzo, decide_eq_true_eq] using values j hj
   · intro a ha
-    simpa only [y, Data.extend, hzm] using frame a (by simpa only [hzo] using ha)
+    exact (frame a (by simpa only [hzo] using ha)).trans (congrFun hzm a)
   · intro i hi htemp
-    have hn : ¬∃ j, f j = i := by
-      rintro ⟨j, hj⟩
-      have hj' := congrArg Fin.val hj
-      change j.val = i.val at hj'
-      omega
-    have hyi : y.regs i = z.regs i := Function.extend_apply' _ _ _ hn
+    have hyi : y.regs i = z.regs i := hframe i (by
+      intro j hj
+      have hv := congrArg Fin.val hj
+      change j.val = i.val at hv
+      omega)
     apply hyi.trans
     have hit : i ≠ Reg.target := by intro h; subst i; contradiction
     have hil : i ≠ Reg.length := by intro h; subst i; contradiction

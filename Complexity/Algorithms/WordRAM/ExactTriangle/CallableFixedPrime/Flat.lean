@@ -10,7 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Input
 
 /-!
-# Initialized halting caller-safe fixed-prime computation
+# Initialized halting caller-safe box fixed-prime computation
 
 The same final state witnesses the actual initialized prefix, halt, verdict, original
 coordinates and global failed-scan accounting. Fourteen real header/pointer instructions

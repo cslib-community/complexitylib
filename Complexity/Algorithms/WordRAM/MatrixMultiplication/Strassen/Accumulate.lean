@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.Quadrant
 public import Complexity.Computability.WordRAM.Signed.ArrayArithmetic.Exec
 
@@ -73,37 +74,34 @@ theorem exec_accumulate {w q t A B : ℕ} (subtract : Bool) (x : Data 64) (u v :
   have hquarter : t * q + q ≤ 4 * q := by
     have hmul := Nat.mul_le_mul_right q (Nat.succ_le_of_lt ht)
     simpa only [Nat.succ_mul] using hmul
-  obtain ⟨v', hv', values, frame, _⟩ := Signed.ArrayArithmetic.exec subtract (z.comap f) u v
-    hzl hbound hu hv
-    (by intro j hj; rw [hzm, hza]; exact hout j hj)
-    (by intro j hj; rw [hzm, hzb]; exact hprod j hj)
-    (by rw [hza]; exact hw.of_le (by omega))
-    (by rw [hzb]; exact hw.of_le (by omega))
-    (by rw [hzo]; exact hw.of_le (by omega))
-    (Or.inr (Or.inr (hza.trans hzo.symm)))
-    (by
-      rw [hzb, hzo]
-      rcases hsep with h | h
-      · exact Or.inl (by omega)
-      · exact Or.inr (Or.inl (by omega)))
-  let y := v'.extend f z
-  have hvector : ExecWithin (w + 2)
-      ((Signed.ArrayArithmetic.program subtract).rename f) z y (26 * q + 4) :=
-    hv'.rename (Fin.castLE_injective _)
+  obtain ⟨y, hvector, ⟨values, frame, _⟩, hframe⟩ :=
+    ExecWithin.rename_post (Fin.castLE_injective _)
+      (Signed.ArrayArithmetic.exec subtract (z.comap f) u v
+      hzl hbound hu hv
+      (by intro j hj; rw [hzm, hza]; exact hout j hj)
+      (by intro j hj; rw [hzm, hzb]; exact hprod j hj)
+      (by rw [hza]; exact hw.of_le (by omega))
+      (by rw [hzb]; exact hw.of_le (by omega))
+      (by rw [hzo]; exact hw.of_le (by omega))
+      (Or.inr (Or.inr (hza.trans hzo.symm)))
+      (by
+        rw [hzb, hzo]
+        rcases hsep with h | h
+        · exact Or.inl (by omega)
+        · exact Or.inr (Or.inl (by omega))))
   have he : ExecWithin (w + 2) (accumulate t subtract) x y (26 * q + 10) := by
     exact (hs.seq (hargs.seq hvector)).mono (by omega)
   refine ⟨y, he, ?_, ?_, ?_⟩
   · intro j hj
-    simpa only [y, Data.extend, hzo] using values j hj
+    simpa only [Data.comap_mem, hzo] using values j hj
   · intro a ha
-    simpa only [y, Data.extend, hzm] using frame a (by simpa only [hzo] using ha)
+    exact (frame a (by simpa only [hzo] using ha)).trans (congrFun hzm a)
   · intro i hi htemp
-    have hn : ¬∃ j, f j = i := by
-      rintro ⟨j, hj⟩
-      have hj' := congrArg Fin.val hj
-      change j.val = i.val at hj'
-      omega
-    have hyi : y.regs i = z.regs i := Function.extend_apply' _ _ _ hn
+    have hyi : y.regs i = z.regs i := hframe i (by
+      intro j hj
+      have hv := congrArg Fin.val hj
+      change j.val = i.val at hv
+      omega)
     apply hyi.trans
     have hib : i ≠ Reg.operandB := by intro h; subst i; contradiction
     have hit : i ≠ Reg.target := by intro h; subst i; contradiction
