@@ -11,7 +11,7 @@ public import Complexity.Foundations.Probability.HierarchyDetector
 public import Complexity.Foundations.Probability.HierarchyDenseChildren
 public import Complexity.Foundations.Probability.EstimatorSchedule
 public import Complexity.Foundations.Probability.HierarchyEstimatedInput
-import Complexity.Foundations.Probability.NormalizedAtomRows.Output
+public import Complexity.Foundations.Probability.NormalizedAtomRows.Request
 import Complexity.Foundations.Probability.RootMetric.FiniteError
 
 /-!
@@ -623,6 +623,31 @@ theorem evaluate_dense (M i : ℕ) (hM : 0 < M) (r : HierarchyTask.Request HP.k 
       (denseChild B.padding id r (B.cutoff i) (B.auxiliary i) HP.ρ HP.K B.base)) := by
   rw [evaluate, step, hr]
   simp only [hM, ↓reduceIte]
+
+/-- The public dense evaluator consumes the supplied bin numerator and its corresponding
+preparation. Its target is a dense normalized bin, with full terminal rank and the actual
+source/usage conditional mean; it is not the fixed-HP atom decoder or a correction request. -/
+theorem evaluate_dense_eq_output (M i : ℕ) (hM : 0 < M)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hr : r.task = .baseNormalized 0 i) (ha : Admissible r)
+    {ζ : ℝ} (hζ : 0 < ζ) :
+    B.evaluate M r = some (.row (fun σ x y =>
+      if r.usage.retains (channels B.padding) σ y then
+        FourthRootHierarchyParams.NormalizedRow.output (B.cutoff i) HP.ρ ζ
+          (requestSignals ζ B.padding id r (fun _ => B.base)
+            (densePreparation B.padding id r (B.auxiliary i) HP.ρ HP.K B.base) σ x y 0)
+          (requestSignals ζ B.padding id r (fun _ => B.base)
+            (densePreparation B.padding id r (B.auxiliary i) HP.ρ HP.K B.base) σ x y 1)
+          (Cslib.RowCompression.firstRank
+            {z | r.terminal.retains (channels B.padding) σ z} HP.K 0
+            (requestSignals ζ B.padding id r (fun _ => B.base)
+              (densePreparation B.padding id r (B.auxiliary i) HP.ρ HP.K B.base) σ x))
+      else 0)) := by
+  rw [B.evaluate_dense M i hM r hr]
+  congr 2
+  funext σ x y
+  exact normalizedRequest_eq_output (B.cutoff i) HP.ρ HP.K hζ B.padding id r ha
+    (fun _ => B.base) (densePreparation B.padding id r (B.auxiliary i) HP.ρ HP.K B.base) σ x y
 
 /-- The pilot's literal zero correction is available even at budget zero. -/
 theorem evaluate_pilotCorrection_zero (M : ℕ)

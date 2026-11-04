@@ -59,7 +59,8 @@ lemma genuine_recipe_identity
     (s t : Fin J) (Ls Lt : ℕ) (D : ZMod P) (sourceSuffix suffix : List (ZMod P))
     (k : ℕ) (G : Matrix (ZMod P) (ZMod P) ℝ) (σ : Environment P J) (x y : ZMod P) :
     genuineNormalizedRecipe HP s t Ls Lt D sourceSuffix suffix k G σ x y =
-    if retainedMask t Lt D suffix σ y then NormalizedRow.output HP ζ
+    if retainedMask t Lt D suffix σ y then NormalizedRow.output HP.toHierarchyParams.atomCutoff
+      HP.ρ ζ
       (genuineTarget HP s t Ls Lt D sourceSuffix suffix k G ζ σ x y 0)
       (genuineTarget HP s t Ls Lt D sourceSuffix suffix k G ζ σ x y 1)
       (firstRank {z | retainedMask t (side P k) D suffix σ z} HP.K 0
@@ -132,7 +133,8 @@ Both the unmasked first row and its full terminal rank are preserved. -/
   let a := iterate S n (fun _ => HP.K)
     (dyadicFloor η m) (Δ σ x) ⟨0, raw σ x⟩ m
   if retainedMask t Lt D suffix σ y then
-    NormalizedRow.output HP ζ (a.row y 0) (a.row y 1) (firstRank S HP.K a.defaultValue a.row) else 0
+    NormalizedRow.output HP.toHierarchyParams.atomCutoff HP.ρ ζ (a.row y 0) (a.row y 1)
+      (firstRank S HP.K a.defaultValue a.row) else 0
 
 open Classical in
 /-- Actual normalized compressed-output fourth moment. The only stochastic hypotheses are
@@ -256,7 +258,8 @@ theorem actual_normalized_fourth_moment_capacity
   have hrestrict : rowNormPow 4 N u X Yt (fun σ x y =>
       actualNormalizedCapacity HP ζ η t Lt D suffix k m n Δ raw σ x y ^ (4⁻¹ : ℝ) -
       genuineNormalizedRecipe HP s t Ls Lt D sourceSuffix suffix k G σ x y ^ (4⁻¹ : ℝ)) ≤
-    rowNormPow 4 N u X Ya (fun σ x y => stateRootError (NormalizedRow.output HP ζ) {z | Ya σ z} HP.K
+    rowNormPow 4 N u X Ya (fun σ x y => stateRootError (NormalizedRow.output
+      HP.toHierarchyParams.atomCutoff HP.ρ ζ) {z | Ya σ z} HP.K
       (iterate {z | Ya σ z} n (fun _ => HP.K)
         (dyadicFloor η m) (Δ σ x) ⟨0, raw σ x⟩ m) ⟨0, truth σ x⟩ y) := by
     rw [←row_mask_subset X Ya Yt hsub]

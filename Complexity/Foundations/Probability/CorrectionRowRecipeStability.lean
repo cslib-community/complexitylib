@@ -140,7 +140,8 @@ lemma normalized_factorization (HP : FourthRootHierarchyParams 16 1 16 32 8)
     (σ : Γ × Ζ) (x y : V) (hy : Zt σ.2 y) :
     normalized I τ HP.ρ HP.toHierarchyParams.atomCutoff HP.γ HP.K Kc f Xs Z Zt
       A prep maximum σ x y =
-    FourthRootHierarchyParams.NormalizedRow.output HP 1 (A x y / f)
+    FourthRootHierarchyParams.NormalizedRow.output HP.toHierarchyParams.atomCutoff HP.ρ 1 (A x y
+      / f)
       (normalizer Xs Zt prep x y) (kthLargest HP.K {w | Z σ.2 w} (fun w => A x w / f)) *
       incomingGate I τ HP.K Kc f A {w | Xs σ.1 w} {w | Z σ.2 w} y * HP.γ (maximum y) := by
   simp only [normalized, hy, ↓reduceIte, FourthRootHierarchyParams.NormalizedRow.output,

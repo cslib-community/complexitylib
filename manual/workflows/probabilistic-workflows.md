@@ -722,9 +722,35 @@ positive-iteration canonical induction or nonzero mixing error. Successful norma
 budget-independent range/usage/support laws, and successor maxima retain their local error
 payment. Pointwise input sparsity is **not** asserted to survive a walk.
 
+The [compressed-bin consumer](../../Complexity/Foundations/Probability/HierarchyCompressedBin.lean)
+now computes first prefixes from those actual history groups on full terminal rank, completes
+its corresponding bin preparation on source × usage, and runs the real two-signal iterate with
+`compatibleCapacity`. Its decoder accepts the actual bin numerator and gate. The shared
+`normalizedRequest_eq_output` identity also accepts these functions, and
+`evaluate_dense_eq_output` identifies the public dense evaluator with that decoder and its
+actual preparation. Existing fixed-HP clients use this same scalar decoder.
+
+This distinction matters: the earlier `actualNormalizedCompatible` and reserve-output theorems
+still target `genuineNormalizedRecipe`, with the HP atom cutoff and polynomial preparation.
+They are not canonical-error theorems for an arbitrary routed bin, unnormalized RAW, or an
+incoming/max-decorated correction. The new consumer does not replace RAW or the correction
+request. Its generic range, usage and postcompression row-support theorem assumes the actual
+bin's separated entry threshold; it never transports sparsity through a conditional walk.
+
+A checked budget-64 consumer uses both genuine half-bins and their original evaluator history.
+Its first nonzero prefix follows the coarse zero group. Its computed bin preparation supplies
+the second slot on the same environment, with positive scale and floor `HP.η / 4`, and all
+seven actual capacity/floor updates are executed. The resulting nonconstant source-dependent
+row has zero fourth-root row error against the actual dense normalized-bin target and proved
+postcompression support. This is an initial exact-slice case with constant bin preparation;
+it does not prove a general inductive parent error bound or a nonzero mixing-error example.
+Out-of-range array defaults are used only beyond the executed horizon, not as unavailable
+recursive calls or zero approximations.
+
 The simultaneous all-lower-budget row/vector availability, canonical error, support and range
-invariant is unfinished. In particular, the scheduled first signal is not yet wired through
-first/second signals, clipped normalization and actual compression/reserve output. Incoming-column
+invariant is unfinished. The finite compressed-bin consumer above is wired, but its general canonical mean/noise
+payments from the simultaneous lower-budget invariant remain unproved; the fixed-HP reserve
+output theorem does not discharge this routed-bin obligation. Incoming-column
 closure, later-iteration and residual zero boundaries, omitted-bin/mean/noise summation,
 residual preparation/normalization, weights/rewards and positive-stage copy routing remain open.
 The earlier single-bin canonical accuracy result retains its scope. No selected abstract or

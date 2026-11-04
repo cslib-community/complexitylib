@@ -36,7 +36,8 @@ lemma cap_pos : 0 < HP.toHierarchyParams.atomCap := by
 
 /-- Scalar caps preserve the exact normalized output, including its closed rank gate. -/
 lemma output_upperCapped (ζ d v r : ℝ) :
-    output HP ζ d v r = output HP ζ (min HP.toHierarchyParams.atomCap d) v
+    output HP.toHierarchyParams.atomCutoff HP.ρ ζ d v r = output HP.toHierarchyParams.atomCutoff
+      HP.ρ ζ (min HP.toHierarchyParams.atomCap d) v
       (min HP.toHierarchyParams.atomCap r) := by
   let T := HP.toHierarchyParams.atomCap
   have hT := cap_pos HP
@@ -53,7 +54,8 @@ lemma output_upperCapped (ζ d v r : ℝ) :
       rw [min_eq_left hTd, max_eq_right (hT.le.trans hTd), min_eq_left hTd,
         max_eq_right hT.le, min_self]
   by_cases hr : r ≤ T
-  · change output HP ζ d v r = output HP ζ (min T d) v (min T r)
+  · change output HP.toHierarchyParams.atomCutoff HP.ρ ζ d v r = output
+      HP.toHierarchyParams.atomCutoff HP.ρ ζ (min T d) v (min T r)
     simp only [output, he, min_eq_right hr]
   · rw [gate_zero HP (hgate.trans (not_le.mp hr).le), min_eq_left (not_le.mp hr).le,
       gate_zero HP hgate]
@@ -67,7 +69,8 @@ theorem boundedLoss_root_bound {ζ : ℝ} (hζ : 0 < ζ) :
       (∀ y ∈ s, |loss y 0| ≤ HP.toHierarchyParams.atomCap) →
       ∀ ε : ℝ, 0 ≤ ε →
       (∀ y ∈ s, clippedError (truth y 0) (truth y 1) (raw y) ≤ ε) →
-      ∀ y ∈ s, |stateRootError (output HP ζ) s HP.K ⟨z,raw+loss⟩ ⟨z,truth+loss⟩ y| ≤ C*ε := by
+      ∀ y ∈ s, |stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) s HP.K
+      ⟨z,raw+loss⟩ ⟨z,truth+loss⟩ y| ≤ C*ε := by
   obtain ⟨L,hL,hroot⟩ := root_dist HP hζ
   let T := HP.toHierarchyParams.atomCap
   let B := 4*T+5
@@ -102,7 +105,8 @@ theorem boundedLoss_root_bound {ζ : ℝ} (hζ : 0 < ζ) :
     have hb := root_range HP ζ ((truth+loss) y 0) ((truth+loss) y 1) (firstRank s HP.K z
       (truth+loss))
     change 0 ≤ _ ∧ _ ≤ 2*R at ha hb
-    have hh : |stateRootError (output HP ζ) s HP.K ⟨z,raw+loss⟩ ⟨z,truth+loss⟩ y| ≤ 2*R :=
+    have hh : |stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) s HP.K ⟨z,raw+loss⟩
+      ⟨z,truth+loss⟩ y| ≤ 2*R :=
       abs_sub_le_iff.mpr ⟨by linarith, by linarith⟩
     apply hh.trans
     have he : 1/2 < ε := not_le.mp hs

@@ -230,12 +230,17 @@ theorem normalized_raw_normalizer_root_stability
     let qB := kthLargest HP.K T (fun w => B x w / f)
     let mA := CorrectionRowRecipe.normalizer Xs Zt prep x y
     let mB := CorrectionRowRecipe.normalizer Xs Zt prep' x y
-    let OA := NormalizedRow.output HP 1 (A x y / f) mA qA
-    let OB := NormalizedRow.output HP 1 (B x y / f) mB qB
+    let OA := NormalizedRow.output HP.toHierarchyParams.atomCutoff HP.ρ 1 (A x y / f) mA qA
+    let OB := NormalizedRow.output HP.toHierarchyParams.atomCutoff HP.ρ 1 (B x y / f) mB qB
     let IA := incomingGate (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff HP.K Kc f A S T y
     let IB := incomingGate (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff HP.K Kc f B S T y
-    have hoA : 0 ≤ OA := NormalizedRow.output_nonneg HP _ _ _ _
-    have hoB : 0 ≤ OB := NormalizedRow.output_nonneg HP _ _ _ _
+    have ho (d v q : ℝ) : NormalizedRow.output HP.toHierarchyParams.atomCutoff HP.ρ 1 d v q ∈
+        Set.Icc 0 (2 * HP.Q HP.toHierarchyParams.atomCap) :=
+      NormalizedRow.output_mem_Icc _ _ (HP.Q_nonneg _)
+        (fun d => ⟨HP.toHierarchyParams.atomCutoff_nonneg d, HP.toHierarchyParams.atomCutoff_le d⟩)
+        (fun q => ⟨HP.ρ_nonneg q, HP.ρ_le_one q⟩) _ _ _ _
+    have hoA : 0 ≤ OA := (ho _ _ _).1
+    have hoB : 0 ≤ OB := (ho _ _ _).1
     have hiA : 0 ≤ IA := HP.incomingCutoff_nonneg _
     have hiB : 0 ≤ IB := HP.incomingCutoff_nonneg _
     have hg : 0 ≤ HP.γ (maximum y) := HP.γ_nonneg _
@@ -253,7 +258,7 @@ theorem normalized_raw_normalizer_root_stability
       Real.mul_rpow (mul_nonneg hoB hiB) hg, Real.mul_rpow hoB hiB]
     apply (root_product_dist
       ⟨Real.rpow_nonneg hoB _, Real.rpow_le_rpow hoB
-        (NormalizedRow.output_le HP _ _ _ _) (by norm_num)⟩
+        ((ho _ _ _).2) (by norm_num)⟩
       ⟨Real.rpow_nonneg hiA _, Real.rpow_le_one hiA (HP.incomingCutoff_le_one _)
         (by norm_num)⟩
       ⟨Real.rpow_nonneg hg _, Real.rpow_le_one hg (HP.γ_le_one _) (by norm_num)⟩).trans

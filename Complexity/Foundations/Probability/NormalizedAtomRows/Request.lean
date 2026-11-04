@@ -15,6 +15,7 @@ public import Complexity.Foundations.Probability.HierarchyRankEnvironment
 The existing `normalizedRequest` is evaluated on its original source, terminal and usage
 coordinates with all copy suffixes. Only the second signal is usage-masked; the first rank
 uses the entire terminal-retained set. The preparation mean averages the same full environment.
+The numerator and gate are the actual request parameters, including routed-bin cutoffs.
 This identity assumes neither an output-error bound nor independence of raw/preparation children.
 -/
 
@@ -35,16 +36,16 @@ variable {P J : ℕ} [Fact P.Prime]
 
 /-- The exact same arbitrary-child normalized request, with raw terminal rank. -/
 theorem normalizedRequest_eq_output {V : Type*} [Fintype V] {k : ℕ}
-    (HP : FourthRootHierarchyParams 16 1 16 32 8) {ζ : ℝ} (hζ : 0 < ζ)
+    (cutoff gate : ℝ → ℝ) (K : ℕ) {ζ : ℝ} (hζ : 0 < ζ)
     (D : ZMod P) (ident : V → ZMod P) (r : HierarchyTask.Request k (Fin J) (ZMod P))
     (hr : Admissible r) (raw prep : Environment P J → Matrix V V ℝ)
     (σ : Environment P J) (x y : V) :
-    normalizedRequest D ident r HP.toHierarchyParams.atomCutoff HP.ρ HP.K raw prep σ x y =
+    normalizedRequest D ident r cutoff gate K raw prep σ x y =
       if r.usage.retains (channels D) σ (ident y) then
-        Matrix.FourthRootHierarchyParams.NormalizedRow.output HP ζ (requestSignals ζ D ident r
-          raw prep σ x y 0)
+        Matrix.FourthRootHierarchyParams.NormalizedRow.output cutoff gate ζ
+          (requestSignals ζ D ident r raw prep σ x y 0)
           (requestSignals ζ D ident r raw prep σ x y 1)
-          (firstRank {z | r.terminal.retains (channels D) σ (ident z)} HP.K 0
+          (firstRank {z | r.terminal.retains (channels D) σ (ident z)} K 0
             (requestSignals ζ D ident r raw prep σ x)) else 0 := by
   classical
   rw [normalizedRequest_formula D ident r hr]

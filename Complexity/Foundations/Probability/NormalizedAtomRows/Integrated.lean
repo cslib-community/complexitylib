@@ -40,26 +40,33 @@ variable (HP : FourthRootHierarchyParams 16 1 16 32 8)
 open Classical in
 /-- The root error has support below 2K, independently of row width and defaults. -/
 lemma sum_rootError_four {ι : Type*} (S : Finset ι) (ζ : ℝ) (a b : State ι)
-    {E : ℝ} (_hE : 0 ≤ E) (h : ∀ y ∈ S, |stateRootError (output HP ζ) S HP.K a b y| ≤ E) :
-    ∑ y ∈ S, |stateRootError (output HP ζ) S HP.K a b y| ^ 4 ≤ 2 * (HP.K : ℝ) * E ^ 4 := by
-  let T := {y ∈ S | output HP ζ (a.row y 0) (a.row y 1) (firstRank S HP.K a.defaultValue a.row) ≠
+    {E : ℝ} (_hE : 0 ≤ E) (h : ∀ y ∈ S, |stateRootError (output HP.toHierarchyParams.atomCutoff
+      HP.ρ ζ) S HP.K a b y| ≤ E) :
+    ∑ y ∈ S, |stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) S HP.K a b y| ^ 4 ≤
+      2 * (HP.K : ℝ) * E ^ 4 := by
+  let T := {y ∈ S | output HP.toHierarchyParams.atomCutoff HP.ρ ζ (a.row y 0) (a.row y 1)
+      (firstRank S HP.K a.defaultValue a.row) ≠
     0} ∪
-    {y ∈ S | output HP ζ (b.row y 0) (b.row y 1) (firstRank S HP.K b.defaultValue b.row) ≠ 0}
+    {y ∈ S | output HP.toHierarchyParams.atomCutoff HP.ρ ζ (b.row y 0) (b.row y 1) (firstRank S
+      HP.K b.defaultValue b.row) ≠ 0}
   have hT : T ⊆ S := union_subset (filter_subset _ _) (filter_subset _ _)
   have hc : T.card ≤ 2 * HP.K := (card_union_le _ _).trans (by
     have ha := support HP S a ζ
     have hb := support HP S b ζ
     omega)
   calc
-    _ = ∑ y ∈ T, |stateRootError (output HP ζ) S HP.K a b y| ^ 4 := by
+    _ = ∑ y ∈ T, |stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) S HP.K a b y| ^
+      4 := by
       symm
       apply sum_subset hT
       intro y hy hyt
-      have ha : output HP ζ (a.row y 0) (a.row y 1) (firstRank S HP.K a.defaultValue a.row) = 0 :=
+      have ha : output HP.toHierarchyParams.atomCutoff HP.ρ ζ (a.row y 0) (a.row y 1) (firstRank
+        S HP.K a.defaultValue a.row) = 0 :=
         by
         by_contra hz
         exact hyt (mem_union_left _ (mem_filter.mpr ⟨hy, hz⟩))
-      have hb : output HP ζ (b.row y 0) (b.row y 1) (firstRank S HP.K b.defaultValue b.row) = 0 :=
+      have hb : output HP.toHierarchyParams.atomCutoff HP.ρ ζ (b.row y 0) (b.row y 1) (firstRank
+        S HP.K b.defaultValue b.row) = 0 :=
         by
         by_contra hz
         exact hyt (mem_union_right _ (mem_filter.mpr ⟨hy, hz⟩))
@@ -71,7 +78,8 @@ lemma sum_rootError_four {ι : Type*} (S : Finset ι) (ζ : ℝ) (a b : State ι
 
 open Classical in
 lemma rootError_range {ι : Type*} (S : Finset ι) (ζ : ℝ) (a b : State ι) (y : ι) :
-    |stateRootError (output HP ζ) S HP.K a b y| ≤ 2 * HP.Q HP.toHierarchyParams.atomCap ^ (4⁻¹ : ℝ)
+    |stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) S HP.K a b y| ≤ 2 * HP.Q
+      HP.toHierarchyParams.atomCap ^ (4⁻¹ : ℝ)
       := by
   have ha := root_range HP ζ (a.row y 0) (a.row y 1) (firstRank S HP.K a.defaultValue a.row)
   have hb := root_range HP ζ (b.row y 0) (b.row y 1) (firstRank S HP.K b.defaultValue b.row)
@@ -98,7 +106,8 @@ private theorem sum_stateRootError_pow_four_le_of_false {η : ℝ}
     (hsecond : ∀ y ∈ S, truth y 0 ≤ dyadicFloor η m j / 4 → truth y 1 = 0)
     (hheavy : 2 * #{y ∈ S | dyadicFloor η m j / 4 < truth y 0} < n j)
     (b : State ι) :
-    ∑ y ∈ S, |stateRootError (output HP ζ) S HP.K b ⟨0, truth⟩ y| ^ 4 ≤
+    ∑ y ∈ S, |stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) S HP.K b ⟨0, truth⟩
+      y| ^ 4 ≤
       (64 * (HP.K : ℝ) * (rangeBound HP) ^ 4 / ((n j : ℝ) * dyadicFloor η m j ^ 4)) *
         ∑ y ∈ S, |clippedError (truth y 0) (truth y 1)
           (uncompressedRow Δ a.row (j + 1) y)| ^ 4 := by
@@ -142,7 +151,8 @@ theorem rowNormPow_falseFirstOverflow_le {η N u : ℝ}
       (dyadicFloor η m) (Δ σ x) (a σ x) j ∧
         ¬ heavyCountEvent Y univ (fun y => truth σ x y 0) (dyadicFloor η m j) (n j) σ
     rowNormPow 4 N u X Y (fun σ x y =>
-      if F σ x then stateRootError (output HP ζ) (S σ) HP.K (b σ x) ⟨0, truth σ x⟩ y else 0) ≤
+      if F σ x then stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) (S σ) HP.K (b
+        σ x) ⟨0, truth σ x⟩ y else 0) ≤
       (64 * (HP.K : ℝ) * (rangeBound HP) ^ 4 / ((n j : ℝ) * dyadicFloor η m j ^ 4)) *
         rowNormPow 4 N u X Y (fun σ x y => clippedError (truth σ x y 0) (truth σ x y 1)
           (uncompressedRow (Δ σ x) (a σ x).row (j + 1) y)) := by
@@ -194,7 +204,8 @@ theorem rowNormPow_falseFirstOverflowBefore_le {η N u : ℝ}
       (dyadicFloor η m) (Δ σ x) (a σ x) j ∧
         ¬ heavyCountEvent Y univ (fun y => truth σ x y 0) (dyadicFloor η m j) (n j) σ
     rowNormPow 4 N u X Y (fun σ x y =>
-      if ∃ j < m, F j σ x then stateRootError (output HP ζ) (S σ) HP.K (b σ x) ⟨0, truth σ x⟩ y
+      if ∃ j < m, F j σ x then stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) (S
+        σ) HP.K (b σ x) ⟨0, truth σ x⟩ y
         else 0) ≤
       ∑ j ∈ range m, (64 * (HP.K : ℝ) * (rangeBound HP) ^ 4 / ((n j : ℝ) * dyadicFloor η m j ^ 4))
  *
@@ -206,7 +217,8 @@ theorem rowNormPow_falseFirstOverflowBefore_le {η N u : ℝ}
   let F := fun j σ x => IsFirstOverflow (S σ) n (fun _ => HP.K)
     (dyadicFloor η m) (Δ σ x) (a σ x) j ∧
       ¬ heavyCountEvent Y univ (fun y => truth σ x y 0) (dyadicFloor η m j) (n j) σ
-  let D := fun σ x y => stateRootError (output HP ζ) (S σ) HP.K (b σ x) ⟨0, truth σ x⟩ y
+  let D := fun σ x y => stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) (S σ) HP.K
+    (b σ x) ⟨0, truth σ x⟩ y
   change rowNormPow 4 N u X Y (fun σ x y => if ∃ j < m, F j σ x then D σ x y else 0) ≤ _
   have hgroup (j : ℕ) (hj : j ∈ range m) :
       rowNormPow 4 N u X Y (fun σ x y => if F j σ x then D σ x y else 0) ≤
@@ -296,7 +308,8 @@ theorem exists_compression_rowNormPow_le {scale : ℝ} (hs : 0 < scale) (hmargin
             heavyCountEvent Y univ (fun y => truth σ x y 0) (dyadicFloor η m j) (n j) σ then
               ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i σ x else 0
         rowNormPow 4 N u X Y (fun σ x y =>
-          stateRootError (output HP ζ) (S σ) HP.K (actual σ x) ⟨0, truth σ x⟩ y) ≤
+          stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) (S σ) HP.K (actual σ x)
+            ⟨0, truth σ x⟩ y) ≤
           128 * (HP.K : ℝ) * (A ^ 4 * vertexNormPow 4 N u X Pre +
             C ^ 4 * vertexNormPow 4 N u X No + C ^ 4 * vertexNormPow 4 N u X Tail) +
           ∑ j ∈ range m, (64 * (HP.K : ℝ) * (rangeBound HP) ^ 4 / ((n j : ℝ) * dyadicFloor η m j ^
@@ -315,7 +328,8 @@ theorem exists_compression_rowNormPow_le {scale : ℝ} (hs : 0 < scale) (hmargin
   let S := fun σ => ({y | Y σ y} : Finset V)
   let actual := fun σ x => iterate (S σ) n (fun _ => HP.K)
     (dyadicFloor η m) (Δ σ x) ⟨0, raw σ x⟩ m
-  let D := fun σ x y => stateRootError (output HP ζ) (S σ) HP.K (actual σ x) ⟨0, truth σ x⟩ y
+  let D := fun σ x y => stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) (S σ) HP.K
+    (actual σ x) ⟨0, truth σ x⟩ y
   let heavy := fun j σ x =>
     heavyCountEvent Y univ (fun y => truth σ x y 0) (dyadicFloor η m j) (n j) σ
   let F := fun σ x => ∃ j < m,

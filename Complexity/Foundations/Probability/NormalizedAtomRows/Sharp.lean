@@ -47,7 +47,7 @@ theorem stationary_bound {scale : ℝ} (hs : 0 < scale) (hmargin : scale ≤ HP.
       ∀ ε : ℕ → ℝ, (∀ i < j, 0 ≤ ε i) →
       (∀ i < j, ∀ y ∈ s, δ / 2 ≤ truth y 0 →
         clippedError (truth y 0) (truth y 1) (uncompressedRow Δ raw (i + 1) y) ≤ ε i) →
-      ∀ y ∈ s, |stateRootError (output HP ζ) s HP.K
+      ∀ y ∈ s, |stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) s HP.K
         (stationaryState s n (fun _ => HP.K) (dyadicFloor δ m) Δ ⟨0, raw⟩ truth j) ⟨0, truth⟩ y| ≤
         Cpre * ∑ i ∈ range j, dyadicFloor δ m i * ε i := by
   obtain ⟨L, hL, hroot⟩ := root_dist HP hζ
@@ -57,7 +57,7 @@ theorem stationary_bound {scale : ℝ} (hs : 0 < scale) (hmargin : scale ≤ HP.
     have h := threshold_margin HP
     linarith [HP.η_lt_η₂, HP.η_pos]
   have hh := abs_stationaryState_root_sub_le_weighted_dyadic
-    (H := output HP ζ) (p := (4⁻¹ : ℝ)) (C := L)
+    (H := output HP.toHierarchyParams.atomCutoff HP.ρ ζ) (p := (4⁻¹ : ℝ)) (C := L)
     hδ (rank_pos HP) hL (by norm_num : (0 : ℝ) ≤ 0) (by linarith : (0 : ℝ) ≤ δ / 2)
     m j hj hno hε herr
     (fun x _ _ hx => entry_zero HP (hx.trans hηθ))
@@ -79,12 +79,15 @@ theorem continuation_preserved {ι : Type*} (s : Finset ι) (n : ℕ → ℕ)
     (hn : ∀ i, j ≤ i → i < m → HP.K ≤ n i) (y : ι) (hy : y ∈ s) :
     let b := stationaryState s n (fun _ => HP.K) (dyadicFloor δ m) Δ ⟨0, raw⟩ truth j
     let c := stationaryContinuation s n HP.K (dyadicFloor δ m) Δ ⟨0, raw⟩ truth j r
-    output HP ζ (c.row y 0) (c.row y 1) (firstRank s HP.K c.defaultValue c.row) =
-      output HP ζ (b.row y 0) (b.row y 1) (firstRank s HP.K b.defaultValue b.row) := by
+    output HP.toHierarchyParams.atomCutoff HP.ρ ζ (c.row y 0) (c.row y 1) (firstRank s HP.K
+      c.defaultValue c.row) =
+      output HP.toHierarchyParams.atomCutoff HP.ρ ζ (b.row y 0) (b.row y 1) (firstRank s HP.K
+        b.defaultValue b.row) := by
   have hb (y : ι) (ν : Fin 2) := abs_stationaryState_row_sub_le_dyadic
     (s := s) (n := n) (K := fun _ => HP.K) (Δ := Δ) (a := ⟨0, raw⟩) (truth := truth)
     hδ.le m j (by omega) hno y ν
-  apply reference_iterate_output_eq (H := output HP ζ) hs.le (rank_pos HP)
+  apply reference_iterate_output_eq (H := output HP.toHierarchyParams.atomCutoff HP.ρ ζ) hs.le
+    (rank_pos HP)
     (fun y hy => by have hh := (abs_le.mp (hb y 0)).1; linarith [hfirst y hy])
     (fun y hy => by
       have hh := abs_le.mp (hb y 1)
@@ -112,25 +115,27 @@ theorem relative_bound {scale : ℝ} (hs : 0 < scale)
       ∀ ε : ℕ → ℝ, (∀ i ≤ m, 0 ≤ ε i) →
       (∀ i ≤ m, ∀ y ∈ s, clippedError (truth y 0) (truth y 1)
         (uncompressedRow Δ raw i y) ≤ ε i) → ∀ y ∈ s,
-      |stateRootError (output HP ζ) s HP.K (iterate s n (fun _ => HP.K) floors Δ ⟨z, raw + loss⟩ m)
+      |stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) s HP.K (iterate s n (fun _
+        => HP.K) floors Δ ⟨z, raw + loss⟩ m)
         (iterate s n (fun _ => HP.K) floors (fun _ => 0) ⟨z, truth + loss⟩ m) y| ≤
         C * prefixErrorBudget ε m := by
   let T := HP.toHierarchyParams.atomCap
   let R := 2 * HP.Q T ^ (4⁻¹ : ℝ)
   have hR : 0 ≤ R := mul_nonneg (by norm_num) (Real.rpow_nonneg (HP.Q_nonneg _) _)
   have hsat (d d' v r : ℝ) (hd : T ≤ d) (hd' : T ≤ d') :
-      output HP ζ d v r = output HP ζ d' v r := by
+      output HP.toHierarchyParams.atomCutoff HP.ρ ζ d v r = output
+      HP.toHierarchyParams.atomCutoff HP.ρ ζ d' v r := by
     rw [output_upperCapped HP ζ d, output_upperCapped HP ζ d']
     rw [min_eq_left hd, min_eq_left hd']
   have hrange {ι : Type u} (s : Finset ι) (K : ℕ) (a b : State ι) (y : ι) :
-      |stateRootError (output HP ζ) s K a b y| ≤ R := by
+      |stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) s K a b y| ≤ R := by
     have ha := root_range HP ζ (a.row y 0) (a.row y 1) (firstRank s K a.defaultValue a.row)
     have hb := root_range HP ζ (b.row y 0) (b.row y 1) (firstRank s K b.defaultValue b.row)
     change 0 ≤ _ ∧ _ ≤ R at ha hb
     unfold stateRootError
     exact abs_sub_le_iff.mpr
       ⟨by linarith [ha.1, ha.2, hb.1, hb.2], by linarith [ha.1, ha.2, hb.1, hb.2]⟩
-  have hg (d v r : ℝ) (hr : T ≤ r) : output HP ζ d v r = 0 := by
+  have hg (d v r : ℝ) (hr : T ≤ r) : output HP.toHierarchyParams.atomCutoff HP.ρ ζ d v r = 0 := by
     apply gate_zero HP
     have hc := HP.toHierarchyParams.atomCap_gt
     have hm := threshold_margin HP
@@ -138,7 +143,8 @@ theorem relative_bound {scale : ℝ} (hs : 0 < scale)
     dsimp only [T] at hr
     linarith [le_max_right ((HP.k : ℝ) + 1) HP.θ₂]
   obtain ⟨C, hC, hbound⟩ := Cslib.RowCompression.exists_iterate_root_bound
-    (output HP ζ) hsat R hR hrange (root_dist HP hζ) hg (cap_pos HP)
+    (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) hsat R hR hrange (root_dist HP hζ) hg
+      (cap_pos HP)
   refine ⟨C, hC, ?_⟩
   intro ι s n floors Δ truth raw loss z m hz hm hn hf hfirst hsecond hloss ε hε herr y hy
   simpa only [stateRootError] using
@@ -159,7 +165,7 @@ theorem sharp_noOverflow {scale : ℝ} (hs : 0 < scale) (hmargin : scale ≤ HP.
         clippedError (truth y 0) (truth y 1) (uncompressedRow Δ raw (i + 1) y) ≤ ε i) →
       ∀ εfinal : ℝ, 0 ≤ εfinal →
       (∀ y ∈ s, clippedError (truth y 0) (truth y 1) (uncompressedRow Δ raw m y) ≤ εfinal) →
-      ∀ y ∈ s, |stateRootError (output HP ζ) s HP.K
+        ∀ y ∈ s, |stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) s HP.K
         (iterate s n (fun _ => HP.K) (dyadicFloor δ m) Δ ⟨0, raw⟩ m) ⟨0, truth⟩ y| ≤
         Cpre * ∑ i ∈ range m, dyadicFloor δ m i * ε i + Cfinal * εfinal := by
   obtain ⟨Cf, hCf, hfinal⟩ := boundedLoss_root_bound HP hζ
@@ -185,11 +191,14 @@ theorem sharp_noOverflow {scale : ℝ} (hs : 0 < scale) (hmargin : scale ≤ HP.
     linarith [HP.η_lt_η₂, HP.θ_lt_θ₂, le_max_right ((HP.k : ℝ) + 1) HP.θ₂]
   have hact := hfinal s actual.defaultValue truth r loss hfirst hloss εf hεf herrf y hy
   rw [hr] at hact
-  change |stateRootError (output HP ζ) s HP.K actual ref y| ≤ Cf * εf at hact
+  change |stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) s HP.K actual ref y| ≤
+    Cf * εf at hact
   have href := hpre s n Δ raw truth m m le_rfl hno ε hε herr y hy
-  change |stateRootError (output HP ζ) s HP.K ref ⟨0, truth⟩ y| ≤ _ at href
+  change |stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) s HP.K ref ⟨0, truth⟩ y|
+    ≤ _ at href
   calc
-    _ ≤ |stateRootError (output HP ζ) s HP.K actual ref y| + |stateRootError (output HP ζ) s
+    _ ≤ |stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) s HP.K actual ref y| +
+      |stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) s
       HP.K ref ⟨0, truth⟩ y| := abs_sub_le _ _ _
     _ ≤ Cf * εf + Cp*∑ i ∈ range m, dyadicFloor δ m i * ε i := add_le_add hact href
     _ = _ := add_comm _ _
@@ -208,7 +217,7 @@ theorem firstOverflow_bound {scale : ℝ} (hs : 0 < scale) (_hmargin : scale ≤
       ∀ ε : ℕ → ℝ, (∀ i, j ≤ i → i < m → 0 ≤ ε i) →
       (∀ i, j ≤ i → i < m → ∀ y ∈ s,
         clippedError (truth y 0) (truth y 1) (uncompressedRow Δ raw (i + 1) y) ≤ ε i) →
-      ∀ y ∈ s, |stateRootError (output HP ζ) s HP.K
+      ∀ y ∈ s, |stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) s HP.K
         (iterate s n (fun _ => HP.K) (dyadicFloor δ m) Δ ⟨0, raw⟩ m)
         (stationaryContinuation s n HP.K (dyadicFloor δ m) Δ ⟨0, raw⟩ truth j (m - j)) y| ≤
         Ctail * ∑ i ∈ Ico j m, 28^(m - i) * ε i := by
@@ -288,7 +297,7 @@ theorem sharp_firstOverflow {scale : ℝ} (hs : 0 < scale) (hmargin : scale ≤ 
         clippedError (truth y 0) (truth y 1) (uncompressedRow Δ raw (i + 1) y) ≤ ε i) →
       (∀ i, j ≤ i → i < m → ∀ y ∈ s,
         clippedError (truth y 0) (truth y 1) (uncompressedRow Δ raw (i + 1) y) ≤ ε i) →
-      ∀ y ∈ s, |stateRootError (output HP ζ) s HP.K
+      ∀ y ∈ s, |stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) s HP.K
         (iterate s n (fun _ => HP.K) (dyadicFloor δ m) Δ ⟨0, raw⟩ m) ⟨0, truth⟩ y| ≤
         Cpre*∑ i ∈ range j, dyadicFloor δ m i * ε i + Ctail*∑ i ∈ Ico j m, 28^(m - i) * ε i := by
   obtain ⟨Ct, hCt, htail⟩ := firstOverflow_bound HP ζ hζ hs hmargin hcapscale
@@ -305,13 +314,17 @@ theorem sharp_firstOverflow {scale : ℝ} (hs : 0 < scale) (hmargin : scale ≤ 
   have hp := hpre s n Δ raw truth m j hj.le hover.1 ε (fun i hi => hε i (hi.trans hj)) herrpre y hy
   have hc := continuation_preserved HP ζ s n Δ raw truth hs hmargin hδ hδs m j (m - j)
     (by omega) hover.1 hfirst hsecond hn y hy
-  change output HP ζ (c.row y 0) (c.row y 1) (firstRank s HP.K c.defaultValue c.row) =
-    output HP ζ (b.row y 0) (b.row y 1) (firstRank s HP.K b.defaultValue b.row) at hc
-  have href : stateRootError (output HP ζ) s HP.K c ⟨0, truth⟩ y = stateRootError (output HP ζ)
+  change output HP.toHierarchyParams.atomCutoff HP.ρ ζ (c.row y 0) (c.row y 1) (firstRank s HP.K
+    c.defaultValue c.row) =
+    output HP.toHierarchyParams.atomCutoff HP.ρ ζ (b.row y 0) (b.row y 1) (firstRank s HP.K
+      b.defaultValue b.row) at hc
+  have href : stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) s HP.K c ⟨0, truth⟩
+    y = stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ)
     s HP.K b ⟨0, truth⟩ y := by
     unfold stateRootError; rw [hc]
   calc
-    _ ≤ |stateRootError (output HP ζ) s HP.K a c y| + |stateRootError (output HP ζ) s HP.K c
+    _ ≤ |stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) s HP.K a c y| +
+      |stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) s HP.K c
       ⟨0, truth⟩ y| := abs_sub_le _ _ _
     _ ≤ Ct*∑ i ∈ Ico j m, 28^(m - i) * ε i + Cp*∑ i ∈ range j, dyadicFloor δ m i * ε i :=
       add_le_add ht (by rw [href]; exact hp)
@@ -338,7 +351,7 @@ theorem sharp_compression {scale : ℝ} (hs : 0 < scale) (hmargin : scale ≤ HP
           clippedError (truth y 0) (truth y 1) (uncompressedRow Δ raw m y) ≤ εfinal) →
         (¬ ∃ j < m, IsFirstOverflow S n (fun _ => HP.K) (dyadicFloor η m) Δ ⟨0, raw⟩ j ∧ ¬heavy j) →
         ∀ y ∈ S,
-        |stateRootError (output HP ζ) S HP.K
+        |stateRootError (output HP.toHierarchyParams.atomCutoff HP.ρ ζ) S HP.K
           (iterate S n (fun _ => HP.K) (dyadicFloor η m) Δ ⟨0, raw⟩ m) ⟨0, truth⟩ y| ≤
           A * (∑ i ∈ range m, dyadicFloor η m i * ε i) +
           C * (if ∀ i < m, stepThreshold S n (fun _ => HP.K) (dyadicFloor η m) Δ ⟨0, raw⟩ i ≤

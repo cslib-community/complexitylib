@@ -202,7 +202,8 @@ theorem uniform_moment_capacity {scale : ℝ} (hs : 0 < scale) (hmargin : scale 
         if IsFirstOverflow (S σ) n (fun _ => HP.K) (dyadicFloor η m) (Δ σ x) ⟨0, raw σ x⟩ j ∧
           heavyCountEvent Y univ (fun y => truth σ x y 0) (dyadicFloor η m j) (n j) σ then
           ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * e i σ x else 0) ≤ (T * ε) ^ 4) →
-      rowNormPow 4 N u X Y (fun σ x y => stateRootError (output HP ζ) (S σ) HP.K
+      rowNormPow 4 N u X Y (fun σ x y => stateRootError (output HP.toHierarchyParams.atomCutoff
+        HP.ρ ζ) (S σ) HP.K
         (iterate (S σ) n (fun _ => HP.K) (dyadicFloor η m) (Δ σ x) ⟨0, raw σ x⟩ m)
         ⟨0, truth σ x⟩ y) ≤
       (128 * (HP.K : ℝ) * (A ^ 4 * (η / 511) ^ 4 + C ^ 4 * 2 ^ 4 + C ^ 4 * T ^ 4) + 64 * (HP.K :

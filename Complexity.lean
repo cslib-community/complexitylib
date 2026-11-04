@@ -3720,6 +3720,7 @@ public import Complexity.Foundations.Probability.HierarchyCanonicalTargets
 public import Complexity.Foundations.Probability.HierarchyChannelTransport
 public import Complexity.Foundations.Probability.HierarchyChildError
 public import Complexity.Foundations.Probability.HierarchyChildRootMoment
+public import Complexity.Foundations.Probability.HierarchyCompressedBin
 public import Complexity.Foundations.Probability.HierarchyCorrectionMean
 public import Complexity.Foundations.Probability.HierarchyCorrectionRawStability
 public import Complexity.Foundations.Probability.HierarchyCorrectionStability
