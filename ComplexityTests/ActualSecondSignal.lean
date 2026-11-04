@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (tests of actual preparatory second signals)
 
-import Complexity.Foundations.Probability.NormalizedAtomRows.SecondSignal
+import Complexity.Foundations.Probability.NormalizedAtomRows.MeanBias
 import Complexity.Foundations.Probability.NormalizedAtomRows.ActualMoment
 
 /-! Genuine selected preparation from zero-iteration residual children, and two-signal edges. -/
@@ -285,3 +285,97 @@ example (n : ℕ) : ¬((1 : ℝ) ^ 4 *
       (32 * (1 - 1 / (155648 * (3 + 1) * (4 : ℝ) ^ 4)) ^ (2 * n) * (16 * 1)) := by
     positivity
   exact not_le.mpr h
+
+
+-- The actual target is a positive, nonconstant genuine preparation, on the same full Ω.
+private def biasTruth : Matrix (ZMod 5) (ZMod 5) ℝ := fun _ y => if y = 0 then 1 else 0
+
+private lemma genuine_bias_eq (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (σ : Environment 5 3) (x y : ZMod 5) :
+    genuinePrep HP (2 : Fin 3) 1 [3] 0 biasTruth σ x y = biasTruth x y := by
+  have hside : side 5 0 = 5 := by norm_num [side]
+  have hone : polynomialPrepCutoff4 HP.θ 1 = 1 := by
+    apply polynomialPrepCutoff4_eq_one HP.θ_pos
+    have h := HP.θ₂_lt
+    norm_num at h
+    linarith [HP.θ_lt_θ₂]
+  have hzero := polynomialPrepCutoff4_eq_zero HP.θ_pos
+    (show (0 : ℝ) ≤ HP.θ / 2 by linarith [HP.θ_pos])
+  simp only [genuinePrep, DenseRowRecipe.preparation, atomPrep, rowGate, hside,
+    full_retains, filter_true, rank_zero, HP.ρ_one 0 HP.η_pos.le, mul_one]
+  by_cases hy : y = 0 <;> simp [biasTruth, hy, rate, hone, hzero]
+
+private lemma genuine_bias_mean (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (x y : ZMod 5) :
+    genuineMean HP (0 : Fin 3) 2 5 5 (CopyPadding.identifier 1 [1] x) 1 [3]
+      0 biasTruth x y = biasTruth x y := by
+  simp only [genuineMean, rowSliceMean, genuine_bias_eq, full_retains, and_self,
+    filter_true, Fintype.expect_const]
+
+-- Stationarity does not remove preparation bias: deleting a nonzero actual child
+-- residual gives second mean discrepancy one, even for an exact stationary walk.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (i : ℕ) :
+    actualClippedMean HP (0 : Fin 3) 2 5 5 5 1 [1] [3] 0 biasTruth 3
+      (firstSignalIncrement (fun _ _ _ _ => 7) 0
+        (secondSignalIncrement (walk HP (fun _ => false)) 3))
+      (fun _ _ _ _ => 0) 1 i 0 0 = 1 := by
+  unfold walk
+  rw [actualClippedMean_second_eq HP (0 : Fin 3) 2 5 5 5 1 [1] [3]
+    (fun _ => fullGraph) (fun _ _ _ => 0)
+    (fun _ σ x y => selected HP (fun _ => false) σ x y)
+    (fun _ _ _ _ => 7) 0 3 biasTruth i 0 0]
+  simp only [rowSliceMean, selected_eq, child, Bool.false_eq_true, false_and, ↓reduceIte,
+    genuine_bias_mean, biasTruth]
+  norm_num
+
+-- Exact-zero residual perturbation gives exact-zero actual deterministic bias,
+-- while the selected preparation and genuine target are positive at endpoint zero.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (i : ℕ) :
+    actualClippedMean HP (0 : Fin 3) 2 5 5 5 1 [1] [3] 0 biasTruth 3
+      (firstSignalIncrement (fun _ _ _ _ => 7) 0
+        (secondSignalIncrement (walk HP (fun _ => true)) 3))
+      (fun _ _ _ _ => 0) 1 i 0 0 = 0 := by
+  unfold walk
+  rw [actualClippedMean_second_eq HP (0 : Fin 3) 2 5 5 5 1 [1] [3]
+    (fun _ => fullGraph) (fun _ _ _ => 0)
+    (fun _ σ x y => selected HP (fun _ => true) σ x y)
+    (fun _ _ _ _ => 7) 0 3 biasTruth i 0 0]
+  simp only [rowSliceMean, selected_eq, child,
+    retainedMask, full_retains, and_self, filter_true, genuine_bias_mean, biasTruth]
+  norm_num
+
+-- An empty usage slice has genuine mean and selected-input mean zero even with
+-- nonzero residuals. No assumption that the conditional slice is inhabited is needed.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    rowSliceMean (retainedMask (0 : Fin 3) 5 1 [1]) (retainedMask 2 0 1 [3])
+      (fun σ x y => selected HP (fun _ => true) σ x y) 0 0 -
+    genuineMean HP (0 : Fin 3) 2 5 0 (CopyPadding.identifier 1 [1] 0) 1 [3]
+      0 biasTruth 0 0 = 0 := by
+  have hz (σ : Environment 5 3) (y : ZMod 5) : ¬retainedMask (2 : Fin 3) 0 1 [3] σ y := by
+    intro hh
+    have h := (mem_retentionBox.mp hh) 0
+    omega
+  have hz' (σ : Environment 5 3) : ¬frameRetains 5 4 0 (σ 2)
+      (CopyPadding.identifier 1 [3] (0 : ZMod 5)) := hz σ 0
+  simp only [rowSliceMean, genuineMean, hz, hz', and_false, filter_false, expect_empty, sub_self]
+
+
+-- The real perturbed lower-child residual pays an explicit absolute envelope.
+-- This does not use a relative error or a target bound inferred from row mass.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    {Lh Lρ : ℝ} (hLh : 0 ≤ Lh) (hLρ : 0 ≤ Lρ) (σ : Environment 5 3) :
+    preparationError threeRoles 1 [3] 0 Lh Lρ
+      (fun τ => rawIncomingNormalized HP 1 id threeRoles 0 0 0 0 0 0 [1] [2] [3]
+        (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff 2 id
+        (fun (_ : HierarchyTask.Request 0 (Fin 3) (ZMod 5)) => child (fun _ => false))
+        (fun _ => prepChild) (fun _ _ _ => 9) τ) biasTruth σ 0 0 ≤ Lh + Lρ := by
+  have hb := preparationError_le threeRoles 1 [3] 0 hLh hLρ
+    (fun τ => rawIncomingNormalized HP 1 id threeRoles 0 0 0 0 0 0 [1] [2] [3]
+      (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff 2 id
+      (fun (_ : HierarchyTask.Request 0 (Fin 3) (ZMod 5)) => child (fun _ => false))
+      (fun _ => prepChild) (fun _ _ _ => 9) τ) biasTruth σ 0 0
+    (e := 1) (m := 1) (by norm_num)
+    (by simp [raw_eq, child, biasTruth])
+    (by intro w _; simp only [raw_eq, child, Bool.false_eq_true, false_and, ↓reduceIte,
+                               biasTruth]; split_ifs <;> norm_num)
+  simpa only [rate, pow_zero, one_pow, inv_one, mul_one, div_one] using hb
