@@ -199,16 +199,17 @@ theorem actualSelectedSecondSignal_mean_bias_le {E : Type*} [Fintype E] [Nonempt
   exact preparation_mean_bias_le HP hK R D ss st ks k kt hLρ hh hρ _ G x y
 
 /-- Actual recursive preparation wiring: cutoff after the full-rank raw H4 child walk,
-then the source × usage preparation walk. Bias is charged to that completed raw child
+then the source × usage preparation walk. Request size q is fixed across precisions.
+Bias is charged to that completed raw child
 minus G, with full-rank maximum and inverse rate explicit in preparationError. -/
-theorem actualCompletedSecondSignal_mean_bias_le {E : Type*} [Fintype E] [Nonempty E]
+theorem actualCompletedSecondSignal_mean_bias_le {q : ℕ} {E : Type*} [Fintype E] [Nonempty E]
     (HP : FourthRootHierarchyParams 16 1 16 32 8) (hK : 0 < HP.K)
     (D : ZMod P) (R : RoleProfile J) (ks k kt : ℕ) (_husage : k ≤ kt)
     (ss st : List (ZMod P))
     (l bin km kb : ℕ) (sm : List (ZMod P)) (Kc : ℕ) (binCutoff : ℝ → ℝ)
-    (raw prep : ∀ j : ℕ, HierarchyTask.Request j (Fin J) (ZMod P) →
+    (raw prep : ℕ → HierarchyTask.Request q (Fin J) (ZMod P) →
       Environment P J → Matrix (ZMod P) (ZMod P) ℝ)
-    (maximum : ∀ j : ℕ, HierarchyTask.Request j (Fin J) (ZMod P) →
+    (maximum : ℕ → HierarchyTask.Request q (Fin J) (ZMod P) →
       Environment P J → ZMod P → ℝ)
     (rawSteps : ℕ → ℕ)
     (graphs : ℕ → ∀ x y, RotationMap

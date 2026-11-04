@@ -106,10 +106,10 @@ theorem actual_bin_residual_one (HP : FourthRootHierarchyParams 16 1 16 32 8)
     rw [hd, hb, hd', hb']
   exact he.trans (_root_.actual_residual_one HP σ)
 
-private def firstInput (HP : FourthRootHierarchyParams 16 1 16 32 8) (j : ℕ) :=
+private def firstInput (HP : FourthRootHierarchyParams 16 1 16 32 8) (_j : ℕ) :=
   rawIncomingNormalized HP 1 id threeRoles 0 0 0 0 0 0 [1] [2] [3]
     (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff 6 (binCutoff HP 0)
-    (fun (_ : HierarchyTask.Request j (Fin 3) (ZMod 5)) σ _ y =>
+    (fun (_ : HierarchyTask.Request HP.k (Fin 3) (ZMod 5)) σ _ y =>
       if (σ 1).1 0 = 0 ∧ y = 0 then 1 else 0)
     (fun _ _ _ _ => 1) (fun _ _ _ => 0)
 
@@ -125,6 +125,16 @@ private def firstWalk (HP : FourthRootHierarchyParams 16 1 16 32 8) (ε : ℝ) (
       (side_le 5 0) (side_le 5 0) (fun x => CopyPadding.identifier 1 [1] x)
       (fun y => CopyPadding.identifier 1 [3] y)) (fun _ _ => firstSteps HP ε j) (firstInput HP j)
 
+-- Two statistical precisions use the same Request HP.k child family. The walk lengths
+-- vary with precision; telescoping still recovers the corresponding completed child.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (ε : ℝ)
+    (σ : Environment 5 3) (x y : ZMod 5) :
+    actualPrefix (firstSignalIncrement (firstWalk HP ε) 0 (fun _ _ _ _ => 7))
+        (fun _ _ _ _ => 0) 0 σ x y 0 = firstWalk HP ε 1 σ x y / rate 0 ∧
+    actualPrefix (firstSignalIncrement (firstWalk HP ε) 0 (fun _ _ _ _ => 7))
+        (fun _ _ _ _ => 0) 2 σ x y 0 = firstWalk HP ε 3 σ x y / rate 0 := by
+  constructor <;> exact actualPrefix_firstSignalIncrement _ _ _ _ (by intros; rfl) _ _ _ _
+
 -- Actual i=2 noise uses child budget 3 and the chosen finite steps, with real capped bins,
 -- unequal role/copy identifiers, dense bases and a nonzero raw column on the full field.
 example (HP : FourthRootHierarchyParams 16 1 16 32 8) {ε : ℝ} (hε : 0 < ε) :
@@ -133,7 +143,8 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) {ε : ℝ} (hε : 0 < ε) 
       (actualNoiseEntry (0 : Fin 3) 2 (side 5 0) (side 5 0) (side 5 0) 1 [1] [3] 0
         (fun _ _ => 0) (firstSignalIncrement (firstWalk HP ε) 0 (fun _ _ _ _ => 7))
         (fun _ _ _ _ => 0) 0 2) ≤ (ε * (64 : ℝ)⁻¹ ^ dyadicSlack 4 2) ^ 4 := by
-  exact actualFirstSignal_noise_le_dyadic HP (by have := _root_.big_K HP; omega) 1 threeRoles
+  exact actualFirstSignal_noise_le_dyadic HP.k_pos HP
+    (by have := _root_.big_K HP; omega) 1 threeRoles
     (zeroHorizon (P := 5)) 0 0 0 0 0 0 (side 5 0) (by decide) (by decide)
     [1] [2] [3] 6 (by decide) (binCutoff HP 0)
     (le_trans (by norm_num : (0 : ℝ) ≤ 16) (le_max_right _ _)) (bin_range HP 0)

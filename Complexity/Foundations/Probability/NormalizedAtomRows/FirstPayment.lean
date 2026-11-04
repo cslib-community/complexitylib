@@ -210,15 +210,15 @@ attribute [local instance] Classical.propDecidable
 
 /-- Numerical actual first noise at budget i+1, with the inverse rate fourth power intact.
 The width-dependent payment comes from actual child ranges, not a budget hypothesis. -/
-theorem actualFirstSignal_noise_le_payment
+theorem actualFirstSignal_noise_le_payment {q : ℕ} (hq : 0 < q)
     (HP : FourthRootHierarchyParams 16 1 16 32 8) (hK : 0 < HP.K)
     (D : ZMod P) (R : RoleProfile J) (Horizon : Horizon P) (l bin ks km k kb Lt : ℕ)
     (hks : ks ≤ Horizon.maxExponent) (hkm : km ≤ Horizon.maxExponent)
     (ss sm st : List (ZMod P)) (Kc : ℕ) (hKc : 0 < Kc) (binCutoff : ℝ → ℝ)
     {CB : ℝ} (hCB : 0 ≤ CB) (hbin : ∀ d, binCutoff d ∈ Set.Icc 0 CB)
-    (raw prep : ∀ j : ℕ, HierarchyTask.Request j (Fin J) (ZMod P) →
+    (raw prep : ℕ → HierarchyTask.Request q (Fin J) (ZMod P) →
       Environment P J → Matrix (ZMod P) (ZMod P) ℝ)
-    (maximum : ∀ j : ℕ, HierarchyTask.Request j (Fin J) (ZMod P) →
+    (maximum : ℕ → HierarchyTask.Request q (Fin J) (ZMod P) →
       Environment P J → ZMod P → ℝ)
     (steps : ℕ → ℕ) (G : Matrix (ZMod P) (ZMod P) ℝ) (hG : ∀ x y, 0 ≤ G x y)
     (second : Environment P J → ZMod P → ℕ → ZMod P → ℝ)
@@ -235,8 +235,9 @@ theorem actualFirstSignal_noise_le_payment
         (1 - 1 / (155648 * (J + 1) * (4 : ℝ) ^ 4)) ^ (2 * steps (i + 1)) *
         firstSignalPayment HP P Kc ks km k kb CB) := by
   have hP : (0 : ℝ) < P := by exact_mod_cast (Fact.out : P.Prime).pos
-  have hb := actualFirstSignal_noise_le_lower HP hK D R l bin ks km k kb Lt ss sm st Kc
+  have hb := actualFirstSignal_noise_le_lower hq HP hK D R l bin ks km k kb Lt ss sm st Kc
     hKc binCutoff raw prep maximum steps G hG second initial hz hP (rate_pos ks) i
+  obtain ⟨q, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (Nat.ne_of_gt hq)
   have hm := incomingMomentBudget_le_payment HP D R Horizon l bin ks km k kb hks hkm
     ss sm st Kc binCutoff hCB hbin (raw (i + 1)) (prep (i + 1)) (maximum (i + 1))
   exact hb.trans (mul_le_mul_of_nonneg_left
@@ -244,15 +245,15 @@ theorem actualFirstSignal_noise_le_payment
 
 /-- Positive-tolerance logarithmic steps discharge the genuine first-prefix dyadic noise
 contract. This makes no assertion about the preparation mean's bias. -/
-theorem actualFirstSignal_noise_le_dyadic
+theorem actualFirstSignal_noise_le_dyadic {q : ℕ} (hq : 0 < q)
     (HP : FourthRootHierarchyParams 16 1 16 32 8) (hK : 0 < HP.K)
     (D : ZMod P) (R : RoleProfile J) (Horizon : Horizon P) (l bin ks km k kb Lt : ℕ)
     (hks : ks ≤ Horizon.maxExponent) (hkm : km ≤ Horizon.maxExponent)
     (ss sm st : List (ZMod P)) (Kc : ℕ) (hKc : 0 < Kc) (binCutoff : ℝ → ℝ)
     {CB : ℝ} (hCB : 0 ≤ CB) (hbin : ∀ d, binCutoff d ∈ Set.Icc 0 CB)
-    (raw prep : ∀ j : ℕ, HierarchyTask.Request j (Fin J) (ZMod P) →
+    (raw prep : ℕ → HierarchyTask.Request q (Fin J) (ZMod P) →
       Environment P J → Matrix (ZMod P) (ZMod P) ℝ)
-    (maximum : ∀ j : ℕ, HierarchyTask.Request j (Fin J) (ZMod P) →
+    (maximum : ℕ → HierarchyTask.Request q (Fin J) (ZMod P) →
       Environment P J → ZMod P → ℝ)
     (steps : ℕ → ℕ) (G : Matrix (ZMod P) (ZMod P) ℝ) (hG : ∀ x y, 0 ≤ G x y)
     (second : Environment P J → ZMod P → ℕ → ZMod P → ℝ)
@@ -279,7 +280,7 @@ theorem actualFirstSignal_noise_le_dyadic
     positivity
   have hp := spectralWalkLength_payment hr (sub_lt_self _ (by positivity))
     (mul_nonneg (by positivity) hpay) hε (dyadicSlack m i) (steps (i + 1)) hsteps
-  have hn := actualFirstSignal_noise_le_payment HP hK D R Horizon l bin ks km k kb Lt
+  have hn := actualFirstSignal_noise_le_payment hq HP hK D R Horizon l bin ks km k kb Lt
     hks hkm ss sm st Kc hKc binCutoff hCB hbin raw prep maximum steps G hG second initial hz i
   exact hn.trans (by nlinarith only [hp])
 
