@@ -10,6 +10,8 @@ module
 import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Prepare
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # The native Convolution-3SUM instance loop
 
@@ -396,30 +398,26 @@ theorem exec_loop_at {w r N U src workspace T : ℕ} (μ : ℕ → ℤ)
       y.regs (hostRegisters found) ≤ 1 ∧
       (y.regs (hostRegisters found) = 1 ↔ ∃ s < 2 * sideLength N, hit N U s μ) ∧
       (∀ a < workspace, y.mem a = x.mem a) := by
-  let I (y : Data (64 + (r + 7))) : Prop :=
+  let P (j : ℕ) (y : Data (64 + (r + 7))) : Prop :=
     ParametersAt N U src workspace (y.comap hostRegisters) ∧
-      y.regs (hostRegisters inst) ≤ 2 * sideLength N ∧
       y.regs (hostRegisters found) ≤ 1 ∧
-      (y.regs (hostRegisters found) = 1 ↔ ∃ s < y.regs (hostRegisters inst), hit N U s μ) ∧
+      (y.regs (hostRegisters found) = 1 ↔ ∃ s < j, hit N U s μ) ∧
       (∀ a < workspace, y.mem a = x.mem a)
-  have hbody (y : Data (64 + (r + 7))) (hy : I y)
-      (hc : (Cond.lt (hostRegisters inst) (hostRegisters stop)).Holds y) :
+  have hbody (y : Data (64 + (r + 7))) (hy : P (y.regs (hostRegisters inst)) y)
+      (hlt : y.regs (hostRegisters inst) < 2 * sideLength N) :
       ∃ z, ExecWithin (w + 2) (round solver) y z
-          (131 * (sideLength N * sideLength N) + T + 23) ∧ I z ∧
-        2 * sideLength N - z.regs (hostRegisters inst) <
-          2 * sideLength N - y.regs (hostRegisters inst) := by
-    obtain ⟨hyp, hys, hyf, hyans, hym⟩ := hy
-    have hlt : y.regs (hostRegisters inst) < 2 * sideLength N := by
-      change y.regs (hostRegisters inst) < y.regs (hostRegisters stop) at hc
-      exact hc.trans_eq hyp.stop
+          (131 * (sideLength N * sideLength N) + T + 23) ∧
+        P (y.regs (hostRegisters inst) + 1) z ∧
+        z.regs (hostRegisters inst) = y.regs (hostRegisters inst) + 1 := by
+    obtain ⟨hyp, hyf, hyans, hym⟩ := hy
     have hyinput : ∀ i < N, y.mem (src + i) = encode (μ i) := by
       intro i hi
       rw [hym _ (by omega)]
       exact hmem i hi
     obtain ⟨z, hz, hzp, hzsi, hzf, hzans, hzm⟩ := exec_round_at μ solver y hyp rfl hlt
       hyf hyinput (hidx _ hlt) hF hnF hμ hsize hbelow (hsolver _ hlt)
-    refine ⟨z, hz, ⟨hzp, by omega, hzf, ?_, ?_⟩, by omega⟩
-    · rw [hzans, hyans, hzsi]
+    refine ⟨z, hz, ⟨hzp, hzf, ?_, ?_⟩, hzsi⟩
+    · rw [hzans, hyans]
       constructor
       · rintro (⟨s, hs, hh⟩ | hh)
         · exact ⟨s, by omega, hh⟩
@@ -431,17 +429,12 @@ theorem exec_loop_at {w r N U src workspace T : ℕ} (μ : ℕ → ℤ)
           exact Or.inr (he ▸ hh)
     · intro a ha
       exact (hzm a ha).trans (hym a ha)
-  have hx : I x := ⟨hp, by omega, by omega, by simp [hi, hf], fun _ _ => rfl⟩
-  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I
-    (fun y => 2 * sideLength N - y.regs (hostRegisters inst)) hbody hx
-  obtain ⟨hyp, hyi, hyf, hyans, hym⟩ := hy
-  have hend : y.regs (hostRegisters inst) = 2 * sideLength N := by
-    change ¬y.regs (hostRegisters inst) < y.regs (hostRegisters stop) at hc
-    have hstop : y.regs (hostRegisters stop) = 2 * sideLength N := hyp.stop
-    omega
-  refine ⟨y, ?_, hyp, hend, hyf, ?_, hym⟩
-  · simpa only [loop, hi, Nat.sub_zero, Nat.add_assoc, Nat.reduceAdd] using he
-  · simpa only [hend] using hyans
+  have hx : P (x.regs (hostRegisters inst)) x :=
+    ⟨hp, by omega, by simp [hi, hf], fun _ _ => rfl⟩
+  obtain ⟨y, he, ⟨hyp, hyf, hyans, hym⟩, hend⟩ := ExecWithin.loop_count P
+    (fun _ hy => hy.1.stop) hbody (by simp [hi]) hx
+  exact ⟨y, by simpa only [loop, hi, Nat.sub_zero, Nat.add_assoc, Nat.reduceAdd] using he,
+    hyp, hend, hyf, hyans, hym⟩
 
 /-- Standalone specialization of the caller-layout execution theorem. -/
 theorem exec_fill {w N U s : ℕ} (μ : ℕ → ℤ) (x : Data 64)

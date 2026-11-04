@@ -288,7 +288,7 @@ theorem exec {w : ℕ} (x : Data 9) {a b r : ℕ} (ha : x.regs p = a) (hb : x.re
   have hx₀ : P (x₀.regs k) x₀ := by
     refine ⟨?_, ?_, ?_, ?_, rfl, ?_⟩ <;> simp +decide [x₀, ha, hb, hr]
   obtain ⟨y, hrun₁, ⟨-, -, -, -, hym, hyf⟩, _⟩ := ExecWithin.loop_count P
-    (fun _ hy => hy.2.2.1) (step hfa hfb) (by simp [x₀]) hx₀
+    (fun _ ⟨_, _, hrr, _⟩ => hrr) (step hfa hfb) (by simp [x₀]) hx₀
   refine ⟨y, (hrun₀.seq hrun₁).mono ?_, ?_, ?_, hym⟩
   · have : x₀.regs k = 0 := by simp +decide [x₀]
     rw [this]; omega

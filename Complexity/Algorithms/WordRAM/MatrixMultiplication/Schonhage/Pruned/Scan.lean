@@ -141,8 +141,8 @@ theorem exec_scan {w N capacity : ℕ} (child : Bool) (x : Data registers) (inpu
       exact hframe a hao has
     · exact fun i hi => (hrf i hi).trans (hfrozen i hi)
   have hlimit (y : Data registers) (hy : P (y.regs index) y) : y.regs count = N := by
-    have hf := hy.2.2.2.2 count (by decide)
-    simpa +decide [x0, count, epoch, childCount, index] using hf.trans (by
+    obtain ⟨_, _, _, _, hf⟩ := hy
+    simpa +decide [x0, count, epoch, childCount, index] using (hf count (by decide)).trans (by
       simpa +decide [x0, count, epoch, childCount, index] using hN)
   obtain ⟨y, hy, ⟨hcount, htable, hread, hframe, hfrozen⟩, hindex⟩ :=
     ExecWithin.loop_count P hlimit hstep (by simp [x0]) hinit

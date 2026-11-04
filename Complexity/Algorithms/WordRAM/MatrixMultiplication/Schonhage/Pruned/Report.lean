@@ -131,7 +131,7 @@ theorem exec_report {w N capacity : ℕ} (x : Data registers) (codes : ℕ → �
       exact hframe a ha
     · exact fun i hi => (hz.regs_eq (reportStep_preserves i hi)).trans (hfrozen i hi)
   obtain ⟨y, hy, ⟨hdone, _, _, hframe, hfrozen⟩, hidx⟩ := ExecWithin.loop_count P
-    (fun _ hy => (hy.2.2.2.2 queryCount (by decide)).trans hN) hstep (by simp [u]) hinit
+    (fun _ ⟨_, _, _, _, hf⟩ => (hf queryCount (by decide)).trans hN) hstep (by simp [u]) hinit
   have hloop : ExecWithin w (.loop (.lt index queryCount) reportStep) u y (9 * N + 2) := by
     simpa only [u, Data.set_regs, Function.update_self, Nat.sub_zero, Nat.mul_comm] using hy
   have he : ExecWithin w report x y (9 * N + 3) := (hsetup.seq hloop).mono (by omega)

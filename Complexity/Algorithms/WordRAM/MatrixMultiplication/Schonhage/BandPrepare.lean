@@ -9,6 +9,8 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandRead
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Complete native padded-band preparation
 
@@ -72,14 +74,13 @@ theorem exec_prepareBand {w L m N : ℕ} (side : Bool) (β : ℕ) (x : Data 96)
       simp only [parameterRegisters, headerRegisters, prepareHead, Code.Preserves, Op.dest]
       decide
     exact hp i hi)
-  let I (y : Data 96) : Prop := BandParameters L m N y ∧ y.regs band = β ∧
-    y.regs index ≤ 7 ^ L ∧ y.mem 1 = L ∧
-    (∀ a < y.regs index, y.mem (2 + a) = encode (bandValue L m N β side matrix a)) ∧
+  let P (j : ℕ) (y : Data 96) : Prop := BandParameters L m N y ∧ y.regs band = β ∧
+    y.mem 1 = L ∧
+    (∀ a < j, y.mem (2 + a) = encode (bandValue L m N β side matrix a)) ∧
     (∀ b, ¬(1 ≤ b ∧ b < 2 + 7 ^ L) → y.mem b = x.mem b)
-  have hstart : I start := by
-    refine ⟨hsp, ?_, ?_, ?_, ?_, ?_⟩
+  have hstart : P (start.regs index) start := by
+    refine ⟨hsp, ?_, ?_, ?_, ?_⟩
     · simpa [start, band, address, index] using hb
-    · simp [start]
     · simp [start]
     · simp [start]
     · intro b hbb
@@ -87,11 +88,11 @@ theorem exec_prepareBand {w L m N : ℕ} (side : Bool) (β : ℕ) (x : Data 96)
         have := Nat.one_le_pow L 7 (by decide)
         omega
       simp [start, hne]
-  have hbody (y : Data 96) (hy : I y) (hc : (Cond.lt index cells).Holds y) :
-      ∃ z, ExecWithin w (prepareBody side) y z (13 * L + 37) ∧ I z ∧
-        7 ^ L - z.regs index < 7 ^ L - y.regs index := by
+  have hbody (y : Data 96) (hy : P (y.regs index) y) (hc : y.regs index < 7 ^ L) :
+      ∃ z, ExecWithin w (prepareBody side) y z (13 * L + 37) ∧
+        P (y.regs index + 1) z ∧ z.regs index = y.regs index + 1 := by
     let i := y.regs index
-    have hi : i < 7 ^ L := by simpa only [Cond.holds_lt, hy.1.cells] using hc
+    have hi : i < 7 ^ L := hc
     have hsplit : SplitParameters L y := ⟨hy.1.fixed.levels, hy.1.fixed.one,
       hy.1.fixed.two, hy.1.fixed.three, hy.1.fixed.four, hy.1.fixed.seven⟩
     obtain ⟨s, hes, _, hmask, houter, hinner, hsmem⟩ :=
@@ -106,14 +107,14 @@ theorem exec_prepareBand {w L m N : ℕ} (side : Bool) (β : ℕ) (x : Data 96)
       decide)
     have htable' (t : ℕ) (ht : t < 2 ^ L) :
         s.mem (inverseBase L m N + t) = MaskTable.lookup L m t := by
-      rw [hsmem, hy.2.2.2.2.2 _ (by
+      rw [hsmem, hy.2.2.2.2 _ (by
         have hlow := band_input_le_snapshot L m N
         unfold inverseBase
         omega)]
       exact htable t ht
     have hmat' (r : ℕ) (hr : r < N) (k : ℕ) (hk : k < D m) :
         s.mem (matrixAddress L m N side r k) = encode (matrix r k) := by
-      rw [hsmem, hy.2.2.2.2.2 _ (by
+      rw [hsmem, hy.2.2.2.2 _ (by
         have hlow := band_input_le_snapshot L m N
         unfold matrixAddress
         omega)]
@@ -146,37 +147,29 @@ theorem exec_prepareBand {w L m N : ℕ} (side : Bool) (β : ℕ) (x : Data 96)
     have hzmem : z.mem = Function.update y.mem (i + 2)
         (encode (bandValue L m N β side matrix i)) := by
       simp only [z, Data.set_mem, Data.write_mem, htmem, hsmem]
-    refine ⟨z, he, ?_, ?_⟩
+    refine ⟨z, he, ?_, hzindex⟩
     · refine ⟨parameters_reframe hy.1 (fun j hj =>
-        he.regs_eq (prepare_preserves_parameters side j hj)), ?_, ?_, ?_, ?_, ?_⟩
+        he.regs_eq (prepare_preserves_parameters side j hj)), ?_, ?_, ?_, ?_⟩
       · exact (he.regs_eq (by
           cases side <;>
             simp +decide only [])).trans hy.2.1
-      · rw [hzindex]; omega
       · rw [hzmem, Function.update_of_ne (by omega : 1 ≠ i + 2)]
-        exact hy.2.2.2.1
+        exact hy.2.2.1
       · intro a ha
-        rw [hzindex] at ha
         rw [hzmem]
         by_cases hai : a = i
         · subst a; rw [Nat.add_comm 2 i, Function.update_self]
         · rw [Function.update_of_ne (by omega : 2 + a ≠ i + 2)]
-          exact hy.2.2.2.2.1 a (by omega)
+          exact hy.2.2.2.1 a (by omega)
       · intro b hbb
         rw [hzmem, Function.update_of_ne (by omega : b ≠ i + 2)]
-        exact hy.2.2.2.2.2 b hbb
-    · rw [hzindex]; change 7 ^ L - (i + 1) < 7 ^ L - i; omega
-  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I
-    (fun y => 7 ^ L - y.regs index) hbody hstart
-  have hindex : y.regs index = 7 ^ L := by
-    simp only [Cond.holds_lt, hy.1.cells] at hc
-    have := hy.2.2.1
-    omega
-  refine ⟨y, ?_, hy.1, hy.2.1, hy.2.2.2.1, ?_, hy.2.2.2.2.2⟩
+        exact hy.2.2.2.2 b hbb
+  obtain ⟨y, he, hy, _⟩ := ExecWithin.loop_count P (fun _ hy => hy.1.cells)
+    hbody (by simp [start]) hstart
+  refine ⟨y, ?_, hy.1, hy.2.1, hy.2.2.1, hy.2.2.2.1, hy.2.2.2.2⟩
   · apply (hs.seq he).mono
     have hzero : start.regs index = 0 := by simp [start]
     rw [hzero, Nat.sub_zero]
     nlinarith only [Nat.zero_le (7 ^ L)]
-  · simpa only [hindex] using hy.2.2.2.2.1
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandPreparation

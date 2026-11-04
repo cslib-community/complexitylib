@@ -9,6 +9,8 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandEncode
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Every shared band, computed once
 
@@ -84,37 +86,35 @@ theorem exec_encodeBands {w L m N : ℕ} (hw : 0 < w) (side : Bool) (x : Data 96
       have hp : ∀ i ∈ parameterRegisters, i ≠ band := by decide
       exact hp i hi
     simp only [start, Data.set_regs, Function.update_of_ne hne])
-  let I (y : Data 96) : Prop := BandParameters L m N y ∧
-    y.regs band ≤ numBands L m N ∧
-    (∀ β < y.regs band, ∀ p < 10 ^ L,
+  let P (j : ℕ) (y : Data 96) : Prop := BandParameters L m N y ∧
+    (∀ β < j, ∀ p < 10 ^ L,
       y.mem (catalogueAddress L m N side β p) =
         encode (catalogueValue L m N side matrix β p)) ∧
     (∀ b, ¬(1 ≤ b ∧ b < Encoding.scratchBase L + 10 ^ L) →
       ¬(catalogueAddress L m N side 0 0 ≤ b ∧
         b < catalogueAddress L m N side (numBands L m N) 0) →
       y.mem b = x.mem b)
-  have hstart : I start := by
-    refine ⟨hp, ?_, ?_, ?_⟩
-    · simp [start]
+  have hstart : P (start.regs band) start := by
+    refine ⟨hp, ?_, ?_⟩
     · simp [start]
     · intro b _ _; rfl
-  have hbody (y : Data 96) (hy : I y) (hc : (Cond.lt band bands).Holds y) :
-      ∃ z, ExecWithin (w + 2) (bandBody side) y z (bandTime L + 1) ∧ I z ∧
-        numBands L m N - z.regs band < numBands L m N - y.regs band := by
+  have hbody (y : Data 96) (hy : P (y.regs band) y) (hc : y.regs band < numBands L m N) :
+      ∃ z, ExecWithin (w + 2) (bandBody side) y z (bandTime L + 1) ∧
+        P (y.regs band + 1) z ∧ z.regs band = y.regs band + 1 := by
     let β := y.regs band
-    have hβ : β < numBands L m N := by simpa only [Cond.holds_lt, hy.1.bands] using hc
+    have hβ : β < numBands L m N := hc
     have hlow := workspace_le_snapshot L m N
     have hcat := catalogue_le_address L m N 0 side
     have htable' (t : ℕ) (ht : t < 2 ^ L) :
         y.mem (inverseBase L m N + t) = MaskTable.lookup L m t := by
-      rw [hy.2.2.2 _ (by unfold inverseBase; omega) (by
+      rw [hy.2.2 _ (by unfold inverseBase; omega) (by
         unfold catalogueBase tableBase at hcat
         omega)]
       exact htable t ht
     have hmat' (r : ℕ) (hr : r < N) (k : ℕ) (hk : k < D m) :
         y.mem (matrixAddress L m N side r k) = encode (matrix r k) := by
       have hbound := matrixAddress_lt_inverse (L := L) side hr hk
-      rw [hy.2.2.2 _ (by unfold matrixAddress; omega) (by
+      rw [hy.2.2 _ (by unfold matrixAddress; omega) (by
         unfold catalogueBase tableBase at hcat
         have := Nat.zero_le (2 ^ L)
         omega)]
@@ -126,21 +126,19 @@ theorem exec_encodeBands {w L m N : ℕ} (hw : 0 < w) (side : Bool) (x : Data 96
       ram_eval [z, htb, htp.fixed.one, (bands_fits hfit).of_le (Nat.succ_le_of_lt hβ),
         band, one, Fin.mk.injEq]
     have hzb : z.regs band = β + 1 := by simp [z]
-    refine ⟨z, he.seq hz, ?_, ?_⟩
-    · refine ⟨parameters_reframe htp ?_, ?_, ?_, ?_⟩
+    refine ⟨z, he.seq hz, ?_, hzb⟩
+    · refine ⟨parameters_reframe htp ?_, ?_, ?_⟩
       · intro i hi
         have hp : ∀ i ∈ parameterRegisters, i ≠ band := by decide
         simp only [z, Data.set_regs, Function.update_of_ne (hp i hi)]
-      · rw [hzb]; omega
       · intro γ hγ p hp
-        rw [hzb] at hγ
         change t.mem _ = _
         by_cases hγβ : γ = β
         · subst γ; exact hvalues p hp
         · have hγlt : γ < β := by omega
           have hprior := catalogue_address_lt (m := m) (N := N) side hγlt hp
           rw [hframe _ ?_ (by omega)]
-          · exact hy.2.2.1 γ hγlt p hp
+          · exact hy.2.1 γ hγlt p hp
           · have haddr := catalogue_le_address L m N γ side
             unfold catalogueAddress at haddr
             have hsep : Encoding.scratchBase L + 10 ^ L ≤ catalogueBase L m N := by
@@ -153,19 +151,13 @@ theorem exec_encodeBands {w L m N : ℕ} (hw : 0 < w) (side : Bool) (x : Data 96
         change t.mem b = x.mem b
         have hinside := catalogue_block_inside side hβ
         rw [hframe b hb (by omega)]
-        exact hy.2.2.2 b hb hc
-    · rw [hzb]; change numBands L m N - (β + 1) < numBands L m N - β; omega
-  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I
-    (fun y => numBands L m N - y.regs band) hbody hstart
-  have hb : y.regs band = numBands L m N := by
-    simp only [Cond.holds_lt, hy.1.bands] at hc
-    have := hy.2.1
-    omega
-  refine ⟨y, ?_, hy.1, ?_, hy.2.2.2⟩
+        exact hy.2.2 b hb hc
+  obtain ⟨y, he, hy, _⟩ := ExecWithin.loop_count P (fun _ hy => hy.1.bands)
+    hbody (by simp [start]) hstart
+  refine ⟨y, ?_, hy.1, hy.2.1, hy.2.2⟩
   · apply (hs.seq he).mono
     have hz : start.regs band = 0 := by simp [start]
     simp only [hz, Nat.sub_zero, Nat.add_assoc, Nat.reduceAdd]
     omega
-  · simpa only [hb] using hy.2.2.1
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandPreparation

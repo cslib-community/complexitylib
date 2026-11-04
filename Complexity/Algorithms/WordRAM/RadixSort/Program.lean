@@ -10,6 +10,8 @@ module
 public import Complexity.Algorithms.WordRAM.RadixSort.Scan
 public import Complexity.Computability.WordRAM.Compile
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Fixed-code native unsigned radix sorter
 
@@ -127,18 +129,16 @@ theorem exec {w base keyBits : ℕ} (xs : List ℕ) (x : Data 16)
       (y.regs src = base ∨ y.regs src = base + xs.length) ∧
       Modifies (Block.mk base (2 * xs.length)).footprint x.mem y.mem := by
   let n := xs.length
-  let I (y : Data 16) : Prop :=
+  let P (j : ℕ) (y : Data 16) : Prop :=
     y.regs len = n ∧ y.regs bits = keyBits ∧ y.regs one = 1 ∧ y.regs two = 2 ∧
-    y.regs bit ≤ keyBits ∧
     ((y.regs src = base ∧ y.regs dst = base + n) ∨
       (y.regs src = base + n ∧ y.regs dst = base)) ∧
-    Block.HoldsList (y.regs src) (passes (y.regs bit) xs) y.mem ∧
+    Block.HoldsList (y.regs src) (passes j xs) y.mem ∧
     Modifies (Block.mk base (2 * n)).footprint x.mem y.mem
-  have hbody (y : Data 16) (hy : I y) (hc : (Cond.lt bit bits).Holds y) :
-      ∃ z, ExecWithin w pass y z (22 * n + 13) ∧ I z ∧
-        keyBits - z.regs bit < keyBits - y.regs bit := by
-    obtain ⟨hyn, hyB, hyo, hy2, hyb, hyp, hym, hyf⟩ := hy
-    have hlt : y.regs bit < keyBits := by simpa only [Cond.holds_lt, hyB] using hc
+  have hbody (y : Data 16) (hy : P (y.regs bit) y) (hlt : y.regs bit < keyBits) :
+      ∃ z, ExecWithin w pass y z (22 * n + 13) ∧ P (y.regs bit + 1) z ∧
+        z.regs bit = y.regs bit + 1 := by
+    obtain ⟨hyn, hyB, hyo, hy2, hyp, hym, hyf⟩ := hy
     have hl : (passes (y.regs bit) xs).length = n := (passes_perm _ _).length_eq
     have hdis : y.regs src + n ≤ y.regs dst ∨ y.regs dst + n ≤ y.regs src := by
       rcases hyp with ⟨ha, hb⟩ | ⟨ha, hb⟩ <;> omega
@@ -152,15 +152,15 @@ theorem exec {w base keyBits : ℕ} (xs : List ℕ) (x : Data 16)
       (hyn.trans hl.symm) rfl rfl rfl hyo hy2 hym hwds
       (by simpa only [hl] using hdis) (by simpa only [hl] using hsf)
       (by simpa only [hl] using hdf) (hbits.of_le (by omega)) (h2.of_le (by omega))
-    refine ⟨z, by simpa only [hl] using he, ?_, by omega⟩
+    refine ⟨z, by simpa only [hl] using he, ?_, hzb⟩
     refine ⟨(he.regs_eq (by decide)).trans hyn, (he.regs_eq (by decide)).trans hyB,
       (he.regs_eq (by decide)).trans hyo, (he.regs_eq (by decide)).trans hy2,
-      by omega, ?_, ?_, ?_⟩
+      ?_, ?_, ?_⟩
     · rw [hzs, hzd]
       rcases hyp with ⟨ha, hb⟩ | ⟨ha, hb⟩
       · exact Or.inr ⟨hb, ha⟩
       · exact Or.inl ⟨hb, ha⟩
-    · rw [hzs, hzb, passes]
+    · rw [hzs, passes]
       exact hzm
     · intro a hnot
       have hnot' : a ∉ (Block.mk (y.regs dst) (passes (y.regs bit) xs).length).footprint := by
@@ -174,24 +174,19 @@ theorem exec {w base keyBits : ℕ} (xs : List ℕ) (x : Data 16)
         rcases hyp with ⟨ha', hb'⟩ | ⟨ha', hb'⟩ <;> omega
       exact (hzf a hnot').trans (hyf a hnot)
   let x₀ := ((x.set one 1).set two 2).set bit 0
-  have hx₀ : I x₀ := by
-    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, Modifies.refl _ _⟩
+  have hx₀ : P (x₀.regs bit) x₀ := by
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, Modifies.refl _ _⟩
     · simpa +decide [x₀] using hn
     · simpa +decide [x₀] using hb
     · simp +decide [x₀]
     · simp +decide [x₀]
-    · simp [x₀]
     · left; simpa +decide [x₀, n] using And.intro hs hd
     · simpa +decide [x₀, passes, hs] using hmem
-  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I
-    (fun y => keyBits - y.regs bit) hbody hx₀
-  obtain ⟨hyn, hyB, hyo, hy2, hyb, hyp, hym, hyf⟩ := hy
-  have hend : y.regs bit = keyBits := by
-    simp only [Cond.holds_lt, hyB] at hc
-    omega
+  obtain ⟨y, he, ⟨_, _, _, _, hyp, hym, hyf⟩, _⟩ := ExecWithin.loop_count P
+    (fun _ ⟨_, hbits, _⟩ => hbits) hbody (by simp [x₀]) hx₀
   have hinit : ExecWithin (B := .standard) w (ram[ one ← #1; two ← #2; bit ← #0 ]) x x₀ 3 := by
     ram_eval [x₀, h2, h2.of_le (show 1 ≤ 2 by omega)]
-  refine ⟨y, ?_, by simpa only [hend] using hym,
+  refine ⟨y, ?_, hym,
     (passes_correct keyBits xs hkeys).1, (passes_correct keyBits xs hkeys).2,
     hyp.imp And.left And.left, hyf⟩
   have hall := hinit.seq he
