@@ -22,10 +22,12 @@ sends at least `⌈log₂ B⌉` bits, where `B` is the number of partitions of `
 (`clog_card_le_ecomplexity_join`). The same holds for the negation, whether the join has more than
 one block (`clog_card_le_ecomplexity_join_ne`).
 
-For graph connectivity this lower bound is due to Hajnal, Maass and Turán [HajnalMaassTuran1988];
-Lovász and Saks place it in their framework of alignments, where the join matrix is the span
-indicator of the graphic matroid of the complete graph, its rank is computed from the Möbius
-function, and the rank bound applies [LovaszSaks1993, Theorems 3.4, 3.6, 6.3 and 6.6].
+Hajnal, Maass and Turán use this rank, which they attribute to Dowling and Wilson, for graph
+connectivity [HajnalMaassTuran1988, Theorem 2], and extend the bound to arbitrary partitions of
+the edges with the regularity lemma. Lovász and Saks place it in their framework of alignments,
+where the join matrix is the span indicator of the graphic matroid of the complete graph, its rank
+is computed from the Möbius function, and the rank bound applies
+[LovaszSaks1993, Theorems 3.4, 3.6, 6.3 and 6.6].
 
 ## Main results
 
