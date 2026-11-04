@@ -421,9 +421,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   random restriction lemmas (`WeightedThreshold/RandomRestriction.lean`, Lemma 1.1 and Lemma 3.1 of
   arXiv:1511.07860v1), the `b`-variable LTF and depth-two threshold function counting bounds
   (`WeightedThreshold/ThresholdCounting.lean`, Theorem 2.3 and Section 4 of arXiv:1511.07860v1), and
-  the quadratic-in-`ε` average-case `Ω(ε² n ^ (3 / 2) / log³ n)` gate and
-  `Ω(ε² n ^ (5 / 2) / log ^ (7 / 2) n)` active-wire lower bounds for
-  `3 * (b + 2) / √(2 ^ b) ≤ ε ≤ 1 / 2` (`WeightedThreshold/AndreevLowerBound.lean`, improving the
+  the fixed-weight quadratic-in-`ε` average-case `Ω(ε² n ^ (3 / 2) / log² n)` gate and
+  `Ω(ε² n ^ (5 / 2) / log ^ (5 / 2) n)` active-wire lower bounds for
+  `3 * (b + 2) / √(2 ^ b) ≤ ε ≤ 1 / 2` in the balanced regime
+  (`WeightedThreshold/AndreevLowerBound.lean`, improving the
   `ε³` dependence in Theorem 1.1 and Section 5 of arXiv:1511.07860v1) are proved; closing the
   worst-case depth-two threshold gate gap between `Ω̃(n ^ (3 / 2))` and `O(n ^ 2)` remains open.
 - **Construction runtimes**, certified separately from gate counts: the mass-production

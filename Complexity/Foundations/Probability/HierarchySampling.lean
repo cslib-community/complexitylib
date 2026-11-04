@@ -170,6 +170,42 @@ noncomputable def ofHierarchyChannels
     nlinarith
   incoming_rank := Nat.le_ceil _
 
+variable
+    (hXY : Cslib.Probability.RetentionChannels X Y f π cπ Cπ Cpair Cvar)
+    (hYX : Cslib.Probability.RetentionChannels Y X f π cπ Cπ Cpair Cvar)
+    (hf : 0 < f) (hπ : 0 < π) (hpair : 0 ≤ Cpair) (hi : i < P.k)
+    (hcount : ∀ z, g z ≠ 0 →
+      (#({w | P.δ₁ * f ≤ G w z} : Finset V) : ℝ) ≤ P.R / f)
+    (I : ℝ → ℝ → ℝ) (τ h : ℝ → ℝ) (τ₀ : ℝ)
+    (hQ : ∀ v, P.Q v ≠ 0 → h v = 1)
+    (hτ0 : ∀ r, 0 ≤ τ r) (hτ1 : ∀ r, τ r ≤ 1) (hτ₀ : 0 ≤ τ₀)
+    (hτ : ∀ r, r ≤ τ₀ → τ r = 1) (hI : ∀ v r, v ≤ P.δ₁ → I v r = 0)
+
+/-- The hierarchy-channel laws preserve their `I` parameter. -/
+theorem ofHierarchyChannels_I :
+    (ofHierarchyChannels P X Y hXY hYX hf hπ hpair hi hcount
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).I = I := by
+  rfl
+
+/-- The hierarchy-channel laws preserve their `τ` parameter. -/
+theorem ofHierarchyChannels_τ :
+    (ofHierarchyChannels P X Y hXY hYX hf hπ hpair hi hcount
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).τ = τ := by
+  rfl
+
+/-- The hierarchy-channel laws preserve their `ρ` parameter. -/
+theorem ofHierarchyChannels_ρ :
+    (ofHierarchyChannels P X Y hXY hYX hf hπ hpair hi hcount
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).ρ = P.ρ := by
+  rfl
+
+/-- The hierarchy-channel laws preserve their `Kc` parameter. -/
+theorem ofHierarchyChannels_Kc :
+    (ofHierarchyChannels P X Y hXY hYX hf hπ hpair hi hcount
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).Kc = ⌈4
+        * (1 + Cpair * P.R)⌉₊ := by
+  rfl
+
 end Matrix.CorrectionSamplingLaws
 
 namespace Matrix.HierarchyParams.CorrectionSampling
@@ -197,5 +233,70 @@ noncomputable def ofChannels
     (fun z hg => P.toHierarchyParams.correctionInput_count_le X Y
       hXY hf hcπ hpair hC hC1 hi (z := z) hg)
     I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI
+
+variable
+    (hXY : Cslib.Probability.RetentionChannels X Y f π cπ Cπ Cpair Cvar)
+    (hYX : Cslib.Probability.RetentionChannels Y X f π cπ Cπ Cpair Cvar)
+    (hf : 0 < f) (hπ : 0 < π) (hcπ : 0 < cπ) (hpair : 0 ≤ Cpair)
+    (hC : ∀ x y, 0 ≤ C x y) (hC1 : C *ᵥ 1 ≤ 1) (hi : i < P.k)
+    (I : ℝ → ℝ → ℝ) (τ h : ℝ → ℝ) (τ₀ : ℝ)
+    (hQ : ∀ v, P.Q v ≠ 0 → h v = 1)
+    (hτ0 : ∀ r, 0 ≤ τ r) (hτ1 : ∀ r, τ r ≤ 1) (hτ₀ : 0 ≤ τ₀)
+    (hτ : ∀ r, r ≤ τ₀ → τ r = 1) (hI : ∀ v r, v ≤ P.δ₁ → I v r = 0)
+
+/-- The channel constructor uses the true stage rate for its source budget. -/
+theorem ofChannels_p :
+    (ofChannels P X Y hXY hYX hf hπ hcπ hpair hC hC1 hi
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).p = Cpair * f := by
+  rfl
+
+/-- The channel constructor preserves its `I` parameter. -/
+theorem ofChannels_I :
+    (ofChannels P X Y hXY hYX hf hπ hcπ hpair hC hC1 hi
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).I = I := by
+  rfl
+
+/-- The channel constructor preserves its `τ` parameter. -/
+theorem ofChannels_τ :
+    (ofChannels P X Y hXY hYX hf hπ hcπ hpair hC hC1 hi
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).τ = τ := by
+  rfl
+
+/-- The channel constructor preserves its `h` parameter. -/
+theorem ofChannels_h :
+    (ofChannels P X Y hXY hYX hf hπ hcπ hpair hC hC1 hi
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).h = h := by
+  rfl
+
+/-- The channel constructor preserves its `ρ` parameter. -/
+theorem ofChannels_ρ :
+    (ofChannels P X Y hXY hYX hf hπ hcπ hpair hC hC1 hi
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).ρ = P.ρ := by
+  rfl
+
+/-- The channel constructor preserves its `K` parameter. -/
+theorem ofChannels_K :
+    (ofChannels P X Y hXY hYX hf hπ hcπ hpair hC hC1 hi
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).K = P.K := by
+  rfl
+
+/-- The channel constructor preserves its `Kc` parameter. -/
+theorem ofChannels_Kc :
+    (ofChannels P X Y hXY hYX hf hπ hcπ hpair hC hC1 hi
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).Kc = ⌈4 * (1
+        + Cpair * P.R)⌉₊ := by
+  rfl
+
+/-- The channel constructor uses the actual terminal pair constant. -/
+theorem ofChannels_c :
+    (ofChannels P X Y hXY hYX hf hπ hcπ hpair hC hC1 hi
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).c = Cpair := by
+  rfl
+
+/-- The channel constructor preserves its `π` parameter. -/
+theorem ofChannels_π :
+    (ofChannels P X Y hXY hYX hf hπ hcπ hpair hC hC1 hi
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).π = π := by
+  rfl
 
 end Matrix.HierarchyParams.CorrectionSampling

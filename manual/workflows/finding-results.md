@@ -92,6 +92,87 @@ does not apply, check the horizon, loss and small-second-signal hypotheses befor
 rank domain or adding a cap. These deterministic lemmas do not supply integrated normalized-output
 moments, recursive estimator budgets or a native class endpoint.
 
+For the actual hierarchy decoder, import
+[NormalizedAtomRows/BoundedLoss](../../Complexity/Foundations/Probability/NormalizedAtomRows/BoundedLoss.lean)
+and open `Matrix.FourthRootHierarchyParams.NormalizedRow`. `output HP ζ d v r` uses the
+actual bounded atom cutoff, core rank gate and `clip (v / ζ)`.
+`boundedLoss_root_bound` derives normalized fourth-root error from raw clipped error,
+nonnegative truth on the full rank set and common first loss bounded by `atomCap`.
+There is no upper bound on true first entries. Its exact saturation identities concern
+only output arguments. For a single full H4 environment,
+[NormalizedAtomRows/Request](../../Complexity/Foundations/Probability/NormalizedAtomRows/Request.lean)'s
+`normalizedRequest_eq_output` identifies the existing request, preserving the narrower
+usage mask and full terminal rank. The [actual-output regressions](../../ComplexityTests/NormalizedAtomRows.lean)
+check off-usage rank closure, unbounded-loss failure and positive output after an increment
+from zero. These deterministic prerequisites feed the conditional moment route below;
+recursive/native RL remains open.
+
+For sharp no-overflow and first-overflow comparisons, import
+[NormalizedAtomRows/Sharp](../../Complexity/Foundations/Probability/NormalizedAtomRows/Sharp.lean).
+`fixed_shape` supplies positive shape and denominator scales. Choose those first, then
+use `sharp_noOverflow` or `sharp_firstOverflow`: final/tail coefficients precede the later
+positive dyadic floor, while the weighted preloss coefficient may depend on it.
+`sharp_compression` keeps the complementary false-first-overflow exclusion explicit.
+[RequestSharp](../../Complexity/Foundations/Probability/NormalizedAtomRows/RequestSharp.lean)
+applies both comparisons to the existing single-environment request; its first-overflow
+client derives the preparation mean range from bounded preparation values, even on empty
+slices. The [positive-floor exact-increment client](../../ComplexityTests/NormalizedAtomSharp.lean)
+starts from zero, allows arbitrary nonnegative first magnitude and obtains zero root error
+from exact raw prefixes. Run `scripts/build.sh --wfail --iofail ComplexityTests.NormalizedAtomSharp`
+from a configured checkout. Nonzero raw-prefix moments, false-overflow payments and recursive
+reserve choices still need their own proofs; these comparisons do not establish them.
+
+For actual heavy-first-overflow input tails, import
+[NormalizedAtomRows/ClippedTail](../../Complexity/Foundations/Probability/NormalizedAtomRows/ClippedTail.lean)
+and open `Matrix.HierarchyParams.H4RankEnvironment.NormalizedMoments`.
+`integrated_actual_clipped_tail_capacity` uses the actual first-overflow masks at any
+capacity sequence dominating `2^(64*dyadicSlack)`. Supply nonnegative genuine row mass,
+a deterministic clipped conditional-mean envelope and noise-max fourth moments. The first
+channel is conditioned on the full terminal rank set; the second uses the narrower usage
+set. `actual_walk_prefix_support` derives literal second-channel zero extension for
+conditional-walk telescoping increments starting at zero. Heavy-event rarity discounts only
+the deterministic mean term. Correlated noise receives its full moment budget, with no
+independence assumption for the adaptively maximizing endpoint. The resulting tail coefficient
+has the explicit mean factor `(2 + 256*M/η)/63` and noise factor `7/9`.
+
+The [tail regressions](../../ComplexityTests/NormalizedAtomTails.lean) check a nonconstant,
+correlated endpoint moment and a nonzero telescoping prefix. From a configured checkout run
+`scripts/build.sh --wfail --iofail ComplexityTests.NormalizedAtomTails`.
+These are conditional compression input estimates; deriving their lower-child envelopes
+and noise budgets, recursive reserves and native RL remains separate work.
+
+For the actual normalized-output fourth moment, import
+[NormalizedAtomRows/ActualMoment](../../Complexity/Foundations/Probability/NormalizedAtomRows/ActualMoment.lean)
+and keep the same `NormalizedMoments` namespace open.
+`actual_normalized_fourth_moment_capacity` bounds the row fourth moment of the difference
+of output fourth roots by `C*ε^4`. Its output evaluates the actual compression iterate,
+unchanged initial default, raw increments and dyadic floor; its first rank is full terminal
+rank and its final mask is usage. `genuineNormalizedRecipe_eq_request` identifies the target
+with the existing `normalizedRequest`, including its genuine joint preparation mean and
+inherited suffixes.
+
+Choose the hierarchy and positive signal scales first, then a positive compression floor η.
+The final coefficient may depend on η, but precedes P/J/N/u, row width, positive horizon m
+and the capacity sequence. Supply clipped deterministic mean envelopes, their endpoint row
+fourth moments, strong endpoint row-noise fourth moments on each channel's own mask, and
+actual second-channel zero extension. No true-entry cap or final-output error bound is a
+premise. The proof combines the final/no-overflow term, weighted preloss, heavy first-overflow
+tails and the complementary false-event union charged at prefix `j+1`. Two actual output
+supports give the factor `2K`, without a row-width factor.
+
+The capacities n must satisfy both `K ≤ n i` and `2^(64*dyadicSlack m i) ≤ n i` for i<m.
+`compatibleCapacity K m i = (K+1)*2^(64*dyadicSlack m i)` supplies both for arbitrary fixed K;
+`actual_normalized_fourth_moment_compatible` applies it to the actual output itself. Increasing
+capacity changes the algorithm: event rarity and false-overflow charges are proved at n,
+with no assumed output or event monotonicity. The
+[capacity regression](../../ComplexityTests/NormalizedAtomCapacity.lean) constructs an inhabited
+hierarchy with K beyond 2^64, checks both capacity bounds at every horizon and proves positive
+uncentered output after a nonzero first increment from zero row/default. Run
+`scripts/build.sh --wfail --iofail ComplexityTests.NormalizedAtomCapacity`.
+These fixtures do not instantiate all stochastic premises. Lower-child contracts, the full
+recursive hierarchy estimator and native resources/RL remain open; this conditional result
+is not a headline abstract or a class equality.
+
 ## Read abstracts, bridges and comparison contracts
 
 For a named headline such as Fagin's theorem, locate its entry in `abstracts/catalogue.json`, then read [FaginAbstract.lean](../../abstracts/ComplexityAbstracts/FaginAbstract.lean). Follow `FaginBridge.fagin` to the library result in [Fagin/Converse.lean](../../Complexity/Computability/Complexity/Fagin/Converse.lean). The presentation exposes finite relational vocabularies, unary cardinality, framed relation tables and malformed-input rejection. The library theorem `Cslib.Logic.ESO.definable_iff_queryLanguage_mem_NP` takes an isomorphism-closure hypothesis; its adjacent theorem packages that hypothesis into the equivalence. Choose the form matching your goal and the [finite-model representation](../circuits-logic-and-other-models/finite-model-logic.md).
