@@ -167,7 +167,7 @@ theorem envelope_le_pow {n F b ap bp cp B κ β : ℕ} (values : List ℤ)
     dsimp only [k] at haddress hmagproduct
     dsimp only [envelope]
     change b + 4 * _ + 1024 + _ + (F + _ + _ + 1) + _ +
-      (1296 + 32 * (n + 1)) + (b + n * (n * n) + 6 * F + 10) + 1 ≤ _
+      (2394 + 32 * (n + 1)) + (b + n * (n * n) + 6 * F + 10) + 1 ≤ _
     have hN3' : n * (n * n) ≤ B ^ e := by simpa only [Nat.mul_assoc] using hN3
     omega
   calc

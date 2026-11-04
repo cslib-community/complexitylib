@@ -89,11 +89,8 @@ theorem bounded_reachable_caller {W n F ap bp cp b P k : ℕ} (values : List ℤ
   obtain ⟨p, mem, y, he, _⟩ := exec_at values hlen hv x xn xF xap xbp xcp xb
     hab hbc hac vab vbc vac (executionWidth_le_admissionWidth n F b ap bp cp P values)
   obtain ⟨t, ht, hex⟩ := he
-  have hlow := Runs.prefix_at_smaller_width program_fixed.2 hW hr (hex.executes Reg.result)
-  have hs := hlow.bounded hx
-  have hpow := pow_admissionWidth_le n F b ap bp cp P values
-  refine ⟨fun i => (hs.1 i).trans_le hpow, fun q => (hs.2 q).trans_le hpow, ?_⟩
-  exact fun q hq => hlow.mem_above hx (hpow.trans hq)
+  exact hr.prefix_bounds program_fixed.2 hW hx (hex.executes Reg.result)
+    (pow_admissionWidth_le n F b ap bp cp P values)
 
 /-- The initialized program has no physical-width-dependent word or address support. -/
 theorem bounded_reachable_input {W n F k : ℕ} (values : List ℤ)
@@ -105,9 +102,6 @@ theorem bounded_reachable_input {W n F k : ℕ} (values : List ℤ)
     (∀ i, s.data.regs i < 16 * E) ∧ (∀ q, s.data.mem q < 16 * E) ∧
       ∀ q, 16 * E ≤ q → s.data.mem q = 0 := by
   obtain ⟨hi, p, mem, y, t, ht, hpref, he, _⟩ := runs_input values hlen hv le_rfl
-  have hlow := Runs.prefix_at_smaller_width entryProgram_fixed.2 hW hr he
-  have hx := Data.Bounded.init (r := 640) hi
-  have hs := hlow.bounded hx
   let E := envelope n F (3 + 3 * (n * n)) 3 (3 + n * n) (3 + 2 * (n * n)) values
   have hpow : 2 ^ inputWidth n F values ≤ 16 * E := by
     have hp := Nat.pow_clog_le_mul (by decide : 1 < (2 : ℕ))
@@ -116,17 +110,6 @@ theorem bounded_reachable_input {W n F k : ℕ} (values : List ℤ)
     rw [pow_add]
     norm_num only [Nat.reducePow]
     omega
-  refine ⟨fun i => (hs.1 i).trans_le hpow, fun q => (hs.2 q).trans_le hpow, ?_⟩
-  intro q hq
-  have hq' : 2 ^ inputWidth n F values ≤ q := hpow.trans hq
-  rw [hlow.mem_above hx hq']
-  cases q with
-  | zero => have := Nat.two_pow_pos (inputWidth n F values); omega
-  | succ q =>
-    change (CountPrime.inputWords n F values).getD q 0 = 0
-    apply List.getD_eq_default
-    have hlen := hi.1
-    dsimp only [Fits] at hlen
-    omega
+  exact hr.prefix_bounds_init entryProgram_fixed.2 hW hi he hpow
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.ParameterSelecting
