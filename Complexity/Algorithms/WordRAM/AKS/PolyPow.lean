@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.AKS.PolyMul
 public import Complexity.Computability.WordRAM.Copy
 public import Complexity.Computability.WordRAM.RegisterFrame
@@ -152,26 +153,22 @@ private theorem mulInto_exec {w : ℕ} (X : Data 21) {x y d : Fin 21} (hx : x.va
       refine ⟨?_, ?_, ?_⟩ <;> (intro h; subst h; simp at hj)
     simp [X₁, h9.1, h9.2.1, h9.2.2]
   -- Multiply.
-  obtain ⟨Y₁, hrun₂, hprod, hframe, -, -, -, hY₁r, hY₁n⟩ :=
-    PolyMul.exec (w := w) (X₁.comap mulMap) (a := a) (b := b) (t := t) (r := r) (n := n)
-      (by change X₁.regs pa = a; simp +decide [X₁]) (by change X₁.regs pb = b; simp +decide [X₁])
-      (by change X₁.regs pt = t; simp +decide [X₁])
-      (by change X₁.regs rr = r; rw [hX₁ rr (by simp), hr])
-      (by change X₁.regs nn = n; rw [hX₁ nn (by simp), hn])
-      hn0 hta htb hpa hpb hfa hfb hft hf2 hfn
-  have hrun₂' := hrun₂.rename mulMap_injective
-  set Y₁' := Y₁.extend mulMap X₁ with hY₁'
-  have hY₁'m : Y₁'.mem = Y₁.mem := rfl
+  obtain ⟨Y₁', hrun₂', ⟨hprod, hframe, -, -, -, hY₁r, hY₁n⟩, outside₁⟩ :=
+    ExecWithin.rename_post mulMap_injective (
+      PolyMul.exec (w := w) (X₁.comap mulMap) (a := a) (b := b) (t := t) (r := r) (n := n)
+        (by change X₁.regs pa = a; simp +decide [X₁]) (by change X₁.regs pb = b; simp +decide [X₁])
+        (by change X₁.regs pt = t; simp +decide [X₁])
+        (by change X₁.regs rr = r; rw [hX₁ rr (by simp), hr])
+        (by change X₁.regs nn = n; rw [hX₁ nn (by simp), hn])
+        hn0 hta htb hpa hpb hfa hfb hft hf2 hfn)
   have hY₁'r (j : Fin 21) (hj : j.val < 9) : Y₁'.regs j = X.regs j := by
     by_cases hjr : j = rr
     · subst hjr
-      rw [hr, hY₁', show rr = mulMap PolyMul.rr from rfl]
-      exact (mulMap_injective.extend_apply _ _ _).trans hY₁r
+      exact hY₁r.trans hr.symm
     by_cases hjn : j = nn
     · subst hjn
-      rw [hn, hY₁', show nn = mulMap PolyMul.nn from rfl]
-      exact (mulMap_injective.extend_apply _ _ _).trans hY₁n
-    rw [hrun₂'.regs_eq (Code.preserves_rename_of_forall_ne _ _ _ (mulMap_ne hj hjr hjn)),
+      exact hY₁n.trans hn.symm
+    rw [outside₁ j (mulMap_ne hj hjr hjn),
       hX₁ j hj]
   -- Set the arguments of the copy.
   let X₂ := (Y₁'.set pa t).set pb dd
@@ -188,28 +185,26 @@ private theorem mulInto_exec {w : ℕ} (X : Data 21) {x y d : Fin 21} (hx : x.va
   have hdst : (X₂.comap copyMap).regs ArrayCopy.dst = dd := by
     change X₂.regs pb = dd; simp +decide [X₂]
   have hlen : (X₂.comap copyMap).regs ArrayCopy.len = r := hXr
-  obtain ⟨Y₂, hrun₄, hY₂m, -, -, hY₂len⟩ := ArrayCopy.exec_of_separated_or_eq (w := w)
-    (X₂.comap copyMap) h1 (by rw [hsrc, hlen]; exact hft) (by rw [hdst, hlen]; exact hfd)
-    (by rw [hsrc, hdst, hlen]; omega)
-  have hrun₄' := hrun₄.rename copyMap_injective
+  obtain ⟨Y₂, hrun₄', ⟨hY₂m, -, -, hY₂len⟩, outside₂⟩ :=
+    ExecWithin.rename_post copyMap_injective (ArrayCopy.exec_of_separated_or_eq (w := w)
+      (X₂.comap copyMap) h1 (by rw [hsrc, hlen]; exact hft) (by rw [hdst, hlen]; exact hfd)
+      (by rw [hsrc, hdst, hlen]; omega))
+  simp only [Data.comap_mem] at hY₂m
   rw [hlen, hsrc, hdst] at hY₂m
   rw [hlen] at hrun₄'
-  refine ⟨Y₂.extend copyMap X₂, ?_, ?_, ?_, ?_⟩
+  refine ⟨Y₂, ?_, ?_, ?_, ?_⟩
   · exact (hrun₁.seq (hrun₂'.seq (hrun₃.seq hrun₄'))).mono (by unfold mulTime; omega)
   · intro k hk
-    change Y₂.mem (dd + k) = _
     rw [hY₂m, ArrayCopy.copyPrefix_read hk]
     exact hprod k hk
   · intro a' hat had
-    change Y₂.mem a' = _
     rw [hY₂m, ArrayCopy.copyPrefix_outside had]
     exact hframe a' hat
   · intro j hj
     by_cases hjr : j = rr
     · subst hjr
-      change Function.extend copyMap Y₂.regs X₂.regs (copyMap ArrayCopy.len) = X.regs rr
-      rw [copyMap_injective.extend_apply, hY₂len, hlen, hr]
-    rw [hrun₄'.regs_eq (Code.preserves_rename_of_forall_ne _ _ _ (copyMap_ne hj hjr)), hX₂ j hj]
+      exact hY₂len.trans (hlen.trans hr.symm)
+    rw [outside₂ j (copyMap_ne hj hjr), hX₂ j hj]
 
 /-- The hypotheses of `exec` on the three blocks, the modulus and the word size. -/
 private structure Hyp (w a b t r n e₀ : ℕ) : Prop where

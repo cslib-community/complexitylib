@@ -8,12 +8,14 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.WordRAM.Realization.Glue
+public import Complexity.Computability.WordRAM.Realization.Witness
 
 /-!
 # Certified finite-result word glue
 
 A finite family of scalar `GlueComputes` certificates realizes one faithfully encoded result.
-The scalar witnesses are selected before every runtime input and word width. All coordinates
+Supplied scalar witnesses retain their scratch and code before every runtime input and word width.
+The proposition-only frontend selects witnesses by classical choice instead. All coordinates
 reuse a static auxiliary bank disjoint from the output slots, and each computed coordinate is
 copied into its final slot. Both those copies and the empty-vector case are charged.
 
@@ -30,7 +32,9 @@ true tag still requires the visible word-fit condition for `1`.
 
 ## Main results
 
-* `Realizes.glueVector`: realize a finite result using certified scalar coordinate computations.
+* `Realizes.Witness.glueVectorOfScalars`: retain supplied scalar code and its maximum bank.
+* `Realizes.Witness.glueVector`, `Realizes.glueVector`: realize a finite result using certified
+  scalar coordinate computations, retaining or erasing the witness data.
 * `Realizes.addWords`, `Realizes.increment`, `Realizes.decrement`: charged scalar word arithmetic.
 * `Realizes.returnNone`, `Realizes.returnSome`: charged optional-word results.
 
@@ -114,9 +118,8 @@ def boolWords : Bool ↪ (Fin 2 → ℕ) where
 @[simp] theorem boolWords_false : boolWords false = ![0, 0] := rfl
 @[simp] theorem boolWords_true : boolWords true = ![1, 0] := rfl
 
-private def coordinateSeq (code : Fin l → Code B r) (idle : Fin r) : List (Fin l) → Code B r
-  | [] => .op (.copy idle idle)
-  | i :: is => .seq (code i) (coordinateSeq code idle is)
+private def coordinateSeq (code : Fin l → Code B r) (idle : Fin r) (is : List (Fin l)) :
+    Code B r := is.foldr (fun i rest => .seq (code i) rest) (.op (.copy idle idle))
 
 private theorem coordinateSeq_glue (code : Fin l → Code B r) (idle : Fin r)
     (h : ∀ i, (code i).IsGlue) (is : List (Fin l)) : (coordinateSeq code idle is).IsGlue := by
@@ -126,9 +129,157 @@ private theorem coordinateSeq_glue (code : Fin l → Code B r) (idle : Fin r)
 
 namespace Realizes
 
-/-- Compute every output coordinate using actual certified scalar code. The common domain and
-all coordinate envelopes remain visible, while code, exchange constant and scratch are uniform.
+/-- Compute every output coordinate using supplied scalar code and a maximum auxiliary bank.
+The common domain and all coordinate envelopes remain visible, while code, exchange constant
+and scratch are uniform.
 A final neutral copy pays for the empty result without materializing a non-fitting constant. -/
+def Witness.glueVectorOfScalars (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → ℕ))
+    (f : δ → α) (g bound : Fin l → (Fin k → ℕ) → ℕ) (time : Fin l → ℕ)
+    {P : (Fin k → ℕ) → Prop}
+    (hresult : ∀ d i, output (f d) i = g i (input d))
+    (scalars : ∀ i, GlueComputes.Witness B P (g i) (bound i) (time i)) :
+    Witness B (fun d => pure (f d)) input output
+      (fun w d _ => P (input d) ∧ ∀ i, Fits w (bound i (input d)))
+      (fun _ _ => (∑ i, time i) + l) :=
+  let n (i : Fin l) := (scalars i).scratchSize
+  let emit (i : Fin l) : ∀ {r : ℕ}, (Fin k → Fin r) →
+      (Fin (n i + 1) → Fin r) → Code B r := (scalars i).code
+  have he (i : Fin l) {r : ℕ} (src : Fin k → Fin r) (tmp : Fin (n i + 1) → Fin r)
+      (hi : Function.Injective tmp) (hd : ∀ a b, src a ≠ tmp b) :
+      (emit i src tmp).IsGlue ∧
+      ∀ (w : ℕ) (x : Data r), P (x.regs ∘ src) → Fits w (bound i (x.regs ∘ src)) →
+        ∃ y, ExecWithin w (emit i src tmp) x y (time i) ∧
+          y.regs (tmp 0) = g i (x.regs ∘ src) ∧ y.mem = x.mem ∧
+          ∀ j, (∀ a, tmp a ≠ j) → y.regs j = x.regs j :=
+    (scalars i).code_spec src tmp hi hd
+  let N := Finset.univ.sup n
+  have hn (i : Fin l) : n i ≤ N :=
+    Finset.le_sup (Finset.mem_univ i)
+  { scratchSize := N
+    factor := 1
+    code := fun _ src tmp => (List.finRange l).foldr
+      (fun i rest => .seq (.seq
+        (emit i src (fun j => tmp ⟨l + j.val, by have := hn i; omega⟩))
+        (.op (.copy (tmp (Fin.castAdd (N + 1) i)) (tmp ⟨l, by omega⟩)))) rest)
+      (.op (.copy (tmp ⟨l, by omega⟩) (tmp ⟨l, by omega⟩)))
+    code_spec := by
+      intro r frontier src tmp hi hd hf hs
+      let dst : Fin l → Fin r := fun i => tmp (Fin.castAdd (N + 1) i)
+      let aux : ∀ i : Fin l, Fin (n i + 1) → Fin r :=
+        fun i j => tmp ⟨l + j.val, by have := hn i; omega⟩
+      let scratch : Fin (N + 1) → Fin r := fun j => tmp ⟨l + j.val, by omega⟩
+      let coord : Fin l → Code B r := fun i =>
+        .seq (emit i src (aux i)) (.op (.copy (dst i) (scratch 0)))
+      have hdsti : Function.Injective dst := by
+        intro i j hij
+        apply Fin.ext
+        exact congrArg (fun a : Fin (l + N + 1) => a.val) (hi hij)
+      have hauxi (i : Fin l) : Function.Injective (aux i) := by
+        intro a b hab
+        apply Fin.ext
+        have h := congrArg (fun a : Fin (l + N + 1) => a.val) (hi hab)
+        dsimp only [aux] at h
+        omega
+      have had (i : Fin l) (j : Fin k) (a : Fin (n i + 1)) : src j ≠ aux i a := hd _ _
+      have hauxDst (i : Fin l) (j : Fin l) : ∀ a, aux i a ≠ dst j := by
+        intro a h
+        have hh := congrArg (fun a : Fin (l + N + 1) => a.val) (hi h)
+        dsimp only [aux, dst] at hh
+        simp only [Fin.val_castAdd] at hh
+        omega
+      have hcglue (i : Fin l) : (coord i).IsGlue :=
+        ⟨(he i src (aux i) (hauxi i) (had i)).1, trivial⟩
+      refine ⟨(coordinateSeq_glue coord (scratch 0) hcglue _).not_readsWidth, ?_⟩
+      intro w d x hx hin hsafe hv
+      have hruni (i : Fin l) (a : Data r) (ha : a.regs ∘ src = input d) :
+          ∃ b, ExecWithin w (coord i) a b (time i + 1) ∧ b.mem = a.mem ∧
+            b.regs ∘ src = input d ∧ b.regs (dst i) = output (f d) i ∧
+            ∀ j, (∀ z, scratch z ≠ j) → dst i ≠ j → b.regs j = a.regs j := by
+        obtain ⟨b, hb, hbo, hbm, hbf⟩ :=
+          (he i src (aux i) (hauxi i) (had i)).2 w a (ha.symm ▸ hsafe.1)
+            (ha.symm ▸ hsafe.2 i)
+        let c := b.set (dst i) (g i (input d))
+        have ho : b.regs (scratch 0) = g i (input d) := by
+          have hz : aux i 0 = scratch 0 := by
+            apply congrArg tmp
+            apply Fin.ext
+            rfl
+          rw [← hz]
+          simpa only [ha] using hbo
+        have hc : ExecWithin (B := B) w (.op (.copy (dst i) (scratch 0))) b c 1 := by
+          simpa only [ho] using
+            (ExecWithin.copy (B := B) (w := w) (d := dst i) (s := scratch 0) (x := b))
+        refine ⟨c, hb.seq hc, hbm, ?_, ?_, ?_⟩
+        · funext j
+          change c.regs (src j) = input d j
+          rw [show c.regs (src j) = b.regs (src j) from Function.update_of_ne (hd _ _) _ _,
+            hbf _ (fun a => (had i j a).symm)]
+          exact congrFun ha j
+        · change (b.set (dst i) _).regs (dst i) = _
+          simp [Data.set, hresult]
+        · intro j hsj hdj
+          rw [show c.regs j = b.regs j from Function.update_of_ne hdj.symm _ _,
+            hbf j (fun z => ?_)]
+          exact hsj ⟨z.val, by have := hn i; omega⟩
+      have hseq (is : List (Fin l)) (hnodup : is.Nodup) (a : Data r)
+          (ha : a.regs ∘ src = input d) :
+          ∃ b, ExecWithin w (coordinateSeq coord (scratch 0) is) a b
+              ((is.map fun i => time i + 1).sum + 1) ∧
+            b.mem = a.mem ∧ b.regs ∘ src = input d ∧
+            (∀ i ∈ is, b.regs (dst i) = output (f d) i) ∧
+            ∀ j, (∀ z, scratch z ≠ j) → (∀ i ∈ is, dst i ≠ j) → b.regs j = a.regs j := by
+        induction is generalizing a with
+        | nil =>
+          have hself : ExecWithin (B := B) w (.op (.copy (scratch 0) (scratch 0))) a a 1 := by
+            convert (ExecWithin.copy (B := B) (w := w) (d := scratch 0) (s := scratch 0)
+              (x := a)) using 1
+            apply Data.ext <;> simp [Data.set]
+          exact ⟨a, hself, rfl, ha, by simp, fun _ _ _ => rfl⟩
+        | cons i is ih =>
+          obtain ⟨b, hb, hbm, hbs, hbo, hbf⟩ := hruni i a ha
+          obtain ⟨c, hc, hcm, hcs, hco, hcf⟩ := ih hnodup.of_cons b hbs
+          refine ⟨c, (hb.seq hc).mono (by simp; omega), hcm.trans hbm, hcs, ?_, ?_⟩
+          · intro j hj
+            rcases List.mem_cons.mp hj with rfl | hj
+            · rw [hcf _ (fun z => ?_) (fun j hj h => ?_)]
+              · exact hbo
+              · intro hh
+                have hval := congrArg (fun a : Fin (l + N + 1) => a.val) (hi hh)
+                dsimp only [scratch, dst] at hval
+                simp only [Fin.val_castAdd] at hval
+                omega
+              · exact (List.nodup_cons.mp hnodup).1 (hdsti h ▸ hj)
+            · exact hco j hj
+          · intro j hsj hdj
+            rw [hcf j hsj (fun i hi => hdj i (by simp [hi]))]
+            exact hbf j hsj (hdj i (by simp))
+      obtain ⟨y, hy, hym, _, hyo, hyf⟩ := hseq (List.finRange l) (List.nodup_finRange l) x hin
+      refine ⟨y, hy.mono ?_, ?_, fun i => hyo i (by simp), ?_⟩
+      · change ((List.finRange l).map fun i => time i + 1).sum + 1 ≤
+          1 * (0 + ((∑ i, time i) + l) + 1)
+        rw [← List.sum_toFinset (fun i => time i + 1) (List.nodup_finRange l)]
+        simp [Finset.sum_add_distrib]
+      · apply Memory.State.ext
+        · exact hym
+        · exact hyf frontier (fun _ => hf _) (fun _ _ => hf _)
+      · intro i hif htmp
+        exact hyf i (fun _ => htmp _) (fun _ _ => htmp _) }
+
+/-- Existential-only frontend to `Witness.glueVectorOfScalars`. Each scalar witness is
+choice-selected once, before runtime; no concrete scratch identity for that choice is asserted.
+The supplied-data entrypoint avoids this selection and retains its maximum auxiliary bank. -/
+noncomputable def Witness.glueVector (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → ℕ))
+    (f : δ → α) (g bound : Fin l → (Fin k → ℕ) → ℕ) (time : Fin l → ℕ)
+    {P : (Fin k → ℕ) → Prop}
+    (hresult : ∀ d i, output (f d) i = g i (input d))
+    (hcoord : ∀ i, GlueComputes B P (g i) (bound i) (time i)) :
+    Witness B (fun d => pure (f d)) input output
+      (fun w d _ => P (input d) ∧ ∀ i, Fits w (bound i (input d)))
+      (fun _ _ => (∑ i, time i) + l) :=
+  Witness.glueVectorOfScalars input output f g bound time hresult
+    (fun i => GlueComputes.Witness.ofGlueComputes (hcoord i))
+
+/-- The existential realization of the retained explicitly budgeted vector witness. -/
 theorem glueVector (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → ℕ))
     (f : δ → α) (g bound : Fin l → (Fin k → ℕ) → ℕ) (time : Fin l → ℕ)
     {P : (Fin k → ℕ) → Prop}
@@ -136,118 +287,8 @@ theorem glueVector (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → 
     (hcoord : ∀ i, GlueComputes B P (g i) (bound i) (time i)) :
     Realizes B (fun d => pure (f d)) input output
       (fun w d _ => P (input d) ∧ ∀ i, Fits w (bound i (input d)))
-      (fun _ _ => (∑ i, time i) + l) := by
-  classical
-  choose n emit he using fun i => (hcoord i).2
-  let N := ∑ i, n i
-  have hn (i : Fin l) : n i ≤ N :=
-    Finset.single_le_sum (fun j _ => Nat.zero_le (n j)) (Finset.mem_univ i)
-  refine ⟨N, 1, fun _ src tmp =>
-    coordinateSeq (fun i => .seq
-      (emit i src (fun j => tmp ⟨l + j.val, by have := hn i; omega⟩))
-      (.op (.copy (tmp (Fin.castAdd (N + 1) i)) (tmp ⟨l, by omega⟩))))
-      (tmp ⟨l, by omega⟩) (List.finRange l), ?_⟩
-  intro r frontier src tmp hi hd hf hs
-  let dst : Fin l → Fin r := fun i => tmp (Fin.castAdd (N + 1) i)
-  let aux : ∀ i : Fin l, Fin (n i + 1) → Fin r :=
-    fun i j => tmp ⟨l + j.val, by have := hn i; omega⟩
-  let scratch : Fin (N + 1) → Fin r := fun j => tmp ⟨l + j.val, by omega⟩
-  let coord : Fin l → Code B r := fun i =>
-    .seq (emit i src (aux i)) (.op (.copy (dst i) (scratch 0)))
-  have hdsti : Function.Injective dst := by
-    intro i j hij
-    apply Fin.ext
-    exact congrArg (fun a : Fin (l + N + 1) => a.val) (hi hij)
-  have hauxi (i : Fin l) : Function.Injective (aux i) := by
-    intro a b hab
-    apply Fin.ext
-    have h := congrArg (fun a : Fin (l + N + 1) => a.val) (hi hab)
-    dsimp only [aux] at h
-    omega
-  have had (i : Fin l) (j : Fin k) (a : Fin (n i + 1)) : src j ≠ aux i a := hd _ _
-  have hauxDst (i : Fin l) (j : Fin l) : ∀ a, aux i a ≠ dst j := by
-    intro a h
-    have hh := congrArg (fun a : Fin (l + N + 1) => a.val) (hi h)
-    dsimp only [aux, dst] at hh
-    simp only [Fin.val_castAdd] at hh
-    omega
-  have hcglue (i : Fin l) : (coord i).IsGlue :=
-    ⟨(he i src (aux i) (hauxi i) (had i)).1, trivial⟩
-  refine ⟨(coordinateSeq_glue coord (scratch 0) hcglue _).not_readsWidth, ?_⟩
-  intro w d x hx hin hsafe hv
-  have hruni (i : Fin l) (a : Data r) (ha : a.regs ∘ src = input d) :
-      ∃ b, ExecWithin w (coord i) a b (time i + 1) ∧ b.mem = a.mem ∧
-        b.regs ∘ src = input d ∧ b.regs (dst i) = output (f d) i ∧
-        ∀ j, (∀ z, scratch z ≠ j) → dst i ≠ j → b.regs j = a.regs j := by
-    obtain ⟨b, hb, hbo, hbm, hbf⟩ :=
-      (he i src (aux i) (hauxi i) (had i)).2 w a (ha.symm ▸ hsafe.1)
-        (ha.symm ▸ hsafe.2 i)
-    let c := b.set (dst i) (g i (input d))
-    have ho : b.regs (scratch 0) = g i (input d) := by
-      have hz : aux i 0 = scratch 0 := by
-        apply congrArg tmp
-        apply Fin.ext
-        rfl
-      rw [← hz]
-      simpa only [ha] using hbo
-    have hc : ExecWithin (B := B) w (.op (.copy (dst i) (scratch 0))) b c 1 := by
-      simpa only [ho] using
-        (ExecWithin.copy (B := B) (w := w) (d := dst i) (s := scratch 0) (x := b))
-    refine ⟨c, hb.seq hc, hbm, ?_, ?_, ?_⟩
-    · funext j
-      change c.regs (src j) = input d j
-      rw [show c.regs (src j) = b.regs (src j) from Function.update_of_ne (hd _ _) _ _,
-        hbf _ (fun a => (had i j a).symm)]
-      exact congrFun ha j
-    · change (b.set (dst i) _).regs (dst i) = _
-      simp [Data.set, hresult]
-    · intro j hsj hdj
-      rw [show c.regs j = b.regs j from Function.update_of_ne hdj.symm _ _,
-        hbf j (fun z => ?_)]
-      exact hsj ⟨z.val, by have := hn i; omega⟩
-  have hseq (is : List (Fin l)) (hnodup : is.Nodup) (a : Data r)
-      (ha : a.regs ∘ src = input d) :
-      ∃ b, ExecWithin w (coordinateSeq coord (scratch 0) is) a b
-          ((is.map fun i => time i + 1).sum + 1) ∧
-        b.mem = a.mem ∧ b.regs ∘ src = input d ∧
-        (∀ i ∈ is, b.regs (dst i) = output (f d) i) ∧
-        ∀ j, (∀ z, scratch z ≠ j) → (∀ i ∈ is, dst i ≠ j) → b.regs j = a.regs j := by
-    induction is generalizing a with
-    | nil =>
-      have hself : ExecWithin (B := B) w (.op (.copy (scratch 0) (scratch 0))) a a 1 := by
-        convert (ExecWithin.copy (B := B) (w := w) (d := scratch 0) (s := scratch 0)
-          (x := a)) using 1
-        apply Data.ext <;> simp [Data.set]
-      exact ⟨a, hself, rfl, ha, by simp, fun _ _ _ => rfl⟩
-    | cons i is ih =>
-      obtain ⟨b, hb, hbm, hbs, hbo, hbf⟩ := hruni i a ha
-      obtain ⟨c, hc, hcm, hcs, hco, hcf⟩ := ih hnodup.of_cons b hbs
-      refine ⟨c, (hb.seq hc).mono (by simp; omega), hcm.trans hbm, hcs, ?_, ?_⟩
-      · intro j hj
-        rcases List.mem_cons.mp hj with rfl | hj
-        · rw [hcf _ (fun z => ?_) (fun j hj h => ?_)]
-          · exact hbo
-          · intro hh
-            have hval := congrArg (fun a : Fin (l + N + 1) => a.val) (hi hh)
-            dsimp only [scratch, dst] at hval
-            simp only [Fin.val_castAdd] at hval
-            omega
-          · exact (List.nodup_cons.mp hnodup).1 (hdsti h ▸ hj)
-        · exact hco j hj
-      · intro j hsj hdj
-        rw [hcf j hsj (fun i hi => hdj i (by simp [hi]))]
-        exact hbf j hsj (hdj i (by simp))
-  obtain ⟨y, hy, hym, _, hyo, hyf⟩ := hseq (List.finRange l) (List.nodup_finRange l) x hin
-  refine ⟨y, hy.mono ?_, ?_, fun i => hyo i (by simp), ?_⟩
-  · change ((List.finRange l).map fun i => time i + 1).sum + 1 ≤
-      1 * (0 + ((∑ i, time i) + l) + 1)
-    rw [← List.sum_toFinset (fun i => time i + 1) (List.nodup_finRange l)]
-    simp [Finset.sum_add_distrib]
-  · apply Memory.State.ext
-    · exact hym
-    · exact hyf frontier (fun _ => hf _) (fun _ _ => hf _)
-  · intro i hif htmp
-    exact hyf i (fun _ => htmp _) (fun _ _ => htmp _)
+      (fun _ _ => (∑ i, time i) + l) :=
+  (Witness.glueVector input output f g bound time hresult hcoord).toRealizes
 
 /-- Add two input words when their sum fits; both projections and the addition are charged. -/
 theorem addWords {δ : Type} {k : ℕ} (input : δ ↪ (Fin k → ℕ)) (i j : Fin k) :

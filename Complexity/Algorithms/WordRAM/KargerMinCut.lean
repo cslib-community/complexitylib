@@ -7,6 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.Karger.Graph
 public import Complexity.Algorithms.WordRAM.Karger.Contract
@@ -515,20 +516,18 @@ theorem copyMatrixCode_exec {w sb wb n : ℕ} {W : Fin n → Fin n → ℕ} {x :
     change x.regs srcBase + x.regs matLen ≤ x.regs wBase
     rw [hsb, hlen, hwb]
     exact hdisj
-  obtain ⟨y₀, hy₀_exec, hy₀_mem, hy₀_src, hy₀_dst, hy₀_len⟩ :=
-    ArrayCopy.exec (x.comap copyRegMap) h1 hs_fit hd_fit hdisj'
+  obtain ⟨y, hy_exec, ⟨hy_mem, hy_src, hy_dst, hy_len⟩, hnot_in⟩ :=
+    ExecWithin.rename_post copyRegMap_injective
+      (ArrayCopy.exec (x.comap copyRegMap) h1 hs_fit hd_fit hdisj')
   have ht_eq : 7 * (x.comap copyRegMap).regs ArrayCopy.len + 4 = 7 * (n * n) + 4 := by
     change 7 * x.regs matLen + 4 = 7 * (n * n) + 4
     rw [hlen]
-  rw [ht_eq] at hy₀_exec
-  let y := y₀.extend copyRegMap x
+  rw [ht_eq] at hy_exec
   have hymem : y.mem = ArrayCopy.copyPrefix x.mem sb wb (n * n) := by
-    have h₀ : y₀.mem = ArrayCopy.copyPrefix x.mem (x.regs srcBase) (x.regs wBase)
-        (x.regs matLen) := hy₀_mem
+    have h₀ : y.mem = ArrayCopy.copyPrefix x.mem (x.regs srcBase) (x.regs wBase)
+        (x.regs matLen) := hy_mem
     rwa [hsb, hwb, hlen] at h₀
-  have hnot_in : ∀ (r : Fin 22), (∀ i : Fin 7, copyRegMap i ≠ r) → y.regs r = x.regs r :=
-    fun r hne => Function.extend_apply' y₀.regs x.regs r (by rintro ⟨i, rfl⟩; exact hne i rfl)
-  refine ⟨y, hy₀_exec.rename copyRegMap_injective, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨y, hy_exec, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · intro i j
     rw [hymem]
     have hj_lt : i.val * n + j.val < n * n := by nlinarith [i.isLt, j.isLt]
@@ -540,17 +539,11 @@ theorem copyMatrixCode_exec {w sb wb n : ℕ} {W : Fin n → Fin n → ℕ} {x :
   · intro a ha
     rw [hymem, ArrayCopy.copyPrefix_outside]
     rwa [Finset.mem_Ico] at ha
-  · change Function.extend copyRegMap y₀.regs x.regs (copyRegMap ArrayCopy.dst) = wb
-    rw [copyRegMap_injective.extend_apply]
-    exact hy₀_dst.trans hwb
+  · exact hy_dst.trans hwb
   · exact hnot_in dBase (by decide)
-  · change Function.extend copyRegMap y₀.regs x.regs (copyRegMap ArrayCopy.src) = sb
-    rw [copyRegMap_injective.extend_apply]
-    exact hy₀_src.trans hsb
+  · exact hy_src.trans hsb
   · exact hnot_in nOrig (by decide)
-  · change Function.extend copyRegMap y₀.regs x.regs (copyRegMap ArrayCopy.len) = n * n
-    rw [copyRegMap_injective.extend_apply]
-    exact hy₀_len.trans hlen
+  · exact hy_len.trans hlen
   · exact hnot_in numTrials (by decide)
   · exact hnot_in trialIdx (by decide)
   · exact hnot_in bestVal (by decide)

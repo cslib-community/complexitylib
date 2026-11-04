@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Bounds
+import Complexity.Computability.WordRAM.Call
 
 /-!
 # Exact native frontend from initialized signed input
@@ -98,21 +99,14 @@ theorem exec_input {κ w : ℕ} (input : List ℤ) (hw : width κ input.length �
     rw [show 2 * (2 * U) = 4 * U by omega]
     omega)
   have hU : 1 ≤ U := Nat.one_le_pow _ _ (by omega)
-  obtain ⟨p, hep, hop, hmp⟩ := ChanHe.Parameters.exec κ (x.comap parameterRegisters)
-    (by simpa only [Data.comap_mem, x, Data.init_mem_zero, List.length_map] using hp)
-  simp only [Data.comap_mem, x, Data.init_mem_zero, List.length_map] at hep hop
-  let a := p.extend parameterRegisters x
-  have ha := hep.rename parameterRegisters_injective
-  have hpr (i : Fin 24) : a.regs (parameterRegisters i) = p.regs i := by
-    exact congrArg (fun z : Data 24 => z.regs i)
-      (Data.comap_extend parameterRegisters_injective p x)
-  have han : a.regs (parameterRegisters ChanHe.Parameters.len) = n :=
-    (hpr _).trans hop.len
-  have haU : a.regs (parameterRegisters ChanHe.Parameters.magnitude) = U :=
-    (hpr _).trans hop.magnitude
-  have haB : a.regs (parameterRegisters ChanHe.Parameters.digits) = l.digits :=
-    (hpr _).trans hop.digits
-  have ham : a.mem = x.mem := hmp
+  obtain ⟨a, ha, ⟨hop, ham⟩, _⟩ := ExecWithin.rename_post parameterRegisters_injective
+    (ChanHe.Parameters.exec κ (x.comap parameterRegisters)
+      (by simpa only [Data.comap_mem, x, Data.init_mem_zero, List.length_map] using hp))
+  simp only [Data.comap_mem, x, Data.init_mem_zero, List.length_map] at ha hop
+  simp only [Data.comap_mem] at ham
+  have han : a.regs (parameterRegisters ChanHe.Parameters.len) = n := hop.len
+  have haU : a.regs (parameterRegisters ChanHe.Parameters.magnitude) = U := hop.magnitude
+  have haB : a.regs (parameterRegisters ChanHe.Parameters.digits) = l.digits := hop.digits
   let b := (((a.set (radixRegisters RadixSort.len) n).set (radixRegisters RadixSort.src) 1).set
     (radixRegisters RadixSort.dst) (n + 1)).set (radixRegisters RadixSort.bits) l.digits
   have hb : ExecWithin w radixSetup a b 4 := by
@@ -180,7 +174,8 @@ theorem exec_input {κ w : ℕ} (input : List ℤ) (hw : width κ input.length �
         rw [Signed.encode_div_two]
         exact_mod_cast (show (z.natAbs : ℤ) ≤ (U : ℤ) by
           simpa only [Int.natCast_natAbs] using hz')⟩
-  obtain ⟨r, her, hor, hregs, hrheap, hrkeys, hrcounts, hrframe⟩ := Arrays.exec l rs
+  obtain ⟨e, harray, ⟨hor, hregs, hrheap, hrkeys, hrcounts, hrframe⟩, _⟩ :=
+    ExecWithin.rename_post arrayRegisters_injective (Arrays.exec l rs
     (d.comap arrayRegisters)
     (by simp +decide [d, Data.comap_regs, arrayRegisters])
     (by simp +decide [d, Data.comap_regs, arrayRegisters, l, layout])
@@ -192,15 +187,13 @@ theorem exec_input {κ w : ℕ} (input : List ℤ) (hw : width κ input.length �
     hrlen (by simpa only [Data.comap_mem, d, c, Data.set_mem, Data.extend, List.length_map, l,
       layout] using hqkeys)
     (by simpa only [Data.comap_mem, d, c, Data.set_mem, Data.extend, List.length_map, l,
-      layout] using hqcounts) hrawkeys hfront
-  let e := r.extend arrayRegisters d
-  have harray := her.rename arrayRegisters_injective
-  have herg (i : Fin 48) : e.regs (arrayRegisters i) = r.regs i :=
-    congrArg (fun z : Data 48 => z.regs i) (Data.comap_extend arrayRegisters_injective r d)
+      layout] using hqcounts) hrawkeys hfront)
+  have heBase : e.regs (arrayRegisters Arrays.descriptors) = l.descriptors := hregs.descriptors
+  have heCount : e.regs (arrayRegisters Arrays.triples) = l.count := hregs.triples
+  have heEnd : e.regs (arrayRegisters Arrays.heapEnd) = l.endpoint := hregs.heapEnd
   let y := ((e.set descriptorBase l.descriptors).set descriptorCount l.count).set heapEnd l.endpoint
   have hy : ExecWithin w finish e y 3 := by
-    ram_eval [finish, y, herg Arrays.descriptors, herg Arrays.triples, herg Arrays.heapEnd,
-      hregs.descriptors, hregs.triples, hregs.heapEnd]
+    ram_eval [finish, y, heBase, heCount, heEnd]
   have hall := ha.seq (hb.seq (hradix.seq (hd.seq (harray.seq hy))))
   refine ⟨y, rs, ?_, hor, ?_, ?_, ?_, hnodup, horder, hset, hcounts, hrkeys, hrcounts, ?_, ?_⟩
   · apply hall.mono
@@ -211,8 +204,8 @@ theorem exec_input {κ w : ℕ} (input : List ℤ) (hw : width κ input.length �
   · rfl
   · rfl
   · have hconstruct := hb.seq (hradix.seq (hd.seq (harray.seq hy)))
-    have hprf (i : Fin 24) : y.regs (parameterRegisters i) = p.regs i :=
-      (hconstruct.regs_eq (construct_preserves_parameters i)).trans (hpr i)
+    have hprf (i : Fin 24) : y.regs (parameterRegisters i) = a.regs (parameterRegisters i) :=
+      hconstruct.regs_eq (construct_preserves_parameters i)
     -- Only register equalities are needed: the parameter output does not constrain memory.
     exact ⟨(hprf _).trans hop.len, (hprf _).trans hop.magnitude,
       (hprf _).trans hop.digits, (hprf _).trans hop.height, (hprf _).trans hop.fuel,
