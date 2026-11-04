@@ -1026,10 +1026,73 @@ The decoder constant precedes the floor; the stationary constant follows it. Shr
 the floor alone does not remove the stationary bias and also affects the rarity and
 false-charge denominators.
 
-**Remaining parent-error gap:** these are explicit finite payments, not a theorem that
-the RHS meets arbitrary requested accuracy. Joint choices of retained depth, sufficient
-budget, field horizon, rates, floor and reserves must still pay width/rate costs and all
-stationary/final/raw sums. Transport from an invariant covering
+The geometric continuation is in
+[`HierarchyInitialGeometric.lean`](../../Complexity/Foundations/Probability/HierarchyInitialGeometric.lean).
+`exists_compressedBin_geometric` consumes that actual successful output and removes the
+finite double tail sum and raw mean false-charge sum. It assumes the concrete sufficient
+cutoff inequality $c(1+4(n+k_a))<M$, where $c$ is the actual `slack`.
+For $U(t)=\lVert t\rVert_{row}^4$ with the original full-rank masks, set
+
+$$
+S=8P\left(\frac{|\zeta|(L_h+L_\rho)}{\operatorname{rate}(k_a)}\right)^4,\qquad
+J_-=S\left((e_0\operatorname{rate}(k_a)/64)^4+U(\operatorname{rate}(n))\right),
+$$
+
+and obtain $J_+$ by replacing $\operatorname{rate}(n)$ with
+$\operatorname{rate}(n)+A$. Write
+$D_-=U(\operatorname{rate}(n)/\operatorname{rate}(k_a))$ and
+$D_+=U((\operatorname{rate}(n)+A)/\operatorname{rate}(k_a))$.
+The deterministic tail is at most
+
+$$
+\frac{(2+256/\delta)^{1/4}}{63}(D_-^{1/4}+J_-^{1/4})
++v_0 28^m(D_+^{1/4}+J_+^{1/4}),
+$$
+
+where $v_0$ is the literal first rarity root. The raw mean charge is at most
+$c_{\rm false}(D_-+J_-)/63+w_0(D_++J_+)$, with the actual false-charge
+coefficient and first weight from the preceding theorem. Both means and the preparation
+are paid; these envelopes are computed from actual rates and row moments, not supplied
+final budgets. Stationary/final payments and all unconditional centered-noise payments
+are unchanged. The budget-8 regression proves successful prefixes, preparation walks
+and compression, then consumes this full inequality on that execution.
+
+The reusable
+[`ScheduleAllocation.lean`](../../Complexity/Foundations/Probability/NormalizedAtomRows/ScheduleAllocation.lean)
+proves the numerical majorants. Capacity exponent 64, inverse-floor exponent 10 and
+factor-$128^d$ tail growth leave at least $64^{-d}$ decay after taking fourth roots.
+In particular, `compatible_first_rarity_decay` proves
+$v_0 28^m\le(2+256/\delta)^{1/4}64^{-2^{\lfloor\log_2 M\rfloor}}$.
+The exceptional false weight also stays literal; its definition is
+$w_0=c_{\rm false}(K+1)^{-1}2^{-24\cdot2^{\lfloor\log_2 M\rfloor}}$.
+These rarity bounds apply to deterministic means, never to correlated centered noise.
+
+[`HierarchyInitialFeasibility.lean`](../../Complexity/Foundations/Probability/HierarchyInitialFeasibility.lean)
+checks the actual guard constants:
+
+$$
+p=M/(16c)-2(k_a+k_s)-\operatorname{rankCharge}\operatorname{rank},\qquad
+h_b=4(k_a-b).
+$$
+
+For $n=\lfloor M/(128c)\rfloor\ge1$, $k_s,k_a\le n$ and structural rank cost at
+most $n$, `slow_depth_guards` proves all retained cutoffs below $M$ and
+$p\ge M/(64c)\ge2n$. Usage does not change `requestPrecision`; usage-row masks and
+costs nevertheless remain in the analytic statements. If identifiers are already below
+$2^n$, Bertrand supplies a prime $2^n<P\le2^{n+1}$ with the stated depth/identifier
+horizon. No arbitrary future stage or copy growth is provided. The checked scalar bounds
+are $P^2\operatorname{rate}(n)^4\le4\cdot16384^{-n}$ and
+$P(2^{-p})^4\le2\cdot128^{-n}$ for $p\ge2n$. They pay the displayed width factors,
+not inverse source/rank rates or sensitivity constants.
+
+**Remaining parent-error gap:** no theorem yet makes the complete RHS meet arbitrary
+requested accuracy. Fixed depth leaves the positive charge
+$\operatorname{rate}(n)/\operatorname{rate}(k_a)$ at every active later group. Letting
+$k_a=n$ leaves this charge exactly one, as a checked edge case demonstrates; this is a
+limitation of this envelope, not an impossibility theorem for the estimator.
+The slow linear candidate has checked guards and scalar width payments, but the full
+stationary/final envelopes, source/rank/usage costs, sensitivity, fixed floor and reserve
+choices still require a joint allocation theorem. Transport from an invariant covering
 ALL actual lower-budget calls is unproved. Heavy-event rarity applies only to deterministic mean envelopes; it must not discount
 correlated noise. Bounded lower-child root-to-ordinary conversion and same-environment
 reset-right-source transport remain to be assembled for general recursive children.

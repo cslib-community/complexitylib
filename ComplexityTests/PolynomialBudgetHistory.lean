@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of actual polynomial evaluator histories)
-import Complexity.Foundations.Probability.HierarchyInitialAllocation
+import Complexity.Foundations.Probability.HierarchyInitialGeometric
 
 /-! A positive identity/full-rate evaluator history with actual ratio-16 bins and polynomial
 preparation. The top bin carries the input, the fine bin vanishes. This exact stationary
@@ -1156,5 +1156,143 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
         LogSpaceEstimation.scaleCutoff, hxy]
   simp [he 0 (by decide), he 1 (by decide), rowNormPow, hret, base,
     Matrix.one_apply, rate, apply_ite]
+
+-- The slow linear depth has nonvacuous budget/precision guards on the original data.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (∀ bin ≤ 1, LogSpaceEstimation.scaleCutoff (data HP).slack
+      ((data HP).sampleScale (request HP) (some bin)) < 128) ∧
+    2 ≤ (data HP).requestPrecision 128 (request HP) := by
+  have hg := BudgetData.slow_depth_guards (data HP) 128 (request HP) 0 0 rfl rfl rfl
+    (by norm_num [data]) (by norm_num [data]) (by norm_num [data]) (by norm_num [data])
+  norm_num only [data, Nat.reduceMul, Nat.reduceDiv, Nat.cast_one, mul_one] at hg
+  exact hg
+
+-- The negative scale is literal: this checks the natAbs cost, not a signed cutoff.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (data HP).sampleScale
+      { (request HP) with terminal := gridChannel 2 1 [2, 3] } (some 3) = -8 := by
+  rw [BudgetData.sampleScale_grid (data HP) _ 1 3 rfl rfl]
+  norm_num
+
+-- Letting terminal rank grow as fast as retained depth does not shrink this envelope.
+-- This is an obstruction to using the charge alone, not to actual estimator accuracy.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (data HP).initialMeanCharge 8 1 1 1
+      { (request HP) with terminal := gridChannel 2 1 [2, 3] } = 1 := by
+  have hlog : Real.logb 2 (16 : ℝ) = 4 := by
+    rw [show (16 : ℝ) = (2 : ℝ) ^ (4 : ℕ) by norm_num, Real.logb_pow]
+    norm_num
+  norm_num [BudgetData.initialMeanCharge, BudgetData.initialInactiveCharge,
+    BudgetData.sampleScale, LogSpaceEstimation.scaleCutoff, data, request, gridChannel,
+    rate, Cslib.RowCompression.dyadicSlack, Real.logb_inv, hlog]
+
+-- A finite bounded prime and horizon exist together, including the largest identifier.
+example : ∃ P, P.Prime ∧ 8 < P ∧ P ≤ 16 ∧
+    ∃ H : Horizon P, H.maxExponent = 3 ∧ H.maxIdentifier = 7 := by
+  exact exists_bounded_depth_prime 3 7 (by decide)
+
+-- The chosen prime 13 pays two width factors against the actual omitted fourth moment.
+example : (13 : ℝ) ^ 2 * rate 3 ^ 4 ≤ 4 * (1 / 16384 : ℝ) ^ 3 :=
+  bounded_width_omission 13 3 (by decide)
+
+private lemma available8 (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ∃ F W A, (data HP).initialPrefixes 8 (request HP) = some F ∧
+      (List.range 4).mapM (fun i => (data HP).complete 8 (request HP)
+        ((data HP).binPreparation 0 (request HP) (F (i + 1)))
+        (Cslib.RowCompression.dyadicSlack 4 i)) = some W ∧
+      (data HP).compressedBin 8 0 0 (HP.η / 4) (HP.η / 4) (request HP) = some A := by
+  obtain ⟨F, hF⟩ : ∃ F, (data HP).initialPrefixes 8 (request HP) = some F :=
+    ⟨_, (BudgetData.initialPrefixes_grid (data HP) 8 (by decide) (by simp [data])
+      (request HP) 0 2 (by decide) 0 0 [1] [2, 3] rfl rfl).1⟩
+  have hw (i : ℕ) : ∃ A, (data HP).complete 8 (request HP)
+      ((data HP).binPreparation 0 (request HP) (F (i + 1)))
+      (Cslib.RowCompression.dyadicSlack 4 i) = some A :=
+    ⟨_, BudgetData.complete_grid (data HP) 8 (request HP) 0 2 (by decide) 0 0
+      [1] [2, 3] rfl rfl _ _⟩
+  choose walks hwalk using hw
+  have hW : (List.range 4).mapM (fun i => (data HP).complete 8 (request HP)
+      ((data HP).binPreparation 0 (request HP) (F (i + 1)))
+      (Cslib.RowCompression.dyadicSlack 4 i)) = some ((List.range 4).map walks) := by
+    simp_rw [hwalk]
+    exact List.mapM_pure
+  suffices hav : ∃ A, (data HP).compressedBin 8 0 0 (HP.η / 4) (HP.η / 4)
+      (request HP) = some A by
+    obtain ⟨A, hA⟩ := hav
+    exact ⟨F, (List.range 4).map walks, A, hF, hW, hA⟩
+  unfold BudgetData.compressedBin
+  have hactive : 0 < (data HP).requestPrecision 8 (request HP) := by
+    norm_num [BudgetData.requestPrecision, LogSpaceEstimation.precision, data,
+      request, gridChannel, rate]
+  rw [ite_eq_right (by simp only [hactive, not_true_eq_false]; norm_num [request, gridChannel])]
+  simp only [hF, bind, Option.bind_some]
+  norm_num only [show Nat.log2 8 + 1 = 4 by decide]
+  rw [hW]
+  exact ⟨_, rfl⟩
+
+-- A successful budget-8 execution consumes the new full output theorem. This checks
+-- availability and the literal quantitative bound; it is still a stationary fixture.
+open Cslib.RowCompression NormalizedMoments in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (hscale : HP.η ≤ max (1 : ℝ) 16 / 10000) :
+    ∃ A C Cp Lh Lρ, (data HP).compressedBin 8 0 0 (HP.η / 4) (HP.η / 4)
+      (request HP) = some A ∧ 0 ≤ C ∧ 0 ≤ Cp ∧ 0 ≤ Lh ∧ 0 ≤ Lρ ∧
+      let m := Nat.log2 8 + 1
+      let X := retainedMask threeRoles.source (side 5 0) (data HP).padding [1]
+      let Ya := retainedMask threeRoles.terminal (side 5 0) (data HP).padding [2, 3]
+      let q := fun i => (data HP).initialMeanCharge 8 1 i 0 (request HP)
+      let e₀ := (2 : ℝ) ^ (-(data HP).requestPrecision 8
+        { (request HP) with usage := (request HP).terminal }) *
+        (64 / 63) / rate 0
+      let e₁ := |(HP.η / 4)| * (2 : ℝ) ^ (-(data HP).requestPrecision 8 (request HP))
+      let deficit := fun i => rowNormPow 4 5 (rate 0) X Ya
+        (fun _ _ _ => rate 1 + (data HP).initialInactiveCharge 8 i (request HP))
+      let prep := fun i => (5 : ℝ) * (|(HP.η / 4)| * (Lh + Lρ) / rate 0) ^ 4 *
+        (8 * ((e₀ * rate 0 * (1 / 64 : ℝ) ^ dyadicSlack m i) ^ 4 + deficit i))
+      let a := fun i => (vertexNormPow 4 5 (rate 0) X (fun _ _ => q i)) ^ (4⁻¹ : ℝ) +
+        (prep i) ^ (4⁻¹ : ℝ)
+      let row := fun t => rowNormPow 4 5 (rate 0) X Ya (fun _ _ _ => t)
+      let inactive := (data HP).binCap * ∑ bin ∈ (data HP).bins, (data HP).binRate bin
+      let sensitivity := (5 : ℝ) * (|(HP.η / 4)| * (Lh + Lρ) / rate 0) ^ 4 * 8
+      let latePrep := sensitivity * ((e₀ * rate 0 / 64) ^ 4 + row (rate 1))
+      let earlyPrep := sensitivity * ((e₀ * rate 0 / 64) ^ 4 + row (rate 1 + inactive))
+      let lateRow := row (rate 1 / rate 0)
+      let earlyRow := row ((rate 1 + inactive) / rate 0)
+      let rarity₀ := ((2 + 256 / dyadicFloor (HP.η / 4) m 0) /
+        (compatibleCapacity HP.K m 0 : ℝ)) ^ (4⁻¹ : ℝ)
+      let tail := (2 + 256 / (HP.η / 4)) ^ (4⁻¹ : ℝ) *
+        (lateRow ^ (4⁻¹ : ℝ) + latePrep ^ (4⁻¹ : ℝ)) / 63 +
+        rarity₀ * 28 ^ m * (earlyRow ^ (4⁻¹ : ℝ) + earlyPrep ^ (4⁻¹ : ℝ))
+      let radius := (2 * max (1 : ℝ) 16) ^ (4⁻¹ : ℝ)
+      let w := fun i => 64 * (HP.K : ℝ) * radius ^ 4 /
+        ((compatibleCapacity HP.K m i : ℝ) * dyadicFloor (HP.η / 4) m i ^ 4)
+      let c := 64 * (HP.K : ℝ) * radius ^ 4 / (HP.η / 4) ^ 4
+      rootDistPow 4 5 (rate 0) X Ya A
+        (denseChild (data HP).padding id (request HP) ((data HP).cutoff 0)
+          (polynomialPrepCutoff4 HP.θ) HP.ρ HP.K (data HP).base) ≤
+        128 * (HP.K : ℝ) *
+          (Cp ^ 4 * ((∑ i ∈ range m, dyadicFloor (HP.η / 4) m i * a i) +
+            (HP.η / 4) * (e₀ + e₁) / 511) ^ 4 +
+          C ^ 4 * (a (Nat.log2 8) + (e₀ + e₁) / 64) ^ 4 +
+          C ^ 4 * (tail +
+            (e₀ + e₁) * (7 / 9)) ^ 4) +
+        64 * (c * (lateRow + latePrep) / 63 + w 0 * (earlyRow + earlyPrep) +
+          (c * e₀ ^ 4 / 63 + c * e₁ ^ 4 / 63)) := by
+  obtain ⟨F, W, A, hF, hW, hA⟩ := available8 HP
+  have hζ : 0 < HP.η / 4 := by linarith [HP.η_pos]
+  obtain ⟨C, hC, hfloor⟩ := BudgetData.exists_compressedBin_geometric HP
+    hζ HP.η_pos le_rfl hscale (by linarith)
+  have hf1 : HP.η / 4 ≤ 1 := by norm_num at hscale; linarith
+  obtain ⟨Cp, hCp, hbound⟩ := hfloor (HP.η / 4) hζ (by linarith) hf1
+  obtain ⟨Lh, Lρ, hLh, hLρ, hh, hρ⟩ := preparation_stability_constants HP
+  refine ⟨A, C, Cp, Lh, Lρ, hA, hC, hCp, hLh, hLρ, ?_⟩
+  have hr : Admissible (request HP) := ⟨by change (0 : Fin 3) ≠ 2; decide, rfl, rfl⟩
+  exact hbound (data HP) 8 1 (by decide)
+    (by ext i; simp only [data, mem_insert, mem_singleton, mem_range]; omega)
+    rfl rfl rfl (by norm_num [data])
+    (⟨1, 4, by decide, by decide⟩ : Horizon 5) (by decide)
+    (request HP) hr threeRoles 0 0 0 [1] [2, 3] rfl rfl rfl (by decide) (by decide)
+    (by decide) (by norm_num [data])
+    (by intro x y; by_cases h : x = y <;> simp [data, base, h])
+    (by simp [data, base]) 0 F hF W (by simpa using hW) A hA Lh Lρ hLh hLρ hh hρ
 
 end PolynomialBudgetHistory
