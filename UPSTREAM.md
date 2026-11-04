@@ -402,6 +402,76 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
   Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
   are retained; the native proofs and representation choices are local.
+* **Finite Section 4 boxes.** The cube/box prerequisite ([#2160](https://github.com/cslib-community/complexitylib/issues/2160))
+  adapts `Sec4/{Boxes,Lemma27_28,BoxesFromLeaves,Lemma29}` at the same formal-math pin,
+  preserving Anthropic's credit and reusing the existing terms, encodings, signed leaf order
+  and alpha/beta counts. Cubes fix terms or admit every term at a star; boxes additionally
+  constrain the star/P0 count and ordering. Output boxes partition exactly the high-order
+  contributing leaves; low-order products remain explicit in the signed sum identity.
+  The finite value recurrence recomputes children and is not a memoized native data structure.
+  Its count bound needs only `m ≤ L` and `t ≤ m`, weakening the source's `10*m ≤ L` premise.
+  The reusable initial-subset argument is generalized to arbitrary linear orders in the small
+  Mathlib-intended `Foundations/Data/Finset/Lowest` topic module, used by the canonical boxes.
+  Native box enumeration/trie construction/query costs and the tuned 1.9992 route remain #1394.
+  No curated abstract or rendering changes are needed for this finite prerequisite.
+* **Native shared box tables.** The original native representation in
+  [#2176](https://github.com/cslib-community/complexitylib/issues/2176) reuses the finite boxes
+  and value recurrence above. A one-time directory over `(m-t+1)*10^L` slots computes compact
+  ranks and three-word descriptors. Per-tile code writes one signed value per box, reading
+  only earlier child ranks; lookup reads those stored words. This replaces the primary
+  source's per-tile relative-pointer trie, not its mathematical box notion. Native level zero
+  remains least significant, matching the existing encoders; the source's Horner numbering
+  must not be substituted silently. Shared setup is at most `64*(L+1)^2*10^L` for `m ≤ L`,
+  each tile costs at most `328*B+8`, and valid lookup at most `18*L+32`, with the actual box
+  count `B`. Setup, resident geometry and retained tile storage must all be charged in future
+  global composition; no Corollary 26 or tuned 1.9992 endpoint follows from this component.
+  `Foundations/Data/{Finset/LowestMax,Nat/RadixUpdate}` hold the small general ordered-subset
+  and radix-update facts used by these concrete clients. No curated abstract or rendering
+  changes are needed for this native data-structure prerequisite.
+* **Native sparse box query.** [#2203](https://github.com/cslib-community/complexitylib/issues/2203)
+  reuses the finite `starBelow` partition and actual compact table above. A five-word native
+  task stack enumerates only prefixes of contributing leaves with order at most `t`.
+  Full leaves below the threshold multiply the original signed words; threshold leaves
+  compute the canonical box key and load its stored signed value. Finite frontier mass
+  and potential proofs charge actual expansion, stack traffic, dispatch and signed sums:
+  the reusable query costs at most `258*(L+1)*Σ(d≤t) alpha(m,d)+28` instructions.
+  This prefix traversal is an original alternative to `Sec4/Theorem30`'s bounded-nine-string
+  successor and per-tile trie at the same pinned formal-math source. It preserves the
+  existing bilinear expression, not the source trace or time contract. Level zero remains
+  least significant and the inner `P0` digit is nine. Actual initialized preparation,
+  same-witness prefix/halt and outside frame are proved; a logarithm of original magnitudes
+  and addresses admits all wider machines, with an independent-width polynomial envelope
+  for every prefix. Shared table setup and retained storage remain explicit. The following
+  routed-product component supplies all-tile reuse and actual routing; remaining endpoint
+  composition stays #1394. This query milestone changes no curated abstract or rendering.
+* **Routed native box product.** [#2314](https://github.com/cslib-community/complexitylib/issues/2314)
+  reuses the existing actual raw-coordinate router, shared band producer and original-order
+  reconstruction. One native geometry construction serves all tiles; each actual retained-value
+  table and sparse query batch is charged, including temporary-result copies and every repeated
+  request occurrence. An appended ordinary threshold is read before low-memory reuse and restored
+  with all original input words. No computed layout, routing, encoding, table, run or time oracle
+  is supplied. The original native controller preserves the existing source terms and numbering.
+  The finite `BoxTradeoff` modules adapt the Section 4 geometric-tail and weighted-binomial
+  estimates at the same formal-math pin, with an original algebraic block specialization
+  `L=189k`, `m=9k`, `t=k`. Under `D^18≤N` and `Q*2^m≤N²`, the complete actual ledger has
+  finite `D^(-8/125)` saving with polynomial depth factors explicit. Here `Q` counts occurrences,
+  strengthening distinct-set sparsity when inputs repeat. Exact integer comparisons replace
+  analytic numerical approximations. Polynomial-factor absorption, ET replacement, parameter
+  retuning and tuned ordinary-3SUM 1.9992 remain #1394. No curated abstract or rendering changes.
+* **Callable box products and actual ET records.**
+  [#2335](https://github.com/cslib-community/complexitylib/issues/2335) translates the full routed
+  box product with the existing native memory-window compiler. Original dimensions derive a
+  polynomial virtual window and logarithmic physical admission; no bounded-scratch or source-fit
+  oracle is supplied. Two real instructions extend final normalization to the appended threshold.
+  Actual setup, translations, input/answer normalization and halt retain the finite `D^(-8/125)`
+  bound with explicit depth factors. The new record consumer reuses actual decoding/copies,
+  executes sixteen changed level/length/threshold instructions, and calls that compiled product.
+  Its initialized client runs the genuine original-weight producer and selects an occupied record;
+  readbacks and occurrence sparsity are conclusions of that execution. General correctness uses
+  `L=21*m` and `t=m/9`; the quantitative specialization requires `m=9k`. The complete per-record
+  finite saving charges adapter and halt, with producer work separate. The full ET controller,
+  aggregate bound, native parameter retuning and ordinary 1.9992 remain #1394. Existing suppliers,
+  headline statements, curated abstracts and rendering are unchanged.
 * **Native pruned-query evaluator.** The explicit-stack pruned-query evaluator ([#1526](https://github.com/cslib-community/complexitylib/issues/1526))
   is original native code, reusing the finite `Pruned.result`, `childSet` and trace/leaf
   quantities from `Sec2/Lemma10.lean`. `PrunedQuery.queryIndex` directly applies the existing

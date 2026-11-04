@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Crypto.Computational.Kilian.Soundness
+public import Complexity.Crypto.Computational.Kilian.Succinct
 public import Complexity.Computability.Complexity.Classes.NP
 import Complexity.Computability.PCP.Completeness
 
@@ -24,13 +25,14 @@ verifier `V` with `O(log n)` random bits and a constant number of queries. Kilia
   for `L` (`PCP_log_subset_NP`); on them the honest prover is accepted with probability one and runs
   in polynomial time (`eval_kilianHonestGame`, `computableInPolyTime_kilianCommit`,
   `computableInPolyTime_kilianRespond`);
-* the protocol is computationally sound (`HashFamily.kilianSound`).
+* the protocol is computationally sound (`HashFamily.kilianSound`);
+* the honest transcript after the statement has `O(n² · (log₂ |enc x| + 1))` payload bits at
+  security parameter `n` (`kilianCommunication_honest_le_log`).
 
 **Gap.** The honest prover is efficient on this particular NP relation, not on an arbitrary given
 NP relation for `L`: that would need a polynomial-time map from witnesses of the given relation to
 PCP proofs (Barak and Goldreich's "relatively-efficient oracle-construction", [BarakGoldreich2001],
-Definition 3.2), which the library's proof of the PCP theorem does not provide. Succinctness
-(communication and verifier time) is not accounted for here.
+Definition 3.2), which the library's proof of the PCP theorem does not provide.
 
 ## Main results
 
@@ -53,7 +55,8 @@ variable {α : Type} {H : List Bool → List Bool → List Bool}
 /-- **Kilian's arguments for NP**: for a collision-resistant `HashFamily H`, every language `L` in
 NP has a polynomial-time PCP verifier `V` with `O(log n)` random bits whose accepted compact tables
 characterize `L`, such that Kilian's protocol over `V` and `H` accepts the honest prover on every
-accepted table with probability one and is computationally sound for `L`. -/
+accepted table with probability one, is computationally sound for `L`, and has honest transcripts
+of `O(n² · (log₂ |enc x| + 1))` payload bits at security parameter `n`. -/
 theorem exists_kilianSound_of_mem_NP (hH : HashFamily H) {enc : α ↪ List Bool} {L : Set α}
     (hL : L ∈ NP enc) :
     ∃ (V : PCPVerifier α) (c : ℕ), V.PolyTime enc ∧
@@ -61,10 +64,17 @@ theorem exists_kilianSound_of_mem_NP (hH : HashFamily H) {enc : α ↪ List Bool
       (∀ x, x ∈ L ↔ ∃ table, V.tableVerifier (x, table) = true) ∧
       (∀ x table, V.tableVerifier (x, table) = true →
         ∀ n, ProbComp.eval (kilianHonestGame H V x table n) = PMF.pure true) ∧
-      KilianSound H V enc L := by
+      KilianSound H V enc L ∧
+      ∃ C : ℕ, ∀ (n : ℕ) (k : List Bool) (x : α) (table : List Bool) (ρs : List (List Bool)),
+        k.length = n → ρs.length = n → (∀ ρ ∈ ρs, ρ.length = V.coins x) →
+          kilianCommunication k (kilianCommit H V k x table) ρs
+            (kilianRespond H V k x table ρs) ≤
+          C * (n + 1) ^ 2 * (Nat.log 2 (enc x).length + 1) := by
   obtain ⟨V, c, d, hV, hpcp⟩ := NP_subset_PCP_log enc hL
   refine ⟨V, c, hV, hpcp.1, fun x => ⟨fun hx => ?_, fun ⟨table, htable⟩ => ?_⟩,
-    fun x table htable n => eval_kilianHonestGame H V htable n, hH.kilianSound hV hpcp⟩
+    fun x table htable n => eval_kilianHonestGame H V htable n, hH.kilianSound hV hpcp,
+    _, fun n k x table ρs hk hn hρs => kilianCommunication_honest_le_log hH.length_eq hk hn hρs
+      (fun ρ hρ => hpcp.2.1 x ρ hρ) (hpcp.1 x)⟩
   · obtain ⟨proof, hproof⟩ := hpcp.2.2.1 x hx
     exact ⟨_, by simpa using PCPVerifier.tableVerifier_complete x proof [] hproof⟩
   · by_contra hx
