@@ -59,7 +59,8 @@ theorem envelope_fits {W n F b ap bp cp : ℕ} (values : List ℤ)
 /-- Existing signed counter arithmetic fits from the original-input envelope alone. -/
 theorem counter_magnitude_fits {n F b ap bp cp : ℕ} (values : List ℤ) :
     GenericRAM.Signed.Fits (Nat.clog 2 (envelope n F b ap bp cp values) + 1)
-      (CountPrime.magnitudeBudget (Nat.sqrt (ParameterChoice.window n)) (Nat.clog 2 n) F : ℤ) := by
+      (CountPrime.magnitudeBudget (Nat.sqrt (ParameterChoice.window n))
+        (Nat.clog 2 n) F : ℤ) := by
   have hle : CountPrime.magnitudeBudget (Nat.sqrt (ParameterChoice.window n)) (Nat.clog 2 n) F <
       envelope n F b ap bp cp values := by dsimp only [envelope]; omega
   have hp := hle.trans_le (Nat.le_pow_clog (by decide : 1 < (2 : ℕ)) _)

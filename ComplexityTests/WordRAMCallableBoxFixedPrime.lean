@@ -6,7 +6,7 @@ Authors: Erik Demaine
 
 -- upstream: local-only (tests)
 
-import Complexity.Algorithms.WordRAM.ExactTriangle.CallableBoxFixedPrime
+import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime
 import Mathlib.Data.List.GetD
 
 /-!
@@ -47,10 +47,10 @@ private noncomputable def zeroCharge (N : ℕ) : ℝ :=
 
 /-- The complete actual program returns one and an original witness on all-zero input. -/
 private theorem initialized_zero (N : ℕ) (hgeo : D 9 ^ 18 ≤ N) : ∃ y : Data 640, ∃ t : ℕ,
-    Runs (width N 0) (CallableBoxFixedPrime.entryProgram.program CallableFixedPrime.Reg.found)
+    Runs (width N 0) (CallableFixedPrime.entryProgram.program CallableFixedPrime.Reg.found)
       (State.init (PreparationInput.input N (D 9) 1 257 (weights N 0)))
-      ⟨CallableBoxFixedPrime.entryProgram.size, y⟩ t ∧
-    Executes (width N 0) (CallableBoxFixedPrime.entryProgram.program CallableFixedPrime.Reg.found)
+      ⟨CallableFixedPrime.entryProgram.size, y⟩ t ∧
+    Executes (width N 0) (CallableFixedPrime.entryProgram.program CallableFixedPrime.Reg.found)
       (State.init (PreparationInput.input N (D 9) 1 257 (weights N 0))) 1 (t + 1) ∧
     y.regs CallableFixedPrime.Reg.found = 1 ∧ y.regs CallableFixedPrime.Reg.scans ≤ 1 ∧
     ((t + 1 : ℕ) : ℝ) ≤ zeroCharge N ∧
@@ -62,7 +62,7 @@ private theorem initialized_zero (N : ℕ) (hgeo : D 9 ^ 18 ≤ N) : ∃ y : Dat
       y.regs CallableFixedPrime.Reg.witnessB = v.val ∧
       y.regs CallableFixedPrime.Reg.witnessC = c.val := by
   obtain ⟨hi, a, hout, y, t, ht, hr, he, yb, yf, ys, yiff, yw, frame, regs⟩ :=
-    CallableBoxFixedPrime.runs_input (m := 9) (n := N) (g := 1) (p := 257)
+    CallableFixedPrime.runs_input (m := 9) (n := N) (g := 1) (p := 257)
       (W := width N 0) (weights N 0) (by simp only [weights, List.length_replicate])
       (by decide) (by decide) prime hgeo le_rfl
   let V := fun q => (weights N 0).getD q 0
@@ -87,12 +87,12 @@ private theorem initialized_zero (N : ℕ) (hgeo : D 9 ^ 18 ≤ N) : ∃ y : Dat
           (fun u c => V (2 * (N * N) + pairIndex (u, c))) 257 +
           y.regs CallableFixedPrime.Reg.found := ys
     simpa only [hF, hf, zero_add] using hs
-  · have hcharge := CallableBoxFixedPrime.timeBound_le (k := 1) (n := N) (g := 1) (p := 257)
+  · have hcharge := CallableFixedPrime.timeBound_le (k := 1) (n := N) (g := 1) (p := 257)
         (lt_of_lt_of_le (by decide : 0 < D 9 ^ 18) hgeo) (weights N 0) a.mem
         (by decide) (by decide) prime hgeo
     dsimp only [V] at hF
     have hbound : ((t + 1 : ℕ) : ℝ) ≤
-        ((CallableBoxFixedPrime.timeBound (m := 9)
+        ((CallableFixedPrime.timeBound (m := 9)
           (lt_of_lt_of_le (by decide : 0 < D 9 ^ 18) hgeo) 1 257 (weights N 0) a.mem + 1 : ℕ)
             : ℝ) + 14 := by exact_mod_cast ht
     have h := hbound.trans (add_le_add hcharge (le_refl (14 : ℝ)))
@@ -107,15 +107,15 @@ private theorem initialized_false_positive (N : ℕ) (hgeo : D 9 ^ 18 ≤ N) :
       (fun b c => V (N * N + pairIndex (b, c)))
       (fun u c => V (2 * (N * N) + pairIndex (u, c))) 257
     ∃ y : Data 640, ∃ t : ℕ,
-      Runs (width N 257) (CallableBoxFixedPrime.entryProgram.program CallableFixedPrime.Reg.found)
+      Runs (width N 257) (CallableFixedPrime.entryProgram.program CallableFixedPrime.Reg.found)
         (State.init (PreparationInput.input N (D 9) 1 257 (weights N 257)))
-        ⟨CallableBoxFixedPrime.entryProgram.size, y⟩ t ∧
-      Executes (width N 257) (CallableBoxFixedPrime.entryProgram.program
+        ⟨CallableFixedPrime.entryProgram.size, y⟩ t ∧
+      Executes (width N 257) (CallableFixedPrime.entryProgram.program
         CallableFixedPrime.Reg.found)
         (State.init (PreparationInput.input N (D 9) 1 257 (weights N 257))) 0 (t + 1) ∧
       y.regs CallableFixedPrime.Reg.found = 0 ∧ y.regs CallableFixedPrime.Reg.scans ≤ F := by
   obtain ⟨hi, a, hout, y, t, ht, hr, he, yb, yf, ys, yiff, yw, frame, regs⟩ :=
-    CallableBoxFixedPrime.runs_input (m := 9) (n := N) (g := 1) (p := 257)
+    CallableFixedPrime.runs_input (m := 9) (n := N) (g := 1) (p := 257)
       (W := width N 257) (weights N 257) (by simp only [weights, List.length_replicate])
       (by decide) (by decide) prime hgeo le_rfl
   let V := fun q => (weights N 257).getD q 0
@@ -145,12 +145,11 @@ private theorem initialized_false_positive (N : ℕ) (hgeo : D 9 ^ 18 ≤ N) :
   · simpa only [hf] using he
   · simpa only [hf, Nat.add_zero] using ys
 
-
 example : ∃ y : Data 640, ∃ t : ℕ,
-    Runs (width side 0) (CallableBoxFixedPrime.entryProgram.program CallableFixedPrime.Reg.found)
+    Runs (width side 0) (CallableFixedPrime.entryProgram.program CallableFixedPrime.Reg.found)
       (State.init (PreparationInput.input side (D 9) 1 257 (weights side 0)))
-      ⟨CallableBoxFixedPrime.entryProgram.size, y⟩ t ∧
-    Executes (width side 0) (CallableBoxFixedPrime.entryProgram.program
+      ⟨CallableFixedPrime.entryProgram.size, y⟩ t ∧
+    Executes (width side 0) (CallableFixedPrime.entryProgram.program
       CallableFixedPrime.Reg.found)
       (State.init (PreparationInput.input side (D 9) 1 257 (weights side 0))) 1 (t + 1) ∧
     y.regs CallableFixedPrime.Reg.found = 1 ∧ y.regs CallableFixedPrime.Reg.scans ≤ 1 ∧
@@ -170,11 +169,11 @@ example :
       (fun b c => V (side * side + pairIndex (b, c)))
       (fun u c => V (2 * (side * side) + pairIndex (u, c))) 257
     ∃ y : Data 640, ∃ t : ℕ,
-      Runs (width side 257) (CallableBoxFixedPrime.entryProgram.program
+      Runs (width side 257) (CallableFixedPrime.entryProgram.program
         CallableFixedPrime.Reg.found)
         (State.init (PreparationInput.input side (D 9) 1 257 (weights side 257)))
-        ⟨CallableBoxFixedPrime.entryProgram.size, y⟩ t ∧
-      Executes (width side 257) (CallableBoxFixedPrime.entryProgram.program
+        ⟨CallableFixedPrime.entryProgram.size, y⟩ t ∧
+      Executes (width side 257) (CallableFixedPrime.entryProgram.program
         CallableFixedPrime.Reg.found)
         (State.init (PreparationInput.input side (D 9) 1 257 (weights side 257))) 0 (t + 1) ∧
       y.regs CallableFixedPrime.Reg.found = 0 ∧ y.regs CallableFixedPrime.Reg.scans ≤ F :=

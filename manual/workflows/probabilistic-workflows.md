@@ -180,6 +180,68 @@ preserves the true cutoff. `CorrectionSampling.withSource` changes only the samp
 pair law, preserving the true input, final pilot, gates and incoming budget. The common
 `correctionRequest_eq_split` avoids rebuilding the split transport for each choice of children.
 
+To compare genuine targets across request roles and copy suffixes, import
+[HierarchyCanonicalTargets](../../Complexity/Foundations/Probability/HierarchyCanonicalTargets.lean).
+Use `stage_correctionIter_eq_of_terminal_rate` to identify the left and negative correction
+targets at a common stage rate. `source_request_mean_canonical` combines this transport with
+the actual narrower-source correction mean, retaining its literal usage-density divisor.
+The proof integrates source spectators and permutes each padded frame seed; it does not
+identify samples at an unchanged environment. The
+[regression client](../../ComplexityTests/HierarchyCanonicalTargets.lean) checks actual residual
+requests with different terminal roles and radix-two suffixes, a positive target and an
+unequal-rate complete correction mean.
+
+For a genuine source-reset dense child, import
+[HierarchyDenseChildren](../../Complexity/Foundations/Probability/HierarchyDenseChildren.lean).
+Build `denseChild` from the deterministic hierarchy base, bin cutoff and genuine
+`densePreparation`. `dense_normalizer` integrates the actual joint source/usage mean;
+`denseChild_terminal` then removes source and spectator dependence pointwise. For a
+left correction sharing the midpoint with that reset source, use
+[HierarchySharedMidpoint](../../Complexity/Foundations/Probability/HierarchySharedMidpoint.lean).
+`sourceChild_mul_denseChild_mean` conditions the single full environment on the old
+source and terminal events. Supply three distinct roles, the complete right-source reset,
+the finite horizon and narrower-source hypotheses, and the dense support/gate bounds.
+The left midpoint hit and literal midpoint-density divisor remain in the sample.
+The [checked client](../../ComplexityTests/HierarchySharedMidpoint.lean) evaluates a positive
+product with unequal rates, nonempty suffixes and a free fourth role.
+
+For signed assembly import
+[HierarchySignedMean](../../Complexity/Foundations/Probability/HierarchySignedMean.lean).
+`canonicalRequestChild` matches normalized index j and evaluates `sourceChild` at j.val;
+`correctionAtomTask_last_succ` proves the final structural dispatch. Request size stays
+`HP.k` as statistical precision varies. `sourceChild_mean_on_terminal_event` derives the
+negative mean from genuine correction normalization and zero off usage, with no target-mean
+premise. The actual negative request has rank rate f and usage min(parent terminal, f).
+`canonical_rawSample_mean` proves the literal one-bin mean `C_bin + E*C_bin - E` on
+one full environment. `canonical_residual_bins_mean` sums `rawPositiveSample` over the
+existing routed-bin partition with route one, then subtracts `rawNegativeSample` once.
+Its exact finite cover and narrower-source horizon are explicit; summing unchanged signed
+rawSample bins would subtract E repeatedly. The
+[checked signed client](../../ComplexityTests/HierarchySignedMean.lean) keeps nonempty
+suffixes, unequal rates and a free spectator, checks two statistical walk precisions,
+positive genuine final correction/product terms, a nonconstant product and two-bin assembly.
+
+For finite absolute estimated-child propagation import
+[HierarchyEstimatedMean](../../Complexity/Foundations/Probability/HierarchyEstimatedMean.lean).
+`estimated_residual_bins_mean_error` compares actual bounded `incomingChildren` at fixed
+`Request HP.k` with `canonicalRequestChild`. Supply the genuine C/top-rate cap, monotone
+bin scales with adjacent ratio at most 16, and the same cover/horizon and dense-gate contracts.
+`boundedRoutedBinCutoff_div_eq` proves true-input agreement before the bounded evaluator is
+used. The product splits as estimatedLeft*(estimatedRight-canonicalRight) +
+(estimatedLeft-canonicalLeft)*canonicalRight. Actual correction range `2*Q(atomCap)` and
+genuine dense range `2*max cap 16` pay the two errors. Importance and midpoint densities
+stay literal; positive-bin errors are summed and the negative error occurs once.
+The [checked error client](../../ComplexityTests/HierarchyChildError.lean) instantiates the
+actual two-bin cap and exact adjacent ratio on the shared spectator/suffix fixture.
+
+[FirstMeanError](../../Complexity/Foundations/Probability/NormalizedAtomRows/FirstMeanError.lean)
+then proves `actualEstimatedResidual_first_mean_le`: the completed full-terminal raw walk
+preserves this input mean and the actual first prefix has bound
+`min 1 (absoluteError / (rate kt + genuineResidual x y))`. The genuine residual is nonnegative.
+This direction does not convert clipped relative error into absolute error. Preparation still
+uses the full-rank maximum in `preparationError`. Recursive root/relative budgets, copy-stage
+routing, numerical reserves, parameter/workspace bounds and native RL=L remain open.
+
 The P=5 regression has source/stage/usage exponents 2/1/3, actual densities
 16/625, 81/625 and 1/625, different nonempty copy suffixes, and a free spectator role.
 It proves a positive complete actual request mean with the genuine final pilot. Usage
@@ -209,8 +271,10 @@ recursive/native correctness remain open.
 
 For the first compression signal, import
 [FirstSignal](../../Complexity/Foundations/Probability/NormalizedAtomRows/FirstSignal.lean)
-and apply `actualFirstSignal_noise_le_lower`. Its child-budget-indexed inputs are genuine
-`rawIncomingNormalized` samples. `firstSignalIncrement` takes successive conditional-walk
+and apply `actualFirstSignal_noise_le_lower`. Its precision-indexed inputs are genuine
+`rawIncomingNormalized` samples on one fixed positive structural `Request q`.
+For a genuine hierarchy use `q = HP.k` and `HP.k_pos`; precision j changes child
+estimates and walk lengths, not the request type or final correction index. `firstSignalIncrement` takes successive conditional-walk
 differences from zero; `actualPrefix_firstSignalIncrement` identifies prefix i with walk
 i+1 divided by `rate k`. Stationarity on the full terminal slice, including empty slices,
 then identifies `actualNoiseEntry` with centered walk noise divided by
@@ -293,7 +357,8 @@ residual A to G on the same full terminal rank slice: its bound is
 no target-size bound. `preparation_mean_bias_le` averages this error over the actual joint
 source × usage slice against `genuinePrep(G)` and `genuineMean`, including empty slices.
 `actualSelectedSecondSignal_mean_bias_le` accepts any completed raw child.
-`actualCompletedSecondSignal_mean_bias_le` instantiates it with the actual raw H4 walk
+`actualCompletedSecondSignal_mean_bias_le` keeps that same structural q at every precision
+and instantiates it with the actual raw H4 walk
 and the ζ-scaled preparation prefix at input budget i+1. `firstSignal_raw_error` and
 `preparationError_eq_firstPrefix` identify its absolute errors with the actual first-prefix
 errors, retaining rate(k) and the full-rank maximum. The first prefix is F_j/rate(k);

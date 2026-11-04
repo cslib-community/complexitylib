@@ -6,7 +6,7 @@ Authors: Erik Demaine
 
 -- upstream: local-only (tests)
 
-import Complexity.Algorithms.WordRAM.ExactTriangle.CallableBoxFixedPrime
+import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime
 import Mathlib.Data.List.GetD
 
 /-!
@@ -62,9 +62,9 @@ example (N : ℕ) : CallableFixedPrime.windowSize N (D 9) 1 257
 /-- A fully admitted dirty caller; original arrays may alias and low selector registers survive. -/
 private theorem dirty_alias (N : ℕ) (hgeo : D 9 ^ 18 ≤ N) :
     ∃ y : Data 640, ∃ t : ℕ,
-      Runs (width N) (CallableBoxFixedPrime.program.program CallableFixedPrime.Reg.found)
-        ⟨0, caller N⟩ ⟨CallableBoxFixedPrime.program.size, y⟩ t ∧
-      Executes (width N) (CallableBoxFixedPrime.program.program CallableFixedPrime.Reg.found)
+      Runs (width N) (CallableFixedPrime.program.program CallableFixedPrime.Reg.found)
+        ⟨0, caller N⟩ ⟨CallableFixedPrime.program.size, y⟩ t ∧
+      Executes (width N) (CallableFixedPrime.program.program CallableFixedPrime.Reg.found)
         ⟨0, caller N⟩ 1 (t + 1) ∧
       y.regs CallableFixedPrime.Reg.found = 1 ∧
       y.regs CallableFixedPrime.Reg.scans ≤ 1 ∧
@@ -111,7 +111,7 @@ private theorem dirty_alias (N : ℕ) (hgeo : D 9 ^ 18 ≤ N) :
       CallableFixedPrime.Reg.ab, CallableFixedPrime.Reg.bc, CallableFixedPrime.Reg.ac, D]
   obtain ⟨hn, hd, hg, hp', hb, hab, hbc, hac⟩ := hargs
   obtain ⟨a, hout, y, he, yb, yf, ys, yiff, yw, frame, regs⟩ :=
-    CallableBoxFixedPrime.exec (m := 9) (zeros N) (by simp only [zeros, List.length_replicate])
+    CallableFixedPrime.exec (m := 9) (zeros N) (by simp only [zeros, List.length_replicate])
       (by decide) (by decide) hp hgeo (caller N) hn hd hg hp' hb
       (by rw [hab]; dsimp only [base]; omega)
       (by rw [hbc]; dsimp only [base]; omega)
@@ -134,7 +134,7 @@ private theorem dirty_alias (N : ℕ) (hgeo : D 9 ^ 18 ≤ N) :
   obtain ⟨t, ht, hex⟩ := he
   refine ⟨y, t, ?_, ?_, hf, ?_, ?_, ?_, ?_, frame⟩
   · simpa only [Nat.zero_add] using hex.runs (pc := 0)
-      (p := CallableBoxFixedPrime.program.program CallableFixedPrime.Reg.found)
+      (p := CallableFixedPrime.program.program CallableFixedPrime.Reg.found)
       (Program.Contains.self _).append_left
   · simpa only [hf] using hex.executes CallableFixedPrime.Reg.found
   · have hs : y.regs CallableFixedPrime.Reg.scans ≤
@@ -149,10 +149,10 @@ private theorem dirty_alias (N : ℕ) (hgeo : D 9 ^ 18 ≤ N) :
 
 example : ∃ y : Data 640, ∃ t : ℕ,
     Runs (width (D 9 ^ 18))
-      (CallableBoxFixedPrime.program.program CallableFixedPrime.Reg.found)
-      ⟨0, caller (D 9 ^ 18)⟩ ⟨CallableBoxFixedPrime.program.size, y⟩ t ∧
+      (CallableFixedPrime.program.program CallableFixedPrime.Reg.found)
+      ⟨0, caller (D 9 ^ 18)⟩ ⟨CallableFixedPrime.program.size, y⟩ t ∧
     Executes (width (D 9 ^ 18))
-      (CallableBoxFixedPrime.program.program CallableFixedPrime.Reg.found)
+      (CallableFixedPrime.program.program CallableFixedPrime.Reg.found)
       ⟨0, caller (D 9 ^ 18)⟩ 1 (t + 1) := by
   obtain ⟨y, t, hr, he, -⟩ := dirty_alias (D 9 ^ 18) (by decide)
   exact ⟨y, t, hr, he⟩

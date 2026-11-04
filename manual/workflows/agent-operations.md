@@ -61,3 +61,22 @@ Commit times, provider completion durations, conversation spans, CI runtime and 
 For new records, retain the initial objective, task/session identities, parent-child links, source revisions, reviews, failed attempts and dispositions. Preserve emitted timestamps and define their event semantics before deriving durations. Retain appropriate excerpts and provenance. The [extraction methods](../development-history/methods.md) describe deduplication; [study design](../development-history/study-design.md) identifies evidence needed for comparisons. Desktop conversations remain absent, so this edition's historical corpus is explicitly incomplete.
 
 [complexitylib]: ../sources.md#complexitylib
+
+When using the hierarchy first-noise/payment and completed-preparation clients, keep
+structural `Request HP.k` fixed and supply `HP.k_pos` where positivity is required.
+Statistical precision indexes estimates and walk lengths independently; specializing
+structure to precision does not identify a fixed recursive hierarchy. See the
+[probabilistic workflow](probabilistic-workflows.md) for the quantitative contracts.
+
+For genuine signed-stage review, inspect the actual normalized index and final structural
+dispatch, inherited-terminal usage containment, and the single negative request in
+`canonical_residual_bins_mean`. Finite cover/horizon hypotheses remain acceptance limits.
+The [probabilistic workflow](probabilistic-workflows.md) separates this proved stage mean
+from estimated-child induction and native resource objectives.
+
+For estimated-child review, inspect `estimated_residual_bins_mean_error` and the actual
+first-mean client linked from the [probabilistic workflow](probabilistic-workflows.md).
+Check true-input bounded/canonical routing agreement, the estimated-left/canonical-right
+product split, literal importance/midpoint factors and once-negative error accounting.
+Finite absolute propagation does not discharge recursive relative budgets or the second
+signal's full-terminal-rank maximum.

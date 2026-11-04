@@ -16,6 +16,7 @@ public import Complexity.Foundations.Probability.HierarchyRawMoment
 
 The increments start from zero and retain the same full environment in every prefix.
 Stationarity identifies their actual conditional mean, including empty slices.
+Structural request size `q` stays fixed as statistical precision and walk length vary.
 The second coordinate is arbitrary. This does not supply its separate moment bridge.
 The telescoping proof pattern is adapted from Samuel Schlesinger's compression API.
 
@@ -154,15 +155,16 @@ theorem actualNoiseEntry_firstSignal_row_le {E : Type*} [Fintype E] [Nonempty E]
 
 open Classical in
 /-- Actual first/full-rank endpoint noise, paid by the explicit lower-child incoming
-moment budget. Children can be arbitrarily correlated on the full environment.
+moment budget. The positive structural size is independent of precision.
+Children can be arbitrarily correlated on the full environment.
 This establishes no preparatory second-signal or recursive budget estimate. -/
-theorem actualFirstSignal_noise_le_lower
+theorem actualFirstSignal_noise_le_lower {q : ℕ} (hq : 0 < q)
     (HP : FourthRootHierarchyParams 16 1 16 32 8) (hK : 0 < HP.K)
     (D : ZMod P) (R : RoleProfile J) (l bin ks km k kb Lt : ℕ)
     (ss sm st : List (ZMod P)) (Kc : ℕ) (hKc : 0 < Kc) (binCutoff : ℝ → ℝ)
-    (raw prep : ∀ j : ℕ, HierarchyTask.Request j (Fin J) (ZMod P) →
+    (raw prep : ℕ → HierarchyTask.Request q (Fin J) (ZMod P) →
       Environment P J → Matrix (ZMod P) (ZMod P) ℝ)
-    (maximum : ∀ j : ℕ, HierarchyTask.Request j (Fin J) (ZMod P) →
+    (maximum : ℕ → HierarchyTask.Request q (Fin J) (ZMod P) →
       Environment P J → ZMod P → ℝ)
     (steps : ℕ → ℕ) (G : Matrix (ZMod P) (ZMod P) ℝ) (hG : ∀ x y, 0 ≤ G x y)
     (second : Environment P J → ZMod P → ℕ → ZMod P → ℝ)
@@ -180,6 +182,7 @@ theorem actualFirstSignal_noise_le_lower
         incomingMomentBudget HP D id R l bin ks km k kb ss sm st Kc binCutoff
           (raw (i + 1)) (prep (i + 1)) (maximum (i + 1)) N u) := by
   dsimp only
+  obtain ⟨q, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (Nat.ne_of_gt hq)
   have hb := rawIncomingNormalized_noise_le_lower HP hK D (id : ZMod P → ZMod P) R
     l bin ks km k kb ss sm st Kc hKc binCutoff (raw (i + 1)) (prep (i + 1))
     (maximum (i + 1)) hN hu (steps (i + 1))

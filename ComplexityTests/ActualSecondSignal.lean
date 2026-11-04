@@ -243,9 +243,9 @@ example : (∑ x : ZMod 5, (({σ : Environment 5 3 |
 example (HP : FourthRootHierarchyParams 16 1 16 32 8) {ε : ℝ} (hε : 0 < ε) :
     let steps := fun j => spectralWalkLength (1 - 1 / (155648 * (3 + 1) * (4 : ℝ) ^ 4))
       ((3 : ℝ) ^ 4 * 512 * HP.K) ε (dyadicSlack 4 (j - 1))
-    let T := fun j σ x y => rawSamplePreparation HP 1 threeRoles
+    let T := fun (_j : ℕ) σ x y => rawSamplePreparation HP 1 threeRoles
       0 0 0 0 0 0 [1] [2] [3] 2 id
-      (fun (_ : HierarchyTask.Request j (Fin 3) (ZMod 5)) => child randomBit)
+      (fun (_ : HierarchyTask.Request HP.k (Fin 3) (ZMod 5)) => child randomBit)
       (fun _ => prepChild) (fun _ _ _ => 9) σ x y
     let H := fun j => conditionalWalk (retainedMask (0 : Fin 3) (side 5 0) 1 [1])
       (retainedMask 2 (side 5 0) 1 [3])
@@ -260,9 +260,9 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) {ε : ℝ} (hε : 0 < ε) 
       (ε * (64 : ℝ)⁻¹ ^ dyadicSlack 4 2) ^ 4 := by
   exact actualSelectedSecondSignal_noise_le_dyadic HP (by have := bigK HP; omega)
     1 threeRoles smallHorizon 0 0 0 (by decide) (by decide) [1] [3]
-    (fun j σ => rawIncomingNormalized HP 1 id threeRoles 0 0 0 0 0 0 [1] [2] [3]
+    (fun (_j : ℕ) σ => rawIncomingNormalized HP 1 id threeRoles 0 0 0 0 0 0 [1] [2] [3]
       (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff 2 id
-      (fun (_ : HierarchyTask.Request j (Fin 3) (ZMod 5)) => child randomBit)
+      (fun (_ : HierarchyTask.Request HP.k (Fin 3) (ZMod 5)) => child randomBit)
       (fun _ => prepChild) (fun _ _ _ => 9) σ)
     (fun j _ _ _ => j + 7) _ 3 (fun _ _ => 0) 2 4 hε (by rfl)
 
