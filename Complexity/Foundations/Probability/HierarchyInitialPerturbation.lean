@@ -1,0 +1,204 @@
+/-
+Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Christian Reitwiessner
+-/
+module
+-- upstream: candidate
+public import Complexity.Foundations.Probability.HierarchyApproximateHistory
+public import Complexity.Foundations.Probability.RootMetric.FiniteEnvelope
+import Complexity.Foundations.Data.List.Blocks
+
+/-!
+# Executed initial group and prefix perturbations
+
+Finite payments sum the actual paired rays before their common completion, then the
+executed groups before parent compression. These original finite comparisons retain the
+computed history and its changing budgets. They do not prove the simultaneous child IH
+or replace production dense leaves.
+-/
+public section
+noncomputable section
+open Finset Cslib Cslib.Probability
+open scoped BigOperators
+namespace Matrix.HierarchyParams.H4RankEnvironment.BudgetData
+attribute [local instance] Classical.propDecidable
+attribute [local implicit_reducible] Matrix
+set_option backward.isDefEq.respectTransparency false
+variable {P : ℕ} [Fact P.Prime] {HP : FourthRootHierarchyParams 16 1 16 32 8}
+  (B : BudgetData HP P)
+
+/-- Sum all actual initial paired rays before completion. Each ray certificate must
+identify the executed compressed history and the executed semantic history at this group's
+budgets. Its error can be supplied by `pairedSample_initial_compressed_root`. The common
+walk contracts their sum; correlation costs only the cube of the number of bins. -/
+theorem completedGroup_initial_compressed_error
+    (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ)
+    (ζ floor : ℝ) (M d : ℕ) (hbins : B.bins.Nonempty)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (s t : Fin 3) (hst : s ≠ t) (ks ku : ℕ) (ss su : List (ZMod P))
+    (hs : r.source = gridChannel s ks ss) (hu : r.usage = gridChannel t ku su)
+    (A C : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ) (ε : ℕ → ℝ)
+    (hA : ∀ i ∈ B.bins,
+      B.pairedSample (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+        else none) M d (.pilotInput ⟨0, HP.k_pos⟩) r (some i) = some (A i))
+    (hC : ∀ i ∈ B.bins,
+      B.pairedSample (fun n q => if n < M then B.evaluate n q else none)
+        M d (.pilotInput ⟨0, HP.k_pos⟩) r (some i) = some (C i))
+    (herr : ∀ i ∈ B.bins, rowNormPow 4 P r.source.rate
+      (fun σ x => r.source.retains (channels B.padding) σ x)
+      (fun σ y => r.usage.retains (channels B.padding) σ y) (A i - C i) ≤ ε i) :
+    ∃ F G,
+      B.completedGroup (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+        else none) M d (.pilotInput ⟨0, HP.k_pos⟩) r = some F ∧
+      B.completedGroup (fun n q => if n < M then B.evaluate n q else none)
+        M d (.pilotInput ⟨0, HP.k_pos⟩) r = some G ∧
+      rowNormPow 4 P r.source.rate
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (fun σ y => r.usage.retains (channels B.padding) σ y) (F - G) ≤
+        (#B.bins : ℝ) ^ 3 * ∑ i ∈ B.bins, ε i := by
+  let Xs := X s (side P ks) (CopyPadding.identifier B.padding ss)
+  let Yu := Y t (side P ku) (CopyPadding.identifier B.padding su)
+  let graphV := graph s t hst (side P ks) (side P ku) (side_le P ks) (side_le P ku)
+    (CopyPadding.identifier B.padding ss) (CopyPadding.identifier B.padding su)
+  let walk := conditionalWalk Xs Yu graphV (fun _ _ => B.steps M r d)
+  let sumA : Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ :=
+    fun σ x y => ∑ i ∈ B.bins, A i σ x y
+  let sumC : Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ :=
+    fun σ x y => ∑ i ∈ B.bins, C i σ x y
+  have hrun (history : ℕ → HierarchyTask.Request HP.k (Fin 3) (ZMod P) →
+      Option (BudgetValue P)) (T : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+      (hT : ∀ i ∈ B.bins, B.pairedSample history M d (.pilotInput ⟨0, HP.k_pos⟩)
+        r (some i) = some (T i)) :
+      B.completedGroup history M d (.pilotInput ⟨0, HP.k_pos⟩) r =
+        some (walk (fun σ x y => ∑ i ∈ B.bins, T i σ x y)) := by
+    have he : (B.rays (.pilotInput ⟨0, HP.k_pos⟩)).isEmpty = false := by
+      simp only [rays, List.append_nil, List.isEmpty_map]
+      exact Bool.eq_false_iff.mpr hbins.not_empty_toList
+    unfold completedGroup
+    rw [he]
+    simp only [Bool.false_eq_true, ↓reduceIte, rays, List.append_nil, List.mapM_map]
+    have hm : B.bins.toList.mapM
+        (fun i => B.pairedSample history M d (.pilotInput ⟨0, HP.k_pos⟩) r (some i)) =
+        some (B.bins.toList.map T) := by
+      apply List.mapM_eq_some_iff_forall₂.mpr
+      rw [List.forall₂_map_right_iff, List.forall₂_same]
+      exact fun i hi => hT i (mem_toList.mp hi)
+    simp only [Function.comp_def]
+    rw [hm]
+    simp only [bind, Option.bind_some, List.map_map, Function.comp_def,
+      Finset.sum_map_toList]
+    exact B.complete_grid M r s t hst ks ku ss su hs hu _ d
+  refine ⟨walk sumA, walk sumC, hrun _ A hA, hrun _ C hC, ?_⟩
+  have hNu : 0 ≤ (P : ℝ) * r.source.rate := by
+    rw [hs]
+    exact mul_nonneg (Nat.cast_nonneg _) (rate_pos ks).le
+  have hcontract := rowNormPow_conditionalWalk_sub_fourth_le Xs Yu hNu graphV
+    (fun _ _ => B.steps M r d) sumA sumC
+  have hx : (fun σ x => r.source.retains (channels B.padding) σ x) = Xs := by
+    funext σ x
+    simp only [hs, Xs, gridChannel, CorrectionRowTask.Channel.retains, channels,
+      semanticSide_grid, X]
+  have hy : (fun σ y => r.usage.retains (channels B.padding) σ y) = Yu := by
+    funext σ y
+    simp only [hu, Yu, gridChannel, CorrectionRowTask.Channel.retains, channels,
+      semanticSide_grid, Y]
+  have hc : rowNormPow 4 P r.source.rate
+      (fun σ x => r.source.retains (channels B.padding) σ x)
+      (fun σ y => r.usage.retains (channels B.padding) σ y) (walk sumA - walk sumC) ≤
+      rowNormPow 4 P r.source.rate
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (fun σ y => r.usage.retains (channels B.padding) σ y) (sumA - sumC) := by
+    simpa only [hx, hy] using hcontract
+  apply hc.trans
+  have he : sumA - sumC = fun σ x y => ∑ i ∈ B.bins, (A i - C i) σ x y := by
+    funext σ x y
+    simp only [sumA, sumC, Pi.sub_apply, Matrix.sub_apply, sum_sub_distrib]
+  rw [he]
+  apply (rowNormPow_sum_fourth_le B.bins hNu _ _ (fun i => A i - C i)).trans
+  exact mul_le_mul_of_nonneg_left (sum_le_sum herr) (by positivity)
+
+/-- Executed group certificates control every actual prefix before parent compression.
+Both lists are the results of the literal history computations, in scheduler order. The
+finite prefix payment retains every group cost and the cube of the executed prefix length;
+it is not a certificate about an independently supplied prefix family. -/
+theorem initial_compressed_prefix_error
+    (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ)
+    (ζ floor : ℝ) (M : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (hs : 0 ≤ r.source.rate)
+    (A C : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ) (ε : ℕ → ℝ)
+    (hA : ∀ j < Nat.log2 M + 1,
+      B.completedGroup (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+        else none) M (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j)
+        (.pilotInput ⟨0, HP.k_pos⟩) r = some (A j))
+    (hC : ∀ j < Nat.log2 M + 1,
+      B.completedGroup (fun n q => if n < M then B.evaluate n q else none)
+        M (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j)
+        (.pilotInput ⟨0, HP.k_pos⟩) r = some (C j))
+    (herr : ∀ j < Nat.log2 M + 1, rowNormPow 4 P r.source.rate
+      (fun σ x => r.source.retains (channels B.padding) σ x)
+      (fun σ y => r.usage.retains (channels B.padding) σ y) (A j - C j) ≤ ε j) :
+    ∃ groups reference,
+      (List.range (Nat.log2 M + 1)).mapM (fun j =>
+        B.completedGroup (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+          else none) M (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j)
+          (.pilotInput ⟨0, HP.k_pos⟩) r) = some groups ∧
+      (List.range (Nat.log2 M + 1)).mapM (fun j =>
+        B.completedGroup (fun n q => if n < M then B.evaluate n q else none)
+          M (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j)
+          (.pilotInput ⟨0, HP.k_pos⟩) r) = some reference ∧
+      (∀ p ≤ Nat.log2 M + 1, rowNormPow 4 P r.source.rate
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (fun σ y => r.usage.retains (channels B.padding) σ y)
+        (fun σ x y => ((groups.take p).map (fun T => T σ x y)).sum -
+          ((reference.take p).map (fun T => T σ x y)).sum) ≤
+        (p : ℝ) ^ 3 * ∑ j ∈ range p, ε j) ∧
+      rowNormPow 4 P r.source.rate
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (fun σ y => r.usage.retains (channels B.padding) σ y)
+        (fun _ => finiteEnvelope (range (Nat.log2 M + 2)) (fun _ => 1)
+          (fun p => rowSliceMean
+            (fun σ x => r.source.retains (channels B.padding) σ x)
+            (fun σ y => r.usage.retains (channels B.padding) σ y)
+            (fun σ x y => ((groups.take p).map (fun T => T σ x y)).sum -
+              ((reference.take p).map (fun T => T σ x y)).sum))) ≤
+        ∑ p ∈ range (Nat.log2 M + 2), (p : ℝ) ^ 3 * ∑ j ∈ range p, ε j := by
+  refine ⟨(List.range (Nat.log2 M + 1)).map A,
+    (List.range (Nat.log2 M + 1)).map C, ?_, ?_, ?_⟩
+  · apply List.mapM_eq_some_iff_forall₂.mpr
+    rw [List.forall₂_map_right_iff, List.forall₂_same]
+    exact fun j hj => hA j (List.mem_range.mp hj)
+  · apply List.mapM_eq_some_iff_forall₂.mpr
+    rw [List.forall₂_map_right_iff, List.forall₂_same]
+    exact fun j hj => hC j (List.mem_range.mp hj)
+  · let E : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ := fun p σ x y =>
+      ((((List.range (Nat.log2 M + 1)).map A).take p).map (fun T => T σ x y)).sum -
+      ((((List.range (Nat.log2 M + 1)).map C).take p).map (fun T => T σ x y)).sum
+    have hNu : 0 ≤ (P : ℝ) * r.source.rate := mul_nonneg (Nat.cast_nonneg _) hs
+    have hpref (p : ℕ) (hp : p ≤ Nat.log2 M + 1) : rowNormPow 4 P r.source.rate
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (fun σ y => r.usage.retains (channels B.padding) σ y) (E p) ≤
+        (p : ℝ) ^ 3 * ∑ j ∈ range p, ε j := by
+      dsimp only [E]
+      simp only [← List.map_take, List.take_range, min_eq_left hp, List.map_map,
+        Function.comp_def, List.sum_map_range_eq_sum_range, ← sum_sub_distrib]
+      have h := rowNormPow_sum_fourth_le (range p)
+        (mul_nonneg (Nat.cast_nonneg P) hs)
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (fun σ y => r.usage.retains (channels B.padding) σ y) (fun j => A j - C j)
+      simp only [card_range, Pi.sub_apply, Matrix.sub_apply] at h
+      apply h.trans
+      exact mul_le_mul_of_nonneg_left (sum_le_sum fun j hj =>
+        herr j ((mem_range.mp hj).trans_le hp)) (by positivity)
+    refine ⟨hpref, ?_⟩
+    apply (rowNormPow_finiteEnvelope_le (range (Nat.log2 M + 2)) (fun _ => 1)
+      (fun p => rowSliceMean
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (fun σ y => r.usage.retains (channels B.padding) σ y) (E p)) _ _ hNu).trans
+    apply sum_le_sum
+    intro p hp
+    simp only [div_one]
+    exact (rowNormPow_sliceMean_fourth_le hNu _ _ (E p)).trans
+      (hpref p (by have h := mem_range.mp hp; omega))
+
+end Matrix.HierarchyParams.H4RankEnvironment.BudgetData

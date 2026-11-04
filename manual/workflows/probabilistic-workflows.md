@@ -1164,6 +1164,31 @@ invariant. In particular the uniform compressed comparison does not replace thos
 inside `evaluate`; doing so invalidates the exact initial-history calculations and needs
 the changing-request IH. No scalar fixed-request convergence theorem supplies that IH.
 
+The [initial perturbation payment](../../Complexity/Foundations/Probability/HierarchyApproximateHistory.lean)
+now derives an ordinary endpoint moment from the actual compressed direct child's rooted
+moment on its own source and usage. Successful compression supplies its bounded normalized
+range and usage vanishing. The explicit multiplier is
+$\sum_y |b\,\pi_a(y)/\pi_{\min(a,b)}(y)|^4$ times
+$(4(2\,\mathrm{binCap})^{3/4})^4$. The literal zero left correction eliminates
+the product-error charge; the reset-right call must still succeed. No reciprocal
+probability of an environment atom or desired parent-error premise enters this comparison.
+The paired theorem consumes a strict positive lower-budget IH at each actual scheduled
+endpoint. Budget zero is literal zero in both histories and requires no compressed call.
+An explicit choice from HP satisfies the scalar cap, margin, preparation and small-floor
+premises, yet the budget-one computation has diagonal error one against its genuine dense
+target. Low-budget approximation is not assumed exact.
+
+[Executed group and prefix transport](../../Complexity/Foundations/Probability/HierarchyInitialPerturbation.lean)
+sums all paired rays before their common completion and every executed group before
+compression. Completion contracts the uncentered fourth moment on the same masks. Finite
+sums retain the cube of the bin count or prefix length and the sum of actual moment costs.
+The returned lists are identified with the literal computed-history executions, including
+the changing budgets, rather than independent prefix families. Conditional Jensen and
+the existing finite-envelope API also pay one common deterministic mean-error envelope
+over all executed prefixes, including prefix zero, by the sum of those prefix payments.
+These are finite transport
+payments, not a proof that their allocations satisfy the parent compression reserves.
+
 **Remaining parent-error gap:** the fixed-request initial compressed-bin allocation is
 paid. Allowing $k_a=n$ instead leaves the active charge exactly one, as the retained edge
 case checks; that varying-request envelope lies outside the fixed-constant theorem.

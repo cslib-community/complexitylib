@@ -3742,6 +3742,7 @@ public import Complexity.Foundations.Probability.HierarchyInitialIntegrated
 public import Complexity.Foundations.Probability.HierarchyInitialMean
 public import Complexity.Foundations.Probability.HierarchyInitialMeanPayment
 public import Complexity.Foundations.Probability.HierarchyInitialPaid
+public import Complexity.Foundations.Probability.HierarchyInitialPerturbation
 public import Complexity.Foundations.Probability.HierarchyInitialPreparation
 public import Complexity.Foundations.Probability.HierarchyInitialSecondNoise
 public import Complexity.Foundations.Probability.HierarchyInitialUniform
@@ -3815,6 +3816,7 @@ public import Complexity.Foundations.Probability.RootMetric.Minkowski
 public import Complexity.Foundations.Probability.RootMetric.Slices
 public import Complexity.Foundations.Probability.RootMetric.Stationarity
 public import Complexity.Foundations.Probability.RootMetric.WalkPerturbation
+public import Complexity.Foundations.Probability.RootMetric.WeightedError
 public import Complexity.Foundations.Probability.RoutedBinAgreement
 public import Complexity.Foundations.Probability.RoutedBinPreparation
 public import Complexity.Foundations.Probability.RoutedHierarchyBins

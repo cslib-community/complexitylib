@@ -6,7 +6,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (tests of actual polynomial evaluator histories)
 import Complexity.Foundations.Probability.HierarchyEvaluatorInitial
-import Complexity.Foundations.Probability.HierarchyApproximateHistory
+import Complexity.Foundations.Probability.HierarchyInitialPerturbation
 
 /-! A positive identity/full-rate evaluator history with actual ratio-16 bins and polynomial
 preparation. The top bin carries the input, the fine bin vanishes. This exact stationary
@@ -476,6 +476,196 @@ private lemma compressed_value (HP : FourthRootHierarchyParams 16 1 16 32 8) :
         rate_pos rate_antitone hsmall 0 (fun _ => 1)
     simp only [defaultEntry, Fin.isValue, ↓reduceIte, one_ne_zero, hn, zero_div,
       base, Matrix.one_apply_ne hxy]
+
+-- A positive small-floor computation can have nonzero error at a low budget. Here
+-- both actual scheduled endpoints are zero, while the genuine top-bin diagonal is one.
+private lemma prefixes_one (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (data HP).initialPrefixes 1 (request HP) = some (fun _ => 0) := by
+  have hg (d : ℕ) := BudgetData.completedGroup_initial (data HP) 1 d (by decide)
+    (show (data HP).bins.Nonempty from by simp [data]) (request HP)
+  have hi (d : ℕ) : (data HP).initialGroupInput 1 d (request HP) = fun _ => 0 := by
+    funext σ x y
+    unfold BudgetData.initialGroupInput
+    have hb (i : ℕ) : (data HP).sampleScale (request HP) (some i) ≤ 0 := by
+      change ⌊Real.logb 2 (rate i / rate 0)⌋ ≤ 0
+      rw [show rate 0 = 1 by norm_num [rate], div_one]
+      have hr := rate_antitone (Nat.zero_le i)
+      norm_num only [rate, pow_zero, inv_one] at hr
+      exact Int.floor_nonpos (Real.logb_nonpos (by norm_num) (rate_pos i).le hr)
+    have hz (i e : ℕ) : LogSpaceEstimation.lastBudget 1 e 1
+        ((data HP).sampleScale (request HP) (some i)) = 0 := by
+      unfold LogSpaceEstimation.lastBudget LogSpaceEstimation.scaleCutoff
+      omega
+    change (∑ bin ∈ (data HP).bins,
+      ((if LogSpaceEstimation.lastBudget 1 d 1 ((data HP).sampleScale (request HP) (some bin)) = 0
+        then 0 else (data HP).initialSample (request HP) bin σ x y) -
+      (if LogSpaceEstimation.lastBudget 1 (2 * d) 1
+          ((data HP).sampleScale (request HP) (some bin)) = 0 then 0
+        else (data HP).initialSample (request HP) bin σ x y))) = 0
+    simp only [hz, ↓reduceIte, sub_self, sum_const_zero]
+  simp_rw [hi, complete_const] at hg
+  unfold BudgetData.initialPrefixes
+  change (do
+    let groups ← (List.range (Nat.log2 1 + 1)).mapM fun j =>
+      (data HP).completedGroup _ 1 (Cslib.RowCompression.dyadicSlack (Nat.log2 1 + 1) j)
+        (.pilotInput ⟨0, HP.k_pos⟩) (request HP)
+    pure fun j σ x y => ((groups.take j).map
+      (fun (A : Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ) => A σ x y)).sum) = _
+  simp_rw [hg]
+  norm_num [List.range_succ]
+  funext j σ x y
+  cases j <;> simp
+
+open Cslib.RowCompression NormalizedMoments in
+private lemma compressed_one (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (ζ : ℝ) (hζ : 0 < ζ) (hζη : ζ ≤ HP.η / 4) :
+    (data HP).compressedBin 1 0 0 ζ ζ (request HP) = some 0 := by
+  have hactive : 0 < (data HP).requestPrecision 1 (request HP) := by
+    norm_num [BudgetData.requestPrecision, LogSpaceEstimation.precision, data,
+      request, gridChannel, rate]
+  unfold BudgetData.compressedBin
+  rw [ite_eq_right (by simp only [hactive, not_true_eq_false]; norm_num [request, gridChannel])]
+  simp only [prefixes_one, bind, Option.bind_some]
+  norm_num only [show Nat.log2 1 = 0 by decide, Nat.zero_add, List.range_succ,
+    List.range_zero, List.nil_append, List.mapM_cons, List.mapM_nil]
+  have hp0 : (data HP).binPreparation 0 (request HP) 0 = 0 :=
+    preparation HP 0 (Or.inl rfl)
+  have hc0 (d : ℕ) : (data HP).complete 1 (request HP) 0 d = some 0 :=
+    complete_const HP 1 d 0
+  simp only [hp0, hc0, bind, Option.bind_some, pure]
+  apply congrArg some
+  funext σ x y
+  have hf : 0 ≤ dyadicFloor ζ 1 0 := dyadicFloor_nonneg hζ.le 1 0
+  have hn : 5 < NormalizedMoments.compatibleCapacity HP.K 1 0 :=
+    (large_K HP).trans_le (NormalizedMoments.compatibleCapacity_bounds HP.K 1 0).1
+  have hsmall : dyadicFloor ζ 1 0 ≤ 1 / 2 := by
+    have hθ := HP.θ₂_lt
+    norm_num at hθ
+    have hfbound := dyadicFloor_le_scale_div hζ.le 1 0
+    linarith [HP.η₂_lt, HP.η_lt_η₂, HP.δ₀_lt_δ₁, HP.δ₁_lt, HP.θ_lt_θ₂, hζη]
+  have hnumer : numerator 0 (dyadicFloor ζ 1 0) = 0 :=
+    boundedRoutedBinCutoff_eq_zero (by norm_num)
+      (fun _ h => polynomialSwitch4_of_le (by norm_num) h)
+      rate_pos rate_antitone hsmall 0 (fun _ => 1)
+  have ht : ({z | (request HP).terminal.retains (channels (data HP).padding) σ z} :
+      Finset (ZMod 5)) = univ := by ext z; simp [request, data, full]
+  have hu : (request HP).usage.retains (channels (data HP).padding) σ y :=
+    full σ 2 [2, 3] y
+  simp only [ht, hu, ↓reduceIte]
+  have hincr : firstSignalIncrement (fun _ => 0) 0
+      (secondSignalIncrement (fun j σ x y =>
+        ([0] : List (Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ))[j - 1]?.getD 0 σ x y)
+        ζ) σ x 0 = 0 := by
+    ext z ν
+    fin_cases ν <;> simp [firstSignalIncrement, secondSignalIncrement]
+  simp only [iterate_succ, iterate_zero, hincr]
+  rw [wide_advance _ _ hn (large_K HP) hf hf]
+  have hrow (z : ZMod 5) : updateEntry (dyadicFloor ζ 1 0)
+      (dyadicFloor ζ 1 0) ((0 + 0 : ZMod 5 → Fin 2 → ℝ) z) =
+      defaultEntry (dyadicFloor ζ 1 0) := by
+    apply updateEntry_eq_default_of_size_le
+    simpa [entrySize] using hf
+  simp only [hrow, defaultEntry, FourthRootHierarchyParams.NormalizedRow.output,
+    show (data HP).cutoff 0 = numerator 0 from rfl, ↓reduceIte, hnumer, zero_mul, zero_div,
+    Pi.zero_apply, Matrix.zero_apply]
+
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    let ζ := HP.η / 4
+    0 < ζ ∧ ζ ≤ HP.η ∧
+      (data HP).compressedBin 1 0 0 ζ ζ (request HP) = some 0 ∧
+      ∀ σ x, |(0 : Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ) σ x x -
+        denseChild 1 id (request HP) (numerator 0) (polynomialPrepCutoff4 HP.θ)
+          HP.ρ HP.K base σ x x| = 1 := by
+  dsimp only
+  refine ⟨by linarith [HP.η_pos], by linarith [HP.η_pos],
+    compressed_one HP (HP.η / 4) (by linarith [HP.η_pos]) le_rfl, ?_⟩
+  intro σ x
+  rw [top_dense]
+  norm_num [base]
+
+-- A nonzero error also occurs with every scalar small-floor premise of the parent
+-- normalization allocation satisfied. All parameters are chosen explicitly from HP.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ∃ scale ζ : ℝ, 0 < scale ∧ scale ≤ HP.η ∧
+      scale ≤ HP.toHierarchyParams.atomCap / 10000 ∧ 0 < ζ ∧ ζ ≤ scale / 2 ∧
+      ζ ≤ scale ∧ ζ ≤ 1 ∧ ζ ≤ HP.θ ∧
+      (data HP).compressedBin 1 0 0 ζ ζ (request HP) = some 0 ∧
+      ∀ σ x, |(0 : Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ) σ x x -
+        denseChild 1 id (request HP) (numerator 0) (polynomialPrepCutoff4 HP.θ)
+          HP.ρ HP.K base σ x x| = 1 := by
+  let scale := min HP.η (min HP.θ (min 1 (HP.toHierarchyParams.atomCap / 10000)))
+  have hcap := FourthRootHierarchyParams.NormalizedRow.cap_pos HP
+  have hs : 0 < scale := lt_min HP.η_pos
+    (lt_min HP.θ_pos (lt_min zero_lt_one (div_pos hcap (by norm_num))))
+  have hη : scale ≤ HP.η := min_le_left _ _
+  have hθ : scale ≤ HP.θ := (min_le_right _ _).trans (min_le_left _ _)
+  have h1 : scale ≤ 1 :=
+    (min_le_right _ _).trans ((min_le_right _ _).trans (min_le_left _ _))
+  have hc : scale ≤ HP.toHierarchyParams.atomCap / 10000 :=
+    (min_le_right _ _).trans ((min_le_right _ _).trans (min_le_right _ _))
+  refine ⟨scale, scale / 4, hs, hη, hc, by positivity, by linarith,
+    by linarith, by linarith, by linarith, ?_, ?_⟩
+  · exact compressed_one HP (scale / 4) (by positivity) (by linarith)
+  · intro σ x
+    rw [top_dense]
+    norm_num [base]
+
+-- The actual paired schedule at parent budget one executes its zero boundary twice.
+-- No positive lower-budget availability or rooted certificate can be smuggled into this edge.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    let B := data HP
+    B.pairedSample (fun n q => if n < 1 then
+      B.compressedHistory (fun _ => 0) (HP.η / 4) (HP.η / 4) n q else none)
+      1 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) (some 0) = some 0 ∧
+    ∃ A C,
+      B.pairedSample (fun n q => if n < 1 then
+        B.compressedHistory (fun _ => 0) (HP.η / 4) (HP.η / 4) n q else none)
+        1 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) (some 0) = some A ∧
+      B.pairedSample (fun n q => if n < 1 then B.evaluate n q else none)
+        1 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) (some 0) = some C ∧
+      rowNormPow 4 5 (request HP).source.rate
+        (fun σ x => (request HP).source.retains (channels B.padding) σ x)
+        (fun σ y => (request HP).usage.retains (channels B.padding) σ y) (A - C) ≤ 0 := by
+  dsimp only
+  constructor
+  · norm_num [BudgetData.pairedSample, BudgetData.sampleScale, data, request, gridChannel,
+      rate, LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff]
+  · have h := BudgetData.pairedSample_initial_compressed_root (data HP) (fun _ => 0)
+      (HP.η / 4) (HP.η / 4) 1 1 0 (by decide) (request HP)
+      (by norm_num [request, gridChannel, rate]) (fun _ => 0) rfl (fun _ => 0)
+      (fun _ => le_rfl) (fun n hn hn0 => by omega)
+    simpa only [add_zero, mul_zero, Nat.cast_ofNat] using h
+
+-- The same zero endpoints pass through both literal bins and the actual common group walk.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ∃ F G,
+      (data HP).completedGroup (fun n q => if n < 1 then
+        (data HP).compressedHistory (fun _ => 0) (HP.η / 4) (HP.η / 4) n q else none)
+        1 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) = some F ∧
+      (data HP).completedGroup (fun n q => if n < 1 then (data HP).evaluate n q else none)
+        1 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) = some G ∧
+      rowNormPow 4 5 (request HP).source.rate
+        (fun σ x => (request HP).source.retains (channels (data HP).padding) σ x)
+        (fun σ y => (request HP).usage.retains (channels (data HP).padding) σ y) (F - G) ≤ 0 := by
+  have hb (i : ℕ) (hi : i ∈ (data HP).bins) : i = 0 ∨ i = 1 := by simpa [data] using hi
+  have ha (i : ℕ) (hi : i ∈ (data HP).bins) :
+      (data HP).pairedSample (fun n q => if n < 1 then
+        (data HP).compressedHistory (fun _ => 0) (HP.η / 4) (HP.η / 4) n q else none)
+        1 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) (some i) = some 0 := by
+    rcases hb i hi with rfl | rfl <;>
+      norm_num [BudgetData.pairedSample, BudgetData.sampleScale, data, request, gridChannel,
+        rate, LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff]
+  have hc (i : ℕ) (hi : i ∈ (data HP).bins) :
+      (data HP).pairedSample (fun n q => if n < 1 then (data HP).evaluate n q else none)
+        1 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) (some i) = some 0 := by
+    rcases hb i hi with rfl | rfl <;>
+      norm_num [BudgetData.pairedSample, BudgetData.sampleScale, data, request, gridChannel,
+        rate, LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff]
+  have h := BudgetData.completedGroup_initial_compressed_error (data HP) (fun _ => 0)
+    (HP.η / 4) (HP.η / 4) 1 1 (by simp [data]) (request HP) 0 2 (by decide)
+    0 0 [1] [2, 3] rfl rfl (fun _ => 0) (fun _ => 0) (fun _ => 0) ha hc
+    (fun _ _ => by simp [rowNormPow])
+  simpa only [sum_const_zero, mul_zero, Nat.cast_ofNat] using h
 
 -- Positive decoder scale with an oversized floor gives a computed child with genuine
 -- nonzero error. This tests transport inputs, not an admissible small-floor allocation.

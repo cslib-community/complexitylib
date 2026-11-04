@@ -9,6 +9,7 @@ module
 public import Complexity.Foundations.Probability.HierarchyCompressedBin
 public import Complexity.Foundations.Probability.HierarchyChildRootMoment
 public import Complexity.Foundations.Probability.RootMetric.WalkPerturbation
+public import Complexity.Foundations.Probability.RootMetric.WeightedError
 
 /-!
 # Perturbations of executed budget histories
@@ -177,6 +178,66 @@ theorem positiveSample_initial_compressed
     unfold initialSample
     rw [← mul_sub, abs_mul]
 
+/-- The executed initial positive sample is paid by the computed direct child's rooted
+moment on its own source and usage. Successful compression certifies its range and usage
+vanishing. The reset-right child needs availability only; zero left correction removes its
+error payment altogether. Importance is integrated, without extracting environment atoms. -/
+theorem positiveSample_initial_compressed_root
+    (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ)
+    (ζ floor : ℝ) (M m bin : ℕ) (hm : m < M)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (hs : 0 ≤ r.source.rate)
+    (D R : Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+    (hd :
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (midpoint r) r.terminal (B.binRate bin)
+      B.compressedBin m bin (exponent Q.direct) ζ floor Q.direct = some D)
+    (hr :
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (midpoint r) r.terminal (B.binRate bin)
+      B.compressedBin m bin (exponent Q.right) ζ floor Q.right = some R) :
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    let C := denseChild B.padding id Q.direct (B.cutoff bin) (B.auxiliary bin)
+      HP.ρ HP.K B.base
+    ∃ A, B.positiveSample (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+      else none) m bin (.pilotInput ⟨0, HP.k_pos⟩) r = some A ∧
+      rowNormPow 4 P r.source.rate
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (fun σ y => r.usage.retains (channels B.padding) σ y)
+        (fun σ x y => A σ x y - B.initialSample r bin σ x y) ≤
+      (∑ y, |B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
+        r.terminal Q.direct y| ^ 4) * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4 *
+      rootDistPow 4 P Q.direct.source.rate
+        (fun σ x => Q.direct.source.retains (channels B.padding) σ x)
+        (fun σ y => Q.direct.usage.retains (channels B.padding) σ y) D C := by
+  dsimp only
+  let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+    r.source (midpoint r) r.terminal (B.binRate bin)
+  have hru := B.compressedBin_range_usage m bin (exponent Q.direct) ζ floor Q.direct D hd
+  refine ⟨_, (B.positiveSample_initial_compressed exponent ζ floor M m bin hm r D R hd hr).1,
+    ?_⟩
+  change rowNormPow 4 P r.source.rate _ _ (fun σ x y =>
+    B.binRate bin * HierarchyTask.usageRatio (channels B.padding) r.terminal Q.direct y *
+      D σ x y - B.initialSample r bin σ x y) ≤ _
+  have he : (fun σ x y =>
+      B.binRate bin * HierarchyTask.usageRatio (channels B.padding) r.terminal Q.direct y *
+        D σ x y - B.initialSample r bin σ x y) =
+      (fun σ x y =>
+        (B.binRate bin * HierarchyTask.usageRatio (channels B.padding) r.terminal Q.direct y) *
+        (D σ x y - denseChild B.padding id Q.direct (B.cutoff bin) (B.auxiliary bin)
+          HP.ρ HP.K B.base σ x y)) := by
+    funext σ x y
+    unfold initialSample
+    ring
+  rw [he]
+  exact rowNormPow_weighted_sub_le_rootDistPow (mul_nonneg (Nat.cast_nonneg _) hs)
+    _ _ _ D _ _ hru.1
+    (fun σ x y => normalizedRequest_mem_Icc HP B.padding Q.direct (B.cutoff bin)
+      B.binCap_nonneg (B.cutoff_bounds bin) _ _ σ x y)
+    (fun σ x y hy => by
+      rw [hru.2 σ x y hy]
+      exact (normalizedRequest_zero_off_usage B.padding id Q.direct _ _ _ _ _ σ x y hy).symm)
+
 /-- A legitimate lower-budget availability IH constructs the actual approximate initial
 paired sample, including its zero coarse boundary and unequal fine/coarse budgets. The
 computed direct children may have nonzero errors; their difference is retained literally. -/
@@ -230,6 +291,102 @@ theorem pairedSample_initial_compressed
     simp only [Pi.sub_apply]
     dsimp only [Q]
     ring
+
+/-- Strict own-request lower-budget rooted accuracy pays both actual paired endpoints.
+At budget zero both executions are literally zero, so no compressed call or accuracy
+premise is required there. Reset-right availability is retained at every positive endpoint.
+The reference is the actual semantic paired history, not a substituted parent target. -/
+theorem pairedSample_initial_compressed_root
+    (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ)
+    (ζ floor : ℝ) (M d bin : ℕ) (hM : 0 < M)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (hs : 0 ≤ r.source.rate)
+    (D : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ) (hzero : D 0 = 0)
+    (ε : ℕ → ℝ) (hε : ∀ n, 0 ≤ ε n)
+    (ih : ∀ n < M, 0 < n →
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (midpoint r) r.terminal (B.binRate bin)
+      B.compressedBin n bin (exponent Q.direct) ζ floor Q.direct = some (D n) ∧
+      rootDistPow 4 P Q.direct.source.rate
+        (fun σ x => Q.direct.source.retains (channels B.padding) σ x)
+        (fun σ y => Q.direct.usage.retains (channels B.padding) σ y) (D n)
+        (denseChild B.padding id Q.direct (B.cutoff bin) (B.auxiliary bin)
+          HP.ρ HP.K B.base) ≤ ε n ∧
+      ∃ R, B.compressedBin n bin (exponent Q.right) ζ floor Q.right = some R) :
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    let fine := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
+    let coarse := LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
+    ∃ A C,
+      B.pairedSample (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+        else none) M d (.pilotInput ⟨0, HP.k_pos⟩) r (some bin) = some A ∧
+      B.pairedSample (fun n q => if n < M then B.evaluate n q else none)
+        M d (.pilotInput ⟨0, HP.k_pos⟩) r (some bin) = some C ∧
+      rowNormPow 4 P r.source.rate
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (fun σ y => r.usage.retains (channels B.padding) σ y) (A - C) ≤
+        8 * ((∑ y, |B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
+          r.terminal Q.direct y| ^ 4) * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4) *
+          (ε fine + ε coarse) := by
+  dsimp only
+  let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+    r.source (midpoint r) r.terminal (B.binRate bin)
+  let w := fun y => B.binRate bin *
+    HierarchyTask.usageRatio (channels B.padding) r.terminal Q.direct y
+  let K := (∑ y, |w y| ^ 4) * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4
+  let E : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ :=
+    fun n σ x y => w y * D n σ x y
+  let C := fun n => if n = 0 then 0 else B.initialSample r bin
+  let fine := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
+  let coarse := LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
+  have hNu : 0 ≤ (P : ℝ) * r.source.rate := mul_nonneg (Nat.cast_nonneg _) hs
+  have hK : 0 ≤ K := by dsimp only [K]; positivity
+  have hend (n : ℕ) (hn : n < M) :
+      rowNormPow 4 P r.source.rate
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (fun σ y => r.usage.retains (channels B.padding) σ y) (E n - C n) ≤ K * ε n := by
+    by_cases hz : n = 0
+    · subst n
+      have he : E 0 - C 0 = 0 := by ext; simp [E, C, hzero]
+      rw [he]
+      simpa [rowNormPow] using mul_nonneg hK (hε 0)
+    · obtain ⟨hd, he, R, hr⟩ := ih n hn (Nat.pos_of_ne_zero hz)
+      obtain ⟨A, hA, hb⟩ := B.positiveSample_initial_compressed_root exponent ζ floor
+        M n bin hn r hs (D n) R hd hr
+      have ha : A = E n := Option.some.inj (hA.symm.trans
+        (B.positiveSample_initial_compressed exponent ζ floor M n bin hn r (D n) R hd hr).1)
+      rw [ha] at hb
+      dsimp only [C]
+      rw [ite_eq_right hz]
+      exact hb.trans (mul_le_mul_of_nonneg_left he hK)
+  have hp := B.pairedSample_initial_compressed exponent ζ floor M d bin hM r D hzero
+    (fun n hn hp => ⟨(ih n hn hp).1, (ih n hn hp).2.2⟩)
+  have hp' : B.pairedSample (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+      else none) M d (.pilotInput ⟨0, HP.k_pos⟩) r (some bin) = some (E fine - E coarse) := by
+    rw [hp]
+    congr 1
+    funext σ x y
+    simp only [Pi.sub_apply, Matrix.sub_apply]
+    dsimp only [E, w, fine, coarse, Q]
+    ring
+  refine ⟨E fine - E coarse, C fine - C coarse, hp',
+    B.pairedSample_initial M d hM bin r, ?_⟩
+  have he : (E fine - E coarse) - (C fine - C coarse) =
+      (fun σ x y => (E fine - C fine) σ x y + (-(E coarse - C coarse)) σ x y) := by
+    funext σ x y
+    simp only [Pi.sub_apply, Matrix.sub_apply, Pi.neg_apply, Matrix.neg_apply]
+    ring
+  rw [he]
+  have hb := rowNormPow_add_le (X := fun σ x => r.source.retains (channels B.padding) σ x)
+    (Y := fun σ y => r.usage.retains (channels B.padding) σ y) hNu
+    (E fine - C fine) (-(E coarse - C coarse))
+  simp only [rowNormPow, Pi.neg_apply, Matrix.neg_apply, abs_neg] at hb
+  change rowNormPow 4 P r.source.rate _ _ _ ≤ _ at hb
+  apply hb.trans
+  have hf := hend fine (B.pairedSample_budgets_lt M d hM r (some bin)).1
+  have hc := hend coarse (B.pairedSample_budgets_lt M d hM r (some bin)).2
+  change 8 * (_ + _) ≤ 8 * K * (ε fine + ε coarse)
+  unfold rowNormPow at hf hc
+  linarith
 
 /-- Completion transports the literal paired-history difference through the same graph,
 length, source and usage suffixes. It introduces no canonical-equality assumption. -/

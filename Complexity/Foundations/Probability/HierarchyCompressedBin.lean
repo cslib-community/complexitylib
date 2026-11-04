@@ -78,6 +78,39 @@ selected dense normalized bin; no incoming or maximum gate is added. -/
           (a.row y 0) (a.row y 1) (firstRank S HP.K a.defaultValue a.row)
       else 0
 
+/-- Every successful compressed bin has the bounded normalized range and literal usage
+support, independently of the additional cutoff hypotheses needed for rank sparsity. -/
+theorem compressedBin_range_usage (M bin k : ℕ) (ζ floor : ℝ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (A : Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+    (hA : B.compressedBin M bin k ζ floor r = some A) :
+    (∀ σ x y, A σ x y ∈ Set.Icc 0 (2 * B.binCap)) ∧
+    (∀ σ x y, ¬ r.usage.retains (channels B.padding) σ y → A σ x y = 0) := by
+  unfold compressedBin at hA
+  split at hA
+  · contradiction
+  · cases hF : B.initialPrefixes M r with
+    | none => simp [hF] at hA
+    | some F =>
+      simp only [hF, bind, Option.bind_some] at hA
+      cases hW : (List.range (Nat.log2 M + 1)).mapM (fun j =>
+          B.complete M r (B.binPreparation bin r (F (j + 1)))
+            (dyadicSlack (Nat.log2 M + 1) j)) with
+      | none => simp [hW] at hA
+      | some W =>
+        simp only [hW, Option.bind_some, pure] at hA
+        have ha := Option.some.inj hA
+        subst A
+        dsimp only
+        constructor
+        · intro σ x y
+          split_ifs
+          · exact FourthRootHierarchyParams.NormalizedRow.output_mem_Icc _ _ B.binCap_nonneg
+              (B.cutoff_bounds bin) (fun q => ⟨HP.ρ_nonneg q, HP.ρ_le_one q⟩) _ _ _ _
+          · exact ⟨le_rfl, mul_nonneg (by norm_num) B.binCap_nonneg⟩
+        · intro σ x y hy
+          exact ite_eq_right hy
+
 /-- Successful compression retains the actual bin's range and usage mask. The separate
 threshold premise proves terminal-row support after compression, without propagating support
 through either of its walks. No child-error or final-accuracy premise is used. -/
@@ -91,6 +124,7 @@ theorem compressedBin_bounds (M bin k : ℕ) (ζ floor : ℝ)
     (∀ σ x y, ¬ r.usage.retains (channels B.padding) σ y → A σ x y = 0) ∧
     ∀ σ x, #{y ∈ ({y | r.terminal.retains (channels B.padding) σ y} : Finset _) |
       A σ x y ≠ 0} < HP.K := by
+  have hru := B.compressedBin_range_usage M bin k ζ floor r A hA
   unfold compressedBin at hA
   split at hA
   · contradiction
@@ -108,13 +142,8 @@ theorem compressedBin_bounds (M bin k : ℕ) (ζ floor : ℝ)
         subst A
         dsimp only
         refine ⟨?_, ?_, ?_⟩
-        · intro σ x y
-          split_ifs
-          · exact FourthRootHierarchyParams.NormalizedRow.output_mem_Icc _ _ B.binCap_nonneg
-              (B.cutoff_bounds bin) (fun q => ⟨HP.ρ_nonneg q, HP.ρ_le_one q⟩) _ _ _ _
-          · exact ⟨le_rfl, mul_nonneg (by norm_num) B.binCap_nonneg⟩
-        · intro σ x y hy
-          exact ite_eq_right hy
+        · exact hru.1
+        · exact hru.2
         · intro σ x
           let a := iterate {z | r.terminal.retains (channels B.padding) σ z}
             (compatibleCapacity HP.K (Nat.log2 M + 1)) (fun _ => HP.K)
