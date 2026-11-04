@@ -19,7 +19,7 @@ dictionary with the two-stage universe-reduced 3-wise independent hash family
 (`Cslib.DataStructure.HashFamily.WordRAM.ReducedKWise`) and proves the full dictionary-level state
 transition, space, initialization, and expected probe-excess bounds:
 * `qBits`, `hashB`, `hashSpace`, `space`, `initSteps`, `space_le_succinctWords`, `initSteps_le`:
-  hash parameter instantiation and unconditional space and initialization step bounds;
+  hash parameter instantiation and space and initialization step bounds;
 * `tsum_uniform_probeExcess_reducedPolyHash_le_five`: expected combined probe excess `≤ 5` under a
   uniformly sampled `ReducedPolySeed`;
 * `bucketMapOfState` and `DictStateInv`: coupling between `Dynamic.State U` and `BucketStateInv` via
@@ -257,7 +257,7 @@ theorem hashSpace_le {U w n_max : ℕ} (hw : 0 < w) (hnU : n_max ≤ U) (hU : U 
   have ht := tableWords_hash_le hw hnU hU
   omega
 
-/-- **Unconditional succinct word-space bound (`space_le_succinctWords`):**
+/-- **Succinct word-space bound (`space_le_succinctWords`):**
 for every `0 < w`, `n_max ≤ U`, and `U ≤ 2 ^ w` (including `Fits w U`), the total space
 `space U V w n_max` is at most `Dynamic.succinctWords 81 213 U V w n_max`. -/
 theorem space_le_succinctWords {U V w n_max : ℕ}
@@ -783,7 +783,7 @@ theorem realizes_queryWithHash_aux {U V w₀ n_max : ℕ} (hwf : DictParamsWf U 
       (Nat.le_sub_one_of_lt (feistelBucket_lt (bucketBits n_max) (fun _ => d.2) d.1.2))
   · exact h.2.2
 
-/-- Unconditional `Realizes .exact` certificate for `queryWithHashProg`. -/
+/-- `Realizes .exact` certificate for `queryWithHashProg`. -/
 theorem realizes_queryWithHash (U V w₀ n_max : ℕ) :
     Realizes .exact (queryWithHashProg U V w₀ n_max)
       (WordEncoding.encode (α := (ℕ × ℕ) × ℕ))
@@ -842,7 +842,7 @@ theorem realizes_insertWithHash_aux {U V w₀ n_max : ℕ} (hwf : DictParamsWf U
       (Nat.le_sub_one_of_lt (feistelBucket_lt (bucketBits n_max) (fun _ => d.2) d.1.1.2))
   · exact h.2.2
 
-/-- Unconditional `Realizes .exact` certificate for `insertWithHashProg`. -/
+/-- `Realizes .exact` certificate for `insertWithHashProg`. -/
 theorem realizes_insertWithHash (U V w₀ n_max : ℕ) :
     Realizes .exact (insertWithHashProg U V w₀ n_max)
       (WordEncoding.encode (α := ((ℕ × ℕ) × ℕ) × ℕ))
@@ -893,7 +893,7 @@ theorem realizes_deletePrepWithHash_aux {U V w₀ n_max : ℕ} (hwf : DictParams
       (Nat.le_sub_one_of_lt (feistelBucket_lt (bucketBits n_max) (fun _ => d.2) d.1.2))
   · exact h.2.2
 
-/-- Unconditional `Realizes .exact` certificate for `deletePrepWithHashProg`. -/
+/-- `Realizes .exact` certificate for `deletePrepWithHashProg`. -/
 theorem realizes_deletePrepWithHash (U V w₀ n_max : ℕ) :
     Realizes .exact (deletePrepWithHashProg U V w₀ n_max)
       (WordEncoding.encode (α := (ℕ × ℕ) × ℕ))
@@ -962,7 +962,7 @@ theorem realizes_deleteFinishWithHash_aux {U V w₀ n_max : ℕ} (hwf : DictPara
       (Nat.le_sub_one_of_lt (feistelBucket_lt (bucketBits n_max) (fun _ => d.1.1.2) d.1.1.1.2))
   · exact h.2.2
 
-/-- Unconditional `Realizes .exact` certificate for `deleteFinishWithHashProg`. -/
+/-- `Realizes .exact` certificate for `deleteFinishWithHashProg`. -/
 theorem realizes_deleteFinishWithHash (U V w₀ n_max : ℕ) :
     Realizes .exact (deleteFinishWithHashProg U V w₀ n_max)
       (WordEncoding.encode (α := (((ℕ × ℕ) × ℕ) × ((ℕ × ℕ) × ℕ)) × ℕ))

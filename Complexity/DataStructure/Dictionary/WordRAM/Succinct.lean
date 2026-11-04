@@ -45,28 +45,31 @@ SOSA 2024, Sections 3–4):
    `U ≤ poly(n_max)` restriction.
 4. **`Memory.Prog` + `realize` refinement (`SuccinctProg` .. `SuccinctDispatch`)**: all
    deterministic bucket, slab, tail, and micro-chain operations are written as `Memory.Prog`
-   programs and compiled to width-independent `WordRAM.Code` via `realize`.
+   programs and compiled to `WordRAM.Code` specialized to `(U, V, w, n_max)` via `realize`.
 
 ## Cost model and parameter dependence
 
 * **Program specialization**: `subroutineCode U V w n_max` is specialized to the static parameters
-  `(U, V, w, n_max)` (and is independent of `base`, which is passed in `frontierReg` at
-  initialization). There is no static code-size bound; all time bounds (`initSteps`, `chargeVal`,
-  `charge`) count **executed Word-RAM instructions**.
+  `(U, V, w, n_max)` and does not depend on `base` (passed in `frontierReg` at initialization).
+  No theorem bounds static code size. All time bounds (`initSteps`, `chargeVal`, `charge`) count
+  **executed Word-RAM instructions**.
 * **Initialization (`initSteps`)**: `initSteps U n_max ≤ 31 * n_max + 1091 ≤ 1091 * (n_max + 1)`
   (`initSteps_le`, `initSteps_le_mul`), building the Four-Russians table and sampling the single
   quotient hash seed once with `seedSlack = 1` and `initPotential = 0`.
 * **Space (`space`)**: `space U V w n_max ≤ Dynamic.succinctWords 81 213 U V w n_max` words
   (`space_le_succinctWords`) for every `0 < w` and `n_max ≤ U` with `Fits w U` (`U < 2 ^ w`).
 * **Per-parameter operation charge (`seq_expected_amortized`)**: at the `Memory.Prog` level
-  (`SuccinctHash`), each operation performs at most `312` expected **amortized** memory accesses
-  and local work (`potential` is unchanged on `query`). At the compiled Word-RAM level, because
-  `opFactor U V w n_max` (`Realizes.factor`) is selected by classical choice separately for each
-  `(U, V, w, n_max)` without a parameter-uniform bound, `chargeVal U V w n_max = 313 *
-  opFactor U V w n_max + 284689` is a finite per-parameter charge (independent of `base` and
-  `ops.length`) rather than a parameter-uniform constant instruction bound; thus the compiled
-  Word-RAM theorems certify multi-operation correctness, succinct space, and linear initialization
-  cost.
+  (`SuccinctHash`), `queryWithHashProg_dict_spec`, `insertWithHashProg_dict_spec`, and
+  `deleteWithHash_dict_spec` prove per-seed **amortized** `memoryCost` bounds of
+  `26 + 3 * probeExcess`, `184 + 8 * probeExcess`, and `270 + 8 * probeExcess` with potential
+  `66 * slotPotential` (unchanged on `query`). In turn,
+  `tsum_uniform_probeExcess_reducedPolyHash_le_five` bounds expected `probeExcess` by `5`. At the
+  compiled Word-RAM level, `opFactor U V w n_max` (`Realizes.factor`) is chosen by classical choice
+  for each `(U, V, w, n_max)` without a proven parameter-uniform bound. Consequently,
+  `chargeVal U V w n_max = 313 * opFactor U V w n_max + 284689` is a per-parameter charge
+  (independent of `base` and `ops.length`) rather than a proven parameter-uniform constant
+  instruction bound. The compiled Word-RAM theorems therefore certify multi-operation correctness,
+  succinct space, and linear initialization cost, without a parameter-uniform operation-time bound.
 
 ## Main definitions
 
@@ -638,7 +641,7 @@ Starting from zeroed memory on `[base, base + space U V w n_max)`, fresh initial
 any valid operation sequence `ops : List (Dynamic.Op U)` (`ValidHistory (Dynamic.empty U) ops`)
 preserves `Rep` across `ops` with expected total instruction count at most
 `initTime + ops.length * chargeVal U V w n_max` (for the per-parameter charge
-`chargeVal U V w n_max`, which has no parameter-uniform constant bound across `(U, V, w, n_max)`).
+`chargeVal U V w n_max`, without a proven parameter-uniform bound across `(U, V, w, n_max)`).
 Companion theorems `space_le_succinctWords` and `initTime_impl_le` / `initSteps_le` establish the
 succinct space and linear initialization bounds. -/
 theorem seq_expected_amortized {U V w n_max base : ℕ}
