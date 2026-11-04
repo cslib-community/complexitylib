@@ -217,6 +217,12 @@ index links to canonical definitions rather than keeping a second set.
   every NP-complete set splits into two NP-complete sets (Glaßer, Pavan, Selman and Zhang);
   separations of complexity classes by autoreducibility (Buhrman, Fortnow, van Melkebeek and
   Torenvliet).
+- **Logspace autoreducibility of complete sets** ([#2468]): the full expanded 2013 paper of
+  Glaßer, Nguyen, Reitwießner, Selman and Witek, including the bounded disjunctive/conjunctive
+  clauses of Proposition 2.7, local self-reducibility and transfer (Lemma 3.3), concrete complete
+  self-reducible problems (Theorem 3.5), Section 4 bounded/logarithmic-query results and
+  separations, and Section 5 mitoticity/diagonalization. The additional parity-logspace
+  application needs a native path-counting class and complement closure.
 - **Uniform diagonalization** (Schöning), which generalizes Ladner's theorem.
 - **Selectivity and downward self-reducibility:** downward self-reducible sets lie in PSPACE.
   P-selective sets (Selman): a P-selective NP-complete set gives `P = NP`, P-selective sets lie in
@@ -868,3 +874,4 @@ not planned, not as proved.
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
 [#1524]: https://github.com/cslib-community/complexitylib/issues/1524
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
+[#2468]: https://github.com/cslib-community/complexitylib/issues/2468
