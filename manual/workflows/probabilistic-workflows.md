@@ -1244,8 +1244,34 @@ $$
 {\mathrm{rate}(k_a)+G(x,y)}\right|^4
 \le \left(\frac{2\,\mathrm{magnitude}(r)}{\mathrm{rate}(k_a)+G(x,y)}\right)^4.
 $$
-This follows from the genuine assembled input amplitude; it supplies no rate or width
-cancellation for small targets. `initialComputedRelativeMoment` takes the minimum of this
+This generic magnitude estimate supplies no rate or width cancellation for small targets.
+For the literal ratio-16 polynomial cutoffs, use
+`initialSample_polynomial_relative_bound`, `initialGroupInput_polynomial_relative_bound`
+and `initialGroupInput_polynomial_relative_fourth_le` instead. Their hypotheses identify
+`binRate = rate` and the actual bounded unrouted polynomial numerator, admit the terminal
+and every retained bin exponent in one horizon, and require a nonnegative substochastic
+base for the group bound. The pointwise estimates need no source-role or nonzero-padding
+premise: they also hold in the degenerate cases. Thus they apply, in particular, to the
+usual distinct-role, nonzero-padding admissible parent requests without extra support
+assumptions. At most two bins contribute at a pair, and the nested fine/coarse guards
+charge each sample once. With $f=\mathrm{rate}(k_a)$ they give
+$$
+|\mathrm{sample}_i|\le64\,B.\mathrm{binCap}(f+G(x,y)),\qquad
+0\le I_d\le128\,B.\mathrm{binCap}(f+G(x,y)).
+$$
+The normalized centered fourth moment is at most $(256\,B.\mathrm{binCap})^4$,
+including empty slices. `initialGroupInput_polynomial_eq_zero` proves exact zero input
+where the target is zero, without a positive target floor.
+`initialRelativeNoiseBudget_polynomial_le` feeds this bound through the existing scheduled
+walk lengths: its upper bound is $(256\,B.\mathrm{binCap})^4$ times the literal
+prefix cube times the sum of the scheduled fourth-power tolerances. The proof starts
+with the actual joint slice densities, bounds them by one and uses the existing
+width/source-rate spectral allocation and `magnitude ≥ 1`.
+`initialComputedRelativeMoment_polynomial_firstNoise_le` bounds the actual computed
+minimum with this semantic payment, preserving its transported-child charge and absolute
+fallback. The [checked clients](../../ComplexityTests/PolynomialBudgetHistory.lean)
+cover positive nonconstant canonical inputs, two active adjacent bins, zero targets and
+a smaller terminal rate. `initialComputedRelativeMoment` takes the minimum of this
 semantic group payment (plus transported centered child error) and the previous absolute
 first-noise cost. The actual own-precision four-statistic, four-max and sharp-reserve
 consumers now use this minimum. Their other three costs are unchanged. Transported child
@@ -1265,9 +1291,13 @@ pair-weighted rooted IH. If the target vanishes at some pair, the factor can sti
 old inverse fourth rate. `initialPerturbationFactor_eq_of_zero` proves this equality,
 and a checked actual small-floor child on the identity target has weighted fourth error
 $1/16$ even though that worst-pair factor is unchanged. Such zero entries are allowed for
-admissible substochastic matrices. A useful further improvement needs control of the weighted error on its actual
-support, and normalized literal input moments under a jointly admissible rate/width
-schedule; the existing unweighted IH and magnitude estimate supply neither. No uniform
+admissible substochastic matrices. The remaining child obligation needs control of
+weighted error on its actual executed support; the existing scalar IH does not supply it.
+The new polynomial semantic payment does not pay this transported error, preparation
+sensitivity or the other three reserve costs. Uniform allocation of all costs and the
+simultaneous changing-request invariant remain open. A future clipped-mean comparison
+would require a corresponding compression/reserve consumer; it cannot replace this
+untruncated weighted-error obligation by itself. No uniform
 positive target floor, free parent accuracy or heavy-event rarity discount is assumed.
 The checked positive budget-two history has nonzero group input but zero centered
 conditional noise: with zero transported error the new first-noise cost vanishes while

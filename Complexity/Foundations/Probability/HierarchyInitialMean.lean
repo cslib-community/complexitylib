@@ -8,6 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Probability.HierarchyInitialHistory
+import Complexity.Foundations.Probability.StochasticAtom.BinSupport
+import Complexity.Foundations.Probability.GridRowMoment.Rate
 
 /-!
 # Canonical means of initial statistical-budget histories
@@ -21,6 +23,10 @@ The assembly proofs are original.
 
 ## Main results
 
+* `initialSample_polynomial_relative_bound`: canonical sample support relative to the base.
+* `initialGroupInput_polynomial_relative_bound`: two-bin and nested-budget input bound.
+* `initialGroupInput_polynomial_relative_fourth_le`: uniform normalized centered input moment.
+* `initialGroupInput_polynomial_eq_zero`: exact zero at zero target entries.
 * `initialSample_mean`: canonical bins on the parent's original source/terminal event.
 * `initialPrefix_canonical_mean`: all bins with both literal budget boundaries.
 * `initialPrefix_polynomial_mean`: exact omitted, inactive and coarse deficit.
@@ -37,6 +43,237 @@ open scoped BigOperators
 attribute [local instance] Classical.propDecidable
 attribute [local implicit_reducible] Matrix
 variable {P : ℕ} [Fact P.Prime] {HP : FourthRootHierarchyParams 16 1 16 32 8}
+
+/-- A zero numerator cutoff gives a zero literal canonical sample. -/
+theorem initialSample_eq_zero (B : BudgetData HP P)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (i : ℕ) (x y : ZMod P)
+    (hz : B.cutoff i (B.base x y / B.binRate i) = 0) (σ : Environment P 3) :
+    B.initialSample r i σ x y = 0 := by
+  unfold initialSample denseChild normalizedRequest
+  split_ifs <;> simp_all [DenseRowRecipe.normalized, HierarchyTask.rawRequests]
+
+/-- Polynomial lower support pays the literal sample relative to the base entry. The
+horizon covers the terminal and bin exponents; no positive target floor is required. -/
+theorem initialSample_polynomial_relative_bound (B : BudgetData HP P)
+    (hrate : B.binRate = rate)
+    (hcutoff : B.cutoff = fun i => boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1)
+      rate 1 i (fun _ => 1))
+    (H : Horizon P) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (t : Fin 3) (ka : ℕ) (st : List (ZMod P))
+    (ht : r.terminal = gridChannel t ka st) (ha : ka ≤ H.maxExponent)
+    (i : ℕ) (hi : i ≤ H.maxExponent) (hC : ∀ x y, 0 ≤ B.base x y)
+    (σ : Environment P 3) (x y : ZMod P) :
+    |B.initialSample r i σ x y| ≤ 64 * B.binCap * (rate ka + B.base x y) := by
+  by_cases hz : B.cutoff i (B.base x y / B.binRate i) = 0
+  · rw [B.initialSample_eq_zero r i x y hz σ, abs_zero]
+    exact mul_nonneg (mul_nonneg (by norm_num) B.binCap_nonneg)
+      (add_nonneg (rate_pos ka).le (hC x y))
+  have hsupport : rate i / 2 < B.base x y := by
+    by_contra hn
+    apply hz
+    rw [hrate, hcutoff]
+    apply boundedRoutedBinCutoff_eq_zero (by norm_num)
+      (fun v hv => polynomialSwitch4_of_le (by norm_num) hv) rate_pos rate_antitone
+    apply (div_le_iff₀ (rate_pos i)).mpr
+    linarith [not_lt.mp hn]
+  let R := HierarchyTask.rawRequests 0 i (.pilotInput ⟨0, HP.k_pos⟩)
+    r.source (midpoint r) r.terminal (B.binRate i)
+  have hr : R.direct.usage.rate = rate (max ka i) := by
+    dsimp only [R, HierarchyTask.rawRequests]
+    rw [ht, hrate]
+    exact rate_min ka i
+  have hratio : HierarchyTask.usageRatio (channels B.padding) r.terminal R.direct y =
+      gridMass P ka / gridMass P (max ka i) :=
+    usageRatio_grid B.padding r.terminal R.direct ka (max ka i) (by rw [ht]; rfl) hr y
+  have hd := normalizedRequest_mem_Icc HP B.padding R.direct (B.cutoff i)
+    B.binCap_nonneg (B.cutoff_bounds i) (fun _ => B.base)
+    (densePreparation B.padding id R.direct (B.auxiliary i) HP.ρ HP.K B.base) σ x y
+  have hnonneg : 0 ≤ rate i * (gridMass P ka / gridMass P (max ka i)) := by
+    unfold gridMass rate; positivity
+  have hmax : max (rate i) (rate ka) ≤ 2 * (rate ka + B.base x y) := by
+    apply max_le <;> linarith [rate_pos ka, hC x y]
+  calc
+    |B.initialSample r i σ x y| =
+        rate i * (gridMass P ka / gridMass P (max ka i)) *
+          |denseChild B.padding id R.direct (B.cutoff i) (B.auxiliary i)
+            HP.ρ HP.K B.base σ x y| := by
+      change |B.binRate i * HierarchyTask.usageRatio _ _ R.direct y * _| = _
+      rw [hratio]
+      rw [abs_mul]
+      congr 1
+      rw [congrFun hrate i, abs_of_nonneg hnonneg]
+    _ ≤ (16 * max (rate i) (rate ka)) * (2 * B.binCap) := by
+      apply mul_le_mul (gridMass_importance_le H ha hi)
+        (abs_le.mpr ⟨by change -(2 * B.binCap) ≤ normalizedRequest _ _ _ _ _ _ _ _ _ _ _
+                        linarith [hd.1, B.binCap_nonneg], hd.2⟩) (abs_nonneg _)
+      exact mul_nonneg (by norm_num) (le_max_of_le_left (rate_pos i).le)
+    _ ≤ 64 * B.binCap * (rate ka + B.base x y) := by
+      nlinarith [mul_le_mul_of_nonneg_right hmax B.binCap_nonneg]
+
+private lemma initial_cutoff_binWeight (B : BudgetData HP P)
+    (hrate : B.binRate = rate)
+    (hcutoff : B.cutoff = fun i => boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1)
+      rate 1 i (fun _ => 1))
+    (hC : ∀ x y, 0 ≤ B.base x y) (hC1 : B.base *ᵥ 1 ≤ 1)
+    (i : ℕ) (x y : ZMod P)
+    (hw : binWeight (polynomialSwitch4 (1 / 2) 1) rate i (B.base x y) = 0) :
+    B.cutoff i (B.base x y / B.binRate i) = 0 := by
+  have htop : B.base x y ≤ 1 := by
+    have h := hC1 x
+    simp only [mulVec, dotProduct, Pi.one_apply, mul_one] at h
+    exact (single_le_sum (fun z _ => hC x z) (mem_univ y)).trans h
+  rw [hrate, hcutoff]
+  have he : boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1) rate 1 i (fun _ => 1)
+      (B.base x y / rate i) =
+      routedBinCutoff (polynomialSwitch4 (1 / 2) 1) rate i (fun _ => 1)
+        (B.base x y / rate i) := by
+    cases i with
+    | zero => apply boundedRoutedBinCutoff_eq (div_nonneg (hC x y) (rate_pos 0).le)
+              simpa only [rate, pow_zero, inv_one, one_pow, div_one] using htop
+    | succ i => simp only [boundedRoutedBinCutoff, Nat.succ_ne_zero, ↓reduceIte,
+        not_lt.mpr (div_nonneg (hC x y) (rate_pos _).le)]
+  dsimp only
+  rw [he, routedBinCutoff, mul_div_cancel₀ _ (rate_pos i).ne', hw, mul_zero, zero_mul]
+
+/-- Each literal paired group is nonnegative and has at most two contributing polynomial
+bins. Nested budget guards charge a sample once. The bound is uniform in M and d. -/
+theorem initialGroupInput_polynomial_relative_bound (B : BudgetData HP P)
+    (hrate : B.binRate = rate)
+    (hcutoff : B.cutoff = fun i => boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1)
+      rate 1 i (fun _ => 1))
+    (H : Horizon P) (hb : ∀ i ∈ B.bins, i ≤ H.maxExponent)
+    (M d : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (t : Fin 3) (ka : ℕ) (st : List (ZMod P))
+    (ht : r.terminal = gridChannel t ka st) (ha : ka ≤ H.maxExponent)
+    (hC : ∀ x y, 0 ≤ B.base x y) (hC1 : B.base *ᵥ 1 ≤ 1)
+    (σ : Environment P 3) (x y : ZMod P) :
+    0 ≤ B.initialGroupInput M d r σ x y ∧
+      B.initialGroupInput M d r σ x y ≤ 128 * B.binCap * (rate ka + B.base x y) := by
+  let A := fun i => B.initialSample r i σ x y
+  let term := fun i =>
+    (if LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some i)) = 0
+      then 0 else A i) -
+    (if LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some i)) = 0
+      then 0 else A i)
+  have hA (i : ℕ) : 0 ≤ A i := by
+    have hd := normalizedRequest_mem_Icc HP B.padding
+      (HierarchyTask.rawRequests 0 i (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (midpoint r) r.terminal (B.binRate i)).direct
+      (B.cutoff i) B.binCap_nonneg (B.cutoff_bounds i) (fun _ => B.base)
+      (densePreparation B.padding id
+        (HierarchyTask.rawRequests 0 i (.pilotInput ⟨0, HP.k_pos⟩)
+          r.source (midpoint r) r.terminal (B.binRate i)).direct
+        (B.auxiliary i) HP.ρ HP.K B.base) σ x y
+    dsimp only [A, initialSample, denseChild]
+    apply mul_nonneg (mul_nonneg (by rw [hrate]; exact (rate_pos i).le) ?_) hd.1
+    unfold HierarchyTask.usageRatio
+    positivity
+  have hterm (i : ℕ) : 0 ≤ term i ∧ term i ≤ A i := by
+    have hn := LogSpaceEstimation.lastBudget_antitone M B.slack
+      (B.sampleScale r (some i)) (show d ≤ 2 * d by omega)
+    dsimp only [term]
+    split_ifs with hf hc hc
+    · exact ⟨by simp, by simpa only [sub_self] using hA i⟩
+    · exfalso
+      exact hc (Nat.eq_zero_of_le_zero (by simpa only [hf] using hn))
+    · simpa only [sub_zero] using And.intro (hA i) (le_refl (A i))
+    · simpa only [sub_self] using And.intro (le_refl (0 : ℝ)) (hA i)
+  let S := B.bins.filter fun i => binWeight (polynomialSwitch4 (1 / 2) 1) rate i (B.base x y) ≠ 0
+  have hcard : #S ≤ 2 := by
+    apply card_filter_binWeight_ne_zero_le_two
+      (fun v hv => polynomialSwitch4_of_le (by norm_num) hv)
+      (fun v hv => polynomialSwitch4_of_ge (by norm_num) hv) rate_pos rate_antitone
+    intro i
+    have h := adjacent_rate_ratio i
+    rw [div_eq_iff (rate_pos (i + 1)).ne'] at h
+    linarith [rate_pos (i + 1)]
+  have he : B.initialGroupInput M d r σ x y = ∑ i ∈ S, term i := by
+    unfold initialGroupInput
+    change (∑ i ∈ B.bins, term i) = _
+    symm
+    apply sum_subset (filter_subset _ _) fun i hi hn => ?_
+    have hw : binWeight (polynomialSwitch4 (1 / 2) 1) rate i (B.base x y) = 0 := by
+      simpa only [S, mem_filter, hi, true_and, not_not] using hn
+    have hz := B.initialSample_eq_zero r i x y
+      (initial_cutoff_binWeight B hrate hcutoff hC hC1 i x y hw) σ
+    dsimp only [term, A]
+    simp only [hz, ite_self, sub_zero]
+  rw [he]
+  refine ⟨sum_nonneg fun i _ => (hterm i).1, ?_⟩
+  calc
+    _ ≤ ∑ i ∈ S, 64 * B.binCap * (rate ka + B.base x y) := by
+      apply sum_le_sum
+      intro i hi
+      exact (hterm i).2.trans ((le_abs_self (A i)).trans
+        (B.initialSample_polynomial_relative_bound hrate hcutoff H r
+        t ka st ht ha i (hb i (mem_filter.mp hi).1) hC σ x y))
+    _ = (#S : ℝ) * (64 * B.binCap * (rate ka + B.base x y)) := by
+      rw [sum_const, nsmul_eq_mul]
+    _ ≤ 128 * B.binCap * (rate ka + B.base x y) := by
+      have hc : (#S : ℝ) ≤ 2 := by exact_mod_cast hcard
+      have hnn : 0 ≤ 64 * B.binCap * (rate ka + B.base x y) :=
+        mul_nonneg (mul_nonneg (by norm_num) B.binCap_nonneg) (add_nonneg (rate_pos ka).le (hC x y))
+      nlinarith [mul_le_mul_of_nonneg_right hc hnn]
+
+/-- A zero target entry has exactly zero canonical group input, even at arbitrarily
+small terminal rates. This is a support statement, not a positive-floor estimate. -/
+theorem initialGroupInput_polynomial_eq_zero (B : BudgetData HP P)
+    (hcutoff : B.cutoff = fun i => boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1)
+      rate 1 i (fun _ => 1))
+    (M d : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (σ : Environment P 3) (x y : ZMod P) (hz : B.base x y = 0) :
+    B.initialGroupInput M d r σ x y = 0 := by
+  unfold initialGroupInput
+  apply sum_eq_zero
+  intro i _
+  have hc : B.cutoff i (B.base x y / B.binRate i) = 0 := by
+    rw [hz, zero_div, hcutoff]
+    exact boundedRoutedBinCutoff_eq_zero (by norm_num)
+      (fun v hv => polynomialSwitch4_of_le (by norm_num) hv) rate_pos rate_antitone
+      (by norm_num) i (fun _ => 1)
+  simp only [B.initialSample_eq_zero r i x y hc σ, ite_self, sub_zero]
+
+/-- Uniform normalized centered fourth moment of the literal polynomial input, on the
+original parent slice. Empty slices contribute zero. No weighted child IH is used. -/
+theorem initialGroupInput_polynomial_relative_fourth_le (B : BudgetData HP P)
+    (hrate : B.binRate = rate)
+    (hcutoff : B.cutoff = fun i => boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1)
+      rate 1 i (fun _ => 1))
+    (H : Horizon P) (hb : ∀ i ∈ B.bins, i ≤ H.maxExponent)
+    (M d : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (s t : Fin 3) (ks ka : ℕ) (ss st : List (ZMod P))
+    (ht : r.terminal = gridChannel t ka st) (ha : ka ≤ H.maxExponent)
+    (hC : ∀ x y, 0 ≤ B.base x y) (hC1 : B.base *ᵥ 1 ≤ 1) (x y : ZMod P) :
+    let Xs := retainedMask s (side P ks) B.padding ss
+    let Ya := retainedMask t (side P ka) B.padding st
+    (𝔼 σ ∈ ({σ | Xs σ x ∧ Ya σ y} : Finset (Environment P 3)),
+      |(B.initialGroupInput M d r σ x y -
+        rowSliceMean Xs Ya (B.initialGroupInput M d r) x y) /
+          (rate ka + B.base x y)| ^ 4) ≤ (256 * B.binCap) ^ 4 := by
+  dsimp only
+  let S := ({σ | retainedMask s (side P ks) B.padding ss σ x ∧
+    retainedMask t (side P ka) B.padding st σ y} : Finset (Environment P 3))
+  let C := 128 * B.binCap * (rate ka + B.base x y)
+  have hbound (σ : Environment P 3) : |B.initialGroupInput M d r σ x y| ≤ C := by
+    have h := B.initialGroupInput_polynomial_relative_bound hrate hcutoff H hb
+      M d r t ka st ht ha hC hC1 σ x y
+    rw [abs_of_nonneg h.1]
+    exact h.2
+  have hd := add_pos_of_pos_of_nonneg (rate_pos ka) (hC x y)
+  rcases S.eq_empty_or_nonempty with he | he
+  · change (𝔼 σ ∈ S, _) ≤ _
+    rw [he, expect_empty]
+    positivity
+  have hmean : |rowSliceMean (retainedMask s (side P ks) B.padding ss)
+      (retainedMask t (side P ka) B.padding st) (B.initialGroupInput M d r) x y| ≤ C :=
+    (abs_expect_le S _).trans (expect_le he fun σ _ => hbound σ)
+  apply expect_le he
+  intro σ _
+  apply pow_le_pow_left₀ (abs_nonneg _) _ 4
+  rw [abs_div, abs_of_pos hd, div_le_iff₀ hd]
+  have htri := (abs_sub _ _).trans (add_le_add (hbound σ) hmean)
+  dsimp only [C] at htri
+  nlinarith only [htri]
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Each literal initial sample has its canonical matrix-unit bin mean. The conditioning

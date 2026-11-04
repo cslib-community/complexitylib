@@ -18,6 +18,7 @@ they do not close the lower-budget induction, preparation or second noise.
 
 ## Main results
 
+* `initialRelativeNoiseBudget_polynomial_le`: structural-cap payment using existing steps.
 * `initialCoarseLoss_eq_zero`: no initial coarse boundary at the chosen horizon.
 * `initialPolynomialLoss_le`: matrix-unit omitted and inactive charge bound.
 * `initialPolynomialLoss_div_le`: omitted/inactive mass in actual decoder units.
@@ -333,5 +334,93 @@ theorem initial_requestSignals_paid_envelope (bin : ℕ) (ζ : ℝ)
 
 
 end Polynomial
+
+section PolynomialNoise
+
+/-- The existing walk schedule pays the canonical polynomial input's normalized fourth
+moment with a structural cap factor. Joint slice densities and the correlated prefix cube
+are those of `initialRelativeNoiseBudget`; no transported child error is included. -/
+theorem initialRelativeNoiseBudget_polynomial_le (B : BudgetData HP P)
+    (hrate : B.binRate = rate)
+    (hcutoff : B.cutoff = fun i => boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1)
+      rate 1 i (fun _ => 1))
+    (H : Horizon P) (hb : ∀ i ∈ B.bins, i ≤ H.maxExponent)
+    (M : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (s t : Fin 3) (hst : s ≠ t) (ks ka : ℕ) (ss st : List (ZMod P))
+    (hs : r.source = gridChannel s ks ss) (ht : r.terminal = gridChannel t ka st)
+    (ha : ka ≤ H.maxExponent)
+    (hC : ∀ x y, 0 ≤ B.base x y) (hC1 : B.base *ᵥ 1 ≤ 1) (j : ℕ) :
+    let m := Nat.log2 M + 1
+    let q := {r with usage := r.terminal}
+    B.initialRelativeNoiseBudget M r s t hst ks ka ss st B.base j ≤
+      (256 * B.binCap) ^ 4 * ((min j m : ℕ) ^ (3 : ℕ) *
+        ∑ i ∈ range (min j m),
+          ((2 : ℝ) ^ (-B.requestPrecision M q) * (64 : ℝ)⁻¹ ^ dyadicSlack m i) ^ 4) := by
+  dsimp only
+  let C := (256 * B.binCap) ^ 4
+  let ρ : ℝ := 1 - 1 / (155648 * (3 + 1) * (4 : ℝ)^4)
+  let q := {r with usage := r.terminal}
+  let m := Nat.log2 M + 1
+  have hsource : 0 < r.source.rate := by rw [hs]; exact rate_pos ks
+  have hNu : 0 < (P : ℝ) * r.source.rate :=
+    mul_pos (by exact_mod_cast (Fact.out : P.Prime).pos) hsource
+  have hC0 : 0 ≤ C := by dsimp only [C]; positivity
+  have hr : 0 < ρ := by norm_num [ρ]
+  have hr1 : ρ < 1 := by norm_num [ρ]
+  have hgraph (x y : ZMod P) :
+      RotationMap.spectralExpansion (graph s t hst (side P ks) (side P ka)
+        (side_le P ks) (side_le P ka) (CopyPadding.identifier B.padding ss)
+        (CopyPadding.identifier B.padding st) x y) ≤ ρ := by
+    unfold graph
+    rw [RotationMap.spectralExpansion_reindex, RotationMap.spectralExpansion_reindex]
+    exact spectralExpansion_lazy_ofPerms_componentMove_le (by decide)
+  unfold initialRelativeNoiseBudget
+  dsimp only
+  rw [mul_comm C, mul_assoc]
+  apply mul_le_mul_of_nonneg_left _ (by positivity)
+  rw [sum_mul]
+  apply sum_le_sum
+  intro i _
+  rw [mul_comm _ C]
+  let d := dyadicSlack m i
+  let T := B.steps M q d
+  have hp := spectralWalkLength_payment hr hr1
+    (show 0 ≤ 32 * ((P : ℝ)^2 / (P * r.source.rate) * B.magnitude q ^ 4) by positivity)
+    (Real.rpow_pos_of_pos (by norm_num) _) d T (Nat.le_max_right _ _)
+  have hm : 1 ≤ B.magnitude q ^ 4 := one_le_pow₀ (B.one_le_magnitude q)
+  have he : 0 ≤ (P : ℝ)^2 / (P * r.source.rate) := div_nonneg (sq_nonneg _) hNu.le
+  have hpay : 2 * ((P : ℝ)^2 / (P * r.source.rate)) * ρ ^ (2 * T) ≤
+      ((2 : ℝ) ^ (-B.requestPrecision M q) * (64 : ℝ)⁻¹ ^ d) ^ 4 := by
+    apply le_trans _ hp
+    apply mul_le_mul_of_nonneg_right _ (pow_nonneg hr.le _)
+    nlinarith [mul_le_mul_of_nonneg_left hm he]
+  calc
+    _ ≤ ((P : ℝ) * r.source.rate)⁻¹ * ∑ _x : ZMod P, ∑ _y : ZMod P,
+        2 * ρ ^ (2 * T) * C := by
+      apply mul_le_mul_of_nonneg_left _ (inv_nonneg.mpr hNu.le)
+      apply sum_le_sum
+      intro x _
+      apply sum_le_sum
+      intro y _
+      have hmom := B.initialGroupInput_polynomial_relative_fourth_le hrate hcutoff H hb
+        M d q s t ks ka ss st ht ha hC hC1 x y
+      have hd : (({σ | retainedMask s (side P ks) B.padding ss σ x ∧
+          retainedMask t (side P ka) B.padding st σ y} :
+            Finset (Environment P 3)).dens : ℝ) ≤ 1 := by
+        exact_mod_cast Finset.dens_le_one
+      have hg := pow_le_pow_left₀ (RotationMap.spectralExpansion_nonneg _) (hgraph x y) (2 * T)
+      apply (mul_le_mul hd (mul_le_mul (mul_le_mul_of_nonneg_left hg (by norm_num))
+        hmom (expect_nonneg fun _ _ => by positivity) (by positivity))
+        (mul_nonneg (mul_nonneg (by norm_num)
+          (pow_nonneg (RotationMap.spectralExpansion_nonneg _) _))
+          (expect_nonneg fun _ _ => by positivity)) zero_le_one).trans
+      rw [one_mul]
+    _ = C * (2 * ((P : ℝ)^2 / (P * r.source.rate)) * ρ ^ (2 * T)) := by
+      simp only [sum_const, card_univ, ZMod.card, nsmul_eq_mul]
+      ring
+    _ ≤ C * ((2 : ℝ) ^ (-B.requestPrecision M q) * (64 : ℝ)⁻¹ ^ d) ^ 4 :=
+      mul_le_mul_of_nonneg_left hpay hC0
+
+end PolynomialNoise
 
 end Matrix.HierarchyParams.H4RankEnvironment.BudgetData

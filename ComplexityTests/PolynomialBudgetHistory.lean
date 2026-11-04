@@ -2272,4 +2272,80 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) (M : ℕ) (R : RoleProfile
   norm_num
   linarith
 
+-- A positive, nonconstant literal group: the diagonal survives and the zero target does
+-- not acquire a floor-dependent charge. These are canonical executed input values.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (σ : Environment 5 3) :
+    (data HP).initialGroupInput 2 1 (request HP) σ 0 0 = 1 ∧
+    (data HP).initialGroupInput 2 1 (request HP) σ 0 1 = 0 := by
+  have h := group_input HP 1
+  constructor
+  · simpa [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff, base] using
+      congrFun (congrFun (congrFun h σ) 0) 0
+  · exact (data HP).initialGroupInput_polynomial_eq_zero rfl 2 1 (request HP) σ 0 1
+      (by norm_num [data, base])
+
+-- Both adjacent fine bins are genuinely active at an interior transition. Farther bins
+-- vanish: the support count is independent of the number of retained bins.
+example :
+    #{i ∈ range 5 | binWeight (polynomialSwitch4 (1 / 2) 1) rate i (3 / 64) ≠ 0} = 2 := by
+  rw [show range 5 = {0, 1, 2, 3, 4} by decide]
+  norm_num [filter_insert, filter_singleton, binWeight, rate,
+    polynomialSwitch4, polynomialTransition4, transitionPolynomial4]
+
+private def supportHorizon : Horizon 5 := ⟨2, 4, by decide, by decide⟩
+
+-- A positive small target, zeros off the diagonal and a smaller terminal rate coexist
+-- with the normalized fourth-moment bound. No positive target floor appears.
+open NormalizedMoments in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (M d : ℕ) (x y : ZMod 5) :
+    let B := scaledData HP (1 / 16)
+    let r := {request HP with terminal := gridChannel 2 2 [2, 3]}
+    let Xs := retainedMask 0 (side 5 0) B.padding [1]
+    let Ya := retainedMask 2 (side 5 2) B.padding [2, 3]
+    (𝔼 σ ∈ ({σ | Xs σ x ∧ Ya σ y} : Finset (Environment 5 3)),
+      |(B.initialGroupInput M d r σ x y - rowSliceMean Xs Ya
+        (B.initialGroupInput M d r) x y) / (rate 2 + B.base x y)| ^ 4) ≤ 4096 ^ 4 := by
+  dsimp only
+  have hC (v z : ZMod 5) : 0 ≤ (scaledData HP (1 / 16)).base v z := by
+    change 0 ≤ (1 / 16 : ℝ) * (if v = z then 1 else 0)
+    split_ifs <;> norm_num
+  have hC1 : (scaledData HP (1 / 16)).base *ᵥ 1 ≤ 1 := by
+    intro v
+    norm_num [scaledData, data, base, Matrix.smul_mulVec]
+  have h := (scaledData HP (1 / 16)).initialGroupInput_polynomial_relative_fourth_le
+    rfl rfl supportHorizon (by
+      intro i hi
+      simp only [scaledData, data, mem_insert, mem_singleton] at hi
+      rcases hi with rfl | rfl <;> decide)
+    M d {request HP with terminal := gridChannel 2 2 [2, 3]}
+    0 2 0 2 [1] [2, 3] rfl (by decide) hC hC1 x y
+  simpa only [show (scaledData HP (1 / 16)).binCap = 16 from rfl,
+    show (256 : ℝ) * 16 = 4096 by norm_num] using h
+
+-- The actual computed minimum accepts the scheduled semantic bound, retaining arbitrary
+-- transported-child charges. This does not assume those charges satisfy parent accuracy.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (M j : ℕ)
+    (ε : ℕ → ℝ) (ζ Lh Lρ : ℝ) :
+    (data HP).initialComputedRelativeMoment M 1 (request HP) threeRoles 0 0 [1] [2, 3]
+      ε ζ Lh Lρ j true 0 ≤
+      min ((data HP).initialComputedMoment M 1 (request HP) threeRoles 0 0 [1] [2, 3]
+        ε ζ Lh Lρ j true 0)
+        (8 * (16 * BudgetData.initialPerturbationFactor 0 base *
+          (((j + 1 : ℕ) : ℝ) ^ 3 * ∑ i ∈ range (j + 1), ε i) +
+          4096 ^ 4 * ((min (j + 1) (Nat.log2 M + 1) : ℕ) ^ (3 : ℕ) *
+            ∑ i ∈ range (min (j + 1) (Nat.log2 M + 1)),
+              ((2 : ℝ) ^ (-(data HP).requestPrecision M (request HP)) *
+                (64 : ℝ)⁻¹ ^ Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) i) ^ 4))) := by
+  have h := (data HP).initialComputedRelativeMoment_polynomial_firstNoise_le rfl rfl
+    supportHorizon (by
+      intro i hi
+      simp only [data, mem_insert, mem_singleton] at hi
+      rcases hi with rfl | rfl <;> decide)
+    M 1 (request HP) threeRoles 0 0 [1] [2, 3] rfl rfl (by decide)
+    (by intro x y; by_cases h : x = y <;> simp [data, base, h])
+    (by intro x; simp [data, base]) ε ζ Lh Lρ j
+  simpa only [show (data HP).base = base from rfl,
+    show (data HP).binCap = 16 from rfl, show (256 : ℝ) * 16 = 4096 by norm_num,
+    show {request HP with usage := (request HP).terminal} = request HP from rfl] using h
+
 end PolynomialBudgetHistory

@@ -3855,6 +3855,7 @@ public import Complexity.Foundations.Probability.Gaussian.Multivariate
 public import Complexity.Foundations.Probability.Gaussian.Real
 public import Complexity.Foundations.Probability.Gaussian.Sheppard
 public import Complexity.Foundations.Probability.GridRowMoment
+public import Complexity.Foundations.Probability.GridRowMoment.Rate
 public import Complexity.Foundations.Probability.HeavyCount
 public import Complexity.Foundations.Probability.HeavyCountRarity
 public import Complexity.Foundations.Probability.HeavyCountTail
@@ -3971,6 +3972,7 @@ public import Complexity.Foundations.Probability.SignedResidualBins
 public import Complexity.Foundations.Probability.SourceRelease
 public import Complexity.Foundations.Probability.SpectralPayment
 public import Complexity.Foundations.Probability.StochasticAtom
+public import Complexity.Foundations.Probability.StochasticAtom.BinSupport
 public import Complexity.Foundations.Probability.TrueSampleMeans
 public import Complexity.Foundations.Probability.UnroutedBinDecoder
 public import Complexity.Foundations.Probability.UnroutedBinRegularity

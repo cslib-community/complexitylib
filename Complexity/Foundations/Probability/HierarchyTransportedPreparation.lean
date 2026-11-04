@@ -30,6 +30,7 @@ changing-request induction and native RL=L remain open.
 * `initial_compressed_preparation`: full-rank sensitivity and actual usage-walk noise.
 * `exists_initial_compressed_fourMax`: the shared sharp reserve on computed histories.
 * `initial_compressed_precision_reserve`: numerical reserve from own-request rooted IH.
+* `initialComputedRelativeMoment_polynomial_firstNoise_le`: actual semantic minimum consumer.
 * `initialComputedRelativeMoment`: sharper costs used by computed statistics and reserve.
 * `initialPerturbationFactor`: target-dependent worst-pair transport payment.
 * `initialComputedMoment_final_firstNoise_zero`: exact old absolute-envelope noise cost.
@@ -272,6 +273,37 @@ No pair-weighted IH or global absorption is claimed. -/
       (((j + 1 : ℕ) : ℝ) ^ 3 * ∑ i ∈ range (j + 1), ε i) +
       B.initialRelativeNoiseBudget M r R.source R.terminal R.source_terminal
         ks ka ss st B.base (j + 1))) else old
+
+/-- The literal computed first-noise minimum consumes the polynomial semantic payment.
+The transported child charge is retained unchanged and is not paid by this theorem. -/
+theorem initialComputedRelativeMoment_polynomial_firstNoise_le (B : BudgetData HP P)
+    (hrate : B.binRate = rate)
+    (hcutoff : B.cutoff = fun i => boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1)
+      rate 1 i (fun _ => 1))
+    (H : Horizon P) (hb : ∀ i ∈ B.bins, i ≤ H.maxExponent)
+    (M n : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
+    (ks ka : ℕ) (ss st : List (ZMod P))
+    (hs : r.source = gridChannel R.source ks ss)
+    (ht : r.terminal = gridChannel R.terminal ka st) (ha : ka ≤ H.maxExponent)
+    (hC : ∀ x y, 0 ≤ B.base x y) (hC1 : B.base *ᵥ 1 ≤ 1)
+    (ε : ℕ → ℝ) (ζ Lh Lρ : ℝ) (j : ℕ) :
+    let m := Nat.log2 M + 1
+    let q := {r with usage := r.terminal}
+    B.initialComputedRelativeMoment M n r R ks ka ss st ε ζ Lh Lρ j true 0 ≤
+      min (B.initialComputedMoment M n r R ks ka ss st ε ζ Lh Lρ j true 0)
+        (8 * (16 * initialPerturbationFactor ka B.base *
+          (((j + 1 : ℕ) : ℝ) ^ 3 * ∑ i ∈ range (j + 1), ε i) +
+          (256 * B.binCap) ^ 4 * ((min (j + 1) m : ℕ) ^ (3 : ℕ) *
+            ∑ i ∈ range (min (j + 1) m),
+              ((2 : ℝ) ^ (-B.requestPrecision M q) *
+                (64 : ℝ)⁻¹ ^ dyadicSlack m i) ^ 4))) := by
+  dsimp only
+  simp only [initialComputedRelativeMoment, Fin.isValue]
+  apply min_le_min_left
+  apply mul_le_mul_of_nonneg_left _ (by norm_num)
+  apply add_le_add le_rfl
+  exact B.initialRelativeNoiseBudget_polynomial_le hrate hcutoff H hb M r
+    R.source R.terminal R.source_terminal ks ka ss st hs ht ha hC hC1 (j + 1)
 
 /-- Nonnegative input payments give nonnegative sharpened costs. -/
 lemma initialComputedRelativeMoment_nonneg (B : BudgetData HP P) (M n : ℕ)
