@@ -248,9 +248,9 @@ index links to canonical definitions rather than keeping a second set.
   separations of complexity classes by autoreducibility (Buhrman, Fortnow, van Melkebeek and
   Torenvliet).
 - **Logspace autoreducibility of complete sets** ([#2468]): the full expanded 2013 paper of
-  Glaßer, Nguyen, Reitwießner, Selman and Witek, including the bounded disjunctive/conjunctive
-  clauses of Proposition 2.7, local self-reducibility and transfer (Lemma 3.3), concrete complete
-  self-reducible problems (Theorem 3.5), Section 4 bounded/logarithmic-query results and
+  Glaßer, Nguyen, Reitwießner, Selman and Witek: local self-reducibility and transfer
+  (Lemma 3.3), concrete complete self-reducible problems (Theorem 3.5), Section 4
+  bounded/logarithmic-query results and
   separations, and Section 5 mitoticity/diagonalization. The additional parity-logspace
   application needs a native path-counting class and complement closure.
 - **Uniform diagonalization** (Schöning), which generalizes Ladner's theorem.
