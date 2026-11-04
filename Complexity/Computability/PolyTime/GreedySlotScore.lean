@@ -645,8 +645,7 @@ def encScoreParams : ((ℕ × ℕ) × (ℕ × ℕ) × List (ℕ × ℕ)) ↪ Lis
     (encPair (encPair encNat encNat) (encList (encPair encNat encNat)))
   let eIn := encPair ePar
     (encPair (encList (encOption (encList encNat))) (encList (encOption (encList encNat))))
-  have hK : ComputableInPolyTime (fun p : _ × _ => p.1.2.1.1 ^ p.1.1.2) eIn encNat :=
-    ComputableInPolyTime.binary_pow' (by fun_prop) (by fun_prop)
+  have hK : ComputableInPolyTime (fun p : _ × _ => p.1.2.1.1 ^ p.1.1.2) eIn encNat := by fun_prop
   have hincCol : ComputableInPolyTime (fun p : _ × _ =>
       clearedIncidenceCollisions (p.1.2.1.1 ^ p.1.1.2) p.1.2.2 p.2.1 p.2.2) eIn encNat := by
     unfold clearedIncidenceCollisions
@@ -1001,17 +1000,11 @@ private theorem list_set_eq_range_map {α : Type*} (d : α) (l : List α) (i : �
   have hset1 : ComputableInPolyTime (fun p : (_ × _) × (_ × _) =>
       (List.range p.2.1.length).map fun k =>
         if decide (p.1.1.2 = k) then p.1.2 else p.2.1.getD k none)
-      eIn (encList eOpt) := ComputableInPolyTime.mapWithInput (by fun_prop)
-    (ComputableInPolyTime.ite'
-      (ComputableInPolyTime.decide_eq' (by fun_prop) (by fun_prop))
-      (by fun_prop) (by fun_prop))
+      eIn (encList eOpt) := by fun_prop
   have hset2 : ComputableInPolyTime (fun p : (_ × _) × (_ × _) =>
       (List.range p.2.2.length).map fun k =>
         if decide (p.1.1.2 = k) then p.1.2 else p.2.2.getD k none)
-      eIn (encList eOpt) := ComputableInPolyTime.mapWithInput (by fun_prop)
-    (ComputableInPolyTime.ite'
-      (ComputableInPolyTime.decide_eq' (by fun_prop) (by fun_prop))
-      (by fun_prop) (by fun_prop))
+      eIn (encList eOpt) := by fun_prop
   refine (ComputableInPolyTime.ite' (show ComputableInPolyTime
       (fun p : _ => p.1.1.1) eIn encBool by fun_prop)
     ((show ComputableInPolyTime (fun p : _ => p.2.1) eIn (encList eOpt) by
@@ -1033,23 +1026,16 @@ private theorem computableInPolyTime_selectSlotStep :
     ComputableInPolyTime selectSlotStep (encPair encNat encSlotSelectAcc) encSlotSelectAcc := by
   let eIn := encPair encNat encSlotSelectAcc
   have hw : ComputableInPolyTime (fun s : ℕ × SlotSelectAcc =>
-      decodeLabelWord s.2.1.2.1.1 s.2.1.1.2 s.1) eIn (encList encNat) :=
-    computableInPolyTime_decodeLabelWord'
-      (by unfold eIn encSlotSelectAcc encScoreParams; fun_prop)
-      (by unfold eIn encSlotSelectAcc encScoreParams; fun_prop)
-      (by unfold eIn; fun_prop)
+      decodeLabelWord s.2.1.2.1.1 s.2.1.1.2 s.1) eIn (encList encNat) := by fun_prop
   have hupd_in : ComputableInPolyTime (fun s : ℕ × SlotSelectAcc =>
       ((s.2.2.1, some (decodeLabelWord s.2.1.2.1.1 s.2.1.1.2 s.1)), s.2.2.2.1))
       eIn (encPair (encPair (encPair encBool encUnary) (encOption (encList encNat)))
-        encPartialSchedules) := by
-    unfold eIn encSlotSelectAcc; fun_prop
+        encPartialSchedules) := by fun_prop
   have hcs := computableInPolyTime_updateSlotSchedules.comp hupd_in
   have hsc_in : ComputableInPolyTime (fun s : ℕ × SlotSelectAcc =>
       (s.2.1, updateSlotSchedules s.2.2.1
         (some (decodeLabelWord s.2.1.2.1.1 s.2.1.1.2 s.1)) s.2.2.2.1))
-      eIn (encPair encScoreParams encPartialSchedules) :=
-    (show ComputableInPolyTime (fun s : ℕ × SlotSelectAcc => s.2.1) eIn encScoreParams by
-      unfold eIn encSlotSelectAcc; fun_prop).prod hcs
+      eIn (encPair encScoreParams encPartialSchedules) := by fun_prop
   have hsc := computableInPolyTime_clearedJointScore.comp hsc_in
   let eBest := encPair (encList encNat) encNat
   let candW (s : ℕ × SlotSelectAcc) := decodeLabelWord s.2.1.2.1.1 s.2.1.1.2 s.1
@@ -1062,15 +1048,7 @@ private theorem computableInPolyTime_selectSlotStep :
   have hbest : ComputableInPolyTime
       (fun s : ℕ × SlotSelectAcc => s.2.2.2.2.elim (some (candW s, candSc s)) fun best =>
         if decide (candSc s < best.2) then some (candW s, candSc s) else some best)
-      eIn (encOption eBest) := by
-    refine ComputableInPolyTime.optionElimWithInput
-      (by unfold eIn encSlotSelectAcc; fun_prop) hsomeCand ?_
-    have hq1 := ComputableInPolyTime.fst eIn eBest
-    have hq2 := ComputableInPolyTime.snd eIn eBest
-    exact ComputableInPolyTime.ite'
-      (ComputableInPolyTime.binary_lt' (hsc.comp hq1)
-        ((ComputableInPolyTime.snd (encList encNat) encNat).comp hq2))
-      (hsomeCand.comp hq1) ((ComputableInPolyTime.optionSome eBest).comp hq2)
+      eIn (encOption eBest) := by fun_prop
   unfold selectSlotStep
   exact (show ComputableInPolyTime (fun s : ℕ × SlotSelectAcc => s.2.1) eIn encScoreParams by
     unfold eIn encSlotSelectAcc; fun_prop).prod
