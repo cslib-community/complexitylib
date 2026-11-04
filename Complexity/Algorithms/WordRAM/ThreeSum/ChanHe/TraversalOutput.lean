@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.ThreeSum.ChanHe.FromNumbers
 public import Complexity.Computability.WordRAM.ListArray
+import Complexity.Computability.WordRAM.MemoryView
 public import Complexity.Computability.WordRAM.Signed.Encoding
 
 /-!
@@ -75,9 +76,12 @@ theorem StoredNodes.congr {U N table : ℕ} {ns : List (ℕ × Node)} {before af
 theorem StoredNodes.frame {U N table frontier : ℕ} {ns : List (ℕ × Node)}
     {before after : ℕ → ℕ} (h : StoredNodes U N table ns before)
     (hlayout : OutputLayout N table frontier ns)
-    (hframe : ∀ a < frontier, after a = before a) : StoredNodes U N table ns after :=
-  h.congr (fun a _ ha => hframe a (ha.trans_le hlayout.table_end))
-    (fun i u hu => hframe _ (by have := hlayout.payload_end i; omega))
+    (hframe : ∀ a < frontier, after a = before a) : StoredNodes U N table ns after := by
+  have ht := hlayout.table_end
+  refine ⟨?_, fun i => ?_⟩
+  · ram_keep h.pointers using hframe
+  · have hp := hlayout.payload_end i
+    ram_keep (h.cells i) using hframe
 
 /-- Appending one native pointer preserves all packed readback. The stored pointer lies below
 both the old arrays and the fresh array, so the actual store cannot overwrite array data. -/

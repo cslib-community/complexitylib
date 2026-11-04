@@ -7,6 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.MemoryView
+
 import Complexity.Computability.WordRAM.Call
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.PPZ.Forced
@@ -185,7 +187,9 @@ theorem RoundFrame.congr {φ : CNF (Fin n)} {C Tb : ℕ} {M : ℕ → ℕ} {x y 
   tBase_eq := hb.trans h.tBase_eq
   nReg_eq := hn.trans h.nReg_eq
   pBase_eq := hp.trans h.pBase_eq
-  clauses := h.clauses.frame fun a _ ha' => hmem a (Or.inl (h.span ▸ ha'))
+  clauses := by
+    have hs := h.span
+    ram_keep h.clauses using hmem
   span := h.span
   rest a ha := (hmem a (Or.inr ha)).trans (h.rest a ha)
 

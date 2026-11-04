@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Program
+import Complexity.Computability.WordRAM.MemoryView
 
 /-!
 # Native frontend array and descriptor execution
@@ -328,9 +329,8 @@ theorem body_exec {w U Λ j : ℕ} (x : Data 48) (rs : List (ℕ × ℕ))
     by simpa only [huh, hucap] using hyh, ?_, ?_, ?_, ?_⟩
   · rw [hym, Function.update_of_ne (by omega), Function.update_self]
   · rw [hym, Function.update_self]
-  · apply hum.frame
-    intro b hlo hhi
-    rw [hym, Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
+  · rw [hym]
+    ram_keep hum
   · intro b hb hb0 hb1
     rw [hym, Function.update_of_ne hb1, Function.update_of_ne hb0]
     apply hf b
