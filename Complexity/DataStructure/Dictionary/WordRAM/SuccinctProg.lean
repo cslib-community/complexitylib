@@ -15,6 +15,7 @@ public import Complexity.Computability.WordRAM.Realization.Reindex
 public import Complexity.Computability.WordRAM.Realization.While
 public import Complexity.Computability.WordRAM.Realization.Witness
 public import Complexity.DataStructure.Dictionary.WordRAM.SuccinctSlotInv
+import Complexity.Computability.WordRAM.Width
 import Complexity.Tactic.Realize
 
 /-!
@@ -161,15 +162,6 @@ theorem validHistory_writePackedProg {w base offset N k idx val : ℕ} {s : Memo
       Fits w (mem₁ (base + offset + wOff + 1) ^^^ ((old₁ ^^^ val₁) <<< 0))) ∧ True)
   exact ⟨by omega, ⟨by omega, hw0⟩, by omega, ⟨by omega, hw1⟩, trivial⟩
 
-private theorem readsWidth_rename {B : Basis} {r₁ r₂ : ℕ} (c : Code B r₁) (f : Fin r₁ → Fin r₂) :
-    (c.rename f).ReadsWidth ↔ c.ReadsWidth := by
-  induction c with
-  | rand _ _ => rfl
-  | op o => cases o <;> rfl
-  | seq c₁ c₂ ih₁ ih₂ => simp [Code.rename, Code.ReadsWidth, ih₁, ih₂]
-  | branch cond c₁ c₂ ih₁ ih₂ => simp [Code.rename, Code.ReadsWidth, ih₁, ih₂]
-  | loop cond body ih => simp [Code.rename, Code.ReadsWidth, ih]
-
 private theorem readPackedCode_not_readsWidth (offset k w : ℕ) :
     ¬(readPackedCode offset k w).ReadsWidth := by
   simp [readPackedCode, addrSetupCode, offsetSetupCode, maskSetupCode, readPackedFinishCode,
@@ -195,7 +187,7 @@ theorem realizes_readPacked (offset N k w₀ : ℕ) :
   intro r frontier src tmp hi hd hf hs
   have hperm_inj : Function.Injective (tmp ∘ perm) := hi.comp perm.injective
   refine ⟨?_, ?_⟩
-  · simp only [Code.ReadsWidth, Op.ReadsWidth, readsWidth_rename, false_or]
+  · simp only [Code.ReadsWidth, Op.ReadsWidth, Code.readsWidth_rename, false_or]
     exact readPackedCode_not_readsWidth offset k w₀
   · intro w d x hx hin ⟨heq, hw, hkw, hidx, hfit⟩ _
     subst heq
@@ -267,7 +259,7 @@ theorem realizes_writePacked (offset N k w₀ : ℕ) :
           ((writePackedCode offset k w₀).rename tmp))), ?_⟩
   intro r frontier src tmp hi hd hf hs
   refine ⟨?_, ?_⟩
-  · simp only [Code.ReadsWidth, Op.ReadsWidth, readsWidth_rename, false_or]
+  · simp only [Code.ReadsWidth, Op.ReadsWidth, Code.readsWidth_rename, false_or]
     exact writePackedCode_not_readsWidth offset k w₀
   · intro w d x hx hin ⟨heq, hw, hkw, hidx, hfit⟩ _
     subst heq

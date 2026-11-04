@@ -33,11 +33,12 @@ SOSA 2024, Sections 3–4):
    `OPT(U, V, n_max) = ⌈log₂ (U.choose n_max)⌉ + n_max · ⌈log₂ V⌉` up to `O(n_max)`.
    We assume `n_max ≤ U` because keys are distinct elements of `Fin U` (so at most `U` distinct keys
    can coexist, and `U.choose n_max = 0` when `n_max > U`).
-2. **Non-sticky slab + tail slot store (`SuccinctSlotInv`, `SuccinctSlabOps`, `SuccinctTailOps`)**:
+2. **Slab + tail slot store (`SuccinctSlotInv`, `SuccinctSlabOps`, `SuccinctTailOps`)**:
    divides the `n_max` physical item slots into full slabs of `slabSize n_max = 2 ^ slabBits n_max`
    (`(slabScale n_max) ^ 2` when `0 < bucketBits n_max`, else `1`) items plus a tail pool of
-   `maxTailItems n_max` individual slots, with zero wasted item slots and non-sticky bucket
-   capacities depending only on the current live set.
+   `maxTailItems n_max` individual slots, with zero wasted item slots, per-bucket item counts
+   depending only on the current live set, and a history-dependent slab/tail hysteresis split paid
+   for by `bucketPotential`.
 3. **Two-stage universe-reduced 3-wise quotient hashing (`ReducedKWise`)**: maps quotients into
    `(bucket, local micro-bucket)` pairs using `O(1) + o(n_max) / w` words of seed and bit-packed
    Four-Russians carryless multiplication tables (`hashSpace U w n_max`), without any
@@ -57,12 +58,15 @@ SOSA 2024, Sections 3–4):
   quotient hash seed once with `seedSlack = 1` and `initPotential = 0`.
 * **Space (`space`)**: `space U V w n_max ≤ Dynamic.succinctWords 81 213 U V w n_max` words
   (`space_le_succinctWords`) for every `0 < w` and `n_max ≤ U` with `Fits w U` (`U < 2 ^ w`).
-* **Expected amortized operation time (`seq_expected_amortized`)**: for fixed `(U, V, w, n_max)`,
-  each `query`, `insert`, and `delete` charges `chargeVal U V w n_max = 313 * opFactor U V w n_max +
-  284689` expected **amortized** instructions (`potential` is unchanged on `query`, and `chargeVal`
-  depends on `(U, V, w, n_max)` through the `Realizes.factor` witness `opFactor U V w n_max`,
-  independently of `base` and `ops.length`) across any valid oblivious operation sequence
-  `ops : List (Dynamic.Op U)` of arbitrary length.
+* **Per-parameter operation charge (`seq_expected_amortized`)**: at the `Memory.Prog` level
+  (`SuccinctHash`), each operation performs at most `312` expected **amortized** memory accesses
+  and local work (`potential` is unchanged on `query`). At the compiled Word-RAM level, because
+  `opFactor U V w n_max` (`Realizes.factor`) is selected by classical choice separately for each
+  `(U, V, w, n_max)` without a parameter-uniform bound, `chargeVal U V w n_max = 313 *
+  opFactor U V w n_max + 284689` is a finite per-parameter charge (independent of `base` and
+  `ops.length`) rather than a parameter-uniform constant instruction bound; thus the compiled
+  Word-RAM theorems certify multi-operation correctness, succinct space, and linear initialization
+  cost.
 
 ## Main definitions
 
@@ -75,8 +79,8 @@ SOSA 2024, Sections 3–4):
 * `Cslib.DataStructure.Dictionary.WordRAM.Succinct.initTime_impl_le`:
   `(impl hw hnU hU hV hfit).initTime ≤ initSteps U n_max + 1` and
   `initSteps U n_max + 1 ≤ 31 * n_max + 1092`.
-* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.seq_expected_amortized`: end-to-end expected
-  amortized execution bound across any valid operation sequence.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.seq_expected_amortized`: end-to-end
+  multi-operation distributional correctness and per-parameter amortized execution certificate.
 
 ## References
 
@@ -629,12 +633,14 @@ theorem totalCost_charge_eq (U V w n_max : ℕ) (s₀ : Dynamic.State U)
     simp only [List.length_cons]
     ring
 
-/-- **Headline expected-amortized theorem (`seq_expected_amortized`):**
+/-- **Headline multi-operation theorem (`seq_expected_amortized`):**
 Starting from zeroed memory on `[base, base + space U V w n_max)`, fresh initialization followed by
 any valid operation sequence `ops : List (Dynamic.Op U)` (`ValidHistory (Dynamic.empty U) ops`)
-executes in expected total instruction count at most
-`initTime + ops.length * chargeVal U V w n_max`, where `space U V w n_max ≤
-Dynamic.succinctWords 81 213 U V w n_max` and `initSteps U n_max ≤ 31 * n_max + 1091`. -/
+preserves `Rep` across `ops` with expected total instruction count at most
+`initTime + ops.length * chargeVal U V w n_max` (for the per-parameter charge
+`chargeVal U V w n_max`, which has no parameter-uniform constant bound across `(U, V, w, n_max)`).
+Companion theorems `space_le_succinctWords` and `initTime_impl_le` / `initSteps_le` establish the
+succinct space and linear initialization bounds. -/
 theorem seq_expected_amortized {U V w n_max base : ℕ}
     (hw : 0 < w) (hnU : n_max ≤ U) (hU : Fits w U) (hV : Fits w V)
     (hfit : Fits w (base + space U V w n_max))

@@ -15,9 +15,10 @@ import Mathlib.Data.Nat.Log
 /-!
 # Formal Abstract: Fixed-Capacity Succinct Dynamic Dictionary with Deletions
 
-This self-contained file states the formal specification and expected-amortized multi-operation
-time and succinct space theorems for the fixed-capacity succinct dynamic dictionary with deletions
-on the randomized Word-RAM (`Succinct.impl` and `Succinct.seq_expected_amortized`), following
+This self-contained file states the formal specification and the multi-operation correctness,
+succinct space, and initialization-time theorems for the fixed-capacity succinct dynamic dictionary
+with deletions on the randomized Word-RAM (`Succinct.impl`, `Succinct.space_le_succinctWords`,
+`Succinct.initTime_impl_le`, and `Succinct.seq_expected_amortized`), following
 `[BenderFarachColtonKuszmaulKuszmaul2024]` (SOSA 2024, Sections 3–4),
 `[BenderConwayFarachColtonKuszmaulTagliavini2023]` (*J. ACM* 70(6):40, 2023;
 `arXiv:2109.04548`, Appendix A), and `[BenderFarachColtonKuszmaulKuszmaulLiu2022]` (STOC 2022;
@@ -37,18 +38,25 @@ polynomial hashing with a bit-packed Four-Russians multiplication table (`Reduce
   keys can coexist (`(dictDom s).card ≤ U`), and the binomial coefficient `U.choose n_max` inside
   the information-theoretic minimum `optBits U V n_max = ⌈log₂ C(U, n_max)⌉ + n_max * ⌈log₂ V⌉` is
   zero whenever `n_max > U`.
-- **Single seed and non-sticky per-bucket state:** A single quotient-hash seed is sampled once at
-  initialization (`seedSlack = 1`, no rehash), and per-bucket micro-chain state is non-sticky
-  under deletions via swap-and-pop slot compaction and slab promotion/demotion, so expected
-  **amortized** operation cost remains bounded across valid operation sequences of arbitrary
-  length.
-- **Program parameterization and instruction counting:** For each `(U, V, w, n_max)`, the compiled
-  `r`-register Word-RAM programs `p_init` and `p_op` (and per-operation charge `C_op`) depend on
-  `(U, V, w, n_max)` and are independent of the base address `base`, initial state `(reg₀, mem₀)`,
-  and operation sequence `ops`. No theorem in this abstract bounds the static code length
-  `p_init.length` or `p_op.length`; all time bounds count **executed Word-RAM instructions**
-  (`expectedTime w p s ≤ T + 1`), excluding caller argument preparation (`prepareDynDictRegs`) and
-  dispatch.
+- **Single seed and per-bucket probe/hysteresis accounting:** A single quotient-hash seed is
+  sampled once at initialization (`seedSlack = 1`, no rehash), and no sticky failure flag is kept:
+  each bucket's item count and expected probe excess per operation depend only on the current
+  active key set, while the physical chain order and slab/tail hysteresis split depend on operation
+  history. In the `Memory.Prog` model (`SuccinctHash`), each operation performs at most `312`
+  expected **amortized** memory accesses and local work.
+- **Program parameterization and what the Word-RAM theorem certifies:** For each
+  `(U, V, w, n_max)`, the compiled `r`-register Word-RAM programs `p_init` and `p_op` (and
+  per-operation charge `C_op`) depend on `(U, V, w, n_max)` and are independent of the base address
+  `base`, initial state `(reg₀, mem₀)`, and operation sequence `ops`. Because `Realizes.factor`
+  selects the compiled exchange factor `opFactor U V w n_max` by classical choice separately for
+  each `(U, V, w, n_max)` without a proven parameter-uniform bound, `C_op` is existentially
+  quantified per `(U, V, w, n_max)` with no upper bound in `succinctDynamicDictionary`. Thus this
+  abstract certifies **multi-operation distributional correctness, succinct space, and linear
+  initialization cost** (with sequence-length and base independence of `C_op` at each fixed
+  `(U, V, w, n_max)`), rather than a parameter-uniform constant operation time bound. No theorem in
+  this abstract bounds the static code length `p_init.length` or `p_op.length`; all instruction
+  counts (`expectedTime w p s ≤ T + 1`) exclude caller argument preparation (`prepareDynDictRegs`)
+  and dispatch.
 - **Initialization step bound and succinct space:** Initialization from zeroed memory on
   `[base, base + sp)` executes in at most `initBudget ≤ 31 * n_max + 1092` expected body
   instructions, and the single contiguous memory block of `sp` machine words (holding all hash
@@ -382,14 +390,16 @@ def succinctWords (C C₀ U V w n_max : ℕ) : ℕ :=
 /-- **Fixed-Capacity Succinct Dynamic Dictionary with Deletions**
 (`Succinct.impl`, `Succinct.space_le_succinctWords`, `Succinct.initTime_impl_le`, and
 `Succinct.seq_expected_amortized`):
-For every key universe `U`, value bound `V`, word width `w`, and capacity `n_max`, there exist
-register count `r ≥ 256`, expected **amortized** per-operation instruction charge `C_op : ℕ`
-(instantiated as `Succinct.chargeVal U V w n_max = 313 * Succinct.opFactor U V w n_max + 284689`,
-which depends on `(U, V, w, n_max)` through the `Realizes.factor` witness `opFactor` and is
-independent of `base` and `ops.length`, with no constant upper bound on `C_op` proven across
-`(U, V, w, n_max)`), allocated block size `sp : ℕ`, initialization instruction budget
-`initBudget : ℕ`, and compiled `r`-register Word-RAM programs `p_init` and `p_op` (depending on
-`(U, V, w, n_max)` and independent of `base`, with no static code-size bound) such that:
+Certifies multi-operation distributional correctness, succinct space, and linear initialization
+cost on the Word-RAM. For every key universe `U`, value bound `V`, word width `w`, and capacity
+`n_max`, there exist register count `r ≥ 256`, per-parameter amortized operation step witness
+`C_op : ℕ` (instantiated as `Succinct.chargeVal U V w n_max = 313 * Succinct.opFactor U V w n_max +
+284689`, where `opFactor` is chosen per `(U, V, w, n_max)` by classical choice via `Realizes.factor`
+without a parameter-uniform bound, so `C_op` is unquantified in magnitude here and records only
+independence from `base` and `ops.length` at fixed `(U, V, w, n_max)`), allocated block size
+`sp : ℕ`, initialization instruction budget `initBudget : ℕ`, and compiled `r`-register Word-RAM
+programs `p_init` and `p_op` (depending on `(U, V, w, n_max)` and independent of `base`, with no
+static code-size bound) such that:
 - `initBudget ≤ 31 * n_max + 1092`;
 - whenever `0 < w`, `n_max ≤ U` (since distinct keys lie in `Fin U` and `U.choose n_max = 0` for
   `n_max > U`), and `U < 2 ^ w`, the total word footprint `sp` satisfies the succinct bound
@@ -405,10 +415,10 @@ independent of `base` and `ops.length`, with no constant upper bound on `C_op` p
      capacity `n_max` and value bound `V` (`ValidDynDictHistory V n_max (emptyDict U) ops`), `p_op`
      executes `ops` sequentially (`ExecDynDictOps`), matching `stepDynDict` and `OpOutputCorrect`
      at every step;
-  3. the total expected executed body instruction count across initialization and `ops` satisfies
-     the expected **amortized** bound
-     `initBudget + T_ops ≤ initBudget + ops.length * C_op`
-     (excluding final `halt` and caller argument preparation/dispatch).
+  3. for that fixed `(U, V, w, n_max)`, the expected executed body instruction count `T_ops` across
+     `ops` satisfies `initBudget + T_ops ≤ initBudget + ops.length * C_op` (recording
+     sequence-length and `base` independence for fixed parameters, without certifying a
+     parameter-uniform bound on `C_op`).
 
 References: `[BenderFarachColtonKuszmaulKuszmaul2024]` (SOSA 2024, Sections 3–4);
 `[BenderConwayFarachColtonKuszmaulTagliavini2023]` (*J. ACM* 70(6):40, 2023;

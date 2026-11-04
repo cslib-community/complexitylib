@@ -41,7 +41,7 @@ Sections 5.2 and 6.1, Lemma 24][BenderFarachColtonKuszmaulKuszmaulLiu2022]):
    `totalMicroBuckets n_max = 2 ^ ⌊log₂ n_max⌋ ∈ (n_max / 2, max n_max 1]`, and each bucket
    indexes up to `effBucketCap n_max = 4 * 2 ^ microBits n_max` local slots using
    `effBucketPosBits n_max ≤ microBits n_max + 3 ≤ 6 * logLogFactor n_max` bits per pointer.
-2. **Pointwise hysteresis slab potential (`bucketPotential`, `tablePotential`):**
+2. **Pointwise hysteresis slab potential (`bucketPotential`):**
    When `0 < bucketBits n_max`, each bucket partitions its `c_b = q_b * K + r_b` items into `q_b`
    full slabs of `K = slabSize n_max = (slabScale n_max)^2` items and `r_b < 2 * K` tail items
    (with `1 ≤ r_b` whenever `0 < q_b`). Promoting `K` tail items when `r_b` reaches `2 * K` and
@@ -63,7 +63,7 @@ Sections 5.2 and 6.1, Lemma 24][BenderFarachColtonKuszmaulKuszmaulLiu2022]):
   `totalMicroBuckets`, `effBucketCap`, `effBucketPosBits`, `slabBits`, `slabSize`,
   `dirSlabsPerBucket`, `tailCapPerBucket`, `maxFullSlabs`, `maxTailItems`, `globalPtrBits`:
   dimension and bit-width parameters.
-* `Cslib.DataStructure.Dictionary.SuccinctBucket.bucketPotential`, `tablePotential`,
+* `Cslib.DataStructure.Dictionary.SuccinctBucket.bucketPotential`,
   `pushBackCounts`, `pushBackWork`, `popBackCounts`, `popBackWork`: hysteresis slab potential and
   transitions.
 * `Cslib.DataStructure.Dictionary.SuccinctBucket.feistelMicroHash`, `feistelBucketHash`,
@@ -74,8 +74,8 @@ Sections 5.2 and 6.1, Lemma 24][BenderFarachColtonKuszmaulKuszmaulLiu2022]):
 
 * `totalMicroBits_eq_log`, `numBuckets_mul_effBucketCap_le`, `numBuckets_mul_slabScale_cubed_le`,
   `globalPtrBits_le_two_mul_slabScale`: exact bit-budget identities across all `n_max`.
-* `bucketPotential_pushBack_le`, `bucketPotential_popBack_le`, `tablePotential_pushBack_le`,
-  `tablePotential_popBack_le`: deterministic hysteresis amortization bounds.
+* `bucketPotential_pushBack_le`, `bucketPotential_popBack_le`: deterministic hysteresis
+  amortization bounds.
 * `isKWiseIndependentHash_projLowBits`, `expect_microCollCount_le_two`,
   `expect_bucketOvfCount_le_one`, `expect_probeExcess_le_three`,
   `tsum_uniform_probeExcess_le_three`: expected probe-excess bounds under 3-wise independence.
@@ -635,63 +635,6 @@ theorem bucketPotential_popBack_le (K q r : ℕ) (_hK : 1 ≤ K) (hr1 : 1 ≤ r)
   unfold bucketPotential popBackCounts popBackWork
   split_ifs <;> dsimp only at * <;> omega
 
-/-- Sum of per-bucket hysteresis potentials across all `M` buckets. -/
-@[expose]
-def tablePotential (K M : ℕ) (qFn rFn : Fin M → ℕ) : ℕ :=
-  ∑ b : Fin M, bucketPotential K (qFn b) (rFn b)
-
-/-- Updating bucket `b` via `pushBackCounts` satisfies
-`tablePotential K M qFn' rFn' + pushBackWork K (rFn b) ≤ tablePotential K M qFn rFn + 1`. -/
-theorem tablePotential_pushBack_le {K M : ℕ} (qFn rFn : Fin M → ℕ) (b : Fin M)
-    (hK : 1 ≤ K) (hr : rFn b < 2 * K) :
-    tablePotential K M
-      (Function.update qFn b (pushBackCounts K (qFn b) (rFn b)).1)
-      (Function.update rFn b (pushBackCounts K (qFn b) (rFn b)).2) +
-      pushBackWork K (rFn b) ≤
-      tablePotential K M qFn rFn + 1 := by
-  unfold tablePotential
-  rw [← Finset.add_sum_erase _ _ (mem_univ b),
-    ← Finset.add_sum_erase _ (fun i => bucketPotential K (qFn i) (rFn i)) (mem_univ b)]
-  simp only [Function.update_self]
-  have hrest :
-      (∑ i ∈ univ.erase b,
-        bucketPotential K
-          (Function.update qFn b (pushBackCounts K (qFn b) (rFn b)).1 i)
-          (Function.update rFn b (pushBackCounts K (qFn b) (rFn b)).2 i)) =
-        ∑ i ∈ univ.erase b, bucketPotential K (qFn i) (rFn i) := by
-    refine sum_congr rfl fun i hi => ?_
-    have hne : i ≠ b := (mem_erase.mp hi).1
-    rw [Function.update_of_ne hne, Function.update_of_ne hne]
-  rw [hrest]
-  have hb := bucketPotential_pushBack_le K (qFn b) (rFn b) hK hr
-  omega
-
-/-- Updating bucket `b` via `popBackCounts` satisfies
-`tablePotential K M qFn' rFn' + popBackWork K (qFn b) (rFn b) ≤ tablePotential K M qFn rFn + 1`. -/
-theorem tablePotential_popBack_le {K M : ℕ} (qFn rFn : Fin M → ℕ) (b : Fin M)
-    (hK : 1 ≤ K) (hr1 : 1 ≤ rFn b) (hr2 : rFn b < 2 * K) :
-    tablePotential K M
-      (Function.update qFn b (popBackCounts K (qFn b) (rFn b)).1)
-      (Function.update rFn b (popBackCounts K (qFn b) (rFn b)).2) +
-      popBackWork K (qFn b) (rFn b) ≤
-      tablePotential K M qFn rFn + 1 := by
-  unfold tablePotential
-  rw [← Finset.add_sum_erase _ _ (mem_univ b),
-    ← Finset.add_sum_erase _ (fun i => bucketPotential K (qFn i) (rFn i)) (mem_univ b)]
-  simp only [Function.update_self]
-  have hrest :
-      (∑ i ∈ univ.erase b,
-        bucketPotential K
-          (Function.update qFn b (popBackCounts K (qFn b) (rFn b)).1 i)
-          (Function.update rFn b (popBackCounts K (qFn b) (rFn b)).2 i)) =
-        ∑ i ∈ univ.erase b, bucketPotential K (qFn i) (rFn i) := by
-    refine sum_congr rfl fun i hi => ?_
-    have hne : i ≠ b := (mem_erase.mp hi).1
-    rw [Function.update_of_ne hne, Function.update_of_ne hne]
-  rw [hrest]
-  have hb := bucketPotential_popBack_le K (qFn b) (rFn b) hK hr1 hr2
-  omega
-
 /-! ## Section 3: Feistel micro-bucket and bucket hash decomposition & expected cost bounds -/
 
 section ProbabilityBounds
@@ -1177,32 +1120,8 @@ theorem tsum_affine_probeExcess_le [Nonempty ι] {U n_max : ℕ}
     (μ : PMF ι) (hμ : ∀ i, μ i ≤ (PMF.uniformOfFintype ι) i)
     (A B : ℕ) (T : ι → ℕ)
     (hT : ∀ i, T i ≤ A + B * probeExcess n_max qOf H i S u) :
-    (∑' i : ι, μ i * (T i : ℝ≥0∞)) ≤ ((A + 3 * B : ℕ) : ℝ≥0∞) := by
-  have h1 : (∑' i : ι, μ i * (T i : ℝ≥0∞)) ≤
-      ∑' i : ι, ((PMF.uniformOfFintype ι) i * (A : ℝ≥0∞) +
-        (B : ℝ≥0∞) * ((PMF.uniformOfFintype ι) i * (probeExcess n_max qOf H i S u : ℝ≥0∞))) := by
-    refine tsum_le_tsum fun i => ?_
-    have hle : (T i : ℝ≥0∞) ≤ ((A + B * probeExcess n_max qOf H i S u : ℕ) : ℝ≥0∞) :=
-      Nat.cast_le.mpr (hT i)
-    calc μ i * (T i : ℝ≥0∞)
-        ≤ (PMF.uniformOfFintype ι) i * ((A + B * probeExcess n_max qOf H i S u : ℕ) : ℝ≥0∞) := by
-          gcongr
-          exact hμ i
-      _ = (PMF.uniformOfFintype ι) i * (A : ℝ≥0∞) +
-            (B : ℝ≥0∞) * ((PMF.uniformOfFintype ι) i *
-              (probeExcess n_max qOf H i S u : ℝ≥0∞)) := by
-          push_cast
-          ring
-  rw [tsum_add, ENNReal.tsum_mul_right, (PMF.uniformOfFintype ι).tsum_coe, one_mul,
-    ENNReal.tsum_mul_left] at h1
-  have h3 := tsum_uniform_probeExcess_le_three hq hh S u hS
-  calc (∑' i : ι, μ i * (T i : ℝ≥0∞))
-      ≤ (A : ℝ≥0∞) + (B : ℝ≥0∞) * 3 := by
-        refine h1.trans ?_
-        gcongr
-    _ = ((A + 3 * B : ℕ) : ℝ≥0∞) := by
-        push_cast
-        ring
+    (∑' i : ι, μ i * (T i : ℝ≥0∞)) ≤ ((A + 3 * B : ℕ) : ℝ≥0∞) :=
+  tsum_affine_probeExcess_of_bound (tsum_uniform_probeExcess_le_three hq hh S u hS) μ hμ A B T hT
 
 end ProbabilityBounds
 

@@ -40,7 +40,6 @@ open Cslib.DataStructure.HashFamily.WordRAM
 open Cslib.DataStructure.WordRAM
 open Cslib.DataStructure.WordRAM.Randomized
 open ComplexityAbstracts.RandomizedWordRAMBridge
-open ComplexityAbstracts.HashFamiliesBridge (trinomialStepLoop trinomialStepLoop_eq)
 open ComplexityAbstracts.HashFamiliesBridge.HFPresentation (WordBounded UnchangedOutside)
 
 /-! ## Part 1: Polymorphic Dynamic Dictionary Presentation and Execution Transfer -/
