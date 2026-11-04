@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Producer
-public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationInput
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.NumericBounds
 
 /-!
 # Input-derived admission and charged adapter overhead
@@ -26,65 +26,6 @@ namespace Cslib.Algorithms.WordRAM.ExactTriangle.RecordProduct
 open Cslib.WordRAM Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
 open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage
-
-/-- Original-input physical width covering the actual producer, every dirty producer word
-before normalization, and all relocated product addresses. -/
-@[expose] def admissionWidth (n D g p A : ℕ) : ℕ :=
-  PreparationInput.width n D g p A +
-    256 * Nat.clog 2 (2 * PreparationInput.wordBound n D g p A + n + n ^ 2 + 5)
-
-/-- Physical admission is positive, including parameter boundary cases. -/
-theorem admissionWidth_pos (n D g p A : ℕ) : 0 < admissionWidth n D g p A := by
-  unfold admissionWidth PreparationInput.width
-  omega
-
-/-- Actual producer word/address bounds and the computed chunk size discharge the physical
-fit numerically; neither a window nor an intermediate arithmetic certificate is an input. -/
-theorem physical_fits {W n D g p A b Q : ℕ}
-    (hb : b ≤ PreparationInput.wordBound n D g p A) (hQ : Q ≤ n ^ 2)
-    (hW : admissionWidth n D g p A ≤ W) :
-    Fits W (2 * b + 4 * CallableProduct.windowSize n Q + 1024) := by
-  have hw : 256 * Nat.clog 2 (2 * PreparationInput.wordBound n D g p A + n + n ^ 2 + 5) ≤ W :=
-    by unfold admissionWidth at hW; omega
-  have hfit := CallableProduct.physical_fits hw
-  have hM : CallableProduct.windowSize n Q ≤ CallableProduct.windowSize n (n ^ 2) := by
-    apply Nat.pow_le_pow_right (by decide)
-    exact Nat.mul_le_mul_left 128 (Nat.clog_mono_right 2 (by omega))
-  exact hfit.of_le (by omega)
-
-/-- The final threshold is logarithmic in the original outer dimension under the producer's
-standard polynomial original-header/weight hypotheses. The constant is positive for every κ. -/
-theorem admissionWidth_le_log {n D g p A κ : ℕ} (hn : 1 ≤ n)
-    (hD : D ≤ n) (hg : g ≤ n) (hp : p ≤ n) (hA : A ≤ (n + 2) ^ κ) :
-    admissionWidth n D g p A ≤ (257 * κ + 5906) * Nat.clog 2 (n + 2) := by
-  let b := n + 2
-  have hb : 2 ≤ b := by dsimp only [b]; omega
-  have hP := PreparationInput.wordBound_le_pow hn hD hg hp hA
-  change PreparationInput.wordBound n D g p A ≤ b ^ (κ + 19) at hP
-  have hunit : 1 ≤ b ^ (κ + 19) := Nat.one_le_pow _ _ (by omega)
-  have hnpow : n ≤ b ^ (κ + 19) := (show n ≤ b by dsimp only [b]; omega).trans
-    (Nat.le_self_pow (by omega) b)
-  have hn2 : n ^ 2 ≤ b ^ (κ + 19) :=
-    (Nat.pow_le_pow_left (by dsimp only [b]; omega : n ≤ b) 2).trans
-      (Nat.pow_le_pow_right (by omega : 1 ≤ b) (by omega : 2 ≤ κ + 19))
-  have harg : 2 * PreparationInput.wordBound n D g p A + n + n ^ 2 + 5 ≤ b ^ (κ + 23) := by
-    have hsum : 2 * PreparationInput.wordBound n D g p A + n + n ^ 2 + 5 ≤
-        9 * b ^ (κ + 19) := by omega
-    have hc : 9 ≤ b ^ 4 := (show 9 ≤ 2 ^ 4 by decide).trans (Nat.pow_le_pow_left hb 4)
-    calc
-      _ ≤ 9 * b ^ (κ + 19) := hsum
-      _ ≤ b ^ 4 * b ^ (κ + 19) := Nat.mul_le_mul_right _ hc
-      _ = b ^ (κ + 23) := by rw [← Nat.pow_add]; congr 1; omega
-  have hbase := Nat.le_pow_clog (by decide : 1 < (2 : ℕ)) b
-  have hlogBound := harg.trans (Nat.pow_le_pow_left hbase (κ + 23))
-  rw [← Nat.pow_mul] at hlogBound
-  have hlog := Nat.clog_le_of_le_pow hlogBound
-  have hprep := PreparationInput.width_le_log hn hD hg hp hA
-  change Nat.clog 2 (2 * PreparationInput.wordBound n D g p A + n + n ^ 2 + 5) ≤
-    Nat.clog 2 b * (κ + 23) at hlog
-  unfold admissionWidth
-  dsimp only [b] at hlog
-  nlinarith only [hlog, hprep]
 
 /-- All real descriptor/log/header/copy/invocation work is linear in original matrices and
 occurrences. This includes standalone halt, but not another execution of the producer. -/

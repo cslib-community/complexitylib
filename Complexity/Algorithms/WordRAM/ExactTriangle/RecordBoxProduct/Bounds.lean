@@ -7,7 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Flat
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Exec
 
 /-!
 # Complete finite saving for an actual prepared-record box call

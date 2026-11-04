@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Flat
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.NumericBounds
 public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationBounds
 
 /-!
@@ -25,34 +26,6 @@ namespace Cslib.Algorithms.WordRAM.ExactTriangle.RecordProduct
 
 open Cslib.WordRAM Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
-
-/-- Explicit input-derived bound for all prefix words and the address support, independent
-of any larger admitted physical width. This is a reservation, not a bulk initialization. -/
-@[expose] def wordBound (n D g p A : ℕ) : ℕ := 2 ^ admissionWidth n D g p A
-
-/-- The prefix bound is polynomial in original size for the usual original scalar/weight
-envelopes, with an explicit fixed exponent for each magnitude exponent κ. -/
-theorem wordBound_le_pow {n D g p A κ : ℕ} (hn : 1 ≤ n)
-    (hD : D ≤ n) (hg : g ≤ n) (hp : p ≤ n) (hA : A ≤ (n + 2) ^ κ) :
-    wordBound n D g p A ≤ (n + 2) ^ (514 * κ + 11812) := by
-  let b := n + 2
-  have hb : 1 < b := by dsimp only [b]; omega
-  have hc := Nat.clog_pos (by decide : 1 < (2 : ℕ)) hb
-  have hp2 := Nat.pow_pred_clog_lt_self (by decide : 1 < (2 : ℕ)) hb
-  have he : Nat.clog 2 b = (Nat.clog 2 b).pred + 1 := (Nat.succ_pred_eq_of_pos hc).symm
-  have hbase : 2 ^ Nat.clog 2 b ≤ b ^ 2 := by
-    rw [he, pow_succ]
-    nlinarith only [hp2, show 2 ≤ b by omega]
-  have hw := admissionWidth_le_log hn hD hg hp hA
-  have hpow := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) hw
-  change 2 ^ admissionWidth n D g p A ≤ _
-  calc
-    _ ≤ 2 ^ ((257 * κ + 5906) * Nat.clog 2 b) := hpow
-    _ = (2 ^ Nat.clog 2 b) ^ (257 * κ + 5906) := by rw [← Nat.pow_mul, Nat.mul_comm]
-    _ ≤ (b ^ 2) ^ (257 * κ + 5906) := Nat.pow_le_pow_left hbase _
-    _ = b ^ (514 * κ + 11812) := by
-      rw [← Nat.pow_mul]
-      exact congrArg (fun k : ℕ => b ^ k) (by omega : 2 * (257 * κ + 5906) = 514 * κ + 11812)
 
 /-- Every actual native prefix at every admitted width has input-derived bounded words and
 zero memory beyond the same bound. The real halting run at the minimum admitted width and

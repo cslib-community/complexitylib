@@ -39,4 +39,22 @@ open RecordProduct
 /-- One actual selected record, including all preparation, patch and native product work. -/
 @[expose] def program : Code .standard 320 := .seq prepare invoke
 
+/-- Constant native record-consumer size and physical-width independence. -/
+theorem program_fixed : program.size ≤ 131584 ∧ ¬program.ReadsWidth := by
+  have hc := CallableBoxProduct.program_length_le
+  simp only [CallableBoxProduct.entryProgram, Code.program, List.length_append,
+    Code.length_assemble, List.length_singleton, Code.size] at hc
+  have hp : RecordProduct.prepare.size ≤ 256 := by decide +kernel
+  have hs : patchInput.size = 16 := by decide +kernel
+  have hprep : ¬RecordProduct.prepare.ReadsWidth := by decide +kernel
+  have hpatch : ¬patchInput.ReadsWidth := by decide +kernel
+  have hcall : ¬CallableBoxProduct.program.ReadsWidth := by
+    simpa only [CallableBoxProduct.entryProgram, Code.ReadsWidth, Op.ReadsWidth, false_or] using
+      CallableBoxProduct.not_readsWidth
+  constructor
+  · simp only [program, prepare, invoke, Code.size, Code.size_rename]
+    omega
+  · simp only [program, prepare, invoke, Code.ReadsWidth, Code.readsWidth_rename,
+      Op.ReadsWidth, hprep, hpatch, hcall, not_false_eq_true, or_self]
+
 end Cslib.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct

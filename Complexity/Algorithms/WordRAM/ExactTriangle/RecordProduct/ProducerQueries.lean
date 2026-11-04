@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.RawInput
+public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationAdjacency
 
 /-!
 # Actual producer chunks admit the native query copies

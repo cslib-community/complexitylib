@@ -7,7 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Bounds
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.RecordData
 
 /-!
 # The actual first prepared record exists
