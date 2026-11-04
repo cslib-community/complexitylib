@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product.Flat
 public import Mathlib.Data.Nat.Log
+import Complexity.Computability.WordRAM.Admission
 
 /-!
 # Positive original-input width admission for native queried products
@@ -42,17 +43,14 @@ public theorem admissionWidth_pos (L m N Q A : ℕ) : 0 < admissionWidth L m N Q
 /-- Mathlib's ceiling logarithm supplies both numerical admission hypotheses. -/
 public theorem admission_bounds {W L m N Q A : ℕ} (hW : admissionWidth L m N Q A ≤ W) :
     0 < W - 2 ∧ magnitudeBound L A < 2 ^ ((W - 2) - 1) ∧ Fits W (wordBudget L m N Q) := by
-  have hl := Nat.le_pow_clog (by decide : 1 < (2 : ℕ))
-    (magnitudeBound L A + wordBudget L m N Q + 1)
-  have he : Nat.clog 2 (magnitudeBound L A + wordBudget L m N Q + 1) ≤ (W - 2) - 1 := by
+  have hs : Nat.clog 2 (magnitudeBound L A + wordBudget L m N Q + 1) ≤ (W - 2) - 1 := by
     unfold admissionWidth at hW
     omega
-  have hp := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) he
-  refine ⟨by unfold admissionWidth at hW; omega, by omega, ?_⟩
-  change wordBudget L m N Q < 2 ^ W
-  have hp' := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) (by omega :
-    Nat.clog 2 (magnitudeBound L A + wordBudget L m N Q + 1) ≤ W)
-  omega
+  refine ⟨by unfold admissionWidth at hW; omega, ?_, ?_⟩
+  · exact fits_of_lt_clog_le
+      (by omega : magnitudeBound L A < magnitudeBound L A + wordBudget L m N Q + 1) hs
+  · exact fits_of_lt_clog_le
+      (by omega : wordBudget L m N Q < magnitudeBound L A + wordBudget L m N Q + 1) (by omega)
 
 /-- Both real input modes run at every sufficiently wide physical width. All product values,
 the charged halt and complete restored-input/outside frame refer to the same actual run. -/

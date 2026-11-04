@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Properties
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Delivery
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Selection
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Exec

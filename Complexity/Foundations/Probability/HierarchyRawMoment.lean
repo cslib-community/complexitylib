@@ -124,14 +124,14 @@ are part of the expression; no width, prime or horizon is hidden in its constant
     (D : ZMod P) (ident : V → ZMod P) (R : RoleProfile J)
     (l bin ks km kt kb : ℕ) (ss sm st : List (ZMod P))
     (Kc : ℕ) (binCutoff : ℝ → ℝ)
-    (raw prep : HierarchyTask.Request (k + 1) (Fin J) (ZMod P) →
+    (raw prep : HierarchyTask.Request k (Fin J) (ZMod P) →
       Environment P J → Matrix V V ℝ)
-    (maximum : HierarchyTask.Request (k + 1) (Fin J) (ZMod P) → Environment P J → V → ℝ)
+    (maximum : HierarchyTask.Request k (Fin J) (ZMod P) → Environment P J → V → ℝ)
     (N u : ℝ) : ℝ :=
   let source := gridChannel R.source ks ss
   let mid := gridChannel R.midpoint km sm
   let terminal := gridChannel R.terminal kt st
-  let requests := HierarchyTask.rawRequests (k := k + 1) l bin .residual
+  let requests := HierarchyTask.rawRequests (k := k) l bin .residual
     source mid terminal (rate kb)
   let child := incomingChildren HP D ident Kc binCutoff raw prep maximum
   let ratio := HierarchyTask.usageRatio (fun role b suffix σ v =>
@@ -144,10 +144,10 @@ are part of the expression; no width, prime or horizon is hidden in its constant
     (rate km / (dens {τ | mid.retains (channels D) τ (ident y)} : ℝ)) *
       child requests.right σ z y
   let negative := fun σ x y => rate km * ratio
-    ⟨HierarchyTask.correctionAtomTask l false (Fin.last (k + 1)), source,
+    ⟨HierarchyTask.correctionAtomTask l false (Fin.last k), source,
       {terminal with rate := rate km}, {terminal with rate := min terminal.rate (rate km)}⟩
         y *
-      child ⟨HierarchyTask.correctionAtomTask l false (Fin.last (k + 1)), source,
+      child ⟨HierarchyTask.correctionAtomTask l false (Fin.last k), source,
         {terminal with rate := rate km}, {terminal with rate := min terminal.rate (rate km)}⟩
           σ x y
   64 * (rowNormPow 4 N u XD YD direct +
@@ -249,7 +249,8 @@ theorem rawIncomingNormalized_moment {k : ℕ}
     change HierarchyTask.rawSample (fun role b suffix σ v =>
       channels D role b suffix σ (ident v)) l bin .residual source mid terminal
         (rate kb) (fun r => child r σ) x y = _
-    unfold HierarchyTask.rawSample
+    unfold HierarchyTask.rawSample HierarchyTask.rawPositiveSample
+      HierarchyTask.rawNegativeSample
     dsimp only
     congr 1
     congr 1

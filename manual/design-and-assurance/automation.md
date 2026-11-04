@@ -2,6 +2,38 @@
 
 The automation layer searches for proofs of explicit mathematical contracts. It generally reuses named certificates and compositional rules; it is not a compiler that can assign a polynomial bound to an arbitrary Lean program. In particular, a short tactic call hides a checked derivation, but the model, algorithm and invariant still have to be right. [complexitylib][complexitylib]
 
+## Assemble joint time and space bounds
+
+Import `Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists`
+and work in `Turing.MultiTapeTM`. Build one `ComputableInO` certificate for the whole
+function with `fun_prop`, then use `ComputableInO.mono` to compare its assembled time and
+space bounds with the desired bounds. Keep the input and output encodings explicit. The
+complete [FunPropLists clients](../../ComplexityTests/Machines/Turing/MultiTape/FunPropLists.lean)
+show this pattern for a list operation, finite tests, a binary-number branch and options,
+including the separate arithmetic comparisons after automation succeeds.
+
+The encoding determines which rule applies. `take'` and `drop'` require the computed count
+to have encoding `encUnary`; binary numbers use `encNat`. Changing between those encodings
+needs a certificate, not just a different annotation. The registered binary `natSucc` and
+`natPred` rules carry quadratic time and linear charged space in encoded length. The
+unary successor/predecessor rules have linear bounds. Space includes encoded output and
+intermediate values; it is not an uncharged-output or scratch-only convention.
+
+Tests against a fixed finite value (`decideEq'`) and binary zero (`natIsZero'`) retain the
+tested computation's premise bounds. Testing a computed list with `isEmpty'` instead adds
+that list's encoded length to both time and space. For equality of two computed values,
+enable `ComputableInO.eq'` locally as a `fun_prop` rule when needed. It adds the explicit
+time term `(La + 1) * (La + Lb + 1)`, where `La` and `Lb` are their encoded lengths, and
+the encoded-pair space charge to the premise bounds. It is deliberately not a global rule,
+so cheaper constant-test rules remain available.
+
+If `fun_prop` cannot assemble the certificate, check the import, function's argument type,
+encodings and available callback certificates; use the named compositional rule to inspect
+the missing premise. If it succeeds but `mono` fails, inspect the intermediate/output
+encoding lengths and prove the remaining growth inequalities. The tactic does not infer
+those bounds or supply missing callback certificates. The [deterministic workflow](../workflows/deterministic-workflows.md)
+explains the joint certificate and charged-space convention in context.
+
 ## Named certificates and polynomial time
 
 [`program_certificate`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/PolyTime/Init.lean#L17) indexes a theorem by its efficiency predicate and the head constant of its program, with an encoding flag. The predicate index prevents a RAM certificate from accidentally solving a Turing-machine goal. Looking up a named routine before unfolding its body keeps clients abstract and controls search. The same annotation registers with `fun_prop`, reusing an existing registration when present; parameterized `IsPPT` certificates are normalized to `IsPPTOn` for the shared encoded-input interface.
@@ -9,6 +41,36 @@ The automation layer searches for proofs of explicit mathematical contracts. It 
 [`polytime`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/PolyTime.lean#L25) combines these certificates with `fun_prop` composition and the Aesop `PolyTime` rules. Loops use Hoare-style iteration theorems plus bounds on state growth and iteration count. A bounded number of calls to individually efficient routines is insufficient if intermediate data grows exponentially; the growth hypotheses are part of the proof obligation. Ordinary search failure can expose a failed compositional attempt as a diagnostic, not as evidence of noncomputability.
 
 Plain and internal tidy predicates have separate search rules at this snapshot. The preferred plain tactic does not change the user's goal to tidy computability or silently restate hypotheses. Machine-level proofs may still use tidy witnesses internally. This is the implemented direction even where older prose or issues describe a stronger prohibition on tidy use inside proofs.
+
+## Rewrite option matches before resource automation
+
+Import `Complexity.Tactic.OptionMatch` to use `option_match_to_elim`. For a
+`ComputableInO` goal, also import
+`Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Option`; that module
+registers `ComputableInO.optionElimWithInput` with `fun_prop`. The
+[complete checked client](../../ComplexityTests/OptionMatch.lean) gives both imports, local
+context and an example with explicit time and space bounds.
+
+Unfold a local wrapper to expose its option match, run `option_match_to_elim`, then use
+`fun_prop` to assemble the available certificates. The tactic rewrites the goal to
+`Option.elim` using a checked equality proof; it does not prove the branch computations
+efficient. In the quantitative client, `ComputableInO.mono` leaves separate time and space
+comparisons, discharged from the encodings. Supply missing callback certificates and prove
+those remaining inequalities. The migrated
+[checker proof](../../Complexity/Computability/Machines/Turing/MultiTape/Counting/Checker.lean),
+`computableInPolyTime_binaryStep`, demonstrates the same route for a named wrapper.
+
+The rewrite supports non-dependent two-way option matches, including nested occurrences,
+occurrences under binders and either alternative order. It rewrites `Option.bind` directly;
+unfold `Option.map` or `Option.any` first to expose their matches. An option payload need
+not have an inhabitant for the quantitative elimination rule.
+
+Dependent matches, general matches on multiple discriminants and alternatives that destructure
+a payload, such as `some (a, b)`, are left unchanged. The diagnostic
+`option_match_to_elim: no option match in the goal` means no supported occurrence was
+rewritten. Check that the wrapper is unfolded and the pattern is supported. For the remaining
+cases, use explicit case analysis or an elimination lemma, then apply the appropriate
+certificates and bounds. Rewriting alone does not supply a missing resource certificate.
 
 ## Other resource predicates
 
@@ -35,6 +97,9 @@ method before unfolding it. The tactic checks its basis and output encoding and 
 `Realizes.reindex` to wire every encoded argument coordinate to an already live word. The
 complete [method-call clients](../../ComplexityTests/WordRAMRealizationCall.lean) cover
 projections, aliased inputs, curried and dependent arguments, and optional-pair replies.
+Word-vector type abbreviations in the callee's input and output encodings are accepted without
+restating their literal `Fin` widths; the [encoding-alias clients](../../ComplexityTests/WordRAMRealizeAliases.lean)
+include a nine-word input, six-word result and empty-vector methods.
 Certificates are tried in context order; this does not search for a runtime bound.
 Zero local work is an absorbed grading: the callee still has its certified native allowance
 against memory charge. It does not mean zero machine instructions.

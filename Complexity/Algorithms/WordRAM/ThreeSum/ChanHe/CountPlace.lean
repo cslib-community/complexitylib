@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountCall
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PlaceExec
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PlaceMemory
+import Complexity.Computability.WordRAM.Call
 
 /-!
 # A complete native counting and placement call
@@ -225,41 +226,34 @@ theorem exec {w M N U t : ℕ} (x : Data 64) (values : ℕ → ℤ) (neg : Bool)
   have qfit : Fits (w + 2) (Place.budget (q.comap registers) M N U t) := by
     rw [Place.budget, qs, qk, qh, qo, qp, qn]
     exact hfit.of_le (by dsimp only [budget]; omega)
-  obtain ⟨b, hb, hbm, hbc, _⟩ := Place.exec (q.comap registers) values neg hM hN
-    (by simpa only [qc] using hc) (by simpa only [qd] using hd) ht
-    (qm.trans hmreg) (qt.trans htag) (qg.trans hneg)
-    (by simpa only [qn] using hbdd) qfit
-    (by simpa only [qs, qn, qo] using hsh) (by simpa only [qo, qn, qp] using hhp)
-    (by simpa only [qp, qk] using hpk) (by simpa only [qk, qn, qh] using hkh)
-    (by
-      intro i hi
-      rw [Data.comap_mem, qmem, am, qs]
-      have hi' : i < x.regs len := by simpa only [qn] using hi
-      rw [Count.memory_before _ _ _ _ _ _ _ (by omega) (by omega)]
-      exact hinput i hi')
-    (by
-      intro i hi
-      have hi' : i < x.regs len := by simpa only [qn] using hi
-      rw [Data.comap_mem, qmem, am, qk, Count.memory, Histogram.memory,
-        ite_eq_right (by omega)]
-      simp [Residues.memory, show i < x.regs len by simpa only [qn] using hi, residueKey])
-    (by
-      intro r hr
-      rw [Data.comap_mem, qmem, am, qh, Count.memory, Histogram.memory_read _ _ _ _ _ _ hr]
-      rfl)
-  let y := b.extend registers q
-  have hy : ExecWithin (w + 2) (Place.program.rename registers) q y
-      (32 * x.regs len + 8) := by simpa only [qn] using hb.rename registers_injective
-  have yc : y.regs pcount = (Place.heavyList values (x.regs len) M (x.regs len)).length := by
-    change Function.extend registers b.regs q.regs (registers Place.count) = _
-    rw [registers_injective.extend_apply, hbc, qn]
+  obtain ⟨y, hy, ⟨hbm, hbc, _⟩, hframe⟩ :=
+    ExecWithin.rename_post registers_injective (Place.exec (q.comap registers) values neg hM hN
+      (by simpa only [qc] using hc) (by simpa only [qd] using hd) ht
+      (qm.trans hmreg) (qt.trans htag) (qg.trans hneg)
+      (by simpa only [qn] using hbdd) qfit
+      (by simpa only [qs, qn, qo] using hsh) (by simpa only [qo, qn, qp] using hhp)
+      (by simpa only [qp, qk] using hpk) (by simpa only [qk, qn, qh] using hkh)
+      (by
+        intro i hi
+        rw [Data.comap_mem, qmem, am, qs]
+        have hi' : i < x.regs len := by simpa only [qn] using hi
+        rw [Count.memory_before _ _ _ _ _ _ _ (by omega) (by omega)]
+        exact hinput i hi')
+      (by
+        intro i hi
+        have hi' : i < x.regs len := by simpa only [qn] using hi
+        rw [Data.comap_mem, qmem, am, qk, Count.memory, Histogram.memory,
+          ite_eq_right (by omega)]
+        simp [Residues.memory, show i < x.regs len by simpa only [qn] using hi, residueKey])
+      (by
+        intro r hr
+        rw [Data.comap_mem, qmem, am, qh, Count.memory, Histogram.memory_read _ _ _ _ _ _ hr]
+        rfl))
+  simp only [qn] at hy hbc
+  have yc : y.regs pcount = (Place.heavyList values (x.regs len) M (x.regs len)).length := hbc
   have yd : y.regs descriptor = x.regs descriptor := by
-    change Function.extend registers b.regs q.regs descriptor = _
-    rw [Function.extend_apply' _ _ _ (by
-      rintro ⟨i, hi⟩
-      have := congrArg Fin.val hi
-      dsimp only [registers, descriptor] at this
-      omega)]
+    rw [hframe descriptor (fun i => Fin.ne_of_val_ne (by
+      dsimp only [registers, descriptor]; omega))]
     have hq : q.regs descriptor = a.regs descriptor := by simp +decide [q, descriptor]
     exact hq.trans (ar descriptor (by decide) (by decide) (by decide))
   have ha' : ExecWithin (w + 2) (CountCall.program 2) z a
@@ -268,7 +262,7 @@ theorem exec {w M N U t : ℕ} (x : Data 64) (values : ℕ → ℤ) (neg : Bool)
     (hp.seq (hy.seq (ExecWithin.store (a := descriptor) (s := pcount)))))
   refine ⟨y.write (y.regs descriptor) (y.regs pcount), he.mono (by omega), ?_, ?_⟩
   · simp only [Data.write_mem, yd, yc]
-    change Function.update b.mem (x.regs descriptor) _ = _
+    change Function.update (y.comap registers).mem (x.regs descriptor) _ = _
     rw [hbm, Data.comap_mem, qmem, am, qn, qo, qp, qc, qd]
     rfl
   · intro i hi hm hc

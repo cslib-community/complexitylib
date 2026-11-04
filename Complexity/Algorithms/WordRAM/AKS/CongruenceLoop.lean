@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.AKS.Congruence
 
 /-!
@@ -96,13 +97,10 @@ private theorem cong_exec {w : ℕ} (x : Data 29) {a b t r n v : ℕ} (ha : x.re
     (hfn : Fits w (n * n + n)) (hfv : Fits w v) :
     ∃ y, ExecWithin w cong x y (Congruence.time r n) ∧ y.regs flag ≤ 1 ∧
       (y.regs flag = 1 ↔ Congruence n r v) ∧ ∀ j, Keep j → y.regs j = x.regs j := by
-  obtain ⟨y, hy, hle, hiff, -⟩ := Congruence.exec (x.comap congMap) ha hb ht hr hn hv hr0 hn0 hab
-    hta htb hfa hfb hft hf2 hfn hfv
-  have hy' := hy.rename congMap_injective
-  have hfl : (y.extend congMap x).regs flag = y.regs Congruence.flag :=
-    congMap_injective.extend_apply _ _ Congruence.flag
-  exact ⟨_, hy', by rw [hfl]; exact hle, by rw [hfl]; exact hiff,
-    fun j hj => hy'.regs_eq (cong_preserves j hj)⟩
+  obtain ⟨y, hy, ⟨hle, hiff, -⟩, -⟩ :=
+    ExecWithin.rename_post congMap_injective (Congruence.exec (x.comap congMap) ha hb ht hr hn
+      hv hr0 hn0 hab hta htb hfa hfb hft hf2 hfn hfv)
+  exact ⟨y, hy, hle, hiff, fun j hj => hy.regs_eq (cong_preserves j hj)⟩
 
 /-- **Step 5.** For `r ≥ 1` and `n ≥ 1`, with the three blocks pairwise disjoint and the word size
 holding the block ends, `2 r`, `n² + n` and `A + 1`, the program leaves `1` in `ok` exactly when

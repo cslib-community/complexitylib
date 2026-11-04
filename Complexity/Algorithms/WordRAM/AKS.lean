@@ -237,10 +237,8 @@ private theorem fits_exp {w s v : ℕ} (hw : 8 * (s + 1) ≤ w) (hv : v < 2 ^ (2
 /-- A subroutine on the low registers preserves the registers of the top level. -/
 private theorem preserves_low {k : ℕ} (hk : k ≤ 29) (c : Code .standard k) (j : Fin 36)
     (hj : 29 ≤ j.val) : (c.rename (low hk)).Preserves j :=
-  Code.preserves_rename_of_forall_ne _ _ _ fun i h => by
-    have := congrArg Fin.val h
-    simp only [low, Fin.val_castLE] at this
-    omega
+  c.preserves_rename_of_offset (offset := 0) (low hk)
+    (fun j => (Nat.zero_add j.val).symm) j (Or.inr (by omega))
 
 /-! ### Correctness -/
 

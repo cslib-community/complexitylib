@@ -9,6 +9,7 @@ module
 
 public import Complexity.Init
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import Mathlib.Topology.MetricSpace.Lipschitz
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Analysis.MeanInequalitiesPow
 import Mathlib.Tactic.FieldSimp
@@ -45,6 +46,8 @@ controls a clipped relative error: if `0 ≤ H ≤ C₀ G`, then for every `a > 
 ## Main results
 
 * `Cslib.abs_sub_le_mul_abs_rpow_inv_sub`: ordinary error is controlled by root error.
+* `Cslib.abs_sub_le_four_mul_root_lipschitz`: bounded fourth-root regularity gives
+  ordinary regularity.
 * `Cslib.homogeneousLoss_nonneg`, `Cslib.homogeneousLoss_self`, `Cslib.homogeneousLoss_comm`,
   `Cslib.homogeneousLoss_mul`: basic properties.
 * `Cslib.rpow_inv_sub_pow_le_homogeneousLoss`, `Cslib.homogeneousLoss_le_rpow_inv_sub_pow`:
@@ -83,6 +86,18 @@ theorem abs_sub_le_mul_abs_rpow_inv_sub {s : ℕ} (hs : s ≠ 0) {z w C : ℝ} (
         abs_pow_sub_pow_le _ _ _
     _ ≤ |z ^ (s⁻¹ : ℝ) - w ^ (s⁻¹ : ℝ)| * s * (C ^ (s⁻¹ : ℝ)) ^ (s - 1) := by gcongr
     _ = s * C ^ (((s : ℝ) - 1) / s) * |z ^ (s⁻¹ : ℝ) - w ^ (s⁻¹ : ℝ)| := by rw [hroot]; ring
+
+/-- Bounded root regularity implies ordinary regularity, using the existing scalar
+root-error comparison at cap one. The factor four is explicit. -/
+lemma abs_sub_le_four_mul_root_lipschitz {f : ℝ → ℝ} {L : NNReal}
+    (hf : ∀ z, f z ∈ Set.Icc 0 1)
+    (hL : LipschitzWith L (fun z => f z ^ (4⁻¹ : ℝ))) (a b : ℝ) :
+    |f a - f b| ≤ (4 * L) * |a - b| := by
+  have h := abs_sub_le_mul_abs_rpow_inv_sub (s := 4) (by decide)
+    (hf a).1 (hf b).1 (hf a).2 (hf b).2
+  norm_num only [Nat.cast_ofNat, Real.one_rpow, mul_one] at h
+  exact h.trans (by simpa only [Real.dist_eq, one_div, mul_assoc] using
+    mul_le_mul_of_nonneg_left (hL.dist_le_mul a b) (by norm_num : (0 : ℝ) ≤ 4))
 
 /-- The **homogeneous loss** `L(H, H') = |H - H'|^s / (H + H')^{s-1}` of the OpenAI preprint
 [OpenAI2026LogSpace, (7.6)]. On nonnegative arguments with `s ≥ 1` it agrees with the preprint's
