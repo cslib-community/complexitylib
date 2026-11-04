@@ -96,6 +96,20 @@ and many-one specializations are not added here. The indexed tagged-base present
 explicit; equivalence to serialized source transducer output is not proved. Word reconstruction,
 suffix length and well-founded descent are semantic results. Likewise the unary dependency
 and id/negation invariant from Lemma 3.3(1) have no oracle resource certificate.
+Import `Complexity.Computability.Complexity.Reduction.LocalSelfReducibility.VirtualWord` for
+native one-bit access to a fixed original prefix and an already stored suffix.
+`LocalSelfReductionQuery.access_output` connects the actual machine output to the query word;
+`access_state_bound` charges only two binary counters, the literal suffix and a halting bit.
+The [accessor](../../Complexity/Computability/Machines/ReadMachine/VirtualWord.lean) certifies
+all five query-machine components in space linear in that state and compiles each fixed-data
+accessor to a native multi-tape machine. With a suffix of at most $\lceil\log_2 n\rceil$ bits
+and an address at most $n$, the encoded state has length at most $16(\log_2 n+1)$.
+The prefix remains read-only input; no reconstructed query is placed in workspace.
+[Checked clients](../../ComplexityTests/VirtualWord.lean) execute empty, length-one,
+non-power-of-two, prefix/suffix boundary and default reads and instantiate native certificates.
+The compiled family fixes the stored data; a uniform initialization or evaluator-regeneration
+construction is not supplied by these access lemmas.
+
 **The transfer lemma remains open**: native virtual-input/answer regeneration for the unbounded
 evaluator and the adaptive-to-tt conversion still need proofs. No desired autoreduction is
 assumed as a substitute. Complete NL/P instances, Theorem 3.5, and Sections 4–5 remain under
