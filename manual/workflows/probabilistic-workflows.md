@@ -837,8 +837,8 @@ with the clipping at one of that deficit divided by `rankRate + baseEntry`.
 `BudgetData.initial_requestSignals_envelope` supplies a post-increment raw-prefix envelope
 for the actual bin-preparation target: deterministic first deficit, centered first noise,
 and the remaining second discrepancy. It preserves the initial canonical base target,
-not a residual-specific mean. Apply the existing first-noise payments separately; preparation
-and second-signal payments must still be proved before using the full integrated output bound.
+not a residual-specific mean. Apply the first-noise payments separately. The preparation transport below refines the
+remaining discrepancy; second-signal noise and combined integrated payments remain open.
 The [actual-history regression](../../ComplexityTests/PolynomialBudgetHistory.lean) checks
 early inactive loss and its final disappearance, a nonzero fine-bin mean at rate `1/16`,
 and a positive omitted entry of size `1/256`. The unequal-rate examples check successful
@@ -866,14 +866,34 @@ entries at budget eight, check the full four-group stationary charge, and retain
 uniform charge at budget two, where the fine scale cutoff does not fit. These are first-mean
 payments, not final compressed-output accuracy or a nonconstant mixing example.
 
+[`HierarchyInitialPreparation.lean`](../../Complexity/Foundations/Probability/HierarchyInitialPreparation.lean)
+transports the actual postincrement `F(j+1)` error through polynomial preparation and the
+full-terminal HP rank gate. It reuses absolute preparation sensitivity and conditional Jensen
+on the original source × usage environment. The first-history error is split in matrix units
+into the exact omitted/inactive/coarse deficit and the centered scheduled first noise.
+The second deterministic envelope has fourth moment at most
+`P * (|ζ| * (Lh + Lρ) / rankRate)^4 * 8 * (firstNoiseMoment + deficitMoment)`.
+The deficit moment is the literal full-rank row norm; global allocation must still pay it.
+There is no independent reseed or conversion of a clipped relative error into absolute error.
+
+The successful preparation-walk list is identified with the literal `compressedBin`
+executions. `BudgetData.initial_requestSignals_two_envelopes` bounds their raw-prefix
+clipped error using the paid first deterministic charge, the second deterministic envelope,
+and the two centered noises separately. Full terminal rank, usage masks, source/rank/usage
+rates, suffixes and prefix `j+1` are preserved. This precedes payment of second walk noise.
+The actual-history regression has strictly positive early preparation bias `η/4`, zero final
+and off-diagonal bias, consumes the sensitivity envelope and its integrated payment, and
+retains the actual successful prefix/preparation executions. This is a stationary fixture,
+not a nonconstant mixing example or a general compressed-output accuracy theorem.
+
 **Remaining parent-error gap:** choosing global rates and reserves so the explicit finite
-payments meet the requested accuracy remains open. Preparation mean/error transport,
-second-signal noise,
+payments meet the requested accuracy remains open. The initial preparation transport above
+still retains its unpaid deficit norm and width/rate costs. Second-signal noise,
 combined false-event raw-prefix moments at j+1, and the resulting no-overflow/final and heavy
 mean-tail budgets have not been paid from an invariant covering ALL actual lower-budget
 calls. Heavy-event rarity applies only to deterministic mean envelopes; it must not discount
 correlated noise. Bounded lower-child root-to-ordinary conversion and same-environment
-conditional Jensen/reset-right-source transport remain to be assembled for this history.
+reset-right-source transport remain to be assembled for general recursive children.
 The general initial multi-bin and noninitial parent steps, nonconstant routing, and the
 simultaneous compressed parent-error theorem remain open.
 

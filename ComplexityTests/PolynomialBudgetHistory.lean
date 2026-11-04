@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of actual polynomial evaluator histories)
-import Complexity.Foundations.Probability.HierarchyInitialMeanPayment
+import Complexity.Foundations.Probability.HierarchyInitialPreparation
 
 /-! A positive identity/full-rate evaluator history with actual ratio-16 bins and polynomial
 preparation. The top bin carries the input, the fine bin vanishes. This exact stationary
@@ -613,5 +613,172 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
 example (HP : FourthRootHierarchyParams 16 1 16 32 8) (x y : ZMod 5) :
     (data HP).initialCoarseLoss 0 1 (request HP) x y = 0 := by
   simpa using BudgetData.initialCoarseLoss_eq_zero (data HP) 0 (request HP) x y
+
+-- These are the literal preparation executions used by compressedBin, including the
+-- initially inactive prefix. The nonzero deterministic bias is not second walk noise.
+private lemma preparation_walks (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (List.range (Nat.log2 2 + 1)).mapM (fun j =>
+      (data HP).complete 2 (request HP)
+        ((data HP).binPreparation 0 (request HP)
+          ((fun i (_ : Environment 5 3) => if 2 ≤ i then base else 0) (j + 1)))
+        (Cslib.RowCompression.dyadicSlack (Nat.log2 2 + 1) j)) =
+      some [0, fun _ => base] := by
+  norm_num [List.range_succ, Cslib.RowCompression.dyadicSlack]
+  simp_rw [preparation HP 0 (Or.inl rfl), preparation HP base (Or.inr rfl)]
+  simp_rw [complete_const]
+  rfl
+
+private lemma genuine_mean (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (x y : ZMod 5) :
+    NormalizedMoments.genuineMean (P := 5) (J := 3) HP 0 2 (side 5 0) (side 5 0)
+      (CopyPadding.identifier (1 : ZMod 5) [1] x) 1 [2, 3] 0 base x y = base x y := by
+  have hprep : NormalizedMoments.genuinePrep (P := 5) (J := 3) HP 2 1 [2, 3] 0 base =
+      fun _ => base := by
+    funext σ a b
+    unfold NormalizedMoments.genuinePrep DenseRowRecipe.preparation atomPrep
+    rw [gate_one, mul_one]
+    norm_num only [rate, pow_zero, inv_one, one_pow, div_one]
+    by_cases hab : a = b
+    · subst b; simpa only [base, Matrix.one_apply_eq] using (prep_values HP).2
+    · simpa only [base, Matrix.one_apply_ne hab] using (prep_values HP).1
+  unfold NormalizedMoments.genuineMean
+  rw [hprep]
+  have hf (σ : Environment 5 3) :
+      frameRetains 5 4 (side 5 0) (σ 0) (CopyPadding.identifier 1 [1] x) ∧
+      frameRetains 5 4 (side 5 0) (σ 2) (CopyPadding.identifier 1 [2, 3] y) := by
+    simpa only [gridChannel, CorrectionRowTask.Channel.retains, channels, semanticSide_grid]
+      using And.intro (full σ 0 [1] x) (full σ 2 [2, 3] y)
+  simp [rowSliceMean, hf]
+
+-- At the first executed prefix, genuine preparation is one on the diagonal but
+-- preparation of F(1) is zero. At the final prefix and off the diagonal bias is zero.
+private lemma actual_preparation_edges
+    (HP : FourthRootHierarchyParams 16 1 16 32 8) (x y : ZMod 5) (hxy : x ≠ y) :
+    let F := fun i (_ : Environment 5 3) => if 2 ≤ i then base else 0
+    let W : List (Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ) := [0, fun _ => base]
+    let Δ := NormalizedMoments.firstSignalIncrement F 0
+      (NormalizedMoments.secondSignalIncrement (fun i σ a b => W[i - 1]?.getD 0 σ a b)
+        (HP.η / 4))
+    (data HP).initialPrefixes 2 (request HP) = some F ∧
+    (List.range 2).mapM (fun j => (data HP).complete 2 (request HP)
+      ((data HP).binPreparation 0 (request HP) (F (j + 1)))
+      (Cslib.RowCompression.dyadicSlack 2 j)) = some W ∧
+    NormalizedMoments.actualClippedMean HP 0 2 (side 5 0) (side 5 0) (side 5 0)
+      1 [1] [2, 3] 0 base (HP.η / 4) Δ (fun _ _ _ _ => 0) 1 0 x x = HP.η / 4 ∧
+    NormalizedMoments.actualClippedMean HP 0 2 (side 5 0) (side 5 0) (side 5 0)
+      1 [1] [2, 3] 0 base (HP.η / 4) Δ (fun _ _ _ _ => 0) 1 1 x x = 0 ∧
+    NormalizedMoments.actualClippedMean HP 0 2 (side 5 0) (side 5 0) (side 5 0)
+      1 [1] [2, 3] 0 base (HP.η / 4) Δ (fun _ _ _ _ => 0) 1 0 x y = 0 := by
+  dsimp only
+  have hret (τ : Environment 5 3) (role : Fin 3) (su : List (ZMod 5)) (v : ZMod 5) :
+      NormalizedMoments.retainedMask role (side 5 0) 1 su τ v := by
+    simpa only [NormalizedMoments.retainedMask, gridChannel,
+      CorrectionRowTask.Channel.retains, channels, semanticSide_grid] using full τ role su v
+  have hη : 0 ≤ HP.η / 4 := div_nonneg HP.η_pos.le (by norm_num)
+  have hη1 : HP.η / 4 ≤ 1 := by
+    linarith [HP.η_lt_η₂, HP.η₂_lt, HP.δ₀_lt_δ₁, HP.δ₁_lt, HP.θ_lt_θ₂, HP.θ₂_lt]
+  refine ⟨prefixes HP, by simpa using preparation_walks HP, ?_, ?_, ?_⟩
+  all_goals
+    unfold NormalizedMoments.actualClippedMean NormalizedMoments.twoMaskMean
+    simp only [Fin.isValue, one_ne_zero, ↓reduceIte,
+      NormalizedMoments.actualPrefix_twoSignal_second]
+    rw [genuine_mean]
+    norm_num [rowSliceMean, hret, base, Matrix.one_apply, hxy,
+      abs_of_nonneg hη, min_eq_right hη1]
+
+-- Sensitivity's actual-history consumer must pay the positive early bias; the envelope
+-- cannot be replaced by centered walk noise, which is zero in this stationary fixture.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ∃ Lh Lρ : ℝ, 0 ≤ Lh ∧ 0 ≤ Lρ ∧ ∀ x : ZMod 5,
+      HP.η / 4 ≤ NormalizedMoments.secondMeanEnvelope threeRoles 1 [1] [2, 3]
+        0 0 0 Lh Lρ (HP.η / 4) (fun _ => 0) base x x := by
+  obtain ⟨Lh, Lρ, hLh, hLρ, hh, hρ⟩ := NormalizedMoments.preparation_stability_constants HP
+  refine ⟨Lh, Lρ, hLh, hLρ, ?_⟩
+  intro x
+  let F := fun i (_ : Environment 5 3) => if 2 ≤ i then base else 0
+  let W : List (Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ) := [0, fun _ => base]
+  have hp := BudgetData.initialSecondSignal_clippedMean_le (data HP) 2 0 0 0 (request HP)
+    threeRoles 0 [1] [2, 3] rfl rfl rfl rfl F W (preparation_walks HP)
+    hLρ hh hρ (HP.η / 4) 0 (by decide) x x
+  have he := (actual_preparation_edges HP x (x + 1) (by simp)).2.2.1
+  have hb := he.symm.le.trans hp
+  simpa only [F, data, threeRoles, ↓reduceIte, show ¬ 2 ≤ 1 by decide] using hb
+
+-- Integrate the same actual postincrement history: the deterministic term remains
+-- the literal deficit's row norm, alongside the original full-rank first-noise rate.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ∃ Lh Lρ : ℝ, 0 ≤ Lh ∧ 0 ≤ Lρ ∧
+    let F := fun i (_ : Environment 5 3) => if 2 ≤ i then base else 0
+    let W : List (Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ) := [0, fun _ => base]
+    let Xs := NormalizedMoments.retainedMask (0 : Fin 3) (side 5 0) (1 : ZMod 5) [1]
+    let Ya := NormalizedMoments.retainedMask (2 : Fin 3) (side 5 0) (1 : ZMod 5) [2, 3]
+    rowNormPow 4 5 (rate 0) Xs Ya (fun _ x y =>
+      NormalizedMoments.actualClippedMean HP 0 2 (side 5 0) (side 5 0) (side 5 0)
+        1 [1] [2, 3] 0 base (HP.η / 4)
+        (NormalizedMoments.firstSignalIncrement F 0
+          (NormalizedMoments.secondSignalIncrement (fun i σ a b => W[i - 1]?.getD 0 σ a b)
+            (HP.η / 4))) (fun _ _ _ _ => 0) 1 0 x y) ≤
+      5 * (|HP.η / 4| * (Lh + Lρ) / rate 0) ^ 4 * (8 *
+        (((2 : ℝ) ^ (-(data HP).requestPrecision 2
+          {request HP with usage := (request HP).terminal}) * (64 / 63) *
+            (1 / 64 : ℝ) ^ Cslib.RowCompression.dyadicSlack (Nat.log2 2 + 1) 0) ^ 4 +
+          rowNormPow 4 5 (rate 0) Xs Ya
+            (fun _ => (data HP).initialPolynomialLoss 2 1 0 (request HP)))) := by
+  obtain ⟨Lh, Lρ, hLh, hLρ, hh, hρ⟩ := NormalizedMoments.preparation_stability_constants HP
+  refine ⟨Lh, Lρ, hLh, hLρ, ?_⟩
+  have hC (x y : ZMod 5) : 0 ≤ (data HP).base x y := by
+    simp only [data, base, Matrix.one_apply]
+    split_ifs <;> norm_num
+  exact BudgetData.initialSecondSignal_mean_moment (data HP) 2 (by decide) 1
+    (by ext i; simp only [data, mem_insert, mem_singleton, mem_range]; omega)
+    rfl rfl rfl (by norm_num [data])
+    (⟨1, 4, by decide, by decide⟩ : Horizon 5) (by decide)
+    (request HP) threeRoles 0 0 [1] [2, 3] rfl rfl (by decide) hC
+    (by simp [data, base]) _ (prefixes HP) 0 (by decide) 0 0 le_rfl rfl
+    _ (preparation_walks HP) hLh hLρ hh hρ (HP.η / 4)
+
+-- The actual compressedBin raw-prefix consumer combines both envelopes before any
+-- second-noise payment. Here both centered noises vanish, while the early bias survives.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ∃ Lh Lρ : ℝ, 0 ≤ Lh ∧ 0 ≤ Lρ ∧ ∀ (σ : Environment 5 3) (x : ZMod 5),
+    let F := fun i (_ : Environment 5 3) => if 2 ≤ i then base else 0
+    let W : List (Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ) := [0, fun _ => base]
+    let Δ := NormalizedMoments.firstSignalIncrement F 0
+      (NormalizedMoments.secondSignalIncrement (fun i τ a b => W[i - 1]?.getD 0 τ a b)
+        (HP.η / 4))
+    let truth := requestSignals (HP.η / 4) (data HP).padding id (request HP) (fun _ => base)
+      ((data HP).binPreparation 0 (request HP) (fun _ => base))
+    Cslib.RowCompression.clippedError (truth σ x x 0) (truth σ x x 1)
+      (Cslib.RowCompression.uncompressedRow (Δ σ x) 0 1 x) ≤
+      (data HP).initialMeanCharge 2 1 0 0 (request HP) +
+        NormalizedMoments.secondMeanEnvelope threeRoles 1 [1] [2, 3]
+          0 0 0 Lh Lρ (HP.η / 4) (fun _ => 0) base x x := by
+  obtain ⟨Lh, Lρ, hLh, hLρ, hh, hρ⟩ := NormalizedMoments.preparation_stability_constants HP
+  refine ⟨Lh, Lρ, hLh, hLρ, ?_⟩
+  intro σ x
+  have hC (a b : ZMod 5) : 0 ≤ (data HP).base a b := by
+    simp only [data, base, Matrix.one_apply]
+    split_ifs <;> norm_num
+  have hp := BudgetData.initial_requestSignals_two_envelopes (data HP) 2 (by decide) 1
+    (by ext i; simp only [data, mem_insert, mem_singleton, mem_range]; omega)
+    rfl rfl rfl (by norm_num [data])
+    (⟨1, 4, by decide, by decide⟩ : Horizon 5) (by decide)
+    (request HP) threeRoles 0 0 [1] [2, 3] rfl rfl (by decide) hC
+    (by simp [data, base]) _ (prefixes HP) 0 (by decide) 0 0 rfl
+    _ (preparation_walks HP) hLρ hh hρ (HP.η / 4) σ x x
+  have hret (τ : Environment 5 3) (role : Fin 3) (su : List (ZMod 5)) (v : ZMod 5) :
+      NormalizedMoments.retainedMask role (side 5 0) 1 su τ v := by
+    simpa only [NormalizedMoments.retainedMask, gridChannel,
+      CorrectionRowTask.Channel.retains, channels, semanticSide_grid] using full τ role su v
+  dsimp only at hp ⊢
+  simpa only [data, threeRoles, NormalizedMoments.actualNoiseEntry, Pi.zero_def,
+    Nat.zero_add, Nat.reduceSub, show ¬ 2 ≤ 1 by decide, Matrix.zero_apply, mul_zero,
+    expect_const_zero,
+    NormalizedMoments.twoMaskMean, Fin.isValue, ↓reduceIte, one_ne_zero,
+    NormalizedMoments.actualPrefix_twoSignal_first,
+    NormalizedMoments.actualPrefix_twoSignal_second, Nat.add_sub_cancel,
+    List.getElem?_cons_zero, Option.getD_some, Pi.zero_apply, zero_mul,
+    rowSliceMean, hret, and_self, filter_true, expect_const, sub_self, abs_zero,
+    zero_div, add_zero] using hp
 
 end PolynomialBudgetHistory
