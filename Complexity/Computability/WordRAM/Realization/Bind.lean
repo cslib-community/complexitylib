@@ -21,7 +21,6 @@ The retained witness gives the concrete scratch, factor and emitter with the exi
 
 ## Main definitions
 
-* `bindLeft`, `bindRight`: the legacy disjoint-bank maps retained for existing consumers.
 * `bindSharedLeft`, `bindSharedRight`: the shared-bank layout for retained binds.
 * `Realizes.Witness.bind`: sequential composition retaining data and sharing dead scratch.
 
@@ -36,16 +35,6 @@ The retained witness gives the concrete scratch, factor and emitter with the exi
 namespace Cslib.WordRAM.Realization
 
 open Cslib.DataStructure
-
-/-- The continuation's scratch bank inside a sequential composition's bank: its first slots, so
-its result slots are the composition's. -/
-def bindLeft {m n₂ l n₁ : ℕ} (i : Fin (m + n₂ + 1)) :
-    Fin (m + (n₂ + l + n₁ + 1) + 1) := ⟨i.val, by omega⟩
-
-/-- The first computation's scratch bank inside a sequential composition's bank, after the
-continuation's. -/
-def bindRight {m n₂ l n₁ : ℕ} (i : Fin (l + n₁ + 1)) :
-    Fin (m + (n₂ + l + n₁ + 1) + 1) := ⟨m + n₂ + 1 + i.val, by omega⟩
 
 /-- The continuation's prefix in a bind that shares dead predecessor auxiliary words. -/
 def bindSharedLeft {m n₂ l n₁ : ℕ} (i : Fin (m + n₂ + 1)) :
