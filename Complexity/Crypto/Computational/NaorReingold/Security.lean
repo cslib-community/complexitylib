@@ -2611,11 +2611,6 @@ private theorem naorReingoldWordRun_hashedAdvGroup (F : PrimeOrderGroupFamily)
         List.take_of_length_le (hbound _)]
     · simp [hq, PMF.monad_pure_eq_pure]
 
-/-- **Asymptotic DDH security of the universal-hash Naor–Reingold bit-string PRF** (paraphrase of
-[NaorReingold2004], Section 4.1, Construction 4.2, Theorem 4.3, and Remark 4.2): under
-`F.DDH setup`, when group descriptions on `(setup n).support` have polynomially bounded bit-length,
-`bound` bounds encoded group elements, and `2 ^ (outLen n) / qMin n` is negligible, no `IsOraclePPT`
-adversary can distinguish `naorReingoldHashedRealGame` from `naorReingoldHashedIdealGame`. -/
 private theorem advantage_naorReingoldHashedReal_groupIdeal_eq (F : PrimeOrderGroupFamily)
     (setup : ℕ → PMF F.Desc) (inLen outLen : ℕ → ℕ) (bound : F.Desc → ℕ)
     (adversary : OracleDistinguisher) (n : ℕ)
@@ -2692,6 +2687,11 @@ private theorem exists_queryBound_hashedAdvGroup {F : PrimeOrderGroupFamily}
   exact (hQb n (F.withSeed.encDesc (d, List.ofFn seed))).1.mono
     (Nat.mul_le_mul_left cA (Nat.pow_le_pow_left (by lia) eA))
 
+/-- **Asymptotic DDH security of the universal-hash Naor–Reingold bit-string PRF** (paraphrase of
+[NaorReingold2004], Section 4.1, Construction 4.2, Theorem 4.3, and Remark 4.2): under
+`F.DDH setup`, when group descriptions on `(setup n).support` have polynomially bounded bit-length,
+`bound` bounds encoded group elements, and `2 ^ (outLen n) / qMin n` is negligible, no `IsOraclePPT`
+adversary can distinguish `naorReingoldHashedRealGame` from `naorReingoldHashedIdealGame`. -/
 theorem DDH.negligible_naorReingoldHashedGame {F : PrimeOrderGroupFamily}
     {setup : ℕ → PMF F.Desc} {inLen outLen : ℕ → ℕ} {bound : F.Desc → ℕ}
     {descBound qMin : ℕ → ℕ}
