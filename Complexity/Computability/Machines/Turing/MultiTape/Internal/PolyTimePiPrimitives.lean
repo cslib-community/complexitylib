@@ -8,6 +8,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pi
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 import Complexity.Foundations.Data.List.Fold
 import Mathlib.Data.List.GetD
 
@@ -23,35 +24,6 @@ branch. The direct proofs introduce no default inhabitant requirement on the val
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 
 variable {α Index Value : Type} {input : α ↪ List Bool} {enc : Value ↪ List Bool}
-
-/-- A fixed finite tag selects a certified branch, charging the tag and captured input.
-Neither the tag nor the result type requires a default inhabitant. -/
-theorem finite_cases {α β Tag : Type} [Finite Tag]
-    {input : α ↪ List Bool} {output : β ↪ List Bool} {tagEncoding : Tag ↪ List Bool}
-    {tag : α → Tag} {branch : Tag → α → β}
-    (htag : ComputableInPolyTime tag input tagEncoding)
-    (hbranch : ∀ choice, ComputableInPolyTime (branch choice) input output) :
-    ComputableInPolyTime (fun a => branch (tag a) a) input output := by
-  classical
-  let _ := Fintype.ofFinite Tag
-  cases isEmpty_or_nonempty Tag with
-  | inl hempty =>
-    let : IsEmpty α := ⟨fun a => isEmptyElim (tag a)⟩
-    exact of_finite _
-  | inr hnonempty =>
-    let fallback := Classical.choice hnonempty
-    have hselect (tags : List Tag) : ComputableInPolyTime (fun a =>
-        tags.foldr (fun choice rest => if tag a = choice then branch choice a else rest)
-          (branch fallback a)) input output := by
-      induction tags with
-      | nil => exact hbranch fallback
-      | cons choice tags ih =>
-        have htest := (of_finite (encIn := tagEncoding) (encOut := encBool)
-          fun t : Tag => decide (t = choice)).comp htag
-        simpa only [List.foldr_cons, Function.comp_def, Bool.decide_iff] using
-          (htest.ite (hbranch choice) ih)
-    simpa only [List.foldr_ite_eq_of_mem, Finset.mem_toList, Finset.mem_univ] using
-      hselect (Finset.univ.toList : List Tag)
 
 /-- Construct a list of a fixed number of efficiently computed entries. -/
 @[fun_prop]
@@ -73,16 +45,12 @@ theorem pi [Fintype Index] {values : α → Index → Value}
 
 private theorem listTail :
     ComputableInPolyTime (List.tail : List Value → List Value) (encList enc) (encList enc) := by
-  obtain ⟨c, k, Q, hfin, tm, htm⟩ := ListEncoding.tail (enc₁ := enc) (enc := encList enc)
-  exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-    k, Q, hfin, tm, fun l => htm l⟩
+  exact (ListEncoding.tail (enc₁ := enc) (enc := encList enc)).computableInPolyTime
 
 private theorem listHeadD (fallback : Value) :
     ComputableInPolyTime (fun l : List Value => l.headD fallback) (encList enc) enc := by
-  obtain ⟨c, k, Q, hfin, tm, htm⟩ := ListEncoding.headD
-    (enc₁ := enc) (enc := encList enc) fallback
-  exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
-    k, Q, hfin, tm, fun l => htm l⟩
+  exact (ListEncoding.headD
+    (enc₁ := enc) (enc := encList enc) fallback).computableInPolyTime
 
 private theorem fixedDrop (count : ℕ) :
     ComputableInPolyTime (fun l : List Value => l.drop count) (encList enc) (encList enc) := by

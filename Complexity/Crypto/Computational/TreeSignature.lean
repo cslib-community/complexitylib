@@ -14,6 +14,7 @@ public import Complexity.Languages.Probabilistic.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Probabilistic.Oracle.Composition
 import Complexity.Probability.PMF.Bind
 import Complexity.Tactic.PolyTime
 import Complexity.Tactic.PPT
@@ -31,13 +32,14 @@ signatures reuse them ([BonehShoup2023], Section 14.6.2, "The key management pro
 "Generating internal keys using a PRF"); the indexed scheme's own randomized signer is run on
 derived coins through `IndexedSignatureScheme.Seeded` (Exercise 13.6).
 
-To sign `msg`, the signer samples a uniform leaf `a₁ ⋯ a_d`, certifies the path: the node
-`a₁ ⋯ a_{i-1}` signs the public key of its child `a₁ ⋯ a_i` at index `a_i` for `i < d`, and the
-node `a₁ ⋯ a_{d-1}` signs `msg` at index `a_d`. The signature is the leaf, the `d - 1` certified
-child keys with their signatures, and the final signature. Verification recomputes the chain from
-the root, checking that the leaf has length `depth n` and the chain `depth n - 1` certificates. The
-public key is `(n, root public key)` and the secret key `(n, k)` with `k` uniform of length
-`keyLen n`.
+To sign `msg`, the signer checks that `msg` has length `n` (returning `[]` otherwise, matching
+`SignatureScheme`'s `n`-bit message space), samples a uniform leaf `a₁ ⋯ a_d`, and certifies the
+path: the node `a₁ ⋯ a_{i-1}` signs the public key of its child `a₁ ⋯ a_i` at index `a_i` for
+`i < d`, and the node `a₁ ⋯ a_{d-1}` signs `msg` at index `a_d`. The signature is the leaf, the
+`d - 1` certified child keys with their signatures, and the final signature. Verification
+recomputes the chain from the root, checking that the leaf has length `depth n` and the chain
+`depth n - 1` certificates. The public key is `(n, root public key)` and the secret key `(n, k)`
+with `k` uniform of length `keyLen n`.
 
 The scheme differs from Fig. 14.7 in four labelled ways: the root key pair is derived from `k`
 like every other node, rather than sampled by key generation and stored in the secret key; the
@@ -112,9 +114,9 @@ abbrev CertState := List Bool × (List Bool × List Bool) × List (List Bool × 
 /-- One step of the chain: derive the child at `a`, sign its public key at index `a`, and move
 to it. -/
 def certifyStep (n : ℕ) (k : List Bool) (state : CertState) (a : Bool) : CertState :=
-  let child := nodeKey S T coins n k (state.1 ++ [a])
-  (state.1 ++ [a], child,
-    state.2.2 ++ [(child.1, signAt S T coins k state.1 state.2.1.2 a.toNat child.1)])
+  let (node, (_, sk), certs) := state
+  let child := nodeKey S T coins n k (node ++ [a])
+  (node ++ [a], child, certs ++ [(child.1, signAt S T coins k node sk a.toNat child.1)])
 
 /-- Certify the path `bits` from the root. -/
 def certify (n : ℕ) (k bits : List Bool) : CertState :=
@@ -138,8 +140,8 @@ def keyDecoder : Decoder (encPair encUnary encBits) := Decoder.unary.pair Decode
 /-- Sign `msg` at the leaf `leaf`: certify the path to the leaf's parent, which signs `msg` at the
 leaf's last bit. -/
 def signWithLeaf (n : ℕ) (k leaf msg : List Bool) : List Bool :=
-  let c := certify S T coins n k leaf.dropLast
-  encodeSignature leaf c.2.2 (signAt S T coins k c.1 c.2.1.2 (leaf.getLastD false).toNat msg)
+  let (node, (_, sk), certs) := certify S T coins n k leaf.dropLast
+  encodeSignature leaf certs (signAt S T coins k node sk (leaf.getLastD false).toNat msg)
 
 /-! ### The algorithms -/
 
@@ -151,27 +153,32 @@ noncomputable def keyGen (n : ℕ) : ProbComp (List Bool × List Bool) := do
     encPair encUnary encBits (n, k))
 
 include depth in
-/-- Signing: sample a uniform leaf of the depth-`depth n` tree and sign there. -/
-noncomputable def sign (sk msg : List Bool) : ProbComp (List Bool) := do
+/-- Signing: when `msg` has length `n`, sample a uniform leaf of the depth-`depth n` tree and sign
+there; otherwise return `[]`. -/
+noncomputable def sign (sk msg : List Bool) : ProbComp (List Bool) :=
   let p := keyDecoder.decode sk
-  let leaf ← BitString.sampleList (depth p.1)
-  return signWithLeaf S T coins p.1 p.2 leaf msg
+  if msg.length = p.1 then do
+    let leaf ← BitString.sampleList (depth p.1)
+    return signWithLeaf S T coins p.1 p.2 leaf msg
+  else
+    pure []
 
 /-- One verification step: check the certificate `(pk', σ)` of the child at `a` under the current
 public key, and move to the child. -/
 def verifyStep (state : Bool × List Bool) (e : Bool × (List Bool × List Bool)) :
     Bool × List Bool :=
-  (state.1 && S.verify state.2 e.1.toNat e.2.1 e.2.2, e.2.1)
+  let cert := e.2
+  (state.1 && S.verify state.2 e.1.toNat cert.1 cert.2, cert.1)
 
 /-- Verification: the leaf has length `depth n` with `depth n - 1` certificates, the certificates
 chain from the root along the leaf's prefix, and the last certified key signs `msg` at the leaf's
 last bit. -/
 def verify (pk msg sig : List Bool) : Bool :=
   let p := keyDecoder.decode pk
-  let s := signatureDecoder.decode sig
-  let r := (s.1.dropLast.zip s.2.1).foldl (verifyStep S) (true, p.2)
-  (s.1.length == depth p.1) && (s.2.1.length + 1 == depth p.1) && r.1 &&
-    S.verify r.2 (s.1.getLastD false).toNat msg s.2.2
+  let (leaf, certs, last) := signatureDecoder.decode sig
+  let r := (leaf.dropLast.zip certs).foldl (verifyStep S) (true, p.2)
+  (leaf.length == depth p.1) && (certs.length + 1 == depth p.1) && r.1 &&
+    S.verify r.2 (leaf.getLastD false).toNat msg last
 
 /-! ### Completeness -/
 
@@ -185,15 +192,17 @@ theorem certify_append (n : ℕ) (k bits : List Bool) (a : Bool) :
 /-- The chain reaches the node `bits` with its key, issues one certificate per bit, and its
 certificates verify from the root when both indices are below the capacity. -/
 theorem certify_spec (n : ℕ) (hcap : 2 ≤ S.capacity n) (k bits : List Bool) :
-    (certify S T coins n k bits).1 = bits ∧
-      (certify S T coins n k bits).2.1 = nodeKey S T coins n k bits ∧
-      (certify S T coins n k bits).2.2.length = bits.length ∧
-      (bits.zip (certify S T coins n k bits).2.2).foldl (verifyStep S)
+    let (node, keys, certs) := certify S T coins n k bits
+    node = bits ∧
+      keys = nodeKey S T coins n k bits ∧
+      certs.length = bits.length ∧
+      (bits.zip certs).foldl (verifyStep S)
         (true, (nodeKey S T coins n k []).1) = (true, (nodeKey S T coins n k bits).1) := by
   induction bits using List.reverseRecOn with
   | nil => simp [certify]
   | append_singleton bits a ih =>
     obtain ⟨hpath, hkey, hlen, hchain⟩ := ih
+    simp only [← certify.eq_1] at hpath hkey hlen hchain
     rw [certify_append]
     simp only [certifyStep, hpath, hkey, true_and]
     refine ⟨by simp [hlen], ?_⟩
@@ -215,6 +224,7 @@ theorem verify_signWithLeaf (n : ℕ) (hcap : 2 ≤ S.capacity n) (hdepth : 1 �
       (signWithLeaf S T coins n k leaf msg) = true := by
   obtain ⟨hpath, hkey, hlen, hchain⟩ :=
     certify_spec (T := T) (coins := coins) n hcap k leaf.dropLast
+  simp only [← certify.eq_1] at hpath hkey hlen hchain
   have hu : (leaf.getLastD false).toNat < S.capacity n := by
     cases leaf.getLastD false <;> simp <;> omega
   have hv := S.verify_sign n (nodeKey S T coins n k leaf.dropLast) (T.keyGenWith_mem_support n _)
@@ -237,15 +247,16 @@ theorem mem_support_keyGen {n : ℕ} {keys : List Bool × List Bool}
   obtain ⟨k, hk, rfl⟩ := h
   exact ⟨k, BitString.length_of_mem_support_uniformList hk, rfl⟩
 
-/-- **Completeness**: every honest signature verifies, when the indexed scheme has at least two
-indices and the tree has depth at least one. -/
+/-- **Completeness**: every honest signature on an `n`-bit message verifies, when the indexed
+scheme has at least two indices and the tree has depth at least one. -/
 theorem verify_sign (hcap : ∀ n, 2 ≤ S.capacity n) (hdepth : ∀ n, 1 ≤ depth n) (n : ℕ)
     (keys : List Bool × List Bool)
     (hkeys : keys ∈ (ProbComp.eval (keyGen S T coins keyLen n)).support)
-    (msg sig : List Bool) (hsig : sig ∈ (ProbComp.eval (sign S T coins depth keys.2 msg)).support) :
+    (msg : List Bool) (hmsg : msg.length = n) (sig : List Bool)
+    (hsig : sig ∈ (ProbComp.eval (sign S T coins depth keys.2 msg)).support) :
     verify S depth keys.1 msg sig = true := by
   obtain ⟨k, -, rfl⟩ := mem_support_keyGen hkeys
-  simp only [sign, keyDecoder.decode_enc, ProbComp.eval_bind, ProbComp.eval_pure,
+  simp only [sign, keyDecoder.decode_enc, hmsg, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
     PMF.mem_support_bind_iff, PMF.mem_support_pure_iff, BitString.eval_sampleList] at hsig
   obtain ⟨leaf, hleaf, rfl⟩ := hsig
   exact verify_signWithLeaf n (hcap n) (hdepth n) k leaf
@@ -266,7 +277,8 @@ variable (hcoins : ComputableInPolyTime
 include hcoins in
 /-- Node keys are computable in polynomial time from the parameter, the secret and the path. -/
 theorem computableInPolyTime_nodeKey :
-    ComputableInPolyTime (fun p : (ℕ × List Bool) × List Bool => nodeKey S T coins p.1.1 p.1.2 p.2)
+    ComputableInPolyTime
+      (fun (((n, k), path) : (ℕ × List Bool) × List Bool) => nodeKey S T coins n k path)
       (encPair (encPair encUnary encBits) encBits) (encPair encBits encBits) := by
   have hkg := T.keyGenWith_polyTime
   have hbudget := T.keyGenBudget_polyTime
@@ -277,8 +289,8 @@ include hcoins in
 /-- Node signatures are computable in polynomial time. -/
 theorem computableInPolyTime_signAt :
     ComputableInPolyTime
-      (fun p : (List Bool × List Bool × List Bool) × ℕ × List Bool =>
-        signAt S T coins p.1.1 p.1.2.1 p.1.2.2 p.2.1 p.2.2)
+      (fun (((k, path, sk), u, msg) : (List Bool × List Bool × List Bool) × ℕ × List Bool) =>
+        signAt S T coins k path sk u msg)
       (encPair (encPair encBits (encPair encBits encBits)) (encPair encUnary encBits)) encBits := by
   have hsg := T.signWith_polyTime
   have hbudget := T.signBudget_polyTime
@@ -289,8 +301,8 @@ include hcoins in
 /-- One chain step is computable in polynomial time. -/
 theorem computableInPolyTime_certifyStep :
     ComputableInPolyTime
-      (fun p : ((ℕ × List Bool) × CertState) × Bool =>
-        certifyStep S T coins p.1.1.1 p.1.1.2 p.1.2 p.2)
+      (fun ((((n, k), state), a) : ((ℕ × List Bool) × CertState) × Bool) =>
+        certifyStep S T coins n k state a)
       (encPair (encPair (encPair encUnary encBits) encCertState) encBool) encCertState := by
   have hnode := computableInPolyTime_nodeKey (T := T) hcoins
   have hsign := computableInPolyTime_signAt (T := T) hcoins
@@ -312,7 +324,8 @@ include hcoins in
 /-- The chain is computable in polynomial time: every node key and signature on the path is
 polynomially bounded, and the chain has one certificate per bit. -/
 theorem computableInPolyTime_certify :
-    ComputableInPolyTime (fun p : (ℕ × List Bool) × List Bool => certify S T coins p.1.1 p.1.2 p.2)
+    ComputableInPolyTime
+      (fun (((n, k), bits) : (ℕ × List Bool) × List Bool) => certify S T coins n k bits)
       (encPair (encPair encUnary encBits) encBits) encCertState := by
   have hnode := computableInPolyTime_nodeKey (T := T) hcoins
   have hsign := computableInPolyTime_signAt (T := T) hcoins
@@ -405,8 +418,8 @@ include hcoins in
 /-- Signing at a given leaf is computable in polynomial time. -/
 theorem computableInPolyTime_signWithLeaf :
     ComputableInPolyTime
-      (fun p : (ℕ × List Bool) × List Bool × List Bool =>
-        signWithLeaf S T coins p.1.1 p.1.2 p.2.1 p.2.2)
+      (fun (((n, k), leaf, msg) : (ℕ × List Bool) × List Bool × List Bool) =>
+        signWithLeaf S T coins n k leaf msg)
       (encPair (encPair encUnary encBits) (encPair encBits encBits)) encBits := by
   have hcert := computableInPolyTime_certify (T := T) hcoins
   have hsign := computableInPolyTime_signAt (T := T) hcoins
@@ -469,7 +482,17 @@ theorem isPPTOn_sign :
         signWithLeaf S T coins (keyDecoder.decode q.1.1).1 (keyDecoder.decode q.1.1).2 q.2 q.1.2)
       (encPair (encPair encBits encBits) encBits) encBits := by
     polytime
-  exact hcount.sampleList.bind_with hpost.isPPTOn
+  have hyes : IsPPTOn (encPair encBits encBits) encBits
+      (fun p : List Bool × List Bool => do
+        let leaf ← BitString.sampleList (depth (keyDecoder.decode p.1).1)
+        return signWithLeaf S T coins (keyDecoder.decode p.1).1 (keyDecoder.decode p.1).2 leaf
+          p.2) :=
+    hcount.sampleList.bind_with hpost.isPPTOn
+  apply IsOraclePPTOn.isPPTOn
+  simpa only [sign, apply_ite] using IsOraclePPTOn.ite'
+    (condition := fun p : List Bool × List Bool => p.2.length = (keyDecoder.decode p.1).1)
+    (by polytime) (hyes.isOraclePPTOn (Operation := Empty))
+    (((ComputableInPolyTime.const []).isPPTOn).isOraclePPTOn (Operation := Empty))
 
 variable (S) in
 /-- The chain check of `verify`: fold the certificates along the leaf's prefix from `root`. -/
@@ -545,7 +568,7 @@ include hdepth in
 /-- Verification is computable in polynomial time. -/
 theorem computableInPolyTime_verify :
     ComputableInPolyTime
-      (fun p : List Bool × List Bool × List Bool => verify S depth p.1 p.2.1 p.2.2)
+      (fun ((pk, msg, sig) : List Bool × List Bool × List Bool) => verify S depth pk msg sig)
       (encPair encBits (encPair encBits encBits)) encBool := by
   have hverify := S.verify_polyTime
   have hkey := keyDecoder.computableInPolyTime
@@ -576,7 +599,8 @@ variable (S T coins keyLen depth) in
 indexed scheme `S` with at least two indices, seeded by `T`, with node coins from `coins`, secrets
 of length `keyLen n` and trees of depth `depth n ≥ 1`. -/
 noncomputable def scheme
-    (hcoins : ComputableInPolyTime (fun p : List Bool × List Bool × ℕ => coins p.1 p.2.1 p.2.2)
+    (hcoins : ComputableInPolyTime
+      (fun ((k, input, length) : List Bool × List Bool × ℕ) => coins k input length)
       (encPair encBits (encPair encBits encUnary)) encBits)
     (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
     (hdepth : ComputableInPolyTime depth encUnary encUnary)
@@ -587,7 +611,8 @@ noncomputable def scheme
   keyGen_ppt := isPPTOn_keyGen hcoins hkeyLen
   sign_ppt := isPPTOn_sign hcoins hdepth
   verify_polyTime := computableInPolyTime_verify hdepth
-  verify_sign n keys hkeys msg _ sig hsig := verify_sign hcap hdepth_pos n keys hkeys msg sig hsig
+  verify_sign n keys hkeys msg hmsg sig hsig :=
+    verify_sign hcap hdepth_pos n keys hkeys msg hmsg sig hsig
 
 end TreeSignature
 

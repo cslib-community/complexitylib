@@ -10,8 +10,8 @@ module
 public import Complexity.Init
 public import Complexity.Foundations.FieldTheory.Finite.Trinomial
 public import Complexity.Probability.KWiseIndependent.Trinomial
-public import Complexity.Algorithms.Lean.Dictionary
-public import Complexity.Algorithms.WordRAM.Hashing.MultiplyShift
+public import Complexity.DataStructure.Dictionary.Spec
+public import Complexity.DataStructure.HashFamily.WordRAM.MultiplyShift
 
 /-!
 # Unit tests for trinomial binary fields, `k`-wise independent trinomial hashing, `Dictionary.spec`,
@@ -23,8 +23,8 @@ Verifies non-vacuity and concrete behavior of:
 2. `Cslib.Probability.trinomialPolyHash` and
    `Cslib.Probability.isKWiseIndependentHash_trinomialPolyHash` at `k = 5`, together with
    `Cslib.Probability.trinomialStep` degree bounds;
-3. `Cslib.Algorithms.Lean.Dictionary.spec` including in-place overwrites at full capacity `n_max`;
-4. `Cslib.Algorithms.WordRAM.Hashing.MultiplyShift.initCode`, `evalCode`, and
+3. `Cslib.DataStructure.Dictionary.spec` including in-place overwrites at full capacity `n_max`;
+4. `Cslib.DataStructure.HashFamily.WordRAM.MultiplyShift.initCode`, `evalCode`, and
    `isUniversalHash_evalData`.
 -/
 
@@ -33,8 +33,8 @@ public section
 namespace ComplexityTests.TrinomialKWiseHash
 
 open Cslib Cslib.Probability Cslib.WordRAM
-open Cslib.Algorithms.Lean
-open Cslib.Algorithms.WordRAM.Hashing
+open Cslib.DataStructure Cslib.DataStructure.Dictionary
+open Cslib.DataStructure.HashFamily.WordRAM
 open scoped ENNReal
 
 /-! ## 1. Explicit trinomial binary fields and 4-limb reduction -/
@@ -124,7 +124,7 @@ inserts two distinct keys `(1, 42)` and `(5, 17)` reaching capacity `2`, then ov
 in-place with `99` (which is valid even at full capacity `(dom s).card = 2` because key `1` is
 already present!), and queries keys `1`, `5`, and `3`. -/
 def sampleDictOps : List (Dictionary.Op 8) :=
-  [.insert 1 42, .insert 5 17, .insert 1 99, .get 1, .get 5, .get 3]
+  [.insert 1 42, .insert 5 17, .insert 1 99, .query 1, .query 5, .query 3]
 
 theorem sampleDictOps_valid_and_run :
     (Dictionary.spec 8 100 2).ValidHistory (Dictionary.empty 8) sampleDictOps ∧
@@ -135,7 +135,7 @@ theorem sampleDictOps_valid_and_run :
     finalState 5 = some 17 ∧
     finalState 3 = none := by
   have hvh : (Dictionary.spec 8 100 2).ValidHistory (Dictionary.empty 8) sampleDictOps := by
-    dsimp [sampleDictOps, Stateful.Spec.ValidHistory, Dictionary.spec]
+    dsimp [sampleDictOps, DataStructure.StateTransitionSpec.ValidHistory, Dictionary.spec]
     decide
   refine ⟨hvh, ?_,
     Dictionary.valuesBounded_run_of_validHistory (Dictionary.valuesBounded_empty 8 100) hvh,

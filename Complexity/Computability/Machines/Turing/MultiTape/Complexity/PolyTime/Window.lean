@@ -44,7 +44,7 @@ theorem computableInPolyTime_windowList :
   unfold windowList
   have hf : ComputableInPolyTime (fun p : ℕ × ℕ => (p.2 : ℤ) - p.1)
       (encPair encUnary encUnary) encInt :=
-    ComputableTidilyInPolyTime.int_natCast_sub.computableInPolyTime.comp
+    ComputableInPolyTime.int_natCast_sub.comp
       ((snd encUnary encUnary).prod (fst encUnary encUnary))
   exact mapWithInput (by fun_prop) hf
 
