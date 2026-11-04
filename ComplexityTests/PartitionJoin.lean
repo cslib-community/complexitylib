@@ -17,7 +17,7 @@ namespace ComplexityTests.PartitionJoin
 
 open Cslib Cslib.SetPartition Cslib.Communication
 
--- `c(b) = (-1)^(b-1) (b-1)!` for the first few `b`.
+-- $c(b) = (-1)^{b-1} (b-1)!$ for the first few $b$.
 example : derivCoeff 1 = 1 := derivCoeff_one
 example : derivCoeff 2 = -1 := by simp [derivCoeff_succ]
 example : derivCoeff 3 = 2 := by simp [derivCoeff_succ, Nat.factorial]
@@ -38,12 +38,12 @@ example (x : Setoid (Fin 3)) : IncidenceAlgebra.mu ℤ x ⊤ = derivCoeff (block
   mu_top x
 
 open Classical in
--- `μ(⊤, ⊤) = c(1) = 1`.
+-- $\mu(\top, \top) = c(1) = 1$.
 example : IncidenceAlgebra.mu ℤ (⊤ : Setoid (Fin 3)) ⊤ = 1 := by
   rw [mu_top, blocks_eq_one_iff.mpr rfl, derivCoeff_one]
 
 open Classical in
--- `μ(⊥, ⊤) = c(3) = 2` on three points.
+-- $\mu(\bot, \top) = c(3) = 2$ on three points.
 example : IncidenceAlgebra.mu ℤ (⊥ : Setoid (Fin 3)) ⊤ = 2 := by
   rw [mu_top, blocks_bot, Nat.card_fin]
   simp [derivCoeff_succ, Nat.factorial]
@@ -67,7 +67,7 @@ example : (joinMatrix ℚ (Fin 0)).rank = 1 := by
   rw [rank_joinMatrix, Nat.card_eq_one_iff_unique]
   exact ⟨⟨fun _ _ => Setoid.ext fun a => a.elim0⟩, ⟨⊥⟩⟩
 
--- There are at least `2 ^ 2 = 4` partitions of four points (in fact `15`).
+-- There are at least $2^2 = 4$ partitions of four points (in fact $15$).
 example : 4 ≤ Nat.card (Setoid (Fin 4)) := by
   simpa using pow_le_card_setoid (N := 4) (j := 2) (by norm_num)
 

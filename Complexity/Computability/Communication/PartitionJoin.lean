@@ -18,7 +18,7 @@ their partitions is the partition with one block; equivalently, whether the unio
 components are Alice's blocks and one whose components are Bob's blocks is connected. The
 communication matrix of this function is the join matrix of the partition lattice, which has full
 rank (`Cslib.SetPartition.rank_joinMatrix`), so by the rank bound every deterministic protocol
-sends at least `⌈log₂ B⌉` bits, where `B` is the number of partitions of `α`
+sends at least $\lceil \log_2 B \rceil$ bits, where $B$ is the number of partitions of `α`
 (`clog_card_le_ecomplexity_join`). The same holds for the negation, whether the join has more than
 one block (`clog_card_le_ecomplexity_join_ne`).
 
@@ -32,8 +32,10 @@ is computed from the Möbius function, and the rank bound applies
 ## Main results
 
 * `Cslib.Communication.communicationMatrix_join`: the communication matrix is the join matrix.
-* `Cslib.Communication.clog_card_le_ecomplexity_join`: `⌈log₂ B⌉ ≤ D` for `P ⊔ Q = ⊤`.
-* `Cslib.Communication.clog_card_le_ecomplexity_join_ne`: `⌈log₂ B⌉ ≤ D` for `P ⊔ Q ≠ ⊤`.
+* `Cslib.Communication.clog_card_le_ecomplexity_join`: $\lceil \log_2 B \rceil \le D$ for
+  $P \sqcup Q = \top$.
+* `Cslib.Communication.clog_card_le_ecomplexity_join_ne`: $\lceil \log_2 B \rceil \le D$ for
+  $P \sqcup Q \ne \top$.
 
 ## References
 
@@ -64,7 +66,7 @@ variable [Finite α]
 
 open Classical in
 /-- A protocol computing a function `f` whose value, or its negation, is `P ⊔ Q = ⊤` sends at
-least `⌈log₂ B⌉` bits. -/
+least $\lceil \log_2 B \rceil$ bits. -/
 private theorem clog_card_le_depth {f : Setoid α → Setoid α → Bool} (g : Bool → Bool)
     (hg : ∀ P Q, g (f P Q) = decide (P ⊔ Q = ⊤)) {p : Protocol (Setoid α) (Setoid α) Bool}
     (hp : p.run = f) : Nat.clog 2 (Nat.card (Setoid α)) ≤ p.depth := by
@@ -78,7 +80,8 @@ private theorem clog_card_le_depth {f : Setoid α → Setoid α → Bool} (g : B
     p.leafCount_le_two_pow_depth)
 
 open Classical in
-/-- **Joining partitions to one block** needs `⌈log₂ B⌉` bits, for `B` the number of partitions. -/
+/-- **Joining partitions to one block** needs $\lceil \log_2 B \rceil$ bits, for $B$ the number of
+partitions. -/
 theorem clog_card_le_ecomplexity_join :
     (Nat.clog 2 (Nat.card (Setoid α)) : ℕ∞) ≤
       Protocol.ecomplexity (fun P Q : Setoid α => fun b => decide (P ⊔ Q = ⊤) = b)
@@ -88,7 +91,7 @@ theorem clog_card_le_ecomplexity_join :
 
 open Classical in
 /-- **Separating partitions**, deciding whether their join has more than one block, needs
-`⌈log₂ B⌉` bits, for `B` the number of partitions. -/
+$\lceil \log_2 B \rceil$ bits, for $B$ the number of partitions. -/
 theorem clog_card_le_ecomplexity_join_ne :
     (Nat.clog 2 (Nat.card (Setoid α)) : ℕ∞) ≤
       Protocol.ecomplexity (fun P Q : Setoid α => fun b => decide (P ⊔ Q ≠ ⊤) = b)

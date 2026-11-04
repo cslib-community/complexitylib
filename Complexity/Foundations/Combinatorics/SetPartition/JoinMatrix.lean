@@ -23,23 +23,27 @@ public import Mathlib.SetTheory.Cardinal.Finite
 
 Partitions of a finite type `α` are equivalence relations `Setoid α`, ordered by refinement, so that
 the join `P ⊔ Q` is the finest partition coarser than both and `⊤` is the partition with one block.
-The *join matrix* has rows and columns indexed by the partitions, and entry `1` at `P` and `Q` if
-`P ⊔ Q = ⊤` and `0` otherwise. It is nonsingular over any field of characteristic zero
-(`rank_joinMatrix`), a theorem of Dowling and Wilson for geometric lattices [DowlingWilson1975],
-here for the partition lattice, which is the lattice of flats of the graphic matroid of a complete
-graph. In the terms of [LovaszSaks1993, Theorems 3.4 and 3.6] the join matrix is the span indicator
-of that matroid, and Lindström's diagonalisation by the Möbius function [Lindstrom1969] reduces its
-rank to the number of partitions `x` with `μ(x, ⊤) ≠ 0`, which is all of them.
+The *join matrix* has rows and columns indexed by the partitions, and entry $1$ at $P$ and $Q$ if
+$P \sqcup Q = \top$ and $0$ otherwise. It is nonsingular over any field of characteristic zero
+(`rank_joinMatrix`). Dowling and Wilson prove this over $\mathbb{Q}$ for every finite lattice
+whose Möbius function satisfies $\mu(a, \top) \ne 0$ for all $a$, which holds in geometric lattices
+[DowlingWilson1975, Lemma 1 and the proof of Theorem 2]; here it is proved for the partition
+lattice, the lattice of flats of the graphic matroid of a complete graph. In the terms of
+[LovaszSaks1993, Theorems 3.4 and 3.6] the join matrix is the span indicator of that matroid, and
+Lindström's diagonalisation by the Möbius function [Lindstrom1969] reduces its rank to the number
+of partitions $x$ with $\mu(x, \top) \ne 0$, which is all of them.
 
-The proof writes the join matrix as `Z Δ Zᵀ`, where `Z` is the zeta matrix of the refinement order,
-which is triangular with unit diagonal when the partitions are ordered by their numbers of blocks,
-and `Δ` is diagonal with entry `c(b)` at a partition with `b` blocks, where `c(b)` is the derivative
-of the falling factorial `X (X - 1) ⋯ (X - b + 1)` at `0`, that is `(-1)^(b-1) (b-1)!`. The
-factorisation rests on the identity `∑_{z ≥ x} c(blocks z) = [x = ⊤]`, the values of the Möbius
-function of the partition lattice. It follows by differentiating at `0` the polynomial identity
-`∑_{z ≥ x} X (X - 1) ⋯ (X - blocks z + 1) = X ^ blocks x`, which holds at every natural number `t`
-because both sides count the maps from `α` to `Fin t` that are constant on the blocks of `x`,
-grouped on the left by their kernels (`sum_descFactorial_blocks`). This classical counting
+The proof writes the join matrix as $J = Z \Delta Z^{\mathsf{T}}$, where $Z$ is the zeta matrix of
+the refinement order, which is triangular with unit diagonal when the partitions are ordered by
+their numbers of blocks, and $\Delta$ is diagonal with entry $c(b)$ at a partition with $b$ blocks.
+Here $c(b)$ is the derivative at $0$ of the falling factorial $X (X - 1) \cdots (X - b + 1)$, that
+is $(-1)^{b-1} (b-1)!$. Writing $b(z)$ for the number of blocks of $z$, the factorisation rests on
+the identity $\sum_{z \ge x} c(b(z)) = [x = \top]$, the values of the Möbius function of the
+partition lattice. It follows by differentiating at $0$ the polynomial identity
+$$\sum_{z \ge x} X (X - 1) \cdots (X - b(z) + 1) = X^{b(x)},$$
+which holds at every natural number $t$ because both sides count the maps from `α` to `Fin t` that
+are constant on the blocks of $x$, grouped on the left by their kernels
+(`sum_descFactorial_blocks`). This classical counting
 argument avoids factorising intervals into products of smaller partition lattices, which Mathlib
 does not provide; `mu_top` identifies the values with Mathlib's `IncidenceAlgebra.mu`.
 
@@ -52,21 +56,23 @@ statements that sum over the partitions or take ranks assume `[Fintype (Setoid �
 ## Main definitions
 
 * `Cslib.SetPartition.blocks`: the number of blocks of a partition.
-* `Cslib.SetPartition.derivCoeff`: the coefficient `c(b)`, the derivative at `0` of the falling
+* `Cslib.SetPartition.derivCoeff`: the coefficient $c(b)$, the derivative at $0$ of the falling
   factorial.
 * `Cslib.SetPartition.joinMatrix`: the join matrix.
 * `Cslib.SetPartition.zetaMatrix`: the zeta matrix of the refinement order.
 
 ## Main results
 
-* `Cslib.SetPartition.pow_le_card_setoid`: `j ^ (N - j) ≤ B_N`.
+* `Cslib.SetPartition.pow_le_card_setoid`: $j^{N-j} \le B_N$, where $B_N$ is the number of
+  partitions of $N$ elements.
 * `Cslib.SetPartition.sum_descFactorial_blocks`: counting maps by their kernels.
-* `Cslib.SetPartition.derivCoeff_succ`: `c(b + 1) = (-1)^b b!`.
-* `Cslib.SetPartition.sum_derivCoeff_blocks`: the Möbius values `∑_{z ≥ x} c(blocks z) = [x = ⊤]`.
-* `Cslib.SetPartition.mu_top`: these are the values `μ(x, ⊤)` of Mathlib's Möbius function
+* `Cslib.SetPartition.derivCoeff_succ`: $c(b + 1) = (-1)^b b!$.
+* `Cslib.SetPartition.sum_derivCoeff_blocks`: the Möbius values
+  $\sum_{z \ge x} c(b(z)) = [x = \top]$.
+* `Cslib.SetPartition.mu_top`: these are the values $\mu(x, \top)$ of Mathlib's Möbius function
   `IncidenceAlgebra.mu`.
-* `Cslib.SetPartition.joinMatrix_eq`: the factorisation `J = Z Δ Zᵀ`.
-* `Cslib.SetPartition.det_zetaMatrix`: the zeta matrix has determinant `1`.
+* `Cslib.SetPartition.joinMatrix_eq`: the factorisation $J = Z \Delta Z^{\mathsf{T}}$.
+* `Cslib.SetPartition.det_zetaMatrix`: the zeta matrix has determinant $1$.
 * `Cslib.SetPartition.rank_joinMatrix`: the join matrix has full rank.
 
 ## References
@@ -162,7 +168,7 @@ private theorem extendMap_injective_ker {N j : ℕ} (hj : j ≤ N) :
   rw [h] at h1
   exact ((key f₂ (f₁ t)).mp h1).symm
 
-/-- **Many partitions**: `j ^ (N - j) ≤ B_N` for `j ≤ N`, by placing the first `j` elements in
+/-- **Many partitions**: $j^{N-j} \le B_N$ for $j \le N$, by placing the first $j$ elements in
 distinct blocks and each of the others in one of these blocks. -/
 theorem pow_le_card_setoid {N j : ℕ} (hj : j ≤ N) :
     j ^ (N - j) ≤ Nat.card (Setoid (Fin N)) := by
@@ -216,7 +222,8 @@ private theorem card_ker (z : Setoid α) :
 
 open Classical in
 /-- Counting the maps constant on the blocks of `x` by their kernels:
-`∑_{z ≥ x} t (t - 1) ⋯ (t - blocks z + 1) = t ^ blocks x`. -/
+$\sum_{z \ge x} t (t - 1) \cdots (t - b(z) + 1) = t^{b(x)}$, where $b(z)$ is the number of blocks
+of $z$. -/
 theorem sum_descFactorial_blocks [Fintype (Setoid α)] (x : Setoid α) :
     ∑ z ∈ {z | x ≤ z}, t.descFactorial (blocks z) = t ^ blocks x := by
   classical
@@ -237,17 +244,18 @@ end Kernels
 
 /-! ### The Möbius values -/
 
-/-- The derivative at `0` of the falling factorial `X (X - 1) ⋯ (X - b + 1)`, which is
-`(-1)^(b-1) (b-1)!` for `b ≥ 1` (`derivCoeff_succ`). -/
+/-- The derivative at $0$ of the falling factorial $X (X - 1) \cdots (X - b + 1)$, which is
+$(-1)^{b-1} (b-1)!$ for $b \ge 1$ (`derivCoeff_succ`). -/
 noncomputable def derivCoeff (b : ℕ) : ℤ :=
   (derivative (descPochhammer ℤ b)).eval 0
 
-/-- `c(1) = 1`. -/
+/-- $c(1) = 1$. -/
 theorem derivCoeff_one : derivCoeff 1 = 1 := by
   simp [derivCoeff]
 
-/-- The recurrence `c(b + 2) = -(b + 1) c(b + 1)`, from `X (X - 1) ⋯ (X - b - 1) =
-X (X - 1) ⋯ (X - b) · (X - b - 1)` and the vanishing of the first factor at `0`. -/
+/-- The recurrence $c(b + 2) = -(b + 1) c(b + 1)$, from
+$X (X - 1) \cdots (X - b - 1) = X (X - 1) \cdots (X - b) \cdot (X - b - 1)$ and the vanishing of
+the first factor at $0$. -/
 theorem derivCoeff_succ_succ (b : ℕ) : derivCoeff (b + 2) = -(b + 1) * derivCoeff (b + 1) := by
   rw [derivCoeff, descPochhammer_succ_right, derivative_mul]
   simp only [derivative_sub, derivative_X, derivative_natCast, sub_zero, mul_one, eval_add,
@@ -256,7 +264,7 @@ theorem derivCoeff_succ_succ (b : ℕ) : derivCoeff (b + 2) = -(b + 1) * derivCo
   push_cast
   ring
 
-/-- The closed form `c(b + 1) = (-1)^b b!`. -/
+/-- The closed form $c(b + 1) = (-1)^b b!$. -/
 theorem derivCoeff_succ (b : ℕ) : derivCoeff (b + 1) = (-1) ^ b * b.factorial := by
   induction b with
   | zero => simp [derivCoeff_one]
@@ -265,7 +273,7 @@ theorem derivCoeff_succ (b : ℕ) : derivCoeff (b + 1) = (-1) ^ b * b.factorial 
     push_cast
     ring
 
-/-- `c(b) ≠ 0` for `b ≥ 1`. -/
+/-- $c(b) \ne 0$ for $b \ge 1$. -/
 theorem derivCoeff_ne_zero {b : ℕ} (hb : 0 < b) : derivCoeff b ≠ 0 := by
   obtain ⟨b, rfl⟩ := Nat.exists_eq_add_of_lt hb
   rw [zero_add, derivCoeff_succ]
@@ -276,7 +284,8 @@ section Mobius
 variable [Finite α]
 
 open Classical in
-/-- The polynomial identity `∑_{z ≥ x} X (X - 1) ⋯ (X - blocks z + 1) = X ^ blocks x`. -/
+/-- The polynomial identity $\sum_{z \ge x} X (X - 1) \cdots (X - b(z) + 1) = X^{b(x)}$, where
+$b(z)$ is the number of blocks of $z$. -/
 theorem sum_descPochhammer_blocks [Fintype (Setoid α)] (x : Setoid α) :
     ∑ z ∈ {z | x ≤ z}, descPochhammer ℤ (blocks z) = (X : ℤ[X]) ^ blocks x := by
   refine eq_of_infinite_eval_eq _ _ (Set.infinite_of_injective_forall_mem
@@ -286,8 +295,8 @@ theorem sum_descPochhammer_blocks [Fintype (Setoid α)] (x : Setoid α) :
   exact_mod_cast sum_descFactorial_blocks t x
 
 open Classical in
-/-- **The Möbius values of the partition lattice**: `∑_{z ≥ x} c(blocks z) = [x = ⊤]`, where
-`c(b) = (-1)^(b-1) (b-1)!` (`derivCoeff`). -/
+/-- **The Möbius values of the partition lattice**: $\sum_{z \ge x} c(b(z)) = [x = \top]$, where
+$b(z)$ is the number of blocks of $z$ and $c(b) = (-1)^{b-1} (b-1)!$ (`derivCoeff`). -/
 theorem sum_derivCoeff_blocks [Fintype (Setoid α)] [Nonempty α] (x : Setoid α) :
     ∑ z ∈ {z | x ≤ z}, derivCoeff (blocks z) = if x = ⊤ then 1 else 0 := by
   have h := congrArg (fun p : ℤ[X] => (derivative p).eval 0) (sum_descPochhammer_blocks x)
@@ -300,8 +309,8 @@ theorem sum_derivCoeff_blocks [Fintype (Setoid α)] [Nonempty α] (x : Setoid α
     simp [h1]
   · simp [show blocks x ≠ 1 by omega, zero_pow (show blocks x - 1 ≠ 0 by omega)]
 
-/-- **The Möbius function of the partition lattice** at the top: `μ(x, ⊤) = c(blocks x)`, which is
-`(-1)^(b-1) (b-1)!` for a partition `x` with `b` blocks. The locally finite order on the partitions
+/-- **The Möbius function of the partition lattice** at the top: $\mu(x, \top) = c(b)$, which is
+$(-1)^{b-1} (b-1)!$, for a partition $x$ with $b$ blocks. The locally finite order on the partitions
 may be any instance, such as `Fintype.toLocallyFiniteOrder`. -/
 theorem mu_top [Nonempty α] [LocallyFiniteOrder (Setoid α)] [DecidableEq (Setoid α)]
     (x : Setoid α) : IncidenceAlgebra.mu ℤ x ⊤ = derivCoeff (blocks x) := by
@@ -328,7 +337,8 @@ end Mobius
 /-! ### The join matrix -/
 
 open Classical in
-/-- The join matrix over `R`: entry `1` at `P` and `Q` if `P ⊔ Q = ⊤`, and `0` otherwise. -/
+/-- The join matrix over `R`: entry $1$ at $P$ and $Q$ if $P \sqcup Q = \top$, and $0$
+otherwise. -/
 @[expose] noncomputable def joinMatrix (R α : Type*) [Zero R] [One R] :
     Matrix (Setoid α) (Setoid α) R :=
   Matrix.of fun P Q => if P ⊔ Q = ⊤ then 1 else 0
@@ -340,7 +350,7 @@ open Classical in
   rfl
 
 open Classical in
-/-- The zeta matrix of the refinement order over `R`, entry `1` at `P` and `z` if `P ≤ z`: the
+/-- The zeta matrix of the refinement order over `R`, entry $1$ at $P$ and $z$ if $P \le z$: the
 matrix of Mathlib's `IncidenceAlgebra.zeta`. -/
 @[expose] noncomputable def zetaMatrix (R α : Type*) [Zero R] [One R] :
     Matrix (Setoid α) (Setoid α) R :=
@@ -351,8 +361,9 @@ section Matrices
 variable [Finite α] [Fintype (Setoid α)] {R : Type*}
 
 open Classical in
-/-- **The factorisation `J = Z Δ Zᵀ`** of the join matrix, with `Δ` the diagonal of the Möbius
-values `μ(z, ⊤) = c(blocks z)`. -/
+/-- **The factorisation $J = Z \Delta Z^{\mathsf{T}}$** of the join matrix, with $\Delta$ the
+diagonal of the Möbius values $\mu(z, \top) = c(b(z))$, where $b(z)$ is the number of blocks of
+$z$. -/
 theorem joinMatrix_eq [CommRing R] [Nonempty α] :
     joinMatrix R α = zetaMatrix R α * Matrix.diagonal (fun z => (derivCoeff (blocks z) : R)) *
       (zetaMatrix R α).transpose := by
@@ -368,7 +379,7 @@ theorem joinMatrix_eq [CommRing R] [Nonempty α] :
 
 open Classical in
 /-- The zeta matrix is unitriangular when the partitions are ordered by their numbers of blocks, so
-its determinant is `1`. -/
+its determinant is $1$. -/
 theorem det_zetaMatrix [CommRing R] : (zetaMatrix R α).det = 1 := by
   have hT : (zetaMatrix R α).BlockTriangular fun P => OrderDual.toDual (blocks P) := by
     intro P z hlt
@@ -388,7 +399,8 @@ theorem det_zetaMatrix [CommRing R] : (zetaMatrix R α).det = 1 := by
   rw [this, Matrix.det_one]
 
 /-- **Dowling–Wilson for the partition lattice**: over a field of characteristic zero, the join
-matrix has full rank, the number of partitions. -/
+matrix has full rank, the number of partitions [DowlingWilson1975, Lemma 1 and the proof of
+Theorem 2]. -/
 theorem rank_joinMatrix [Field R] [CharZero R] : (joinMatrix R α).rank = Nat.card (Setoid α) := by
   classical
   rw [Nat.card_eq_fintype_card]
