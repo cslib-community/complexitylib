@@ -1843,6 +1843,8 @@ public import Complexity.Computability.Complexity.Reduction.Autoreducibility
 public import Complexity.Computability.Complexity.Reduction.Isomorphism
 public import Complexity.Computability.Complexity.Reduction.Levin
 public import Complexity.Computability.Complexity.Reduction.LogSpaceAutoreducibility
+public import Complexity.Computability.Complexity.Reduction.LogSpaceBoundedAutoreducibility
+public import Complexity.Computability.Complexity.Reduction.LogSpaceBoundedTruthTable
 public import Complexity.Computability.Complexity.Reduction.LogSpaceTruthTable
 public import Complexity.Computability.Complexity.Reduction.ManyOne
 public import Complexity.Computability.Complexity.Reduction.OneOne
@@ -2122,6 +2124,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogS
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.AllBranches
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Boolean
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Equality
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Nondeterministic
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Output
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Unary
