@@ -1839,8 +1839,8 @@ public import Complexity.Computability.Complexity.ProofSystem
 public import Complexity.Computability.Complexity.Reduction
 public import Complexity.Computability.Complexity.Reduction.Autoreducibility
 public import Complexity.Computability.Complexity.Reduction.Isomorphism
-public import Complexity.Computability.Complexity.Reduction.LogSpaceAutoreducibility
 public import Complexity.Computability.Complexity.Reduction.Levin
+public import Complexity.Computability.Complexity.Reduction.LogSpaceAutoreducibility
 public import Complexity.Computability.Complexity.Reduction.LogSpaceTruthTable
 public import Complexity.Computability.Complexity.Reduction.ManyOne
 public import Complexity.Computability.Complexity.Reduction.OneOne
