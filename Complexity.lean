@@ -3693,6 +3693,7 @@ public import Complexity.Foundations.Probability.CoordinateExpectation
 public import Complexity.Foundations.Probability.CoordinateFactorization
 public import Complexity.Foundations.Probability.CorrectionAtom
 public import Complexity.Foundations.Probability.CorrectionRowRecipe
+public import Complexity.Foundations.Probability.CorrectionRowRecipeStability
 public import Complexity.Foundations.Probability.CorrectionRowTasks
 public import Complexity.Foundations.Probability.DenseRowRecipes
 public import Complexity.Foundations.Probability.DenseRowRecipes.Stability
@@ -3718,6 +3719,7 @@ public import Complexity.Foundations.Probability.HierarchyChannelTransport
 public import Complexity.Foundations.Probability.HierarchyChildError
 public import Complexity.Foundations.Probability.HierarchyChildRootMoment
 public import Complexity.Foundations.Probability.HierarchyCorrectionMean
+public import Complexity.Foundations.Probability.HierarchyCorrectionRawStability
 public import Complexity.Foundations.Probability.HierarchyCorrectionStability
 public import Complexity.Foundations.Probability.HierarchyCutoffs
 public import Complexity.Foundations.Probability.HierarchyDenseChildren
