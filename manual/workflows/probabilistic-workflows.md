@@ -221,9 +221,26 @@ rawSample bins would subtract E repeatedly. The
 suffixes, unequal rates and a free spectator, checks two statistical walk precisions,
 positive genuine final correction/product terms, a nonconstant product and two-bin assembly.
 
-This completes the bounded genuine signed stage mean. It does not identify a recursive
-estimated-child evaluator or propagate its errors, realize copy-stage routing, or prove
-numerical envelopes, recursive reserves, workspace or native RL=L.
+For finite absolute estimated-child propagation import
+[HierarchyEstimatedMean](../../Complexity/Foundations/Probability/HierarchyEstimatedMean.lean).
+`estimated_residual_bins_mean_error` compares actual bounded `incomingChildren` at fixed
+`Request HP.k` with `canonicalRequestChild`. Supply the genuine C/top-rate cap, monotone
+bin scales with adjacent ratio at most 16, and the same cover/horizon and dense-gate contracts.
+`boundedRoutedBinCutoff_div_eq` proves true-input agreement before the bounded evaluator is
+used. The product splits as estimatedLeft*(estimatedRight-canonicalRight) +
+(estimatedLeft-canonicalLeft)*canonicalRight. Actual correction range `2*Q(atomCap)` and
+genuine dense range `2*max cap 16` pay the two errors. Importance and midpoint densities
+stay literal; positive-bin errors are summed and the negative error occurs once.
+The [checked error client](../../ComplexityTests/HierarchyChildError.lean) instantiates the
+actual two-bin cap and exact adjacent ratio on the shared spectator/suffix fixture.
+
+[FirstMeanError](../../Complexity/Foundations/Probability/NormalizedAtomRows/FirstMeanError.lean)
+then proves `actualEstimatedResidual_first_mean_le`: the completed full-terminal raw walk
+preserves this input mean and the actual first prefix has bound
+`min 1 (absoluteError / (rate kt + genuineResidual x y))`. The genuine residual is nonnegative.
+This direction does not convert clipped relative error into absolute error. Preparation still
+uses the full-rank maximum in `preparationError`. Recursive root/relative budgets, copy-stage
+routing, numerical reserves, parameter/workspace bounds and native RL=L remain open.
 
 The P=5 regression has source/stage/usage exponents 2/1/3, actual densities
 16/625, 81/625 and 1/625, different nonempty copy suffixes, and a free spectator role.
