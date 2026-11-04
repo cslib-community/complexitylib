@@ -33,6 +33,7 @@ not a competing execution semantics or a second client language.
 
 ## Main results
 
+* `Realizes.Spec.consequence`, `Realizes.consequence`: strengthen the domain or enlarge work.
 * `Realizes.exists_refines`: forget the fresh-register frame to the existing `Refines` API.
 
 The realization certificate and its grading are original infrastructure. The memory interface,
@@ -157,15 +158,16 @@ variable {p : δ → Memory.Prog α} {input : δ ↪ (Fin k → ℕ)}
   {output : α ↪ (Fin l → ℕ)} {safe : ℕ → δ → Memory.State → Prop}
   {work : δ → Memory.State → ℕ}
 
-/-- Strengthen the visible entry domain or enlarge the local-work charge. The entry word and
-memory bounds may discharge fit conditions; no executable code or domain is hidden by this rule. -/
-theorem consequence {safe' : ℕ → δ → Memory.State → Prop} {work' : δ → Memory.State → ℕ}
-    (h : Realizes B p input output safe work)
+/-- Strengthen the visible entry domain or enlarge the local-work charge for a specified
+scratch size, exchange factor and emitter, all of which are unchanged. -/
+theorem Spec.consequence {safe' : ℕ → δ → Memory.State → Prop}
+    {work' : δ → Memory.State → ℕ} {n C : ℕ}
+    {emit : ∀ {r : ℕ}, (frontier : Fin r) → (Fin k → Fin r) →
+      (Fin (l + n + 1) → Fin r) → Code B r}
+    (he : Spec B p input output safe work n C emit)
     (hsafe : ∀ w d s, (∀ i, Fits w (input d i)) → Memory.WellFormed w s →
       safe' w d s → safe w d s)
-    (hwork : ∀ d s, work d s ≤ work' d s) : Realizes B p input output safe' work' := by
-  obtain ⟨n, C, emit, he⟩ := h
-  refine ⟨n, C, emit, ?_⟩
+    (hwork : ∀ d s, work d s ≤ work' d s) : Spec B p input output safe' work' n C emit := by
   intro r frontier src tmp hi hd hf hs
   obtain ⟨hnw, hrun⟩ := he frontier src tmp hi hd hf hs
   refine ⟨hnw, ?_⟩
@@ -175,6 +177,16 @@ theorem consequence {safe' : ℕ → δ → Memory.State → Prop} {work' : δ �
     hrun w d x hx hin (hsafe w d _ hwords (wellFormed_memoryState hx) hsafe') hv
   exact ⟨y, hy.mono (Nat.mul_le_mul_left C (by have := hwork d (memoryState frontier x); omega)),
     hm, hout, hframe⟩
+
+/-- Strengthen the visible entry domain or enlarge the local-work charge. The entry word and
+memory bounds may discharge fit conditions; no executable code or domain is hidden by this rule. -/
+theorem consequence {safe' : ℕ → δ → Memory.State → Prop} {work' : δ → Memory.State → ℕ}
+    (h : Realizes B p input output safe work)
+    (hsafe : ∀ w d s, (∀ i, Fits w (input d i)) → Memory.WellFormed w s →
+      safe' w d s → safe w d s)
+    (hwork : ∀ d s, work d s ≤ work' d s) : Realizes B p input output safe' work' :=
+  let ⟨n, C, emit, he⟩ := h
+  ⟨n, C, emit, he.consequence hsafe hwork⟩
 
 /-- Existing defined-evaluation basis simulation preserves the complete realization certificate. -/
 theorem mapSimulates {B' : Basis} (h : Realizes B p input output safe work)

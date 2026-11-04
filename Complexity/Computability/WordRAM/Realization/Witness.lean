@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.WordRAM.Realization.Basic
+public import Complexity.Computability.WordRAM.Realization.Reindex
 
 /-!
 # Retaining a uniform realization witness
@@ -26,6 +26,8 @@ its proved exchange factor, without adding another realization judgment.
 * `Realizes.scratchSize`, `Realizes.factor`, `Realizes.code`: select the uniform witness.
 * `Realizes.Witness`: retain a specified witness and its execution contract.
 * `Realizes.Witness.ofRealizes`: an existential-only choice fallback.
+* `Realizes.Witness.consequence`, `Realizes.Witness.consequenceValid`, `Realizes.Witness.congr`,
+  `Realizes.Witness.reindex`: the `Realizes` adapters, retaining every supplied field.
 
 ## Main results
 
@@ -111,17 +113,7 @@ def Witness.consequence {safe' : ℕ → δ → Memory.State → Prop}
   scratchSize := h.scratchSize
   factor := h.factor
   code := h.code
-  code_spec := by
-    intro r frontier src tmp hi hd hf hs
-    obtain ⟨hnw, hrun⟩ := h.code_spec frontier src tmp hi hd hf hs
-    refine ⟨hnw, ?_⟩
-    intro w d x hx hin hsafe' hv
-    have hwords (i : Fin k) : Fits w (input d i) := congrFun hin i ▸ hx.1 (src i)
-    obtain ⟨y, hy, hm, hout, hframe⟩ :=
-      hrun w d x hx hin (hsafe w d _ hwords (wellFormed_memoryState hx) hsafe') hv
-    refine ⟨y, hy.mono (Nat.mul_le_mul_left h.factor ?_), hm, hout, hframe⟩
-    have := hwork d (memoryState frontier x)
-    omega
+  code_spec := Spec.consequence h.code_spec hsafe hwork
 
 /-- The client's own admissible history can discharge a stronger entry domain. The supplied
 scratch, factor and emitter remain unchanged. -/
@@ -146,9 +138,7 @@ def Witness.congr {p' : δ → Memory.Prog α} (h : Witness B p input output saf
   scratchSize := h.scratchSize
   factor := h.factor
   code := h.code
-  code_spec := by
-    intro r frontier src tmp hi hd hf hs
-    simpa only [hp] using h.code_spec frontier src tmp hi hd hf hs
+  code_spec := funext hp ▸ h.code_spec
 
 /-- Rewire already live input words by a fixed index map, retaining the supplied resources.
 The pointwise encoding equality charges no new host-side argument computation. -/
@@ -160,15 +150,6 @@ def Witness.reindex {ε : Type} {m : ℕ} (h : Witness B p input output safe wor
   scratchSize := h.scratchSize
   factor := h.factor
   code := fun frontier src tmp => h.code frontier (src ∘ ix) tmp
-  code_spec := by
-    intro r frontier src tmp hi hd hf hs
-    obtain ⟨hnw, hrun⟩ := h.code_spec frontier (src ∘ ix) tmp hi
-      (fun i j => hd (ix i) j) hf (fun i => hs (ix i))
-    refine ⟨hnw, ?_⟩
-    intro w e x hx hin hsafe hv
-    have hin' : x.regs ∘ (src ∘ ix) = input (f e) := by
-      funext i
-      exact (congrFun hin (ix i)).trans (hw e i).symm
-    exact hrun w (f e) x hx hin' hsafe hv
+  code_spec := Spec.reindex h.code_spec f env ix hw
 
 end Cslib.WordRAM.Realization.Realizes

@@ -57,6 +57,26 @@ example : bodyWitness.factor = 1 ∧ loopWitness.factor = 11 := ⟨rfl, rfl⟩
 -- The bank formula is concrete in the supplied data; scalar scratch is not assigned a numeral.
 example : loopWitness.scratchSize = 1 + bodyWitness.scratchSize + 3 := rfl
 
+-- The data adapters keep the supplied scratch, factor and emitter rather than reselecting them.
+example {r : ℕ} (frontier : Fin r) src tmp :
+    let h := bodyWitness.consequenceValid (safe' := fun w d _ => Fits w d.2 ∧ d.1 = ())
+      (fun _ _ _ _ _ _ hs => hs.1)
+    h.scratchSize = bodyWitness.scratchSize ∧ h.factor = 1 ∧
+      h.code frontier src tmp = bodyWitness.code frontier src tmp :=
+  ⟨rfl, rfl, rfl⟩
+
+example {r : ℕ} (frontier : Fin r) src tmp :
+    let h := bodyWitness.congr (p' := fun d => pure d.2) (fun _ => rfl)
+    h.scratchSize = bodyWitness.scratchSize ∧ h.factor = 1 ∧
+      h.code frontier src tmp = bodyWitness.code frontier src tmp :=
+  ⟨rfl, rfl, rfl⟩
+
+example {r : ℕ} (frontier : Fin r) src tmp :
+    let h := bodyWitness.reindex id WordEncoding.encode id (fun _ _ => rfl)
+    h.scratchSize = bodyWitness.scratchSize ∧ h.factor = 1 ∧
+      h.code frontier src tmp = bodyWitness.code frontier src tmp :=
+  ⟨rfl, rfl, rfl⟩
+
 /-- A uniform native body with its tighter clock and full original semantic/frame result. -/
 theorem identity_native {w : ℕ} (a q : ℕ) (s : Memory.State)
     (hs : Memory.WellFormed w s) (ha : Fits w a) (hq : Fits w q) :
