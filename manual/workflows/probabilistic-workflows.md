@@ -180,6 +180,38 @@ preserves the true cutoff. `CorrectionSampling.withSource` changes only the samp
 pair law, preserving the true input, final pilot, gates and incoming budget. The common
 `correctionRequest_eq_split` avoids rebuilding the split transport for each choice of children.
 
+To compare genuine targets across request roles and copy suffixes, import
+[HierarchyCanonicalTargets](../../Complexity/Foundations/Probability/HierarchyCanonicalTargets.lean).
+Use `stage_correctionIter_eq_of_terminal_rate` to identify the left and negative correction
+targets at a common stage rate. `source_request_mean_canonical` combines this transport with
+the actual narrower-source correction mean, retaining its literal usage-density divisor.
+The proof integrates source spectators and permutes each padded frame seed; it does not
+identify samples at an unchanged environment. The
+[regression client](../../ComplexityTests/HierarchyCanonicalTargets.lean) checks actual residual
+requests with different terminal roles and radix-two suffixes, a positive target and an
+unequal-rate complete correction mean.
+
+For a genuine source-reset dense child, import
+[HierarchyDenseChildren](../../Complexity/Foundations/Probability/HierarchyDenseChildren.lean).
+Build `denseChild` from the deterministic hierarchy base, bin cutoff and genuine
+`densePreparation`. `dense_normalizer` integrates the actual joint source/usage mean;
+`denseChild_terminal` then removes source and spectator dependence pointwise. For a
+left correction sharing the midpoint with that reset source, use
+[HierarchySharedMidpoint](../../Complexity/Foundations/Probability/HierarchySharedMidpoint.lean).
+`sourceChild_mul_denseChild_mean` conditions the single full environment on the old
+source and terminal events. Supply three distinct roles, the complete right-source reset,
+the finite horizon and narrower-source hypotheses, and the dense support/gate bounds.
+The left midpoint hit and literal midpoint-density divisor remain in the sample.
+The [checked client](../../ComplexityTests/HierarchySharedMidpoint.lean) evaluates a positive
+product with unequal rates, nonempty suffixes and a free fourth role.
+
+This is a single-path mean. The dispatched residual `rawSample` still needs its actual
+negative request transported under inherited terminal conditioning and its finite last
+iteration identified. The actual bin decomposition/routing must then assemble positive
+bin contributions while subtracting the special correction once, rather than once per bin.
+The original residual conditional-mean criterion and estimated-child error propagation
+remain open; neither follows from the single-path product.
+
 The P=5 regression has source/stage/usage exponents 2/1/3, actual densities
 16/625, 81/625 and 1/625, different nonempty copy suffixes, and a free spectator role.
 It proves a positive complete actual request mean with the genuine final pilot. Usage
@@ -206,6 +238,111 @@ requires lower-child moments to be paid by a later induction; it assumes no fina
 noise certificate. Zero correction remains literal; the moment/noise bridge here treats
 positive iterations. Pilot/copy paths, quantitative lower-child budgets, summation and
 recursive/native correctness remain open.
+
+For the first compression signal, import
+[FirstSignal](../../Complexity/Foundations/Probability/NormalizedAtomRows/FirstSignal.lean)
+and apply `actualFirstSignal_noise_le_lower`. Its child-budget-indexed inputs are genuine
+`rawIncomingNormalized` samples. `firstSignalIncrement` takes successive conditional-walk
+differences from zero; `actualPrefix_firstSignalIncrement` identifies prefix i with walk
+i+1 divided by `rate k`. Stationarity on the full terminal slice, including empty slices,
+then identifies `actualNoiseEntry` with centered walk noise divided by
+`rate k * (1 + G / rate k)`.
+
+The endpoint row moment is bounded directly by `rate k` to the inverse fourth power,
+times `32 * lambda^(2*steps(i+1))`, times the explicit lower-child
+`incomingMomentBudget` at budget i+1. No maximum-entry conversion, hidden width constant,
+or independence assumption is used. The
+[regressions](../../ComplexityTests/ActualFirstSignal.lean) check nonzero nonconstant
+telescoping prefixes, zero inputs, empty slices and a nonconstant random mean/moment.
+For a numerical payment, import
+[FirstPayment](../../Complexity/Foundations/Probability/NormalizedAtomRows/FirstPayment.lean).
+Supply CB≥0 and a proved [0,CB] range for the actual bin cutoff.
+`normalizedRequest_mem_Icc` gives direct/right range 2CB; correction range remains
+CA=2Q(atomCap). `incomingMomentBudget_le_payment` pays all three child norms on the
+same full environment. For N=P and u=rate(ks), with ks and km in the declared horizon,
+each bounded row pays at most 16P times its fourth-power bound. This deliberately retains
+the full endpoint width P; it does not infer sparse support for an arbitrary bounded cutoff.
+The correction product still uses its existing proved K/Kc support bounds.
+
+`firstSignalPayment` evaluates both actual usage ratios as exact grid frame-mass ratios,
+with usage exponent max(k,kb) or max(k,km). The right factor keeps rate(km) divided by
+its actual midpoint density. The resulting finite payment retains P, the rounded frame
+masses, and rate(km)/rate(ks); none is hidden in a universal constant.
+`actualFirstSignal_noise_le_payment` keeps rate(k)^(-4), and
+`actualFirstSignal_noise_le_dyadic` uses the shared `spectralWalkLength` at child budget i+1
+to pay the dyadic fourth-power noise contract for ε>0. The
+[actual-bin regressions](../../ComplexityTests/ActualFirstPayment.lean) use
+`boundedRoutedBinCutoff` with a genuine polynomial switch, top cap HP.k+2, adjacent-scale
+ratio 16 and explicit CB=max(HP.k+2,16). They check a nonzero complete residual, negative-input
+clipping, a chosen actual i=2 noise client, exact logarithmic steps and zero/empty edges.
+
+For the preparatory second signal, import
+[SecondSignal](../../Complexity/Foundations/Probability/NormalizedAtomRows/SecondSignal.lean).
+`selectedPreparation` applies the selected preparation cutoff and full terminal-rank
+gate to a supplied **completed raw child in matrix units**. `completedRawChild` names the
+actual conditional H4 walk of `rawIncomingNormalized` used by FirstSignal and FirstPayment.
+Apply preparation after this raw walk, then average preparation on source × usage.
+`hierarchyTaskRecipe_residualPreparation` checks the existing hierarchy evaluator reads
+that completed child before the nonlinear recipe. All source, midpoint, terminal, usage
+and copy data remain on the same environment. `rawSamplePreparation` is the optional
+unaveraged finite client; it does not identify the recursive preparation evaluator. `actualSelectedSecondSignal_noise` bounds
+its endpoint row noise by `ζ^4 * 32 * lambda^(2*steps(i+1)) * rowNormPow(T_(i+1))`
+on source × usage. Stationarity identifies the actual second noise with
+`|ζ| * |walk_(i+1) - rowSliceMean(T_(i+1))|`. The initial second signal is literally zero,
+and `firstSignalIncrement` retains its existing full-rank first prefix.
+
+The preparation is in [0,1] and has fewer than K nonzero retained rank entries per row.
+For usage exponent kt≥k, `selectedPreparation_support_moment` applies the generic
+sparse-row bound **before walk averaging**. Its payment is
+`K * (N*u)^(-1) * sum_x density(sourceRetains x)`, without independence of the input,
+support or source. `source_density_sum` evaluates the sum as `P * (side(P,ks)/P)^4`,
+including nonempty copy suffixes and D=0. With N=P, u=rate(ks), and ks in the declared
+horizon, `selectedPreparation_moment_le` gives 16K. No sparsity of the averaged
+walk is claimed.
+
+`actualSelectedSecondSignal_noise_le` feeds that input payment into the actual second
+prefix: its noise moment is at most `ζ^4 * 32 * lambda^(2*steps(i+1)) * 16K`.
+For ε>0, the shared `spectralWalkLength` takes lambda and coefficient ζ^4*512K
+and gives an explicit natural ceiling of a base-lambda logarithm;
+`actualSelectedSecondSignal_noise_le_dyadic` accepts this length or any larger one and
+pays `(ε * 64^(-dyadicSlack(m,i)))^4`. The length uses input budget i+1. The extra 1 in
+its logarithm denominator also handles zero scaling and capacity. ε=0 is excluded from
+this finite-length guarantee: a positive spectral upper bound never vanishes in finitely
+many steps.
+
+The [regressions](../../ComplexityTests/ActualSecondSignal.lean) check positive, nonconstant
+selected preparation, the actual H4 second-prefix client with the
+chosen steps, D=0 with a nonempty suffix, two-signal prefixes, zero children, and empty
+usage through compression. Mixing controls noise around the selected input's own mean.
+
+For deterministic preparation bias, import
+[MeanBias](../../Complexity/Foundations/Probability/NormalizedAtomRows/MeanBias.lean).
+`preparation_stability_constants` uses polynomial entry-cutoff regularity and the actual
+hierarchy rho fourth-root regularity. `preparation_sub_genuinePrep_le` compares signed
+residual A to G on the same full terminal rank slice: its bound is
+`(Lh * |A σ x y - G x y| + Lρ * rank₁(fullRank, |A σ x · - G x ·|)) / rate k`.
+`preparationError_le` accepts explicit absolute entry and full-rank envelopes; it needs
+no target-size bound. `preparation_mean_bias_le` averages this error over the actual joint
+source × usage slice against `genuinePrep(G)` and `genuineMean`, including empty slices.
+`actualSelectedSecondSignal_mean_bias_le` accepts any completed raw child.
+`actualCompletedSecondSignal_mean_bias_le` instantiates it with the actual raw H4 walk
+and the ζ-scaled preparation prefix at input budget i+1. `firstSignal_raw_error` and
+`preparationError_eq_firstPrefix` identify its absolute errors with the actual first-prefix
+errors, retaining rate(k) and the full-rank maximum. The first prefix is F_j/rate(k);
+`atomPrep` itself divides by rate(k), so preparing that prefix directly would divide twice. The clipped
+second deterministic discrepancy is at most `min 1 (|ζ| * jointMean(preparationError))`.
+All source/copy suffixes, rates, role data and correlations remain present. The first
+coordinate is unchanged. The regressions evaluate a positive nonconstant genuine target,
+a perturbed-residual bias of one, exact-zero perturbation and empty usage. The ordering
+regression has raw values 0 and 2: preparation of their average is 1, while the average
+of their preparations is 1/2. A seven-step actual H4 completed child retains a positive
+preparation and a zero endpoint.
+
+This controls bias by explicit absolute residual errors. Deriving those errors from
+recursive lower-child relative estimates, numerical mean envelopes, recursive
+budget/reserve induction, recursive parameter/workspace bounds and native RL=L remain
+open. Row mass does not provide a uniform target bound, and clipped relative error
+alone does not provide an absolute residual error.
 
 For a coarser source, `source_incoming_cost_le` quantifies the generic incoming cost as
 `32 * R * (sourceRate / stageRate)`; the fixed incoming rank is not proved to pay that

@@ -27,6 +27,7 @@ is at least `t` exactly when at least `k` values are at least `t` (`Finset.le_kt
 ## Main definitions
 
 * `Finset.kthLargest`: the `k`-th largest value, padded with zeros.
+* `Finset.abs_le_kthLargest_one`: absolute values are bounded by the full-slice maximum.
 
 ## Main results
 
@@ -178,5 +179,16 @@ theorem abs_kthLargest_sub_kthLargest_le (hk : 0 < k) (hε : 0 ≤ ε)
       sub_le_iff_le_add'.mp (le_of_abs_le ((abs_sub_comm _ _).trans_le (h x hx))))
 
 end Stability
+
+open Classical in
+/-- A retained endpoint's magnitude is bounded by the full row maximum, including zero. -/
+lemma abs_le_kthLargest_one {ι R' : Type*} [AddCommGroup R'] [LinearOrder R']
+    [IsOrderedAddMonoid R'] (S : Finset ι) (b : ι → R') (y : ι) (hy : y ∈ S) :
+    |b y| ≤ kthLargest 1 S (fun z => |b z|) := by
+  by_cases hz : b y = 0
+  · simpa only [hz, abs_zero] using (kthLargest_nonneg (k := 1) (s := S) (h := fun z => |b z|))
+  · exact (le_kthLargest_iff (by decide : 0 < 1) (abs_pos.mpr hz)).mpr
+      (card_pos.mpr ⟨y, mem_filter.mpr ⟨hy, le_rfl⟩⟩)
+
 
 end Finset
