@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.WordRAM.Realization.Basic
+public import Complexity.Computability.WordRAM.Realization.Reindex
 
 /-!
 # Retaining a uniform realization witness
@@ -26,6 +26,8 @@ its proved exchange factor, without adding another realization judgment.
 * `Realizes.scratchSize`, `Realizes.factor`, `Realizes.code`: select the uniform witness.
 * `Realizes.Witness`: retain a specified witness and its execution contract.
 * `Realizes.Witness.ofRealizes`: an existential-only choice fallback.
+* `Realizes.Witness.consequence`, `Realizes.Witness.consequenceValid`, `Realizes.Witness.congr`,
+  `Realizes.Witness.reindex`: the `Realizes` adapters, retaining every supplied field.
 
 ## Main results
 
@@ -101,5 +103,53 @@ noncomputable def Witness.ofRealizes (h : Realizes B p input output safe work) :
   factor := h.factor
   code := h.code
   code_spec := h.choose_spec.choose_spec.choose_spec
+
+/-- Strengthen the entry domain or enlarge local work without reselecting any witness data. -/
+def Witness.consequence {safe' : ℕ → δ → Memory.State → Prop}
+    {work' : δ → Memory.State → ℕ} (h : Witness B p input output safe work)
+    (hsafe : ∀ w d s, (∀ i, Fits w (input d i)) → Memory.WellFormed w s →
+      safe' w d s → safe w d s)
+    (hwork : ∀ d s, work d s ≤ work' d s) : Witness B p input output safe' work' where
+  scratchSize := h.scratchSize
+  factor := h.factor
+  code := h.code
+  code_spec := Spec.consequence h.code_spec hsafe hwork
+
+/-- The client's own admissible history can discharge a stronger entry domain. The supplied
+scratch, factor and emitter remain unchanged. -/
+def Witness.consequenceValid {safe' : ℕ → δ → Memory.State → Prop}
+    (h : Witness B p input output safe work)
+    (hsafe : ∀ w d s, (∀ i, Fits w (input d i)) → Memory.WellFormed w s →
+      (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (p d)) →
+      safe' w d s → safe w d s) : Witness B p input output safe' work where
+  scratchSize := h.scratchSize
+  factor := h.factor
+  code := h.code
+  code_spec := by
+    intro r frontier src tmp hi hd hf hs
+    obtain ⟨hnw, hrun⟩ := h.code_spec frontier src tmp hi hd hf hs
+    refine ⟨hnw, fun w d x hx hin hsafe' hv => hrun w d x hx hin ?_ hv⟩
+    exact hsafe w d _ (fun i => congrFun hin i ▸ hx.1 (src i))
+      (wellFormed_memoryState hx) hv hsafe'
+
+/-- Exact source equality changes no witness field or code. -/
+def Witness.congr {p' : δ → Memory.Prog α} (h : Witness B p input output safe work)
+    (hp : ∀ d, p d = p' d) : Witness B p' input output safe work where
+  scratchSize := h.scratchSize
+  factor := h.factor
+  code := h.code
+  code_spec := funext hp ▸ h.code_spec
+
+/-- Rewire already live input words by a fixed index map, retaining the supplied resources.
+The pointwise encoding equality charges no new host-side argument computation. -/
+def Witness.reindex {ε : Type} {m : ℕ} (h : Witness B p input output safe work)
+    (f : ε → δ) (env : ε ↪ (Fin m → ℕ)) (ix : Fin k → Fin m)
+    (hw : ∀ e i, input (f e) i = env e (ix i)) :
+    Witness B (fun e => p (f e)) env output
+      (fun w e s => safe w (f e) s) (fun e s => work (f e) s) where
+  scratchSize := h.scratchSize
+  factor := h.factor
+  code := fun frontier src tmp => h.code frontier (src ∘ ix) tmp
+  code_spec := Spec.reindex h.code_spec f env ix hw
 
 end Cslib.WordRAM.Realization.Realizes

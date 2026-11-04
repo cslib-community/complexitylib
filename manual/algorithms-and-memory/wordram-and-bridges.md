@@ -102,6 +102,32 @@ randomized constructor. Existing existential Backend clients remain available th
 choice fallback. Fixed-resource Karger endpoints still need their own compatible emitter and
 resource proofs; no selected abstract bound follows from this example.
 
+### Keep native loop overhead additive
+
+When a memory loop already has a retained body witness, keep that data through
+`Witness.iterateRuntime` and use `Witness.loopEmit_spec` for a tighter clock on the **same**
+`loopEmit` instructions. For a state of `l` words and runtime fuel `q`, its bound is
+`C*(memoryCost + iterationWork) + (l+5)*(q+1)`. Here `iterationWork` includes one unit per
+iteration. Counter setup, state/result copies, decrement, tests and exit remain paid. The
+coarse witness factor is still available; substituting that coarse factor into an outer clock
+can lose this sharper accounting. This rule retains the full original execution contract,
+including reached domains, memory/frontier, outputs and the register frame.
+
+Open the complete [checked Backend client](../../ComplexityTests/WordRAMRealizationAdditiveLoop.lean),
+which reuses the existing query-free `identityBody` source. From this checkout, run
+`scripts/build.sh --wfail --iofail ComplexityTests.WordRAMRealizationAdditiveLoop`.
+Its retained vector-glue body has a three-instruction allowance, including the result and
+neutral copies. The one-word loop therefore runs within `9*q+6` body instructions even though
+it performs no memory query. The SAME Backend code handles value seven/fuel two at width three
+within 24 instructions, preserving all dirty memory and frontier three. At width zero/fuel zero
+it returns zero within six instructions, without assuming that one fits a zero-width word.
+Both cases retain the full live-register frame.
+
+The scalar glue emitter is selected once from its fixed-time certificate; its scratch size
+remains a retained parameter, not a proved numeral. This example gives a numerical time bound
+without a fixed register-count claim. Argument installation and caller halt are separate charges.
+It does not identify the supplied code with a witness chosen from an arbitrary existential proof.
+
 ## Randomized instructions and exact laws
 
 [Complexity/Computability/WordRAM/Randomized/Defs.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Randomized/Defs.lean) keeps the same flat instruction syntax and gives `rand dst src` the exact uniform law on `0,…,R[src]`, provided the bound fits. The deterministic interpreter faults on `rand`; the probabilistic interpreter produces a `ProbComp` tree. Halted and faulted outcomes are absorbing, and a halt retains final registers and memory.
