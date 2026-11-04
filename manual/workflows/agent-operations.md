@@ -67,3 +67,9 @@ structural `Request HP.k` fixed and supply `HP.k_pos` where positivity is requir
 Statistical precision indexes estimates and walk lengths independently; specializing
 structure to precision does not identify a fixed recursive hierarchy. See the
 [probabilistic workflow](probabilistic-workflows.md) for the quantitative contracts.
+
+For genuine signed-stage review, inspect the actual normalized index and final structural
+dispatch, inherited-terminal usage containment, and the single negative request in
+`canonical_residual_bins_mean`. Finite cover/horizon hypotheses remain acceptance limits.
+The [probabilistic workflow](probabilistic-workflows.md) separates this proved stage mean
+from estimated-child induction and native resource objectives.

@@ -92,7 +92,8 @@ theorem actual_bin_residual_one (HP : FourthRootHierarchyParams 16 1 16 32 8)
       rawIncomingNormalized (k := 1) HP 1 (fun (_ : Unit) => 0) threeRoles
       0 0 0 0 0 0 [1] [2] [3] (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff 2
       (fun _ => 1) (fun _ _ _ _ => 1) (fun _ _ _ _ => 1) (fun _ _ _ => 0) σ () () := by
-    simp only [rawIncomingNormalized, HierarchyTask.rawSample, HierarchyTask.rawRequests,
+    simp only [rawIncomingNormalized, HierarchyTask.rawSample, HierarchyTask.rawPositiveSample,
+    HierarchyTask.rawNegativeSample, HierarchyTask.rawRequests,
       show HierarchyTask.correctionAtomTask (k := 1) 0 false (Fin.last 1) =
         .row 0 (.normalized 0) from rfl]
     dsimp only [threeRoles]

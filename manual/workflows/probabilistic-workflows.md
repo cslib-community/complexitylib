@@ -205,12 +205,25 @@ The left midpoint hit and literal midpoint-density divisor remain in the sample.
 The [checked client](../../ComplexityTests/HierarchySharedMidpoint.lean) evaluates a positive
 product with unequal rates, nonempty suffixes and a free fourth role.
 
-This is a single-path mean. The dispatched residual `rawSample` still needs its actual
-negative request transported under inherited terminal conditioning and its finite last
-iteration identified. The actual bin decomposition/routing must then assemble positive
-bin contributions while subtracting the special correction once, rather than once per bin.
-The original residual conditional-mean criterion and estimated-child error propagation
-remain open; neither follows from the single-path product.
+For signed assembly import
+[HierarchySignedMean](../../Complexity/Foundations/Probability/HierarchySignedMean.lean).
+`canonicalRequestChild` matches normalized index j and evaluates `sourceChild` at j.val;
+`correctionAtomTask_last_succ` proves the final structural dispatch. Request size stays
+`HP.k` as statistical precision varies. `sourceChild_mean_on_terminal_event` derives the
+negative mean from genuine correction normalization and zero off usage, with no target-mean
+premise. The actual negative request has rank rate f and usage min(parent terminal, f).
+`canonical_rawSample_mean` proves the literal one-bin mean `C_bin + E*C_bin - E` on
+one full environment. `canonical_residual_bins_mean` sums `rawPositiveSample` over the
+existing routed-bin partition with route one, then subtracts `rawNegativeSample` once.
+Its exact finite cover and narrower-source horizon are explicit; summing unchanged signed
+rawSample bins would subtract E repeatedly. The
+[checked signed client](../../ComplexityTests/HierarchySignedMean.lean) keeps nonempty
+suffixes, unequal rates and a free spectator, checks two statistical walk precisions,
+positive genuine final correction/product terms, a nonconstant product and two-bin assembly.
+
+This completes the bounded genuine signed stage mean. It does not identify a recursive
+estimated-child evaluator or propagate its errors, realize copy-stage routing, or prove
+numerical envelopes, recursive reserves, workspace or native RL=L.
 
 The P=5 regression has source/stage/usage exponents 2/1/3, actual densities
 16/625, 81/625 and 1/625, different nonempty copy suffixes, and a free spectator role.

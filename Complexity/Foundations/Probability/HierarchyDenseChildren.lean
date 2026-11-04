@@ -7,6 +7,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Probability.HierarchyCanonicalTargets
+public import Complexity.Foundations.Probability.CoordinateFactorization
 
 /-!
 # Genuine dense children on the shared hierarchy environment
@@ -121,5 +122,59 @@ theorem dense_terminal_mean (hD : D ≠ 0) (hid : Function.Injective ident)
     (Yt := splitUsage D ident r) hsub hne hkh hρ0 hρ1 hη hρη
     (ht ▸ rate_pos k) hC0 hCM (by norm_num : (0 : ℝ) ≤ 32) hK
     (split_usage_pair D ident r hr hD hid H hk ht hu y)
+
+include hr in
+/-- Actual dense direct mean on the inherited source and terminal event. Source
+spectators integrate out after genuine normalization, with its literal density ratio. -/
+theorem denseChild_mean_on_terminal_event
+    (hD : D ≠ 0) (hid : Function.Injective ident) (H : Horizon P)
+    {s k u : ℕ} (hsH : s ≤ H.maxExponent) (hs : r.source.rate = rate s)
+    (hk : k ≤ H.maxExponent) (ht : r.terminal.rate = rate k)
+    (hu : r.usage.rate = rate u)
+    (cutoff h ρ : ℝ → ℝ) (K : ℕ) (C : Matrix V V ℝ)
+    (q : FrameChannel P 4 1 → Prop) [DecidablePred q]
+    (x y : V) (hsub : ∀ A, splitUsage D ident r A y → q A)
+    (hkh : ∀ v, cutoff v ≠ 0 → h v = 1)
+    (hρ0 : ∀ v, 0 ≤ ρ v) (hρ1 : ∀ v, ρ v ≤ 1) {η : ℝ}
+    (hη : 0 < η) (hρη : ∀ v, v ≤ η → ρ v = 1)
+    (hC0 : ∀ w, 0 ≤ C x w) (hCM : ∑ w, C x w ≤ 1)
+    (hK : 2 * (1 + 32 / η) ≤ K) :
+    (𝔼 σ ∈ ({σ : Environment P J |
+      r.source.retains (channels D) σ (ident x) ∧ q (σ r.terminal.role)} : Finset _),
+      (r.terminal.rate * ((dens {σ : Environment P J | q (σ r.terminal.role)} : ℝ) /
+        dens {σ : Environment P J | r.usage.retains (channels D) σ (ident y)})) *
+      denseChild D ident r cutoff h ρ K C σ x y) =
+      r.terminal.rate * cutoff (C x y / r.terminal.rate) := by
+  have hx := source_nonempty D ident r hr hD hid H hsH hs x
+  have hpos : 0 < (dens {σ : Environment P J |
+      r.source.retains (channels D) σ (ident x)} : ℝ) := by
+    rw [channel_density D r.source s hs]
+    have hside : (0 : ℝ) < side P s := by
+      exact_mod_cast side_pos P s (Fact.out : P.Prime).pos
+    have hP : (0 : ℝ) < P := by exact_mod_cast (Fact.out : P.Prime).pos
+    positivity
+  have hfull : ({σ : Environment P J |
+      r.source.retains (channels D) σ (ident x)} : Finset _).Nonempty :=
+    dens_ne_zero.mp (by exact_mod_cast hpos.ne')
+  simp_rw [denseChild_eq D ident r hr cutoff h ρ K C _ x y hx]
+  have hf := expect_pi_split_mul_filter r.source.role r.terminal.role hr.1
+    (fun A => coordinate D r.source A (ident x)) q (fun _ => (1 : ℝ))
+    (fun A => denseAtom (splitTerminal D ident r) (splitUsage D ident r)
+      cutoff h ρ K r.terminal.rate C A x y)
+  change (𝔼 σ ∈ ({σ : Environment P J |
+    r.source.retains (channels D) σ (ident x) ∧ q (σ r.terminal.role)} : Finset _),
+    1 * denseAtom (splitTerminal D ident r) (splitUsage D ident r)
+      cutoff h ρ K r.terminal.rate C (σ r.terminal.role) x y) =
+    (𝔼 σ ∈ ({σ : Environment P J |
+      r.source.retains (channels D) σ (ident x)} : Finset _), (1 : ℝ)) * _ at hf
+  simp only [one_mul, expect_const hfull] at hf
+  rw [← mul_expect, hf, mul_expect]
+  have hd : (dens {σ : Environment P J |
+      r.usage.retains (channels D) σ (ident y)} : ℝ) =
+      dens {A | splitUsage D ident r A y} := by
+    rw [channel_density D r.usage u hu, split_usage_density D ident r hu]
+  rw [dens_filter_pi_eval r.terminal.role q, hd]
+  exact dense_terminal_mean D ident r hr hD hid H hk ht hu cutoff h ρ K C q x y
+    hsub hkh hρ0 hρ1 hη hρη hC0 hCM (by simpa only [mul_one] using hK)
 
 end Matrix.HierarchyParams.H4RankEnvironment
