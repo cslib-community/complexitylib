@@ -21,7 +21,9 @@ The structural parameter `HP.k` is fixed. Rows and vectors share one history, an
 child retains the entire original H4 environment. `finiteInput` is the unaveraged finite
 assembly helper. The public RAW route assembles paired endpoint differences before one
 common completion per dyadic slack group, using `LogSpaceEstimation.lastBudget` at both budgets.
-The negative residual is one signed ray, outside the positive-bin sum.
+The negative residual is one signed ray, outside the positive-bin sum. Initial pilot and
+actual inputs share the same zero-correction assembly; their request precisions and walks
+retain their own constructor ranks.
 
 This is a partial mathematical evaluator, not the closed compressed estimator of
 [OpenAI2026LogSpace, Sections 7.4–7.5]. Dense leaves are unavailable at budget zero. Only the
@@ -33,7 +35,7 @@ also return `none`. The exact base matrix and literal iteration-zero constants r
 Allocation magnitudes are derived from certified primitive cutoff caps and explicit finite
 bin/rate/density charges, not supplied per request. They are proved sufficient for every initial
 pilot paired sample and the assembled initial group, with actual completion noise. Their validity
-for later constructions, noise summation, later RAW dispatch, post-average compression,
+for later constructions, noise summation, later-iteration RAW dispatch, post-average compression,
 incoming support, the simultaneous row/vector canonical-accuracy invariant and cross-stage/reward
 transport remain open. In particular, no
 row sparsity of a conditional average is inferred from pointwise input sparsity.
@@ -562,11 +564,13 @@ unavailable pending their analytic zero-approximation theorem. -/
       (densePreparation B.padding id r (B.auxiliary i) HP.ρ HP.K B.base)) else none
   | .baseNormalized 0 i => if 0 < M then some (.row
       (denseChild B.padding id r (B.cutoff i) (B.auxiliary i) HP.ρ HP.K B.base)) else none
-  | .row 0 (.pilotInput i) =>
+  | .row 0 (.pilotInput i) | .row 0 (.input i) =>
+    -- Both initial targets are C + 0*C. Reuse the proved initial history rather than
+    -- duplicating a route through the equal literal-zero actual correction.
     if i.val = 0 then
       if 0 < B.requestPrecision M r then (B.raw history M (.pilotInput i) r).map .row else none
     else none
-  | .row 0 (.input _) | .residual 0 => none
+  | .residual 0 => none
   | .row 0 (.score i) => if 0 < B.requestPrecision M r then do
       let A ← row history (B.childBudget M) { r with task := .row 0 (.pilotInput i) }
       pure (.row (fun σ => PilotRowRecipe.score HP.toHierarchyParams

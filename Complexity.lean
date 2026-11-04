@@ -3732,6 +3732,7 @@ public import Complexity.Foundations.Probability.HierarchyDenseChildren
 public import Complexity.Foundations.Probability.HierarchyDetector
 public import Complexity.Foundations.Probability.HierarchyEstimatedInput
 public import Complexity.Foundations.Probability.HierarchyEstimatedMean
+public import Complexity.Foundations.Probability.HierarchyEvaluatorInitial
 public import Complexity.Foundations.Probability.HierarchyInitialAllocation
 public import Complexity.Foundations.Probability.HierarchyInitialFeasibility
 public import Complexity.Foundations.Probability.HierarchyInitialGeometric

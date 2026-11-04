@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of actual polynomial evaluator histories)
-import Complexity.Foundations.Probability.HierarchyInitialUniform
+import Complexity.Foundations.Probability.HierarchyEvaluatorInitial
 
 /-! A positive identity/full-rate evaluator history with actual ratio-16 bins and polynomial
 preparation. The top bin carries the input, the fine bin vanishes. This exact stationary
@@ -125,9 +125,10 @@ private lemma initial (HP : FourthRootHierarchyParams 16 1 16 32 8) (i : ℕ)
     dsimp only
     split_ifs <;> simp only [HierarchyTask.rawRequests, data, hz, zero_mul, zero_div,
       mul_zero]
-private lemma complete_const (HP : FourthRootHierarchyParams 16 1 16 32 8)
-    (M d : ℕ) (A : Matrix (ZMod 5) (ZMod 5) ℝ) :
-    (data HP).complete M (request HP) (fun _ => A) d = some (fun _ => A) := by
+private lemma complete_const_task (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (M d : ℕ) (A : Matrix (ZMod 5) (ZMod 5) ℝ)
+    (task : HierarchyTask HP.k) :
+    (data HP).complete M {request HP with task := task} (fun _ => A) d = some (fun _ => A) := by
   rw [BudgetData.complete_grid _ M _ 0 2 (by decide) 0 0 [1] [2, 3] rfl rfl _ d]
   apply congrArg some
   funext σ x y
@@ -138,37 +139,129 @@ private lemma complete_const (HP : FourthRootHierarchyParams 16 1 16 32 8)
   have hy : Y (2 : Fin 3) (side 5 0) (CopyPadding.identifier (1 : ZMod 5) [2, 3]) σ y := by
     simpa only [Y, show side 5 0 = 5 by norm_num [side]] using full_retains (σ 2) _
   exact ite_eq_left ⟨hx, hy⟩
-private lemma group_input (HP : FourthRootHierarchyParams 16 1 16 32 8) (d : ℕ) :
-    (data HP).initialGroupInput 2 d (request HP) = fun _ x y =>
+private lemma complete_const (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (M d : ℕ) (A : Matrix (ZMod 5) (ZMod 5) ℝ) :
+    (data HP).complete M (request HP) (fun _ => A) d = some (fun _ => A) :=
+  complete_const_task HP M d A (request HP).task
+private lemma group_input (HP : FourthRootHierarchyParams 16 1 16 32 8) (d : ℕ)
+    (task : HierarchyTask HP.k := (request HP).task) :
+    (data HP).initialGroupInput 2 d {request HP with task := task} = fun _ x y =>
       (if LogSpaceEstimation.lastBudget 2 d 1 0 = 0 then 0 else base x y) -
       (if LogSpaceEstimation.lastBudget 2 (2 * d) 1 0 = 0 then 0 else base x y) := by
   funext σ x y
   unfold BudgetData.initialGroupInput
-  rw [sum_congr rfl (fun i hi => by rw [initial HP i hi])]
+  have hi (i : ℕ) (hi : i ∈ (data HP).bins) :
+      (data HP).initialSample {request HP with task := task} i =
+        fun _ x y => if i = 0 then base x y else 0 := initial HP i hi
+  rw [sum_congr rfl (fun i hmem => by rw [hi i hmem])]
   norm_num [BudgetData.sampleScale, data, request, gridChannel, rate]
-private lemma prefixes (HP : FourthRootHierarchyParams 16 1 16 32 8) :
-    (data HP).initialPrefixes 2 (request HP) =
+private lemma prefixes_task (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (task : HierarchyTask HP.k) :
+    (data HP).initialPrefixes 2 {request HP with task := task} =
       some (fun j _ => if 2 ≤ j then base else 0) := by
   have hg (d : ℕ) := BudgetData.completedGroup_initial (data HP) 2 d (by decide)
-    (show (data HP).bins.Nonempty from by simp [data]) (request HP)
+    (show (data HP).bins.Nonempty from by simp [data]) {request HP with task := task}
   simp_rw [group_input] at hg
   unfold BudgetData.initialPrefixes
   change (do
     let groups ← (List.range (Nat.log2 2 + 1)).mapM fun j =>
       (data HP).completedGroup _ 2 (Cslib.RowCompression.dyadicSlack (Nat.log2 2 + 1) j)
-        (.pilotInput ⟨0, HP.k_pos⟩) (request HP)
+        (.pilotInput ⟨0, HP.k_pos⟩) {request HP with task := task}
     pure fun j σ x y => ((groups.take j).map
       (fun (A : Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ) => A σ x y)).sum) = _
   simp_rw [hg]
   norm_num [List.range_succ, Cslib.RowCompression.dyadicSlack,
     LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff]
-  simp_rw [complete_const]
+  simp_rw [complete_const_task]
   simp only [Option.bind_some]
   apply congrArg some
   funext j σ x y
   cases j with
   | zero => simp
   | succ j => cases j <;> simp
+
+private lemma prefixes (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (data HP).initialPrefixes 2 (request HP) =
+      some (fun j _ => if 2 ≤ j then base else 0) :=
+  prefixes_task HP (request HP).task
+
+-- The actual (nonpilot) constructor executes the same nonzero base-stage recipe.
+-- Its own precision is used, and its zero-budget boundary remains unavailable.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (data HP).evaluate 2 {request HP with task := .row 0 (.input ⟨0, HP.k_pos⟩)} =
+        some (.row (fun _ => base)) ∧
+      (data HP).evaluate 0 {request HP with task := .row 0 (.input ⟨0, HP.k_pos⟩)} = none ∧
+      base (0 : ZMod 5) 0 = 1 ∧ CorrectionRowRecipe.input base 0 base = base := by
+  refine ⟨?_, ?_, by simp [base], by ext x y; simp [CorrectionRowRecipe.input]⟩
+  · simpa only [show Nat.log2 2 + 1 = 2 by decide, le_refl, ↓reduceIte] using
+      BudgetData.evaluate_initial_prefix (data HP) 2
+        {request HP with task := .row 0 (.input ⟨0, HP.k_pos⟩)} false rfl rfl
+        (by norm_num [BudgetData.requestPrecision, LogSpaceEstimation.precision,
+          data, request, gridChannel, rate]) _ (prefixes_task HP (.row 0 (.input ⟨0, HP.k_pos⟩)))
+  · rw [BudgetData.evaluate_eq]
+    norm_num [BudgetData.step, BudgetData.requestPrecision, LogSpaceEstimation.precision,
+      data, request, gridChannel, rate]
+
+-- Every positive lower budget in this interval has a real nonzero dense output,
+-- simultaneously with range, rank support and own-source/full-rank rooted errors.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (m : ℕ) (hm : m < 3) (hm0 : 0 < m) :
+    ∃ A, (data HP).evaluate m {request HP with task := .baseNormalized 0 0} = some (.row A) ∧
+      (∀ σ, A σ (0 : ZMod 5) 0 = 1) ∧
+      (∀ σ x y, A σ x y ∈ Set.Icc 0 (2 * (data HP).binCap)) ∧
+      (∀ σ x, #{y ∈ ({y | (request HP).terminal.retains (channels (1 : ZMod 5)) σ y} :
+        Finset _) | A σ x y ≠ 0} < HP.K) ∧
+      rootDistPow 4 5 (request HP).source.rate
+        (fun σ x => (request HP).source.retains (channels (1 : ZMod 5)) σ x)
+        (fun σ y => (request HP).terminal.retains (channels (1 : ZMod 5)) σ y)
+        A (fun _ => base) = 0 := by
+  have he : HP.η₂ ≤ 1 / 2 := by
+    have hθ := HP.θ₂_lt
+    norm_num at hθ
+    linarith [HP.η₂_lt, HP.δ₀_lt_δ₁, HP.δ₁_lt, HP.θ_lt_θ₂]
+  have hz : ∀ d, d ≤ 1 / 2 → (data HP).cutoff 0 d = 0 := fun _ hd =>
+    boundedRoutedBinCutoff_eq_zero (by norm_num)
+      (fun _ h => polynomialSwitch4_of_le (by norm_num) h)
+      rate_pos rate_antitone hd 0 (fun _ => 1)
+  obtain ⟨A, hA, htarget, hrange, _, hsupp, _, hroot⟩ :=
+    BudgetData.evaluate_lower_dense_contract (data HP) 3 m hm hm0
+      {request HP with task := .baseNormalized 0 0} 0 rfl
+      (show Admissible (request HP) from ⟨by change (0 : Fin 3) ≠ 2; decide, rfl, rfl⟩)
+      (1 / 2) HP.η₂ (by norm_num) he hz HP.ρ_zero
+  have ht : denseChild (n := HP.k) 1 id {request HP with task := .baseNormalized 0 0} (numerator 0)
+      (polynomialPrepCutoff4 HP.θ) HP.ρ HP.K base = fun _ => base := by
+    rw [denseChild_congr_task]
+    funext σ x y
+    exact top_dense HP σ x y
+  change A = denseChild (n := HP.k) 1 id {request HP with task := .baseNormalized 0 0} (numerator 0)
+    (polynomialPrepCutoff4 HP.θ) HP.ρ HP.K base at htarget
+  refine ⟨A, by simpa only [hm, ↓reduceIte] using hA, ?_, hrange, hsupp, ?_⟩
+  · intro σ
+    rw [htarget, ht]
+    simp [base]
+  · change rootDistPow 4 5 (request HP).source.rate
+      (fun σ x => (request HP).source.retains (channels (1 : ZMod 5)) σ x)
+      (fun σ y => (request HP).terminal.retains (channels (1 : ZMod 5)) σ y) A
+      (denseChild (n := HP.k) 1 id {request HP with task := .baseNormalized 0 0}
+        (numerator 0) (polynomialPrepCutoff4 HP.θ) HP.ρ HP.K base) = 0 at hroot
+    simpa only [ht] using hroot
+
+-- A score successor consumes the actual earlier pilotInput result at budget 2 < 3.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (data HP).evaluate 3 {request HP with task := .row 0 (.score ⟨0, HP.k_pos⟩)} =
+      some (.row (fun σ => PilotRowRecipe.score HP.toHierarchyParams
+        (fun τ y => (request HP).terminal.retains (channels (1 : ZMod 5)) τ y)
+        (request HP).terminal.rate base σ)) := by
+  have hA := BudgetData.evaluate_initial_prefix (data HP) 2 (request HP) true rfl rfl
+    (by norm_num [BudgetData.requestPrecision, LogSpaceEstimation.precision,
+      data, request, gridChannel, rate]) _ (prefixes HP)
+  have hchild : (data HP).childBudget 3 = 2 := by
+    norm_num [BudgetData.childBudget, data, LogSpaceEstimation.lastBudget,
+      LogSpaceEstimation.scaleCutoff]
+  apply (BudgetData.evaluate_score_child (data HP) 3 (by decide)
+    {request HP with task := .row 0 (.score ⟨0, HP.k_pos⟩)} ⟨0, HP.k_pos⟩ rfl
+    (by norm_num [BudgetData.requestPrecision, LogSpaceEstimation.precision,
+      data, request, gridChannel, rate]) (fun _ => base) ?_).1
+  simpa only [hchild, show Nat.log2 2 + 1 = 2 by decide, le_refl, ↓reduceIte, request] using hA
 
 example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
     (data HP).initialPrefixes 2 (request HP) =
@@ -1327,7 +1420,11 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8)
         (retainedMask threeRoles.source (side P 0) (1 : ZMod P) [1])
         (retainedMask threeRoles.terminal (side P 0) (1 : ZMod P) [2, 3]) A
         (denseChild 1 id (uniformRequest HP P) ((uniformData HP P n).cutoff 0)
-          (polynomialPrepCutoff4 HP.θ) HP.ρ HP.K (uniformData HP P n).base) ≤ ε := by
+          (polynomialPrepCutoff4 HP.θ) HP.ρ HP.K (uniformData HP P n).base) ≤ ε ∧
+      (uniformData HP P n).evaluate (128 * n)
+        {uniformRequest HP P with task := .baseNormalized 0 0} = some (.row
+          (denseChild 1 id (uniformRequest HP P) ((uniformData HP P n).cutoff 0)
+            (polynomialPrepCutoff4 HP.θ) HP.ρ HP.K (uniformData HP P n).base)) := by
   have hζ : 0 < HP.η / 4 := by linarith [HP.η_pos]
   obtain ⟨C, _, hfloor⟩ := BudgetData.exists_compressedBin_uniform_accuracy HP
     hζ HP.η_pos le_rfl hscale (by linarith)

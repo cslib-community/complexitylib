@@ -630,7 +630,8 @@ theorem fixed_charge_linear_guards (ks ka c : ℕ) (rankCost : ℝ) (hc : 0 < c)
 /-- Arbitrary accuracy of every successful actual compressed-bin output at sufficiently
 large linear budget. C is fixed before the floor, Cpre after the floor, and both before depth
 or prime. Fixed slack and structural charge pay the actual precision and scale guards.
-The output and both actual histories are constructed; the recursive lower-budget invariant
+The output and both actual histories are constructed, and its dense target is the actual
+positive-budget dense constructor of `evaluate`; the recursive lower-budget invariant
 and general/noninitial evaluator dispatch remain separate. -/
 theorem exists_compressedBin_uniform_accuracy (HP : FourthRootHierarchyParams 16 1 16 32 8)
     {ζ scale : ℝ} (hζ : 0 < ζ) (hscl : 0 < scale)
@@ -660,7 +661,10 @@ theorem exists_compressedBin_uniform_accuracy (HP : FourthRootHierarchyParams 16
         (retainedMask R.source (side P ks) B.padding ss)
         (retainedMask R.terminal (side P ka) B.padding st) A
         (denseChild B.padding id r (B.cutoff bin) (polynomialPrepCutoff4 HP.θ) HP.ρ HP.K
-          B.base) ≤ ε := by
+          B.base) ≤ ε ∧
+        B.evaluate M {r with task := .baseNormalized 0 bin} = some (.row
+          (denseChild B.padding id r (B.cutoff bin) (polynomialPrepCutoff4 HP.θ) HP.ρ HP.K
+            B.base)) := by
   obtain ⟨C, hC, hfloor⟩ := exists_compressedBin_geometric HP hζ hscl hmargin hcapscale hsmall
   refine ⟨C, hC, ?_⟩
   intro floor hf hfs hf1
@@ -716,11 +720,13 @@ theorem exists_compressedBin_uniform_accuracy (HP : FourthRootHierarchyParams 16
     simp only [hF, bind, Option.bind_some]
     rw [hW]
     exact ⟨_, rfl⟩
-  refine ⟨A, hA, ?_⟩
-  exact (houtput B _ n hM hbins hrate hcutoff haux hD H hdepth r hr R ks ka ku ss st
-    hsource hterminal husage hks hka hku hbudget hbase hbase1 bin F hF _ hW A hA
-    Lh Lρ hLh hLρ hh hρ).trans
-      (hN P n _ B hnN hM (linear_firstSlack c n hc) hP hbins hrate hBC
-        r hsc hp0 hp1 H hks R ss st)
+  refine ⟨A, hA, ?_, ?_⟩
+  · exact (houtput B _ n hM hbins hrate hcutoff haux hD H hdepth r hr R ks ka ku ss st
+      hsource hterminal husage hks hka hku hbudget hbase hbase1 bin F hF _ hW A hA
+      Lh Lρ hLh hLρ hh hρ).trans
+        (hN P n _ B hnN hM (linear_firstSlack c n hc) hP hbins hrate hBC
+          r hsc hp0 hp1 H hks R ss st)
+  · simpa only [haux, denseChild_congr_task] using B.evaluate_dense _ bin (by omega)
+      {r with task := .baseNormalized 0 bin} rfl
 
 end Matrix.HierarchyParams.H4RankEnvironment.BudgetData

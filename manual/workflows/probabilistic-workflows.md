@@ -1123,10 +1123,32 @@ choosing depth and pays both actual precisions and the scale budget.
 `exists_compressedBin_uniform_accuracy` preserves the order $C$, then positive floor,
 then $C_{\rm pre}$, then fixed request constants, requested accuracy and depth. It
 constructs both actual histories and a successful compressed output with error at most
-the requested positive accuracy. The regression chooses bounded primes after depth,
+the requested positive accuracy, and identifies its dense target with the actual
+positive-budget `.baseNormalized` result of `BudgetData.evaluate`. The regression chooses
+bounded primes after depth,
 uses a nonzero identity base, nonempty suffixes and fixed nonzero usage exponent, and
 consumes this existence theorem. This is an initial ratio-16 polynomial-bin result;
 it supplies no general recursive evaluator induction.
+
+The [actual initial-constructor bridge](../../Complexity/Foundations/Probability/HierarchyEvaluatorInitial.lean)
+also identifies the initial pilot and actual `.input 0` outputs with their own final
+history prefixes. The actual input now executes the shared zero-correction RAW recipe;
+its own task rank still sets its precision and walk lengths. Full terminal usage is
+required by this bridge. The existing deficit and unconditional noise payment consequently
+bounds its canonical matrix-unit error, with omitted/inactive/coarse charges retained.
+`evaluate_score_child` executes a score from an actual strictly lower-budget pilot input
+and pays its full-rank error with explicit width and inverse-rate costs. The nonzero
+identity fixture executes `.input 0` and this score successor and keeps the zero-budget
+input unavailable.
+
+`evaluate_lower_dense_contract` quantifies over every positive $m<M$ and every changing
+dense request/bin. It proves availability, the constructor-correct target, range, usage
+vanishing, terminal-row support, and zero rooted errors on both its own source/usage
+and source/full-rank masks. This is the **exact dense seed** contract: the evaluator still
+reads the genuine semantic dense leaves. It is not the simultaneous recursive row/vector
+invariant. In particular the uniform compressed comparison does not replace those leaves
+inside `evaluate`; doing so invalidates the exact initial-history calculations and needs
+the changing-request IH. No scalar fixed-request convergence theorem supplies that IH.
 
 **Remaining parent-error gap:** the fixed-request initial compressed-bin allocation is
 paid. Allowing $k_a=n$ instead leaves the active charge exactly one, as the retained edge
