@@ -208,10 +208,7 @@ index links to canonical definitions rather than keeping a second set.
   The residual-bin phase order is local; full global stochastic preparation/access enumeration,
   finite-accuracy ports, estimated copy/routing-fraction comparisons, and the complete scheduled
   mean-prefix bound remain open; range/true means do not establish root
-  regularity or the error recurrence. Canonical correction targets now transport across roles
-  and copy suffixes; canonical dense-child assembly and the shared-midpoint joint residual
-  conditional mean remain open, before a deterministic error envelope can be derived from
-  genuine lower-child errors. Paired raw differences, full-coordinate conditional walks, summed noise, compression, strong recursive
+  regularity or the error recurrence. Paired raw differences, full-coordinate conditional walks, summed noise, compression, strong recursive
   induction and native logarithmic workspace/class equality remain required.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
   logspace reduction.
