@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 public import Complexity.Foundations.Probability.HierarchyEstimatedInput
+public import Complexity.Foundations.Probability.HierarchyChildRootMoment
 
 /-!
 # Estimated-child mean error against the genuine finite residual

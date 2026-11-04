@@ -3842,6 +3842,7 @@ public import Complexity.Foundations.Probability.HierarchyAtomCutoff
 public import Complexity.Foundations.Probability.HierarchyCanonicalTargets
 public import Complexity.Foundations.Probability.HierarchyChannelTransport
 public import Complexity.Foundations.Probability.HierarchyChildError
+public import Complexity.Foundations.Probability.HierarchyChildRootMoment
 public import Complexity.Foundations.Probability.HierarchyCorrectionMean
 public import Complexity.Foundations.Probability.HierarchyCutoffs
 public import Complexity.Foundations.Probability.HierarchyDenseChildren
@@ -3860,6 +3861,7 @@ public import Complexity.Foundations.Probability.HierarchyTaskMeans
 public import Complexity.Foundations.Probability.HierarchyTasks
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ActualMoment
 public import Complexity.Foundations.Probability.NormalizedAtomRows.BoundedLoss
+public import Complexity.Foundations.Probability.NormalizedAtomRows.ChildRootReserve
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ClippedTail
 public import Complexity.Foundations.Probability.NormalizedAtomRows.CommonEnvelope
 public import Complexity.Foundations.Probability.NormalizedAtomRows.FiniteEnvelopePayment
@@ -3875,6 +3877,7 @@ public import Complexity.Foundations.Probability.NormalizedAtomRows.Output
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Request
 public import Complexity.Foundations.Probability.NormalizedAtomRows.RequestSharp
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ReserveOutput
+public import Complexity.Foundations.Probability.NormalizedAtomRows.RootReserveOutput
 public import Complexity.Foundations.Probability.NormalizedAtomRows.SecondEnvelope
 public import Complexity.Foundations.Probability.NormalizedAtomRows.SecondSignal
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Sharp
@@ -3899,6 +3902,7 @@ public import Complexity.Foundations.Probability.RootMetric.AbsoluteError
 public import Complexity.Foundations.Probability.RootMetric.ConditionalWalk
 public import Complexity.Foundations.Probability.RootMetric.Conditioning
 public import Complexity.Foundations.Probability.RootMetric.FiniteEnvelope
+public import Complexity.Foundations.Probability.RootMetric.FiniteError
 public import Complexity.Foundations.Probability.RootMetric.Minkowski
 public import Complexity.Foundations.Probability.RootMetric.Slices
 public import Complexity.Foundations.Probability.RootMetric.Stationarity

@@ -214,3 +214,10 @@ For a named headline such as Fagin's theorem, locate its entry in `abstracts/cat
 The abstract is a readable presentation and its bridge proves the connection. The underlying library declaration is normally the reusable API. `#check_abstract` audits dependencies; it does not decide whether the semantics match your application. Likewise, `comparator/` contains selected independently stated contracts and solutions applying library theorems. Its coverage is explicit and limited, so absence from comparator is not a failed theorem check. Read the [assurance reference](../design-and-assurance/assurance.md) when deciding what evidence a result already has, and use the [contribution workflow](contributing.md) for any new proof or representation bridge.
 
 [complexitylib]: ../sources.md#complexitylib
+
+For actual output from per-request rooted moments, use
+[RootReserveOutput](../../Complexity/Foundations/Probability/NormalizedAtomRows/RootReserveOutput.lean)
+and its [child reserve payment](../../Complexity/Foundations/Probability/NormalizedAtomRows/ChildRootReserve.lean).
+The full-environment finite allocation is explicit and conservative; it supplies no recursive
+accuracy or parameter/workspace closure. The source-reset guard and exact coefficients are
+explained in the [probabilistic workflow](probabilistic-workflows.md).

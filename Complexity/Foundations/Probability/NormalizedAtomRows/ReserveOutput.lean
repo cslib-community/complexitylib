@@ -133,14 +133,10 @@ theorem actualEstimatedResidual_output_from_cost_reserves
       (graph R.source R.terminal R.source_terminal (side P ks) (side P kt)
         (side_le P ks) (side_le P kt) (fun x => CopyPadding.identifier D ss x)
         (fun y => CopyPadding.identifier D st y)) (fun _ _ => rawSteps j) (input j)
-    let cost := fun j x y => rowSliceMean (retainedMask R.source (side P ks) D ss)
-      (retainedMask R.terminal (side P kt) D st) (fun σ x y =>
-        (∑ i ∈ range (n + 1), HierarchyTask.positiveChildError channelsV
-          l i .residual source mid terminal (rate (kb i))
-          (2 * HP.Q HP.toHierarchyParams.atomCap) (2 * max cap 16)
-          (estimated (j + 1) i σ) (canonical i σ) x y) +
-        HierarchyTask.negativeChildError channelsV l 0 .residual source mid terminal
-          (rate (kb 0)) (estimated (j + 1) 0 σ) (canonical 0 σ) x y) x y
+    let cost := fun j x y => HierarchyTask.conditionalChildCost channelsV (range (n + 1)) l
+      source mid terminal (fun i => rate (kb i))
+      (2 * HP.Q HP.toHierarchyParams.atomCap) (2 * max cap 16)
+      (estimated (j + 1)) canonical x y
     let T := fun j σ x y => selectedPreparation HP D R st kt (F j) σ x y
     let W := fun j => conditionalWalk (retainedMask R.source (side P ks) D ss)
       (retainedMask R.terminal (side P ku) D st)
