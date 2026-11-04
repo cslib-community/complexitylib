@@ -1404,6 +1404,7 @@ public import Complexity.Computability.Complexity.Classes.FunctionTime.Bounds
 public import Complexity.Computability.Complexity.Classes.FunctionTime.Decide
 public import Complexity.Computability.Complexity.Classes.FunctionTime.WordRAM
 public import Complexity.Computability.Complexity.Classes.Hierarchy
+public import Complexity.Computability.Complexity.Classes.Hierarchy.LazyDiagonalBounds
 public import Complexity.Computability.Complexity.Classes.Hierarchy.LogClock
 public import Complexity.Computability.Complexity.Classes.Hierarchy.Nondeterministic
 public import Complexity.Computability.Complexity.Classes.Hierarchy.NondeterministicExponentialTime
@@ -2068,6 +2069,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Cases
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunProp
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lists
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.NatPolynomial
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Option
@@ -2758,6 +2760,7 @@ public import Complexity.Computability.WordRAM.ExactNotation
 public import Complexity.Computability.WordRAM.Function
 public import Complexity.Computability.WordRAM.GhostLoop
 public import Complexity.Computability.WordRAM.Glue
+public import Complexity.Computability.WordRAM.Glue.Basic
 public import Complexity.Computability.WordRAM.Heap
 public import Complexity.Computability.WordRAM.InputArray
 public import Complexity.Computability.WordRAM.Invariance
@@ -2967,6 +2970,7 @@ public import Complexity.Crypto.Computational.InaccessibleEntropy.Basic
 public import Complexity.Crypto.Computational.InaccessibleEntropy.EntropyReduction
 public import Complexity.Crypto.Computational.InaccessibleEntropy.OneWay
 public import Complexity.Crypto.Computational.InaccessibleEntropy.Repetition
+public import Complexity.Crypto.Computational.InaccessibleEntropy.TargetCollision
 public import Complexity.Crypto.Computational.IndexedSignature
 public import Complexity.Crypto.Computational.IndexedSignature.Counter
 public import Complexity.Crypto.Computational.IndexedSignature.Double
@@ -2976,6 +2980,7 @@ public import Complexity.Crypto.Computational.Kilian.NP
 public import Complexity.Crypto.Computational.Kilian.Soundness
 public import Complexity.Crypto.Computational.Kilian.Succinct
 public import Complexity.Crypto.Computational.LWE.Basic
+public import Complexity.Crypto.Computational.LubyRackoff
 public import Complexity.Crypto.Computational.MAC
 public import Complexity.Crypto.Computational.MerkleDamgard
 public import Complexity.Crypto.Computational.MerkleSignature
@@ -3052,6 +3057,7 @@ public import Complexity.Crypto.Computational.PseudorandomFunction.RandomOracle
 public import Complexity.Crypto.Computational.PseudorandomFunction.TruthTable
 public import Complexity.Crypto.Computational.PseudorandomGenerator
 public import Complexity.Crypto.Computational.PseudorandomPermutation
+public import Complexity.Crypto.Computational.Rompel
 public import Complexity.Crypto.Computational.SIS.Basic
 public import Complexity.Crypto.Computational.SchnorrIdentification
 public import Complexity.Crypto.Computational.SchnorrProtocol
@@ -3059,11 +3065,13 @@ public import Complexity.Crypto.Computational.Signature
 public import Complexity.Crypto.Computational.Stretch
 public import Complexity.Crypto.Computational.Stretch.Quantitative
 public import Complexity.Crypto.Computational.TCRSignature
+public import Complexity.Crypto.Computational.TCRSignature.ManyTime
 public import Complexity.Crypto.Computational.TargetCollisionResistant
 public import Complexity.Crypto.Computational.TreeSignature
 public import Complexity.Crypto.Computational.TreeSignature.CoinHybrid
 public import Complexity.Crypto.Computational.TreeSignature.Security
 public import Complexity.Crypto.Computational.UniformChoice
+public import Complexity.Crypto.Computational.WordSignature
 public import Complexity.Crypto.Computational.ZeroKnowledge
 public import Complexity.Crypto.Computational.ZeroKnowledge.Amplification
 public import Complexity.Crypto.Computational.ZeroKnowledge.AuxClock
@@ -3809,10 +3817,12 @@ public import Complexity.Foundations.Order.UpperLower
 public import Complexity.Foundations.Probability.AtomCutoffs
 public import Complexity.Foundations.Probability.ColumnDetector
 public import Complexity.Foundations.Probability.ConditionalProductMean
+public import Complexity.Foundations.Probability.CoordinateExpectation
 public import Complexity.Foundations.Probability.CorrectionAtom
 public import Complexity.Foundations.Probability.CorrectionRowRecipe
 public import Complexity.Foundations.Probability.CorrectionRowTasks
 public import Complexity.Foundations.Probability.DenseRowRecipes
+public import Complexity.Foundations.Probability.DenseRowRecipes.Stability
 public import Complexity.Foundations.Probability.DetectedHierarchy
 public import Complexity.Foundations.Probability.DetectedStage
 public import Complexity.Foundations.Probability.EfronStein
@@ -3829,6 +3839,8 @@ public import Complexity.Foundations.Probability.HeavyCountRarity
 public import Complexity.Foundations.Probability.HeavyCountTail
 public import Complexity.Foundations.Probability.HierarchyAccess
 public import Complexity.Foundations.Probability.HierarchyAtomCutoff
+public import Complexity.Foundations.Probability.HierarchyCanonicalTargets
+public import Complexity.Foundations.Probability.HierarchyChannelTransport
 public import Complexity.Foundations.Probability.HierarchyCorrectionMean
 public import Complexity.Foundations.Probability.HierarchyCutoffs
 public import Complexity.Foundations.Probability.HierarchyParams
@@ -3840,13 +3852,20 @@ public import Complexity.Foundations.Probability.HierarchySourceSampling
 public import Complexity.Foundations.Probability.HierarchyTaskData
 public import Complexity.Foundations.Probability.HierarchyTaskMeans
 public import Complexity.Foundations.Probability.HierarchyTasks
+public import Complexity.Foundations.Probability.NormalizedAtomRows.ActualMoment
 public import Complexity.Foundations.Probability.NormalizedAtomRows.BoundedLoss
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ClippedTail
+public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstPayment
+public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstSignal
+public import Complexity.Foundations.Probability.NormalizedAtomRows.Integrated
+public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanBias
 public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanEvent
 public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanTail
+public import Complexity.Foundations.Probability.NormalizedAtomRows.Moment
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Output
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Request
 public import Complexity.Foundations.Probability.NormalizedAtomRows.RequestSharp
+public import Complexity.Foundations.Probability.NormalizedAtomRows.SecondSignal
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Sharp
 public import Complexity.Foundations.Probability.NormalizedAtomRows.TwoMask
 public import Complexity.Foundations.Probability.PilotRowTasks
@@ -3869,6 +3888,7 @@ public import Complexity.Foundations.Probability.RootMetric.ConditionalWalk
 public import Complexity.Foundations.Probability.RootMetric.Conditioning
 public import Complexity.Foundations.Probability.RootMetric.Minkowski
 public import Complexity.Foundations.Probability.RootMetric.Slices
+public import Complexity.Foundations.Probability.RootMetric.Stationarity
 public import Complexity.Foundations.Probability.RoutedHierarchyBins
 public import Complexity.Foundations.Probability.SamplerPrefix
 public import Complexity.Foundations.Probability.ScheduledFineProductMean
@@ -3876,6 +3896,7 @@ public import Complexity.Foundations.Probability.ScheduledProductMean
 public import Complexity.Foundations.Probability.SecondMoment
 public import Complexity.Foundations.Probability.SignedResidualBins
 public import Complexity.Foundations.Probability.SourceRelease
+public import Complexity.Foundations.Probability.SpectralPayment
 public import Complexity.Foundations.Probability.StochasticAtom
 public import Complexity.Foundations.Probability.TrueSampleMeans
 public import Complexity.Foundations.Quantum.Measurement
@@ -4225,6 +4246,7 @@ public import Complexity.Tactic.FirstOrder
 public import Complexity.Tactic.FirstOrder.Init
 public import Complexity.Tactic.LogSpace
 public import Complexity.Tactic.LogSpace.Init
+public import Complexity.Tactic.OptionMatch
 public import Complexity.Tactic.PPT
 public import Complexity.Tactic.PolyTime
 public import Complexity.Tactic.PolyTime.Init
