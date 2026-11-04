@@ -350,7 +350,7 @@ private theorem isPPTOn_keyedOracleGame {Operation : Type} [DecidableEq Operatio
         (fun x : (ℕ × List Bool) × (Operation × List Bool) × Unit => bound x.1.1) call
         encUnary := hbound.comp (by polytime)
     exact ((horacle.comp hcall).bitsTakeWithInput hbound').prod (ComputableInPolyTime.const ())
-  have hrun := hadversary.run_interpret_preprocess (State := Unit) (input := caller)
+  have hrun := hadversary.run_interpret_preprocess' (State := Unit) (input := caller)
     (operationEncoding := encFinEnum Operation) (stateEncoding := encFinEnum Unit)
     (handler := fun caller request (_ : Unit) =>
       pure ((oracle caller.1 caller.2 request).take (bound caller.1), ()))
@@ -358,7 +358,7 @@ private theorem isPPTOn_keyedOracleGame {Operation : Type} [DecidableEq Operatio
     (initial := fun _ => ())
     (resources := fun caller _ => bound caller.1)
     (by polytime) hreply.isPPTOn (by polytime) (fun _ _ => True) (fun _ => trivial)
-    (by polytime)
+    (hbound.comp (by polytime))
     (fun caller request _ _ result hresult => by
       simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hresult
       subst result

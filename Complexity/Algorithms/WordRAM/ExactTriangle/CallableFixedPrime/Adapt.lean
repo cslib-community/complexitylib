@@ -97,24 +97,24 @@ theorem exec_adapt {W : ℕ} (x : Data 640)
     (aregs j (by omega)).trans (hregs j (by omega))
   have a_below (q : ℕ) (hq : q < b) : a.mem q = x.mem q := by rw [amem]; exact hbelow q hq
   have a_sum : ArrayCopySum.wordSum a.mem ab N = Sa := sum_eq a.mem a_below ab hab
-  obtain ⟨c₁, hc₁, c₁mem, c₁src, c₁dst, c₁len, c₁total, c₁regs⟩ := exec_copy a h1
+  obtain ⟨c₁, hc₁, post₁, c₁regs⟩ := exec_copy a h1
     (by rw [a_src, a_len]; exact fit.of_le (by omega))
     (by rw [a_dst, a_len]; exact fit.of_le (by omega))
     (by rw [a_total, a_src, a_len, a_sum]; exact fit.of_le (by omega))
     (by rw [a_src, a_dst, a_len]; omega)
   have hc₁' : ExecWithin W (ArrayCopySum.program.rename copyBank) a c₁ (8 * N + 4) := by
     simpa only [a_len] using hc₁
-  have c₁_dst : c₁.regs (copyBank 1) = b + 5 := c₁dst.trans a_dst
-  have c₁_len : c₁.regs (copyBank 2) = N := c₁len.trans a_len
+  have c₁_dst : c₁.regs (copyBank 1) = b + 5 := post₁.dst.trans a_dst
+  have c₁_len : c₁.regs (copyBank 2) = N := post₁.len.trans a_len
   have c₁_total : c₁.regs (copyBank 7) = Sa := by
-    simpa only [a_total, a_src, a_len, a_sum, Nat.zero_add] using c₁total
+    simpa only [a_total, a_src, a_len, a_sum, Nat.zero_add] using post₁.total
   have c₁_meta (j : Fin 640) (hj : j.val < 608) : c₁.regs j = x.regs j :=
     (c₁regs j (Or.inl (by omega))).trans (a_meta j hj)
   have cm₁ : c₁.mem = ArrayCopy.copyPrefix
       (headerMemory x.mem b n (x.regs Reg.dimension) (x.regs Reg.groups) (x.regs Reg.prime))
-      ab (b + 5) N := by rw [c₁mem, a_src, a_dst, a_len, amem, hmem]
+      ab (b + 5) N := by rw [post₁.memory, a_src, a_dst, a_len, amem, hmem]
   have c₁_below (q : ℕ) (hq : q < b) : c₁.mem q = x.mem q := by
-    rw [c₁mem, a_dst, ArrayCopy.copyPrefix_outside (by omega)]
+    rw [post₁.memory, a_dst, ArrayCopy.copyPrefix_outside (by omega)]
     exact a_below q hq
   obtain ⟨d₂, hd₂, d₂mem, d₂src, d₂dst, d₂len, d₂total, d₂regs⟩ :=
     exec_nextCopy Reg.bc c₁ (by rw [c₁_dst, c₁_len]; exact fit.of_le (by omega))
@@ -127,23 +127,23 @@ theorem exec_adapt {W : ℕ} (x : Data 640)
   have d₂_below (q : ℕ) (hq : q < b) : d₂.mem q = x.mem q := by
     rw [d₂mem]; exact c₁_below q hq
   have d₂_sum : ArrayCopySum.wordSum d₂.mem bc N = Sb := sum_eq d₂.mem d₂_below bc hbc
-  obtain ⟨c₂, hc₂, c₂mem, c₂src, c₂dst, c₂len, c₂total, c₂regs⟩ := exec_copy d₂ h1
+  obtain ⟨c₂, hc₂, post₂, c₂regs⟩ := exec_copy d₂ h1
     (by rw [d₂_src, d₂_len]; exact fit.of_le (by omega))
     (by rw [d₂_dst, d₂_len]; exact fit.of_le (by omega))
     (by rw [d₂_total, d₂_src, d₂_len, d₂_sum]; exact fit.of_le (by omega))
     (by rw [d₂_src, d₂_dst, d₂_len]; omega)
   have hc₂' : ExecWithin W (ArrayCopySum.program.rename copyBank) d₂ c₂ (8 * N + 4) := by
     simpa only [d₂_len] using hc₂
-  have c₂_dst : c₂.regs (copyBank 1) = b + 5 + N := c₂dst.trans d₂_dst
-  have c₂_len : c₂.regs (copyBank 2) = N := c₂len.trans d₂_len
+  have c₂_dst : c₂.regs (copyBank 1) = b + 5 + N := post₂.dst.trans d₂_dst
+  have c₂_len : c₂.regs (copyBank 2) = N := post₂.len.trans d₂_len
   have c₂_total : c₂.regs (copyBank 7) = Sa + Sb := by
-    simpa only [d₂_total, d₂_src, d₂_len, d₂_sum] using c₂total
+    simpa only [d₂_total, d₂_src, d₂_len, d₂_sum] using post₂.total
   have c₂_meta (j : Fin 640) (hj : j.val < 608) : c₂.regs j = x.regs j :=
     (c₂regs j (Or.inl (by omega))).trans (d₂_meta j hj)
   have cm₂ : c₂.mem = ArrayCopy.copyPrefix c₁.mem bc (b + 5 + N) N := by
-    rw [c₂mem, d₂_src, d₂_dst, d₂_len, d₂mem]
+    rw [post₂.memory, d₂_src, d₂_dst, d₂_len, d₂mem]
   have c₂_below (q : ℕ) (hq : q < b) : c₂.mem q = x.mem q := by
-    rw [c₂mem, d₂_dst, ArrayCopy.copyPrefix_outside (by omega)]
+    rw [post₂.memory, d₂_dst, ArrayCopy.copyPrefix_outside (by omega)]
     exact d₂_below q hq
   obtain ⟨d₃, hd₃, d₃mem, d₃src, d₃dst, d₃len, d₃total, d₃regs⟩ :=
     exec_nextCopy Reg.ac c₂ (by rw [c₂_dst, c₂_len]; exact fit.of_le (by omega))
@@ -156,7 +156,7 @@ theorem exec_adapt {W : ℕ} (x : Data 640)
   have d₃_below (q : ℕ) (hq : q < b) : d₃.mem q = x.mem q := by
     rw [d₃mem]; exact c₂_below q hq
   have d₃_sum : ArrayCopySum.wordSum d₃.mem ac N = Sc := sum_eq d₃.mem d₃_below ac hac
-  obtain ⟨c₃, hc₃, c₃mem, c₃src, c₃dst, c₃len, c₃total, c₃regs⟩ := exec_copy d₃ h1
+  obtain ⟨c₃, hc₃, post₃, c₃regs⟩ := exec_copy d₃ h1
     (by rw [d₃_src, d₃_len]; exact fit.of_le (by omega))
     (by rw [d₃_dst, d₃_len]; exact fit.of_le (by omega))
     (by rw [d₃_total, d₃_src, d₃_len, d₃_sum]; exact fit.of_le (by omega))
@@ -164,11 +164,11 @@ theorem exec_adapt {W : ℕ} (x : Data 640)
   have hc₃' : ExecWithin W (ArrayCopySum.program.rename copyBank) d₃ c₃ (8 * N + 4) := by
     simpa only [d₃_len] using hc₃
   have c₃_total : c₃.regs (copyBank 7) = T := by
-    simpa only [d₃_total, d₃_src, d₃_len, d₃_sum] using c₃total
+    simpa only [d₃_total, d₃_src, d₃_len, d₃_sum] using post₃.total
   have c₃_meta (j : Fin 640) (hj : j.val < 608) : c₃.regs j = x.regs j :=
     (c₃regs j (Or.inl (by omega))).trans (d₃_meta j hj)
   have cm₃ : c₃.mem = ArrayCopy.copyPrefix c₂.mem ac (b + 5 + N + N) N := by
-    rw [c₃mem, d₃_src, d₃_dst, d₃_len, d₃mem]
+    rw [post₃.memory, d₃_src, d₃_dst, d₃_len, d₃mem]
   let y := c₃.set Reg.total T
   have hsave : ExecWithin (B := .standard) W (.op (.copy Reg.total (copyBank 7))) c₃ y 1 := by
     simpa only [y, c₃_total] using

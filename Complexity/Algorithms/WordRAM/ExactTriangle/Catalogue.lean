@@ -7,6 +7,7 @@ Authors: Anthropic, PBC, Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ChunkCatalogue
 public import Complexity.Algorithms.WordRAM.ExactTriangle.Parameters
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ResidueClasses
@@ -201,33 +202,27 @@ theorem exec_at {w : ℕ} (n D g p : ℕ) (values : ℕ → ℤ) (initial : Data
     simp +decide [b, bank, Parameters.divisor]
   have hs : sOf D ≤ D := Nat.sqrt_le_self D
   have hpiece : pieceSize D g ≤ D := (pieceSize_le_sOf hg).trans hs
-  obtain ⟨v, hv, hvs, hvq, hvB, hvH, hvn, -, -, hvm⟩ := Parameters.exec (b.comap bank)
-    (by rw [hb7]; exact hbudget.of_le (by omega))
-    (by rw [hb6]; exact hbudget.of_le (by dsimp [N]; omega))
-    (by rw [hb7, hb8]; exact hbudget.of_le (by omega))
-    (by rw [hb6, hb7, hb8]; exact hbudget.of_le (by omega))
-  let c := v.extend bank b
+  obtain ⟨c, hv, ⟨hvs, hvq, hvB, hvH, hvn, -, -, hvm⟩, -⟩ :=
+    ExecWithin.rename_post bank_injective (Parameters.exec (b.comap bank)
+      (by rw [hb7]; exact hbudget.of_le (by omega))
+      (by rw [hb6]; exact hbudget.of_le (by dsimp [N]; omega))
+      (by rw [hb7, hb8]; exact hbudget.of_le (by omega))
+      (by rw [hb6, hb7, hb8]; exact hbudget.of_le (by omega)))
   have hc : ExecWithin (w + 2) parameters b c (5 * sOf D + 5 * queryCap n D + 27) := by
-    simpa only [parameters, c, hb6, hb7] using hv.rename bank_injective
-  have hcLow (i : Fin 15) : c.regs (bank i) = v.regs i := by
-    change Function.extend bank v.regs b.regs (bank i) = _
-    exact bank_injective.extend_apply _ _ i
+    simpa only [parameters, hb6, hb7] using hv
+  simp only [Data.comap_regs] at hb6 hb7 hb8
   have hc6 : c.regs 6 = n := by
     change c.regs (bank Parameters.size) = n
-    rw [hcLow]
     exact hvn.trans hb6
   have hc10 : c.regs 10 = queryCap n D := by
     change c.regs (bank Parameters.capacity) = _
-    rw [hcLow]
-    simpa only [hb6, hb7] using hvq
+    simpa only [Data.comap_regs, hb6, hb7] using hvq
   have hc11 : c.regs 11 = pieceSize D g := by
     change c.regs (bank Parameters.pieceLength) = _
-    rw [hcLow]
-    simpa only [hb7, hb8] using hvB
+    simpa only [Data.comap_regs, hb7, hb8] using hvB
   have hc12 : c.regs 12 = numPieces n D g := by
     change c.regs (bank Parameters.pieces) = _
-    rw [hcLow]
-    simpa only [hb6, hb7, hb8] using hvH
+    simpa only [Data.comap_regs, hb6, hb7, hb8] using hvH
   have hc28 : c.regs 28 = countBase := by
     have h := hc.regs_eq (parameters_preserves 28 (by decide))
     exact h.trans ((by simp +decide [b] : b.regs 28 = a.regs 28).trans hac)
