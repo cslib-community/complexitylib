@@ -30,7 +30,7 @@ The degree-one coefficients carry at most the variance
 (`BitString.sum_fourierCoeff_singleton_sq_le`), so by the Cauchy–Schwarz inequality a monotone
 or antitone Boolean function on `n` coordinates with variance `σ²` has total influence at most
 `√(n σ²)` (`BitString.totalInfluence_le_sqrt_card_mul_of_monotone`), in particular at most `√n`
-(`BitString.totalInfluence_le_sqrt_card_of_monotone`) [O'Donnell, Section 2.3][ODonnell2014].
+(`BitString.totalInfluence_le_sqrt_card_of_monotone`) [O'Donnell, Exercise 2.23][ODonnell2014].
 
 ## Main results
 
@@ -156,8 +156,8 @@ theorem sum_influence_sq_le_of_monotone (hf : Monotone f) :
   exact sum_fourierCoeff_singleton_sq_le _
 
 /-- **Monotone functions have total influence at most `√(n σ²)`**: a monotone Boolean function on
-`n` coordinates, read as signs with variance `σ²`, has total influence at most `√(n σ²)`
-[O'Donnell, Section 2.3][ODonnell2014]. -/
+`n` coordinates, read as signs with variance `σ²`, has total influence at most `√(n σ²)`,
+refining [O'Donnell, Exercise 2.23][ODonnell2014]. -/
 theorem totalInfluence_le_sqrt_card_mul_of_monotone (hf : Monotone f) :
     totalInfluence (fun x => signVal (f x)) ≤
       √(Fintype.card ι * 𝔼 x, (signVal (f x) - 𝔼 y, signVal (f y)) ^ 2) := by
@@ -181,7 +181,7 @@ theorem totalInfluence_le_sqrt_card_mul_of_antitone (hf : Antitone f) :
 
 /-- **Monotone functions have total influence at most `√n`**: a monotone Boolean function on `n`
 coordinates, read as signs, has total influence at most `√n`
-[O'Donnell, Section 2.3][ODonnell2014]. -/
+[O'Donnell, Exercise 2.23][ODonnell2014]. -/
 theorem totalInfluence_le_sqrt_card_of_monotone (hf : Monotone f) :
     totalInfluence (fun x => signVal (f x)) ≤ √(Fintype.card ι) :=
   (totalInfluence_le_sqrt_card_mul_of_monotone hf).trans <| Real.sqrt_le_sqrt <|

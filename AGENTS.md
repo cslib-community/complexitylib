@@ -95,8 +95,10 @@ when a milestone completes only part of it.
    release ownership. Explicitly released work is available immediately; a coordinator may
    reassign stale work after checking activity and notifying the owner. Preserve work and credit,
    resolve overlapping claims before editing, and check ownership when returning.
-4. Implement, self-review and validate. Update documentation and selected abstracts when the
-   change affects them, according to the requirements below.
+4. Implement, self-review and validate. Assess both manuals for every change and update affected
+   instructions, reference sections and checked examples in the same change, following
+   [the manual requirements](CONTRIBUTING.md#maintaining-the-manuals). Update selected
+   abstracts when the change affects them, according to the requirements below.
 5. Open a PR with validation and limitations; link its issue when there is one and request
    coordinator review. Record the handoff once. Awaiting review is not abandoned work. Keep
    linked issues open until integration or an explicit disposition.
@@ -123,7 +125,9 @@ tooling.
 - Give a clear verdict and a useful next step. Link requested changes from the task issue when
   needed for handoff; resolve unavailable ownership using the worker rules above.
 - Resolve ownership and dependency conflicts, and help stale tasks reach a useful next step.
-- Check affected `ROADMAP.md`, `abstracts/catalogue.json`, `UPSTREAM.md` and other documentation.
+- Require review of both the Operator's Manual and the Agent Operator's Manual, including any
+  reason that no edit is needed. Make this part of reviewing and integrating each change.
+  Check affected `ROADMAP.md`, `abstracts/catalogue.json`, `UPSTREAM.md` and other documentation.
   Preserve source credit and the distinction between a completed milestone and its open objective.
 - Merge only with maintainer authority, required validation and independent review of the current
   revision. Shepherding approved PRs through the merge queue and keeping the queue moving is a
@@ -180,6 +184,10 @@ concrete and the change is small; otherwise record a specific follow-up with dec
 consumers, and a proposed home. Apply the migration policy below when changing public interfaces.
 Do not expand a bounded PR into an unbounded architectural cleanup.
 
+Do not prove a lemma that the library, Mathlib or core already has, even privately: use it, or make
+a private original public. After a build, `python3 scripts/parallel_defs.py --theorems` lists the
+theorems a change adds or modifies whose statement already exists; CI posts the same notice.
+
 "Lowest suitable" does not mean the most widely imported file. Adding a public declaration changes
 a module's public interface and can invalidate downstream build artifacts, even for clients that do
 not use the new declaration. Prefer a small topic module imported by its consumers over appending
@@ -235,7 +243,12 @@ lake exe lint-style
 lake exe checkInitImports
 ```
 
-`scripts/check.sh` restores optional caches and runs this sequence. CI runs the same checks.
+`scripts/check.sh` first runs the live manual checker and its tooling tests, then restores
+optional caches and runs this sequence. Both full and quick modes require those manual checks;
+CI runs them too, with the tests included in its Python tooling suite. These stdlib-only checks
+need no PDF tools or generated research data. They catch source/link drift and malformed visual
+markup; they do not replace the required review of both manuals' meaning and usability.
+CI runs the same six Lean checks.
 For Lean, dependency or build changes, all six gates must pass on the final source revision before
 integration. A successful hosted run covering that revision supplies full validation; do not
 repeat it locally merely to satisfy a second reporting requirement. Use local full validation
@@ -333,13 +346,23 @@ the pin past it and remove the superseded local copy together. Record unresolved
 
 ## Proof hygiene
 
+These rules exist for readability and robustness. When following one would make a particular
+proof or statement worse (longer, harder to read, or working against the automation), deviate,
+say why in the PR, and propose amending the rule. Reviewers judge a deviation by the rule's
+purpose, not its letter.
+
 - No `sorry` on `main`, no custom `axiom`, no `native_decide`.
 - `set_option maxHeartbeats` / `maxRecDepth` overrides need a justifying comment. A
   `maxHeartbeats` above the 200000 default, or zero (unlimited), also needs a reviewed entry in
   `scripts/heartbeat_allowlist.txt`, which `scripts/check_hygiene.py` enforces and keeps
   shrinking; prefer reducing the proof's cost.
 - Never put `[simp]` on machine step functions or transition tables (goals explode).
-- Non-terminal `simp` only as `simp only`; definitions as terms, not `by` blocks, where possible.
+- Non-terminal `simp` only as `simp only`, so that later steps do not depend on the shape of a
+  `simp` normal form, which changes as simp sets grow. A `simp` whose result is closed by a
+  finishing tactic that does not depend on that shape (`omega`, `linarith`, `nlinarith`,
+  `norm_num`, `ring`, `grind`, `tauto`), as in `simp [h]; omega`, counts as terminal, as in
+  Mathlib's flexible-tactic linter.
+- Definitions as terms, not `by` blocks, where possible.
 - Prefer `do` notation for sequential monadic computations, including probabilistic experiments
   in theorem statements. Keep explicit `bind` in laws about bind and proof steps that use those
   laws directly, and for operations such as `PMF.bind` between different universes that the standard
@@ -370,6 +393,14 @@ proved, its limiting hypotheses/model/resource conventions, and a checked instan
 For a refactor, check declaration preservation, imports and a client using the intended API.
 Lean acceptance under audited axioms does not establish that a definition matches its intended
 mathematics; state material limits of the review.
+
+Review of both manuals is mandatory for every change. Follow
+[Maintaining the manuals](CONTRIBUTING.md#maintaining-the-manuals): check the impact assessment
+against the final revision. Check affected codebase procedures and examples from the Operator's
+Manual's documented starting point; a human should be able to perform the task by hand, and an
+agent should be able to reuse the account without reconstructing it from conversations. Check
+human direction, roles and handoffs in the Agent Operator's Manual when the workflow changes.
+A passing link or excerpt check does not replace this review.
 
 Use inline comments for local findings. Explain the problem and a concrete change or question;
 mark optional suggestions as nits. Group related points. Keep unrelated cleanup as a follow-up,
