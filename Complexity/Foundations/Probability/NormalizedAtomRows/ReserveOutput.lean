@@ -17,6 +17,11 @@ Only actual lower-child conditional-error-cost row moments are reserved. The fin
 allocation retains visible horizon dependence and full B1 width/rate amplification.
 This is an original finite assembly of the existing conditional output theorem.
 Recursive reserve induction, copy routing and parameter/workspace growth remain open.
+The output constant is chosen after HP, ζ, scale and the positive floor, before the
+prime, environment width, horizon, prefix length or child families. Child accuracies may
+therefore be chosen using that constant without depending circularly on those families.
+This uniformity concerns the final output coefficient only; the displayed allocation and
+walk lengths still retain their P, rate, bin and finite-horizon factors.
 The row/normalization proof patterns are adapted from Samuel Schlesinger.
 
 ## Main results
@@ -72,40 +77,42 @@ set_option backward.isDefEq.respectTransparency false in
 lower-child cost reserves. Common B, both endpoint ROW noises, nonnegativity, row mass
 and zero extension are derived. No recursive growth or native RL=L endpoint is claimed. -/
 theorem actualEstimatedResidual_output_from_cost_reserves
-    (HP : FourthRootHierarchyParams 16 1 16 32 8) (D : ZMod P)
-    (hD : D ≠ 0) (H : Horizon P) (R : RoleProfile J)
-    (l ks km kt n : ℕ) (ksH : ks ≤ H.maxExponent) (hms : km ≤ ks)
-    (ss sm st : List (ZMod P)) (kb : ℕ → ℕ)
-    (hbH : ∀ i ∈ range (n + 1), kb i ≤ H.maxExponent)
-    (C : Matrix (ZMod P) (ZMod P) ℝ) (hC : ∀ x y, 0 ≤ C x y) (hC1 : C *ᵥ 1 ≤ 1)
-    (hCf : ∀ x y, C x y ≤ rate km)
-    (χ : ℝ → ℝ) (hχ : ∀ v, 1 ≤ v → χ v = 1)
-    (h : ℕ → ℝ → ℝ) (ρ : ℝ → ℝ) (K : ℕ)
-    (hkh : ∀ i ∈ range (n + 1), ∀ v,
-      routedBinCutoff χ (fun i => rate (kb i)) i (fun _ => 1) v ≠ 0 → h i v = 1)
-    (hρ0 : ∀ v, 0 ≤ ρ v) (hρ1 : ∀ v, ρ v ≤ 1) {η : ℝ}
-    (hη : 0 < η) (hρη : ∀ v, v ≤ η → ρ v = 1)
-    (hK : 2 * (1 + 32 / η) ≤ K)
-    (hχmono : Monotone χ) (hχ0 : ∀ v, v ≤ 1 / 2 → χ v = 0)
-    (hχrange : ∀ v, χ v ∈ Set.Icc 0 1)
-    (hanti : Antitone (fun i => rate (kb i)))
-    (hratio : ∀ i, rate (kb i) / rate (kb (i + 1)) ≤ 16)
-    {cap : ℝ} (hcap : 0 ≤ cap) (hCcap : ∀ z w, C z w ≤ cap * rate (kb 0))
-    (Kc : ℕ)
-    (raw prep : ℕ → ℕ → HierarchyTask.Request HP.k (Fin J) (ZMod P) →
-      Environment P J → Matrix (ZMod P) (ZMod P) ℝ)
-    (maximum : ℕ → ℕ → HierarchyTask.Request HP.k (Fin J) (ZMod P) →
-      Environment P J → ZMod P → ℝ)
-    (hcover : ∀ z y, C z y = 0 ∨ rate (kb n) ≤ C z y)
-    (ku : ℕ) (husage : kt ≤ ku) (ktH : kt ≤ H.maxExponent)
-    {Lh Lρ : ℝ} (hLh : 0 ≤ Lh) (hLρ : 0 ≤ Lρ)
-    (hh : ∀ a b, |polynomialPrepCutoff4 HP.θ a - polynomialPrepCutoff4 HP.θ b| ≤ Lh * |a - b|)
-    (hρ : ∀ a b, |HP.ρ a - HP.ρ b| ≤ Lρ * |a - b|)
+    (HP : FourthRootHierarchyParams 16 1 16 32 8)
     {ζ scale floor : ℝ} (hζ : 0 < ζ) (hs : 0 < scale) (hmargin : scale ≤ HP.η)
     (hsmall : ζ ≤ scale / 2) (hcapscale : scale ≤ HP.toHierarchyParams.atomCap / 10000)
-    (hfloor : 0 < floor) (hfloors : floor ≤ scale) (hfloor1 : floor ≤ 1) (hfloorθ : floor ≤ HP.θ)
-    (m : ℕ) (hm : 0 < m) :
-    ∃ Cbound : ℝ, 0 ≤ Cbound ∧ ∀ ε : ℝ, 0 < ε →
+    (hfloor : 0 < floor) (hfloors : floor ≤ scale) (hfloor1 : floor ≤ 1) (hfloorθ : floor ≤ HP.θ) :
+    ∃ Cbound : ℝ, 0 ≤ Cbound ∧
+    ∀ (P J : ℕ) [Fact P.Prime] (D : ZMod P)
+    (_hD : D ≠ 0) (H : Horizon P) (R : RoleProfile J)
+    (l ks km kt n : ℕ) (_ksH : ks ≤ H.maxExponent) (_hms : km ≤ ks)
+    (ss sm st : List (ZMod P)) (kb : ℕ → ℕ)
+    (_hbH : ∀ i ∈ range (n + 1), kb i ≤ H.maxExponent)
+    (C : Matrix (ZMod P) (ZMod P) ℝ) (_hC : ∀ x y, 0 ≤ C x y) (_hC1 : C *ᵥ 1 ≤ 1)
+    (_hCf : ∀ x y, C x y ≤ rate km)
+    (χ : ℝ → ℝ) (_hχ : ∀ v, 1 ≤ v → χ v = 1)
+    (h : ℕ → ℝ → ℝ) (ρ : ℝ → ℝ) (K : ℕ)
+    (_hkh : ∀ i ∈ range (n + 1), ∀ v,
+      routedBinCutoff χ (fun i => rate (kb i)) i (fun _ => 1) v ≠ 0 → h i v = 1)
+    (_hρ0 : ∀ v, 0 ≤ ρ v) (_hρ1 : ∀ v, ρ v ≤ 1) {η : ℝ}
+    (_hη : 0 < η) (_hρη : ∀ v, v ≤ η → ρ v = 1)
+    (_hK : 2 * (1 + 32 / η) ≤ K)
+    (_hχmono : Monotone χ) (_hχ0 : ∀ v, v ≤ 1 / 2 → χ v = 0)
+    (_hχrange : ∀ v, χ v ∈ Set.Icc 0 1)
+    (_hanti : Antitone (fun i => rate (kb i)))
+    (_hratio : ∀ i, rate (kb i) / rate (kb (i + 1)) ≤ 16)
+    {cap : ℝ} (_hcap : 0 ≤ cap) (_hCcap : ∀ z w, C z w ≤ cap * rate (kb 0))
+    (Kc : ℕ)
+    (_hcover : ∀ z y, C z y = 0 ∨ rate (kb n) ≤ C z y)
+    (ku : ℕ) (_husage : kt ≤ ku) (_ktH : kt ≤ H.maxExponent)
+    {Lh Lρ : ℝ} (_hLh : 0 ≤ Lh) (_hLρ : 0 ≤ Lρ)
+    (_hh : ∀ a b, |polynomialPrepCutoff4 HP.θ a - polynomialPrepCutoff4 HP.θ b| ≤ Lh * |a - b|)
+    (_hρ : ∀ a b, |HP.ρ a - HP.ρ b| ≤ Lρ * |a - b|)
+    (m : ℕ) (_hm : 0 < m),
+    ∀ (raw prep : ℕ → ℕ → HierarchyTask.Request HP.k (Fin J) (ZMod P) →
+      Environment P J → Matrix (ZMod P) (ZMod P) ℝ)
+    (maximum : ℕ → ℕ → HierarchyTask.Request HP.k (Fin J) (ZMod P) →
+      Environment P J → ZMod P → ℝ),
+    ∀ ε : ℝ, 0 < ε →
     let amplification : ℝ := P * (|ζ| * (Lh + Lρ) / rate kt) ^ 4
     let tolerance := ε / (2 * (m + 1))
     let r : ℝ := 1 - 1 / (155648 * (J + 1) * (4 : ℝ) ^ 4)
@@ -157,7 +164,9 @@ theorem actualEstimatedResidual_output_from_cost_reserves
     hsmall hcapscale
   obtain ⟨Cbound, hCbound, hout⟩ := hfloorbound floor hfloor hfloors hfloor1 hfloorθ
   refine ⟨Cbound, hCbound, ?_⟩
-  intro ε hε
+  intro P J inst D hD H R l ks km kt n ksH hms ss sm st kb hbH C hC hC1 hCf χ hχ h ρ K hkh
+    hρ0 hρ1 η hη hρη hK hχmono hχ0 hχrange hanti hratio cap hcap hCcap Kc hcover ku husage ktH
+    Lh Lρ hLh hLρ hh hρ m hm raw prep maximum ε hε
   extract_lets amplification tolerance r payment rawSteps prepSteps cutoff bounded source mid
     terminal
     estimated canonical channelsV input G F cost T W Δ
