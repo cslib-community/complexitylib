@@ -42,6 +42,7 @@ theorem exec_entryHeader {W n F : ℕ} (x : Data 640) (hn : x.mem 1 = n) (hF : x
     a ⟨⟨sm, an, aF, aa, ab, ac, af⟩, _⟩
   wram_exec [an, aF, aa, ab, ac, af]
   wram_simp [sm, Reg.side, Reg.bound, Reg.ab, Reg.bc, Reg.ac, Reg.free]
+  exact ⟨an, aF, aa, ab, ac, af⟩
 
 /-- Original scalar words and all original signed matrix words fit before the first instruction. -/
 theorem input_fits {W n F : ℕ} (values : List ℤ) (hlen : values.length = 3 * (n * n))
