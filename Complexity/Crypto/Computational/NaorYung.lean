@@ -16,14 +16,15 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
+import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.UniformNat
 import Complexity.Crypto.Game.Hybrid
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Probability.PMF
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
-import Complexity.Tactic.PolyTime
-import Complexity.Tactic.PPT
+import Complexity.Tactic.PolyTime.Init
 
 /-!
 # Naor–Yung universal one-way hash functions from one-way permutations
@@ -112,14 +113,9 @@ theorem naorYungPivot_lt {m : ℕ} (hm : 1 ≤ m) (δ : List Bool) :
     naorYungPivot m δ < m := by
   unfold naorYungPivot
   cases h : (List.range m).filter (fun i => δ.getD i false) with
-  | nil =>
-    simp only [List.headD_nil]
-    omega
+  | nil => simp only [List.headD_nil]; omega
   | cons a rest =>
-    have ha : a ∈ (List.range m).filter (fun i => δ.getD i false) := by
-      rw [h]
-      exact List.mem_cons_self ..
-    exact List.mem_range.mp (List.mem_of_mem_filter ha)
+    exact List.mem_range.mp (List.mem_of_mem_filter (h ▸ List.mem_cons_self ..))
 
 theorem getD_naorYungPivot_of_exists {m : ℕ} {δ : List Bool}
     (h : ∃ i < m, δ.getD i false = true) :
@@ -129,15 +125,22 @@ theorem getD_naorYungPivot_of_exists {m : ℕ} {δ : List Bool}
   have hmem : i ∈ (List.range m).filter (fun j => δ.getD j false) :=
     List.mem_filter.mpr ⟨List.mem_range.mpr hi_lt, hi_true⟩
   cases hlist : (List.range m).filter (fun j => δ.getD j false) with
-  | nil =>
-    rw [hlist] at hmem
-    cases hmem
+  | nil => rw [hlist] at hmem; cases hmem
   | cons a rest =>
-    have ha : a ∈ (List.range m).filter (fun j => δ.getD j false) := by
-      rw [hlist]
-      exact List.mem_cons_self ..
-    simp only [List.headD_cons]
-    exact (List.mem_filter.mp ha).2
+    have ha : a ∈ (List.range m).filter (fun j => δ.getD j false) := hlist ▸ List.mem_cons_self ..
+    simpa only [List.headD_cons] using (List.mem_filter.mp ha).2
+
+private theorem computableTidilyInPolyTime_naorYungPivot
+    {γ : Type} {encIn : γ ↪ List Bool} {m : γ → ℕ} {δ : γ → List Bool}
+    (hm : ComputableTidilyInPolyTime m encIn encUnary)
+    (hδ : ComputableTidilyInPolyTime δ encIn encBits) :
+    ComputableTidilyInPolyTime (fun a => naorYungPivot (m a) (δ a)) encIn encUnary :=
+  (ComputableTidilyInPolyTime.headD (encA := encUnary) (encL := encList encUnary) 0).comp
+    (ComputableTidilyInPolyTime.filterWithInput (test := fun a i => (δ a).getD i false)
+      (ComputableTidilyInPolyTime.range.comp hm)
+      (ComputableTidilyInPolyTime.bitsGetDWithInput
+        (hδ.comp (ComputableTidilyInPolyTime.fst encIn encUnary))
+        (ComputableTidilyInPolyTime.snd encIn encUnary) false))
 
 /-- Computing `naorYungPivot` is plain polynomial-time on unary `m` and raw bit string `δ`. -/
 @[program_certificate, fun_prop]
@@ -145,10 +148,8 @@ theorem computableInPolyTime_naorYungPivot
     {γ : Type} {encIn : γ ↪ List Bool} {m : γ → ℕ} {δ : γ → List Bool}
     (hm : ComputableInPolyTime m encIn encUnary)
     (hδ : ComputableInPolyTime δ encIn encBits) :
-    ComputableInPolyTime (fun a => naorYungPivot (m a) (δ a)) encIn encUnary := by
-  unfold naorYungPivot
-  exact (ComputableInPolyTime.headD (encA := encUnary) (encL := encList encUnary) 0).comp
-    (by polytime)
+    ComputableInPolyTime (fun a => naorYungPivot (m a) (δ a)) encIn encUnary :=
+  .of_tidy (computableTidilyInPolyTime_naorYungPivot hm.tidy hδ.tidy)
 
 /-- Canonical `{0, δ}`-coset representative of `y` at width `m`: normalize `y` to width `m` and XOR
 with `δ` when coordinate `naorYungPivot m δ` is `true`. -/
@@ -161,9 +162,7 @@ def naorYungCanon (m : ℕ) (δ y : List Bool) : List Bool :=
 @[simp]
 theorem length_naorYungCanon (m : ℕ) (δ y : List Bool) :
     (naorYungCanon m δ y).length = m := by
-  unfold naorYungCanon
-  dsimp only
-  split_ifs
+  unfold naorYungCanon; dsimp only; split_ifs
   · exact BitString.length_listXor m _
   · exact BitString.length_listRow m 0 y
 
@@ -171,15 +170,24 @@ private theorem getD_naorYungCanon_pivot {m : ℕ} {δ : List Bool}
     (hδ : ∃ i < m, δ.getD i false = true) (y : List Bool) :
     (naorYungCanon m δ y).getD (naorYungPivot m δ) false = false := by
   rcases hδ with ⟨i₀, hi₀_lt, hi₀_true⟩
-  have hm : 1 ≤ m := by omega
-  have hp_lt : naorYungPivot m δ < m := naorYungPivot_lt hm δ
+  have hp_lt : naorYungPivot m δ < m := naorYungPivot_lt (by omega) δ
   have hp_true : δ.getD (naorYungPivot m δ) false = true :=
     getD_naorYungPivot_of_exists ⟨i₀, hi₀_lt, hi₀_true⟩
-  unfold naorYungCanon
-  dsimp only
-  split_ifs with hy
+  unfold naorYungCanon; dsimp only; split_ifs with hy
   · rw [BitString.getD_listXor_pair m _ δ (naorYungPivot m δ) hp_lt, hy, hp_true, Bool.xor_self]
   · exact Bool.eq_false_iff.mpr hy
+
+private theorem computableTidilyInPolyTime_naorYungCanon
+    {γ : Type} {encIn : γ ↪ List Bool} {m : γ → ℕ} {δ y : γ → List Bool}
+    (hm : ComputableTidilyInPolyTime m encIn encUnary)
+    (hδ : ComputableTidilyInPolyTime δ encIn encBits)
+    (hy : ComputableTidilyInPolyTime y encIn encBits) :
+    ComputableTidilyInPolyTime (fun a => naorYungCanon (m a) (δ a) (y a)) encIn encBits := by
+  have hp := computableTidilyInPolyTime_naorYungPivot hm hδ
+  have hy₀ := ComputableTidilyInPolyTime.bitsRowWithInput hm (.const 0) hy
+  exact ComputableTidilyInPolyTime.ite' (ComputableTidilyInPolyTime.bitsGetDWithInput hy₀ hp false)
+    (ComputableTidilyInPolyTime.bitsXorWithInput hm
+      (ComputableTidilyInPolyTime.cons' hy₀ (ComputableTidilyInPolyTime.cons' hδ (.const [])))) hy₀
 
 /-- Computing `naorYungCanon` is plain polynomial-time on unary `m` and raw bit strings `δ, y`. -/
 @[program_certificate, fun_prop]
@@ -188,9 +196,8 @@ theorem computableInPolyTime_naorYungCanon
     (hm : ComputableInPolyTime m encIn encUnary)
     (hδ : ComputableInPolyTime δ encIn encBits)
     (hy : ComputableInPolyTime y encIn encBits) :
-    ComputableInPolyTime (fun a => naorYungCanon (m a) (δ a) (y a)) encIn encBits := by
-  unfold naorYungCanon
-  polytime
+    ComputableInPolyTime (fun a => naorYungCanon (m a) (δ a) (y a)) encIn encBits :=
+  .of_tidy (computableTidilyInPolyTime_naorYungCanon hm.tidy hδ.tidy hy.tidy)
 
 /-- **Naor–Yung 1-bit quotient** `m → m - 1`: canonicalize bit `p := naorYungPivot m δ` via
 `naorYungCanon m δ y` and delete coordinate `p`. -/
@@ -205,17 +212,24 @@ theorem length_naorYungShrink (m : ℕ) (δ y : List Bool) :
     (naorYungShrink m δ y).length = m - 1 := by
   cases m with
   | zero =>
-    unfold naorYungShrink
-    dsimp only
-    have hc : naorYungCanon 0 δ y = [] :=
-      List.length_eq_zero_iff.mp (length_naorYungCanon 0 δ y)
-    simp [hc]
+    unfold naorYungShrink; dsimp only
+    simp [List.length_eq_zero_iff.mp (length_naorYungCanon 0 δ y)]
   | succ m' =>
     have hp : naorYungPivot (m' + 1) δ < m' + 1 := naorYungPivot_lt (by omega) δ
-    unfold naorYungShrink
-    dsimp only
-    rw [List.length_append, List.length_take, List.length_drop, length_naorYungCanon]
-    omega
+    unfold naorYungShrink; dsimp only
+    rw [List.length_append, List.length_take, List.length_drop, length_naorYungCanon]; omega
+
+private theorem computableTidilyInPolyTime_naorYungShrink
+    {γ : Type} {encIn : γ ↪ List Bool} {m : γ → ℕ} {δ y : γ → List Bool}
+    (hm : ComputableTidilyInPolyTime m encIn encUnary)
+    (hδ : ComputableTidilyInPolyTime δ encIn encBits)
+    (hy : ComputableTidilyInPolyTime y encIn encBits) :
+    ComputableTidilyInPolyTime (fun a => naorYungShrink (m a) (δ a) (y a)) encIn encBits := by
+  have hp := computableTidilyInPolyTime_naorYungPivot hm hδ
+  have hc := computableTidilyInPolyTime_naorYungCanon hm hδ hy
+  exact ComputableTidilyInPolyTime.bitsAppend (ComputableTidilyInPolyTime.bitsTakeWithInput hc hp)
+    (ComputableTidilyInPolyTime.bitsDropWithInput hc
+      (ComputableTidilyInPolyTime.unary_add.comp (hp.prod (.const 1))))
 
 /-- Computing `naorYungShrink` is plain polynomial-time on unary `m` and raw bit strings `δ, y`. -/
 @[program_certificate, fun_prop]
@@ -224,9 +238,8 @@ theorem computableInPolyTime_naorYungShrink
     (hm : ComputableInPolyTime m encIn encUnary)
     (hδ : ComputableInPolyTime δ encIn encBits)
     (hy : ComputableInPolyTime y encIn encBits) :
-    ComputableInPolyTime (fun a => naorYungShrink (m a) (δ a) (y a)) encIn encBits := by
-  unfold naorYungShrink
-  polytime
+    ComputableInPolyTime (fun a => naorYungShrink (m a) (δ a) (y a)) encIn encBits :=
+  .of_tidy (computableTidilyInPolyTime_naorYungShrink hm.tidy hδ.tidy hy.tidy)
 
 private theorem eq_of_take_append_drop_eq {m p : ℕ} (hp : p < m) {c₀ c₁ : List Bool}
     (hc₀ : c₀.length = m) (hc₁ : c₁.length = m)
@@ -243,22 +256,16 @@ private theorem eq_of_take_append_drop_eq {m p : ℕ} (hp : p < m) {c₀ c₁ : 
     have hlen_R : i < (c₁.take p ++ c₁.drop (p + 1)).length := by
       rw [List.length_append, htake₁]; omega
     have hget := congrArg (fun l => l[i]?) heq
-    rw [List.getElem?_eq_getElem hlen_L, List.getElem?_eq_getElem hlen_R,
-      Option.some.injEq, List.getElem_append_left (by omega),
-      List.getElem_append_left (by omega), List.getElem_take, List.getElem_take] at hget
-    exact hget
-  · have h₀ : c₀[i] = c₀.getD i false := by
-      rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi₀, Option.getD_some]
-    have h₁ : c₁[i] = c₁.getD i false := by
-      rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi₁, Option.getD_some]
-    rw [h₀, h₁, hp₀, hp₁]
+    rwa [List.getElem?_eq_getElem hlen_L, List.getElem?_eq_getElem hlen_R, Option.some.injEq,
+      List.getElem_append_left (by omega), List.getElem_append_left (by omega),
+      List.getElem_take, List.getElem_take] at hget
+  · simpa only [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi₀,
+      List.getElem?_eq_getElem hi₁, Option.getD_some] using hp₀.trans hp₁.symm
   · have hget := congrArg (fun l => l[i - 1]?) heq
-    rw [List.getElem?_append_right (by omega), List.getElem?_append_right (by omega),
-      htake₀, htake₁, List.getElem?_drop, List.getElem?_drop] at hget
-    have hidx : p + 1 + (i - 1 - p) = i := by omega
-    rw [hidx, List.getElem?_eq_getElem hi₀, List.getElem?_eq_getElem hi₁,
-      Option.some.injEq] at hget
-    exact hget
+    rwa [List.getElem?_append_right (by omega), List.getElem?_append_right (by omega),
+      htake₀, htake₁, List.getElem?_drop, List.getElem?_drop,
+      show p + 1 + (i - 1 - p) = i by omega, List.getElem?_eq_getElem hi₀,
+      List.getElem?_eq_getElem hi₁, Option.some.injEq] at hget
 
 private theorem listRow_zero_eq_self {m : ℕ} {y : List Bool} (hy : y.length = m) :
     BitString.listRow m 0 y = y := by
@@ -273,26 +280,22 @@ theorem naorYungShrink_collision_eq_listXor {m : ℕ} {δ y₀ y₁ : List Bool}
     (hcol : naorYungShrink m δ y₀ = naorYungShrink m δ y₁) :
     y₁ = BitString.listXor m [y₀, δ] := by
   rcases hδ with ⟨i₀, hi₀_lt, hi₀_true⟩
-  have hm : 1 ≤ m := by omega
-  have hp : naorYungPivot m δ < m := naorYungPivot_lt hm δ
+  have hp : naorYungPivot m δ < m := naorYungPivot_lt (by omega) δ
   have hc_eq : naorYungCanon m δ y₀ = naorYungCanon m δ y₁ :=
     eq_of_take_append_drop_eq hp (length_naorYungCanon m δ y₀) (length_naorYungCanon m δ y₁)
       (getD_naorYungCanon_pivot ⟨i₀, hi₀_lt, hi₀_true⟩ y₀)
       (getD_naorYungCanon_pivot ⟨i₀, hi₀_lt, hi₀_true⟩ y₁) hcol
-  unfold naorYungCanon at hc_eq
-  dsimp only at hc_eq
+  unfold naorYungCanon at hc_eq; dsimp only at hc_eq
   rw [listRow_zero_eq_self hy₀, listRow_zero_eq_self hy₁] at hc_eq
   split_ifs at hc_eq with hb₀ hb₁
-  · exfalso
-    apply hne
+  · exfalso; apply hne
     have hx := congrArg (fun z => BitString.listXor m [δ, z]) hc_eq
     rwa [BitString.listXor_pair_comm m y₀ δ, BitString.listXor_pair_comm m y₁ δ,
       BitString.listXor_pair_self_left_of_length δ hy₀,
       BitString.listXor_pair_self_left_of_length δ hy₁] at hx
   · exact hc_eq.symm
   · have hx := congrArg (fun z => BitString.listXor m [δ, z]) hc_eq
-    rw [BitString.listXor_pair_comm m y₁ δ,
-      BitString.listXor_pair_self_left_of_length δ hy₁,
+    rw [BitString.listXor_pair_comm m y₁ δ, BitString.listXor_pair_self_left_of_length δ hy₁,
       BitString.listXor_pair_comm m δ y₀] at hx
     exact hx.symm
   · exact False.elim (hne hc_eq)
@@ -310,6 +313,17 @@ theorem length_naorYungStep (f : List Bool → List Bool) (n : ℕ) (δ w : List
     (naorYungStep f n δ w).length = n + 1 := by
   simp [naorYungStep]
 
+private theorem computableTidilyInPolyTime_naorYungStep
+    {f : List Bool → List Bool} (hf : ComputableTidilyInPolyTime f encBits encBits)
+    {γ : Type} {encIn : γ ↪ List Bool} {n : γ → ℕ} {δ w : γ → List Bool}
+    (hn : ComputableTidilyInPolyTime n encIn encUnary)
+    (hδ : ComputableTidilyInPolyTime δ encIn encBits)
+    (hw : ComputableTidilyInPolyTime w encIn encBits) :
+    ComputableTidilyInPolyTime (fun a => naorYungStep f (n a) (δ a) (w a)) encIn encBits := by
+  have hn2 := ComputableTidilyInPolyTime.unary_add.comp (hn.prod (.const 2))
+  exact computableTidilyInPolyTime_naorYungShrink hn2 hδ
+    (hf.comp (ComputableTidilyInPolyTime.bitsRowWithInput hn2 (.const 0) hw))
+
 /-- Evaluating `naorYungStep f` is plain polynomial-time whenever `f` is plain polynomial-time. -/
 @[program_certificate, fun_prop]
 theorem computableInPolyTime_naorYungStep
@@ -318,9 +332,8 @@ theorem computableInPolyTime_naorYungStep
     (hn : ComputableInPolyTime n encIn encUnary)
     (hδ : ComputableInPolyTime δ encIn encBits)
     (hw : ComputableInPolyTime w encIn encBits) :
-    ComputableInPolyTime (fun a => naorYungStep f (n a) (δ a) (w a)) encIn encBits := by
-  unfold naorYungStep
-  polytime
+    ComputableInPolyTime (fun a => naorYungStep f (n a) (δ a) (w a)) encIn encBits :=
+  .of_tidy (computableTidilyInPolyTime_naorYungStep hf.tidy hn.tidy hδ.tidy hw.tidy)
 
 /-- Zero-loss preimage reduction from `naorYungStep f` to `inversionGame f` (adapting
 [NaorYung1989], Section 3; [Goldreich2004], Section 6.4.3.2, June 2003 draft Proposition 6.4.21): at
@@ -345,65 +358,99 @@ theorem isPPT_naorYungStepInverter
     {f : List Bool → List Bool} {adversary : TargetCollisionFinder}
     (hf : ComputableInPolyTime f encBits encBits) (ha : adversary.IsPPT) :
     IsPPT encBits (naorYungStepInverter f adversary) := by
-  have hchoose := ha.choose
-  have hfind := ha.find
-  change IsPPTOn (encPair encUnary encBits) encBits
-    (fun p => naorYungStepInverter f adversary p.1 p.2)
-  unfold naorYungStepInverter
-  ppt
+  let E0 := encPair encUnary encBits
+  let E1 := encPair E0 (encPair encBits encBits)
+  have hft := hf.tidy
+  have hm := ComputableTidilyInPolyTime.fst encUnary encBits
+  have hn0 := ComputableTidilyInPolyTime.unary_sub.comp (hm.prod (.const 2))
+  have hq := ComputableTidilyInPolyTime.id' (encIn := E1)
+  have hn1 := hn0.comp hq.fst'
+  have hn1_2 := ComputableTidilyInPolyTime.unary_add.comp (hn1.prod (.const 2))
+  have hw₀1 := ComputableTidilyInPolyTime.bitsRowWithInput hn1_2 (.const 0) hq.snd'.fst'
+  have hδ1 := ComputableTidilyInPolyTime.bitsXorWithInput hn1_2
+    (ComputableTidilyInPolyTime.cons' (hft.comp hw₀1)
+      (ComputableTidilyInPolyTime.cons' hq.fst'.snd' (.const [])))
+  have hr := ComputableTidilyInPolyTime.id' (encIn := encPair E1 encBits)
+  have hcb := ComputableTidilyInPolyTime.ite'
+    (ComputableTidilyInPolyTime.beq (hft.comp hr.snd') hr.fst'.fst'.snd')
+    hr.snd' (hw₀1.comp hr.fst')
+  change IsPPTOn E0 encBits (fun p => naorYungStepInverter f adversary p.1 p.2)
+  exact IsPPTOn.ite (hm.unary_lt' (.const 2)) (ComputableTidilyInPolyTime.const []).isPPTOn
+    ((ha.choose.preprocess (.of_tidy hn0)).bind_with
+      ((ha.find.preprocess (.of_tidy (hn1.prod (hq.snd'.snd'.prod hδ1)))).bind_with hcb.isPPTOn))
 
 private def xorFixedWidth (u y : List Bool) : List Bool :=
   if y.length = u.length then BitString.listXor u.length [u, y] else y
 
 private theorem length_xorFixedWidth (u y : List Bool) :
     (xorFixedWidth u y).length = y.length := by
-  unfold xorFixedWidth
-  split_ifs with h
+  unfold xorFixedWidth; split_ifs with h
   · rw [BitString.length_listXor, h]
   · rfl
 
 private theorem involutive_xorFixedWidth (u : List Bool) :
     Function.Involutive (xorFixedWidth u) := by
-  intro y
-  unfold xorFixedWidth
+  intro y; unfold xorFixedWidth
   by_cases h : y.length = u.length
-  · simp only [h, ↓reduceIte]
-    have hlen : (BitString.listXor u.length [u, y]).length = u.length :=
-      BitString.length_listXor u.length [u, y]
-    simp only [hlen, ↓reduceIte, BitString.listXor_pair_self_left_of_length u h]
-  · simp only [h, ↓reduceIte]
+  · simp [h, BitString.length_listXor, BitString.listXor_pair_self_left_of_length u h]
+  · simp [h]
 
 private theorem uniformList_map_listXor {m : ℕ} {u : List Bool} (hu : u.length = m) :
     (BitString.uniformList m).map (fun y => BitString.listXor m [u, y]) =
       BitString.uniformList m := by
-  calc
-    (BitString.uniformList m).map (fun y => BitString.listXor m [u, y])
-      = (BitString.uniformList m).map (xorFixedWidth u) := by
-          rw [PMF.map, PMF.map]
-          apply PMF.bind_congr_on_support
-          intro y hy
-          have hy_len : y.length = m := BitString.length_of_mem_support_uniformList hy
-          simp only [Function.comp_apply, xorFixedWidth, hy_len, hu, ↓reduceIte]
-    _ = BitString.uniformList m :=
-          BitString.uniformList_map_of_bijective (xorFixedWidth u)
-            (involutive_xorFixedWidth u).bijective (length_xorFixedWidth u) m
+  have heq : (BitString.uniformList m).map (fun y => BitString.listXor m [u, y]) =
+      (BitString.uniformList m).map (xorFixedWidth u) := by
+    refine PMF.bind_congr_on_support _ _ _ fun y hy => ?_
+    simp [xorFixedWidth, BitString.length_of_mem_support_uniformList hy, hu]
+  exact heq.trans (BitString.uniformList_map_of_bijective (xorFixedWidth u)
+    (involutive_xorFixedWidth u).bijective (length_xorFixedWidth u) m)
 
 private theorem exists_true_listXor_of_ne {m : ℕ} {u v : List Bool}
     (hu : u.length = m) (hv : v.length = m) (hne : u ≠ v) :
     ∃ i < m, (BitString.listXor m [u, v]).getD i false = true := by
   by_contra hall
   simp only [not_exists, not_and] at hall
-  apply hne
-  apply List.ext_getElem (hu.trans hv.symm)
-  intro i hi_u hi_v
+  apply hne (List.ext_getElem (hu.trans hv.symm) fun i hi_u hi_v => ?_)
   have hi_m : i < m := by omega
-  have hzero : (BitString.listXor m [u, v]).getD i false = false :=
-    Bool.eq_false_iff.mpr (hall i hi_m)
+  have hzero := Bool.eq_false_iff.mpr (hall i hi_m)
   rw [BitString.getD_listXor_pair m u v i hi_m] at hzero
   have heq_bit : u.getD i false = v.getD i false := by
     cases h1 : u.getD i false <;> cases h2 : v.getD i false <;> simp_all
   simpa only [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi_u,
     List.getElem?_eq_getElem hi_v, Option.getD_some] using heq_bit
+
+private theorem naorYungStep_inversion_eval_eq
+    {f : List Bool → List Bool} (hf_len : ∀ w, (f w).length = w.length)
+    (hf_bij : Function.Bijective f) (adversary : TargetCollisionFinder) (n : ℕ) :
+    ProbComp.eval (inversionGame f (naorYungStepInverter f adversary) (n + 2)) =
+      (ProbComp.eval (adversary.choose n)).bind (fun choice =>
+        let w₀ := BitString.listRow (n + 2) 0 choice.1
+        (BitString.uniformList (n + 2)).bind (fun δ =>
+          (ProbComp.eval (adversary.find n choice.2 δ)).bind (fun w₁ =>
+            let y := BitString.listXor (n + 2) [f w₀, δ]
+            PMF.pure (f (if f w₁ == y then w₁ else w₀) == y)))) := by
+  have hlt_false : ¬ (n + 2 < 2) := by omega
+  have hsub : n + 2 - 2 = n := by omega
+  simp only [inversionGame, naorYungStepInverter, hlt_false, ↓reduceIte, hsub,
+    ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList, PMF.bind_bind,
+    PMF.pure_bind]
+  trans ((BitString.uniformList (n + 2)).map f).bind (fun y =>
+    (ProbComp.eval (adversary.choose n)).bind (fun choice =>
+      let w₀ := BitString.listRow (n + 2) 0 choice.1
+      let δ := BitString.listXor (n + 2) [f w₀, y]
+      (ProbComp.eval (adversary.find n choice.2 δ)).bind (fun w₁ =>
+        PMF.pure (f (if f w₁ == y then w₁ else w₀) == y))))
+  · rw [PMF.bind_map]; rfl
+  · rw [BitString.uniformList_map_of_bijective f hf_bij hf_len (n + 2), PMF.bind_comm]
+    refine PMF.bind_congr_on_support _ _ _ fun choice _ => ?_
+    let w₀ := BitString.listRow (n + 2) 0 choice.1
+    have hfw₀ : (f w₀).length = n + 2 :=
+      (hf_len w₀).trans (BitString.length_listRow (n + 2) 0 choice.1)
+    conv_rhs => rw [← uniformList_map_listXor hfw₀, PMF.bind_map]
+    refine PMF.bind_congr_on_support _ _ _ fun y hy => ?_
+    dsimp only [Function.comp_def, w₀] at hfw₀ ⊢
+    simp only [BitString.listXor_pair_self_left_of_length _
+      (BitString.length_of_mem_support_uniformList hy)]
 
 /-- **Single-step Naor–Yung security bound**: for any length-preserving bijection `f`, the
 target-collision success probability of `adversary` against `naorYungStep f` at parameter `n` is at
@@ -420,81 +467,14 @@ theorem succProbability_targetCollisionGame_naorYungStep_le
       Game.succProbability
         (ProbComp.eval (inversionGame f (naorYungStepInverter f adversary) (n + 2))) := by
   let validStep (m : ℕ) (w : List Bool) : Bool := w.length == m + 2
-  have hlt_false : ¬ (n + 2 < 2) := by omega
-  have hsub : n + 2 - 2 = n := by omega
-  have hinv_law :
-      ProbComp.eval (inversionGame f (naorYungStepInverter f adversary) (n + 2)) =
-        (ProbComp.eval (adversary.choose n)).bind (fun choice =>
-          let w₀ := BitString.listRow (n + 2) 0 choice.1
-          (BitString.uniformList (n + 2)).bind (fun δ =>
-            (ProbComp.eval (adversary.find n choice.2 δ)).map (fun w₁ =>
-              let y := BitString.listXor (n + 2) [f w₀, δ]
-              f (if f w₁ == y then w₁ else w₀) == y))) := by
-    have hmap_f : (BitString.uniformList (n + 2)).map f = BitString.uniformList (n + 2) :=
-      BitString.uniformList_map_of_bijective f hf_bij hf_len (n + 2)
-    simp only [inversionGame, naorYungStepInverter, hlt_false, ↓reduceIte, hsub,
-      ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList, PMF.bind_bind,
-      PMF.pure_bind]
-    calc
-      (BitString.uniformList (n + 2)).bind (fun x =>
-          (ProbComp.eval (adversary.choose n)).bind (fun choice =>
-            let w₀ := BitString.listRow (n + 2) 0 choice.1
-            let δ := BitString.listXor (n + 2) [f w₀, f x]
-            (ProbComp.eval (adversary.find n choice.2 δ)).bind (fun w₁ =>
-              PMF.pure (f (if f w₁ == f x then w₁ else w₀) == f x))))
-        = ((BitString.uniformList (n + 2)).map f).bind (fun y =>
-            (ProbComp.eval (adversary.choose n)).bind (fun choice =>
-              let w₀ := BitString.listRow (n + 2) 0 choice.1
-              let δ := BitString.listXor (n + 2) [f w₀, y]
-              (ProbComp.eval (adversary.find n choice.2 δ)).bind (fun w₁ =>
-                PMF.pure (f (if f w₁ == y then w₁ else w₀) == y)))) := by
-          rw [PMF.bind_map]
-          rfl
-      _ = (ProbComp.eval (adversary.choose n)).bind (fun choice =>
-            (BitString.uniformList (n + 2)).bind (fun y =>
-              let w₀ := BitString.listRow (n + 2) 0 choice.1
-              let δ := BitString.listXor (n + 2) [f w₀, y]
-              (ProbComp.eval (adversary.find n choice.2 δ)).bind (fun w₁ =>
-                PMF.pure (f (if f w₁ == y then w₁ else w₀) == y)))) := by
-          rw [hmap_f, PMF.bind_comm]
-      _ = _ := by
-          apply PMF.bind_congr_on_support
-          intro choice _
-          let w₀ := BitString.listRow (n + 2) 0 choice.1
-          have hfw₀ : (f w₀).length = n + 2 :=
-            (hf_len w₀).trans (BitString.length_listRow (n + 2) 0 choice.1)
-          have hδ_unif := uniformList_map_listXor hfw₀
-          calc
-            (BitString.uniformList (n + 2)).bind (fun y =>
-                let δ := BitString.listXor (n + 2) [f w₀, y]
-                (ProbComp.eval (adversary.find n choice.2 δ)).bind (fun w₁ =>
-                  PMF.pure (f (if f w₁ == y then w₁ else w₀) == y)))
-              = ((BitString.uniformList (n + 2)).map
-                  (fun y => BitString.listXor (n + 2) [f w₀, y])).bind (fun δ =>
-                    let y := BitString.listXor (n + 2) [f w₀, δ]
-                    (ProbComp.eval (adversary.find n choice.2 δ)).bind (fun w₁ =>
-                      PMF.pure (f (if f w₁ == y then w₁ else w₀) == y))) := by
-                rw [PMF.bind_map]
-                apply PMF.bind_congr_on_support
-                intro y hy
-                have hy_len : y.length = n + 2 := BitString.length_of_mem_support_uniformList hy
-                simp only [Function.comp_apply,
-                  BitString.listXor_pair_self_left_of_length (f w₀) hy_len]
-            _ = _ := by
-                rw [hδ_unif]
-                rfl
   unfold Game.succProbability
   apply ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
-  rw [hinv_law]
-  simp only [targetCollisionGame, ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList,
-    PMF.map, Function.comp_def]
-  apply PMF.bind_apply_mono_on_support
-  intro choice _
-  apply PMF.bind_apply_mono_on_support
-  intro δ hδ
+  rw [naorYungStep_inversion_eval_eq hf_len hf_bij adversary n]
+  simp only [targetCollisionGame, ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList]
+  apply PMF.bind_apply_mono_on_support; intro choice _
+  apply PMF.bind_apply_mono_on_support; intro δ hδ
+  apply PMF.bind_apply_mono_on_support; intro w₁ _
   have hδ_len : δ.length = n + 2 := BitString.length_of_mem_support_uniformList hδ
-  apply PMF.bind_apply_mono_on_support
-  intro w₁ _
   cases hcol : isCollision (naorYungStep f n) validStep n δ choice.1 w₁
   · simp
   · rw [isCollision_eq_true_iff] at hcol
@@ -510,22 +490,18 @@ theorem succProbability_targetCollisionGame_naorYungStep_le
     have hy_len : y.length = n + 2 := BitString.length_listXor (n + 2) [f w₀, δ]
     have hwin : (f (if f w₁ == y then w₁ else w₀) == y) = true := by
       by_cases hfy : f w₀ = y
-      · by_cases hcheck : (f w₁ == y) = true
-        · simp only [hcheck, ↓reduceIte]
-        · simp only [Bool.not_eq_true] at hcheck
-          simp only [hcheck, Bool.false_eq_true, ↓reduceIte, hfy, beq_self_eq_true]
+      · by_cases hcheck : (f w₁ == y) = true <;> simp_all
       · have hδ_eq : δ = BitString.listXor (n + 2) [f w₀, y] :=
           (BitString.listXor_pair_self_left_of_length (f w₀) hδ_len).symm
-        have hδ_nz : ∃ i < n + 2, δ.getD i false = true := by
-          rw [hδ_eq]
-          exact exists_true_listXor_of_ne hfw₀_len hy_len hfy
+        have hδ_nz : ∃ i < n + 2, δ.getD i false = true :=
+          hδ_eq ▸ exists_true_listXor_of_ne hfw₀_len hy_len hfy
         have hstep_eq' : naorYungShrink (n + 2) δ (f w₀) = naorYungShrink (n + 2) δ (f w₁) := by
           have hraw : naorYungShrink (n + 2) δ (f (BitString.listRow (n + 2) 0 choice.1)) =
               naorYungShrink (n + 2) δ (f (BitString.listRow (n + 2) 0 w₁)) := hstep_eq
           rwa [listRow_zero_eq_self hw₁_len] at hraw
-        have hfw_ne : f w₀ ≠ f w₁ := fun heq => hne (hw₀_eq ▸ hf_bij.1 heq)
         have hfw₁_eq : f w₁ = y :=
-          naorYungShrink_collision_eq_listXor hδ_nz hfw₀_len hfw₁_len hfw_ne hstep_eq'
+          naorYungShrink_collision_eq_listXor hδ_nz hfw₀_len hfw₁_len
+            (fun heq => hne (hw₀_eq ▸ hf_bij.1 heq)) hstep_eq'
         simp only [hfw₁_eq, beq_self_eq_true, ↓reduceIte]
     change PMF.pure true true ≤ PMF.pure (f (if f w₁ == y then w₁ else w₀) == y) true
     rw [hwin]
@@ -583,19 +559,12 @@ theorem length_naorYungCascade (f : List Bool → List Bool) (n : ℕ)
 private theorem length_naorYungCascade_le (f : List Bool → List Bool) (n : ℕ)
     (subkeys : List (List Bool)) (state rest : List Bool) :
     (naorYungCascade f n subkeys state rest).length ≤ state.length + (n + 1) := by
-  induction subkeys generalizing state rest with
-  | nil =>
-    simp only [naorYungCascade, List.foldl_nil]
-    omega
-  | cons δ ks ih =>
-    simp only [naorYungCascade, List.foldl_cons]
-    have hstep :
-        (naorYungCascade f n ks (naorYungStep f n δ (state ++ [rest.headD false]))
-          (rest.drop 1)).length = n + 1 :=
-      length_naorYungCascade f n ks (length_naorYungStep f n δ _) (rest.drop 1)
-    change (naorYungCascade f n ks (naorYungStep f n δ (state ++ [rest.headD false]))
-      (rest.drop 1)).length ≤ state.length + (n + 1)
-    omega
+  cases subkeys with
+  | nil => simp [naorYungCascade]
+  | cons δ ks =>
+    have h := length_naorYungCascade f n ks
+      (length_naorYungStep f n δ (state ++ [rest.headD false])) (rest.drop 1)
+    simp only [naorYungCascade, List.foldl_cons, naorYungCascadeStep] at h ⊢; omega
 
 theorem naorYungCascade_append_singleton (f : List Bool → List Bool) (n : ℕ)
     (ks : List (List Bool)) (δ state rest : List Bool) :
@@ -605,6 +574,47 @@ theorem naorYungCascade_append_singleton (f : List Bool → List Bool) (n : ℕ)
     rw [List.headD_eq_head?_getD, List.head?_drop, List.getD_eq_getElem?_getD]
   simp only [naorYungCascade, List.foldl_append, List.foldl_cons, List.foldl_nil,
     naorYungCascadeStep, snd_foldl_naorYungCascadeStep, hhead]
+
+private theorem computableTidilyInPolyTime_naorYungCascade
+    {f : List Bool → List Bool} (hf : ComputableTidilyInPolyTime f encBits encBits)
+    {γ : Type} {encIn : γ ↪ List Bool}
+    {n : γ → ℕ} {subkeys : γ → List (List Bool)} {state rest : γ → List Bool}
+    (hn : ComputableTidilyInPolyTime n encIn encUnary)
+    (hsubkeys : ComputableTidilyInPolyTime subkeys encIn (encList encBits))
+    (hstate : ComputableTidilyInPolyTime state encIn encBits)
+    (hrest : ComputableTidilyInPolyTime rest encIn encBits) :
+    ComputableTidilyInPolyTime
+      (fun a => naorYungCascade f (n a) (subkeys a) (state a) (rest a))
+      encIn encBits := by
+  let EStep := encPair (encPair encUnary (encPair encBits encBits)) encBits
+  have hp := ComputableTidilyInPolyTime.id' (encIn := EStep)
+  have hhead := (ComputableTidilyInPolyTime.headD
+    (encA := encBool) (encL := encBits) false).comp hp.fst'.snd'.snd'
+  have hw := ComputableTidilyInPolyTime.bitsAppend hp.fst'.snd'.fst'
+    (ComputableTidilyInPolyTime.bitsCons hhead (.const []))
+  have hstep := (computableTidilyInPolyTime_naorYungStep hf hp.fst'.fst' hp.snd' hw).prod
+    (ComputableTidilyInPolyTime.bitsDropWithInput hp.fst'.snd'.snd' (.const 1))
+  let stateBound (a : γ) : ℕ := 2 * ((state a).length + (n a + 1)) + 1 + (rest a).length
+  have hpoly : PolyBounded (fun a => (encIn a).length) stateBound := by
+    have hs := hstate.polyBounded_length
+    have hr := hrest.polyBounded_length
+    have hn_b := hn.polyBounded_length
+    simp only [encBits_apply, encUnary_apply, List.length_replicate] at hs hr hn_b
+    exact (((PolyBounded.const 2).mul (hs.add (hn_b.add (.const 1)))).add (.const 1)).add hr
+  refine (ComputableTidilyInPolyTime.foldlWith
+    (encA := encBits) (encL := encList encBits) (encP := encUnary) (encB := encPair encBits encBits)
+    (par := n) (step := naorYungCascadeStep f)
+    hn hsubkeys (hstate.prod hrest) hstep (B := stateBound) hpoly fun a i _ => ?_).fst'
+  let pair := ((subkeys a).take i).foldl (naorYungCascadeStep f (n a)) (state a, rest a)
+  change (encPair encBits encBits pair).length ≤ stateBound a
+  have h1 : pair.1.length ≤ (state a).length + (n a + 1) :=
+    length_naorYungCascade_le f (n a) ((subkeys a).take i) (state a) (rest a)
+  have h2 : pair.2.length ≤ (rest a).length := by
+    have heq := snd_foldl_naorYungCascadeStep f (n a) ((subkeys a).take i) (state a) (rest a)
+    change ((subkeys a).take i |>.foldl (naorYungCascadeStep f (n a)) (state a, rest a)).2.length
+      ≤ (rest a).length
+    rw [heq, List.length_drop]; omega
+  simp only [length_encPair, encBits_apply, stateBound]; omega
 
 /-- Folding `naorYungCascade` is computable in plain polynomial time whenever `f` is computable in
 plain polynomial time. -/
@@ -619,44 +629,9 @@ theorem computableInPolyTime_naorYungCascade
     (hrest : ComputableInPolyTime rest encIn encBits) :
     ComputableInPolyTime
       (fun a => naorYungCascade f (n a) (subkeys a) (state a) (rest a))
-      encIn encBits := by
-  have hstep : ComputableInPolyTime
-      (fun p : (ℕ × (List Bool × List Bool)) × List Bool =>
-        naorYungCascadeStep f p.1.1 p.1.2 p.2)
-      (encPair (encPair encUnary (encPair encBits encBits)) encBits)
-      (encPair encBits encBits) := by
-    unfold naorYungCascadeStep
-    polytime
-  let stateBound (a : γ) : ℕ :=
-    2 * ((state a).length + (n a + 1)) + 1 + (rest a).length
-  have hpoly : PolyBounded (fun a => (encIn a).length) stateBound := by
-    have hs := hstate.polyBounded_length
-    have hr := hrest.polyBounded_length
-    simp only [encBits_apply] at hs hr
-    exact (((PolyBounded.const 2).mul (hs.add (hn.polyBounded.add (.const 1)))).add
-      (.const 1)).add hr
-  have hfold : ComputableInPolyTime
-      (fun a => (subkeys a).foldl (naorYungCascadeStep f (n a)) (state a, rest a))
-      encIn (encPair encBits encBits) := by
-    apply ComputableInPolyTime.foldlWith
-      (encA := encBits) (encL := encList encBits)
-      (encP := encUnary) (encB := encPair encBits encBits)
-      (par := n) (step := naorYungCascadeStep f)
-      hn hsubkeys (hstate.prod hrest) hstep hpoly
-    intro a i _
-    let pair := ((subkeys a).take i).foldl (naorYungCascadeStep f (n a)) (state a, rest a)
-    change (encPair encBits encBits pair).length ≤ stateBound a
-    have h1 : pair.1.length ≤ (state a).length + (n a + 1) :=
-      length_naorYungCascade_le f (n a) ((subkeys a).take i) (state a) (rest a)
-    have h2 : pair.2.length ≤ (rest a).length := by
-      have heq := snd_foldl_naorYungCascadeStep f (n a) ((subkeys a).take i) (state a) (rest a)
-      change ((subkeys a).take i |>.foldl (naorYungCascadeStep f (n a)) (state a, rest a)).2.length
-        ≤ (rest a).length
-      rw [heq, List.length_drop]
-      omega
-    simp only [length_encPair, encBits_apply, stateBound]
-    omega
-  exact (ComputableInPolyTime.fst encBits encBits).comp hfold
+      encIn encBits :=
+  .of_tidy (computableTidilyInPolyTime_naorYungCascade
+    hf.tidy hn.tidy hsubkeys.tidy hstate.tidy hrest.tidy)
 
 /-- **Naor–Yung `2(n + 1) → (n + 1)` compression evaluator** ([NaorYung1989], Section 3;
 [Goldreich2004], Section 6.4.3.2): split `x` into two `(n + 1)`-bit halves and absorb the second
@@ -679,8 +654,13 @@ theorem computableInPolyTime_naorYungCompressionEval
     ComputableInPolyTime
       (fun ⟨n, K, x⟩ => naorYungCompressionEval f n K x)
       (encPair encUnary (encPair encBits encBits)) encBits := by
-  unfold naorYungCompressionEval
-  polytime
+  have hp := ComputableTidilyInPolyTime.id' (encIn := encPair encUnary (encPair encBits encBits))
+  have hn1 := ComputableTidilyInPolyTime.unary_add.comp (hp.fst'.prod (.const 1))
+  have hn2 := ComputableTidilyInPolyTime.unary_add.comp (hp.fst'.prod (.const 2))
+  exact .of_tidy (computableTidilyInPolyTime_naorYungCascade hf.tidy hp.fst'
+    (ComputableTidilyInPolyTime.bitsRowsWithInput hn1 hn2 hp.snd'.fst')
+    (ComputableTidilyInPolyTime.bitsRowWithInput hn1 (.const 0) hp.snd'.snd')
+    (ComputableTidilyInPolyTime.bitsRowWithInput hn1 (.const 1) hp.snd'.snd'))
 
 /-- Step-`i` `(n + 2)`-bit input fed to subkey `i` during `naorYungCompressionEval f n`, computed
 using only the prefix `front` containing subkeys `< i`. -/
@@ -696,6 +676,28 @@ theorem length_naorYungCascadeInput (f : List Bool → List Bool) (n i : ℕ) (f
   simp only [naorYungCascadeInput, List.length_append, List.length_singleton,
     length_naorYungCascade f n _ (BitString.length_listRow (n + 1) 0 x)]
 
+private theorem computableTidilyInPolyTime_naorYungCascadeInput
+    {f : List Bool → List Bool} (hf : ComputableTidilyInPolyTime f encBits encBits)
+    {γ : Type} {encIn : γ ↪ List Bool}
+    {n i : γ → ℕ} {front x : γ → List Bool}
+    (hn : ComputableTidilyInPolyTime n encIn encUnary)
+    (hi : ComputableTidilyInPolyTime i encIn encUnary)
+    (hfront : ComputableTidilyInPolyTime front encIn encBits)
+    (hx : ComputableTidilyInPolyTime x encIn encBits) :
+    ComputableTidilyInPolyTime
+      (fun a => naorYungCascadeInput f (n a) (i a) (front a) (x a))
+      encIn encBits := by
+  have hn1 := ComputableTidilyInPolyTime.unary_add.comp (hn.prod (.const 1))
+  have hn2 := ComputableTidilyInPolyTime.unary_add.comp (hn.prod (.const 2))
+  have htail := ComputableTidilyInPolyTime.bitsRowWithInput hn1 (.const 1) hx
+  have hcasc := computableTidilyInPolyTime_naorYungCascade hf hn
+    (ComputableTidilyInPolyTime.bitsRowsWithInput hi hn2 hfront)
+    (ComputableTidilyInPolyTime.bitsRowWithInput hn1 (.const 0) hx) htail
+  exact ComputableTidilyInPolyTime.bitsAppend hcasc
+    (ComputableTidilyInPolyTime.bitsCons
+      (ComputableTidilyInPolyTime.bitsGetDWithInput htail hi false)
+      (ComputableTidilyInPolyTime.const []))
+
 @[program_certificate, fun_prop]
 theorem computableInPolyTime_naorYungCascadeInput
     {f : List Bool → List Bool} (hf : ComputableInPolyTime f encBits encBits)
@@ -707,9 +709,9 @@ theorem computableInPolyTime_naorYungCascadeInput
     (hx : ComputableInPolyTime x encIn encBits) :
     ComputableInPolyTime
       (fun a => naorYungCascadeInput f (n a) (i a) (front a) (x a))
-      encIn encBits := by
-  unfold naorYungCascadeInput
-  polytime
+      encIn encBits :=
+  .of_tidy (computableTidilyInPolyTime_naorYungCascadeInput
+    hf.tidy hn.tidy hi.tidy hfront.tidy hx.tidy)
 
 private theorem listRow_lt_take {width count j : ℕ} (hj : j < count) (word : List Bool) :
     BitString.listRow width j (word.take (count * width)) = BitString.listRow width j word := by
@@ -832,74 +834,13 @@ theorem exists_naorYungCascadeInput_collision
   apply hne
   rw [← eq_listRow_zero_append_one hx₀, ← eq_listRow_zero_append_one hx₁, hS0, hrow1_eq]
 
-private structure CascadeReductionState where
-  active : Bool
-  stepIdx : ℕ
-  front : List Bool
-  innerState : List Bool
+private abbrev CascadeState := Bool × ℕ × List Bool × List Bool
 
-private def encodeCascadeState (s : CascadeReductionState) : List Bool :=
+private abbrev encCascadeState : CascadeState ↪ List Bool :=
   encPair encBool (encPair encUnary (encPair encBits encBits))
-    (s.active, s.stepIdx, s.front, s.innerState)
 
-private def decodeCascadeState (code : List Bool) : CascadeReductionState where
-  active := (unframe code).headD false
-  stepIdx := (unframe (dropFrame code)).length
-  front := unframe (dropFrame (dropFrame code))
-  innerState := dropFrame (dropFrame (dropFrame code))
-
-private theorem decodeCascadeState_encodeCascadeState (s : CascadeReductionState) :
-    decodeCascadeState (encodeCascadeState s) = s := by
-  cases s
-  simp only [decodeCascadeState, encodeCascadeState, encPair_apply, unframe_frame_append,
-    dropFrame_frame_append, encBool_apply, List.headD_cons, encUnary_apply, List.length_replicate,
-    encBits, Function.Embedding.refl_apply]
-
-@[local fun_prop]
-private theorem computableInPolyTime_encodeCascadeState
-    {γ : Type} {encIn : γ ↪ List Bool}
-    {active : γ → Bool} {stepIdx : γ → ℕ} {front innerState : γ → List Bool}
-    (hactive : ComputableInPolyTime active encIn encBool)
-    (hstep : ComputableInPolyTime stepIdx encIn encUnary)
-    (hfront : ComputableInPolyTime front encIn encBits)
-    (hinner : ComputableInPolyTime innerState encIn encBits) :
-    ComputableInPolyTime
-      (fun a => encodeCascadeState ⟨active a, stepIdx a, front a, innerState a⟩)
-      encIn encBits := by
-  unfold encodeCascadeState
-  polytime
-
-@[local fun_prop]
-private theorem computableInPolyTime_decodeCascadeState_active
-    {γ : Type} {encIn : γ ↪ List Bool} {code : γ → List Bool}
-    (hcode : ComputableInPolyTime code encIn encBits) :
-    ComputableInPolyTime (fun a => (decodeCascadeState (code a)).active) encIn encBool := by
-  unfold decodeCascadeState
-  polytime
-
-@[local fun_prop]
-private theorem computableInPolyTime_decodeCascadeState_stepIdx
-    {γ : Type} {encIn : γ ↪ List Bool} {code : γ → List Bool}
-    (hcode : ComputableInPolyTime code encIn encBits) :
-    ComputableInPolyTime (fun a => (decodeCascadeState (code a)).stepIdx) encIn encUnary := by
-  unfold decodeCascadeState
-  polytime
-
-@[local fun_prop]
-private theorem computableInPolyTime_decodeCascadeState_front
-    {γ : Type} {encIn : γ ↪ List Bool} {code : γ → List Bool}
-    (hcode : ComputableInPolyTime code encIn encBits) :
-    ComputableInPolyTime (fun a => (decodeCascadeState (code a)).front) encIn encBits := by
-  unfold decodeCascadeState
-  polytime
-
-@[local fun_prop]
-private theorem computableInPolyTime_decodeCascadeState_innerState
-    {γ : Type} {encIn : γ ↪ List Bool} {code : γ → List Bool}
-    (hcode : ComputableInPolyTime code encIn encBits) :
-    ComputableInPolyTime (fun a => (decodeCascadeState (code a)).innerState) encIn encBits := by
-  unfold decodeCascadeState
-  polytime
+private def cascadeStateDecoder : Decoder encCascadeState :=
+  Decoder.pair Decoder.bool (Decoder.pair Decoder.unary (Decoder.pair Decoder.bits Decoder.bits))
 
 /-- Planted-subkey reduction from `naorYungCompressionEval f` to `naorYungStep f`: guess a dyadic
 slot `slot < n + 1`, sample `slot` prefix `(n + 2)`-bit subkeys `front` before seeing the challenge
@@ -914,13 +855,13 @@ noncomputable def naorYungCascadeAdversary
     let i := if active then slot else 0
     let front ← BitString.sampleList (i * (n + 2))
     let w₀ := naorYungCascadeInput f n i front choice.1
-    return (w₀, encodeCascadeState ⟨active, i, front, choice.2⟩)
+    return (w₀, encCascadeState (active, i, front, choice.2))
   find n savedState δStar := do
-    let s := decodeCascadeState savedState
-    let i := min n s.stepIdx
+    let s := cascadeStateDecoder.decode savedState
+    let i := min n s.2.1
     let back ← BitString.sampleList ((n - i) * (n + 2))
-    let x₁ ← adversary.find n s.innerState (s.front ++ δStar ++ back)
-    return if s.active then naorYungCascadeInput f n i s.front x₁ else []
+    let x₁ ← adversary.find n s.2.2.2 (s.2.2.1 ++ δStar ++ back)
+    return if s.1 then naorYungCascadeInput f n i s.2.2.1 x₁ else []
 
 /-- `naorYungCascadeAdversary` is a uniform strict PPT `TargetCollisionFinder` whenever `f` is plain
 polynomial-time and `adversary` is strict PPT. -/
@@ -928,13 +869,114 @@ theorem isPPT_naorYungCascadeAdversary
     {f : List Bool → List Bool} {adversary : TargetCollisionFinder}
     (hf : ComputableInPolyTime f encBits encBits) (ha : adversary.IsPPT) :
     (naorYungCascadeAdversary f adversary).IsPPT := by
-  have hchoose := ha.choose
-  have hfind := ha.find
+  have hft := hf.tidy
+  have hdec_t := cascadeStateDecoder.computableInPolyTime.tidy
   constructor
-  · dsimp only [naorYungCascadeAdversary]
-    ppt
-  · dsimp only [naorYungCascadeAdversary]
-    ppt
+  · let E1 := encPair encUnary encUnary
+    let E2 := encPair E1 (encPair encBits encBits)
+    have hq := ComputableTidilyInPolyTime.id' (encIn := E2)
+    have hact2 := hq.fst'.snd'.unary_lt'
+      (ComputableTidilyInPolyTime.unary_add.comp (hq.fst'.fst'.prod (.const 1)))
+    have hi2 := ComputableTidilyInPolyTime.ite' hact2 hq.fst'.snd' (.const 0)
+    have hfront_len := ComputableTidilyInPolyTime.unary_mul.comp
+      (hi2.prod (ComputableTidilyInPolyTime.unary_add.comp (hq.fst'.fst'.prod (.const 2))))
+    have hr := ComputableTidilyInPolyTime.id' (encIn := encPair E2 encBits)
+    have hw₀3 := computableTidilyInPolyTime_naorYungCascadeInput hft
+      hr.fst'.fst'.fst' (hi2.comp hr.fst') hr.snd' hr.fst'.snd'.fst'
+    have hst3 := ((hact2.comp hr.fst').prod ((hi2.comp hr.fst').prod
+      (hr.snd'.prod hr.fst'.snd'.snd'))).encoded
+    have hch := ha.choose.preprocess (.of_tidy (ComputableTidilyInPolyTime.fst encUnary encUnary))
+    exact (isPPTOn_sampleDyadicIndex (.of_tidy (ComputableTidilyInPolyTime.unary_add.comp
+      (ComputableTidilyInPolyTime.id'.prod (.const 1))))).bind_with
+      (hch.bind_with ((isPPTOn_sampleList.preprocess (.of_tidy hfront_len)).bind_with
+        (hw₀3.prod hst3).isPPTOn))
+  · let EF0 := encPair encUnary (encPair encBits encBits)
+    let EF1 := encPair EF0 encBits
+    have hp := ComputableTidilyInPolyTime.id' (encIn := EF0)
+    have hs0 := hdec_t.comp hp.snd'.fst'
+    have hi0 := ComputableTidilyInPolyTime.unary_min.comp (hp.fst'.prod hs0.snd'.fst')
+    have hback_len := ComputableTidilyInPolyTime.unary_mul.comp
+      ((ComputableTidilyInPolyTime.unary_sub.comp (hp.fst'.prod hi0)).prod
+        (ComputableTidilyInPolyTime.unary_add.comp (hp.fst'.prod (.const 2))))
+    have hq := ComputableTidilyInPolyTime.id' (encIn := EF1)
+    have hK1 := ComputableTidilyInPolyTime.bitsAppend
+      (ComputableTidilyInPolyTime.bitsAppend (hs0.snd'.snd'.fst'.comp hq.fst')
+        hq.fst'.snd'.snd') hq.snd'
+    have hfind_in := hq.fst'.fst'.prod ((hs0.snd'.snd'.snd'.comp hq.fst').prod hK1)
+    have hr := ComputableTidilyInPolyTime.id' (encIn := encPair EF1 encBits)
+    have hr0 := hr.fst'.fst'
+    have hret := ComputableTidilyInPolyTime.ite' (hs0.fst'.comp hr0)
+      (computableTidilyInPolyTime_naorYungCascadeInput hft
+        hr0.fst' (hi0.comp hr0) (hs0.snd'.snd'.fst'.comp hr0) hr.snd')
+      (.const [])
+    exact (isPPTOn_sampleList.preprocess (.of_tidy hback_len)).bind_with
+      ((ha.find.preprocess (.of_tidy hfind_in)).bind_with hret.isPPTOn)
+
+private noncomputable def naorYungCascadeSlotTrial
+    (f : List Bool → List Bool) (adversary : TargetCollisionFinder) (n slot : ℕ) : Game := do
+  let choice ← ProbComp.eval (adversary.choose n)
+  let active := decide (slot < n + 1)
+  let i := if active then slot else 0
+  let front ← BitString.uniformList (i * (n + 2))
+  let w₀ := naorYungCascadeInput f n i front choice.1
+  let s := cascadeStateDecoder.decode (encCascadeState (active, i, front, choice.2))
+  let i' := min n s.2.1
+  let δStar ← BitString.uniformList (n + 2)
+  let back ← BitString.uniformList ((n - i') * (n + 2))
+  let x₁ ← ProbComp.eval (adversary.find n s.2.2.2 (s.2.2.1 ++ δStar ++ back))
+  let w₁ := if s.1 then naorYungCascadeInput f n i' s.2.2.1 x₁ else []
+  return isCollision (naorYungStep f n) (fun m w => w.length == m + 2) n δStar w₀ w₁
+
+private theorem naorYungCascadeSlotTrial_eq
+    (f : List Bool → List Bool) (adversary : TargetCollisionFinder) (n j : ℕ)
+    (hs : j < n + 1) :
+    naorYungCascadeSlotTrial f adversary n j =
+      ((ProbComp.eval (adversary.choose n)).bind fun choice =>
+        (BitString.uniformList ((n + 1) * (n + 2))).bind fun K =>
+          (ProbComp.eval (adversary.find n choice.2 K)).map fun x₁ => (choice, K, x₁)).map
+        (fun t =>
+          if j < n + 1 then
+            isCollision (naorYungStep f n) (fun m w => w.length == m + 2) n
+              (BitString.listRow (n + 2) j t.2.1)
+              (naorYungCascadeInput f n j t.2.1 t.1.1)
+              (naorYungCascadeInput f n j t.2.1 t.2.2)
+          else false) := by
+  let κ := n + 2
+  let validStep (m : ℕ) (w : List Bool) : Bool := w.length == m + 2
+  have hi_le : j ≤ n := by omega
+  have hlen_sum : j * κ + (κ + (n - j) * κ) = (n + 1) * κ := by
+    rw [show j * κ + (κ + (n - j) * κ) = (j + 1 + (n - j)) * κ by ring,
+      show j + 1 + (n - j) = n + 1 by omega]
+  simp only [naorYungCascadeSlotTrial, hs, decide_true, ↓reduceIte,
+    cascadeStateDecoder.decode_enc, Nat.min_eq_right hi_le, PMF.monad_bind_eq_bind,
+    PMF.monad_pure_eq_pure, PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def]
+  refine PMF.bind_congr_on_support _ _ _ fun choice _ => ?_
+  trans (BitString.uniformList (j * κ)).bind (fun front =>
+    (BitString.uniformList (κ + (n - j) * κ)).bind (fun rest =>
+      (ProbComp.eval (adversary.find n choice.2
+        (front ++ rest.take κ ++ rest.drop κ))).bind fun x₁ =>
+        PMF.pure
+          (isCollision (naorYungStep f n) validStep n (rest.take κ)
+            (naorYungCascadeInput f n j front choice.1)
+            (naorYungCascadeInput f n j front x₁))))
+  · refine PMF.bind_congr_on_support _ _ _ fun front _ => ?_
+    exact (BitString.uniformList_bind_split κ ((n - j) * κ) _).symm
+  · rw [← BitString.uniformList_bind_split (j * κ) (κ + (n - j) * κ), hlen_sum]
+    refine PMF.bind_congr_on_support _ _ _ fun K hK => ?_
+    have hK_len : K.length = (n + 1) * κ := BitString.length_of_mem_support_uniformList hK
+    have hrejoin : K.take (j * κ) ++ (K.drop (j * κ)).take κ ++ (K.drop (j * κ)).drop κ = K := by
+      rw [List.append_assoc, List.take_append_drop, List.take_append_drop]
+    have hrow : (K.drop (j * κ)).take κ = BitString.listRow κ j K := by
+      have hrem : κ ≤ (K.drop (j * κ)).length := by
+        rw [List.length_drop, hK_len]
+        have : (j + 1) * κ ≤ (n + 1) * κ := Nat.mul_le_mul_right κ (by omega)
+        have : j * κ + κ = (j + 1) * κ := by ring
+        omega
+      unfold BitString.listRow
+      rw [List.take_append_of_le_length hrem]
+    rw [hrejoin, hrow, naorYungCascadeInput_take_eq f K choice.1]
+    refine PMF.bind_congr_on_support _ _ _ fun x₁ _ => ?_
+    rw [naorYungCascadeInput_take_eq f K x₁]
 
 /-- **Concrete security bound for `naorYungCompressionEval`**: the target-collision success
 probability of `adversary` against `naorYungCompressionEval f` at security parameter `n` is at most
@@ -960,28 +1002,17 @@ theorem succProbability_targetCollisionGame_naorYungCompressionEval_le
         (ProbComp.eval (adversary.find n choice.2 K)).map fun x₁ => (choice, K, x₁)
   let W (t : (List Bool × List Bool) × List Bool × List Bool) : Bool :=
     isCollision (naorYungCompressionEval f n) validComp n t.2.1 t.1.1 t.2.2
-  let slotTrial (slot : ℕ) : Game := do
-    let choice ← ProbComp.eval (adversary.choose n)
-    let active := decide (slot < n + 1)
-    let i := if active then slot else 0
-    let front ← BitString.uniformList (i * κ)
-    let w₀ := naorYungCascadeInput f n i front choice.1
-    let s := decodeCascadeState (encodeCascadeState ⟨active, i, front, choice.2⟩)
-    let i' := min n s.stepIdx
-    let δStar ← BitString.uniformList κ
-    let back ← BitString.uniformList ((n - i') * κ)
-    let x₁ ← ProbComp.eval (adversary.find n s.innerState (s.front ++ δStar ++ back))
-    let w₁ := if s.active then naorYungCascadeInput f n i' s.front x₁ else []
-    return isCollision (naorYungStep f n) validStep n δStar w₀ w₁
+  let slotTrial := naorYungCascadeSlotTrial f adversary n
   have hred_eq :
       ProbComp.eval
         (targetCollisionGame (fun m => m + 2) (naorYungStep f) validStep
           (naorYungCascadeAdversary f adversary) n) =
         (PMF.uniformOfFintype (Fin (dyadicSize (n + 1)))).bind (fun s => slotTrial s.val) := by
-    simp only [targetCollisionGame, naorYungCascadeAdversary, slotTrial, ProbComp.eval_bind,
+    simp only [targetCollisionGame, naorYungCascadeAdversary, slotTrial,
+      naorYungCascadeSlotTrial, ProbComp.eval_bind,
       ProbComp.eval_pure, eval_sampleDyadicIndex, BitString.eval_sampleList,
       PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind,
-      PMF.bind_map, Function.comp_def, κ]
+      PMF.bind_map, Function.comp_def, validStep]
   have hcomp_eq :
       ProbComp.eval
         (targetCollisionGame (fun m => (m + 1) * (m + 2))
@@ -996,71 +1027,6 @@ theorem succProbability_targetCollisionGame_naorYungCompressionEval_le
         (naorYungCascadeInput f n s.val t.2.1 t.1.1)
         (naorYungCascadeInput f n s.val t.2.1 t.2.2)
     else false
-  have hslot_eq : ∀ s : Fin (dyadicSize (n + 1)), s.val < n + 1 →
-      slotTrial s.val = μ.map (Wi s) := by
-    intro s hs
-    have hi_le : s.val ≤ n := by omega
-    have hlen_sum : s.val * κ + (κ + (n - s.val) * κ) = (n + 1) * κ := by
-      calc
-        s.val * κ + (κ + (n - s.val) * κ)
-          = (s.val + 1 + (n - s.val)) * κ := by ring
-        _ = (n + 1) * κ := by rw [show s.val + 1 + (n - s.val) = n + 1 by omega]
-    simp only [slotTrial, Wi, μ, hs, decide_true, ↓reduceIte,
-      decodeCascadeState_encodeCascadeState, Nat.min_eq_right hi_le, PMF.monad_bind_eq_bind,
-      PMF.monad_pure_eq_pure, PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def]
-    apply PMF.bind_congr_on_support
-    intro choice _
-    calc
-      (BitString.uniformList (s.val * κ)).bind (fun front =>
-        (BitString.uniformList κ).bind (fun δStar =>
-          (BitString.uniformList ((n - s.val) * κ)).bind (fun back =>
-            (ProbComp.eval (adversary.find n choice.2 (front ++ δStar ++ back))).bind fun x₁ =>
-              PMF.pure
-                (isCollision (naorYungStep f n) validStep n δStar
-                  (naorYungCascadeInput f n s.val front choice.1)
-                  (naorYungCascadeInput f n s.val front x₁)))))
-        = (BitString.uniformList (s.val * κ)).bind (fun front =>
-            (BitString.uniformList (κ + (n - s.val) * κ)).bind (fun rest =>
-              (ProbComp.eval (adversary.find n choice.2
-                (front ++ rest.take κ ++ rest.drop κ))).bind fun x₁ =>
-                PMF.pure
-                  (isCollision (naorYungStep f n) validStep n (rest.take κ)
-                    (naorYungCascadeInput f n s.val front choice.1)
-                    (naorYungCascadeInput f n s.val front x₁)))) := by
-          apply PMF.bind_congr_on_support
-          intro front _
-          exact (BitString.uniformList_bind_split κ ((n - s.val) * κ) _).symm
-      _ = (BitString.uniformList (s.val * κ + (κ + (n - s.val) * κ))).bind (fun K =>
-            let front := K.take (s.val * κ)
-            let rest := K.drop (s.val * κ)
-            (ProbComp.eval (adversary.find n choice.2
-              (front ++ rest.take κ ++ rest.drop κ))).bind fun x₁ =>
-              PMF.pure
-                (isCollision (naorYungStep f n) validStep n (rest.take κ)
-                  (naorYungCascadeInput f n s.val front choice.1)
-                  (naorYungCascadeInput f n s.val front x₁))) :=
-          (BitString.uniformList_bind_split (s.val * κ) (κ + (n - s.val) * κ) _).symm
-      _ = _ := by
-          rw [hlen_sum]
-          apply PMF.bind_congr_on_support
-          intro K hK
-          have hK_len : K.length = (n + 1) * κ := BitString.length_of_mem_support_uniformList hK
-          have hrejoin : K.take (s.val * κ) ++ (K.drop (s.val * κ)).take κ ++
-              (K.drop (s.val * κ)).drop κ = K := by
-            rw [List.append_assoc, List.take_append_drop, List.take_append_drop]
-          have hrow : (K.drop (s.val * κ)).take κ = BitString.listRow κ s.val K := by
-            have hrem : κ ≤ (K.drop (s.val * κ)).length := by
-              rw [List.length_drop, hK_len]
-              have : (s.val + 1) * κ ≤ (n + 1) * κ := Nat.mul_le_mul_right κ (by omega)
-              have : s.val * κ + κ = (s.val + 1) * κ := by ring
-              omega
-            unfold BitString.listRow
-            rw [List.take_append_of_le_length hrem]
-          dsimp only
-          rw [hrejoin, hrow, naorYungCascadeInput_take_eq f K choice.1]
-          apply PMF.bind_congr_on_support
-          intro x₁ _
-          rw [naorYungCascadeInput_take_eq f K x₁]
   have hcover :
       ∀ t ∈ μ.support, W t = true → ∃ s : Fin (dyadicSize (n + 1)), Wi s t = true := by
     rintro ⟨choice, K, x₁⟩ ht hW
@@ -1094,7 +1060,8 @@ theorem succProbability_targetCollisionGame_naorYungCompressionEval_le
     have hF : F j = Wi ⟨j, hj_lt⟩ := funext fun t => by simp only [F, hj_lt, ↓reduceDIte]
     simp only [hF, hj_lt, ↓reduceDIte]
     by_cases hs : j < n + 1
-    · rw [hslot_eq ⟨j, hj_lt⟩ hs]
+    · dsimp only [slotTrial]
+      rw [naorYungCascadeSlotTrial_eq f adversary n j hs]
     · have hWi : Wi ⟨j, hj_lt⟩ = fun _ => false := funext fun t => by
         simp only [Wi, hs, ↓reduceIte]
       rw [hWi]
@@ -1116,8 +1083,13 @@ def naorYungCompression {f : List Bool → List Bool}
   keyLen n := (n + 1) * (n + 2)
   blockLen n := n + 1
   eval := naorYungCompressionEval f
-  keyLen_polyTime := by polytime
-  blockLen_polyTime := by polytime
+  keyLen_polyTime := by
+    exact .of_tidy (ComputableTidilyInPolyTime.unary_mul.comp
+      ((ComputableTidilyInPolyTime.unary_add.comp
+        (ComputableTidilyInPolyTime.id'.prod (.const 1))).prod
+        (ComputableTidilyInPolyTime.unary_add.comp
+          (ComputableTidilyInPolyTime.id'.prod (.const 2)))))
+  blockLen_polyTime := by exact ComputableInPolyTime.unary_succ
   polyTime := computableInPolyTime_naorYungCompressionEval hf
   le_blockLen n := Nat.le_succ n
   length_eq n K x _ _ := length_naorYungCompressionEval f n K x
@@ -1133,7 +1105,10 @@ theorem OneWayPermutation.targetCollisionResistant_naorYungCompression
   have hstep_tcr := hf.targetCollisionResistantOn_naorYungStep
   have hredPPT : (naorYungCascadeAdversary f adversary).IsPPT :=
     isPPT_naorYungCascadeAdversary hf.oneWay.polyTime hadversary
-  have hloss_pb : PolynomiallyBounded (fun n => dyadicSize (n + 1)) := by fun_prop
+  have hloss_pb : PolynomiallyBounded (fun n => dyadicSize (n + 1)) :=
+    (ComputableInPolyTime.unary_dyadicSize.tidy.comp
+      (ComputableTidilyInPolyTime.unary_add.comp
+        (ComputableTidilyInPolyTime.id'.prod (.const 1)))).polynomiallyBounded
   refine negligible_of_le
     ((hstep_tcr.negligible (naorYungCascadeAdversary f adversary) hredPPT).polynomiallyBounded_mul
       hloss_pb)
