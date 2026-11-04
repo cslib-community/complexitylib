@@ -60,9 +60,9 @@ public instance : Fintype Tag := Fintype.ofList [.push, .pop, .size] fun t => by
 
 /-- One realization per constructor. -/
 public noncomputable def certificates : Tag → Certificate .exact
-  | .push => ⟨realizes_push⟩
-  | .pop => ⟨realizes_pop⟩
-  | .size => ⟨realizes_size⟩
+  | .push => Certificate.ofRealizes realizes_push
+  | .pop => Certificate.ofRealizes realizes_pop
+  | .size => Certificate.ofRealizes realizes_size
 
 /-- The stack's operations on layout `L`: every operation passes the layout, a push its value. -/
 public noncomputable def backend (w C : ℕ) (L : Stack.Memory.Layout) :

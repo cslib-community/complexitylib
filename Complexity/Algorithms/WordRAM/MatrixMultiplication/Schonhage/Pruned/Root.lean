@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Scan
 public import Complexity.Computability.WordRAM.Heap
+import Complexity.Computability.WordRAM.MemoryView
 
 /-!
 # Initialization of the actual root stack frame
@@ -146,12 +147,6 @@ theorem exec_rootList {w N capacity : ℕ} (x : Data registers) (input : ℕ →
     exact (hu.seq (hv.seq hy)).mono (by omega)
   have hyoutside (a : ℕ) (ha : ¬(Block.mk (x.regs frames) 4).Owns a) :
       y.mem a = v.mem a := hfinishFrame a (by simpa only [Block.mem_footprint, hvf] using ha)
-  have hawayList (i : ℕ) : ¬(Block.mk (x.regs frames) 4).Owns (x.regs lists + i) := by
-    change ¬(x.regs frames ≤ _ ∧ _ < x.regs frames + 4)
-    omega
-  have hawayStamp (i : ℕ) : ¬(Block.mk (x.regs frames) 4).Owns (x.regs stamps + i) := by
-    change ¬(x.regs frames ≤ _ ∧ _ < x.regs frames + 4)
-    omega
   have htable' : ScanMemory v.mem (x.regs lists) (x.regs stamps) (x.regs epoch + 1)
       capacity ((Finset.range N).image input) := by
     simpa +decide [u, childList, stamps, epoch, listBase, count, term, scanSet_root] using htable
@@ -159,8 +154,7 @@ theorem exec_rootList {w N capacity : ℕ} (x : Data registers) (input : ℕ →
     fun i hi => he.regs_eq (rootList_preserves i hi)⟩
   · simpa +decide [hy.regs_eq (by decide : rootFinish.Preserves epoch), u, epoch,
       childList, count, listBase] using hve
-  · exact htable'.congr (fun i _ => hyoutside _ (hawayList i))
-      (fun q _ => hyoutside _ (hawayStamp q))
+  · ram_keep htable' using hyoutside
   · rw [hmem, hvf]
     simpa +decide [Function.update_apply, u, childList, count, listBase, term, scanSet_root]
       using hvc

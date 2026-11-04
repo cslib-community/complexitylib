@@ -15,6 +15,8 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingExecute
 Every parameter, sorted multiplicity table, frontend descriptor, prime bit, heavy list and packed
 output is computed by one finite native program for the fixed magnitude exponent. The output
 list is exactly the existing finite instances, including negative and small-input cases.
+`OutputLayout` exposes the table and payload endpoints below the actual final heap register,
+independently of their values; old temporary scratch beyond this frontier need not remain live.
 
 ## Main definitions
 
@@ -57,7 +59,9 @@ theorem exec_input {κ w : ℕ} (input : List ℤ) (hw : width κ input.length �
       Traversal.StoredNodes (2 * U) (2 * m ^ 2) (arena κ n y.mem).table out y.mem ∧
       y.regs Traversal.outputCount = out.length ∧
       y.regs Traversal.outputs = (arena κ n y.mem).table ∧
-      y.regs packedLength = 8 * m ^ 2 := by
+      y.regs packedLength = 8 * m ^ 2 ∧
+      Traversal.OutputLayout (2 * m ^ 2) (arena κ n y.mem).table
+        (y.regs Traversal.heap) out := by
   obtain ⟨x, rs, hf, ho, hbase, hcount, hend, hnd, _, hkeys, hcounts, _, _, hp, _⟩ :=
     Frontend.exec_input input ((frontend_width_le κ input.length).trans hw) hvalues
   have hcard : rs.length ≤ input.length := by
@@ -65,14 +69,14 @@ theorem exec_input {κ w : ℕ} (input : List ℤ) (hw : width κ input.length �
     simpa only [List.length_map] using ht
   have hb : x.Bounded w := hf.bounded (Data.Bounded.init (input_fits input hw hvalues))
   have hw2 : w - 2 + 2 = w := by have := (three_le_width κ input.length).trans hw; omega
-  obtain ⟨out, y, hs, hout, hstored, hlen, htable, hpacked⟩ :=
+  obtain ⟨out, y, hs, hout, hstored, hlen, htable, hpacked, hlayout⟩ :=
     afterFrontend_exec (w := w - 2) input rs x (by simpa only [hw2] using hw)
       (by simpa only [hw2] using hb) hvalues ho hp hbase hcount hend hkeys hnd hcard
   rw [hw2] at hs
   have hnodes := entries_output hkeys (fun p hp => (hcounts p hp).2) hvalues
   have heq : out.map Prod.snd = Cslib.Algorithms.ThreeSum.ChanHe.allNodes input.length
       ((input.length + 2) ^ κ) (fun i : Fin input.length => input[i]) := hout.trans hnodes
-  refine ⟨out, y, (hf.seq hs).mono ?_, ?_, hstored, hlen, htable, hpacked⟩
+  refine ⟨out, y, (hf.seq hs).mono ?_, ?_, hstored, hlen, htable, hpacked, hlayout⟩
   · have hpos : 0 < Frontend.cost κ input.length := by dsimp only [Frontend.cost]; omega
     dsimp only [cost]
     omega
@@ -94,11 +98,13 @@ theorem runs_input {κ w : ℕ} (input : List ℤ) (hw : width κ input.length �
       Traversal.StoredNodes (2 * U) (2 * m ^ 2) (arena κ n y.mem).table out y.mem ∧
       y.regs Traversal.outputCount = out.length ∧
       y.regs Traversal.outputs = (arena κ n y.mem).table ∧
-      y.regs packedLength = 8 * m ^ 2 ∧ y.Bounded w := by
-  obtain ⟨out, y, ⟨t, ht, he⟩, hout, hstored, hlen, htable, hpacked⟩ :=
+      y.regs packedLength = 8 * m ^ 2 ∧ y.Bounded w ∧
+      Traversal.OutputLayout (2 * m ^ 2) (arena κ n y.mem).table
+        (y.regs Traversal.heap) out := by
+  obtain ⟨out, y, ⟨t, ht, he⟩, hout, hstored, hlen, htable, hpacked, hlayout⟩ :=
     exec_input input hw hvalues
   have hpos : 0 < cost κ input.length := by dsimp only [cost]; omega
-  refine ⟨out, y, t + 1, ?_, ?_, by omega, hout, hstored, hlen, htable, hpacked, ?_⟩
+  refine ⟨out, y, t + 1, ?_, ?_, by omega, hout, hstored, hlen, htable, hpacked, ?_, hlayout⟩
   · simpa only [flatProgram, hlen, State.init] using he.executes Traversal.outputCount
   · simpa only [flatProgram, State.init, Nat.zero_add, Nat.add_sub_cancel] using
       he.runs (pc := 0) (p := flatProgram κ) (Program.Contains.self _).append_left

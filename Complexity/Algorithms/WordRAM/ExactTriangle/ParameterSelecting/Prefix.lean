@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Flat
 public import Complexity.Computability.WordRAM.Width
 import Complexity.Foundations.Data.Nat.Log
+import Complexity.Computability.WordRAM.Admission
 
 /-!
 # Original-data bounds for every assembled-solver prefix
@@ -59,12 +60,8 @@ theorem original_bounded {W n F b ap bp cp P : ℕ} (values : List ℤ) (x : Dat
     (hregs : ∀ i, x.regs i ≤ P) (hmem : ∀ q, x.mem q ≤ P)
     (hW : admissionWidth n F b ap bp cp P values ≤ W) : x.Bounded W := by
   have hp : P < 2 ^ W := by
-    have hle := Nat.le_pow_clog (by decide : 1 < (2 : ℕ))
-      (envelope n F b ap bp cp values + P + 1)
-    have hpow := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ))
-      (show Nat.clog 2 (envelope n F b ap bp cp values + P + 1) ≤ W by
-        unfold admissionWidth at hW; omega)
-    omega
+    exact fits_of_lt_clog_le (by omega : P < envelope n F b ap bp cp values + P + 1)
+      (by unfold admissionWidth at hW; omega)
   exact ⟨fun i => (hregs i).trans_lt hp, fun q => (hmem q).trans_lt hp⟩
 
 /-- Every actual caller prefix has a width-independent bound. The semantic solver proves
@@ -89,11 +86,8 @@ theorem bounded_reachable_caller {W n F ap bp cp b P k : ℕ} (values : List ℤ
   obtain ⟨p, mem, y, he, _⟩ := exec_at values hlen hv x xn xF xap xbp xcp xb
     hab hbc hac vab vbc vac (executionWidth_le_admissionWidth n F b ap bp cp P values)
   obtain ⟨t, ht, hex⟩ := he
-  have hlow := Runs.prefix_at_smaller_width program_fixed.2 hW hr (hex.executes Reg.result)
-  have hs := hlow.bounded hx
-  have hpow := pow_admissionWidth_le n F b ap bp cp P values
-  refine ⟨fun i => (hs.1 i).trans_le hpow, fun q => (hs.2 q).trans_le hpow, ?_⟩
-  exact fun q hq => hlow.mem_above hx (hpow.trans hq)
+  exact hr.prefix_bounds program_fixed.2 hW hx (hex.executes Reg.result)
+    (pow_admissionWidth_le n F b ap bp cp P values)
 
 /-- The initialized program has no physical-width-dependent word or address support. -/
 theorem bounded_reachable_input {W n F k : ℕ} (values : List ℤ)
@@ -105,9 +99,6 @@ theorem bounded_reachable_input {W n F k : ℕ} (values : List ℤ)
     (∀ i, s.data.regs i < 16 * E) ∧ (∀ q, s.data.mem q < 16 * E) ∧
       ∀ q, 16 * E ≤ q → s.data.mem q = 0 := by
   obtain ⟨hi, p, mem, y, t, ht, hpref, he, _⟩ := runs_input values hlen hv le_rfl
-  have hlow := Runs.prefix_at_smaller_width entryProgram_fixed.2 hW hr he
-  have hx := Data.Bounded.init (r := 640) hi
-  have hs := hlow.bounded hx
   let E := envelope n F (3 + 3 * (n * n)) 3 (3 + n * n) (3 + 2 * (n * n)) values
   have hpow : 2 ^ inputWidth n F values ≤ 16 * E := by
     have hp := Nat.pow_clog_le_mul (by decide : 1 < (2 : ℕ))
@@ -116,17 +107,6 @@ theorem bounded_reachable_input {W n F k : ℕ} (values : List ℤ)
     rw [pow_add]
     norm_num only [Nat.reducePow]
     omega
-  refine ⟨fun i => (hs.1 i).trans_le hpow, fun q => (hs.2 q).trans_le hpow, ?_⟩
-  intro q hq
-  have hq' : 2 ^ inputWidth n F values ≤ q := hpow.trans hq
-  rw [hlow.mem_above hx hq']
-  cases q with
-  | zero => have := Nat.two_pow_pos (inputWidth n F values); omega
-  | succ q =>
-    change (CountPrime.inputWords n F values).getD q 0 = 0
-    apply List.getD_eq_default
-    have hlen := hi.1
-    dsimp only [Fits] at hlen
-    omega
+  exact hr.prefix_bounds_init entryProgram_fixed.2 hW hi he hpow
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.ParameterSelecting

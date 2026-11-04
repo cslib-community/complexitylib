@@ -131,14 +131,14 @@ private theorem staged_memory (w capacity : ℕ) (o : Queue.QueueOp ℕ) (x : Da
     exact DynamicProgram.prepare_mem _ _ _
   · change Function.update _ zero 0 (Backend.frontier family) = _
     rw [Function.update_of_ne (result_ne_frontier 1).symm]
-    exact prepare_frontier _ _ _ _
+    exact prepare_frontier w capacity o x
 
 private theorem staged_tag (w capacity : ℕ) (o : Queue.QueueOp ℕ) (x : Data registers) :
     (staged w capacity o x).regs tag =
       match o with | .enqueue _ => 0 | .dequeue => 1 := by
   change Function.update _ zero 0 tag = _
   rw [Function.update_of_ne tag_ne_zero]
-  exact prepare_tag _ _ _ _
+  exact prepare_tag w capacity o x
 
 private noncomputable def committed (m : ℕ × ℕ) (x : Data registers) : Data registers :=
   (x.set (src 0) m.1).set (src 1) m.2

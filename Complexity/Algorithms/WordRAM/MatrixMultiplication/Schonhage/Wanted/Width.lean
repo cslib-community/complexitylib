@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted.Flat
 public import Mathlib.Data.Nat.Log
+import Complexity.Computability.WordRAM.Admission
 
 /-!
 # Sufficient physical width for native wanted-query grouping
@@ -45,11 +46,8 @@ theorem admissionWidth_pos (L m N Q : ℕ) : 0 < admissionWidth L m N Q := by
 /-- A sufficiently large physical width guarantees the actual numerical fit premise. -/
 theorem admission_fit {W L m N Q : ℕ} (hW : admissionWidth L m N Q ≤ W) :
     Fits W (wordBudget L m N Q) := by
-  have hc := Nat.le_pow_clog (by decide : 1 < (2 : ℕ)) (wordBudget L m N Q + 1)
-  have hpow := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ))
-    (by unfold admissionWidth at hW; omega : Nat.clog 2 (wordBudget L m N Q + 1) ≤ W)
-  change wordBudget L m N Q < 2 ^ W
-  omega
+  exact fits_of_lt_clog_le (by omega : wordBudget L m N Q < wordBudget L m N Q + 1)
+    (by unfold admissionWidth at hW; omega)
 
 /-- Actual initialized runs at every sufficiently wide physical width. The same returned
 memory holds the original-index permutation, query codes, exact spans and readonly frame. -/

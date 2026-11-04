@@ -23,7 +23,7 @@ the FHE industrial context, the first-order design decisions and the repository'
 | Consolidation: duplicates, accurate statements and docs, less churn | [#949], [#939] |
 | Fully homomorphic encryption: follow-ups to the instantiated bootstrapping theorem, then modern schemes | [#1104] |
 | Boneh–Shoup cryptography tracks; zero-knowledge architecture | [#640], [#643] |
-| Crypto frontier tracks: Kilian's succinct arguments, signatures from one-way functions | [#999], [#1001] |
+| Crypto frontier track: Kilian's succinct arguments | [#999] |
 | OpenAI math TCS results: review Fortnow's rewrites and extract in-scope results | [#1002] |
 | A Verso guide with a chapter per area | [#585] |
 | Randomized Word RAM: broader expected-time rules and simulation bridges | [#1124] |
@@ -33,24 +33,18 @@ the FHE industrial context, the first-order design decisions and the repository'
 
 Priorities live in this list and in the tiers of [#897].
 
-1. [Rompel's signature theorem](#cryptographic-landmarks) ([#1001])
-2. [Completeness of oblivious transfer](#cryptographic-landmarks)
-3. [Håstad's optimal MAX-E3SAT hardness](#approximation-and-pcp) ([#886])
-4. [Williams's NEXP ⊄ ACC⁰](#circuits-and-algebraic-complexity) ([#889])
-5. [Valiant's VNP-completeness of the permanent](#circuits-and-algebraic-complexity)
-6. [The Kabanets–Impagliazzo theorem](#circuits-and-algebraic-complexity) ([#891])
-7. [MIP = NEXP](#interactive-proofs) ([#892])
-8. [Regev's worst-case to average-case reduction](#cryptographic-landmarks)
+1. [Completeness of oblivious transfer](#cryptographic-landmarks)
+2. [Håstad's optimal MAX-E3SAT hardness](#approximation-and-pcp) ([#886])
+3. [Williams's NEXP ⊄ ACC⁰](#circuits-and-algebraic-complexity) ([#889])
+4. [Valiant's VNP-completeness of the permanent](#circuits-and-algebraic-complexity)
+5. [The Kabanets–Impagliazzo theorem](#circuits-and-algebraic-complexity) ([#891])
+6. [MIP = NEXP](#interactive-proofs) ([#892])
+7. [Regev's worst-case to average-case reduction](#cryptographic-landmarks)
 
 ## Cryptography
 
 ### Cryptographic landmarks
 
-- **Rompel's signature theorem** ([#1001]). One-way functions imply digital signatures that are
-  existentially unforgeable under adaptive chosen-message attacks, for arbitrary
-  polynomial-length messages. Authentication trees from one-time signatures and
-  collision-resistant hashing are an intermediate development step; for the theorem itself,
-  universal one-way hash functions replace the collision-resistance assumption.
 - **Completeness of oblivious transfer.** In the ideal OT-hybrid model, every polynomial-time
   multiparty functionality admits a protocol secure against static malicious corruptions, with
   real/ideal simulation and abort, under the standard communication assumptions.
@@ -253,6 +247,14 @@ index links to canonical definitions rather than keeping a second set.
   every NP-complete set splits into two NP-complete sets (Glaßer, Pavan, Selman and Zhang);
   separations of complexity classes by autoreducibility (Buhrman, Fortnow, van Melkebeek and
   Torenvliet).
+- **Logspace autoreducibility of complete sets** ([#2468]): the full expanded 2013 paper of
+  Glaßer, Nguyen, Reitwießner, Selman and Witek: native transfer from local self-reducibility
+  (Lemma 3.3), including virtual-input/answer regeneration and adaptive-to-tt conversion;
+  bounded and many-one self-reducibility specializations; concrete complete self-reducible
+  problems (Theorem 3.5); Section 4
+  bounded/logarithmic-query results and
+  separations, and Section 5 mitoticity/diagonalization. The additional parity-logspace
+  application needs a native path-counting class and complement closure.
 - **Uniform diagonalization** (Schöning), which generalizes Ladner's theorem.
 - **Selectivity and downward self-reducibility:** downward self-reducible sets lie in PSPACE.
   P-selective sets (Selman): a P-selective NP-complete set gives `P = NP`, P-selective sets lie in
@@ -646,28 +648,14 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   classes over arbitrary value domains with weighted or bit costs; simulations between instances;
   the typed core proposed in [CSLib #1158](https://github.com/leanprover/cslib/pull/1158).
 - **Word RAM:** an AC⁰ basis; wider-fragment and Turing-machine simulations;
-  transfer of Anthropic's modular machine and 3SUM/APSP algorithms, with the direct 3SUM
-  adaptation below; size-based width selection with an input-fit guarantee and explicit overhead;
+  transfer of Anthropic's modular machine and 3SUM/APSP algorithms; size-based width selection
+  with an input-fit guarantee and explicit overhead;
   expected-time rules for unbounded almost-surely terminating structured loops; random-tape
   equivalence and BPP/RP/ZPP simulation bridges for the randomized word RAM ([#1124]); transfer
   of cell-probe lower bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
-- **Direct 3SUM adaptation** ([#1394]): integrate the improved Section 4 route and native
-  exponent 1.9992 from [#2358](https://github.com/cslib-community/complexitylib/pull/2358).
-  Conservative native ordinary integer 3SUM is proved in
-  `WordRAM/ThreeSum/Decision/Subquadratic.lean`: for each fixed polynomial magnitude exponent,
-  one fixed 848-register program has charged time `Oκ(n^(2−1/5184))`, logarithmic physical
-  admission and polynomial words/support at every wider execution prefix. Correctness includes
-  every length, distinct positions and repeated values; only the time estimate is eventual.
-  This is standard Word-RAM instruction time, not bit/Turing time or arbitrary-real 3SUM.
-  The concrete cyclic-Strassen counter ([#1701]), minimum-count selector ([#2098]) and computed
-  conservative parameters ([#2127]) feed the actual assembled ET callee ([#2146]). Its time
-  field is `Oκ(n^(3−1/1296))` for polynomial weights. The ordinary proof charges native Chan–He
-  preprocessing, actual packed dimensions, all matrix/callee calls, control work and halt;
-  it does not assume a fast solver, prime procedure, layout or time contract. The counter
-  computes residues, padding, seven-product recursion and exact modular counts within
-  `3704*(p+1)²*(n+1)^2.81` instructions. The selected prime is computed by trial division and
-  actual counter calls; the assembled solver runs the real exhaustive branch at smaller
-  geometry. These conservative original estimates do not establish the source's tuned endpoint.
+- **Sharper native Exact Triangle exponent** ([#2423]): the automatic box-backed Exact Triangle
+  host runs in `Oκ(n^(3−33/20000))` (exponent 2.99835) after integer retuning; reaching the
+  source's stated 2.9983 under the same native conventions remains open.
 - **Memory-oracle realization** ([#2205], [#2213]): the foundational graded kernel certifies
   all four memory queries, register-word glue, native branches and binds with one fixed
   continuation emitter for all runtime replies. Its functional representation retains the
@@ -851,16 +839,14 @@ not planned, not as proved.
 [#939]: https://github.com/cslib-community/complexitylib/issues/939
 [#949]: https://github.com/cslib-community/complexitylib/issues/949
 [#999]: https://github.com/cslib-community/complexitylib/issues/999
-[#1001]: https://github.com/cslib-community/complexitylib/issues/1001
 [#1002]: https://github.com/cslib-community/complexitylib/issues/1002
 [#1104]: https://github.com/cslib-community/complexitylib/issues/1104
 [#1124]: https://github.com/cslib-community/complexitylib/issues/1124
 [#1155]: https://github.com/cslib-community/complexitylib/issues/1155
 [#1351]: https://github.com/cslib-community/complexitylib/issues/1351
-[#1394]: https://github.com/cslib-community/complexitylib/issues/1394
 [#1539]: https://github.com/cslib-community/complexitylib/issues/1539
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
-[#1701]: https://github.com/cslib-community/complexitylib/issues/1701
+[#2468]: https://github.com/cslib-community/complexitylib/issues/2468
 [#1817]: https://github.com/cslib-community/complexitylib/issues/1817
 [#1885]: https://github.com/cslib-community/complexitylib/pull/1885
 [#2019]: https://github.com/cslib-community/complexitylib/issues/2019
@@ -869,9 +855,7 @@ not planned, not as proved.
 [#2205]: https://github.com/cslib-community/complexitylib/issues/2205
 [#2213]: https://github.com/cslib-community/complexitylib/issues/2213
 [#2289]: https://github.com/cslib-community/complexitylib/issues/2289
-[#2098]: https://github.com/cslib-community/complexitylib/issues/2098
-[#2127]: https://github.com/cslib-community/complexitylib/issues/2127
 [#2145]: https://github.com/cslib-community/complexitylib/issues/2145
-[#2146]: https://github.com/cslib-community/complexitylib/issues/2146
 [#2084]: https://github.com/cslib-community/complexitylib/issues/2084
 [#2290]: https://github.com/cslib-community/complexitylib/issues/2290
+[#2423]: https://github.com/cslib-community/complexitylib/issues/2423

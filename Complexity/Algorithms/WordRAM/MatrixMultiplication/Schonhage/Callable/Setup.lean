@@ -7,6 +7,8 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Power.Rename
+import Complexity.Computability.WordRAM.RegisterFrame
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Callable.Program
 
 /-!
@@ -94,10 +96,9 @@ theorem exec_setup {W b N Q : ℕ} (x : Data 163) (hb : x.regs Reg.base = b)
   have lc : l.regs Reg.second = Nat.clog 2 (N + Q + 3) := by
     change l.regs Reg.second = Nat.clog 2 (s.regs Reg.result) at lr
     simpa only [ss] using lr
-  have lb : l.regs Reg.base = b := (hl.regs_eq (by
-    simp [NatClog.program, NatClog.body, Code.rename, Code.Preserves, Op.rename, Op.dest, Op.bin,
-      clogBank, Reg.base, NatClog.result, NatClog.arg,
-      NatClog.one, NatClog.two])).trans sb
+  have lb : l.regs Reg.base = b := (hl.regs_eq
+    (NatClog.program.preserves_rename_of_offset (offset := 0) clogBank
+      (fun j => (Nat.zero_add j.val).symm) Reg.base (Or.inr (by decide)))).trans sb
   let p := ((l.set Reg.third 128).set Reg.fourth
     (Nat.clog 2 (N + Q + 3) * 128)).set Reg.third 2
   have hexp' : Fits W (Nat.clog 2 (N + Q + 3) * 128) := by
@@ -106,25 +107,20 @@ theorem exec_setup {W b N Q : ℕ} (x : Data 163) (hb : x.regs Reg.base = b)
       (ram[ Reg.third ← #128; Reg.fourth ← Reg.second * Reg.third; Reg.third ← #2 ]) l p 3 := by
     ram_eval [p, lc, h128, h2, hexp', Reg.third, Reg.fourth, Reg.second,
       Fin.mk.injEq]
-  obtain ⟨a, ha, av, ac, ao, am, ab, ae⟩ := Power.exec (w := W) 2
-    (128 * Nat.clog 2 (N + Q + 3)) (by decide) (p.comap powerBank)
-    (by simp [p, powerBank, Power.base, Reg.third, Reg.fourth])
-    (by simp [p, powerBank, Power.exponent, Reg.third, Reg.fourth, Nat.mul_comm]) hpfit
-  let z := a.extend powerBank p
-  have hz : ExecWithin W (Power.program.rename powerBank) p z
-      (4 * (128 * Nat.clog 2 (N + Q + 3)) + 5) := ha.rename powerBank_injective
-  have zv : z.regs Reg.result = windowSize N Q :=
-    (powerBank_injective.extend_apply _ _ Power.value).trans av
+  obtain ⟨z, hz, zv, _, _, am, _, _, hframe⟩ :=
+    Power.exec_rename powerBank powerBank_injective (w := W) 2
+      (128 * Nat.clog 2 (N + Q + 3)) (by decide) p
+      (by simp [p, powerBank, Power.base, Reg.third, Reg.fourth])
+      (by simp [p, powerBank, Power.exponent, Reg.third, Reg.fourth, Nat.mul_comm]) hpfit
+  change z.regs Reg.result = windowSize N Q at zv
   have zb : z.regs Reg.base = b := by
-    have hnot : ¬∃ i, powerBank i = Reg.base := by
-      rintro ⟨i, hi⟩
-      have := congrArg (fun k : Fin 163 => k.val) hi
-      simp only [powerBank, Reg.base, Fin.val_castAdd] at this
-      omega
-    change Function.extend powerBank a.regs p.regs Reg.base = b
-    rw [Function.extend_apply' _ _ _ hnot]
-    simpa [p, Reg.base, Reg.third, Reg.fourth,
-      Function.update_apply, Fin.mk.injEq] using lb
+    have hp : p.regs Reg.base = b := by
+      simpa [p, Reg.base, Reg.third, Reg.fourth, Function.update_apply, Fin.mk.injEq] using lb
+    refine (hframe _ ?_).trans hp
+    intro i hi
+    have hv := congrArg (fun k : Fin 163 => k.val) hi
+    simp only [powerBank, Reg.base, Fin.val_castAdd] at hv
+    omega
   let z' := z.set Reg.modulus (windowSize N Q)
   have hcopy : ExecWithin (B := .standard) W (.op (.copy Reg.modulus Reg.result)) z z' 1 := by
     simpa only [z', zv] using

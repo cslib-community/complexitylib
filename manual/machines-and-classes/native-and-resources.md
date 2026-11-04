@@ -82,5 +82,21 @@ Randomized logarithmic space is defined directly over PTMs. Workspace is bounded
 
 The source of [MachinePrograms.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/MachinePrograms.lean#L24) distinguishes two nondeterministic successors, a stuck state, and a halted self-loop; it also checks channel isolation and fair-coin semantics. [CountingMachine.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/CountingMachine.lean#L25) contains repeated equal accepting actions and checks three accepting versus one rejecting branch, first-halt padding stability, and malformed certificates. [Alternation.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/Alternation.lean#L1) uses the same two choices with existential and universal polarity and obtains different acceptance outcomes. These are inspected regression witnesses, not test executions performed during the initial source review.
 
+## Composing polynomial resource envelopes
+
+Import
+[`ResourceBounds.Polynomial.Automation`](../../Complexity/Computability/Machines/Turing/MultiTape/ResourceBounds/Polynomial/Automation.lean)
+and use `growth_poly` for `Turing.MultiTapeTM.PolyBounded size cost`. Local certificates supply
+the leaves; constants, the original size, sums, products, fixed powers, natural logarithms and
+square roots compose. Existing `Cslib.PolynomiallyBounded` goals use their `fun_prop` rules.
+For substitution, apply `PolyBounded.comp` with the outer certificate and run `growth_poly`
+on the inner size expression. This keeps the intermediate measure explicit.
+
+The tactic closes a polynomial-growth goal or fails. Exponentials, variable exponents and
+factorials need independent bounds and are rejected by the
+[ordinary-import examples](../../ComplexityTests/PolynomialGrowth.lean). Exact instruction
+allowances, encoded-output bounds and physical word fits remain separate obligations; a coarse
+polynomial envelope does not certify a particular word width or a fixed degree.
+
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib

@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Caller
 public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Callee
 
@@ -119,16 +120,9 @@ theorem exec_at {r w N U src workspace : ℕ} (c : Callee r) (μ : ℕ → ℤ)
       y.regs (hostRegisters found) ≤ 1 ∧
       (y.regs (hostRegisters found) = 1 ↔ Convolution N μ) ∧
       ∀ p < workspace, y.mem p = x.mem p := by
-  obtain ⟨p, hp, hpp, hpi, hpf, hpm⟩ := exec_prepare_at (x.comap hostRegisters)
-    hN hU hb hab hbelow hsize hfill hsqrt
-  let a := p.extend hostRegisters x
-  have ha := hp.rename (hostRegisters_injective (r := r + 7))
-  have hac : a.comap hostRegisters = p := Data.comap_extend hostRegisters_injective _ _
-  have hap : ParametersAt N U src workspace (a.comap hostRegisters) := by rw [hac]; exact hpp
-  have hai : a.regs (hostRegisters inst) = 0 :=
-    (hostRegisters_injective.extend_apply _ _ _).trans hpi
-  have haf : a.regs (hostRegisters found) = 0 :=
-    (hostRegisters_injective.extend_apply _ _ _).trans hpf
+  obtain ⟨a, ha, ⟨hap, hai, haf, hpm⟩, -⟩ :=
+    ExecWithin.rename_post (hostRegisters_injective (r := r + 7))
+      (exec_prepare_at (x.comap hostRegisters) hN hU hb hab hbelow hsize hfill hsqrt)
   obtain ⟨y, hy, _, _, hyf, hyans, hym⟩ := exec_loop_at μ c.code a hap hai haf
     (fun i hi => (congrFun hpm (src + i)).trans (hmem i hi))
     hidx hF hnF hμ hsize hbelow

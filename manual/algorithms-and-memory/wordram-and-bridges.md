@@ -10,6 +10,36 @@ Copies and memory moves rely on a bounded-state invariant rather than rechecking
 
 Structured [Complexity/Computability/WordRAM/Structured.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Structured.lean) has operations, sequencing, branches and loops. Its `Exec` relation counts actual branch/jump overhead, and assembly preserves exact counts. Hoare and potential rules prove executions of this code; they do not treat a source-language loop as one machine instruction.
 
+## Proving routine calls and memory frames
+
+For structured `Code`, import
+[`SymbolicExec.Call`](../../Complexity/Computability/WordRAM/SymbolicExec/Call.lean).
+Unfold the caller and run `wram_exec` to its named routine. Apply
+`wram_call routine_spec with y post`, then resume `wram_exec` using the returned facts.
+The routine specification supplies its instruction allowance and full postcondition; the
+routine body stays closed. A fixed-time existential contract and a time-indexed `WP` contract
+are both supported. In the latter case, bind `y`, the returned allowance, and its postcondition.
+
+For an injective bank, use `wram_call routine_spec renamed bank_injective with y ⟨post, frame⟩`.
+Here the specification starts from the caller's `Data.comap bank`; `frame` preserves registers
+outside the bank. Memory and register projections of bank views are normalized once. Preparation,
+callee and continuation allowances add through `WP.seq`; assembly and the final halt retain their
+existing separate rules. Missing word fits, alias conditions or a mismatched routine still need
+proof. Open the complete ordinary-import
+[call examples](../../ComplexityTests/WordRAMCallAutomation.lean), including a dirty caller,
+its actual continuation, a variable allowance and rejected wrong-code/insufficient-time cases.
+
+For memory readback, import
+[`MemoryView`](../../Complexity/Computability/WordRAM/MemoryView.lean).
+`ram_keep view using frame` preserves a block, list or finite-footprint assertion when its live
+support lies in the supplied `Set.EqOn` frame. Prefix and outside-interval pointwise frames are
+also accepted; interval containment is checked with `omega`. `ram_keep view` handles stores
+outside a live block. Compose equality frames with `Set.EqOn.trans`, or obtain one from
+`Modifies.eqOn` and disjoint read/write supports. Read-only views may overlap and unused cells
+may be dirty. If containment fails, supply the missing layout inequality or use the explicit
+`.keep` lemma. The [memory-view examples](../../ComplexityTests/WordRAMMemoryViews.lean) check
+aliasing, empty/exact-endpoint blocks, composed frames and rejected corrupting writes.
+
 ## Uniformity and output conventions
 
 [WordSizeDependentProgram](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Time.lean#L149) chooses code from the width with a fixed register count and a global instruction-list-length bound. Literals may depend on width, and the selector itself is uncharged. `UniformDecidableInTime` instead uses one fixed program, which may read the width. These are distinct contracts.
@@ -17,6 +47,29 @@ Structured [Complexity/Computability/WordRAM/Structured.lean](https://github.com
 Time bounds, input encodings and permitted input/width pairs can depend on width. Every contract is conditional on `InputFits`. Empty allowed conditions or inputs that never fit can make a proposition vacuous; a logarithmic threshold in the number of input words does not bound those words' values. Input-dependent width schedules can convey advice. These points are explicit in the source and must accompany comparisons with uniform Turing classes.
 
 [Complexity/Computability/WordRAM/Function.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Function.lean) treats scalar word-valued functions. [ExecutesList](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/ListOutput.lean#L92) treats list output as the length-prefixed array addressed by the returned word in the pre-halt memory. Returning zero without writing can therefore return the original input. This is an output convention on the same machine; it does not charge the mathematical observer for copying that array out.
+
+## Checking resource-model consequences
+
+[`Runs.exists_footprints`](../../Complexity/Computability/WordRAM/Footprint.lean) bounds distinct
+read and written cells by actual continuing instructions. Changing unread initial cells replays
+the same control path and registers; `Executes.exists_readFootprint` also preserves the charged
+halt and output. These rules permit width-reading instructions and arbitrary deterministic
+operation bases.
+
+[`ThreeSum.not_uniformDecidableInO_sublinear`](../../Complexity/Algorithms/WordRAM/ThreeSum/LowerBound.lean)
+uses this replay rule on canonical signed, length-prefixed input under the same `Admissible`
+domain as the fast algorithm. Changing any tail entry of `[1,-1,1,…,1]` to zero changes the
+answer, so every tail cell must be read. The result excludes exponents below one in the existing
+uniform time API, including magnitude exponent zero and all admitted wider words.
+
+For output, use
+[`Runs.card_changed_le` or `Runs.block_lowerBound`](../../Complexity/Computability/WordRAM/OutputLowerBound.lean):
+each distinct changed cell needs a store. `ExecutesList.denseMatrix_lowerBound` specializes this
+to materializing an all-one square matrix from initialized zero input, with its chosen output
+pointer unrestricted and halt charged. Output length alone gives no such lower bound when the
+answer already occupies input memory. The
+[model examples](../../ComplexityTests/WordRAM/ModelLowerBounds.lean) include an actual initialized
+one-entry matrix run and the zero-entry boundary case.
 
 ## Proved deterministic bridges
 
@@ -53,6 +106,107 @@ Every incoming requirement is explicit in [Program.ComputesInTime.turingComputab
 The reverse TM simulation's displayed overhead for a `T`-step, `n`-word, width-`w` run with scalar degree `d` is `O((T+1)*((n+T+1)*(w+1))^max(3,d))`, in addition to setup/clock obligations. The cubic floor reflects the finite association-list representation used by this simulator; it is not asserted to be an optimal RAM/TM overhead. The additive case has scalar degree two and still pays this cubic floor.
 
 For scalar functions, polynomial output **bit length** differs from polynomial output **value**. `UniformComputableInPolyTime.polyBounded` records the necessity of the latter for a logarithmic-width scalar output. The general-width equivalence and logarithmic-width equivalence should not be merged into one unqualified theorem.
+
+## Retain concrete realization resources
+
+For a fixed register count or exchange factor, retain a
+[`Realizes.Witness`](../../Complexity/Computability/WordRAM/Realization/Witness.lean) as data.
+Its `scratchSize`, `factor` and `code` fields satisfy the same `Realizes.Spec` execution contract
+used by the existential `Realizes` judgment: bounded entry data, encoded live inputs, explicit
+safe domain and valid memory history, full memory/frontier equality, result words and register
+frame. `Witness.toRealizes` erases the selected data when only existence is needed.
+
+Supply that witness as the `realizes` field of the existing
+[`Certificate`](../../Complexity/Computability/WordRAM/Realization/Backend.lean). The same
+`Backend.registers`, `Backend.code` and `Backend.factor` retain its fields. If a client has only
+an existential proof `h : Realizes ...`, use `Certificate.ofRealizes h`; this preserves correctness
+using classical choice. It does not prove that the chosen scratch size, factor or code equals
+those in a preferred derivation. Erasing a supplied witness and selecting again loses that
+implementation identity.
+
+The four primitive witnesses `readWitness`, `writeWitness`, `allocDirtyWitness` and `allocWitness`
+reuse the existing primitive execution proofs. The concrete
+[`MemoryBackend`](../../Complexity/Computability/WordRAM/Realization/MemoryBackend.lean) family
+uses them through the generic Backend and proves seven registers and factor four. Open the
+complete [checked client](../../ComplexityTests/WordRAMMemoryBackend.lean): allocate two cells,
+write seven at the returned address and read it back, with final frontier five, an unrelated
+dirty cell unchanged and at most 32 body instructions. It also checks empty allocations at width zero.
+Arguments are already delivered by an **uncharged** calling convention; this bound does not
+include native client control, argument installation, result decoding or halt.
+
+For a runtime conditional, use
+[`Realizes.Witness.branch`](../../Complexity/Computability/WordRAM/Realization/Branch.lean)
+on two supplied witnesses. It keeps their common temporary prefix, reserving
+`max left.scratchSize right.scratchSize`, with factor `max left.factor right.factor + 2`.
+Only the selected arm's domain and memory history are required. The selected local work gains
+two units for native branch control; choosing an arm does not execute the other one.
+The existential `Realizes.branch` reuses this construction by erasure.
+
+The [branch client](../../ComplexityTests/WordRAMRealizationBranchWitness.lean) has three runtime
+words: a selector and two allocation counts. It compares the selector with the first count,
+then clears the selected allocation. Each supplied arm needs two auxiliary words, so the same
+generic Backend uses **eight registers**, versus ten with the former sum reservation, and
+factor six. Both outcomes check the full memory/frontier result on dirty memory, an invalid
+unselected allocation and empty allocation at width zero. The bound includes the native
+conditional but still uses the delivered-argument, body-only calling convention above.
+
+This explicit route does not retain concrete witnesses through every bind, loop or
+randomized constructor. Existing existential Backend clients remain available through the
+choice fallback. Fixed-resource Karger endpoints still need their own compatible emitter and
+resource proofs; no selected abstract bound follows from this example.
+
+### Retain scalar code and share its scratch bank
+
+Import `Complexity.Computability.WordRAM.Realization.GlueVector`. For a concrete scalar
+implementation, retain a `GlueComputes.Witness` rather than erase it to `GlueComputes` and
+select again. The `proj`, `const`, `binary` and `binExact` data constructors reuse the original
+scalar execution contract and proofs. Projections and constants have zero auxiliary slots;
+`binary` retains `a+b+2` auxiliary slots for operands with scratch sizes `a` and `b`. Exact
+subtraction and division still require their explicit definedness premises: a fitting output
+alone does not justify underflow or division by zero. Input registers may repeat, and the
+scalar rules require no whole-state boundedness premise.
+
+Pass those supplied scalars directly to `Realizes.Witness.glueVectorOfScalars`. Coordinates run
+sequentially, sharing the **maximum** auxiliary bank while each result gets its own persistent
+output slot. Each output copy and the final neutral copy are charged. The existing
+`Witness.glueVector` and `Realizes.glueVector` proposition-based interfaces remain available,
+but their classical-choice fallback gives no concrete scratch or code identity.
+
+The complete [checked client](../../ComplexityTests/WordRAMScalarWitness.lean) computes
+`(cursor+1, accumulator+value)` with two specified three-instruction scalar additions. Its
+actual supplied Backend has nine registers and a nine-instruction body allowance. Replaying
+the original sum-bank placement on these **same supplied scalar data** gives eleven registers;
+this is not a numerical claim about witnesses selected from old existential proofs. The tests
+check maximum-word output, full dirty-memory/frontier/live-register preservation, actually
+aliased input registers, overflow-domain exclusion and a width-zero projection. Argument
+installation and a caller halt remain separate charges. No sixteen-register Karger endpoint
+or whole-initializer bound follows from this standalone client.
+
+### Keep native loop overhead additive
+
+When a memory loop already has a retained body witness, keep that data through
+`Witness.iterateRuntime` and use `Witness.loopEmit_spec` for a tighter clock on the **same**
+`loopEmit` instructions. For a state of `l` words and runtime fuel `q`, its bound is
+`C*(memoryCost + iterationWork) + (l+5)*(q+1)`. Here `iterationWork` includes one unit per
+iteration. Counter setup, state/result copies, decrement, tests and exit remain paid. The
+coarse witness factor is still available; substituting that coarse factor into an outer clock
+can lose this sharper accounting. This rule retains the full original execution contract,
+including reached domains, memory/frontier, outputs and the register frame.
+
+Open the complete [checked Backend client](../../ComplexityTests/WordRAMRealizationAdditiveLoop.lean),
+which reuses the existing query-free `identityBody` source. From this checkout, run
+`scripts/build.sh --wfail --iofail ComplexityTests.WordRAMRealizationAdditiveLoop`.
+Its retained vector-glue body has a three-instruction allowance, including the result and
+neutral copies. The one-word loop therefore runs within `9*q+6` body instructions even though
+it performs no memory query. The SAME Backend code handles value seven/fuel two at width three
+within 24 instructions, preserving all dirty memory and frontier three. At width zero/fuel zero
+it returns zero within six instructions, without assuming that one fits a zero-width word.
+Both cases retain the full live-register frame.
+
+The scalar glue emitter is selected once from its fixed-time certificate; its scratch size
+remains a retained parameter, not a proved numeral. This example gives a numerical time bound
+without a fixed register-count claim. Argument installation and caller halt are separate charges.
+It does not identify the supplied code with a witness chosen from an arbitrary existential proof.
 
 ## Randomized instructions and exact laws
 

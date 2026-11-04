@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.SymbolicExec.Call
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.InputProgram
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Exec
 
@@ -35,36 +36,13 @@ theorem exec_entryHeader {W n F : ℕ} (x : Data 640) (hn : x.mem 1 = n) (hF : x
   have inj : Function.Injective bank := by
     intro i j h
     exact Fin.ext (congrArg (fun k : Fin 640 => k.val) h)
-  obtain ⟨s, hs, sm, sn, sF, sa, sb, sc, sf⟩ :=
-    CountPrime.exec_header (x.comap bank) hn hF hfit
-  let a := s.extend bank x
-  have ha : ExecWithin W (CountPrime.input.rename bank) x a 9 := hs.rename inj
-  have reg (i : Fin 128) : a.regs (bank i) = s.regs i := inj.extend_apply _ _ _
-  have an := (reg CountPrime.Reg.side).trans sn
-  have aF := (reg CountPrime.Reg.modulus).trans sF
-  have aa := (reg CountPrime.Reg.inputAB).trans sa
-  have ab := (reg CountPrime.Reg.inputBC).trans sb
-  have ac := (reg CountPrime.Reg.inputAC).trans sc
-  have af := (reg CountPrime.Reg.scratch).trans sf
-  let y := a.set Reg.side n |>.set Reg.bound F |>.set Reg.ab 3
-    |>.set Reg.bc (3 + n * n) |>.set Reg.ac (3 + 2 * (n * n))
-    |>.set Reg.free (3 + 3 * (n * n))
-  let side := bank CountPrime.Reg.side
-  let bound := bank CountPrime.Reg.modulus
-  let regAB := bank CountPrime.Reg.inputAB
-  let regBC := bank CountPrime.Reg.inputBC
-  let regAC := bank CountPrime.Reg.inputAC
-  let free := bank CountPrime.Reg.scratch
-  have hcopies : ExecWithin (B := .standard) W
-      (ram[ Reg.side ← side; Reg.bound ← bound; Reg.ab ← regAB; Reg.bc ← regBC;
-        Reg.ac ← regAC; Reg.free ← free ]) a y 6 := by
-    refine ⟨6, le_rfl, ?_⟩
-    ram_eval [y, an, aF, aa, ab, ac, af, side, bound, regAB, regBC, regAC, free,
-      Reg.side, Reg.bound, Reg.ab, Reg.bc, Reg.ac, Reg.free, CountPrime.Reg.side,
-      CountPrime.Reg.modulus, CountPrime.Reg.inputAB, CountPrime.Reg.inputBC,
-      CountPrime.Reg.inputAC, CountPrime.Reg.scratch, Fin.mk.injEq]
-  refine ⟨y, ha.seq hcopies, sm, ?_, ?_, ?_, ?_, ?_, ?_⟩
-  all_goals simp +decide [y, Reg.side, Reg.bound, Reg.ab, Reg.bc, Reg.ac, Reg.free]
+  unfold entryHeader
+  wram_exec
+  wram_call (CountPrime.exec_header (x.comap bank) hn hF hfit) renamed inj with
+    a ⟨⟨sm, an, aF, aa, ab, ac, af⟩, _⟩
+  wram_exec [an, aF, aa, ab, ac, af]
+  wram_simp [sm, Reg.side, Reg.bound, Reg.ab, Reg.bc, Reg.ac, Reg.free]
+  exact ⟨an, aF, aa, ab, ac, af⟩
 
 /-- Original scalar words and all original signed matrix words fit before the first instruction. -/
 theorem input_fits {W n F : ℕ} (values : List ℤ) (hlen : values.length = 3 * (n * n))

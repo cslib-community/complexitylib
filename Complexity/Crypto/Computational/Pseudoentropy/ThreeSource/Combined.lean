@@ -9,7 +9,6 @@ module
 
 public import Complexity.Crypto.Computational.GeneratorXor
 public import Complexity.Crypto.Computational.Pseudoentropy.ThreeSource.Amplification
-import Complexity.Tactic.PolyTime
 
 /-!
 # Combining the entropy-grid candidates
@@ -66,23 +65,14 @@ theorem isPolyTime_combinedGenerate {pair : SamplablePair} (saved : pair.SeedRea
       combinedGenerate input.1 (saved.length input.1) (observationBound input.1)
         (densityBound input.1) (common input.1) (saved.evaluate input.1) input.2)
       (encPair encUnary encBits) encBits := by
-  have hobservation := hobservation.tidy
-  have hdensity := hdensity.tidy
-  have hcommon := hcommon.tidy
-  refine .of_tidy ?_
-  have hlength := saved.length_isPolyTime.tidy
-  have hsize := (isPolyTime_size saved.length_isPolyTime (.of_tidy hdensity)).tidy
-  have houtput : ComputableTidilyInPolyTime
-      (fun n => size (saved.length n) (densityBound n) * common n + 1) encUnary encUnary := by
-    fun_prop
-  unfold combinedGenerate
-  refine (GeneratorXor.isPolyTime_generate (.of_tidy (by polytime)) (.of_tidy (by polytime))
-    (.of_tidy (houtput.comp (ComputableTidilyInPolyTime.fst encUnary encBits)))
-    (.of_tidy ?_) (.of_tidy (by polytime))).tidy
-  have hgenerate := (isPolyTime_amplifiedGenerate saved (.of_tidy hobservation) (.of_tidy
-    hdensity) (.of_tidy hcommon)).tidy
-  exact hgenerate.comp (g := fun input : ((ℕ × List Bool) × ℕ) × List Bool =>
-    ((input.1.1.1, input.1.2), input.2)) (by fun_prop)
+  have hsize := isPolyTime_size saved.length_isPolyTime hdensity
+  have houtput := (hsize.unary_mul' hcommon).unary_add' (.const 1)
+  have h1 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary) encBits
+  have hgen := ((h1.fst'.fst'.prod h1.snd').prod (.snd _ encBits)).trans
+    (isPolyTime_amplifiedGenerate saved hobservation hdensity hcommon)
+  exact GeneratorXor.isPolyTime_generate (hsize.comp (.fst encUnary encBits))
+    (hcommon.comp (.fst encUnary encBits)) (houtput.comp (.fst encUnary encBits))
+    hgen (.snd encUnary encBits)
 
 /-- The output is one bit longer than the total cost of all the independent seed blocks. -/
 theorem length_combinedGenerate (n sourceBits observationBound densityBound commonBits : ℕ)
@@ -106,22 +96,15 @@ theorem combinedGenerate_indistinguishableWithAdvice {pair : SamplablePair} {gap
       (fun n => uniformList (size (saved.length n) (densityBound n) * common n + 1)) := by
   obtain ⟨choose, hchoose, hsecure⟩ :=
     exists_secure_amplified_choice_withAdvice hpair saved bounds hgap
-  obtain ⟨hobservationPlain, hdensityPlain, hcommonPlain, _, _⟩ := bounds
-  have hobservation := hobservationPlain.tidy
-  have hdensity := hdensityPlain.tidy
-  have hcommon := hcommonPlain.tidy
-  have hlength := saved.length_isPolyTime.tidy
-  have hsize := (isPolyTime_size saved.length_isPolyTime (.of_tidy hdensity)).tidy
-  unfold combinedGenerate
-  refine GeneratorXor.indistinguishableWithAdvice (choose := choose)
+  obtain ⟨hobservation, hdensity, hcommon, _, _⟩ := bounds
+  have hsize := isPolyTime_size saved.length_isPolyTime hdensity
+  exact GeneratorXor.indistinguishableWithAdvice (choose := choose)
     (count := fun n => size (saved.length n) (densityBound n)) (seedBits := common)
     (outputBits := fun n => size (saved.length n) (densityBound n) * common n + 1)
     (generator := fun n index => amplifiedGenerate n (saved.length n) (observationBound n)
       (densityBound n) (common n) index (saved.evaluate n))
-    (.of_tidy (by polytime)) (.of_tidy hcommon) (.of_tidy (by polytime)) (.of_tidy ?_) hchoose
-      hsecure
-  exact (isPolyTime_amplifiedGenerate saved (.of_tidy hobservation) (.of_tidy hdensity) (.of_tidy
-    hcommon)).tidy
+    hsize hcommon ((hsize.unary_mul' hcommon).unary_add' (.const 1))
+    (isPolyTime_amplifiedGenerate saved hobservation hdensity hcommon) hchoose hsecure
 
 /-- One entropy-valid choice suffices for security of the complete, explicitly computed grid. -/
 theorem combinedGenerate_indistinguishable {pair : SamplablePair} {gap : ℕ → ℝ}

@@ -14,7 +14,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Width
 # Logarithmic physical width for the complete ordinary host
 
 The coefficient depends only on the fixed magnitude exponent and the concrete finite callee.
-It covers the native computation of the preprocessing word envelope, the disjoint matrix arena,
+It covers the native computation of the preprocessing word envelope, the live-frontier matrix arena,
 and the callee's actual logarithmic-width obligation. No width depends on input values.
 
 ## Main definitions
@@ -35,13 +35,6 @@ These coarse polynomial bounds are original.
 namespace Cslib.Algorithms.WordRAM.ThreeSum.Decision
 
 open Cslib.WordRAM
-
-/-- A constant for fixed exponent and concrete callee, independent of length and word width. -/
-def widthCoefficient (κ d : ℕ) : ℕ :=
-  1300 * κ + 7865 + (d + 1) * (envelopeExponent κ + 20) + 20
-
-/-- Positive logarithmic physical width, including empty inputs. -/
-def width (κ d n : ℕ) : ℕ := widthCoefficient κ d * Nat.clog 2 (n + 2)
 
 /-- This native width is positive for every length and exponent. -/
 theorem width_pos (κ d n : ℕ) : 0 < width κ d n := by
@@ -79,8 +72,8 @@ theorem margin_fits {κ d n w : ℕ} (hw : width κ d n ≤ w) :
     nlinarith
   exact hq.trans_lt (Nat.pow_lt_pow_right (by decide) (by omega))
 
-/-- Thirty-two times the reservation remains within the small extra polynomial margin. -/
-theorem reservation_margin (κ n : ℕ) :
+/-- Thirty-two times the value bound remains within the small extra polynomial margin. -/
+theorem envelope_margin (κ n : ℕ) :
     32 * (n + 2) ^ envelopeExponent κ ≤ (n + 2) ^ (envelopeExponent κ + 5) := by
   rw [pow_add]
   have h5 : 32 ≤ (n + 2) ^ 5 := by
@@ -88,9 +81,9 @@ theorem reservation_margin (κ n : ℕ) :
   simpa only [Nat.mul_comm] using Nat.mul_le_mul_left ((n + 2) ^ envelopeExponent κ) h5
 
 /-- The actual matrix arena, filler and side meet the finite callee's width guarantee. -/
-theorem callee_width {κ d n N w : ℕ} (hN : N < (n + 2) ^ envelopeExponent κ)
-    (hw : width κ d n ≤ w) :
-    d * Nat.clog 2 (2 * (n + 2) ^ envelopeExponent κ +
+theorem callee_width {κ d n N H w : ℕ} (hN : N < (n + 2) ^ envelopeExponent κ)
+    (hH : H ≤ (n + 2) ^ envelopeExponent κ) (hw : width κ d n ≤ w) :
+    d * Nat.clog 2 (H +
       3 * (Host.sideLength N * Host.sideLength N) +
       (2 * (n + 2) ^ envelopeExponent κ + 1) + Host.sideLength N + 2) ≤ w := by
   let V := (n + 2) ^ envelopeExponent κ
@@ -100,9 +93,9 @@ theorem callee_width {κ d n N w : ℕ} (hN : N < (n + 2) ^ envelopeExponent κ)
   have ht : Host.sideLength N ≤ N + 1 := by
     dsimp only [Host.sideLength]
     exact Nat.add_le_add_right (Nat.sqrt_le_self N) 1
-  have hsize : 2 * V + 3 * (Host.sideLength N * Host.sideLength N) +
+  have hsize : H + 3 * (Host.sideLength N * Host.sideLength N) +
       (2 * V + 1) + Host.sideLength N + 2 ≤ 32 * V := by omega
-  have hbound := hsize.trans (reservation_margin κ n)
+  have hbound := hsize.trans (envelope_margin κ n)
   have hpow : (n + 2) ^ (envelopeExponent κ + 5) ≤
       2 ^ ((envelopeExponent κ + 5) * L) := by
     simpa only [← pow_mul, Nat.mul_comm] using
@@ -129,7 +122,7 @@ theorem signed_margin {κ d n w : ℕ} (hw : width κ d n ≤ w) (z : ℤ)
   exact ⟨by omega, by rw [he]; omega, by rw [he]; omega⟩
 
 /-- The runtime exponent and every power-loop result fit without an extra input premise. -/
-theorem reservation_fits {κ d n w : ℕ} (hw : width κ d n ≤ w) :
+theorem envelope_fits {κ d n w : ℕ} (hw : width κ d n ≤ w) :
     Fits w ((n + 2) ^ envelopeExponent κ) ∧ Fits w (envelopeExponent κ) ∧
       Fits w (n + 2) ∧ Fits w 3 := by
   let V := (n + 2) ^ envelopeExponent κ
@@ -141,20 +134,20 @@ theorem reservation_fits {κ d n w : ℕ} (hw : width κ d n ≤ w) :
     exact (by simp : n + 2 = (n + 2) ^ 1) ▸
       Nat.pow_le_pow_right (by omega) (by dsimp only [envelopeExponent]; omega)
   have hf := (margin_fits hw).mono (show w - 3 ≤ w by omega)
-  have hm := reservation_margin κ n
+  have hm := envelope_margin κ n
   exact ⟨hf.of_le (by omega), hf.of_le (by omega),
     hf.of_le (by omega), hf.of_le (by omega)⟩
 
 /-- All local caller premises follow from the single global logarithmic threshold. -/
-theorem caller_fits {κ d n N w : ℕ} (hN : N < (n + 2) ^ envelopeExponent κ)
-    (hw : width κ d n ≤ w) :
+theorem caller_fits {κ d n N H w : ℕ} (hN : N < (n + 2) ^ envelopeExponent κ)
+    (hH : H ≤ (n + 2) ^ envelopeExponent κ) (hw : width κ d n ≤ w) :
     let V := (n + 2) ^ envelopeExponent κ
     (∀ s < 2 * Host.sideLength N, Cslib.GenericRAM.Signed.Fits (w - 2)
       ((2 * (Host.sideLength N * Host.sideLength N) + s + 1 : ℕ) : ℤ)) ∧
     Cslib.GenericRAM.Signed.Fits (w - 2) (2 * (V : ℤ) + 1) ∧
     Cslib.GenericRAM.Signed.Fits (w - 2) (-(2 * (V : ℤ) + 1)) ∧
     (∀ z : ℤ, |z| ≤ (V : ℤ) → Cslib.GenericRAM.Signed.Fits (w - 2) z) ∧
-    Fits w (2 * V + 3 * (Host.sideLength N * Host.sideLength N)) ∧
+    Fits w (H + 3 * (Host.sideLength N * Host.sideLength N)) ∧
     Fits w (4 * V + 2) ∧ Fits w (4 * N + 4) ∧ Fits w (2 * V) := by
   let V := (n + 2) ^ envelopeExponent κ
   have hV : 1 ≤ V := Nat.one_le_pow _ _ (by omega)
@@ -162,7 +155,7 @@ theorem caller_fits {κ d n N w : ℕ} (hN : N < (n + 2) ^ envelopeExponent κ)
   have ht : Host.sideLength N ≤ N + 1 := by
     dsimp only [Host.sideLength]
     exact Nat.add_le_add_right (Nat.sqrt_le_self N) 1
-  have hm := reservation_margin κ n
+  have hm := envelope_margin κ n
   have hf := (margin_fits hw).mono (show w - 3 ≤ w by omega)
   refine ⟨?_, ?_, ?_, ?_, hf.of_le (by omega), hf.of_le (by omega),
     hf.of_le (by omega), hf.of_le (by omega)⟩

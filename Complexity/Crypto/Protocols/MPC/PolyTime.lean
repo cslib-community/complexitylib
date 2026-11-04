@@ -661,15 +661,13 @@ private theorem computableTidilyInPolyTime_sumBlocksCode {α : Type} {enc : α �
     ComputableTidilyInPolyTime (fun a => sumBlocksCode m (coins a)) enc encCode := by
   induction m with
   | zero =>
-    have hcoinsBin : ComputableTidilyInPolyTime coins enc encNat := unary_to_binary.comp hcoins
-    have hw : ComputableTidilyInPolyTime (fun a => 0 * coins a) enc encNat := by fun_prop
+    have hcoinsBin := unary_to_binary.comp hcoins
+    have hw := binary_mul' (const 0) hcoinsBin
     exact computableTidilyInPolyTime_zeroBitStringCode hw hcoins
   | succ m ih =>
-    have hcoinsBin : ComputableTidilyInPolyTime coins enc encNat := unary_to_binary.comp hcoins
-    have hmCoinsUnary : ComputableTidilyInPolyTime (fun a => m * coins a) enc encUnary := by
-      polytime
-    have hsuccCoinsBin : ComputableTidilyInPolyTime (fun a => (m + 1) * coins a) enc encNat := by
-      fun_prop
+    have hcoinsBin := unary_to_binary.comp hcoins
+    have hmCoinsUnary := unary_mul.comp ((const m).prod hcoins)
+    have hsuccCoinsBin := binary_mul' (const (m + 1)) hcoinsBin
     have hrange₁ : ComputableTidilyInPolyTime
         (fun a => ([], List.range (m * coins a))) enc encCode := by
       have hr : ComputableTidilyInPolyTime
@@ -679,12 +677,9 @@ private theorem computableTidilyInPolyTime_sumBlocksCode {α : Type} {enc : α �
       exact (const []).prod hr
     have hrange₂ : ComputableTidilyInPolyTime
         (fun a => ([], (List.range (coins a)).map (fun c => c + coins a * m))) enc encCode := by
-      have hp1 : ComputableTidilyInPolyTime (fun p : α × ℕ => coins p.1)
-          (encPair enc encUnary) encNat := hcoinsBin.comp (fst enc encUnary)
-      have hp2 : ComputableTidilyInPolyTime (fun p : α × ℕ => p.2)
-          (encPair enc encUnary) encNat := unary_to_binary.comp (snd enc encUnary)
-      have hf : ComputableTidilyInPolyTime (fun p : α × ℕ => p.2 + coins p.1 * m)
-          (encPair enc encUnary) encNat := by fun_prop
+      have hp1 := hcoinsBin.comp (fst enc encUnary)
+      have hp2 := unary_to_binary.comp (snd enc encUnary)
+      have hf := binary_add' hp2 (binary_mul' hp1 (const m))
       exact (const []).prod (mapWith hf id' (range.comp hcoins))
     exact (computableInPolyTime_compCode (.of_tidy hsuccCoinsBin)
       (.of_tidy (computableTidilyInPolyTime_xorBitStringsCode hcoins))
@@ -697,18 +692,15 @@ private theorem computableTidilyInPolyTime_extractInputsCode {α : Type} {enc : 
     (hn : ComputableTidilyInPolyTime n enc encUnary)
     (hcoins : ComputableTidilyInPolyTime coins enc encUnary) :
     ComputableTidilyInPolyTime (fun a => extractInputsCode m (n a) (coins a)) enc encCode := by
-  have hnBin : ComputableTidilyInPolyTime n enc encNat := unary_to_binary.comp hn
-  have hcoinsBin : ComputableTidilyInPolyTime coins enc encNat := unary_to_binary.comp hcoins
-  have hmn : ComputableTidilyInPolyTime (fun a => m * n a) enc encUnary := by polytime
-  have hp_n : ComputableTidilyInPolyTime (fun p : α × ℕ => n p.1)
-      (encPair enc encUnary) encNat := hnBin.comp (fst enc encUnary)
-  have hp_coins : ComputableTidilyInPolyTime (fun p : α × ℕ => coins p.1)
-      (encPair enc encUnary) encNat := hcoinsBin.comp (fst enc encUnary)
-  have hp_idx : ComputableTidilyInPolyTime (fun p : α × ℕ => p.2)
-      (encPair enc encUnary) encNat := unary_to_binary.comp (snd enc encUnary)
-  have hf : ComputableTidilyInPolyTime
-      (fun p : α × ℕ => p.2 % n p.1 + (n p.1 + coins p.1) * (p.2 / n p.1))
-      (encPair enc encUnary) encNat := by fun_prop
+  have hnBin := unary_to_binary.comp hn
+  have hcoinsBin := unary_to_binary.comp hcoins
+  have hmn := unary_mul.comp ((const m).prod hn)
+  have hp_n := hnBin.comp (fst enc encUnary)
+  have hp_coins := hcoinsBin.comp (fst enc encUnary)
+  have hp_idx := unary_to_binary.comp (snd enc encUnary)
+  have hmod := ComputableInPolyTime.binary_mod.tidy.comp (hp_idx.prod hp_n)
+  have hdiv := ComputableInPolyTime.binary_div.tidy.comp (hp_idx.prod hp_n)
+  have hf := binary_add' hmod (binary_mul' (binary_add' hp_n hp_coins) hdiv)
   exact (const []).prod (mapWith hf id' (range.comp hmn))
 
 private theorem computableTidilyInPolyTime_extractCoinsCode {α : Type} {enc : α ↪ List Bool}
@@ -716,18 +708,15 @@ private theorem computableTidilyInPolyTime_extractCoinsCode {α : Type} {enc : �
     (hn : ComputableTidilyInPolyTime n enc encUnary)
     (hcoins : ComputableTidilyInPolyTime coins enc encUnary) :
     ComputableTidilyInPolyTime (fun a => extractCoinsCode m (n a) (coins a)) enc encCode := by
-  have hnBin : ComputableTidilyInPolyTime n enc encNat := unary_to_binary.comp hn
-  have hcoinsBin : ComputableTidilyInPolyTime coins enc encNat := unary_to_binary.comp hcoins
-  have hmc : ComputableTidilyInPolyTime (fun a => m * coins a) enc encUnary := by polytime
-  have hp_n : ComputableTidilyInPolyTime (fun p : α × ℕ => n p.1)
-      (encPair enc encUnary) encNat := hnBin.comp (fst enc encUnary)
-  have hp_coins : ComputableTidilyInPolyTime (fun p : α × ℕ => coins p.1)
-      (encPair enc encUnary) encNat := hcoinsBin.comp (fst enc encUnary)
-  have hp_idx : ComputableTidilyInPolyTime (fun p : α × ℕ => p.2)
-      (encPair enc encUnary) encNat := unary_to_binary.comp (snd enc encUnary)
-  have hf : ComputableTidilyInPolyTime
-      (fun p : α × ℕ => (n p.1 + p.2 % coins p.1) + (n p.1 + coins p.1) * (p.2 / coins p.1))
-      (encPair enc encUnary) encNat := by fun_prop
+  have hnBin := unary_to_binary.comp hn
+  have hcoinsBin := unary_to_binary.comp hcoins
+  have hmc := unary_mul.comp ((const m).prod hcoins)
+  have hp_n := hnBin.comp (fst enc encUnary)
+  have hp_coins := hcoinsBin.comp (fst enc encUnary)
+  have hp_idx := unary_to_binary.comp (snd enc encUnary)
+  have hmod := ComputableInPolyTime.binary_mod.tidy.comp (hp_idx.prod hp_coins)
+  have hdiv := ComputableInPolyTime.binary_div.tidy.comp (hp_idx.prod hp_coins)
+  have hf := binary_add' (binary_add' hp_n hmod) (binary_mul' (binary_add' hp_n hp_coins) hdiv)
   exact (const []).prod (mapWith hf id' (range.comp hmc))
 
 private theorem computableTidilyInPolyTime_xorPreludeCode {α : Type} {enc : α ↪ List Bool}
@@ -735,10 +724,9 @@ private theorem computableTidilyInPolyTime_xorPreludeCode {α : Type} {enc : α 
     (hn : ComputableTidilyInPolyTime n enc encUnary)
     (hcoins : ComputableTidilyInPolyTime coins enc encUnary) :
     ComputableTidilyInPolyTime (fun a => xorPreludeCode m (n a) (coins a)) enc encCode := by
-  have hnBin : ComputableTidilyInPolyTime n enc encNat := unary_to_binary.comp hn
-  have hcoinsBin : ComputableTidilyInPolyTime coins enc encNat := unary_to_binary.comp hcoins
-  have hwidth : ComputableTidilyInPolyTime (fun a => m * (n a + coins a)) enc encNat := by
-    fun_prop
+  have hnBin := unary_to_binary.comp hn
+  have hcoinsBin := unary_to_binary.comp hcoins
+  have hwidth := binary_mul' (const m) (binary_add' hnBin hcoinsBin)
   exact (computableInPolyTime_appendCode (.of_tidy hwidth)
     (.of_tidy (computableTidilyInPolyTime_extractInputsCode m hn hcoins))
     (computableInPolyTime_compCode (.of_tidy hwidth)
@@ -789,10 +777,6 @@ namespace PolyTimeRunner
 
 open Cslib.Circuits Cslib.Circuits.Boolean
 open Turing.MultiTapeTM ComputableTidilyInPolyTime
-
-/-- Binary encoding of `Fin m` via `Fin.val`. -/
-private def encFin (m : ℕ) : Fin m ↪ List Bool :=
-  Function.Embedding.trans ⟨Fin.val, Fin.val_injective⟩ encNat
 
 private theorem length_encList_tail_le {Item : Type} (enc : Item ↪ List Bool)
     (L : List Item) :
@@ -1049,19 +1033,6 @@ private theorem runWith_sample_comm {ι : Type} {spec : ι → Type} {α β γ S
   funext b
   rw [← runWith_sample_bind]
 
-/-- Replacing a private sample `d₁` with `f <$> d₂` when
-`ProbComp.eval d₁ = (ProbComp.eval d₂).map f` preserves `ProbOracleComp.runWith` under every
-stateful oracle. -/
-private theorem runWith_sample_congr {ι : Type} {spec : ι → Type} {α β γ State : Type}
-    (oracle : (i : ι) → StateT State PMF (spec i))
-    (d₁ : ProbComp α) (d₂ : ProbComp β) (f : β → α)
-    (heval : ProbComp.eval d₁ = (ProbComp.eval d₂).map f)
-    (k : α → ProbOracleComp spec γ) (s : State) :
-    ProbOracleComp.runWith oracle (ProbOracleComp.sample d₁ >>= k) s =
-      ProbOracleComp.runWith oracle (ProbOracleComp.sample d₂ >>= fun b => k (f b)) s := by
-  rw [runWith_sample_bind, runWith_sample_bind, heval, PMF.bind_map]
-  rfl
-
 /-! ### Section 4B: Word-Level Real and Simulated Runners and Their PPT Certificates -/
 
 /-- Any family of distributions `fun a => g a <$> ProbComp.uniform (ι → Bool)` over a finite input
@@ -1106,25 +1077,17 @@ private theorem computableTidilyInPolyTime_step1Wires {α : Type} {input : α �
       ComputableTidilyInPolyTime
         (fun a => step1SenderShare m (N a) (x_bits a s ++ r_bits a s) (c1_bits a s) i)
         input encBits := by
-    have hxr : ComputableTidilyInPolyTime (fun a => x_bits a s ++ r_bits a s) input encBits :=
-      bitsAppend ((pi_apply encBits s).comp hx) ((pi_apply encBits s).comp hr)
-    have hc1s : ComputableTidilyInPolyTime (fun a => c1_bits a s) input encBits :=
-      (pi_apply encBits s).comp hc1
-    have hbit : ComputableTidilyInPolyTime
-        (fun p : α × ℕ => (x_bits p.1 s ++ r_bits p.1 s).getD p.2 false)
-        (encPair input encUnary) encBool :=
-      bitsGetDWithInput (hxr.comp (fst _ _)) (snd _ _) false
-    have hrow : ComputableTidilyInPolyTime
-        (fun p : α × ℕ =>
-          Cslib.BitString.ofList (m - 1) (Cslib.BitString.listRow (m - 1) p.2 (c1_bits p.1 s)))
-        (encPair input encUnary) (encPi encBool) :=
-      (computableTidilyInPolyTime_ofList_fin (m - 1)).comp
-        (bitsRowWithInput (const (m - 1)) (snd _ _) (hc1s.comp (fst _ _)))
+    have hxr := bitsAppend ((pi_apply encBits s).comp hx) ((pi_apply encBits s).comp hr)
+    have hc1s := (pi_apply encBits s).comp hc1
+    have hbit := bitsGetDWithInput (hxr.comp (fst input encUnary)) (snd input encUnary) false
+    have hrow := (computableTidilyInPolyTime_ofList_fin (m - 1)).comp
+      (bitsRowWithInput (const (m - 1)) (snd input encUnary) (hc1s.comp (fst input encUnary)))
     have hcomp : ComputableTidilyInPolyTime
         (fun q : Bool × (Fin (m - 1) → Bool) => ProbComp.completeShares m q.1 q.2 i)
         (encPair encBool (encPi encBool)) encBool :=
       of_finite _
-    exact mapToBitsWithInput (range.comp hN) (hcomp.comp (hbit.prod hrow))
+    have hbody := hcomp.comp (hbit.prod hrow)
+    exact mapToBitsWithInput (range.comp hN) hbody
   simpa only [step1Wires, List.flatten_eq_flatMap, List.flatMap_map, id_eq] using
     bitsFlatten (mapConst (List.finRange m) fun s _ => hsender s)
 
@@ -1306,22 +1269,10 @@ private theorem computableTidilyInPolyTime_extractGateCoreInput (m : ℕ) :
   let eGate := Boolean.encGate
   let eAcc := encStep2Acc m
   let ePi := encPi (Index := Fin m) encBits
-  have hop : ComputableTidilyInPolyTime
-      (fun st : (Boolean.Op × List ℕ) × Step2Acc m => st.1.1)
-      (encPair eGate eAcc) Boolean.encOp :=
-    (fst Boolean.encOp (encList encNat)).comp (fst eGate eAcc)
-  have hwiresList : ComputableTidilyInPolyTime
-      (fun st : (Boolean.Op × List ℕ) × Step2Acc m => st.1.2)
-      (encPair eGate eAcc) (encList encNat) :=
-    (snd Boolean.encOp (encList encNat)).comp (fst eGate eAcc)
-  have hidx0 : ComputableTidilyInPolyTime
-      (fun st : (Boolean.Op × List ℕ) × Step2Acc m => st.1.2.getD 0 0)
-      (encPair eGate eAcc) encNat :=
-    (listGetD (encA := encNat) 0).comp (hwiresList.prod (const 0))
-  have hidx1 : ComputableTidilyInPolyTime
-      (fun st : (Boolean.Op × List ℕ) × Step2Acc m => st.1.2.getD 1 0)
-      (encPair eGate eAcc) encNat :=
-    (listGetD (encA := encNat) 0).comp (hwiresList.prod (const 1))
+  have hop := (fst Boolean.encOp (encList encNat)).comp (fst eGate eAcc)
+  have hwiresList := (snd Boolean.encOp (encList encNat)).comp (fst eGate eAcc)
+  have hidx0 := (listGetD (encA := encNat) 0).comp (hwiresList.prod (const 0))
+  have hidx1 := (listGetD (encA := encNat) 0).comp (hwiresList.prod (const 1))
   have hx : ComputableTidilyInPolyTime
       (fun st : (Boolean.Op × List ℕ) × Step2Acc m => fun s : Fin m =>
         ((st.2.1 s).getD (st.1.2.getD 0 0) false,
@@ -1331,8 +1282,8 @@ private theorem computableTidilyInPolyTime_extractGateCoreInput (m : ℕ) :
     have hws := (pi_apply encBits s).comp ((fst ePi (encPair ePi ePi)).comp (snd eGate eAcc))
     exact (listGetD_binary (encA := encBool) false hws hidx0).prod
       (listGetD_binary (encA := encBool) false hws hidx1)
-  exact (of_finite (encA := encPair Boolean.encOp (encPi (encPair encBool encBool))) id).comp
-    (hop.prod hx)
+  exact (of_finite (encA := encPair Boolean.encOp (encPi (encPair encBool encBool)))
+    (encB := encFinite (Boolean.Op × (Fin m → Bool × Bool))) id).comp (hop.prod hx)
 
 /-- Format the per-party Step 2 deltas `(w_delta, ot_c_delta, ot_a_delta)` for an `.and`
 (`isOr = false`) or `.or` (`isOr = true`) gate. -/
@@ -1448,7 +1399,9 @@ private theorem isOraclePPTOn_realGateStep (m : ℕ) [NeZero m] :
   dsimp only at hpost
   have hprep := (isOraclePPTOn_realGateCore m).preprocess
     (computableTidilyInPolyTime_extractGateCoreInput m)
-  exact hprep.map_with (f := fun p delta => appendStep2Acc m p.2 delta) hpost
+  have hres := hprep.map_with
+    (f := fun (p : (Boolean.Op × List ℕ) × Step2Acc m) delta => appendStep2Acc m p.2 delta) hpost
+  exact hres
 
 private theorem realGateStep_growth (m : ℕ) [NeZero m]
     (gate : Boolean.Op × List ℕ) (acc next : Step2Acc m)
@@ -1456,28 +1409,20 @@ private theorem realGateStep_growth (m : ℕ) [NeZero m]
     (encStep2Acc m next).length ≤
       (encStep2Acc m acc).length + m * (4 + 6 * (orderedPairs m).length) := by
   obtain ⟨delta, hdelta, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext
-  refine length_encStep2Acc_appendStep2Acc_le m acc delta ?_ ?_ ?_
-  all_goals
-    intro i
-    rcases hg : extractGateCoreInput m (gate, acc) with ⟨op, x⟩
-    rw [hg] at hdelta
-    cases op with
-    | const b =>
-      obtain rfl := OracleComp.eq_of_mem_supportWith_pure hdelta
-      simp
-    | not =>
-      obtain rfl := OracleComp.eq_of_mem_supportWith_pure hdelta
-      simp
-    | and =>
-      simp only [realGateCore] at hdelta
-      obtain ⟨tr, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hdelta
-      dsimp only [finishMulGate, realSharedMulPure]
-      first | (simp; done) | exact length_flatten_ite_singleton_le _ _ _
-    | or =>
-      simp only [realGateCore] at hdelta
-      obtain ⟨tr, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hdelta
-      dsimp only [finishMulGate, realSharedMulPure]
-      first | (simp; done) | exact length_flatten_ite_singleton_le _ _ _
+  rcases hg : extractGateCoreInput m (gate, acc) with ⟨op, x⟩
+  rw [hg] at hdelta
+  cases op with
+  | const b | not =>
+    obtain rfl := OracleComp.eq_of_mem_supportWith_pure hdelta
+    exact length_encStep2Acc_appendStep2Acc_le m acc _
+      (fun _ => by simp) (fun _ => by simp) (fun _ => by simp)
+  | and | or =>
+    simp only [realGateCore] at hdelta
+    obtain ⟨tr, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hdelta
+    exact length_encStep2Acc_appendStep2Acc_le m acc _
+      (fun _ => by simp [finishMulGate])
+      (fun _ => length_flatten_ite_singleton_le _ _ _)
+      (fun _ => length_flatten_ite_singleton_le _ _ _)
 
 /-- Single Step 2 gate transition in `simRunWord`. -/
 private noncomputable def simGateStep (m : ℕ) [NeZero m] (I : Finset (Fin m))
@@ -1497,8 +1442,10 @@ private theorem isPPTOn_simGateStep (m : ℕ) [NeZero m] (I : Finset (Fin m)) :
   dsimp only at hpost
   have hprep := (isPPTOn_simGateCore m I).preprocess
     (ComputableInPolyTime.of_tidy (computableTidilyInPolyTime_extractGateCoreInput m))
-  exact hprep.map_with
-    (f := fun p delta => appendStep2Acc m p.2 delta) (ComputableInPolyTime.of_tidy hpost)
+  have hres := hprep.map_with
+    (f := fun (p : (Boolean.Op × List ℕ) × Step2Acc m) delta => appendStep2Acc m p.2 delta)
+    (ComputableInPolyTime.of_tidy hpost)
+  exact hres
 
 private theorem simGateStep_growth (m : ℕ) [NeZero m] (I : Finset (Fin m))
     (gate : Boolean.Op × List ℕ) (acc next : Step2Acc m)
@@ -1507,30 +1454,22 @@ private theorem simGateStep_growth (m : ℕ) [NeZero m] (I : Finset (Fin m))
       (encStep2Acc m acc).length + m * (4 + 6 * (orderedPairs m).length) := by
   simp only [simGateStep, ProbComp.eval_map, PMF.mem_support_map_iff] at hnext
   obtain ⟨delta, hdelta, rfl⟩ := hnext
-  refine length_encStep2Acc_appendStep2Acc_le m acc delta ?_ ?_ ?_
-  all_goals
-    intro i
-    rcases hg : extractGateCoreInput m (gate, acc) with ⟨op, x⟩
-    rw [hg] at hdelta
-    cases op with
-    | const b =>
-      simp only [simGateCore, ProbComp.eval_pure, PMF.mem_support_pure_iff] at hdelta
-      subst hdelta; simp
-    | not =>
-      simp only [simGateCore, ProbComp.eval_pure, PMF.mem_support_pure_iff] at hdelta
-      subst hdelta; simp
-    | and =>
-      simp only [simGateCore, ProbComp.eval_bind, ProbComp.eval_map,
-        bind_pure_comp, PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at hdelta
-      obtain ⟨ans, _, r, _, rfl⟩ := hdelta
-      dsimp only [finishMulGate, simSharedMulPure]
-      first | (simp; done) | exact length_flatten_ite_singleton_le _ _ _
-    | or =>
-      simp only [simGateCore, ProbComp.eval_bind, ProbComp.eval_map,
-        bind_pure_comp, PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at hdelta
-      obtain ⟨ans, _, r, _, rfl⟩ := hdelta
-      dsimp only [finishMulGate, simSharedMulPure]
-      first | (simp; done) | exact length_flatten_ite_singleton_le _ _ _
+  rcases hg : extractGateCoreInput m (gate, acc) with ⟨op, x⟩
+  rw [hg] at hdelta
+  cases op with
+  | const b | not =>
+    simp only [simGateCore, ProbComp.eval_pure, PMF.mem_support_pure_iff] at hdelta
+    subst hdelta
+    exact length_encStep2Acc_appendStep2Acc_le m acc _
+      (fun _ => by simp) (fun _ => by simp) (fun _ => by simp)
+  | and | or =>
+    simp only [simGateCore, ProbComp.eval_bind, ProbComp.eval_map,
+      bind_pure_comp, PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at hdelta
+    obtain ⟨ans, _, r, _, rfl⟩ := hdelta
+    exact length_encStep2Acc_appendStep2Acc_le m acc _
+      (fun _ => by simp [finishMulGate])
+      (fun _ => length_flatten_ite_singleton_le _ _ _)
+      (fun _ => length_flatten_ite_singleton_le _ _ _)
 
 /-- Step 3 item `(r_party, a_shares, y_bit)` for output coordinate `(r_party, j)`. -/
 private abbrev OutItem (m : ℕ) : Type :=
@@ -1611,20 +1550,10 @@ private theorem computableTidilyInPolyTime_buildOutItems {α : Type} {input : α
       (fun a => buildOutItems m (k a) I (outputs a) (wires a) (y_bits a))
       input (encList (encFinite (OutItem m))) := by
   refine flatMapConst (List.finRange m) fun r _ => ?_
-  have hkBin : ComputableTidilyInPolyTime (fun p : α × ℕ => k p.1)
-      (encPair input encUnary) encNat :=
-    unary_to_binary.comp (hk.comp (fst input encUnary))
-  have hjBin : ComputableTidilyInPolyTime (fun p : α × ℕ => p.2)
-      (encPair input encUnary) encNat :=
-    unary_to_binary.comp (snd input encUnary)
-  have hidx : ComputableTidilyInPolyTime
-      (fun p : α × ℕ => r.val * k p.1 + p.2)
-      (encPair input encUnary) encNat := by
-    fun_prop
-  have hwIdx : ComputableTidilyInPolyTime
-      (fun p : α × ℕ => (outputs p.1).getD (r.val * k p.1 + p.2) 0)
-      (encPair input encUnary) encNat :=
-    listGetD_binary (encA := encNat) 0 (houtputs.comp (fst input encUnary)) hidx
+  have hkBin := unary_to_binary.comp (hk.comp (fst input encUnary))
+  have hjBin := unary_to_binary.comp (snd input encUnary)
+  have hidx := binary_add' (binary_mul' (const r.val) hkBin) hjBin
+  have hwIdx := listGetD_binary (encA := encNat) 0 (houtputs.comp (fst input encUnary)) hidx
   have ha_shares : ComputableTidilyInPolyTime
       (fun p : α × ℕ => fun s : Fin m =>
         ((wires p.1) s).getD ((outputs p.1).getD (r.val * k p.1 + p.2) 0) false)
@@ -1644,7 +1573,8 @@ private theorem computableTidilyInPolyTime_buildOutItems {α : Type} {input : α
       (fun q : (Fin m → Bool) × Bool => (r, q.1, q.2))
       (encPair (encPi encBool) encBool) (encFinite (OutItem m)) :=
     of_finite _
-  exact mapWithInput (range.comp hk) (hpack.comp (ha_shares.prod hy_bit))
+  have hbody := hpack.comp (ha_shares.prod hy_bit)
+  exact mapWithInput (range.comp hk) hbody
 
 /-- Format the per-party Step 3 deltas `(ot_c_delta, ot_a_delta, msg_delta, y_delta)` for recipient
 `r_party : Fin m`. -/
@@ -1727,7 +1657,9 @@ private theorem isOraclePPTOn_realOutStep (m : ℕ) [NeZero m] :
       ((comp' (snd eItem eAcc) (fst eIn eAcc)).prod (snd eIn eAcc))
   dsimp only at hpost
   have hprep := (isOraclePPTOn_realOutCore m).preprocess (fst eItem eAcc)
-  exact hprep.map_with (f := fun p delta => appendStep3Acc m p.2 delta) hpost
+  have hres := hprep.map_with
+    (f := fun (p : OutItem m × Step3Acc m) delta => appendStep3Acc m p.2 delta) hpost
+  exact hres
 
 private theorem realOutStep_growth (m : ℕ) [NeZero m]
     (item : OutItem m) (acc next : Step3Acc m)
@@ -1737,15 +1669,11 @@ private theorem realOutStep_growth (m : ℕ) [NeZero m]
   obtain ⟨delta, hdelta, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext
   simp only [realOutCore] at hdelta
   obtain ⟨tr, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hdelta
-  refine length_encStep3Acc_appendStep3Acc_le m acc _ ?_ ?_ ?_ ?_
-  · intro i
-    dsimp only [finishOutStep, realSharedMulPure]
-    exact length_flatten_ite_singleton_le _ _ _
-  · intro i
-    dsimp only [finishOutStep, realSharedMulPure]
-    exact length_flatten_ite_singleton_le _ _ _
-  · intro i; dsimp only [finishOutStep]; split_ifs <;> simp
-  · intro i; dsimp only [finishOutStep]; split_ifs <;> simp
+  exact length_encStep3Acc_appendStep3Acc_le m acc _
+    (fun _ => length_flatten_ite_singleton_le _ _ _)
+    (fun _ => length_flatten_ite_singleton_le _ _ _)
+    (fun _ => by dsimp only [finishOutStep]; split_ifs <;> simp)
+    (fun _ => by dsimp only [finishOutStep]; split_ifs <;> simp)
 
 /-- Single Step 3 output-coordinate transition in `simRunWord`. -/
 private noncomputable def simOutStep (m : ℕ) [NeZero m] (I : Finset (Fin m))
@@ -1766,7 +1694,8 @@ private theorem isPPTOn_simOutStep (m : ℕ) [NeZero m] (I : Finset (Fin m)) :
   dsimp only at hpost
   have hprep := (isPPTOn_simOutCore m I).preprocess (ComputableInPolyTime.of_tidy (fst eItem eAcc))
   have hres := hprep.map_with
-    (f := fun p delta => appendStep3Acc m p.2 delta) (ComputableInPolyTime.of_tidy hpost)
+    (f := fun (p : OutItem m × Step3Acc m) delta => appendStep3Acc m p.2 delta)
+    (ComputableInPolyTime.of_tidy hpost)
   exact hres
 
 private theorem simOutStep_growth (m : ℕ) [NeZero m] (I : Finset (Fin m))
@@ -1779,15 +1708,11 @@ private theorem simOutStep_growth (m : ℕ) [NeZero m] (I : Finset (Fin m))
   simp only [simOutCore, ProbComp.eval_bind, ProbComp.eval_map,
     bind_pure_comp, PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at hdelta
   obtain ⟨ans, _, r, _, rfl⟩ := hdelta
-  refine length_encStep3Acc_appendStep3Acc_le m acc _ ?_ ?_ ?_ ?_
-  · intro i
-    dsimp only [finishOutStep, simSharedMulPure]
-    exact length_flatten_ite_singleton_le _ _ _
-  · intro i
-    dsimp only [finishOutStep, simSharedMulPure]
-    exact length_flatten_ite_singleton_le _ _ _
-  · intro i; dsimp only [finishOutStep]; split_ifs <;> simp
-  · intro i; dsimp only [finishOutStep]; split_ifs <;> simp
+  exact length_encStep3Acc_appendStep3Acc_le m acc _
+    (fun _ => length_flatten_ite_singleton_le _ _ _)
+    (fun _ => length_flatten_ite_singleton_le _ _ _)
+    (fun _ => by dsimp only [finishOutStep]; split_ifs <;> simp)
+    (fun _ => by dsimp only [finishOutStep]; split_ifs <;> simp)
 
 /-- Assemble party `i`'s 7-tuple view word from its 7 `List Bool` components, matching
 `encGMWPartyView`. -/
@@ -1980,6 +1905,23 @@ private theorem listRow_extendCoalitionBits {m len : ℕ} (I : Finset (Fin m))
   · rfl
   · exact List.ofFn_const len false
 
+private theorem computableTidilyInPolyTime_familySimInput_bits
+    {α : Type} {encA : α ↪ List Bool} {m : ℕ} {n k len : α → ℕ} {I : Finset (Fin m)}
+    (v : (inp : FamilySimInput α m n k I) → (i : I) → BitString (len inp.1))
+    (hlen : ComputableTidilyInPolyTime len encA encUnary)
+    (hword : ComputableTidilyInPolyTime (fun inp => extendCoalitionBits I (v inp))
+      (encFamilySimInput encA m n k I) encBits) :
+    ComputableTidilyInPolyTime
+      (fun (inp : FamilySimInput α m n k I) (i : Fin m) =>
+        if hi : i ∈ I then List.ofFn (v inp ⟨i, hi⟩) else List.replicate (len inp.1) false)
+      (encFamilySimInput encA m n k I) (encPi encBits) := by
+  have ha := computableTidilyInPolyTime_familySimInput_fst
+    (encA := encA) (m := m) (n := n) (k := k) (I := I)
+  refine pi fun i => ?_
+  convert bitsRowWithInput (comp' hlen ha) (const i.val) hword using 1
+  funext inp
+  exact (listRow_extendCoalitionBits I (v inp) i).symm
+
 private theorem computableTidilyInPolyTime_familySimInput_x_bits
     {α : Type} {encA : α ↪ List Bool} {m : ℕ} {n k : α → ℕ} {I : Finset (Fin m)}
     (hn : ComputableTidilyInPolyTime n encA encUnary) :
@@ -1992,15 +1934,8 @@ private theorem computableTidilyInPolyTime_familySimInput_x_bits
         (inp.1, (extendCoalitionBits I inp.2.1, extendCoalitionBits I inp.2.2)))
       (encFamilySimInput encA m n k I) (encPair encA (encPair encBits encBits)) :=
     of_eq fun _ => rfl
-  have ha := computableTidilyInPolyTime_familySimInput_fst
-    (encA := encA) (m := m) (n := n) (k := k) (I := I)
-  have hword := comp' (fst encBits encBits)
-    (comp' (snd encA (encPair encBits encBits)) hid)
-  refine pi fun i => ?_
-  have hrow := bitsRowWithInput (comp' hn ha) (const i.val) hword
-  convert hrow using 1
-  funext inp
-  exact (listRow_extendCoalitionBits I inp.2.1 i).symm
+  exact computableTidilyInPolyTime_familySimInput_bits (fun inp => inp.2.1) hn
+    (comp' (fst encBits encBits) (comp' (snd encA (encPair encBits encBits)) hid))
 
 private theorem computableTidilyInPolyTime_familySimInput_y_bits
     {α : Type} {encA : α ↪ List Bool} {m : ℕ} {n k : α → ℕ} {I : Finset (Fin m)}
@@ -2014,15 +1949,8 @@ private theorem computableTidilyInPolyTime_familySimInput_y_bits
         (inp.1, (extendCoalitionBits I inp.2.1, extendCoalitionBits I inp.2.2)))
       (encFamilySimInput encA m n k I) (encPair encA (encPair encBits encBits)) :=
     of_eq fun _ => rfl
-  have ha := computableTidilyInPolyTime_familySimInput_fst
-    (encA := encA) (m := m) (n := n) (k := k) (I := I)
-  have hword := comp' (snd encBits encBits)
-    (comp' (snd encA (encPair encBits encBits)) hid)
-  refine pi fun i => ?_
-  have hrow := bitsRowWithInput (comp' hk ha) (const i.val) hword
-  convert hrow using 1
-  funext inp
-  exact (listRow_extendCoalitionBits I inp.2.2 i).symm
+  exact computableTidilyInPolyTime_familySimInput_bits (fun inp => inp.2.2) hk
+    (comp' (snd encBits encBits) (comp' (snd encA (encPair encBits encBits)) hid))
 
 /-- Word-level runner for `Protocol.runEncoded` applied to `gmwOT14RandomizedProtocol` on a
 polynomial-time circuit code family `D : α → List (Boolean.Op × List ℕ) × List ℕ`. -/
@@ -2260,7 +2188,8 @@ private def joinReceived2 {m : ℕ} :
     | oracle op parties =>
       cases op
       rcases c₁ with ⟨c_head, c_tail⟩
-      simp [joinSubCoins2, encOTSubCoins, ih c_tail, List.append_assoc]
+      dsimp only [List.cons_append, joinSubCoins2, encOTSubCoins]
+      rw [ih c_tail, List.append_assoc]
 
 @[simp] private theorem encOTOracleAnswers_joinReceived2 {m : ℕ}
     (sc₁ sc₂ : Schedule m (sharedMulSpec 2)) (i : Fin m)
@@ -2280,7 +2209,8 @@ private def joinReceived2 {m : ℕ} :
     | oracle op parties =>
       cases op
       rcases r₁ with ⟨r_head, r_tail⟩
-      simp [joinReceived2, encOTOracleAnswers, ih r_tail, List.append_assoc]
+      dsimp only [List.cons_append, joinReceived2, encOTOracleAnswers]
+      rw [ih r_tail, List.append_assoc]
 
 /-- Join a received transcript along `((pairsSchedule L).map (Round.embed parties) ++ rest₁)`
 with `b` into a transcript along `((pairsSchedule L).map (Round.embed parties) ++ rest₂)`. -/
@@ -2326,7 +2256,9 @@ private theorem splitPairsOTReceived_joinPairsOTReceived {m : ℕ} {α : Type}
   | nil => exact hk r b
   | cons _ L ih =>
     rcases r with ⟨r_head, r_tail⟩
-    simp [splitPairsOTReceived, joinPairsOTReceived, ih]
+    dsimp only [pairsSchedule, pairRound, List.map, List.append, Round.embed,
+      splitPairsOTReceived, joinPairsOTReceived] at ih ⊢
+    rw [ih r_tail]
 
 @[simp] private theorem splitOTMulCompose_joinOTMulCompose {m : ℕ}
     (a b : Schedule m (sharedMulSpec m)) (i : Fin m)
@@ -2340,7 +2272,8 @@ private theorem splitPairsOTReceived_joinPairsOTReceived {m : ℕ} {α : Type}
     cases r with
     | message _ _ _ =>
       rcases r_a with ⟨r_head, r_tail⟩
-      simp [splitOTMulCompose, joinOTMulCompose, ih]
+      dsimp only [List.cons_append, splitOTMulCompose, joinOTMulCompose]
+      rw [ih r_tail r_b]
     | oracle op parties =>
       cases op
       exact splitPairsOTReceived_joinPairsOTReceived parties i (orderedPairs m)
@@ -2560,11 +2493,18 @@ private theorem runOTSteps_append {m : ℕ} {State Mid Out : Fin m → Type}
         res₂.2.2)) := by
   induction steps₁ with
   | done output =>
-    simp [Steps.append, runOTSteps, runOTSteps_mapState, joinSubCoins2, joinReceived2]
+    dsimp only [Steps.append, runOTSteps, joinSubCoins2, joinReceived2]
+    simp [runOTSteps_mapState]
   | message send next ih =>
-    simp [Steps.append, runOTSteps, ih, joinSubCoins2, joinReceived2]
-  | oracle query next ih =>
-    simp [Steps.append, runOTSteps, ih, joinSubCoins2, joinReceived2]
+    dsimp only [Steps.append, List.append_eq, List.cons_append, runOTSteps,
+      joinSubCoins2, joinReceived2] at ih ⊢
+    simp only [bind_assoc, pure_bind, ih]
+  | @oracle _ _ op _ _ query next ih =>
+    cases op
+    dsimp only [Steps.append, List.append_eq, List.cons_append, runOTSteps,
+      joinSubCoins2, joinReceived2] at ih ⊢
+    simp only [bind_assoc, pure_bind, ih]
+    rfl
 
 private theorem eval_pi_twoPartyMulSampleCoins :
     ProbComp.eval (OracleComp.pi twoPartyMulProtocol.sampleCoins) =
@@ -2677,39 +2617,13 @@ private theorem runWith_sample_runEncoded_compose_twoPartyMul {m : ℕ} {OState 
               (send (st s₀)) i,
             res.2.1 i),
          res.2.2)
-    have hlhs :
-        (do
-          let c_ot ← ProbOracleComp.sample
-            (OracleComp.pi
-              (Composition.sampleSubCoins (fun _ : Unit => twoPartyMulProtocol)
-                (.message s₀ r₀ Msg :: rest)))
-          let recv ←
-            (Composition.Steps.compose (fun _ => twoPartyMulProtocol)
-              (Steps.message send next)).runEncoded (fun i => (st i, c_ot i))
-          return (c_ot, recv,
-            fun i =>
-              (Composition.Steps.compose (fun _ => twoPartyMulProtocol)
-                (Steps.message send next)).outputAt i (st i, c_ot i) (recv i))) =
-        f <$> (do
-          let c_ot ← ProbOracleComp.sample
-            (OracleComp.pi (Composition.sampleSubCoins (fun _ : Unit => twoPartyMulProtocol) rest))
-          let recv ← (Composition.Steps.compose (fun _ => twoPartyMulProtocol) next).runEncoded
-            (fun i => ((st i, Round.deliverMessage (send (st s₀)) i), c_ot i))
-          return (c_ot, recv,
-            fun i =>
-              (Composition.Steps.compose (fun _ => twoPartyMulProtocol) next).outputAt i
-                ((st i, Round.deliverMessage (send (st s₀)) i), c_ot i) (recv i))) := by
-      simp only [f, Composition.Steps.compose, Composition.sampleSubCoins, Steps.runEncoded,
-        Steps.runEncoded_mapState, Steps.outputAt, Steps.outputAt_mapState,
-        map_bind, Functor.map_map, bind_pure_comp]
-      rfl
-    have hrhs :
-        runOTSteps (Steps.message send next) st =
-          f <$> runOTSteps next (fun i => (st i, Round.deliverMessage (send (st s₀)) i)) := by
-      simp [f, runOTSteps]
-    rw [hlhs, hrhs, ProbOracleComp.runWith_map, ProbOracleComp.runWith_map]
-    exact congrArg (Prod.map f id <$> ·)
+    have hih := congrArg (PMF.map (Prod.map f id))
       (ih (fun i => (st i, Round.deliverMessage (send (st s₀)) i)) s)
+    rw [← ProbOracleComp.runWith_map, ← ProbOracleComp.runWith_map] at hih
+    simp only [f, Composition.Steps.compose, Composition.sampleSubCoins, Steps.runEncoded,
+      Steps.runEncoded_mapState, Steps.outputAt, Steps.outputAt_mapState, runOTSteps,
+      map_bind, Functor.map_map, bind_pure_comp] at hih ⊢
+    exact hih
   | @oracle _ Out' op parties rest query next ih =>
     cases op
     let q : Fin 2 → Bool × Bool := fun t => query t (st (parties t))
@@ -2945,28 +2859,29 @@ private theorem runSharedMulSteps_append {m : ℕ} {State Mid Out : Fin m → Ty
   induction steps₁ with
   | done output =>
     rw [Steps.append, runSharedMulSteps_mapState]
-    simp [runSharedMulSteps, Composition.Steps.compose, unitSubCoins, runOTSteps,
+    dsimp only [runSharedMulSteps, Composition.Steps.compose, unitSubCoins, runOTSteps,
       joinOTSubCoins, joinOTMulCompose]
+    simp
   | message send next ih =>
-    simp only [Steps.append, List.append_eq, List.cons_append, runSharedMulSteps,
-      Composition.Steps.compose, unitSubCoins, runOTSteps, runOTSteps_mapState,
-      joinOTSubCoins, joinOTMulCompose, bind_assoc, pure_bind] at ih ⊢
+    dsimp only [Steps.append, List.append_eq, List.cons_append, runSharedMulSteps,
+      Composition.Steps.compose, unitSubCoins, runOTSteps,
+      joinOTSubCoins, joinOTMulCompose] at ih ⊢
+    simp only [runOTSteps_mapState, bind_assoc, pure_bind] at ih ⊢
     rw [ih]
     simp
   | @oracle _ _ op parties rest query next ih =>
     cases op
-    simp only [Steps.append, List.append_eq, List.cons_append, runSharedMulSteps,
-      Composition.Steps.compose, unitSubCoins, runOTSteps_append, runOTSteps_mapState,
-      bind_assoc] at ih ⊢
+    dsimp only [Steps.append, List.append_eq, List.cons_append, runSharedMulSteps,
+      Composition.Steps.compose, unitSubCoins, joinOTSubCoins, joinOTMulCompose] at ih ⊢
+    simp only [runOTSteps_append, runOTSteps_mapState, bind_assoc] at ih ⊢
     conv_lhs => arg 1; rw [runOTSteps_embed]
     conv_rhs => arg 1; rw [runOTSteps_embed]
     simp only [bind_map_left]
     refine congrArg (Bind.bind _) (funext fun res_embed => ?_)
     have hih := ih steps₂ (fun i => (st i, (res_embed.2.2 i).2))
     rw [hih]
-    simp only [bind_assoc, pure_bind, joinOTSubCoins, joinOTMulCompose,
+    simp only [bind_assoc, pure_bind,
       joinPairsOTSubCoins_joinSubCoins2, joinPairsOTReceived_joinReceived2]
-    rfl
 
 /-- Deterministic coalition simulator expansion along `sc₂ : Schedule m (sharedMulSpec 2)`
 for `twoPartyMulSim`. -/
@@ -3028,10 +2943,16 @@ private theorem detExpandOTSim_append {m : ℕ} (I : Finset (Fin m))
     have hih := ih (fun j => (r₁ j).2)
     cases r with
     | message _ _ _ =>
-      simp [detExpandOTSim, Schedule.Received.append, joinSubCoins2, joinReceived2, hih]
+      dsimp only [List.cons_append, detExpandOTSim, Schedule.Received.append,
+        joinSubCoins2, joinReceived2]
+      rw [Prod.mk.injEq] at hih
+      rw [hih.1, hih.2]
     | oracle op parties =>
       cases op
-      simp [detExpandOTSim, Schedule.Received.append, joinSubCoins2, joinReceived2, hih]
+      dsimp only [List.cons_append, detExpandOTSim, Schedule.Received.append,
+        joinSubCoins2, joinReceived2]
+      rw [Prod.mk.injEq] at hih
+      rw [hih.1, hih.2]
 
 /-- Simulated subcoins and `ot14Spec` received transcripts along `steps : Steps State Out sc`
 for coalition `I`. -/
@@ -3150,51 +3071,20 @@ private theorem simSharedMulSteps_append {m : ℕ} [NeZero m] {State Mid Out : F
       cases r₁ i
       rfl
     rw [Steps.append, hr, simSharedMulSteps_mapState, simSharedMulSteps_done]
-    simp [Steps.outputAt, joinOTSubCoins, joinOTMulCompose]
+    dsimp only [Steps.outputAt, joinOTSubCoins, joinOTMulCompose]
+    simp
   | message send next ih =>
-    simp only [Steps.append, List.append_eq, List.cons_append, Schedule.Received.append,
-      simSharedMulSteps_message, ih, Steps.outputAt,
-      map_bind, bind_map_left, Functor.map_map, bind_pure_comp,
-      joinOTSubCoins, joinOTMulCompose]
+    dsimp only [Steps.append, List.append_eq, List.cons_append, Schedule.Received.append,
+      Steps.outputAt, joinOTSubCoins, joinOTMulCompose]
+    simp only [simSharedMulSteps_message, ih,
+      map_bind, bind_map_left, Functor.map_map, bind_pure_comp]
   | @oracle _ _ op parties rest query next ih =>
     cases op
-    simp only [Steps.append, List.append_eq, List.cons_append, Schedule.Received.append,
-      simSharedMulSteps_oracle, ih, Steps.outputAt,
+    dsimp only [Steps.append, List.append_eq, List.cons_append, Schedule.Received.append,
+      Steps.outputAt, joinOTSubCoins, joinOTMulCompose]
+    simp only [simSharedMulSteps_oracle, ih,
       bind_assoc, map_bind, bind_map_left, Functor.map_map, bind_pure_comp,
-      joinOTSubCoins, joinOTMulCompose,
       joinPairsOTSubCoins_joinSubCoins2, joinPairsOTReceived_joinReceived2]
-
-private theorem dropPairsOTReceived_joinPairsOTReceived {m : ℕ} {α : Type}
-    (parties : Fin m ↪ Fin m) (i : Fin m) (L : List (OrderedPair m))
-    {rest₁ rest₂ : Schedule m (sharedMulSpec 2)}
-    (k_join : (Schedule.compose (fun _ => twoPartyMulSchedule) rest₁).Received i → α →
-      (Schedule.compose (fun _ => twoPartyMulSchedule) rest₂).Received i)
-    (r : (Schedule.compose (fun _ => twoPartyMulSchedule)
-      ((pairsSchedule L).map (Round.embed parties) ++ rest₁)).Received i)
-    (b : α) :
-    dropPairsOTReceived parties i L (joinPairsOTReceived parties i L k_join r b) =
-      k_join (dropPairsOTReceived parties i L r) b := by
-  induction L with
-  | nil => rfl
-  | cons _ L ih =>
-    rcases r with ⟨r_head, r_tail⟩
-    dsimp only [pairsSchedule, pairRound, List.map, List.append, Round.embed,
-      dropPairsOTReceived, joinPairsOTReceived] at ih ⊢
-    exact ih r_tail
-
-private theorem encOutCoordsMsgReceived_joinOTMulCompose {m k : ℕ} (i : Fin m)
-    (coord : Fin m × Fin k) (L : List (Fin m × Fin k))
-    (r_ot : (otMulCompose [.oracle () (Function.Embedding.refl (Fin m))]).Received i)
-    (r_gather : (otMulCompose (GMWCircuit.gatherSchedule m coord.1 (List.finRange m))).Received i)
-    (r_L : (otMulCompose (GMWCircuit.outCoordsSchedule m L)).Received i) :
-    encOutCoordsMsgReceived i (coord :: L)
-      (joinOTMulCompose (GMWCircuit.coordSchedule m coord.1) (GMWCircuit.outCoordsSchedule m L) i
-        (joinOTMulCompose [.oracle () (Function.Embedding.refl (Fin m))]
-          (GMWCircuit.gatherSchedule m coord.1 (List.finRange m)) i r_ot r_gather)
-        r_L) =
-      encGatherOTReceived coord.1 i (List.finRange m) r_gather ++
-        encOutCoordsMsgReceived i L r_L := by
-  simp [encOutCoordsMsgReceived, joinOTMulCompose, dropPairsOTReceived_joinPairsOTReceived]
 
 /-! ### Sub-part 4C.2: One `sharedMulSpec m` Round & Step 1 Input Sharing -/
 
@@ -4119,22 +4009,14 @@ private theorem eval_simSharedMulSteps_progSteps {m n g : ℕ} [NeZero m] (I : F
     rw [Program.code_gate, foldlMList_append]
     simp only [foldlMList_cons, foldlMList_nil, bind_pure, map_bind,
       map_projStep2Acc_simGateStep]
-    have hbind :
-        ProbComp.eval (do
-          let acc ← foldlMList (simGateStep m I) p.code
-            (fun i => List.ofFn (st i), fun _ => [], fun _ => [])
-          simGateStepProj m I line.code (projStep2Acc I acc)) =
-        (ProbComp.eval (projStep2Acc I <$>
-          foldlMList (simGateStep m I) p.code
-            (fun i => List.ofFn (st i), fun _ => [], fun _ => []))).bind
-          (fun accI => ProbComp.eval (simGateStepProj m I line.code accI)) := by
-      simp only [ProbComp.eval_bind, ProbComp.eval_map, PMF.bind_map]
-      rfl
-    rw [hbind, ← ih]
+    have hih := congrArg
+      (PMF.bind · (fun accI => ProbComp.eval (simGateStepProj m I line.code accI))) ih.symm
+    simp only [ProbComp.eval_bind, ProbComp.eval_map, PMF.bind_map, Function.comp_def] at hih ⊢
+    rw [hih]
     simp only [GMWCircuit.progDist, GMWCircuit.progSteps, GMWCircuit.progSchedule,
       I.restrict_def, simSharedMulSteps_append, Steps.outputAt_append,
-      ProbComp.eval_bind, ProbComp.eval_map, bind_pure_comp,
-      PMF.bind_bind, PMF.bind_map, PMF.map_bind, PMF.map_comp, Function.comp_def]
+      ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure, bind_pure_comp,
+      PMF.bind_bind, PMF.bind_map, PMF.pure_bind, Function.comp_def]
     refine Cslib.Probability.PMF.bind_congr_on_support _ _ _ fun r_p hr_p => ?_
     have hw := hsum_p r_p hr_p
     rw [PMF.bind_comm]
@@ -4558,16 +4440,16 @@ private theorem runSharedMulSteps_singleCoordSteps {m k : ℕ} [NeZero m]
           encOutCoordsMsgReceived i L r_rest)) <$>
       realPairsCalls m
         (fun s => (a_table s coord.1 coord.2, GMWCircuit.constShare true s)) (orderedPairs m) := by
+  let fGather (i : Fin m) (st : (Fin m → BitString k) × BitString k) (sum_i : Bool) :=
+    (st.1, st.2 + if i = coord.1 then Pi.single coord.2 sum_i else 0)
+  have hgather := runSharedMulSteps_gatherStepsWith coord.1 fGather (List.finRange m)
   have happ := runSharedMulSteps_append_of_pure
     (Steps.oracle (spec := sharedMulSpec m)
       (State := fun _ : Fin m => (Fin m → BitString k) × BitString k)
       (op := ()) (parties := Function.Embedding.refl (Fin m))
       (fun s st => (st.1 coord.1 coord.2, GMWCircuit.constShare true s))
       (.done fun i st => (st.1, st.2 i rfl, (0 : Bool))))
-    (GMWCircuit.gatherStepsWith coord.1
-      (fun i (st : (Fin m → BitString k) × BitString k) sum_i =>
-        (st.1, st.2 + if i = coord.1 then Pi.single coord.2 sum_i else 0))
-      (List.finRange m))
+    (GMWCircuit.gatherStepsWith coord.1 fGather (List.finRange m))
     (fun _ i => unitOTGatherSubCoins coord.1 i (List.finRange m))
     (fun st₁ i => deliverOTGather coord.1 (fun s => (st₁ s).2.1) (List.finRange m) i)
     (fun st₁ i =>
@@ -4580,7 +4462,7 @@ private theorem runSharedMulSteps_singleCoordSteps {m k : ℕ} [NeZero m]
                  (GMWCircuit.deliverGather (spec := sharedMulSpec m) coord.1
                    (fun s => (st₁ s).2.1) (List.finRange m) i))
          else 0))
-    (runSharedMulSteps_gatherStepsWith coord.1 _ (List.finRange m))
+    hgather
     (fun i => (a_table i, y_acc i))
   have hmul := runSharedMulSteps_oracle_done
     (fun s (st : (Fin m → BitString k) × BitString k) =>
@@ -4931,29 +4813,31 @@ private theorem simSharedMulSteps_singleCoordSteps {m k : ℕ} [NeZero m]
         (if i.1 = coord.1 then List.ofFn ans else []) ++
           encOutCoordsMsgReceived i.1 L r_rest)) <$>
       ProbComp.uniform (OrderedPair m → Bool) := by
+  let fGather (i : Fin m) (st : (Fin m → BitString k) × BitString k) (sum_i : Bool) :=
+    (st.1, st.2 + if i = coord.1 then Pi.single coord.2 sum_i else 0)
+  let steps1 := Steps.oracle (spec := sharedMulSpec m)
+    (State := fun _ : Fin m => (Fin m → BitString k) × BitString k)
+    (op := ()) (parties := Function.Embedding.refl (Fin m))
+    (fun s st => (st.1 coord.1 coord.2, GMWCircuit.constShare true s))
+    (.done fun i st => (st.1, st.2 i rfl, (0 : Bool)))
+  let stI (i : I) := (a_table i.1, y_acc i.1)
+  let r1 (i : I) :
+      Schedule.Received
+        [.oracle (spec := sharedMulSpec m) () (Function.Embedding.refl (Fin m))] i.1 :=
+    (Round.deliverOracle (spec := sharedMulSpec m) (op := ())
+      (Function.Embedding.refl (Fin m)) ans i.1, ())
+  have hgather := simSharedMulSteps_gatherStepsWith I coord.1 fGather (List.finRange m)
+    (fun i => steps1.outputAt i.1 (stI i) (r1 i)) ans
   have happ :=
     simSharedMulSteps_append_of_pure (Out := fun _ : Fin m => (Fin m → BitString k) × BitString k) I
-      (Steps.oracle (spec := sharedMulSpec m)
-        (State := fun _ : Fin m => (Fin m → BitString k) × BitString k)
-        (op := ()) (parties := Function.Embedding.refl (Fin m))
-        (fun s st => (st.1 coord.1 coord.2, GMWCircuit.constShare true s))
-        (.done fun i st => (st.1, st.2 i rfl, (0 : Bool))))
-      (GMWCircuit.gatherStepsWith coord.1
-        (fun i (st : (Fin m → BitString k) × BitString k) sum_i =>
-          (st.1, st.2 + if i = coord.1 then Pi.single coord.2 sum_i else 0))
-        (List.finRange m))
-      (fun i => (a_table i.1, y_acc i.1))
-      (fun i =>
-        (Round.deliverOracle (spec := sharedMulSpec m) (op := ())
-          (Function.Embedding.refl (Fin m)) ans i.1, ()))
+      steps1
+      (GMWCircuit.gatherStepsWith coord.1 fGather (List.finRange m))
+      stI r1
       (fun i =>
         GMWCircuit.deliverGather (spec := sharedMulSpec m) coord.1 ans (List.finRange m) i.1)
       (fun i => unitOTGatherSubCoins coord.1 i.1 (List.finRange m))
       (fun i => deliverOTGather coord.1 ans (List.finRange m) i.1)
-      (simSharedMulSteps_gatherStepsWith I coord.1
-        (fun i (st : (Fin m → BitString k) × BitString k) sum_i =>
-          (st.1, st.2 + if i = coord.1 then Pi.single coord.2 sum_i else 0))
-        (List.finRange m) _ ans)
+      hgather
   have hmul := simSharedMulSteps_oracle_done I
     (fun s (st : (Fin m → BitString k) × BitString k) =>
       (st.1 coord.1 coord.2, GMWCircuit.constShare true s))
@@ -5389,55 +5273,6 @@ private theorem runSharedMulSteps_gmwCircuitSteps {m coins n k : ℕ} [NeZero m]
       (fun s => GMWCircuit.shareInputBits m (n + coins) (Fin.append (x s) (r s)) (c₁ s) i)
   have hst : (fun i => List.ofFn (st i)) = in_shares :=
     funext fun i => (step1Wires_ofFn x r c₁ i).symm
-  dsimp only [gmwCircuitProtocol]
-  rw [runSharedMulSteps_append, runSharedMulSteps_inputShareSteps, pure_bind,
-    runSharedMulSteps_append]
-  simp only [map_bind, bind_pure_comp, Functor.map_map]
-  have hstep3 (res₂ :
-      ((i : Fin m) →
-        Schedule.SubCoins (spec₁ := sharedMulSpec 2)
-          (fun _ : Unit => Fin.cases Bool (fun _ => Unit))
-          (Schedule.compose (fun _ => multiPartyMulSchedule m)
-            (GMWCircuit.progSchedule m D.program)) i) ×
-      ((i : Fin m) → (otMulCompose (GMWCircuit.progSchedule m D.program)).Received i) ×
-      ((i : Fin m) → Wire (m * (n + coins)) D.size → Bool)) :
-      ((fun res₃ =>
-        encodeViewsAndOutputs (encGMWPartyView m coins n k C) (fun _ y => List.ofFn y)
-          (fun i =>
-            ⟨x i,
-             (r i,
-              ((c₁ i, unitSubCoins (gmwCircuitSchedule m (n + coins) k D) i),
-               joinOTSubCoins (GMWCircuit.inputShareSchedule m (n + coins))
-                 (GMWCircuit.progSchedule m D.program ++ GMWCircuit.outputSchedule m k) i
-                 (unitOTMsgSubCoins i (GMWCircuit.allPairs m))
-                 (joinOTSubCoins (GMWCircuit.progSchedule m D.program)
-                   (GMWCircuit.outputSchedule m k) i (res₂.1 i) (res₃.1 i)))),
-             joinOTMulCompose (GMWCircuit.inputShareSchedule m (n + coins))
-               (GMWCircuit.progSchedule m D.program ++ GMWCircuit.outputSchedule m k) i
-               (receivedOTMsgScheduleOfInbox i
-                 (fun s =>
-                   GMWCircuit.shareInputBits m (n + coins) (Fin.append (x s) (r s)) (c₁ s) i)
-                 (GMWCircuit.allPairs m))
-               (joinOTMulCompose (GMWCircuit.progSchedule m D.program)
-                 (GMWCircuit.outputSchedule m k) i (res₂.2.1 i) (res₃.2.1 i))⟩,
-           res₃.2.2)) <$>
-        runSharedMulSteps (GMWCircuit.outputSteps m (n + coins) k D) res₂.2.2) =
-      (packRealOutput m x_bits r_bits c1_bits in_shares <$>
-        foldlMList (realOutStep m)
-          (buildOutItems m k Finset.univ D.code.2 (packStep2 res₂).1 (fun _ => []))
-          ((packStep2 res₂).2.1, (packStep2 res₂).2.2, fun _ => [], fun _ => [])) := by
-    dsimp only [packStep2]
-    rw [← runSharedMulSteps_outputSteps D res₂.2.2
-      (fun i => encOTSubCoins _ i (res₂.1 i))
-      (fun i => encOTOracleAnswers _ i (res₂.2.1 i)),
-      Functor.map_map]
-    refine congrArg (Functor.map (f := WordOracleComp Unit) · _) (funext fun res₃ => ?_)
-    dsimp only [Function.comp_def, encodeViewsAndOutputs, packRealOutput, packPartyViewWord]
-    congr 1
-    refine Prod.ext (List.map_congr_left fun i _ => ?_) rfl
-    rw [encGMWPartyView_of_join, ← hst]
-    rfl
-  simp_rw [hstep3]
   have hprog := congrArg
     (· >>= fun acc2 =>
       packRealOutput m x_bits r_bits c1_bits in_shares <$>
@@ -5446,7 +5281,23 @@ private theorem runSharedMulSteps_gmwCircuitSteps {m coins n k : ℕ} [NeZero m]
           (acc2.2.1, acc2.2.2, fun _ => [], fun _ => []))
     (runSharedMulSteps_progSteps D.program st)
   simp only [bind_map_left, hst] at hprog
-  exact hprog
+  dsimp only [gmwCircuitProtocol]
+  rw [runSharedMulSteps_append, runSharedMulSteps_inputShareSteps, pure_bind,
+    runSharedMulSteps_append]
+  simp only [map_bind, bind_pure_comp, Functor.map_map]
+  refine Eq.trans ?_ hprog
+  refine congrArg (_ >>= ·) (funext fun res₂ => ?_)
+  dsimp only [Function.comp_def, packStep2]
+  rw [← runSharedMulSteps_outputSteps D res₂.2.2
+    (fun i => encOTSubCoins _ i (res₂.1 i))
+    (fun i => encOTOracleAnswers _ i (res₂.2.1 i)),
+    Functor.map_map]
+  refine congrArg (Functor.map (f := WordOracleComp Unit) · _) (funext fun res₃ => ?_)
+  dsimp only [Function.comp_def, encodeViewsAndOutputs, packRealOutput, packPartyViewWord]
+  refine congrArg (encPair (encList encBits) (encList encBits))
+    (Prod.ext (List.map_congr_left fun i _ => ?_) rfl)
+  rw [encGMWPartyView_of_join, ← hst]
+  rfl
 
 private theorem eval_pi_gmwSampleCoins {m coins n k : ℕ} [NeZero m]
     (C : Circuit Boolean.signature (m * n + coins) (m * k)) :
@@ -5490,119 +5341,33 @@ private theorem runWith_realRunWord_eq_runEncoded {α : Type} (m : ℕ) [NeZero 
   rcases inp with ⟨a, x⟩
   let D := (C a).comp (xorPreludeCircuit m (n a) (coins a))
   dsimp only [Protocol.runEncoded]
-  rw [runWith_sample_congr_eq oracle _ _ (eval_pi_gmwSampleCoins (C a))]
-  have hsteps (rc : (Fin m → BitString (coins a)) ×
-      (Fin m → Fin (n a + coins a) → Fin (m - 1) → Bool)) (s₁ : OState) :
-      ProbOracleComp.runWith oracle (do
-        let c_ot ← ProbOracleComp.sample
-          (OracleComp.pi
-            (Composition.sampleSubCoins (fun _ : Unit => twoPartyMulProtocol)
-              (Schedule.compose (fun _ => multiPartyMulSchedule m)
-                (gmwCircuitSchedule m (n a + coins a) (k a) D))))
-        let recv ←
-          (gmwOT14RandomizedProtocol m (coins a) (n a) (k a) (C a)).steps.runEncoded
-            (fun i =>
-              (x i,
-               (rc.1 i,
-                ((rc.2 i, unitSubCoins (gmwCircuitSchedule m (n a + coins a) (k a) D) i), c_ot i))))
-        let views : (i : Fin m) → _ := fun i =>
-          ⟨x i,
-           (rc.1 i,
-            ((rc.2 i, unitSubCoins (gmwCircuitSchedule m (n a + coins a) (k a) D) i), c_ot i)),
-           recv i⟩
-        return encodeViewsAndOutputs (encGMWPartyView m (coins a) (n a) (k a) (C a))
-          (fun _ y => List.ofFn y)
-          (views,
-           fun i =>
-             (gmwOT14RandomizedProtocol m (coins a) (n a) (k a) (C a)).outputOfView i
-               (views i))) s₁ =
-      ProbOracleComp.runWith oracle (do
-        let x_bits : Fin m → List Bool := fun i => List.ofFn (x i)
-        let r_bits : Fin m → List Bool := fun i => List.ofFn (rc.1 i)
-        let c1_bits : Fin m → List Bool := fun i =>
-          List.ofFn
-            ((Cslib.BitString.blocksEquiv
-              (α := Bool) (m := n a + coins a) (k := m - 1)).symm (rc.2 i))
-        let in_shares := step1Wires m (n a + coins a) x_bits r_bits c1_bits
-        let acc2 ← foldlMList (realGateStep m) D.code.1 (in_shares, fun _ => [], fun _ => [])
-        let outItems := buildOutItems m (k a) Finset.univ D.code.2 acc2.1 (fun _ => [])
-        let acc3 ←
-          foldlMList (realOutStep m) outItems (acc2.2.1, acc2.2.2, fun _ => [], fun _ => [])
-        return packRealOutput m x_bits r_bits c1_bits in_shares acc3) s₁ := by
-    let steps₂ :=
-      ((gmwCircuitProtocol m (n a + coins a) (k a) D).compose
-        (fun _ => multiPartyMulProtocol m)).steps
-    let st₂ : (i : Fin m) → _ := fun i =>
-      (Fin.append (x i) (rc.1 i),
-       (rc.2 i, unitSubCoins (gmwCircuitSchedule m (n a + coins a) (k a) D) i))
-    have hlhs :
-        (do
-          let c_ot ← ProbOracleComp.sample
-            (OracleComp.pi
-              (Composition.sampleSubCoins (fun _ : Unit => twoPartyMulProtocol)
-                (Schedule.compose (fun _ => multiPartyMulSchedule m)
-                  (gmwCircuitSchedule m (n a + coins a) (k a) D))))
-          let recv ←
-            (gmwOT14RandomizedProtocol m (coins a) (n a) (k a) (C a)).steps.runEncoded
-              (fun i =>
-                (x i,
-                 (rc.1 i,
-                  ((rc.2 i, unitSubCoins (gmwCircuitSchedule m (n a + coins a) (k a) D) i),
-                   c_ot i))))
-          let views : (i : Fin m) → _ := fun i =>
-            ⟨x i,
-             (rc.1 i,
-              ((rc.2 i, unitSubCoins (gmwCircuitSchedule m (n a + coins a) (k a) D) i), c_ot i)),
-             recv i⟩
-          return encodeViewsAndOutputs (encGMWPartyView m (coins a) (n a) (k a) (C a))
-            (fun _ y => List.ofFn y)
-            (views,
-             fun i =>
-               (gmwOT14RandomizedProtocol m (coins a) (n a) (k a) (C a)).outputOfView i
-                 (views i))) =
-        ((fun res =>
-          encodeViewsAndOutputs (encGMWPartyView m (coins a) (n a) (k a) (C a))
-            (fun _ y => List.ofFn y)
-            (fun i =>
-              ⟨x i,
-               (rc.1 i,
-                ((rc.2 i, unitSubCoins (gmwCircuitSchedule m (n a + coins a) (k a) D) i), res.1 i)),
-               res.2.1 i⟩,
-             res.2.2)) <$>
-          (do
-            let c_ot ← ProbOracleComp.sample
-              (OracleComp.pi
-                (Composition.sampleSubCoins (fun _ : Unit => twoPartyMulProtocol)
-                  (Schedule.compose (fun _ => multiPartyMulSchedule m)
-                    (gmwCircuitSchedule m (n a + coins a) (k a) D))))
-            let recv ←
-              (Composition.Steps.compose (fun _ => twoPartyMulProtocol) steps₂).runEncoded
-                (fun i => (st₂ i, c_ot i))
-            return (c_ot, recv,
-              fun i =>
-                (Composition.Steps.compose (fun _ => twoPartyMulProtocol) steps₂).outputAt i
-                  (st₂ i, c_ot i) (recv i)))) := by
-      simp [D, steps₂, st₂, gmwOT14RandomizedProtocol, Protocol.randomizedWrapper,
-        Protocol.mapInput, gmwOT14Protocol, Protocol.compose, Protocol.outputOfView,
-        Steps.runEncoded_mapState, Steps.outputAt_mapState, map_bind, bind_pure_comp,
-        Functor.map_map]
-    have hrunOT :
-        runOTSteps steps₂ st₂ =
-          runSharedMulSteps (gmwCircuitProtocol m (n a + coins a) (k a) D).steps
-            (fun i => (Fin.append (x i) (rc.1 i), rc.2 i)) := by
-      simp [steps₂, st₂, Protocol.compose, runSharedMulSteps, runOTSteps_mapState]
-    rw [hlhs, ProbOracleComp.runWith_map,
-      runWith_sample_runEncoded_compose_twoPartyMul oracle steps₂ st₂ s₁,
-      hrunOT, ← ProbOracleComp.runWith_map]
-    exact congrArg (fun p => ProbOracleComp.runWith oracle p s₁)
-      (runSharedMulSteps_gmwCircuitSteps (C a) x rc.1 rc.2)
-  rw [realRunWord]
-  rw [runWith_sample_congr_eq oracle _ _ (eval_sampleTwoPiBits_real m (coins a) (n a + coins a))]
-  simp only [ProbOracleComp.sample_bind, ProbOracleComp.sample_pure,
-    bind_assoc, pure_bind, ProbOracleComp.runWith_bind]
+  rw [realRunWord,
+    runWith_sample_congr_eq oracle _ _ (eval_pi_gmwSampleCoins (C a)),
+    runWith_sample_congr_eq oracle _ _ (eval_sampleTwoPiBits_real m (coins a) (n a + coins a))]
+  simp only [ProbOracleComp.sample_bind, ProbOracleComp.sample_pure, bind_assoc, pure_bind]
+  rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_bind]
   refine congrArg (PMF.bind _) (funext fun ⟨r, s₁⟩ => ?_)
+  rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_bind]
   refine congrArg (PMF.bind _) (funext fun ⟨c₁, s₂⟩ => ?_)
-  simpa only [ProbOracleComp.runWith_bind] using (hsteps (r, c₁) s₂).symm
+  let steps₂ :=
+    ((gmwCircuitProtocol m (n a + coins a) (k a) D).compose
+      (fun _ => multiPartyMulProtocol m)).steps
+  let st₂ : (i : Fin m) → _ := fun i =>
+    (Fin.append (x i) (r i),
+     (c₁ i, unitSubCoins (gmwCircuitSchedule m (n a + coins a) (k a) D) i))
+  have hrunOT :
+      runOTSteps steps₂ st₂ =
+        runSharedMulSteps (gmwCircuitProtocol m (n a + coins a) (k a) D).steps
+          (fun i => (Fin.append (x i) (r i), c₁ i)) := by
+    simp [steps₂, st₂, Protocol.compose, runSharedMulSteps, runOTSteps_mapState]
+  rw [← runSharedMulSteps_gmwCircuitSteps (C a) x r c₁, ← hrunOT, ProbOracleComp.runWith_map,
+    ← runWith_sample_runEncoded_compose_twoPartyMul oracle steps₂ st₂ s₂,
+    ← ProbOracleComp.runWith_map]
+  refine congrArg (fun p => ProbOracleComp.runWith oracle p s₂) ?_
+  simp [D, steps₂, st₂, gmwOT14RandomizedProtocol, Protocol.randomizedWrapper,
+    Protocol.mapInput, gmwOT14Protocol, Protocol.compose, Protocol.outputOfView,
+    Steps.runEncoded_mapState, Steps.outputAt_mapState, map_bind, bind_pure_comp,
+    Functor.map_map]
 
 private noncomputable def simOutStepProj (m k : ℕ) [NeZero m] (I : Finset (Fin m))
     (outs : List ℕ) (y_bits : Fin m → List Bool)
@@ -5747,107 +5512,6 @@ private theorem eval_simSharedMulSteps_gmwCircuitSim {m coins n k : ℕ} [NeZero
     rw [hxr_i, GMWCircuit.outputAt_inputShareSteps]
   dsimp only [gmwCircuitProtocol]
   simp_rw [simSharedMulSteps_append, hstep1, pure_bind, hout1_at]
-  have henc (r_prog : (i : Fin m) → (GMWCircuit.progSchedule m D.program).Received i)
-      (sub₁ : (i : I) →
-        Schedule.SubCoins (spec₁ := sharedMulSpec 2)
-          (fun _ : Unit => Fin.cases Bool (fun _ => Unit))
-          (Schedule.compose (fun _ => multiPartyMulSchedule m)
-            (GMWCircuit.progSchedule m D.program)) i.1 ×
-        (otMulCompose (GMWCircuit.progSchedule m D.program)).Received i.1)
-      (sub₂ : (i : I) →
-        Schedule.SubCoins (spec₁ := sharedMulSpec 2)
-          (fun _ : Unit => Fin.cases Bool (fun _ => Unit))
-          (Schedule.compose (fun _ => multiPartyMulSchedule m)
-            (GMWCircuit.outputSchedule m k)) i.1 ×
-        (otMulCompose (GMWCircuit.outputSchedule m k)).Received i.1) :
-      encodeCoalitionView (encGMWPartyView m coins n k C) I
-        (fun i =>
-          ⟨xI i,
-           (rI i,
-            ((c₁ i.1, unitSubCoins (gmwCircuitSchedule m (n + coins) k D) i.1),
-             joinOTSubCoins (GMWCircuit.inputShareSchedule m (n + coins))
-               (GMWCircuit.progSchedule m D.program ++ GMWCircuit.outputSchedule m k) i.1
-               (unitOTMsgSubCoins i.1 (GMWCircuit.allPairs m))
-               (joinOTSubCoins (GMWCircuit.progSchedule m D.program)
-                 (GMWCircuit.outputSchedule m k) i.1 (sub₁ i).1 (sub₂ i).1))),
-           joinOTMulCompose (GMWCircuit.inputShareSchedule m (n + coins))
-             (GMWCircuit.progSchedule m D.program ++ GMWCircuit.outputSchedule m k) i.1
-             (receivedOTMsgScheduleOfInbox i.1
-               (fun s => GMWCircuit.shareInputBits m (n + coins) (xr s) (c₁ s) i.1)
-               (GMWCircuit.allPairs m))
-             (joinOTMulCompose (GMWCircuit.progSchedule m D.program)
-               (GMWCircuit.outputSchedule m k) i.1 (sub₁ i).2 (sub₂ i).2)⟩) =
-      packSimOutputFromCoalition I x_bits r_bits c1_bits in_shares
-        (fun i : I =>
-          (encOTSubCoins
-             (Schedule.compose (fun _ => multiPartyMulSchedule m)
-               (GMWCircuit.progSchedule m D.program))
-             i.1 (sub₁ i).1 ++
-             encOTSubCoins
-               (Schedule.compose (fun _ => multiPartyMulSchedule m)
-                 (GMWCircuit.outputSchedule m k))
-               i.1 (sub₂ i).1,
-           encOTOracleAnswers
-             (Schedule.compose (fun _ => multiPartyMulSchedule m)
-               (GMWCircuit.progSchedule m D.program))
-             i.1 (sub₁ i).2 ++
-             encOTOracleAnswers
-               (Schedule.compose (fun _ => multiPartyMulSchedule m)
-                 (GMWCircuit.outputSchedule m k))
-               i.1 (sub₂ i).2,
-           encOutCoordsMsgReceived i.1 (GMWCircuit.outCoords m k) (sub₂ i).2)) := by
-    dsimp only [encodeCoalitionView, packSimOutputFromCoalition]
-    refine congrArg (encList encBits) (List.map_congr_left fun i _ => ?_)
-    by_cases hi : i ∈ I
-    · simp only [hi, ↓reduceDIte]
-      dsimp only [D]
-      rw [encGMWPartyView_of_join, ← hst_in]
-      simp [x_bits, r_bits, c1_bits, st, hi]
-    · simp [hi]
-  have hstep3 (r_prog : (i : Fin m) → (GMWCircuit.progSchedule m D.program).Received i)
-      (sub₁ : (i : I) →
-        Schedule.SubCoins (spec₁ := sharedMulSpec 2)
-          (fun _ : Unit => Fin.cases Bool (fun _ => Unit))
-          (Schedule.compose (fun _ => multiPartyMulSchedule m)
-            (GMWCircuit.progSchedule m D.program)) i.1 ×
-        (otMulCompose (GMWCircuit.progSchedule m D.program)).Received i.1) :
-      ProbComp.eval (do
-        let r_out ← GMWCircuit.outputDist m k y
-        let sub₂ ← simSharedMulSteps I (GMWCircuit.outputSteps m (n + coins) k D)
-          (I.restrict fun s => (GMWCircuit.progSteps m D.program).outputAt s (st s) (r_prog s))
-          (I.restrict r_out)
-        return encodeCoalitionView (encGMWPartyView m coins n k C) I
-          (fun i =>
-            ⟨xI i,
-             (rI i,
-              ((c₁ i.1, unitSubCoins (gmwCircuitSchedule m (n + coins) k D) i.1),
-               joinOTSubCoins (GMWCircuit.inputShareSchedule m (n + coins))
-                 (GMWCircuit.progSchedule m D.program ++ GMWCircuit.outputSchedule m k) i.1
-                 (unitOTMsgSubCoins i.1 (GMWCircuit.allPairs m))
-                 (joinOTSubCoins (GMWCircuit.progSchedule m D.program)
-                   (GMWCircuit.outputSchedule m k) i.1 (sub₁ i).1 (sub₂ i).1))),
-             joinOTMulCompose (GMWCircuit.inputShareSchedule m (n + coins))
-               (GMWCircuit.progSchedule m D.program ++ GMWCircuit.outputSchedule m k) i.1
-               (receivedOTMsgScheduleOfInbox i.1
-                 (fun s => GMWCircuit.shareInputBits m (n + coins) (xr s) (c₁ s) i.1)
-                 (GMWCircuit.allPairs m))
-               (joinOTMulCompose (GMWCircuit.progSchedule m D.program)
-                 (GMWCircuit.outputSchedule m k) i.1 (sub₁ i).2 (sub₂ i).2)⟩)) =
-      ProbComp.eval
-        (packSimOutputFromCoalition I x_bits r_bits c1_bits in_shares <$>
-          simOutStepProj m k I D.code.2 y_bits
-            (fun s => wireToList ((GMWCircuit.progSteps m D.program).outputAt s (st s) (r_prog s)),
-             fun i : I => encOTSubCoins _ i.1 (sub₁ i).1,
-             fun i : I => encOTOracleAnswers _ i.1 (sub₁ i).2)) := by
-    simp_rw [henc r_prog sub₁]
-    have hout := congrArg
-      (PMF.map (packSimOutputFromCoalition I x_bits r_bits c1_bits in_shares))
-      (eval_simSharedMulSteps_outputSteps_proj I D
-        (fun s => (GMWCircuit.progSteps m D.program).outputAt s (st s) (r_prog s)) yI
-        (fun i : I => encOTSubCoins _ i.1 (sub₁ i).1)
-        (fun i : I => encOTOracleAnswers _ i.1 (sub₁ i).2))
-    simpa only [ProbComp.eval_bind, ProbComp.eval_map, bind_pure_comp,
-      PMF.map_bind, PMF.map_comp, Function.comp_def, y, y_bits] using hout
   have hprog := congrArg
     (fun d =>
       d.bind fun accI =>
@@ -5864,8 +5528,25 @@ private theorem eval_simSharedMulSteps_gmwCircuitSim {m coins n k : ℕ} [NeZero
   refine congrArg (PMF.bind _) (funext fun r_prog => ?_)
   rw [PMF.bind_comm]
   refine congrArg (PMF.bind _) (funext fun sub₁ => ?_)
-  simpa only [ProbComp.eval_bind, ProbComp.eval_map, bind_pure_comp,
-    PMF.map_comp, Function.comp_def, I.restrict_def] using hstep3 r_prog sub₁
+  have hout := congrArg
+    (PMF.map (packSimOutputFromCoalition I x_bits r_bits c1_bits in_shares))
+    (eval_simSharedMulSteps_outputSteps_proj I D
+      (fun s => (GMWCircuit.progSteps m D.program).outputAt s (st s) (r_prog s)) yI
+      (fun i : I => encOTSubCoins _ i.1 (sub₁ i).1)
+      (fun i : I => encOTOracleAnswers _ i.1 (sub₁ i).2))
+  simp only [ProbComp.eval_bind, ProbComp.eval_map, bind_pure_comp,
+    PMF.map_bind, PMF.map_comp, Function.comp_def, y, y_bits, I.restrict_def] at hout ⊢
+  refine Eq.trans ?_ hout
+  refine congrArg (PMF.bind _) (funext fun r_out => ?_)
+  refine congrArg (PMF.map · _) (funext fun sub₂ => ?_)
+  dsimp only [Function.comp_def, encodeCoalitionView, packSimOutputFromCoalition]
+  refine congrArg (encList encBits) (List.map_congr_left fun i _ => ?_)
+  by_cases hi : i ∈ I
+  · simp only [hi, ↓reduceDIte]
+    dsimp only [D]
+    rw [encGMWPartyView_of_join, ← hst_in]
+    simp [x_bits, r_bits, c1_bits, st, hi]
+  · simp [hi]
 
 private theorem eval_simRunWord_eq_gmwOT14RandomizedSim {α : Type} (m : ℕ) [NeZero m]
     (coins n k : α → ℕ)
@@ -5878,51 +5559,20 @@ private theorem eval_simRunWord_eq_gmwOT14RandomizedSim {α : Type} (m : ℕ) [N
       (encodeCoalitionView (encGMWPartyView m (coins inp.1) (n inp.1) (k inp.1) (C inp.1)) I <$>
         gmwOT14RandomizedSim m (coins inp.1) (n inp.1) (k inp.1) (C inp.1) I inp.2.1 inp.2.2) := by
   rcases inp with ⟨a, xI, yI⟩
-  let D := (C a).comp (xorPreludeCircuit m (n a) (coins a))
-  have hrhs (rI : (i : I) → BitString (coins a)) :
-      (encodeCoalitionView (encGMWPartyView m (coins a) (n a) (k a) (C a)) I <$>
-        ((fun v (i : I) =>
-          (⟨xI i, (rI i, (v i).coins), (v i).received⟩ :
-            PartyView (fun _ => BitString (n a)) _ _ i.1)) <$>
-          mapInputSim
-            (fun _ (xr : BitString (n a) × BitString (coins a)) => Fin.append xr.1 xr.2)
-            (gmwOT14Sim m (n a + coins a) (k a) D) I
-            (fun i => (xI i, rI i)) yI)) =
-      (do
-        let c₁ ← OracleComp.pi
-          (fun _ : Fin m => ProbComp.uniform (Fin (n a + coins a) → Fin (m - 1) → Bool))
-        let xr := GMWCircuit.extendByZero I (fun i => Fin.append (xI i) (rI i))
-        let r_prog ← GMWCircuit.progDist m (Cslib.BitString.blocksEquiv.symm xr) D.program
-        let r_out ← GMWCircuit.outputDist m (k a) (GMWCircuit.extendByZero I yI)
-        let sub ← simSharedMulSteps I (gmwCircuitProtocol m (n a + coins a) (k a) D).steps
-          (fun i => (Fin.append (xI i) (rI i), c₁ i.1))
-          (fun i =>
-            Schedule.Received.append (GMWCircuit.deliverInputShares xr c₁ i.1)
-              (Schedule.Received.append (r_prog i.1) (r_out i.1)))
-        return encodeCoalitionView (encGMWPartyView m (coins a) (n a) (k a) (C a)) I
-          (fun i =>
-            ⟨xI i,
-             (rI i,
-              ((c₁ i.1, unitSubCoins (gmwCircuitSchedule m (n a + coins a) (k a) D) i.1),
-               (sub i).1)),
-             (sub i).2⟩)) := by
-    simp only [mapInputSim, gmwOT14Sim, composeSim, gmwCircuitSim, GMWCircuit.gmwCircuitRealViews,
-      expandSimSteps_twoPartyMulSim, simSharedMulSteps,
-      bind_assoc, map_bind, bind_map_left, bind_pure_comp, map_pure, Functor.map_map,
-      I.restrict_def]
-    rfl
   rw [simRunWord, gmwOT14RandomizedSim, randomizedWrapperSim]
   simp only [ProbComp.eval_bind, ProbComp.eval_map, bind_pure_comp,
     eval_sampleTwoPiBits_sim m (coins a) (n a + coins a) I,
     PMF.bind_bind, PMF.bind_map, PMF.map_bind, PMF.map_comp, Function.comp_def]
   refine congrArg (PMF.bind _) (funext fun rI => ?_)
-  have hrhs_eval := congrArg ProbComp.eval (hrhs rI)
-  simp only [D, ProbComp.eval_bind, ProbComp.eval_map, bind_pure_comp,
-    PMF.map_comp, Function.comp_def] at hrhs_eval
-  rw [hrhs_eval]
-  refine congrArg (PMF.bind _) (funext fun c₁ => ?_)
-  simpa only [ProbComp.eval_bind, ProbComp.eval_map, bind_pure_comp] using
+  have hsim (c₁ : Fin m → Fin (n a + coins a) → Fin (m - 1) → Bool) :=
     (eval_simSharedMulSteps_gmwCircuitSim (C a) I xI yI rI c₁).symm
+  simp only [ProbComp.eval_bind, ProbComp.eval_map, bind_pure_comp] at hsim
+  simp_rw [hsim]
+  simp only [mapInputSim, gmwOT14Sim, composeSim, gmwCircuitSim, GMWCircuit.gmwCircuitRealViews,
+    expandSimSteps_twoPartyMulSim, simSharedMulSteps, ProbComp.eval_bind, ProbComp.eval_map,
+    bind_assoc, map_bind, bind_map_left, bind_pure_comp, map_pure, Functor.map_map,
+    PMF.map_bind, PMF.map_comp, Function.comp_def, I.restrict_def]
+  rfl
 
 end PolyTimeRunner
 

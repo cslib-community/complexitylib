@@ -122,8 +122,13 @@ theorem computableInPolyTime_rompelTruncWidth :
   unfold rompelTruncWidth
   have hlog : ComputableInPolyTime (Nat.log 2) encUnary encUnary :=
     ComputableInPolyTime.binary_log_two.comp ComputableInPolyTime.unary_to_binary
-  simpa only [Function.comp_def] using
-    ComputableInPolyTime.unary_add.comp (hlog.prod (ComputableInPolyTime.const 1))
+  exact ComputableInPolyTime.unary_add' hlog (ComputableInPolyTime.const 1)
+
+private theorem computableInPolyTime_rompelSeedWidth {α : Type} {encode : α ↪ List Bool}
+    {n m : α → ℕ} (hn : ComputableInPolyTime n encode encUnary)
+    (hm : ComputableInPolyTime m encode encUnary) :
+    ComputableInPolyTime (fun a => rompelSeedWidth (n a) (m a)) encode encUnary :=
+  ComputableInPolyTime.unary_add' (ComputableInPolyTime.unary_mul' hn hm) hn
 
 theorem lt_two_pow_rompelTruncWidth (n : ℕ) : n < 2 ^ rompelTruncWidth n := by
   simpa only [rompelTruncWidth] using Nat.lt_pow_succ_log_self (by decide : 1 < 2) n
@@ -412,10 +417,7 @@ theorem computableInPolyTime_rompelBaseEvalWord {g : List Bool → List Bool} {o
   have hn := ComputableInPolyTime.fst encUnary encBits
   have hz := ComputableInPolyTime.snd encUnary encBits
   have hm := houtLen.comp hn
-  have hsLen : ComputableInPolyTime (fun p : ℕ × List Bool => rompelSeedWidth p.1 (outLen p.1))
-      (encPair encUnary encBits) encUnary :=
-    ComputableInPolyTime.unary_add.comp
-      ((ComputableInPolyTime.unary_mul.comp (hn.prod hm)).prod hn)
+  have hsLen := computableInPolyTime_rompelSeedWidth hn hm
   have htLen := computableInPolyTime_rompelTruncWidth.comp hn
   have hx := ComputableInPolyTime.bitsRowWithInput hn (ComputableInPolyTime.const 0)
     (ComputableInPolyTime.bitsTakeWithInput hz hn)
@@ -429,7 +431,7 @@ theorem computableInPolyTime_rompelBaseEvalWord {g : List Bool → List Bool} {o
   have hfull := computableInPolyTime_wordAffineHash hn hseed hgx
   have hpad := ComputableInPolyTime.bitsAppend (ComputableInPolyTime.bitsTakeWithInput hfull hr)
     ((ComputableInPolyTime.bitsReplicate false).comp
-      (ComputableInPolyTime.unary_sub.comp (hn.prod hr)))
+      (ComputableInPolyTime.unary_sub' hn hr))
   exact ComputableInPolyTime.bitsAppend (ComputableInPolyTime.bitsAppend hseed hrBits) hpad
 
 /-! ### Accessible preimage sets $L_0$ and the OWF inverter reduction (Claim 4.6) -/
@@ -517,8 +519,35 @@ theorem isPPT_rompelBaseInverter {g : List Bool → List Bool} {outLen : ℕ →
     (houtLen : ComputableInPolyTime outLen encUnary encUnary)
     (hA : IsPPT encBits A) :
     IsPPT encBits (rompelBaseInverter g outLen A) := by
-  unfold rompelBaseInverter rompelSeedWidth
-  ppt
+  apply IsPPTOn.isPPT
+  have hn0 := ComputableInPolyTime.fst encUnary encBits
+  refine hn0.sampleList.bind_with ?_
+  have hp1 := ComputableInPolyTime.fst (encPair encUnary encBits) encBits
+  refine (computableInPolyTime_rompelTruncWidth.comp (hn0.comp hp1)).sampleList.bind_with ?_
+  have hp2 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encBits) encBits
+  have hn2 := hn0.comp (hp1.comp hp2)
+  refine (computableInPolyTime_rompelSeedWidth hn2 (houtLen.comp hn2)).sampleList.bind_with ?_
+  have hp3 := ComputableInPolyTime.fst
+    (encPair (encPair (encPair encUnary encBits) encBits) encBits) encBits
+  have hrawSeed := ComputableInPolyTime.snd
+    (encPair (encPair (encPair encUnary encBits) encBits) encBits) encBits
+  have hrBits := (ComputableInPolyTime.snd
+    (encPair (encPair encUnary encBits) encBits) encBits).comp hp3
+  have hp2' := hp2.comp hp3
+  have hx := (ComputableInPolyTime.snd (encPair encUnary encBits) encBits).comp hp2'
+  have hp1' := hp1.comp hp2'
+  have hn := hn0.comp hp1'
+  have hy := (ComputableInPolyTime.snd encUnary encBits).comp hp1'
+  have hm := houtLen.comp hn
+  have hseed := computableInPolyTime_wordAdjustAffineSeed hn hm
+    (ComputableInPolyTime.bitsBoundedBinaryValueWithInput hn hrBits) hy (hg.comp hx) hrawSeed
+  have hinp := ComputableInPolyTime.bitsAppend (ComputableInPolyTime.bitsAppend hx hseed) hrBits
+  refine (hA.on.preprocess (hn.prod hinp)).bind_with (ComputableInPolyTime.isPPTOn ?_)
+  have hp4 := ComputableInPolyTime.fst
+    (encPair (encPair (encPair (encPair encUnary encBits) encBits) encBits) encBits) encBits
+  have hraw := ComputableInPolyTime.snd
+    (encPair (encPair (encPair (encPair encUnary encBits) encBits) encBits) encBits) encBits
+  exact ComputableInPolyTime.bitsTakeWithInput hraw (hn.comp hp4)
 
 private def rompelTupleEquiv (n m : ℕ) :
     (BitString n × ((Fin n → BitString m) × BitString n) × BitString (rompelTruncWidth n)) ≃
@@ -590,6 +619,215 @@ private theorem uniformList_rompelBaseInLen_eq (n m : ℕ) :
   refine congrArg (PMF.uniformOfFintype _).map (funext fun t => ?_)
   exact ofFn_rompelBaseInputEquiv (eSwap t)
 
+private abbrev rompelEscPred (g : List Bool → List Bool) (outLen : ℕ → ℕ) (n : ℕ)
+    (z : RompelBaseInput n (outLen n)) (raw : List Bool) : Prop :=
+  raw.length = rompelBaseInLen n (outLen n) ∧
+    rompelBaseEvalWord g outLen n raw = rompelBaseEvalWord g outLen n z.packWord ∧
+    Cslib.BitString.ofList (rompelBaseInLen n (outLen n)) raw ∉
+      rompelAccessibleSet g outLen n (rompelBaseInputEquiv n (outLen n) z)
+
+open Classical in
+private theorem rompelBase_escape_succProbability_eq (g : List Bool → List Bool) (outLen : ℕ → ℕ)
+    (A : ℕ → List Bool → ProbComp (List Bool)) (n : ℕ) :
+    (Game.succProbability (ProbComp.eval
+      (accessibleEscapeGame (rompelBaseEvalWord g outLen)
+        (fun k => rompelBaseInLen k (outLen k)) (rompelAccessibleSet g outLen) A n)) : ℝ) =
+    ∑ x : BitString n, ((PMF.uniformOfFintype (BitString n)) x).toReal *
+      ∑ rBits : BitString (rompelTruncWidth n),
+        ((PMF.uniformOfFintype (BitString (rompelTruncWidth n))) rBits).toReal *
+        ∑ s : (Fin n → BitString (outLen n)) × BitString n,
+          ((PMF.uniformOfFintype ((Fin n → BitString (outLen n)) × BitString n)) s).toReal *
+            ((ProbComp.eval (A n (RompelBaseInput.mk x s.1 s.2 rBits).packWord) >>= fun raw =>
+              PMF.pure (decide (rompelEscPred g outLen n ⟨x, s.1, s.2, rBits⟩ raw)))
+                true).toReal := by
+  simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal, accessibleEscapeGame,
+    ProbComp.eval_bind, Cslib.BitString.eval_sampleList, ProbComp.eval_pure]
+  rw [uniformList_rompelBaseInLen_eq n (outLen n), PMF.bind_bind]
+  simp only [PMF.bind_apply_toReal]
+  refine sum_congr rfl fun x _ => congrArg (_ * ·) ?_
+  rw [PMF.bind_bind]
+  simp only [PMF.bind_apply_toReal]
+  refine sum_congr rfl fun rBits _ => congrArg (_ * ·) ?_
+  rw [PMF.bind_map, PMF.bind_apply_toReal]
+  refine sum_congr rfl fun s _ => congrArg (_ * ·) ?_
+  rfl
+
+private theorem rompelBase_inversion_succProbability_eq (g : List Bool → List Bool)
+    (outLen : ℕ → ℕ) (A : ℕ → List Bool → ProbComp (List Bool)) (n : ℕ)
+    (hlen : ∀ w : List Bool, w.length = n → (g w).length = outLen n) :
+    let gFin := wordToFinMap n (outLen n) g
+    4 * (Game.succProbability (ProbComp.eval
+      (inversionGame g (rompelBaseInverter g outLen A) n)) : ℝ) =
+    ∑ x : BitString n, ((PMF.uniformOfFintype (BitString n)) x).toReal *
+      ∑ rBits : BitString (rompelTruncWidth n),
+        ((PMF.uniformOfFintype (BitString (rompelTruncWidth n))) rBits).toReal *
+        ∑ y : BitString (outLen n),
+          4 * (((PMF.uniformOfFintype (BitString n)).map gFin) y).toReal *
+          ∑ s : (Fin n → BitString (outLen n)) × BitString n,
+            (((PMF.uniformOfFintype ((Fin n → BitString (outLen n)) × BitString n)).map
+              (adjustAffineSeed (Cslib.BitString.boundedBinaryValue n (List.ofFn rBits))
+                (y + gFin x))) s).toReal *
+            ((ProbComp.eval (A n (RompelBaseInput.mk x s.1 s.2 rBits).packWord) >>= fun raw =>
+              PMF.pure (g (raw.take n) == List.ofFn y)) true).toReal := by
+  intro gFin
+  have hg_ofFn (x : BitString n) : g (List.ofFn x) = List.ofFn (gFin x) :=
+    (Cslib.BitString.ofFn_ofList (hlen (List.ofFn x) List.length_ofFn)).symm
+  have heval :
+      ProbComp.eval (inversionGame g (rompelBaseInverter g outLen A) n) =
+      ((PMF.uniformOfFintype (BitString n)).map gFin).bind fun y =>
+        (PMF.uniformOfFintype (BitString n)).bind fun x =>
+          (PMF.uniformOfFintype (BitString (rompelTruncWidth n))).bind fun rBits =>
+            ((PMF.uniformOfFintype ((Fin n → BitString (outLen n)) × BitString n)).map
+              (adjustAffineSeed (Cslib.BitString.boundedBinaryValue n (List.ofFn rBits))
+                (y + gFin x))).bind fun s =>
+              ProbComp.eval (A n (RompelBaseInput.mk x s.1 s.2 rBits).packWord) >>=
+                fun raw => PMF.pure (g (raw.take n) == List.ofFn y) := by
+    simp only [inversionGame, rompelBaseInverter, ProbComp.eval_bind,
+      Cslib.BitString.eval_sampleList, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind,
+      PMF.monad_bind_eq_bind]
+    dsimp only [gFin]
+    rw [rompelSeedWidth, uniformList_seed_eq_map n (outLen n),
+      Cslib.BitString.uniformList, PMF.bind_map, PMF.bind_map]
+    refine PMF.bind_congr_on_support _ _ _ fun x₀ _ => ?_
+    dsimp only [Function.comp_def]
+    rw [PMF.bind_map]
+    refine PMF.bind_congr_on_support _ _ _ fun x _ => ?_
+    dsimp only [Function.comp_def]
+    rw [Cslib.BitString.uniformList, PMF.bind_map]
+    refine PMF.bind_congr_on_support _ _ _ fun rBits _ => ?_
+    dsimp only [Function.comp_def]
+    rw [PMF.bind_map, PMF.bind_map]
+    refine PMF.bind_congr_on_support _ _ _ fun sRaw _ => ?_
+    simp only [Function.comp_def, hg_ofFn, wordAdjustAffineSeed_eq_packAffineSeed,
+      Cslib.BitString.ofList_ofFn, unpackAffineSeed_packAffineSeed, RompelBaseInput.packWord,
+      Prod.mk.eta]
+    rfl
+  simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal, heval, PMF.bind_apply_toReal,
+    mul_sum]
+  rw [sum_comm]
+  refine sum_congr rfl fun x _ => ?_
+  rw [sum_comm]
+  refine sum_congr rfl fun rBits _ => sum_congr rfl fun y _ => sum_congr rfl fun s _ => ?_
+  ring
+
+open Classical in
+private theorem rompelBase_escape_seed_toReal_le (g : List Bool → List Bool) (outLen : ℕ → ℕ)
+    (A : ℕ → List Bool → ProbComp (List Bool)) (n : ℕ)
+    (hlen : ∀ w : List Bool, w.length = n → (g w).length = outLen n)
+    (x : BitString n) (rBits : BitString (rompelTruncWidth n))
+    (s : (Fin n → BitString (outLen n)) × BitString n) :
+    let gFin := wordToFinMap n (outLen n) g
+    let r := Cslib.BitString.boundedBinaryValue n (List.ofFn rBits)
+    ((ProbComp.eval (A n (RompelBaseInput.mk x s.1 s.2 rBits).packWord) >>= fun raw =>
+        PMF.pure (decide (rompelEscPred g outLen n ⟨x, s.1, s.2, rBits⟩ raw))) true).toReal ≤
+      ∑ y ∈ (rompelLightImages gFin (gFin x) r)ᶜ,
+        if prefixProj n r (Cslib.BitString.LinearHash.affineHash s y) =
+            prefixProj n r (Cslib.BitString.LinearHash.affineHash s (gFin x)) then
+          ((ProbComp.eval (A n (RompelBaseInput.mk x s.1 s.2 rBits).packWord) >>= fun raw =>
+            PMF.pure (g (raw.take n) == List.ofFn y)) true).toReal
+        else 0 := by
+  intro gFin r
+  let m := outLen n
+  have hg_ofFn (x' : BitString n) : g (List.ofFn x') = List.ofFn (gFin x') :=
+    (Cslib.BitString.ofFn_ofList (hlen (List.ofFn x') List.length_ofFn)).symm
+  let pA := ProbComp.eval (A n (RompelBaseInput.mk x s.1 s.2 rBits).packWord)
+  have hkey (raw : List Bool) (hesc : rompelEscPred g outLen n ⟨x, s.1, s.2, rBits⟩ raw) :
+      let y := gFin (RompelBaseInput.unpackWord n m raw).preimage
+      y ∈ (rompelLightImages gFin (gFin x) r)ᶜ ∧
+        prefixProj n r (Cslib.BitString.LinearHash.affineHash s y) =
+          prefixProj n r (Cslib.BitString.LinearHash.affineHash s (gFin x)) ∧
+        (g (raw.take n) == List.ofFn y) = true := by
+    rcases hesc with ⟨hlen_raw, heval_raw, hnot_acc⟩
+    let z : RompelBaseInput n m := ⟨x, s.1, s.2, rBits⟩
+    let z' := RompelBaseInput.unpackWord n m raw
+    have hpack' : z'.packWord = raw := RompelBaseInput.packWord_unpackWord hlen_raw
+    have hequiv' : rompelBaseInputEquiv n m z' =
+        Cslib.BitString.ofList (rompelBaseInLen n m) raw := by
+      simp [rompelBaseInputEquiv, hpack']
+    have hhash : rompelBaseHashFin gFin z' = rompelBaseHashFin gFin z := by
+      apply (rompelBaseOutputEquiv n m).injective
+      rw [← wordToFinMap_rompelBaseEvalWord, ← wordToFinMap_rompelBaseEvalWord,
+        wordToFinMap, wordToFinMap, ofFn_rompelBaseInputEquiv, ofFn_rompelBaseInputEquiv,
+        hpack', heval_raw]
+    have hcoll := (rompelBaseHashFin_eq_iff gFin z' z).mp hhash
+    have hz'_not : z' ∉ rompelAccessibleInputSet gFin z := by
+      intro hz'
+      apply hnot_acc
+      rw [← hequiv', rompelAccessibleSet, mem_map]
+      refine ⟨z', ?_, rfl⟩
+      dsimp only [gFin, m, z] at hz' ⊢
+      simpa only [(rompelBaseInputEquiv n (outLen n)).symm_apply_apply] using hz'
+    have hnot_light : gFin z'.preimage ∉ rompelLightImages gFin (gFin x) r := by
+      intro hlight
+      exact hz'_not (mem_filter.mpr ⟨mem_fiberSet _ _ _ |>.mpr hhash, hlight⟩)
+    have htake : raw.take n = List.ofFn z'.preimage := by
+      rw [← hpack', RompelBaseInput.packWord, List.append_assoc,
+        List.take_left' (List.length_ofFn (f := z'.preimage))]
+    exact ⟨mem_compl.mpr hnot_light, hcoll.2.2.2, by rw [htake, hg_ofFn, beq_self_eq_true]⟩
+  have hbind (P : List Bool → Prop) [DecidablePred P] :
+      ((pA >>= fun raw => PMF.pure (decide (P raw))) true).toReal =
+        ∑' raw, (pA raw).toReal * if P raw then 1 else 0 := by
+    rw [show (pA >>= _) = pA.bind _ from rfl, PMF.bind_apply_toReal_tsum]
+    refine tsum_congr fun raw => congrArg ((pA raw).toReal * ·) ?_
+    by_cases h : P raw <;> simp [h]
+  have hsum (P : List Bool → Prop) [DecidablePred P] :
+      Summable (fun raw => (pA raw).toReal * if P raw then 1 else 0) :=
+    Summable.of_nonneg_of_le (fun _ => by split_ifs <;> positivity)
+      (fun _ => by split_ifs <;> simp [ENNReal.toReal_nonneg]) (PMF.summable_toReal pA)
+  have hrhs : (∑ y ∈ (rompelLightImages gFin (gFin x) r)ᶜ,
+      if prefixProj n r (Cslib.BitString.LinearHash.affineHash s y) =
+          prefixProj n r (Cslib.BitString.LinearHash.affineHash s (gFin x)) then
+        ((pA >>= fun raw => PMF.pure (g (raw.take n) == List.ofFn y)) true).toReal
+      else 0) =
+      ∑' raw, ∑ y ∈ (rompelLightImages gFin (gFin x) r)ᶜ, (pA raw).toReal *
+        (if prefixProj n r (Cslib.BitString.LinearHash.affineHash s y) =
+            prefixProj n r (Cslib.BitString.LinearHash.affineHash s (gFin x)) ∧
+            g (raw.take n) = List.ofFn y then 1 else 0) := by
+    refine (sum_congr rfl fun y _ => ?_).trans (Summable.tsum_finsetSum (fun y _ => hsum _)).symm
+    split_ifs with hpref
+    · rw [show (pA >>= _) = pA.bind _ from rfl, PMF.bind_apply_toReal_tsum]
+      refine tsum_congr fun raw => congrArg ((pA raw).toReal * ·) ?_
+      by_cases hg_eq : g (raw.take n) = List.ofFn y <;> simp [hpref, hg_eq]
+    · symm; convert tsum_zero with raw; simp [hpref]
+  rw [hbind, hrhs]
+  refine Summable.tsum_le_tsum (fun raw => ?_) (hsum _) (summable_sum fun y _ => hsum _)
+  split_ifs with hesc
+  · obtain ⟨hy_mem, hpref, hg_eq⟩ := hkey raw hesc
+    rw [mul_one]
+    refine le_trans ?_ (single_le_sum (f := fun y => (pA raw).toReal *
+        (if prefixProj n r (Cslib.BitString.LinearHash.affineHash s y) =
+            prefixProj n r (Cslib.BitString.LinearHash.affineHash s (gFin x)) ∧
+            g (raw.take n) = List.ofFn y then 1 else 0))
+      (fun y _ => by split_ifs <;> positivity) hy_mem)
+    simp [hpref, beq_iff_eq.mp hg_eq]
+  · rw [mul_zero]
+    exact sum_nonneg fun y _ => by split_ifs <;> positivity
+
+private theorem rompelBase_heavy_image_mass_ge {n m r : ℕ} (hr_le : r ≤ n)
+    (gFin : BitString n → BitString m) {y₀ y : BitString m}
+    (hy_not : y ∉ rompelLightImages gFin y₀ r) :
+    (1 : ℝ) ≤ 4 * (((PMF.uniformOfFintype (BitString n)).map gFin) y).toReal * (2 : ℝ) ^ r := by
+  have hy_heavy : 2 ^ (n - r) < 4 * #(fiberSet gFin y) := by
+    by_contra! hle
+    exact hy_not (mem_insert_of_mem (mem_filter.mpr ⟨mem_univ y, by rwa [Nat.min_eq_left hr_le]⟩))
+  have hcard_sub : Nat.card {a : BitString n // gFin a = y} = #(fiberSet gFin y) :=
+    Nat.card_eq_fintype_card.trans (card_fiberSet_eq_fintypeCard gFin y).symm
+  rw [PMF.uniformOfFintype_map_apply, hcard_sub, ENNReal.toReal_div, ENNReal.toReal_natCast,
+    ENNReal.toReal_natCast]
+  have hcard_bs : (Fintype.card (BitString n) : ℝ) = (2 : ℝ) ^ n := by
+    simp only [Fintype.card_fun, Fintype.card_fin, Fintype.card_bool, Nat.cast_pow,
+      Nat.cast_ofNat]
+  have hpow_split : (2 : ℝ) ^ n = (2 : ℝ) ^ (n - r) * (2 : ℝ) ^ r := by
+    rw [← pow_add, Nat.sub_add_cancel hr_le]
+  have hheavy_real : (2 : ℝ) ^ (n - r) ≤ 4 * (#(fiberSet gFin y) : ℝ) := by
+    exact_mod_cast hy_heavy.le
+  rw [hcard_bs, hpow_split]
+  have hpos : (0 : ℝ) < (2 : ℝ) ^ (n - r) := by positivity
+  have hpos_r : (0 : ℝ) < (2 : ℝ) ^ r := by positivity
+  rw [show 4 * ((#(fiberSet gFin y) : ℝ) / ((2 : ℝ) ^ (n - r) * (2 : ℝ) ^ r)) * (2 : ℝ) ^ r =
+      (4 * (#(fiberSet gFin y) : ℝ)) / (2 : ℝ) ^ (n - r) by field_simp]
+  exact (one_le_div hpos).mpr hheavy_real
+
 /-- **`[HHRVW2020]`, Section 4.2, Claim 4.6 (pp. 21–22)**: for any fixed-output-length function `g`
 (`(g w).length = outLen n` on `n`-bit inputs) and any adversary `A`, escaping `rompelAccessibleSet`
 with a fixed-width colliding preimage occurs with probability at most `4` times the inversion
@@ -604,214 +842,19 @@ theorem rompelBase_escape_le_four_mul_inversion (g : List Bool → List Bool) (o
         (inversionGame g (rompelBaseInverter g outLen A) n)) : ℝ) := by
   let m := outLen n
   let gFin : BitString n → BitString m := wordToFinMap n m g
-  have hg_ofFn (x : BitString n) : g (List.ofFn x) = List.ofFn (gFin x) :=
-    (Cslib.BitString.ofFn_ofList (hlen (List.ofFn x) List.length_ofFn)).symm
-  let escPred (z : RompelBaseInput n m) (raw : List Bool) : Prop :=
-    raw.length = rompelBaseInLen n m ∧
-      rompelBaseEvalWord g outLen n raw = rompelBaseEvalWord g outLen n z.packWord ∧
-      Cslib.BitString.ofList (rompelBaseInLen n m) raw ∉
-        rompelAccessibleSet g outLen n (rompelBaseInputEquiv n m z)
   classical
-  have hesc_eq :
-      (Game.succProbability (ProbComp.eval
-        (accessibleEscapeGame (rompelBaseEvalWord g outLen)
-          (fun k => rompelBaseInLen k (outLen k)) (rompelAccessibleSet g outLen) A n)) : ℝ) =
-      ∑ x : BitString n, ((PMF.uniformOfFintype (BitString n)) x).toReal *
-        ∑ rBits : BitString (rompelTruncWidth n),
-          ((PMF.uniformOfFintype (BitString (rompelTruncWidth n))) rBits).toReal *
-          ∑ s : (Fin n → BitString m) × BitString n,
-            ((PMF.uniformOfFintype ((Fin n → BitString m) × BitString n)) s).toReal *
-              ((ProbComp.eval (A n (RompelBaseInput.mk x s.1 s.2 rBits).packWord) >>= fun raw =>
-                PMF.pure (decide (escPred ⟨x, s.1, s.2, rBits⟩ raw))) true).toReal := by
-    simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal, accessibleEscapeGame,
-      ProbComp.eval_bind, Cslib.BitString.eval_sampleList, ProbComp.eval_pure]
-    rw [uniformList_rompelBaseInLen_eq n m, PMF.bind_bind]
-    simp only [PMF.bind_apply_toReal]
-    refine sum_congr rfl fun x _ => congrArg (_ * ·) ?_
-    rw [PMF.bind_bind]
-    simp only [PMF.bind_apply_toReal]
-    refine sum_congr rfl fun rBits _ => congrArg (_ * ·) ?_
-    rw [PMF.bind_map, PMF.bind_apply_toReal]
-    refine sum_congr rfl fun s _ => congrArg (_ * ·) ?_
-    rfl
-  have hinv_eq :
-      (Game.succProbability (ProbComp.eval
-        (inversionGame g (rompelBaseInverter g outLen A) n)) : ℝ) =
-      ∑ y : BitString m, (((PMF.uniformOfFintype (BitString n)).map gFin) y).toReal *
-        ∑ x : BitString n, ((PMF.uniformOfFintype (BitString n)) x).toReal *
-          ∑ rBits : BitString (rompelTruncWidth n),
-            ((PMF.uniformOfFintype (BitString (rompelTruncWidth n))) rBits).toReal *
-            ∑ s : (Fin n → BitString m) × BitString n,
-              (((PMF.uniformOfFintype ((Fin n → BitString m) × BitString n)).map
-                (adjustAffineSeed (Cslib.BitString.boundedBinaryValue n (List.ofFn rBits))
-                  (y + gFin x))) s).toReal *
-              ((ProbComp.eval (A n (RompelBaseInput.mk x s.1 s.2 rBits).packWord) >>= fun raw =>
-                PMF.pure (g (raw.take n) == List.ofFn y)) true).toReal := by
-    have heval :
-        ProbComp.eval (inversionGame g (rompelBaseInverter g outLen A) n) =
-        ((PMF.uniformOfFintype (BitString n)).map gFin).bind fun y =>
-          (PMF.uniformOfFintype (BitString n)).bind fun x =>
-            (PMF.uniformOfFintype (BitString (rompelTruncWidth n))).bind fun rBits =>
-              ((PMF.uniformOfFintype ((Fin n → BitString m) × BitString n)).map
-                (adjustAffineSeed (Cslib.BitString.boundedBinaryValue n (List.ofFn rBits))
-                  (y + gFin x))).bind fun s =>
-                ProbComp.eval (A n (RompelBaseInput.mk x s.1 s.2 rBits).packWord) >>=
-                  fun raw => PMF.pure (g (raw.take n) == List.ofFn y) := by
-      simp only [inversionGame, rompelBaseInverter, ProbComp.eval_bind,
-        Cslib.BitString.eval_sampleList, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind,
-        PMF.monad_bind_eq_bind]
-      dsimp only [gFin, m]
-      rw [rompelSeedWidth, uniformList_seed_eq_map n (outLen n)]
-      rw [Cslib.BitString.uniformList, PMF.bind_map, PMF.bind_map]
-      refine PMF.bind_congr_on_support _ _ _ fun x₀ _ => ?_
-      dsimp only [Function.comp_def]
-      rw [PMF.bind_map]
-      refine PMF.bind_congr_on_support _ _ _ fun x _ => ?_
-      dsimp only [Function.comp_def]
-      rw [Cslib.BitString.uniformList, PMF.bind_map]
-      refine PMF.bind_congr_on_support _ _ _ fun rBits _ => ?_
-      dsimp only [Function.comp_def]
-      rw [PMF.bind_map, PMF.bind_map]
-      refine PMF.bind_congr_on_support _ _ _ fun sRaw _ => ?_
-      simp only [Function.comp_def, hg_ofFn, wordAdjustAffineSeed_eq_packAffineSeed,
-        Cslib.BitString.ofList_ofFn, unpackAffineSeed_packAffineSeed, RompelBaseInput.packWord,
-        Prod.mk.eta]
-      rfl
-    simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal, heval, PMF.bind_apply_toReal]
-  -- Swap the outer `y` sum into the inner sum over `x` and `rBits`:
-  have hinv_reord :
-      4 * (Game.succProbability (ProbComp.eval
-        (inversionGame g (rompelBaseInverter g outLen A) n)) : ℝ) =
-      ∑ x : BitString n, ((PMF.uniformOfFintype (BitString n)) x).toReal *
-        ∑ rBits : BitString (rompelTruncWidth n),
-          ((PMF.uniformOfFintype (BitString (rompelTruncWidth n))) rBits).toReal *
-          ∑ y : BitString m, 4 * (((PMF.uniformOfFintype (BitString n)).map gFin) y).toReal *
-            ∑ s : (Fin n → BitString m) × BitString n,
-              (((PMF.uniformOfFintype ((Fin n → BitString m) × BitString n)).map
-                (adjustAffineSeed (Cslib.BitString.boundedBinaryValue n (List.ofFn rBits))
-                  (y + gFin x))) s).toReal *
-              ((ProbComp.eval (A n (RompelBaseInput.mk x s.1 s.2 rBits).packWord) >>= fun raw =>
-                PMF.pure (g (raw.take n) == List.ofFn y)) true).toReal := by
-    rw [hinv_eq]
-    simp only [mul_sum]
-    rw [sum_comm]
-    refine sum_congr rfl fun x _ => ?_
-    rw [sum_comm]
-    refine sum_congr rfl fun rBits _ => ?_
-    refine sum_congr rfl fun y _ => ?_
-    refine sum_congr rfl fun s _ => ?_
-    ring
-  rw [hesc_eq, hinv_reord]
+  rw [rompelBase_escape_succProbability_eq g outLen A n,
+    rompelBase_inversion_succProbability_eq g outLen A n hlen]
   refine sum_le_sum fun x _ => mul_le_mul_of_nonneg_left ?_ ENNReal.toReal_nonneg
   refine sum_le_sum fun rBits _ => mul_le_mul_of_nonneg_left ?_ ENNReal.toReal_nonneg
   let r := Cslib.BitString.boundedBinaryValue n (List.ofFn rBits)
   have hr_le : r ≤ n := Cslib.BitString.boundedBinaryValue_le n _
   have hr_min : min r n = r := Nat.min_eq_left hr_le
-  -- Decompose each escaping output `raw` by its image `y = gFin (unpackWord raw).preimage`:
-  have hpointwise (s : (Fin n → BitString m) × BitString n) :
-      ((ProbComp.eval (A n (RompelBaseInput.mk x s.1 s.2 rBits).packWord) >>= fun raw =>
-          PMF.pure (decide (escPred ⟨x, s.1, s.2, rBits⟩ raw))) true).toReal ≤
-        ∑ y ∈ (rompelLightImages gFin (gFin x) r)ᶜ,
-          if prefixProj n r (Cslib.BitString.LinearHash.affineHash s y) =
-              prefixProj n r (Cslib.BitString.LinearHash.affineHash s (gFin x)) then
-            ((ProbComp.eval (A n (RompelBaseInput.mk x s.1 s.2 rBits).packWord) >>= fun raw =>
-              PMF.pure (g (raw.take n) == List.ofFn y)) true).toReal
-          else 0 := by
-    let pA := ProbComp.eval (A n (RompelBaseInput.mk x s.1 s.2 rBits).packWord)
-    have hkey (raw : List Bool) (hesc : escPred ⟨x, s.1, s.2, rBits⟩ raw) :
-        let y := gFin (RompelBaseInput.unpackWord n m raw).preimage
-        y ∈ (rompelLightImages gFin (gFin x) r)ᶜ ∧
-          prefixProj n r (Cslib.BitString.LinearHash.affineHash s y) =
-            prefixProj n r (Cslib.BitString.LinearHash.affineHash s (gFin x)) ∧
-          (g (raw.take n) == List.ofFn y) = true := by
-      rcases hesc with ⟨hlen_raw, heval_raw, hnot_acc⟩
-      let z : RompelBaseInput n m := ⟨x, s.1, s.2, rBits⟩
-      let z' := RompelBaseInput.unpackWord n m raw
-      have hpack' : z'.packWord = raw := RompelBaseInput.packWord_unpackWord hlen_raw
-      have hequiv' : rompelBaseInputEquiv n m z' =
-          Cslib.BitString.ofList (rompelBaseInLen n m) raw := by
-        simp [rompelBaseInputEquiv, hpack']
-      have hhash : rompelBaseHashFin gFin z' = rompelBaseHashFin gFin z := by
-        apply (rompelBaseOutputEquiv n m).injective
-        rw [← wordToFinMap_rompelBaseEvalWord, ← wordToFinMap_rompelBaseEvalWord,
-          wordToFinMap, wordToFinMap, ofFn_rompelBaseInputEquiv, ofFn_rompelBaseInputEquiv,
-          hpack', heval_raw]
-      have hcoll := (rompelBaseHashFin_eq_iff gFin z' z).mp hhash
-      have hz'_not : z' ∉ rompelAccessibleInputSet gFin z := by
-        intro hz'
-        apply hnot_acc
-        rw [← hequiv', rompelAccessibleSet, mem_map]
-        refine ⟨z', ?_, rfl⟩
-        dsimp only [gFin, m, z] at hz' ⊢
-        simpa only [(rompelBaseInputEquiv n (outLen n)).symm_apply_apply] using hz'
-      have hnot_light : gFin z'.preimage ∉ rompelLightImages gFin (gFin x) r := by
-        intro hlight
-        exact hz'_not (mem_filter.mpr ⟨mem_fiberSet _ _ _ |>.mpr hhash, hlight⟩)
-      have htake : raw.take n = List.ofFn z'.preimage := by
-        rw [← hpack', RompelBaseInput.packWord, List.append_assoc,
-          List.take_left' (List.length_ofFn (f := z'.preimage))]
-      exact ⟨mem_compl.mpr hnot_light, hcoll.2.2.2, by rw [htake, hg_ofFn, beq_self_eq_true]⟩
-    -- Use `tsum` linearity over `raw : List Bool`:
-    have hlhs : ((pA >>= fun raw => PMF.pure (decide (escPred ⟨x, s.1, s.2, rBits⟩ raw)))
-        true).toReal = ∑' raw, (pA raw).toReal *
-          (if escPred ⟨x, s.1, s.2, rBits⟩ raw then 1 else 0) := by
-      rw [show (pA >>= _) = pA.bind _ from rfl, PMF.bind_apply_toReal_tsum]
-      refine tsum_congr fun raw => congrArg ((pA raw).toReal * ·) ?_
-      by_cases h : escPred ⟨x, s.1, s.2, rBits⟩ raw <;> simp [h]
-    have hrhs : (∑ y ∈ (rompelLightImages gFin (gFin x) r)ᶜ,
-        if prefixProj n r (Cslib.BitString.LinearHash.affineHash s y) =
-            prefixProj n r (Cslib.BitString.LinearHash.affineHash s (gFin x)) then
-          ((pA >>= fun raw => PMF.pure (g (raw.take n) == List.ofFn y)) true).toReal
-        else 0) =
-        ∑ y ∈ (rompelLightImages gFin (gFin x) r)ᶜ,
-          ∑' raw, (pA raw).toReal *
-            (if prefixProj n r (Cslib.BitString.LinearHash.affineHash s y) =
-                prefixProj n r (Cslib.BitString.LinearHash.affineHash s (gFin x)) ∧
-                g (raw.take n) = List.ofFn y then 1 else 0) := by
-      refine sum_congr rfl fun y _ => ?_
-      split_ifs with hpref
-      · rw [show (pA >>= _) = pA.bind _ from rfl, PMF.bind_apply_toReal_tsum]
-        refine tsum_congr fun raw => congrArg ((pA raw).toReal * ·) ?_
-        by_cases hg_eq : g (raw.take n) = List.ofFn y <;> simp [hpref, hg_eq]
-      · symm
-        convert tsum_zero with raw
-        simp [hpref]
-    have hsum_tsum : (∑ y ∈ (rompelLightImages gFin (gFin x) r)ᶜ,
-        ∑' raw, (pA raw).toReal *
-          (if prefixProj n r (Cslib.BitString.LinearHash.affineHash s y) =
-              prefixProj n r (Cslib.BitString.LinearHash.affineHash s (gFin x)) ∧
-              g (raw.take n) = List.ofFn y then 1 else 0)) =
-        ∑' raw, ∑ y ∈ (rompelLightImages gFin (gFin x) r)ᶜ, (pA raw).toReal *
-          (if prefixProj n r (Cslib.BitString.LinearHash.affineHash s y) =
-              prefixProj n r (Cslib.BitString.LinearHash.affineHash s (gFin x)) ∧
-              g (raw.take n) = List.ofFn y then 1 else 0) := by
-      refine Summable.tsum_finsetSum (fun y _ => ?_) |>.symm
-      refine Summable.of_nonneg_of_le (fun raw => by split_ifs <;> positivity)
-        (fun raw => ?_) (PMF.summable_toReal pA)
-      split_ifs <;> simp [ENNReal.toReal_nonneg]
-    rw [hlhs, hrhs, hsum_tsum]
-    refine Summable.tsum_le_tsum (fun raw => ?_)
-      (Summable.of_nonneg_of_le (fun raw => by split_ifs <;> positivity)
-        (fun raw => by split_ifs <;> simp [ENNReal.toReal_nonneg]) (PMF.summable_toReal pA))
-      (summable_sum fun y _ => Summable.of_nonneg_of_le (fun raw => by split_ifs <;> positivity)
-        (fun raw => by split_ifs <;> simp [ENNReal.toReal_nonneg]) (PMF.summable_toReal pA))
-    by_cases hesc : escPred ⟨x, s.1, s.2, rBits⟩ raw
-    · obtain ⟨hy_mem, hpref, hg_eq⟩ := hkey raw hesc
-      simp only [hesc, ↓reduceIte, mul_one]
-      refine le_trans ?_ (single_le_sum (f := fun y => (pA raw).toReal *
-          (if prefixProj n r (Cslib.BitString.LinearHash.affineHash s y) =
-              prefixProj n r (Cslib.BitString.LinearHash.affineHash s (gFin x)) ∧
-              g (raw.take n) = List.ofFn y then 1 else 0))
-        (fun y _ => by split_ifs <;> positivity) hy_mem)
-      simp [hpref, beq_iff_eq.mp hg_eq]
-    · simp only [hesc, ↓reduceIte, mul_zero]
-      exact sum_nonneg fun y _ => by split_ifs <;> positivity
-  -- Sum `hpointwise` over `s` and swap the finite sums over `s` and `y`:
   calc
     (∑ s : (Fin n → BitString m) × BitString n,
         ((PMF.uniformOfFintype ((Fin n → BitString m) × BitString n)) s).toReal *
           ((ProbComp.eval (A n (RompelBaseInput.mk x s.1 s.2 rBits).packWord) >>= fun raw =>
-            PMF.pure (decide (escPred ⟨x, s.1, s.2, rBits⟩ raw))) true).toReal)
+            PMF.pure (decide (rompelEscPred g outLen n ⟨x, s.1, s.2, rBits⟩ raw))) true).toReal)
       ≤ ∑ s : (Fin n → BitString m) × BitString n,
           ((PMF.uniformOfFintype ((Fin n → BitString m) × BitString n)) s).toReal *
             ∑ y ∈ (rompelLightImages gFin (gFin x) r)ᶜ,
@@ -820,7 +863,8 @@ theorem rompelBase_escape_le_four_mul_inversion (g : List Bool → List Bool) (o
                 ((ProbComp.eval (A n (RompelBaseInput.mk x s.1 s.2 rBits).packWord) >>= fun raw =>
                   PMF.pure (g (raw.take n) == List.ofFn y)) true).toReal
               else 0 :=
-      sum_le_sum fun s _ => mul_le_mul_of_nonneg_left (hpointwise s) ENNReal.toReal_nonneg
+      sum_le_sum fun s _ => mul_le_mul_of_nonneg_left
+        (rompelBase_escape_seed_toReal_le g outLen A n hlen x rBits s) ENNReal.toReal_nonneg
     _ = ∑ y ∈ (rompelLightImages gFin (gFin x) r)ᶜ,
           ∑ s : (Fin n → BitString m) × BitString n,
             ((PMF.uniformOfFintype ((Fin n → BitString m) × BitString n)) s).toReal *
@@ -842,28 +886,7 @@ theorem rompelBase_escape_le_four_mul_inversion (g : List Bool → List Bool) (o
           (sum_nonneg fun s _ => mul_nonneg ENNReal.toReal_nonneg ENNReal.toReal_nonneg))
       have hy_not : y ∉ rompelLightImages gFin (gFin x) r := mem_compl.mp hy_compl
       have hy_ne : y ≠ gFin x := fun h => hy_not (h ▸ self_mem_rompelLightImages _ _ _)
-      have hy_heavy : 2 ^ (n - r) < 4 * #(fiberSet gFin y) := by
-        by_contra! hle
-        exact hy_not (mem_insert_of_mem (mem_filter.mpr ⟨mem_univ y, by rwa [hr_min]⟩))
-      have hmass_y : (1 : ℝ) ≤ 4 * (((PMF.uniformOfFintype (BitString n)).map gFin) y).toReal *
-          (2 : ℝ) ^ r := by
-        have hcard_sub : Nat.card {a : BitString n // gFin a = y} = #(fiberSet gFin y) :=
-          Nat.card_eq_fintype_card.trans (card_fiberSet_eq_fintypeCard gFin y).symm
-        rw [PMF.uniformOfFintype_map_apply, hcard_sub, ENNReal.toReal_div, ENNReal.toReal_natCast,
-          ENNReal.toReal_natCast]
-        have hcard_bs : (Fintype.card (BitString n) : ℝ) = (2 : ℝ) ^ n := by
-          simp only [Fintype.card_fun, Fintype.card_fin, Fintype.card_bool, Nat.cast_pow,
-            Nat.cast_ofNat]
-        have hpow_split : (2 : ℝ) ^ n = (2 : ℝ) ^ (n - r) * (2 : ℝ) ^ r := by
-          rw [← pow_add, Nat.sub_add_cancel hr_le]
-        have hheavy_real : (2 : ℝ) ^ (n - r) ≤ 4 * (#(fiberSet gFin y) : ℝ) := by
-          exact_mod_cast hy_heavy.le
-        rw [hcard_bs, hpow_split]
-        have hpos : (0 : ℝ) < (2 : ℝ) ^ (n - r) := by positivity
-        have hpos_r : (0 : ℝ) < (2 : ℝ) ^ r := by positivity
-        rw [show 4 * ((#(fiberSet gFin y) : ℝ) / ((2 : ℝ) ^ (n - r) * (2 : ℝ) ^ r)) * (2 : ℝ) ^ r =
-            (4 * (#(fiberSet gFin y) : ℝ)) / (2 : ℝ) ^ (n - r) by field_simp]
-        exact (one_le_div hpos).mpr hheavy_real
+      have hmass_y := rompelBase_heavy_image_mass_ge hr_le gFin hy_not
       rw [mul_sum]
       refine sum_le_sum fun s _ => ?_
       split_ifs with hpref
@@ -875,58 +898,35 @@ theorem rompelBase_escape_le_four_mul_inversion (g : List Bool → List Bool) (o
         have hp_nonneg : 0 ≤ ((ProbComp.eval (A n (RompelBaseInput.mk x s.1 s.2 rBits).packWord) >>=
             fun raw => PMF.pure (g (raw.take n) == List.ofFn y)) true).toReal :=
           ENNReal.toReal_nonneg
-        calc
-          ((PMF.uniformOfFintype ((Fin n → BitString m) × BitString n)) s).toReal *
-              ((ProbComp.eval (A n (RompelBaseInput.mk x s.1 s.2 rBits).packWord) >>=
-                fun raw => PMF.pure (g (raw.take n) == List.ofFn y)) true).toReal
-            = 1 * (((PMF.uniformOfFintype ((Fin n → BitString m) × BitString n)) s).toReal *
-                ((ProbComp.eval (A n (RompelBaseInput.mk x s.1 s.2 rBits).packWord) >>=
-                  fun raw => PMF.pure (g (raw.take n) == List.ofFn y)) true).toReal) :=
-              (one_mul _).symm
-          _ ≤ (4 * (((PMF.uniformOfFintype (BitString n)).map gFin) y).toReal * (2 : ℝ) ^ r) *
-                (((PMF.uniformOfFintype ((Fin n → BitString m) × BitString n)) s).toReal *
-                  ((ProbComp.eval (A n (RompelBaseInput.mk x s.1 s.2 rBits).packWord) >>=
-                    fun raw => PMF.pure (g (raw.take n) == List.ofFn y)) true).toReal) :=
-              mul_le_mul_of_nonneg_right hmass_y (mul_nonneg hu_nonneg hp_nonneg)
-          _ = _ := by ring
+        nlinarith [mul_le_mul_of_nonneg_right hmass_y (mul_nonneg hu_nonneg hp_nonneg)]
       · rw [mul_zero]
         exact mul_nonneg (mul_nonneg (by positivity) ENNReal.toReal_nonneg)
           (mul_nonneg ENNReal.toReal_nonneg ENNReal.toReal_nonneg)
 
 /-! ### Sibling isolation via 3-wise independence (Claim 4.8) and the entropy gap (Claim 4.7) -/
 
-private theorem card_prefixProj_pair_eq (n m r : ℕ) (hr : r ≤ n)
-    {y₁ y₂ : BitString m} (h₁₂ : y₁ ≠ y₂) :
-    (#(univ.filter fun s : (Fin n → BitString m) × BitString n =>
-        prefixProj n r (Cslib.BitString.LinearHash.affineHash s y₂) =
-          prefixProj n r (Cslib.BitString.LinearHash.affineHash s y₁)) : ℝ) =
-      (Fintype.card ((Fin n → BitString m) × BitString n) : ℝ) / (2 : ℝ) ^ r := by
+private theorem card_prefixProj_eq_of_restrict (n m r : ℕ) (hr : r ≤ n)
+    (T : Finset (BitString m)) (hT : #T ≤ 3) (y₁ : BitString m) (hy₁ : y₁ ∈ T)
+    (P : (Fin n → BitString m) × BitString n → Prop) [DecidablePred P]
+    (hP : ∀ s, P s ↔ ∀ u ∈ T,
+      prefixProj n r (Cslib.BitString.LinearHash.affineHash s u) =
+        prefixProj n r (Cslib.BitString.LinearHash.affineHash s y₁)) :
+    (#(univ.filter P) : ℝ) =
+      (2 : ℝ) ^ r * ((Fintype.card ((Fin n → BitString m) × BitString n) : ℝ) *
+        (((2 : ℝ) ^ r) ^ #T)⁻¹) := by
   let S := (Fin n → BitString m) × BitString n
   let H (s : S) (y : BitString m) := prefixProj n r (Cslib.BitString.LinearHash.affineHash s y)
   have hh := isThreeWiseIndependentHash_prefixProj_affineHash n m r
-  let T : Finset (BitString m) := {y₁, y₂}
-  have hT_card : #T = 2 := card_pair h₁₂
-  have hy₁ : y₁ ∈ T := by simp [T]
-  have hy₂ : y₂ ∈ T := by simp [T]
-  have hpart : (univ.filter fun s : S => H s y₂ = H s y₁) =
+  have hpart : univ.filter P =
       univ.biUnion fun w : BitString (min r n) =>
         univ.filter fun s : S => T.restrict (H s) = fun _ => w := by
     ext s
-    simp only [mem_filter, mem_univ, true_and, mem_biUnion]
-    constructor
-    · intro hs
-      refine ⟨H s y₁, funext fun ⟨u, hu⟩ => ?_⟩
-      dsimp only [restrict]
-      rcases mem_insert.mp hu with rfl | hu₂
-      · rfl
-      · rw [mem_singleton.mp hu₂, hs]
-    · rintro ⟨w, hw⟩
-      have hw₁ := congrFun hw ⟨y₁, hy₁⟩
-      have hw₂ := congrFun hw ⟨y₂, hy₂⟩
-      dsimp only [restrict] at hw₁ hw₂
-      exact hw₂.trans hw₁.symm
+    simp only [mem_filter, mem_univ, true_and, mem_biUnion, hP s]
+    refine ⟨fun hs => ⟨H s y₁, funext fun ⟨u, hu⟩ => hs u hu⟩,
+      fun ⟨w, hw⟩ u hu =>
+        (congrFun hw ⟨u, hu⟩).trans (congrFun hw ⟨y₁, hy₁⟩).symm⟩
   have hcard_part :
-      #(univ.filter fun s : S => H s y₂ = H s y₁) =
+      #(univ.filter P) =
         ∑ w : BitString (min r n),
           #(univ.filter fun s : S => T.restrict (H s) = fun _ => w) := by
     rw [hpart, Finset.card_biUnion]
@@ -940,19 +940,31 @@ private theorem card_prefixProj_pair_eq (n m r : ℕ) (hr : r ≤ n)
   rw [hcard_part, Nat.cast_sum]
   have hterm (w : BitString (min r n)) :
       (#(univ.filter fun s : S => T.restrict (H s) = fun _ => w) : ℝ) =
-        (Fintype.card S : ℝ) * (((2 : ℝ) ^ r) ^ 2)⁻¹ := by
+        (Fintype.card S : ℝ) * (((2 : ℝ) ^ r) ^ #T)⁻¹ := by
     have hd := congrArg (fun q : ℚ≥0 => (q : ℝ))
-      (hh.dens_filter_restrict_eq (T := T) (by omega) (fun _ => w))
+      (hh.dens_filter_restrict_eq (T := T) hT (fun _ => w))
     rw [Finset.dens_eq_card_div_card] at hd
-    simp only [NNRat.cast_div, NNRat.cast_natCast, NNRat.cast_inv, NNRat.cast_pow, hT_card,
+    simp only [NNRat.cast_div, NNRat.cast_natCast, NNRat.cast_inv, NNRat.cast_pow,
       Fintype.card_fun, Fintype.card_fin, Fintype.card_bool, Nat.min_eq_left hr, Nat.cast_pow,
       Nat.cast_ofNat] at hd
     have hS : (Fintype.card S : ℝ) ≠ 0 := by exact_mod_cast Fintype.card_ne_zero
     exact (div_eq_iff hS).mp hd |>.trans (mul_comm _ _)
   simp only [hterm, sum_const, card_univ, Fintype.card_fun, Fintype.card_fin, Fintype.card_bool,
     Nat.min_eq_left hr, nsmul_eq_mul, Nat.cast_pow, Nat.cast_ofNat]
+  rfl
+
+private theorem card_prefixProj_pair_eq (n m r : ℕ) (hr : r ≤ n)
+    {y₁ y₂ : BitString m} (h₁₂ : y₁ ≠ y₂) :
+    (#(univ.filter fun s : (Fin n → BitString m) × BitString n =>
+        prefixProj n r (Cslib.BitString.LinearHash.affineHash s y₂) =
+          prefixProj n r (Cslib.BitString.LinearHash.affineHash s y₁)) : ℝ) =
+      (Fintype.card ((Fin n → BitString m) × BitString n) : ℝ) / (2 : ℝ) ^ r := by
+  let T : Finset (BitString m) := {y₁, y₂}
+  have hT_card : #T = 2 := card_pair h₁₂
+  rw [card_prefixProj_eq_of_restrict n m r hr T (by omega) y₁ (by simp [T]) _
+    (fun s => by simp only [T, mem_insert, mem_singleton, forall_eq_or_imp, forall_eq, true_and]),
+    hT_card]
   have hpos : (2 : ℝ) ^ r ≠ 0 := by positivity
-  dsimp only [S]
   field_simp
 
 private theorem card_prefixProj_triple_eq (n m r : ℕ) (hr : r ≤ n)
@@ -963,64 +975,93 @@ private theorem card_prefixProj_triple_eq (n m r : ℕ) (hr : r ≤ n)
           prefixProj n r (Cslib.BitString.LinearHash.affineHash s y₃) =
             prefixProj n r (Cslib.BitString.LinearHash.affineHash s y₁)) : ℝ) =
       (Fintype.card ((Fin n → BitString m) × BitString n) : ℝ) / ((2 : ℝ) ^ r) ^ 2 := by
-  let S := (Fin n → BitString m) × BitString n
-  let H (s : S) (y : BitString m) := prefixProj n r (Cslib.BitString.LinearHash.affineHash s y)
-  have hh := isThreeWiseIndependentHash_prefixProj_affineHash n m r
   let T : Finset (BitString m) := {y₁, y₂, y₃}
   have hT_card : #T = 3 := by
     rw [card_insert_of_notMem (by simp [h₁₂, h₁₃]), card_pair h₂₃]
-  have hy₁ : y₁ ∈ T := by simp [T]
-  have hy₂ : y₂ ∈ T := by simp [T]
-  have hy₃ : y₃ ∈ T := by simp [T]
-  have hpart : (univ.filter fun s : S => H s y₂ = H s y₁ ∧ H s y₃ = H s y₁) =
-      univ.biUnion fun w : BitString (min r n) =>
-        univ.filter fun s : S => T.restrict (H s) = fun _ => w := by
-    ext s
-    simp only [mem_filter, mem_univ, true_and, mem_biUnion]
-    constructor
-    · rintro ⟨hs₂, hs₃⟩
-      refine ⟨H s y₁, funext fun ⟨u, hu⟩ => ?_⟩
-      dsimp only [restrict]
-      simp only [T, mem_insert, mem_singleton] at hu
-      rcases hu with rfl | rfl | rfl
-      · rfl
-      · exact hs₂
-      · exact hs₃
-    · rintro ⟨w, hw⟩
-      have hw₁ := congrFun hw ⟨y₁, hy₁⟩
-      have hw₂ := congrFun hw ⟨y₂, hy₂⟩
-      have hw₃ := congrFun hw ⟨y₃, hy₃⟩
-      dsimp only [restrict] at hw₁ hw₂ hw₃
-      exact ⟨hw₂.trans hw₁.symm, hw₃.trans hw₁.symm⟩
-  have hcard_part :
-      #(univ.filter fun s : S => H s y₂ = H s y₁ ∧ H s y₃ = H s y₁) =
-        ∑ w : BitString (min r n),
-          #(univ.filter fun s : S => T.restrict (H s) = fun _ => w) := by
-    rw [hpart, Finset.card_biUnion]
-    intro w₁ _ w₂ _ hw₁₂
-    dsimp only [Function.onFun]
-    rw [disjoint_left]
-    intro s hs₁ hs₂
-    have h1 := congrFun (mem_filter.mp hs₁).2 ⟨y₁, hy₁⟩
-    have h2 := congrFun (mem_filter.mp hs₂).2 ⟨y₁, hy₁⟩
-    exact hw₁₂ (h1.symm.trans h2)
-  rw [hcard_part, Nat.cast_sum]
-  have hterm (w : BitString (min r n)) :
-      (#(univ.filter fun s : S => T.restrict (H s) = fun _ => w) : ℝ) =
-        (Fintype.card S : ℝ) * (((2 : ℝ) ^ r) ^ 3)⁻¹ := by
-    have hd := congrArg (fun q : ℚ≥0 => (q : ℝ))
-      (hh.dens_filter_restrict_eq (T := T) (by omega) (fun _ => w))
-    rw [Finset.dens_eq_card_div_card] at hd
-    simp only [NNRat.cast_div, NNRat.cast_natCast, NNRat.cast_inv, NNRat.cast_pow, hT_card,
-      Fintype.card_fun, Fintype.card_fin, Fintype.card_bool, Nat.min_eq_left hr, Nat.cast_pow,
-      Nat.cast_ofNat] at hd
-    have hS : (Fintype.card S : ℝ) ≠ 0 := by exact_mod_cast Fintype.card_ne_zero
-    exact (div_eq_iff hS).mp hd |>.trans (mul_comm _ _)
-  simp only [hterm, sum_const, card_univ, Fintype.card_fun, Fintype.card_fin, Fintype.card_bool,
-    Nat.min_eq_left hr, nsmul_eq_mul, Nat.cast_pow, Nat.cast_ofNat]
+  rw [card_prefixProj_eq_of_restrict n m r hr T (by omega) y₁ (by simp [T]) _
+    (fun s => by simp only [T, mem_insert, mem_singleton, forall_eq_or_imp, forall_eq, true_and]),
+    hT_card]
   have hpos : (2 : ℝ) ^ r ≠ 0 := by positivity
-  dsimp only [S]
   field_simp
+
+private theorem card_subset_rompelBaseHashFin_fiber_eq {n m : ℕ}
+    (gFin : BitString n → BitString m) (x : BitString n)
+    (s : (Fin n → BitString m) × BitString n) (rBits : BitString (rompelTruncWidth n))
+    (A : Finset (RompelBaseInput n m))
+    (hA : A ⊆ fiberSet (rompelBaseHashFin gFin)
+      (rompelBaseHashFin gFin ⟨x, s.1, s.2, rBits⟩)) :
+    #A = #(univ.filter fun x' : BitString n =>
+      RompelBaseInput.mk x' s.1 s.2 rBits ∈ A) := by
+  refine card_bij (fun z' _ => z'.preimage)
+    (fun z' hz' => ?_)
+    (fun z₁ hz₁ z₂ hz₂ hpre => ?_)
+    (fun x' hx' => ⟨⟨x', s.1, s.2, rBits⟩, (mem_filter.mp hx').2, rfl⟩)
+  · have heq := (rompelBaseHashFin_eq_iff gFin z' ⟨x, s.1, s.2, rBits⟩).mp
+      (mem_fiberSet _ _ _ |>.mp (hA hz'))
+    have hz'eq : RompelBaseInput.mk z'.preimage s.1 s.2 rBits = z' := by
+      cases z'; dsimp only at heq ⊢; congr
+      · exact heq.1.symm
+      · exact heq.2.1.symm
+      · exact heq.2.2.1.symm
+    exact mem_filter.mpr ⟨mem_univ _, hz'eq ▸ hz'⟩
+  · have h₁ := (rompelBaseHashFin_eq_iff gFin z₁ ⟨x, s.1, s.2, rBits⟩).mp
+      (mem_fiberSet _ _ _ |>.mp (hA hz₁))
+    have h₂ := (rompelBaseHashFin_eq_iff gFin z₂ ⟨x, s.1, s.2, rBits⟩).mp
+      (mem_fiberSet _ _ _ |>.mp (hA hz₂))
+    cases z₁; cases z₂; dsimp only at hpre h₁ h₂; congr
+    · exact h₁.1.trans h₂.1.symm
+    · exact h₁.2.1.trans h₂.2.1.symm
+    · exact h₁.2.2.1.trans h₂.2.2.1.symm
+
+private theorem rompelBase_sum_otherColl_le {n m r : ℕ} (hr : r ≤ n)
+    (gFin : BitString n → BitString m) {x xStar : BitString n} (hne : gFin x ≠ gFin xStar) :
+    (∑ s ∈ univ.filter (fun s : (Fin n → BitString m) × BitString n =>
+        prefixProj n r (Cslib.BitString.LinearHash.affineHash s (gFin xStar)) =
+          prefixProj n r (Cslib.BitString.LinearHash.affineHash s (gFin x))),
+      (#((univ.filter fun x' : BitString n => gFin x' ≠ gFin x ∧ gFin x' ≠ gFin xStar).filter
+        fun x' => prefixProj n r (Cslib.BitString.LinearHash.affineHash s (gFin x')) =
+          prefixProj n r (Cslib.BitString.LinearHash.affineHash s (gFin x))) : ℝ)) ≤
+      (2 : ℝ) ^ (n - r) *
+        (#(univ.filter fun s : (Fin n → BitString m) × BitString n =>
+          prefixProj n r (Cslib.BitString.LinearHash.affineHash s (gFin xStar)) =
+            prefixProj n r (Cslib.BitString.LinearHash.affineHash s (gFin x))) : ℝ) := by
+  let S := (Fin n → BitString m) × BitString n
+  let H (s : S) (y : BitString m) := prefixProj n r (Cslib.BitString.LinearHash.affineHash s y)
+  let E : Finset S := univ.filter fun s => H s (gFin xStar) = H s (gFin x)
+  let otherDom : Finset (BitString n) :=
+    univ.filter fun x' => gFin x' ≠ gFin x ∧ gFin x' ≠ gFin xStar
+  let otherColl (s : S) : Finset (BitString n) :=
+    otherDom.filter fun x' => H s (gFin x') = H s (gFin x)
+  have hexchange_nat : (∑ s ∈ E, #(otherColl s)) =
+      ∑ x' ∈ otherDom, #(univ.filter fun s : S =>
+        H s (gFin xStar) = H s (gFin x) ∧ H s (gFin x') = H s (gFin x)) := by
+    simp only [otherColl, card_eq_sum_ones, sum_filter]
+    rw [sum_comm]
+    refine sum_congr rfl fun x' _ => ?_
+    simp only [E, sum_filter, ite_and]
+  have hexchange : (∑ s ∈ E, (#(otherColl s) : ℝ)) =
+      ∑ x' ∈ otherDom, (#(univ.filter fun s : S =>
+        H s (gFin xStar) = H s (gFin x) ∧ H s (gFin x') = H s (gFin x)) : ℝ) := by
+    exact_mod_cast hexchange_nat
+  rw [hexchange]
+  have htriple (x' : BitString n) (hx' : x' ∈ otherDom) :
+      (#(univ.filter fun s : S =>
+        H s (gFin xStar) = H s (gFin x) ∧ H s (gFin x') = H s (gFin x)) : ℝ) =
+      (Fintype.card S : ℝ) / ((2 : ℝ) ^ r) ^ 2 := by
+    obtain ⟨h₁₃, h₂₃⟩ := (mem_filter.mp hx').2
+    exact card_prefixProj_triple_eq n m r hr hne h₁₃.symm h₂₃.symm
+  rw [sum_congr rfl htriple, sum_const, nsmul_eq_mul, card_prefixProj_pair_eq n m r hr hne]
+  have hdom_le : (#otherDom : ℝ) ≤ (2 : ℝ) ^ n := by
+    have : #otherDom ≤ Fintype.card (BitString n) := card_le_univ _
+    simpa using (Nat.cast_le (α := ℝ)).mpr this
+  have hpow_split : (2 : ℝ) ^ n = (2 : ℝ) ^ (n - r) * (2 : ℝ) ^ r := by
+    rw [← pow_add, Nat.sub_add_cancel hr]
+  calc
+    (#otherDom : ℝ) * ((Fintype.card S : ℝ) / ((2 : ℝ) ^ r) ^ 2)
+      ≤ (2 : ℝ) ^ n * ((Fintype.card S : ℝ) / ((2 : ℝ) ^ r) ^ 2) :=
+        mul_le_mul_of_nonneg_right hdom_le (by positivity)
+    _ = (2 : ℝ) ^ (n - r) * ((Fintype.card S : ℝ) / (2 : ℝ) ^ r) := by
+        rw [hpow_split]; field_simp
 
 /-- **`[HHRVW2020]`, Section 4.2, Claim 4.8 (p. 23)**: for distinct images `gFin x ≠ gFin xStar`
 with `#(fiberSet gFin (gFin x)) ≤ #(fiberSet gFin (gFin xStar)) ≤ 2 ^ (n - r)` (`r ≤ n`),
@@ -1048,35 +1089,18 @@ theorem rompelBase_heavy_sibling_prob_ge {n m : ℕ} (gFin : BitString n → Bit
   let H (s : S) (y : BitString m) := prefixProj n r (Cslib.BitString.LinearHash.affineHash s y)
   let collInputs (s : S) : Finset (BitString n) :=
     univ.filter fun x' => H s (gFin x') = H s (gFin x)
-  have hfib_card (s : S) :
-      #(fiberSet (rompelBaseHashFin gFin) (rompelBaseHashFin gFin ⟨x, s.1, s.2, rBits⟩)) =
-        #(collInputs s) := by
-    refine card_bij (fun z' _ => z'.preimage)
-      (fun z' hz' => ?_)
-      (fun z₁ hz₁ z₂ hz₂ hpre => ?_)
-      (fun x' hx' => ?_)
-    · have h := (rompelBaseHashFin_eq_iff gFin z' ⟨x, s.1, s.2, rBits⟩).mp
-        (mem_fiberSet _ _ _ |>.mp hz')
-      exact mem_filter.mpr ⟨mem_univ _, h.2.2.2⟩
-    · have h₁ := (rompelBaseHashFin_eq_iff gFin z₁ ⟨x, s.1, s.2, rBits⟩).mp
-        (mem_fiberSet _ _ _ |>.mp hz₁)
-      have h₂ := (rompelBaseHashFin_eq_iff gFin z₂ ⟨x, s.1, s.2, rBits⟩).mp
-        (mem_fiberSet _ _ _ |>.mp hz₂)
-      cases z₁; cases z₂
-      dsimp only at hpre h₁ h₂
-      congr
-      · exact h₁.1.trans h₂.1.symm
-      · exact h₁.2.1.trans h₂.2.1.symm
-      · exact h₁.2.2.1.trans h₂.2.2.1.symm
-    · refine ⟨⟨x', s.1, s.2, rBits⟩, mem_fiberSet _ _ _ |>.mpr ?_, rfl⟩
-      exact (rompelBaseHashFin_eq_iff gFin _ _).mpr ⟨rfl, rfl, rfl, (mem_filter.mp hx').2⟩
-  have hmem_star (s : S) :
-      RompelBaseInput.mk xStar s.1 s.2 rBits ∈
+  have hmem_input (s : S) (x' : BitString n) :
+      RompelBaseInput.mk x' s.1 s.2 rBits ∈
         fiberSet (rompelBaseHashFin gFin) (rompelBaseHashFin gFin ⟨x, s.1, s.2, rBits⟩) ↔
-      H s (gFin xStar) = H s (gFin x) := by
+      H s (gFin x') = H s (gFin x) := by
     rw [mem_fiberSet, rompelBaseHashFin_eq_iff]
     simp only [H, r, RompelBaseInput.truncIndex, true_and]
     rfl
+  have hfib_card (s : S) :
+      #(fiberSet (rompelBaseHashFin gFin) (rompelBaseHashFin gFin ⟨x, s.1, s.2, rBits⟩)) =
+        #(collInputs s) := by
+    rw [card_subset_rompelBaseHashFin_fiber_eq gFin x s rBits _ Subset.rfl]
+    simp only [collInputs, hmem_input s]
   let E : Finset S := univ.filter fun s => H s (gFin xStar) = H s (gFin x)
   let otherDom : Finset (BitString n) :=
     univ.filter fun x' => gFin x' ≠ gFin x ∧ gFin x' ≠ gFin xStar
@@ -1084,39 +1108,8 @@ theorem rompelBase_heavy_sibling_prob_ge {n m : ℕ} (gFin : BitString n → Bit
     otherDom.filter fun x' => H s (gFin x') = H s (gFin x)
   have hE_card : (#E : ℝ) = (Fintype.card S : ℝ) / (2 : ℝ) ^ r :=
     card_prefixProj_pair_eq n m r hr hne
-  -- Compute expected `#(otherColl s)` over `s ∈ E`:
-  have hsum_other : (∑ s ∈ E, (#(otherColl s) : ℝ)) ≤ (2 : ℝ) ^ (n - r) * (#E : ℝ) := by
-    have hexchange_nat : (∑ s ∈ E, #(otherColl s)) =
-        ∑ x' ∈ otherDom, #(univ.filter fun s : S =>
-          H s (gFin xStar) = H s (gFin x) ∧ H s (gFin x') = H s (gFin x)) := by
-      simp only [otherColl, card_eq_sum_ones, sum_filter]
-      rw [sum_comm]
-      refine sum_congr rfl fun x' _ => ?_
-      simp only [E, sum_filter, ite_and]
-    have hexchange : (∑ s ∈ E, (#(otherColl s) : ℝ)) =
-        ∑ x' ∈ otherDom, (#(univ.filter fun s : S =>
-          H s (gFin xStar) = H s (gFin x) ∧ H s (gFin x') = H s (gFin x)) : ℝ) := by
-      exact_mod_cast hexchange_nat
-    rw [hexchange]
-    have htriple (x' : BitString n) (hx' : x' ∈ otherDom) :
-        (#(univ.filter fun s : S =>
-          H s (gFin xStar) = H s (gFin x) ∧ H s (gFin x') = H s (gFin x)) : ℝ) =
-        (Fintype.card S : ℝ) / ((2 : ℝ) ^ r) ^ 2 := by
-      obtain ⟨h₁₃, h₂₃⟩ := (mem_filter.mp hx').2
-      exact card_prefixProj_triple_eq n m r hr hne h₁₃.symm h₂₃.symm
-    rw [sum_congr rfl htriple, sum_const, nsmul_eq_mul]
-    have hdom_le : (#otherDom : ℝ) ≤ (2 : ℝ) ^ n := by
-      have : #otherDom ≤ Fintype.card (BitString n) := card_le_univ _
-      simpa using (Nat.cast_le (α := ℝ)).mpr this
-    have hpow_split : (2 : ℝ) ^ n = (2 : ℝ) ^ (n - r) * (2 : ℝ) ^ r := by
-      rw [← pow_add, Nat.sub_add_cancel hr]
-    rw [hE_card]
-    calc
-      (#otherDom : ℝ) * ((Fintype.card S : ℝ) / ((2 : ℝ) ^ r) ^ 2)
-        ≤ (2 : ℝ) ^ n * ((Fintype.card S : ℝ) / ((2 : ℝ) ^ r) ^ 2) :=
-          mul_le_mul_of_nonneg_right hdom_le (by positivity)
-      _ = (2 : ℝ) ^ (n - r) * ((Fintype.card S : ℝ) / (2 : ℝ) ^ r) := by
-          rw [hpow_split]; field_simp
+  have hsum_other : (∑ s ∈ E, (#(otherColl s) : ℝ)) ≤ (2 : ℝ) ^ (n - r) * (#E : ℝ) :=
+    rompelBase_sum_otherColl_le hr gFin hne
   -- Markov's inequality on `E`: at least half of `s ∈ E` have `#(otherColl s) ≤ 2 * 2 ^ (n - r)`:
   let Egood : Finset S := E.filter fun s => #(otherColl s) ≤ 2 * 2 ^ (n - r)
   let Ebad : Finset S := E.filter fun s => ¬ (#(otherColl s) ≤ 2 * 2 ^ (n - r))
@@ -1187,7 +1180,7 @@ theorem rompelBase_heavy_sibling_prob_ge {n m : ℕ} (gFin : BitString n → Bit
         refine sum_le_sum fun s hs => ?_
         have hsE : s ∈ E := (mem_filter.mp hs).1
         have hstar_in : H s (gFin xStar) = H s (gFin x) := (mem_filter.mp hsE).2
-        have hmem_s := (hmem_star s).mpr hstar_in
+        have hmem_s := (hmem_input s xStar).mpr hstar_in
         simp only [PMF.uniformOfFintype_apply, ENNReal.toReal_inv, ENNReal.toReal_natCast,
           hmem_s, ↓reduceIte, hfib_card s, one_div]
         refine mul_le_mul_of_nonneg_left ?_ (by positivity)
@@ -1199,6 +1192,15 @@ theorem rompelBase_heavy_sibling_prob_ge {n m : ℕ} (gFin : BitString n → Bit
         mul_nonneg ENNReal.toReal_nonneg (div_nonneg (by split_ifs <;> positivity)
           (Nat.cast_nonneg _))
 
+open Classical in
+private noncomputable abbrev rompelSdiffWeight {n m : ℕ} (gFin : BitString n → BitString m)
+    (x xStar : BitString n) (s : (Fin n → BitString m) × BitString n)
+    (rBits : BitString (rompelTruncWidth n)) : ℝ :=
+  (if RompelBaseInput.mk xStar s.1 s.2 rBits ∈
+      fiberSet (rompelBaseHashFin gFin) (rompelBaseHashFin gFin ⟨x, s.1, s.2, rBits⟩) \
+        rompelAccessibleInputSet gFin ⟨x, s.1, s.2, rBits⟩ then (1 : ℝ) else 0) /
+    #(fiberSet (rompelBaseHashFin gFin) (rompelBaseHashFin gFin ⟨x, s.1, s.2, rBits⟩))
+
 private theorem rompelBase_goodPair_term_ge {n m : ℕ} (gFin : BitString n → BitString m)
     {x xStar : BitString n} (hne : gFin x ≠ gFin xStar)
     (hfib_le : #(fiberSet gFin (gFin x)) ≤ #(fiberSet gFin (gFin xStar))) :
@@ -1206,12 +1208,7 @@ private theorem rompelBase_goodPair_term_ge {n m : ℕ} (gFin : BitString n → 
       ∑ rBits : BitString (rompelTruncWidth n), ((2 ^ rompelTruncWidth n : ℝ)⁻¹) *
         ∑ s : (Fin n → BitString m) × BitString n,
           ((PMF.uniformOfFintype ((Fin n → BitString m) × BitString n)) s).toReal *
-            ((if RompelBaseInput.mk xStar s.1 s.2 rBits ∈
-                fiberSet (rompelBaseHashFin gFin)
-                  (rompelBaseHashFin gFin ⟨x, s.1, s.2, rBits⟩) \
-                  rompelAccessibleInputSet gFin ⟨x, s.1, s.2, rBits⟩ then (1 : ℝ) else 0) /
-              #(fiberSet (rompelBaseHashFin gFin)
-                (rompelBaseHashFin gFin ⟨x, s.1, s.2, rBits⟩))) := by
+            rompelSdiffWeight gFin x xStar s rBits := by
   have hx_not_in : x ∉ fiberSet gFin (gFin xStar) := by
     rw [mem_fiberSet]; exact hne
   have hsum_le : 1 + #(fiberSet gFin (gFin xStar)) ≤ 2 ^ n := by
@@ -1280,12 +1277,7 @@ private theorem rompelBase_escape_density_sum_eq {n m : ℕ} (gFin : BitString n
       ∑ rBits : BitString (rompelTruncWidth n), ((2 ^ rompelTruncWidth n : ℝ)⁻¹) *
         ∑ s : (Fin n → BitString m) × BitString n,
           ((PMF.uniformOfFintype ((Fin n → BitString m) × BitString n)) s).toReal *
-            ((if RompelBaseInput.mk p.2 s.1 s.2 rBits ∈
-                fiberSet (rompelBaseHashFin gFin)
-                  (rompelBaseHashFin gFin ⟨p.1, s.1, s.2, rBits⟩) \
-                  rompelAccessibleInputSet gFin ⟨p.1, s.1, s.2, rBits⟩ then (1 : ℝ) else 0) /
-              #(fiberSet (rompelBaseHashFin gFin)
-                (rompelBaseHashFin gFin ⟨p.1, s.1, s.2, rBits⟩))) := by
+            rompelSdiffWeight gFin p.1 p.2 s rBits := by
   let S := (Fin n → BitString m) × BitString n
   let R := BitString (rompelTruncWidth n)
   have hcard_Z : (Fintype.card (RompelBaseInput n m) : ℝ) =
@@ -1303,38 +1295,8 @@ private theorem rompelBase_escape_density_sum_eq {n m : ℕ} (gFin : BitString n
           if RompelBaseInput.mk xStar s.1 s.2 rBits ∈
               fiberSet (rompelBaseHashFin gFin) (rompelBaseHashFin gFin ⟨x, s.1, s.2, rBits⟩) \
                 rompelAccessibleInputSet gFin ⟨x, s.1, s.2, rBits⟩ then (1 : ℝ) else 0 := by
-    have hbij : #(fiberSet (rompelBaseHashFin gFin) (rompelBaseHashFin gFin ⟨x, s.1, s.2, rBits⟩) \
-        rompelAccessibleInputSet gFin ⟨x, s.1, s.2, rBits⟩) =
-        #(univ.filter fun xStar : BitString n =>
-          RompelBaseInput.mk xStar s.1 s.2 rBits ∈
-            fiberSet (rompelBaseHashFin gFin) (rompelBaseHashFin gFin ⟨x, s.1, s.2, rBits⟩) \
-              rompelAccessibleInputSet gFin ⟨x, s.1, s.2, rBits⟩) := by
-      refine card_bij (fun z' _ => z'.preimage)
-        (fun z' hz' => ?_)
-        (fun z₁ hz₁ z₂ hz₂ hpre => ?_)
-        (fun xStar hxStar => ⟨⟨xStar, s.1, s.2, rBits⟩, (mem_filter.mp hxStar).2, rfl⟩)
-      · have hfib := (mem_sdiff.mp hz').1
-        have heq := (rompelBaseHashFin_eq_iff gFin z' ⟨x, s.1, s.2, rBits⟩).mp
-          (mem_fiberSet _ _ _ |>.mp hfib)
-        have hz'eq : RompelBaseInput.mk z'.preimage s.1 s.2 rBits = z' := by
-          cases z'
-          dsimp only at heq ⊢
-          congr
-          · exact heq.1.symm
-          · exact heq.2.1.symm
-          · exact heq.2.2.1.symm
-        exact mem_filter.mpr ⟨mem_univ _, hz'eq ▸ hz'⟩
-      · have h₁ := (rompelBaseHashFin_eq_iff gFin z₁ ⟨x, s.1, s.2, rBits⟩).mp
-          (mem_fiberSet _ _ _ |>.mp (mem_sdiff.mp hz₁).1)
-        have h₂ := (rompelBaseHashFin_eq_iff gFin z₂ ⟨x, s.1, s.2, rBits⟩).mp
-          (mem_fiberSet _ _ _ |>.mp (mem_sdiff.mp hz₂).1)
-        cases z₁; cases z₂
-        dsimp only at hpre h₁ h₂
-        congr
-        · exact h₁.1.trans h₂.1.symm
-        · exact h₁.2.1.trans h₂.2.1.symm
-        · exact h₁.2.2.1.trans h₂.2.2.1.symm
-    rw [hbij, card_eq_sum_ones, Nat.cast_sum, Nat.cast_one, sum_filter]
+    rw [card_subset_rompelBaseHashFin_fiber_eq gFin x s rBits _ sdiff_subset,
+      card_eq_sum_ones, Nat.cast_sum, Nat.cast_one, sum_filter]
   conv_lhs => rw [← (rompelTupleEquiv n m).sum_comp, Fintype.sum_prod_type]
   conv_rhs => rw [Fintype.sum_prod_type]
   refine sum_congr rfl fun x _ => ?_
@@ -1350,13 +1312,7 @@ private theorem rompelBase_escape_density_sum_eq {n m : ℕ} (gFin : BitString n
               (rompelBaseHashFin gFin (rompelTupleEquiv n m (x, s, rBits))))))
       = ∑ rBits : R, ∑ s : S, ∑ xStar : BitString n,
           ((2 ^ n : ℝ)⁻¹) * ((2 ^ rompelTruncWidth n : ℝ)⁻¹) *
-            ((PMF.uniformOfFintype S) s).toReal *
-            ((if RompelBaseInput.mk xStar s.1 s.2 rBits ∈
-                fiberSet (rompelBaseHashFin gFin)
-                  (rompelBaseHashFin gFin ⟨x, s.1, s.2, rBits⟩) \
-                  rompelAccessibleInputSet gFin ⟨x, s.1, s.2, rBits⟩ then (1 : ℝ) else 0) /
-              #(fiberSet (rompelBaseHashFin gFin)
-                (rompelBaseHashFin gFin ⟨x, s.1, s.2, rBits⟩))) := by
+            ((PMF.uniformOfFintype S) s).toReal * rompelSdiffWeight gFin x xStar s rBits := by
       refine sum_congr rfl fun rBits _ => sum_congr rfl fun s _ => ?_
       have hunif : ((PMF.uniformOfFintype (RompelBaseInput n m))
           (rompelTupleEquiv n m (x, s, rBits))).toReal =
@@ -1365,17 +1321,12 @@ private theorem rompelBase_escape_density_sum_eq {n m : ℕ} (gFin : BitString n
         simp only [PMF.uniformOfFintype_apply, ENNReal.toReal_inv, ENNReal.toReal_natCast, hcard_Z]
         ring
       rw [hunif]
-      simp only [rompelTupleEquiv, Equiv.coe_fn_mk]
+      simp only [rompelTupleEquiv, Equiv.coe_fn_mk, rompelSdiffWeight]
       rw [hsdiff_sum x rBits s, sum_div, mul_sum]
     _ = ∑ xStar : BitString n, ((2 ^ n : ℝ)⁻¹) *
           ∑ rBits : R, ((2 ^ rompelTruncWidth n : ℝ)⁻¹) *
             ∑ s : S, ((PMF.uniformOfFintype S) s).toReal *
-              ((if RompelBaseInput.mk xStar s.1 s.2 rBits ∈
-                  fiberSet (rompelBaseHashFin gFin)
-                    (rompelBaseHashFin gFin ⟨x, s.1, s.2, rBits⟩) \
-                    rompelAccessibleInputSet gFin ⟨x, s.1, s.2, rBits⟩ then (1 : ℝ) else 0) /
-                #(fiberSet (rompelBaseHashFin gFin)
-                  (rompelBaseHashFin gFin ⟨x, s.1, s.2, rBits⟩))) := by
+              rompelSdiffWeight gFin x xStar s rBits := by
       rw [sum_congr rfl fun rBits _ => sum_comm, sum_comm]
       refine sum_congr rfl fun xStar _ => ?_
       rw [mul_sum]
@@ -1485,12 +1436,7 @@ theorem rompelBase_accessibleInput_le_conditionalEntropy_sub {n m : ℕ}
     _ ≤ ∑ p ∈ goodPairs, ((2 ^ n : ℝ)⁻¹) *
           ∑ rBits : R, ((2 ^ rompelTruncWidth n : ℝ)⁻¹) *
             ∑ s : S, ((PMF.uniformOfFintype S) s).toReal *
-              ((if RompelBaseInput.mk p.2 s.1 s.2 rBits ∈
-                  fiberSet (rompelBaseHashFin gFin)
-                    (rompelBaseHashFin gFin ⟨p.1, s.1, s.2, rBits⟩) \
-                    rompelAccessibleInputSet gFin ⟨p.1, s.1, s.2, rBits⟩ then (1 : ℝ) else 0) /
-                #(fiberSet (rompelBaseHashFin gFin)
-                  (rompelBaseHashFin gFin ⟨p.1, s.1, s.2, rBits⟩))) := by
+              rompelSdiffWeight gFin p.1 p.2 s rBits := by
         refine sum_le_sum fun p hp => mul_le_mul_of_nonneg_left ?_ (by positivity)
         obtain ⟨hne, hfib_le⟩ := (mem_filter.mp hp).2
         exact rompelBase_goodPair_term_ge gFin hne hfib_le
@@ -1607,23 +1553,15 @@ theorem OneWay.exists_inaccessibleEntropyFamily {f : List Bool → List Bool} (h
   have hcoll_ev := (hg.output_collision_negligible).eventually_le_inv_polynomial
     (p := fun _ => 2) (by fun_prop) (fun _ => by omega)
   obtain ⟨N₀, hN₀⟩ := Filter.eventually_atTop.mp hcoll_ev
-  have hinLen : ComputableInPolyTime (fun n => rompelBaseInLen n (outLen n)) encUnary encUnary := by
-    have hid := ComputableInPolyTime.id' (encIn := encUnary)
-    have hsLen : ComputableInPolyTime (fun n => rompelSeedWidth n (outLen n)) encUnary encUnary :=
-      ComputableInPolyTime.unary_add.comp
-        ((ComputableInPolyTime.unary_mul.comp (hid.prod houtLen)).prod hid)
-    exact ComputableInPolyTime.unary_add.comp
-      ((ComputableInPolyTime.unary_add.comp (hid.prod hsLen)).prod
-        computableInPolyTime_rompelTruncWidth)
+  have hid := ComputableInPolyTime.id' (encIn := encUnary)
+  have hsLen := computableInPolyTime_rompelSeedWidth hid houtLen
+  have hinLen : ComputableInPolyTime (fun n => rompelBaseInLen n (outLen n)) encUnary encUnary :=
+    ComputableInPolyTime.unary_add' (ComputableInPolyTime.unary_add' hid hsLen)
+      computableInPolyTime_rompelTruncWidth
   have houtLen₀ :
-      ComputableInPolyTime (fun n => rompelBaseOutLen n (outLen n)) encUnary encUnary := by
-    have hid := ComputableInPolyTime.id' (encIn := encUnary)
-    have hsLen : ComputableInPolyTime (fun n => rompelSeedWidth n (outLen n)) encUnary encUnary :=
-      ComputableInPolyTime.unary_add.comp
-        ((ComputableInPolyTime.unary_mul.comp (hid.prod houtLen)).prod hid)
-    exact ComputableInPolyTime.unary_add.comp
-      ((ComputableInPolyTime.unary_add.comp
-        (hsLen.prod computableInPolyTime_rompelTruncWidth)).prod hid)
+      ComputableInPolyTime (fun n => rompelBaseOutLen n (outLen n)) encUnary encUnary :=
+    ComputableInPolyTime.unary_add'
+      (ComputableInPolyTime.unary_add' hsLen computableInPolyTime_rompelTruncWidth) hid
   refine ⟨{
     inLen := fun n => rompelBaseInLen n (outLen n)
     outLen := fun n => rompelBaseOutLen n (outLen n)
