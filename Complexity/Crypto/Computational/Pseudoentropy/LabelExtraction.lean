@@ -29,9 +29,11 @@ the efficient reduction handles all indices. The generator must still combine th
 
 ## Main results
 
-* `HasGap.indexed_extracted_advantage_negligible`: dense masks give negligible extraction
+* `HasGapWithAdvice.indexed_extracted_advantage_negligible`,
+  `HasGap.indexed_extracted_advantage_negligible`: dense masks give negligible extraction
   advantage for any valid choices from a uniformly efficient indexed family.
-* `HasGap.extract_indexed_labels`: the fixed polynomial schedule pays the full statistical loss.
+* `HasGapWithAdvice.extract_indexed_labels`,
+  `HasGap.extract_indexed_labels`: the fixed polynomial schedule pays the full statistical loss.
 
 ## References
 
@@ -52,19 +54,22 @@ open Probability Probability.PMF BitString Filter Turing.MultiTapeTM
 
 open scoped NNReal
 
-/-- Label extraction is computationally uniform along any valid choices from an efficient
-polynomial-size family. The choices need not be computable: the reduction handles all indices
-uniformly, and only the proof uses the chosen index. Observations and hash seeds stay public. -/
-theorem HasGap.indexed_extracted_advantage_negligible {pair : SamplablePair} {gap : ℕ → ℝ}
-    (hpair : pair.HasGap gap) (realization : pair.SeedRealization) (choose : ℕ → ℕ)
+/-- Label extraction is computationally uniform relative to fixed advice along any valid choices
+from an efficient polynomial-size family. The choices need not be computable: the reduction handles
+all indices uniformly, and only the proof uses the chosen index. Observations and hash seeds stay
+public. -/
+theorem HasGapWithAdvice.indexed_extracted_advantage_negligible {pair : SamplablePair}
+    {gap : ℕ → ℝ} {advice : ℕ → List Bool} (hpair : pair.HasGapWithAdvice gap advice)
+    (realization : pair.SeedRealization) (choose : ℕ → ℕ)
     {Seed Output : ℕ → ℕ → Type} [∀ n i, Finite (Seed n i)] [∀ n i, Fintype (Output n i)]
     [∀ n i, Nonempty (Output n i)] (seed : ∀ n i, ProbComp (Seed n i))
     (hash : ∀ n i, Seed n i → List Bool → Output n i)
-    (test : ∀ n i, List (List Bool) × Seed n i × Output n i → ProbComp Bool)
-    (htest : IsPPTOn (encPair (encPair encUnary encUnary)
+    (test : ∀ (a : ℕ × List Bool) i,
+      List (List Bool) × Seed a.1 i × Output a.1 i → ProbComp Bool)
+    (htest : IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary)
       (encList (encPair encBits encBool))) encBool
-        (fun input => extractLabels (seed input.1.1 input.1.2) (hash input.1.1 input.1.2)
-          input.2 >>= test input.1.1 input.1.2))
+        (fun ((a, i), samples) => extractLabels (seed a.1 i) (hash a.1 i)
+          samples >>= test a i))
     {candidates count densityBound : ℕ → ℕ} {numerator : ℕ → ℕ → ℕ} {slack : ℕ → ℝ}
     (hcandidates : ComputableInPolyTime candidates encUnary encUnary)
     (hcount : ComputableInPolyTime count encUnary encUnary)
@@ -88,10 +93,10 @@ theorem HasGap.indexed_extracted_advantage_negligible {pair : SamplablePair} {ga
       (ProbComp.eval (do
         let samples ← OracleComp.replicate (count n) (pair.sample n)
         let result ← extractLabels (seed n (choose n)) (hash n (choose n)) samples
-        test n (choose n) result))
+        test (n, advice n) (choose n) result))
       ((extractLabelsIdeal ((fun value => pair.encode n value.1) <$>
         pair.latentSample n) (count n) (seed n (choose n))).bind
-          (fun output => ProbComp.eval (test n (choose n) output)))) := by
+          (fun output => ProbComp.eval (test (n, advice n) (choose n) output)))) := by
   simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hcandidates
   simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hcount
   simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hnumerator
@@ -101,9 +106,9 @@ theorem HasGap.indexed_extracted_advantage_negligible {pair : SamplablePair} {ga
     2 * Real.exp (-2 * slack n ^ 2 / (count n * (realization.length n + n + 2 : ℕ) ^ 2)) +
       Real.sqrt (Fintype.card (Output n (choose n)) * (2 * (2 : ℝ) ^
         (-(count n * ((numerator n (choose n) : ℝ) / dyadicSize (densityBound n)) - slack n)))) / 2
-  let reduced := fun n i samples => do
-    let result ← extractLabels (seed n i) (hash n i) samples
-    test n i result
+  let reduced := fun (a : ℕ × List Bool) i samples => do
+    let result ← extractLabels (seed a.1 i) (hash a.1 i) samples
+    test a i result
   apply negligible_iff_coe.mpr
   apply (Asymptotics.superpolynomialDecay_iff_abs_isBoundedUnder _
     tendsto_natCast_atTop_atTop).mpr
@@ -134,23 +139,25 @@ theorem HasGap.indexed_extracted_advantage_negligible {pair : SamplablePair} {ga
   refine ⟨2, Filter.eventually_map.mpr ?_⟩
   filter_upwards [hmasks, hmass, hchoose, hvalid,
     (herror' degree).eventually_le_const (by norm_num : (0 : ℝ) < 1)] with
-    n hmask hmass hindex hn hsmall
-  obtain ⟨mask, hdense, hpositive, hdistinguish⟩ := hmask (choose n) hindex hn.1 hn.2.1 hn.2.2
+    n hmask hmass hindex ⟨hnumPos, hnumLe, hnumRatio⟩ hsmall
+  obtain ⟨mask, hdense, hpositive, hdistinguish⟩ :=
+    hmask (choose n) hindex hnumPos hnumLe hnumRatio
   have hclose := maskedSample_extract_dist_bind_le (pair.latentSample n)
     (fun value => pair.encode n value.1) Prod.snd mask (count n) (realization.length n + n + 2)
     (hmass mask (fun value _ => hpositive value)) (seed n (choose n)) (hash n (choose n))
     (hhash n (choose n)) hdense (hslack n)
-    (fun output => ProbComp.eval (test n (choose n) output))
+    (fun output => ProbComp.eval (test (n, advice n) (choose n) output))
   rw [← coe_nndist, ← Game.advantage_eq_nndist] at hclose
   have hcompare := extractLabels_sequence_gap (pair.sample n)
     (maskedSample (pair.latentSample n)
       (fun value => pair.encode n value.1) Prod.snd mask)
-    (count n) (seed n (choose n)) (hash n (choose n)) (test n (choose n)) _ hclose
+    (count n) (seed n (choose n)) (hash n (choose n)) (test (n, advice n) (choose n)) _ hclose
   have htotal : (Game.advantage
-      (ProbComp.eval (OracleComp.replicate (count n) (pair.sample n) >>= reduced n (choose n)))
+      (ProbComp.eval
+        (OracleComp.replicate (count n) (pair.sample n) >>= reduced (n, advice n) (choose n)))
       ((extractLabelsIdeal ((fun value => pair.encode n value.1) <$>
         pair.latentSample n) (count n) (seed n (choose n))).bind
-          (fun output => ProbComp.eval (test n (choose n) output))) : ℝ) ≤
+          (fun output => ProbComp.eval (test (n, advice n) (choose n) output))) : ℝ) ≤
         (dyadicSize (count n) : ℝ) / inverseGap n + error n := by
     change _ - error n ≤ _ at hcompare
     exact le_of_lt ((sub_lt_iff_lt_add.mp (hcompare.trans_lt hdistinguish)))
@@ -166,6 +173,126 @@ theorem HasGap.indexed_extracted_advantage_negligible {pair : SamplablePair} {ga
   dsimp only [error, reduced] at h
   nlinarith
 
+/-- Label extraction is computationally uniform along any valid choices from an efficient
+polynomial-size family. The choices need not be computable: the reduction handles all indices
+uniformly, and only the proof uses the chosen index. Observations and hash seeds stay public. -/
+theorem HasGap.indexed_extracted_advantage_negligible {pair : SamplablePair} {gap : ℕ → ℝ}
+    (hpair : pair.HasGap gap) (realization : pair.SeedRealization) (choose : ℕ → ℕ)
+    {Seed Output : ℕ → ℕ → Type} [∀ n i, Finite (Seed n i)] [∀ n i, Fintype (Output n i)]
+    [∀ n i, Nonempty (Output n i)] (seed : ∀ n i, ProbComp (Seed n i))
+    (hash : ∀ n i, Seed n i → List Bool → Output n i)
+    (test : ∀ n i, List (List Bool) × Seed n i × Output n i → ProbComp Bool)
+    (htest : IsPPTOn (encPair (encPair encUnary encUnary)
+      (encList (encPair encBits encBool))) encBool
+        (fun ((n, i), samples) => extractLabels (seed n i) (hash n i)
+          samples >>= test n i))
+    {candidates count densityBound : ℕ → ℕ} {numerator : ℕ → ℕ → ℕ} {slack : ℕ → ℝ}
+    (hcandidates : ComputableInPolyTime candidates encUnary encUnary)
+    (hcount : ComputableInPolyTime count encUnary encUnary)
+    (hnumerator : ComputableInPolyTime (fun input => numerator input.1 input.2)
+      (encPair encUnary encUnary) encUnary)
+    (hdensity : ComputableInPolyTime densityBound encUnary encUnary)
+    (hchoose : ∀ᶠ n in atTop, choose n < candidates n)
+    (hvalid : ∀ᶠ n in atTop, 0 < numerator n (choose n) ∧
+      numerator n (choose n) ≤ dyadicSize (densityBound n) ∧
+      (numerator n (choose n) : ℝ) / dyadicSize (densityBound n) ≤
+        PMF.conditionalEntropy (pair.joint n) + gap n)
+    (hhash : ∀ n i, IsTwoUniversal (ProbComp.eval (seed n i))
+      (fun s (bits : BitString (count n)) => hash n i s (List.ofFn bits)))
+    (hslack : ∀ n, 0 ≤ slack n)
+    (herror : Negligible (fun n => Real.toNNReal
+      (2 * Real.exp (-2 * slack n ^ 2 / (count n * (realization.length n + n + 2 : ℕ) ^ 2)) +
+        Real.sqrt (Fintype.card (Output n (choose n)) * (2 * (2 : ℝ) ^
+          (-(count n * ((numerator n (choose n) : ℝ) / dyadicSize (densityBound n)) -
+            slack n)))) / 2))) :
+    Negligible (fun n => Game.advantage
+      (ProbComp.eval (do
+        let samples ← OracleComp.replicate (count n) (pair.sample n)
+        let result ← extractLabels (seed n (choose n)) (hash n (choose n)) samples
+        test n (choose n) result))
+      ((extractLabelsIdeal ((fun value => pair.encode n value.1) <$>
+        pair.latentSample n) (count n) (seed n (choose n))).bind
+          (fun output => ProbComp.eval (test n (choose n) output)))) := by
+  have hprepare : ComputableInPolyTime
+      (fun (((n, _), i), samples) => ((n, i), samples) :
+        ((ℕ × List Bool) × ℕ) × List (List Bool × Bool) →
+          (ℕ × ℕ) × List (List Bool × Bool))
+      (encPair (encPair (encPair encUnary encBits) encUnary)
+        (encList (encPair encBits encBool)))
+      (encPair (encPair encUnary encUnary)
+        (encList (encPair encBits encBool))) := by fun_prop
+  exact (hasGap_iff_hasGapWithAdvice_nil.mp hpair).indexed_extracted_advantage_negligible
+    realization choose seed hash (fun a i result => test a.1 i result)
+    (htest.preprocess hprepare) hcandidates hcount hnumerator hdensity
+    hchoose hvalid hhash hslack herror
+
+/-- The explicit repetition schedule makes any valid indexed label extractor computationally
+uniform relative to fixed advice. Only the proof uses the chosen indices; the sampler, hash, and
+test form one uniformly efficient family. The entropy budget discharges the complete statistical
+error. -/
+theorem HasGapWithAdvice.extract_indexed_labels {pair : SamplablePair} {gap : ℕ → ℝ}
+    {advice : ℕ → List Bool} (hpair : pair.HasGapWithAdvice gap advice)
+    (realization : pair.SeedRealization) (choose : ℕ → ℕ)
+    {Seed : ℕ → ℕ → Type} [∀ n i, Finite (Seed n i)]
+    {outputBits : ℕ → ℕ → ℕ} {candidates inverseSlack : ℕ → ℕ}
+    (seed : ∀ n i, ProbComp (Seed n i))
+    (hash : ∀ n i, Seed n i → List Bool → BitString (outputBits n i))
+    (test : ∀ (a : ℕ × List Bool) i,
+      List (List Bool) × Seed a.1 i × BitString (outputBits a.1 i) → ProbComp Bool)
+    (htest : IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary)
+      (encList (encPair encBits encBool))) encBool
+        (fun ((a, i), samples) => extractLabels (seed a.1 i) (hash a.1 i)
+          samples >>= test a i))
+    (hcandidates : ComputableInPolyTime candidates encUnary encUnary)
+    (hslack : ComputableInPolyTime inverseSlack encUnary encUnary)
+    {numerator : ℕ → ℕ → ℕ} {densityBound : ℕ → ℕ}
+    (hnumerator : ComputableInPolyTime (fun input => numerator input.1 input.2)
+      (encPair encUnary encUnary) encUnary)
+    (hdensity : ComputableInPolyTime densityBound encUnary encUnary)
+    (hchoose : ∀ᶠ n in atTop, choose n < candidates n)
+    (hvalid : ∀ᶠ n in atTop, 0 < numerator n (choose n) ∧
+      numerator n (choose n) ≤ dyadicSize (densityBound n) ∧
+      (numerator n (choose n) : ℝ) / dyadicSize (densityBound n) ≤
+        PMF.conditionalEntropy (pair.joint n) + gap n)
+    (hhash : ∀ n i, IsTwoUniversal (ProbComp.eval (seed n i))
+      (fun s (bits : BitString
+        (ExtractionSchedule.count n (realization.length n) (inverseSlack n))) =>
+          hash n i s (List.ofFn bits)))
+    (hbudget : ∀ᶠ n in atTop,
+      outputBits n (choose n) +
+        2 * (ExtractionSchedule.slack n (realization.length n) (inverseSlack n) : ℝ) ≤
+        ExtractionSchedule.count n (realization.length n) (inverseSlack n) *
+          ((numerator n (choose n) : ℝ) / dyadicSize (densityBound n))) :
+    Negligible (fun n => Game.advantage
+      (ProbComp.eval (do
+        let samples ← OracleComp.replicate
+          (ExtractionSchedule.count n (realization.length n) (inverseSlack n)) (pair.sample n)
+        let result ← extractLabels (seed n (choose n)) (hash n (choose n)) samples
+        test (n, advice n) (choose n) result))
+      ((extractLabelsIdeal ((fun value => pair.encode n value.1) <$>
+        pair.latentSample n)
+          (ExtractionSchedule.count n (realization.length n) (inverseSlack n))
+          (seed n (choose n))).bind
+            (fun output => ProbComp.eval (test (n, advice n) (choose n) output)))) := by
+  have hcandidates := hcandidates.tidy
+  have hslack := hslack.tidy
+  have hnumerator := hnumerator.tidy
+  have hdensity := hdensity.tidy
+  apply hpair.indexed_extracted_advantage_negligible realization choose seed hash test htest
+    (.of_tidy hcandidates)
+    (ExtractionSchedule.isPolyTime_count (.of_tidy (by fun_prop))
+      realization.length_isPolyTime (.of_tidy hslack)) (.of_tidy hnumerator)
+    (.of_tidy hdensity) hchoose hvalid hhash
+    (slack := fun n => ExtractionSchedule.slack n (realization.length n) (inverseSlack n))
+    (fun _ => Nat.cast_nonneg _)
+  apply negligible_of_eventually_le ExtractionSchedule.error_negligible
+  filter_upwards [hbudget] with n hn
+  apply NNReal.coe_le_coe.mp
+  rw [Real.coe_toNNReal _ (by positivity)]
+  simpa only [BitString, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, Nat.cast_pow,
+    Nat.cast_ofNat] using ExtractionSchedule.error_le n (realization.length n) (inverseSlack n)
+      (outputBits n (choose n)) ((numerator n (choose n) : ℝ) / dyadicSize (densityBound n)) hn
+
 /-- The explicit repetition schedule makes any valid indexed label extractor computationally
 uniform. Only the proof uses the chosen indices; the sampler, hash, and test form one uniformly
 efficient family. The entropy budget discharges the complete statistical error. -/
@@ -178,8 +305,8 @@ theorem HasGap.extract_indexed_labels {pair : SamplablePair} {gap : ℕ → ℝ}
     (test : ∀ n i, List (List Bool) × Seed n i × BitString (outputBits n i) → ProbComp Bool)
     (htest : IsPPTOn (encPair (encPair encUnary encUnary)
       (encList (encPair encBits encBool))) encBool
-        (fun input => extractLabels (seed input.1.1 input.1.2) (hash input.1.1 input.1.2)
-          input.2 >>= test input.1.1 input.1.2))
+        (fun ((n, i), samples) => extractLabels (seed n i) (hash n i)
+          samples >>= test n i))
     (hcandidates : ComputableInPolyTime candidates encUnary encUnary)
     (hslack : ComputableInPolyTime inverseSlack encUnary encUnary)
     {numerator : ℕ → ℕ → ℕ} {densityBound : ℕ → ℕ}
@@ -211,23 +338,17 @@ theorem HasGap.extract_indexed_labels {pair : SamplablePair} {gap : ℕ → ℝ}
           (ExtractionSchedule.count n (realization.length n) (inverseSlack n))
           (seed n (choose n))).bind
             (fun output => ProbComp.eval (test n (choose n) output)))) := by
-  have hcandidates := hcandidates.tidy
-  have hslack := hslack.tidy
-  have hnumerator := hnumerator.tidy
-  have hdensity := hdensity.tidy
-  apply hpair.indexed_extracted_advantage_negligible realization choose seed hash test htest
-    (.of_tidy hcandidates)
-    (ExtractionSchedule.isPolyTime_count (.of_tidy (by fun_prop))
-      realization.length_isPolyTime (.of_tidy hslack)) (.of_tidy hnumerator)
-    (.of_tidy hdensity) hchoose hvalid hhash
-    (slack := fun n => ExtractionSchedule.slack n (realization.length n) (inverseSlack n))
-    (fun _ => Nat.cast_nonneg _)
-  apply negligible_of_eventually_le ExtractionSchedule.error_negligible
-  filter_upwards [hbudget] with n hn
-  apply NNReal.coe_le_coe.mp
-  rw [Real.coe_toNNReal _ (by positivity)]
-  simpa only [BitString, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, Nat.cast_pow,
-    Nat.cast_ofNat] using ExtractionSchedule.error_le n (realization.length n) (inverseSlack n)
-      (outputBits n (choose n)) ((numerator n (choose n) : ℝ) / dyadicSize (densityBound n)) hn
+  have hprepare : ComputableInPolyTime
+      (fun (((n, _), i), samples) => ((n, i), samples) :
+        ((ℕ × List Bool) × ℕ) × List (List Bool × Bool) →
+          (ℕ × ℕ) × List (List Bool × Bool))
+      (encPair (encPair (encPair encUnary encBits) encUnary)
+        (encList (encPair encBits encBool)))
+      (encPair (encPair encUnary encUnary)
+        (encList (encPair encBits encBool))) := by fun_prop
+  exact (hasGap_iff_hasGapWithAdvice_nil.mp hpair).extract_indexed_labels
+    realization choose seed hash (fun a i result => test a.1 i result)
+    (htest.preprocess hprepare) hcandidates hslack hnumerator hdensity
+    hchoose hvalid hhash hbudget
 
 end Cslib.Crypto.Pseudoentropy.SamplablePair

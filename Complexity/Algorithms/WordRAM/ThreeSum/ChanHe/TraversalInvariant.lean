@@ -122,7 +122,7 @@ structure Cursor.Invariant (a : Arena) (w : ℕ) (target : List Node)
   /-- The actual bitmap still represents all candidate primes. -/
   bitmap : a.Bitmap x.mem
   /-- The actual word stack represents exactly the pending entries. -/
-  stack : Stack.Rep (w + 2) a.stack a.capacity
+  stack : WordStack.Rep (w + 2) a.stack a.capacity
     (s.pending.flatMap Entry.words) (x.comap registers)
   /-- The existing finite depth invariant bounds pending entries. -/
   depth : Math.Bounded a.fuel (s.pending.map Entry.task)
@@ -156,24 +156,24 @@ structure Cursor.Invariant (a : Arena) (w : ℕ) (target : List Node)
 /-- A live loop has at least one pending entry, since each entry occupies seven actual words. -/
 theorem Cursor.Invariant.nonempty {a : Arena} {w : ℕ} {target : List Node}
     {s : Cursor} {x : Data 128} (h : s.Invariant a w target x)
-    (hc : (Cond.lt zero (registers Stack.len)).Holds x) : s.pending ≠ [] := by
+    (hc : (Cond.lt zero (registers WordStack.len)).Holds x) : s.pending ≠ [] := by
   intro he
   have hz := h.controls.2.2.2.2.2.2.2.2.2.1
   have hl := h.stack.length_eq
-  change x.regs zero < x.regs (registers Stack.len) at hc
+  change x.regs zero < x.regs (registers WordStack.len) at hc
   simp only [he, List.flatMap_nil, List.length_nil, Data.comap_regs] at hl
   omega
 
 /-- A finished actual loop has emitted the complete target, with every array already read back. -/
 theorem Cursor.Invariant.finished {a : Arena} {w : ℕ} {target : List Node}
     {s : Cursor} {x : Data 128} (h : s.Invariant a w target x)
-    (hc : ¬(Cond.lt zero (registers Stack.len)).Holds x) :
+    (hc : ¬(Cond.lt zero (registers WordStack.len)).Holds x) :
     s.pending = [] ∧ s.emitted.map Prod.snd = target := by
   have hz := h.controls.2.2.2.2.2.2.2.2.2.1
   have hl := h.stack.length_eq
   rw [length_serialized] at hl
-  change ¬x.regs zero < x.regs (registers Stack.len) at hc
-  change x.regs (registers Stack.len) = 7 * s.pending.length at hl
+  change ¬x.regs zero < x.regs (registers WordStack.len) at hc
+  change x.regs (registers WordStack.len) = 7 * s.pending.length at hl
   have he : s.pending = [] := List.eq_nil_of_length_eq_zero (by omega)
   refine ⟨he, ?_⟩
   simpa only [he, List.map_nil, Math.output, List.flatMap_nil, List.append_nil] using h.exactOutput

@@ -42,13 +42,14 @@ example (d : ℕ) : taper 1024 d = 0 := by
 example : degreeBound 1024 = 2 ^ 11 := by
   rw [degreeBound, log_two_1024]
 
-example : precisionBound 3 1024 0 = 3072 := rfl
+example : precisionBound 3 1024 0 = 33792 := by
+  rw [precisionBound, log_two_1024]
 
 /-- One level adds `8 C s (4 · 2 ^ a_0 + a_0 + 1)` with `a_0 = 0`. -/
-example : precisionBound 3 1024 1 = 3072 + 8 * 3 * 1024 * 5 := by
+example : precisionBound 3 1024 1 = 33792 + 8 * 3 * 1024 * 5 := by
   have h : slotBits 1024 0 = 0 := by
     simp [slotBits, prefixBits, taper, log_two_1024]
-  simp [precisionBound, h]
+  simp [precisionBound, log_two_1024, h]
 
 example : nodePrecision 5 2 3 7 1 = 5 + 8 * 2 * 4 + 8 * 7 * 4 := rfl
 
@@ -62,6 +63,12 @@ example : 1024 ^ 9 ≤ degreeBound 1024 ^ 10 ∧ degreeBound 1024 ^ 10 ≤ 2 ^ 2
 example : Active 1 1024 0 1000 5 :=
   Active.root (by norm_num) (by rw [show leafSize 1024 = 341 by
     rw [leafSize, log_two_1024, sqrt_10]]; norm_num) (by norm_num)
+
+/-- The enlarged root allowance includes precision `11264`, exceeding the old linear bound. -/
+example : Active 1 1024 0 1000 11264 :=
+  Active.root_logPrecision (by norm_num)
+    (by rw [leafSize, log_two_1024, sqrt_10]; norm_num)
+    (by rw [log_two_1024])
 
 /-- A child with `62` edges is not active at `s = 1024`: it is a leaf. -/
 example : ¬ Active 1 1024 1 62 5 := fun h => by
