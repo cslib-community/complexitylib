@@ -10,8 +10,9 @@ module
 public import Complexity.Crypto.Computational.Pseudoentropy.Seed
 public import Complexity.Probability.UniformNat
 public import Complexity.Crypto.Computational.Pseudoentropy.MatrixExtraction
+import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Crypto.Computational.Pseudoentropy.LabelExtraction
-import Complexity.Tactic.PPT
+import Complexity.Tactic.PolyTime.Init
 
 /-!
 # Executable extraction of repeated labels
@@ -72,9 +73,9 @@ theorem isPPTOn_extractWordLabels {α : Type} {input : α ↪ List Bool} {count 
     (hsamples : ComputableInPolyTime samples input (encList (encPair encBits encBool))) :
     IsPPTOn input
       (encPair (encList encBits) (encPair encBits encBits))
-      (fun a => extractWordLabels (count a) (outputBits a) (samples a)) := by
-  unfold extractWordLabels
-  ppt
+      (fun a => extractWordLabels (count a) (outputBits a) (samples a)) :=
+  isPPTOn_extractMatrixLabels hcount houtput
+    ((bits_encList_polyTime encBool).2.comp (.snd input (encList encBool))) hsamples
 
 attribute [program_certificate] isPPTOn_extractWordLabels
 
@@ -85,8 +86,8 @@ theorem eval_extractWordLabels (count outputBits : ℕ) (samples : List (List Bo
         (fun seed bits => LinearHash.hash (blocksEquiv (m := outputBits) (k := count) seed)
           (ofList count bits))
           samples)).map (fun result =>
-            (result.1, List.ofFn (extractedSeed result), List.ofFn (extractedDigest result))) := by
-  exact eval_extractMatrixLabels count outputBits id samples
+            (result.1, List.ofFn (extractedSeed result), List.ofFn (extractedDigest result))) :=
+  eval_extractMatrixLabels count outputBits id samples
 
 /-- The ideal word program agrees with the finite ideal distribution and retains the full seed. -/
 theorem eval_extractWordLabelsIdeal (source : ProbComp (List Bool)) (count outputBits : ℕ) :
@@ -94,8 +95,8 @@ theorem eval_extractWordLabelsIdeal (source : ProbComp (List Bool)) (count outpu
       (extractLabelsIdeal (Output := BitString outputBits) source count
         (ProbComp.uniform (BitString (outputBits * count)))).map
           (fun result =>
-            (result.1, List.ofFn (extractedSeed result), List.ofFn (extractedDigest result))) := by
-  exact eval_extractMatrixLabelsIdeal source count count outputBits
+            (result.1, List.ofFn (extractedSeed result), List.ofFn (extractedDigest result))) :=
+  eval_extractMatrixLabelsIdeal source count count outputBits
 
 /-- An ordinary word test after extraction gives the finite test required by the security
 theorem. Sampling, padding, hashing, and encoding the public data are all charged to PPT.
@@ -116,12 +117,13 @@ theorem isPPTOn_extractedWordTest {α : Type} {input : α ↪ List Bool} {count 
             (ofList (count input.1) bits)) input.2
         test input.1
           (result.1, List.ofFn (extractedSeed result), List.ofFn (extractedDigest result))) := by
-  have hword : IsPPTOn (encPair input
-      (encList (encPair encBits encBool))) encBool
-      (fun input => extractWordLabels (count input.1) (outputBits input.1) input.2 >>=
-        test input.1) := by ppt
-  apply hword.congr
-  intro input
+  let sampleEnc := encList (encPair encBits encBool)
+  let resultEnc := encPair (encList encBits) (encPair encBits encBits)
+  have hparam := ComputableInPolyTime.fst input sampleEnc
+  have hword := (isPPTOn_extractWordLabels (hcount.comp hparam) (houtput.comp hparam)
+    (.snd input sampleEnc)).bind_with (second := fun p => test p.1)
+    (htest.preprocess ((hparam.comp (.fst _ resultEnc)).prod (.snd _ resultEnc)))
+  refine hword.congr fun input => ?_
   simp only [ProbComp.eval_bind, eval_extractWordLabels, PMF.bind_map, Function.comp_def]
 
 open Filter in
@@ -161,15 +163,10 @@ theorem SamplablePair.HasGapWithAdvice.extract_indexed_word_labels {pair : Sampl
         test (n, advice n) (choose n) result))
       (ProbComp.eval (extractWordLabelsIdeal (Prod.fst <$> pair.sample n) (count n)
         (outputBits n (choose n)) >>= test (n, advice n) (choose n)))) := by
-  have hcandidates := hcandidates.tidy
-  have houtput := houtput.tidy
-  have hslack := hslack.tidy
-  have hnumerator := hnumerator.tidy
-  have hdensity := hdensity.tidy
   let count := fun n => ExtractionSchedule.count n (realization.length n) (inverseSlack n)
-  have hcount : ComputableTidilyInPolyTime count encUnary encUnary :=
-    (ExtractionSchedule.isPolyTime_count (.of_tidy (by fun_prop))
-      realization.length_isPolyTime (.of_tidy hslack)).tidy
+  have hcount := ExtractionSchedule.isPolyTime_count .id'
+    realization.length_isPolyTime hslack
+  have hn := (ComputableInPolyTime.fst (encPair encUnary encBits) encUnary).fst'
   have h := hpair.extract_indexed_labels realization choose
     (inverseSlack := inverseSlack)
     (fun n i => ProbComp.uniform (BitString (outputBits n i * count n)))
@@ -177,19 +174,14 @@ theorem SamplablePair.HasGapWithAdvice.extract_indexed_word_labels {pair : Sampl
       (blocksEquiv (m := outputBits n i) (k := count n) seed) (ofList (count n) bits))
     (fun a i result => test a i (result.1, List.ofFn result.2.1, List.ofFn result.2.2))
     (isPPTOn_extractedWordTest
-      (α := (ℕ × List Bool) × ℕ) (input := encPair (encPair encUnary encBits) encUnary)
       (count := fun input : (ℕ × List Bool) × ℕ => count input.1.1)
       (outputBits := fun input : (ℕ × List Bool) × ℕ => outputBits input.1.1 input.2)
       (fun input : (ℕ × List Bool) × ℕ => test input.1 input.2) htest
-      (.of_tidy (by fun_prop))
-      (.of_tidy (houtput.comp (g := fun input : (ℕ × List Bool) × ℕ => (input.1.1, input.2))
-        (by fun_prop))))
-    (.of_tidy hcandidates) (.of_tidy hslack) (.of_tidy hnumerator) (.of_tidy hdensity) hchoose
-      hvalid
+      (hcount.comp hn) (houtput.comp (hn.prod (.snd _ encUnary))))
+    hcandidates hslack hnumerator hdensity hchoose hvalid
     (fun n i => by simpa only [ProbComp.eval_uniform, ofList_ofFn] using
       LinearHash.isTwoUniversal_flat (count n) (outputBits n i)) hbudget
-  apply h.congr
-  intro n
+  refine h.congr fun n => ?_
   have hpublic : ProbComp.eval ((fun value => pair.encode n value.1) <$>
       pair.latentSample n) = ProbComp.eval (Prod.fst <$> pair.sample n) := by
     simp only [ProbComp.eval_map, pair.eval_latentSample, pair.eval_sample, PMF.map_comp,
@@ -235,17 +227,13 @@ theorem SamplablePair.HasGap.extract_indexed_word_labels {pair : SamplablePair} 
         test n (choose n) result))
       (ProbComp.eval (extractWordLabelsIdeal (Prod.fst <$> pair.sample n) (count n)
         (outputBits n (choose n)) >>= test n (choose n)))) := by
-  have hprepare : ComputableInPolyTime
-      (fun (((n, _), i), result) => ((n, i), result) :
-        ((ℕ × List Bool) × ℕ) × (List (List Bool) × List Bool × List Bool) →
-          (ℕ × ℕ) × (List (List Bool) × List Bool × List Bool))
-      (encPair (encPair (encPair encUnary encBits) encUnary)
-        (encPair (encList encBits) (encPair encBits encBits)))
-      (encPair (encPair encUnary encUnary)
-        (encPair (encList encBits) (encPair encBits encBits))) := by fun_prop
-  exact (SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mp hpair).extract_indexed_word_labels
+  have houter := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary)
+    (encPair (encList encBits) (encPair encBits encBits))
+  have h := (SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mp hpair).extract_indexed_word_labels
     realization choose hcandidates houtput hslack hnumerator hdensity hchoose hvalid hbudget
-    (fun a i result => test a.1 i result) (htest.preprocess hprepare)
+    (fun a => test a.1) (htest.preprocess ((houter.fst'.fst'.prod houter.snd').prod (.snd _ _)))
+  dsimp only at h ⊢
+  exact h
 
 open Filter in
 /-- Computational label extraction relative to fixed advice as two ordinary word programs. The
@@ -277,20 +265,14 @@ theorem SamplablePair.HasGapWithAdvice.extract_word_labels {pair : SamplablePair
         test (n, advice n) result))
       (ProbComp.eval (extractWordLabelsIdeal (Prod.fst <$> pair.sample n) (count n)
         (outputBits n) >>= test (n, advice n)))) := by
+  have hn := ComputableInPolyTime.fst encUnary encUnary
+  have houter := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary)
+    (encPair (encList encBits) (encPair encBits encBits))
   exact hpair.extract_indexed_word_labels realization (fun _ => 0)
-    (candidates := fun _ => 1) (outputBits := fun n _ => outputBits n)
-    (numerator := fun n _ => numerator n) (by polytime) (by polytime) hslack (by polytime)
-    hdensity (Eventually.of_forall (by intro n; decide)) hvalid hbudget (fun a _ => test a)
-    (by
-      have hprepare : ComputableInPolyTime
-          (fun ((a, _), result) => (a, result) :
-            ((ℕ × List Bool) × ℕ) × (List (List Bool) × List Bool × List Bool) →
-              (ℕ × List Bool) × (List (List Bool) × List Bool × List Bool))
-          (encPair (encPair (encPair encUnary encBits) encUnary)
-            (encPair (encList encBits) (encPair encBits encBits)))
-          (encPair (encPair encUnary encBits)
-            (encPair (encList encBits) (encPair encBits encBits))) := by fun_prop
-      exact htest.preprocess hprepare)
+    (outputBits := fun n _ => outputBits n) (numerator := fun n _ => numerator n)
+    (.const 1) (houtput.comp hn) hslack (hnumerator.comp hn) hdensity
+    (Eventually.of_forall (by intro n; decide)) hvalid hbudget (fun a _ => test a)
+    (htest.preprocess (houter.fst'.prod (.snd _ _)))
 
 open Filter in
 /-- Computational label extraction as two ordinary word programs. The client supplies the
@@ -321,9 +303,12 @@ theorem SamplablePair.HasGap.extract_word_labels {pair : SamplablePair} {gap : �
         test n result))
       (ProbComp.eval (extractWordLabelsIdeal (Prod.fst <$> pair.sample n) (count n)
         (outputBits n) >>= test n))) := by
-  exact hpair.extract_indexed_word_labels realization (fun _ => 0)
-    (candidates := fun _ => 1) (outputBits := fun n _ => outputBits n)
-    (numerator := fun n _ => numerator n) (by polytime) (by polytime) hslack (by polytime)
-    hdensity (Eventually.of_forall (by intro n; decide)) hvalid hbudget (fun n _ => test n) (by ppt)
+  have houter := ComputableInPolyTime.fst (encPair encUnary encBits)
+    (encPair (encList encBits) (encPair encBits encBits))
+  have h := (SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mp hpair).extract_word_labels
+    realization houtput hslack hnumerator hdensity hvalid hbudget
+    (fun a => test a.1) (htest.preprocess (houter.fst'.prod (.snd _ _)))
+  dsimp only at h ⊢
+  exact h
 
 end Cslib.Crypto.Pseudoentropy

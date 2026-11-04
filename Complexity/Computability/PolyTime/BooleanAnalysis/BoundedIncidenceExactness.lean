@@ -352,9 +352,10 @@ private theorem formalEqParityFactor_congr_fiber {n' D_cap Q r A₀ R k' ℓ : �
     have key : ∀ h, h = D.factorAssign f_aug t → x h = x' h := by rintro h rfl; exact hg_eq
     dsimp only [x₁, x₂]
     rw [localBitsEquiv_apply hVG, localBitsEquiv_apply hVG, key _ (mem_varGroup.mp hw)]
-  unfold formalEqParityFactor formalClearedMonomialSum
-  congr 1; refine Finset.sum_congr rfl fun M hM => ?_
-  congr 1; refine Finset.prod_congr rfl fun v hvM => ?_
+  apply congrArg (parityFactorCleared ℓ _)
+  refine Finset.sum_congr rfl fun M hM => ?_
+  apply congrArg (_ * ·)
+  refine Finset.prod_congr rfl fun v hvM => ?_
   have hv_sc : v ∈ scope f_aug := hscope (Finset.mem_biUnion.mpr ⟨M, hM, hvM⟩)
   let e : BalancedSchedules.ScopeIncidence scope := ⟨f_aug, ⟨v, hv_sc⟩⟩
   have hrows_v : rows v =
@@ -375,11 +376,10 @@ private theorem formalEqParityFactor_congr_fiber {n' D_cap Q r A₀ R k' ℓ : �
   rw [hnode_eq, Polynomial.eval_map_apply, Polynomial.eval_map_apply] at hscaled_q
   simp only [Int.coe_castRingHom] at hscaled_q
   have hint_eval := Int.cast_injective hscaled_q
-  have heval_sum : ∀ x : Fin n' → Bool,
+  have heval_sum (x : Fin n' → Bool) :
       (evalVarReplacementRowScaledIntPoly D e x).eval ((t.1 : ℤ) + 1) =
         ∑ i : Fin n', (varReplacementRowScaledInt Q r A₀ R D.place
           (BalancedSchedules.scopeVarOf scope) e i).eval ((t.1 : ℤ) + 1) * bitVal ℤ (x i) := by
-    intro x
     dsimp only [evalVarReplacementRowScaledIntPoly]
     change Polynomial.evalRingHom ((t.1 : ℤ) + 1) (∑ i, _) = _
     rw [map_sum]
@@ -492,32 +492,31 @@ private theorem toJetTable_measurementFold_eq {n' Q r A₀ R J ℓ k' : ℕ} {τ
   let P_eq : Fin eqs'.length → Finset (Finset (Fin n')) := fun f =>
     HeavyBranchFold.toFinsetEquation n' eqs'[f]
   let y_U : Fin n' → ℤ := fun i => bitVal ℤ (decide (i ∈ supportOfList n' indU))
-  have hy_U_eq : (fun i : Fin n' => bitVal ℤ (indU.getD i.1 false)) = y_U := by
-    funext i; congr 1; apply Bool.eq_iff_iff.mpr
-    simp only [decide_eq_true_eq, mem_supportOfList]
-  have hemb_val : ∀ f : Fin eqs'.length, (emb f).1 = f.1 := fun f => by
+  have hy_U_eq : (fun i : Fin n' => bitVal ℤ (indU.getD i.1 false)) = y_U :=
+    funext fun i => congrArg (bitVal ℤ) (Bool.eq_iff_iff.mpr
+      (by simp only [decide_eq_true_eq, mem_supportOfList]))
+  have hemb_val (f : Fin eqs'.length) : (emb f).1 = f.1 := by
     simp only [emb, withNeutralScopesIndexEquiv, Equiv.trans_apply, finCongr_apply, Fin.val_cast,
       finSumFinEquiv_apply_left, Fin.val_castAdd]
-  have hscope_eq : ∀ f : Fin eqs'.length, scope (emb f) = equationScope (P_eq f) := fun f => by
+  have hscope_eq (f : Fin eqs'.length) : scope (emb f) = equationScope (P_eq f) := by
     dsimp only [scope, emb, P_eq]
     rw [listScopeFamily_withNeutralScopesList]
-    dsimp only [withNeutralScope]
     exact listScopeFamily_map_equationVars n' eqs' f
-  have hgms : ∀ g : Fin r, (∀ w ∈ vGroups_t.getD g.1 [], w < n') ∧
+  have hgms (g : Fin r) : (∀ w ∈ vGroups_t.getD g.1 [], w < n') ∧
       (grpMeas_t.getD g.1 []).length = m_rows ∧
       ∀ row ∈ grpMeas_t.getD g.1 [], row.length = (vGroups_t.getD g.1 []).length ∧
-        (row.map Int.natAbs).sum ≤ r ^ (2 * Q) := fun g => by
+        (row.map Int.natAbs).sum ≤ r ^ (2 * Q) := by
     dsimp only [vGroups_t, grpMeas_t, m_rows]
     rw [hdata]
     exact groupMeasurementMatrices_spec (n' := n') (A₀ := A₀) (R := R)
       augScopes sv ss hr1 le_rfl t g
-  have hVG : ∀ g : Fin r, (vGroups_t.getD g.1 []).Nodup ∧ (∀ w ∈ vGroups_t.getD g.1 [], w < n') ∧
-      ∀ v : Fin n', v.1 ∈ vGroups_t.getD g.1 [] ↔ D.varAssign v t = g := fun g =>
+  have hVG (g : Fin r) : (vGroups_t.getD g.1 []).Nodup ∧ (∀ w ∈ vGroups_t.getD g.1 [], w < n') ∧
+      ∀ v : Fin n', v.1 ∈ vGroups_t.getD g.1 [] ↔ D.varAssign v t = g :=
     ⟨(href.2.2.1 t g).1, (hgms g).1, fun v => ((href.2.2.1 t g).2.2 v).trans mem_varGroup⟩
-  have hdg_eq : ∀ g : Fin r, min (2 * n') (vGroups_t.getD g.1 []).length =
-      (vGroups_t.getD g.1 []).length := fun g =>
+  have hdg_eq (g : Fin r) : min (2 * n') (vGroups_t.getD g.1 []).length =
+      (vGroups_t.getD g.1 []).length :=
     Nat.min_eq_right ((href.2.2.1 t g).2.1.trans (Nat.div_le_self _ _))
-  have hgrp_prod : ∀ (g : Fin r) (xList : List Bool),
+  have hgrp_prod (g : Fin r) (xList : List Bool) :
       CommonCountingAccum.toJetTable J ℓ
         (CommonCountingAccum.prodJet J ℓ
           ((grpEqLists.getD g.1 []).map fun eqPair =>
@@ -527,15 +526,14 @@ private theorem toJetTable_measurementFold_eq {n' Q r A₀ R J ℓ k' : ℕ} {τ
         (∏ f ∈ univ.filter (fun f : Fin eqs'.length => D.factorAssign (emb f) t = g),
           formalEqParityFactor dDen k' ℓ (designRows f) node
             (fun i => xList.getD i.1 false) (P_eq f)) := by
-    intro g xList
     rw [CommonCountingAccum.toJetTable_prodJet]
     dsimp only [grpEqLists]
     rw [List.getD_map_range _ [] g.2]
     unfold groupEquationsAt
-    have hrange_fin : List.range eqs'.length = (List.finRange eqs'.length).map Fin.val := by
-      refine List.ext_getElem (by simp only [List.length_range, List.length_map,
-        List.length_finRange]) fun k hk _ => ?_
-      simp only [List.getElem_range, List.getElem_map, List.getElem_finRange, Fin.val_cast]
+    have hrange_fin : List.range eqs'.length = (List.finRange eqs'.length).map Fin.val :=
+      List.ext_getElem (by simp only [List.length_range, List.length_map, List.length_finRange])
+        fun _ _ _ => by simp only [List.getElem_range, List.getElem_map, List.getElem_finRange,
+          Fin.val_cast]
     rw [hrange_fin, List.filter_map, List.map_map, List.map_map, List.map_map]
     let p_pred : Fin eqs'.length → Bool := fun f =>
       decide ((data.factorGroups.getD f.1 []).getD t.1 0 = g.1)
@@ -552,8 +550,8 @@ private theorem toJetTable_measurementFold_eq {n' Q r A₀ R J ℓ k' : ℕ} {τ
       refine List.map_congr_left fun f _ => ?_
       simp only [Function.comp_apply, List.getD_eq_getElem eqs' [] f.2]
       have hert : eqRowTables.getD f.1 [] =
-          (List.range n').map fun v => data.lookupReplacementRow f.1 v := by
-        dsimp only [eqRowTables, buildEqRowTables]; exact List.getD_map_range _ [] f.2
+          (List.range n').map fun v => data.lookupReplacementRow f.1 v :=
+        List.getD_map_range _ [] f.2
       have hrows_len : ∀ r_tbl ∈ eqRowTables.getD f.1 [], r_tbl.length ≤ n' := by
         rw [hert]; intro r_tbl hr_tbl
         obtain ⟨v, _, rfl⟩ := List.mem_map.mp hr_tbl
@@ -561,10 +559,11 @@ private theorem toJetTable_measurementFold_eq {n' Q r A₀ R J ℓ k' : ℕ} {τ
       rw [toJetTable_evalEquationParityFactorJet_eq dDen node hrows_len indU xList
         (hcan _ (List.getElem_mem f.2)) (hk_deg _ (List.getElem_mem f.2))
         (hvars _ (List.getElem_mem f.2)), hy_U_eq]
-      dsimp only [F_jet]; congr 1
-      unfold formalEqParityFactor formalClearedMonomialSum
-      congr 1; refine Finset.sum_congr rfl fun M hM => ?_
-      congr 1; refine Finset.prod_congr rfl fun v hvM => ?_
+      apply congrArg (evalJetHom n' J ℓ y_U)
+      apply congrArg (parityFactorCleared ℓ _)
+      refine Finset.sum_congr rfl fun M hM => ?_
+      apply congrArg (_ * ·)
+      refine Finset.prod_congr rfl fun v hvM => ?_
       have hv_sc : v ∈ scope (emb f) := (hscope_eq f).symm ▸ Finset.mem_biUnion.mpr ⟨M, hM, hvM⟩
       have hrow_eq : (fun i : Fin n' =>
           Polynomial.ofCoeffList (((eqRowTables.getD f.1 []).getD v.1 []).getD i.1 [])) =
@@ -609,31 +608,30 @@ private theorem toJetTable_measurementFold_eq {n' Q r A₀ R J ℓ k' : ℕ} {τ
     congrArg (evalJetHom n' J ℓ y_U) (Finset.prod_congr rfl fun f hf =>
       formalEqParityFactor_congr_fiber (k' := k') (ℓ := ℓ) hdata href t hVG (emb f)
         (Finset.mem_filter.mp hf).2 (hscope_eq f).symm.subset dDen x x' hm hg)
-  have hstep : ∀ (p_par : ℕ × ℕ) (word : List ℤ) (acc : JetRows),
+  have hstep (p_par : ℕ × ℕ) (word : List ℤ) (acc : JetRows) :
       (measurementStepBody ((p_par, word), (measCtx, acc))).1 = measCtx ∧
       CommonCountingAccum.toJetTable J ℓ
         (measurementStepBody ((p_par, word), (measCtx, acc))).2 =
       CommonCountingAccum.toJetTable J ℓ acc + fiber (split word) := by
-    intro p_par word acc
     unfold measurementStepBody
     dsimp only [measCtx]
     split_ifs with hAll
     · refine ⟨rfl, ?_⟩
       rw [CommonCountingAccum.toJetTable_addJet]
-      congr 1
+      refine congrArg (CommonCountingAccum.toJetTable J ℓ acc + ·) ?_
       let repOpts : List (Option (List Bool)) := (List.range r).map fun g =>
         BooleanMeasurements.search Prod.fst Prod.snd
           ((grpMeas_t.getD g [], (word.drop (g * m_rows)).take m_rows),
             min (2 * n') (vGroups_t.getD g []).length)
-      have hAll_mem : ∀ g : Fin r, (BooleanMeasurements.search Prod.fst Prod.snd
+      have hAll_mem (g : Fin r) : (BooleanMeasurements.search Prod.fst Prod.snd
           ((grpMeas_t.getD g.1 [], (word.drop (g.1 * m_rows)).take m_rows),
-            (vGroups_t.getD g.1 []).length)).isSome = true := fun g => by
+            (vGroups_t.getD g.1 []).length)).isSome = true := by
         have hm := (List.all_eq_true.mp hAll) _ (List.mem_map_of_mem (List.mem_range.mpr g.2))
         simpa only [vGroups_t, grpMeas_t, hdg_eq g] using hm
       let reps := repOpts.map fun o => o.getD []
-      have hreps_spec : ∀ g : Fin r, (reps.getD g.1 []).length = (vGroups_t.getD g.1 []).length ∧
+      have hreps_spec (g : Fin r) : (reps.getD g.1 []).length = (vGroups_t.getD g.1 []).length ∧
           BooleanMeasurements.evalBoolMatrix (grpMeas_t.getD g.1 []) (reps.getD g.1 []) =
-            (word.drop (g.1 * m_rows)).take m_rows := fun g => by
+            (word.drop (g.1 * m_rows)).take m_rows := by
         dsimp only [reps, repOpts]
         rw [List.map_map, List.getD_map_range _ [] g.2, Function.comp_apply, hdg_eq g]
         obtain ⟨ys, hys⟩ := Option.isSome_iff_exists.mp (hAll_mem g)
@@ -641,11 +639,11 @@ private theorem toJetTable_measurementFold_eq {n' Q r A₀ R J ℓ k' : ℕ} {τ
         exact BooleanMeasurements.search_some Prod.fst Prod.snd _ hys
       let rep : ∀ g : Fin r, BitString (vGroups_t.getD g.1 []).length := fun g j =>
         (reps.getD g.1 [])[j]'(by rw [(hreps_spec g).1]; exact j.2)
-      have hreps_ofFn : ∀ g : Fin r, reps.getD g.1 [] = List.ofFn (rep g) := fun g =>
+      have hreps_ofFn (g : Fin r) : reps.getD g.1 [] = List.ofFn (rep g) :=
         List.ext_getElem ((hreps_spec g).1.trans (List.length_ofFn).symm) fun k _ _ => by
           simp only [List.getElem_ofFn, rep, Fin.getElem_fin]
-      have hrep_meas : ∀ g : Fin r, BooleanMeasurements.evalBoolMatrix (grpMeas_t.getD g.1 [])
-          (List.ofFn (rep g)) = (word.drop (g.1 * m_rows)).take m_rows := fun g => by
+      have hrep_meas (g : Fin r) : BooleanMeasurements.evalBoolMatrix (grpMeas_t.getD g.1 [])
+          (List.ofFn (rep g)) = (word.drop (g.1 * m_rows)).take m_rows := by
         rw [← hreps_ofFn g]; exact (hreps_spec g).2
       let xStar := buildBaseAssignment n' r vGroups_t reps
       have hgj_ofFn : (List.map (fun g =>
@@ -662,13 +660,12 @@ private theorem toJetTable_measurementFold_eq {n' Q r A₀ R J ℓ k' : ℕ} {τ
               ((n', J, ℓ, k'), (node, dDen),
                 (vGroups_t.getD g.1 [], grpMeas_t.getD g.1 [],
                   (word.drop (g.1 * m_rows)).take m_rows),
-                (indE, indU, xStar), grpEqLists.getD g.1 [])) := by
-        refine List.ext_getElem
-            (by simp only [List.length_map, List.length_range, List.length_ofFn])
-          fun k _ hk => ?_
-        have hk_lt : k < r := by simpa only [List.length_ofFn] using hk
-        simp only [List.getElem_map, List.getElem_range, List.getElem_ofFn, vGroups_t, grpMeas_t,
-          hdg_eq ⟨k, hk_lt⟩]
+                (indE, indU, xStar), grpEqLists.getD g.1 [])) :=
+        List.ext_getElem (by simp only [List.length_map, List.length_range, List.length_ofFn])
+          fun k _ hk => by
+            have hk_lt : k < r := by simpa only [List.length_ofFn] using hk
+            simp only [List.getElem_map, List.getElem_range, List.getElem_ofFn, vGroups_t,
+              grpMeas_t, hdg_eq ⟨k, hk_lt⟩]
       change CommonCountingAccum.toJetTable J ℓ (CommonCountingAccum.prodJet J ℓ _) = _
       rw [hgj_ofFn, CommonCountingAccum.toJetTable_prodJet, List.map_ofFn, List.prod_ofFn]
       simp only [Function.comp_apply, CommonCountingAccum.toJetTable_streamGroupJetSum_eq_sum]
@@ -711,17 +708,15 @@ private theorem toJetTable_measurementFold_eq {n' Q r A₀ R J ℓ k' : ℕ} {τ
   let c_meas := r * m_rows
   let D_cap := r ^ (2 * Q)
   let N_cnt := MeasurementFold.count (c_meas, D_cap)
-  have hfold : ∀ (ws : List (List ℤ)) (acc : JetRows),
+  have hfold (ws : List (List ℤ)) (acc : JetRows) :
       (ws.foldl (fun st w => measurementStepBody (((c_meas, D_cap), w), st)) (measCtx, acc)).1 =
         measCtx ∧
       CommonCountingAccum.toJetTable J ℓ
         (ws.foldl (fun st w => measurementStepBody (((c_meas, D_cap), w), st)) (measCtx, acc)).2 =
         CommonCountingAccum.toJetTable J ℓ acc + (ws.map fun w => fiber (split w)).sum := by
-    intro ws
-    induction ws with
-    | nil => intro acc; simp only [List.foldl_nil, List.map_nil, List.sum_nil, add_zero, and_self]
+    induction ws generalizing acc with
+    | nil => simp only [List.foldl_nil, List.map_nil, List.sum_nil, add_zero, and_self]
     | cons w ws ih =>
-      intro acc
       simp only [List.foldl_cons, List.map_cons, List.sum_cons]
       have h1 := hstep (c_meas, D_cap) w acc
       have hst : measurementStepBody (((c_meas, D_cap), w), (measCtx, acc)) =
@@ -734,10 +729,10 @@ private theorem toJetTable_measurementFold_eq {n' Q r A₀ R J ℓ k' : ℕ} {τ
   have hrange_ofFn : List.map
       ((fun w => fiber (split w)) ∘ Cslib.Radix.measurementValues c_meas D_cap) (List.range N_cnt) =
       List.ofFn (fun idx : Fin N_cnt =>
-        fiber (split (Cslib.Radix.measurementValues c_meas D_cap idx.1))) := by
-    refine List.ext_getElem (by simp only [List.length_map, List.length_range, List.length_ofFn])
-      fun k _ hk => ?_
-    simp only [List.getElem_map, List.getElem_range, List.getElem_ofFn, Function.comp_apply]
+        fiber (split (Cslib.Radix.measurementValues c_meas D_cap idx.1))) :=
+    List.ext_getElem (by simp only [List.length_map, List.length_range, List.length_ofFn])
+      fun k _ hk => by
+        simp only [List.getElem_map, List.getElem_range, List.getElem_ofFn, Function.comp_apply]
   rw [hrange_ofFn, List.sum_ofFn]
   -- Each local assignment has exactly one decoded measurement index.
   have hlen : ∀ g ug, (meas g ug).length = m_rows := fun g ug => by
@@ -882,19 +877,16 @@ private theorem toJetTable_subsetPairFold_eq {n' Q r A₀ R q ℓ k' : ℕ} {τ 
   let mobBody : SubsetPairFold.DecodedPair × JetTable J ℓ ℤ → JetTable J ℓ ℤ := fun p =>
     let term := G (supportOfList n' p.1.1) (supportOfList n' p.1.2.1)
     if p.1.2.2 = true then p.2 - term else p.2 + term
-  have hsub_fold : ∀ (items : List SubsetPairFold.DecodedPair) (acc : JetRows),
+  have hsub_fold (items : List SubsetPairFold.DecodedPair) (acc : JetRows) :
       (items.foldl (fun st item => subsetPairStepBody (item, st)) (subCtx, acc)).1 = subCtx ∧
       CommonCountingAccum.toJetTable J ℓ
         (items.foldl (fun st item => subsetPairStepBody (item, st)) (subCtx, acc)).2 =
       items.foldl (fun accT item => mobBody (item, accT))
         (CommonCountingAccum.toJetTable J ℓ acc) := by
-    intro items
-    induction items with
-    | nil => intro acc; exact ⟨rfl, rfl⟩
+    induction items generalizing acc with
+    | nil => exact ⟨rfl, rfl⟩
     | cons item items ih =>
-      intro acc
       simp only [List.foldl_cons]
-      have h1_fst : (subsetPairStepBody (item, (subCtx, acc))).1 = subCtx := rfl
       have h1_snd : CommonCountingAccum.toJetTable J ℓ
           (subsetPairStepBody (item, (subCtx, acc))).2 =
           mobBody (item, CommonCountingAccum.toJetTable J ℓ acc) := by
@@ -907,14 +899,14 @@ private theorem toJetTable_subsetPairFold_eq {n' Q r A₀ R q ℓ k' : ℕ} {τ 
                 (data.varGroups.getD t.1 [], data.groupMeasurementMatrices.getD t.1 []),
                 (item.1, item.2.1), grpEqLists), zeroJet J ℓ)).2.2.2 =
             G (supportOfList n' item.1) (supportOfList n' item.2.1) :=
-          toJetTable_measurementFold_eq (J := J) (ℓ := ℓ) hr1 hcan hvars hk_deg hdata href t
-            item.1 item.2.1
+          toJetTable_measurementFold_eq (J := J) (ℓ := ℓ) hr1 hcan hvars hk_deg hdata
+            href t item.1 item.2.1
         cases item.2.2
         · simp only [Bool.false_eq_true, ↓reduceIte, hm]
         · simp only [↓reduceIte, CommonCountingAccum.toJetTable_smulJet, hm, neg_one_smul,
             sub_eq_add_neg]
       have hst : subsetPairStepBody (item, (subCtx, acc)) =
-          (subCtx, (subsetPairStepBody (item, (subCtx, acc))).2) := Prod.ext h1_fst rfl
+          (subCtx, (subsetPairStepBody (item, (subCtx, acc))).2) := Prod.ext rfl rfl
       rw [hst]
       obtain ⟨ih1, ih2⟩ := ih _
       exact ⟨ih1, by rw [ih2, h1_snd]⟩
@@ -930,14 +922,6 @@ private theorem toJetTable_subsetPairFold_eq {n' Q r A₀ R q ℓ k' : ℕ} {τ 
   let p_formal : (Fin n' → Bool) → MvPolynomial (Fin n') ℤ := fun x =>
     (((∏ f : Fin eqs'.length, formalEqParityFactor dDen k' ℓ (designRows f) node x
       (P_eq f)).coeff u_col.1).coeff j.1)
-  have hG_entry : ∀ E U : Finset (Fin n'),
-      G E U j u_col = ∑ x ∈ univ.filter (fun x : Fin n' → Bool => ∀ i ∈ E, x i = true),
-        MvPolynomial.eval (fun i => bitVal ℤ (decide (i ∈ U))) (p_formal x) := fun E U => by
-    dsimp only [G]
-    rw [jetTable_sum_apply]
-    refine Finset.sum_congr rfl fun x _ => ?_
-    simp only [evalJetHom, RingHom.comp_apply, JetTable.ofPolyVPolyZ_apply,
-      Polynomial.coe_mapRingHom, Polynomial.coeff_map, p_formal]
   have hlhs_entry :
       (∑ E ∈ (univ : Finset (Fin n')).powerset.filter (fun E => #E ≤ q),
         ∑ U ∈ E.powerset, (-1 : JetTable J ℓ ℤ) ^ (#E - #U) * G E U) j u_col =
@@ -949,7 +933,13 @@ private theorem toJetTable_subsetPairFold_eq {n' Q r A₀ R q ℓ k' : ℕ} {τ 
     refine Finset.sum_congr rfl fun E _ => ?_
     rw [jetTable_sum_apply]
     refine Finset.sum_congr rfl fun U _ => ?_
-    rw [jetTable_neg_one_pow_mul_apply, hG_entry]
+    rw [jetTable_neg_one_pow_mul_apply]
+    dsimp only [G]
+    rw [jetTable_sum_apply]
+    apply congrArg (_ * ·)
+    refine Finset.sum_congr rfl fun x _ => ?_
+    simp only [evalJetHom, RingHom.comp_apply, JetTable.ofPolyVPolyZ_apply,
+      Polynomial.coe_mapRingHom, Polynomial.coeff_map, p_formal]
   have hp_deg : ∀ x : Fin n' → Bool, (p_formal x).totalDegree ≤ q := fun x =>
     (totalDegree_coeff_prod_formalEqParityFactor_le univ dDen k' ℓ designRows node x P_eq
       u_col.1 j.1).trans (Nat.lt_succ_iff.mp j.2)
@@ -973,12 +963,12 @@ private theorem toJetTable_subsetPairFold_eq {n' Q r A₀ R q ℓ k' : ℕ} {τ 
     dsimp only [scope, emb, P_eq]
     rw [listScopeFamily_withNeutralScopesList]
     exact listScopeFamily_map_equationVars n' eqs' f
-  have hx_term : ∀ x : Fin n' → Bool,
+  have hx_term (x : Fin n' → Bool) :
       MvPolynomial.eval (fun i => bitVal ℤ (x i)) (p_formal x) =
       ((∏ f : Fin eqs'.length, parityFactorCleared ℓ (Polynomial.C (dDen ^ k'))
         (clearedMonomialSumPoly dDen k'
           (fun v => Polynomial.taylor node (designReplacementScaledIntMap D emb x f v))
-          (P_eq f))).coeff u_col.1).coeff j.1 := fun x => by
+          (P_eq f))).coeff u_col.1).coeff j.1 := by
     dsimp only [p_formal]
     rw [← Polynomial.coeff_map, ← Polynomial.coe_mapRingHom, ← Polynomial.coeff_map,
       Polynomial.map_prod]
@@ -987,20 +977,20 @@ private theorem toJetTable_subsetPairFold_eq {n' Q r A₀ R q ℓ k' : ℕ} {τ 
     simp only [Polynomial.coe_mapRingHom, formalEqParityFactor,
       map_parityFactorCleared (Polynomial.mapRingHom (MvPolynomial.eval fun i => bitVal ℤ (x i))),
       Polynomial.map_C, MvPolynomial.eval_C]
-    congr 1
+    apply congrArg (parityFactorCleared ℓ _)
     rw [formalClearedMonomialSum, Polynomial.map_sum, clearedMonomialSumPoly]
     refine Finset.sum_congr rfl fun M hM => ?_
     rw [Polynomial.map_mul, Polynomial.map_C, MvPolynomial.eval_C, Polynomial.map_prod,
       clearedMonomialPoly]
-    congr 1
+    apply congrArg (_ * ·)
     refine Finset.prod_congr rfl fun v hvM => ?_
     have hv_sc : v ∈ scope (emb f) := (hscope_eq f).symm ▸ Finset.mem_biUnion.mpr ⟨M, hM, hvM⟩
     rw [Cslib.AffineTaylor.map_eval_self_affineInput,
       designReplacementScaledIntMap_of_mem D emb x hv_sc]
-    congr 1
-    simp only [designRows, hv_sc, ↓reduceDIte, evalVarReplacementRowScaledIntPoly, mul_comm]
-    rfl
-  simp only [hx_term]
+    refine congrArg (Polynomial.taylor node) (Finset.sum_congr rfl fun i _ => ?_)
+    simp only [designRows, hv_sc, ↓reduceDIte]
+    exact mul_comm _ _
+  rw [Finset.sum_congr rfl fun x _ => hx_term x]
   have hsum_coeff : (∑ x : Fin n' → Bool,
       ((∏ f : Fin eqs'.length, parityFactorCleared ℓ (Polynomial.C (dDen ^ k'))
         (clearedMonomialSumPoly dDen k'
@@ -1057,21 +1047,14 @@ theorem evalBoundedIncidenceBranch_eq_rootCount {N₀_branch n' : ℕ}
   let scheds := BalancedSchedules.constructBalancedSchedules
     n' augScopes.length Q r (b + w) edges
   let data := buildReplacementDesignData n' (r ^ (2 * Q)) Q r A₀ R augScopes scheds.1 scheds.2
-  have hshape' : validDesignShape n' r eqs'.length data = true := by
-    simpa only [b, w, β, r, Q, R, A₀, augScopes, edges, scheds, data,
-      Nat.min_eq_right hQn, Nat.min_eq_right hRn, Nat.min_eq_right hrn,
-      Nat.min_eq_right hA₀n, Nat.min_eq_right haux] using hshape
-  have href' : data.Refines augScopes D := by
-    simpa only [b, w, β, r, Q, R, A₀, augScopes, edges, scheds, data,
-      Nat.min_eq_right hQn, Nat.min_eq_right hRn, Nat.min_eq_right hrn,
-      Nat.min_eq_right hA₀n, Nat.min_eq_right haux] using href
-  have hrmeas_le' : r * data.measurementMatrix.length ≤ n' := by
-    simpa only [b, w, β, r, Q, R, A₀, augScopes, edges, scheds, data,
-      Nat.min_eq_right hQn, Nat.min_eq_right hRn, Nat.min_eq_right hrn,
-      Nat.min_eq_right hA₀n, Nat.min_eq_right haux] using hrmeas_le
+  rw [Nat.min_eq_right hQn, Nat.min_eq_right hRn, Nat.min_eq_right hrn,
+    Nat.min_eq_right hA₀n, Nat.min_eq_right haux] at hshape href hrmeas_le
+  have hshape' : validDesignShape n' r eqs'.length data = true := hshape
+  have href' : data.Refines augScopes D := href
   have hc_meas : min (4 * (n' + 1) * (eqs'.length * n' + n' + 1))
       (r * data.measurementMatrix.length) = r * data.measurementMatrix.length :=
-    Nat.min_eq_right (hrmeas_le'.trans (by nlinarith [Nat.zero_le (eqs'.length * n')]))
+    Nat.min_eq_right (hrmeas_le.trans
+      ((by omega : n' ≤ eqs'.length * n' + n' + 1).trans (Nat.le_mul_of_pos_left _ (by omega))))
   unfold evalBoundedIncidenceBranch
   simp only [hvalid, Bool.not_true, Bool.false_eq_true, ↓reduceIte]
   dsimp only [prepareBranchEvalInput, ParameterCheck.computeScheduleParams]
@@ -1182,7 +1165,7 @@ theorem evalBoundedIncidenceBranch_eq_rootCount {N₀_branch n' : ℕ}
       dsimp only [J, q]
       have hdm := Nat.div_add_mod ((k' * (R - 1)) * (eqs'.length + 2 * n')) Q
       have hmod := Nat.mod_lt ((k' * (R - 1)) * (eqs'.length + 2 * n')) hQ_pos
-      nlinarith
+      rw [Nat.mul_succ]; omega
     have hnl : nodes.length = Q := by simp only [nodes, List.length_map, List.length_range]
     rw [hnl]
     exact (hle1.trans hle2).trans_lt hlt_QJ

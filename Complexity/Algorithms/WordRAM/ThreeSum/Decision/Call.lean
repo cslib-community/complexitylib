@@ -31,15 +31,15 @@ namespace Cslib.Algorithms.WordRAM.ThreeSum.Decision
 open Cslib.WordRAM
 
 /-- Load a pointer from actual memory and pass its raw runtime arguments to the host. -/
-theorem exec_loadSetup {r w tab num N V k : ℕ} (x : Data (registerCount r))
-    (hc : Controls tab num N V x) (hk : x.regs (controllerRegisters r current) = k)
+theorem exec_loadSetup {r w tab num N V H k : ℕ} (x : Data (registerCount r))
+    (hc : Controls tab num N V H x) (hk : x.regs (controllerRegisters r current) = k)
     (ha : Fits w (tab + k)) :
     ∃ y, ExecWithin w (.seq (loadSource.rename (controllerRegisters r)) callSetup) x y 6 ∧
       (y.comap (hostRegisters r)).regs (Host.hostRegisters Host.len) = N ∧
       (y.comap (hostRegisters r)).regs (Host.hostRegisters Host.upper) = V ∧
       (y.comap (hostRegisters r)).regs (Host.hostRegisters Host.base) = x.mem (tab + k) ∧
-      (y.comap (hostRegisters r)).regs (Host.hostRegisters Host.matAB) = 2 * V ∧
-      Controls tab num N V y ∧
+      (y.comap (hostRegisters r)).regs (Host.hostRegisters Host.matAB) = H ∧
+      Controls tab num N V H y ∧
       y.regs (controllerRegisters r current) = k ∧
       y.regs (controllerRegisters r answer) = x.regs (controllerRegisters r answer) ∧
       y.mem = x.mem := by
@@ -47,7 +47,7 @@ theorem exec_loadSetup {r w tab num N V k : ℕ} (x : Data (registerCount r))
   let h := fun i => hostRegisters r (Host.hostRegisters (r := r + 7) i)
   let y := x.set (m address) (tab + k) |>.set (m source) (x.mem (tab + k))
     |>.set (h Host.len) N |>.set (h Host.upper) V
-    |>.set (h Host.base) (x.mem (tab + k)) |>.set (h Host.matAB) (2 * V)
+    |>.set (h Host.base) (x.mem (tab + k)) |>.set (h Host.matAB) H
   have hm (i j : Fin 16) : m i = m j ↔ i = j := (controller_injective r).eq_iff
   have hh (i j : Fin 64) : h i = h j ↔ i = j :=
     ((host_injective r).comp Host.hostRegisters_injective).eq_iff

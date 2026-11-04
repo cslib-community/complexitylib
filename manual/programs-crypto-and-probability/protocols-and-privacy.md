@@ -19,13 +19,59 @@ Abort is observable in [Complexity/Crypto/Protocols/SigmaProtocol/Abort.lean](ht
 
 Identification and Fiat–Shamir add adversarial interaction to this same transcript model. Their security is not merely the existence of a mathematical witness extractor: the computational instances require an encoded efficient extractor, and finite quantitative transformations explicitly track replay and calls.
 
+## Kilian: honest payload and verifier input accounting
+
+Import `Complexity.Crypto.Computational.Kilian.Succinct` to bound an honest
+transcript for a PCP verifier `V`. The
+[accounting API](../../Complexity/Crypto/Computational/Kilian/Succinct.lean)
+uses `r = V.coins x` random bits and a bound `q` on the number of queries
+for every random string of length `r`.
+
+Use `kilianCommunication_honest_le` when those PCP parameters remain explicit.
+Its premises require `hlen : ∀ k y, (H k y).length = k.length`, a key of length
+`n`, exactly `n` challenge strings, each of length `r`, and the query bound.
+It counts the key, commitment root, challenges and honest response payload.
+It excludes the statement and the `encPair`/`encList` message framing.
+For logarithmic randomness and constant `q`, use
+`kilianCommunication_honest_le_log`: the bound is a constant times
+`(n + 1)^2 * (Nat.log 2 (enc x).length + 1)`. Thus it is polynomial in the
+security parameter and polylogarithmic in the encoded statement length.
+
+For machine time, use the separate
+[`computableInPolyTime_kilianVerify`](../../Complexity/Crypto/Computational/Kilian.lean)
+certificate. It requires a polynomial-time hash, the digest-length premise
+`hlen`, `V.PolyTime enc`, and `hcoins` bounding `V.coins x` logarithmically in
+`(enc x).length`. Its clock is polynomial in the **received encoded verifier
+input**. `length_kilianVerifierInput_honest_le` bounds that input's framed
+encoding, including the statement; it is not itself a runtime certificate.
+Combining the two bounds gives polynomial time in `n + (enc x).length` on
+honest transcripts when the query bound is polynomial too, as it is for the
+PCP-theorem verifier's constant query bound. The verifier does not truncate
+malicious oversized messages, so this does not give a clock solely in
+`n + (enc x).length` against arbitrary cheating provers.
+
+For the NP endpoint, import `Complexity.Crypto.Computational.Kilian.NP` and use
+[`exists_kilianSound_of_mem_NP`](../../Complexity/Crypto/Computational/Kilian/NP.lean).
+It combines the collision-resistant `HashFamily` assumption with a PCP-theorem
+verifier and a uniform honest-payload bound. Its honest witnesses are accepted
+compact PCP tables. It does not supply an efficient conversion from witnesses
+of an arbitrary given NP relation to those tables; that remaining part of the
+broader argument-system objective is explicit in the source.
+
+The complete checked client
+[`ComplexityTests/Crypto/KilianSuccinct.lean`](../../ComplexityTests/Crypto/KilianSuccinct.lean)
+includes the import, one-bit/one-query verifier, digest-length proof and bound
+application. At `n = 2` its honest transcript has exactly **12 payload bits**,
+attaining the generic bound. Its constant hash exercises accounting only;
+it is not a collision-resistance example.
+
 ## Shared random oracles and ideal permutations
 
 [Complexity/Crypto/Protocols/Signature/RandomOracle.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Protocols/Signature/RandomOracle.lean) defines a typed random-oracle signature experiment. Signer, verifier and forger share one lazy hash cache. The forger's coins are drawn explicitly before deterministic oracle interaction, enabling replay. Signing and hash queries have separate bounds. Key generation can be an arbitrary PMF, so this finite experiment is not identical to the native `SignatureScheme` interface.
 
 [Complexity/Crypto/Protocols/SigmaProtocol/FiatShamir.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Protocols/SigmaProtocol/FiatShamir.lean) hashes `(message, commitment)` to the challenge and proves correctness and a quantitative EUF-CMA bound using special soundness, special HVZK, commitment unpredictability and the generic forking lemma. The bound includes signing/programming collisions, challenge guessing and the square-root forking term. It is a finite exact-security reduction; an asymptotic machine claim additionally needs the encoded efficiency bridges. The module cites Bellare–Neven and Boneh–Shoup and labels its comparison with their constants [bs23][bs23].
 
-The ideal-permutation model gives an adversary both forward and inverse access to one consistent random permutation. Separate cipher/primitive channels support [Complexity/Crypto/Protocols/Cipher/EvenMansour.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Protocols/Cipher/EvenMansour.lean); the two-key and single-key advantages are bounded by `2*Q_cipher*Q_primitive/|G|`. [Complexity/Crypto/Protocols/Cipher/LubyRackoff.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Protocols/Cipher/LubyRackoff.lean) proves three-round forward and four-round strong/bidirectional Feistel results and an explicit three-round chosen-ciphertext attack. These are bounded-query theorems over finite groups with exact ideal functions/permutations. Native local computation is not charged merely by `IsQueryBounded`.
+The ideal-permutation model gives an adversary both forward and inverse access to one consistent random permutation. Separate cipher/primitive channels support [Complexity/Crypto/Protocols/Cipher/EvenMansour.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Protocols/Cipher/EvenMansour.lean); the two-key and single-key advantages are bounded by `2*Q_cipher*Q_primitive/|G|`. [Complexity/Crypto/Protocols/Cipher/LubyRackoff.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Protocols/Cipher/LubyRackoff.lean) proves three-round forward and four-round strong/bidirectional Feistel results and an explicit three-round chosen-ciphertext attack. These are bounded-query theorems over finite groups with exact ideal functions/permutations. Native local computation is not charged merely by `IsQueryBounded`. The uniform computational counterparts live in [Complexity/Crypto/Computational/PseudorandomPermutation.lean](../../Complexity/Crypto/Computational/PseudorandomPermutation.lean) (`BlockCipher`, `BlockCipher.PRP`, `BlockCipher.StrongPRP` against oracle-PPT word distinguishers, with explicit security parameter and the `[]` convention for malformed blocks) and [Complexity/Crypto/Computational/LubyRackoff.lean](../../Complexity/Crypto/Computational/LubyRackoff.lean): `PseudorandomFunction.prp_lubyRackoffCipher` proves that the three-round cipher built from a `PseudorandomFunction` is a PRP. Its proof reduces to `PseudorandomFunction.multiKey` with an oracle-PPT adapter, and transfers the finite-group bound to randomized adversaries by fixing their private coins (`ProbOracleComp.coinLaw`, [CoinFixing.lean](../../Complexity/Languages/Probabilistic/Oracle/CoinFixing.lean)).
 
 ## General zero knowledge: quantifier orders, primary-input clocks, and instance indexing
 

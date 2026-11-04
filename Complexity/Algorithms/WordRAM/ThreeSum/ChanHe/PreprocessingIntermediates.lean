@@ -56,11 +56,10 @@ theorem intermediates_polynomial {κ w : ℕ} (input : List ℤ)
     (∀ i, s.data.regs i < (input.length + 2) ^ (2720 * κ + 16456)) ∧
       ∀ a, s.data.mem a < (input.length + 2) ^ (2720 * κ + 16456) := by
   obtain ⟨_, _, _, he, _, _, _, _, _, _, _, _⟩ := runs_input input le_rfl hvalues
-  have hsmall := Runs.prefix_at_smaller_width
-    (Code.not_readsWidth_program (not_readsWidth κ) Traversal.outputCount) hw hr he
-  have hb := hsmall.bounded_init (input_fits input le_rfl hvalues)
-  have hpoly := two_pow_width_le κ input.length
-  exact ⟨fun i => (hb.1 i).trans_le hpoly, fun a => (hb.2 a).trans_le hpoly⟩
+  obtain ⟨regs, mem, -⟩ := hr.prefix_bounds_init
+    (Code.not_readsWidth_program (not_readsWidth κ) Traversal.outputCount) hw
+    (input_fits input le_rfl hvalues) he (two_pow_width_le κ input.length)
+  exact ⟨regs, mem⟩
 
 /-- Every prefix uses a polynomial initial interval of memory, even at wider physical widths. -/
 theorem space_polynomial {κ w : ℕ} (input : List ℤ)
@@ -70,17 +69,8 @@ theorem space_polynomial {κ w : ℕ} (input : List ℤ)
     (hr : Runs w (flatProgram κ) (State.init (input.map Signed.encode)) s steps)
     (ha : (input.length + 2) ^ (2720 * κ + 16456) ≤ a) : s.data.mem a = 0 := by
   obtain ⟨_, _, _, he, _, _, _, _, _, _, _, _⟩ := runs_input input le_rfl hvalues
-  have hsmall := Runs.prefix_at_smaller_width
-    (Code.not_readsWidth_program (not_readsWidth κ) Traversal.outputCount) hw hr he
-  have hi := input_fits input (κ := κ) le_rfl hvalues
-  have hword : 2 ^ width κ input.length ≤ a := (two_pow_width_le κ input.length).trans ha
-  rw [hsmall.mem_above (Data.Bounded.init hi) hword]
-  have hn : input.length < 2 ^ width κ input.length := by
-    simpa only [Fits, List.length_map] using hi.1
-  have hpos : a ≠ 0 := by omega
-  obtain ⟨k, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hpos
-  change (Data.init (input.map Signed.encode) : Data 128).mem (k + 1) = 0
-  rw [Data.init_mem_succ]
-  exact List.getD_eq_default _ _ (by simp only [List.length_map]; omega)
+  exact (hr.prefix_bounds_init
+    (Code.not_readsWidth_program (not_readsWidth κ) Traversal.outputCount) hw
+    (input_fits input le_rfl hvalues) he (two_pow_width_le κ input.length)).2.2 a ha
 
 end Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Preprocessing

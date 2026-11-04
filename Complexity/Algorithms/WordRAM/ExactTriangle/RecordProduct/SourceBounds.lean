@@ -68,23 +68,7 @@ theorem bounded_reachable_original {W m n g p A k : ℕ} (values : List ℤ)
       ∀ a, wordBound n (D m) g p A ≤ a → s.data.mem a = 0 := by
   obtain ⟨hi, a, idx, ha, hidx, hord, y, t, ht, hpref, he, hy, yr, hv', hf, hreg, hQ⟩ :=
     runs_input values hlen hD hg hp hN hv le_rfl
-  have hlow := Runs.prefix_at_smaller_width entryProgram_fixed.2 hW hr he
-  have hs := hlow.bounded (Data.Bounded.init hi)
-  refine ⟨hs.1, hs.2, ?_⟩
-  intro a ha
-  rw [hlow.mem_above (Data.Bounded.init hi) ha]
-  cases a with
-  | zero =>
-    change 2 ^ admissionWidth n (D m) g p A ≤ 0 at ha
-    have := Nat.two_pow_pos (admissionWidth n (D m) g p A)
-    omega
-  | succ a =>
-    change (PreparationInput.input n (D m) g p values).getD a 0 = 0
-    apply List.getD_eq_default
-    have hlen := hi.1
-    dsimp only [Fits] at hlen
-    change 2 ^ admissionWidth n (D m) g p A ≤ a + 1 at ha
-    omega
+  exact hr.prefix_bounds_init entryProgram_fixed.2 hW hi he le_rfl
 
 /-- Complete producer preparation plus one actual record product, including the final halt.
 The per-record sparsity is supplied by its actual native chunk, not an aggregate solver oracle. -/

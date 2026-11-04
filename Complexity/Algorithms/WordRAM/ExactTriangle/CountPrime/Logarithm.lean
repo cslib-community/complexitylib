@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.Program
 
 /-!
@@ -45,31 +46,31 @@ theorem exec_logarithm {w : ℕ} (x : Data 128)
   let f : Fin 4 → Fin 128 := Fin.castLE (by decide)
   have harg : (z.comap f).regs NatClog.arg = x.regs Reg.side := by
     simp [z, f, Data.comap, NatClog.arg, Reg.low0]
-  obtain ⟨s, hs, result, memory, _, _⟩ := NatClog.exec (z.comap f)
-    (hw.of_le (by omega))
-    (by rw [harg]; exact hw.of_le (by omega))
-    (by rw [harg]; exact hw.of_le (by omega))
-  let t := s.extend f z
-  have hcall : ExecWithin w (NatClog.program.rename f) z t (5 * K + 5) := by
-    simpa only [harg] using hs.rename (Fin.castLE_injective _)
+  obtain ⟨t, hcall, ⟨result, memory, _, _⟩, hframe⟩ :=
+    ExecWithin.rename_post (f := f) (x := z) (Fin.castLE_injective _) (NatClog.exec (z.comap f)
+      (hw.of_le (by omega))
+      (by rw [harg]; exact hw.of_le (by omega))
+      (by rw [harg]; exact hw.of_le (by omega)))
+  have hreg : f NatClog.result = Reg.low1 := by decide
   have tresult : t.regs Reg.low1 = K := by
-    change Function.extend f s.regs z.regs (f NatClog.result) = K
-    rw [(Fin.castLE_injective _).extend_apply]
-    simpa only [harg] using result
+    rw [harg] at result
+    simpa only [Data.comap_regs, hreg] using result
   have tm : t.mem = x.mem := memory
   have thigh (i : Fin 128) (hi : 4 ≤ i.val) : t.regs i = z.regs i := by
-    apply Function.extend_apply'
-    rintro ⟨j, hj⟩
+    apply hframe
+    intro j hj
     have hv := congrArg Fin.val hj
     change j.val = i.val at hv
     omega
+  have hcall' : ExecWithin w (NatClog.program.rename f) z t (5 * K + 5) := by
+    simpa only [harg] using hcall
   let y := t.set Reg.depth K
   have hlast : ExecWithin (B := .standard) w (ram[ Reg.depth ← Reg.low1 ]) t y 1 := by
     simpa only [y, tresult] using (ExecWithin.copy (B := .standard) (w := w)
       (d := Reg.depth) (s := Reg.low1) (x := t))
   have he : ExecWithin w logarithm x y (5 * K + 11) := by
     obtain ⟨n, hn, argsRun⟩ := hargs
-    obtain ⟨m, hm, restRun⟩ := hcall.seq hlast
+    obtain ⟨m, hm, restRun⟩ := hcall'.seq hlast
     cases argsRun with
     | seq h₁ rest₁ => cases rest₁ with
       | seq h₂ rest₂ => cases rest₂ with
