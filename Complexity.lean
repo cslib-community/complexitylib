@@ -3838,9 +3838,11 @@ public import Complexity.Foundations.Probability.HierarchyAccess
 public import Complexity.Foundations.Probability.HierarchyAtomCutoff
 public import Complexity.Foundations.Probability.HierarchyCanonicalTargets
 public import Complexity.Foundations.Probability.HierarchyChannelTransport
+public import Complexity.Foundations.Probability.HierarchyChildError
 public import Complexity.Foundations.Probability.HierarchyCorrectionMean
 public import Complexity.Foundations.Probability.HierarchyCutoffs
 public import Complexity.Foundations.Probability.HierarchyDenseChildren
+public import Complexity.Foundations.Probability.HierarchyEstimatedMean
 public import Complexity.Foundations.Probability.HierarchyParams
 public import Complexity.Foundations.Probability.HierarchyRankCutoffs
 public import Complexity.Foundations.Probability.HierarchyRankEnvironment
@@ -3855,6 +3857,7 @@ public import Complexity.Foundations.Probability.HierarchyTasks
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ActualMoment
 public import Complexity.Foundations.Probability.NormalizedAtomRows.BoundedLoss
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ClippedTail
+public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstMeanError
 public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstPayment
 public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstSignal
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Integrated
@@ -3889,6 +3892,7 @@ public import Complexity.Foundations.Probability.RootMetric.Conditioning
 public import Complexity.Foundations.Probability.RootMetric.Minkowski
 public import Complexity.Foundations.Probability.RootMetric.Slices
 public import Complexity.Foundations.Probability.RootMetric.Stationarity
+public import Complexity.Foundations.Probability.RoutedBinAgreement
 public import Complexity.Foundations.Probability.RoutedHierarchyBins
 public import Complexity.Foundations.Probability.SamplerPrefix
 public import Complexity.Foundations.Probability.ScheduledFineProductMean

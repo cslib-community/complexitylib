@@ -73,3 +73,10 @@ dispatch, inherited-terminal usage containment, and the single negative request 
 `canonical_residual_bins_mean`. Finite cover/horizon hypotheses remain acceptance limits.
 The [probabilistic workflow](probabilistic-workflows.md) separates this proved stage mean
 from estimated-child induction and native resource objectives.
+
+For estimated-child review, inspect `estimated_residual_bins_mean_error` and the actual
+first-mean client linked from the [probabilistic workflow](probabilistic-workflows.md).
+Check true-input bounded/canonical routing agreement, the estimated-left/canonical-right
+product split, literal importance/midpoint factors and once-negative error accounting.
+Finite absolute propagation does not discharge recursive relative budgets or the second
+signal's full-terminal-rank maximum.
