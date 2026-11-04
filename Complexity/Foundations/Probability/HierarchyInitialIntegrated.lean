@@ -22,6 +22,7 @@ parent induction.
 
 * `exists_compressedBin_fourMax`: successful actual output with concrete four-max inputs.
 * `initialFourMax_moment`: both centered noises paid, deterministic mean norms explicit.
+* `initialFourMaxReserve_le`: explicit finite numerical charge for all sharp reserve terms.
 * `initialFourMax_preloss`: finite Minkowski stationary payment without a group-count loss.
 * `initialFourMax_tail`: deterministic heavy-tail norm plus unconditional noise payment.
 * `initialSignals_falseBudget`: raw j+1 false-event moments with both noises paid.
@@ -77,6 +78,120 @@ heavy first-overflow tail and raw false-overflow charges. No smallness is assert
     rowNormPow 4 P r.source.rate X Y (fun σ x y =>
       clippedError (truth σ x y 0) (truth σ x y 1)
       (uncompressedRow (Δ σ x) (raw σ x) (j + 1) y))
+
+/-- Numerical sufficient charge for the literal sharp initial reserve. This keeps
+floor, capacity and prefix-weight costs explicit, with no stochastic hypotheses. -/
+@[expose] def initialNumericalReserve (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (M : ℕ) (floor cap C Cpre : ℝ) (a : ℕ → ℝ) : ℝ :=
+  let m := Nat.log2 M + 1
+  let n := compatibleCapacity HP.K m
+  128 * (HP.K : ℝ) *
+    (Cpre ^ 4 * (∑ i ∈ range m, dyadicFloor floor m i * a i) ^ 4 +
+      C ^ 4 * a (Nat.log2 M) ^ 4 +
+      C ^ 4 * (∑ j ∈ range m, ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * a i) ^ 4) +
+    ∑ j ∈ range m,
+      (64 * (HP.K : ℝ) * ((2 * max cap 16) ^ (4⁻¹ : ℝ)) ^ 4 /
+        ((n j : ℝ) * dyadicFloor floor m j ^ 4)) * a j ^ 4
+
+/-- A finite numerical allocation for the sharp reserve. This conservative payment
+keeps every stationary, final, heavy-selected and raw false-event coefficient. Dropping
+heavy selection here gains no rarity factor and never discounts correlated noise. -/
+theorem initialFourMaxReserve_le {P : ℕ} [Fact P.Prime]
+    {HP : FourthRootHierarchyParams 16 1 16 32 8} (B : BudgetData HP P)
+    (M bin k : ℕ) (ζ floor : ℝ) (hf : 0 ≤ floor)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (hr : 0 ≤ r.source.rate)
+    (R : RoleProfile 3) (ks ku : ℕ) (ss st : List (ZMod P))
+    (G : Matrix (ZMod P) (ZMod P) ℝ)
+    (F : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+    (W : List (Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ))
+    (cap C Cpre : ℝ) (a : ℕ → ℝ) (ha : ∀ j, 0 ≤ a j)
+    (hb : ∀ j < Nat.log2 M + 1,
+      vertexNormPow 4 P r.source.rate
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (actualFourMax HP R.source R.terminal (side P ks) (side P k) (side P ku)
+          B.padding ss st k G ζ
+          (firstSignalIncrement F k
+            (secondSignalIncrement (fun j σ x y => W[j - 1]?.getD 0 σ x y) ζ)) 0 j) ≤ a j ^ 4)
+    (hraw : ∀ j < Nat.log2 M + 1,
+      rowNormPow 4 P r.source.rate
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (fun σ y => r.terminal.retains (channels B.padding) σ y)
+        (fun σ x y =>
+          let truth := requestSignals ζ B.padding id r (fun _ => G)
+            (B.binPreparation bin r (fun _ => G)) σ x y
+          clippedError (truth 0) (truth 1)
+            (uncompressedRow ((firstSignalIncrement F k
+              (secondSignalIncrement (fun j σ x y => W[j - 1]?.getD 0 σ x y) ζ)) σ x)
+              0 (j + 1) y)) ≤ a j ^ 4) :
+    B.initialFourMaxReserve M bin k ζ floor r R ks ku ss st G F W cap C Cpre ≤
+      initialNumericalReserve HP M floor cap C Cpre a := by
+  unfold initialFourMaxReserve initialNumericalReserve
+  extract_lets m n X Y Δ raw truth ε εfinal S Pre No Tail
+  change ∀ j < m, vertexNormPow 4 P r.source.rate X (ε j) ≤ a j ^ 4 at hb
+  have hNu : 0 ≤ (P : ℝ) * r.source.rate := mul_nonneg (Nat.cast_nonneg _) hr
+  have hrestrict (Θ : Environment P 3 → ZMod P → Prop)
+      (f : Environment P 3 → ZMod P → ℝ) :
+      vertexNormPow 4 P r.source.rate X (fun σ x => if Θ σ x then f σ x else 0) ≤
+        vertexNormPow 4 P r.source.rate X f := by
+    unfold vertexNormPow
+    apply mul_le_mul_of_nonneg_left _ (inv_nonneg.mpr hNu)
+    apply expect_le_expect
+    intro σ _
+    apply sum_le_sum
+    intro x _
+    dsimp only
+    split_ifs
+    · exact le_rfl
+    · simp only [abs_zero, zero_pow (by decide : 4 ≠ 0)]
+      positivity
+  have hpre : vertexNormPow 4 P r.source.rate X Pre ≤
+      (∑ i ∈ range m, dyadicFloor floor m i * a i) ^ 4 :=
+    vertexNormPow_sum_le_pow_sum (by decide : 4 ≠ 0) hNu (range m) ε
+      (dyadicFloor floor m) a (fun i _ => dyadicFloor_nonneg hf m i)
+      (fun i _ => ha i) (fun i hi => hb i (mem_range.mp hi))
+  have hno : vertexNormPow 4 P r.source.rate X No ≤ a (Nat.log2 M) ^ 4 := by
+    dsimp only [No]
+    convert (hrestrict (fun σ x => ∀ i < m,
+      stepThreshold (S σ) n (fun _ => HP.K) (dyadicFloor floor m) (Δ σ x)
+        ⟨0, raw σ x⟩ i ≤ dyadicFloor floor m i) εfinal).trans
+      (hb (Nat.log2 M) (by omega)) using 1
+    congr 1
+    funext σ x
+    split_ifs <;> rfl
+  let tail := fun j σ x => if IsFirstOverflow (S σ) n (fun _ => HP.K)
+      (dyadicFloor floor m) (Δ σ x) ⟨0, raw σ x⟩ j ∧
+      heavyCountEvent Y univ (fun y => truth σ x y 0) (dyadicFloor floor m j) (n j) σ then
+        ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i σ x else 0
+  let budget := fun j => ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * a i
+  have ht (j : ℕ) : vertexNormPow 4 P r.source.rate X (tail j) ≤ budget j ^ 4 := by
+    dsimp only [tail, budget]
+    refine le_trans (b := vertexNormPow 4 P r.source.rate X
+      (fun σ x => ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i σ x)) ?_ ?_
+    · convert (hrestrict (fun σ x => IsFirstOverflow (S σ) n (fun _ => HP.K)
+      (dyadicFloor floor m) (Δ σ x) ⟨0, raw σ x⟩ j ∧
+      heavyCountEvent Y univ (fun y => truth σ x y 0) (dyadicFloor floor m j) (n j) σ)
+      (fun σ x => ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i σ x)) using 1
+      congr 1
+      funext σ x
+      split_ifs <;> rfl
+    · exact vertexNormPow_sum_le_pow_sum (by decide : 4 ≠ 0) hNu (Ico j m) ε
+        (fun i => (28 : ℝ) ^ (m - i)) a (fun i _ => by positivity)
+        (fun i _ => ha i) (fun i hi => hb i (mem_Ico.mp hi).2)
+  have htail : vertexNormPow 4 P r.source.rate X Tail ≤
+      (∑ j ∈ range m, ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * a i) ^ 4 := by
+    have h := vertexNormPow_sum_le_pow_sum (by decide : 4 ≠ 0) hNu (range m) tail
+      (fun _ => 1) budget (fun _ _ => by norm_num)
+      (fun j _ => sum_nonneg fun i _ => mul_nonneg (by positivity) (ha i)) (fun j _ => ht j)
+    simpa only [one_mul, Tail, tail, budget] using h
+  apply add_le_add
+  · apply mul_le_mul_of_nonneg_left _ (by positivity)
+    exact add_le_add (add_le_add
+      (mul_le_mul_of_nonneg_left hpre (by positivity))
+      (mul_le_mul_of_nonneg_left hno (by positivity)))
+      (mul_le_mul_of_nonneg_left htail (by positivity))
+  · apply sum_le_sum
+    intro j hj
+    exact mul_le_mul_of_nonneg_left (hraw j (mem_range.mp hj)) (by positivity)
 
 /-- Shared decoding against the genuine dense bin using literal four-max statistics.
 Actual preparation executions retain their usage noise and full-terminal first rank.

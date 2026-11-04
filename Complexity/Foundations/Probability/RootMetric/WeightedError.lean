@@ -94,4 +94,56 @@ theorem rowNormPow_sum_fourth_le {I Ω V : Type*} [Fintype Ω] [Fintype V]
       rw [← mul_expect, expect_sum_comm]
       ring
 
+/-- Centering a perturbation preserves its conditional mean subtraction on the same
+slice. Conditional Jensen pays the mean perturbation; no target or independence is used. -/
+theorem rowNormPow_centered_sub_fourth_le {Ω V : Type*} [Fintype Ω] [Fintype V]
+    {N u : ℝ} (hNu : 0 ≤ N * u)
+    (X Y : Ω → V → Prop) [∀ σ x, Decidable (X σ x)] [∀ σ y, Decidable (Y σ y)]
+    (A C : Ω → V → V → ℝ) :
+    rowNormPow 4 N u X Y (fun σ x y =>
+      (A σ x y - rowSliceMean X Y A x y) -
+        (C σ x y - rowSliceMean X Y C x y)) ≤
+      16 * rowNormPow 4 N u X Y (A - C) := by
+  have hj := rowNormPow_sliceMean_fourth_le hNu X Y (A - C)
+  have hb := rowNormPow_add_le (X := X) (Y := Y) hNu (A - C)
+    (fun _ x y => -rowSliceMean X Y (A - C) x y)
+  have he : (fun σ x y => A σ x y - C σ x y +
+      -rowSliceMean X Y (A - C) x y) =
+      (fun σ x y => (A σ x y - rowSliceMean X Y A x y) -
+        (C σ x y - rowSliceMean X Y C x y)) := by
+    funext σ x y
+    simp only [rowSliceMean, Pi.sub_apply, expect_sub_distrib]
+    ring
+  change rowNormPow 4 N u X Y (fun σ x y => A σ x y - C σ x y +
+    -rowSliceMean X Y (A - C) x y) ≤ _ at hb
+  rw [he] at hb
+  have hn : rowNormPow 4 N u X Y (fun _ x y => -rowSliceMean X Y (A - C) x y) =
+      rowNormPow 4 N u X Y (fun _ => rowSliceMean X Y (A - C)) := by
+    simp only [rowNormPow, abs_neg]
+  rw [hn] at hb
+  linarith
+
+
+/-- The centered noise of an actual history is paid by its centered reference noise
+and the uncentered history difference. The reference mean is preserved literally. -/
+theorem rowNormPow_centered_fourth_le {Ω V : Type*} [Fintype Ω] [Fintype V]
+    {N u : ℝ} (hNu : 0 ≤ N * u)
+    (X Y : Ω → V → Prop) [∀ σ x, Decidable (X σ x)] [∀ σ y, Decidable (Y σ y)]
+    (A C : Ω → V → V → ℝ) :
+    rowNormPow 4 N u X Y (fun σ x y => A σ x y - rowSliceMean X Y A x y) ≤
+      8 * (16 * rowNormPow 4 N u X Y (A - C) +
+        rowNormPow 4 N u X Y (fun σ x y => C σ x y - rowSliceMean X Y C x y)) := by
+  have h := rowNormPow_add_le (X := X) (Y := Y) hNu
+    (fun σ x y => (A σ x y - rowSliceMean X Y A x y) -
+      (C σ x y - rowSliceMean X Y C x y))
+    (fun σ x y => C σ x y - rowSliceMean X Y C x y)
+  have he : (fun σ x y => (A σ x y - rowSliceMean X Y A x y) -
+      (C σ x y - rowSliceMean X Y C x y) +
+      (C σ x y - rowSliceMean X Y C x y)) =
+      (fun σ x y => A σ x y - rowSliceMean X Y A x y) := by
+    funext σ x y; ring
+  rw [he] at h
+  exact h.trans (mul_le_mul_of_nonneg_left (add_le_add
+    (rowNormPow_centered_sub_fourth_le hNu X Y A C) le_rfl) (by norm_num))
+
 end Cslib

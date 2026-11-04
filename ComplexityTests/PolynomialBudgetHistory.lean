@@ -1925,4 +1925,192 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
   simpa only [mul_one] using
     (hN 5 n { data HP with rankCharge := 7 } hn rfl (uniformRequest HP 5) rfl rfl le_rfl).2.2.1
 
+-- A genuine small floor and a nonzero rooted child error supply the own-precision IH.
+-- The coefficient is fixed for the only positive lower budget; no parent budget is used.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    let ζ := min HP.η (1 / 10000) / 4
+    let Q := HierarchyTask.rawRequests 0 0 (.pilotInput ⟨0, HP.k_pos⟩)
+      (request HP).source (BudgetData.midpoint (request HP)) (request HP).terminal
+      ((data HP).binRate 0)
+    let c := (2 : ℝ) ^ ((data HP).requestPrecision 1 Q.direct)
+    0 < ζ ∧ ζ ≤ HP.η ∧ ζ ≤ max (1 : ℝ) 16 / 20000 ∧
+    ∃ A C,
+      (data HP).pairedSample (fun n q => if n < 2 then
+        (data HP).compressedHistory (fun _ => 0) ζ ζ n q else none)
+        2 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) (some 0) = some A ∧
+      (data HP).pairedSample (fun n q => if n < 2 then (data HP).evaluate n q else none)
+        2 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) (some 0) = some C ∧
+      rowNormPow 4 5 (request HP).source.rate
+        (fun σ x => (request HP).source.retains (channels (data HP).padding) σ x)
+        (fun σ y => (request HP).usage.retains (channels (data HP).padding) σ y) (A - C) ≤
+        8 * ((∑ y, |(data HP).binRate 0 * HierarchyTask.usageRatio
+          (channels (data HP).padding) (request HP).terminal Q.direct y| ^ 4) *
+          (4 * (2 * (data HP).binCap) ^ ((3 : ℝ) / 4)) ^ 4) *
+          (c ^ 4 * ((2 : ℝ) ^ (-(data HP).requestPrecision 1 Q.direct)) ^ 4 +
+            c ^ 4 * ((2 : ℝ) ^ (-(data HP).requestPrecision 0 Q.direct)) ^ 4) := by
+  dsimp only
+  let ζ := min HP.η (1 / 10000) / 4
+  let Q := HierarchyTask.rawRequests 0 0 (.pilotInput ⟨0, HP.k_pos⟩)
+    (request HP).source (BudgetData.midpoint (request HP)) (request HP).terminal
+    ((data HP).binRate 0)
+  let c := (2 : ℝ) ^ ((data HP).requestPrecision 1 Q.direct)
+  have hζ : 0 < ζ := by
+    dsimp only [ζ]
+    exact div_pos (lt_min HP.η_pos (by norm_num)) (by norm_num)
+  have hη : ζ ≤ HP.η := by
+    have h := min_le_left HP.η (1 / 10000 : ℝ)
+    dsimp only [ζ]; linarith [HP.η_pos]
+  refine ⟨hζ, hη, ?_, ?_⟩
+  · have h := min_le_right HP.η (1 / 10000 : ℝ)
+    norm_num; linarith
+  · have hd : (data HP).compressedBin 1 0 0 ζ ζ Q.direct = some 0 := by
+      simpa only [Q, HierarchyTask.rawRequests, request, data, gridChannel, rate, pow_zero,
+        inv_one, min_self] using compressed_one HP (.baseNormalized 0 0) ζ hζ
+        (by dsimp only [ζ]; exact div_le_div_of_nonneg_right (min_le_left _ _) (by norm_num))
+    have ht : denseChild (data HP).padding id Q.direct ((data HP).cutoff 0)
+        ((data HP).auxiliary 0) HP.ρ HP.K (data HP).base = (fun _ => base) := by
+      funext σ x y
+      have hq : Q.direct = {request HP with task := .baseNormalized 0 0} := by
+        simp [Q, HierarchyTask.rawRequests, request, data, gridChannel, rate]
+      rw [hq, denseChild_congr_task]
+      exact top_dense HP σ x y
+    have hroot : rootDistPow 4 5 Q.direct.source.rate
+        (fun σ x => Q.direct.source.retains (channels (data HP).padding) σ x)
+        (fun σ y => Q.direct.usage.retains (channels (data HP).padding) σ y) 0
+        (denseChild (data HP).padding id Q.direct ((data HP).cutoff 0)
+          ((data HP).auxiliary 0) HP.ρ HP.K (data HP).base) ≤
+        c ^ 4 * ((2 : ℝ) ^ (-(data HP).requestPrecision 1 Q.direct)) ^ 4 := by
+      rw [ht, ← mul_pow]
+      have hc : c * (2 : ℝ) ^ (-(data HP).requestPrecision 1 Q.direct) = 1 := by
+        dsimp only [c]
+        rw [← Real.rpow_add (by norm_num)]
+        simp
+      rw [hc, one_pow]
+      have hs : Q.direct.source = gridChannel 0 0 [1] := rfl
+      have hu : Q.direct.usage = gridChannel 2 0 [2, 3] := by
+        simp [Q, HierarchyTask.rawRequests, request, data, gridChannel, rate]
+      rw [hs, hu]
+      simp only [rootDistPow, rowNormPow, data, full, filter_true]
+      norm_num only [gridChannel, rate, base, Matrix.one_apply, Pi.zero_apply,
+        zero_sub, abs_neg, Real.zero_rpow (by norm_num : (4⁻¹ : ℝ) ≠ 0),
+        apply_ite (fun t : ℝ => |t ^ (4⁻¹ : ℝ)| ^ 4)]
+      norm_num [apply_ite abs, ite_pow]
+    have hp := (data HP).pairedSample_initial_compressed_precision (fun _ => 0)
+      ζ ζ 2 1 0 (by decide) (request HP) (by norm_num [request, gridChannel, rate])
+      (fun _ => 0) rfl c (fun m hm hmpos => by
+        have he : m = 1 := by omega
+        subst m
+        exact ⟨hd, hroot, right_one_available HP ζ⟩)
+    simpa only [Nat.cast_ofNat, show LogSpaceEstimation.lastBudget 2 1 (data HP).slack
+      ((data HP).sampleScale (request HP) (some 0)) = 1 by
+        norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff,
+          BudgetData.sampleScale, data, request, gridChannel, rate],
+      show LogSpaceEstimation.lastBudget 2 (2 * 1) (data HP).slack
+        ((data HP).sampleScale (request HP) (some 0)) = 0 by
+        norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff,
+          BudgetData.sampleScale, data, request, gridChannel, rate]] using hp
+
+-- Budget one consumes no positive child IH, even after all bins are completed.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ∃ F G,
+      (data HP).completedGroup (fun n q => if n < 1 then
+        (data HP).compressedHistory (fun _ => 0) (HP.η / 4) (HP.η / 4) n q else none)
+        1 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) = some F ∧
+      (data HP).completedGroup (fun n q => if n < 1 then (data HP).evaluate n q else none)
+        1 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) = some G ∧
+      rowNormPow 4 5 (request HP).source.rate
+        (fun σ x => (request HP).source.retains (channels (data HP).padding) σ x)
+        (fun σ y => (request HP).usage.retains (channels (data HP).padding) σ y) (F - G) ≤ 0 := by
+  have h := (data HP).completedGroup_initial_compressed_precision (fun _ => 0)
+    (HP.η / 4) (HP.η / 4) 1 1 (by decide) (by simp [data]) (request HP)
+    0 2 (by decide) 0 0 [1] [2, 3] rfl rfl (fun _ _ => 0) (fun _ => rfl) 0
+    (fun _ _ n hn hnpos => by omega)
+  simpa only [BudgetData.initialRootGroupCharge, zero_pow (by decide : 4 ≠ 0),
+    zero_mul, add_zero, mul_zero, sum_const_zero, Nat.cast_ofNat] using h
+
+-- Centered transport keeps a nonconstant correlated perturbation centered at its own mean.
+example :
+    rowNormPow 4 1 1 (fun (_ : Fin 2) (_ : Unit) => True) (fun _ _ => True)
+      (fun σ _ _ => (if σ = 0 then (2 : ℝ) else 0) - 1) = 1 ∧
+    rowNormPow 4 1 1 (fun (_ : Fin 2) (_ : Unit) => True) (fun _ _ => True)
+      (fun σ x y => (if σ = 0 then (2 : ℝ) else 0) -
+        rowSliceMean (fun (_ : Fin 2) (_ : Unit) => True) (fun _ _ => True)
+          (fun τ _ _ => if τ = 0 then (2 : ℝ) else 0) x y) ≤ 128 := by
+  constructor
+  · norm_num [rowNormPow, Fin.sum_univ_two, expect_eq_sum_div_card]
+  · have h := rowNormPow_centered_fourth_le (by norm_num : (0 : ℝ) ≤ 1 * 1)
+      (fun (_ : Fin 2) (_ : Unit) => True) (fun _ _ => True)
+      (fun σ _ _ => if σ = 0 then (2 : ℝ) else 0) (fun _ _ _ => 1)
+    norm_num [rowNormPow, rowSliceMean, Fin.sum_univ_two, expect_eq_sum_div_card] at h ⊢
+
+-- All four costs and every sharp reserve term are consumed on the literal zero boundary.
+-- The scalar floor is valid and positive; the canonical diagonal target is still one.
+open Cslib.RowCompression NormalizedMoments in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    let ζ := min HP.η (1 / 10000) / 4
+    ∃ Lh Lρ : ℝ, 0 ≤ Lh ∧ 0 ≤ Lρ ∧
+      (data HP).initialFourMaxReserve 1 0 0 ζ ζ (request HP) threeRoles 0 0 [1] [2, 3]
+        base (fun _ => 0) [0] 1 1 1 ≤
+      BudgetData.initialNumericalReserve HP 1 ζ 1 1 1
+        (fun j =>
+          let a := fun noise ν => (data HP).initialComputedMoment 1 1 (request HP)
+            threeRoles 0 0 [1] [2, 3] (fun _ => 0) ζ Lh Lρ j noise ν ^ (4⁻¹ : ℝ)
+          (a false 0 + a false 1) + (a true 0 + a true 1)) := by
+  dsimp only
+  let ζ := min HP.η (1 / 10000) / 4
+  obtain ⟨Lh, Lρ, hLh, hLρ, hh, hρ⟩ := preparation_stability_constants HP
+  refine ⟨Lh, Lρ, hLh, hLρ, ?_⟩
+  obtain ⟨groups, hrun, hp⟩ := (data HP).initial_compressed_precision_reserve 1 (by decide) 1
+    (by ext i; simp only [data, mem_insert, mem_singleton, mem_range]; omega)
+    rfl rfl rfl (by norm_num [data]) (⟨1, 4, by decide, by decide⟩ : Horizon 5) (by decide)
+    (request HP) threeRoles 0 0 [1] [2, 3] rfl rfl (by decide)
+    (by intro x y; by_cases h : x = y <;> simp [data, base, h])
+    (by simp [data, base]) (fun _ => 0) ζ ζ (fun _ _ => 0) (fun _ => rfl) 0
+    (fun _ _ m hm hmpos => by omega) 0 0 le_rfl rfl hLh hLρ hh hρ
+    (by
+      dsimp only [ζ]
+      exact (div_pos (lt_min HP.η_pos (by norm_num)) (by norm_num)).le) 1 1 1
+  have hgroups : (List.range (Nat.log2 1 + 1)).mapM (fun j =>
+      (data HP).completedGroup (fun m q => if m < 1 then
+        (data HP).compressedHistory (fun _ => 0) ζ ζ m q else none) 1
+        (dyadicSlack (Nat.log2 1 + 1) j) (.pilotInput ⟨0, HP.k_pos⟩)
+        { request HP with usage := (request HP).terminal }) = some [0] := by
+    rw [show { request HP with usage := (request HP).terminal } = request HP from rfl]
+    norm_num only [show Nat.log2 1 = 0 by decide, Nat.zero_add, List.range_succ,
+      List.range_zero, List.nil_append, List.mapM_cons, List.mapM_nil]
+    rw [show dyadicSlack 1 0 = 1 by decide, group_one_zero]
+    rfl
+  have hF : (fun p σ x y =>
+      (([0] : List (Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ)).take p |>.map
+        (fun T => T σ x y)).sum) =
+      (fun _ => (0 : Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ)) := by
+    funext p σ x y
+    cases p <;> simp
+  have hW : (List.range (Nat.log2 1 + 1)).mapM (fun j =>
+      (data HP).complete 1 (request HP) ((data HP).binPreparation 0 (request HP)
+        ((fun _ => 0) (j + 1))) (dyadicSlack (Nat.log2 1 + 1) j)) = some [0] := by
+    have hw (j : ℕ) : (data HP).complete 1 (request HP)
+        ((data HP).binPreparation 0 (request HP) ((fun _ => 0) (j + 1)))
+        (dyadicSlack (Nat.log2 1 + 1) j) = some 0 := by
+      rw [show (data HP).binPreparation 0 (request HP) 0 = 0 from
+        preparation HP 0 (Or.inl rfl)]
+      exact complete_const HP 1 _ 0
+    simp_rw [hw]
+    norm_num [List.range_succ]
+  have he : groups = [0] := Option.some.inj (hrun.symm.trans hgroups)
+  subst groups
+  dsimp only at hp
+  rw [hF] at hp
+  simp only [BudgetData.initialRootGroupCharge, zero_pow (by decide : 4 ≠ 0),
+    zero_mul, add_zero, mul_zero, sum_const_zero] at hp
+  have hb := hp [0] (by
+    convert hW using 1
+    apply congrArg (fun f : ℕ → Option (Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ) =>
+      (List.range (Nat.log2 1 + 1)).mapM f)
+    funext j
+    rw [show (fun σ x y =>
+      (([0] : List (Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ)).take (j + 1) |>.map
+        (fun T => T σ x y)).sum) = 0 from congrFun hF (j + 1)])
+  convert hb using 1; congr 8
+
 end PolynomialBudgetHistory

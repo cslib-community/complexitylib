@@ -388,6 +388,48 @@ theorem pairedSample_initial_compressed_root
   unfold rowNormPow at hf hc
   linarith
 
+/-- Actual scheduled endpoints consume strict lower-budget rooted hypotheses at their
+own request precision. The coefficient is fixed across these calls; neither a parent
+accuracy certificate nor an independently chosen endpoint error budget is accepted. -/
+theorem pairedSample_initial_compressed_precision
+    (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ)
+    (ζ floor : ℝ) (M d bin : ℕ) (hM : 0 < M)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (hs : 0 ≤ r.source.rate)
+    (D : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ) (hzero : D 0 = 0)
+    (coefficient : ℝ)
+    (ih : ∀ n < M, 0 < n →
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (midpoint r) r.terminal (B.binRate bin)
+      B.compressedBin n bin (exponent Q.direct) ζ floor Q.direct = some (D n) ∧
+      rootDistPow 4 P Q.direct.source.rate
+        (fun σ x => Q.direct.source.retains (channels B.padding) σ x)
+        (fun σ y => Q.direct.usage.retains (channels B.padding) σ y) (D n)
+        (denseChild B.padding id Q.direct (B.cutoff bin) (B.auxiliary bin)
+          HP.ρ HP.K B.base) ≤ (coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision n
+        (HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)).direct)) ^ 4) ∧
+      ∃ R, B.compressedBin n bin (exponent Q.right) ζ floor Q.right = some R) :
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    let fine := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
+    let coarse := LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
+    ∃ A C,
+      B.pairedSample (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+        else none) M d (.pilotInput ⟨0, HP.k_pos⟩) r (some bin) = some A ∧
+      B.pairedSample (fun n q => if n < M then B.evaluate n q else none)
+        M d (.pilotInput ⟨0, HP.k_pos⟩) r (some bin) = some C ∧
+      rowNormPow 4 P r.source.rate
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (fun σ y => r.usage.retains (channels B.padding) σ y) (A - C) ≤
+        8 * ((∑ y, |B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
+          r.terminal Q.direct y| ^ 4) * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4) *
+          (coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision fine Q.direct)) ^ 4 +
+            coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision coarse Q.direct)) ^ 4) := by
+  exact B.pairedSample_initial_compressed_root exponent ζ floor M d bin hM r hs D hzero
+    (fun n => (coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision n
+        (HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)).direct)) ^ 4)) (fun _ => by positivity) ih
+
 /-- Completion transports the literal paired-history difference through the same graph,
 length, source and usage suffixes. It introduces no canonical-equality assumption. -/
 theorem complete_grid_sub (M d : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))

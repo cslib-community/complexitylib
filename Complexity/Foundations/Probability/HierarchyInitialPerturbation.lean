@@ -118,6 +118,83 @@ theorem completedGroup_initial_compressed_error
   apply (rowNormPow_sum_fourth_le B.bins hNu _ _ (fun i => A i - C i)).trans
   exact mul_le_mul_of_nonneg_left (sum_le_sum herr) (by positivity)
 
+/-- Literal group cost from own-request lower-budget precision. Both endpoint budgets,
+the fourth-power importance sum and the bin cube are retained for numerical allocation. -/
+@[expose] def initialRootGroupCharge
+    (M d : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (coefficient : ℝ) : ℝ :=
+  (#B.bins : ℝ) ^ 3 * ∑ bin ∈ B.bins,
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    let fine := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
+    let coarse := LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
+    8 * ((∑ y, |B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
+      r.terminal Q.direct y| ^ 4) * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4) *
+      (coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision fine Q.direct)) ^ 4 +
+        coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision coarse Q.direct)) ^ 4)
+
+/-- Every literal own-precision group charge is nonnegative, including zero endpoints. -/
+lemma initialRootGroupCharge_nonneg (M d : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (coefficient : ℝ) :
+    0 ≤ B.initialRootGroupCharge M d r coefficient := by
+  unfold initialRootGroupCharge
+  apply mul_nonneg (by positivity)
+  apply sum_nonneg
+  intro bin _
+  positivity
+
+/-- All actual initial rays are paid directly by a strict lower-budget own-request
+rooted IH at actual precision. Reset-right availability is required on its own request.
+The returned completed histories are literal executions, not supplied parent budgets. -/
+theorem completedGroup_initial_compressed_precision
+    (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ)
+    (ζ floor : ℝ) (M d : ℕ) (hM : 0 < M) (hbins : B.bins.Nonempty)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (s t : Fin 3) (hst : s ≠ t) (ks ku : ℕ) (ss su : List (ZMod P))
+    (hs : r.source = gridChannel s ks ss) (hu : r.usage = gridChannel t ku su)
+    (D : ℕ → ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+    (hzero : ∀ bin, D bin 0 = 0) (coefficient : ℝ)
+    (ih : ∀ bin ∈ B.bins, ∀ n < M, 0 < n →
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (midpoint r) r.terminal (B.binRate bin)
+      B.compressedBin n bin (exponent Q.direct) ζ floor Q.direct = some (D bin n) ∧
+      rootDistPow 4 P Q.direct.source.rate
+        (fun σ x => Q.direct.source.retains (channels B.padding) σ x)
+        (fun σ y => Q.direct.usage.retains (channels B.padding) σ y) (D bin n)
+        (denseChild B.padding id Q.direct (B.cutoff bin) (B.auxiliary bin)
+          HP.ρ HP.K B.base) ≤
+        coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision n Q.direct)) ^ 4 ∧
+      ∃ R, B.compressedBin n bin (exponent Q.right) ζ floor Q.right = some R) :
+    ∃ F G,
+      B.completedGroup (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+        else none) M d (.pilotInput ⟨0, HP.k_pos⟩) r = some F ∧
+      B.completedGroup (fun n q => if n < M then B.evaluate n q else none)
+        M d (.pilotInput ⟨0, HP.k_pos⟩) r = some G ∧
+      rowNormPow 4 P r.source.rate
+        (fun σ x => r.source.retains (channels B.padding) σ x)
+        (fun σ y => r.usage.retains (channels B.padding) σ y) (F - G) ≤
+        B.initialRootGroupCharge M d r coefficient := by
+  have hsr : 0 ≤ r.source.rate := by rw [hs]; exact (rate_pos ks).le
+  have hp (i : {i // i ∈ B.bins}) :=
+    B.pairedSample_initial_compressed_precision exponent ζ floor M d i.val hM r hsr
+      (D i.val) (hzero i.val) coefficient (ih i.val i.property)
+  choose A C hA hC he using hp
+  let a := fun i => if hi : i ∈ B.bins then A ⟨i, hi⟩ else 0
+  let c := fun i => if hi : i ∈ B.bins then C ⟨i, hi⟩ else 0
+  let ε := fun bin =>
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    let fine := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
+    let coarse := LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
+    8 * ((∑ y, |B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
+      r.terminal Q.direct y| ^ 4) * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4) *
+      (coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision fine Q.direct)) ^ 4 +
+        coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision coarse Q.direct)) ^ 4)
+  exact B.completedGroup_initial_compressed_error exponent ζ floor M d hbins r s t hst
+    ks ku ss su hs hu a c ε
+    (fun i hi => by simpa only [a, dite_eq_left hi] using hA ⟨i, hi⟩)
+    (fun i hi => by simpa only [c, dite_eq_left hi] using hC ⟨i, hi⟩)
+    (fun i hi => by simpa only [a, c, dite_eq_left hi] using he ⟨i, hi⟩)
+
 /-- Executed group certificates control every actual prefix before parent compression.
 Both lists are the results of the literal history computations, in scheduler order. The
 finite prefix payment retains every group cost and the cube of the executed prefix length;

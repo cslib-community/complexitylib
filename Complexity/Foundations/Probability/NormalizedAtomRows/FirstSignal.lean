@@ -131,6 +131,40 @@ theorem actualNoiseEntry_firstSignalIncrement {E : Type*} [Fintype E] [Nonempty 
     rowSliceMean_conditionalWalk]
 
 open Classical in
+/-- Conditional first-mean discrepancy in matrix units pays the actual clipped first
+mean after rank-rate normalization. No completion representation of the prefix is needed. -/
+theorem actualClippedMean_first_prefix_row_le
+    (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (s t : Fin J) (Ls La Lt : ℕ) (D : ZMod P) (ss st : List (ZMod P))
+    (F : ℕ → Environment P J → ZMod P → ZMod P → ℝ)
+    (k : ℕ) (G : Matrix (ZMod P) (ZMod P) ℝ) (hG : ∀ x y, 0 ≤ G x y) (ζ : ℝ)
+    (second : Environment P J → ZMod P → ℕ → ZMod P → ℝ)
+    (i : ℕ) {N u : ℝ} (hNu : 0 ≤ N * u) :
+    rowNormPow 4 N u (retainedMask s Ls D ss) (retainedMask t La D st)
+      (fun _ x y => actualClippedMean HP s t Ls La Lt D ss st k G ζ
+        (firstSignalIncrement F k second) 0 0 i x y) ≤
+      (rate k)⁻¹ ^ 4 * rowNormPow 4 N u (retainedMask s Ls D ss) (retainedMask t La D st)
+        (fun _ x y => rowSliceMean (retainedMask s Ls D ss)
+          (retainedMask t La D st) (F (i + 1)) x y - G x y) := by
+  apply rowNormPow_le_mul hNu
+  intro σ x y _ _
+  have hr := rate_pos k
+  have hd : 0 ≤ G x y / rate k := div_nonneg (hG x y) hr.le
+  have hden : rate k ≤ rate k * (1 + G x y / rate k) := by nlinarith
+  simp only [actualClippedMean, twoMaskMean, Fin.isValue, ↓reduceIte,
+    actualPrefix_firstSignalIncrement F k second 0 (by intros; rfl),
+    rowSliceMean, ← expect_div, ← sub_div, abs_div, abs_of_pos hr]
+  rw [abs_of_nonneg (le_min (by norm_num) (div_nonneg (by positivity) (by positivity)))]
+  calc
+    _ ≤ (|_ - _| / rate k / (1 + G x y / rate k)) ^ 4 :=
+      pow_le_pow_left₀ (by positivity) (min_le_right _ _) 4
+    _ ≤ (|_ - _| / rate k) ^ 4 := by
+      rw [div_div]
+      exact pow_le_pow_left₀ (by positivity)
+        (div_le_div_of_nonneg_left (abs_nonneg _) hr hden) 4
+    _ = _ := by rw [div_eq_mul_inv, mul_pow]; ring
+
+open Classical in
 /-- Relative first noise for arbitrary literal prefix families costs only the explicit
 inverse fourth power of the rank rate. No width or environment-atom factor is introduced. -/
 theorem actualNoiseEntry_first_prefix_row_le

@@ -1204,8 +1204,24 @@ successful preparation walks, then applies the same sharp parent comparison. Its
 `initialFourMaxReserve` retains stationary preloss, final no-overflow error, deterministic
 heavy-tail selection and raw false-overflow charges at prefix $j+1$. Constants keep their
 order: decoder coefficient, positive floor, preloss coefficient, then width and executions.
-This is an honest finite conditional bound; the preparation moments have not yet been
-allocated through every four-max/reserve term. No parent-accuracy premise supplies the gap.
+`initial_compressed_precision_moments` now supplies all four actual moments directly
+from strict lower-budget rooted hypotheses at each direct child's own `requestPrecision`.
+The reset-right call must also succeed on its own request. The computed first noise is
+centered at its own conditional mean: centering the perturbation costs at most sixteen
+in fourth moment, followed by the constant-eight comparison with semantic centered noise.
+The first deterministic payment contains the transported mean and omitted/inactive deficit,
+while the preparation mean also pays the absolute input error. First quantities retain the
+full terminal mask; preparation noise retains usage.
+
+`initial_compressed_precision_fourMax` pays both the four-max moment and raw postincrement
+clipped error from those four moments. `initial_compressed_precision_reserve` then bounds
+the literal `initialFourMaxReserve` by `initialNumericalReserve`. This scalar expression
+retains the floor, capacity, stationary coefficient, final prefix, all weighted tail
+prefixes, and raw false-event coefficients. It conservatively drops heavy selection,
+without giving either noise a rarity discount. Bin/prefix cubes, importance sums,
+width/rank-rate sensitivity, actual child precision and slack remain explicit numerical
+costs. The finite charge has not been proved uniformly absorbable into the parent's
+requested accuracy. No parent-accuracy or supplied four-max budget supplies that gap.
 The [complete checked clients](../../ComplexityTests/PolynomialBudgetHistory.lean) include a
 budget-two parent pair whose actual budget-one compressed child has diagonal error one with
 valid scalar small-floor parameters, a separately executed reset-right child, and a literal
