@@ -221,3 +221,9 @@ and its [child reserve payment](../../Complexity/Foundations/Probability/Normali
 The full-environment finite allocation is explicit and conservative; it supplies no recursive
 accuracy or parameter/workspace closure. The source-reset guard and exact coefficients are
 explained in the [probabilistic workflow](probabilistic-workflows.md).
+
+The two reserve-output theorems choose their output constant after the fixed hierarchy,
+ζ, scale and positive floor, before the prime, environment width, horizon, prefix length
+and raw/preparation/maximum families. Select this constant before allocating recursive
+child accuracies. Uniformity of that coefficient does not remove any displayed finite
+allocation or walk-length losses and supplies no recursive accuracy theorem.

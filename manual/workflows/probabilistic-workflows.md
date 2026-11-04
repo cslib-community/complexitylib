@@ -488,3 +488,9 @@ Keep efficiency and security as separate goals. In [Crypto/Computational/Basic.l
 Specify the experiment, admissible adversaries, success event and assumption; prove the reduction's efficiency using the routines above; then prove the probability or advantage inequality. Semantic rewrites and native certificates discharge different obligations. If a proposed reduction only has a query bound, return to the realization step before calling it a computational security reduction. Use the [security-game reference](../programs-crypto-and-probability/security-games-and-primitives.md) to choose the correct primitive and adversary model.
 
 [complexitylib]: ../sources.md#complexitylib
+
+The two reserve-output theorems choose their output constant after the fixed hierarchy,
+ζ, scale and positive floor, before the prime, environment width, horizon, prefix length
+and raw/preparation/maximum families. Select this constant before allocating recursive
+child accuracies. Uniformity of that coefficient does not remove any displayed finite
+allocation or walk-length losses and supplies no recursive accuracy theorem.
