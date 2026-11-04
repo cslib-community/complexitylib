@@ -264,8 +264,8 @@ theorem space_le_succinctWords {U V w n_max : ℕ}
     (hw : 0 < w) (hnU : n_max ≤ U) (hU : U ≤ 2 ^ w) :
     space U V w n_max ≤ Dynamic.succinctWords 81 213 U V w n_max := by
   have hh := hashSpace_le hw hnU hU
-  have htab := tableArrays_words_le_succinctWords (U := U) (V := V) (w := w) (n_max := n_max)
-    (C_hdr := 0) hnU
+  have htab := totalSpace_le_succinctWords (U := U) (V := V) (w := w) (n_max := n_max)
+    (h_space := hashSpace U w n_max) hnU
   have h12345 := div_add_packedWords_le
     (Dynamic.optBits U V n_max + 79 * n_max * Dynamic.logLogFactor n_max) 35
     (2 * n_max) 1 w
@@ -285,7 +285,7 @@ theorem space_le_succinctWords {U V w n_max : ℕ}
         (2 * n_max) * 1 + w - 1) / w ≤
       (Dynamic.optBits U V n_max + 81 * n_max * Dynamic.logLogFactor n_max + w - 1) / w :=
     Nat.div_le_div_right hnum
-  unfold space totalSpace offGM offLM offVal offQuot lmSubWords
+  unfold space
   unfold Dynamic.succinctWords at htab ⊢
   omega
 
@@ -392,23 +392,6 @@ theorem tsum_uniform_probeExcess_reducedPolyHash_le_five {U n_max : ℕ} (hnU : 
     (qOf := qStage1 U n_max) (H := polyStage2 U n_max) (C_bad := 2)
     (isKWiseIndependentHash_polyStage2 U n_max) S u hS G hG hbad
   simpa using hmain
-
-/-- Affine expectation corollary of `tsum_uniform_probeExcess_reducedPolyHash_le_five`:
-if `T θ ≤ A + B * probeExcess ...`, then the uniform expectation of `T θ` is at most `A + 5 * B`. -/
-theorem tsum_affine_probeExcess_reducedPolyHash_le {U n_max : ℕ} (hnU : n_max ≤ U)
-    (S : Finset (Fin U)) (u : Fin U) (hS : #(S.erase u) ≤ n_max)
-    (A B : ℕ) (T : QuotHashSeed U n_max → ℕ)
-    (hT : ∀ θ : QuotHashSeed U n_max,
-      T θ ≤ A + B * probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2 S u) :
-    (∑' θ : QuotHashSeed U n_max,
-      (PMF.uniformOfFintype (QuotHashSeed U n_max)) θ * (T θ : ℝ≥0∞)) ≤
-        ((A + 5 * B : ℕ) : ℝ≥0∞) :=
-  tsum_affine_probeExcess_of_bound
-    (qOf := fun θ : QuotHashSeed U n_max => qStage1 U n_max θ.1)
-    (H := fun θ : QuotHashSeed U n_max => polyStage2 U n_max θ.2)
-    (tsum_uniform_probeExcess_reducedPolyHash_le_five hnU S u hS)
-    (PMF.uniformOfFintype (QuotHashSeed U n_max))
-    (fun _ => le_rfl) A B T hT
 
 /-! ## Section 3: `bucketMapOfState`, `DictStateInv`, and probe-excess cardinality bounds -/
 

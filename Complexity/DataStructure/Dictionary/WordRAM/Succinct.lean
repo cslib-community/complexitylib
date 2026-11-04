@@ -60,8 +60,8 @@ SOSA 2024, Sections 3–4):
   (`space_le_succinctWords`) for every `0 < w` and `n_max ≤ U` with `Fits w U` (`U < 2 ^ w`).
 * **Per-parameter operation charge (`seq_expected_amortized`)**: at the `Memory.Prog` level
   (`SuccinctHash`), `queryWithHashProg_dict_spec`, `insertWithHashProg_dict_spec`, and
-  `deleteWithHash_dict_spec` prove per-seed **amortized** `memoryCost` bounds of
-  `26 + 3 * probeExcess`, `184 + 8 * probeExcess`, and `270 + 8 * probeExcess` with potential
+  `deleteWithHashProg_dict_spec` prove per-seed **amortized** `memoryCost` bounds of
+  `26 + 8 * probeExcess`, `184 + 8 * probeExcess`, and `270 + 8 * probeExcess` with potential
   `66 * slotPotential` (unchanged on `query`). In turn,
   `tsum_uniform_probeExcess_reducedPolyHash_le_five` bounds expected `probeExcess` by `5`. At the
   compiled Word-RAM level, `opFactor U V w n_max` (`Realizes.factor`) is chosen by classical choice
@@ -137,14 +137,14 @@ theorem span_exec_succinct {U V w n_max base : ℕ}
     apply ExecWithin.op
     rw [Op.eval_exactBin]
     have hfr₂ : s₂.regs (frontierReg U V w n_max) = base := by
-      simp only [s₂, s₁, set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hfr]
+      simp only [s₂, s₁, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hfr]
     have hcur₂ : s₂.regs (curReg U V w n_max) = space U V w n_max := by
-      simp only [s₂, set_regs, update_sReg, ↓reduceIte]
+      simp only [s₂, Data.set_regs, update_sReg, ↓reduceIte]
     rw [hfr₂, hcur₂]
     exact Data.put_of_fits hfit
   refine ⟨s₃, e₁.seq (e₂.seq e₃), rfl, ?_, ?_, fun j => Fin.elim0 j⟩
-  · simp only [s₃, s₂, s₁, set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hfr]
-  · simp only [s₃, set_regs, update_sReg, ↓reduceIte]
+  · simp only [s₃, s₂, s₁, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hfr]
+  · simp only [s₃, Data.set_regs, update_sReg, ↓reduceIte]
 
 theorem setup_exec_succinct {U V w n_max base : ℕ}
     (hwf : DictParamsWf U V w n_max)

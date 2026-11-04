@@ -1043,46 +1043,6 @@ theorem tsum_uniform_probeExcess_twoStage_le {ι₁ ι₂ : Type*}
         · exact Nat.cast_ne_zero.mpr Fintype.card_ne_zero
         · exact ENNReal.natCast_ne_top _
 
-/-- General affine expectation bound from any upper bound `E_probe` on the uniform expectation of
-`probeExcess`. -/
-theorem tsum_affine_probeExcess_of_bound [Nonempty ι] {U n_max E_probe : ℕ}
-    {qOf : ι → Fin U → Q}
-    {H : ι → Q → Fin (2 ^ totalMicroBits n_max)}
-    {S : Finset (Fin U)} {u : Fin U}
-    (hprobe :
-      (∑' i : ι, (PMF.uniformOfFintype ι) i * (probeExcess n_max (qOf i) H i S u : ℝ≥0∞)) ≤
-        (E_probe : ℝ≥0∞))
-    (μ : PMF ι) (hμ : ∀ i, μ i ≤ (PMF.uniformOfFintype ι) i)
-    (A B : ℕ) (T : ι → ℕ)
-    (hT : ∀ i, T i ≤ A + B * probeExcess n_max (qOf i) H i S u) :
-    (∑' i : ι, μ i * (T i : ℝ≥0∞)) ≤ ((A + E_probe * B : ℕ) : ℝ≥0∞) := by
-  have h1 : (∑' i : ι, μ i * (T i : ℝ≥0∞)) ≤
-      ∑' i : ι, ((PMF.uniformOfFintype ι) i * (A : ℝ≥0∞) +
-        (B : ℝ≥0∞) *
-          ((PMF.uniformOfFintype ι) i * (probeExcess n_max (qOf i) H i S u : ℝ≥0∞))) := by
-    refine tsum_le_tsum fun i => ?_
-    have hle : (T i : ℝ≥0∞) ≤ ((A + B * probeExcess n_max (qOf i) H i S u : ℕ) : ℝ≥0∞) :=
-      Nat.cast_le.mpr (hT i)
-    calc μ i * (T i : ℝ≥0∞)
-        ≤ (PMF.uniformOfFintype ι) i *
-            ((A + B * probeExcess n_max (qOf i) H i S u : ℕ) : ℝ≥0∞) := by
-          gcongr
-          exact hμ i
-      _ = (PMF.uniformOfFintype ι) i * (A : ℝ≥0∞) +
-            (B : ℝ≥0∞) * ((PMF.uniformOfFintype ι) i *
-              (probeExcess n_max (qOf i) H i S u : ℝ≥0∞)) := by
-          push_cast
-          ring
-  rw [tsum_add, ENNReal.tsum_mul_right, (PMF.uniformOfFintype ι).tsum_coe, one_mul,
-    ENNReal.tsum_mul_left] at h1
-  calc (∑' i : ι, μ i * (T i : ℝ≥0∞))
-      ≤ (A : ℝ≥0∞) + (B : ℝ≥0∞) * (E_probe : ℝ≥0∞) := by
-        refine h1.trans ?_
-        gcongr
-    _ = ((A + E_probe * B : ℕ) : ℝ≥0∞) := by
-        push_cast
-        ring
-
 /-- `ℝ≥0∞` expectation form of `expect_probeExcess_le_three` under `PMF.uniformOfFintype ι`:
 `∑' i : ι, (PMF.uniformOfFintype ι) i * (probeExcess n_max qOf H i S u : ℝ≥0∞) ≤ 3`. -/
 theorem tsum_uniform_probeExcess_le_three [Nonempty ι] {U n_max : ℕ}
@@ -1106,22 +1066,6 @@ theorem tsum_uniform_probeExcess_le_three [Nonempty ι] {U n_max : ℕ}
         rw [mul_comm (3 : ℝ≥0∞), ← mul_assoc, ENNReal.inv_mul_cancel, one_mul]
         · exact Nat.cast_ne_zero.mpr Fintype.card_ne_zero
         · exact ENNReal.natCast_ne_top _
-
-/-- More generally, for any distribution `μ : PMF ι` satisfying
-`∀ i, μ i ≤ PMF.uniformOfFintype ι i` and any affine step bound
-`T i ≤ A + B * probeExcess n_max qOf H i S u`,
-`∑' i : ι, μ i * (T i : ℝ≥0∞) ≤ A + 3 * B`. -/
-theorem tsum_affine_probeExcess_le [Nonempty ι] {U n_max : ℕ}
-    {qOf : Fin U → Q}
-    (hq : ∀ u₁ u₂ : Fin U, qOf u₁ = qOf u₂ →
-      keyQuotient (bucketBits n_max) u₁.val = keyQuotient (bucketBits n_max) u₂.val)
-    {H : ι → Q → Fin (2 ^ totalMicroBits n_max)} (hh : IsKWiseIndependentHash 3 H)
-    (S : Finset (Fin U)) (u : Fin U) (hS : #(S.erase u) ≤ n_max)
-    (μ : PMF ι) (hμ : ∀ i, μ i ≤ (PMF.uniformOfFintype ι) i)
-    (A B : ℕ) (T : ι → ℕ)
-    (hT : ∀ i, T i ≤ A + B * probeExcess n_max qOf H i S u) :
-    (∑' i : ι, μ i * (T i : ℝ≥0∞)) ≤ ((A + 3 * B : ℕ) : ℝ≥0∞) :=
-  tsum_affine_probeExcess_of_bound (tsum_uniform_probeExcess_le_three hq hh S u hS) μ hμ A B T hT
 
 end ProbabilityBounds
 

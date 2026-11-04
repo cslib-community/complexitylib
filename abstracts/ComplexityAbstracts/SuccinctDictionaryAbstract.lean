@@ -43,8 +43,8 @@ polynomial hashing with a bit-packed Four-Russians multiplication table (`Reduce
   Each bucket's item count and expected probe excess per operation depend only on the current
   active key set, whereas the physical chain order and slab/tail hysteresis split depend on
   operation history. In the `Memory.Prog` model (`SuccinctHash`), `queryWithHashProg_dict_spec`,
-  `insertWithHashProg_dict_spec`, and `deleteWithHash_dict_spec` prove per-seed **amortized**
-  `memoryCost` bounds of `26 + 3 * probeExcess`, `184 + 8 * probeExcess`, and
+  `insertWithHashProg_dict_spec`, and `deleteWithHashProg_dict_spec` prove per-seed **amortized**
+  `memoryCost` bounds of `26 + 8 * probeExcess`, `184 + 8 * probeExcess`, and
   `270 + 8 * probeExcess` with potential `66 * slotPotential`. In turn,
   `tsum_uniform_probeExcess_reducedPolyHash_le_five` bounds expected `probeExcess` by `5`.
 - **Program parameterization and what the Word-RAM theorem certifies:** For each

@@ -82,10 +82,6 @@ theorem sReg_ne {U V w n_max : ℕ} {i j : Fin 256} (h : i ≠ j) :
   fun heq => h ((sReg_injective U V w n_max) heq)
 
 @[simp]
-theorem set_regs {r : ℕ} (x : Data r) (j : Fin r) (v : ℕ) (i : Fin r) :
-    (x.set j v).regs i = Function.update x.regs j v i := rfl
-
-@[simp]
 theorem update_sReg {U V w n_max : ℕ} (f : Fin (rSuccinct U V w n_max) → ℕ)
     (j : Fin 256) (v : ℕ) (i : Fin 256) :
     Function.update f (sReg U V w n_max j) v (sReg U V w n_max i) =
@@ -937,17 +933,17 @@ private theorem exec_opCode_query {U V w n_max base : ℕ}
   have hx₃_bdd : x₃.Bounded w := hex_z.bounded hx₂_bdd
   have hcond_pos : (Cond.eq (tagReg U V w n_max) (zeroReg U V w n_max)).Holds x₃ := by
     change x₃.regs (tagReg U V w n_max) = x₃.regs (zeroReg U V w n_max)
-    simp only [x₃, set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, htag₂]
+    simp only [x₃, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, htag₂]
   have hmem₃ : x₃.mem = x.mem := hmem₂.trans hmem₁
   have hfr₃ : x₃.regs (frontierReg U V w n_max) = base + space U V w n_max := by
-    simp only [x₃, set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hfr₂]
+    simp only [x₃, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hfr₂]
   have hbase₃ : x₃.regs (baseReg U V w n_max) = base := by
-    simp only [x₃, set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hbase₂]
+    simp only [x₃, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hbase₂]
   have hu₃ : x₃.regs (argUReg U V w n_max) = u.val := by
-    simp only [x₃, set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hu₂]
+    simp only [x₃, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hu₂]
   have hout₃ : x₃.regs (hashOutReg U V w n_max) =
       hValOfSeed U n_max θ (keyQuotient (bucketBits n_max) u.val) := by
-    simp only [x₃, set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hout₂]
+    simp only [x₃, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hout₂]
   have hms₃ : memoryState (frontierReg U V w n_max) x₃ =
       memoryState (frontierReg U V w n_max) x :=
     Memory.State.ext hmem₃ (hfr₃.trans hfr.symm)
@@ -1094,7 +1090,7 @@ private theorem exec_opCode_insert {U V w n_max base : ℕ}
   have hx₃_bdd : x₃.Bounded w := hex_z.bounded hx₂_bdd
   have hcond_neg0 : ¬(Cond.eq (tagReg U V w n_max) (zeroReg U V w n_max)).Holds x₃ := by
     change x₃.regs (tagReg U V w n_max) ≠ x₃.regs (zeroReg U V w n_max)
-    simp only [x₃, set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, htag₂, ne_eq,
+    simp only [x₃, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, htag₂, ne_eq,
       one_ne_zero, not_false_eq_true]
   let x₄ := x₃.set (oneReg U V w n_max) 1
   have hfit1 : Fits w 1 :=
@@ -1105,19 +1101,19 @@ private theorem exec_opCode_insert {U V w n_max base : ℕ}
   have hx₄_bdd : x₄.Bounded w := hex_o.bounded hx₃_bdd
   have hcond_pos1 : (Cond.eq (tagReg U V w n_max) (oneReg U V w n_max)).Holds x₄ := by
     change x₄.regs (tagReg U V w n_max) = x₄.regs (oneReg U V w n_max)
-    simp only [x₄, x₃, set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, htag₂]
+    simp only [x₄, x₃, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, htag₂]
   have hmem₄ : x₄.mem = x.mem := hmem₂.trans hmem₁
   have hfr₄ : x₄.regs (frontierReg U V w n_max) = base + space U V w n_max := by
-    simp only [x₄, x₃, set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hfr₂]
+    simp only [x₄, x₃, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hfr₂]
   have hbase₄ : x₄.regs (baseReg U V w n_max) = base := by
-    simp only [x₄, x₃, set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hbase₂]
+    simp only [x₄, x₃, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hbase₂]
   have hu₄ : x₄.regs (argUReg U V w n_max) = u.val := by
-    simp only [x₄, x₃, set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hu₂]
+    simp only [x₄, x₃, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hu₂]
   have hv₄ : x₄.regs (argVReg U V w n_max) = v := by
-    simp only [x₄, x₃, set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hv₂]
+    simp only [x₄, x₃, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hv₂]
   have hout₄ : x₄.regs (hashOutReg U V w n_max) =
       hValOfSeed U n_max θ (keyQuotient (bucketBits n_max) u.val) := by
-    simp only [x₄, x₃, set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hout₂]
+    simp only [x₄, x₃, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hout₂]
   have hms₄ : memoryState (frontierReg U V w n_max) x₄ =
       memoryState (frontierReg U V w n_max) x :=
     Memory.State.ext hmem₄ (hfr₄.trans hfr.symm)
@@ -1323,7 +1319,7 @@ private theorem exec_opCode_delete {U V w n_max base : ℕ}
   have hx₃_bdd : x₃.Bounded w := hex_z.bounded hx₂_bdd
   have hcond_neg0 : ¬(Cond.eq (tagReg U V w n_max) (zeroReg U V w n_max)).Holds x₃ := by
     change x₃.regs (tagReg U V w n_max) ≠ x₃.regs (zeroReg U V w n_max)
-    simp only [x₃, set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, htag₂, ne_eq,
+    simp only [x₃, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, htag₂, ne_eq,
       OfNat.ofNat_ne_zero, not_false_eq_true]
   let x₄ := x₃.set (oneReg U V w n_max) 1
   have hfit1 : Fits w 1 :=
@@ -1334,7 +1330,7 @@ private theorem exec_opCode_delete {U V w n_max base : ℕ}
   have hx₄_bdd : x₄.Bounded w := hex_o.bounded hx₃_bdd
   have hcond_neg1 : ¬(Cond.eq (tagReg U V w n_max) (oneReg U V w n_max)).Holds x₄ := by
     change x₄.regs (tagReg U V w n_max) ≠ x₄.regs (oneReg U V w n_max)
-    simp only [x₄, x₃, set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, htag₂, ne_eq,
+    simp only [x₄, x₃, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, htag₂, ne_eq,
       Nat.reduceEqDiff, not_false_eq_true]
   let x₅ := x₄.set (hqReg U V w n_max) (x₄.regs (hashOutReg U V w n_max))
   have hex_cp : ExecWithin (B := .exact) w
@@ -1343,14 +1339,14 @@ private theorem exec_opCode_delete {U V w n_max base : ℕ}
   have hx₅_bdd : x₅.Bounded w := hex_cp.bounded hx₄_bdd
   have hmem₅ : x₅.mem = x.mem := hmem₂.trans hmem₁
   have hfr₅ : x₅.regs (frontierReg U V w n_max) = base + space U V w n_max := by
-    simp only [x₅, x₄, x₃, set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hfr₂]
+    simp only [x₅, x₄, x₃, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hfr₂]
   have hbase₅ : x₅.regs (baseReg U V w n_max) = base := by
-    simp only [x₅, x₄, x₃, set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hbase₂]
+    simp only [x₅, x₄, x₃, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hbase₂]
   have hu₅ : x₅.regs (argUReg U V w n_max) = u.val := by
-    simp only [x₅, x₄, x₃, set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hu₂]
+    simp only [x₅, x₄, x₃, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hu₂]
   have hhq₅ : x₅.regs (hqReg U V w n_max) =
       hValOfSeed U n_max θ (keyQuotient (bucketBits n_max) u.val) := by
-    simp only [x₅, x₄, x₃, set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hout₂]
+    simp only [x₅, x₄, x₃, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hout₂]
   have hms₅ : memoryState (frontierReg U V w n_max) x₅ =
       memoryState (frontierReg U V w n_max) x :=
     Memory.State.ext hmem₅ (hfr₅.trans hfr.symm)
