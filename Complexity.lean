@@ -4089,6 +4089,7 @@ public import Complexity.Foundations.Probability.Gaussian.Fourier
 public import Complexity.Foundations.Probability.Gaussian.MassBounds
 public import Complexity.Foundations.Probability.Gaussian.Measure
 public import Complexity.Foundations.Probability.Gaussian.Multivariate
+public import Complexity.Foundations.Probability.Gaussian.NoiseOperator
 public import Complexity.Foundations.Probability.Gaussian.Periodization
 public import Complexity.Foundations.Probability.Gaussian.Poisson
 public import Complexity.Foundations.Probability.Gaussian.Projection

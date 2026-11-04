@@ -49,6 +49,8 @@ a centered Gaussian of variance `‖a‖ ^ 2` there (`pi_gaussianReal_map_dotPro
   coordinates form a standard Gaussian vector of `EuclideanSpace ℝ ι`.
 * `ProbabilityTheory.pi_gaussianReal_map_dotProduct`: the law of a projection of independent
   standard Gaussian coordinates.
+* `ProbabilityTheory.memLp_dotProduct_pi_gaussianReal`,
+  `ProbabilityTheory.integrable_dotProduct_pi_gaussianReal`: its moments.
 * `ProbabilityTheory.measureReal_pi_gaussianReal_eq`: the product measure of standard Gaussians
   carries events to the standard Gaussian measure on `EuclideanSpace ℝ ι`.
 -/
@@ -56,7 +58,7 @@ a centered Gaussian of variance `‖a‖ ^ 2` there (`pi_gaussianReal_map_dotPro
 @[expose] public section
 
 open MeasureTheory
-open scoped NNReal RealInnerProductSpace
+open scoped ENNReal NNReal RealInnerProductSpace
 
 namespace ProbabilityTheory
 
@@ -131,6 +133,20 @@ theorem pi_gaussianReal_map_dotProduct {ι : Type*} [Fintype ι] (a : ι → ℝ
       dotProduct_comm]
   rw [h, ← Measure.map_map (by fun_prop) (by fun_prop),
     (measurePreserving_toLp_pi_gaussianReal ι).map_eq, stdGaussian_map_inner]
+
+/-- Under independent standard Gaussian coordinates, the projection `a ⬝ᵥ ·` has finite moments
+of every finite order. -/
+theorem memLp_dotProduct_pi_gaussianReal {ι : Type*} [Fintype ι] (a : ι → ℝ) {p : ℝ≥0∞}
+    (hp : p ≠ ∞) :
+    MemLp (fun x => a ⬝ᵥ x) p (Measure.pi fun _ : ι => gaussianReal 0 1) := by
+  have hD : Measurable fun x : ι → ℝ => a ⬝ᵥ x := by fun_prop
+  exact (memLp_id_gaussianReal' p hp).comp_measurePreserving
+    ⟨hD, pi_gaussianReal_map_dotProduct a⟩
+
+/-- Under independent standard Gaussian coordinates, the projection `a ⬝ᵥ ·` is integrable. -/
+theorem integrable_dotProduct_pi_gaussianReal {ι : Type*} [Fintype ι] (a : ι → ℝ) :
+    Integrable (fun x => a ⬝ᵥ x) (Measure.pi fun _ : ι => gaussianReal 0 1) :=
+  memLp_one_iff_integrable.1 (memLp_dotProduct_pi_gaussianReal a ENNReal.one_ne_top)
 
 /-- The product of standard Gaussians on `ι → ℝ` carries an event to the same event under the
 standard Gaussian measure of `EuclideanSpace ℝ ι`. -/
