@@ -228,7 +228,7 @@ structure CommitmentReceiver.IsPPT (receiver : CommitmentReceiver) : Prop where
   /-- The second stage is strict PPT on `(n, state, c)`. -/
   guess :
     IsPPTOn (encPair encUnary (encPair encBits encBits)) encBool
-      (fun p => receiver.guess p.1 p.2.1 p.2.2)
+      (fun ⟨n, state, c⟩ => receiver.guess n state c)
 
 /-- The two-stage commitment-hiding experiment against a stateful receiver `receiver` with
 auxiliary input `aux` and hidden bit selector `bit : Bool` at security parameter `n`.
@@ -239,19 +239,20 @@ noncomputable def commitmentHidingGame (commit : List Bool → Bool → List Boo
     (receiver : CommitmentReceiver) (aux : List Bool) (bit : Bool) (n : ℕ) : ProbComp Bool := do
   let choice ← receiver.choose n aux
   let seed ← BitString.sampleList n
-  receiver.guess n choice.2
-    (commit choice.1.1 (if bit then choice.1.2.2 else choice.1.2.1) seed)
+  let ((r, b₀, b₁), state) := choice
+  receiver.guess n state
+    (commit r (if bit then b₁ else b₀) seed)
 
 /-- The commitment-hiding experiment runs in strict PPT on `(n, aux, bit)` whenever `commit` is
 computable in plain polynomial time and `receiver` is strict PPT. -/
 theorem isPPTOn_commitmentHidingGame {commit : List Bool → Bool → List Bool → List Bool}
     {receiver : CommitmentReceiver}
     (hcommit : ComputableInPolyTime
-      (fun p : List Bool × Bool × List Bool => commit p.1 p.2.1 p.2.2)
+      (fun ⟨r, b, seed⟩ => commit r b seed)
       (encPair encBits (encPair encBool encBits)) encBits)
     (hR : receiver.IsPPT) :
     IsPPTOn (encPair encUnary (encPair encBits encBool)) encBool
-      (fun p => commitmentHidingGame commit receiver p.2.1 p.2.2 p.1) := by
+      (fun ⟨n, aux, bit⟩ => commitmentHidingGame commit receiver aux bit n) := by
   have hcommit_tidy := hcommit.tidy
   have hchoose := hR.choose
   have hguess := hR.guess
@@ -263,7 +264,7 @@ indexed family on `(n, aux)`. -/
 theorem isPPT_commitmentHidingGame {commit : List Bool → Bool → List Bool → List Bool}
     {receiver : CommitmentReceiver}
     (hcommit : ComputableInPolyTime
-      (fun p : List Bool × Bool × List Bool => commit p.1 p.2.1 p.2.2)
+      (fun ⟨r, b, seed⟩ => commit r b seed)
       (encPair encBits (encPair encBool encBits)) encBits)
     (hR : receiver.IsPPT) (bit : Bool) :
     IsPPT encBool (fun n aux => commitmentHidingGame commit receiver aux bit n) := by
@@ -278,7 +279,7 @@ in the unary security parameter `n`. -/
 theorem isPPTOn_commitmentHidingGame_aux {commit : List Bool → Bool → List Bool → List Bool}
     {receiver : CommitmentReceiver} {aux : ℕ → List Bool}
     (hcommit : ComputableInPolyTime
-      (fun p : List Bool × Bool × List Bool => commit p.1 p.2.1 p.2.2)
+      (fun ⟨r, b, seed⟩ => commit r b seed)
       (encPair encBits (encPair encBool encBits)) encBits)
     (hR : receiver.IsPPT)
     (haux : ComputableInPolyTime aux encUnary encBits) (bit : Bool) :
@@ -372,8 +373,9 @@ noncomputable def naorReceiverDistinguisher (receiver : CommitmentReceiver)
     (aux : ℕ → List Bool) (bit : Bool) : Distinguisher :=
   fun n pad => do
     let choice ← receiver.choose n (aux n)
-    receiver.guess n choice.2
-      (naorCommit id choice.1.1 (if bit then choice.1.2.2 else choice.1.2.1) pad)
+    let ((r, b₀, b₁), state) := choice
+    receiver.guess n state
+      (naorCommit id r (if bit then b₁ else b₀) pad)
 
 /-- `naorReceiverDistinguisher receiver aux bit` is a strict PPT distinguisher whenever `receiver`
 is strict PPT and `aux` is computable in plain polynomial time. -/
@@ -1148,13 +1150,12 @@ structure BitCommitmentScheme where
   polyTime_commitLength : ComputableInPolyTime commitLength encUnary encUnary
   /-- `commit` is computable in plain polynomial time. -/
   polyTime_commit :
-    ComputableInPolyTime (fun p : List Bool × Bool × List Bool => commit p.1 p.2.1 p.2.2)
+    ComputableInPolyTime (fun ⟨r, b, seed⟩ => commit r b seed)
       (encPair encBits (encPair encBool encBits)) encBits
   /-- `verify` is computable in plain polynomial time. -/
   polyTime_verify :
     ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool × Bool × List Bool =>
-        verify p.1 p.2.1 p.2.2.1 p.2.2.2.1 p.2.2.2.2)
+      (fun ⟨n, r, c, b, seed⟩ => verify n r c b seed)
       (encPair encUnary (encPair encBits (encPair encBits (encPair encBool encBits)))) encBool
   /-- Honest commitments have length `commitLength n` when `seed.length = n`. -/
   length_commit : ∀ (n : ℕ) (r : List Bool) (b : Bool) (seed : List Bool),

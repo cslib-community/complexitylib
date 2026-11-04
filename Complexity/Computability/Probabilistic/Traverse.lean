@@ -87,7 +87,7 @@ theorem IsPPTOn.mapM {α β : Type} {input : α ↪ List Bool} {output : β ↪ 
       (encPair (encList input) encBits) (encList output) := by
     apply ComputableTidilyInPolyTime.mapWithInput
     · fun_prop
-    · exact hevaluate.comp (show ComputableTidilyInPolyTime
+    · exact hevaluate.tidy.comp (show ComputableTidilyInPolyTime
         (fun p : (List α × List Bool) × (α × ℕ) =>
           (p.2.1, BitString.listRow (budget p.1.1) p.2.2 p.1.2))
         (encPair (encPair (encList input) encBits) (encPair input encUnary))

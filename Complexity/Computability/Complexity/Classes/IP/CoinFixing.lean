@@ -91,7 +91,7 @@ variable {S : Type} (oracle : Operation × List Bool → StateT S PMF (List Bool
 
 /-- The handler of the private coins and of the prover `o`. -/
 local notation "handler" o =>
-  ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) o
+  OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) o
 
 /-- An instruction with a fixed coin makes the requests of `coinStep`. -/
 private theorem run_interpret_finiteStep_pure (t : ℕ)
@@ -188,10 +188,10 @@ the programs of fixed coins. -/
 theorem acceptProb_eq_sum {V : WordOracleComp Operation Bool} {t : ℕ} {x : List Bool}
     (hV : ∀ (S : Type) (oracle : Operation × List Bool → StateT S PMF (List Bool)) s,
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (Turing.MultiTapeTM.encBool <$> V)).run s =
       (OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           (M.runOracle t x)).run s)
     (P : Prover Operation) :
     acceptProb V P =
@@ -201,7 +201,7 @@ theorem acceptProb_eq_sum {V : WordOracleComp Operation Bool} {t : ℕ} {x : Lis
     (hV P.State P.respond P.init)
   rw [OracleComp.interpret_map, StateT.run_map, run_interpret_runOracle_eq_coins,
     _root_.PMF.monad_map_eq_map, PMF.map_comp] at h
-  have hl : acceptProb V P = ((OracleComp.interpret (ProbOracleComp.handler
+  have hl : acceptProb V P = ((OracleComp.interpret (OracleComp.sumHandler
       (fun n => StateT.lift (ProbComp.unifOracle n)) P.respond) V).run P.init).map
         ((fun z => decide (z.1 = [true])) ∘ fun p => (Turing.MultiTapeTM.encBool p.1, p.2))
           true := by

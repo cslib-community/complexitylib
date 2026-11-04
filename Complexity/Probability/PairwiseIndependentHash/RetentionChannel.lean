@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
+public import Complexity.Foundations.Probability.ProductDensity
 public import Complexity.Probability.PairwiseIndependentHash.Affine
 public import Complexity.Probability.PairwiseIndependentHash.Retention
 public import Mathlib.Algebra.Field.ZMod
@@ -74,17 +75,6 @@ namespace Cslib.Probability
 
 open Finset
 open scoped BigOperators
-
-/-- **Independence of separate seeds**: on the product of two seed spaces, an event about the
-first seed and an event about the second have probability equal to the product of their
-probabilities. -/
-theorem dens_filter_fst_and_snd {ι κ : Type*} [Fintype ι] [Fintype κ] (p : ι → Prop)
-    (q : κ → Prop) [DecidablePred p] [DecidablePred q] :
-    dens {z : ι × κ | p z.1 ∧ q z.2} = dens {i | p i} * dens {j | q j} := by
-  rw [dens_eq_card_div_card, dens_eq_card_div_card, dens_eq_card_div_card,
-    ← univ_product_univ, filter_product, card_product, Fintype.card_prod]
-  push_cast
-  rw [mul_div_mul_comm]
 
 variable (P H L : ℕ) [NeZero P]
 

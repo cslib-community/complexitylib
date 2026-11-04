@@ -25,7 +25,7 @@ finite-control machines with strict polynomial bounds and independent fair coins
 conventions, `Randomized.StrictPPT`, `Randomized.Negligible` and `Randomized.Indistinguishable`,
 are the shared foundations displayed in the appendix.
 The definitions and theorem statements below specify the claim; Lean checks their proofs through
-`CryptographyBridge`. Besides the shared foundations, the audit allows only the following eight
+`CryptographyBridge`. Besides the shared foundations, the audit allows only the following nine
 foundational program, interpretation and machine modules across the implementation boundary,
 without importing a security definition:
 * under `Computability.Machines.Turing.MultiTape`: `Machine` (machines whose oracle channels
@@ -34,8 +34,8 @@ without importing a security definition:
   `Probabilistic.Oracle` (fair-coin runs with external oracle calls);
 * under `Languages.Probabilistic`: `Basic` (terminating programs with typed calls, whose only
   randomness is uniform choice from a finite range), `Oracle` (private coins beside external
-  calls), `Sum` (sums of oracle interfaces) and `Oracle.Interaction` (runs against a stateful
-  randomized oracle).
+  calls), `Sum` (sums of oracle interfaces), `Semantics` (the generic run of a program against a
+  stateful randomized oracle) and `Oracle.Interaction` (its instance with private coins).
 
 ## References
 
@@ -203,6 +203,7 @@ info: abstract audit passed for `ComplexityTests.Abstracts.CryptographyAbstract`
   Complexity.Languages.Probabilistic.Basic,
   Complexity.Languages.Probabilistic.Oracle,
   Complexity.Languages.Probabilistic.Sum,
+  Complexity.Languages.Probabilistic.Semantics,
   Complexity.Languages.Probabilistic.Oracle.Interaction,
   Complexity.Computability.Machines.Turing.MultiTape.Machine,
   Complexity.Computability.Machines.Turing.MultiTape.Machine.Program,

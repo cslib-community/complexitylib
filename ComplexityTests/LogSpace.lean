@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 import Complexity.Computability.Complexity.Classes.LogSpace
 import Complexity.Computability.Complexity.Classes.LogSpace.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Streaming
+import Complexity.Tactic.LogSpace
 
 /-! Logarithmic space: a nontrivial problem in `L` decided in constant workspace, complements,
 reductions and composition, a nondeterministic machine with a branch running forever, the
@@ -40,6 +41,8 @@ private theorem computableInLogSpace_oddOnes : ComputableInLogSpace oddOnes encB
   exact ⟨_, c, h.computableInTimeAndSpace.mono (fun _ => le_rfl) fun _ =>
     by simpa using Nat.le_mul_of_pos_right c (Nat.succ_pos _)⟩
 
+attribute [local program_certificate] computableInLogSpace_oddOnes
+
 /-- The words with an odd number of ones. -/
 private def OddOnes : Set (List Bool) := {word | oddOnes word = true}
 
@@ -64,8 +67,8 @@ example : ∃ c₁ c₂ t, DecidableInTimeAndSpace OddOnes encBits t
 example :
     ComputableInLogSpace (fun w => !oddOnes w) encBits encBool ∧
     ComputableInLogSpace (oddOnes ∘ fun w : List Bool => w) encBits encBool :=
-  ⟨(ComputableInLogSpace.of_finite (encIn := encBool) not).comp computableInLogSpace_oddOnes,
-    computableInLogSpace_oddOnes.comp .id⟩
+by
+  constructor <;> logspace
 
 /-- Reversal is computable in zero workspace, so it reduces `OddOnes` (and its complement, in both
 logarithmic space and polynomial time) to the words whose reversal has an odd number of ones. -/
