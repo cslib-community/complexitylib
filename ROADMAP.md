@@ -655,21 +655,7 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   `WordRAM/ThreeSum/Decision/One9992.lean` (standard Word-RAM instruction time, polynomially
   bounded integer inputs). The source's sharper Exact Triangle exponent 2.9983 is not claimed by
   this integer retuning and remains open.
-  Conservative native ordinary integer 3SUM is proved in
-  `WordRAM/ThreeSum/Decision/Subquadratic.lean`: for each fixed polynomial magnitude exponent,
-  one fixed 848-register program has charged time `Oκ(n^(2−1/5184))`, logarithmic physical
-  admission and polynomial words/support at every wider execution prefix. Correctness includes
-  every length, distinct positions and repeated values; only the time estimate is eventual.
-  This is standard Word-RAM instruction time, not bit/Turing time or arbitrary-real 3SUM.
-  The concrete cyclic-Strassen counter ([#1701]), minimum-count selector ([#2098]) and computed
-  conservative parameters ([#2127]) feed the actual assembled ET callee ([#2146]). Its time
-  field is `Oκ(n^(3−1/1296))` for polynomial weights. The ordinary proof charges native Chan–He
-  preprocessing, actual packed dimensions, all matrix/callee calls, control work and halt;
-  it does not assume a fast solver, prime procedure, layout or time contract. The counter
-  computes residues, padding, seven-product recursion and exact modular counts within
-  `3704*(p+1)²*(n+1)^2.81` instructions. The selected prime is computed by trial division and
-  actual counter calls; the assembled solver runs the real exhaustive branch at smaller
-  geometry. These conservative original estimates do not establish the source's tuned endpoint.
+  `Subquadratic.lean` specializes the same tuned pipeline to the weaker `2−1/5184` bound.
 - **Memory-oracle realization** ([#2205], [#2213]): the foundational graded kernel certifies
   all four memory queries, register-word glue, native branches and binds with one fixed
   continuation emitter for all runtime replies. Its functional representation retains the
@@ -862,7 +848,6 @@ not planned, not as proved.
 [#1394]: https://github.com/cslib-community/complexitylib/issues/1394
 [#1539]: https://github.com/cslib-community/complexitylib/issues/1539
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
-[#1701]: https://github.com/cslib-community/complexitylib/issues/1701
 [#1817]: https://github.com/cslib-community/complexitylib/issues/1817
 [#1885]: https://github.com/cslib-community/complexitylib/pull/1885
 [#2019]: https://github.com/cslib-community/complexitylib/issues/2019
@@ -871,9 +856,6 @@ not planned, not as proved.
 [#2205]: https://github.com/cslib-community/complexitylib/issues/2205
 [#2213]: https://github.com/cslib-community/complexitylib/issues/2213
 [#2289]: https://github.com/cslib-community/complexitylib/issues/2289
-[#2098]: https://github.com/cslib-community/complexitylib/issues/2098
-[#2127]: https://github.com/cslib-community/complexitylib/issues/2127
 [#2145]: https://github.com/cslib-community/complexitylib/issues/2145
-[#2146]: https://github.com/cslib-community/complexitylib/issues/2146
 [#2084]: https://github.com/cslib-community/complexitylib/issues/2084
 [#2290]: https://github.com/cslib-community/complexitylib/issues/2290
