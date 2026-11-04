@@ -214,9 +214,9 @@ theorem positiveCharge_nonneg
   exact add_nonneg (mul_nonneg (abs_nonneg _) (mul_nonneg (by norm_num) B.binCap_nonneg))
     (mul_nonneg (abs_nonneg _) (by positivity))
 
-/-- The derived allocation is positive without a supplied per-request magnitude. -/
-theorem magnitude_pos (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) :
-    0 < B.magnitude r := by
+/-- The existing derived allocation covers bounded preparation inputs without a new budget. -/
+theorem one_le_magnitude (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) :
+    1 ≤ B.magnitude r := by
   have hp : 0 ≤ ∑ i ∈ B.bins, B.positiveMagnitude r i := by
     apply sum_nonneg
     intro i _
@@ -225,8 +225,13 @@ theorem magnitude_pos (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) :
   have hn : 0 ≤ B.negativeMagnitude r := by
     unfold negativeMagnitude atomCap
     exact sum_nonneg fun y _ => mul_nonneg (abs_nonneg _) (by positivity)
-  unfold magnitude atomCap
-  positivity
+  have hcap : 0 ≤ B.atomCap := by unfold atomCap; positivity
+  change 1 ≤ 1 + B.atomCap + 2 * _
+  linarith
+
+/-- The derived allocation is positive without a supplied per-request magnitude. -/
+theorem magnitude_pos (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) :
+    0 < B.magnitude r := lt_of_lt_of_le zero_lt_one (B.one_le_magnitude r)
 
 /-- Positive lengths are chosen from the derived finite rate/cutoff envelope before
 the lower calls. Task-specific validity and noise summation remain proof obligations. -/

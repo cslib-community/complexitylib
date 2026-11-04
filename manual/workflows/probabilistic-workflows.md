@@ -838,7 +838,8 @@ with the clipping at one of that deficit divided by `rankRate + baseEntry`.
 for the actual bin-preparation target: deterministic first deficit, centered first noise,
 and the remaining second discrepancy. It preserves the initial canonical base target,
 not a residual-specific mean. Apply the first-noise payments separately. The preparation transport below refines the
-remaining discrepancy; second-signal noise and combined integrated payments remain open.
+remaining discrepancy; the scheduled second-noise payment is given below, while combined
+integrated output payments remain open.
 The [actual-history regression](../../ComplexityTests/PolynomialBudgetHistory.lean) checks
 early inactive loss and its final disappearance, a nonzero fine-bin mean at rate `1/16`,
 and a positive omitted entry of size `1/256`. The unequal-rate examples check successful
@@ -880,16 +881,51 @@ The successful preparation-walk list is identified with the literal `compressedB
 executions. `BudgetData.initial_requestSignals_two_envelopes` bounds their raw-prefix
 clipped error using the paid first deterministic charge, the second deterministic envelope,
 and the two centered noises separately. Full terminal rank, usage masks, source/rank/usage
-rates, suffixes and prefix `j+1` are preserved. This precedes payment of second walk noise.
+rates, suffixes and prefix `j+1` are preserved. Apply the second-noise payment below
+to its separate usage statistic.
 The actual-history regression has strictly positive early preparation bias `η/4`, zero final
 and off-diagonal bias, consumes the sensitivity envelope and its integrated payment, and
 retains the actual successful prefix/preparation executions. This is a stationary fixture,
 not a nonconstant mixing example or a general compressed-output accuracy theorem.
 
+For the literal scheduled second walks, import
+[`HierarchyInitialSecondNoise.lean`](../../Complexity/Foundations/Probability/HierarchyInitialSecondNoise.lean).
+Start with a `BudgetData`, a bin whose auxiliary cutoff lies in [0,1], the original grid
+source/usage request and a successful preparation-list execution. No first-history accuracy
+premise is needed for centered noise. `BudgetData.one_le_magnitude` proves the existing derived
+allocation covers one; `BudgetData.binPreparation_mem_Icc` bounds each literal input.
+`BudgetData.preparationWalks_noise` applies `completion_noise` with that allocation and its
+original length, request precision and dyadic slack. `BudgetData.preparationWalks_mean` is
+the shared stationarity rule for the executed list entry.
+
+`BudgetData.initialSecondSignal_noise_moment` pays the usage row statistic at raw prefix
+`j+1` by `(|ζ| * 2^(-requestPrecision M r) * 64^(-dyadicSlack(m,j)))^4`.
+Its first history, full-terminal rank and the original environment are retained; zeta may
+have either sign or be zero. For a nonnegative base target, `BudgetData.initialSecondSignal_noise`
+gives the corresponding row-maximum bound. With `e = |ζ| * 2^(-requestPrecision M r)`,
+`BudgetData.initialSecondSignal_preloss` pays stationary noise by
+`((36 L floor + 72 L) * e / 511)^4`, and
+`BudgetData.initialSecondSignal_overflowNoise` pays an actual overflow-selected noise tail
+by `(e * 7/9)^4` unconditionally. Its selector may depend on every walk.
+`BudgetData.initialSecondSignal_falseNoise` pays the scheduled raw-prefix false charges by
+`64 K radius^4 / floor^4 * e^4 / 63`.
+`BudgetData.initialSignals_falseNoise` adds the already-paid first-noise charge on full rank
+to this second-noise charge on usage, preserving their distinct precisions and rates.
+These bounds do not include deterministic mean envelopes or allocate global reserves.
+
+For a successful `compressedBin`, apply `BudgetData.compressedBin_secondNoise` to its output
+equality to obtain the actual first history, preparation list and all second-noise row budgets.
+This avoids supplying replacement walk or oracle families. The actual-history regression above
+checks this consumer on its positive stationary output and exact zero second prefixes at ζ=0 despite
+positive final preparation. A separate nonconstant supplied history
+checks two different preparation values and the actual allocated usage-walk bound with ζ=-3;
+it does not establish positive residual noise or a nonconstant evaluator induction case.
+
 **Remaining parent-error gap:** choosing global rates and reserves so the explicit finite
 payments meet the requested accuracy remains open. The initial preparation transport above
-still retains its unpaid deficit norm and width/rate costs. Second-signal noise,
-combined false-event raw-prefix moments at j+1, and the resulting no-overflow/final and heavy
+still retains its unpaid deficit norm and width/rate costs. Although both centered noises
+and their summed false charges are paid above, combined deterministic/noise false-event
+raw-prefix moments at j+1 and the resulting no-overflow/final and heavy
 mean-tail budgets have not been paid from an invariant covering ALL actual lower-budget
 calls. Heavy-event rarity applies only to deterministic mean envelopes; it must not discount
 correlated noise. Bounded lower-child root-to-ordinary conversion and same-environment

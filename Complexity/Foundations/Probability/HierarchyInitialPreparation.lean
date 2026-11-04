@@ -23,6 +23,7 @@ not pay second walk noise, global allocation, the parent induction or native RL=
 ## Main results
 
 * `initialPrefix_absolute_moment`: actual deficit plus centered scheduled first noise.
+* `preparationWalks_mean`: shared stationarity of successful literal preparation walks.
 * `initialSecondSignal_clippedMean_le`: deterministic envelope for executed preparation walks.
 * `initialSecondSignal_mean_moment`: same-environment conditional Jensen payment.
 * `initial_requestSignals_two_envelopes`: actual compressed-bin raw-prefix consumer.
@@ -84,6 +85,33 @@ theorem preparationWalks_get (B : BudgetData HP P) (M bin : ℕ)
   subst W
   simp [List.getElem?_map, List.getElem?_range hj]
 
+/-- Stationarity for a successful preparation-list entry on its original usage slice. -/
+theorem preparationWalks_mean (B : BudgetData HP P) (M bin : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
+    (ks ku : ℕ) (ss st : List (ZMod P))
+    (hs : r.source = gridChannel R.source ks ss)
+    (hu : r.usage = gridChannel R.terminal ku st)
+    (F : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+    (W : List (Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ))
+    (hW : (List.range (Nat.log2 M + 1)).mapM (fun i =>
+      B.complete M r (B.binPreparation bin r (F (i + 1)))
+        (dyadicSlack (Nat.log2 M + 1) i)) = some W)
+    (j : ℕ) (hj : j < Nat.log2 M + 1) (x y : ZMod P) :
+    rowSliceMean (retainedMask R.source (side P ks) B.padding ss)
+      (retainedMask R.terminal (side P ku) B.padding st) (W[j]?.getD 0) x y =
+    rowSliceMean (retainedMask R.source (side P ks) B.padding ss)
+      (retainedMask R.terminal (side P ku) B.padding st)
+      (B.binPreparation bin r (F (j + 1))) x y := by
+  rw [B.preparationWalks_get M bin r R ks ku ss st hs hu F W hW j hj]
+  convert rowSliceMean_conditionalWalk
+    (X R.source (side P ks) (CopyPadding.identifier B.padding ss))
+    (Y R.terminal (side P ku) (CopyPadding.identifier B.padding st))
+    (graph R.source R.terminal R.source_terminal (side P ks) (side P ku)
+      (side_le P ks) (side_le P ku) (CopyPadding.identifier B.padding ss)
+      (CopyPadding.identifier B.padding st))
+    (fun _ _ => B.steps M r (dyadicSlack (Nat.log2 M + 1) j))
+    (B.binPreparation bin r (F (j + 1))) x y using 1 <;> congr 8
+
 /-- Actual preparation bias at an executed second prefix. Stationarity removes only
 its usage walk; sensitivity still charges the completed full-rank first history. -/
 theorem initialSecondSignal_clippedMean_le (B : BudgetData HP P) (M bin ka ku : ℕ)
@@ -108,7 +136,6 @@ theorem initialSecondSignal_clippedMean_le (B : BudgetData HP P) (M bin ka ku : 
         (secondSignalIncrement (fun i σ x y => W[i - 1]?.getD 0 σ x y) ζ))
         (fun _ _ _ _ => 0) 1 j x y ≤
       secondMeanEnvelope R B.padding ss st ks ka ku Lh Lρ ζ (F (j + 1)) B.base x y := by
-  have hw := B.preparationWalks_get M bin r R ks ku ss st hs hu F W hW j hj
   have hK := FourthRootHierarchyParams.NormalizedRow.rank_pos HP
   unfold actualClippedMean twoMaskMean
   simp only [Fin.isValue, one_ne_zero, ↓reduceIte, actualPrefix_twoSignal_second,
@@ -116,20 +143,7 @@ theorem initialSecondSignal_clippedMean_le (B : BudgetData HP P) (M bin ka ku : 
   unfold rowSliceMean
   rw [← mul_expect]
   change min 1 |ζ * rowSliceMean _ _ (W[j]?.getD 0) x y - ζ * _| ≤ _
-  have hmean : rowSliceMean (retainedMask R.source (side P ks) B.padding ss)
-      (retainedMask R.terminal (side P ku) B.padding st) (W[j]?.getD 0) x y =
-      rowSliceMean (retainedMask R.source (side P ks) B.padding ss)
-        (retainedMask R.terminal (side P ku) B.padding st)
-        (B.binPreparation bin r (F (j + 1))) x y := by
-    rw [hw]
-    convert rowSliceMean_conditionalWalk
-      (X R.source (side P ks) (CopyPadding.identifier B.padding ss))
-      (Y R.terminal (side P ku) (CopyPadding.identifier B.padding st))
-      (graph R.source R.terminal R.source_terminal (side P ks) (side P ku)
-        (side_le P ks) (side_le P ku) (CopyPadding.identifier B.padding ss)
-        (CopyPadding.identifier B.padding st))
-      (fun _ _ => B.steps M r (dyadicSlack (Nat.log2 M + 1) j))
-      (B.binPreparation bin r (F (j + 1))) x y using 1 <;> congr 8
+  have hmean := B.preparationWalks_mean M bin r R ks ku ss st hs hu F W hW j hj x y
   rw [hmean, ← mul_sub, abs_mul]
   apply min_le_min_left
   apply mul_le_mul_of_nonneg_left _ (abs_nonneg ζ)

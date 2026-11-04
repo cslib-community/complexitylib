@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of actual polynomial evaluator histories)
-import Complexity.Foundations.Probability.HierarchyInitialPreparation
+import Complexity.Foundations.Probability.HierarchyInitialSecondNoise
 
 /-! A positive identity/full-rate evaluator history with actual ratio-16 bins and polynomial
 preparation. The top bin carries the input, the fine bin vanishes. This exact stationary
@@ -780,5 +780,108 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
     List.getElem?_cons_zero, Option.getD_some, Pi.zero_apply, zero_mul,
     rowSliceMean, hret, and_self, filter_true, expect_const, sub_self, abs_zero,
     zero_div, add_zero] using hp
+
+-- The real successful compressed output supplies its own histories and paid second noise.
+-- This positive stationary case still has early deterministic preparation bias.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (data HP).compressedBin 2 0 0 (HP.η / 4) (HP.η / 4) (request HP) =
+      some (fun _ => base) ∧
+    ∃ F W,
+      (data HP).initialPrefixes 2 (request HP) = some F ∧
+      (List.range (Nat.log2 2 + 1)).mapM (fun i =>
+        (data HP).complete 2 (request HP) ((data HP).binPreparation 0 (request HP) (F (i + 1)))
+          (Cslib.RowCompression.dyadicSlack (Nat.log2 2 + 1) i)) = some W ∧
+      ∀ j < Nat.log2 2 + 1,
+        rowNormPow 4 5 (rate 0) (NormalizedMoments.retainedMask 0 (side 5 0) 1 [1])
+          (NormalizedMoments.retainedMask 2 (side 5 0) 1 [2, 3])
+          (NormalizedMoments.actualNoiseEntry 0 2 (side 5 0) (side 5 0) (side 5 0)
+            1 [1] [2, 3] 0 base (NormalizedMoments.firstSignalIncrement F 0
+              (NormalizedMoments.secondSignalIncrement
+                (fun i σ x y => W[i - 1]?.getD 0 σ x y) (HP.η / 4)))
+            (fun _ _ _ _ => 0) 1 j) ≤
+          (|HP.η / 4| * (2 : ℝ) ^ (-(data HP).requestPrecision 2 (request HP)) *
+            (1 / 64 : ℝ) ^ Cslib.RowCompression.dyadicSlack (Nat.log2 2 + 1) j) ^ 4 := by
+  refine ⟨compressed_value HP, ?_⟩
+  exact BudgetData.compressedBin_secondNoise (data HP) 2 0 0
+    (fun d => ⟨polynomialPrepCutoff4_nonneg _ _, polynomialPrepCutoff4_le_one _ _⟩)
+    (HP.η / 4) (HP.η / 4) (request HP) threeRoles 0 0 [1] [2, 3] rfl rfl
+    (fun _ => base) (compressed_value HP)
+
+-- Zero second scaling keeps every executed second prefix zero despite positive preparation.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    let F := fun i (_ : Environment 5 3) => if 2 ≤ i then base else 0
+    let W : List (Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ) := [0, fun _ => base]
+    (List.range (Nat.log2 2 + 1)).mapM (fun i =>
+      (data HP).complete 2 (request HP) ((data HP).binPreparation 0 (request HP) (F (i + 1)))
+        (Cslib.RowCompression.dyadicSlack (Nat.log2 2 + 1) i)) = some W ∧
+    W[1]?.getD 0 = (fun _ => base) ∧ ∀ j (σ : Environment 5 3) (x y : ZMod 5),
+      NormalizedMoments.actualPrefix (NormalizedMoments.firstSignalIncrement F 0
+        (NormalizedMoments.secondSignalIncrement
+          (fun i τ a b => W[i - 1]?.getD 0 τ a b) 0)) (fun _ _ _ _ => 0) j σ x y 1 = 0 := by
+  dsimp only
+  refine ⟨preparation_walks HP, rfl, ?_⟩
+  intro j σ x y
+  rw [NormalizedMoments.actualPrefix_twoSignal_second, zero_mul]
+
+-- Nonconstant supplied first histories exercise the actual allocated preparation walk.
+-- This is a mixing bound for that completed input, not a new evaluator induction fixture.
+private def varyingHistory (_ : ℕ) (σ : Environment 5 3) : Matrix (ZMod 5) (ZMod 5) ℝ :=
+  if (σ 1).1 0 = 0 then base else 0
+
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ∃ W : List (Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ),
+      (List.range (Nat.log2 2 + 1)).mapM (fun i =>
+        (data HP).complete 2 (request HP)
+          ((data HP).binPreparation 0 (request HP) (varyingHistory (i + 1)))
+          (Cslib.RowCompression.dyadicSlack (Nat.log2 2 + 1) i)) = some W ∧
+      (∃ σ τ : Environment 5 3,
+        (data HP).binPreparation 0 (request HP) (varyingHistory 1) σ 0 0 = 1 ∧
+        (data HP).binPreparation 0 (request HP) (varyingHistory 1) τ 0 0 = 0) ∧
+      rowNormPow 4 5 (rate 0) (NormalizedMoments.retainedMask 0 (side 5 0) 1 [1])
+        (NormalizedMoments.retainedMask 2 (side 5 0) 1 [2, 3])
+        (NormalizedMoments.actualNoiseEntry 0 2 (side 5 0) (side 5 0) (side 5 0)
+          1 [1] [2, 3] 0 base (NormalizedMoments.firstSignalIncrement varyingHistory 0
+            (NormalizedMoments.secondSignalIncrement
+              (fun i σ x y => W[i - 1]?.getD 0 σ x y) (-3)))
+          (fun _ _ _ _ => 0) 1 0) ≤
+        (3 * (2 : ℝ) ^ (-(data HP).requestPrecision 2 (request HP)) *
+          (1 / 64 : ℝ) ^ Cslib.RowCompression.dyadicSlack (Nat.log2 2 + 1) 0) ^ 4 := by
+  have hc (i : ℕ) := BudgetData.complete_grid (data HP) 2 (request HP) 0 2
+    (by decide) 0 0 [1] [2, 3] rfl rfl
+    ((data HP).binPreparation 0 (request HP) (varyingHistory (i + 1)))
+    (Cslib.RowCompression.dyadicSlack (Nat.log2 2 + 1) i)
+  let W := (List.range (Nat.log2 2 + 1)).map fun i => conditionalWalk
+    (X (0 : Fin 3) (side 5 0) (CopyPadding.identifier (1 : ZMod 5) [1]))
+    (Y (2 : Fin 3) (side 5 0) (CopyPadding.identifier (1 : ZMod 5) [2, 3]))
+    (graph (0 : Fin 3) 2 (by decide) (side 5 0) (side 5 0) (side_le 5 0) (side_le 5 0)
+      (CopyPadding.identifier (1 : ZMod 5) [1]) (CopyPadding.identifier (1 : ZMod 5) [2, 3]))
+    (fun _ _ => (data HP).steps 2 (request HP)
+      (Cslib.RowCompression.dyadicSlack (Nat.log2 2 + 1) i))
+    ((data HP).binPreparation 0 (request HP) (varyingHistory (i + 1)))
+  have hW : (List.range (Nat.log2 2 + 1)).mapM (fun i =>
+      (data HP).complete 2 (request HP)
+        ((data HP).binPreparation 0 (request HP) (varyingHistory (i + 1)))
+        (Cslib.RowCompression.dyadicSlack (Nat.log2 2 + 1) i)) = some W := by
+    simp_rw [hc]
+    exact List.mapM_pure
+  refine ⟨W, hW, ?_, ?_⟩
+  · let f : Frame 5 4 1 := Classical.choice inferInstance
+    let σ : Environment 5 3 := fun _ => (0, f)
+    let τ : Environment 5 3 := fun _ => (1, f)
+    refine ⟨σ, τ, ?_, ?_⟩
+    · change densePreparation (data HP).padding id (request HP) ((data HP).auxiliary 0)
+        HP.ρ HP.K (varyingHistory 1 σ) σ 0 0 = 1
+      have hp := congrFun (congrFun (congrFun (preparation HP base (Or.inr rfl)) σ) 0) 0
+      simpa [BudgetData.binPreparation, varyingHistory, σ, base] using hp
+    · change densePreparation (data HP).padding id (request HP) ((data HP).auxiliary 0)
+        HP.ρ HP.K (varyingHistory 1 τ) τ 0 0 = 0
+      have hp := congrFun (congrFun (congrFun (preparation HP 0 (Or.inl rfl)) τ) 0) 0
+      simpa [BudgetData.binPreparation, varyingHistory, τ] using hp
+  · have hn := BudgetData.initialSecondSignal_noise_moment (data HP) 2 0
+      (fun d => ⟨polynomialPrepCutoff4_nonneg _ _, polynomialPrepCutoff4_le_one _ _⟩)
+      (request HP) threeRoles 0 0 [1] [2, 3] rfl rfl varyingHistory W hW
+      0 base (-3) 0 (by decide)
+    norm_num only [abs_neg, abs_of_nonneg (by norm_num : (0 : ℝ) ≤ 3)] at hn
+    exact hn
 
 end PolynomialBudgetHistory
