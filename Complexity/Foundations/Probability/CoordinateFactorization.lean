@@ -57,4 +57,42 @@ theorem expect_pi_split_mul_filter {R A : Type*} [Fintype R] [DecidableEq R]
   simp_rw [← mul_expect]
   rw [← expect_mul]
 
+/-- Restrict a source-conditioned full product to a terminal event containing the support.
+The terminal density is the exact change of conditioning, including empty events. -/
+theorem expect_pi_supported_terminal {R A : Type*} [Fintype R] [DecidableEq R]
+    [Fintype A] [Nonempty A] (s t : R) (hst : s ≠ t)
+    (p q : A → Prop) [DecidablePred p] [DecidablePred q]
+    (F : (R → A) → ℝ) (hF : ∀ σ, ¬ q (σ t) → F σ = 0) :
+    (𝔼 σ ∈ ({σ : R → A | p (σ s) ∧ q (σ t)} : Finset _),
+      (dens {a | q a} : ℝ) * F σ) =
+    𝔼 σ ∈ ({σ : R → A | p (σ s)} : Finset _), F σ := by
+  classical
+  let e := (Equiv.piSplitAt t (fun _ : R => A)).trans (Equiv.prodComm _ _)
+  have split (v : A → Prop) [DecidablePred v] :
+      (𝔼 σ ∈ ({σ : R → A | p (σ s) ∧ v (σ t)} : Finset _), F σ) =
+      𝔼 z ∈ ({rest | p (rest ⟨s, hst⟩)} : Finset ({j : R // j ≠ t} → A)) ×ˢ
+        ({a | v a} : Finset A), F (e.symm z) := by
+    apply expect_equiv e
+    · intro σ
+      simp [e]
+    · intro σ _
+      exact congrArg F (e.symm_apply_apply σ).symm
+  rw [← mul_expect, split q, expect_product]
+  have hs := split (fun _ => True)
+  simp only [and_true, filter_true_of_mem, mem_univ, forall_const] at hs
+  rw [hs, expect_product, mul_expect]
+  apply expect_congr rfl
+  intro rest _
+  symm
+  have hz (a : A) : F (e.symm (rest, a)) =
+      if a ∈ ({a | q a} : Finset A) then F (e.symm (rest, a)) else 0 := by
+    split_ifs with ha
+    · rfl
+    · exact hF _ (by simpa [e] using ha)
+  calc
+    _ = 𝔼 a, if a ∈ ({a | q a} : Finset A) then F (e.symm (rest, a)) else 0 :=
+      expect_congr rfl (fun a _ => hz a)
+    _ = _ := by simpa only [NNRat.smul_def] using
+      (Fintype.expect_ite_mem {a | q a} (fun a => F (e.symm (rest, a))))
+
 end Finset

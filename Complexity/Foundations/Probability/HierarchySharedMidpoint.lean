@@ -17,11 +17,9 @@ reads only the terminal frame after its joint normalizer is computed. All three 
 belong to one full environment, including free spectators. The original correction
 iteration, actual usage factors and midpoint density are retained.
 
-This proves a genuine single-path conditional product mean, not the residual raw-sample
-mean. The remaining concrete bridge must transport the actual negative request under
-inherited terminal conditioning, identify the dispatched final correction iteration, and
-apply the existing bin decomposition/routing with the negative correction included once.
-Estimated-child perturbation, recursive mean envelopes and native endpoints remain open.
+This proves a genuine single-path conditional product mean. `HierarchySignedMean` uses it
+to derive the actual signed raw-sample mean and finite bin residual with one special negative
+request. Estimated-child perturbation, recursive mean envelopes and native endpoints remain open.
 
 The assembly is original work by Christian Reitwiessner, using Samuel Schlesinger's
 hierarchy construction. This does not establish recursive error envelopes or RL=L.

@@ -249,7 +249,8 @@ theorem rawIncomingNormalized_moment {k : ℕ}
     change HierarchyTask.rawSample (fun role b suffix σ v =>
       channels D role b suffix σ (ident v)) l bin .residual source mid terminal
         (rate kb) (fun r => child r σ) x y = _
-    unfold HierarchyTask.rawSample
+    unfold HierarchyTask.rawSample HierarchyTask.rawPositiveSample
+      HierarchyTask.rawNegativeSample
     dsimp only
     congr 1
     congr 1
