@@ -494,3 +494,19 @@ The two reserve-output theorems choose their output constant after the fixed hie
 and raw/preparation/maximum families. Select this constant before allocating recursive
 child accuracies. Uniformity of that coefficient does not remove any displayed finite
 allocation or walk-length losses and supplies no recursive accuracy theorem.
+
+[HierarchyCorrectionStability](../../Complexity/Foundations/Probability/HierarchyCorrectionStability.lean)
+factors the actual correction request into its unit-pilot coefficient and `γ(maximum y)`.
+The coefficient lies in `[0, 2 Q(atomCap)]`, even for signed raw/preparation estimates.
+If `Lγ` is the hierarchy's fourth-root Lipschitz constant for γ, the fourth-root output
+change is at most `(2 Q(atomCap))^(1/4) Lγ |maximum y - maximum' y|`. The integrated theorem
+keeps both children on the same full environment and the original source/full-terminal
+masks; its loss is `((2 Q(atomCap))^(1/4) Lγ)^4`. It does not silently transport a vertex
+error to a different source or remove any width/rate coefficient from that transport.
+
+This handles only the maximum argument of `correctionRequest`. Recursive use still needs
+raw/preparatory perturbation contracts for `CorrectionRowRecipe.preparation` and
+`CorrectionRowRecipe.normalized`, together with approximate `PilotRowRecipe.score`,
+`PilotRowRecipe.detector` and `PilotRowRecipe.maximum` calls. The existing range/support
+and exact-mean theorems do not supply these accuracy statements. No well-founded
+approximate evaluator or recursively satisfied reserve is established by this contract.

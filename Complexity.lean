@@ -3844,6 +3844,7 @@ public import Complexity.Foundations.Probability.HierarchyChannelTransport
 public import Complexity.Foundations.Probability.HierarchyChildError
 public import Complexity.Foundations.Probability.HierarchyChildRootMoment
 public import Complexity.Foundations.Probability.HierarchyCorrectionMean
+public import Complexity.Foundations.Probability.HierarchyCorrectionStability
 public import Complexity.Foundations.Probability.HierarchyCutoffs
 public import Complexity.Foundations.Probability.HierarchyDenseChildren
 public import Complexity.Foundations.Probability.HierarchyEstimatedInput
