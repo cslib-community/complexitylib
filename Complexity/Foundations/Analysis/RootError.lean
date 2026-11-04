@@ -46,7 +46,8 @@ controls a clipped relative error: if `0 ≤ H ≤ C₀ G`, then for every `a > 
 ## Main results
 
 * `Cslib.abs_sub_le_mul_abs_rpow_inv_sub`: ordinary error is controlled by root error.
-* `Cslib.abs_sub_le_four_mul_root_lipschitz`: bounded fourth-root regularity gives ordinary regularity.
+* `Cslib.abs_sub_le_four_mul_root_lipschitz`: bounded fourth-root regularity gives
+  ordinary regularity.
 * `Cslib.homogeneousLoss_nonneg`, `Cslib.homogeneousLoss_self`, `Cslib.homogeneousLoss_comm`,
   `Cslib.homogeneousLoss_mul`: basic properties.
 * `Cslib.rpow_inv_sub_pow_le_homogeneousLoss`, `Cslib.homogeneousLoss_le_rpow_inv_sub_pow`:
