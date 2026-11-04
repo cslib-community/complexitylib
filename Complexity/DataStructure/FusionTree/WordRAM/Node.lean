@@ -83,17 +83,18 @@ workspace; the terminal self-copy used by `moves` occupies register 39 instead. 
 private theorem preserves_caller (w : ℕ) (i : Fin registers) (hlo : 31 ≤ i.val)
     (hhi : i.val < 39) : (code w).Preserves i := by
   have hh (c : Code .standard 21) : (c.rename headerBank).Preserves i :=
-    preserves_bank _ c i (Or.inr (by omega))
+    c.preserves_rename_of_offset _ (fun _ => rfl) i (Or.inr (by omega))
   have hc (c : Code .standard 21) : (c.rename compressBank).Preserves i :=
-    preserves_bank _ c i (Or.inl (by omega))
+    c.preserves_rename_of_offset _ (fun _ => rfl) i (Or.inl (by omega))
   have hr (c : Code .standard 10) : (c.rename rankBank).Preserves i :=
-    preserves_bank _ c i (Or.inl (by omega))
+    c.preserves_rename_of_offset _ (fun _ => rfl) i (Or.inl (by omega))
   have hn (c : Code .standard 17) : (c.rename neighborBank).Preserves i :=
-    preserves_bank _ c i (Or.inl (by omega))
+    c.preserves_rename_of_offset _ (fun _ => rfl) i (Or.inl (by omega))
   have hb (c : Code .standard 10) : (c.rename boundaryBank).Preserves i :=
-    preserves_bank _ c i (Or.inl (by omega))
+    c.preserves_rename_of_offset _ (fun _ => rfl) i (Or.inl (by omega))
   have hm (c : Code .standard (Cslib.WordRAM.Multiword.Bank.capacity 44 + 4)) :
-      (c.rename msbBank).Preserves i := preserves_bank _ c i (Or.inl (by omega))
+      (c.rename msbBank).Preserves i :=
+    c.preserves_rename_of_offset _ (fun _ => rfl) i (Or.inl (by omega))
   simp only [code, readHeader, initial, finish, correction, highest, boundaries,
     boundaryQuery, secondQuery, sketchQuery, compress, rank, neighbors, neighborAddress,
     saveNeighbor, moves, compressionInputs, rankInputs, neighborInputs, boundaryInputs,

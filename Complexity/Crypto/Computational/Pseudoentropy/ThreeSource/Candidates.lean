@@ -10,7 +10,7 @@ module
 public import Complexity.Crypto.Computational.Pseudoentropy.EntropyGrid
 public import Complexity.Crypto.Computational.Pseudoentropy.ThreeSource.Seeded
 import Complexity.Computability.Probabilistic.UniformNat
-import Complexity.Tactic.PPT
+import Complexity.Tactic.PolyTime.Init
 
 /-!
 # Expanding candidates from a pseudoentropy pair
@@ -79,50 +79,52 @@ section Lengths
 
 variable {α : Type} {input : α ↪ List Bool}
   {n sourceBits observationBound densityBound index : α → ℕ}
+  {evaluate : α → List Bool → List Bool × Bool} {seed : α → List Bool}
   (hn : ComputableInPolyTime n input encUnary)
   (hsource : ComputableInPolyTime sourceBits input encUnary)
   (hobservation : ComputableInPolyTime observationBound input encUnary)
   (hdensity : ComputableInPolyTime densityBound input encUnary)
   (hindex : ComputableInPolyTime index input encUnary)
 
+private abbrev isPolyTime_count :=
+  ExtractionSchedule.isPolyTime_count hn hsource
+    ((ComputableInPolyTime.unary_dyadicSize.comp hdensity).unary_sub' (.const 1))
+
 include hn hsource hobservation hdensity hindex
 
 /-- The exact input size is uniformly available in unary. -/
 theorem isPolyTime_seedLength : ComputableInPolyTime
     (fun a => seedLength (n a) (sourceBits a) (observationBound a) (densityBound a) (index a))
-    input encUnary := by
-  unfold seedLength
-  polytime
+    input encUnary :=
+  ThreeSource.isPolyTime_seedLength (isPolyTime_count hn hsource hdensity) hsource hobservation
+    (isPolyTime_observationBits hn hsource hdensity hindex)
+    (isPolyTime_labelBits hn hsource hdensity hindex)
+    (isPolyTime_remainingBits hn hsource hdensity hindex)
 
 /-- The exact output size is uniformly available in unary. -/
 theorem isPolyTime_outputLength : ComputableInPolyTime
     (fun a => outputLength (n a) (sourceBits a) (observationBound a) (densityBound a) (index a))
-    input encUnary := by
-  unfold outputLength
-  polytime
-
-end Lengths
-
-attribute [program_certificate] isPolyTime_seedLength isPolyTime_outputLength
+    input encUnary :=
+  ThreeSource.isPolyTime_outputLength (isPolyTime_count hn hsource hdensity) hsource hobservation
+    (isPolyTime_observationBits hn hsource hdensity hindex)
+    (isPolyTime_labelBits hn hsource hdensity hindex)
+    (isPolyTime_remainingBits hn hsource hdensity hindex)
 
 /-- Candidate evaluation is uniformly polynomial time, with an ordinary captured callback. -/
-theorem isPolyTime_generate {α : Type} {input : α ↪ List Bool}
-    {n sourceBits observationBound densityBound index : α → ℕ}
-    {evaluate : α → List Bool → List Bool × Bool} {seed : α → List Bool}
-    (hn : ComputableInPolyTime n input encUnary)
-    (hsource : ComputableInPolyTime sourceBits input encUnary)
-    (hobservation : ComputableInPolyTime observationBound input encUnary)
-    (hdensity : ComputableInPolyTime densityBound input encUnary)
-    (hindex : ComputableInPolyTime index input encUnary)
+theorem isPolyTime_generate
     (hevaluate : ComputableInPolyTime (fun a => evaluate a.1 a.2)
       (encPair input encBits) (encPair encBits encBool))
     (hseed : ComputableInPolyTime seed input encBits) :
     ComputableInPolyTime (fun a => generate (n a) (sourceBits a) (observationBound a)
-      (densityBound a) (index a) (evaluate a) (seed a)) input encBits := by
-  unfold generate
-  apply ThreeSource.isPolyTime_generate <;> fun_prop
+      (densityBound a) (index a) (evaluate a) (seed a)) input encBits :=
+  ThreeSource.isPolyTime_generate (isPolyTime_count hn hsource hdensity) hsource hobservation
+    (isPolyTime_observationBits hn hsource hdensity hindex)
+    (isPolyTime_labelBits hn hsource hdensity hindex)
+    (isPolyTime_remainingBits hn hsource hdensity hindex) hevaluate hseed
 
-attribute [program_certificate] isPolyTime_generate
+end Lengths
+
+attribute [program_certificate] isPolyTime_seedLength isPolyTime_outputLength isPolyTime_generate
 
 /-- A saved sampler gives one efficient evaluator for the entire indexed family. -/
 theorem isPolyTime_generate_of_realization {pair : SamplablePair} (saved : pair.SeedRealization)
@@ -133,9 +135,13 @@ theorem isPolyTime_generate_of_realization {pair : SamplablePair} (saved : pair.
       (observationBound input.1.1) (densityBound input.1.1) input.1.2
       (saved.evaluate input.1.1) input.2)
       (encPair (encPair encUnary encUnary) encBits) encBits := by
-  have hlength := saved.length_isPolyTime
-  have hevaluate := saved.efficient
-  apply isPolyTime_generate <;> fun_prop
+  let inputEnc := encPair (encPair encUnary encUnary) encBits
+  have hn := (ComputableInPolyTime.fst (encPair encUnary encUnary) encBits).fst'
+  exact isPolyTime_generate hn (saved.length_isPolyTime.comp hn)
+    (hobservation.comp hn) (hdensity.comp hn)
+    (ComputableInPolyTime.fst (encPair encUnary encUnary) encBits).snd'
+    (saved.efficient.comp ((hn.comp (.fst inputEnc encBits)).prod (.snd inputEnc encBits)))
+    (.snd (encPair encUnary encUnary) encBits)
 
 /-- The advertised lengths give strict expansion for every entry, even an inaccurate guess. -/
 theorem seedLength_lt_outputLength (n sourceBits observationBound densityBound index : ℕ) :
@@ -210,29 +216,31 @@ theorem exists_secure_choice_withAdvice {pair : SamplablePair} {gap : ℕ → �
           ((uniformList (outputLength n (saved.length n) (observationBound n) (densityBound n)
             (choose n))).bind
               (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))) := by
-  have hobservation := hobservation.tidy
-  have hdensity := hdensity.tidy
   obtain ⟨choose, hvalid⟩ := exists_valid_choice_withAdvice hpair saved hgap
   refine ⟨choose, hvalid.mono (fun _ h => h.index_lt), ?_⟩
   intro test htest
-  have hlength := saved.length_isPolyTime.tidy
+  have hn := ComputableInPolyTime.fst encUnary encUnary
+  have hi := ComputableInPolyTime.snd encUnary encUnary
   have h := hpair.extract_indexed_three saved choose
-    (candidates := fun n => size (saved.length n) (densityBound n))
     (inverseSlack := fun n => dyadicSize (densityBound n) - 1)
     (observationBits := fun n i => observationBits n (saved.length n) (densityBound n) i)
     (labelBits := fun n i => labelBits n (saved.length n) (densityBound n) i)
     (remainingBits := fun n i => remainingBits n (saved.length n) (densityBound n) i)
     (numerator := fun n i => numerator (densityBound n) i)
-    ⟨by polytime, .of_tidy hobservation, by polytime, by polytime, by polytime, by polytime,
-      by polytime, .of_tidy hdensity⟩ hfits (hvalid.mono (fun _ h => h.index_lt))
+    ⟨isPolyTime_size saved.length_isPolyTime hdensity, hobservation,
+      isPolyTime_observationBits hn (saved.length_isPolyTime.comp hn) (hdensity.comp hn) hi,
+      isPolyTime_labelBits hn (saved.length_isPolyTime.comp hn) (hdensity.comp hn) hi,
+      isPolyTime_remainingBits hn (saved.length_isPolyTime.comp hn) (hdensity.comp hn) hi,
+      (ComputableInPolyTime.unary_dyadicSize.comp hdensity).unary_sub' (.const 1),
+      isPolyTime_numerator (hdensity.comp hn) hi, hdensity⟩
+    hfits (hvalid.mono (fun _ h => h.index_lt))
     (hvalid.mono (fun n h => ⟨numerator_pos _ _, h.numerator_le, h.density_le⟩))
-    (hvalid.mono (fun _ h => by simpa only [scale, Nat.cast_mul, Nat.cast_ofNat]
-      using h.observation_budget))
+    (hvalid.mono (fun _ h => by
+      simpa only [scale, Nat.cast_mul, Nat.cast_ofNat] using h.observation_budget))
     (Eventually.of_forall (fun n => by
-      simpa only [scale, Nat.cast_mul, Nat.cast_ofNat] using
-        (label_budget n (saved.length n) (densityBound n) (choose n)).le))
-    (hvalid.mono (fun _ h => by simpa only [scale, Nat.cast_mul, Nat.cast_ofNat]
-      using h.remaining_budget)) test htest
+      simpa only [scale, Nat.cast_mul, Nat.cast_ofNat] using (label_budget ..).le))
+    (hvalid.mono (fun _ h => by
+      simpa only [scale, Nat.cast_mul, Nat.cast_ofNat] using h.remaining_budget)) test htest
   unfold seedLength outputLength generate
   simp_rw [ThreeSource.eval_generate_of_realization saved _ _ _ _ _ _ (hfits _)]
   simpa only [ProbComp.eval_bind, BitString.eval_sampleList] using h
@@ -262,22 +270,17 @@ theorem exists_secure_choice {pair : SamplablePair} {gap : ℕ → ℝ}
   obtain ⟨choose, hchoose, hsecure⟩ := exists_secure_choice_withAdvice
     (SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mp hpair) saved hobservation hdensity hfits hgap
   refine ⟨choose, hchoose, fun test htest => ?_⟩
-  have hprepare : ComputableInPolyTime
-      (fun (((n, _), i), word) => ((n, i), word) :
-        ((ℕ × List Bool) × ℕ) × List Bool → (ℕ × ℕ) × List Bool)
-      (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
-      (encPair (encPair encUnary encUnary) encBits) := by fun_prop
-  exact hsecure (fun a i word => test a.1 i word) (htest.preprocess hprepare)
+  have houter := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary) encBits
+  exact hsecure (fun a i word => test a.1 i word)
+    (htest.preprocess ((houter.fst'.fst'.prod houter.snd').prod (.snd _ encBits)))
 
 /-- A linear grid precision suffices for the gap already obtained from a general one-way
 function. This is a numerical consequence of rounding the denominator up to a power of two. -/
 theorem four_steps_le_owf_gap (n : ℕ) :
     4 / (dyadicSize (16 * (n + 7)) : ℝ) ≤ 1 / (2 * ((n : ℝ) + 7)) := by
-  have hD : (0 : ℝ) < dyadicSize (16 * (n + 7)) := by
-    exact_mod_cast dyadicSize_pos _
+  have hD : (0 : ℝ) < dyadicSize (16 * (n + 7)) := by exact_mod_cast dyadicSize_pos _
   have hbound : (16 * (n + 7) : ℝ) < dyadicSize (16 * (n + 7)) := by
     exact_mod_cast lt_dyadicSize (16 * (n + 7))
-  apply (div_le_div_iff₀ hD (by positivity)).mpr
-  nlinarith
+  exact (div_le_div_iff₀ hD (by positivity)).mpr (by nlinarith)
 
 end Cslib.Crypto.Pseudoentropy.EntropyGrid

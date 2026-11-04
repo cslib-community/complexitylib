@@ -110,8 +110,8 @@ private def input (HP : FourthRootHierarchyParams 16 1 16 32 8) (precision : ℕ
     (fun _ => 0) 6 fixtureCutoff (estimates HP) (prep HP) (maximum HP) precision
 
 -- The finite scalar fixture is globally bounded; the routed-bin noise client below
--- uses the genuine top/fine recipes. Each positive bin contributes (i+1)*v*(1+Q(1));
--- one Q(1) is removed.
+-- uses the genuine top/fine recipes. Summing over five midpoints gives each positive
+-- bin contribution (i+1)*v*(1+5*Q(1)); one Q(1) is removed.
 set_option backward.isDefEq.respectTransparency false in
 private theorem input_eq (HP : FourthRootHierarchyParams 16 1 16 32 8)
     (precision : ℕ) (σ : Environment 5 4) :

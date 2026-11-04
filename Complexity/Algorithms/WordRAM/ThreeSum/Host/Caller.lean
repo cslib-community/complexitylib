@@ -75,13 +75,7 @@ theorem exec_prepare_at {w N U src workspace : ℕ} (x : Data 64)
   change ExecWithin w _ a b (5 * Nat.sqrt (a.regs sqrtArg) + 7) at he
   rw [han] at he
   have hbr (i : Fin 64) (hi : 34 ≤ i.val) : b.regs i = a.regs i := by
-    apply he.regs_eq
-    apply Code.preserves_rename_of_forall_ne
-    intro j hj
-    have := congrArg Fin.val hj
-    dsimp only [sqrtRegisters] at this
-    have := j.isLt
-    omega
+    exact he.regs_eq (Code.preserves_rename_of_offset _ _ (fun _ => rfl) i (Or.inr hi))
   have hr' : b.regs sqrtRoot = Nat.sqrt N := by
     change b.regs sqrtRoot = Nat.sqrt (a.regs sqrtArg) at hr
     simpa only [han] using hr

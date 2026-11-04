@@ -8,6 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Crypto.Computational.PseudorandomFunction
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import Complexity.Computability.Probabilistic.Oracle.Substitution
 import Complexity.Computability.Probabilistic.PPT.Capture
@@ -16,8 +18,6 @@ import Complexity.Crypto.Negligible.Basic
 import Complexity.Languages.Probabilistic.Oracle.CoinFixing
 import Complexity.Languages.Probabilistic.RandomPermutation
 import Complexity.Probability.PMF.Bind
-import Complexity.Tactic.PolyTime
-import Complexity.Tactic.PPT
 
 /-!
 # Uniform computational block ciphers and pseudorandom permutations
@@ -227,14 +227,12 @@ theorem computableInPolyTime_decrypt_comp {γ : Type} {input : γ ↪ List Bool}
   toFun x := BitString.ofList (E.blockLen n) (E.encrypt n key (List.ofFn x))
   invFun y := BitString.ofList (E.blockLen n) (E.decrypt n key (List.ofFn y))
   left_inv x := by
-    dsimp only
     have hx : (List.ofFn x).length = E.blockLen n := List.length_ofFn
-    rw [BitString.ofFn_ofList (E.length_encrypt n key _ hkey hx),
+    dsimp only; rw [BitString.ofFn_ofList (E.length_encrypt n key _ hkey hx),
       E.decrypt_encrypt n key _ hkey hx, BitString.ofList_ofFn]
   right_inv y := by
-    dsimp only
     have hy : (List.ofFn y).length = E.blockLen n := List.length_ofFn
-    rw [BitString.ofFn_ofList (E.length_decrypt n key _ hkey hy),
+    dsimp only; rw [BitString.ofFn_ofList (E.length_decrypt n key _ hkey hy),
       E.encrypt_decrypt n key _ hkey hy, BitString.ofList_ofFn]
 
 /-- The encryption oracle, answering words of the wrong length with `[]`. -/
@@ -268,17 +266,14 @@ theorem strongPRPOracle_eq_strongRandomPermOracle {n : ℕ} {key : List Bool}
     E.strongPRPOracle n key request =
       strongRandomPermOracle (E.blockLen n) (E.permEquiv n key hkey) request := by
   obtain ⟨inverse, query⟩ := request
-  by_cases hq : query.length = E.blockLen n
-  · cases inverse
-    · simp only [strongPRPOracle, strongRandomPermOracle, hq, ↓reduceIte, Bool.false_eq_true]
-      change E.encrypt n key query = List.ofFn (BitString.ofList (E.blockLen n)
-        (E.encrypt n key (List.ofFn (BitString.ofList (E.blockLen n) query))))
-      rw [BitString.ofFn_ofList hq, BitString.ofFn_ofList (E.length_encrypt n key query hkey hq)]
+  cases inverse
+  · exact E.prpOracle_eq_randomPermOracle hkey query
+  · by_cases hq : query.length = E.blockLen n
     · simp only [strongPRPOracle, strongRandomPermOracle, hq, ↓reduceIte]
       change E.decrypt n key query = List.ofFn (BitString.ofList (E.blockLen n)
         (E.decrypt n key (List.ofFn (BitString.ofList (E.blockLen n) query))))
       rw [BitString.ofFn_ofList hq, BitString.ofFn_ofList (E.length_decrypt n key query hkey hq)]
-  · simp [strongPRPOracle, strongRandomPermOracle, hq]
+    · simp [strongPRPOracle, strongRandomPermOracle, hq]
 
 /-- The real chosen-plaintext experiment: one uniform `keyLen n`-bit key answers every encryption
 query ([BonehShoup2023], Attack Game 4.1, Experiment 0). -/
@@ -337,28 +332,22 @@ private theorem isPPTOn_keyedOracleGame {Operation : Type} [DecidableEq Operatio
         (OracleComp.sumHandler ProbComp.unifFin (fun request => pure (oracle n key request)))
         (adversary n [])) := by
   let caller : (ℕ × List Bool) ↪ List Bool := encPair encUnary encBits
-  let call := encPair caller (encPair (encPair (encFinEnum Operation) encBits) (encFinEnum Unit))
-  have hreply : ComputableInPolyTime
-      (fun x : (ℕ × List Bool) × (Operation × List Bool) × Unit =>
-        ((oracle x.1.1 x.1.2 x.2.1).take (bound x.1.1), ())) call
-      (encPair encBits (encFinEnum Unit)) := by
-    have hcall : ComputableInPolyTime
-        (fun x : (ℕ × List Bool) × (Operation × List Bool) × Unit => (x.1.1, x.1.2, x.2.1)) call
-        (encPair encUnary (encPair encBits (encPair (encFinEnum Operation) encBits))) := by
-      polytime
-    have hbound' : ComputableInPolyTime
-        (fun x : (ℕ × List Bool) × (Operation × List Bool) × Unit => bound x.1.1) call
-        encUnary := hbound.comp (by polytime)
-    exact ((horacle.comp hcall).bitsTakeWithInput hbound').prod (ComputableInPolyTime.const ())
-  have hrun := hadversary.run_interpret_preprocess (State := Unit) (input := caller)
+  have hfst := ComputableInPolyTime.fst caller
+    (encPair (encPair (encFinEnum Operation) encBits) (encFinEnum Unit))
+  have hsnd := ComputableInPolyTime.snd caller
+    (encPair (encPair (encFinEnum Operation) encBits) (encFinEnum Unit))
+  have hcall := hfst.fst'.prod (hfst.snd'.prod hsnd.fst')
+  have hreply := ((horacle.comp hcall).bitsTakeWithInput (hbound.comp hfst.fst')).prod
+    (ComputableInPolyTime.const (encOut := encFinEnum Unit) ())
+  have hrun := hadversary.run_interpret_preprocess' (State := Unit) (input := caller)
     (operationEncoding := encFinEnum Operation) (stateEncoding := encFinEnum Unit)
     (handler := fun caller request (_ : Unit) =>
       pure ((oracle caller.1 caller.2 request).take (bound caller.1), ()))
-    (prepare := fun caller => (caller.1, []))
-    (initial := fun _ => ())
+    (prepare := fun caller => (caller.1, [])) (initial := fun _ => ())
     (resources := fun caller _ => bound caller.1)
-    (by polytime) hreply.isPPTOn (by polytime) (fun _ _ => True) (fun _ => trivial)
-    (by polytime)
+    ((ComputableInPolyTime.fst encUnary encBits).prod (ComputableInPolyTime.const []))
+    hreply.isPPTOn (ComputableInPolyTime.const ()) (fun _ _ => True) (fun _ => trivial)
+    (hbound.comp (ComputableInPolyTime.fst caller encBits).fst')
     (fun caller request _ _ result hresult => by
       simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hresult
       subst result
@@ -381,11 +370,9 @@ private theorem isPPTOn_keyedOracleGame {Operation : Type} [DecidableEq Operatio
       fun request (_ : Unit) => PMF.pure (oracle n key request, ())) =
       fun q => StateT.lift (OracleComp.sumHandler ProbComp.unifOracle
         (fun request => PMF.pure (oracle n key request)) q) by
-    funext q
-    rcases q with r | request
+    funext q; rcases q with r | request
     · rfl
-    · funext u
-      simp [StateT.lift, Probability.PMF.monad_pure_eq_pure]]
+    · funext u; simp [StateT.lift, Probability.PMF.monad_pure_eq_pure]]
   rw [OracleComp.run_interpret_lift, ← PMF.monad_map_eq_map, Functor.map_map]
   exact id_map _
 
@@ -397,31 +384,48 @@ variable (E : BlockCipher)
 adversary. -/
 theorem isPPTOn_prpRealGame {adversary : OracleDistinguisher}
     (hadversary : IsOraclePPT encBool adversary) :
-    IsPPTOn encUnary encBool (E.prpRealGame adversary) :=
-  isPPTOn_keyedOracleGame hadversary E.keyLen_polyTime E.blockLen_polyTime
+    IsPPTOn encUnary encBool (E.prpRealGame adversary) := by
+  have hn := ComputableInPolyTime.fst encUnary
+    (encPair encBits (encPair (encFinEnum Unit) encBits))
+  have hrest := ComputableInPolyTime.snd encUnary
+    (encPair encBits (encPair (encFinEnum Unit) encBits))
+  have hq := hrest.snd'.snd'
+  exact isPPTOn_keyedOracleGame hadversary E.keyLen_polyTime E.blockLen_polyTime
     (fun n key request => E.prpOracle n key request.2)
-    (by unfold prpOracle; polytime)
-    (fun n key request hkey => by
-      unfold prpOracle
-      split_ifs with hq
+    (ComputableInPolyTime.ite_decide
+      (ComputableInPolyTime.unary_eq' (hq.trans ComputableInPolyTime.length_bits)
+        (hn.trans E.blockLen_polyTime))
+      (E.computableInPolyTime_encrypt_comp hn hrest.fst' hq)
+      (ComputableInPolyTime.const []))
+    fun n key request hkey => by
+      unfold prpOracle; split_ifs with hq
       · exact (E.length_encrypt n key _ hkey hq).le
-      · exact Nat.zero_le _)
+      · exact Nat.zero_le _
 
 /-- The real chosen-ciphertext experiment is uniformly strict PPT for every oracle-PPT
 adversary. -/
 theorem isPPTOn_strongPRPRealGame {adversary : StrongPRPDistinguisher}
     (hadversary : IsOraclePPT encBool adversary) :
-    IsPPTOn encUnary encBool (E.strongPRPRealGame adversary) :=
-  isPPTOn_keyedOracleGame hadversary E.keyLen_polyTime E.blockLen_polyTime
+    IsPPTOn encUnary encBool (E.strongPRPRealGame adversary) := by
+  have hn := ComputableInPolyTime.fst encUnary
+    (encPair encBits (encPair (encFinEnum Bool) encBits))
+  have hrest := ComputableInPolyTime.snd encUnary
+    (encPair encBits (encPair (encFinEnum Bool) encBits))
+  have hq := hrest.snd'.snd'
+  exact isPPTOn_keyedOracleGame hadversary E.keyLen_polyTime E.blockLen_polyTime
     (fun n key request => E.strongPRPOracle n key request)
-    (by unfold strongPRPOracle; polytime)
-    (fun n key request hkey => by
-      obtain ⟨inverse, query⟩ := request
-      simp only [strongPRPOracle]
-      split_ifs with hq
+    (ComputableInPolyTime.ite_decide
+      (ComputableInPolyTime.unary_eq' (hq.trans ComputableInPolyTime.length_bits)
+        (hn.trans E.blockLen_polyTime))
+      (ComputableInPolyTime.ite hrest.snd'.fst'
+        (E.computableInPolyTime_decrypt_comp hn hrest.fst' hq)
+        (E.computableInPolyTime_encrypt_comp hn hrest.fst' hq))
+      (ComputableInPolyTime.const []))
+    fun n key ⟨inverse, query⟩ hkey => by
+      simp only [strongPRPOracle]; split_ifs with hq
       · exact (E.length_decrypt n key _ hkey hq).le
       · exact (E.length_encrypt n key _ hkey hq).le
-      · exact Nat.zero_le _)
+      · exact Nat.zero_le _
 
 end BlockCipher
 
@@ -446,23 +450,21 @@ theorem isOraclePPT_liftForwardDistinguisher {blockLen : ℕ → ℕ}
     {adversary : OracleDistinguisher} (hadversary : IsOraclePPT encBool adversary) :
     IsOraclePPT encBool (liftForwardDistinguisher blockLen adversary) := by
   let caller : (ℕ × List Bool) ↪ List Bool := encPair encUnary encBits
-  let call := encPair caller (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
-  have hlimit : ComputableInPolyTime
-      (fun x : (ℕ × List Bool) × (Unit × List Bool) × Unit => blockLen x.1.1) call encUnary :=
-    hblockLen.comp (by polytime)
-  have hhandler : IsOraclePPTOn call (encPair encBits (encFinEnum Unit))
-      (fun x : (ℕ × List Bool) × (Unit × List Bool) × Unit =>
-        (fun reply => (reply, ())) <$> (List.take (blockLen x.1.1) <$>
-          ProbOracleComp.query (spec := fun _ : Bool × List Bool => List Bool) (false, x.2.1.2))) :=
-    (IsOraclePPTOn.query_take' false (by polytime) hlimit).map' (by polytime)
+  have hfst := ComputableInPolyTime.fst caller
+    (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
+  have hsnd := ComputableInPolyTime.snd caller
+    (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
+  have hhandler :=
+    (IsOraclePPTOn.query_take' false hsnd.fst'.snd' (hfst.fst'.trans hblockLen)).map'
+      (ComputableInPolyTime.id'.prod (ComputableInPolyTime.const (encOut := encFinEnum Unit) ()))
   have hrun := hadversary.run_interpret_preprocess_open' (External := Bool) (State := Unit)
     (input := caller) (operationEncoding := encFinEnum Unit) (stateEncoding := encFinEnum Unit)
     (handler := fun caller (request : Unit × List Bool) (_ : Unit) =>
       (fun reply => (reply, ())) <$> (List.take (blockLen caller.1) <$>
         ProbOracleComp.query (spec := fun _ : Bool × List Bool => List Bool) (false, request.2)))
     (prepare := id) (initial := fun _ => ()) (resources := fun caller _ => blockLen caller.1)
-    (by polytime) hhandler (by polytime) (fun _ _ => True) (fun _ => trivial)
-    (hblockLen.comp (by polytime))
+    ComputableInPolyTime.id' hhandler (ComputableInPolyTime.const ()) (fun _ _ => True)
+    (fun _ => trivial) (hblockLen.comp (ComputableInPolyTime.fst caller encBits).fst')
     (fun _ _ _ _ result hresult => by
       simp only [OracleComp.mem_supportWith_map_iff] at hresult
       obtain ⟨reply, ⟨raw, _, rfl⟩, rfl⟩ := hresult
@@ -482,12 +484,9 @@ private theorem liftForward_handler_eq (m : ℕ) :
         (fun request : Unit × List Bool => List.take m <$>
           ProbOracleComp.query (spec := fun _ : Bool × List Bool => List Bool) (false, request.2))
         q) := by
-  funext q
-  rcases q with k | request
+  funext q; rcases q with k | request
   · rfl
-  · funext u
-    cases u
-    simp only [OracleComp.sumHandler, StateT.lift, bind_pure_comp]
+  · funext ⟨⟩; simp only [OracleComp.sumHandler, StateT.lift, bind_pure_comp]
 
 /-- Running `liftForwardDistinguisher` against a bidirectional table `oracle` is running the
 forward adversary against the cut encryption channel of `oracle`. -/
@@ -503,9 +502,7 @@ private theorem eval_interpret_liftForwardDistinguisher (blockLen : ℕ → ℕ)
   rw [liftForwardDistinguisher, liftForward_handler_eq, OracleComp.run_interpret_lift,
     OracleComp.interpret_map, OracleComp.interpret_map, Functor.map_map]
   simp only [id_map', OracleComp.interpret_interpret]
-  congr 1
-  funext q
-  rcases q with k | request
+  congr 1; funext q; rcases q with k | request
   · simp [OracleComp.sumHandler, ProbOracleComp.sample, ProbComp.unifFin]
   · simp [OracleComp.sumHandler, PMF.monad_map_eq_map]
 
@@ -572,11 +569,9 @@ theorem advantage_prpIdealGame_randomFunctionIdealGame_le (blockLen : ℕ → �
       (OracleComp.sumHandler (fun k => ProbOracleComp.sample (ProbComp.unifFin k))
         (fun request : Unit × List Bool => randomFunctionQuery m request.2))
       (adversary n [])
-  have hadaptedQ : adapted.IsQueryBounded Q := by
-    refine hQ.interpret fun q => ?_
-    rcases q with k | request
-    · exact ProbOracleComp.IsQueryBounded.sample (ProbComp.unifFin k)
-    · exact isQueryBounded_randomFunctionQuery m request.2
+  have hadaptedQ : adapted.IsQueryBounded Q := hQ.interpret fun
+    | .inl k => ProbOracleComp.IsQueryBounded.sample (ProbComp.unifFin k)
+    | .inr request => isQueryBounded_randomFunctionQuery m request.2
   have heval (table : BitString m → BitString m) :
       OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
           (fun request : Unit × List Bool => PMF.pure (randomFunctionOracle m table request.2)))
@@ -595,24 +590,17 @@ theorem advantage_prpIdealGame_randomFunctionIdealGame_le (blockLen : ℕ → �
         OracleComp.interpret
           (OracleComp.sumHandler ProbComp.unifOracle (fun x => PMF.pure (π x))) adapted := by
     simp only [prpIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
-      ProbOracleComp.eval_interpret, ProbComp.eval_pure]
-    congr 1
-    funext π
-    exact heval π
+      ProbOracleComp.eval_interpret, ProbComp.eval_pure]; exact congrArg _ (funext fun π => heval π)
   have hfunc : ProbComp.eval (randomFunctionIdealGame blockLen adversary n) =
       (PMF.uniformOfFintype (BitString m → BitString m)).bind fun f =>
         OracleComp.interpret
           (OracleComp.sumHandler ProbComp.unifOracle (fun x => PMF.pure (f x))) adapted := by
     simp only [randomFunctionIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
-      ProbOracleComp.eval_interpret, ProbComp.eval_pure]
-    congr 1
-    funext f
-    exact heval f
-  have hpermCoins := ProbOracleComp.table_bind_interpret_eq_coinLaw_bind
-    (PMF.uniformOfFintype (Equiv.Perm (BitString m))) (fun π x => π x) adapted
-  have hfuncCoins := ProbOracleComp.table_bind_interpret_eq_coinLaw_bind
-    (PMF.uniformOfFintype (BitString m → BitString m)) (fun f x => f x) adapted
-  rw [hperm, hfunc, hpermCoins, hfuncCoins]
+      ProbOracleComp.eval_interpret, ProbComp.eval_pure]; exact congrArg _ (funext heval)
+  rw [hperm, hfunc, ProbOracleComp.table_bind_interpret_eq_coinLaw_bind
+      (PMF.uniformOfFintype (Equiv.Perm (BitString m))) (fun π x => π x) adapted,
+    ProbOracleComp.table_bind_interpret_eq_coinLaw_bind
+      (PMF.uniformOfFintype (BitString m → BitString m)) (fun f x => f x) adapted]
   refine Game.advantage_bind_le _ _ _ fun ω => ?_
   rw [Game.coe_advantage]
   simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal]
@@ -635,7 +623,8 @@ theorem indistinguishable_prpIdealGame_randomFunctionIdealGame {blockLen : ℕ �
   obtain ⟨c, d, hbounds⟩ := hadversary.query_bounds
   let Q : ℕ → ℕ := fun n => c * (n + 2) ^ d
   have hQ : PolynomiallyBounded fun n => (Q n).choose 2 := by
-    refine PolynomiallyBounded.mono_of_le (g := fun n => Q n ^ 2) (by dsimp only [Q]; fun_prop)
+    refine PolynomiallyBounded.mono_of_le (g := fun n => Q n ^ 2)
+      (((PolynomiallyBounded.const c).mul ((PolynomiallyBounded.id.add (.const 2)).pow d)).pow 2)
       fun n => ?_
     change (Q n).choose 2 ≤ Q n ^ 2
     rw [Nat.choose_two_right, sq]
@@ -652,7 +641,10 @@ theorem indistinguishable_prpIdealGame_randomFunctionIdealGame {blockLen : ℕ �
 theorem BlockCipher.PRP.pseudorandomFunction {E : BlockCipher} (hkey : E.keyLen = id)
     (hblock : E.blockLen = id) (h : E.PRP) :
     PseudorandomFunction (fun key query => E.encrypt key.length key query) where
-  polyTime := E.computableInPolyTime_encrypt_comp (by polytime) (by polytime) (by polytime)
+  polyTime := E.computableInPolyTime_encrypt_comp
+    ((ComputableInPolyTime.fst encBits encBits).trans ComputableInPolyTime.length_bits)
+    (ComputableInPolyTime.fst encBits encBits)
+    (ComputableInPolyTime.snd encBits encBits)
   length_eq key query hq := by
     simpa only [hblock, id_eq] using E.length_encrypt key.length key query
       (by simp [hkey]) (by simp [hblock, hq])

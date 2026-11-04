@@ -16,10 +16,13 @@ public import Complexity.DataStructure.StateTransition.Resource
 
 `MemoryBackend` runs each memory operation as the static body of a primitive realization, chosen
 by the operation's constructor. `Backend` does the same for any specification `D` refined to the
-memory oracle by a `Refinement D (Memory.spec w)`. One `Realizes` certificate per constructor tag
-supplies the body; the refinement supplies correctness and memory charges.
+memory oracle by a `Refinement D (Memory.spec w)`. One supplied realization witness per
+constructor tag supplies the body; the refinement supplies correctness and memory charges.
 
-A `Certificate` bundles one realization with its program, encodings, domain and local work. A
+A `Certificate` bundles a `Realizes.Witness` with its program, encodings, domain and local work.
+Resource and code projections retain those supplied data. `Certificate.ofRealizes` supports
+existing existential clients using classical choice; it does not identify the chosen resources
+with a particular realization derivation. A
 family `C : ι → Certificate B` over a finite type of tags fixes one register file, one body per
 tag and one exchange factor (`Backend.registers`, `Backend.code`, `Backend.factor`), before every
 width, refinement, runtime layout and argument. A `Backend D C` says which tag each operation of
@@ -132,8 +135,16 @@ structure Certificate (B : Basis) where
   {safe : ℕ → Arg → Memory.State → Prop}
   /-- The certified local work. -/
   {work : Arg → Memory.State → ℕ}
-  /-- The realization. -/
-  realizes : Realizes B prog input output safe work
+  /-- The supplied witness. Resource and code projections retain these data directly. -/
+  realizes : Realizes.Witness B prog input output safe work
+
+/-- Package an existential realization using its classically selected witness. This fallback
+retains correctness, but supplies no concrete bounds on its selected scratch or factor. -/
+noncomputable abbrev Certificate.ofRealizes {B : Basis} {δ α : Type} {k l : ℕ}
+    {p : δ → Memory.Prog α} {input : δ ↪ (Fin k → ℕ)} {output : α ↪ (Fin l → ℕ)}
+    {safe : ℕ → δ → Memory.State → Prop} {work : δ → Memory.State → ℕ}
+    (h : Realizes B p input output safe work) : Certificate B :=
+  ⟨Realizes.Witness.ofRealizes h⟩
 
 variable {B : Basis} {ι : Type}
 
@@ -155,20 +166,20 @@ section Registers
 variable [Fintype ι] (C : ι → Certificate B)
 
 /-- Registers for the longest argument vector. -/
-noncomputable def argWords : ℕ := Finset.univ.sup fun i => (C i).k
+@[expose] noncomputable def argWords : ℕ := Finset.univ.sup fun i => (C i).k
 
 /-- Registers for the largest result and scratch bank. -/
-noncomputable def scratchWords : ℕ :=
+@[expose] noncomputable def scratchWords : ℕ :=
   Finset.univ.sup fun i => (C i).l + (C i).realizes.scratchSize + 1
 
 /-- One register count, chosen before every width, refinement, layout and argument. -/
-noncomputable def registers : ℕ := argWords C + scratchWords C + 1
+@[expose] noncomputable def registers : ℕ := argWords C + scratchWords C + 1
 
 /-- Register zero holds the allocation frontier. -/
-def frontier : Fin (registers C) := ⟨0, by unfold registers; omega⟩
+@[expose] def frontier : Fin (registers C) := ⟨0, by unfold registers; omega⟩
 
 /-- The argument registers of tag `i`, from register one. -/
-def src (i : ι) (j : Fin (C i).k) : Fin (registers C) :=
+@[expose] def src (i : ι) (j : Fin (C i).k) : Fin (registers C) :=
   ⟨j.val + 1, by
     have := Finset.le_sup (f := fun i => (C i).k) (Finset.mem_univ i)
     have := j.isLt
@@ -176,7 +187,7 @@ def src (i : ι) (j : Fin (C i).k) : Fin (registers C) :=
     omega⟩
 
 /-- The result and scratch registers of tag `i`, after all argument registers. -/
-noncomputable def tmp (i : ι) (j : Fin ((C i).l + (C i).realizes.scratchSize + 1)) :
+@[expose] noncomputable def tmp (i : ι) (j : Fin ((C i).l + (C i).realizes.scratchSize + 1)) :
     Fin (registers C) :=
   ⟨argWords C + 1 + j.val, by
     have := Finset.le_sup (f := fun i => (C i).l + (C i).realizes.scratchSize + 1)
@@ -241,11 +252,11 @@ theorem tmp_ne_frontier (i : ι) (a : Fin ((C i).l + (C i).realizes.scratchSize 
   omega
 
 /-- The static body of tag `i`. -/
-noncomputable def code (i : ι) : Code B (registers C) :=
+@[expose] noncomputable def code (i : ι) : Code B (registers C) :=
   (C i).realizes.code (frontier C) (src C i) (tmp C i)
 
 /-- One exchange factor for every tag. -/
-noncomputable def factor : ℕ := Finset.univ.sup fun i => (C i).realizes.factor
+@[expose] noncomputable def factor : ℕ := Finset.univ.sup fun i => (C i).realizes.factor
 
 /-- Each tag's exchange factor is at most the common one. -/
 theorem factor_le (i : ι) : (C i).realizes.factor ≤ factor C :=
@@ -290,7 +301,8 @@ def install (i : ι) (d : (C i).Arg) (x : Data (registers C)) : Data (registers 
   apply Memory.State.ext rfl
   simp [memoryState, install, frontier]
 
-private theorem install_src (i : ι) (d : (C i).Arg) (x : Data (registers C)) :
+/-- Installed arguments occupy the selected tag's actual source registers. -/
+theorem install_src (i : ι) (d : (C i).Arg) (x : Data (registers C)) :
     (install C i d x).regs ∘ src C i = (C i).input d := by
   funext j
   simp [install, src]
@@ -318,7 +330,8 @@ theorem install_eq_self (i : ι) (d : (C i).Arg) (x : Data (registers C))
       rw [dite_eq_right hj]
   · rfl
 
-private theorem install_bounded {w : ℕ} (i : ι) (d : (C i).Arg) {x : Data (registers C)}
+/-- Installing fitted argument words preserves bounded data. -/
+theorem install_bounded {w : ℕ} (i : ι) (d : (C i).Arg) {x : Data (registers C)}
     (hx : x.Bounded w) (hin : ∀ j, Fits w ((C i).input d j)) : (install C i d x).Bounded w := by
   refine ⟨fun j => ?_, hx.2⟩
   simp only [install]

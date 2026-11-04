@@ -44,6 +44,23 @@ private theorem promise {κ : ℕ} (input : List ℤ)
   obtain ⟨out, y, steps, he, hr, ht, ho, hm, _, _, _, _⟩ := runs_input input le_rfl h
   exact ⟨out, y, steps, he, hr, ht, ho, hm⟩
 
+-- A later solver may freely reuse dead scratch at or above the computed live frontier.
+-- The actual initialized preprocessing output remains represented below it.
+example {κ : ℕ} (input : List ℤ)
+    (h : ∀ z ∈ input, |z| ≤ ((input.length + 2) ^ κ : ℕ)) :
+    ∃ (out : List (ℕ × Node)) (y : Data 128),
+      ExecWithin (width κ input.length) (program κ)
+        (Data.init (input.map Signed.encode)) y (cost κ input.length - 1) ∧
+      ∀ after : ℕ → ℕ,
+        (∀ p < y.regs Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal.heap,
+          after p = y.mem p) →
+        Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal.StoredNodes
+          (2 * (input.length + 2) ^ κ)
+          (2 * mPar input.length (2 * (input.length + 2) ^ κ) ^ 2)
+          (arena κ input.length y.mem).table out after := by
+  obtain ⟨out, y, he, _, hstored, _, _, _, hlayout⟩ := exec_input input le_rfl h
+  exact ⟨out, y, he, fun _ hframe => hstored.frame hlayout hframe⟩
+
 -- Empty input retains the complete initialization/prime/forest execution, with no output.
 example : ∃ y steps,
     Executes (width 0 0) (flatProgram 0) (State.init []) 0 steps ∧
