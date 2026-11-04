@@ -43,7 +43,7 @@ private theorem triangle_iff {n : ℕ} (hn : 0 < n) (z : ℤ) :
     exact ⟨⟨0, hn⟩, ⟨0, hn⟩, ⟨0, hn⟩, by simp [hz]⟩
 
 private def TimedConstant (z : ℤ) (answer : ℕ) : Prop :=
-  ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ, 2 ^ 1296 ≤ N ∧ ∀ n ≥ N,
+  ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ, 2 ^ 2394 ≤ N ∧ ∀ n ≥ N,
     ∃ p y t,
       IsSelectedPrime (fun _ _ : Fin n => z) (fun _ _ => z) (fun _ _ => z) (window n) p ∧
       InputFits (width n) (words n p z) ∧
@@ -51,18 +51,18 @@ private def TimedConstant (z : ℤ) (answer : ℕ) : Prop :=
         ⟨entryProgram.size, y⟩ t ∧
       Executes (width n) (entryProgram.program Reg.found) (State.init (words n p z))
         answer (t + 1) ∧
-      t + 1 ≤ dyadicTime n 1 ∧ (dyadicTime n 1 : ℝ) ≤ C * (n : ℝ) ^ (3 - 1 / 1296 : ℝ) ∧
+      t + 1 ≤ dyadicTime n 1 ∧ (dyadicTime n 1 : ℝ) ≤ C * (n : ℝ) ^ (3 - 33 / 20000 : ℝ) ∧
       y.regs Reg.found = answer ∧
       ∀ q < workspaceBase n, y.mem q = (Data.init (words n p z) : Data 640).mem q
 
 -- Permit the existing concrete fast-threshold numeral during this original-input client.
-set_option exponentiation.threshold 1296 in
+set_option exponentiation.threshold 2394 in
 private theorem timed_constant (z : ℤ) (hz : z.natAbs ≤ 1) :
     TimedConstant z (if z = 0 then 1 else 0) := by
   obtain ⟨C, hC, N, hN, hrun⟩ := exists_dyadic_runs_threshold (by decide : 1 ≤ (1 : ℕ))
   refine ⟨C, hC, N, hN, ?_⟩
   intro n hnN
-  have hn : 0 < n := (Nat.two_pow_pos 1296).trans_le (hN.trans hnN)
+  have hn : 0 < n := (Nat.two_pow_pos 2394).trans_le (hN.trans hnN)
   have hf := (blocks_pos_iff n).mpr (hN.trans hnN)
   obtain ⟨p, hp⟩ := exists_isSelectedPrime (fun _ _ : Fin n => z)
     (fun _ _ => z) (fun _ _ => z) (window n) (window_ge_sixteen hf)

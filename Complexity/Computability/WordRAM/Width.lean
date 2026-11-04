@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.WordRAM.Structured
+import Mathlib.Data.List.GetD
 
 /-!
 # Width-independent native program prefixes
@@ -20,6 +21,8 @@ and programs that compose them.
 
 * `Code.readsWidth_rename`: register renaming does not change width observation.
 * `Runs.prefix_at_smaller_width`: wider prefixes agree with an admitted smaller-width execution.
+* `Runs.prefix_bounds`: uniform prefix word bounds and the original outside-memory frame.
+* `Runs.prefix_bounds_init`: initialized prefixes also have zero memory above the envelope.
 
 These determinism and representation lemmas are original.
 -/
@@ -98,5 +101,36 @@ theorem Runs.mem_above {B : Basis} {r w a : ℕ} {p : Program B r} {s t : State 
   | refl => rfl
   | @tail t u n hpre hstep ih =>
     exact (hstep.mem_above (Runs.bounded hpre hs) ha).trans ih
+
+/-- A halt at an admitted width bounds every wider prefix and preserves original outside memory.
+The envelope bounds the address-word universe; no clearing or initial-zero hypothesis is used. -/
+theorem Runs.prefix_bounds {B : Basis} {r w W P v total k : ℕ} {p : Program B r}
+    {s₀ s : State r} (hr : Runs W p s₀ s k) (hp : ¬p.ReadsWidth) (hw : w ≤ W)
+    (hi : s₀.data.Bounded w) (he : Executes w p s₀ v total) (hP : 2 ^ w ≤ P) :
+    (∀ i, s.data.regs i < P) ∧ (∀ a, s.data.mem a < P) ∧
+      ∀ a, P ≤ a → s.data.mem a = s₀.data.mem a := by
+  have low := hr.prefix_at_smaller_width hp hw he
+  have bounded := low.bounded hi
+  exact ⟨fun i => (bounded.1 i).trans_le hP, fun a => (bounded.2 a).trans_le hP,
+    fun a ha => low.mem_above hi (hP.trans ha)⟩
+
+/-- Initialized wider prefixes have bounded words and zero memory above the same envelope. -/
+theorem Runs.prefix_bounds_init {B : Basis} {r w W P v total k : ℕ}
+    {p : Program B r} {input : List ℕ} {s : State r}
+    (hr : Runs W p (State.init input) s k) (hp : ¬p.ReadsWidth) (hw : w ≤ W)
+    (hi : InputFits w input) (he : Executes w p (State.init input) v total) (hP : 2 ^ w ≤ P) :
+    (∀ i, s.data.regs i < P) ∧ (∀ a, s.data.mem a < P) ∧
+      ∀ a, P ≤ a → s.data.mem a = 0 := by
+  obtain ⟨regs, mem, frame⟩ := hr.prefix_bounds hp hw (Data.Bounded.init hi) he hP
+  refine ⟨regs, mem, fun a ha => ?_⟩
+  rw [frame a ha]
+  cases a with
+  | zero => have := Nat.two_pow_pos w; omega
+  | succ a =>
+    change input.getD a 0 = 0
+    apply List.getD_eq_default
+    have hlen := hi.1
+    dsimp only [Fits] at hlen
+    omega
 
 end Cslib.WordRAM
