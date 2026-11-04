@@ -3834,6 +3834,7 @@ public import Complexity.Foundations.Order.UpperLower
 public import Complexity.Foundations.Probability.AtomCutoffs
 public import Complexity.Foundations.Probability.ColumnDetector
 public import Complexity.Foundations.Probability.ConditionalProductMean
+public import Complexity.Foundations.Probability.CoordinateExpectation
 public import Complexity.Foundations.Probability.CorrectionAtom
 public import Complexity.Foundations.Probability.CorrectionRowRecipe
 public import Complexity.Foundations.Probability.CorrectionRowTasks
@@ -3855,6 +3856,8 @@ public import Complexity.Foundations.Probability.HeavyCountRarity
 public import Complexity.Foundations.Probability.HeavyCountTail
 public import Complexity.Foundations.Probability.HierarchyAccess
 public import Complexity.Foundations.Probability.HierarchyAtomCutoff
+public import Complexity.Foundations.Probability.HierarchyCanonicalTargets
+public import Complexity.Foundations.Probability.HierarchyChannelTransport
 public import Complexity.Foundations.Probability.HierarchyCorrectionMean
 public import Complexity.Foundations.Probability.HierarchyCutoffs
 public import Complexity.Foundations.Probability.HierarchyParams

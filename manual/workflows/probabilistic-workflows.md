@@ -180,6 +180,19 @@ preserves the true cutoff. `CorrectionSampling.withSource` changes only the samp
 pair law, preserving the true input, final pilot, gates and incoming budget. The common
 `correctionRequest_eq_split` avoids rebuilding the split transport for each choice of children.
 
+To compare genuine targets across request roles and copy suffixes, import
+[HierarchyCanonicalTargets](../../Complexity/Foundations/Probability/HierarchyCanonicalTargets.lean).
+Use `stage_correctionIter_eq_of_terminal_rate` to identify the left and negative correction
+targets at a common stage rate. `source_request_mean_canonical` combines this transport with
+the actual narrower-source correction mean, retaining its literal usage-density divisor.
+The proof integrates source spectators and permutes each padded frame seed; it does not
+identify samples at an unchanged environment. The
+[regression client](../../ComplexityTests/HierarchyCanonicalTargets.lean) checks actual residual
+requests with different terminal roles and radix-two suffixes, a positive target and an
+unequal-rate complete correction mean. Canonical dense-child assembly, the joint
+source × terminal raw-sample mean with a shared midpoint, and child-error propagation
+remain open. A correction-child mean alone does not provide the residual mean.
+
 The P=5 regression has source/stage/usage exponents 2/1/3, actual densities
 16/625, 81/625 and 1/625, different nonempty copy suffixes, and a free spectator role.
 It proves a positive complete actual request mean with the genuine final pilot. Usage
