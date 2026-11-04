@@ -115,30 +115,11 @@ For a renamed execution without a surrounding preparation and continuation, use
 `Exec.rename_post` or `ExecWithin.rename_post`. They return the postcondition on the callee
 bank and the unchanged outside registers; the first retains an exact instruction count.
 
-### Transfer a fixed record through a native stack
-
-Import `Complexity.Algorithms.WordRAM.Stack.Record` and open `Cslib.WordRAM`.
-`Stack.pushRecord` and `Stack.popRecord` use the existing nine-register bounded stack
-dispatcher. Supply its injective embedding, a disjoint record bank and a register for the
-terminal self-copy. Prove `Stack.Rep`, the capacity/address fit and `Fits w 2`; pushing also
-needs room and fitting source values. Popping needs distinct destination registers and the
-record at the live stack top. Repeated source registers are allowed when pushing.
-
-`Stack.pushRecord_exec` puts `List.ofFn` of the source words at the top in forward order
-and costs exactly `9*n+1` instructions. `Stack.popRecord_exec` restores that order in exactly
-`14*n+1` instructions. Both counts include argument delivery and exclude a final program
-halt. A zero-length transfer is one self-copy. Memory outside the reserved stack and registers
-outside the relevant banks are preserved; unused stack cells can be dirty and popped cells
-are not cleared.
-
-The [record client](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/ComplexityTests/WordRAMStackRecord.lean)
-pushes two words and pops them into a different bank, checking their order, a live tail and
-outside sentinels. Its interpreter checks include the charged halt and insufficient fuel.
-Run `scripts/build.sh --wfail --iofail ComplexityTests.WordRAMStackRecord` from the API checkout.
-For capacity failures, check `n+vs.length <= capacity`; for register-frame failures, check
-disjointness from the dispatcher and injectivity of the pop destination bank.
-The Chan–He traversal specializes this API to its seven-word record, retaining its exact
-64-instruction push and 99-instruction pop.
+The Chan–He traversal's record helpers are another `Exec.rename_post` client.
+[`Traversal.WordStack.pushRecord_exec` and `popRecord_exec`](https://github.com/cslib-community/complexitylib/blob/8609e5ae206693e3c35a920ba2cf24ef76135d26/Complexity/Algorithms/WordRAM/ThreeSum/ChanHe/TraversalStack.lean#L225)
+move a fixed register bank through the traversal's own nine-register word stack in exactly
+`9*n+1` and `14*n+1` instructions. They are local to the hand-stepped traversal, not a library
+stack API; the library's bounded stack is `Stack.Memory`, run natively by `Stack.Native`.
 
 ### Use an explicit memory frame
 
