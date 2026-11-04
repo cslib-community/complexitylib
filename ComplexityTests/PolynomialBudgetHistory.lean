@@ -1,0 +1,404 @@
+/-
+Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Christian Reitwiessner
+-/
+module
+-- upstream: local-only (tests of actual polynomial evaluator histories)
+import Complexity.Foundations.Probability.HierarchyInitialHistory
+
+/-! A positive identity/full-rate evaluator history with actual ratio-16 bins and polynomial
+preparation. The top bin carries the input, the fine bin vanishes. This exact stationary
+fixture does not claim nonconstant mixing error or a general canonical parent step. -/
+set_option linter.privateModule false
+noncomputable section
+open Finset Cslib Cslib.Probability Matrix Matrix.HierarchyParams
+open Matrix.HierarchyParams.H4RankEnvironment
+open scoped BigOperators
+attribute [local instance] Classical.propDecidable
+attribute [local implicit_reducible] Matrix
+local instance : Fact (Nat.Prime 5) := ⟨by decide⟩
+set_option backward.isDefEq.respectTransparency false
+namespace PolynomialBudgetHistory
+private def base : Matrix (ZMod 5) (ZMod 5) ℝ := 1
+private def numerator (i : ℕ) (d : ℝ) : ℝ :=
+  boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1) rate 1 i (fun _ => 1) d
+private lemma large_K (HP : FourthRootHierarchyParams 16 1 16 32 8) : 5 < HP.K := by
+  have hg := HP.gate
+  have hn : 0 ≤ 32 * (HP.k : ℝ) / HP.η :=
+    div_nonneg (mul_nonneg (by norm_num) (Nat.cast_nonneg _)) HP.η_pos.le
+  have hk : (5 : ℝ) < HP.K := by linarith
+  exact_mod_cast hk
+private lemma numerator_values : numerator 0 0 = 0 ∧ numerator 0 1 = 1 ∧
+    numerator 1 0 = 0 ∧ numerator 1 16 = 0 := by
+  norm_num [numerator, boundedRoutedBinCutoff, routedBinCutoff, binWeight, rate,
+    polynomialSwitch4, polynomialTransition4, transitionPolynomial4]
+private def data (HP : FourthRootHierarchyParams 16 1 16 32 8) : BudgetData HP 5 where
+  padding := 1
+  base := base
+  bins := {0, 1}
+  binRate := rate
+  cutoff := numerator
+  auxiliary := fun _ => polynomialPrepCutoff4 HP.θ
+  slack := 1
+  slack_pos := by decide
+  rankCharge := 0
+  binCap := 16
+  binCap_nonneg := by norm_num
+  cutoff_bounds := by
+    intro i d
+    have hstep (j : ℕ) : rate j = 16 * rate (j + 1) := by
+      simp only [rate, pow_succ, _root_.mul_inv_rev]
+      ring
+    simpa only [DenseBinRecipe.polynomialUnrouted, numerator,
+      show max (1 : ℝ) 16 = 16 by norm_num] using
+      (DenseBinRecipe.polynomialUnrouted_numerator_laws HP
+      rate_pos hstep (by norm_num : (0 : ℝ) ≤ 1) i d).1
+private def request (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    HierarchyTask.Request HP.k (Fin 3) (ZMod 5) :=
+  ⟨.row 0 (.pilotInput ⟨0, HP.k_pos⟩), gridChannel 0 0 [1],
+    gridChannel 2 0 [2, 3], gridChannel 2 0 [2, 3]⟩
+private lemma full (σ : Environment 5 3) (role : Fin 3) (suffix : List (ZMod 5))
+    (v : ZMod 5) : (gridChannel role 0 suffix).retains (channels (1 : ZMod 5)) σ v := by
+  simp only [gridChannel, CorrectionRowTask.Channel.retains, channels, semanticSide_grid]
+  simpa only [show side 5 0 = 5 by norm_num [side]] using full_retains (σ role) _
+private lemma prep_values (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    polynomialPrepCutoff4 HP.θ 0 = 0 ∧ polynomialPrepCutoff4 HP.θ 1 = 1 := by
+  have hθ : HP.θ < 1 := by linarith [HP.θ_lt_θ₂, HP.θ₂_lt]
+  exact ⟨polynomialPrepCutoff4_eq_zero HP.θ_pos (by linarith [HP.θ_pos]),
+    polynomialPrepCutoff4_eq_one HP.θ_pos (by linarith)⟩
+private lemma gate_one (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (b : ℝ) (A : Matrix (ZMod 5) (ZMod 5) ℝ) (S : Finset (ZMod 5)) (x : ZMod 5) :
+    rowGate HP.ρ HP.K b A S x = 1 := by
+  unfold rowGate
+  rw [kthLargest_eq_zero_of_card_lt
+    ((card_le_univ S).trans_lt (by simpa using large_K HP))]
+  exact HP.ρ_one 0 HP.η_pos.le
+private lemma top_dense (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (σ : Environment 5 3) (x y : ZMod 5) :
+    denseChild 1 id (request HP) (numerator 0) (polynomialPrepCutoff4 HP.θ)
+      HP.ρ HP.K base σ x y = base x y := by
+  have hr : Admissible (request HP) := ⟨by change (0 : Fin 3) ≠ 2; decide, rfl, rfl⟩
+  have hn := source_nonempty 1 id (request HP) hr (by decide)
+    Function.injective_id (⟨1, 4, by decide, by decide⟩ : Horizon 5) (s := 0) (by decide) rfl x
+  rw [denseChild_eq 1 id (request HP) hr _ _ _ _ _ σ x y hn]
+  have ht (A : FrameChannel 5 4 1) (v : ZMod 5) : splitTerminal 1 id (request HP) A v := by
+    change frameRetains 5 4 (semanticSide 5 (rate 0)) A _
+    rw [semanticSide_grid, show side 5 0 = 5 by norm_num [side]]
+    exact full_retains A _
+  have hu (A : FrameChannel 5 4 1) (v : ZMod 5) : splitUsage 1 id (request HP) A v := ht A v
+  simp only [denseAtom, ht, ↓reduceIte, atomNormalizer, atomPrep, hu, filter_true,
+    gate_one, mul_one, Fintype.expect_const]
+  norm_num only [request, gridChannel, rate, pow_zero, inv_one, one_pow, div_one]
+  by_cases hxy : x = y
+  · subst y
+    norm_num [base, prep_values HP, numerator_values]
+  · norm_num [base, Matrix.one_apply_ne hxy, prep_values HP, numerator_values]
+private lemma initial (HP : FourthRootHierarchyParams 16 1 16 32 8) (i : ℕ)
+    (hi : i ∈ (data HP).bins) :
+    (data HP).initialSample (request HP) i = fun _ x y => if i = 0 then base x y else 0 := by
+  have hi' : i = 0 ∨ i = 1 := by simpa only [data, mem_insert, mem_singleton] using hi
+  funext σ x y
+  rcases hi' with rfl | rfl
+  · unfold BudgetData.initialSample
+    have hr : (HierarchyTask.rawRequests 0 0 (.pilotInput ⟨0, HP.k_pos⟩)
+        (request HP).source (BudgetData.midpoint (request HP)) (request HP).terminal
+        ((data HP).binRate 0)).direct = {request HP with task := .baseNormalized 0 0} := by
+      simp [HierarchyTask.rawRequests, data, request, gridChannel, rate]
+    change rate 0 * _ * denseChild _ _ _ _ _ _ _ _ σ x y = _
+    rw [hr, denseChild_congr_task]
+    change rate 0 * HierarchyTask.usageRatio (channels (1 : ZMod 5)) (request HP).terminal
+      {request HP with task := .baseNormalized 0 0} y *
+      denseChild 1 id (request HP) (numerator 0) (polynomialPrepCutoff4 HP.θ)
+        HP.ρ HP.K base σ x y = _
+    rw [usageRatio_grid (k := HP.k) 1 (request HP).terminal
+      {request HP with task := .baseNormalized 0 0} 0 0 rfl rfl y]
+    rw [top_dense]
+    norm_num [side, rate]
+  · change _ * _ * denseChild _ _ _ (numerator 1) _ _ _ base σ x y = (0 : ℝ)
+    have hz : ∀ v w : ZMod 5, numerator 1 (base v w / rate 1) = 0 := by
+      intro v w
+      by_cases hvw : v = w
+      · subst w; norm_num [base, rate, numerator_values]
+      · simp only [base, Matrix.one_apply_ne hvw, zero_div, numerator_values.2.2.1]
+    unfold denseChild normalizedRequest DenseRowRecipe.normalized
+    dsimp only
+    split_ifs <;> simp only [HierarchyTask.rawRequests, data, hz, zero_mul, zero_div,
+      mul_zero]
+private lemma complete_const (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (M d : ℕ) (A : Matrix (ZMod 5) (ZMod 5) ℝ) :
+    (data HP).complete M (request HP) (fun _ => A) d = some (fun _ => A) := by
+  rw [BudgetData.complete_grid _ M _ 0 2 (by decide) 0 0 [1] [2, 3] rfl rfl _ d]
+  apply congrArg some
+  funext σ x y
+  rw [conditionalWalk_const]
+  change (if _ then A x y else 0) = A x y
+  have hx : X (0 : Fin 3) (side 5 0) (CopyPadding.identifier (1 : ZMod 5) [1]) σ x := by
+    simpa only [X, show side 5 0 = 5 by norm_num [side]] using full_retains (σ 0) _
+  have hy : Y (2 : Fin 3) (side 5 0) (CopyPadding.identifier (1 : ZMod 5) [2, 3]) σ y := by
+    simpa only [Y, show side 5 0 = 5 by norm_num [side]] using full_retains (σ 2) _
+  exact ite_eq_left ⟨hx, hy⟩
+private lemma group_input (HP : FourthRootHierarchyParams 16 1 16 32 8) (d : ℕ) :
+    (data HP).initialGroupInput 2 d (request HP) = fun _ x y =>
+      (if LogSpaceEstimation.lastBudget 2 d 1 0 = 0 then 0 else base x y) -
+      (if LogSpaceEstimation.lastBudget 2 (2 * d) 1 0 = 0 then 0 else base x y) := by
+  funext σ x y
+  unfold BudgetData.initialGroupInput
+  rw [sum_congr rfl (fun i hi => by rw [initial HP i hi])]
+  norm_num [BudgetData.sampleScale, data, request, gridChannel, rate]
+private lemma prefixes (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (data HP).initialPrefixes 2 (request HP) =
+      some (fun j _ => if 2 ≤ j then base else 0) := by
+  have hg (d : ℕ) := BudgetData.completedGroup_initial (data HP) 2 d (by decide)
+    (show (data HP).bins.Nonempty from by simp [data]) (request HP)
+  simp_rw [group_input] at hg
+  unfold BudgetData.initialPrefixes
+  change (do
+    let groups ← (List.range (Nat.log2 2 + 1)).mapM fun j =>
+      (data HP).completedGroup _ 2 (Cslib.RowCompression.dyadicSlack (Nat.log2 2 + 1) j)
+        (.pilotInput ⟨0, HP.k_pos⟩) (request HP)
+    pure fun j σ x y => ((groups.take j).map
+      (fun (A : Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ) => A σ x y)).sum) = _
+  simp_rw [hg]
+  norm_num [List.range_succ, Cslib.RowCompression.dyadicSlack,
+    LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff]
+  simp_rw [complete_const]
+  simp only [Option.bind_some]
+  apply congrArg some
+  funext j σ x y
+  cases j with
+  | zero => simp
+  | succ j => cases j <;> simp
+
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (data HP).initialPrefixes 2 (request HP) =
+      some (fun j _ => if 2 ≤ j then base else 0) ∧
+    (data HP).auxiliary 0 0 = 0 ∧ (data HP).auxiliary 0 1 = 1 ∧
+    (data HP).initialSample (request HP) 0 = (fun _ => base) ∧
+    (data HP).initialSample (request HP) 1 = (fun _ _ _ => 0) := by
+  refine ⟨prefixes HP, (prep_values HP).1, (prep_values HP).2, ?_, ?_⟩
+  · simpa only [↓reduceIte] using initial HP 0 (by simp [data])
+  · simpa only [one_ne_zero, ↓reduceIte] using initial HP 1 (by simp [data])
+
+-- The primitive matrix is substochastic and the actual top/fine bins cover it exactly.
+-- The zero fine contribution is part of valid unequal-rate geometry, not a duplicated half-bin.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (∀ x y, 0 ≤ base x y) ∧ base *ᵥ 1 ≤ 1 ∧ ∀ x y,
+      ∑ i ∈ (data HP).bins, rate i * numerator i (base x y / rate i) = base x y := by
+  refine ⟨?_, ?_, ?_⟩
+  · intro x y
+    simp only [base, Matrix.one_apply]
+    split_ifs <;> norm_num
+  · simp [base]
+  · intro x y
+    by_cases hxy : x = y
+    · subst y
+      norm_num [data, base, rate, numerator_values]
+    · norm_num [data, base, Matrix.one_apply_ne hxy, numerator_values]
+
+private lemma preparation (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (A : Matrix (ZMod 5) (ZMod 5) ℝ) (hA : A = 0 ∨ A = base) :
+    (data HP).binPreparation 0 (request HP) (fun _ => A) = fun _ => A := by
+  funext σ x y
+  unfold BudgetData.binPreparation densePreparation DenseRowRecipe.preparation atomPrep
+  rw [gate_one, mul_one]
+  change polynomialPrepCutoff4 HP.θ (A x y / rate 0) = A x y
+  norm_num only [rate, pow_zero, inv_one, one_pow, div_one]
+  rcases hA with rfl | rfl
+  · exact (prep_values HP).1
+  · by_cases hxy : x = y
+    · subst y; simpa only [base, Matrix.one_apply_eq] using (prep_values HP).2
+    · simpa only [base, Matrix.one_apply_ne hxy] using (prep_values HP).1
+
+private def increment (ζ : ℝ) (x : ZMod 5) (j : ℕ) (y : ZMod 5) (ν : Fin 2) : ℝ :=
+  if j = 1 then if ν = 0 then base x y else ζ * base x y else 0
+
+private lemma compressed (HP : FourthRootHierarchyParams 16 1 16 32 8) (ζ floor : ℝ) :
+    (data HP).compressedBin 2 0 0 ζ floor (request HP) = some (fun _σ x y =>
+      let a := Cslib.RowCompression.iterate univ
+        (NormalizedMoments.compatibleCapacity HP.K 2) (fun _ => HP.K)
+        (Cslib.RowCompression.dyadicFloor floor 2) (increment ζ x) ⟨0, 0⟩ 2
+      FourthRootHierarchyParams.NormalizedRow.output (numerator 0) HP.ρ ζ
+        (a.row y 0) (a.row y 1)
+        (Cslib.RowCompression.firstRank univ HP.K a.defaultValue a.row)) := by
+  have hactive : 0 < (data HP).requestPrecision 2 (request HP) := by
+    norm_num [BudgetData.requestPrecision, LogSpaceEstimation.precision, data,
+      request, gridChannel, rate]
+  unfold BudgetData.compressedBin
+  rw [ite_eq_right (by simp only [hactive, not_true_eq_false]; norm_num [request, gridChannel])]
+  simp only [prefixes, bind, Option.bind_some]
+  norm_num [List.range_succ, Cslib.RowCompression.dyadicSlack]
+  simp_rw [preparation HP 0 (Or.inl rfl), preparation HP base (Or.inr rfl)]
+  simp_rw [complete_const]
+  simp only [Option.bind_some]
+  apply congrArg some
+  funext σ x y
+  have ht (z : ZMod 5) : (request HP).terminal.retains (channels (data HP).padding) σ z :=
+    full σ 2 [2, 3] z
+  simp only [show (request HP).usage = (request HP).terminal from rfl, ht, ↓reduceIte]
+  apply congrArg (fun a : Cslib.RowCompression.State (ZMod 5) =>
+    FourthRootHierarchyParams.NormalizedRow.output (numerator 0) HP.ρ ζ
+      (a.row y 0) (a.row y 1)
+      (Cslib.RowCompression.firstRank univ HP.K a.defaultValue a.row))
+  apply Cslib.RowCompression.iterate_congr
+  intro j hj
+  funext z ν
+  interval_cases j <;> fin_cases ν <;>
+    norm_num [NormalizedMoments.firstSignalIncrement, NormalizedMoments.secondSignalIncrement,
+      increment, rate]
+
+open Cslib.RowCompression in
+private lemma wide_advance (n K : ℕ) (hn : 5 < n) (hK : 5 < K)
+    {floor z : ℝ} (hf : 0 ≤ floor) (hz : z ≤ floor)
+    (w Δ : ZMod 5 → Fin 2 → ℝ) :
+    advance univ n K floor Δ ⟨z, w⟩ =
+      ⟨floor, fun y => updateEntry floor floor ((w + Δ) y)⟩ := by
+  have hk (j : ℕ) (hj : 5 < j) (f : ZMod 5 → ℝ) : kthLargest j univ f = 0 :=
+    kthLargest_eq_zero_of_card_lt (by simpa using hj) f
+  have ht : threshold univ n floor z (w + Δ) = floor := by
+    simp only [threshold, hk n hn, max_eq_left hf, max_eq_right hz]
+  have hd : newDefault univ n K floor z (w + Δ) = floor := by
+    rw [newDefault, ht, hk K hK]
+    exact max_eq_left ((min_le_left _ _).trans (max_le hz hf))
+  unfold advance update
+  simp only [ht, hd]
+
+open Cslib.RowCompression in
+private lemma actual_iterate (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (x : ZMod 5) :
+    let ζ := HP.η / 4
+    let f := dyadicFloor ζ 2
+    let a := iterate univ (NormalizedMoments.compatibleCapacity HP.K 2) (fun _ => HP.K)
+      f (increment ζ x) ⟨0, 0⟩ 2
+    a.defaultValue = f 1 ∧ (∀ y,
+      a.row y = if x = y then (fun ν => if ν = 0 then 1 + f 0 else ζ)
+        else defaultEntry (f 1)) ∧ ∀ i < 2,
+      stepThreshold univ (NormalizedMoments.compatibleCapacity HP.K 2) (fun _ => HP.K)
+        f (increment ζ x) ⟨0, 0⟩ i ≤ f i := by
+  intro ζ f a
+  have hζ : 0 < ζ := by dsimp only [ζ]; linarith [HP.η_pos]
+  have hf (j : ℕ) : 0 ≤ f j := dyadicFloor_nonneg hζ.le 2 j
+  have h01 : f 0 ≤ f 1 := by
+    have h := dyadicFloor_mul_le_succ hζ.le (m := 2) (i := 0) (by decide)
+    linarith [hf 0]
+  have hn (j : ℕ) : 5 < NormalizedMoments.compatibleCapacity HP.K 2 j :=
+    (large_K HP).trans_le (NormalizedMoments.compatibleCapacity_bounds HP.K 2 j).1
+  have hzero : advance univ (NormalizedMoments.compatibleCapacity HP.K 2 0) HP.K
+      (f 0) (increment ζ x 0) ⟨0, 0⟩ = ⟨f 0, fun _ => defaultEntry (f 0)⟩ := by
+    rw [wide_advance _ _ (hn 0) (large_K HP) (hf 0) (hf 0)]
+    congr 1
+    funext y
+    apply updateEntry_eq_default_of_size_le
+    norm_num [increment, entrySize]
+    exact hf 0
+  have hno (i : ℕ) (hi : i < 2) :
+      stepThreshold univ (NormalizedMoments.compatibleCapacity HP.K 2) (fun _ => HP.K)
+        f (increment ζ x) ⟨0, 0⟩ i ≤ f i := by
+    have hk (j : ℕ) (g : ZMod 5 → ℝ) :
+        kthLargest (NormalizedMoments.compatibleCapacity HP.K 2 j) univ g = 0 :=
+      kthLargest_eq_zero_of_card_lt (by simpa using hn j) g
+    interval_cases i
+    · simp only [stepThreshold, inputRow, iterate_zero, threshold, hk,
+        max_eq_left (hf 0), max_eq_right (hf 0)]
+      exact le_rfl
+    · simp only [stepThreshold, inputRow, iterate_succ, iterate_zero]
+      rw [hzero]
+      simp only [threshold, hk, max_eq_left (hf 1), max_eq_right h01]
+      exact le_rfl
+  dsimp only [a]
+  simp only [iterate_succ, iterate_zero]
+  rw [hzero, wide_advance _ _ (hn 1) (large_K HP) (hf 1) h01]
+  refine ⟨rfl, ?_, hno⟩
+  intro y
+  dsimp only [State.row]
+  by_cases hxy : x = y
+  · rw [ite_eq_left hxy]
+    have hv : ((fun _ : ZMod 5 => defaultEntry (f 0)) + increment ζ x 1) y =
+        (fun ν => if ν = 0 then 1 + f 0 else ζ) := by
+      funext ν
+      fin_cases ν <;> simp [increment, defaultEntry, base, hxy, add_comm]
+    rw [hv]
+    apply updateEntry_eq_self_of_three_mul_le (hf 1) (hf 1) (by linarith [hf 1])
+    have hsize := abs_apply_le_entrySize (fun ν : Fin 2 => if ν = 0 then 1 + f 0 else ζ) 1
+    have hb := dyadicFloor_le_scale_div hζ.le 2 1
+    simp only [Fin.isValue, one_ne_zero, ↓reduceIte, abs_of_pos hζ] at hsize
+    linarith
+  · rw [ite_eq_right hxy]
+    apply updateEntry_eq_default_of_size_le
+    have hv : ((fun _ : ZMod 5 => defaultEntry (f 0)) + increment ζ x 1) y =
+        defaultEntry (f 0) := by
+      funext ν
+      fin_cases ν <;> simp [increment, defaultEntry, base, Matrix.one_apply_ne hxy]
+    rw [hv]
+    norm_num [entrySize, defaultEntry, abs_of_nonneg (hf 0), hf 0]
+    linarith [hf 1]
+
+open Cslib.RowCompression in
+private lemma compressed_value (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (data HP).compressedBin 2 0 0 (HP.η / 4) (HP.η / 4) (request HP) =
+      some (fun _ => base) := by
+  rw [compressed]
+  apply congrArg some
+  funext σ x y
+  dsimp only
+  obtain ⟨hd, hr, _⟩ := actual_iterate HP x
+  have hζ : 0 < HP.η / 4 := by linarith [HP.η_pos]
+  have hf := dyadicFloor_nonneg hζ.le 2 1
+  have hη : dyadicFloor (HP.η / 4) 2 1 ≤ HP.η := by
+    linarith [dyadicFloor_le_scale_div hζ.le 2 1, HP.η_pos]
+  have hk (f : ZMod 5 → ℝ) : kthLargest HP.K univ f = 0 :=
+    kthLargest_eq_zero_of_card_lt (by simpa using large_K HP) f
+  simp only [firstRank, hk, hd, max_eq_left hf,
+    FourthRootHierarchyParams.NormalizedRow.output, HP.ρ_one _ hη, mul_one]
+  rw [hr y]
+  by_cases hxy : x = y
+  · rw [ite_eq_left hxy]
+    have hn : numerator 0 (1 + dyadicFloor (HP.η / 4) 2 0) = 1 := by
+      have h0 := dyadicFloor_nonneg hζ.le 2 0
+      exact (boundedRoutedBinCutoff_zero_saturates (χ := polynomialSwitch4 (1 / 2) 1)
+        (b := rate) (by norm_num : (0 : ℝ) ≤ 1) (by linarith) le_rfl).trans
+        numerator_values.2.1
+    simp only [Fin.isValue, ↓reduceIte, one_ne_zero, hn]
+    rw [hxy]
+    norm_num [FourthRootHierarchyParams.NormalizedRow.clip, hζ.ne', base]
+  · rw [ite_eq_right hxy]
+    have hsmall : dyadicFloor (HP.η / 4) 2 1 ≤ 1 / 2 := by
+      have hθ := HP.θ₂_lt
+      norm_num at hθ
+      linarith [HP.η₂_lt, HP.η_lt_η₂, HP.δ₀_lt_δ₁, HP.δ₁_lt, HP.θ_lt_θ₂]
+    have hn : numerator 0 (dyadicFloor (HP.η / 4) 2 1) = 0 :=
+      boundedRoutedBinCutoff_eq_zero (by norm_num)
+        (fun _ h => polynomialSwitch4_of_le (by norm_num) h)
+        rate_pos rate_antitone hsmall 0 (fun _ => 1)
+    simp only [defaultEntry, Fin.isValue, ↓reduceIte, one_ne_zero, hn, zero_div,
+      base, Matrix.one_apply_ne hxy]
+
+-- Both scheduled groups execute below capacity: this is proved for the actual iterate,
+-- not supplied as a premise of the accuracy check below.
+open Cslib.RowCompression in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (x : ZMod 5) :
+    ∀ i < 2, stepThreshold univ (NormalizedMoments.compatibleCapacity HP.K 2)
+      (fun _ => HP.K) (dyadicFloor (HP.η / 4) 2) (increment (HP.η / 4) x) ⟨0, 0⟩ i ≤
+        dyadicFloor (HP.η / 4) 2 i :=
+  (actual_iterate HP x).2.2
+
+-- The executed positive history and compression have zero rooted error against the
+-- actual dense polynomial target; no final-output accuracy premise is supplied.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (data HP).compressedBin 2 0 0 (HP.η / 4) (HP.η / 4) (request HP) =
+      some (fun _ => base) ∧
+    rootDistPow 4 5 (rate 0)
+      (fun σ x => (request HP).source.retains (channels (data HP).padding) σ x)
+      (fun σ y => (request HP).terminal.retains (channels (data HP).padding) σ y)
+      (fun _ => base)
+      (denseChild 1 id (request HP) (numerator 0) (polynomialPrepCutoff4 HP.θ)
+        HP.ρ HP.K base) = 0 := by
+  refine ⟨compressed_value HP, ?_⟩
+  have hd : denseChild 1 id (request HP) (numerator 0) (polynomialPrepCutoff4 HP.θ)
+      HP.ρ HP.K base = fun _ => base := by
+    funext σ x y
+    exact top_dense HP σ x y
+  rw [hd]
+  simp [rootDistPow, rowNormPow]
+
+end PolynomialBudgetHistory

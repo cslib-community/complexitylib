@@ -805,15 +805,33 @@ with nonzero truth and a provably inaccurate prefix zero, then checks zero discr
 exact increment. The integrated regression uses the same Bool environment for masks and increments and checks
 zero fourth moment without a prefix-zero accuracy premise. First overflow at group zero is
 also checked against truth. These are decoder regressions, not evaluator-history accuracy
-fixtures. The positive constant-one compressed fixture has not been migrated to polynomial
-preparation; its half-bin geometry is not the polynomial recipe. Deriving mean/noise envelopes
-and their weighted payments from ALL actual lower-budget errors remain open. The integrated
-false-overflow charge still needs its raw-prefix moment paid, and the heavy-tail budget still
-needs a split into deterministic conditional-mean rarity and correlated noise. Rarity cannot
-be applied directly to noise. Actual bounded-prefix root-difference conversion and conditional
-Jensen on the original environment, an initial multi-bin valid setup with sufficient budget,
-and a positive polynomial-preparation evaluator-history accuracy fixture remain open, as do
-nonconstant routing and the general compressed parent-error theorem.
+fixtures. The separate positive evaluator-history regression now uses actual ratio-16 bins
+and polynomial preparation on a full-rate identity input: its top bin carries the input, its
+fine bin is zero, both scheduled groups execute without overflow, and the compressed output
+has zero rooted error against the actual dense polynomial target. This stationary example
+has no nonconstant mixing error. The older constant-one half-bin example remains a
+construction fixture, not valid polynomial geometry.
+
+[`HierarchyInitialHistory.lean`](../../Complexity/Foundations/Probability/HierarchyInitialHistory.lean)
+expands actual first prefixes as sums of completed groups with their own walk lengths.
+`BudgetData.initialPrefix_mean` sums their literal conditional means, while
+`BudgetData.initialGroupInput_sum` telescopes the fine/coarse budgets bin by bin and retains
+both inactive-fine and initial-coarse boundary terms. The centered prefix noise is a sum of
+correlated group noises, paid by finite Minkowski and geometric dyadic decay without a group
+count. `BudgetData.initial_actualNoiseEntry` supplies that payment in the existing predecoder
+statistics API. First-signal weighted stationary noise and overflow-noise tails are paid
+unconditionally. Multiplying the stationary coefficient by the scheduled floor leaves the
+explicit `36 L floor + 72 L` factor; shrinking the floor alone does not pay the bias.
+
+**Remaining parent-error gap:** deterministic first means still need the canonical bin-cover
+and omitted/inactive-bin payments. Preparation mean/error transport, second-signal noise,
+combined false-event raw-prefix moments at j+1, and the resulting no-overflow/final and heavy
+mean-tail budgets have not been paid from an invariant covering ALL actual lower-budget
+calls. Heavy-event rarity applies only to deterministic mean envelopes; it must not discount
+correlated noise. Bounded lower-child root-to-ordinary conversion and same-environment
+conditional Jensen/reset-right-source transport remain to be assembled for this history.
+The general initial multi-bin and noninitial parent steps, nonconstant routing, and the
+simultaneous compressed parent-error theorem remain open.
 
 The simultaneous all-lower-budget row/vector availability, canonical error, support and range
 invariant is unfinished. The finite compressed-bin consumer above is wired, but its general canonical mean/noise

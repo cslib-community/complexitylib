@@ -78,6 +78,34 @@ theorem sum_propagation_mul_dyadic_decay_le {C q : ℝ}
       have h := geom_sum_Ico_le_of_lt_one (m := 1) (n := m + 1) (mul_nonneg hC hq) hCq
       simpa only [sum_Ico_eq_sum_range, Nat.add_sub_cancel, pow_one, Nat.add_comm] using h
 
+/-- A prefix of the dyadic decay sum retains the decay of its last included group.
+This pays sums of correlated group noises without losing a factor for the prefix length. -/
+theorem sum_prefix_dyadic_decay_le {q : ℝ} (hq : 0 ≤ q) (hq1 : q < 1)
+    {m j : ℕ} (hj : j ≤ m) :
+    ∑ i ∈ range j, q ^ dyadicSlack m i ≤ q ^ dyadicSlack m (j - 1) / (1 - q) := by
+  have hterm (i : ℕ) (hi : i < j) :
+      dyadicSlack m (j - 1) + (j - 1 - i) ≤ dyadicSlack m i := by
+    have hj0 : 0 < j := by omega
+    have he : m - (i + 1) = (m - j) + (j - 1 - i) := by omega
+    have hd : 1 ≤ 2 ^ (m - j) := Nat.one_le_pow _ _ (by decide)
+    have hr : j - 1 - i + 1 ≤ 2 ^ (j - 1 - i) :=
+      Nat.succ_le_of_lt Nat.lt_two_pow_self
+    simp only [dyadicSlack, show j - 1 + 1 = j by omega, he, pow_add]
+    nlinarith
+  calc
+    _ ≤ ∑ i ∈ range j, q ^ dyadicSlack m (j - 1) * q ^ (j - 1 - i) := by
+      apply sum_le_sum
+      intro i hi
+      rw [← pow_add]
+      exact pow_le_pow_of_le_one hq hq1.le (hterm i (mem_range.mp hi))
+    _ = q ^ dyadicSlack m (j - 1) * ∑ i ∈ range j, q ^ i := by
+      rw [← mul_sum, sum_range_reflect]
+    _ ≤ q ^ dyadicSlack m (j - 1) * (1 / (1 - q)) := by
+      apply mul_le_mul_of_nonneg_left _ (pow_nonneg hq _)
+      simpa only [Nat.add_zero, pow_zero, Nat.Ico_zero_eq_range] using
+        geom_sum_Ico_le_of_lt_one (m := 0) (n := j) hq hq1
+    _ = _ := by ring
+
 /-- **A horizon-independent budget for actual first-overflow noise.** Individual moments
 decaying geometrically in the dyadic slack give an explicit normalized tail bound. The
 source mask, noise, increments, initial states, and overflow may be arbitrarily correlated. -/
