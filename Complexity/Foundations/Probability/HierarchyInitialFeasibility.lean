@@ -21,6 +21,8 @@ rank and source exponents must be tracked separately when using the omitted-dept
 ## Main results
 
 * `requestPrecision_grid`: exact actual-request precision on the grid.
+* `requestPrecision_initial_raw_pay`: ordinary direct-child scale/budget/rank cancellation.
+* `requestPrecision_initial_scheduled_raw_pay`: explicit payment at actual scheduled budgets.
 * `sampleScale_grid`: exact integer scale offset.
 * `retained_scaleCutoff_lt`: every retained cutoff is below a sufficient budget.
 * `slow_depth_guards`: depth M/(128*slack) pays cutoffs and positive precision.
@@ -51,6 +53,92 @@ theorem requestPrecision_grid (B : BudgetData HP P) (M ks ka : ℕ)
       2 * ((ka : ℝ) + ks) - B.rankCharge * r.task.rank := by
   rw [requestPrecision, LogSpaceEstimation.precision, hs, ht, logb_rate, logb_rate]
   ring
+
+/-- Ordinary-progress payment for the actual direct pilot request. The source is literally
+inherited and rank decrease comes from `rawRequests_rank_lt`; no precision relation is
+assumed. The budget-loss and scale-window premises still need a scheduled allocation.
+This norm-level estimate must be raised to the fourth power for moment consumers. -/
+theorem requestPrecision_initial_raw_pay (B : BudgetData HP P)
+    (hcharge : 0 ≤ B.rankCharge) (hrate : B.binRate = rate)
+    (M m ks ka bin : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩))
+    (w : ℝ) (hw : 1 ≤ w) (hgap : (M : ℝ) - m ≤ w + 1)
+    (hdist : |(bin : ℝ) - ka| < w) :
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    (2 : ℝ) ^ (4 * |(bin : ℝ) - ka|) * (2 : ℝ) ^ (-B.requestPrecision m Q.direct) ≤
+      (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge) *
+        (2 : ℝ) ^ (8 * w) * (2 : ℝ) ^ (-|(bin : ℝ) - ka| / 2) := by
+  dsimp only
+  let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+    r.source (midpoint r) r.terminal (B.binRate bin)
+  have hq := B.requestPrecision_grid m ks bin Q.direct hs (by
+    dsimp only [Q, HierarchyTask.rawRequests]
+    exact congrFun hrate bin)
+  have hp := B.requestPrecision_grid M ks ka r hs ht
+  have hrank : Q.direct.task.rank < r.task.rank := by
+    rw [htask]
+    exact HierarchyTask.rawRequests_rank_lt 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin) Q.direct
+      (by simp only [Q, HierarchyTask.RawRequests.calls, List.mem_append, List.mem_cons,
+        true_or, true_or, true_or])
+  have hrank' : (Q.direct.task.rank : ℝ) + 1 ≤ r.task.rank := by exact_mod_cast hrank
+  have hslack : (1 : ℝ) ≤ B.slack := by exact_mod_cast B.slack_pos
+  have hden : (0 : ℝ) < 16 * B.slack := by positivity
+  have hbudget : ((M : ℝ) - m) / (16 * B.slack) ≤ (w + 1) / 16 :=
+    (div_le_div_of_nonneg_right hgap hden.le).trans
+      (div_le_div_of_nonneg_left (by linarith) (by norm_num) (by linarith))
+  have hr := mul_le_mul_of_nonneg_left hrank' hcharge
+  have habs := le_abs_self ((bin : ℝ) - ka)
+  have he : 4 * |(bin : ℝ) - ka| - B.requestPrecision m Q.direct ≤
+      -B.requestPrecision M r - B.rankCharge + 8 * w - |(bin : ℝ) - ka| / 2 := by
+    rw [hq, hp]
+    rw [sub_div] at hbudget
+    nlinarith
+  simp only [← Real.rpow_add (by norm_num : (0 : ℝ) < 2)]
+  apply Real.rpow_le_rpow_of_exponent_le (by norm_num : (1 : ℝ) ≤ 2)
+  linarith
+
+/-- The preceding ordinary-progress rule at the literal scheduled endpoint. The displayed
+window is an explicit finite cost, not a claim that the parent's walks absorb it. It applies
+to both endpoint slacks (including exhausted budgets); equal endpoints are cancelled by
+`pairedSample`, rather than charged twice. Structural charge is fixed before all exponents. -/
+theorem requestPrecision_initial_scheduled_raw_pay (B : BudgetData HP P)
+    (hcharge : 0 ≤ B.rankCharge) (hrate : B.binRate = rate)
+    (M d ks ka bin : ℕ) (hM : 0 < M)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩)) :
+    let cost := max d (Cslib.LogSpaceEstimation.scaleCutoff B.slack (B.sampleScale r (some bin)))
+    let m := Cslib.LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
+    let w := (cost : ℝ) + |(bin : ℝ) - ka| + 1
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    m < M ∧
+    (2 : ℝ) ^ (4 * |(bin : ℝ) - ka|) * (2 : ℝ) ^ (-B.requestPrecision m Q.direct) ≤
+      (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge) *
+        (2 : ℝ) ^ (8 * w) * (2 : ℝ) ^ (-|(bin : ℝ) - ka| / 2) := by
+  dsimp only
+  constructor
+  · exact LogSpaceEstimation.lastBudget_lt hM B.slack_pos
+  · apply B.requestPrecision_initial_raw_pay hcharge hrate M _ ks ka bin r hs ht htask
+    · linarith [Nat.cast_nonneg (α := ℝ)
+        (max d (LogSpaceEstimation.scaleCutoff B.slack (B.sampleScale r (some bin)))),
+        abs_nonneg ((bin : ℝ) - ka)]
+    · have hnat : M ≤ LogSpaceEstimation.lastBudget M d B.slack
+          (B.sampleScale r (some bin)) +
+          max d (LogSpaceEstimation.scaleCutoff B.slack (B.sampleScale r (some bin))) := by
+        unfold LogSpaceEstimation.lastBudget
+        omega
+      have hreal : (M : ℝ) ≤ (LogSpaceEstimation.lastBudget M d B.slack
+          (B.sampleScale r (some bin)) : ℝ) +
+          (max d (LogSpaceEstimation.scaleCutoff B.slack (B.sampleScale r (some bin))) : ℝ) :=
+        by exact_mod_cast hnat
+      simp only [Nat.cast_max] at hreal ⊢
+      linarith [abs_nonneg ((bin : ℝ) - ka)]
+    · linarith [Nat.cast_nonneg (α := ℝ)
+        (max d (LogSpaceEstimation.scaleCutoff B.slack (B.sampleScale r (some bin))))]
 
 /-- The actual logarithmic scale is integral on the fourth-power dyadic grid. -/
 theorem sampleScale_grid (B : BudgetData HP P)

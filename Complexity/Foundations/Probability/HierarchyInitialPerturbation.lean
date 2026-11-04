@@ -7,6 +7,8 @@ module
 -- upstream: candidate
 public import Complexity.Foundations.Probability.HierarchyApproximateHistory
 public import Complexity.Foundations.Probability.RootMetric.FiniteEnvelope
+public import Complexity.Foundations.Probability.RootMetric.ClippedMean
+public import Complexity.Foundations.Probability.HierarchyInitialMean
 import Complexity.Foundations.Data.List.Blocks
 
 /-!
@@ -15,7 +17,9 @@ import Complexity.Foundations.Data.List.Blocks
 Finite payments sum the actual paired rays before their common completion, then the
 executed groups before parent compression. These original finite comparisons retain the
 computed history and its changing budgets. They do not prove the simultaneous child IH
-or replace production dense leaves.
+or replace production dense leaves. The positive carried-child clipped-mean estimate
+proves canonical domination before subtraction, but does not yet migrate the computed
+four-statistic consumer or pay its ordinary sampling and saturated preparation costs.
 -/
 public section
 noncomputable section
@@ -27,6 +31,122 @@ attribute [local implicit_reducible] Matrix
 set_option backward.isDefEq.respectTransparency false
 variable {P : ℕ} [Fact P.Prime] {HP : FourthRootHierarchyParams 16 1 16 32 8}
   (B : BudgetData HP P)
+
+/-- Clipped conditional accuracy of a literal positive carried child. Canonical polynomial
+support proves domination by `2 * binCap * base`, before any fine/coarse subtraction.
+The approximate child can be nonzero at zero target. Reset-right execution is still required.
+This local estimate does not pay centered sampling or the second preparation coordinate. -/
+theorem positiveSample_initial_compressed_clipped_mean
+    (hrate : B.binRate = rate)
+    (hcutoff : B.cutoff = fun i => boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1)
+      rate 1 i (fun _ => 1))
+    (hD : B.padding ≠ 0) (H : Horizon P)
+    (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ)
+    (ζ floor : ℝ) (M m bin : ℕ) (hm : m < M)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (s t : Fin 3) (hst : s ≠ t) (ks ka : ℕ) (ss st : List (ZMod P))
+    (hs : r.source = gridChannel s ks ss) (ht : r.terminal = gridChannel t ka st)
+    (hks : ks ≤ H.maxExponent) (hbin : bin ≤ H.maxExponent)
+    (hprep : ∀ v, B.cutoff bin v ≠ 0 → B.auxiliary bin v = 1)
+    (hC : ∀ x y, 0 ≤ B.base x y) (hC1 : B.base *ᵥ 1 ≤ 1)
+    (hK : 2 * (1 + 32 / HP.η) ≤ HP.K)
+    (D R : Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+    (hd :
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (midpoint r) r.terminal (B.binRate bin)
+      B.compressedBin m bin (exponent Q.direct) ζ floor Q.direct = some D)
+    (hr :
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (midpoint r) r.terminal (B.binRate bin)
+      B.compressedBin m bin (exponent Q.right) ζ floor Q.right = some R) :
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    let C := denseChild B.padding id Q.direct (B.cutoff bin) (B.auxiliary bin)
+      HP.ρ HP.K B.base
+    let Xs := X s (side P ks) (CopyPadding.identifier B.padding ss)
+    let Ya := Y t (side P ka) (CopyPadding.identifier B.padding st)
+    ∃ A, B.positiveSample (fun n q => if n < M then B.compressedHistory exponent ζ floor n q
+        else none) m bin (.pilotInput ⟨0, HP.k_pos⟩) r = some A ∧
+      ∀ x y,
+        min 1 (|rowSliceMean Xs Ya (A - B.initialSample r bin) x y| /
+          (rate ka + B.base x y)) ^ 4 ≤
+        (512 * (6 * B.binCap + 3) ^ 3) *
+          (B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
+            r.terminal Q.direct y / rate ka) *
+          𝔼 σ ∈ ({σ | Xs σ x ∧ Ya σ y} : Finset (Environment P 3)),
+            |D σ x y ^ (4⁻¹ : ℝ) - C σ x y ^ (4⁻¹ : ℝ)| ^ 4 := by
+  dsimp only
+  let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+    r.source (midpoint r) r.terminal (B.binRate bin)
+  let C := denseChild B.padding id Q.direct (B.cutoff bin) (B.auxiliary bin)
+    HP.ρ HP.K B.base
+  let Xs := X s (side P ks) (CopyPadding.identifier B.padding ss)
+  let Ya := Y t (side P ka) (CopyPadding.identifier B.padding st)
+  let b := fun y => B.binRate bin *
+    HierarchyTask.usageRatio (channels B.padding) r.terminal Q.direct y
+  let A : Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ :=
+    fun σ x y => b y * D σ x y
+  refine ⟨A, (B.positiveSample_initial_compressed exponent ζ floor M m bin hm r D R hd hr).1,
+    ?_⟩
+  intro x y
+  let S : Finset (Environment P 3) := {σ | Xs σ x ∧ Ya σ y}
+  have hb : 0 ≤ b y := by
+    dsimp only [b, HierarchyTask.usageRatio]
+    rw [hrate]
+    exact mul_nonneg (rate_pos bin).le (by positivity)
+  have hcanonical : rowSliceMean Xs Ya (B.initialSample r bin) x y =
+      B.binRate bin * B.cutoff bin (B.base x y / B.binRate bin) :=
+    B.initialSample_mean hD H r s t hst ks ka bin bin ss st hs ht hks hbin
+      (congrFun hrate bin) hprep hC hC1 hK x y
+  have hdom : B.binRate bin * B.cutoff bin (B.base x y / B.binRate bin) ≤
+      2 * B.binCap * B.base x y := by
+    by_cases hz : B.cutoff bin (B.base x y / B.binRate bin) = 0
+    · rw [hz, mul_zero]
+      exact mul_nonneg (mul_nonneg (by norm_num) B.binCap_nonneg) (hC x y)
+    have hsupport : rate bin / 2 < B.base x y := by
+      by_contra hn
+      apply hz
+      rw [hrate, hcutoff]
+      apply boundedRoutedBinCutoff_eq_zero (by norm_num)
+        (fun v hv => polynomialSwitch4_of_le (by norm_num) hv) rate_pos rate_antitone
+      apply (div_le_iff₀ (rate_pos bin)).mpr
+      linarith [not_lt.mp hn]
+    have hcap := (B.cutoff_bounds bin (B.base x y / B.binRate bin)).2
+    rw [hrate] at hcap ⊢
+    nlinarith [mul_le_mul_of_nonneg_left hcap (rate_pos bin).le,
+      mul_nonneg B.binCap_nonneg (show 0 ≤ 2 * B.base x y - rate bin by linarith)]
+  have heq : b y * (𝔼 σ ∈ S, C σ x y) =
+      rowSliceMean Xs Ya (B.initialSample r bin) x y := by
+    rw [mul_expect]
+    rfl
+  have hbound : (b y / rate ka) * (𝔼 σ ∈ S, C σ x y) ≤
+      (2 * B.binCap) * (B.base x y / rate ka) := by
+    rw [div_mul_eq_mul_div, heq, hcanonical]
+    exact (div_le_div_of_nonneg_right hdom (rate_pos ka).le).trans_eq (by ring)
+  have hru := B.compressedBin_range_usage m bin (exponent Q.direct) ζ floor Q.direct D hd
+  have hlocal := min_relative_expect_sub_four_le S
+    (C := fun σ => C σ x y) (A := fun σ => D σ x y)
+    (div_nonneg hb (rate_pos ka).le) (div_nonneg (hC x y) (rate_pos ka).le)
+    (mul_nonneg (by norm_num : (0 : ℝ) ≤ 2) B.binCap_nonneg)
+    (fun σ _ => (normalizedRequest_mem_Icc HP B.padding Q.direct (B.cutoff bin)
+      B.binCap_nonneg (B.cutoff_bounds bin) _ _ σ x y).1)
+    (fun σ _ => (hru.1 σ x y).1) hbound
+  have hmean : rowSliceMean Xs Ya (A - B.initialSample r bin) x y =
+      b y * (𝔼 σ ∈ S, (D σ x y - C σ x y)) := by
+    rw [mul_expect]
+    apply expect_congr rfl
+    intro σ _
+    change b y * D σ x y - b y * C σ x y = _
+    ring
+  rw [hmean]
+  have he : |(b y / rate ka) * (𝔼 σ ∈ S, (D σ x y - C σ x y))| /
+      (1 + B.base x y / rate ka) =
+      |b y * (𝔼 σ ∈ S, (D σ x y - C σ x y))| / (rate ka + B.base x y) := by
+    rw [div_mul_eq_mul_div, abs_div, abs_of_pos (rate_pos ka), div_div]
+    congr 1
+    field_simp [(rate_pos ka).ne']
+  rw [he] at hlocal
+  convert hlocal using 1; ring
 
 /-- Sum all actual initial paired rays before completion. Each ray certificate must
 identify the executed compressed history and the executed semantic history at this group's

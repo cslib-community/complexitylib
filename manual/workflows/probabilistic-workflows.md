@@ -1186,6 +1186,40 @@ The returned lists are identified with the literal computed-history executions, 
 the changing budgets, rather than independent prefix families. Conditional Jensen and
 the existing finite-envelope API also pay one common deterministic mean-error envelope
 over all executed prefixes, including prefix zero, by the sum of those prefix payments.
+The local two-payment estimates start with
+[`positiveSample_initial_compressed_clipped_mean`](../../Complexity/Foundations/Probability/HierarchyInitialPerturbation.lean).
+It identifies the literal positive sample and clips its mean discrepancy on the original
+joint source/terminal slice. Polynomial support and `initialSample_mean` prove canonical
+mean domination by $2\,\mathrm{binCap}\,G(x,y)$ before any signed subtraction. The
+approximate child needs nonnegativity, not canonical support; it may be nonzero at a zero
+target. Reset-right availability remains a premise even though zero left correction removes
+its error. With physical scale $c=b_i\,\mathrm{usageRatio}/\mathrm{rate}(k_a)$, the
+conditional fourth-moment charge is $512(6\,\mathrm{binCap}+3)^3c$ times the child's
+conditional rooted fourth moment. The scale occurs to the first power. Empty slices use
+zero means; no independence is needed. The
+[clipped-mean API](../../Complexity/Foundations/Probability/RootMetric/ClippedMean.lean)
+also proves scalar fidelity with constant $32K$ and a triangle inequality for finite signed
+sums. Apply positive domination to each summand before subtracting fine and coarse means.
+
+[`requestPrecision_initial_scheduled_raw_pay`](../../Complexity/Foundations/Probability/HierarchyInitialFeasibility.lean)
+checks a separate ordinary-progress payment at the actual `lastBudget`, including exhausted
+budgets. Source inheritance and structural rank decrease follow from the literal direct
+request. The structural charge precedes all request exponents. This is a norm-level bound:
+its entire coefficient must be raised to the fourth power in a moment payment. Its explicit
+window factor has **not** been absorbed by the evaluator's walk allocation.
+
+These local estimates do not replace `initialComputedRelativeMoment` or its existing
+transport charge. The remaining migration must integrate the positive endpoint estimates
+on the child's own masks, preserve the actual fine/coarse signs and correlated prefix sums,
+pay ordinary sampling progress with the scheduled walks, and pay the saturated preparation
+comparison separately. The first clipped mean alone does not supply either missing payment.
+The current `initialFourMaxReserve_le` consumer still uses the existing four-statistic costs;
+no simultaneous changing-request invariant or uniform reserve absorption follows here.
+The [two-atom regression](../../ComplexityTests/InitialTwoPayment.lean) shows why: scalar
+rooted fourth error $1/32$ can coexist with centered normalized fourth error $1$ after
+physical scaling. It also distinguishes clipping after averaging from averaging clipped
+samples. These are finite inference tests, not an executed recursive counterexample.
+
 The [computed-prefix preparation payment](../../Complexity/Foundations/Probability/HierarchyTransportedPreparation.lean)
 combines these transported moments with the semantic history's actual omitted/inactive deficit
 and centered first noise. `BudgetData.initialTransportMoment` keeps the prefix cube and sum

@@ -3952,6 +3952,7 @@ public import Complexity.Foundations.Probability.ProductError
 public import Complexity.Foundations.Probability.RawProductMoment
 public import Complexity.Foundations.Probability.RootMetric
 public import Complexity.Foundations.Probability.RootMetric.AbsoluteError
+public import Complexity.Foundations.Probability.RootMetric.ClippedMean
 public import Complexity.Foundations.Probability.RootMetric.ConditionalWalk
 public import Complexity.Foundations.Probability.RootMetric.Conditioning
 public import Complexity.Foundations.Probability.RootMetric.FiniteEnvelope

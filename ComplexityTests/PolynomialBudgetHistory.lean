@@ -2348,4 +2348,93 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) (M j : ℕ)
     show (data HP).binCap = 16 from rfl, show (256 : ℝ) * 16 = 4096 by norm_num,
     show {request HP with usage := (request HP).terminal} = request HP from rfl] using h
 
+-- The clipped positive-mean estimate is instantiated by an actual small-floor compressed
+-- child with nonzero error. Reset-right still executes; no exact-child premise is used.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    let ζ := min HP.η (1 / 10000) / 4
+    let Xs := X 0 (side 5 0) (CopyPadding.identifier (1 : ZMod 5) [1])
+    let Ya := Y 2 (side 5 0) (CopyPadding.identifier (1 : ZMod 5) [2, 3])
+    ∃ A, (data HP).positiveSample (fun m q => if m < 2 then
+        (data HP).compressedHistory (fun _ => 0) ζ ζ m q else none)
+        1 0 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) = some A ∧
+      (∀ σ, |A σ 0 0 - (data HP).initialSample (request HP) 0 σ 0 0| = 1) ∧
+      min 1 (|rowSliceMean Xs Ya (A - (data HP).initialSample (request HP) 0) 0 0| /
+        (rate 0 + base 0 0)) ^ 4 ≤ 512 * (6 * (16 : ℝ) + 3) ^ 3 := by
+  dsimp only
+  let ζ := min HP.η (1 / 10000) / 4
+  let Q := HierarchyTask.rawRequests 0 0 (.pilotInput ⟨0, HP.k_pos⟩)
+    (request HP).source (BudgetData.midpoint (request HP)) (request HP).terminal
+    ((data HP).binRate 0)
+  have hζ : 0 < ζ := div_pos (lt_min HP.η_pos (by norm_num)) (by norm_num)
+  have hd : (data HP).compressedBin 1 0 0 ζ ζ Q.direct = some 0 := by
+    simpa only [Q, HierarchyTask.rawRequests, request, data, gridChannel, rate, pow_zero,
+      inv_one, min_self] using compressed_one HP (.baseNormalized 0 0) ζ hζ
+      (by dsimp only [ζ]; exact div_le_div_of_nonneg_right (min_le_left _ _) (by norm_num))
+  obtain ⟨R, hr⟩ := right_one_available HP ζ
+  have hprep (v : ℝ) (hv : (data HP).cutoff 0 v ≠ 0) :
+      (data HP).auxiliary 0 v = 1 := by
+    exact HP.routedBin_prep_eq_one (by norm_num)
+      (fun w hw => polynomialSwitch4_of_le (by norm_num) hw) rate_pos rate_antitone
+      0 (fun _ => 1) hv
+  have hK : 2 * (1 + 32 / HP.η) ≤ HP.K := by
+    have hk : (1 : ℝ) ≤ HP.k := by exact_mod_cast HP.k_pos
+    have hdiv := div_le_div_of_nonneg_right
+      (mul_le_mul_of_nonneg_left hk (by norm_num : (0 : ℝ) ≤ 32)) HP.η_pos.le
+    have hg := HP.gate
+    norm_num only [mul_one] at hdiv
+    nlinarith [div_nonneg (by norm_num : (0 : ℝ) ≤ 32) HP.η_pos.le]
+  obtain ⟨A, hrun, hbound⟩ := (data HP).positiveSample_initial_compressed_clipped_mean
+    rfl rfl (by norm_num [data]) supportHorizon (fun _ => 0) ζ ζ 2 1 0 (by decide)
+    (request HP) 0 2 (by decide) 0 0 [1] [2, 3] rfl rfl (by decide) (by decide)
+    hprep (by intro x y; by_cases h : x = y <;> simp [data, base, h])
+    (by simp [data, base]) hK 0 R hd hr
+  refine ⟨A, hrun, ?_, ?_⟩
+  · have he := (data HP).positiveSample_initial_compressed (fun _ => 0) ζ ζ 2 1 0
+      (by decide) (request HP) 0 R hd hr
+    have hz : A = 0 := by
+      apply Option.some.inj
+      apply hrun.symm.trans
+      convert he.1 using 1
+      congr 1
+      funext σ x y
+      simp
+    rw [hz]
+    intro σ
+    rw [initial HP 0 (by simp [data])]
+    norm_num [base]
+  · have hc (σ : Environment 5 3) : denseChild (data HP).padding id Q.direct
+        ((data HP).cutoff 0) ((data HP).auxiliary 0) HP.ρ HP.K (data HP).base σ 0 0 = 1 := by
+      have hq : Q.direct = {request HP with task := .baseNormalized 0 0} := by
+        simp [Q, HierarchyTask.rawRequests, request, data, gridChannel, rate]
+      rw [hq, denseChild_congr_task]
+      simpa only [data, base, Matrix.one_apply_eq] using top_dense HP σ 0 0
+    have hratio : HierarchyTask.usageRatio (channels (data HP).padding)
+        (request HP).terminal Q.direct 0 = 1 := by
+      have h := usageRatio_grid (data HP).padding (request HP).terminal Q.direct 0 0 rfl
+        (by simp [Q, HierarchyTask.rawRequests, request, data, gridChannel, rate]) 0
+      norm_num [gridMass, side] at h
+      exact h
+    have hx (σ : Environment 5 3) :
+        X 0 (side 5 0) (CopyPadding.identifier (1 : ZMod 5) [1]) σ 0 := by
+      simpa only [gridChannel, CorrectionRowTask.Channel.retains, channels, semanticSide_grid,
+        X] using full σ 0 [1] 0
+    have hy (σ : Environment 5 3) :
+        Y 2 (side 5 0) (CopyPadding.identifier (1 : ZMod 5) [2, 3]) σ 0 := by
+      simpa only [gridChannel, CorrectionRowTask.Channel.retains, channels, semanticSide_grid,
+        Y] using full σ 2 [2, 3] 0
+    have h := hbound 0 0
+    dsimp only [Q] at hc
+    simp_rw [hc] at h
+    change _ ≤ _ * ((data HP).binRate 0 * HierarchyTask.usageRatio
+      (channels (data HP).padding) (request HP).terminal Q.direct 0 / rate 0) *
+      𝔼 σ ∈ _, |(0 : ℝ) ^ (4⁻¹ : ℝ) - _| ^ 4 at h
+    rw [hratio] at h
+    simp only [show (data HP).binRate 0 = 1 by norm_num [data, rate],
+      show (data HP).padding = 1 from rfl, show (data HP).base = base from rfl,
+      show (data HP).binCap = 16 from rfl,
+      show rate 0 = 1 by norm_num [rate], Real.zero_rpow (by norm_num : (4⁻¹ : ℝ) ≠ 0),
+      Real.one_rpow, zero_sub, abs_neg, abs_one, one_pow, hx, hy, and_self, filter_true,
+      Fintype.expect_const, mul_one, div_one] at h
+    simpa only [show rate 0 = 1 by norm_num [rate]] using h
+
 end PolynomialBudgetHistory
