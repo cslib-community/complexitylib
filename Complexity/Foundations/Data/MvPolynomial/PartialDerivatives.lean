@@ -41,6 +41,8 @@ product by `2 ^ d`, and it is a claim in the chapter "Lower bounds for depth-3 c
 
 ## Main results
 
+* `MvPolynomial.iteratedPDeriv_rename`: injective variable renaming commutes with iterated
+  partial differentiation.
 * `MvPolynomial.range_partialDerivatives`: the range is the span of the partial derivatives.
 * `MvPolynomial.rank_partialDerivatives_le_rename`: renaming variables injectively does not
   decrease the measure.
@@ -129,7 +131,8 @@ private theorem iteratedPDeriv_prod_mem_span {d : ℕ} (ℓ : Fin d → MvPolyno
     rw [Finset.mem_coe, Finset.mem_powersetCard, Finset.card_insert_of_notMem hi.2, hT'.2]
     exact ⟨Finset.subset_univ _, by omega⟩
 
-private theorem iteratedPDeriv_rename {τ : Type v} {f : σ → τ} (hf : Function.Injective f) {k : ℕ}
+/-- Injective variable renaming commutes with iterated partial differentiation. -/
+theorem iteratedPDeriv_rename {τ : Type v} {f : σ → τ} (hf : Function.Injective f) {k : ℕ}
     (α : Fin k → σ) (p : MvPolynomial σ K) :
     iteratedPDeriv (f ∘ α) (rename f p) = rename f (iteratedPDeriv α p) := by
   induction k with

@@ -133,14 +133,6 @@ theorem choose_sq_le_mul_cost_permanent
   rw [hcompute] at h
   exact_mod_cast (Matrix.choose_sq_le_rank_partialDerivatives_permanent_mvPolynomialX k).trans h
 
-/-- The generic matrix of `Cslib.Circuits.Arithmetic.genericMatrix` renames the variables of
-`Matrix.mvPolynomialX` to row-major order. -/
-private theorem genericMatrix_eq_map_rename :
-    Arithmetic.genericMatrix K n =
-      (Matrix.mvPolynomialX (Fin n) (Fin n) K).map (rename finProdFinEquiv) := by
-  ext i j
-  simp [Arithmetic.genericMatrix]
-
 /-- The bound of `choose_sq_le_mul_cost_det` for the `n`-th member of the determinant family
 `Cslib.Circuits.Arithmetic.detFamily`. -/
 theorem choose_sq_le_mul_cost_detFamily
@@ -150,7 +142,7 @@ theorem choose_sq_le_mul_cost_detFamily
     n.choose k ^ 2 ≤ d.choose k * c.program.cost SumOfTerms.termCost := by
   have hpoly : (Arithmetic.detFamily K).poly n =
       rename finProdFinEquiv (Matrix.mvPolynomialX (Fin n) (Fin n) K).det := by
-    rw [AlgHom.map_det, AlgHom.mapMatrix_apply, ← genericMatrix_eq_map_rename]
+    rw [AlgHom.map_det, AlgHom.mapMatrix_apply, ← Arithmetic.genericMatrix_eq_map_rename]
     rfl
   have h := rank_partialDerivatives_le_mul_cost c k j
   rw [hcompute, hpoly] at h
@@ -167,7 +159,7 @@ theorem choose_sq_le_mul_cost_permFamily
   have hpoly : (Arithmetic.permFamily K).poly n =
       rename finProdFinEquiv (Matrix.mvPolynomialX (Fin n) (Fin n) K).permanent := by
     change (Arithmetic.genericMatrix K n).permanent = _
-    simp [genericMatrix_eq_map_rename, Matrix.permanent, map_sum, map_prod]
+    simp [Arithmetic.genericMatrix_eq_map_rename, Matrix.permanent, map_sum, map_prod]
   have h := rank_partialDerivatives_le_mul_cost c k j
   rw [hcompute, hpoly] at h
   exact_mod_cast ((Matrix.choose_sq_le_rank_partialDerivatives_permanent_mvPolynomialX k).trans
