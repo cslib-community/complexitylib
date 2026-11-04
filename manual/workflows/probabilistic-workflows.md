@@ -557,13 +557,42 @@ the actual score, detector and maximum, a correlated nonzero moment, and empty/z
 The shared [rank API](../../Complexity/Foundations/Data/Finset/KthLargest/Stability.lean)
 also removes repeated normalization proofs in dense and correction preparation.
 
-These are local recipe contracts for the existing hierarchy constructors. The structural
-request still uses fixed `HP.k`; a statistical precision parameter does not change that task.
-No well-founded approximate evaluator, allocated two-level recursive fragment or recursive
-closure is constructed. The new transport is a local score/raw payment, with explicit
-width, rate and density costs. Recursively realizing those children on the correct
-environments, allocating their tolerances and walk lengths, assembling bin payments and
-controlling their growth, full correction/pilot/copy closure, workspace bounds and native
-RL=L remain open. The regressions additionally check a correlated detector moment of
+For a computed initial-pilot fragment, use
+[InitialPilotScore](../../Complexity/Foundations/Probability/InitialPilotScore.lean).
+It evaluates the dense bin from the stage-zero base matrix and its actual preparation,
+uses the literal zero correction of the first pilot input, walks that RAW sample on
+all H4 coordinates, and passes the completed matrix to the actual score recipe on the
+same environment. Both requests strictly decrease the existing constructor rank;
+statistical accuracy does not change `HP.k`.
+
+The fixed-HP score constant is chosen before the prime, roles, rates or base matrix.
+The finite budget is `width * (L / terminalRate)^4 * 32 * inputFourthMoment`, where the
+input moment is the literal finite sum of the computed dense sample. The step count is
+`max 1 (spectralWalkLength gap budget tolerance 0)`, so positive tolerance gives an actual
+positive-length call even at zero budget. This is a mathematical finite allocation,
+not a certified efficient procedure for choosing the budget or executing the walk.
+The general payment targets the score of the bin's conditional mean. At equal parent/bin
+terminal rates, dense normalization proves that mean is the matrix-unit bin. For a
+nonnegative substochastic base covered by a single bin,
+`initialPilotScore_allocated_of_single_bin` therefore bounds error against the actual
+initial score of that base without a supplied child-error or desired-mean certificate.
+
+The [computed regression](../../ComplexityTests/InitialPilotScore.lean) uses a bounded routed
+top bin with a smooth scalar switch, the identity base over `ZMod 5`, source exponent one,
+full terminal rate, distinct roles and nonempty suffixes. Its computed lower RAW walk and
+upper score are both one or both zero according to the same original source frame, at
+positive allocated lengths. The two environments agree on every other role, including
+the terminal frame. This is a nonconstant correlated exact-on-slice case; it does
+not establish nonzero mixing error or later recursive closure.
+
+Full well-founded approximate evaluation remains open. In particular, later pilot/correction
+iterations, general finite bin sums, source-dependent detector children, parameter growth,
+copy routing, native workspace and RL=L are not supplied by this fragment. The existing
+detector transport still accepts a score with no dependence on its internally averaged
+source seed. The new RAW/score fragment retains that dependence and does not feed it through
+the restricted detector interface or reseed it. A later detector client must prove actual
+invariance or retain the needed source coordinates explicitly.
+
+The regressions additionally check a correlated detector moment of
 `1/32`, a distinct child normalization `1/16`, and nonconstant padded frame source/rank
 densities `16/625` and `81/625`.

@@ -36,4 +36,15 @@ theorem abs_kthLargest_div_sub_div_le {V : Type*} {k : ℕ} (hk : 0 < k)
   rw [← sub_div, abs_div, abs_of_pos hr]
   exact div_le_div_of_nonneg_right
     (abs_le_kthLargest_one S (fun x => a x - b x) x hx) hr.le
+
+/-- A padded rank above the size of its actual set is zero, including for signed inputs. -/
+theorem kthLargest_eq_zero_of_card_lt {V R : Type*} [LinearOrder R] [Zero R]
+    {k : ℕ} {S : Finset V} (hk : S.card < k) (a : V → R) : kthLargest k S a = 0 := by
+  classical
+  have he : S.filter (fun x => k ≤ #{w ∈ S | a x ≤ a w}) = ∅ := by
+    apply filter_eq_empty_iff.mpr
+    intro x _ hx
+    exact (not_le_of_gt ((card_filter_le _ _).trans_lt hk)) hx
+  simp [kthLargest, he]
+
 end Finset
