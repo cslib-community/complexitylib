@@ -346,7 +346,7 @@ private theorem advantage_evalNaorReingoldTape_uniform_le (inLen outLen : ℕ �
         (expWidth n + (inLen n * expWidth n + outLen n * (2 * bound (desc n) + 1)))).bind
         fun tape =>
           OracleComp.interpret
-            (ProbOracleComp.handler ProbComp.unifOracle fun request =>
+            (OracleComp.sumHandler ProbComp.unifOracle fun request =>
               PMF.pure (if request.2.length = inLen n then
                 F.evalNaorReingoldTape inLen outLen desc bound expWidth n tape request.2
               else []))
@@ -364,7 +364,7 @@ private theorem advantage_evalNaorReingoldTape_uniform_le (inLen outLen : ℕ �
     fun p =>
       (Cslib.BitString.uniformList H).bind fun seed =>
         OracleComp.interpret
-          (ProbOracleComp.handler ProbComp.unifOracle fun request =>
+          (OracleComp.sumHandler ProbComp.unifOracle fun request =>
             PMF.pure (if request.2.length = m then
               F.linearHashKDF (fun _ => ℓ) bound
                 ((d, seed), F.encode d (F.naorReingoldEval d p.1 p.2
@@ -377,7 +377,7 @@ private theorem advantage_evalNaorReingoldTape_uniform_le (inLen outLen : ℕ �
   have hlhs :
       ((Cslib.BitString.uniformList (E + (m * E + H))).bind fun tape =>
         OracleComp.interpret
-          (ProbOracleComp.handler ProbComp.unifOracle fun request =>
+          (OracleComp.sumHandler ProbComp.unifOracle fun request =>
             PMF.pure (if request.2.length = m then
               F.evalNaorReingoldTape inLen outLen desc bound expWidth n tape request.2
             else []))
@@ -387,7 +387,7 @@ private theorem advantage_evalNaorReingoldTape_uniform_le (inLen outLen : ℕ �
       (fun law : PMF (ℕ × List ℕ × List Bool) =>
         law.bind fun parsed =>
           OracleComp.interpret
-            (ProbOracleComp.handler ProbComp.unifOracle fun request =>
+            (OracleComp.sumHandler ProbComp.unifOracle fun request =>
               PMF.pure (if request.2.length = m then
                 F.naorReingoldHashedWordEval ℓ bound d parsed.2.2 parsed.1 parsed.2.1 request.2
               else []))
@@ -403,7 +403,7 @@ private theorem advantage_evalNaorReingoldTape_uniform_le (inLen outLen : ℕ �
     cases q with
     | inl r => rfl
     | inr request =>
-      dsimp only [ProbOracleComp.handler]
+      dsimp only [OracleComp.sumHandler]
       by_cases hq : request.2.length = m
       · simp only [hq, ↓reduceIte, naorReingoldHashedWordEval]
         have hxs : List.ofFn (BitString.ofList m request.2) = request.2 :=
@@ -423,7 +423,7 @@ private theorem advantage_evalNaorReingoldTape_uniform_le (inLen outLen : ℕ �
     change ((Cslib.BitString.uniformList H).bind fun seed =>
       ν.bind fun α₀ => (PMF.uniformOfFintype (Fin m → ZMod (F.order d))).bind fun α =>
         OracleComp.interpret
-          (ProbOracleComp.handler ProbComp.unifOracle fun request =>
+          (OracleComp.sumHandler ProbComp.unifOracle fun request =>
             PMF.pure (if request.2.length = m then
               F.linearHashKDF (fun _ => ℓ) bound
                 ((d, seed), F.encode d (F.naorReingoldEval d α₀ α (BitString.ofList m request.2)))
@@ -471,7 +471,7 @@ private theorem naorReingoldHashedIdealGame_pure_const (inLen outLen : ℕ → �
       (fun k _ => adversary k []) n =
     (PMF.uniformOfFintype (BitString (inLen n) → BitString (outLen n))).bind fun f =>
       OracleComp.interpret
-        (ProbOracleComp.handler ProbComp.unifOracle fun request =>
+        (OracleComp.sumHandler ProbComp.unifOracle fun request =>
           PMF.pure (if request.2.length = inLen n then
             List.ofFn (f (BitString.ofList (inLen n) request.2))
           else []))
@@ -542,7 +542,7 @@ private noncomputable def prfTapeDistinguisher (F : PrimeOrderGroupFamily)
     (adversary : OracleDistinguisher) : Distinguisher :=
   fun n tape =>
     Prod.fst <$> (OracleComp.interpret
-      (ProbOracleComp.handler (fun r => StateT.lift (ProbComp.unifFin r))
+      (OracleComp.sumHandler (fun r => StateT.lift (ProbComp.unifFin r))
         fun request _ =>
           pure (if request.2.length = n then
             F.evalNaorReingoldTape id id desc bound expWidth n tape request.2
@@ -632,7 +632,7 @@ private theorem eval_prfTapeDistinguisher (F : PrimeOrderGroupFamily)
     (adversary : OracleDistinguisher) (n : ℕ) (tape : List Bool) :
     ProbComp.eval (prfTapeDistinguisher F desc bound expWidth adversary n tape) =
       OracleComp.interpret
-        (ProbOracleComp.handler ProbComp.unifOracle fun request =>
+        (OracleComp.sumHandler ProbComp.unifOracle fun request =>
           PMF.pure (if request.2.length = n then
             F.evalNaorReingoldTape id id desc bound expWidth n tape request.2
           else []))
@@ -640,12 +640,12 @@ private theorem eval_prfTapeDistinguisher (F : PrimeOrderGroupFamily)
   simp only [prfTapeDistinguisher, ProbComp.eval_map, ProbOracleComp.eval_run_interpret,
     ProbComp.eval_pure]
   have hH :
-      ProbOracleComp.handler (fun r => StateT.lift (ProbComp.unifOracle r))
+      OracleComp.sumHandler (fun r => StateT.lift (ProbComp.unifOracle r))
         (fun (request : Unit × List Bool) (_ : Unit) =>
           PMF.pure (if request.2.length = n then
             F.evalNaorReingoldTape id id desc bound expWidth n tape request.2
           else [], ())) =
-      fun q => StateT.lift (ProbOracleComp.handler ProbComp.unifOracle
+      fun q => StateT.lift (OracleComp.sumHandler ProbComp.unifOracle
         (fun request => PMF.pure (if request.2.length = n then
           F.evalNaorReingoldTape id id desc bound expWidth n tape request.2
         else [])) q) := by
@@ -654,7 +654,7 @@ private theorem eval_prfTapeDistinguisher (F : PrimeOrderGroupFamily)
     | inl r => rfl
     | inr request =>
       funext u
-      simp [ProbOracleComp.handler, StateT.lift, PMF.monad_pure_eq_pure]
+      simp [OracleComp.sumHandler, StateT.lift, PMF.monad_pure_eq_pure]
   rw [hH, OracleComp.run_interpret_lift, ← PMF.monad_map_eq_map, Functor.map_map]
   exact id_map _
 
@@ -734,7 +734,7 @@ theorem DDH.pseudorandomFunction_naorReingoldSeeded {F : PrimeOrderGroupFamily}
     cases q with
     | inl r => rfl
     | inr request =>
-      dsimp only [ProbOracleComp.handler, prfOracle]
+      dsimp only [OracleComp.sumHandler, prfOracle]
       by_cases hq : request.2.length = n
       · simp only [hq, ↓reduceIte, naorReingoldSeededPRF_eq_evalTape, hklen]
       · simp [hq]
@@ -742,7 +742,7 @@ theorem DDH.pseudorandomFunction_naorReingoldSeeded {F : PrimeOrderGroupFamily}
       distinguishingGame (BitString.uniformList (targetLen n)) (D_tape n) =
       (BitString.uniformList need).bind fun tape =>
         OracleComp.interpret
-          (ProbOracleComp.handler ProbComp.unifOracle fun request =>
+          (OracleComp.sumHandler ProbComp.unifOracle fun request =>
             PMF.pure (if request.2.length = n then
               F.evalNaorReingoldTape id id desc bound expWidth n tape request.2
             else []))
@@ -754,7 +754,7 @@ theorem DDH.pseudorandomFunction_naorReingoldSeeded {F : PrimeOrderGroupFamily}
     cases q with
     | inl r => rfl
     | inr request =>
-      dsimp only [ProbOracleComp.handler]
+      dsimp only [OracleComp.sumHandler]
       rw [evalNaorReingoldTape_take F id id desc bound expWidth (limit := need) le_rfl]
   have hideal_eq :
       ProbComp.eval (prfIdealGame adversary n) =
@@ -1019,11 +1019,11 @@ theorem DDH.exists_pseudorandomGenerator {F : PrimeOrderGroupFamily} {desc : ℕ
     refine negligible_of_le (hexp_neg.add hnr_neg) fun n => ?_
     have hinterp (oracle : List Bool → List Bool) :
         OracleComp.interpret
-          (ProbOracleComp.handler ProbComp.unifOracle fun request => PMF.pure (oracle request.2))
+          (OracleComp.sumHandler ProbComp.unifOracle fun request => PMF.pure (oracle request.2))
           (adv n []) =
         ProbComp.eval (D n ((queries n).map fun word => (oracle word).headD false)) := by
       change OracleComp.interpret
-        (ProbOracleComp.handler ProbComp.unifOracle fun request => pure (oracle request.2))
+        (OracleComp.sumHandler ProbComp.unifOracle fun request => pure (oracle request.2))
         (KabanetsCai.queryTable (queries n) >>= fun word => ProbOracleComp.sample (D n word)) = _
       rw [OracleComp.interpret_bind,
         KabanetsCai.interpret_queryTable ProbComp.unifOracle oracle (queries n),
@@ -1034,7 +1034,7 @@ theorem DDH.exists_pseudorandomGenerator {F : PrimeOrderGroupFamily} {desc : ℕ
         (BitString.uniformList
           (expWidth n + (inBits n * expWidth n + 1 * (2 * bound (desc n) + 1)))).bind fun tape =>
             OracleComp.interpret
-              (ProbOracleComp.handler ProbComp.unifOracle fun request =>
+              (OracleComp.sumHandler ProbComp.unifOracle fun request =>
                 PMF.pure (if request.2.length = inBits n then
                   F.evalNaorReingoldTape inBits (fun _ => 1) desc bound expWidth n tape request.2
                 else []))

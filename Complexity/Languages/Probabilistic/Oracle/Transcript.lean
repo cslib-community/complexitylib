@@ -16,7 +16,7 @@ import Complexity.Languages.Probabilistic.Oracle.Simulation
 # Transcripts of randomized programs
 
 The typed transcript of a program with private coins records only its external requests: private
-samples use the other component of `ProbOracleComp.handler` and do not enter the log. Forgetting
+samples use the other component of `OracleComp.sumHandler` and do not enter the log. Forgetting
 the log recovers the original execution, and an existing log is an untouched suffix of the new one.
 
 ## Main results
@@ -41,9 +41,9 @@ variable {Query α State : Type} {Response : Query → Type}
 /-- Forgetting the external log preserves the joint result and complete oracle state. -/
 theorem run_interpret_withTranscript (oracle : (q : Query) → StateT State PMF (Response q))
     (program : ProbOracleComp Response α) (s : State) (transcript : Transcript Response) :
-    ((interpret (handler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
+    ((interpret (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
       program).run (s, transcript)).map (fun (result, state) => (result, state.1)) =
-        (interpret (handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+        (interpret (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           program).run s := by
   apply ProbOracleComp.run_interpret_map_state (withTranscript oracle) oracle Prod.fst
   intro q state
@@ -55,10 +55,10 @@ change either part of the log. -/
 theorem run_interpret_withTranscript_append
     (oracle : (q : Query) → StateT State PMF (Response q)) (program : ProbOracleComp Response α)
     (s : State) (transcript : Transcript Response) :
-    (interpret (handler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
+    (interpret (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
       program).run (s, transcript) =
         ((interpret
-          (handler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
+          (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
             program).run (s, [])).map (fun (result, state, fresh) =>
               (result, state, fresh ++ transcript)) := by
   symm

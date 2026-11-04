@@ -68,10 +68,12 @@ Lemmas 4.2 and 4.4 in `[PaghPaghRuzic2009]`:
   `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.tableSize`: power-of-$2$ table bit-width
   $M = \lceil \log_2 \max(8 n_{\max}, 8) \rceil$ and capacity $2^M$.
 * `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.cyclicSlotMod`,
+  `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.probeSlot`,
+  `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.backSlot`,
   `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.cyclicInterval`,
   `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.scaleWindow`: cyclic slot indexing,
-  contiguous
-  cyclic intervals containing $b$, and centered dyadic-scale windows $W_j(b)$.
+  forward/backward slot offsets, contiguous cyclic intervals containing $b$, and centered
+  dyadic-scale windows $W_j(b)$.
 * `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.scaleOverload`,
   `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.HasClusterWitness`: scale-$j$ window
   overload
@@ -83,6 +85,8 @@ Lemmas 4.2 and 4.4 in `[PaghPaghRuzic2009]`:
 * `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.eight_mul_le_tableSize`,
   `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.tableSize_le_sixteen_mul`: load-factor and
   linear-space bounds for `tableSize`.
+* `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.card_cyclicInterval`: a cyclic interval of
+  length $\mathrm{len} \le 2^M$ has cardinality $\mathrm{len}$.
 * `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.expect_indicator_mul_sum_pow_four_le`:
   fourth-moment bound for centered bucket indicators conditioned on $h_i(u) = b$ under $5$-wise
   independence.
@@ -177,39 +181,6 @@ theorem tableSize_le_sixteen_mul (n_max : ℕ) : tableSize n_max ≤ 16 * max n_
   le_of_lt (tableSize_lt_sixteen_mul n_max)
 
 /-! ## Section 2: Fourth central moment under $5$-wise independence conditioned on $h_i(u) = b$ -/
-
-/-- Tuples of `n` elements of `S` with at most `m ≤ n` distinct entries factor through `Fin m`, so
-there are at most `m ^ n * #S ^ m` of them. -/
-private theorem card_filter_card_image_le {X : Type*} [DecidableEq X] (S : Finset X) {m n : ℕ}
-    (hmn : m ≤ n) :
-    #{t ∈ piFinset fun _ : Fin n => S | #(univ.image t) ≤ m} ≤ m ^ n * #S ^ m := by
-  classical
-  calc #{t ∈ piFinset fun _ : Fin n => S | #(univ.image t) ≤ m}
-      ≤ #(((piFinset fun _ : Fin n => (univ : Finset (Fin m))) ×ˢ
-          (piFinset fun _ : Fin m => S)).image fun q => q.2 ∘ q.1) := by
-        refine card_le_card fun t ht => ?_
-        rw [mem_filter, mem_piFinset] at ht
-        obtain ⟨htS, hcard⟩ := ht
-        set I := univ.image t
-        let e := I.equivFin
-        have hmem (j : Fin n) : t j ∈ I := mem_image_of_mem t (mem_univ j)
-        let v (r : Fin m) : X := if hr : r.1 < #I then (e.symm ⟨r, hr⟩).1 else
-          t ⟨0, lt_of_lt_of_le (Nat.zero_lt_of_lt r.2) hmn⟩
-        refine mem_image.2 ⟨(fun j => Fin.castLE hcard (e ⟨t j, hmem j⟩), v), ?_, ?_⟩
-        · refine mem_product.2 ⟨by simp, mem_piFinset.2 fun r => ?_⟩
-          by_cases hr : r.1 < #I
-          · obtain ⟨j, -, hj⟩ := mem_image.1 (e.symm ⟨r, hr⟩).2
-            simp only [v, hr, ↓reduceDIte, ← hj]
-            exact htS j
-          · simp only [v, hr, ↓reduceDIte]
-            exact htS _
-        · funext j
-          have hlt : (Fin.castLE hcard (e ⟨t j, hmem j⟩)).1 < #I := (e ⟨t j, hmem j⟩).2
-          simp only [Function.comp_apply, v, hlt, ↓reduceDIte]
-          have : (⟨(Fin.castLE hcard (e ⟨t j, hmem j⟩)).1, hlt⟩ : Fin #I) = e ⟨t j, hmem j⟩ :=
-            Fin.ext rfl
-          rw [this, Equiv.symm_apply_apply]
-    _ ≤ m ^ n * #S ^ m := card_image_le.trans (by simp [card_piFinset])
 
 /-- Centered indicator of a bucket subset `W ⊆ Y`: `1 - #W / |Y|` on `W` and `- #W / |Y|` outside
 `W`. -/
@@ -423,6 +394,117 @@ theorem expect_indicator_mul_sum_pow_four_le {ι X Y : Type*} [Fintype ι] [Fint
 $\{(b - a + \mathrm{idx}) \bmod 2^M \mid 0 \le \mathrm{idx} < \mathrm{len}\}$. -/
 @[expose] def cyclicInterval (M : ℕ) (b : Fin (2 ^ M)) (a len : ℕ) : Finset (Fin (2 ^ M)) :=
   (Finset.range len).image fun idx => cyclicSlotMod M (b.val + 2 ^ M * (a + 1) - a + idx)
+
+/-- Slot probed at offset `d` from starting bucket `b : Fin (2 ^ M)`: `(b.val + d) mod 2 ^ M`. -/
+@[expose] def probeSlot (M : ℕ) (b : Fin (2 ^ M)) (d : ℕ) : Fin (2 ^ M) :=
+  cyclicSlotMod M (b.val + d)
+
+/-- Slot located `a` positions cyclically before `b : Fin (2 ^ M)`: `(b.val - a) mod 2 ^ M`. -/
+@[expose] def backSlot (M : ℕ) (b : Fin (2 ^ M)) (a : ℕ) : Fin (2 ^ M) :=
+  cyclicSlotMod M (b.val + 2 ^ M * (a + 1) - a)
+
+@[simp]
+theorem probeSlot_zero {M : ℕ} (b : Fin (2 ^ M)) : probeSlot M b 0 = b := by
+  apply Fin.ext
+  simp [probeSlot, cyclicSlotMod, Nat.mod_eq_of_lt b.isLt]
+
+theorem probeSlot_add {M : ℕ} (b : Fin (2 ^ M)) (d₁ d₂ : ℕ) :
+    probeSlot M (probeSlot M b d₁) d₂ = probeSlot M b (d₁ + d₂) := by
+  apply Fin.ext
+  simp [probeSlot, cyclicSlotMod, Nat.add_assoc]
+
+theorem probeSlot_backSlot_eq {M : ℕ} (b : Fin (2 ^ M)) (a idx : ℕ) :
+    probeSlot M (backSlot M b a) idx =
+      cyclicSlotMod M (b.val + 2 ^ M * (a + 1) - a + idx) := by
+  apply Fin.ext
+  simp [probeSlot, backSlot, cyclicSlotMod]
+
+theorem cyclicInterval_eq_image_probeSlot {M : ℕ} (b : Fin (2 ^ M)) (a len : ℕ) :
+    cyclicInterval M b a len =
+      (Finset.range len).image (probeSlot M (backSlot M b a)) := by
+  ext y
+  simp [cyclicInterval, probeSlot_backSlot_eq]
+
+theorem probeSlot_backSlot_add {M : ℕ} (b : Fin (2 ^ M)) (a d : ℕ) :
+    probeSlot M (backSlot M b a) (a + d) = probeSlot M b d := by
+  apply Fin.ext
+  simp only [probeSlot, backSlot, cyclicSlotMod]
+  have h1 : a ≤ 2 ^ M * (a + 1) := by
+    have : 1 ≤ 2 ^ M := Nat.one_le_two_pow
+    calc a ≤ 1 * (a + 1) := by omega
+      _ ≤ 2 ^ M * (a + 1) := Nat.mul_le_mul_right (a + 1) this
+  rw [Nat.mod_add_mod, show b.val + 2 ^ M * (a + 1) - a + (a + d) =
+      b.val + d + 2 ^ M * (a + 1) by omega, Nat.add_mul_mod_self_left]
+
+theorem probeSlot_backSlot_sub {M : ℕ} (b : Fin (2 ^ M)) {a idx : ℕ} (hidx : idx ≤ a) :
+    probeSlot M (backSlot M b a) idx = backSlot M b (a - idx) := by
+  apply Fin.ext
+  simp only [probeSlot, backSlot, cyclicSlotMod]
+  have h1 : 1 ≤ 2 ^ M := Nat.one_le_two_pow
+  have ha_le : a ≤ 2 ^ M * (a + 1) := by
+    calc a ≤ 1 * (a + 1) := by omega
+      _ ≤ 2 ^ M * (a + 1) := Nat.mul_le_mul_right (a + 1) h1
+  have hsub_le : a - idx ≤ 2 ^ M * (a - idx + 1) := by
+    calc a - idx ≤ 1 * (a - idx + 1) := by omega
+      _ ≤ 2 ^ M * (a - idx + 1) := Nat.mul_le_mul_right (a - idx + 1) h1
+  have hmul : 2 ^ M * (a + 1) = 2 ^ M * (a - idx + 1) + 2 ^ M * idx := by
+    rw [← Nat.mul_add]
+    congr 1
+    omega
+  rw [Nat.mod_add_mod, show b.val + 2 ^ M * (a + 1) - a + idx =
+      (b.val + 2 ^ M * (a - idx + 1) - (a - idx)) + 2 ^ M * idx by omega,
+    Nat.add_mul_mod_self_left]
+
+theorem backSlot_backSlot {M : ℕ} (b : Fin (2 ^ M)) (a₁ a₂ : ℕ) :
+    backSlot M (backSlot M b a₁) a₂ = backSlot M b (a₁ + a₂) := by
+  apply Fin.ext
+  simp only [backSlot, cyclicSlotMod]
+  have h1 : 1 ≤ 2 ^ M := Nat.one_le_two_pow
+  have ha₁ : a₁ ≤ 2 ^ M * (a₁ + 1) := by
+    calc a₁ ≤ 1 * (a₁ + 1) := by omega
+      _ ≤ 2 ^ M * (a₁ + 1) := Nat.mul_le_mul_right (a₁ + 1) h1
+  have ha₂ : a₂ ≤ 2 ^ M * (a₂ + 1) := by
+    calc a₂ ≤ 1 * (a₂ + 1) := by omega
+      _ ≤ 2 ^ M * (a₂ + 1) := Nat.mul_le_mul_right (a₂ + 1) h1
+  have ha₁₂ : a₁ + a₂ ≤ 2 ^ M * (a₁ + a₂ + 1) := by
+    calc a₁ + a₂ ≤ 1 * (a₁ + a₂ + 1) := by omega
+      _ ≤ 2 ^ M * (a₁ + a₂ + 1) := Nat.mul_le_mul_right (a₁ + a₂ + 1) h1
+  have hmod_le : a₂ ≤ (b.val + 2 ^ M * (a₁ + 1) - a₁) % 2 ^ M + 2 ^ M * (a₂ + 1) := by omega
+  have hmul : 2 ^ M * (a₁ + 1) + 2 ^ M * (a₂ + 1) =
+      2 ^ M * (a₁ + a₂ + 1) + 2 ^ M * 1 := by ring
+  have hsub_mod :
+      ((b.val + 2 ^ M * (a₁ + 1) - a₁) % 2 ^ M + 2 ^ M * (a₂ + 1) - a₂) % 2 ^ M =
+        ((b.val + 2 ^ M * (a₁ + 1) - a₁) % 2 ^ M + (2 ^ M * (a₂ + 1) - a₂)) % 2 ^ M := by
+    congr 1
+    omega
+  rw [hsub_mod, Nat.mod_add_mod,
+    show b.val + 2 ^ M * (a₁ + 1) - a₁ + (2 ^ M * (a₂ + 1) - a₂) =
+      (b.val + 2 ^ M * (a₁ + a₂ + 1) - (a₁ + a₂)) + 2 ^ M * 1 by omega,
+    Nat.add_mul_mod_self_left]
+
+theorem probeSlot_injOn_range {M : ℕ} (b : Fin (2 ^ M)) {len : ℕ} (hlen : len ≤ 2 ^ M) :
+    Set.InjOn (probeSlot M b) (Finset.range len) := by
+  intro i hi j hj hij
+  simp only [Finset.mem_coe, Finset.mem_range] at hi hj
+  have hval : (b.val + i) % 2 ^ M = (b.val + j) % 2 ^ M := congrArg Fin.val hij
+  have hb : b.val < 2 ^ M := b.isLt
+  have hi_mod : (b.val + i) % 2 ^ M =
+      if b.val + i < 2 ^ M then b.val + i else b.val + i - 2 ^ M := by
+    split_ifs with h
+    · exact Nat.mod_eq_of_lt h
+    · rw [Nat.mod_eq_sub_mod (by omega), Nat.mod_eq_of_lt (by omega)]
+  have hj_mod : (b.val + j) % 2 ^ M =
+      if b.val + j < 2 ^ M then b.val + j else b.val + j - 2 ^ M := by
+    split_ifs with h
+    · exact Nat.mod_eq_of_lt h
+    · rw [Nat.mod_eq_sub_mod (by omega), Nat.mod_eq_of_lt (by omega)]
+  rw [hi_mod, hj_mod] at hval
+  split_ifs at hval <;> omega
+
+theorem card_cyclicInterval {M : ℕ} (b : Fin (2 ^ M)) (a : ℕ) {len : ℕ} (hlen : len ≤ 2 ^ M) :
+    #(cyclicInterval M b a len) = len := by
+  rw [cyclicInterval_eq_image_probeSlot,
+    Finset.card_image_of_injOn (probeSlot_injOn_range (backSlot M b a) hlen), Finset.card_range]
 
 /-- Centered dyadic-scale window $W_j(b)$ of width $2^{j+1}$ around $b$ in `Fin (2 ^ M)`:
 $\{(b - 2^j + d) \bmod 2^M \mid 0 \le d < 2^{j+1}\}$. -/

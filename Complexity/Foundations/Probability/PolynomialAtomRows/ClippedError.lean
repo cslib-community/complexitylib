@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Christian Reitwiessner. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Christian Reitwiessner
 -/
 
 module
@@ -10,6 +10,7 @@ module
 public import Complexity.Foundations.Probability.PolynomialAtomRows.RootError
 public import Complexity.Foundations.Probability.PolynomialAtomRows.Saturation
 public import Complexity.Foundations.Analysis.RowCompression.ClippedError
+import Complexity.Foundations.Analysis.RowCompression.BoundedCap
 import Complexity.Foundations.Data.Finset.KthLargest.Truncation
 import Mathlib.Algebra.Order.Group.MinMax
 import Mathlib.Tactic.Linarith
@@ -70,23 +71,6 @@ theorem eval_eq_upperCapped (hθ : 0 < θ) (v r : ℝ) :
     exact (kind.eval_eq_zero_of_rank_ge hθ
       ((kind.gateThreshold_le_scale hθ).trans (not_le.mp hr).le)).trans
         (kind.eval_eq_zero_of_rank_ge hθ (kind.gateThreshold_le_scale hθ)).symm
-
-private theorem abs_min_add_sub_min_add_le {d raw loss ε : ℝ} (hθ : 0 < θ)
-    (hε : 0 ≤ ε) (hεsmall : ε ≤ 1 / 2)
-    (hraw : |raw - d| ≤ (1 + d) * ε) (hloss : |loss| ≤ θ) :
-    |min θ (raw + loss) - min θ (d + loss)| ≤ (4 * θ + 5) * ε := by
-  have hδ : 0 ≤ (4 * θ + 5) * ε := by positivity
-  by_cases hdlarge : d ≤ 4 * (θ + 1)
-  · apply (abs_min_sub_min_le_max _ _ _ _).trans
-    refine max_le (by simpa only [sub_self, abs_zero] using hδ) ?_
-    simp only [add_sub_add_right_eq_sub]
-    exact hraw.trans (mul_le_mul_of_nonneg_right (by linarith) hε)
-  · have hproduct := mul_le_mul_of_nonneg_left hεsmall (by linarith [not_le.mp hdlarge] : 0 ≤ 1 + d)
-    have hrawlo := (abs_le.mp hraw).1
-    have hlosslo := (abs_le.mp hloss).1
-    have hcapraw : θ ≤ raw + loss := by nlinarith [not_le.mp hdlarge]
-    have hcaptruth : θ ≤ d + loss := by linarith [not_le.mp hdlarge]
-    simpa only [min_eq_left hcapraw, min_eq_left hcaptruth, sub_self, abs_zero] using hδ
 
 /-- A clipped raw-error envelope controls the actual polynomial root outputs after a common
 loss. Only the first loss coordinate is bounded; second coordinates and the common default

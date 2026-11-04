@@ -94,15 +94,15 @@ lemma cuckooInitSteps_4_4 : cuckooInitSteps 4 4 = 1131 := by
 
 example : cuckooSpaceFactor = 7699050 := rfl
 example : cuckooEvalHashBound = 427126092003 := rfl
-example : cuckooGetStepsBound = 854252184109 := rfl
-example : cuckooGetCharge = 854252184111 := rfl
+example : cuckooQueryStepsBound = 854252184109 := rfl
+example : cuckooQueryCharge = 854252184111 := rfl
 example : cuckooEvictIterBound = 854252184173 := rfl
 example : cuckooInsertBaseBound = 854252184154 := rfl
 example : cuckooResampleAtBaseFactor = 38400295 := rfl
 example : cuckooRehashAmortizedBound = 2562833357400 := rfl
 example : cuckooInsertCharge = 27336684332552 := rfl
 example : cuckooSpace 4 ≤ cuckooSpaceFactor * (4 + 1) := cuckooSpace_le 4
-example : cuckooOpCharge (.get (⟨0, by decide⟩ : Fin 4)) ≤ cuckooInsertCharge :=
+example : cuckooOpCharge (.query (⟨0, by decide⟩ : Fin 4)) ≤ cuckooInsertCharge :=
   cuckooOpCharge_le _
 example : cuckooOpCharge (.insert (⟨0, by decide⟩ : Fin 4) 5) ≤ cuckooInsertCharge :=
   cuckooOpCharge_le _
@@ -124,15 +124,15 @@ example (sampleState : DictState 4) :
   rintro rfl
   decide
 
-/-- Six-operation sequence (`insert 0 5`, `insert 1 3`, `insert 0 7`, `get 0`, `get 1`, `get 2`)
-on `Fin 4`, exercising two distinct keys, an overwrite, two hits, and a miss. -/
+/-- Six-operation sequence (`insert 0 5`, `insert 1 3`, `insert 0 7`, `query 0`, `query 1`,
+`query 2`) on `Fin 4`, exercising two distinct keys, an overwrite, two hits, and a miss. -/
 def sampleOps : List (DictOp 4) :=
   [ .insert ⟨0, by decide⟩ 5,
     .insert ⟨1, by decide⟩ 3,
     .insert ⟨0, by decide⟩ 7,
-    .get ⟨0, by decide⟩,
-    .get ⟨1, by decide⟩,
-    .get ⟨2, by decide⟩ ]
+    .query ⟨0, by decide⟩,
+    .query ⟨1, by decide⟩,
+    .query ⟨2, by decide⟩ ]
 
 lemma validDictHistory_sampleOps : ValidDictHistory 8 4 (emptyDict 4) sampleOps := by
   refine ⟨⟨Or.inl (by decide), by decide⟩,
