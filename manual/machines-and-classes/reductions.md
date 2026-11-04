@@ -175,10 +175,39 @@ unbounded original length, with a logarithmic saved-counter budget. The finite c
 suffix substitution, virtual EOF before physical EOF, present false bits, empty words,
 resumption from a noninitial cursor and an already halted state.
 
-This is substitution for component-certified `QueryMachine`s. A conversion extracting that
-interface and its state bound from an arbitrary existing native logspace predicate/transducer
-certificate is not provided. Generating the supplied header from a query generator and
-regenerating an answer word also remain open.
+For an existing native machine, import
+[`VirtualWord.Native`](../../Complexity/Computability/Machines/ReadMachine/VirtualWord/Native.lean).
+`Native.machine` reuses the universal simulator's finite work-tape zippers, finite control and
+binary shifted input-head position, without keeping output history in its saved state.
+`configuration_native`, `output_native` and `halted_native` preserve the original machine's
+configuration, streaming output and halt flag at every clock. Initialization starts at native
+position one; position zero is the left blank and the right blank is at input length plus one.
+The adapter ignores any fetched bit at position zero, allows a right move from that boundary,
+and blocks outward right moves at EOF. Present false symbols remain distinct from EOF.
+
+`Native.computableInSpace_of_computes` takes a fixed native binary machine, an injective numbering
+of its finite states, and its ordinary computation and workspace certificates on the specified
+virtual words. It derives all five component certificates and selects a first-halt clock
+internally. Its saved configuration budget is $O(s+\log_2(m)+1)$ for native workspace $s$ and
+virtual input length $m$, by `length_native_run_le_of_space` and `budget_le`. The input-head term
+follows from the native model's clamped boundary convention; no extra runtime bound is needed.
+The original word, virtual word and emitted output history are absent from that saved encoding.
+The description is fixed, so compiler constants may depend on the machine but not the runtime
+header or input.
+
+`Native.of_logSpace` directly accepts an ordinary `ComputableInLogSpace f encBits encOut`
+certificate for a word function. It constructs a native certificate for applying `f` to the
+virtual word on `Simulation.encInput`, in workspace
+$O(\log_2(m)+|\mathrm{encData}(p)|+\log_2|\mathrm{encInput}(p)|+1)$.
+This is a bound in the charged header and both input lengths; a specialization measuring space
+only against the original word still needs appropriate header/virtual-length bounds.
+[The complete native client](../../ComplexityTests/VirtualWordNative.lean) uses the existing
+framing transducer's machine, including pending output and final EOF flushing, and also applies
+the ordinary logspace bridge. It checks nonempty/empty output, present false, both boundary
+movement conventions and already halted configurations.
+
+The supplied header still has to be generated from a live query generator; virtual answer-word
+regeneration also remains open. This extraction does not implement either obligation.
 
 **The transfer lemma remains open**: native virtual-input/answer regeneration for the unbounded
 evaluator and the adaptive-to-tt conversion still need proofs. No desired autoreduction is
