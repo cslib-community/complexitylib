@@ -207,6 +207,81 @@ noise certificate. Zero correction remains literal; the moment/noise bridge here
 positive iterations. Pilot/copy paths, quantitative lower-child budgets, summation and
 recursive/native correctness remain open.
 
+For the first compression signal, import
+[FirstSignal](../../Complexity/Foundations/Probability/NormalizedAtomRows/FirstSignal.lean)
+and apply `actualFirstSignal_noise_le_lower`. Its child-budget-indexed inputs are genuine
+`rawIncomingNormalized` samples. `firstSignalIncrement` takes successive conditional-walk
+differences from zero; `actualPrefix_firstSignalIncrement` identifies prefix i with walk
+i+1 divided by `rate k`. Stationarity on the full terminal slice, including empty slices,
+then identifies `actualNoiseEntry` with centered walk noise divided by
+`rate k * (1 + G / rate k)`.
+
+The endpoint row moment is bounded directly by `rate k` to the inverse fourth power,
+times `32 * lambda^(2*steps(i+1))`, times the explicit lower-child
+`incomingMomentBudget` at budget i+1. No maximum-entry conversion, hidden width constant,
+or independence assumption is used. The
+[regressions](../../ComplexityTests/ActualFirstSignal.lean) check nonzero nonconstant
+telescoping prefixes, zero inputs, empty slices and a nonconstant random mean/moment.
+For a numerical payment, import
+[FirstPayment](../../Complexity/Foundations/Probability/NormalizedAtomRows/FirstPayment.lean).
+Supply CB≥0 and a proved [0,CB] range for the actual bin cutoff.
+`normalizedRequest_mem_Icc` gives direct/right range 2CB; correction range remains
+CA=2Q(atomCap). `incomingMomentBudget_le_payment` pays all three child norms on the
+same full environment. For N=P and u=rate(ks), with ks and km in the declared horizon,
+each bounded row pays at most 16P times its fourth-power bound. This deliberately retains
+the full endpoint width P; it does not infer sparse support for an arbitrary bounded cutoff.
+The correction product still uses its existing proved K/Kc support bounds.
+
+`firstSignalPayment` evaluates both actual usage ratios as exact grid frame-mass ratios,
+with usage exponent max(k,kb) or max(k,km). The right factor keeps rate(km) divided by
+its actual midpoint density. The resulting finite payment retains P, the rounded frame
+masses, and rate(km)/rate(ks); none is hidden in a universal constant.
+`actualFirstSignal_noise_le_payment` keeps rate(k)^(-4), and
+`actualFirstSignal_noise_le_dyadic` uses the shared `spectralWalkLength` at child budget i+1
+to pay the dyadic fourth-power noise contract for ε>0. The
+[actual-bin regressions](../../ComplexityTests/ActualFirstPayment.lean) use
+`boundedRoutedBinCutoff` with a genuine polynomial switch, top cap HP.k+2, adjacent-scale
+ratio 16 and explicit CB=max(HP.k+2,16). They check a nonzero complete residual, negative-input
+clipping, a chosen actual i=2 noise client, exact logarithmic steps and zero/empty edges.
+
+For the preparatory second signal, import
+[SecondSignal](../../Complexity/Foundations/Probability/NormalizedAtomRows/SecondSignal.lean).
+`selectedResidualPreparation` applies the selected preparation cutoff and terminal-rank
+gate to the actual lower-child residual. Its children retain all source, midpoint, terminal,
+usage and copy data on the same environment. `actualSelectedSecondSignal_noise` bounds
+its endpoint row noise by `ζ^4 * 32 * lambda^(2*steps(i+1)) * rowNormPow(T_(i+1))`
+on source × usage. Stationarity identifies the actual second noise with
+`|ζ| * |walk_(i+1) - rowSliceMean(T_(i+1))|`. The initial second signal is literally zero,
+and `firstSignalIncrement` retains its existing full-rank first prefix.
+
+The preparation is in [0,1] and has fewer than K nonzero retained rank entries per row.
+For usage exponent kt≥k, `selectedResidualPreparation_support_moment` applies the generic
+sparse-row bound **before walk averaging**. Its payment is
+`K * (N*u)^(-1) * sum_x density(sourceRetains x)`, without independence of the input,
+support or source. `source_density_sum` evaluates the sum as `P * (side(P,ks)/P)^4`,
+including nonempty copy suffixes and D=0. With N=P, u=rate(ks), and ks in the declared
+horizon, `selectedResidualPreparation_moment_le` gives 16K. No sparsity of the averaged
+walk is claimed.
+
+`actualSelectedSecondSignal_noise_le` feeds that input payment into the actual second
+prefix: its noise moment is at most `ζ^4 * 32 * lambda^(2*steps(i+1)) * 16K`.
+For ε>0, the shared `spectralWalkLength` takes lambda and coefficient ζ^4*512K
+and gives an explicit natural ceiling of a base-lambda logarithm;
+`actualSelectedSecondSignal_noise_le_dyadic` accepts this length or any larger one and
+pays `(ε * 64^(-dyadicSlack(m,i)))^4`. The length uses input budget i+1. The extra 1 in
+its logarithm denominator also handles zero scaling and capacity. ε=0 is excluded from
+this finite-length guarantee: a positive spectral upper bound never vanishes in finitely
+many steps.
+
+The [regressions](../../ComplexityTests/ActualSecondSignal.lean) check positive, nonconstant
+selected preparation, the actual H4 second-prefix client with the
+chosen steps, D=0 with a nonempty suffix, two-signal prefixes, zero children, and empty
+usage through compression. The genuine joint preparation target is unchanged. Mixing
+controls noise around the selected input's own mean; convergence of that mean to the genuine
+target is a separate bias obligation. Mean envelopes, recursive budget/reserve induction,
+recursive parameter/workspace bounds and native RL=L remain open. Finite noise payments
+do not establish these recursive conclusions.
+
 For a coarser source, `source_incoming_cost_le` quantifies the generic incoming cost as
 `32 * R * (sourceRate / stageRate)`; the fixed incoming rank is not proved to pay that
 inflated budget. Arbitrary coarser sampling sources, a fully assembled recursive hierarchy,
