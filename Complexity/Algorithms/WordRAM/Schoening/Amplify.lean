@@ -7,6 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.MemoryView
+
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.Schoening.Trial
 public import Complexity.Algorithms.WordRAM.Schoening.TrialCount
@@ -735,7 +737,7 @@ private theorem ampLoop_law {φ : CNF (Fin n)} {C A w : ℕ} (hw : Fits w (A + 3
       hc hbody fun y ⟨hy, hyb, hyl, hyo, hyf⟩ => by
         have hmy : ∀ a, A + n ≤ a → y.mem a = y₁.mem a := hy.rest
         have hdy : HoldsList (A + n) (decDigits ds) y.mem :=
-          hh₁.frame fun a ha _ => hmy a ha
+          by ram_keep hh₁ using hmy
         by_cases he : φ.eval (assignmentAt y.mem A n) = true
         · simp only [he, ↓reduceIte] at hyo hyf
           have hcy : ¬(Cond.lt zero flag).Holds y := by simp [Cond.holds_lt, hyf]

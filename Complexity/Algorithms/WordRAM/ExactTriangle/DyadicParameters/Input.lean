@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.Exec
 public import Complexity.Computability.WordRAM.Width
 import Mathlib.Data.List.GetD
+import Complexity.Computability.WordRAM.Admission
 
 /-!
 # Initialized halting native parameter preparation
@@ -54,9 +55,7 @@ theorem exec_input {W n : ℕ} (hW : admissionWidth n ≤ W) :
       y.regs Reg.fast = (if 0 < ParameterChoice.blocks n then 1 else 0) ∧
       y.Bounded W ∧ y.mem = (Data.init [n] : Data 16).mem := by
   have hfit : Fits W (wordBudget n) :=
-    ((by omega : wordBudget n < wordBudget n + 1).trans_le
-      (Nat.le_pow_clog (by decide) _)).trans_le
-        (Nat.pow_le_pow_right (by decide) hW)
+    fits_of_lt_clog_le (Nat.lt_succ_self _) hW
   have h1 : Fits W 1 := hfit.of_le (by unfold wordBudget; omega)
   have hn : Fits W n := hfit.of_le (by unfold wordBudget; omega)
   have hi : InputFits W [n] := ⟨by simpa using h1, by simpa using hn⟩

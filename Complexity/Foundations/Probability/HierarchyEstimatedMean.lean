@@ -5,7 +5,8 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: candidate
-public import Complexity.Foundations.Probability.HierarchyChildError
+public import Complexity.Foundations.Probability.HierarchyEstimatedInput
+public import Complexity.Foundations.Probability.HierarchyChildRootMoment
 
 /-!
 # Estimated-child mean error against the genuine finite residual
@@ -66,10 +67,8 @@ theorem estimated_residual_bins_mean_error
     let channelsV := fun role b suffix σ v => channels D role b suffix σ (ident v)
     let S := ({σ : Environment P J | source.retains (channels D) σ (ident x) ∧
       terminal.retains (channels D) σ (ident y)} : Finset _)
-    |(𝔼 σ ∈ S, ((∑ i ∈ range (n + 1), HierarchyTask.rawPositiveSample channelsV
-      l i .residual source mid terminal (rate (kb i)) (estimated i σ) x y) -
-      HierarchyTask.rawNegativeSample channelsV l 0 .residual source mid terminal
-        (rate (kb 0)) (estimated 0 σ) x y)) -
+    |(𝔼 σ ∈ S, estimatedResidualInput HP D ident R l ks km kt n ss sm st kb Kc
+      bounded (fun _ => raw) (fun _ => prep) (fun _ => maximum) 0 σ x y) -
       HP.toHierarchyParams.residual (canonicalChannel ident (rate km))
         (canonicalChannel ident (rate km)) (rate km) C x y| ≤
     𝔼 σ ∈ S, ((∑ i ∈ range (n + 1), HierarchyTask.positiveChildError channelsV
@@ -78,7 +77,7 @@ theorem estimated_residual_bins_mean_error
       (estimated i σ) (canonical i σ) x y) +
       HierarchyTask.negativeChildError channelsV l 0 .residual source mid terminal
         (rate (kb 0)) (estimated 0 σ) (canonical 0 σ) x y) := by
-  dsimp only
+  dsimp only [estimatedResidualInput]
   have hm := canonical_residual_bins_mean HP D ident hD hid H R l ks km kt n ksH hms
     ss sm st kb hbH C hC hC1 hCf χ hχ h ρ K hkh hρ0 hρ1 hη hρη hK x y hcover
   dsimp only at hm

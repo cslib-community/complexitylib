@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Flat
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Bounds
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Callable.Width
+import Complexity.Computability.WordRAM.Admission
 
 /-!
 # Every-wide-width initialized callable product
@@ -29,11 +30,7 @@ open Cslib.Algorithms.MatrixMultiplication.Schonhage
 
 private theorem context_fits {W b N Q P : ℕ}
     (hW : 256 * Nat.clog 2 (b + N + Q + P + 5) ≤ W) : Fits W P := by
-  have hc : Nat.clog 2 (b + N + Q + P + 5) ≤ W := by omega
-  have hceil := Nat.le_pow_clog (by decide : 1 < (2 : ℕ)) (b + N + Q + P + 5)
-  have hpow := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) hc
-  change P < 2 ^ W
-  omega
+  exact fits_of_lt_clog_le (by omega : P < b + N + Q + P + 5) (by omega)
 
 /-- Every native caller prefix is physically word-bounded, including a loaded dirty word
 before the following remainder. Here `P` bounds every initial register and memory word,

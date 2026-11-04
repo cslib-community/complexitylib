@@ -106,30 +106,23 @@ theorem exists_short_hash_split (size width count : ℕ) (hsize : 0 < size) (hco
   let initial := min width (Nat.log 2 size - margin)
   let rest := width - initial
   have hinitial : initial ≤ width := min_le_left _ _
-  have hrest : rest ≤ margin + 6 := by
-    dsimp [initial, rest]
-    lia
+  have hrest : rest ≤ margin + 6 := by dsimp [initial, rest]; omega
   have hpower : (2 : ℝ) ^ margin = (dyadicSize (16 * count) : ℝ) ^ 2 := by
     simp only [margin, dyadicSize, Nat.cast_pow, Nat.cast_ofNat, pow_mul, mul_comm 2]
-  refine ⟨initial, rest, by dsimp [rest]; lia, ?_, ?_⟩
+  refine ⟨initial, rest, by dsimp [rest]; omega, ?_, ?_⟩
   · split_ifs with hzero
     · positivity
-    · have hinitial' : initial + margin ≤ Nat.log 2 size := by
-        dsimp [initial] at *
-        lia
+    · have hinitial' : initial + margin ≤ Nat.log 2 size := by dsimp [initial] at *; omega
       have hsizePow : (2 : ℝ) ^ initial * (dyadicSize (16 * count) : ℝ) ^ 2 ≤ size := by
         rw [← hpower, ← pow_add]
-        have h : 2 ^ (initial + margin) ≤ size :=
-          (Nat.pow_le_pow_right two_pos hinitial').trans
-            (Nat.pow_log_le_self 2 (by lia))
-        exact_mod_cast h
+        exact_mod_cast (Nat.pow_le_pow_right two_pos hinitial').trans
+          (Nat.pow_log_le_self 2 hsize.ne')
       have hsizeReal : (0 : ℝ) < size := by exact_mod_cast hsize
       have hscale : (0 : ℝ) < dyadicSize (16 * count) := by
         exact_mod_cast dyadicSize_pos (16 * count)
       have hroot : Real.sqrt ((2 : ℝ) ^ initial / size) ≤
           1 / (dyadicSize (16 * count) : ℝ) := by
-        apply Real.sqrt_le_iff.mpr ⟨by positivity, ?_⟩
-        apply (div_le_iff₀ hsizeReal).mpr
+        apply Real.sqrt_le_iff.mpr ⟨by positivity, (div_le_iff₀ hsizeReal).mpr ?_⟩
         simpa only [div_pow, one_pow, div_mul_eq_mul_div, one_mul] using
           (le_div_iff₀ (sq_pos_of_pos hscale)).mpr hsizePow
       have hcountReal : (0 : ℝ) < count := by exact_mod_cast hcount
@@ -137,9 +130,9 @@ theorem exists_short_hash_split (size width count : ℕ) (hsize : 0 < size) (hco
         exact_mod_cast (lt_dyadicSize (16 * count)).le
       have hinv := one_div_le_one_div_of_le (by positivity : (0 : ℝ) < 16 * count) hscaleBound
       have hcancel : 2 * (1 / (16 * (count : ℝ))) = 1 / (8 * count) := by ring
-      linarith
+      linarith only [hroot, hinv, hcancel]
   · calc
-      _ ≤ (2 : ℝ) ^ (margin + 7) := pow_le_pow_right₀ (by norm_num) (by lia)
+      _ ≤ (2 : ℝ) ^ (margin + 7) := pow_le_pow_right₀ (by norm_num) (by omega)
       _ = _ := by rw [pow_add, hpower]; norm_num; ring
 
 open Classical in
@@ -172,7 +165,7 @@ theorem matrix_fiber_correlation_le {n count initial rest : ℕ} {Image : Type*}
     obtain ⟨preimage, _, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hx
     exact preimage.property
   have hhash : IsTwoUniversal seed (fun rows x => (hash rows x).1) :=
-    LinearHash.isTwoUniversal_prefix (by lia : initial ≤ count)
+    LinearHash.isTwoUniversal_prefix (by omega : initial ≤ count)
   have h := correlation_le_guessInverter f image source hsource predict seed hash precision hp
   have hinverter : guessInverter f predict seed precision image =
       guessInverter f predictor seed precision image :=
@@ -191,13 +184,13 @@ theorem matrix_fiber_correlation_le {n count initial rest : ℕ} {Image : Type*}
         ← div_eq_mul_inv] at hdist
       rw [Nat.card_eq_fintype_card]
       dsimp only [source]
-      linarith
+      linarith only [hdist]
   simp only [source, sum_map_mul, predict, hash, Equiv.apply_symm_apply,
     hinverter, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin,
     Nat.cast_pow, Nat.cast_ofNat] at h
   dsimp only [seed] at h hprefix
-  rw [pow_succ]
-  nlinarith
+  rw [pow_succ']
+  linarith only [h, hprefix]
 
 open Classical in
 /-- A hash within six bits of the logarithmic fiber size has a uniform polynomial reduction
@@ -218,16 +211,17 @@ theorem matrix_fiber_correlation_le_of_length {n count width : ℕ} {Image : Typ
   have hsize : 0 < Nat.card {x // f x = image} := Nat.card_pos
   obtain ⟨initial, rest, rfl, herror, hguess⟩ :=
     exists_short_hash_split _ width count hsize hcount hwidth
-  have h := matrix_fiber_correlation_le f image hlen predictor precision (by lia)
+  have h := matrix_fiber_correlation_le f image hlen predictor precision
+    (Nat.lt_of_lt_of_le (Nat.mul_pos (by decide) hcount) hp)
   have hcountReal : (0 : ℝ) < count := by exact_mod_cast hcount
   have hpReal : 8 * (count : ℝ) ≤ precision := by exact_mod_cast hp
   have haccuracy := one_div_le_one_div_of_le (by positivity : (0 : ℝ) < 8 * count) hpReal
-  have hsuccess : 0 ≤ (((guessInverter f predictor
+  have hweighted := mul_le_mul_of_nonneg_right hguess (ENNReal.toReal_nonneg
+    (a := ((guessInverter f predictor
       (PMF.uniformOfFintype (Fin count → BitString n)) precision image).map
-        (fun x => f x == image)) true).toReal := ENNReal.toReal_nonneg
-  have hweighted := mul_le_mul_of_nonneg_right hguess hsuccess
+        (fun x => f x == image)) true))
   have hcancel : 1 / (8 * (count : ℝ)) + 1 / (8 * count) = 1 / (4 * count) := by ring
-  linarith
+  linarith only [h, herror, haccuracy, hweighted, hcancel]
 
 open Classical in
 /-- Averaging all hash lengths removes the restriction on digest size. A range at least
@@ -256,7 +250,7 @@ theorem matrix_fiber_mean_correlation_le {n count : ℕ} [NeZero count] {Image :
     have hlog := Nat.log_mono_right (b := 2) hcard
     rw [Nat.log_pow Nat.one_lt_two] at hlog
     dsimp [cutoff]
-    lia
+    omega
   have hpoint (i : Fin count) :
       (∑ rows, (PMF.uniformOfFintype (Fin count → BitString n) rows).toReal *
         ∑ x : {x // f x = image}, (PMF.uniformOfFintype {x // f x = image} x).toReal *
@@ -271,19 +265,17 @@ theorem matrix_fiber_mean_correlation_le {n count : ℕ} [NeZero count] {Image :
               (2 * agreement (predictor image i rows
                 (LinearHash.hash (rows ∘ Fin.castLE
                   (Nat.succ_le_of_lt i.isLt)) x)) x - 1)) ≤ 1 := by
-        apply sum_mul_le
-        intro rows
-        apply sum_mul_le
-        intro x
-        linarith [agreement_le_one (predictor image i rows
-          (LinearHash.hash (rows ∘ Fin.castLE (Nat.succ_le_of_lt i.isLt)) x)) x]
+        refine sum_mul_le _ _ _ fun rows => sum_mul_le _ _ _ fun x => ?_
+        have hle := agreement_le_one (predictor image i rows
+          (LinearHash.hash (rows ∘ Fin.castLE (Nat.succ_le_of_lt i.isLt)) x)) x
+        linarith only [hle]
       have hnonneg : 0 ≤ 1 / (4 * (count : ℝ)) +
           128 * (dyadicSize (16 * count) : ℝ) ^ 2 * success i := by
         dsimp only [success]
         positivity
-      linarith
-    · simpa only [zero_add] using matrix_fiber_correlation_le_of_length f image (by lia)
-        (Nat.succ_le_of_lt i.isLt) (by dsimp [cutoff] at hlong; lia)
+      linarith only [hmean, hnonneg]
+    · simpa only [zero_add] using matrix_fiber_correlation_le_of_length f image (by omega)
+        (Nat.succ_le_of_lt i.isLt) (by dsimp [cutoff] at hlong; omega)
         (predictor image i) precision hp
   calc
     _ ≤ ∑ i : Fin count, (PMF.uniformOfFintype (Fin count) i).toReal *
@@ -336,12 +328,11 @@ theorem matrixPrediction_correlation_le {n count : ℕ} [NeZero count] {Image : 
       rw [Finset.sum_comm]
       refine Finset.sum_congr rfl fun i _ => ?_
       rw [Finset.sum_comm]
-      refine Finset.sum_congr rfl fun rows _ => ?_
-      simp only [mul_left_comm]
-      congr 1
-      funext y
-      congr 5
-      exact Subsingleton.elim _ _
+      refine Finset.sum_congr rfl fun rows _ => Finset.sum_congr rfl fun y _ =>
+        (mul_left_comm _ _ _).trans (congrArg (_ * ·)
+          ((mul_left_comm _ _ _).trans (congrArg (_ * ·) (congrArg (· * _)
+            (congrArg (fun inst => (@PMF.uniformOfFintype { y // f y = f x } inst _ y).toReal)
+              (Subsingleton.elim _ _))))))
     have hlog : Real.logb 2 (Nat.card {y // f y = f x}) <
         (Nat.log 2 (Nat.card {y // f y = f x}) : ℝ) + 1 := by
       simpa only [← Nat.cast_ofNat (R := ℝ) (n := 2), Real.natFloor_logb_natCast] using
@@ -350,11 +341,11 @@ theorem matrixPrediction_correlation_le {n count : ℕ} [NeZero count] {Image : 
         ((Nat.log 2 (Nat.card {y // f y = f x}) : ℝ) + 6) / count - 1 / (4 * count) := by
       calc
         _ ≤ ((Nat.log 2 (Nat.card {y // f y = f x}) : ℝ) + 23 / 4) / count :=
-          div_le_div_of_nonneg_right (by linarith) (Nat.cast_nonneg count)
+          div_le_div_of_nonneg_right (by linarith only [hlog]) (Nat.cast_nonneg count)
         _ = _ := by ring
     rw [hgroup]
     dsimp only [success]
-    linarith
+    linarith only [h, hmargin]
   have havg := Finset.sum_le_sum (s := Finset.univ) (fun x _ =>
     mul_le_mul_of_nonneg_left (hpoint x) (ENNReal.toReal_nonneg (a := source x)))
   rw [sum_conditionalSnd_map] at havg
@@ -420,13 +411,10 @@ theorem matrixInverter_success_ge {n count : ℕ} [NeZero count] {Image : Type*}
   have h := matrixPrediction_entropy_le f hcount predictor precision hp
   have hscale : (0 : ℝ) < dyadicSize (16 * count) := by
     exact_mod_cast dyadicSize_pos (16 * count)
-  have hbound : (1 / (count : ℝ)) / (128 * (dyadicSize (16 * count) : ℝ) ^ 2) ≤
-      (inversionExperiment f (matrixInverter f predictor precision) true).toReal := by
-    apply (div_le_iff₀ (by positivity)).mpr
-    have htwo : (2 : ℝ) / count = 2 * (1 / count) := by ring
-    rw [htwo] at h
-    nlinarith
-  convert hbound using 1
-  ring
+  rw [show (1 : ℝ) / (128 * count * (dyadicSize (16 * count) : ℝ) ^ 2) =
+    (1 / (count : ℝ)) / (128 * (dyadicSize (16 * count) : ℝ) ^ 2) by ring,
+    div_le_iff₀' (by positivity)]
+  have htwo : (2 : ℝ) / count = 2 * (1 / count) := by ring
+  linarith only [h, hprediction, htwo]
 
 end Cslib.Crypto.Pseudoentropy

@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.BoxRecordWitness.Exec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Width
+import Complexity.Computability.WordRAM.Admission
 
 /-!
 # Original-input admission for product-selected witness recovery
@@ -62,11 +63,7 @@ theorem physical_fits {w m n g p A heap Q : ℕ}
     exact Nat.mul_le_mul_left 128 (Nat.clog_mono_right 2 (by omega))
   have hout := (outputBase_lt_window (Q := Q) hN).le.trans hwindow
   have he : Fits (w + 2) (envelope n (D m) g p A) := by
-    have hn := Nat.le_pow_clog (by decide : 1 < (2 : ℕ)) (envelope n (D m) g p A)
-    have hw : Nat.clog 2 (envelope n (D m) g p A) < w + 2 := by
-      unfold admissionWidth at hW
-      omega
-    exact hn.trans_lt (Nat.pow_lt_pow_right (by decide : 1 < (2 : ℕ)) hw)
+    exact fits_of_clog_lt (by unfold admissionWidth at hW; omega)
   apply he.of_le
   unfold envelope
   rw [pow_two] at hQ hwindow hout ⊢

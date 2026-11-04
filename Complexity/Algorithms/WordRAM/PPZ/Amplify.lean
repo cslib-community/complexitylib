@@ -7,6 +7,9 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.MemoryView
+
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.PPZ.Round
 public import Complexity.Algorithms.WordRAM.Schoening.Amplify
@@ -266,11 +269,9 @@ theorem decCounter_rename_spec {w : ℕ} {ds : List ℕ} {x : Data 32} (hz : x.r
       HoldsList (x.regs bBase) (decDigits ds) y.mem ∧
       y.regs sFound = (if ∀ d ∈ ds, d = 0 then 0 else 1) ∧
       ∀ b, b < x.regs bBase → y.mem b = x.mem b := by
-  obtain ⟨y, hy, hh', hf, hm⟩ := Schoening.decCounter_spec (w := w) (x := x.comap embed) hz hone
-    hl hh hfit
-  refine ⟨y.extend embed x, ExecWithin.rename embed_injective hy, hh', ?_, hm⟩
-  rw [← hf]
-  exact embed_injective.extend_apply y.regs x.regs Schoening.Reg.found
+  obtain ⟨y, hy, hpost, -⟩ := ExecWithin.rename_post embed_injective
+    (Schoening.decCounter_spec (w := w) (x := x.comap embed) hz hone hl hh hfit)
+  exact ⟨y, hy, hpost⟩
 
 /-- **Multiply-add**, renamed: Schöning's `Cslib.Algorithms.WordRAM.Schoening.mulAdd_spec`. -/
 theorem mulAdd_rename_spec {w a cy Bd : ℕ} {ds : List ℕ} {x : Data 32} (hz : x.regs zero = 0)
@@ -283,11 +284,9 @@ theorem mulAdd_rename_spec {w a cy Bd : ℕ} {ds : List ℕ} {x : Data 32} (hz :
       HoldsList (x.regs bBase) (mulAddDigits a cy ds) y.mem ∧
       y.regs bLen = (mulAddDigits a cy ds).length ∧
       ∀ b, b < x.regs bBase → y.mem b = x.mem b := by
-  obtain ⟨y, hy, hh', hl', hm⟩ := Schoening.mulAdd_spec (w := w) (x := x.comap embed) hz hone ha
-    hc hl hh hds haB hcB hf hfit
-  refine ⟨y.extend embed x, ExecWithin.rename embed_injective hy, hh', ?_, hm⟩
-  rw [← hl']
-  exact embed_injective.extend_apply y.regs x.regs Schoening.Reg.bLen
+  obtain ⟨y, hy, hpost, -⟩ := ExecWithin.rename_post embed_injective
+    (Schoening.mulAdd_spec (w := w) (x := x.comap embed) hz hone ha hc hl hh hds haB hcB hf hfit)
+  exact ⟨y, hy, hpost⟩
 
 /-- A deterministic run of frame-preserving code keeps the frame if it keeps the memory below
 `Tb`, with the memory after the arrays taken as it is. -/
@@ -303,7 +302,9 @@ theorem RoundFrame.of_exec_mem_lt {φ : CNF (Fin n)} {C Tb : ℕ} {M : ℕ → �
   tBase_eq := (he.regs_eq hc.2.2.2.2.2.1).trans h.tBase_eq
   nReg_eq := (he.regs_eq hc.2.2.2.2.2.2.1).trans h.nReg_eq
   pBase_eq := (he.regs_eq hc.2.2.2.2.2.2.2).trans h.pBase_eq
-  clauses := h.clauses.frame fun a _ ha' => hmem a (h.span ▸ ha')
+  clauses := by
+    have hs := h.span
+    ram_keep h.clauses using hmem
   span := h.span
   rest _ _ := rfl
 
@@ -474,8 +475,8 @@ theorem ampLoopWith_law {φ : CNF (Fin n)} {C Tb w Tc : ℕ} {S : List ℕ}
       hc hbody fun y ⟨hy, hyb, hyl, hyo, hyf⟩ => by
         have hmy : ∀ a, Tb + 2 * n ≤ a → y.mem a = y₁.mem a := hy.rest
         have hdy : HoldsList (Tb + 2 * n + S.length) (decDigits ds) y.mem :=
-          hh₁.frame fun a ha _ => hmy a (by omega)
-        have hpy : HoldsList (Tb + 2 * n) S y.mem := hpar₁.frame fun a ha _ => hmy a ha
+          by ram_keep hh₁ using hmy
+        have hpy : HoldsList (Tb + 2 * n) S y.mem := by ram_keep hpar₁ using hmy
         rw [succeeds_partialAssignmentAt]
         by_cases he : φ.eval (assignmentAt y.mem Tb n) = true
         · simp only [he, ↓reduceIte] at hyo hyf

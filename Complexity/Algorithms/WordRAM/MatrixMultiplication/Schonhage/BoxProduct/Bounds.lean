@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxProduct.FrontProgram
 public import Mathlib.Data.Nat.Log
+import Complexity.Computability.WordRAM.Admission
 
 /-!
 # Original-input width admission for routed native box products
@@ -38,17 +39,14 @@ theorem admission_bounds {W L m t N Q A : ℕ}
     (hW : admissionWidth L m t N Q A ≤ W) :
     0 < W - 2 ∧ magnitudeBound L A < 2 ^ ((W - 2) - 1) ∧
       Fits W (wordBudget L m t N Q) := by
-  have hl := Nat.le_pow_clog (by decide : 1 < (2 : ℕ))
-    (magnitudeBound L A + wordBudget L m t N Q + 1)
-  have he : Nat.clog 2 (magnitudeBound L A + wordBudget L m t N Q + 1) ≤ (W - 2) - 1 := by
+  have hs : Nat.clog 2 (magnitudeBound L A + wordBudget L m t N Q + 1) ≤ (W - 2) - 1 := by
     unfold admissionWidth at hW
     omega
-  have hp := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) he
-  refine ⟨by unfold admissionWidth at hW; omega, by omega, ?_⟩
-  change wordBudget L m t N Q < 2 ^ W
-  have hp' := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) (by omega :
-    Nat.clog 2 (magnitudeBound L A + wordBudget L m t N Q + 1) ≤ W)
-  omega
+  refine ⟨by unfold admissionWidth at hW; omega, ?_, ?_⟩
+  · exact fits_of_lt_clog_le
+      (by omega : magnitudeBound L A < magnitudeBound L A + wordBudget L m t N Q + 1) hs
+  · exact fits_of_lt_clog_le
+      (by omega : wordBudget L m t N Q < magnitudeBound L A + wordBudget L m t N Q + 1) (by omega)
 
 /-- Original-input word/support envelope, independent of larger admitted physical widths. -/
 @[expose] def wordBound (L m t N Q A : ℕ) : ℕ :=

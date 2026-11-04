@@ -157,11 +157,27 @@ by explicit absolute residual entry and full-rank maximum errors on the same ful
 environment, using the actual rho gate and joint source × usage mean. It retains the
 rate divisor and ζ scaling; deriving numerical errors from recursive relative estimates
 remains open.
+For an integrated second deterministic envelope, use
+[SecondEnvelope](../../Complexity/Foundations/Probability/NormalizedAtomRows/SecondEnvelope.lean).
+`secondMeanEnvelope_moment` keeps the width P and inverse rank-rate fourth power;
+`actualEstimatedResidual_second_envelope_moment` pays it from the finite range/support bound on the shared
+`estimatedResidualInput` and finite positive-bin/once-negative child-error costs.
+`estimatedResidualInput_moment_le` retains the scale sum, top/fine caps, exact rounded
+marginals and width P; it needs no final input-moment certificate. The target stays the canonical
+residual at km, while full terminal rank and normalization stay at kt. This is a finite
+absolute error bridge; small recursive errors and numerical reserves remain open.
 The [FirstPayment route](probabilistic-workflows.md) now supplies a finite first-signal
 payment from actual bin/correction ranges, exact importance and midpoint-density factors,
 and an explicit retained width P. Both signal clients use `spectralWalkLength`; its
 positive-tolerance guarantee leaves numerical mean envelopes, recursive budgets/reserves,
 parameter/workspace growth and native RL=L open.
+For the finite conditional output from actual lower-child cost moments, use
+[ReserveOutput](../../Complexity/Foundations/Probability/NormalizedAtomRows/ReserveOutput.lean).
+It constructs the common B by a finite scaled maximum, chooses both actual walk lengths,
+and discharges the compatible-capacity output theorem at the genuine canonical residual.
+The explicit allocation depends on the positive prefix horizon; recursive reserve induction,
+copy routing and parameter/workspace growth remain open. See the
+[probabilistic workflow](probabilistic-workflows.md) for the exact reserve and amplification.
 `actual_normalized_fourth_moment_capacity` bounds the row fourth moment of the difference
 of output fourth roots by `C*ε^4`. Its output evaluates the actual compression iterate,
 unchanged initial default, raw increments and dyadic floor; its first rank is full terminal
@@ -198,3 +214,45 @@ For a named headline such as Fagin's theorem, locate its entry in `abstracts/cat
 The abstract is a readable presentation and its bridge proves the connection. The underlying library declaration is normally the reusable API. `#check_abstract` audits dependencies; it does not decide whether the semantics match your application. Likewise, `comparator/` contains selected independently stated contracts and solutions applying library theorems. Its coverage is explicit and limited, so absence from comparator is not a failed theorem check. Read the [assurance reference](../design-and-assurance/assurance.md) when deciding what evidence a result already has, and use the [contribution workflow](contributing.md) for any new proof or representation bridge.
 
 [complexitylib]: ../sources.md#complexitylib
+
+For actual output from per-request rooted moments, use
+[RootReserveOutput](../../Complexity/Foundations/Probability/NormalizedAtomRows/RootReserveOutput.lean)
+and its [child reserve payment](../../Complexity/Foundations/Probability/NormalizedAtomRows/ChildRootReserve.lean).
+The full-environment finite allocation is explicit and conservative; it supplies no recursive
+accuracy or parameter/workspace closure. The source-reset guard and exact coefficients are
+explained in the [probabilistic workflow](probabilistic-workflows.md).
+
+The two reserve-output theorems choose their output constant after the fixed hierarchy,
+ζ, scale and positive floor, before the prime, environment width, horizon, prefix length
+and raw/preparation/maximum families. Select this constant before allocating recursive
+child accuracies. Uniformity of that coefficient does not remove any displayed finite
+allocation or walk-length losses and supplies no recursive accuracy theorem.
+
+For changes to the completed pilot maximum with raw and preparation children fixed,
+[HierarchyCorrectionStability](../../Complexity/Foundations/Probability/HierarchyCorrectionStability.lean)
+gives a pointwise fourth-root bound and an integrated actual-request contract. Its
+[regressions](../../ComplexityTests/HierarchyCorrectionStability.lean) check a nonzero request,
+pilot plateaus, a dyadic change of maximum estimate and an empty vertex domain. These are
+local sensitivity tests, not a two-level recursive approximate estimator.
+
+For changing completed RAW and PREP children as well, use
+[HierarchyCorrectionRawStability](../../Complexity/Foundations/Probability/HierarchyCorrectionRawStability.lean).
+Its pointwise theorem displays entry, row, column and full source×terminal maxima at the
+actual inverse terminal rate, and the original joint source/usage prep mean error.
+The integrated theorem pays RAW absolute row errors with explicit width squared and
+inverse-rate fourth power, PREP errors on source/usage rows, and maximum errors on the
+original source/full-terminal pairs. Constants are selected at fixed HP before requests
+or child tables. The [nonzero fixtures](../../ComplexityTests/HierarchyCorrectionRawStability.lean)
+perturb RAW and PREP separately and jointly, and distinguish row from incoming ranks.
+This supplies a local correction accuracy contract; it does not construct recursive children.
+
+For the pilot's actual score, detector and running maximum local moments, use
+[PilotRowStability](../../Complexity/Foundations/Probability/PilotRowStability.lean).
+It keeps the raw K-rank, pays detector source maxima on the actual finite slices after
+conditional Jensen, and pays both maximum children. The score row payment displays
+one width and inverse rate to the fourth power; detector payments retain their literal
+conditional means and sums. [HierarchyPilotStability](../../Complexity/Foundations/Probability/HierarchyPilotStability.lean)
+feeds the previous/current maximum children into the actual correction contract.
+The [nonzero client](../../ComplexityTests/PilotRowStability.lean) changes a raw rank and
+all three recipe outputs. Allocated recursive calls and full environment/rate/bin
+transport of these payments remain separate from this local layer.

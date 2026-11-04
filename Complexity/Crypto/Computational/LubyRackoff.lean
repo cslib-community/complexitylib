@@ -9,6 +9,8 @@ module
 
 public import Complexity.Crypto.Computational.PseudorandomFunction.MultiKey
 public import Complexity.Crypto.Computational.PseudorandomPermutation
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import Complexity.Computability.Probabilistic.Oracle.Substitution
 import Complexity.Crypto.Negligible.Basic
@@ -17,8 +19,6 @@ import Complexity.Foundations.Data.BitString.List.Operations
 import Complexity.Languages.Probabilistic.Oracle.CoinFixing
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.Product
-import Complexity.Tactic.PolyTime
-import Complexity.Tactic.PPT
 
 /-!
 # The Luby–Rackoff block cipher from a pseudorandom function
@@ -110,8 +110,7 @@ private def joinBlock {n : ℕ} (halves : BitString n × BitString n) : List Boo
 
 private theorem length_joinBlock {n : ℕ} (halves : BitString n × BitString n) :
     (joinBlock halves).length = 2 * n := by
-  simp only [joinBlock, List.length_append, List.length_ofFn]
-  omega
+  simp only [joinBlock, List.length_append, List.length_ofFn]; omega
 
 private theorem joinBlock_splitBlock {n : ℕ} {block : List Bool} (hblock : block.length = 2 * n) :
     joinBlock (splitBlock n block) = block := by
@@ -132,20 +131,22 @@ private abbrev Represents {n : ℕ} (g : List Bool → List Bool) (f : BitString
   ∀ x, g (List.ofFn x) = List.ofFn (f x)
 
 private theorem feistelRoundWord_joinBlock {n : ℕ} {g : List Bool → List Bool}
-    {f : BitString n → BitString n} (h : Represents g f) (halves : BitString n × BitString n) :
-    feistelRoundWord g n (joinBlock halves) = joinBlock (LubyRackoff.feistelRound f halves) := by
-  obtain ⟨a, b⟩ := halves
-  simp only [feistelRoundWord, joinBlock, LubyRackoff.feistelRound,
-    List.take_left' List.length_ofFn, List.drop_left' List.length_ofFn, h, ← BitString.ofFn_add]
+    {f : BitString n → BitString n} (h : Represents g f) :
+    ∀ halves : BitString n × BitString n,
+      feistelRoundWord g n (joinBlock halves) = joinBlock (LubyRackoff.feistelRound f halves)
+  | ⟨_, _⟩ => by
+    simp only [feistelRoundWord, joinBlock, LubyRackoff.feistelRound,
+      List.take_left' List.length_ofFn, List.drop_left' List.length_ofFn, h, ← BitString.ofFn_add]
 
 private theorem feistelInvRoundWord_joinBlock {n : ℕ} {g : List Bool → List Bool}
-    {f : BitString n → BitString n} (h : Represents g f) (halves : BitString n × BitString n) :
-    feistelInvRoundWord g n (joinBlock halves) =
-      joinBlock (LubyRackoff.feistelInvRound f halves) := by
-  obtain ⟨a, b⟩ := halves
-  simp only [feistelInvRoundWord, joinBlock, LubyRackoff.feistelInvRound,
-    List.take_left' List.length_ofFn, List.drop_left' List.length_ofFn, h, bitString_sub_eq_add,
-    ← BitString.ofFn_add]
+    {f : BitString n → BitString n} (h : Represents g f) :
+    ∀ halves : BitString n × BitString n,
+      feistelInvRoundWord g n (joinBlock halves) =
+        joinBlock (LubyRackoff.feistelInvRound f halves)
+  | ⟨_, _⟩ => by
+    simp only [feistelInvRoundWord, joinBlock, LubyRackoff.feistelInvRound,
+      List.take_left' List.length_ofFn, List.drop_left' List.length_ofFn, h, bitString_sub_eq_add,
+      ← BitString.ofFn_add]
 
 /-- Word-level Feistel rounds compute the Feistel network of the round functions they represent.
 -/
@@ -158,8 +159,7 @@ private theorem feistelNetworkWord_joinBlock {n : ℕ} {gs : List (List Bool →
   | nil => rfl
   | cons hg _ ih =>
     rw [feistelNetworkWord, List.foldl_cons, ← feistelNetworkWord, feistelRoundWord_joinBlock hg,
-      ih, LubyRackoff.feistelNetwork_cons]
-    rfl
+      ih, LubyRackoff.feistelNetwork_cons]; rfl
 
 /-- Word-level inverse rounds compute the inverse Feistel network. -/
 private theorem feistelNetworkWordInv_joinBlock {n : ℕ} {gs : List (List Bool → List Bool)}
@@ -171,8 +171,7 @@ private theorem feistelNetworkWordInv_joinBlock {n : ℕ} {gs : List (List Bool 
   | nil => rfl
   | cons hg _ ih =>
     rw [feistelNetworkWordInv, List.foldr_cons, ← feistelNetworkWordInv, ih,
-      feistelInvRoundWord_joinBlock hg, LubyRackoff.feistelNetwork_cons]
-    rfl
+      feistelInvRoundWord_joinBlock hg, LubyRackoff.feistelNetwork_cons]; rfl
 
 /-! ### The cipher -/
 
@@ -214,10 +213,10 @@ private theorem lubyRackoffEncrypt_eq
     lubyRackoffEncrypt family n key block =
       joinBlock (LubyRackoff.feistel3 (roundFunction family n 0 key) (roundFunction family n 1 key)
         (roundFunction family n 2 key) (splitBlock n block)) := by
+  have hrep {i} (hi : i < 3) := represents_roundFunction hlength hkey hi
   conv_lhs => rw [← joinBlock_splitBlock hblock]
-  exact feistelNetworkWord_joinBlock (.cons (represents_roundFunction hlength hkey (by decide))
-    (.cons (represents_roundFunction hlength hkey (by decide))
-      (.cons (represents_roundFunction hlength hkey (by decide)) .nil))) _
+  exact feistelNetworkWord_joinBlock
+    (.cons (hrep (by decide)) (.cons (hrep (by decide)) (.cons (hrep (by decide)) .nil))) _
 
 private theorem lubyRackoffDecrypt_eq
     (hlength : ∀ key query, query.length = key.length → (family key query).length = key.length)
@@ -226,10 +225,44 @@ private theorem lubyRackoffDecrypt_eq
       joinBlock ((LubyRackoff.feistel3 (roundFunction family n 0 key)
         (roundFunction family n 1 key) (roundFunction family n 2 key)).symm
           (splitBlock n block)) := by
+  have hrep {i} (hi : i < 3) := represents_roundFunction hlength hkey hi
   conv_lhs => rw [← joinBlock_splitBlock hblock]
-  exact feistelNetworkWordInv_joinBlock (.cons (represents_roundFunction hlength hkey (by decide))
-    (.cons (represents_roundFunction hlength hkey (by decide))
-      (.cons (represents_roundFunction hlength hkey (by decide)) .nil))) _
+  exact feistelNetworkWordInv_joinBlock
+    (.cons (hrep (by decide)) (.cons (hrep (by decide)) (.cons (hrep (by decide)) .nil))) _
+
+private theorem computableInPolyTime_feistelRoundWord {α : Type} {enc : α ↪ List Bool}
+    {g : α → List Bool → List Bool} {n : α → ℕ} {block : α → List Bool}
+    (hg : ∀ {q : α → List Bool}, ComputableInPolyTime q enc encBits →
+      ComputableInPolyTime (fun a => g a (q a)) enc encBits)
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hblock : ComputableInPolyTime block enc encBits) :
+    ComputableInPolyTime (fun a => feistelRoundWord (g a) (n a) (block a)) enc encBits :=
+  let hdrop := hblock.bitsDropWithInput hn
+  hdrop.bitsAppend ((ComputableInPolyTime.bitsZipWith Bool.xor).comp
+    ((hblock.bitsTakeWithInput hn).prod (hg hdrop)))
+
+private theorem computableInPolyTime_feistelInvRoundWord {α : Type} {enc : α ↪ List Bool}
+    {g : α → List Bool → List Bool} {n : α → ℕ} {block : α → List Bool}
+    (hg : ∀ {q : α → List Bool}, ComputableInPolyTime q enc encBits →
+      ComputableInPolyTime (fun a => g a (q a)) enc encBits)
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hblock : ComputableInPolyTime block enc encBits) :
+    ComputableInPolyTime (fun a => feistelInvRoundWord (g a) (n a) (block a)) enc encBits :=
+  let htake := hblock.bitsTakeWithInput hn
+  ((ComputableInPolyTime.bitsZipWith Bool.xor).comp
+    ((hblock.bitsDropWithInput hn).prod (hg htake))).bitsAppend htake
+
+private theorem computableInPolyTime_keyRound
+    (hpoly : ComputableInPolyTime (fun pair : List Bool × List Bool => family pair.1 pair.2)
+      (encPair encBits encBits) encBits)
+    (i : ℕ) {q : ℕ × List Bool × List Bool → List Bool}
+    (hq : ComputableInPolyTime q (encPair encUnary (encPair encBits encBits)) encBits) :
+    ComputableInPolyTime (fun x => family (keyBlock x.1 i x.2.1) (q x))
+      (encPair encUnary (encPair encBits encBits)) encBits :=
+  let hn := ComputableInPolyTime.fst encUnary (encPair encBits encBits)
+  let hk := (ComputableInPolyTime.snd encUnary (encPair encBits encBits)).fst'
+  hpoly.comp (((hk.bitsDropWithInput
+    (ComputableInPolyTime.unary_mul' (.const i) hn)).bitsTakeWithInput hn).prod hq)
 
 variable (family) in
 /-- The three-round Luby–Rackoff block cipher with `3 * n`-bit keys and `2 * n`-bit blocks, built
@@ -242,18 +275,22 @@ Section 4.5). -/
     BlockCipher where
   keyLen n := 3 * n
   blockLen n := 2 * n
-  keyLen_polyTime := by polytime
-  blockLen_polyTime := by polytime
+  keyLen_polyTime := by exact ComputableInPolyTime.unary_mul' (.const 3) .id'
+  blockLen_polyTime := by exact ComputableInPolyTime.unary_mul' (.const 2) .id'
   encrypt := lubyRackoffEncrypt family
   decrypt := lubyRackoffDecrypt family
   encrypt_polyTime := by
-    simp only [lubyRackoffEncrypt, feistelNetworkWord, List.foldl_cons, List.foldl_nil]
-    unfold feistelRoundWord keyBlock
-    polytime
+    have hn := ComputableInPolyTime.fst encUnary (encPair encBits encBits)
+    have hb := (ComputableInPolyTime.snd encUnary (encPair encBits encBits)).snd'
+    exact computableInPolyTime_feistelRoundWord (computableInPolyTime_keyRound hpoly 2) hn
+      (computableInPolyTime_feistelRoundWord (computableInPolyTime_keyRound hpoly 1) hn
+        (computableInPolyTime_feistelRoundWord (computableInPolyTime_keyRound hpoly 0) hn hb))
   decrypt_polyTime := by
-    simp only [lubyRackoffDecrypt, feistelNetworkWordInv, List.foldr_cons, List.foldr_nil]
-    unfold feistelInvRoundWord keyBlock
-    polytime
+    have hn := ComputableInPolyTime.fst encUnary (encPair encBits encBits)
+    have hb := (ComputableInPolyTime.snd encUnary (encPair encBits encBits)).snd'
+    exact computableInPolyTime_feistelInvRoundWord (computableInPolyTime_keyRound hpoly 0) hn
+      (computableInPolyTime_feistelInvRoundWord (computableInPolyTime_keyRound hpoly 1) hn
+        (computableInPolyTime_feistelInvRoundWord (computableInPolyTime_keyRound hpoly 2) hn hb))
   length_encrypt n key block hkey hblock := by
     rw [lubyRackoffEncrypt_eq hlength hkey hblock, length_joinBlock]
   length_decrypt n key block hkey hblock := by
@@ -353,49 +390,51 @@ private theorem isOraclePPTOn_feistelRoundQuery {α : Type} {input : α ↪ List
     (hn : ComputableInPolyTime n input encUnary)
     (hblock : ComputableInPolyTime block input encBits) :
     IsOraclePPTOn input encBits (fun a => feistelRoundQuery i (n a) (block a)) :=
-  (IsOraclePPTOn.query_take' i (by polytime) hn).map_with'
+  let hfst := ComputableInPolyTime.fst input encBits
+  (IsOraclePPTOn.query_take' i (hblock.bitsDropWithInput hn) hn).map_with'
     (f := fun a reply => (block a).drop (n a) ++
       List.zipWith Bool.xor ((block a).take (n a)) reply)
-    (by polytime)
+    (computableInPolyTime_feistelRoundWord (g := fun p : α × List Bool => fun _ => p.2)
+      (fun _ => ComputableInPolyTime.snd input encBits) (hfst.trans hn) (hfst.trans hblock))
 
 private theorem isOraclePPTOn_feistelInvRoundQuery {α : Type} {input : α ↪ List Bool}
     (i : Fin t) {n : α → ℕ} {block : α → List Bool}
     (hn : ComputableInPolyTime n input encUnary)
     (hblock : ComputableInPolyTime block input encBits) :
     IsOraclePPTOn input encBits (fun a => feistelInvRoundQuery i (n a) (block a)) :=
-  (IsOraclePPTOn.query_take' i (by polytime) hn).map_with'
+  let hfst := ComputableInPolyTime.fst input encBits
+  (IsOraclePPTOn.query_take' i (hblock.bitsTakeWithInput hn) hn).map_with'
     (f := fun a reply => List.zipWith Bool.xor ((block a).drop (n a)) reply ++
       (block a).take (n a))
-    (by polytime)
+    (computableInPolyTime_feistelInvRoundWord (g := fun p : α × List Bool => fun _ => p.2)
+      (fun _ => ComputableInPolyTime.snd input encBits) (hfst.trans hn) (hfst.trans hblock))
 
 private theorem isOraclePPTOn_feistelNetworkQuery (rounds : List (Fin t)) :
     ∀ {α : Type} {input : α ↪ List Bool} {n : α → ℕ} {block : α → List Bool},
       ComputableInPolyTime n input encUnary → ComputableInPolyTime block input encBits →
       IsOraclePPTOn input encBits (fun a => feistelNetworkQuery rounds (n a) (block a)) := by
   induction rounds with
-  | nil =>
-    intro α input n block _ hblock
-    exact (ComputableInPolyTime.isPPTOn hblock).isOraclePPTOn (Operation := Fin t)
+  | nil => exact fun _ hblock => hblock.isPPTOn.isOraclePPTOn (Operation := Fin t)
   | cons i rounds ih =>
     intro α input n block hn hblock
     exact (isOraclePPTOn_feistelRoundQuery i hn hblock).bind_with
       (second := fun a word => feistelNetworkQuery rounds (n a) word)
-      (ih (n := fun p : α × List Bool => n p.1) (block := Prod.snd) (by polytime) (by polytime))
+      (ih ((ComputableInPolyTime.fst input encBits).trans hn)
+        (ComputableInPolyTime.snd input encBits))
 
 private theorem isOraclePPTOn_feistelNetworkInvQuery (rounds : List (Fin t)) :
     ∀ {α : Type} {input : α ↪ List Bool} {n : α → ℕ} {block : α → List Bool},
       ComputableInPolyTime n input encUnary → ComputableInPolyTime block input encBits →
       IsOraclePPTOn input encBits (fun a => feistelNetworkInvQuery rounds (n a) (block a)) := by
   induction rounds with
-  | nil =>
-    intro α input n block _ hblock
-    exact (ComputableInPolyTime.isPPTOn hblock).isOraclePPTOn (Operation := Fin t)
+  | nil => exact fun _ hblock => hblock.isPPTOn.isOraclePPTOn (Operation := Fin t)
   | cons i rounds ih =>
     intro α input n block hn hblock
     simp only [feistelNetworkInvQuery, List.foldrM_cons]
     exact (ih hn hblock).bind_with (second := fun a word => feistelInvRoundQuery i (n a) word)
-      (isOraclePPTOn_feistelInvRoundQuery i (n := fun p : α × List Bool => n p.1)
-        (block := Prod.snd) (by polytime) (by polytime))
+      (isOraclePPTOn_feistelInvRoundQuery i
+        ((ComputableInPolyTime.fst input encBits).trans hn)
+        (ComputableInPolyTime.snd input encBits))
 
 /-- Feistel query rounds never lengthen a word. -/
 private theorem length_le_of_mem_support_feistelNetworkQuery (rounds : List (Fin t)) (n : ℕ) :
@@ -404,17 +443,14 @@ private theorem length_le_of_mem_support_feistelNetworkQuery (rounds : List (Fin
   induction rounds with
   | nil =>
     intro block reply hreply
-    simp only [feistelNetworkQuery, List.foldlM_nil, OracleComp.support,
-      OracleComp.supportWith_pure, Set.mem_singleton_iff] at hreply
-    exact hreply ▸ le_rfl
+    simpa [feistelNetworkQuery, OracleComp.support] using congrArg List.length hreply |>.le
   | cons i rounds ih =>
     intro block reply hreply
     simp only [feistelNetworkQuery, List.foldlM_cons, OracleComp.mem_supportWith_bind_iff,
       feistelRoundQuery, OracleComp.mem_supportWith_map_iff] at hreply
     obtain ⟨_, ⟨_, ⟨raw, _, rfl⟩, rfl⟩, hrest⟩ := hreply
     refine (ih _ _ hrest).trans ?_
-    simp only [List.length_append, List.length_drop, List.length_zipWith, List.length_take]
-    omega
+    simp only [List.length_append, List.length_drop, List.length_zipWith, List.length_take]; omega
 
 /-- Inverse Feistel query rounds never lengthen a word. -/
 private theorem length_le_of_mem_support_feistelNetworkInvQuery (rounds : List (Fin t))
@@ -424,17 +460,14 @@ private theorem length_le_of_mem_support_feistelNetworkInvQuery (rounds : List (
   induction rounds with
   | nil =>
     intro block reply hreply
-    simp only [feistelNetworkInvQuery, List.foldrM_nil, OracleComp.support,
-      OracleComp.supportWith_pure, Set.mem_singleton_iff] at hreply
-    exact hreply ▸ le_rfl
+    simpa [feistelNetworkInvQuery, OracleComp.support] using congrArg List.length hreply |>.le
   | cons i rounds ih =>
     intro block reply hreply
     simp only [feistelNetworkInvQuery, List.foldrM_cons, OracleComp.mem_supportWith_bind_iff,
       feistelInvRoundQuery, OracleComp.mem_supportWith_map_iff] at hreply
     obtain ⟨word, hword, _, ⟨raw, _, rfl⟩, rfl⟩ := hreply
     refine le_trans ?_ (ih _ _ hword)
-    simp only [List.length_append, List.length_drop, List.length_zipWith, List.length_take]
-    omega
+    simp only [List.length_append, List.length_drop, List.length_zipWith, List.length_take]; omega
 
 end Queries
 
@@ -458,14 +491,12 @@ private theorem isOraclePPT_interpret_handler {Operation External : Type} [Decid
     IsOraclePPT encBool (fun n aux => OracleComp.interpret
       (OracleComp.sumHandler (fun k => ProbOracleComp.sample (ProbComp.unifFin k)) (handler n))
       (adversary n aux)) := by
-  have hstate : IsOraclePPTOn (encPair (encPair encUnary encBits)
-      (encPair (encPair (encFinEnum Operation) encBits) (encFinEnum Unit)))
-      (encPair encBits (encFinEnum Unit))
-      (fun x : (ℕ × List Bool) × (Operation × List Bool) × Unit =>
-        (fun reply => (reply, ())) <$> handler x.1.1 x.2.1) :=
-    (hhandler.preprocess'
-      (prepare := fun x : (ℕ × List Bool) × (Operation × List Bool) × Unit => (x.1, x.2.1))
-      (by polytime)).map' (by polytime)
+  have hfst := ComputableInPolyTime.fst (encPair encUnary encBits)
+    (encPair (encPair (encFinEnum Operation) encBits) (encFinEnum Unit))
+  have hsnd := ComputableInPolyTime.snd (encPair encUnary encBits)
+    (encPair (encPair (encFinEnum Operation) encBits) (encFinEnum Unit))
+  have hstate := (hhandler.preprocess' (hfst.prod hsnd.fst')).map'
+    (ComputableInPolyTime.id'.prod (ComputableInPolyTime.const (encOut := encFinEnum Unit) ()))
   have hrun := hadversary.run_interpret_preprocess_open' (External := External) (State := Unit)
     (input := encPair encUnary encBits) (operationEncoding := encFinEnum Operation)
     (stateEncoding := encFinEnum Unit)
@@ -473,36 +504,25 @@ private theorem isOraclePPT_interpret_handler {Operation External : Type} [Decid
       (fun reply => (reply, ())) <$> handler caller.1 request)
     (prepare := id) (initial := fun _ => ())
     (resources := fun caller query => resources caller.1 query)
-    (by polytime) hstate (by polytime) (fun _ _ => True) (fun _ => trivial) hresources
+    ComputableInPolyTime.id' hstate (ComputableInPolyTime.const ()) (fun _ _ => True)
+    (fun _ => trivial) hresources
     (fun caller request _ _ result hresult => by
       simp only [OracleComp.mem_supportWith_map_iff] at hresult
       obtain ⟨reply, hreply', rfl⟩ := hresult
       exact ⟨trivial, hreply caller.1 request reply hreply', by simp [encFinEnum]⟩)
-  have heq (n : ℕ) (aux : List Bool) :
-      Prod.fst <$> (OracleComp.interpret
-        (OracleComp.sumHandler (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
-          (fun request (_ : Unit) => (fun reply => (reply, ())) <$> handler n request))
-        (adversary n aux)).run () =
-      OracleComp.interpret
-        (OracleComp.sumHandler (fun k => ProbOracleComp.sample (ProbComp.unifFin k)) (handler n))
-        (adversary n aux) := by
-    rw [show (OracleComp.sumHandler
-        (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
-        (fun request (_ : Unit) => (fun reply => (reply, ())) <$> handler n request)) =
-        fun q => StateT.lift (OracleComp.sumHandler
-          (fun k => ProbOracleComp.sample (ProbComp.unifFin k)) (handler n) q) by
-      funext q
-      rcases q with k | request
-      · rfl
-      · funext u
-        simp only [OracleComp.sumHandler, StateT.lift, bind_pure_comp],
-      OracleComp.run_interpret_lift, Functor.map_map]
-    exact id_map _
   have h := hrun.map' (ComputableInPolyTime.fst encBool (encFinEnum Unit))
   refine IsOraclePPTOn.isOraclePPT ?_
-  convert h using 1
-  funext input
-  exact (heq input.1 input.2).symm
+  convert h using 1; funext ⟨n, aux⟩
+  rw [show (OracleComp.sumHandler
+      (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
+      (fun request (_ : Unit) => (fun reply => (reply, ())) <$> handler n request)) =
+      fun q => StateT.lift (OracleComp.sumHandler
+        (fun k => ProbOracleComp.sample (ProbComp.unifFin k)) (handler n) q) by
+    funext q; rcases q with k | request
+    · rfl
+    · funext u; simp only [OracleComp.sumHandler, StateT.lift, bind_pure_comp],
+    OracleComp.run_interpret_lift, Functor.map_map]
+  exact (id_map _).symm
 
 /-! ### The reduction to three PRF keys -/
 
@@ -522,23 +542,25 @@ Malformed blocks are answered with `[]` without querying. -/
 theorem isOraclePPT_lubyRackoffAdversary {adversary : OracleDistinguisher}
     (hadversary : IsOraclePPT encBool adversary) :
     IsOraclePPT encBool (lubyRackoffAdversary adversary) := by
-  refine isOraclePPT_interpret_handler hadversary ?_ (resources := fun n _ => 2 * n)
-    (by polytime) fun n request reply hreply => ?_
-  · have hcondition : ComputableInPolyTime
-        (fun x : (ℕ × List Bool) × (Unit × List Bool) => decide (x.2.2.length = 2 * x.1.1))
-        (encPair (encPair encUnary encBits) (encPair (encFinEnum Unit) encBits)) encBool := by
-      polytime
-    exact IsOraclePPTOn.ite' hcondition
-      (isOraclePPTOn_feistelNetworkQuery [0, 1, 2] (by polytime) (by polytime))
-      ((ComputableInPolyTime.isPPTOn (ComputableInPolyTime.const ([] : List Bool))).isOraclePPTOn
-        (Operation := Fin 3))
-  · simp only [lubyRackoffQuery] at hreply
-    split_ifs at hreply with hblock
-    · exact (length_le_of_mem_support_feistelNetworkQuery _ _ _ _ hreply).trans hblock.le
-    · simp only [OracleComp.support, OracleComp.supportWith_pure, Set.mem_singleton_iff]
-        at hreply
-      subst hreply
-      simp
+  have hn := (ComputableInPolyTime.fst (encPair encUnary encBits)
+    (encPair (encFinEnum Unit) encBits)).fst'
+  have hblock := (ComputableInPolyTime.snd (encPair encUnary encBits)
+    (encPair (encFinEnum Unit) encBits)).snd'
+  refine isOraclePPT_interpret_handler hadversary
+    (IsOraclePPTOn.ite'
+      (ComputableInPolyTime.unary_eq' (hblock.trans ComputableInPolyTime.length_bits)
+        (ComputableInPolyTime.unary_mul' (.const 2) hn))
+      (isOraclePPTOn_feistelNetworkQuery [0, 1, 2] hn hblock)
+      ((ComputableInPolyTime.const ([] : List Bool)).isPPTOn.isOraclePPTOn (Operation := Fin 3)))
+    (resources := fun n _ => 2 * n)
+    (ComputableInPolyTime.unary_mul' (.const 2)
+      (ComputableInPolyTime.fst (encPair encUnary encBits) encBits).fst')
+    fun n request reply hreply => ?_
+  simp only [lubyRackoffQuery] at hreply
+  split_ifs at hreply with hblock
+  · exact (length_le_of_mem_support_feistelNetworkQuery _ _ _ _ hreply).trans hblock.le
+  · simp only [OracleComp.support, OracleComp.supportWith_pure, Set.mem_singleton_iff] at hreply
+    subst hreply; simp
 
 /-- Interpreting the adapter against deterministic channels runs the block-cipher adversary
 against the word-level Feistel rounds that read the channels. -/
@@ -553,10 +575,7 @@ private theorem interpret_lubyRackoffAdversary (adversary : OracleDistinguisher)
         else []))) (adversary n []) := by
   simp only [lubyRackoffAdversary, OracleComp.interpret_interpret, OracleComp.interpret_sumHandler,
     ProbOracleComp.interpret_sample, ProbComp.unifFin, OracleComp.interpret_query]
-  congr 2
-  funext request
-  unfold lubyRackoffQuery
-  split_ifs
+  congr 2; funext request; unfold lubyRackoffQuery; split_ifs
   · exact interpret_feistelNetworkQuery oracle n _ _
   · rfl
 
@@ -565,8 +584,7 @@ private theorem represents_prfOracle_take {family : List Bool → List Bool → 
     (hlength : ∀ key query, query.length = key.length → (family key query).length = key.length)
     {n t i : ℕ} {key : List Bool} (hkey : key.length = t * n) (hi : i < t) :
     Represents (fun query => (prfOracle family n (keyBlock n i key) query).take n)
-      (roundFunction family n i key) := by
-  intro x
+      (roundFunction family n i key) := fun x => by
   simp only [prfOracle, List.length_ofFn, ↓reduceIte]
   rw [represents_roundFunction hlength hkey hi x, List.take_of_length_le List.length_ofFn.le]
 
@@ -581,21 +599,15 @@ theorem eval_prpRealGame_lubyRackoffCipher {family : List Bool → List Bool →
     BitString.eval_sampleList, ProbOracleComp.eval_interpret, ProbComp.eval_pure]
   refine PMF.bind_congr_on_support _ _ _ fun key hkey => ?_
   have hkeyLength : key.length = 3 * n := BitString.length_of_mem_support_uniformList hkey
-  rw [interpret_lubyRackoffAdversary]
-  congr 2
-  funext request
-  congr 1
+  rw [interpret_lubyRackoffAdversary]; congr 2; funext request; congr 1
   change (if request.2.length = 2 * n then lubyRackoffEncrypt family n key request.2 else []) = _
-  by_cases hblock : request.2.length = 2 * n
-  · simp only [hblock, ↓reduceIte]
-    rw [lubyRackoffEncrypt_eq hfamily.length_eq hkeyLength hblock]
+  split_ifs with hblock
+  · rw [lubyRackoffEncrypt_eq hfamily.length_eq hkeyLength hblock]
     conv_rhs => rw [← joinBlock_splitBlock hblock]
+    have hrep {i} (hi : i < 3) := represents_prfOracle_take hfamily.length_eq hkeyLength hi
     exact (feistelNetworkWord_joinBlock
-      (.cons (represents_prfOracle_take hfamily.length_eq hkeyLength (by decide))
-        (.cons (represents_prfOracle_take hfamily.length_eq hkeyLength (by decide))
-          (.cons (represents_prfOracle_take hfamily.length_eq hkeyLength (by decide))
-            .nil))) _).symm
-  · simp only [hblock, ↓reduceIte]
+      (.cons (hrep (by decide)) (.cons (hrep (by decide)) (.cons (hrep (by decide)) .nil))) _).symm
+  · rfl
 
 /-! ### Random rounds against a random permutation -/
 
@@ -609,12 +621,9 @@ private def blockOracle (n : ℕ) (σ : BitString n × BitString n → BitString
 private def blockEquiv (n : ℕ) : BitString (2 * n) ≃ BitString n × BitString n where
   toFun z := splitBlock n (List.ofFn z)
   invFun halves := BitString.ofList (2 * n) (joinBlock halves)
-  left_inv z := by
-    dsimp only
-    rw [joinBlock_splitBlock List.length_ofFn, BitString.ofList_ofFn]
-  right_inv halves := by
-    dsimp only
-    rw [BitString.ofFn_ofList (length_joinBlock halves), splitBlock_joinBlock]
+  left_inv z := by dsimp only; rw [joinBlock_splitBlock List.length_ofFn, BitString.ofList_ofFn]
+  right_inv h := by
+    dsimp only; rw [BitString.ofFn_ofList (length_joinBlock h), splitBlock_joinBlock]
 
 /-- A permutation of `2 * n`-bit strings reads as the corresponding permutation of halves. -/
 private theorem randomPermOracle_eq_blockOracle (n : ℕ) (π : Equiv.Perm (BitString (2 * n)))
@@ -642,8 +651,7 @@ private theorem isQueryBounded_pairAdversary {adversary : OracleDistinguisher} {
   refine hQ.interpret fun q => ?_
   rcases q with k | request
   · exact ProbOracleComp.IsQueryBounded.sample (ProbComp.unifFin k)
-  · dsimp only [OracleComp.sumHandler]
-    split_ifs
+  · dsimp only [OracleComp.sumHandler]; split_ifs
     · simpa only [map_eq_bind_pure_comp, Function.comp_def, Nat.add_zero, Sum.elim_inr] using
         (ProbOracleComp.IsQueryBounded.query (splitBlock n request.2)).bind fun _ =>
           OracleComp.IsCostBounded.pure _ 0
@@ -658,10 +666,7 @@ private theorem interpret_pairAdversary (adversary : OracleDistinguisher) (n : �
         (adversary n []) := by
   simp only [pairAdversary, OracleComp.interpret_interpret, OracleComp.interpret_sumHandler,
     ProbOracleComp.interpret_sample, ProbComp.unifFin, OracleComp.interpret_query]
-  congr 2
-  funext request
-  unfold blockOracle
-  split_ifs <;> simp [PMF.monad_map_eq_map]
+  congr 2; funext request; unfold blockOracle; split_ifs <;> simp [PMF.monad_map_eq_map]
 
 /-- With random round functions, the adapter runs the block-cipher adversary against the Feistel
 network of three independent uniform random functions. -/
@@ -674,18 +679,11 @@ private theorem eval_prfMultiIdealGame_lubyRackoffAdversary (adversary : OracleD
           (pairAdversary adversary n) := by
   simp only [prfMultiIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbOracleComp.eval_interpret, ProbComp.eval_pure, interpret_pairAdversary]
-  congr 1
-  funext tables
-  rw [interpret_lubyRackoffAdversary]
-  congr 2
-  funext request
-  congr 1
-  unfold blockOracle
-  split_ifs with hblock
+  congr 1; funext tables; rw [interpret_lubyRackoffAdversary]; congr 2; funext request; congr 1
+  unfold blockOracle; split_ifs with hblock
   · conv_lhs => rw [← joinBlock_splitBlock hblock]
-    have hT (i : Fin 3) : Represents (fun query => (randomFunctionOracle n (tables i) query).take n)
-        (tables i) := by
-      intro x
+    have hT (i : Fin 3) : Represents (fun q => (randomFunctionOracle n (tables i) q).take n)
+        (tables i) := fun x => by
       simp only [randomFunctionOracle, List.length_ofFn, ↓reduceIte, BitString.ofList_ofFn]
       exact List.take_of_length_le List.length_ofFn.le
     exact feistelNetworkWord_joinBlock (.cons (hT 0) (.cons (hT 1) (.cons (hT 2) .nil))) _
@@ -698,16 +696,11 @@ private theorem bind_uniformOfFintype_fin_three {X β : Type} [Fintype X] [Nonem
       (PMF.uniformOfFintype X).bind fun a => (PMF.uniformOfFintype X).bind fun b =>
         (PMF.uniformOfFintype X).bind fun c => F a b c := by
   let e : X × X × X ≃ (Fin 3 → X) :=
-    { toFun := fun t => ![t.1, t.2.1, t.2.2]
-      invFun := fun f => (f 0, f 1, f 2)
-      left_inv := fun _ => rfl
-      right_inv := fun f => by
-        funext i
-        fin_cases i <;> rfl }
+    { toFun := fun t => ![t.1, t.2.1, t.2.2], invFun := fun f => (f 0, f 1, f 2)
+      left_inv := fun _ => rfl, right_inv := fun f => by funext i; fin_cases i <;> rfl }
   rw [← PMF.uniformOfFintype_map_equiv e, PMF.bind_map, ← PMF.uniformOfFintype_prod,
     ← PMF.uniformOfFintype_prod]
-  simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]
-  rfl
+  simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]; rfl
 
 /-- **Three random Feistel rounds against a random permutation**, for randomized word-oracle
 adversaries ([BonehShoup2023], proof of Theorem 4.9): with independent uniform random round
@@ -727,17 +720,15 @@ theorem advantage_lubyRackoffRandomRounds_prpIdealGame_le (adversary : OracleDis
     simp only [prpIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
       ProbOracleComp.eval_interpret, ProbComp.eval_pure, interpret_pairAdversary]
     rw [← PMF.uniformOfFintype_map_equiv (blockEquiv n).permCongr, PMF.bind_map]
-    congr 1
-    funext π
-    simp only [Function.comp_apply, randomPermOracle_eq_blockOracle]
-  have hroundsCoins := ProbOracleComp.table_bind_interpret_eq_coinLaw_bind
-    (PMF.uniformOfFintype (Fin 3 → BitString n → BitString n))
-    (fun tables p => LubyRackoff.feistel3 (tables 0) (tables 1) (tables 2) p)
-    (pairAdversary adversary n)
-  have hpermCoins := ProbOracleComp.table_bind_interpret_eq_coinLaw_bind
-    (PMF.uniformOfFintype (Equiv.Perm (BitString n × BitString n))) (fun σ p => σ p)
-    (pairAdversary adversary n)
-  rw [eval_prfMultiIdealGame_lubyRackoffAdversary, hperm, hroundsCoins, hpermCoins]
+    congr 1; funext π; simp only [Function.comp_apply, randomPermOracle_eq_blockOracle]
+  rw [eval_prfMultiIdealGame_lubyRackoffAdversary, hperm,
+    ProbOracleComp.table_bind_interpret_eq_coinLaw_bind
+      (PMF.uniformOfFintype (Fin 3 → BitString n → BitString n))
+      (fun tables p => LubyRackoff.feistel3 (tables 0) (tables 1) (tables 2) p)
+      (pairAdversary adversary n),
+    ProbOracleComp.table_bind_interpret_eq_coinLaw_bind
+      (PMF.uniformOfFintype (Equiv.Perm (BitString n × BitString n))) (fun σ p => σ p)
+      (pairAdversary adversary n)]
   refine Game.advantage_bind_le _ _ _ fun ω => ?_
   have h := LubyRackoff.advantage_feistel3RandomRoundsGame_idealPermGame_le
     (ProbOracleComp.isQueryBounded_fixCoins hadaptedQ ω)
@@ -759,7 +750,9 @@ theorem PseudorandomFunction.prp_lubyRackoffCipher {family : List Bool → List 
   obtain ⟨c, d, hbounds⟩ := hadversary.query_bounds
   let Q : ℕ → ℕ := fun n => c * (n + 2) ^ d
   have hQ : PolynomiallyBounded fun n => 3 * (Q n).choose 2 := by
-    refine PolynomiallyBounded.mono_of_le (g := fun n => 3 * Q n ^ 2) (by dsimp only [Q]; fun_prop)
+    refine PolynomiallyBounded.mono_of_le (g := fun n => 3 * Q n ^ 2)
+      ((PolynomiallyBounded.const 3).mul
+        (((PolynomiallyBounded.const c).mul ((PolynomiallyBounded.id.add (.const 2)).pow d)).pow 2))
       fun n => ?_
     change 3 * (Q n).choose 2 ≤ 3 * Q n ^ 2
     rw [Nat.choose_two_right, sq]

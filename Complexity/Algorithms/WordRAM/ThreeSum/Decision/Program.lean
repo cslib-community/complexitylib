@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Preprocessing
+public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Admissible
 public import Complexity.Algorithms.WordRAM.ThreeSum.Host.ExecuteAt
 
 /-!
@@ -88,9 +89,6 @@ abbrev address : Fin 16 := 13
 abbrev workspace : Fin 16 := 14
 /-- Constant zero. -/
 abbrev zero : Fin 16 := 15
-
-/-- Exactly the exponent already proved for every preprocessing word. -/
-def envelopeExponent (κ : ℕ) : ℕ := 2720 * κ + 16456
 
 /-- Read only the ordinary raw length header and initialize the small-case verdict. -/
 def readLength : Code .standard 16 := ram[

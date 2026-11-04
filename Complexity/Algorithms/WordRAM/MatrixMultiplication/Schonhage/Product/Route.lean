@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product.Memory
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted.Exec
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted.Input
@@ -54,20 +55,18 @@ public theorem exec_wanted {w L m N : ℕ} (hm : m ≤ L) (qs : List (Fin N × F
       y.mem (Wanted.offsetAddress L m N qs.length + numBands L m N ^ 2) = qs.length ∧
       (∀ a, a < Wanted.inputLimit qs.length ∨ Wanted.memoryLimit L m N qs.length ≤ a →
         y.mem a = x.mem a) := by
-  obtain ⟨z, he, zp, zv, zo, zlast, zframe⟩ := Wanted.exec_program hm (Wanted.inputPairs qs)
-    (Wanted.inputPairs_lt qs) (x.comap bank) hL hmemory hN hQ hinput (producer_fits hfit).2
-  let y := z.extend bank x
+  obtain ⟨y, he, ⟨zp, zv, zo, zlast, zframe⟩, outside⟩ :=
+    ExecWithin.rename_post bank_injective (Wanted.exec_program hm (Wanted.inputPairs qs)
+      (Wanted.inputPairs_lt qs) (x.comap bank) hL hmemory hN hQ hinput (producer_fits hfit).2)
   have hf (i : Fin 160) (hi : 96 ≤ i.val) : y.regs i = x.regs i := by
-    have hnot : ¬∃ j, bank j = i := by
-      rintro ⟨j, hj⟩
-      have hv := congrArg (fun r : Fin 160 => r.val) hj
-      change j.val = i.val at hv
-      omega
-    exact Function.extend_apply' _ _ _ hnot
-  refine ⟨y, he.rename bank_injective, hp.reframe hf, ?_, ?_, zo, zlast, zframe⟩
-  · simpa only [y, Data.comap_extend bank_injective] using zp
+    apply outside
+    intro j hj
+    have hv := congrArg (fun r : Fin 160 => r.val) hj
+    change j.val = i.val at hv
+    omega
+  refine ⟨y, he, hp.reframe hf, ?_, ?_, zo, zlast, zframe⟩
+  · exact zp
   · intro i
-    change z.mem _ = _ ∧ z.mem _ = _
-    simpa only [Wanted.inputPairs_get] using zv i.val i.isLt
+    simpa only [Data.comap_mem, Wanted.inputPairs_get] using zv i.val i.isLt
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.QueriedProduct

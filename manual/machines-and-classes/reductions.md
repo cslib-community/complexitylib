@@ -40,6 +40,12 @@ The [logspace family](https://github.com/cslib-community/complexitylib/blob/13e6
 
 The proven [bounded-query closure in L](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/LogSpaceTruthTable.lean#L469) and [fixed-bound composition](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/LogSpaceTruthTable.lean#L480) preserve this model. All six notions have polynomial-time counterparts. This source does not provide an unrestricted-logspace-truth-table `mem_L` theorem, so the bounded closure result must retain its bounded-query hypothesis.
 
+For a fixed bound with an OR or AND evaluator, import
+[`LogSpaceBoundedTruthTable`](../../Complexity/Computability/Complexity/Reduction/LogSpaceBoundedTruthTable.lean).
+`LogSpaceKDTTReducible k` and `LogSpaceKCTTReducible k` retain the same unary count and indexed
+query generator and require that count to be at most `k` on every input. Their
+`logSpaceKTruthTableReducible` lemmas preserve that bound when introducing an explicit evaluator.
+
 ## Adaptive word-oracle access
 
 [`PolyTimeTuringReducible`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Turing.lean#L120) defines `A ≤T B` by membership in `PWithOracle (encB '' B) encA`. The underlying algorithm is a deterministic adaptive `WordQueryComp` with a native `IsOraclePPTOn` realization. Its polynomial clock charges query-symbol writes and bounds both query lengths and query count; the oracle evaluation itself is one step. The machine realization is efficient for arbitrary admissible handlers, while correctness of the reduction is stated for the designated language oracle.
@@ -52,9 +58,48 @@ The oracle recognizes the **encoded image** of `B`: a word outside the image of 
 
 An autoreduction is a reduction to the same language that avoids asking its original instance. [Polynomial-time](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L83) and [logspace](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L101) many-one versions require a fixed-point-free map. The polynomial-time truth-table variants—`k`-bounded, bounded, disjunctive, conjunctive, and unrestricted—require `q(a,i) ≠ a` only for indices actually used, `i < r(a)`. The same resource and answer semantics described above apply.
 
+To turn a bounded disjunctive or conjunctive reduction from `Aᶜ` to `A` into an autoreduction,
+import [`LogSpaceBoundedAutoreducibility`](../../Complexity/Computability/Complexity/Reduction/LogSpaceBoundedAutoreducibility.lean)
+and apply `LogSpaceKDTTReducible.autoreducible_of_compl` or
+`LogSpaceKCTTReducible.autoreducible_of_compl`. The result is
+`LogSpaceKTruthTableAutoreducible k encA A`, with the same at-most-`k` bound. An active self-query
+forces rejection for OR and acceptance for AND; the construction then asks zero queries.
+Otherwise it negates the aggregate oracle answer. The test for self-queries uses certified
+logspace equality of encoded instances and ignores unused indices.
+
+The [complete checked client](../../ComplexityTests/LogSpaceBoundedAutoreducibility.lean), including
+imports, exercises both membership branches, active and inactive self-queries, and the zero-query
+full-language OR and empty-language AND witnesses. Its `L`-complete Boolean singleton examples
+also show how to apply the complement-closed-class completeness corollaries. These establish
+Proposition 2.7(2,3) of the expanded ECCC TR13-047 version; the theorem module maps the exact
+source and conventions. The remaining full-paper objective stays on [issue #2468](https://github.com/cslib-community/complexitylib/issues/2468).
+
 [`PolyTimeTuringAutoreducible`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/TuringAutoreducible.lean#L80) has a more specific execution quantifier: no encoded self-query occurs along the run with the language's actual oracle, measured by `OracleComp.queriesWith`. It does not demand absence of self-queries along every counterfactual oracle-response path. Its native efficiency certificate still applies across handlers. [Every P language](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/TuringAutoreducible.lean#L135) has such an autoreduction, using zero queries. In contrast, [singletons](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L379) and their complements fail fixed-point-free many-one autoreducibility.
 
 [`MitoticWith`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L595) asks for an efficient separator `S` such that `A` is mutually reducible with each of `A ∩ S` and `A \ S`. The module specializes this to polynomial-time and logspace many-one reductions, and to polynomial-time `k`-bounded, bounded, disjunctive and unrestricted truth tables. For a fixed `k`, it requires equivalence of each part with `A`; it does not additionally require a direct `k`-query equivalence between the two parts, because composition can square the bound. [Fixed-query mitoticity implies autoreducibility](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L881), with analogous bounded, disjunctive, and unrestricted results. The many-one implication has an explicit [co-singleton boundary](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L1059).
+
+## Local logspace self-reducibility
+
+Import `Complexity.Computability.Complexity.Reduction.LocalSelfReducibility` for
+`LocalSelfReductionQuery` and the indexed tt, disjunctive and conjunctive self-reducibility
+predicates. The query word has the same encoded length, is strictly lexicographically smaller,
+and agrees before the last ceiling-logarithm-many symbols. Only active query indices are
+restricted. OR/AND self-reductions allow either Boolean answer when the count is zero.
+They embed into tt self-reductions, which give query-avoiding tt autoreductions of the same
+language. The count, generator and evaluator retain their native logspace certificates.
+The [checked client](../../ComplexityTests/LocalSelfReducibility.lean) includes a nonzero-query
+word instance and a zero-query singleton, as well as invalid-query edge cases.
+
+The source is the expanded ECCC TR13-047 version (18 March 2013), Definitions 3.1–3.2,
+printed page 6. The predicates cover the unbounded indexed tt/OR/AND clauses; bounded-query
+and many-one specializations are not added here. The indexed tagged-base presentation is
+explicit; equivalence to serialized source transducer output is not proved. Word reconstruction,
+suffix length and well-founded descent are semantic results. Likewise the unary dependency
+and id/negation invariant from Lemma 3.3(1) have no oracle resource certificate.
+**The transfer lemma remains open**: native virtual-input/answer regeneration for the unbounded
+evaluator and the adaptive-to-tt conversion still need proofs. No desired autoreduction is
+assumed as a substitute. Complete NL/P instances, Theorem 3.5, and Sections 4–5 remain under
+[issue #2468](https://github.com/cslib-community/complexitylib/issues/2468).
 
 ## Parameter-sensitive transfer rules
 

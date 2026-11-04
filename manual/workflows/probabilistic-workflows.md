@@ -371,10 +371,108 @@ regression has raw values 0 and 2: preparation of their average is 1, while the 
 of their preparations is 1/2. A seven-step actual H4 completed child retains a positive
 preparation and a zero endpoint.
 
-This controls bias by explicit absolute residual errors. Deriving those errors from
-recursive lower-child relative estimates, numerical mean envelopes, recursive
-budget/reserve induction, recursive parameter/workspace bounds and native RL=L remain
-open. Row mass does not provide a uniform target bound, and clipped relative error
+For quantitative second deterministic envelopes, import
+[SecondEnvelope](../../Complexity/Foundations/Probability/NormalizedAtomRows/SecondEnvelope.lean).
+`secondMeanEnvelope` is the actual B1: `min 1 (|ζ| * jointMean(preparationError))`.
+`actualSelectedSecondSignal_mean_le_envelope` and
+`actualCompletedSecondSignal_mean_le_envelope` bound the actual clipped second mean by B1.
+For usage contained in full terminal rank, `secondMeanEnvelope_moment` pays its fourth row
+moment by `P * (|ζ| * (Lh + Lρ) / rate k)^4` times the completed raw absolute error moment.
+Conditional Jensen cancels the joint densities; repeating the full-rank maximum over usage
+endpoints costs the visible width P. No independence or target-size cap is used.
+
+`actualCompletedRaw_absolute_moment_le_payment` splits `A-G = (A-μ)+(μ-G)` at the actual
+full-rank input mean μ, paying `8 * (32 * λ^(2*steps) * firstSignalPayment + ROW(error))`.
+The centered noise is in RAW matrix units; relative `actualNoiseEntry` cannot be substituted
+without restoring its rate and target factors. `actualCompletedSecondSignal_envelope_payment`
+then pays B1 with the same explicit width and inverse rate. Its mean-error hypothesis is
+absolute, before clipping. For actual finite bins,
+`actualEstimatedResidual_second_envelope_moment` discharges that mean-error step with
+`estimated_residual_bins_mean_error`: positive costs sum and the negative cost is charged once.
+The shared [estimated input](../../Complexity/Foundations/Probability/HierarchyEstimatedInput.lean)
+names exactly that positive-bin sum minus one negative request, with fixed `Request HP.k`
+and independent precision. Its pointwise range uses the actual left support at most K,
+zero extension off midpoint usage, and dense ranges `2 * CB_i`: the product costs
+`K * CA * 2 * CB_i`, rather than ambient width P. Here `CA = 2 * Q(atomCap)`,
+`CB_0 = cap` and `CB_i = 16` for fine bounded routed bins. The finite scale sum retains
+all rates, exact rounded-grid importance ratios and the midpoint marginal divisor.
+`estimatedResidualInput_moment_le` pays `16 * P * bound^4` at `N=P, u=rate ks`;
+the second-envelope client uses this payment without a retained raw-input-moment premise.
+The canonical residual remains at km, with full rank and normalization at kt, finite
+coverage, narrower-source horizon, all suffixes and one shared environment.
+
+`actualEstimatedFirstSignal_noise_le_dyadic` pays actual first-prefix row noise using the
+same input and the inverse parent-rate fourth power. For scaled centered RAW noise,
+`estimatedResidualInput_scaled_noise_le_dyadic` feeds `spectralWalkLength` the coefficient
+`amplification * 32 * 16 * P * bound^4`. For B1 the amplification is
+`P * (|ζ| * (Lh + Lρ) / rate kt)^4`; this retains RAW matrix units.
+Positive tolerance is required. The [finite input tests](../../ComplexityTests/HierarchyEstimatedInput.lean)
+include a positive nonconstant two-bin input, exact once-negative arithmetic, independent
+precisions, separate top/fine caps, support versus width, chosen amplified steps and zero/empty edges.
+The [regressions](../../ComplexityTests/SecondEnvelope.lean) check a positive nonconstant
+spectator raw child and B1, exact-zero/empty edges, actual clipped-mean comparison and an exact
+two-endpoint counterexample to dropping width.
+
+[ReserveOutput](../../Complexity/Foundations/Probability/NormalizedAtomRows/ReserveOutput.lean)
+assembles the actual finite output from explicit lower-child conditional-error-cost fourth
+moments. `actualEstimatedResidual_output_from_cost_reserves` derives common deterministic B
+matrices by finite maxima of the actual first/B1 envelopes divided by `2^dyadicSlack`.
+The first payment uses absolute mean error over `rate kt + G`; the second retains
+`A = P * (|ζ| * (Lh + Lρ) / rate kt)^4`. At horizon m its uniform child-cost reserve is
+`tolerance^4 / (1 + rate kt^(-4) + A)`, where `tolerance = ε / (2 * (m + 1))`.
+This finite allocation pays both common-B moments without claiming growth independent of m.
+RAW steps are the maximum of the actual first-noise requirement and the fully amplified
+`(1 + A)` RAW requirement. Preparation steps use the existing 16K payment. The target is
+`genuineNormalizedRecipe` at the canonical residual, identified with `normalizedRequest`
+by `genuineNormalizedRecipe_eq_request`; capacities are actually `(K+1)*2^(64*slack)`.
+The theorem derives nonnegativity, row mass and zero extension, with finite cover,
+narrower-source horizon, gate/cutoff/cap and routing agreements still explicit.
+The [new regressions](../../ComplexityTests/ReserveOutput.lean) evaluate a positive,
+nonconstant full-matrix input with a free spectator, show the once-negative arithmetic,
+compute nonzero common B and check the actual completed prefix at index zero.
+The bounded fixture does not assert the canonical routed-bin mean or recursive reserves.
+A separate actual lower-child conditional-cost client proves that the finite reserve is
+satisfiable at some positive tolerance; it does not claim that tolerance is small.
+
+[ChildRootReserve](../../Complexity/Foundations/Probability/NormalizedAtomRows/ChildRootReserve.lean)
+now pays that cost reserve from actual normalized lower-child rooted moments.
+[RootReserveOutput](../../Complexity/Foundations/Probability/NormalizedAtomRows/RootReserveOutput.lean)
+reuses the same output assembly. Its target is still the genuine canonical residual.
+The cost API retains only the union of actual estimated/canonical left supports. Both left
+children vanish off midpoint usage, so right errors are charged only at their reset source z.
+Left errors use the old source and midpoint terminal. Each lower budget uses its own full
+terminal rank; min-rate usage is proved to lie in that rank, with every suffix unchanged.
+
+The sufficient allocation is deliberately conservative. Put `CA = 2 Q(atomCap)`,
+`CB = 2 max(cap,16)`, `B = max(CA,CB)` and let `A` be `residualCostCoefficient`.
+Its literal formula is `8 ((n+1)^4 sum_i 8 (D_i + 8 P^4 (CA^4+CB^4) T_i) + N)`,
+where `D_i`, `T_i`, and `N` are endpoint sums of the fourth powers of the direct,
+importance-times-midpoint, and once-negative coefficients. Their rounded grid densities
+remain literal. Set `scale = P^2 / (P rate ks) * A` and
+`delta = tolerance^4 / (1 + rate kt^(-4) + amplification)`.
+For each called request r, a rooted row moment at most
+`delta / (1+scale) / (1 + (4 B^(3/4))^4 P r.source.rate) / (1 + #calls)`
+pays the desired reserve, where `calls = residualErrorCalls` contains the direct/left/right
+requests per positive bin and the special negative request once. In particular
+`#calls ≤ 3(n+1)+1`; it counts requests, not environment atoms. The proof keeps a sum
+of child ordinary errors on their own source/usage domains for each environment, applies
+conditional Jensen to the actual cost, and swaps finite sums with expectation. Bounded
+root-to-ordinary conversion then pays each integrated child moment. Repeating this sum
+over parent pairs costs the explicit `P²`; child source normalization costs `P r.source.rate`.
+There is no environment-cardinality or inverse minimum-atom-probability factor, and no
+independence assumption on children. Exact midpoint density and importance factors remain
+in `A`. This finite transport does not establish useful recursive parameter growth.
+The ordinary-error conversion applies only to bounded normalized estimated and canonical
+outputs, never to the signed raw target divided by a rate. The
+[domain regressions](../../ComplexityTests/ChildRootReserve.lean) check an off-source error
+ignored by the actual product, full-rank masks, two-bin/once-negative coefficients,
+canonical-zero and positive nonconstant normalized outputs. A sparse, mask-sensitive
+normalized-child regression also checks an integrated budget that permits a unit error at
+a retained atom; the corresponding per-atom allowance would be strictly less than one.
+
+Deriving small numerical errors from recursive lower-child relative estimates, numerical
+reserves, recursive budget induction, copy routing, parameter/workspace bounds and native RL=L
+remain open. Row mass does not provide a uniform target bound, and clipped relative error
 alone does not provide an absolute residual error.
 
 For a coarser source, `source_incoming_cost_le` quantifies the generic incoming cost as
@@ -390,3 +488,111 @@ Keep efficiency and security as separate goals. In [Crypto/Computational/Basic.l
 Specify the experiment, admissible adversaries, success event and assumption; prove the reduction's efficiency using the routines above; then prove the probability or advantage inequality. Semantic rewrites and native certificates discharge different obligations. If a proposed reduction only has a query bound, return to the realization step before calling it a computational security reduction. Use the [security-game reference](../programs-crypto-and-probability/security-games-and-primitives.md) to choose the correct primitive and adversary model.
 
 [complexitylib]: ../sources.md#complexitylib
+
+The two reserve-output theorems choose their output constant after the fixed hierarchy,
+ζ, scale and positive floor, before the prime, environment width, horizon, prefix length
+and raw/preparation/maximum families. Select this constant before allocating recursive
+child accuracies. Uniformity of that coefficient does not remove any displayed finite
+allocation or walk-length losses and supplies no recursive accuracy theorem.
+
+[HierarchyCorrectionStability](../../Complexity/Foundations/Probability/HierarchyCorrectionStability.lean)
+factors the actual correction request into its unit-pilot coefficient and `γ(maximum y)`.
+The coefficient lies in `[0, 2 Q(atomCap)]`, even for signed raw/preparation estimates.
+If `Lγ` is the hierarchy's fourth-root Lipschitz constant for γ, the fourth-root output
+change is at most `(2 Q(atomCap))^(1/4) Lγ |maximum y - maximum' y|`. The integrated theorem
+keeps both children on the same full environment and the original source/full-terminal
+masks; its loss is `((2 Q(atomCap))^(1/4) Lγ)^4`. It does not silently transport a vertex
+error to a different source or remove any width/rate coefficient from that transport.
+
+For all three changing child classes, use
+[HierarchyCorrectionRawStability](../../Complexity/Foundations/Probability/HierarchyCorrectionRawStability.lean).
+Its selected preparation theorem and normalized recipe bound retain the actual HP row
+and pilot gates, auxiliary incoming scores, both ranks, and signed unbounded raw entries.
+The bounded atom cutoff and denominator root regularity control outputs globally; no
+raw target cap is assumed. Preparation errors pass through the actual same-environment
+joint source/usage mean, followed by `max (1/2) (min 1 mean)`.
+
+The pointwise actual-request theorem keeps the entry, full terminal-row, source-column
+and full source×terminal maxima. Its integrated contract retains the original source and
+full terminal masks: RAW absolute row error costs `64 (Cr / terminalRate)^4 width^2`,
+PREP source/usage row error costs `64 Cp^4`, and ordinary maximum error on the same
+source/full-terminal pairs costs `64 Cm^4`. The three constants depend only on HP.
+Usage inclusion in rank and zero extension allow conditional Jensen on PREP without
+charging full-environment atom costs. Every child can depend on the same full environment.
+The [regressions](../../ComplexityTests/HierarchyCorrectionRawStability.lean) include nonzero
+separate/joint perturbations and row/incoming rank sensitivity; the dyadic maximum
+regression above remains in place.
+
+For the actual pilot score, detector and running maximum recipes, use
+[PilotRowStability](../../Complexity/Foundations/Probability/PilotRowStability.lean).
+The score contract keeps the signed raw inputs in the original K-rank and pays ordinary
+fourth-moment row error with `width * ((Lϕ + Lρ) / rate)^4`. Its constants come from the
+fixed HP cutoffs before domains, rates or child tables. The detector first takes its actual
+source mean and terminal-conditioned mean: Jensen pays the source-rank maximum by the
+sum of fourth powers on that same finite source slice. The literal-payment theorem retains those means and the finite source sum.
+[PilotDetectorTransport](../../Complexity/Foundations/Probability/PilotDetectorTransport.lean)
+reinserts the terminal conditioning by finite Fubini: its integrated score payment is
+`width * childSourceRate / (parentSourceRate * terminalDensityLowerBound)` times the
+child row moment. All outer coordinates and both actual integration variables remain in
+that moment. A positive terminal-density lower bound is explicit; empty conditioning
+still gives zero in the underlying detector contract.
+The clipped running maximum pays the sum of its previous-maximum and current-detector
+fourth moments, on the original pair masks.
+
+[HierarchyPilotStability](../../Complexity/Foundations/Probability/HierarchyPilotStability.lean)
+also transports this payment through `terminalSplit` to actual full H4 rank environments.
+The child source resets to the terminal stage rate with its role and suffix unchanged;
+the terminal frame keeps its own role and suffix. Composing with the actual score contract
+pays raw errors with an additional `width * (C / terminalRate)^4`, where `C` is selected
+at fixed HP before the prime, request or children. The score can depend on every outer
+coordinate and its terminal frame. This is the literal detector recipe, whose score argument
+has no dependence on the internally averaged source seed. No independent recursive child
+realization is inferred from the product used by finite Fubini. The same module
+provides `correctionRequest_stageDetector_root_moment`, combining the transported current
+score/detector payment, previous maximum, and changing RAW/PREP correction children, retaining
+its RAW width²/rate⁴ and PREP source/usage payments. It requires no assumed final-maximum
+error. The [checked pilot client](../../ComplexityTests/PilotRowStability.lean) changes the raw
+K-rank from zero to the gate cutoff while fixing the inspected entry, and checks changes to
+the actual score, detector and maximum, a correlated nonzero moment, and empty/zero cases.
+The shared [rank API](../../Complexity/Foundations/Data/Finset/KthLargest/Stability.lean)
+also removes repeated normalization proofs in dense and correction preparation.
+
+For a computed initial-pilot fragment, use
+[InitialPilotScore](../../Complexity/Foundations/Probability/InitialPilotScore.lean).
+It evaluates the dense bin from the stage-zero base matrix and its actual preparation,
+uses the literal zero correction of the first pilot input, walks that RAW sample on
+all H4 coordinates, and passes the completed matrix to the actual score recipe on the
+same environment. Both requests strictly decrease the existing constructor rank;
+statistical accuracy does not change `HP.k`.
+
+The fixed-HP score constant is chosen before the prime, roles, rates or base matrix.
+The finite budget is `width * (L / terminalRate)^4 * 32 * inputFourthMoment`, where the
+input moment is the literal finite sum of the computed dense sample. The step count is
+`max 1 (spectralWalkLength gap budget tolerance 0)`, so positive tolerance gives an actual
+positive-length call even at zero budget. This is a mathematical finite allocation,
+not a certified efficient procedure for choosing the budget or executing the walk.
+The general payment targets the score of the bin's conditional mean. At equal parent/bin
+terminal rates, dense normalization proves that mean is the matrix-unit bin. For a
+nonnegative substochastic base covered by a single bin,
+`initialPilotScore_allocated_of_single_bin` therefore bounds error against the actual
+initial score of that base without a supplied child-error or desired-mean certificate.
+
+The [computed regression](../../ComplexityTests/InitialPilotScore.lean) uses a bounded routed
+top bin with a smooth scalar switch, the identity base over `ZMod 5`, source exponent one,
+full terminal rate, distinct roles and nonempty suffixes. Its computed lower RAW walk and
+upper score are both one or both zero according to the same original source frame, at
+positive allocated lengths. The two environments agree on every other role, including
+the terminal frame. This is a nonconstant correlated exact-on-slice case; it does
+not establish nonzero mixing error or later recursive closure.
+
+Full well-founded approximate evaluation remains open. In particular, later pilot/correction
+iterations, general finite bin sums, source-dependent detector children, parameter growth,
+copy routing, native workspace and RL=L are not supplied by this fragment. The existing
+detector transport still accepts a score with no dependence on its internally averaged
+source seed. The new RAW/score fragment retains that dependence and does not feed it through
+the restricted detector interface or reseed it. A later detector client must prove actual
+invariance or retain the needed source coordinates explicitly.
+
+The regressions additionally check a correlated detector moment of
+`1/32`, a distinct child normalization `1/16`, and nonconstant padded frame source/rank
+densities `16/625` and `81/625`.
