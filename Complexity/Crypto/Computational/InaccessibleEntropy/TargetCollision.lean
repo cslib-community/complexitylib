@@ -522,6 +522,7 @@ theorem listRow_rompelCompressionEval (G : ShrinkingCollisionGrid) (n : ℕ) (K 
     [] q (by simpa only [List.length_range] using hq)
   simpa only [rompelCompressionEval, List.append_nil, List.getElem_range] using h
 
+@[fun_prop]
 theorem computableInPolyTime_rompelCompressionEval (G : ShrinkingCollisionGrid) :
     ComputableInPolyTime
       (fun ⟨n, K, x⟩ => rompelCompressionEval G n K x)
