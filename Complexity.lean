@@ -3796,6 +3796,7 @@ public import Complexity.Foundations.Probability.RootMetric.Minkowski
 public import Complexity.Foundations.Probability.RootMetric.Slices
 public import Complexity.Foundations.Probability.RootMetric.Stationarity
 public import Complexity.Foundations.Probability.RoutedBinAgreement
+public import Complexity.Foundations.Probability.RoutedBinPreparation
 public import Complexity.Foundations.Probability.RoutedHierarchyBins
 public import Complexity.Foundations.Probability.SamplerPrefix
 public import Complexity.Foundations.Probability.ScheduledFineProductMean

@@ -747,6 +747,15 @@ it does not prove a general inductive parent error bound or a nonzero mixing-err
 Out-of-range array defaults are used only beyond the executed horizon, not as unavailable
 recursive calls or zero approximations.
 
+The [routed-bin preparation laws](../../Complexity/Foundations/Probability/RoutedBinPreparation.lean)
+now provide a concrete alternative to unconstrained preparation: the existing polynomial
+cutoff vanishes on light inputs, is one wherever the bounded routed numerator is nonzero,
+and has a globally Lipschitz fourth root. Its constants precede bin scales and routing.
+The [checked instance](../../ComplexityTests/RoutedBinPreparation.lean) uses a nonzero routed
+top bin and checks the zero side; constant-one preparation fails that light-input contract.
+These primitive laws do not yet supply routed-numerator regularity, mean/noise envelopes
+or the general compressed parent-error theorem.
+
 The simultaneous all-lower-budget row/vector availability, canonical error, support and range
 invariant is unfinished. The finite compressed-bin consumer above is wired, but its general canonical mean/noise
 payments from the simultaneous lower-budget invariant remain unproved; the fixed-HP reserve
