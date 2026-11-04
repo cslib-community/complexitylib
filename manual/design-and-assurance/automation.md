@@ -10,6 +10,36 @@ The automation layer searches for proofs of explicit mathematical contracts. It 
 
 Plain and internal tidy predicates have separate search rules at this snapshot. The preferred plain tactic does not change the user's goal to tidy computability or silently restate hypotheses. Machine-level proofs may still use tidy witnesses internally. This is the implemented direction even where older prose or issues describe a stronger prohibition on tidy use inside proofs.
 
+## Rewrite option matches before resource automation
+
+Import `Complexity.Tactic.OptionMatch` to use `option_match_to_elim`. For a
+`ComputableInO` goal, also import
+`Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Option`; that module
+registers `ComputableInO.optionElimWithInput` with `fun_prop`. The
+[complete checked client](../../ComplexityTests/OptionMatch.lean) gives both imports, local
+context and an example with explicit time and space bounds.
+
+Unfold a local wrapper to expose its option match, run `option_match_to_elim`, then use
+`fun_prop` to assemble the available certificates. The tactic rewrites the goal to
+`Option.elim` using a checked equality proof; it does not prove the branch computations
+efficient. In the quantitative client, `ComputableInO.mono` leaves separate time and space
+comparisons, discharged from the encodings. Supply missing callback certificates and prove
+those remaining inequalities. The migrated
+[checker proof](../../Complexity/Computability/Machines/Turing/MultiTape/Counting/Checker.lean),
+`computableInPolyTime_binaryStep`, demonstrates the same route for a named wrapper.
+
+The rewrite supports non-dependent two-way option matches, including nested occurrences,
+occurrences under binders and either alternative order. It rewrites `Option.bind` directly;
+unfold `Option.map` or `Option.any` first to expose their matches. An option payload need
+not have an inhabitant for the quantitative elimination rule.
+
+Dependent matches, general matches on multiple discriminants and alternatives that destructure
+a payload, such as `some (a, b)`, are left unchanged. The diagnostic
+`option_match_to_elim: no option match in the goal` means no supported occurrence was
+rewritten. Check that the wrapper is unfolded and the pattern is supported. For the remaining
+cases, use explicit case analysis or an elimination lemma, then apply the appropriate
+certificates and bounds. Rewriting alone does not supply a missing resource certificate.
+
 ## Other resource predicates
 
 | Tactic/interface | Input contract and strategy | Boundary |
