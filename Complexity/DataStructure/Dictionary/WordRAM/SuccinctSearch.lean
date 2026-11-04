@@ -271,7 +271,6 @@ theorem clientResult_resolveOvfStepProg {U V w n_max h_space : ℕ}
     rw [ite_eq_right hb0, ite_eq_right hj_slab]
     rfl
 
-set_option linter.unusedSimpArgs false in
 theorem realizes_resolveOvfStepGen :
     Realizes .exact resolveOvfStepGenProg
       (WordEncoding.encode (α := (DictParams × (ℕ × ℕ)) × (ℕ × ℕ)))
@@ -285,17 +284,7 @@ theorem realizes_resolveOvfStepGen :
     obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1
     have hb_pos : 0 < bucketBits n_max := h.2.2.2.2.2
     have hK : 0 < slabSize n_max := slabSize_pos n_max
-    try simp only [
-      resolveOvfStepGenPre_mk, ResolveOvfStepPre, resolveOvfStepGenProg_mk,
-      p_w_mk, p_nMax_mk, p_nMaxSubOne_mk, p_offQuot_mk, p_quotBits_mk, p_offVal_mk,
-      p_valBits_mk, p_lmBits_mk, p_offGM_mk, p_gmBits_mk, p_bucketBits_mk,
-      p_bucketMask_mk, p_slabSize_mk, p_slabSizeSubOne_mk, p_twoSlabSize_mk,
-      p_dirSlabs_mk, p_dirSlabsSubOne_mk, p_tailCap_mk, p_gmSlabDirBase_mk,
-      p_gmTailPtrBase_mk, p_gmTailOwnerBase_mk, p_gmSlabMetaBase_mk, p_numMicro_mk,
-      p_minCap_mk, p_U_mk, p_V_mk, p_hSpace_mk, p_offLMSub_mk,
-      readQuotGenProg_mk, writeQuotGenProg_mk, readValGenProg_mk, writeValGenProg_mk,
-      readLMGenProg_mk, writeLMGenProg_mk, readGMGenProg_mk, writeGMGenProg_mk,
-      readBucketCountGenProg_mk, resolveIndexedSlotGenProg_mk] at *
+    simpDictParamsWith [resolveOvfStepGenPre_mk, ResolveOvfStepPre, resolveOvfStepGenProg_mk]
   )
   · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU (le_of_lt (gmQIdx_lt hb_pos h.2.1))
   · exact fits_const_of_dictEnv h.1 (by decide)
@@ -565,7 +554,6 @@ theorem clientResult_ovfStepProg {U V w n_max h_space : ℕ}
     clientResult_readQuotProg s hphys_lt]
   split_ifs <;> exact ⟨rfl, hres.2⟩
 
-set_option linter.unusedSimpArgs false in
 theorem realizes_ovfStepGen :
     Realizes .exact ovfStepGenProg
       (WordEncoding.encode (α := (DictParams × ((ℕ × ℕ) × ℕ)) × ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ)))
@@ -579,18 +567,8 @@ theorem realizes_ovfStepGen :
     rcases d with ⟨⟨dp, d1⟩, d2⟩
     obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1
     have hb_pos : 0 < bucketBits n_max := h.2.2.2.2.2
-    try simp only [
-      ovfStepGenPre_mk, OvfStepPre, ovfStepGenProg_mk,
-      resolveOvfStepGenPre_mk, ResolveOvfStepPre, resolveOvfStepGenProg_mk,
-      p_w_mk, p_nMax_mk, p_nMaxSubOne_mk, p_offQuot_mk, p_quotBits_mk, p_offVal_mk,
-      p_valBits_mk, p_lmBits_mk, p_offGM_mk, p_gmBits_mk, p_bucketBits_mk,
-      p_bucketMask_mk, p_slabSize_mk, p_slabSizeSubOne_mk, p_twoSlabSize_mk,
-      p_dirSlabs_mk, p_dirSlabsSubOne_mk, p_tailCap_mk, p_gmSlabDirBase_mk,
-      p_gmTailPtrBase_mk, p_gmTailOwnerBase_mk, p_gmSlabMetaBase_mk, p_numMicro_mk,
-      p_minCap_mk, p_U_mk, p_V_mk, p_hSpace_mk, p_offLMSub_mk,
-      readQuotGenProg_mk, writeQuotGenProg_mk, readValGenProg_mk, writeValGenProg_mk,
-      readLMGenProg_mk, writeLMGenProg_mk, readGMGenProg_mk, writeGMGenProg_mk,
-      readBucketCountGenProg_mk, resolveIndexedSlotGenProg_mk] at *
+    simpDictParamsWith [ovfStepGenPre_mk, OvfStepPre, ovfStepGenProg_mk,
+      resolveOvfStepGenPre_mk, ResolveOvfStepPre, resolveOvfStepGenProg_mk]
   )
   · exact h
   · exact h.1

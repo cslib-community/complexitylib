@@ -800,7 +800,6 @@ theorem queryWithHashGenPre_mk (U V w₀ n_max w : ℕ) (d : (ℕ × ℕ) × ℕ
     QueryWithHashGenPre w (mkDictParams U V w₀ n_max (hashSpace U w₀ n_max), d) s ↔
       QueryWithHashPre U V w₀ n_max w d s := Iff.rfl
 
-set_option linter.unusedSimpArgs false in
 /-- Parameter-free `Realizes .exact` certificate for `queryWithHashGenProg`. -/
 theorem realizes_queryWithHashGen :
     Realizes .exact queryWithHashGenProg
@@ -813,9 +812,8 @@ theorem realizes_queryWithHashGen :
   all_goals (
     rcases d with ⟨dp, d⟩
     obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.2.2.2.1
-    try simp only [queryWithHashGenPre_mk, QueryWithHashPre, p_bucketBits_mk, p_bucketMask_mk,
-      p_U_mk, p_V_mk, p_w_mk, p_nMax_mk, p_hSpace_mk,
-      searchMicroChainGenPre_mk, SearchMicroChainPre, queryBodyGenProg_mk] at *
+    simpDictParamsWith [queryWithHashGenPre_mk, QueryWithHashPre,
+      searchMicroChainGenPre_mk, SearchMicroChainPre, queryBodyGenProg_mk]
   )
   · rw [and_mask_xor_eq_feistelBucket]
     exact (fits_bucketBits_and_mask h.2.2.2.1 hw hnU hU).2.of_le
@@ -888,7 +886,6 @@ theorem insertWithHashGenPre_mk (U V w₀ n_max w : ℕ) (d : ((ℕ × ℕ) × �
     InsertWithHashGenPre w (mkDictParams U V w₀ n_max (hashSpace U w₀ n_max), d) s ↔
       InsertWithHashPre U V w₀ n_max w d s := Iff.rfl
 
-set_option linter.unusedSimpArgs false in
 /-- Parameter-free `Realizes .exact` certificate for `insertWithHashGenProg`. -/
 theorem realizes_insertWithHashGen :
     Realizes .exact insertWithHashGenProg
@@ -901,9 +898,8 @@ theorem realizes_insertWithHashGen :
   all_goals (
     rcases d with ⟨dp, d⟩
     obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.2.2.2.1.1
-    try simp only [insertWithHashGenPre_mk, InsertWithHashPre, p_bucketBits_mk, p_bucketMask_mk,
-      p_U_mk, p_V_mk, p_w_mk, p_nMax_mk, p_hSpace_mk,
-      insertBodyGenPre_mk, InsertBodyPre, SearchMicroChainPre, insertBodyGenProg_mk] at *
+    simpDictParamsWith [insertWithHashGenPre_mk, InsertWithHashPre,
+      insertBodyGenPre_mk, InsertBodyPre, SearchMicroChainPre, insertBodyGenProg_mk]
   )
   · rw [and_mask_xor_eq_feistelBucket]
     exact (fits_bucketBits_and_mask h.2.2.2.1.1 hw hnU hU).2.of_le
@@ -952,7 +948,6 @@ theorem deletePrepWithHashGenProg_mk (U V w₀ n_max : ℕ) (d : (ℕ × ℕ) ×
   simp only [deletePrepWithHashGenProg, deletePrepWithHashProg, p_bucketBits_mk, p_bucketMask_mk,
     deletePrepGenProg_mk]
 
-set_option linter.unusedSimpArgs false in
 /-- Parameter-free `Realizes .exact` certificate for `deletePrepWithHashGenProg`. -/
 theorem realizes_deletePrepWithHashGen :
     Realizes .exact deletePrepWithHashGenProg
@@ -965,9 +960,8 @@ theorem realizes_deletePrepWithHashGen :
   all_goals (
     rcases d with ⟨dp, d⟩
     obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.2.2.2.1
-    try simp only [queryWithHashGenPre_mk, QueryWithHashPre, p_bucketBits_mk, p_bucketMask_mk,
-      p_U_mk, p_V_mk, p_w_mk, p_nMax_mk, p_hSpace_mk,
-      searchMicroChainGenPre_mk, SearchMicroChainPre, deletePrepGenProg_mk] at *
+    simpDictParamsWith [queryWithHashGenPre_mk, QueryWithHashPre,
+      searchMicroChainGenPre_mk, SearchMicroChainPre, deletePrepGenProg_mk]
   )
   · rw [and_mask_xor_eq_feistelBucket]
     exact (fits_bucketBits_and_mask h.2.2.2.1 hw hnU hU).2.of_le
@@ -1053,7 +1047,6 @@ theorem deleteFinishWithHashGenPre_mk (U V w₀ n_max w : ℕ)
     DeleteFinishWithHashGenPre w (mkDictParams U V w₀ n_max (hashSpace U w₀ n_max), d) s ↔
       DeleteFinishWithHashPre U V w₀ n_max w d s := Iff.rfl
 
-set_option linter.unusedSimpArgs false in
 /-- Parameter-free `Realizes .exact` certificate for `deleteFinishWithHashGenProg`. -/
 theorem realizes_deleteFinishWithHashGen :
     Realizes .exact deleteFinishWithHashGenProg
@@ -1066,9 +1059,8 @@ theorem realizes_deleteFinishWithHashGen :
   all_goals (
     rcases d with ⟨dp, d⟩
     obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.2.2.2.1
-    try simp only [deleteFinishWithHashGenPre_mk, DeleteFinishWithHashPre,
-      p_bucketBits_mk, p_bucketMask_mk, p_U_mk, p_V_mk, p_w_mk, p_nMax_mk, p_hSpace_mk,
-      deleteFinishGenPre_mk, DeleteFinishPre, DeleteFoundPre, deleteFinishGenProg_mk] at *
+    simpDictParamsWith [deleteFinishWithHashGenPre_mk, DeleteFinishWithHashPre,
+      deleteFinishGenPre_mk, DeleteFinishPre, DeleteFoundPre, deleteFinishGenProg_mk]
   )
   · rw [and_mask_xor_eq_feistelBucket]
     exact (fits_bucketBits_and_mask h.2.2.2.1 hw hnU hU).2.of_le

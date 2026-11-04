@@ -377,7 +377,6 @@ private theorem promoteStep_bounds {U V w₀ n_max h_space w base b k : ℕ}
   · rw [hgm_wv]; exact htail
   · rw [hgm_wv]; omega
 
-set_option linter.unusedSimpArgs false in
 theorem realizes_promoteStepGen :
     Realizes .exact promoteStepGenProg
       (WordEncoding.encode (α := (DictParams × (ℕ × ℕ)) × ℕ)) (WordEncoding.encode (α := ℕ))
@@ -417,17 +416,8 @@ theorem realizes_promoteStepGen :
     rcases d with ⟨⟨dp, d1⟩, d2⟩
     let d := (d1, d2)
     obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1
-    try simp only [
-      promoteStepGenPre_mk, removeLastTailItemGenPre_mk, removeLastTailItemGenProg_mk,
-      p_w_mk, p_nMax_mk, p_nMaxSubOne_mk, p_offQuot_mk, p_quotBits_mk, p_offVal_mk,
-      p_valBits_mk, p_lmBits_mk, p_offGM_mk, p_gmBits_mk, p_bucketBits_mk,
-      p_bucketMask_mk, p_slabSize_mk, p_slabSizeSubOne_mk, p_twoSlabSize_mk,
-      p_dirSlabs_mk, p_dirSlabsSubOne_mk, p_tailCap_mk, p_gmSlabDirBase_mk,
-      p_gmTailPtrBase_mk, p_gmTailOwnerBase_mk, p_gmSlabMetaBase_mk, p_numMicro_mk,
-      p_minCap_mk, p_U_mk, p_V_mk, p_hSpace_mk, p_offLMSub_mk,
-      readQuotGenProg_mk, writeQuotGenProg_mk, readValGenProg_mk, writeValGenProg_mk,
-      readLMGenProg_mk, writeLMGenProg_mk, readGMGenProg_mk, writeGMGenProg_mk,
-      readBucketCountGenProg_mk, resolveIndexedSlotGenProg_mk] at *
+    simpDictParamsWith [promoteStepGenPre_mk, removeLastTailItemGenPre_mk,
+      removeLastTailItemGenProg_mk]
   )
   · exact (promoteStep_bounds hw h).1
   · exact fits_of_le_globalMetaLen h.1 h.2.2 hw hnU hU

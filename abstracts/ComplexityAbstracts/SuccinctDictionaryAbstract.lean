@@ -48,8 +48,9 @@ polynomial hashing with a bit-packed Four-Russians multiplication table (`Reduce
   `270 + 8 * probeExcess` with potential `66 * slotPotential`. In turn,
   `tsum_uniform_probeExcess_reducedPolyHash_le_five` bounds expected `probeExcess` by `5`.
 - **Program parameterization and parameter-uniform `O(1)` operation charge:** The five generic
-  `Memory.Prog` subroutines (`extractOpGenProg`, `queryOpGenProg`, `insertOpGenProg`,
-  `deletePrepGenProg`, `deleteFinGenProg`) are compiled once independent of `(U, V, w, n_max)` and
+  `Memory.Prog` subroutines (`extractQuotGenProg`, `queryWithHashGenProg`, `insertWithHashGenProg`,
+  `deletePrepWithHashGenProg`, `deleteFinishWithHashGenProg`) are compiled once independent of
+  `(U, V, w, n_max)` and
   receive the 36 static parameters via registers loaded by `loadParamsCode` in `36` instructions.
   Consequently, both the register budget `r ≥ 256` (`Succinct.rSuccinct`) and the per-operation
   charge `C_op` (`Succinct.chargeVal = 313 * Succinct.opFactor + 284725`) are universal `O(1)`

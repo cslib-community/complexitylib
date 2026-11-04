@@ -15,11 +15,11 @@ import Complexity.Tactic.Realize
 
 This module realizes the two-phase bucket-level deletion of the fixed-capacity succinct dictionary
 in `Memory.Prog` via `realize`:
-* `deletePrepProg` and `realizes_deletePrep`: Phase 1 of `delete` (search bucket `b` for `q_target`
-  and, if found, read the quotient `q_last` of the last slot in the bucket so that the Word-RAM
-  wrapper can compute `m_last`);
-* `deleteSwapProg`, `deleteFoundProg`, `deleteFinishProg`, and `realizes_deleteFinish`: Phase 2 of
-  `delete` (unlink the deleted slot, swap the last slot into the deleted slot and relink into
+* `deletePrepProg` and `realizes_deletePrepGen`: Phase 1 of `delete` (search bucket `b` for
+  `q_target` and, if found, read the quotient `q_last` of the last slot in the bucket so that the
+  Word-RAM wrapper can compute `m_last`);
+* `deleteSwapProg`, `deleteFoundProg`, `deleteFinishProg`, and `realizes_deleteFinishGen`: Phase 2
+  of `delete` (unlink the deleted slot, swap the last slot into the deleted slot and relink into
   `m_last` when `j_del < j_last`, and pop the last slot from the bucket).
 -/
 

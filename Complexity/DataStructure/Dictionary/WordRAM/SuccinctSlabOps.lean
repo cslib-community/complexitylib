@@ -736,7 +736,6 @@ private theorem appendTailItem_sub_lt_n_max {U V w₀ n_max h_space w : ℕ}
   have := appendTailItem_lt_n_max hw hb_pos d s h
   omega
 
-set_option linter.unusedSimpArgs false in
 theorem realizes_pushBackTailWriteGen :
     Realizes .exact pushBackTailWriteGenProg
       (WordEncoding.encode (α := ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ))
@@ -760,18 +759,8 @@ theorem realizes_pushBackTailWriteGen :
     rcases d with ⟨⟨⟨dp, base, b⟩, q_val⟩, v_val⟩
     let d : ((ℕ × ℕ) × ℕ) × ℕ := (((base, b), q_val), v_val)
     obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1.1
-    try simp only [
-      pushBackTailWriteGenPre_mk, pushBackSlotGenPre_mk,
-      appendTailItemGenPre_mk, appendTailItemGenProg_mk,
-      p_w_mk, p_nMax_mk, p_nMaxSubOne_mk, p_offQuot_mk, p_quotBits_mk, p_offVal_mk,
-      p_valBits_mk, p_lmBits_mk, p_offGM_mk, p_gmBits_mk, p_bucketBits_mk,
-      p_bucketMask_mk, p_slabSize_mk, p_slabSizeSubOne_mk, p_twoSlabSize_mk,
-      p_dirSlabs_mk, p_dirSlabsSubOne_mk, p_tailCap_mk, p_gmSlabDirBase_mk,
-      p_gmTailPtrBase_mk, p_gmTailOwnerBase_mk, p_gmSlabMetaBase_mk, p_numMicro_mk,
-      p_minCap_mk, p_U_mk, p_V_mk, p_hSpace_mk, p_offLMSub_mk,
-      readQuotGenProg_mk, writeQuotGenProg_mk, readValGenProg_mk, writeValGenProg_mk,
-      readLMGenProg_mk, writeLMGenProg_mk, readGMGenProg_mk, writeGMGenProg_mk,
-      readBucketCountGenProg_mk, resolveIndexedSlotGenProg_mk] at *
+    simpDictParamsWith [pushBackTailWriteGenPre_mk, pushBackSlotGenPre_mk,
+      appendTailItemGenPre_mk, appendTailItemGenProg_mk]
     try dsimp only [d, PushBackSlotPre] at *
   )
   · exact ⟨h.1.1, h.1.2.1.multi_tail h.2, h.1.2.2.1,
@@ -1094,7 +1083,6 @@ theorem pushBackSlotProg_effect {U V w n_max h_space base b q_val v_val : ℕ}
       rw [hcost]
       omega
 
-set_option linter.unusedSimpArgs false in
 theorem realizes_pushBackSlotGen :
     Realizes .exact pushBackSlotGenProg
       (WordEncoding.encode (α := ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ))
@@ -1128,18 +1116,8 @@ theorem realizes_pushBackSlotGen :
     rcases d with ⟨⟨⟨dp, base, b⟩, q_val⟩, v_val⟩
     let d : ((ℕ × ℕ) × ℕ) × ℕ := (((base, b), q_val), v_val)
     obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1
-    try simp only [
-      pushBackSlotGenPre_mk, pushBackTailWriteGenPre_mk, pushBackTailWriteGenProg_mk,
-      promoteSlabGenPre_mk, promoteSlabGenProg_mk,
-      p_w_mk, p_nMax_mk, p_nMaxSubOne_mk, p_offQuot_mk, p_quotBits_mk, p_offVal_mk,
-      p_valBits_mk, p_lmBits_mk, p_offGM_mk, p_gmBits_mk, p_bucketBits_mk,
-      p_bucketMask_mk, p_slabSize_mk, p_slabSizeSubOne_mk, p_twoSlabSize_mk,
-      p_dirSlabs_mk, p_dirSlabsSubOne_mk, p_tailCap_mk, p_gmSlabDirBase_mk,
-      p_gmTailPtrBase_mk, p_gmTailOwnerBase_mk, p_gmSlabMetaBase_mk, p_numMicro_mk,
-      p_minCap_mk, p_U_mk, p_V_mk, p_hSpace_mk, p_offLMSub_mk,
-      readQuotGenProg_mk, writeQuotGenProg_mk, readValGenProg_mk, writeValGenProg_mk,
-      readLMGenProg_mk, writeLMGenProg_mk, readGMGenProg_mk, writeGMGenProg_mk,
-      readBucketCountGenProg_mk, resolveIndexedSlotGenProg_mk] at *
+    simpDictParamsWith [pushBackSlotGenPre_mk, pushBackTailWriteGenPre_mk,
+      pushBackTailWriteGenProg_mk, promoteSlabGenPre_mk, promoteSlabGenProg_mk]
     try dsimp only [d, PushBackSlotPre] at *
   )
   · exact h.1

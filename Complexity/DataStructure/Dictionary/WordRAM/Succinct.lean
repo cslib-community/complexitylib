@@ -44,8 +44,9 @@ SOSA 2024, Sections 3–4):
    Four-Russians carryless multiplication tables (`hashSpace U w n_max`), without any
    `U ≤ poly(n_max)` restriction.
 4. **`Memory.Prog` + `realize` refinement (`SuccinctProg` .. `SuccinctDispatch`)**: all
-   deterministic bucket, slab, tail, and micro-chain operations are written as `Memory.Prog`
-   programs and compiled to `WordRAM.Code` specialized to `(U, V, w, n_max)` via `realize`.
+   deterministic bucket, slab, tail, and micro-chain operations are written as parameter-free
+   `Memory.Prog` subroutines compiled to `WordRAM.Code` via `realize`, with specialization to
+   `(U, V, w, n_max)` supplied by the 36-instruction `loadParamsCode` prefix.
 
 ## Cost model and parameter dependence
 
@@ -64,11 +65,11 @@ SOSA 2024, Sections 3–4):
   `26 + 8 * probeExcess`, `184 + 8 * probeExcess`, and `270 + 8 * probeExcess` with potential
   `66 * slotPotential` (unchanged on `query`). In turn,
   `tsum_uniform_probeExcess_reducedPolyHash_le_five` bounds expected `probeExcess` by `5`. Because
-  the five generic `Memory.Prog` subroutines (`extractOpGenProg`, `queryOpGenProg`,
-  `insertOpGenProg`, `deletePrepGenProg`, `deleteFinGenProg`) are compiled once independent of
-  `(U, V, w, n_max)` and receive the 36 static parameters via registers loaded by `loadParamsCode`
-  in `36` instructions, both the register budget `rSuccinct` and the operation charge
-  `chargeVal = 313 * opFactor + 284725` are parameter-free `O(1)` constants across all
+  the five generic `Memory.Prog` subroutines (`extractQuotGenProg`, `queryWithHashGenProg`,
+  `insertWithHashGenProg`, `deletePrepWithHashGenProg`, `deleteFinishWithHashGenProg`) are compiled
+  once independent of `(U, V, w, n_max)` and receive the 36 static parameters via registers loaded
+  by `loadParamsCode` in `36` instructions, both the register budget `rSuccinct` and the operation
+  charge `chargeVal = 313 * opFactor + 284725` are parameter-free `O(1)` constants across all
   `(U, V, w, n_max)`, `base`, and `ops.length`.
 
 ## Main definitions

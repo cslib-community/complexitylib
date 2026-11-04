@@ -297,7 +297,6 @@ theorem prependIfIndexedGenPre_mk (U V w₀ n_max h_space w : ℕ)
     PrependIfIndexedGenPre w ((mkDictParams U V w₀ n_max h_space, d1), d2) s ↔
       PrependIfIndexedPre U V w₀ n_max h_space w (d1, d2) s := Iff.rfl
 
-set_option linter.unusedSimpArgs false in
 theorem realizes_prependIfIndexedGen :
     Realizes .exact prependIfIndexedGenProg
       (WordEncoding.encode (α := (DictParams × ((ℕ × ℕ) × ℕ)) × ℕ))
@@ -309,9 +308,8 @@ theorem realizes_prependIfIndexedGen :
   all_goals (
     rcases d with ⟨⟨dp, d1⟩, d2⟩
     obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1
-    try simp only [
-      prependIfIndexedGenPre_mk, PrependIfIndexedPre, prependIfIndexedGenProg_mk,
-      lmPrependGenPre_mk, LMPrependPre, lmPrependGenProg_mk, p_minCap_mk] at *
+    simpDictParamsWith [prependIfIndexedGenPre_mk, PrependIfIndexedPre, prependIfIndexedGenProg_mk,
+      lmPrependGenPre_mk, LMPrependPre, lmPrependGenProg_mk]
   )
   · exact ⟨h.1, h.2.1, h.2.2.1, by omega, by omega, h.2.2.2⟩
 
@@ -452,7 +450,6 @@ theorem unlinkIfIndexedGenPre_mk (U V w₀ n_max h_space w : ℕ)
     UnlinkIfIndexedGenPre w ((mkDictParams U V w₀ n_max h_space, d1), d2) s ↔
       UnlinkIfIndexedPre U V w₀ n_max h_space w (d1, d2) s := Iff.rfl
 
-set_option linter.unusedSimpArgs false in
 theorem realizes_unlinkIfIndexedGen :
     Realizes .exact unlinkIfIndexedGenProg
       (WordEncoding.encode (α := (DictParams × ((ℕ × ℕ) × ℕ)) × ℕ))
@@ -464,9 +461,8 @@ theorem realizes_unlinkIfIndexedGen :
   all_goals (
     rcases d with ⟨⟨dp, d1⟩, d2⟩
     obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1
-    try simp only [
-      unlinkIfIndexedGenPre_mk, UnlinkIfIndexedPre, unlinkIfIndexedGenProg_mk,
-      lmUnlinkGenPre_mk, LMUnlinkPre, lmUnlinkGenProg_mk, p_minCap_mk] at *
+    simpDictParamsWith [unlinkIfIndexedGenPre_mk, UnlinkIfIndexedPre, unlinkIfIndexedGenProg_mk,
+      lmUnlinkGenPre_mk, LMUnlinkPre, lmUnlinkGenProg_mk]
   )
   · have hj_cap : d2 < effBucketCap n_max := by omega
     exact ⟨h.1, h.2.1, h.2.2.1, hj_cap, (h.2.2.2 hj_cap).1, (h.2.2.2 hj_cap).2⟩

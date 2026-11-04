@@ -20,7 +20,7 @@ bucket-level lookup and insertion operations of the fixed-capacity succinct dict
   per-bucket quotient uniqueness, and the abstract per-bucket quotient-to-value map `B`;
 * `queryBodyProg_bucket_spec`: lookup correctness and probe-excess cost bound under
   `BucketStateInv`;
-* `insertBodyProg` and `realizes_insertBody`: bucket-level `insert` (update in-place if present,
+* `insertBodyProg` and `realizes_insertBodyGen`: bucket-level `insert` (update in-place if present,
   otherwise append to bucket and prepend to micro-chain if `< effBucketCap n_max`).
 -/
 
@@ -365,7 +365,6 @@ theorem insertBodyGenPre_mk (U V w₀ n_max h_space w : ℕ)
     InsertBodyGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
       InsertBodyPre U V w₀ n_max h_space w d s := Iff.rfl
 
-set_option linter.unusedSimpArgs false in
 theorem realizes_insertBodyGen :
     Realizes .exact insertBodyGenProg
       (WordEncoding.encode (α := DictParams × ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ)))
@@ -379,19 +378,9 @@ theorem realizes_insertBodyGen :
   all_goals (
     rcases d with ⟨dp, d⟩
     obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1.1
-    try simp only [
-      insertBodyGenPre_mk, InsertBodyPre,
+    simpDictParamsWith [insertBodyGenPre_mk, InsertBodyPre,
       searchMicroChainGenPre_mk, SearchMicroChainPre, searchBucketGenProg_mk,
-      insertNewGenPre_mk, InsertNewPre, insertNewGenProg_mk,
-      p_w_mk, p_nMax_mk, p_nMaxSubOne_mk, p_offQuot_mk, p_quotBits_mk, p_offVal_mk,
-      p_valBits_mk, p_lmBits_mk, p_offGM_mk, p_gmBits_mk, p_bucketBits_mk,
-      p_bucketMask_mk, p_slabSize_mk, p_slabSizeSubOne_mk, p_twoSlabSize_mk,
-      p_dirSlabs_mk, p_dirSlabsSubOne_mk, p_tailCap_mk, p_gmSlabDirBase_mk,
-      p_gmTailPtrBase_mk, p_gmTailOwnerBase_mk, p_gmSlabMetaBase_mk, p_numMicro_mk,
-      p_minCap_mk, p_U_mk, p_V_mk, p_hSpace_mk, p_offLMSub_mk,
-      readQuotGenProg_mk, writeQuotGenProg_mk, readValGenProg_mk, writeValGenProg_mk,
-      readLMGenProg_mk, writeLMGenProg_mk, readGMGenProg_mk, writeGMGenProg_mk,
-      readBucketCountGenProg_mk, resolveIndexedSlotGenProg_mk] at *
+      insertNewGenPre_mk, InsertNewPre, insertNewGenProg_mk]
   )
   · exact h.1
   · exact fits_const_of_dictEnv h.1.1 (by decide)

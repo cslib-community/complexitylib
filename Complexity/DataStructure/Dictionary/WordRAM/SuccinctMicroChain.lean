@@ -1778,7 +1778,6 @@ theorem microStepGenPre_mk (U V w₀ n_max h_space w : ℕ)
     MicroStepGenPre w (((mkDictParams U V w₀ n_max h_space, d1), z0), a) s ↔
       MicroStepPre U V w₀ n_max h_space w ((d1, z0), a) s := Iff.rfl
 
-set_option linter.unusedSimpArgs false in
 theorem realizes_microStepGen :
     Realizes .exact microStepGenProg
       (WordEncoding.encode (α := ((DictParams × ((ℕ × ℕ) × ℕ)) × ℕ) × (((ℕ × ℕ) × ℕ) × ℕ)))
@@ -1794,17 +1793,7 @@ theorem realizes_microStepGen :
     rcases d with ⟨⟨⟨dp, d1⟩, z0⟩, a⟩
     let d := ((d1, z0), a)
     obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1
-    try simp only [
-      microStepGenPre_mk, MicroStepPre, readLMNextGenProg_mk,
-      p_w_mk, p_nMax_mk, p_nMaxSubOne_mk, p_offQuot_mk, p_quotBits_mk, p_offVal_mk,
-      p_valBits_mk, p_lmBits_mk, p_offGM_mk, p_gmBits_mk, p_bucketBits_mk,
-      p_bucketMask_mk, p_slabSize_mk, p_slabSizeSubOne_mk, p_twoSlabSize_mk,
-      p_dirSlabs_mk, p_dirSlabsSubOne_mk, p_tailCap_mk, p_gmSlabDirBase_mk,
-      p_gmTailPtrBase_mk, p_gmTailOwnerBase_mk, p_gmSlabMetaBase_mk, p_numMicro_mk,
-      p_minCap_mk, p_U_mk, p_V_mk, p_hSpace_mk, p_offLMSub_mk,
-      readQuotGenProg_mk, writeQuotGenProg_mk, readValGenProg_mk, writeValGenProg_mk,
-      readLMGenProg_mk, writeLMGenProg_mk, readGMGenProg_mk, writeGMGenProg_mk,
-      readBucketCountGenProg_mk, resolveIndexedSlotGenProg_mk] at *
+    simpDictParamsWith [microStepGenPre_mk, MicroStepPre, readLMNextGenProg_mk]
   )
   · have := h.2.2.1; omega
   · exact h.1
