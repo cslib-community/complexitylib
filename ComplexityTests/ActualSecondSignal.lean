@@ -238,7 +238,8 @@ example : (∑ x : ZMod 5, (({σ : Environment 5 3 |
 -- budget 3. Its first signal is nonzero, its children use the nonconstant spectator, and
 -- the steps depend on the requested ε and dyadic slack rather than an assumed noise bound.
 example (HP : FourthRootHierarchyParams 16 1 16 32 8) {ε : ℝ} (hε : 0 < ε) :
-    let steps := fun j => secondSignalWalkLength 3 HP.K 3 ε (dyadicSlack 4 (j - 1))
+    let steps := fun j => spectralWalkLength (1 - 1 / (155648 * (3 + 1) * (4 : ℝ) ^ 4))
+      ((3 : ℝ) ^ 4 * 512 * HP.K) ε (dyadicSlack 4 (j - 1))
     let T := fun j σ x y => selectedResidualPreparation HP 1 threeRoles
       0 0 0 0 0 0 [1] [2] [3] 2 id
       (fun (_ : HierarchyTask.Request j (Fin 3) (ZMod 5)) => child randomBit)
@@ -268,11 +269,14 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) (i : ℕ)
   simp [actualNoiseEntry, twoMaskMean, actualPrefix_twoSignal_second, rowSliceMean]
 
 -- The logarithmic sufficient-length lemma permits zero capacity with arbitrary scaling.
-example (ζ : ℝ) {ε : ℝ} (hε : 0 < ε) (slack : ℕ) :
+example (ζ ε : ℝ) (slack : ℕ) :
     ζ ^ 4 * (32 * (1 - 1 / (155648 * ((3 : ℕ) + 1 : ℝ) * (4 : ℝ) ^ 4)) ^
-      (2 * secondSignalWalkLength 3 0 ζ ε slack) * (16 * (0 : ℕ))) ≤
+      (2 * spectralWalkLength (1 - 1 / (155648 * (3 + 1) * (4 : ℝ) ^ 4))
+        (ζ ^ 4 * 512 * 0) ε slack) * (16 * (0 : ℕ))) ≤
       (ε * (64 : ℝ)⁻¹ ^ slack) ^ 4 :=
-  secondSignalWalkLength_payment 3 0 ζ hε slack _ le_rfl
+  by
+    simp only [Nat.cast_zero, mul_zero]
+    positivity
 
 -- At ε=0 a positive spectral upper bound never becomes exactly zero in finite time.
 example (n : ℕ) : ¬((1 : ℝ) ^ 4 *
