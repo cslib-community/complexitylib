@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.ExactTriangle.PrimeSelection.Input
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.Width
 public import Complexity.Computability.WordRAM.Width
+import Complexity.Computability.WordRAM.Admission
 
 /-!
 # Original-input width admission for concrete prime selection
@@ -60,8 +61,7 @@ theorem exec_input {W n D A : ℕ} (values : List ℤ)
     (Nat.le_add_right _ _).trans hW
   have hsquare : Fits (Nat.clog 2 (4 * (D + 2) * (D + 2) + 5))
       (4 * (D + 2) * (D + 2) + 4) :=
-    (by omega : 4 * (D + 2) * (D + 2) + 4 < 4 * (D + 2) * (D + 2) + 5).trans_le
-      (Nat.le_pow_clog (by decide) _)
+    fits_of_lt_clog_le (Nat.lt_succ_self _) (le_refl _)
   exact exec_input_at values hlen hD hv hmag
     (by simpa only [CountPrime.admissionWidth, Nat.add_assoc] using haddr)
     (by simpa only [CountPrime.admissionWidth, Nat.add_assoc] using hc)

@@ -7,6 +7,8 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Core
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Properties
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Adapt
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Admission
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Receive
