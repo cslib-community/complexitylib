@@ -107,8 +107,28 @@ and an address at most $n$, the encoded state has length at most $16(\log_2 n+1)
 The prefix remains read-only input; no reconstructed query is placed in workspace.
 [Checked clients](../../ComplexityTests/VirtualWord.lean) execute empty, length-one,
 non-power-of-two, prefix/suffix boundary and default reads and instantiate native certificates.
-The compiled family fixes the stored data; a uniform initialization or evaluator-regeneration
-construction is not supplied by these access lemmas.
+For runtime parameters, import
+`Complexity.Computability.Complexity.Reduction.LocalSelfReducibility.RuntimeAccess`.
+The [runtime accessor](../../Complexity/Computability/Machines/ReadMachine/VirtualWord/Runtime.lean)
+is one fixed query machine with a fixed initial state. Its input encoding is a framed binary
+cut/suffix/address header followed by the literal original word. It loads only that header,
+then reads one bit of the original-word tail.
+`Turing.VirtualWord.Runtime.access_inSpace` compiles the whole operation with constants shared by all runtime parameters and explicitly charges the actual
+header length plus a logarithmic input-position counter. Binary addresses never allocate a
+word or unary counter of the indicated length.
+
+`Turing.VirtualWord.Runtime.access_inOriginalLogSpace` measures workspace against the original
+length $n$ when cut and address are at most $n$ and the suffix has at most $\lceil\log_2 n\rceil$ bits.
+The physical query-machine states have length at most $272(\log_2 n+1)$; compilation adds a
+fixed multiplicative constant. `LocalSelfReductionQuery.runtime_output` consumes exact query
+reconstruction, including out-of-range false defaults; `runtime_admissible` checks the size
+conditions for this compiler domain. All natural parameters have total behavior. With an
+invalid cut beyond the original length, the operation still uses that declared cut as the
+suffix offset and reads false in the intervening gap; virtual-word reconstruction is asserted
+only for valid cuts. Large parameters retain the general charged-header bound.
+[Runtime clients](../../ComplexityTests/VirtualWordRuntime.lean) check a nonconstant parameter
+family, native certificates, boundaries and invalid data. These results initialize and execute
+an individual read; they do not yet feed a certified evaluator or regenerate its answers.
 
 **The transfer lemma remains open**: native virtual-input/answer regeneration for the unbounded
 evaluator and the adaptive-to-tt conversion still need proofs. No desired autoreduction is
