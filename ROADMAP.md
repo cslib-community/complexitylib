@@ -248,8 +248,10 @@ index links to canonical definitions rather than keeping a second set.
   separations of complexity classes by autoreducibility (Buhrman, Fortnow, van Melkebeek and
   Torenvliet).
 - **Logspace autoreducibility of complete sets** ([#2468]): the full expanded 2013 paper of
-  Glaßer, Nguyen, Reitwießner, Selman and Witek: local self-reducibility and transfer
-  (Lemma 3.3), concrete complete self-reducible problems (Theorem 3.5), Section 4
+  Glaßer, Nguyen, Reitwießner, Selman and Witek: native transfer from local self-reducibility
+  (Lemma 3.3), including virtual-input/answer regeneration and adaptive-to-tt conversion;
+  bounded and many-one self-reducibility specializations; concrete complete self-reducible
+  problems (Theorem 3.5); Section 4
   bounded/logarithmic-query results and
   separations, and Section 5 mitoticity/diagonalization. The additional parity-logspace
   application needs a native path-counting class and complement closure.
