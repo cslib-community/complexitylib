@@ -8,8 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.QueryValues
-public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.QuerySpan
 public import Complexity.Algorithms.ExactTriangle.PieceBounds
+import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.QuerySpan
 
 /-!
 # Protected original data for a real record consumer

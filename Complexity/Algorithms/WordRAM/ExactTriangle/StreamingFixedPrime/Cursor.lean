@@ -7,7 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.QuerySpan
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.RecordData
 
 /-!
 # Logical instance cursor independent of physical storage

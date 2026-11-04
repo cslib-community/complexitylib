@@ -9,9 +9,9 @@ module
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Accounting
 public import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Controller
-public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.QuerySpan
 public import Complexity.Algorithms.WordRAM.ExactTriangle.BoxRecordWitness.Record
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Width
+import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.QuerySpan
 import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Original
 import Complexity.Computability.WordRAM.RegisterFrame
 
