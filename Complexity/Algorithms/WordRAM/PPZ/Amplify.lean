@@ -7,6 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.MemoryView
+
 import Complexity.Computability.WordRAM.Call
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.PPZ.Round
@@ -300,7 +302,9 @@ theorem RoundFrame.of_exec_mem_lt {φ : CNF (Fin n)} {C Tb : ℕ} {M : ℕ → �
   tBase_eq := (he.regs_eq hc.2.2.2.2.2.1).trans h.tBase_eq
   nReg_eq := (he.regs_eq hc.2.2.2.2.2.2.1).trans h.nReg_eq
   pBase_eq := (he.regs_eq hc.2.2.2.2.2.2.2).trans h.pBase_eq
-  clauses := h.clauses.frame fun a _ ha' => hmem a (h.span ▸ ha')
+  clauses := by
+    have hs := h.span
+    ram_keep h.clauses using hmem
   span := h.span
   rest _ _ := rfl
 
@@ -471,8 +475,8 @@ theorem ampLoopWith_law {φ : CNF (Fin n)} {C Tb w Tc : ℕ} {S : List ℕ}
       hc hbody fun y ⟨hy, hyb, hyl, hyo, hyf⟩ => by
         have hmy : ∀ a, Tb + 2 * n ≤ a → y.mem a = y₁.mem a := hy.rest
         have hdy : HoldsList (Tb + 2 * n + S.length) (decDigits ds) y.mem :=
-          hh₁.frame fun a ha _ => hmy a (by omega)
-        have hpy : HoldsList (Tb + 2 * n) S y.mem := hpar₁.frame fun a ha _ => hmy a ha
+          by ram_keep hh₁ using hmy
+        have hpy : HoldsList (Tb + 2 * n) S y.mem := by ram_keep hpar₁ using hmy
         rw [succeeds_partialAssignmentAt]
         by_cases he : φ.eval (assignmentAt y.mem Tb n) = true
         · simp only [he, ↓reduceIte] at hyo hyf

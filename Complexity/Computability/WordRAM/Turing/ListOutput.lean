@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.WordRAM.Turing
 public import Complexity.Computability.WordRAM.ListOutput
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -232,9 +233,9 @@ theorem parkedOutputCertificate_isPolynomial (L : ℕ)
   let bound : α → ℕ := fun a =>
     6 * (FiniteState.encoding B.encoding (s a)).length + 2 * W a + 4 +
       (parkedOutput L (s a)).length * (2 * W a + 1)
-  have hB : PolyBounded (fun a => (encIn a).length) bound :=
-    ((((PolyBounded.const 6).mul hS).add ((PolyBounded.const 2).mul hW)).add (.const 4)).add
-      (hlen.mul (((PolyBounded.const 2).mul hW).add (.const 1)))
+  have hB : PolyBounded (fun a => (encIn a).length) bound := by
+    dsimp only [bound]
+    growth_poly
   refine congr_isPolynomial _ _ (snd_isPolynomial _ (snd_isPolynomial _
     (iterate_isPolynomial _ _ _ (readCertificate_isPolynomial _ c _ hc hv)
       (prod_isPolynomial _ _ (prod_isPolynomial _ _ hc hc)
@@ -367,9 +368,8 @@ theorem Program.ComputesListInTime.turingComputableInPolyTime_of_width
       ((hencode.polyBounded_length.mono fun a =>
         length_le_length_encList encNat (encode (width a) a)).add (.const 1)).add
           hstepsU.polyBounded
-    exact (((((PolyBounded.const _).add ((PolyBounded.const (2 * r)).mul
-      (((PolyBounded.const 2).mul hw).add (.const 1)))).add ((PolyBounded.const 2).mul hw)).add
-      (hE.mul (((PolyBounded.const 6).mul hw).add (.const 3)))).add hw).add (.const 5)
+    dsimp only [bound, stateBound]
+    growth_poly
   have hOutLen (a : α) (j : ℕ) (hj : j ≤ steps a) :
       (FiniteState.resultEncoding B.encoding (FiniteState.run (width a) q j
         (initState B r (encode (width a) a)))).length ≤ bound a := by
@@ -412,9 +412,9 @@ theorem Program.ComputesListInTime.turingComputableInPolyTime
     (h : p.ComputesListInTime (fun _ => encode) (fun a _ => T (size a))
       (fun a w => logWidth k (size a) ≤ w) f) :
     Turing.MultiTapeTM.ComputableInPolyTime f encIn (encList encNat) := by
-  have hlog : PolyBounded (fun a => (encIn a).length) (fun a => logWidth k (size a)) :=
-    ((PolyBounded.const k).mul (hsize.add (.const 1))).mono fun a =>
-      Nat.mul_le_mul_left k (Nat.add_le_add_right (Nat.log_le_self 2 (size a)) 1)
+  have hlog : PolyBounded (fun a => (encIn a).length) (fun a => logWidth k (size a)) := by
+    unfold logWidth
+    growth_poly
   obtain ⟨width, hwidth, hge⟩ := exists_unary_majorant
     (hlog.add (hencode.polyBounded_length (encMid := encList encNat)))
   exact h.turingComputableInPolyTime_of_width hop hwidth (fun a => by have := hge a; omega)

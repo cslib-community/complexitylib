@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.ScanSet
+public import Complexity.Computability.WordRAM.MemoryView
 
 /-!
 # Memory invariant of a timestamped query list
@@ -65,6 +66,17 @@ theorem ScanMemory.congr {mem mem' : ℕ → ℕ} {out stamps epoch capacity : �
     exact h.marked q hq
   · obtain ⟨v, hv, hrange, hreal⟩ := h.listed
     exact ⟨v, hv, hrange, fun i => (hlist i i.isLt).trans (hreal i)⟩
+
+/-- A frame on the occupied output and full timestamp directory retains the semantic view.
+The list's dirty tail is deliberately outside the required read set. -/
+theorem ScanMemory.keep {mem mem' : ℕ → ℕ} {out stamps epoch capacity : ℕ} {S : Finset ℕ}
+    {reads : Set ℕ} (h : ScanMemory mem out stamps epoch capacity S)
+    (hf : Set.EqOn mem' mem reads)
+    (hlist : Set.Ico out (out + S.card) ⊆ reads)
+    (hstamps : Set.Ico stamps (stamps + capacity) ⊆ reads) :
+    ScanMemory mem' out stamps epoch capacity S :=
+  h.congr (fun i hi => hf (hlist ⟨by omega, by omega⟩))
+    (fun q hq => hf (hstamps ⟨by omega, by omega⟩))
 
 /-- Reading the occupied native list gives exactly its represented finite set. -/
 theorem ScanMemory.image_read {mem : ℕ → ℕ} {out stamps epoch capacity : ℕ} {S : Finset ℕ}
