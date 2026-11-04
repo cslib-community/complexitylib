@@ -3722,6 +3722,7 @@ public import Complexity.Foundations.Probability.HierarchyTasks
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ActualMoment
 public import Complexity.Foundations.Probability.NormalizedAtomRows.BoundedLoss
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ClippedTail
+public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstPayment
 public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstSignal
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Integrated
 public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanEvent
@@ -3760,6 +3761,7 @@ public import Complexity.Foundations.Probability.ScheduledFineProductMean
 public import Complexity.Foundations.Probability.ScheduledProductMean
 public import Complexity.Foundations.Probability.SecondMoment
 public import Complexity.Foundations.Probability.SignedResidualBins
+public import Complexity.Foundations.Probability.SpectralPayment
 public import Complexity.Foundations.Probability.SourceRelease
 public import Complexity.Foundations.Probability.StochasticAtom
 public import Complexity.Foundations.Probability.TrueSampleMeans

@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstSignal
-public import Mathlib.Analysis.SpecialFunctions.Log.Base
+public import Complexity.Foundations.Probability.SpectralPayment
 
 /-!
 # Preparatory second signals on the actual usage slice
@@ -24,8 +24,8 @@ is a separate obligation.
 
 These are original finite bridges using the existing fourth-moment adaptation of
 [OpenAI2026LogSpace, Lemma 7.8, printed p. 42], revision 7ef5c0cc. Telescoping and support
-proofs reuse Samuel Schlesinger's compression API. Lower-child first-signal payments,
-recursive envelopes, recursive estimation and native RL remain open.
+proofs reuse Samuel Schlesinger's compression API. Recursive child budgets and envelopes,
+recursive estimation and native RL remain open.
 
 ## Main definitions
 
@@ -421,47 +421,6 @@ theorem actualSelectedSecondSignal_noise_le
         husage ss sm st Kc binCutoff (raw (i + 1)) (prep (i + 1)) (maximum (i + 1)))
       (mul_nonneg (by norm_num) (by rw [pow_mul]; positivity))) (by positivity))
 
-/-- A sufficient finite walk length for positive tolerance. The extra 1 in the denominator
-handles zero scaling or zero capacity without a division-by-zero case. This only controls
-noise about the selected input's own mean, not bias from the genuine preparation target. -/
-@[expose] def secondSignalWalkLength (J K : ℕ) (ζ ε : ℝ) (slack : ℕ) : ℕ :=
-  ⌈Real.logb (1 - 1 / (155648 * (J + 1) * (4 : ℝ) ^ 4))
-    ((ε * (64 : ℝ)⁻¹ ^ slack) ^ 4 / (ζ ^ 4 * 512 * K + 1))⌉₊
-
-/-- Every larger walk length pays the fourth-power dyadic noise budget. Positive ε is
-essential for this logarithmic choice; ε=0 supplies no universal finite exact mixing. -/
-lemma secondSignalWalkLength_payment (J K : ℕ) (ζ : ℝ) {ε : ℝ} (hε : 0 < ε)
-    (slack steps : ℕ) (hsteps : secondSignalWalkLength J K ζ ε slack ≤ steps) :
-    ζ ^ 4 * (32 * (1 - 1 / (155648 * (J + 1) * (4 : ℝ) ^ 4)) ^ (2 * steps) *
-      (16 * K)) ≤ (ε * (64 : ℝ)⁻¹ ^ slack) ^ 4 := by
-  let r : ℝ := 1 - 1 / (155648 * (J + 1) * (4 : ℝ) ^ 4)
-  let C : ℝ := ζ ^ 4 * 512 * K
-  let b : ℝ := (ε * (64 : ℝ)⁻¹ ^ slack) ^ 4
-  have hden : (1 : ℝ) < 155648 * (J + 1) * (4 : ℝ) ^ 4 := by
-    have : (0 : ℝ) ≤ J := Nat.cast_nonneg J
-    nlinarith
-  have hr : 0 < r := sub_pos.mpr ((div_lt_one (by linarith)).mpr hden)
-  have hr1 : r < 1 := sub_lt_self _ (by positivity)
-  have hC : 0 ≤ C := by dsimp only [C]; positivity
-  have hb : 0 < b := by dsimp only [b]; positivity
-  have hlog : Real.logb r (b / (C + 1)) ≤ (steps : ℝ) := by
-    exact (Nat.le_ceil _).trans (by exact_mod_cast hsteps)
-  have hpow : r ^ steps ≤ b / (C + 1) := by
-    have := (Real.logb_le_iff_le_rpow_of_base_lt_one hr hr1
-      (div_pos hb (by positivity))).mp hlog
-    rwa [Real.rpow_natCast] at this
-  have hp : r ^ (2 * steps) ≤ b / (C + 1) :=
-    (pow_le_pow_of_le_one hr.le hr1.le (by omega : steps ≤ 2 * steps)).trans hpow
-  have hm := mul_le_mul_of_nonneg_left hp hC
-  have hc : C * (b / (C + 1)) ≤ b := by
-    rw [← mul_div_assoc]
-    apply (div_le_iff₀ (by positivity : 0 < C + 1)).mpr
-    nlinarith [hb.le]
-  calc
-    _ = C * r ^ (2 * steps) := by dsimp only [C, r]; ring
-    _ ≤ C * (b / (C + 1)) := hm
-    _ ≤ b := hc
-
 /-- The logarithmic step choice discharges the actual second-prefix noise budget at i+1.
 First-signal payments and deterministic mean envelopes remain separate obligations. -/
 theorem actualSelectedSecondSignal_noise_le_dyadic
@@ -476,7 +435,8 @@ theorem actualSelectedSecondSignal_noise_le_dyadic
     (F : ℕ → Environment P J → ZMod P → ZMod P → ℝ)
     (steps : ℕ → ℕ) (ζ : ℝ) (G : Matrix (ZMod P) (ZMod P) ℝ)
     (i m : ℕ) {ε : ℝ} (hε : 0 < ε)
-    (hsteps : secondSignalWalkLength J HP.K ζ ε (dyadicSlack m i) ≤ steps (i + 1)) :
+    (hsteps : spectralWalkLength (1 - 1 / (155648 * (J + 1) * (4 : ℝ) ^ 4))
+      (ζ ^ 4 * 512 * HP.K) ε (dyadicSlack m i) ≤ steps (i + 1)) :
     let T := fun j σ x y => selectedResidualPreparation HP D R l bin ks km k kb ss sm st
       Kc binCutoff (raw j) (prep j) (maximum j) σ x y
     let H := fun j => conditionalWalk (retainedMask R.source (side P ks) D ss)
@@ -489,9 +449,19 @@ theorem actualSelectedSecondSignal_noise_le_dyadic
       (actualNoiseEntry R.source R.terminal (side P ks) (side P k) (side P kt) D ss st k G
         (firstSignalIncrement F k (secondSignalIncrement H ζ)) (fun _ _ _ _ => 0) 1 i) ≤
       (ε * (64 : ℝ)⁻¹ ^ dyadicSlack m i) ^ 4 := by
+  have hden : (1 : ℝ) < 155648 * (J + 1) * (4 : ℝ) ^ 4 := by
+    have : (0 : ℝ) ≤ J := Nat.cast_nonneg J
+    nlinarith
+  have hr : 0 < 1 - 1 / (155648 * (J + 1) * (4 : ℝ) ^ 4) :=
+    sub_pos.mpr ((div_lt_one (by linarith)).mpr hden)
+  have hp := spectralWalkLength_payment hr (sub_lt_self _ (by positivity))
+    (by positivity : 0 ≤ ζ ^ 4 * 512 * HP.K) hε (dyadicSlack m i) (steps (i + 1)) hsteps
+  have hp' : ζ ^ 4 * (32 * (1 - 1 / (155648 * (J + 1) * (4 : ℝ) ^ 4)) ^
+      (2 * steps (i + 1)) * (16 * HP.K)) ≤
+      (ε * (64 : ℝ)⁻¹ ^ dyadicSlack m i) ^ 4 := by nlinarith only [hp]
   exact (actualSelectedSecondSignal_noise_le HP hK D R Horizon l bin ks km k kb kt husage
     hks ss sm st Kc binCutoff raw prep maximum F steps ζ G i).trans
-      (secondSignalWalkLength_payment J HP.K ζ hε (dyadicSlack m i) (steps (i + 1)) hsteps)
+      hp'
 
 end
 end Matrix.HierarchyParams.H4RankEnvironment.NormalizedMoments
