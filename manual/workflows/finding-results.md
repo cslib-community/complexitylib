@@ -227,3 +227,21 @@ The two reserve-output theorems choose their output constant after the fixed hie
 and raw/preparation/maximum families. Select this constant before allocating recursive
 child accuracies. Uniformity of that coefficient does not remove any displayed finite
 allocation or walk-length losses and supplies no recursive accuracy theorem.
+
+For changes to the completed pilot maximum with raw and preparation children fixed,
+[HierarchyCorrectionStability](../../Complexity/Foundations/Probability/HierarchyCorrectionStability.lean)
+gives a pointwise fourth-root bound and an integrated actual-request contract. Its
+[regressions](../../ComplexityTests/HierarchyCorrectionStability.lean) check a nonzero request,
+pilot plateaus, a dyadic change of maximum estimate and an empty vertex domain. These are
+local sensitivity tests, not a two-level recursive approximate estimator.
+
+For changing completed RAW and PREP children as well, use
+[HierarchyCorrectionRawStability](../../Complexity/Foundations/Probability/HierarchyCorrectionRawStability.lean).
+Its pointwise theorem displays entry, row, column and full source×terminal maxima at the
+actual inverse terminal rate, and the original joint source/usage prep mean error.
+The integrated theorem pays RAW absolute row errors with explicit width squared and
+inverse-rate fourth power, PREP errors on source/usage rows, and maximum errors on the
+original source/full-terminal pairs. Constants are selected at fixed HP before requests
+or child tables. The [nonzero fixtures](../../ComplexityTests/HierarchyCorrectionRawStability.lean)
+perturb RAW and PREP separately and jointly, and distinguish row from incoming ranks.
+This supplies a local correction accuracy contract; it does not construct recursive children.

@@ -494,3 +494,36 @@ The two reserve-output theorems choose their output constant after the fixed hie
 and raw/preparation/maximum families. Select this constant before allocating recursive
 child accuracies. Uniformity of that coefficient does not remove any displayed finite
 allocation or walk-length losses and supplies no recursive accuracy theorem.
+
+[HierarchyCorrectionStability](../../Complexity/Foundations/Probability/HierarchyCorrectionStability.lean)
+factors the actual correction request into its unit-pilot coefficient and `γ(maximum y)`.
+The coefficient lies in `[0, 2 Q(atomCap)]`, even for signed raw/preparation estimates.
+If `Lγ` is the hierarchy's fourth-root Lipschitz constant for γ, the fourth-root output
+change is at most `(2 Q(atomCap))^(1/4) Lγ |maximum y - maximum' y|`. The integrated theorem
+keeps both children on the same full environment and the original source/full-terminal
+masks; its loss is `((2 Q(atomCap))^(1/4) Lγ)^4`. It does not silently transport a vertex
+error to a different source or remove any width/rate coefficient from that transport.
+
+For all three changing child classes, use
+[HierarchyCorrectionRawStability](../../Complexity/Foundations/Probability/HierarchyCorrectionRawStability.lean).
+Its selected preparation theorem and normalized recipe bound retain the actual HP row
+and pilot gates, auxiliary incoming scores, both ranks, and signed unbounded raw entries.
+The bounded atom cutoff and denominator root regularity control outputs globally; no
+raw target cap is assumed. Preparation errors pass through the actual same-environment
+joint source/usage mean, followed by `max (1/2) (min 1 mean)`.
+
+The pointwise actual-request theorem keeps the entry, full terminal-row, source-column
+and full source×terminal maxima. Its integrated contract retains the original source and
+full terminal masks: RAW absolute row error costs `64 (Cr / terminalRate)^4 width^2`,
+PREP source/usage row error costs `64 Cp^4`, and ordinary maximum error on the same
+source/full-terminal pairs costs `64 Cm^4`. The three constants depend only on HP.
+Usage inclusion in rank and zero extension allow conditional Jensen on PREP without
+charging full-environment atom costs. Every child can depend on the same full environment.
+The [regressions](../../ComplexityTests/HierarchyCorrectionRawStability.lean) include nonzero
+separate/joint perturbations and row/incoming rank sensitivity; the dyadic maximum
+regression above remains in place.
+
+Approximate `PilotRowRecipe.score`, `PilotRowRecipe.detector` and `PilotRowRecipe.maximum`
+contracts remain open. These local estimates construct no well-founded approximate
+evaluator, allocated two-level recursive fragment or recursive closure. Finite parameter
+and workspace growth and native RL=L also remain open.

@@ -81,7 +81,23 @@ dirty cell unchanged and at most 32 body instructions. It also checks empty allo
 Arguments are already delivered by an **uncharged** calling convention; this bound does not
 include native client control, argument installation, result decoding or halt.
 
-This first explicit family does not retain concrete witnesses through every bind, loop or
+For a runtime conditional, use
+[`Realizes.Witness.branch`](../../Complexity/Computability/WordRAM/Realization/Branch.lean)
+on two supplied witnesses. It keeps their common temporary prefix, reserving
+`max left.scratchSize right.scratchSize`, with factor `max left.factor right.factor + 2`.
+Only the selected arm's domain and memory history are required. The selected local work gains
+two units for native branch control; choosing an arm does not execute the other one.
+The existential `Realizes.branch` reuses this construction by erasure.
+
+The [branch client](../../ComplexityTests/WordRAMRealizationBranchWitness.lean) has three runtime
+words: a selector and two allocation counts. It compares the selector with the first count,
+then clears the selected allocation. Each supplied arm needs two auxiliary words, so the same
+generic Backend uses **eight registers**, versus ten with the former sum reservation, and
+factor six. Both outcomes check the full memory/frontier result on dirty memory, an invalid
+unselected allocation and empty allocation at width zero. The bound includes the native
+conditional but still uses the delivered-argument, body-only calling convention above.
+
+This explicit route does not retain concrete witnesses through every bind, loop or
 randomized constructor. Existing existential Backend clients remain available through the
 choice fallback. Fixed-resource Karger endpoints still need their own compatible emitter and
 resource proofs; no selected abstract bound follows from this example.
