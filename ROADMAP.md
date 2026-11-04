@@ -651,8 +651,10 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   expected-time rules for unbounded almost-surely terminating structured loops; random-tape
   equivalence and BPP/RP/ZPP simulation bridges for the randomized word RAM ([#1124]); transfer
   of cell-probe lower bounds; and the Horn-SAT, 2SAT, matching and domino-tiling clients.
-- **Direct 3SUM adaptation** ([#1394]): integrate the improved Section 4 route and native
-  exponent 1.9992 from [#2358](https://github.com/cslib-community/complexitylib/pull/2358).
+- **Direct 3SUM adaptation** ([#1394]): the native ordinary 1.9992 endpoint is proved in
+  `WordRAM/ThreeSum/Decision/One9992.lean` (standard Word-RAM instruction time, polynomially
+  bounded integer inputs). The source's sharper Exact Triangle exponent 2.9983 is not claimed by
+  this integer retuning and remains open.
   Conservative native ordinary integer 3SUM is proved in
   `WordRAM/ThreeSum/Decision/Subquadratic.lean`: for each fixed polynomial magnitude exponent,
   one fixed 848-register program has charged time `Oκ(n^(2−1/5184))`, logarithmic physical
