@@ -371,10 +371,34 @@ regression has raw values 0 and 2: preparation of their average is 1, while the 
 of their preparations is 1/2. A seven-step actual H4 completed child retains a positive
 preparation and a zero endpoint.
 
-This controls bias by explicit absolute residual errors. Deriving those errors from
-recursive lower-child relative estimates, numerical mean envelopes, recursive
-budget/reserve induction, recursive parameter/workspace bounds and native RL=L remain
-open. Row mass does not provide a uniform target bound, and clipped relative error
+For quantitative second deterministic envelopes, import
+[SecondEnvelope](../../Complexity/Foundations/Probability/NormalizedAtomRows/SecondEnvelope.lean).
+`secondMeanEnvelope` is the actual B1: `min 1 (|ζ| * jointMean(preparationError))`.
+`actualSelectedSecondSignal_mean_le_envelope` and
+`actualCompletedSecondSignal_mean_le_envelope` bound the actual clipped second mean by B1.
+For usage contained in full terminal rank, `secondMeanEnvelope_moment` pays its fourth row
+moment by `P * (|ζ| * (Lh + Lρ) / rate k)^4` times the completed raw absolute error moment.
+Conditional Jensen cancels the joint densities; repeating the full-rank maximum over usage
+endpoints costs the visible width P. No independence or target-size cap is used.
+
+`actualCompletedRaw_absolute_moment_le_payment` splits `A-G = (A-μ)+(μ-G)` at the actual
+full-rank input mean μ, paying `8 * (32 * λ^(2*steps) * firstSignalPayment + ROW(error))`.
+The centered noise is in RAW matrix units; relative `actualNoiseEntry` cannot be substituted
+without restoring its rate and target factors. `actualCompletedSecondSignal_envelope_payment`
+then pays B1 with the same explicit width and inverse rate. Its mean-error hypothesis is
+absolute, before clipping. For actual finite bins,
+`actualEstimatedResidual_second_envelope_moment` discharges that mean-error step with
+`estimated_residual_bins_mean_error`: positive costs sum and the negative cost is charged once.
+It retains the actual signed input moment and canonical residual at km, with full rank and
+normalization at kt, finite coverage, narrower-source horizon, all suffixes, shared environment,
+importance and midpoint factors. Structural `Request HP.k` is independent of precision.
+The [regressions](../../ComplexityTests/SecondEnvelope.lean) check a positive nonconstant
+spectator raw child and B1, exact-zero/empty edges, actual clipped-mean comparison and an exact
+two-endpoint counterexample to dropping width.
+
+Deriving small numerical errors from recursive lower-child relative estimates, numerical
+reserves, recursive budget induction, copy routing, parameter/workspace bounds and native RL=L
+remain open. Row mass does not provide a uniform target bound, and clipped relative error
 alone does not provide an absolute residual error.
 
 For a coarser source, `source_incoming_cost_le` quantifies the generic incoming cost as

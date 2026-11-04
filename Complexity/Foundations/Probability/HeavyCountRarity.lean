@@ -9,6 +9,7 @@ module
 
 public import Complexity.Foundations.Probability.RootMetric
 public import Complexity.Foundations.Probability.HeavyCount
+public import Complexity.Foundations.Data.Finset.KthLargest.Moment
 import Mathlib.Algebra.Order.BigOperators.Expect
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Tactic.Positivity
@@ -125,21 +126,6 @@ theorem vertexNormPow_event_le_rowNormPow (hs : s ≠ 0) (hNu : 0 ≤ N * u) {q 
         exact hv σ x (mem_filter.mp hx).2
       · simp [hΘ, hs]
     _ ≤ _ := rowNormPow_event_le hs hNu hrare b
-
-omit [Fintype V] in
-private theorem abs_kthLargest_pow_le_sum (S : Finset V) (b : V → ℝ)
-    (hs : s ≠ 0) : |kthLargest 1 S (fun y => |b y|)| ^ s ≤ ∑ y ∈ S, |b y| ^ s := by
-  classical
-  have hmem : kthLargest 1 S (fun y => |b y|) ∈
-      insert 0 ((S.filter fun y => 1 ≤ #{w ∈ S | |b y| ≤ |b w|}).image fun y => |b y|) :=
-    max'_mem _ _
-  rcases mem_insert.mp hmem with hz | hmem
-  · rw [hz, abs_zero, zero_pow hs]
-    positivity
-  · obtain ⟨y, hy, heq⟩ := mem_image.mp hmem
-    rw [← heq, abs_abs]
-    exact single_le_sum (f := fun y => |b y| ^ s)
-      (fun _ _ => by positivity) (mem_filter.mp hy).1
 
 /-- Conditional rarity controls the maximum deterministic error magnitude among retained
 endpoints, with zero as the maximum of an empty row. -/

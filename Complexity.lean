@@ -3603,6 +3603,7 @@ public import Complexity.Foundations.Data.Finset.Average
 public import Complexity.Foundations.Data.Finset.Expect
 public import Complexity.Foundations.Data.Finset.Finpartition
 public import Complexity.Foundations.Data.Finset.KthLargest
+public import Complexity.Foundations.Data.Finset.KthLargest.Moment
 public import Complexity.Foundations.Data.Finset.KthLargest.Truncation
 public import Complexity.Foundations.Data.Finset.Lowest
 public import Complexity.Foundations.Data.Finset.LowestMax
@@ -3868,6 +3869,7 @@ public import Complexity.Foundations.Probability.NormalizedAtomRows.Moment
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Output
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Request
 public import Complexity.Foundations.Probability.NormalizedAtomRows.RequestSharp
+public import Complexity.Foundations.Probability.NormalizedAtomRows.SecondEnvelope
 public import Complexity.Foundations.Probability.NormalizedAtomRows.SecondSignal
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Sharp
 public import Complexity.Foundations.Probability.NormalizedAtomRows.TwoMask
@@ -3887,6 +3889,7 @@ public import Complexity.Foundations.Probability.ProductDensity
 public import Complexity.Foundations.Probability.ProductError
 public import Complexity.Foundations.Probability.RawProductMoment
 public import Complexity.Foundations.Probability.RootMetric
+public import Complexity.Foundations.Probability.RootMetric.AbsoluteError
 public import Complexity.Foundations.Probability.RootMetric.ConditionalWalk
 public import Complexity.Foundations.Probability.RootMetric.Conditioning
 public import Complexity.Foundations.Probability.RootMetric.Minkowski
