@@ -49,7 +49,7 @@ theorem prefix_polynomial {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
     (hw : width κ c.widthCoefficient input.length ≤ w)
     (hvalues : ∀ z ∈ input, |z| ≤ ((input.length + 2) ^ κ : ℕ))
     {s : State (registerCount r)} {steps : ℕ}
-    (hr : Runs w (flatProgram κ c) (State.init (input.map Signed.encode)) s steps) :
+    (hr : Runs w (flatProgram κ c.code) (State.init (input.map Signed.encode)) s steps) :
     (∀ i, s.data.regs i < (input.length + 2) ^ (2 * widthCoefficient κ c.widthCoefficient)) ∧
       (∀ a, s.data.mem a < (input.length + 2) ^ (2 * widthCoefficient κ c.widthCoefficient)) ∧
       ∀ a, (input.length + 2) ^ (2 * widthCoefficient κ c.widthCoefficient) ≤ a →

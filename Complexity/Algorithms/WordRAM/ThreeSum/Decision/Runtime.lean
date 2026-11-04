@@ -14,11 +14,35 @@ public import Complexity.Foundations.Data.Nat.LogRpow
 /-!
 # Uniform runtime transfer for the actual ordinary 3SUM host
 
-The existing native reduction retains preprocessing, its packed side and actual catalogue
-count, every matrix/callee invocation and all control reserves. Any actual certified callee
-whose time is uniformly O(n^(3-δ)) at polynomial integer magnitudes gives ordinary cost
-O(n^a) for every a > 2-δ/2, with 0 < δ ≤ 1. Constants and thresholds precede original
-inputs and physical widths. No concrete supplier or execution/time theorem is imported here.
+The ordinary algorithm preprocesses an input of length `n` into a short catalogue of
+Convolution-3SUM instances. Each instance becomes a sequence of Exact Triangle (ET) calls.
+The saving comes from their square-root dimension, after charging the entire catalogue and
+the work of constructing the calls. The following ledger keeps those quantities separate.
+
+Write `ℓ = log₂(n+2)+1`, `q = instanceBound κ n`,
+`s = Host.sideLength (instanceLength κ n)` and `E = envelopeExponent κ`.
+The actual ET magnitude argument is `F = 2*(n+2)^E+1`. For fixed `κ`:
+
+* `ChanHe.Preprocessing.cost_bound` bounds preprocessing by
+  `Kκ*(n+2)*(sqrt(n+2)+1)*ℓ^13`.
+* `instanceBound_le_numBound` bounds `q` by `128*(κ+2)^2*ℓ^7`.
+* `Cslib.Algorithms.ThreeSum.ChanHe.packed_side_le` gives `s = Oκ(sqrt(n)*ℓ²)`.
+  Its companion `packed_weight_le` proves `F ≤ (s+2)^(2E+2)`, so the ET hypothesis applies
+  to the actual dimension and magnitude, without padding the original input.
+* `callerTime_add_twelve_le` bounds one complete Convolution call, including outer control,
+  by `2*s*c.time s F + 355*s³`.
+
+The definition `cost` therefore charges preprocessing, the fixed `4E+32` setup/halt reserve,
+and `q` copies of that last expression. In particular, an ET bound `T(s)=O(s^(3-δ))`
+contributes `O(q*s^(4-δ))`. Substituting the displayed bounds gives the leading scale
+`n^(2-δ/2)` times a fixed logarithmic factor. `exists_cost_bound` absorbs the logarithms
+only after this composition, proving every exponent `a > 2-δ/2` when `0 < δ ≤ 1`.
+The strict inequality pays for those factors; the endpoint `a = 2-δ/2` is not asserted.
+
+All constants and thresholds precede original inputs and physical widths. The hypothesis
+concerns the time field of an actual certified `Host.Callee`, whose execution is already
+charged by the host. No concrete ET supplier is imported here; `Decision.Transfer` adds
+the initialized correctness and prefix-resource guarantees to this quantitative account.
 
 ## Main results
 

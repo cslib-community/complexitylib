@@ -42,15 +42,15 @@ theorem exists_runs_of_callee_time {r : ℕ} (c : Host.Callee r) {δ a : ℝ}
       ∀ n ≥ N, ∀ F ≤ (n + 2) ^ κ,
         (c.time n F : ℝ) ≤ C * (n : ℝ) ^ (3 - δ)) (κ : ℕ) :
     ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ,
-      ¬(program κ c).ReadsWidth ∧ ∀ (input : List ℤ) (W : ℕ),
+      ¬(program κ c.code).ReadsWidth ∧ ∀ (input : List ℤ) (W : ℕ),
       width κ c.widthCoefficient input.length ≤ W →
       (∀ z ∈ input, |z| ≤ ((input.length + 2) ^ κ : ℕ)) →
       InputFits W (input.map Signed.encode) ∧ ∃ (y : Data (registerCount r)) (steps : ℕ),
-        Executes W (flatProgram κ c)
+        Executes W (flatProgram κ c.code)
           (State.init (input.map Signed.encode))
           (y.regs (controllerRegisters r answer)) steps ∧
-        Runs W (flatProgram κ c)
-          (State.init (input.map Signed.encode)) ⟨(program κ c).size, y⟩
+        Runs W (flatProgram κ c.code)
+          (State.init (input.map Signed.encode)) ⟨(program κ c.code).size, y⟩
           (steps - 1) ∧
         steps ≤ cost κ c input.length ∧
         (N ≤ input.length → (steps : ℝ) ≤ C * (input.length : ℝ) ^ a) ∧
@@ -58,7 +58,7 @@ theorem exists_runs_of_callee_time {r : ℕ} (c : Host.Callee r) {δ a : ℝ}
         (y.regs (controllerRegisters r answer) = 1 ↔
           HasSolution (fun i : Fin input.length => input[i])) ∧ y.Bounded W ∧
         ∀ (s : State (registerCount r)) (t : ℕ),
-          Runs W (flatProgram κ c)
+          Runs W (flatProgram κ c.code)
             (State.init (input.map Signed.encode)) s t →
           (∀ i, s.data.regs i < (input.length + 2) ^ (2 * widthCoefficient κ c.widthCoefficient)) ∧
           (∀ a, s.data.mem a < (input.length + 2) ^ (2 * widthCoefficient κ c.widthCoefficient)) ∧

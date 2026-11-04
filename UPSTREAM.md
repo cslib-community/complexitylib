@@ -233,8 +233,8 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   preprocessing milestone is #1446. `Algorithms/WordRAM/ThreeSum/Decision.lean` composes that
   actual initialized output with the Convolution host (#1559): raw registers 78/79/116 supply the
   actual pointer table, count and common packed length. The caller-owned host reads each signed
-  payload directly and reserves matrices above twice the preprocessing polynomial word bound,
-  preserving every future instance. One finite program per fixed exponent and certified finite
+  payload directly and places matrices at the final preprocessing heap frontier, preserving
+  every future instance on return. One finite program per fixed exponent and certified finite
   Exact Triangle block returns the existing distinct-position verdict, with derived positive
   logarithmic physical width, polynomial words/space at every admitted-width prefix, and a fully
   charged compositional bound at the actual packed size. `Host.Callee` requires actual finite-code
@@ -262,14 +262,24 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `Foundations/Data/Nat/LogRpow` remains general mathematics intended for Mathlib, transporting
   real log little-o to shifted natural logs for side/count/preprocessing estimates without
   expanding a widely imported hub.
+  The follow-up #2380 extracts `Computability/WordRAM/Call` with migrated ordinary-host and
+  traversal clients. Fixed-bank record transfers (`Traversal.WordStack.pushRecord`/`popRecord`)
+  stay in `ChanHe/TraversalStack`, beside the word dispatcher that #2272 made traversal-local.
+  `Traversal.OutputLayout` exports live table/payload endpoints; matrix workspace now copies
+  the final preprocessing heap, independently of the polynomial value envelope. Callee framing
+  preserves this live prefix on return. `Decision.program` takes finite solver code directly,
+  replacing the duplicate `Decision.Code` assembly; `Decision.Initialize` replaces `Reserve`.
+  `One9992` adds admissibility/input fitting and standard uniform decision/time corollaries
+  while retaining the complete initialized-run theorem. The Operator Manual companion documents
+  these APIs and the quantitative account; no selected abstract or agent workflow changes.
 
-  Bounded API follow-ups from the traversal/preprocessing reviews: merge the stage proof modules
-  `PreprocessingSnapshot`, `PreprocessingPrimes`, `PreprocessingSetup`, `PreprocessingFinish`,
-  `PreprocessingInvariant`, `PreprocessingStep` and `PreprocessingLoop` with their controller
-  consumer `PreprocessingExecute`, or use `import all` to make their proof plumbing private.
-  This includes `Saved`, `ForestCursor`, `snapshot_exec`, `primes_exec`, `setupTraversal_exec`,
-  `finish_exec`, `execute_next_root` and `forest_body_exec`; keep the initialized-input, readback,
-  width and resource endpoints available through `Preprocessing`. Separately, move
+  The preprocessing stage proofs are private implementation details: `PreprocessingSetup`
+  contains snapshot, prime-table and reservation setup; `PreprocessingLoop` contains the forest
+  invariant and loop proof. `PreprocessingExecute` uses `import all` for these two companions.
+  Initialized-input, readback, width and resource endpoints remain available through
+  `Preprocessing`.
+
+  Bounded API follow-ups from the traversal/preprocessing reviews: move
   `modulus_bounds_of_candidates` from `SelectorBounds` beside `Collisions`' `modulus_bounds` and
   derive or cross-reference the stronger bound, migrating `TraversalCall` and selector tests.
   Derive `Structured`'s `ExecWithin.loop_invariant` as the `Data`-state case of
