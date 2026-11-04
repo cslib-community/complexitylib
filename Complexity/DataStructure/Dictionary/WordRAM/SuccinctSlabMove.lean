@@ -11,12 +11,13 @@ public import Complexity.DataStructure.Dictionary.WordRAM.SuccinctSlabPool
 import Complexity.Tactic.Realize
 
 /-!
-# Slab Promotion and Demotion Loops in `Memory.Prog`
+# Slab Promotion Loop in `Memory.Prog`
 
-This module implements the `K`-step (`K = slabSize n_max`) slab promotion (`promoteSlabProg`) and
-slab demotion (`demoteSlabProg`) operations in `Memory.Prog`, proves that they preserve
+This module implements the `K`-step (`K = slabSize n_max`) slab promotion (`promoteStepProg`,
+`promoteLoopProg`, and `promoteSlabProg`) in `Memory.Prog`, proves that it preserves
 `SlotStoreInv`, `bCount`, and all logical `(quotAt, valAt)` entries via `slotOf`, and certifies
-their Word-RAM realizations via `realize` and `Realizes.iterate₀`.
+its Word-RAM realization via `realize` and `Realizes.iterate₀`. Slab demotion (`demoteSlabProg`)
+is implemented in `Complexity.DataStructure.Dictionary.WordRAM.SuccinctSlabDemote`.
 -/
 
 public section

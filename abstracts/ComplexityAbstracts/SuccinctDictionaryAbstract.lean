@@ -383,10 +383,13 @@ def succinctWords (C C₀ U V w n_max : ℕ) : ℕ :=
 (`Succinct.impl`, `Succinct.space_le_succinctWords`, `Succinct.initTime_impl_le`, and
 `Succinct.seq_expected_amortized`):
 For every key universe `U`, value bound `V`, word width `w`, and capacity `n_max`, there exist
-register count `r ≥ 256`, expected **amortized** per-operation instruction charge `C_op : ℕ`,
-allocated block size `sp : ℕ`, initialization instruction budget `initBudget : ℕ`, and compiled
-`r`-register Word-RAM programs `p_init` and `p_op` (depending on `(U, V, w, n_max)` and independent
-of `base`, with no static code-size bound) such that:
+register count `r ≥ 256`, expected **amortized** per-operation instruction charge `C_op : ℕ`
+(instantiated as `Succinct.chargeVal U V w n_max = 313 * Succinct.opFactor U V w n_max + 284689`,
+which depends on `(U, V, w, n_max)` through the `Realizes.factor` witness `opFactor` and is
+independent of `base` and `ops.length`, with no constant upper bound on `C_op` proven across
+`(U, V, w, n_max)`), allocated block size `sp : ℕ`, initialization instruction budget
+`initBudget : ℕ`, and compiled `r`-register Word-RAM programs `p_init` and `p_op` (depending on
+`(U, V, w, n_max)` and independent of `base`, with no static code-size bound) such that:
 - `initBudget ≤ 31 * n_max + 1092`;
 - whenever `0 < w`, `n_max ≤ U` (since distinct keys lie in `Fin U` and `U.choose n_max = 0` for
   `n_max > U`), and `U < 2 ^ w`, the total word footprint `sp` satisfies the succinct bound

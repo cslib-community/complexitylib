@@ -20,14 +20,17 @@ fixed-capacity succinct dynamic dictionary.
 
 ## Memory layout (`[base, base + totalSpace)`)
 
-1. `[base, base + h_space)`: Seeded hash family `QuotientHashImpl` mapping quotients in
-   `Fin (2 ^ quotientBits U n_max)` to micro-bucket hashes in `Fin (2 ^ totalMicroBits n_max)`.
+1. `[base, base + h_space)`: Seeded 3-wise quotient hash table and seed (`h_space` words,
+   instantiated in `SuccinctHash.lean` with `ReducedKWise.TableRep` and `ReducedKWise.SeedRep` at
+   `h_space = hashSpace U w n_max`) mapping quotients in `Fin (2 ^ quotientBits U n_max)` to
+   micro-bucket hashes in `Fin (2 ^ totalMicroBits n_max)`.
 2. `Quotients`: `packedWords n_max (quotientBits U n_max) w` words storing `n_max` quotients of
    `quotientBits U n_max` bits (`offQuot`).
 3. `Values`: `packedWords n_max (valBits V) w` words storing `n_max` values of `valBits V` bits
    (`offVal`).
-4. `LocalMeta`: `packedWords (localMetaLen n_max) (effBucketPosBits n_max) w` words storing
-   per-bucket micro-bucket heads and doubly-linked list `next`/`prev` pointers (`offLM`).
+4. `LocalMeta`: `9 * lmSubWords n_max w` words (`9` bit-packed sub-arrays of
+   `totalMicroBuckets n_max` entries of `effBucketPosBits n_max` bits each) storing per-bucket
+   micro-bucket heads and doubly-linked list `next`/`prev` pointers (`offLM`).
 5. `GlobalMeta`: `packedWords (globalMetaLen n_max) (globalPtrBits n_max) w` words storing global
    counts, per-bucket slab/tail counts, direct slab directories, tail pointers, tail back-pointers,
    and the logical/physical slab pool bijection (`offGM`).
@@ -49,10 +52,12 @@ open scoped BigOperators ENNReal
 
 /-! ## Section 1: `QuotientHashImpl`, array offsets, and extraction functions -/
 
-/-- A Word-RAM hash family implementation mapping quotients in `Fin (2 ^ quotientBits U n_max)` to
-`Fin (2 ^ totalMicroBits n_max)`, using register `0` as base register, register `1` as key
-register, and register `2` as output register, with expected `probeExcess` bounded by `probeConst`
-on every active set `S` of size at most `n_max`. -/
+/-- Generic interface for a Word-RAM hash family implementation mapping quotients in
+`Fin (2 ^ quotientBits U n_max)` to `Fin (2 ^ totalMicroBits n_max)`, using register `0` as base
+register, register `1` as key register, and register `2` as output register, with expected
+`probeExcess` bounded by `probeConst` on every active set `S` of size at most `n_max`. (Note:
+`SuccinctHash.lean` instantiates the concrete dictionary directly against `ReducedKWise` rather than
+through this wrapper.) -/
 structure QuotientHashImpl (r_hash : ℕ) [NeZero r_hash] (w base U n_max : ℕ) : Type 1 where
   /-- Underlying Word-RAM hash family implementation on quotients. -/
   impl : Impl .exact r_hash 0 w base (2 ^ quotientBits U n_max) (2 ^ totalMicroBits n_max) Fin.elim0
@@ -70,8 +75,9 @@ structure QuotientHashImpl (r_hash : ℕ) [NeZero r_hash] (w base U n_max : ℕ)
   seedRep_congr : ∀ (s : impl.Seed) {mem₁ mem₂ : ℕ → ℕ},
     (∀ a, base ≤ a → a < base + impl.space → mem₁ a = mem₂ a) →
     impl.seedRep s mem₁ → impl.seedRep s mem₂
-  /-- Expected `probeExcess` constant (`3` for exact 9-wise hashing, `4` for two-stage
-  universe-reduced 9-wise hashing). -/
+  /-- Expected `probeExcess` constant (`3` for exact 3-wise hashing via
+  `expect_probeExcess_le_three`, `5` for two-stage universe-reduced 3-wise hashing via
+  `tsum_uniform_probeExcess_reducedPolyHash_le_five`). -/
   probeConst : ℕ
   /-- For every active set `S` of size at most `n_max` and every query key `u : Fin U`, the sum of
   `probeExcess` over all seeds `s : impl.Seed` is at most `probeConst * Fintype.card impl.Seed`. -/

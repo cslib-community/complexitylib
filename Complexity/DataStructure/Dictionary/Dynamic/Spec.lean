@@ -34,7 +34,7 @@ This file also defines the information-theoretic minimum bit bound
 `optBits U V n = ⌈log₂ C(U, n)⌉ + n * ⌈log₂ V⌉` (note that `n ≤ U` is required for
 `U.choose n > 0`, since `C(U, n) = 0` for `n > U`) and the succinct word bound
 `succinctWords C C₀ U V w n_max =`
-`⌈(optBits U V n_max + C * n_max * log₂log₂(max n_max 4)) / w⌉ + C₀`
+`⌈(optBits U V n_max + C * n_max * ⌈log₂ ⌈log₂ (max n_max 4)⌉⌉) / w⌉ + C₀`
 used by succinct dictionary implementations on the `w`-bit Word RAM.
 
 ## Main definitions
