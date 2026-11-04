@@ -209,11 +209,7 @@ theorem exec_record {w m n g p A : ℕ} (values : List ℤ)
   · intro j
     exact (yr _).trans ((rregs _ (by change j.val < 65; omega)).trans (hbank j))
   · intro j hj
-    apply hex.regs_eq
-    apply Code.preserves_rename_of_forall_ne
-    intro i hij
-    have hv := congrArg (fun k : Fin 416 => k.val) hij
-    change i.val = j.val at hv
-    omega
+    exact hex.regs_eq (BoxRecordWitness.program.preserves_rename_of_offset
+      (offset := 0) recordBank (fun j => (Nat.zero_add j.val).symm) j (Or.inr hj))
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.FixedPrime

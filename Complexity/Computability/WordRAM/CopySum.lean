@@ -59,6 +59,26 @@ open Reg
 @[expose] def program : Code .standard 8 :=
   ram[ idx ← #0; one ← #1; while idx < len do [ ⟪body⟫ ] ]
 
+/-- Copied destination, retained span arguments and the accumulated sum of the original source. -/
+structure Post {r : ℕ} (f : Fin 8 → Fin r) (x y : Data r) : Prop where
+  /-- The destination contains the original source prefix. -/
+  memory : y.mem = ArrayCopy.copyPrefix x.mem (x.regs (f Reg.src))
+    (x.regs (f Reg.dst)) (x.regs (f Reg.len))
+  /-- The source pointer survives the loop. -/
+  src : y.regs (f Reg.src) = x.regs (f Reg.src)
+  /-- The destination pointer survives the loop. -/
+  dst : y.regs (f Reg.dst) = x.regs (f Reg.dst)
+  /-- The original span length survives the loop. -/
+  len : y.regs (f Reg.len) = x.regs (f Reg.len)
+  /-- The accumulator adds precisely the original source words. -/
+  total : y.regs (f Reg.total) = x.regs (f Reg.total) +
+    wordSum x.mem (x.regs (f Reg.src)) (x.regs (f Reg.len))
+
+/-- Read a native postcondition through the caller's selected registers. -/
+theorem Post.of_comap {r : ℕ} {f : Fin 8 → Fin r} {x y : Data r}
+    (post : Post id (x.comap f) (y.comap f)) : Post f x y :=
+  ⟨post.memory, post.src, post.dst, post.len, post.total⟩
+
 /-- Copy a separated source span and accumulate its original words. Every loop test, load,
 store and sum is charged; only actual source/destination and total-sum numerical fits are
 premises. This does not require a clean destination. -/
@@ -67,10 +87,7 @@ theorem exec {w : ℕ} (x : Data 8) (h1 : Fits w 1)
     (hd : Fits w (x.regs dst + x.regs len))
     (ht : Fits w (x.regs total + wordSum x.mem (x.regs src) (x.regs len)))
     (hsep : x.regs src + x.regs len ≤ x.regs dst) :
-    ∃ y, ExecWithin w program x y (8 * x.regs len + 4) ∧
-      y.mem = ArrayCopy.copyPrefix x.mem (x.regs src) (x.regs dst) (x.regs len) ∧
-      y.regs src = x.regs src ∧ y.regs dst = x.regs dst ∧ y.regs len = x.regs len ∧
-      y.regs total = x.regs total + wordSum x.mem (x.regs src) (x.regs len) := by
+    ∃ y, ExecWithin w program x y (8 * x.regs len + 4) ∧ Post id x y := by
   let I (y : Data 8) : Prop :=
     y.regs src = x.regs src ∧ y.regs dst = x.regs dst ∧ y.regs len = x.regs len ∧
     y.regs one = 1 ∧ y.regs idx ≤ x.regs len ∧
@@ -123,8 +140,8 @@ theorem exec {w : ℕ} (x : Data 8) (h1 : Fits w 1)
   have hend : y.regs idx = x.regs len := by
     simp only [Cond.holds_lt, hyl] at hc
     omega
-  refine ⟨y, ?_, by simpa only [hend] using hym, hys, hyd, hyl,
-    by simpa only [hend] using hyt⟩
+  refine ⟨y, ?_, by simpa only [hend, id] using hym, hys, hyd, hyl,
+    by simpa only [hend, id] using hyt⟩
   have hinit := (ExecWithin.const (d := idx) (x := x) (fits_zero w)).seq
     ((ExecWithin.const (d := one) h1).seq he)
   convert hinit using 1

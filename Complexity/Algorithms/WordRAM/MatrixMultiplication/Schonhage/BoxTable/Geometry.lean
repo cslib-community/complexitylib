@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Power.Rename
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable.CatalogueLoop
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable.Index
 
@@ -33,21 +34,14 @@ theorem exec_span {w L : ℕ} (x : Data registers)
     ∃ y, ExecWithin w (Power.program.rename powerRegisters) x y (4 * L + 5) ∧
       y.regs Reg.span = 10 ^ L ∧ y.regs Reg.one = 1 ∧ y.mem = x.mem ∧
       (∀ i, i ≠ Reg.span → i ≠ Reg.level → i ≠ Reg.one → y.regs i = x.regs i) := by
-  obtain ⟨z, hz, hv, _, ho, hm, _, _⟩ :=
-    Power.exec 10 L (by decide) (x.comap powerRegisters) h10 hL hfit
-  have he := hz.rename powerRegisters_injective
-  refine ⟨z.extend powerRegisters x, he, ?_, ?_, hm, ?_⟩
-  · have h := congrArg (fun d : Data 5 => d.regs Power.value)
-      (Data.comap_extend powerRegisters_injective z x)
-    exact h.trans hv
-  · have h := congrArg (fun d : Data 5 => d.regs Power.one)
-      (Data.comap_extend powerRegisters_injective z x)
-    exact h.trans ho
-  · intro i hv hc ho
-    apply he.regs_eq
-    simp [Power.program, Power.body, Code.rename, Code.Preserves, Op.rename, Op.dest,
-      Op.bin, powerRegisters, Power.value, Power.counter, Power.base, Power.exponent,
-      Power.one, Ne.symm hv, Ne.symm hc, Ne.symm ho]
+  obtain ⟨y, he, hv, _, ho, hm, _, _, -⟩ :=
+    Power.exec_rename powerRegisters powerRegisters_injective 10 L (by decide) x h10 hL hfit
+  refine ⟨y, he, hv, ho, hm, ?_⟩
+  intro i hv hc ho
+  apply he.regs_eq
+  simp [Power.program, Power.body, Code.rename, Code.Preserves, Op.rename, Op.dest,
+    Op.bin, powerRegisters, Power.value, Power.counter, Power.base, Power.exponent,
+    Power.one, Ne.symm hv, Ne.symm hc, Ne.symm ho]
 
 /-- Explicit scalar initialization, also valid when every old temporary is dirty. -/
 theorem exec_constants {w : ℕ} (x : Data registers) (hfit : Fits w 10) :

@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingProgram
 import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingLayout
 import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingReserve
+import Complexity.Computability.WordRAM.Call
 
 /-!
 # Internal initialization proof for native preprocessing
@@ -105,24 +106,22 @@ private theorem primes_exec {κ n w : ℕ} (x : Data 128) (hs : Saved κ n x)
   have hpi : Function.Injective primeRegisters := by
     intro i j hij
     exact Fin.ext (congrArg (fun k : Fin 128 => k.val) hij)
-  obtain ⟨z, hz, hmem, hcount, _, _⟩ := PrimeTable.exec (p.comap primeRegisters)
+  obtain ⟨y, hz, ⟨hmem, hcount, _, _⟩, _⟩ := ExecWithin.rename_post hpi
+    (PrimeTable.exec (p.comap primeRegisters)
     (hfit.of_le (by change m + 3 ≤ base + m + 4; omega))
-    (hfit.of_le (by change base + (m + 1) ≤ base + m + 4; omega))
-  let y := z.extend primeRegisters p
+    (hfit.of_le (by change base + (m + 1) ≤ base + m + 4; omega)))
   have he : ExecWithin w (.seq preparePrimes (PrimeTable.program.rename primeRegisters)) x y
       (2 + ((m + 1) * (7 * m + 15) + 8)) := by
-    simpa +decide [y, p, Data.comap, primeRegisters, PrimeTable.limit, m] using
-      hp.within.seq (hz.rename hpi)
+    simpa +decide [p, Data.comap, primeRegisters, PrimeTable.limit, m] using
+      hp.within.seq hz
   have hmemory : y.mem = PrimeTable.memory x.mem base (m + 1) := by
-    simpa +decide [y, p, Data.extend, Data.comap, primeRegisters, PrimeTable.limit,
+    simpa +decide [p, Data.comap, primeRegisters, PrimeTable.limit,
       PrimeTable.base] using hmem
   refine ⟨y, he, hs.congr (fun i hi _ => he.regs_eq ?_), hmemory, ?_, ?_, ?_⟩
   · have hh : ∀ i : Fin 128, 109 ≤ i.val →
         (Code.seq preparePrimes (PrimeTable.program.rename primeRegisters)).Preserves i := by decide
     exact hh i hi
-  · have hc := congrArg (fun d : Data 15 => d.regs PrimeTable.count)
-      (Data.comap_extend hpi z p)
-    exact hc.trans (by simpa +decide [p, Data.comap, primeRegisters, PrimeTable.limit] using hcount)
+  · simpa +decide [p, Data.comap, primeRegisters, PrimeTable.limit] using hcount
   · intro q hq
     change y.mem (base + q) = if q.Prime then 1 else 0
     change q ≤ m at hq

@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxQuery.InputLayout
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxQuery.State
 import Mathlib.Data.Nat.Log
+import Complexity.Computability.WordRAM.Admission
 
 /-!
 # Original-input admission for complete sparse box queries
@@ -60,21 +61,18 @@ theorem admissionWidth_pos (L m t A B : ℕ) : 0 < admissionWidth L m t A B := b
 theorem admission_bounds {W L m t A B : ℕ} (hW : admissionWidth L m t A B ≤ W) :
     0 < W - 2 ∧ Fits W (originalAddressBound L m t) ∧
       GenericRAM.Signed.Fits (W - 2) (magnitudeBound L A B : ℕ) := by
-  have hlog := Nat.le_pow_clog (by decide : 1 < (2 : ℕ))
-    (magnitudeBound L A B + originalAddressBound L m t + 1)
-  have hs : Nat.clog 2 (magnitudeBound L A B + originalAddressBound L m t + 1) ≤ (W - 2) - 1 := by
-    unfold admissionWidth at hW
-    omega
-  have hp := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) hs
-  have hmag : magnitudeBound L A B < 2 ^ ((W - 2) - 1) := by omega
+  have hs : Nat.clog 2 (magnitudeBound L A B + originalAddressBound L m t + 1) ≤
+      (W - 2) - 1 := by unfold admissionWidth at hW; omega
+  have hmag : magnitudeBound L A B < 2 ^ ((W - 2) - 1) :=
+    fits_of_lt_clog_le
+      (by omega : magnitudeBound L A B < magnitudeBound L A B + originalAddressBound L m t + 1) hs
   have hw : 0 < W - 2 := by unfold admissionWidth at hW; omega
   refine ⟨hw, ?_, hw, ?_, ?_⟩
-  · change originalAddressBound L m t < 2 ^ W
-    have hp' := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) (by omega :
-      Nat.clog 2 (magnitudeBound L A B + originalAddressBound L m t + 1) ≤ W)
-    omega
+  · exact fits_of_lt_clog_le
+      (by omega : originalAddressBound L m t <
+        magnitudeBound L A B + originalAddressBound L m t + 1) (by omega)
   · have hn : 0 ≤ (magnitudeBound L A B : ℤ) := Int.natCast_nonneg _
-    have hp0 : 0 ≤ (2 : ℤ) ^ ((W - 2) - 1) := by positivity
+    have hp : 0 ≤ (2 : ℤ) ^ ((W - 2) - 1) := by positivity
     omega
   · exact_mod_cast hmag
 

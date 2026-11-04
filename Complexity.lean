@@ -2740,6 +2740,7 @@ public import Complexity.Computability.USTCON.Reader.Defs
 public import Complexity.Computability.USTCON.Reader.Encode
 public import Complexity.Computability.USTCON.Reader.Invariant
 public import Complexity.Computability.USTCON.Space
+public import Complexity.Computability.WordRAM.Admission
 public import Complexity.Computability.WordRAM.Allocation
 public import Complexity.Computability.WordRAM.ArrayAppend
 public import Complexity.Computability.WordRAM.ArrayNormalize

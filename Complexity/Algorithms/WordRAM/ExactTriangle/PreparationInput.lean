@@ -11,6 +11,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.Instances
 public import Complexity.Computability.WordRAM.Width
 public import Complexity.Computability.GenericRAM.Signed.Fits
 public import Mathlib.Data.Nat.Log
+import Complexity.Computability.WordRAM.Admission
 
 /-!
 # Initialized native ExactTriangle preparation
@@ -183,12 +184,11 @@ private theorem fits_at_width (n D g p A : ℕ) :
       Fits (width n D g p A) (Instances.budget n D g p) := by
   let V := envelope n D g p A
   let k := Nat.clog 2 V
-  have hpow : V ≤ 2 ^ k := Nat.le_pow_clog (by decide) V
-  have hmag : A + p + 1 < 2 ^ k := lt_of_lt_of_le
-    (by dsimp only [V, envelope]; omega) hpow
-  have hbudget : Instances.budget n D g p < 2 ^ k := lt_of_lt_of_le
-    (by dsimp only [V, envelope]; omega) hpow
-  refine ⟨⟨by omega, ?_, ?_⟩, (show Fits k (Instances.budget n D g p) from hbudget).mono
+  have hmag : A + p + 1 < 2 ^ k :=
+    fits_of_lt_clog_le (B := V) (by dsimp only [V, envelope]; omega) (le_refl _)
+  have hbudget : Fits k (Instances.budget n D g p) :=
+    fits_of_lt_clog_le (B := V) (by dsimp only [V, envelope]; omega) (le_refl _)
+  refine ⟨⟨by omega, ?_, ?_⟩, hbudget.mono
     (by dsimp only [width, k, V]; omega)⟩
   · simp only [Nat.add_sub_cancel]
     exact (neg_nonpos.mpr (by positivity)).trans (Int.natCast_nonneg _)

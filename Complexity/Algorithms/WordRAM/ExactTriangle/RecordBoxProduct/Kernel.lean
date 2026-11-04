@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Program
 
 /-!
@@ -51,15 +52,11 @@ theorem exec_invoke {W b m N : ℕ}
       (ExecWithin.copy (w := W) (x := x) (d := calleeBank CallableProduct.Reg.base)
         (s := Reg.base))
   have zb : (z.comap calleeBank).regs CallableProduct.Reg.base = b := by simp [z]
-  obtain ⟨a, ha, ar, ab, aM, av, ai, af⟩ :=
-    CallableBoxProduct.exec X Y qs (z.comap calleeBank) zb hinput hX hY
-      (Nat.div_le_self _ _) hN hfit
-  let c := a.extend calleeBank z
-  have hc : ExecWithin W (CallableBoxProduct.program.rename calleeBank) z c
-      (CallableBoxProduct.timeBound m (m / 9) qs) := ha.rename calleeBank_injective
-  have cr : c.regs (calleeBank CallableProduct.Reg.result) =
-      b + QueriedProduct.outputBase (21 * m) m N qs.length :=
-    (calleeBank_injective.extend_apply _ _ _).trans ar
+  obtain ⟨c, hc, ⟨cr, _, _, av, ai, af⟩, hframe⟩ :=
+    ExecWithin.rename_post calleeBank_injective (
+      CallableBoxProduct.exec X Y qs (z.comap calleeBank) zb hinput hX hY
+        (Nat.div_le_self _ _) hN hfit)
+  change c.regs (calleeBank CallableProduct.Reg.result) = _ at cr
   let y := c.set Reg.result (b + QueriedProduct.outputBase (21 * m) m N qs.length)
   have hy : ExecWithin (B := .standard) W
       (.op (.copy Reg.result (calleeBank CallableProduct.Reg.result))) c y 1 := by
@@ -68,15 +65,13 @@ theorem exec_invoke {W b m N : ℕ}
   refine ⟨y, ?_, by simp [y], av, ai, af, ?_⟩
   · exact (hz.seq (hc.seq hy)).mono (by omega)
   · intro i hi hne
-    have hbank : ¬∃ j, calleeBank j = i := by
-      rintro ⟨j, hj⟩
+    have hbank (j) : calleeBank j ≠ i := by
+      intro hj
       have h := congrArg Fin.val hj
       change 128 + j.val = i.val at h
       omega
-    have hiz : i ≠ calleeBank CallableProduct.Reg.base := by
-      intro h
-      exact hbank ⟨_, h.symm⟩
-    simp only [y, Data.set_regs, Function.update_of_ne hne, c, Data.extend,
-      Function.extend_apply' _ _ _ hbank, z, Function.update_of_ne hiz]
+    have hiz : i ≠ calleeBank CallableProduct.Reg.base := (hbank _).symm
+    rw [Data.set_regs, Function.update_of_ne hne, hframe i hbank]
+    simp only [z, Data.set_regs, Function.update_of_ne hiz]
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct

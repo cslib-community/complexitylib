@@ -10,6 +10,8 @@ module
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Delivery
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Properties
 
+import Complexity.Computability.WordRAM.Call
+
 /-!
 # Actual exhaustive branch of the assembled ExactTriangle solver
 
@@ -46,35 +48,26 @@ theorem exec_slow {W n F b : ℕ} (x : Data 640) (A B C : Fin n → Fin n → �
       (y.regs CallableFixedPrime.Reg.found = 1 ↔ HasZeroTriangle A B C) ∧ y.mem = x.mem ∧
       ∀ j : Fin 640, 24 ≤ j.val → j ≠ CallableFixedPrime.Reg.found → y.regs j = x.regs j := by
   obtain ⟨a, ha, am, an, _, aAB, aBC, aAC, ab, ar⟩ := exec_slowArguments (W := W) x
-  obtain ⟨z, hz, zbool, ziff, zm⟩ := ThreeSum.Host.Slow.exec_at A B C
-    (a.comap slowBank) (an.trans hn) aAB aBC aAC hAB hBC hAC hfit
-    (fun i j => (congrFun am _).trans (hmA i j))
-    (fun i j => (congrFun am _).trans (hmB i j))
-    (fun i j => (congrFun am _).trans (hmC i j)) hA hB hC
-  let z' := z.extend slowBank a
-  have solve : ExecWithin W (ThreeSum.Host.Slow.program.rename slowBank) a z'
-      (39 * (n * (n * n)) + 9) := hz.rename slowBank_injective
-  have reg (i : Fin 24) : z'.regs (slowBank i) = z.regs i :=
-    slowBank_injective.extend_apply _ _ _
+  obtain ⟨z', solve, ⟨zbool, ziff, zm⟩, frame⟩ :=
+    ExecWithin.rename_post slowBank_injective (ThreeSum.Host.Slow.exec_at A B C
+      (a.comap slowBank) (an.trans hn) aAB aBC aAC hAB hBC hAC hfit
+      (fun i j => (congrFun am _).trans (hmA i j))
+      (fun i j => (congrFun am _).trans (hmB i j))
+      (fun i j => (congrFun am _).trans (hmC i j)) hA hB hC)
   let y := z'.set CallableFixedPrime.Reg.found (z'.regs Reg.result)
   have copy : ExecWithin (B := .standard) W
       (ram[ CallableFixedPrime.Reg.found ← Reg.result ]) z' y 1 := ExecWithin.copy
   have he : ExecWithin W slow x y (39 * (n * (n * n)) + 16) := by
     exact (ha.seq (solve.seq copy)).mono (le_of_eq (by ring))
-  have yf : y.regs CallableFixedPrime.Reg.found = z.regs ThreeSum.Host.Slow.out :=
-    (show y.regs CallableFixedPrime.Reg.found = z'.regs Reg.result from rfl).trans
-      (reg ThreeSum.Host.Slow.out)
-  refine ⟨y, he, yf.trans_le zbool, ?_, zm.trans am, ?_⟩
-  · simpa only [yf] using ziff
+  refine ⟨y, he, zbool, ziff, zm.trans am, ?_⟩
   · intro j hj hneq
-    have hs : (ThreeSum.Host.Slow.program.rename slowBank).Preserves j :=
-      ThreeSum.Host.Slow.program.preserves_rename_of_forall_ne slowBank j (by
-        intro i hi
-        have h := congrArg (fun k : Fin 640 => k.val) hi
-        have := i.isLt
-        dsimp only [slowBank, Fin.val_castLE] at h
-        omega)
+    have outside : ∀ i, slowBank i ≠ j := by
+      intro i hi
+      have hv := congrArg Fin.val hi
+      have := i.isLt
+      change i.val = j.val at hv
+      omega
     exact (show y.regs j = z'.regs j from Function.update_of_ne hneq _ _).trans
-      ((solve.regs_eq hs).trans (ar j (by omega)))
+      ((frame j outside).trans (ar j (by omega)))
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.ParameterSelecting

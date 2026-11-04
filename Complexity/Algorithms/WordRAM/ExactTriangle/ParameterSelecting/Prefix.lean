@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Flat
 public import Complexity.Computability.WordRAM.Width
 import Complexity.Foundations.Data.Nat.Log
+import Complexity.Computability.WordRAM.Admission
 
 /-!
 # Original-data bounds for every assembled-solver prefix
@@ -59,12 +60,8 @@ theorem original_bounded {W n F b ap bp cp P : ℕ} (values : List ℤ) (x : Dat
     (hregs : ∀ i, x.regs i ≤ P) (hmem : ∀ q, x.mem q ≤ P)
     (hW : admissionWidth n F b ap bp cp P values ≤ W) : x.Bounded W := by
   have hp : P < 2 ^ W := by
-    have hle := Nat.le_pow_clog (by decide : 1 < (2 : ℕ))
-      (envelope n F b ap bp cp values + P + 1)
-    have hpow := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ))
-      (show Nat.clog 2 (envelope n F b ap bp cp values + P + 1) ≤ W by
-        unfold admissionWidth at hW; omega)
-    omega
+    exact fits_of_lt_clog_le (by omega : P < envelope n F b ap bp cp values + P + 1)
+      (by unfold admissionWidth at hW; omega)
   exact ⟨fun i => (hregs i).trans_lt hp, fun q => (hmem q).trans_lt hp⟩
 
 /-- Every actual caller prefix has a width-independent bound. The semantic solver proves

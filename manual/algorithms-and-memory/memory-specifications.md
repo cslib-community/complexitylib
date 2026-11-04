@@ -121,6 +121,57 @@ move a fixed register bank through the traversal's own nine-register word stack 
 `9*n+1` and `14*n+1` instructions. They are local to the hand-stepped traversal, not a library
 stack API; the library's bounded stack is `Stack.Memory`, run natively by `Stack.Native`.
 
+### Reuse routine postconditions and register frames
+
+For a proved native routine, keep its whole postcondition when calling
+`ExecWithin.rename_post`; consume only the named fields needed by the continuation.
+For example, [`ArrayCopySum.Post`](../../Complexity/Computability/WordRAM/CopySum.lean)
+records the resulting memory, retained source/destination/length and accumulated sum.
+Its memory and sum facts refer to the original input state, so a caller can use `post.memory`
+and `post.total` without reconstructing register extensions or a positional tuple.
+The actual source/destination separation and numerical fit premises still belong to the
+routine. This is the same charged execution; the postcondition emits no instructions.
+
+[`WordRAMProcedureContracts`](../../ComplexityTests/WordRAMProcedureContracts.lean) is a
+complete ordinary-import client. From the repository root, run
+`scripts/build.sh --wfail --iofail ComplexityTests.WordRAMProcedureContracts`.
+It checks the real copy routine, including dirty destination words and its frame;
+use its full imports and premises when adapting a call. If transport fails, check the bank's
+injectivity and distinguish facts about the source view from protected caller registers.
+
+For a contiguous bank, import
+[`Complexity.Computability.WordRAM.RegisterFrame`](../../Complexity/Computability/WordRAM/RegisterFrame.lean)
+and use `Code.preserves_rename_of_offset`. Supply the equation
+`(bank j).val = offset + j.val` and the outside interval premise
+`i.val < offset ∨ offset + sourceRegisters ≤ i.val`.
+`Exec.regs_eq` or `ExecWithin.regs_eq` then gives the protected register equality for the actual
+execution. This works with arbitrary basis and register counts; an enumerated map can supply
+its offset equation once. Sparse maps and protection inside a bank still use the more general
+`preserves_rename_of_forall_ne` or the routine's own preservation contract.
+
+The complete [register-frame client](../../ComplexityTests/WordRAMRegisterFrames.lean)
+copies inside an interior bank in one instruction and retains dirty registers on both sides
+and arbitrary memory. Its negative control checks that an owned destination can change.
+Run `scripts/build.sh --wfail --iofail ComplexityTests.WordRAMRegisterFrames`.
+
+### Derive word admission from a numerical envelope
+
+Import [`Complexity.Computability.WordRAM.Admission`](../../Complexity/Computability/WordRAM/Admission.lean)
+for the scalar bridge from binary ceiling logarithms to `Fits W v`, meaning `v < 2^W`:
+`fits_of_clog_lt` admits an envelope `B` when `Nat.clog 2 B < W`;
+`fits_of_lt_clog_le` admits `v < B` when `Nat.clog 2 B ≤ W`.
+Prove the algorithm-specific envelope bound once, then use `Fits.of_le` for smaller values and
+`Fits.mono` for larger widths. These sufficient rules do not infer memory separation,
+old-word bounds, or workspace geometry.
+
+The strict endpoint matters: width three holds seven but not eight, even though
+`Nat.clog 2 8 = 3`. For the envelope itself retain a spare bit. The complete
+[admission client](../../ComplexityTests/WordRAMAdmission.lean) checks these boundaries with
+actual native constant instructions and includes width zero.
+Run `scripts/build.sh --wfail --iofail ComplexityTests.WordRAMAdmission`.
+If admission fails, check whether the intended value is strictly below the envelope or is the
+envelope, then check the original value bound; do not replace a strict premise by a non-strict one.
+
 ### Use an explicit memory frame
 
 [HeapAssertion](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Heap.lean#L62) records a finite support and a predicate on total memory. Separating conjunction uses disjoint supports; `Modifies` records agreement outside an allowed write set. This is an explicit-footprint frame calculus inspired by separation logic, not a replacement semantics in which inaccessible cells disappear [reynolds02][reynolds02].
