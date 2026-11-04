@@ -700,13 +700,13 @@ theorem isPPTOn_sufCmaGame (M : MACScheme) {adversary : Forger}
           pair.2.2)
         (encPair (encPair encUnary encBits)
           (encPair (encPair encBits encBits) (encList (encPair encBits encBits))))
-        (encList (encPair encBits encBits)) := by polytime
+        (encList (encPair encBits encBits)) := (ComputableInPolyTime.snd _ _).snd'
     have helem : ComputableInPolyTime
         (fun pair : (ℕ × List Bool) × ((List Bool × List Bool) × List (List Bool × List Bool)) =>
           pair.2.1)
         (encPair (encPair encUnary encBits)
           (encPair (encPair encBits encBits) (encList (encPair encBits encBits))))
-        (encPair encBits encBits) := by polytime
+        (encPair encBits encBits) := (ComputableInPolyTime.snd _ _).fst'
     classical
     convert ComputableInPolyTime.decide_mem hlist helem using 1
     funext a
@@ -1045,13 +1045,13 @@ theorem isPPTOn_sufOneTimeGame (M : MACScheme) {adversary : Forger}
           pair.2.2)
         (encPair (encPair encUnary encBits)
           (encPair (encPair encBits encBits) (encList (encPair encBits encBits))))
-        (encList (encPair encBits encBits)) := by polytime
+        (encList (encPair encBits encBits)) := (ComputableInPolyTime.snd _ _).snd'
     have helem : ComputableInPolyTime
         (fun pair : (ℕ × List Bool) × ((List Bool × List Bool) × List (List Bool × List Bool)) =>
           pair.2.1)
         (encPair (encPair encUnary encBits)
           (encPair (encPair encBits encBits) (encList (encPair encBits encBits))))
-        (encPair encBits encBits) := by polytime
+        (encPair encBits encBits) := (ComputableInPolyTime.snd _ _).fst'
     classical
     convert ComputableInPolyTime.decide_mem hlist helem using 1
     funext a
@@ -1434,16 +1434,17 @@ theorem isOraclePPT_reindexForger {ℓ : ℕ → ℕ}
     (hℓ : ComputableInPolyTime ℓ encUnary encUnary) {adversary : Forger}
     (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
     IsOraclePPT (encPair encBits encBits) (reindexForger ℓ adversary) := by
+  have hparam : ComputableInPolyTime (fun p : ℕ × List Bool => GeneratorReindex.parameter ℓ p.1)
+      (encPair encUnary encBits) encUnary :=
+    GeneratorReindex.isPolyTime_parameter hℓ (ComputableInPolyTime.fst _ _)
   have hcond : ComputableTidilyInPolyTime
       (fun p : ℕ × List Bool => ℓ (GeneratorReindex.parameter ℓ p.1) == p.1)
-      (encPair encUnary encBits) encBool := by
-    apply ComputableInPolyTime.tidy
-    polytime
+      (encPair encUnary encBits) encBool :=
+    (ComputableInPolyTime.beq (hℓ.comp hparam) (ComputableInPolyTime.fst _ _)).tidy
   have hprep : ComputableTidilyInPolyTime
       (fun p : ℕ × List Bool => (GeneratorReindex.parameter ℓ p.1, p.2))
-      (encPair encUnary encBits) (encPair encUnary encBits) := by
-    apply ComputableInPolyTime.tidy
-    polytime
+      (encPair encUnary encBits) (encPair encUnary encBits) :=
+    (hparam.pair (ComputableInPolyTime.snd _ _)).tidy
   have hyes : IsOraclePPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p : ℕ × List Bool => adversary (GeneratorReindex.parameter ℓ p.1) p.2) :=
     hadversary.preprocess hprep
@@ -1653,8 +1654,23 @@ theorem isOraclePPT_macToPrfDistinguisher {adversary : Forger}
         encBits
         (fun p : (ℕ × List Bool) × ((Unit × List Bool) × List (List Bool)) =>
           List.take p.1.1 <$> ProbOracleComp.query ((), p.2.1.2)) :=
-      IsOraclePPTOn.query_take () (by polytime) (by polytime)
+      IsOraclePPTOn.query_take ()
+        ((ComputableInPolyTime.snd _ _).fst'.snd').tidy
+        ((ComputableInPolyTime.fst _ _).fst').tidy
     exact hq.map_with (by polytime)
+  have hcaller : ComputableInPolyTime
+      (fun pair : (ℕ × List Bool) × List Bool => pair.1.1)
+      (encPair (encPair encUnary encBits) encBits) encUnary :=
+    (ComputableInPolyTime.fst _ _).fst'
+  have hquery : ComputableInPolyTime
+      (fun pair : (ℕ × List Bool) × List Bool => pair.2.length)
+      (encPair (encPair encUnary encBits) encBits) encUnary :=
+    ComputableInPolyTime.length_bits.comp (ComputableInPolyTime.snd _ _)
+  have hres : ComputableInPolyTime
+      (fun pair : (ℕ × List Bool) × List Bool => pair.1.1 + 2 * pair.2.length + 2)
+      (encPair (encPair encUnary encBits) encBits) encUnary :=
+    (hcaller.unary_add' ((ComputableInPolyTime.const 2).unary_mul' hquery)).unary_add'
+      (ComputableInPolyTime.const 2)
   have hrun : IsOraclePPTOn (encPair encUnary encBits)
       (encPair (encPair encBits encBits) (encList encBits))
       (fun caller : ℕ × List Bool =>
@@ -1668,7 +1684,7 @@ theorem isOraclePPT_macToPrfDistinguisher {adversary : Forger}
       (initial := fun _ => ([] : List (List Bool)))
       (resources := fun caller query => caller.1 + 2 * query.length + 2)
       (by fun_prop) hhandler (by fun_prop)
-      (fun _ _ => True) (fun _ => trivial) (by polytime)
+      (fun _ _ => True) (fun _ => trivial) hres.tidy
     intro caller request queried _ result hresult
     unfold macLogHandler at hresult
     obtain ⟨tag, htag, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
@@ -1690,7 +1706,9 @@ theorem isOraclePPT_macToPrfDistinguisher {adversary : Forger}
       encBool
       (fun p : (ℕ × List Bool) × ((List Bool × List Bool) × List (List Bool)) =>
         (· == p.2.1.2) <$> (List.take p.1.1 <$> ProbOracleComp.query ((), p.2.1.1))) :=
-    (IsOraclePPTOn.query_take () (by polytime) (by polytime)).map_with (by polytime)
+    (IsOraclePPTOn.query_take ()
+      (((ComputableInPolyTime.snd _ _).fst').fst').tidy
+      ((ComputableInPolyTime.fst _ _).fst').tidy).map_with (by polytime)
   have hno : IsOraclePPTOn
       (encPair (encPair encUnary encBits)
         (encPair (encPair encBits encBits) (encList encBits)))
