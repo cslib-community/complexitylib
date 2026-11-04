@@ -48,7 +48,7 @@ theorem WP.of_spec {B : Basis} {r w T : ℕ} {c : Code B r} {x : Data r}
 
 /-- Apply a fixed-time or time-indexed routine contract and expose its continuation.
 Only bank-view projections are normalized; the callee program remains closed. -/
-syntax "wram_call " term:max " with" (ppSpace colGt rintroPat)+ : tactic
+syntax (name := wramCall) "wram_call " term:max " with" (ppSpace colGt rintroPat)+ : tactic
 
 macro_rules
   | `(tactic| wram_call $h with $pats*) =>
@@ -60,7 +60,10 @@ macro_rules
       try simp only [Cslib.WordRAM.Data.comap_regs, Cslib.WordRAM.Data.comap_mem] at *))
 
 /-- Apply a routine contract in an injective bank and retain the outside-register frame. -/
-syntax "wram_call " term:max " renamed " term:max " with"
+tactic_extension wramCall
+
+@[tactic_alt wramCall]
+syntax (name := wramCallRenamed) "wram_call " term:max " renamed " term:max " with"
   (ppSpace colGt rintroPat)+ : tactic
 
 macro_rules

@@ -46,7 +46,7 @@ end Turing.MultiTapeTM.PolyBounded
 
 /-- Prove a polynomial resource-growth expression using local bounds and compositional rules.
 Substitution uses an explicit `PolyBounded.comp`; no resource model or degree is inferred. -/
-macro "growth_poly" : tactic => `(tactic|
+macro (name := growthPoly) "growth_poly" : tactic => `(tactic|
   solve
   | repeat' first
     | assumption
