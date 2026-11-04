@@ -100,4 +100,3 @@ theorem rowNormPow_finiteEnvelope_le_card_mul {I Ω V : Type*} [Fintype Ω] [Fin
     _ = _ := by simp only [sum_const, nsmul_eq_mul]
 
 end Cslib
-
