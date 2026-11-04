@@ -6,6 +6,7 @@ Authors: Erik Demaine
 
 import Complexity.Computability.WordRAM.SymbolicExec.CanonicalCall
 import Complexity.Computability.WordRAM.Notation
+import Complexity.Computability.WordRAM.Subroutine
 
 /-!
 # Canonical register-bank continuations

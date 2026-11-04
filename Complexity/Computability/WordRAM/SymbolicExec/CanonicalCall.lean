@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+public import Complexity.Computability.WordRAM.RegisterFrame
 public import Complexity.Computability.WordRAM.SymbolicExec.Call
 
 /-!
@@ -27,25 +28,7 @@ public section
 namespace Cslib.WordRAM
 
 attribute [wram_simps] Data.comap_regs Data.comap_mem
-  Matrix.cons_val_zero Matrix.cons_val_one Matrix.cons_val
-
-/-- Read a register in the callee's injective bank. -/
-theorem Data.extend_regs_of_eq {r s : ℕ} {f : Fin r → Fin s} (hf : f.Injective)
-    (y : Data r) (x : Data s) (i : Fin r) (j : Fin s) (h : f i = j) :
-    (y.extend f x).regs j = y.regs i := by
-  subst j
-  exact hf.extend_apply _ _ i
-
-/-- Read a caller register outside the callee's bank. -/
-theorem Data.extend_regs_of_forall_ne {r s : ℕ} {f : Fin r → Fin s}
-    (y : Data r) (x : Data s) (i : Fin s) (hi : ∀ j, f j ≠ i) :
-    (y.extend f x).regs i = x.regs i :=
-  Function.extend_apply' _ _ _ (by rintro ⟨j, hj⟩; exact hi j hj)
-
-/-- Extending registers retains the actual returned memory, including callee writes. -/
-@[simp, wram_simps]
-theorem Data.extend_mem {r s : ℕ} (f : Fin r → Fin s) (y : Data r) (x : Data s) :
-    (y.extend f x).mem = y.mem := rfl
+  Data.extend_mem Matrix.cons_val_zero Matrix.cons_val_one Matrix.cons_val
 
 /-- Continue a renamed fixed-time routine at its canonical caller state, with exact allowance. -/
 theorem WP.of_spec_rename {B : Basis} {r s w T : ℕ} {f : Fin r → Fin s}
