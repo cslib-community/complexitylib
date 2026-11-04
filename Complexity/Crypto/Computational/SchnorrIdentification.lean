@@ -62,6 +62,9 @@ exactly, which matters for the honest prover and for simulation but not for this
 
 * `Cslib.Crypto.PrimeOrderGroupFamily.succProbability_schnorrDirectGame_le`: `ε ≤ 1 / 2 ^ k + √ε'`
   at each security parameter.
+* `Cslib.Crypto.PrimeOrderGroupFamily.extractNat_cast`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.computableInPolyTime_extractNat`: the extracted witness is
+  `(c - c')⁻¹ (z - z')` modulo `q`, and is computable in polynomial time.
 * `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_rewind`: the rewinding adversary is uniform strict
   PPT.
 * `Cslib.Crypto.PrimeOrderGroupFamily.negligible_schnorrDirectGame`: Schnorr identification is
@@ -142,8 +145,9 @@ private theorem challenge_ne {q k : ℕ} (hkq : 2 ^ k ≤ q) {c c' : BitString k
     Nat.mod_eq_of_lt ((BitString.lsbValue_lt _).trans_le (by simpa using hkq))] at h
   exact hc (List.ofFn_injective (BitString.lsbValue_injective (by simp) h))
 
-/-- Fermat's little theorem gives the inverse in `extractNat`. -/
-private theorem extractNat_cast {q : ℕ} [Fact q.Prime] {c z c' z' : ℕ}
+/-- Fermat's little theorem gives the inverse in `extractNat`: modulo a prime `q`, it is
+`(c - c')⁻¹ (z - z')` whenever `c` and `c'` are distinct modulo `q`. -/
+theorem extractNat_cast {q : ℕ} [Fact q.Prime] {c z c' z' : ℕ}
     (hc : (c : ZMod q) ≠ c') :
     (extractNat q c z c' z' : ZMod q) = ((c : ZMod q) - c')⁻¹ * ((z : ZMod q) - z') := by
   have hsub (a b : ℕ) : (((a % q + q - b % q) % q : ℕ) : ZMod q) = (a : ZMod q) - b := by
@@ -284,6 +288,16 @@ private theorem computableTidilyInPolyTime_extractNat {α : Type} {input : α �
   exact .binary_mod' (.binary_mul' hpow (hdiff hz hz')) hq
 
 attribute [local fun_prop] computableTidilyInPolyTime_extractNat
+
+/-- The extracted witness `extractNat` is computable in polynomial time from the group description
+and the four binary numbers. -/
+theorem computableInPolyTime_extractNat {α : Type} {input : α ↪ List Bool}
+    {d : α → F.Desc} {c z c' z' : α → ℕ} (hd : ComputableInPolyTime d input F.encDesc)
+    (hc : ComputableInPolyTime c input encNat) (hz : ComputableInPolyTime z input encNat)
+    (hc' : ComputableInPolyTime c' input encNat) (hz' : ComputableInPolyTime z' input encNat) :
+    ComputableInPolyTime (fun a => extractNat (F.order (d a)) (c a) (z a) (c' a) (z' a))
+      input encNat :=
+  .of_tidy (computableTidilyInPolyTime_extractNat hd.tidy hc.tidy hz.tidy hc'.tidy hz'.tidy)
 
 /-- **The rewinding adversary is uniform strict PPT** when the impersonator is and the challenge
 length is computable in polynomial time. -/

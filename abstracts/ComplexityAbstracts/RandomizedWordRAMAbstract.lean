@@ -371,7 +371,7 @@ theorem quickselect :
 
 /--
 info: abstract audit passed for `ComplexityAbstracts.RandomizedWordRAMAbstract`: 282 root
-declarations, 256 dependencies checked
+declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.RandomizedWordRAMAbstract

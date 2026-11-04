@@ -71,7 +71,7 @@ theorem savitch {α : Type} (enc : α ↪ List Bool) : NPSPACE enc = PSPACE enc 
 
 /--
 info: abstract audit passed for `ComplexityTests.Abstracts.SavitchAbstract`:
-7 root declarations, 40 dependencies checked
+7 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.SavitchAbstract

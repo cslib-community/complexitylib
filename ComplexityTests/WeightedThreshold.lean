@@ -1,10 +1,15 @@
 /-
 Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Christian Reitwiessner
 -/
 
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold
+import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Andreev
+import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevAverage
+import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevLowerBound
+import Complexity.Computability.Circuit.Boolean.WeightedThreshold.RandomRestriction
+import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ThresholdCounting
 import Complexity.Computability.Circuit.Boolean.Threshold.Parity
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Tactic.FinCases
@@ -18,7 +23,7 @@ open Cslib Cslib.Circuits
 
 namespace WeightedThresholdTests
 
-open Boolean.WeightedThreshold
+open Boolean.WeightedThreshold Finset
 
 -- Nullary gates use the empty sum (equality is accepted), and a negative coefficient implements
 -- negation without adding a separate operation.
@@ -157,5 +162,212 @@ example : ∃ x y : Fin 1 → Bool,
     exact gate.val.elim0
   · intro h
     exact Bool.false_ne_true (congrFun h 0)
+
+-- Exact depth-two weighted threshold circuit for Andreev's function at `b = 2, m = 2` (`8` bits):
+-- 80 bottom gates, 81 total gates, depth at most 2, and mixed truth-table evaluation where
+-- changing block parities changes the selected truth-table entry.
+example :
+    (andreevCircuit 2 2).Computes interpretation (single (Boolean.andreev 2 2)) ∧
+    (andreevCircuit 2 2).size = 81 ∧
+    (andreevCircuit 2 2).depth ≤ 2 ∧
+    (andreevCircuit 2 2).wireCount ≤ 720 ∧
+    (andreevCircuit 2 2).eval interpretation
+      (fun i => decide (i = 1 ∨ i = 2 ∨ i = 4)) 0 = true ∧
+    (andreevCircuit 2 2).eval interpretation
+      (fun i => decide (i = 1 ∨ i = 2 ∨ i = 4 ∨ i = 5)) 0 = false := by
+  refine ⟨computes_andreevCircuit 2 2, size_andreevCircuit_two_two, depth_andreevCircuit_le 2 2,
+    wireCount_andreevCircuit_two_two_le, ?_, ?_⟩
+  · rw [eval_andreevCircuit_eq_evalInt]
+    exact andreevCircuitEvalInt_two_two_mixed.1
+  · rw [eval_andreevCircuit_eq_evalInt]
+    exact andreevCircuitEvalInt_two_two_mixed.2
+
+-- Windowed depth-two weighted threshold circuit and subcube correlation at `b = 2, m = 2, r = 1`:
+-- `andreevWindowedCircuit 2 2 1 4` uses `33` gates (`≤ 288` active wires) at depth at most `2`
+-- and matches `Boolean.andreev 2 2` on the mixed concrete truth-table inputs; at `B = 5` (`41`
+-- gates, `≤ 360` active wires), every input lies in-window (`|X_S(w)| ≤ 4` and
+-- `|t_S(w) - (#S * 2) / 2| ≤ 1`), so `andreevWindowedCircuit 2 2 1 5` agrees with
+-- `andreevSubcubeEval 2 2 1` everywhere and matches `Boolean.andreev 2 2` on `192` of the `256`
+-- inputs (`2 * 192 = 384 = 256 + 128`); and at `B = 9, t = 17 / 6` (`3 * t + 1 / 2 = 9 ≤ B`), the
+-- analytic Hoeffding correlation theorem gives a lower bound strictly exceeding `1 / 2`.
+example :
+    (andreevWindowedCircuit 2 2 1 4).size = 33 ∧
+    (andreevWindowedCircuit 2 2 1 4).depth ≤ 2 ∧
+    (andreevWindowedCircuit 2 2 1 4).wireCount ≤ 288 ∧
+    (andreevWindowedCircuit 2 2 1 4).eval interpretation
+      (fun i => decide (i = 1 ∨ i = 4)) 0 = true ∧
+    (andreevWindowedCircuit 2 2 1 4).eval interpretation
+      (fun i => decide (i = 1 ∨ i = 4 ∨ i = 5)) 0 = false ∧
+    (andreevWindowedCircuit 2 2 1 5).size = 41 ∧
+    2 * #{w : BitString (2 ^ 2 + 2 * 2) |
+      (andreevWindowedCircuit 2 2 1 5).eval interpretation w 0 =
+        Boolean.andreev 2 2 w} = 384 ∧
+    (2 ^ (2 ^ 2 + 2 * 2) : ℝ) * (1 / 2 + 1 / (2 * Real.sqrt (2 * 2 ^ (2 - 1)))) -
+      2 ^ 1 * (2 * 2 ^ (2 ^ 2 + 2 * 2)) *
+        (Real.exp (-(2 * (17 / 6 : ℝ) ^ 2 / (2 ^ 2 : ℝ))) +
+          Real.exp (-(2 * (17 / 6 : ℝ) ^ 2 / (2 * 2 : ℝ)))) ≤
+      (#{w : BitString (2 ^ 2 + 2 * 2) |
+        (andreevWindowedCircuit 2 2 1 9).eval interpretation w 0 =
+          Boolean.andreev 2 2 w} : ℝ) := by
+  have hin (w : BitString (2 ^ 2 + 2 * 2)) : andreevInWindow 2 2 1 5 w := by
+    intro S hS σ
+    have hcard : #S ≤ 1 :=
+      (Finset.card_le_card ((mem_andreevPrefixSubsets S).mp hS)).trans
+        (by rw [card_andreevPrefixCoords (by decide : 1 ≤ 2)])
+    have hX := andreevTableScore_bounds 2 2 S w
+    have ht := andreevBlockSum_bounds 2 2 S w
+    cases σ <;>
+      simp only [andreevWindowLower, andreevWindowCenter, andreevLinearForm, ↓reduceIte,
+        Bool.false_eq_true, Nat.cast_mul, Nat.cast_ofNat] <;>
+      omega
+  refine ⟨by rw [size_andreevWindowedCircuit (by decide)]; rfl,
+    depth_andreevWindowedCircuit_le 2 2 1 4,
+    (wireCount_andreevWindowedCircuit_le (by decide) 2 4).trans (by decide),
+    by rw [eval_andreevWindowedCircuit_eq_evalInt]; decide,
+    by rw [eval_andreevWindowedCircuit_eq_evalInt]; decide,
+    by rw [size_andreevWindowedCircuit (by decide)]; rfl,
+    by
+      simp_rw [fun w => eval_andreevWindowedCircuit_eq_subcubeEval_of_inWindow (hin w) 0]
+      exact (two_mul_card_andreevSubcubeEval_eq_andreev (by decide) 2).trans (by decide),
+    card_eval_andreevWindowedCircuit_eq_andreev_ge_sqrt (by decide) 2 9 0
+      (by norm_num) (by norm_num)⟩
+
+-- Erdős–Littlewood–Offord anti-concentration and Kane–Williams block-partition gate and wire
+-- random restriction lemmas instantiated on the Andreev block-variable partition
+-- `Boolean.andreevBlockVar 2 2` and a depth-one gate.
+example :
+    #{w : Fin 4 → Bool |
+      (2 : ℝ) ≤ ∑ i : Fin 4, (1 : ℝ) * (w i).toNat ∧
+        (∑ i : Fin 4, (1 : ℝ) * (w i).toNat) < 2 + 1} ≤ (4 : ℕ).choose (4 / 2) ∧
+    (∀ x : Fin 2 → Bool,
+      ((Boolean.Threshold.parityCircuit 2).mapOp ofThreshold).program.eval interpretation x
+        ⟨0, by decide⟩ =
+        ltfEval
+          (inputWeight ((Boolean.Threshold.parityCircuit 2).mapOp ofThreshold).program
+            ⟨0, by decide⟩)
+          (((Boolean.Threshold.parityCircuit 2).mapOp ofThreshold).program.lines
+            ⟨0, by decide⟩).op.threshold
+          x) ∧
+    (∑ σ : Fin 2 → Fin 2,
+      (#{w : BitString (2 ^ 2 + 2 * 2) |
+        ¬ ForcedToConst
+          (ltfEval (inputWeight (andreevCircuit 2 2).program ⟨0, by decide⟩)
+            ((andreevCircuit 2 2).program.lines ⟨0, by decide⟩).op.threshold)
+          (Cslib.Combinatorics.LittlewoodOfford.blockLiveSet (Boolean.andreevBlockVar 2 2) σ)
+          w} : ℝ)) ≤
+      (Fintype.card (Fin 2 → Fin 2) : ℝ) * (2 : ℝ) ^ Fintype.card (Fin (2 ^ 2 + 2 * 2)) *
+        (4 * (1 / (Fintype.card (Fin 2) : ℝ)) *
+          Real.sqrt #(inputSupport (andreevCircuit 2 2).program ⟨0, by decide⟩)) ∧
+    (∑ σ : Fin 2 → Fin 2,
+      (#{w : BitString (2 ^ 2 + 2 * 2) |
+        ¬ ForcedToAtMostOne
+          (ltfEval (inputWeight (andreevCircuit 2 2).program ⟨0, by decide⟩)
+            ((andreevCircuit 2 2).program.lines ⟨0, by decide⟩).op.threshold)
+          (Cslib.Combinatorics.LittlewoodOfford.blockLiveSet (Boolean.andreevBlockVar 2 2) σ)
+          w} : ℝ)) ≤
+      (Fintype.card (Fin 2 → Fin 2) : ℝ) * (2 : ℝ) ^ Fintype.card (Fin (2 ^ 2 + 2 * 2)) *
+        (4 * (#(inputSupport (andreevCircuit 2 2).program ⟨0, by decide⟩) : ℝ) *
+          (1 / (Fintype.card (Fin 2) : ℝ)) *
+          Real.sqrt (1 / (Fintype.card (Fin 2) : ℝ))) := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · simpa using
+      Cslib.Combinatorics.LittlewoodOfford.card_filter_sum_bool_le_choose_of_forall_le_abs
+        (fun _ : Fin 4 => (1 : ℝ)) (P := fun s => (2 : ℝ) ≤ s ∧ s < 2 + 1) (δ := 1)
+        (fun _ => by norm_num) (fun x y hx hy => by rw [abs_lt]; constructor <;> linarith)
+  · intro x
+    exact eval_eq_ltfEval_inputWeight_of_depths_le_one
+      ((Boolean.Threshold.parityCircuit 2).mapOp ofThreshold).program x (by decide)
+  · simpa [ltfSupport_inputWeight_eq_inputSupport] using
+      sum_card_not_forcedToConst_blockLiveSet_le (Boolean.andreevBlockVar 2 2)
+        (andreevBlockVar_joint_injective 2 2)
+        (inputWeight (andreevCircuit 2 2).program ⟨0, by decide⟩)
+        ((andreevCircuit 2 2).program.lines ⟨0, by decide⟩).op.threshold
+  · simpa [ltfSupport_inputWeight_eq_inputSupport] using
+      sum_card_not_forcedToAtMostOne_blockLiveSet_le (Boolean.andreevBlockVar 2 2)
+        (andreevBlockVar_joint_injective 2 2)
+        (inputWeight (andreevCircuit 2 2).program ⟨0, by decide⟩)
+        ((andreevCircuit 2 2).program.lines ⟨0, by decide⟩).op.threshold
+
+-- OR is constant after fixing the other input true, a nonconstant literal when it is false,
+-- and genuinely depends on two inputs when both are live.
+private theorem ltfEval_or (w : Fin 2 → Bool) :
+    ltfEval (fun _ : Fin 2 => (1 : ℝ)) 1 w = (w 0 || w 1) := by
+  cases h₀ : w 0 <;> cases h₁ : w 1 <;>
+    norm_num [ltfEval, Fin.sum_univ_two, h₀, h₁]
+
+example : ForcedToConst (ltfEval (fun _ : Fin 2 => (1 : ℝ)) 1) {0} (fun _ => true) := by
+  simp only [funext ltfEval_or, ForcedToConst, restrictUpdate]
+  decide
+
+example : ¬ ForcedToConst (ltfEval (fun _ : Fin 2 => (1 : ℝ)) 1) {0}
+    (fun _ => false) := by
+  simp only [funext ltfEval_or, ForcedToConst, restrictUpdate]
+  decide
+
+example : ForcedToAtMostOne (ltfEval (fun _ : Fin 2 => (1 : ℝ)) 1) {0}
+    (fun _ => false) := by
+  simp only [funext ltfEval_or, ForcedToAtMostOne, ForcedToConst, restrictUpdate]
+  decide
+
+example : ¬ ForcedToAtMostOne (ltfEval (fun _ : Fin 2 => (1 : ℝ)) 1) univ
+    (fun _ => false) := by
+  simp only [funext ltfEval_or, ForcedToAtMostOne, ForcedToConst, restrictUpdate]
+  decide
+
+-- The live second coordinate has zero weight: it cannot prevent constancy. With both live,
+-- the first coordinate remains a nonconstant literal, despite the extra zero-weight input.
+private theorem ltfEval_zero_weight (w : Fin 2 → Bool) :
+    ltfEval (fun i : Fin 2 => if i = 0 then (1 : ℝ) else 0) 1 w = w 0 := by
+  cases h : w 0 <;> norm_num [ltfEval, Fin.sum_univ_two, h]
+
+example : ForcedToConst (ltfEval (fun i : Fin 2 => if i = 0 then (1 : ℝ) else 0) 1)
+    {1} (fun _ => false) := by
+  simp only [funext ltfEval_zero_weight, ForcedToConst, restrictUpdate]
+  decide
+
+example : ForcedToAtMostOne (ltfEval (fun i : Fin 2 => if i = 0 then (1 : ℝ) else 0) 1)
+    univ (fun _ => false) ∧
+    ¬ ForcedToConst (ltfEval (fun i : Fin 2 => if i = 0 then (1 : ℝ) else 0) 1)
+      univ (fun _ => false) := by
+  simp only [funext ltfEval_zero_weight, ForcedToAtMostOne, ForcedToConst, restrictUpdate]
+  decide
+
+-- Chow-parameter LTF counting, depth-two subcube collapse, and the simultaneous-in-`q`
+-- depth-two gate and wire correlation and lower bounds for Andreev's function (`b = 2, m = 2`).
+open Classical in
+example (σ : Fin 2 → Fin 2) (w : BitString (2 ^ 2 + 2 * 2)) (u : BitString 2) :
+    #(univ.filter (IsLTF (κ := Fin 2))) ≤ 125 ∧
+    #(univ.filter (IsDepthTwoWithGates (κ := Fin 2) 1)) ≤ 78125 ∧
+    Boolean.andreev 2 2 (embedUpdate (andreevLiveVar 2 2 σ) w u) =
+      w (Boolean.andreevTableIndex 2 2
+        (BitString.equivFin 2 (u + andreevResidualParities 2 2 σ w))) ∧
+    IsDepthTwoWithGates
+      (circuitUnforcedConstCount (andreevCircuit 2 2) 0
+        (Cslib.Combinatorics.LittlewoodOfford.blockLiveSet (Boolean.andreevBlockVar 2 2) σ) w)
+      (fun u' : BitString 2 =>
+        (andreevCircuit 2 2).eval interpretation (embedUpdate (andreevLiveVar 2 2 σ) w u') 0) ∧
+    IsDepthTwoWithGates
+      (circuitUnforcedAtMostOneCount (andreevCircuit 2 2) 0
+        (Cslib.Combinatorics.LittlewoodOfford.blockLiveSet (Boolean.andreevBlockVar 2 2) σ) w)
+      (fun u' : BitString 2 =>
+        (andreevCircuit 2 2).eval interpretation (embedUpdate (andreevLiveVar 2 2 σ) w u') 0) := by
+  refine ⟨(card_isLTF_le (κ := Fin 2)).trans (by decide : _ ≤ 125),
+    (card_isDepthTwoWithGates_le (κ := Fin 2) 1).trans (by decide : _ ≤ 78125),
+    andreev_embedUpdate_andreevLiveVar 2 2 σ w u, ?_, ?_⟩
+  · rw [← univ_image_andreevLiveVar_eq_blockLiveSet]
+    exact isDepthTwoWithGates_eval_embedUpdate_const (andreevCircuit 2 2)
+      (depth_andreevCircuit_le 2 2) 0 (andreevLiveVar_injective 2 2 σ) w
+  · rw [← univ_image_andreevLiveVar_eq_blockLiveSet]
+    exact isDepthTwoWithGates_eval_embedUpdate (andreevCircuit 2 2)
+      (depth_andreevCircuit_le 2 2) 0 (andreevLiveVar_injective 2 2 σ) w
+
+/-- A fixed weight vector has at most five threshold behaviours on two bits. -/
+example (β : Fin 2 → ℝ) : #{g : BitString 2 → Bool | IsThresholdShift β g} ≤ 5 := by
+  simpa using card_isThresholdShift_le β
+
+/-- The canonical simultaneous tail is uniformly small, even for the empty weight family. -/
+example : andreevWeightTail 14 1 (andreevWeightScale 14 1)
+    (((14 : ℕ) + 2 : ℝ) * Real.sqrt ((2 : ℝ) ^ 14)) ≤ (1 / 2 : ℝ) ^ 20 :=
+  andreevWeightTail_scale_le 14 (by decide)
 
 end WeightedThresholdTests

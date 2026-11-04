@@ -10,7 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Entry
 
 /-!
-# Initialized halting fixed-prime ExactTriangle decision
+# Initialized box-backed halting fixed-prime ExactTriangle decision
 
 The actual fixed 416-register standard-native program decides the original signed input at
 every admitted physical width. Its prefix witness and halt share the same state, which retains

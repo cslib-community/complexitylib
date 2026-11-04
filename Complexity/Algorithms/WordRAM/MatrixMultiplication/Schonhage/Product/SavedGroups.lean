@@ -109,7 +109,7 @@ public theorem SavedGroups.span_queries {L m N : ℕ} (hm : m ≤ L)
     (hoffsets : ∀ t ≤ numBands L m N ^ 2,
       old (Wanted.offsetAddress L m N qs.length + t) =
         Nat.count (fun k => (Wanted.tileKey L m N ∘ Wanted.inputPairs qs) k < t) qs.length)
-    (T : ℕ × ℕ) (hT : T ∈ Cslib.Algorithms.MatrixMultiplication.Schonhage.tiles L m N) (a b : ℕ)
+    (T : ℕ × ℕ) (hT : T ∈ tiles L m N) (a b : ℕ)
     (ha : μ (offsetBase L m N qs.length + (T.1 * numBands L m N + T.2)) = a)
     (hb : μ (offsetBase L m N qs.length + (T.1 * numBands L m N + T.2 + 1)) = b)
     (queries : Fin (b - a) → OutStr L)
@@ -117,8 +117,7 @@ public theorem SavedGroups.span_queries {L m N : ℕ} (hm : m ≤ L)
       (PrunedQuery.queryIndex (queries i)).val) :
     Finset.univ.image queries = wantedStrings (MaskTable.layout hm) qs.toFinset T.1 T.2 := by
   have hband : T.1 < numBands L m N ∧ T.2 < numBands L m N := by
-    simpa only [Cslib.Algorithms.MatrixMultiplication.Schonhage.tiles,
-      Finset.mem_product, Finset.mem_range] using hT
+    simpa only [tiles, Finset.mem_product, Finset.mem_range] using hT
   have ht : T.1 * numBands L m N + T.2 < numBands L m N ^ 2 := by
     nlinarith only [Nat.mul_le_mul_right (numBands L m N) (Nat.succ_le_of_lt hband.1), hband.2]
   have has : old (Wanted.offsetAddress L m N qs.length +

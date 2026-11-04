@@ -6,8 +6,8 @@ Authors: Samuel Schlesinger
 
 import Complexity.Foundations.NumberTheory.AKS.Criterion
 
-/-! The AKS identity on a prime and a composite, the binomial divisibility, and the AKS tests on
-a prime. -/
+/-! The AKS identity on a prime and a composite, the binomial divisibility, the AKS tests on a
+prime, and `Passes` as `PassesUpTo` at the paper's bound. -/
 
 namespace ComplexityTests.AKSCriterion
 
@@ -26,5 +26,10 @@ example (r : ℕ) :
     not_dvd_choose_of_prime_dvd Nat.prime_two (by norm_num) (by norm_num),
     passes_of_prime (by decide) r,
     fun h => h.1 ⟨2, 3, by norm_num, by norm_num⟩⟩
+
+-- `Passes` is `PassesUpTo` at the paper's bound `⌊√φ(r) log₂ n⌋`, and the prime `7` passes the
+-- tests up to every bound.
+example (n r A : ℕ) : (Passes n r ↔ PassesUpTo n r (numTests n r)) ∧ PassesUpTo 7 r A :=
+  ⟨Iff.rfl, passesUpTo_of_prime (by decide) r A⟩
 
 end ComplexityTests.AKSCriterion

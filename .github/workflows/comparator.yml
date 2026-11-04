@@ -1,33 +1,9 @@
 name: Comparator
 
+# Manual only (Samuel, 2026-10-31): automatic pull-request and main-push runs took far more CI
+# time than the assurance they added. Run on demand from the Actions tab, or with
+# `gh workflow run comparator.yml --ref <branch>`.
 on:
-  pull_request:
-    paths:
-      - 'Complexity/**/*.lean'
-      - 'Complexity.lean'
-      - 'comparator/**'
-      - 'scripts/check_comparator.py'
-      - 'scripts/test_check_comparator.py'
-      - 'scripts/cache/get_mathlib.py'
-      - 'scripts/test_mathlib_cache.py'
-      - 'lakefile.toml'
-      - 'lean-toolchain'
-      - 'lake-manifest.json'
-      - '.github/workflows/comparator.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'Complexity/**/*.lean'
-      - 'Complexity.lean'
-      - 'comparator/**'
-      - 'scripts/check_comparator.py'
-      - 'scripts/test_check_comparator.py'
-      - 'scripts/cache/get_mathlib.py'
-      - 'scripts/test_mathlib_cache.py'
-      - 'lakefile.toml'
-      - 'lean-toolchain'
-      - 'lake-manifest.json'
-      - '.github/workflows/comparator.yml'
   workflow_dispatch:
 
 permissions:

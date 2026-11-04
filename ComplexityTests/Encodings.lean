@@ -37,4 +37,24 @@ example : ComputableInTimeAndSpace (fun n : ℕ => encNat (n + 1)) encNat encBit
 example (n : ℕ) : (encNat (n + 1)).length ≤ 2 * (encNat n).length + 3 :=
   computableInTimeAndSpace_succ.length_le n
 
+-- Binary predecessor and zero test: one transducer each, with the same exact bounds.
+example : ComputableInTimeAndSpace (fun n : ℕ => encNat (n - 1)) encNat encBits
+    (fun n => 2 * (encNat n).length + 3) (fun _ => 0) :=
+  let ⟨k, Q, hQ, tm, h⟩ := computableInTimeAndSpace_pred
+  ⟨k, Q, hQ, tm, h⟩
+
+example : ComputableInTimeAndSpace (fun n : ℕ => encBool (decide (n = 0))) encNat encBits
+    (fun n => 2 * (encNat n).length + 3) (fun _ => 0) :=
+  let ⟨k, Q, hQ, tm, h⟩ := computableInTimeAndSpace_isZero
+  ⟨k, Q, hQ, tm, h⟩
+
+-- Concrete instances: the borrow out of `4 = 0b100` drops the leading digit, `0 - 1 = 0`, and the
+-- clock for `4` (three digits) is `9` steps.
+example : encNat (4 - 1) = [true, true] ∧ encNat (0 - 1) = [] ∧
+    encNat (6 - 1) = [true, false, true] ∧ (fun n => 2 * (encNat n).length + 3) 4 = 9 := by
+  decide
+
+example : encBool (decide ((0 : ℕ) = 0)) = [true] ∧ encBool (decide ((4 : ℕ) = 0)) = [false] := by
+  decide
+
 end ComplexityTests.Encodings

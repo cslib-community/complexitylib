@@ -129,7 +129,10 @@ def setup : Code .standard 24 := ram[
   quotient ← #0; len ← *quotient; one ← #1; two ← #2; three ← #3;
   four ← #4; five ← #5; eight ← #8; base ← len + two ]
 
-/-- Unroll only the fixed exponent, never the input length or word width. -/
+/-- Unroll only the compile-time fixed exponent `κ`, never the input length or word width.
+Unlike `WordRAM.Power.program`, which loops over a runtime exponent register using counter and
+constant-one scratch registers, `power κ` emits `κ + 1` straight-line instructions over `magnitude`
+and `base` alone and requires no `Fits w (κ + 1)` budget premise at empty input (`n = 0`). -/
 def power : ℕ → Code .standard 24
   | 0 => ram[ magnitude ← #1 ]
   | κ + 1 => .seq (power κ) (ram[ magnitude ← magnitude * base ])

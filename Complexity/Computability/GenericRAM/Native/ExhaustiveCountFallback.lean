@@ -207,11 +207,11 @@ noncomputable def countPredicateCertificate {pred : P → List Bool → Bool}
       ((NativeCertificate.linear (.of_eq fun _ => rfl)).prod (NativeCertificate.const 0))
       (NativeCertificate.ofPolyTime (computableInPolyTime_countStep hpred)))))
 
-private theorem length_prefix_state_le (pred : P → List Bool → Bool) (x : ℕ × P) {j : ℕ}
+private theorem length_prefix_accumulator_le (pred : P → List Bool → Bool) (x : ℕ × P) {j : ℕ}
     (hj : j ≤ 2 ^ x.1) :
-    (encPair encNat (encPair encUnary (encPair (encPair encUnary encP) encNat))
-      (BooleanFold.runPrefix (countStep pred) x.1 j (x, 0))).length ≤
-      7 * (encPair encUnary encP x).length + 6 := by
+    (encPair (encPair encUnary encP) encNat
+      (BooleanFold.runPrefix (countStep pred) x.1 j (x, 0)).2.2).length ≤
+      3 * (encPair encUnary encP x).length + 2 := by
   have hx_le : x.1 ≤ (encPair encUnary encP x).length := by
     simp only [length_encPair, encUnary_apply, List.length_replicate]
     omega
@@ -224,31 +224,8 @@ private theorem length_prefix_state_le (pred : P → List Bool → Bool) (x : �
       simpa [Nat.size_eq_bits_len] using Nat.size_le_size hz_le
     rw [BooleanFold.length_clock] at hm
     exact hm
-  have hacc_le :
-      (encPair (encPair encUnary encP) encNat
-        (BooleanFold.runPrefix (countStep pred) x.1 j (x, 0)).2.2).length ≤
-        3 * (encPair encUnary encP x).length + 2 := by
-    rw [length_encPair, prefix_payload_eq]
-    omega
-  have hpref := BooleanFold.length_prefix_le (countStep pred) x.1 j
-    (3 * (encPair encUnary encP x).length + 2) (x, 0) hj hacc_le
+  rw [length_encPair, prefix_payload_eq]
   omega
-
-private theorem roundCertificate_isPolynomial {β : Type} {encB : β ↪ List Bool}
-    {body : ℕ × β → β} (cb : NativeCertificate body (encPair encNat encB) encB)
-    (hcb : cb.IsPolynomial) :
-    (IndexFold.roundCertificate cb).IsPolynomial := by
-  have hsq : PolyBounded (fun p : ℕ × β => (encPair encNat encB p).length)
-      (fun p => ((encNat p.1).length + 1) ^ 2) :=
-    PolyBounded.of_forall_le 1 2 fun p => by
-      have hp1 : (encNat p.1).length ≤ (encPair encNat encB p).length := by
-        simp only [length_encPair]; omega
-      simpa only [one_mul] using Nat.pow_le_pow_left (Nat.add_le_add_right hp1 1) 2
-  have hlin : PolyBounded (fun p : ℕ × β => (encPair encNat encB p).length)
-      (fun p => (encNat p.1).length + 1) :=
-    PolyBounded.of_forall_le 1 1 fun p => by
-      simp only [length_encPair, pow_one, one_mul]; omega
-  exact ⟨(PolyBounded.self.add hsq).add hcb.1, (PolyBounded.self.add hlin).add hcb.2⟩
 
 private theorem countPredicateCertificate_bounds {pred : P → List Bool → Bool}
     (hpred : ComputableInPolyTime (fun q : P × List Bool => pred q.1 q.2) (encPair encP encBits)
@@ -259,112 +236,14 @@ private theorem countPredicateCertificate_bounds {pred : P → List Bool → Boo
       PolyBounded (fun x : ℕ × P => (encPair encUnary encP x).length) P_ex ∧
       PolyBounded (fun x : ℕ × P => (encPair encUnary encP x).length) Q_ex ∧
       ∀ x : ℕ × P, (countPredicateCertificate hpred).time x ≤ (2 ^ x.1 + 1) * P_ex x + Q_ex x := by
-  let cb : NativeCertificate (countStep pred)
-      (encPair (encPair encUnary encBits) (encPair (encPair encUnary encP) encNat))
-      (encPair (encPair encUnary encP) encNat) :=
-    NativeCertificate.ofPolyTime (computableInPolyTime_countStep hpred)
-  have hcb : cb.IsPolynomial :=
-    NativeCertificate.ofPolyTime_isPolynomial (computableInPolyTime_countStep hpred)
-  let cstep := IndexFold.roundCertificate (BooleanFold.visitCertificate cb)
-  have hcstep : cstep.IsPolynomial :=
-    roundCertificate_isPolynomial (BooleanFold.visitCertificate cb)
-      (BooleanFold.visitCertificate_isPolynomial cb hcb)
-  obtain ⟨ct, dt, hct⟩ := hcstep.1.exists_le
-  obtain ⟨cs, ds, hcs⟩ := hcstep.2.exists_le
-  have hstate (x : ℕ × P) (j : ℕ) (hj : j ≤ 2 ^ x.1) :
-      (encPair encNat (encPair encUnary (encPair (encPair encUnary encP) encNat))
-        ((IndexFold.step (BooleanFold.visit (countStep pred)))^[j] (0, (x.1, (x, 0))))).length ≤
-        7 * (encPair encUnary encP x).length + 6 :=
-    length_prefix_state_le pred x hj
-  have hmaxS (x : ℕ × P) :
-      NativeCertificate.maxStateLength
-        (encPair encNat (encPair encUnary (encPair (encPair encUnary encP) encNat)))
-        (IndexFold.step (BooleanFold.visit (countStep pred)))
-        (2 ^ x.1) (0, (x.1, (x, 0))) ≤ 7 * (encPair encUnary encP x).length + 6 :=
-    NativeCertificate.maxStateLength_le _ _ (2 ^ x.1) _ (hstate x)
-  have hmaxRT (x : ℕ × P) :
-      NativeCertificate.maxRoundTime cstep (2 ^ x.1) (0, (x.1, (x, 0))) ≤
-        ct * (7 * (encPair encUnary encP x).length + 7) ^ dt :=
-    NativeCertificate.maxRoundTime_le cstep (2 ^ x.1) _ fun j hj =>
-      (hct _).trans (Nat.mul_le_mul_left ct
-        (Nat.pow_le_pow_left (by have := hstate x j hj; omega) dt))
-  have hmaxRS (x : ℕ × P) :
-      NativeCertificate.maxRoundSpace cstep (2 ^ x.1) (0, (x.1, (x, 0))) ≤
-        cs * (7 * (encPair encUnary encP x).length + 7) ^ ds :=
-    NativeCertificate.maxRoundSpace_le cstep (2 ^ x.1) _ fun j hj =>
-      (hcs _).trans (Nat.mul_le_mul_left cs
-        (Nat.pow_le_pow_left (by have := hstate x j hj; omega) ds))
-  have hx_le (x : ℕ × P) : x.1 ≤ (encPair encUnary encP x).length := by
-    simp only [length_encPair, encUnary_apply, List.length_replicate]; omega
-  have hB7 : PolyBounded (fun x : ℕ × P => (encPair encUnary encP x).length)
-      (fun x => 7 * (encPair encUnary encP x).length + 6) :=
-    ((PolyBounded.const 7).mul .self).add (.const 6)
-  have hSpace : PolyBounded (fun x : ℕ × P => (encPair encUnary encP x).length)
-      (countPredicateCertificate hpred).space := by
-    have hupper : PolyBounded (fun x : ℕ × P => (encPair encUnary encP x).length)
-        (fun x => 6 * (encPair encUnary encP x).length +
-          cs * (7 * (encPair encUnary encP x).length + 7) ^ ds +
-          (7 * (encPair encUnary encP x).length + 6) +
-          ((encPair encUnary encP x).length + 1)) :=
-      (((((PolyBounded.const 6).mul .self).add
-        (NativeCertificate.polyBounded_pow_of_polyBounded hB7 cs ds)).add hB7).add
-          (PolyBounded.self.add (.const 1)))
-    refine hupper.mono fun x => ?_
-    change (BooleanFold.clock.comp
-        (NativeCertificate.linear (ComputableInO.fst encUnary encP))).space x +
-      ((NativeCertificate.const 0).prod
-        ((NativeCertificate.linear (ComputableInO.fst encUnary encP)).prod
-          ((NativeCertificate.linear (.of_eq fun _ => rfl)).prod
-            (NativeCertificate.const 0)))).space x +
-      NativeCertificate.maxRoundSpace cstep (2 ^ x.1) (0, (x.1, (x, 0))) +
-      NativeCertificate.maxStateLength
-        (encPair encNat (encPair encUnary (encPair (encPair encUnary encP) encNat)))
-        (IndexFold.step (BooleanFold.visit (countStep pred))) (2 ^ x.1) (0, (x.1, (x, 0))) +
-      (encNat (2 ^ x.1)).length ≤ _
-    simp only [NativeCertificate.comp_space, NativeCertificate.linear_space,
-      NativeCertificate.prod_space, NativeCertificate.const_space, BooleanFold.clock,
-      encUnary_apply, List.length_replicate, BooleanFold.length_clock]
-    have h1 := hmaxRS x
-    have h2 := hmaxS x
-    have h3 := hx_le x
-    omega
-  refine ⟨hSpace, fun x => ct * (7 * (encPair encUnary encP x).length + 7) ^ dt +
-      (7 * (encPair encUnary encP x).length + 6) +
-      ((encPair encUnary encP x).length + 2) ^ 2,
-    fun x => 6 * (encPair encUnary encP x).length, ?_, (PolyBounded.const 6).mul .self, fun x => ?_⟩
-  · exact ((NativeCertificate.polyBounded_pow_of_polyBounded hB7 ct dt).add hB7).add
-      (NativeCertificate.polyBounded_pow_of_polyBounded (PolyBounded.self.add (.const 1)) 1 2
-        |>.mono fun x => by simp only [one_mul]; exact le_of_eq (by ring))
-  · change (BooleanFold.clock.comp
-        (NativeCertificate.linear (ComputableInO.fst encUnary encP))).time x +
-      ((NativeCertificate.const 0).prod
-        ((NativeCertificate.linear (ComputableInO.fst encUnary encP)).prod
-          ((NativeCertificate.linear (.of_eq fun _ => rfl)).prod
-            (NativeCertificate.const 0)))).time x +
-      (2 ^ x.1 + 1) * (NativeCertificate.maxRoundTime cstep (2 ^ x.1) (0, (x.1, (x, 0))) +
-        NativeCertificate.maxStateLength
-          (encPair encNat (encPair encUnary (encPair (encPair encUnary encP) encNat)))
-          (IndexFold.step (BooleanFold.visit (countStep pred))) (2 ^ x.1) (0, (x.1, (x, 0))) +
-        ((encNat (2 ^ x.1)).length + 1) ^ 2) ≤ _
-    simp only [NativeCertificate.comp_time, NativeCertificate.linear_time,
-      NativeCertificate.prod_time, NativeCertificate.const_time, BooleanFold.clock,
-      encUnary_apply, List.length_replicate, BooleanFold.length_clock]
-    have h1 := hmaxRT x
-    have h2 := hmaxS x
-    have h3 := hx_le x
-    have h4 : (x.1 + 1 + 1) ^ 2 ≤ ((encPair encUnary encP x).length + 2) ^ 2 :=
-      Nat.pow_le_pow_left (by omega) 2
-    have hmul :
-        (2 ^ x.1 + 1) * (NativeCertificate.maxRoundTime cstep (2 ^ x.1) (0, (x.1, (x, 0))) +
-          NativeCertificate.maxStateLength
-            (encPair encNat (encPair encUnary (encPair (encPair encUnary encP) encNat)))
-            (IndexFold.step (BooleanFold.visit (countStep pred)))
-            (2 ^ x.1) (0, (x.1, (x, 0))) + (x.1 + 1 + 1) ^ 2) ≤
-        (2 ^ x.1 + 1) * (ct * (7 * (encPair encUnary encP x).length + 7) ^ dt +
-          (7 * (encPair encUnary encP x).length + 6) +
-          ((encPair encUnary encP x).length + 2) ^ 2) :=
-      Nat.mul_le_mul_left _ (by omega)
-    omega
+  obtain ⟨hspace, T, hT, htime⟩ := BooleanFold.certificate_bounds
+    (NativeCertificate.linear_isPolynomial _)
+    (NativeCertificate.prod_isPolynomial _ _ (NativeCertificate.linear_isPolynomial _)
+      (NativeCertificate.const_isPolynomial _))
+    (NativeCertificate.ofPolyTime_isPolynomial (computableInPolyTime_countStep hpred))
+    (((PolyBounded.const 3).mul .self).add (.const 2))
+    fun x j hj => length_prefix_accumulator_le pred x hj
+  exact ⟨hspace, T, fun _ => 0, hT, .const 0, fun x => htime x⟩
 
 end StreamingCore
 

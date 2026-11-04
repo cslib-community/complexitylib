@@ -39,15 +39,31 @@ theorem streamingIdentity :
 example {α β : Type*} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool}
     {f : α → β} {T S : α → ℕ} (h : ComputableInBigO f encIn encOut T S) :
     (¬ ComputableInO (fun w : List Bool => w) word word List.length (fun _ => 0)) ∧
-    ComputableInLinearTimeAndSpace (fun w : List Bool => w) word word ∧
-    ComputableInLinearTimeAndSpace (fun _ : List Bool => []) word word ∧
+    ComputableInDegree (fun w : List Bool => w) word word 1 1 ∧
+    ComputableInDegree (fun _ : List Bool => []) word word 1 1 ∧
     (∃ c, ∃ (k : ℕ) (State : Type) (_ : Finite State) (tm : Turing.MultiTapeTM k Bool State),
       ∀ a, tm.ComputesTidilyInTimeAndSpace (encIn a) (encOut (f a))
         (c * (T a + 1)) (c * (S a + 1))) := by
   refine ⟨?_, .of_eq fun _ => rfl,
-    (ComputableInLinearTimeAndSpace.const []).comp (.of_eq fun _ => rfl),
+    ((ComputableInDegree.const []).comp (.of_eq fun _ => rfl)).mono,
     Internal.NormalForm.bigO h⟩
   rintro ⟨c, _, hl⟩
   have hc := hl (List.replicate (c + 1) true)
   simp only [word, Function.Embedding.refl_apply, List.length_replicate, zero_add, mul_one] at hc
+  omega
+
+-- The copy machine retains exactly zero workspace and needs a genuinely linear output bound.
+example : ComputableInTimeAndSpace id word word (fun w => w.length + 1) (fun _ => 0) ∧
+    ComputableInDegree id word word 1 1 ∧
+    ¬ DegreeBounded (List.length (α := Bool)) List.length 0 := by
+  have h : ComputableInTimeAndSpace id word word (fun w => w.length + 1) (fun _ => 0) :=
+    computableInTimeAndSpace_id
+  have hd := ComputableInDegree.of_bounds
+    (show DegreeBounded (fun w => (word w).length) (fun w => w.length + 1) 1 from
+      ⟨1, fun _ => by simp [word]⟩) (DegreeBounded.const 0) h
+  -- Converting independent constants to a common bound and back preserves the function class.
+  refine ⟨h, ComputableInDegree.one_one_iff.mpr (ComputableInDegree.one_one_iff.mp hd), ?_⟩
+  rintro ⟨c, hc⟩
+  have := hc (List.replicate (c + 1) true)
+  simp only [pow_zero, mul_one, List.length_replicate] at this
   omega

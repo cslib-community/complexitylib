@@ -29,8 +29,8 @@ The image may have any type with decidable equality, and its length need not equ
 length. The finite seed type and its distribution may depend on the image; they are fixed before
 the independent parity query is sampled. For a strict PPT predictor,
 the coin-tape representation in `Cslib.Computability.Probabilistic.CoinTape` supplies the
-appropriate seeded behavior with a polynomial-time deterministic evaluator. Connecting the
-encoded programs and proving the complete inverter PPT remain separate porting steps. This
+appropriate seeded behavior with a polynomial-time deterministic evaluator; the uniform inverter
+built on this argument is proved PPT in `Cslib.Crypto.GoldreichLevin.isPPT_wordInverter`. This
 module contains the finite distributional argument, adapted from cslib `crypto` at `5ff69ca`.
 
 ## Main definitions

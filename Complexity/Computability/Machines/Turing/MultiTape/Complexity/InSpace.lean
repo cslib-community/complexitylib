@@ -54,10 +54,6 @@ theorem weaken {f : α → β} (h : ComputableTidilyInSpace f encIn encB S) (hS 
   let ⟨T, hT⟩ := h
   ⟨T, hT.weaken (.refl _) hS⟩
 
-theorem mono_le {f : α → β} (h : ComputableTidilyInSpace f encIn encB S)
-    (hS : ∀ a, S a ≤ S₁ a) : ComputableTidilyInSpace f encIn encB S₁ :=
-  h.weaken (.of_le hS)
-
 theorem length_le {f : α → β} (h : ComputableTidilyInSpace f encIn encB S) :
     (fun a => (encB (f a)).length) ≼ S :=
   let ⟨_, hT⟩ := h
@@ -67,12 +63,6 @@ theorem of_enc_eq {f : α → β} {g : α → γ} (h : ComputableTidilyInSpace f
     (he : ∀ a, encC (g a) = encB (f a)) : ComputableTidilyInSpace g encIn encC S :=
   let ⟨T, hT⟩ := h
   ⟨T, hT.of_enc_eq he⟩
-
-theorem of_encIn_eq {α' : Type} {encIn' : α' ↪ List Bool} {f : α → β} (e : α' → α)
-    (h : ComputableTidilyInSpace f encIn encB S) (he : ∀ a, encIn' a = encIn (e a)) :
-    ComputableTidilyInSpace (fun a => f (e a)) encIn' encB fun a => S (e a) :=
-  let ⟨_, hT⟩ := h
-  ⟨_, hT.of_encIn_eq e he⟩
 
 theorem comp {f : α → β} {g : β → γ} {S₂ : β → ℕ} (hg : ComputableTidilyInSpace g encB encC S₂)
     (hf : ComputableTidilyInSpace f encIn encB S₁) :
@@ -88,14 +78,6 @@ theorem prod {f : α → β} {g : α → γ} (hf : ComputableTidilyInSpace f enc
   let ⟨_, hf⟩ := hf
   let ⟨_, hg⟩ := hg
   ⟨_, hf.prod hg⟩
-
-theorem append {f₁ : α → β} {f₂ : α → γ} {g : α → δ} {encD : δ ↪ List Bool}
-    (h₁ : ComputableTidilyInSpace f₁ encIn encB S₁) (h₂ : ComputableTidilyInSpace f₂ encIn encC S₂)
-    (hg : ∀ x, encD (g x) = encB (f₁ x) ++ encC (f₂ x)) :
-    ComputableTidilyInSpace g encIn encD fun x => S₁ x + S₂ x :=
-  let ⟨_, h₁⟩ := h₁
-  let ⟨_, h₂⟩ := h₂
-  ⟨_, h₁.append h₂ hg⟩
 
 theorem ite {c : α → Bool} {f g : α → β} {Sc : α → ℕ}
     (hc : ComputableTidilyInSpace c encIn encBool Sc) (hf : ComputableTidilyInSpace f encIn encB S₁)

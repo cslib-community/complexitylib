@@ -48,11 +48,11 @@ abbrev modulus : Fin 163 := 161
 /-- Temporary absolute address. -/
 abbrev address : Fin 163 := 162
 /-- Source register retaining the original input span length. -/
-abbrev inputSize : Fin 163 := QueriedProduct.inputSize.castAdd 3
+abbrev inputSize : Fin 163 := QueriedProduct.Reg.inputSize.castAdd 3
 /-- Source register retaining the relative answer pointer. -/
-abbrev output : Fin 163 := QueriedProduct.output.castAdd 3
+abbrev output : Fin 163 := QueriedProduct.Reg.output.castAdd 3
 /-- Source register retaining the query occurrence count. -/
-abbrev queryCount : Fin 163 := QueriedProduct.queryCount.castAdd 3
+abbrev queryCount : Fin 163 := QueriedProduct.Reg.queryCount.castAdd 3
 
 end Reg
 

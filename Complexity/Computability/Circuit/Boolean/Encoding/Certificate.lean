@@ -11,6 +11,7 @@ public import Complexity.Computability.Circuit.Boolean.EvaluationTime
 public import Complexity.Foundations.Data.BitString.List
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary

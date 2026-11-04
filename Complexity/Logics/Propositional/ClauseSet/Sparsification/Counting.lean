@@ -9,6 +9,7 @@ module
 
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Step
 public import Complexity.Logics.Propositional.CNF.ModelCount.Declared
+import Complexity.Logics.Propositional.ClauseSet.Satisfiable
 
 /-!
 # Disjoint sparsification branches
@@ -52,14 +53,6 @@ Reduction removes redundant clauses without changing the solutions. -/
 def countingChild (ψ : ClauseSet V) (c : ℕ) (H : Finset (Literal V)) : Bool → ClauseSet V
   | false => child ψ c H false
   | true => reduce (ψ ∪ petals ψ c H ∪ negatedHeartUnits H)
-
-private theorem sat_union_iff (ψ χ : ClauseSet V) (x : V → Bool) :
-    (ψ ∪ χ).Sat x ↔ ψ.Sat x ∧ χ.Sat x := by
-  constructor
-  · exact fun h => ⟨fun C hC => h C (Finset.mem_union_left _ hC),
-      fun C hC => h C (Finset.mem_union_right _ hC)⟩
-  · rintro ⟨hψ, hχ⟩ C hC
-    exact (Finset.mem_union.mp hC).elim (hψ C) (hχ C)
 
 /-- The negated units express exactly the failure of the heart clause. -/
 theorem sat_negatedHeartUnits_iff (H : Finset (Literal V)) (x : V → Bool) :

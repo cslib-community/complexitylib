@@ -64,7 +64,7 @@ end ComplexityTests.Abstracts.Randomized
 
 /--
 info: abstract audit passed for `ComplexityTests.Abstracts.Randomized`:
-6 root declarations, 91 dependencies checked
+6 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.Randomized allowing [

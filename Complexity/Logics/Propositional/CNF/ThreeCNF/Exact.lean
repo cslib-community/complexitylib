@@ -50,8 +50,9 @@ times.
   assignments.
 * `Cslib.Logic.PL.CNF.satisfiable_toExact3CNF`: hence it preserves satisfiability.
 * `Cslib.Logic.PL.CNF.length_toExact3CNF`, `Cslib.Logic.PL.CNF.length_vars_toExact3CNF`,
-  `Cslib.Logic.PL.CNF.length_vars_toExact3CNF_le`: the size, linear in the number of literal
-  occurrences.
+  `Cslib.Logic.PL.CNF.length_vars_toExact3CNF_le`,
+  `Cslib.Logic.PL.CNF.length_vars_le_length_vars_toExact3CNF`: the size, between one and seven
+  times the number of literal occurrences.
 
 ## References
 
@@ -468,6 +469,12 @@ theorem CNF.length_vars_toExact3CNF (φ : CNF V) :
 theorem CNF.length_vars_toExact3CNF_le (φ : CNF V) :
     φ.toExact3CNF.vars.length ≤ 7 * φ.vars.length := by
   rw [CNF.length_vars_toExact3CNF, CNF.length_vars, ← List.sum_map_mul_left]
+  exact List.sum_le_sum fun c _ => by omega
+
+/-- Splitting keeps every literal occurrence. -/
+theorem CNF.length_vars_le_length_vars_toExact3CNF (φ : CNF V) :
+    φ.vars.length ≤ φ.toExact3CNF.vars.length := by
+  rw [CNF.length_vars_toExact3CNF, CNF.length_vars]
   exact List.sum_le_sum fun c _ => by omega
 
 end Cslib.Logic.PL

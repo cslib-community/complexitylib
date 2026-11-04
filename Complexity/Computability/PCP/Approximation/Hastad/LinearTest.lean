@@ -112,7 +112,8 @@ theorem linearProb_longCode (π : β → γ) (δ : ℝ) (x : β) :
   rw [linearProb_eq_add_linearCorr, linearCorr_longCode]
   ring
 
-/-- **Walsh–Fourier expansion of Håstad's 3-bit linear test** [Håstad, Lemma 5.1][Hastad2001]:
+/-- **Walsh–Fourier expansion of Håstad's 3-bit linear test**
+[Håstad, proof of Lemma 5.2, Eqs. (9)–(12)][Hastad2001]:
 the correlation equals
 `∑ T : Finset β, (1 - 2 * δ) ^ #T * fourierCoeff F_A T ^ 2 * fourierCoeff F_B (projectSet π T)`. -/
 theorem linearCorr_eq_sum (π : β → γ) (δ : ℝ) (B : (γ → Bool) → Bool)

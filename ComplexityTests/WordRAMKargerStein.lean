@@ -30,7 +30,7 @@ Concrete non-vacuity and behavioral tests for `Cslib.Algorithms.WordRAM.Karger` 
 
 namespace ComplexityTests.WordRAMKargerStein
 
-open Cslib Cslib.WordRAM Cslib.Algorithms.WordRAM.Karger
+open Cslib Cslib.WordRAM Cslib.WeightedCut Cslib.Algorithms.WordRAM.Karger
 open scoped ENNReal
 
 /-! ## 1. Pure-integer threshold and recursion depth -/

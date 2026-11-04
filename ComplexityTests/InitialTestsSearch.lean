@@ -77,11 +77,11 @@ private abbrev TestIn := (ℕ × ℕ) × (List (List Bool) × List (List Bool))
 example :
     let encIn : TestIn ↪ List Bool :=
       encPair (encPair encUnary encUnary) (encPair (encList encBits) (encList encBits))
-    ComputableInPolyTime (fun x : TestIn =>
-      (greedyRowListLength x.1.2 x.1.1 + initialRowWeightBound x.1.2 x.1.1 + qG x.1.1 x.1.2,
-        (checkSmallBiasShifts (ellG x.1.1 x.1.2) (dG x.1.1 x.1.2) 1 (biasDen x.1.1 x.1.2) x.2.1,
-          buildShortenedTannerRows x.1.1 (ellG x.1.1 x.1.2) (dG x.1.1 x.1.2) (cG x.1.1 x.1.2)
-            x.2.1 x.2.2))) encIn (encPair encUnary (encPair encBool (encList encBits))) := by
+    ComputableInPolyTime (fun (((m, B), (shifts, H0)) : TestIn) =>
+      (greedyRowListLength B m + initialRowWeightBound B m + qG m B,
+        (checkSmallBiasShifts (ellG m B) (dG m B) 1 (biasDen m B) shifts,
+          buildShortenedTannerRows m (ellG m B) (dG m B) (cG m B) shifts H0)))
+      encIn (encPair encUnary (encPair encBool (encList encBits))) := by
   intro encIn; dsimp only [encIn]
   fail_if_success exact (by fun_prop :
     ComputableInPolyTime (fun p : ℕ × ℕ => qG p.1 p.2) (encPair encNat encUnary) encUnary)

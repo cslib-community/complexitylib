@@ -68,7 +68,7 @@ end ComplexityTests.Abstracts.Encoding
 
 /--
 info: abstract audit passed for `ComplexityTests.Abstracts.Encoding`:
-14 root declarations, 32 dependencies checked
+14 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.Encoding

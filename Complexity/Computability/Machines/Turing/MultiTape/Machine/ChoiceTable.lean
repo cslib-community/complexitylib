@@ -87,10 +87,8 @@ inductive OutputTrack
 
 namespace OutputTrack
 
-instance : Finite OutputTrack :=
-  Finite.of_surjective (fun i : Fin 3 => [empty, accept, other][i]) fun t => by
-    cases t
-    exacts [⟨0, rfl⟩, ⟨1, rfl⟩, ⟨2, rfl⟩]
+instance : Fintype OutputTrack :=
+  ⟨{empty, accept, other}, fun t => by cases t <;> simp⟩
 
 /-- The track of a word. -/
 def ofWord (word : List Bool) : OutputTrack :=
@@ -119,6 +117,24 @@ theorem ofWord_append (word : List Bool) (symbol : Option Bool) :
 theorem ofWord_eq_accept_iff (word : List Bool) : ofWord word = accept ↔ word = [true] := by
   unfold ofWord
   split_ifs with h₁ h₂ <;> simp_all
+
+/-- Emitting the same word after words with the same track gives words with the same track. -/
+theorem ofWord_append_eq_of_eq {word word' : List Bool} (h : ofWord word = ofWord word')
+    (more : List Bool) : ofWord (word ++ more) = ofWord (word' ++ more) := by
+  induction more using List.reverseRecOn with
+  | nil => simpa using h
+  | append_singleton more symbol ih =>
+    have hsym : [symbol] = (some symbol).toList := rfl
+    rw [← List.append_assoc, ← List.append_assoc, hsym, ofWord_append, ofWord_append, ih]
+
+/-- A word with a given track: `[]`, `[true]` or `[false]`. -/
+def toWord : OutputTrack → List Bool
+  | empty => []
+  | accept => [true]
+  | other => [false]
+
+@[simp] theorem ofWord_toWord (track : OutputTrack) : ofWord track.toWord = track := by
+  cases track <;> rfl
 
 end OutputTrack
 

@@ -6,11 +6,14 @@ Authors: Samuel Schlesinger
 
 import Complexity.Crypto.Computational.OneWay
 import Complexity.Crypto.Computational.Basic
+import Complexity.Crypto.Computational.HardCore
 import Complexity.Crypto.Negligible.Basic
+import Complexity.Crypto.Negligible.Dyadic
 import Complexity.Crypto.Primitives.PRG.Game
 import Complexity.Tactic.PPT
 
-/-! Tests of uniform parameterized programs and the one-way-function experiment. -/
+/-! Tests of uniform parameterized programs and the one-way-function experiment, and checks that
+the PPT, pseudorandom-generator and hard-core definitions are not vacuous. -/
 
 namespace ComplexityTests.ComputationalCrypto
 
@@ -150,5 +153,87 @@ example :
       List.ofFn r = [true, false, true]).card = 1 := by decide
   rw [hcount]
   norm_num
+
+/-! ### Nonvacuity of the efficiency and security definitions
+
+A program with exponentially long output is not PPT, so `IsPPT` is a real restriction. Prepending a
+constant bit is not a pseudorandom generator, and the first seed bit is not hard-core for the
+identity: the obvious PPT adversaries break them with constant advantage. These rule out a security
+definition that holds for every candidate. -/
+
+/-- A program whose output is exponentially long in the unary parameter is not PPT. -/
+example : ¬ IsPPT encBits
+    (fun n (_ : List Bool) => (pure (List.replicate (2 ^ n) true) : ProbComp (List Bool))) := by
+  intro h
+  obtain ⟨c, d, hle⟩ := h.on.length_le
+  have hbound (n : ℕ) : 2 ^ n ≤ c * (2 * n + 2) ^ d := by
+    simpa using hle (n, []) (List.replicate (2 ^ n) true) (by simp)
+  obtain ⟨m, hm⟩ := (negligible_iff _).1 (negligible_const_div_two_pow (c * 4 ^ d)) d 1 one_pos
+  have hlt := hm (m + 1) (by omega)
+  have hnat : 2 ^ (m + 1) ≤ (m + 1) ^ d * (c * 4 ^ d) :=
+    calc 2 ^ (m + 1) ≤ c * (2 * (m + 1) + 2) ^ d := hbound (m + 1)
+      _ ≤ c * (4 ^ d * (m + 1) ^ d) := by
+        rw [← mul_pow]; exact Nat.mul_le_mul_left c (Nat.pow_le_pow_left (by omega) d)
+      _ = (m + 1) ^ d * (c * 4 ^ d) := by ring
+  have hreal : ((2 : ℝ≥0) ^ (m + 1)) ≤ ((m + 1 : ℕ) : ℝ≥0) ^ d * ((c * 4 ^ d : ℕ) : ℝ≥0) := by
+    exact_mod_cast hnat
+  rw [mul_div_assoc', div_lt_one (by positivity)] at hlt
+  exact absurd hreal (not_le.mpr hlt)
+
+/-- Accept exactly when the first bit is `false`. -/
+private def firstBitFalse : Distinguisher := fun _ w => pure (!(w.headD true))
+
+private theorem firstBitFalse_ppt : IsPPT encBool firstBitFalse := by
+  unfold firstBitFalse
+  ppt
+
+/-- Prepending `false` to a uniform seed is not a pseudorandom generator: the generated words
+always start with `false`, uniform words only half of the time. -/
+example : ¬ PseudorandomGenerator (fun w => false :: w) (· + 1) := by
+  intro h
+  have hreal (n : ℕ) :
+      distinguishingGame (generatorEnsemble (fun w => false :: w) n) (firstBitFalse n) =
+        PMF.pure true := by
+    simp [distinguishingGame, generatorEnsemble, firstBitFalse, PMF.bind_map, Function.comp_def]
+  have hideal (n : ℕ) :
+      distinguishingGame (BitString.uniformList (n + 1)) (firstBitFalse n) =
+        PMF.uniformOfFintype Bool := by
+    rw [BitString.uniformList_succ]
+    simp only [distinguishingGame, firstBitFalse, PMF.monad_bind_eq_bind, PMF.bind_bind,
+      PMF.bind_map, Function.comp_def, List.headD_cons, ProbComp.eval_pure, PMF.bind_const]
+    ext b
+    cases b <;> simp [PMF.bind_apply, PMF.uniformOfFintype_apply]
+  have hneg := h.indistinguishable firstBitFalse firstBitFalse_ppt
+  simp only [hreal, hideal] at hneg
+  refine not_negligible_const ?_ hneg
+  rw [Game.advantage, ne_eq, nndist_eq_zero]
+  intro heq
+  norm_num [Game.succProbability, PMF.uniformOfFintype_apply, ENNReal.toNNReal_ofNat] at heq
+
+/-- Copy the first bit of the input. -/
+private def copyFirst : Distinguisher := fun _ w => pure (w.headD false)
+
+private theorem copyFirst_ppt : IsPPT encBool copyFirst := by
+  unfold copyFirst
+  ppt
+
+/-- The first seed bit is not hard-core for the identity: copying it predicts it always. -/
+example : ¬ HardCore id (fun w => w.headD false) := by
+  intro h
+  have hgame (n : ℕ) :
+      ProbComp.eval (predictionGame id (fun w => w.headD false) copyFirst n) = PMF.pure true := by
+    simp only [predictionGame, copyFirst, id, ProbComp.eval_bind, ProbComp.eval_pure,
+      BitString.eval_sampleList]
+    simp
+  have hneg := h.unpredictable copyFirst copyFirst_ppt
+  have hfun : predictionAdvantage id (fun w => w.headD false) copyFirst =
+      fun _ => Game.guessingAdvantage (PMF.pure true) := by
+    funext n
+    rw [predictionAdvantage, hgame]
+  rw [hfun] at hneg
+  refine not_negligible_const ?_ hneg
+  rw [Game.guessingAdvantage, Game.advantage, ne_eq, nndist_eq_zero]
+  intro heq
+  norm_num [Game.succProbability, PMF.uniformOfFintype_apply, ENNReal.toNNReal_ofNat] at heq
 
 end ComplexityTests.ComputationalCrypto

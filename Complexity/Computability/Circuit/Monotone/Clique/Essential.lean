@@ -16,11 +16,14 @@ import Mathlib.Tactic.Linarith
 /-!
 # Every edge is essential to the clique function
 
-For `2 ≤ k ≤ n`, removing one edge from the complete graph on a `k`-set through it destroys every
-`k`-clique, so the `k`-clique function depends on every edge (`essentialAt_clique`). A monotone
-circuit has fan-in at most two, so it has at least `n.choose 2 - 1` gates
-(`edgeCount_le_succ_size`). This settles small clique sizes, where the method of approximations
-says nothing.
+For `2 ≤ k ≤ n`, every edge is essential to every Boolean function separating the graphs with a
+`k`-clique from the `(k - 1)`-colourable graphs (`Cslib.Circuits.Clique.Separates.essentialAt`).
+Colour a `k`-set through the edge injectively, except that the two endpoints share a colour: the
+complete multipartite graph of that colouring is `(k - 1)`-colourable, and adding the edge completes
+the `k`-clique on the set. In particular the `k`-clique function depends on every edge
+(`essentialAt_clique`). A monotone circuit has fan-in at most two, so a separating one has at least
+`n.choose 2 - 1` gates (`edgeCount_le_succ_size_of_separates`, `edgeCount_le_succ_size`). This
+settles small clique sizes, where the method of approximations says nothing.
 
 It also records that monotone circuits compute the clique function at all, as the disjunction over
 the `k`-sets of the conjunction of their edges (`exists_computes_clique`), so that the lower bounds
@@ -29,18 +32,83 @@ for it are not vacuous.
 ## Main results
 
 * `Cslib.Circuits.Monotone.exists_computes_clique`: some monotone circuit computes `k`-clique.
+* `Cslib.Circuits.Clique.Separates.essentialAt`: every edge is essential to a function separating
+  the graphs with a `k`-clique from the `(k - 1)`-colourable graphs.
 * `Cslib.Circuits.Monotone.essentialAt_clique`: every edge is essential to `k`-clique.
-* `Cslib.Circuits.Monotone.edgeCount_le_succ_size`,
-  `Cslib.Circuits.Monotone.edgeCount_le_two_pow_depth`: the resulting size and depth bounds.
+* `Cslib.Circuits.Monotone.edgeCount_le_succ_size_of_separates`,
+  `Cslib.Circuits.Monotone.edgeCount_le_two_pow_depth_of_separates`,
+  `Cslib.Circuits.Monotone.edgeCount_le_succ_size`,
+  `Cslib.Circuits.Monotone.edgeCount_le_two_pow_depth`: the resulting size and depth bounds, for
+  separating circuits and for circuits computing `k`-clique.
 -/
-
 @[expose] public section
 
-namespace Cslib.Circuits.Monotone
+namespace Cslib.Circuits
 
-open Cslib.Circuits.Clique Finset
+open Finset
 
 variable {n k : ℕ}
+
+namespace Clique
+
+/-- For `2 ≤ k ≤ n`, every edge is essential to a function separating the graphs with a `k`-clique
+from the `(k - 1)`-colourable graphs. Choose a `k`-set `t` through the edge `{u, v}` and colour
+`t \ {v}` injectively with `k - 1` colours, giving `v` (and every vertex outside `t`) the colour of
+`u`. The complete multipartite graph of this colouring is `(k - 1)`-colourable, and adding the edge
+`{u, v}` makes `t` a `k`-clique. -/
+theorem Separates.essentialAt (hk : 2 ≤ k) (hkn : k ≤ n) {f : BooleanFunction (edgeCount n)}
+    (hf : Separates k (k - 1) f) (i : Fin (edgeCount n)) : EssentialAt f i := by
+  classical
+  obtain ⟨⟨e, he⟩, rfl⟩ := (edgeEquiv n).surjective i
+  induction e using Sym2.ind with | h u v => ?_
+  have huv : u ≠ v := by simpa using he
+  have hcard : (s(u, v) : Sym2 (Fin n)).toFinset.card ≤ k := by
+    rw [Sym2.card_toFinset_of_not_isDiag _ he]
+    exact hk
+  obtain ⟨t, hut, -, ht⟩ := exists_subsuperset_card_eq (subset_univ _) hcard (by simpa using hkn)
+  have hv : v ∈ t := hut (by simp)
+  have hu : u ∈ t.erase v := mem_erase.2 ⟨huv, hut (by simp)⟩
+  let ρ : Fin n → t.erase v := fun w => if h : w ∈ t.erase v then ⟨w, h⟩ else ⟨u, hu⟩
+  let φ : t.erase v ≃ Fin (k - 1) :=
+    Fintype.equivFinOfCardEq (by rw [Fintype.card_coe, card_erase_of_mem hv, ht])
+  let c : Fin n → Fin (k - 1) := fun w => φ (ρ w)
+  -- Only the endpoints of `{u, v}` share a colour inside `t`.
+  have hc : ∀ a ∈ t, ∀ b ∈ t, a ≠ b → c a = c b → s(a, b) = s(u, v) := by
+    have hρ (w : Fin n) (hw : w ∈ t) : (ρ w : Fin n) = if w = v then u else w := by
+      by_cases hwv : w = v
+      · simp [ρ, hwv]
+      · simp [ρ, hwv, hw]
+    intro a ha b hb hab hab'
+    have h := congrArg Subtype.val (φ.injective hab')
+    rw [hρ a ha, hρ b hb] at h
+    split_ifs at h with ha' hb' hb'
+    · exact absurd (ha'.trans hb'.symm) hab
+    · rw [ha', ← h]
+      exact Sym2.eq_swap
+    · rw [hb', h]
+    · exact absurd h hab
+  have htrue : f (Function.update (ofColoring c) (edgeEquiv n ⟨s(u, v), he⟩) true) = true := by
+    refine hf.1 _ (decide_eq_true ⟨t, ht, fun e' he' => ?_⟩)
+    by_cases hee : e' = ⟨s(u, v), he⟩
+    · rw [hee, Function.update_self]
+    · rw [Function.update_of_ne ((edgeEquiv n).injective.ne hee)]
+      simp only [ofColoring, Equiv.symm_apply_apply, decide_eq_true_iff]
+      intro a ha b hb hab'
+      by_contra hab
+      refine hee (Subtype.ext ?_)
+      rw [Sym2.mem_toFinset] at ha hb
+      rw [(Sym2.mem_and_mem_iff hab).1 ⟨ha, hb⟩]
+      exact hc a (he' (Sym2.mem_toFinset.2 ha)) b (he' (Sym2.mem_toFinset.2 hb)) hab hab'
+  refine ⟨ofColoring c, Function.update (ofColoring c) (edgeEquiv n ⟨s(u, v), he⟩) true,
+    fun j hj => (Function.update_of_ne hj _ _).symm, ?_⟩
+  rw [hf.ofColoring_eq_false c, htrue]
+  exact Bool.false_ne_true
+
+end Clique
+
+namespace Monotone
+
+open Clique
 
 /-- Monotone programs have fan-in at most two. -/
 theorem program_fanInAtMost_two {g : ℕ} (p : Program signature n g) : p.FanInAtMost 2 := by
@@ -105,27 +173,36 @@ theorem ecomplexity_clique_ne_top (n k : ℕ) :
 /-- For `2 ≤ k ≤ n`, every edge is essential to `k`-clique. -/
 theorem essentialAt_clique (hk : 2 ≤ k) (hkn : k ≤ n) (i : Fin (edgeCount n)) :
     EssentialAt (single (clique n k)) i := by
-  let e := (edgeEquiv n).symm i
-  have he : e.1.toFinset.card ≤ k := by
-    rw [Sym2.card_toFinset_of_not_isDiag _ e.2]
-    exact hk
-  obtain ⟨s, hes, -, hs⟩ := exists_subsuperset_card_eq (subset_univ _) he (by simpa using hkn)
-  refine ⟨ofFinset s, Function.update (ofFinset s) i false,
-    fun j hj => (Function.update_of_ne hj _ _).symm, fun h => ?_⟩
-  have h0 := congrFun h 0
-  simp only [single, clique_ofFinset hs] at h0
-  obtain ⟨t, ht, hyt⟩ := of_decide_eq_true h0.symm
-  have hxt : Contains (ofFinset s) t := fun e' he' => by
-    have := hyt e' he'
-    by_cases hi : edgeEquiv n e' = i
-    · rw [hi, Function.update_self] at this
-      exact absurd this Bool.false_ne_true
-    · rwa [Function.update_of_ne hi] at this
-  have hts : t = s :=
-    eq_of_subset_of_card_le (subset_of_contains_ofFinset (by omega) hxt) (by omega)
-  have := hyt e (hts ▸ hes)
-  rw [show edgeEquiv n e = i from Equiv.apply_symm_apply _ _, Function.update_self] at this
-  exact Bool.false_ne_true this
+  obtain ⟨x, y, hxy, hne⟩ := (separates_clique (r := k - 1) (by omega)).essentialAt hk hkn i
+  exact ⟨x, y, hxy, fun h => hne (by simpa using congrFun h 0)⟩
+
+/-- Every edge is essential to the output of a circuit separating the graphs with a `k`-clique from
+the `(k - 1)`-colourable graphs. -/
+private theorem essentialAt_eval_of_separates (hk : 2 ≤ k) (hkn : k ≤ n)
+    {C : Circuit signature (edgeCount n) 1}
+    (hC : Separates k (k - 1) fun x => C.eval interpretation x 0) (i : Fin (edgeCount n)) :
+    EssentialAt (C.eval interpretation) i := by
+  obtain ⟨x, y, hxy, hne⟩ := hC.essentialAt hk hkn i
+  exact ⟨x, y, hxy, fun h => hne (congrFun h 0)⟩
+
+/-- For `2 ≤ k ≤ n`, a monotone circuit separating the graphs with a `k`-clique from the
+`(k - 1)`-colourable graphs has at least `n.choose 2 - 1` gates. -/
+theorem edgeCount_le_succ_size_of_separates (hk : 2 ≤ k) (hkn : k ≤ n)
+    {C : Circuit signature (edgeCount n) 1}
+    (hC : Separates k (k - 1) fun x => C.eval interpretation x 0) : edgeCount n ≤ 1 + C.size := by
+  simpa using C.essential_le_size (target := C.eval interpretation) (fun _ => rfl)
+    (selected := univ) (fun i _ => essentialAt_eval_of_separates hk hkn hC i)
+    (program_fanInAtMost_two C.program)
+
+/-- For `2 ≤ k ≤ n`, a monotone circuit separating the graphs with a `k`-clique from the
+`(k - 1)`-colourable graphs has depth at least `log₂ C(n, 2)`. -/
+theorem edgeCount_le_two_pow_depth_of_separates (hk : 2 ≤ k) (hkn : k ≤ n)
+    {C : Circuit signature (edgeCount n) 1}
+    (hC : Separates k (k - 1) fun x => C.eval interpretation x 0) :
+    edgeCount n ≤ 2 ^ C.depth := by
+  simpa using C.essential_le_depth (target := C.eval interpretation) (fun _ => rfl)
+    (selected := univ) (fun i _ => essentialAt_eval_of_separates hk hkn hC i)
+    (program_fanInAtMost_two C.program)
 
 /-- For `2 ≤ k ≤ n`, a monotone circuit computing `k`-clique has at least `n.choose 2 - 1`
 gates. -/
@@ -150,4 +227,6 @@ theorem sq_half_le_edgeCount (n : ℕ) : (n / 2) ^ 2 ≤ edgeCount n := by
   · simp [hm]
   · nlinarith [Nat.sub_add_cancel (show 1 ≤ n by omega)]
 
-end Cslib.Circuits.Monotone
+end Monotone
+
+end Cslib.Circuits

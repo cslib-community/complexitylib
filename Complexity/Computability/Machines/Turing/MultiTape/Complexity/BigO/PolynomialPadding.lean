@@ -28,6 +28,8 @@ on inputs long enough to pay for it.
 
 * `Turing.MultiTapeTM.computableInO_polynomialPadding`: append `(n + 1) ^ k` bits to a framed
   word in time `O((n + 1) ^ (2 * k))` and space `O((n + 1) ^ k)`, for `k ≥ 1`.
+* `Turing.MultiTapeTM.computableInO_unary_roundedPower`: write the rounded power
+  `2 ^ (k * Nat.size (n + 1) + s)` of a binary natural in unary in time `O((n + 1) ^ (k + 1))`.
 * `Turing.MultiTapeTM.computableInO_roundedPolynomialPadding`: round the padding length up to
   `2 ^ (k * Nat.size (n + 1))` and write it in time `O((n + 1) ^ (k + 1))`.
 * `Turing.MultiTapeTM.computableInO_polynomialPaddingGuard`: compare the `k`th power of the
@@ -93,16 +95,41 @@ theorem polynomialPaddingPower_bounds (k n : ℕ) :
   · exact Nat.pow_le_pow_left (Nat.lt_size_self (n + 1)).le k
   · simpa only [mul_pow] using Nat.pow_le_pow_left hupper k
 
-private theorem computableInO_length_succ_size_mul (k : ℕ) :
-    ComputableInO (fun x : List Bool => k * Nat.size (x.length + 1)) encBits encUnary
-      (fun x => (x.length + 1) ^ 2) (fun x => x.length + 1) := by
-  have hp : ComputableInPolyTime (fun n : ℕ => k * Nat.size (n + 1)) encNat encUnary :=
-    ComputableInPolyTime.unary_mul' (.const k)
-      (ComputableInPolyTime.binary_size.comp (by fun_prop))
-  have h := hp.nat_inO.tidy.comp ComputableInO.lengthNat.tidy
-  refine .of_tidy (h.mono 2 (fun x => ?_) fun x => ?_)
-  · nlinarith
-  · omega
+/-- Write the rounded power `2 ^ (k * Nat.size (n + 1) + s)` of a binary natural `n` in unary.
+It is at least `2 ^ s * (n + 1) ^ k` and at most `2 ^ (k + s) * (n + 1) ^ k`
+(`Turing.MultiTapeTM.polynomialPaddingPower_bounds`). Repeated unary doubling gives time
+`O((n + 1) ^ (k + 1))` and space `O((n + 1) ^ k)`, for `k ≥ 1`; the constants depend on `k`
+and `s`. -/
+theorem computableInO_unary_roundedPower {k : ℕ} (hk : 1 ≤ k) (s : ℕ) :
+    ComputableInO (fun n : ℕ => 2 ^ (k * Nat.size (n + 1) + s)) encNat encUnary
+      (fun n => (n + 1) ^ (k + 1)) (fun n => (n + 1) ^ k) := by
+  have hp : ComputableInPolyTime (fun n : ℕ => k * Nat.size (n + 1) + s) encNat encUnary :=
+    ComputableInPolyTime.unary_add' (ComputableInPolyTime.unary_mul' (.const k)
+      (ComputableInPolyTime.binary_size.comp (by fun_prop))) (.const s)
+  refine (ComputableInO.unary_two_pow.comp hp.nat_inO).mono ((k + s + 1) * 2 ^ (k + s) + 1)
+    (fun n => ?_) fun n => ?_
+  all_goals
+    have hb := (polynomialPaddingPower_bounds k n).2
+    have hp : n + 1 ≤ (n + 1) ^ k := Nat.le_self_pow (by omega) _
+    have hN : 2 ^ (k * Nat.size (n + 1) + s) ≤ 2 ^ (k + s) * (n + 1) ^ k := by
+      rw [pow_add, pow_add]
+      nlinarith [Nat.one_le_two_pow (n := s)]
+  · have hsz : k * Nat.size (n + 1) + s + 1 ≤ (k + s + 1) * (n + 1) := by
+      have := Nat.size_le_self (n + 1)
+      nlinarith
+    calc
+      _ ≤ (n + 1) ^ (k + 1) + ((k + s + 1) * (n + 1)) * (2 ^ (k + s) * (n + 1) ^ k) :=
+        Nat.add_le_add ((Nat.le_succ n).trans (Nat.le_self_pow (by omega) _))
+          (Nat.mul_le_mul hsz hN)
+      _ = ((k + s + 1) * 2 ^ (k + s) + 1) * (n + 1) ^ (k + 1) := by ring
+      _ ≤ _ := Nat.mul_le_mul_left _ (Nat.le_succ _)
+  · calc
+      _ ≤ (n + 1) ^ k + 2 ^ (k + s) * (n + 1) ^ k :=
+        Nat.add_le_add ((Nat.le_succ n).trans hp) hN
+      _ = (2 ^ (k + s) + 1) * (n + 1) ^ k := by ring
+      _ ≤ _ := by
+        apply Nat.mul_le_mul _ (Nat.le_succ _)
+        nlinarith [Nat.one_le_two_pow (n := k + s)]
 
 /-- Frame a word and append a rounded polynomial number of padding bits. Repeated unary
 doubling gives time `O((n + 1) ^ (k + 1))` while the space remains `O((n + 1) ^ k)`. -/
@@ -112,45 +139,21 @@ theorem computableInO_roundedPolynomialPadding {k : ℕ} (hk : 1 ≤ k) :
         List.replicate (2 ^ (k * Nat.size (x.length + 1))) true)
       encBits encBits (fun x => (x.length + 1) ^ (k + 1))
       (fun x => (x.length + 1) ^ k) := by
-  have hu := ComputableInO.unary_two_pow.tidy.comp
-    (computableInO_length_succ_size_mul k).tidy
-  have h := (ComputableTidilyInO.of_linear
-    (.of_frame (f := id) (encOut := encFramed encBits) fun _ => rfl)).append hu
+  have h := (ComputableInO.of_linear
+    (.of_frame (f := id) (encMid := encFramed encBits) fun _ => rfl)).append
+      ((computableInO_unary_roundedPower hk 0).comp ComputableInO.lengthNat)
       (g := fun x : List Bool => frame x ++
         List.replicate (2 ^ (k * Nat.size (x.length + 1))) true)
-      (encOut := encBits) fun _ => rfl
-  refine .of_tidy (h.mono ((k + 1) * 2 ^ k + 8) (fun x => ?_) fun x => ?_)
+      (encOut := encBits) fun _ => by simp
+  refine h.mono 3 (fun x => ?_) fun x => ?_
   all_goals
-    have hb := (polynomialPaddingPower_bounds k x.length).2
     have hp : x.length + 1 ≤ (x.length + 1) ^ k := Nat.le_self_pow (by omega) _
     dsimp only [Function.comp_apply, id_eq, encBits_apply]
-  · have hc : (k * Nat.size (x.length + 1) + 1) *
-        2 ^ (k * Nat.size (x.length + 1)) ≤
-        ((k + 1) * 2 ^ k) * (x.length + 1) ^ (k + 1) := by
-      calc
-        _ ≤ ((k + 1) * (x.length + 1)) * (2 ^ k * (x.length + 1) ^ k) :=
-          Nat.mul_le_mul (by have := Nat.size_le_self (x.length + 1); nlinarith) hb
-        _ = _ := by rw [pow_succ]; ring
-    have hs : (x.length + 1) ^ 2 ≤ (x.length + 1) ^ (k + 1) :=
+  · have hs : (x.length + 1) ^ 2 ≤ (x.length + 1) ^ (k + 1) :=
       Nat.pow_le_pow_right (by omega) (by omega)
-    have hl : x.length ≤ (x.length + 1) ^ (k + 1) :=
-      (Nat.le_succ _).trans (Nat.le_self_pow (by omega) _)
-    calc
-      _ ≤ (x.length + 1) ^ (k + 1) + ((x.length + 1) ^ (k + 1) +
-          ((k + 1) * 2 ^ k) * (x.length + 1) ^ (k + 1)) :=
-        Nat.add_le_add hl (Nat.add_le_add hs hc)
-      _ = ((k + 1) * 2 ^ k + 2) * (x.length + 1) ^ (k + 1) := by ring
-      _ ≤ _ := Nat.mul_le_mul (by omega) (Nat.le_succ _)
-  · have hcoeff : 2 ^ k + 2 ≤ (k + 1) * 2 ^ k + 8 := by
-      have hq : 2 ^ k ≤ (k + 1) * 2 ^ k := by
-        simpa only [one_mul] using
-          Nat.mul_le_mul_right (2 ^ k) (show 1 ≤ k + 1 by omega)
-      omega
-    calc
-      _ ≤ (x.length + 1) ^ k + ((x.length + 1) ^ k + 2 ^ k * (x.length + 1) ^ k) :=
-        Nat.add_le_add ((Nat.le_succ _).trans hp) (Nat.add_le_add hp hb)
-      _ = (2 ^ k + 2) * (x.length + 1) ^ k := by ring
-      _ ≤ _ := Nat.mul_le_mul hcoeff (Nat.le_succ _)
+    have hl : x.length + 1 ≤ (x.length + 1) ^ (k + 1) := Nat.le_self_pow (by omega) _
+    omega
+  · omega
 
 /-- Testing whether a framed word has polynomially sufficient padding takes quadratic time and
 linear space in the full input length, independently of the fixed exponent. -/

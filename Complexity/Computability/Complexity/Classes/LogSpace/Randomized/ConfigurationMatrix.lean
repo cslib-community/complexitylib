@@ -43,8 +43,9 @@ machine on its configurations [Gill][Gill1977]. Borodin, Cook and Pippenger comp
 and inverse in parallel [Borodin, Cook and Pippenger][BorodinCookPippenger1983], which gives
 `BPSPACE(S) ⊆ DSPACE(S²)` [Hoza, Section 4.3][Hoza2022]; the inverse of `1 - W` as the sum
 `W⁰ + W¹ + …` of transition-matrix powers is the picture of [Hoza, Section 3.2][Hoza2022].
-Exact evaluation of the polynomial-size matrix also gives `BPL ⊆ P`. None of these algorithms is
-formalized here.
+Exact evaluation of the polynomial-size matrix also gives `BPL ⊆ P`. The parallel algorithms are
+not formalized; a sequential exact evaluation, which gives `Cslib.Complexity.BPL_subset_P`, is in
+`Complexity.Computability.Complexity.Classes.LogSpace.Randomized.PolyTime`.
 
 The matrices are indexed by an arbitrary closed set of views rather than a set of
 configurations of bounded size, and have no time layers: the model of `Cslib.Complexity.BPL`

@@ -15,8 +15,8 @@ import Mathlib.Tactic.Ring
 /-!
 # Binary word arithmetic and comparison
 
-The carry fold, its value and length laws, and the highest-differing-bit characterization of
-strict order are pure facts about least-significant-first binary words. They do not import a
+The word adder and its value law, and the highest-differing-bit characterization of strict
+order are pure facts about least-significant-first binary words. They do not import a
 computability calculus. The multiplication bit fold and its prefix-size laws are shared with
 the direct and legacy resource proofs, retaining the original shift-and-add data.
 -/
@@ -69,28 +69,6 @@ lemma addBits_bits (c : Bool) (m n : ℕ) : addBits c m.bits n.bits = (m + n + c
           2 * (m + n + (carry a b c).toNat) + (a ^^ (b ^^ c)).toNat by
           cases a <;> cases b <;> cases c <;> simp [carry] <;> omega, bits_bit]
       cases a <;> cases b <;> cases c <;> simp_all [carry]
-
-/-- One round: add the digit `a`, the next digit of the rest `r` and the carry `c`. -/
-def addStep (s : Bool × List Bool × List Bool) (a : Bool) : Bool × List Bool × List Bool :=
-  (carry a (s.2.1.headD false) s.1, s.2.1.tail, s.2.2 ++ [a ^^ (s.2.1.headD false ^^ s.1)])
-
-/-- The fold invariant splits the accumulated digits from the remaining carry addition. -/
-lemma foldl_addStep (l : List Bool) (c : Bool) (r out : List Bool) :
-    let s := l.foldl addStep (c, r, out)
-    out ++ addBits c l r = s.2.2 ++ incr s.1 s.2.1 := by
-  induction l generalizing c r out with
-  | nil => rfl
-  | cons a l ih => simp [addBits, ← ih, addStep]
-
-/-- Each round consumes at most one remaining digit and emits exactly one output digit. -/
-lemma length_foldl_addStep (l : List Bool) (s : Bool × List Bool × List Bool) :
-    (l.foldl addStep s).2.1.length ≤ s.2.1.length ∧
-      (l.foldl addStep s).2.2.length = s.2.2.length + l.length := by
-  induction l generalizing s with
-  | nil => simp
-  | cons a l ih =>
-    obtain ⟨h₁, h₂⟩ := ih (addStep s a)
-    exact ⟨h₁.trans (by simp [addStep]), h₂.trans (by simp [addStep]; omega)⟩
 
 end NatAdd
 

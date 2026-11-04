@@ -1,141 +1,170 @@
 /-
-Copyright (c) 2026 Renfei Zhou. All rights reserved.
+Copyright (c) 2026 Renfei Zhou, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Renfei Zhou
+Authors: Renfei Zhou, Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: local-only (native priority-queue migration regressions)
 
-public import Complexity.Algorithms.WordRAM.PriorityQueue.BinaryHeap
+public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Native.Certificate
 
-/-! Nonvacuity and interpreter checks for `IndexedMinPQ` and the standalone word-RAM binary
-min-heap (`Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap`). -/
+/-! The original operation sequence and dirty-initialization cases, through the replacement
+fixed program. These are certified actual executions, with halt-inclusive call bounds. The
+old interpreter's implementation-specific instruction/register constants are not retained.
+External argument delivery and host continuations have the existing operation-call semantics. -/
 
-@[expose] public section
-
-open Cslib Cslib.WordRAM
-open Cslib.Algorithms.Lean
-open Cslib.Algorithms.WordRAM.PriorityQueue
-open Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap
-open Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.Reg
+public section
 
 namespace WordRAMPriorityQueueTests
 
-/-- Pure interpreter step for a single `IndexedMinPQ` operation on `BinaryHeap.pqCode`. -/
-def stepEval {n K_max : ℕ} (w fuel : ℕ) (x : Data rBin)
-    (o : (IndexedMinPQ.spec n K_max).Op) :
-    Option (Data rBin × (IndexedMinPQ.spec n K_max).Result o × ℕ) := do
-  let x' : Data rBin :=
-    { regs := fun i => if pqCode.input i then pqCode.encode o i else x.regs i, mem := x.mem }
-  let yn ← pqCode.code.eval w fuel x'
-  let res ← pqCode.decode (n := n) (K_max := K_max) o yn.1.regs
-  pure (yn.1, res, yn.2)
+open Cslib Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
+open Cslib.DataStructure.PriorityQueue
+open Cslib.DataStructure.PriorityQueue.BinaryHeap.Native
+open Cslib.DataStructure.PriorityQueue.BinaryHeap (space)
 
-/-- Full concrete trace exercising `initFresh`, `isEmpty`, `getKey` (absent and present), `insert`
-(including key `0`), `decreaseKey`, equal-key lexicographic tie-breaking by `v.val`, and
-`extractMin` down to empty, checking every operation's instruction count against `charge`. -/
-def runSequence : Option (List (Option ℕ) × List (Option (Fin 4 × ℕ)) × Bool) := do
-  let x0 := (((Data.init [] : Data rBin).set frontierReg 10).set nReg 4)
-  let (x1, tInit) ← pqCode.initFresh.eval 10 8 x0
-  let (x2, emp0, tEmp0) ← stepEval (n := 4) (K_max := 20) 10 8 x1 .isEmpty
-  let (x3, gk0, tGk0) ← stepEval (n := 4) (K_max := 20) 10 8 x2 (.getKey 2)
-  let (x4, _, tIns2) ← stepEval (n := 4) (K_max := 20) 10 8 x3 (.insert 2 0)
-  let (x5, emp1, tEmp1) ← stepEval (n := 4) (K_max := 20) 10 8 x4 .isEmpty
-  let (x6, gk2, tGk2) ← stepEval (n := 4) (K_max := 20) 10 8 x5 (.getKey 2)
-  let (x7, gk1, tGk1) ← stepEval (n := 4) (K_max := 20) 10 8 x6 (.getKey 1)
-  let (x8, _, tIns3) ← stepEval (n := 4) (K_max := 20) 10 8 x7 (.insert 3 5)
-  let (x9, _, tIns1) ← stepEval (n := 4) (K_max := 20) 10 8 x8 (.insert 1 5)
-  let (x10, _, tIns0) ← stepEval (n := 4) (K_max := 20) 10 8 x9 (.insert 0 9)
-  let (x11, _, tDec0) ← stepEval (n := 4) (K_max := 20) 10 8 x10 (.decreaseKey 0 5)
-  let (x12, e1, tExt1) ← stepEval (n := 4) (K_max := 20) 10 8 x11 .extractMin
-  let (x13, e2, tExt2) ← stepEval (n := 4) (K_max := 20) 10 8 x12 .extractMin
-  let (x14, e3, tExt3) ← stepEval (n := 4) (K_max := 20) 10 8 x13 .extractMin
-  let (x15, e4, tExt4) ← stepEval (n := 4) (K_max := 20) 10 8 x14 .extractMin
-  let (x16, e5, tExt5) ← stepEval (n := 4) (K_max := 20) 10 8 x15 .extractMin
-  let (_, emp2, tEmp2) ← stepEval (n := 4) (K_max := 20) 10 8 x16 .isEmpty
-  let ok :=
-    decide (x1.regs frontierReg = 10 + space 4) &&
-    decide (tInit ≤ 11) &&
-    emp0 && !emp1 && emp2 &&
-    decide (tEmp0 ≤ charge 4 .isEmpty ∧ tEmp1 ≤ charge 4 .isEmpty ∧ tEmp2 ≤ charge 4 .isEmpty) &&
-    decide (tGk0 ≤ charge 4 (.getKey 2) ∧ tGk2 ≤ charge 4 (.getKey 2) ∧
-      tGk1 ≤ charge 4 (.getKey 1)) &&
-    decide (tIns2 ≤ charge 4 (.insert 2 0) ∧ tIns3 ≤ charge 4 (.insert 3 5) ∧
-      tIns1 ≤ charge 4 (.insert 1 5) ∧ tIns0 ≤ charge 4 (.insert 0 9)) &&
-    decide (tDec0 ≤ charge 4 (.decreaseKey 0 5)) &&
-    decide (tExt1 ≤ charge 4 .extractMin ∧ tExt2 ≤ charge 4 .extractMin ∧
-      tExt3 ≤ charge 4 .extractMin ∧ tExt4 ≤ charge 4 .extractMin ∧
-      tExt5 ≤ charge 4 .extractMin)
-  pure ([gk0, gk2, gk1], [e1, e2, e3, e4, e5], ok)
+/-- The existing indexed-priority-queue specification for this four-handle fixture. -/
+abbrev spec := indexedMinPQSpec 4 20
+private abbrev SequenceResult := List (Option ℕ) × List (Option (Fin 4 × ℕ)) × Bool
 
-example : runSequence =
-    some ([none, some 0, none],
-      [some (2, 0), some (0, 5), some (1, 5), some (3, 5), none], true) := by
-  decide +kernel
+/-- The retained sequence checks absent/present lookup, zero key, decrease, strict key/handle
+ties, extraction down to empty and the empty test on both sides. -/
+private def sequence : spec.Client SequenceResult := do
+  let emp₀ ← spec.call .isEmpty
+  let gk₀ ← spec.call (.getKey 2)
+  spec.call (.insert 2 0)
+  let emp₁ ← spec.call .isEmpty
+  let gk₂ ← spec.call (.getKey 2)
+  let gk₁ ← spec.call (.getKey 1)
+  spec.call (.insert 3 5)
+  spec.call (.insert 1 5)
+  spec.call (.insert 0 9)
+  spec.call (.decreaseKey 0 5)
+  let e₁ ← spec.call .extractMin
+  let e₂ ← spec.call .extractMin
+  let e₃ ← spec.call .extractMin
+  let e₄ ← spec.call .extractMin
+  let e₅ ← spec.call .extractMin
+  let emp₂ ← spec.call .isEmpty
+  pure ([gk₀, gk₂, gk₁], [e₁, e₂, e₃, e₄, e₅], emp₀ && !emp₁ && emp₂)
 
-/-- Dirty-memory `initClear` check: starting with non-zero stale words across `[4, 4 + space 4)`,
-`pqCode.initClear` wipes the heap footprint in `≤ 4 * space 4 + 17 = 69` instructions so subsequent
-queries observe an empty priority queue and clean operations succeed. -/
-def runDirtyInitClear : Option (Bool × Option ℕ × Option (Fin 4 × ℕ) × Bool) := do
-  let dirty := (((Data.init (List.replicate 24 42) : Data rBin).set frontierReg 4).set nReg 4)
-  let (x1, tClr) ← pqCode.initClear.eval 10 32 dirty
-  let (x2, emp, _) ← stepEval (n := 4) (K_max := 20) 10 8 x1 .isEmpty
-  let (x3, gk, _) ← stepEval (n := 4) (K_max := 20) 10 8 x2 (.getKey 1)
-  let (x4, _, _) ← stepEval (n := 4) (K_max := 20) 10 8 x3 (.insert 1 7)
-  let (_, ext, _) ← stepEval (n := 4) (K_max := 20) 10 8 x4 .extractMin
-  let ok := decide (x1.regs frontierReg = 4 + space 4 ∧ tClr ≤ 4 * space 4 + 17)
-  pure (emp, gk, ext, ok)
+private def sequenceResult : SequenceResult :=
+  ([none, some 0, none], [some (2, 0), some (0, 5), some (1, 5), some (3, 5), none], true)
 
-example : runDirtyInitClear = some (true, none, some (1, 7), true) := by
-  decide +kernel
+/-- Clearing stale words really yields an empty queue before a new insertion/extraction. -/
+private def clearedClient : spec.Client (Bool × Option ℕ × Option (Fin 4 × ℕ)) := do
+  let emp ← spec.call .isEmpty
+  let key ← spec.call (.getKey 1)
+  spec.call (.insert 1 7)
+  let entry ← spec.call .extractMin
+  pure (emp, key, entry)
 
-/-- Lift a single `IndexedMinPQ` operation into `Client` for `spec 4 20`. -/
-abbrev callOp (o : IndexedMinPQ.Op 4) :
-    (IndexedMinPQ.spec 4 20).Client ((IndexedMinPQ.spec 4 20).Result o) :=
-  PFunctor.FreeM.lift (P := (IndexedMinPQ.spec 4 20).signature) o
+private theorem sequence_valid : spec.ValidHistory (IndexedMinPQ.empty 4)
+    (spec.clientHistory (IndexedMinPQ.empty 4) sequence) := by
+  change spec.ValidHistory (IndexedMinPQ.empty 4)
+    [.isEmpty, .getKey 2, .insert 2 0, .isEmpty, .getKey 2, .getKey 1, .insert 3 5,
+      .insert 1 5, .insert 0 9, .decreaseKey 0 5, .extractMin, .extractMin, .extractMin,
+      .extractMin, .extractMin, .isEmpty]
+  simp [StateTransitionSpec.ValidHistory, spec, IndexedMinPQ.valid, IndexedMinPQ.step,
+    IndexedMinPQ.empty]
 
-/-- Concrete adaptive client inserting `(2, 8)` and `(1, 8)`, decreasing `2` to `0`, and extracting
-the minimum. -/
-def sampleClient : (IndexedMinPQ.spec 4 20).Client (Option (Fin 4 × ℕ)) := do
-  callOp (.insert 2 8)
-  callOp (.insert 1 8)
-  callOp (.decreaseKey 2 0)
-  callOp .extractMin
+private theorem sequence_result :
+    spec.clientResult (IndexedMinPQ.empty 4) sequence = sequenceResult := by decide +kernel
 
-/-- Nonvacuity check for `BinaryHeap.subroutineDS`, `Rep`, `instruction_bound`, and
-`run_client_bound`: initializes an actual `Rep 4 10 10 (IndexedMinPQ.empty 4) y₀` state from
-zeroed memory and executes `sampleClient` over `Basis.standard` with result `some (2, 0)`. -/
-example :
-    ∃ y₀ y traces,
-      Rep 4 10 10 (IndexedMinPQ.empty 4) y₀ ∧
-      Stateful.Executes ((dynamicProgram 4 20).ExecOp 10) sampleClient y₀
-        (some (2, 0)) y traces ∧
-      Stateful.total DynamicProgram.OperationTrace.instructions traces ≤
-        (IndexedMinPQ.spec 4 20).totalCost (fun _ o => charge 4 o + 1)
-          (IndexedMinPQ.empty 4)
-          ((IndexedMinPQ.spec 4 20).runClient (IndexedMinPQ.empty 4) sampleClient).2.2 := by
+private theorem cleared_valid : spec.ValidHistory (IndexedMinPQ.empty 4)
+    (spec.clientHistory (IndexedMinPQ.empty 4) clearedClient) := by
+  change spec.ValidHistory (IndexedMinPQ.empty 4)
+    [.isEmpty, .getKey 1, .insert 1 7, .extractMin]
+  simp [StateTransitionSpec.ValidHistory, spec, IndexedMinPQ.valid, IndexedMinPQ.step,
+    IndexedMinPQ.empty]
+
+private theorem cleared_result : spec.clientResult (IndexedMinPQ.empty 4) clearedClient =
+    (true, none, some (1, 7)) := by decide +kernel
+
+noncomputable section
+
+private def initial (base : ℕ) (mem : ℕ → ℕ) : Data Program.registers :=
+  ⟨fun i => if i = Program.code.frontierReg then base else
+    if i = Program.code.nReg then 4 else 0, mem⟩
+
+private theorem initial_bounded (base : ℕ) (mem : ℕ → ℕ)
+    (hb : Fits 10 base) (hm : ∀ a, Fits 10 (mem a)) : (initial base mem).Bounded 10 := by
+  refine ⟨fun i => ?_, hm⟩
+  dsimp only [initial]
+  split_ifs
+  · exact hb
+  · decide
+  · exact fits_zero _
+
+private theorem initial_frontier (base : ℕ) (mem : ℕ → ℕ) :
+    (initial base mem).regs Program.code.frontierReg = base := by
+  simp only [initial, ite_true]
+
+private theorem initial_dimension (base : ℕ) (mem : ℕ → ℕ) :
+    (initial base mem).regs Program.code.nReg = 4 := by
+  simp only [initial, ite_eq_right Program.code.nReg_ne_frontier, ite_true]
+
+example : ∃ y₀ y traces,
+    ExecWithin 10 Program.code.initFresh (initial 10 (fun _ => 0)) y₀
+      (2 * Initialize.realizes_reserve.factor + Initialize.realizes_metadata.factor) ∧
+    Executes ((dynamicProgram 4 20).ExecOp 10) sequence y₀ sequenceResult y traces ∧
+    Representation.Rep 10 (show Fits 10 4 by decide) (show Fits 10 20 by decide)
+      (IndexedMinPQ.empty 4) y ∧
+    DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤
+      spec.totalCost (fun _ o => operationTime o + 1) (IndexedMinPQ.empty 4)
+        (spec.clientHistory (IndexedMinPQ.empty 4) sequence) := by
   have hS : Fits 10 (10 + space 4) := by decide
   have hK : Fits 10 20 := by decide
-  let x₀ : Data rBin := (((⟨fun _ => 0, fun _ => 0⟩ : Data rBin).set frontierReg 10).set nReg 4)
-  have hx₀ : x₀.Bounded 10 :=
-    ⟨fun i => by fin_cases i <;> decide, fun _ => show Fits 10 0 by decide⟩
-  have hfr : x₀.regs frontierReg = 10 := by decide
-  have hpar : ∀ j, x₀.regs (pqCode.toSubroutineCode.initParams j) = (![4] : Fin 1 → ℕ) j := by
-    intro j; fin_cases j; decide
-  have hz : ∀ a ∈ (Block.mk 10 (space 4)).footprint, x₀.mem a = 0 := fun _ _ => rfl
-  obtain ⟨y₀, _, _, hr₀, _, _⟩ := (subroutineDS hS hK).initFresh_exec hx₀ hfr hpar hz
-  have hhist : ((IndexedMinPQ.spec 4 20).runClient (IndexedMinPQ.empty 4) sampleClient).2.2 =
-      [.insert 2 8, .insert 1 8, .decreaseKey 2 0, .extractMin] := rfl
-  have hv : (IndexedMinPQ.spec 4 20).ValidHistory (IndexedMinPQ.empty 4)
-      ((IndexedMinPQ.spec 4 20).runClient (IndexedMinPQ.empty 4) sampleClient).2.2 := by
-    rw [hhist]
-    simp [Stateful.Spec.ValidHistory, IndexedMinPQ.spec, IndexedMinPQ.empty]
-  have hres : ((IndexedMinPQ.spec 4 20).runClient (IndexedMinPQ.empty 4) sampleClient).1 =
-      some (2, 0) := by
-    decide
-  obtain ⟨y, traces, hex, _, hcost⟩ := run_client_bound hS hK sampleClient hr₀ hv
-  rw [hres] at hex
-  exact ⟨y₀, y, traces, hr₀, hex, hcost⟩
+  obtain ⟨y₀, he, _, _, hr₀⟩ := Representation.initFresh_rep
+    (show Fits 10 4 by decide) hK (initial 10 (fun _ => 0))
+    (initial_bounded _ _ (by decide) (fun _ => fits_zero _))
+    (initial_frontier _ _) (initial_dimension _ _) hS (fun _ _ => rfl)
+  obtain ⟨y, tr, hex, hr, ht⟩ := run_client_bound hS hK sequence hr₀ sequence_valid
+  have hempty : spec.clientState (IndexedMinPQ.empty 4) sequence = IndexedMinPQ.empty 4 :=
+    by decide +kernel
+  rw [sequence_result] at hex
+  rw [hempty] at hr
+  exact ⟨y₀, y, tr, he, hex, hr, ht⟩
+
+private def dirtyMemory (a : ℕ) : ℕ := if a = 0 then 7 else if a = 100 then 9 else 42
+
+example : ∃ y₀ y traces,
+    ExecWithin 10 Program.code.initClear (initial 4 dirtyMemory) y₀
+      (2 * Initialize.realizes_reserve.factor + Initialize.realizes_metadata.factor +
+        4 * space 4 + 6) ∧
+    Executes ((dynamicProgram 4 20).ExecOp 10) clearedClient y₀ (true, none, some (1, 7)) y
+      traces ∧
+    DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤
+      spec.totalCost (fun _ o => operationTime o + 1) (IndexedMinPQ.empty 4)
+        (spec.clientHistory (IndexedMinPQ.empty 4) clearedClient) := by
+  have hS : Fits 10 (4 + space 4) := by decide
+  have hK : Fits 10 20 := by decide
+  let C := subroutineImpl hS hK
+  have hp : ∀ i, (initial 4 dirtyMemory).regs (Program.code.initParams i) =
+      (![4] : Fin 1 → ℕ) i := by
+    intro i
+    have hi : i = 0 := Subsingleton.elim _ _
+    subst i
+    simpa only [Program.code.initParams_eq, Matrix.cons_val_zero] using initial_dimension 4 _
+  have hm : ∀ a, Fits 10 (dirtyMemory a) := by
+    intro a
+    unfold dirtyMemory
+    split_ifs <;> decide
+  obtain ⟨y₀, he, _, hr₀, _, _⟩ := C.initClear_exec
+    (initial_bounded _ _ (by decide) hm) (initial_frontier _ _) hp
+  have hrep : Representation.Rep 4 (show Fits 10 4 by decide) hK (IndexedMinPQ.empty 4) y₀ := by
+    rw [subroutineImpl_toBase] at hr₀
+    exact (subroutineBase_rep_iff hS hK _ _).mp hr₀
+  have htime : C.initTime =
+      2 * Initialize.realizes_reserve.factor + Initialize.realizes_metadata.factor := by
+    rw [subroutineImpl_toBase, subroutineBase_initTime]
+  have hspace : C.space = space 4 := by
+    rw [subroutineImpl_toBase, subroutineBase_space]
+  rw [htime, hspace] at he
+  obtain ⟨y, tr, hex, _, ht⟩ := run_client_bound hS hK clearedClient hrep cleared_valid
+  rw [cleared_result] at hex
+  exact ⟨y₀, y, tr, he, hex, ht⟩
+
+end
 
 end WordRAMPriorityQueueTests

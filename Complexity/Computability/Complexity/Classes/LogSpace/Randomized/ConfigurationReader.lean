@@ -146,7 +146,8 @@ theorem liveCoinCountWithSymbol_eq_liveConfigMatrix {B : ℕ}
     exact coinCountWithSymbol_eq_configMatrix (R := R) machine x y hinput hx hy hfitX hfitY
 
 omit [Fintype State] in
-private theorem canonical_of_reachable {input : List Bool} {v : FiniteCfg k Bool State}
+/-- Every view reachable from the initial view already has its canonical output summary. -/
+theorem canonical_of_reachable {input : List Bool} {v : FiniteCfg k Bool State}
     (hv : Relation.ReflTransGen machine.toNTM.ViewStep (machine.toNTM.initView input) v) :
     outputClass v.output = v.output := by
   obtain ⟨p, hrep⟩ := exists_computationPath_of_viewStep hv

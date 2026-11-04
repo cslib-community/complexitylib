@@ -25,7 +25,7 @@ An indexed signature scheme ([BonehShoup2023], Definition 14.6) signs pairs `(u,
 `u < q` and a message. Its security game lets the adversary choose the indices of its signing
 queries, but never the same index twice; it wins with a valid signature on any pair `(u, msg)` it
 never had signed. An indexed scheme is what a stateful signer that never reuses an index needs:
-Merkle's tree signature uses the index of the next unused leaf ([Merkle1989], Section 6;
+Merkle's tree signature uses the index of the next unused leaf ([Merkle1989], Sections 6–7;
 [BonehShoup2023], Section 14.6.4, where the index is a nonce). The index is an explicit input, so
 the syntax is stateless; the state is the signer's obligation never to repeat an index, which the
 game enforces.
@@ -67,7 +67,7 @@ every word with the total decoder `requestDecoder`.
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*][BonehShoup2023],
   Section 14.6.1 (Definition 14.6) and Section 14.6.4.
-* [R. C. Merkle, *A Certified Digital Signature*][Merkle1989], Section 6.
+* [R. C. Merkle, *A Certified Digital Signature*][Merkle1989], Sections 6–7.
 -/
 
 @[expose] public section
@@ -140,10 +140,10 @@ def indexedEufCmaGame (S : IndexedSignatureScheme) (adversary : IndexedForger) (
     ProbComp Bool := do
   let keys ← S.keyGen n
   let out ← (OracleComp.interpret
-    (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
       (S.indexedSigningOracle n keys.2)) (adversary n keys.1)).run []
-  return !out.2.contains (out.1.1, out.1.2.1) &&
-    S.verify keys.1 out.1.1 out.1.2.1 out.1.2.2
+  let (u, msg, sig) := out.1
+  return !out.2.contains (u, msg) && S.verify keys.1 u msg sig
 
 /-- Running an oracle-PPT indexed forger against `indexedSigningOracle` is uniformly strict PPT in
 the unary security parameter, the public key and the secret key. -/
@@ -154,7 +154,7 @@ theorem isPPTOn_run_indexedSigningOracle (S : IndexedSignatureScheme) {adversary
       (encPair (encPair encUnary (encPair encBits encBits)) (encList (encPair encUnary encBits)))
       (fun caller : ℕ × (List Bool × List Bool) =>
         (OracleComp.interpret
-          (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
             (S.indexedSigningOracle caller.1 caller.2.2)) (adversary caller.1 caller.2.1)).run
           []) := by
   obtain ⟨c, d, hlen⟩ := S.sign_ppt.length_le

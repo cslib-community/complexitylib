@@ -133,7 +133,7 @@ theorem explicit_bound {K : Type*} [Field K] {n d N k Δ : ℕ} [NeZero n]
   ConstantDepthArithmeticBridge.explicit_bound e hk hn hΔ C simple depth computes
 
 /-- info: abstract audit passed for `ComplexityAbstracts.ConstantDepthArithmeticAbstract`: 8 root
-declarations, 145 dependencies checked -/
+declarations -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.ConstantDepthArithmeticAbstract allowing [
   Complexity.Computability.Circuit.Arithmetic.SigmaPi,

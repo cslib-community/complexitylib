@@ -1,0 +1,221 @@
+# Word-RAM, random sampling, and Turing bridges
+
+## Concrete machine and operation basis
+
+[Complexity/Computability/WordRAM/Defs.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Defs.lean) uses finite register indices, natural memory addresses and word values below `2^w`. The program is a finite instruction list. The default memory is zero; input length is stored at address zero and input words at `1,…,n`. A scalar result is returned by `halt`, which costs one instruction. Installing the input and reading the result are conventions, not hidden execution steps [complexitylib][complexitylib].
+
+`Basis` separates ALU symbols/arity from their interpretation. `standard` uses natural truncated subtraction and Lean's total division/modulo conventions; `exact` faults on subtraction underflow and division/modulo by zero. Both check result width rather than silently wrapping arithmetic modulo `2^w`. Restricted additive/arithmetic bases expose which operations an algorithm uses. `Basis.Hom` preserves interpretation; successful-run simulations can relate a partial basis to a more total one.
+
+Copies and memory moves rely on a bounded-state invariant rather than rechecking every existing word. The program counter is naturally unbounded in the base Word-RAM; code-length/address restrictions are separate. An instruction can explicitly read the width, and `ReadsWidth` tracks that feature. Without it, successful runs have a width-monotonicity theorem.
+
+Structured [Complexity/Computability/WordRAM/Structured.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Structured.lean) has operations, sequencing, branches and loops. Its `Exec` relation counts actual branch/jump overhead, and assembly preserves exact counts. Hoare and potential rules prove executions of this code; they do not treat a source-language loop as one machine instruction.
+
+## Uniformity and output conventions
+
+[WordSizeDependentProgram](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Time.lean#L149) chooses code from the width with a fixed register count and a global instruction-list-length bound. Literals may depend on width, and the selector itself is uncharged. `UniformDecidableInTime` instead uses one fixed program, which may read the width. These are distinct contracts.
+
+Time bounds, input encodings and permitted input/width pairs can depend on width. Every contract is conditional on `InputFits`. Empty allowed conditions or inputs that never fit can make a proposition vacuous; a logarithmic threshold in the number of input words does not bound those words' values. Input-dependent width schedules can convey advice. These points are explicit in the source and must accompany comparisons with uniform Turing classes.
+
+[Complexity/Computability/WordRAM/Function.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Function.lean) treats scalar word-valued functions. [ExecutesList](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/ListOutput.lean#L92) treats list output as the length-prefixed array addressed by the returned word in the pre-halt memory. Returning zero without writing can therefore return the original input. This is an output convention on the same machine; it does not charge the mathematical observer for copying that array out.
+
+## Proved deterministic bridges
+
+| Bridge | Statement and costs | Restrictions |
+|---|---|---|
+| Word-RAM ↔ generic interpreter | `step_toGeneric`, `run_toGeneric`, `executes_toGeneric_iff` in [Complexity/Computability/WordRAM/Defs.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Defs.lean) | Same basis, exact state correspondence and step count |
+| Multitape TM → Word-RAM | `ComputableInPolyTime.exists_wordRAM` and `exists_wordRAM_nat` in [Complexity/Computability/WordRAM/OfTuring.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/OfTuring.lean) | One fixed additive program; tapes represented by interleaved addresses; scalar answer must fit |
+| Word-RAM → native TM | [Complexity/Computability/WordRAM/Turing/Overhead.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Turing/Overhead.lean) | Efficient scalar operations, encoded fitted input, width and step budget construction charged |
+| Polynomial-time decisions | [mem_P_iff_uniformPolynomialTime](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/P/WordRAM.lean#L153) | Fixed program; basis contains additive operations and has polynomial native scalar cost; specified encoding and threshold |
+| Polynomial-time scalar functions | [Complexity/Computability/WordRAM/Invariance.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Invariance.lean) | General polynomial-bit answers use a polynomial width threshold; logarithmic-width equivalence additionally requires polynomially bounded answer values |
+| Word-RAM → unbounded log-cost RAM | [Complexity/Computability/WordRAM/RAM.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/RAM.lean) | Additive fragment; eight target slots per instruction; successful forward simulation, not overflow-reflecting equivalence |
+
+The fixed-program, scalar-output route to native polynomial time has these inputs:
+
+```mermaid
+flowchart TB
+program["Fixed Word-RAM program<br/>basis and registers"]
+fits["Admitted width<br/>all inputs fit"]
+run["Successful RAM run<br/>polynomial step bound"]
+operations["Checked operations<br/>native cost certificates"]
+setup["Efficient setup<br/>unary width and words"]
+simulation["Clock and simulator<br/>finite sparse memory"]
+result["ComputableInPolyTime<br/>binary scalar output"]
+program -->|"prove computation"| run
+fits -->|"supply valid inputs"| run
+run -->|"bound step count"| simulation
+operations -->|"implement operations"| simulation
+setup -->|"prepare state"| simulation
+simulation -->|"charge the whole simulation"| result
+```
+
+Every incoming requirement is explicit in [Program.ComputesInTime.turingComputableInPolyTime_of_width](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Turing.lean#L514). The chosen width is computable in unary, the fitted input words are computable from the original encoding, and each checked basis operation has a native certificate. The bounds are measured in that original encoded input length. [WordRAMTuring](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/WordRAMTuring.lean#L65) demonstrates the route. List-output and width-selected code use their own contracts.
+
+The reverse TM simulation's displayed overhead for a `T`-step, `n`-word, width-`w` run with scalar degree `d` is `O((T+1)*((n+T+1)*(w+1))^max(3,d))`, in addition to setup/clock obligations. The cubic floor reflects the finite association-list representation used by this simulator; it is not asserted to be an optimal RAM/TM overhead. The additive case has scalar degree two and still pays this cubic floor.
+
+For scalar functions, polynomial output **bit length** differs from polynomial output **value**. `UniformComputableInPolyTime.polyBounded` records the necessity of the latter for a logarithmic-width scalar output. The general-width equivalence and logarithmic-width equivalence should not be merged into one unqualified theorem.
+
+## Retain concrete realization resources
+
+For a fixed register count or exchange factor, retain a
+[`Realizes.Witness`](../../Complexity/Computability/WordRAM/Realization/Witness.lean) as data.
+Its `scratchSize`, `factor` and `code` fields satisfy the same `Realizes.Spec` execution contract
+used by the existential `Realizes` judgment: bounded entry data, encoded live inputs, explicit
+safe domain and valid memory history, full memory/frontier equality, result words and register
+frame. `Witness.toRealizes` erases the selected data when only existence is needed.
+
+Supply that witness as the `realizes` field of the existing
+[`Certificate`](../../Complexity/Computability/WordRAM/Realization/Backend.lean). The same
+`Backend.registers`, `Backend.code` and `Backend.factor` retain its fields. If a client has only
+an existential proof `h : Realizes ...`, use `Certificate.ofRealizes h`; this preserves correctness
+using classical choice. It does not prove that the chosen scratch size, factor or code equals
+those in a preferred derivation. Erasing a supplied witness and selecting again loses that
+implementation identity.
+
+The four primitive witnesses `readWitness`, `writeWitness`, `allocDirtyWitness` and `allocWitness`
+reuse the existing primitive execution proofs. The concrete
+[`MemoryBackend`](../../Complexity/Computability/WordRAM/Realization/MemoryBackend.lean) family
+uses them through the generic Backend and proves seven registers and factor four. Open the
+complete [checked client](../../ComplexityTests/WordRAMMemoryBackend.lean): allocate two cells,
+write seven at the returned address and read it back, with final frontier five, an unrelated
+dirty cell unchanged and at most 32 body instructions. It also checks empty allocations at width zero.
+Arguments are already delivered by an **uncharged** calling convention; this bound does not
+include native client control, argument installation, result decoding or halt.
+
+For a runtime conditional, use
+[`Realizes.Witness.branch`](../../Complexity/Computability/WordRAM/Realization/Branch.lean)
+on two supplied witnesses. It keeps their common temporary prefix, reserving
+`max left.scratchSize right.scratchSize`, with factor `max left.factor right.factor + 2`.
+Only the selected arm's domain and memory history are required. The selected local work gains
+two units for native branch control; choosing an arm does not execute the other one.
+The existential `Realizes.branch` reuses this construction by erasure.
+
+The [branch client](../../ComplexityTests/WordRAMRealizationBranchWitness.lean) has three runtime
+words: a selector and two allocation counts. It compares the selector with the first count,
+then clears the selected allocation. Each supplied arm needs two auxiliary words, so the same
+generic Backend uses **eight registers**, versus ten with the former sum reservation, and
+factor six. Both outcomes check the full memory/frontier result on dirty memory, an invalid
+unselected allocation and empty allocation at width zero. The bound includes the native
+conditional but still uses the delivered-argument, body-only calling convention above.
+
+This explicit route does not retain concrete witnesses through every bind, loop or
+randomized constructor. Existing existential Backend clients remain available through the
+choice fallback. Fixed-resource Karger endpoints still need their own compatible emitter and
+resource proofs; no selected abstract bound follows from this example.
+
+### Retain scalar code and share its scratch bank
+
+Import `Complexity.Computability.WordRAM.Realization.GlueVector`. For a concrete scalar
+implementation, retain a `GlueComputes.Witness` rather than erase it to `GlueComputes` and
+select again. The `proj`, `const`, `binary` and `binExact` data constructors reuse the original
+scalar execution contract and proofs. Projections and constants have zero auxiliary slots;
+`binary` retains `a+b+2` auxiliary slots for operands with scratch sizes `a` and `b`. Exact
+subtraction and division still require their explicit definedness premises: a fitting output
+alone does not justify underflow or division by zero. Input registers may repeat, and the
+scalar rules require no whole-state boundedness premise.
+
+Pass those supplied scalars directly to `Realizes.Witness.glueVectorOfScalars`. Coordinates run
+sequentially, sharing the **maximum** auxiliary bank while each result gets its own persistent
+output slot. Each output copy and the final neutral copy are charged. The existing
+`Witness.glueVector` and `Realizes.glueVector` proposition-based interfaces remain available,
+but their classical-choice fallback gives no concrete scratch or code identity.
+
+The complete [checked client](../../ComplexityTests/WordRAMScalarWitness.lean) computes
+`(cursor+1, accumulator+value)` with two specified three-instruction scalar additions. Its
+actual supplied Backend has nine registers and a nine-instruction body allowance. Replaying
+the original sum-bank placement on these **same supplied scalar data** gives eleven registers;
+this is not a numerical claim about witnesses selected from old existential proofs. The tests
+check maximum-word output, full dirty-memory/frontier/live-register preservation, actually
+aliased input registers, overflow-domain exclusion and a width-zero projection. Argument
+installation and a caller halt remain separate charges. No sixteen-register Karger endpoint
+or whole-initializer bound follows from this standalone client.
+
+### Keep native loop overhead additive
+
+When a memory loop already has a retained body witness, keep that data through
+`Witness.iterateRuntime` and use `Witness.loopEmit_spec` for a tighter clock on the **same**
+`loopEmit` instructions. For a state of `l` words and runtime fuel `q`, its bound is
+`C*(memoryCost + iterationWork) + (l+5)*(q+1)`. Here `iterationWork` includes one unit per
+iteration. Counter setup, state/result copies, decrement, tests and exit remain paid. The
+coarse witness factor is still available; substituting that coarse factor into an outer clock
+can lose this sharper accounting. This rule retains the full original execution contract,
+including reached domains, memory/frontier, outputs and the register frame.
+
+Open the complete [checked Backend client](../../ComplexityTests/WordRAMRealizationAdditiveLoop.lean),
+which reuses the existing query-free `identityBody` source. From this checkout, run
+`scripts/build.sh --wfail --iofail ComplexityTests.WordRAMRealizationAdditiveLoop`.
+Its retained vector-glue body has a three-instruction allowance, including the result and
+neutral copies. The one-word loop therefore runs within `9*q+6` body instructions even though
+it performs no memory query. The SAME Backend code handles value seven/fuel two at width three
+within 24 instructions, preserving all dirty memory and frontier three. At width zero/fuel zero
+it returns zero within six instructions, without assuming that one fits a zero-width word.
+Both cases retain the full live-register frame.
+
+The scalar glue emitter is selected once from its fixed-time certificate; its scratch size
+remains a retained parameter, not a proved numeral. This example gives a numerical time bound
+without a fixed register-count claim. Argument installation and caller halt are separate charges.
+It does not identify the supplied code with a witness chosen from an arbitrary existential proof.
+
+## Randomized instructions and exact laws
+
+[Complexity/Computability/WordRAM/Randomized/Defs.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Randomized/Defs.lean) keeps the same flat instruction syntax and gives `rand dst src` the exact uniform law on `0,…,R[src]`, provided the bound fits. The deterministic interpreter faults on `rand`; the probabilistic interpreter produces a `ProbComp` tree. Halted and faulted outcomes are absorbing, and a halt retains final registers and memory.
+
+The extension records worst-case successful halting, fault-freedom, random-call count and an explicit bit currency. Even `rand 0` makes one call while consuming zero bits in that currency. A bound of `R` calls implies at most `R*w` such bits. This is a unit-cost finite-uniform-word model, not an assertion that every instruction is exactly executable in bounded fair-coin time. The native strict-PPT distinction is explained in [programs and realization](../programs-crypto-and-probability/programs-and-realization.md).
+
+[Complexity/Computability/WordRAM/Randomized/Structured.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Randomized/Structured.lean) uses `ExecRand` to certify a finite fault-free structured execution tree with the distribution of final data and exact instruction count. Compilation and random/cost bounds preserve its law.
+
+### Realize memory clients with private coins
+
+Import `Complexity.Computability.WordRAM.Realization.Random` for
+[`RealizesRand`](../../Complexity/Computability/WordRAM/Realization/Random.lean), and
+`Complexity.Computability.WordRAM.Realization.RandomLoop` for runtime-bounded iteration.
+Start with a memory client with private coins, faithful input/output word encodings, a safe
+entry domain, and separate time and random-call budgets. The realization chooses its emitter,
+scratch size and exchange constant before runtime arguments, word widths and initial memories.
+It requires bounded initial data, the encoded argument in its source registers, disjoint
+scratch/frontier placement, the safe-domain premise and demonic admissibility of the client.
+
+[`ExecRandLaw`](../../Complexity/Computability/WordRAM/Randomized/Law.lean) relates the emitted
+code to the **joint** law of encoded result words and the entire memory function and frontier.
+A result-only marginal cannot preserve a later memory-dependent call. The code keeps registers
+outside its scratch bank and frontier, and every path terminates within `C*(time+1)` native
+instructions and the separate random-call budget. Deterministic components enter through an
+existing `Realizes` certificate and `Realizes.toRand`; their time is memory charge plus local
+work and their random-call budget is zero.
+
+`RealizesRand.bind` requires the continuation's domain and uniform time/call bounds for every
+supported intermediate answer and memory. `RealizesRand.iterate` requires the corresponding
+bounds at every supported loop prefix, using one body emitter. Supply those obligations at
+reached memories; a bound only at the initial state, or only in expectation, is insufficient.
+The native rules account for register copies, loop counters, headers and exits.
+
+`RealizesRand.exists_init_program` compiles a selected result coordinate to the existing flat
+program semantics, retaining its joint law with full memory/frontier and exporting both
+`RandHaltsWithin` and `RandCallsBounded`. Keep the raw-input prefix equality, length/fit,
+safe-domain and demonic-admissibility premises. `Data.init` raw-memory placement is an
+**uncharged calling convention**; the charged `2*k+5` native prefix installs the frontier and
+first `k` argument registers, not the whole graph. Its allowance `C*(time+1)+1` includes that
+prefix, the body and trailing halt. The random budget counts primitive inclusive-range calls,
+even `rand(0)`; it does not prove a bounded-cost exact fair-bit sampler.
+
+Open the complete checked
+[WordRAMRealizationRandom clients](../../ComplexityTests/WordRAMRealizationRandom.lean),
+including their imports and encodings. `sample_program` samples an input position, retaining
+repeated values' multiplicity; its input is nonempty and must fit. The runtime-repeat client
+bounds every iteration. `storeSample_result_eq_cell` and `realizesRand_storeSample` retain the
+correlation between the returned sample and the written cell, while preserving other memory
+and the frontier. These are realization clients, not a completed native Karger implementation:
+K2 still needs its method/setup and exact-resource deletion train, and K3 needs recursive
+frame-stack realization. No expected-cost or uniform-word claim becomes a strict fair-coin
+runtime claim through this interface.
+
+## Expected time and unbounded termination
+
+[expectedTime](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Randomized/Expected.lean#L165) sums, over horizons `t`, the probability that execution is still running. It is valued in extended nonnegative reals. Since both halt and fault are absorbing, this is time until either; concluding almost-sure **successful** halting also requires fault-freedom. `Executes.expectedTime_eq` recovers deterministic instruction counts, and worst-case halting reduces the sum to a finite horizon.
+
+There are two structured interfaces. `expectedCodeTime` uses the finite fault-free `ExecRand` tree when one exists and is infinite otherwise; it can conservatively assign infinity to an unbounded almost-surely terminating loop. `ExecCodeDist` separately pairs a genuine output PMF with an expected step bound and supports unbounded geometric Las Vegas loops via `ExecCodeDist.loop_geometric` and `program_halts`. Distinguish this distributional certificate from finite-tree structured execution.
+
+## Known Limitations
+
+The inspected bridges establish their explicit deterministic models and encodings. They do not give a blanket equivalence for arbitrary width advice, arbitrary mathematical input encodings, all unbounded-integer operations at unit cost, or the randomized uniform-word instruction under strict fair-coin time. List-output extraction and dynamic caller argument preparation have their stated conventions; full end-to-end costs require a native caller when those steps matter.
+
+[complexitylib]: ../sources.md#complexitylib

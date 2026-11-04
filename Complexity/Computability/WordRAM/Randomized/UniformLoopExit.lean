@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Probability.PMF.UniformSubset
 public import Complexity.Computability.WordRAM.Randomized.Expected
+import Complexity.Foundations.Analysis.ENNRealTsum
 
 /-!
 # Uniform Rejection-Sampling Loop Exit Law on the Randomized Word RAM
@@ -163,14 +164,6 @@ private theorem exitMass_eq_ite_exitWeightSeq {r : ℕ} {α : Type*} [Fintype α
           simp [hne]
       · rw [(PMF.apply_eq_zero_iff _ _).mpr hz, zero_mul]
 
-private theorem tsum_iSup_of_monotone {α : Type*} {f : ℕ → α → ℝ≥0∞}
-    (hf : ∀ a, Monotone fun n => f n a) :
-    (∑' a, ⨆ n, f n a) = ⨆ n, ∑' a, f n a := by
-  rw [tsum_eq_iSup_sum]
-  simp_rw [ENNReal.finsetSum_iSup_of_monotone hf]
-  rw [iSup_comm]
-  simp_rw [← tsum_eq_iSup_sum]
-
 /-- If each iteration of a Word-RAM loop `Code.loop cond body` samples `f y` uniformly from a finite
 type `α` and exits iff `f y ∈ E` for a nonempty target subset `E : Finset α`, then the loop exit
 distribution `loopExitPMF cond μ_body x` mapped under `f` equals `PMF.uniformOfFinset E hE`. -/
@@ -204,7 +197,7 @@ theorem loopExitPMF_map_eq_uniformOfFinset {r : ℕ} {α : Type*} [Fintype α]
         (hasSum_loopExitDensity hp_pos hp_top hinv1 hp_exit hx_inv) y
     · simp [hθ]
   simp_rw [hpoint]
-  rw [tsum_iSup_of_monotone]
+  rw [ENNReal.tsum_iSup_of_monotone]
   · change (⨆ K : ℕ, exitMass cond μ_body f K x θ) = _
     simp_rw [exitMass_eq_ite_exitWeightSeq hinv hlaw _ hIx hcx θ]
     by_cases hθ : θ ∈ E <;> simp [hθ]

@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.Classes.Oracle
 public import Complexity.Computability.Complexity.Reduction
 public import Complexity.Computability.Probabilistic.Oracle.Composition
+import Complexity.Computability.Complexity.Classes.Oracle.QueryBit
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -23,7 +24,7 @@ Polynomial time relative to an oracle composes with polynomial-time pre- and pos
 `Cslib.Complexity.ComputableInPolyTimeWithOracle.map`), through the compositional rules of strict
 oracle PPT. One request decides the oracle language itself
 (`Cslib.Complexity.computableInPolyTimeWithOracle_mem`): the request is copied onto the query
-buffer, and only the first bit of the reply is read.
+buffer, and only the first bit of the reply is read (`Cslib.Complexity.queryBit`).
 
 Hence `P` relative to `A` contains `A` and lies inside `NP` relative to `A`, and both classes are
 closed under polynomial-time many-one reductions of the problem
@@ -118,18 +119,9 @@ theorem PolyTimeOracleProgram.of_query {req : α → List Bool} {input : α ↪ 
     {Admissible : Set (List Bool) → Prop} {Spec : (α → Bool) → Prop}
     (hreq : ComputableInPolyTime req input encBits)
     (hSpec : ∀ A : Set (List Bool), Admissible A → Spec (fun a => decide (req a ∈ A))) :
-    PolyTimeOracleProgram input encBool Admissible Spec := by
-  refine ⟨fun a => (fun reply => decide (reply = [true])) <$>
-    (List.take 1 <$> OracleComp.query ((), req a)), ?_, fun A hA => ?_⟩
-  · simp only [OracleComp.interpret_map, OracleComp.interpret_query]
-    exact (IsOraclePPTOn.query_take' () hreq (limit := fun _ => 1)
-      (ComputableInPolyTime.const 1)).map'
-      (ComputableInPolyTime.id'.decide_eq' (ComputableInPolyTime.const [true]))
-  · convert hSpec A hA using 1
-    funext a
-    change decide (List.take 1 (languageOracle A ((), req a)) = [true]) = decide (req a ∈ A)
-    rw [languageOracle_apply]
-    cases decide (req a ∈ A) <;> rfl
+    PolyTimeOracleProgram input encBool Admissible Spec :=
+  ⟨fun a => queryBit (req a), isOraclePPTOn_queryBit hreq, fun A hA => by
+    simpa only [interpret_queryBit] using hSpec A hA⟩
 
 open Classical in
 /-- **One request decides the oracle language.** The word is copied onto the query buffer and

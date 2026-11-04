@@ -8,9 +8,11 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.ZipTransducer
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryComparison
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryAddition
 
 /-! Zip transducers: semantics on concrete words, the machine bound on a concrete input, and the
-linear comparison certificate instantiated on concrete numbers. -/
+linear comparison, equality, addition and disjunction certificates instantiated on concrete
+numbers. -/
 
 @[expose] public section
 namespace ComplexityTests.ZipTransducer
@@ -54,19 +56,21 @@ example : orZip.toTM.ComputesInTimeAndSpace (frame [true, false] ++ [false, fals
   simp only [List.length_append, length_frame, List.length_cons, List.length_nil] at h
   simpa [orZip] using h
 
+theorem bits_five : Nat.bits 5 = [true, false, true] := by
+  rw [show 5 = Nat.bit true 2 from rfl, Nat.bits_append_bit _ _ (by simp),
+    show 2 = Nat.bit false 1 from rfl, Nat.bits_append_bit _ _ (by simp), Nat.one_bits]
+
+theorem bits_six : Nat.bits 6 = [false, true, true] := by
+  rw [show 6 = Nat.bit false 3 from rfl, Nat.bits_append_bit _ _ (by simp),
+    show 3 = Nat.bit true 1 from rfl, Nat.bits_append_bit _ _ (by simp), Nat.one_bits]
+
 -- The linear comparison certificate on `(5, 6)`: `encPair encNat encNat (5, 6)` has length
 -- `2 * 3 + 1 + 3 = 10`, so some machine outputs `[true]` within `31` steps and `5` cells.
 example : ∃ (k : ℕ) (Q : Type) (_ : Finite Q) (tm : Turing.MultiTapeTM k Bool Q),
     tm.ComputesInTimeAndSpace (encPair encNat encNat (5, 6)) [true] 31 5 := by
   obtain ⟨k, Q, hQ, tm, h⟩ := computableInTimeAndSpace_natLt
-  have hb5 : Nat.bits 5 = [true, false, true] := by
-    rw [show 5 = Nat.bit true 2 from rfl, Nat.bits_append_bit _ _ (by simp),
-      show 2 = Nat.bit false 1 from rfl, Nat.bits_append_bit _ _ (by simp), Nat.one_bits]
-  have hb6 : Nat.bits 6 = [false, true, true] := by
-    rw [show 6 = Nat.bit false 3 from rfl, Nat.bits_append_bit _ _ (by simp),
-      show 3 = Nat.bit true 1 from rfl, Nat.bits_append_bit _ _ (by simp), Nat.one_bits]
   refine ⟨k, Q, hQ, tm, ?_⟩
-  simpa [encNat_apply, encBool_apply, hb5, hb6, length_frame] using h (5, 6)
+  simpa [encNat_apply, encBool_apply, bits_five, bits_six, length_frame] using h (5, 6)
 
 -- The comparison is correct on both sides, including equal operands.
 example : ∃ (k : ℕ) (Q : Type) (_ : Finite Q) (tm : Turing.MultiTapeTM k Bool Q),
@@ -75,5 +79,46 @@ example : ∃ (k : ℕ) (Q : Type) (_ : Finite Q) (tm : Turing.MultiTapeTM k Boo
       tm.Computes (encPair encNat encNat (0, 1)) [true] := by
   obtain ⟨k, Q, hQ, tm, h⟩ := computableInTimeAndSpace_natLt
   exact ⟨k, Q, hQ, tm, (h (6, 5)).1, (h (6, 6)).1, (h (0, 1)).1⟩
+
+-- Non-strict comparison and equality, within the same `31` steps and `5` cells on `(5, 6)`.
+example : ∃ (k : ℕ) (Q : Type) (_ : Finite Q) (tm : Turing.MultiTapeTM k Bool Q),
+    tm.ComputesInTimeAndSpace (encPair encNat encNat (5, 6)) [true] 31 5 ∧
+      tm.Computes (encPair encNat encNat (6, 6)) [true] ∧
+      tm.Computes (encPair encNat encNat (6, 5)) [false] := by
+  obtain ⟨k, Q, hQ, tm, h⟩ := computableInTimeAndSpace_natLe
+  refine ⟨k, Q, hQ, tm, ?_, (h (6, 6)).1, (h (6, 5)).1⟩
+  simpa [encNat_apply, encBool_apply, bits_five, bits_six, length_frame] using h (5, 6)
+
+example : ∃ (k : ℕ) (Q : Type) (_ : Finite Q) (tm : Turing.MultiTapeTM k Bool Q),
+    tm.ComputesInTimeAndSpace (encPair encNat encNat (5, 6)) [false] 31 5 ∧
+      tm.Computes (encPair encNat encNat (6, 6)) [true] ∧
+      tm.Computes (encPair encNat encNat (0, 0)) [true] := by
+  obtain ⟨k, Q, hQ, tm, h⟩ := computableInTimeAndSpace_natEq
+  refine ⟨k, Q, hQ, tm, ?_, (h (6, 6)).1, (h (0, 0)).1⟩
+  simpa [encNat_apply, encBool_apply, bits_five, bits_six, length_frame] using h (5, 6)
+
+-- Addition: `5 + 6 = 11 = 0b1011` within `31` steps and `5` cells; the final carry of `3 + 1`
+-- adds a digit.
+example : ∃ (k : ℕ) (Q : Type) (_ : Finite Q) (tm : Turing.MultiTapeTM k Bool Q),
+    tm.ComputesInTimeAndSpace (encPair encNat encNat (5, 6)) [true, true, false, true] 31 5 ∧
+      tm.Computes (encPair encNat encNat (3, 1)) [false, false, true] := by
+  obtain ⟨k, Q, hQ, tm, h⟩ := computableInTimeAndSpace_natAdd
+  have h11 : Nat.bits 11 = [true, true, false, true] := by
+    rw [show 11 = Nat.bit true 5 from rfl, Nat.bits_append_bit _ _ (by simp), bits_five]
+  have h4 : Nat.bits 4 = [false, false, true] := by
+    rw [show 4 = Nat.bit false 2 from rfl, Nat.bits_append_bit _ _ (by simp),
+      show 2 = Nat.bit false 1 from rfl, Nat.bits_append_bit _ _ (by simp), Nat.one_bits]
+  refine ⟨k, Q, hQ, tm, ?_, by simpa [encNat_apply, h4] using (h (3, 1)).1⟩
+  simpa [encNat_apply, bits_five, bits_six, h11, length_frame] using h (5, 6)
+
+-- Disjunction: `5 ||| 6 = 7 = 0b111` within `31` steps and `5` cells.
+example : ∃ (k : ℕ) (Q : Type) (_ : Finite Q) (tm : Turing.MultiTapeTM k Bool Q),
+    tm.ComputesInTimeAndSpace (encPair encNat encNat (5, 6)) [true, true, true] 31 5 := by
+  obtain ⟨k, Q, hQ, tm, h⟩ := computableInTimeAndSpace_natOr
+  have h7 : Nat.bits 7 = [true, true, true] := by
+    rw [show 7 = Nat.bit true 3 from rfl, Nat.bits_append_bit _ _ (by simp),
+      show 3 = Nat.bit true 1 from rfl, Nat.bits_append_bit _ _ (by simp), Nat.one_bits]
+  refine ⟨k, Q, hQ, tm, ?_⟩
+  simpa [encNat_apply, bits_five, bits_six, h7, length_frame] using h (5, 6)
 
 end ComplexityTests.ZipTransducer

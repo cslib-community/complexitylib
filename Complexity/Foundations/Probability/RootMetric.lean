@@ -76,7 +76,7 @@ variable (s : ℕ) (N u : ℝ) (X Y : Ω → V → Prop) [∀ σ v, Decidable (X
 
 /-- The `s`-th power `d_{u,a}(H, H')^s` of the root distance of two random tables
 [OpenAI2026LogSpace, (5.19)]. -/
-noncomputable def rootDistPow (H H' : Ω → V → V → ℝ) : ℝ :=
+@[expose] noncomputable def rootDistPow (H H' : Ω → V → V → ℝ) : ℝ :=
   rowNormPow s N u X Y fun σ x y => H σ x y ^ (s⁻¹ : ℝ) - H' σ x y ^ (s⁻¹ : ℝ)
 
 /-- The `s`-th power `‖v‖^s_{u;s}` of the integrated norm of a random vertex array

@@ -1024,15 +1024,8 @@ variable {α : Type} {input : α ↪ List Bool}
   simpa only [decide_eq_true_eq] using er_cond hc hyes hno
 @[local fun_prop] private theorem er_bool_not {x : α → Bool} (hx : CPT x input encBool) :
     CPT (fun a => !(x a)) input encBool := bool_not.comp hx
-@[local fun_prop] private theorem er_bool_and {l r : α → Bool}
-    (hl : CPT l input encBool) (hr : CPT r input encBool) :
-    CPT (fun a => l a && r a) input encBool := bool_and.comp (hl.prod hr)
-@[local fun_prop] private theorem er_decide_and {l r : α → Prop}
-    [∀ a, Decidable (l a)] [∀ a, Decidable (r a)]
-    (hl : CPT (fun a => decide (l a)) input encBool)
-    (hr : CPT (fun a => decide (r a)) input encBool) :
-    CPT (fun a => decide (l a ∧ r a)) input encBool := by
-  simpa only [Bool.decide_and, Function.comp_def] using er_bool_and hl hr
+attribute [local fun_prop] ComputableInPolyTime.bool_and' ComputableInPolyTime.unary_range'
+  ComputableInPolyTime.binary_pow'
 @[local fun_prop] private theorem er_decide_ne {β : Type} {encB : β ↪ List Bool}
     [DecidableEq β] {l r : α → β} (hl : CPT l input encB) (hr : CPT r input encB) :
     CPT (fun a => decide (l a ≠ r a)) input encBool := by
@@ -1060,25 +1053,10 @@ variable {α : Type} {input : α ↪ List Bool}
     CPT (fun a => List.replicate (count a) (val a)) input (encList encB) := by
   simpa only [Function.comp_def, List.map_const', List.length_range] using
     mapWithInput (f := fun a _ => val a) (range.comp hc) (hv.comp (fst input encUnary))
-@[local fun_prop] private theorem er_range {n : α → ℕ} (hn : CPT n input encUnary) :
-    CPT (fun a => List.range (n a)) input (encList encUnary) := range.comp hn
-@[local fun_prop] private theorem er_unary_add {l r : α → ℕ} (hl : CPT l input encUnary)
-    (hr : CPT r input encUnary) : CPT (fun a => l a + r a) input encUnary :=
-  (show CPT (fun p : ℕ × ℕ => p.1 + p.2) (encPair encUnary encUnary) encUnary by fun_prop).comp
-    (hl.prod hr)
-@[local fun_prop] private theorem er_unary_sub {l r : α → ℕ} (hl : CPT l input encUnary)
-    (hr : CPT r input encUnary) : CPT (fun a => l a - r a) input encUnary :=
-  unary_sub.comp (hl.prod hr)
-@[local fun_prop] private theorem er_unary_mul {l r : α → ℕ} (hl : CPT l input encUnary)
-    (hr : CPT r input encUnary) : CPT (fun a => l a * r a) input encUnary :=
-  (show CPT (fun p : ℕ × ℕ => p.1 * p.2) (encPair encUnary encUnary) encUnary by fun_prop).comp
-    (hl.prod hr)
 @[local fun_prop] private theorem er_unary_max {l r : α → ℕ} (hl : CPT l input encUnary)
     (hr : CPT r input encUnary) : CPT (fun a => max (l a) (r a)) input encUnary :=
   (show CPT (fun p : ℕ × ℕ => max p.1 p.2) (encPair encUnary encUnary) encUnary by fun_prop).comp
     (hl.prod hr)
-@[local fun_prop] private theorem er_binary_pow {b e : α → ℕ} (hb : CPT b input encNat)
-    (he : CPT e input encUnary) : CPT (fun a => b a ^ e a) input encNat := binary_pow' hb he
 @[local fun_prop] private theorem er_binary_div {l r : α → ℕ} (hl : CPT l input encNat)
     (hr : CPT r input encNat) : CPT (fun a => l a / r a) input encNat :=
   binary_div.comp (hl.prod hr)
@@ -1220,7 +1198,7 @@ theorem computableInPolyTime_commonDenom_int {Q R : α → ℕ}
   exact foldlWith (encP := encPair encUnary encUnary) (encA := encUnary)
     (encL := encList encUnary) (encB := encList encIntBin) (par := fun a => (m a, A₀ a))
     (list := fun a => List.range (j a)) (init := fun a => (1 : ℤ) :: List.replicate (m a) 0)
-    (step := stepFn) (hm.prod hA₀) (er_range hj)
+    (step := stepFn) (hm.prod hA₀) (unary_range' hj)
     (er_cons (.const 1) (er_replicate hm (.const 0))) hstep hB fun a i _ => by
       rw [List.take_range]
       change (encList encIntBin (fallingOrbitWeights (m a) (A₀ a) (min i (j a)))).length ≤ _

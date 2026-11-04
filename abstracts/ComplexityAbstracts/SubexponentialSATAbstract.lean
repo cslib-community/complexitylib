@@ -231,7 +231,7 @@ end ComplexityAbstracts.SubexponentialSATAbstract
 
 /--
 info: abstract audit passed for `ComplexityAbstracts.SubexponentialSATAbstract`:
-27 root declarations, 143 dependencies checked
+27 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.SubexponentialSATAbstract allowing [

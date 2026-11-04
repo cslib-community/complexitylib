@@ -14,6 +14,11 @@ proves that `echoCipher` fails both `INDCPA` (via `not_indcpa_of_ciphertext_leng
 Boneh–Shoup Example 5.1 / Exercise 5.10(a)) and `CiphertextIntegrity` (via an explicit zero-query
 oracle-PPT adversary), and exercises the composed runtime certificates (`IsPPT`, `IsOraclePPT`) and
 quantitative security bounds for Boneh–Shoup Theorem 9.1 (`AE ⇒ CCA`) on `echoCipher`.
+
+The one-time notions fail for `echoCipher` too: one encryption query of `(0ⁿ, 1ⁿ)` reveals the
+challenge bit, so it is neither `OneTimeINDCPA` nor `OneTimeINDCCA`, and a zero-query adversary
+breaks `OneTimeCiphertextIntegrity`. The one-time CPA game refuses the second query of the
+two-query attack `detCPAAdversary`, which therefore has no advantage there.
 -/
 
 namespace ComplexityTests.Crypto.AuthenticatedEncryption
@@ -205,6 +210,245 @@ example (n : ℕ) :
     norm_num
   simpa [hd] using
     echoCipher.advantage_ccaGame_le_two_mul id (fun _ => 0) zeroCCAAdversary n
+      (isQueryBounded_zeroCCAAdversary n) hct
+
+/-! ### One-Time Oracles, Games, and 1AE ⇒ 1CCA Bounds on `echoCipher` -/
+
+-- First valid query to `oneTimeCPAEncryptionOracle` transitions `alreadyQueried` to `true`, and a
+-- second valid query returns `[]`.
+example :
+    echoCipher.oneTimeCPAEncryptionOracle 2 [] false
+      ((), encPair encBits encBits ([true, false], [false, true])) false =
+      pure ([true, false], true) ∧
+    echoCipher.oneTimeCPAEncryptionOracle 2 [] false
+      ((), encPair encBits encBits ([true, false], [false, true])) true =
+      pure ([], true) := by
+  exact ⟨rfl, rfl⟩
+
+-- First valid query to `oneTimeCIEncryptionOracle` records `[ct]`, and a second valid query returns
+-- `[]` without modifying the queried list.
+example :
+    echoCipher.oneTimeCIEncryptionOracle 2 [] ((), [true, false]) [] =
+      pure ([true, false], [[true, false]]) ∧
+    echoCipher.oneTimeCIEncryptionOracle 2 [] ((), [false, true]) [[true, false]] =
+      pure ([], [[true, false]]) := by
+  exact ⟨rfl, rfl⟩
+
+-- In `oneTimeCCAOracle`, the first encryption query succeeds, a second encryption query is
+-- rejected, and decryption of the challenge ciphertext is rejected while fresh ciphertexts decrypt.
+example :
+    echoCipher.oneTimeCCAOracle 2 [] false
+      (false, encPair encBits encBits ([true, false], [false, true])) [] =
+      pure ([true, false], [[true, false]]) ∧
+    echoCipher.oneTimeCCAOracle 2 [] false
+      (false, encPair encBits encBits ([false, true], [true, false])) [[true, false]] =
+      pure ([], [[true, false]]) ∧
+    echoCipher.oneTimeCCAOracle 2 [] false (true, [true, false]) [[true, false]] =
+      pure ([], [[true, false]]) ∧
+    echoCipher.oneTimeCCAOracle 2 [] false (true, [false, true]) [[true, false]] =
+      pure (encOption encBits (some [false, true]), [[true, false]]) := by
+  exact ⟨rfl, rfl, rfl, rfl⟩
+
+/-- `echoCipher` also fails `OneTimeCiphertextIntegrity` and `OneTimeAuthenticatedEncryption`. -/
+theorem not_oneTimeCiphertextIntegrity_echoCipher :
+    ¬ echoCipher.OneTimeCiphertextIntegrity := by
+  intro hci
+  let adversary : CIAdversary := fun n _ =>
+    ProbOracleComp.sample (pure (List.replicate n false))
+  have hadvBody : IsPPTOn (encPair encUnary encBits) encBits
+      (fun p : ℕ × List Bool => (pure (List.replicate p.1 false) : ProbComp (List Bool))) := by
+    have hrep : ComputableInPolyTime
+        (fun p : ℕ × List Bool => List.replicate p.1 false)
+        (encPair encUnary encBits) encBits := by polytime
+    exact hrep.isPPTOn
+  have hadv : IsOraclePPT encBits adversary :=
+    hadvBody.isOraclePPTOn.isOraclePPT
+  have hneg := hci.negligible adversary hadv
+  have heval (n : ℕ) :
+      Game.succProbability (ProbComp.eval (echoCipher.ciOneTimeGame adversary n)) = 1 := by
+    simp [SymmetricCipher.ciOneTimeGame, echoCipher, adversary, Game.succProbability]
+  simp only [heval] at hneg
+  exact not_negligible_const one_ne_zero hneg
+
+theorem not_oneTimeAuthenticatedEncryption_echoCipher :
+    ¬ echoCipher.OneTimeAuthenticatedEncryption :=
+  fun hae => not_oneTimeCiphertextIntegrity_echoCipher hae.2
+
+theorem unframe_dropFrame_pair (a b : List Bool) :
+    unframe (encPair encBits encBits (a, b)) = a ∧
+      dropFrame (encPair encBits encBits (a, b)) = b := by
+  simp [encPair_apply, unframe_frame_append, dropFrame_frame_append]
+
+/-- Ask for one encryption of the pair `(0ⁿ, 1ⁿ)` and output the first bit of the answer. -/
+def firstBitCPAAdversary : OracleDistinguisher :=
+  fun n _ => do
+    let c ← List.take n <$> ProbOracleComp.query
+      ((), encPair encBits encBits (List.replicate n false, List.replicate n true))
+    return c.headD false
+
+theorem isOraclePPT_firstBitCPAAdversary : IsOraclePPT encBool firstBitCPAAdversary := by
+  have hq : ComputableInPolyTime
+      (fun p : ℕ × List Bool =>
+        encPair encBits encBits (List.replicate p.1 false, List.replicate p.1 true))
+      (encPair encUnary encBits) encBits := by
+    polytime
+  have hlim : ComputableInPolyTime
+      (fun p : ℕ × List Bool => p.1) (encPair encUnary encBits) encUnary := by
+    fun_prop
+  have hout : ComputableInPolyTime
+      (fun p : (ℕ × List Bool) × List Bool => p.2.headD false)
+      (encPair (encPair encUnary encBits) encBits) encBool := by
+    polytime
+  unfold firstBitCPAAdversary
+  exact ((IsOraclePPTOn.query_take' () hq hlim).bind_with hout.isOraclePPTOn).isOraclePPT
+
+/-- In the one-time game at a positive parameter, the single query is answered by the chosen
+plaintext itself, so the adversary outputs the challenge bit. -/
+theorem eval_cpaOneTimeGame_firstBitCPAAdversary (bit : Bool) (n : ℕ) :
+    ProbComp.eval (echoCipher.cpaOneTimeGame firstBitCPAAdversary bit (n + 1)) = PMF.pure bit := by
+  have hpair := unframe_dropFrame_pair (List.replicate (n + 1) false) (List.replicate (n + 1) true)
+  simp only [SymmetricCipher.cpaOneTimeGame, firstBitCPAAdversary, OracleComp.interpret_bind,
+    OracleComp.interpret_map, OracleComp.interpret_pure, ProbOracleComp.interpret_query,
+    StateT.run_bind, StateT.run_map, StateT.run_pure, ProbComp.eval_bind, ProbComp.eval_map,
+    ProbComp.eval_pure]
+  unfold SymmetricCipher.oneTimeCPAEncryptionOracle
+  dsimp only [StateT.run]
+  simp only [hpair.1, hpair.2]
+  cases bit <;> simp [echoCipher, List.replicate_succ]
+
+/-- **`echoCipher` is not one-time IND-CPA**: one query has advantage `1` at every positive
+parameter. -/
+theorem not_oneTimeINDCPA_echoCipher : ¬ echoCipher.OneTimeINDCPA := by
+  intro h
+  have hneg := h firstBitCPAAdversary isOraclePPT_firstBitCPAAdversary
+  have hcomp := hneg.comp_of_polynomial_bound (index := fun n => n + 1) (bound := fun m => m)
+    (Filter.tendsto_add_atTop_nat 1) (by fun_prop) (Filter.Eventually.of_forall fun n => by omega)
+  have hconst : Negligible (fun _ : ℕ => (1 : ℝ≥0)) := hcomp.congr fun n => by
+    simp [eval_cpaOneTimeGame_firstBitCPAAdversary, Game.advantage, Game.succProbability]
+  exact not_negligible_const one_ne_zero hconst
+
+/-- The one-time game refuses the second query of the two-query attack `detCPAAdversary`, whose
+answer is then `[]`: the adversary outputs `false` under both challenge bits, so the attack that
+breaks multi-query `INDCPA` has no advantage here. -/
+theorem eval_cpaOneTimeGame_detCPAAdversary (bit : Bool) (n : ℕ) :
+    ProbComp.eval (echoCipher.cpaOneTimeGame SymmetricCipher.detCPAAdversary bit (n + 1)) =
+      PMF.pure false := by
+  have hpair1 := unframe_dropFrame_pair (List.replicate (n + 1) false)
+    (List.replicate (n + 1) true)
+  have hpair2 := unframe_dropFrame_pair (List.replicate (n + 1) false)
+    (List.replicate (n + 1) false)
+  simp only [SymmetricCipher.cpaOneTimeGame, SymmetricCipher.detCPAAdversary,
+    OracleComp.interpret_bind, OracleComp.interpret_map, OracleComp.interpret_pure,
+    ProbOracleComp.interpret_query, StateT.run_bind, StateT.run_map, StateT.run_pure,
+    ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure]
+  unfold SymmetricCipher.oneTimeCPAEncryptionOracle
+  dsimp only [StateT.run]
+  simp only [hpair1.1, hpair1.2, hpair2.1, hpair2.2]
+  cases bit <;> simp [echoCipher, List.replicate_succ]
+
+/-- The one-query attack sent through the encryption channel `(false, ·)` of the one-time CCA
+oracle. -/
+def firstBitCCAAdversary : CCAAdversary :=
+  fun n _ => do
+    let c ← List.take n <$> ProbOracleComp.query
+      (false, encPair encBits encBits (List.replicate n false, List.replicate n true))
+    return c.headD false
+
+theorem isOraclePPT_firstBitCCAAdversary : IsOraclePPT encBool firstBitCCAAdversary := by
+  have hq : ComputableInPolyTime
+      (fun p : ℕ × List Bool =>
+        encPair encBits encBits (List.replicate p.1 false, List.replicate p.1 true))
+      (encPair encUnary encBits) encBits := by
+    polytime
+  have hlim : ComputableInPolyTime
+      (fun p : ℕ × List Bool => p.1) (encPair encUnary encBits) encUnary := by
+    fun_prop
+  have hout : ComputableInPolyTime
+      (fun p : (ℕ × List Bool) × List Bool => p.2.headD false)
+      (encPair (encPair encUnary encBits) encBits) encBool := by
+    polytime
+  unfold firstBitCCAAdversary
+  exact ((IsOraclePPTOn.query_take' false hq hlim).bind_with hout.isOraclePPTOn).isOraclePPT
+
+theorem eval_ccaOneTimeGame_firstBitCCAAdversary (bit : Bool) (n : ℕ) :
+    ProbComp.eval (echoCipher.ccaOneTimeGame firstBitCCAAdversary bit (n + 1)) = PMF.pure bit := by
+  have hpair := unframe_dropFrame_pair (List.replicate (n + 1) false) (List.replicate (n + 1) true)
+  simp only [SymmetricCipher.ccaOneTimeGame, firstBitCCAAdversary, OracleComp.interpret_bind,
+    OracleComp.interpret_map, OracleComp.interpret_pure, ProbOracleComp.interpret_query,
+    StateT.run_bind, StateT.run_map, StateT.run_pure, ProbComp.eval_bind, ProbComp.eval_map,
+    ProbComp.eval_pure]
+  unfold SymmetricCipher.oneTimeCCAOracle
+  dsimp only [StateT.run]
+  simp only [hpair.1, hpair.2]
+  cases bit <;> simp [echoCipher, List.replicate_succ]
+
+/-- **`echoCipher` is not one-time IND-CCA**: the same single encryption query has advantage `1`
+at every positive parameter. -/
+theorem not_oneTimeINDCCA_echoCipher : ¬ echoCipher.OneTimeINDCCA := by
+  intro h
+  have hneg := h firstBitCCAAdversary isOraclePPT_firstBitCCAAdversary
+  have hcomp := hneg.comp_of_polynomial_bound (index := fun n => n + 1) (bound := fun m => m)
+    (Filter.tendsto_add_atTop_nat 1) (by fun_prop) (Filter.Eventually.of_forall fun n => by omega)
+  have hconst : Negligible (fun _ : ℕ => (1 : ℝ≥0)) := hcomp.congr fun n => by
+    simp [eval_ccaOneTimeGame_firstBitCCAAdversary, Game.advantage, Game.succProbability]
+  exact not_negligible_const one_ne_zero hconst
+
+-- Composed closed-game `IsPPT` certificates for one-time games and encryption-query preservation
+-- certificates for the Theorem 9.1 reductions.
+example (bit : Bool) (n : ℕ) :
+    IsPPT encBool (fun n _ => echoCipher.cpaOneTimeGame
+      (SymmetricCipher.ccaToCPAAdversary id zeroCCAAdversary) bit n) ∧
+    IsPPT encBool (fun n _ => echoCipher.ciOneTimeGame
+      (SymmetricCipher.ccaToCIAdversary id (fun _ => 0) bit zeroCCAAdversary) n) ∧
+    IsPPT encBool (fun n _ => echoCipher.ccaOneTimeGame zeroCCAAdversary bit n) ∧
+    (SymmetricCipher.ccaToCPAAdversary id zeroCCAAdversary n []).IsQueryBounded 0 ∧
+    (SymmetricCipher.ccaToCIAdversary id (fun _ => 0) bit zeroCCAAdversary n []).IsQueryBounded 0 ∧
+    (SymmetricCipher.ccaToCIHiddenBitAdversary id (fun _ => 0) zeroCCAAdversary n []).IsQueryBounded
+      0 :=
+  ⟨echoCipher.isPPT_cpaOneTimeGame
+    (SymmetricCipher.isOraclePPT_ccaToCPAAdversary ComputableInPolyTime.id'
+      isOraclePPT_zeroCCAAdversary)
+    bit,
+   echoCipher.isPPT_ciOneTimeGame
+    (SymmetricCipher.isOraclePPT_ccaToCIAdversary ComputableInPolyTime.id'
+      (ComputableInPolyTime.const 0) bit isOraclePPT_zeroCCAAdversary),
+   echoCipher.isPPT_ccaOneTimeGame isOraclePPT_zeroCCAAdversary bit,
+   SymmetricCipher.isQueryBounded_ccaToCPAAdversary id zeroCCAAdversary n []
+    (isQueryBounded_zeroCCAAdversary n),
+   SymmetricCipher.isQueryBounded_ccaToCIAdversary id (fun _ => 0) bit zeroCCAAdversary n []
+    (isQueryBounded_zeroCCAAdversary n),
+   SymmetricCipher.isQueryBounded_ccaToCIHiddenBitAdversary id (fun _ => 0) zeroCCAAdversary n []
+    (isQueryBounded_zeroCCAAdversary n)⟩
+
+-- Quantitative 1AE ⇒ 1CCA Theorem 9.1 bounds instantiated on `echoCipher` and `zeroCCAAdversary`.
+example (n : ℕ) :
+    (Game.advantage (ProbComp.eval (echoCipher.ccaOneTimeGame zeroCCAAdversary false n))
+        (ProbComp.eval (echoCipher.ccaOneTimeGame zeroCCAAdversary true n)) : ℝ) ≤
+      4 *
+        (Game.succProbability
+          (ProbComp.eval
+            (echoCipher.ciOneTimeGame
+              (SymmetricCipher.ccaToCIHiddenBitAdversary id (fun _ => 0) zeroCCAAdversary) n)) :
+            ℝ) +
+      (Game.advantage
+        (ProbComp.eval
+          (echoCipher.cpaOneTimeGame
+            (SymmetricCipher.ccaToCPAAdversary id zeroCCAAdversary) false n))
+        (ProbComp.eval
+          (echoCipher.cpaOneTimeGame
+            (SymmetricCipher.ccaToCPAAdversary id zeroCCAAdversary) true n)) :
+          ℝ) := by
+  have hct (k : List Bool) (hk : k ∈ (ProbComp.eval (echoCipher.keyGen n)).support)
+      (msg : List Bool) (hmsg : msg.length = n)
+      (ct : List Bool) (hct : ct ∈ (ProbComp.eval (echoCipher.encrypt n k msg)).support) :
+      ct.length ≤ id n :=
+    (echoCipher_ctLen n k hk msg hmsg ct hct).le
+  have hd : 2 * (dyadicSize 0 : ℝ) = 4 := by
+    have h0 : dyadicSize 0 = 2 := by decide
+    rw [h0]
+    norm_num
+  simpa [hd] using
+    echoCipher.advantage_ccaOneTimeGame_le_two_mul id (fun _ => 0) zeroCCAAdversary n
       (isQueryBounded_zeroCCAAdversary n) hct
 
 end ComplexityTests.Crypto.AuthenticatedEncryption

@@ -30,7 +30,7 @@ open Cslib.Algorithms.MatrixMultiplication.Schonhage
 
 /-- The sum of the actual preparation phases, before matrix adaptation and encoding. -/
 @[expose] public def routingTimeBound (L m N Q : ℕ) : ℕ :=
-  ((16 * L + 49) + ((6 * L + 16) * 2 ^ L + 14)) + 50 +
+  ((16 * L + 49) + ((6 * L + 16) * 2 ^ L + 16)) + 50 +
     (7 * inputEnd m N Q + 10) + (14 * Q + 10) + Wanted.timeBound L m N Q +
       (7 * numBands L m N ^ 2 + 14 * Q + 37)
 

@@ -25,8 +25,17 @@ finite-control machines with strict polynomial bounds and independent fair coins
 conventions, `Randomized.StrictPPT`, `Randomized.Negligible` and `Randomized.Indistinguishable`,
 are the shared foundations displayed in the appendix.
 The definitions and theorem statements below specify the claim; Lean checks their proofs through
-`CryptographyBridge`. The audit allows only the listed foundational program, interpretation and
-machine modules across the implementation boundary, without importing a security definition.
+`CryptographyBridge`. Besides the shared foundations, the audit allows only the following nine
+foundational program, interpretation and machine modules across the implementation boundary,
+without importing a security definition:
+* under `Computability.Machines.Turing.MultiTape`: `Machine` (machines whose oracle channels
+  have a write-only query buffer and a read-only reply tape), `Machine.Program` (a clocked run as
+  a typed program), `Probabilistic` (one fresh fair coin per live instruction) and
+  `Probabilistic.Oracle` (fair-coin runs with external oracle calls);
+* under `Languages.Probabilistic`: `Basic` (terminating programs with typed calls, whose only
+  randomness is uniform choice from a finite range), `Oracle` (private coins beside external
+  calls), `Sum` (sums of oracle interfaces), `Semantics` (the generic run of a program against a
+  stateful randomized oracle) and `Oracle.Interaction` (its instance with private coins).
 
 ## References
 
@@ -186,7 +195,7 @@ abbrev OracleResponse : Sum ℕ (Unit × List Bool) → Type :=
   Cslib.probOracleSpec (fun _ : Unit × List Bool => List Bool)
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.CryptographyAbstract`: 15 root declarations, 254 dependencies checked
+info: abstract audit passed for `ComplexityTests.Abstracts.CryptographyAbstract`: 15 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.CryptographyAbstract allowing [
@@ -194,6 +203,7 @@ info: abstract audit passed for `ComplexityTests.Abstracts.CryptographyAbstract`
   Complexity.Languages.Probabilistic.Basic,
   Complexity.Languages.Probabilistic.Oracle,
   Complexity.Languages.Probabilistic.Sum,
+  Complexity.Languages.Probabilistic.Semantics,
   Complexity.Languages.Probabilistic.Oracle.Interaction,
   Complexity.Computability.Machines.Turing.MultiTape.Machine,
   Complexity.Computability.Machines.Turing.MultiTape.Machine.Program,

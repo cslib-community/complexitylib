@@ -25,8 +25,9 @@ connects its ends, and the empty graph on two vertices does not; `Cslib.Complexi
 places it in `L` (and hence `P`), `Cslib.Complexity.USTCON_logSpaceComplete_SL` and
 `Cslib.Complexity.USTCON_logSpaceComplete_L` establish its completeness for `SL` and `L` (under
 both log-space and polynomial-time reductions), and `Cslib.Complexity.SL_eq_L` identifies `SL` with
-`L`. The encoding of the edge is pinned bit by bit: the header `11 0 0 1 0`, then the matrix
-`0110`.
+`L`. Completeness for `L` under these reductions adds nothing to membership: the one-bit problem
+`{true}` is complete too, because a reduction may decide its input. The encoding of the edge is
+pinned bit by bit: the header `11 0 0 1 0`, then the matrix `0110`.
 -/
 
 namespace ComplexityTests.Reingold
@@ -111,6 +112,12 @@ example :
 
 example : Complexity.PolyTimeComplete Complexity.L Complexity.encUSTCON Complexity.USTCON :=
   Complexity.USTCON_logSpaceComplete_L.polyTimeComplete
+
+-- Completeness for `L` under logspace reductions is weak: the reduction composes the decider of
+-- the source problem with the identity, so the one-bit problem `{true}` is complete.
+example : Complexity.LogSpaceComplete Complexity.L Turing.MultiTapeTM.encBool ({true} : Set Bool) :=
+  ⟨⟨id, Turing.MultiTapeTM.ComputableInLogSpace.id, fun _ => Iff.rfl⟩,
+    fun _ _ _ ⟨f, hf, hA⟩ => ⟨f, hf, hA⟩⟩
 
 example {m : ℕ} {l : List Bool} (hne : m ≠ 2) :
     List.replicate m true ++ false :: l ≠ [true, true, false, true] :=

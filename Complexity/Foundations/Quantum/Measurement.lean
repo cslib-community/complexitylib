@@ -34,6 +34,7 @@ query index (`Complexity/Computability/QueryComplexity/Quantum/Search.lean`).
 ## Main results
 
 * `Cslib.Quantum.measureProb_univ`: the outcome probabilities sum to `‖ψ‖²`.
+* `Cslib.Quantum.measureProb_ket`: a basis state is measured with certainty.
 * `Cslib.Quantum.measure_toOuterMeasure_apply`: the measurement probabilities are `measureProb`.
 
 ## References
@@ -69,6 +70,11 @@ theorem measureProb_nonneg (ψ : EuclideanSpace ℂ ι) (S : Finset ι) : 0 ≤ 
 /-- The outcome probabilities of a state sum to its squared norm. -/
 theorem measureProb_univ [Fintype ι] (ψ : EuclideanSpace ℂ ι) : measureProb ψ univ = ‖ψ‖ ^ 2 :=
   (EuclideanSpace.norm_sq_eq ψ).symm
+
+/-- Measuring a basis state `|x⟩` gives outcome `x` with certainty. -/
+theorem measureProb_ket [DecidableEq ι] (x : ι) (S : Finset ι) :
+    measureProb (ket x) S = if x ∈ S then 1 else 0 := by
+  simp [measureProb, apply_ite]
 
 theorem measureProb_le_measureProb_univ [Fintype ι] (ψ : EuclideanSpace ℂ ι) (S : Finset ι) :
     measureProb ψ S ≤ measureProb ψ univ :=

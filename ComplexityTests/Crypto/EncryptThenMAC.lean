@@ -220,4 +220,80 @@ example (n : ℕ) :
     zeroCPAAdversary n 0 (isQueryBounded_zeroCPAAdversary n)
   simpa [echoPrfCipher] using h
 
+/-! ### One-Time Encrypt-then-MAC and Query-Count Preservation Certificates -/
+
+theorem isQueryBounded_zeroCIAdversary (n : ℕ) :
+    (zeroCIAdversary n []).IsQueryBounded 0 :=
+  ProbOracleComp.IsQueryBounded.sample (pure (List.replicate n false))
+
+-- Composed closed-game `IsPPT` and query-bound preservation certificates for multi-query and
+-- one-time Theorem 9.2 reductions on `echoPrfCipher` and `echoPrfMAC`.
+example (bit : Bool) (n : ℕ) :
+    IsPPT encBool
+      (fun n _ =>
+        echoPrfMAC.sufOneTimeGame
+          (etmToOneTimeMACForger echoPrfCipher echoPrfMAC (fun n => 2 * n) zeroCIAdversary) n) ∧
+    IsPPT encBool
+      (fun n _ =>
+        echoPrfCipher.cpaOneTimeGame
+          (etmToOneTimeCPAAdversary echoPrfMAC zeroCPAAdversary) bit n) ∧
+    (etmToMACForger echoPrfCipher echoPrfMAC (fun n => 2 * n) zeroCIAdversary n []).IsQueryBounded
+      0 ∧
+    (etmToOneTimeMACForger echoPrfCipher echoPrfMAC (fun n => 2 * n) zeroCIAdversary n
+      []).IsQueryBounded 0 ∧
+    (etmToCPAAdversary echoPrfMAC zeroCPAAdversary n []).IsQueryBounded 0 ∧
+    (etmToOneTimeCPAAdversary echoPrfMAC zeroCPAAdversary n []).IsQueryBounded 0 :=
+  ⟨echoPrfMAC.isPPT_sufOneTimeGame
+    (isOraclePPT_etmToOneTimeMACForger echoPrfCipher echoPrfMAC (by polytime)
+      isOraclePPT_zeroCIAdversary),
+   echoPrfCipher.isPPT_cpaOneTimeGame
+    (isOraclePPT_etmToOneTimeCPAAdversary echoPrfMAC isOraclePPT_zeroCPAAdversary) bit,
+   isQueryBounded_etmToMACForger echoPrfCipher echoPrfMAC (fun n => 2 * n) zeroCIAdversary n []
+    (isQueryBounded_zeroCIAdversary n),
+   isQueryBounded_etmToOneTimeMACForger echoPrfCipher echoPrfMAC (fun n => 2 * n) zeroCIAdversary n
+    [] (isQueryBounded_zeroCIAdversary n),
+   isQueryBounded_etmToCPAAdversary echoPrfMAC zeroCPAAdversary n []
+    (isQueryBounded_zeroCPAAdversary n),
+   isQueryBounded_etmToOneTimeCPAAdversary echoPrfMAC zeroCPAAdversary n []
+    (isQueryBounded_zeroCPAAdversary n)⟩
+
+-- Quantitative one-time Theorem 9.2 equalities instantiated on `echoPrfCipher`, `echoPrfMAC`, and
+-- `echoPrfEtM`.
+example (n : ℕ) :
+    Game.succProbability (ProbComp.eval (echoPrfEtM.ciOneTimeGame zeroCIAdversary n)) =
+      Game.succProbability
+        (ProbComp.eval
+          (echoPrfMAC.sufOneTimeGame
+            (etmToOneTimeMACForger echoPrfCipher echoPrfMAC (fun n => 2 * n) zeroCIAdversary)
+            n)) ∧
+    Game.advantage
+        (ProbComp.eval (echoPrfEtM.cpaOneTimeGame zeroCPAAdversary false n))
+        (ProbComp.eval (echoPrfEtM.cpaOneTimeGame zeroCPAAdversary true n)) =
+      Game.advantage
+        (ProbComp.eval
+          (echoPrfCipher.cpaOneTimeGame
+            (etmToOneTimeCPAAdversary echoPrfMAC zeroCPAAdversary) false n))
+        (ProbComp.eval
+          (echoPrfCipher.cpaOneTimeGame
+            (etmToOneTimeCPAAdversary echoPrfMAC zeroCPAAdversary) true n)) := by
+  have htag (km : List Bool) (hkm : km ∈ (ProbComp.eval (echoPrfMAC.keyGen n)).support)
+      (c : List Bool) (_hc : c.length = echoPrfMAC.msgLen n)
+      (tag : List Bool) (htag : tag ∈ (ProbComp.eval (echoPrfMAC.sign km c)).support) :
+      tag.length ≤ 2 * n := by
+    change km ∈ (ProbComp.eval (BitString.sampleList (2 * n))).support at hkm
+    rw [BitString.eval_sampleList, BitString.mem_support_uniformList_iff] at hkm
+    change tag ∈ (ProbComp.eval (pure (prfOracle echoFamily km.length km c))).support at htag
+    rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at htag
+    subst htag
+    unfold prfOracle
+    split_ifs with hlen
+    · exact (echoFamily_length km c hlen).le.trans hkm.le
+    · simp
+  exact ⟨succProbability_ciOneTimeGame_encryptThenMAC_eq echoPrfCipher echoPrfMAC
+    (prfCipher_ciphertext_length echoFamily echoFamily_polyTime echoFamily_length)
+    (fun n => 2 * n) zeroCIAdversary n htag,
+   advantage_cpaOneTimeGame_encryptThenMAC_eq echoPrfCipher echoPrfMAC
+    (prfCipher_ciphertext_length echoFamily echoFamily_polyTime echoFamily_length)
+    zeroCPAAdversary n⟩
+
 end ComplexityTests.Crypto.EncryptThenMAC

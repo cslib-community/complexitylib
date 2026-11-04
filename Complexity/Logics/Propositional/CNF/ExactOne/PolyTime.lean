@@ -167,7 +167,9 @@ theorem computableInPolyTime_clause (enc : V ↪ List Bool) :
         (if p.2.length < 3 then forcePadding p.1 2 else []) :=
     funext fun p => clause_eq_selected p.1 p.2
   rw [hs]
-  fun_prop
+  refine ComputableInPolyTime.listAppend'
+    (ComputableInPolyTime.listAppend'
+      (ComputableInPolyTime.listAppend' ?_ ?_) ?_) ?_ <;> fun_prop
 
 /-- The ordinary clause replacements are polynomial-time under the original label encoding. -/
 @[fun_prop]

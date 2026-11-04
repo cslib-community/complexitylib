@@ -44,6 +44,12 @@ satisfying assignments can be found in polynomial time (`Cslib.Complexity.SAT.ex
 
 ## Main results
 
+* `Cslib.Complexity.SAT.eval_units`, `Cslib.Complexity.SAT.vars_units`: unit clauses hold when
+  their literals do, and have the variables of their literals.
+* `Cslib.Complexity.SAT.map_fst_foldl_selfReduceStep`: the steps fix the variables in order.
+* `Cslib.Complexity.SAT.length_encList_le_of_mem_vars`,
+  `Cslib.Complexity.SAT.length_encCNF_units_le`: the literals and the unit clauses fixing
+  variables of `φ` are short.
 * `Cslib.Complexity.SAT.verifier_search`: with answers correct up to `queryBound`, the
   self-reduction finds a satisfying assignment of every satisfiable formula.
 * `Cslib.Complexity.SAT.computableInPolyTime_search`: the self-reduction is polynomial-time
@@ -90,7 +96,9 @@ theorem queryBound_mono : Monotone queryBound := fun _ _ h => by
 
 /-! ### Correctness -/
 
-private theorem map_fst_foldl_selfReduceStep (D : CNF ℕ → Bool) (φ : CNF ℕ) (l : List ℕ)
+/-- Each step of the self-reduction fixes the next variable: folding the steps over `l` appends
+`l` to the variables fixed so far. -/
+theorem map_fst_foldl_selfReduceStep (D : CNF ℕ → Bool) (φ : CNF ℕ) (l : List ℕ)
     (answers : List (Literal ℕ)) :
     (l.foldl (selfReduceStep D φ) answers).map Prod.fst = answers.map Prod.fst ++ l := by
   induction l generalizing answers with
@@ -105,10 +113,22 @@ private theorem map_fst_selfReduce (D : CNF ℕ → Bool) (φ : CNF ℕ) :
 theorem length_search (D : CNF ℕ → Bool) (φ : CNF ℕ) : (search D φ).length = φ.vars.length := by
   rw [search, List.length_map, ← map_fst_selfReduce D φ, List.length_map]
 
+/-- Unit clauses hold exactly when their literals do. -/
+theorem eval_units (σ : ℕ → Bool) (answers : List (Literal ℕ)) :
+    (units answers).eval σ = true ↔ ∀ l ∈ answers, σ l.1 = l.2 := by
+  simp only [units, CNF.eval_eq_true_iff, List.forall_mem_map, Clause.eval_cons, Clause.eval_nil,
+    Bool.or_false, Literal.eval_eq_true_iff]
+
+/-- The variables of unit clauses are those of their literals. -/
+theorem vars_units (answers : List (Literal ℕ)) : (units answers).vars = answers.map Prod.fst := by
+  induction answers with
+  | nil => rfl
+  | cons l answers ih => simpa [units, CNF.vars] using ih
+
 /-- A formula with unit clauses holds exactly when the formula holds and the literals do. -/
 private theorem eval_append_units (σ : ℕ → Bool) (φ : CNF ℕ) (answers : List (Literal ℕ)) :
     (φ ++ units answers).eval σ = true ↔ φ.eval σ = true ∧ ∀ l ∈ answers, σ l.1 = l.2 := by
-  simp [units, CNF.eval_eq_true_iff, Clause.eval_eq_true_iff, or_imp, forall_and]
+  rw [CNF.eval_append, Bool.and_eq_true, eval_units]
 
 theorem length_encCNF_append (φ ψ : CNF ℕ) :
     (encCNF (φ ++ ψ)).length = (encCNF φ).length + (encCNF ψ).length := by
@@ -122,6 +142,20 @@ theorem length_encNat_le_of_mem_vars {φ : CNF ℕ} {v : ℕ} (hv : v ∈ φ.var
   calc (encNat l.1).length ≤ (encPair encNat encBool l).length := length_le_encPair_left _ _ _
     _ ≤ (encList (encPair encNat encBool) c).length := length_le_encList_of_mem _ hl
     _ ≤ (encCNF φ).length := length_le_encList_of_mem _ hc
+
+/-- Literals fixing variables of `φ` have short encodings: each takes at most `4 L + 5` bits,
+where `L` is the length of `φ`. -/
+theorem length_encList_le_of_mem_vars {φ : CNF ℕ} {answers : List (Literal ℕ)}
+    (hanswers : ∀ l ∈ answers, l.1 ∈ φ.vars) :
+    (encList (encPair encNat encBool) answers).length ≤
+      answers.length * (4 * (encCNF φ).length + 5) := by
+  have h := length_encList_le (encPair encNat encBool) answers (b := 2 * (encCNF φ).length + 2)
+    fun l hl => by
+      have := length_encNat_le_of_mem_vars (hanswers l hl)
+      rw [length_encPair, encBool_apply, List.length_singleton]
+      omega
+  calc _ ≤ answers.length * (2 * (2 * (encCNF φ).length + 2) + 1) := h
+    _ = answers.length * (4 * (encCNF φ).length + 5) := by ring
 
 /-- The unit clause of a literal on `v` takes `8 b + 11` bits, where `b` is the length of the
 binary digits of `v`. -/
@@ -139,22 +173,26 @@ private theorem length_encCNF_unit_le {φ : CNF ℕ} {l : Literal ℕ} (hl : l.1
   rw [length_encCNF_unit]
   omega
 
+/-- Unit clauses fixing variables of `φ` take at most `8 L + 11` bits each, where `L` is the
+length of `φ`. -/
+theorem length_encCNF_units_le {φ : CNF ℕ} {answers : List (Literal ℕ)}
+    (hanswers : ∀ l ∈ answers, l.1 ∈ φ.vars) :
+    (encCNF (units answers)).length ≤ answers.length * (8 * (encCNF φ).length + 11) := by
+  induction answers with
+  | nil => simp [units, encCNF]
+  | cons l answers ih =>
+    have h₁ := length_encCNF_unit_le (hanswers l (List.mem_cons_self ..))
+    have h₂ := ih fun l' hl' => hanswers l' (List.mem_cons_of_mem _ hl')
+    rw [show units (l :: answers) = [[l]] ++ units answers from rfl, length_encCNF_append,
+      List.length_cons, Nat.succ_mul]
+    omega
+
 /-- The formulas that the self-reduction asks about are no longer than `queryBound`. -/
 private theorem length_query_le {φ : CNF ℕ} {answers : List (Literal ℕ)}
     (hanswers : ∀ l ∈ answers, l.1 ∈ φ.vars) (hlen : answers.length ≤ φ.vars.length) {v : ℕ}
     (hv : v ∈ φ.vars) :
     (encCNF (φ ++ units answers ++ [[(v, true)]])).length ≤ queryBound (encCNF φ).length := by
-  have hunits : (encCNF (units answers)).length ≤
-      answers.length * (8 * (encCNF φ).length + 11) := by
-    induction answers with
-    | nil => simp [units, encCNF]
-    | cons l answers ih =>
-      have h₁ := length_encCNF_unit_le (hanswers l (List.mem_cons_self ..))
-      have h₂ := ih (fun l' hl' => hanswers l' (List.mem_cons_of_mem _ hl'))
-        (Nat.le_of_succ_le hlen)
-      rw [show units (l :: answers) = [[l]] ++ units answers from rfl, length_encCNF_append,
-        List.length_cons, Nat.succ_mul]
-      omega
+  have hunits := length_encCNF_units_le hanswers
   have hvars : φ.vars.length ≤ (encCNF φ).length := length_vars_le φ
   have hv' := length_encCNF_unit_le (l := (v, true)) hv
   have hmul : answers.length * (8 * (encCNF φ).length + 11) ≤

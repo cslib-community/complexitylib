@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.PCP.Approximation.MaxCSP
 public import Complexity.Computability.Complexity.Problems.ThreeSAT
 public import Complexity.Logics.Propositional.CNF.UnsatVal
+import Complexity.Computability.PCP.Encoded.Count
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
@@ -148,25 +149,6 @@ theorem satisfiable_toCNF {g : Graph (α → α → Bool)} (h : (g.toGraph id).S
   rw [h₁, h₂, hp'] at hsat
   exact Bool.false_ne_true hsat
 
-private theorem card_filter_get_eq_countP {β : Type*} (p : β → Bool) (l : List β) :
-    #{i : Fin l.length | p (l.get i) = true} = l.countP p := by
-  induction l with
-  | nil => simp
-  | cons a l ih =>
-    change #{i : Fin (l.length + 1) | p ((a :: l).get i) = true} = _
-    rw [List.countP_cons, ← ih, Fin.card_filter_univ_succ', add_comm]
-    simp only [List.get_eq_getElem, Fin.val_zero, List.getElem_cons_zero, Fin.val_succ,
-      List.getElem_cons_succ]
-    congr
-
-/-- The violated edges of a constraint graph, counted along its edge list. -/
-private theorem card_unsatEdges_toGraph (g : Graph (α → α → Bool)) (σ : ℕ → α) :
-    #((g.toGraph id).unsatEdges σ) = g.edges.countP fun d => !d.constraint (σ d.src) (σ d.dst) := by
-  rw [← card_filter_get_eq_countP]
-  congr 1
-  ext i
-  simp [ConstraintGraph.Satisfies, toGraph]
-
 /-- **Every violated edge leaves a falsified clause**: an assignment falsifies at least as many
 clauses of the formula as the labelling it writes violates edges, when `pairs` lists all pairs of
 labels. -/
@@ -174,6 +156,7 @@ private theorem card_unsatEdges_le_countUnsat (hpairs : ∀ p, p ∈ pairs) (g :
     (τ : ℕ → Bool) :
     #((g.toGraph id).unsatEdges (readLabel e τ)) ≤ (toCNF e pairs g).countUnsat τ := by
   rw [card_unsatEdges_toGraph, CNF.countUnsat, toCNF, List.countP_flatMap]
+  simp only [id_eq]
   refine List.countP_le_sum_map fun d _ hd => List.countP_pos_iff.2
     ⟨excludeClause e d.src d.dst (readLabel e τ d.src, readLabel e τ d.dst),
       List.mem_map.2 ⟨_, List.mem_filter.2 ⟨hpairs _, hd⟩, rfl⟩, ?_⟩

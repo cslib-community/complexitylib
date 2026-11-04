@@ -27,7 +27,8 @@ semiring `K`.
 
 A family is *VNP-complete* when it lies in `VNP K` and every family in `VNP K` is a p-projection of
 it. A VNP-complete family is in `VP` exactly when `VNP ⊆ VP`. Valiant's theorem that the permanent
-is VNP-complete over fields of characteristic other than two is not proved here.
+is VNP-complete over fields of characteristic other than two is not proved here. The membership
+direction, over every commutative ring, is in `Arithmetic/Permanent`.
 
 ## Main definitions
 

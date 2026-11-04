@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product.Program
 
 /-!
@@ -38,44 +39,43 @@ private theorem copyBank_injective : Function.Injective copyBank := by
 source/destination/length registers, and every register beyond the seven-register callee,
 are preserved. Source and destination separation is a numerical layout obligation. -/
 public theorem exec_copyCall {w : ℕ} (x : Data 160) (h1 : Fits w 1)
-    (hs : Fits w (x.regs source + x.regs length))
-    (hd : Fits w (x.regs destination + x.regs length))
-    (hsep : x.regs source + x.regs length ≤ x.regs destination ∨
-      x.regs destination + x.regs length ≤ x.regs source ∨
-      x.regs source = x.regs destination) :
-    ∃ y, ExecWithin w copyCall x y (7 * x.regs length + 7) ∧
-      y.mem = ArrayCopy.copyPrefix x.mem (x.regs source) (x.regs destination) (x.regs length) ∧
+    (hs : Fits w (x.regs Reg.source + x.regs Reg.length))
+    (hd : Fits w (x.regs Reg.destination + x.regs Reg.length))
+    (hsep : x.regs Reg.source + x.regs Reg.length ≤ x.regs Reg.destination ∨
+      x.regs Reg.destination + x.regs Reg.length ≤ x.regs Reg.source ∨
+      x.regs Reg.source = x.regs Reg.destination) :
+    ∃ y, ExecWithin w copyCall x y (7 * x.regs Reg.length + 7) ∧
+      y.mem =
+        ArrayCopy.copyPrefix x.mem (x.regs Reg.source) (x.regs Reg.destination)
+          (x.regs Reg.length) ∧
       (∀ i, 7 ≤ i.val → y.regs i = x.regs i) := by
-  let x1 := x.set (0 : Fin 160) (x.regs source)
-  let x2 := x1.set (1 : Fin 160) (x.regs destination)
-  let x3 := x2.set (2 : Fin 160) (x.regs length)
-  have h0 : ExecWithin (B := .standard) w (.op (.copy (0 : Fin 160) source)) x x1 1 :=
+  let x1 := x.set (0 : Fin 160) (x.regs Reg.source)
+  let x2 := x1.set (1 : Fin 160) (x.regs Reg.destination)
+  let x3 := x2.set (2 : Fin 160) (x.regs Reg.length)
+  have h0 : ExecWithin (B := .standard) w (.op (.copy (0 : Fin 160) Reg.source)) x x1 1 :=
     ExecWithin.copy
-  have h01 : ExecWithin (B := .standard) w (.op (.copy (1 : Fin 160) destination)) x1 x2 1 := by
-    ram_eval [x1, x2, source, destination]
-  have h02 : ExecWithin (B := .standard) w (.op (.copy (2 : Fin 160) length)) x2 x3 1 := by
-    ram_eval [x1, x2, x3, source, destination, length]
-  obtain ⟨z, hz, hm, _, _, _⟩ := ArrayCopy.exec_of_separated_or_eq (x3.comap copyBank) h1
-    (by simpa [x1, x2, x3, copyBank, ArrayCopy.src, ArrayCopy.len] using hs)
-    (by simpa [x1, x2, x3, copyBank, ArrayCopy.dst, ArrayCopy.len] using hd)
-    (by simpa [x1, x2, x3, copyBank, ArrayCopy.src, ArrayCopy.dst, ArrayCopy.len] using hsep)
-  let y := z.extend copyBank x3
-  have he := hz.rename copyBank_injective
+  have h01 :
+      ExecWithin (B := .standard) w (.op (.copy (1 : Fin 160) Reg.destination)) x1 x2 1 := by
+    ram_eval [x1, x2, Reg.source, Reg.destination]
+  have h02 : ExecWithin (B := .standard) w (.op (.copy (2 : Fin 160) Reg.length)) x2 x3 1 := by
+    ram_eval [x1, x2, x3, Reg.source, Reg.destination, Reg.length]
+  obtain ⟨y, he, ⟨hm, _, _, _⟩, hframe⟩ := ExecWithin.rename_post copyBank_injective
+    (ArrayCopy.exec_of_separated_or_eq (x3.comap copyBank) h1
+      (by simpa [x1, x2, x3, copyBank, ArrayCopy.src, ArrayCopy.len] using hs)
+      (by simpa [x1, x2, x3, copyBank, ArrayCopy.dst, ArrayCopy.len] using hd)
+      (by simpa [x1, x2, x3, copyBank, ArrayCopy.src, ArrayCopy.dst, ArrayCopy.len] using hsep))
   refine ⟨y, ?_, ?_, ?_⟩
-  · have hlen : (x3.comap copyBank).regs ArrayCopy.len = x.regs length := by
+  · have hlen : (x3.comap copyBank).regs ArrayCopy.len = x.regs Reg.length := by
       simp [x1, x2, x3, copyBank, ArrayCopy.len]
     rw [hlen] at he
     exact (h0.seq (h01.seq (h02.seq he))).mono (by omega)
-  · change z.mem = _
-    simpa [x1, x2, x3, copyBank, ArrayCopy.src, ArrayCopy.dst, ArrayCopy.len] using hm
+  · simpa [x1, x2, x3, copyBank, ArrayCopy.src, ArrayCopy.dst, ArrayCopy.len] using hm
   · intro i hi
-    have hnot : ¬∃ j, copyBank j = i := by
-      rintro ⟨j, hj⟩
+    rw [hframe i (by
+      intro j hj
       have hv := congrArg (fun r : Fin 160 => r.val) hj
       change j.val = i.val at hv
-      omega
-    change Function.extend copyBank z.regs x3.regs i = x.regs i
-    rw [Function.extend_apply' _ _ _ hnot]
+      omega)]
     simp only [x3, x2, x1, Data.set_regs,
       Function.update_of_ne (show i ≠ (2 : Fin 160) by omega),
       Function.update_of_ne (show i ≠ (1 : Fin 160) by omega),

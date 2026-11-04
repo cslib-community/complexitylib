@@ -17,16 +17,13 @@ import Mathlib.Tactic.Linarith
 Operations on lists encoded by `Turing.MultiTapeTM.encList`, with explicit degrees
 (`Turing.MultiTapeTM.ComputableTidilyInDegree`): adding an element at either end and concatenation
 in linear time; finding the first element that passes a test and keeping the elements that pass a
-test, one degree above the test; and dropping a number of elements in quadratic time. The tests may
-depend on a parameter.
+test, one degree above the test. The tests may depend on a parameter.
 
 ## Main results
 
 * `Turing.MultiTapeTM.ComputableTidilyInDegree.cons`, `.snoc`, `.listAppend`.
 * `Turing.MultiTapeTM.ComputableTidilyInDegree.findWith`: the first element passing a test.
 * `Turing.MultiTapeTM.ComputableTidilyInDegree.filterWith`: the elements passing a test.
-* `Turing.MultiTapeTM.ComputableTidilyInDegree.dropUnary`: dropping a number of elements, given
-  in unary.
 -/
 
 namespace Turing.MultiTapeTM
@@ -182,29 +179,6 @@ public theorem filterWith {t : π × α → Bool} {par : γ → π} {list : γ �
   funext x
   rw [foldl_filterStep, List.nil_append]
 
-/-- Dropping the first `n` elements, with `n` in unary. -/
-public theorem dropUnary (enc : α ↪ List Bool) :
-    ComputableTidilyInDegree (fun p : List α × ℕ => p.1.drop p.2)
-      (encPair (encList enc) encUnary) (encList enc) 2 1 := by
-  have hrep (l : List α) (n : ℕ) : (List.replicate n true).foldl (fun acc _ => acc.tail) l =
-      l.drop n := by
-    simp [List.foldl_const, List.tail_iterate]
-  have hfold := foldl' (encA := encBool) (encL := encBits) (encB := encList enc)
-    (list := fun p : List α × ℕ => List.replicate p.2 true) (step := fun acc _ => acc.tail)
-    ((of_eq (f := fun n => List.replicate n true) (encIn := encUnary) (encMid := encBits)
-      fun _ => rfl).comp (snd (encList enc) encUnary))
-    (fst (encList enc) encUnary)
-    ((tail (enc₁ := enc)).comp (fst (encList enc) encBool))
-    (B := fun p => (encPair (encList enc) encUnary p).length) .self (fun p i hi => by
-      rw [List.take_replicate, hrep]
-      have := SizedListEncoding.length_drop_le (encA := enc) (encL := encList enc) p.1
-        (min i p.2)
-      simp only [length_encPair]
-      omega)
-  convert hfold.mono (d' := 2) (e' := 1) using 1
-  funext p
-  rw [hrep]
-
 /-- One step of mapping with the parameter `p`. -/
 @[expose] public def mapStep {β : Type} (f : π × α → β) (p : π) (acc : List β) (a : α) :
     List β :=
@@ -326,20 +300,6 @@ public theorem isSome (enc : α ↪ List Bool) :
       fun o => by cases o <;> simp))).mono (d' := 1) (e' := 0) using 1
   funext o
   cases o <;> rfl
-
-/-- The length of a list, in unary. -/
-public theorem length (enc : α ↪ List Bool) :
-    ComputableTidilyInDegree (fun l : List α => l.length) (encList enc) encUnary 2 1 := by
-  have hfold := foldl' (encL := encList enc) (encB := encUnary) (list := id)
-    (init := fun _ => 0) (step := fun n _ => n + 1) (of_eq fun _ => rfl) (const 0)
-    (unary_succ.comp (fst encUnary enc)) (B := fun l => (encList enc l).length) .self
-    (fun l i hi => by
-      have := length_le_length_encList enc l
-      simp [List.foldl_const]
-      omega)
-  convert hfold.mono (d' := 2) (e' := 1) using 1
-  funext l
-  simp [List.foldl_const]
 
 /-- A list of `n` copies of an element. -/
 public theorem replicate (enc : α ↪ List Bool) :

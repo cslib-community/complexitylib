@@ -33,8 +33,8 @@ entries, which a sharper count would exploit. Only the gate count is certified; 
 obtained from a synthesis bound, not constructed by a certified uniform procedure.
 
 The permanent family `permFamily K` of generic permanents is also a p-family
-(`isPFamily_permFamily`). Nothing here places it in `VP` or proves Valiant's `VNP`-completeness of
-the permanent.
+(`isPFamily_permFamily`). The separate `Arithmetic/Permanent` module proves membership in `VNP`.
+Nothing here places it in `VP` or proves Valiant's `VNP`-completeness of the permanent.
 
 ## Main definitions
 

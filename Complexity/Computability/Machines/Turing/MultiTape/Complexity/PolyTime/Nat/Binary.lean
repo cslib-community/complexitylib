@@ -10,7 +10,6 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryDivision
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Arith
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -21,6 +20,7 @@ public import Complexity.Foundations.Data.Nat.BinarySize
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Subtraction
 import Complexity.Foundations.Data.BitString.List.Binary
 import Complexity.Tactic.PolyTime.Init
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryAddition
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Bitwise
 
@@ -30,12 +30,13 @@ import Mathlib.Data.Nat.Bitwise
 Polynomial-time certificates for arithmetic on the binary encoding `Turing.MultiTapeTM.encNat`
 (digits least significant first), the binary counterparts of the unary certificates in
 `Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat.lean`. Addition and
-multiplication are Christian Reitwiessner's degree-bounded
-machines (`Turing.MultiTapeTM.computableTidilyInDegree_add`,
-`Turing.MultiTapeTM.computableTidilyInDegree_mul`). A list is summed by a left fold whose
-accumulator grows by at most one digit more than the length of the element added. Powers of two are
-computed from a unary exponent by repeated doubling. Strict comparison is the linear-time zip
-transducer of `Turing.MultiTapeTM.computableInTimeAndSpace_natLt`. The verifiers and reductions
+multiplication reuse Christian Reitwiessner's plain schoolbook certificates
+`Turing.MultiTapeTM.ComputableInO.natAdd` and `Turing.MultiTapeTM.ComputableInO.natMul`. A list is
+summed by a left fold whose accumulator grows by at most one digit more than the length of the
+element added. Powers of two are computed from a unary exponent by repeated doubling. Comparisons
+are the linear-time zip transducers of `Turing.MultiTapeTM.computableInTimeAndSpace_natLt` and
+`Turing.MultiTapeTM.computableInTimeAndSpace_natLe`; bitwise OR is that of
+`Turing.MultiTapeTM.computableInTimeAndSpace_natOr`. The verifiers and reductions
 of the number problems (`Cslib.Complexity.SubsetSum` and its relatives) are built from these.
 
 Truncated subtraction is schoolbook subtraction: a left fold over the digit pairs of both operands
@@ -53,7 +54,6 @@ multiplication.
 
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsToNat`: binary decoding of arbitrary words.
 * `Nat.size_add_le`: a sum has at most one binary digit more than its summands together.
-* `Nat.lt_iff_exists_testBit`: strict order through the highest differing bit.
 * `Nat.size_add_le_max`, `Nat.size_mul_le`, `Nat.size_pow_le`, `Nat.size_sum_le`: binary lengths
   of sums, products, powers and list sums.
 * `Turing.MultiTapeTM.BinarySub.sub_eq`: truncated subtraction through the final borrow.
@@ -191,7 +191,8 @@ theorem binary_add : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1 + p.2
 @[fun_prop]
 theorem binary_mul : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1 * p.2)
     (encPair encNat encNat) encNat :=
-  computableTidilyInDegree_mul.computableTidilyInPolyTime
+  (ComputableInPolyTime.binary_mul' (ComputableInPolyTime.fst encNat encNat)
+    (ComputableInPolyTime.snd encNat encNat)).tidy
 
 /-- Add computed binary values, fixing their intermediate encodings for proof search. -/
 @[fun_prop]
@@ -245,12 +246,11 @@ theorem binary_lt : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => decide (p.
     (encPair encNat encNat) encBool :=
   ComputableInPolyTime.binary_lt.tidy
 
-/-- Comparison of binary naturals. -/
+/-- Comparison of binary naturals, from the linear zip-transducer certificate. -/
 @[fun_prop]
 theorem binary_le : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => decide (p.1 ≤ p.2))
-    (encPair encNat encNat) encBool := by
-  simpa only [Function.comp_def, ← decide_not, Nat.not_lt] using
-    bool_not.comp (binary_lt.comp ((snd encNat encNat).prod (fst encNat encNat)))
+    (encPair encNat encNat) encBool :=
+  ComputableInPolyTime.binary_le.tidy
 
 /-- Strictly compare computed binary values, fixing their intermediate encodings. -/
 @[fun_prop]
@@ -414,13 +414,14 @@ theorem binary_and : ComputableInPolyTime (fun p : ℕ × ℕ => p.1 &&& p.2)
     congrArg encNat <| Nat.eq_of_testBit_eq fun i => by
       rw [Nat.testBit_bitwise rfl, Nat.testBit_and]
 
-/-- Bitwise OR of binary naturals. -/
+/-- Bitwise OR of binary naturals, from the linear zip-transducer certificate
+`Turing.MultiTapeTM.computableInTimeAndSpace_natOr`. -/
 @[fun_prop, program_certificate]
 theorem binary_or : ComputableInPolyTime (fun p : ℕ × ℕ => p.1 ||| p.2)
     (encPair encNat encNat) encNat :=
-  .of_tidy <| (ComputableTidilyInPolyTime.binary_bitwise or rfl).of_enc_eq fun p =>
-    congrArg encNat <| Nat.eq_of_testBit_eq fun i => by
-      rw [Nat.testBit_bitwise rfl, Nat.testBit_or]
+  (ComputableInO.of_linear ComputableInDegree.natOr).computableInPolyTime
+    (PolyBounded.of_forall_le 1 1 (fun _ => by simp))
+    (PolyBounded.of_forall_le 1 1 (fun _ => by simp))
 
 /-- Bitwise XOR of binary naturals. -/
 @[fun_prop, program_certificate]

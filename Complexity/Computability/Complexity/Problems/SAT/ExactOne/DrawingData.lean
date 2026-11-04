@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalDrawing
 public import Complexity.Computability.Complexity.Problems.SAT.Incidence.Compact
 public import Complexity.Logics.Propositional.CNF.Occurrence
+import Complexity.Foundations.Data.List.Range
 import Mathlib.Data.List.GetD
 import Mathlib.Data.List.Nodup
 
@@ -95,12 +96,6 @@ structure Valid {φ : CNF V} (a : FormulaDrawing φ) : Prop where
         (o.2.2.1 = t.2.2.1 ∧ p = realPoint (a.variablePoint o.2.2.1)) ∨
           (o.1 = t.1 ∧ p = realPoint (a.clausePoints.getD o.1 (0, 0)))
 
-private theorem idxOf_range_eq {i n : ℕ} (hi : i < n) : (List.range n).idxOf i = i := by
-  have h := (List.nodup_range : (List.range n).Nodup).idxOf_getElem i
-    (by simpa only [List.length_range] using hi)
-  rw [List.getElem_range] at h
-  exact h
-
 /-- An occurring variable resolves to its supplied position in the actual graph. -/
 theorem drawingPosition_variable {φ : CNF V} (a : FormulaDrawing φ) {v : V}
     (hv : v ∈ φ.vars) :
@@ -108,7 +103,7 @@ theorem drawingPosition_variable {φ : CNF V} (a : FormulaDrawing φ) {v : V}
       a.variablePoint v := by
   have hi := List.idxOf_lt_length_of_mem (CNF.mem_distinctVars.mpr hv)
   change a.positions.getD ((List.range _).idxOf (φ.distinctVars.idxOf v)) (0, 0) = _
-  rw [idxOf_range_eq (by omega), positions]
+  rw [List.idxOf_range_of_lt (by omega), positions]
   rw [List.getD_append _ _ _ _ (by simpa only [List.length_map] using hi)]
   rw [List.getD_eq_getElem _ _ (by simpa only [List.length_map] using hi), List.getElem_map]
   congr 1
@@ -120,7 +115,7 @@ theorem drawingPosition_clause {φ : CNF V} (a : FormulaDrawing φ) (_ha : a.Val
     Graph.drawingPosition (SAT.incidenceGraph φ) a.drawing (φ.distinctVars.length + i) =
       a.clausePoints.getD i (0, 0) := by
   change a.positions.getD ((List.range _).idxOf (φ.distinctVars.length + i)) (0, 0) = _
-  rw [idxOf_range_eq (by omega), positions]
+  rw [List.idxOf_range_of_lt (by omega), positions]
   rw [List.getD_append_right _ _ _ _ (by simp only [List.length_map]; omega)]
   simp only [List.length_map, Nat.add_sub_cancel_left]
 

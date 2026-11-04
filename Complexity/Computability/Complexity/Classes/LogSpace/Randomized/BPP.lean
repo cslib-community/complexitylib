@@ -31,8 +31,9 @@ programs (`Cslib.Complexity.mem_PromiseRP_iff_exists_isPPTOn`,
 (`Cslib.Complexity.BPP_subset_IP`, `Cslib.Complexity.IP_subset_PSPACE`) this gives
 `BPL ⊆ PSPACE`.
 
-The stronger inclusion `BPL ⊆ P`, by exact evaluation of the configuration matrix, is not
-proved here.
+The stronger inclusion `BPL ⊆ P`, by exact evaluation of the configuration matrix, is
+`Cslib.Complexity.BPL_subset_P` in
+`Complexity.Computability.Complexity.Classes.LogSpace.Randomized.PolyTime`.
 
 ## Main results
 

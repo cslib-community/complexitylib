@@ -329,6 +329,15 @@ end Example
                                 r"^{\mathsf{f}}", r"\cdots"):
                     self.assertIn(command, rendered)
 
+    def test_complex_amplitudes_are_pdflatex_safe(self):
+        sample = "(Fin m → Bool) → ℂ, ‖ψ y‖ ^ 2, ±1"
+        for rendered in (abstract_to_tex.escape_tex_code_line(sample),
+                         abstract_to_tex.escape_tex_prose(sample)):
+            with self.subTest(rendered=rendered):
+                self.assertTrue(rendered.isascii())
+                for command in (r"\mathbb{C}", r"\|", r"\pm"):
+                    self.assertIn(command, rendered)
+
     def test_named_axiom_audits_are_stripped(self):
         sample = (
             "/-! # Title\n\nIntro.\n-/\n\nnamespace Foo\n\n"
@@ -348,8 +357,8 @@ end Example
             "/-! # Title\n\nIntro.\n-/\n\n"
             "namespace Foo\n\n"
             "/-- A definition. -/\ndef x : Nat := 0\n\n"
-            "/--\ninfo: abstract audit passed for `Foo`: 1 root\ndeclarations, 0 dependencies"
-            " checked\n-/\n#guard_msgs (whitespace := lax) in\n#check_abstract Foo\n\n"
+            "/--\ninfo: abstract audit passed for `Foo`: 1 root\ndeclarations\n-/\n"
+            "#guard_msgs (whitespace := lax) in\n#check_abstract Foo\n\n"
             "end Foo\n"
         )
         _, _, sections = abstract_to_tex.parse_abstract(sample)

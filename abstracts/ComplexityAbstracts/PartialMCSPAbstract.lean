@@ -327,7 +327,7 @@ theorem partialMCSP_mem_NP_encBinary : PartialMCSP ∈ NP encInstanceBinary :=
 
 /--
 info: abstract audit passed for `ComplexityAbstracts.PartialMCSPAbstract`:
-60 root declarations, 180 dependencies checked
+60 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.PartialMCSPAbstract allowing [

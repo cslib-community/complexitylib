@@ -86,7 +86,7 @@ theorem braverman {n d q k : ℕ} (hq : 1 ≤ q) (C : Cslib.Circuits.Circuit ACB
 
 /--
 info: abstract audit passed for `ComplexityAbstracts.BravermanAbstract`: 8 root
-declarations, 111 dependencies checked
+declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.BravermanAbstract allowing [

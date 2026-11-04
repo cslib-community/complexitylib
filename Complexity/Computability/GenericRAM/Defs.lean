@@ -29,8 +29,9 @@ Interpretations are mathematical functions: executable instances require executa
 interpretations. No bit-cost bound or simulation of real arithmetic by a Turing machine is claimed.
 
 This factors the finite-register, indirect-memory semantics of `Cslib.WordRAM`, adapted from
-[MIT–ULB CompGeom Group][Tromino2025]. An explicit adapter relates the original word semantics
-to this core without changing its public API.
+[MIT–ULB CompGeom Group][Tromino2025]. `Cslib.WordRAM.Basis.genericModel` represents the word
+semantics exactly in this core, and the word RAM's interpreter properties, such as
+`Cslib.WordRAM.Executes.unique`, are the results below transported along that representation.
 
 ## Main definitions
 
