@@ -78,8 +78,8 @@ theorem length_count_le (c D : ℕ) :
 /-- Decode the actual signed measurement values with unary dimension and binary radius/index.
 No fitting-index hypothesis is needed for this total polynomial-time decoder. -/
 theorem decoder_polyTime :
-    ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ =>
-      Cslib.Radix.measurementValues p.1.1 p.1.2 p.2)
+    ComputableInPolyTime (fun (((c, D), j) : (ℕ × ℕ) × ℕ) =>
+      Cslib.Radix.measurementValues c D j)
       (encPair (encPair encUnary encNat) encNat) (encList encIntBin) := by
   let ei := encPair (encPair encUnary encNat) encNat
   have hp := ComputableInPolyTime.fst (encPair encUnary encNat) encNat
@@ -96,12 +96,13 @@ theorem decoder_polyTime :
       Int.subNatNat (Cslib.Radix.digit (2 * p.1.2 + 1) p.2 i) p.1.2)
     (ComputableInPolyTime.range.comp hc) hshift
   convert hm using 1
-  funext p
+  funext ⟨⟨c, D⟩, j⟩
   simp only [Cslib.Radix.measurementValues, Int.subNatNat_eq_coe, Function.comp_def]
 
 /-- The fixed signed-tuple decoder has an actual polynomial native implementation. -/
 noncomputable def decoder :
-    NativeCertificate (fun p : (ℕ × ℕ) × ℕ => Cslib.Radix.measurementValues p.1.1 p.1.2 p.2)
+    NativeCertificate (fun (((c, D), j) : (ℕ × ℕ) × ℕ) =>
+      Cslib.Radix.measurementValues c D j)
       (encPair (encPair encUnary encNat) encNat) (encList encIntBin) :=
   NativeCertificate.ofPolyTime decoder_polyTime
 
@@ -127,9 +128,16 @@ theorem length_values_le (c D j : ℕ) :
 
 variable {β : Type}
 
+/-- Persistent streaming state `(index, (params, acc))` of `MeasurementFold`. -/
+abbrev StreamState (β : Type) : Type := ℕ × ((ℕ × ℕ) × β)
+
+/-- Retained `(params, acc)` payload of a `MeasurementFold` state. -/
+abbrev StreamState.payload (s : StreamState β) : (ℕ × ℕ) × β := s.2
+
 /-- Decode the current index while retaining the full runtime parameters outside the user body. -/
 def visit (body : ((ℕ × ℕ) × List ℤ) × β → β) (p : ℕ × ((ℕ × ℕ) × β)) : (ℕ × ℕ) × β :=
-  (p.2.1, body ((p.2.1, Cslib.Radix.measurementValues p.2.1.1 p.2.1.2 p.1), p.2.2))
+  let (j, (c, D), acc) := p
+  ((c, D), body (((c, D), Cslib.Radix.measurementValues c D j), acc))
 
 /-- A streaming prefix stores only the binary index, complete parameters and captured state. -/
 def runPrefix (body : ((ℕ × ℕ) × List ℤ) × β → β) (p : ℕ × ℕ) (j : ℕ) (initial : β) :
@@ -141,7 +149,8 @@ def run (body : ((ℕ × ℕ) × List ℤ) × β → β) (p : ℕ × ℕ) (initi
 
 /-- Neither dimension nor radius can be overwritten by the callback. -/
 @[simp] theorem prefix_parameters (body : ((ℕ × ℕ) × List ℤ) × β → β)
-    (p : ℕ × ℕ) (j : ℕ) (initial : β) : (runPrefix body p j initial).2.1 = p := by
+    (p : ℕ × ℕ) (j : ℕ) (initial : β) :
+    (StreamState.payload (runPrefix body p j initial)).1 = p := by
   induction j with
   | zero => rfl
   | succ j ih =>
@@ -152,17 +161,17 @@ def run (body : ((ℕ × ℕ) × List ℤ) × β → β) (p : ℕ × ℕ) (initi
 /-- All prefixes follow the increasing-index order, with full parameters and captured state. -/
 theorem prefix_accumulator (body : ((ℕ × ℕ) × List ℤ) × β → β)
     (p : ℕ × ℕ) (j : ℕ) (initial : β) :
-    (runPrefix body p j initial).2.2 = (List.range j).foldl
+    (StreamState.payload (runPrefix body p j initial)).2 = (List.range j).foldl
       (fun acc i => body ((p, Cslib.Radix.measurementValues p.1 p.2 i), acc)) initial := by
   induction j with
   | zero => rfl
   | succ j ih =>
     change (IndexFold.run (visit body) (j + 1) (p, initial)).2.2 = _
     rw [IndexFold.run_succ]
-    change body (((runPrefix body p j initial).2.1,
-      Cslib.Radix.measurementValues (runPrefix body p j initial).2.1.1
-        (runPrefix body p j initial).2.1.2 (runPrefix body p j initial).1),
-      (runPrefix body p j initial).2.2) = _
+    change body (((StreamState.payload (runPrefix body p j initial)).1,
+      Cslib.Radix.measurementValues (StreamState.payload (runPrefix body p j initial)).1.1
+        (StreamState.payload (runPrefix body p j initial)).1.2 (runPrefix body p j initial).1),
+      (StreamState.payload (runPrefix body p j initial)).2) = _
     rw [prefix_parameters,
       show (runPrefix body p j initial).1 = j from IndexFold.run_index _ _ _, ih]
     simp [List.range_succ, List.foldl_append]
@@ -170,7 +179,7 @@ theorem prefix_accumulator (body : ((ℕ × ℕ) × List ℤ) × β → β)
 /-- Exact ordered-fold specification. With `measurementValues_coverage`, every fitting signed
 word is visited once. The materialized index/word lists occur only in this specification. -/
 theorem run_accumulator (body : ((ℕ × ℕ) × List ℤ) × β → β) (p : ℕ × ℕ) (initial : β) :
-    (run body p initial).2.2 =
+    (StreamState.payload (run body p initial)).2 =
       ((List.range (count p)).map (Cslib.Radix.measurementValues p.1 p.2)).foldl
         (fun acc word => body ((p, word), acc)) initial := by
   rw [run, prefix_accumulator]
@@ -184,14 +193,18 @@ variable {encB : β ↪ List Bool}
 both retained parameters and the final binary counter, including at base one/dimension zero. -/
 theorem length_prefix_le (body : ((ℕ × ℕ) × List ℤ) × β → β)
     (c D j B : ℕ) (initial : β) (hj : j ≤ count (c, D))
-    (hB : (encB (runPrefix body (c, D) j initial).2.2).length ≤ B) :
+    (hB : (encB (StreamState.payload (runPrefix body (c, D) j initial)).2).length ≤ B) :
     (encPair encNat (encPair (encPair encUnary encNat) encB)
       (runPrefix body (c, D) j initial)).length ≤
       2 * (c * (D.size + 1) + 1) + 4 * c + 2 * D.size + 4 + B := by
   have hs : (encPair (encPair encUnary encNat) encB
       (runPrefix body (c, D) j initial).2).length ≤
       2 * (encPair encUnary encNat (c, D)).length + 1 + B := by
-    rw [length_encPair, prefix_parameters]
+    rw [length_encPair]
+    change 2 * (encPair encUnary encNat
+      (StreamState.payload (runPrefix body (c, D) j initial)).1).length + 1 +
+      (encB (StreamState.payload (runPrefix body (c, D) j initial)).2).length ≤ _
+    rw [prefix_parameters]
     omega
   have hi := IndexFold.length_run_le (visit body) ((c, D), initial) hj hs
   have hp : (encPair encUnary encNat (c, D)).length = 2 * c + 1 + D.size := by
@@ -215,15 +228,16 @@ theorem length_callback_input_le (c D j : ℕ) (acc : β) :
 
 /-- Prepare the complete runtime parameter/tuple/captured-state input to the callback. -/
 theorem prepare_polyTime :
-    ComputableInPolyTime (fun p : ℕ × ((ℕ × ℕ) × β) =>
-      ((p.2.1, Cslib.Radix.measurementValues p.2.1.1 p.2.1.2 p.1), p.2.2))
+    ComputableInPolyTime (fun ((j, (c, D), acc) : ℕ × ((ℕ × ℕ) × β)) =>
+      (((c, D), Cslib.Radix.measurementValues c D j), acc))
       (encPair encNat (encPair (encPair encUnary encNat) encB))
       (encPair (encPair (encPair encUnary encNat) (encList encIntBin)) encB) := by
   have hs := ComputableInPolyTime.snd encNat (encPair (encPair encUnary encNat) encB)
   have hp := (ComputableInPolyTime.fst (encPair encUnary encNat) encB).comp hs
   have hi := ComputableInPolyTime.fst encNat (encPair (encPair encUnary encNat) encB)
-  exact (hp.prod (decoder_polyTime.comp (hp.prod hi))).prod
-    ((ComputableInPolyTime.snd (encPair encUnary encNat) encB).comp hs)
+  exact ((hp.prod (decoder_polyTime.comp (hp.prod hi))).prod
+    ((ComputableInPolyTime.snd (encPair encUnary encNat) encB).comp hs)).of_enc_eq
+    fun ⟨_, ⟨_, _⟩, _⟩ => rfl
 
 /-- The actual captured callback uses the proved direct decoder, retaining both parameters. -/
 noncomputable def visitCertificate {body : ((ℕ × ℕ) × List ℤ) × β → β}

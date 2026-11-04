@@ -624,22 +624,68 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   routines. Its certificates expose actual native TM witnesses, parameterized time/space bounds,
   and polynomial-time corollaries, and feed the fixed-program step and whole-run simulators in
   `GenericRAM/Simulation/{Turing,Run}` (#298, #292).
-* **Stateful algorithms prototype.** `Foundations/Semantics/Stateful/*` reuses Quang Dao's merged
+* **Stateful algorithms prototype.** `DataStructure/StateTransition.lean` and
+  `DataStructure/StateTransition/*` reuse Quang Dao's merged
   `PFunctor.FreeM` for adaptive clients and substitution, adding persistent representation
   simulation, interface composition, semantic Hoare rules and separate native-resource
   certificates. Its queue and reset-and-replay constructions deliberately count backend calls;
   arbitrary pure continuations do not have machine-time certificates. `CostHoare` adds client
   operation-cost contracts and separate method-budget composition. The `stateful` Aesop rules
   support these contracts. `WordRAM/Controller` adds fixed-code client refinements with charged
-  preparation, control flow and final halt; the adaptive stack example constructs its empty
-  representation from the standard input. `WordRAM/Function` gives separate nonuniform and
+  preparation, control flow and final halt. `WordRAM/Function` gives separate nonuniform and
   uniform RAM function-time predicates, with named-certificate reuse by `polytime`. Arbitrary continuation
   synthesis, iterative clients and a Turing-machine simulation remain open.
-  `Foundations/Data/OrderedSet` and `Foundations/Data/OrderedSet/*` provide neutral
+  The bounded `WordRAM/Realization` foundation (#2213, under #2205) reuses the memory
+  oracle and the same native `Code`/`ExecWithin` semantics. Its explicit faithful register
+  encodings support all four memory queries, certified word glue, branches and uniform
+  reply-dependent bind, charging local work as well as memory operations. Bounded native loops
+  charge iterations even without a query. The initialized flat-program projection installs
+  live inputs in `2*k+5` instructions and includes the final halt; Unit observation additionally
+  writes a real zero word. Input layout, bounded words and safe domains remain explicit.
+  The operation-level memory backend uses four fixed constructor bodies and the generic
+  implementation interface; its delivered-argument preparation is explicit and uncharged, so
+  its body bounds are not whole-client clocks. The upper local-ADT adapter reuses the existing
+  initialization/locality bundle and semantic module; its argument map instantiates one global
+  emitter rather than selecting code after runtime layouts. Combined cost takes the program and
+  an explicit work grading, with a separately proved envelope before dropping local work.
+  Certified coordinate-wise glue stages multiword results with every copy charged; Option
+  values use a tag and unshifted payload, including maximal fitting words. The actual
+  `Stack.Memory` size/push/pop clients reuse those rules over faithfully encoded runtime layouts,
+  with visible layout/representation/spare-capacity conditions and local work 0/10/19.
+  `Stack.Native` runs those three certificates through `Realization.Backend` as a native stack
+  with one constant per-operation bound, and `Stack.Controller` compiles an adaptive stack client
+  to one flat program through `realize`; the hand-stepped stack dispatcher survives only inside
+  Chan–He traversal (`Traversal.WordStack`), which steps it with exact counts.
+  The full framed queue/faithful allocation client remains separate. No abstract headline is added.
+  `PriorityQueue/BinaryHeap/Native` realizes the original memory heap methods, with exact source
+  state/history transport and a single code family before runtime layouts, dimensions and widths.
+  Its raw interface retains the compact `3n+1` fit/local-zero domain and uses the shared linear
+  clear for dirty storage; the original two-query `3n+2` allocator stays unchanged for allocated
+  clients. The pure model and order lemmas retain Renfei Zhou's source credit outside `WordRAM`.
+  The native Dijkstra client preserves the original adjacency-list encoding, word envelope and
+  log-linear endpoint, including the actual input prefix and final halt, with one existential
+  uniform factor. The old hand-stepped binary-heap execution and its fixed clock/register
+  constants are retired; no reduction in source size, space or instruction count is asserted.
+  The bounded two-stack queue migration landed in #2303; the generic framed/allocation/whole-client
+  objectives remain open. The native Fibonacci Dijkstra consumer uses the same framed source
+  interface and generic history/key/domain lemmas, retains the original nonzero heap potential,
+  and reserves the original `9n+5` layout in the input's zero tail without a clearing pass. Its
+  flat program retains the original word hypothesis and sharper reachable-vertex clock, pays
+  actual prefix/body/halt and preserves the complete source memory/frontier. It supersedes only
+  the old Dijkstra executor and fixed-640 implementation helpers, not the MinPQ-used Fibonacci
+  execution core or the unresolved abstract-space contract.
+  Karger–Stein's specification-law bridge (#2289) reuses the existing contraction client and
+  native execution model. `LoopSegmentLaw` packages the existing finite loop segments with an
+  exact observation law and strict pathwise instruction/query bounds; the two-branch recurrence
+  lives at the PMF layer, and compiled cut-output transport is shared with basic Karger.
+  The exact-basis abstract bridge keeps its existing compatibility statements and source.
+  This refactor does not supply the later memory-oracle contraction/frame-stack realization
+  under #2205 or introduce a new curated headline.
+  `DataStructure/OrderedSet` and `DataStructure/OrderedSet/*` provide neutral
   optional-minimum contracts, a typed finite-set interface including deletion, and adaptive
   minimum extraction, with no tree or cost dependency. Bounded-key implementations may specialize
   insertion admissibility.
-  `Algorithms/Lean/SearchTree/*` reuses Mathlib's `BinaryTree`, height and node count for an
+  `DataStructure/SearchTree/*` reuses Mathlib's `BinaryTree`, height and node count for an
   unbalanced ordered-set realization. Finite-set behavior, strict invariants and height-bounded
   node visits are proved, including deletion through the shared interface and adaptive clients;
   allocation, comparison implementation and client computation are excluded from that cost model.
@@ -647,10 +693,15 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   a balanced tree or machine-time certificate.
   `WordRAM/Dynamic` separately connects
   fixed bounded-word operation programs and faithful memory transcripts to those contracts.
-  The direct shared-heap queue uses the existing FIFO operation signature and native operation
-  traces, with a hidden two-stack representation, a concrete-register potential, framed storage,
-  and separately charged initialization. Its `2 * capacity` reservation is explicit; external
-  client computation and argument delivery are not charged by the operation-history bound.
+  The direct shared-heap queue realizes physical-array memory programs through one fixed
+  finite Backend family and the existing dynamic certificate. Count words remain in registers;
+  one native dispatcher, charged metadata copies and a scaled rear potential give uniform
+  amortized instruction bounds, including halt. Initialization uses six register instructions
+  from arbitrary bounded dirty data, preserving every memory cell. The original `2 * capacity`
+  reservation and end-fit domain are retained. The shared register count and exchange factor are
+  fixed before widths, layouts, values and clients; the removed hand-code's literal instruction
+  constants are not asserted. External client computation and tag/payload delivery remain outside
+  the operation-history bound; no generic stateful memory-only Backend instance is claimed.
   Coordinate placement and overlap with Srinivas's #685 and the merged #401 (`Algorithms/Lean/Query`)
   before upstream submission; #685 is not copied here. This is a prototype of composition and
   refinement, not a replacement for their query models or a general cell-probe lower-bound semantics.

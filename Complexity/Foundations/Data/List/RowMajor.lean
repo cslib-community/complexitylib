@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Erik Demaine. All rights reserved.
+Copyright (c) 2026 Erik Demaine, Christian Reitwiessner. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Erik Demaine
+Authors: Erik Demaine, Christian Reitwiessner
 -/
 
 module
@@ -22,6 +22,8 @@ import Mathlib.Data.List.GetD
 * `List.flatMap_ofFn_prod`: nested row-major enumeration agrees with the existing product
   equivalence on finite indices.
 * `List.getD_flatMap_ofFn`: read a cell at its ordinary flat row-major index.
+* `List.getElem?_flatMap_mul_add`: read entry `j` of block `i` of a flattened list whose blocks
+  all have length `M`.
 -/
 
 @[expose] public section
@@ -60,5 +62,25 @@ theorem getD_flatMap_ofFn {α : Type*} {n d : ℕ} (f : Fin n → Fin d → α)
     rw [length_ofFn]
     exact (finProdFinEquiv (i, j)).isLt), List.getElem_ofFn]
   exact congrArg (fun p => f p.1 p.2) (finProdFinEquiv.symm_apply_apply (i, j))
+
+/-- Indexing a flattened list whose blocks all have length `M`: position `i * M + j` is entry `j`
+of block `i`. -/
+theorem getElem?_flatMap_mul_add {ι δ : Type*} (l : List ι) (f : ι → List δ) (M : ℕ)
+    (hf : ∀ x ∈ l, (f x).length = M) {i j : ℕ} (hi : i < l.length) (hj : j < M) :
+    (l.flatMap f)[i * M + j]? = (f l[i])[j]? := by
+  induction l generalizing i with
+  | nil => simp at hi
+  | cons x l ih =>
+    have hx := hf x (by simp)
+    rw [List.flatMap_cons]
+    cases i with
+    | zero =>
+      simp only [Nat.zero_mul, Nat.zero_add, List.getElem_cons_zero]
+      rw [List.getElem?_append_left (by omega)]
+    | succ i =>
+      rw [List.getElem?_append_right (by rw [hx, Nat.succ_mul]; omega), hx]
+      have : (i + 1) * M + j - M = i * M + j := by rw [Nat.succ_mul]; omega
+      rw [this, ih (fun y hy => hf y (by simp [hy])) (by simpa using hi)]
+      simp
 
 end List
