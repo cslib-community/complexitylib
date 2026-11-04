@@ -80,8 +80,10 @@ the pair `(k, H(k, m))`:
      `KeyedHashFamily` (`OneWayPermutation.exists_targetCollisionResistant_keyedHashFamily`) proves
      that **every one-way permutation implies the existence of a stateless many-time EUF-CMA secure
      digital signature scheme (`OneWayPermutation.exists_eufCMA`)**, with no separate hash-family
-     assumption. Constructing UOWHFs from arbitrary one-way functions rather than one-way
-     permutations ([Rompel1990]) remains separate future work.
+     assumption. Many-time extension to unrestricted `List Bool` messages (`WordSignatureScheme`)
+     and instantiation from general `OneWay` functions ([Rompel1990]) are proved in
+     `Complexity.Crypto.Computational.TCRSignature.ManyTime` and
+     `Complexity.Crypto.Computational.Rompel`.
 
 ## Main definitions
 
@@ -456,14 +458,14 @@ private theorem computableInPolyTime_finiteConfig_parts {k : ℕ} {Control : Typ
       (encPair encFiniteCfg (encPi (encPair encBits (encBiTape encBool)))) :=
   .of_eq fun _ => rfl
 
-private theorem computableInPolyTime_finiteConfig_tapes {k : ℕ} {Control : Type}
+theorem computableInPolyTime_finiteConfig_tapes {k : ℕ} {Control : Type}
     [Finite Control] :
     ComputableInPolyTime
       (FiniteConfig.tapes (k := k) (Symbol := Bool) (State := Control) (Oracle := Unit))
       encFiniteConfig encFiniteCfg :=
   computableInPolyTime_finiteConfig_parts.fst'
 
-private theorem computableInPolyTime_finiteConfig_channels {k : ℕ} {Control : Type}
+theorem computableInPolyTime_finiteConfig_channels {k : ℕ} {Control : Type}
     [Finite Control] :
     ComputableInPolyTime
       (FiniteConfig.channels (k := k) (Symbol := Bool) (State := Control) (Oracle := Unit))
@@ -482,7 +484,7 @@ private theorem computableInPolyTime_finiteConfig_mk {k : ℕ} {Control α : Typ
       input encFiniteConfig :=
   (htapes.prod hchannels).of_enc_eq fun _ => rfl
 
-private theorem computableInPolyTime_finiteConfig_answerSymbols {k : ℕ} {Control : Type}
+theorem computableInPolyTime_finiteConfig_answerSymbols {k : ℕ} {Control : Type}
     [Finite Control] :
     ComputableInPolyTime
       (FiniteConfig.answerSymbols (k := k) (Symbol := Bool) (State := Control) (Oracle := Unit))
@@ -496,7 +498,7 @@ private theorem computableInPolyTime_finiteConfig_answerSymbols {k : ℕ} {Contr
           computableInPolyTime_finiteConfig_channels).snd')
   exact (ComputableInPolyTime.of_finite id).comp hheads
 
-private theorem computableInPolyTime_finiteConfig_step {k : ℕ} {Control : Type}
+theorem computableInPolyTime_finiteConfig_step {k : ℕ} {Control : Type}
     [Finite Control] (action : Action k Bool Control)
     (symbol : Unit → Option Bool) (move : Unit → SignType) :
     ComputableInPolyTime
@@ -511,7 +513,7 @@ private theorem computableInPolyTime_finiteConfig_step {k : ℕ} {Control : Type
   exact (ComputableInPolyTime.bitsAppend hch.fst' (.const (symbol ch).toList)).prod
     (ComputableInPolyTime.biTape_step (none, move ch) hch.snd')
 
-private theorem computableInPolyTime_finiteConfig_receive {k : ℕ} {Control α : Type}
+theorem computableInPolyTime_finiteConfig_receive {k : ℕ} {Control α : Type}
     [Finite Control] {input : α ↪ List Bool}
     {cfg : α → FiniteConfig k Bool Control Unit} {answer : α → List Bool}
     (hcfg : ComputableInPolyTime cfg input encFiniteConfig)
@@ -533,7 +535,7 @@ private theorem computableInPolyTime_finiteConfig_receive {k : ℕ} {Control α 
     channel
   exact computableInPolyTime_finiteConfig_mk htapes hchannels
 
-private theorem computableInPolyTime_finiteConfig_init {k : ℕ} {Control α : Type}
+theorem computableInPolyTime_finiteConfig_init {k : ℕ} {Control α : Type}
     [Finite Control] {input : α ↪ List Bool} {word : α → List Bool}
     (hword : ComputableInPolyTime word input encBits) (state : Control) :
     ComputableInPolyTime
@@ -1171,7 +1173,7 @@ noncomputable def tcrAdversary {k : ℕ} {Control : Type}
       let r1 := simRun machine word reply coins
       return (outDecoder.decode r1.1).2.1
 
-private theorem computableInPolyTime_wordOf {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_wordOf {α : Type} {input : α ↪ List Bool}
     {n : α → ℕ} {pk : α → List Bool}
     (hn : ComputableInPolyTime n input encUnary)
     (hpk : ComputableInPolyTime pk input encBits) :
@@ -1182,7 +1184,7 @@ private theorem computableInPolyTime_wordOf {α : Type} {input : α ↪ List Boo
       (encPair encUnary encBits) encBits := .of_eq fun _ => rfl
   exact henc.comp (hn.prod (henc.comp (hn.prod hpk)))
 
-private theorem computableInPolyTime_fuelOf {α : Type} {input : α ↪ List Bool}
+theorem computableInPolyTime_fuelOf {α : Type} {input : α ↪ List Bool}
     (c d : ℕ) {n : α → ℕ} {pk : α → List Bool}
     (hn : ComputableInPolyTime n input encUnary)
     (hpk : ComputableInPolyTime pk input encBits) :
