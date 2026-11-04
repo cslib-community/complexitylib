@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of actual polynomial evaluator histories)
-import Complexity.Foundations.Probability.HierarchyInitialIntegrated
+import Complexity.Foundations.Probability.HierarchyInitialPaid
 
 /-! A positive identity/full-rate evaluator history with actual ratio-16 bins and polynomial
 preparation. The top bin carries the input, the fine bin vanishes. This exact stationary
@@ -967,5 +967,76 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
     (by intro x y; by_cases h : x = y <;> simp [base, Matrix.one_apply, h]) 0 0
     (by decide)
   simpa only [threeRoles, data, Nat.cast_ofNat, abs_zero, zero_mul, add_zero] using h
+
+
+-- The paid inequality consumes the genuine successful budget-2 history. Its RHS has
+-- canonical charges/Jensen deficits and a selected deterministic tail, with no supplied
+-- clipped-error moment or output budget. The positive early deficit is retained.
+open Cslib.RowCompression NormalizedMoments in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (hscale : HP.η ≤ max (1 : ℝ) 16 / 10000) :
+    ∃ C Cp Lh Lρ : ℝ, 0 ≤ C ∧ 0 ≤ Cp ∧ 0 ≤ Lh ∧ 0 ≤ Lρ ∧
+      let F := fun j (_ : Environment 5 3) => if 2 ≤ j then base else 0
+      let W : List (Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ) := [0, fun _ => base]
+      let m := Nat.log2 2 + 1
+      let X := retainedMask threeRoles.source (side 5 0) (data HP).padding [1]
+      let Ya := retainedMask threeRoles.terminal (side 5 0) (data HP).padding [2, 3]
+      let Δ := firstSignalIncrement F 0
+        (secondSignalIncrement (fun i σ x y => W[i - 1]?.getD 0 σ x y) (HP.η / 4))
+      let q := fun i => (data HP).initialMeanCharge 2 1 i 0 (request HP)
+      let e₀ := (2 : ℝ) ^ (-(data HP).requestPrecision 2
+          {(request HP) with usage := (request HP).terminal}) *
+        (64 / 63) / rate 0
+      let e₁ := |(HP.η / 4)| * (2 : ℝ) ^ (-(data HP).requestPrecision 2 (request HP))
+      let deficit := fun i => rowNormPow 4 5 (rate 0) X Ya
+        (fun _ => (data HP).initialPolynomialLoss 2 1 i (request HP))
+      let prep := fun i => (5 : ℝ) * (|(HP.η / 4)| * (Lh + Lρ) / rate 0) ^ 4 *
+        (8 * ((e₀ * rate 0 * (1 / 64 : ℝ) ^ dyadicSlack m i) ^ 4 + deficit i))
+      let a := fun i => (vertexNormPow 4 5 (rate 0) X (fun _ _ => q i)) ^ (4⁻¹ : ℝ) +
+        (prep i) ^ (4⁻¹ : ℝ)
+      let meanTail := fun σ x => ∑ j ∈ range m,
+        if meanFirstEvent threeRoles.terminal (data HP).padding [2, 3] 0 m j (HP.η / 4) base
+            (compatibleCapacity HP.K m) (fun _ => HP.K) Δ 0 σ x then
+          meanRowTail threeRoles.terminal (side 5 0) (data HP).padding [2, 3] m j
+            (actualClippedMean HP threeRoles.source threeRoles.terminal
+              (side 5 0) (side 5 0) (side 5 0)
+              (data HP).padding [1] [2, 3] 0 base (HP.η / 4) Δ 0 0) σ x +
+          meanRowTail threeRoles.terminal (side 5 0) (data HP).padding [2, 3] m j
+            (actualClippedMean HP threeRoles.source threeRoles.terminal
+              (side 5 0) (side 5 0) (side 5 0)
+              (data HP).padding [1] [2, 3] 0 base (HP.η / 4) Δ 0 1) σ x
+        else 0
+      let radius := (2 * max (1 : ℝ) 16) ^ (4⁻¹ : ℝ)
+      let w := fun i => 64 * (HP.K : ℝ) * radius ^ 4 /
+        ((compatibleCapacity HP.K m i : ℝ) * dyadicFloor (HP.η / 4) m i ^ 4)
+      let c := 64 * (HP.K : ℝ) * radius ^ 4 / (HP.η / 4) ^ 4
+      rootDistPow 4 5 (rate 0) X Ya (fun _ => base)
+        (denseChild (data HP).padding id (request HP) ((data HP).cutoff 0)
+          (polynomialPrepCutoff4 HP.θ) HP.ρ HP.K base) ≤
+        128 * (HP.K : ℝ) *
+          (Cp ^ 4 * ((∑ i ∈ range m, dyadicFloor (HP.η / 4) m i * a i) +
+            (HP.η / 4) * (e₀ + e₁) / 511) ^ 4 +
+          C ^ 4 * (a (Nat.log2 2) + (e₀ + e₁) / 64) ^ 4 +
+          C ^ 4 * (vertexNormPow 4 5 (rate 0) X meanTail ^ (4⁻¹ : ℝ) +
+            (e₀ + e₁) * (7 / 9)) ^ 4) +
+        64 * ((∑ i ∈ range m, w i *
+          (rowNormPow 4 5 (rate 0) X Ya (fun _ _ _ => q i) + prep i)) +
+          (c * e₀ ^ 4 / 63 + c * e₁ ^ 4 / 63)) := by
+  have hζ : 0 < HP.η / 4 := by linarith [HP.η_pos]
+  obtain ⟨C, hC, hfloor⟩ := BudgetData.exists_compressedBin_paid HP
+    hζ HP.η_pos le_rfl hscale (by linarith)
+  have hf1 : HP.η / 4 ≤ 1 := by norm_num at hscale; linarith
+  obtain ⟨Cp, hCp, hbound⟩ := hfloor (HP.η / 4) hζ (by linarith) hf1
+  obtain ⟨Lh, Lρ, hLh, hLρ, hh, hρ⟩ := preparation_stability_constants HP
+  refine ⟨C, Cp, Lh, Lρ, hC, hCp, hLh, hLρ, ?_⟩
+  have hr : Admissible (request HP) := ⟨by change (0 : Fin 3) ≠ 2; decide, rfl, rfl⟩
+  exact hbound (data HP) 2 1 (by decide)
+    (by ext i; simp only [data, mem_insert, mem_singleton, mem_range]; omega)
+    rfl rfl rfl (by norm_num [data])
+    (⟨1, 4, by decide, by decide⟩ : Horizon 5) (by decide)
+    (request HP) hr threeRoles 0 0 0 [1] [2, 3] rfl rfl rfl (by decide) (by decide)
+    (by intro x y; by_cases h : x = y <;> simp [data, base, h])
+    (by simp [data, base]) 0 _ (prefixes HP) _ (preparation_walks HP) _ (compressed_value HP)
+    Lh Lρ hLh hLρ hh hρ
 
 end PolynomialBudgetHistory

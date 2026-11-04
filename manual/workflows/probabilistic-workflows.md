@@ -956,16 +956,39 @@ The actual-history regression consumes the successful positive stationary compre
 with the four-max decoder bound under its small-scale condition, and checks the zero-zeta
 moment payment on the genuine early history. The latter keeps the positive early first-mean
 deficit. These clients do not demonstrate nonconstant evaluator mixing or global induction.
-The decoder bound still displays its preloss/final/tail and raw false-event moments; the
-separate payments above have not been packaged as one globally allocated output budget.
+For one finite paid output inequality, import
+[`HierarchyInitialPaid.lean`](../../Complexity/Foundations/Probability/HierarchyInitialPaid.lean)
+and use `BudgetData.exists_compressedBin_paid`. It consumes successful actual first-history,
+preparation-list and `compressedBin` executions on the canonical polynomial geometry.
+The constant $C$ is chosen before the positive floor, and $C_{pre}$ after it.
+There is no supplied final-error or free budget premise.
 
-**Remaining parent-error gap:** choosing global rates and reserves so the explicit finite
-payments meet the requested accuracy remains open. The initial preparation transport above
-still retains its unpaid deficit norm and width/rate costs. Although both centered noises
-and their combined raw false-event moments are now split and paid above, deterministic
-mean norms, the weighted mean preloss, final mean and selected heavy mean-tail norm remain.
-Substituting the separate payments into the actual decoder comparison and allocating them
-from an invariant covering ALL actual lower-budget calls remain open. Heavy-event rarity applies only to deterministic mean envelopes; it must not discount
+For each postincrement prefix $j+1$, write $q_j$ for `initialMeanCharge`, and $D_j$ for
+the fourth-power row norm of `initialPolynomialLoss` on the **full terminal rank**.
+The preparation payment is
+$J_j=P(|\zeta|(L_h+L_\rho)/\operatorname{rate}(k_a))^4
+\cdot 8((e_0\operatorname{rate}(k_a)64^{-\operatorname{dyadicSlack}(m,j)})^4+D_j)$.
+`BudgetData.initialFirstMean_moments` bounds the first maximum by the vertex moment of
+the constant $q_j$ and its raw row moment by the corresponding constant row moment.
+The shared `Cslib.RowCompression.vertex_row_max` transports the second maximum to its
+usage-row moment, which the existing preparation Jensen theorem bounds by $J_j$.
+Thus $a_j$ is now the sum of the fourth roots of the constant-charge vertex moment and
+$J_j$, rather than an unpaid actual mean-maximum norm.
+
+The single output RHS substitutes these $a_j$ in the stationary sum and final-prefix
+payment, substitutes both geometric noise payments, and replaces the raw false-charge
+moments by $64\sum_j w_j(\lVert q_j\rVert_{row}^4+J_j)$ plus the two noise charges.
+The outer factor $64$ from the four-term fourth-power split remains distinct from
+$w_j$'s decoder coefficient. The selected deterministic heavy-tail norm stays explicit;
+both of its noise terms are paid unconditionally. The budget-2 regression consumes this
+inequality on the actual positive stationary output, retaining the genuine early deficit.
+It is not a nonconstant evaluator-mixing or general induction example.
+
+**Remaining parent-error gap:** the finite constituent substitutions are assembled, but
+choosing global rates and reserves so their explicit payments meet requested accuracy
+remains open. The full-rank deficit, width/rate costs and selected deterministic heavy-tail
+norm still need global allocation or rarity payment. Transport from an invariant covering
+ALL actual lower-budget calls is unproved. Heavy-event rarity applies only to deterministic mean envelopes; it must not discount
 correlated noise. Bounded lower-child root-to-ordinary conversion and same-environment
 reset-right-source transport remain to be assembled for general recursive children.
 The general initial multi-bin and noninitial parent steps, nonconstant routing, and the
