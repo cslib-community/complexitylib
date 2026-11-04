@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of actual polynomial evaluator histories)
-import Complexity.Foundations.Probability.HierarchyInitialPaid
+import Complexity.Foundations.Probability.HierarchyInitialAllocation
 
 /-! A positive identity/full-rate evaluator history with actual ratio-16 bins and polynomial
 preparation. The top bin carries the input, the fine bin vanishes. This exact stationary
@@ -1038,5 +1038,123 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8)
     (by intro x y; by_cases h : x = y <;> simp [data, base, h])
     (by simp [data, base]) 0 _ (prefixes HP) _ (preparation_walks HP) _ (compressed_value HP)
     Lh Lρ hLh hLρ hh hρ
+
+-- Both deterministic actual-history means now receive scheduled heavy rarity, while
+-- all three noise payments retain their unconditional constants. Rank is in the horizon.
+open Cslib.RowCompression NormalizedMoments in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (hscale : HP.η ≤ max (1 : ℝ) 16 / 10000) :
+    ∃ C Cp Lh Lρ : ℝ, 0 ≤ C ∧ 0 ≤ Cp ∧ 0 ≤ Lh ∧ 0 ≤ Lρ ∧
+      let m := Nat.log2 2 + 1
+      let X := retainedMask threeRoles.source (side 5 0) (data HP).padding [1]
+      let Ya := retainedMask threeRoles.terminal (side 5 0) (data HP).padding [2, 3]
+      let q := fun i => (data HP).initialMeanCharge 2 1 i 0 (request HP)
+      let e₀ := (2 : ℝ) ^ (-(data HP).requestPrecision 2
+          {(request HP) with usage := (request HP).terminal}) *
+        (64 / 63) / rate 0
+      let e₁ := |(HP.η / 4)| * (2 : ℝ) ^ (-(data HP).requestPrecision 2 (request HP))
+      let deficit := fun i => rowNormPow 4 5 (rate 0) X Ya
+        (fun _ _ _ => rate 1 + (data HP).initialInactiveCharge 2 i (request HP))
+      let prep := fun i => (5 : ℝ) * (|(HP.η / 4)| * (Lh + Lρ) / rate 0) ^ 4 *
+        (8 * ((e₀ * rate 0 * (1 / 64 : ℝ) ^ dyadicSlack m i) ^ 4 + deficit i))
+      let a := fun i => (vertexNormPow 4 5 (rate 0) X (fun _ _ => q i)) ^ (4⁻¹ : ℝ) +
+        (prep i) ^ (4⁻¹ : ℝ)
+      let rarity := fun j => ((2 + 256 / dyadicFloor (HP.η / 4) m j) /
+        (compatibleCapacity HP.K m j : ℝ)) ^ (4⁻¹ : ℝ)
+      let tail := ∑ j ∈ range m, rarity j * ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) *
+        ((rowNormPow 4 5 (rate 0) X Ya (fun _ _ _ => q i)) ^ (4⁻¹ : ℝ) +
+          (prep i) ^ (4⁻¹ : ℝ))
+      let radius := (2 * max (1 : ℝ) 16) ^ (4⁻¹ : ℝ)
+      let w := fun i => 64 * (HP.K : ℝ) * radius ^ 4 /
+        ((compatibleCapacity HP.K m i : ℝ) * dyadicFloor (HP.η / 4) m i ^ 4)
+      let c := 64 * (HP.K : ℝ) * radius ^ 4 / (HP.η / 4) ^ 4
+      rootDistPow 4 5 (rate 0) X Ya (fun _ => base)
+        (denseChild (data HP).padding id (request HP) ((data HP).cutoff 0)
+          (polynomialPrepCutoff4 HP.θ) HP.ρ HP.K base) ≤
+        128 * (HP.K : ℝ) *
+          (Cp ^ 4 * ((∑ i ∈ range m, dyadicFloor (HP.η / 4) m i * a i) +
+            (HP.η / 4) * (e₀ + e₁) / 511) ^ 4 +
+          C ^ 4 * (a (Nat.log2 2) + (e₀ + e₁) / 64) ^ 4 +
+          C ^ 4 * (tail +
+            (e₀ + e₁) * (7 / 9)) ^ 4) +
+        64 * ((∑ i ∈ range m, w i *
+          (rowNormPow 4 5 (rate 0) X Ya (fun _ _ _ => q i) + prep i)) +
+          (c * e₀ ^ 4 / 63 + c * e₁ ^ 4 / 63)) := by
+  have hζ : 0 < HP.η / 4 := by linarith [HP.η_pos]
+  obtain ⟨C, hC, hfloor⟩ := BudgetData.exists_compressedBin_allocated HP
+    hζ HP.η_pos le_rfl hscale (by linarith)
+  have hf1 : HP.η / 4 ≤ 1 := by norm_num at hscale; linarith
+  obtain ⟨Cp, hCp, hbound⟩ := hfloor (HP.η / 4) hζ (by linarith) hf1
+  obtain ⟨Lh, Lρ, hLh, hLρ, hh, hρ⟩ := preparation_stability_constants HP
+  refine ⟨C, Cp, Lh, Lρ, hC, hCp, hLh, hLρ, ?_⟩
+  have hr : Admissible (request HP) := ⟨by change (0 : Fin 3) ≠ 2; decide, rfl, rfl⟩
+  exact hbound (data HP) 2 1 (by decide)
+    (by ext i; simp only [data, mem_insert, mem_singleton, mem_range]; omega)
+    rfl rfl rfl (by norm_num [data])
+    (⟨1, 4, by decide, by decide⟩ : Horizon 5) (by decide)
+    (request HP) hr threeRoles 0 0 0 [1] [2, 3] rfl rfl rfl (by decide) (by decide) (by decide)
+    (by intro x y; by_cases h : x = y <;> simp [data, base, h])
+    (by simp [data, base]) 0 _ (prefixes HP) _ (preparation_walks HP) _ (compressed_value HP)
+    Lh Lρ hLh hLρ hh hρ
+
+-- The actual early deficit is positive; the new pointwise payment cannot erase it.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (x : ZMod 5) :
+    0 < (data HP).initialPolynomialLoss 2 1 0 (request HP) x x ∧
+      (data HP).initialPolynomialLoss 2 1 1 (request HP) x x = 0 := by
+  norm_num [BudgetData.initialPolynomialLoss, BudgetData.initialFineLoss,
+    BudgetData.initialCoarseLoss, BudgetData.sampleScale, data, request, gridChannel,
+    rate, base, numerator, boundedRoutedBinCutoff, routedBinCutoff, binWeight,
+    polynomialSwitch4, polynomialTransition4, transitionPolynomial4,
+    Cslib.RowCompression.dyadicSlack, LogSpaceEstimation.lastBudget,
+    LogSpaceEstimation.scaleCutoff]
+
+-- With sufficient budget the envelope has one explicit inactive group and positive
+-- omitted-coverage charge at every later group; at the small edge budget it need not.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (i : ℕ) :
+    (data HP).initialMeanCharge 8 1 i 0 (request HP) ≤
+      1 / 16 + if i = 0 then 17 else 0 := by
+  have hb := BudgetData.initialMeanCharge_le_schedule (data HP) 8 1 i 0 (by decide)
+    (request HP) (fun bin => (rate_pos bin).le) (scale_cutoffs HP)
+  norm_num [data, rate] at hb ⊢
+  exact hb
+
+-- A concrete sufficient-budget history retains the early group coefficient v(0)*28^4;
+-- its inactive charge is not multiplied by the weights of all four groups.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (v : ℕ → ℝ)
+    (hv : ∀ j, 0 ≤ v j) :
+    (∑ j ∈ range 4, v j * ∑ i ∈ Ico j 4, (28 : ℝ) ^ (4 - i) *
+      (data HP).initialMeanCharge 8 1 i 0 (request HP)) ≤
+      1 / 16 * (∑ j ∈ range 4, v j * ∑ i ∈ Ico j 4, (28 : ℝ) ^ (4 - i)) +
+        v 0 * 28 ^ 4 * 17 := by
+  have hb := BudgetData.initialMeanCharge_tail_schedule (data HP) 8 1 0 (by decide)
+    (request HP) (fun bin => (rate_pos bin).le) (scale_cutoffs HP) v hv
+  norm_num [data, rate] at hb ⊢
+  exact hb
+
+-- Full-rank fourth moments see the actual early identity deficit and exact final zero.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    let X := NormalizedMoments.retainedMask (0 : Fin 3) (side 5 0) (1 : ZMod 5) [1]
+    let Y := NormalizedMoments.retainedMask (2 : Fin 3) (side 5 0) (1 : ZMod 5) [2, 3]
+    rowNormPow 4 5 (rate 0) X Y
+      (fun _ => (data HP).initialPolynomialLoss 2 1 0 (request HP)) = 1 ∧
+    rowNormPow 4 5 (rate 0) X Y
+      (fun _ => (data HP).initialPolynomialLoss 2 1 1 (request HP)) = 0 := by
+  dsimp only
+  have hret (τ : Environment 5 3) (role : Fin 3) (su : List (ZMod 5)) (v : ZMod 5) :
+      NormalizedMoments.retainedMask role (side 5 0) 1 su τ v := by
+    simpa only [NormalizedMoments.retainedMask, gridChannel,
+      CorrectionRowTask.Channel.retains, channels, semanticSide_grid] using full τ role su v
+  have he (j : ℕ) (hj : j < 2) (x y : ZMod 5) :
+      (data HP).initialPolynomialLoss 2 1 j (request HP) x y =
+        if j = 0 then base x y else 0 := by
+    interval_cases j <;> by_cases hxy : x = y <;>
+      norm_num [BudgetData.initialPolynomialLoss, BudgetData.initialFineLoss,
+        BudgetData.initialCoarseLoss, BudgetData.sampleScale, data, request, gridChannel,
+        rate, base, Matrix.one_apply, numerator, boundedRoutedBinCutoff, routedBinCutoff, binWeight,
+        polynomialSwitch4, polynomialTransition4, transitionPolynomial4,
+        Cslib.RowCompression.dyadicSlack, LogSpaceEstimation.lastBudget,
+        LogSpaceEstimation.scaleCutoff, hxy]
+  simp [he 0 (by decide), he 1 (by decide), rowNormPow, hret, base,
+    Matrix.one_apply, rate, apply_ite]
 
 end PolynomialBudgetHistory

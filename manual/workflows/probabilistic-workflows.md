@@ -984,10 +984,52 @@ both of its noise terms are paid unconditionally. The budget-2 regression consum
 inequality on the actual positive stationary output, retaining the genuine early deficit.
 It is not a nonconstant evaluator-mixing or general induction example.
 
-**Remaining parent-error gap:** the finite constituent substitutions are assembled, but
-choosing global rates and reserves so their explicit payments meet requested accuracy
-remains open. The full-rank deficit, width/rate costs and selected deterministic heavy-tail
-norm still need global allocation or rarity payment. Transport from an invariant covering
+The next finite allocation is in
+[`HierarchyInitialAllocation.lean`](../../Complexity/Foundations/Probability/HierarchyInitialAllocation.lean).
+`BudgetData.exists_compressedBin_allocated` consumes `exists_compressedBin_paid` and pays
+the full-rank deficit by the fourth row moment of the constant
+$d_j=\operatorname{rate}(n)+\operatorname{initialInactiveCharge}(M,j,r)$.
+This follows pointwise from omitted polynomial coverage plus the literal inactive bins;
+the coarse boundary is zero. No lower bound on positive base entries is needed.
+In the preceding formula for $J_j$, replace $D_j$ by this constant-charge moment.
+
+Both deterministic means now receive actual heavy-event rarity. Write
+$\epsilon_{0,i}=\lVert q_i\rVert_{row}$ and $\epsilon_{1,i}=J_i^{1/4}$.
+The selected mean-tail root is replaced by the explicit finite payment
+
+$$
+T=\sum_{j<m}\left(\frac{2+256/\delta_j}{\operatorname{capacity}_j}\right)^{1/4}
+\sum_{j\le i<m}28^{m-i}(\epsilon_{0,i}+\epsilon_{1,i}).
+$$
+
+Here $m=\lfloor\log_2 M\rfloor+1$, $\delta_j=\operatorname{dyadicFloor}(\delta,m,j)$
+and the capacity is the actual `compatibleCapacity HP.K m j`.
+The shared `NormalizedMoments.integrated_mean_tail_schedule` applies actual rarity to
+each deterministic prefix before finite Minkowski. There is no environment-cardinality
+factor. Noise stays outside rarity: the output tail still contains $(e_0+e_1)7/9$,
+and the stationary, final and raw false-charge noise constants are unchanged.
+
+For sufficient budget $M>1$ with every retained literal scale cutoff strictly below $M$,
+`initialMeanCharge_le_schedule` gives
+$q_i\le\operatorname{rate}(n)/\operatorname{rate}(k_a)+\mathbf1_{i=0}A/\operatorname{rate}(k_a)$,
+where $A=\operatorname{binCap}\sum_{b\in\operatorname{bins}}\operatorname{binRate}(b)$.
+`initialMeanCharge_tail_schedule` isolates the possible early inactive payment with its
+exact coefficient $v_0 28^m$ in the double sum. It is not charged at every later prefix.
+The actual-history tests retain positive early deficit, exact final deficit zero,
+the budget-2 insufficient-cutoff edge, and the sufficient-budget-8 schedule.
+They also consume the new successful-output inequality on the genuine budget-2 history.
+
+The allocation depends on retained depth $n$, source and rank rates, width $P$, actual
+scale cutoffs, and the positive floor. Depth and source exponent must fit the field horizon;
+actual rarity additionally requires $k_a\le H.\operatorname{maxExponent}$, with $k_a\le k_u$.
+The decoder constant precedes the floor; the stationary constant follows it. Shrinking
+the floor alone does not remove the stationary bias and also affects the rarity and
+false-charge denominators.
+
+**Remaining parent-error gap:** these are explicit finite payments, not a theorem that
+the RHS meets arbitrary requested accuracy. Joint choices of retained depth, sufficient
+budget, field horizon, rates, floor and reserves must still pay width/rate costs and all
+stationary/final/raw sums. Transport from an invariant covering
 ALL actual lower-budget calls is unproved. Heavy-event rarity applies only to deterministic mean envelopes; it must not discount
 correlated noise. Bounded lower-child root-to-ordinary conversion and same-environment
 reset-right-source transport remain to be assembled for general recursive children.

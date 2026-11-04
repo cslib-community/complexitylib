@@ -19,12 +19,12 @@ they do not close the lower-budget induction, preparation or second noise.
 ## Main results
 
 * `initialCoarseLoss_eq_zero`: no initial coarse boundary at the chosen horizon.
+* `initialPolynomialLoss_le`: matrix-unit omitted and inactive charge bound.
 * `initialPolynomialLoss_div_le`: omitted/inactive mass in actual decoder units.
 * `initialMeanCharge_preloss`: finite scheduled payment under explicit scale allocation.
 * `initialFirstSignal_clippedMean_final`: actual final first-mean payment.
 * `initialFirstSignal_clippedMean_preloss`: stationary consumer with row maxima.
 * `initial_requestSignals_paid_envelope`: actual compression request with separate noise.
-* `initialFirstSignal_clippedMean_heavy`: deterministic heavy tail with explicit charge norm.
 -/
 
 public section
@@ -125,6 +125,18 @@ this is a computable allocation charge, not a requested final error or a substit
     (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) : ℝ :=
   (rate n + B.initialInactiveCharge M j r) / rate ka
 
+/-- The matrix-unit deficit uses actual omitted and inactive mass; no output budget or
+positive lower bound on base entries is assumed. -/
+theorem initialPolynomialLoss_le (B : BudgetData HP P) (M n j : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hrate : B.binRate = rate) (hC : ∀ x y, 0 ≤ B.base x y) (x y : ZMod P) :
+    B.initialPolynomialLoss M n j r x y ≤ rate n + B.initialInactiveCharge M j r := by
+  unfold initialPolynomialLoss
+  rw [B.initialCoarseLoss_eq_zero, add_zero]
+  exact add_le_add (initialOmitted_le n (hC x y))
+    (B.initialFineLoss_le_charge M j r
+      (by intro bin; rw [hrate]; exact (rate_pos bin).le) x y)
+
 /-- Pointwise transport through the actual denominator rankRate+baseEntry. -/
 theorem initialPolynomialLoss_div_le (B : BudgetData HP P) (M n j ka : ℕ)
     (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
@@ -132,12 +144,7 @@ theorem initialPolynomialLoss_div_le (B : BudgetData HP P) (M n j ka : ℕ)
     B.initialPolynomialLoss M n j r x y / (rate ka + B.base x y) ≤
       B.initialMeanCharge M n j ka r := by
   have hnon := B.initialPolynomialLoss_nonneg M n j r hrate hC x y
-  have hbound : B.initialPolynomialLoss M n j r x y ≤
-      rate n + B.initialInactiveCharge M j r := by
-    unfold initialPolynomialLoss
-    rw [B.initialCoarseLoss_eq_zero, add_zero]
-    exact add_le_add (initialOmitted_le n (hC x y))
-      (B.initialFineLoss_le_charge M j r (by intro bin; rw [hrate]; exact (rate_pos bin).le) x y)
+  have hbound := B.initialPolynomialLoss_le M n j r hrate hC x y
   exact (div_le_div_of_nonneg_left hnon (rate_pos ka)
     (le_add_of_nonneg_right (hC x y))).trans
       (div_le_div_of_nonneg_right hbound (rate_pos ka).le)
@@ -324,62 +331,6 @@ theorem initial_requestSignals_paid_envelope (bin : ℕ) (ζ : ℝ)
   exact hp.trans (add_le_add (add_le_add
     (B.initialPolynomialLoss_div_le M n j ka r hrate hC x y) le_rfl) le_rfl)
 
-/-- A deterministic heavy-tail payment for the actual first clipped mean. Its primitive
-finite charge is integrated on the original source/usage masks, with the actual base as
-heavy-event truth. This deliberately coarse bound retains the row norm of that charge;
-it does not certify a shrinking reserve budget. No correlated noise occurs in this tail. -/
-theorem initialFirstSignal_clippedMean_heavy
-    (hka : ka ≤ H.maxExponent) (Lt : ℕ) (hLt : Lt ≤ P) (ζ : ℝ)
-    (second : Environment P 3 → ZMod P → ℕ → ZMod P → ℝ)
-    {δ : ℝ} (hδ : 0 < δ) (capacity K : ℕ → ℕ)
-    (hncap : ∀ j < Nat.log2 M + 1,
-      2 ^ (64 * dyadicSlack (Nat.log2 M + 1) j) ≤ capacity j)
-    (Δ : Environment P 3 → ZMod P → ℕ → ZMod P → Fin 2 → ℝ)
-    (raw : Environment P 3 → ZMod P → ZMod P → Fin 2 → ℝ) :
-    let m := Nat.log2 M + 1
-    let e := (rate n + B.binCap * ∑ bin ∈ B.bins, B.binRate bin) / rate ka
-    let μ := fun i x y => actualClippedMean HP s t (side P ks) (side P ka) Lt B.padding
-      ss st ka B.base ζ (firstSignalIncrement F ka second) 0 0 i x y
-    vertexNormPow 4 P (rate ks) (retainedMask s (side P ks) B.padding ss) (fun σ x =>
-      ∑ j ∈ range m, if meanFirstEvent t B.padding st ka m j δ B.base capacity K Δ raw σ x
-        then meanRowTail t Lt B.padding st m j μ σ x else 0) ≤
-      ((2 + 256 / δ) / 63) ^ 4 *
-        rowNormPow 4 P (rate ks) (retainedMask s (side P ks) B.padding ss)
-          (retainedMask t Lt B.padding st) (fun _ _ _ => e) := by
-  extract_lets m e μ
-  have hr (bin : ℕ) : 0 ≤ B.binRate bin := by rw [hrate]; exact (rate_pos bin).le
-  have he : 0 ≤ e := div_nonneg (add_nonneg (rate_pos n).le
-    (mul_nonneg B.binCap_nonneg (sum_nonneg fun bin _ => hr bin))) (rate_pos ka).le
-  have hμ (i : ℕ) (hi : i < m) (x y : ZMod P) : |μ i x y| ≤ e * 2 ^ dyadicSlack m i := by
-    have hm := B.initialFirstSignal_clippedMean M hM n hbins hrate hcutoff haux hD H hn r
-      s t hst ks ka ss st hs ht hks hC hC1 F hF i hi Lt ζ second x y
-    have hm0 : 0 ≤ μ i x y := by
-      rw [show μ i x y = _ from hm]
-      exact le_min (by norm_num) (div_nonneg
-        (B.initialPolynomialLoss_nonneg M n i r hrate hC x y)
-        (add_pos_of_pos_of_nonneg (rate_pos ka) (hC x y)).le)
-    rw [abs_of_nonneg hm0]
-    have hb : B.initialMeanCharge M n i ka r ≤ e :=
-      div_le_div_of_nonneg_right
-        (add_le_add le_rfl (B.initialInactiveCharge_le M i r hr)) (rate_pos ka).le
-    exact ((B.initialFirstSignal_clippedMean_le M hM n hbins hrate hcutoff haux hD H hn r
-      s t hst ks ka ss st hs ht hks hC hC1 F hF i hi Lt ζ second x y).trans hb).trans
-        (le_mul_of_one_le_right he (one_le_pow₀ (by norm_num)))
-  have hNu : 0 ≤ (P : ℝ) * rate ks := mul_nonneg (Nat.cast_nonneg _) (rate_pos ks).le
-  let E := rowNormPow 4 P (rate ks) (retainedMask s (side P ks) B.padding ss)
-    (retainedMask t Lt B.padding st) (fun _ _ _ => e)
-  have hE : 0 ≤ E := rowNormPow_nonneg hNu _
-  have hroot := Real.rpow_inv_natCast_pow hE (by decide : (4 : ℕ) ≠ 0)
-  norm_num only [Nat.cast_ofNat] at hroot
-  have hbudget : E ≤ (E ^ (1 / 4 : ℝ)) ^ (4 : ℕ) := hroot.ge
-  have hp := integrated_mean_tail_capacity s t (Ne.symm hst) (side P ks) Lt B.padding hD
-    ss st H hka hLt B.base hC hδ (Real.rpow_nonneg hE _) hNu
-    (fun x => by simpa only [mulVec, dotProduct, Pi.one_apply, mul_one] using hC1 x)
-    m capacity K hncap Δ raw μ (fun _ _ => e) (fun _ _ => he) hμ hbudget
-  refine hp.trans_eq ?_
-  simp only [mul_pow, hroot]
-  dsimp only [E]
-  ring
 
 end Polynomial
 
