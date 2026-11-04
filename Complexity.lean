@@ -3048,7 +3048,9 @@ public import Complexity.Crypto.Computational.Pseudoentropy.WordExtraction
 public import Complexity.Crypto.Computational.Pseudoentropy.WordReduction
 public import Complexity.Crypto.Computational.Pseudoentropy.WordSeedExtraction
 public import Complexity.Crypto.Computational.PseudorandomFunction
+public import Complexity.Crypto.Computational.PseudorandomFunction.CircuitLowerBound
 public import Complexity.Crypto.Computational.PseudorandomFunction.Coins
+public import Complexity.Crypto.Computational.PseudorandomFunction.CriticalPath
 public import Complexity.Crypto.Computational.PseudorandomFunction.MultiKey
 public import Complexity.Crypto.Computational.PseudorandomFunction.RandomOracle
 public import Complexity.Crypto.Computational.PseudorandomFunction.TruthTable
