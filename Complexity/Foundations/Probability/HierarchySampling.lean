@@ -206,6 +206,18 @@ theorem ofHierarchyChannels_Kc :
         * (1 + Cpair * P.R)⌉₊ := by
   rfl
 
+/-- The hierarchy-channel laws retain the supplied preparation cutoff. -/
+theorem ofHierarchyChannels_h :
+    (ofHierarchyChannels P X Y hXY hYX hf hπ hpair hi hcount
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).h = h := by
+  rfl
+
+/-- The hierarchy-channel laws retain the hierarchy row rank. -/
+theorem ofHierarchyChannels_K :
+    (ofHierarchyChannels P X Y hXY hYX hf hπ hpair hi hcount
+      I τ h τ₀ hQ hτ0 hτ1 hτ₀ hτ hI).K = P.K := by
+  rfl
+
 end Matrix.CorrectionSamplingLaws
 
 namespace Matrix.HierarchyParams.CorrectionSampling

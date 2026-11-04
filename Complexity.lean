@@ -797,6 +797,7 @@ public import Complexity.Computability.Circuit.Boolean.ConstDepth
 public import Complexity.Computability.Circuit.Boolean.Continuity
 public import Complexity.Computability.Circuit.Boolean.Convolution
 public import Complexity.Computability.Circuit.Boolean.Correction
+public import Complexity.Computability.Circuit.Boolean.CriticalPath
 public import Complexity.Computability.Circuit.Boolean.DepthClasses
 public import Complexity.Computability.Circuit.Boolean.DepthTime
 public import Complexity.Computability.Circuit.Boolean.DepthTime.PolyTime
@@ -1029,6 +1030,7 @@ public import Complexity.Computability.Circuit.Complexity
 public import Complexity.Computability.Circuit.CompositionDepth
 public import Complexity.Computability.Circuit.Continuity
 public import Complexity.Computability.Circuit.Counting
+public import Complexity.Computability.Circuit.CriticalPath
 public import Complexity.Computability.Circuit.Cyclic
 public import Complexity.Computability.Circuit.Cyclic.Feedback
 public import Complexity.Computability.Circuit.DagProtocol
@@ -1843,6 +1845,10 @@ public import Complexity.Computability.Complexity.Reduction
 public import Complexity.Computability.Complexity.Reduction.Autoreducibility
 public import Complexity.Computability.Complexity.Reduction.Isomorphism
 public import Complexity.Computability.Complexity.Reduction.Levin
+public import Complexity.Computability.Complexity.Reduction.LocalSelfReducibility
+public import Complexity.Computability.Complexity.Reduction.LocalSelfReducibility.RuntimeAccess
+public import Complexity.Computability.Complexity.Reduction.LocalSelfReducibility.RuntimeEvaluator
+public import Complexity.Computability.Complexity.Reduction.LocalSelfReducibility.VirtualWord
 public import Complexity.Computability.Complexity.Reduction.LogSpaceAutoreducibility
 public import Complexity.Computability.Complexity.Reduction.LogSpaceBoundedAutoreducibility
 public import Complexity.Computability.Complexity.Reduction.LogSpaceBoundedTruthTable
@@ -1949,6 +1955,9 @@ public import Complexity.Computability.MCSP.SuccinctNP.Words
 public import Complexity.Computability.Machines.ReadMachine.Basic
 public import Complexity.Computability.Machines.ReadMachine.StepMachine
 public import Complexity.Computability.Machines.ReadMachine.Tidy
+public import Complexity.Computability.Machines.ReadMachine.VirtualWord
+public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Evaluator
+public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Runtime
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Game
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.GuessVerify
@@ -3060,6 +3069,7 @@ public import Complexity.Crypto.Computational.Pseudoentropy.WordExtraction
 public import Complexity.Crypto.Computational.Pseudoentropy.WordReduction
 public import Complexity.Crypto.Computational.Pseudoentropy.WordSeedExtraction
 public import Complexity.Crypto.Computational.PseudorandomFunction
+public import Complexity.Crypto.Computational.PseudorandomFunction.CircuitLowerBound
 public import Complexity.Crypto.Computational.PseudorandomFunction.Coins
 public import Complexity.Crypto.Computational.PseudorandomFunction.MultiKey
 public import Complexity.Crypto.Computational.PseudorandomFunction.RandomOracle
@@ -3877,6 +3887,10 @@ public import Complexity.Foundations.Probability.HierarchySourceSampling
 public import Complexity.Foundations.Probability.HierarchyTaskData
 public import Complexity.Foundations.Probability.HierarchyTaskMeans
 public import Complexity.Foundations.Probability.HierarchyTasks
+public import Complexity.Foundations.Probability.InitialPilotCompleted
+public import Complexity.Foundations.Probability.InitialPilotCorrection
+public import Complexity.Foundations.Probability.InitialPilotCorrectionMean
+public import Complexity.Foundations.Probability.InitialPilotDetector
 public import Complexity.Foundations.Probability.InitialPilotScore
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ActualMoment
 public import Complexity.Foundations.Probability.NormalizedAtomRows.BoundedLoss
