@@ -189,9 +189,28 @@ The proof integrates source spectators and permutes each padded frame seed; it d
 identify samples at an unchanged environment. The
 [regression client](../../ComplexityTests/HierarchyCanonicalTargets.lean) checks actual residual
 requests with different terminal roles and radix-two suffixes, a positive target and an
-unequal-rate complete correction mean. Canonical dense-child assembly, the joint
-source × terminal raw-sample mean with a shared midpoint, and child-error propagation
-remain open. A correction-child mean alone does not provide the residual mean.
+unequal-rate complete correction mean.
+
+For a genuine source-reset dense child, import
+[HierarchyDenseChildren](../../Complexity/Foundations/Probability/HierarchyDenseChildren.lean).
+Build `denseChild` from the deterministic hierarchy base, bin cutoff and genuine
+`densePreparation`. `dense_normalizer` integrates the actual joint source/usage mean;
+`denseChild_terminal` then removes source and spectator dependence pointwise. For a
+left correction sharing the midpoint with that reset source, use
+[HierarchySharedMidpoint](../../Complexity/Foundations/Probability/HierarchySharedMidpoint.lean).
+`sourceChild_mul_denseChild_mean` conditions the single full environment on the old
+source and terminal events. Supply three distinct roles, the complete right-source reset,
+the finite horizon and narrower-source hypotheses, and the dense support/gate bounds.
+The left midpoint hit and literal midpoint-density divisor remain in the sample.
+The [checked client](../../ComplexityTests/HierarchySharedMidpoint.lean) evaluates a positive
+product with unequal rates, nonempty suffixes and a free fourth role.
+
+This is a single-path mean. The dispatched residual `rawSample` still needs its actual
+negative request transported under inherited terminal conditioning and its finite last
+iteration identified. The actual bin decomposition/routing must then assemble positive
+bin contributions while subtracting the special correction once, rather than once per bin.
+The original residual conditional-mean criterion and estimated-child error propagation
+remain open; neither follows from the single-path product.
 
 The P=5 regression has source/stage/usage exponents 2/1/3, actual densities
 16/625, 81/625 and 1/625, different nonempty copy suffixes, and a free spectator role.
