@@ -691,15 +691,19 @@ The [shared statistical-budget evaluator](../../Complexity/Foundations/Probabili
 supplies a partial stage-zero path over the existing `HierarchyTask.Request`. It keeps HP.k
 fixed and shares whole row/vector history on the original three-role environment. The unaveraged
 `finiteInput` helper retains finite positive-bin assembly and one residual subtraction. Public RAW
-instead takes both actual last-budget samples of each dyadic slack group and completes their
-difference separately. The residual is one signed ray outside the positive-bin sum. Each group's
-walk length pays its own slack factor; `pairedSample_initial_completion` proves centered fourth
-moment noise at most `(2^(-precision) * 64^(-slack))^4` for every initial bin/group, from actual
-recursive calls and the original H4 graph.
+instead takes both actual last-budget samples of each dyadic slack group, assembles their
+signed differences, and completes the whole group once. The common graph and length make this
+literally the sum of completed rays (`completedGroup_initial_rays`), including empty retained
+slices. The residual is one signed ray outside the positive-bin sum. The horizon is
+`Nat.log2 M + 1`, using compression's existing `dyadicSlack` schedule. Each group's walk length
+pays its own slack factor; `completedGroup_initial_grid` proves centered fourth moment noise at
+most `(2^(-precision) * 64^(-slack))^4` for the assembled initial group, from actual recursive
+calls and the original H4 graph. An empty initial ray list keeps zero without calling history
+or validating a frame; this does not restore unsupported main/residual dispatch.
 
 The free per-request magnitude input has been removed. Primitive bin cutoffs have a certified
 uniform cap; allocation uses explicit finite bin, endpoint-rate and density charges. Those
-amplitudes are proved sufficient for all initial paired samples. Their sufficiency for other
+amplitudes are proved sufficient for all initial paired samples and their assembled group. Their sufficiency for other
 constructors and the total noise/bin payment remain open. These conservative finite charges
 include vertex width and do not establish the intended uniform growth or native workspace bound.
 

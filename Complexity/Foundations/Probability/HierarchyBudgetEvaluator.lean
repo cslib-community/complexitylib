@@ -19,9 +19,9 @@ import Complexity.Foundations.Probability.RootMetric.FiniteError
 
 The structural parameter `HP.k` is fixed. Rows and vectors share one history, and every
 child retains the entire original H4 environment. `finiteInput` is the unaveraged finite
-assembly helper. The public RAW route separately completes the paired endpoint differences
-of dyadic slack groups, using `LogSpaceEstimation.lastBudget` at both budgets. The negative
-residual is one signed ray, outside the positive-bin sum.
+assembly helper. The public RAW route assembles paired endpoint differences before one
+common completion per dyadic slack group, using `LogSpaceEstimation.lastBudget` at both budgets.
+The negative residual is one signed ray, outside the positive-bin sum.
 
 This is a partial mathematical evaluator, not the closed compressed estimator of
 [OpenAI2026LogSpace, Sections 7.4–7.5]. Dense leaves are unavailable at budget zero. Only the
@@ -32,10 +32,10 @@ also return `none`. The exact base matrix and literal iteration-zero constants r
 
 Allocation magnitudes are derived from certified primitive cutoff caps and explicit finite
 bin/rate/density charges, not supplied per request. They are proved sufficient for every initial
-pilot paired sample and its actual completion noise. Their validity for later constructions,
-noise summation, later RAW dispatch, post-average compression, incoming support, the simultaneous
-row/vector
-canonical-accuracy invariant and cross-stage/reward transport remain open. In particular, no
+pilot paired sample and the assembled initial group, with actual completion noise. Their validity
+for later constructions, noise summation, later RAW dispatch, post-average compression,
+incoming support, the simultaneous row/vector canonical-accuracy invariant and cross-stage/reward
+transport remain open. In particular, no
 row sparsity of a conditional average is inferred from pointwise input sparsity.
 
 The shared-history organization is inspired by `current`, `rolls`, `forecast`, and
@@ -53,7 +53,9 @@ Complexitylib's existing requests, not a port of those declarations.
 * `BudgetData.evaluate_eq`: public recursive constructor equation.
 * `BudgetData.complete_grid`: exact request-to-H4-graph identification.
 * `BudgetData.completion_noise`: range-based centered-noise allocation.
-* `BudgetData.pairedSample_initial_completion`: actual scheduled initial-noise payment.
+* `BudgetData.pairedSample_initial_completion`: actual scheduled initial-ray noise payment.
+* `BudgetData.completedGroup_initial_rays`: literal common-walk group aggregation.
+* `BudgetData.completedGroup_initial_grid`: derived assembled-group noise payment.
 * `BudgetData.evaluate_normalized_bounds`: actual normalized range, usage and row support.
 * `BudgetData.evaluate_maximum_succ`: actual inductive maximum error payment.
 -/
@@ -423,23 +425,53 @@ theorem pairedSample_budgets_lt (M d : ℕ) (hM : 0 < M)
   ⟨LogSpaceEstimation.lastBudget_lt hM B.slack_pos,
     LogSpaceEstimation.lastBudget_lt hM B.slack_pos⟩
 
-/-- Scheduled RAW: complete each paired slack group separately, then add positive rays
-and the single negative ray. The old finite assembly is only an input helper.
-This is the additive scheduled first signal; compression and canonical payments remain
-separate, and unavailable positive-budget children propagate `none`. -/
+/-- Positive rays and the residual's one negative ray, in their assembly order. -/
+@[expose] def rays (t : HierarchyTask.RawTask HP.k) : List (Option ℕ) :=
+  B.bins.toList.map some ++ (match t with | .residual => [none] | _ => [])
+
+/-- Assemble the actual paired children before the common group walk. Empty ray lists
+retain their literal zero without introducing a frame-availability obligation. -/
+@[expose] def completedGroup
+    (history : ℕ → HierarchyTask.Request HP.k (Fin 3) (ZMod P) →
+      Option (BudgetValue P))
+    (M d : ℕ) (t : HierarchyTask.RawTask HP.k)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) :
+    Option (Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ) :=
+  if (B.rays t).isEmpty then some 0 else do
+    let inputs ← (B.rays t).mapM (B.pairedSample history M d t r)
+    B.complete M r (fun σ x y => (inputs.map (fun A => A σ x y)).sum) d
+
+/-- Scheduled RAW completes each assembled paired group once. All its rays share the
+actual source/usage graph and length. Unsupported positive-budget children still propagate
+`none`; the single residual negative ray remains outside the positive-bin list. -/
 @[expose] def raw
     (history : ℕ → HierarchyTask.Request HP.k (Fin 3) (ZMod P) →
       Option (BudgetValue P))
     (M : ℕ) (t : HierarchyTask.RawTask HP.k)
     (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) :
     Option (Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ) := do
-  let rays := B.bins.toList.map some ++ (match t with | .residual => [none] | _ => [])
-  let groups ← (List.range (Nat.log2 M + 1)).mapM fun j => do
-    let terms ← rays.mapM fun bin => do
-      let A ← B.pairedSample history M (2 ^ (Nat.log2 M - j)) t r bin
-      B.complete M r A (2 ^ (Nat.log2 M - j))
-    pure fun σ x y => (terms.map (fun A => A σ x y)).sum
+  let groups ← (List.range (Nat.log2 M + 1)).mapM fun j =>
+    B.completedGroup history M (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j) t r
   pure fun σ x y => (groups.map (fun A => A σ x y)).sum
+
+set_option backward.isDefEq.respectTransparency false in
+/-- One assembled group walk equals the sum of the literal completed rays, on a common
+grid request. No independence, support, or canonical-error hypothesis is used. -/
+theorem complete_grid_list_sum (M : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (s t : Fin 3) (hst : s ≠ t) (ks ku : ℕ) (ss su : List (ZMod P))
+    (hs : r.source = gridChannel s ks ss) (hu : r.usage = gridChannel t ku su)
+    (inputs : List (Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)) (d : ℕ) :
+    B.complete M r (fun σ x y => (inputs.map (fun A => A σ x y)).sum) d =
+      some (fun σ x y => (inputs.map (fun A => conditionalWalk
+        (X s (side P ks) (CopyPadding.identifier B.padding ss))
+        (Y t (side P ku) (CopyPadding.identifier B.padding su))
+        (graph s t hst (side P ks) (side P ku) (side_le P ks) (side_le P ku)
+          (CopyPadding.identifier B.padding ss) (CopyPadding.identifier B.padding su))
+        (fun _ _ => B.steps M r d) A σ x y)).sum) := by
+  rw [B.complete_grid M r s t hst ks ku ss su hs hu _ d]
+  congr 1
+  funext σ x y
+  exact conditionalWalk_list_sum _ _ _ _ inputs σ x y
 
 /-- Paired endpoint subtraction is exactly the existing schedule's telescoped group.
 The equality retains both budgets and the zero boundary. It uses no independence. -/
@@ -843,6 +875,133 @@ theorem pairedSample_initial_completion (M d : ℕ) (hM : 0 < M) (bin : ℕ)
   have hsource : 0 < r.source.rate := by rw [hs]; exact rate_pos ks
   exact ⟨A, hA, B.complete_grid M r s t hst ks ku ss su hs hu A d,
     B.completion_noise M r s t hst ks ku ss su hsource A hbound d⟩
+
+/-- Literal assembled initial input at one paired group, before its common walk. All
+bins use the same recursive history; their fine/coarse budgets retain their own scales. -/
+@[expose] def initialGroupInput (M d : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) :
+    Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ :=
+  fun σ x y => ∑ bin ∈ B.bins,
+    ((if LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin)) = 0
+      then 0 else B.initialSample r bin σ x y) -
+    (if LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin)) = 0
+      then 0 else B.initialSample r bin σ x y))
+
+/-- The allocation pays the amplitude of the assembled initial group, with every bin
+included. This bound is derived from primitive cutoff caps, before the common walk. -/
+theorem initialGroupInput_bound (M d : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (σ : Environment P 3) (x y : ZMod P) :
+    |B.initialGroupInput M d r σ x y| ≤ B.magnitude r := by
+  have hb (bin : ℕ) :
+      |((if LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin)) = 0
+        then 0 else B.initialSample r bin σ x y) -
+      (if LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin)) = 0
+        then 0 else B.initialSample r bin σ x y))| ≤ 2 * B.positiveMagnitude r bin := by
+    have ha := B.initialSample_abs_le r bin σ x y
+    have hp : 0 ≤ B.positiveMagnitude r bin :=
+      sum_nonneg fun y _ => B.positiveCharge_nonneg r bin y
+    split_ifs <;> simp only [zero_sub, sub_zero, sub_self, abs_neg, abs_zero] <;> linarith
+  have hn : 0 ≤ B.negativeMagnitude r := by
+    unfold negativeMagnitude atomCap
+    have hQ := HP.Q_nonneg HP.toHierarchyParams.atomCap
+    exact sum_nonneg fun y _ => mul_nonneg (abs_nonneg _) (by positivity)
+  have hc : 0 ≤ B.atomCap := mul_nonneg (by norm_num) (HP.Q_nonneg _)
+  calc
+    _ ≤ ∑ bin ∈ B.bins, |((if LogSpaceEstimation.lastBudget M d B.slack
+        (B.sampleScale r (some bin)) = 0 then 0 else B.initialSample r bin σ x y) -
+        (if LogSpaceEstimation.lastBudget M (2 * d) B.slack
+          (B.sampleScale r (some bin)) = 0 then 0 else B.initialSample r bin σ x y))| :=
+      abs_sum_le_sum_abs _ _
+    _ ≤ ∑ bin ∈ B.bins, 2 * B.positiveMagnitude r bin := sum_le_sum fun bin _ => hb bin
+    _ ≤ B.magnitude r := by rw [← mul_sum]; unfold magnitude; linarith
+
+set_option backward.isDefEq.respectTransparency false in
+/-- The actual initial-group computation assembles its paired history children and
+then completes that assembled input. Nonempty bins require the genuine frame guard. -/
+theorem completedGroup_initial (M d : ℕ) (hM : 0 < M) (hbins : B.bins.Nonempty)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) :
+    B.completedGroup (fun m r => if m < M then B.evaluate m r else none)
+      M d (.pilotInput ⟨0, HP.k_pos⟩) r = B.complete M r (B.initialGroupInput M d r) d := by
+  have he : (B.rays (.pilotInput ⟨0, HP.k_pos⟩)).isEmpty = false := by
+    simp only [rays, List.append_nil, List.isEmpty_map]
+    exact Bool.eq_false_iff.mpr hbins.not_empty_toList
+  unfold completedGroup
+  rw [he]
+  simp only [Bool.false_eq_true, ↓reduceIte, rays, List.append_nil, List.mapM_map]
+  simp_rw [Function.comp_def, B.pairedSample_initial M d hM]
+  have hm (f : ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ) :
+      B.bins.toList.mapM (fun i => some (f i)) = some (B.bins.toList.map f) := List.mapM_pure
+  rw [hm]
+  simp only [bind, Option.bind_some]
+  congr 1
+  funext σ x y
+  simp only [List.map_map, Function.comp_def, Pi.sub_apply]
+  rw [Finset.sum_map_toList]
+  unfold initialGroupInput
+  apply sum_congr rfl
+  intro bin _
+  split_ifs <;> rfl
+
+set_option backward.isDefEq.respectTransparency false in
+/-- The computed initial group is literally the sum of its completed paired rays.
+Every term retains its own fine/coarse scale, but shares the request graph and length. -/
+theorem completedGroup_initial_rays (M d : ℕ) (hM : 0 < M) (hbins : B.bins.Nonempty)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (s t : Fin 3) (hst : s ≠ t) (ks ku : ℕ) (ss su : List (ZMod P))
+    (hs : r.source = gridChannel s ks ss) (hu : r.usage = gridChannel t ku su) :
+    let T := fun bin =>
+      (if LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin)) = 0
+        then 0 else B.initialSample r bin) -
+      (if LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin)) = 0
+        then 0 else B.initialSample r bin)
+    B.completedGroup (fun m r => if m < M then B.evaluate m r else none)
+      M d (.pilotInput ⟨0, HP.k_pos⟩) r = some (fun σ x y =>
+        (B.bins.toList.map (fun bin => conditionalWalk
+          (X s (side P ks) (CopyPadding.identifier B.padding ss))
+          (Y t (side P ku) (CopyPadding.identifier B.padding su))
+          (graph s t hst (side P ks) (side P ku) (side_le P ks) (side_le P ku)
+            (CopyPadding.identifier B.padding ss) (CopyPadding.identifier B.padding su))
+          (fun _ _ => B.steps M r d) (T bin) σ x y)).sum) := by
+  intro T
+  rw [B.completedGroup_initial M d hM hbins r]
+  have hinput : B.initialGroupInput M d r =
+      fun σ x y => ((B.bins.toList.map T).map (fun A => A σ x y)).sum := by
+    funext σ x y
+    simp only [List.map_map, Function.comp_def, Finset.sum_map_toList, initialGroupInput]
+    apply sum_congr rfl
+    intro bin _
+    dsimp only [T]
+    split_ifs <;> rfl
+  rw [hinput]
+  simpa only [List.map_map, Function.comp_def] using
+    B.complete_grid_list_sum M r s t hst ks ku ss su hs hu (B.bins.toList.map T) d
+
+/-- Actual assembled-group availability and centered noise on the unchanged H4 grid.
+The same history children supply both the computed row and its proved allocation amplitude.
+This is centered group noise, not canonical accuracy or a sum over all groups. -/
+theorem completedGroup_initial_grid (M d : ℕ) (hM : 0 < M) (hbins : B.bins.Nonempty)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (s t : Fin 3) (hst : s ≠ t) (ks ku : ℕ) (ss su : List (ZMod P))
+    (hs : r.source = gridChannel s ks ss) (hu : r.usage = gridChannel t ku su) :
+    let Xs := X s (side P ks) (CopyPadding.identifier B.padding ss)
+    let Yu := Y t (side P ku) (CopyPadding.identifier B.padding su)
+    let A := B.initialGroupInput M d r
+    let F := conditionalWalk Xs Yu
+      (graph s t hst (side P ks) (side P ku) (side_le P ks) (side_le P ku)
+        (CopyPadding.identifier B.padding ss) (CopyPadding.identifier B.padding su))
+      (fun _ _ => B.steps M r d) A
+    B.completedGroup (fun m r => if m < M then B.evaluate m r else none)
+      M d (.pilotInput ⟨0, HP.k_pos⟩) r = some F ∧
+    rowNormPow 4 P r.source.rate Xs Yu
+      (fun σ x y => F σ x y - rowSliceMean Xs Yu A x y) ≤
+        (((2 : ℝ) ^ (-B.requestPrecision M r)) * (64 : ℝ)⁻¹ ^ d) ^ 4 := by
+  dsimp only
+  constructor
+  · rw [B.completedGroup_initial M d hM hbins r]
+    exact B.complete_grid M r s t hst ks ku ss su hs hu _ d
+  · have hsource : 0 < r.source.rate := by rw [hs]; exact rate_pos ks
+    exact B.completion_noise M r s t hst ks ku ss su hsource _
+      (B.initialGroupInput_bound M d r) d
 
 /-- Every successful shared normalized call has the existing actual range, usage guard,
 and rank-channel row sparsity, irrespective of lower-call errors. This is the safety

@@ -1047,22 +1047,64 @@ private lemma shared_scheduled (HP : FourthRootHierarchyParams 16 1 16 32 8) :
     split_ifs <;> rfl
   have hm (l : List ℕ) (f : ℕ → Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ) :
       l.mapM (fun x => some (f x)) = some (l.map f) := List.mapM_pure
-  unfold BudgetData.raw
-  dsimp only
-  simp only [List.append_nil, List.mapM_map]
+  have he : ((budgetData HP).rays (.pilotInput ⟨0, HP.k_pos⟩)).isEmpty = false := by
+    simp [BudgetData.rays, budgetData]
+  unfold BudgetData.raw BudgetData.completedGroup
+  simp only [he]
+  simp only [Bool.false_eq_true, ↓reduceIte]
+  simp only [BudgetData.rays, List.append_nil, List.mapM_map]
   dsimp only [Function.comp_def]
   simp_rw [BudgetData.pairedSample_initial _ 64 _ (by decide), shared_initial, hs]
   simp_rw [hc]
-  simp only [bind, pure, Option.bind_some]
+  simp only [bind, pure]
+  simp_rw [hm]
+  simp only [Option.bind_some]
+  simp_rw [List.map_map]
+  dsimp only [Function.comp_def]
   simp_rw [shared_complete_const]
   simp_rw [hm]
   simp only [Option.bind_some]
-  simp_rw [hm]
-  simp only [Option.bind_some]
-  norm_num [List.range_succ, bind, pure, budgetData,
+  norm_num [List.range_succ, Cslib.RowCompression.dyadicSlack, bind, pure, budgetData,
     LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff]
-  funext σ x y
-  split_ifs <;> simp_all
+
+-- Group aggregation is performed before its common completion. The two nonzero
+-- half-rays combine to the full row at slack 32; the finer slack-1 group cancels.
+set_option backward.isDefEq.respectTransparency false in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    (budgetData HP).completedGroup
+      (fun m r => if m < 64 then (budgetData HP).evaluate m r else none)
+      64 32 (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP) =
+      some (fun σ x y => if source σ x then base x y else 0) ∧
+    (budgetData HP).completedGroup
+      (fun m r => if m < 64 then (budgetData HP).evaluate m r else none)
+      64 1 (.pilotInput ⟨0, HP.k_pos⟩) (budgetRequest HP) = some 0 := by
+  have hinput (d : ℕ) : (budgetData HP).initialGroupInput 64 d (budgetRequest HP) =
+      fun (_ : Environment 5 3) x y =>
+        (if LogSpaceEstimation.lastBudget 64 d 1 0 = 0 then 0 else base x y) -
+        (if LogSpaceEstimation.lastBudget 64 (2 * d) 1 0 = 0 then 0 else base x y) := by
+    funext σ x y
+    simp only [BudgetData.initialGroupInput]
+    simp_rw [shared_initial]
+    norm_num [BudgetData.sampleScale, budgetData, budgetRequest, request, gridChannel, rate]
+    split_ifs <;> ring
+  constructor
+  all_goals
+    rw [BudgetData.completedGroup_initial _ 64 _ (by decide)
+      (show (budgetData HP).bins.Nonempty from by simp [budgetData]), hinput]
+    norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff]
+  · exact shared_complete_const HP 64 base 32
+  · rw [shared_complete_const HP 64 (fun _ _ => 0) 1]
+    congr 1
+    funext σ x y
+    split_ifs <;> rfl
+
+-- An empty initial schedule keeps its zero without touching history or validating
+-- a graph, including at budget zero. Unsupported main/residual dispatch stays separate.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ({ budgetData HP with bins := ∅ } : BudgetData HP 5).completedGroup
+      (fun _ _ => none) 0 1 (.pilotInput ⟨0, HP.k_pos⟩)
+      { budgetRequest HP with source := (budgetRequest HP).usage } = some 0 := by
+  simp [BudgetData.completedGroup, BudgetData.rays]
 
 -- A concrete active parent budget reaches those two bins through the one evaluator.
 example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
