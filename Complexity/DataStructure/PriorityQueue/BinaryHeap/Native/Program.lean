@@ -41,17 +41,19 @@ open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.PriorityQueue.WordRAM
 
 /-- The two initialization routines, fixed before every runtime dimension and base. -/
-@[expose] def initialization : Fin 2 → Certificate .exact :=
-  ![⟨Initialize.realizes_reserve⟩, ⟨Initialize.realizes_metadata⟩]
+@[expose] noncomputable def initialization : Fin 2 → Certificate .exact :=
+  ![Certificate.ofRealizes Initialize.realizes_reserve,
+    Certificate.ofRealizes Initialize.realizes_metadata]
 
 /-- One static register family for all methods and both initialization routines. -/
-@[expose] def family : Fin 5 ⊕ Fin 2 → Certificate .exact := Sum.elim certificates initialization
+@[expose] noncomputable def family : Fin 5 ⊕ Fin 2 → Certificate .exact :=
+  Sum.elim certificates initialization
 
 /-- The runtime parameter-independent register count. -/
 noncomputable abbrev registers := Backend.registers family
 
 /-- The common method-argument positions: n, count address, count length, base, handle and key. -/
-def argument (i : Fin 6) : Fin registers := Backend.src family (.inl 2) i
+noncomputable def argument (i : Fin 6) : Fin registers := Backend.src family (.inl 2) i
 
 /-- Four common result/scratch slots, also used for three tag bits and a staged zero. -/
 noncomputable def bank (i : Fin 4) : Fin registers :=
@@ -443,25 +445,14 @@ theorem wrap_body {w n K : ℕ} (L : Memory.Layout n) (x : Data registers)
     | exact hy
     | exact (Exec.copy (B := Basis.exact) (d := bank 2) (s := bank 1)).bounded hy
   · cases o <;> rfl
-  · cases o <;> try rfl
-    change (y.set (bank 2) (y.regs (bank 1))).regs (Backend.frontier family) =
-      y.regs (Backend.frontier family)
-    simp only [Data.set_regs, Function.update_of_ne (bank_ne_frontier 2).symm]
+  · cases o <;> rfl
   · intro i
     cases o <;> try rfl
     change (y.set (bank 2) (y.regs (bank 1))).regs (argument (i.castAdd 2)) = _
     simp only [Data.set_regs, Function.update_of_ne (bank_ne_argument 2 (i.castAdd 2)).symm]
-  · cases o <;> try rfl
-    change (y.set (bank 2) (y.regs (bank 1))).regs (bank 0) = y.regs (bank 0)
-    simp only [Data.set_regs, Function.update_of_ne
-      (bank_injective.ne (by decide : (0 : Fin 4) ≠ 2))]
-  · cases o <;> try rfl
-    change (y.set (bank 2) (y.regs (bank 1))).regs (bank 1) = y.regs (bank 1)
-    simp only [Data.set_regs, Function.update_of_ne
-      (bank_injective.ne (by decide : (1 : Fin 4) ≠ 2))]
-  · cases o <;> try rfl
-    change Function.update y.regs (bank 2) (y.regs (bank 1)) (bank 2) = y.regs (bank 1)
-    exact Function.update_self _ _ _
+  · cases o <;> rfl
+  · cases o <;> rfl
+  · cases o <;> rfl
 
 private theorem reserve_layout :
     Function.Injective reserveScratch ∧

@@ -10,9 +10,13 @@ module
 public import Complexity.Computability.WordRAM.Realization.Basic
 
 /-!
-# Selecting a uniform realization witness
+# Retaining a uniform realization witness
 
-These projections choose one witness of `Realizes` before any runtime argument, width, memory
+`Realizes.Witness` retains supplied scratch, factor and emitter data with the same execution
+contract as `Realizes`. Its erasure supplies the existential judgment without discarding the
+data used by a concrete backend.
+
+The legacy projections choose one witness of `Realizes` before any runtime argument, width, memory
 or register layout. They use classical choice from a proposition: they do not claim executable
 extraction from an arbitrary proof. They let adapters refer to the same emitted native code and
 its proved exchange factor, without adding another realization judgment.
@@ -20,6 +24,8 @@ its proved exchange factor, without adding another realization judgment.
 ## Main definitions
 
 * `Realizes.scratchSize`, `Realizes.factor`, `Realizes.code`: select the uniform witness.
+* `Realizes.Witness`: retain a specified witness and its execution contract.
+* `Realizes.Witness.ofRealizes`: an existential-only choice fallback.
 
 ## Main results
 
@@ -35,6 +41,26 @@ open Cslib.DataStructure
 variable {B : Basis} {δ α : Type} {k l : ℕ}
   {p : δ → Memory.Prog α} {input : δ ↪ (Fin k → ℕ)} {output : α ↪ (Fin l → ℕ)}
   {safe : ℕ → δ → Memory.State → Prop} {work : δ → Memory.State → ℕ}
+
+/-- A specified realization, retaining its resource parameters and emitter as data. Correctness
+is the same contract existentially quantified by `Realizes`, not a new execution semantics. -/
+structure Witness (B : Basis) (p : δ → Memory.Prog α) (input : δ ↪ (Fin k → ℕ))
+    (output : α ↪ (Fin l → ℕ)) (safe : ℕ → δ → Memory.State → Prop)
+    (work : δ → Memory.State → ℕ) where
+  /-- Auxiliary registers, excluding results and the reserved extra slot. -/
+  scratchSize : ℕ
+  /-- Exchange factor for memory charges plus local work. -/
+  factor : ℕ
+  /-- The emitter, fixed before all runtime values and register placements. -/
+  code : ∀ {r : ℕ}, (frontier : Fin r) → (Fin k → Fin r) →
+    (Fin (l + scratchSize + 1) → Fin r) → Code B r
+  /-- The existing execution, whole-memory/frontier and register-frame contract. -/
+  code_spec : Spec B p input output safe work scratchSize factor code
+
+/-- Forget resource and emitter selection while retaining the original realization judgment. -/
+theorem Witness.toRealizes (h : Witness B p input output safe work) :
+    Realizes B p input output safe work :=
+  ⟨h.scratchSize, h.factor, h.code, h.code_spec⟩
 
 /-- Number of auxiliary registers, chosen independently of every runtime value. -/
 noncomputable def scratchSize (h : Realizes B p input output safe work) : ℕ := h.choose
@@ -66,5 +92,14 @@ theorem code_spec (h : Realizes B p input output safe work) {r : ℕ}
           output ((Memory.spec w).clientResult (memoryState frontier x) (p d)) i) ∧
         ∀ i, i ≠ frontier → (∀ j, tmp j ≠ i) → y.regs i = x.regs i :=
   h.choose_spec.choose_spec.choose_spec frontier src tmp hi hd hf hs
+
+/-- Select a witness from an existential realization. This fallback preserves correctness but
+does not assert concrete scratch, factor or code identities for a particular derivation. -/
+noncomputable def Witness.ofRealizes (h : Realizes B p input output safe work) :
+    Witness B p input output safe work where
+  scratchSize := h.scratchSize
+  factor := h.factor
+  code := h.code
+  code_spec := h.choose_spec.choose_spec.choose_spec
 
 end Cslib.WordRAM.Realization.Realizes
