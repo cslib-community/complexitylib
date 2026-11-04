@@ -43,24 +43,14 @@ open ProbComp Turing.MultiTapeTM
 /-- The centered-binomial program is uniformly strict PPT, with a unary parameter and binary
 signed output. No fixed finite output type or finite-rank encoding is used. -/
 theorem isPPTOn_sampleCenteredBinomial :
-    IsPPTOn encUnary encIntBin sampleCenteredBinomial := by
-  have hcount : IsPPTOn encUnary encUnary
-      (fun η => OracleComp.countTrue η (ProbComp.uniform Bool)) :=
-    (isPPTOn_uniform_bool encUnary).countTrue .id'
-  have hcast : ComputableTidilyInPolyTime (fun n : ℕ => (n : ℤ)) encUnary encIntBin :=
-    ComputableTidilyInPolyTime.intBin_natCast.comp
-      ComputableTidilyInPolyTime.unary_to_binary
-  have hsub : ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ => (p.1.2 : ℤ) - p.2)
-      (encPair (encPair encUnary encUnary) encUnary) encIntBin :=
-    ComputableTidilyInPolyTime.intBin_sub.comp
-      ((hcast.comp ((ComputableTidilyInPolyTime.fst _ _).snd')).prod
-        (hcast.comp (ComputableTidilyInPolyTime.snd _ _)))
-  have hsecond := (hcount.preprocess
-    (ComputableInPolyTime.fst encUnary encUnary)).map_with
-      (f := fun (p : ℕ × ℕ) (negative : ℕ) => (p.2 : ℤ) - negative) (.of_tidy hsub)
-  unfold sampleCenteredBinomial
-  apply hcount.bind_with
-  simpa only [bind_pure_comp] using hsecond
+    IsPPTOn encUnary encIntBin sampleCenteredBinomial :=
+  let e1 := encPair encUnary encUnary
+  let hcount := (isPPTOn_uniform_bool encUnary).countTrue .id'
+  let hcast := ComputableInPolyTime.unary_to_binary.trans .intBin_natCast
+  let hsub := ((((ComputableInPolyTime.fst e1 encUnary).trans
+    (.snd encUnary encUnary)).trans hcast).prod
+    ((ComputableInPolyTime.snd e1 encUnary).trans hcast)).trans .intBin_sub
+  hcount.bind_with ((hcount.preprocess (.fst encUnary encUnary)).bind_with hsub.isPPTOn)
 
 end Cslib.Probability
 

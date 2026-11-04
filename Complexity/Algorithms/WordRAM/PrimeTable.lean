@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.PrimeTrial
 public import Mathlib.NumberTheory.PrimeCounting
 
@@ -115,27 +116,22 @@ private theorem exec_test {w m : ℕ} (x : Data 15) (htwo : x.regs two = 2)
   · let p := x.set arg (x.regs cursor)
     have hcopy : ExecWithin (B := .standard) w (ram[ arg ← cursor ]) x p 1 :=
       ExecWithin.copy
-    obtain ⟨a, ha, haf, haa, ham⟩ := PrimeTrial.exec (p.comap trialRegisters)
-      (by change 2 ≤ x.regs cursor; omega)
-      (hfit.of_le (by change x.regs cursor + 2 ≤ m + 3; omega))
-    let y := a.extend trialRegisters p
-    have hf : y.regs flag = a.regs PrimeTrial.flag := by
-      change Function.extend trialRegisters a.regs p.regs (trialRegisters PrimeTrial.flag) = _
-      exact trial_injective.extend_apply _ _ _
-    refine ⟨y, ?_, hf.trans haf, ham, ?_⟩
+    obtain ⟨y, ha, ⟨haf, _, ham⟩, hframe⟩ := ExecWithin.rename_post trial_injective
+      (PrimeTrial.exec (p.comap trialRegisters)
+        (by change 2 ≤ x.regs cursor; omega)
+        (hfit.of_le (by change x.regs cursor + 2 ≤ m + 3; omega)))
+    refine ⟨y, ?_, haf, ham, ?_⟩
     · exact (ExecWithin.branch_neg (by simpa only [Cond.holds_lt, htwo] using hp)
-        (hcopy.seq (ha.rename trial_injective))).mono (by
+        (hcopy.seq ha)).mono (by
           change 1 + (7 * (x.regs cursor - 2) + 6) + 2 ≤ 7 * m + 9
           omega)
     · intro i hi
-      change Function.extend trialRegisters a.regs p.regs i = x.regs i
-      rw [Function.extend_apply']
-      · have hne : i ≠ arg := by intro h; subst i; change 6 ≤ 0 at hi; omega
-        exact Function.update_of_ne hne _ _
-      · rintro ⟨j, hj⟩
-        have := congrArg Fin.val hj
-        dsimp [trialRegisters] at this
-        omega
+      have hne : i ≠ arg := by intro h; subst i; change 6 ≤ 0 at hi; omega
+      refine (hframe i ?_).trans (Function.update_of_ne hne _ _)
+      intro j hj
+      have hv := congrArg Fin.val hj
+      dsimp [trialRegisters] at hv
+      omega
 
 
 /-- Write every primality bit through `m`, count exactly `Nat.primesLE m`, and preserve

@@ -7,123 +7,90 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.WordRAM.Realization.Backend
 public import Complexity.Computability.WordRAM.Realization.Primitive
-public import Complexity.Computability.WordRAM.Realization.Witness
-public import Complexity.DataStructure.StateTransition.Resource
 
 /-!
-# An operation-level native backend for the memory interface
+# A fixed seven-register backend for the memory interface
 
-Four uniform primitive realization witnesses supply four static native bodies. The source query
-constructor selects its body; its argument values never select or generate native code. This is
-an operation-level implementation for `DataStructure.Module.realize`, not a single native
-dispatcher for all queries. Witness selection uses classical choice from realization proofs;
-no effective code extraction is asserted.
+The four primitive witnesses are retained as data in the existing `Certificate`/`Backend`.
+Their supplied scratch, factor and code determine seven registers and exchange factor four;
+no resource projection chooses again from an existential proof.
 
-`prepare` installs already delivered arguments in two registers without changing memory or the
-frontier. This is a semantic calling convention, and its installation and result decoding are
-uncharged. `instruction_bound` counts only the selected body's actual `Exec` instructions; it
-does not include a final halt or imply a whole-client machine-clock bound. Client-side argument
-computation, glue and control require the separate graded realization rules.
-
-The representation retains the literal global memory function and frontier, as well as global
-word bounds. Every actual execution from the prepared state is correct, by determinism of the
-same native code whose existence follows from its realization certificate.
+`prepare` retains the existing calling convention: already delivered arguments occupy registers
+one and two, with an unused second word zeroed. Installation and typed result decoding are
+uncharged. `instruction_bound` counts selected body instructions only, with no halt or native
+client-control claim. Full memory, frontier, admissibility and word bounds are retained.
 
 ## Main definitions
 
-* `MemoryBackend.body`, `MemoryBackend.prepare`, `MemoryBackend.exec`: static operation bodies
-  and their existing native execution evidence.
-* `MemoryBackend.implementation`: a generic `DataStructure.StateTransitionImpl`.
+* `certificates`, `backend`: the four supplied primitive witnesses in the shared backend.
+* `body`, `prepare`, `exec`, `implementation`: the existing operation-level execution interface.
 
 ## Main results
 
-* `MemoryBackend.instruction_bound`: a uniform body-instruction bound in `Memory.charge + 1`.
+* `registers_eq`, `factor_eq`: concrete resources of the supplied family.
+* `read_code`, `write_code`: literal one-instruction bodies.
+* `instruction_bound`: the existing body-only charge bound.
 -/
-
 
 namespace Cslib.WordRAM.Realization.MemoryBackend
 
 open Cslib.DataStructure
 
-private abbrev word : ℕ ↪ (Fin 1 → ℕ) :=
-  (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
+local notation "word" => Equiv.toEmbedding (Equiv.symm (Equiv.funUnique (Fin 1) ℕ))
 
-private theorem readCertificate :
-    Realizes .exact (fun a : ℕ => Memory.read a) word word
-      (fun _ _ _ => True) (fun _ _ => 0) := Realizes.read word 0
+/-- Supplied witnesses for read, write, zeroed allocation and dirty allocation, in that order. -/
+@[expose] public def certificates : Fin 4 → Certificate .exact :=
+  ![⟨Realizes.readWitness word 0⟩,
+    ⟨Realizes.writeWitness (Function.Embedding.refl (Fin 2 → ℕ)) 0 1⟩,
+    ⟨Realizes.allocWitness word 0⟩, ⟨Realizes.allocDirtyWitness word 0⟩]
 
-private theorem writeCertificate :
-    Realizes .exact (fun a : Fin 2 → ℕ => Memory.write (a 0) (a 1))
-      (Function.Embedding.refl _) (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
-      (fun _ _ _ => True) (fun _ _ => 0) := Realizes.write (.refl _) 0 1
+/-- The memory operations use their original programs and typed results through one backend. -/
+@[expose] public def backend (w : ℕ) : Backend (Memory.spec w) certificates where
+  tag
+    | .read _ => 0
+    | .write _ _ => 1
+    | .alloc _ => 2
+    | .allocDirty _ => 3
+  arg
+    | .read a => a
+    | .write a v => ![a, v]
+    | .alloc n => n
+    | .allocDirty n => n
+  answer
+    | .read _ => id
+    | .write _ _ => id
+    | .alloc _ => id
+    | .allocDirty _ => id
 
-private theorem allocCertificate :
-    Realizes .exact (fun a : ℕ => Memory.alloc a) word word
-      (fun _ _ _ => True) (fun _ _ => 0) := Realizes.alloc word 0
+/-- The family has two argument slots, four result/scratch slots and one frontier. -/
+@[expose] public noncomputable def registers : ℕ := Backend.registers certificates
 
-private theorem dirtyCertificate :
-    Realizes .exact (fun a : ℕ => Memory.allocDirty a) word word
-      (fun _ _ _ => True) (fun _ _ => 0) := Realizes.allocDirty word 0
-
-private noncomputable def slots : ℕ :=
-  (1 + readCertificate.scratchSize + 1) + (0 + writeCertificate.scratchSize + 1) +
-    (1 + allocCertificate.scratchSize + 1) + (1 + dirtyCertificate.scratchSize + 1)
-
-/-- One register count is selected before every width, state, query and argument. -/
-public noncomputable def registers : ℕ := slots + 3
+/-- Concrete register count, determined by the supplied witnesses. -/
+public theorem registers_eq : registers = 7 := by decide
 
 /-- Register zero retains the allocation frontier across calls. -/
-public noncomputable def frontier : Fin registers := ⟨0, by unfold registers; omega⟩
+@[expose] public noncomputable def frontier : Fin registers := Backend.frontier certificates
 
-private noncomputable def src {k : ℕ} (hk : k ≤ 2) (i : Fin k) : Fin registers :=
-  ⟨i.val + 1, by have := i.isLt; unfold registers; omega⟩
+private def src {k : ℕ} (hk : k ≤ 2) (i : Fin k) : Fin registers :=
+  ⟨i.val + 1, by rw [registers_eq]; have := i.isLt; omega⟩
 
-private noncomputable def tmp {n : ℕ} (hn : n ≤ slots) (i : Fin n) : Fin registers :=
-  ⟨i.val + 3, by have := i.isLt; unfold registers; omega⟩
+private def resultReg : Fin registers := ⟨3, by rw [registers_eq]; decide⟩
 
-private theorem layout {k n : ℕ} (hk : k ≤ 2) (hn : n ≤ slots) :
-    Function.Injective (tmp hn) ∧ (∀ i j, src hk i ≠ tmp hn j) ∧
-      (∀ j, tmp hn j ≠ frontier) ∧ (∀ i, src hk i ≠ frontier) := by
-  refine ⟨?_, ?_, ?_, ?_⟩
-  · intro i j h
-    apply Fin.ext
-    have := congrArg Fin.val h
-    simp only [tmp] at this
-    omega
-  · intro i j h
-    have := congrArg Fin.val h
-    simp only [src, tmp] at this
-    have := i.isLt
-    omega
-  · intro j h
-    have := congrArg Fin.val h
-    simp only [tmp, frontier] at this
-    omega
-  · intro i h
-    have := congrArg Fin.val h
-    simp only [src, frontier] at this
-    omega
+/-- The four bodies are exactly the supplied bodies of the shared backend. -/
+@[expose] public noncomputable def body (o : Memory.Op) : Code .exact registers :=
+  Backend.code certificates ((backend 0).tag o)
 
-private theorem readSlots : 1 + readCertificate.scratchSize + 1 ≤ slots := by
-  unfold slots; omega
+/-- The supplied read is the literal load from argument register one to result register three. -/
+public theorem read_code (a : ℕ) :
+    body (.read a) = .op (.load ⟨3, by rw [registers_eq]; decide⟩
+      ⟨1, by rw [registers_eq]; decide⟩) := rfl
 
-private theorem writeSlots : 0 + writeCertificate.scratchSize + 1 ≤ slots := by
-  unfold slots; omega
-
-private theorem allocSlots : 1 + allocCertificate.scratchSize + 1 ≤ slots := by
-  unfold slots; omega
-
-private theorem dirtySlots : 1 + dirtyCertificate.scratchSize + 1 ≤ slots := by
-  unfold slots; omega
-
-/-- Four static bodies, selected only by the query constructor. All emitters were chosen before
-the query's runtime arguments. There is no native operation-tag dispatcher. -/
-public noncomputable def body : Memory.Op → Code .exact registers
-  | .read _ => readCertificate.code frontier (src (by omega)) (tmp readSlots)
-  | .write _ _ => writeCertificate.code frontier (src le_rfl) (tmp writeSlots)
-  | .alloc _ => allocCertificate.code frontier (src (by omega)) (tmp allocSlots)
-  | .allocDirty _ => dirtyCertificate.code frontier (src (by omega)) (tmp dirtySlots)
+/-- The supplied store is the literal store from argument register two to address register one. -/
+public theorem write_code (a v : ℕ) :
+    body (.write a v) = .op (.store ⟨1, by rw [registers_eq]; decide⟩
+      ⟨2, by rw [registers_eq]; decide⟩) := rfl
 
 private def first : Memory.Op → ℕ
   | .read a | .write a _ => a
@@ -133,8 +100,7 @@ private def second : Memory.Op → ℕ
   | .write _ v => v
   | _ => 0
 
-/-- Semantic installation of delivered arguments in registers one and two. Installation is
-uncharged and is not asserted to execute as part of `body`. -/
+/-- Deliver arguments in registers one and two; this is an uncharged calling convention. -/
 public noncomputable def prepare (o : Memory.Op) (x : Data registers) : Data registers :=
   (x.set (src (k := 2) le_rfl 0) (first o)).set (src (k := 2) le_rfl 1) (second o)
 
@@ -143,7 +109,7 @@ public theorem prepare_memoryState (o : Memory.Op) (x : Data registers) :
     memoryState frontier (prepare o x) = memoryState frontier x := by
   apply Memory.State.ext
   · rfl
-  · simp [memoryState, prepare, Data.set, src, frontier]
+  · rfl
 
 private theorem prepare_bounded {w : ℕ} {o : Memory.Op} {x : Data registers}
     (hx : x.Bounded w) (hv : Memory.valid w (memoryState frontier x) o) :
@@ -161,53 +127,44 @@ private theorem prepare_bounded {w : ℕ} {o : Memory.Op} {x : Data registers}
     | _ => exact fits_zero w
   exact (hx.set hfirst).set hsecond
 
-private theorem prepare_unary (o : Memory.Op) (x : Data registers) :
-    (prepare o x).regs ∘ src (k := 1) (by omega) = word (first o) := by
-  funext i
-  have hi : i = 0 := Fin.eq_zero i
-  subst i
-  simp [prepare, src, Data.set, word]
-
-private theorem prepare_binary (a v : ℕ) (x : Data registers) :
-    (prepare (.write a v) x).regs ∘ src (k := 2) le_rfl =
-      fun i => if i = 0 then a else v := by
-  funext i
-  fin_cases i <;> simp [prepare, src, first, second, Data.set]
-
-/-- Typed observation of the primitive result: word answers occupy the first scratch register;
-the store has the unique unit answer. Decoding performs no charged native instruction. -/
+/-- Typed observations retain the existing word/unit convention without native decoding work. -/
 public noncomputable def result (o : Memory.Op) (y : Data registers) : o.Result :=
   match o with
-  | .read _ => y.regs (tmp readSlots 0)
+  | .read _ => y.regs resultReg
   | .write _ _ => ()
-  | .alloc _ => y.regs (tmp allocSlots 0)
-  | .allocDirty _ => y.regs (tmp dirtySlots 0)
+  | .alloc _ => y.regs resultReg
+  | .allocDirty _ => y.regs resultReg
 
-/-- Existing native `Exec` evidence for a typed operation, following uncharged argument delivery.
-Its natural-number trace counts body instructions only, with no final halt. -/
+/-- Existing operation-level native body traces, following uncharged argument delivery. -/
 public noncomputable def exec (w : ℕ) : Execution (Memory.spec w) (Data registers) ℕ :=
   fun x o a y n => Exec w (body o) (prepare o x) y n ∧ a = result o y
 
-/-- The execution interface records actual native body instructions and the typed observation. -/
+/-- The execution interface records the actual body instructions and typed observation. -/
 public theorem exec_iff (w : ℕ) (x y : Data registers) (o : Memory.Op) (a : o.Result) (n : ℕ) :
     exec w x o a y n ↔ Exec w (body o) (prepare o x) y n ∧ a = result o y := Iff.rfl
 
-/-- Changing a read's delivered address leaves its static native body unchanged. -/
-public theorem body_read_eq (a b : ℕ) : body (.read a) = body (.read b) := by rfl
+/-- Runtime addresses do not select new read code. -/
+public theorem body_read_eq (a b : ℕ) : body (.read a) = body (.read b) := rfl
 
-/-- Changing a store's delivered address or value leaves its static body unchanged. -/
-public theorem body_write_eq (a v b u : ℕ) : body (.write a v) = body (.write b u) := by rfl
+/-- Runtime addresses and values do not select new store code. -/
+public theorem body_write_eq (a v b u : ℕ) : body (.write a v) = body (.write b u) := rfl
 
-/-- Changing the allocation count leaves its static native body unchanged. -/
-public theorem body_alloc_eq (a b : ℕ) : body (.alloc a) = body (.alloc b) := by rfl
+/-- Runtime counts do not select new zeroed-allocation code. -/
+public theorem body_alloc_eq (a b : ℕ) : body (.alloc a) = body (.alloc b) := rfl
 
-/-- Changing the dirty-allocation count leaves its static body unchanged. -/
-public theorem body_allocDirty_eq (a b : ℕ) : body (.allocDirty a) = body (.allocDirty b) := by rfl
+/-- Runtime counts do not select new dirty-allocation code. -/
+public theorem body_allocDirty_eq (a b : ℕ) : body (.allocDirty a) = body (.allocDirty b) := rfl
 
-/-- A single body-instruction exchange factor, independent of widths and arguments. -/
-public noncomputable def factor : ℕ :=
-  max (max readCertificate.factor writeCertificate.factor)
-    (max allocCertificate.factor dirtyCertificate.factor)
+/-- A single exchange factor for all four supplied primitive bodies. -/
+@[expose] public noncomputable def factor : ℕ := Backend.factor certificates
+
+/-- Concrete factor, retained from the supplied four primitive witnesses. -/
+public theorem factor_eq : factor = 4 := by decide
+
+private theorem prepare_inputs (o : Memory.Op) (x : Data registers) :
+    (prepare o x).regs ∘ Backend.src certificates ((backend 0).tag o) =
+      (certificates ((backend 0).tag o)).input ((backend 0).arg o) := by
+  cases o <;> funext j <;> fin_cases j <;> rfl
 
 private theorem exists_body {w : ℕ} {x : Data registers} (o : Memory.Op)
     (hx : x.Bounded w) (hv : Memory.valid w (memoryState frontier x) o) :
@@ -216,77 +173,35 @@ private theorem exists_body {w : ℕ} {x : Data registers} (o : Memory.Op)
       memoryState frontier y = (Memory.step (memoryState frontier x) o).1 ∧
       result o y = (Memory.step (memoryState frontier x) o).2 := by
   have hb := prepare_bounded hx hv
-  cases o with
-  | read a =>
-    obtain ⟨hi, hd, hf, hs⟩ := layout (k := 1) (by omega) readSlots
-    have hv' : (Memory.spec w).ValidHistory (memoryState frontier (prepare (.read a) x))
-        ((Memory.spec w).clientHistory (memoryState frontier (prepare (.read a) x))
-          (Memory.read a)) := by
-      simpa only [StateTransitionSpec.clientHistory, StateTransitionSpec.runClient_lift,
-        prepare_memoryState, StateTransitionSpec.validHistory_cons,
-        StateTransitionSpec.validHistory_nil, and_true] using hv
-    obtain ⟨y, ⟨n, hn, he⟩, hm, hout, _⟩ :=
-      (readCertificate.code_spec frontier _ _ hi hd hf hs).2 w a _ hb
-        (prepare_unary (.read a) x) trivial hv'
-    refine ⟨y, n, he, ?_, ?_, ?_⟩
-    · change n ≤ readCertificate.factor * (1 + 0 + 1) at hn
-      exact hn.trans (Nat.mul_le_mul_right _ (by unfold factor; omega))
-    · simpa [StateTransitionSpec.clientState, StateTransitionSpec.runClient_lift,
-        prepare_memoryState] using hm
-    · simpa [result, word, tmp, StateTransitionSpec.clientResult,
-        StateTransitionSpec.runClient_lift, prepare_memoryState] using hout 0
-  | write a v =>
-    obtain ⟨hi, hd, hf, hs⟩ := layout (k := 2) le_rfl writeSlots
-    have hv' : (Memory.spec w).ValidHistory (memoryState frontier (prepare (.write a v) x))
-        ((Memory.spec w).clientHistory (memoryState frontier (prepare (.write a v) x))
-          (Memory.write a v)) := by
-      simpa only [StateTransitionSpec.clientHistory, StateTransitionSpec.runClient_lift,
-        prepare_memoryState, StateTransitionSpec.validHistory_cons,
-        StateTransitionSpec.validHistory_nil, and_true] using hv
-    obtain ⟨y, ⟨n, hn, he⟩, hm, _, _⟩ :=
-      (writeCertificate.code_spec frontier _ _ hi hd hf hs).2 w
-        (fun i => if i = 0 then a else v) _ hb (prepare_binary a v x) trivial hv'
-    refine ⟨y, n, he, ?_, ?_, rfl⟩
-    · change n ≤ writeCertificate.factor * (1 + 0 + 1) at hn
-      exact hn.trans (Nat.mul_le_mul_right _ (by unfold factor; omega))
-    · simpa [StateTransitionSpec.clientState, StateTransitionSpec.runClient_lift,
-        prepare_memoryState] using hm
-  | alloc a =>
-    obtain ⟨hi, hd, hf, hs⟩ := layout (k := 1) (by omega) allocSlots
-    have hv' : (Memory.spec w).ValidHistory (memoryState frontier (prepare (.alloc a) x))
-        ((Memory.spec w).clientHistory (memoryState frontier (prepare (.alloc a) x))
-          (Memory.alloc a)) := by
-      simpa only [StateTransitionSpec.clientHistory, StateTransitionSpec.runClient_lift,
-        prepare_memoryState, StateTransitionSpec.validHistory_cons,
-        StateTransitionSpec.validHistory_nil, and_true] using hv
-    obtain ⟨y, ⟨n, hn, he⟩, hm, hout, _⟩ :=
-      (allocCertificate.code_spec frontier _ _ hi hd hf hs).2 w a _ hb
-        (prepare_unary (.alloc a) x) trivial hv'
-    refine ⟨y, n, he, ?_, ?_, ?_⟩
-    · change n ≤ allocCertificate.factor * (a + 1 + 0 + 1) at hn
-      exact hn.trans (Nat.mul_le_mul_right _ (by unfold factor; omega))
-    · simpa [StateTransitionSpec.clientState, StateTransitionSpec.runClient_lift,
-        prepare_memoryState] using hm
-    · simpa [result, word, tmp, StateTransitionSpec.clientResult,
-        StateTransitionSpec.runClient_lift, prepare_memoryState] using hout 0
-  | allocDirty a =>
-    obtain ⟨hi, hd, hf, hs⟩ := layout (k := 1) (by omega) dirtySlots
-    have hv' : (Memory.spec w).ValidHistory (memoryState frontier (prepare (.allocDirty a) x))
-        ((Memory.spec w).clientHistory (memoryState frontier (prepare (.allocDirty a) x))
-          (Memory.allocDirty a)) := by
-      simpa only [StateTransitionSpec.clientHistory, StateTransitionSpec.runClient_lift,
-        prepare_memoryState, StateTransitionSpec.validHistory_cons,
-        StateTransitionSpec.validHistory_nil, and_true] using hv
-    obtain ⟨y, ⟨n, hn, he⟩, hm, hout, _⟩ :=
-      (dirtyCertificate.code_spec frontier _ _ hi hd hf hs).2 w a _ hb
-        (prepare_unary (.allocDirty a) x) trivial hv'
-    refine ⟨y, n, he, ?_, ?_, ?_⟩
-    · change n ≤ dirtyCertificate.factor * (1 + 0 + 1) at hn
-      exact hn.trans (Nat.mul_le_mul_right _ (by unfold factor; omega))
-    · simpa [StateTransitionSpec.clientState, StateTransitionSpec.runClient_lift,
-        prepare_memoryState] using hm
-    · simpa [result, word, tmp, StateTransitionSpec.clientResult,
-        StateTransitionSpec.runClient_lift, prepare_memoryState] using hout 0
+  have hprepare : memoryState (Backend.frontier certificates) (prepare o x) =
+      memoryState frontier x := prepare_memoryState o x
+  have hs : (certificates ((backend 0).tag o)).safe w ((backend 0).arg o)
+      (memoryState (Backend.frontier certificates) (prepare o x)) := by cases o <;> trivial
+  have hvalid : (Memory.spec w).ValidHistory
+      (memoryState (Backend.frontier certificates) (prepare o x))
+      ((Memory.spec w).clientHistory
+        (memoryState (Backend.frontier certificates) (prepare o x))
+        ((certificates ((backend 0).tag o)).prog ((backend 0).arg o))) := by
+    rw [hprepare]
+    cases o <;>
+      simpa [certificates, backend, StateTransitionSpec.clientHistory,
+        StateTransitionSpec.runClient_lift, StateTransitionSpec.validHistory_cons,
+        StateTransitionSpec.validHistory_nil, prepare_memoryState] using hv
+  obtain ⟨y, n, he, hn, hm, hout, -, -⟩ :=
+    Backend.exists_exec_live certificates ((backend 0).tag o) ((backend 0).arg o) hb
+      (prepare_inputs o x) hs hvalid
+  rw [hprepare] at hn hm hout
+  refine ⟨y, n, he, ?_, ?_, ?_⟩
+  · cases o <;>
+      simpa [factor, frontier, certificates, backend, memoryCost, StateTransitionSpec.clientHistory,
+      StateTransitionSpec.runClient_lift, StateTransitionSpec.totalCost_cons,
+      StateTransitionSpec.totalCost_nil, Nat.add_zero, prepare_memoryState] using hn
+  · cases o <;> exact hm
+  · cases o with
+    | write _ _ => rfl
+    | read _ | alloc _ | allocDirty _ =>
+      have hout0 := hout ⟨0, by change 0 < 1; decide⟩
+      exact hout0
 
 /-- The memory interface implemented by four static bodies. The representation includes every
 cell, the frontier and global word bounds; argument installation is semantic and uncharged. -/

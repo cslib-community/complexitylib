@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Header
 
 /-!
@@ -103,28 +104,12 @@ theorem exec_copy {W : ℕ} (x : Data 640) (h1 : Fits W 1)
       x.regs (copyBank ArrayCopySum.Reg.len) ≤ x.regs (copyBank ArrayCopySum.Reg.dst)) :
     ∃ y, ExecWithin W (ArrayCopySum.program.rename copyBank) x y
         (8 * x.regs (copyBank ArrayCopySum.Reg.len) + 4) ∧
-      y.mem = ArrayCopy.copyPrefix x.mem (x.regs (copyBank ArrayCopySum.Reg.src))
-        (x.regs (copyBank ArrayCopySum.Reg.dst)) (x.regs (copyBank ArrayCopySum.Reg.len)) ∧
-      y.regs (copyBank ArrayCopySum.Reg.src) = x.regs (copyBank ArrayCopySum.Reg.src) ∧
-      y.regs (copyBank ArrayCopySum.Reg.dst) = x.regs (copyBank ArrayCopySum.Reg.dst) ∧
-      y.regs (copyBank ArrayCopySum.Reg.len) = x.regs (copyBank ArrayCopySum.Reg.len) ∧
-      y.regs (copyBank ArrayCopySum.Reg.total) = x.regs (copyBank ArrayCopySum.Reg.total) +
-        ArrayCopySum.wordSum x.mem (x.regs (copyBank ArrayCopySum.Reg.src))
-          (x.regs (copyBank ArrayCopySum.Reg.len)) ∧
+      ArrayCopySum.Post copyBank x y ∧
       ∀ j : Fin 640, j.val < 620 ∨ 628 ≤ j.val → y.regs j = x.regs j := by
-  obtain ⟨a, ha, hm, hs', hd', hl, ht'⟩ := ArrayCopySum.exec (x.comap copyBank)
-    h1 hs hd ht hsep
-  let y := a.extend copyBank x
-  have hy : ExecWithin W (ArrayCopySum.program.rename copyBank) x y
-      (8 * x.regs (copyBank ArrayCopySum.Reg.len) + 4) := ha.rename copyBank_injective
-  refine ⟨y, hy, hm,
-    (copyBank_injective.extend_apply _ _ _).trans hs',
-    (copyBank_injective.extend_apply _ _ _).trans hd',
-    (copyBank_injective.extend_apply _ _ _).trans hl,
-    (copyBank_injective.extend_apply _ _ _).trans ht', ?_⟩
-  intro j hj
-  apply hy.regs_eq
-  apply Code.preserves_rename_of_forall_ne
+  obtain ⟨y, hy, post, hframe⟩ :=
+    ExecWithin.rename_post copyBank_injective (ArrayCopySum.exec (x.comap copyBank)
+      h1 hs hd ht hsep)
+  refine ⟨y, hy, post.of_comap, fun j hj => hframe j ?_⟩
   intro i he
   have hv := congrArg Fin.val he
   have hi := i.isLt

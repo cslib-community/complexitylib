@@ -85,6 +85,10 @@ lemma lets asymptotic clients inspect the time field without exposing the whole 
 theorem callee_time (n F : ℕ) : callee.time n F = callerTime n F := by
   simp only [callee]
 
+/-- The executable component is exactly the automatic native box program. -/
+theorem callee_code : callee.code = program := by
+  simp only [callee]
+
 /-- The actual fixed logarithmic admission coefficient, available without unfolding the
 semantic execution certificate. -/
 theorem callee_widthCoefficient : callee.widthCoefficient = 123357 := by

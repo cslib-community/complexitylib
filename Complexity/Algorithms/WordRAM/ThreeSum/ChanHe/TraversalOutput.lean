@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.ThreeSum.ChanHe.FromNumbers
 public import Complexity.Computability.WordRAM.ListArray
+import Complexity.Computability.WordRAM.MemoryView
 public import Complexity.Computability.WordRAM.Signed.Encoding
 
 /-!
@@ -22,10 +23,12 @@ predicate or execution model.
 ## Main definitions
 
 * `StoredNodes`: exact pointer-table and packed-array readback for the emitted preorder.
+* `OutputLayout`: live table and packed-array endpoints below a separate allocation frontier.
 
 ## Main results
 
 * `StoredNodes.congr`: transfer exact readback along a frame on its live cells.
+* `StoredNodes.frame`: preserve every live output under a frame below its allocation frontier.
 * `StoredNodes.append`: one actual pointer-table store appends a represented native node.
 
 The concrete output invariant and proofs are original.
@@ -46,6 +49,14 @@ structure StoredNodes (U N table : ℕ) (ns : List (ℕ × Node)) (mem : ℕ →
   cells : ∀ i : Fin ns.length, (Block.mk ns[i.val].1 (4 * N)).Realizes mem
     (fun u => Signed.encode (ns[i.val].2.oneArray U u.val))
 
+/-- The live output regions lie below a frontier, independently of their stored values.
+This bounds the table and payloads needed by later callers, not all temporary cells ever touched. -/
+structure OutputLayout (N table frontier : ℕ) (ns : List (ℕ × Node)) : Prop where
+  /-- The complete pointer table precedes the available workspace. -/
+  table_end : table + ns.length ≤ frontier
+  /-- Every emitted payload precedes the available workspace. -/
+  payload_end : ∀ i : Fin ns.length, ns[i.val].1 + 4 * N ≤ frontier
+
 /-- Empty traversal output imposes no pointed-to array obligations. -/
 theorem storedNodes_nil (U N table : ℕ) (mem : ℕ → ℕ) : StoredNodes U N table [] mem :=
   ⟨Block.holdsList_nil table mem, fun i => Fin.elim0 i⟩
@@ -60,6 +71,17 @@ theorem StoredNodes.congr {U N table : ℕ} {ns : List (ℕ × Node)} {before af
   refine ⟨h.pointers.frame (by simpa only [List.length_map] using ht), ?_⟩
   intro i u
   exact (hc i u.val u.isLt).trans (h.cells i u)
+
+/-- Keeping the prefix below the live frontier retains every table entry and packed payload. -/
+theorem StoredNodes.frame {U N table frontier : ℕ} {ns : List (ℕ × Node)}
+    {before after : ℕ → ℕ} (h : StoredNodes U N table ns before)
+    (hlayout : OutputLayout N table frontier ns)
+    (hframe : ∀ a < frontier, after a = before a) : StoredNodes U N table ns after := by
+  have ht := hlayout.table_end
+  refine ⟨?_, fun i => ?_⟩
+  · ram_keep h.pointers using hframe
+  · have hp := hlayout.payload_end i
+    ram_keep (h.cells i) using hframe
 
 /-- Appending one native pointer preserves all packed readback. The stored pointer lies below
 both the old arrays and the fresh array, so the actual store cannot overwrite array data. -/

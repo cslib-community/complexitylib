@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.RadixSort.Model
 public import Complexity.Computability.WordRAM.ListArray
+import Complexity.Computability.WordRAM.MemoryView
 
 /-!
 # Native stable digit-selection scan
@@ -192,9 +193,8 @@ theorem exec {w s d b t : ℕ} (xs acc : List ℕ) (x : Data 16)
         exact (he.regs_eq (preserves_low j hj)).trans (hr j hj)
       · rw [hzi, hsuc, ite_eq_left heq, List.length_append, List.length_singleton]
         omega
-      · apply hm.frame
-        intro a hlo hhi
-        rw [hzm, hyd, Function.update_of_ne (by rcases hdisj with h | h <;> omega)]
+      · rw [hzm, hyd]
+        rcases hdisj with h | h <;> ram_keep hm
       · rw [hzi, hsuc, ite_eq_left heq, hzm, hyd, hu]
         exact ha.append_one _
       · intro a hnot

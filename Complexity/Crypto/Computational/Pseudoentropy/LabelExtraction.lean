@@ -13,7 +13,6 @@ public import Complexity.Probability.UniformNat
 import Complexity.Crypto.Computational.Pseudoentropy.DenseMask
 import Complexity.Crypto.Computational.Pseudoentropy.MaskedExtraction
 import Complexity.Crypto.Game.Statistical
-import Complexity.Tactic.PolyTime
 
 /-!
 # Computational extraction of a pseudoentropy pair's labels
@@ -97,10 +96,6 @@ theorem HasGapWithAdvice.indexed_extracted_advantage_negligible {pair : Samplabl
       ((extractLabelsIdeal ((fun value => pair.encode n value.1) <$>
         pair.latentSample n) (count n) (seed n (choose n))).bind
           (fun output => ProbComp.eval (test (n, advice n) (choose n) output)))) := by
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hcandidates
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hcount
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hnumerator
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hdensity
   classical
   let error := fun n =>
     2 * Real.exp (-2 * slack n ^ 2 / (count n * (realization.length n + n + 2 : ℕ) ^ 2)) +
@@ -119,19 +114,17 @@ theorem HasGapWithAdvice.indexed_extracted_advantage_negligible {pair : Samplabl
     apply Real.coe_toNNReal
     positivity
   let inverseGap := fun n => dyadicSize (count n) * (n + 1) ^ degree
-  have hinverseGap : ComputableTidilyInPolyTime inverseGap encUnary encUnary := by
-    unfold inverseGap
-    polytime
-  have hgap (n : ℕ) : 0 < inverseGap n := by
-    exact Nat.mul_pos (dyadicSize_pos _) (Nat.pow_pos (by lia))
-  have hmasks := hpair.eventually_exists_indexed_mask reduced htest (.of_tidy hcandidates)
-    (.of_tidy hcount)
-    (.of_tidy hnumerator) (.of_tidy hdensity) (.of_tidy hinverseGap) hgap
+  have hinverseGap : ComputableInPolyTime inverseGap encUnary encUnary :=
+    (hcount.trans .unary_dyadicSize).unary_mul'
+      (ComputableInPolyTime.unary_succ.trans (.unary_pow degree))
+  have hgap (n : ℕ) : 0 < inverseGap n :=
+    Nat.mul_pos (dyadicSize_pos _) (Nat.pow_pos (by lia))
+  have hmasks := hpair.eventually_exists_indexed_mask reduced htest hcandidates hcount
+    hnumerator hdensity hinverseGap hgap
   have hbound : PolynomiallyBounded
-      (fun n => 2 * inverseGap n * dyadicSize (densityBound n)) := by
-    have := hinverseGap.polynomiallyBounded
-    have := hdensity.polynomiallyBounded
-    fun_prop
+      (fun n => 2 * inverseGap n * dyadicSize (densityBound n)) :=
+    ((PolynomiallyBounded.const 2).mul hinverseGap.tidy.polynomiallyBounded).mul
+      (hdensity.trans .unary_dyadicSize).tidy.polynomiallyBounded
   have hmass := maskedSample_dyadic_mass_ge_eventually
     (fun n => pair.latentSample n) (fun _ => id) (fun _ => Prod.snd)
     realization.length (fun n => 2 * inverseGap n * dyadicSize (densityBound n)) hbound
@@ -170,8 +163,26 @@ theorem HasGapWithAdvice.indexed_extracted_advantage_negligible {pair : Samplabl
     gcongr
     linarith
   have h := mul_le_mul_of_nonneg_left htotal (pow_nonneg (Nat.cast_nonneg n : (0 : ℝ) ≤ n) degree)
-  dsimp only [error, reduced] at h
-  nlinarith
+  rw [mul_add] at h
+  dsimp only [reduced] at h
+  change (n : ℝ) ^ degree * error n ≤ 1 at hsmall
+  linarith only [h, hprecision, hsmall]
+
+private theorem preprocess_indexed_test
+    (F : ℕ → ℕ → List (List Bool × Bool) → ProbComp Bool)
+    (htest : IsPPTOn (encPair (encPair encUnary encUnary)
+      (encList (encPair encBits encBool))) encBool
+      (fun ((n, i), samples) => F n i samples)) :
+    IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary)
+      (encList (encPair encBits encBool))) encBool
+      (fun ((a, i), samples) => F a.1 i samples) :=
+  let eS := encList (encPair encBits encBool)
+  let p0 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary) eS
+  have hEq : (fun x : ((ℕ × List Bool) × ℕ) × List (List Bool × Bool) =>
+      (fun ((n, i), samples) => F n i samples) ((x.1.1.1, x.1.2), x.2)) =
+    (fun ((a, i), samples) => F a.1 i samples) := rfl
+  Eq.mp (congrArg (IsPPTOn _ encBool) hEq)
+    (htest.preprocess ((p0.fst'.fst'.prod p0.snd').prod (.snd _ eS)))
 
 /-- Label extraction is computationally uniform along any valid choices from an efficient
 polynomial-size family. The choices need not be computable: the reduction handles all indices
@@ -213,18 +224,13 @@ theorem HasGap.indexed_extracted_advantage_negligible {pair : SamplablePair} {ga
       ((extractLabelsIdeal ((fun value => pair.encode n value.1) <$>
         pair.latentSample n) (count n) (seed n (choose n))).bind
           (fun output => ProbComp.eval (test n (choose n) output)))) := by
-  have hprepare : ComputableInPolyTime
-      (fun (((n, _), i), samples) => ((n, i), samples) :
-        ((ℕ × List Bool) × ℕ) × List (List Bool × Bool) →
-          (ℕ × ℕ) × List (List Bool × Bool))
-      (encPair (encPair (encPair encUnary encBits) encUnary)
-        (encList (encPair encBits encBool)))
-      (encPair (encPair encUnary encUnary)
-        (encList (encPair encBits encBool))) := by fun_prop
-  exact (hasGap_iff_hasGapWithAdvice_nil.mp hpair).indexed_extracted_advantage_negligible
-    realization choose seed hash (fun a i result => test a.1 i result)
-    (htest.preprocess hprepare) hcandidates hcount hnumerator hdensity
-    hchoose hvalid hhash hslack herror
+  have h := (hasGap_iff_hasGapWithAdvice_nil.mp hpair).indexed_extracted_advantage_negligible
+    realization choose seed hash (fun a i => test a.1 i)
+    (preprocess_indexed_test (fun n i s => extractLabels (seed n i) (hash n i) s >>= test n i)
+      htest)
+    hcandidates hcount hnumerator hdensity hchoose hvalid hhash hslack herror
+  dsimp only at h
+  exact h
 
 /-- The explicit repetition schedule makes any valid indexed label extractor computationally
 uniform relative to fixed advice. Only the proof uses the chosen indices; the sampler, hash, and
@@ -274,15 +280,10 @@ theorem HasGapWithAdvice.extract_indexed_labels {pair : SamplablePair} {gap : �
           (ExtractionSchedule.count n (realization.length n) (inverseSlack n))
           (seed n (choose n))).bind
             (fun output => ProbComp.eval (test (n, advice n) (choose n) output)))) := by
-  have hcandidates := hcandidates.tidy
-  have hslack := hslack.tidy
-  have hnumerator := hnumerator.tidy
-  have hdensity := hdensity.tidy
   apply hpair.indexed_extracted_advantage_negligible realization choose seed hash test htest
-    (.of_tidy hcandidates)
-    (ExtractionSchedule.isPolyTime_count (.of_tidy (by fun_prop))
-      realization.length_isPolyTime (.of_tidy hslack)) (.of_tidy hnumerator)
-    (.of_tidy hdensity) hchoose hvalid hhash
+    hcandidates
+    (ExtractionSchedule.isPolyTime_count .id' realization.length_isPolyTime hslack)
+    hnumerator hdensity hchoose hvalid hhash
     (slack := fun n => ExtractionSchedule.slack n (realization.length n) (inverseSlack n))
     (fun _ => Nat.cast_nonneg _)
   apply negligible_of_eventually_le ExtractionSchedule.error_negligible
@@ -338,17 +339,12 @@ theorem HasGap.extract_indexed_labels {pair : SamplablePair} {gap : ℕ → ℝ}
           (ExtractionSchedule.count n (realization.length n) (inverseSlack n))
           (seed n (choose n))).bind
             (fun output => ProbComp.eval (test n (choose n) output)))) := by
-  have hprepare : ComputableInPolyTime
-      (fun (((n, _), i), samples) => ((n, i), samples) :
-        ((ℕ × List Bool) × ℕ) × List (List Bool × Bool) →
-          (ℕ × ℕ) × List (List Bool × Bool))
-      (encPair (encPair (encPair encUnary encBits) encUnary)
-        (encList (encPair encBits encBool)))
-      (encPair (encPair encUnary encUnary)
-        (encList (encPair encBits encBool))) := by fun_prop
-  exact (hasGap_iff_hasGapWithAdvice_nil.mp hpair).extract_indexed_labels
-    realization choose seed hash (fun a i result => test a.1 i result)
-    (htest.preprocess hprepare) hcandidates hslack hnumerator hdensity
-    hchoose hvalid hhash hbudget
+  have h := (hasGap_iff_hasGapWithAdvice_nil.mp hpair).extract_indexed_labels
+    realization choose seed hash (fun a i => test a.1 i)
+    (preprocess_indexed_test (fun n i s => extractLabels (seed n i) (hash n i) s >>= test n i)
+      htest)
+    hcandidates hslack hnumerator hdensity hchoose hvalid hhash hbudget
+  dsimp only at h
+  exact h
 
 end Cslib.Crypto.Pseudoentropy.SamplablePair
