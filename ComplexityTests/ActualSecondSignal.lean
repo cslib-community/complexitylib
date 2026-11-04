@@ -10,7 +10,7 @@ module
 import Complexity.Foundations.Probability.NormalizedAtomRows.MeanBias
 import Complexity.Foundations.Probability.NormalizedAtomRows.ActualMoment
 
-/-! Genuine selected preparation from zero-iteration residual children, and two-signal edges. -/
+/-! Finite raw-sample clients, completed-raw preparation wiring, and two-signal edges. -/
 set_option linter.privateModule false
 
 open Finset Cslib Cslib.Probability Cslib.RowCompression Matrix Matrix.HierarchyParams
@@ -45,7 +45,7 @@ private def prepChild (_σ : Environment 5 3) : Matrix (ZMod 5) (ZMod 5) ℝ :=
 
 private def selected (HP : FourthRootHierarchyParams 16 1 16 32 8)
     (b : Environment 5 3 → Bool) :=
-  selectedResidualPreparation HP 1 threeRoles 0 0 0 0 0 0 [1] [2] [3] 2 id
+  rawSamplePreparation HP 1 threeRoles 0 0 0 0 0 0 [1] [2] [3] 2 id
     (fun (_ : HierarchyTask.Request 0 (Fin 3) (ZMod 5)) => child b)
     (fun _ => prepChild) (fun _ _ _ => 9)
 
@@ -86,7 +86,8 @@ private lemma selected_eq (HP : FourthRootHierarchyParams 16 1 16 32 8)
     have hh := HP.θ₂_lt
     norm_num at hh
     linarith
-  simp only [selected, selectedResidualPreparation, DenseRowRecipe.preparation, atomPrep,
+  simp only [selected, rawSamplePreparation, selectedPreparation,
+    DenseRowRecipe.preparation, atomPrep,
     raw_eq, rowGate, retainedMask, hside, full_retains, filter_true, rank_zero,
     HP.ρ_one 0 HP.η_pos.le, mul_one]
   by_cases h : b σ ∧ y = 0
@@ -223,9 +224,11 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
       (retainedMask 2 (side 5 1) 1 [3]) (selected HP randomBit) ≤ 16 * HP.K ∧
       selected HP randomBit envLow 0 0 = 1 ∧ selected HP randomBit envHigh 0 0 = 0 := by
   constructor
-  · exact selectedResidualPreparation_moment_le HP (by have := bigK HP; omega) 1 threeRoles
-      smallHorizon 0 0 0 0 0 0 1 (by decide) (by decide) [1] [2] [3] 2 id
-      (fun _ => child randomBit) (fun _ => prepChild) (fun _ _ _ => 9)
+  · exact selectedPreparation_moment_le HP (by have := bigK HP; omega) 1 threeRoles
+      smallHorizon 0 0 1 (by decide) (by decide) [1] [3]
+      (rawIncomingNormalized HP 1 id threeRoles 0 0 0 0 0 0 [1] [2] [3]
+        (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff 2 id
+        (fun _ => child randomBit) (fun _ => prepChild) (fun _ _ _ => 9))
   · simp [selected_eq, child, randomBit, envLow, envHigh]
 
 -- A nonempty suffix and degenerate D=0 still use the exact one-point frame marginal.
@@ -234,13 +237,13 @@ example : (∑ x : ZMod 5, (({σ : Environment 5 3 |
   rw [source_density_sum]
   norm_num [side]
 
--- This is the genuine i=2 second-prefix noise client, using the H4 graph and input
+-- This finite raw-sample i=2 second-prefix noise client uses the H4 graph and input
 -- budget 3. Its first signal is nonzero, its children use the nonconstant spectator, and
 -- the steps depend on the requested ε and dyadic slack rather than an assumed noise bound.
 example (HP : FourthRootHierarchyParams 16 1 16 32 8) {ε : ℝ} (hε : 0 < ε) :
     let steps := fun j => spectralWalkLength (1 - 1 / (155648 * (3 + 1) * (4 : ℝ) ^ 4))
       ((3 : ℝ) ^ 4 * 512 * HP.K) ε (dyadicSlack 4 (j - 1))
-    let T := fun j σ x y => selectedResidualPreparation HP 1 threeRoles
+    let T := fun j σ x y => rawSamplePreparation HP 1 threeRoles
       0 0 0 0 0 0 [1] [2] [3] 2 id
       (fun (_ : HierarchyTask.Request j (Fin 3) (ZMod 5)) => child randomBit)
       (fun _ => prepChild) (fun _ _ _ => 9) σ x y
@@ -256,8 +259,11 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) {ε : ℝ} (hε : 0 < ε) 
           (secondSignalIncrement H 3)) (fun _ _ _ _ => 0) 1 2) ≤
       (ε * (64 : ℝ)⁻¹ ^ dyadicSlack 4 2) ^ 4 := by
   exact actualSelectedSecondSignal_noise_le_dyadic HP (by have := bigK HP; omega)
-    1 threeRoles smallHorizon 0 0 0 0 0 0 0 (by decide) (by decide) [1] [2] [3] 2 id
-    (fun _ _ => child randomBit) (fun _ _ => prepChild) (fun _ _ _ _ => 9)
+    1 threeRoles smallHorizon 0 0 0 (by decide) (by decide) [1] [3]
+    (fun j σ => rawIncomingNormalized HP 1 id threeRoles 0 0 0 0 0 0 [1] [2] [3]
+      (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff 2 id
+      (fun (_ : HierarchyTask.Request j (Fin 3) (ZMod 5)) => child randomBit)
+      (fun _ => prepChild) (fun _ _ _ => 9) σ)
     (fun j _ _ _ => j + 7) _ 3 (fun _ _ => 0) 2 4 hε (by rfl)
 
 -- Zero scaling gives exact zero actual noise, including the ε=0 boundary.
@@ -379,3 +385,121 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8)
     (by intro w _; simp only [raw_eq, child, Bool.false_eq_true, false_and, ↓reduceIte,
                                biasTruth]; split_ifs <;> norm_num)
   simpa only [rate, pow_zero, one_pow, inv_one, mul_one, div_one] using hb
+
+-- A real completed H4 raw child with seven smoothing steps, not an unaveraged cutoff.
+private def completed (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (b : Bool) (_j : ℕ) (σ : Environment 5 3) (x y : ZMod 5) : ℝ :=
+  completedRawChild HP 1 threeRoles 0 0 0 0 0 0 [1] [2] [3] 2 id
+    (fun (_ : HierarchyTask.Request 0 (Fin 3) (ZMod 5)) => child (fun _ => b))
+    (fun _ => prepChild) (fun _ _ _ => 9) 7 σ x y
+
+set_option backward.isDefEq.respectTransparency false in
+private lemma completed_eq (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (b : Bool) (j : ℕ) (σ : Environment 5 3) (x y : ZMod 5) :
+    completed HP b j σ x y = child (fun _ => b) σ x y := by
+  have hs : ∀ τ : Environment 5 3,
+      retainedMask threeRoles.source (side 5 0) 1 [1] τ x := by
+    intro τ
+    have he : side 5 0 = 5 := by norm_num [side]
+    rw [he]
+    exact full_retains _ _
+  have ht : ∀ τ : Environment 5 3,
+      retainedMask threeRoles.terminal (side 5 0) 1 [3] τ y := by
+    intro τ
+    have he : side 5 0 = 5 := by norm_num [side]
+    rw [he]
+    exact full_retains _ _
+  simp only [completed, completedRawChild, conditionalWalk, hs, ht, and_self,
+    mem_filter, mem_univ, ↓reduceDIte]
+  simp only [raw_eq, child]
+  exact congrFun (RotationMap.walk_pow_const _ _ _) _
+
+private lemma completed_prep_eq (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (b : Bool) (j : ℕ) (σ : Environment 5 3) (x y : ZMod 5) :
+    selectedPreparation HP 1 threeRoles [3] 0 (completed HP b j) σ x y =
+      child (fun _ => b) σ x y := by
+  have he : (fun τ => rawIncomingNormalized HP 1 id threeRoles 0 0 0 0 0 0 [1] [2] [3]
+      (polynomialAuxCutoff4 HP.θ) HP.incomingCutoff 2 id
+      (fun (_ : HierarchyTask.Request 0 (Fin 3) (ZMod 5)) => child (fun _ => b))
+      (fun _ => prepChild) (fun _ _ _ => 9) τ) = completed HP b j := by
+    funext τ a z
+    rw [raw_eq, completed_eq]
+  rw [← he]
+  exact selected_eq HP (fun _ => b) σ x y
+
+-- Positive completed preparation, a zero child, and a nonconstant endpoint survive smoothing.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (σ : Environment 5 3) :
+    selectedPreparation HP 1 threeRoles [3] 0 (completed HP true 3) σ 0 0 = 1 ∧
+    selectedPreparation HP 1 threeRoles [3] 0 (completed HP true 3) σ 0 1 = 0 ∧
+    selectedPreparation HP 1 threeRoles [3] 0 (completed HP false 3) σ 0 0 = 0 := by
+  simp [completed_prep_eq, child]
+
+-- The cutoff of the average is one, whereas the average of cutoffs is only one half.
+-- These nonconstant raw values are in matrix units and share the same full rank slice.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (σ : Environment 5 3) :
+    let raw := fun (b : Bool) (_τ : Environment 5 3) (_x y : ZMod 5) =>
+      if b ∧ y = 0 then (2 : ℝ) else 0
+    selectedPreparation HP 1 threeRoles [3] 0
+      (fun τ x y => 𝔼 b : Bool, raw b τ x y) σ 0 0 = 1 ∧
+    (𝔼 b : Bool, selectedPreparation HP 1 threeRoles [3] 0 (raw b) σ 0 0) = 1 / 2 := by
+  have h1 : polynomialPrepCutoff4 HP.θ 1 = 1 := by
+    apply polynomialPrepCutoff4_eq_one HP.θ_pos
+    have h := HP.θ₂_lt
+    norm_num at h
+    linarith [HP.θ_lt_θ₂]
+  have h2 : polynomialPrepCutoff4 HP.θ 2 = 1 := by
+    apply polynomialPrepCutoff4_eq_one HP.θ_pos
+    have h := HP.θ₂_lt
+    norm_num at h
+    linarith [HP.θ_lt_θ₂]
+  have h0 := polynomialPrepCutoff4_eq_zero HP.θ_pos
+    (show (0 : ℝ) ≤ HP.θ / 2 by linarith [HP.θ_pos])
+  have hs : side 5 0 = 5 := by norm_num [side]
+  simp only [selectedPreparation, DenseRowRecipe.preparation, atomPrep, rowGate,
+    retainedMask, hs, full_retains, filter_true, rank_zero,
+    HP.ρ_one 0 HP.η_pos.le, mul_one]
+  simp only [Finset.expect_eq_sum_div_card, Fintype.sum_bool]
+  norm_num [rate, smul_eq_mul, h1, h2, h0]
+
+-- Actual seven-step raw prefixes and seven-step preparation prefixes have zero
+-- deterministic bias for exact completed raw children; both coordinates start at zero.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (i : ℕ) :
+    let A := completed HP true
+    let T := fun j σ x y => selectedPreparation HP 1 threeRoles [3] 0 (A j) σ x y
+    let H := fun j => conditionalWalk (retainedMask (0 : Fin 3) 5 1 [1])
+      (retainedMask 2 5 1 [3]) fullGraph (fun _ _ => 7) (T j)
+    actualClippedMean HP (0 : Fin 3) 2 5 5 5 1 [1] [3] 0 biasTruth 3
+      (firstSignalIncrement A 0 (secondSignalIncrement H 3))
+      (fun _ _ _ _ => 0) 1 i 0 0 = 0 := by
+  dsimp only
+  rw [actualClippedMean_second_eq]
+  simp only [rowSliceMean, completed_prep_eq, child,
+    genuine_bias_mean, biasTruth, retainedMask, full_retains, and_self, filter_true,
+    Fintype.expect_const, sub_self, abs_zero, mul_zero, min_eq_right (by norm_num : (0 : ℝ) ≤ 1)]
+
+-- Empty usage stays zero even for the positive completed child.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    rowSliceMean (retainedMask (0 : Fin 3) 5 1 [1]) (fun _ _ => False)
+      (fun σ x y => selectedPreparation HP 1 threeRoles [3] 0 (completed HP true 3) σ x y)
+      0 0 = 0 := by
+  simp [rowSliceMean]
+
+-- Numerical second-prefix payment also consumes the completed seven-step raw H4 child.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) {ε : ℝ} (hε : 0 < ε) :
+    let A := completed HP true
+    let steps := fun j => spectralWalkLength (1 - 1 / (155648 * (3 + 1) * (4 : ℝ) ^ 4))
+      ((3 : ℝ) ^ 4 * 512 * HP.K) ε (dyadicSlack 4 (j - 1))
+    let T := fun j σ x y => selectedPreparation HP 1 threeRoles [3] 0 (A j) σ x y
+    let H := fun j => conditionalWalk (retainedMask (0 : Fin 3) (side 5 0) 1 [1])
+      (retainedMask 2 (side 5 1) 1 [3])
+      (graph (0 : Fin 3) 2 (by decide) (side 5 0) (side 5 1)
+        (side_le 5 0) (side_le 5 1) (fun x => CopyPadding.identifier 1 [1] x)
+        (fun y => CopyPadding.identifier 1 [3] y)) (fun _ _ => steps j) (T j)
+    rowNormPow 4 5 (rate 0) (retainedMask (0 : Fin 3) (side 5 0) 1 [1])
+      (retainedMask 2 (side 5 1) 1 [3])
+      (actualNoiseEntry (0 : Fin 3) 2 (side 5 0) (side 5 0) (side 5 1) 1 [1] [3] 0
+        biasTruth (firstSignalIncrement A 0 (secondSignalIncrement H 3))
+        (fun _ _ _ _ => 0) 1 2) ≤ (ε * (64 : ℝ)⁻¹ ^ dyadicSlack 4 2) ^ 4 := by
+  exact actualSelectedSecondSignal_noise_le_dyadic HP (by have := bigK HP; omega)
+    1 threeRoles smallHorizon 0 0 1 (by decide) (by decide) [1] [3]
+    (completed HP true) (completed HP true) _ 3 biasTruth 2 4 hε (by rfl)

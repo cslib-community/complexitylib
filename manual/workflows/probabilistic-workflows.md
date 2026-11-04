@@ -246,21 +246,26 @@ clipping, a chosen actual i=2 noise client, exact logarithmic steps and zero/emp
 
 For the preparatory second signal, import
 [SecondSignal](../../Complexity/Foundations/Probability/NormalizedAtomRows/SecondSignal.lean).
-`selectedResidualPreparation` applies the selected preparation cutoff and terminal-rank
-gate to the actual lower-child residual. Its children retain all source, midpoint, terminal,
-usage and copy data on the same environment. `actualSelectedSecondSignal_noise` bounds
+`selectedPreparation` applies the selected preparation cutoff and full terminal-rank
+gate to a supplied **completed raw child in matrix units**. `completedRawChild` names the
+actual conditional H4 walk of `rawIncomingNormalized` used by FirstSignal and FirstPayment.
+Apply preparation after this raw walk, then average preparation on source × usage.
+`hierarchyTaskRecipe_residualPreparation` checks the existing hierarchy evaluator reads
+that completed child before the nonlinear recipe. All source, midpoint, terminal, usage
+and copy data remain on the same environment. `rawSamplePreparation` is the optional
+unaveraged finite client; it does not identify the recursive preparation evaluator. `actualSelectedSecondSignal_noise` bounds
 its endpoint row noise by `ζ^4 * 32 * lambda^(2*steps(i+1)) * rowNormPow(T_(i+1))`
 on source × usage. Stationarity identifies the actual second noise with
 `|ζ| * |walk_(i+1) - rowSliceMean(T_(i+1))|`. The initial second signal is literally zero,
 and `firstSignalIncrement` retains its existing full-rank first prefix.
 
 The preparation is in [0,1] and has fewer than K nonzero retained rank entries per row.
-For usage exponent kt≥k, `selectedResidualPreparation_support_moment` applies the generic
+For usage exponent kt≥k, `selectedPreparation_support_moment` applies the generic
 sparse-row bound **before walk averaging**. Its payment is
 `K * (N*u)^(-1) * sum_x density(sourceRetains x)`, without independence of the input,
 support or source. `source_density_sum` evaluates the sum as `P * (side(P,ks)/P)^4`,
 including nonempty copy suffixes and D=0. With N=P, u=rate(ks), and ks in the declared
-horizon, `selectedResidualPreparation_moment_le` gives 16K. No sparsity of the averaged
+horizon, `selectedPreparation_moment_le` gives 16K. No sparsity of the averaged
 walk is claimed.
 
 `actualSelectedSecondSignal_noise_le` feeds that input payment into the actual second
@@ -287,12 +292,19 @@ residual A to G on the same full terminal rank slice: its bound is
 `preparationError_le` accepts explicit absolute entry and full-rank envelopes; it needs
 no target-size bound. `preparation_mean_bias_le` averages this error over the actual joint
 source × usage slice against `genuinePrep(G)` and `genuineMean`, including empty slices.
-`actualSelectedSecondSignal_mean_bias_le` applies this to the real incoming-normalized
-lower-child residual and the ζ-scaled telescoping prefix at input budget i+1. The clipped
+`actualSelectedSecondSignal_mean_bias_le` accepts any completed raw child.
+`actualCompletedSecondSignal_mean_bias_le` instantiates it with the actual raw H4 walk
+and the ζ-scaled preparation prefix at input budget i+1. `firstSignal_raw_error` and
+`preparationError_eq_firstPrefix` identify its absolute errors with the actual first-prefix
+errors, retaining rate(k) and the full-rank maximum. The first prefix is F_j/rate(k);
+`atomPrep` itself divides by rate(k), so preparing that prefix directly would divide twice. The clipped
 second deterministic discrepancy is at most `min 1 (|ζ| * jointMean(preparationError))`.
 All source/copy suffixes, rates, role data and correlations remain present. The first
 coordinate is unchanged. The regressions evaluate a positive nonconstant genuine target,
-a perturbed-residual bias of one, exact-zero perturbation and empty usage.
+a perturbed-residual bias of one, exact-zero perturbation and empty usage. The ordering
+regression has raw values 0 and 2: preparation of their average is 1, while the average
+of their preparations is 1/2. A seven-step actual H4 completed child retains a positive
+preparation and a zero endpoint.
 
 This controls bias by explicit absolute residual errors. Deriving those errors from
 recursive lower-child relative estimates, numerical mean envelopes, recursive
