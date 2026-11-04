@@ -6,32 +6,39 @@ Authors: Jonathan Katz
 
 import Complexity.Crypto.Computational.OneWayToPRF
 import Complexity.Crypto.Computational.PseudorandomFunction.CircuitLowerBound
+import Complexity.Crypto.Negligible.Basic
 
 /-!
 # Tests for the `2n - 2` `B₂`-circuit lower bound on pseudorandom functions
 
-This file exercises the critical-path API (`CriticalPath.lean`) and the unconditional `2n - 2`
-`B₂`-circuit lower bound for pseudorandom functions (`CircuitLowerBound.lean`):
+This file exercises the critical-path API (`Complexity/Computability/Circuit/CriticalPath.lean` and
+`Complexity/Computability/Circuit/Boolean/CriticalPath.lean`) and the unconditional `2n - 2`
+`B₂`-circuit lower bound for pseudorandom functions
+(`Complexity/Crypto/Computational/PseudorandomFunction/CircuitLowerBound.lean`):
 
-1. **Tightness of Lemma 7.4 at `2n - 2`**: an explicit `2`-gate normalized `B₂` circuit on `2`
+1. **Tightness of Lemma 7.4 at `2n - 2`**: an explicit `2`-gate `NoDeadGates` `B₂` circuit on `2`
    inputs with no isolated variables and disjoint critical paths of size `2 = 2 * 2 - 2`.
 2. **Concrete completeness of both distinguishers**:
    * `isolatedVarDistinguisher` accepts `x ↦ x 0` on `BitString 2` with probability `1`;
    * `criticalPathDistinguisher` accepts `x ↦ x 0 ^^ x 1` on `BitString 2` (computed by a `1`-gate
-     normalized circuit without isolated variables whose critical paths intersect at gate `0`) with
-     probability `1`.
+     `NoDeadGates` circuit without isolated variables whose critical paths intersect at gate `0`)
+     with probability `1`.
 3. **Refuting an insecure candidate via Theorem 7.5**: the one-time-pad XOR family
    `key, query ↦ List.zipWith xor key query` has `B₂`-complexity at most `1` on its first output
    bit for every key, so `PseudorandomFunction.eventually_exists_key_two_mul_sub_two_le_complexity`
    rules out `PseudorandomFunction xorFamily`.
-4. **Conditional non-vacuity from `OneWay`**: composing `OneWay.exists_pseudorandomFunction` with
-   Theorem 7.5 yields a `PseudorandomFunction` family whose keys achieve `B₂`-complexity at least
-   `2 * n - 2` with overwhelming probability under any uniform one-way function.
+4. **Unconditional and conditional non-vacuity**:
+   * `booleanPRF_uniform` verifies that `fun n => PMF.uniformOfFintype (BooleanFunction n)`
+     satisfies `BooleanPRF` unconditionally, giving the `2 * n - 2` gate lower bound for random
+     Boolean functions with no cryptographic assumption;
+   * composing `OneWay.exists_pseudorandomFunction` with Theorem 7.5 yields a
+     `PseudorandomFunction` family whose keys achieve `B₂`-complexity at least `2 * n - 2` with
+     overwhelming probability under any uniform one-way function.
 -/
 
 namespace ComplexityTests.Crypto.PRFCircuitLowerBound
 
-open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Crypto
+open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Crypto Cslib.Probability
 
 /-! ### 1. Tightness of Lemma 7.4 (`2 * n - 2` gates at `n = 2`, `m = 1`) -/
 
@@ -51,7 +58,7 @@ abbrev tightCircuit : Circuit (fullSignature 2 Bool) 2 1 where
       ⟨opXor, ![.input 0, .gate 0]⟩
   outputs := fun _ => .gate 1
 
-example : tightCircuit.Normalized := by decide
+example : tightCircuit.NoDeadGates := by decide
 example : ¬ tightCircuit.HasIsolatedVar := by decide
 example : tightCircuit.criticalPath 0 = [.input 0] := by decide
 example : tightCircuit.criticalPath 1 = [.input 1, .gate 0, .gate 1] := by decide
@@ -92,12 +99,12 @@ theorem succProbability_isolatedVarDistinguisher_proj0 :
 /-- Two-input parity `x ↦ x 0 ^^ x 1`. -/
 def parity2 (x : BitString 2) : Bool := x 0 ^^ x 1
 
-/-- Single-gate normalized `B₂` circuit computing `parity2`. -/
+/-- Single-gate `NoDeadGates` `B₂` circuit computing `parity2`. -/
 abbrev xorCircuit : Circuit (fullSignature 2 Bool) 2 1 where
   program := Program.empty.gate ⟨opXor, ![.input 0, .input 1]⟩
   outputs := fun _ => .gate 0
 
-example : xorCircuit.Normalized := by decide
+example : xorCircuit.NoDeadGates := by decide
 example : ¬ xorCircuit.HasIsolatedVar := by decide
 example : xorCircuit.criticalPath 0 = [.input 0, .gate 0] := by decide
 example : xorCircuit.criticalPath 1 = [.input 1, .gate 0] := by decide
@@ -158,7 +165,23 @@ theorem not_pseudorandomFunction_xorFamily : ¬ PseudorandomFunction xorFamily :
   have hup := complexity_restriction_xorFamily_le_one (by omega : 1 ≤ n) key
   omega
 
-/-! ### 4. Conditional non-vacuity from uniform one-way functions -/
+/-! ### 4. Unconditional `BooleanPRF` instance and conditional `OneWay` instance -/
+
+/-- Because `BooleanPRF` imposes no efficient sampling or evaluation condition, the uniform random
+Boolean function ensemble satisfies it unconditionally. -/
+theorem booleanPRF_uniform : BooleanPRF (fun n => PMF.uniformOfFintype (BooleanFunction n)) := by
+  intro adversary _
+  simp only [booleanPRFRealGame, booleanPRFIdealGame, Game.advantage_self]
+  exact negligible_zero
+
+/-- Unconditional consequence of Theorem 7.5 on `booleanPRF_uniform`: a uniformly random `n`-bit
+Boolean function has `B₂`-circuit complexity below `2 * n - 2` with negligible probability. -/
+theorem negligible_uniform_complexity_lt_two_mul_sub_two :
+    Negligible (fun n =>
+      ((PMF.uniformOfFintype (BooleanFunction n)).map (fun f =>
+        decide (complexity (fullInterpretation (k := 2)) (single f) < 2 * n - 2))
+        true).toNNReal) :=
+  booleanPRF_uniform.negligible_complexity_lt_two_mul_sub_two
 
 /-- Any uniform `OneWay` function yields a `PseudorandomFunction` family satisfying both forms of
 Fan–Li–Yang Theorem 7.5. -/

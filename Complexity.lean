@@ -795,6 +795,7 @@ public import Complexity.Computability.Circuit.Boolean.ConstDepth
 public import Complexity.Computability.Circuit.Boolean.Continuity
 public import Complexity.Computability.Circuit.Boolean.Convolution
 public import Complexity.Computability.Circuit.Boolean.Correction
+public import Complexity.Computability.Circuit.Boolean.CriticalPath
 public import Complexity.Computability.Circuit.Boolean.DepthClasses
 public import Complexity.Computability.Circuit.Boolean.DepthTime
 public import Complexity.Computability.Circuit.Boolean.DepthTime.PolyTime
@@ -1027,6 +1028,7 @@ public import Complexity.Computability.Circuit.Complexity
 public import Complexity.Computability.Circuit.CompositionDepth
 public import Complexity.Computability.Circuit.Continuity
 public import Complexity.Computability.Circuit.Counting
+public import Complexity.Computability.Circuit.CriticalPath
 public import Complexity.Computability.Circuit.Cyclic
 public import Complexity.Computability.Circuit.Cyclic.Feedback
 public import Complexity.Computability.Circuit.DagProtocol
@@ -3050,7 +3052,6 @@ public import Complexity.Crypto.Computational.Pseudoentropy.WordSeedExtraction
 public import Complexity.Crypto.Computational.PseudorandomFunction
 public import Complexity.Crypto.Computational.PseudorandomFunction.CircuitLowerBound
 public import Complexity.Crypto.Computational.PseudorandomFunction.Coins
-public import Complexity.Crypto.Computational.PseudorandomFunction.CriticalPath
 public import Complexity.Crypto.Computational.PseudorandomFunction.MultiKey
 public import Complexity.Crypto.Computational.PseudorandomFunction.RandomOracle
 public import Complexity.Crypto.Computational.PseudorandomFunction.TruthTable

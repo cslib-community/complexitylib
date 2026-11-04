@@ -7,9 +7,10 @@ Authors: Jonathan Katz
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Circuit.Boolean.CriticalPath
 public import Complexity.Crypto.Computational.PseudorandomFunction
-public import Complexity.Crypto.Computational.PseudorandomFunction.CriticalPath
 public import Complexity.Crypto.Computational.PseudorandomFunction.TruthTable
+import Complexity.Computability.Circuit.InnerSize
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -57,9 +58,10 @@ where circuit size counts binary gates over the complete two-input Boolean basis
 * **Isolated-variable distinguisher (Lemma 7.3)**:
   Note that Lemma 7.3's brief prose ("all `n` sampled restrictions give the same output") refers to
   each `(n - 1)`-bit restriction on `Fin n \ {x}` yielding a constant `1`-bit function
-  `f (ρ[x := false]) = f (ρ[x := true])` (matching the natural property `I_n` in Section 7.2 of
-  [FanLiYang2022]), which occurs with probability `(1 / 2) ^ n` per coordinate `x` against a random
-  function and probability `1` when `x` is isolated.
+  `f (ρ[x := false]) = f (ρ[x := true])` (matching the isolated-variable collision pairs `I_n` in
+  the proof of Theorem 7.6 in Section 7.2 of [FanLiYang2022]), which occurs with probability
+  `(1 / 2) ^ n` per coordinate `x` against a random function and probability `1` when `x` is
+  isolated.
 * **Critical-path intersection distinguisher (Lemma 7.2)**:
   For each `x < y` in `Fin n`, `criticalPathDistinguisher` tests whether none of the `n` restricted
   `2`-bit functions on `(x, y)` is AND-type (`8 / 16 = 1 / 2` of `B₂` gates) or none is XOR-type
@@ -77,8 +79,8 @@ where circuit size counts binary gates over the complete two-input Boolean basis
   ensemble and distinguisher adapter for a word-valued family.
 * `Cslib.Crypto.isolatedVarDistinguisher`: oracle-PPT distinguisher for functions with an isolated
   coordinate ([FanLiYang2022], Lemma 7.3).
-* `Cslib.Crypto.criticalPathDistinguisher`: oracle-PPT distinguisher for functions whose normalized
-  `B₂` circuit has intersecting critical paths ([FanLiYang2022], Lemma 7.2).
+* `Cslib.Crypto.criticalPathDistinguisher`: oracle-PPT distinguisher for functions whose
+  `NoDeadGates` `B₂` circuit has intersecting critical paths ([FanLiYang2022], Lemma 7.2).
 
 ## Main results
 
@@ -144,7 +146,9 @@ returning `[]` on malformed queries. -/
 
 /-- A Boolean-output pseudorandom function ensemble ([FanLiYang2022], Definitions 4.4–4.5):
 no uniform strict oracle-PPT adversary distinguishes `D n` from a uniformly random `n`-bit Boolean
-function with non-negligible advantage. -/
+function with non-negligible advantage. As in [FanLiYang2022], Definition 4.5, this definition
+imposes no efficient sampling or evaluation condition on `D n`, so the uniform ensemble
+`fun n => PMF.uniformOfFintype (BooleanFunction n)` satisfies it unconditionally. -/
 @[expose] def BooleanPRF (D : ∀ n, PMF (BooleanFunction n)) : Prop :=
   Game.Indistinguishable (booleanPRFRealGame D) booleanPRFIdealGame (IsOraclePPT encBool)
 
@@ -1076,12 +1080,12 @@ private theorem checkCritAnswers_map_critQueries {n : ℕ} (hn : 2 ≤ n) (f : B
       rw [hrowXYT x y ⟨t, ht⟩]
       simpa only [List.getD_cons_zero, List.getD_cons_succ] using h
 
-/-- **Fan–Li–Yang Lemma 7.2 (completeness)**: if `C` is a normalized single-output `B₂` circuit
-computing `single f` (`2 ≤ n`) whose critical paths are not pairwise disjoint, then
-`criticalPathDistinguisher` accepts `f` with probability `1`. -/
+/-- **Fan–Li–Yang Lemma 7.2 (completeness)**: if `C` is a single-output `B₂` circuit with
+`NoDeadGates` (*normalized* in [FanLiYang2022]) computing `single f` (`2 ≤ n`) whose critical paths
+are not pairwise disjoint, then `criticalPathDistinguisher` accepts `f` with probability `1`. -/
 theorem succProbability_criticalPathDistinguisher_of_not_disjoint_criticalPath {n : ℕ} (hn : 2 ≤ n)
     {C : Circuit (fullSignature 2 Bool) n 1} {f : BooleanFunction n}
-    (hcomp : C.Computes fullInterpretation (single f)) (hnorm : C.Normalized)
+    (hcomp : C.Computes fullInterpretation (single f)) (hnoDead : C.NoDeadGates)
     (hnotDisj :
       ¬ Pairwise fun x y => Disjoint (C.criticalPath x).toFinset (C.criticalPath y).toFinset) :
     Game.succProbability (evalBooleanOracle criticalPathDistinguisher n f) = 1 := by
@@ -1098,12 +1102,12 @@ theorem succProbability_criticalPathDistinguisher_of_not_disjoint_criticalPath {
     rcases lt_or_gt_of_ne hne with hlt | hgt
     · refine ⟨x₀, y₀, hlt, ?_⟩
       simpa only [hfeq] using
-        not_isAndType_or_not_isXorType_of_not_disjoint_criticalPath C hnorm hne hinter
+        not_isAndType_or_not_isXorType_of_not_disjoint_criticalPath C hnoDead hne hinter
     · have hinter' : ¬ Disjoint (C.criticalPath y₀).toFinset (C.criticalPath x₀).toFinset :=
         fun hd => hinter hd.symm
       refine ⟨y₀, x₀, hgt, ?_⟩
       simpa only [hfeq] using
-        not_isAndType_or_not_isXorType_of_not_disjoint_criticalPath C hnorm hne.symm hinter'
+        not_isAndType_or_not_isXorType_of_not_disjoint_criticalPath C hnoDead hne.symm hinter'
   obtain ⟨x, y, hxy, hor⟩ := hpair
   have htrue :
       checkCritAnswers n ((critQueries n).map fun word => (booleanOracle n f word).headD false) =
@@ -1324,7 +1328,7 @@ theorem BooleanPRF.negligible_complexity_lt_two_mul_sub_two {D : ∀ n, PMF (Boo
     · simp only [hlt, decide_true, PMF.pure_apply_self]
       obtain ⟨C₀, hC₀comp, hC₀size⟩ :=
         exists_computes_size_eq_complexity (I := fullInterpretation (k := 2)) (f := single f)
-      obtain ⟨C, hCnorm, hCsize, hCeval, -⟩ := C₀.exists_normalized
+      obtain ⟨C, hCnoDead, hCsize, hCeval, -⟩ := C₀.exists_noDeadGates
       have hCcomp : C.Computes fullInterpretation (single f) := by
         rw [Circuit.computes_single_iff]
         intro z
@@ -1344,10 +1348,10 @@ theorem BooleanPRF.negligible_complexity_lt_two_mul_sub_two {D : ∀ n, PMF (Boo
               Disjoint (C.criticalPath x).toFinset (C.criticalPath y).toFinset := by
           intro hdisj
           have hge := C.two_mul_sub_two_mul_le_size
-            (fanInAtMost_two_fullSignature C) hCnorm hiso hdisj
+            C.fanInAtMost_fullSignature hCnoDead hiso hdisj
           omega
         have h1 := succProbability_criticalPathDistinguisher_of_not_disjoint_criticalPath
-          hn hCcomp hCnorm hnotDisj
+          hn hCcomp hCnoDead hnotDisj
         have h1' : evalBooleanOracle criticalPathDistinguisher n f true = 1 := by
           have := congrArg (fun x : ℝ≥0 => (x : ℝ≥0∞)) h1
           simpa only [Game.succProbability, ENNReal.coe_toNNReal (PMF.apply_ne_top _ _),

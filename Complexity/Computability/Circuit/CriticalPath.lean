@@ -7,60 +7,52 @@ Authors: Jonathan Katz
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Circuit.Boolean.SemiCircuit.Gate
-public import Complexity.Computability.Circuit.Complexity
 public import Complexity.Computability.Circuit.FanIn
-public import Cslib.Computability.Circuit.Full
+public import Mathlib.Data.Fintype.Sigma
 import Complexity.Computability.Circuit.Program
 import Mathlib.Data.Finset.Max
+import Mathlib.Data.Fintype.BigOperators
 
 /-!
-# Critical paths and the `2n - 2m` structure theorem for binary circuits
+# Critical paths, dead-gate elimination, and the `2n - 2m` structure theorem
 
-Gate-elimination and critical-path structure for general Boolean circuits over the full binary
-basis `B₂` (`Cslib.Circuits.fullInterpretation (k := 2) (Carrier := Bool)`), following Section 7.1
+Signature-generic wire out-degrees, syntactic dead-gate elimination, isolated variables, critical
+paths, and two-variable intersection bottlenecks for bounded-fan-in circuits, following Section 7.1
 of Fan, Li, and Yang [FanLiYang2022].
 
 For each input wire `x` of a circuit `C`, the *critical path* `C.criticalPath x` walks forward
 along unique outgoing gate slots until reaching a wire `C.criticalEndpoint x` whose out-degree in
-`C` is not `1` (Definition 7.1). A circuit is *normalized* (`C.Normalized`) when every internal
-gate of out-degree `0` is a designated output wire; dead-gate elimination (`C.exists_normalized`)
-normalizes any circuit without increasing its gate count or fan-in. An *isolated variable*
-(`C.HasIsolatedVar`) is an input wire of out-degree `0` that is not a designated output wire.
+`C` is not `1` (Definition 7.1). A circuit has *no dead gates* (`C.NoDeadGates`, called
+*normalized* in [FanLiYang2022]) when every internal gate of out-degree `0` is a designated output
+wire; syntactic dead-gate elimination (`C.exists_noDeadGates`) removes unused internal gates without
+increasing gate count or fan-in. An *isolated variable* (`C.HasIsolatedVar`) is an input wire of
+out-degree `0` that is not a designated output wire.
 
-Counting outgoing slots across all `n + C.size` wires proves Lemma 7.4
-(`C.two_mul_sub_two_mul_le_size`): every normalized circuit of fan-in at most `2` with `n` inputs,
-`m` outputs, no isolated variable, and pairwise disjoint critical paths has at least `2 * n - 2 * m`
-gates. Conversely, in a normalized single-output fan-in-`2` circuit:
-
-* an isolated variable makes the computed function independent of that coordinate
-  (`Circuit.eval_update_of_outDeg_input_eq_zero`, supporting Lemma 7.3);
-* two intersecting critical paths force a shared bottleneck gate `G` through which all dependence
-  on those two inputs passes under every restriction of the remaining inputs
-  (`Circuit.exists_bottleneck_of_not_disjoint_criticalPath`), preventing the restricted `2`-bit
-  subfunctions from exhibiting both AND-type and XOR-type behavior over `B₂`
-  (`Cslib.Circuits.Boolean.exists_lt_pair_not_isAndType_or_not_isXorType`, supporting Lemma 7.2
-  and Theorem 7.5).
+When a fan-in-`2` circuit has no dead gates, no isolated variables, and pairwise disjoint critical
+paths, counting outgoing gate slots against critical endpoints gives `2 * n - 2 * m ≤ C.size`
+(Lemma 7.4). Conversely, if two distinct inputs `x ≠ y` of a single-output fan-in-`2` circuit with
+no dead gates have intersecting critical paths, every `2`-variable restriction to `(x, y)` factors
+through a single binary gate operation `opG` via unary pre- and post-processing
+(`C.exists_bottleneck_of_not_disjoint_criticalPath`).
 
 ## Main definitions
 
 * `Cslib.Circuits.Circuit.outDeg`: out-degree of a wire in a circuit.
-* `Cslib.Circuits.Circuit.Normalized`: circuits with no unused non-output gates.
+* `Cslib.Circuits.Circuit.NoDeadGates`: circuits with no unused non-output internal gates
+  (*normalized* in [FanLiYang2022], Definition 7.1).
 * `Cslib.Circuits.Circuit.HasIsolatedVar`: circuits with an unused non-output input wire.
 * `Cslib.Circuits.Circuit.criticalPath`, `Cslib.Circuits.Circuit.criticalEndpoint`: the critical
   path and its terminal wire starting from each input coordinate.
-* `Cslib.Circuits.Boolean.IsAndType`, `Cslib.Circuits.Boolean.IsXorType`: non-affine (`GF(2)`
-  degree `2`) and balanced two-variable affine operations in `B₂`.
 
 ## Main results
 
-* `Cslib.Circuits.Circuit.exists_normalized`: dead-gate elimination into a normalized circuit.
+* `Cslib.Circuits.Circuit.exists_noDeadGates`: syntactic dead-gate elimination preserving
+  evaluation, size upper bounds, and fan-in bounds.
+* `Cslib.Circuits.Circuit.eval_update_of_outDeg_input_eq_zero`: updating an isolated input wire does
+  not change circuit evaluation.
 * `Cslib.Circuits.Circuit.two_mul_sub_two_mul_le_size`: Lemma 7.4 of [FanLiYang2022].
 * `Cslib.Circuits.Circuit.exists_bottleneck_of_not_disjoint_criticalPath`: two-variable restriction
   bottleneck at the first intersection of two critical paths.
-* `Cslib.Circuits.Boolean.exists_lt_pair_not_isAndType_or_not_isXorType`: every `n`-bit Boolean
-  function (`2 ≤ n`) of `B₂`-complexity strictly below `2 * n - 2` has a pair of coordinates whose
-  `2`-bit restrictions are either never AND-type or never XOR-type.
 
 ## References
 
@@ -198,7 +190,7 @@ theorem Circuit.sum_outDeg_le_of_fanInAtMost (C : Circuit σ n m) {r : ℕ} (h :
     _ = r * C.size := by
       simp [Nat.mul_comm]
 
-/-! ### Output wires, normalized circuits, and isolated variables -/
+/-! ### Output wires, dead-gate freedom, and isolated variables -/
 
 /-- The finite set of designated output wires of `C`. -/
 @[expose] def Circuit.outputsFinset (C : Circuit σ n m) : Finset (Wire n C.size) :=
@@ -211,12 +203,14 @@ theorem Circuit.mem_outputsFinset (C : Circuit σ n m) {v : Wire n C.size} :
 theorem Circuit.card_outputsFinset_le (C : Circuit σ n m) : C.outputsFinset.card ≤ m := by
   simpa [Circuit.outputsFinset] using Finset.card_image_le (f := C.outputs) (s := Finset.univ)
 
-/-- A circuit is *normalized* if every internal gate of out-degree `0` is a designated output wire
-(Fan–Li–Yang [FanLiYang2022], Definition 7.1). -/
-@[expose] def Circuit.Normalized (C : Circuit σ n m) : Prop :=
+/-- A circuit has *no dead gates* if every internal gate of out-degree `0` is a designated output
+wire (called *normalized* in Fan–Li–Yang [FanLiYang2022], Definition 7.1; named `NoDeadGates` here
+to distinguish syntactic dead-gate freedom from semantic duplicate-gate merging in
+`Cslib.Circuits.Circuit.Irredundant`). -/
+@[expose] def Circuit.NoDeadGates (C : Circuit σ n m) : Prop :=
   ∀ k : Fin C.size, C.outDeg (.gate k) = 0 → .gate k ∈ C.outputsFinset
 
-instance Circuit.instDecidableNormalized (C : Circuit σ n m) : Decidable C.Normalized :=
+instance Circuit.instDecidableNoDeadGates (C : Circuit σ n m) : Decidable C.NoDeadGates :=
   inferInstanceAs (Decidable (∀ _ : Fin C.size, _ → _))
 
 /-- A circuit *has an isolated variable* if some input wire has out-degree `0` and is not a
@@ -308,25 +302,25 @@ private theorem Program.exists_deleteUnusedGate :
             simpa only [Wire.castSucc_gate, hcast] using
               (q.trace_gate_castSucc line I x (.gate (j.castPred hj))).symm
 
-/-- **Dead-gate elimination**: every circuit can be normalized without increasing its gate count,
-changing its evaluation under any interpretation, or increasing any fan-in bound. -/
-theorem Circuit.exists_normalized (C : Circuit σ n m) :
-    ∃ C' : Circuit σ n m, C'.Normalized ∧ C'.size ≤ C.size ∧
+/-- **Dead-gate elimination**: every circuit has an equivalent circuit with `NoDeadGates`
+(*normalized* in [FanLiYang2022], Definition 7.1), no more gates, and the same fan-in bounds. -/
+theorem Circuit.exists_noDeadGates (C : Circuit σ n m) :
+    ∃ C' : Circuit σ n m, C'.NoDeadGates ∧ C'.size ≤ C.size ∧
       (∀ {U : Type u} (I : Interpretation σ U) (x : Fin n → U), C'.eval I x = C.eval I x) ∧
       (∀ r, C.FanInAtMost r → C'.FanInAtMost r) := by
   suffices ∀ s (C : Circuit σ n m), C.size = s →
-      ∃ C' : Circuit σ n m, C'.Normalized ∧ C'.size ≤ C.size ∧
+      ∃ C' : Circuit σ n m, C'.NoDeadGates ∧ C'.size ≤ C.size ∧
         (∀ {U : Type u} (I : Interpretation σ U) (x : Fin n → U), C'.eval I x = C.eval I x) ∧
         (∀ r, C.FanInAtMost r → C'.FanInAtMost r) from this C.size C rfl
   intro s
   induction s using Nat.strong_induction_on with
   | _ s ih =>
     intro C hs
-    by_cases hnorm : C.Normalized
-    · exact ⟨C, hnorm, le_rfl, fun _ _ => rfl, fun _ h => h⟩
-    · unfold Circuit.Normalized at hnorm
-      push Not at hnorm
-      obtain ⟨k₀, hout0, hnotOut⟩ := hnorm
+    by_cases hnoDead : C.NoDeadGates
+    · exact ⟨C, hnoDead, le_rfl, fun _ _ => rfl, fun _ h => h⟩
+    · unfold Circuit.NoDeadGates at hnoDead
+      push Not at hnoDead
+      obtain ⟨k₀, hout0, hnotOut⟩ := hnoDead
       rcases C with ⟨p, outputs⟩
       cases s with
       | zero => exact (hs ▸ k₀).elim0
@@ -341,8 +335,9 @@ theorem Circuit.exists_normalized (C : Circuit σ n m) :
           exact hnotOut (Circuit.mem_outputsFinset ⟨p, outputs⟩ |>.mpr ⟨j, hj⟩)
         obtain ⟨q, ρ, htrace, hfan⟩ := Program.exists_deleteUnusedGate.{v, u} p k₀ hunused
         let C₁ : Circuit σ n m := ⟨q, fun j => ρ (outputs j) (houtNe j)⟩
-        obtain ⟨C', hC'norm, hC'size, hC'eval, hC'fan⟩ := ih g (Nat.lt_succ_self g) C₁ rfl
-        refine ⟨C', hC'norm, hC'size.trans (Nat.le_succ g), ?_, fun r hr => hC'fan r (hfan r hr)⟩
+        obtain ⟨C', hC'noDead, hC'size, hC'eval, hC'fan⟩ := ih g (Nat.lt_succ_self g) C₁ rfl
+        refine ⟨C', hC'noDead, hC'size.trans (Nat.le_succ g), ?_,
+          fun r hr => hC'fan r (hfan r hr)⟩
         intro U I x
         rw [hC'eval I x]
         funext j
@@ -618,11 +613,11 @@ theorem Circuit.outDeg_criticalEndpoint_ne_one (C : Circuit σ n m) (x : Fin n) 
     C.outDeg (C.criticalEndpoint x) ≠ 1 :=
   C.outDeg_getLast_criticalPathAux_ne_one C.size (.input x) (by simp)
 
-/-- **Fan–Li–Yang Lemma 7.4**: every normalized circuit of fan-in at most `2` with `n` inputs,
-`m` outputs, no isolated variable, and pairwise disjoint critical paths has at least
-`2 * n - 2 * m` gates. -/
+/-- **Fan–Li–Yang Lemma 7.4**: every circuit of fan-in at most `2` with `n` inputs, `m` outputs,
+no dead gates (*normalized* in [FanLiYang2022]), no isolated variable, and pairwise disjoint
+critical paths has at least `2 * n - 2 * m` gates. -/
 theorem Circuit.two_mul_sub_two_mul_le_size (C : Circuit σ n m)
-    (hfan : C.FanInAtMost 2) (hnorm : C.Normalized) (hiso : ¬ C.HasIsolatedVar)
+    (hfan : C.FanInAtMost 2) (hnoDead : C.NoDeadGates) (hiso : ¬ C.HasIsolatedVar)
     (hdisj : Pairwise fun x y => Disjoint (C.criticalPath x).toFinset (C.criticalPath y).toFinset) :
     2 * n - 2 * m ≤ C.size := by
   let bonus : Wire n C.size → ℕ := fun v => if v ∈ C.outputsFinset then 2 else 0
@@ -632,7 +627,7 @@ theorem Circuit.two_mul_sub_two_mul_le_size (C : Circuit σ n m)
     | input i =>
       by_contra hnot
       exact hiso ⟨i, hv, hnot⟩
-    | gate k => exact hnorm k hv
+    | gate k => exact hnoDead k hv
   have hge1 : ∀ v : Wire n C.size, 1 ≤ C.outDeg v + bonus v := by
     intro v
     by_cases hv : C.outDeg v = 0
@@ -684,8 +679,8 @@ theorem Circuit.two_mul_sub_two_mul_le_size (C : Circuit σ n m)
 
 /-! ### Two-variable bottleneck at intersecting critical paths -/
 
-/-- In a normalized single-output circuit, the designated output wire has out-degree `0`. -/
-theorem Circuit.outDeg_output_eq_zero_of_normalized (C : Circuit σ n 1) (hnorm : C.Normalized) :
+/-- In a single-output circuit with `NoDeadGates`, the designated output wire has out-degree `0`. -/
+theorem Circuit.outDeg_output_eq_zero_of_noDeadGates (C : Circuit σ n 1) (hnoDead : C.NoDeadGates) :
     C.outDeg (C.outputs 0) = 0 := by
   by_contra hpos
   let Reach : Wire n C.size → Wire n C.size → Prop :=
@@ -720,23 +715,23 @@ theorem Circuit.outDeg_output_eq_zero_of_normalized (C : Circuit σ n 1) (hnorm 
     have hle : s.1 ≤ kMax := Finset.le_max' S s.1 hsMem
     have hlt : kMax < s.1 := C.program.lt_of_lines_wires_eq_gate s.1 s.2 kMax hs
     exact Nat.lt_irrefl _ (hlt.trans_le hle)
-  obtain ⟨j, hj⟩ := C.mem_outputsFinset.mp (hnorm kMax hkMaxOut0)
+  obtain ⟨j, hj⟩ := C.mem_outputsFinset.mp (hnoDead kMax hkMaxOut0)
   have hj0 : j = 0 := Subsingleton.elim j 0
   rw [hj0] at hj
   have hlt := hrank _ _ hkMaxMem
   rw [hj] at hlt
   exact Nat.lt_irrefl _ hlt
 
-/-- **Critical-path bottleneck lemma**: if two distinct input variables `x ≠ y` of a normalized
-single-output fan-in-`2` circuit `C` have intersecting critical paths, then there exists a single
-binary operation `opG : U → U → U` (determined by the first shared gate `G` and independent of the
-restriction `ρ`) such that for every assignment `ρ : Fin n → U` there exist unary functions
+/-- **Critical-path bottleneck lemma**: if two distinct input variables `x ≠ y` of a single-output
+fan-in-`2` circuit `C` with `NoDeadGates` have intersecting critical paths, then there exists a
+single binary operation `opG : U → U → U` (determined by the first shared gate `G` and independent
+of the restriction `ρ`) such that for every assignment `ρ : Fin n → U` there exist unary functions
 `f₁, f₂, f₃ : U → U` satisfying
 `C.eval I (Function.update (Function.update ρ x bx) y by_) 0 = f₁ (opG (f₂ bx) (f₃ by_))`
 for all `bx, by_ : U`. -/
 theorem Circuit.exists_bottleneck_of_not_disjoint_criticalPath {U : Type u} [DecidableEq (Fin n)]
     (C : Circuit σ n 1) (I : Interpretation σ U)
-    (hfan : C.FanInAtMost 2) (hnorm : C.Normalized) {x y : Fin n} (hxy : x ≠ y)
+    (hfan : C.FanInAtMost 2) (hnoDead : C.NoDeadGates) {x y : Fin n} (hxy : x ≠ y)
     (hinter : ¬ Disjoint (C.criticalPath x).toFinset (C.criticalPath y).toFinset) :
     ∃ opG : U → U → U, ∀ ρ : Fin n → U, ∃ f₁ f₂ f₃ : U → U, ∀ bx by_ : U,
       C.eval I (Function.update (Function.update ρ x bx) y by_) 0 =
@@ -1112,7 +1107,7 @@ theorem Circuit.exists_bottleneck_of_not_disjoint_criticalPath {U : Type u} [Dec
     change opG (C.program.trace I (assign bx by_) (C.slotWire ⟨G, sx.2⟩))
       (C.program.trace I (assign bx by_) (C.slotWire ⟨G, sySlot⟩)) = _
     rw [hsxWire, hsyWire, hf₂ bx by_, hf₃ bx by_]
-  have hout0 := C.outDeg_output_eq_zero_of_normalized hnorm
+  have hout0 := C.outDeg_output_eq_zero_of_noDeadGates hnoDead
   have houtNotPx : C.outputs 0 ∉ Px := by
     intro hmem
     obtain ⟨i, _, hia, heq⟩ := (Finset.mem_filter.mp hmem).2
@@ -1144,192 +1139,3 @@ theorem Circuit.exists_bottleneck_of_not_disjoint_criticalPath {U : Type u} [Dec
     rw [hf₁ bx by_, hGtrace bx by_]
 
 end Cslib.Circuits
-
-namespace Cslib.Circuits.Boolean
-
-open Cslib.Circuits
-
-/-! ### AND-type and XOR-type `2`-bit Boolean functions -/
-
-/-- A binary Boolean operation is *AND-type* when it is non-affine (`GF(2)` degree `2`), i.e., one
-of the `8` operations `(a ⊕ α) ∧ (b ⊕ β) ⊕ γ`. -/
-@[expose] def IsAndType (h : Bool → Bool → Bool) : Prop :=
-  ¬ SemiCircuit.IsAffineOp h
-
-instance (h : Bool → Bool → Bool) : Decidable (IsAndType h) :=
-  inferInstanceAs (Decidable (¬ _))
-
-/-- A binary Boolean operation is *XOR-type* when it is affine and depends on both arguments, i.e.,
-`a ⊕ b` or `¬(a ⊕ b)`. -/
-@[expose] def IsXorType (h : Bool → Bool → Bool) : Prop :=
-  SemiCircuit.IsAffineOp h ∧ h false false ≠ h true false ∧ h false false ≠ h false true
-
-instance (h : Bool → Bool → Bool) : Decidable (IsXorType h) :=
-  inferInstanceAs (Decidable (_ ∧ _ ∧ _))
-
-private theorem not_isAndType_comp_aux :
-    ∀ (u0 u1 v0 v1 w0 w1 g00 g10 g01 g11 : Bool),
-      SemiCircuit.IsAffineOp
-          (fun u v : Bool => if u then if v then g11 else g10 else if v then g01 else g00) →
-        ¬ IsAndType fun a b =>
-          if (if (if a then v1 else v0) then
-                if (if b then w1 else w0) then g11 else g10
-              else
-                if (if b then w1 else w0) then g01 else g00) then u1 else u0 := by
-  decide
-
-private theorem not_isXorType_comp_aux :
-    ∀ (u0 u1 v0 v1 w0 w1 g00 g10 g01 g11 : Bool),
-      ¬ SemiCircuit.IsAffineOp
-          (fun u v : Bool => if u then if v then g11 else g10 else if v then g01 else g00) →
-        ¬ IsXorType fun a b =>
-          if (if (if a then v1 else v0) then
-                if (if b then w1 else w0) then g11 else g10
-              else
-                if (if b then w1 else w0) then g01 else g00) then u1 else u0 := by
-  decide
-
-/-- Composing an affine binary gate `G` with unary pre- and post-processing never yields an
-AND-type binary function. -/
-theorem not_isAndType_comp_of_isAffineOp {G : Bool → Bool → Bool}
-    (hG : SemiCircuit.IsAffineOp G) (f₁ f₂ f₃ : Bool → Bool) :
-    ¬ IsAndType fun a b => f₁ (G (f₂ a) (f₃ b)) := by
-  have hG' : SemiCircuit.IsAffineOp
-      (fun u v : Bool =>
-        if u then if v then G true true else G true false
-        else if v then G false true else G false false) := by
-    convert hG using 1
-    ext u v
-    cases u <;> cases v <;> rfl
-  convert not_isAndType_comp_aux (f₁ false) (f₁ true) (f₂ false) (f₂ true) (f₃ false) (f₃ true)
-    (G false false) (G true false) (G false true) (G true true) hG' using 2
-  ext a b
-  cases a <;> cases b <;> cases h₂ : f₂ _ <;> cases h₃ : f₃ _ <;> cases hG₂ : G _ _ <;> simp_all
-
-/-- Composing a non-affine (AND-type) binary gate `G` with unary pre- and post-processing never
-yields an XOR-type binary function. -/
-theorem not_isXorType_comp_of_not_isAffineOp {G : Bool → Bool → Bool}
-    (hG : ¬ SemiCircuit.IsAffineOp G) (f₁ f₂ f₃ : Bool → Bool) :
-    ¬ IsXorType fun a b => f₁ (G (f₂ a) (f₃ b)) := by
-  have hGeq : (fun u v : Bool =>
-      if u then if v then G true true else G true false
-      else if v then G false true else G false false) = G := by
-    ext u v
-    cases u <;> cases v <;> rfl
-  have hG' : ¬ SemiCircuit.IsAffineOp
-      (fun u v : Bool =>
-        if u then if v then G true true else G true false
-        else if v then G false true else G false false) :=
-    hGeq.symm ▸ hG
-  convert not_isXorType_comp_aux (f₁ false) (f₁ true) (f₂ false) (f₂ true) (f₃ false) (f₃ true)
-    (G false false) (G true false) (G false true) (G true true) hG' using 2
-  ext a b
-  cases a <;> cases b <;> cases h₂ : f₂ _ <;> cases h₃ : f₃ _ <;> cases hG₂ : G _ _ <;> simp_all
-
-/-- Every circuit over `fullSignature 2 U` has fan-in at most `2`. -/
-theorem fanInAtMost_two_fullSignature {U : Type*} {n m : ℕ}
-    (C : Circuit (fullSignature 2 U) n m) : C.FanInAtMost 2 := by
-  refine C.fanInAtMost_of_arity_le fun op => ?_
-  cases op <;> simp [fullSignature]
-
-/-- In a normalized single-output `B₂` circuit with intersecting critical paths at `x ≠ y`, either
-no `2`-bit restriction to `(x, y)` is AND-type or no `2`-bit restriction to `(x, y)` is XOR-type
-(the structural core of Fan–Li–Yang [FanLiYang2022], Lemma 7.2). -/
-theorem not_isAndType_or_not_isXorType_of_not_disjoint_criticalPath {n : ℕ}
-    (C : Circuit (fullSignature 2 Bool) n 1) (hnorm : C.Normalized)
-    {x y : Fin n} (hxy : x ≠ y)
-    (hinter : ¬ Disjoint (C.criticalPath x).toFinset (C.criticalPath y).toFinset) :
-    (∀ ρ : Fin n → Bool,
-      ¬ IsAndType fun bx by_ =>
-        C.eval fullInterpretation (Function.update (Function.update ρ x bx) y by_) 0) ∨
-    (∀ ρ : Fin n → Bool,
-      ¬ IsXorType fun bx by_ =>
-        C.eval fullInterpretation (Function.update (Function.update ρ x bx) y by_) 0) := by
-  obtain ⟨opG, hbot⟩ := C.exists_bottleneck_of_not_disjoint_criticalPath
-    fullInterpretation (fanInAtMost_two_fullSignature C) hnorm hxy hinter
-  by_cases hAff : SemiCircuit.IsAffineOp opG
-  · left
-    intro ρ
-    obtain ⟨f₁, f₂, f₃, hf⟩ := hbot ρ
-    have hfun : (fun bx by_ =>
-        C.eval fullInterpretation (Function.update (Function.update ρ x bx) y by_) 0) =
-        fun bx by_ => f₁ (opG (f₂ bx) (f₃ by_)) :=
-      funext fun bx => funext fun by_ => hf bx by_
-    rw [hfun]
-    exact not_isAndType_comp_of_isAffineOp hAff f₁ f₂ f₃
-  · right
-    intro ρ
-    obtain ⟨f₁, f₂, f₃, hf⟩ := hbot ρ
-    have hfun : (fun bx by_ =>
-        C.eval fullInterpretation (Function.update (Function.update ρ x bx) y by_) 0) =
-        fun bx by_ => f₁ (opG (f₂ bx) (f₃ by_)) :=
-      funext fun bx => funext fun by_ => hf bx by_
-    rw [hfun]
-    exact not_isXorType_comp_of_not_isAffineOp hAff f₁ f₂ f₃
-
-/-- Every `n`-bit Boolean function (`2 ≤ n`) of `B₂`-circuit complexity strictly less than
-`2 * n - 2` either has an isolated coordinate or has two intersecting critical paths in a
-normalized circuit, and in both cases admits `x < y` in `Fin n` whose `2`-bit restrictions are
-either never AND-type or never XOR-type. -/
-theorem exists_lt_pair_not_isAndType_or_not_isXorType {n : ℕ} (hn : 2 ≤ n)
-    {f : (Fin n → Bool) → Bool}
-    (hf : complexity (fullInterpretation (k := 2)) (single f) < 2 * n - 2) :
-    ∃ x y : Fin n, x < y ∧
-      ((∀ ρ : Fin n → Bool,
-          ¬ IsAndType fun bx by_ => f (Function.update (Function.update ρ x bx) y by_)) ∨
-       (∀ ρ : Fin n → Bool,
-          ¬ IsXorType fun bx by_ => f (Function.update (Function.update ρ x bx) y by_))) := by
-  obtain ⟨C₀, hC₀comp, hC₀size⟩ :=
-    exists_computes_size_eq_complexity (I := fullInterpretation (k := 2)) (f := single f)
-  obtain ⟨C, hCnorm, hCsize, hCeval, -⟩ := C₀.exists_normalized
-  have hfeq : ∀ z : Fin n → Bool, f z = C.eval fullInterpretation z 0 := by
-    intro z
-    have h1 := Circuit.computes_single_iff.mp hC₀comp z
-    have h2 := congrFun (hCeval fullInterpretation z) 0
-    exact (h2.trans h1).symm
-  have hlt : C.size < 2 * n - 2 := by omega
-  by_cases hiso : C.HasIsolatedVar
-  · obtain ⟨i, hout, hnotOut⟩ := hiso
-    have hindep : ∀ (ρ : Fin n → Bool) (b : Bool), f (Function.update ρ i b) = f ρ := by
-      intro ρ b
-      rw [hfeq, hfeq, congrFun (C.eval_update_of_outDeg_input_eq_zero fullInterpretation
-        hout hnotOut ρ b) 0]
-    by_cases hi0 : i.val = 0
-    · let y : Fin n := ⟨1, by omega⟩
-      have hiy : i < y := by
-        change i.val < 1
-        omega
-      refine ⟨i, y, hiy, Or.inr fun ρ hxor => ?_⟩
-      have hxy : i ≠ y := ne_of_lt hiy
-      have heq0 : f (Function.update (Function.update ρ i false) y false) =
-          f (Function.update (Function.update ρ i true) y false) := by
-        rw [Function.update_comm hxy, Function.update_comm hxy, hindep, hindep]
-      exact hxor.2.1 heq0
-    · let x : Fin n := ⟨0, by omega⟩
-      have hxi : x < i := by
-        change 0 < i.val
-        omega
-      refine ⟨x, i, hxi, Or.inr fun ρ hxor => ?_⟩
-      have heq0 : f (Function.update (Function.update ρ x false) i false) =
-          f (Function.update (Function.update ρ x false) i true) := by
-        rw [hindep, hindep]
-      exact hxor.2.2 heq0
-  · have hnotDisj :
-        ¬ Pairwise fun x y => Disjoint (C.criticalPath x).toFinset (C.criticalPath y).toFinset := by
-      intro hdisj
-      have hge := C.two_mul_sub_two_mul_le_size (fanInAtMost_two_fullSignature C) hCnorm hiso hdisj
-      omega
-    unfold Pairwise at hnotDisj
-    push Not at hnotDisj
-    obtain ⟨x, y, hxy, hinter⟩ := hnotDisj
-    rcases lt_or_gt_of_ne hxy with hltXY | hgtXY
-    · refine ⟨x, y, hltXY, ?_⟩
-      simpa only [← hfeq] using
-        not_isAndType_or_not_isXorType_of_not_disjoint_criticalPath C hCnorm hxy hinter
-    · have hinter' : ¬ Disjoint (C.criticalPath y).toFinset (C.criticalPath x).toFinset :=
-        fun hd => hinter hd.symm
-      refine ⟨y, x, hgtXY, ?_⟩
-      simpa only [← hfeq] using
-        not_isAndType_or_not_isXorType_of_not_disjoint_criticalPath C hCnorm hxy.symm hinter'
-
-end Cslib.Circuits.Boolean
