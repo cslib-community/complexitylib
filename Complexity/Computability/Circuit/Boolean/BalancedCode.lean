@@ -97,21 +97,6 @@ private def WireBitsLe (c : Code) (bound : ℕ) : Prop :=
   (∀ gate ∈ c.1, ∀ wire ∈ gate.2, (encNat wire).length ≤ bound) ∧
     ∀ wire ∈ c.2, (encNat wire).length ≤ bound
 
-private theorem length_encoding_member {α : Type} (enc : α ↪ List Bool)
-    {values : List α} {value : α} (h : value ∈ values) :
-    (enc value).length ≤ (encList enc values).length := by
-  induction values with
-  | nil => simp at h
-  | cons head tail ih =>
-    rcases List.mem_cons.mp h with rfl | ht
-    · rw [length_encList]
-      simp only [List.map_cons, List.sum_cons]
-      omega
-    · have := ih ht
-      rw [length_encList] at this ⊢
-      simp only [List.map_cons, List.sum_cons]
-      omega
-
 private theorem codeMass_le_encoding (c : Code) : codeMass c ≤ (encCode c).length := by
   have hg : (c.1.map fun gate => gate.2.length + 1).sum ≤ (encList encGate c.1).length := by
     rw [length_encList]
@@ -127,15 +112,15 @@ private theorem codeMass_le_encoding (c : Code) : codeMass c ≤ (encCode c).len
 private theorem wireBitsLe_encoding (c : Code) : WireBitsLe c (encCode c).length := by
   constructor
   · intro gate hg wire hw
-    have ha := length_encoding_member encNat hw
-    have hb := length_encoding_member encGate hg
+    have ha := length_le_encList_of_mem encNat hw
+    have hb := length_le_encList_of_mem encGate hg
     rw [show (encGate gate).length =
       2 * (encOp gate.1).length + 1 + (encList encNat gate.2).length from length_encPair gate] at hb
     rw [show (encCode c).length =
       2 * (encList encGate c.1).length + 1 + (encList encNat c.2).length from length_encPair c]
     omega
   · intro wire hw
-    have := length_encoding_member encNat hw
+    have := length_le_encList_of_mem encNat hw
     simp only [encCode, length_encPair]
     omega
 
@@ -487,7 +472,7 @@ private theorem intervalTables_entry_bound (n : ℕ) (op unit : Code) (leaves : 
     · exact wireBitsLe_mono (wireBitsLe_encoding op) (by dsimp [B, inputBudget]; omega)
   have hleaves : ∀ c ∈ leaves, codeMass c ≤ B ∧ WireBitsLe c B := by
     intro c h
-    have hc := length_encoding_member encCode h
+    have hc := length_le_encList_of_mem encCode h
     have hB : (encCode c).length ≤ B := by dsimp only [B, inputBudget]; omega
     exact ⟨(codeMass_le_encoding c).trans hB, wireBitsLe_mono (wireBitsLe_encoding c) hB⟩
   have hBM : B ≤ M := by dsimp [M]; nlinarith

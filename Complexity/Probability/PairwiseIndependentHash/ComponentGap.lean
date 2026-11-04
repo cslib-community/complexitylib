@@ -86,7 +86,7 @@ acting on the torus alone, `w ↦ (1 + E_ab) w` and `w ↦ w + e_i`. -/
 
 @[simp]
 theorem torusMove_inl (p : {p : Fin H × Fin H // p.1 ≠ p.2}) (w : Fin H → ZMod M) :
-    torusMove H M (.inl p) w = update w p.1.1 (w p.1.1 + w p.1.2) := by
+    torusMove H M (.inl p) w = update w p.val.1 (w p.val.1 + w p.val.2) := by
   simp only [torusMove, affineGenerator, Sum.elim_inl, affineSL_apply,
     SpecialLinearGroup.map_transvection, SpecialLinearGroup.transvection_mulVec, map_one, one_mul]
   exact funext fun _ ↦ by simp

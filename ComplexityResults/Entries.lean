@@ -9,10 +9,12 @@ import ComplexityResults.Registry
 import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder
 import Complexity.Computability.Complexity.Classes.LogSpace.PolyTime
 import Complexity.Computability.Complexity.Classes.SharpP.Lowness
+import Complexity.Computability.Complexity.Classes.TimeSpace.Williams
 import Complexity.Computability.Complexity.FineGrained.OrthogonalVectors
 import Complexity.Computability.Complexity.FineGrained.PPZ
 import Complexity.Computability.Complexity.FineGrained.Schoening
 import Complexity.Computability.Complexity.FineGrained.Sparsification
+import Complexity.Crypto.Computational.Nonuniform.ZeroKnowledge
 
 /-!
 # Collected results without selected formal abstracts
@@ -145,3 +147,36 @@ register_result "native-sparsification" where
     encCNF and polynomial encoded-length overhead; no new sharp sparsification \
     constant."
 
+register_result "williams-square-root-space" where
+  title := "Williams's square-root-space simulation of deterministic time"
+  topic := "space complexity"
+  sources := [
+    { paper := Williams2025, theorem := "Theorem 1.1",
+      locator := "arXiv:2502.17779v1, Section 3" }
+  ]
+  theorems := [
+    Cslib.Complexity.DTIME_subset_DSPACE_sqrt
+  ]
+  scope := "For every time bound t(n) >= n and arbitrary injective input encoding, \
+    DTIME(t) is contained in DSPACE(Nat.sqrt(t * (Nat.log2(t) + 1))). Finite binary \
+    multitape machines, read-only input and visited-work-cell space; classes absorb \
+    affine constants. No time-constructibility or monotonicity hypothesis."
+
+register_result "gmw-zero-knowledge" where
+  title := "Goldreich–Micali–Wigderson auxiliary-input zero-knowledge proofs for NP"
+  topic := "cryptography"
+  sources := [
+    { paper := GoldreichMicaliWigderson1991, theorem := unverified,
+      locator := unverified },
+    { paper := Goldreich2001, theorem := unverified,
+      locator := "Sections 4.3.3 and 4.4" }
+  ]
+  theorems := [
+    Cslib.Crypto.NonuniformOneWay.exists_zkProof_of_mem_NP,
+    Cslib.Crypto.NonuniformOneWay.exists_zkProof_of_npRelation
+  ]
+  scope := "From any nonuniformly one-way function, every language L in NP and every \
+    NPRelation R admits a sequentially amplified ZKProof system (adapted masked-3SAT \
+    protocol) with soundness (1/3)^(n+1), NegligibleSoundness, and auxiliary-input zero \
+    knowledge in family-indexed, unbounded-auxiliary-input, and Goldreich instance-indexed \
+    forms; the relation version preserves R's native witnesses via a Levin reduction."

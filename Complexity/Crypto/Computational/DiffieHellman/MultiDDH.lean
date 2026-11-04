@@ -287,10 +287,10 @@ theorem advantage_multiDDH_le (d : F.Desc) (ι : Type*) [Fintype ι] [DecidableE
       ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
         (F.multiDDHIdealTupleLaw d ι).bind (test (α • F.generator d))) ≤
     Game.advantage
-      ((F.ddhRealTupleLaw d).bind fun t =>
-        (F.multiDDHRerandomizeLaw d ι t.1 t.2.1 t.2.2).bind (test t.1))
-      ((F.ddhIdealTupleLaw d).bind fun t =>
-        (F.multiDDHRerandomizeLaw d ι t.1 t.2.1 t.2.2).bind (test t.1)) +
+      ((F.ddhRealTupleLaw d).bind fun (u, v, w) =>
+        (F.multiDDHRerandomizeLaw d ι u v w).bind (test u))
+      ((F.ddhIdealTupleLaw d).bind fun (u, v, w) =>
+        (F.multiDDHRerandomizeLaw d ι u v w).bind (test u)) +
       (F.order d : ℝ≥0)⁻¹ := by
   have hreal :
       ((F.ddhRealTupleLaw d).bind fun t =>

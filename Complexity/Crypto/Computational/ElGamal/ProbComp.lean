@@ -195,7 +195,7 @@ theorem computableInPolyTime_hashedElGamalDecaps {H : F.Desc × List Bool → Li
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     (hd : ComputableInPolyTime d encUnary F.encDesc) :
     ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => F.hashedElGamalDecaps H d p.1 p.2.1 p.2.2)
+      (fun ⟨n, sk, ct⟩ => F.hashedElGamalDecaps H d n sk ct)
       (encPair encUnary (encPair encBits encBits)) encBits := by
   let E := encPair encUnary (encPair encBits encBits)
   have hd1 : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => d p.1) E F.encDesc :=
@@ -237,17 +237,18 @@ theorem hashedElGamalDecaps_hashedElGamalEncapsProb (H : F.Desc × List Bool →
 def kemToDDHDistinguisher (H : F.Desc × List Bool → List Bool)
     (distinguisher : Distinguisher) (n : ℕ)
     (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool :=
-  let pk := encPair F.encDesc encBits (input.1, input.2.1)
+  let pk := encPair F.encDesc encBits (input.1, F.ddhPk input)
   distinguisher n
-    (encPair encBits (encPair encBits encBits) (pk, (H (input.1, input.2.2.2), input.2.2.1)))
+    (encPair encBits (encPair encBits encBits)
+      (pk, (H (input.1, F.ddhShared input), F.ddhEph input)))
 
 /-- KDF distinguisher constructed from a `KEMAdversary` (`Distinguisher`) for
 `(elGamalKeyGenProb d, hashedElGamalEncapsProb H d)`. -/
 def kemToKDFDistinguisher (distinguisher : Distinguisher) (n : ℕ)
     (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool :=
-  let pk := encPair F.encDesc encBits (input.1, input.2.1)
+  let pk := encPair F.encDesc encBits (input.1, F.ddhPk input)
   distinguisher n
-    (encPair encBits (encPair encBits encBits) (pk, (input.2.2.2, input.2.2.1)))
+    (encPair encBits (encPair encBits encBits) (pk, (F.ddhShared input, F.ddhEph input)))
 
 /-- `ddhIdealGame` for `kemToDDHDistinguisher` is identical to `kdfRealGame` for
 `kemToKDFDistinguisher`. -/
@@ -461,7 +462,7 @@ theorem DDH.indcpaOf_hybrid_hashedElGamal {F : PrimeOrderGroupFamily}
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     (hd : ComputableInPolyTime d encUnary F.encDesc)
     (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encryptSym p.1 p.2.1 p.2.2)) :
+      (fun ⟨n, k, m⟩ => encryptSym n k m)) :
     INDCPAOf encMsg (F.elGamalKeyGenProb d)
       (hybridEncrypt (F.hashedElGamalEncapsProb H d) encryptSym) :=
   (hDDH.kemINDCPA_hashedElGamalEncapsProb hKDF hH).hybrid_indcpa hdem
@@ -482,13 +483,13 @@ theorem DDH.indcpaOn_hybrid_hashedElGamal {F : PrimeOrderGroupFamily}
     (hKDF : F.SecureKDF (fun n => PMF.pure (d n)) H (fun n => n))
     (hdem : DEMOneTimeINDCPAOn valid encMsg encryptSym)
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     (hpk : ∀ n pk m₀ m₁, valid n pk m₀ m₁ = valid n [] m₀ m₁)
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     (hd : ComputableInPolyTime d encUnary F.encDesc)
     (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encryptSym p.1 p.2.1 p.2.2)) :
+      (fun ⟨n, k, m⟩ => encryptSym n k m)) :
     INDCPAOn valid encMsg (F.elGamalKeyGenProb d)
       (hybridEncrypt (F.hashedElGamalEncapsProb H d) encryptSym) :=
   (hDDH.kemINDCPA_hashedElGamalEncapsProb hKDF hH).hybrid_indcpaOn hdem hvalid hpk
@@ -508,7 +509,7 @@ theorem DDH.wordINDCPA_hybrid_hashedElGamal {F : PrimeOrderGroupFamily}
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     (hd : ComputableInPolyTime d encUnary F.encDesc)
     (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun p => encryptSym p.1 p.2.1 p.2.2)) :
+      (fun ⟨n, k, m⟩ => encryptSym n k m)) :
     WordINDCPA (F.elGamalKeyGenProb d)
       (hybridEncrypt (F.hashedElGamalEncapsProb H d) encryptSym) := by
   let E := encPair encUnary (encPair encBits (encPair encBits encBits))
@@ -525,7 +526,8 @@ theorem DDH.wordINDCPA_hybrid_hashedElGamal {F : PrimeOrderGroupFamily}
   have hbeq : ComputableInPolyTime (fun p : ℕ × ℕ => p.1 == p.2)
       (encPair encUnary encUnary) encBool := by fun_prop
   exact hDDH.indcpaOn_hybrid_hashedElGamal hKDF hdem
-    (hbeq.comp (hl0.prod hl1)) (fun _ _ _ _ => rfl) hH hd hencryptSym
+    (hbeq.comp (hl0.prod hl1))
+    (fun _ _ _ _ => rfl) hH hd hencryptSym
 
 /-- Probabilistic polynomial-time multiplicative ElGamal encryption for a group description family
 `d : ℕ → F.Desc` and message encoder `encodeMsg : F.Desc → Msg → List Bool`
@@ -546,7 +548,7 @@ theorem isPPTOn_elGamalEncryptProb {Msg : Type} {encMsg : Msg ↪ List Bool}
       (encPair F.encDesc encMsg) encBits)
     (hd : ComputableInPolyTime d encUnary F.encDesc) :
     IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => F.elGamalEncryptProb encodeMsg d p.1 p.2.1 p.2.2) := by
+      (fun ⟨n, pk, m⟩ => F.elGamalEncryptProb encodeMsg d n pk m) := by
   let E := encPair (encPair encUnary (encPair encBits encMsg)) encNat
   have hp1 : ComputableInPolyTime (fun p : (ℕ × List Bool × Msg) × ℕ => p.1)
       E (encPair encUnary (encPair encBits encMsg)) :=
@@ -591,7 +593,7 @@ def elGamalDecryptDet (d : ℕ → F.Desc) (n : ℕ) (sk ct : List Bool) : List 
 theorem computableInPolyTime_elGamalDecryptDet {d : ℕ → F.Desc}
     (hd : ComputableInPolyTime d encUnary F.encDesc) :
     ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => F.elGamalDecryptDet d p.1 p.2.1 p.2.2)
+      (fun ⟨n, sk, ct⟩ => F.elGamalDecryptDet d n sk ct)
       (encPair encUnary (encPair encBits encBits)) encBits := by
   let E := encPair encUnary (encPair encBits encBits)
   have hd1 : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => d p.1) E F.encDesc :=
@@ -711,7 +713,7 @@ theorem DDH.indcpaOn_elGamalEncryptProb {F : PrimeOrderGroupFamily}
     {encodeMsg : F.Desc → Msg → List Bool} {d : ℕ → F.Desc}
     (hDDH : F.DDH (fun n => PMF.pure (d n)))
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     (hsound : F.AdmitsGroupElements encodeMsg valid)
     (hencMsg : ComputableInPolyTime (fun p : F.Desc × Msg => encodeMsg p.1 p.2)

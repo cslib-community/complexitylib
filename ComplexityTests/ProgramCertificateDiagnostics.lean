@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Crypto.Computational.Signature
+import Complexity.Crypto.Computational.IndexedSignature.Seeded
 import Complexity.Crypto.Computational.MAC
 import ComplexityTests.PolyTimePlainDriver
 
@@ -16,6 +17,10 @@ open Turing.MultiTapeTM Cslib.Crypto
 run_meta do
   for (certificate, program) in
       [(`Cslib.Crypto.SignatureScheme.verify_polyTime, `Cslib.Crypto.SignatureScheme.verify),
+       (`Cslib.Crypto.IndexedSignatureScheme.Seeded.signWith_polyTime,
+        `Cslib.Crypto.IndexedSignatureScheme.Seeded.signWith),
+       (`Cslib.Crypto.IndexedSignatureScheme.Seeded.signBudget_polyTime,
+        `Cslib.Crypto.IndexedSignatureScheme.Seeded.signBudget),
        (`Cslib.Crypto.MACScheme.verify_polyTime, `Cslib.Crypto.MACScheme.verify)] do
     let type := (← Lean.getConstInfo certificate).type
     let key ← Lean.Meta.forallTelescope type fun _ conclusion =>
@@ -43,13 +48,14 @@ example (B : Cslib.WordRAM.Basis) (c : ℕ) : ComputableInPolyTime
 
 namespace ProgramCertificateDiagnostics
 
+/-- A non-efficiency proposition used to check attribute rejection. -/
 def NotEfficiency (_ : List Bool → List Bool) : Prop := True
 
 theorem wrongPredicate : NotEfficiency List.reverse := True.intro
 
 /--
 error: unsupported efficiency predicate `ProgramCertificateDiagnostics.NotEfficiency` for
-`program_certificate`; expected TM polynomial time, PPT, or a documented word-RAM certificate
+`program_certificate`; expected TM polynomial time or logarithmic space, PPT, or a documented word-RAM certificate
 -/
 #guard_msgs (whitespace := lax) in
 attribute [program_certificate] wrongPredicate
@@ -58,7 +64,7 @@ theorem noProgram : True := True.intro
 
 /--
 error: unsupported efficiency predicate `True` for `program_certificate`; expected
-TM polynomial time, PPT, or a documented word-RAM certificate
+TM polynomial time or logarithmic space, PPT, or a documented word-RAM certificate
 -/
 #guard_msgs (whitespace := lax) in
 attribute [program_certificate] noProgram

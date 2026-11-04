@@ -232,9 +232,9 @@ theorem run_interpret_run_interpret {κ : Type w} {target : OracleSpec.{w, v} κ
     (oracle : (q : κ) → StateT External m (target q))
     (program : OracleComp spec α) (hidden : Hidden) (external : External) :
     (interpret oracle ((interpret handler program).run hidden)).run external =
-      (fun result => ((result.1, result.2.1), result.2.2)) <$>
+      (fun ⟨a, b, c⟩ => ((a, b), c)) <$>
         (interpret (m := StateT (Hidden × External) m) (fun q state =>
-          (fun result => (result.1.1, result.1.2, result.2)) <$>
+          (fun ⟨⟨a, b⟩, c⟩ => (a, b, c)) <$>
             (interpret oracle ((handler q).run state.1)).run state.2) program).run
           (hidden, external) := by
   induction program using OracleComp.induction generalizing hidden external with

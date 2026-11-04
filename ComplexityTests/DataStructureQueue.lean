@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.Queue
+public import Complexity.DataStructure.Queue.Spec
 
 /-!
 # Queue substitution and resource contract tests
@@ -24,15 +24,15 @@ Recorded events describe operations and sizes; they are not measurements of runn
 
 namespace ComplexityTests.DataStructureQueue
 
-open Cslib.Stateful Cslib.Algorithms.Lean.Queue
+open Cslib.DataStructure Cslib.DataStructure.Queue
 
 /-- Direct lists record the operation that was performed. -/
 def directExec : Execution (stackPair Nat) (List Nat × List Nat) (stackPair Nat).Op :=
   fun c o a c' event => (c', a) = (stackPair Nat).stepFn c o ∧ event = o
 
 /-- Both stack components are updated by the product specification; the other is preserved. -/
-def direct : Realization (stackPair Nat) directExec :=
-  Realization.ofFn Eq
+def direct : StateTransitionImpl (stackPair Nat) directExec :=
+  StateTransitionImpl.ofFn Eq
     (fun o hr _ => by
       subst hr
       exact ⟨((stackPair Nat).stepFn _ o).2, ((stackPair Nat).stepFn _ o).1, o, rfl, rfl⟩)
@@ -81,8 +81,8 @@ theorem reverseStep_correct (c : ReverseStacks) (o : (stackPair Nat).Op) :
     simp [reverseStep, reverseStackStep, decode, stackPair, stack]
 
 /-- Reversed stacks realize precisely the same interface, with their own evidence type. -/
-def reversed : Realization (stackPair Nat) reverseExec :=
-  Realization.ofFn (fun s c => decode c = s)
+def reversed : StateTransitionImpl (stackPair Nat) reverseExec :=
+  StateTransitionImpl.ofFn (fun s c => decode c = s)
     (fun o _ _ =>
       ⟨(reverseStep _ o).2, (reverseStep _ o).1,
         (o, _, _), rfl, rfl⟩)
@@ -119,7 +119,7 @@ theorem adaptiveClient_eval :
 /-- One client theorem applies unchanged to every stack-pair realization, including different
 concrete state and native trace types. Its conclusion contains the flattened backend execution. -/
 theorem adaptiveClient_backend {C Trace : Type} {exec : Execution (stackPair Nat) C Trace}
-    (R : Realization (stackPair Nat) exec) {c : C}
+    (R : StateTransitionImpl (stackPair Nat) exec) {c : C}
     (hr : (implementation.realize R).rep [7, 11] c) :
     ∃ c' traces, Executes exec (link methods adaptiveClient) c (some 11) c' traces ∧
       (implementation.realize R).rep [5, 8] c' := by
@@ -212,63 +212,63 @@ info: 'ComplexityTests.DataStructureQueue.adaptiveClient_reversed' depends on ax
 #guard_msgs (whitespace := lax) in
 #print axioms ComplexityTests.DataStructureQueue.adaptiveClient_reversed
 /--
-info: 'Cslib.Stateful.Realization.exists_executes' depends on axioms:
+info: 'Cslib.DataStructure.StateTransitionImpl.exists_executes' depends on axioms:
 [propext]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Stateful.Realization.exists_executes
+#print axioms Cslib.DataStructure.StateTransitionImpl.exists_executes
 /--
-info: 'Cslib.Stateful.Realization.correct_client' depends on axioms:
+info: 'Cslib.DataStructure.StateTransitionImpl.correct_client' depends on axioms:
 [propext]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Stateful.Realization.correct_client
+#print axioms Cslib.DataStructure.StateTransitionImpl.correct_client
 /--
-info: 'Cslib.Stateful.Module.realize' does not depend on any axioms
+info: 'Cslib.DataStructure.Module.realize' does not depend on any axioms
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Stateful.Module.realize
+#print axioms Cslib.DataStructure.Module.realize
 /--
-info: 'Cslib.Stateful.Module.amortized_client' depends on axioms:
+info: 'Cslib.DataStructure.Module.amortized_client' depends on axioms:
 [propext, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Stateful.Module.amortized_client
+#print axioms Cslib.DataStructure.Module.amortized_client
 /--
-info: 'Cslib.Stateful.link_exec' depends on axioms:
+info: 'Cslib.DataStructure.link_exec' depends on axioms:
 [propext]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Stateful.link_exec
+#print axioms Cslib.DataStructure.link_exec
 /--
-info: 'Cslib.Stateful.link_exec_decompose' depends on axioms:
+info: 'Cslib.DataStructure.link_exec_decompose' depends on axioms:
 [propext]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Stateful.link_exec_decompose
+#print axioms Cslib.DataStructure.link_exec_decompose
 /--
-info: 'Cslib.Algorithms.Lean.Queue.implementation' depends on axioms:
+info: 'Cslib.DataStructure.Queue.implementation' depends on axioms:
 [propext, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Algorithms.Lean.Queue.implementation
+#print axioms Cslib.DataStructure.Queue.implementation
 /--
-info: 'Cslib.Algorithms.Lean.Queue.potential_step' depends on axioms:
+info: 'Cslib.DataStructure.Queue.potential_step' depends on axioms:
 [propext, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Algorithms.Lean.Queue.potential_step
+#print axioms Cslib.DataStructure.Queue.potential_step
 /--
-info: 'Cslib.Algorithms.Lean.Queue.realized_client' depends on axioms:
+info: 'Cslib.DataStructure.Queue.realized_client' depends on axioms:
 [propext, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Algorithms.Lean.Queue.realized_client
+#print axioms Cslib.DataStructure.Queue.realized_client
 /--
-info: 'Cslib.Algorithms.Lean.Queue.realized_client_bound' depends on axioms:
+info: 'Cslib.DataStructure.Queue.realized_client_bound' depends on axioms:
 [propext, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Cslib.Algorithms.Lean.Queue.realized_client_bound
+#print axioms Cslib.DataStructure.Queue.realized_client_bound
 
 end ComplexityTests.DataStructureQueue
