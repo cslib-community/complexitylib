@@ -440,7 +440,7 @@ theorem computableInPolyTime_localMap_toCSP :
     (bits_encList_polyTime encBool).1.comp (snd encLocalMap encBits)
   have hzip : ComputableInPolyTime (fun q : LocalMap × List Bool => q.1.2.zip q.2)
       encLocalMapQuery (encList (encPair encLocalOutput encBool)) :=
-    (computableInPolyTime_zip encLocalOutput encBool).comp (hout.prod hbits)
+    (ComputableInPolyTime.zip encLocalOutput encBool).comp (hout.prod hbits)
   have hentry : ComputableInPolyTime
       (fun p : LocalOutput × Bool => ((p.1.2, p.2), p.1.1))
       (encPair encLocalOutput encBool) (encConstraint LocalMap.encCSPRel encNat) := by
