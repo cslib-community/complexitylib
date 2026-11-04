@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.Deduplicate.Count
+import Complexity.Computability.WordRAM.MemoryView
 
 /-!
 # Complete native adjacent deduplication and multiplicity arrays
@@ -189,11 +190,7 @@ theorem exec {w s base : ℕ} (xs : List ℕ) (x : Data 16)
       have hkr : Block.HoldsList base (rs.map Prod.fst ++ [xs[y.regs idx]])
           (Function.update y.mem (base + rs.length) xs[y.regs idx]) := by
         simpa only [List.length_map] using hyrk.append_one xs[y.regs idx]
-      apply hkr.frame
-      intro a hlo hhi
-      rw [Function.update_of_ne (by
-        simp only [List.length_append, List.length_map, List.length_singleton] at hhi
-        omega)]
+      ram_keep hkr
     have hcountrep : Block.HoldsList (base + n)
         ((rs ++ [(xs[y.regs idx], c)]).map Prod.snd) z.mem := by
       rw [List.map_append]
@@ -201,9 +198,7 @@ theorem exec {w s base : ℕ} (xs : List ℕ) (x : Data 16)
       rw [hzmem]
       have hcr : Block.HoldsList (base + n) (rs.map Prod.snd)
           (Function.update y.mem (base + rs.length) xs[y.regs idx]) := by
-        apply hyrc.frame
-        intro a hlo hhi
-        rw [Function.update_of_ne (by omega)]
+        ram_keep hyrc
       simpa only [List.length_map] using hcr.append_one c
     have hrs' : RunEncoding (xs.take (y.regs idx + c)) (rs ++ [(xs[y.regs idx], c)]) := by
       refine ⟨?_, ?_, ?_⟩
@@ -229,12 +224,7 @@ theorem exec {w s base : ℕ} (xs : List ℕ) (x : Data 16)
         (hz.regs_eq (by decide)).trans huk, (hz.regs_eq (by decide)).trans hucb,
         (hz.regs_eq (by decide)).trans huo, by omega, ?_, ?_,
         rs ++ [(xs[y.regs idx], c)], by simpa only [hzi] using hrs', ?_, hkeyrep, hcountrep, ?_⟩
-      · apply hym.frame
-        intro a hlo hhi
-        apply hzf
-        rw [Block.mem_footprint]
-        change ¬(base ≤ a ∧ a < base + 2 * n)
-        omega
+      · ram_keep hym using hzf
       · intro a ha
         exact (hzf a ha).trans (hyf a ha)
       · rw [hzout, huout, List.length_append, List.length_singleton]

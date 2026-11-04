@@ -7,7 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-import Complexity.Computability.WordRAM.Call
+import Complexity.Computability.WordRAM.SymbolicExec.Call
 public import Complexity.Algorithms.WordRAM.ExactTriangle.PrimeSelection.Program
 
 /-!
@@ -36,16 +36,15 @@ theorem exec_trial {w : ℕ} (x : Data 160) (hp : 2 ≤ x.regs Reg.cursor)
       y.regs Reg.trialFlag = (if (x.regs Reg.cursor).Prime then 1 else 0) ∧
       y.mem = x.mem ∧ ∀ i, 6 ≤ i.val → y.regs i = x.regs i := by
   let p := x.set Reg.trialArg (x.regs Reg.cursor)
-  obtain ⟨y, hz, ⟨hflag, _, hmem⟩, hframe⟩ := ExecWithin.rename_post trial_injective
-    (PrimeTrial.exec (p.comap trialRegisters)
+  unfold trial
+  wram_exec
+  wram_call (PrimeTrial.exec (p.comap trialRegisters)
       (by change 2 ≤ x.regs Reg.cursor; exact hp)
-      (by change Fits w (x.regs Reg.cursor + 2); exact hfit))
-  have hcopy : ExecWithin (B := .standard) w (ram[ Reg.trialArg ← Reg.cursor ]) x p 1 :=
-    ExecWithin.copy
-  refine ⟨y, ?_, hflag, hmem, ?_⟩
-  · exact (hcopy.seq hz).mono (by
-      change 1 + (7 * (x.regs Reg.cursor - 2) + 6) ≤ 7 * x.regs Reg.cursor + 7
-      omega)
+      (by change Fits w (x.regs Reg.cursor + 2); exact hfit)) renamed trial_injective with
+    y ⟨⟨hflag, _, hmem⟩, hframe⟩
+  refine ⟨?_, hflag, hmem, ?_⟩
+  · change 7 * (x.regs Reg.cursor - 2) + 6 + 1 ≤ 7 * x.regs Reg.cursor + 7
+    omega
   · intro i hi
     have hne : i ≠ Reg.trialArg := by
       intro h

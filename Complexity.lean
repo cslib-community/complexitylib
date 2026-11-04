@@ -669,6 +669,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalStep
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalTime
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalVisit
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision
+public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Admissible
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Body
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Boundary
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Call
@@ -707,6 +708,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Prepare
 public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Program
 public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Slow
 public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Width
+public import Complexity.Algorithms.WordRAM.ThreeSum.LowerBound
 public import Complexity.Algorithms.WordRAM.ThreeSum.Memory
 public import Complexity.Algorithms.WordRAM.ThreeSum.Weight
 public import Complexity.Computability.BranchingProgram.MonoidProgram
@@ -2436,6 +2438,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Degree
 public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Exponential
 public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial
+public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 public import Complexity.Computability.Machines.Turing.MultiTape.Run
 public import Complexity.Computability.Machines.Turing.MultiTape.SingleTape
 public import Complexity.Computability.Machines.Turing.MultiTape.Space
@@ -2759,6 +2762,7 @@ public import Complexity.Computability.WordRAM.Defs
 public import Complexity.Computability.WordRAM.Dynamic
 public import Complexity.Computability.WordRAM.ExactLog
 public import Complexity.Computability.WordRAM.ExactNotation
+public import Complexity.Computability.WordRAM.Footprint
 public import Complexity.Computability.WordRAM.Function
 public import Complexity.Computability.WordRAM.GhostLoop
 public import Complexity.Computability.WordRAM.Glue
@@ -2769,6 +2773,7 @@ public import Complexity.Computability.WordRAM.Invariance
 public import Complexity.Computability.WordRAM.ListArray
 public import Complexity.Computability.WordRAM.ListOutput
 public import Complexity.Computability.WordRAM.MapOp
+public import Complexity.Computability.WordRAM.MemoryView
 public import Complexity.Computability.WordRAM.MemoryWindow
 public import Complexity.Computability.WordRAM.MemoryWindow.Normalization
 public import Complexity.Computability.WordRAM.Multiword
@@ -2791,6 +2796,7 @@ public import Complexity.Computability.WordRAM.Native
 public import Complexity.Computability.WordRAM.NativeDegree
 public import Complexity.Computability.WordRAM.Notation
 public import Complexity.Computability.WordRAM.OfTuring
+public import Complexity.Computability.WordRAM.OutputLowerBound
 public import Complexity.Computability.WordRAM.PackedCount
 public import Complexity.Computability.WordRAM.Power
 public import Complexity.Computability.WordRAM.Power.Rename
@@ -2844,6 +2850,7 @@ public import Complexity.Computability.WordRAM.Signed.State
 public import Complexity.Computability.WordRAM.Structured
 public import Complexity.Computability.WordRAM.Subroutine
 public import Complexity.Computability.WordRAM.SymbolicExec
+public import Complexity.Computability.WordRAM.SymbolicExec.Call
 public import Complexity.Computability.WordRAM.SymbolicExec.Init
 public import Complexity.Computability.WordRAM.Time
 public import Complexity.Computability.WordRAM.Trace
@@ -3869,6 +3876,7 @@ public import Complexity.Foundations.Probability.HierarchySourceSampling
 public import Complexity.Foundations.Probability.HierarchyTaskData
 public import Complexity.Foundations.Probability.HierarchyTaskMeans
 public import Complexity.Foundations.Probability.HierarchyTasks
+public import Complexity.Foundations.Probability.InitialPilotScore
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ActualMoment
 public import Complexity.Foundations.Probability.NormalizedAtomRows.BoundedLoss
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ChildRootReserve

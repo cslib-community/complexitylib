@@ -12,6 +12,7 @@ public import Complexity.Crypto.Computational.Signature
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 public import Complexity.Languages.Probabilistic.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -350,9 +351,9 @@ theorem computableInPolyTime_certify :
     cs * (8 * (encChainInput x).length + 3 * Bk x + 11) ^ ds
   have hBk : PolyBounded (fun x => (encChainInput x).length) Bk :=
     PolyBounded.of_forall_le ck dk fun _ => le_rfl
-  have hBs : PolyBounded (fun x => (encChainInput x).length) Bs :=
-    (PolyBounded.const cs).mul (((((PolyBounded.const 8).mul .self).add
-      ((PolyBounded.const 3).mul hBk)).add (.const 11)).pow ds)
+  have hBs : PolyBounded (fun x => (encChainInput x).length) Bs := by
+    dsimp only [Bs]
+    growth_poly
   have hkeyLe (x : (ℕ × List Bool) × List Bool) {path : List Bool}
       (hpath : path.length ≤ x.2.length) :
       (nodeKey S T coins x.1.1 x.1.2 path).1.length ≤ Bk x ∧
@@ -400,9 +401,7 @@ theorem computableInPolyTime_certify :
           (hkeyLe x (by simp; omega)).1⟩
   · have hx2 : PolyBounded (fun x => (encChainInput x).length) fun x => x.2.length :=
       PolyBounded.self.mono fun x => (length_le_encChainInput x).2.2
-    exact ((((PolyBounded.const 2).mul hx2).add ((PolyBounded.const 6).mul hBk)).add (.const 5)).add
-      (hx2.mul ((((PolyBounded.const 4).mul hBk).add ((PolyBounded.const 2).mul hBs)).add
-        (.const 3)))
+    growth_poly
   · rintro x consumed ⟨path, key, certs⟩ hprefix ⟨hpath, hkey, hlen, hcerts⟩
     simp only at hpath hkey hlen
     have hconsumed : consumed.length ≤ x.2.length := hprefix.length_le

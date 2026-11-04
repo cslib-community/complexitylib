@@ -36,13 +36,6 @@ namespace Cslib.Algorithms.WordRAM.ThreeSum.Decision
 
 open Cslib.WordRAM
 
-/-- A constant for fixed exponent and concrete callee, independent of length and word width. -/
-def widthCoefficient (κ d : ℕ) : ℕ :=
-  1300 * κ + 7865 + (d + 1) * (envelopeExponent κ + 20) + 20
-
-/-- Positive logarithmic physical width, including empty inputs. -/
-def width (κ d n : ℕ) : ℕ := widthCoefficient κ d * Nat.clog 2 (n + 2)
-
 /-- This native width is positive for every length and exponent. -/
 theorem width_pos (κ d n : ℕ) : 0 < width κ d n := by
   have hL : 0 < Nat.clog 2 (n + 2) := Nat.clog_pos (by decide) (by omega)
