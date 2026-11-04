@@ -1840,6 +1840,7 @@ public import Complexity.Computability.Complexity.Reduction
 public import Complexity.Computability.Complexity.Reduction.Autoreducibility
 public import Complexity.Computability.Complexity.Reduction.Isomorphism
 public import Complexity.Computability.Complexity.Reduction.Levin
+public import Complexity.Computability.Complexity.Reduction.LocalSelfReducibility
 public import Complexity.Computability.Complexity.Reduction.LogSpaceAutoreducibility
 public import Complexity.Computability.Complexity.Reduction.LogSpaceBoundedAutoreducibility
 public import Complexity.Computability.Complexity.Reduction.LogSpaceBoundedTruthTable

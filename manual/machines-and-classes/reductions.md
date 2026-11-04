@@ -78,6 +78,29 @@ source and conventions. The remaining full-paper objective stays on [issue #2468
 
 [`MitoticWith`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L595) asks for an efficient separator `S` such that `A` is mutually reducible with each of `A ∩ S` and `A \ S`. The module specializes this to polynomial-time and logspace many-one reductions, and to polynomial-time `k`-bounded, bounded, disjunctive and unrestricted truth tables. For a fixed `k`, it requires equivalence of each part with `A`; it does not additionally require a direct `k`-query equivalence between the two parts, because composition can square the bound. [Fixed-query mitoticity implies autoreducibility](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L881), with analogous bounded, disjunctive, and unrestricted results. The many-one implication has an explicit [co-singleton boundary](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L1059).
 
+## Local logspace self-reducibility
+
+Import `Complexity.Computability.Complexity.Reduction.LocalSelfReducibility` for
+`LocalSelfReductionQuery` and the indexed tt, disjunctive and conjunctive self-reducibility
+predicates. The query word has the same encoded length, is strictly lexicographically smaller,
+and agrees before the last ceiling-logarithm-many symbols. Only active query indices are
+restricted. OR/AND self-reductions allow either Boolean answer when the count is zero.
+They embed into tt self-reductions, which give query-avoiding tt autoreductions of the same
+language. The count, generator and evaluator retain their native logspace certificates.
+The [checked client](../../ComplexityTests/LocalSelfReducibility.lean) includes a nonzero-query
+word instance and a zero-query singleton, as well as invalid-query edge cases.
+
+The source is the expanded ECCC TR13-047 version (18 March 2013), Definitions 3.1–3.2,
+printed page 6. The predicates cover the unbounded indexed tt/OR/AND clauses; bounded-query
+and many-one specializations are not added here. The indexed tagged-base presentation is
+explicit; equivalence to serialized source transducer output is not proved. Word reconstruction,
+suffix length and well-founded descent are semantic results. Likewise the unary dependency
+and id/negation invariant from Lemma 3.3(1) have no oracle resource certificate.
+**The transfer lemma remains open**: native virtual-input/answer regeneration for the unbounded
+evaluator and the adaptive-to-tt conversion still need proofs. No desired autoreduction is
+assumed as a substitute. Complete NL/P instances, Theorem 3.5, and Sections 4–5 remain under
+[issue #2468](https://github.com/cslib-community/complexitylib/issues/2468).
+
 ## Parameter-sensitive transfer rules
 
 [FPT reductions and kernels](parameterized-complexity.md) separately bound the target parameter by a function of the source parameter. Fine-grained transfer uses more quantitative contracts without defining a new reduction datatype. [`DecidableInExpTime.of_reduction`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/FineGrained/Reduction.lean#L117) takes a native polynomial-time membership-preserving map with `μB(f(a)) ≤ c μA(a)+c`. A target time rate `2^(δ μB)` yields source rate `2^(cδ μA)`, up to encoded-length polynomial factors, for `δ ≥ 0`. [`DecidableInSubexpTime.of_reduction`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/FineGrained/Reduction.lean#L181) transfers the predicate that permits a decider for each positive rate.
