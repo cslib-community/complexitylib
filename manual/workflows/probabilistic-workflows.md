@@ -523,7 +523,29 @@ The [regressions](../../ComplexityTests/HierarchyCorrectionRawStability.lean) in
 separate/joint perturbations and row/incoming rank sensitivity; the dyadic maximum
 regression above remains in place.
 
-Approximate `PilotRowRecipe.score`, `PilotRowRecipe.detector` and `PilotRowRecipe.maximum`
-contracts remain open. These local estimates construct no well-founded approximate
-evaluator, allocated two-level recursive fragment or recursive closure. Finite parameter
-and workspace growth and native RL=L also remain open.
+For the actual pilot score, detector and running maximum recipes, use
+[PilotRowStability](../../Complexity/Foundations/Probability/PilotRowStability.lean).
+The score contract keeps the signed raw inputs in the original K-rank and pays ordinary
+fourth-moment row error with `width * ((Lϕ + Lρ) / rate)^4`. Its constants come from the
+fixed HP cutoffs before domains, rates or child tables. The detector first takes its actual
+source mean and terminal-conditioned mean: Jensen pays the source-rank maximum by the
+sum of fourth powers on that same finite source slice. The theorem retains those means
+and the literal finite sum; it does not hide their later rate/bin transport in a constant.
+The clipped running maximum pays the sum of its previous-maximum and current-detector
+fourth moments, on the original pair masks.
+
+[HierarchyPilotStability](../../Complexity/Foundations/Probability/HierarchyPilotStability.lean)
+feeds these last two child payments into the actual correction root-error contract, retaining
+its RAW width²/rate⁴ and PREP source/usage payments. It requires no assumed final-maximum
+error. The [checked pilot client](../../ComplexityTests/PilotRowStability.lean) changes the raw
+K-rank from zero to the gate cutoff while fixing the inspected entry, and checks changes to
+the actual score, detector and maximum, a correlated nonzero moment, and empty/zero cases.
+The shared [rank API](../../Complexity/Foundations/Data/Finset/KthLargest/Stability.lean)
+also removes repeated normalization proofs in dense and correction preparation.
+
+These are local recipe contracts for the existing hierarchy constructors. The structural
+request still uses fixed `HP.k`; a statistical precision parameter does not change that task.
+No well-founded approximate evaluator, allocated two-level recursive fragment or recursive
+closure is constructed. Deriving recursively allocated child budgets, transporting the literal
+detector payments across the full environment/rate/bin interfaces, finite parameter and
+workspace growth, and native RL=L remain open.

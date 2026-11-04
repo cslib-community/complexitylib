@@ -20,9 +20,9 @@ is averaged on its original joint source/usage slice. The integrated contract pa
 absolute row moments with explicit width squared and inverse-rate fourth powers, PREP
 source/usage row moments through conditional Jensen, and the ordinary maximum error.
 
-This is an original local accuracy contract. Approximate pilot score/detector/maximum
-contracts, a well-founded approximate evaluator, allocated recursive fragments and closure,
-parameter/workspace growth and native RL=L remain open.
+This is an original local accuracy contract. Pilot recipe moments are supplied separately
+in `PilotRowStability`. A well-founded approximate evaluator, allocated recursive fragments
+and closure, parameter/workspace growth and native RL=L remain open.
 
 ## Main results
 
@@ -173,13 +173,8 @@ theorem normalized_raw_prep_root_stability
     have hiA : 0 ≤ IA := HP.incomingCutoff_nonneg _
     have hiB : 0 ≤ IB := HP.incomingCutoff_nonneg _
     have hg : 0 ≤ HP.γ (maximum y) := HP.γ_nonneg _
-    have hq : |qA-qB| ≤ kthLargest 1 T (fun w => |A x w - B x w|) / f := by
-      apply abs_kthLargest_sub_kthLargest_le (NormalizedRow.rank_pos HP)
-        (div_nonneg kthLargest_nonneg hf.le)
-      intro w hw
-      rw [← sub_div, abs_div, abs_of_pos hf]
-      exact div_le_div_of_nonneg_right
-        (abs_le_kthLargest_one T (fun w => A x w - B x w) w hw) hf.le
+    have hq : |qA - qB| ≤ kthLargest 1 T (fun w => |A x w - B x w|) / f :=
+      abs_kthLargest_div_sub_div_le (NormalizedRow.rank_pos HP) hf T (A x) (B x)
     have hd := hdist (A x y / f) mA qA (B x y / f) mB qB
     rw [← sub_div, abs_div, abs_of_pos hf] at hd
     have hm := CorrectionRowRecipe.normalizer_stability Xs Zt prep prep' x y

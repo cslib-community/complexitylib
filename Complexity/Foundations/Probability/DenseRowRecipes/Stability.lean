@@ -8,6 +8,7 @@ module
 
 public import Complexity.Foundations.Probability.DenseRowRecipes
 public import Complexity.Foundations.Analysis.RootError
+public import Complexity.Foundations.Data.Finset.KthLargest.Stability
 
 /-!
 # Absolute stability of dense preparation
@@ -35,15 +36,9 @@ theorem atomPrep_stability {V : Type*}
         Lρ * kthLargest 1 S (fun w => |A x w - B x w|)) / r := by
   classical
   let e := kthLargest 1 S (fun w => |A x w - B x w|)
-  have he : 0 ≤ e := kthLargest_nonneg
-  have hw (w : V) (hw : w ∈ S) : |A x w - B x w| ≤ e :=
-    abs_le_kthLargest_one S (fun w => A x w - B x w) w hw
   have hq : |kthLargest K S (fun w => A x w / r) -
-      kthLargest K S (fun w => B x w / r)| ≤ e / r := by
-    apply abs_kthLargest_sub_kthLargest_le hK (div_nonneg he hr.le)
-    intro w hw'
-    rw [← sub_div, abs_div, abs_of_pos hr]
-    exact div_le_div_of_nonneg_right (hw w hw') hr.le
+      kthLargest K S (fun w => B x w / r)| ≤ e / r :=
+    abs_kthLargest_div_sub_div_le hK hr S (A x) (B x)
   have hgate := (hlρ (kthLargest K S (fun w => A x w / r))
     (kthLargest K S (fun w => B x w / r))).trans
     (mul_le_mul_of_nonneg_left hq hLρ)
