@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.PPZ.Round
 public import Complexity.Algorithms.WordRAM.Schoening.Amplify
@@ -266,11 +267,9 @@ theorem decCounter_rename_spec {w : ℕ} {ds : List ℕ} {x : Data 32} (hz : x.r
       HoldsList (x.regs bBase) (decDigits ds) y.mem ∧
       y.regs sFound = (if ∀ d ∈ ds, d = 0 then 0 else 1) ∧
       ∀ b, b < x.regs bBase → y.mem b = x.mem b := by
-  obtain ⟨y, hy, hh', hf, hm⟩ := Schoening.decCounter_spec (w := w) (x := x.comap embed) hz hone
-    hl hh hfit
-  refine ⟨y.extend embed x, ExecWithin.rename embed_injective hy, hh', ?_, hm⟩
-  rw [← hf]
-  exact embed_injective.extend_apply y.regs x.regs Schoening.Reg.found
+  obtain ⟨y, hy, hpost, -⟩ := ExecWithin.rename_post embed_injective
+    (Schoening.decCounter_spec (w := w) (x := x.comap embed) hz hone hl hh hfit)
+  exact ⟨y, hy, hpost⟩
 
 /-- **Multiply-add**, renamed: Schöning's `Cslib.Algorithms.WordRAM.Schoening.mulAdd_spec`. -/
 theorem mulAdd_rename_spec {w a cy Bd : ℕ} {ds : List ℕ} {x : Data 32} (hz : x.regs zero = 0)
@@ -283,11 +282,9 @@ theorem mulAdd_rename_spec {w a cy Bd : ℕ} {ds : List ℕ} {x : Data 32} (hz :
       HoldsList (x.regs bBase) (mulAddDigits a cy ds) y.mem ∧
       y.regs bLen = (mulAddDigits a cy ds).length ∧
       ∀ b, b < x.regs bBase → y.mem b = x.mem b := by
-  obtain ⟨y, hy, hh', hl', hm⟩ := Schoening.mulAdd_spec (w := w) (x := x.comap embed) hz hone ha
-    hc hl hh hds haB hcB hf hfit
-  refine ⟨y.extend embed x, ExecWithin.rename embed_injective hy, hh', ?_, hm⟩
-  rw [← hl']
-  exact embed_injective.extend_apply y.regs x.regs Schoening.Reg.bLen
+  obtain ⟨y, hy, hpost, -⟩ := ExecWithin.rename_post embed_injective
+    (Schoening.mulAdd_spec (w := w) (x := x.comap embed) hz hone ha hc hl hh hds haB hcB hf hfit)
+  exact ⟨y, hy, hpost⟩
 
 /-- A deterministic run of frame-preserving code keeps the frame if it keeps the memory below
 `Tb`, with the memory after the arrays taken as it is. -/

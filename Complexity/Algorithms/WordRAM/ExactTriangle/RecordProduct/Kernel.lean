@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Program
 
 /-!
@@ -47,19 +48,14 @@ theorem exec_copy {W s d n : ℕ} (x : Data 320)
   have hs' : (x.comap copyBank).regs ArrayCopy.src = s := hs
   have hd' : (x.comap copyBank).regs ArrayCopy.dst = d := hd
   have hn' : (x.comap copyBank).regs ArrayCopy.len = n := hn
-  obtain ⟨a, ha, am, asrc, adst, alen⟩ := ArrayCopy.exec (x.comap copyBank)
-    (hfit.of_le (by omega))
-    (by rw [hs', hn']; exact hfit.of_le (by omega))
-    (by rw [hd', hn']; exact hfit.of_le (by omega)) (by simpa only [hs', hd', hn'] using hsep)
-  refine ⟨a.extend copyBank x, ?_, ?_, ?_, ?_, ?_, ?_⟩
-  · simpa only [copy, hn'] using ha.rename copyBank_injective
-  · simpa only [Data.extend, Data.comap_mem, hs', hd', hn'] using am
-  · exact (copyBank_injective.extend_apply _ _ ArrayCopy.src).trans (asrc.trans hs')
-  · exact (copyBank_injective.extend_apply _ _ ArrayCopy.dst).trans (adst.trans hd')
-  · exact (copyBank_injective.extend_apply _ _ ArrayCopy.len).trans (alen.trans hn')
-  · intro i hi
-    apply Function.extend_apply'
-    rintro ⟨j, hj⟩
+  obtain ⟨y, hy, ⟨ym, ysrc, ydst, ylen⟩, hframe⟩ := ExecWithin.rename_post copyBank_injective
+    (ArrayCopy.exec (x.comap copyBank) (hfit.of_le (by omega))
+      (by rw [hs', hn']; exact hfit.of_le (by omega))
+      (by rw [hd', hn']; exact hfit.of_le (by omega)) (by simpa only [hs', hd', hn'] using hsep))
+  refine ⟨y, ?_, ?_, ysrc.trans hs', ydst.trans hd', ylen.trans hn', fun i hi => hframe i ?_⟩
+  · simpa only [copy, hn'] using hy
+  · simpa only [Data.comap_mem, hs', hd', hn'] using ym
+  · intro j hj
     have h := congrArg Fin.val hj
     change 96 + j.val = i.val at h
     omega
@@ -89,14 +85,10 @@ theorem exec_invoke {W b m N : ℕ}
       (ExecWithin.copy (w := W) (x := x) (d := calleeBank CallableProduct.Reg.base)
         (s := Reg.base))
   have zb : (z.comap calleeBank).regs CallableProduct.Reg.base = b := by simp [z]
-  obtain ⟨a, ha, ar, ab, aM, av, ai, af⟩ :=
-    CallableProduct.exec X Y qs (z.comap calleeBank) zb hinput hX hY hN hfit
-  let c := a.extend calleeBank z
-  have hc : ExecWithin W (CallableProduct.program.rename calleeBank) z c
-      (CallableProduct.timeBound (m := m) qs) := ha.rename calleeBank_injective
-  have cr : c.regs (calleeBank CallableProduct.Reg.result) =
-      b + QueriedProduct.outputBase (19 * m) m N qs.length :=
-    (calleeBank_injective.extend_apply _ _ _).trans ar
+  obtain ⟨c, hc, ⟨cr, _, _, av, ai, af⟩, hframe⟩ :=
+    ExecWithin.rename_post calleeBank_injective (
+      CallableProduct.exec X Y qs (z.comap calleeBank) zb hinput hX hY hN hfit)
+  change c.regs (calleeBank CallableProduct.Reg.result) = _ at cr
   let y := c.set Reg.result (b + QueriedProduct.outputBase (19 * m) m N qs.length)
   have hy : ExecWithin (B := .standard) W
       (.op (.copy Reg.result (calleeBank CallableProduct.Reg.result))) c y 1 := by
@@ -105,15 +97,13 @@ theorem exec_invoke {W b m N : ℕ}
   refine ⟨y, ?_, by simp [y], av, ai, af, ?_⟩
   · exact (hz.seq (hc.seq hy)).mono (by omega)
   · intro i hi hne
-    have hbank : ¬∃ j, calleeBank j = i := by
-      rintro ⟨j, hj⟩
+    have hbank (j) : calleeBank j ≠ i := by
+      intro hj
       have h := congrArg Fin.val hj
       change 128 + j.val = i.val at h
       omega
-    have hiz : i ≠ calleeBank CallableProduct.Reg.base := by
-      intro h
-      exact hbank ⟨_, h.symm⟩
-    simp only [y, Data.set_regs, Function.update_of_ne hne, c, Data.extend,
-      Function.extend_apply' _ _ _ hbank, z, Function.update_of_ne hiz]
+    have hiz : i ≠ calleeBank CallableProduct.Reg.base := (hbank _).symm
+    rw [Data.set_regs, Function.update_of_ne hne, hframe i hbank]
+    simp only [z, Data.set_regs, Function.update_of_ne hiz]
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.RecordProduct

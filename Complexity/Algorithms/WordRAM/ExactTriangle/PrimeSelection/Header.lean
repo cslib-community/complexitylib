@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.ExactTriangle.PrimeSelection.Program
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.Input
 public import Complexity.Computability.WordRAM.Compile
@@ -70,17 +71,14 @@ theorem exec_header {W n D : ℕ} (x : Data 160) (hn : x.mem 1 = n) (hD : x.mem 
   have hinj : Function.Injective counterRegisters := by
     intro i j h
     exact Fin.ext (congrArg (fun i : Fin 160 => i.val) h)
-  obtain ⟨s, he, hm, hs, hd, ha, hb, hc, hf⟩ :=
-    CountPrime.exec_header (x.comap counterRegisters) hn hD hw
-  let q := s.extend counterRegisters x
-  have low (i : Fin 128) : q.regs (counterRegisters i) = s.regs i :=
-    hinj.extend_apply _ _ _
-  have qs : q.regs Reg.countSide = n := (low CountPrime.Reg.side).trans hs
-  have qd : q.regs Reg.countPrime = D := (low CountPrime.Reg.modulus).trans hd
-  have qa : q.regs Reg.countAB = 3 := (low CountPrime.Reg.inputAB).trans ha
-  have qb : q.regs Reg.countBC = 3 + n * n := (low CountPrime.Reg.inputBC).trans hb
-  have qc : q.regs Reg.countAC = 3 + 2 * (n * n) := (low CountPrime.Reg.inputAC).trans hc
-  have qf : q.regs Reg.countScratch = 3 + 3 * (n * n) := (low CountPrime.Reg.scratch).trans hf
+  obtain ⟨q, he, ⟨hm, hs, hd, ha, hb, hc, hf⟩, -⟩ :=
+    ExecWithin.rename_post hinj (CountPrime.exec_header (x.comap counterRegisters) hn hD hw)
+  have qs : q.regs Reg.countSide = n := hs
+  have qd : q.regs Reg.countPrime = D := hd
+  have qa : q.regs Reg.countAB = 3 := ha
+  have qb : q.regs Reg.countBC = 3 + n * n := hb
+  have qc : q.regs Reg.countAC = 3 + 2 * (n * n) := hc
+  have qf : q.regs Reg.countScratch = 3 + 3 * (n * n) := hf
   let y := (((((q.set Reg.side n).set Reg.window D).set Reg.inputAB 3).set
     Reg.inputBC (3 + n * n)).set Reg.inputAC (3 + 2 * (n * n))).set
     Reg.scratch (3 + 3 * (n * n))
@@ -91,7 +89,7 @@ theorem exec_header {W n D : ℕ} (x : Data 160) (hn : x.mem 1 = n) (hD : x.mem 
     ram_eval [y, qs, qd, qa, qb, qc, qf, Reg.side, Reg.window, Reg.inputAB, Reg.inputBC,
       Reg.inputAC, Reg.scratch, Reg.countSide, Reg.countPrime, Reg.countAB, Reg.countBC,
       Reg.countAC, Reg.countScratch, Fin.mk.injEq]
-  refine ⟨y, (he.rename hinj).seq copy, hm, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨y, he.seq copy, hm, ?_, ?_, ?_, ?_, ?_, ?_⟩
   all_goals rfl
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.PrimeSelection

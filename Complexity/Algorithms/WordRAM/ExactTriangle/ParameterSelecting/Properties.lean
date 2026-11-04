@@ -47,12 +47,7 @@ theorem slowBank_injective : Function.Injective slowBank := by
 /-- Parameters preserve the complete original protocol and all high saved arguments. -/
 theorem parameters_preserves (j : Fin 640) (hj : j.val < 144 ∨ 160 ≤ j.val) :
     parameters.Preserves j :=
-  DyadicParameters.program.preserves_rename_of_forall_ne parameterBank j (by
-    intro i hi
-    have hv := congrArg Fin.val hi
-    dsimp only [parameterBank] at hv
-    have := i.isLt
-    omega)
+  DyadicParameters.program.preserves_rename_of_offset parameterBank (fun _ => rfl) j hj
 
 /-- The assembled program cannot inspect physical width. -/
 theorem program_not_readsWidth : ¬program.ReadsWidth := by

@@ -37,7 +37,9 @@ private def Ready (n : ℕ) (x : Data 16) : Prop := x.regs Reg.side = n ∧
   x.regs Reg.tensorDepth = ParameterChoice.tensorDepth n ∧ x.regs Reg.four = 4
 
 private theorem power_preserves : ∀ i : Fin 16, i.val < 7 ∨ 12 ≤ i.val →
-    (Power.program.rename powerRegisters).Preserves i := by decide +kernel
+    (Power.program.rename powerRegisters).Preserves i :=
+  fun i hi => Power.program.preserves_rename_of_offset powerRegisters
+    (fun j => Nat.add_comm j.val 7) i hi
 
 private theorem Ready.after_power {w n : ℕ} {x y : Data 16} {t : ℕ}
     (hx : Ready n x) (he : ExecWithin w (Power.program.rename powerRegisters) x y t) :
@@ -83,17 +85,21 @@ private theorem exec_finish {w n : ℕ} (x : Data 16)
   · intro i hw hf
     simp only [y, Data.set_regs, Function.update_of_ne hf, Function.update_of_ne hw]
 
+/-- Computed dyadic parameters, original dimension and unchanged memory. -/
+@[expose] def Post (n : ℕ) (x y : Data 16) : Prop :=
+  y.regs Reg.side = n ∧ y.regs Reg.blocks = ParameterChoice.blocks n ∧
+  y.regs Reg.level = ParameterChoice.level n ∧ y.regs Reg.window =
+    ParameterChoice.window n ∧
+  y.regs Reg.groups = ParameterChoice.groups n ∧
+  y.regs Reg.tensorDepth = ParameterChoice.tensorDepth n ∧
+  y.regs Reg.fast = (if 0 < ParameterChoice.blocks n then 1 else 0) ∧ y.mem = x.mem
+
 /-- Execute the logarithm, rounded exponent arithmetic, two real powers and regime flag.
 Memory and the original n are preserved. All fits follow from one original-scalar envelope. -/
 theorem exec {w n : ℕ} (x : Data 16) (hn : x.regs Reg.side = n)
     (hfit : Fits w (wordBudget n)) :
-    ∃ y, ExecWithin w program x y (timeBound n) ∧
-      y.regs Reg.side = n ∧ y.regs Reg.blocks = ParameterChoice.blocks n ∧
-      y.regs Reg.level = ParameterChoice.level n ∧ y.regs Reg.window =
-        ParameterChoice.window n ∧
-      y.regs Reg.groups = ParameterChoice.groups n ∧
-      y.regs Reg.tensorDepth = ParameterChoice.tensorDepth n ∧
-      y.regs Reg.fast = (if 0 < ParameterChoice.blocks n then 1 else 0) ∧ y.mem = x.mem := by
+    ∃ y, ExecWithin w program x y (timeBound n) ∧ Post n x y := by
+  unfold Post
   have ht : ParameterChoice.blocks n ≤ n :=
     (ParameterChoice.blocks_le_log n).trans (Nat.log_le_self 2 n)
   have hm : ParameterChoice.level n ≤ n :=
@@ -146,12 +152,9 @@ theorem exec {w n : ℕ} (x : Data 16) (hn : x.regs Reg.side = n)
     (hfit.of_le (by change n ≤ _; unfold wordBudget; omega))
     (hfit.of_le (by change Nat.log 2 n + 1 ≤ _; unfold wordBudget; omega))
   have bside : b.regs Reg.side = n := by
-    have frame := hb.regs_eq (Code.preserves_rename_of_forall_ne NatLog.program logRegisters
-      Reg.side (by
-        intro i h
-        have hv := congrArg (fun i : Fin 16 => i.val) h
-        dsimp [logRegisters, Reg.side] at hv
-        omega))
+    have frame := hb.regs_eq (Code.preserves_rename_of_offset (offset := 7)
+      NatLog.program logRegisters
+      (fun _ => by simp [logRegisters, Nat.add_comm]) Reg.side (Or.inl (by decide)))
     exact frame.trans (by simpa +decide [a, Reg.side, Reg.workValue] using hn)
   have blog' : b.regs Reg.workCount = Nat.log 2 n := blog
   let c := ((((((((b.set Reg.divisor 2394).set Reg.blocks (ParameterChoice.blocks n)).set

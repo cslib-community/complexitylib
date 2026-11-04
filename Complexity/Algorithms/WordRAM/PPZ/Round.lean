@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.PPZ.Forced
 public import Complexity.Algorithms.WordRAM.Schoening.Trial
@@ -722,23 +723,20 @@ theorem roundCheck_exec {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → ℕ} (hw 
       y.regs out = (if φ.eval (assignmentAt x.mem Tb n) then 1 else 0) := by
   set σ := assignmentAt x.mem Tb n
   have hσ : AssignAt x.mem Tb σ := assignAt_assignmentAt hbits
-  obtain ⟨y₀, hy₀, hm₀, hr₀⟩ := Schoening.scan_spec (w := w) σ φ (x.comap embed)
-    hx.zero_eq hx.one_eq (by simpa [embed] using hx.cBeg_eq ▸ hx.clauses)
-    (by simp only [Data.comap_regs]; rw [show embed Schoening.Reg.cBeg = cBeg by decide,
-      show embed Schoening.Reg.aBase = tBase by decide, hx.cBeg_eq, hx.tBase_eq]; exact hx.span)
-    (by simp only [Data.comap_regs]; rw [show embed Schoening.Reg.aBase = tBase by decide,
-      hx.tBase_eq]; exact hσ)
-    (by simp only [Data.comap_regs]; rw [show embed Schoening.Reg.aBase = tBase by decide,
-      hx.tBase_eq]; exact hw)
-    (by simp only [Data.comap_regs]; rw [show embed Schoening.Reg.aBase = tBase by decide,
-      hx.tBase_eq]; omega)
-  have hrun := ExecWithin.rename embed_injective hy₀
-  set y₁ := y₀.extend embed x with hy₁
+  obtain ⟨y₁, hrun, ⟨hm₀, hr₀⟩, -⟩ :=
+    ExecWithin.rename_post embed_injective (Schoening.scan_spec (w := w) σ φ (x.comap embed)
+      hx.zero_eq hx.one_eq (by simpa [embed] using hx.cBeg_eq ▸ hx.clauses)
+      (by simp only [Data.comap_regs]; rw [show embed Schoening.Reg.cBeg = cBeg by decide,
+        show embed Schoening.Reg.aBase = tBase by decide, hx.cBeg_eq, hx.tBase_eq]; exact hx.span)
+      (by simp only [Data.comap_regs]; rw [show embed Schoening.Reg.aBase = tBase by decide,
+        hx.tBase_eq]; exact hσ)
+      (by simp only [Data.comap_regs]; rw [show embed Schoening.Reg.aBase = tBase by decide,
+        hx.tBase_eq]; exact hw)
+      (by simp only [Data.comap_regs]; rw [show embed Schoening.Reg.aBase = tBase by decide,
+        hx.tBase_eq]; omega))
   have hfnd : y₁.regs sFound = if φ.eval σ then 0 else 1 := by
-    have h : y₁.regs sFound = y₀.regs Schoening.Reg.found :=
-      embed_injective.extend_apply y₀.regs x.regs Schoening.Reg.found
-    rw [h]
     unfold ScanResult at hr₀
+    simp only [Data.comap_regs, show embed Schoening.Reg.found = sFound from rfl] at hr₀
     rcases hfu : Cslib.Complexity.Schoening.firstUnsat φ σ with _ | c
     · simp only [hfu] at hr₀
       rw [hr₀]
