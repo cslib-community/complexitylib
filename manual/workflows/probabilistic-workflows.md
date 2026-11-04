@@ -529,13 +529,27 @@ The score contract keeps the signed raw inputs in the original K-rank and pays o
 fourth-moment row error with `width * ((Lϕ + Lρ) / rate)^4`. Its constants come from the
 fixed HP cutoffs before domains, rates or child tables. The detector first takes its actual
 source mean and terminal-conditioned mean: Jensen pays the source-rank maximum by the
-sum of fourth powers on that same finite source slice. The theorem retains those means
-and the literal finite sum; it does not hide their later rate/bin transport in a constant.
+sum of fourth powers on that same finite source slice. The literal-payment theorem retains those means and the finite source sum.
+[PilotDetectorTransport](../../Complexity/Foundations/Probability/PilotDetectorTransport.lean)
+reinserts the terminal conditioning by finite Fubini: its integrated score payment is
+`width * childSourceRate / (parentSourceRate * terminalDensityLowerBound)` times the
+child row moment. All outer coordinates and both actual integration variables remain in
+that moment. A positive terminal-density lower bound is explicit; empty conditioning
+still gives zero in the underlying detector contract.
 The clipped running maximum pays the sum of its previous-maximum and current-detector
 fourth moments, on the original pair masks.
 
 [HierarchyPilotStability](../../Complexity/Foundations/Probability/HierarchyPilotStability.lean)
-feeds these last two child payments into the actual correction root-error contract, retaining
+also transports this payment through `terminalSplit` to actual full H4 rank environments.
+The child source resets to the terminal stage rate with its role and suffix unchanged;
+the terminal frame keeps its own role and suffix. Composing with the actual score contract
+pays raw errors with an additional `width * (C / terminalRate)^4`, where `C` is selected
+at fixed HP before the prime, request or children. The score can depend on every outer
+coordinate and its terminal frame. This is the literal detector recipe, whose score argument
+has no dependence on the internally averaged source seed. No independent recursive child
+realization is inferred from the product used by finite Fubini. The same module
+provides `correctionRequest_stageDetector_root_moment`, combining the transported current
+score/detector payment, previous maximum, and changing RAW/PREP correction children, retaining
 its RAW width²/rate⁴ and PREP source/usage payments. It requires no assumed final-maximum
 error. The [checked pilot client](../../ComplexityTests/PilotRowStability.lean) changes the raw
 K-rank from zero to the gate cutoff while fixing the inspected entry, and checks changes to
@@ -546,6 +560,10 @@ also removes repeated normalization proofs in dense and correction preparation.
 These are local recipe contracts for the existing hierarchy constructors. The structural
 request still uses fixed `HP.k`; a statistical precision parameter does not change that task.
 No well-founded approximate evaluator, allocated two-level recursive fragment or recursive
-closure is constructed. Deriving recursively allocated child budgets, transporting the literal
-detector payments across the full environment/rate/bin interfaces, finite parameter and
-workspace growth, and native RL=L remain open.
+closure is constructed. The new transport is a local score/raw payment, with explicit
+width, rate and density costs. Recursively realizing those children on the correct
+environments, allocating their tolerances and walk lengths, assembling bin payments and
+controlling their growth, full correction/pilot/copy closure, workspace bounds and native
+RL=L remain open. The regressions additionally check a correlated detector moment of
+`1/32`, a distinct child normalization `1/16`, and nonconstant padded frame source/rank
+densities `16/625` and `81/625`.

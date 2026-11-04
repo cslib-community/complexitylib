@@ -3761,6 +3761,7 @@ public import Complexity.Foundations.Probability.NormalizedAtomRows.SecondEnvelo
 public import Complexity.Foundations.Probability.NormalizedAtomRows.SecondSignal
 public import Complexity.Foundations.Probability.NormalizedAtomRows.Sharp
 public import Complexity.Foundations.Probability.NormalizedAtomRows.TwoMask
+public import Complexity.Foundations.Probability.PilotDetectorTransport
 public import Complexity.Foundations.Probability.PilotRowStability
 public import Complexity.Foundations.Probability.PilotRowTasks
 public import Complexity.Foundations.Probability.PilotTasks
