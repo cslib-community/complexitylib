@@ -37,6 +37,26 @@ The native allocation library [Complexity/Computability/WordRAM/Allocation.lean]
 
 [Realizes](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Realization/Basic.lean#L95) is a graded realization interface. It chooses scratch registers, a constant and a uniform code emitter **before** arguments, width and memory. It requires faithful register encodings, a whole-memory/frontier abstraction, register framing and explicit safety/work bounds. Its instruction allowance is proportional to `memoryCost + work + 1`. The `work` term is necessary because pure/control code can take time without making memory queries. `Realizes.exists_refines` connects it to the native controller layer. Primitive, bind and branch modules provide a compositional foundation, not a compiler for every arbitrary Lean function.
 
+### Retain resources through a dependent bind
+
+Import `Complexity.Computability.WordRAM.Realization.Bind` and use
+`Realizes.Witness.bind` when a continuation consumes a runtime answer and you need to
+retain concrete code and resources. It keeps the predecessor’s answer live while sharing its
+dead auxiliary registers with the continuation. With `l` answer words and component scratch
+sizes `n₁`, `n₂`, its scratch size is `l + max n₁ n₂`; the factor remains the maximum
+component factor. The original safe-domain and valid-history obligations still apply at the
+actual intermediate state. `Witness.bind_execWithin` can tighten the two component execution
+budgets on that same code and add them, retaining the full memory, output and register frame.
+
+The complete checked [dependent-read client](../../ComplexityTests/WordRAMRealizationBindScratch.lean)
+reads a pointer and then its target using one supplied emitter. Its generic Backend has five
+registers, compared with six for the former disjoint-bank layout, and executes two loads;
+argument installation and halt are separate. The client checks a maximum fitting payload,
+a zero pointer, aliased input registers and an unallocated second address that fails the
+original history condition. This deterministic supplier does not change `RealizesRand.bind`.
+For supplying its data to a Backend, follow
+[Retain concrete realization resources](wordram-and-bridges.md#retain-concrete-realization-resources).
+
 ### Export a canonical initialized flat program
 
 Import `Complexity.Computability.WordRAM.Realization.Program.Standard` when you have a
