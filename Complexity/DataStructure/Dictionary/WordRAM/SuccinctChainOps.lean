@@ -18,7 +18,8 @@ dictionary operations (`insertBodyProg`, `deletePrepProg`, `deleteFinishProg`):
 * `AllChainsValid`: global doubly-linked chain invariant across all `(b, m)` pairs;
 * `prependIfIndexedProg` and `unlinkIfIndexedProg`: conditional micro-chain updates when a logical
   slot index `j` is in the indexed prefix `j < effBucketCap n_max`;
-* `readBucketCountProg` and `readTotalSlotsProg`: `O(1)` readers for `bCount` and `totalSlots`;
+* `readTotalSlotsProg`: `O(1)` reader for `totalSlots` (`readBucketCountProg` for `bCount` lives in
+  `SuccinctProg.lean`);
 * `copyLastPayloadProg`: `O(1)` payload copy from the last logical slot of bucket `b` to `phys_del`.
 -/
 
@@ -233,6 +234,17 @@ theorem lmUnlinkProg_allChainsValid {U V w n_max h_space base b m j_del : ℕ}
 
 /-! ## Section 2: `prependIfIndexedProg`, `unlinkIfIndexedProg`, and bucket readers -/
 
+/-- Parameter-free `Memory.Prog` operation prepending `j_new = d.2` to micro-bucket chain
+`(b, m) = (d.1.2.1.2, d.1.2.2)` at `base = d.1.2.1.1` when
+`j_new < min n_max (effBucketCap n_max)`. -/
+@[expose]
+def prependIfIndexedGenProg (d : (DictParams × ((ℕ × ℕ) × ℕ)) × ℕ) : Memory.Prog Unit := do
+  let cap ← pure (p_minCap d.1.1)
+  if d.2 < cap then
+    lmPrependGenProg (d.1.1, (d.1.2, d.2))
+  else
+    pure ()
+
 /-- `Memory.Prog` operation prepending `j_new = d.2` to micro-bucket chain
 `(b, m) = (d.1.1.2, d.1.2)` at `base = d.1.1.1` when `j_new < min n_max (effBucketCap n_max)`. -/
 @[expose]
@@ -242,6 +254,13 @@ def prependIfIndexedProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) 
     lmPrependProg U V w n_max h_space d
   else
     pure ()
+
+@[simp]
+theorem prependIfIndexedGenProg_mk (U V w n_max h_space : ℕ)
+    (d1 : (ℕ × ℕ) × ℕ) (d2 : ℕ) :
+    prependIfIndexedGenProg ((mkDictParams U V w n_max h_space, d1), d2) =
+      prependIfIndexedProg U V w n_max h_space (d1, d2) := by
+  simp only [prependIfIndexedGenProg, prependIfIndexedProg, p_minCap_mk, lmPrependGenProg_mk]
 
 theorem memoryCost_prependIfIndexedProg_le (U V w n_max h_space : ℕ)
     (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) :
@@ -256,21 +275,44 @@ theorem memoryCost_prependIfIndexedProg_le (U V w n_max h_space : ℕ)
 @[expose]
 def PrependIfIndexedPre (U V w₀ n_max h_space w : ℕ)
     (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) : Prop :=
-  DictEnv U V w₀ n_max h_space w d.1.1.1 ∧
+  DictEnvGen w (mkDictParams U V w₀ n_max h_space) d.1.1.1 ∧
   d.1.1.2 < numBuckets n_max ∧
   d.1.2 < numMicroPerBucket n_max ∧
   lmHead n_max (lmAt d.1.1.1 U V w₀ n_max h_space s.mem) d.1.1.2 d.1.2 ≤ effBucketCap n_max
 
-theorem realizes_prependIfIndexed {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀) :
-    Realizes .exact (prependIfIndexedProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := ((ℕ × ℕ) × ℕ) × ℕ)) (WordEncoding.encode (α := Unit))
-      (PrependIfIndexedPre U V w₀ n_max h_space)
+/-- Parameter-free precondition for `prependIfIndexedGenProg`. -/
+@[expose]
+def PrependIfIndexedGenPre (w : ℕ)
+    (d : (DictParams × ((ℕ × ℕ) × ℕ)) × ℕ) (s : Memory.State) : Prop :=
+  DictEnvGen w d.1.1 d.1.2.1.1 ∧
+  d.1.2.1.2 < numBuckets (p_nMax d.1.1) ∧
+  d.1.2.2 < numMicroPerBucket (p_nMax d.1.1) ∧
+  lmHead (p_nMax d.1.1)
+    (lmAt d.1.2.1.1 (p_U d.1.1) (p_V d.1.1) (p_w d.1.1) (p_nMax d.1.1) (p_hSpace d.1.1) s.mem)
+    d.1.2.1.2 d.1.2.2 ≤ effBucketCap (p_nMax d.1.1)
+
+@[simp]
+theorem prependIfIndexedGenPre_mk (U V w₀ n_max h_space w : ℕ)
+    (d1 : (ℕ × ℕ) × ℕ) (d2 : ℕ) (s : Memory.State) :
+    PrependIfIndexedGenPre w ((mkDictParams U V w₀ n_max h_space, d1), d2) s ↔
+      PrependIfIndexedPre U V w₀ n_max h_space w (d1, d2) s := Iff.rfl
+
+set_option linter.unusedSimpArgs false in
+theorem realizes_prependIfIndexedGen :
+    Realizes .exact prependIfIndexedGenProg
+      (WordEncoding.encode (α := (DictParams × ((ℕ × ℕ) × ℕ)) × ℕ))
+      (WordEncoding.encode (α := Unit))
+      PrependIfIndexedGenPre
       (fun _ _ => 0) := by
-  have hp := realizes_lmPrepend (U := U) (V := V) (w₀ := w₀) (n_max := n_max)
-    (h_space := h_space) hw hnU hU
+  have hp := realizes_lmPrependGen
   realize
-  · exact fits_of_le_max_n_one h.1 hw hnU hU (by omega)
+  all_goals (
+    rcases d with ⟨⟨dp, d1⟩, d2⟩
+    obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1
+    try simp only [
+      prependIfIndexedGenPre_mk, PrependIfIndexedPre, prependIfIndexedGenProg_mk,
+      lmPrependGenPre_mk, LMPrependPre, lmPrependGenProg_mk, p_minCap_mk] at *
+  )
   · exact ⟨h.1, h.2.1, h.2.2.1, by omega, by omega, h.2.2.2⟩
 
 /-- Pure state effect and `AllChainsValid` preservation of `prependIfIndexedProg`. -/
@@ -344,6 +386,17 @@ theorem prependIfIndexedProg_allChainsValid {U V w n_max h_space base b m j_new 
       · exact hj_in
       · exact False.elim (hj_not_cap hcap)
 
+/-- Parameter-free `Memory.Prog` operation unlinking `j_del = d.2` from micro-bucket chain
+`(b, m) = (d.1.2.1.2, d.1.2.2)` at `base = d.1.2.1.1` when
+`j_del < min n_max (effBucketCap n_max)`. -/
+@[expose]
+def unlinkIfIndexedGenProg (d : (DictParams × ((ℕ × ℕ) × ℕ)) × ℕ) : Memory.Prog Unit := do
+  let cap ← pure (p_minCap d.1.1)
+  if d.2 < cap then
+    lmUnlinkGenProg (d.1.1, (d.1.2, d.2))
+  else
+    pure ()
+
 /-- `Memory.Prog` operation unlinking `j_del = d.2` from micro-bucket chain
 `(b, m) = (d.1.1.2, d.1.2)` at `base = d.1.1.1` when `j_del < min n_max (effBucketCap n_max)`. -/
 @[expose]
@@ -353,6 +406,13 @@ def unlinkIfIndexedProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) �
     lmUnlinkProg U V w n_max h_space d
   else
     pure ()
+
+@[simp]
+theorem unlinkIfIndexedGenProg_mk (U V w n_max h_space : ℕ)
+    (d1 : (ℕ × ℕ) × ℕ) (d2 : ℕ) :
+    unlinkIfIndexedGenProg ((mkDictParams U V w n_max h_space, d1), d2) =
+      unlinkIfIndexedProg U V w n_max h_space (d1, d2) := by
+  simp only [unlinkIfIndexedGenProg, unlinkIfIndexedProg, p_minCap_mk, lmUnlinkGenProg_mk]
 
 theorem memoryCost_unlinkIfIndexedProg_le (U V w n_max h_space : ℕ)
     (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) :
@@ -367,24 +427,48 @@ theorem memoryCost_unlinkIfIndexedProg_le (U V w n_max h_space : ℕ)
 @[expose]
 def UnlinkIfIndexedPre (U V w₀ n_max h_space w : ℕ)
     (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) : Prop :=
-  DictEnv U V w₀ n_max h_space w d.1.1.1 ∧
+  DictEnvGen w (mkDictParams U V w₀ n_max h_space) d.1.1.1 ∧
   d.1.1.2 < numBuckets n_max ∧
   d.1.2 < numMicroPerBucket n_max ∧
   (d.2 < effBucketCap n_max →
     lmPrev n_max (lmAt d.1.1.1 U V w₀ n_max h_space s.mem) d.1.1.2 d.2 ≤ effBucketCap n_max ∧
     lmNext n_max (lmAt d.1.1.1 U V w₀ n_max h_space s.mem) d.1.1.2 d.2 ≤ effBucketCap n_max)
 
-theorem realizes_unlinkIfIndexed {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀) :
-    Realizes .exact (unlinkIfIndexedProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := ((ℕ × ℕ) × ℕ) × ℕ)) (WordEncoding.encode (α := Unit))
-      (UnlinkIfIndexedPre U V w₀ n_max h_space)
+/-- Parameter-free precondition for `unlinkIfIndexedGenProg`. -/
+@[expose]
+def UnlinkIfIndexedGenPre (w : ℕ)
+    (d : (DictParams × ((ℕ × ℕ) × ℕ)) × ℕ) (s : Memory.State) : Prop :=
+  let lm := lmAt d.1.2.1.1 (p_U d.1.1) (p_V d.1.1) (p_w d.1.1) (p_nMax d.1.1) (p_hSpace d.1.1) s.mem
+  DictEnvGen w d.1.1 d.1.2.1.1 ∧
+  d.1.2.1.2 < numBuckets (p_nMax d.1.1) ∧
+  d.1.2.2 < numMicroPerBucket (p_nMax d.1.1) ∧
+  (d.2 < effBucketCap (p_nMax d.1.1) →
+    lmPrev (p_nMax d.1.1) lm d.1.2.1.2 d.2 ≤ effBucketCap (p_nMax d.1.1) ∧
+    lmNext (p_nMax d.1.1) lm d.1.2.1.2 d.2 ≤ effBucketCap (p_nMax d.1.1))
+
+@[simp]
+theorem unlinkIfIndexedGenPre_mk (U V w₀ n_max h_space w : ℕ)
+    (d1 : (ℕ × ℕ) × ℕ) (d2 : ℕ) (s : Memory.State) :
+    UnlinkIfIndexedGenPre w ((mkDictParams U V w₀ n_max h_space, d1), d2) s ↔
+      UnlinkIfIndexedPre U V w₀ n_max h_space w (d1, d2) s := Iff.rfl
+
+set_option linter.unusedSimpArgs false in
+theorem realizes_unlinkIfIndexedGen :
+    Realizes .exact unlinkIfIndexedGenProg
+      (WordEncoding.encode (α := (DictParams × ((ℕ × ℕ) × ℕ)) × ℕ))
+      (WordEncoding.encode (α := Unit))
+      UnlinkIfIndexedGenPre
       (fun _ _ => 0) := by
-  have hu := realizes_lmUnlink (U := U) (V := V) (w₀ := w₀) (n_max := n_max)
-    (h_space := h_space) hw hnU hU
+  have hu := realizes_lmUnlinkGen
   realize
-  · exact fits_of_le_max_n_one h.1 hw hnU hU (by omega)
-  · have hj_cap : d.2 < effBucketCap n_max := by omega
+  all_goals (
+    rcases d with ⟨⟨dp, d1⟩, d2⟩
+    obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1
+    try simp only [
+      unlinkIfIndexedGenPre_mk, UnlinkIfIndexedPre, unlinkIfIndexedGenProg_mk,
+      lmUnlinkGenPre_mk, LMUnlinkPre, lmUnlinkGenProg_mk, p_minCap_mk] at *
+  )
+  · have hj_cap : d2 < effBucketCap n_max := by omega
     exact ⟨h.1, h.2.1, h.2.2.1, hj_cap, (h.2.2.2 hj_cap).1, (h.2.2.2 hj_cap).2⟩
 
 /-- Pure state effect and `AllChainsValid` preservation of `unlinkIfIndexedProg`. -/
@@ -442,6 +526,19 @@ theorem unlinkIfIndexedProg_allChainsValid {U V w n_max h_space base b m j_del :
       exact hj_not_cap ((hvalid.1 b' hb' m' hm').lt_cap_of_mem hj_in)
     · exact And.left
 
+/-- Parameter-free `Memory.Prog` reader returning `totalSlots n_max gm` at `base = d.2`. -/
+@[expose]
+def readTotalSlotsGenProg (d : DictParams × ℕ) : Memory.Prog ℕ :=
+  if p_bucketBits d.1 = 0 then do
+    let i0 ← pure 0
+    readGMGenProg (d.1, (d.2, i0))
+  else do
+    let i0 ← pure 0
+    let i1 ← pure 1
+    let n_slabs ← readGMGenProg (d.1, (d.2, i0))
+    let n_tails ← readGMGenProg (d.1, (d.2, i1))
+    pure (n_slabs * p_slabSize d.1 + n_tails)
+
 /-- `Memory.Prog` reader returning `totalSlots n_max gm` at `base`. -/
 @[expose]
 def readTotalSlotsProg (U V w n_max h_space : ℕ) (base : ℕ) : Memory.Prog ℕ :=
@@ -454,6 +551,13 @@ def readTotalSlotsProg (U V w n_max h_space : ℕ) (base : ℕ) : Memory.Prog �
     let n_slabs ← readGMProg U V w n_max h_space (base, i0)
     let n_tails ← readGMProg U V w n_max h_space (base, i1)
     pure (n_slabs * slabSize n_max + n_tails)
+
+@[simp]
+theorem readTotalSlotsGenProg_mk (U V w n_max h_space base : ℕ) :
+    readTotalSlotsGenProg (mkDictParams U V w n_max h_space, base) =
+      readTotalSlotsProg U V w n_max h_space base := by
+  by_cases hb0 : bucketBits n_max = 0 <;>
+    simp [readTotalSlotsGenProg, readTotalSlotsProg, hb0, ← PFunctor.FreeM.bind_eq_bind]
 
 theorem clientState_readTotalSlotsProg (U V w n_max h_space : ℕ) (base : ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (readTotalSlotsProg U V w n_max h_space base) = s := by
@@ -486,46 +590,48 @@ theorem clientResult_readTotalSlotsProg (U V w n_max h_space : ℕ) (base : ℕ)
       clientResult_readGMProg s h1_lt]
     rfl
 
-theorem realizes_readTotalSlots {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀) :
-    Realizes .exact (readTotalSlotsProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := ℕ)) (WordEncoding.encode (α := ℕ))
-      (fun w base s => DictEnv U V w₀ n_max h_space w base ∧
-        SlotStoreInv n_max (gmAt base U V w₀ n_max h_space s.mem))
+theorem realizes_readTotalSlotsGen :
+    Realizes .exact readTotalSlotsGenProg
+      (WordEncoding.encode (α := DictParams × ℕ)) (WordEncoding.encode (α := ℕ))
+      (fun w d s => DictEnvGen w d.1 d.2 ∧
+        SlotStoreInv (p_nMax d.1)
+          (gmAt d.2 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem))
       (fun _ _ => 0) := by
-  have hrg := realizes_readGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-  have h0_lt : 0 < globalMetaLen n_max := by
-    unfold globalMetaLen
-    exact Nat.lt_of_lt_of_le (by decide : 0 < 4) (Nat.le_add_right 4 _)
-  by_cases hb0 : bucketBits n_max = 0
-  · refine Realizes.congr (p := fun base : ℕ => do
-        let i0 ← pure 0
-        readGMProg U V w₀ n_max h_space (base, i0)) ?_
-      (fun base => by simp [readTotalSlotsProg, hb0])
-    realize
-    · exact h.1
-    · exact h0_lt
-  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hb0
-    have h1_lt : 1 < globalMetaLen n_max := by
-      unfold globalMetaLen
-      exact Nat.lt_of_lt_of_le (by decide : 1 < 4) (Nat.le_add_right 4 _)
-    refine Realizes.congr (p := fun base : ℕ => do
-        let i0 ← pure 0
+  have hrg := realizes_readGMGen
+  refine Realizes.congr (p := fun d : DictParams × ℕ => do
+      let i0 ← pure 0
+      if p_bucketBits d.1 = i0 then
+        readGMGenProg (d.1, (d.2, i0))
+      else
         let i1 ← pure 1
-        let n_slabs ← readGMProg U V w₀ n_max h_space (base, i0)
-        let n_tails ← readGMProg U V w₀ n_max h_space (base, i1)
-        pure (n_slabs * slabSize n_max + n_tails)) ?_
-      (fun base => by simp [readTotalSlotsProg, hb0])
-    realize
-    · exact fits_const_of_dictEnv h.1 (by decide)
-    · exact h.1
-    · exact h0_lt
-    · exact h1_lt
-    · rw [clientState_readGMProg, clientResult_readGMProg s h0_lt,
-        clientResult_readGMProg s h1_lt]
-      exact fits_of_le_max_n_one h.1 hw hnU hU
-        (le_trans (h.2.multi_total_le hb_pos) (le_max_left _ _))
-    · exact fits_of_le_max_n_one h.1 hw hnU hU (slabSize_le_max_n_one n_max)
+        let n_slabs ← readGMGenProg (d.1, (d.2, i0))
+        let n_tails ← readGMGenProg (d.1, (d.2, i1))
+        pure (n_slabs * p_slabSize d.1 + n_tails)) ?_
+    (fun d => by simp only [readTotalSlotsGenProg, ← PFunctor.FreeM.bind_eq_bind, pure_bind])
+  realize_dict
+  · exact h.1
+  · unfold globalMetaLen; omega
+  · exact fits_const_of_dictEnv h.1 (by decide)
+  · exact h.1
+  · unfold globalMetaLen; omega
+  · unfold globalMetaLen; omega
+  · have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
+    have h1_lt : 1 < globalMetaLen n_max := by unfold globalMetaLen; omega
+    rw [clientState_readGMProg, clientResult_readGMProg s h0_lt,
+      clientResult_readGMProg s h1_lt]
+    exact fits_of_le_max_n_one h.1 hw hnU hU
+      (le_trans (h.2.multi_total_le (Nat.pos_of_ne_zero hc)) (le_max_left _ _))
+
+/-- Parameter-free `Memory.Prog` helper copying `(quotAt, valAt)` from the last logical slot
+`lastSlotOfGenProg (dp, (base, b))` of bucket `b = d.2.1.2` (`base = d.2.1.1`) into
+`phys_del = d.2.2`. -/
+@[expose]
+def copyLastPayloadGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog Unit := do
+  let phys_last ← lastSlotOfGenProg (d.1, d.2.1)
+  let q_last ← readQuotGenProg (d.1, (d.2.1.1, phys_last))
+  let v_last ← readValGenProg (d.1, (d.2.1.1, phys_last))
+  writeQuotGenProg (d.1, ((d.2.1.1, d.2.2), q_last))
+  writeValGenProg (d.1, ((d.2.1.1, d.2.2), v_last))
 
 /-- `Memory.Prog` helper copying `(quotAt, valAt)` from the last logical slot
 `lastSlotOfProg (base, b)` of bucket `b = d.1.2` (`base = d.1.1`) into `phys_del = d.2`. -/
@@ -536,6 +642,13 @@ def copyLastPayloadProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : 
   let v_last ← readValProg U V w n_max h_space (d.1.1, phys_last)
   writeQuotProg U w n_max h_space ((d.1.1, d.2), q_last)
   writeValProg U V w n_max h_space ((d.1.1, d.2), v_last)
+
+@[simp]
+theorem copyLastPayloadGenProg_mk (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) :
+    copyLastPayloadGenProg (mkDictParams U V w n_max h_space, d) =
+      copyLastPayloadProg U V w n_max h_space d := by
+  simp only [copyLastPayloadGenProg, copyLastPayloadProg, lastSlotOfGenProg_mk,
+    readQuotGenProg_mk, readValGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk]
 
 theorem memoryCost_copyLastPayloadProg_le (U V w n_max h_space : ℕ)
     (d : (ℕ × ℕ) × ℕ) (s : Memory.State) :
@@ -551,33 +664,43 @@ theorem memoryCost_copyLastPayloadProg_le (U V w n_max h_space : ℕ)
 @[expose]
 def CopyLastPayloadPre (U V w₀ n_max h_space w : ℕ)
     (d : (ℕ × ℕ) × ℕ) (s : Memory.State) : Prop :=
-  DictEnv U V w₀ n_max h_space w d.1.1 ∧
+  DictEnvGen w (mkDictParams U V w₀ n_max h_space) d.1.1 ∧
   SlotStoreInv n_max (gmAt d.1.1 U V w₀ n_max h_space s.mem) ∧
   d.1.2 < numBuckets n_max ∧
   1 ≤ bCount n_max (gmAt d.1.1 U V w₀ n_max h_space s.mem) d.1.2 ∧
   d.2 < n_max
 
-theorem realizes_copyLastPayload {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀) (hV : V ≤ 2 ^ w₀) :
-    Realizes .exact (copyLastPayloadProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := (ℕ × ℕ) × ℕ)) (WordEncoding.encode (α := Unit))
-      (CopyLastPayloadPre U V w₀ n_max h_space)
+/-- Parameter-free precondition for `copyLastPayloadGenProg`. -/
+@[expose]
+def CopyLastPayloadGenPre (w : ℕ)
+    (d : DictParams × ((ℕ × ℕ) × ℕ)) (s : Memory.State) : Prop :=
+  let gm := gmAt d.2.1.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem
+  DictEnvGen w d.1 d.2.1.1 ∧
+  SlotStoreInv (p_nMax d.1) gm ∧
+  d.2.1.2 < numBuckets (p_nMax d.1) ∧
+  1 ≤ bCount (p_nMax d.1) gm d.2.1.2 ∧
+  d.2.2 < p_nMax d.1
+
+@[simp]
+theorem copyLastPayloadGenPre_mk (U V w₀ n_max h_space w : ℕ)
+    (d : (ℕ × ℕ) × ℕ) (s : Memory.State) :
+    CopyLastPayloadGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
+      CopyLastPayloadPre U V w₀ n_max h_space w d s := Iff.rfl
+
+theorem realizes_copyLastPayloadGen :
+    Realizes .exact copyLastPayloadGenProg
+      (WordEncoding.encode (α := DictParams × ((ℕ × ℕ) × ℕ)))
+      (WordEncoding.encode (α := Unit))
+      CopyLastPayloadGenPre
       (fun _ _ => 0) := by
-  have hl := realizes_lastSlotOf (U := U) (V := V) (w₀ := w₀) (n_max := n_max)
-    (h_space := h_space) hw hnU hU
-  have hrq := realizes_readQuot (U := U) (V := V) (w := w₀) (n_max := n_max)
-    (h_space := h_space) hw hU.le
-  have hrv := realizes_readVal (U := U) (V := V) (w := w₀) (n_max := n_max)
-    (h_space := h_space) hw hV
-  have hwq := realizes_writeQuot (U := U) (V := V) (w := w₀) (n_max := n_max)
-    (h_space := h_space) hw hU.le
-  have hwv := realizes_writeVal (U := U) (V := V) (w := w₀) (n_max := n_max)
-    (h_space := h_space) hw hV
-  realize
-  · exact h.1
-  · exact h.2.1
-  · exact h.2.2.1
-  · exact h.2.2.2.1
+  have hl := realizes_lastSlotOfGen
+  have hrq := realizes_readQuotGen
+  have hrv := realizes_readValGen
+  have hwq := realizes_writeQuotGen
+  have hwv := realizes_writeValGen
+  realize_dict [copyLastPayloadGenPre_mk, CopyLastPayloadPre,
+    lastSlotOfGenPre_mk, lastSlotOfGenProg_mk]
+  · exact ⟨h.1, h.2.1, h.2.2.1, h.2.2.2.1⟩
   · exact h.1
   · rw [clientResult_lastSlotOfProg d.1 s h.2.1 h.2.2.1 h.2.2.2.1]
     exact (slotOf_lt_and_injective h.2.1).1 d.1.2 h.2.2.1 _ (by have := h.2.2.2.1; omega)

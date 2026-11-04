@@ -104,8 +104,9 @@ theorem nonvacuous_succinctDynamicDictionary :
         μ_init μ_final T_ops ∧
       (initBudget : ℝ≥0∞) + T_ops ≤
         ((initBudget + sampleOps.length * C_op : ℕ) : ℝ≥0∞) := by
-  obtain ⟨r, C_op, sp, initBudget, hr, p_init, p_op, hinit_le, hsp_le, hrun⟩ :=
-    succinctDynamicDictionary 16 8 64 4
+  obtain ⟨r, C_op, hr, hdict⟩ := succinctDynamicDictionary
+  obtain ⟨sp, initBudget, p_init, p_op, hinit_le, hsp_le, hrun⟩ :=
+    hdict 16 8 64 4
   have hsp : sp ≤ succinctWords 81 213 16 8 64 4 :=
     hsp_le (by decide) (by decide) (by decide)
   have hsp_lt : 0 + sp < 2 ^ 64 := by

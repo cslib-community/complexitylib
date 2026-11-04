@@ -211,9 +211,9 @@ example :
 /-- Non-vacuous end-to-end execution of `seq_expected_amortized` on `sampleDictOps`
 starting from an initial machine state with `reg 240 = 100` and zeroed memory. -/
 theorem nonvacuous_seq_expected_amortized :
-    let x₀ : Data (rSuccinct (2 ^ 32) (2 ^ 16) 64 16) :=
-      ⟨Function.update (fun _ => 0) (frontierReg (2 ^ 32) (2 ^ 16) 64 16) 100, fun _ => 0⟩
-    ∃ (ν₀ ν_final : PMF (sampleSuccinctImpl.Seed × Data (rSuccinct (2 ^ 32) (2 ^ 16) 64 16)))
+    let x₀ : Data rSuccinct :=
+      ⟨Function.update (fun _ => 0) WordRAM.Succinct.frontierReg 100, fun _ => 0⟩
+    ∃ (ν₀ ν_final : PMF (sampleSuccinctImpl.Seed × Data rSuccinct))
       (T_ops : ℝ≥0∞),
       ExecCodeDist 64 (subroutineCode (2 ^ 32) (2 ^ 16) 64 16).initFresh x₀ (ν₀.map Prod.snd)
         sampleSuccinctImpl.initTime ∧
@@ -225,20 +225,20 @@ theorem nonvacuous_seq_expected_amortized :
       sampleSuccinctImpl.initTime + T_ops +
         (∑' q, ν_final q * (potential (2 ^ 32) (2 ^ 16) 64 16 100 q.1 q.2 : ℝ≥0∞)) ≤
         sampleSuccinctImpl.initTime +
-          (sampleDictOps.length * chargeVal (2 ^ 32) (2 ^ 16) 64 16 : ℕ) := by
+          (sampleDictOps.length * chargeVal : ℕ) := by
   intro x₀
   have hx₀ : x₀.Bounded 64 := by
     refine ⟨fun i => ?_, fun _ => (by decide : 0 < 2 ^ 64)⟩
     dsimp only [x₀]
-    by_cases h : i = frontierReg (2 ^ 32) (2 ^ 16) 64 16
+    by_cases h : i = WordRAM.Succinct.frontierReg
     · subst h
       rw [Function.update_self]
       decide
     · rw [Function.update_of_ne h]
       decide
-  have hfr₀ : x₀.regs (frontierReg (2 ^ 32) (2 ^ 16) 64 16) = 100 := by
+  have hfr₀ : x₀.regs WordRAM.Succinct.frontierReg = 100 := by
     dsimp only [x₀]
-    exact Function.update_self (frontierReg (2 ^ 32) (2 ^ 16) 64 16) 100 (fun _ => 0)
+    exact Function.update_self WordRAM.Succinct.frontierReg 100 (fun _ => 0)
   have hmain := seq_expected_amortized
     (by decide) (by decide) (by decide) (by decide) hfit_succinct_example
     sampleDictOps hx₀ hfr₀ (fun _ _ => rfl) validHistory_sampleDictOps

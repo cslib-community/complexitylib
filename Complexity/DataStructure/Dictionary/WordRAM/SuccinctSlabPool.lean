@@ -63,7 +63,27 @@ theorem memoryCost_writeGMProg_ite_le (U V w n_max h_space base idx val : ℕ)
       (if P then writeGMProg U V w n_max h_space ((base, idx), val) else pure ()) s ≤ 4 := by
   split_ifs <;> simp
 
-/-! ## Section 2: `gmPushSlabProg` and `realizes_gmPushSlab` -/
+/-! ## Section 2: `gmPushSlabProg` and `realizes_gmPushSlabGen` -/
+
+/-- Parameter-free `Memory.Prog` operation allocating a new full slab `p_new = gm 0` as the new top
+slab `s_new = gm (gmQIdx b)` of bucket `b = d.2.2` at `base = d.2.1`. -/
+def gmPushSlabGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Unit := do
+  let q_b ← readGMGenProg (d.1, (d.2.1, 4 + 3 * d.2.2))
+  let p_new ← readGMGenProg (d.1, (d.2.1, 0))
+  let top_old ← readGMGenProg (d.1, (d.2.1, 4 + 3 * d.2.2 + 2))
+  writeGMGenProg (d.1, ((d.2.1, p_gmSlabMetaBase d.1 + 4 * p_new), d.2.2))
+  writeGMGenProg (d.1, ((d.2.1, p_gmSlabMetaBase d.1 + 4 * p_new + 1), q_b))
+  writeGMGenProg (d.1, ((d.2.1, p_gmSlabMetaBase d.1 + 4 * p_new + 2), top_old))
+  (if 0 < q_b then
+    writeGMGenProg (d.1, ((d.2.1, p_gmSlabMetaBase d.1 + 4 * top_old + 3), p_new))
+  else pure ()) >>= fun _ => do
+  (if q_b < p_dirSlabs d.1 then
+    writeGMGenProg (d.1,
+      ((d.2.1, p_gmSlabDirBase d.1 + d.2.2 * p_dirSlabs d.1 + q_b), p_new))
+  else pure ()) >>= fun _ => do
+  writeGMGenProg (d.1, ((d.2.1, 4 + 3 * d.2.2 + 2), p_new))
+  writeGMGenProg (d.1, ((d.2.1, 4 + 3 * d.2.2), q_b + 1))
+  writeGMGenProg (d.1, ((d.2.1, 0), p_new + 1))
 
 /-- `Memory.Prog` operation allocating a new full slab `p_new = gm 0` as the new top slab
 `s_new = gm (gmQIdx b)` of bucket `b = d.2` at `base = d.1`. -/
@@ -85,6 +105,10 @@ def gmPushSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Un
   writeGMProg U V w n_max h_space ((d.1, 4 + 3 * d.2), q_b + 1)
   writeGMProg U V w n_max h_space ((d.1, 0), p_new + 1)
 
+@[simp] theorem gmPushSlabGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
+    gmPushSlabGenProg (mkDictParams U V w n_max h_space, d) =
+      gmPushSlabProg U V w n_max h_space d := by rfl
+
 theorem memoryCost_gmPushSlabProg_le (U V w n_max h_space : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     memoryCost (gmPushSlabProg U V w n_max h_space d) s ≤ 38 := by
   unfold gmPushSlabProg
@@ -95,12 +119,31 @@ theorem memoryCost_gmPushSlabProg_le (U V w n_max h_space : ℕ) (d : ℕ × ℕ
 /-- Precondition for `gmPushSlabProg`. -/
 @[expose]
 def GmPushSlabPre (U V w₀ n_max h_space w base b : ℕ) (s : Memory.State) : Prop :=
-  DictEnv U V w₀ n_max h_space w base ∧
+  DictEnvGen w (mkDictParams U V w₀ n_max h_space) base ∧
   SlabBijection n_max (gmAt base U V w₀ n_max h_space s.mem)
     (fun b' => gmAt base U V w₀ n_max h_space s.mem (gmQIdx b'))
     (gmAt base U V w₀ n_max h_space s.mem 0) ∧
   b < numBuckets n_max ∧
-  gmAt base U V w₀ n_max h_space s.mem 0 < maxFullSlabs n_max
+  gmAt base U V w₀ n_max h_space s.mem 0 < maxFullSlabs n_max ∧
+  0 < bucketBits n_max
+
+/-- Parameter-free precondition for `gmPushSlabGenProg`. -/
+@[expose]
+def GmPushSlabGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Memory.State) : Prop :=
+  DictEnvGen w d.1 d.2.1 ∧
+  SlabBijection (p_nMax d.1)
+    (gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem)
+    (fun b' => gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1)
+      s.mem (gmQIdx b'))
+    (gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem 0) ∧
+  d.2.2 < numBuckets (p_nMax d.1) ∧
+  gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem 0 <
+    maxFullSlabs (p_nMax d.1) ∧
+  0 < bucketBits (p_nMax d.1)
+
+@[simp] theorem gmPushSlabGenPre_mk (U V w₀ n_max h_space w : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
+    GmPushSlabGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
+      GmPushSlabPre U V w₀ n_max h_space w d.1 d.2 s := Iff.rfl
 
 theorem gmPushSlabProg_effect {U V w n_max h_space base b : ℕ}
     (hw : 0 < w) (hb_pos : 0 < bucketBits n_max) (hb : b < numBuckets n_max)
@@ -225,7 +268,6 @@ theorem gmPushSlabProg_effect {U V w n_max h_space base b : ℕ}
   rfl
 
 private theorem gmPushSlab_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ × ℕ} {s : Memory.State}
-    (hb_pos : 0 < bucketBits n_max)
     (h : GmPushSlabPre U V w₀ n_max h_space w d.1 d.2 s) :
     let e_qb := (Memory.spec 0).clientResult s (readGMProg U V w₀ n_max h_space (d.1, 4 + 3 * d.2))
     let s1 := (Memory.spec 0).clientState s (readGMProg U V w₀ n_max h_space (d.1, 4 + 3 * d.2))
@@ -244,7 +286,7 @@ private theorem gmPushSlab_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ × �
       gmSlabDirBase n_max + d.2 * dirSlabsPerBucket n_max + e_qb < globalMetaLen n_max) ∧
     e_qb + 1 ≤ n_max ∧
     e_pnew + 1 ≤ n_max := by
-  rcases h with ⟨_, hslab, hb, hp_lt⟩
+  rcases h with ⟨_, hslab, hb, hp_lt, hb_pos⟩
   set gm := gmAt d.1 U V w₀ n_max h_space s.mem
   have hq_idx_lt : 4 + 3 * d.2 < globalMetaLen n_max := gmQIdx_lt hb_pos hb
   have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
@@ -275,82 +317,85 @@ private theorem gmPushSlab_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ × �
     rw [heqb] at hdir ⊢
     exact gmSlabDirIdx_lt hb_pos hb hdir
 
-theorem realizes_gmPushSlab {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀)
-    (hb_pos : 0 < bucketBits n_max) :
-    Realizes .exact (gmPushSlabProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := ℕ × ℕ)) (WordEncoding.encode (α := Unit))
-      (fun w d s => GmPushSlabPre U V w₀ n_max h_space w d.1 d.2 s)
+theorem realizes_gmPushSlabGen :
+    Realizes .exact gmPushSlabGenProg
+      (WordEncoding.encode (α := DictParams × (ℕ × ℕ))) (WordEncoding.encode (α := Unit))
+      GmPushSlabGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-  have hwg := realizes_writeGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-  refine Realizes.congr (p := fun d : ℕ × ℕ => do
-      let q_idx ← pure (4 + 3 * d.2)
-      let q_b ← readGMProg U V w₀ n_max h_space (d.1, q_idx)
+  have hrg := realizes_readGMGen
+  have hwg := realizes_writeGMGen
+  refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) => do
+      let q_idx ← pure (4 + 3 * d.2.2)
+      let q_b ← readGMGenProg (d.1, (d.2.1, q_idx))
       let i0 ← pure 0
-      let p_new ← readGMProg U V w₀ n_max h_space (d.1, i0)
-      let top_idx ← pure (4 + 3 * d.2 + 2)
-      let top_old ← readGMProg U V w₀ n_max h_space (d.1, top_idx)
-      let ownB_idx ← pure (gmSlabMetaBase n_max + 4 * p_new)
-      writeGMProg U V w₀ n_max h_space ((d.1, ownB_idx), d.2)
-      let ownS_idx ← pure (gmSlabMetaBase n_max + 4 * p_new + 1)
-      writeGMProg U V w₀ n_max h_space ((d.1, ownS_idx), q_b)
-      let bel_idx ← pure (gmSlabMetaBase n_max + 4 * p_new + 2)
-      writeGMProg U V w₀ n_max h_space ((d.1, bel_idx), top_old)
+      let p_new ← readGMGenProg (d.1, (d.2.1, i0))
+      let top_idx ← pure (4 + 3 * d.2.2 + 2)
+      let top_old ← readGMGenProg (d.1, (d.2.1, top_idx))
+      let ownB_idx ← pure (p_gmSlabMetaBase d.1 + 4 * p_new)
+      writeGMGenProg (d.1, ((d.2.1, ownB_idx), d.2.2))
+      let ownS_idx ← pure (p_gmSlabMetaBase d.1 + 4 * p_new + 1)
+      writeGMGenProg (d.1, ((d.2.1, ownS_idx), q_b))
+      let bel_idx ← pure (p_gmSlabMetaBase d.1 + 4 * p_new + 2)
+      writeGMGenProg (d.1, ((d.2.1, bel_idx), top_old))
       (if i0 < q_b then do
-        let abv_idx ← pure (gmSlabMetaBase n_max + 4 * top_old + 3)
-        writeGMProg U V w₀ n_max h_space ((d.1, abv_idx), p_new)
+        let abv_idx ← pure (p_gmSlabMetaBase d.1 + 4 * top_old + 3)
+        writeGMGenProg (d.1, ((d.2.1, abv_idx), p_new))
       else pure ()) >>= fun _ => do
-      let dir_cap ← pure (dirSlabsPerBucket n_max)
-      (if q_b < dir_cap then do
-        let dir_idx ← pure (gmSlabDirBase n_max + d.2 * dirSlabsPerBucket n_max + q_b)
-        writeGMProg U V w₀ n_max h_space ((d.1, dir_idx), p_new)
+      (if q_b < p_dirSlabs d.1 then do
+        let dir_idx ← pure (p_gmSlabDirBase d.1 + d.2.2 * p_dirSlabs d.1 + q_b)
+        writeGMGenProg (d.1, ((d.2.1, dir_idx), p_new))
       else pure ()) >>= fun _ => do
-      writeGMProg U V w₀ n_max h_space ((d.1, top_idx), p_new)
+      writeGMGenProg (d.1, ((d.2.1, top_idx), p_new))
       let q_next ← pure (q_b + 1)
-      writeGMProg U V w₀ n_max h_space ((d.1, q_idx), q_next)
+      writeGMGenProg (d.1, ((d.2.1, q_idx), q_next))
       let p_next ← pure (p_new + 1)
-      writeGMProg U V w₀ n_max h_space ((d.1, i0), p_next)) ?_
-    (fun d => by simp only [gmPushSlabProg, pure_bind])
-  realize
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (gmPushSlab_bounds hb_pos h).1)
+      writeGMGenProg (d.1, ((d.2.1, i0), p_next))) ?_
+    (fun d => by simp only [gmPushSlabGenProg, pure_bind])
+  realize_dict [gmPushSlabGenPre_mk]
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
+      (le_of_lt (gmPushSlab_bounds h).1)
   · exact fits_const_of_dictEnv h.1 (by omega)
   · exact h.1
-  · exact (gmPushSlab_bounds hb_pos h).1
-  · exact (gmPushSlab_bounds hb_pos h).2.1
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (gmPushSlab_bounds hb_pos h).2.2.1)
-  · exact (gmPushSlab_bounds hb_pos h).2.2.1
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (gmPushSlab_bounds hb_pos h).2.2.2.1)
+  · exact (gmPushSlab_bounds h).1
+  · exact (gmPushSlab_bounds h).2.1
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
+      (le_of_lt (gmPushSlab_bounds h).2.2.1)
+  · exact (gmPushSlab_bounds h).2.2.1
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
+      (le_of_lt (gmPushSlab_bounds h).2.2.2.1)
   · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact (gmPushSlab_bounds hb_pos h).2.2.2.1
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (gmPushSlab_bounds hb_pos h).2.2.2.2.1)
-  · exact (gmPushSlab_bounds hb_pos h).2.2.2.2.1
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (gmPushSlab_bounds hb_pos h).2.2.2.2.2.1)
-  · exact (gmPushSlab_bounds hb_pos h).2.2.2.2.2.1
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt ((gmPushSlab_bounds hb_pos h).2.2.2.2.2.2.1 hc))
+  · exact (gmPushSlab_bounds h).2.2.2.1
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
+      (le_of_lt (gmPushSlab_bounds h).2.2.2.2.1)
+  · exact (gmPushSlab_bounds h).2.2.2.2.1
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
+      (le_of_lt (gmPushSlab_bounds h).2.2.2.2.2.1)
+  · exact (gmPushSlab_bounds h).2.2.2.2.2.1
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
+      (le_of_lt ((gmPushSlab_bounds h).2.2.2.2.2.2.1 hc))
   · exact fits_const_of_dictEnv h.1 (by omega)
   · exact h.1
-  · exact (gmPushSlab_bounds hb_pos h).2.2.2.2.2.2.1 hc
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (dirSlabsPerBucket_le_globalMetaLen hb_pos)
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt ((gmPushSlab_bounds hb_pos h).2.2.2.2.2.2.2.1 hc))
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (dirSlabsPerBucket_le_globalMetaLen hb_pos)
+  · exact (gmPushSlab_bounds h).2.2.2.2.2.2.1 hc
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
+      (le_of_lt ((gmPushSlab_bounds h).2.2.2.2.2.2.2.1 hc))
   · exact h.1
-  · exact ((gmPushSlab_bounds hb_pos h).2.2.2.2.2.2.2.1 hc)
+  · exact ((gmPushSlab_bounds h).2.2.2.2.2.2.2.1 hc)
   · exact fits_of_le_max_n_one h.1 hw hnU hU
-      ((gmPushSlab_bounds hb_pos h).2.2.2.2.2.2.2.2.1.trans (Nat.le_max_left n_max 1))
+      ((gmPushSlab_bounds h).2.2.2.2.2.2.2.2.1.trans (Nat.le_max_left n_max 1))
   · exact fits_of_le_max_n_one h.1 hw hnU hU
-      ((gmPushSlab_bounds hb_pos h).2.2.2.2.2.2.2.2.2.trans (Nat.le_max_left n_max 1))
+      ((gmPushSlab_bounds h).2.2.2.2.2.2.2.2.2.trans (Nat.le_max_left n_max 1))
 
 /-! ## Section 3: `gmUnlinkTopSlabProg`, `gmCompactSlabProg`, `gmPopSlabProg` -/
+
+/-- Parameter-free `Memory.Prog` operation unlinking the top slab of bucket `b = d.2.2` at
+`base = d.2.1`. -/
+def gmUnlinkTopSlabGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ := do
+  let q_b ← readGMGenProg (d.1, (d.2.1, 4 + 3 * d.2.2))
+  let p_del ← readGMGenProg (d.1, (d.2.1, 4 + 3 * d.2.2 + 2))
+  let bel_del ← readGMGenProg (d.1, (d.2.1, p_gmSlabMetaBase d.1 + 4 * p_del + 2))
+  writeGMGenProg (d.1, ((d.2.1, 4 + 3 * d.2.2 + 2), bel_del))
+  let _ ← writeGMGenProg (d.1, ((d.2.1, 4 + 3 * d.2.2), q_b - 1))
+  pure p_del
 
 /-- `Memory.Prog` operation unlinking the top slab of bucket `b = d.2` at `base = d.1` and
 returning its physical slab index `p_del = gm (gmSlabTopIdx b)`. -/
@@ -362,6 +407,10 @@ def gmUnlinkTopSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Pr
   let _ ← writeGMProg U V w n_max h_space ((d.1, 4 + 3 * d.2), q_b - 1)
   pure p_del
 
+@[simp] theorem gmUnlinkTopSlabGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
+    gmUnlinkTopSlabGenProg (mkDictParams U V w n_max h_space, d) =
+      gmUnlinkTopSlabProg U V w n_max h_space d := by rfl
+
 @[simp]
 theorem memoryCost_gmUnlinkTopSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     memoryCost (gmUnlinkTopSlabProg U V w n_max h_space d) s = 14 := by
@@ -370,12 +419,30 @@ theorem memoryCost_gmUnlinkTopSlabProg (U V w n_max h_space : ℕ) (d : ℕ × �
 /-- Precondition for `gmUnlinkTopSlabProg` and `gmPopSlabProg`. -/
 @[expose]
 def GmPopSlabPre (U V w₀ n_max h_space w base b : ℕ) (s : Memory.State) : Prop :=
-  DictEnv U V w₀ n_max h_space w base ∧
+  DictEnvGen w (mkDictParams U V w₀ n_max h_space) base ∧
   SlabBijection n_max (gmAt base U V w₀ n_max h_space s.mem)
     (fun b' => gmAt base U V w₀ n_max h_space s.mem (gmQIdx b'))
     (gmAt base U V w₀ n_max h_space s.mem 0) ∧
   b < numBuckets n_max ∧
-  1 ≤ gmAt base U V w₀ n_max h_space s.mem (gmQIdx b)
+  1 ≤ gmAt base U V w₀ n_max h_space s.mem (gmQIdx b) ∧
+  0 < bucketBits n_max
+
+/-- Parameter-free precondition for `gmUnlinkTopSlabGenProg` and `gmPopSlabGenProg`. -/
+@[expose]
+def GmPopSlabGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Memory.State) : Prop :=
+  DictEnvGen w d.1 d.2.1 ∧
+  SlabBijection (p_nMax d.1)
+    (gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem)
+    (fun b' => gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1)
+      s.mem (gmQIdx b'))
+    (gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem 0) ∧
+  d.2.2 < numBuckets (p_nMax d.1) ∧
+  1 ≤ gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem (gmQIdx d.2.2) ∧
+  0 < bucketBits (p_nMax d.1)
+
+@[simp] theorem gmPopSlabGenPre_mk (U V w₀ n_max h_space w : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
+    GmPopSlabGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
+      GmPopSlabPre U V w₀ n_max h_space w d.1 d.2 s := Iff.rfl
 
 theorem gmUnlinkTopSlabProg_effect {U V w n_max h_space base b : ℕ}
     (hw : 0 < w) (hb_pos : 0 < bucketBits n_max) (hb : b < numBuckets n_max)
@@ -449,7 +516,6 @@ theorem gmUnlinkTopSlabProg_effect {U V w n_max h_space base b : ℕ}
   rfl
 
 private theorem gmUnlinkTopSlab_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ × ℕ} {s : Memory.State}
-    (hb_pos : 0 < bucketBits n_max)
     (h : GmPopSlabPre U V w₀ n_max h_space w d.1 d.2 s) :
     let e_qb := (Memory.spec 0).clientResult s (readGMProg U V w₀ n_max h_space (d.1, 4 + 3 * d.2))
     let s1 := (Memory.spec 0).clientState s (readGMProg U V w₀ n_max h_space (d.1, 4 + 3 * d.2))
@@ -459,7 +525,7 @@ private theorem gmUnlinkTopSlab_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ
     4 + 3 * d.2 + 2 < globalMetaLen n_max ∧
     gmSlabMetaBase n_max + 4 * e_pdel + 2 < globalMetaLen n_max ∧
     1 ≤ e_qb := by
-  rcases h with ⟨_, hslab, hb, hq_pos⟩
+  rcases h with ⟨_, hslab, hb, hq_pos, hb_pos⟩
   set gm := gmAt d.1 U V w₀ n_max h_space s.mem
   have hq_idx_lt : 4 + 3 * d.2 < globalMetaLen n_max := gmQIdx_lt hb_pos hb
   have htop_idx_lt : 4 + 3 * d.2 + 2 < globalMetaLen n_max := gmSlabTopIdx_lt hb_pos hb
@@ -477,41 +543,39 @@ private theorem gmUnlinkTopSlab_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ
     by rw [hepdel]; exact gmSlabBelowIdx_lt hb_pos hp_del_cap,
     by rw [heqb]; exact hq_pos⟩
 
-theorem realizes_gmUnlinkTopSlab {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀)
-    (hb_pos : 0 < bucketBits n_max) :
-    Realizes .exact (gmUnlinkTopSlabProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := ℕ × ℕ)) (WordEncoding.encode (α := ℕ))
-      (fun w d s => GmPopSlabPre U V w₀ n_max h_space w d.1 d.2 s)
+theorem realizes_gmUnlinkTopSlabGen :
+    Realizes .exact gmUnlinkTopSlabGenProg
+      (WordEncoding.encode (α := DictParams × (ℕ × ℕ))) (WordEncoding.encode (α := ℕ))
+      GmPopSlabGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-  have hwg := realizes_writeGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-  refine Realizes.congr (p := fun d : ℕ × ℕ => do
-      let q_idx ← pure (4 + 3 * d.2)
-      let q_b ← readGMProg U V w₀ n_max h_space (d.1, q_idx)
-      let top_idx ← pure (4 + 3 * d.2 + 2)
-      let p_del ← readGMProg U V w₀ n_max h_space (d.1, top_idx)
-      let bel_idx ← pure (gmSlabMetaBase n_max + 4 * p_del + 2)
-      let bel_del ← readGMProg U V w₀ n_max h_space (d.1, bel_idx)
-      writeGMProg U V w₀ n_max h_space ((d.1, top_idx), bel_del)
+  have hrg := realizes_readGMGen
+  have hwg := realizes_writeGMGen
+  refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) => do
+      let q_idx ← pure (4 + 3 * d.2.2)
+      let q_b ← readGMGenProg (d.1, (d.2.1, q_idx))
+      let top_idx ← pure (4 + 3 * d.2.2 + 2)
+      let p_del ← readGMGenProg (d.1, (d.2.1, top_idx))
+      let bel_idx ← pure (p_gmSlabMetaBase d.1 + 4 * p_del + 2)
+      let bel_del ← readGMGenProg (d.1, (d.2.1, bel_idx))
+      writeGMGenProg (d.1, ((d.2.1, top_idx), bel_del))
       let q_prev ← pure (q_b - 1)
-      let _ ← writeGMProg U V w₀ n_max h_space ((d.1, q_idx), q_prev)
+      let _ ← writeGMGenProg (d.1, ((d.2.1, q_idx), q_prev))
       pure p_del) ?_
-    (fun d => by simp only [gmUnlinkTopSlabProg, pure_bind])
-  realize
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (gmUnlinkTopSlab_bounds hb_pos h).1)
+    (fun d => by simp only [gmUnlinkTopSlabGenProg, pure_bind])
+  realize_dict [gmPopSlabGenPre_mk]
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
+      (le_of_lt (gmUnlinkTopSlab_bounds h).1)
   · exact fits_const_of_dictEnv h.1 (by omega)
   · exact h.1
-  · exact (gmUnlinkTopSlab_bounds hb_pos h).1
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (gmUnlinkTopSlab_bounds hb_pos h).2.1)
-  · exact (gmUnlinkTopSlab_bounds hb_pos h).2.1
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (gmUnlinkTopSlab_bounds hb_pos h).2.2.1)
+  · exact (gmUnlinkTopSlab_bounds h).1
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
+      (le_of_lt (gmUnlinkTopSlab_bounds h).2.1)
+  · exact (gmUnlinkTopSlab_bounds h).2.1
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
+      (le_of_lt (gmUnlinkTopSlab_bounds h).2.2.1)
   · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact (gmUnlinkTopSlab_bounds hb_pos h).2.2.1
-  · exact (gmUnlinkTopSlab_bounds hb_pos h).2.2.2
+  · exact (gmUnlinkTopSlab_bounds h).2.2.1
+  · exact (gmUnlinkTopSlab_bounds h).2.2.2
 
 /-- Pure first half of `gmCompactSlab` when `p_del < p_last`: updates the directory and top pointer
 of `b_last`. -/
@@ -599,6 +663,23 @@ theorem gmCompactSlab_eq_parts {n_max : ℕ} (gmA : ℕ → ℕ) {p_del : ℕ}
   rw [ite_eq_left hlt, hpGe _ hB, hpGe _ hS, hpGe _ hBel, hpGe _ hAbv, hpQ]
   rfl
 
+/-- Parameter-free `Memory.Prog` helper performing `gmRelinkMovedSlab` for
+`d = (dp, ((base, p_del), p_last))`. -/
+def gmRelinkMovedSlabGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog Unit := do
+  let base := d.2.1.1
+  let p_del := d.2.1.2
+  let p_last := d.2.2
+  let b_last ← readGMGenProg (d.1, (base, p_gmSlabMetaBase d.1 + 4 * p_last))
+  let s_last ← readGMGenProg (d.1, (base, p_gmSlabMetaBase d.1 + 4 * p_last + 1))
+  let q_last ← readGMGenProg (d.1, (base, 4 + 3 * b_last))
+  (if s_last < p_dirSlabs d.1 then
+    writeGMGenProg (d.1,
+      ((base, p_gmSlabDirBase d.1 + b_last * p_dirSlabs d.1 + s_last), p_del))
+  else pure ()) >>= fun _ => do
+    if s_last + 1 = q_last then
+      writeGMGenProg (d.1, ((base, 4 + 3 * b_last + 2), p_del))
+    else pure ()
+
 /-- `Memory.Prog` helper performing `gmRelinkMovedSlab` for `d = ((base, p_del), p_last)`. -/
 def gmRelinkMovedSlabProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit := do
   let base := d.1.1
@@ -614,6 +695,10 @@ def gmRelinkMovedSlabProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) 
     if s_last + 1 = q_last then
       writeGMProg U V w n_max h_space ((base, 4 + 3 * b_last + 2), p_del)
     else pure ()
+
+@[simp] theorem gmRelinkMovedSlabGenProg_mk (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) :
+    gmRelinkMovedSlabGenProg (mkDictParams U V w n_max h_space, d) =
+      gmRelinkMovedSlabProg U V w n_max h_space d := by rfl
 
 theorem memoryCost_gmRelinkMovedSlabProg_le (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ)
     (s : Memory.State) :
@@ -637,13 +722,26 @@ def GmMovedSlabInv (U V w₀ n_max h_space base p_del p_last : ℕ) (s : Memory.
   b_last < numBuckets n_max ∧
   s_last + 1 ≤ n_max ∧
   (0 < s_last → bel_last < maxFullSlabs n_max) ∧
-  (s_last + 1 < q_last → abv_last < maxFullSlabs n_max)
+  (s_last + 1 < q_last → abv_last < maxFullSlabs n_max) ∧
+  0 < bucketBits n_max
 
 /-- Precondition for `gmRelinkMovedSlabProg` and `gmLinkMovedNeighborsProg`. -/
 @[expose]
 def GmMovedSlabPre (U V w₀ n_max h_space w base p_del p_last : ℕ) (s : Memory.State) : Prop :=
-  DictEnv U V w₀ n_max h_space w base ∧
+  DictEnvGen w (mkDictParams U V w₀ n_max h_space) base ∧
   GmMovedSlabInv U V w₀ n_max h_space base p_del p_last s
+
+/-- Parameter-free precondition for `gmRelinkMovedSlabGenProg` and `gmLinkMovedNeighborsGenProg`. -/
+@[expose]
+def GmMovedSlabGenPre (w : ℕ) (d : DictParams × ((ℕ × ℕ) × ℕ)) (s : Memory.State) : Prop :=
+  DictEnvGen w d.1 d.2.1.1 ∧
+  GmMovedSlabInv (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1)
+    d.2.1.1 d.2.1.2 d.2.2 s
+
+@[simp] theorem gmMovedSlabGenPre_mk (U V w₀ n_max h_space w : ℕ) (d : (ℕ × ℕ) × ℕ)
+    (s : Memory.State) :
+    GmMovedSlabGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
+      GmMovedSlabPre U V w₀ n_max h_space w d.1.1 d.1.2 d.2 s := Iff.rfl
 
 theorem gmRelinkMovedSlabProg_effect {U V w n_max h_space base p_del p_last : ℕ}
     (hw : 0 < w) (hb_pos : 0 < bucketBits n_max)
@@ -718,7 +816,7 @@ theorem gmRelinkMovedSlabProg_effect {U V w n_max h_space base p_del p_last : �
   rfl
 
 private theorem gmRelinkMovedSlab_bounds {U V w₀ n_max h_space w : ℕ}
-    {d : (ℕ × ℕ) × ℕ} {s : Memory.State} (hb_pos : 0 < bucketBits n_max)
+    {d : (ℕ × ℕ) × ℕ} {s : Memory.State}
     (h : GmMovedSlabPre U V w₀ n_max h_space w d.1.1 d.1.2 d.2 s) :
     let e_blast := (Memory.spec 0).clientResult s
       (readGMProg U V w₀ n_max h_space (d.1.1, gmSlabMetaBase n_max + 4 * d.2))
@@ -737,7 +835,7 @@ private theorem gmRelinkMovedSlab_bounds {U V w₀ n_max h_space w : ℕ}
       gmSlabDirBase n_max + e_blast * dirSlabsPerBucket n_max + e_slast < globalMetaLen n_max) ∧
     e_slast + 1 ≤ n_max ∧
     (e_slast + 1 = e_qlast → 4 + 3 * e_blast + 2 < globalMetaLen n_max) := by
-  rcases h with ⟨_, _, hp_last_cap, hb_last, hs_le, _, _⟩
+  rcases h with ⟨_, _, hp_last_cap, hb_last, hs_le, _, _, hb_pos⟩
   set gm := gmAt d.1.1 U V w₀ n_max h_space s.mem
   have hownB_lt := gmSlabOwnerBIdx_lt hb_pos hp_last_cap
   have hownS_lt := gmSlabOwnerSIdx_lt hb_pos hp_last_cap
@@ -757,61 +855,76 @@ private theorem gmRelinkMovedSlab_bounds {U V w₀ n_max h_space w : ℕ}
     rw [heblast]
     exact gmSlabTopIdx_lt hb_pos hb_last
 
-theorem realizes_gmRelinkMovedSlab {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀)
-    (hb_pos : 0 < bucketBits n_max) :
-    Realizes .exact (gmRelinkMovedSlabProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := (ℕ × ℕ) × ℕ)) (WordEncoding.encode (α := Unit))
-      (fun w d s => GmMovedSlabPre U V w₀ n_max h_space w d.1.1 d.1.2 d.2 s)
+theorem realizes_gmRelinkMovedSlabGen :
+    Realizes .exact gmRelinkMovedSlabGenProg
+      (WordEncoding.encode (α := DictParams × ((ℕ × ℕ) × ℕ))) (WordEncoding.encode (α := Unit))
+      GmMovedSlabGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-  have hwg := realizes_writeGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-  refine Realizes.congr (p := fun d : (ℕ × ℕ) × ℕ => do
-      let ownB_idx ← pure (gmSlabMetaBase n_max + 4 * d.2)
-      let b_last ← readGMProg U V w₀ n_max h_space (d.1.1, ownB_idx)
-      let ownS_idx ← pure (gmSlabMetaBase n_max + 4 * d.2 + 1)
-      let s_last ← readGMProg U V w₀ n_max h_space (d.1.1, ownS_idx)
+  have hrg := realizes_readGMGen
+  have hwg := realizes_writeGMGen
+  refine Realizes.congr (p := fun d : DictParams × ((ℕ × ℕ) × ℕ) => do
+      let ownB_idx ← pure (p_gmSlabMetaBase d.1 + 4 * d.2.2)
+      let b_last ← readGMGenProg (d.1, (d.2.1.1, ownB_idx))
+      let ownS_idx ← pure (p_gmSlabMetaBase d.1 + 4 * d.2.2 + 1)
+      let s_last ← readGMGenProg (d.1, (d.2.1.1, ownS_idx))
       let q_idx ← pure (4 + 3 * b_last)
-      let q_last ← readGMProg U V w₀ n_max h_space (d.1.1, q_idx)
-      let dir_cap ← pure (dirSlabsPerBucket n_max)
-      (if s_last < dir_cap then do
-        let dir_idx ← pure (gmSlabDirBase n_max + b_last * dirSlabsPerBucket n_max + s_last)
-        writeGMProg U V w₀ n_max h_space ((d.1.1, dir_idx), d.1.2)
+      let q_last ← readGMGenProg (d.1, (d.2.1.1, q_idx))
+      (if s_last < p_dirSlabs d.1 then do
+        let dir_idx ← pure (p_gmSlabDirBase d.1 + b_last * p_dirSlabs d.1 + s_last)
+        writeGMGenProg (d.1, ((d.2.1.1, dir_idx), d.2.1.2))
       else pure ()) >>= fun _ => do
         let s_next ← pure (s_last + 1)
         if s_next = q_last then do
           let top_idx ← pure (4 + 3 * b_last + 2)
-          writeGMProg U V w₀ n_max h_space ((d.1.1, top_idx), d.1.2)
+          writeGMGenProg (d.1, ((d.2.1.1, top_idx), d.2.1.2))
         else pure ()) ?_
-    (fun d => by simp only [gmRelinkMovedSlabProg, pure_bind])
-  realize
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (gmRelinkMovedSlab_bounds hb_pos h).1)
+    (fun d => by simp only [gmRelinkMovedSlabGenProg, pure_bind])
+  realize_dict [gmMovedSlabGenPre_mk]
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
+      (le_of_lt (gmRelinkMovedSlab_bounds h).1)
   · exact fits_const_of_dictEnv h.1 (by omega)
   · exact h.1
-  · exact (gmRelinkMovedSlab_bounds hb_pos h).1
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (gmRelinkMovedSlab_bounds hb_pos h).2.1)
-  · exact (gmRelinkMovedSlab_bounds hb_pos h).2.1
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (gmRelinkMovedSlab_bounds hb_pos h).2.2.1)
+  · exact (gmRelinkMovedSlab_bounds h).1
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
+      (le_of_lt (gmRelinkMovedSlab_bounds h).2.1)
+  · exact (gmRelinkMovedSlab_bounds h).2.1
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
+      (le_of_lt (gmRelinkMovedSlab_bounds h).2.2.1)
   · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact (gmRelinkMovedSlab_bounds hb_pos h).2.2.1
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (dirSlabsPerBucket_le_globalMetaLen hb_pos)
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt ((gmRelinkMovedSlab_bounds hb_pos h).2.2.2.1 hc))
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (dirSlabsPerBucket_le_globalMetaLen hb_pos)
+  · exact (gmRelinkMovedSlab_bounds h).2.2.1
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
+      (le_of_lt ((gmRelinkMovedSlab_bounds h).2.2.2.1 hc))
   · exact h.1
-  · exact ((gmRelinkMovedSlab_bounds hb_pos h).2.2.2.1 hc)
+  · exact ((gmRelinkMovedSlab_bounds h).2.2.2.1 hc)
   · exact fits_of_le_max_n_one h.1 hw hnU hU
-      ((gmRelinkMovedSlab_bounds hb_pos h).2.2.2.2.1.trans (Nat.le_max_left n_max 1))
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt ((gmRelinkMovedSlab_bounds hb_pos h).2.2.2.2.2 hc))
+      ((gmRelinkMovedSlab_bounds h).2.2.2.2.1.trans (Nat.le_max_left n_max 1))
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
+      (le_of_lt ((gmRelinkMovedSlab_bounds h).2.2.2.2.2 hc))
   · exact fits_const_of_dictEnv h.1 (by omega)
   · exact h.1
-  · exact ((gmRelinkMovedSlab_bounds hb_pos h).2.2.2.2.2 hc)
+  · exact ((gmRelinkMovedSlab_bounds h).2.2.2.2.2 hc)
+
+/-- Parameter-free `Memory.Prog` helper performing `gmLinkMovedNeighbors` for
+`d = (dp, ((base, p_del), p_last))`. -/
+def gmLinkMovedNeighborsGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog Unit := do
+  let base := d.2.1.1
+  let p_del := d.2.1.2
+  let p_last := d.2.2
+  let b_last ← readGMGenProg (d.1, (base, p_gmSlabMetaBase d.1 + 4 * p_last))
+  let s_last ← readGMGenProg (d.1, (base, p_gmSlabMetaBase d.1 + 4 * p_last + 1))
+  let bel_last ← readGMGenProg (d.1, (base, p_gmSlabMetaBase d.1 + 4 * p_last + 2))
+  let abv_last ← readGMGenProg (d.1, (base, p_gmSlabMetaBase d.1 + 4 * p_last + 3))
+  let q_last ← readGMGenProg (d.1, (base, 4 + 3 * b_last))
+  (if 0 < s_last then
+    writeGMGenProg (d.1, ((base, p_gmSlabMetaBase d.1 + 4 * bel_last + 3), p_del))
+  else pure ()) >>= fun _ => do
+    (if s_last + 1 < q_last then
+      writeGMGenProg (d.1, ((base, p_gmSlabMetaBase d.1 + 4 * abv_last + 2), p_del))
+    else pure ()) >>= fun _ => do
+      writeGMGenProg (d.1, ((base, p_gmSlabMetaBase d.1 + 4 * p_del), b_last))
+      writeGMGenProg (d.1, ((base, p_gmSlabMetaBase d.1 + 4 * p_del + 1), s_last))
+      writeGMGenProg (d.1, ((base, p_gmSlabMetaBase d.1 + 4 * p_del + 2), bel_last))
+      writeGMGenProg (d.1, ((base, p_gmSlabMetaBase d.1 + 4 * p_del + 3), abv_last))
 
 /-- `Memory.Prog` helper performing `gmLinkMovedNeighbors` for `d = ((base, p_del), p_last)`. -/
 def gmLinkMovedNeighborsProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit := do
@@ -833,6 +946,10 @@ def gmLinkMovedNeighborsProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × �
       writeGMProg U V w n_max h_space ((base, gmSlabMetaBase n_max + 4 * p_del + 1), s_last)
       writeGMProg U V w n_max h_space ((base, gmSlabMetaBase n_max + 4 * p_del + 2), bel_last)
       writeGMProg U V w n_max h_space ((base, gmSlabMetaBase n_max + 4 * p_del + 3), abv_last)
+
+@[simp] theorem gmLinkMovedNeighborsGenProg_mk (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) :
+    gmLinkMovedNeighborsGenProg (mkDictParams U V w n_max h_space, d) =
+      gmLinkMovedNeighborsProg U V w n_max h_space d := by rfl
 
 theorem memoryCost_gmLinkMovedNeighborsProg_le (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ)
     (s : Memory.State) :
@@ -858,7 +975,7 @@ theorem gmLinkMovedNeighborsProg_effect {U V w n_max h_space base p_del p_last :
     gmAt base U V w n_max h_space s'.mem =
       gmLinkMovedNeighbors n_max (gmAt base U V w n_max h_space s.mem) p_del p_last := by
   intro s'
-  rcases hpre with ⟨hp_del_cap, hp_last_cap, hb_last, _, hbel_cap, habv_cap⟩
+  rcases hpre with ⟨hp_del_cap, hp_last_cap, hb_last, _, hbel_cap, habv_cap, _⟩
   set gm := gmAt base U V w n_max h_space s.mem
   set b_last := gm (gmSlabOwnerBIdx n_max p_last)
   set s_last := gm (gmSlabOwnerSIdx n_max p_last)
@@ -965,7 +1082,7 @@ theorem gmLinkMovedNeighborsProg_effect {U V w n_max h_space base p_del p_last :
   rfl
 
 private theorem gmLinkMovedNeighbors_bounds {U V w₀ n_max h_space w : ℕ}
-    {d : (ℕ × ℕ) × ℕ} {s : Memory.State} (hb_pos : 0 < bucketBits n_max)
+    {d : (ℕ × ℕ) × ℕ} {s : Memory.State}
     (h : GmMovedSlabPre U V w₀ n_max h_space w d.1.1 d.1.2 d.2 s) :
     let e_blast := (Memory.spec 0).clientResult s
       (readGMProg U V w₀ n_max h_space (d.1.1, gmSlabMetaBase n_max + 4 * d.2))
@@ -997,7 +1114,7 @@ private theorem gmLinkMovedNeighbors_bounds {U V w₀ n_max h_space w : ℕ}
     gmSlabMetaBase n_max + 4 * d.1.2 + 1 < globalMetaLen n_max ∧
     gmSlabMetaBase n_max + 4 * d.1.2 + 2 < globalMetaLen n_max ∧
     gmSlabMetaBase n_max + 4 * d.1.2 + 3 < globalMetaLen n_max := by
-  rcases h with ⟨_, hp_del_cap, hp_last_cap, hb_last, hs_le, hbel_cap, habv_cap⟩
+  rcases h with ⟨_, hp_del_cap, hp_last_cap, hb_last, hs_le, hbel_cap, habv_cap, hb_pos⟩
   set gm := gmAt d.1.1 U V w₀ n_max h_space s.mem
   have hownB_lt := gmSlabOwnerBIdx_lt hb_pos hp_last_cap
   have hownS_lt := gmSlabOwnerSIdx_lt hb_pos hp_last_cap
@@ -1031,88 +1148,98 @@ private theorem gmLinkMovedNeighbors_bounds {U V w₀ n_max h_space w : ℕ}
     gmSlabBelowIdx_lt hb_pos hp_del_cap,
     gmSlabAboveIdx_lt hb_pos hp_del_cap⟩
 
-theorem realizes_gmLinkMovedNeighbors {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀)
-    (hb_pos : 0 < bucketBits n_max) :
-    Realizes .exact (gmLinkMovedNeighborsProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := (ℕ × ℕ) × ℕ)) (WordEncoding.encode (α := Unit))
-      (fun w d s => GmMovedSlabPre U V w₀ n_max h_space w d.1.1 d.1.2 d.2 s)
+theorem realizes_gmLinkMovedNeighborsGen :
+    Realizes .exact gmLinkMovedNeighborsGenProg
+      (WordEncoding.encode (α := DictParams × ((ℕ × ℕ) × ℕ))) (WordEncoding.encode (α := Unit))
+      GmMovedSlabGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-  have hwg := realizes_writeGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-  refine Realizes.congr (p := fun d : (ℕ × ℕ) × ℕ => do
-      let ownB_last_idx ← pure (gmSlabMetaBase n_max + 4 * d.2)
-      let b_last ← readGMProg U V w₀ n_max h_space (d.1.1, ownB_last_idx)
-      let ownS_last_idx ← pure (gmSlabMetaBase n_max + 4 * d.2 + 1)
-      let s_last ← readGMProg U V w₀ n_max h_space (d.1.1, ownS_last_idx)
-      let bel_last_idx ← pure (gmSlabMetaBase n_max + 4 * d.2 + 2)
-      let bel_last ← readGMProg U V w₀ n_max h_space (d.1.1, bel_last_idx)
-      let abv_last_idx ← pure (gmSlabMetaBase n_max + 4 * d.2 + 3)
-      let abv_last ← readGMProg U V w₀ n_max h_space (d.1.1, abv_last_idx)
+  have hrg := realizes_readGMGen
+  have hwg := realizes_writeGMGen
+  refine Realizes.congr (p := fun d : DictParams × ((ℕ × ℕ) × ℕ) => do
+      let ownB_last_idx ← pure (p_gmSlabMetaBase d.1 + 4 * d.2.2)
+      let b_last ← readGMGenProg (d.1, (d.2.1.1, ownB_last_idx))
+      let ownS_last_idx ← pure (p_gmSlabMetaBase d.1 + 4 * d.2.2 + 1)
+      let s_last ← readGMGenProg (d.1, (d.2.1.1, ownS_last_idx))
+      let bel_last_idx ← pure (p_gmSlabMetaBase d.1 + 4 * d.2.2 + 2)
+      let bel_last ← readGMGenProg (d.1, (d.2.1.1, bel_last_idx))
+      let abv_last_idx ← pure (p_gmSlabMetaBase d.1 + 4 * d.2.2 + 3)
+      let abv_last ← readGMGenProg (d.1, (d.2.1.1, abv_last_idx))
       let q_last_idx ← pure (4 + 3 * b_last)
-      let q_last ← readGMProg U V w₀ n_max h_space (d.1.1, q_last_idx)
+      let q_last ← readGMGenProg (d.1, (d.2.1.1, q_last_idx))
       let i0 ← pure 0
       (if i0 < s_last then do
-        let abv_bel_idx ← pure (gmSlabMetaBase n_max + 4 * bel_last + 3)
-        writeGMProg U V w₀ n_max h_space ((d.1.1, abv_bel_idx), d.1.2)
+        let abv_bel_idx ← pure (p_gmSlabMetaBase d.1 + 4 * bel_last + 3)
+        writeGMGenProg (d.1, ((d.2.1.1, abv_bel_idx), d.2.1.2))
       else pure ()) >>= fun _ => do
         let s_last_next ← pure (s_last + 1)
         (if s_last_next < q_last then do
-          let bel_abv_idx ← pure (gmSlabMetaBase n_max + 4 * abv_last + 2)
-          writeGMProg U V w₀ n_max h_space ((d.1.1, bel_abv_idx), d.1.2)
+          let bel_abv_idx ← pure (p_gmSlabMetaBase d.1 + 4 * abv_last + 2)
+          writeGMGenProg (d.1, ((d.2.1.1, bel_abv_idx), d.2.1.2))
         else pure ()) >>= fun _ => do
-          let ownB_del_idx ← pure (gmSlabMetaBase n_max + 4 * d.1.2)
-          writeGMProg U V w₀ n_max h_space ((d.1.1, ownB_del_idx), b_last)
-          let ownS_del_idx ← pure (gmSlabMetaBase n_max + 4 * d.1.2 + 1)
-          writeGMProg U V w₀ n_max h_space ((d.1.1, ownS_del_idx), s_last)
-          let bel_del_idx ← pure (gmSlabMetaBase n_max + 4 * d.1.2 + 2)
-          writeGMProg U V w₀ n_max h_space ((d.1.1, bel_del_idx), bel_last)
-          let abv_del_idx ← pure (gmSlabMetaBase n_max + 4 * d.1.2 + 3)
-          writeGMProg U V w₀ n_max h_space ((d.1.1, abv_del_idx), abv_last)) ?_
-    (fun d => by simp only [gmLinkMovedNeighborsProg, pure_bind])
-  realize
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds hb_pos h).1)
+          let ownB_del_idx ← pure (p_gmSlabMetaBase d.1 + 4 * d.2.1.2)
+          writeGMGenProg (d.1, ((d.2.1.1, ownB_del_idx), b_last))
+          let ownS_del_idx ← pure (p_gmSlabMetaBase d.1 + 4 * d.2.1.2 + 1)
+          writeGMGenProg (d.1, ((d.2.1.1, ownS_del_idx), s_last))
+          let bel_del_idx ← pure (p_gmSlabMetaBase d.1 + 4 * d.2.1.2 + 2)
+          writeGMGenProg (d.1, ((d.2.1.1, bel_del_idx), bel_last))
+          let abv_del_idx ← pure (p_gmSlabMetaBase d.1 + 4 * d.2.1.2 + 3)
+          writeGMGenProg (d.1, ((d.2.1.1, abv_del_idx), abv_last))) ?_
+    (fun d => by simp only [gmLinkMovedNeighborsGenProg, pure_bind])
+  realize_dict [gmMovedSlabGenPre_mk]
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
+      (le_of_lt (gmLinkMovedNeighbors_bounds h).1)
   · exact fits_const_of_dictEnv h.1 (by omega)
   · exact h.1
-  · exact (gmLinkMovedNeighbors_bounds hb_pos h).1
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds hb_pos h).2.1)
-  · exact (gmLinkMovedNeighbors_bounds hb_pos h).2.1
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds hb_pos h).2.2.1)
-  · exact (gmLinkMovedNeighbors_bounds hb_pos h).2.2.1
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds hb_pos h).2.2.2.1)
-  · exact (gmLinkMovedNeighbors_bounds hb_pos h).2.2.2.1
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds hb_pos h).2.2.2.2.1)
+  · exact (gmLinkMovedNeighbors_bounds h).1
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
+      (le_of_lt (gmLinkMovedNeighbors_bounds h).2.1)
+  · exact (gmLinkMovedNeighbors_bounds h).2.1
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
+      (le_of_lt (gmLinkMovedNeighbors_bounds h).2.2.1)
+  · exact (gmLinkMovedNeighbors_bounds h).2.2.1
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
+      (le_of_lt (gmLinkMovedNeighbors_bounds h).2.2.2.1)
+  · exact (gmLinkMovedNeighbors_bounds h).2.2.2.1
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
+      (le_of_lt (gmLinkMovedNeighbors_bounds h).2.2.2.2.1)
   · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact (gmLinkMovedNeighbors_bounds hb_pos h).2.2.2.2.1
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt ((gmLinkMovedNeighbors_bounds hb_pos h).2.2.2.2.2.1 hc))
+  · exact (gmLinkMovedNeighbors_bounds h).2.2.2.2.1
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
+      (le_of_lt ((gmLinkMovedNeighbors_bounds h).2.2.2.2.2.1 hc))
   · exact fits_const_of_dictEnv h.1 (by omega)
   · exact h.1
-  · exact ((gmLinkMovedNeighbors_bounds hb_pos h).2.2.2.2.2.1 hc)
+  · exact ((gmLinkMovedNeighbors_bounds h).2.2.2.2.2.1 hc)
   · exact fits_of_le_max_n_one h.1 hw hnU hU
-      ((gmLinkMovedNeighbors_bounds hb_pos h).2.2.2.2.2.2.1.trans (Nat.le_max_left n_max 1))
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt ((gmLinkMovedNeighbors_bounds hb_pos h).2.2.2.2.2.2.2.1 hc))
+      ((gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.1.trans (Nat.le_max_left n_max 1))
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
+      (le_of_lt ((gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.2.1 hc))
   · exact fits_const_of_dictEnv h.1 (by omega)
   · exact h.1
-  · exact ((gmLinkMovedNeighbors_bounds hb_pos h).2.2.2.2.2.2.2.1 hc)
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds hb_pos h).2.2.2.2.2.2.2.2.1)
-  · exact (gmLinkMovedNeighbors_bounds hb_pos h).2.2.2.2.2.2.2.2.1
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds hb_pos h).2.2.2.2.2.2.2.2.2.1)
-  · exact (gmLinkMovedNeighbors_bounds hb_pos h).2.2.2.2.2.2.2.2.2.1
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds hb_pos h).2.2.2.2.2.2.2.2.2.2.1)
-  · exact (gmLinkMovedNeighbors_bounds hb_pos h).2.2.2.2.2.2.2.2.2.2.1
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds hb_pos h).2.2.2.2.2.2.2.2.2.2.2)
-  · exact (gmLinkMovedNeighbors_bounds hb_pos h).2.2.2.2.2.2.2.2.2.2.2
+  · exact ((gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.2.1 hc)
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
+      (le_of_lt (gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.2.2.1)
+  · exact (gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.2.2.1
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
+      (le_of_lt (gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.2.2.2.1)
+  · exact (gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.2.2.2.1
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
+      (le_of_lt (gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.2.2.2.2.1)
+  · exact (gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.2.2.2.2.1
+  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
+      (le_of_lt (gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.2.2.2.2.2)
+  · exact (gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.2.2.2.2.2
+
+/-- Parameter-free `Memory.Prog` operation compacting the slab pool by relocating the metadata of
+`p_last = gm 0 - 1` into `p_del = d.2.2` (when `p_del < p_last`) and decrementing `gm 0`. -/
+def gmCompactSlabGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Unit := do
+  let n_slabs ← readGMGenProg (d.1, (d.2.1, 0))
+  let p_last := n_slabs - 1
+  if d.2.2 < p_last then
+    gmRelinkMovedSlabGenProg (d.1, (d.2, p_last))
+    gmLinkMovedNeighborsGenProg (d.1, (d.2, p_last))
+    writeGMGenProg (d.1, ((d.2.1, 0), p_last))
+  else
+    writeGMGenProg (d.1, ((d.2.1, 0), p_last))
 
 /-- `Memory.Prog` operation compacting the slab pool by relocating the metadata of
 `p_last = gm 0 - 1` into `p_del = d.2` (when `p_del < p_last`) and decrementing `gm 0`. -/
@@ -1125,6 +1252,10 @@ def gmCompactSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog
     writeGMProg U V w n_max h_space ((d.1, 0), p_last)
   else
     writeGMProg U V w n_max h_space ((d.1, 0), p_last)
+
+@[simp] theorem gmCompactSlabGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
+    gmCompactSlabGenProg (mkDictParams U V w n_max h_space, d) =
+      gmCompactSlabProg U V w n_max h_space d := by rfl
 
 theorem memoryCost_gmCompactSlabProg_le (U V w n_max h_space : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     memoryCost (gmCompactSlabProg U V w n_max h_space d) s ≤ 54 := by
@@ -1161,11 +1292,27 @@ def GmCompactSlabInv (U V w₀ n_max h_space base p_del : ℕ) (s : Memory.State
 def GmCompactSlabPre (U V w₀ n_max h_space w base p_del : ℕ) (s : Memory.State) : Prop :=
   let gm := gmAt base U V w₀ n_max h_space s.mem
   let p_last := gm 0 - 1
-  DictEnv U V w₀ n_max h_space w base ∧
+  DictEnvGen w (mkDictParams U V w₀ n_max h_space) base ∧
   1 ≤ gm 0 ∧
   gm 0 ≤ maxFullSlabs n_max ∧
   p_del < gm 0 ∧
   (p_del < p_last → GmMovedSlabPre U V w₀ n_max h_space w base p_del p_last s)
+
+/-- Parameter-free precondition for `gmCompactSlabGenProg`. -/
+@[expose]
+def GmCompactSlabGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Memory.State) : Prop :=
+  let gm := gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem
+  let p_last := gm 0 - 1
+  DictEnvGen w d.1 d.2.1 ∧
+  1 ≤ gm 0 ∧
+  gm 0 ≤ maxFullSlabs (p_nMax d.1) ∧
+  d.2.2 < gm 0 ∧
+  (d.2.2 < p_last → GmMovedSlabGenPre w (d.1, (d.2, p_last)) s)
+
+@[simp] theorem gmCompactSlabGenPre_mk (U V w₀ n_max h_space w : ℕ) (d : ℕ × ℕ)
+    (s : Memory.State) :
+    GmCompactSlabGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
+      GmCompactSlabPre U V w₀ n_max h_space w d.1 d.2 s := Iff.rfl
 
 theorem gmMovedSlabInv_after_relink {U V w₀ n_max h_space base p_del p_last : ℕ}
     {s : Memory.State} (hw : 0 < w₀) (hb_pos : 0 < bucketBits n_max)
@@ -1174,7 +1321,7 @@ theorem gmMovedSlabInv_after_relink {U V w₀ n_max h_space base p_del p_last : 
       ((Memory.spec 0).clientState s
         (gmRelinkMovedSlabProg U V w₀ n_max h_space ((base, p_del), p_last))) := by
   obtain ⟨_, _, _, _, _, hgm⟩ := gmRelinkMovedSlabProg_effect hw hb_pos s hinv
-  rcases hinv with ⟨hp_del_cap, hp_last_cap, hb_last, hs_le, hbel_cap, habv_cap⟩
+  rcases hinv with ⟨hp_del_cap, hp_last_cap, hb_last, hs_le, hbel_cap, habv_cap, _⟩
   rcases gmRelinkMovedSlab_preserves_meta
     (gmAt base U V w₀ n_max h_space s.mem) (p_del := p_del) hb_last with ⟨_, hpQ, hpGe⟩
   have hB : gmSlabMetaBase n_max ≤ gmSlabOwnerBIdx n_max p_last := by
@@ -1188,15 +1335,15 @@ theorem gmMovedSlabInv_after_relink {U V w₀ n_max h_space base p_del p_last : 
   unfold GmMovedSlabInv
   dsimp only
   rw [hgm, hpGe _ hB, hpGe _ hS, hpGe _ hBel, hpGe _ hAbv, hpQ]
-  exact ⟨hp_del_cap, hp_last_cap, hb_last, hs_le, hbel_cap, habv_cap⟩
+  exact ⟨hp_del_cap, hp_last_cap, hb_last, hs_le, hbel_cap, habv_cap, hb_pos⟩
 
 theorem gmMovedSlabPre_after_relink {U V w₀ n_max h_space w base p_del p_last : ℕ}
-    {s : Memory.State} (hw : 0 < w₀) (hb_pos : 0 < bucketBits n_max)
+    {s : Memory.State} (hw : 0 < w₀)
     (hpre : GmMovedSlabPre U V w₀ n_max h_space w base p_del p_last s) :
     GmMovedSlabPre U V w₀ n_max h_space w base p_del p_last
       ((Memory.spec 0).clientState s
         (gmRelinkMovedSlabProg U V w₀ n_max h_space ((base, p_del), p_last))) :=
-  ⟨hpre.1, gmMovedSlabInv_after_relink hw hb_pos hpre.2⟩
+  ⟨hpre.1, gmMovedSlabInv_after_relink hw hpre.2.2.2.2.2.2.2 hpre.2⟩
 
 theorem gmCompactSlabProg_effect {U V w n_max h_space base p_del : ℕ}
     (hw : 0 < w) (hb_pos : 0 < bucketBits n_max)
@@ -1262,47 +1409,58 @@ theorem gmCompactSlabProg_effect {U V w n_max h_space base p_del : ℕ}
     unfold gmCompactSlab
     rw [ite_eq_right hlt, hg1]
 
-theorem realizes_gmCompactSlab {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀)
-    (hb_pos : 0 < bucketBits n_max) :
-    Realizes .exact (gmCompactSlabProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := ℕ × ℕ)) (WordEncoding.encode (α := Unit))
-      (fun w d s => GmCompactSlabPre U V w₀ n_max h_space w d.1 d.2 s)
+theorem realizes_gmCompactSlabGen :
+    Realizes .exact gmCompactSlabGenProg
+      (WordEncoding.encode (α := DictParams × (ℕ × ℕ))) (WordEncoding.encode (α := Unit))
+      GmCompactSlabGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-  have hwg := realizes_writeGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-  have hrel := realizes_gmRelinkMovedSlab (U := U) (V := V) (h_space := h_space) hw hnU hU hb_pos
-  have hlnk := realizes_gmLinkMovedNeighbors (U := U) (V := V) (h_space := h_space) hw hnU hU hb_pos
-  have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
-  refine Realizes.congr (p := fun d : ℕ × ℕ => do
+  have hrg := realizes_readGMGen
+  have hwg := realizes_writeGMGen
+  have hrel := realizes_gmRelinkMovedSlabGen
+  have hlnk := realizes_gmLinkMovedNeighborsGen
+  refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) => do
       let i0 ← pure 0
-      let n_slabs ← readGMProg U V w₀ n_max h_space (d.1, i0)
+      let n_slabs ← readGMGenProg (d.1, (d.2.1, i0))
       let p_last ← pure (n_slabs - 1)
-      if d.2 < p_last then do
-        gmRelinkMovedSlabProg U V w₀ n_max h_space (d, p_last)
-        gmLinkMovedNeighborsProg U V w₀ n_max h_space (d, p_last)
-        writeGMProg U V w₀ n_max h_space ((d.1, i0), p_last)
+      if d.2.2 < p_last then do
+        gmRelinkMovedSlabGenProg (d.1, (d.2, p_last))
+        gmLinkMovedNeighborsGenProg (d.1, (d.2, p_last))
+        writeGMGenProg (d.1, ((d.2.1, i0), p_last))
       else
-        writeGMProg U V w₀ n_max h_space ((d.1, i0), p_last)) ?_
-    (fun d => by simp only [gmCompactSlabProg, pure_bind])
-  realize
+        writeGMGenProg (d.1, ((d.2.1, i0), p_last))) ?_
+    (fun d => by simp only [gmCompactSlabGenProg, pure_bind])
+  realize_dict [gmCompactSlabGenPre_mk, gmMovedSlabGenPre_mk,
+    gmRelinkMovedSlabGenProg_mk, gmLinkMovedNeighborsGenProg_mk]
   · exact h.1
-  · exact h0_lt
-  · rw [clientResult_readGMProg s h0_lt]; exact h.2.1
-  · rw [clientResult_readGMProg s h0_lt] at hc ⊢
+  · unfold globalMetaLen; omega
+  · have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
+    rw [clientResult_readGMProg s h0_lt]; exact h.2.1
+  · have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
+    rw [clientResult_readGMProg s h0_lt] at hc ⊢
     exact h.2.2.2.2 hc
-  · rw [clientResult_readGMProg s h0_lt] at hc ⊢
-    exact gmMovedSlabPre_after_relink hw hb_pos (h.2.2.2.2 hc)
+  · have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
+    rw [clientResult_readGMProg s h0_lt] at hc ⊢
+    exact gmMovedSlabPre_after_relink hw (h.2.2.2.2 hc)
   · exact h.1
-  · exact h0_lt
+  · unfold globalMetaLen; omega
   · exact h.1
-  · exact h0_lt
+  · unfold globalMetaLen; omega
+
+/-- Parameter-free `Memory.Prog` operation popping the top slab of bucket `b = d.2.2` at
+`base = d.2.1` and compacting the physical slab pool. -/
+def gmPopSlabGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Unit := do
+  let p_del ← gmUnlinkTopSlabGenProg d
+  gmCompactSlabGenProg (d.1, (d.2.1, p_del))
 
 /-- `Memory.Prog` operation popping the top slab of bucket `b = d.2` at `base = d.1` and compacting
 the physical slab pool. -/
 def gmPopSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Unit := do
   let p_del ← gmUnlinkTopSlabProg U V w n_max h_space d
   gmCompactSlabProg U V w n_max h_space (d.1, p_del)
+
+@[simp] theorem gmPopSlabGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
+    gmPopSlabGenProg (mkDictParams U V w n_max h_space, d) =
+      gmPopSlabProg U V w n_max h_space d := by rfl
 
 theorem memoryCost_gmPopSlabProg_le (U V w n_max h_space : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     memoryCost (gmPopSlabProg U V w n_max h_space d) s ≤ 68 := by
@@ -1351,7 +1509,7 @@ theorem gmCompactSlabInv_of_slabBijection {U V w₀ n_max h_space base b : ℕ}
   have hmax_le : maxFullSlabs n_max ≤ n_max := maxFullSlabs_le n_max
   refine ⟨lt_of_lt_of_le hp_del_lt hslab.nslabs_le,
     lt_of_lt_of_le (by omega : gm 0 - 1 < gm 0) hslab.nslabs_le,
-    hb_last, by have := hslab.nslabs_le; omega, ?_, ?_⟩
+    hb_last, by have := hslab.nslabs_le; omega, ?_, ?_, hb_pos⟩
   · intro hs_pos
     have hbel_eq := hslab.below_eq _ hb_last _ hs_last hs_pos
     rw [hptr_last] at hbel_eq
@@ -1370,12 +1528,12 @@ theorem gmCompactSlabInv_of_slabBijection {U V w₀ n_max h_space base b : ℕ}
     exact lt_of_lt_of_le (hslab.ptr_lt _ hb_last _ hs1_lt) hslab.nslabs_le
 
 theorem gmCompactSlabPre_of_gmPopSlabPre {U V w₀ n_max h_space w base b : ℕ} {s : Memory.State}
-    (hw : 0 < w₀) (hb_pos : 0 < bucketBits n_max)
+    (hw : 0 < w₀)
     (h : GmPopSlabPre U V w₀ n_max h_space w base b s) :
     GmCompactSlabPre U V w₀ n_max h_space w base
       ((Memory.spec 0).clientResult s (gmUnlinkTopSlabProg U V w₀ n_max h_space (base, b)))
       ((Memory.spec 0).clientState s (gmUnlinkTopSlabProg U V w₀ n_max h_space (base, b))) := by
-  rcases h with ⟨hdict, hslab, hb, hq_pos⟩
+  rcases h with ⟨hdict, hslab, hb, hq_pos, hb_pos⟩
   have hinv := gmCompactSlabInv_of_slabBijection hw hb_pos hb s hslab hq_pos
   rcases hinv with ⟨h1, h2, h3, h4⟩
   exact ⟨hdict, h1, h2, h3, fun hlt => ⟨hdict, h4 hlt⟩⟩
@@ -1418,18 +1576,16 @@ theorem gmPopSlabProg_effect {U V w n_max h_space base b : ℕ}
   rw [hres]
   rfl
 
-theorem realizes_gmPopSlab {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀)
-    (hb_pos : 0 < bucketBits n_max) :
-    Realizes .exact (gmPopSlabProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := ℕ × ℕ)) (WordEncoding.encode (α := Unit))
-      (fun w d s => GmPopSlabPre U V w₀ n_max h_space w d.1 d.2 s)
+theorem realizes_gmPopSlabGen :
+    Realizes .exact gmPopSlabGenProg
+      (WordEncoding.encode (α := DictParams × (ℕ × ℕ))) (WordEncoding.encode (α := Unit))
+      GmPopSlabGenPre
       (fun _ _ => 0) := by
-  have hunl := realizes_gmUnlinkTopSlab (U := U) (V := V) (h_space := h_space) hw hnU hU hb_pos
-  have hcmp := realizes_gmCompactSlab (U := U) (V := V) (h_space := h_space) hw hnU hU hb_pos
-  unfold gmPopSlabProg
-  realize
+  have hunl := realizes_gmUnlinkTopSlabGen
+  have hcmp := realizes_gmCompactSlabGen
+  unfold gmPopSlabGenProg
+  realize_dict [gmPopSlabGenPre_mk, gmCompactSlabGenPre_mk, gmUnlinkTopSlabGenProg_mk]
   · exact h
-  · exact gmCompactSlabPre_of_gmPopSlabPre hw hb_pos h
+  · exact gmCompactSlabPre_of_gmPopSlabPre hw h
 
 end Cslib.DataStructure.Dictionary.WordRAM.Succinct

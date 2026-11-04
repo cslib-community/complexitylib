@@ -47,17 +47,17 @@ polynomial hashing with a bit-packed Four-Russians multiplication table (`Reduce
   `memoryCost` bounds of `26 + 8 * probeExcess`, `184 + 8 * probeExcess`, and
   `270 + 8 * probeExcess` with potential `66 * slotPotential`. In turn,
   `tsum_uniform_probeExcess_reducedPolyHash_le_five` bounds expected `probeExcess` by `5`.
-- **Program parameterization and what the Word-RAM theorem certifies:** For each
-  `(U, V, w, n_max)`, the compiled `r`-register Word-RAM programs `p_init` and `p_op` (and
-  per-operation charge `C_op`) depend on `(U, V, w, n_max)` and do not depend on `base`, the
-  initial state `(reg₀, mem₀)`, or `ops`. The compiler (`Realizes.factor`) chooses the exchange
-  factor `opFactor U V w n_max` by classical choice for each `(U, V, w, n_max)` without a proven
-  parameter-uniform bound, so `C_op` is existentially quantified per `(U, V, w, n_max)` with no
-  upper bound in `succinctDynamicDictionary`. Thus this abstract certifies **multi-operation
-  distributional correctness, succinct space, and linear initialization cost** (with
-  sequence-length and `base` independence of `C_op` at each fixed `(U, V, w, n_max)`), and does
-  not certify a parameter-uniform constant operation-time bound. No theorem in this abstract bounds
-  the static code length `p_init.length` or `p_op.length`. All instruction counts
+- **Program parameterization and parameter-uniform `O(1)` operation charge:** The five generic
+  `Memory.Prog` subroutines (`extractOpGenProg`, `queryOpGenProg`, `insertOpGenProg`,
+  `deletePrepGenProg`, `deleteFinGenProg`) are compiled once independent of `(U, V, w, n_max)` and
+  receive the 36 static parameters via registers loaded by `loadParamsCode` in `36` instructions.
+  Consequently, both the register budget `r ≥ 256` (`Succinct.rSuccinct`) and the per-operation
+  charge `C_op` (`Succinct.chargeVal = 313 * Succinct.opFactor + 284725`) are universal `O(1)`
+  constants existentially quantified **outside** `∀ (U V w n_max : ℕ)`, independent of
+  `(U, V, w, n_max)`, `base`, and `ops.length`. For each `(U, V, w, n_max)`, the compiled
+  `r`-register Word-RAM programs `p_init` and `p_op` depend on `(U, V, w, n_max)` and do not depend
+  on `base`, the initial state `(reg₀, mem₀)`, or `ops`. No theorem in this abstract bounds the
+  static code length `p_init.length` or `p_op.length`. All instruction counts
   (`expectedTime w p s ≤ T + 1`) exclude caller argument preparation (`prepareDynDictRegs`) and
   dispatch.
 - **Initialization step bound and succinct space:** Initialization from zeroed memory on
@@ -393,16 +393,14 @@ def succinctWords (C C₀ U V w n_max : ℕ) : ℕ :=
 /-- **Fixed-Capacity Succinct Dynamic Dictionary with Deletions**
 (`Succinct.impl`, `Succinct.space_le_succinctWords`, `Succinct.initTime_impl_le`, and
 `Succinct.seq_expected_amortized`):
-Certifies multi-operation distributional correctness, succinct space, and linear initialization
-cost on the Word-RAM. For every key universe `U`, value bound `V`, word width `w`, and capacity
-`n_max`, there exist register count `r ≥ 256`, per-parameter amortized operation step witness
-`C_op : ℕ` (instantiated as `Succinct.chargeVal U V w n_max = 313 * Succinct.opFactor U V w n_max +
-284689`, where `opFactor` is chosen per `(U, V, w, n_max)` by classical choice via `Realizes.factor`
-without a proven parameter-uniform bound, so `C_op` is unquantified in magnitude here and records
-only independence from `base` and `ops.length` at fixed `(U, V, w, n_max)`), allocated block size
-`sp : ℕ`, initialization instruction budget `initBudget : ℕ`, and compiled `r`-register Word-RAM
-programs `p_init` and `p_op` (depending on `(U, V, w, n_max)` and independent of `base`, with no
-static code-size bound) such that:
+Certifies multi-operation distributional correctness, succinct space, linear initialization cost,
+and universal `O(1)` expected amortized operation time on the Word-RAM. There exist universal
+constants `r ≥ 256` (`Succinct.rSuccinct`) and `C_op : ℕ` (`Succinct.chargeVal = 313 *
+Succinct.opFactor + 284725`, independent of `U`, `V`, `w`, `n_max`, `base`, and `ops.length`) such
+that for every key universe `U`, value bound `V`, word width `w`, and capacity `n_max`, there exist
+allocated block size `sp : ℕ`, initialization instruction budget `initBudget : ℕ`, and compiled
+`r`-register Word-RAM programs `p_init` and `p_op` (depending on `(U, V, w, n_max)` and independent
+of `base`, with no static code-size bound) such that:
 - `initBudget ≤ 31 * n_max + 1092`;
 - whenever `0 < w`, `n_max ≤ U` (since distinct keys lie in `Fin U` and `U.choose n_max = 0` for
   `n_max > U`), and `U < 2 ^ w`, the total word footprint `sp` satisfies the succinct bound
@@ -418,10 +416,9 @@ static code-size bound) such that:
      capacity `n_max` and value bound `V` (`ValidDynDictHistory V n_max (emptyDict U) ops`), `p_op`
      executes `ops` sequentially (`ExecDynDictOps`), matching `stepDynDict` and `OpOutputCorrect`
      at every step;
-  3. for that fixed `(U, V, w, n_max)`, the expected executed body instruction count `T_ops` across
-     `ops` satisfies `initBudget + T_ops ≤ initBudget + ops.length * C_op` (recording
-     sequence-length and `base` independence for fixed parameters, without certifying a
-     parameter-uniform bound on `C_op`).
+  3. the expected executed body instruction count `T_ops` across `ops` satisfies the expected
+     amortized bound `initBudget + T_ops ≤ initBudget + ops.length * C_op` for the universal
+     constant `C_op`.
 
 References: `[BenderFarachColtonKuszmaulKuszmaul2024]` (SOSA 2024, Sections 3–4);
 `[BenderConwayFarachColtonKuszmaulTagliavini2023]` (*J. ACM* 70(6):40, 2023;
@@ -430,39 +427,40 @@ References: `[BenderFarachColtonKuszmaulKuszmaul2024]` (SOSA 2024, Sections 3–
 `[DietzfelbingerHagerupKatajainenPenttonen1997]`; `[CarterWegman1979]`; `[WegmanCarter1981]`;
 `[Vadhan2012]`; `[LidlNiederreiter1997]`. -/
 theorem succinctDynamicDictionary :
-    ∀ (U V w n_max : ℕ),
-      ∃ (r C_op sp initBudget : ℕ) (hr : 256 ≤ r) (p_init p_op : List (Instr r)),
-        initBudget ≤ 31 * n_max + 1092 ∧
-        (0 < w → n_max ≤ U → U < 2 ^ w →
-          sp ≤ succinctWords 81 213 U V w n_max) ∧
-        ∀ (base : ℕ),
-          0 < w →
-          n_max ≤ U →
-          U < 2 ^ w →
-          V < 2 ^ w →
-          base + sp < 2 ^ w →
-          ∀ (reg₀ : Fin r → ℕ) (mem₀ : ℕ → ℕ),
-            WordBounded w reg₀ mem₀ →
-            reg₀ ⟨240, by omega⟩ = base →
-            (∀ a, base ≤ a → a < base + sp → mem₀ a = 0) →
-            ∃ (Seed : Type) (μ_init : PMF (CoupledState Seed r)),
-              ExecProgramDist w p_init ⟨247, by omega⟩ reg₀ mem₀
-                (μ_init.map CoupledState.toRegMem) initBudget ∧
-              (∀ p ∈ μ_init.support,
-                WordBounded w p.reg p.mem ∧
-                p.reg ⟨0, by omega⟩ = base ∧
-                p.reg ⟨240, by omega⟩ = base + sp ∧
-                UnchangedOutside base sp mem₀ p.mem) ∧
-              ∀ ops : List (DynDictOp U),
-                ValidDynDictHistory V n_max (emptyDict U) ops →
-                ∃ (μ_final : PMF (CoupledState Seed r)) (T_ops : ℝ≥0∞),
-                  ExecDynDictOps w p_op
-                    ⟨244, by omega⟩ ⟨245, by omega⟩ ⟨246, by omega⟩
-                    ⟨247, by omega⟩ ⟨252, by omega⟩ ⟨253, by omega⟩
-                    base sp (emptyDict U) ops
-                    μ_init μ_final T_ops ∧
-                  (initBudget : ℝ≥0∞) + T_ops ≤
-                    ((initBudget + ops.length * C_op : ℕ) : ℝ≥0∞) :=
+    ∃ (r C_op : ℕ) (hr : 256 ≤ r),
+      ∀ (U V w n_max : ℕ),
+        ∃ (sp initBudget : ℕ) (p_init p_op : List (Instr r)),
+          initBudget ≤ 31 * n_max + 1092 ∧
+          (0 < w → n_max ≤ U → U < 2 ^ w →
+            sp ≤ succinctWords 81 213 U V w n_max) ∧
+          ∀ (base : ℕ),
+            0 < w →
+            n_max ≤ U →
+            U < 2 ^ w →
+            V < 2 ^ w →
+            base + sp < 2 ^ w →
+            ∀ (reg₀ : Fin r → ℕ) (mem₀ : ℕ → ℕ),
+              WordBounded w reg₀ mem₀ →
+              reg₀ ⟨240, by omega⟩ = base →
+              (∀ a, base ≤ a → a < base + sp → mem₀ a = 0) →
+              ∃ (Seed : Type) (μ_init : PMF (CoupledState Seed r)),
+                ExecProgramDist w p_init ⟨247, by omega⟩ reg₀ mem₀
+                  (μ_init.map CoupledState.toRegMem) initBudget ∧
+                (∀ p ∈ μ_init.support,
+                  WordBounded w p.reg p.mem ∧
+                  p.reg ⟨0, by omega⟩ = base ∧
+                  p.reg ⟨240, by omega⟩ = base + sp ∧
+                  UnchangedOutside base sp mem₀ p.mem) ∧
+                ∀ ops : List (DynDictOp U),
+                  ValidDynDictHistory V n_max (emptyDict U) ops →
+                  ∃ (μ_final : PMF (CoupledState Seed r)) (T_ops : ℝ≥0∞),
+                    ExecDynDictOps w p_op
+                      ⟨244, by omega⟩ ⟨245, by omega⟩ ⟨246, by omega⟩
+                      ⟨247, by omega⟩ ⟨252, by omega⟩ ⟨253, by omega⟩
+                      base sp (emptyDict U) ops
+                      μ_init μ_final T_ops ∧
+                    (initBudget : ℝ≥0∞) + T_ops ≤
+                      ((initBudget + ops.length * C_op : ℕ) : ℝ≥0∞) :=
   ComplexityAbstracts.SuccinctDictionaryBridge.succinctDynamicDictionary
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,

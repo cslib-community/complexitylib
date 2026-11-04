@@ -35,6 +35,32 @@ open Finset
 
 /-! ## Section 1: Single step of slab promotion (`promoteStepProg`) -/
 
+/-- Parameter-free single step `k < slabSize n_max` of slab promotion for
+`x = ((dp, (base, b)), k)`. -/
+def promoteStepGenProg (x : (DictParams × (ℕ × ℕ)) × ℕ) : Memory.Prog ℕ := do
+  let dp := x.1.1
+  let base := x.1.2.1
+  let b := x.1.2.2
+  let k := x.2
+  let u := p_slabSizeSubOne dp - k
+  let r_top := p_slabSize dp + u
+  let t_u ← readGMGenProg (dp, (base, p_gmTailPtrBase dp + (b * p_tailCap dp + u)))
+  let t_top ← readGMGenProg (dp, (base, p_gmTailPtrBase dp + (b * p_tailCap dp + r_top)))
+  let p_new ← readGMGenProg (dp, (base, 0))
+  let g_u := p_nMaxSubOne dp - t_u
+  let g_top := p_nMaxSubOne dp - t_top
+  let g_slab := p_new * p_slabSize dp + k
+  let q_u ← readQuotGenProg (dp, (base, g_u))
+  let v_u ← readValGenProg (dp, (base, g_u))
+  let q_top ← readQuotGenProg (dp, (base, g_top))
+  let v_top ← readValGenProg (dp, (base, g_top))
+  writeQuotGenProg (dp, ((base, g_u), q_top))
+  writeValGenProg (dp, ((base, g_u), v_top))
+  removeLastTailItemGenProg (dp, (base, b))
+  writeQuotGenProg (dp, ((base, g_slab), q_u))
+  let _ ← writeValGenProg (dp, ((base, g_slab), v_u))
+  pure (k + 1)
+
 /-- One step `k < slabSize n_max` of slab promotion for `x = ((base, b), k)`:
 1. Reads the payload `(q_u, v_u)` at low tail item `u = (slabSize n_max - 1) - k` and the payload
    `(q_top, v_top)` at the last tail item `r_top = slabSize n_max + u = gm (gmRIdx b) - 1`.
@@ -66,15 +92,23 @@ def promoteStepProg (U V w n_max h_space : ℕ) (x : (ℕ × ℕ) × ℕ) : Memo
   let _ ← writeValProg U V w n_max h_space ((base, g_slab), v_u)
   pure (k + 1)
 
+@[simp] theorem promoteStepGenProg_mk (U V w n_max h_space : ℕ) (d1 : ℕ × ℕ) (d2 : ℕ) :
+    promoteStepGenProg ((mkDictParams U V w n_max h_space, d1), d2) =
+      promoteStepProg U V w n_max h_space (d1, d2) := by
+  simp only [promoteStepGenProg, promoteStepProg, p_slabSizeSubOne_mk, p_slabSize_mk,
+    p_gmTailPtrBase_mk, p_tailCap_mk, p_nMaxSubOne_mk, readGMGenProg_mk, readQuotGenProg_mk,
+    readValGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk, removeLastTailItemGenProg_mk]
+
 @[simp]
 theorem memoryCost_promoteStepProg (U V w n_max h_space : ℕ) (x : (ℕ × ℕ) × ℕ) (s : Memory.State) :
     memoryCost (promoteStepProg U V w n_max h_space x) s = 66 := by
   simp [promoteStepProg, -bind_pure_comp, ← PFunctor.FreeM.bind_eq_bind, memoryCost_bind]
 
-theorem one_le_memoryCost_promoteStepProg (U V w n_max h_space : ℕ) (x : (ℕ × ℕ) × ℕ)
-    (s : Memory.State) :
-    1 ≤ memoryCost (promoteStepProg U V w n_max h_space x) s := by
-  rw [memoryCost_promoteStepProg]
+theorem one_le_memoryCost_promoteStepGenProg (x : (DictParams × (ℕ × ℕ)) × ℕ) (s : Memory.State) :
+    1 ≤ memoryCost (promoteStepGenProg x) s := by
+  unfold promoteStepGenProg readGMGenProg readPackedGenProg
+  dsimp only
+  rw [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind, memoryCost_readPackedProg]
   omega
 
 /-- Pure state invariant for step `k` (`k < slabSize n_max`) of `promoteStepProg`. -/
@@ -91,8 +125,22 @@ def PromoteStepInv (U V w₀ n_max h_space base b k : ℕ) (s : Memory.State) : 
 /-- Precondition for `promoteStepProg` in `Realizes`. -/
 @[expose]
 def PromoteStepPre (U V w₀ n_max h_space w base b k : ℕ) (s : Memory.State) : Prop :=
-  DictEnv U V w₀ n_max h_space w base ∧
-  PromoteStepInv U V w₀ n_max h_space base b k s
+  DictEnvGen w (mkDictParams U V w₀ n_max h_space) base ∧
+  PromoteStepInv U V w₀ n_max h_space base b k s ∧
+  0 < bucketBits n_max
+
+/-- Parameter-free precondition for `promoteStepGenProg`. -/
+@[expose]
+def PromoteStepGenPre (w : ℕ) (x : (DictParams × (ℕ × ℕ)) × ℕ) (s : Memory.State) : Prop :=
+  DictEnvGen w x.1.1 x.1.2.1 ∧
+  PromoteStepInv (p_U x.1.1) (p_V x.1.1) (p_w x.1.1) (p_nMax x.1.1) (p_hSpace x.1.1)
+    x.1.2.1 x.1.2.2 x.2 s ∧
+  0 < bucketBits (p_nMax x.1.1)
+
+@[simp] theorem promoteStepGenPre_mk (U V w₀ n_max h_space w : ℕ) (d1 : ℕ × ℕ) (d2 : ℕ)
+    (s : Memory.State) :
+    PromoteStepGenPre w ((mkDictParams U V w₀ n_max h_space, d1), d2) s ↔
+      PromoteStepPre U V w₀ n_max h_space w d1.1 d1.2 d2 s := Iff.rfl
 
 theorem promoteStepProg_effect {U V w n_max h_space base b k : ℕ}
     (hw : 0 < w) (hb_pos : 0 < bucketBits n_max)
@@ -241,12 +289,9 @@ theorem promoteStepProg_effect {U V w n_max h_space base b k : ℕ}
     hout2 a (by dsimp only [totalSpace, offGM, offLM, offVal, offQuot] at ha ⊢; omega),
     hout1 a (by dsimp only [totalSpace, offGM, offLM, offVal, offQuot] at ha ⊢; omega)]
 
-private theorem promoteStep_bounds {U V w₀ n_max h_space w : ℕ} {x : (ℕ × ℕ) × ℕ}
-    {s : Memory.State} (hw : 0 < w₀) (hb_pos : 0 < bucketBits n_max)
-    (h : PromoteStepPre U V w₀ n_max h_space w x.1.1 x.1.2 x.2 s) :
-    let base := x.1.1
-    let b := x.1.2
-    let k := x.2
+private theorem promoteStep_bounds {U V w₀ n_max h_space w base b k : ℕ}
+    {s : Memory.State} (hw : 0 < w₀)
+    (h : PromoteStepPre U V w₀ n_max h_space w base b k s) :
     let u := (slabSize n_max - 1) - k
     let r_top := slabSize n_max + u
     let ptr_u_idx := gmTailPtrBase n_max + (b * tailCapPerBucket n_max + u)
@@ -282,12 +327,12 @@ private theorem promoteStep_bounds {U V w₀ n_max h_space w : ℕ} {x : (ℕ ×
       (gmAt base U V w₀ n_max h_space s_wv.mem 1) ∧
     1 ≤ gmAt base U V w₀ n_max h_space s_wv.mem (gmRIdx b) ∧
     k + 1 ≤ max n_max 1 := by
-  rcases h with ⟨_, hb, hk_lt, htail, _, hrb_eq, htot⟩
+  rcases h with ⟨_, ⟨hb, hk_lt, htail, _, hrb_eq, htot⟩, hb_pos⟩
   have hb0 : bucketBits n_max ≠ 0 := by omega
   have hK_pos : 0 < slabSize n_max := slabSize_pos n_max
   have hTcap : tailCapPerBucket n_max = 2 * slabSize n_max := by
     unfold tailCapPerBucket; rw [ite_eq_right hb0]
-  intro base b k u r_top ptr_u_idx ptr_top_idx t_u s1 t_top s2 p_new
+  intro u r_top ptr_u_idx ptr_top_idx t_u s1 t_top s2 p_new
     g_u g_top g_slab q_top v_top s_wq s_wv
   let gm := gmAt base U V w₀ n_max h_space s.mem
   change b < numBuckets n_max at hb
@@ -295,10 +340,10 @@ private theorem promoteStep_bounds {U V w₀ n_max h_space w : ℕ} {x : (ℕ ×
   change gm (gmRIdx b) = 2 * slabSize n_max - k at hrb_eq
   change gm 0 * slabSize n_max + k + gm 1 ≤ n_max at htot
   have hr_le_nt : gm (gmRIdx b) ≤ gm 1 := r_le_ntails_of_tailBijection htail hb
-  have hu_lt_r : u < gm (gmRIdx b) := by dsimp only [u, k]; omega
-  have hr_top_lt_r : r_top < gm (gmRIdx b) := by dsimp only [r_top, u, k]; omega
-  have hu_cap : u < tailCapPerBucket n_max := by dsimp only [u, k]; omega
-  have hr_top_cap : r_top < tailCapPerBucket n_max := by dsimp only [r_top, u, k]; omega
+  have hu_lt_r : u < gm (gmRIdx b) := by dsimp only [u]; omega
+  have hr_top_lt_r : r_top < gm (gmRIdx b) := by dsimp only [r_top, u]; omega
+  have hu_cap : u < tailCapPerBucket n_max := by dsimp only [u]; omega
+  have hr_top_cap : r_top < tailCapPerBucket n_max := by dsimp only [r_top, u]; omega
   have hptr_u_lt : ptr_u_idx < globalMetaLen n_max := gmTailPtrIdx_lt hb_pos hb hu_cap
   have hptr_top_lt : ptr_top_idx < globalMetaLen n_max := gmTailPtrIdx_lt hb_pos hb hr_top_cap
   have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
@@ -332,77 +377,81 @@ private theorem promoteStep_bounds {U V w₀ n_max h_space w : ℕ} {x : (ℕ ×
   · rw [hgm_wv]; exact htail
   · rw [hgm_wv]; omega
 
-theorem realizes_promoteStep {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀) (hV : V ≤ 2 ^ w₀)
-    (hb_pos : 0 < bucketBits n_max) :
-    Realizes .exact (promoteStepProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := (ℕ × ℕ) × ℕ)) (WordEncoding.encode (α := ℕ))
-      (fun w x s => PromoteStepPre U V w₀ n_max h_space w x.1.1 x.1.2 x.2 s)
+set_option linter.unusedSimpArgs false in
+theorem realizes_promoteStepGen :
+    Realizes .exact promoteStepGenProg
+      (WordEncoding.encode (α := (DictParams × (ℕ × ℕ)) × ℕ)) (WordEncoding.encode (α := ℕ))
+      PromoteStepGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-  have hrq := realizes_readQuot (U := U) (V := V) (w := w₀) (n_max := n_max) (h_space := h_space)
-    hw (le_of_lt hU)
-  have hwq := realizes_writeQuot (U := U) (V := V) (w := w₀) (n_max := n_max) (h_space := h_space)
-    hw (le_of_lt hU)
-  have hrv := realizes_readVal (U := U) (V := V) (w := w₀) (n_max := n_max) (h_space := h_space)
-    hw hV
-  have hwv := realizes_writeVal (U := U) (V := V) (w := w₀) (n_max := n_max) (h_space := h_space)
-    hw hV
-  have hrem := realizes_removeLastTailItem (U := U) (V := V) (h_space := h_space)
-    hw hnU hU hV hb_pos
-  refine Realizes.congr (p := fun x : (ℕ × ℕ) × ℕ => do
-      let u ← pure ((slabSize n_max - 1) - x.2)
-      let r_top ← pure (slabSize n_max + u)
-      let ptr_u_idx ← pure (gmTailPtrBase n_max + (x.1.2 * tailCapPerBucket n_max + u))
-      let t_u ← readGMProg U V w₀ n_max h_space (x.1.1, ptr_u_idx)
-      let ptr_top_idx ← pure (gmTailPtrBase n_max + (x.1.2 * tailCapPerBucket n_max + r_top))
-      let t_top ← readGMProg U V w₀ n_max h_space (x.1.1, ptr_top_idx)
+  have hrg := realizes_readGMGen
+  have hrq := realizes_readQuotGen
+  have hwq := realizes_writeQuotGen
+  have hrv := realizes_readValGen
+  have hwv := realizes_writeValGen
+  have hrem := realizes_removeLastTailItemGen
+  refine Realizes.congr (p := fun d : (DictParams × (ℕ × ℕ)) × ℕ => do
+      let u ← pure (p_slabSizeSubOne d.1.1 - d.2)
+      let r_top ← pure (p_slabSize d.1.1 + u)
+      let ptr_u_idx ← pure (p_gmTailPtrBase d.1.1 + (d.1.2.2 * p_tailCap d.1.1 + u))
+      let t_u ← readGMGenProg (d.1.1, (d.1.2.1, ptr_u_idx))
+      let ptr_top_idx ← pure (p_gmTailPtrBase d.1.1 + (d.1.2.2 * p_tailCap d.1.1 + r_top))
+      let t_top ← readGMGenProg (d.1.1, (d.1.2.1, ptr_top_idx))
       let i0 ← pure 0
-      let p_new ← readGMProg U V w₀ n_max h_space (x.1.1, i0)
-      let g_u ← pure ((n_max - 1) - t_u)
-      let g_top ← pure ((n_max - 1) - t_top)
-      let g_slab ← pure (p_new * slabSize n_max + x.2)
-      let q_u ← readQuotProg U w₀ n_max h_space (x.1.1, g_u)
-      let v_u ← readValProg U V w₀ n_max h_space (x.1.1, g_u)
-      let q_top ← readQuotProg U w₀ n_max h_space (x.1.1, g_top)
-      let v_top ← readValProg U V w₀ n_max h_space (x.1.1, g_top)
-      writeQuotProg U w₀ n_max h_space ((x.1.1, g_u), q_top)
-      writeValProg U V w₀ n_max h_space ((x.1.1, g_u), v_top)
-      removeLastTailItemProg U V w₀ n_max h_space (x.1.1, x.1.2)
-      writeQuotProg U w₀ n_max h_space ((x.1.1, g_slab), q_u)
-      let _ ← writeValProg U V w₀ n_max h_space ((x.1.1, g_slab), v_u)
-      pure (x.2 + 1)) ?_
-    (fun x => by simp only [promoteStepProg, pure_bind])
+      let p_new ← readGMGenProg (d.1.1, (d.1.2.1, i0))
+      let g_u ← pure (p_nMaxSubOne d.1.1 - t_u)
+      let g_top ← pure (p_nMaxSubOne d.1.1 - t_top)
+      let g_slab ← pure (p_new * p_slabSize d.1.1 + d.2)
+      let q_u ← readQuotGenProg (d.1.1, (d.1.2.1, g_u))
+      let v_u ← readValGenProg (d.1.1, (d.1.2.1, g_u))
+      let q_top ← readQuotGenProg (d.1.1, (d.1.2.1, g_top))
+      let v_top ← readValGenProg (d.1.1, (d.1.2.1, g_top))
+      writeQuotGenProg (d.1.1, ((d.1.2.1, g_u), q_top))
+      writeValGenProg (d.1.1, ((d.1.2.1, g_u), v_top))
+      removeLastTailItemGenProg (d.1.1, d.1.2)
+      writeQuotGenProg (d.1.1, ((d.1.2.1, g_slab), q_u))
+      let _ ← writeValGenProg (d.1.1, ((d.1.2.1, g_slab), v_u))
+      pure (d.2 + 1)) ?_
+    (fun d => by simp only [promoteStepGenProg, pure_bind])
   realize
-  · exact (promoteStep_bounds hw hb_pos h).1
-  · exact fits_of_le_max_n_one h.1 hw hnU hU
-      ((Nat.sub_le _ _).trans (slabSize_le_max_n_one n_max))
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      ((promoteStep_bounds hw hb_pos h).2.1.trans (tailCapPerBucket_le_globalMetaLen hb_pos))
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (promoteStep_bounds hw hb_pos h).2.2.1)
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU (tailCapPerBucket_le_globalMetaLen hb_pos)
+  all_goals (
+    rcases d with ⟨⟨dp, d1⟩, d2⟩
+    let d := (d1, d2)
+    obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1
+    try simp only [
+      promoteStepGenPre_mk, removeLastTailItemGenPre_mk, removeLastTailItemGenProg_mk,
+      p_w_mk, p_nMax_mk, p_nMaxSubOne_mk, p_offQuot_mk, p_quotBits_mk, p_offVal_mk,
+      p_valBits_mk, p_lmBits_mk, p_offGM_mk, p_gmBits_mk, p_bucketBits_mk,
+      p_bucketMask_mk, p_slabSize_mk, p_slabSizeSubOne_mk, p_twoSlabSize_mk,
+      p_dirSlabs_mk, p_dirSlabsSubOne_mk, p_tailCap_mk, p_gmSlabDirBase_mk,
+      p_gmTailPtrBase_mk, p_gmTailOwnerBase_mk, p_gmSlabMetaBase_mk, p_numMicro_mk,
+      p_minCap_mk, p_U_mk, p_V_mk, p_hSpace_mk, p_offLMSub_mk,
+      readQuotGenProg_mk, writeQuotGenProg_mk, readValGenProg_mk, writeValGenProg_mk,
+      readLMGenProg_mk, writeLMGenProg_mk, readGMGenProg_mk, writeGMGenProg_mk,
+      readBucketCountGenProg_mk, resolveIndexedSlotGenProg_mk] at *
+  )
+  · exact (promoteStep_bounds hw h).1
+  · exact fits_of_le_globalMetaLen h.1 h.2.2 hw hnU hU
+      ((promoteStep_bounds hw h).2.1.trans (tailCapPerBucket_le_globalMetaLen h.2.2))
+  · exact fits_of_le_globalMetaLen h.1 h.2.2 hw hnU hU
+      (le_of_lt (promoteStep_bounds hw h).2.2.1)
   · exact h.1
-  · exact (promoteStep_bounds hw hb_pos h).2.2.1
-  · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (promoteStep_bounds hw hb_pos h).2.2.2.1)
-  · exact (promoteStep_bounds hw hb_pos h).2.2.2.1
-  · exact (promoteStep_bounds hw hb_pos h).2.2.2.2.1
-  · exact (promoteStep_bounds hw hb_pos h).2.2.2.2.2.1
-  · exact fits_of_le_max_n_one h.1 hw hnU hU (by omega)
-  · exact (promoteStep_bounds hw hb_pos h).2.2.2.2.2.2.1
+  · exact (promoteStep_bounds hw h).2.2.1
+  · exact fits_of_le_globalMetaLen h.1 h.2.2 hw hnU hU
+      (le_of_lt (promoteStep_bounds hw h).2.2.2.1)
+  · exact (promoteStep_bounds hw h).2.2.2.1
+  · exact (promoteStep_bounds hw h).2.2.2.2.1
+  · exact (promoteStep_bounds hw h).2.2.2.2.2.1
+  · exact (promoteStep_bounds hw h).2.2.2.2.2.2.1
   · exact fits_of_le_max_n_one h.1 hw hnU hU
-      (le_trans (le_of_lt (promoteStep_bounds hw hb_pos h).2.2.2.2.2.2.2.2.2.1)
+      (le_trans (le_of_lt (promoteStep_bounds hw h).2.2.2.2.2.2.2.2.2.1)
         (le_max_left n_max 1))
-  · exact fits_of_le_max_n_one h.1 hw hnU hU (slabSize_le_max_n_one n_max)
-  · exact (promoteStep_bounds hw hb_pos h).2.2.2.2.2.2.2.1
-  · exact (promoteStep_bounds hw hb_pos h).2.2.2.2.2.2.2.2.1
-  · exact (promoteStep_bounds hw hb_pos h).2.2.2.2.2.2.2.2.2.2.1
-  · exact h.2.1
-  · exact (promoteStep_bounds hw hb_pos h).2.2.2.2.2.2.2.2.2.2.2.1
-  · exact (promoteStep_bounds hw hb_pos h).2.2.2.2.2.2.2.2.2.1
+  · exact (promoteStep_bounds hw h).2.2.2.2.2.2.2.1
+  · exact (promoteStep_bounds hw h).2.2.2.2.2.2.2.2.1
+  · exact ⟨h.1, (promoteStep_bounds hw h).2.2.2.2.2.2.2.2.2.2.1, h.2.1.1,
+      (promoteStep_bounds hw h).2.2.2.2.2.2.2.2.2.2.2.1, h.2.2⟩
+  · exact (promoteStep_bounds hw h).2.2.2.2.2.2.2.2.2.1
   · exact fits_of_le_max_n_one h.1 hw hnU hU
-      (promoteStep_bounds hw hb_pos h).2.2.2.2.2.2.2.2.2.2.2.2
+      (promoteStep_bounds hw h).2.2.2.2.2.2.2.2.2.2.2.2
 
 /-! ## Section 2: `PromoteArrInv`, `PromoteLoopInv`, and `promoteSlabProg` -/
 
@@ -720,7 +769,7 @@ theorem iterate_promoteStepProg_spec {U V w₀ n_max h_space w base b : ℕ} {s�
         ((Memory.spec 0).clientState s
           (iterate (promoteStepProg U V w₀ n_max h_space) (base, b) m k)) ∧
       memoryCost (iterate (promoteStepProg U V w₀ n_max h_space) (base, b) m k) s = 66 * m ∧
-      (DictEnv U V w₀ n_max h_space w base →
+      (DictEnvGen w (mkDictParams U V w₀ n_max h_space) base →
         iterationSafe (promoteStepProg U V w₀ n_max h_space)
           (fun w x s => PromoteStepPre U V w₀ n_max h_space w x.1.1 x.1.2 x.2 s)
           w (base, b) m k s) := by
@@ -747,26 +796,68 @@ theorem iterate_promoteStepProg_spec {U V w₀ n_max h_space w base b : ℕ} {s�
       omega
     · intro hdenv
       simp only [iterationSafe, hres]
-      exact ⟨⟨hdenv, promoteStepInv_of_loopInv hinv hk_lt⟩, hsafe hdenv⟩
+      exact ⟨⟨hdenv, promoteStepInv_of_loopInv hinv hk_lt, hb_pos⟩, hsafe hdenv⟩
+
+/-- Parameter-free wrapper for `iterate promoteStepGenProg` with signature
+`(((dp, (base, b)), k), m) → Memory.Prog ℕ` matching `Realizes.iterate₀`. -/
+def promoteLoopGenProg (d : ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ) : Memory.Prog ℕ :=
+  iterate promoteStepGenProg d.1.1 d.2 d.1.2
 
 /-- Wrapper for `iterate (promoteStepProg U V w n_max h_space)` with signature
 `(((base, b), k), m) → Memory.Prog ℕ` matching `Realizes.iterate₀`. -/
 def promoteLoopProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog ℕ :=
   iterate (promoteStepProg U V w n_max h_space) d.1.1 d.2 d.1.2
 
-theorem realizes_promoteLoop {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀) (hV : V ≤ 2 ^ w₀)
-    (hb_pos : 0 < bucketBits n_max) :
-    Realizes .exact (promoteLoopProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := ((ℕ × ℕ) × ℕ) × ℕ)) (WordEncoding.encode (α := ℕ))
+@[simp] theorem iterate_promoteStepGenProg_mk (U V w n_max h_space : ℕ)
+    (d : ℕ × ℕ) (m k : ℕ) :
+    iterate promoteStepGenProg (mkDictParams U V w n_max h_space, d) m k =
+      iterate (promoteStepProg U V w n_max h_space) d m k := by
+  induction m generalizing k with
+  | zero => rfl
+  | succ m ih =>
+    unfold iterate
+    rw [promoteStepGenProg_mk]
+    congr 1
+    funext s'
+    exact ih s'
+
+@[simp] theorem promoteLoopGenProg_mk (U V w n_max h_space : ℕ)
+    (d1 : ℕ × ℕ) (d2 d3 : ℕ) :
+    promoteLoopGenProg (((mkDictParams U V w n_max h_space, d1), d2), d3) =
+      promoteLoopProg U V w n_max h_space ((d1, d2), d3) :=
+  iterate_promoteStepGenProg_mk U V w n_max h_space d1 d3 d2
+
+@[simp] theorem iterationSafe_promoteStepGenProg_mk (U V w₀ n_max h_space w : ℕ)
+    (d : ℕ × ℕ) (m k : ℕ) (s : Memory.State) :
+    iterationSafe promoteStepGenProg PromoteStepGenPre w
+        (mkDictParams U V w₀ n_max h_space, d) m k s ↔
+      iterationSafe (promoteStepProg U V w₀ n_max h_space)
+        (fun w x s => PromoteStepPre U V w₀ n_max h_space w x.1.1 x.1.2 x.2 s)
+        w d m k s := by
+  induction m generalizing k s with
+  | zero => exact Iff.rfl
+  | succ m ih =>
+    unfold iterationSafe
+    rw [promoteStepGenPre_mk, promoteStepGenProg_mk]
+    exact and_congr_right fun _ => ih _ _
+
+theorem realizes_promoteLoopGen :
+    Realizes .exact promoteLoopGenProg
+      (WordEncoding.encode (α := ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ))
+      (WordEncoding.encode (α := ℕ))
       (fun w d s =>
-        iterationSafe (promoteStepProg U V w₀ n_max h_space)
-          (fun w x s => PromoteStepPre U V w₀ n_max h_space w x.1.1 x.1.2 x.2 s)
-          w d.1.1 d.2 d.1.2 s)
+        iterationSafe promoteStepGenProg PromoteStepGenPre w d.1.1 d.2 d.1.2 s)
       (fun _ _ => 0) :=
-  Realizes.iterate₀ (WordEncoding.encode (α := ℕ × ℕ)) (WordEncoding.encode (α := ℕ))
-    (realizes_promoteStep hw hnU hU hV hb_pos)
-    (one_le_memoryCost_promoteStepProg U V w₀ n_max h_space)
+  Realizes.iterate₀ (WordEncoding.encode (α := DictParams × (ℕ × ℕ)))
+    (WordEncoding.encode (α := ℕ))
+    realizes_promoteStepGen
+    one_le_memoryCost_promoteStepGenProg
+
+/-- Parameter-free `Memory.Prog` operation promoting `K = slabSize n_max` tail items of bucket
+`b = d.2.2` at `base = d.2.1` into a new full slab. -/
+def promoteSlabGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Unit := do
+  let _ ← promoteLoopGenProg ((d, 0), p_slabSize d.1)
+  gmPushSlabGenProg d
 
 /-- `Memory.Prog` operation promoting `K = slabSize n_max` tail items of bucket `b = d.2` at
 `base = d.1` (`gm (gmRIdx b) = 2 * K`) into a new full slab via `promoteLoopProg` followed by
@@ -774,6 +865,12 @@ theorem realizes_promoteLoop {U V w₀ n_max h_space : ℕ}
 def promoteSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Unit := do
   let _ ← promoteLoopProg U V w n_max h_space ((d, 0), slabSize n_max)
   gmPushSlabProg U V w n_max h_space d
+
+@[simp] theorem promoteSlabGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
+    promoteSlabGenProg (mkDictParams U V w n_max h_space, d) =
+      promoteSlabProg U V w n_max h_space d := by
+  simp only [promoteSlabGenProg, promoteSlabProg, p_slabSize_mk,
+    promoteLoopGenProg_mk, gmPushSlabGenProg_mk]
 
 /-- Pure entry invariant for `promoteSlabProg`. -/
 @[expose]
@@ -791,8 +888,20 @@ def PromoteSlabInv (U V w₀ n_max h_space base b : ℕ) (s : Memory.State) : Pr
 /-- Precondition for `promoteSlabProg` in `Realizes`. -/
 @[expose]
 def PromoteSlabPre (U V w₀ n_max h_space w base b : ℕ) (s : Memory.State) : Prop :=
-  DictEnv U V w₀ n_max h_space w base ∧
-  PromoteSlabInv U V w₀ n_max h_space base b s
+  DictEnvGen w (mkDictParams U V w₀ n_max h_space) base ∧
+  PromoteSlabInv U V w₀ n_max h_space base b s ∧
+  0 < bucketBits n_max
+
+/-- Parameter-free precondition for `promoteSlabGenProg`. -/
+@[expose]
+def PromoteSlabGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Memory.State) : Prop :=
+  DictEnvGen w d.1 d.2.1 ∧
+  PromoteSlabInv (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) d.2.1 d.2.2 s ∧
+  0 < bucketBits (p_nMax d.1)
+
+@[simp] theorem promoteSlabGenPre_mk (U V w₀ n_max h_space w : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
+    PromoteSlabGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
+      PromoteSlabPre U V w₀ n_max h_space w d.1 d.2 s := Iff.rfl
 
 theorem promoteLoopInv_zero {U V w₀ n_max h_space base b : ℕ} {s₀ : Memory.State}
     (hpre : PromoteSlabInv U V w₀ n_max h_space base b s₀) :
@@ -1042,33 +1151,30 @@ theorem promoteSlabProg_effect {U V w n_max h_space base b : ℕ}
     have hpush_cost := memoryCost_gmPushSlabProg_le U V w n_max h_space (base, b) s₁
     omega
 
-theorem realizes_promoteSlab {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀) (hV : V ≤ 2 ^ w₀)
-    (hb_pos : 0 < bucketBits n_max) :
-    Realizes .exact (promoteSlabProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := ℕ × ℕ)) (WordEncoding.encode (α := Unit))
-      (fun w d s => PromoteSlabPre U V w₀ n_max h_space w d.1 d.2 s)
+theorem realizes_promoteSlabGen :
+    Realizes .exact promoteSlabGenProg
+      (WordEncoding.encode (α := DictParams × (ℕ × ℕ))) (WordEncoding.encode (α := Unit))
+      PromoteSlabGenPre
       (fun _ _ => 0) := by
-  have hloop := realizes_promoteLoop (U := U) (V := V) (h_space := h_space) hw hnU hU hV hb_pos
-  have hpush := realizes_gmPushSlab (U := U) (V := V) (h_space := h_space) hw hnU hU hb_pos
-  refine Realizes.congr (p := fun d : ℕ × ℕ => do
+  have hloop := realizes_promoteLoopGen
+  have hpush := realizes_gmPushSlabGen
+  refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) => do
       let k0 ← pure 0
-      let n_iter ← pure (slabSize n_max)
-      let _ ← promoteLoopProg U V w₀ n_max h_space ((d, k0), n_iter)
-      gmPushSlabProg U V w₀ n_max h_space d) ?_
-    (fun d => by simp only [promoteSlabProg, pure_bind])
-  realize
-  · exact fits_of_le_max_n_one h.1 hw hnU hU (slabSize_le_max_n_one n_max)
-  · exact (iterate_promoteStepProg_spec hw hb_pos (slabSize n_max) 0 s
-      (by omega) (promoteLoopInv_zero h.2)).2.2 h.1
+      let _ ← promoteLoopGenProg ((d, k0), p_slabSize d.1)
+      gmPushSlabGenProg d) ?_
+    (fun d => by simp only [promoteSlabGenProg, pure_bind])
+  realize_dict [promoteSlabGenPre_mk, iterationSafe_promoteStepGenProg_mk,
+    promoteLoopGenProg_mk, gmPushSlabGenPre_mk, gmPushSlabGenProg_mk]
+  · exact (iterate_promoteStepProg_spec hw h.2.2 (slabSize n_max) 0 s
+      (by omega) (promoteLoopInv_zero h.2.1)).2.2 h.1
   · rcases d with ⟨base, b⟩
     dsimp only at h
-    have hloopK := (iterate_promoteStepProg_spec (w := w) hw hb_pos (slabSize n_max) 0 s
-      (by omega) (promoteLoopInv_zero h.2)).1
+    have hloopK := (iterate_promoteStepProg_spec (w := w) hw h.2.2 (slabSize n_max) 0 s
+      (by omega) (promoteLoopInv_zero h.2.1)).1
     rw [Nat.zero_add] at hloopK
     have htot1 : (gmAt base U V w₀ n_max h_space
         ((Memory.spec 0).clientState s
-          (promoteLoopProg U V w₀ n_max h_space ((((base, b), 0), slabSize n_max)))).mem 0 + 1) *
+          (promoteLoopProg U V w₀ n_max h_space (((base, b), 0), slabSize n_max))).mem 0 + 1) *
         slabSize n_max ≤ n_max := by
       unfold promoteLoopProg
       dsimp only
@@ -1076,6 +1182,6 @@ theorem realizes_promoteSlab {U V w₀ n_max h_space : ℕ}
       rw [Nat.add_one_mul]
       omega
     unfold GmPushSlabPre
-    exact ⟨h.1, hloopK.slab_bij, h.2.1, nslabs_lt_maxFullSlabs_of_mul_le hb_pos htot1⟩
+    exact ⟨h.1, hloopK.slab_bij, h.2.1.1, nslabs_lt_maxFullSlabs_of_mul_le h.2.2 htot1, h.2.2⟩
 
 end Cslib.DataStructure.Dictionary.WordRAM.Succinct

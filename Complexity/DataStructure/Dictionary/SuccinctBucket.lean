@@ -47,8 +47,8 @@ Sections 5.2 and 6.1, Lemma 24][BenderFarachColtonKuszmaulKuszmaulLiu2022]):
    (with `1 ≤ r_b` whenever `0 < q_b`). Promoting `K` tail items when `r_b` reaches `2 * K` and
    demoting a full slab when `r_b` drops to `0` with `0 < q_b` are paid for deterministically
    (pointwise for every hash seed) by the hysteresis potential `bucketPotential K q_b r_b`.
-3. **3-wise independent expected collision and overflow bounds (`expect_probeExcess_le_three`,
-   `tsum_uniform_probeExcess_le_three`):**
+3. **3-wise independent expected collision and overflow bounds (`expect_probeExcess_le_three_on`,
+   `tsum_uniform_probeExcess_twoStage_le`):**
    A single 3-wise independent hash family `H : ι → Q → Fin (2 ^ totalMicroBits n_max)` provides
    both the combined `(bucket, microBucket)` hash `feistelMicroHash` and (by bit-prefix projection
    `projLowBits`) the 3-wise independent bucket hash `feistelBucketHash`. For any state `s` with
@@ -76,9 +76,10 @@ Sections 5.2 and 6.1, Lemma 24][BenderFarachColtonKuszmaulKuszmaulLiu2022]):
   `globalPtrBits_le_two_mul_slabScale`: exact bit-budget identities across all `n_max`.
 * `bucketPotential_pushBack_le`, `bucketPotential_popBack_le`: deterministic hysteresis
   amortization bounds.
-* `isKWiseIndependentHash_projLowBits`, `expect_microCollCount_le_two`,
-  `expect_bucketOvfCount_le_one`, `expect_probeExcess_le_three`,
-  `tsum_uniform_probeExcess_le_three`: expected probe-excess bounds under 3-wise independence.
+* `isKWiseIndependentHash_projLowBits`, `expect_microCollCount_le_two_on`,
+  `expect_bucketOvfCount_le_one_on`, `expect_probeExcess_le_three_on`,
+  `sum_probeExcess_le_three_mul_card_on`, `tsum_uniform_probeExcess_twoStage_le`: expected
+  probe-excess bounds under 3-wise independence.
 * `packedWords_add_le`, `succinct_space_le_succinctWords`: master word-level space accounting.
 
 ## References
@@ -289,14 +290,14 @@ theorem lt_effBucketCap_of_bucketBits_eq_zero {n : ℕ} (hb : bucketBits n = 0) 
   omega
 
 /-- When `0 < bucketBits n`, `microBits n = 3 * Dynamic.logLogFactor n` and
-`effBucketCap n = bucketCap n`. -/
-theorem effBucketCap_eq_bucketCap_of_pos {n : ℕ} (hb : 0 < bucketBits n) :
-    effBucketCap n = bucketCap n := by
+`effBucketCap n = 4 * (slabScale n) ^ 3`. -/
+theorem effBucketCap_eq_four_mul_slabScale_cubed_of_pos {n : ℕ} (hb : 0 < bucketBits n) :
+    effBucketCap n = 4 * (slabScale n) ^ 3 := by
   have hle : 3 * Dynamic.logLogFactor n ≤ Nat.log 2 n := by
     unfold bucketBits at hb
     omega
   have hm : microBits n = 3 * Dynamic.logLogFactor n := min_eq_right hle
-  unfold effBucketCap numMicroPerBucket bucketCap slabScale
+  unfold effBucketCap numMicroPerBucket slabScale
   rw [hm, Nat.mul_comm 3 (Dynamic.logLogFactor n), pow_mul]
 
 /-- Every 1-based local slot pointer `0 .. min n (effBucketCap n)` fits strictly below
@@ -802,8 +803,10 @@ def probeExcess {U : ℕ} (n_max : ℕ) (qOf : Fin U → Q)
     (H : ι → Q → Fin (2 ^ totalMicroBits n_max)) (i : ι) (S : Finset (Fin U)) (u : Fin U) : ℕ :=
   microCollCount n_max qOf H i S u + bucketOvfCount n_max qOf H i S u
 
-/-- Localized form of `expect_microCollCount_le_two`: requires quotient injectivity of `qOf` only
-on `insert u (S.erase u)`. -/
+/-- **Expected micro-bucket collision bound:** under a pairwise-independent hash `H`, for any
+`S : Finset (Fin U)` with `#(S.erase u) ≤ n_max` such that `qOf` is quotient-injective on
+`insert u (S.erase u)`, the expected number of keys in `S.erase u` landing in `u`'s micro-bucket is
+at most `2`. -/
 theorem expect_microCollCount_le_two_on {U n_max : ℕ}
     {qOf : Fin U → Q}
     {H : ι → Q → Fin (2 ^ totalMicroBits n_max)} (hh : IsPairwiseIndependentHash H)
@@ -825,20 +828,10 @@ theorem expect_microCollCount_le_two_on {U n_max : ℕ}
     exact_mod_cast hcard
   exact hexp.trans hle
 
-/-- **Expected micro-bucket collision bound:** under a pairwise-independent hash `H`, for any
-`S : Finset (Fin U)` with `#(S.erase u) ≤ n_max`, the expected number of keys in `S.erase u`
-landing in `u`'s micro-bucket is at most `2`. -/
-theorem expect_microCollCount_le_two {U n_max : ℕ}
-    {qOf : Fin U → Q}
-    (hq : ∀ u₁ u₂ : Fin U, qOf u₁ = qOf u₂ →
-      keyQuotient (bucketBits n_max) u₁.val = keyQuotient (bucketBits n_max) u₂.val)
-    {H : ι → Q → Fin (2 ^ totalMicroBits n_max)} (hh : IsPairwiseIndependentHash H)
-    (S : Finset (Fin U)) (u : Fin U) (hS : #(S.erase u) ≤ n_max) :
-    𝔼 i, (microCollCount n_max qOf H i S u : ℚ) ≤ 2 :=
-  expect_microCollCount_le_two_on hh S u hS fun u₁ _ u₂ _ => hq u₁ u₂
-
-/-- Localized form of `expect_bucketOvfCount_le_one`: requires quotient injectivity of `qOf` only
-on `insert u (S.erase u)`. -/
+/-- **Expected bucket overflow bound:** under a 3-wise independent hash `H`, for any
+`S : Finset (Fin U)` with `#(S.erase u) ≤ n_max` such that `qOf` is quotient-injective on
+`insert u (S.erase u)`, the expected overflow above `effBucketCap n_max` in `u`'s Feistel bucket is
+at most `1`. -/
 theorem expect_bucketOvfCount_le_one_on {U n_max : ℕ}
     {qOf : Fin U → Q}
     {H : ι → Q → Fin (2 ^ totalMicroBits n_max)} (hh : IsKWiseIndependentHash 3 H)
@@ -874,20 +867,10 @@ theorem expect_bucketOvfCount_le_one_on {U n_max : ℕ}
   simp only [heq] at hovf
   exact hovf
 
-/-- **Expected bucket overflow bound:** under a 3-wise independent hash `H`, for any
-`S : Finset (Fin U)` with `#(S.erase u) ≤ n_max`, the expected overflow above `effBucketCap n_max`
-in `u`'s Feistel bucket is at most `1`. -/
-theorem expect_bucketOvfCount_le_one {U n_max : ℕ}
-    {qOf : Fin U → Q}
-    (hq : ∀ u₁ u₂ : Fin U, qOf u₁ = qOf u₂ →
-      keyQuotient (bucketBits n_max) u₁.val = keyQuotient (bucketBits n_max) u₂.val)
-    {H : ι → Q → Fin (2 ^ totalMicroBits n_max)} (hh : IsKWiseIndependentHash 3 H)
-    (S : Finset (Fin U)) (u : Fin U) (hS : #(S.erase u) ≤ n_max) :
-    𝔼 i, (bucketOvfCount n_max qOf H i S u : ℚ) ≤ 1 :=
-  expect_bucketOvfCount_le_one_on hh S u hS fun u₁ _ u₂ _ => hq u₁ u₂
-
-/-- Localized form of `expect_probeExcess_le_three`: requires quotient injectivity of `qOf` only
-on `insert u (S.erase u)`. -/
+/-- **Master expected probe-excess bound:** under a 3-wise independent hash `H`, for any
+`S : Finset (Fin U)` with `#(S.erase u) ≤ n_max` such that `qOf` is quotient-injective on
+`insert u (S.erase u)`, the expected combined probe excess `probeExcess n_max qOf H i S u` is at
+most `3`. -/
 theorem expect_probeExcess_le_three_on {U n_max : ℕ}
     {qOf : Fin U → Q}
     {H : ι → Q → Fin (2 ^ totalMicroBits n_max)} (hh : IsKWiseIndependentHash 3 H)
@@ -905,20 +888,8 @@ theorem expect_probeExcess_le_three_on {U n_max : ℕ}
   rw [expect_add_distrib]
   linarith
 
-/-- **Master expected probe-excess bound:** under a 3-wise independent hash `H`, for any
-`S : Finset (Fin U)` with `#(S.erase u) ≤ n_max`, the expected combined probe excess
-`probeExcess n_max qOf H i S u` is at most `3`. -/
-theorem expect_probeExcess_le_three {U n_max : ℕ}
-    {qOf : Fin U → Q}
-    (hq : ∀ u₁ u₂ : Fin U, qOf u₁ = qOf u₂ →
-      keyQuotient (bucketBits n_max) u₁.val = keyQuotient (bucketBits n_max) u₂.val)
-    {H : ι → Q → Fin (2 ^ totalMicroBits n_max)} (hh : IsKWiseIndependentHash 3 H)
-    (S : Finset (Fin U)) (u : Fin U) (hS : #(S.erase u) ≤ n_max) :
-    𝔼 i, (probeExcess n_max qOf H i S u : ℚ) ≤ 3 :=
-  expect_probeExcess_le_three_on hh S u hS fun u₁ _ u₂ _ => hq u₁ u₂
-
-/-- Localized natural-number sum form of `expect_probeExcess_le_three_on`: the sum of `probeExcess`
-over all seeds `i : ι` is at most `3 * Fintype.card ι`. -/
+/-- Natural-number sum form of `expect_probeExcess_le_three_on`: the sum of `probeExcess` over all
+seeds `i : ι` is at most `3 * Fintype.card ι`. -/
 theorem sum_probeExcess_le_three_mul_card_on {U n_max : ℕ}
     {qOf : Fin U → Q}
     {H : ι → Q → Fin (2 ^ totalMicroBits n_max)} (hh : IsKWiseIndependentHash 3 H)
@@ -933,17 +904,6 @@ theorem sum_probeExcess_le_three_mul_card_on {U n_max : ℕ}
   have hcard_pos : (0 : ℚ) < (Fintype.card ι : ℚ) := Nat.cast_pos.mpr Fintype.card_pos
   rw [div_le_iff₀ hcard_pos] at hexp
   exact_mod_cast hexp
-
-/-- Natural-number sum form of `expect_probeExcess_le_three`: the sum of `probeExcess` over all
-seeds `i : ι` is at most `3 * Fintype.card ι`. -/
-theorem sum_probeExcess_le_three_mul_card {U n_max : ℕ}
-    {qOf : Fin U → Q}
-    (hq : ∀ u₁ u₂ : Fin U, qOf u₁ = qOf u₂ →
-      keyQuotient (bucketBits n_max) u₁.val = keyQuotient (bucketBits n_max) u₂.val)
-    {H : ι → Q → Fin (2 ^ totalMicroBits n_max)} (hh : IsKWiseIndependentHash 3 H)
-    (S : Finset (Fin U)) (u : Fin U) (hS : #(S.erase u) ≤ n_max) :
-    (∑ i : ι, probeExcess n_max qOf H i S u) ≤ 3 * Fintype.card ι :=
-  sum_probeExcess_le_three_mul_card_on hh S u hS fun u₁ _ u₂ _ => hq u₁ u₂
 
 omit [Fintype ι] in
 /-- Deterministic worst-case bound on `probeExcess`: for any seed `i`,
@@ -1043,30 +1003,6 @@ theorem tsum_uniform_probeExcess_twoStage_le {ι₁ ι₂ : Type*}
         · exact Nat.cast_ne_zero.mpr Fintype.card_ne_zero
         · exact ENNReal.natCast_ne_top _
 
-/-- `ℝ≥0∞` expectation form of `expect_probeExcess_le_three` under `PMF.uniformOfFintype ι`:
-`∑' i : ι, (PMF.uniformOfFintype ι) i * (probeExcess n_max qOf H i S u : ℝ≥0∞) ≤ 3`. -/
-theorem tsum_uniform_probeExcess_le_three [Nonempty ι] {U n_max : ℕ}
-    {qOf : Fin U → Q}
-    (hq : ∀ u₁ u₂ : Fin U, qOf u₁ = qOf u₂ →
-      keyQuotient (bucketBits n_max) u₁.val = keyQuotient (bucketBits n_max) u₂.val)
-    {H : ι → Q → Fin (2 ^ totalMicroBits n_max)} (hh : IsKWiseIndependentHash 3 H)
-    (S : Finset (Fin U)) (u : Fin U) (hS : #(S.erase u) ≤ n_max) :
-    (∑' i : ι, (PMF.uniformOfFintype ι) i * (probeExcess n_max qOf H i S u : ℝ≥0∞)) ≤ 3 := by
-  have hsum := sum_probeExcess_le_three_mul_card hq hh S u hS
-  calc (∑' i : ι, (PMF.uniformOfFintype ι) i * (probeExcess n_max qOf H i S u : ℝ≥0∞))
-      = ∑ i : ι, (Fintype.card ι : ℝ≥0∞)⁻¹ * (probeExcess n_max qOf H i S u : ℝ≥0∞) := by
-        rw [tsum_fintype]
-        simp [PMF.uniformOfFintype_apply]
-    _ = (Fintype.card ι : ℝ≥0∞)⁻¹ * ((∑ i : ι, probeExcess n_max qOf H i S u : ℕ) : ℝ≥0∞) := by
-        rw [← Finset.mul_sum, Nat.cast_sum]
-    _ ≤ (Fintype.card ι : ℝ≥0∞)⁻¹ * ((3 * Fintype.card ι : ℕ) : ℝ≥0∞) := by
-        gcongr
-    _ = 3 := by
-        push_cast
-        rw [mul_comm (3 : ℝ≥0∞), ← mul_assoc, ENNReal.inv_mul_cancel, one_mul]
-        · exact Nat.cast_ne_zero.mpr Fintype.card_ne_zero
-        · exact ENNReal.natCast_ne_top _
-
 end ProbabilityBounds
 
 /-! ## Section 4: Cardinality bounds for injective bucket and micro-bucket slot maps -/
@@ -1139,29 +1075,6 @@ theorem bucketOverflow_le {ι Q : Type*} {U n_max c_b : ℕ}
 
 /-! ## Section 5: Master word-level space accounting (`succinctWords`) -/
 
-/-- Ceiling-division subadditivity for `packedWords`:
-`packedWords N₁ k₁ w + packedWords N₂ k₂ w ≤ (N₁ * k₁ + N₂ * k₂ + w - 1) / w + 5`. -/
-theorem packedWords_add_le (N₁ k₁ N₂ k₂ w : ℕ) :
-    packedWords N₁ k₁ w + packedWords N₂ k₂ w ≤
-      (N₁ * k₁ + N₂ * k₂ + w - 1) / w + 5 := by
-  unfold packedWords
-  rcases Nat.eq_zero_or_pos w with rfl | hw
-  · simp
-  · have hdiv : (N₁ * k₁ + w - 1) / w + (N₂ * k₂ + w - 1) / w ≤
-        (N₁ * k₁ + N₂ * k₂ + w - 1) / w + 1 := by
-      have h1 := Nat.div_add_mod (N₁ * k₁ + w - 1) w
-      have h2 := Nat.div_add_mod (N₂ * k₂ + w - 1) w
-      have h3 := Nat.div_add_mod (N₁ * k₁ + N₂ * k₂ + w - 1) w
-      have hm3 : (N₁ * k₁ + N₂ * k₂ + w - 1) % w < w := Nat.mod_lt _ hw
-      have hlt :
-          w * ((N₁ * k₁ + w - 1) / w + (N₂ * k₂ + w - 1) / w) <
-            w * ((N₁ * k₁ + N₂ * k₂ + w - 1) / w + 2) := by
-        rw [Nat.left_distrib, Nat.left_distrib, Nat.mul_two]
-        omega
-      have hlt' := (Nat.mul_lt_mul_left hw).mp hlt
-      omega
-    omega
-
 /-- Adding an auxiliary bit-packed array `packedWords N_aux k_aux w` to an existing word bound
 `((B + w - 1) / w) + C₀` increases the bit numerator to `B + N_aux * k_aux` and the additive word
 constant by at most `3`. -/
@@ -1185,6 +1098,13 @@ theorem div_add_packedWords_le (B C₀ N_aux k_aux w : ℕ) :
       have hlt' := (Nat.mul_lt_mul_left hw).mp hlt
       omega
     omega
+
+/-- Ceiling-division subadditivity for `packedWords`:
+`packedWords N₁ k₁ w + packedWords N₂ k₂ w ≤ (N₁ * k₁ + N₂ * k₂ + w - 1) / w + 5`. -/
+theorem packedWords_add_le (N₁ k₁ N₂ k₂ w : ℕ) :
+    packedWords N₁ k₁ w + packedWords N₂ k₂ w ≤
+      (N₁ * k₁ + N₂ * k₂ + w - 1) / w + 5 :=
+  div_add_packedWords_le (N₁ * k₁) 2 N₂ k₂ w
 
 /-- **Master succinct word-space bound:** if `n_max ≤ U` and the auxiliary bit budget `B_aux` is at
 most `C_aux * n_max * Dynamic.logLogFactor n_max`, then storing `n_max` quotients of

@@ -95,7 +95,7 @@ theorem bucketStateInv_of_zero {U V w₀ n_max h_space base : ℕ} (mOf : ℕ �
 theorem BucketStateInv.searchMicroChainPre {U V w₀ n_max h_space w base b q_target m : ℕ}
     {mOf : ℕ → ℕ} {L : ℕ → ℕ → List ℕ} {B : ℕ → ℕ → Option ℕ} {s : Memory.State}
     (hinv : BucketStateInv U V w₀ n_max h_space base mOf L B s)
-    (henv : DictEnv U V w₀ n_max h_space w base)
+    (henv : DictEnvGen w (mkDictParams U V w₀ n_max h_space) base)
     (hb : b < numBuckets n_max) (hm : m < numMicroPerBucket n_max) :
     SearchMicroChainPre U V w₀ n_max h_space w (((base, b), q_target), m) s :=
   ⟨henv, hb, hm, hinv.hslot, L b m, hinv.hchains.1 b hb m hm,
@@ -132,7 +132,7 @@ theorem searchBucket_exists_iff {U V w₀ n_max h_space base b q_target m : ℕ}
 theorem searchBucketProg_bucket_spec {U V w₀ n_max h_space w base b q_target m : ℕ}
     {mOf : ℕ → ℕ} {L : ℕ → ℕ → List ℕ} {B : ℕ → ℕ → Option ℕ} {s : Memory.State}
     (hinv : BucketStateInv U V w₀ n_max h_space base mOf L B s)
-    (henv : DictEnv U V w₀ n_max h_space w base)
+    (henv : DictEnvGen w (mkDictParams U V w₀ n_max h_space) base)
     (hb : b < numBuckets n_max) (hm_eq : m = mOf q_target)
     (hm_lt : m < numMicroPerBucket n_max) :
     let gm := gmAt base U V w₀ n_max h_space s.mem
@@ -174,7 +174,7 @@ returns `B b q_target` without modifying memory. -/
 theorem queryBodyProg_bucket_spec {U V w₀ n_max h_space w base b q_target m : ℕ}
     {mOf : ℕ → ℕ} {L : ℕ → ℕ → List ℕ} {B : ℕ → ℕ → Option ℕ} {s : Memory.State}
     (hinv : BucketStateInv U V w₀ n_max h_space base mOf L B s)
-    (henv : DictEnv U V w₀ n_max h_space w base)
+    (henv : DictEnvGen w (mkDictParams U V w₀ n_max h_space) base)
     (hb : b < numBuckets n_max) (hm_eq : m = mOf q_target)
     (hm_lt : m < numMicroPerBucket n_max) :
     let gm := gmAt base U V w₀ n_max h_space s.mem
@@ -208,6 +208,21 @@ theorem queryBodyProg_bucket_spec {U V w₀ n_max h_space w base b q_target m : 
 
 /-! ## Section 2: `insertBodyProg` via `realize` -/
 
+/-- Parameter-free helper `Memory.Prog` appending a new `(q_target, v_new)` entry to bucket `b` and
+prepending its logical index `j_new = bCount b` to micro-chain `(b, m)` when `totalSlots < n_max`.
+Input `d = (dp, ((((base, b), q_target), v_new), m))`. -/
+@[expose]
+def insertNewGenProg
+    (d : DictParams × ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ)) : Memory.Prog Unit := do
+  let tot ← readTotalSlotsGenProg (d.1, d.2.1.1.1.1)
+  let cap ← pure (p_nMax d.1)
+  if tot < cap then do
+    let j_new ← readBucketCountGenProg (d.1, d.2.1.1.1)
+    pushBackSlotGenProg (((d.1, d.2.1.1.1), d.2.1.1.2), d.2.1.2)
+    prependIfIndexedGenProg ((d.1, (d.2.1.1.1, d.2.2)), j_new)
+  else
+    pure ()
+
 /-- Helper `Memory.Prog` appending a new `(q_target, v_new)` entry to bucket `b` and prepending
 its logical index `j_new = bCount b` to micro-chain `(b, m)` when `totalSlots < n_max`.
 Input `d = ((((base, b), q_target), v_new), m)`. -/
@@ -223,11 +238,19 @@ def insertNewProg (U V w n_max h_space : ℕ)
   else
     pure ()
 
+@[simp]
+theorem insertNewGenProg_mk (U V w n_max h_space : ℕ)
+    (d : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ) :
+    insertNewGenProg (mkDictParams U V w n_max h_space, d) =
+      insertNewProg U V w n_max h_space d := by
+  simp only [insertNewGenProg, insertNewProg, readTotalSlotsGenProg_mk, p_nMax_mk,
+    readBucketCountGenProg_mk, pushBackSlotGenProg_mk, prependIfIndexedGenProg_mk]
+
 /-- Precondition for `insertNewProg` in `Realizes`. -/
 @[expose]
 def InsertNewPre (U V w₀ n_max h_space w : ℕ)
     (d : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ) (s : Memory.State) : Prop :=
-  DictEnv U V w₀ n_max h_space w d.1.1.1.1 ∧
+  DictEnvGen w (mkDictParams U V w₀ n_max h_space) d.1.1.1.1 ∧
   d.1.1.1.2 < numBuckets n_max ∧
   d.2 < numMicroPerBucket n_max ∧
   d.1.1.2 < 2 ^ quotientBits U n_max ∧
@@ -235,25 +258,42 @@ def InsertNewPre (U V w₀ n_max h_space w : ℕ)
   SlotStoreInv n_max (gmAt d.1.1.1.1 U V w₀ n_max h_space s.mem) ∧
   lmHead n_max (lmAt d.1.1.1.1 U V w₀ n_max h_space s.mem) d.1.1.1.2 d.2 ≤ effBucketCap n_max
 
-theorem realizes_insertNew {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀) (hV : V ≤ 2 ^ w₀) :
-    Realizes .exact (insertNewProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := (((ℕ × ℕ) × ℕ) × ℕ) × ℕ))
+/-- Parameter-free precondition for `insertNewGenProg` in `Realizes`. -/
+@[expose]
+def InsertNewGenPre (w : ℕ)
+    (d : DictParams × ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ)) (s : Memory.State) : Prop :=
+  DictEnvGen w d.1 d.2.1.1.1.1 ∧
+  d.2.1.1.1.2 < numBuckets (p_nMax d.1) ∧
+  d.2.2 < numMicroPerBucket (p_nMax d.1) ∧
+  d.2.1.1.2 < 2 ^ quotientBits (p_U d.1) (p_nMax d.1) ∧
+  d.2.1.2 < 2 ^ valBits (p_V d.1) ∧
+  SlotStoreInv (p_nMax d.1)
+    (gmAt d.2.1.1.1.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem) ∧
+  lmHead (p_nMax d.1)
+    (lmAt d.2.1.1.1.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem)
+    d.2.1.1.1.2 d.2.2 ≤ effBucketCap (p_nMax d.1)
+
+@[simp]
+theorem insertNewGenPre_mk (U V w₀ n_max h_space w : ℕ)
+    (d : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ) (s : Memory.State) :
+    InsertNewGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
+      InsertNewPre U V w₀ n_max h_space w d s := Iff.rfl
+
+theorem realizes_insertNewGen :
+    Realizes .exact insertNewGenProg
+      (WordEncoding.encode (α := DictParams × ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ)))
       (WordEncoding.encode (α := Unit))
-      (InsertNewPre U V w₀ n_max h_space)
+      InsertNewGenPre
       (fun _ _ => 0) := by
-  have htot := realizes_readTotalSlots (U := U) (V := V) (w₀ := w₀) (n_max := n_max)
-    (h_space := h_space) hw hnU hU
-  have hbc := realizes_readBucketCount (U := U) (V := V) (w₀ := w₀) (n_max := n_max)
-    (h_space := h_space) hw hnU hU
-  have hpb := realizes_pushBackSlot (U := U) (V := V) (w₀ := w₀) (n_max := n_max)
-    (h_space := h_space) hw hnU hU hV
-  have hpr := realizes_prependIfIndexed (U := U) (V := V) (w₀ := w₀) (n_max := n_max)
-    (h_space := h_space) hw hnU hU
-  realize
+  have htot := realizes_readTotalSlotsGen
+  have hbc := realizes_readBucketCountGen
+  have hpb := realizes_pushBackSlotGen
+  have hpr := realizes_prependIfIndexedGen
+  realize_dict [insertNewGenPre_mk, InsertNewPre, readTotalSlotsGenProg_mk,
+    pushBackSlotGenPre_mk, PushBackSlotPre, pushBackSlotGenProg_mk,
+    prependIfIndexedGenPre_mk, PrependIfIndexedPre, prependIfIndexedGenProg_mk]
   · exact h.1
   · exact h.2.2.2.2.2.1
-  · exact fits_of_le_max_n_one h.1 hw hnU hU (le_max_left _ _)
   · exact h.1
   · rw [clientState_readTotalSlotsProg]
     exact h.2.2.2.2.2.1
@@ -269,6 +309,19 @@ theorem realizes_insertNew {U V w₀ n_max h_space : ℕ}
     refine ⟨h.1, h.2.1, h.2.2.1, ?_⟩
     rw [eff.2.2.1]
     exact h.2.2.2.2.2.2
+
+/-- Parameter-free dictionary `insert` body `insertBodyGenProg`
+(`d = (dp, ((((base, b), q_target), v_new), m))`). -/
+@[expose]
+def insertBodyGenProg
+    (d : DictParams × ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ)) : Memory.Prog Unit := do
+  let res ← searchBucketGenProg (d.1, (d.2.1.1, d.2.2))
+  let z1 ← pure 1
+  if res.1.1 = z1 then
+    writeValGenProg (d.1, ((d.2.1.1.1.1, res.2), d.2.1.2))
+  else
+    insertNewGenProg d
+
 /-- Dictionary `insert` body `insertBodyProg` (`d = ((((base, b), q_target), v_new), m)`):
 searches bucket `b` for `q_target` via `searchBucketProg`; if found, overwrites `valAt` in-place;
 otherwise calls `insertNewProg`. -/
@@ -282,6 +335,14 @@ def insertBodyProg (U V w n_max h_space : ℕ)
   else
     insertNewProg U V w n_max h_space d
 
+@[simp]
+theorem insertBodyGenProg_mk (U V w n_max h_space : ℕ)
+    (d : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ) :
+    insertBodyGenProg (mkDictParams U V w n_max h_space, d) =
+      insertBodyProg U V w n_max h_space d := by
+  simp only [insertBodyGenProg, insertBodyProg, searchBucketGenProg_mk, writeValGenProg_mk,
+    insertNewGenProg_mk]
+
 /-- Precondition for `insertBodyProg` in `Realizes`. -/
 @[expose]
 def InsertBodyPre (U V w₀ n_max h_space w : ℕ)
@@ -290,32 +351,62 @@ def InsertBodyPre (U V w₀ n_max h_space w : ℕ)
   d.1.1.2 < 2 ^ quotientBits U n_max ∧
   d.1.2 < 2 ^ valBits V
 
-theorem realizes_insertBody {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀) (hV : V ≤ 2 ^ w₀) :
-    Realizes .exact (insertBodyProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := (((ℕ × ℕ) × ℕ) × ℕ) × ℕ))
+/-- Parameter-free precondition for `insertBodyGenProg` in `Realizes`. -/
+@[expose]
+def InsertBodyGenPre (w : ℕ)
+    (d : DictParams × ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ)) (s : Memory.State) : Prop :=
+  SearchMicroChainGenPre w (d.1, (d.2.1.1, d.2.2)) s ∧
+  d.2.1.1.2 < 2 ^ quotientBits (p_U d.1) (p_nMax d.1) ∧
+  d.2.1.2 < 2 ^ valBits (p_V d.1)
+
+@[simp]
+theorem insertBodyGenPre_mk (U V w₀ n_max h_space w : ℕ)
+    (d : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ) (s : Memory.State) :
+    InsertBodyGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
+      InsertBodyPre U V w₀ n_max h_space w d s := Iff.rfl
+
+set_option linter.unusedSimpArgs false in
+theorem realizes_insertBodyGen :
+    Realizes .exact insertBodyGenProg
+      (WordEncoding.encode (α := DictParams × ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ)))
       (WordEncoding.encode (α := Unit))
-      (InsertBodyPre U V w₀ n_max h_space)
+      InsertBodyGenPre
       (fun _ _ => 0) := by
-  have hsb := realizes_searchBucket (U := U) (V := V) (w₀ := w₀) (n_max := n_max)
-    (h_space := h_space) hw hnU hU
-  have hwv := realizes_writeVal (U := U) (V := V) (w := w₀) (n_max := n_max)
-    (h_space := h_space) hw hV
-  have hin := realizes_insertNew (U := U) (V := V) (w₀ := w₀) (n_max := n_max)
-    (h_space := h_space) hw hnU hU hV
+  have hsb := realizes_searchBucketGen
+  have hwv := realizes_writeValGen
+  have hin := realizes_insertNewGen
   realize
+  all_goals (
+    rcases d with ⟨dp, d⟩
+    obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1.1
+    try simp only [
+      insertBodyGenPre_mk, InsertBodyPre,
+      searchMicroChainGenPre_mk, SearchMicroChainPre, searchBucketGenProg_mk,
+      insertNewGenPre_mk, InsertNewPre, insertNewGenProg_mk,
+      p_w_mk, p_nMax_mk, p_nMaxSubOne_mk, p_offQuot_mk, p_quotBits_mk, p_offVal_mk,
+      p_valBits_mk, p_lmBits_mk, p_offGM_mk, p_gmBits_mk, p_bucketBits_mk,
+      p_bucketMask_mk, p_slabSize_mk, p_slabSizeSubOne_mk, p_twoSlabSize_mk,
+      p_dirSlabs_mk, p_dirSlabsSubOne_mk, p_tailCap_mk, p_gmSlabDirBase_mk,
+      p_gmTailPtrBase_mk, p_gmTailOwnerBase_mk, p_gmSlabMetaBase_mk, p_numMicro_mk,
+      p_minCap_mk, p_U_mk, p_V_mk, p_hSpace_mk, p_offLMSub_mk,
+      readQuotGenProg_mk, writeQuotGenProg_mk, readValGenProg_mk, writeValGenProg_mk,
+      readLMGenProg_mk, writeLMGenProg_mk, readGMGenProg_mk, writeGMGenProg_mk,
+      readBucketCountGenProg_mk, resolveIndexedSlotGenProg_mk] at *
+  )
   · exact h.1
   · exact fits_const_of_dictEnv h.1.1 (by decide)
   · exact h.1.1
   · obtain ⟨L, hchain, hc_lt⟩ := h.1.2.2.2.2
-    have hspec := (searchBucketProg_spec h.1.1 h.1.2.1 h.1.2.2.1 h.1.2.2.2.1 hchain hc_lt).2.2
+    have hspec := (searchBucketProg_spec (d := (d.1.1, d.2))
+      h.1.1 h.1.2.1 h.1.2.2.1 h.1.2.2.2.1 hchain hc_lt).2.2
     dsimp only at hspec
     split_ifs at hspec with hex
     · rw [hspec.2.2.2.2]
       exact (slotOf_lt_and_injective h.1.2.2.2.1).1 d.1.1.1.2 h.1.2.1 _ hspec.2.1
     · omega
   · obtain ⟨L, hchain, hc_lt⟩ := h.1.2.2.2.2
-    rw [(searchBucketProg_spec h.1.1 h.1.2.1 h.1.2.2.1 h.1.2.2.2.1 hchain hc_lt).1]
+    rw [(searchBucketProg_spec (d := (d.1.1, d.2))
+      h.1.1 h.1.2.1 h.1.2.2.1 h.1.2.2.2.1 hchain hc_lt).1]
     exact ⟨h.1.1, h.1.2.1, h.1.2.2.1, h.2.1, h.2.2, h.1.2.2.2.1, hchain.head_le_cap⟩
 
 /-- Pure state effect, `BucketStateInv` preservation, and amortized `memoryCost` bound of
@@ -324,7 +415,7 @@ theorem insertBodyProg_bucket_spec {U V w₀ n_max h_space w base b q_target v_n
     {mOf : ℕ → ℕ} {L : ℕ → ℕ → List ℕ} {B : ℕ → ℕ → Option ℕ} {s : Memory.State}
     (hw : 0 < w₀)
     (hinv : BucketStateInv U V w₀ n_max h_space base mOf L B s)
-    (henv : DictEnv U V w₀ n_max h_space w base)
+    (henv : DictEnvGen w (mkDictParams U V w₀ n_max h_space) base)
     (hb : b < numBuckets n_max) (hm_eq : m = mOf q_target)
     (hm_lt : m < numMicroPerBucket n_max)
     (hq_lt : q_target < 2 ^ quotientBits U n_max)

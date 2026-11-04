@@ -291,6 +291,19 @@ theorem demoteSlabProg_tot_eq {U V w n_max h_space base b : ℕ}
     total_eq_sum_bCount hb_pos hpre.2.1 hpre.2.2.1]
   exact Finset.sum_congr rfl fun b' hb' => hbc b' (Finset.mem_range.mp hb')
 
+/-- Parameter-free `Memory.Prog` operation resolving the physical slot
+`slotOf n_max gm b (bCount n_max gm b - 1)` of the last item in a non-empty bucket `b = d.2.2`
+at `base = d.2.1` (`1 ≤ bCount n_max gm b`). -/
+def lastSlotOfGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ :=
+  if p_bucketBits d.1 = 0 then do
+    let c ← readGMGenProg (d.1, (d.2.1, 0))
+    pure (c - 1)
+  else do
+    let r_b ← readGMGenProg (d.1, (d.2.1, 4 + 3 * d.2.2 + 1))
+    let t_last ← readGMGenProg
+      (d.1, (d.2.1, p_gmTailPtrBase d.1 + (d.2.2 * p_tailCap d.1 + (r_b - 1))))
+    pure (p_nMaxSubOne d.1 - t_last)
+
 /-- `Memory.Prog` operation resolving the physical slot `slotOf n_max gm b (bCount n_max gm b - 1)`
 of the last item in a non-empty bucket `b = d.2` at `base = d.1` (`1 ≤ bCount n_max gm b`). -/
 def lastSlotOfProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
@@ -302,6 +315,28 @@ def lastSlotOfProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog �
     let t_last ← readGMProg U V w n_max h_space
       (d.1, gmTailPtrBase n_max + (d.2 * tailCapPerBucket n_max + (r_b - 1)))
     pure ((n_max - 1) - t_last)
+
+@[simp] theorem lastSlotOfGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
+    lastSlotOfGenProg (mkDictParams U V w n_max h_space, d) =
+      lastSlotOfProg U V w n_max h_space d := by
+  by_cases hb0 : bucketBits n_max = 0 <;>
+    simp [lastSlotOfGenProg, lastSlotOfProg, hb0, ← PFunctor.FreeM.bind_eq_bind]
+
+/-- Parameter-free precondition for `lastSlotOfGenProg`. -/
+@[expose]
+def LastSlotOfGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Memory.State) : Prop :=
+  let gm := gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem
+  DictEnvGen w d.1 d.2.1 ∧
+  SlotStoreInv (p_nMax d.1) gm ∧
+  d.2.2 < numBuckets (p_nMax d.1) ∧
+  1 ≤ bCount (p_nMax d.1) gm d.2.2
+
+@[simp] theorem lastSlotOfGenPre_mk (U V w₀ n_max h_space w : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
+    LastSlotOfGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
+      (DictEnvGen w (mkDictParams U V w₀ n_max h_space) d.1 ∧
+        SlotStoreInv n_max (gmAt d.1 U V w₀ n_max h_space s.mem) ∧
+        d.2 < numBuckets n_max ∧
+        1 ≤ bCount n_max (gmAt d.1 U V w₀ n_max h_space s.mem) d.2) := Iff.rfl
 
 theorem clientState_lastSlotOfProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (lastSlotOfProg U V w n_max h_space d) = s := by
@@ -359,87 +394,98 @@ theorem clientResult_lastSlotOfProg {U V w n_max h_space : ℕ} (d : ℕ × ℕ)
     rw [hsub]
     rfl
 
-theorem realizes_lastSlotOf {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀) :
-    Realizes .exact (lastSlotOfProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := ℕ × ℕ)) (WordEncoding.encode (α := ℕ))
-      (fun w d s => DictEnv U V w₀ n_max h_space w d.1 ∧
-        SlotStoreInv n_max (gmAt d.1 U V w₀ n_max h_space s.mem) ∧
-        d.2 < numBuckets n_max ∧
-        1 ≤ bCount n_max (gmAt d.1 U V w₀ n_max h_space s.mem) d.2)
+theorem realizes_lastSlotOfGen :
+    Realizes .exact lastSlotOfGenProg
+      (WordEncoding.encode (α := DictParams × (ℕ × ℕ))) (WordEncoding.encode (α := ℕ))
+      LastSlotOfGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-  by_cases hb0 : bucketBits n_max = 0
-  · refine Realizes.congr (p := fun d : ℕ × ℕ => do
-        let i0 ← pure 0
-        let c ← readGMProg U V w₀ n_max h_space (d.1, i0)
-        pure (c - 1)) ?_
-      (fun d => by simp [lastSlotOfProg, hb0])
-    realize
-    · exact h.1
-    · unfold globalMetaLen; omega
-    · have hd2 : d.2 = 0 := by
-        have := h.2.2.1
-        have : numBuckets n_max = 1 := by simp [numBuckets, hb0]
-        omega
-      have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
-      rw [clientResult_readGMProg _ h0_lt]
-      have hbc := h.2.2.2
-      unfold bCount at hbc
-      simp only [hb0, ↓reduceIte, hd2] at hbc
-      exact hbc
-  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hb0
-    refine Realizes.congr (p := fun d : ℕ × ℕ => do
-        let r_idx ← pure (4 + 3 * d.2 + 1)
-        let r_b ← readGMProg U V w₀ n_max h_space (d.1, r_idx)
-        let ptr_idx ← pure (gmTailPtrBase n_max + (d.2 * tailCapPerBucket n_max + (r_b - 1)))
-        let t_last ← readGMProg U V w₀ n_max h_space (d.1, ptr_idx)
-        pure ((n_max - 1) - t_last)) ?_
-      (fun d => by simp [lastSlotOfProg, hb0, ← PFunctor.FreeM.bind_eq_bind])
-    realize
-    · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU (le_of_lt (gmRIdx_lt hb_pos h.2.2.1))
-    · refine fits_const_of_dictEnv h.1 ?_; omega
-    · exact h.1
-    · exact gmRIdx_lt hb_pos h.2.2.1
-    · have hr_idx_lt : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos h.2.2.1
-      rw [clientResult_readGMProg _ hr_idx_lt]
-      exact pos_gmRIdx_of_pos_bCount hb_pos h.2.1 h.2.2.1 h.2.2.2
-    · have hr_idx_lt : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos h.2.2.1
-      rw [clientResult_readGMProg _ hr_idx_lt]
-      have hr_cap :
-          gmAt d.1 U V w₀ n_max h_space s.mem (4 + 3 * d.2 + 1) - 1 < tailCapPerBucket n_max := by
-        have := (h.2.1.multi_r_bounds hb_pos d.2 h.2.2.1).1; unfold gmRIdx at this; omega
-      exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-        (le_of_lt (gmTailPtrIdx_lt hb_pos h.2.2.1 hr_cap))
-    · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU (tailCapPerBucket_le_globalMetaLen hb_pos)
-    · have hr_idx_lt : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos h.2.2.1
-      rw [clientResult_readGMProg _ hr_idx_lt]
-      have hr_cap :
-          gmAt d.1 U V w₀ n_max h_space s.mem (4 + 3 * d.2 + 1) - 1 < tailCapPerBucket n_max := by
-        have := (h.2.1.multi_r_bounds hb_pos d.2 h.2.2.1).1; unfold gmRIdx at this; omega
-      exact gmTailPtrIdx_lt hb_pos h.2.2.1 hr_cap
-    · have hr_idx_lt : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos h.2.2.1
-      have hr_pos := pos_gmRIdx_of_pos_bCount hb_pos h.2.1 h.2.2.1 h.2.2.2
-      have hr_cap :
-          gmAt d.1 U V w₀ n_max h_space s.mem (4 + 3 * d.2 + 1) - 1 < tailCapPerBucket n_max := by
-        have := (h.2.1.multi_r_bounds hb_pos d.2 h.2.2.1).1; unfold gmRIdx at this; omega
-      have hptr_lt : gmTailPtrBase n_max +
-          (d.2 * tailCapPerBucket n_max +
-            (gmAt d.1 U V w₀ n_max h_space s.mem (4 + 3 * d.2 + 1) - 1)) <
-          globalMetaLen n_max := gmTailPtrIdx_lt hb_pos h.2.2.1 hr_cap
-      rw [clientState_readGMProg, clientResult_readGMProg _ hr_idx_lt,
-        clientResult_readGMProg _ hptr_lt]
-      have htail := h.2.1.multi_tail hb_pos
-      unfold gmRIdx at hr_pos
-      have ht_lt := htail.ptr_lt d.2 h.2.2.1
-        (gmAt d.1 U V w₀ n_max h_space s.mem (4 + 3 * d.2 + 1) - 1)
-        (by unfold gmRIdx; omega)
-      have htot := h.2.1.multi_total_le hb_pos
-      unfold gmTailPtrIdx gmTailPtrFlatIdx at ht_lt
+  have hrg := realizes_readGMGen
+  refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) => do
+      let z ← pure 0
+      if p_bucketBits d.1 = z then
+        let c ← readGMGenProg (d.1, (d.2.1, z))
+        pure (c - 1)
+      else
+        let r_idx ← pure (4 + 3 * d.2.2 + 1)
+        let r_b ← readGMGenProg (d.1, (d.2.1, r_idx))
+        let ptr_idx ← pure (p_gmTailPtrBase d.1 + (d.2.2 * p_tailCap d.1 + (r_b - 1)))
+        let t_last ← readGMGenProg (d.1, (d.2.1, ptr_idx))
+        pure (p_nMaxSubOne d.1 - t_last)) ?_
+    (fun d => by
+      simp only [lastSlotOfGenProg, ← PFunctor.FreeM.bind_eq_bind, pure_bind])
+  realize_dict [lastSlotOfGenPre_mk]
+  · exact h.1
+  · unfold globalMetaLen; omega
+  · have hd2 : d.2 = 0 := by
+      have := h.2.2.1
+      have : numBuckets n_max = 1 := by simp [numBuckets, hc]
       omega
-    · refine fits_of_le_max_n_one h.1 hw hnU hU ?_; omega
+    have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
+    rw [clientResult_readGMProg _ h0_lt]
+    have hbc := h.2.2.2
+    unfold bCount at hbc
+    simp only [hc, ↓reduceIte, hd2] at hbc
+    exact hbc
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hc
+    exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU (le_of_lt (gmRIdx_lt hb_pos h.2.2.1))
+  · refine fits_const_of_dictEnv h.1 ?_; omega
+  · exact h.1
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hc
+    exact gmRIdx_lt hb_pos h.2.2.1
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hc
+    have hr_idx_lt : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos h.2.2.1
+    rw [clientResult_readGMProg _ hr_idx_lt]
+    exact pos_gmRIdx_of_pos_bCount hb_pos h.2.1 h.2.2.1 h.2.2.2
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hc
+    have hr_idx_lt : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos h.2.2.1
+    rw [clientResult_readGMProg _ hr_idx_lt]
+    have hr_cap :
+        gmAt d.1 U V w₀ n_max h_space s.mem (4 + 3 * d.2 + 1) - 1 < tailCapPerBucket n_max := by
+      have := (h.2.1.multi_r_bounds hb_pos d.2 h.2.2.1).1; unfold gmRIdx at this; omega
+    exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
+      (le_of_lt (gmTailPtrIdx_lt hb_pos h.2.2.1 hr_cap))
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hc
+    have hr_idx_lt : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos h.2.2.1
+    rw [clientResult_readGMProg _ hr_idx_lt]
+    have hr_cap :
+        gmAt d.1 U V w₀ n_max h_space s.mem (4 + 3 * d.2 + 1) - 1 < tailCapPerBucket n_max := by
+      have := (h.2.1.multi_r_bounds hb_pos d.2 h.2.2.1).1; unfold gmRIdx at this; omega
+    exact gmTailPtrIdx_lt hb_pos h.2.2.1 hr_cap
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hc
+    have hr_idx_lt : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos h.2.2.1
+    have hr_pos := pos_gmRIdx_of_pos_bCount hb_pos h.2.1 h.2.2.1 h.2.2.2
+    have hr_cap :
+        gmAt d.1 U V w₀ n_max h_space s.mem (4 + 3 * d.2 + 1) - 1 < tailCapPerBucket n_max := by
+      have := (h.2.1.multi_r_bounds hb_pos d.2 h.2.2.1).1; unfold gmRIdx at this; omega
+    have hptr_lt : gmTailPtrBase n_max +
+        (d.2 * tailCapPerBucket n_max +
+          (gmAt d.1 U V w₀ n_max h_space s.mem (4 + 3 * d.2 + 1) - 1)) <
+        globalMetaLen n_max := gmTailPtrIdx_lt hb_pos h.2.2.1 hr_cap
+    rw [clientState_readGMProg, clientResult_readGMProg _ hr_idx_lt,
+      clientResult_readGMProg _ hptr_lt]
+    have htail := h.2.1.multi_tail hb_pos
+    unfold gmRIdx at hr_pos
+    have ht_lt := htail.ptr_lt d.2 h.2.2.1
+      (gmAt d.1 U V w₀ n_max h_space s.mem (4 + 3 * d.2 + 1) - 1)
+      (by unfold gmRIdx; omega)
+    have htot := h.2.1.multi_total_le hb_pos
+    unfold gmTailPtrIdx gmTailPtrFlatIdx at ht_lt
+    omega
 
 /-! ## Section 2: `pushBackSlotProg` via `realize` -/
+
+/-- Parameter-free helper `Memory.Prog` for the multi-bucket prefix of `pushBackSlotGenProg`. -/
+def pushBackTailWriteGenProg (d : ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ) : Memory.Prog ℕ := do
+  let dp := d.1.1.1
+  let base := d.1.1.2.1
+  let b := d.1.1.2.2
+  let q_val := d.1.2
+  let v_val := d.2
+  let t_new ← appendTailItemGenProg (dp, (base, b))
+  let g_new := p_nMaxSubOne dp - t_new
+  writeQuotGenProg (dp, ((base, g_new), q_val))
+  writeValGenProg (dp, ((base, g_new), v_val))
+  readGMGenProg (dp, (base, 4 + 3 * b + 1))
 
 /-- Helper `Memory.Prog` for the multi-bucket prefix of `pushBackSlotProg`: appends one tail item
 to bucket `b = d.1.1.2` at `base = d.1.1.1`, writes `(q_val, v_val) = (d.1.2, d.2)` into its
@@ -454,6 +500,13 @@ def pushBackTailWriteProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ)
   writeQuotProg U w n_max h_space ((base, g_new), q_val)
   writeValProg U V w n_max h_space ((base, g_new), v_val)
   readGMProg U V w n_max h_space (base, 4 + 3 * b + 1)
+
+@[simp] theorem pushBackTailWriteGenProg_mk (U V w n_max h_space : ℕ)
+    (d1 : ℕ × ℕ) (d2 d3 : ℕ) :
+    pushBackTailWriteGenProg (((mkDictParams U V w n_max h_space, d1), d2), d3) =
+      pushBackTailWriteProg U V w n_max h_space ((d1, d2), d3) := by
+  simp only [pushBackTailWriteGenProg, pushBackTailWriteProg, p_nMaxSubOne_mk,
+    appendTailItemGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk, readGMGenProg_mk]
 
 @[simp]
 theorem memoryCost_pushBackTailWriteProg (U V w n_max h_space : ℕ)
@@ -612,12 +665,45 @@ def PushBackSlotPre (U V w₀ n_max h_space w : ℕ) (d : ((ℕ × ℕ) × ℕ) 
   let q_val := d.1.2
   let v_val := d.2
   let gm := gmAt base U V w₀ n_max h_space s.mem
-  DictEnv U V w₀ n_max h_space w base ∧
+  DictEnvGen w (mkDictParams U V w₀ n_max h_space) base ∧
   SlotStoreInv n_max gm ∧
   b < numBuckets n_max ∧
   totalSlots n_max gm < n_max ∧
   q_val < 2 ^ quotientBits U n_max ∧
   v_val < 2 ^ valBits V
+
+/-- Parameter-free precondition for `pushBackSlotGenProg`. -/
+@[expose]
+def PushBackSlotGenPre (w : ℕ) (d : ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ)
+    (s : Memory.State) : Prop :=
+  let dp := d.1.1.1
+  let base := d.1.1.2.1
+  let b := d.1.1.2.2
+  let q_val := d.1.2
+  let v_val := d.2
+  let gm := gmAt base (p_U dp) (p_V dp) (p_w dp) (p_nMax dp) (p_hSpace dp) s.mem
+  DictEnvGen w dp base ∧
+  SlotStoreInv (p_nMax dp) gm ∧
+  b < numBuckets (p_nMax dp) ∧
+  totalSlots (p_nMax dp) gm < p_nMax dp ∧
+  q_val < 2 ^ quotientBits (p_U dp) (p_nMax dp) ∧
+  v_val < 2 ^ valBits (p_V dp)
+
+@[simp] theorem pushBackSlotGenPre_mk (U V w₀ n_max h_space w : ℕ)
+    (d1 : ℕ × ℕ) (d2 d3 : ℕ) (s : Memory.State) :
+    PushBackSlotGenPre w (((mkDictParams U V w₀ n_max h_space, d1), d2), d3) s ↔
+      PushBackSlotPre U V w₀ n_max h_space w ((d1, d2), d3) s := Iff.rfl
+
+/-- Parameter-free precondition for `pushBackTailWriteGenProg`. -/
+@[expose]
+def PushBackTailWriteGenPre (w : ℕ) (d : ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ)
+    (s : Memory.State) : Prop :=
+  PushBackSlotGenPre w d s ∧ 0 < bucketBits (p_nMax d.1.1.1)
+
+@[simp] theorem pushBackTailWriteGenPre_mk (U V w₀ n_max h_space w : ℕ)
+    (d1 : ℕ × ℕ) (d2 d3 : ℕ) (s : Memory.State) :
+    PushBackTailWriteGenPre w (((mkDictParams U V w₀ n_max h_space, d1), d2), d3) s ↔
+      (PushBackSlotPre U V w₀ n_max h_space w ((d1, d2), d3) s ∧ 0 < bucketBits n_max) := Iff.rfl
 
 private theorem appendTailItem_lt_n_max {U V w₀ n_max h_space w : ℕ}
     (hw : 0 < w₀) (hb_pos : 0 < bucketBits n_max)
@@ -650,41 +736,73 @@ private theorem appendTailItem_sub_lt_n_max {U V w₀ n_max h_space w : ℕ}
   have := appendTailItem_lt_n_max hw hb_pos d s h
   omega
 
-theorem realizes_pushBackTailWrite {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀) (hV : V ≤ 2 ^ w₀)
-    (hb_pos : 0 < bucketBits n_max) :
-    Realizes .exact (pushBackTailWriteProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := ((ℕ × ℕ) × ℕ) × ℕ)) (WordEncoding.encode (α := ℕ))
-      (PushBackSlotPre U V w₀ n_max h_space)
+set_option linter.unusedSimpArgs false in
+theorem realizes_pushBackTailWriteGen :
+    Realizes .exact pushBackTailWriteGenProg
+      (WordEncoding.encode (α := ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ))
+      (WordEncoding.encode (α := ℕ))
+      PushBackTailWriteGenPre
       (fun _ _ => 0) := by
-  have happ := realizes_appendTailItem (U := U) (V := V) (h_space := h_space) hw hnU hU hb_pos
-  have hwq := realizes_writeQuot (U := U) (V := V) (w := w₀) (n_max := n_max) (h_space := h_space)
-    hw (le_of_lt hU)
-  have hwv := realizes_writeVal (U := U) (V := V) (w := w₀) (n_max := n_max) (h_space := h_space)
-    hw hV
-  have hrg := realizes_readGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-  refine Realizes.congr (p := fun d : ((ℕ × ℕ) × ℕ) × ℕ => do
-      let t_new ← appendTailItemProg U V w₀ n_max h_space d.1.1
-      let g_new ← pure ((n_max - 1) - t_new)
-      writeQuotProg U w₀ n_max h_space ((d.1.1.1, g_new), d.1.2)
-      writeValProg U V w₀ n_max h_space ((d.1.1.1, g_new), d.2)
-      let r_idx ← pure (4 + 3 * d.1.1.2 + 1)
-      readGMProg U V w₀ n_max h_space (d.1.1.1, r_idx)) ?_
-    (fun d => by simp [pushBackTailWriteProg, ← PFunctor.FreeM.bind_eq_bind])
+  have happ := realizes_appendTailItemGen
+  have hwq := realizes_writeQuotGen
+  have hwv := realizes_writeValGen
+  have hrg := realizes_readGMGen
+  refine Realizes.congr (p := fun d : ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ => do
+      let t_new ← appendTailItemGenProg d.1.1
+      let g_new ← pure (p_nMaxSubOne d.1.1.1 - t_new)
+      writeQuotGenProg (d.1.1.1, ((d.1.1.2.1, g_new), d.1.2))
+      writeValGenProg (d.1.1.1, ((d.1.1.2.1, g_new), d.2))
+      let r_idx ← pure (4 + 3 * d.1.1.2.2 + 1)
+      readGMGenProg (d.1.1.1, (d.1.1.2.1, r_idx))) ?_
+    (fun d => by simp only [pushBackTailWriteGenProg, ← PFunctor.FreeM.bind_eq_bind, pure_bind])
   realize
-  · exact h.1
-  · exact h.2.1.multi_tail hb_pos
-  · exact h.2.2.1
-  · exact (h.2.1.multi_r_bounds hb_pos d.1.1.2 h.2.2.1).1
-  · exact appendTailItem_le_n_max_sub_one hw hb_pos d s h
-  · refine fits_of_le_max_n_one h.1 hw hnU hU ?_; omega
-  · exact h.1
-  · exact appendTailItem_sub_lt_n_max hw hb_pos d s h
-  · refine fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU ?_
-    have := gmRIdx_lt hb_pos h.2.2.1; unfold gmRIdx at this; omega
-  · refine fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU ?_
-    have := gmRIdx_lt hb_pos h.2.2.1; unfold gmRIdx at this; omega
-  · exact gmRIdx_lt hb_pos h.2.2.1
+  all_goals (
+    rcases d with ⟨⟨⟨dp, base, b⟩, q_val⟩, v_val⟩
+    let d : ((ℕ × ℕ) × ℕ) × ℕ := (((base, b), q_val), v_val)
+    obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1.1
+    try simp only [
+      pushBackTailWriteGenPre_mk, pushBackSlotGenPre_mk,
+      appendTailItemGenPre_mk, appendTailItemGenProg_mk,
+      p_w_mk, p_nMax_mk, p_nMaxSubOne_mk, p_offQuot_mk, p_quotBits_mk, p_offVal_mk,
+      p_valBits_mk, p_lmBits_mk, p_offGM_mk, p_gmBits_mk, p_bucketBits_mk,
+      p_bucketMask_mk, p_slabSize_mk, p_slabSizeSubOne_mk, p_twoSlabSize_mk,
+      p_dirSlabs_mk, p_dirSlabsSubOne_mk, p_tailCap_mk, p_gmSlabDirBase_mk,
+      p_gmTailPtrBase_mk, p_gmTailOwnerBase_mk, p_gmSlabMetaBase_mk, p_numMicro_mk,
+      p_minCap_mk, p_U_mk, p_V_mk, p_hSpace_mk, p_offLMSub_mk,
+      readQuotGenProg_mk, writeQuotGenProg_mk, readValGenProg_mk, writeValGenProg_mk,
+      readLMGenProg_mk, writeLMGenProg_mk, readGMGenProg_mk, writeGMGenProg_mk,
+      readBucketCountGenProg_mk, resolveIndexedSlotGenProg_mk] at *
+    try dsimp only [d, PushBackSlotPre] at *
+  )
+  · exact ⟨h.1.1, h.1.2.1.multi_tail h.2, h.1.2.2.1,
+      (h.1.2.1.multi_r_bounds h.2 d.1.1.2 h.1.2.2.1).1, h.2⟩
+  · exact appendTailItem_le_n_max_sub_one hw h.2 d s h.1
+  · exact h.1.1
+  · exact appendTailItem_sub_lt_n_max hw h.2 d s h.1
+  · refine fits_of_le_globalMetaLen h.1.1 h.2 hw hnU hU ?_
+    have := gmRIdx_lt h.2 h.1.2.2.1; unfold gmRIdx at this; omega
+  · refine fits_of_le_globalMetaLen h.1.1 h.2 hw hnU hU ?_
+    have := gmRIdx_lt h.2 h.1.2.2.1; unfold gmRIdx at this; omega
+  · exact gmRIdx_lt h.2 h.1.2.2.1
+
+/-- Parameter-free `Memory.Prog` operation appending `(q_val, v_val) = (d.1.2, d.2)` at logical
+slot `bCount n_max gm b` of bucket `b = d.1.1.2.2` at `base = d.1.1.2.1`. -/
+def pushBackSlotGenProg (d : ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ) : Memory.Prog Unit :=
+  if p_bucketBits d.1.1.1 = 0 then do
+    let dp := d.1.1.1
+    let base := d.1.1.2.1
+    let q_val := d.1.2
+    let v_val := d.2
+    let c ← readGMGenProg (dp, (base, 0))
+    writeQuotGenProg (dp, ((base, c), q_val))
+    writeValGenProg (dp, ((base, c), v_val))
+    writeGMGenProg (dp, ((base, 0), c + 1))
+  else do
+    let r_b_new ← pushBackTailWriteGenProg d
+    if r_b_new = p_twoSlabSize d.1.1.1 then
+      promoteSlabGenProg d.1.1
+    else
+      pure ()
 
 /-- `Memory.Prog` operation appending `(q_val, v_val) = (d.1.2, d.2)` at logical slot
 `bCount n_max gm b` of bucket `b = d.1.1.2` at `base = d.1.1.1`, promoting `K` tail items into a
@@ -704,6 +822,14 @@ def pushBackSlotProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × �
       promoteSlabProg U V w n_max h_space d.1.1
     else
       pure ()
+
+@[simp] theorem pushBackSlotGenProg_mk (U V w n_max h_space : ℕ)
+    (d1 : ℕ × ℕ) (d2 d3 : ℕ) :
+    pushBackSlotGenProg (((mkDictParams U V w n_max h_space, d1), d2), d3) =
+      pushBackSlotProg U V w n_max h_space ((d1, d2), d3) := by
+  simp only [pushBackSlotGenProg, pushBackSlotProg, p_bucketBits_mk, p_twoSlabSize_mk,
+    readGMGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk, writeGMGenProg_mk,
+    pushBackTailWriteGenProg_mk, promoteSlabGenProg_mk]
 
 /-- Pure state effect and amortized `memoryCost` bound of `pushBackSlotProg`. -/
 theorem pushBackSlotProg_effect {U V w n_max h_space base b q_val v_val : ℕ}
@@ -968,78 +1094,104 @@ theorem pushBackSlotProg_effect {U V w n_max h_space base b q_val v_val : ℕ}
       rw [hcost]
       omega
 
-theorem realizes_pushBackSlot {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀) (hV : V ≤ 2 ^ w₀) :
-    Realizes .exact (pushBackSlotProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := ((ℕ × ℕ) × ℕ) × ℕ)) (WordEncoding.encode (α := Unit))
-      (PushBackSlotPre U V w₀ n_max h_space)
+set_option linter.unusedSimpArgs false in
+theorem realizes_pushBackSlotGen :
+    Realizes .exact pushBackSlotGenProg
+      (WordEncoding.encode (α := ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ))
+      (WordEncoding.encode (α := Unit))
+      PushBackSlotGenPre
       (fun _ _ => 0) := by
-  by_cases hb0 : bucketBits n_max = 0
-  · have hrg := realizes_readGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-    have hwq := realizes_writeQuot (U := U) (V := V) (w := w₀) (n_max := n_max) (h_space := h_space)
-      hw (le_of_lt hU)
-    have hwv := realizes_writeVal (U := U) (V := V) (w := w₀) (n_max := n_max) (h_space := h_space)
-      hw hV
-    have hwg := realizes_writeGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-    refine Realizes.congr (p := fun d : ((ℕ × ℕ) × ℕ) × ℕ => do
-        let i0 ← pure 0
-        let c ← readGMProg U V w₀ n_max h_space (d.1.1.1, i0)
-        writeQuotProg U w₀ n_max h_space ((d.1.1.1, c), d.1.2)
-        writeValProg U V w₀ n_max h_space ((d.1.1.1, c), d.2)
+  have hrg := realizes_readGMGen
+  have hwq := realizes_writeQuotGen
+  have hwv := realizes_writeValGen
+  have hwg := realizes_writeGMGen
+  have htw := realizes_pushBackTailWriteGen
+  have hprom := realizes_promoteSlabGen
+  refine Realizes.congr (p := fun d : ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ => do
+      let i0 ← pure 0
+      if p_bucketBits d.1.1.1 = i0 then
+        let c ← readGMGenProg (d.1.1.1, (d.1.1.2.1, i0))
+        writeQuotGenProg (d.1.1.1, ((d.1.1.2.1, c), d.1.2))
+        writeValGenProg (d.1.1.1, ((d.1.1.2.1, c), d.2))
         let c1 ← pure (c + 1)
-        writeGMProg U V w₀ n_max h_space ((d.1.1.1, i0), c1)) ?_
-      (fun d => by simp [pushBackSlotProg, hb0, ← PFunctor.FreeM.bind_eq_bind])
-    realize
-    · exact h.1
-    · unfold globalMetaLen; omega
-    · have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
-      rw [clientResult_readGMProg _ h0_lt]
-      have htot := h.2.2.2.1
-      unfold totalSlots at htot
-      rw [ite_eq_left hb0] at htot
-      exact htot
-    · have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
-      rw [clientResult_readGMProg _ h0_lt]
-      have htot := h.2.2.2.1
-      unfold totalSlots at htot
-      rw [ite_eq_left hb0] at htot
-      refine fits_of_le_max_n_one h.1 hw hnU hU ?_
-      omega
-  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hb0
-    have htw :=
-      realizes_pushBackTailWrite (U := U) (V := V) (h_space := h_space) hw hnU hU hV hb_pos
-    have hprom := realizes_promoteSlab (U := U) (V := V) (h_space := h_space) hw hnU hU hV hb_pos
-    refine Realizes.congr (p := fun d : ((ℕ × ℕ) × ℕ) × ℕ => do
-        let r_b_new ← pushBackTailWriteProg U V w₀ n_max h_space d
-        let twoK ← pure (2 * slabSize n_max)
-        if r_b_new = twoK then
-          promoteSlabProg U V w₀ n_max h_space d.1.1
+        writeGMGenProg (d.1.1.1, ((d.1.1.2.1, i0), c1))
+      else
+        let r_b_new ← pushBackTailWriteGenProg d
+        if r_b_new = p_twoSlabSize d.1.1.1 then
+          promoteSlabGenProg d.1.1
         else
           pure ()) ?_
-      (fun d => by simp [pushBackSlotProg, hb0, ← PFunctor.FreeM.bind_eq_bind])
-    realize
-    · exact h
-    · have h2K : 2 * slabSize n_max ≤ globalMetaLen n_max := by
-        have := tailCapPerBucket_le_globalMetaLen hb_pos
-        unfold tailCapPerBucket at this
-        rw [ite_eq_right hb0] at this
-        exact this
-      exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU h2K
-    · rcases d with ⟨⟨⟨base, b⟩, q_val⟩, v_val⟩
-      rcases h with ⟨hdict, hinv, hb, htot, hq_lt, hv_lt⟩
-      dsimp only at hdict hinv hb htot hq_lt hv_lt hc ⊢
-      obtain ⟨hres1, _, _, _, _, htail1, hslab1, htot1, _, hrb1, hother1, _⟩ :=
-        pushBackTailWriteProg_effect (U := U) (V := V) (h_space := h_space)
-          hw hb_pos s hinv hb htot hq_lt hv_lt
-      rw [hres1] at hc
-      have htot0_lt : gmAt base U V w₀ n_max h_space s.mem 0 * slabSize n_max +
-          gmAt base U V w₀ n_max h_space s.mem 1 < n_max := by
-        unfold totalSlots at htot; rw [ite_eq_right hb0] at htot; exact htot
-      refine ⟨hdict, hb, htail1, hslab1, by rw [hrb1, hc], fun b' hb' hne => ?_, by omega⟩
-      rw [(hother1 b' hb' hne).1, (hother1 b' hb' hne).2]
-      exact hinv.multi_r_bounds hb_pos b' hb'
+    (fun d => by
+      simp only [pushBackSlotGenProg, ← PFunctor.FreeM.bind_eq_bind, pure_bind])
+  realize
+  all_goals (
+    rcases d with ⟨⟨⟨dp, base, b⟩, q_val⟩, v_val⟩
+    let d : ((ℕ × ℕ) × ℕ) × ℕ := (((base, b), q_val), v_val)
+    obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1
+    try simp only [
+      pushBackSlotGenPre_mk, pushBackTailWriteGenPre_mk, pushBackTailWriteGenProg_mk,
+      promoteSlabGenPre_mk, promoteSlabGenProg_mk,
+      p_w_mk, p_nMax_mk, p_nMaxSubOne_mk, p_offQuot_mk, p_quotBits_mk, p_offVal_mk,
+      p_valBits_mk, p_lmBits_mk, p_offGM_mk, p_gmBits_mk, p_bucketBits_mk,
+      p_bucketMask_mk, p_slabSize_mk, p_slabSizeSubOne_mk, p_twoSlabSize_mk,
+      p_dirSlabs_mk, p_dirSlabsSubOne_mk, p_tailCap_mk, p_gmSlabDirBase_mk,
+      p_gmTailPtrBase_mk, p_gmTailOwnerBase_mk, p_gmSlabMetaBase_mk, p_numMicro_mk,
+      p_minCap_mk, p_U_mk, p_V_mk, p_hSpace_mk, p_offLMSub_mk,
+      readQuotGenProg_mk, writeQuotGenProg_mk, readValGenProg_mk, writeValGenProg_mk,
+      readLMGenProg_mk, writeLMGenProg_mk, readGMGenProg_mk, writeGMGenProg_mk,
+      readBucketCountGenProg_mk, resolveIndexedSlotGenProg_mk] at *
+    try dsimp only [d, PushBackSlotPre] at *
+  )
+  · exact h.1
+  · unfold globalMetaLen; omega
+  · have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
+    rw [clientResult_readGMProg _ h0_lt]
+    have htot := h.2.2.2.1
+    unfold totalSlots at htot
+    rw [ite_eq_left hc] at htot
+    exact htot
+  · have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
+    rw [clientResult_readGMProg _ h0_lt]
+    have htot := h.2.2.2.1
+    unfold totalSlots at htot
+    rw [ite_eq_left hc] at htot
+    refine fits_of_le_max_n_one h.1 hw hnU hU ?_
+    omega
+  · exact ⟨h, Nat.pos_of_ne_zero hc⟩
+  · rename_i hc0
+    have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hc0
+    rcases h with ⟨hdict, hinv, hb, htot, hq_lt, hv_lt⟩
+    obtain ⟨hres1, _, _, _, _, htail1, hslab1, htot1, _, hrb1, hother1, _⟩ :=
+      pushBackTailWriteProg_effect (U := U) (V := V) (h_space := h_space)
+        hw hb_pos s hinv hb htot hq_lt hv_lt
+    rw [hres1] at hc
+    have htot0_lt : gmAt base U V w₀ n_max h_space s.mem 0 * slabSize n_max +
+        gmAt base U V w₀ n_max h_space s.mem 1 < n_max := by
+      unfold totalSlots at htot; rw [ite_eq_right hc0] at htot; exact htot
+    refine ⟨hdict, ⟨hb, htail1, hslab1, by rw [hrb1, hc], fun b' hb' hne => ?_, by omega⟩,
+      hb_pos⟩
+    rw [(hother1 b' hb' hne).1, (hother1 b' hb' hne).2]
+    exact hinv.multi_r_bounds hb_pos b' hb'
 
 /-! ## Section 3: `popBackSlotProg` via `realize` -/
+
+/-- Parameter-free `Memory.Prog` operation removing the last logical slot `bCount n_max gm b - 1`
+of a non-empty bucket `b = d.2.2` at `base = d.2.1`. -/
+def popBackSlotGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Unit :=
+  if p_bucketBits d.1 = 0 then do
+    let c ← readGMGenProg (d.1, (d.2.1, 0))
+    writeGMGenProg (d.1, ((d.2.1, 0), c - 1))
+  else do
+    removeLastTailItemGenProg d
+    let r_b_new ← readGMGenProg (d.1, (d.2.1, 4 + 3 * d.2.2 + 1))
+    let q_b ← readGMGenProg (d.1, (d.2.1, 4 + 3 * d.2.2))
+    if r_b_new = 0 then
+      if 0 < q_b then
+        demoteSlabGenProg d
+      else
+        pure ()
+    else
+      pure ()
 
 /-- `Memory.Prog` operation removing the last logical slot `bCount n_max gm b - 1` of a non-empty
 bucket `b = d.2` at `base = d.1`, demoting the top full slab into `K = slabSize n_max` tail items
@@ -1060,16 +1212,35 @@ def popBackSlotProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog U
     else
       pure ()
 
+@[simp] theorem popBackSlotGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
+    popBackSlotGenProg (mkDictParams U V w n_max h_space, d) =
+      popBackSlotProg U V w n_max h_space d := by
+  simp only [popBackSlotGenProg, popBackSlotProg, p_bucketBits_mk,
+    readGMGenProg_mk, writeGMGenProg_mk, removeLastTailItemGenProg_mk, demoteSlabGenProg_mk]
+
 /-- Precondition for `popBackSlotProg` in `Realizes`. -/
 @[expose]
 def PopBackSlotPre (U V w₀ n_max h_space w : ℕ) (d : ℕ × ℕ) (s : Memory.State) : Prop :=
   let base := d.1
   let b := d.2
   let gm := gmAt base U V w₀ n_max h_space s.mem
-  DictEnv U V w₀ n_max h_space w base ∧
+  DictEnvGen w (mkDictParams U V w₀ n_max h_space) base ∧
   SlotStoreInv n_max gm ∧
   b < numBuckets n_max ∧
   1 ≤ bCount n_max gm b
+
+/-- Parameter-free precondition for `popBackSlotGenProg`. -/
+@[expose]
+def PopBackSlotGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Memory.State) : Prop :=
+  let gm := gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem
+  DictEnvGen w d.1 d.2.1 ∧
+  SlotStoreInv (p_nMax d.1) gm ∧
+  d.2.2 < numBuckets (p_nMax d.1) ∧
+  1 ≤ bCount (p_nMax d.1) gm d.2.2
+
+@[simp] theorem popBackSlotGenPre_mk (U V w₀ n_max h_space w : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
+    PopBackSlotGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
+      PopBackSlotPre U V w₀ n_max h_space w d s := Iff.rfl
 
 /-- Pure state effect and amortized `memoryCost` bound of `popBackSlotProg`. -/
 theorem popBackSlotProg_effect {U V w n_max h_space base b : ℕ}
@@ -1370,93 +1541,93 @@ theorem popBackSlotProg_effect {U V w n_max h_space base b : ℕ}
       rw [hcost]
       omega
 
-theorem realizes_popBackSlot {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀) (hV : V ≤ 2 ^ w₀) :
-    Realizes .exact (popBackSlotProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := ℕ × ℕ)) (WordEncoding.encode (α := Unit))
-      (PopBackSlotPre U V w₀ n_max h_space)
+theorem realizes_popBackSlotGen :
+    Realizes .exact popBackSlotGenProg
+      (WordEncoding.encode (α := DictParams × (ℕ × ℕ))) (WordEncoding.encode (α := Unit))
+      PopBackSlotGenPre
       (fun _ _ => 0) := by
-  by_cases hb0 : bucketBits n_max = 0
-  · have hrg := realizes_readGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-    have hwg := realizes_writeGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-    refine Realizes.congr (p := fun d : ℕ × ℕ => do
-        let i0 ← pure 0
-        let c ← readGMProg U V w₀ n_max h_space (d.1, i0)
+  have hrg := realizes_readGMGen
+  have hwg := realizes_writeGMGen
+  have hrem := realizes_removeLastTailItemGen
+  have hdem := realizes_demoteSlabGen
+  refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) => do
+      let z ← pure 0
+      if p_bucketBits d.1 = z then
+        let c ← readGMGenProg (d.1, (d.2.1, z))
         let c_sub ← pure (c - 1)
-        writeGMProg U V w₀ n_max h_space ((d.1, i0), c_sub)) ?_
-      (fun d => by simp [popBackSlotProg, hb0, ← PFunctor.FreeM.bind_eq_bind])
-    realize
-    · exact h.1
-    · unfold globalMetaLen; omega
-    · have hd2 : d.2 = 0 := by
-        have := h.2.2.1
-        have : numBuckets n_max = 1 := by simp [numBuckets, hb0]
-        omega
-      have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
-      rw [clientResult_readGMProg _ h0_lt]
-      have hbc := h.2.2.2
-      unfold bCount at hbc
-      simp only [hb0, ↓reduceIte, hd2] at hbc
-      exact hbc
-  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hb0
-    have hrem := realizes_removeLastTailItem (U := U) (V := V) (h_space := h_space)
-      hw hnU hU hV hb_pos
-    have hrg := realizes_readGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-    have hdem := realizes_demoteSlab (U := U) (V := V) (h_space := h_space) hw hnU hU hV hb_pos
-    refine Realizes.congr (p := fun d : ℕ × ℕ => do
-        removeLastTailItemProg U V w₀ n_max h_space d
-        let r_idx ← pure (4 + 3 * d.2 + 1)
-        let r_b_new ← readGMProg U V w₀ n_max h_space (d.1, r_idx)
-        let q_idx ← pure (4 + 3 * d.2)
-        let q_b ← readGMProg U V w₀ n_max h_space (d.1, q_idx)
-        let z ← pure 0
+        writeGMGenProg (d.1, ((d.2.1, z), c_sub))
+      else
+        removeLastTailItemGenProg d
+        let r_idx ← pure (4 + 3 * d.2.2 + 1)
+        let r_b_new ← readGMGenProg (d.1, (d.2.1, r_idx))
+        let q_idx ← pure (4 + 3 * d.2.2)
+        let q_b ← readGMGenProg (d.1, (d.2.1, q_idx))
         if r_b_new = z then
           if z < q_b then
-            demoteSlabProg U V w₀ n_max h_space d
+            demoteSlabGenProg d
           else
             pure ()
         else
           pure ()) ?_
-      (fun d => by simp [popBackSlotProg, hb0, ← PFunctor.FreeM.bind_eq_bind])
-    realize
-    · exact h.1
-    · exact h.2.1.multi_tail hb_pos
-    · exact h.2.2.1
-    · exact pos_gmRIdx_of_pos_bCount hb_pos h.2.1 h.2.2.1 h.2.2.2
-    · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU (le_of_lt (gmRIdx_lt hb_pos h.2.2.1))
-    · refine fits_const_of_dictEnv h.1 ?_; omega
-    · exact gmRIdx_lt hb_pos h.2.2.1
-    · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU (le_of_lt (gmQIdx_lt hb_pos h.2.2.1))
-    · exact gmQIdx_lt hb_pos h.2.2.1
-    · rename_i hc1
-      rcases d with ⟨base, b⟩
-      rcases h with ⟨hdict, hinv, hb, hbc⟩
-      dsimp only at hdict hinv hb hbc hc1 hc ⊢
-      have hr0_pos : 1 ≤ gmAt base U V w₀ n_max h_space s.mem (gmRIdx b) :=
-        pos_gmRIdx_of_pos_bCount hb_pos hinv hb hbc
-      have htail₀ := hinv.multi_tail hb_pos
-      have hslab₀ := hinv.multi_slab hb_pos
-      have htot₀ := hinv.multi_total_le hb_pos
-      obtain ⟨_, _, _, _, _, hgm1_eq⟩ :=
-        removeLastTailItemProg_effect (U := U) (V := V) (h_space := h_space)
-          hw hb_pos hb s htail₀ hr0_pos
-      let s₁ := (Memory.spec 0).clientState s
-        (removeLastTailItemProg U V w₀ n_max h_space (base, b))
-      have hr_idx_lt : 4 + 3 * b + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos hb
-      have hq_idx_lt : 4 + 3 * b < globalMetaLen n_max := gmQIdx_lt hb_pos hb
-      rw [clientState_readGMProg] at hc
-      rw [clientState_readGMProg, clientState_readGMProg]
-      rw [clientResult_readGMProg s₁ hr_idx_lt] at hc1
-      rw [clientResult_readGMProg s₁ hq_idx_lt] at hc
-      have hpres1 := gmRemoveTail_preserves_nonTail hb hr0_pos htail₀
-      have htail1 := tailBijection_gmRemoveTail hb hr0_pos htail₀
-      have ⟨_, hslab1⟩ := slabBijection_gmRemoveTail hb hr0_pos htail₀ hslab₀
-      refine ⟨hdict, hb, ?_, ?_, hc1, hc, fun b' hb' hne => ?_, ?_⟩
-      · rw [hgm1_eq]; exact htail1
-      · rw [hgm1_eq]; exact hslab1
-      · rw [hgm1_eq, hpres1.2.2.2.2.1 b' hb', hpres1.2.2.2.1 b' hb' hne]
-        exact hinv.multi_r_bounds hb_pos b' hb'
-      · rw [hgm1_eq, hpres1.1, hpres1.2.1]
-        omega
+    (fun d => by
+      simp only [popBackSlotGenProg, ← PFunctor.FreeM.bind_eq_bind, pure_bind])
+  realize_dict [popBackSlotGenPre_mk, removeLastTailItemGenPre_mk, removeLastTailItemGenProg_mk,
+    demoteSlabGenPre_mk, demoteSlabGenProg_mk]
+  · exact h.1
+  · unfold globalMetaLen; omega
+  · have hd2 : d.2 = 0 := by
+      have := h.2.2.1
+      have : numBuckets n_max = 1 := by simp [numBuckets, hc]
+      omega
+    have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
+    rw [clientResult_readGMProg _ h0_lt]
+    have hbc := h.2.2.2
+    unfold bCount at hbc
+    simp only [hc, ↓reduceIte, hd2] at hbc
+    exact hbc
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hc
+    exact ⟨h.1, h.2.1.multi_tail hb_pos, h.2.2.1,
+      pos_gmRIdx_of_pos_bCount hb_pos h.2.1 h.2.2.1 h.2.2.2, hb_pos⟩
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hc
+    exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU (le_of_lt (gmRIdx_lt hb_pos h.2.2.1))
+  · refine fits_const_of_dictEnv h.1 ?_; omega
+  · exact h.1
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hc
+    exact gmRIdx_lt hb_pos h.2.2.1
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hc
+    exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU (le_of_lt (gmQIdx_lt hb_pos h.2.2.1))
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hc
+    exact gmQIdx_lt hb_pos h.2.2.1
+  · rename_i hc0 hc1
+    have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hc0
+    rcases d with ⟨base, b⟩
+    rcases h with ⟨hdict, hinv, hb, hbc⟩
+    dsimp only at hdict hinv hb hbc hc1 hc ⊢
+    have hr0_pos : 1 ≤ gmAt base U V w₀ n_max h_space s.mem (gmRIdx b) :=
+      pos_gmRIdx_of_pos_bCount hb_pos hinv hb hbc
+    have htail₀ := hinv.multi_tail hb_pos
+    have hslab₀ := hinv.multi_slab hb_pos
+    have htot₀ := hinv.multi_total_le hb_pos
+    obtain ⟨_, _, _, _, _, hgm1_eq⟩ :=
+      removeLastTailItemProg_effect (U := U) (V := V) (h_space := h_space)
+        hw hb_pos hb s htail₀ hr0_pos
+    let s₁ := (Memory.spec 0).clientState s
+      (removeLastTailItemProg U V w₀ n_max h_space (base, b))
+    have hr_idx_lt : 4 + 3 * b + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos hb
+    have hq_idx_lt : 4 + 3 * b < globalMetaLen n_max := gmQIdx_lt hb_pos hb
+    rw [clientState_readGMProg] at hc
+    rw [clientState_readGMProg, clientState_readGMProg]
+    rw [clientResult_readGMProg s₁ hr_idx_lt] at hc1
+    rw [clientResult_readGMProg s₁ hq_idx_lt] at hc
+    have hpres1 := gmRemoveTail_preserves_nonTail hb hr0_pos htail₀
+    have htail1 := tailBijection_gmRemoveTail hb hr0_pos htail₀
+    have ⟨_, hslab1⟩ := slabBijection_gmRemoveTail hb hr0_pos htail₀ hslab₀
+    refine ⟨hdict, ⟨hb, ?_, ?_, hc1, hc, fun b' hb' hne => ?_, ?_⟩, hb_pos⟩
+    · rw [hgm1_eq]; exact htail1
+    · rw [hgm1_eq]; exact hslab1
+    · rw [hgm1_eq, hpres1.2.2.2.2.1 b' hb', hpres1.2.2.2.1 b' hb' hne]
+      exact hinv.multi_r_bounds hb_pos b' hb'
+    · rw [hgm1_eq, hpres1.1, hpres1.2.1]
+      omega
 
 end Cslib.DataStructure.Dictionary.WordRAM.Succinct

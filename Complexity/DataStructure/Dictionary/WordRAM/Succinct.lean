@@ -58,18 +58,18 @@ SOSA 2024, Sections 3–4):
   quotient hash seed once with `seedSlack = 1` and `initPotential = 0`.
 * **Space (`space`)**: `space U V w n_max ≤ Dynamic.succinctWords 81 213 U V w n_max` words
   (`space_le_succinctWords`) for every `0 < w` and `n_max ≤ U` with `Fits w U` (`U < 2 ^ w`).
-* **Per-parameter operation charge (`seq_expected_amortized`)**: at the `Memory.Prog` level
+* **Constant operation charge (`seq_expected_amortized`)**: at the `Memory.Prog` level
   (`SuccinctHash`), `queryWithHashProg_dict_spec`, `insertWithHashProg_dict_spec`, and
   `deleteWithHashProg_dict_spec` prove per-seed **amortized** `memoryCost` bounds of
   `26 + 8 * probeExcess`, `184 + 8 * probeExcess`, and `270 + 8 * probeExcess` with potential
   `66 * slotPotential` (unchanged on `query`). In turn,
-  `tsum_uniform_probeExcess_reducedPolyHash_le_five` bounds expected `probeExcess` by `5`. At the
-  compiled Word-RAM level, `opFactor U V w n_max` (`Realizes.factor`) is chosen by classical choice
-  for each `(U, V, w, n_max)` without a proven parameter-uniform bound. Consequently,
-  `chargeVal U V w n_max = 313 * opFactor U V w n_max + 284689` is a per-parameter charge
-  (independent of `base` and `ops.length`) rather than a proven parameter-uniform constant
-  instruction bound. The compiled Word-RAM theorems therefore certify multi-operation correctness,
-  succinct space, and linear initialization cost, without a parameter-uniform operation-time bound.
+  `tsum_uniform_probeExcess_reducedPolyHash_le_five` bounds expected `probeExcess` by `5`. Because
+  the five generic `Memory.Prog` subroutines (`extractOpGenProg`, `queryOpGenProg`,
+  `insertOpGenProg`, `deletePrepGenProg`, `deleteFinGenProg`) are compiled once independent of
+  `(U, V, w, n_max)` and receive the 36 static parameters via registers loaded by `loadParamsCode`
+  in `36` instructions, both the register budget `rSuccinct` and the operation charge
+  `chargeVal = 313 * opFactor + 284725` are parameter-free `O(1)` constants across all
+  `(U, V, w, n_max)`, `base`, and `ops.length`.
 
 ## Main definitions
 
@@ -83,7 +83,7 @@ SOSA 2024, Sections 3–4):
   `(impl hw hnU hU hV hfit).initTime ≤ initSteps U n_max + 1` and
   `initSteps U n_max + 1 ≤ 31 * n_max + 1092`.
 * `Cslib.DataStructure.Dictionary.WordRAM.Succinct.seq_expected_amortized`: end-to-end
-  multi-operation distributional correctness and per-parameter amortized execution certificate.
+  multi-operation distributional correctness and constant expected amortized execution certificate.
 
 ## References
 
@@ -113,32 +113,31 @@ open scoped BigOperators ENNReal
 
 theorem span_exec_succinct {U V w n_max base : ℕ}
     (hfit : Fits w (base + space U V w n_max))
-    {x : Data (rSuccinct U V w n_max)}
-    (hfr : x.regs (frontierReg U V w n_max) = base) :
-    ∃ x₁ : Data (rSuccinct U V w n_max),
+    {x : Data rSuccinct}
+    (hfr : x.regs frontierReg = base) :
+    ∃ x₁ : Data rSuccinct,
       ExecWithin w (subroutineCode U V w n_max).allocSpan x x₁ 3 ∧
       x₁.mem = x.mem ∧
-      x₁.regs (baseReg U V w n_max) = base ∧
-      x₁.regs (frontierReg U V w n_max) = base + space U V w n_max ∧
+      x₁.regs baseReg = base ∧
+      x₁.regs frontierReg = base + space U V w n_max ∧
       (∀ j : Fin 0, x₁.regs ((subroutineCode U V w n_max).initParams j) = Fin.elim0 j) := by
   have hfit_sp : Fits w (space U V w n_max) := hfit.of_le (Nat.le_add_left _ _)
-  let s₁ := x.set (baseReg U V w n_max) (x.regs (frontierReg U V w n_max))
-  let s₂ := s₁.set (curReg U V w n_max) (space U V w n_max)
-  let s₃ := s₂.set (frontierReg U V w n_max) (base + space U V w n_max)
+  let s₁ := x.set baseReg (x.regs frontierReg)
+  let s₂ := s₁.set curReg (space U V w n_max)
+  let s₃ := s₂.set frontierReg (base + space U V w n_max)
   have e₁ : ExecWithin (B := .exact) w
-      (.op (.copy (baseReg U V w n_max) (frontierReg U V w n_max))) x s₁ 1 :=
+      (.op (.copy baseReg frontierReg)) x s₁ 1 :=
     ExecWithin.copy
   have e₂ : ExecWithin (B := .exact) w
-      (.op (.const (curReg U V w n_max) (space U V w n_max))) s₁ s₂ 1 :=
+      (.op (.const curReg (space U V w n_max))) s₁ s₂ 1 :=
     ExecWithin.const hfit_sp
   have e₃ : ExecWithin (B := .exact) w
-      (.op (.exactBin .add (frontierReg U V w n_max)
-        (frontierReg U V w n_max) (curReg U V w n_max))) s₂ s₃ 1 := by
+      (.op (.exactBin .add frontierReg frontierReg curReg)) s₂ s₃ 1 := by
     apply ExecWithin.op
     rw [Op.eval_exactBin]
-    have hfr₂ : s₂.regs (frontierReg U V w n_max) = base := by
+    have hfr₂ : s₂.regs frontierReg = base := by
       simp only [s₂, s₁, Data.set_regs, update_sReg, Fin.reduceEq, ↓reduceIte, hfr]
-    have hcur₂ : s₂.regs (curReg U V w n_max) = space U V w n_max := by
+    have hcur₂ : s₂.regs curReg = space U V w n_max := by
       simp only [s₂, Data.set_regs, update_sReg, ↓reduceIte]
     rw [hfr₂, hcur₂]
     exact Data.put_of_fits hfit
@@ -149,19 +148,19 @@ theorem span_exec_succinct {U V w n_max base : ℕ}
 theorem setup_exec_succinct {U V w n_max base : ℕ}
     (hwf : DictParamsWf U V w n_max)
     (hfit : Fits w (base + space U V w n_max))
-    {x₁ : Data (rSuccinct U V w n_max)}
+    {x₁ : Data rSuccinct}
     (hx₁ : x₁.Bounded w)
-    (hbase : x₁.regs (baseReg U V w n_max) = base)
-    (hfr : x₁.regs (frontierReg U V w n_max) = base + space U V w n_max)
+    (hbase : x₁.regs baseReg = base)
+    (hfr : x₁.regs frontierReg = base + space U V w n_max)
     (hz : ∀ a ∈ (Block.mk base (space U V w n_max)).footprint, x₁.mem a = 0) :
-    ∃ ν₀ : PMF (QuotHashSeed U n_max × Data (rSuccinct U V w n_max)),
+    ∃ ν₀ : PMF (QuotHashSeed U n_max × Data rSuccinct),
       ExecCodeDist w (subroutineCode U V w n_max).initSetup x₁ (ν₀.map Prod.snd)
         ((ReducedKWise.initTableSteps (qBits U n_max) (hashB n_max) (totalMicroBits n_max) +
           ReducedKWise.resampleSteps (qBits U n_max) (hashB n_max) (totalMicroBits n_max) 3 : ℕ) :
           ℝ≥0∞) ∧
       (∀ θ, (ν₀.map Prod.fst) θ ≤ 1 * (PMF.uniformOfFintype (QuotHashSeed U n_max)) θ) ∧
       ∀ p ∈ ν₀.support,
-        p.2.regs (frontierReg U V w n_max) = base + space U V w n_max ∧
+        p.2.regs frontierReg = base + space U V w n_max ∧
         Rep U V w n_max base p.1 (Dynamic.empty U) p.2 ∧
         potential U V w n_max base p.1 p.2 ≤ 0 ∧
         Modifies (Block.mk base (space U V w n_max)).footprint x₁.mem p.2.mem := by
@@ -173,33 +172,33 @@ theorem setup_exec_succinct {U V w n_max base : ℕ}
       (reducedTrinomialStep (qBits U n_max) (hashB n_max) (totalMicroBits n_max)) ≤ w :=
     le_of_lt (two_mul_reducedChunkBits_hash_lt hwf.2.1 (le_of_lt hwf.2.2.1) hfit)
   obtain ⟨y_tab, he_tab, hy_base, hy_tab, hy_mod⟩ :=
-    ReducedKWise.initTableCode_execWithin (x := x₁.comap (coreReg U V w n_max))
+    ReducedKWise.initTableCode_execWithin (x := x₁.comap coreReg)
       hbase hc_le hfit_hash
-  have hy_bdd : y_tab.Bounded w := he_tab.bounded (hx₁.comap (coreReg U V w n_max))
-  let x₂ : Data (rSuccinct U V w n_max) := y_tab.extend (coreReg U V w n_max) x₁
-  have hx₂_bdd : x₂.Bounded w := hy_bdd.extend (coreReg_injective U V w n_max) hx₁
+  have hy_bdd : y_tab.Bounded w := he_tab.bounded (hx₁.comap coreReg)
+  let x₂ : Data rSuccinct := y_tab.extend coreReg x₁
+  have hx₂_bdd : x₂.Bounded w := hy_bdd.extend coreReg_injective hx₁
   have he_tab_ren : ExecCodeDist w
       ((ReducedKWise.initTableCode w (qBits U n_max) (hashB n_max)
-        (totalMicroBits n_max) 3).rename (coreReg U V w n_max))
+        (totalMicroBits n_max) 3).rename coreReg)
       x₁ (PMF.pure x₂)
       (ReducedKWise.initTableSteps (qBits U n_max) (hashB n_max)
         (totalMicroBits n_max) : ℝ≥0∞) := by
-    simpa [x₂] using (ExecCodeDist.of_execWithin he_tab).rename (coreReg_injective U V w n_max)
-  have hx₂_comap : x₂.comap (coreReg U V w n_max) = y_tab :=
-    Data.comap_extend (coreReg_injective U V w n_max) y_tab x₁
-  have hbase₂ : (x₂.comap (coreReg U V w n_max)).regs 0 = base := by
+    simpa [x₂] using (ExecCodeDist.of_execWithin he_tab).rename coreReg_injective
+  have hx₂_comap : x₂.comap coreReg = y_tab :=
+    Data.comap_extend coreReg_injective y_tab x₁
+  have hbase₂ : (x₂.comap coreReg).regs 0 = base := by
     rw [hx₂_comap]; exact hy_base
   have htab₂ : ReducedKWise.TableRep base w (qBits U n_max) (hashB n_max)
-      (totalMicroBits n_max) 3 (x₂.comap (coreReg U V w n_max)).mem := by
+      (totalMicroBits n_max) 3 (x₂.comap coreReg).mem := by
     rw [hx₂_comap]; exact hy_tab
-  have hres_rand := ReducedKWise.resampleCode_execRand (x := x₂.comap (coreReg U V w n_max))
+  have hres_rand := ReducedKWise.resampleCode_execRand (x := x₂.comap coreReg)
     hbase₂ (qBits_le_of_le_pow hwf.1 (le_of_lt hwf.2.2.1)) hc_le hfit_hash
   obtain ⟨ν_core, he_res, hunif, hsupp_res⟩ :=
     Impl.resample_exec_of_execRand (space := hashSpace U w n_max)
       (ReducedKWise.extractSeed base (qBits U n_max) (hashB n_max) (totalMicroBits n_max) 3)
       hres_rand
       (ReducedKWise.map_extractSeed_eval_resampleComp base (qBits U n_max) (hashB n_max)
-        (totalMicroBits n_max) 3 (x₂.comap (coreReg U V w n_max)))
+        (totalMicroBits n_max) 3 (x₂.comap coreReg))
       (fun z hz => by
         obtain ⟨hz0, htab', hseed', hframe, hsteps⟩ :=
           ReducedKWise.mem_support_resampleComp hbase₂ htab₂ hz
@@ -210,14 +209,14 @@ theorem setup_exec_succinct {U V w n_max base : ℕ}
         rcases ha with hlt | hge
         · exact Or.inl hlt
         · exact Or.inr (le_trans (Nat.add_le_add_left (Nat.le_add_right _ _) base) hge))
-  have he_res_ren := he_res.rename (coreReg_injective U V w n_max)
+  have he_res_ren := he_res.rename coreReg_injective
   let lift0 : LatentState (QuotHashSeed U n_max) 240 →
-      QuotHashSeed U n_max × Data (rSuccinct U V w n_max) :=
-    fun p => (p.latent, p.data.extend (coreReg U V w n_max) x₂)
+      QuotHashSeed U n_max × Data rSuccinct :=
+    fun p => (p.latent, p.data.extend coreReg x₂)
   let ν₀ := ν_core.map lift0
   have he_res_ν₀ : ExecCodeDist w
       ((ReducedKWise.resampleCode (qBits U n_max) (hashB n_max)
-        (totalMicroBits n_max) 3).rename (coreReg U V w n_max))
+        (totalMicroBits n_max) 3).rename coreReg)
       x₂ (ν₀.map Prod.snd)
       (ReducedKWise.resampleSteps (qBits U n_max) (hashB n_max) (totalMicroBits n_max) 3 :
         ℝ≥0∞) := by
@@ -237,17 +236,17 @@ theorem setup_exec_succinct {U V w n_max base : ℕ}
     obtain ⟨q, hq, rfl⟩ := hp
     obtain ⟨hq_base, hq_tab, hq_seed, hq_mod⟩ := hsupp_res q hq
     have hq_bdd : q.data.Bounded w :=
-      he_res.bounded (hx₂_bdd.comap (coreReg U V w n_max)) q.data
+      he_res.bounded (hx₂_bdd.comap coreReg) q.data
         ((PMF.mem_support_map_iff _ _ _).mpr ⟨q, hq, rfl⟩)
-    let z := q.data.extend (coreReg U V w n_max) x₂
-    have hz_bdd : z.Bounded w := hq_bdd.extend (coreReg_injective U V w n_max) hx₂_bdd
-    have hz_base : z.regs (baseReg U V w n_max) = base := by
-      change (z.comap (coreReg U V w n_max)).regs 0 = base
-      rw [Data.comap_extend (coreReg_injective U V w n_max)]
+    let z := q.data.extend coreReg x₂
+    have hz_bdd : z.Bounded w := hq_bdd.extend coreReg_injective hx₂_bdd
+    have hz_base : z.regs baseReg = base := by
+      change (z.comap coreReg).regs 0 = base
+      rw [Data.comap_extend coreReg_injective]
       exact hq_base
-    have hz_fr : z.regs (frontierReg U V w n_max) = base + space U V w n_max := by
+    have hz_fr : z.regs frontierReg = base + space U V w n_max := by
       dsimp only [z, x₂]
-      have h240 : 240 ≤ (frontierReg U V w n_max).val := le_rfl
+      have h240 : 240 ≤ frontierReg.val := le_rfl
       rw [Data.extend_regs_of_notMem _ _ (notMem_range_coreReg h240),
         Data.extend_regs_of_notMem _ _ (notMem_range_coreReg h240)]
       exact hfr
@@ -268,7 +267,7 @@ theorem setup_exec_succinct {U V w n_max base : ℕ}
     have hlm0 : ∀ idx, lmAt base U V w n_max (hashSpace U w n_max) z.mem idx = 0 :=
       fun idx => congrFun (lmAt_zero_of_init hwf.1 htable_zero) idx
     obtain ⟨hdict0, hpot0⟩ :=
-      dictStateInv_of_zero (s := memoryState (frontierReg U V w n_max) z) q.latent hgm0 hlm0
+      dictStateInv_of_zero (s := memoryState frontierReg z) q.latent hgm0 hlm0
     have hmod_all : Modifies (Block.mk base (space U V w n_max)).footprint x₁.mem z.mem := by
       intro a ha
       simp only [Block.mem_footprint, Block.Owns] at ha
@@ -296,14 +295,14 @@ theorem setup_exec_succinct {U V w n_max base : ℕ}
 
 theorem tsum_mul_probeExcess_le {U V w n_max base : ℕ} (hnU : n_max ≤ U)
     {s_abs : Dynamic.State U} (u : Fin U)
-    (ν : PMF (QuotHashSeed U n_max × Data (rSuccinct U V w n_max)))
+    (ν : PMF (QuotHashSeed U n_max × Data rSuccinct))
     (hseed : ∀ θ, (ν.map Prod.fst) θ ≤ 1 * (PMF.uniformOfFintype (QuotHashSeed U n_max)) θ)
     (hsupp : ∀ p ∈ ν.support, Rep U V w n_max base p.1 s_abs p.2) :
     (∑' p, ν p *
-      ((8 * opFactor U V w n_max) *
+      ((8 * opFactor) *
         probeExcess n_max (qStage1 U n_max p.1.1) (polyStage2 U n_max) p.1.2
           (Dynamic.dom s_abs) u : ℕ)) ≤
-      (40 * opFactor U V w n_max : ℝ≥0∞) := by
+      (40 * opFactor : ℝ≥0∞) := by
   obtain ⟨p₀, hp₀⟩ := ν.support_nonempty
   have hdict₀ := (hsupp p₀ hp₀).2.2.2.2.2
   obtain ⟨L₀, hb₀⟩ := hdict₀.hbucket
@@ -318,11 +317,11 @@ theorem tsum_mul_probeExcess_le {U V w n_max base : ℕ} (hnU : n_max ≤ U)
   let E (θ : QuotHashSeed U n_max) : ℝ≥0∞ :=
     (probeExcess n_max (qStage1 U n_max θ.1) (polyStage2 U n_max) θ.2 (Dynamic.dom s_abs) u : ℝ≥0∞)
   have hmap :
-      (∑' p, ν p * ((8 * opFactor U V w n_max : ℝ≥0∞) * E p.1)) =
-        (8 * opFactor U V w n_max : ℝ≥0∞) * ∑' θ, (ν.map Prod.fst) θ * E θ := by
+      (∑' p, ν p * ((8 * opFactor : ℝ≥0∞) * E p.1)) =
+        (8 * opFactor : ℝ≥0∞) * ∑' θ, (ν.map Prod.fst) θ * E θ := by
     rw [← ENNReal.tsum_mul_left,
       ← Cslib.Probability.PMF.tsum_map_mul ν Prod.fst
-        (fun θ => (8 * opFactor U V w n_max : ℝ≥0∞) * E θ)]
+        (fun θ => (8 * opFactor : ℝ≥0∞) * E θ)]
     refine tsum_congr fun p => ?_
     ring
   have hle_unif :
@@ -334,46 +333,46 @@ theorem tsum_mul_probeExcess_le {U V w n_max base : ℕ} (hnU : n_max ≤ U)
     exact mul_le_mul' hs le_rfl
   have h5 := tsum_uniform_probeExcess_reducedPolyHash_le_five hnU (Dynamic.dom s_abs) u herase_le
   calc (∑' p, ν p *
-        ((8 * opFactor U V w n_max) *
+        ((8 * opFactor) *
           probeExcess n_max (qStage1 U n_max p.1.1) (polyStage2 U n_max) p.1.2
             (Dynamic.dom s_abs) u : ℕ))
-      = ∑' p, ν p * ((8 * opFactor U V w n_max : ℝ≥0∞) * E p.1) := by
+      = ∑' p, ν p * ((8 * opFactor : ℝ≥0∞) * E p.1) := by
         refine tsum_congr fun p => ?_
         push_cast
         rfl
-    _ = (8 * opFactor U V w n_max : ℝ≥0∞) * ∑' θ, (ν.map Prod.fst) θ * E θ := hmap
-    _ ≤ (8 * opFactor U V w n_max : ℝ≥0∞) *
+    _ = (8 * opFactor : ℝ≥0∞) * ∑' θ, (ν.map Prod.fst) θ * E θ := hmap
+    _ ≤ (8 * opFactor : ℝ≥0∞) *
           ∑' θ, (PMF.uniformOfFintype (QuotHashSeed U n_max)) θ * E θ :=
         mul_le_mul' le_rfl hle_unif
-    _ ≤ (8 * opFactor U V w n_max : ℝ≥0∞) * 5 :=
+    _ ≤ (8 * opFactor : ℝ≥0∞) * 5 :=
         mul_le_mul' le_rfl h5
-    _ = (40 * opFactor U V w n_max : ℝ≥0∞) := by
+    _ = (40 * opFactor : ℝ≥0∞) := by
         norm_cast; ring
 
 @[simp]
 theorem input_tagReg (U V w n_max : ℕ) :
-    (subroutineCode U V w n_max).input (tagReg U V w n_max) = true :=
+    (subroutineCode U V w n_max).input tagReg = true :=
   decide_eq_true (Or.inl rfl)
 
 @[simp]
 theorem input_argUReg (U V w n_max : ℕ) :
-    (subroutineCode U V w n_max).input (argUReg U V w n_max) = true :=
+    (subroutineCode U V w n_max).input argUReg = true :=
   decide_eq_true (Or.inr (Or.inl rfl))
 
 @[simp]
 theorem input_argVReg (U V w n_max : ℕ) :
-    (subroutineCode U V w n_max).input (argVReg U V w n_max) = true :=
+    (subroutineCode U V w n_max).input argVReg = true :=
   decide_eq_true (Or.inr (Or.inr rfl))
 
-theorem input_sReg_eq_false {U V w n_max : ℕ} {i : Fin 256}
+theorem input_sReg_eq_false {U V w n_max : ℕ} {i : Fin 292}
     (h1 : i ≠ 244) (h2 : i ≠ 245) (h3 : i ≠ 246) :
-    (subroutineCode U V w n_max).input (sReg U V w n_max i) = false := by
+    (subroutineCode U V w n_max).input (sReg i) = false := by
   dsimp only [subroutineCode]
   rw [decide_eq_false_iff_not]
   rintro (h | h | h)
-  · exact h1 ((sReg_injective U V w n_max) h)
-  · exact h2 ((sReg_injective U V w n_max) h)
-  · exact h3 ((sReg_injective U V w n_max) h)
+  · exact h1 (sReg_injective h)
+  · exact h2 (sReg_injective h)
+  · exact h3 (sReg_injective h)
 
 /-- Reusable `Randomized.StateTransitionImpl` certificate over `Basis.exact` for the fixed-capacity
 succinct dynamic dictionary (`Dynamic.spec U V n_max`). -/
@@ -397,12 +396,12 @@ noncomputable def impl {U V w n_max base : ℕ}
         ReducedKWise.resampleSteps (qBits U n_max) (hashB n_max) (totalMicroBits n_max) 3 : ℕ) :
         ℝ≥0∞))
     (initPotential := 0)
-    (charge := charge U V w n_max)
+    (charge := charge)
     (rep := Rep U V w n_max base)
     (potential := potential U V w n_max base)
-    (encode := encode U V w n_max)
-    (argMatch := argMatch U V w n_max)
-    (decode := decode U V w n_max)
+    (encode := encode)
+    (argMatch := argMatch)
+    (decode := decode)
     (bounded := fun h => h.1)
     (arguments_fit := by
       intro s o hval i hi
@@ -436,11 +435,11 @@ noncomputable def impl {U V w n_max base : ℕ}
         simp only [input_tagReg, input_argUReg, sReg_inj, Fin.reduceEq, ↓reduceIte, and_self])
     (rep_supported := by
       intro θ s x x' hregs hmem hx'_bdd ⟨_, hbase, hfr, htab, hseed, hdict⟩
-      have hbase' : x'.regs (baseReg U V w n_max) = base :=
-        (hregs (baseReg U V w n_max)
+      have hbase' : x'.regs baseReg = base :=
+        (hregs baseReg
           (input_sReg_eq_false (by decide) (by decide) (by decide))).trans hbase
-      have hfr' : x'.regs (frontierReg U V w n_max) = base + space U V w n_max :=
-        (hregs (frontierReg U V w n_max)
+      have hfr' : x'.regs frontierReg = base + space U V w n_max :=
+        (hregs frontierReg
           (input_sReg_eq_false (by decide) (by decide) (by decide))).trans hfr
       have hhash_eq : ∀ a, base ≤ a → a < base + hashSpace U w n_max → x.mem a = x'.mem a := by
         intro a ha1 ha2
@@ -450,8 +449,8 @@ noncomputable def impl {U V w n_max base : ℕ}
         unfold space totalSpace offGM offLM offVal offQuot
         omega
       have htab_eq : ∀ a, base + hashSpace U w n_max ≤ a → a < base + space U V w n_max →
-          (memoryState (frontierReg U V w n_max) x).mem a =
-            (memoryState (frontierReg U V w n_max) x').mem a := by
+          (memoryState frontierReg x).mem a =
+            (memoryState frontierReg x').mem a := by
         intro a ha1 ha2
         refine (hmem a ?_).symm
         simp only [Block.mem_footprint, Block.Owns]
@@ -471,14 +470,13 @@ noncomputable def impl {U V w n_max base : ℕ}
         exact ⟨by omega, ha2⟩
       rw [(arrays_congr_of_eq_on hw htab_eq).2.2.2])
     (clear_nodup := by
-      change (List.map (sReg U V w n_max) [241, 242, 243, 0, 240]).Nodup
-      exact (List.nodup_map_iff (sReg_injective U V w n_max)).mpr (by decide))
+      change (List.map sReg [241, 242, 243, 0, 240]).Nodup
+      exact (List.nodup_map_iff sReg_injective).mpr (by decide))
     (params_not_clear := fun j => Fin.elim0 j)
     (incCur_eval := by
       intro x h1 hfit_inc
-      change x.regs (oneReg U V w n_max) = 1 at h1
-      change (Op.exactBin .add (curReg U V w n_max) (curReg U V w n_max)
-        (oneReg U V w n_max)).eval w x = _
+      change x.regs oneReg = 1 at h1
+      change (Op.exactBin .add curReg curReg oneReg).eval w x = _
       rw [Op.eval_exactBin, h1]
       exact Data.put_of_fits hfit_inc)
     (span_exec := fun _ hfr _ => span_exec_succinct hfit hfr)
@@ -486,31 +484,31 @@ noncomputable def impl {U V w n_max base : ℕ}
     (step_exec := by
       classical
       intro s o ν hv hseed hsupp
-      let nextData (p : QuotHashSeed U n_max × Data (rSuccinct U V w n_max)) :
-          Data (rSuccinct U V w n_max) :=
+      let nextData (p : QuotHashSeed U n_max × Data rSuccinct) :
+          Data rSuccinct :=
         if hp : p ∈ ν.support then
-          Classical.choose (exec_opCode hwf hfit p.1 s o hv (hsupp p hp).1 (hsupp p hp).2)
+          Classical.choose (exec_opCode hwf hV hfit p.1 s o hv (hsupp p hp).1 (hsupp p hp).2)
         else p.2
-      let nextSteps (p : QuotHashSeed U n_max × Data (rSuccinct U V w n_max)) : ℕ :=
+      let nextSteps (p : QuotHashSeed U n_max × Data rSuccinct) : ℕ :=
         if hp : p ∈ ν.support then
           Classical.choose (Classical.choose_spec
-            (exec_opCode hwf hfit p.1 s o hv (hsupp p hp).1 (hsupp p hp).2))
+            (exec_opCode hwf hV hfit p.1 s o hv (hsupp p hp).1 (hsupp p hp).2))
         else 0
-      let μ_step (p : QuotHashSeed U n_max × Data (rSuccinct U V w n_max)) :
-          PMF (QuotHashSeed U n_max × Data (rSuccinct U V w n_max)) :=
+      let μ_step (p : QuotHashSeed U n_max × Data rSuccinct) :
+          PMF (QuotHashSeed U n_max × Data rSuccinct) :=
         PMF.pure (p.1, nextData p)
-      let T_step (p : QuotHashSeed U n_max × Data (rSuccinct U V w n_max)) : ℝ≥0∞ :=
+      let T_step (p : QuotHashSeed U n_max × Data rSuccinct) : ℝ≥0∞ :=
         (nextSteps p : ℝ≥0∞)
       refine ⟨μ_step, T_step, ?_, ?_, ?_⟩
       · intro p hp
         have hspec := Classical.choose_spec (Classical.choose_spec
-          (exec_opCode hwf hfit p.1 s o hv (hsupp p hp).1 (hsupp p hp).2))
+          (exec_opCode hwf hV hfit p.1 s o hv (hsupp p hp).1 (hsupp p hp).2))
         have hd_eq : nextData p =
-            Classical.choose (exec_opCode hwf hfit p.1 s o hv (hsupp p hp).1 (hsupp p hp).2) :=
+            Classical.choose (exec_opCode hwf hV hfit p.1 s o hv (hsupp p hp).1 (hsupp p hp).2) :=
           dite_eq_left hp
         have hs_eq : nextSteps p =
             Classical.choose (Classical.choose_spec
-              (exec_opCode hwf hfit p.1 s o hv (hsupp p hp).1 (hsupp p hp).2)) :=
+              (exec_opCode hwf hV hfit p.1 s o hv (hsupp p hp).1 (hsupp p hp).2)) :=
           dite_eq_left hp
         refine ⟨?_, ?_⟩
         · dsimp only [μ_step, T_step]
@@ -544,21 +542,22 @@ noncomputable def impl {U V w n_max base : ℕ}
             (∑' p, ν p * (nextSteps p + potential U V w n_max base p.1 (nextData p) : ℕ)) ≤
               ∑' p, ν p *
                 ((potential U V w n_max base p.1 p.2 : ℝ≥0∞) +
-                  (273 * opFactor U V w n_max + 284689 : ℝ≥0∞) +
-                  ((8 * opFactor U V w n_max) *
+                  (273 * opFactor + 284725 : ℝ≥0∞) +
+                  ((8 * opFactor) *
                     probeExcess n_max (qStage1 U n_max p.1.1) (polyStage2 U n_max) p.1.2
                       (Dynamic.dom s) (opKey o) : ℕ)) := by
           refine tsum_le_tsum fun p => ?_
           by_cases hp : p ∈ ν.support
           · refine mul_le_mul' le_rfl ?_
             have hspec := Classical.choose_spec (Classical.choose_spec
-              (exec_opCode hwf hfit p.1 s o hv (hsupp p hp).1 (hsupp p hp).2))
+              (exec_opCode hwf hV hfit p.1 s o hv (hsupp p hp).1 (hsupp p hp).2))
             have hd_eq : nextData p =
-                Classical.choose (exec_opCode hwf hfit p.1 s o hv (hsupp p hp).1 (hsupp p hp).2) :=
+                Classical.choose
+                  (exec_opCode hwf hV hfit p.1 s o hv (hsupp p hp).1 (hsupp p hp).2) :=
               dite_eq_left hp
             have hs_eq : nextSteps p =
                 Classical.choose (Classical.choose_spec
-                  (exec_opCode hwf hfit p.1 s o hv (hsupp p hp).1 (hsupp p hp).2)) :=
+                  (exec_opCode hwf hV hfit p.1 s o hv (hsupp p hp).1 (hsupp p hp).2)) :=
               dite_eq_left hp
             rw [hd_eq, hs_eq]
             exact_mod_cast hspec.2.2.2.2
@@ -568,36 +567,36 @@ noncomputable def impl {U V w n_max base : ℕ}
         have hsplit :
             (∑' p, ν p *
               ((potential U V w n_max base p.1 p.2 : ℝ≥0∞) +
-                (273 * opFactor U V w n_max + 284689 : ℝ≥0∞) +
-                ((8 * opFactor U V w n_max) *
+                (273 * opFactor + 284725 : ℝ≥0∞) +
+                ((8 * opFactor) *
                   probeExcess n_max (qStage1 U n_max p.1.1) (polyStage2 U n_max) p.1.2
                     (Dynamic.dom s) (opKey o) : ℕ))) =
               (∑' p, ν p * (potential U V w n_max base p.1 p.2 : ℝ≥0∞)) +
-                (273 * opFactor U V w n_max + 284689 : ℝ≥0∞) +
+                (273 * opFactor + 284725 : ℝ≥0∞) +
                 ∑' p, ν p *
-                  ((8 * opFactor U V w n_max) *
+                  ((8 * opFactor) *
                     probeExcess n_max (qStage1 U n_max p.1.1) (polyStage2 U n_max) p.1.2
                       (Dynamic.dom s) (opKey o) : ℕ) := by
           simp_rw [mul_add, tsum_add, ENNReal.tsum_mul_right, ν.tsum_coe, one_mul]
         have hch_eq :
-            (273 * opFactor U V w n_max + 284689 : ℝ≥0∞) +
-              (40 * opFactor U V w n_max : ℝ≥0∞) =
-            (charge U V w n_max s o : ℝ≥0∞) := by
+            (273 * opFactor + 284725 : ℝ≥0∞) +
+              (40 * opFactor : ℝ≥0∞) =
+            (charge s o : ℝ≥0∞) := by
           unfold charge chargeVal
-          norm_cast
+          rw [Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat, Nat.cast_ofNat]
           ring
         calc (∑' p, ν p * (nextSteps p + potential U V w n_max base p.1 (nextData p) : ℕ))
             ≤ (∑' p, ν p * (potential U V w n_max base p.1 p.2 : ℝ≥0∞)) +
-                (273 * opFactor U V w n_max + 284689 : ℝ≥0∞) +
+                (273 * opFactor + 284725 : ℝ≥0∞) +
                 ∑' p, ν p *
-                  ((8 * opFactor U V w n_max) *
+                  ((8 * opFactor) *
                     probeExcess n_max (qStage1 U n_max p.1.1) (polyStage2 U n_max) p.1.2
                       (Dynamic.dom s) (opKey o) : ℕ) := hsplit ▸ hptwise
           _ ≤ (∑' p, ν p * (potential U V w n_max base p.1 p.2 : ℝ≥0∞)) +
-                (273 * opFactor U V w n_max + 284689 : ℝ≥0∞) +
-                (40 * opFactor U V w n_max : ℝ≥0∞) :=
+                (273 * opFactor + 284725 : ℝ≥0∞) +
+                (40 * opFactor : ℝ≥0∞) :=
               add_le_add le_rfl hprobe_sum
-          _ = (charge U V w n_max s o : ℝ≥0∞) +
+          _ = (charge s o : ℝ≥0∞) +
                 ∑' p, ν p * (potential U V w n_max base p.1 p.2 : ℝ≥0∞) := by
               rw [add_assoc, hch_eq, add_comm])
 
@@ -624,10 +623,10 @@ theorem initTime_impl_le {U V w n_max base : ℕ}
   unfold initSteps
   omega
 
-theorem totalCost_charge_eq (U V w n_max : ℕ) (s₀ : Dynamic.State U)
+theorem totalCost_charge_eq (U V n_max : ℕ) (s₀ : Dynamic.State U)
     (ops : List (Dynamic.Op U)) :
-    (Dynamic.spec U V n_max).totalCost (charge U V w n_max) s₀ ops =
-      ops.length * chargeVal U V w n_max := by
+    (Dynamic.spec U V n_max).totalCost charge s₀ ops =
+      ops.length * chargeVal := by
   induction ops generalizing s₀ with
   | nil => simp
   | cons o os ih =>
@@ -640,18 +639,18 @@ theorem totalCost_charge_eq (U V w n_max : ℕ) (s₀ : Dynamic.State U)
 Starting from zeroed memory on `[base, base + space U V w n_max)`, fresh initialization followed by
 any valid operation sequence `ops : List (Dynamic.Op U)` (`ValidHistory (Dynamic.empty U) ops`)
 preserves `Rep` across `ops` with expected total instruction count at most
-`initTime + ops.length * chargeVal U V w n_max` (for the per-parameter charge
-`chargeVal U V w n_max`, without a proven parameter-uniform bound across `(U, V, w, n_max)`).
-Companion theorems `space_le_succinctWords` and `initTime_impl_le` / `initSteps_le` establish the
-succinct space and linear initialization bounds. -/
+`initTime + ops.length * chargeVal` for the parameter-free `O(1)` operation charge `chargeVal`
+(amortized across `ops`). Companion theorems `space_le_succinctWords` and
+`initTime_impl_le` / `initSteps_le` establish the succinct space and linear initialization
+bounds. -/
 theorem seq_expected_amortized {U V w n_max base : ℕ}
     (hw : 0 < w) (hnU : n_max ≤ U) (hU : Fits w U) (hV : Fits w V)
     (hfit : Fits w (base + space U V w n_max))
-    {x : Data (rSuccinct U V w n_max)} (ops : List (Dynamic.Op U))
-    (hx : x.Bounded w) (hfr : x.regs (frontierReg U V w n_max) = base)
+    {x : Data rSuccinct} (ops : List (Dynamic.Op U))
+    (hx : x.Bounded w) (hfr : x.regs frontierReg = base)
     (hz : ∀ a ∈ (Block.mk base (space U V w n_max)).footprint, x.mem a = 0)
     (hv : (Dynamic.spec U V n_max).ValidHistory (Dynamic.empty U) ops) :
-    ∃ (ν₀ ν_final : PMF ((impl hw hnU hU hV hfit).Seed × Data (rSuccinct U V w n_max)))
+    ∃ (ν₀ ν_final : PMF ((impl hw hnU hU hV hfit).Seed × Data rSuccinct))
       (T_ops : ℝ≥0∞),
       ExecCodeDist w (subroutineCode U V w n_max).initFresh x (ν₀.map Prod.snd)
         (impl hw hnU hU hV hfit).initTime ∧
@@ -661,7 +660,7 @@ theorem seq_expected_amortized {U V w n_max base : ℕ}
         Rep U V w n_max base p.1 ((Dynamic.spec U V n_max).run (Dynamic.empty U) ops).1 p.2) ∧
       (impl hw hnU hU hV hfit).initTime + T_ops +
         (∑' q, ν_final q * (potential U V w n_max base q.1 q.2 : ℝ≥0∞)) ≤
-        (impl hw hnU hU hV hfit).initTime + (ops.length * chargeVal U V w n_max : ℕ) := by
+        (impl hw hnU hU hV hfit).initTime + (ops.length * chargeVal : ℕ) := by
   let C := impl hw hnU hU hV hfit
   obtain ⟨ν₀, ν_final, T_ops, he_init, hex_steps, hseed_final, hrep_final, hamort⟩ :=
     C.seq_expected_amortized_ofFn ops hx hfr (fun j => Fin.elim0 j) hz hv
@@ -672,7 +671,7 @@ theorem seq_expected_amortized {U V w n_max base : ℕ}
   · change C.initTime + T_ops +
         (∑' q, ν_final q * (potential U V w n_max base q.1 q.2 : ℝ≥0∞)) ≤
       C.initTime + (0 : ℕ) +
-        ((Dynamic.spec U V n_max).totalCost (charge U V w n_max) (Dynamic.empty U) ops : ℝ≥0∞)
+        ((Dynamic.spec U V n_max).totalCost charge (Dynamic.empty U) ops : ℝ≥0∞)
       at hamort
     rw [totalCost_charge_eq] at hamort
     simpa only [Nat.cast_zero, add_zero] using hamort

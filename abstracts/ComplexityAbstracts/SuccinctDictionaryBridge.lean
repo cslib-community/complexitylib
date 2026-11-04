@@ -480,47 +480,47 @@ theorem succinctInitBudget_le (U n_max : ℕ) :
 (`Succinct.seq_expected_amortized`). -/
 theorem succinctDynamicDictionary (S : Presentation) (hS : Laws S)
     (P : DynDictPresentation S) (hP : DynDictLaws S P) :
-    ∀ (U V w n_max : ℕ),
-      ∃ (r C_op sp initBudget : ℕ) (hr : 256 ≤ r) (p_init p_op : List (S.Instr r)),
-        initBudget ≤ 31 * n_max + 1092 ∧
-        (0 < w → n_max ≤ U → U < 2 ^ w →
-          sp ≤ Dynamic.succinctWords 81 213 U V w n_max) ∧
-        ∀ (base : ℕ),
-          0 < w →
-          n_max ≤ U →
-          U < 2 ^ w →
-          V < 2 ^ w →
-          base + sp < 2 ^ w →
-          ∀ (reg₀ : Fin r → ℕ) (mem₀ : ℕ → ℕ),
-            WordBounded w reg₀ mem₀ →
-            reg₀ ⟨240, by omega⟩ = base →
-            (∀ a, base ≤ a → a < base + sp → mem₀ a = 0) →
-            ∃ (Seed : Type) (μ_init : PMF (P.CoupledState Seed r)),
-              P.ExecProgramDist w p_init ⟨247, by omega⟩ reg₀ mem₀
-                (μ_init.map P.toRegMem) initBudget ∧
-              (∀ p ∈ μ_init.support,
-                WordBounded w (P.csReg p) (P.csMem p) ∧
-                P.csReg p ⟨0, by omega⟩ = base ∧
-                P.csReg p ⟨240, by omega⟩ = base + sp ∧
-                UnchangedOutside base sp mem₀ (P.csMem p)) ∧
-              ∀ ops : List (P.DynDictOp U),
-                P.ValidDynDictHistory V n_max (DynDictPresentation.emptyDict U) ops →
-                ∃ (μ_final : PMF (P.CoupledState Seed r)) (T_ops : ℝ≥0∞),
-                  P.ExecDynDictOps w p_op
-                    ⟨244, by omega⟩ ⟨245, by omega⟩ ⟨246, by omega⟩
-                    ⟨247, by omega⟩ ⟨252, by omega⟩ ⟨253, by omega⟩
-                    base sp (DynDictPresentation.emptyDict U) ops
-                    μ_init μ_final T_ops ∧
-                  (initBudget : ℝ≥0∞) + T_ops ≤
-                    ((initBudget + ops.length * C_op : ℕ) : ℝ≥0∞) := by
+    ∃ (r C_op : ℕ) (hr : 256 ≤ r),
+      ∀ (U V w n_max : ℕ),
+        ∃ (sp initBudget : ℕ) (p_init p_op : List (S.Instr r)),
+          initBudget ≤ 31 * n_max + 1092 ∧
+          (0 < w → n_max ≤ U → U < 2 ^ w →
+            sp ≤ Dynamic.succinctWords 81 213 U V w n_max) ∧
+          ∀ (base : ℕ),
+            0 < w →
+            n_max ≤ U →
+            U < 2 ^ w →
+            V < 2 ^ w →
+            base + sp < 2 ^ w →
+            ∀ (reg₀ : Fin r → ℕ) (mem₀ : ℕ → ℕ),
+              WordBounded w reg₀ mem₀ →
+              reg₀ ⟨240, by omega⟩ = base →
+              (∀ a, base ≤ a → a < base + sp → mem₀ a = 0) →
+              ∃ (Seed : Type) (μ_init : PMF (P.CoupledState Seed r)),
+                P.ExecProgramDist w p_init ⟨247, by omega⟩ reg₀ mem₀
+                  (μ_init.map P.toRegMem) initBudget ∧
+                (∀ p ∈ μ_init.support,
+                  WordBounded w (P.csReg p) (P.csMem p) ∧
+                  P.csReg p ⟨0, by omega⟩ = base ∧
+                  P.csReg p ⟨240, by omega⟩ = base + sp ∧
+                  UnchangedOutside base sp mem₀ (P.csMem p)) ∧
+                ∀ ops : List (P.DynDictOp U),
+                  P.ValidDynDictHistory V n_max (DynDictPresentation.emptyDict U) ops →
+                  ∃ (μ_final : PMF (P.CoupledState Seed r)) (T_ops : ℝ≥0∞),
+                    P.ExecDynDictOps w p_op
+                      ⟨244, by omega⟩ ⟨245, by omega⟩ ⟨246, by omega⟩
+                      ⟨247, by omega⟩ ⟨252, by omega⟩ ⟨253, by omega⟩
+                      base sp (DynDictPresentation.emptyDict U) ops
+                      μ_init μ_final T_ops ∧
+                    (initBudget : ℝ≥0∞) + T_ops ≤
+                      ((initBudget + ops.length * C_op : ℕ) : ℝ≥0∞) := by
+  refine ⟨Succinct.rSuccinct, Succinct.chargeVal, by have := Succinct.le_rSuccinct; omega, ?_⟩
   intro U V w n_max
-  refine ⟨Succinct.rSuccinct U V w n_max, Succinct.chargeVal U V w n_max,
-    Succinct.space U V w n_max, succinctInitBudget U n_max,
-    Succinct.le_rSuccinct U V w n_max,
+  refine ⟨Succinct.space U V w n_max, succinctInitBudget U n_max,
     S.programOf ((Succinct.subroutineCode U V w n_max).initFresh.program
-      (Succinct.outReg U V w n_max)),
+      Succinct.outReg),
     S.programOf ((Succinct.subroutineCode U V w n_max).code.program
-      (Succinct.outReg U V w n_max)),
+      Succinct.outReg),
     succinctInitBudget_le U n_max,
     fun hw hnU hU => Succinct.space_le_succinctWords hw hnU (le_of_lt hU), ?_⟩
   intro base hw hnU hU hV hfit reg₀ mem₀ hbdd₀ hfr₀ hz₀
@@ -539,7 +539,7 @@ theorem succinctDynamicDictionary (S : Presentation) (hS : Laws S)
   rw [hinit_time] at he_init
   refine ⟨C.Seed, ν₀.map P.coupledStateOf, ?_, ?_, ?_⟩
   · rw [map_coupledStateOf_toRegMem hP]
-    exact compile_execCodeDist hS hP (Succinct.outReg U V w n_max) he_init
+    exact compile_execCodeDist hS hP Succinct.outReg he_init
   · exact support_coupledStateOf_init hP fun p hp =>
       ⟨(hsupp₀ p hp).2.1.1, (hsupp₀ p hp).2.1.2.1, (hsupp₀ p hp).1, (hsupp₀ p hp).2.2.2⟩
   · intro ops hv_abs
@@ -550,70 +550,70 @@ theorem succinctDynamicDictionary (S : Presentation) (hS : Laws S)
       C.steps_expected_amortized_ofFn ops_lib ν₀ hv_lib hseed₀ fun p hp => (hsupp₀ p hp).2.1
     refine ⟨ν_final.map P.coupledStateOf, T_ops, ?_, ?_⟩
     · refine compile_execStepsOfFn hS hP C
-        (Succinct.tagReg U V w n_max) (Succinct.argUReg U V w n_max)
-        (Succinct.argVReg U V w n_max) (Succinct.outReg U V w n_max)
-        (Succinct.resTagReg U V w n_max) (Succinct.resValReg U V w n_max)
+        Succinct.tagReg Succinct.argUReg
+        Succinct.argVReg Succinct.outReg
+        Succinct.resTagReg Succinct.resValReg
         (fun o d => ?_) (fun s o regs hdec => ?_) hex_steps
       · funext i
         cases o with
         | query u =>
           dsimp only [DynDictPresentation.dynDictOpOf]
           rw [hP.prepareDynDictRegs_query]
-          change (if decide (i = Succinct.tagReg U V w n_max ∨
-              i = Succinct.argUReg U V w n_max ∨
-              i = Succinct.argVReg U V w n_max) then
-            if i = Succinct.tagReg U V w n_max then 0
-            else if i = Succinct.argUReg U V w n_max then u.val
+          change (if decide (i = Succinct.tagReg ∨
+              i = Succinct.argUReg ∨
+              i = Succinct.argVReg) then
+            if i = Succinct.tagReg then 0
+            else if i = Succinct.argUReg then u.val
             else 0
           else d.regs i) = _
-          by_cases h1 : i = Succinct.tagReg U V w n_max
+          by_cases h1 : i = Succinct.tagReg
           · subst h1; simp
-          · by_cases h2 : i = Succinct.argUReg U V w n_max
+          · by_cases h2 : i = Succinct.argUReg
             · subst h2; simp [h1]
-            · by_cases h3 : i = Succinct.argVReg U V w n_max
+            · by_cases h3 : i = Succinct.argVReg
               · subst h3; simp [h1, h2]
               · simp [h1, h2, h3]
         | insert u v =>
           dsimp only [DynDictPresentation.dynDictOpOf]
           rw [hP.prepareDynDictRegs_insert]
-          change (if decide (i = Succinct.tagReg U V w n_max ∨
-              i = Succinct.argUReg U V w n_max ∨
-              i = Succinct.argVReg U V w n_max) then
-            if i = Succinct.tagReg U V w n_max then 1
-            else if i = Succinct.argUReg U V w n_max then u.val
-            else if i = Succinct.argVReg U V w n_max then v
+          change (if decide (i = Succinct.tagReg ∨
+              i = Succinct.argUReg ∨
+              i = Succinct.argVReg) then
+            if i = Succinct.tagReg then 1
+            else if i = Succinct.argUReg then u.val
+            else if i = Succinct.argVReg then v
             else 0
           else d.regs i) = _
-          by_cases h1 : i = Succinct.tagReg U V w n_max
+          by_cases h1 : i = Succinct.tagReg
           · subst h1; simp
-          · by_cases h2 : i = Succinct.argUReg U V w n_max
+          · by_cases h2 : i = Succinct.argUReg
             · subst h2; simp [h1]
-            · by_cases h3 : i = Succinct.argVReg U V w n_max
+            · by_cases h3 : i = Succinct.argVReg
               · subst h3; simp [h1, h2]
               · simp [h1, h2, h3]
         | delete u =>
           dsimp only [DynDictPresentation.dynDictOpOf]
           rw [hP.prepareDynDictRegs_delete]
-          change (if decide (i = Succinct.tagReg U V w n_max ∨
-              i = Succinct.argUReg U V w n_max ∨
-              i = Succinct.argVReg U V w n_max) then
-            if i = Succinct.tagReg U V w n_max then 2
-            else if i = Succinct.argUReg U V w n_max then u.val
+          change (if decide (i = Succinct.tagReg ∨
+              i = Succinct.argUReg ∨
+              i = Succinct.argVReg) then
+            if i = Succinct.tagReg then 2
+            else if i = Succinct.argUReg then u.val
             else 0
           else d.regs i) = _
-          by_cases h1 : i = Succinct.tagReg U V w n_max
+          by_cases h1 : i = Succinct.tagReg
           · subst h1; simp
-          · by_cases h2 : i = Succinct.argUReg U V w n_max
+          · by_cases h2 : i = Succinct.argUReg
             · subst h2; simp [h1]
-            · by_cases h3 : i = Succinct.argVReg U V w n_max
+            · by_cases h3 : i = Succinct.argVReg
               · subst h3; simp [h1, h2]
               · simp [h1, h2, h3]
       · cases o with
         | query u =>
           dsimp only [DynDictPresentation.dynDictOpOf]
           rw [hP.opOutputCorrect_query]
-          change (if regs (Succinct.resTagReg U V w n_max) = 0 then some none
-            else some (some (regs (Succinct.resValReg U V w n_max)))) = some (s u) at hdec
+          change (if regs Succinct.resTagReg = 0 then some none
+            else some (some (regs Succinct.resValReg))) = some (s u) at hdec
           split_ifs at hdec ⊢ with h0 <;> simp_all
         | insert u v =>
           dsimp only [DynDictPresentation.dynDictOpOf]
@@ -631,24 +631,24 @@ theorem succinctDynamicDictionary (S : Presentation) (hS : Laws S)
           simp [hp_eq]
         · rw [(PMF.apply_eq_zero_iff _ _).mpr hp, zero_mul]
       have htot :
-          (Dynamic.spec U V n_max).totalCost (Succinct.charge U V w n_max)
+          (Dynamic.spec U V n_max).totalCost Succinct.charge
             (Dynamic.empty U) ops_lib =
-            ops_lib.length * Succinct.chargeVal U V w n_max :=
-        Succinct.totalCost_charge_eq U V w n_max (Dynamic.empty U) ops_lib
+            ops_lib.length * Succinct.chargeVal :=
+        Succinct.totalCost_charge_eq U V n_max (Dynamic.empty U) ops_lib
       change T_ops + ∑' q, ν_final q * (C.potential q.1 q.2 : ℝ≥0∞) ≤
-        ((Dynamic.spec U V n_max).totalCost (Succinct.charge U V w n_max)
+        ((Dynamic.spec U V n_max).totalCost Succinct.charge
           (Dynamic.empty U) ops_lib : ℝ≥0∞) +
         ∑' p, ν₀ p * (C.potential p.1 p.2 : ℝ≥0∞) at hamort
       rw [hpot₀, add_zero, htot] at hamort
-      have hle_ops : T_ops ≤ ((ops_lib.length * Succinct.chargeVal U V w n_max : ℕ) : ℝ≥0∞) :=
+      have hle_ops : T_ops ≤ ((ops_lib.length * Succinct.chargeVal : ℕ) : ℝ≥0∞) :=
         le_trans (le_self_add) hamort
       rw [List.length_map]
       calc (succinctInitBudget U n_max : ℝ≥0∞) + T_ops
         _ ≤ (succinctInitBudget U n_max : ℝ≥0∞) +
-              ((ops_lib.length * Succinct.chargeVal U V w n_max : ℕ) : ℝ≥0∞) :=
+              ((ops_lib.length * Succinct.chargeVal : ℕ) : ℝ≥0∞) :=
             add_le_add le_rfl hle_ops
         _ = ((succinctInitBudget U n_max +
-              ops_lib.length * Succinct.chargeVal U V w n_max : ℕ) : ℝ≥0∞) := by
+              ops_lib.length * Succinct.chargeVal : ℕ) : ℝ≥0∞) := by
             push_cast
             ring
 

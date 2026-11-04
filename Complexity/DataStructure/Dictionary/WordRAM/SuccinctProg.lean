@@ -162,302 +162,701 @@ theorem validHistory_writePackedProg {w base offset N k idx val : ℕ} {s : Memo
       Fits w (mem₁ (base + offset + wOff + 1) ^^^ ((old₁ ^^^ val₁) <<< 0))) ∧ True)
   exact ⟨by omega, ⟨by omega, hw0⟩, by omega, ⟨by omega, hw1⟩, trivial⟩
 
-private theorem readPackedCode_not_readsWidth (offset k w : ℕ) :
-    ¬(readPackedCode offset k w).ReadsWidth := by
+private theorem readPackedCode_not_readsWidth :
+    ¬readPackedCode.ReadsWidth := by
   simp [readPackedCode, addrSetupCode, offsetSetupCode, maskSetupCode, readPackedFinishCode,
     Code.ReadsWidth, Op.ReadsWidth, Op.exactBin]
 
-private theorem writePackedCode_not_readsWidth (offset k w : ℕ) :
-    ¬(writePackedCode offset k w).ReadsWidth := by
+private theorem writePackedCode_not_readsWidth :
+    ¬writePackedCode.ReadsWidth := by
   simp [writePackedCode, addrSetupCode, offsetSetupCode, maskSetupCode, writePackedFinishCode,
     Code.ReadsWidth, Op.ReadsWidth, Op.exactBin]
 
-/-- Uniform `Realizes .exact` certificate for `readPackedProg`. -/
-theorem realizes_readPacked (offset N k w₀ : ℕ) :
-    Realizes .exact (fun d : ℕ × ℕ => readPackedProg d.1 offset k w₀ d.2)
-      (WordEncoding.encode (α := ℕ × ℕ)) (WordEncoding.encode (α := ℕ))
-      (fun w d _ => w = w₀ ∧ 0 < w₀ ∧ k ≤ w₀ ∧ d.2 < N ∧
-        Fits w₀ (d.1 + offset + packedWords N k w₀))
+/-- Parameter-free `Memory.Prog` wrapper for `readPackedProg` taking
+`d = (((base, offset), (k, w)), idx)`. -/
+def readPackedGenProg (d : ((ℕ × ℕ) × (ℕ × ℕ)) × ℕ) : Memory.Prog ℕ :=
+  readPackedProg d.1.1.1 d.1.1.2 d.1.2.1 d.1.2.2 d.2
+
+/-- Parameter-free `Memory.Prog` wrapper for `writePackedProg` taking
+`d = ((((base, offset), (k, w)), idx), val)`. -/
+def writePackedGenProg (d : (((ℕ × ℕ) × (ℕ × ℕ)) × ℕ) × ℕ) : Memory.Prog Unit :=
+  writePackedProg d.1.1.1.1 d.1.1.1.2 d.1.1.2.1 d.1.1.2.2 d.1.2 d.2
+
+/-- Uniform parameter-free `Realizes .exact` certificate for `readPackedGenProg`. -/
+theorem realizes_readPackedGen :
+    Realizes .exact readPackedGenProg
+      (WordEncoding.encode (α := ((ℕ × ℕ) × (ℕ × ℕ)) × ℕ)) (WordEncoding.encode (α := ℕ))
+      (fun w d _ => ∃ N, w = d.1.2.2 ∧ 0 < w ∧ d.1.2.1 ≤ w ∧ d.2 < N ∧
+        Fits w (d.1.1.1 + d.1.1.2 + packedWords N d.1.2.1 w))
       (fun _ _ => 0) := by
   let perm : Fin 10 ≃ Fin 10 := Equiv.swap 0 2
   refine ⟨8, 38, fun _ src tmp =>
-    .seq (.op (.copy (tmp 2) (src 0)))
-      (.seq (.op (.copy (tmp 1) (src 1)))
-        ((readPackedCode offset k w₀).rename (tmp ∘ perm))), ?_⟩
+    .seq (.op (.exactBin .add (tmp 2) (src 0) (src 1)))
+      (.seq (.op (.copy (tmp 1) (src 4)))
+        (.seq (.op (.copy (tmp 8) (src 3)))
+          (.seq (.op (.copy (tmp 9) (src 2)))
+            (readPackedCode.rename (tmp ∘ perm))))), ?_⟩
   intro r frontier src tmp hi hd hf hs
   have hperm_inj : Function.Injective (tmp ∘ perm) := hi.comp perm.injective
   refine ⟨?_, ?_⟩
-  · simp only [Code.ReadsWidth, Op.ReadsWidth, Code.readsWidth_rename, false_or]
-    exact readPackedCode_not_readsWidth offset k w₀
-  · intro w d x hx hin ⟨heq, hw, hkw, hidx, hfit⟩ _
-    subst heq
-    have hsrc0 : x.regs (src 0) = d.1 := congrFun hin 0
-    have hsrc1 : x.regs (src 1) = d.2 := congrFun hin 1
-    let x₁ := x.set (tmp 2) (x.regs (src 0))
-    let x₂ := x₁.set (tmp 1) (x₁.regs (src 1))
-    have hc1 : ExecWithin (B := .exact) w (.op (.copy (tmp 2) (src 0))) x x₁ 1 := ExecWithin.copy
-    have hc2 : ExecWithin (B := .exact) w (.op (.copy (tmp 1) (src 1))) x₁ x₂ 1 := ExecWithin.copy
-    have hx₂_bdd : x₂.Bounded w := hc2.bounded (hc1.bounded hx)
-    have hbase0 : (x₂.comap (tmp ∘ perm)).regs 0 = d.1 := by
-      change x₂.regs (tmp (perm 0)) = d.1
-      have hne12 : tmp 1 ≠ tmp (perm 0) := fun h => by
-        have := Fin.ext_iff.mp (hi h); revert this; decide
-      dsimp only [x₂, x₁, Data.set]
-      rw [Function.update_of_ne hne12.symm]
+  · simp [Code.ReadsWidth, Op.ReadsWidth, Op.exactBin, Code.readsWidth_rename,
+      readPackedCode_not_readsWidth]
+  · intro w d x hx hin ⟨N, heq, hw, hkw, hidx, hfit⟩ _
+    have hsrc0 : x.regs (src 0) = d.1.1.1 := congrFun hin 0
+    have hsrc1 : x.regs (src 1) = d.1.1.2 := congrFun hin 1
+    have hsrc2 : x.regs (src 2) = d.1.2.1 := congrFun hin 2
+    have hsrc3 : x.regs (src 3) = d.1.2.2 := congrFun hin 3
+    have hsrc4 : x.regs (src 4) = d.2 := congrFun hin 4
+    let x₁ := x.set (tmp 2) (d.1.1.1 + d.1.1.2)
+    let x₂ := x₁.set (tmp 1) (x₁.regs (src 4))
+    let x₃ := x₂.set (tmp 8) (x₂.regs (src 3))
+    let x₄ := x₃.set (tmp 9) (x₃.regs (src 2))
+    have hc1 :
+        ExecWithin (B := .exact) w (.op (.exactBin .add (tmp 2) (src 0) (src 1))) x x₁ 1 := by
+      apply ExecWithin.op
+      rw [Op.eval_exactBin, hsrc0, hsrc1]
+      exact Data.put_of_fits (hfit.of_le (by omega))
+    have hc2 : ExecWithin (B := .exact) w (.op (.copy (tmp 1) (src 4))) x₁ x₂ 1 := ExecWithin.copy
+    have hc3 : ExecWithin (B := .exact) w (.op (.copy (tmp 8) (src 3))) x₂ x₃ 1 := ExecWithin.copy
+    have hc4 : ExecWithin (B := .exact) w (.op (.copy (tmp 9) (src 2))) x₃ x₄ 1 := ExecWithin.copy
+    have hx₄_bdd : x₄.Bounded w := hc4.bounded (hc3.bounded (hc2.bounded (hc1.bounded hx)))
+    have hne : ∀ (a b : Fin 10), a ≠ b → tmp a ≠ tmp b := fun a b hab h => hab (hi h)
+    have hbase0 : (x₄.comap (tmp ∘ perm)).regs 0 = d.1.1.1 + d.1.1.2 := by
+      change x₄.regs (tmp (perm 0)) = d.1.1.1 + d.1.1.2
       have hp0 : perm 0 = 2 := by decide
-      rw [hp0, Function.update_self, hsrc0]
-    have hidx1 : (x₂.comap (tmp ∘ perm)).regs 1 = d.2 := by
-      change x₂.regs (tmp (perm 1)) = d.2
+      rw [hp0]
+      dsimp only [x₄, x₃, x₂, x₁, Data.set]
+      rw [Function.update_of_ne (hne 2 9 (by decide)),
+        Function.update_of_ne (hne 2 8 (by decide)),
+        Function.update_of_ne (hne 2 1 (by decide)),
+        Function.update_self]
+    have hidx1 : (x₄.comap (tmp ∘ perm)).regs 1 = d.2 := by
+      change x₄.regs (tmp (perm 1)) = d.2
       have hp1 : perm 1 = 1 := by decide
       rw [hp1]
-      dsimp only [x₂, x₁, Data.set]
-      rw [Function.update_self, Function.update_of_ne (hd 1 2), hsrc1]
+      dsimp only [x₄, x₃, x₂, x₁, Data.set]
+      rw [Function.update_of_ne (hne 1 9 (by decide)),
+        Function.update_of_ne (hne 1 8 (by decide)),
+        Function.update_self, Function.update_of_ne (hd 4 2), hsrc4]
+    have hw8 : (x₄.comap (tmp ∘ perm)).regs 8 = w := by
+      change x₄.regs (tmp (perm 8)) = w
+      have hp8 : perm 8 = 8 := by decide
+      rw [hp8]
+      dsimp only [x₄, x₃, x₂, x₁, Data.set]
+      rw [Function.update_of_ne (hne 8 9 (by decide)),
+        Function.update_self, Function.update_of_ne (hd 3 1),
+        Function.update_of_ne (hd 3 2), hsrc3, heq]
+    have hk9 : (x₄.comap (tmp ∘ perm)).regs 9 = d.1.2.1 := by
+      change x₄.regs (tmp (perm 9)) = d.1.2.1
+      have hp9 : perm 9 = 9 := by decide
+      rw [hp9]
+      dsimp only [x₄, x₃, x₂, x₁, Data.set]
+      rw [Function.update_self, Function.update_of_ne (hd 2 8),
+        Function.update_of_ne (hd 2 1), Function.update_of_ne (hd 2 2), hsrc2]
     obtain ⟨y_core, hex_core, hymem, _, _, hy2⟩ :=
-      readPackedCode_execWithin hw hkw hidx (hx₂_bdd.comap (tmp ∘ perm)) hbase0 hidx1 hfit
+      readPackedCode_execWithin hw hkw hidx (hx₄_bdd.comap (tmp ∘ perm)) hbase0 hidx1 hw8 hk9 hfit
     have hex_ren := hex_core.rename hperm_inj
-    let y := y_core.extend (tmp ∘ perm) x₂
-    refine ⟨y, (hc1.seq (hc2.seq hex_ren)).mono (by change 1 + (1 + 36) ≤ 38 * (2 + 0 + 1); omega),
+    let y := y_core.extend (tmp ∘ perm) x₄
+    refine ⟨y, (hc1.seq (hc2.seq (hc3.seq (hc4.seq hex_ren)))).mono
+      (by change 1 + (1 + (1 + (1 + 34))) ≤ 38 * (2 + 0 + 1); omega),
       ?_, ?_, ?_⟩
     · apply Memory.State.ext
       · exact hymem
       · change y.regs frontier = x.regs frontier
         have hnot : ¬∃ j : Fin 10, (tmp ∘ perm) j = frontier := by
           rintro ⟨j, hj⟩; exact hf (perm j) hj
-        change Function.extend (tmp ∘ perm) y_core.regs x₂.regs frontier = x.regs frontier
+        change Function.extend (tmp ∘ perm) y_core.regs x₄.regs frontier = x.regs frontier
         rw [Function.extend_apply' _ _ _ hnot]
-        dsimp only [x₂, x₁, Data.set]
-        rw [Function.update_of_ne (hf 1).symm, Function.update_of_ne (hf 2).symm]
+        dsimp only [x₄, x₃, x₂, x₁, Data.set]
+        rw [Function.update_of_ne (hf 9).symm, Function.update_of_ne (hf 8).symm,
+          Function.update_of_ne (hf 1).symm, Function.update_of_ne (hf 2).symm]
     · intro i
       have hi0 : i = 0 := Fin.eq_zero i
       subst hi0
       rw [clientResult_width]
-      change y.regs (tmp 0) = readPacked (d.1 + offset) k w x.mem d.2
+      change y.regs (tmp 0) = readPacked (d.1.1.1 + d.1.1.2) d.1.2.1 d.1.2.2 x.mem d.2
       have hp2 : tmp 0 = (tmp ∘ perm) 2 := by congr 1
       rw [hp2]
       change (y.comap (tmp ∘ perm)).regs 2 = _
-      rw [Data.comap_extend hperm_inj, hy2]
+      rw [Data.comap_extend hperm_inj, hy2, ← heq]
       rfl
     · intro i _ htmp
       have hnot : ¬∃ j : Fin 10, (tmp ∘ perm) j = i := by
         rintro ⟨j, hj⟩; exact htmp (perm j) hj
-      change Function.extend (tmp ∘ perm) y_core.regs x₂.regs i = x.regs i
+      change Function.extend (tmp ∘ perm) y_core.regs x₄.regs i = x.regs i
       rw [Function.extend_apply' _ _ _ hnot]
-      dsimp only [x₂, x₁, Data.set]
-      rw [Function.update_of_ne (htmp 1).symm, Function.update_of_ne (htmp 2).symm]
+      dsimp only [x₄, x₃, x₂, x₁, Data.set]
+      rw [Function.update_of_ne (htmp 9).symm, Function.update_of_ne (htmp 8).symm,
+        Function.update_of_ne (htmp 1).symm, Function.update_of_ne (htmp 2).symm]
 
-/-- Uniform `Realizes .exact` certificate for `writePackedProg`. -/
-theorem realizes_writePacked (offset N k w₀ : ℕ) :
-    Realizes .exact (fun d : (ℕ × ℕ) × ℕ => writePackedProg d.1.1 offset k w₀ d.1.2 d.2)
-      (WordEncoding.encode (α := (ℕ × ℕ) × ℕ)) (WordEncoding.encode (α := Unit))
-      (fun w d _ => w = w₀ ∧ 0 < w₀ ∧ k ≤ w₀ ∧ d.1.2 < N ∧
-        Fits w₀ (d.1.1 + offset + packedWords N k w₀))
+/-- Uniform parameter-free `Realizes .exact` certificate for `writePackedGenProg`. -/
+theorem realizes_writePackedGen :
+    Realizes .exact writePackedGenProg
+      (WordEncoding.encode (α := (((ℕ × ℕ) × (ℕ × ℕ)) × ℕ) × ℕ)) (WordEncoding.encode (α := Unit))
+      (fun w d _ => ∃ N, w = d.1.1.2.2 ∧ 0 < w ∧ d.1.1.2.1 ≤ w ∧ d.1.2 < N ∧
+        Fits w (d.1.1.1.1 + d.1.1.1.2 + packedWords N d.1.1.2.1 w))
       (fun _ _ => 0) := by
   refine ⟨9, 50, fun _ src tmp =>
-    .seq (.op (.copy (tmp 0) (src 0)))
-      (.seq (.op (.copy (tmp 1) (src 1)))
-        (.seq (.op (.copy (tmp 2) (src 2)))
-          ((writePackedCode offset k w₀).rename tmp))), ?_⟩
+    .seq (.op (.exactBin .add (tmp 0) (src 0) (src 1)))
+      (.seq (.op (.copy (tmp 1) (src 4)))
+        (.seq (.op (.copy (tmp 2) (src 5)))
+          (.seq (.op (.copy (tmp 8) (src 3)))
+            (.seq (.op (.copy (tmp 9) (src 2)))
+              (writePackedCode.rename tmp))))), ?_⟩
   intro r frontier src tmp hi hd hf hs
   refine ⟨?_, ?_⟩
-  · simp only [Code.ReadsWidth, Op.ReadsWidth, Code.readsWidth_rename, false_or]
-    exact writePackedCode_not_readsWidth offset k w₀
-  · intro w d x hx hin ⟨heq, hw, hkw, hidx, hfit⟩ _
-    subst heq
-    have hsrc0 : x.regs (src 0) = d.1.1 := congrFun hin 0
-    have hsrc1 : x.regs (src 1) = d.1.2 := congrFun hin 1
-    have hsrc2 : x.regs (src 2) = d.2 := congrFun hin 2
-    let x₁ := x.set (tmp 0) (x.regs (src 0))
-    let x₂ := x₁.set (tmp 1) (x₁.regs (src 1))
-    let x₃ := x₂.set (tmp 2) (x₂.regs (src 2))
-    have hc1 : ExecWithin (B := .exact) w (.op (.copy (tmp 0) (src 0))) x x₁ 1 := ExecWithin.copy
-    have hc2 : ExecWithin (B := .exact) w (.op (.copy (tmp 1) (src 1))) x₁ x₂ 1 := ExecWithin.copy
-    have hc3 : ExecWithin (B := .exact) w (.op (.copy (tmp 2) (src 2))) x₂ x₃ 1 := ExecWithin.copy
-    have hx₃_bdd : x₃.Bounded w := hc3.bounded (hc2.bounded (hc1.bounded hx))
-    have hne01 : tmp 0 ≠ tmp 1 := fun h => by have := Fin.ext_iff.mp (hi h); revert this; decide
-    have hne02 : tmp 0 ≠ tmp 2 := fun h => by have := Fin.ext_iff.mp (hi h); revert this; decide
-    have hne12 : tmp 1 ≠ tmp 2 := fun h => by have := Fin.ext_iff.mp (hi h); revert this; decide
-    have hbase0 : (x₃.comap tmp).regs 0 = d.1.1 := by
-      change x₃.regs (tmp 0) = d.1.1
-      dsimp only [x₃, x₂, x₁, Data.set]
-      rw [Function.update_of_ne hne02, Function.update_of_ne hne01, Function.update_self, hsrc0]
-    have hidx1 : (x₃.comap tmp).regs 1 = d.1.2 := by
-      change x₃.regs (tmp 1) = d.1.2
-      dsimp only [x₃, x₂, x₁, Data.set]
-      rw [Function.update_of_ne hne12, Function.update_self, Function.update_of_ne (hd 1 0), hsrc1]
-    have hval2 : (x₃.comap tmp).regs 2 = d.2 := by
-      change x₃.regs (tmp 2) = d.2
-      dsimp only [x₃, x₂, x₁, Data.set]
-      rw [Function.update_self, Function.update_of_ne (hd 2 1), Function.update_of_ne (hd 2 0),
-        hsrc2]
+  · simp [Code.ReadsWidth, Op.ReadsWidth, Op.exactBin, Code.readsWidth_rename,
+      writePackedCode_not_readsWidth]
+  · intro w d x hx hin ⟨N, heq, hw, hkw, hidx, hfit⟩ _
+    have hsrc0 : x.regs (src 0) = d.1.1.1.1 := congrFun hin 0
+    have hsrc1 : x.regs (src 1) = d.1.1.1.2 := congrFun hin 1
+    have hsrc2 : x.regs (src 2) = d.1.1.2.1 := congrFun hin 2
+    have hsrc3 : x.regs (src 3) = d.1.1.2.2 := congrFun hin 3
+    have hsrc4 : x.regs (src 4) = d.1.2 := congrFun hin 4
+    have hsrc5 : x.regs (src 5) = d.2 := congrFun hin 5
+    let x₁ := x.set (tmp 0) (d.1.1.1.1 + d.1.1.1.2)
+    let x₂ := x₁.set (tmp 1) (x₁.regs (src 4))
+    let x₃ := x₂.set (tmp 2) (x₂.regs (src 5))
+    let x₄ := x₃.set (tmp 8) (x₃.regs (src 3))
+    let x₅ := x₄.set (tmp 9) (x₄.regs (src 2))
+    have hc1 :
+        ExecWithin (B := .exact) w (.op (.exactBin .add (tmp 0) (src 0) (src 1))) x x₁ 1 := by
+      apply ExecWithin.op
+      rw [Op.eval_exactBin, hsrc0, hsrc1]
+      exact Data.put_of_fits (hfit.of_le (by omega))
+    have hc2 : ExecWithin (B := .exact) w (.op (.copy (tmp 1) (src 4))) x₁ x₂ 1 := ExecWithin.copy
+    have hc3 : ExecWithin (B := .exact) w (.op (.copy (tmp 2) (src 5))) x₂ x₃ 1 := ExecWithin.copy
+    have hc4 : ExecWithin (B := .exact) w (.op (.copy (tmp 8) (src 3))) x₃ x₄ 1 := ExecWithin.copy
+    have hc5 : ExecWithin (B := .exact) w (.op (.copy (tmp 9) (src 2))) x₄ x₅ 1 := ExecWithin.copy
+    have hx₅_bdd : x₅.Bounded w :=
+      hc5.bounded (hc4.bounded (hc3.bounded (hc2.bounded (hc1.bounded hx))))
+    have hne : ∀ (a b : Fin 10), a ≠ b → tmp a ≠ tmp b := fun a b hab h => hab (hi h)
+    have hbase0 : (x₅.comap tmp).regs 0 = d.1.1.1.1 + d.1.1.1.2 := by
+      change x₅.regs (tmp 0) = d.1.1.1.1 + d.1.1.1.2
+      dsimp only [x₅, x₄, x₃, x₂, x₁, Data.set]
+      rw [Function.update_of_ne (hne 0 9 (by decide)),
+        Function.update_of_ne (hne 0 8 (by decide)),
+        Function.update_of_ne (hne 0 2 (by decide)),
+        Function.update_of_ne (hne 0 1 (by decide)),
+        Function.update_self]
+    have hidx1 : (x₅.comap tmp).regs 1 = d.1.2 := by
+      change x₅.regs (tmp 1) = d.1.2
+      dsimp only [x₅, x₄, x₃, x₂, x₁, Data.set]
+      rw [Function.update_of_ne (hne 1 9 (by decide)),
+        Function.update_of_ne (hne 1 8 (by decide)),
+        Function.update_of_ne (hne 1 2 (by decide)),
+        Function.update_self, Function.update_of_ne (hd 4 0), hsrc4]
+    have hval2 : (x₅.comap tmp).regs 2 = d.2 := by
+      change x₅.regs (tmp 2) = d.2
+      dsimp only [x₅, x₄, x₃, x₂, x₁, Data.set]
+      rw [Function.update_of_ne (hne 2 9 (by decide)),
+        Function.update_of_ne (hne 2 8 (by decide)),
+        Function.update_self, Function.update_of_ne (hd 5 1),
+        Function.update_of_ne (hd 5 0), hsrc5]
+    have hw8 : (x₅.comap tmp).regs 8 = w := by
+      change x₅.regs (tmp 8) = w
+      dsimp only [x₅, x₄, x₃, x₂, x₁, Data.set]
+      rw [Function.update_of_ne (hne 8 9 (by decide)),
+        Function.update_self, Function.update_of_ne (hd 3 2),
+        Function.update_of_ne (hd 3 1), Function.update_of_ne (hd 3 0), hsrc3, heq]
+    have hk9 : (x₅.comap tmp).regs 9 = d.1.1.2.1 := by
+      change x₅.regs (tmp 9) = d.1.1.2.1
+      dsimp only [x₅, x₄, x₃, x₂, x₁, Data.set]
+      rw [Function.update_self, Function.update_of_ne (hd 2 8),
+        Function.update_of_ne (hd 2 2), Function.update_of_ne (hd 2 1),
+        Function.update_of_ne (hd 2 0), hsrc2]
     obtain ⟨y_core, hex_core, hymem, _, _, _⟩ :=
-      writePackedCode_execWithin hw hkw hidx (hx₃_bdd.comap tmp) hbase0 hidx1 hval2 hfit
+      writePackedCode_execWithin hw hkw hidx (hx₅_bdd.comap tmp) hbase0 hidx1 hval2 hw8 hk9 hfit
     have hex_ren := hex_core.rename hi
-    let y := y_core.extend tmp x₃
-    refine ⟨y, (hc1.seq (hc2.seq (hc3.seq hex_ren))).mono
-      (by change 1 + (1 + (1 + 47)) ≤ 50 * (4 + 0 + 1); omega), ?_, ?_, ?_⟩
+    let y := y_core.extend tmp x₅
+    refine ⟨y, (hc1.seq (hc2.seq (hc3.seq (hc4.seq (hc5.seq hex_ren))))).mono
+      (by change 1 + (1 + (1 + (1 + (1 + 45)))) ≤ 50 * (4 + 0 + 1); omega), ?_, ?_, ?_⟩
     · apply Memory.State.ext
-      · exact hymem
+      · change y_core.mem =
+          writePacked (d.1.1.1.1 + d.1.1.1.2) d.1.1.2.1 d.1.1.2.2 x.mem d.1.2 d.2
+        rw [hymem, ← heq]
+        rfl
       · change y.regs frontier = x.regs frontier
         have hnot : ¬∃ j : Fin 10, tmp j = frontier := by rintro ⟨j, hj⟩; exact hf j hj
-        change Function.extend tmp y_core.regs x₃.regs frontier = x.regs frontier
+        change Function.extend tmp y_core.regs x₅.regs frontier = x.regs frontier
         rw [Function.extend_apply' _ _ _ hnot]
-        dsimp only [x₃, x₂, x₁, Data.set]
-        rw [Function.update_of_ne (hf 2).symm, Function.update_of_ne (hf 1).symm,
+        dsimp only [x₅, x₄, x₃, x₂, x₁, Data.set]
+        rw [Function.update_of_ne (hf 9).symm, Function.update_of_ne (hf 8).symm,
+          Function.update_of_ne (hf 2).symm, Function.update_of_ne (hf 1).symm,
           Function.update_of_ne (hf 0).symm]
     · intro i
       exact Fin.elim0 i
     · intro i _ htmp
       have hnot : ¬∃ j : Fin 10, tmp j = i := by rintro ⟨j, hj⟩; exact htmp j hj
-      change Function.extend tmp y_core.regs x₃.regs i = x.regs i
+      change Function.extend tmp y_core.regs x₅.regs i = x.regs i
       rw [Function.extend_apply' _ _ _ hnot]
-      dsimp only [x₃, x₂, x₁, Data.set]
-      rw [Function.update_of_ne (htmp 2).symm, Function.update_of_ne (htmp 1).symm,
+      dsimp only [x₅, x₄, x₃, x₂, x₁, Data.set]
+      rw [Function.update_of_ne (htmp 9).symm, Function.update_of_ne (htmp 8).symm,
+        Function.update_of_ne (htmp 2).symm, Function.update_of_ne (htmp 1).symm,
         Function.update_of_ne (htmp 0).symm]
 
 /-! ## Section 2: Dictionary array `Memory.Prog` primitives (`Quot`, `Val`, `LM`, `GM`) -/
+
+/-- Runtime register block of 36 precomputed dictionary layout parameters. -/
+def DictParams : Type := Fin 36 → ℕ
+
+instance : WordEncoding DictParams := ⟨36, Function.Embedding.refl (Fin 36 → ℕ)⟩
+
+/-- Construct the 36-word parameter vector for `(U, V, w, n_max, h_space)`. -/
+def mkDictParams (U V w n_max h_space : ℕ) : DictParams := fun i =>
+  match i.val with
+  | 0 => w
+  | 1 => n_max
+  | 2 => n_max - 1
+  | 3 => offQuot h_space
+  | 4 => quotientBits U n_max
+  | 5 => offVal U w n_max h_space
+  | 6 => valBits V
+  | 7 => offLMSub U V w n_max h_space 0
+  | 8 => offLMSub U V w n_max h_space 1
+  | 9 => offLMSub U V w n_max h_space 2
+  | 10 => offLMSub U V w n_max h_space 3
+  | 11 => offLMSub U V w n_max h_space 4
+  | 12 => offLMSub U V w n_max h_space 5
+  | 13 => offLMSub U V w n_max h_space 6
+  | 14 => offLMSub U V w n_max h_space 7
+  | 15 => offLMSub U V w n_max h_space 8
+  | 16 => effBucketPosBits n_max
+  | 17 => offGM U V w n_max h_space
+  | 18 => globalPtrBits n_max
+  | 19 => bucketBits n_max
+  | 20 => 2 ^ bucketBits n_max - 1
+  | 21 => slabSize n_max
+  | 22 => slabSize n_max - 1
+  | 23 => 2 * slabSize n_max
+  | 24 => dirSlabsPerBucket n_max
+  | 25 => dirSlabsPerBucket n_max - 1
+  | 26 => tailCapPerBucket n_max
+  | 27 => gmSlabDirBase n_max
+  | 28 => gmTailPtrBase n_max
+  | 29 => gmTailOwnerBase n_max
+  | 30 => gmSlabMetaBase n_max
+  | 31 => numMicroPerBucket n_max
+  | 32 => min n_max (effBucketCap n_max)
+  | 33 => U
+  | 34 => V
+  | 35 => h_space
+  | _ => 0
+
+def p_w (dp : DictParams) : ℕ := dp ⟨0, by decide⟩
+def p_nMax (dp : DictParams) : ℕ := dp ⟨1, by decide⟩
+def p_nMaxSubOne (dp : DictParams) : ℕ := dp ⟨2, by decide⟩
+def p_offQuot (dp : DictParams) : ℕ := dp ⟨3, by decide⟩
+def p_quotBits (dp : DictParams) : ℕ := dp ⟨4, by decide⟩
+def p_offVal (dp : DictParams) : ℕ := dp ⟨5, by decide⟩
+def p_valBits (dp : DictParams) : ℕ := dp ⟨6, by decide⟩
+def p_offLMSub (c : Fin 9) (dp : DictParams) : ℕ :=
+  match c.val with
+  | 0 => dp ⟨7, by decide⟩
+  | 1 => dp ⟨8, by decide⟩
+  | 2 => dp ⟨9, by decide⟩
+  | 3 => dp ⟨10, by decide⟩
+  | 4 => dp ⟨11, by decide⟩
+  | 5 => dp ⟨12, by decide⟩
+  | 6 => dp ⟨13, by decide⟩
+  | 7 => dp ⟨14, by decide⟩
+  | _ => dp ⟨15, by decide⟩
+def p_lmBits (dp : DictParams) : ℕ := dp ⟨16, by decide⟩
+def p_offGM (dp : DictParams) : ℕ := dp ⟨17, by decide⟩
+def p_gmBits (dp : DictParams) : ℕ := dp ⟨18, by decide⟩
+def p_bucketBits (dp : DictParams) : ℕ := dp ⟨19, by decide⟩
+def p_bucketMask (dp : DictParams) : ℕ := dp ⟨20, by decide⟩
+def p_slabSize (dp : DictParams) : ℕ := dp ⟨21, by decide⟩
+def p_slabSizeSubOne (dp : DictParams) : ℕ := dp ⟨22, by decide⟩
+def p_twoSlabSize (dp : DictParams) : ℕ := dp ⟨23, by decide⟩
+def p_dirSlabs (dp : DictParams) : ℕ := dp ⟨24, by decide⟩
+def p_dirSlabsSubOne (dp : DictParams) : ℕ := dp ⟨25, by decide⟩
+def p_tailCap (dp : DictParams) : ℕ := dp ⟨26, by decide⟩
+def p_gmSlabDirBase (dp : DictParams) : ℕ := dp ⟨27, by decide⟩
+def p_gmTailPtrBase (dp : DictParams) : ℕ := dp ⟨28, by decide⟩
+def p_gmTailOwnerBase (dp : DictParams) : ℕ := dp ⟨29, by decide⟩
+def p_gmSlabMetaBase (dp : DictParams) : ℕ := dp ⟨30, by decide⟩
+def p_numMicro (dp : DictParams) : ℕ := dp ⟨31, by decide⟩
+def p_minCap (dp : DictParams) : ℕ := dp ⟨32, by decide⟩
+def p_U (dp : DictParams) : ℕ := dp ⟨33, by decide⟩
+def p_V (dp : DictParams) : ℕ := dp ⟨34, by decide⟩
+def p_hSpace (dp : DictParams) : ℕ := dp ⟨35, by decide⟩
+
+@[simp] theorem p_w_mk (U V w n_max h_space : ℕ) :
+    p_w (mkDictParams U V w n_max h_space) = w := rfl
+@[simp] theorem p_nMax_mk (U V w n_max h_space : ℕ) :
+    p_nMax (mkDictParams U V w n_max h_space) = n_max := rfl
+@[simp] theorem p_nMaxSubOne_mk (U V w n_max h_space : ℕ) :
+    p_nMaxSubOne (mkDictParams U V w n_max h_space) = n_max - 1 := rfl
+@[simp] theorem p_offQuot_mk (U V w n_max h_space : ℕ) :
+    p_offQuot (mkDictParams U V w n_max h_space) = offQuot h_space := rfl
+@[simp] theorem p_quotBits_mk (U V w n_max h_space : ℕ) :
+    p_quotBits (mkDictParams U V w n_max h_space) = quotientBits U n_max := rfl
+@[simp] theorem p_offVal_mk (U V w n_max h_space : ℕ) :
+    p_offVal (mkDictParams U V w n_max h_space) = offVal U w n_max h_space := rfl
+@[simp] theorem p_valBits_mk (U V w n_max h_space : ℕ) :
+    p_valBits (mkDictParams U V w n_max h_space) = valBits V := rfl
+@[simp] theorem p_lmBits_mk (U V w n_max h_space : ℕ) :
+    p_lmBits (mkDictParams U V w n_max h_space) = effBucketPosBits n_max := rfl
+@[simp] theorem p_offGM_mk (U V w n_max h_space : ℕ) :
+    p_offGM (mkDictParams U V w n_max h_space) = offGM U V w n_max h_space := rfl
+@[simp] theorem p_gmBits_mk (U V w n_max h_space : ℕ) :
+    p_gmBits (mkDictParams U V w n_max h_space) = globalPtrBits n_max := rfl
+@[simp] theorem p_bucketBits_mk (U V w n_max h_space : ℕ) :
+    p_bucketBits (mkDictParams U V w n_max h_space) = bucketBits n_max := rfl
+@[simp] theorem p_bucketMask_mk (U V w n_max h_space : ℕ) :
+    p_bucketMask (mkDictParams U V w n_max h_space) = 2 ^ bucketBits n_max - 1 := rfl
+@[simp] theorem p_slabSize_mk (U V w n_max h_space : ℕ) :
+    p_slabSize (mkDictParams U V w n_max h_space) = slabSize n_max := rfl
+@[simp] theorem p_slabSizeSubOne_mk (U V w n_max h_space : ℕ) :
+    p_slabSizeSubOne (mkDictParams U V w n_max h_space) = slabSize n_max - 1 := rfl
+@[simp] theorem p_twoSlabSize_mk (U V w n_max h_space : ℕ) :
+    p_twoSlabSize (mkDictParams U V w n_max h_space) = 2 * slabSize n_max := rfl
+@[simp] theorem p_dirSlabs_mk (U V w n_max h_space : ℕ) :
+    p_dirSlabs (mkDictParams U V w n_max h_space) = dirSlabsPerBucket n_max := rfl
+@[simp] theorem p_dirSlabsSubOne_mk (U V w n_max h_space : ℕ) :
+    p_dirSlabsSubOne (mkDictParams U V w n_max h_space) = dirSlabsPerBucket n_max - 1 := rfl
+@[simp] theorem p_tailCap_mk (U V w n_max h_space : ℕ) :
+    p_tailCap (mkDictParams U V w n_max h_space) = tailCapPerBucket n_max := rfl
+@[simp] theorem p_gmSlabDirBase_mk (U V w n_max h_space : ℕ) :
+    p_gmSlabDirBase (mkDictParams U V w n_max h_space) = gmSlabDirBase n_max := rfl
+@[simp] theorem p_gmTailPtrBase_mk (U V w n_max h_space : ℕ) :
+    p_gmTailPtrBase (mkDictParams U V w n_max h_space) = gmTailPtrBase n_max := rfl
+@[simp] theorem p_gmTailOwnerBase_mk (U V w n_max h_space : ℕ) :
+    p_gmTailOwnerBase (mkDictParams U V w n_max h_space) = gmTailOwnerBase n_max := rfl
+@[simp] theorem p_gmSlabMetaBase_mk (U V w n_max h_space : ℕ) :
+    p_gmSlabMetaBase (mkDictParams U V w n_max h_space) = gmSlabMetaBase n_max := rfl
+@[simp] theorem p_numMicro_mk (U V w n_max h_space : ℕ) :
+    p_numMicro (mkDictParams U V w n_max h_space) = numMicroPerBucket n_max := rfl
+@[simp] theorem p_minCap_mk (U V w n_max h_space : ℕ) :
+    p_minCap (mkDictParams U V w n_max h_space) = min n_max (effBucketCap n_max) := rfl
+@[simp] theorem p_U_mk (U V w n_max h_space : ℕ) :
+    p_U (mkDictParams U V w n_max h_space) = U := rfl
+@[simp] theorem p_V_mk (U V w n_max h_space : ℕ) :
+    p_V (mkDictParams U V w n_max h_space) = V := rfl
+@[simp] theorem p_hSpace_mk (U V w n_max h_space : ℕ) :
+    p_hSpace (mkDictParams U V w n_max h_space) = h_space := rfl
+@[simp] theorem p_offLMSub_mk (U V w n_max h_space : ℕ) (c : Fin 9) :
+    p_offLMSub c (mkDictParams U V w n_max h_space) = offLMSub U V w n_max h_space c.val := by
+  rcases c with ⟨_ | _ | _ | _ | _ | _ | _ | _ | _ | c, hc⟩ <;> try rfl
+  omega
 
 /-- Common entry envelope for dictionary `Memory.Prog` operations at `base`. -/
 def DictEnv (U V w n_max h_space : ℕ) (w' base : ℕ) : Prop :=
   w' = w ∧ Fits w (base + totalSpace U V w n_max h_space)
 
+/-- Combined runtime parameter and memory envelope for parameter-free `Realizes` certificates. -/
+structure DictEnvGen (w : ℕ) (dp : DictParams) (base : ℕ) : Prop where
+  params : ∃ U V w₀ n_max h_space,
+    0 < w₀ ∧ n_max ≤ U ∧ U < 2 ^ w₀ ∧ V ≤ 2 ^ w₀ ∧
+    dp = mkDictParams U V w₀ n_max h_space
+  env : DictEnv (p_U dp) (p_V dp) (p_w dp) (p_nMax dp) (p_hSpace dp) w base
+
+/-- Parameter-free `Memory.Prog` operation reading `Quotients[d.2.2]` at `base = d.2.1`. -/
+def readQuotGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ :=
+  readPackedGenProg (((d.2.1, p_offQuot d.1), (p_quotBits d.1, p_w d.1)), d.2.2)
+
 /-- Read `Quotients[d.2]` at `base = d.1` in `Memory.Prog`. -/
 def readQuotProg (U w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
   readPackedProg d.1 (offQuot h_space) (quotientBits U n_max) w d.2
+
+@[simp] theorem readQuotGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
+    readQuotGenProg (mkDictParams U V w n_max h_space, d) =
+      readQuotProg U w n_max h_space d := rfl
+
+/-- Parameter-free `Memory.Prog` operation writing `d.2.2` to `Quotients[d.2.1.2]` at
+`base = d.2.1.1`. -/
+def writeQuotGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog Unit :=
+  writePackedGenProg ((((d.2.1.1, p_offQuot d.1), (p_quotBits d.1, p_w d.1)), d.2.1.2), d.2.2)
 
 /-- Write `d.2` to `Quotients[d.1.2]` at `base = d.1.1` in `Memory.Prog`. -/
 def writeQuotProg (U w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit :=
   writePackedProg d.1.1 (offQuot h_space) (quotientBits U n_max) w d.1.2 d.2
 
+@[simp] theorem writeQuotGenProg_mk (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) :
+    writeQuotGenProg (mkDictParams U V w n_max h_space, d) =
+      writeQuotProg U w n_max h_space d := rfl
+
+/-- Parameter-free `Memory.Prog` operation reading `Values[d.2.2]` at `base = d.2.1`. -/
+def readValGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ :=
+  readPackedGenProg (((d.2.1, p_offVal d.1), (p_valBits d.1, p_w d.1)), d.2.2)
+
 /-- Read `Values[d.2]` at `base = d.1` in `Memory.Prog`. -/
 def readValProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
   readPackedProg d.1 (offVal U w n_max h_space) (valBits V) w d.2
+
+@[simp] theorem readValGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
+    readValGenProg (mkDictParams U V w n_max h_space, d) =
+      readValProg U V w n_max h_space d := rfl
+
+/-- Parameter-free `Memory.Prog` operation writing `d.2.2` to `Values[d.2.1.2]` at
+`base = d.2.1.1`. -/
+def writeValGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog Unit :=
+  writePackedGenProg ((((d.2.1.1, p_offVal d.1), (p_valBits d.1, p_w d.1)), d.2.1.2), d.2.2)
 
 /-- Write `d.2` to `Values[d.1.2]` at `base = d.1.1` in `Memory.Prog`. -/
 def writeValProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit :=
   writePackedProg d.1.1 (offVal U w n_max h_space) (valBits V) w d.1.2 d.2
 
+@[simp] theorem writeValGenProg_mk (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) :
+    writeValGenProg (mkDictParams U V w n_max h_space, d) =
+      writeValProg U V w n_max h_space d := rfl
+
+/-- Parameter-free `Memory.Prog` operation reading `LocalMeta[c, d.2.2]` at `base = d.2.1`. -/
+def readLMGenProg (c : Fin 9) (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ :=
+  readPackedGenProg (((d.2.1, p_offLMSub c d.1), (p_lmBits d.1, p_w d.1)), d.2.2)
+
 /-- Read `LocalMeta[c, d.2]` at `base = d.1` in `Memory.Prog`. -/
 def readLMProg (U V w n_max h_space c : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
   readPackedProg d.1 (offLMSub U V w n_max h_space c) (effBucketPosBits n_max) w d.2
+
+@[simp] theorem readLMGenProg_mk (U V w n_max h_space : ℕ) (c : Fin 9) (d : ℕ × ℕ) :
+    readLMGenProg c (mkDictParams U V w n_max h_space, d) =
+      readLMProg U V w n_max h_space c.val d := by
+  simp [readLMGenProg, readLMProg, readPackedGenProg]
+
+/-- Parameter-free `Memory.Prog` operation writing `d.2.2` to `LocalMeta[c, d.2.1.2]` at
+`base = d.2.1.1`. -/
+def writeLMGenProg (c : Fin 9) (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog Unit :=
+  writePackedGenProg ((((d.2.1.1, p_offLMSub c d.1), (p_lmBits d.1, p_w d.1)), d.2.1.2), d.2.2)
 
 /-- Write `d.2` to `LocalMeta[c, d.1.2]` at `base = d.1.1` in `Memory.Prog`. -/
 def writeLMProg (U V w n_max h_space c : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit :=
   writePackedProg d.1.1 (offLMSub U V w n_max h_space c) (effBucketPosBits n_max) w d.1.2 d.2
 
+@[simp] theorem writeLMGenProg_mk (U V w n_max h_space : ℕ) (c : Fin 9) (d : (ℕ × ℕ) × ℕ) :
+    writeLMGenProg c (mkDictParams U V w n_max h_space, d) =
+      writeLMProg U V w n_max h_space c.val d := by
+  simp [writeLMGenProg, writeLMProg, writePackedGenProg]
+
+/-- Parameter-free `Memory.Prog` operation reading `GlobalMeta[d.2.2]` at `base = d.2.1`. -/
+def readGMGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ :=
+  readPackedGenProg (((d.2.1, p_offGM d.1), (p_gmBits d.1, p_w d.1)), d.2.2)
+
 /-- Read `GlobalMeta[d.2]` at `base = d.1` in `Memory.Prog`. -/
 def readGMProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
   readPackedProg d.1 (offGM U V w n_max h_space) (globalPtrBits n_max) w d.2
+
+@[simp] theorem readGMGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
+    readGMGenProg (mkDictParams U V w n_max h_space, d) =
+      readGMProg U V w n_max h_space d := rfl
+
+/-- Parameter-free `Memory.Prog` operation writing `d.2.2` to `GlobalMeta[d.2.1.2]` at
+`base = d.2.1.1`. -/
+def writeGMGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog Unit :=
+  writePackedGenProg ((((d.2.1.1, p_offGM d.1), (p_gmBits d.1, p_w d.1)), d.2.1.2), d.2.2)
 
 /-- Write `d.2` to `GlobalMeta[d.1.2]` at `base = d.1.1` in `Memory.Prog`. -/
 def writeGMProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog Unit :=
   writePackedProg d.1.1 (offGM U V w n_max h_space) (globalPtrBits n_max) w d.1.2 d.2
 
-theorem realizes_readQuot {U V w n_max h_space : ℕ} (hw : 0 < w) (hU : U ≤ 2 ^ w) :
-    Realizes .exact (readQuotProg U w n_max h_space)
-      (WordEncoding.encode (α := ℕ × ℕ)) (WordEncoding.encode (α := ℕ))
-      (fun w' d _ => DictEnv U V w n_max h_space w' d.1 ∧ d.2 < n_max)
+@[simp] theorem writeGMGenProg_mk (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) :
+    writeGMGenProg (mkDictParams U V w n_max h_space, d) =
+      writeGMProg U V w n_max h_space d := rfl
+
+/-- Parameter-free `Memory.Prog` operation reading `bCount` (`d = (dp, (base, b))`). -/
+def readBucketCountGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog ℕ :=
+  if p_bucketBits d.1 = 0 then
+    readGMGenProg (d.1, (d.2.1, 0))
+  else do
+    let q_b ← readGMGenProg (d.1, (d.2.1, 4 + 3 * d.2.2))
+    let r_b ← readGMGenProg (d.1, (d.2.1, 4 + 3 * d.2.2 + 1))
+    pure (q_b * p_slabSize d.1 + r_b)
+
+/-- `Memory.Prog` operation reading `bCount n_max gm b` (`d = (base, b)`). -/
+def readBucketCountProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
+  if bucketBits n_max = 0 then
+    readGMProg U V w n_max h_space (d.1, 0)
+  else do
+    let q_b ← readGMProg U V w n_max h_space (d.1, 4 + 3 * d.2)
+    let r_b ← readGMProg U V w n_max h_space (d.1, 4 + 3 * d.2 + 1)
+    pure (q_b * slabSize n_max + r_b)
+
+@[simp] theorem readBucketCountGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
+    readBucketCountGenProg (mkDictParams U V w n_max h_space, d) =
+      readBucketCountProg U V w n_max h_space d := rfl
+
+/-- Parameter-free `Memory.Prog` operation resolving indexed local slot `j = d.2.2` of bucket
+`b = d.2.1.2` at `base = d.2.1.1`. -/
+def resolveIndexedSlotGenProg (d : DictParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog ℕ :=
+  if p_bucketBits d.1 = 0 then
+    pure d.2.2
+  else do
+    let q_b ← readGMGenProg (d.1, (d.2.1.1, 4 + 3 * d.2.1.2))
+    if d.2.2 < q_b * p_slabSize d.1 then do
+      let p ← readGMGenProg (d.1,
+        (d.2.1.1, p_gmSlabDirBase d.1 + d.2.1.2 * p_dirSlabs d.1 + d.2.2 / p_slabSize d.1))
+      pure (p * p_slabSize d.1 + (p_slabSizeSubOne d.1 - d.2.2 % p_slabSize d.1))
+    else do
+      let t ← readGMGenProg (d.1,
+        (d.2.1.1, p_gmTailPtrBase d.1 + (d.2.1.2 * p_tailCap d.1 +
+          (d.2.2 - q_b * p_slabSize d.1))))
+      pure (p_nMaxSubOne d.1 - t)
+
+/-- `Memory.Prog` operation resolving indexed local slot `j = d.2 < effBucketCap n_max` of bucket
+`b = d.1.2` at `base = d.1.1` to physical slot `slotOf n_max gm b j < n_max`. -/
+def resolveIndexedSlotProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog ℕ :=
+  if bucketBits n_max = 0 then
+    pure d.2
+  else do
+    let q_b ← readGMProg U V w n_max h_space (d.1.1, 4 + 3 * d.1.2)
+    if d.2 < q_b * slabSize n_max then do
+      let p ← readGMProg U V w n_max h_space
+        (d.1.1, gmSlabDirBase n_max + d.1.2 * dirSlabsPerBucket n_max + d.2 / slabSize n_max)
+      pure (p * slabSize n_max + ((slabSize n_max - 1) - d.2 % slabSize n_max))
+    else do
+      let t ← readGMProg U V w n_max h_space
+        (d.1.1, gmTailPtrBase n_max + (d.1.2 * tailCapPerBucket n_max +
+          (d.2 - q_b * slabSize n_max)))
+      pure ((n_max - 1) - t)
+
+@[simp] theorem resolveIndexedSlotGenProg_mk (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) :
+    resolveIndexedSlotGenProg (mkDictParams U V w n_max h_space, d) =
+      resolveIndexedSlotProg U V w n_max h_space d := rfl
+
+set_option hygiene false in
+/-- Helper tactic for parameter-free `Realizes` proofs over `DictParams × D`:
+runs `realize` and unpacks `d = (dp, d)` and `DictEnvGen` (`h.1`) in every resulting goal. -/
+macro "realize_dict" : tactic =>
+  `(tactic| (
+    realize
+    all_goals (
+      rcases d with ⟨dp, d⟩
+      obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1
+      try simp only [
+        p_w_mk, p_nMax_mk, p_nMaxSubOne_mk, p_offQuot_mk, p_quotBits_mk, p_offVal_mk,
+        p_valBits_mk, p_lmBits_mk, p_offGM_mk, p_gmBits_mk, p_bucketBits_mk,
+        p_bucketMask_mk, p_slabSize_mk, p_slabSizeSubOne_mk, p_twoSlabSize_mk,
+        p_dirSlabs_mk, p_dirSlabsSubOne_mk, p_tailCap_mk, p_gmSlabDirBase_mk,
+        p_gmTailPtrBase_mk, p_gmTailOwnerBase_mk, p_gmSlabMetaBase_mk, p_numMicro_mk,
+        p_minCap_mk, p_U_mk, p_V_mk, p_hSpace_mk, p_offLMSub_mk,
+        readQuotGenProg_mk, writeQuotGenProg_mk, readValGenProg_mk, writeValGenProg_mk,
+        readLMGenProg_mk, writeLMGenProg_mk, readGMGenProg_mk, writeGMGenProg_mk,
+        readBucketCountGenProg_mk, resolveIndexedSlotGenProg_mk] at *
+    )))
+
+set_option hygiene false in
+/-- Helper tactic for parameter-free `Realizes` proofs over `DictParams × D` with extra
+simplification lemmas for sub-programs and preconditions. -/
+macro "realize_dict" "[" extra:Lean.Parser.Tactic.simpLemma,* "]" : tactic =>
+  `(tactic| (
+    realize
+    all_goals (
+      rcases d with ⟨dp, d⟩
+      obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1
+      try simp only [
+        $extra,*,
+        p_w_mk, p_nMax_mk, p_nMaxSubOne_mk, p_offQuot_mk, p_quotBits_mk, p_offVal_mk,
+        p_valBits_mk, p_lmBits_mk, p_offGM_mk, p_gmBits_mk, p_bucketBits_mk,
+        p_bucketMask_mk, p_slabSize_mk, p_slabSizeSubOne_mk, p_twoSlabSize_mk,
+        p_dirSlabs_mk, p_dirSlabsSubOne_mk, p_tailCap_mk, p_gmSlabDirBase_mk,
+        p_gmTailPtrBase_mk, p_gmTailOwnerBase_mk, p_gmSlabMetaBase_mk, p_numMicro_mk,
+        p_minCap_mk, p_U_mk, p_V_mk, p_hSpace_mk, p_offLMSub_mk,
+        readQuotGenProg_mk, writeQuotGenProg_mk, readValGenProg_mk, writeValGenProg_mk,
+        readLMGenProg_mk, writeLMGenProg_mk, readGMGenProg_mk, writeGMGenProg_mk,
+        readBucketCountGenProg_mk, resolveIndexedSlotGenProg_mk] at *
+    )))
+
+theorem realizes_readQuotGen :
+    Realizes .exact readQuotGenProg
+      (WordEncoding.encode (α := DictParams × (ℕ × ℕ))) (WordEncoding.encode (α := ℕ))
+      (fun w' d _ => DictEnvGen w' d.1 d.2.1 ∧ d.2.2 < p_nMax d.1)
       (fun _ _ => 0) := by
-  refine (realizes_readPacked (offQuot h_space) n_max (quotientBits U n_max) w).consequence
-    ?_ (fun _ _ => le_rfl)
-  intro w' d _ _ _ ⟨⟨rfl, hspace⟩, hidx⟩
-  exact ⟨rfl, hw, quotientBits_le_of_le_pow hU, hidx,
+  have hrp := realizes_readPackedGen
+  unfold readQuotGenProg
+  realize_dict
+  rcases henv with ⟨rfl, hspace⟩
+  exact ⟨n_max, rfl, hw, quotientBits_le_of_le_pow hU.le, h.2,
     hspace.of_le (by unfold totalSpace offGM offLM offVal offQuot; omega)⟩
 
-theorem realizes_writeQuot {U V w n_max h_space : ℕ} (hw : 0 < w) (hU : U ≤ 2 ^ w) :
-    Realizes .exact (writeQuotProg U w n_max h_space)
-      (WordEncoding.encode (α := (ℕ × ℕ) × ℕ)) (WordEncoding.encode (α := Unit))
-      (fun w' d _ => DictEnv U V w n_max h_space w' d.1.1 ∧ d.1.2 < n_max)
+theorem realizes_writeQuotGen :
+    Realizes .exact writeQuotGenProg
+      (WordEncoding.encode (α := DictParams × ((ℕ × ℕ) × ℕ))) (WordEncoding.encode (α := Unit))
+      (fun w' d _ => DictEnvGen w' d.1 d.2.1.1 ∧ d.2.1.2 < p_nMax d.1)
       (fun _ _ => 0) := by
-  refine (realizes_writePacked (offQuot h_space) n_max (quotientBits U n_max) w).consequence
-    ?_ (fun _ _ => le_rfl)
-  intro w' d _ _ _ ⟨⟨rfl, hspace⟩, hidx⟩
-  exact ⟨rfl, hw, quotientBits_le_of_le_pow hU, hidx,
+  have hwp := realizes_writePackedGen
+  unfold writeQuotGenProg
+  realize_dict
+  rcases henv with ⟨rfl, hspace⟩
+  exact ⟨n_max, rfl, hw, quotientBits_le_of_le_pow hU.le, h.2,
     hspace.of_le (by unfold totalSpace offGM offLM offVal offQuot; omega)⟩
 
-theorem realizes_readVal {U V w n_max h_space : ℕ} (hw : 0 < w) (hV : V ≤ 2 ^ w) :
-    Realizes .exact (readValProg U V w n_max h_space)
-      (WordEncoding.encode (α := ℕ × ℕ)) (WordEncoding.encode (α := ℕ))
-      (fun w' d _ => DictEnv U V w n_max h_space w' d.1 ∧ d.2 < n_max)
+theorem realizes_readValGen :
+    Realizes .exact readValGenProg
+      (WordEncoding.encode (α := DictParams × (ℕ × ℕ))) (WordEncoding.encode (α := ℕ))
+      (fun w' d _ => DictEnvGen w' d.1 d.2.1 ∧ d.2.2 < p_nMax d.1)
       (fun _ _ => 0) := by
-  refine (realizes_readPacked (offVal U w n_max h_space) n_max (valBits V) w).consequence
-    ?_ (fun _ _ => le_rfl)
-  intro w' d _ _ _ ⟨⟨rfl, hspace⟩, hidx⟩
-  exact ⟨rfl, hw, valBits_le_of_le_pow hV, hidx,
+  have hrp := realizes_readPackedGen
+  unfold readValGenProg
+  realize_dict
+  rcases henv with ⟨rfl, hspace⟩
+  exact ⟨n_max, rfl, hw, valBits_le_of_le_pow hV, h.2,
     hspace.of_le (by unfold totalSpace offGM offLM offVal; omega)⟩
 
-theorem realizes_writeVal {U V w n_max h_space : ℕ} (hw : 0 < w) (hV : V ≤ 2 ^ w) :
-    Realizes .exact (writeValProg U V w n_max h_space)
-      (WordEncoding.encode (α := (ℕ × ℕ) × ℕ)) (WordEncoding.encode (α := Unit))
-      (fun w' d _ => DictEnv U V w n_max h_space w' d.1.1 ∧ d.1.2 < n_max)
+theorem realizes_writeValGen :
+    Realizes .exact writeValGenProg
+      (WordEncoding.encode (α := DictParams × ((ℕ × ℕ) × ℕ))) (WordEncoding.encode (α := Unit))
+      (fun w' d _ => DictEnvGen w' d.1 d.2.1.1 ∧ d.2.1.2 < p_nMax d.1)
       (fun _ _ => 0) := by
-  refine (realizes_writePacked (offVal U w n_max h_space) n_max (valBits V) w).consequence
-    ?_ (fun _ _ => le_rfl)
-  intro w' d _ _ _ ⟨⟨rfl, hspace⟩, hidx⟩
-  exact ⟨rfl, hw, valBits_le_of_le_pow hV, hidx,
+  have hwp := realizes_writePackedGen
+  unfold writeValGenProg
+  realize_dict
+  rcases henv with ⟨rfl, hspace⟩
+  exact ⟨n_max, rfl, hw, valBits_le_of_le_pow hV, h.2,
     hspace.of_le (by unfold totalSpace offGM offLM offVal; omega)⟩
 
-theorem realizes_readLM {U V w n_max h_space c : ℕ}
-    (hw : 0 < w) (hnU : n_max ≤ U) (hU : U < 2 ^ w) (hc : c < 9) :
-    Realizes .exact (readLMProg U V w n_max h_space c)
-      (WordEncoding.encode (α := ℕ × ℕ)) (WordEncoding.encode (α := ℕ))
-      (fun w' d _ => DictEnv U V w n_max h_space w' d.1 ∧ d.2 < totalMicroBuckets n_max)
+theorem realizes_readLMGen (c : Fin 9) :
+    Realizes .exact (readLMGenProg c)
+      (WordEncoding.encode (α := DictParams × (ℕ × ℕ))) (WordEncoding.encode (α := ℕ))
+      (fun w' d _ => DictEnvGen w' d.1 d.2.1 ∧ d.2.2 < totalMicroBuckets (p_nMax d.1))
       (fun _ _ => 0) := by
-  refine (realizes_readPacked (offLMSub U V w n_max h_space c) (totalMicroBuckets n_max)
-    (effBucketPosBits n_max) w).consequence ?_ (fun _ _ => le_rfl)
-  intro w' d _ _ _ ⟨⟨heq, hspace⟩, hidx⟩
-  subst heq
-  have hsub : (c + 1) * lmSubWords n_max w' ≤ 9 * lmSubWords n_max w' :=
-    Nat.mul_le_mul_right _ hc
-  rw [Nat.add_one_mul] at hsub
-  exact ⟨rfl, hw, effBucketPosBits_le_of_lt_pow hnU hU, hidx,
-    hspace.of_le (by
-      unfold lmSubWords at hsub
-      unfold totalSpace offGM offLMSub offLM lmSubWords
-      omega)⟩
+  have hrp := realizes_readPackedGen
+  unfold readLMGenProg
+  fin_cases c <;>
+  · realize_dict
+    rcases henv with ⟨rfl, hspace⟩
+    refine ⟨totalMicroBuckets n_max, rfl, hw, effBucketPosBits_le_of_lt_pow hnU hU, h.2,
+      hspace.of_le ?_⟩
+    unfold totalSpace offGM offLMSub offLM lmSubWords
+    omega
 
-theorem realizes_writeLM {U V w n_max h_space c : ℕ}
-    (hw : 0 < w) (hnU : n_max ≤ U) (hU : U < 2 ^ w) (hc : c < 9) :
-    Realizes .exact (writeLMProg U V w n_max h_space c)
-      (WordEncoding.encode (α := (ℕ × ℕ) × ℕ)) (WordEncoding.encode (α := Unit))
-      (fun w' d _ => DictEnv U V w n_max h_space w' d.1.1 ∧ d.1.2 < totalMicroBuckets n_max)
+theorem realizes_writeLMGen (c : Fin 9) :
+    Realizes .exact (writeLMGenProg c)
+      (WordEncoding.encode (α := DictParams × ((ℕ × ℕ) × ℕ))) (WordEncoding.encode (α := Unit))
+      (fun w' d _ => DictEnvGen w' d.1 d.2.1.1 ∧ d.2.1.2 < totalMicroBuckets (p_nMax d.1))
       (fun _ _ => 0) := by
-  refine (realizes_writePacked (offLMSub U V w n_max h_space c) (totalMicroBuckets n_max)
-    (effBucketPosBits n_max) w).consequence ?_ (fun _ _ => le_rfl)
-  intro w' d _ _ _ ⟨⟨heq, hspace⟩, hidx⟩
-  subst heq
-  have hsub : (c + 1) * lmSubWords n_max w' ≤ 9 * lmSubWords n_max w' :=
-    Nat.mul_le_mul_right _ hc
-  rw [Nat.add_one_mul] at hsub
-  exact ⟨rfl, hw, effBucketPosBits_le_of_lt_pow hnU hU, hidx,
-    hspace.of_le (by
-      unfold lmSubWords at hsub
-      unfold totalSpace offGM offLMSub offLM lmSubWords
-      omega)⟩
+  have hwp := realizes_writePackedGen
+  unfold writeLMGenProg
+  fin_cases c <;>
+  · realize_dict
+    rcases henv with ⟨rfl, hspace⟩
+    refine ⟨totalMicroBuckets n_max, rfl, hw, effBucketPosBits_le_of_lt_pow hnU hU, h.2,
+      hspace.of_le ?_⟩
+    unfold totalSpace offGM offLMSub offLM lmSubWords
+    omega
 
-theorem realizes_readGM {U V w n_max h_space : ℕ}
-    (hw : 0 < w) (hnU : n_max ≤ U) (hU : U < 2 ^ w) :
-    Realizes .exact (readGMProg U V w n_max h_space)
-      (WordEncoding.encode (α := ℕ × ℕ)) (WordEncoding.encode (α := ℕ))
-      (fun w' d _ => DictEnv U V w n_max h_space w' d.1 ∧ d.2 < globalMetaLen n_max)
+theorem realizes_readGMGen :
+    Realizes .exact readGMGenProg
+      (WordEncoding.encode (α := DictParams × (ℕ × ℕ))) (WordEncoding.encode (α := ℕ))
+      (fun w' d _ => DictEnvGen w' d.1 d.2.1 ∧ d.2.2 < globalMetaLen (p_nMax d.1))
       (fun _ _ => 0) := by
-  refine (realizes_readPacked (offGM U V w n_max h_space) (globalMetaLen n_max)
-    (globalPtrBits n_max) w).consequence ?_ (fun _ _ => le_rfl)
-  intro w' d _ _ _ ⟨⟨heq, hspace⟩, hidx⟩
-  subst heq
-  exact ⟨rfl, hw, globalPtrBits_le_of_lt_pow hnU hU, hidx,
+  have hrp := realizes_readPackedGen
+  unfold readGMGenProg
+  realize_dict
+  rcases henv with ⟨rfl, hspace⟩
+  exact ⟨globalMetaLen n_max, rfl, hw, globalPtrBits_le_of_lt_pow hnU hU, h.2,
     hspace.of_le (by unfold totalSpace; omega)⟩
 
-theorem realizes_writeGM {U V w n_max h_space : ℕ}
-    (hw : 0 < w) (hnU : n_max ≤ U) (hU : U < 2 ^ w) :
-    Realizes .exact (writeGMProg U V w n_max h_space)
-      (WordEncoding.encode (α := (ℕ × ℕ) × ℕ)) (WordEncoding.encode (α := Unit))
-      (fun w' d _ => DictEnv U V w n_max h_space w' d.1.1 ∧ d.1.2 < globalMetaLen n_max)
+theorem realizes_writeGMGen :
+    Realizes .exact writeGMGenProg
+      (WordEncoding.encode (α := DictParams × ((ℕ × ℕ) × ℕ))) (WordEncoding.encode (α := Unit))
+      (fun w' d _ => DictEnvGen w' d.1 d.2.1.1 ∧ d.2.1.2 < globalMetaLen (p_nMax d.1))
       (fun _ _ => 0) := by
-  refine (realizes_writePacked (offGM U V w n_max h_space) (globalMetaLen n_max)
-    (globalPtrBits n_max) w).consequence ?_ (fun _ _ => le_rfl)
-  intro w' d _ _ _ ⟨⟨heq, hspace⟩, hidx⟩
-  subst heq
-  exact ⟨rfl, hw, globalPtrBits_le_of_lt_pow hnU hU, hidx,
+  have hwp := realizes_writePackedGen
+  unfold writeGMGenProg
+  realize_dict
+  rcases henv with ⟨rfl, hspace⟩
+  exact ⟨globalMetaLen n_max, rfl, hw, globalPtrBits_le_of_lt_pow hnU hU, h.2,
     hspace.of_le (by unfold totalSpace; omega)⟩
 
 theorem clientState_readGMProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
@@ -471,9 +870,10 @@ theorem clientResult_readGMProg {U V w n_max h_space base idx : ℕ} (s : Memory
   simp [readGMProg, gmAt, hidx]
 
 theorem fits_const_of_dictEnv {U V w₀ n_max h_space w base c : ℕ}
-    (h : DictEnv U V w₀ n_max h_space w base) (hc : c ≤ 24) :
+    (h : DictEnvGen w (mkDictParams U V w₀ n_max h_space) base) (hc : c ≤ 24) :
     Fits w c := by
-  rcases h with ⟨rfl, hspace⟩
+  rcases h.env with ⟨rfl, hspace⟩
+  dsimp only [p_U_mk, p_V_mk, p_w_mk, p_nMax_mk, p_hSpace_mk] at hspace
   have hl : 2 ≤ lmSubWords n_max w := Nat.le_add_left 2 _
   have hg : 2 ≤ packedWords (globalMetaLen n_max) (globalPtrBits n_max) w := Nat.le_add_left 2 _
   have hv : 2 ≤ packedWords n_max (valBits V) w := Nat.le_add_left 2 _
@@ -481,19 +881,19 @@ theorem fits_const_of_dictEnv {U V w₀ n_max h_space w base c : ℕ}
   exact hspace.of_le (by unfold totalSpace offGM offLM offVal offQuot; omega)
 
 theorem fits_of_le_globalMetaLen {U V w₀ n_max h_space w base x : ℕ}
-    (h : DictEnv U V w₀ n_max h_space w base) (hb_pos : 0 < bucketBits n_max)
+    (h : DictEnvGen w (mkDictParams U V w₀ n_max h_space) base) (hb_pos : 0 < bucketBits n_max)
     (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀)
     (hx : x ≤ globalMetaLen n_max) : Fits w x := by
-  rcases h with ⟨rfl, _⟩
+  rcases h.env with ⟨rfl, _⟩
   have hmax := max_n_one_lt_two_pow_w hw hnU hU
   have hlen := globalMetaLen_le_of_bucketBits_pos hb_pos
   exact hmax.of_le (by omega)
 
 theorem fits_of_le_max_n_one {U V w₀ n_max h_space w base x : ℕ}
-    (h : DictEnv U V w₀ n_max h_space w base)
+    (h : DictEnvGen w (mkDictParams U V w₀ n_max h_space) base)
     (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀)
     (hx : x ≤ max n_max 1) : Fits w x := by
-  rcases h with ⟨rfl, _⟩
+  rcases h.env with ⟨rfl, _⟩
   exact (max_n_one_lt_two_pow_w hw hnU hU).of_le hx
 
 theorem slabSize_le_max_n_one (n_max : ℕ) : slabSize n_max ≤ max n_max 1 := by
@@ -528,21 +928,12 @@ theorem tailCapPerBucket_le_globalMetaLen {n_max : ℕ} (hb : 0 < bucketBits n_m
 theorem effBucketCap_eq_dirSlabs_mul_slabSize {n_max : ℕ} (hb : 0 < bucketBits n_max) :
     effBucketCap n_max = dirSlabsPerBucket n_max * slabSize n_max := by
   have hb0 : bucketBits n_max ≠ 0 := by omega
-  rw [effBucketCap_eq_bucketCap_of_pos hb, (slabSize_eq_sq_of_pos hb).1]
-  unfold bucketCap dirSlabsPerBucket
+  rw [effBucketCap_eq_four_mul_slabScale_cubed_of_pos hb, (slabSize_eq_sq_of_pos hb).1]
+  unfold dirSlabsPerBucket
   rw [ite_eq_right hb0]
   ring
 
 /-! ## Section 3: `readBucketCountProg` and `resolveIndexedSlotProg` via `realize` -/
-
-/-- `Memory.Prog` operation reading `bCount n_max gm b` (`d = (base, b)`). -/
-def readBucketCountProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog ℕ :=
-  if bucketBits n_max = 0 then
-    readGMProg U V w n_max h_space (d.1, 0)
-  else do
-    let q_b ← readGMProg U V w n_max h_space (d.1, 4 + 3 * d.2)
-    let r_b ← readGMProg U V w n_max h_space (d.1, 4 + 3 * d.2 + 1)
-    pure (q_b * slabSize n_max + r_b)
 
 theorem clientResult_readBucketCountProg {U V w n_max h_space : ℕ}
     (d : ℕ × ℕ) (s : Memory.State) (hb : d.2 < numBuckets n_max) :
@@ -579,64 +970,49 @@ theorem memoryCost_readBucketCountProg_le {U V w n_max h_space : ℕ}
   · change 2 ≤ 4; omega
   · change 4 ≤ 4; omega
 
-theorem realizes_readBucketCount {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀) :
-    Realizes .exact (readBucketCountProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := ℕ × ℕ)) (WordEncoding.encode (α := ℕ))
-      (fun w d s => DictEnv U V w₀ n_max h_space w d.1 ∧
-        SlotStoreInv n_max (gmAt d.1 U V w₀ n_max h_space s.mem) ∧
-        d.2 < numBuckets n_max)
+theorem realizes_readBucketCountGen :
+    Realizes .exact readBucketCountGenProg
+      (WordEncoding.encode (α := DictParams × (ℕ × ℕ))) (WordEncoding.encode (α := ℕ))
+      (fun w d s => DictEnvGen w d.1 d.2.1 ∧
+        SlotStoreInv (p_nMax d.1)
+          (gmAt d.2.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem) ∧
+        d.2.2 < numBuckets (p_nMax d.1))
       (fun _ _ => 0) := by
-  have hrg := realizes_readGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-  by_cases hb0 : bucketBits n_max = 0
-  · refine Realizes.congr (p := fun d : ℕ × ℕ => do
+  have hrg := realizes_readGMGen
+  refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) =>
+      if p_bucketBits d.1 = 0 then do
         let i0 ← pure 0
-        readGMProg U V w₀ n_max h_space (d.1, i0)) ?_
-      (fun d => by simp [readBucketCountProg, hb0])
-    realize
-    · exact h.1
-    · unfold globalMetaLen; omega
-  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hb0
-    refine Realizes.congr (p := fun d : ℕ × ℕ => do
-        let q_idx ← pure (4 + 3 * d.2)
-        let q_b ← readGMProg U V w₀ n_max h_space (d.1, q_idx)
+        readGMGenProg (d.1, (d.2.1, i0))
+      else do
+        let q_idx ← pure (4 + 3 * d.2.2)
+        let q_b ← readGMGenProg (d.1, (d.2.1, q_idx))
         let r_idx ← pure (q_idx + 1)
-        let r_b ← readGMProg U V w₀ n_max h_space (d.1, r_idx)
-        pure (q_b * slabSize n_max + r_b)) ?_
-      (fun d => by simp [readBucketCountProg, hb0, ← PFunctor.FreeM.bind_eq_bind])
-    realize
-    · exact fits_of_le_globalMetaLen (by tauto) hb_pos hw hnU hU (le_of_lt (gmQIdx_lt hb_pos h.2.2))
-    · exact fits_const_of_dictEnv (by tauto) (by decide)
-    · exact h.1
-    · exact gmQIdx_lt hb_pos h.2.2
-    · exact fits_of_le_globalMetaLen (by tauto) hb_pos hw hnU hU (le_of_lt (gmRIdx_lt hb_pos h.2.2))
-    · exact gmRIdx_lt hb_pos h.2.2
-    · have hq_lt : 4 + 3 * d.2 < globalMetaLen n_max := gmQIdx_lt hb_pos h.2.2
-      have hr_lt : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos h.2.2
-      rw [clientState_readGMProg, clientResult_readGMProg _ hq_lt,
-        clientResult_readGMProg _ hr_lt]
-      have hbc := bCount_le_n_max h.2.1 d.2
-      unfold bCount at hbc
-      simp only [hb0, ↓reduceIte, h.2.2, gmQIdx, gmRIdx] at hbc
-      exact fits_of_le_max_n_one (by tauto) hw hnU hU (by omega)
-    · exact fits_of_le_max_n_one (by tauto) hw hnU hU (slabSize_le_max_n_one n_max)
-
-/-- `Memory.Prog` operation resolving indexed local slot `j = d.2 < effBucketCap n_max` of bucket
-`b = d.1.2` at `base = d.1.1` to physical slot `slotOf n_max gm b j < n_max`. -/
-def resolveIndexedSlotProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) : Memory.Prog ℕ :=
-  if bucketBits n_max = 0 then
-    pure d.2
-  else do
-    let q_b ← readGMProg U V w n_max h_space (d.1.1, 4 + 3 * d.1.2)
-    if d.2 < q_b * slabSize n_max then do
-      let p ← readGMProg U V w n_max h_space
-        (d.1.1, gmSlabDirBase n_max + d.1.2 * dirSlabsPerBucket n_max + d.2 / slabSize n_max)
-      pure (p * slabSize n_max + ((slabSize n_max - 1) - d.2 % slabSize n_max))
-    else do
-      let t ← readGMProg U V w n_max h_space
-        (d.1.1, gmTailPtrBase n_max + (d.1.2 * tailCapPerBucket n_max +
-          (d.2 - q_b * slabSize n_max)))
-      pure ((n_max - 1) - t)
+        let r_b ← readGMGenProg (d.1, (d.2.1, r_idx))
+        pure (q_b * p_slabSize d.1 + r_b)) ?_
+    (fun d => by simp [readBucketCountGenProg, ← PFunctor.FreeM.bind_eq_bind])
+  realize_dict
+  · exact h.1
+  · unfold globalMetaLen; omega
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hc
+    exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU (le_of_lt (gmQIdx_lt hb_pos h.2.2))
+  · exact fits_const_of_dictEnv h.1 (by decide)
+  · exact h.1
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hc
+    exact gmQIdx_lt hb_pos h.2.2
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hc
+    exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU (le_of_lt (gmRIdx_lt hb_pos h.2.2))
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hc
+    exact gmRIdx_lt hb_pos h.2.2
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hc
+    have hb0 : bucketBits n_max ≠ 0 := hc
+    have hq_lt : 4 + 3 * d.2 < globalMetaLen n_max := gmQIdx_lt hb_pos h.2.2
+    have hr_lt : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos h.2.2
+    rw [clientState_readGMProg, clientResult_readGMProg _ hq_lt,
+      clientResult_readGMProg _ hr_lt]
+    have hbc := bCount_le_n_max h.2.1 d.2
+    unfold bCount at hbc
+    simp only [hb0, ↓reduceIte, h.2.2, gmQIdx, gmRIdx] at hbc
+    exact fits_of_le_max_n_one h.1 hw hnU hU (by omega)
 
 theorem clientState_resolveIndexedSlotProg {U V w n_max h_space : ℕ}
     (d : (ℕ × ℕ) × ℕ) (s : Memory.State) :
@@ -655,6 +1031,7 @@ theorem memoryCost_resolveIndexedSlotProg_le {U V w n_max h_space : ℕ}
   · change 0 ≤ 4; omega
   · simp only [← PFunctor.FreeM.bind_eq_bind]
     rw [memoryCost_bind]
+    change 2 + memoryCost (if d.2 < _ * slabSize n_max then _ else _) _ ≤ 4
     split_ifs <;> · change 2 + 2 ≤ 4; omega
 
 theorem clientResult_resolveIndexedSlotProg {U V w n_max h_space : ℕ}
@@ -716,7 +1093,7 @@ private theorem resolveIndexedSlot_dir_lt {n_max b j : ℕ}
 private theorem resolveIndexedSlot_slab_fit {U V w₀ n_max h_space w : ℕ}
     (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀)
     (hb_pos : 0 < bucketBits n_max) (d : (ℕ × ℕ) × ℕ) (s : Memory.State)
-    (henv : DictEnv U V w₀ n_max h_space w d.1.1)
+    (henv : DictEnvGen w (mkDictParams U V w₀ n_max h_space) d.1.1)
     (hinv : SlotStoreInv n_max (gmAt d.1.1 U V w₀ n_max h_space s.mem))
     (hb : d.1.2 < numBuckets n_max) (hj_cap : d.2 < effBucketCap n_max)
     (hc : d.2 < (Memory.spec 0).clientResult s
@@ -812,69 +1189,75 @@ private theorem resolveIndexedSlot_tail_le {U V w₀ n_max h_space : ℕ}
   unfold gmTailPtrIdx gmTailPtrFlatIdx at ht_lt
   omega
 
-theorem realizes_resolveIndexedSlot {U V w₀ n_max h_space : ℕ}
-    (hw : 0 < w₀) (hnU : n_max ≤ U) (hU : U < 2 ^ w₀) :
-    Realizes .exact (resolveIndexedSlotProg U V w₀ n_max h_space)
-      (WordEncoding.encode (α := (ℕ × ℕ) × ℕ)) (WordEncoding.encode (α := ℕ))
-      (fun w d s => DictEnv U V w₀ n_max h_space w d.1.1 ∧
-        SlotStoreInv n_max (gmAt d.1.1 U V w₀ n_max h_space s.mem) ∧
-        d.1.2 < numBuckets n_max ∧
-        d.2 < bCount n_max (gmAt d.1.1 U V w₀ n_max h_space s.mem) d.1.2 ∧
-        d.2 < effBucketCap n_max)
+theorem realizes_resolveIndexedSlotGen :
+    Realizes .exact resolveIndexedSlotGenProg
+      (WordEncoding.encode (α := DictParams × ((ℕ × ℕ) × ℕ))) (WordEncoding.encode (α := ℕ))
+      (fun w d s => DictEnvGen w d.1 d.2.1.1 ∧
+        SlotStoreInv (p_nMax d.1)
+          (gmAt d.2.1.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem) ∧
+        d.2.1.2 < numBuckets (p_nMax d.1) ∧
+        d.2.2 < bCount (p_nMax d.1)
+          (gmAt d.2.1.1 (p_U d.1) (p_V d.1) (p_w d.1) (p_nMax d.1) (p_hSpace d.1) s.mem)
+          d.2.1.2 ∧
+        d.2.2 < effBucketCap (p_nMax d.1))
       (fun _ _ => 0) := by
-  have hrg := realizes_readGM (U := U) (V := V) (h_space := h_space) hw hnU hU
-  by_cases hb0 : bucketBits n_max = 0
-  · refine Realizes.congr (p := fun d : (ℕ × ℕ) × ℕ => pure d.2) ?_
-      (fun d => by simp [resolveIndexedSlotProg, hb0])
-    realize
-  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hb0
-    refine Realizes.congr (p := fun d : (ℕ × ℕ) × ℕ => do
-        let q_idx ← pure (4 + 3 * d.1.2)
-        let q_b ← readGMProg U V w₀ n_max h_space (d.1.1, q_idx)
-        let qK ← pure (q_b * slabSize n_max)
-        if d.2 < qK then do
+  have hrg := realizes_readGMGen
+  refine Realizes.congr (p := fun d : DictParams × ((ℕ × ℕ) × ℕ) =>
+      if p_bucketBits d.1 = 0 then
+        pure d.2.2
+      else do
+        let q_idx ← pure (4 + 3 * d.2.1.2)
+        let q_b ← readGMGenProg (d.1, (d.2.1.1, q_idx))
+        let qK ← pure (q_b * p_slabSize d.1)
+        if d.2.2 < qK then do
           let dir_idx ←
-            pure (gmSlabDirBase n_max + d.1.2 * dirSlabsPerBucket n_max + d.2 / slabSize n_max)
-          let p ← readGMProg U V w₀ n_max h_space (d.1.1, dir_idx)
-          pure (p * slabSize n_max + ((slabSize n_max - 1) - d.2 % slabSize n_max))
+            pure (p_gmSlabDirBase d.1 + d.2.1.2 * p_dirSlabs d.1 + d.2.2 / p_slabSize d.1)
+          let p ← readGMGenProg (d.1, (d.2.1.1, dir_idx))
+          pure (p * p_slabSize d.1 + (p_slabSizeSubOne d.1 - d.2.2 % p_slabSize d.1))
         else do
           let ptr_idx ←
-            pure (gmTailPtrBase n_max + (d.1.2 * tailCapPerBucket n_max + (d.2 - qK)))
-          let t ← readGMProg U V w₀ n_max h_space (d.1.1, ptr_idx)
-          pure ((n_max - 1) - t)) ?_
-      (fun d => by simp [resolveIndexedSlotProg, hb0, ← PFunctor.FreeM.bind_eq_bind])
-    realize
-    · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU (le_of_lt (gmQIdx_lt hb_pos h.2.2.1))
-    · exact fits_const_of_dictEnv h.1 (by decide)
-    · exact h.1
-    · exact gmQIdx_lt hb_pos h.2.2.1
-    · have hq_lt : 4 + 3 * d.1.2 < globalMetaLen n_max := gmQIdx_lt hb_pos h.2.2.1
-      rw [clientResult_readGMProg _ hq_lt]
-      have hbc := bCount_le_n_max h.2.1 d.1.2
-      unfold bCount at hbc
-      simp only [hb0, ↓reduceIte, h.2.2.1, gmQIdx] at hbc
-      exact fits_of_le_max_n_one h.1 hw hnU hU (by omega)
-    · exact fits_of_le_max_n_one h.1 hw hnU hU (slabSize_le_max_n_one n_max)
-    · exact Nat.ne_of_gt (slabSize_pos n_max)
-    · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-        (le_of_lt (resolveIndexedSlot_dir_lt hb_pos h.2.2.1 h.2.2.2.2))
-    · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-        (dirSlabsPerBucket_le_globalMetaLen hb_pos)
-    · exact fits_of_le_max_n_one h.1 hw hnU hU (slabSize_le_max_n_one n_max)
-    · exact h.1
-    · exact resolveIndexedSlot_dir_lt hb_pos h.2.2.1 h.2.2.2.2
-    · have := Nat.mod_lt d.2 (slabSize_pos n_max); omega
-    · exact resolveIndexedSlot_slab_fit hw hnU hU hb_pos d s h.1 h.2.1 h.2.2.1 h.2.2.2.2 hc
-    · exact fits_of_le_max_n_one h.1 hw hnU hU (by have := slabSize_le_max_n_one n_max; omega)
-    · omega
-    · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-        (le_of_lt (resolveIndexedSlot_tailIdx_lt hb0 hb_pos d s h.2.1 h.2.2.1 h.2.2.2.1 hc))
-    · exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-        (tailCapPerBucket_le_globalMetaLen hb_pos)
-    · exact h.1
-    · exact resolveIndexedSlot_tailIdx_lt hb0 hb_pos d s h.2.1 h.2.2.1 h.2.2.2.1 hc
-    · exact resolveIndexedSlot_tail_le hb0 hb_pos d s h.2.1 h.2.2.1 h.2.2.2.1 hc
-    · exact fits_of_le_max_n_one h.1 hw hnU hU (by omega)
+            pure (p_gmTailPtrBase d.1 + (d.2.1.2 * p_tailCap d.1 + (d.2.2 - qK)))
+          let t ← readGMGenProg (d.1, (d.2.1.1, ptr_idx))
+          pure (p_nMaxSubOne d.1 - t)) ?_
+    (fun d => by simp [resolveIndexedSlotGenProg, ← PFunctor.FreeM.bind_eq_bind])
+  realize_dict
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero ‹¬bucketBits n_max = 0›
+    exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU (le_of_lt (gmQIdx_lt hb_pos h.2.2.1))
+  · exact fits_const_of_dictEnv h.1 (by decide)
+  · exact h.1
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero ‹¬bucketBits n_max = 0›
+    exact gmQIdx_lt hb_pos h.2.2.1
+  · have hb0 : ¬bucketBits n_max = 0 := ‹¬bucketBits n_max = 0›
+    have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hb0
+    have hq_lt : 4 + 3 * d.1.2 < globalMetaLen n_max := gmQIdx_lt hb_pos h.2.2.1
+    rw [clientResult_readGMProg _ hq_lt]
+    have hbc := bCount_le_n_max h.2.1 d.1.2
+    unfold bCount at hbc
+    simp only [hb0, ↓reduceIte, h.2.2.1, gmQIdx] at hbc
+    exact fits_of_le_max_n_one h.1 hw hnU hU (by omega)
+  · exact Nat.ne_of_gt (slabSize_pos n_max)
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero ‹¬bucketBits n_max = 0›
+    exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
+      (le_of_lt (resolveIndexedSlot_dir_lt hb_pos h.2.2.1 h.2.2.2.2))
+  · exact h.1
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero ‹¬bucketBits n_max = 0›
+    exact resolveIndexedSlot_dir_lt hb_pos h.2.2.1 h.2.2.2.2
+  · have : d.2 % slabSize n_max < slabSize n_max := Nat.mod_lt d.2 (slabSize_pos n_max)
+    omega
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero ‹¬bucketBits n_max = 0›
+    exact resolveIndexedSlot_slab_fit hw hnU hU hb_pos d s h.1 h.2.1 h.2.2.1 h.2.2.2.2 hc
+  · omega
+  · have hb0 : ¬bucketBits n_max = 0 := ‹¬bucketBits n_max = 0›
+    have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hb0
+    exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
+      (le_of_lt (resolveIndexedSlot_tailIdx_lt hb0 hb_pos d s h.2.1 h.2.2.1 h.2.2.2.1 hc))
+  · exact h.1
+  · have hb0 : ¬bucketBits n_max = 0 := ‹¬bucketBits n_max = 0›
+    have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hb0
+    exact resolveIndexedSlot_tailIdx_lt hb0 hb_pos d s h.2.1 h.2.2.1 h.2.2.2.1 hc
+  · have hb0 : ¬bucketBits n_max = 0 := ‹¬bucketBits n_max = 0›
+    have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hb0
+    exact resolveIndexedSlot_tail_le hb0 hb_pos d s h.2.1 h.2.2.1 h.2.2.2.1 hc
 
 /-! ## Section 4: Pure state effects and costs of `read*Prog` and `write*Prog` -/
 
