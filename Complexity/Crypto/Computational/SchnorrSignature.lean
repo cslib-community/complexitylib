@@ -8,13 +8,12 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Crypto.Computational.SchnorrEavesdrop
+public import Complexity.Crypto.Computational.SchnorrProtocol
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrSignature
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
-import Complexity.Computability.Probabilistic.Repeat
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Foundations.Data.BitString.Counter
 import Complexity.Probability.PMF
@@ -60,21 +59,11 @@ protocol over a `PrimeOrderGroupFamily` `F`:
      (`oneWayGame_schnorrKeyGen_eq`), with asymptotic negligibility in
      `negligible_eufCmaGame_schnorrFamilyROMScheme`.
 
-3. **Uniform strict-PPT `ufCma0Game` and simulated-signing EUF-CMA reductions under `DiscreteLog`**:
-   * `SchnorrUF0Forger`, `ufCma0Game`, and `ufCma0RealKeyGame` formalize uniform strict-PPT
-     no-signing-query (UF-CMA0) signature forgery in the random-oracle model. Projecting out the
-     forged message (`SchnorrUF0Forger.toImpersonator`) reduces `ufCma0Game` directly to
-     `schnorrDirectGame` and hence to `F.DiscreteLog setup` (`succProbability_ufCma0Game_le`,
-     `succProbability_ufCma0RealKeyGame_le`, `negligible_ufCma0Game`,
-     `negligible_ufCma0RealKeyGame`).
-   * `SchnorrCMASigForger`, `schnorrEufCmaGame`, and `schnorrIdealEufCmaGame` add `Qs n` signing
-     queries answered by strict-PPT (`schnorrRealTranscript`) or ideal
-     (`schnorrHonestTranscript`) Schnorr signatures. Replacing those signing transcripts by
-     witness-free simulated transcripts (`schnorrSimulatedTranscript`,
-     `SchnorrCMASigForger.toUF0`) incurs statistical distance at most `2 * Qs n / 2 ^ n` (or
-     `Qs n / 2 ^ n`), yielding quantitative and asymptotic EUF-CMA security under
-     `F.DiscreteLog setup` (`succProbability_schnorrEufCmaGame_le`,
-     `negligible_schnorrEufCmaGame`, `schnorr_isEufCmaSecure_of_discreteLogHard`).
+The typed security theorem is conditional on the success probability of its explicit forking
+reduction. Applying `F.DiscreteLog` requires a separate strict-PPT realization of that reduction,
+including its shared signing/hash oracle and private-coin replay. The bit-encoded arithmetic
+certificates in this module do not establish that realization. Strict-PPT identification and
+eavesdropping security are provided by `SchnorrIdentification` and `SchnorrEavesdrop`.
 
 ## Main definitions
 
@@ -90,18 +79,6 @@ protocol over a `PrimeOrderGroupFamily` `F`:
   `Cslib.Crypto.PrimeOrderGroupFamily.schnorrFamilyROMScheme`,
   `Cslib.Crypto.PrimeOrderGroupFamily.schnorrScalarROMScheme`: Fiat–Shamir ROM Schnorr signature
   schemes over `F` with `m`-bit and scalar challenges.
-* `Cslib.Crypto.PrimeOrderGroupFamily.SchnorrUF0Forger`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.ufCma0Game`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.ufCma0RealKeyGame`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.SchnorrUF0Forger.toImpersonator`: uniform strict-PPT UF-CMA0
-  forgers, games, and reduction to `SchnorrImpersonator`.
-* `Cslib.Crypto.PrimeOrderGroupFamily.SchnorrCMASigForger`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.schnorrEufCmaGame`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.schnorrIdealEufCmaGame`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.SchnorrCMASigForger.toUF0`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.IsUF0Secure`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.IsEufCmaSecure`: uniform strict-PPT EUF-CMA forgers, games,
-  simulated-signing reduction, and security predicates.
 
 ## Main results
 
@@ -118,15 +95,6 @@ protocol over a `PrimeOrderGroupFamily` `F`:
   `Cslib.Crypto.PrimeOrderGroupFamily.succProbability_eufCmaGame_schnorrScalarROMScheme_le`,
   `Cslib.Crypto.PrimeOrderGroupFamily.negligible_eufCmaGame_schnorrFamilyROMScheme`: ROM correctness
   and Pointcheval–Stern / Bellare–Neven EUF-CMA bounds.
-* `Cslib.Crypto.PrimeOrderGroupFamily.succProbability_ufCma0Game_le`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.succProbability_ufCma0RealKeyGame_le`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.negligible_ufCma0Game`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.negligible_ufCma0RealKeyGame`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.succProbability_schnorrEufCmaGame_le`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.negligible_schnorrEufCmaGame`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.schnorr_isUF0Secure_of_discreteLogHard`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.schnorr_isEufCmaSecure_of_discreteLogHard`: quantitative and
-  asymptotic UF-CMA0 and EUF-CMA security under `F.DiscreteLog setup`.
 
 ## References
 
@@ -290,7 +258,9 @@ theorem isPPTOn_schnorrRespondBits :
 /-- Deterministic bit-encoded Schnorr signing from explicit coins and a random-oracle challenge
 ([BonehShoup2023], Section 19.2): given `(d, sk, msg, r, roOut)` where `r` is the commitment
 randomness and `roOut` is the random-oracle digest on `(msg, encode (r • g))`, output the encoded
-signature `(t, z) = (schnorrCommitBits (d, r), schnorrRespondBits (d, sk, r, roOut))`. -/
+signature `(t, z) = (schnorrCommitBits (d, r), schnorrRespondBits (d, sk, r, roOut))`.
+This arithmetic kernel takes `roOut` as an input; its caller must obtain it from the shared hash
+oracle. The message is not used again once that challenge has been supplied. -/
 def schnorrSignCoins
     (input : F.Desc × List Bool × List Bool × List Bool × List Bool) : List Bool × List Bool :=
   let (d, sk, _msg, r, roOut) := input
@@ -336,7 +306,9 @@ theorem isPPTOn_schnorrSignCoins :
 
 /-- Bit-encoded Schnorr signature verification ([BonehShoup2023], Section 19.2): given
 `(d, pk, msg, (t, z), roOut)` where `roOut` is the random-oracle challenge for `(msg, t)`, check
-whether `z • g == t + roOut • pk` on encoded group elements. -/
+whether `z • g == t + roOut • pk` on encoded group elements. This checks the algebraic equation
+for a supplied challenge; the caller must enforce `roOut = H(msg, t)` in the same oracle world
+used by the signer and adversary. -/
 def schnorrSigVerifyBits
     (input : F.Desc × List Bool × List Bool × (List Bool × List Bool) × List Bool) : Bool :=
   let (d, pk, _msg, (t, z), roOut) := input
@@ -626,447 +598,5 @@ theorem negligible_eufCmaGame_schnorrFamilyROMScheme {M : Type} [DecidableEq M]
     NNReal.coe_natCast, Nat.cast_mul, Nat.cast_add, Nat.cast_add, Nat.cast_one,
     mul_one_div, mul_one_div]
   exact F.succProbability_eufCmaGame_schnorrFamilyROMScheme_le (d n) (hm n) (A n) (hA n)
-
-/-! ### 3. Uniform strict-PPT `ufCma0Game` and reduction to `schnorrDirectGame` / `DiscreteLog` -/
-
-/-- A uniform two-stage UF-CMA0 (no-signing-query) forger against Schnorr signatures in the random
-oracle model ([BonehShoup2023], Section 19.2.1): its first stage sees the security parameter, the
-group description, and the encoded public key, and outputs `(msg, t, state)` (target message word,
-commitment word, and saved state word); its second stage sees the security parameter, the state, and
-the `k n`-bit random-oracle challenge `roOut` for `(msg, t)`, and outputs the response word `z`. -/
-structure SchnorrUF0Forger where
-  /-- Choose a target message and commitment word, keeping a state word. -/
-  commit : ℕ → F.Desc × List Bool → ProbComp (List Bool × List Bool × List Bool)
-  /-- Respond to the random-oracle challenge word from the state word. -/
-  respond : ℕ → List Bool × List Bool → ProbComp (List Bool)
-
-/-- Both stages of a `SchnorrUF0Forger` are uniform strict PPT in their full inputs. -/
-def SchnorrUF0Forger.IsPPT (A : F.SchnorrUF0Forger) : Prop :=
-  IsPPTOn (encPair encUnary (encPair F.encDesc encBits))
-      (encPair encBits (encPair encBits encBits))
-      (fun input => A.commit input.1 input.2) ∧
-    IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun input => A.respond input.1 input.2)
-
-/-- The UF-CMA0 (no-signing-query) signature forgery game with ideal uniform keys
-([BonehShoup2023], Attack Game 13.1 with zero signing queries): draw `d ← setup n` and uniform
-`α : ZMod (F.order d)`, run `A.commit` on `(d, encode (α • g))` to obtain `(msg, t, state)`, draw
-the `k n`-bit random-oracle challenge `roOut` at `(msg, t)`, run `A.respond` on `(state, roOut)` to
-obtain `z`, and accept when `t = encode (z • g - roOut • (α • g))`. -/
-noncomputable def ufCma0Game (setup : ℕ → PMF F.Desc) (k : ℕ → ℕ)
-    (A : F.SchnorrUF0Forger) (n : ℕ) : Game := do
-  let d ← setup n
-  let α ← PMF.uniformOfFintype (ZMod (F.order d))
-  let mts ← ProbComp.eval (A.commit n (d, F.encode d (α • F.generator d)))
-  let roOut ← BitString.uniformList (k n)
-  let z ← ProbComp.eval (A.respond n (mts.2.2, roOut))
-  return decide (mts.2.1 = F.encode d ((ofBits z : ZMod (F.order d)) • F.generator d -
-    (ofBits roOut : ZMod (F.order d)) • (α • F.generator d)))
-
-/-- The UF-CMA0 signature forgery game where the key pair is generated by the strict-PPT key
-generator `F.schnorrSigKeyGen n d` (`F.sampleExp n d`). -/
-noncomputable def ufCma0RealKeyGame (setup : ℕ → PMF F.Desc) (k : ℕ → ℕ)
-    (A : F.SchnorrUF0Forger) (n : ℕ) : Game := do
-  let d ← setup n
-  let keys ← ProbComp.eval (F.schnorrSigKeyGen n d)
-  let mts ← ProbComp.eval (A.commit n (d, keys.1))
-  let roOut ← BitString.uniformList (k n)
-  let z ← ProbComp.eval (A.respond n (mts.2.2, roOut))
-  return decide (mts.2.1 = F.schnorrRecoverCommitBits (d, keys.1, roOut, z))
-
-/-- Project a UF-CMA0 signature forger to a `SchnorrImpersonator` by discarding the forged message
-word from the commitment stage. -/
-noncomputable def SchnorrUF0Forger.toImpersonator {F : PrimeOrderGroupFamily}
-    (A : F.SchnorrUF0Forger) : F.SchnorrImpersonator where
-  commit n input := Prod.snd <$> A.commit n input
-  respond := A.respond
-
-/-- `ufCma0Game` for `A` has the exact distribution of `schnorrDirectGame` for
-`A.toImpersonator`. -/
-theorem ufCma0Game_eq_schnorrDirectGame (setup : ℕ → PMF F.Desc) (k : ℕ → ℕ)
-    (A : F.SchnorrUF0Forger) (n : ℕ) :
-    F.ufCma0Game setup k A n = F.schnorrDirectGame setup k A.toImpersonator n := by
-  simp only [ufCma0Game, schnorrDirectGame, SchnorrUF0Forger.toImpersonator, ProbComp.eval_map,
-    PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def]
-
-/-- Replacing the ideal uniform key in `ufCma0Game` by the strict-PPT key generator
-`schnorrSigKeyGen` changes the game advantage by at most `1 / 2 ^ n`. -/
-theorem advantage_ufCma0RealKeyGame_ufCma0Game_le (setup : ℕ → PMF F.Desc) (k : ℕ → ℕ)
-    (A : F.SchnorrUF0Forger) (n : ℕ) :
-    Game.advantage (F.ufCma0RealKeyGame setup k A n) (F.ufCma0Game setup k A n) ≤
-      1 / 2 ^ n := by
-  have hreal (d : F.Desc) :
-      (ProbComp.eval (F.schnorrSigKeyGen n d)).bind (fun keys =>
-        (ProbComp.eval (A.commit n (d, keys.1))).bind fun mts =>
-          (BitString.uniformList (k n)).bind fun roOut =>
-            (ProbComp.eval (A.respond n (mts.2.2, roOut))).bind fun z =>
-              PMF.pure (decide (mts.2.1 = F.schnorrRecoverCommitBits (d, keys.1, roOut, z)))) =
-      ((ProbComp.eval (F.sampleExp n d)).map (Nat.cast : ℕ → ZMod (F.order d))).bind fun α =>
-        (ProbComp.eval (A.commit n (d, F.encode d (α • F.generator d)))).bind fun mts =>
-          (BitString.uniformList (k n)).bind fun roOut =>
-            (ProbComp.eval (A.respond n (mts.2.2, roOut))).bind fun z =>
-              PMF.pure (decide (mts.2.1 =
-                F.encode d ((ofBits z : ZMod (F.order d)) • F.generator d -
-                  (ofBits roOut : ZMod (F.order d)) • (α • F.generator d)))) := by
-    rw [eval_schnorrSigKeyGen, PMF.bind_map]
-    refine congrArg (PMF.bind _) (funext fun α => ?_)
-    simp only [Function.comp_apply, schnorrRecoverCommitBits_encode]
-  simp only [ufCma0RealKeyGame, ufCma0Game, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, hreal]
-  refine Game.advantage_bind_le_nnreal (setup n) _ _ fun d => ?_
-  exact Game.advantage_bind_le_of_closeTo (F.closeTo_uniform_sampleExp n d).symm _
-
-/-- **Projecting a UF-CMA0 forger to a `SchnorrImpersonator` preserves uniform strict PPT**. -/
-theorem isPPT_toImpersonator {A : F.SchnorrUF0Forger} (hA : A.IsPPT) :
-    A.toImpersonator.IsPPT :=
-  ⟨hA.1.map (by fun_prop), hA.2⟩
-
-/-- **The rewinding discrete-logarithm adversary built from a UF-CMA0 forger is uniform strict
-PPT** when the forger is and `k` is computable in polynomial time. -/
-theorem isPPTOn_rewind_toImpersonator {k : ℕ → ℕ}
-    (hk : ComputableInPolyTime k encUnary encUnary)
-    {A : F.SchnorrUF0Forger} (hA : A.IsPPT) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc encBits)) encBits
-      (fun input => A.toImpersonator.rewind k input.1 input.2) :=
-  isPPTOn_rewind hk (F.isPPT_toImpersonator hA)
-
-/-- **Quantitative UF-CMA0 security bound for Schnorr signatures**: at each security parameter where
-every supported group has order at least `2 ^ k n`, a UF-CMA0 forger succeeds in `ufCma0Game` with
-probability at most `1 / 2 ^ k n + √ε'`, where `ε'` is the discrete-logarithm success probability of
-`A.toImpersonator.rewind k`. -/
-theorem succProbability_ufCma0Game_le (setup : ℕ → PMF F.Desc) (k : ℕ → ℕ)
-    (A : F.SchnorrUF0Forger) (n : ℕ) (hkq : ∀ d ∈ (setup n).support, 2 ^ k n ≤ F.order d) :
-    (Game.succProbability (F.ufCma0Game setup k A n) : ℝ) ≤
-      1 / 2 ^ k n +
-        √(Game.succProbability (F.discreteLogGame setup (A.toImpersonator.rewind k) n)) := by
-  rw [ufCma0Game_eq_schnorrDirectGame]
-  exact succProbability_schnorrDirectGame_le setup k A.toImpersonator n hkq
-
-/-- **Quantitative UF-CMA0 security bound with strict-PPT key generation (`ufCma0RealKeyGame`)**:
-the forgery probability is at most `1 / 2 ^ n + 1 / 2 ^ k n + √ε'`. -/
-theorem succProbability_ufCma0RealKeyGame_le (setup : ℕ → PMF F.Desc) (k : ℕ → ℕ)
-    (A : F.SchnorrUF0Forger) (n : ℕ) (hkq : ∀ d ∈ (setup n).support, 2 ^ k n ≤ F.order d) :
-    (Game.succProbability (F.ufCma0RealKeyGame setup k A n) : ℝ) ≤
-      1 / 2 ^ n + 1 / 2 ^ k n +
-        √(Game.succProbability (F.discreteLogGame setup (A.toImpersonator.rewind k) n)) := by
-  have hhop : Game.succProbability (F.ufCma0RealKeyGame setup k A n) ≤
-      1 / 2 ^ n + Game.succProbability (F.ufCma0Game setup k A n) := by
-    calc Game.succProbability (F.ufCma0RealKeyGame setup k A n)
-        ≤ Game.advantage (F.ufCma0RealKeyGame setup k A n) (F.ufCma0Game setup k A n) +
-          Game.succProbability (F.ufCma0Game setup k A n) := by
-          simpa only [Game.advantage_pure_false] using
-            Game.advantage_triangle
-              (F.ufCma0RealKeyGame setup k A n)
-              (F.ufCma0Game setup k A n)
-              (PMF.pure false)
-      _ ≤ 1 / 2 ^ n + Game.succProbability (F.ufCma0Game setup k A n) :=
-        add_le_add (F.advantage_ufCma0RealKeyGame_ufCma0Game_le setup k A n) le_rfl
-  have hhopR : (Game.succProbability (F.ufCma0RealKeyGame setup k A n) : ℝ) ≤
-      1 / 2 ^ n + (Game.succProbability (F.ufCma0Game setup k A n) : ℝ) := by
-    exact_mod_cast hhop
-  have huf0 := F.succProbability_ufCma0Game_le setup k A n hkq
-  linarith
-
-/-- **Asymptotic UF-CMA0 security of Schnorr signatures under `F.DiscreteLog setup`**: when `k` is
-computable in polynomial time, `2 ^ k n ≤ F.order d` for all supported groups, and `1 / 2 ^ k n` is
-negligible, every uniform strict-PPT `SchnorrUF0Forger` succeeds with negligible probability in
-`ufCma0Game`. -/
-theorem negligible_ufCma0Game {setup : ℕ → PMF F.Desc} (hDL : F.DiscreteLog setup)
-    {k : ℕ → ℕ} (hk : ComputableInPolyTime k encUnary encUnary)
-    (hkq : ∀ n, ∀ d ∈ (setup n).support, 2 ^ k n ≤ F.order d)
-    (hchallenge : Negligible fun n => 1 / 2 ^ k n)
-    {A : F.SchnorrUF0Forger} (hA : A.IsPPT) :
-    Negligible fun n => Game.succProbability (F.ufCma0Game setup k A n) := by
-  simpa only [ufCma0Game_eq_schnorrDirectGame] using
-    negligible_schnorrDirectGame hDL hk hkq hchallenge (F.isPPT_toImpersonator hA)
-
-/-- **Asymptotic UF-CMA0 security of Schnorr signatures with strict-PPT key generation
-(`ufCma0RealKeyGame`) under `F.DiscreteLog setup`**. -/
-theorem negligible_ufCma0RealKeyGame {setup : ℕ → PMF F.Desc} (hDL : F.DiscreteLog setup)
-    {k : ℕ → ℕ} (hk : ComputableInPolyTime k encUnary encUnary)
-    (hkq : ∀ n, ∀ d ∈ (setup n).support, 2 ^ k n ≤ F.order d)
-    (hchallenge : Negligible fun n => 1 / 2 ^ k n)
-    {A : F.SchnorrUF0Forger} (hA : A.IsPPT) :
-    Negligible fun n => Game.succProbability (F.ufCma0RealKeyGame setup k A n) := by
-  have huf0 := F.negligible_ufCma0Game hDL hk hkq hchallenge hA
-  have hkey : Negligible fun n => (1 / 2 ^ n : ℝ≥0) := by
-    simpa only [one_div, inv_pow] using negligible_geometric (ratio := 2⁻¹) (by norm_num)
-  refine negligible_of_le (hkey.add huf0) fun n => ?_
-  calc Game.succProbability (F.ufCma0RealKeyGame setup k A n)
-      ≤ Game.advantage (F.ufCma0RealKeyGame setup k A n) (F.ufCma0Game setup k A n) +
-        Game.succProbability (F.ufCma0Game setup k A n) := by
-        simpa only [Game.advantage_pure_false] using
-          Game.advantage_triangle
-            (F.ufCma0RealKeyGame setup k A n)
-            (F.ufCma0Game setup k A n)
-            (PMF.pure false)
-    _ ≤ 1 / 2 ^ n + Game.succProbability (F.ufCma0Game setup k A n) :=
-      add_le_add (F.advantage_ufCma0RealKeyGame_ufCma0Game_le setup k A n) le_rfl
-
-/-! ### 4. Simulated-signing-query EUF-CMA reduction under `DiscreteLog` -/
-
-/-- A uniform chosen-message (EUF-CMA) forger against Schnorr signatures ([BonehShoup2023],
-Section 19.2.2): its first stage sees the security parameter, the group description, the encoded
-public key, and `Qs n` signing transcripts `(t, roOut, z)`, and outputs `(msg, t, state)`; its
-second stage sees the security parameter, the state, and the `k n`-bit random-oracle challenge
-`roOut` for `(msg, t)`, and outputs the response word `z`. -/
-structure SchnorrCMASigForger where
-  /-- Commit from the group description, encoded public key, and signing transcripts. -/
-  commit : ℕ → F.Desc × List Bool × List (List Bool × List Bool × List Bool) →
-    ProbComp (List Bool × List Bool × List Bool)
-  /-- Respond to the random-oracle challenge word from the saved state word. -/
-  respond : ℕ → List Bool × List Bool → ProbComp (List Bool)
-
-/-- Both stages of a `SchnorrCMASigForger` are uniform strict PPT in their full inputs. -/
-def SchnorrCMASigForger.IsPPT (A : F.SchnorrCMASigForger) : Prop :=
-  IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encList encTranscript))))
-      (encPair encBits (encPair encBits encBits))
-      (fun input => A.commit input.1 input.2) ∧
-    IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun input => A.respond input.1 input.2)
-
-/-- The EUF-CMA signature forgery game in the strict-PPT model: before committing to its forgery,
-the forger receives `Qs n` signing transcripts generated by the strict-PPT honest signer
-(`schnorrRealTranscript`) with `k n`-bit challenges. -/
-noncomputable def schnorrEufCmaGame (setup : ℕ → PMF F.Desc) (k Qs : ℕ → ℕ)
-    (A : F.SchnorrCMASigForger) (n : ℕ) : Game := do
-  let d ← setup n
-  let α ← PMF.uniformOfFintype (ZMod (F.order d))
-  let sigs ← ProbComp.eval (OracleComp.replicate (Qs n) (F.schnorrRealTranscript n d α (k n)))
-  let mts ← ProbComp.eval (A.commit n (d, F.encode d (α • F.generator d), sigs))
-  let roOut ← BitString.uniformList (k n)
-  let z ← ProbComp.eval (A.respond n (mts.2.2, roOut))
-  return decide (mts.2.1 = F.encode d ((ofBits z : ZMod (F.order d)) • F.generator d -
-    (ofBits roOut : ZMod (F.order d)) • (α • F.generator d)))
-
-/-- The EUF-CMA signature forgery game with exact ideal signing transcripts
-(`schnorrHonestTranscript`). -/
-noncomputable def schnorrIdealEufCmaGame (setup : ℕ → PMF F.Desc) (k Qs : ℕ → ℕ)
-    (A : F.SchnorrCMASigForger) (n : ℕ) : Game := do
-  let d ← setup n
-  let α ← PMF.uniformOfFintype (ZMod (F.order d))
-  let sigs ← (PMF.iid (F.schnorrHonestTranscript d α (k n)) (Qs n)).map List.ofFn
-  let mts ← ProbComp.eval (A.commit n (d, F.encode d (α • F.generator d), sigs))
-  let roOut ← BitString.uniformList (k n)
-  let z ← ProbComp.eval (A.respond n (mts.2.2, roOut))
-  return decide (mts.2.1 = F.encode d ((ofBits z : ZMod (F.order d)) • F.generator d -
-    (ofBits roOut : ZMod (F.order d)) • (α • F.generator d)))
-
-/-- Turn a chosen-message forger `A : F.SchnorrCMASigForger` into a no-signing-query forger
-`F.SchnorrUF0Forger` by simulating `Qs n` signing transcripts on the public key using
-`schnorrSimulatedTranscript` ([BonehShoup2023], Section 19.2.2). -/
-noncomputable def SchnorrCMASigForger.toUF0 {F : PrimeOrderGroupFamily} (k Qs : ℕ → ℕ)
-    (A : F.SchnorrCMASigForger) : F.SchnorrUF0Forger where
-  commit n := fun (d, pk) => do
-    let sigs ← OracleComp.replicate (Qs n) (F.schnorrSimulatedTranscript n d pk (k n))
-    A.commit n (d, pk, sigs)
-  respond := A.respond
-
-/-- Replacing `Qs n` ideal honest signing transcripts by strict-PPT simulated ones changes the game
-advantage by at most `Qs n / 2 ^ n`. -/
-theorem advantage_schnorrIdealEufCmaGame_ufCma0Game_le
-    (setup : ℕ → PMF F.Desc) (k Qs : ℕ → ℕ) (A : F.SchnorrCMASigForger) (n : ℕ) :
-    Game.advantage (F.schnorrIdealEufCmaGame setup k Qs A n)
-      (F.ufCma0Game setup k (A.toUF0 k Qs) n) ≤ Qs n / 2 ^ n := by
-  simp only [schnorrIdealEufCmaGame, ufCma0Game, SchnorrCMASigForger.toUF0,
-    ProbComp.eval_bind, PMF.monad_bind_eq_bind, PMF.bind_bind]
-  refine Game.advantage_bind_le_nnreal (setup n) _ _ fun d => ?_
-  refine Game.advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order d))) _ _ fun α => ?_
-  exact Game.advantage_bind_le_of_closeTo
-    (F.closeTo_iid_schnorrHonestTranscript_replicate_simulated n d α (k n) (Qs n)) _
-
-/-- Replacing `Qs n` strict-PPT honest signing transcripts by strict-PPT simulated ones changes the
-game advantage by at most `2 * Qs n / 2 ^ n`. -/
-theorem advantage_schnorrEufCmaGame_ufCma0Game_le
-    (setup : ℕ → PMF F.Desc) (k Qs : ℕ → ℕ) (A : F.SchnorrCMASigForger) (n : ℕ) :
-    Game.advantage (F.schnorrEufCmaGame setup k Qs A n)
-      (F.ufCma0Game setup k (A.toUF0 k Qs) n) ≤ 2 * Qs n / 2 ^ n := by
-  simp only [schnorrEufCmaGame, ufCma0Game, SchnorrCMASigForger.toUF0,
-    ProbComp.eval_bind, PMF.monad_bind_eq_bind, PMF.bind_bind]
-  refine Game.advantage_bind_le_nnreal (setup n) _ _ fun d => ?_
-  refine Game.advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order d))) _ _ fun α => ?_
-  exact Game.advantage_bind_le_of_closeTo
-    (F.closeTo_replicate_schnorrRealTranscript_simulated n d α (k n) (Qs n)) _
-
-/-- **Quantitative EUF-CMA security bound with ideal signing transcripts**: at each security
-parameter where every supported group has order at least `2 ^ k n`, a forger's success probability
-in `schnorrIdealEufCmaGame` is at most `Qs n / 2 ^ n + 1 / 2 ^ k n + √ε'`. -/
-theorem succProbability_schnorrIdealEufCmaGame_le
-    (setup : ℕ → PMF F.Desc) (k Qs : ℕ → ℕ) (A : F.SchnorrCMASigForger) (n : ℕ)
-    (hkq : ∀ d ∈ (setup n).support, 2 ^ k n ≤ F.order d) :
-    (Game.succProbability (F.schnorrIdealEufCmaGame setup k Qs A n) : ℝ) ≤
-      Qs n / 2 ^ n + 1 / 2 ^ k n +
-        √(Game.succProbability
-          (F.discreteLogGame setup ((A.toUF0 k Qs).toImpersonator.rewind k) n)) := by
-  have hhop : Game.succProbability (F.schnorrIdealEufCmaGame setup k Qs A n) ≤
-      Qs n / 2 ^ n + Game.succProbability (F.ufCma0Game setup k (A.toUF0 k Qs) n) := by
-    calc Game.succProbability (F.schnorrIdealEufCmaGame setup k Qs A n)
-        ≤ Game.advantage (F.schnorrIdealEufCmaGame setup k Qs A n)
-            (F.ufCma0Game setup k (A.toUF0 k Qs) n) +
-          Game.succProbability (F.ufCma0Game setup k (A.toUF0 k Qs) n) := by
-          simpa only [Game.advantage_pure_false] using
-            Game.advantage_triangle
-              (F.schnorrIdealEufCmaGame setup k Qs A n)
-              (F.ufCma0Game setup k (A.toUF0 k Qs) n)
-              (PMF.pure false)
-      _ ≤ Qs n / 2 ^ n + Game.succProbability (F.ufCma0Game setup k (A.toUF0 k Qs) n) :=
-        add_le_add (F.advantage_schnorrIdealEufCmaGame_ufCma0Game_le setup k Qs A n) le_rfl
-  have hhopR : (Game.succProbability (F.schnorrIdealEufCmaGame setup k Qs A n) : ℝ) ≤
-      Qs n / 2 ^ n + (Game.succProbability (F.ufCma0Game setup k (A.toUF0 k Qs) n) : ℝ) := by
-    exact_mod_cast hhop
-  have huf0 := F.succProbability_ufCma0Game_le setup k (A.toUF0 k Qs) n hkq
-  linarith
-
-/-- **Quantitative EUF-CMA security bound in the strict-PPT model**: at each security parameter
-where every supported group has order at least `2 ^ k n`, a forger's success probability in
-`schnorrEufCmaGame` is at most `2 * Qs n / 2 ^ n + 1 / 2 ^ k n + √ε'`. -/
-theorem succProbability_schnorrEufCmaGame_le
-    (setup : ℕ → PMF F.Desc) (k Qs : ℕ → ℕ) (A : F.SchnorrCMASigForger) (n : ℕ)
-    (hkq : ∀ d ∈ (setup n).support, 2 ^ k n ≤ F.order d) :
-    (Game.succProbability (F.schnorrEufCmaGame setup k Qs A n) : ℝ) ≤
-      2 * Qs n / 2 ^ n + 1 / 2 ^ k n +
-        √(Game.succProbability
-          (F.discreteLogGame setup ((A.toUF0 k Qs).toImpersonator.rewind k) n)) := by
-  have hhop : Game.succProbability (F.schnorrEufCmaGame setup k Qs A n) ≤
-      2 * Qs n / 2 ^ n + Game.succProbability (F.ufCma0Game setup k (A.toUF0 k Qs) n) := by
-    calc Game.succProbability (F.schnorrEufCmaGame setup k Qs A n)
-        ≤ Game.advantage (F.schnorrEufCmaGame setup k Qs A n)
-            (F.ufCma0Game setup k (A.toUF0 k Qs) n) +
-          Game.succProbability (F.ufCma0Game setup k (A.toUF0 k Qs) n) := by
-          simpa only [Game.advantage_pure_false] using
-            Game.advantage_triangle
-              (F.schnorrEufCmaGame setup k Qs A n)
-              (F.ufCma0Game setup k (A.toUF0 k Qs) n)
-              (PMF.pure false)
-      _ ≤ 2 * Qs n / 2 ^ n + Game.succProbability (F.ufCma0Game setup k (A.toUF0 k Qs) n) :=
-        add_le_add (F.advantage_schnorrEufCmaGame_ufCma0Game_le setup k Qs A n) le_rfl
-  have hhopR : (Game.succProbability (F.schnorrEufCmaGame setup k Qs A n) : ℝ) ≤
-      2 * Qs n / 2 ^ n + (Game.succProbability (F.ufCma0Game setup k (A.toUF0 k Qs) n) : ℝ) := by
-    exact_mod_cast hhop
-  have huf0 := F.succProbability_ufCma0Game_le setup k (A.toUF0 k Qs) n hkq
-  linarith
-
-/-- **The simulated-signing reduction `A.toUF0 k Qs` is uniform strict PPT** when the EUF-CMA
-forger `A` is and both `k` and `Qs` are computable in polynomial time. -/
-theorem isPPT_toUF0 {k Qs : ℕ → ℕ}
-    (hk : ComputableInPolyTime k encUnary encUnary)
-    (hQs : ComputableInPolyTime Qs encUnary encUnary)
-    {A : F.SchnorrCMASigForger} (hA : A.IsPPT) :
-    (A.toUF0 k Qs).IsPPT := by
-  refine ⟨?_, hA.2⟩
-  let encIn := encPair encUnary (encPair F.encDesc encBits)
-  have hk_t := hk.tidy
-  have hQs_t := hQs.tidy
-  have hn : ComputableInPolyTime (fun p : ℕ × F.Desc × List Bool => p.1) encIn encUnary := by
-    fun_prop
-  have hd : ComputableInPolyTime (fun p : ℕ × F.Desc × List Bool => p.2.1) encIn F.encDesc := by
-    fun_prop
-  have hpk : ComputableInPolyTime (fun p : ℕ × F.Desc × List Bool => p.2.2) encIn encBits := by
-    fun_prop
-  have hm : ComputableInPolyTime (fun p : ℕ × F.Desc × List Bool => k p.1) encIn encUnary := by
-    fun_prop
-  have hcount : ComputableInPolyTime (fun p : ℕ × F.Desc × List Bool => Qs p.1) encIn encUnary := by
-    fun_prop
-  have hrep := (isPPTOn_schnorrSimulatedTranscript hn hd hpk hm).replicate hcount
-  change IsPPTOn encIn (encPair encBits (encPair encBits encBits)) fun p =>
-    OracleComp.replicate (Qs p.1) (F.schnorrSimulatedTranscript p.1 p.2.1 p.2.2 (k p.1)) >>=
-      fun sigs => A.commit p.1 (p.2.1, p.2.2, sigs)
-  exact hrep.bind_with (hA.1.preprocess
-    (prepare := fun p : (ℕ × F.Desc × List Bool) × List (List Bool × List Bool × List Bool) =>
-      (p.1.1, (p.1.2.1, p.1.2.2, p.2))) (by fun_prop))
-
-/-- **The composed rewinding discrete-logarithm adversary `(A.toUF0 k Qs).toImpersonator.rewind k`
-is uniform strict PPT** when `A` is and `k` and `Qs` are computable in polynomial time. -/
-theorem isPPTOn_rewind_toUF0 {k Qs : ℕ → ℕ}
-    (hk : ComputableInPolyTime k encUnary encUnary)
-    (hQs : ComputableInPolyTime Qs encUnary encUnary)
-    {A : F.SchnorrCMASigForger} (hA : A.IsPPT) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc encBits)) encBits
-      (fun input => (A.toUF0 k Qs).toImpersonator.rewind k input.1 input.2) :=
-  F.isPPTOn_rewind_toImpersonator hk (F.isPPT_toUF0 hk hQs hA)
-
-/-- **Schnorr signatures are EUF-CMA secure with ideal signing transcripts under the
-discrete-logarithm assumption** ([BonehShoup2023], Theorem 19.7; [PointchevalStern2000]). -/
-theorem negligible_schnorrIdealEufCmaGame {setup : ℕ → PMF F.Desc} (hDL : F.DiscreteLog setup)
-    {k Qs : ℕ → ℕ} (hk : ComputableInPolyTime k encUnary encUnary)
-    (hQs : ComputableInPolyTime Qs encUnary encUnary)
-    (hkq : ∀ n, ∀ d ∈ (setup n).support, 2 ^ k n ≤ F.order d)
-    (hchallenge : Negligible fun n => 1 / 2 ^ k n)
-    {A : F.SchnorrCMASigForger} (hA : A.IsPPT) :
-    Negligible fun n => Game.succProbability (F.schnorrIdealEufCmaGame setup k Qs A n) := by
-  have huf0 := F.negligible_ufCma0Game hDL hk hkq hchallenge (F.isPPT_toUF0 hk hQs hA)
-  have hsim := negligible_div_two_pow_of_polyTime hQs
-  refine negligible_of_le (hsim.add huf0) fun n => ?_
-  calc Game.succProbability (F.schnorrIdealEufCmaGame setup k Qs A n)
-      ≤ Game.advantage (F.schnorrIdealEufCmaGame setup k Qs A n)
-          (F.ufCma0Game setup k (A.toUF0 k Qs) n) +
-        Game.succProbability (F.ufCma0Game setup k (A.toUF0 k Qs) n) := by
-        simpa only [Game.advantage_pure_false] using
-          Game.advantage_triangle
-            (F.schnorrIdealEufCmaGame setup k Qs A n)
-            (F.ufCma0Game setup k (A.toUF0 k Qs) n)
-            (PMF.pure false)
-    _ ≤ Qs n / 2 ^ n + Game.succProbability (F.ufCma0Game setup k (A.toUF0 k Qs) n) :=
-      add_le_add (F.advantage_schnorrIdealEufCmaGame_ufCma0Game_le setup k Qs A n) le_rfl
-
-/-- **Schnorr signatures are EUF-CMA secure in the strict-PPT model under the discrete-logarithm
-assumption** ([BonehShoup2023], Theorem 19.7; [PointchevalStern2000]). -/
-theorem negligible_schnorrEufCmaGame {setup : ℕ → PMF F.Desc} (hDL : F.DiscreteLog setup)
-    {k Qs : ℕ → ℕ} (hk : ComputableInPolyTime k encUnary encUnary)
-    (hQs : ComputableInPolyTime Qs encUnary encUnary)
-    (hkq : ∀ n, ∀ d ∈ (setup n).support, 2 ^ k n ≤ F.order d)
-    (hchallenge : Negligible fun n => 1 / 2 ^ k n)
-    {A : F.SchnorrCMASigForger} (hA : A.IsPPT) :
-    Negligible fun n => Game.succProbability (F.schnorrEufCmaGame setup k Qs A n) := by
-  have huf0 := F.negligible_ufCma0Game hDL hk hkq hchallenge (F.isPPT_toUF0 hk hQs hA)
-  have h2Qs : ComputableInPolyTime (fun n => 2 * Qs n) encUnary encUnary := by
-    have hQs_t := hQs.tidy
-    exact .of_tidy (by fun_prop)
-  have hsim := negligible_div_two_pow_of_polyTime h2Qs
-  refine negligible_of_le (hsim.add huf0) fun n => ?_
-  calc Game.succProbability (F.schnorrEufCmaGame setup k Qs A n)
-      ≤ Game.advantage (F.schnorrEufCmaGame setup k Qs A n)
-          (F.ufCma0Game setup k (A.toUF0 k Qs) n) +
-        Game.succProbability (F.ufCma0Game setup k (A.toUF0 k Qs) n) := by
-        simpa only [Game.advantage_pure_false] using
-          Game.advantage_triangle
-            (F.schnorrEufCmaGame setup k Qs A n)
-            (F.ufCma0Game setup k (A.toUF0 k Qs) n)
-            (PMF.pure false)
-    _ ≤ (2 * Qs n : ℕ) / 2 ^ n +
-        Game.succProbability (F.ufCma0Game setup k (A.toUF0 k Qs) n) := by
-      simpa only [Nat.cast_mul, Nat.cast_ofNat] using
-        add_le_add (F.advantage_schnorrEufCmaGame_ufCma0Game_le setup k Qs A n) le_rfl
-
-/-- Schnorr signatures with challenge length `k` are UF-CMA0 secure against all uniform strict-PPT
-no-signing-query forgers. -/
-def IsUF0Secure (setup : ℕ → PMF F.Desc) (k : ℕ → ℕ) : Prop :=
-  ∀ (A : F.SchnorrUF0Forger), A.IsPPT →
-    Negligible fun n => Game.succProbability (F.ufCma0Game setup k A n)
-
-/-- Schnorr signatures with challenge length `k` are EUF-CMA secure in the strict-PPT model for all
-polynomial-time signing query counts `Qs` and all uniform strict-PPT `SchnorrCMASigForger`
-forgers. -/
-def IsEufCmaSecure (setup : ℕ → PMF F.Desc) (k : ℕ → ℕ) : Prop :=
-  ∀ (Qs : ℕ → ℕ), ComputableInPolyTime Qs encUnary encUnary →
-    ∀ (A : F.SchnorrCMASigForger), A.IsPPT →
-      Negligible fun n => Game.succProbability (F.schnorrEufCmaGame setup k Qs A n)
-
-/-- **Schnorr signatures satisfy `IsUF0Secure` under `F.DiscreteLog setup`**. -/
-theorem schnorr_isUF0Secure_of_discreteLogHard
-    {setup : ℕ → PMF F.Desc} (hDL : F.DiscreteLog setup)
-    {k : ℕ → ℕ} (hk : ComputableInPolyTime k encUnary encUnary)
-    (hkq : ∀ n, ∀ d ∈ (setup n).support, 2 ^ k n ≤ F.order d)
-    (hchallenge : Negligible fun n => 1 / 2 ^ k n) :
-    F.IsUF0Secure setup k :=
-  fun _ hA => F.negligible_ufCma0Game hDL hk hkq hchallenge hA
-
-/-- **Schnorr signatures satisfy `IsEufCmaSecure` under `F.DiscreteLog setup`**. -/
-theorem schnorr_isEufCmaSecure_of_discreteLogHard
-    {setup : ℕ → PMF F.Desc} (hDL : F.DiscreteLog setup)
-    {k : ℕ → ℕ} (hk : ComputableInPolyTime k encUnary encUnary)
-    (hkq : ∀ n, ∀ d ∈ (setup n).support, 2 ^ k n ≤ F.order d)
-    (hchallenge : Negligible fun n => 1 / 2 ^ k n) :
-    F.IsEufCmaSecure setup k :=
-  fun _ hQs _ hA => F.negligible_schnorrEufCmaGame hDL hk hQs hkq hchallenge hA
 
 end Cslib.Crypto.PrimeOrderGroupFamily

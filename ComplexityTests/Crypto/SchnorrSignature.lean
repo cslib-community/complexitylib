@@ -18,8 +18,9 @@ Schnorr signature algorithms (`schnorrSigKeyGen`, `schnorrCommitBits`, `schnorrR
 `schnorrSignCoins`, `schnorrSigVerifyBits`, `schnorrRecoverCommitBits`), their strict-PPT and
 polynomial-time certificates, the typed Fiat–Shamir random-oracle signature schemes
 (`schnorrFamilyROMScheme` and `schnorrScalarROMScheme`) with their Pointcheval–Stern /
-Bellare–Neven EUF-CMA bound, and the uniform strict-PPT `ufCma0Game` and simulated-signing
-`schnorrEufCmaGame` security reductions under `schnorrGroups.DiscreteLog`.
+Bellare–Neven EUF-CMA bound. Strict-PPT identification is tested separately in
+`ComplexityTests/Crypto/SchnorrEavesdrop.lean`; efficient realization of the general ROM
+forking reduction remains a separate obligation.
 -/
 
 namespace ComplexityTests.Crypto.SchnorrSignature
@@ -125,62 +126,25 @@ example (F : PrimeOrderGroupFamily) (d : F.Desc) (hm : 2 ^ 3 ≤ F.order d) :
     (m := 3) d hm (trivialROMForger F d) (trivialROMForger_callBounded F d)
   simpa using h
 
-/-- A uniform strict-PPT UF-CMA0 forger on `schnorrGroups` that ignores its inputs. -/
-noncomputable def silentUF0 : schnorrGroups.SchnorrUF0Forger where
-  commit _ _ := pure ([], [], [])
-  respond _ _ := pure []
+/-- Request a signature and return exactly that signed message. This is a legal adaptive ROM
+forger, but its output cannot be a fresh-message forgery. -/
+noncomputable def replayROMForger (F : PrimeOrderGroupFamily) (d : F.Desc) :
+    Forger (F.Carrier d) (List Bool)
+      (F.Carrier d × ZMod (F.order d))
+      (List Bool × F.Carrier d) (BitString 3) where
+  Coins := Unit
+  coins := PMF.pure ()
+  forge _ _ := do
+    let sig ← OracleComp.query (.inl [])
+    return ([], sig)
 
-theorem silentUF0_isPPT : silentUF0.IsPPT :=
-  ⟨(ComputableInPolyTime.const _).isPPTOn, (ComputableInPolyTime.const _).isPPTOn⟩
-
-/-- A uniform strict-PPT EUF-CMA forger on `schnorrGroups` that ignores its inputs. -/
-noncomputable def silentCMA : schnorrGroups.SchnorrCMASigForger where
-  commit _ _ := pure ([], [], [])
-  respond _ _ := pure []
-
-theorem silentCMA_isPPT : silentCMA.IsPPT :=
-  ⟨(ComputableInPolyTime.const _).isPPTOn, (ComputableInPolyTime.const _).isPPTOn⟩
-
-/-- `n`-bit challenges have negligible guessing probability `1 / 2 ^ n`. -/
-theorem negligible_inv_two_pow : Negligible fun n => (1 : ℝ≥0) / 2 ^ n := by
-  simpa only [one_div, inv_pow] using negligible_geometric (ratio := 2⁻¹) (by norm_num)
-
-/-- Under the discrete-logarithm assumption for Schnorr groups of order at least `2 ^ n`,
-Schnorr signatures with `n`-bit challenges resist `silentUF0` with negligible forgery
-probability. -/
-example (setup : ℕ → PMF schnorrGroups.Desc) (hDL : schnorrGroups.DiscreteLog setup)
-    (hsize : ∀ n, ∀ d ∈ (setup n).support, 2 ^ n ≤ schnorrGroups.order d) :
-    Negligible fun n => Game.succProbability (schnorrGroups.ufCma0Game setup id silentUF0 n) :=
-  schnorrGroups.negligible_ufCma0Game
-    hDL (ComputableInPolyTime.of_eq fun _ => rfl) hsize negligible_inv_two_pow silentUF0_isPPT
-
-/-- Under the discrete-logarithm assumption for Schnorr groups of order at least `2 ^ n`,
-Schnorr signatures with `n`-bit challenges and `2` signing queries resist `silentCMA` with
-negligible forgery probability. -/
-example (setup : ℕ → PMF schnorrGroups.Desc) (hDL : schnorrGroups.DiscreteLog setup)
-    (hsize : ∀ n, ∀ d ∈ (setup n).support, 2 ^ n ≤ schnorrGroups.order d) :
-    Negligible fun n =>
-      Game.succProbability (schnorrGroups.schnorrEufCmaGame setup id (fun _ => 2) silentCMA n) :=
-  schnorrGroups.negligible_schnorrEufCmaGame
-    hDL (ComputableInPolyTime.of_eq fun _ => rfl) (ComputableInPolyTime.const 2)
-    hsize negligible_inv_two_pow silentCMA_isPPT
-
-/-- Under the discrete-logarithm assumption for Schnorr groups of order at least `2 ^ n`,
-Schnorr signatures with `n`-bit challenges are UF-CMA0 secure against every uniform strict-PPT
-no-signing-query forger. -/
-example (setup : ℕ → PMF schnorrGroups.Desc) (hDL : schnorrGroups.DiscreteLog setup)
-    (hsize : ∀ n, ∀ d ∈ (setup n).support, 2 ^ n ≤ schnorrGroups.order d) :
-    schnorrGroups.IsUF0Secure setup id :=
-  schnorrGroups.schnorr_isUF0Secure_of_discreteLogHard
-    hDL (ComputableInPolyTime.of_eq fun _ => rfl) hsize negligible_inv_two_pow
-
-/-- Under the discrete-logarithm assumption for Schnorr groups of order at least `2 ^ n`,
-Schnorr signatures with `n`-bit challenges are EUF-CMA secure against every uniform strict-PPT
-forger and every polynomial-time signing query count. -/
-example (setup : ℕ → PMF schnorrGroups.Desc) (hDL : schnorrGroups.DiscreteLog setup)
-    (hsize : ∀ n, ∀ d ∈ (setup n).support, 2 ^ n ≤ schnorrGroups.order d) :
-    schnorrGroups.IsEufCmaSecure setup id :=
-  schnorrGroups.schnorr_isEufCmaSecure_of_discreteLogHard
-    hDL (ComputableInPolyTime.of_eq fun _ => rfl) hsize negligible_inv_two_pow
+/-- The actual Schnorr EUF-CMA game rejects replay even though an honest signature verifies. -/
+example (F : PrimeOrderGroupFamily) (d : F.Desc) (hm : 2 ^ 3 ≤ F.order d) :
+    eufCmaGame (F.schnorrFamilyROMScheme (M := List Bool) (m := 3) d hm)
+      (replayROMForger F d) = PMF.pure false := by
+  simp only [eufCmaGame, replayROMForger, OracleComp.interpret_bind,
+    OracleComp.interpret_query, OracleComp.interpret_pure, StateT.run_bind,
+    StateT.run_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.pure_bind]
+  simp [handler, StateT.run, PMF.bind_bind]
 
 end ComplexityTests.Crypto.SchnorrSignature
