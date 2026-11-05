@@ -10,6 +10,7 @@ module
 public import Complexity.Crypto.Computational.SIS.Module
 public import Complexity.Computability.Probabilistic.UniformNat
 import Complexity.Foundations.Data.List.Lookup
+import Complexity.Foundations.Data.ZMod.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.BinaryDiv
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
@@ -184,18 +185,12 @@ private theorem sampledMatrixWord_ppt :
     fun_prop
   exact h.map_with (expandedWord_polyTime.comp hpre)
 
-private theorem finEquiv_val {q : ℕ} [NeZero q] (i : Fin q) :
-    (ZMod.finEquiv q i).val = i.val := by
-  cases q with
-  | zero => exact (NeZero.ne 0 rfl).elim
-  | succ q => rfl
-
 private theorem eval_binaryNat_uniform_residue (w : ℕ) :
     ProbComp.eval (sampleBinaryNat w) =
       (ProbComp.eval (ProbComp.uniform (ZMod (2 ^ w)))).map ZMod.val := by
   rw [eval_sampleBinaryNat, ProbComp.eval_uniform,
     ← PMF.uniformOfFintype_map_equiv (ZMod.finEquiv (2 ^ w)).toEquiv, PMF.map_comp]
-  simp only [Function.comp_def, RingEquiv.toEquiv_eq_coe, EquivLike.coe_coe, finEquiv_val]
+  simp only [Function.comp_def, RingEquiv.toEquiv_eq_coe, EquivLike.coe_coe, ZMod.val_finEquiv]
 
 private theorem eval_matrixCoefficients (d k n w : ℕ) :
     ProbComp.eval (OracleComp.replicate d
