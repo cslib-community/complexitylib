@@ -70,11 +70,14 @@ verifier time) is in `Complexity.Crypto.Computational.Kilian.Succinct`.
   computational soundness.
 * `Cslib.Crypto.kilianOpenings`, `Cslib.Crypto.kilianConflict`, `Cslib.Crypto.kilianBindingOutput`,
   `Cslib.Crypto.kilianBindingAdversary`: the reduction to position binding.
+* `Cslib.Crypto.kilianProof`: the PCP proof spelled by a compact position table.
 
 ## Main results
 
 * `Cslib.Crypto.merkleBreaksBinding_kilianBindingOutput`: two accepted runs that open a position
   to different bits give a binding break.
+* `Cslib.Crypto.accepts_kilianProof`: an accepted response consistent with a position table makes
+  the PCP verifier accept `kilianProof`.
 * `Cslib.Crypto.succProbability_kilianSoundnessGame_le`: the exact soundness bound.
 * `Cslib.Crypto.isPPT_kilianBindingAdversary`: the reduction is efficient.
 * `Cslib.Crypto.succProbability_kilianSoundnessGame_le_collision`: the same bound in terms of
@@ -229,7 +232,7 @@ theorem merkleBreaksBinding_kilianBindingOutput {k : List Bool} {x : α} {root :
 /-- The PCP proof spelled by a table `π` of the positions of `x`: the bit at address `a` is the
 table's bit at the position of `a`. Only addresses up to the sum of the address table are
 spelled; the others are never queried. -/
-private def kilianProof (V : PCPVerifier α) (x : α) (π : ℕ → Bool) : List Bool :=
+def kilianProof (V : PCPVerifier α) (x : α) (π : ℕ → Bool) : List Bool :=
   (List.range ((V.queryTable x).sum + 1)).map fun a => π (kilianPosition V x a)
 
 /-- Opened positions lie inside the compact table. -/
@@ -243,7 +246,7 @@ private theorem kilianPosition_lt_of_mem_kilianOpenings {x : α} {ρs : List (Li
 
 /-- An accepted response whose opened bits agree with the table `π` makes the PCP verifier accept
 the proof spelled by `π` on every random string of the right length. -/
-private theorem accepts_kilianProof {k : List Bool} {x : α} {root : List Bool}
+theorem accepts_kilianProof {k : List Bool} {x : α} {root : List Bool}
     {ρs : List (List Bool)} {response : KilianResponse}
     (h : kilianVerify H V k x root ρs response = true) {π : ℕ → Bool}
     (hcons : ∀ o ∈ kilianOpenings V x ρs response, o.2.1 = π (kilianPosition V x o.1))
