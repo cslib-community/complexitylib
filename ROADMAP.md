@@ -187,9 +187,13 @@ families and full-input native runtime.
   secret-free simulator, adaptive oracle-cache simulation and paired same-coins fork equality
   remain open. Other endpoints include identification security under SIS and Dilithium-style
   signature schemes over module SIS and module LWE, as theory.
-- **Hybrid encryption:** prove modular KEM–DEM CCA composition with compatible key spaces and
-  rejection-aware canonical ciphertext parsing (Boneh–Shoup Exercise 12.5(a)); adaptive
-  decapsulation security of a KEM alone does not supply this composition.
+- **Hybrid encryption:** prove modular KEM–DEM CCA composition (Boneh–Shoup Exercise 12.5(a)).
+  Canonical `hybridDecrypt` rejects malformed pair encodings and propagates Option-valued
+  component failures ([#2692](https://github.com/cslib-community/complexitylib/issues/2692)).
+  The exact DEM leg is tracked in [#2694](https://github.com/cslib-community/complexitylib/issues/2694).
+  Two KEM hops and compatible key distributions/key postprocessing remain open; encoded
+  Encrypt-then-MAC keys are not uniform over all words of their encoded length. Adaptive
+  decapsulation security of a KEM alone does not supply the composition.
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
