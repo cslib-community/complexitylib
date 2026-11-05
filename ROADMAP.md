@@ -145,8 +145,12 @@ families and full-input native runtime.
   external-state preservation ([#2579]).
   The finite Fiat–Shamir theorem now permits injective hash-point representations in an arbitrary
   query domain, retaining all out-of-image queries and the same bound
-  ([#2684](https://github.com/cslib-community/complexitylib/issues/2684)); concrete word Schnorr
-  specialization and explicit key-generation/signing approximation transport remain open.
+  ([#2684](https://github.com/cslib-community/complexitylib/issues/2684)). The canonical word Schnorr
+  instance now supplies completeness, special soundness on all word transcripts, perfect HVZK,
+  commitment unpredictability and the finite ROM bound with every word hash query retained
+  ([#2696](https://github.com/cslib-community/complexitylib/issues/2696)). Public keys remain actual
+  group elements and scalar sampling is ideal; native adapter composition, key-generation/signing
+  approximation transport and the complete efficient forking reduction remain open.
 - **Lattices**: Fiat–Shamir with aborts and signatures from SIS (Lyubashevsky 2009,
   2012); strict-PPT samplers for integer boxes; identification security under SIS; efficiency
   certificates for the simulator and extractor; full interactive-view simulation;
