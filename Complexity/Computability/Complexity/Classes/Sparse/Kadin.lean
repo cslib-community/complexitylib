@@ -381,9 +381,9 @@ theorem length_queriesWith_searchStepProgram_le (answer : Unit × List Bool → 
 
 /-- The algorithm: `count a` rounds of binary search from `(0, N a)` with the requests `req`,
 then one request `fin (a, lo)` at the threshold found. -/
-def program (req fin : α × ℕ → List Bool) (N count : α → ℕ) (a : α) : WordQueryComp Unit Bool :=
-  OracleComp.iterate (count a) (searchStepProgram req a) (0, N a) >>= fun st =>
-    queryBit (fin (a, st.1))
+def program (req fin : α × ℕ → List Bool) (N count : α → ℕ) (a : α) : WordQueryComp Unit Bool := do
+  let st ← OracleComp.iterate (count a) (searchStepProgram req a) (0, N a)
+  queryBit (fin (a, st.1))
 
 open Classical in
 theorem interpret_program (A : Set (List Bool)) (req fin : α × ℕ → List Bool) (N count : α → ℕ)

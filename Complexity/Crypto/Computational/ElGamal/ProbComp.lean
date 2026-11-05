@@ -114,9 +114,9 @@ private theorem dropFrame_encPair_encBits_pair (p : List Bool × List Bool) :
 `a ← sampleExp n (d n)` and output
 `(encPair F.encDesc encBits (d n, encode (a • g)), encNat a)`. -/
 noncomputable def elGamalKeyGenProb (d : ℕ → F.Desc) (n : ℕ) :
-    ProbComp (List Bool × List Bool) :=
-  F.sampleExp n (d n) >>= fun a =>
-    pure (encPair F.encDesc encBits (d n, F.encodeElGamalPublicKey (d n, a)), encNat a)
+    ProbComp (List Bool × List Bool) := do
+  let a ← F.sampleExp n (d n)
+  return (encPair F.encDesc encBits (d n, F.encodeElGamalPublicKey (d n, a)), encNat a)
 
 /-- `elGamalKeyGenProb` is uniformly strict PPT whenever `d` is computable in polynomial time. -/
 theorem isPPTOn_elGamalKeyGenProb {d : ℕ → F.Desc}
@@ -135,11 +135,11 @@ theorem isPPTOn_elGamalKeyGenProb {d : ℕ → F.Desc}
 pp. 460–461): sample `b ← sampleExp n (d n)`, unpack `u = dropFrame pk`, and output
 `(H (d n, encode (b • u)), encode (b • g))`. -/
 noncomputable def hashedElGamalEncapsProb (H : F.Desc × List Bool → List Bool)
-    (d : ℕ → F.Desc) (n : ℕ) (pk : List Bool) : ProbComp (List Bool × List Bool) :=
-  F.sampleExp n (d n) >>= fun b =>
-    let u := dropFrame pk
-    pure (H (d n, F.smul (d n, b, u)),
-      F.smul (d n, b, F.encode (d n) (F.generator (d n))))
+    (d : ℕ → F.Desc) (n : ℕ) (pk : List Bool) : ProbComp (List Bool × List Bool) := do
+  let b ← F.sampleExp n (d n)
+  let u := dropFrame pk
+  return (H (d n, F.smul (d n, b, u)),
+    F.smul (d n, b, F.encode (d n) (F.generator (d n))))
 
 /-- `hashedElGamalEncapsProb` is uniformly strict PPT whenever `H` and `d` are computable in
 polynomial time. -/
@@ -483,10 +483,10 @@ theorem DDH.wordINDCPA_hybrid_hashedElGamal {F : PrimeOrderGroupFamily} {keyLen 
 `u = dropFrame pk`, and output
 `encPair encBits encBits (encodeElGamalEncrypt (d n, u, encodeMsg (d n) m, b))`. -/
 noncomputable def elGamalEncryptProb {Msg : Type} (encodeMsg : F.Desc → Msg → List Bool)
-    (d : ℕ → F.Desc) (n : ℕ) (pk : List Bool) (m : Msg) : ProbComp (List Bool) :=
-  F.sampleExp n (d n) >>= fun b =>
-    let u := dropFrame pk
-    pure (encPair encBits encBits (F.encodeElGamalEncrypt (d n, u, encodeMsg (d n) m, b)))
+    (d : ℕ → F.Desc) (n : ℕ) (pk : List Bool) (m : Msg) : ProbComp (List Bool) := do
+  let b ← F.sampleExp n (d n)
+  let u := dropFrame pk
+  return encPair encBits encBits (F.encodeElGamalEncrypt (d n, u, encodeMsg (d n) m, b))
 
 /-- `elGamalEncryptProb` is uniformly strict PPT whenever `encodeMsg` and `d` are computable in
 polynomial time. -/

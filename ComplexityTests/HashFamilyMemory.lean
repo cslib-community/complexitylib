@@ -103,8 +103,9 @@ example : (kWiseSpec 2 2 (2 ^ 1)).Contract ops
 /-- An upper hop with coins of its own: before each resample it draws a bit and ignores it. -/
 noncomputable def wastefulMethods :
     Methods (tableSpec 2 1).toSpec (tableSpec 2 1).withCoins.toSpec
-  | .resample => ProbOracleComp.sample (ProbComp.unifFin 1) >>= fun _ =>
-      ProbOracleComp.query (spec := HashFamily.Result (U := 2) (2 ^ 1)) .resample
+  | .resample => do
+    let _ ← ProbOracleComp.sample (ProbComp.unifFin 1)
+    ProbOracleComp.query (spec := HashFamily.Result (U := 2) (2 ^ 1)) .resample
   | .eval u => ProbOracleComp.query (spec := HashFamily.Result (U := 2) (2 ^ 1)) (.eval u)
 
 /-- The wasteful hop refines the random function, since the ignored bit changes no law. -/

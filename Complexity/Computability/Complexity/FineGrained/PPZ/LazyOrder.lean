@@ -49,14 +49,16 @@ variable {n : ℕ} (O : (Fin n → Option Bool) → Fin n → Option Bool)
 /-- Process the variables of `l` in order with the oracle `O`, starting from `τ`. -/
 noncomputable def runList : List (Fin n) → (Fin n → Option Bool) → PMF (Fin n → Option Bool)
   | [], τ => PMF.pure τ
-  | x :: l, τ => (stepWith O τ x).bind fun b => runList l (Function.update τ x (some b))
+  | x :: l, τ => do
+    let b ← stepWith O τ x
+    runList l (Function.update τ x (some b))
 
 /-- **Process the variables `g 0, …, g (m - 1)` in a uniformly random order** with the oracle `O`,
 starting from `τ`. -/
 noncomputable def roundOn {m : ℕ} (g : Fin m → Fin n) (τ : Fin n → Option Bool) :
-    PMF (Fin n → Option Bool) :=
-  (Cslib.Probability.PMF.uniformOfFintype (Equiv.Perm (Fin m))).bind fun e =>
-    runList O (List.ofFn (g ∘ e)) τ
+    PMF (Fin n → Option Bool) := do
+  let e ← Cslib.Probability.PMF.uniformOfFintype (Equiv.Perm (Fin m))
+  runList O (List.ofFn (g ∘ e)) τ
 
 theorem runList_nil (τ : Fin n → Option Bool) : runList O [] τ = PMF.pure τ := rfl
 
@@ -88,7 +90,8 @@ theorem runWith_eq_runList (π : Equiv.Perm (Fin n)) :
 /-- No variables: nothing changes. -/
 theorem roundOn_zero (g : Fin 0 → Fin n) (τ : Fin n → Option Bool) :
     roundOn O g τ = PMF.pure τ := by
-  simp only [roundOn, List.ofFn_zero, runList_nil, PMF.bind_const]
+  simp only [roundOn, Probability.PMF.monad_bind_eq_bind, List.ofFn_zero, runList_nil,
+    PMF.bind_const]
 
 /-- **The lazy form of a uniformly random order.** Processing `g 0, …, g m` in a uniformly random
 order is the same as choosing `p` uniformly, processing `g p`, and then processing the others in a
@@ -103,11 +106,12 @@ theorem roundOn_succ {m : ℕ} (g : Fin (m + 1) → Fin n) (τ : Fin n → Optio
       (Cslib.Probability.PMF.uniformOfFintype (Fin (m + 1) × Equiv.Perm (Fin m))).map
         Equiv.Perm.decomposeFin.symm :=
     (Cslib.Probability.PMF.uniformOfFintype_map_equiv _).symm
-  rw [roundOn, hunif, ← Cslib.Probability.PMF.uniformOfFintype_prod, PMF.bind_map, PMF.bind_bind]
+  rw [roundOn, Probability.PMF.monad_bind_eq_bind, hunif,
+    ← Cslib.Probability.PMF.uniformOfFintype_prod, PMF.bind_map, PMF.bind_bind]
   refine congrArg _ (funext fun p => ?_)
   simp only [PMF.bind_map, Function.comp_def, List.ofFn_succ,
     Equiv.Perm.decomposeFin_symm_apply_zero, Equiv.Perm.decomposeFin_symm_apply_succ,
-    runList_cons, roundOn]
+    runList_cons, roundOn, Probability.PMF.monad_bind_eq_bind]
   exact PMF.bind_comm _ _ _
 
 /-- **A round is `roundOn` on all variables** from the empty assignment. -/
