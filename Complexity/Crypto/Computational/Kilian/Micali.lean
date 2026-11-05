@@ -8,8 +8,11 @@ module
 -- upstream: candidate
 
 public import Complexity.Crypto.Computational.Kilian
+public import Complexity.Crypto.Computational.MerkleTree.ROMExtract
 public import Complexity.Languages.Probabilistic.RandomOracle
 public import Complexity.Languages.Probabilistic.Semantics
+import Complexity.Foundations.Data.List.Lookup
+import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Map
 
 /-!
@@ -78,8 +81,10 @@ from [Micali2000].
   `Cslib.Crypto.evalPure_merkleVerifyProg`: simulation of the oracle-program Merkle operations by
   `merkleRoot`, `merklePath` and `merkleVerify`.
 * `Cslib.Crypto.evalPure_merkleVerifyProg_merklePathProg`,
-  `Cslib.Crypto.merkleVerifyProg_merklePathProg`: Merkle opening completeness under deterministic
-  and lazy random oracles.
+  `Cslib.Crypto.merkleVerifyProg_merklePathProg`,
+  `Cslib.Crypto.isQueryBounded_merkleVerifyProg`,
+  `Cslib.Crypto.pathQueriedInTrace_of_mem_support_merkleVerifyProg`: Merkle opening completeness,
+  query-count bound, and trace path coverage under deterministic and lazy random oracles.
 * `Cslib.Crypto.micaliVerifyPure_micaliProvePure_eq_true`,
   `Cslib.Crypto.micaliVerify_micaliProve_eq_true`,
   `Cslib.Crypto.micaliHonestGame_eq_pure_true`: perfect completeness of Micali's non-interactive
@@ -500,6 +505,148 @@ theorem merkleVerifyProg_merklePathProg (dist : (q : List Bool) → PMF (MerkleH
         (fun _ => none)).map Prod.fst = PMF.pure true :=
   OracleComp.map_fst_runWith_answer_eq_pure dist _ true fun h _ =>
     evalPure_merkleVerifyProg_merklePathProg h leaves hi
+
+private theorem isQueryBounded_foldlM_merkleInputsStepProg (path : List (List Bool))
+    (init : List (List Bool) × ℕ) :
+    OracleComp.IsQueryBounded (path.foldlM merkleInputsStepProg init) path.length := by
+  induction path generalizing init with
+  | nil => exact .pure init 0
+  | cons sibling rest ih =>
+    simp only [List.foldlM_cons, List.length_cons, merkleInputsStepProg]
+    exact .liftBind (init.1.headD []) _ rest.length fun node => ih _
+
+/-- `merkleVerifyProg d root i leaf path` makes at most `path.length + 1` Merkle hash queries
+(one leaf query plus one query per sibling along `path`). -/
+theorem isQueryBounded_merkleVerifyProg (d : ℕ) (root : List Bool) (i : ℕ) (leaf : List Bool)
+    (path : List (List Bool)) :
+    OracleComp.IsQueryBounded (merkleVerifyProg d root i leaf path) (path.length + 1) := by
+  unfold merkleVerifyProg merkleRootOfPathProg merkleInputsProg
+  have hinputs : OracleComp.IsQueryBounded
+      (path.foldlM merkleInputsStepProg ([leaf], i) >>= fun x => pure x.1)
+      path.length := by
+    simpa only [Nat.add_zero] using
+      (isQueryBounded_foldlM_merkleInputsStepProg path ([leaf], i)).bind fun x =>
+        OracleComp.IsCostBounded.pure x.1 0
+  have hroot : OracleComp.IsQueryBounded
+      ((path.foldlM merkleInputsStepProg ([leaf], i) >>= fun x => pure x.1) >>= fun inputs =>
+        OracleComp.query (spec := MerkleHashSpec) (inputs.headD []))
+      (path.length + 1) :=
+    hinputs.bind fun inputs =>
+      OracleComp.IsCostBounded.query (cost := fun _ => 1) (inputs.headD [])
+  simpa only [Nat.add_zero] using hroot.bind fun cand =>
+    OracleComp.IsCostBounded.pure _ 0
+
+/-- Multi-step invariant of `memoize`: running `prog` from `tr` produces `tr'` extending `tr` with
+`Nodup` keys and supported values, and `res = evalPure h prog` for every `h` consistent with
+`tr'`. -/
+theorem mem_support_run_memoize_invariant {Query : Type} [BEq Query] [LawfulBEq Query]
+    {Value β : Type} (dist : Query → PMF Value) (prog : OracleComp (fun _ : Query => Value) β)
+    {tr tr' : List (Query × Value)} {res : β}
+    (hnodup : (tr.map Prod.fst).Nodup)
+    (hsupp : ∀ e ∈ tr, e.2 ∈ (dist e.1).support)
+    (hmem : (res, tr') ∈ ((OracleComp.interpret (memoize dist) prog).run tr).support) :
+    (∀ e ∈ tr, e ∈ tr') ∧
+      (tr'.map Prod.fst).Nodup ∧
+      (∀ e ∈ tr', e.2 ∈ (dist e.1).support) ∧
+      (∀ h : Query → Value, TraceConsistentWith h tr' → res = OracleComp.evalPure h prog) := by
+  induction prog using OracleComp.induction generalizing tr with
+  | pure a =>
+    simp only [OracleComp.run_interpret_pure, PMF.monad_pure_eq_pure, PMF.mem_support_pure_iff,
+      Prod.mk.injEq] at hmem
+    rcases hmem with ⟨rfl, rfl⟩
+    exact ⟨fun _ h => h, hnodup, hsupp, fun _ _ => rfl⟩
+  | query_bind q cont ih =>
+    simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+      PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff] at hmem
+    rcases hmem with ⟨⟨ans, tr₁⟩, hans, hcont⟩
+    obtain ⟨hq_mem, hsub₁, hnodup₁, hsupp₁⟩ :=
+      mem_support_memoize_nodup dist q hnodup hsupp hans
+    obtain ⟨hsub₂, hnodup', hsupp', heval⟩ := ih ans hnodup₁ hsupp₁ hcont
+    refine ⟨fun e he => hsub₂ e (hsub₁ e he), hnodup', hsupp', fun h hcons => ?_⟩
+    have hq_eq : h q = ans := hcons (q, ans) (hsub₂ (q, ans) hq_mem)
+    simp only [OracleComp.evalPure_bind, OracleComp.evalPure_query, hq_eq]
+    exact heval h hcons
+
+private theorem mem_support_foldlM_merkleInputsStepProg (dist : List Bool → PMF (List Bool))
+    (path : List (List Bool)) (init : List (List Bool) × ℕ) (hinit : init.1 ≠ [])
+    {tr tr' : List (List Bool × List Bool)} {out : List (List Bool) × ℕ}
+    (hnodup : (tr.map Prod.fst).Nodup)
+    (hsupp : ∀ e ∈ tr, e.2 ∈ (dist e.1).support)
+    (htail_init : ∀ q ∈ init.1.tail, ∃ ans, (q, ans) ∈ tr)
+    (hmem : (out, tr') ∈
+      ((OracleComp.interpret (memoize dist)
+        (path.foldlM merkleInputsStepProg init)).run tr).support) :
+    out.1 ≠ [] ∧ ∀ q ∈ out.1.tail, ∃ ans, (q, ans) ∈ tr' := by
+  induction path generalizing init tr with
+  | nil =>
+    simp only [List.foldlM_nil, OracleComp.run_interpret_pure, PMF.monad_pure_eq_pure,
+      PMF.mem_support_pure_iff, Prod.mk.injEq] at hmem
+    rcases hmem with ⟨rfl, rfl⟩
+    exact ⟨hinit, htail_init⟩
+  | cons sibling rest ih =>
+    simp only [List.foldlM_cons, merkleInputsStepProg, OracleComp.run_interpret_bind,
+      OracleComp.run_interpret_query, OracleComp.run_interpret_pure, PMF.monad_bind_eq_bind,
+      PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hmem
+    rcases hmem with ⟨_, ⟨⟨node, tr₁⟩, hnode, rfl⟩, hrest⟩
+    obtain ⟨hq_mem, hsub₁, hnodup₁, hsupp₁⟩ :=
+      mem_support_memoize_nodup dist (init.1.headD []) hnodup hsupp hnode
+    refine ih _ (List.cons_ne_nil _ _) hnodup₁ hsupp₁ ?_ hrest
+    intro q hq
+    simp only [List.tail_cons] at hq
+    cases hlist : init.1 with
+    | nil => exact False.elim (hinit hlist)
+    | cons hd tl =>
+      rw [hlist, List.headD_cons] at hq_mem
+      rw [hlist] at hq htail_init
+      rcases List.mem_cons.mp hq with rfl | htl
+      · exact ⟨node, hq_mem⟩
+      · obtain ⟨ans, hans⟩ := htail_init q htl
+        exact ⟨ans, hsub₁ _ hans⟩
+
+/-- Running `merkleVerifyProg d root i leaf path` under `memoize dist` records every hash step of
+`merkleInputs` in the final trace `tr'`. -/
+theorem pathQueriedInTrace_of_mem_support_merkleVerifyProg (dist : List Bool → PMF (List Bool))
+    (d : ℕ) (root : List Bool) (i : ℕ) (leaf : List Bool) (path : List (List Bool))
+    {tr tr' : List (List Bool × List Bool)} {ok : Bool}
+    (hnodup : (tr.map Prod.fst).Nodup)
+    (hsupp : ∀ e ∈ tr, e.2 ∈ (dist e.1).support)
+    (hmem : (ok, tr') ∈
+      ((OracleComp.interpret (memoize dist)
+        (merkleVerifyProg d root i leaf path)).run tr).support)
+    {h : List Bool → List Bool} (hcons : TraceConsistentWith h tr') :
+    PathQueriedInTrace (fun _ => h) [] tr' i leaf path := by
+  simp only [merkleVerifyProg, merkleRootOfPathProg, merkleInputsProg,
+    OracleComp.run_interpret_bind, OracleComp.run_interpret_query, OracleComp.run_interpret_pure,
+    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff,
+    PMF.mem_support_pure_iff] at hmem
+  rcases hmem with ⟨⟨cand, tr₂⟩, ⟨_, ⟨⟨⟨inputs, pos⟩, tr₁⟩, hfold, rfl⟩, hcand⟩, rfl, rfl⟩
+  obtain ⟨hsub₁, hnodup₁, hsupp₁, heval₁⟩ :=
+    mem_support_run_memoize_invariant dist (path.foldlM merkleInputsStepProg ([leaf], i))
+      hnodup hsupp hfold
+  obtain ⟨hhead_mem, hsub₂, -, -⟩ :=
+    mem_support_memoize_nodup dist (inputs.headD []) hnodup₁ hsupp₁ hcand
+  have hcons₁ : TraceConsistentWith h tr₁ := fun p hp => hcons p (hsub₂ p hp)
+  have hinputs_eq : inputs = merkleInputs (fun _ => h) [] leaf i path := by
+    have heq := congrArg Prod.fst (heval₁ h hcons₁)
+    simpa [merkleInputs, evalPure_merkleInputsStepProg] using heq
+  obtain ⟨hne, htail⟩ := mem_support_foldlM_merkleInputsStepProg dist path ([leaf], i)
+    (List.cons_ne_nil _ _) hnodup hsupp (by simp) hfold
+  intro q hq
+  rw [← hinputs_eq] at hq
+  cases hlist : inputs with
+  | nil => exact False.elim (hne hlist)
+  | cons hd tl =>
+    rw [hlist, List.headD_cons] at hhead_mem
+    rw [hlist] at hq htail
+    rcases List.mem_cons.mp hq with rfl | htl
+    · have hc : h q = cand := hcons (q, cand) hhead_mem
+      dsimp only
+      rwa [hc]
+    · obtain ⟨ans, hans⟩ := htail q htl
+      have hans' := hsub₂ (q, ans) hans
+      have hc : h q = ans := hcons (q, ans) hans'
+      dsimp only
+      rwa [hc]
 
 /-! ### Part 2: Micali CS Proofs / Non-Interactive Argument in the ROM -/
 
