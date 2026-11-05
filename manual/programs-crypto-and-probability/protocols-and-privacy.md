@@ -182,32 +182,37 @@ from an identification adversary does not supply this signature reduction.
 [`Complexity/Crypto/Protocols/SigmaProtocol/FiatShamirNIZK.lean`](../../Complexity/Crypto/Protocols/SigmaProtocol/FiatShamirNIZK.lean)
 compiles a public-coin `SigmaProtocol X Y T C Z` into a non-interactive proof system
 (`fiatShamirNIZKProve`, `fiatShamirNIZKVerify`) over the statement-bound random-oracle specification
-`NIZKHashSpec Y T C := fun _ : Y × T => C` [bs23][bs23]:
+`NIZKHashSpec Y T C := fun _ : Y × T => C` ([bs23][bs23], Sections 20.3.3–20.3.5):
 
-- **Completeness and statement binding:** `fiatShamirNIZK_complete` proves acceptance with
-  probability `1` (`= PMF.pure true`) from any initial lazy random-oracle cache when `R x y` holds.
-  Querying `H` on `(y, t)` rather than `t` alone is required when statements can be chosen
-  adaptively after querying `H`; a concrete `ZMod 5 × ZMod 5` Schnorr counterexample in
+- **Completeness and statement binding (`Section 20.3.3`):** `fiatShamirNIZK_complete` proves
+  acceptance with probability `1` (`= PMF.pure true`) from any initial lazy random-oracle cache when
+  `R x y` holds. Querying `H` on `(y, t)` rather than `t` alone is required when statements can be
+  chosen adaptively after querying `H`; a concrete `ZMod 5 × ZMod 5` Schnorr counterexample in
   [`ComplexityTests/Crypto/FiatShamirNIZK.lean`](../../ComplexityTests/Crypto/FiatShamirNIZK.lean)
   forges accepted proofs of false statements with probability `4 / 5` under `H(t)` (`Qro = 1`),
   versus the `2 / 5` cap enforced by `H(y, t)`.
-- **Adaptive multi-theorem zero knowledge (`fiatShamirNIZKRealGame`, `fiatShamirNIZKSimGame`):**
-  over `NIZKDistinguisherSpec` (`.inl (x, y)` for proving, `.inr (y, t)` for hashing) with an
-  explicit checker `valid : X → Y → Bool`, invalid queries (`valid x y = false`) return `none`
-  identically without modifying the cache, while valid queries are answered in `fiatShamirNIZKSimGame`
-  by the witness-free programmable-ROM simulator `nizkSimProve simulate`. Under `SpecialHVZK` and
-  `UnpredictableCommitments R δ`, `abs_sub_fiatShamirNIZKRealGame_simGame_le` and
-  `advantage_fiatShamirNIZKRealGame_simGame_le` bound the advantage of any `(Qp, Qro)`-bounded
-  distinguisher by `Qp * (Qp + Qro) * δ`.
-- **ROM proof of knowledge and simulation-extractability:** via `Forking.fork`,
-  `succProbability_fiatShamirNIZKPokGame_le` bounds an explicit-coin `Qro`-hash cheating prover's
-  acceptance probability by `(Qro + 1) / |C| + √((Qro + 1) * ε')` for `fiatShamirNIZKExtract` (with
-  `oneWayGame` and false-statement soundness corollaries). When the adversary also makes up to `Qp`
-  adaptive prove calls and outputs `(y*, (t*, z*))` whose pair `(y*, t*)` was not returned by the
-  prove oracle, `fiatShamirNIZKSimExtractWith` (parameterized by a `SimCoinSource`, with
-  `fiatShamirNIZKSimExtract` using `PMF.pi` over finite `Y` and `linearSimCoinSource` avoiding
-  statement/group finiteness on `SigmaProtocol.linear` and `SigmaProtocol.schnorr`) achieves
-  `ε ≤ Qp * (Qp + Qro) * δ + (Qro + 1) / |C| + √((Qro + 1) * ε')`
+- **Adaptive multi-theorem zero knowledge (`fiatShamirNIZKRealGame`, `fiatShamirNIZKSimGame`; Attack
+  Game 20.3 and Theorem 20.3 / Equation (20.9)):** over `NIZKDistinguisherSpec` (`.inl (x, y)` for
+  proving, `.inr (y, t)` for hashing) with an explicit checker `valid : X → Y → Bool`, invalid
+  queries (`valid x y = false`) return `none` identically without modifying the cache, while valid
+  queries are answered in `fiatShamirNIZKSimGame` by the witness-free programmable-ROM simulator
+  `nizkSimProve simulate`. Whereas Boneh–Shoup's Figure 20.2 simulator returns `fail` when `(y, t)`
+  is already programmed in the oracle table, `nizkSimProve` overwrites `(y, t)` at the head of the
+  association-list cache; the `IdenticalUntilBad` collision hop justifies this overwrite simulator,
+  yielding `abs_sub_fiatShamirNIZKRealGame_simGame_le` and
+  `advantage_fiatShamirNIZKRealGame_simGame_le` (`≤ Qp * (Qp + Qro) * δ`) under `SpecialHVZK` and
+  `UnpredictableCommitments R δ`.
+- **ROM proof of knowledge (`Section 20.3.4`) and derived simulation-extractability:** via
+  `Forking.fork` (Bellare–Neven, Lemma 1), `succProbability_fiatShamirNIZKPokGame_le` bounds an
+  explicit-coin `Qro`-hash cheating prover's acceptance probability by
+  `(Qro + 1) / |C| + √((Qro + 1) * ε')` for `fiatShamirNIZKExtract` (with `oneWayGame` and
+  false-statement soundness corollaries). Combining the Attack Game 20.3 zero-knowledge hop with
+  `SimCoinSource` presampling and Bellare–Neven Lemma 1 yields a derived fresh-pair
+  simulation-extractability reduction: when the adversary also makes up to `Qp` adaptive prove calls
+  and outputs `(y*, (t*, z*))` whose pair `(y*, t*)` was not returned by the prove oracle,
+  `fiatShamirNIZKSimExtractWith` (with `fiatShamirNIZKSimExtract` using `PMF.pi` over finite `Y` and
+  `linearSimCoinSource` avoiding statement/group finiteness on `SigmaProtocol.linear` and
+  `SigmaProtocol.schnorr`) achieves `ε ≤ Qp * (Qp + Qro) * δ + (Qro + 1) / |C| + √((Qro + 1) * ε')`
   (`succProbability_fiatShamirNIZKRealExtGameOn_le`, `succProbability_fiatShamirNIZKRealExtGame_le`).
   All bounds are exact finite probability laws in `OracleComp`; machine-level `IsPPT` efficiency
   bridges for rewinding extractors are separate.

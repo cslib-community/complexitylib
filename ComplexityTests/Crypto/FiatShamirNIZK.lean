@@ -498,7 +498,7 @@ theorem schnorr2D_false_of_snd_ne_zero {y : ZMod 5 × ZMod 5} (hy : y.2 ≠ 0) :
   simp
 
 /-- Buggy Fiat–Shamir verifier that queries the random oracle on the commitment `prf.1` *alone*,
-omitting the statement `y` ([BonehShoup2023], Section 20.5). -/
+omitting the statement `y` ([BonehShoup2023], Section 20.3.3). -/
 def unstatedVerify {X Y T C Z : Type} (P : SigmaProtocol X Y T C Z) (y : Y) (prf : T × Z) :
     OracleComp (fun _ : T => C) Bool :=
   (fun c => P.verify y prf.1 c prf.2) <$> OracleComp.query (spec := fun _ : T => C) prf.1

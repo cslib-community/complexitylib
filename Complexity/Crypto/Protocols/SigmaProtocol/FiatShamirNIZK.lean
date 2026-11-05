@@ -26,48 +26,56 @@ import Complexity.Probability.PMF.Uniform
 /-!
 # Fiat–Shamir non-interactive zero-knowledge proofs of knowledge in the random-oracle model
 
-The Fiat–Shamir transformation ([FiatShamir1986]; [BonehShoup2023], Section 20.5) compiles a
-public-coin Sigma protocol `P : SigmaProtocol X Y T C Z` for a relation `R : X → Y → Prop` into a
-non-interactive proof system in the random-oracle model: given a witness-statement pair `(x, y)`
-and commitment coins `(t, st) ← P.commit x y`, the prover queries a hash oracle `H : Y × T → C` on
-the pair `(y, t)` to obtain the challenge `c` and outputs `(t, P.respond x y st c)`
-(`fiatShamirNIZKProve`); the verifier queries `H` at `(y, t)` and checks `P.verify y t c z`
-(`fiatShamirNIZKVerify`). Binding *both* the statement `y` and the commitment `t` in the hash query
-is essential when statements can be chosen adaptively after querying `H`: hashing `t` alone fails
-soundness on protocols such as Schnorr's where a cheating prover can solve the verification
-equation for `y` after seeing `H(t)`.
+The Fiat–Shamir transformation ([FiatShamir1986]; [BonehShoup2023], Sections 20.3.3–20.3.5)
+compiles a public-coin Sigma protocol `P : SigmaProtocol X Y T C Z` for a relation
+`R : X → Y → Prop` into a non-interactive proof system in the random-oracle model: given a
+witness-statement pair `(x, y)` and commitment coins `(t, st) ← P.commit x y`, the prover queries a
+hash oracle `H : Y × T → C` on the pair `(y, t)` to obtain the challenge `c` and outputs
+`(t, P.respond x y st c)` (`fiatShamirNIZKProve`); the verifier queries `H` at `(y, t)` and checks
+`P.verify y t c z` (`fiatShamirNIZKVerify`). Binding *both* the statement `y` and the commitment `t`
+in the hash query is essential when statements can be chosen adaptively after querying `H`: hashing
+`t` alone fails soundness on protocols such as Schnorr's where a cheating prover can solve the
+verification equation for `y` after seeing `H(t)`.
 
-This module establishes the three core random-oracle security properties of Fiat–Shamir NIZK proofs
-as exact probability laws over `OracleComp`:
+This module establishes the random-oracle security properties of Fiat–Shamir NIZK proofs as exact
+probability laws over `OracleComp`:
 
-1. **Completeness** (`fiatShamirNIZK_complete`, `fiatShamirNIZK_verify_of_prove`): for every
-   `(x, y)` with `R x y` and every initial random-oracle cache `cache`, running honest commitment
-   sampling, `fiatShamirNIZKProve`, and `fiatShamirNIZKVerify` against the lazy uniform random
-   oracle `ROMSignature.oracle C` accepts with probability `1` (`= PMF.pure true`).
+1. **Completeness** (`fiatShamirNIZK_complete`, `fiatShamirNIZK_verify_of_prove`; [BonehShoup2023],
+   Section 20.3.3): for every `(x, y)` with `R x y` and every initial random-oracle cache `cache`,
+   running honest commitment sampling, `fiatShamirNIZKProve`, and `fiatShamirNIZKVerify` against the
+   lazy uniform random oracle `ROMSignature.oracle C` accepts with probability `1`
+   (`= PMF.pure true`).
 2. **Adaptive multi-theorem zero knowledge in the programmable ROM** ([BonehShoup2023], Section
-   20.5, Attack Game 20.5 and Theorem 20.1): an adaptive distinguisher queries `.inl (x, y)` for a
-   proof (validated by an explicit Boolean relation checker `valid : X → Y → Bool` with
-   `∀ x y, valid x y = true → R x y`, returning `none` identically in both experiments when
-   `valid x y = false`) and `.inr (y, t)` for the random oracle. Under `P.SpecialHVZK R simulate`
-   and `δ`-unpredictable commitments (`P.UnpredictableCommitments R δ`, Definition 19.7), replacing
-   honest proving by the witness-free programmable-ROM simulator `nizkSimProve simulate` changes
-   the acceptance probability of any distinguisher making at most `Qp` prove calls and `Qro` hash
-   calls by at most `Qp * (Qp + Qro) * δ` (`abs_sub_fiatShamirNIZKRealGame_simGame_le`,
-   `advantage_fiatShamirNIZKRealGame_simGame_le`).
-3. **ROM proof of knowledge and simulation-extractability** ([BellareNeven2006], Lemma 1;
-   [BonehShoup2023], Sections 19.6.1 and 20.5):
+   20.3.5, Attack Game 20.3, Figure 20.2, and Theorem 20.3 / Equation (20.9)): an adaptive
+   distinguisher queries `.inl (x, y)` for a proof (validated by an explicit Boolean relation
+   checker `valid : X → Y → Bool` with `∀ x y, valid x y = true → R x y`, returning `none`
+   identically in both experiments when `valid x y = false`) and `.inr (y, t)` for the random
+   oracle. Under `P.SpecialHVZK R simulate` and `δ`-unpredictable commitments
+   (`P.UnpredictableCommitments R δ`, Definition 19.7), replacing honest proving by the
+   witness-free programmable-ROM simulator `nizkSimProve simulate` changes the acceptance
+   probability of any distinguisher making at most `Qp` prove calls and `Qro` hash calls by at most
+   `Qp * (Qp + Qro) * δ` (`abs_sub_fiatShamirNIZKRealGame_simGame_le`,
+   `advantage_fiatShamirNIZKRealGame_simGame_le`). Concrete adaptation: whereas Figure 20.2 in
+   [BonehShoup2023] outputs `fail` when a sampled commitment point `(y, t)` is already programmed in
+   the random-oracle table, `nizkSimProve` overwrites `(y, t)` at the head of the association-list
+   cache; the `IdenticalUntilBad` / `toOuterMeasure_bad_le` collision hop directly justifies this
+   overwrite simulator.
+3. **ROM proof of knowledge and derived simulation-extractability**:
    * *Plain ROM proof of knowledge* (`fiatShamirNIZKExtract`,
-     `succProbability_fiatShamirNIZKPokGame_le`): for an explicit-coin cheating prover making at
-     most `Qro` hash calls on statement `y`, the acceptance probability `ε` satisfies
-     `ε ≤ (Qro + 1) / |C| + √((Qro + 1) * ε')`, where `ε'` is the probability that rewinding
-     outputs `some w` with `R w y`.
-   * *Simulation-extractability* (`fiatShamirNIZKSimExtract`,
-     `succProbability_fiatShamirNIZKRealExtGame_le`,
-     `succProbability_fiatShamirNIZKSimExtGame_le`): when an explicit-coin adversary also makes up
-     to `Qp` adaptive prove calls and outputs `(y*, (t*, z*))` whose statement-commitment pair
-     `(y*, t*)` was never returned by the prove oracle (which in particular holds whenever `y*` is
-     a fresh statement), the witness-free rewinding extractor recovers `some (y*, w*)` with
-     `R w* y*` with probability `ε'` satisfying
+     `succProbability_fiatShamirNIZKPokGame_le`; [BonehShoup2023], Section 20.3.4, proved via the
+     general forking inequality of [BellareNeven2006], Lemma 1): for an explicit-coin cheating
+     prover making at most `Qro` hash calls on statement `y`, the acceptance probability `ε`
+     satisfies `ε ≤ (Qro + 1) / |C| + √((Qro + 1) * ε')`, where `ε'` is the probability that
+     rewinding outputs `some w` with `R w y`.
+   * *Derived adaptive multi-theorem simulation-extractability* (`fiatShamirNIZKSimExtractWith`,
+     `fiatShamirNIZKSimExtract`, `succProbability_fiatShamirNIZKRealExtGame_le`,
+     `succProbability_fiatShamirNIZKSimExtGame_le`): derived here by combining our Attack Game 20.3
+     zero-knowledge simulation hop, `SimCoinSource` presampling across forks, and
+     [BellareNeven2006], Lemma 1 (rather than stated as a standalone theorem in [BonehShoup2023]).
+     When an explicit-coin adversary also makes up to `Qp` adaptive prove calls and outputs
+     `(y*, (t*, z*))` whose statement-commitment pair `(y*, t*)` was never returned by the prove
+     oracle (which in particular holds whenever `y*` is a fresh statement), the witness-free
+     rewinding extractor recovers `some (y*, w*)` with `R w* y*` with probability `ε'` satisfying
      `ε ≤ Qp * (Qp + Qro) * δ + (Qro + 1) / |C| + √((Qro + 1) * ε')` against real proofs (and
      `ε ≤ (Qro + 1) / |C| + √((Qro + 1) * ε')` against simulated proofs).
 
@@ -94,9 +102,11 @@ machine-level `IsPPT` efficiency bridges for multi-query rewinding reductions ar
 * `Cslib.Crypto.Protocols.SigmaProtocol.nizkSimProve`,
   `Cslib.Crypto.Protocols.SigmaProtocol.nizkRealHandler`,
   `Cslib.Crypto.Protocols.SigmaProtocol.nizkSimHandler`,
+  `Cslib.Crypto.Protocols.SigmaProtocol.nizkRealExtHandler`,
+  `Cslib.Crypto.Protocols.SigmaProtocol.nizkSimExtHandler`,
   `Cslib.Crypto.Protocols.SigmaProtocol.fiatShamirNIZKRealGame`,
   `Cslib.Crypto.Protocols.SigmaProtocol.fiatShamirNIZKSimGame`: adaptive multi-theorem real and
-  programmable-ROM simulated experiments.
+  programmable-ROM simulated handlers and experiments.
 * `Cslib.Crypto.Protocols.SigmaProtocol.NIZKProver`,
   `Cslib.Crypto.Protocols.SigmaProtocol.fiatShamirNIZKPokGame`,
   `Cslib.Crypto.Protocols.SigmaProtocol.fiatShamirNIZKExtract`,
@@ -154,7 +164,8 @@ machine-level `IsPPT` efficiency bridges for multi-query rewinding reductions ar
 ## References
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
-  Version 0.6][BonehShoup2023], Sections 19.6.1, 19.7, and 20.5.
+  Version 0.6][BonehShoup2023], Sections 19.6.1, 19.7, and 20.3.3–20.3.5 (Attack Game 20.3,
+  Figure 20.2, and Theorem 20.3).
 * [M. Bellare, G. Neven, *Multi-Signatures in the Plain Public-Key Model and a General Forking
   Lemma*][BellareNeven2006], Lemma 1.
 * [A. Fiat, A. Shamir, *How to Prove Yourself: Practical Solutions to Identification and Signature
@@ -172,13 +183,13 @@ variable {X Y T C Z : Type}
 
 /-! ### Non-interactive prover, verifier, and completeness -/
 
-/-- Random-oracle query specification for Fiat–Shamir NIZK proofs ([BonehShoup2023], Section 20.5):
-every challenge query binds both the statement `y : Y` and the commitment `t : T` and returns a
-challenge in `C`. -/
+/-- Random-oracle query specification for Fiat–Shamir NIZK proofs
+([BonehShoup2023], Section 20.3.3): every challenge query binds both the statement `y : Y` and the
+commitment `t : T` and returns a challenge in `C`. -/
 abbrev NIZKHashSpec (Y T C : Type) : OracleSpec (Y × T) :=
   fun _ : Y × T => C
 
-/-- Fiat–Shamir non-interactive prover ([BonehShoup2023], Section 20.5): given witness `x`,
+/-- Fiat–Shamir non-interactive prover ([BonehShoup2023], Section 20.3.3): given witness `x`,
 statement `y`, and commitment coins `(t, st)` sampled from `P.commit x y`, query the random oracle
 at `(y, t)` for the challenge `c` and output `(t, P.respond x y st c)`. -/
 @[expose] def fiatShamirNIZKProve (P : SigmaProtocol X Y T C Z) (x : X) (y : Y)
@@ -186,31 +197,12 @@ at `(y, t)` for the challenge `c` and output `(t, P.respond x y st c)`. -/
   (fun c => (coins.1, P.respond x y coins.2 c)) <$>
     OracleComp.query (spec := NIZKHashSpec Y T C) (y, coins.1)
 
-/-- Fiat–Shamir non-interactive verifier ([BonehShoup2023], Section 20.5): query the random oracle
-at `(y, prf.1)` for the challenge `c` and check `P.verify y prf.1 c prf.2`. -/
+/-- Fiat–Shamir non-interactive verifier ([BonehShoup2023], Section 20.3.3): query the random
+oracle at `(y, prf.1)` for the challenge `c` and check `P.verify y prf.1 c prf.2`. -/
 @[expose] def fiatShamirNIZKVerify (P : SigmaProtocol X Y T C Z) (y : Y) (prf : T × Z) :
     OracleComp (NIZKHashSpec Y T C) Bool :=
   (fun c => P.verify y prf.1 c prf.2) <$>
     OracleComp.query (spec := NIZKHashSpec Y T C) (y, prf.1)
-
-/-- A table entry produced by a call of `oracle C` is found at its queried point. -/
-private theorem lookup_of_mem_support_oracle [DecidableEq Y] [DecidableEq T] [Fintype C]
-    [Nonempty C] {yt : Y × T} {cache : List ((Y × T) × C)}
-    {result : C × List ((Y × T) × C)} (h : result ∈ (oracle C yt cache).support) :
-    result.2.lookup yt = some result.1 := by
-  rcases (RandomOracle.mem_support_memoize_iff _ _ _ _).mp h with ⟨hlookup, hnext⟩ | ⟨_, _, hnext⟩
-  · rw [hnext, hlookup]
-  · rw [hnext, List.lookup_cons_self]
-
-/-- An `oracle C` call adds at most one entry to the cache. -/
-private theorem length_le_of_mem_support_oracle [DecidableEq Y] [DecidableEq T] [Fintype C]
-    [Nonempty C] {yt : Y × T} {cache : List ((Y × T) × C)}
-    {result : C × List ((Y × T) × C)} (h : result ∈ (oracle C yt cache).support) :
-    result.2.length ≤ cache.length + 1 := by
-  rcases (RandomOracle.mem_support_memoize_iff _ _ _ _).mp h with ⟨_, hnext⟩ | ⟨_, _, hnext⟩
-  · rw [hnext]
-    exact Nat.le_succ _
-  · rw [hnext, List.length_cons]
 
 /-- Support-level completeness of Fiat–Shamir NIZK proofs: for any `(x, y)` in `R`, any supported
 commitment coins, and any initial random-oracle cache, every proof produced by
@@ -239,7 +231,7 @@ theorem fiatShamirNIZK_verify_of_prove [DecidableEq Y] [DecidableEq T] [Fintype 
   exact hP.accepts_of_mem_support_commit hxy hcoins r.1
 
 /-- **Perfect completeness** of Fiat–Shamir NIZK proofs in the lazy random-oracle model
-([BonehShoup2023], Section 20.5): for any `(x, y)` satisfying `R x y` and any initial cache
+([BonehShoup2023], Section 20.3.3): for any `(x, y)` satisfying `R x y` and any initial cache
 `cache`, sampling commitment coins, proving, and verifying in sequence against `oracle C` accepts
 with probability `1`. -/
 theorem fiatShamirNIZK_complete [DecidableEq Y] [DecidableEq T] [Fintype C] [Nonempty C]
@@ -275,7 +267,7 @@ theorem UnpredictableCommitments.mono {P : SigmaProtocol X Y T C Z} {R R' : X �
   fun x y hxy t => (h x y (hR x y hxy) t).trans (ENNReal.coe_le_coe.mpr hδ)
 
 /-- Two-channel oracle specification for adaptive multi-theorem Fiat–Shamir NIZK experiments
-([BonehShoup2023], Section 20.5, Attack Game 20.5): `.inl (x, y)` requests a proof for candidate
+([BonehShoup2023], Section 20.3.5, Attack Game 20.3): `.inl (x, y)` requests a proof for candidate
 witness-statement pair `(x, y)` (returning `Option (T × Z)`) and `.inr (y, t)` queries the random
 oracle at `(y, t)` (returning `C`). -/
 abbrev NIZKDistinguisherSpec (X Y T C Z : Type) : OracleSpec ((X × Y) ⊕ (Y × T)) :=
@@ -296,8 +288,9 @@ theorem NIZKCallBounded.isQueryBounded {α : Type}
   (h.1.add h.2).of_le fun q => by cases q <;> simp
 
 /-- Witness-free programmable-ROM proof simulation on statement `y` ([BonehShoup2023], Section
-20.5): sample a uniform challenge `c ← C`, sample `(t, z) ← simulate y c`, program `(y, t) ↦ c` at
-the front of the random-oracle cache, and return `(t, z)`. -/
+20.3.5, adapted from Figure 20.2): sample a uniform challenge `c ← C`, sample
+`(t, z) ← simulate y c`, program `(y, t) ↦ c` at the front of the random-oracle cache (overwriting
+any existing binding rather than returning `fail`), and return `(t, z)`. -/
 @[expose] noncomputable def nizkSimProve [Fintype C] [Nonempty C]
     (simulate : Y → C → PMF (T × Z)) (y : Y) :
     StateT (List ((Y × T) × C)) PMF (T × Z) := fun cache => do
@@ -305,7 +298,7 @@ the front of the random-oracle cache, and return `(t, z)`. -/
   let (t, z) ← simulate y c
   return ((t, z), ((y, t), c) :: cache)
 
-/-- Real multi-theorem NIZK oracle handler ([BonehShoup2023], Attack Game 20.5): invalid witness
+/-- Real multi-theorem NIZK oracle handler ([BonehShoup2023], Attack Game 20.3): invalid witness
 candidates (`valid x y = false`) return `none` without touching the random-oracle cache; valid
 pairs sample honest commitment coins and run `fiatShamirNIZKProve` against `oracle C`. -/
 @[expose] noncomputable def nizkRealHandler [DecidableEq Y] [DecidableEq T] [Fintype C]
@@ -322,8 +315,9 @@ pairs sample honest commitment coins and run `fiatShamirNIZKProve` against `orac
   | .inr yt => oracle C yt
 
 /-- Programmable-ROM simulated multi-theorem NIZK oracle handler ([BonehShoup2023], Attack Game
-20.5): invalid witness candidates (`valid x y = false`) return `none` identically without touching
-the cache; valid pairs run the witness-free simulator `nizkSimProve simulate y`. -/
+20.3, using the overwrite adaptation of Figure 20.2): invalid witness candidates
+(`valid x y = false`) return `none` identically without touching the cache; valid pairs run the
+witness-free simulator `nizkSimProve simulate y`. -/
 @[expose] noncomputable def nizkSimHandler [DecidableEq Y] [DecidableEq T] [Fintype C]
     [Nonempty C] (simulate : Y → C → PMF (T × Z)) (valid : X → Y → Bool) :
     (q : (X × Y) ⊕ (Y × T)) →
@@ -359,7 +353,7 @@ theorem nizkSimHandler_inl_congr [DecidableEq Y] [DecidableEq T] [Fintype C] [No
       nizkSimHandler simulate valid (.inl (x₂, y)) cache := by
   simp only [nizkSimHandler, h]
 
-/-- Real adaptive multi-theorem NIZK experiment ([BonehShoup2023], Attack Game 20.5, Experiment
+/-- Real adaptive multi-theorem NIZK experiment ([BonehShoup2023], Attack Game 20.3, Experiment
 0). -/
 @[expose] noncomputable def fiatShamirNIZKRealGame [DecidableEq Y] [DecidableEq T] [Fintype C]
     [Nonempty C] (P : SigmaProtocol X Y T C Z) (valid : X → Y → Bool)
@@ -368,7 +362,7 @@ theorem nizkSimHandler_inl_congr [DecidableEq Y] [DecidableEq T] [Fintype C] [No
   return b
 
 /-- Simulated adaptive multi-theorem NIZK experiment in the programmable random-oracle model
-([BonehShoup2023], Attack Game 20.5, Experiment 1). -/
+([BonehShoup2023], Attack Game 20.3, Experiment 1, with the overwrite simulator `nizkSimProve`). -/
 @[expose] noncomputable def fiatShamirNIZKSimGame [DecidableEq Y] [DecidableEq T] [Fintype C]
     [Nonempty C] (simulate : Y → C → PMF (T × Z)) (valid : X → Y → Bool)
     (D : OracleComp (NIZKDistinguisherSpec X Y T C Z) Bool) : Game := do
@@ -786,7 +780,8 @@ private theorem extHandlers_bind_apply_le [DecidableEq Y] [DecidableEq T] [Finty
       (add_le_add le_rfl (toOuterMeasure_flag_le_nizk hvalid hUnpred hcall))
 
 /-- **Adaptive multi-theorem zero knowledge** of Fiat–Shamir NIZK proofs in the programmable
-random-oracle model ([BonehShoup2023], Section 20.5, Theorem 20.1): under `SpecialHVZK` and
+random-oracle model ([BonehShoup2023], Section 20.3.5, Theorem 20.3 / Equation (20.9), adapted via
+`IdenticalUntilBad` to the overwrite simulator `nizkSimProve`): under `SpecialHVZK` and
 `δ`-unpredictable commitments, any adaptive distinguisher making at most `Qp` prove calls and `Qro`
 direct hash calls distinguishes `fiatShamirNIZKRealGame` from `fiatShamirNIZKSimGame` with
 acceptance-probability difference at most `Qp * (Qp + Qro) * δ`. -/
@@ -819,7 +814,7 @@ theorem abs_sub_fiatShamirNIZKRealGame_simGame_le [DecidableEq Y] [DecidableEq T
   exact abs_sub_extHandlers_bind_le hvalid hHVZK hUnpred hD (fun (b, _) => PMF.pure b) true
 
 /-- `Game.advantage` form of **adaptive multi-theorem Fiat–Shamir NIZK zero knowledge**
-([BonehShoup2023], Section 20.5, Theorem 20.1). -/
+([BonehShoup2023], Section 20.3.5, Theorem 20.3 / Equation (20.9)). -/
 theorem advantage_fiatShamirNIZKRealGame_simGame_le [DecidableEq Y] [DecidableEq T] [Fintype C]
     [Nonempty C] {P : SigmaProtocol X Y T C Z} {R : X → Y → Prop}
     {simulate : Y → C → PMF (T × Z)} {valid : X → Y → Bool} {δ : ℝ≥0}
@@ -928,15 +923,6 @@ private noncomputable def presampledHandler [DecidableEq Y] [DecidableEq T] [Fin
 private def represent {S : Type} (st : ReductionState Y T C S) : ExtGameState Y T C × List S :=
   ((st.table.map fun e => (e.1, e.2.1), st.proved), st.samples)
 
-private theorem lookup_map_table [DecidableEq Y] [DecidableEq T]
-    (table : List ((Y × T) × C × Option ℕ)) (yt : Y × T) :
-    (table.map fun e => (e.1, e.2.1)).lookup yt = (table.lookup yt).map Prod.fst := by
-  induction table with
-  | nil => rfl
-  | cons e rest ih =>
-    obtain ⟨k, b⟩ := e
-    cases hxk : yt == k <;> simp [List.lookup_cons, hxk, ih]
-
 private theorem run_interpret_countingUniform_pure [Fintype C] [Nonempty C] {β : Type}
     (b : β) (n : ℕ) :
     (interpret countingUniform (pure b : OracleComp (NIZKHashSpec Y T C) β)).run n =
@@ -1007,7 +993,7 @@ private theorem combined_step [DecidableEq Y] [DecidableEq T] [Fintype C] [Nonem
     cases h : s.1.table.lookup yt with
     | some e =>
       have hcache : (represent s.1).1.1.lookup yt = some e.1 := by
-        rw [represent, lookup_map_table, h]
+        rw [represent, List.lookup_map_snd, h]
         rfl
       rw [run_reductionHandler_inr_some valid fallback simEval h]
       simp only [run_interpret_countingUniform_pure, PMF.monad_map_eq_map, PMF.pure_map,
@@ -1017,7 +1003,7 @@ private theorem combined_step [DecidableEq Y] [DecidableEq T] [Fintype C] [Nonem
       rfl
     | none =>
       have hcache : (represent s.1).1.1.lookup yt = none := by
-        rw [represent, lookup_map_table, h]
+        rw [represent, List.lookup_map_snd, h]
         rfl
       rw [run_reductionHandler_inr_none valid fallback simEval h]
       simp only [interpret_map, interpret_query, StateT.run_map, PMF.monad_map_eq_map,
@@ -1046,7 +1032,7 @@ private theorem map_run_finish [DecidableEq Y] [DecidableEq T] [Fintype C] [None
   cases h : st.table.lookup (y, t) with
   | some e =>
     have hcache : (represent st).1.1.lookup (y, t) = some e.1 := by
-      rw [represent, lookup_map_table, h]
+      rw [represent, List.lookup_map_snd, h]
       rfl
     simp only [finish, h, run_interpret_countingUniform_pure, PMF.pure_map, finishExtGame, verdict]
     rw [oracle, memoize_of_some _ _ _ _ hcache]
@@ -1054,7 +1040,7 @@ private theorem map_run_finish [DecidableEq Y] [DecidableEq T] [Fintype C] [None
     rfl
   | none =>
     have hcache : (represent st).1.1.lookup (y, t) = none := by
-      rw [represent, lookup_map_table, h]
+      rw [represent, List.lookup_map_snd, h]
       rfl
     simp only [finish, h, interpret_map, interpret_query, StateT.run_map, PMF.monad_map_eq_map,
       finishExtGame, verdict]
@@ -1340,9 +1326,9 @@ private def plainForkingProg [DecidableEq Y] [DecidableEq T] (P : SigmaProtocol 
   FiatShamirNIZK.forkingProg P' (fun e _ => e.elim) () (fun _ e => e.elim)
     (fun y' => decide (y' = y)) (liftPlainProve y (A.prove y s)) []
 
-/-- **Plain ROM knowledge extractor** ([BellareNeven2006], Lemma 1; [BonehShoup2023], Section
-20.5): fork `A` across its at most `Qro + 1` hash queries on statement `y` and apply `extract` to
-the two accepting transcripts when the fork succeeds. -/
+/-- **Plain ROM knowledge extractor** ([BonehShoup2023], Section 20.3.4; rewinding via
+[BellareNeven2006], Lemma 1): fork `A` across its at most `Qro + 1` hash queries on statement `y`
+and apply `extract` to the two accepting transcripts when the fork succeeds. -/
 noncomputable def fiatShamirNIZKExtract [DecidableEq Y] [DecidableEq T] [Fintype C]
     [Nonempty C] [DecidableEq C] {W : Type}
     (P : SigmaProtocol X Y T C Z) (extract : Y → T → C → Z → C → Z → W)
@@ -1447,11 +1433,11 @@ private theorem fork_plain_le_extractGame [DecidableEq Y] [DecidableEq T] [Finty
     obtain ⟨⟨_, o'⟩, _⟩ := out'
     simp [hR]
 
-/-- **Plain ROM proof of knowledge** for Fiat–Shamir NIZK proofs ([BellareNeven2006], Lemma 1;
-[BonehShoup2023], Section 20.5): if `P` is special sound at `y` with extractor `extract` and `A`
-makes at most `Qro` hash calls on `y`, then `A`'s acceptance probability `ε` satisfies
-`ε ≤ (Qro + 1) / |C| + √((Qro + 1) * ε')`, where `ε'` is the probability that
-`fiatShamirNIZKExtract P extract A Qro y` outputs `some w` with `R w y`. -/
+/-- **Plain ROM proof of knowledge** for Fiat–Shamir NIZK proofs ([BonehShoup2023], Section 20.3.4,
+proved via the general forking inequality of [BellareNeven2006], Lemma 1): if `P` is special sound
+at `y` with extractor `extract` and `A` makes at most `Qro` hash calls on `y`, then `A`'s
+acceptance probability `ε` satisfies `ε ≤ (Qro + 1) / |C| + √((Qro + 1) * ε')`, where `ε'` is the
+probability that `fiatShamirNIZKExtract P extract A Qro y` outputs `some w` with `R w y`. -/
 theorem succProbability_fiatShamirNIZKPokGame_le [DecidableEq Y] [DecidableEq T] [Fintype C]
     [Nonempty C] [DecidableEq C] {W : Type} {P : SigmaProtocol X Y T C Z} {R : W → Y → Prop}
     [∀ w y, Decidable (R w y)] {extract : Y → T → C → Z → C → Z → W}
@@ -1686,7 +1672,8 @@ private noncomputable def simForkCoins [Fintype C] [Nonempty C]
   return (s, samples)
 
 /-- **Witness-free simulation-extractability rewinding extractor** parameterized by an explicit
-`SimCoinSource` ([BellareNeven2006], Lemma 1; [BonehShoup2023], Section 20.5). -/
+`SimCoinSource` (derived adaptive multi-theorem reduction combining `SimCoinSource` presampling with
+[BellareNeven2006], Lemma 1). -/
 noncomputable def fiatShamirNIZKSimExtractWith [DecidableEq Y] [DecidableEq T]
     [Fintype C] [Nonempty C] [DecidableEq C] {W : Type}
     {simulate : Y → C → PMF (T × Z)} (P : SigmaProtocol X Y T C Z)
@@ -1831,10 +1818,11 @@ private theorem fork_sim_le_simExtractGame [DecidableEq Y] [DecidableEq T] [Fint
     obtain ⟨⟨_, o'⟩, _⟩ := out'
     simp [hadm, hR]
 
-/-- **Simulation-extractability against simulated proofs** (general `SimCoinSource` and
-`admissible` form): without needing commitment unpredictability or `SpecialHVZK`, an adaptive
-adversary making at most `Qp` prove calls and `Qro` hash calls wins `fiatShamirNIZKSimExtGameOn`
-with probability at most `(Qro + 1) / |C| + √((Qro + 1) * ε')`. -/
+/-- **Derived simulation-extractability against simulated proofs** (general `SimCoinSource` and
+`admissible` form, via `SimCoinSource` presampling and [BellareNeven2006], Lemma 1): without
+needing commitment unpredictability or `SpecialHVZK`, an adaptive adversary making at most `Qp`
+prove calls and `Qro` hash calls wins `fiatShamirNIZKSimExtGameOn` with probability at most
+`(Qro + 1) / |C| + √((Qro + 1) * ε')`. -/
 theorem succProbability_fiatShamirNIZKSimExtGameOn_le [DecidableEq Y] [DecidableEq T]
     [Fintype C] [Nonempty C] [DecidableEq C] {W : Type} {P : SigmaProtocol X Y T C Z}
     {R : W → Y → Prop} [∀ w y, Decidable (R w y)]
@@ -1894,11 +1882,12 @@ theorem succProbability_fiatShamirNIZKSimExtGame_le [DecidableEq Y] [DecidableEq
   succProbability_fiatShamirNIZKSimExtGameOn_le hsound (SimCoinSource.ofFintype simulate)
     valid (fun _ => true) hA
 
-/-- **Adaptive multi-theorem proof of knowledge (simulation-extractability) against real proofs**
-(general `SimCoinSource` and `admissible` form): under `SpecialSoundness`, `SpecialHVZK`, and
-`UnpredictableCommitments R_honest δ`, an adversary making at most `Qp` prove calls and `Qro` hash
-calls wins `fiatShamirNIZKRealExtGameOn` with probability at most
-`Qp * (Qp + Qro) * δ + (Qro + 1) / |C| + √((Qro + 1) * ε')`. -/
+/-- **Derived adaptive multi-theorem proof of knowledge (simulation-extractability) against real
+proofs** (general `SimCoinSource` and `admissible` form, combining the Attack Game 20.3 / Theorem
+20.3 zero-knowledge hop with `SimCoinSource` presampling and [BellareNeven2006], Lemma 1): under
+`SpecialSoundness`, `SpecialHVZK`, and `UnpredictableCommitments R_honest δ`, an adversary making
+at most `Qp` prove calls and `Qro` hash calls wins `fiatShamirNIZKRealExtGameOn` with probability
+at most `Qp * (Qp + Qro) * δ + (Qro + 1) / |C| + √((Qro + 1) * ε')`. -/
 theorem succProbability_fiatShamirNIZKRealExtGameOn_le [DecidableEq Y] [DecidableEq T]
     [Fintype C] [Nonempty C] [DecidableEq C] {W : Type} {P : SigmaProtocol X Y T C Z}
     {R_honest : X → Y → Prop} {R : W → Y → Prop} [∀ w y, Decidable (R w y)]
@@ -1946,8 +1935,9 @@ theorem succProbability_fiatShamirNIZKRealExtGameOn_le [DecidableEq Y] [Decidabl
     linarith
   linarith
 
-/-- **Adaptive multi-theorem simulation-extractability** of Fiat–Shamir NIZK proofs in the
-random-oracle model ([BellareNeven2006], Lemma 1; [BonehShoup2023], Section 20.5). -/
+/-- **Derived adaptive multi-theorem simulation-extractability** of Fiat–Shamir NIZK proofs in the
+random-oracle model (combining the Attack Game 20.3 / Theorem 20.3 zero-knowledge hop with
+[BellareNeven2006], Lemma 1). -/
 theorem succProbability_fiatShamirNIZKRealExtGame_le [DecidableEq Y] [DecidableEq T]
     [Fintype Y] [Finite T] [Finite Z] [Fintype C] [Nonempty C] [DecidableEq C] {W : Type}
     {P : SigmaProtocol X Y T C Z} {R_honest : X → Y → Prop} {R : W → Y → Prop}
