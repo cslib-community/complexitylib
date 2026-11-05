@@ -683,7 +683,7 @@ theorem weakOneWay_reindex_liuPassCore
     intro y hy
     have hlen : y.length = n := BitString.length_of_mem_support_uniformList hy
     simp [hlen, B, PMF.map, Function.comp_def]
-  rw [hdistH_eq] at hn_H
+  rw [PMF.monad_bind_eq_bind, hdistH_eq] at hn_H
   have hsumH := PMF.toReal_true_add_toReal_false distH
   have hsumA := PMF.toReal_true_add_toReal_false distA
   have hfailH_ge : 1 / ((p.eval n : ℕ) : ℝ) ≤ (distH false).toReal := by linarith
