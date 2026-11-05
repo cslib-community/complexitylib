@@ -147,15 +147,17 @@ families and full-input native runtime.
   2012); strict-PPT samplers for integer boxes; identification security under SIS; efficiency
   certificates for the simulator and extractor; full interactive-view simulation;
   Dilithium-style signature schemes over module SIS and module LWE, as theory.
-- **Hybrid encryption:** prove modular KEM–DEM CCA composition (Boneh–Shoup Exercise 12.5(a)).
-  Canonical `hybridDecrypt` rejects malformed pair encodings and propagates Option-valued
-  component failures ([#2692](https://github.com/cslib-community/complexitylib/issues/2692)).
-  The exact DEM leg ([#2694](https://github.com/cslib-community/complexitylib/issues/2694)) now
-  uses the symmetric cipher's actual key sampler and its existing one-time CCA game, with
-  a native loss-one reduction for `n`-bit messages and prechallenge decryption queries.
-  Two KEM hops and compatible key distributions/key postprocessing remain open; encoded
-  Encrypt-then-MAC keys are not uniform over all words of their encoded length. Adaptive
-  decapsulation security of a KEM alone does not supply the composition.
+- **Hybrid encryption:** the `n`-bit-message modular KEM–DEM adaptive CCA endpoint
+  ([#2725](https://github.com/cslib-community/complexitylib/issues/2725), Boneh–Shoup
+  Exercise 12.5(a)) now proves both KEM hops and the factor-two bound with native reductions
+  into the existing KEM and one-time symmetric CCA games. It reuses canonical Option-valued
+  decryption ([#2692](https://github.com/cslib-community/complexitylib/issues/2692)) and the
+  actual-key DEM leg ([#2694](https://github.com/cslib-community/complexitylib/issues/2694)).
+  A native key postprocessor must map uniform seeds exactly to the actual DEM key sampler;
+  saved-coins and PRF Encrypt-then-MAC `3*n`-bit clients are checked. Perfect correctness
+  separately requires supported postprocessed real keys. Arbitrary message-space extension,
+  prechallenge KEM queries and multiple encapsulation challenges remain open; this endpoint
+  does not claim unrestricted word-message CCA security.
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.

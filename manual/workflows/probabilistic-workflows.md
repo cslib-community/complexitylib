@@ -144,9 +144,27 @@ The native reduction certificate charges both adaptive phases and bounds every e
 The [checked clients](../../ComplexityTests/Crypto/HybridDEMCCA.lean) apply the result to the
 existing PRF Encrypt-then-MAC cipher, expose an insecure echo cipher, and run a zero-width
 prechallenge/challenge/postchallenge trace. They distinguish an empty encryption reply from an
-encoded successful empty plaintext. This is an intermediate-game result: the two KEM hops and
-ideal-key distribution compatibility still remain. In particular, the Encrypt-then-MAC sampler
-frames an `n`-bit encryption key with a `2*n`-bit MAC key; its `4*n+1` encoded bits are not uniform.
+encoded successful empty plaintext.
+
+For the complete `n`-bit-message composition, import
+[`Hybrid/CompositionCCA.lean`](../../Complexity/Crypto/Computational/Encryption/Hybrid/CompositionCCA.lean)
+and apply `hybrid_indcca2On`. Supply the existing KEM CCA indistinguishability assumption,
+`E.OneTimeINDCCA`, native algorithms, supported KEM correctness, and a native postprocessor
+`F` satisfying `(uniformList (keyLen n)).map (F n) = eval (E.keyGen n)` for every `n`.
+Postprocess every successful decapsulation with `Option.map (F n)` too. The conclusion uses
+`INDCCA2On` with both challenge lengths equal to `n`, not unrestricted `WordINDCCA2`.
+`exists_hybridCCA_reductions` returns native KEM and symmetric adversaries and the exact
+`2 * KEM advantage + symmetric advantage` bound. Reply caps are derived from supported
+secret-key lengths and the native decryptor; external replies need no assumed length bound.
+
+The [complete composition clients](../../ComplexityTests/Crypto/HybridCompositionCCA.lean)
+use `IsPPTOn.exists_total_seeded_evaluator` for arbitrary actual key generators and split `3*n`
+uniform bits into the PRF Encrypt-then-MAC cipher's actual framed keys. Those keys have encoded
+length `4*n+1` and are not uniform words of that length. For perfect correctness, apply
+`hybridDecrypt_postprocessed_hybridEncrypt` with a supported-real-key premise: the total evaluator
+provides it for every seed, while the simple split map needs real keys of length `3*n`.
+The clients also distinguish failed decapsulation from accepted empty keys, detect omitted
+postprocessing on forwarded replies, and exhibit a failed real hop without KEM correctness.
 
 ## Certify a list accumulator
 

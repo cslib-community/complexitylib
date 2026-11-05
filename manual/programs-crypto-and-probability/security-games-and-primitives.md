@@ -117,7 +117,7 @@ Starting with the imports and local context in [`ComplexityTests/Crypto/HybridEn
 
 For adaptive decapsulation security, import [`KEMFromPKE/CCA.lean`](../../Complexity/Crypto/Computational/Encryption/KEMFromPKE/CCA.lean) and apply `WordINDCCA2.indistinguishable_encryptKeyEncaps` (Boneh–Shoup v0.6, Exercise 12.5(f), p. 514 [bs23][bs23]). The result uses `Game.Indistinguishable` over `kemCCARealGame` and `kemCCAIdealGame`, with the existing `IsOraclePPT` adversaries. Both games share the CPA sampling continuations and use `cca2Phase2Oracle` to reject the exact challenge word. The reduction preserves advantage exactly, samples two equal-length keys, and forwards postchallenge queries unchanged. It requires a unary polynomial-time `keyLen`; honest algorithm certificates and supported-output correctness are separate. Here the original option-valued decryptor is retained, so `some []` denotes successful empty-key decapsulation and `none` denotes rejection.
 
-The [checked CCA KEM clients](../../ComplexityTests/Crypto/KEMFromPKECCA.lean) instantiate doubled key length, an unconditional correct zero-width KEM, and a reply-dependent tag-flipping attack with advantage `1 - 2^(-keyLen n)`. The attack fixture is correctly decryptable but insecure; it makes no CPA-security claim. Its native oracle certificate bounds reply reading, and the honest-game certificate charges decryption. This endpoint covers one encapsulation followed by adaptive queries; full KEM–DEM CCA composition, prechallenge KEM queries and multiple encapsulation challenges remain separate objectives.
+The [checked CCA KEM clients](../../ComplexityTests/Crypto/KEMFromPKECCA.lean) instantiate doubled key length, an unconditional correct zero-width KEM, and a reply-dependent tag-flipping attack with advantage `1 - 2^(-keyLen n)`. The attack fixture is correctly decryptable but insecure; it makes no CPA-security claim. Its native oracle certificate bounds reply reading, and the honest-game certificate charges decryption. This KEM endpoint covers one encapsulation followed by adaptive queries. The composition below uses this schedule; prechallenge KEM queries and multiple encapsulation challenges remain separate objectives.
 
 The canonical `hybridDecrypt` now takes Option-valued decapsulation and symmetric decryption,
 rejects noncanonical ciphertext-pair encodings, and propagates component failures. Its supported
@@ -137,10 +137,26 @@ Canonical framing makes component-level challenge rejection agree with exact wor
 
 The [checked clients](../../ComplexityTests/Crypto/HybridDEMCCA.lean) include the existing PRF
 Encrypt-then-MAC construction, a full-advantage echo-cipher counterexample, and a zero-width
-adaptive trace distinguishing `none` from `some []`. The full composition bound still requires
-two KEM steps and key-distribution compatibility. Encoded Encrypt-then-MAC keys are framed
-pairs with `3*n` random bits and encoded length `4*n+1`, so they cannot be replaced by uniform
-words of that encoded length.
+adaptive trace distinguishing `none` from `some []`.
+
+[`Hybrid/CompositionCCA.lean`](../../Complexity/Crypto/Computational/Encryption/Hybrid/CompositionCCA.lean)
+completes both KEM hops and Exercise 12.5(a)'s concrete bound for this `n`-bit-message model:
+`exists_hybridCCA_reductions` supplies native adversaries with hybrid advantage at most twice
+the KEM advantage plus the actual symmetric CCA advantage. The hidden-bit reduction's signed
+probability identities precede the absolute-value bound. `hybrid_indcca2On` gives the asymptotic
+endpoint using existing `INDCCA2On`, and `isPPTOn_hybridCCAGame` certifies the honest experiment.
+No new encryption scheme or security predicate is introduced.
+
+The postprocessor `F` must take uniform `keyLen n`-bit seeds to exactly the distribution of
+`E.keyGen n`, with one native algorithm for all parameters. The
+[checked clients](../../ComplexityTests/Crypto/HybridCompositionCCA.lean) instantiate an actual
+CCA-secure PKE's encrypted-key KEM with the PRF Encrypt-then-MAC cipher. Its `3*n` random bits
+produce framed keys of encoded length `4*n+1`, not uniform encoded words. A general total
+saved-coins client uses the existing evaluator theorem and returns supported keys on every seed.
+Supported KEM correctness justifies the real-hop sampling commutation; perfect hybrid correctness
+additionally checks support of the postprocessed real key. Tests expose the failure without that
+KEM premise, and show that a perfect zero-width KEM with the insecure echo DEM remains insecure.
+Arbitrary message-space extension and stronger KEM query schedules remain separate.
 
 ## Authentication, signatures, and state
 
