@@ -227,6 +227,9 @@ def main():
 
     base.transform = transform
     revision, dirty = git('rev-parse', 'HEAD'), bool(git('status', '--porcelain'))
+    base.SOURCE_REVISION = revision
+    base.SOURCE_PATHS = set(git('ls-tree', '-r', '-t', '-z', '--name-only', revision).split('\0'))
+    base.CHANGED_PATHS = set(git('diff', '--name-only', '-z', revision, '--').split('\0'))
     parts, inputs, figure_outputs = [preamble(revision, dirty, agent=args.agent_manual)], {}, {}
     for relative in files:
         if not args.agent_manual and relative == WORKFLOWS[0]:
