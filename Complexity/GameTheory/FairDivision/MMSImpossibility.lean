@@ -44,7 +44,8 @@ splits of S and its complement. All finite checking uses kernel `decide`.
 
 ## References
 
-* [T. Ezra and T. Garbuz, *Improved Impossibility Bounds for Maximin Share Allocations*][EzraGarbuz2027],
+* [T. Ezra and T. Garbuz, *Improved Impossibility Bounds for Maximin Share Allocations*]
+  [EzraGarbuz2027],
   Theorem 2, PDF p. 13, with the finite certificate in Appendix B.
 -/
 
