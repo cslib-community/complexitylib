@@ -227,6 +227,10 @@ families and full-input native runtime.
   actual group elements and scalar sampling is ideal; native adapter composition,
   key-generation/signing approximation transport and the complete efficient forking reduction
   remain open under [#2568].
+- **Fiat–Shamir reduction failure output** ([#2774](https://github.com/cslib-community/complexitylib/issues/2774)):
+  the existing reduction and quantitative bound accept an explicit fallback; Schnorr uses zero.
+  Native fork execution, transcript/answer nonexhaustion and actual simulator-sampling transport
+  remain prerequisites for [#2568].
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
