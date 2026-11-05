@@ -244,7 +244,9 @@ private theorem merkleInputs_append (leaf : List Bool) (i : ℕ) (path : List (L
       merkleInputsStep H k (path.foldl (merkleInputsStep H k) ([leaf], i)) sibling :=
   List.foldl_concat _ _ _ _
 
-private theorem snd_foldl_merkleInputsStep (leaf : List Bool) (i : ℕ) (path : List (List Bool)) :
+/-- After folding `merkleInputsStep` along `path` from `(leaf, i)`, the position component is
+`i / 2 ^ path.length`. -/
+theorem snd_foldl_merkleInputsStep (leaf : List Bool) (i : ℕ) (path : List (List Bool)) :
     (path.foldl (merkleInputsStep H k) ([leaf], i)).2 = i / 2 ^ path.length := by
   induction path using List.reverseRecOn with
   | nil => simp
