@@ -86,6 +86,13 @@ Priorities live in this list and in the tiers of [#897].
   series, arbitrary-modulus search-LWE sampling experiment, efficient finite-precision sampling
   and quantum reduction remain open in
   [#1213](https://github.com/cslib-community/complexitylib/issues/1213).
+  Exact coefficient-fiber disintegration is proved in
+  [#2766](https://github.com/cslib-community/complexitylib/issues/2766): reducing integer basis
+  coordinates modulo any positive integer, including composite moduli, gives actual positive
+  residue masses and filtered coset Gaussians. Tagged samples reconstruct with the actual
+  marginal weights. The joint LWE sample bound of Lemma 3.11 remains separate in
+  [#2767](https://github.com/cslib-community/complexitylib/issues/2767); no uniform-residue or
+  efficient-sampling claim follows from disintegration alone.
 - **Kilian's succinct arguments** ([#999]). If collision-resistant hash families exist, every
   language in NP has an interactive argument with polylogarithmic communication, by committing
   to a PCP with Merkle trees; Micali's CS proofs and the BCS transform give the random-oracle

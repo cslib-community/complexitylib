@@ -3367,6 +3367,7 @@ public import Complexity.DataStructure.WordRAM.Randomized.StateTransition
 public import Complexity.DataStructure.WordRAM.StateTransition
 public import Complexity.Foundations.Algebra.FiniteMagnitude
 public import Complexity.Foundations.Algebra.GeometricTail
+public import Complexity.Foundations.Algebra.Module.ZLattice.CoefficientFiber
 public import Complexity.Foundations.Algebra.Shear
 public import Complexity.Foundations.Analysis.Asymptotics.CostBound
 public import Complexity.Foundations.Analysis.Asymptotics.Exponential
@@ -3893,6 +3894,7 @@ public import Complexity.Foundations.Probability.FineProductMean
 public import Complexity.Foundations.Probability.FourthRootHierarchyParams
 public import Complexity.Foundations.Probability.Gaussian.CenteredTail
 public import Complexity.Foundations.Probability.Gaussian.Convolution
+public import Complexity.Foundations.Probability.Gaussian.CoefficientFiber
 public import Complexity.Foundations.Probability.Gaussian.Discrete
 public import Complexity.Foundations.Probability.Gaussian.DiscreteTail
 public import Complexity.Foundations.Probability.Gaussian.Fourier
