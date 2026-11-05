@@ -2996,6 +2996,7 @@ public import Complexity.Crypto.Computational.IndexedSignature.Double
 public import Complexity.Crypto.Computational.IndexedSignature.Seeded
 public import Complexity.Crypto.Computational.Kilian
 public import Complexity.Crypto.Computational.Kilian.Micali
+public import Complexity.Crypto.Computational.Kilian.MicaliSoundness
 public import Complexity.Crypto.Computational.Kilian.NP
 public import Complexity.Crypto.Computational.Kilian.Soundness
 public import Complexity.Crypto.Computational.Kilian.Succinct
