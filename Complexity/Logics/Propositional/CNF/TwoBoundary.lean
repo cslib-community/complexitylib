@@ -37,13 +37,21 @@ counting only variables occurring in clauses. The CNF construction traverses exp
 lists; no native-machine polynomial-time implementation is claimed here. The zero-predicate
 case uses the base CNF itself. This endpoint does not import or formalize the paper's
 external subexponential SAT theorem, row-selection algorithm or exact-one applications.
+
+## Main definitions
+
+* `query`, `predicate`: ordinary CNF boundary queries and explicit DNF predicates.
+
+## References
+
+* [ChenJiangZhu2027], Theorem 1.1 and Section 4.1, PDF pp. 4–5 and 12.
 -/
 
 public section
 
 namespace Cslib.Logic.PL.TwoBoundary
 
-variable {V W : Type*}
+variable {V W : Type*} {r : ℕ}
 
 /-- A variable or a Boolean constant. -/
 @[expose] def atomEval (σ : W → Bool) : Bool ⊕ W → Bool := Sum.elim id σ
@@ -62,8 +70,11 @@ theorem lowerClause_eval (σ : W → Bool) (c : List ((Bool ⊕ W) × Bool)) :
     rcases l with ⟨a, b⟩
     cases a with
     | inl t =>
-      cases t <;> cases b <;>
-        simp_all [lowerClause, atomEval, CNF.eval] <;> exact ih
+      cases t <;> cases b
+      · simp [lowerClause, atomEval, CNF.eval]
+      · exact ih
+      · exact ih
+      · simp [lowerClause, atomEval, CNF.eval]
     | inr w =>
       cases h : c.any (fun l => match l.1 with | .inl b => b == l.2 | .inr _ => false) <;>
         simp_all +decide [lowerClause, atomEval, CNF.eval, Clause.eval, Literal.eval]

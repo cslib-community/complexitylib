@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
+public import Complexity.Statistics.LeastSquares.NonRange
 import all Complexity.Statistics.LeastSquares.NonRange
 import Mathlib.Tactic.NormNum
 
@@ -14,7 +15,7 @@ import Mathlib.Tactic.NormNum
 
 open Cslib.LeastSquares.NonRange
 
-example : ¬ IsRange retained := not_range
+public theorem optimum_not_range : ¬ IsRange retained := not_range
 
 example : IsRange ∅ := by
   refine ⟨![0, 0, 0, 1], fun i => ?_⟩

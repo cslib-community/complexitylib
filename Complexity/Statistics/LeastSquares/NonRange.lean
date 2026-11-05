@@ -30,6 +30,19 @@ The finite comparisons and general-position certificates use kernel computation.
 The nonseparation result quantifies over all real plane coefficients and follows from
 the source's exact affine dependence. No floating-point computation is used.
 This endpoint does not assert the paper's general rounding or audit algorithms.
+
+## Main definitions
+
+* `point`, `retained`, `scatter`: the exact rational instance and centered cross-scatter.
+* `planeValue`, `IsRange`: real affine-plane evaluation and its selected finite range.
+
+## Main results
+
+* `nonrange_optimum`: the explicit unique optimum is not selected by any lifted plane.
+
+## References
+
+* [XuGaoHu2027], Theorem 5.4, PDF p. 12 (printed p. 10).
 -/
 
 public section

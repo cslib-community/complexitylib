@@ -7,13 +7,13 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-import Complexity.GameTheory.FacilityLocation.QuarterQCD
+public import Complexity.GameTheory.FacilityLocation.QuarterQCD
 
 /-! Regression clients for the actual normalized quarter-QCD mechanism. -/
 
 open Cslib.FacilityLocation.QuarterQCD
 
-example : cost 1 3 4 0 < cost 0 3 4 0 := quarterQCD_counterexample.2.1
+public theorem profitable_deviation : cost 1 3 4 0 < cost 0 3 4 0 := quarterQCD_counterexample.2.1
 
 example : ∀ t : ℝ, 0 ≤ t → t < 8 → 4 ≤ socialCost 0 3 4 t := witness_optimum.2
 

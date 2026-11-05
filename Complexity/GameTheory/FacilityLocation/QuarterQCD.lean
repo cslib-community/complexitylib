@@ -29,6 +29,16 @@ quarter-QCD, not a formalization of the paper's mechanism search or its other re
 The source's unit circle is scaled by eight, so the weight floor is four.
 The original rule is [Meir2019Circle], Definition 3.1;
 its strategyproofness and ratio claims are Theorem 3.2 and Proposition 3.3.
+
+## Main definitions
+
+* `circleDist`, `weights`, `cost`: canonical shorter-arc distance and the actual normalized rule.
+* `socialCost`, `Strategyproof`: facility cost and the ordered-report incentive contract.
+
+## References
+
+* [RogowskiDziubinski2027], Remark P.1, PDF pp. 50–51.
+* [Meir2019Circle], Definition 3.1, Theorem 3.2 and Proposition 3.3.
 -/
 
 public section

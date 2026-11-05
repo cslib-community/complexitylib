@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
+public import Complexity.Logics.Propositional.CNF.TwoBoundary
 import all Complexity.Logics.Propositional.CNF.TwoBoundary
 
 /-! Cases include no internal variables, empty terms, unused variables, and cancellation. -/
@@ -39,7 +40,7 @@ example : query ([] : CNF (Fin 1)) 0 (fun _ => []) false = [] ∧
     query ([] : CNF (Fin 1)) 0 (fun _ => []) true = [] := by
   decide +kernel
 
-example (B : CNF (Fin 3)) (P : Fin 4 → List (List (Literal (Fin 3)))) :
+public theorem query_counts (B : CNF (Fin 3)) (P : Fin 4 → List (List (Literal (Fin 3)))) :
     Fintype.card {x : Fin 3 → Bool // B.eval x = true ∧ ∀ j, predicate (P j) x = true} =
       Fintype.card {σ : Fin 3 ⊕ Fin 3 → Bool // (query B 3 P false).eval σ = true} -
       Fintype.card {σ : Fin 3 ⊕ Fin 3 → Bool // (query B 3 P true).eval σ = true} :=
