@@ -44,6 +44,25 @@ Module-SIS zero equation. The source function type retains pointwise multiplicat
 `negacyclicMul` for polynomial multiplication. Dimension zero is excluded because its quotient
 is `R/(2)`. This algebraic bridge adds no hardness or runtime claim.
 
+The pure coefficient identity `negacyclicMul_eq_coeff_mul` is available separately in
+[SIS/Polynomial/Coefficients.lean](../../Complexity/Crypto/Computational/SIS/Polynomial/Coefficients.lean),
+so algebra clients need not import native computation certificates. For native multiplication, import
+[SIS/Native.lean](../../Complexity/Crypto/Computational/SIS/Native.lean).
+`negacyclicMulResidues n q a b` truncates two natural-coefficient lists to `n`, computes the
+existing integer `mulZJet (2*n)`, and reduces each lower coefficient minus its wrapped upper
+coefficient modulo `q`. Short lists are zero-padded and the output has exactly `n` entries.
+The plain certificate charges unary `n`, binary `q`, and both complete framed binary input
+lists. It imposes no coefficient-size bound. For `q > 0`, `negacyclicMulResidues_ofFn` identifies
+the output with the canonical coefficients of the existing `negacyclicMul`; neither primality
+nor positive dimension is needed. At `q = 0`, the total operation instead truncates each
+signed result at zero, with no canonical-residue interpretation claimed.
+The [checked clients](../../ComplexityTests/Crypto/NegacyclicNative.lean) include `X² = -1`
+modulo six, modulus one, empty and irregular inputs, a 128-bit modulus, and the actual
+rank-one `moduleLWEKeyGen` coefficient computation. Full key generation, encryption and
+decryption still need variable-rank traversal and canonical key/ciphertext packing and parsing.
+This arithmetic certificate does not remove the existing restrictions on exact native samplers
+or imply small-secret security.
+
 These are implications from hardness assumptions. They do not prove that a concrete OWF, DDH group, LWE family or SIS parameter choice is hard. The LWE interface exposes only the serialized public matrix `[B*t+e | B]`, with independent errors and one shared uniform secret; in [`SIS/Module.lean`](../../Complexity/Crypto/Computational/SIS/Module.lean), `expandModuleMatrix` and `flattenPolyVec` embed negacyclic `ModuleSIS` and `ModuleLWE` instances over `ℤ_q[X]/(X^n+1)` into unstructured `(d * n) × (k * n)` matrices over `ℤ_q` (checked with concrete evaluations and nonvacuity proofs in [`ComplexityTests/Crypto/ModuleSIS.lean`](../../ComplexityTests/Crypto/ModuleSIS.lean)), and [`SIS/ModuleEncryption.lean`](../../Complexity/Crypto/Computational/SIS/ModuleEncryption.lean) builds dual-Regev public-key encryption (`moduleLWEKeyGen`, `moduleLWEEncrypt`, `moduleLWEDecrypt`), bounded-noise decryption correctness (`moduleLWEDecrypt_moduleLWEEncrypt_eq`), and two-hop public-key/ciphertext reductions to `ModuleLWE.sampleLaw` (`advantage_realEncryptionView_uniform_le`, `advantage_realEncryptionView_msg_le`, checked in [`ComplexityTests/Crypto/ModuleEncryption.lean`](../../ComplexityTests/Crypto/ModuleEncryption.lean)); no worst-case lattice reduction is asserted there.
 
 The Module-LWE sampling APIs now accept explicit distributions: `moduleLWEPublicKeyLaw` has an
