@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 # Finite additive fair division
 
 Import [MMSImpossibility.lean](../../Complexity/GameTheory/FairDivision/MMSImpossibility.lean)
-for Ezra and Garbuz's STOC 2027 submission 115, Theorem 2 (PDF p. 13).
+for Ezra and Garbuz's STOC submission 115, Theorem 2 (PDF p. 13).
 An `Allocation` assigns each of eleven indivisible goods to one of four agents;
 `bundle a i` is its fiber. Thus every good is allocated exactly once, and empty
 bundles are allowed. `itemValue` is the source's positive integer table, and
@@ -35,5 +35,58 @@ that threshold 22 is impossible even for a single valuation's maximin partition.
 After building the library, elaborate that complete client with
 `lake env lean ComplexityTests/PaperEndpointsBatchB.lean`; expected success is
 no diagnostics. If its imports are missing, follow the normal checkout/cache
-bootstrap instructions before retrying. The source's asymptotic goods bounds,
-chores results and general existence questions remain outside this endpoint.
+bootstrap instructions before retrying.
+
+## Chores and the constant bound
+
+Import [MMSChores.lean](../../Complexity/GameTheory/FairDivision/MMSChores.lean)
+for Theorem 4 (PDF p. 14). The source's eleven-item positive cost table uses
+exactly the same allocation utilities, agent types and witness partitions.
+`Caps t c` means a complete partition with every bundle costing at most $c$;
+the chores MMS minimizes this maximum, reversing the goods convention.
+`caps_iff` characterizes the exact MMS as 90, and `total` gives total cost 360,
+so MMS equals proportional share for both types. `unavoidable_loss` quantifies
+over every complete allocation and proves some agent incurs cost at least 93.
+`allocation_cap_iff` proves the optimum maximum cost is exactly 93: the first
+source partition attains costs $(90,90,93,81)$, as checked in the client. Thus
+the instance witnesses the factor $93/90=31/30$. The proof uses a kernel-checked
+subset-splitting certificate, with no restrictions on allocations.
+
+## Asymptotic construction in progress
+
+Import [MMSAsymptotic.lean](../../Complexity/GameTheory/FairDivision/MMSAsymptotic.lean)
+for the actual parameterized construction in Section 2.1 of STOC submission 115
+(PDF p. 8). `Good k d` contains the $X,Y,G,Z,P,Q,D$ item families, with
+$n=2k+2+d$ agents and exactly $n+5k$ items (`card_goods`). `weight`, `correction`,
+`goodsValue` and `choreCost` implement the source tables. The source chooses $k$
+divisible by 8; this makes the division in $U=7k^3-k^2/2$ exact. Item values and
+costs are integers, proved strictly positive for every $k>0$ and every label set.
+This positivity does not assert that arbitrary label sets satisfy the source's
+balanced-code constraints.
+
+`low_bundle_rigidity k hk B` is the complete equivalence in Lemma 7 (PDF p. 9):
+a subset of low goods has weight $17k^2$ exactly when it is one $G$ good or a
+matched $X_j,Y_j$ pair. It holds for arbitrary positive $k$, without enumeration
+at a selected size. `goodsValue_add_choreCost` gives the exact bundle identity
+$v_S(B)+c_S(B)=6w(B)$ used in the goods-to-chores argument. The checked client
+contains a 128-agent item-count instance, matched/mismatched low pairs and
+positivity applications. The Z weight is exactly $T-H=68k^3-17k^2$; it is not
+$3T/4$ for general $k$. `weight_total` proves total weight $nT$, while
+`correction_total`, `goodsValue_total` and `choreCost_total` give zero total
+correction and total value/cost $n\cdot204k^3$ for each size-$k$ label set.
+
+`labelSet` implements the labels $2h+a_h$. `card_labelSet`, `sum_labelSet` and
+`labelSet_sdiff_card` prove the source cardinality, balanced-word sum and one-sided
+distance identities. `witness` is the complete type-specific partition of Lemma 6;
+`witness_weight` and `witness_correction` prove each bundle has weight $T$ and zero
+correction. `balanced_guarantees_iff` and `balanced_caps_iff` therefore prove exact
+goods and chores MMS $204k^3$ for every balanced even-length word, over all
+complete partitions. The checked client includes a concrete balanced type with
+$k=8$, $d=110$ and exact MMS $104448$, so these premises are satisfiable.
+
+Theorems 1 and 3 remain unfinished: existence of the exponentially large balanced
+code, the contradiction for every allocation, the inverse-log-squared gap and
+the logarithmic item budget are still required.
+The existence side of the claimed MMS threshold also requires the cited external
+existence theorem. The finite four-agent result and this structural lemma do not
+complete those headline claims.

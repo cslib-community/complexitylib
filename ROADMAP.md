@@ -28,6 +28,7 @@ the FHE industrial context, the first-order design decisions and the repository'
 | A Verso guide with a chapter per area | [#585] |
 | Randomized Word RAM: broader expected-time rules and simulation bridges | [#1124] |
 | Proof automation: predictable polynomial-time certificate search | [#1155] |
+| STOC manuscript headline formalizations, including quantitative bounds and source obstructions | [#2527](https://github.com/cslib-community/complexitylib/issues/2527) |
 
 ### Landmark theorems, in priority order
 

@@ -123,7 +123,7 @@ Only selected protocol endpoints and key definitions were traced. The source fil
 ## One-shot tetrahedral random oblivious transfer
 
 Import [Tetrahedral.lean](../../Complexity/Crypto/Multiparty/Tetrahedral.lean) for
-Beaver's STOC 2027 submission 1234, Theorem 4.1 (PDF p. 3). `shuffle` enumerates
+Beaver's STOC submission 1234, Theorem 4.1 (PDF p. 3). `shuffle` enumerates
 all 24 permutations exactly once; `aliceTable` and `bobTable` are Figures 2–3.
 Alice's ordered two-card hand and Bob's third card come from one uniform shuffle.
 `correctness` proves that the selected bit is received, and `uniform_output`
@@ -139,14 +139,38 @@ It also checks an obstruction to Section 5's reverse privacy assertion: given
 Bob's card 0, the event that Alice has ordered hand (1,3) has probability $1/6$;
 message X has probability $1/3$; their joint probability is $1/6$, not $1/18$.
 Thus the reverse public announcement leaks hand information beyond the dealt
-card. The forward random-OT theorem is separate. No reverse simulation,
-optimality, chosen-input realization, composability or machine-time bound is
-provided by this module.
+card. `reverse_message_leakage` in
+[TetrahedralYield.lean](../../Complexity/Crypto/Multiparty/TetrahedralYield.lean)
+exports that obstruction as a named theorem.
+
+For chosen-input OT, import
+[TetrahedralChosen.lean](../../Complexity/Crypto/Multiparty/TetrahedralChosen.lean).
+Bob sends `choiceOffset`, the XOR of his random and desired selections. Alice
+sends `chosenMasks`, two bits masking her chosen input pair with the appropriately
+permuted random pair. `chosen_correctness` proves that Bob recovers his selected
+input bit for every shuffle. `chosen_alice_privacy` equates full-view counts for
+either receiver choice; `chosen_bob_privacy` equates them for any two input pairs
+agreeing at the selected position. Views retain the original local hand, trit,
+outputs and all conversion messages. The exact resource count is one shuffle,
+one trit and three additional public bits. This is standalone passive privacy;
+typed protocol substitution and the advertised circuit/MPC consequence remain
+unproved for this implementation.
+
+For larger decks, `rankHand`, `goodRanks`, `yield` and `expectedYield` in
+`TetrahedralYield.lean` implement Section 10's successful-rank count for actual
+permutations of $4m$ distinct cards and arbitrary hand-position sets.
+`yield_le` and `expectedYield_le` prove $g\le m$ pointwise and in expectation.
+`advertised_rates_exceed_bound` proves that both advertised constants,
+$(9/32)n$ and $(81/256)n$ for $n=4m$, exceed this bound for every positive $m$.
+Thus those quantitative claims in Theorems 10.1–10.2 (PDF p. 13) cannot describe
+the protocol in Figure 31. This does not refute the weaker $\Theta(n)$ yield
+claim. Its lower bound, parallel privacy, optimality and MPC consequences remain
+unproved; the forward single-shuffle result is preserved.
 
 ## Exact signed correlation of Add/XNOR chains
 
 Import [AddXNOR.lean](../../Complexity/Cryptanalysis/AddXNOR.lean) for Wang,
-Lv, Shen and Zhang's submission 733, Theorem 4 (PDF p. 16).
+Lv, Shen and Zhang's STOC submission 733, Theorem 4 (PDF p. 16).
 `step` uses Lean's actual full-width `BitVec` modular addition or bitwise XNOR.
 The sampler `word` is bijective from a high-part index and a two-bit index to
 all words of width $h+2$ (`word_bijective`); uniform independent indices therefore
@@ -163,3 +187,18 @@ The [client](../../ComplexityTests/PaperEndpointsBatchB.lean) checks full-width
 operations and two-operand and longer-chain theorem applications.
 These are uniform-ensemble signed expectations; they do not establish an absolute
 correlation bound, a planted-instance statistic, NP-hardness or a search bound.
+
+Import [AddXNORRuns.lean](../../Complexity/Cryptanalysis/AddXNORRuns.lean) for
+Theorem 3 (PDF pp. 15–16). `fixedCorrelation h bs` holds every operator fixed
+while averaging independent uniform full-width operands. `runs zs` encodes
+addition runs separated by XNORs, allowing zero runs and a final XNOR.
+`exists_runs` represents every operator string this way after one extra XNOR;
+`fixedCorrelation_append_xnor` proves that this extra step preserves correlation.
+`fixedCorrelation_runs_cos` proves the exact product of
+$(1/\sqrt2)^z\cos(z\pi/4)$ over the runs. `abs_runFactor_le` gives the per-run
+decay bound and `runFactor_eq_zero_iff` characterizes zero factors by
+$z\equiv2\pmod4$. The checked client includes a vanishing run and a negative
+signed correlation. These results cover arbitrary strings and run lengths;
+they do not prove NP-completeness, the general-bit spectrum or transposition
+differential, the dissection runtime/space bounds, or the ideal-model adversarial
+lower bound advertised elsewhere in the paper.

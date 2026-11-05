@@ -2867,6 +2867,7 @@ public import Complexity.Computability.WordRAM.Turing.ListOutput
 public import Complexity.Computability.WordRAM.Turing.Overhead
 public import Complexity.Computability.WordRAM.Width
 public import Complexity.Cryptanalysis.AddXNOR
+public import Complexity.Cryptanalysis.AddXNORRuns
 public import Complexity.Crypto.Computational.Basic
 public import Complexity.Crypto.Computational.CollisionResistant
 public import Complexity.Crypto.Computational.Commitment
@@ -3102,6 +3103,8 @@ public import Complexity.Crypto.Game.Hybrid
 public import Complexity.Crypto.Game.Statistical
 public import Complexity.Crypto.Game.UntilBad
 public import Complexity.Crypto.Multiparty.Tetrahedral
+public import Complexity.Crypto.Multiparty.TetrahedralChosen
+public import Complexity.Crypto.Multiparty.TetrahedralYield
 public import Complexity.Crypto.Negligible
 public import Complexity.Crypto.Negligible.Basic
 public import Complexity.Crypto.Negligible.Dyadic
@@ -3960,6 +3963,8 @@ public import Complexity.Foundations.RingTheory.AdjoinRoot
 public import Complexity.Foundations.RingTheory.CyclicIntRing
 public import Complexity.Foundations.RingTheory.CyclicIntRing.Coefficients
 public import Complexity.Foundations.RingTheory.GaloisRing
+public import Complexity.GameTheory.FairDivision.MMSAsymptotic
+public import Complexity.GameTheory.FairDivision.MMSChores
 public import Complexity.GameTheory.FairDivision.MMSImpossibility
 public import Complexity.Init
 public import Complexity.Languages.Probabilistic.Basic
