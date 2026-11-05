@@ -214,9 +214,12 @@ index links to canonical definitions rather than keeping a second set.
   depth-versus-budget coverage and a common full-bin horizon.
   Actual second-mean stability uses the two preparation supports and full-terminal-rank
   clipped mean/noise inputs, without the old width factor. Its literal stationary,
-  final, tail and raw allocations now have a fixed-charge numerical payment. The full
-  four-statistic reserve, second centered-noise allocation, general terminal-rank and
-  correction products, simultaneous recursive accuracy/availability and native logarithmic workspace/class
+  final, tail and raw allocations now have a fixed-charge numerical payment. Sparse
+  second centered noise uses spare decay in the unchanged usage-walk allocation.
+  One common charge pays the actual initial four-statistic mixed-tail reserve on an
+  explicit covered-field/depth family, conditional on the lower-budget accuracy and
+  separate reset-right execution premises. General terminal-rank and correction products,
+  simultaneous recursive accuracy/availability and native logarithmic workspace/class
   equality remain open.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
   logspace reduction.

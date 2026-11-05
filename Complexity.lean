@@ -3889,9 +3889,12 @@ public import Complexity.Foundations.Probability.HierarchyInitialMeanUniform
 public import Complexity.Foundations.Probability.HierarchyInitialPaid
 public import Complexity.Foundations.Probability.HierarchyInitialPerturbation
 public import Complexity.Foundations.Probability.HierarchyInitialPreparation
+public import Complexity.Foundations.Probability.HierarchyInitialReserveAssembly
 public import Complexity.Foundations.Probability.HierarchyInitialSecondMeanAllocation
 public import Complexity.Foundations.Probability.HierarchyInitialSecondNoise
+public import Complexity.Foundations.Probability.HierarchyInitialSecondNoiseAllocation
 public import Complexity.Foundations.Probability.HierarchyInitialSemanticNoise
+public import Complexity.Foundations.Probability.HierarchyInitialSparseSecondNoise
 public import Complexity.Foundations.Probability.HierarchyInitialUniform
 public import Complexity.Foundations.Probability.HierarchyParams
 public import Complexity.Foundations.Probability.HierarchyPilotStability
@@ -3978,6 +3981,7 @@ public import Complexity.Foundations.Probability.SecondMoment
 public import Complexity.Foundations.Probability.SignedResidualBins
 public import Complexity.Foundations.Probability.SourceRelease
 public import Complexity.Foundations.Probability.SpectralPayment
+public import Complexity.Foundations.Probability.SpectralPayment.Squared
 public import Complexity.Foundations.Probability.StochasticAtom
 public import Complexity.Foundations.Probability.StochasticAtom.BinSupport
 public import Complexity.Foundations.Probability.TrueSampleMeans

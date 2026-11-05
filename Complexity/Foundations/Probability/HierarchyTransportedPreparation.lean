@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 public import Complexity.Foundations.Probability.HierarchyInitialPerturbation
+public import Complexity.Foundations.Probability.HierarchyInitialSparseSecondNoise
 public import Complexity.Foundations.Probability.HierarchyInitialIntegrated
 public import Complexity.Foundations.Probability.HierarchyInitialSemanticNoise
 public import Complexity.Foundations.Probability.HierarchySupportedPreparation
@@ -17,48 +18,27 @@ import Complexity.Foundations.Data.List.Blocks
 /-!
 # Preparation payments for computed approximate initial histories
 
-Literal completed-group executions identify both histories. Their finite prefix transport
-is added to the semantic omitted/inactive deficit and centered first noise in matrix units.
-The polynomial preparation and full-terminal rank gate then pay their actual usage mean
-through the existing sensitivity theorem; centered preparation noise is paid separately,
-without a rarity factor. The absolute fallback keeps its prefix cube and summed group costs.
+Literal completed-group executions identify the first prefixes and preparation walks on
+one environment. Their transport consumes strict lower-budget own-request rooted precision,
+including separate reset-right execution. The semantic omitted/inactive deficit and
+centered first noise are retained explicitly.
 
-These original finite bounds consume strict lower-budget own-request rooted precision,
-not a parent accuracy hypothesis. All four moments and the sharp reserve receive explicit
-finite numerical payments. The precision route also consumes an own-mask clipped
-conditional-mean payment for its first coordinate and a centered spectral payment for
-first noise, keeping the previous noise fallback and preparation costs. Its sharp fine-bin
-coefficient and finite Minkowski remove bin
-and prefix cubes from clipped means. An explicit joint window condition pays that finite
-transport part, without asserting the condition uniformly. The actual reserve also
-separates deterministic tails from correlated noise. All surviving first-mean endpoints
-receive geometric stationary, final, raw and rarity-tail payments, with the semantic
-deficit kept separate. One structural charge pays all four transport components before
-request coordinates, width and budget. A joint fixed-depth, bounded-budget family now pays
-the positive-prefix semantic row moments and the final semantic term in the actual reserve.
-The exceptional initial semantic row and positive prefixes retain the structural rank
-salary in a common rooted envelope. All four semantic and transport payments are assembled
-in the actual separated-reserve consumer on the bounded family. A fixed structural charge
-pays this entire first mean before field width, depth, budget or request exponents. The
-second mean/noise, simultaneous changing-request induction and native RL=L remain open.
-First-noise transport now sums actual centered group discrepancies by joint-slice Minkowski.
-The existing computed first-noise minimum consumes this payment in the four-max and raw
-separated reserve. One charge pays its geometric envelope uniformly on a bounded full-bin
-and terminal-exponent family, before field width, requests, and positive precision. This
-does not combine the remaining reserve costs. The normalized lane now removes the
-absolute terminal and bin-horizon restrictions: joint own-precision conversion, bin
-Minkowski and actual spectral contraction pay actual first noise on unbounded admissible
-families. The same computed minimum is consumed by the four-max and raw reserve.
-Its structural charge is fixed before field, horizon, requests, budget and precision;
-conditional endpoint IH remains separate from joint recursive availability. Canonical
-budget-boundary support also pays the original semantic noise. One structural charge
-therefore pays the complete initial first-noise statistic under the polynomial cutoff;
-all four first-noise allocations retain the literal unconditional tail. The complete
-first mean and this noise are paid together on the original first-mean family. The
-second-coordinate reserve and joint recursive availability remain open. Actual second-mean
-stability now uses saturated relative errors and the union of the two preparation supports;
-the computed minimum consumes full-rank first-mean and centered-noise payments without
-an endpoint width factor. Both previous fallbacks remain available.
+`initialComputedPrecisionMoment` supplies four nonnegative costs to the actual four-max,
+raw clipped-error and sharp-reserve consumers. The first mean uses clipped group and
+endpoint transport. The first noise combines joint-slice centered transport with the
+canonical semantic payment. Both retain their previous fallbacks and structural-charge
+allocations. The second mean uses saturated relative errors on the union of the two
+preparation supports, with full-terminal-rank first-mean/noise inputs. The second noise
+uses a sparse spectral minimum under the actual polynomial-preparation, source-horizon
+and source/terminal/usage guards; the original range bound remains available.
+
+The reserve separates deterministic heavy-event tails from unconditional centered-noise
+tails and retains the literal raw false-event weights. The bounded first-coordinate
+allocations live here. Uniform mean and second-mean allocations and the covered joint
+four-statistic payment are supplied by the specialized allocation and reserve-assembly
+modules. Their execution bridge uses the same completed groups and preparation list.
+Simultaneous changing-request accuracy/availability and native logarithmic-space
+realization remain separate obligations.
 
 ## Main results
 
@@ -72,6 +52,7 @@ an endpoint width factor. Both previous fallbacks remain available.
 * `initialComputedRelativeMoment`: denominator-retaining semantic first-noise costs.
 * `initialComputedPrecisionMoment`: clipped mean and centered noise in the literal reserve.
 * `initialComputedPrecisionMoment_secondMean_le`: supported relative preparation payment.
+* `initialComputedPrecisionMoment_secondNoise_le`: guarded sparse preparation-noise payment.
 * `initial_compressed_centered_first_noise`: correlated centered actual prefix payment.
 * `initialComputedPrecisionMoment_firstNoise_exists_charge`: fixed-charge bounded noise family.
 * `initialComputedNormalizedNoise_polynomial_uniform_le`: complete initial noise envelope.
@@ -1074,6 +1055,16 @@ lemma initialComputedCenteredNoise_nonneg (B : BudgetData HP P) (M : ℕ)
   unfold initialComputedCenteredNoise
   split_ifs <;> positivity
 
+/-- The sparse second-noise branch requires the actual polynomial preparation and
+source horizon. Its usage channel is narrower than full terminal rank, on the same suffix. -/
+@[expose] def initialSecondNoiseAdmissible (B : BudgetData HP P)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
+    (ks ka : ℕ) (ss st : List (ZMod P)) : Prop :=
+  B.auxiliary = (fun _ => polynomialPrepCutoff4 HP.θ) ∧
+    r.source = gridChannel R.source ks ss ∧ r.terminal = gridChannel R.terminal ka st ∧
+    (∃ H : Horizon P, ks ≤ H.maxExponent) ∧
+    ∃ ku, ka ≤ ku ∧ r.usage = gridChannel R.terminal ku st
+
 /-- Four computed costs from own-request precision, using clipped mean transport for
 the first coordinate and centered spectral transport for first noise. Both keep their
 previous fallbacks. Saturated preparation also uses the two actual supports and the
@@ -1106,7 +1097,10 @@ These minima are consumed by the literal four-max and raw clipped-error gates. -
         min old (B.initialComputedCenteredNoise M r R ks ka ss st coefficient j) else old
   if !noise ∧ ν = 1 then min (cost noise ν)
     (8 * (2 * HP.K) * (|ζ| * preparationRelativeConstant HP Lh Lρ) ^ 4 *
-      (cost false 0 + cost true 0)) else cost noise ν
+      (cost false 0 + cost true 0)) else
+    if noise ∧ ν = 1 then min (cost noise ν)
+      (if B.initialSecondNoiseAdmissible r R ks ka ss st then
+        B.initialSecondNoiseMoment M r ζ j else cost noise ν) else cost noise ν
 
 /-- The actual supported second-mean minimum consumes the same first-mean and first-noise
 costs. Its full-rank input moments are supplied by the executed-history theorem. -/
@@ -1120,6 +1114,19 @@ theorem initialComputedPrecisionMoment_secondMean_le (B : BudgetData HP P) (M n 
   simp only [initialComputedPrecisionMoment, Bool.not_false, Bool.not_true,
     Bool.false_eq_true, false_and, (show (0 : Fin 2) ≠ 1 by decide),
     (show (1 : Fin 2) ≠ 0 by decide), and_false, and_self, ↓reduceIte]
+  exact min_le_right _ _
+
+/-- The actual second-noise minimum consumes the literal sparse preparation payment
+when its polynomial-preparation and source/usage guards hold. Field coverage belongs to
+numerical allocation, not to this execution selector. -/
+theorem initialComputedPrecisionMoment_secondNoise_le (B : BudgetData HP P) (M n : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
+    (ks ka : ℕ) (ss st : List (ZMod P)) (coefficient ζ Lh Lρ : ℝ) (j : ℕ)
+    (hadm : B.initialSecondNoiseAdmissible r R ks ka ss st) :
+    B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ j true 1 ≤
+      B.initialSecondNoiseMoment M r ζ j := by
+  simp only [initialComputedPrecisionMoment, Bool.not_true, Bool.false_eq_true, false_and,
+    (show (1 : Fin 2) ≠ 0 by decide), and_false, and_self, ↓reduceIte, hadm]
   exact min_le_right _ _
 
 /-- A single structural charge allocates actual conditional first noise on a bounded
@@ -1469,6 +1476,7 @@ lemma initialComputedPrecisionMoment_nonneg (B : BudgetData HP P) (M n : ℕ)
     { r with usage := r.terminal } ka coefficient
   have hcenter := B.initialComputedCenteredNoise_nonneg M r hr R ks ka ss st coefficient j
   have hnormalized := B.initialComputedNormalizedNoise_nonneg M r hr R ks ka ss st coefficient j
+  have hsparse := B.initialSecondNoiseMoment_nonneg M r ζ j
   unfold initialComputedPrecisionMoment
   split_ifs <;> positivity
 
@@ -3471,9 +3479,20 @@ theorem initial_compressed_precision_moments
         Bool.false_eq_true, false_and, (show (0 : Fin 2) ≠ 1 by decide),
         (show (1 : Fin 2) ≠ 0 by decide), and_false, and_self, ↓reduceIte] using hm1
     · dsimp only [centered, cost]
-      simpa only [initialComputedPrecisionMoment, Bool.not_true, Bool.false_eq_true,
-        false_and, (show (1 : Fin 2) ≠ 0 by decide), and_false,
-        ↓reduceIte] using (hrows W hW j hj 1).2
+      simp only [initialComputedPrecisionMoment, Bool.not_true, Bool.false_eq_true,
+        false_and, (show (1 : Fin 2) ≠ 0 by decide), and_false, and_self, ↓reduceIte]
+      apply le_min (hrows W hW j hj 1).2
+      split_ifs with hadm
+      · obtain ⟨_, _, _, ⟨H', hks'⟩, _⟩ := hadm
+        have hz := B.initialSecondSignal_noise_allocated M bin r R H' ks ka ku hks' husage
+          ss st hs ht hu (congrFun haux bin) F W hW B.base ζ j hj
+        change rowNormPow 4 P r.source.rate
+          (retainedMask R.source (side P ks) B.padding ss)
+          (retainedMask R.terminal (side P ku) B.padding st)
+          (actualNoiseEntry R.source R.terminal (side P ks) (side P ka) (side P ku)
+            B.padding ss st ka B.base Δ (fun _ _ _ _ => 0) 1 j) ≤ _
+        exact hz
+      · exact (hrows W hW j hj 1).2
 
 /-- The four literal row maxima are paid from own-request lower-budget rooted precision.
 Minkowski retains all explicit computed costs and their separate masks. -/
@@ -3942,8 +3961,10 @@ end Polynomial
 /-- Sharp parent comparison for literal computed approximate histories, using exactly
 `compressedBin`'s shared decoder. This honest finite conditional reserve retains all actual
 four-max and false-overflow costs. `initial_compressed_preparation` pays the second mean
-and noise; joint allocation of transport costs and the remaining reserve is still open.
-Constants are fixed before width, budget, history and children, in the shared kernel's order. -/
+and noise. The specialized reserve-assembly module pays their joint numerical reserve
+on an explicit covered field/depth family; simultaneous recursive accuracy and availability
+remain separate. Constants are fixed before width, budget, history and children,
+in the shared kernel's order. -/
 theorem exists_initial_compressed_fourMax (HP : FourthRootHierarchyParams 16 1 16 32 8)
     {cap ζ scale : ℝ} (hcap : 0 ≤ cap) (hζ : 0 < ζ) (hs : 0 < scale)
     (hmargin : scale ≤ HP.η) (hcapscale : scale ≤ max cap 16 / 10000)
