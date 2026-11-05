@@ -23,6 +23,11 @@ identity is assumed.
 * `ProbabilityTheory.integrable_gaussianWeight`: integrability of the complex-valued weight.
 * `ProbabilityTheory.fourier_gaussianWeight`: its Fourier transform at every frequency.
 * `ZLattice.summable_fourier_gaussianWeight`: summability on any discrete frequency lattice.
+
+## References
+
+The width convention and Gaussian Fourier identity are those in [Regev2009], printed page 18
+immediately before Lemma 2.14. The proof specializes Mathlib's general Gaussian Fourier transform.
 -/
 
 public section

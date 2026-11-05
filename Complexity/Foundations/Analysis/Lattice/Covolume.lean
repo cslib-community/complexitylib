@@ -24,6 +24,10 @@ The statements use the total Bochner integral, so they require no integrability 
 
 * `ZLattice.integral_comp_basis`: change coordinates in a whole-space integral.
 * `ZLattice.setIntegral_comp_basis`: change coordinates in a set integral.
+
+## References
+
+These are integral forms of Mathlib's `ZLattice.volume_image_eq_volume_div_covolume'`.
 -/
 
 public section
