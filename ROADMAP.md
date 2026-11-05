@@ -145,6 +145,9 @@ families and full-input native runtime.
   2012); strict-PPT samplers for integer boxes; identification security under SIS; efficiency
   certificates for the simulator and extractor; full interactive-view simulation;
   Dilithium-style signature schemes over module SIS and module LWE, as theory.
+- **Hybrid encryption:** prove modular KEM–DEM CCA composition with compatible key spaces and
+  rejection-aware canonical ciphertext parsing (Boneh–Shoup Exercise 12.5(a)); adaptive
+  decapsulation security of a KEM alone does not supply this composition.
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
