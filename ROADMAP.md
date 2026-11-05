@@ -186,8 +186,10 @@ In order:
   `1 / |F| + (1 - 1 / |F|) * (2 / |F|)`. `VOLE/MaskedMulCheck.lean` executes the check
   in a cached ideal `World` with separate role interfaces and one fresh affine mask, proving
   completeness and exact simulation of the full honest receiver view (private key/tags and
-  public transcript). Scalar-challenge batching, malicious-verifier zero knowledge, certified
-  efficient realizations and the full VOLE-in-the-head transform remain (#643);
+  public transcript). `VOLE/AdaptiveMulCheck.lean` extends the exact full-view law to arbitrary
+  receivers in that fixed schedule, retaining private coins, state and repeated setup reads.
+  Scalar-challenge batching, adversarial setup and scheduling, full zero-knowledge protocol
+  security, certified efficient realizations and the full VOLE-in-the-head transform remain (#643);
 - libzk's compositional structure as a composition of these components, without ciphersuites.
 
 ### Concurrent and quantum security
