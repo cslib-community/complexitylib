@@ -116,10 +116,16 @@ families and full-input native runtime.
 
 In order:
 - the `PublicCoin → IP` bridge, with a uniform word verifier and adversarial decoding;
-- parallel and OR composition of interactive reductions;
+- parallel and AND/OR composition (`Verifier.seqProd`, `Reduction.seqProd`, `relProd`, `relDisj`
+  in `Interactive/AuxZK.lean`) and round-by-round knowledge soundness (`Verifier.RbrKnowledgeSound`,
+  `Verifier.RbrKnowledgeSound.append`, `Verifier.RbrKnowledgeSound.seqProd`,
+  `Verifier.RbrKnowledgeSound.iterate`, `Verifier.RbrKnowledgeSound.bundle` in
+  `Interactive/RbrKnowledge.lean`; parallel and OR protocol composition remain);
 - oracle statements, so a later phase can query an earlier phase's oracle message (virtual
   output oracles, as in ArkLib), with knowledge soundness and zero knowledge in oracle worlds;
-- efficiency-certified simulators and extractors, and auxiliary-input zero knowledge on the core;
+- efficiency-certified simulators and extractors (`Interactive/Efficient.lean`), and
+  auxiliary-input zero knowledge on the core (`Reduction.AuxHVZK`, `Reduction.ZK`,
+  `Reduction.EfficientAuxHVZK`, `Reduction.ComputationalAuxHVZK` in `Interactive/AuxZK.lean`);
 - polynomial commitment and evaluation-query reductions, and the Ligero IOP;
 - the BCS transform to non-interactive arguments in the random-oracle model;
 - VOLE as an ideal functionality, and VOLE-in-the-head;

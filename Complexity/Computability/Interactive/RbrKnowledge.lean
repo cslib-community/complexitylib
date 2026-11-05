@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Interactive.AuxZK
 public import Complexity.Computability.Interactive.Bundle
 public import Complexity.Computability.Interactive.Efficient
 import Complexity.Probability.PMF.Bind
@@ -45,9 +46,6 @@ iterated stages (`Verifier.RbrKnowledgeSound.iterate`), and statement-parameteri
 ## Main definitions
 
 * `Interactive.Verifier.RbrKnowledgeSound`: round-by-round knowledge soundness in the plain model.
-* `Interactive.relProd`, `Interactive.Verifier.seqProd`, `Interactive.Reduction.seqProd`,
-  `Interactive.Verifier.extractSeqProd`: sequential product composition of relations, verifiers,
-  reductions, and straight-line extractors.
 * `Interactive.Verifier.extractIterate`: composed straight-line extractor for `Reduction.iterate`.
 
 ## Main results
@@ -71,10 +69,9 @@ iterated stages (`Verifier.RbrKnowledgeSound.iterate`), and statement-parameteri
 * `Interactive.Verifier.RbrKnowledgeSound.append`,
   `Interactive.Verifier.RbrKnowledgeSound.seq`: sequential composition of round-by-round knowledge
   soundness with `Verifier.extractAppend`.
-* `Interactive.Verifier.outputOn_seqProd`,
-  `Interactive.Verifier.RbrKnowledgeSound.seqProd`,
-  `Interactive.Verifier.RbrSound.seqProd`,
-  `Interactive.Reduction.Complete.seqProd`: sequential product composition on `s₁ ++ s₂`.
+* `Interactive.Verifier.RbrKnowledgeSound.seqProd`,
+  `Interactive.Verifier.RbrSound.seqProd`: sequential product composition on `s₁ ++ s₂` over
+  `Verifier.seqProd` and `relProd`.
 * `Interactive.Reduction.id_rbrKnowledgeSound`,
   `Interactive.Verifier.RbrKnowledgeSound.iterate`,
   `Interactive.Verifier.RbrKnowledgeSound.bundle`: identity, iteration, and bundle preservation.
@@ -86,15 +83,14 @@ iterated stages (`Verifier.RbrKnowledgeSound.iterate`), and statement-parameteri
 * [A. Chiesa, E. Yogev, *Building Cryptographic Proofs from Hash Functions*][ChiesaYogev2024]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Interactive
 
 open scoped ENNReal
 open Spec Probability Turing.MultiTapeTM
 
-variable {ιP ιV : Type} {oP : OracleSpec ιP} {oV : OracleSpec ιV} {s s₁ s₂ : Spec}
-  {StmtIn WitIn StmtOut WitOut : Type}
+variable {s s₁ s₂ : Spec} {StmtIn WitIn StmtOut WitOut : Type}
 
 /-! ### Round-by-round helpers -/
 
@@ -312,64 +308,6 @@ section SeqProd
 
 variable {S₁ W₁ S₂ W₂ T₁ U₁ T₂ U₂ : Type}
 
-/-- The product of two relations on pairs of statements and pairs of witnesses. -/
-def relProd (rel₁ : S₁ → W₁ → Prop) (rel₂ : T₁ → U₁ → Prop) :
-    S₁ × T₁ → W₁ × U₁ → Prop :=
-  fun x w => rel₁ x.1 w.1 ∧ rel₂ x.2 w.2
-
-/-- Sequential product of verifiers: runs `V₁` on the first statement component in rounds `s₁` and
-`V₂` on the second statement component in rounds `s₂`, returning the pair of output statements when
-both accept. -/
-def Verifier.seqProd (V₁ : Verifier oV s₁ S₁ S₂) (V₂ : Verifier oV s₂ T₁ T₂) :
-    Verifier oV (s₁ ++ s₂) (S₁ × T₁) (S₂ × T₂) where
-  samplers := PerChallenge.append s₁ s₂ V₁.samplers V₂.samplers
-  decide x c := do
-    let cs := PerChallenge.split s₁ s₂ c
-    match ← liftDecisionLeft s₁ s₂ (V₁.decide x.1 cs.1) with
-    | none => return none
-    | some y₁ => (Option.map (y₁, ·)) <$> liftDecisionRight s₁ s₂ (V₂.decide x.2 cs.2)
-
-/-- Sequential product of reductions: runs `R₁` on `(x.1, w.1)` followed by `R₂` on `(x.2, w.2)`. -/
-def Reduction.seqProd (R₁ : Reduction oP oV s₁ S₁ W₁ S₂ W₂)
-    (R₂ : Reduction oP oV s₂ T₁ U₁ T₂ U₂) :
-    Reduction oP oV (s₁ ++ s₂) (S₁ × T₁) (W₁ × U₁) (S₂ × T₂) (W₂ × U₂) where
-  prover x w := do
-    let st₁ ← R₁.prover x.1 w.1
-    ProverStrategy.append s₁ s₂ st₁ fun yw₁ => do
-      let st₂ ← R₂.prover x.2 w.2
-      ProverStrategy.bindLeaf s₂ st₂ fun _ yw₂ =>
-        pure ((yw₁.1, yw₂.1), (yw₁.2, yw₂.2))
-  verifier := R₁.verifier.seqProd R₂.verifier
-
-/-- The product straight-line extractor for `Verifier.seqProd`: runs `E₁` on the first transcript
-half and first output witness, and `E₂` on the second transcript half and second output witness. -/
-def Verifier.extractSeqProd (E₁ : S₁ → Transcript s₁ → W₂ → W₁)
-    (E₂ : T₁ → Transcript s₂ → U₂ → U₁) :
-    S₁ × T₁ → Transcript (s₁ ++ s₂) → W₂ × U₂ → W₁ × U₁ :=
-  fun x τ w =>
-    (E₁ x.1 (Transcript.split s₁ s₂ τ).1 w.1,
-      E₂ x.2 (Transcript.split s₁ s₂ τ).2 w.2)
-
-/-- The output of `Verifier.seqProd` on a complete transcript pairs the outputs of `V₁` and `V₂` on
-the two transcript halves. -/
-theorem Verifier.outputOn_seqProd (V₁ : Verifier OracleSpec.empty s₁ S₁ S₂)
-    (V₂ : Verifier OracleSpec.empty s₂ T₁ T₂)
-    (x : S₁ × T₁) (τ : Transcript (s₁ ++ s₂)) :
-    (V₁.seqProd V₂).outputOn x τ =
-      (V₁.outputOn x.1 (Transcript.split s₁ s₂ τ).1).bind fun y₁ =>
-        (V₂.outputOn x.2 (Transcript.split s₁ s₂ τ).2).map fun y₂ => (y₁, y₂) := by
-  rw [outputOn_eq, outputOn_eq]
-  simp only [Verifier.seqProd, challenges_split]
-  refine (OracleComp.interpret_bind (m := Id) _ _ _).trans ?_
-  erw [interpret_liftDecisionLeft]
-  cases h : OracleComp.interpret (m := Id) (answerAll s₁ (Transcript.split s₁ s₂ τ).1)
-      (V₁.decide x.1 (Transcript.challenges s₁ (Transcript.split s₁ s₂ τ).1)) with
-  | none => rfl
-  | some y₁ =>
-    refine (OracleComp.interpret_map (m := Id) _ _ _).trans ?_
-    erw [interpret_liftDecisionRight]
-    exact congrArg (Option.map (y₁, ·)) (outputOn_eq V₂ x.2 _).symm
-
 /-- **Round-by-round knowledge soundness composes across sequential products**, with combined state
 `State₁` on the first phase and `State₁ ∨ State₂` on the second phase, and with product extractor
 `Verifier.extractSeqProd E₁ E₂`. -/
@@ -511,56 +449,6 @@ theorem Verifier.RbrSound.seqProd
         (hr₁' x) (hjunc x hx) (hsecond x hx))
     rw [Verifier.outputOn_seqProd]
 
-/-- Completeness errors add up under `Reduction.seqProd`. -/
-theorem Reduction.Complete.seqProd
-    {R₁ : Reduction OracleSpec.empty OracleSpec.empty s₁ S₁ W₁ S₂ W₂}
-    {R₂ : Reduction OracleSpec.empty OracleSpec.empty s₂ T₁ U₁ T₂ U₂}
-    {rel₁ : S₁ → W₁ → Prop} {rel₁' : S₂ → W₂ → Prop}
-    {rel₂ : T₁ → U₁ → Prop} {rel₂' : T₂ → U₂ → Prop}
-    {ε₁ ε₂ : ℝ≥0∞}
-    (h₁ : R₁.Complete World.plain rel₁ rel₁' ε₁)
-    (h₂ : R₂.Complete World.plain rel₂ rel₂' ε₂) :
-    (R₁.seqProd R₂).Complete World.plain (relProd rel₁ rel₂) (relProd rel₁' rel₂') (ε₁ + ε₂) := by
-  intro x w ⟨hxw₁, hxw₂⟩
-  have hl₁ := h₁ x.1 w.1 hxw₁
-  have hl₂ := h₂ x.2 w.2 hxw₂
-  rw [Reduction.run, World.plain_eval_execute, PMF.toOuterMeasure_map_apply] at hl₁ hl₂ ⊢
-  have hlaw : plainLaw ((R₁.seqProd R₂).prover x w >>=
-      runStrategy (s₁ ++ s₂) (R₁.seqProd R₂).verifier.samplers) =
-      (plainLaw (R₁.prover x.1 w.1 >>= runStrategy s₁ R₁.verifier.samplers)).bind fun r₁ =>
-        (plainLaw (R₂.prover x.2 w.2 >>= runStrategy s₂ R₂.verifier.samplers)).map
-          fun r₂ => (Transcript.append s₁ s₂ r₁.1 r₂.1,
-            ((r₁.2.1, r₂.2.1), (r₁.2.2, r₂.2.2))) := by
-    simp only [Reduction.seqProd, Verifier.seqProd, bind_assoc, plainLaw_bind, PMF.bind_bind]
-    congr 1
-    funext st₁
-    rw [← plainLaw_bind, plainLaw_run_append]
-    congr 1
-    funext r₁
-    simp only [bind_assoc, plainLaw_bind, PMF.map_bind]
-    congr 1
-    funext st₂
-    rw [← PMF.map_bind, ← plainLaw_bind, plainLaw_bindLeaf_run, PMF.map_bind]
-    simp only [plainLaw_pure, PMF.pure_map]
-    exact PMF.bind_pure_comp _ _
-  rw [hlaw]
-  refine le_trans (Probability.PMF.toOuterMeasure_bind_failure_le _ _
-    {r₁ | R₁.verifier.outputOn x.1 r₁.1 = some r₁.2.1 ∧ rel₁' r₁.2.1 r₁.2.2} _ ε₂
-    fun r₁ _ hr₁ => ?_) ?_
-  · rw [PMF.toOuterMeasure_map_apply]
-    refine le_trans (MeasureTheory.measure_mono ?_) hl₂
-    rintro r₂ hfail ⟨hout₂, hrel₂⟩
-    apply hfail
-    simp only [Set.mem_ofPred_eq] at hr₁
-    simp only [Reduction.seqProd, Verifier.outputOn_seqProd, Spec.Transcript.split_append,
-      hr₁.1, Option.bind_some, Option.map_eq_some_iff, Prod.mk.injEq, true_and, relProd,
-      hr₁.2, hrel₂, and_true]
-    exact ⟨r₂.2.1, hout₂, rfl⟩
-  · refine add_le_add (le_trans (MeasureTheory.measure_mono ?_) hl₁) le_rfl
-    rintro r₁ hr₁
-    simp only [Set.mem_compl_iff, Set.mem_ofPred_eq] at hr₁
-    exact hr₁
-
 end SeqProd
 
 /-! ### Identity, iteration, and bundles -/
@@ -575,7 +463,7 @@ theorem Reduction.id_rbrKnowledgeSound {S W : Type} (rel : S → W → Prop) :
   exact hnot hrel
 
 /-- Composed straight-line extractor for the first `k` stages of `Reduction.iterate`. -/
-noncomputable def Verifier.extractIterate {s : ℕ → Spec} {S W : ℕ → Type}
+@[expose] noncomputable def Verifier.extractIterate {s : ℕ → Spec} {S W : ℕ → Type}
     (R : (i : ℕ) →
       Reduction OracleSpec.empty OracleSpec.empty (s i) (S i) (W i) (S (i + 1)) (W (i + 1)))
     (E : (i : ℕ) → S i → Transcript (s i) → W (i + 1) → W i)

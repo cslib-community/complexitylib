@@ -173,7 +173,7 @@ def Reduction.append (R₁ : Reduction oP oV s₁ S₁ W₁ S₂ W₂)
 section Rbr
 
 /-- The challenges of a composed transcript split into those of its halves. -/
-theorem challenges_split : ∀ (s₁ s₂ : Spec) (τ : Transcript (s₁ ++ s₂)),
+private theorem challenges_split : ∀ (s₁ s₂ : Spec) (τ : Transcript (s₁ ++ s₂)),
     PerChallenge.split s₁ s₂ (Transcript.challenges (s₁ ++ s₂) τ) =
       (Transcript.challenges s₁ (Transcript.split s₁ s₂ τ).1,
         Transcript.challenges s₂ (Transcript.split s₁ s₂ τ).2)
@@ -215,16 +215,16 @@ private theorem interpret_liftMsgRight : ∀ (s₁ s₂ : Spec) (τ : Transcript
 
 
 /-- The answers to the verifier's queries from a transcript, in the plain model. -/
-abbrev answerAll (s : Spec) (τ : Transcript s) :
+private abbrev answerAll (s : Spec) (τ : Transcript s) :
     (q : Empty ⊕ MsgQuery s) → (OracleSpec.empty ⊕ₒ msgSpec s) q :=
   OracleComp.sumHandler (m := Id) (fun e : Empty => e.elim) (Transcript.answer s τ)
 
-theorem outputOn_eq (V : Verifier OracleSpec.empty s₁ S₁ S₂) (x : S₁) (τ : Transcript s₁) :
+private theorem outputOn_eq (V : Verifier OracleSpec.empty s₁ S₁ S₂) (x : S₁) (τ : Transcript s₁) :
     V.outputOn x τ = OracleComp.interpret (m := Id) (answerAll s₁ τ)
       (V.decide x (Transcript.challenges s₁ τ)) :=
   rfl
 
-theorem interpret_liftDecisionLeft {α : Type} (τ : Transcript (s₁ ++ s₂))
+private theorem interpret_liftDecisionLeft {α : Type} (τ : Transcript (s₁ ++ s₂))
     (p : OracleComp (OracleSpec.empty ⊕ₒ msgSpec s₁) α) :
     OracleComp.interpret (m := Id) (answerAll (s₁ ++ s₂) τ) (liftDecisionLeft s₁ s₂ p) =
       OracleComp.interpret (m := Id) (answerAll s₁ (Transcript.split s₁ s₂ τ).1) p := by
@@ -237,7 +237,7 @@ theorem interpret_liftDecisionLeft {α : Type} (τ : Transcript (s₁ ++ s₂))
   · refine (OracleComp.interpret_interpret (m := Id) _ _ _).trans ?_
     exact interpret_liftMsgLeft s₁ s₂ τ q
 
-theorem interpret_liftDecisionRight {α : Type} (τ : Transcript (s₁ ++ s₂))
+private theorem interpret_liftDecisionRight {α : Type} (τ : Transcript (s₁ ++ s₂))
     (p : OracleComp (OracleSpec.empty ⊕ₒ msgSpec s₂) α) :
     OracleComp.interpret (m := Id) (answerAll (s₁ ++ s₂) τ) (liftDecisionRight s₁ s₂ p) =
       OracleComp.interpret (m := Id) (answerAll s₂ (Transcript.split s₁ s₂ τ).2) p := by
