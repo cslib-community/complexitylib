@@ -46,6 +46,26 @@ is `R/(2)`. This algebraic bridge adds no hardness or runtime claim.
 
 These are implications from hardness assumptions. They do not prove that a concrete OWF, DDH group, LWE family or SIS parameter choice is hard. The LWE interface exposes only the serialized public matrix `[B*t+e | B]`, with independent errors and one shared uniform secret; in [`SIS/Module.lean`](../../Complexity/Crypto/Computational/SIS/Module.lean), `expandModuleMatrix` and `flattenPolyVec` embed negacyclic `ModuleSIS` and `ModuleLWE` instances over `ℤ_q[X]/(X^n+1)` into unstructured `(d * n) × (k * n)` matrices over `ℤ_q` (checked with concrete evaluations and nonvacuity proofs in [`ComplexityTests/Crypto/ModuleSIS.lean`](../../ComplexityTests/Crypto/ModuleSIS.lean)), and [`SIS/ModuleEncryption.lean`](../../Complexity/Crypto/Computational/SIS/ModuleEncryption.lean) builds dual-Regev public-key encryption (`moduleLWEKeyGen`, `moduleLWEEncrypt`, `moduleLWEDecrypt`), bounded-noise decryption correctness (`moduleLWEDecrypt_moduleLWEEncrypt_eq`), and two-hop public-key/ciphertext reductions to `ModuleLWE.sampleLaw` (`advantage_realEncryptionView_uniform_le`, `advantage_realEncryptionView_msg_le`, checked in [`ComplexityTests/Crypto/ModuleEncryption.lean`](../../ComplexityTests/Crypto/ModuleEncryption.lean)); no worst-case lattice reduction is asserted there.
 
+The Module-LWE sampling APIs now accept explicit distributions: `moduleLWEPublicKeyLaw` has an
+optional `secretLaw`, `encryptionViewOfKeyLaw` an optional `ephemeralLaw`, and `realEncryptionView`
+accepts both. Their defaults remain uniform, and the existing security reductions concern those
+uniform defaults. [`ModuleEncryption/Sampling.lean`](../../Complexity/Crypto/Computational/SIS/ModuleEncryption/Sampling.lean)
+proves that conditioning public-key generation on the actual sampled secret preserves the public
+view, including when the same run retains `(secret, view)`. Sampling a fresh secret independently
+of a public key would not preserve that correlation.
+The concrete small-secret instance reuses the existing centered-binomial fair-bit program and
+modular `GSW.noiseLaw`. Under `2*η < 2^w`, every sampled integer is its residue's centered lift,
+so the resulting module secret satisfies the coefficient bound `η`. Nested list sampling has a
+uniform strict-PPT certificate for unary row count, degree and binomial width, with binary signed
+integer output. The subsequent modular-cast identity is semantic; this is not a native certificate
+for the whole encryption scheme. [Tests](../../ComplexityTests/Crypto/ModuleEncryptionSampling.lean)
+include nonzero supported secrets, zero dimensions/width, and a variable-row native client.
+They also show that uniform rank-one, degree-one secrets and ephemeral values modulo sixteen,
+with all errors one, decrypt a true message correctly with probability only `7/16`.
+The existing deterministic correctness theorem requires bounded secrets as well as bounded noise;
+this example does not contradict it. Small-secret correctness and security require their own
+statements for the chosen laws.
+
 For numerical modulus conversion, import
 [`SIS/ModulusSwitch.lean`](../../Complexity/Crypto/Computational/SIS/ModulusSwitch.lean).
 `moduleLWEModulusSwitch p ct` converts the existing ciphertext components with the reusable
