@@ -9,6 +9,7 @@ public import Complexity.Foundations.Probability.HierarchyInitialPerturbation
 public import Complexity.Foundations.Probability.HierarchyInitialIntegrated
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ScheduledMeanTail
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ScheduleAllocation
+import Complexity.Foundations.Probability.HierarchyInitialFeasibility
 
 /-!
 # Preparation payments for computed approximate initial histories
@@ -29,8 +30,10 @@ transport part, without asserting the condition uniformly. The actual reserve al
 separates deterministic tails from correlated noise. All surviving first-mean endpoints
 receive geometric stationary, final, raw and rarity-tail payments, with the semantic
 deficit kept separate. One structural charge pays all four transport components before
-request coordinates, width and budget. Uniform absorption of the remaining costs, simultaneous
-changing-request induction and native RL=L remain open.
+request coordinates, width and budget. A joint fixed-depth, bounded-budget family now pays
+the positive-prefix semantic row moments and the final semantic term in the actual reserve.
+The exceptional initial semantic group and its stationary/raw/tail allocation, the other
+three statistics, simultaneous changing-request induction and native RL=L remain open.
 
 ## Main results
 
@@ -47,6 +50,10 @@ changing-request induction and native RL=L remain open.
 * `initialComputedPrecisionMoment_first_tail_le`: paid actual deterministic first-mean tail.
 * `initialComputedPrecisionMoment_first_pre_le`: stationary floor-weighted endpoint payment.
 * `initialComputedPrecisionMoment_first_final_le`: final slack-one endpoint payment.
+* `initialPolynomialLoss_row_bounded_family`: positive-prefix semantic row payment.
+* `initialComputedFirstFinalPayment`: final semantic payment in the actual reserve.
+* `initialComputedPrecisionMoment_first_final_payment_le`: computed final payment consumer.
+* `initialComputedFirstFinalBudget_bounded_family`: actual final semantic budget absorption.
 * `initialComputedPrecisionMoment_first_raw_le`: aggregate weighted raw endpoint payment.
 * `initial_compressed_precision_clipped_first`: actual clipped first-coordinate payment.
 * `initialPerturbationFactor`: target-dependent worst-pair transport payment.
@@ -831,6 +838,137 @@ theorem initialComputedPrecisionMoment_first_final_le (B : BudgetData HP P)
     (Nat.log2 M) ks ka ha hi r hr hs ht htask R ss st coefficient ζ Lh Lρ).trans
   exact mul_le_mul_of_nonneg_left
     (add_le_add (mul_le_mul_of_nonneg_left hg hK) le_rfl) (by positivity)
+
+/-- Actual semantic first-mean moments after group zero in the joint fixed-depth,
+bounded-budget family. The row width is paid using the bounded field horizon.
+The initial inactive group, centered noises and second preparation are separate. -/
+theorem initialPolynomialLoss_row_bounded_family (B : BudgetData HP P)
+    (hcharge : 0 ≤ B.rankCharge) (M n j ks ka : ℕ) (hM : 1 < M) (hj : 0 < j)
+    (hbins : B.bins = range (n + 1)) (hrate : B.binRate = rate)
+    (hlo : B.slack * (1 + 4 * (n + ka)) < M)
+    (hhi : M ≤ 32 * B.slack * n) (ha : 2 * ka ≤ n) (hP : P ≤ 2 ^ (n + 1))
+    (H : Horizon P) (hks : ks ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (hC : ∀ x y, 0 ≤ B.base x y) (R : RoleProfile 3) (ss st : List (ZMod P)) :
+    rowNormPow 4 P r.source.rate
+      (retainedMask R.source (side P ks) B.padding ss)
+      (retainedMask R.terminal (side P ka) B.padding st)
+      (fun _ x y => min 1 (|B.initialPolynomialLoss M n j r x y| /
+        (rate ka + B.base x y))) ≤
+      32 * ((2 : ℝ) ^ (-B.requestPrecision M r)) ^ 4 := by
+  have hc : ∀ bin ∈ B.bins, LogSpaceEstimation.scaleCutoff B.slack
+      (B.sampleScale {r with usage := r.terminal} (some bin)) < M := by
+    intro bin hb
+    rw [hbins, mem_range] at hb
+    exact B.retained_scaleCutoff_lt {r with usage := r.terminal} M n ka hrate ht hlo
+      bin (by omega)
+  have hz := B.initialInactiveCharge_eq_zero_of_pos M j hM hj r hc
+  have hp (x y : ZMod P) :
+      min 1 (|B.initialPolynomialLoss M n j r x y| / (rate ka + B.base x y)) ≤
+        rate n / rate ka := by
+    have hb := B.initialPolynomialLoss_div_le M n j ka r hrate hC x y
+    rw [initialMeanCharge, hz, add_zero] at hb
+    rw [abs_of_nonneg (B.initialPolynomialLoss_nonneg M n j r hrate hC x y)]
+    exact (min_le_right _ _).trans hb
+  rw [hs]
+  exact (grid_row_moment_le B.padding R.source ks ss H hks _ _
+    (div_nonneg (rate_pos n).le (rate_pos ka).le) (fun σ x y => by
+      rw [abs_of_nonneg (le_min (by norm_num) (div_nonneg (abs_nonneg _)
+        (add_nonneg (rate_pos ka).le (hC x y))))]
+      exact hp x y)).trans
+    (B.bounded_family_omission_row hcharge n M ks ka hhi ha hP r hs ht)
+
+/-- The existing computed final first-mean payment consumes the joint semantic schedule.
+Transport still pays its own structural charge. This does not certify the complete
+reserve: the exceptional initial semantic group and the other three statistics remain. -/
+theorem initialComputedFirstFinalBudget_bounded_family (B : BudgetData HP P)
+    (hcharge : 0 ≤ B.rankCharge) (M n ks ka : ℕ) (hM : 1 < M)
+    (hbins : B.bins = range (n + 1)) (hrate : B.binRate = rate)
+    (hlo : B.slack * (1 + 4 * (n + ka)) < M)
+    (hhi : M ≤ 32 * B.slack * n) (ha : 2 * ka ≤ n) (hP : P ≤ 2 ^ (n + 1))
+    (H : Horizon P) (hks : ks ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (hC : ∀ x y, 0 ≤ B.base x y) (R : RoleProfile 3) (ss st : List (ZMod P))
+    (coefficient : ℝ) :
+    B.initialComputedFirstFinalBudget M n r R ks ka ss st coefficient ≤
+      (8 : ℝ) ^ (4⁻¹ : ℝ) *
+        (((max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^
+          (4⁻¹ : ℝ) * |coefficient| * (2 : ℝ) ^ (-B.requestPrecision M r) *
+          (2 : ℝ) ^ (-B.rankCharge)) * (4 * ∑' h, LogSpaceEstimation.scaleMajorant h) +
+        (32 : ℝ) ^ (4⁻¹ : ℝ) * (2 : ℝ) ^ (-B.requestPrecision M r)) := by
+  have hj : 0 < Nat.log2 M := by
+    have hp := Nat.lt_pow_succ_log_self (b := 2) (by decide) M
+    rw [← Nat.log2_eq_log_two] at hp
+    by_contra hz
+    have he : Nat.log2 M = 0 := by omega
+    rw [he] at hp
+    norm_num at hp
+    omega
+  have hb := B.initialPolynomialLoss_row_bounded_family hcharge M n (Nat.log2 M)
+    ks ka hM hj hbins hrate hlo hhi ha hP H hks r hs ht hC R ss st
+  have hroot := Real.rpow_le_rpow
+    (rowNormPow_nonneg (mul_nonneg (Nat.cast_nonneg P) (by rw [hs]; exact (rate_pos ks).le)) _)
+    hb (by norm_num : (0 : ℝ) ≤ 4⁻¹)
+  rw [Real.mul_rpow (by norm_num : (0 : ℝ) ≤ 32) (by positivity)] at hroot
+  have he : (((2 : ℝ) ^ (-B.requestPrecision M r)) ^ 4) ^ (4⁻¹ : ℝ) =
+      (2 : ℝ) ^ (-B.requestPrecision M r) := by
+    convert Real.pow_rpow_inv_natCast (by positivity :
+      0 ≤ (2 : ℝ) ^ (-B.requestPrecision M r)) (by decide : (4 : ℕ) ≠ 0) using 1
+  rw [he] at hroot
+  exact mul_le_mul_of_nonneg_left (add_le_add le_rfl hroot) (by positivity)
+
+/-- Final first-mean payment used by the actual reserve. On the bounded budget family
+it takes the smaller of the original exact semantic budget and the paid semantic bound.
+Outside that family the original unconditional envelope is retained. -/
+@[expose] def initialComputedFirstFinalPayment (B : BudgetData HP P) (M n : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
+    (ks ka : ℕ) (ss st : List (ZMod P)) (coefficient : ℝ) : ℝ :=
+  let old := B.initialComputedFirstFinalBudget M n r R ks ka ss st coefficient
+  if 1 < M ∧ B.slack * (1 + 4 * (n + ka)) < M ∧ M ≤ 32 * B.slack * n ∧
+      2 * ka ≤ n ∧ P ≤ 2 ^ (n + 1) then
+    min old ((8 : ℝ) ^ (4⁻¹ : ℝ) *
+      (((max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^
+        (4⁻¹ : ℝ) * |coefficient| * (2 : ℝ) ^ (-B.requestPrecision M r) *
+        (2 : ℝ) ^ (-B.rankCharge)) * (4 * ∑' h, LogSpaceEstimation.scaleMajorant h) +
+      (32 : ℝ) ^ (4⁻¹ : ℝ) * (2 : ℝ) ^ (-B.requestPrecision M r)))
+  else old
+
+/-- The paid final payment preserves the original unconditional guarantee. -/
+theorem initialComputedFirstFinalPayment_le (B : BudgetData HP P) (M n : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
+    (ks ka : ℕ) (ss st : List (ZMod P)) (coefficient : ℝ) :
+    B.initialComputedFirstFinalPayment M n r R ks ka ss st coefficient ≤
+      B.initialComputedFirstFinalBudget M n r R ks ka ss st coefficient := by
+  unfold initialComputedFirstFinalPayment
+  split_ifs
+  · exact min_le_left _ _
+  · exact le_rfl
+
+/-- Literal computed final statistic with its bounded-family semantic payment. This is
+consumed by the existing separated-reserve theorem, not a second estimator interface. -/
+theorem initialComputedPrecisionMoment_first_final_payment_le (B : BudgetData HP P)
+    (hcharge : 0 ≤ B.rankCharge) (hrate : B.binRate = rate) (H : Horizon P)
+    (M n ks ka : ℕ) (ha : ka ≤ H.maxExponent) (hks : ks ≤ H.maxExponent)
+    (hbins : B.bins = range (n + 1)) (hn : n ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩))
+    (hC : ∀ x y, 0 ≤ B.base x y)
+    (R : RoleProfile 3) (ss st : List (ZMod P)) (coefficient ζ Lh Lρ : ℝ) :
+    B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ
+      (Nat.log2 M) false 0 ^ (4⁻¹ : ℝ) ≤
+      B.initialComputedFirstFinalPayment M n r R ks ka ss st coefficient := by
+  have hp := B.initialComputedPrecisionMoment_first_final_le hcharge hrate H M n ks ka
+    ha (fun bin hb => by rw [hbins, mem_range] at hb; omega) r
+    (by rw [hs]; exact (rate_pos ks).le) hs ht htask R ss st coefficient ζ Lh Lρ
+  unfold initialComputedFirstFinalPayment
+  split_ifs with h
+  · exact le_min hp (hp.trans (B.initialComputedFirstFinalBudget_bounded_family hcharge
+      M n ks ka h.1 hbins hrate h.2.1 h.2.2.1 h.2.2.2.1 h.2.2.2.2
+      H hks r hs ht hC R ss st coefficient))
+  · exact hp
 
 /-- Aggregate raw first-mean charge uses the weighted endpoint theorem, with literal
 postincrement indexing and no unconditional weighted-moment envelope. -/
@@ -1739,7 +1877,7 @@ theorem initial_compressed_precision_reserve
             (B.initialComputedFirstPreBudget M n r R ks ka ss st coefficient floor +
               ∑ j ∈ range (Nat.log2 M + 1), dyadicFloor floor (Nat.log2 M + 1) j *
                 (a j false 1 + (a j true 0 + a j true 1)))
-            (B.initialComputedFirstFinalBudget M n r R ks ka ss st coefficient +
+            (B.initialComputedFirstFinalPayment M n r R ks ka ss st coefficient +
               (a (Nat.log2 M) false 1 + (a (Nat.log2 M) true 0 + a (Nat.log2 M) true 1)))
             ((B.initialComputedFirstTailBudget M n r R ks ka ss st coefficient floor +
               ∑ j ∈ range (Nat.log2 M + 1),
@@ -1804,9 +1942,9 @@ theorem initial_compressed_precision_reserve
         R ss st coefficient ζ Lh Lρ floor hfloor.le
       simp only [mul_add, sum_add_distrib]
       linarith only [hp]
-    · have hp := B.initialComputedPrecisionMoment_first_final_le hcharge hrate H M n ks ka
-        hka (fun bin hi => by rw [hbins, mem_range] at hi; omega) r hr
-        (by simp only [hs, gridChannel]) (by simp only [ht, gridChannel]) htask
+    · have hp := B.initialComputedPrecisionMoment_first_final_payment_le hcharge hrate H M n ks ka
+        hka hks hbins hn r
+        (by simp only [hs, gridChannel]) (by simp only [ht, gridChannel]) htask hC
         R ss st coefficient ζ Lh Lρ
       linarith only [hp]
     · intro j hj

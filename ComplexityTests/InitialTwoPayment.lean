@@ -650,3 +650,99 @@ example (K m j : ℕ) :
   convert compatible_false_weight_eq 1 K m j 2 using 1
   norm_num
   ring
+
+-- One evaluator per retained depth, with a bounded family of budgets. The charge is fixed
+-- first; positive precision grows with depth and actual nonzero omitted mass persists.
+example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ}
+    (B : BudgetData HP P) (hrate : B.binRate = rate) (hslack : B.slack = 1)
+    (n : ℕ) :
+    let B' : BudgetData HP P := {B with rankCharge := 1}
+    let r : HierarchyTask.Request HP.k (Fin 3) (ZMod P) :=
+      ⟨.row 0 (.pilotInput ⟨0, HP.k_pos⟩), gridChannel 0 0 [],
+        gridChannel 2 0 [], gridChannel 2 0 []⟩
+    r.task.rank < n →
+      0 < B'.requestPrecision (16 * n) r ∧
+      (∀ bin ≤ n, LogSpaceEstimation.scaleCutoff B'.slack
+        (B'.sampleScale r (some bin)) < 16 * n) ∧
+      rate n / rate 0 ≤ (2 : ℝ) ^ (-B'.requestPrecision (16 * n) r) ∧
+      0 < rate n / 4 ∧
+      (rate n / 4) * (1 - polynomialSwitch4 (1 / 2) 1 ((rate n / 4) / rate n)) =
+        rate n / 4 := by
+  dsimp only
+  intro hn
+  let B' : BudgetData HP P := {B with rankCharge := 1}
+  let r : HierarchyTask.Request HP.k (Fin 3) (ZMod P) :=
+    ⟨.row 0 (.pilotInput ⟨0, HP.k_pos⟩), gridChannel 0 0 [],
+      gridChannel 2 0 [], gridChannel 2 0 []⟩
+  have hn0 : 0 < n := by omega
+  have hp : B'.requestPrecision (16 * n) r = (n : ℝ) - r.task.rank := by
+    rw [B'.requestPrecision_grid (16 * n) 0 0 r rfl rfl]
+    dsimp only [B']
+    rw [hslack]
+    push_cast
+    ring
+  have hg := B'.bounded_family_depth_guards (by norm_num [B']) n (16 * n) 0 0
+    (by change B.slack * (1 + 4 * (n + 0)) < _; rw [hslack]; omega)
+    (by change _ ≤ 32 * B.slack * n; rw [hslack]; omega)
+    (by omega) r hrate rfl rfl
+  refine ⟨?_, hg.1, hg.2.2, div_pos (rate_pos n) (by norm_num), ?_⟩
+  · rw [hp]
+    exact sub_pos.mpr (by exact_mod_cast hn)
+  · have he : (rate n / 4) / rate n = (1 / 4 : ℝ) := by
+      field_simp [(rate_pos n).ne']
+    rw [he, polynomialSwitch4_of_le (by norm_num) (by norm_num)]
+    ring
+
+-- A fixed-depth semantic obstruction, not an executed full-estimator counterexample:
+-- at depth zero true mass 1/4 is omitted, so its normalized error is 1/5, above 2^-8.
+example :
+    (1 / 4 : ℝ) * (1 - polynomialSwitch4 (1 / 2) 1 ((1 / 4) / rate 0)) /
+      (rate 0 + 1 / 4) > (2 : ℝ) ^ (-8 : ℝ) := by
+  have hz : polynomialSwitch4 (1 / 2) 1 ((1 / 4 : ℝ) / rate 0) = 0 :=
+    polynomialSwitch4_of_le (by norm_num) (by norm_num [rate])
+  rw [hz]
+  norm_num [rate]
+
+-- The literal initial group can omit every bin even when its cutoff fits. Its actual
+-- charge must remain in stationary/raw/tail analysis, rather than being set to zero.
+example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ}
+    (B : BudgetData HP P) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) :
+    B.initialInactiveCharge 16 0 r = B.binCap * ∑ bin ∈ B.bins, B.binRate bin := by
+  unfold BudgetData.initialInactiveCharge
+  norm_num [Cslib.RowCompression.dyadicSlack]
+
+-- This consumes the existing computed first-mean minimum and the very final budget
+-- appearing in initial_compressed_precision_reserve. It remains conditional on child IH;
+-- neither the other three reserve statistics nor the exceptional group is certified.
+example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ} [Fact P.Prime]
+    (B : BudgetData HP P) (hcharge : 0 ≤ B.rankCharge)
+    (M n ks ka : ℕ) (hM : 1 < M)
+    (hbins : B.bins = range (n + 1)) (hrate : B.binRate = rate)
+    (hlo : B.slack * (1 + 4 * (n + ka)) < M)
+    (hhi : M ≤ 32 * B.slack * n) (ha : 2 * ka ≤ n) (hP : P ≤ 2 ^ (n + 1))
+    (H : Horizon P) (hn : n ≤ H.maxExponent) (hks : ks ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩))
+    (hC : ∀ x y, 0 ≤ B.base x y) (R : RoleProfile 3) (ss st : List (ZMod P))
+    (coefficient ζ Lh Lρ : ℝ) :
+    B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ
+      (Nat.log2 M) false 0 ^ (4⁻¹ : ℝ) ≤
+      (8 : ℝ) ^ (4⁻¹ : ℝ) *
+        (((max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^
+          (4⁻¹ : ℝ) * |coefficient| * (2 : ℝ) ^ (-B.requestPrecision M r) *
+          (2 : ℝ) ^ (-B.rankCharge)) * (4 * ∑' h, LogSpaceEstimation.scaleMajorant h) +
+        (32 : ℝ) ^ (4⁻¹ : ℝ) * (2 : ℝ) ^ (-B.requestPrecision M r)) := by
+  have hka : ka ≤ H.maxExponent := (by omega : ka ≤ n).trans hn
+  exact (B.initialComputedPrecisionMoment_first_final_le hcharge hrate H M n ks ka hka
+    (fun bin hb => by rw [hbins, mem_range] at hb; omega) r
+    (by rw [hs]; exact (rate_pos ks).le) hs ht htask R ss st coefficient ζ Lh Lρ).trans
+    (B.initialComputedFirstFinalBudget_bounded_family hcharge M n ks ka hM hbins hrate
+      hlo hhi ha hP H hks r hs ht hC R ss st coefficient)
+
+-- Each larger retained depth admits its own bounded prime and common field horizon.
+-- This changes the evaluator family, never the bin set during one recursive execution.
+example (n : ℕ) :
+    ∃ P, P.Prime ∧ 2 ^ n < P ∧ P ≤ 2 ^ (n + 1) ∧
+      ∃ H : Horizon P, H.maxExponent = n ∧ H.maxIdentifier = 0 :=
+  exists_bounded_depth_prime n 0 (by positivity)

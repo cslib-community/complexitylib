@@ -2231,7 +2231,7 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
               3] 0 ζ +
               ∑ j ∈ range (Nat.log2 1 + 1), dyadicFloor ζ (Nat.log2 1 + 1) j *
                 (a j false 1 + (a j true 0 + a j true 1)))
-            ((data HP).initialComputedFirstFinalBudget 1 1 (request HP) threeRoles 0 0 [1] [2,
+            ((data HP).initialComputedFirstFinalPayment 1 1 (request HP) threeRoles 0 0 [1] [2,
               3] 0 +
               (a (Nat.log2 1) false 1 + (a (Nat.log2 1) true 0 + a (Nat.log2 1) true 1)))
             (((data HP).initialComputedFirstTailBudget 1 1 (request HP) threeRoles 0 0 [1] [2,

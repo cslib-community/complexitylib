@@ -7,6 +7,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Probability.HierarchyInitialMean
+import Complexity.Foundations.Probability.HierarchyInitialFeasibility
 
 /-!
 # Finite scheduled payments for initial conditional means
@@ -22,6 +23,7 @@ they do not close the lower-budget induction, preparation or second noise.
 * `initialCoarseLoss_eq_zero`: no initial coarse boundary at the chosen horizon.
 * `initialPolynomialLoss_le`: matrix-unit omitted and inactive charge bound.
 * `initialPolynomialLoss_div_le`: omitted/inactive mass in actual decoder units.
+* `initialPolynomialLoss_div_bounded_family`: positive-prefix joint semantic payment.
 * `initialMeanCharge_preloss`: finite scheduled payment under explicit scale allocation.
 * `initialFirstSignal_clippedMean_final`: actual final first-mean payment.
 * `initialFirstSignal_clippedMean_preloss`: stationary consumer with row maxima.
@@ -177,6 +179,30 @@ theorem initialInactiveCharge_le (B : BudgetData HP P) (M j : ℕ)
   split_ifs
   · exact le_rfl
   · exact hrate bin
+
+/-- In a fixed-depth bounded-budget family, every positive prefix pays its actual
+omitted/inactive deficit at parent precision. Group zero is deliberately excluded. -/
+theorem initialPolynomialLoss_div_bounded_family (B : BudgetData HP P)
+    (hcharge : 0 ≤ B.rankCharge) (M n j ks ka : ℕ) (hM : 1 < M) (hj : 0 < j)
+    (hbins : B.bins = range (n + 1)) (hrate : B.binRate = rate)
+    (hlo : B.slack * (1 + 4 * (n + ka)) < M)
+    (hhi : M ≤ 32 * B.slack * n) (ha : 2 * ka ≤ n)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (hC : ∀ x y, 0 ≤ B.base x y) (x y : ZMod P) :
+    B.initialPolynomialLoss M n j r x y / (rate ka + B.base x y) ≤
+      (2 : ℝ) ^ (-B.requestPrecision M r) := by
+  have hg := B.bounded_family_depth_guards hcharge n M ks ka hlo hhi ha r hrate hs ht
+  have hc : ∀ bin ∈ B.bins, LogSpaceEstimation.scaleCutoff B.slack
+      (B.sampleScale {r with usage := r.terminal} (some bin)) < M := by
+    intro bin hb
+    rw [hbins, mem_range] at hb
+    exact B.retained_scaleCutoff_lt {r with usage := r.terminal} M n ka hrate ht hlo
+      bin (by omega)
+  have hz := B.initialInactiveCharge_eq_zero_of_pos M j hM hj r hc
+  have hp := B.initialPolynomialLoss_div_le M n j ka r hrate hC x y
+  rw [initialMeanCharge, hz, add_zero] at hp
+  exact hp.trans hg.2.2
 
 /-- Global finite stationary first-mean payment. Scale allocation makes every positive
 index active; the possible initial deficit is multiplied by its actual exponentially small

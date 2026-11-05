@@ -26,6 +26,9 @@ rank and source exponents must be tracked separately when using the omitted-dept
 * `requestPrecision_initial_clipped_adjust`: divide actual scale loss by the precision salary.
 * `requestPrecision_initial_raw_pay`: ordinary direct-child scale/budget/rank cancellation.
 * `requestPrecision_initial_scheduled_raw_pay`: explicit payment at actual scheduled budgets.
+* `requestPrecision_le_omitted_depth_iff`: exact maximum-budget interface.
+* `bounded_family_depth_guards`: joint cutoff-fit and parent-precision payment.
+* `bounded_family_omission_row`: bounded width paid at parent precision.
 * `sampleScale_grid`: exact integer scale offset.
 * `retained_scaleCutoff_lt`: every retained cutoff is below a sufficient budget.
 * `slow_depth_guards`: depth M/(128*slack) pays cutoffs and positive precision.
@@ -287,6 +290,92 @@ theorem retained_scaleCutoff_lt (B : BudgetData HP P)
     simpa only [Int.natAbs_natCast] using hh.trans (by omega : ka + bin ≤ n + ka)
   exact (Nat.mul_le_mul_left B.slack (by omega : 1 + 4 * ((ka : ℤ) - bin).natAbs ≤
     1 + 4 * (n + ka))).trans_lt hbudget
+
+/-- Exact maximum-budget interface for the omitted-depth exponent. In particular,
+fixed retained depth cannot support this comparison at arbitrarily large budgets.
+The source and rank terms are explicit, not constants chosen after a request. -/
+theorem requestPrecision_le_omitted_depth_iff (B : BudgetData HP P) (M n ks ka : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka) :
+    B.requestPrecision M r ≤ 4 * ((n : ℝ) - ka) ↔
+      (M : ℝ) ≤ 16 * B.slack *
+        (4 * (n : ℝ) - 2 * ka + 2 * ks + B.rankCharge * r.task.rank) := by
+  rw [B.requestPrecision_grid M ks ka r hs ht]
+  have hs : (0 : ℝ) < B.slack := by exact_mod_cast B.slack_pos
+  have hc : (0 : ℝ) < 16 * B.slack := by positivity
+  rw [sub_le_iff_le_add, sub_le_iff_le_add, div_le_iff₀ hc]
+  constructor <;> intro h <;> nlinarith
+
+/-- A fixed evaluator can serve a bounded budget family. The maximum budget is chosen
+jointly with retained depth, rather than sending the budget to infinity at fixed bins.
+The terminal exponent is restricted to half the retained depth to leave a width margin.
+No positivity of parent precision, or accuracy of recursive children, is assumed. -/
+theorem bounded_family_depth_guards (B : BudgetData HP P)
+    (hcharge : 0 ≤ B.rankCharge) (n M ks ka : ℕ)
+    (hlo : B.slack * (1 + 4 * (n + ka)) < M)
+    (hhi : M ≤ 32 * B.slack * n) (ha : 2 * ka ≤ n)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hrate : B.binRate = rate) (hs : r.source.rate = rate ks)
+    (ht : r.terminal.rate = rate ka) :
+    (∀ bin ≤ n, LogSpaceEstimation.scaleCutoff B.slack
+      (B.sampleScale r (some bin)) < M) ∧
+    B.requestPrecision M r ≤ 2 * (n : ℝ) - 2 * ((ka : ℝ) + ks) ∧
+    rate n / rate ka ≤ (2 : ℝ) ^ (-B.requestPrecision M r) := by
+  have hc : (0 : ℝ) < B.slack := by exact_mod_cast B.slack_pos
+  have hm : (M : ℝ) ≤ 32 * (B.slack : ℝ) * n := by exact_mod_cast hhi
+  have hp : B.requestPrecision M r ≤ 2 * (n : ℝ) - 2 * ((ka : ℝ) + ks) := by
+    rw [B.requestPrecision_grid M ks ka r hs ht]
+    have hd : (M : ℝ) / (16 * B.slack) ≤ 2 * (n : ℝ) :=
+      (div_le_iff₀ (by positivity)).mpr (by nlinarith)
+    nlinarith [mul_nonneg hcharge (Nat.cast_nonneg (α := ℝ) r.task.rank)]
+  refine ⟨B.retained_scaleCutoff_lt r M n ka hrate ht hlo, hp, ?_⟩
+  have ha' : 2 * (ka : ℝ) ≤ n := by exact_mod_cast ha
+  have hr (k : ℕ) : rate k = (2 : ℝ) ^ (-4 * (k : ℝ)) := by
+    rw [Real.rpow_mul_natCast (by norm_num)]
+    norm_num [rate_eq_source_grid]
+  rw [hr n, hr ka, ← Real.rpow_sub (by norm_num)]
+  apply Real.rpow_le_rpow_of_exponent_le (by norm_num)
+  nlinarith [Nat.cast_nonneg (α := ℝ) ks]
+
+/-- The same bounded family pays the row-width factor of the omitted fourth moment.
+This uses a bounded prime horizon; it is stronger than a matrix-entry estimate. -/
+theorem bounded_family_omission_row (B : BudgetData HP P)
+    (hcharge : 0 ≤ B.rankCharge) (n M ks ka : ℕ)
+    (hM : M ≤ 32 * B.slack * n) (ha : 2 * ka ≤ n)
+    (hP : P ≤ 2 ^ (n + 1))
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka) :
+    16 * (P : ℝ) * (rate n / rate ka) ^ 4 ≤
+      32 * ((2 : ℝ) ^ (-B.requestPrecision M r)) ^ 4 := by
+  have hc : (0 : ℝ) < B.slack := by exact_mod_cast B.slack_pos
+  have hm : (M : ℝ) ≤ 32 * (B.slack : ℝ) * n := by exact_mod_cast hM
+  have hp : B.requestPrecision M r ≤ 2 * (n : ℝ) - 2 * ((ka : ℝ) + ks) := by
+    rw [B.requestPrecision_grid M ks ka r hs ht]
+    have hd : (M : ℝ) / (16 * B.slack) ≤ 2 * (n : ℝ) :=
+      (div_le_iff₀ (by positivity)).mpr (by nlinarith)
+    nlinarith [mul_nonneg hcharge (Nat.cast_nonneg (α := ℝ) r.task.rank)]
+  have ha' : 2 * (ka : ℝ) ≤ n := by exact_mod_cast ha
+  have hP' : (P : ℝ) ≤ (2 : ℝ) ^ ((n : ℝ) + 1) := by
+    have he : (n : ℝ) + 1 = ((n + 1 : ℕ) : ℝ) := by push_cast; rfl
+    rw [he, Real.rpow_natCast]
+    exact_mod_cast hP
+  have hr (k : ℕ) : rate k = (2 : ℝ) ^ (-4 * (k : ℝ)) := by
+    rw [Real.rpow_mul_natCast (by norm_num)]
+    norm_num [rate_eq_source_grid]
+  apply (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hP' (by norm_num))
+    (pow_nonneg (div_nonneg (rate_pos n).le (rate_pos ka).le) 4)).trans
+  rw [hr n, hr ka, ← Real.rpow_sub (by norm_num),
+    ← Real.rpow_mul_natCast (by norm_num), mul_assoc,
+    ← Real.rpow_add (by norm_num)]
+  rw [← Real.rpow_mul_natCast (by norm_num)]
+  have he : (n : ℝ) + 1 + (-4 * (n : ℝ) - -4 * (ka : ℝ)) * 4 ≤
+      1 + -B.requestPrecision M r * 4 := by
+    nlinarith [Nat.cast_nonneg (α := ℝ) n, Nat.cast_nonneg (α := ℝ) ks]
+  calc
+    _ ≤ 16 * (2 : ℝ) ^ (1 + -B.requestPrecision M r * 4) :=
+      mul_le_mul_of_nonneg_left
+        (Real.rpow_le_rpow_of_exponent_le (by norm_num) he) (by norm_num)
+    _ = _ := by rw [Real.rpow_add (by norm_num)]; norm_num; ring
 
 /-- The literal slow linear depth pays all retained cutoffs and leaves a quantitative
 precision margin. Structural rank cost is exposed, rather than silently absorbed.

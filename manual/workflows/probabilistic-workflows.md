@@ -1368,6 +1368,37 @@ retained-depth and cutoff-fit premises, which are additional schedule obligation
 uniform smallness of that deficit follows just from scalar child accuracy. Complete
 reserve allocation, ordinary progress and saturated preparation remain open.
 
+For semantic omission, fix the evaluator's retained depth $n$ and a maximum budget
+jointly: `BudgetData.bins` cannot change during recursion. The bounded-family interface
+requires $c(1+4(n+a))<M\le32cn$, $2a\le n$ and nonnegative structural charge, where
+$c$ is `slack` and $a$ is the terminal exponent. `bounded_family_depth_guards` derives
+actual retained cutoff fit and $\mathrm{rate}(n)/\mathrm{rate}(a)\le2^{-p(M,r)}$.
+`requestPrecision_le_omitted_depth_iff` gives the exact alternative maximum-budget
+condition, retaining the source and rank penalties. It rules out taking $M$ arbitrarily
+large at fixed $n$ for this exponent comparison.
+
+With $P\le2^{n+1}$, the actual positive-prefix semantic row moment is at most
+$32\,2^{-4p(M,r)}$ (`initialPolynomialLoss_row_bounded_family`). The rounded source
+mass is bounded through `grid_row_moment_le`; nominal rates are not identified with
+rounded masses. `initialComputedFirstFinalBudget_bounded_family` pays the semantic term
+of the existing final budget. `initialComputedFirstFinalPayment` takes the smaller of
+that budget and the paid bound when the numerical family guards hold, retaining the
+original envelope otherwise. The existing `initial_compressed_precision_reserve` now
+consumes this payment through `initialComputedPrecisionMoment_first_final_payment_le`;
+`initialComputedFirstFinalPayment_le` preserves the old unconditional guarantee. The checked
+[computed final client](../../ComplexityTests/InitialTwoPayment.lean) composes it with
+`initialComputedPrecisionMoment_first_final_le`. The final transport term still retains
+its independent structural charge.
+
+This is a bounded positive-prefix/final milestone. Group zero can have every bin inactive:
+the test at $M=16$ checks its full inactive charge. Stationary, raw and tail semantic
+absorption, including that group's weight relative to parent precision, remains unproved.
+No combination with `initialFirstTransportPayment_exists_charge` is claimed to pay all
+four semantic terms or the complete reserve. The tests vary depth with positive precision,
+retain nonzero omitted true mass, and exhibit a fixed-depth semantic obstruction; they do
+not establish a nonzero executed full reserve. `exists_bounded_depth_prime` supplies
+bounded field horizons separately for each depth.
+
 `initialClippedEndpointWindow_growth` gives a necessary condition for a proposed
 allocation $wW_{\mathrm{end}}\le2^A$ when $w\ge1$: every live bin $i$ must satisfy
 $$
