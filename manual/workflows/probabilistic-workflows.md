@@ -1634,11 +1634,39 @@ client in [PolynomialBudgetHistory](../../ComplexityTests/PolynomialBudgetHistor
 also consumes the normalized lane, with a separate reset call and no success demand
 for its unused bin. Existing fully correlated two-atom noise clients remain checked.
 
-This completes the unbounded conditional transported first-noise lane, not the full
-reserve allocation or recursive availability theorem. Supported semantic noise
-keeps its existing polynomial payment. The assembled first mean and production leaves
-are unchanged. Second mean/saturated preparation, terminal rank, general products, full
-changing-request accuracy/availability and native RL=L remain open.
+The existing semantic noise now also has a uniform structural payment, proved in
+[HierarchyInitialSemanticNoise](../../Complexity/Foundations/Probability/HierarchyInitialSemanticNoise.lean).
+For the polynomial cutoff `boundedRoutedBinCutoff (polynomialSwitch4 (1/2) 1)`
+and a nonnegative row-substochastic base, an initial canonical group with $2d<M$ is zero: both positive endpoint
+budgets give the same canonical sample, or the cutoff removes both. Thus a nonzero
+group has $M\le 2d$. Nonnegative initial request precision bounds the structural
+charge by $M$, and the original $64^{-d}$ schedule pays this charge, the budget and
+the last dyadic slack. The original correlated-prefix cube is retained and absorbed
+using $j\le\log_2 M+1\le M\le2^M$; no independence is assumed.
+`initialRelativeNoiseBudget_polynomial_uniform_le` bounds that same semantic budget
+by the fourth power of $256\,\mathrm{binCap}\,2^{-p}2^{-A}(1/2)^{\mathrm{slack}}$.
+
+`initialComputedNormalizedNoise_polynomial_uniform_le` combines this with the
+normalized transport payment. `initialComputedPrecisionMoment_firstNoise_polynomial_paid`
+chooses one natural charge before every field, horizon, bin family, request and budget,
+and pays the complete first-noise coordinate of the actual computed minimum by
+$(2^{-p}(1/2)^{\mathrm{slack}})^4$. The canonical support argument applies to the
+semantic input; approximate children still use the conditional own-request IH above.
+The evaluator and walk steps are unchanged.
+
+[HierarchyInitialSemanticNoise](../../ComplexityTests/HierarchyInitialSemanticNoise.lean)
+checks a nonzero sample whose early group vanishes and a growing full-bin family
+with fixed positive charge and positive precision.
+[HierarchyInitialFirstNoise](../../ComplexityTests/HierarchyInitialFirstNoise.lean)
+checks the complete computed cost with one charge chosen before arbitrary field,
+depth and positive precision, together with existence of admissible prime horizons.
+These numerical allocation clients do not construct successful recursive children.
+
+The complete initial first-noise allocation is proved under the stated guards and
+conditional child execution/IH. The other three reserve statistics, second mean/saturated
+preparation, terminal rank, general products, full changing-request accuracy/availability
+and native RL=L remain open. The assembled bounded first mean and production leaves
+are unchanged.
 
 For the same executed prefixes, `initial_compressed_first_noise` now also returns a
 pairwise normalized payment. `initialRelativeNoiseBudget` sums the scheduled conditional

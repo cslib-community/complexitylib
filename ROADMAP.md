@@ -202,8 +202,14 @@ index links to canonical definitions rather than keeping a second set.
   The residual-bin phase order is local; full global stochastic preparation/access enumeration,
   finite-accuracy ports, estimated copy/routing-fraction comparisons, and the complete scheduled
   mean-prefix bound remain open; range/true means do not establish root
-  regularity or the error recurrence. Paired raw differences, full-coordinate conditional walks, summed noise, compression, strong recursive
-  induction and native logarithmic workspace/class equality remain required.
+  regularity or the error recurrence. The initial computed estimator now carries normalized
+  child errors through actual conditional walks and correlated bin/prefix sums. One fixed
+  structural charge pays the complete initial first-noise cost uniformly over admissible
+  finite bin families and terminal exponents. Canonical budget-boundary support absorbs
+  the existing semantic noise as well as normalized transported noise. This is
+  conditional on lower-budget child accuracy and reset-right execution. The full reserve,
+  second preparation/terminal rank, general correction products, simultaneous recursive
+  accuracy/availability and native logarithmic workspace/class equality remain open.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
   logspace reduction.
 - **Williams's `TIME[t] ⊆ SPACE[√(t log t)]`** ([#888]): implicit Tree Evaluation with the

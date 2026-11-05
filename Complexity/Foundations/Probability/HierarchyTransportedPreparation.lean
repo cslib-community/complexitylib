@@ -7,6 +7,7 @@ module
 -- upstream: candidate
 public import Complexity.Foundations.Probability.HierarchyInitialPerturbation
 public import Complexity.Foundations.Probability.HierarchyInitialIntegrated
+public import Complexity.Foundations.Probability.HierarchyInitialSemanticNoise
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ScheduledMeanTail
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ScheduleAllocation
 import Complexity.Foundations.Probability.HierarchyInitialFeasibility
@@ -48,7 +49,10 @@ absolute terminal and bin-horizon restrictions: joint own-precision conversion, 
 Minkowski and actual spectral contraction pay actual first noise on unbounded admissible
 families. The same computed minimum is consumed by the four-max and raw reserve.
 Its structural charge is fixed before field, horizon, requests, budget and precision;
-conditional endpoint IH remains separate from joint recursive availability.
+conditional endpoint IH remains separate from joint recursive availability. Canonical
+budget-boundary support also pays the original semantic noise. One structural charge
+therefore pays the complete initial first-noise statistic under the polynomial cutoff;
+the other three reserve statistics and joint recursive availability remain open.
 
 ## Main results
 
@@ -63,6 +67,8 @@ conditional endpoint IH remains separate from joint recursive availability.
 * `initialComputedPrecisionMoment`: clipped mean and centered noise in the literal reserve.
 * `initial_compressed_centered_first_noise`: correlated centered actual prefix payment.
 * `initialComputedPrecisionMoment_firstNoise_exists_charge`: fixed-charge bounded noise family.
+* `initialComputedNormalizedNoise_polynomial_uniform_le`: complete initial noise envelope.
+* `initialComputedPrecisionMoment_firstNoise_polynomial_paid`: uniform complete noise payment.
 * `initialComputedPrecisionMoment_first_weighted_le`: weighted moments with separate deficit.
 * `initialComputedPrecisionMoment_first_tail_le`: paid actual deterministic first-mean tail.
 * `initialComputedPrecisionMoment_first_pre_le`: stationary floor-weighted endpoint payment.
@@ -1183,6 +1189,110 @@ theorem initialComputedPrecisionMoment_firstNoise_uniform_charge
     (2 : ℝ) ^ (-B.requestPrecision M { r with usage := r.terminal }) *
       (1 / 2 : ℝ) ^ dyadicSlack (Nat.log2 M + 1) j by positivity)
   simpa only [K, hcap, hcharge, one_mul, mul_assoc, mul_comm, mul_left_comm] using hh
+
+/-- Both normalized transported noise and the original semantic noise have a
+uniform structural payment. Canonical budget-boundary support pays the semantic
+prefix cube; the walk schedule and production evaluator are unchanged. -/
+theorem initialComputedNormalizedNoise_polynomial_uniform_le (B : BudgetData HP P)
+    (hcharge : 0 ≤ B.rankCharge) (hrate : B.binRate = rate)
+    (hcutoff : B.cutoff = fun i => boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1)
+      rate 1 i (fun _ => 1))
+    (H : Horizon P) (hi : ∀ bin ∈ B.bins, bin ≤ H.maxExponent)
+    (M j ks ka : ℕ) (hM : 0 < M) (hj : j < Nat.log2 M + 1)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
+    (ss st : List (ZMod P))
+    (hs : r.source = gridChannel R.source ks ss)
+    (ht : r.terminal = gridChannel R.terminal ka st)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩))
+    (ha : ka ≤ H.maxExponent) (hp : 0 ≤ B.requestPrecision M r)
+    (hbase : ∀ x y, 0 ≤ B.base x y) (hrow : B.base *ᵥ 1 ≤ 1)
+    (coefficient : ℝ) :
+    B.initialComputedNormalizedNoise M r R ks ka ss st coefficient j ≤
+      ((2 * (initialNormalizedNoiseConstant B.binCap coefficient + 256 * B.binCap)) *
+        (2 : ℝ) ^ (-B.requestPrecision M { r with usage := r.terminal }) *
+        (2 : ℝ) ^ (-B.rankCharge) *
+        (1 / 2 : ℝ) ^ dyadicSlack (Nat.log2 M + 1) j) ^ 4 := by
+  have hsemantic := B.initialRelativeNoiseBudget_polynomial_uniform_le hcharge hrate
+    hcutoff H hi M hM r R.source R.terminal R.source_terminal ks ka ss st hs ht htask
+    ha hp hbase hrow (j + 1) (by omega)
+  simp only [Nat.add_sub_cancel] at hsemantic
+  let T := (2 : ℝ) ^ (-B.requestPrecision M { r with usage := r.terminal }) *
+    (2 : ℝ) ^ (-B.rankCharge) * (1 / 2 : ℝ) ^ dyadicSlack (Nat.log2 M + 1) j
+  let x := initialNormalizedNoiseConstant B.binCap coefficient * T
+  let y := 256 * B.binCap * T
+  have hcap := B.binCap_nonneg
+  have hS : 0 ≤ ∑' h, LogSpaceEstimation.scaleMajorant h :=
+    tsum_nonneg LogSpaceEstimation.scaleMajorant_nonneg
+  have hx : 0 ≤ x := by dsimp only [x, T, initialNormalizedNoiseConstant]; positivity
+  have hy : 0 ≤ y := by dsimp only [y, T]; positivity
+  have hb : B.initialComputedNormalizedNoise M r R ks ka ss st coefficient j ≤
+      8 * (x ^ 4 + y ^ 4) := by
+    unfold initialComputedNormalizedNoise
+    apply mul_le_mul_of_nonneg_left _ (by norm_num : (0 : ℝ) ≤ 8)
+    apply add_le_add
+    · dsimp only [x, T]
+      ring_nf
+      exact le_rfl
+    · simpa only [y, T, mul_assoc] using hsemantic
+  have hx4 : x ^ 4 ≤ (x + y) ^ 4 := pow_le_pow_left₀ hx (le_add_of_nonneg_right hy) 4
+  have hy4 : y ^ 4 ≤ (x + y) ^ 4 := pow_le_pow_left₀ hy (le_add_of_nonneg_left hx) 4
+  apply hb.trans
+  calc
+    _ ≤ 16 * (x + y) ^ 4 := by linarith
+    _ = _ := by dsimp only [x, y, T]; ring
+
+/-- One charge, fixed before every field, horizon, bin family and request, pays the
+complete actual first-noise statistic. This combines semantic and transported noise;
+it does not pay the other three reserve statistics or construct recursive children. -/
+theorem initialComputedPrecisionMoment_firstNoise_polynomial_paid
+    (binCap coefficient : ℝ) :
+    ∃ A : ℕ, ∀ {P : ℕ} [Fact P.Prime] (B : BudgetData HP P),
+      B.binCap = binCap → B.rankCharge = A → B.binRate = rate →
+      B.cutoff = (fun i => boundedRoutedBinCutoff (polynomialSwitch4 (1 / 2) 1)
+        rate 1 i (fun _ => 1)) →
+      ∀ (H : Horizon P) (M j ks ka : ℕ), 0 < M → j < Nat.log2 M + 1 →
+      ka ≤ H.maxExponent → (∀ bin ∈ B.bins, bin ≤ H.maxExponent) →
+      ∀ (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (R : RoleProfile 3)
+        (ss st : List (ZMod P)),
+      r.source = gridChannel R.source ks ss →
+      r.terminal = gridChannel R.terminal ka st →
+      r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩) →
+      0 ≤ B.requestPrecision M r → (∀ x y, 0 ≤ B.base x y) → B.base *ᵥ 1 ≤ 1 →
+      ∀ (n : ℕ) (ζ Lh Lρ : ℝ),
+      B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ j true 0 ≤
+        ((2 : ℝ) ^ (-B.requestPrecision M r) *
+          (1 / 2 : ℝ) ^ dyadicSlack (Nat.log2 M + 1) j) ^ 4 := by
+  let K := 2 * (initialNormalizedNoiseConstant binCap coefficient + 256 * binCap)
+  obtain ⟨A, hA⟩ := exists_nat_gt K
+  have hpow : (A : ℝ) ≤ (2 : ℝ) ^ A := by
+    exact_mod_cast (Nat.lt_two_pow_self (n := A)).le
+  have hpaid : K * (2 : ℝ) ^ (-(A : ℝ)) ≤ 1 := by
+    rw [Real.rpow_neg (by norm_num : (0 : ℝ) ≤ 2), Real.rpow_natCast]
+    exact (mul_le_mul_of_nonneg_right (hA.le.trans hpow) (by positivity)).trans_eq
+      (mul_inv_cancel₀ (by positivity))
+  refine ⟨A, ?_⟩
+  intro P _ B hcap hcharge hrate hcutoff H M j ks ka hM hj ha hi r R ss st hs ht
+    htask hp hbase hrow n ζ Lh Lρ
+  have hadm : B.initialNormalizedNoiseAdmissible M r ka :=
+    ⟨by rw [hcharge]; positivity, hrate, htask, hp, H, ha, hi⟩
+  have hmin : B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ
+      j true 0 ≤ B.initialComputedNormalizedNoise M r R ks ka ss st coefficient j := by
+    simp only [initialComputedPrecisionMoment, initialComputedCenteredNoise,
+      Bool.not_true, Bool.false_eq_true, false_and, ↓reduceIte, and_self, hadm]
+    exact (min_le_right _ _).trans (min_le_right _ _)
+  apply (hmin.trans (B.initialComputedNormalizedNoise_polynomial_uniform_le
+    (by rw [hcharge]; positivity) hrate hcutoff H hi M j ks ka hM hj r R ss st
+    hs ht htask ha hp hbase hrow coefficient)).trans
+  have hcap0 := B.binCap_nonneg
+  have hS : 0 ≤ ∑' h, LogSpaceEstimation.scaleMajorant h :=
+    tsum_nonneg LogSpaceEstimation.scaleMajorant_nonneg
+  apply pow_le_pow_left₀ (by unfold initialNormalizedNoiseConstant; positivity)
+  have hh := mul_le_mul_of_nonneg_right hpaid (show 0 ≤
+    (2 : ℝ) ^ (-B.requestPrecision M r) *
+      (1 / 2 : ℝ) ^ dyadicSlack (Nat.log2 M + 1) j by positivity)
+  have hprecision : B.requestPrecision M { r with usage := r.terminal } =
+      B.requestPrecision M r := rfl
+  simpa only [hprecision, K, hcap, hcharge, one_mul, mul_assoc, mul_comm, mul_left_comm] using hh
 
 /-- The existing first-mean minimum consumes the finite joint allocation condition.
 Only the clipped transport part is paid here; the semantic deficit and other three
