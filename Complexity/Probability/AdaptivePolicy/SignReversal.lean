@@ -22,6 +22,11 @@ The transition retains only `s && a`, a sufficient statistic for the terminal co
 this realizes the claimed two-state model without storing the paper's redundant pair.
 The experiment below sums the actual first and terminal costs, rather than assuming a
 value-function identity. This module does not formalize the general audit theorem.
+
+## Main results
+
+* `sign_reversal`: the exact positive myopic covariance and negative actual cost gap.
+* `terminal_covariance`: the terminal myopic term is zero for every second-step policy.
 -/
 
 public section

@@ -62,6 +62,41 @@ The six directly cited CSLib dependency files were byte-identical to independent
 pinned blobs despite the live dependency-checkout drift. The chapters link those pinned
 sources directly; copied files and generated audit reports are not maintained inputs.
 
+## Selected finite stochastic experiments
+
+Three optional STOC 2027 submission endpoints are available as separate imports. These
+are mathematical experiments, with no machine-runtime or full-paper claim. The source
+versions and PDF digests are recorded under `Aldridge2027`, `Wang2027` and `Kong2027`
+in [the bibliography](../../references.bib). The checked clients are in
+[Stoc2027BatchC.lean](../../ComplexityTests/Stoc2027BatchC.lean).
+
+- [AdaptivePolicy.SignReversal](../../Complexity/Probability/AdaptivePolicy/SignReversal.lean)
+  realizes Aldridge's Proposition 3.8 (PDF p. 4) with Boolean states and actions. The
+  initial state is uniform, investment costs $a(1+s)$, the transition is $s'=s\land a$,
+  and the terminal cost is $-ms'$. `sign_reversal` gives myopic covariance $1/4$ and
+  actual policy-minus-open-loop cost $(1-m)/4<0$ for every real $m>1$. The second
+  action has no effect. Retaining only $s\land a$ preserves the two-state claim;
+  the paper's stored pair contains redundant information.
+- [Submodular.OracleSavings](../../Complexity/Algorithms/Lean/Submodular/OracleSavings.lean)
+  proves Wang's Theorem 2(1) (PDF p. 7). A finite type indexes all oracles;
+  `savings p c A` is exactly $(1-\prod_{i\in A}(1-p_i))\sum_{i\notin A}c_i$.
+  Use `savings_nonneg` and `savings_isSubmodular` with pointwise $0\le p_i\le1$
+  and $c_i\ge0$. Submodularity reuses the library's `IsSubmodular`; savings need
+  not be monotone (the test has singleton saving one and full-set saving zero).
+  The scheduling theorem and FPTAS are outside this endpoint.
+- [PeerPrediction.Quadratic](../../Complexity/Probability/PeerPrediction/Quadratic.lean)
+  implements Kong's equation (8), Lemma 7.2 and Theorem 7.3 (PDF pp. 18–19).
+  `IsJoint` means a nonnegative finite probability table of total mass one;
+  `reportedLaw` sums conditional reporting probabilities over latent signals.
+  `expectFour` uses four independent draws from the same report law. `payment_unbiased`
+  identifies the equality-only payment's expectation with QMI, and `truthful_reward`
+  characterizes independence. `truthful_alice` and `truthful_bob` allow an arbitrary
+  fixed memoryless peer channel; own deviations must have the stated form
+  $T=\lambda D+(1-\lambda)q\mathbf1^T$, with $D$ doubly stochastic and
+  $0\le\lambda\le1$. `centered_mixed` and `qmi_mixed_le` prove Proposition 7.1's
+  identity and contraction. There is no full-support or equal-alphabet assumption.
+  General-channel DPI, history-dependent deviations and the rigidity results are excluded.
+
 ## Known Limitations
 
 Primary-source verification was selective. HILL/Holenstein/GGM and selected RAM/algorithm sources were consulted; textbook locator claims and most construction proofs remain code-grounded rather than independently reconciled line by line with the literature. The section intentionally does not infer autonomous-development percentages from theorem counts or test files.

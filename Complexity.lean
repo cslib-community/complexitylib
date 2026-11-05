@@ -49,6 +49,7 @@ public import Complexity.Algorithms.Lean.Sort.Bitonic.Trace
 public import Complexity.Algorithms.Lean.Sort.Bitonic.ZeroOne
 public import Complexity.Algorithms.Lean.Submodular.Basic
 public import Complexity.Algorithms.Lean.Submodular.Greedy
+public import Complexity.Algorithms.Lean.Submodular.OracleSavings
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Alphabets
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.BandBounds
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Batch
@@ -4185,6 +4186,7 @@ public import Complexity.MachineLearning.UniformLearning.KushilevitzMansour
 public import Complexity.MachineLearning.UniformLearning.LowDegree
 public import Complexity.MachineLearning.UniformLearning.LowDegreeClasses
 public import Complexity.MachineLearning.UniformLearning.MembershipQuery
+public import Complexity.Probability.AdaptivePolicy.SignReversal
 public import Complexity.Probability.AdaptiveWeights
 public import Complexity.Probability.ApproximateCounting
 public import Complexity.Probability.ApproximateCounting.Relative
@@ -4269,6 +4271,7 @@ public import Complexity.Probability.PairwiseIndependentHash.SliceGap
 public import Complexity.Probability.PairwiseIndependentHash.Toeplitz
 public import Complexity.Probability.PairwiseIndependentHash.Universal
 public import Complexity.Probability.PairwiseIndependentHash.ValidatedWords
+public import Complexity.Probability.PeerPrediction.Quadratic
 public import Complexity.Probability.Pinsker
 public import Complexity.Probability.Product
 public import Complexity.Probability.ProductConditioning
