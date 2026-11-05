@@ -16,6 +16,7 @@ public import Complexity.Foundations.Data.BitString.List
 public import Complexity.Foundations.Data.BitString.ShortWords
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import Complexity.Computability.Probabilistic.Oracle.Composition
+import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
 
 /-!
@@ -451,7 +452,8 @@ theorem acceptProb_wordVerifier_honestWordProver {α : Type}
     (P : ProbOracleComp OracleSpec.empty
       (ProverStrategy (ProbOracleComp OracleSpec.empty) s α)) :
     Complexity.acceptProb (V.wordVerifier codecs x) (honestWordProver codecs P) =
-      (World.plain.eval (V.execute x P)).toOuterMeasure {r | r.2.1.isSome} := by
+      (World.plain.eval (V.execute x P)).toOuterMeasure
+        (Set.ofPred fun (_, out, _) => out.isSome) := by
   have hdist :
       ((honestWordProver codecs P).run (V.wordVerifier codecs x)
         (honestWordProver codecs P).init).map Prod.fst =
@@ -550,12 +552,6 @@ noncomputable def optimalTypedStrategy :
             (ProverStrategy (ProbOracleComp OracleSpec.empty) s Unit) from
           pure (optimalTypedStrategy s cs smps (fun τ => accept (ch, τ)))
 
-private theorem tsum_pmf_mul_le {α : Type*} (p : PMF α) (f : α → ℝ≥0∞) (c : ℝ≥0∞)
-    (h : ∀ a, f a ≤ c) : ∑' a, p a * f a ≤ c := by
-  calc ∑' a, p a * f a
-    _ ≤ ∑' a, p a * c := tsum_le_tsum fun a => mul_le_mul_of_nonneg_left (h a) zero_le
-    _ = c := by rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
-
 private theorem tsum_pmf_mul_mono {α : Type*} (p : PMF α) (f g : α → ℝ≥0∞)
     (h : ∀ a, f a ≤ g a) : ∑' a, p a * f a ≤ ∑' a, p a * g a :=
   tsum_le_tsum fun a => mul_le_mul_of_nonneg_left (h a) zero_le
@@ -567,7 +563,7 @@ theorem runWith_runWordRounds_le_optimalTypedStrategy :
     ∀ (s : Spec) (codecs : RoundCodecs s) (smp : PerChallenge ProbComp s)
       (accept : Transcript s → Bool) (P : Complexity.Prover Unit) (pState : P.State),
       (ProbOracleComp.runWith P.respond (runWordRounds s codecs smp) pState).toOuterMeasure
-        {p | (p.1.1 && accept p.1.2) = true} ≤
+        (Set.ofPred fun ((valid, τ), _) => (valid && accept τ) = true) ≤
       (plainLaw (runStrategy s smp (optimalTypedStrategy s codecs smp accept))).toOuterMeasure
         {r | accept r.1 = true}
   | [], (), (), accept, P, pState => by
@@ -588,7 +584,7 @@ theorem runWith_runWordRounds_le_optimalTypedStrategy :
       simp only [runWordRounds, ProbOracleComp.runWith_bind, ProbOracleComp.runWith_map,
         ProbOracleComp.runWith_query, PMF.bind_map, Function.comp_def,
         PMF.toOuterMeasure_bind_apply]
-      refine tsum_pmf_mul_le (P.respond ((), []) pState) _ (val mStar) fun ⟨w, pState'⟩ => ?_
+      refine PMF.tsum_mul_le_of_forall_le (P.respond ((), []) pState) fun ⟨w, pState'⟩ => ?_
       rw [PMF.toOuterMeasure_map_apply]
       dsimp
       rcases hdec : c.decode (w.take c.limit) with _ | m
@@ -615,7 +611,8 @@ theorem runWith_runWordRounds_le_optimalTypedStrategy :
         ProbOracleComp.runWith_sample, ProbOracleComp.runWith_query, PMF.bind_map,
         Function.comp_def, PMF.toOuterMeasure_bind_apply]
       refine tsum_pmf_mul_mono (ProbComp.eval smp) _ _ fun ch => ?_
-      refine tsum_pmf_mul_le (P.respond ((), c.encode ch) pState) _ _ fun ⟨_, pState'⟩ => ?_
+      refine PMF.tsum_mul_le_of_forall_le
+        (P.respond ((), c.encode ch) pState) fun ⟨_, pState'⟩ => ?_
       rw [PMF.toOuterMeasure_map_apply]
       exact runWith_runWordRounds_le_optimalTypedStrategy s cs smps
         (fun τ => accept (ch, τ)) P pState'
@@ -629,7 +626,8 @@ theorem acceptProb_wordVerifier_le_optimalTypedStrategy
     Complexity.acceptProb (V.wordVerifier codecs x) P ≤
       (World.plain.eval
         (V.execute x (pure (optimalTypedStrategy s codecs V.samplers
-          (fun τ => (V.outputOn x τ).isSome))))).toOuterMeasure {r | r.2.1.isSome} := by
+          (fun τ => (V.outputOn x τ).isSome))))).toOuterMeasure
+            (Set.ofPred fun (_, out, _) => out.isSome) := by
   rw [Complexity.acceptProb, ← PMF.toOuterMeasure_apply_singleton,
     Verifier.wordVerifier, Verifier.wordVerifierWith,
     Complexity.Prover.run_eq_runWith, ProbOracleComp.runWith_map,
