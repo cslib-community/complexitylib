@@ -287,8 +287,24 @@ Apply `hybridDecrypt_hybridEncrypt` with component correctness returning `some k
 The [hybrid clients](../../ComplexityTests/Crypto/HybridEncryption.lean) show why the framing check
 matters: `[true, true]` and `[true, true, false]` have the same projections, but only the latter
 is a canonical pair. They also check accepted empty plaintext (`[true]` as an oracle reply),
-rejection (`[]`), and exact challenge-word rejection. This parsing repair is a prerequisite for
-the separate [DEM reduction](https://github.com/cslib-community/complexitylib/issues/2694).
+rejection (`[]`), and exact challenge-word rejection.
+
+For the symmetric leg of CCA composition, import
+[`Hybrid/DEMCCA.lean`](../../Complexity/Crypto/Computational/Encryption/Hybrid/DEMCCA.lean).
+`hybridDEMGame` uses the existing two-phase `cca2GameOn`: it retains the original joint KEM key
+and encapsulation distribution, samples the hidden key from `E.keyGen n`, and redirects the
+selected KEM component to that key in both phases. Challenge messages must each have length `n`.
+`eval_hybridDEMGame` proves exact equality with the existing symmetric `ccaOneTimeGame`, and
+`OneTimeINDCCA.indistinguishable_hybridDEMGame` supplies the loss-one security conclusion.
+The native reduction certificate charges both adaptive phases and bounds every external reply read;
+`isPPTOn_hybridDEMGame` also certifies the closed experiment.
+
+The [checked clients](../../ComplexityTests/Crypto/HybridDEMCCA.lean) apply the result to the
+existing PRF Encrypt-then-MAC cipher, expose an insecure echo cipher, and run a zero-width
+prechallenge/challenge/postchallenge trace. They distinguish an empty encryption reply from an
+encoded successful empty plaintext. This is an intermediate-game result: the two KEM hops and
+ideal-key distribution compatibility still remain. In particular, the Encrypt-then-MAC sampler
+frames an `n`-bit encryption key with a `2*n`-bit MAC key; its `4*n+1` encoded bits are not uniform.
 
 ## Certify a list accumulator
 
