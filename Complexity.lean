@@ -3124,6 +3124,7 @@ public import Complexity.Crypto.Computational.Rompel
 public import Complexity.Crypto.Computational.SIS.Basic
 public import Complexity.Crypto.Computational.SIS.Module
 public import Complexity.Crypto.Computational.SIS.ModuleEncryption
+public import Complexity.Crypto.Computational.SIS.ModuleEncryption.Native
 public import Complexity.Crypto.Computational.SIS.ModuleEncryption.Sampling
 public import Complexity.Crypto.Computational.SIS.ModuleEncryption.Sampling.Concentration
 public import Complexity.Crypto.Computational.SIS.ModulusSwitch
