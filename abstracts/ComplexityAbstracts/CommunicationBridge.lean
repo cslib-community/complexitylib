@@ -12,8 +12,8 @@ import Complexity.Computability.Communication.Discrepancy
 
 /-! # Transfer of communication lower bounds to individual protocols
 
-The abstract uses the elementary deterministic protocol tree, but defines its own worst-case
-cost and per-input error conditions. No communication-complexity infimum occurs in its statements.
+The abstract uses the elementary deterministic protocol tree, but defines its own tree-depth
+bound and per-input error conditions. No communication-complexity infimum occurs in its statements.
 -/
 
 namespace ComplexityAbstracts.CommunicationBridge
