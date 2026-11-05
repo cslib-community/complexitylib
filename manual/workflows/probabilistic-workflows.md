@@ -20,6 +20,26 @@ zero lattice. This is a mathematical distribution, with no efficient sampler or 
 bound. Regev's quantum worst-case/average-case reduction remains open in
 [issue #1213](https://github.com/cslib-community/complexitylib/issues/1213).
 
+To vary the center continuously, import
+[Gaussian/Periodization.lean](../../Complexity/Foundations/Probability/Gaussian/Periodization.lean).
+`ZLattice.continuous_gaussianMass L s hs` proves continuity of the normalizer for `hs : 0 < s`.
+The proof establishes summable sup norms of the lattice translates on every compact set, so
+the continuous sum comes from local uniform convergence.
+
+For other decaying functions, import
+[Lattice/Periodization.lean](../../Complexity/Foundations/Analysis/Lattice/Periodization.lean).
+Supply a bundled continuous map `f : C(E, F)` into a complete normed additive group, a real exponent
+`b > Module.finrank ℤ L`, and `f =O[cocompact E] (fun x ↦ ‖x‖ ^ (-b))`.
+`ZLattice.continuous_tsum_translate` proves continuity of `x ↦ ∑' z : L, f (x + z)`;
+`continuous_automorphize` proves continuity of Mathlib's existing `QuotientAddGroup.automorphize`
+on the quotient of `E` by `L.toAddSubgroup`. For a Schwartz function, import
+[Lattice/Schwartz.lean](../../Complexity/Foundations/Analysis/Lattice/Schwartz.lean) and use
+`SchwartzMap.continuous_automorphize` directly. The
+[checked clients](../../ComplexityTests/LatticePeriodization.lean) include a nonzero Schwartz
+bump, an infinite integer lattice, a skew two-dimensional basis, and a rank-zero lattice on
+an off-center compact interval. Fourier coefficient identification, covolume normalization,
+and full lattice Poisson summation remain separate work.
+
 ## Certify a closed randomized routine
 
 Use `IsPPTOn input output program` when the required conclusion is a uniform, strict polynomial-time implementation on encoded types. The encodings are embeddings into bit lists. One finite-control fair-coin machine and one polynomial clock must work for every input, with exact equality of encoded output laws. Output writing is charged. This is the contract to request before proving a probabilistic routine efficient.

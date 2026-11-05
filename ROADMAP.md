@@ -59,7 +59,11 @@ Priorities live in this list and in the tiers of [#897].
   restrictions and quantum reduction are part of the theorem.
   The discrete Gaussian foundation proves convergence, positive normalization and translation
   laws on shifted discrete lattices ([#2573](https://github.com/cslib-community/complexitylib/issues/2573));
-  smoothing estimates, efficient sampling and the quantum reduction remain open in
+  local normal convergence and continuous lattice periodization, including Schwartz and
+  Gaussian clients, are proved in
+  [#2608](https://github.com/cslib-community/complexitylib/issues/2608). Uniform Gaussian mass
+  estimates, multidimensional lattice Poisson summation, smoothing estimates, efficient sampling
+  and the quantum reduction remain open in
   [#1213](https://github.com/cslib-community/complexitylib/issues/1213).
 - **Kilian's succinct arguments** ([#999]). If collision-resistant hash families exist, every
   language in NP has an interactive argument with polylogarithmic communication, by committing
