@@ -168,6 +168,23 @@ The construction chain is explicit:
 
 The final theorem fixes the number of parties and has explicit polynomial-time unary schedules for per-party input/output and random-tape widths. Its efficiency assertion concerns the **centralized joint runner**, not separately certified local native machines for every party. Its randomized privacy assertion excludes the full coalition. The source explicitly compares this variant with Goldreich's Chapter 7 and contains a full-coalition counterexample to its independent-coin-share simulator in [ComplexityTests/Crypto/MPC.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/Crypto/MPC.lean). The primary book page confirms Chapter 7's relevant semi-honest, composition and OT-completeness development; the delicate full-coalition comparison is retained as the formalization's documented statement boundary, not independently adjudicated here [goldreich04][goldreich04].
 
+For the commitment ingredient toward malicious security, import
+[`Complexity.Crypto.Protocols.MPC.OTCommitment`](../../Complexity/Crypto/Protocols/MPC/OTCommitment.lean).
+`OTCommitment.Sender` selects arbitrary randomized OT tables from private state and receives
+only the ideal sender's `Unit` answer. Apply `binding` to an initial state distribution and a
+function producing two candidate openings from the final sender state: it bounds their joint
+acceptance probability by `2⁻ᵏ`, without assuming the submitted tables encode a consistent bit.
+Keep receiver choices and selected values private; giving either to the sender changes the game.
+`perfectHiding` equates full query/answer transcript and final-state laws for arbitrary adaptive
+`Receiver` strategies, including all four OT indices. The checked
+[OT commitment tests](../../ComplexityTests/Crypto/OTCommitment.lean) demonstrate rejection of an
+inconsistent opening, a tight one-call attack with success `1/2`, and the zero-call bound `1`.
+
+This is a fixed-schedule information-theoretic commitment construction, with honest correctness
+and double-opening binding. It has no polynomial-time certificate or ideal commitment
+realization. The malicious MPC compiler and real/ideal simulation remain open in
+[#1212](https://github.com/cslib-community/complexitylib/issues/1212).
+
 ## Upstream perfect secrecy and sharing
 
 Pinned cslib supplies [PerfectlySecret](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Crypto/Protocols/PerfectSecrecy/Defs.lean#L76): observing any positive-probability ciphertext leaves every message prior unchanged. Its equivalent ciphertext-distribution formulation and one-time-pad instance are finite semantic security, with no PPT restriction. The upstream commitment interface separately defines perfect/statistical hiding and perfect binding [cslib][cslib].
