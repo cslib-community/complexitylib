@@ -3189,6 +3189,8 @@ public import Complexity.Crypto.Protocols.MPC.OTCommitment.Opening.PolyTime
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.PolyTime
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.Program
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.Program.PolyTime
+public import Complexity.Crypto.Protocols.MPC.OTCommitment.SenderProgram
+public import Complexity.Crypto.Protocols.MPC.OTCommitment.SenderProgram.PolyTime
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.World
 public import Complexity.Crypto.Protocols.MPC.PolyTime
 public import Complexity.Crypto.Protocols.MPC.SharedMul

@@ -42,7 +42,7 @@ example : (senderIdeal mixedSender 2 (pure ()) (fun _ => pure (claimOne 2, ())) 
   let ts : Fin 2 → Fin 4 → Bool :=
     Fin.cons (table false false) (Fin.cons (table true false) Fin.elim0)
   have ht : senderTables mixedSender 2 () = pure (ts, ()) := by
-    simp only [senderTables, mixedSender, PMF.monad_bind_eq_bind,
+    simp only [senderTables_succ, senderTables_zero, mixedSender, PMF.monad_bind_eq_bind,
       PMF.monad_pure_eq_pure, PMF.pure_bind]
     rfl
   have he : extract ts = false := by decide
