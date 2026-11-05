@@ -2389,6 +2389,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.OnWord
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.OutputToTape
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.PrepareClock
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.PrepareInput
+public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.PrepareInput.Space
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.PreparePair
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.PrepareReplay
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.ReadInput
@@ -2415,8 +2416,10 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.C
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape.Embed
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape.QueryBounds
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape.Space
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape.Substitution
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Composition
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Composition.Space
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Deterministic
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ExplicitBlockNetwork
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ExplicitBlockNetwork.Graph
@@ -2452,6 +2455,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.R
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.RunsWords
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Sampling
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Sequential
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Sequential.CoinTape
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.SingleOracle
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Tidy
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Tidy.Redirect
