@@ -116,7 +116,7 @@ theorem Emission.local_prefix {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : Dat
 
 /-- An in-place consumer may dirty arbitrary higher scratch. Exact metadata and preservation
 below the current endpoint retain the entire local emission view and every pending child. -/
-def Emission.after_prefix {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y z : Data 128}
+def Emission.afterPrefix {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y z : Data 128}
     (h : Emission Q Λ e x y false) (hl : e.Loaded x)
     (hr : ∀ i, z.regs i = y.regs i)
     (hf : ∀ p < y.regs heap, z.mem p = y.mem p) : Emission Q Λ e x z false := by

@@ -110,7 +110,7 @@ theorem construct_consume {r κ n w : ℕ} {a : Arena} (c : Host.Callee r)
   obtain ⟨y, hy, hyb, hya, hyp, hym, hyf⟩ := exec_consume_emission c e
     (x.comap (preprocessingRegisters r)) v em hc hv hw hresources (by omega) hlenv
     ((hframe _).trans henv) ((hframe _).trans hone) (by rw [hframe]; exact hb)
-  have hyem := em.after_prefix (z := y.comap (preprocessingRegisters r)) hl
+  have hyem := em.afterPrefix (z := y.comap (preprocessingRegisters r)) hl
     (by intro i; simpa only [Data.comap_regs] using hyp i)
     (by
       intro q hq
