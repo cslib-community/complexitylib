@@ -53,6 +53,7 @@ an off-center compact interval. For Fourier coefficient identification, see
 [the quotient-integral workflow below](#unfold-a-lattice-fourier-coefficient). Covolume normalization
 and full lattice Poisson summation remain separate work.
 
+
 ## Certify a closed randomized routine
 
 Use `IsPPTOn input output program` when the required conclusion is a uniform, strict polynomial-time implementation on encoded types. The encodings are embeddings into bit lists. One finite-control fair-coin machine and one polynomial clock must work for every input, with exact equality of encoded output laws. Output writing is charged. This is the contract to request before proving a probabilistic routine efficient.
