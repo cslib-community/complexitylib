@@ -2950,7 +2950,7 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) (coefficient : ℝ) :
 
 -- Actual budget-one direct error is nonzero, and its reset-right call succeeds.
 -- Only the active top bin demands IH; the unused fine bin is not called at budget one.
-example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+private theorem positive_centered_group (HP : FourthRootHierarchyParams 16 1 16 32 8) :
     let ζ := min HP.η (1 / 10000) / 4
     let Q := HierarchyTask.rawRequests 0 0 (.pilotInput ⟨0, HP.k_pos⟩)
       (request HP).source (BudgetData.midpoint (request HP)) (request HP).terminal
@@ -2965,6 +2965,14 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
         2 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) = some F ∧
       (data HP).completedGroup (fun n q => if n < 2 then (data HP).evaluate n q else none)
         2 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) = some G ∧
+      rowNormPow 4 5 (request HP).source.rate
+        (fun σ x => (request HP).source.retains (channels (data HP).padding) σ x)
+        (fun σ y => (request HP).usage.retains (channels (data HP).padding) σ y)
+        (fun σ x y => (F - G) σ x y - rowSliceMean
+          (X 0 (side 5 0) (CopyPadding.identifier (data HP).padding [1]))
+          (Y 2 (side 5 0) (CopyPadding.identifier (data HP).padding [2, 3]))
+          (F - G) x y) ≤
+        (data HP).initialCenteredGroupCharge 2 1 (request HP) c ∧
       rowNormPow 4 5 (request HP).source.rate
         (fun σ x => (request HP).source.retains (channels (data HP).padding) σ x)
         (fun σ y => (request HP).usage.retains (channels (data HP).padding) σ y)
@@ -3017,7 +3025,7 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
   · intro σ
     rw [ht]
     norm_num [base]
-  · obtain ⟨F, G, hf, hg, _, ha⟩ :=
+  · obtain ⟨F, G, hf, hg, hb, ha⟩ :=
       (data HP).completedGroup_initial_compressed_centered_precision (fun _ => 0)
         ζ ζ 2 1 (by decide) (by simp [data]) (request HP) 0 2 (by decide)
         0 0 [1] [2, 3] rfl rfl (fun _ _ => 0) (fun _ => rfl) c (by
@@ -3039,6 +3047,197 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
           have hn1 : n = 1 := by omega
           subst n
           exact ⟨hd, hroot, right_available HP ζ 1 (by decide)⟩)
-    exact ⟨F, G, hf, hg, ha 0 0 (by norm_num [data]) rfl rfl rfl rfl⟩
+    refine ⟨F, G, hf, hg, ?_, ha 0 0 (by norm_num [data]) rfl rfl rfl rfl⟩
+    simpa only [BudgetData.initialCenteredGroupCharge, Nat.cast_ofNat] using hb
+
+-- The same nonzero actual child error now feeds the literal two-group first-noise
+-- payment, including the exhausted initial group. This fixture's stationary centered
+-- noise is zero; the separate two-atom test below checks nonzero correlated noise.
+open Cslib.RowCompression NormalizedMoments in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    let ζ := min HP.η (1 / 10000) / 4
+    let Q := HierarchyTask.rawRequests 0 0 (.pilotInput ⟨0, HP.k_pos⟩)
+      (request HP).source (BudgetData.midpoint (request HP)) (request HP).terminal
+      ((data HP).binRate 0)
+    let c := (2 : ℝ) ^ ((data HP).requestPrecision 1 Q.direct)
+    ∃ groups,
+      (List.range 2).mapM (fun i => (data HP).completedGroup (fun n q => if n < 2 then
+        (data HP).compressedHistory (fun _ => 0) ζ ζ n q else none)
+        2 (dyadicSlack 2 i) (.pilotInput ⟨0, HP.k_pos⟩) (request HP)) = some groups ∧
+      rowNormPow 4 5 (request HP).source.rate
+        (retainedMask threeRoles.source (side 5 0) (data HP).padding [1])
+        (retainedMask threeRoles.terminal (side 5 0) (data HP).padding [2, 3])
+        (actualNoiseEntry threeRoles.source threeRoles.terminal (side 5 0) (side 5 0)
+          (side 5 0) (data HP).padding [1] [2, 3] 0 base
+          (firstSignalIncrement (fun p σ x y =>
+            ((groups.take p).map (fun T => T σ x y)).sum) 0 (fun _ _ _ _ => 0)) 0 0 1) ≤
+        (data HP).initialComputedCenteredNoise 2 (request HP) threeRoles 0 0 [1] [2, 3] c 1 := by
+  dsimp only
+  obtain ⟨_, _, A₁, C₁, hA₁, hC₁, hb₁, _⟩ := positive_centered_group HP
+  let ζ := min HP.η (1 / 10000) / 4
+  have hz (e bin : ℕ) (he : 2 ≤ e) : LogSpaceEstimation.lastBudget 2 e (data HP).slack
+      ((data HP).sampleScale (request HP) (some bin)) = 0 :=
+    Nat.sub_eq_zero_of_le (he.trans (le_max_left _ _))
+  obtain ⟨A₀, C₀, hA₀, hC₀, hb₀, _⟩ :=
+    (data HP).completedGroup_initial_compressed_centered_precision (fun _ => 0)
+      ζ ζ 2 2 (by decide) (by simp [data]) (request HP) 0 2 (by decide)
+      0 0 [1] [2, 3] rfl rfl (fun _ _ => 0) (fun _ => rfl) 0 (by
+        intro bin _
+        dsimp only
+        intro _ n hn _ hp
+        simp only [hz 2 bin le_rfl, show 2 * 2 = 4 from rfl, hz 4 bin (by decide),
+          mem_insert, mem_singleton] at hn
+        omega)
+  let A := fun i => if i = 0 then A₀ else A₁
+  let C := fun i => if i = 0 then C₀ else C₁
+  have hA (i : ℕ) (hi : i < Nat.log2 2 + 1) : (data HP).completedGroup
+      (fun n q => if n < 2 then (data HP).compressedHistory (fun _ => 0) ζ ζ n q else none)
+      2 (dyadicSlack (Nat.log2 2 + 1) i) (.pilotInput ⟨0, HP.k_pos⟩) (request HP) =
+        some (A i) := by
+    have hi' : i < 2 := by simpa using hi
+    interval_cases i
+    · simpa [A, dyadicSlack] using hA₀
+    · simpa [A, dyadicSlack, ζ] using hA₁
+  have hC (i : ℕ) (hi : i < Nat.log2 2 + 1) : (data HP).completedGroup
+      (fun n q => if n < 2 then (data HP).evaluate n q else none)
+      2 (dyadicSlack (Nat.log2 2 + 1) i) (.pilotInput ⟨0, HP.k_pos⟩) (request HP) =
+        some (C i) := by
+    have hi' : i < 2 := by simpa using hi
+    interval_cases i
+    · simpa [C, dyadicSlack] using hC₀
+    · simpa [C, dyadicSlack] using hC₁
+  let groups := (List.range 2).map A
+  have hg : (List.range (Nat.log2 2 + 1)).mapM (fun i => (data HP).completedGroup
+      (fun n q => if n < 2 then (data HP).compressedHistory (fun _ => 0) ζ ζ n q else none)
+      2 (dyadicSlack (Nat.log2 2 + 1) i) (.pilotInput ⟨0, HP.k_pos⟩) (request HP)) =
+        some groups := by
+    change _ = some ((List.range (Nat.log2 2 + 1)).map A)
+    apply List.mapM_eq_some_iff_forall₂.mpr
+    rw [List.forall₂_map_right_iff, List.forall₂_same]
+    exact fun i hi => hA i (List.mem_range.mp hi)
+  refine ⟨groups, hg, ?_⟩
+  apply (data HP).initial_compressed_centered_first_noise (fun _ => 0) ζ ζ 2 (by decide)
+    (by simp [data]) (request HP) threeRoles 0 0 [1] [2, 3] rfl rfl A C _ hA hC
+    _ groups hg (by intro x y; by_cases h : x = y <;> simp [data, base, h])
+    (side 5 0) (fun _ _ _ _ => 0) 1 (by decide)
+  intro i hi
+  simp only [show { request HP with usage := (request HP).terminal } = request HP from rfl]
+  have hi' : i < 2 := by simpa using hi
+  interval_cases i
+  · have hz' := (data HP).initialRootGroupCharge_eq_zero_of_le 2 2 (request HP) 0 le_rfl
+    rw [hz', mul_zero] at hb₀
+    norm_num [A, C, dyadicSlack]
+    rw [BudgetData.initialCenteredGroupCharge,
+      (data HP).initialRootGroupCharge_eq_zero_of_le 2 2 (request HP) _ le_rfl, mul_zero]
+    simpa [threeRoles, request, gridChannel, CorrectionRowTask.Channel.retains,
+      channels, semanticSide_grid, retainedMask, X, Y, rowNormPow, rowSliceMean] using hb₀
+  · simpa [A, C, dyadicSlack, threeRoles, request, gridChannel,
+      CorrectionRowTask.Channel.retains, channels, semanticSide_grid, retainedMask,
+      X, Y, rowNormPow, rowSliceMean] using hb₁
+
+-- Fully correlated two-atom noise receives a geometric Minkowski payment, rather
+-- than a sum of component moments. Both the exact moment and its paid bound are checked.
+example :
+    let Z := fun (σ : Fin 2) (_ _ : Unit) => if σ = 0 then (1 : ℝ) else -1
+    rowNormPow 4 1 1 (fun (_ : Fin 2) (_ : Unit) => True) (fun _ _ => True)
+      (fun σ x y => ∑ i ∈ range 2, (1 / 2 : ℝ) ^ (i + 1) * Z σ x y) =
+        (3 / 4 : ℝ) ^ 4 ∧
+    rowNormPow 4 1 1 (fun (_ : Fin 2) (_ : Unit) => True) (fun _ _ => True)
+      (fun σ x y => ∑ i ∈ range 2, (1 / 2 : ℝ) ^ (i + 1) * Z σ x y) ≤
+        (∑ i ∈ range 2, (1 / 2 : ℝ) ^ (i + 1)) ^ 4 := by
+  dsimp only
+  constructor
+  · norm_num [rowNormPow, Fin.sum_univ_two, expect_eq_sum_div_card, sum_range_succ]
+  · have h := rowNormPow_sum_le_pow_sum
+      (X := fun (_ : Fin 2) (_ : Unit) => True) (by decide : 4 ≠ 0)
+      (by norm_num : (0 : ℝ) ≤ 1 * 1) (fun (_ : Fin 2) (_ : Unit) => True)
+      (range 2) (fun _ σ (_ _ : Unit) => if σ = 0 then (1 : ℝ) else -1)
+      (fun i => (1 / 2 : ℝ) ^ (i + 1)) (fun _ => 1)
+      (by intros; positivity) (by intros; norm_num)
+      (by intros; norm_num [rowNormPow, Fin.sum_univ_two, expect_eq_sum_div_card])
+    simpa only [mul_one] using h
+
+-- Choose the charge before the field, varying admissible horizon, positive parent
+-- precision and whole bin family. No joint recursive availability is inferred.
+open Cslib.RowCompression NormalizedMoments in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (L : ℕ) (coefficient : ℝ) :
+    ∃ A : ℕ, ∀ {P : ℕ} [Fact P.Prime] (B : BudgetData HP P),
+      B.binCap = 1 → B.rankCharge = A → B.binRate = rate →
+      ∀ (H : Horizon P) (n M j ks ka : ℕ), n ≤ L → B.bins = range (n + 1) →
+      n ≤ H.maxExponent → ka ≤ n → j < Nat.log2 M + 1 →
+      ∀ (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)),
+      r.source.rate = rate ks → r.terminal.rate = rate ka →
+      r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩) →
+      0 < B.requestPrecision M { r with usage := r.terminal } →
+      (∀ x y, 0 ≤ B.base x y) → ∀ (R : RoleProfile 3) (ss st : List (ZMod P)),
+      B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient 0 0 0 j true 0 ≤
+        8 * (((2 : ℝ) ^ (-B.requestPrecision M { r with usage := r.terminal }) *
+          (1 / 2 : ℝ) ^ dyadicSlack (Nat.log2 M + 1) j) ^ 4 +
+          B.initialRelativeNoiseBudget M r R.source R.terminal R.source_terminal
+            ks ka ss st B.base (j + 1)) := by
+  obtain ⟨A, hA⟩ := BudgetData.initialComputedPrecisionMoment_firstNoise_exists_charge
+    (HP := HP) 1 coefficient L
+  refine ⟨A, ?_⟩
+  intro P _ B hcap hcharge hrate H n M j ks ka hn hbins hH hka hj r hs ht htask hp hbase
+    R ss st
+  exact hA B hcap hcharge hrate H M j ks ka hj (hka.trans hn) (hka.trans hH)
+    (fun bin hb => by rw [hbins, mem_range] at hb; omega)
+    (by rw [hbins, card_range]; omega) r hs ht htask hp.le hbase R ss st n 0 0 0
+
+-- Exhausted actual endpoints still have exactly zero centered payment, independently
+-- of the signed error coefficient and the chosen structural charge.
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (coefficient : ℝ) :
+    (data HP).initialCenteredGroupCharge 1 1 (request HP) coefficient = 0 := by
+  rw [BudgetData.initialCenteredGroupCharge,
+    (data HP).initialRootGroupCharge_eq_zero_of_le 1 1 (request HP) coefficient le_rfl,
+    mul_zero]
+
+-- The charge-first family has concrete positive precision at every requested p>0.
+-- Whole bin families of depths zero, one and two use the same charge and field.
+open Cslib.RowCompression NormalizedMoments in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) (coefficient : ℝ) :
+    ∃ A : ℕ, ∀ n ≤ 2, ∀ p : ℕ, 0 < p →
+      let B : BudgetData HP 5 := {data HP with bins := range (n + 1), rankCharge := A}
+      let M := 16 * (36 * A + p)
+      B.requestPrecision M (request HP) = p ∧
+      ∀ j < Nat.log2 M + 1,
+        B.initialComputedPrecisionMoment M n (request HP) threeRoles 0 0 [1] [2, 3]
+          coefficient 0 0 0 j true 0 ≤
+        8 * (((2 : ℝ) ^ (-(p : ℝ)) *
+          (1 / 2 : ℝ) ^ dyadicSlack (Nat.log2 M + 1) j) ^ 4 +
+          B.initialRelativeNoiseBudget M (request HP) threeRoles.source threeRoles.terminal
+            threeRoles.source_terminal 0 0 [1] [2, 3] B.base (j + 1)) := by
+  obtain ⟨A, hA⟩ := BudgetData.initialComputedPrecisionMoment_firstNoise_exists_charge
+    (HP := HP) 16 coefficient 2
+  refine ⟨A, ?_⟩
+  intro n hn p hp
+  dsimp only
+  let B : BudgetData HP 5 := {data HP with bins := range (n + 1), rankCharge := A}
+  let M := 16 * (36 * A + p)
+  have hrank : (request HP).task.rank = 36 := by
+    norm_num [request, HierarchyTask.rank, BoundedRowTask.localTask,
+      CorrectionRowTask.rank, PilotRowTask.rank, PilotTask.rank]
+  have hprecision : B.requestPrecision M (request HP) = p := by
+    rw [B.requestPrecision_grid M 0 0 (request HP) rfl rfl, hrank]
+    dsimp only [B, M, data]
+    push_cast
+    ring
+  refine ⟨hprecision, ?_⟩
+  intro j hj
+  have h := hA B rfl rfl rfl supportHorizon M j 0 0 hj (by decide) (by decide)
+    (fun bin hb => by
+      change bin ∈ range (n + 1) at hb
+      rw [mem_range] at hb
+      change bin ≤ 2
+      omega)
+    (by change (range (n + 1)).card ≤ 2 + 1; rw [card_range]; omega)
+    (request HP) rfl rfl rfl (by
+      change 0 ≤ B.requestPrecision M (request HP)
+      rw [hprecision]
+      positivity)
+    (by intro x y; by_cases h : x = y <;> simp [B, data, base, h])
+    threeRoles [1] [2, 3] n 0 0 0
+  simpa only [show { request HP with usage := (request HP).terminal } = request HP from rfl,
+    hprecision] using h
 
 end PolynomialBudgetHistory

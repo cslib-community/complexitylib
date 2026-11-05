@@ -1552,12 +1552,36 @@ completed-group bound, are in [PolynomialBudgetHistory](../../ComplexityTests/Po
 [ActualFirstSignal](../../ComplexityTests/ActualFirstSignal.lean) checks fully correlated
 two-atom centered inputs and their raw spectral comparison.
 
-This is a completed-group consumer, not a uniformly paid prefix reserve. The active
-payment still contains bin sums, importance sup norms, range constants and parent
-precision. Summing these centered group discrepancies with correlated geometric weights,
-proving uniform structural allocation, and feeding that payment through the computed
-first-noise minimum remain open. The conditional first-mean assembly and production
-leaves are unchanged.
+For the literal prefixes, `initial_compressed_centered_first_noise` now sums the
+centered compressed-minus-semantic group discrepancies using weighted Minkowski on
+these same joint slices. Its fourth-moment payment is the fourth power of the sum
+of the individual fourth roots, without a prefix cube. `initialCenteredGroupCharge`
+retains the exact spectral factor and endpoint charges; equal/exhausted pairs stay zero.
+The semantic `initialRelativeNoiseBudget` is added separately, with no rarity discount.
+`initial_compressed_precision_moments` consumes this payment in the first-noise minimum
+of `initialComputedPrecisionMoment`. The existing four-max and raw separated-reserve
+consumers therefore use the new minimum on actual computed histories.
+
+`initial_importance_norm_le` bounds rounded importance by sixteen on one common
+admissible horizon, independently of field width and copy suffixes.
+`initialActiveRootGroupCharge_bounded` bounds the finite bin factor when the number of
+bins is at most $L+1$. The sharp exponent $25d/(8c)$ is at most $5d$, leaving residual
+$2^{-d}$ under the unchanged $64^{-d}$ schedule. Positive parent precision pays the
+extra precision factor. `initialComputedPrecisionMoment_firstNoise_exists_charge`
+chooses one structural charge from the primitive bin cap, child coefficient and $L$,
+before field width, request exponents and budgets, for all terminal exponents at most
+$L$ and full bin families of size at most $L+1$. The common admissible horizon and
+positive parent precision remain explicit hypotheses. The inverse terminal normalization
+is bounded by $\mathrm{rate}(L)^{-1}$ in this family; no cancellation for an unbounded
+terminal/bin family is claimed. The checked clients vary the full bin family, horizon
+and positive precision under this one charge, and check a fully correlated two-atom
+geometrically weighted moment as well as existing nonzero actual child-error/reserve clients.
+
+This is a conditional first-noise allocation on the stated bounded family, not a joint
+recursive availability theorem or a complete reserve allocation. Supported semantic noise
+keeps its existing polynomial payment. The assembled first mean and production leaves
+are unchanged. Second mean/saturated preparation, terminal rank, general products, full
+changing-request accuracy/availability and native RL=L remain open.
 
 For the same executed prefixes, `initial_compressed_first_noise` now also returns a
 pairwise normalized payment. `initialRelativeNoiseBudget` sums the scheduled conditional
@@ -1603,7 +1627,8 @@ a smaller terminal rate. `initialComputedRelativeMoment` takes the minimum of th
 semantic group payment (plus transported centered child error) and the previous absolute
 first-noise cost. The actual own-precision four-statistic, four-max and sharp-reserve
 consumers use this noise minimum. `initialComputedPrecisionMoment` additionally sharpens
-the first mean with the own-mask clipped-prefix payment described above. Second mean and
+the first mean with the own-mask clipped-prefix payment and first noise with the
+centered spectral prefix payment described above. Second mean and
 second noise retain their existing costs. Transported centered child error still pays
 `initialPerturbationFactor`: the fourth power of the finite sup norm of
 $(\mathrm{rate}(k_a)+G(x,y))^{-1}$. The reusable `rowNormPow_mul_le_pi_norm` applies

@@ -32,8 +32,9 @@ The slope-one window envelope permits deterministic rarity allocation in the com
 reserve; ordinary sampling progress and saturated preparation remain separate obligations.
 `completedGroup_initial_compressed_centered_precision` retains spectral contraction on
 the actual input difference. `initialRootGroupCharge_le_active` feeds sharp active-pair
-own-precision cancellation into that completed-group consumer, while leaving the correlated
-prefix allocation and computed first-noise minimum unchanged.
+own-precision cancellation into that completed-group consumer. Rounded-importance and
+bounded full-bin envelopes support the correlated prefix allocation in
+`HierarchyTransportedPreparation`.
 -/
 public section
 noncomputable section
@@ -1979,6 +1980,92 @@ theorem initialRootGroupCharge_le_active (hcharge : 0 ≤ B.rankCharge)
       r.terminal Q.direct y‖ ^ 4 * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4) by positivity)
   dsimp only [Q, a] at hmul
   nlinarith only [hmul]
+
+/-- On a common admissible horizon, rounded importance is uniformly bounded.
+This bound is independent of the field width and of all copy suffixes. -/
+theorem initial_importance_norm_le (hrate : B.binRate = rate) (H : Horizon P)
+    (ka bin : ℕ) (ha : ka ≤ H.maxExponent) (hi : bin ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (ht : r.terminal.rate = rate ka) :
+    let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)
+    ‖fun y => B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
+      r.terminal Q.direct y‖ ≤ 16 := by
+  dsimp only
+  apply (pi_norm_le_iff_of_nonneg (by norm_num : (0 : ℝ) ≤ 16)).mpr
+  intro y
+  have hratio := usageRatio_grid B.padding r.terminal
+    (HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (midpoint r) r.terminal (B.binRate bin)).direct ka (max ka bin) ht
+    (by simpa only [HierarchyTask.rawRequests, hrate, ht] using rate_min ka bin) y
+  rw [hratio, hrate, Real.norm_eq_abs,
+    abs_of_nonneg (mul_nonneg (rate_pos bin).le (by positivity))]
+  have h := gridMass_importance_le H ha hi
+  have hone (k : ℕ) : rate k ≤ 1 := by
+    simpa only [rate, pow_zero, inv_one, one_pow] using rate_antitone (Nat.zero_le k)
+  exact h.trans (by nlinarith [max_le (hone bin) (hone ka)])
+
+/-- A bounded full bin family has a uniform active envelope chosen before coordinates.
+The horizon is used only for rounded importance; the cardinal bound is explicit.
+The exponent five is below the unchanged spectral schedule's six binary units. -/
+theorem initialActiveRootGroupCharge_bounded (hrate : B.binRate = rate) (H : Horizon P)
+    (M d ka L : ℕ) (ha : ka ≤ H.maxExponent)
+    (hi : ∀ bin ∈ B.bins, bin ≤ H.maxExponent) (hc : #B.bins ≤ L + 1)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (ht : r.terminal.rate = rate ka) (coefficient : ℝ) :
+    B.initialActiveRootGroupCharge M d r ka coefficient ≤
+      (16 * ((L + 1 : ℕ) : ℝ) ^ 4 *
+        ((16 : ℝ) ^ 4 * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4)) *
+      (coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision M r) *
+        (2 : ℝ) ^ (-B.rankCharge) * (32 : ℝ) ^ d) ^ 4) := by
+  let a : ℝ := (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge) * (32 : ℝ) ^ d
+  let K : ℝ := 16 * ((16 : ℝ) ^ 4 * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4) *
+    (coefficient ^ 4 * a ^ 4)
+  have he : (2 : ℝ) ^ (25 * (d : ℝ) / (8 * B.slack)) ≤ (32 : ℝ) ^ d := by
+    have hs : (1 : ℝ) ≤ B.slack := by exact_mod_cast B.slack_pos
+    have hx : 25 * (d : ℝ) / (8 * B.slack) ≤ 5 * d := by
+      apply (div_le_iff₀ (by positivity : (0 : ℝ) < 8 * B.slack)).mpr
+      nlinarith [mul_nonneg (show (0 : ℝ) ≤ d by positivity) (sub_nonneg.mpr hs)]
+    apply (Real.rpow_le_rpow_of_exponent_le (by norm_num : (1 : ℝ) ≤ 2) hx).trans_eq
+    rw [show (32 : ℝ) = 2 ^ (5 : ℕ) by norm_num, ← pow_mul,
+      ← Real.rpow_natCast]
+    congr 1
+    push_cast
+    ring
+  have hterm (bin : ℕ) (hb : bin ∈ B.bins) :
+      (let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (midpoint r) r.terminal (B.binRate bin)
+       let fine := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
+       let coarse := LogSpaceEstimation.lastBudget M (2*d) B.slack (B.sampleScale r (some bin))
+       if fine = coarse then 0 else
+       16 * (‖fun y => B.binRate bin * HierarchyTask.usageRatio (channels B.padding)
+         r.terminal Q.direct y‖ ^ 4 * (4 * (2 * B.binCap) ^ ((3 : ℝ) / 4)) ^ 4) *
+         (coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision M r) *
+           (2 : ℝ) ^ (-B.rankCharge) * (2 : ℝ) ^ (25 * (d : ℝ) / (8 * B.slack)) /
+             (2 : ℝ) ^ (4 * |(bin : ℝ) - ka|)) ^ 4)) ≤ K := by
+    dsimp only
+    split_ifs
+    · dsimp only [K]; positivity
+    have hn := B.initial_importance_norm_le hrate H ka bin ha (hi bin hb) r ht
+    have hd : (1 : ℝ) ≤ 2 ^ (4 * |(bin : ℝ) - ka|) :=
+      Real.one_le_rpow (by norm_num) (by positivity)
+    have hx : (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge) *
+        (2 : ℝ) ^ (25 * (d : ℝ) / (8 * B.slack)) /
+          (2 : ℝ) ^ (4 * |(bin : ℝ) - ka|) ≤ a := by
+      apply (div_le_self (by positivity) hd).trans
+      exact mul_le_mul_of_nonneg_left he (by positivity)
+    dsimp only [K]
+    gcongr
+  have hsum := sum_le_sum hterm
+  rw [sum_const, nsmul_eq_mul] at hsum
+  have hmul := mul_le_mul_of_nonneg_left hsum (by positivity : 0 ≤ (#B.bins : ℝ) ^ 3)
+  have hc' : (#B.bins : ℝ) ≤ ((L + 1 : ℕ) : ℝ) := by exact_mod_cast hc
+  have hpow := pow_le_pow_left₀ (by positivity) hc' 4
+  unfold initialActiveRootGroupCharge
+  apply hmul.trans
+  have hh := mul_le_mul_of_nonneg_right hpow (show 0 ≤ K by dsimp only [K]; positivity)
+  dsimp only [K, a] at hh ⊢
+  nlinarith only [hh]
 
 /-- All endpoints vanish when the group slack exhausts the parent budget. This holds
 for every coefficient and every request, without an accuracy hypothesis. -/
