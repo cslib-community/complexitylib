@@ -81,7 +81,10 @@ milestones, reusing the finite sampling, gadget algebra, native certificates and
 where their hypotheses match. The [pre-rewrite FHE section][archive-fhe] maps the schemes to
 current libraries and workloads.
 
-1. **Ring arithmetic and RLWE.** Polynomial-ring operations over `(Z/qZ)[X]/(X^d + 1)`, RNS/CRT
+1. **Ring arithmetic and RLWE.** The coefficient `negacyclicMul` and Module-SIS map now have
+   a canonical `AdjoinRoot (X^d + 1)` interpretation in `SIS/Polynomial`, for positive dimension
+   over a nontrivial commutative coefficient ring. Remaining: certified polynomial-ring
+   operations over `(Z/qZ)[X]/(X^d + 1)`, RNS/CRT
    conversions, rounding and modulus-switching error bounds, and negacyclic NTTs implementing
    ring multiplication, with native certificates. Define the RLWE secret and error laws and
    experiment separately; an ordinary-LWE reduction does not give them. Nearest-integer
