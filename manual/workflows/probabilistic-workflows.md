@@ -767,7 +767,8 @@ in a finite-dimensional real inner-product space, supply `IsAddFundamentalDomain
 `Integrable f` for `f : E → ℂ`, and membership of `w` in
 `LinearMap.BilinForm.dualSubmodule (innerₗ E) L`. Then
 `ZLattice.integral_fourierChar_tsum_translate` identifies the integral over `s` of
-`(Real.fourierChar (-⟪x,w⟫) : ℂ) * ∑' z : L, f (x + z)` with `𝓕 f w`.
+`(Real.fourierChar (-⟪x,w⟫) : ℂ) * ∑' z : L, f (x + z)` with the Fourier transform of `f`
+evaluated at `w`.
 The character is `exp(-2πi⟪x,w⟫)`. The domain integral uses ambient volume without a
 covolume divisor; it is not the coefficient for probability-normalized quotient measure.
 
