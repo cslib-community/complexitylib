@@ -123,7 +123,11 @@ In order:
 - efficiency-certified simulators and extractors, and auxiliary-input zero knowledge on the core;
 - polynomial commitment and evaluation-query reductions, and the Ligero IOP;
 - the BCS transform to non-interactive arguments in the random-oracle model;
-- VOLE as an ideal functionality, and VOLE-in-the-head;
+- VOLE as an ideal functionality, and VOLE-in-the-head (ring/field VOLE correlations,
+  `voleIdealDist`, IT-MAC linear homomorphism, `voleCommitWitness` hiding, field opening
+  unforgeability, degree-2 multiplication identity `voleMulCheck`, and linear `voleInTheHeadSigma`
+  in `Crypto/Protocols/VOLE/Basic.lean`; active VOLE generation and general circuit
+  VOLE-in-the-head compilation remain);
 - libzk's compositional structure as a composition of these components, without ciphersuites.
 
 ### Concurrent and quantum security
