@@ -151,6 +151,12 @@ families and full-input native runtime.
   ([#2696](https://github.com/cslib-community/complexitylib/issues/2696)). Public keys remain actual
   group elements and scalar sampling is ideal; native adapter composition, key-generation/signing
   approximation transport and the complete efficient forking reduction remain open.
+- **Native Schnorr ROM algorithms** ([#2708](https://github.com/cslib-community/complexitylib/issues/2708)):
+  actual sampled signing and verification have full-input oracle-PPT certificates with bounded
+  hash-reply reads. Joint signature/cache realization under typed `m`-bit replies is exact after
+  retaining the actual scalar-sampling law; replacing that law by ideal signing costs at most
+  `2⁻ⁿ` per signature. The actual key-generation error is a separate `2⁻ⁿ` bound. Adaptive signing
+  composition, native forger transport and efficient forking still belong to [#2568].
 - **Lattices**: Fiat–Shamir with aborts and signatures from SIS (Lyubashevsky 2009,
   2012); strict-PPT samplers for integer boxes; identification security under SIS; efficiency
   certificates for the simulator and extractor; full interactive-view simulation;
