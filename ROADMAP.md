@@ -274,6 +274,11 @@ families and full-input native runtime.
   retaining the actual scalar-sampling law; replacing that law by ideal signing costs at most
   `2⁻ⁿ` per signature. The actual key-generation error is a separate `2⁻ⁿ` bound. Adaptive signing
   composition, native forger transport and efficient forking still belong to [#2568].
+- **Encoded Schnorr game representation** ([#2742](https://github.com/cslib-community/complexitylib/issues/2742)):
+  the existing word-key/outer-word scheme and canonical-key/word-pair scheme have equal ideal
+  EUF-CMA games after an adapter preserving coins, both query budgets, the shared cache and message
+  log. Total signature decoding retains accepted malformed outer words. Key and nonce laws remain
+  explicit; adaptive actual-sampling replacement and full efficient forking remain [#2568].
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.

@@ -343,6 +343,26 @@ Checks in [`Crypto/SchnorrNativeROM.lean`](../../ComplexityTests/Crypto/SchnorrN
 cover bounded reply prefixes, aliases, malformed outer signatures, a cache hit retaining junk
 entries, and preservation of external state through private nonce sampling.
 
+[`SchnorrSignature/EncodedROM.lean`](../../Complexity/Crypto/Computational/SchnorrSignature/EncodedROM.lean)
+exposes the same arithmetic as `schnorrEncodedROMScheme`, an instance of the existing shared-ROM
+scheme with word keys and outer signature words. Its key law and scalar-nonce law are explicit:
+the actual sampler choices and the ideal uniform choices are not identified. Canonical-key
+per-call laws reuse the native signer/verifier realization, including their complete external
+state. No public-key decoder or additional reply-cap premise is introduced.
+
+`schnorrDecodedForger` retains the forger's coins, encodes canonical public-key inputs and signing
+replies, and total-decodes its final signature. Every hash word remains distinct. Both signing
+and hash budgets are preserved, as are the shared cache and signing-message log. The theorem
+`eufCmaGame_schnorrEncodedROMScheme_eq` gives exact equality with the canonical word-pair game
+only for the ideal key and nonce laws. Freshness is still final-message nonmembership, so repeated
+signing requests are allowed. In particular, malformed outer framing is not automatically
+rejected: `[true,true]` decodes to the identity commitment and zero response and is accepted under
+the identity public key in the checked order-11 example. The regressions in
+[`Crypto/SchnorrEncodedROM.lean`](../../ComplexityTests/Crypto/SchnorrEncodedROM.lean) also retain
+distinct junk-cache entries and distinguish fresh from signed final messages. This completes the
+representation milestone #2742; adaptive actual-sampling error composition, the key-generation
+transport and the native efficient forking reduction remain #2568.
+
 For strict-PPT **identification** under discrete log, use `SchnorrImpersonator`,
 `schnorrDirectGame` and `negligible_schnorrDirectGame`; for an adversary given independent honest
 conversations, use `SchnorrEavesdropAdversary`, `schnorrEavesdropGame` and
