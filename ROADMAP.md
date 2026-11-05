@@ -21,7 +21,7 @@ the FHE industrial context, the first-order design decisions and the repository'
 | Metacomplexity: time-bounded Kolmogorov complexity, partial MCSP, hardness magnification | [#798], audit [#884] |
 | Plain computability: delete the tidy calculus, keeping a machine-level kernel | [#862], from [#456] |
 | Consolidation: duplicates, accurate statements and docs, less churn | [#949], [#939] |
-| Fully homomorphic encryption: follow-ups to the instantiated bootstrapping theorem, then modern schemes | [#1104] |
+| Fully homomorphic encryption: follow-ups to the instantiated bootstrapping theorem, then modern schemes | [#2585] |
 | Boneh–Shoup cryptography tracks; zero-knowledge architecture | [#640], [#643] |
 | Crypto frontier track: Kilian's succinct arguments | [#999] |
 | OpenAI math TCS results: review Fortnow's rewrites and extract in-scope results | [#1002] |
@@ -71,8 +71,11 @@ Priorities live in this list and in the tiers of [#897].
 Gentry's bootstrapping is instantiated with GSW ([#486];
 [theorems](Complexity/Crypto/Computational/Homomorphic/GSW/FullyHomomorphic.lean)), including
 uniform compactness for the leveled wrapper decryption circuits and level-indexed multi-hop
-evaluation. Its remaining follow-up ([#1104]) is Gentry's exact concrete-security loss together
-with the `poly(ℓ, d)` running-time clause of his Theorem 4. Then develop these in reviewable
+evaluation. After the bounded unified reduction in [#1104], the remaining objective ([#2585])
+is Gentry's exact concrete-security loss together with the `poly(ℓ, d)` running-time clause
+of his Theorem 4. The actual modular link choice and guessing stages have exact saved-tape
+laws and native replay certificates; the unified reduction's remaining branches and the
+literal source loss/runtime comparison still need execution-level proofs. Develop these in reviewable
 milestones, reusing the finite sampling, gadget algebra, native certificates and game reductions
 where their hypotheses match. The [pre-rewrite FHE section][archive-fhe] maps the schemes to
 current libraries and workloads.
@@ -902,3 +905,4 @@ not planned, not as proved.
 [#2568]: https://github.com/cslib-community/complexitylib/issues/2568
 
 [#2579]: https://github.com/cslib-community/complexitylib/issues/2579
+[#2585]: https://github.com/cslib-community/complexitylib/issues/2585
