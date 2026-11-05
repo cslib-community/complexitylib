@@ -531,16 +531,18 @@ section PolyTime
 
 open ComputableInPolyTime
 
+attribute [local irreducible] ComputableInPolyTime
+
+private theorem computableInPolyTime_headCNF :
+    ComputableInPolyTime (fun s : State => s.2.1.headD []) encState encCNF :=
+  (headD (encA := encCNF) []).comp (id' (encIn := encState)).snd'.fst'
+
 private theorem computableInPolyTime_isSparse_head (M K : ℕ) :
     ComputableInPolyTime
       (fun s : State => isSparse (countingThreshold M) K (s.2.1.headD []))
-      encState encBool := by
-  have h := computableInPolyTime_isSparse encNat
-    (computableInPolyTime_countingThreshold_le M) K
-  have hH : ComputableInPolyTime (fun s : State => s.2.1.headD []) encState encCNF := by
-    unfold encState
-    fun_prop
-  exact h.comp hH
+      encState encBool :=
+  (computableInPolyTime_isSparse encNat
+    (computableInPolyTime_countingThreshold_le M) K).comp computableInPolyTime_headCNF
 
 private theorem computableInPolyTime_inner (M K : ℕ) :
     ComputableInPolyTime (fun s : State =>
@@ -567,7 +569,7 @@ private theorem computableInPolyTime_leafUpdate :
     simp only [leafUpdate, leafWeight, min_def, Bool.not_eq_true', decide_eq_false_iff_not,
       not_lt]
   rw [heq]
-  unfold encState encCNF
+  unfold encState
   fun_prop
 
 private theorem computableInPolyTime_init (k : ℕ) :
@@ -580,8 +582,7 @@ private theorem computableInPolyTime_init (k : ℕ) :
 private theorem computableInPolyTime_rounds (B : ℕ) :
     ComputableInPolyTime (rounds B) encCNF encNat := by
   have hvars := SAT.computableInPolyTime_distinctVars
-  have h := unary_div_const B
-  unfold rounds
+  unfold rounds encCNF
   fun_prop
 
 /-- Separate step time and workspace: a polynomial in the encoded state and counter-output
@@ -601,12 +602,12 @@ private theorem exists_computableInO_step (M K : ℕ) {g : CNF ℕ → ℕ} {t u
           u (s.2.1.headD []) +
             ((encState s).length + (encNat (g (s.2.1.headD []))).length + 1) ^ d
         else 0) := by
-  obtain ⟨dE, eE, hE⟩ := (show ComputableInPolyTime (fun s : State => s.2.1.isEmpty) encState
-    encBool by unfold encState; fun_prop).exists_degree
+  obtain ⟨dE, eE, hE⟩ :=
+    (by unfold encState; fun_prop :
+      ComputableInPolyTime (fun s : State => s.2.1.isEmpty) encState encBool).exists_degree
   obtain ⟨dI, eI, hI⟩ := (id' (encIn := encState)).exists_degree
   obtain ⟨dS, eS, hS⟩ := (computableInPolyTime_isSparse_head M K).exists_degree
-  obtain ⟨dH, eH, hH⟩ := (show ComputableInPolyTime (fun s : State => s.2.1.headD []) encState
-    encCNF by unfold encState; fun_prop).exists_degree
+  obtain ⟨dH, eH, hH⟩ := computableInPolyTime_headCNF.exists_degree
   obtain ⟨dN, eN, hN⟩ := (computableInPolyTime_inner M K).exists_degree
   obtain ⟨dU, eU, hU⟩ := computableInPolyTime_leafUpdate.exists_degree
   set D := dE + dI + dS + dH + dN + dU + 1
@@ -621,24 +622,27 @@ private theorem exists_computableInO_step (M K : ℕ) {g : CNF ℕ → ℕ} {t u
   have hpair_le (s : State) (c : ℕ) :
       ((encPair encState encNat (s, c)).length + 1) ^ D ≤
         4 ^ D * ((encState s).length + (encNat c).length + 1) ^ D := by
-    rw [ ← mul_pow]
+    rw [← mul_pow]
     refine Nat.pow_le_pow_left ?_ D
     simp only [length_encPair]
     omega
   refine ⟨D, h.mono (4 ^ D + 5) (fun s => ?_) (fun s => ?_)⟩ <;>
   · simp only [Function.comp_apply]
     have hp := hpair_le s (g (s.2.1.headD []))
-    have h4D : 1 ≤ 4 ^ D := Nat.one_le_pow _ _ (by norm_num)
+    have h4D : 1 ≤ 4 ^ D := Nat.one_le_pow _ _ (by decide)
     generalize 4 ^ D = F at hp h4D ⊢
     generalize ((encState s).length + 1) ^ D = P
     generalize t (s.2.1.headD []) = T
     generalize u (s.2.1.headD []) = U
     generalize ((encState s).length + (encNat (g (s.2.1.headD []))).length + 1) ^ D = Q at hp ⊢
     generalize ((encPair encState encNat (s, g (s.2.1.headD []))).length + 1) ^ D = R at hp ⊢
+    have hFP := Nat.le_mul_of_pos_left P h4D
+    have hFT := Nat.le_mul_of_pos_left T h4D
+    have hFU := Nat.le_mul_of_pos_left U h4D
     cases s.2.1.isEmpty <;>
       cases isSparse (countingThreshold M) K (s.2.1.headD []) <;>
       simp only [Bool.false_eq_true, ite_false, ite_true, and_true, and_false,
-        Bool.true_eq_false] <;> nlinarith
+        Bool.true_eq_false, Nat.add_mul, Nat.mul_add] <;> omega
 
 end PolyTime
 
@@ -784,45 +788,25 @@ private theorem exists_computableInO_search_resources (hM2 : 2 ≤ M)
         else 0) ((step M K g)^[i] (init k φ)) ≤
         2 * (2 * stateBound K L_coeff φ + 1) ^ d + V φ := by
     intro φ i _
-    obtain ⟨stk, acc, heq, hstk, hacc, hmem⟩ := (iterate_step hM hK hM2 hkK hTB g φ).2 i
-    rw [heq]
+    obtain ⟨-, hS, hN_sb, hsp⟩ := iterate_step_prefix_bounds hM hK hM2 hkK hTB g φ i
     dsimp only
-    have hS := length_encState_le hM hK hkK hstk hacc hmem
-    have hpow1 : ((encState (φ.distinctVars.length, (stk.map Subtype.val, acc))).length + 1) ^ d ≤
-        (2 * stateBound K L_coeff φ + 1) ^ d :=
-      Nat.pow_le_pow_left (by omega) d
+    have hpow1 : ((encState ((step M K g)^[i] (init k φ))).length + 1) ^ d ≤
+        (2 * stateBound K L_coeff φ + 1) ^ d := Nat.pow_le_pow_left (by omega) d
     split_ifs with hc
-    · cases stk with
-      | nil => simp at hc
-      | cons s rest =>
-        obtain ⟨w, hw, hwlen, rfl⟩ := hmem s List.mem_cons_self
-        simp only [List.map_cons, List.headD_cons] at hc hS hpow1 ⊢
-        set ψ := ((rule hM hK).tree.walk (rootState hkK φ) w).1
-        have hlen := length_walk_le_of_isSparse hM hK hkK hc.2
-        have henc := length_encCNF_walk_le hM hK hkK hw hwlen
-        have hwidth : ∀ c ∈ ψ, c.length ≤ k :=
-          fun c hC => length_le_of_mem_walk hM hK hkK hw hC
-        have hg_bound : g ψ ≤ 2 ^ φ.numVars :=
-          (hg_le ψ hwidth hc.2).trans (Nat.pow_le_pow_right (by omega)
-            (numVars_walk_le hM hK hkK w))
-        have hglen : (encNat (g ψ)).length ≤ φ.numVars + 1 :=
-          length_encNat_le_of_le_two_pow hg_bound
-        have hN_le_sb : φ.numVars + 1 ≤ stateBound K L_coeff φ := by
-          unfold stateBound
-          omega
-        have hpow2 :
-            ((encState (φ.distinctVars.length, (ψ :: rest.map Subtype.val, acc))).length +
-              (encNat (g ψ)).length + 1) ^ d ≤ (2 * stateBound K L_coeff φ + 1) ^ d :=
-          Nat.pow_le_pow_left (by omega) d
-        have hv_le := hv φ ψ hwidth hc.2 hlen henc
-        omega
+    · obtain ⟨hwidth, -, hnv, hlen, henc⟩ := hsp hc
+      set ψ := ((step M K g)^[i] (init k φ)).2.1.headD []
+      have hglen : (encNat (g ψ)).length ≤ φ.numVars + 1 :=
+        length_encNat_le_of_le_two_pow
+          ((hg_le ψ hwidth hc.2).trans (Nat.pow_le_pow_right (by decide) hnv))
+      have hpow2 :
+          ((encState ((step M K g)^[i] (init k φ))).length + (encNat (g ψ)).length + 1) ^ d ≤
+            (2 * stateBound K L_coeff φ + 1) ^ d := Nat.pow_le_pow_left (by omega) d
+      have hv_le := hv φ ψ hwidth hc.2 hlen henc
+      omega
     · omega
   have hstate : ∀ φ, ∀ i ≤ rounds B φ,
-      (encState ((step M K g)^[i] (init k φ))).length ≤ stateBound K L_coeff φ := by
-    intro φ i _
-    obtain ⟨stk, acc, heq, hstk, hacc, hmem⟩ := (iterate_step hM hK hM2 hkK hTB g φ).2 i
-    rw [heq]
-    exact length_encState_le hM hK hkK hstk hacc hmem
+      (encState ((step M K g)^[i] (init k φ))).length ≤ stateBound K L_coeff φ :=
+    fun φ i _ => (iterate_step_prefix_bounds hM hK hM2 hkK hTB g φ i).2.1
   exact ⟨d, dn, di,
     (ComputableInO.iterate hn.inO hi.inO hstep
       (hround t R ht) (hround u Q hu) hstate).snd'.snd'⟩
@@ -878,174 +862,162 @@ private theorem search_time_bound (K M B L_coeff d dn di : ℕ)
           ((encNat (rounds B φ)).length + 1) ^ 2) : ℕ) ≤
         C₀ * ((2 : ℝ) ^ ((1 / B + occBound K M * δ) * φ.numVars) *
           (((encCNF φ).length : ℝ) + 1) ^ E) + C₀ := by
-  set Kx := K * L_coeff
-  set c₁ := (2 + Kx) * (6 * K + 1)
-  set c₂ := 4 + 4 * (L_coeff + 1) * (2 * c₁ + 1) + 10
-  set C₁ := 2 * (2 * c₂ + 1) ^ d + c₂ + 16
-  set E := dn + di + 3 * d + 2 * e + 3
-  set C₂ : ℝ := c * 2 ^ δ * ((c₁ : ℝ) + 1) ^ e + c + 1
-  set C₀ : ℝ := 2 + 5 * (C₁ + C₂)
-  set T : CNF ℕ → ℕ := fun φ =>
-    ((encCNF φ).length + 1) ^ dn + ((encCNF φ).length + 1) ^ di +
-      (rounds B φ + 1) * (2 * (2 * stateBound K L_coeff φ + 1) ^ d +
-        leafTime K M L_coeff δ c e φ +
-        stateBound K L_coeff φ + ((encNat (rounds B φ)).length + 1) ^ 2)
+  let Kx := K * L_coeff
+  let c₁ := (2 + Kx) * (6 * K + 1)
+  let c₂ := 4 + 4 * (L_coeff + 1) * (2 * c₁ + 1) + 10
+  let C₁ := 2 * (2 * c₂ + 1) ^ d + c₂ + 16
+  let E := dn + di + 3 * d + 2 * e + 3
+  let C₂ : ℝ := c * 2 ^ δ * ((c₁ : ℝ) + 1) ^ e + c + 1
+  let C₀ : ℝ := 2 + 5 * (C₁ + C₂)
   refine ⟨⌈C₀⌉₊, E, fun φ => ?_⟩
-  set L := (encCNF φ).length
-  set N := φ.numVars
-  set P := (L + 1) ^ E
+  let L := (encCNF φ).length
+  let N := φ.numVars
+  let P := (L + 1) ^ E
   have hNL : N ≤ L := φ.numVars_le_length_vars.trans (SAT.length_vars_le φ)
   have hmL : φ.length ≤ L := length_le_length_encList _ φ
-  have hP (a : ℕ) (ha : a ≤ E) : (L + 1) ^ a ≤ P := Nat.pow_le_pow_right (Nat.succ_pos L) ha
+  have hP (a : ℕ) (ha : a ≤ E) : (L + 1) ^ a ≤ P :=
+    Nat.pow_le_pow_right (Nat.succ_pos L) ha
   have hnb : nodeBound K L_coeff φ ≤ c₁ * (L + 1) ^ 2 := by
     have h₁ : φ.length + 1 + K * (L_coeff * N) ≤ (2 + Kx) * (L + 1) := by
-      have : K * (L_coeff * N) = Kx * N := by ring
-      nlinarith
-    have h₂ : 2 * (K * (2 * L + 1)) + 1 ≤ (6 * K + 1) * (L + 1) := by nlinarith
-    calc nodeBound K L_coeff φ ≤ ((2 + Kx) * (L + 1)) * ((6 * K + 1) * (L + 1)) :=
-          Nat.mul_le_mul h₁ h₂
-      _ = c₁ * (L + 1) ^ 2 := by ring
+      have hKL : K * (L_coeff * N) ≤ Kx * L := by
+        rw [show Kx * L = K * (L_coeff * L) by ring]
+        exact Nat.mul_le_mul_left K (Nat.mul_le_mul_left L_coeff hNL)
+      exact (Nat.add_le_add (Nat.add_le_add_right hmL 1) hKL).trans
+        (Nat.le.intro (by ring : L + 1 + Kx * L + (L + 1 + Kx) = (2 + Kx) * (L + 1)))
+    have h₂ : 2 * (K * (2 * L + 1)) + 1 ≤ (6 * K + 1) * (L + 1) :=
+      Nat.le.intro
+        (by ring : 2 * (K * (2 * L + 1)) + 1 + (2 * K * L + 4 * K + L) = (6 * K + 1) * (L + 1))
+    exact (Nat.mul_le_mul h₁ h₂).trans_eq (by dsimp only [c₁]; ring)
+  clear_value Kx
   have hsb : stateBound K L_coeff φ ≤ c₂ * (L + 1) ^ 3 := by
-    have h₁ : L_coeff * N + 1 ≤ (L_coeff + 1) * (L + 1) := by nlinarith
-    have h₂ : 2 * nodeBound K L_coeff φ + 1 ≤ (2 * c₁ + 1) * (L + 1) ^ 2 := by
-      have : 1 ≤ (L + 1) ^ 2 := Nat.one_le_pow _ _ (Nat.succ_pos L)
-      nlinarith
-    have h₃ : 1 ≤ (L + 1) ^ 3 := Nat.one_le_pow _ _ (Nat.succ_pos L)
-    have h₃' : L + 1 ≤ (L + 1) ^ 3 := by
-      calc L + 1 = (L + 1) ^ 1 := (pow_one _).symm
-        _ ≤ (L + 1) ^ 3 := Nat.pow_le_pow_right (Nat.succ_pos L) (by omega)
+    have h₁ : L_coeff * N + 1 ≤ (L_coeff + 1) * (L + 1) :=
+      (Nat.add_le_add_right (Nat.mul_le_mul_left L_coeff hNL) 1).trans
+        (Nat.le.intro (by ring : L_coeff * L + 1 + (L_coeff + L) = (L_coeff + 1) * (L + 1)))
+    have h₂ : 2 * nodeBound K L_coeff φ + 1 ≤ (2 * c₁ + 1) * (L + 1) ^ 2 :=
+      (Nat.add_le_add (Nat.mul_le_mul_left 2 hnb)
+        (Nat.one_le_pow 2 (L + 1) (Nat.succ_pos L))).trans_eq (by ring)
+    have h₃ : 1 ≤ (L + 1) ^ 3 := Nat.one_le_pow 3 (L + 1) (Nat.succ_pos L)
+    have h₃' : L + 1 ≤ (L + 1) ^ 3 :=
+      (pow_one (L + 1)).symm.le.trans (Nat.pow_le_pow_right (Nat.succ_pos L) (by decide))
     have h₄ := Nat.mul_le_mul h₁ h₂
     have hdef : stateBound K L_coeff φ =
         4 * N + 4 * ((L_coeff * N + 1) * (2 * nodeBound K L_coeff φ + 1)) + 10 := rfl
     have e₁ : 4 * (L + 1) ^ 3 +
         4 * (((L_coeff + 1) * (L + 1)) * ((2 * c₁ + 1) * (L + 1) ^ 2)) + 10 * (L + 1) ^ 3 =
-        c₂ * (L + 1) ^ 3 := by simp only [c₂]; ring
+        c₂ * (L + 1) ^ 3 := by dsimp only [c₂]; ring
     omega
+  clear_value c₁ c₂
   have henc : (encNat (rounds B φ)).length = N / B + 3 := by
     rw [rounds, CNF.length_distinctVars, encNat_two_pow, List.length_append,
       List.length_replicate, List.length_singleton]
   have hr : rounds B φ + 1 ≤ 5 * 2 ^ (N / B) := by
-    have : rounds B φ = 4 * 2 ^ (N / B) := by
-      rw [rounds, CNF.length_distinctVars, pow_add]
-      ring
+    have : rounds B φ = 4 * 2 ^ (N / B) := by rw [rounds, CNF.length_distinctVars, pow_add]; ring
     have : 1 ≤ 2 ^ (N / B) := Nat.one_le_two_pow
     omega
   have hpoly : (L + 1) ^ dn + (L + 1) ^ di ≤ 2 * P := by
-    have := hP dn (by omega)
-    have := hP di (by omega)
+    have := hP dn (by dsimp only [E]; omega)
+    have := hP di (by dsimp only [E]; omega)
     omega
   have hrnd : 2 * (2 * stateBound K L_coeff φ + 1) ^ d + stateBound K L_coeff φ +
       ((encNat (rounds B φ)).length + 1) ^ 2 ≤ C₁ * P := by
     have h₁ : (2 * stateBound K L_coeff φ + 1) ^ d ≤ (2 * c₂ + 1) ^ d * (L + 1) ^ (3 * d) := by
       rw [pow_mul, ← mul_pow]
       refine Nat.pow_le_pow_left ?_ d
-      have : 1 ≤ (L + 1) ^ 3 := Nat.one_le_pow _ _ (Nat.succ_pos L)
-      have e₁ : (2 * c₂ + 1) * (L + 1) ^ 3 = 2 * (c₂ * (L + 1) ^ 3) + (L + 1) ^ 3 := by ring
-      omega
+      exact (Nat.add_le_add (Nat.mul_le_mul_left 2 hsb)
+        (Nat.one_le_pow 3 (L + 1) (Nat.succ_pos L))).trans_eq (by ring)
     have h₂ : ((encNat (rounds B φ)).length + 1) ^ 2 ≤ 16 * (L + 1) ^ 2 := by
       rw [henc]
-      have : N / B + 3 + 1 ≤ 4 * (L + 1) := by
-        have := (Nat.div_le_self N B).trans hNL
-        omega
-      calc (N / B + 3 + 1) ^ 2 ≤ (4 * (L + 1)) ^ 2 := Nat.pow_le_pow_left this 2
-        _ = 16 * (L + 1) ^ 2 := by ring
-    have h₃ := hP (3 * d) (by omega)
-    have h₄ := hP 3 (by omega)
-    have h₅ := hP 2 (by omega)
-    have h₆ := Nat.mul_le_mul_left ((2 * c₂ + 1) ^ d) h₃
-    calc 2 * (2 * stateBound K L_coeff φ + 1) ^ d + stateBound K L_coeff φ +
-          ((encNat (rounds B φ)).length + 1) ^ 2
-        ≤ 2 * ((2 * c₂ + 1) ^ d * P) + c₂ * P + 16 * P := by
-          have := hsb.trans (Nat.mul_le_mul_left c₂ h₄)
-          have := h₂.trans (Nat.mul_le_mul_left 16 h₅)
-          omega
-      _ = C₁ * P := by ring
-  set Y : ℝ := 2 ^ ((occBound K M * δ) * N)
+      have hdiv : N / B + 3 + 1 ≤ 4 * (L + 1) := by
+        have := (Nat.div_le_self N B).trans hNL; omega
+      exact (Nat.pow_le_pow_left hdiv 2).trans_eq (by ring)
+    have h₃ := Nat.mul_le_mul_left ((2 * c₂ + 1) ^ d) (hP (3 * d) (by dsimp only [E]; omega))
+    have h₄ := hsb.trans (Nat.mul_le_mul_left c₂ (hP 3 (by dsimp only [E]; omega)))
+    have h₅ := h₂.trans (Nat.mul_le_mul_left 16 (hP 2 (by dsimp only [E]; omega)))
+    exact (Nat.add_le_add (Nat.add_le_add (Nat.mul_le_mul_left 2 (h₁.trans h₃)) h₄) h₅).trans_eq
+      (by dsimp only [C₁]; ring)
+  clear_value C₁
+  let Y : ℝ := 2 ^ ((occBound K M * δ) * N)
   have hY : 1 ≤ Y := Real.one_le_rpow (by norm_num) (by positivity)
-  have hP1 : (1 : ℝ) ≤ P := by exact_mod_cast Nat.one_le_pow _ _ (Nat.succ_pos L)
+  have hP1 : (1 : ℝ) ≤ P := by exact_mod_cast Nat.one_le_pow E (L + 1) (Nat.succ_pos L)
   have hleaf : (leafTime K M L_coeff δ c e φ : ℝ) ≤ C₂ * Y * P := by
     have h₁ : (2 : ℝ) ^ (δ * ((occBound K M * N + 1 : ℕ) : ℝ)) = 2 ^ δ * Y := by
-      rw [← Real.rpow_add (by norm_num)]
-      congr 1
-      push_cast
-      ring
+      rw [← Real.rpow_add (by norm_num)]; congr 1; push_cast; ring
     have h₂ : ((nodeBound K L_coeff φ : ℝ) + 1) ^ e ≤ ((c₁ : ℝ) + 1) ^ e * P := by
-      have : ((nodeBound K L_coeff φ : ℝ) + 1) ≤ ((c₁ : ℝ) + 1) * ((L : ℝ) + 1) ^ 2 := by
-        have hnb' : (nodeBound K L_coeff φ : ℝ) ≤ c₁ * ((L : ℝ) + 1) ^ 2 := by exact_mod_cast hnb
-        have hL2 : (1 : ℝ) ≤ ((L : ℝ) + 1) ^ 2 :=
-          one_le_pow₀ (by linarith [(L.cast_nonneg : (0 : ℝ) ≤ L)])
-        have e₁ : ((c₁ : ℝ) + 1) * ((L : ℝ) + 1) ^ 2 = c₁ * ((L : ℝ) + 1) ^ 2 +
-          ((L : ℝ) + 1) ^ 2 := by ring
-        linarith only [hnb', hL2, e₁]
-      calc ((nodeBound K L_coeff φ : ℝ) + 1) ^ e ≤ (((c₁ : ℝ) + 1) * ((L : ℝ) + 1) ^ 2) ^ e :=
-            pow_le_pow_left₀ (by positivity) this e
-        _ = ((c₁ : ℝ) + 1) ^ e * ((L : ℝ) + 1) ^ (2 * e) := by rw [mul_pow, ← pow_mul]
-        _ ≤ ((c₁ : ℝ) + 1) ^ e * P := by
-            refine mul_le_mul_of_nonneg_left ?_ (by positivity)
-            exact_mod_cast hP (2 * e) (by omega)
-    have h₃ := Nat.ceil_lt_add_one (show (0 : ℝ) ≤
+      have hnb_add : nodeBound K L_coeff φ + 1 ≤ (c₁ + 1) * (L + 1) ^ 2 :=
+        (Nat.add_le_add hnb (Nat.one_le_pow 2 (L + 1) (Nat.succ_pos L))).trans_eq (by ring)
+      have hpow_nat : (nodeBound K L_coeff φ + 1) ^ e ≤ (c₁ + 1) ^ e * P := by
+        calc (nodeBound K L_coeff φ + 1) ^ e ≤ ((c₁ + 1) * (L + 1) ^ 2) ^ e :=
+              Nat.pow_le_pow_left hnb_add e
+          _ = (c₁ + 1) ^ e * (L + 1) ^ (2 * e) := by rw [mul_pow, ← pow_mul]
+          _ ≤ (c₁ + 1) ^ e * P := Nat.mul_le_mul_left _ (hP (2 * e) (by dsimp only [E]; omega))
+      exact_mod_cast hpow_nat
+    have h₃ := (Nat.ceil_lt_add_one (show (0 : ℝ) ≤
       (c : ℝ) * (2 ^ (δ * ((occBound K M * N + 1 : ℕ) : ℝ)) *
-        ((nodeBound K L_coeff φ : ℝ) + 1) ^ e) + c by positivity)
+        ((nodeBound K L_coeff φ : ℝ) + 1) ^ e) + c by positivity)).le
     unfold leafTime
     rw [h₁] at h₃ ⊢
     have h₄ : (c : ℝ) * (2 ^ δ * Y * ((nodeBound K L_coeff φ : ℝ) + 1) ^ e) ≤
         c * 2 ^ δ * ((c₁ : ℝ) + 1) ^ e * Y * P := by
-      have := mul_le_mul_of_nonneg_left h₂ (by positivity : (0 : ℝ) ≤ c * 2 ^ δ * Y)
-      linarith only [this]
-    have h₅ : (c : ℝ) + 1 ≤ ((c : ℝ) + 1) * Y * P := by
-      rw [mul_assoc]
-      exact le_mul_of_one_le_right (by positivity)
-        (one_le_mul_of_one_le_of_one_le hY hP1)
-    calc (⌈(c : ℝ) * (2 ^ δ * Y * ((nodeBound K L_coeff φ : ℝ) + 1) ^ e) + c⌉₊ : ℝ)
-        ≤ (c : ℝ) * (2 ^ δ * Y * ((nodeBound K L_coeff φ : ℝ) + 1) ^ e) + c + 1 := h₃.le
-      _ ≤ C₂ * Y * P := by simp only [C₂]; linarith only [h₄, h₅]
-  set X : ℝ := 2 ^ ((1 / B : ℝ) * N)
+      calc (c : ℝ) * (2 ^ δ * Y * ((nodeBound K L_coeff φ : ℝ) + 1) ^ e)
+          = (c * 2 ^ δ * Y) * ((nodeBound K L_coeff φ : ℝ) + 1) ^ e := by ring
+        _ ≤ (c * 2 ^ δ * Y) * (((c₁ : ℝ) + 1) ^ e * P) :=
+          mul_le_mul_of_nonneg_left h₂ (by positivity)
+        _ = c * 2 ^ δ * ((c₁ : ℝ) + 1) ^ e * Y * P := by ring
+    have h₅ : (c : ℝ) + 1 ≤ ((c : ℝ) + 1) * (Y * P) :=
+      le_mul_of_one_le_right (by positivity) (one_le_mul_of_one_le_of_one_le hY hP1)
+    calc (⌈(c : ℝ) * (2 ^ δ * Y * (↑(nodeBound K L_coeff φ) + 1) ^ e) + c⌉₊ : ℝ)
+        ≤ (c : ℝ) * (2 ^ δ * Y * ((nodeBound K L_coeff φ : ℝ) + 1) ^ e) + c + 1 := h₃
+      _ = (c : ℝ) * (2 ^ δ * Y * ((nodeBound K L_coeff φ : ℝ) + 1) ^ e) + ((c : ℝ) + 1) :=
+        add_assoc _ _ _
+      _ ≤ c * 2 ^ δ * ((c₁ : ℝ) + 1) ^ e * Y * P + ((c : ℝ) + 1) * (Y * P) := add_le_add h₄ h₅
+      _ = C₂ * Y * P := by dsimp only [C₂]; ring
+  clear_value C₂ E
+  clear hNL hmL hP hnb hsb henc
+  let X : ℝ := 2 ^ ((1 / B : ℝ) * N)
   have hX : ((2 ^ (N / B) : ℕ) : ℝ) ≤ X := by
     rw [Nat.cast_pow, Nat.cast_ofNat, ← Real.rpow_natCast]
     refine Real.rpow_le_rpow_of_exponent_le (by norm_num) ?_
-    rw [one_div_mul_eq_div]
-    exact Nat.cast_div_le
+    rw [one_div_mul_eq_div]; exact Nat.cast_div_le
   have hX1 : 1 ≤ X := Real.one_le_rpow (by norm_num) (by positivity)
   have hXY : X * Y = 2 ^ ((1 / B + occBound K M * δ) * N) := by
-    rw [← Real.rpow_add (by norm_num)]
-    ring_nf
-  have hT : (T φ : ℝ) ≤ 2 * P + 5 * X * (C₁ * P + C₂ * Y * P) := by
-    dsimp only [T]
-    have h₁ : ((L + 1) ^ dn + (L + 1) ^ di : ℝ) ≤ 2 * P := by exact_mod_cast hpoly
-    have h₂ : ((rounds B φ + 1 : ℕ) : ℝ) ≤ 5 * X := by
-      have : ((rounds B φ + 1 : ℕ) : ℝ) ≤ ((5 * 2 ^ (N / B) : ℕ) : ℝ) := by exact_mod_cast hr
-      rw [Nat.cast_mul] at this
-      push_cast at this hX ⊢
-      linarith only [this, hX]
-    have h₃ : (((2 * (2 * stateBound K L_coeff φ + 1) ^ d + stateBound K L_coeff φ +
-        ((encNat (rounds B φ)).length + 1) ^ 2 : ℕ)) : ℝ) ≤ C₁ * P := by exact_mod_cast hrnd
-    have h₄ : (((2 * (2 * stateBound K L_coeff φ + 1) ^ d + leafTime K M L_coeff δ c e φ +
-        stateBound K L_coeff φ + ((encNat (rounds B φ)).length + 1) ^ 2 : ℕ)) : ℝ) ≤
-        C₁ * P + C₂ * Y * P := by
-      push_cast at h₃ ⊢
-      linarith only [h₃, hleaf]
-    have h₅ := mul_le_mul h₂ h₄ (by positivity) (by positivity)
-    push_cast at h₁ h₅ ⊢
-    linarith only [h₁, h₅]
-  have h_prod : (T φ : ℝ) ≤
-      ⌈C₀⌉₊ * (2 ^ ((1 / B + occBound K M * δ) * N) * ((L : ℝ) + 1) ^ E) := by
-    calc (T φ : ℝ) ≤ 2 * P + 5 * X * (C₁ * P + C₂ * Y * P) := hT
-      _ ≤ C₀ * (X * Y * P) := by
-          have hXY1 : 1 ≤ X * Y := one_le_mul_of_one_le_of_one_le hX1 hY
-          have hC₁ : (0 : ℝ) ≤ C₁ := by positivity
-          have hP0 : (0 : ℝ) ≤ P := by positivity
-          have a₁ : (P : ℝ) ≤ X * Y * P := le_mul_of_one_le_left hP0 hXY1
-          have a₂ : X * P ≤ X * Y * P := by
-            have := mul_le_mul_of_nonneg_left hY (by positivity : (0 : ℝ) ≤ X * P)
-            linarith only [this, show X * P * Y = X * Y * P by ring]
-          have a₃ := mul_le_mul_of_nonneg_left a₂ hC₁
-          simp only [C₀]
-          linarith only [a₁, a₃]
-      _ ≤ ⌈C₀⌉₊ * (2 ^ ((1 / B + occBound K M * δ) * N) * ((L : ℝ) + 1) ^ E) := by
-          rw [← hXY]
-          push_cast [P]
-          exact mul_le_mul_of_nonneg_right (Nat.le_ceil C₀) (by positivity)
-  linarith [h_prod, (Nat.cast_nonneg ⌈C₀⌉₊ : (0 : ℝ) ≤ ⌈C₀⌉₊)]
+    rw [← Real.rpow_add (by norm_num)]; ring_nf
+  have hP_def : (P : ℝ) = ((L : ℝ) + 1) ^ E := by dsimp only [P]; push_cast; rfl
+  clear_value X Y P
+  have hP_nn : (0 : ℝ) ≤ P := Nat.cast_nonneg P
+  have hX_nn : 0 ≤ X := zero_le_one.trans hX1
+  have h₁ : (((L + 1) ^ dn + (L + 1) ^ di : ℕ) : ℝ) ≤ 2 * P := by exact_mod_cast hpoly
+  have h₂ : ((rounds B φ + 1 : ℕ) : ℝ) ≤ 5 * X := by
+    calc ((rounds B φ + 1 : ℕ) : ℝ) ≤ ((5 * 2 ^ (N / B) : ℕ) : ℝ) := Nat.cast_le.mpr hr
+      _ = 5 * ((2 ^ (N / B) : ℕ) : ℝ) := by push_cast; rfl
+      _ ≤ 5 * X := mul_le_mul_of_nonneg_left hX (by norm_num)
+  have h₃ : (((2 * (2 * stateBound K L_coeff φ + 1) ^ d + stateBound K L_coeff φ +
+      ((encNat (rounds B φ)).length + 1) ^ 2 : ℕ)) : ℝ) ≤ C₁ * P := by exact_mod_cast hrnd
+  have h₄ : (((2 * (2 * stateBound K L_coeff φ + 1) ^ d + leafTime K M L_coeff δ c e φ +
+      stateBound K L_coeff φ + ((encNat (rounds B φ)).length + 1) ^ 2 : ℕ)) : ℝ) ≤
+      C₁ * P + C₂ * Y * P := by
+    rw [show 2 * (2 * stateBound K L_coeff φ + 1) ^ d + leafTime K M L_coeff δ c e φ +
+      stateBound K L_coeff φ + ((encNat (rounds B φ)).length + 1) ^ 2 =
+      (2 * (2 * stateBound K L_coeff φ + 1) ^ d + stateBound K L_coeff φ +
+        ((encNat (rounds B φ)).length + 1) ^ 2) + leafTime K M L_coeff δ c e φ by omega,
+      Nat.cast_add]
+    exact add_le_add h₃ hleaf
+  have h₅ := mul_le_mul h₂ h₄ (Nat.cast_nonneg _) (mul_nonneg (by norm_num) hX_nn)
+  have hT : (((L + 1) ^ dn + (L + 1) ^ di +
+      (rounds B φ + 1) * (2 * (2 * stateBound K L_coeff φ + 1) ^ d +
+        leafTime K M L_coeff δ c e φ + stateBound K L_coeff φ +
+        ((encNat (rounds B φ)).length + 1) ^ 2) : ℕ) : ℝ) ≤
+      2 * P + 5 * X * (C₁ * P + C₂ * Y * P) := by
+    rw [Nat.cast_add, Nat.cast_mul]; exact add_le_add h₁ h₅
+  have hXY1 : 1 ≤ X * Y := one_le_mul_of_one_le_of_one_le hX1 hY
+  have a₁ : (P : ℝ) ≤ X * Y * P := le_mul_of_one_le_left hP_nn hXY1
+  have a₂ : X * P ≤ X * Y * P :=
+    (le_mul_of_one_le_right (mul_nonneg hX_nn hP_nn) hY).trans_eq (by ring)
+  have a₃ := mul_le_mul_of_nonneg_left a₂ (Nat.cast_nonneg C₁)
+  have h_mid : 2 * (P : ℝ) + 5 * X * (C₁ * P + C₂ * Y * P) ≤ C₀ * (X * Y * P) := by
+    dsimp only [C₀]; linarith
+  have h_ceil := mul_le_mul_of_nonneg_right (Nat.le_ceil C₀) (hP_nn.trans a₁)
+  rw [← hXY, ← hP_def]
+  exact (hT.trans (h_mid.trans h_ceil)).trans (le_add_of_nonneg_right (Nat.cast_nonneg _))
 
 include hM hK in
 /-- **The time and space of the counting-sparsification search.** Given a total leaf routine `g`
