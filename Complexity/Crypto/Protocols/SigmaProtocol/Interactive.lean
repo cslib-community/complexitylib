@@ -123,26 +123,26 @@ def interactiveTranscript (P : SigmaProtocol X Y T C Z) (t : T) (c : C) (z : Z) 
   (t, c, z, ())
 
 /-- Package a conversation triple `(t, c, z)` as a transcript of `P.interactiveSpec`. -/
-def transcriptOfConversation (P : SigmaProtocol X Y T C Z) (tcz : T × C × Z) :
+def transcriptOfConversation (P : SigmaProtocol X Y T C Z) : T × C × Z →
     Transcript P.interactiveSpec :=
-  (tcz.1, tcz.2.1, tcz.2.2, ())
+  fun (t, c, z) => (t, c, z, ())
 
 /-- The commitment `t` of an interactive transcript. -/
-def commitOfTranscript (P : SigmaProtocol X Y T C Z) (τ : Transcript P.interactiveSpec) : T :=
-  τ.1
+def commitOfTranscript (P : SigmaProtocol X Y T C Z) : Transcript P.interactiveSpec → T :=
+  fun (t, _, _, _) => t
 
 /-- The challenge `c` of an interactive transcript. -/
-def challengeOfTranscript (P : SigmaProtocol X Y T C Z) (τ : Transcript P.interactiveSpec) : C :=
-  τ.2.1
+def challengeOfTranscript (P : SigmaProtocol X Y T C Z) : Transcript P.interactiveSpec → C :=
+  fun (_, c, _, _) => c
 
 /-- The response `z` of an interactive transcript. -/
-def responseOfTranscript (P : SigmaProtocol X Y T C Z) (τ : Transcript P.interactiveSpec) : Z :=
-  τ.2.2.1
+def responseOfTranscript (P : SigmaProtocol X Y T C Z) : Transcript P.interactiveSpec → Z :=
+  fun (_, _, z, _) => z
 
 /-- View an interactive transcript as a Sigma-protocol conversation `(t, c, z)`. -/
-def conversationOfTranscript (P : SigmaProtocol X Y T C Z)
-    (τ : Transcript P.interactiveSpec) : T × C × Z :=
-  (τ.1, τ.2.1, τ.2.2.1)
+def conversationOfTranscript (P : SigmaProtocol X Y T C Z) :
+    Transcript P.interactiveSpec → T × C × Z :=
+  fun (t, c, z, _) => (t, c, z)
 
 variable (P : SigmaProtocol X Y T C Z)
 
@@ -158,14 +158,14 @@ variable (P : SigmaProtocol X Y T C Z)
 @[simp] theorem conversationOfTranscript_interactiveTranscript (t : T) (c : C) (z : Z) :
     P.conversationOfTranscript (P.interactiveTranscript t c z) = (t, c, z) := rfl
 
-@[simp] theorem commitOfTranscript_transcriptOfConversation (tcz : T × C × Z) :
-    P.commitOfTranscript (P.transcriptOfConversation tcz) = tcz.1 := rfl
+@[simp] theorem commitOfTranscript_transcriptOfConversation (t : T) (c : C) (z : Z) :
+    P.commitOfTranscript (P.transcriptOfConversation (t, c, z)) = t := rfl
 
-@[simp] theorem challengeOfTranscript_transcriptOfConversation (tcz : T × C × Z) :
-    P.challengeOfTranscript (P.transcriptOfConversation tcz) = tcz.2.1 := rfl
+@[simp] theorem challengeOfTranscript_transcriptOfConversation (t : T) (c : C) (z : Z) :
+    P.challengeOfTranscript (P.transcriptOfConversation (t, c, z)) = c := rfl
 
-@[simp] theorem responseOfTranscript_transcriptOfConversation (tcz : T × C × Z) :
-    P.responseOfTranscript (P.transcriptOfConversation tcz) = tcz.2.2 := rfl
+@[simp] theorem responseOfTranscript_transcriptOfConversation (t : T) (c : C) (z : Z) :
+    P.responseOfTranscript (P.transcriptOfConversation (t, c, z)) = z := rfl
 
 @[simp] theorem conversationOfTranscript_transcriptOfConversation (tcz : T × C × Z) :
     P.conversationOfTranscript (P.transcriptOfConversation tcz) = tcz := rfl
@@ -259,9 +259,9 @@ theorem eval_toInteractiveReduction_run
     {sampleCommit : X → Y → ProbComp (T × P.State)}
     (hcommit : P.CommitRealizedBy sampleCommit) (y : Y) (x : X) :
     World.plain.eval ((P.toInteractiveReduction sampleCommit).run y x) =
-      (P.conversation x y).map fun tcz =>
-        (P.transcriptOfConversation tcz,
-          if P.verify y tcz.1 tcz.2.1 tcz.2.2 then some () else none, ((), ())) := by
+      (P.conversation x y).map fun (t, c, z) =>
+        (P.transcriptOfConversation (t, c, z),
+          if P.verify y t c z then some () else none, ((), ())) := by
   rw [Interactive.Reduction.run, toInteractiveReduction, World.plain_eval_execute,
     P.plainLaw_toInteractiveProver_runStrategy hcommit y x, PMF.map_comp]
   rfl
@@ -289,8 +289,8 @@ theorem Complete.toInteractiveReduction {R : X → Y → Prop}
   intro y x hyx
   rw [P.eval_toInteractiveReduction_run hcommit y x, PMF.toOuterMeasure_map_apply,
     nonpos_iff_eq_zero, PMF.toOuterMeasure_apply_eq_zero_iff, Set.disjoint_left]
-  intro tcz htcz hfail
-  have hacc : P.verify y tcz.1 tcz.2.1 tcz.2.2 = true :=
+  rintro ⟨t, c, z⟩ htcz hfail
+  have hacc : P.verify y t c z = true :=
     h.accepts_of_mem_support_conversation hyx htcz
   exact hfail ⟨by simp [hacc], trivial⟩
 
@@ -374,18 +374,12 @@ theorem SpecialSoundness.knowledgeSound_of_extractor {W : Type} {R : W → Y →
       (1 / (Fintype.card C : ℝ≥0∞)) := by
   intro y strat
   by_cases hy : y ∈ language (Function.swap R)
-  · have hzero :
-        (World.plain.eval
-          (P.toInteractiveVerifier.execute (oP := OracleSpec.empty) y strat)).toOuterMeasure
-          {r | (∃ x', r.2.1 = some x' ∧ Accept x' r.2.2) ∧
-            ¬ Function.swap R y (E y r.1 r.2.2)} = 0 := by
-      rw [World.plain_eval_execute, PMF.toOuterMeasure_map_apply,
-        PMF.toOuterMeasure_apply_eq_zero_iff, Set.disjoint_left]
-      rintro ⟨τ, ⟨⟩⟩ _ ⟨⟨⟨⟩, hacc, -⟩, hnot⟩
-      have hacc' := (P.toInteractiveVerifier_outputOn_eq_some_iff y τ ()).mp hacc
-      exact hnot (hE y τ hy hacc')
-    rw [hzero]
-    exact zero_le
+  · refine le_of_eq_of_le ?_ zero_le
+    rw [World.plain_eval_execute, PMF.toOuterMeasure_map_apply,
+      PMF.toOuterMeasure_apply_eq_zero_iff, Set.disjoint_left]
+    rintro ⟨τ, ⟨⟩⟩ _ ⟨⟨⟨⟩, hacc, -⟩, hnot⟩
+    have hacc' := (P.toInteractiveVerifier_outputOn_eq_some_iff y τ ()).mp hacc
+    exact hnot (hE y τ hy hacc')
   · refine (MeasureTheory.measure_mono ?_).trans (SpecialSoundness.sound h Set.univ y hy Unit strat)
     rintro r ⟨⟨x', hx', -⟩, -⟩
     exact ⟨x', Set.mem_univ x', hx'⟩
