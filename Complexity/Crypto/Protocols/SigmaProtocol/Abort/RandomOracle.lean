@@ -47,7 +47,7 @@ noncomputable def fiatShamirAbortSign (P : SigmaProtocol X Y T C (Option Z))
     (K : ℕ) → (Fin K → T × P.State) → OracleComp (fun _ : M × T => C) (Option (T × Z))
   | 0, _ => pure none
   | K + 1, coins => do
-      let view ← (fiatShamir P keyGen).sign sk msg (coins 0)
+      let view ← (fiatShamir (Function.Embedding.refl _) P keyGen).sign sk msg (coins 0)
       let later ← fiatShamirAbortSign P keyGen sk msg K (Fin.tail coins)
       return (view.2.map fun z => (view.1, z)).orElse fun _ => later
 
@@ -55,13 +55,13 @@ noncomputable def fiatShamirAbortSign (P : SigmaProtocol X Y T C (Option Z))
 The `none` reply is an abort and never verifies. No total correctness assertion is made. -/
 noncomputable def fiatShamirAbort (P : SigmaProtocol X Y T C (Option Z))
     (keyGen : PMF (X × Y)) (K : ℕ) : Scheme Y (X × Y) M (Option (T × Z)) (M × T) C where
-  keyGen := (fiatShamir (M := M) P keyGen).keyGen
+  keyGen := (fiatShamir (Function.Embedding.refl (M × T)) P keyGen).keyGen
   SignCoins := Fin K → T × P.State
   signCoins sk _ := iid (P.commit sk.1 sk.2) K
   sign sk msg coins := fiatShamirAbortSign P keyGen sk msg K coins
   verify y msg
     | none => pure false
-    | some (w, z) => (fiatShamir P keyGen).verify y msg (w, some z)
+    | some (w, z) => (fiatShamir (Function.Embedding.refl _) P keyGen).verify y msg (w, some z)
 
 /-- Every branch of the all-attempt signer has at most `K` hash calls. This counts queries,
 not running time. -/
@@ -120,12 +120,15 @@ equal full transcripts. The stateful answering kernel is common to both witnesse
 theorem fiatShamir_sign_run_eq_of_transcript_eq {x x' : X} {y : Y}
     (h : ∀ c, P.transcript x y c = P.transcript x' y c) (msg : M) (state : R) :
     ((P.commit x y).bind fun coin =>
-      (interpret answer ((fiatShamir P keyGen).sign (x, y) msg coin)).run state) =
+      (interpret answer
+        ((fiatShamir (Function.Embedding.refl _) P keyGen).sign (x, y) msg coin)).run state) =
     (P.commit x' y).bind fun coin =>
-      (interpret answer ((fiatShamir P keyGen).sign (x', y) msg coin)).run state := by
+      (interpret answer
+        ((fiatShamir (Function.Embedding.refl _) P keyGen).sign (x', y) msg coin)).run state := by
   have hk := bind_respond_challenge_eq_of_transcript_eq P h
     (fun w => (answer (msg, w)).run state)
-  simpa only [fiatShamir, interpret_map, interpret_query, StateT.run_map,
+  simpa only [fiatShamir, Function.Embedding.refl_apply, interpret_map, interpret_query,
+    StateT.run_map,
     PMF.monad_map_eq_map, PMF.map_bind, PMF.map_comp, Function.comp_def] using
     congrArg (PMF.map fun view => ((view.1, view.2.2.1), view.2.2.2)) hk
 
@@ -135,7 +138,9 @@ theorem fiatShamirAbortSign_run_succ (x : X) (y : Y) (msg : M) (K : ℕ) (state 
     ((iid (P.commit x y) (K + 1)).bind fun coins =>
       (interpret answer (fiatShamirAbortSign P keyGen (x, y) msg (K + 1) coins)).run state) =
     ((P.commit x y).bind fun coin =>
-      (interpret answer ((fiatShamir P keyGen).sign (x, y) msg coin)).run state).bind fun first =>
+      (interpret answer
+        ((fiatShamir (Function.Embedding.refl _) P keyGen).sign (x, y) msg coin)).run state).bind
+      fun first =>
     ((iid (P.commit x y) K).bind fun coins =>
       (interpret answer (fiatShamirAbortSign P keyGen (x, y) msg K coins)).run first.2).map
       fun later =>
