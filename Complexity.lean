@@ -4015,6 +4015,7 @@ public import Complexity.Languages.Probabilistic.Traverse
 public import Complexity.Languages.Probabilistic.UniformNat
 public import Complexity.Languages.Probabilistic.UniformNat.Support
 public import Complexity.Languages.Probabilistic.UntilBad
+public import Complexity.Languages.Probabilistic.UntilBad.TwoCost
 public import Complexity.Languages.Probabilistic.Vector
 public import Complexity.Logics.FirstOrder.Basic
 public import Complexity.Logics.FirstOrder.Encoding
