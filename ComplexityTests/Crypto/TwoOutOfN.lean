@@ -20,6 +20,7 @@ STOC submission 886, Section 4. Slopes are obtained from the proved existence th
 open Cslib.Crypto.Protocols.SecretSharing.ImperfectRandomness
 open Cslib.Crypto.Protocols.SecretSharing.ImperfectRandomness.TwoOutOfN
 open Cslib.Probability Finset
+open scoped Cslib.Probability.PMF
 
 namespace TwoOutOfNTests
 
@@ -132,5 +133,30 @@ example : (((source (by decide : 2 ≤ 3) (univ : Finset V)).map (share α 1 0))
   norm_num [card_keys (by decide : 2 ≤ 3), field_card]
 
 example : ¬ (central 1).Nonempty := by simp [central]
+
+-- The full endpoint supplies both arbitrary three-bit failure and an actual tight index map.
+example : ∃ g : V → Bool,
+    (∀ T, dist ((source (by decide : 2 ≤ 3) T).map (fun k => g k.2))
+      (PMF.uniformOfFintype Bool) ≤ 1 / 10) ∧
+    (∃ T, dist ((source (by decide : 2 ≤ 3) T).map (fun k => g k.2))
+      (PMF.uniformOfFintype Bool) = 1 / 10) ∧
+    (∀ ext : Key 3 V → (Fin 3 → Bool), ∃ T,
+      1 / 10 ≤ dist ((source (by decide : 2 ≤ 3) T).map ext)
+        (PMF.uniformOfFintype (Fin 3 → Bool))) := by
+  obtain ⟨_, _, _, _, _, _, _, _, _, _, hlow, g, hu, ht⟩ :=
+    binary_theorem4_1 3 2 (by decide) (by decide)
+  norm_num at hlow hu ht
+  exact ⟨g, hu, ht, fun ext => hlow 3 (by decide) ext⟩
+
+-- At n=2 the same actual constructor attains the paper's 1/6 boundary constant.
+example : ∃ g : V → Bool,
+    (∀ T, dist ((source (by decide : 2 ≤ 2) T).map (fun k => g k.2))
+      (PMF.uniformOfFintype Bool) ≤ 1 / 6) ∧
+    (∃ T, dist ((source (by decide : 2 ≤ 2) T).map (fun k => g k.2))
+      (PMF.uniformOfFintype Bool) = 1 / 6) := by
+  have hev : Even (Fintype.card V) := by rw [field_card]; decide
+  obtain ⟨g, _, hu, ht⟩ := exists_tight_index_extractor (by decide : 2 ≤ 2) hev
+  norm_num at hu ht
+  exact ⟨g, hu, ht⟩
 
 end TwoOutOfNTests

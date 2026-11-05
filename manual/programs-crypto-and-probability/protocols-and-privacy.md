@@ -139,9 +139,12 @@ fixes one generator, whereas this endpoint quantifies over a class of generator 
 
 The abstract of STOC submission 886 also advertises Theorem 1.2's two-out-of-$n$ and
 $r$-out-of-$r$ results, expanded in Theorems 4.1 and 5.1. The construction below covers
-Theorem 4.1's correctness, privacy and items 1–2. Combining both threshold constructions
-with the extraction lower bounds and matching upper bounds, including the two-party $1/6$
-tightness, remains part of [issue 2524](https://github.com/cslib-community/complexitylib/issues/2524).
+all four items of Theorem 4.1, including its tight extraction bound. For the original padded
+source family's $1/6$ tightness, import
+`Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.TwoPartyTightness` and use
+`binary_padded_extraction_tight`. The separate Theorem 5.1 construction, combined main-results
+integration, independent review and final CI remain tracked in
+[issue 2524](https://github.com/cslib-community/complexitylib/issues/2524).
 
 Import `Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.TwoPartyTightness`
 and apply `binary_padded_extraction_tight` for the matching $1/6$ upper bound at every
@@ -167,7 +170,7 @@ maps the construction to Aggarwal's Theorem 1.1 and Section 3.
 
 Import `Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.TwoOutOfN`. In namespace
 `Cslib.Crypto.Protocols.SecretSharing.ImperfectRandomness.TwoOutOfN`, use
-`binary_construction n b hn hb` with $n \ge 2$ and $n < 2^b$. It constructs distinct nonzero
+`binary_theorem4_1 n b hn hb` with $n \ge 2$ and $n < 2^b$. It constructs distinct nonzero
 slopes in `GaloisField 2 b`, fixed message/share bijections onto `Fin b → Bool` and
 `Fin (b + 1) → Bool`, and the sharing map `bitShare`. These bijections transport actual sharing
 functions. They are noncomputable choices,
@@ -192,16 +195,22 @@ matching equations (5)–(6), PDF pp. 8–9 of STOC submission 886.
 
 `extraction_parameters` proves that the actual central/side counts are $n-1$ and $n$, that both
 are nonempty, and that the total is odd. `binary_index_parameters` proves even index cardinality
-and slope existence at every admissible $n,b$. These are the constructor hypotheses needed by
-the generic extraction proof. `binary_construction` does not itself bundle the lower bound
-$1/(4n-2)$, the balanced-index upper bound, or their equality; those remaining integration links
-must be checked before claiming the full Theorem 4.1 or Theorem 1.2.
+and slope existence at every admissible $n,b$. The constructor's `no_string_extractor`
+instantiates `OddSources.no_string_extractor` on exactly these sources, for every positive
+output length and every deterministic extractor, with lower bound $1/(4n-2)$.
+`exists_tight_index_extractor` instantiates the common balanced-index theorem: it constructs
+an actual index function attaining that error on one source and at most that error on every
+source. `binary_theorem4_1` bundles these with the same sharing scheme, source family,
+correctness, privacy, literal encodings and size/entropy statements, with no unproved linking
+premises. `binary_construction` remains the intermediate correctness/privacy/items 1–2 result.
 
 From the repository root after setup, run `scripts/build.sh ComplexityTests.Crypto.TwoOutOfN`.
 The [checked client](../../ComplexityTests/Crypto/TwoOutOfN.lean) covers $n=2,3$ at $b=2$, rejects
 the inadmissible $b=1$ edge, checks the actual tag ownership and duplicated central keys,
 reconstructs an actual pair, proves singleton/empty privacy and failure of authorized privacy,
-and checks both extremal source supports. The [source module](../../Complexity/Crypto/Protocols/SecretSharing/ImperfectRandomness/TwoOutOfN.lean)
+checks both extremal source supports and masses, and applies the full bundle to arbitrary
+three-bit extractors at $n=3$ while obtaining tight index errors $1/10$ and $1/6$ at $n=3,2$.
+The [source module](../../Complexity/Crypto/Protocols/SecretSharing/ImperfectRandomness/TwoOutOfN.lean)
 gives the precise result-to-declaration mapping.
 
 ## Independent thinning of spread sources

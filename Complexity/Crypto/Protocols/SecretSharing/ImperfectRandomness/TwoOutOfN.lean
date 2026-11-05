@@ -31,8 +31,9 @@ no bit-operation running time is asserted.
 * `reconstruct_share`, `authorized_correctness`: every authorized coalition reconstructs
   on every ambient key.
 * `share_expect`, `unauthorized_privacy`: exact single-share multiplicities and joint privacy.
-* `binary_construction`: literal message/share alphabets at every admissible `n,b`, with
-  exact key size and the support and entropy bounds of Theorem 4.1, items 1–2.
+* `binary_theorem4_1`: full Theorem 4.1 at every admissible `n,b`, including literal
+  message/share bits, all four numbered items and tight extraction error.
+* `binary_construction`: the correctness/privacy and size/entropy part of this bundle.
 * `extraction_parameters`, `binary_index_parameters`: all actual constructor hypotheses
   for applying the generic odd-branch extraction lower bound and tight upper bound.
 
@@ -46,6 +47,7 @@ public section
 namespace Cslib.Crypto.Protocols.SecretSharing.ImperfectRandomness.TwoOutOfN
 
 open Finset Cslib.Probability
+open scoped Cslib.Probability.PMF
 
 /-- The distinct central and side branches of equation (5). -/
 abbrev Branch (n : ℕ) := Fin (n - 1) ⊕ Fin n
@@ -182,18 +184,8 @@ private theorem sum_keys {n : ℕ} {V : Type*} [Fintype V] [DecidableEq V]
     (∑ k ∈ OddSources.keys (central n) T, f k) =
       ∑ i : V, if i ∈ T then ∑ c : Fin (n - 1), f (.inl c, i)
         else ∑ p : Fin n, f (.inr p, i) := by
-  rw [OddSources.keys, sum_filter, Fintype.sum_prod_type]
-  rw [Fintype.sum_sum_type]
-  conv_lhs =>
-    lhs
-    rw [sum_comm]
-  conv_lhs =>
-    rhs
-    rw [sum_comm]
-  rw [← sum_add_distrib]
-  apply sum_congr rfl
-  intro i _
-  by_cases hi : i ∈ T <;> simp [hi]
+  rw [OddSources.sum_keys]
+  simp [central]
 
 private theorem sum_share {n : ℕ} {V : Type*} [Field V] [Fintype V]
     [DecidableEq V] (T : Finset V) (α : Fin n → V) (hα : ∀ j, α j ≠ 0)
@@ -232,20 +224,6 @@ private theorem sum_share {n : ℕ} {V : Type*} [Field V] [Fintype V]
       by_cases hi : i ∈ T <;> simp [hi]
     _ = _ := by rw [hp]
 
-private theorem source_expect {n : ℕ} (hn : 2 ≤ n) {V : Type*} [Fintype V]
-    [DecidableEq V] [Nonempty V] (T : Finset V) (f : Key n V → ℝ) :
-    (∑ k, (source hn T k).toReal * f k) =
-      (∑ k ∈ OddSources.keys (central n) T, f k) / (OddSources.keys (central n) T).card := by
-  classical
-  simp only [source, OddSources.source, PMF.uniformOfFinset_apply]
-  simp_rw [apply_ite ENNReal.toReal, ENNReal.toReal_inv, ENNReal.toReal_natCast,
-    ENNReal.toReal_zero, ite_mul, zero_mul]
-  rw [← sum_filter, ← mul_sum]
-  have hs : univ.filter (fun k => k ∈ OddSources.keys (central n) T) =
-      OddSources.keys (central n) T := by ext; simp
-  rw [hs]
-  ring
-
 /-- Lemma 4.3: each party's actual share law is independent of the message, for every source. -/
 theorem singleton_privacy {n : ℕ} (hn : 2 ≤ n) {V : Type*} [Field V] [Fintype V]
     [DecidableEq V] (α : Fin n → V) (hα : ∀ j, α j ≠ 0) (j : Fin n)
@@ -263,7 +241,8 @@ theorem singleton_privacy {n : ℕ} (hn : 2 ≤ n) {V : Type*} [Field V] [Fintyp
       (sum_share T α hα j m' (fun y => if y = x then 1 else 0)).symm
   have h' := congrArg (fun z : ℝ => z / (OddSources.keys (central n) T).card) h
   rw [PMF.map_apply_toReal, PMF.map_apply_toReal]
-  simpa only [← source_expect hn, mul_ite, mul_one, mul_zero, eq_comm] using h'
+  simpa only [source, ← OddSources.source_expect (central n) (central_nonempty hn)
+    (side_nonempty hn), mul_ite, mul_one, mul_zero, eq_comm] using h'
 
 
 /-- The complete joint view of a coalition; party identities remain part of its coordinates. -/
@@ -305,7 +284,8 @@ theorem share_expect {n : ℕ} (hn : 2 ≤ n) {V : Type*} [Field V] [Fintype V]
     (∑ k, (source hn T k).toReal * score (share α j m k)) =
       ((n - 1 : ℕ) * (∑ x : V, score (.inl x)) +
         ∑ i ∈ univ \ T, score (.inr i)) / (OddSources.keys (central n) T).card := by
-  rw [source_expect hn, sum_share T α hα]
+  rw [source, OddSources.source_expect (central n) (central_nonempty hn) (side_nonempty hn),
+    sum_share T α hα]
 
 /-- Every ordinary share value has exactly the probability asserted in Lemma 4.3. -/
 theorem share_apply_inl {n : ℕ} (hn : 2 ≤ n) {V : Type*} [Field V] [Fintype V]
@@ -337,7 +317,7 @@ theorem share_apply_inr {n : ℕ} (hn : 2 ≤ n) {V : Type*} [Field V] [Fintype 
 theorem source_minEntropy {n : ℕ} (hn : 2 ≤ n) {V : Type*} [Fintype V]
     [DecidableEq V] [Nonempty V] (T : Finset V) :
     Real.logb 2 (((n - 1) * Fintype.card V : ℕ) : ℝ) ≤ PMF.minEntropy (source hn T) := by
-  rw [source_flat, PMF.minEntropy_uniformOfFinset]
+  rw [source, OddSources.minEntropy_source]
   apply Real.logb_le_logb_of_le (by norm_num)
   · exact_mod_cast Nat.mul_pos (by omega : 0 < n - 1) (Fintype.card_pos (α := V))
   · exact_mod_cast (card_keys_bounds hn T).1
@@ -416,9 +396,9 @@ theorem bit_unauthorized_privacy {n b : ℕ} (hn : 2 ≤ n) {V : Type*}
 open scoped Classical in
 /-- The actual construction and items 1–2 of Theorem 4.1 at every permitted `n,b`.
 The source laws are unchanged by message/share encoding. Extraction items 3–4 are separate
-from this theorem. Their generic
-complementary-branch hypotheses are discharged by
-`extraction_parameters` and `binary_index_parameters`; this theorem assumes no extraction claim. -/
+from this intermediate theorem; `binary_theorem4_1` includes all four items. The generic
+complementary-branch hypotheses are discharged by `extraction_parameters` and
+`binary_index_parameters`. -/
 theorem binary_construction (n b : ℕ) (hn : 2 ≤ n) (hb : n < 2 ^ b) :
     let V := GaloisField 2 b
     let : Fintype V := Fintype.ofFinite _
@@ -459,5 +439,85 @@ theorem binary_construction (n b : ℕ) (hn : 2 ≤ n) (hb : n < 2 ^ b) :
       Real.logb_mul (by exact_mod_cast (by omega : n - 1 ≠ 0)) (by positivity),
       Real.logb_pow, Real.logb_self_eq_one (by norm_num), mul_one] at he
     simpa only [add_comm] using he
+
+
+
+/-- The generic odd-branch constant is exactly the constant in Theorem 4.1. -/
+theorem extraction_constant {n : ℕ} (hn : 2 ≤ n) :
+    (1 : ℝ) / (2 * Fintype.card (Branch n)) = 1 / (4 * (n : ℝ) - 2) := by
+  rw [card_branch hn, Nat.cast_sub (by omega), Nat.cast_mul, Nat.cast_ofNat, Nat.cast_one]
+  congr 1
+  ring
+
+/-- Theorem 4.1, item 3: every extractor of every positive output length fails on an actual
+allowed source, without computational restrictions on the extractor. -/
+theorem no_string_extractor {n : ℕ} (hn : 2 ≤ n) {V : Type*} [Fintype V]
+    [DecidableEq V] [Nonempty V] (ℓ : ℕ) (hℓ : 0 < ℓ)
+    (ext : Key n V → (Fin ℓ → Bool)) :
+    ∃ T : Finset V, (1 : ℝ) / (4 * (n : ℝ) - 2) ≤
+      dist ((source hn T).map ext) (PMF.uniformOfFintype (Fin ℓ → Bool)) := by
+  have h := OddSources.no_string_extractor (central n) (central_nonempty hn)
+    (side_nonempty hn) (extraction_parameters hn).2.2.2.2.1 ℓ hℓ ext
+  simpa only [source, extraction_constant hn] using h
+
+/-- Theorem 4.1, item 4: a balanced function of the actual index achieves the optimal bound
+on all sources, with equality on one source. There is no assumed balancing witness. -/
+theorem exists_tight_index_extractor {n : ℕ} (hn : 2 ≤ n) {V : Type*} [Fintype V]
+    [DecidableEq V] [Nonempty V] (heven : Even (Fintype.card V)) :
+    ∃ g : V → Bool,
+      (univ.filter fun i => g i = true).card = (univ.filter fun i => g i = false).card ∧
+      (∀ T, dist ((source hn T).map (fun k => g k.2))
+        (PMF.uniformOfFintype Bool) ≤ (1 : ℝ) / (4 * (n : ℝ) - 2)) ∧
+      (∃ T, dist ((source hn T).map (fun k => g k.2))
+        (PMF.uniformOfFintype Bool) = (1 : ℝ) / (4 * (n : ℝ) - 2)) := by
+  have hclasses : (central n).card = n - 1 ∧ (univ \ central n).card = (n - 1) + 1 := by
+    rw [card_central, card_side]
+    omega
+  have h := OddSources.exists_tight_index_extractor (central n) (central_nonempty hn)
+    (side_nonempty hn) (n - 1) (Or.inl hclasses) heven
+  simpa only [source, extraction_constant hn] using h
+
+open scoped Classical in
+/-- Full Theorem 4.1 of STOC submission 886, at every `n ≥ 2` and `2^b > n`.
+A single fixed scheme on literal message/share bits has perfect authorized correctness and
+joint unauthorized privacy for the entire actual source class. All four numbered items are
+included: exact key/share alphabets, flat supports and entropy, failure of every positive-length
+extractor, and an index-only bit extractor attaining the bound. No unproved linking premise is
+assumed. Fixed encoding bijections carry no bit-level runtime claim. -/
+theorem binary_theorem4_1 (n b : ℕ) (hn : 2 ≤ n) (hb : n < 2 ^ b) :
+    let V := GaloisField 2 b
+    let : Fintype V := Fintype.ofFinite _
+    ∃ (em : V ≃ (Fin b → Bool)) (es : Share V ≃ (Fin (b + 1) → Bool))
+      (α : Fin n → V), Function.Injective α ∧ (∀ j, α j ≠ 0) ∧
+      Fintype.card (Key n V) = (2 * n - 1) * 2 ^ b ∧
+      (∀ (J : Finset (Fin n)), 2 ≤ J.card →
+        ∃ rec : (J → (Fin (b + 1) → Bool)) → (Fin b → Bool),
+          ∀ m k, rec (bitView α em es J m k) = m) ∧
+      (∀ (J : Finset (Fin n)), J.card < 2 → ∀ T m m',
+        (source hn T).map (bitView α em es J m) =
+          (source hn T).map (bitView α em es J m')) ∧
+      (∀ T : Finset V, source hn T = PMF.uniformOfFinset (OddSources.keys (central n) T)
+          (OddSources.keys_nonempty _ (central_nonempty hn) (side_nonempty hn) T) ∧
+        (n - 1) * 2 ^ b ≤ (OddSources.keys (central n) T).card ∧
+        (OddSources.keys (central n) T).card ≤ n * 2 ^ b) ∧
+      (∀ T : Finset V, (b : ℝ) + Real.logb 2 (n - 1 : ℕ) ≤
+        PMF.minEntropy (source hn T)) ∧
+      (∀ ℓ : ℕ, 0 < ℓ → ∀ ext : Key n V → (Fin ℓ → Bool),
+        ∃ T, (1 : ℝ) / (4 * (n : ℝ) - 2) ≤
+          dist ((source hn T).map ext) (PMF.uniformOfFintype (Fin ℓ → Bool))) ∧
+      (∃ g : V → Bool,
+        (∀ T, dist ((source hn T).map (fun k => g k.2))
+          (PMF.uniformOfFintype Bool) ≤ (1 : ℝ) / (4 * (n : ℝ) - 2)) ∧
+        (∃ T, dist ((source hn T).map (fun k => g k.2))
+          (PMF.uniformOfFintype Bool) = (1 : ℝ) / (4 * (n : ℝ) - 2))) := by
+  classical
+  let V := GaloisField 2 b
+  let : Fintype V := Fintype.ofFinite _
+  obtain ⟨em, es, α, hα, hα0, hk, hr, hp, hs, he⟩ := binary_construction n b hn hb
+  have hev : Even (Fintype.card V) := (binary_index_parameters n b hn hb).2.1
+  obtain ⟨g, _, hu, ht⟩ := exists_tight_index_extractor hn hev
+  exact ⟨em, es, α, hα, hα0, hk, hr, hp,
+    fun T => ⟨source_flat hn T, (hs T).1, (hs T).2⟩, he,
+    fun ℓ hℓ ext => no_string_extractor hn ℓ hℓ ext, g, hu, ht⟩
 
 end Cslib.Crypto.Protocols.SecretSharing.ImperfectRandomness.TwoOutOfN
