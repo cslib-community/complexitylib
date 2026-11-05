@@ -613,26 +613,27 @@ example {keys : List Bool × List Bool}
     (schnorrGroups.generator d23) hct
 
 /-- Concrete instantiation of `DDH.kemINDCPA_hashedElGamalEncapsProb`,
-`DDH.wordINDCPA_hybrid_hashedElGamal` (with `otpWordEncrypt`),
+`DDH.wordINDCPA_hybrid_hashedElGamal` (with a `2 * n`-bit one-time pad),
 `DDH.indcpaOn_elGamalEncryptProb`, and `DDH.indcpa_elGamalBitEncryptProb`. -/
 example (d : ℕ → schnorrGroups.Desc)
     (hd : ComputableInPolyTime d encUnary schnorrGroups.encDesc)
     (hDDH : schnorrGroups.DDH (fun n => PMF.pure (d n)))
     (H : schnorrGroups.Desc × List Bool → List Bool)
-    (hKDF : schnorrGroups.SecureKDF (fun n => PMF.pure (d n)) H (fun n => n))
+    (hKDF : schnorrGroups.SecureKDF (fun n => PMF.pure (d n)) H (fun n => 2 * n))
     (hH : ComputableInPolyTime H (encPair schnorrGroups.encDesc encBits) encBits) :
-    Encryption.KEMINDCPA (schnorrGroups.elGamalKeyGenProb d)
+    Encryption.KEMINDCPA (fun n => 2 * n) (schnorrGroups.elGamalKeyGenProb d)
       (schnorrGroups.hashedElGamalEncapsProb H d) ∧
     Encryption.WordINDCPA (schnorrGroups.elGamalKeyGenProb d)
       (Encryption.hybridEncrypt (schnorrGroups.hashedElGamalEncapsProb H d)
-        Encryption.otpWordEncrypt) ∧
+        (Encryption.otpKeyWordEncrypt (fun n => 2 * n))) ∧
     Encryption.INDCPAOn twoElements encBits (schnorrGroups.elGamalKeyGenProb d)
       (schnorrGroups.elGamalEncryptProb (fun _ x => x) d) ∧
     Encryption.INDCPA (schnorrGroups.elGamalKeyGenProb d)
       (schnorrGroups.elGamalEncryptProb schnorrGroups.encodeBit d) :=
   ⟨hDDH.kemINDCPA_hashedElGamalEncapsProb hKDF hH,
-    hDDH.wordINDCPA_hybrid_hashedElGamal hKDF Encryption.demOneTimeWordINDCPA_otpWordEncrypt
-      hH hd Encryption.isPPTOn_otpWordEncrypt,
+    hDDH.wordINDCPA_hybrid_hashedElGamal hKDF
+      (Encryption.demOneTimeKeyWordINDCPA_otpKeyWordEncrypt (fun n => 2 * n))
+      hH hd (Encryption.isPPTOn_otpKeyWordEncrypt (by fun_prop)),
     hDDH.indcpaOn_elGamalEncryptProb computableInPolyTime_twoElements
       admitsGroupElements_twoElements (by fun_prop),
     hDDH.indcpa_elGamalBitEncryptProb⟩

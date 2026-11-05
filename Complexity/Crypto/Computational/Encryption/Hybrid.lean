@@ -24,17 +24,18 @@ import Complexity.Probability.PMF
 A Key Encapsulation Mechanism (KEM) samples a public/secret key pair `(pk, sk) ← keyGen n` and
 encapsulates a symmetric key `(k, ctKem) ← encaps n pk` ([BonehShoup2023], Exercise 11.9). Its
 chosen-plaintext / semantic security (`KEMINDCPA`, Exercise 11.9) asks that replacing the
-encapsulated key `k` with an independent uniform `n`-bit key `BitString.sampleList n` is
+encapsulated key `k` with an independent uniform `keyLen n`-bit key is
 computationally indistinguishable to every uniform strict PPT distinguisher receiving
 `(pk, (k, ctKem))`.
 
 A Data Encapsulation Mechanism (DEM) over message space `Msg` encrypts a single challenge message
-under a fresh uniform `n`-bit key ([BonehShoup2023], Section 2.2, Attack Game 2.1, p. 16, and
-Definition 2.2). As for public-key encryption (`Encryption.gameOn`), the experiment `demGameOn`
-takes a challenge-pair admissibility predicate `valid`, and an inadmissible pair makes it output
-`false` in both experiments. `demGame` and `DEMOneTimeINDCPAOf` are the always-true case,
-`DEMOneTimeINDCPA` specializes to single-bit messages, and `DEMOneTimeWordINDCPA` imposes Attack
-Game 2.1's equal-length rule on bit words.
+under a fresh uniform `keyLen n`-bit key ([BonehShoup2023], Section 2.2, Attack Game 2.1, p. 16,
+and Definition 2.2). As for public-key encryption (`Encryption.gameOn`), `demKeyGameOn` takes a
+challenge-pair admissibility predicate `valid`, and an inadmissible pair makes it output `false`
+in both experiments. `demKeyGame` and `DEMOneTimeKeyINDCPAOf` are the always-true case. The
+normalized interfaces `demGameOn`, `demGame`, and `DEMOneTimeINDCPAOf` specialize to `keyLen n = n`;
+`DEMOneTimeINDCPA` specializes further to single-bit messages, and `DEMOneTimeWordINDCPA` imposes
+Attack Game 2.1's equal-length rule on bit words.
 
 Combining `encaps` with `encryptSym` produces the hybrid public-key encryption scheme
 `hybridEncrypt encaps encryptSym` (`hybridDecrypt decaps decryptSym`, Exercise 11.9(a)). By
@@ -54,10 +55,13 @@ representation conventions:
 * Plaintext messages are parameterized by `Msg : Type` (with message encoding
   `encMsg : Msg ↪ List Bool` for PPT admissibility), matching `Encryption.gameOn` and
   `Encryption.INDCPAOn` in `Complexity/Crypto/Computational/Encryption/Basic.lean`.
-* The DEM adversary receives the empty public key `[]`, and `demGameOn valid` evaluates `valid` at
-  it. `KEMINDCPA.hybrid_indcpaOn` therefore asks that `valid` ignore the public key.
+* The DEM adversary receives the empty public key `[]`; `demKeyGameOn valid` evaluates `valid`
+  at it. `KEMINDCPA.hybrid_indcpaOn` therefore asks that `valid` ignore the public key.
 * Both the ideal KEM key distribution and the one-time DEM key distribution at security parameter
-  `n` are fixed to uniform `n`-bit strings (`BitString.sampleList n`). Because `encaps` returns
+  `n` are uniform `keyLen n`-bit strings (`BitString.sampleList (keyLen n)`). The schedule is
+  a function of the security parameter; `fun n => n` recovers the normalized convention.
+  A native unary polynomial-time certificate for `keyLen` certifies ideal sampling. The security
+  reductions themselves do not sample ideal keys and need no such premise. Because `encaps` returns
   arbitrary bit lists and `KEMINDCPA` requires only negligible distinguishing advantage, finitely
   many or negligibly probable length deviations remain compatible with `KEMINDCPA`, whereas
   non-negligible length deviations are detectable (as in `not_kemINDCPA_leaking`).
@@ -87,7 +91,7 @@ representation conventions:
 * `Cslib.Crypto.Encryption.hybridEncrypt`, `Cslib.Crypto.Encryption.hybridDecrypt`: KEM–DEM
   hybrid encryption and deterministic decryption.
 * `Cslib.Crypto.Encryption.hybridIdealGame`: intermediate game replacing the encapsulated key
-  with an independent uniform `n`-bit key.
+  with an independent uniform `keyLen n`-bit key.
 * `Cslib.Crypto.Encryption.hybridToKEMDistinguisher`,
   `Cslib.Crypto.Encryption.hybridToKEMHiddenBitDistinguisher`,
   `Cslib.Crypto.Encryption.hybridToDEMAdversary`: the certified uniform reductions.
@@ -156,14 +160,15 @@ def kemRealGame (keyGen : ℕ → ProbComp (List Bool × List Bool))
   distinguisher n (encPair encBits (encPair encBits encBits) (keys.1, encapsulated))
 
 /-- The ideal KEM IND-CPA experiment ([BonehShoup2023], Exercise 11.9, Experiment `1`):
-sample `(pk, sk) ← keyGen n`, `(k, ctKem) ← encaps n pk`, and an independent uniform `n`-bit key
-`kIdeal ← BitString.sampleList n`, and pass `(pk, (kIdeal, ctKem))` to `distinguisher n`. -/
-noncomputable def kemIdealGame (keyGen : ℕ → ProbComp (List Bool × List Bool))
+sample `(pk, sk) ← keyGen n`, `(k, ctKem) ← encaps n pk`, and an independent uniform
+`keyLen n`-bit key `kIdeal ← BitString.sampleList (keyLen n)`,
+and pass `(pk, (kIdeal, ctKem))` to `distinguisher n`. -/
+noncomputable def kemIdealGame (keyLen : ℕ → ℕ) (keyGen : ℕ → ProbComp (List Bool × List Bool))
     (encaps : ℕ → List Bool → ProbComp (List Bool × List Bool))
     (distinguisher : Distinguisher) (n : ℕ) : ProbComp Bool := do
   let keys ← keyGen n
   let encapsulated ← encaps n keys.1
-  let kIdeal ← BitString.sampleList n
+  let kIdeal ← BitString.sampleList (keyLen n)
   distinguisher n
     (encPair encBits (encPair encBits encBits) (keys.1, (kIdeal, encapsulated.2)))
 
@@ -191,9 +196,12 @@ theorem isPPTOn_kemRealGame {keyGen : ℕ → ProbComp (List Bool × List Bool)}
           (((hp2.fst'.comp' hq1).prod hq2).encoding_comp))))
 
 /-- The ideal KEM IND-CPA experiment is uniform strict PPT when key generation, encapsulation, and
-the distinguisher have native certificates. -/
+the distinguisher have native certificates and `keyLen` is computable in polynomial time
+in unary. -/
 @[fun_prop]
-theorem isPPTOn_kemIdealGame {keyGen : ℕ → ProbComp (List Bool × List Bool)}
+theorem isPPTOn_kemIdealGame {keyLen : ℕ → ℕ}
+    (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
+    {keyGen : ℕ → ProbComp (List Bool × List Bool)}
     {encaps : ℕ → List Bool → ProbComp (List Bool × List Bool)}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
     (hencaps : IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
@@ -201,7 +209,7 @@ theorem isPPTOn_kemIdealGame {keyGen : ℕ → ProbComp (List Bool × List Bool)
     {distinguisher : Distinguisher} (hdist : IsPPT encBool distinguisher)
     {α : Type} {input : α ↪ List Bool} {n : α → ℕ}
     (hn : ComputableInPolyTime n input encUnary) :
-    IsPPTOn input encBool (fun a => kemIdealGame keyGen encaps distinguisher (n a)) := by
+    IsPPTOn input encBool (fun a => kemIdealGame keyLen keyGen encaps distinguisher (n a)) := by
   let E1 := encPair input (encPair encBits encBits)
   let E2 := encPair E1 (encPair encBits encBits)
   let hp1 := ComputableInPolyTime.fst input (encPair encBits encBits)
@@ -213,7 +221,7 @@ theorem isPPTOn_kemIdealGame {keyGen : ℕ → ProbComp (List Bool × List Bool)
   have hn2 := hn.comp' (hp1.comp' hq1)
   exact (hkeyGen.preprocess hn).bind_with
     ((hencaps.preprocess ((hn.comp' hp1).prod hp2.fst')).bind_with
-      (hn2.sampleList.bind_with
+      ((hkeyLen.comp' hn2).sampleList.bind_with
         (hdist.on.preprocess
           ((hn2.comp' hr1).prod
             (((hp2.fst'.comp' (hq1.comp' hr1)).prod
@@ -221,12 +229,13 @@ theorem isPPTOn_kemIdealGame {keyGen : ℕ → ProbComp (List Bool × List Bool)
 
 /-- IND-CPA / semantic security for a Key Encapsulation Mechanism ([BonehShoup2023],
 Exercise 11.9): every uniform strict PPT distinguisher has negligible advantage between
-`kemRealGame` and `kemIdealGame`. -/
-def KEMINDCPA (keyGen : ℕ → ProbComp (List Bool × List Bool))
+`kemRealGame` and `kemIdealGame keyLen`. The key space is the uniform bit-word space of length
+`keyLen n`; security does not bundle correctness or efficient honest sampling. -/
+def KEMINDCPA (keyLen : ℕ → ℕ) (keyGen : ℕ → ProbComp (List Bool × List Bool))
     (encaps : ℕ → List Bool → ProbComp (List Bool × List Bool)) : Prop :=
   Game.Indistinguishable
     (fun D n => ProbComp.eval (kemRealGame keyGen encaps D n))
-    (fun D n => ProbComp.eval (kemIdealGame keyGen encaps D n))
+    (fun D n => ProbComp.eval (kemIdealGame keyLen keyGen encaps D n))
     (IsPPT encBool)
 
 /-! ### One-Time Symmetric Encryption (DEM) -/
@@ -612,16 +621,17 @@ theorem hybridDecrypt_hybridEncrypt {Msg : Type}
 /-- The intermediate hybrid game $G_1$ for the standard hybrid argument of
 [BonehShoup2023], Exercise 11.9(b): identical to
 `Encryption.game keyGen (hybridEncrypt encaps encryptSym)` except that the symmetric key passed to
-`encryptSym` is an independent uniform `n`-bit key `kIdeal ← BitString.sampleList n` rather than
+`encryptSym` is an independent uniform `keyLen n`-bit key rather than
 `encapsulated.1`. -/
-noncomputable def hybridIdealGame {Msg : Type} (keyGen : ℕ → ProbComp (List Bool × List Bool))
+noncomputable def hybridIdealGame {Msg : Type} (keyLen : ℕ → ℕ)
+    (keyGen : ℕ → ProbComp (List Bool × List Bool))
     (encaps : ℕ → List Bool → ProbComp (List Bool × List Bool))
     (encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool))
     (adversary : AdversaryOf Msg) (bit : Bool) (n : ℕ) : ProbComp Bool := do
   let keys ← keyGen n
   let choice ← adversary.choose n keys.1
   let encapsulated ← encaps n keys.1
-  let kIdeal ← BitString.sampleList n
+  let kIdeal ← BitString.sampleList (keyLen n)
   let ctDem ← encryptSym n kIdeal
     (if bit then ChoiceOut.msg₁ choice else ChoiceOut.msg₀ choice)
   adversary.guess n choice.2 (encPair encBits encBits (encapsulated.2, ctDem))
@@ -803,14 +813,15 @@ experiment `Encryption.game keyGen (hybridEncrypt encaps encryptSym)`. -/
 
 /-- In the ideal KEM experiment, `hybridToKEMDistinguisher` reproduces the intermediate game
 `hybridIdealGame`. -/
-@[simp] theorem eval_kemIdealGame_hybridToKEMDistinguisher {Msg : Type}
+@[simp] theorem eval_kemIdealGame_hybridToKEMDistinguisher {Msg : Type} (keyLen : ℕ → ℕ)
     (keyGen : ℕ → ProbComp (List Bool × List Bool))
     (encaps : ℕ → List Bool → ProbComp (List Bool × List Bool))
     (encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool))
     (adversary : AdversaryOf Msg) (bit : Bool) (n : ℕ) :
     ProbComp.eval
-      (kemIdealGame keyGen encaps (hybridToKEMDistinguisher encryptSym adversary bit) n) =
-      ProbComp.eval (hybridIdealGame keyGen encaps encryptSym adversary bit n) := by
+      (kemIdealGame keyLen keyGen encaps
+            (hybridToKEMDistinguisher encryptSym adversary bit) n) =
+      ProbComp.eval (hybridIdealGame keyLen keyGen encaps encryptSym adversary bit n) := by
   simp only [kemIdealGame, hybridToKEMDistinguisher, hybridIdealGame, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind]
   congr 1; funext keys
@@ -821,15 +832,15 @@ experiment `Encryption.game keyGen (hybridEncrypt encaps encryptSym)`. -/
 
 /-- In the one-time symmetric DEM experiment, `hybridToDEMAdversary` reproduces the intermediate
 game `hybridIdealGame`. -/
-@[simp] theorem eval_demGame_hybridToDEMAdversary {Msg : Type}
+@[simp] theorem eval_demKeyGame_hybridToDEMAdversary {Msg : Type} (keyLen : ℕ → ℕ)
     (keyGen : ℕ → ProbComp (List Bool × List Bool))
     (encaps : ℕ → List Bool → ProbComp (List Bool × List Bool))
     (encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool))
     (adversary : AdversaryOf Msg) (bit : Bool) (n : ℕ) :
     ProbComp.eval
-      (demGame encryptSym (hybridToDEMAdversary keyGen encaps adversary) bit n) =
-      ProbComp.eval (hybridIdealGame keyGen encaps encryptSym adversary bit n) := by
-  simp only [demGame, demGameOn, demKeyGameOn, ↓reduceIte, hybridToDEMAdversary, hybridIdealGame,
+      (demKeyGame keyLen encryptSym (hybridToDEMAdversary keyGen encaps adversary) bit n) =
+      ProbComp.eval (hybridIdealGame keyLen keyGen encaps encryptSym adversary bit n) := by
+  simp only [demKeyGame, demKeyGameOn, ↓reduceIte, hybridToDEMAdversary, hybridIdealGame,
     ChoiceOut.msgs, ChoiceOut.msg₀, ChoiceOut.msg₁, encPair_apply,
     encBits_apply, ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind,
     unframe_frame_append, dropFrame_frame_append]
@@ -866,16 +877,17 @@ theorem eval_kemRealGame_hybridToKEMHiddenBitDistinguisher {Msg : Type}
 
 /-- In the ideal KEM experiment, `hybridToKEMHiddenBitDistinguisher` averages the two intermediate
 games `hybridIdealGame`, complementing the second. -/
-theorem eval_kemIdealGame_hybridToKEMHiddenBitDistinguisher {Msg : Type}
+theorem eval_kemIdealGame_hybridToKEMHiddenBitDistinguisher {Msg : Type} (keyLen : ℕ → ℕ)
     (keyGen : ℕ → ProbComp (List Bool × List Bool))
     (encaps : ℕ → List Bool → ProbComp (List Bool × List Bool))
     (encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool))
     (adversary : AdversaryOf Msg) (n : ℕ) :
     ProbComp.eval
-      (kemIdealGame keyGen encaps (hybridToKEMHiddenBitDistinguisher encryptSym adversary) n) =
+      (kemIdealGame keyLen keyGen encaps
+        (hybridToKEMHiddenBitDistinguisher encryptSym adversary) n) =
       (do
         let bit ← PMF.uniformOfFintype Bool
-        (ProbComp.eval (hybridIdealGame keyGen encaps encryptSym adversary bit n)).map
+        (ProbComp.eval (hybridIdealGame keyLen keyGen encaps encryptSym adversary bit n)).map
           (fun guess => guess ^^ bit)) := by
   simp only [kemIdealGame, hybridToKEMHiddenBitDistinguisher, hybridIdealGame, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
@@ -915,18 +927,18 @@ theorem probability_kemRealGame_hybridToKEMHiddenBitDistinguisher {Msg : Type}
 
 /-- Success probability of `hybridToKEMHiddenBitDistinguisher` in `kemIdealGame` is one half plus
 half the signed `hybridIdealGame` gap. -/
-theorem probability_kemIdealGame_hybridToKEMHiddenBitDistinguisher {Msg : Type}
+theorem probability_kemIdealGame_hybridToKEMHiddenBitDistinguisher {Msg : Type} (keyLen : ℕ → ℕ)
     (keyGen : ℕ → ProbComp (List Bool × List Bool))
     (encaps : ℕ → List Bool → ProbComp (List Bool × List Bool))
     (encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool))
     (adversary : AdversaryOf Msg) (n : ℕ) :
     (Game.succProbability (ProbComp.eval
-      (kemIdealGame keyGen encaps
+      (kemIdealGame keyLen keyGen encaps
         (hybridToKEMHiddenBitDistinguisher encryptSym adversary) n)) : ℝ) =
       (1 + (Game.succProbability (ProbComp.eval
-        (hybridIdealGame keyGen encaps encryptSym adversary false n)) : ℝ) -
+        (hybridIdealGame keyLen keyGen encaps encryptSym adversary false n)) : ℝ) -
         Game.succProbability (ProbComp.eval
-          (hybridIdealGame keyGen encaps encryptSym adversary true n))) / 2 := by
+          (hybridIdealGame keyLen keyGen encaps encryptSym adversary true n))) / 2 := by
   rw [eval_kemIdealGame_hybridToKEMHiddenBitDistinguisher]
   simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal, PMF.monad_bind_eq_bind,
     PMF.bind_apply_toReal, Fintype.sum_bool, PMF.uniformOfFintype_apply, Fintype.card_bool]
@@ -938,7 +950,7 @@ variant of [BonehShoup2023], Exercise 11.9(b)): the hybrid IND-CPA advantage is 
 of the KEM advantages of `hybridToKEMDistinguisher encryptSym adversary false` and
 `hybridToKEMDistinguisher encryptSym adversary true`, plus the DEM advantage of
 `hybridToDEMAdversary keyGen encaps adversary`. -/
-theorem advantage_hybridGame_le {Msg : Type}
+theorem advantage_hybridGame_le {Msg : Type} (keyLen : ℕ → ℕ)
     (keyGen : ℕ → ProbComp (List Bool × List Bool))
     (encaps : ℕ → List Bool → ProbComp (List Bool × List Bool))
     (encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool))
@@ -950,28 +962,32 @@ theorem advantage_hybridGame_le {Msg : Type}
         (ProbComp.eval
           (kemRealGame keyGen encaps (hybridToKEMDistinguisher encryptSym adversary false) n))
         (ProbComp.eval
-          (kemIdealGame keyGen encaps (hybridToKEMDistinguisher encryptSym adversary false) n)) +
+          (kemIdealGame keyLen keyGen encaps
+            (hybridToKEMDistinguisher encryptSym adversary false) n)) +
       Game.advantage
         (ProbComp.eval
           (kemRealGame keyGen encaps (hybridToKEMDistinguisher encryptSym adversary true) n))
         (ProbComp.eval
-          (kemIdealGame keyGen encaps (hybridToKEMDistinguisher encryptSym adversary true) n)) +
+          (kemIdealGame keyLen keyGen encaps
+            (hybridToKEMDistinguisher encryptSym adversary true) n)) +
       Game.advantage
-        (ProbComp.eval (demGame encryptSym (hybridToDEMAdversary keyGen encaps adversary) false n))
         (ProbComp.eval
-          (demGame encryptSym (hybridToDEMAdversary keyGen encaps adversary) true n)) := by
+          (demKeyGame keyLen encryptSym (hybridToDEMAdversary keyGen encaps adversary) false n))
+        (ProbComp.eval
+          (demKeyGame keyLen encryptSym
+            (hybridToDEMAdversary keyGen encaps adversary) true n)) := by
   simp only [eval_kemRealGame_hybridToKEMDistinguisher, eval_kemIdealGame_hybridToKEMDistinguisher,
-    eval_demGame_hybridToDEMAdversary]
+    eval_demKeyGame_hybridToDEMAdversary]
   have h1 := Game.advantage_triangle
     (ProbComp.eval (game keyGen (hybridEncrypt encaps encryptSym) adversary false n))
-    (ProbComp.eval (hybridIdealGame keyGen encaps encryptSym adversary false n))
+    (ProbComp.eval (hybridIdealGame keyLen keyGen encaps encryptSym adversary false n))
     (ProbComp.eval (game keyGen (hybridEncrypt encaps encryptSym) adversary true n))
   have h2 := Game.advantage_triangle
-    (ProbComp.eval (hybridIdealGame keyGen encaps encryptSym adversary false n))
-    (ProbComp.eval (hybridIdealGame keyGen encaps encryptSym adversary true n))
+    (ProbComp.eval (hybridIdealGame keyLen keyGen encaps encryptSym adversary false n))
+    (ProbComp.eval (hybridIdealGame keyLen keyGen encaps encryptSym adversary true n))
     (ProbComp.eval (game keyGen (hybridEncrypt encaps encryptSym) adversary true n))
   rw [Game.advantage_comm
-    (ProbComp.eval (hybridIdealGame keyGen encaps encryptSym adversary true n))
+    (ProbComp.eval (hybridIdealGame keyLen keyGen encaps encryptSym adversary true n))
     (ProbComp.eval (game keyGen (hybridEncrypt encaps encryptSym) adversary true n))] at h2
   exact (h1.trans (add_le_add le_rfl h2)).trans_eq (by ac_rfl)
 
@@ -979,7 +995,7 @@ theorem advantage_hybridGame_le {Msg : Type}
 Exercise 11.9(b)): the hybrid IND-CPA advantage is at most twice the KEM advantage of
 `hybridToKEMHiddenBitDistinguisher encryptSym adversary`, plus the DEM advantage of
 `hybridToDEMAdversary keyGen encaps adversary`. -/
-theorem advantage_hybridGame_le_two_mul {Msg : Type}
+theorem advantage_hybridGame_le_two_mul {Msg : Type} (keyLen : ℕ → ℕ)
     (keyGen : ℕ → ProbComp (List Bool × List Bool))
     (encaps : ℕ → List Bool → ProbComp (List Bool × List Bool))
     (encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool))
@@ -991,12 +1007,15 @@ theorem advantage_hybridGame_le_two_mul {Msg : Type}
         (ProbComp.eval
           (kemRealGame keyGen encaps (hybridToKEMHiddenBitDistinguisher encryptSym adversary) n))
         (ProbComp.eval
-          (kemIdealGame keyGen encaps (hybridToKEMHiddenBitDistinguisher encryptSym adversary) n)) +
+          (kemIdealGame keyLen keyGen encaps
+        (hybridToKEMHiddenBitDistinguisher encryptSym adversary) n)) +
       Game.advantage
-        (ProbComp.eval (demGame encryptSym (hybridToDEMAdversary keyGen encaps adversary) false n))
         (ProbComp.eval
-          (demGame encryptSym (hybridToDEMAdversary keyGen encaps adversary) true n)) := by
-  rw [eval_demGame_hybridToDEMAdversary, eval_demGame_hybridToDEMAdversary]
+          (demKeyGame keyLen encryptSym (hybridToDEMAdversary keyGen encaps adversary) false n))
+        (ProbComp.eval
+          (demKeyGame keyLen encryptSym
+            (hybridToDEMAdversary keyGen encaps adversary) true n)) := by
+  rw [eval_demKeyGame_hybridToDEMAdversary, eval_demKeyGame_hybridToDEMAdversary]
   apply NNReal.coe_le_coe.mp
   simp only [NNReal.coe_add, NNReal.coe_mul, NNReal.coe_ofNat, Game.coe_advantage,
     probability_kemRealGame_hybridToKEMHiddenBitDistinguisher,
@@ -1007,9 +1026,9 @@ theorem advantage_hybridGame_le_two_mul {Msg : Type}
       Game.succProbability (ProbComp.eval
         (game keyGen (hybridEncrypt encaps encryptSym) adversary true n)))
     ((Game.succProbability (ProbComp.eval
-      (hybridIdealGame keyGen encaps encryptSym adversary false n)) : ℝ) -
+      (hybridIdealGame keyLen keyGen encaps encryptSym adversary false n)) : ℝ) -
       Game.succProbability (ProbComp.eval
-        (hybridIdealGame keyGen encaps encryptSym adversary true n))) 0
+        (hybridIdealGame keyLen keyGen encaps encryptSym adversary true n))) 0
   have hscale (a b c d : ℝ) :
       2 * |(1 + a - b) / 2 - (1 + c - d) / 2| = |(a - b) - (c - d)| := by
     calc
@@ -1019,14 +1038,14 @@ theorem advantage_hybridGame_le_two_mul {Msg : Type}
 
 /-- **IND-CPA security of KEM–DEM hybrid encryption** ([BonehShoup2023], Exercise 11.9(b)):
 if `(keyGen, encaps)` is an IND-CPA secure KEM and `encryptSym` is a one-time IND-CPA secure DEM
-over `encMsg` (with uniform strict PPT honest algorithms), then `hybridEncrypt encaps encryptSym`
-is IND-CPA secure over `encMsg`. -/
-theorem KEMINDCPA.hybrid_indcpa {Msg : Type} {encMsg : Msg ↪ List Bool}
+over `encMsg` at the same `keyLen` (with uniform strict PPT honest algorithms), then
+`hybridEncrypt encaps encryptSym` is IND-CPA secure over `encMsg`. -/
+theorem KEMINDCPA.hybrid_indcpa {keyLen : ℕ → ℕ} {Msg : Type} {encMsg : Msg ↪ List Bool}
     {keyGen : ℕ → ProbComp (List Bool × List Bool)}
     {encaps : ℕ → List Bool → ProbComp (List Bool × List Bool)}
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
-    (hkem : KEMINDCPA keyGen encaps)
-    (hdem : DEMOneTimeINDCPAOf encMsg encryptSym)
+    (hkem : KEMINDCPA keyLen keyGen encaps)
+    (hdem : DEMOneTimeKeyINDCPAOf encMsg keyLen encryptSym)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
     (hencaps : IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p => encaps p.1 p.2))
@@ -1041,12 +1060,13 @@ theorem KEMINDCPA.hybrid_indcpa {Msg : Type} {encMsg : Msg ↪ List Bool}
   have hdemAdv := hdem (hybridToDEMAdversary keyGen encaps adversary)
     (isPPT_hybridToDEMAdversary hkeyGen hencaps hadversary)
   exact negligible_of_le ((hkemFalse.add hkemTrue).add hdemAdv)
-    (advantage_hybridGame_le keyGen encaps encryptSym adversary)
+    (advantage_hybridGame_le keyLen keyGen encaps encryptSym adversary)
 
-/-- When `valid` ignores the public key, running the unrestricted `demGame` on the DEM adversary
-built from `adversary.restrict valid` has the same output distribution as running `demGameOn valid`
-on it: an invalid pair already makes the restricted adversary's guess `false`. -/
-theorem eval_demGame_hybridToDEMAdversary_restrict {Msg : Type}
+/-- When `valid` ignores the public key, running the unrestricted `demKeyGame keyLen` on the DEM
+adversary built from `adversary.restrict valid` has the same output distribution as running
+`demKeyGameOn valid keyLen` on it: an invalid pair already makes the restricted
+adversary's guess `false`. -/
+theorem eval_demKeyGame_hybridToDEMAdversary_restrict {Msg : Type} (keyLen : ℕ → ℕ)
     (valid : ℕ → List Bool → Msg → Msg → Bool)
     (hpk : ∀ n pk m₀ m₁, valid n pk m₀ m₁ = valid n [] m₀ m₁)
     (keyGen : ℕ → ProbComp (List Bool × List Bool))
@@ -1054,10 +1074,11 @@ theorem eval_demGame_hybridToDEMAdversary_restrict {Msg : Type}
     (encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool))
     (adversary : AdversaryOf Msg) (bit : Bool) (n : ℕ) :
     ProbComp.eval
-      (demGame encryptSym (hybridToDEMAdversary keyGen encaps (adversary.restrict valid)) bit n) =
-      ProbComp.eval (demGameOn valid encryptSym
+      (demKeyGame keyLen encryptSym
+        (hybridToDEMAdversary keyGen encaps (adversary.restrict valid)) bit n) =
+      ProbComp.eval (demKeyGameOn valid keyLen encryptSym
         (hybridToDEMAdversary keyGen encaps (adversary.restrict valid)) bit n) := by
-  simp only [demGame, demGameOn, demKeyGameOn, hybridToDEMAdversary, AdversaryOf.restrict,
+  simp only [demKeyGame, demKeyGameOn, hybridToDEMAdversary, AdversaryOf.restrict,
     ChoiceOut.msgs, ChoiceOut.msg₀, ChoiceOut.msg₁, ↓reduceIte,
     ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind,
     apply_ite ProbComp.eval, encPair_apply, encBits_apply, unframe_frame_append,
@@ -1072,15 +1093,15 @@ theorem eval_demGame_hybridToDEMAdversary_restrict {Msg : Type}
 /-- **IND-CPA security of KEM–DEM hybrid encryption under an admissibility predicate**
 ([BonehShoup2023], Exercise 11.9(b)), for a polynomial-time predicate `valid` that ignores the
 public key, such as the equal-length rule: if `(keyGen, encaps)` is an IND-CPA secure KEM and
-`encryptSym` satisfies `DEMOneTimeINDCPAOn valid encMsg`, then `hybridEncrypt encaps encryptSym`
-satisfies `INDCPAOn valid encMsg`. -/
-theorem KEMINDCPA.hybrid_indcpaOn {Msg : Type} {encMsg : Msg ↪ List Bool}
+`encryptSym` satisfies `DEMOneTimeKeyINDCPAOn valid encMsg keyLen`, then
+`hybridEncrypt encaps encryptSym` satisfies `INDCPAOn valid encMsg`. -/
+theorem KEMINDCPA.hybrid_indcpaOn {keyLen : ℕ → ℕ} {Msg : Type} {encMsg : Msg ↪ List Bool}
     {valid : ℕ → List Bool → Msg → Msg → Bool}
     {keyGen : ℕ → ProbComp (List Bool × List Bool)}
     {encaps : ℕ → List Bool → ProbComp (List Bool × List Bool)}
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
-    (hkem : KEMINDCPA keyGen encaps)
-    (hdem : DEMOneTimeINDCPAOn valid encMsg encryptSym)
+    (hkem : KEMINDCPA keyLen keyGen encaps)
+    (hdem : DEMOneTimeKeyINDCPAOn valid encMsg keyLen encryptSym)
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
@@ -1100,9 +1121,9 @@ theorem KEMINDCPA.hybrid_indcpaOn {Msg : Type} {encMsg : Msg ↪ List Bool}
   have hdemAdv := hdem (hybridToDEMAdversary keyGen encaps (adversary.restrict valid))
     (isPPT_hybridToDEMAdversary hkeyGen hencaps hA')
   refine negligible_of_le ((hkemFalse.add hkemTrue).add hdemAdv) fun n => ?_
-  simpa only [eval_game_restrict, eval_demGame_hybridToDEMAdversary_restrict valid hpk,
+  simpa only [eval_game_restrict, eval_demKeyGame_hybridToDEMAdversary_restrict keyLen valid hpk,
     Pi.add_apply] using
-    advantage_hybridGame_le keyGen encaps encryptSym (adversary.restrict valid) n
+    advantage_hybridGame_le keyLen keyGen encaps encryptSym (adversary.restrict valid) n
 
 /-! ### Non-vacuous One-Time Pad DEMs -/
 
@@ -1185,7 +1206,7 @@ IND-CPA secure public-key bit-encryption scheme. -/
 theorem KEMINDCPA.hybrid_otpEncrypt_indcpa
     {keyGen : ℕ → ProbComp (List Bool × List Bool)}
     {encaps : ℕ → List Bool → ProbComp (List Bool × List Bool)}
-    (hkem : KEMINDCPA keyGen encaps)
+    (hkem : KEMINDCPA (fun n => n) keyGen encaps)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
     (hencaps : IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p => encaps p.1 p.2)) :
@@ -1346,7 +1367,7 @@ equal-length instance of `KEMINDCPA.hybrid_indcpaOn`. -/
 theorem KEMINDCPA.hybrid_otpWordEncrypt_indcpa
     {keyGen : ℕ → ProbComp (List Bool × List Bool)}
     {encaps : ℕ → List Bool → ProbComp (List Bool × List Bool)}
-    (hkem : KEMINDCPA keyGen encaps)
+    (hkem : KEMINDCPA (fun n => n) keyGen encaps)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
     (hencaps : IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p => encaps p.1 p.2)) :
