@@ -726,3 +726,30 @@ a selected headline abstract.
 The regressions additionally check a correlated detector moment of
 `1/32`, a distinct child normalization `1/16`, and nonconstant padded frame source/rank
 densities `16/625` and `81/625`.
+
+## Unfold a lattice Fourier coefficient
+
+Import [`Complexity.Foundations.Analysis.Lattice.Fourier`](../../Complexity/Foundations/Analysis/Lattice/Fourier.lean)
+to integrate a periodized function at a dual frequency. For a countable `L : Submodule ℤ E`
+in a finite-dimensional real inner-product space, supply `IsAddFundamentalDomain L s volume`,
+`Integrable f` for `f : E → ℂ`, and membership of `w` in
+`LinearMap.BilinForm.dualSubmodule (innerₗ E) L`. Then
+`ZLattice.integral_fourierChar_tsum_translate` identifies the integral over `s` of
+`(Real.fourierChar (-⟪x,w⟫) : ℂ) * ∑' z : L, f (x + z)` with the Fourier transform of `f`
+evaluated at `w`.
+The character is `exp(-2πi⟪x,w⟫)`. The domain integral uses ambient volume without a
+covolume divisor; it is not the coefficient for probability-normalized quotient measure.
+
+For a real basis `b`, `ZSpan.isAddFundamentalDomain b volume` supplies the domain
+`ZSpan.fundamentalDomain b` of `Submodule.span ℤ (Set.range b)`. The basis may be sheared.
+For a Schwartz function, use `f.integrable`; for a Gaussian, the checked
+[`LatticeFourier.lean` clients](../../ComplexityTests/LatticeFourier.lean) derive integrability
+and evaluate the Fourier coefficient using Mathlib's Gaussian transform. They include the basis
+`(1,0), (1/2,1)` with nonzero dual frequency `(2,0)`, its Gaussian coefficient `exp(-4π)`,
+and the zero-frequency mass identity. Run `scripts/build.sh ComplexityTests.LatticeFourier`
+from the repository root to check these complete examples.
+
+Integrability supplies the almost-everywhere convergence needed for exchanging the sum and
+integral. No pointwise convergence or uniform convergence assumption is hidden in this theorem.
+Continuity of the periodization, reconstruction from Fourier coefficients, covolume normalization,
+Poisson summation and smoothing estimates are separate obligations.
