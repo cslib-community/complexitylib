@@ -162,6 +162,13 @@ def PromoteStepGenPre (w : ℕ) (x : (DictParams × (ℕ × ℕ)) × ℕ) (s : M
     PromoteStepGenPre w ((mkDictParams U V w₀ n_max h_space, d1), d2) s ↔
       PromoteStepPre U V w₀ n_max h_space w d1.1 d1.2 d2 s := Iff.rfl
 
+/-- Under `PromoteStepInv U V w n_max h_space base b k s` (`k < slabSize n_max`,
+`gm (gmRIdx b) = 2 * slabSize n_max - k`), `promoteStepProg` returns `k + 1` in `memoryCost = 66`
+(`memoryCost_promoteStepProg`). It preserves `frontier`, `lmAt`, and memory outside
+`[base + offQuot h_space, base + totalSpace U V w n_max h_space)`. It moves tail item
+`u = (slabSize n_max - 1) - k` of bucket `b` to physical slab slot `gm 0 * slabSize n_max + k`,
+compacts the last tail item `r_top = slabSize n_max + u` into `u`, and updates `gmAt` to
+`gmRemoveTail n_max gm b`. -/
 theorem promoteStepProg_effect {U V w n_max h_space base b k : ℕ}
     (hw : 0 < w) (hb_pos : 0 < bucketBits n_max)
     (s : Memory.State)
@@ -1036,6 +1043,12 @@ theorem slotOf_gmPushSlab_preserve {α : Type*} {n_max b : ℕ} {gm₀ gm : ℕ 
     rw [hslot_eq]
     exact harr.other_bucket b' hb' hbeq j (by unfold bCount; simp [hb0, hb', hj])
 
+/-- Under `PromoteSlabInv U V w n_max h_space base b s` (`gm (gmRIdx b) = 2 * slabSize n_max`),
+`promoteSlabProg` runs in `memoryCost ≤ 66 * slabSize n_max + 38` and preserves `frontier`, `lmAt`,
+and memory outside `[base + offQuot h_space, base + totalSpace U V w n_max h_space)`. It restores
+`SlotStoreInv n_max gm'` with `gm' (gmQIdx b) = gm₀ (gmQIdx b) + 1`,
+`gm' (gmRIdx b) = slabSize n_max`, and unchanged `(gmQIdx b', gmRIdx b')` for `b' ≠ b`. It also
+preserves `bCount` and every logical `(quotAt, valAt)` entry at `slotOf` across all buckets. -/
 theorem promoteSlabProg_effect {U V w n_max h_space base b : ℕ}
     (hw : 0 < w) (hb_pos : 0 < bucketBits n_max)
     (s : Memory.State)

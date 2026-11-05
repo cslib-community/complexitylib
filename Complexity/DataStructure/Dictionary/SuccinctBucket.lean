@@ -24,13 +24,15 @@ import Mathlib.Tactic.Ring
 # Partitioned-bucket, micro-bucket, and slab-hysteresis model for succinct dictionaries
 
 This file develops the pure structural, combinatorial, and probabilistic core of the fixed-capacity
-succinct dictionary with deletions, following [Bender, Farach-Colton, J. Kuszmaul and W. Kuszmaul,
-SOSA 2024, Sections 3–4][BenderFarachColtonKuszmaulKuszmaul2024] combined with one-round Feistel
-quotienting ([Arbitman, Naor and Segev, FOCS 2010, Claim 5.7][ArbitmanNaorSegev2010];
+succinct dictionary with deletions. It combines the bucket partition and fingerprint-indexed buckets
+of [Bender, Farach-Colton, J. Kuszmaul and W. Kuszmaul, SOSA 2024,
+Sections 3–4][BenderFarachColtonKuszmaulKuszmaul2024] with one-round Feistel quotienting
+([Arbitman, Naor and Segev, FOCS 2010, Claim 5.7][ArbitmanNaorSegev2010];
 [Bender, Conway, Farach-Colton, Kuszmaul and Tagliavini, *J. ACM* 2023,
-Section 7][BenderConwayFarachColtonKuszmaulTagliavini2023]) and zero-wasted-slot full-slab /
-tail-item storage ([Bender, Farach-Colton, J. Kuszmaul, W. Kuszmaul and M. Liu, STOC 2022,
-Sections 5.2 and 6.1, Lemma 24][BenderFarachColtonKuszmaulKuszmaulLiu2022]):
+Section 7][BenderConwayFarachColtonKuszmaulTagliavini2023]). Storage uses zero-wasted-slot
+full-slab / tail-item packing ([Bender, Farach-Colton, J. Kuszmaul, W. Kuszmaul and M. Liu, STOC
+2022, Sections 5.2 and 6.1, Lemma 24][BenderFarachColtonKuszmaulKuszmaulLiu2022]) together with this
+formalization's own micro-bucket chains and slab-hysteresis potential:
 
 1. **Unified bucket and micro-bucket decomposition (`totalMicroBits_eq_log`):**
    At capacity `n_max`, each key is assigned a `bucketBits n_max`-bit Feistel bucket
@@ -88,6 +90,8 @@ Sections 5.2 and 6.1, Lemma 24][BenderFarachColtonKuszmaulKuszmaulLiu2022]):
 
 ## References
 
+* [Y. Arbitman, M. Naor and G. Segev, *Backyard Cuckoo Hashing: Constant Worst-Case Operations
+  with a Succinct Representation*, Claim 5.7][ArbitmanNaorSegev2010]
 * [M. A. Bender, M. Farach-Colton, J. Kuszmaul and W. Kuszmaul, *Modern Hashing Made Simple*,
   Sections 3–4][BenderFarachColtonKuszmaulKuszmaul2024]
 * [M. A. Bender, M. Farach-Colton, J. Kuszmaul, W. Kuszmaul and M. Liu, *On the Optimal

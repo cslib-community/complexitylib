@@ -31,11 +31,13 @@ Because `(idx % w) * k ≤ (w - 1) * w < 2^w` holds for every word width `w ≥ 
 
 Each `k`-bit entry at `(wOff, bOff)` splits into `lowWidth = min k (w - bOff)` low bits at offset
 `bOff` of word `base + wOff` and `highWidth = k - lowWidth` high bits at offset `0` of word
-`base + wOff + 1`, updated in place via bitwise XOR. Unlike single-word packing primitives such as
-`QuotientFilter`'s `extractPacked`/`writePackedMem` or `Cslib.BitString.readPackedField` (which pack
-`⌊w / k⌋` entries per word without crossing word boundaries and thus waste up to half of each word
-when `k > w / 2`), allowing entries to straddle adjacent words achieves the tight `⌈N * k / w⌉ + 2`
-word bound needed for succinctness.
+`base + wOff + 1`, updated in place via bitwise XOR. Unlike `QuotientFilter`'s single-word
+`extractPacked`/`writePackedMem` (which packs `⌊w / k⌋` entries per word without crossing word
+boundaries and wastes up to half of each word when `k > w / 2`), allowing entries to straddle
+adjacent words achieves the tight `⌈N * k / w⌉ + 2` word bound needed for succinctness. Unlike
+`Cslib.BitString.readPackedField`, which is a pure bit-level specification over a tuple of words
+with no Word-RAM machine code or memory layout, this module provides `O(1)`-step Word-RAM read and
+write programs over `ℕ → ℕ`.
 
 ## Main definitions
 

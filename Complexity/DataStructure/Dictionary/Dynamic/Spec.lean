@@ -30,14 +30,13 @@ capacity condition `(dom s).card < n_max ∨ (s u).isSome` holds automatically f
 and key `u`, so `spec U V n_max` also covers unbounded-capacity dynamic dictionaries over `Fin U`
 (`valid_insert_iff_of_le`).
 
-This file also defines the per-key ceiling bit bound
-`optBits U V n = ⌈log₂ C(U, n)⌉ + n * ⌈log₂ V⌉` (which equals the exact information-theoretic
-minimum `⌈log₂ (C(U, n) * V^n)⌉` when `V` is a power of two and exceeds it by at most `n` bits
-otherwise; note that `n ≤ U` is required for `U.choose n > 0`, since `C(U, n) = 0` for `n > U`)
-and the succinct word bound
-`succinctWords C C₀ U V w n_max =`
-`⌈(optBits U V n_max + C * n_max * ⌈log₂ ⌈log₂ (max n_max 4)⌉⌉) / w⌉ + C₀`
-used by succinct dictionary implementations on the `w`-bit Word RAM.
+This file also defines the information-theoretic bit bound
+`optBits U V n = ⌈log₂ C(U, n)⌉ + n * ⌈log₂ V⌉` for `n` keys. When `0 < V` and `n ≤ U`,
+`optBits U V n` equals the exact minimum `⌈log₂ (C(U, n) * V^n)⌉` when `V` is a power of two and
+exceeds it by at most `n` bits otherwise. When `n > U`, `C(U, n) = 0`; when `V = 0`, there are no
+valued non-empty dictionaries. From `optBits`, `succinctWords C C₀ U V w n_max` defines the word
+bound `⌈(optBits U V n_max + C * n_max * ⌈log₂ ⌈log₂ (max n_max 4)⌉⌉) / w⌉ + C₀` on the `w`-bit
+Word RAM.
 
 ## Main definitions
 
@@ -265,10 +264,11 @@ theorem valuesBounded_run_empty {U V n_max : ℕ} {os : List (Op U)}
 
 /-! ### Information-theoretic minimum bits and succinct word bounds -/
 
-/-- Per-key ceiling bit bound `OPT(U, V, n) = ⌈log₂ C(U, n)⌉ + n * ⌈log₂ V⌉`
-for representing an `n`-element subset of `Fin U` with values in `Fin V` (equals the exact
-information-theoretic minimum `⌈log₂ (C(U, n) * V^n)⌉` when `V` is a power of two and is within
-`< n` bits otherwise; valid for `n ≤ U`, since `U.choose n = 0` when `n > U`). -/
+/-- Information-theoretic bit bound `OPT(U, V, n) = ⌈log₂ C(U, n)⌉ + n * ⌈log₂ V⌉`
+for representing `n` keys in `Fin U` with values in `Fin V`. When `0 < V` and `n ≤ U`, this equals
+the exact minimum `⌈log₂ (C(U, n) * V^n)⌉` when `V` is a power of two and exceeds it by at most `n`
+bits otherwise. When `n > U`, `U.choose n = 0`; when `V = 0`, there are no valued non-empty
+dictionaries. -/
 @[expose]
 def optBits (U V n : ℕ) : ℕ :=
   Nat.clog 2 (U.choose n) + n * Nat.clog 2 V

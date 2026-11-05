@@ -162,6 +162,11 @@ def GmPushSlabGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Memory.Stat
     GmPushSlabGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
       GmPushSlabPre U V w₀ n_max h_space w d.1 d.2 s := Iff.rfl
 
+/-- Under `SlabBijection` and `gm 0 < maxFullSlabs n_max` (`b < numBuckets n_max`),
+`gmPushSlabProg` runs in `memoryCost ≤ 38` (`memoryCost_gmPushSlabProg_le`) and preserves
+`frontier`, `quotAt`, `valAt`, `lmAt`, and memory outside
+`[base + offGM U V w n_max h_space, base + totalSpace U V w n_max h_space)`. It updates `gmAt` to
+`gmPushSlab n_max gm b`, allocating `p_new = gm 0` as the new top slab of bucket `b`. -/
 theorem gmPushSlabProg_effect {U V w n_max h_space base b : ℕ}
     (hw : 0 < w) (hb_pos : 0 < bucketBits n_max) (hb : b < numBuckets n_max)
     (s : Memory.State)
@@ -1555,6 +1560,12 @@ theorem gmCompactSlabPre_of_gmPopSlabPre {U V w₀ n_max h_space w base b : ℕ}
   rcases hinv with ⟨h1, h2, h3, h4⟩
   exact ⟨hdict, h1, h2, h3, fun hlt => ⟨hdict, h4 hlt⟩⟩
 
+/-- Under `SlabBijection` and `1 ≤ gm (gmQIdx b)` (`b < numBuckets n_max`), `gmPopSlabProg` runs in
+`memoryCost ≤ 68` (`memoryCost_gmPopSlabProg_le`) and preserves `frontier`, `quotAt`, `valAt`,
+`lmAt`, and memory outside
+`[base + offGM U V w n_max h_space, base + totalSpace U V w n_max h_space)`. It updates `gmAt` to
+`gmPopSlab n_max gm b`, unlinking the top slab `p_del` of bucket `b` and compacting
+`p_last = gm 0 - 1` into `p_del`. -/
 theorem gmPopSlabProg_effect {U V w n_max h_space base b : ℕ}
     (hw : 0 < w) (hb_pos : 0 < bucketBits n_max) (hb : b < numBuckets n_max)
     (s : Memory.State)

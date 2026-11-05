@@ -163,6 +163,13 @@ def DemoteStepGenPre (w : ℕ) (x : (DictParams × (ℕ × ℕ)) × ℕ) (s : Me
     DemoteStepGenPre w ((mkDictParams U V w₀ n_max h_space, d1), d2) s ↔
       DemoteStepPre U V w₀ n_max h_space w d1.1 d1.2 d2 s := Iff.rfl
 
+/-- Under `DemoteStepInv U V w n_max h_space base b k s` (`k < slabSize n_max`,
+`gm (gmRIdx b) = k`, `1 ≤ gm (gmQIdx b)`), `demoteStepProg` returns `k + 1` in `memoryCost = 48`
+(`memoryCost_demoteStepProg`). It preserves `frontier`, `lmAt`, and memory outside
+`[base + offQuot h_space, base + totalSpace U V w n_max h_space)`. It copies entry
+`u = (slabSize n_max - 1) - k` of the last full slab `p_last = gm 0 - 1` into `p_del =
+gm (gmSlabTopIdx b)`, moves the old entry of `p_del` into the new tail slot
+`g_tail = (n_max - 1) - gm 1`, and updates `gmAt` to `gmAppendTail n_max gm b`. -/
 theorem demoteStepProg_effect {U V w n_max h_space base b k : ℕ}
     (hw : 0 < w) (hb_pos : 0 < bucketBits n_max)
     (s : Memory.State)
@@ -1043,6 +1050,13 @@ theorem slotOf_gmPopSlab_preserve {α : Type*} {n_max b : ℕ} {gm₀ gm : ℕ �
         htail_other b' hb' hbeq r hr_lt]
       exact harr.other_tails _ (htail₀.ptr_lt b' hb' r hr_lt)
 
+/-- Under `DemoteSlabInv U V w n_max h_space base b s` (`gm (gmRIdx b) = 0` and
+`1 ≤ gm (gmQIdx b)`), `demoteSlabProg` runs in `memoryCost ≤ 48 * slabSize n_max + 68` and preserves
+`frontier`, `lmAt`, and memory outside
+`[base + offQuot h_space, base + totalSpace U V w n_max h_space)`. It restores
+`SlotStoreInv n_max gm'` with `gm' (gmQIdx b) = gm₀ (gmQIdx b) - 1`,
+`gm' (gmRIdx b) = slabSize n_max`, and unchanged `(gmQIdx b', gmRIdx b')` for `b' ≠ b`. It also
+preserves `bCount` and every logical `(quotAt, valAt)` entry at `slotOf` across all buckets. -/
 theorem demoteSlabProg_effect {U V w n_max h_space base b : ℕ}
     (hw : 0 < w) (hb_pos : 0 < bucketBits n_max)
     (s : Memory.State)

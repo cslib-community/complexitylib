@@ -18,15 +18,17 @@ import Mathlib.Data.Nat.Log
 This self-contained file states the formal specification and the multi-operation correctness,
 succinct space, and initialization-time theorems for the fixed-capacity succinct dynamic dictionary
 with deletions on the randomized Word-RAM (`Succinct.impl` with `initFresh_exec` and
-`steps_expected_amortized_ofFn`, `Succinct.initSteps_le`, and `Succinct.space_le_succinctWords`),
-following `[BenderFarachColtonKuszmaulKuszmaul2024]` (SOSA 2024, Sections 3–4),
-`[ArbitmanNaorSegev2010]` (FOCS 2010, Claim 5.7),
-`[BenderConwayFarachColtonKuszmaulTagliavini2023]` (*J. ACM* 70(6):40, 2023;
-`arXiv:2109.04548`, Section 7, pp. 31–33), and `[BenderFarachColtonKuszmaulKuszmaulLiu2022]`
-(STOC 2022; `arXiv:2111.00602`, Sections 5.2 and 6.1, Lemma 24), combined with two-stage
-universe-reduced `3`-wise independent polynomial hashing with a bit-packed Four-Russians
-multiplication table (`ReducedKWise.impl`; `[CarterWegman1979]`, `[WegmanCarter1981]`,
-`[PaghPaghRuzic2009]`, `[Vadhan2012]`, `[LidlNiederreiter1997]`, and
+`steps_expected_amortized_ofFn`, `Succinct.initSteps_le`, and `Succinct.space_le_succinctWords`).
+The construction combines the bucket partition and fingerprint-indexed buckets of
+`[BenderFarachColtonKuszmaulKuszmaul2024]` (SOSA 2024, Sections 3–4) with one-round Feistel
+quotienting (`[ArbitmanNaorSegev2010]`, FOCS 2010, Claim 5.7;
+`[BenderConwayFarachColtonKuszmaulTagliavini2023]`, *J. ACM* 70(6):40, 2023;
+`arXiv:2109.04548`, Section 7, pp. 31–33). It uses the full-slab and shared tail-pool layout of
+`[BenderFarachColtonKuszmaulKuszmaulLiu2022]` (STOC 2022; `arXiv:2111.00602`, Sections 5.2 and 6.1,
+Lemma 24) together with this formalization's own micro-bucket chains and slab-hysteresis potential.
+Quotient hashing uses two-stage universe-reduced `3`-wise independent polynomial hashing with a
+bit-packed Four-Russians multiplication table (`ReducedKWise.impl`; `[CarterWegman1979]`,
+`[WegmanCarter1981]`, `[PaghPaghRuzic2009]`, `[Vadhan2012]`, `[LidlNiederreiter1997]`, and
 `[DietzfelbingerHagerupKatajainenPenttonen1997]`).
 
 ## Scope, operation semantics, and cost accounting
@@ -36,17 +38,20 @@ multiplication table (`ReducedKWise.impl`; `[CarterWegman1979]`, `[WegmanCarter1
   `v : ℕ` when `v < V` and either fewer than `n_max` keys are currently present or `u` is already
   present), and `delete u` (removing `u` or leaving `s` unchanged if `u` is absent) across
   oblivious operation sequences `ops : List (DynDictOp U)` of any length
-  (`ValidDynDictHistory V n_max`). Material differences from
-  `[BenderFarachColtonKuszmaulKuszmaul2024]`: the capacity `n_max` is fixed (no table resizing),
-  and operations run in `O(1)` expected amortized time for oblivious operation sequences fixed
-  before initialization (whereas SOSA 2024 Sections 5–6 prove with-high-probability bounds and
-  support resizing).
+  (`ValidDynDictHistory V n_max`). Unlike `[BenderFarachColtonKuszmaulKuszmaul2024]`, the capacity
+  `n_max` is fixed (no table resizing), and hashing uses explicit two-stage `3`-wise independent
+  quotient hashing rather than fully random hash functions (SOSA 2024 Section 2.1). Micro-bucket
+  chains and the slab-hysteresis potential replace SOSA 2024's B-tree query mapper. Operations run
+  in `O(1)` expected amortized time on sequences fixed before initialization, whereas SOSA 2024
+  Lemma 4.3 gives worst-case `O(1)` queries and deletions and expected `O(1)` insertions at fixed
+  capacity, and Sections 5–6 prove with-high-probability bounds and support resizing.
 - **Why `n_max ≤ U` is assumed and `optBits` rounding:** Distinct active keys are drawn from
   `Fin U`, so at most `U` keys can coexist (`(dictDom s).card ≤ U`), and the binomial coefficient
   `U.choose n_max` inside `optBits U V n_max = ⌈log₂ C(U, n_max)⌉ + n_max * ⌈log₂ V⌉` is zero
-  whenever `n_max > U`. Note that `optBits U V n_max` equals the exact information-theoretic
-  minimum `⌈log₂(C(U, n_max) · V ^ n_max)⌉` when `V` is a power of two (and is within `< n_max`
-  bits otherwise, since `⌈log₂ V⌉` rounds the per-value bit-length to an integer).
+  whenever `n_max > U`. When `0 < V` and `n_max ≤ U`, `optBits U V n_max` equals the exact
+  information-theoretic minimum `⌈log₂(C(U, n_max) · V ^ n_max)⌉` when `V` is a power of two and
+  exceeds it by at most `n_max` bits otherwise. When `V = 0`, there are no valued non-empty
+  dictionaries.
 - **Single seed and per-bucket probe/hysteresis accounting:** A single quotient-hash seed is
   sampled once at initialization (`seedSlack = 1`, no rehash), and no persistent flag is kept to
   latch hash or overflow failures across operations. Each bucket's item count and expected extra
@@ -387,9 +392,10 @@ inductive ExecDynDictOps {Seed : Type} {r U : ℕ}
 /-! ## Succinct Space Accounting and Headline Expected-Amortized Theorem -/
 
 /-- Information-theoretic baseline bit-length `⌈log₂ C(U, n_max)⌉ + n_max * ⌈log₂ V⌉` required to
-represent `n_max` distinct keys from `Fin U` with associated `⌈log₂ V⌉`-bit values in `Fin V`
-(equal to the exact information-theoretic minimum `⌈log₂(C(U, n_max) · V ^ n_max)⌉` when `V` is a
-power of two, and within `< n_max` bits otherwise). -/
+represent `n_max` distinct keys from `Fin U` with associated `⌈log₂ V⌉`-bit values in `Fin V`.
+When `0 < V` and `n_max ≤ U`, this equals the exact information-theoretic minimum
+`⌈log₂(C(U, n_max) · V ^ n_max)⌉` when `V` is a power of two and exceeds it by at most `n_max`
+bits otherwise. When `V = 0`, there are no valued non-empty dictionaries. -/
 def optBits (U V n_max : ℕ) : ℕ :=
   Nat.clog 2 (U.choose n_max) + n_max * Nat.clog 2 V
 

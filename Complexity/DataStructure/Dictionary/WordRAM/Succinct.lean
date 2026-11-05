@@ -23,19 +23,22 @@ reusable `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl` certificat
 
 ## Mathematical and algorithmic design
 
-This implementation combines the partitioned-bucket, micro-hash chain, and hysteresis-potential
-design of [Bender, Farach-Colton, J. Kuszmaul, and W. Kuszmaul, SOSA 2024,
+This implementation combines the bucket partition and fingerprint-indexed buckets of
+[Bender, Farach-Colton, J. Kuszmaul, and W. Kuszmaul, SOSA 2024,
 Sections 3–4][BenderFarachColtonKuszmaulKuszmaul2024] with one-round Feistel quotienting
 ([Arbitman, Naor, and Segev, FOCS 2010, Claim 5.7][ArbitmanNaorSegev2010];
 [Bender, Conway, Farach-Colton, Kuszmaul, and Tagliavini, *J. ACM* 2023, Section 7, arXiv
-pp. 31–33][BenderConwayFarachColtonKuszmaulTagliavini2023]) and fixed-width slabs with a shared
-tail pool ([Bender, Farach-Colton, J. Kuszmaul, W. Kuszmaul, and M. Liu, STOC 2022, Sections 5.2
-and 6.1, Lemma 24][BenderFarachColtonKuszmaulKuszmaulLiu2022]).
-Material differences from [Bender, Farach-Colton, J. Kuszmaul, and W. Kuszmaul, SOSA
-2024][BenderFarachColtonKuszmaulKuszmaul2024]: the capacity `n_max` is fixed (no table resizing),
-and operations run in `O(1)` expected amortized time for oblivious operation sequences fixed before
-initialization (whereas SOSA 2024 Sections 5–6 prove with-high-probability bounds and support
-resizing).
+pp. 31–33][BenderConwayFarachColtonKuszmaulTagliavini2023]). It uses fixed-width full slabs with a
+shared tail pool ([Bender, Farach-Colton, J. Kuszmaul, W. Kuszmaul, and M. Liu, STOC 2022,
+Sections 5.2 and 6.1, Lemma 24][BenderFarachColtonKuszmaulKuszmaulLiu2022]) together with this
+formalization's own micro-bucket chains and slab-hysteresis potential.
+Unlike [Bender, Farach-Colton, J. Kuszmaul, and W. Kuszmaul, SOSA
+2024][BenderFarachColtonKuszmaulKuszmaul2024], the capacity `n_max` is fixed (no table resizing),
+and hashing uses explicit two-stage 3-wise independent quotient hashing rather than fully random
+hash functions (SOSA 2024 Section 2.1). Operations run in `O(1)` expected amortized time on
+oblivious operation sequences fixed before initialization, whereas SOSA 2024 Lemma 4.3 gives
+worst-case `O(1)` queries and deletions and expected `O(1)` insertions at fixed capacity, and
+Sections 5–6 prove with-high-probability bounds and support resizing.
 
 1. **One-round Feistel quotienting (`FeistelQuotient`)**: splits each key `u : Fin U` into a
    `bucketBits n_max`-bit low part and a `quotientBits U n_max`-bit quotient `q`, storing only `q`

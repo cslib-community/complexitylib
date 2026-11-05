@@ -31,11 +31,9 @@ import Mathlib.Tactic.Ring
 This file formalizes the one-round Feistel permutation used for quotienting keys in succinct hash
 tables ([Arbitman, Naor and Segev, FOCS 2010, Claim 5.7][ArbitmanNaorSegev2010];
 [Bender, Conway, Farach-Colton, Kuszmaul and Tagliavini, *J. ACM* 2023, Section 7, arXiv
-pp. 31–33][BenderConwayFarachColtonKuszmaulTagliavini2023];
-[Bender, Farach-Colton, J. Kuszmaul and W. Kuszmaul, SOSA 2024, Footnote 2 and
-Sections 3–4][BenderFarachColtonKuszmaulKuszmaul2024]) together with the universal bit-accounting
-inequality comparing quotient + value storage against the information-theoretic optimum
-`Dynamic.optBits U V n = ⌈log₂ C(U, n)⌉ + n * ⌈log₂ V⌉` across all `0 ≤ n ≤ U`.
+pp. 31–33][BenderConwayFarachColtonKuszmaulTagliavini2023]) together with the universal
+bit-accounting inequality comparing quotient + value storage against the information-theoretic
+optimum `Dynamic.optBits U V n = ⌈log₂ C(U, n)⌉ + n * ⌈log₂ V⌉` across all `0 ≤ n ≤ U`.
 
 Given a universe bound `U`, capacity `n ≤ U`, and bucket bit-width
 `b = bucketBits n = ⌊log₂ n⌋ - 3 * logLogFactor n`:
@@ -78,8 +76,6 @@ Given a universe bound `U`, capacity `n ≤ U`, and bucket bit-width
 * [M. A. Bender, A. Conway, M. Farach-Colton, W. Kuszmaul and G. Tagliavini, *Iceberg Hashing:
   Optimizing Many Hash-Table Criteria at Once*,
   Section 7][BenderConwayFarachColtonKuszmaulTagliavini2023]
-* [M. A. Bender, M. Farach-Colton, J. Kuszmaul and W. Kuszmaul, *Modern Hashing Made Simple*,
-  Sections 3–4][BenderFarachColtonKuszmaulKuszmaul2024]
 -/
 
 public section
