@@ -62,14 +62,44 @@ The six directly cited CSLib dependency files were byte-identical to independent
 pinned blobs despite the live dependency-checkout drift. The chapters link those pinned
 sources directly; copied files and generated audit reports are not maintained inputs.
 
-## Selected finite stochastic experiments
+## Adaptive policies and finite stochastic experiments
 
-Three optional STOC 2027 submission endpoints are available as separate imports. These
-are mathematical experiments, with no machine-runtime or full-paper claim. The source
+The work associated with STOC submissions 587, 191 and 152 includes the general
+finite-horizon covariance identity and the bounded results below. The expanded
+headline programme remains open in [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
+The information and auditing sample-complexity bounds, scheduling LP/FPTAS and
+DPI rigidity theorems are not provided by these imports. There is no machine-runtime
+or full-paper completion claim. The source
 versions and PDF digests are recorded under `Aldridge2027`, `Wang2027` and `Kong2027`
 in [the bibliography](../../references.bib). The checked clients are in
 [Stoc2027BatchC.lean](../../ComplexityTests/Stoc2027BatchC.lean).
 
+- [AdaptivePolicy.Covariance](../../Complexity/Probability/AdaptivePolicy/Covariance.lean)
+  proves STOC submission 587, Lemma 3.3 and Theorem 3.4 (PDF p. 3), for every finite
+  state/action space, finite horizon and randomized Markov policy. `FiniteMDP`
+  supplies a normalized nonnegative initial law and controlled transition kernels,
+  with arbitrary real costs; `MarkovPolicy` supplies conditional action probabilities.
+  `stateLaw` propagates the evaluated policy through its own action-dependent dynamics.
+  `value` and `actionValue` evaluate the comparison policy backward with zero terminal
+  cost. `openLoop` uses the evaluated policy's action marginals at each time, then runs
+  under its own trajectory law. Apply `performance_difference`,
+  `covariance_characterization` or `joint_product_characterization` without proving
+  a Bellman equation or an identity as a hypothesis. `traceCovariance_sub_state`
+  permits any state-only baseline. Time indices start at zero and `totalCost π H`
+  includes exactly the times in `Finset.range H`, including an empty horizon.
+  [AdaptivePolicyCovariance.lean](../../ComplexityTests/AdaptivePolicyCovariance.lean)
+  constructs the actual two-step investment MDP, independently calculates both
+  trajectory costs and recovers their difference using the general theorem.
+- [AdaptivePolicy.Nonidentifiability](../../Complexity/Probability/AdaptivePolicy/Nonidentifiability.lean)
+  proves the finite-context case of STOC submission 587, Proposition 5.2 (PDF p. 5).
+  `finite_nonidentifiability` takes a context set of positive initial probability and
+  an action with positive marginal probability that is never played on that set.
+  It constructs two deterministic binary loss tables with identical complete logged
+  data laws for every sample count but different policy-minus-open-loop costs.
+  `logLaw` is nonnegative and normalized; `sampleLaw` is the i.i.d. product, including
+  the empty log. Logged propensities are functions of the recorded context, so adding
+  them does not distinguish the instances. The checked client exhibits a gap change
+  of $-1/4$. This result does not cover arbitrary measurable context spaces.
 - [AdaptivePolicy.SignReversal](../../Complexity/Probability/AdaptivePolicy/SignReversal.lean)
   realizes Aldridge's Proposition 3.8 (PDF p. 4) with Boolean states and actions. The
   initial state is uniform, investment costs $a(1+s)$, the transition is $s'=s\land a$,
@@ -96,6 +126,11 @@ in [the bibliography](../../references.bib). The checked clients are in
   $0\le\lambda\le1$. `centered_mixed` and `qmi_mixed_le` prove Proposition 7.1's
   identity and contraction. There is no full-support or equal-alphabet assumption.
   General-channel DPI, history-dependent deviations and the rigidity results are excluded.
+  STOC submission 152 also supplies an existing author formalization of its headline
+  analytic and algebraic results, linked in its PDF p. 20:
+  [finite-sample-information-monotones](https://github.com/yuqkong-1844/finite-sample-information-monotones).
+  That Lean 4.32 development is an external reuse source; it has not been ported or
+  validated against this checkout's toolchain. It does not establish local coverage.
 
 ## Known Limitations
 

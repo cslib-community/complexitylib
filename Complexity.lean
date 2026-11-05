@@ -4186,6 +4186,8 @@ public import Complexity.MachineLearning.UniformLearning.KushilevitzMansour
 public import Complexity.MachineLearning.UniformLearning.LowDegree
 public import Complexity.MachineLearning.UniformLearning.LowDegreeClasses
 public import Complexity.MachineLearning.UniformLearning.MembershipQuery
+public import Complexity.Probability.AdaptivePolicy.Covariance
+public import Complexity.Probability.AdaptivePolicy.Nonidentifiability
 public import Complexity.Probability.AdaptivePolicy.SignReversal
 public import Complexity.Probability.AdaptiveWeights
 public import Complexity.Probability.ApproximateCounting
