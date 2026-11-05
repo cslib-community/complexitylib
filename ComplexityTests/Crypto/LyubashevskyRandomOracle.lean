@@ -21,18 +21,21 @@ abbrev Query := Unit × (Fin 1 → ZMod 17)
 abbrev Digest := BitString 1
 abbrev Cache := List (Query × Digest)
 
+noncomputable abbrev protocol := lyubashevsky 1 2 1 17 3 1
+
 noncomputable def keyGen := PMF.pure ((0 : Matrix (Fin 2) (Fin 1) ℤ), key)
 
 def badCoins : (Fin 1 → ZMod 17) × (Fin 2 → ℤ) := (1, ![1, 3])
 
-theorem respond_bad (c : Digest) : P.respond 0 key badCoins.2 c = none := by
-  norm_num [P, lyubashevsky, badCoins, mem_intBox, Fin.forall_fin_two]
+theorem respond_bad (c : Digest) : protocol.respond 0 key ![1, 3] c = none := by
+  simp only [protocol, lyubashevsky, Matrix.zero_mulVec, add_zero]
+  norm_num [mem_intBox, Fin.forall_fin_two]
 
-theorem respond_good (c : Digest) : P.respond 0 key (0 : Fin 2 → ℤ) c = some 0 := by
-  simp [P, lyubashevsky, zero_mem_intBox]
+theorem respond_good (c : Digest) : protocol.respond 0 key (0 : Fin 2 → ℤ) c = some 0 := by
+  simp [protocol, lyubashevsky]
 
 /-- The abort fixture is an actual possible commitment and mask, with nonzero public matrix. -/
-example : badCoins ∈ (P.commit 0 key).support := by
+theorem bad_coins_mem : badCoins ∈ (protocol.commit 0 key).support := by
   apply (PMF.mem_support_map_iff _ _ _).mpr
   refine ⟨![1, 3], (mem_support_uniformOfFinset_iff _ _).mpr ?_, ?_⟩
   · rw [mem_intBox]
@@ -43,33 +46,64 @@ example : badCoins ∈ (P.commit 0 key).support := by
       norm_num [key, A, badCoins, Matrix.mulVec, dotProduct, Fin.sum_univ_two]
     · rfl
 
+private theorem oracle_run (q : Query) (cache : Cache) :
+    (oracle Digest q).run cache = memoize (fun _ => PMF.uniformOfFintype Digest) q cache := rfl
+
 /-- An aborted new hash query is still sampled and stored in the actual final cache. -/
 theorem abort_new_query :
     (interpret (oracle Digest)
-      (fiatShamirAbortSign P keyGen (0, key) () 1 (fun _ => badCoins))).run [] =
+      (fiatShamirAbortSign protocol keyGen (0, key) () 1 (fun _ => badCoins))).run [] =
     (PMF.uniformOfFintype Digest).map fun c => (none, [(((), 1), c)]) := by
-  simp [fiatShamirAbortSign, fiatShamir, interpret_bind, interpret_map, interpret_query,
-    StateT.run_bind, StateT.run_map, oracle, memoize, PMF.map, respond_bad, badCoins]
+  simp [fiatShamirAbortSign, fiatShamir, oracle_run, memoize, PMF.map, respond_bad, badCoins,
+    Function.comp_def]
 
 /-- Repeating that aborted point reuses its first digest: two calls leave only one cache entry. -/
 theorem repeated_abort_query :
     (interpret (oracle Digest)
-      (fiatShamirAbortSign P keyGen (0, key) () 2 (fun _ => badCoins))).run [] =
+      (fiatShamirAbortSign protocol keyGen (0, key) () 2 (fun _ => badCoins))).run [] =
     (PMF.uniformOfFintype Digest).map fun c => (none, [(((), 1), c)]) := by
-  simp [fiatShamirAbortSign, fiatShamir, interpret_bind, interpret_map, interpret_query,
-    StateT.run_bind, StateT.run_map, oracle, memoize, PMF.map, respond_bad, badCoins]
+  simp [fiatShamirAbortSign, fiatShamir, oracle_run, memoize, PMF.map, respond_bad, badCoins,
+    Fin.tail, Function.comp_def]
+
+/-- A later external query reads exactly the digest stored by the aborted attempt. -/
+example : (do
+    let signed ← (interpret (oracle Digest)
+      (fiatShamirAbortSign protocol keyGen (0, key) () 1 (fun _ => badCoins))).run []
+    let answer ← (oracle Digest ((), 1)).run signed.2
+    return (signed, answer)) =
+    (PMF.uniformOfFintype Digest).map fun c =>
+      ((none, [(((), 1), c)]), (c, [(((), 1), c)])) := by
+  rw [abort_new_query]
+  simp [oracle_run, memoize, PMF.map, Function.comp_def]
+
+/-- The actual sampled signer has positive probability of this retained aborted cache entry. -/
+example :
+    0 < (((lyubashevskyROMSignature Unit 1 2 1 17 1 3 1 1).signCoins (0, key) ()).bind
+      fun coins => (interpret (oracle Digest)
+        ((lyubashevskyROMSignature Unit 1 2 1 17 1 3 1 1).sign (0, key) () coins)).run [])
+      (none, [(((), 1), fun _ => false)]) := by
+  apply (PMF.apply_pos_iff _ _).mpr
+  apply (PMF.mem_support_bind_iff _ _ _).mpr
+  refine ⟨fun _ => badCoins, ?_, ?_⟩
+  · exact (mem_support_iid_iff _ _).mpr fun _ => bad_coins_mem
+  · change (none, [(((), 1), fun _ => false)]) ∈
+      ((interpret (oracle Digest)
+        (fiatShamirAbortSign protocol keyGen (0, key) () 1 (fun _ => badCoins))).run []).support
+    rw [abort_new_query]
+    exact (PMF.mem_support_map_iff _ _ _).mpr
+      ⟨fun _ => false, by simp, rfl⟩
 
 /-- A success does not stop later hash effects. Both different points are retained, and the
 returned signature is the earlier success even though the later attempt aborts. -/
 theorem success_then_abort :
     (interpret (oracle Digest)
-      (fiatShamirAbortSign P keyGen (0, key) () 2 ![(0, 0), badCoins])).run [] = do
+      (fiatShamirAbortSign protocol keyGen (0, key) () 2 ![(0, (0 : Fin 2 → ℤ)), badCoins])).run [] = do
         let c₀ ← PMF.uniformOfFintype Digest
         let c₁ ← PMF.uniformOfFintype Digest
         return (some (0, 0), [(((), 1), c₁), (((), 0), c₀)]) := by
-  simp [fiatShamirAbortSign, fiatShamir, interpret_bind, interpret_map, interpret_query,
-    StateT.run_bind, StateT.run_map, oracle, memoize, PMF.map, respond_bad, respond_good,
-    badCoins]
+  simp [fiatShamirAbortSign, fiatShamir, oracle_run, memoize, PMF.map, respond_good,
+    badCoins, List.lookup_cons, Function.comp_def,
+    show (((), (1 : Fin 1 → ZMod 17)) == ((), 0)) = false by decide]
 
 /-- Zero attempts abort without changing the cache, but the requested message is logged. -/
 example (cache : Cache) (log : List Unit) :

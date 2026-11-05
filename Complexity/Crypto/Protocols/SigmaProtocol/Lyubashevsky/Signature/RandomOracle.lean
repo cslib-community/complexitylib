@@ -95,10 +95,10 @@ theorem lyubashevskyROMSignature_forger_eq (hβ : β ≤ γ) (hη : k * η ≤ �
     (do
       let coins ← A.coins
       (interpret (handler (lyubashevskyROMSignature M n m k q η γ β K) (S, y))
-        (A.forge y coins)).run state) = do
+        (A.forge y coins)).run state) = (do
       let coins ← A.coins
       (interpret (handler (lyubashevskyROMSignature M n m k q η γ β K) (S', y))
-        (A.forge y coins)).run state := by
+        (A.forge y coins)).run state) := by
   congr 1
   funext coins
   exact lyubashevskyROMSignature_forger_run_eq hβ hη hS hS' (A.forge y coins) state
