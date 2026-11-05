@@ -141,6 +141,24 @@ giving an upper bound `3/8`; a supported error triple produces target phase 12 a
 actual failure. These are original sufficient correctness bounds for the supplied laws. They add
 no small-secret security reduction, Gaussian sampler or native certificate for the entire scheme.
 
+For a concrete growing family, [ModulusSwitch/CenteredBinomial.lean](../../Complexity/Crypto/Computational/SIS/ModulusSwitch/CenteredBinomial.lean)
+sets `t = l+1`, rank and degree `t`, CBD1 secret/ephemeral coefficients, and CBD(8t) error
+coefficients with good radius `4t`. Put `Q = 8t³+4t`, `Bp = floor((Q+t²+2)/2)`,
+`w = Nat.size(4Bp+2)`, target `p = 2^w` and source `q = 2^(w+1)`.
+The proved bounds are `p ≤ 68t³`, `q ≤ 136t³`, strict no-wrap `16t < q`, and target
+margin `4Bp+2 < p`. Half scaling and even moduli make the message-scale mismatch zero.
+The actual retained-secret experiment fails with probability at most `4(2t+1)t exp(-t)`,
+which is negligible for every message family. The extra factor `t` counts coefficients inside
+each noise polynomial; the shared coefficient bound lives in
+[Sampling/Concentration.lean](../../Complexity/Crypto/Computational/SIS/ModuleEncryption/Sampling/Concentration.lean).
+The [checked clients](../../ComplexityTests/Crypto/ModulusSwitchCenteredBinomial.lean)
+certify growing native CBD rows and power-of-two uniform matrix-entry samples, with unary
+parameters and binary outputs, and check their semantic modular laws. They also prove positive
+actual failure at `t=1`: `q=64`, `p=32`, errors all eight and supported secrets produce phase 29
+and decode a true message incorrectly. The displayed bound is below one at `t=10`.
+This is correctness for explicit laws, not a small-secret security reduction. Complete native
+key generation, encryption and decryption certificates remain separate.
+
 ## Encryption and chosen-message attacks
 
 [AdversaryOf](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/Encryption/Basic.lean#L73) has a first stage choosing two messages and a saved word from the public key, and a second stage guessing from that saved state and the challenge ciphertext. Each stage has a native certificate. `INDCPAOn` explicitly constrains admissible message pairs. `WordINDCPA` requires equal lengths; the general `INDCPAOf` with all pairs is stronger for variable-length word messages. Invalid challenges are made independent of the hidden experiment bit.

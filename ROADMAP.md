@@ -126,8 +126,10 @@ current libraries and workloads.
    uniformly over binary moduli and framed runtime row lists; subsequent scheme operations
    still need native certificates. The actual centered-binomial sampler now has a shared
    scalar concentration bound in `Languages/Probabilistic/CenteredBinomial/Concentration`;
-   a growing-parameter switched-encryption correctness family still needs the coordinate
-   union bound and explicit modulus/rounding margins.
+   `SIS/ModulusSwitch/CenteredBinomial` instantiates a growing-rank/degree family with cubic
+   moduli and negligible actual switched-decryption failure. It proves the coordinate union,
+   strict no-wrap and rounding margins; small-secret security and full native scheme
+   certificates remain open.
 2. **FHEW/TFHE programmable bootstrapping**
    ([Ducas–Micciancio](https://eprint.iacr.org/2014/816);
    [Chillotti–Gama–Georgieva–Izabachène](https://eprint.iacr.org/2016/870)). Ring-GSW external
