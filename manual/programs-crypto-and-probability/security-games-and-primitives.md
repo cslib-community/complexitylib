@@ -68,6 +68,26 @@ exercise a 128-bit modulus, negative representatives, modulus one, ragged/empty 
 existing ciphertext encoding, and composition of two certified conversions. This runtime
 certificate adds no decoding or security guarantee.
 
+For sufficient plaintext-preserving margins, import
+[`SIS/ModulusSwitch/Correctness.lean`](../../Complexity/Crypto/Computational/SIS/ModulusSwitch/Correctness.lean).
+Suppose the actual source phase is `encodePolyMsg q m + err`, with integer error bounded by
+`Bq`, and use the same integer secret at both moduli. Write `S` for its coefficient absolute-value
+sum and `Δ = |(p/q) * floor(q/2) - floor(p/2)|`. If
+`(p/q) * Bq + (1+S)/2 + Δ ≤ Bp` and `4*Bp+2 < p`, then
+`moduleLWEDecrypt_modulusSwitch_eq` proves that the switched ciphertext decrypts to `m`.
+The source modulus need only be positive for that conclusion. The separate
+`moduleLWEDecrypt_modulusSwitch_eq_source` adds `4*Bq+2 < q` to derive equality of the actual
+source and target decryptions. These sufficient margins are not claimed optimal.
+The error theorem constructs its target representative from the phase bound, including source
+carries, rather than assuming a decoding conclusion. `moduleLWEDecrypt_modulusSwitch_encrypt_eq`
+applies it to honest encryption using the existing integer error polynomial and centered secret.
+The exact scale mismatch is zero for two even moduli, `1/2` for even source and odd target,
+`p/(2*q)` for odd source and even target, and `|1-p/q|/2` for two odd moduli.
+[Checked examples](../../ComplexityTests/Crypto/ModulusSwitchCorrectness.lean) apply the honest
+encryption theorem in all four cases with nonzero noise, and exercise negative half ties and a
+nonzero carry. They also show plaintext loss at target moduli one and two and failure at the
+strict decoder threshold. This is deterministic correctness, with no additional security claim.
+
 ## Encryption and chosen-message attacks
 
 [AdversaryOf](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/Encryption/Basic.lean#L73) has a first stage choosing two messages and a saved word from the public key, and a second stage guessing from that saved state and the challenge ciphertext. Each stage has a native certificate. `INDCPAOn` explicitly constrains admissible message pairs. `WordINDCPA` requires equal lengths; the general `INDCPAOf` with all pairs is stronger for variable-length word messages. Invalid challenges are made independent of the hidden experiment bit.

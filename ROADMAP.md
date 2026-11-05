@@ -96,8 +96,9 @@ current libraries and workloads.
    ring multiplication, with native certificates. Define the RLWE secret and error laws and
    experiment separately; an ordinary-LWE reduction does not give them. Nearest-integer
    coefficient conversion and the Module-LWE phase-error bound are available in
-   `SIS/ModulusSwitch`; decoding preservation under modulus changes, parity-preserving
-   variants remain open. `SIS/ModulusSwitch/Native` certifies exact coefficient conversion
+   `SIS/ModulusSwitch`; `SIS/ModulusSwitch/Correctness` gives sufficient decryption-preserving
+   margins including odd-modulus message scaling. Parity-preserving switching variants remain
+   open. `SIS/ModulusSwitch/Native` certifies exact coefficient conversion
    uniformly over binary moduli and framed runtime row lists; subsequent scheme operations
    still need native certificates.
 2. **FHEW/TFHE programmable bootstrapping**
