@@ -1919,6 +1919,7 @@ public import Complexity.Computability.Interactive.RbrKnowledge
 public import Complexity.Computability.Interactive.Security
 public import Complexity.Computability.Interactive.Security.Repeat
 public import Complexity.Computability.Interactive.Sequential
+public import Complexity.Computability.Interactive.StrategyEffect
 public import Complexity.Computability.Interactive.Sumcheck
 public import Complexity.Computability.Interactive.ToIP
 public import Complexity.Computability.Kolmogorov.AverageCase
