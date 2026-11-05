@@ -38,6 +38,7 @@ changing-request induction and native RL=L remain open.
 * `initialComputedRelativeMoment_polynomial_firstNoise_le`: actual semantic minimum consumer.
 * `initialComputedRelativeMoment`: denominator-retaining semantic first-noise costs.
 * `initialComputedPrecisionMoment`: clipped own-mask first-mean cost in the literal reserve.
+* `initialComputedPrecisionMoment_first_weighted_le`: weighted moments with separate deficit.
 * `initial_compressed_precision_clipped_first`: actual clipped first-coordinate payment.
 * `initialPerturbationFactor`: target-dependent worst-pair transport payment.
 * `initialComputedMoment_final_firstNoise_zero`: exact old absolute-envelope noise cost.
@@ -502,6 +503,54 @@ theorem initialComputedPrecisionMoment_first_endpoint_paid (B : BudgetData HP P)
   apply add_le_add _ le_rfl
   exact B.initialClippedEndpointPrefixCharge_paid hcharge hrate H M j ks ka ha hi
     { r with usage := r.terminal } hs ht htask hwindow coefficient
+
+/-- Weighted first-mean moments in the literal computed reserve. Use the actual
+false-event coefficient at index `j` for the raw prefix `j + 1`. The semantic deficit
+is paid separately. No successful parent accuracy or uniform prefix bound is assumed. -/
+theorem initialComputedPrecisionMoment_first_weighted_le (B : BudgetData HP P)
+    (hcharge : 0 ≤ B.rankCharge) (hrate : B.binRate = rate) (H : Horizon P)
+    (M n ks ka : ℕ) (ha : ka ≤ H.maxExponent)
+    (hi : ∀ bin ∈ B.bins, bin ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩))
+    (R : RoleProfile 3) (ss st : List (ZMod P)) (coefficient ζ Lh Lρ : ℝ)
+    (s : Finset ℕ) (w : ℕ → ℝ) (hw : ∀ j ∈ s, 0 ≤ w j) :
+    (∑ j ∈ s, w j *
+      B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ j false 0) ≤
+    8 * (((max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^
+      (4⁻¹ : ℝ) * |coefficient| * (2 : ℝ) ^ (-B.requestPrecision M r) *
+        (2 : ℝ) ^ (-B.rankCharge)) ^ 4 *
+          ∑ j ∈ s, w j * B.initialClippedEndpointWindow M j ka
+            { r with usage := r.terminal } ^ 4 +
+      ∑ j ∈ s, w j * rowNormPow 4 P r.source.rate
+        (retainedMask R.source (side P ks) B.padding ss)
+        (retainedMask R.terminal (side P ka) B.padding st)
+        (fun _ x y => min 1 (|B.initialPolynomialLoss M n j r x y| /
+          (rate ka + B.base x y)))) := by
+  have hpoint (j : ℕ) :
+      B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ j false 0 ≤
+        8 * (B.initialClippedEndpointPrefixCharge M j { r with usage := r.terminal } ka
+          coefficient + rowNormPow 4 P r.source.rate
+            (retainedMask R.source (side P ks) B.padding ss)
+            (retainedMask R.terminal (side P ka) B.padding st)
+            (fun _ x y => min 1 (|B.initialPolynomialLoss M n j r x y| /
+              (rate ka + B.base x y)))) := by
+    unfold initialComputedPrecisionMoment
+    simp only [Bool.not_false, Fin.isValue, and_self, ↓reduceIte]
+    exact (min_le_right _ _).trans (min_le_right _ _)
+  calc
+    _ ≤ ∑ j ∈ s, w j * (8 *
+        (B.initialClippedEndpointPrefixCharge M j { r with usage := r.terminal } ka
+          coefficient + _)) := sum_le_sum fun j hj =>
+      mul_le_mul_of_nonneg_left (hpoint j) (hw j hj)
+    _ = 8 * ((∑ j ∈ s, w j * B.initialClippedEndpointPrefixCharge M j
+        { r with usage := r.terminal } ka coefficient) + _) := by
+      simp only [mul_add, sum_add_distrib, mul_sum]
+      congr 1 <;> apply sum_congr rfl <;> intros <;> ring
+    _ ≤ _ := mul_le_mul_of_nonneg_left (add_le_add
+      (B.initialClippedEndpointPrefixCharge_weighted_le hcharge hrate H M ks ka ha hi
+        { r with usage := r.terminal } hs ht htask s w hw coefficient) le_rfl) (by norm_num)
 
 /-- The new first-mean minimum and all retained costs are nonnegative. -/
 lemma initialComputedPrecisionMoment_nonneg (B : BudgetData HP P) (M n : ℕ)

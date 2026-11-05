@@ -385,10 +385,11 @@ example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ}
 -- is fixed before M, both request exponents and the field width; there are three bins.
 private lemma endpoint_window {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ}
     (B : BudgetData HP P) (hbins : B.bins = range 3) (hcap : B.binCap = 16)
-    (hslack : B.slack = 1) (M ka : ℕ)
+    (hslack : B.slack = 1) (M j ka : ℕ)
+    (hd : Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j ≤ 16)
     (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) :
     (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^ (4⁻¹ : ℝ) *
-      B.initialClippedEndpointWindow M (Nat.log2 M) ka r ≤ (2 : ℝ) ^ (64 : ℝ) := by
+      B.initialClippedEndpointWindow M j ka r ≤ (2 : ℝ) ^ (64 : ℝ) := by
   have hc : (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^
       (4⁻¹ : ℝ) ≤ 1024 := by
     have hh := Real.rpow_le_rpow (by rw [hcap]; norm_num :
@@ -398,7 +399,7 @@ private lemma endpoint_window {HP : FourthRootHierarchyParams 16 1 16 32 8} {P :
     have he : ((1024 : ℝ) ^ 4) ^ (4⁻¹ : ℝ) = 1024 :=
       Real.pow_rpow_inv_natCast (by norm_num) (by decide : (4 : ℕ) ≠ 0)
     rwa [he] at hh
-  have hw : B.initialClippedEndpointWindow M (Nat.log2 M) ka r ≤ 12 := by
+  have hw : B.initialClippedEndpointWindow M j ka r ≤ 12 := by
     unfold BudgetData.initialClippedEndpointWindow
     rw [hbins]
     calc
@@ -409,58 +410,65 @@ private lemma endpoint_window {HP : FourthRootHierarchyParams 16 1 16 32 8} {P :
         · norm_num
         · apply (Real.rpow_le_rpow_of_exponent_le (by norm_num : (1 : ℝ) ≤ 2)
             (show _ ≤ (2 : ℝ) by
-              simp only [Cslib.RowCompression.dyadicSlack_last, hslack]
+              rw [hslack]
+              have hd' : (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j : ℝ) ≤ 16 := by
+                exact_mod_cast hd
               linarith [abs_nonneg ((bin : ℝ) - ka)])).trans_eq
           norm_num
       _ = 12 := by norm_num
-  have hw0 : 0 ≤ B.initialClippedEndpointWindow M (Nat.log2 M) ka r := by
+  have hw0 : 0 ≤ B.initialClippedEndpointWindow M j ka r := by
     unfold BudgetData.initialClippedEndpointWindow
     exact sum_nonneg fun _ _ => by split_ifs <;> positivity
   exact (mul_le_mul hc hw hw0 (by norm_num)).trans (by norm_num)
 
--- Positive parent precision 8, with a nontrivial 2^(-32) fourth-moment transport payment.
+-- Every positive parent precision, at any surviving slack at most 16. In particular
+-- precisions 4, 8 and 16 and slacks 1, 2, 4 and 16 share the structural charge 64.
 -- The structural charge is 64 before choosing the parent budget. This is an allocation
 -- and actual-minimum client, conditional on the separate child IH, not a full reserve.
 example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ} [Fact P.Prime]
     (B : BudgetData HP P) (hbins : B.bins = range 3) (hcap : B.binCap = 16)
     (hslack : B.slack = 1) (hrate : B.binRate = rate) (H : Horizon P)
-    (hi : ∀ bin ∈ B.bins, bin ≤ H.maxExponent) (ζ Lh Lρ : ℝ) :
+    (hi : ∀ bin ∈ B.bins, bin ≤ H.maxExponent) (ζ Lh Lρ : ℝ)
+    (p j : ℕ) (hp0 : 0 < p) :
     let B' : BudgetData HP P := { B with rankCharge := 64 }
     let r : HierarchyTask.Request HP.k (Fin 3) (ZMod P) :=
       ⟨.row 0 (.pilotInput ⟨0, HP.k_pos⟩), gridChannel 0 0 [],
         gridChannel 2 0 [], gridChannel 2 0 []⟩
-    let M := 16 * (64 * r.task.rank + 8)
-    B'.requestPrecision M r = 8 ∧
-      B'.initialClippedEndpointPrefixCharge M (Nat.log2 M) r 0 1 ≤ (2 : ℝ) ^ (-32 : ℝ) ∧
+    let M := 16 * (64 * r.task.rank + p)
+    Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j ≤ 16 →
+    0 < B'.requestPrecision M r ∧ B'.requestPrecision M r = p ∧
+      B'.initialClippedEndpointPrefixCharge M j r 0 1 ≤ (2 : ℝ) ^ (-4 * (p : ℝ)) ∧
       B'.initialComputedPrecisionMoment M 2 r ⟨0, 1, 2, by decide, by decide, by decide⟩
-        0 0 [] [] 1 ζ Lh Lρ (Nat.log2 M) false 0 ≤
-        8 * ((2 : ℝ) ^ (-32 : ℝ) + rowNormPow 4 P r.source.rate
+        0 0 [] [] 1 ζ Lh Lρ j false 0 ≤
+        8 * ((2 : ℝ) ^ (-4 * (p : ℝ)) + rowNormPow 4 P r.source.rate
           (retainedMask (0 : Fin 3) (side P 0) B'.padding [])
           (retainedMask (2 : Fin 3) (side P 0) B'.padding [])
-          (fun _ x y => min 1 (|B'.initialPolynomialLoss M 2 (Nat.log2 M) r x y| /
+          (fun _ x y => min 1 (|B'.initialPolynomialLoss M 2 j r x y| /
             (rate 0 + B'.base x y)))) := by
   dsimp only
+  intro hd
   let B' : BudgetData HP P := { B with rankCharge := 64 }
   let r : HierarchyTask.Request HP.k (Fin 3) (ZMod P) :=
     ⟨.row 0 (.pilotInput ⟨0, HP.k_pos⟩), gridChannel 0 0 [],
       gridChannel 2 0 [], gridChannel 2 0 []⟩
-  let M := 16 * (64 * r.task.rank + 8)
-  have hp : B'.requestPrecision M r = 8 := by
+  let M := 16 * (64 * r.task.rank + p)
+  have hp : B'.requestPrecision M r = p := by
     change (M : ℝ) / (16 * B.slack) +
-      (Real.logb 2 (rate 0) + Real.logb 2 (rate 0)) / 2 - 64 * r.task.rank = 8
+      (Real.logb 2 (rate 0) + Real.logb 2 (rate 0)) / 2 - 64 * r.task.rank = p
     rw [hslack]
     norm_num [rate, M]
-  have hw := endpoint_window B' hbins hcap hslack M 0 r
+  have hw := endpoint_window B' hbins hcap hslack M j 0 hd r
   have he := B'.initialClippedEndpointPrefixCharge_paid (by norm_num) hrate H M
-    (Nat.log2 M) 0 0 (Nat.zero_le _) hi r rfl rfl rfl hw 1
+    j 0 0 (Nat.zero_le _) hi r rfl rfl rfl hw 1
   have hm := B'.initialComputedPrecisionMoment_first_endpoint_paid (by norm_num) hrate H
-    M 2 (Nat.log2 M) 0 0 (Nat.zero_le _) hi r rfl rfl rfl
+    M 2 j 0 0 (Nat.zero_le _) hi r rfl rfl rfl
     ⟨0, 1, 2, by decide, by decide, by decide⟩ [] [] 1 ζ Lh Lρ hw
-  have hpow : ((2 : ℝ) ^ (-8 : ℝ)) ^ 4 = (2 : ℝ) ^ (-32 : ℝ) := by
+  have hpow : ((2 : ℝ) ^ (-(p : ℝ))) ^ 4 = (2 : ℝ) ^ (-4 * (p : ℝ)) := by
     rw [← Real.rpow_natCast, ← Real.rpow_mul (by norm_num : (0 : ℝ) ≤ 2)]
-    norm_num
+    congr 1
+    ring
   simp only [hp, one_pow, one_mul, hpow] at he hm
-  exact ⟨hp, he, hm⟩
+  exact ⟨by rw [hp]; exact_mod_cast hp0, hp, he, hm⟩
 
 -- Unavailable positive endpoints are not invented by the telescope. The zero boundary
 -- remains available, and exhausted equal pairs make no lower call at all.
@@ -474,3 +482,63 @@ example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ} [Fact P.Prime]
   simp [BudgetData.sample, BudgetData.pairedSample, hs, hslack,
     LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff,
     BudgetData.positiveSample, BudgetData.row]
+
+
+-- An actual live scheduled endpoint invalidates the charge-64 uniform window inference.
+-- The unconditional first-overflow tail multiplies this window by a weight >= 1.
+-- This is an envelope counterexample, not a claim about the actual estimator error.
+example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ}
+    (B : BudgetData HP P) (hslack : B.slack = 1) (hbin : 0 ∈ B.bins)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : B.sampleScale r (some 0) = 0) (w : ℝ) (hw : 1 ≤ w) :
+    ¬ w * B.initialClippedEndpointWindow 8192 1 0 r ≤ (2 : ℝ) ^ (64 : ℝ) := by
+  intro h
+  have hlive : LogSpaceEstimation.lastBudget 8192
+      (Cslib.RowCompression.dyadicSlack (Nat.log2 8192 + 1) 1) B.slack
+      (B.sampleScale r (some 0)) ≠ 0 := by
+    norm_num [Cslib.RowCompression.dyadicSlack, LogSpaceEstimation.lastBudget,
+      LogSpaceEstimation.scaleCutoff, hslack, hs]
+  have hg := B.initialClippedEndpointWindow_growth 8192 1 0 0 r hbin hlive w 64 hw h
+  norm_num [Cslib.RowCompression.dyadicSlack, hslack] at hg
+
+
+-- Zero and exhausted endpoints have no transport charge, before any precision estimate.
+example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ} [Fact P.Prime]
+    (B : BudgetData HP P) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (j ka : ℕ) (coefficient : ℝ) :
+    B.initialClippedEndpointWindow 0 j ka r = 0 ∧
+      B.initialClippedEndpointPrefixCharge 0 j r ka coefficient = 0 := by
+  simp [BudgetData.initialClippedEndpointWindow, BudgetData.initialClippedEndpointPrefixCharge,
+    BudgetData.initialEndpointCharge, LogSpaceEstimation.lastBudget]
+
+
+-- The same obstruction occurs in the exact tail sum of the numerical reserve.
+open Cslib.RowCompression in
+example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ}
+    (B : BudgetData HP P) (hslack : B.slack = 1) (hbin : 0 ∈ B.bins)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : B.sampleScale r (some 0) = 0) :
+    ¬ (∑ i ∈ Ico 1 (Nat.log2 8192 + 1), (28 : ℝ) ^ (Nat.log2 8192 + 1 - i) *
+      B.initialClippedEndpointWindow 8192 i 0 r) ≤ (2 : ℝ) ^ (64 : ℝ) := by
+  intro h
+  have hlive : LogSpaceEstimation.lastBudget 8192
+      (dyadicSlack (Nat.log2 8192 + 1) 1) B.slack (B.sampleScale r (some 0)) ≠ 0 := by
+    norm_num [dyadicSlack, LogSpaceEstimation.lastBudget,
+      LogSpaceEstimation.scaleCutoff, hslack, hs]
+  have hg := B.initialClippedEndpointWindow_tail_growth 8192 1 1 0 0 r
+    (by decide) hbin hlive 64 h
+  norm_num [dyadicSlack, hslack] at hg
+
+
+-- Positive parent precision does not imply a positive scheduled endpoint budget.
+-- At M=1 even the final endpoint is exhausted; its transport window is exactly zero.
+example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ}
+    (B : BudgetData HP P) (hslack : B.slack = 1) (hcharge : B.rankCharge = 0)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = 1) (ht : r.terminal.rate = 1) (ka : ℕ) :
+    0 < B.requestPrecision 1 r ∧ B.initialClippedEndpointWindow 1 (Nat.log2 1) ka r = 0 := by
+  constructor
+  · norm_num [BudgetData.requestPrecision, LogSpaceEstimation.precision,
+      hslack, hcharge, hs, ht]
+  · simp [BudgetData.initialClippedEndpointWindow, Cslib.RowCompression.dyadicSlack,
+      LogSpaceEstimation.lastBudget]

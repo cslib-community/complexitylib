@@ -26,6 +26,8 @@ precision pays both endpoints with an explicit slack window. Finite Minkowski re
 bin and prefix cardinality cubes from clipped means. The literal signed conditional mean
 telescopes before root bounds, leaving only one fine endpoint per bin and a proved zero
 start boundary. A bounded surviving slack has a uniform two-sided scale allocation.
+Finite weighted endpoint moments retain the compression coefficients; a live endpoint
+gives a necessary growth condition for allocating the unconditional rooted tail.
 Unrestricted large-slack tail absorption, ordinary sampling progress and saturated
 preparation remain separate obligations.
 -/
@@ -1014,6 +1016,115 @@ theorem initialClippedEndpointPrefixCharge_le
         3 * |(bin : ℝ) - ka| / 4) :=
     Real.pow_rpow_inv_natCast (by positivity) (by decide : (4 : ℕ) ≠ 0)
   rwa [he] at hr
+
+/-- Finite weighted fourth-moment allocation for the surviving endpoints. The weights
+are literal compression coefficients, and may vary with the prefix. This does not
+replace them by a uniform unweighted bound or discount a correlated heavy event. -/
+theorem initialClippedEndpointPrefixCharge_weighted_le
+    (hcharge : 0 ≤ B.rankCharge) (hrate : B.binRate = rate) (H : Horizon P)
+    (M ks ka : ℕ) (ha : ka ≤ H.maxExponent)
+    (hi : ∀ bin ∈ B.bins, bin ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩))
+    (s : Finset ℕ) (w : ℕ → ℝ) (hw : ∀ j ∈ s, 0 ≤ w j) (coefficient : ℝ) :
+    (∑ j ∈ s, w j * B.initialClippedEndpointPrefixCharge M j r ka coefficient) ≤
+      ((max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^ (4⁻¹ : ℝ) *
+        |coefficient| * (2 : ℝ) ^ (-B.requestPrecision M r) *
+        (2 : ℝ) ^ (-B.rankCharge)) ^ 4 *
+          ∑ j ∈ s, w j * B.initialClippedEndpointWindow M j ka r ^ 4 := by
+  rw [mul_sum]
+  apply sum_le_sum
+  intro j hj
+  exact (mul_le_mul_of_nonneg_left
+    (B.initialClippedEndpointPrefixCharge_le hcharge hrate H M j ks ka ha hi r hs ht
+      htask coefficient) (hw j hj)).trans_eq (by rw [mul_pow]; ring)
+
+/-- Rooted finite weighted allocation for stationary preloss and deterministic mean
+tails. The latter may use the existing outer mean-rarity factor; this theorem does
+not introduce such a factor for environment-dependent noise. -/
+theorem initialClippedEndpointPrefixCharge_sum_root_le
+    (hcharge : 0 ≤ B.rankCharge) (hrate : B.binRate = rate) (H : Horizon P)
+    (M ks ka : ℕ) (ha : ka ≤ H.maxExponent)
+    (hi : ∀ bin ∈ B.bins, bin ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩))
+    (s : Finset ℕ) (w : ℕ → ℝ) (hw : ∀ j ∈ s, 0 ≤ w j) (coefficient : ℝ) :
+    (∑ j ∈ s, w j *
+      B.initialClippedEndpointPrefixCharge M j r ka coefficient ^ (4⁻¹ : ℝ)) ≤
+      ((max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^ (4⁻¹ : ℝ) *
+        |coefficient| * (2 : ℝ) ^ (-B.requestPrecision M r) *
+        (2 : ℝ) ^ (-B.rankCharge)) *
+          ∑ j ∈ s, w j * B.initialClippedEndpointWindow M j ka r := by
+  rw [mul_sum]
+  apply sum_le_sum
+  intro j hj
+  have h := Real.rpow_le_rpow (B.initialClippedEndpointPrefixCharge_nonneg M j r ka _)
+    (B.initialClippedEndpointPrefixCharge_le hcharge hrate H M j ks ka ha hi r hs ht
+      htask coefficient) (by norm_num : (0 : ℝ) ≤ 4⁻¹)
+  have hn : 0 ≤ B.initialClippedEndpointWindow M j ka r := by
+    unfold initialClippedEndpointWindow
+    exact sum_nonneg fun _ _ => by split_ifs <;> positivity
+  have hc := B.binCap_nonneg
+  let K := (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^ (4⁻¹ : ℝ) *
+    |coefficient| * (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge)
+  have he : ((K * B.initialClippedEndpointWindow M j ka r) ^ 4) ^ (4⁻¹ : ℝ) =
+      K * B.initialClippedEndpointWindow M j ka r :=
+    Real.pow_rpow_inv_natCast (by dsimp only [K]; positivity) (by decide : (4 : ℕ) ≠ 0)
+  rw [he] at h
+  exact (mul_le_mul_of_nonneg_left h (hw j hj)).trans_eq (by ring)
+
+omit [Fact P.Prime] in
+/-- A live bin gives a necessary growth condition for any weighted window allocation.
+In particular a tail weight at least one supplies no decay for its surviving endpoint.
+This is a condition on the numerical envelope, not a lower bound on estimator error. -/
+theorem initialClippedEndpointWindow_growth
+    (M j ka bin : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hbin : bin ∈ B.bins)
+    (hlive : LogSpaceEstimation.lastBudget M (dyadicSlack (Nat.log2 M + 1) j)
+      B.slack (B.sampleScale r (some bin)) ≠ 0)
+    (w A : ℝ) (hw : 1 ≤ w)
+    (hpaid : w * B.initialClippedEndpointWindow M j ka r ≤ (2 : ℝ) ^ A) :
+    (dyadicSlack (Nat.log2 M + 1) j : ℝ) / (16 * B.slack) +
+      1 / 16 - 3 * |(bin : ℝ) - ka| / 4 ≤ A := by
+  have hterm : (2 : ℝ) ^ ((dyadicSlack (Nat.log2 M + 1) j : ℝ) / (16 * B.slack) +
+      1 / 16 - 3 * |(bin : ℝ) - ka| / 4) ≤ B.initialClippedEndpointWindow M j ka r := by
+    unfold initialClippedEndpointWindow
+    have h := single_le_sum (f := fun b =>
+      if LogSpaceEstimation.lastBudget M (dyadicSlack (Nat.log2 M + 1) j) B.slack
+        (B.sampleScale r (some b)) = 0 then (0 : ℝ) else
+        (2 : ℝ) ^ ((dyadicSlack (Nat.log2 M + 1) j : ℝ) / (16 * B.slack) +
+          1 / 16 - 3 * |(b : ℝ) - ka| / 4))
+      (fun b _ => by split_ifs <;> positivity) hbin
+    simpa only [hlive, ↓reduceIte] using h
+  have hn : 0 ≤ B.initialClippedEndpointWindow M j ka r :=
+    (Real.rpow_pos_of_pos (by norm_num) _).le.trans hterm
+  have h := hterm.trans ((le_mul_of_one_le_left hn hw).trans hpaid)
+  exact (Real.rpow_le_rpow_left_iff (by norm_num : (1 : ℝ) < 2)).mp h
+
+omit [Fact P.Prime] in
+/-- Necessary growth condition for the literal unconditional compression tail. Its
+coefficient is `28 ^ (m - i)`, with no heavy-rarity discount. A single live endpoint
+already constrains any allocation of the entire rooted tail window. -/
+theorem initialClippedEndpointWindow_tail_growth
+    (M j i ka bin : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hi : i ∈ Ico j (Nat.log2 M + 1)) (hbin : bin ∈ B.bins)
+    (hlive : LogSpaceEstimation.lastBudget M (dyadicSlack (Nat.log2 M + 1) i)
+      B.slack (B.sampleScale r (some bin)) ≠ 0)
+    (A : ℝ)
+    (hpaid : (∑ l ∈ Ico j (Nat.log2 M + 1), (28 : ℝ) ^ (Nat.log2 M + 1 - l) *
+      B.initialClippedEndpointWindow M l ka r) ≤ (2 : ℝ) ^ A) :
+    (dyadicSlack (Nat.log2 M + 1) i : ℝ) / (16 * B.slack) +
+      1 / 16 - 3 * |(bin : ℝ) - ka| / 4 ≤ A := by
+  apply B.initialClippedEndpointWindow_growth M i ka bin r hbin hlive
+    ((28 : ℝ) ^ (Nat.log2 M + 1 - i)) A (one_le_pow₀ (by norm_num))
+  apply le_trans _ hpaid
+  apply single_le_sum _ hi
+  intro l _
+  apply mul_nonneg (by positivity)
+  unfold initialClippedEndpointWindow
+  exact sum_nonneg fun _ _ => by split_ifs <;> positivity
 
 /-- A structural allocation for the surviving endpoints, fixed before child errors.
 The condition has no sum over prefix groups, source exponent or field width. -/

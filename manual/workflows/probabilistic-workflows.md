@@ -1305,14 +1305,54 @@ $4\sum_{h\in\mathbb Z}\mathrm{scaleMajorant}(h)$ independently of bin count, hor
 source/terminal exponents and field width. The existing summable majorant has the explicit
 value `tsum_scaleMajorant`. `initialClippedEndpointPrefixCharge_uniform_paid` consequently
 uses a single structural allocation chosen before those coordinates. Larger surviving
-slacks still have their explicit exponential factor; absorption into compression tails
-is not proved here.
+slacks still have their explicit exponential factor. The literal weights do not all
+supply decay: stationary preloss uses $\delta 2^{-10d}$; the raw false-event coefficient
+is $64K R^4/((K+1)\delta^4)\,2^{-24d}$, where $R=(2\max(\mathrm{cap},16))^{1/4}$.
+The final index has $d=1$, though its child budget may still be zero at positive parent
+precision. In contrast, the unconditional first-overflow tail uses
+$28^{m-i}$ without a rarity discount for correlated transported error.
+
+`initialClippedEndpointPrefixCharge_weighted_le` retains arbitrary nonnegative finite
+weights on the endpoint fourth moments. `initialClippedEndpointPrefixCharge_sum_root_le`
+retains weighted roots for stationary preloss and mean tails. The actual computed
+first-mean minimum consumes the fourth-moment bound in `initialComputedPrecisionMoment_first_weighted_le`, keeping the weighted semantic
+deficit separate. For raw false-event allocation use the coefficient indexed by $j$ on
+the statistic for prefix $j+1$, as in `initialFourMaxReserve`; stationary and tail payments
+still need their rooted Minkowski sums. This weighted moment lemma alone does not close
+those sums or replace the other three statistics in the reserve.
+
+The existing deterministic mean-tail API has a different weight:
+$((2+256/b_j)/n_j)^{1/4}$ outside its sum over $i\ge j$. With the actual floor and
+capacity it is at most
+$((2+256/\delta)/(K+1))^{1/4}2^{-27d_j/2}$.
+Since $d_i\le d_j$ inside that tail, this decay can pay the endpoint factor
+$2^{d_i/(16\,\mathrm{slack})}$, with the polynomial factor $28^{m-i}$ still to sum.
+This route requires a deterministic conditional-mean/row-tail comparison and separate
+payments for semantic deficit and correlated noise. It is not the unconditional
+four-max envelope tested below, and that separation has not yet been integrated into
+the literal reserve client.
+
+`initialClippedEndpointWindow_growth` gives a necessary condition for a proposed
+allocation $wW_{\mathrm{end}}\le2^A$ when $w\ge1$: every live bin $i$ must satisfy
+$$
+\frac{d}{16\,\mathrm{slack}}+\frac1{16}-\frac34|i-a|\le A.
+$$
+The checked regression at $M=8192$, group $1$, slack $1$ and bin/terminal exponent zero
+has a positive scheduled child budget and violates this condition for $A=64$, even
+before multiplying by $28^{m-i}$.
+`initialClippedEndpointWindow_tail_growth` checks the same necessary condition for
+the exact rooted tail sum, and its regression rejects that allocation too. Thus these
+unconditional tail coefficients do not justify a uniform endpoint-window allocation by themselves. This is a counterexample
+to that numerical inference, not to the estimator's accuracy. A sharper joint event
+analysis or another payment is still required; ordinary progress and saturated
+preparation remain independent gaps.
 
 The [allocation regressions](../../ComplexityTests/InitialTwoPayment.lean) retain the older
-$M=4$ fixture, whose parent precision is negative. A new fixture fixes charge $64$ first,
-then chooses $M=16(64\,\mathrm{rank}(r)+8)$ at full source/terminal rate and three bins.
-Its parent precision is exactly $8$, and its surviving transport fourth moment is paid by
-$2^{-32}$. The bound is consumed by `initialComputedPrecisionMoment_first_endpoint_paid`.
+$M=4$ fixture, whose parent precision is negative. The positive-precision fixture fixes
+charge $64$ first, then chooses $M=16(64\,\mathrm{rank}(r)+p)$ for any positive integer $p$
+at full source/terminal rate and three bins. Its parent precision is exactly $p$ and its
+surviving transport fourth moment is paid by $2^{-4p}$ at every slack at most $16$.
+The bound is consumed by `initialComputedPrecisionMoment_first_endpoint_paid`.
 This tests positive-precision numerical allocation and the actual minimum, conditional on
 the separate child IH; it does not certify recursive availability or a complete reserve.
 The executed history regression checks adjacent unequal groups with a shared nonzero
