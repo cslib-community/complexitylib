@@ -65,6 +65,47 @@ theorem toyIOP_complete : IOPCompleteness toyIOP toyRel := by
   subst hrel
   simp [iopVerify, iopAnswers, iopProverOracles, prefixChallenges, toyIOP]
 
+/-- Round-by-round doomed predicate for `toyIOP`: either no rounds have elapsed yet, or the first
+round's oracle table disagrees with `x` at the position selected by `c₀`. -/
+def toyDoomed (x : Bool) (tr : List (OracleTable 1 Bool × Bool)) : Prop :=
+  match tr with
+  | [] => True
+  | (π₀, c₀) :: _ => π₀ (if c₀ then 1 else 0) ≠ x
+
+/-- Round-by-round good-step relation for `toyIOP`: in round `0` (`tr = []`), challenge `c` selects
+an entry of `π` that disagrees with `x`; later rounds preserve the round-`0` disagreement. -/
+def toyGoodStep (x : Bool) (tr : List (OracleTable 1 Bool × Bool))
+    (π : OracleTable 1 Bool) (c : Bool) : Prop :=
+  tr = [] → π (if c then 1 else 0) ≠ x
+
+/-- `toyIOP` satisfies `IOPRoundByRoundSoundness` with `toyDoomed` and `toyGoodStep`. -/
+theorem toyIOP_rbrSound :
+    IOPRoundByRoundSoundness toyIOP {false} toyDoomed toyGoodStep where
+  init_doomed _ _ := trivial
+  step_doomed x tr π c hdoomed hgood := by
+    cases tr with
+    | nil => exact hgood rfl
+    | cons hd tl => exact hdoomed
+  reject_of_doomed x oracles chals hdoomed := by
+    change oracles 0 (if chals 0 then 1 else 0) ≠ x at hdoomed
+    simp only [iopVerify, iopAnswers, toyIOP, List.map_cons, List.map_nil, beq_eq_false_iff_ne,
+      ne_eq, List.cons.injEq]
+    exact fun h => hdoomed h.1
+
+-- Round-by-round soundness applied to `toyIOP`: when `x = true ∉ {false}` and the round-0 oracle
+-- table is constant `false`, every challenge vector is rejected via `iopVerify_eq_false`.
+example (chals : Fin 2 → Bool) :
+    let oracles := bcsHonestTables toyIOP constHash [false, true] encSym toyFS true false
+    iopVerify toyIOP true chals oracles = false := by
+  intro oracles
+  refine toyIOP_rbrSound.iopVerify_eq_false (by simp) oracles chals ?_
+  intro ⟨j, hj⟩
+  rcases j with _ | j
+  · intro _
+    decide +revert
+  · intro hnil
+    nomatch hnil
+
 /-- Straight-line knowledge extractor for `toyIOP`: read entry `0` of the round-`0` oracle table. -/
 def toyExtract (_ : Bool) (oracles : Fin 2 → OracleTable 1 Bool) : Bool :=
   oracles ⟨0, by decide⟩ ⟨0, by decide⟩

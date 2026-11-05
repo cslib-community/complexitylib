@@ -101,8 +101,7 @@ families and full-input native runtime.
 ### Public-key, lattice and symmetric constructions ([#640])
 
 - **Sigma protocols and Fiat–Shamir** ([#581]): computational Schnorr signatures under discrete
-  log against strict PPT forgers; eavesdropping security in the strict-PPT model, with the
-  statistical-distance term from sampling `ZMod q`.
+  log against strict PPT forgers.
 - **Chosen-ciphertext security** ([#1885]): multi-challenge CCA from the single-challenge
   Cramer–Shoup theorem.
 - **Lattices**: Fiat–Shamir with aborts and signatures from SIS (Lyubashevsky 2009,
@@ -122,8 +121,7 @@ In order:
   output oracles, as in ArkLib), with knowledge soundness and zero knowledge in oracle worlds;
 - efficiency-certified simulators and extractors, and auxiliary-input zero knowledge on the core;
 - polynomial commitment and evaluation-query reductions, and the Ligero IOP;
-- random-oracle query-trace probability bounds and `Interactive.Reduction` / Ligero composition
-  on top of the core BCS transform (`Complexity/Crypto/Protocols/BCS/Basic.lean`);
+- the BCS transform to non-interactive arguments in the random-oracle model;
 - VOLE as an ideal functionality, and VOLE-in-the-head;
 - libzk's compositional structure as a composition of these components, without ciphersuites.
 

@@ -492,8 +492,9 @@ theorem iopVerify_eq_true_of_bcsVerify_of_openings_eq
     {H : List Bool → List Bool → List Bool} {k : List Bool} {encSym : Sym → List Bool}
     {hFS : Stmt → List (List Bool) → Chal} {x : Stmt} {oracles : Fin r → OracleTable d Sym}
     {prf : BCSProof r Sym} (hver : bcsVerify iop H k encSym hFS x prf = true)
-    (hagree : ∀ p ∈ (iop.queries x (bcsChallenge hFS x prf.roots)).zip prf.openings,
-      p.2.1 = oracles p.1.1 p.1.2) :
+    (hagree : ∀ j idx val path,
+      ((j, idx), (val, path)) ∈ (iop.queries x (bcsChallenge hFS x prf.roots)).zip prf.openings →
+      val = oracles j idx) :
     iopVerify iop x (bcsChallenge hFS x prf.roots) oracles = true := by
   simp only [bcsVerify, Bool.and_eq_true, beq_iff_eq] at hver
   obtain ⟨⟨hlen, -⟩, hdecide⟩ := hver
@@ -507,7 +508,7 @@ theorem iopVerify_eq_true_of_bcsVerify_of_openings_eq
   have hmo : m < prf.openings.length := by simpa only [List.length_map] using h₁
   have hmem : (qs[m], prf.openings[m]) ∈ qs.zip prf.openings :=
     List.mem_iff_getElem.mpr ⟨m, by simp [hmq, hmo], by simp⟩
-  have heq := hagree (qs[m], prf.openings[m]) hmem
+  have heq := hagree qs[m].1 qs[m].2 prf.openings[m].1 prf.openings[m].2 hmem
   simpa only [iopAnswers, List.getElem_map] using heq
 
 /-- **Committed-table binding extraction (`bcs_sound_or_merkleCollision`)**: if `bcsVerify` accepts
@@ -542,7 +543,7 @@ theorem bcs_sound_or_merkleCollision
     exact isCollision_of_merkleVerify hmv₁ hmv₂ hne_bool n
   · left
     rw [Bool.not_eq_true, Option.isSome_eq_false_iff, Option.isNone_iff_eq_none] at hfind
-    refine iopVerify_eq_true_of_bcsVerify_of_openings_eq hver fun ⟨⟨j, idx⟩, ⟨val, path⟩⟩ hmem => ?_
+    refine iopVerify_eq_true_of_bcsVerify_of_openings_eq hver fun j idx val path hmem => ?_
     have hnone := List.find?_eq_none.mp hfind ((j, idx), (val, path)) hmem
     simp only [bne_iff_ne, ne_eq, Decidable.not_not] at hnone
     exact hinj hnone
@@ -602,8 +603,9 @@ theorem rel_iopExtract_of_bcsVerify_of_openings_eq
     {H : List Bool → List Bool → List Bool} {k : List Bool} {encSym : Sym → List Bool}
     {hFS : Stmt → List (List Bool) → Chal} {x : Stmt} {oracles : Fin r → OracleTable d Sym}
     {prf : BCSProof r Sym} (hver : bcsVerify iop H k encSym hFS x prf = true)
-    (hagree : ∀ p ∈ (iop.queries x (bcsChallenge hFS x prf.roots)).zip prf.openings,
-      p.2.1 = oracles p.1.1 p.1.2)
+    (hagree : ∀ j idx val path,
+      ((j, idx), (val, path)) ∈ (iop.queries x (bcsChallenge hFS x prf.roots)).zip prf.openings →
+      val = oracles j idx)
     (hks : IOPKnowledgeSoundnessAt iop rel iopExtract x (bcsChallenge hFS x prf.roots) oracles) :
     rel x (iopExtract x oracles) :=
   hks (iopVerify_eq_true_of_bcsVerify_of_openings_eq hver hagree)
