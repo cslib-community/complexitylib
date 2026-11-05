@@ -59,7 +59,8 @@ Priorities live in this list and in the tiers of [#897].
 
 ### Modern fully homomorphic encryption
 
-Gentry's bootstrapping is instantiated with GSW ([#486]; formal abstract `gsw-fhe`), including
+Gentry's bootstrapping is instantiated with GSW ([#486];
+[theorems](Complexity/Crypto/Computational/Homomorphic/GSW/FullyHomomorphic.lean)), including
 uniform compactness for the leveled wrapper decryption circuits and level-indexed multi-hop
 evaluation. Its remaining follow-up ([#1104]) is Gentry's exact concrete-security loss together
 with the `poly(ℓ, d)` running-time clause of his Theorem 4. Then develop these in reviewable
@@ -100,14 +101,14 @@ families and full-input native runtime.
 ### Public-key, lattice and symmetric constructions ([#640])
 
 - **Sigma protocols and Fiat–Shamir** ([#581]): computational Schnorr signatures under discrete
-  log against strict PPT forgers; eavesdropping security in the strict-PPT model, with the
-  statistical-distance term from sampling `ZMod q`.
-- **Chosen-ciphertext security** ([#1885]): multi-challenge CCA from the single-challenge
-  Cramer–Shoup theorem.
+  log against strict PPT forgers. The arithmetic algorithms and exact typed ROM reduction are
+  proved; strict-PPT identification and eavesdropping results do not discharge this signature
+  endpoint. Remaining work includes shared encoded signing/hash access, final-message freshness,
+  and a polynomial-time private-coin replay/forking realization ([#2568]).
 - **Lattices**: Fiat–Shamir with aborts and signatures from SIS (Lyubashevsky 2009,
   2012); strict-PPT samplers for integer boxes; identification security under SIS; efficiency
-  certificates for the simulator and extractor; full interactive-view simulation; SIS for
-  general moduli; module SIS and module LWE toward Dilithium-style schemes, as theory.
+  certificates for the simulator and extractor; full interactive-view simulation;
+  Dilithium-style signature schemes over module SIS and module LWE, as theory.
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
@@ -116,10 +117,16 @@ families and full-input native runtime.
 
 In order:
 - the `PublicCoin → IP` bridge, with a uniform word verifier and adversarial decoding;
-- parallel and AND/OR composition, and round-by-round knowledge soundness;
+- parallel and AND/OR composition (`Verifier.seqProd`, `Reduction.seqProd`, `relProd`, `relDisj`
+  in `Interactive/AuxZK.lean`) and round-by-round knowledge soundness (`Verifier.RbrKnowledgeSound`,
+  `Verifier.RbrKnowledgeSound.append`, `Verifier.RbrKnowledgeSound.seqProd`,
+  `Verifier.RbrKnowledgeSound.iterate`, `Verifier.RbrKnowledgeSound.bundle` in
+  `Interactive/RbrKnowledge.lean`; parallel and OR protocol composition remain);
 - oracle statements, so a later phase can query an earlier phase's oracle message (virtual
   output oracles, as in ArkLib), with knowledge soundness and zero knowledge in oracle worlds;
-- efficiency-certified simulators and extractors, and auxiliary-input zero knowledge on the core;
+- efficiency-certified simulators and extractors (`Interactive/Efficient.lean`), and
+  auxiliary-input zero knowledge on the core (`Reduction.AuxHVZK`, `Reduction.ZK`,
+  `Reduction.EfficientAuxHVZK`, `Reduction.ComputationalAuxHVZK` in `Interactive/AuxZK.lean`);
 - polynomial commitment and evaluation-query reductions, and the Ligero IOP;
 - the BCS transform to non-interactive arguments in the random-oracle model;
 - VOLE as an ideal functionality, and VOLE-in-the-head;
@@ -178,6 +185,17 @@ index links to canonical definitions rather than keeping a second set.
 - The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
   its input.
 - **Space:** Savitch bounds for general space-constructible functions.
+- **Catalytic space and KMPS collapses** ([#2521]): define native `CSPACE(s,c)` and its
+  nondeterministic/randomized variants, with exact restoration for every initial catalyst and
+  every computation branch; existing `Catalytic/Comparison` routines are only algebraic tools.
+  Formalize Koucký–Mertz–Pyne–Sami, [*Collapsing Catalytic Classes*](https://arxiv.org/abs/2504.08444):
+  `CL = CNL = CPrL` (hence `CBPL = CL`), the general compress-or-compute oracle simulation,
+  catalytic Savitch/complementation and randomized space–catalyst tradeoffs, preserving the
+  paper's parameter ranges, oracle promises and restoration conventions. Include its catalytic
+  hierarchy collapses and lossy-space consequences with their stated resource bounds.
+  Track the newer Koucký–Mertz–Sami [robust catalytic extensions](https://arxiv.org/abs/2605.09648)
+  separately: their broader collapse is conditional on the explicit circuit-hardness assumption,
+  with resetting-error and time regimes distinguished from KMPS's unconditional results.
 - **Randomized logspace** ([#459], [#474]): RL and BPL, `USTCON ∈ RL`, Nisan's generator,
   `BPL ⊆ L²` and Saks–Zhou. The preprint route to native `RL = L` remains open in
   [#1444](https://github.com/cslib-community/complexitylib/issues/1444). Its estimator work in
@@ -851,7 +869,6 @@ not planned, not as proved.
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
 [#2468]: https://github.com/cslib-community/complexitylib/issues/2468
 [#1817]: https://github.com/cslib-community/complexitylib/issues/1817
-[#1885]: https://github.com/cslib-community/complexitylib/pull/1885
 [#2019]: https://github.com/cslib-community/complexitylib/issues/2019
 [#2062]: https://github.com/cslib-community/complexitylib/issues/2062
 [#2063]: https://github.com/cslib-community/complexitylib/issues/2063
@@ -862,3 +879,7 @@ not planned, not as proved.
 [#2084]: https://github.com/cslib-community/complexitylib/issues/2084
 [#2290]: https://github.com/cslib-community/complexitylib/issues/2290
 [#2423]: https://github.com/cslib-community/complexitylib/issues/2423
+
+[#2521]: https://github.com/cslib-community/complexitylib/issues/2521
+
+[#2568]: https://github.com/cslib-community/complexitylib/issues/2568
