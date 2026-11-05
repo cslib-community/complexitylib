@@ -58,8 +58,9 @@ Priorities live in this list and in the tiers of [#897].
   malicious compiler, and MPC simulation remain open in
   [#1212](https://github.com/cslib-community/complexitylib/issues/1212).
   `Crypto/Protocols/Commitment/World` supplies an original single-session phased abort
-  functionality with receiver-poll secrecy and an immutable committed bit. Its OT simulation
-  consumer is tracked separately in [#2647](https://github.com/cslib-community/complexitylib/issues/2647);
+  functionality with receiver-poll secrecy and an immutable committed bit.
+  `OTCommitment/World` connects both corruption-specific laws to its actual transitions,
+  including prefix-dependent withholding, in semantic `StateT PMF` drivers. Realized programs,
   arbitrary scheduling, composition and efficient simulation remain open.
 - **Regev's worst-case to average-case reduction.** For suitable `q` and Gaussian noise rate
   `α` with `αq > 2√n`, an efficient search-LWE algorithm yields a quantum polynomial-time
