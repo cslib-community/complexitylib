@@ -192,9 +192,6 @@ theorem eval_game_modLeveledAdversary_eq_map_coins (E : Scheme)
       (chooseReplay (evaluateKey n keys).1 chosen) encSeed guessSeed))]
   rfl
 
-set_option maxHeartbeats 800000 in
--- Checking the composition normalizes the nested key, choice and ciphertext replay expressions;
--- the default 200000-heartbeat budget is exhausted during that definitional equality check.
 /-- The complete replay is native polynomial time in the unary parameter and complete tape,
 for either fixed challenge world. This does not assert a multiplicative runtime ratio to the
 adversary's running time. -/
@@ -245,9 +242,17 @@ adversary's running time. -/
   have htape := ComputableInPolyTime.snd encUnary encBits
   have hremaining := htape.bitsDropWithInput (hkeyCoins.comp hn)
   have hrest := hremaining.bitsDropWithInput (hchoiceBudget.comp hn)
+  -- Explicit replay arguments avoid unfolding the whole selector while inferring its inputs.
   have hchosen : ComputableInPolyTime chosen (encPair encUnary encBits)
       (encPair (encPair encBool encBool) encBits) :=
-    computableInPolyTime_modLeveledChooseCoins hkey hzero hn (hcoins.comp hn) (hdepth.comp hn)
+    computableInPolyTime_modLeveledChooseCoins
+      (evaluateKey := evaluateKey) (evaluateZero := evaluateZero)
+      (n := fun p : ℕ × List Bool => p.1)
+      (indexCoins := fun p => coins p.1) (depth := fun p => depth p.1)
+      (capacity := fun p => capacity p.1) (keyCoins := fun p => keyCoins p.1)
+      (challengePk := fun p => (target p).1)
+      (tape := fun p => (p.2.drop (keyCoins p.1)).take (choiceBudget p.1))
+      hkey hzero hn (hcoins.comp hn) (hdepth.comp hn)
       (hcapacity.comp hn) (hkeyCoins.comp hn) htarget.fst'
       (hremaining.bitsTakeWithInput (hchoiceBudget.comp hn))
   let challenge := fun (p : ℕ × List Bool) => evaluateEncrypt
