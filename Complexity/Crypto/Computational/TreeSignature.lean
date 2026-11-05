@@ -13,7 +13,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decod
 public import Complexity.Languages.Probabilistic.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
@@ -392,16 +392,16 @@ theorem computableInPolyTime_certify :
     simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate] at h
     have hx := length_le_encChainInput x
     exact h.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (by omega) ds))
-  refine ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.foldlWith_spec
+  refine (ComputableInPolyTime.foldlWith_spec
     (encP := encPair encUnary encBits) (encA := encBool) (encL := encBits)
     (par := fun x : ChainInput => x.1) (list := ChainInput.bits)
     (init := fun x => (([], nodeKey S T coins x.parameter x.secret [], []) : CertState))
     (step := fun par state a => certifyStep S T coins par.1 par.2 state a)
-    (ComputableTidilyInPolyTime.fst _ _) (ComputableTidilyInPolyTime.snd _ _)
+    (ComputableInPolyTime.fst _ _) (ComputableInPolyTime.snd _ _)
     (((ComputableInPolyTime.const []).prod
       ((((ComputableInPolyTime.fst _ _).prod (.const [])).trans
-        (computableInPolyTime_nodeKey (T := T) hcoins)).prod (.const []))).tidy)
-    (computableInPolyTime_certifyStep (T := T) hcoins).tidy
+        (computableInPolyTime_nodeKey (T := T) hcoins)).prod (.const []))))
+    (computableInPolyTime_certifyStep (T := T) hcoins)
     (fun x consumed state => CertState.node state = consumed ∧
       CertState.keyPair state = nodeKey S T coins x.parameter x.secret consumed ∧
       (CertState.certificates state).length = consumed.length ∧
@@ -526,7 +526,7 @@ private theorem computableInPolyTime_chainCheck :
     (hs1.fst'.bool_and'
       ((hs1.snd'.prod ((hs2.fst'.trans (.of_finite Bool.toNat)).prod hs2.snd')).trans
         S.verify_polyTime)).prod hs2.snd'.fst'
-  refine ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.foldlWith_of_bounded_growth
+  refine ComputableInPolyTime.foldlWith_of_bounded_growth
     (encP := encBool) (encA := encPair encBool (encPair encBits encBits))
     (encL := encList (encPair encBool (encPair encBits encBits)))
     (par := fun _ => false)
@@ -534,9 +534,9 @@ private theorem computableInPolyTime_chainCheck :
       (q.2.1.take (q.2.1.length - 1)).zip q.2.2)
     (init := fun q => (true, q.1))
     (step := fun _ state e => verifyStep S state e)
-    (.const false) hzip.tidy (((ComputableInPolyTime.const true).prod (.fst _ _)).tidy) hstep'.tidy
+    (.const false) hzip ((ComputableInPolyTime.const true).prod (.fst _ _)) hstep'
     (growth := fun q => (encIn q).length + 3)
-    (PolyBounded.self.add (.const 3)) ?_)
+    (PolyBounded.self.add (.const 3)) ?_
   intro q state e he
   have hmem := length_le_encList_of_mem (encPair encBits encBits) (List.of_mem_zip he).2
   have hle : (encList (encPair encBits encBits) q.2.2).length ≤ (encIn q).length := by
