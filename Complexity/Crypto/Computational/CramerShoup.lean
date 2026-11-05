@@ -502,33 +502,33 @@ private noncomputable def cramerShoupExactCollisionInner
     (encodeAD : F.Desc × AD → List Bool) (H : F.Desc × List Bool → List Bool)
     (isElem : F.Desc × List Bool → Bool) (adversary : ADCCA2AdversaryOf Msg AD)
     (bit : Bool) (n : ℕ) (d : F.Desc)
-    (α β γ σ τ σ₁ τ₁ σ₂ τ₂ : ZMod (F.order d)) : Game :=
+    (α β γ σ τ σ₁ τ₁ σ₂ τ₂ : ZMod (F.order d)) : Game := do
   let sk := F.skNatOfZMod d σ τ σ₁ τ₁ σ₂ τ₂
   let u := F.encode d (α • F.generator d)
   let v := F.encode d (β • F.generator d)
   let w := F.encode d (γ • F.generator d)
   let pk := F.encodeCramerShoupPublicKey d u sk
-  (ProbComp.eval ((OracleComp.interpret
+  let choiceOut ← ProbComp.eval ((OracleComp.interpret
     (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
-    (adversary.choose n pk)).run ())).bind fun choiceOut =>
-    let choice := choiceOut.1
-    if isElem (d, encodeMsg (d, choice.1.1.1)) &&
-        isElem (d, encodeMsg (d, choice.1.1.2)) then
-      let m := if bit then encodeMsg (d, choice.1.1.2) else encodeMsg (d, choice.1.1.1)
-      let ad := encodeAD (d, choice.1.2)
-      let ct := F.encodeCramerShoupChallenge H d sk v w m ad
-      runFinderOracle (F.cramerShoupCollisionPhase2Reply hasAD H isElem d sk ct ad)
-        (fun req =>
-          let q := splitCramerShoupQuery hasAD req
-          F.isCramerShoupCollision H d q.1 q.2 ct ad)
-        (fun req =>
-          let q := splitCramerShoupQuery hasAD req
-          extractCramerShoupTuple q.1 q.2)
-        (adversary.guess n choice.2 ct) none
-        (fun cand => isCollisionFor (F.cramerShoupHashMod H) (fun _ _ _ => true) n d
-          cand (extractCramerShoupTuple ct ad))
-    else PMF.pure false
+    (adversary.choose n pk)).run ())
+  let choice := choiceOut.1
+  if isElem (d, encodeMsg (d, choice.1.1.1)) &&
+      isElem (d, encodeMsg (d, choice.1.1.2)) then
+    let m := if bit then encodeMsg (d, choice.1.1.2) else encodeMsg (d, choice.1.1.1)
+    let ad := encodeAD (d, choice.1.2)
+    let ct := F.encodeCramerShoupChallenge H d sk v w m ad
+    runFinderOracle (F.cramerShoupCollisionPhase2Reply hasAD H isElem d sk ct ad)
+      (fun req =>
+        let q := splitCramerShoupQuery hasAD req
+        F.isCramerShoupCollision H d q.1 q.2 ct ad)
+      (fun req =>
+        let q := splitCramerShoupQuery hasAD req
+        extractCramerShoupTuple q.1 q.2)
+      (adversary.guess n choice.2 ct) none
+      (fun cand => isCollisionFor (F.cramerShoupHashMod H) (fun _ _ _ => true) n d
+        cand (extractCramerShoupTuple ct ad))
+  else pure false
 
 /-- Exact-exponent collision game matching the collision event between `cramerShoupGame2` and
 `cramerShoupGame3`. -/
@@ -1332,24 +1332,24 @@ private noncomputable def cramerShoupCCA2InnerSK
     (H : F.Desc × List Bool → List Bool)
     (isElem : F.Desc × List Bool → Bool)
     (d : F.Desc) (adversary : WordADCCA2Adversary AD) (bit : Bool) (n : ℕ)
-    (α σ τ σ₁ τ₁ σ₂ τ₂ : ZMod (F.order d)) (useExactB : Bool) : Game :=
+    (α σ τ σ₁ τ₁ σ₂ τ₂ : ZMod (F.order d)) (useExactB : Bool) : Game := do
   let sk := F.skNatOfZMod d σ τ σ₁ τ₁ σ₂ τ₂
   let pk := F.encodeCramerShoupPublicKey d (F.encode d (α • F.generator d)) sk
-  (ProbComp.eval ((OracleComp.interpret
+  let choiceOut ← ProbComp.eval ((OracleComp.interpret
     (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
-    (adversary.choose n pk)).run ())).bind fun choiceOut =>
-    if isElem (d, choiceOut.1.1.1.1) && isElem (d, choiceOut.1.1.1.2) then
-      if useExactB then
-        (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β =>
-          F.cramerShoupCCA2InnerB hasAD encodeAD H isElem d adversary bit n
-            α σ τ σ₁ τ₁ σ₂ τ₂ choiceOut β
-      else
-        (ProbComp.eval (F.sampleExp n d)).bind fun b =>
-          F.cramerShoupCCA2InnerB hasAD encodeAD H isElem d adversary bit n
-            α σ τ σ₁ τ₁ σ₂ τ₂ choiceOut (b : ZMod (F.order d))
+    (adversary.choose n pk)).run ())
+  if isElem (d, choiceOut.1.1.1.1) && isElem (d, choiceOut.1.1.1.2) then
+    if useExactB then
+      let β ← PMF.uniformOfFintype (ZMod (F.order d))
+      F.cramerShoupCCA2InnerB hasAD encodeAD H isElem d adversary bit n
+        α σ τ σ₁ τ₁ σ₂ τ₂ choiceOut β
     else
-      PMF.pure false
+      let b ← ProbComp.eval (F.sampleExp n d)
+      F.cramerShoupCCA2InnerB hasAD encodeAD H isElem d adversary bit n
+        α σ τ σ₁ τ₁ σ₂ τ₂ choiceOut (b : ZMod (F.order d))
+  else
+    pure false
 
 private theorem advantage_cramerShoupCCA2InnerSK_le
     (hasAD : Bool) {AD : Type} (encodeAD : F.Desc × AD → List Bool)
@@ -1436,7 +1436,8 @@ private theorem cramerShoupMsgCCA2Game_pure_eq_innerSK
     congrArg _ (funext fun τ => congrArg _ (funext fun σ₁ =>
       congrArg _ (funext fun τ₁ => congrArg _ (funext fun σ₂ =>
         congrArg _ (funext fun τ₂ => ?_)))))))
-  simp only [cramerShoupCCA2InnerSK, cramerShoupCCA2InnerB, ↓reduceIte,
+  simp only [cramerShoupCCA2InnerSK, cramerShoupCCA2InnerB, PMF.monad_bind_eq_bind,
+    PMF.monad_pure_eq_pure, ↓reduceIte,
     encodeCramerShoupPublicKey_encode, skNatOfZMod,
     csPkU, csPkH, csPkH₁, csPkH₂, csSkS, csSkT, csSkS₁, csSkT₁, csSkS₂, csSkT₂,
     csChoiceMsg₀, csChoiceMsg₁, csChoiceAD, ZMod.natCast_zmod_val]
@@ -1501,6 +1502,7 @@ theorem advantage_cca2ADGameOn_cramerShoupADGroupCCA2Game_le
       F.cca2ADPhase1Oracle_cramerShoupADDecryptOpt]
     refine congrArg _ (funext fun a => congrArg _ (funext fun sk => ?_))
     dsimp only [cramerShoupCCA2InnerSK]
+    simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
     rw [F.encodeCramerShoupPublicKey_eq_skNatOfZMod (d n) (a : ZMod (F.order (d n))) sk,
       F.cramerShoupPhase1Oracle_eq_skNatOfZMod true H isElem hmem (d n) sk]
     refine congrArg _ (funext fun choiceOut => ?_)
@@ -1591,6 +1593,7 @@ theorem advantage_cca2GameOn_cramerShoupGroupCCA2Game_le
       F.cca2Phase1Oracle_cramerShoupDecryptOpt]
     refine congrArg _ (funext fun a => congrArg _ (funext fun sk => ?_))
     dsimp only [cramerShoupCCA2InnerSK, CCA2AdversaryOf.toADUnit]
+    simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
     rw [eval_run_interpret_map_bind,
       F.encodeCramerShoupPublicKey_eq_skNatOfZMod (d n) (a : ZMod (F.order (d n))) sk,
       F.cramerShoupPhase1Oracle_eq_skNatOfZMod false H isElem hmem (d n) sk]
