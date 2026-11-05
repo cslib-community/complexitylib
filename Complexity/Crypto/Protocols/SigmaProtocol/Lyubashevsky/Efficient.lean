@@ -889,6 +889,30 @@ private theorem computableTidilyInPolyTime_challengeIntList :
 def inBoxList (m B : ℕ) (z : List ℤ) : Bool :=
   (List.range m).all fun j => decide ((z.getD j 0).natAbs ≤ B)
 
+/-- Polynomial-time evaluation on the displayed binary/unary encodings. -/
+@[fun_prop]
+theorem computableInPolyTime_listDot :
+    ComputableInPolyTime (fun p : ℕ × List ℤ × List ℤ => listDot p.1 p.2.1 p.2.2)
+      (encPair encUnary (encPair (encList encIntBin) (encList encIntBin))) encIntBin := by
+  unfold listDot
+  fun_prop
+
+/-- Polynomial-time evaluation on the displayed binary/unary encodings. -/
+@[fun_prop]
+theorem computableInPolyTime_challengeIntList :
+    ComputableInPolyTime (fun p : ℕ × List Bool => challengeIntList p.1 p.2)
+      (encPair encUnary encBits) (encList encIntBin) := by
+  unfold challengeIntList
+  fun_prop
+
+/-- Polynomial-time evaluation on the displayed binary/unary encodings. -/
+@[fun_prop]
+theorem computableInPolyTime_inBoxList :
+    ComputableInPolyTime (fun p : ℕ × ℕ × List ℤ => inBoxList p.1 p.2.1 p.2.2)
+      (encPair encUnary (encPair encNat (encList encIntBin))) encBool := by
+  unfold inBoxList
+  fun_prop
+
 /-- Check whether `A z = w + T ĉ` modulo `q` across the first `n` rows. -/
 def lyubashevskyVerifyEqList (n m k q : ℕ) (A T : List (List ℤ)) (w z : List ℤ)
     (c : List Bool) : Bool :=

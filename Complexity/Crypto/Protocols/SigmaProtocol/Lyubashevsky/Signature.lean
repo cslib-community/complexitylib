@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Crypto.Protocols.SigmaProtocol.Identification
+public import Complexity.Probability.IID
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky
 import Complexity.Probability.PMF
 
@@ -483,6 +484,34 @@ theorem fsAbortSignBounded_apply_none (P : SigmaProtocol X Y T C (Option Z))
     · rintro (_ | sig) hne
       · exact absurd rfl hne
       · simp
+
+/-- Exact bounded signing is independent sampling followed by selection of the first success,
+including after a deterministic serialization of each successful signature. -/
+theorem fsAbortSignBounded_map_eq_iid {W : Type u}
+    (P : SigmaProtocol X Y T C (Option Z)) (hash : M × T → C)
+    (encode : T × Z → W) (K : ℕ) (x : X) (y : Y) (msg : M) :
+    (fsAbortSignBounded P hash K x y msg).map (Option.map encode) =
+      (PMF.iid ((fsAbortSignAttempt P hash x y msg).map (Option.map encode)) K).map
+        (fun attempts => ((List.ofFn attempts).find? Option.isSome).getD none) := by
+  induction K with
+  | zero => simp [fsAbortSignBounded, PMF.iid]
+  | succ K ih =>
+    simp only [fsAbortSignBounded, PMF.iid, PMF.monad_bind_eq_bind,
+      PMF.monad_pure_eq_pure, PMF.map_bind, PMF.bind_map]
+    congr 1
+    funext attempt
+    cases attempt with
+    | none => simpa [PMF.map_comp, Function.comp_def, List.ofFn_cons] using ih
+    | some sig =>
+      simp only [Function.comp_apply, Option.map_some, PMF.pure_map, PMF.map_comp]
+      have hf : ((fun attempts : Fin (K + 1) → Option W =>
+          ((List.ofFn attempts).find? Option.isSome).getD none) ∘
+          Fin.cons (some (encode sig))) =
+          Function.const (Fin K → Option W) (some (encode sig)) := by
+        funext attempts
+        simp
+      rw [hf]
+      exact (PMF.map_const _ _).symm
 
 /-- **Forking extraction for Fiat–Shamir with aborts.** Two valid signatures `(t, z₁)` and
 `(t, z₂)` sharing a commitment `t` on points mapped to distinct challenges `h₁ (msg₁, t) ≠
