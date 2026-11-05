@@ -34,12 +34,13 @@ in `Memory.Prog` via `realize`:
 
 ## Main results
 
-* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_deletePrepGen`: `Realizes` certificate
-  for `deletePrepGenProg`.
-* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_deleteFinishGen`: `Realizes`
-  certificate for `deleteFinishGenProg`.
-* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.delete_bucket_spec`: combined two-phase deletion
-  correctness, `BucketStateInv` preservation, and amortized `memoryCost` bound.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_deletePrepGen`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.deletePrepProg_bucket_spec`: `Realizes`
+  certificate and bucket-level specification for `deletePrepProg`.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.realizes_deleteFinishGen`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.deleteFinishProg_bucket_spec`: `Realizes`
+  certificate, `BucketStateInv` preservation, and amortized `memoryCost` bound for
+  `deleteFinishProg`.
 -/
 
 public section

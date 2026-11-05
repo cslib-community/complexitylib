@@ -38,10 +38,10 @@ Word-RAM `Code` via `Realizes.code_spec`.
 
 ## Main results
 
-* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.validHistory_queryBodyProg`,
-  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.validHistory_insertBodyProg`,
-  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.validHistory_deletePrepProg`,
-  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.validHistory_deleteFinishProg`: memory history
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.validProg_queryBody`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.validProg_insertBody`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.validProg_deletePrep`,
+  `Cslib.DataStructure.Dictionary.WordRAM.Succinct.validProg_deleteFinish`: memory history
   admissibility for the four top-level `Memory.Prog` dictionary subroutines.
 -/
 
