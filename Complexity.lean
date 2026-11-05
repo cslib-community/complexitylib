@@ -3161,6 +3161,7 @@ public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.E
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrIdentification
 public import Complexity.Crypto.Protocols.SigmaProtocol.SchnorrSignature
 public import Complexity.Crypto.Protocols.Signature.RandomOracle
+public import Complexity.Crypto.Protocols.VOLE.AdaptiveMulCheck
 public import Complexity.Crypto.Protocols.VOLE.Basic
 public import Complexity.Crypto.Protocols.VOLE.BatchMulCheck
 public import Complexity.Crypto.Protocols.VOLE.MaskedMulCheck
