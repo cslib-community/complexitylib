@@ -2638,6 +2638,7 @@ public import Complexity.Computability.Probabilistic.Realization.OpenOracleSimul
 public import Complexity.Computability.Probabilistic.Realization.OracleSimulation
 public import Complexity.Computability.Probabilistic.Repeat
 public import Complexity.Computability.Probabilistic.Sampling
+public import Complexity.Computability.Probabilistic.Sampling.F4
 public import Complexity.Computability.Probabilistic.Selection
 public import Complexity.Computability.Probabilistic.Traverse
 public import Complexity.Computability.Probabilistic.UniformNat
@@ -4038,6 +4039,7 @@ public import Complexity.Languages.Probabilistic.RandomOracle
 public import Complexity.Languages.Probabilistic.RandomOracle.Probabilistic
 public import Complexity.Languages.Probabilistic.RandomPermutation
 public import Complexity.Languages.Probabilistic.Repeat
+public import Complexity.Languages.Probabilistic.Sampling.F4
 public import Complexity.Languages.Probabilistic.Selection
 public import Complexity.Languages.Probabilistic.Semantics
 public import Complexity.Languages.Probabilistic.Sharing
