@@ -168,11 +168,14 @@ families and full-input native runtime.
   The arithmetic algorithms and exact typed ROM reduction are
   proved; strict-PPT identification and eavesdropping results do not discharge this signature
   endpoint. Remaining work includes shared encoded signing/hash access, final-message freshness,
-  and an efficient realization of the full forking reduction ([#2568]). The private-coin replay
-  prerequisite now includes a full-input oracle-PPT certificate, tape preparation, and joint
-  external-state preservation ([#2579]). Shared replacement laws derive a key-independent tape
-  from actual PPT key-generation support and transport joint-state mixtures through the existing
-  ROM game ([#2652]); the concrete word-forger adapter remains [#2636].
+  and an efficient realization of the full forking reduction ([#2568]).
+- **Oracle forger replay**: the private-coin replay prerequisite now includes a full-input
+  oracle-PPT certificate, tape preparation, and joint external-state preservation ([#2579]).
+  Shared replacement laws derive a key-independent tape from actual PPT key-generation support
+  and transport joint-state mixtures through the existing
+  ROM game ([#2652]). The word-forger adapter ([#2636]) now has an efficient full-input guarded
+  replay and exact shared-world/EUF-CMA equality with separate signing/hash channels. Applying it
+  to Schnorr's encoded query space and realizing the complete efficient reduction remain open.
 - **Lattices**: full random-oracle EUF-CMA signatures from SIS (Lyubashevsky 2009,
   2012) remain open. Strict-PPT box sampling, bounded signing and negligible availability are
   proved. The public-key-only fork milestone ([#2620]) bounds accepting-fork probability by
