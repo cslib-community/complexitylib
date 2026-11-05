@@ -7,6 +7,7 @@ module
 -- upstream: candidate
 public import Complexity.Foundations.Probability.ConditionalProductMean
 public import Complexity.Foundations.Probability.RootMetric.WeightedError
+public import Complexity.Foundations.Probability.RootMetric.Minkowski
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
@@ -234,6 +235,39 @@ theorem rowNormPow_clipped_sum_le
   rw [one_mul, abs_of_nonneg (show 0 ≤ min 1 (|∑ i ∈ S, e i x y| / a x y) by positivity),
     abs_of_nonneg (show 0 ≤ ∑ i ∈ S, min 1 (|e i x y| / a x y) by
       exact sum_nonneg fun i _ => le_min (by norm_num) (div_nonneg (abs_nonneg _) haxy.le))]
+  exact pow_le_pow_left₀ (by positivity) (min_abs_sum_div_le S (ha x y) _) 4
+
+/-- Correlated signed clipped means pay the fourth power of the sum of rooted budgets.
+This is Minkowski on the unchanged joint slice, including empty sums and zero budgets. -/
+theorem rowNormPow_clipped_sum_le_pow_sum
+    {I Ω V : Type*} [Fintype Ω] [Fintype V] (S : Finset I)
+    {N u : ℝ} (hNu : 0 ≤ N * u)
+    (X Y : Ω → V → Prop) [∀ σ x, Decidable (X σ x)] [∀ σ y, Decidable (Y σ y)]
+    (e : I → V → V → ℝ) (a : V → V → ℝ) (ha : ∀ x y, 0 < a x y)
+    (ε : I → ℝ)
+    (herr : ∀ i ∈ S, rowNormPow 4 N u X Y
+      (fun _ x y => min 1 (|e i x y| / a x y)) ≤ ε i) :
+    rowNormPow 4 N u X Y (fun _ x y => min 1 (|∑ i ∈ S, e i x y| / a x y)) ≤
+      (∑ i ∈ S, ε i ^ (4⁻¹ : ℝ)) ^ 4 := by
+  have hε (i : I) (hi : i ∈ S) : 0 ≤ ε i :=
+    (rowNormPow_nonneg hNu _).trans (herr i hi)
+  apply le_trans ?_ (by
+    simpa only [one_mul] using rowNormPow_sum_le_pow_sum (X := X) (by decide : 4 ≠ 0)
+      hNu Y S (fun i _ x y => min 1 (|e i x y| / a x y)) (fun _ => 1)
+      (fun i => ε i ^ (4⁻¹ : ℝ)) (fun _ _ => by norm_num)
+      (fun i hi => Real.rpow_nonneg (hε i hi) _)
+      (fun i hi => by
+        have he : (ε i ^ (4⁻¹ : ℝ)) ^ 4 = ε i := by
+          convert Real.rpow_inv_natCast_pow (n := 4) (hε i hi) (by decide) using 1
+        rw [he]
+        exact herr i hi))
+  apply (rowNormPow_le_mul hNu (c := 1) ?_).trans_eq (one_mul _)
+  intro σ x y _ _
+  have haxy := ha x y
+  rw [one_mul, abs_of_nonneg (show 0 ≤ min 1 (|∑ i ∈ S, e i x y| / a x y) by positivity),
+    abs_of_nonneg (show 0 ≤ ∑ i ∈ S, min 1 (|e i x y| / a x y) by
+      exact sum_nonneg fun i _ => le_min (by norm_num)
+        (div_nonneg (abs_nonneg _) (ha x y).le))]
   exact pow_le_pow_left₀ (by positivity) (min_abs_sum_div_le S (ha x y) _) 4
 
 end Cslib

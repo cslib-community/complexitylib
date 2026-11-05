@@ -1245,15 +1245,53 @@ The structural charge is fixed before all source, terminal and bin exponents.
 `initialClippedRootEndpoint_le` raises the whole payment to the fourth power and combines
 it with the rounded coefficient at the actual scheduled endpoint, with zero endpoints
 charged zero. Apply it separately at $d$ and $2d$. This finite allocation retains the prefix
-slack cost; it does not absorb cardinality cubes or ordinary-progress/preparation costs.
+slack cost; it does not pay ordinary progress or preparation.
 
 `pairedSample_initial_compressed_clipped_precision` uses the actual fine/coarse
 `lastBudget` calls, strict lower budgets and each direct request's own precision. Equal
 budgets and zero endpoints have exact zero charges; reset-right must still succeed at
 positive endpoints. `completedGroup_initial_compressed_clipped_mean` preserves means
 through each actual stationary completion. `initial_compressed_prefix_clipped_mean`
-then sums correlated signed group means, retaining the bin and prefix cardinality cubes.
-Positive domination is used before signed pairing; clipping stays after the common mean.
+then sums correlated signed group means. Both now use finite Minkowski on the unchanged
+joint slice: group moments are bounded by $(\sum_i \epsilon_i^{1/4})^4$, and prefix moments
+by $(\sum_j \epsilon_j^{1/4})^4$. There is no bin-count or prefix-count cube in this clipped
+route. Positive domination precedes signed pairing; clipping stays after the common mean.
+The ordinary centered-noise route retains its own previous costs.
+
+[`initialClippedRootWindow`](../../Complexity/Foundations/Probability/HierarchyInitialPerturbation.lean)
+is a numerical sum of the two endpoint factors above, at $d$ and $2d$. It omits zero
+endpoints and equal-budget pairs. Write this sum as $W(M,d,a,r)$ and set
+$C=\max(512(6\,\mathrm{binCap}+3)^3,32768\,\mathrm{binCap}^3)$.
+`initialClippedRootGroupCharge_le` and `initialClippedRootPrefix_le` bound the actual
+finite prefix transport by
+$$
+\left(2C^{1/4}|c|\,2^{-\mathrm{requestPrecision}(M,r)}\,
+2^{-\mathrm{rankCharge}}\sum_{j<p} W(M,\mathrm{dyadicSlack}(m,j),a,r)\right)^4,
+\qquad m=\lfloor\log_2 M\rfloor+1.
+$$
+Consequently `initialClippedRootPrefix_paid` pays this transport at parent precision
+provided the explicit joint allocation condition
+$$
+2C^{1/4}\sum_{j<p}W(M,\mathrm{dyadicSlack}(m,j),a,r)
+\le 2^{\mathrm{rankCharge}}
+$$
+is proved. This condition contains no child error, source precision or field-width factor.
+For uniform use, choose the structural charge first and prove the condition for every
+allowed budget and terminal exponent. The theorem does not assert that the current
+unbounded schedule satisfies it. In particular, stationarity preserves the clipped mean,
+so a spectral sampling contraction cannot be applied to erase its slack growth.
+The geometric offset decay alone does not pay the remaining sum over prefix slacks.
+A telescoping comparison or a proved relation to the actual compression tail weights is
+still needed for that unrestricted conclusion.
+
+The [finite allocation regressions](../../ComplexityTests/InitialTwoPayment.lean) fix charge
+$64$ before the exponents and field width, take positive budget $M=4$, and pay all three
+prefix groups for terminal exponents $0,1,2$. The matching bin has literal endpoint
+budgets $3$ and $2$, whereas an adjacent bin has equal zero endpoints. This is a bounded
+numerical allocation test, not recursive availability or a uniformly paid reserve.
+Its parent precision is negative: the bound permits a large error and does not establish
+positive requested precision or small-error payment. The separate executed-child fixtures
+retain nonzero child output and nonzero child error; they do not assert that stronger claim.
 
 The literal computed first-coordinate consumer is
 [`initial_compressed_precision_clipped_first`](../../Complexity/Foundations/Probability/HierarchyTransportedPreparation.lean).
@@ -1261,9 +1299,12 @@ It adds the semantic omitted/inactive deficit to the clipped prefix perturbation
 `initialComputedPrecisionMoment` takes the minimum of that payment and the previous first
 mean cost. The existing precision four-statistic, `actualFourMax`, raw `clippedError` and
 sharp-reserve proofs consume this minimum. Ordinary first sampling noise and saturated
-second preparation retain their previous costs. Their schedule-dependent payment,
-cardinality-cube absorption and the simultaneous changing-request
-invariant remain open; no uniformly paid reserve or native endpoint follows here.
+second preparation retain their previous costs.
+`initialComputedPrecisionMoment_first_paid` consumes the joint window condition in this
+same first-mean minimum and leaves the semantic omitted/inactive deficit explicit.
+Uniform window absorption, the separate ordinary-noise and preparation payments, and the
+simultaneous changing-request invariant remain open; no uniformly paid reserve or native
+endpoint follows here.
 The [two-atom regression](../../ComplexityTests/InitialTwoPayment.lean) shows why: scalar
 rooted fourth error $1/32$ can coexist with centered normalized fourth error $1$ after
 physical scaling. It also distinguishes clipping after averaging from averaging clipped

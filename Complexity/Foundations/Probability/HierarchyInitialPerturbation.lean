@@ -22,8 +22,10 @@ computed history and its changing budgets. They do not prove the simultaneous ch
 or replace production dense leaves. Positive carried-child clipped means integrate onto
 own-request rooted precision before signed pairing and correlated prefix addition. The
 piecewise coefficient retains rounded masses and sharp fine-bin decay. Actual scheduled
-precision pays the endpoint with an explicit slack window. Ordinary sampling progress,
-cardinality-cube absorption and saturated preparation remain separate payments.
+precision pays both endpoints with an explicit slack window. Finite Minkowski removes
+bin and prefix cardinality cubes from clipped means. A numerical window condition pays
+the finite prefix; its uniform absorption, ordinary sampling progress and saturated
+preparation remain separate obligations.
 -/
 public section
 noncomputable section
@@ -877,7 +879,7 @@ theorem completedGroup_initial_compressed_clipped_mean
         M d (.pilotInput ⟨0, HP.k_pos⟩) r = some G ∧
       rowNormPow 4 P r.source.rate Xs Ya
         (fun _ x y => min 1 (|rowSliceMean Xs Ya (F - G) x y| / a x y)) ≤
-        (#B.bins : ℝ) ^ 3 * ∑ i ∈ B.bins, ε i := by
+        (∑ i ∈ B.bins, ε i ^ (4⁻¹ : ℝ)) ^ 4 := by
   dsimp only
   let Xs := X s (side P ks) (CopyPadding.identifier B.padding ss)
   let Ya := Y t (side P ka) (CopyPadding.identifier B.padding st)
@@ -900,16 +902,16 @@ theorem completedGroup_initial_compressed_clipped_mean
   rw [he]
   have hNu : 0 ≤ (P : ℝ) * r.source.rate := by
     rw [hs]; exact mul_nonneg (Nat.cast_nonneg _) (rate_pos ks).le
-  apply (rowNormPow_clipped_sum_le B.bins hNu Xs Ya
-    (fun i => rowSliceMean Xs Ya (A i - C i)) a ha).trans
-  exact mul_le_mul_of_nonneg_left (sum_le_sum herr) (by positivity)
+  exact rowNormPow_clipped_sum_le_pow_sum B.bins hNu Xs Ya
+    (fun i => rowSliceMean Xs Ya (A i - C i)) a ha ε herr
 
-/-- Clipped conditional-mean cost at the actual fine/coarse budgets. The rounded-mass
-coefficient uses sharp fine-bin decay. Equal and exhausted endpoints retain exact zero charges. -/
+/-- Clipped conditional-mean cost at the actual fine/coarse budgets, summed by finite
+Minkowski without a bin-count cube. The rounded coefficient uses sharp fine-bin decay.
+Equal and exhausted endpoints retain exact zero charges. -/
 @[expose] def initialClippedRootGroupCharge
     (M d : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
     (ka : ℕ) (coefficient : ℝ) : ℝ :=
-  (#B.bins : ℝ) ^ 3 * ∑ bin ∈ B.bins,
+  (∑ bin ∈ B.bins, (
     let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
       r.source (midpoint r) r.terminal (B.binRate bin)
     let fine := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
@@ -917,7 +919,230 @@ coefficient uses sharp fine-bin decay. Equal and exhausted endpoints retain exac
     if fine = coarse then 0 else
     8 * (B.initialClippedRootCoefficient ka bin) *
       (B.initialEndpointCharge fine Q.direct coefficient +
-        B.initialEndpointCharge coarse Q.direct coefficient)
+        B.initialEndpointCharge coarse Q.direct coefficient)) ^ (4⁻¹ : ℝ)) ^ 4
+
+/-- Both actual endpoint slacks in the cardinality-free finite allocation. Equal
+budgets cost zero; no child accuracy occurs in this numerical window. The remaining
+slack growth must be paid before a uniform structural-charge claim. -/
+@[expose] def initialClippedRootWindow (M d ka : ℕ)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) : ℝ :=
+  ∑ bin ∈ B.bins,
+    if LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin)) =
+      LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin)) then 0 else
+    (if LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin)) = 0 then 0 else
+      (2 : ℝ) ^ ((d : ℝ) / (16 * B.slack) + 1 / 16 - 3 * |(bin : ℝ) - ka| / 4)) +
+      (if LogSpaceEstimation.lastBudget M (2 * d) B.slack
+        (B.sampleScale r (some bin)) = 0 then 0 else
+        (2 : ℝ) ^ (((2 * d : ℕ) : ℝ) / (16 * B.slack) + 1 / 16 -
+          3 * |(bin : ℝ) - ka| / 4))
+
+/-- Sharp scheduled endpoints pay an actual completed-group mean without a bin-count
+cube. The explicit finite window retains both endpoint losses and the original guards.
+No centered-noise or preparation conclusion follows. -/
+theorem initialClippedRootGroupCharge_le
+    (hcharge : 0 ≤ B.rankCharge) (hrate : B.binRate = rate) (H : Horizon P)
+    (M d ks ka : ℕ) (ha : ka ≤ H.maxExponent)
+    (hi : ∀ bin ∈ B.bins, bin ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩)) (coefficient : ℝ) :
+    B.initialClippedRootGroupCharge M d r ka coefficient ≤
+      (2 * (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^
+        (4⁻¹ : ℝ) * |coefficient| *
+        (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge) *
+        B.initialClippedRootWindow M d ka r) ^ 4 := by
+  let C := max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)
+  let K := C ^ (4⁻¹ : ℝ) * |coefficient| *
+    (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge)
+  let w := fun (δ bin : ℕ) =>
+    if LogSpaceEstimation.lastBudget M δ B.slack (B.sampleScale r (some bin)) = 0 then 0 else
+      (2 : ℝ) ^ ((δ : ℝ) / (16 * B.slack) + 1 / 16 - 3 * |(bin : ℝ) - ka| / 4)
+  have hcap := B.binCap_nonneg
+  have hC : 0 ≤ C := le_trans (by positivity : 0 ≤ 32768 * B.binCap ^ 3) (le_max_right _ _)
+  have hK : 0 ≤ K := by dsimp only [K]; positivity
+  have hKpow : K ^ 4 = C * coefficient ^ 4 *
+      ((2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge)) ^ 4 := by
+    have hc : (C ^ (4⁻¹ : ℝ)) ^ 4 = C := by
+      convert Real.rpow_inv_natCast_pow (n := 4) hC (by decide) using 1
+    dsimp only [K]
+    rw [mul_pow, mul_pow, mul_pow, hc, (by decide : Even 4).pow_abs coefficient]
+    ring
+  have he (δ bin : ℕ) (hb : bin ∈ B.bins) :
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (midpoint r) r.terminal (B.binRate bin)
+      let m := LogSpaceEstimation.lastBudget M δ B.slack (B.sampleScale r (some bin))
+      B.initialClippedRootCoefficient ka bin * B.initialEndpointCharge m Q.direct coefficient ≤
+        (K * w δ bin) ^ 4 := by
+    by_cases hz : LogSpaceEstimation.lastBudget M δ B.slack
+        (B.sampleScale r (some bin)) = 0
+    · simp only [hz, initialEndpointCharge, ↓reduceIte, w, mul_zero, zero_pow (by decide : 4 ≠ 0)]
+      exact le_rfl
+    have hh := B.initialClippedRootEndpoint_le hcharge hrate H M δ ks ka bin ha (hi bin hb)
+      r hs ht htask coefficient
+    convert hh using 1
+    rw [mul_pow, hKpow]
+    simp only [w, ite_eq_right hz]
+    dsimp only [C]
+    ring
+  unfold initialClippedRootGroupCharge
+  apply pow_le_pow_left₀ (sum_nonneg fun bin _ => by
+    apply Real.rpow_nonneg
+    dsimp only
+    split_ifs
+    · exact le_rfl
+    exact mul_nonneg (mul_nonneg (by norm_num) (B.initialClippedRootCoefficient_nonneg _ _))
+      (add_nonneg (B.initialEndpointCharge_nonneg _ _ _) (B.initialEndpointCharge_nonneg _ _ _)))
+  change _ ≤ 2 * C ^ (4⁻¹ : ℝ) * |coefficient| *
+    (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge) *
+      B.initialClippedRootWindow M d ka r
+  rw [show 2 * C ^ (4⁻¹ : ℝ) * |coefficient| *
+    (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge) = 2 * K by
+      dsimp only [K]; ring]
+  rw [initialClippedRootWindow, mul_sum]
+  apply sum_le_sum
+  intro bin hb
+  dsimp only
+  by_cases hz : LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin)) =
+      LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
+  · simp only [ite_eq_left hz, Real.zero_rpow (by norm_num : (4⁻¹ : ℝ) ≠ 0), mul_zero, le_refl]
+  rw [ite_eq_right hz, ite_eq_right hz]
+  change _ ≤ 2 * K * (w d bin + w (2 * d) bin)
+  let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+    r.source (midpoint r) r.terminal (B.binRate bin)
+  let f := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale r (some bin))
+  let c := LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin))
+  have hwf : 0 ≤ w d bin := by dsimp only [w]; split_ifs <;> positivity
+  have hwc : 0 ≤ w (2 * d) bin := by dsimp only [w]; split_ifs <;> positivity
+  have hf := he d bin hb
+  have hc := he (2 * d) bin hb
+  have hsum : 0 ≤ K * (w d bin + w (2 * d) bin) := by positivity
+  have hf' : (K * w d bin) ^ 4 ≤ (K * (w d bin + w (2 * d) bin)) ^ 4 := by
+    exact pow_le_pow_left₀ (mul_nonneg hK hwf)
+      (mul_le_mul_of_nonneg_left (le_add_of_nonneg_right hwc) hK) 4
+  have hc' : (K * w (2 * d) bin) ^ 4 ≤ (K * (w d bin + w (2 * d) bin)) ^ 4 := by
+    exact pow_le_pow_left₀ (mul_nonneg hK hwc)
+      (mul_le_mul_of_nonneg_left (le_add_of_nonneg_left hwf) hK) 4
+  have hh : 8 * B.initialClippedRootCoefficient ka bin *
+      (B.initialEndpointCharge f Q.direct coefficient +
+        B.initialEndpointCharge c Q.direct coefficient) ≤
+      (2 * K * (w d bin + w (2 * d) bin)) ^ 4 := by
+    dsimp only at hf hc
+    dsimp only [f, c, Q]
+    nlinarith [hf', hc']
+  have hcoef := B.initialClippedRootCoefficient_nonneg ka bin
+  have hff := B.initialEndpointCharge_nonneg f Q.direct coefficient
+  have hcc := B.initialEndpointCharge_nonneg c Q.direct coefficient
+  have hr := Real.rpow_le_rpow (by positivity : 0 ≤ 8 * B.initialClippedRootCoefficient ka bin *
+      (B.initialEndpointCharge f Q.direct coefficient +
+        B.initialEndpointCharge c Q.direct coefficient)) hh (by norm_num : (0 : ℝ) ≤ 4⁻¹)
+  have hroot : ((2 * K * (w d bin + w (2 * d) bin)) ^ 4) ^ (4⁻¹ : ℝ) =
+      2 * K * (w d bin + w (2 * d) bin) := by
+    convert Real.pow_rpow_inv_natCast (mul_nonneg (by norm_num : (0 : ℝ) ≤ 2) hsum)
+      (by decide : (4 : ℕ) ≠ 0) using 1 <;> ring
+  rw [hroot] at hr
+  exact hr
+
+/-- Every actual finite prefix has a numerical scheduled payment without bin or prefix
+cardinality cubes. To claim a uniform parent payment one must bound this window sum with
+one structural charge fixed before all request exponents and the field width. -/
+theorem initialClippedRootPrefix_le
+    (hcharge : 0 ≤ B.rankCharge) (hrate : B.binRate = rate) (H : Horizon P)
+    (M p ks ka : ℕ) (ha : ka ≤ H.maxExponent)
+    (hi : ∀ bin ∈ B.bins, bin ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩)) (coefficient : ℝ) :
+    (∑ j ∈ range p, (B.initialClippedRootGroupCharge M
+      (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j) r ka coefficient) ^
+        (4⁻¹ : ℝ)) ^ 4 ≤
+      (2 * (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^
+        (4⁻¹ : ℝ) * |coefficient| *
+        (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge) *
+        ∑ j ∈ range p, B.initialClippedRootWindow M
+          (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j) ka r) ^ 4 := by
+  let K := 2 * (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^
+    (4⁻¹ : ℝ) * |coefficient| *
+    (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge)
+  have hcap := B.binCap_nonneg
+  have hK : 0 ≤ K := by dsimp only [K]; positivity
+  have hw (d : ℕ) : 0 ≤ B.initialClippedRootWindow M d ka r := by
+    unfold initialClippedRootWindow
+    apply sum_nonneg
+    intro bin _
+    split_ifs <;> positivity
+  apply pow_le_pow_left₀ (sum_nonneg fun j _ =>
+    Real.rpow_nonneg (by unfold initialClippedRootGroupCharge; positivity) _)
+  change _ ≤ K * ∑ j ∈ range p, B.initialClippedRootWindow M
+    (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j) ka r
+  rw [mul_sum]
+  apply sum_le_sum
+  intro j _
+  have hh := Real.rpow_le_rpow
+    (by unfold initialClippedRootGroupCharge; positivity)
+    (B.initialClippedRootGroupCharge_le hcharge hrate H M
+      (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j) ks ka ha hi r hs ht htask coefficient)
+    (by norm_num : (0 : ℝ) ≤ 4⁻¹)
+  have he : ((K * B.initialClippedRootWindow M
+      (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j) ka r) ^ 4) ^ (4⁻¹ : ℝ) =
+      K * B.initialClippedRootWindow M
+        (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j) ka r := by
+    convert Real.pow_rpow_inv_natCast (mul_nonneg hK (hw _))
+      (by decide : (4 : ℕ) ≠ 0) using 1
+  exact hh.trans_eq he
+
+/-- A sufficient joint slack/structural-charge condition for a finite prefix. The condition
+is purely numerical and independent of child errors, source precision and field width.
+A uniform application must choose the charge first and prove it for every allowed M, p, ka;
+this theorem does not assert that the current unbounded schedule satisfies it. -/
+theorem initialClippedRootPrefix_paid
+    (hcharge : 0 ≤ B.rankCharge) (hrate : B.binRate = rate) (H : Horizon P)
+    (M p ks ka : ℕ) (ha : ka ≤ H.maxExponent)
+    (hi : ∀ bin ∈ B.bins, bin ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩))
+    (hwindow : 2 *
+      (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^ (4⁻¹ : ℝ) *
+      (∑ j ∈ range p, B.initialClippedRootWindow M
+        (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j) ka r) ≤
+      (2 : ℝ) ^ B.rankCharge) (coefficient : ℝ) :
+    (∑ j ∈ range p, (B.initialClippedRootGroupCharge M
+      (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j) r ka coefficient) ^
+        (4⁻¹ : ℝ)) ^ 4 ≤
+      coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision M r)) ^ 4 := by
+  apply (B.initialClippedRootPrefix_le hcharge hrate H M p ks ka ha hi r hs ht htask
+    coefficient).trans
+  have hcancel : (2 : ℝ) ^ (-B.rankCharge) * (2 : ℝ) ^ B.rankCharge = 1 := by
+    rw [← Real.rpow_add (by norm_num), neg_add_cancel, Real.rpow_zero]
+  have hh := mul_le_mul_of_nonneg_left hwindow
+    (show 0 ≤ |coefficient| * (2 : ℝ) ^ (-B.requestPrecision M r) *
+      (2 : ℝ) ^ (-B.rankCharge) by positivity)
+  have hb : 2 *
+      (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^ (4⁻¹ : ℝ) *
+      |coefficient| * (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge) *
+      (∑ j ∈ range p, B.initialClippedRootWindow M
+        (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j) ka r) ≤
+      |coefficient| * (2 : ℝ) ^ (-B.requestPrecision M r) := by
+    calc
+      _ ≤ (|coefficient| * (2 : ℝ) ^ (-B.requestPrecision M r)) *
+          ((2 : ℝ) ^ (-B.rankCharge) * (2 : ℝ) ^ B.rankCharge) := by
+        convert hh using 1 <;> ring
+      _ = _ := by rw [hcancel, mul_one]
+  have hn : 0 ≤ 2 *
+      (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^ (4⁻¹ : ℝ) *
+      |coefficient| * (2 : ℝ) ^ (-B.requestPrecision M r) * (2 : ℝ) ^ (-B.rankCharge) *
+      (∑ j ∈ range p, B.initialClippedRootWindow M
+        (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j) ka r) := by
+    have hc := B.binCap_nonneg
+    apply mul_nonneg (by positivity)
+    apply sum_nonneg
+    intro j _
+    unfold initialClippedRootWindow
+    apply sum_nonneg
+    intro bin _
+    split_ifs <;> positivity
+  simpa only [mul_pow, (by decide : Even 4).pow_abs coefficient] using
+    pow_le_pow_left₀ hn hb 4
 
 omit [Fact P.Prime] in
 /-- Every own-mask clipped group charge is nonnegative. -/
@@ -925,14 +1150,7 @@ lemma initialClippedRootGroupCharge_nonneg (M d : ℕ)
     (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (ka : ℕ) (coefficient : ℝ) :
     0 ≤ B.initialClippedRootGroupCharge M d r ka coefficient := by
   unfold initialClippedRootGroupCharge
-  apply mul_nonneg (by positivity)
-  apply sum_nonneg
-  intro bin _
-  dsimp only
-  split_ifs
-  · exact le_rfl
-  exact mul_nonneg (mul_nonneg (by norm_num) (B.initialClippedRootCoefficient_nonneg ka bin))
-    (add_nonneg (B.initialEndpointCharge_nonneg _ _ _) (B.initialEndpointCharge_nonneg _ _ _))
+  positivity
 
 omit [Fact P.Prime] in
 /-- Exhausted group budgets have zero clipped charge for every request precision. -/
@@ -945,7 +1163,9 @@ lemma initialClippedRootGroupCharge_eq_zero_of_le (M d : ℕ)
   have hc (bin : ℕ) :
       LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale r (some bin)) = 0 :=
     Nat.sub_eq_zero_of_le ((show M ≤ 2 * d by omega).trans (le_max_left _ _))
-  simp only [initialClippedRootGroupCharge, hf, hc, ↓reduceIte, sum_const_zero, mul_zero]
+  simp only [initialClippedRootGroupCharge, hf, hc, ↓reduceIte,
+    Real.zero_rpow (by norm_num : (4⁻¹ : ℝ) ≠ 0),
+    sum_const_zero, zero_pow (by decide : 4 ≠ 0)]
 
 /-- Literal group cost from own-request lower-budget precision. Both endpoint budgets,
 the sharp fourth-power importance sup norm and the bin cube remain explicit. Zero
@@ -1167,7 +1387,7 @@ theorem initial_compressed_prefix_clipped_mean
           (fun _ x y => min 1 (|rowSliceMean Xs Ya
             (fun σ x y => ((groups.take p).map (fun T => T σ x y)).sum -
               ((reference.take p).map (fun T => T σ x y)).sum) x y| / a x y)) ≤
-          (p : ℝ) ^ 3 * ∑ j ∈ range p, ε j := by
+          (∑ j ∈ range p, ε j ^ (4⁻¹ : ℝ)) ^ 4 := by
   dsimp only
   refine ⟨(List.range (Nat.log2 M + 1)).map A,
     (List.range (Nat.log2 M + 1)).map C, ?_, ?_, ?_⟩
@@ -1190,15 +1410,12 @@ theorem initial_compressed_prefix_clipped_mean
       funext x y
       simp only [rowSliceMean, expect_sum_comm, Pi.sub_apply, Matrix.sub_apply]
     rw [hm]
-    apply (rowNormPow_clipped_sum_le (range p) (mul_nonneg (Nat.cast_nonneg P) hs)
+    exact rowNormPow_clipped_sum_le_pow_sum (range p) (mul_nonneg (Nat.cast_nonneg P) hs)
       (fun σ x => r.source.retains (channels B.padding) σ x)
       (fun σ y => r.usage.retains (channels B.padding) σ y)
       (fun j => rowSliceMean
         (fun σ x => r.source.retains (channels B.padding) σ x)
-        (fun σ y => r.usage.retains (channels B.padding) σ y) (A j - C j)) a ha).trans
-    simp only [card_range]
-    exact mul_le_mul_of_nonneg_left
-      (sum_le_sum fun j hj => herr j ((mem_range.mp hj).trans_le hp)) (by positivity)
-
+        (fun σ y => r.usage.retains (channels B.padding) σ y) (A j - C j)) a ha ε
+      (fun j hj => herr j ((mem_range.mp hj).trans_le hp))
 
 end Matrix.HierarchyParams.H4RankEnvironment.BudgetData

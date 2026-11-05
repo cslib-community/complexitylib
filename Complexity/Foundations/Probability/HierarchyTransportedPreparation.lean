@@ -15,13 +15,15 @@ Literal completed-group executions identify both histories. Their finite prefix 
 is added to the semantic omitted/inactive deficit and centered first noise in matrix units.
 The polynomial preparation and full-terminal rank gate then pay their actual usage mean
 through the existing sensitivity theorem; centered preparation noise is paid separately,
-without a rarity factor. Every prefix cube and summed group cost remains explicit.
+without a rarity factor. Ordinary transport keeps its prefix cube and summed group costs.
 
 These original finite bounds consume strict lower-budget own-request rooted precision,
 not a parent accuracy hypothesis. All four moments and the sharp reserve receive explicit
 finite numerical payments. The precision route also consumes an own-mask clipped
 conditional-mean payment for its first coordinate, keeping the previous ordinary-noise
-and preparation costs. The Fubini coefficient does not claim sharp fine-bin cubic decay.
+and preparation costs. Its sharp fine-bin coefficient and finite Minkowski remove bin
+and prefix cubes from clipped means. An explicit joint window condition pays that finite
+transport part, without asserting the condition uniformly.
 Uniform absorption of the displayed costs, simultaneous
 changing-request induction and native RL=L remain open.
 
@@ -138,7 +140,7 @@ theorem initial_compressed_first_noise
             ka G (firstSignalIncrement F ka second) 0 0 j) ≤
           (rate ka)⁻¹ ^ 4 * (8 * (16 *
             (((j + 1 : ℕ) : ℝ) ^ 3 * ∑ i ∈ range (j + 1), ε i) +
-            (((2 : ℝ) ^ (-B.requestPrecision M {r with usage := r.terminal}) * (64 / 63)) *
+            (((2 : ℝ) ^ (-B.requestPrecision M { r with usage := r.terminal }) * (64 / 63)) *
               (1 / 64 : ℝ) ^ dyadicSlack (Nat.log2 M + 1) j) ^ 4)) ∧
         rowNormPow 4 P r.source.rate
           (retainedMask R.source (side P ks) B.padding ss)
@@ -236,7 +238,7 @@ and prefix cubes enter through the executed group charges ε, without parent acc
     (ks ka : ℕ) (ss st : List (ZMod P)) (ε : ℕ → ℝ) (ζ Lh Lρ : ℝ)
     (j : ℕ) (noise : Bool) (ν : Fin 2) : ℝ :=
   let T := ((j + 1 : ℕ) : ℝ) ^ 3 * ∑ i ∈ range (j + 1), ε i
-  let Z := (((2 : ℝ) ^ (-B.requestPrecision M {r with usage := r.terminal}) * (64 / 63)) *
+  let Z := (((2 : ℝ) ^ (-B.requestPrecision M { r with usage := r.terminal }) * (64 / 63)) *
     (1 / 64 : ℝ) ^ dyadicSlack (Nat.log2 M + 1) j) ^ 4
   if noise then
     if ν = 0 then (rate ka)⁻¹ ^ 4 * (8 * (16 * T + Z)) else
@@ -293,7 +295,7 @@ theorem initialComputedRelativeMoment_polynomial_firstNoise_le (B : BudgetData H
     (hC : ∀ x y, 0 ≤ B.base x y) (hC1 : B.base *ᵥ 1 ≤ 1)
     (ε : ℕ → ℝ) (ζ Lh Lρ : ℝ) (j : ℕ) :
     let m := Nat.log2 M + 1
-    let q := {r with usage := r.terminal}
+    let q := { r with usage := r.terminal }
     B.initialComputedRelativeMoment M n r R ks ka ss st ε ζ Lh Lρ j true 0 ≤
       min (B.initialComputedMoment M n r R ks ka ss st ε ζ Lh Lρ j true 0)
         (8 * (16 * initialPerturbationFactor ka B.base *
@@ -425,14 +427,45 @@ payments. This minimum is consumed by the literal four-max and raw clipped-error
     { r with usage := r.terminal } coefficient
   let old := B.initialComputedRelativeMoment M n r R ks ka ss st ε ζ Lh Lρ j noise ν
   if !noise ∧ ν = 0 then min old
-    (8 * ((((j + 1 : ℕ) : ℝ) ^ 3 * ∑ i ∈ range (j + 1),
-      B.initialClippedRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
-        { r with usage := r.terminal } ka coefficient) +
+    (8 * (((∑ i ∈ range (j + 1),
+      (B.initialClippedRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
+        { r with usage := r.terminal } ka coefficient) ^ (4⁻¹ : ℝ)) ^ 4) +
       rowNormPow 4 P r.source.rate
         (retainedMask R.source (side P ks) B.padding ss)
         (retainedMask R.terminal (side P ka) B.padding st)
         (fun _ x y => min 1 (|B.initialPolynomialLoss M n j r x y| /
           (rate ka + B.base x y))))) else old
+
+/-- The existing first-mean minimum consumes the finite joint allocation condition.
+Only the clipped transport part is paid here; the semantic deficit and other three
+statistics remain separate. Uniform use requires the window condition uniformly. -/
+theorem initialComputedPrecisionMoment_first_paid (B : BudgetData HP P)
+    (hcharge : 0 ≤ B.rankCharge) (hrate : B.binRate = rate) (H : Horizon P)
+    (M n j ks ka : ℕ) (ha : ka ≤ H.maxExponent)
+    (hi : ∀ bin ∈ B.bins, bin ≤ H.maxExponent)
+    (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
+    (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka)
+    (htask : r.task = .row 0 (.pilotInput ⟨0, HP.k_pos⟩))
+    (R : RoleProfile 3) (ss st : List (ZMod P)) (coefficient ζ Lh Lρ : ℝ)
+    (hwindow : 2 *
+      (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^ (4⁻¹ : ℝ) *
+      (∑ i ∈ range (j + 1), B.initialClippedRootWindow M
+        (dyadicSlack (Nat.log2 M + 1) i) ka { r with usage := r.terminal }) ≤
+      (2 : ℝ) ^ B.rankCharge) :
+    B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient ζ Lh Lρ j false 0 ≤
+      8 * (coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision M r)) ^ 4 +
+        rowNormPow 4 P r.source.rate
+          (retainedMask R.source (side P ks) B.padding ss)
+          (retainedMask R.terminal (side P ka) B.padding st)
+          (fun _ x y => min 1 (|B.initialPolynomialLoss M n j r x y| /
+            (rate ka + B.base x y)))) := by
+  unfold initialComputedPrecisionMoment
+  simp only [Bool.not_false, Fin.isValue, and_self, ↓reduceIte]
+  apply (min_le_right _ _).trans
+  apply mul_le_mul_of_nonneg_left _ (by norm_num : (0 : ℝ) ≤ 8)
+  apply add_le_add _ le_rfl
+  exact B.initialClippedRootPrefix_paid hcharge hrate H M (j + 1) ks ka ha hi
+    { r with usage := r.terminal } hs ht htask hwindow coefficient
 
 /-- The new first-mean minimum and all retained costs are nonnegative. -/
 lemma initialComputedPrecisionMoment_nonneg (B : BudgetData HP P) (M n : ℕ)
@@ -836,9 +869,9 @@ theorem initial_compressed_precision_clipped_first
         rowNormPow 4 P r.source.rate Xs Ya
           (fun _ x y => actualClippedMean HP R.source R.terminal (side P ks) (side P ka)
             Lt B.padding ss st ka B.base ζ (firstSignalIncrement F ka second) 0 0 j x y) ≤
-        8 * ((((j + 1 : ℕ) : ℝ) ^ 3 * ∑ i ∈ range (j + 1),
-          B.initialClippedRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
-            { r with usage := r.terminal } ka coefficient) +
+        8 * (((∑ i ∈ range (j + 1),
+          (B.initialClippedRootGroupCharge M (dyadicSlack (Nat.log2 M + 1) i)
+            { r with usage := r.terminal } ka coefficient) ^ (4⁻¹ : ℝ)) ^ 4) +
           rowNormPow 4 P r.source.rate Xs Ya (fun _ x y =>
             min 1 (|B.initialPolynomialLoss M n j r x y| / (rate ka + B.base x y)))) := by
   have hne : B.bins.Nonempty := by rw [hbins]; exact ⟨0, mem_range.mpr (by omega)⟩
