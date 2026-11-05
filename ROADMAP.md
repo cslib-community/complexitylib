@@ -178,6 +178,17 @@ index links to canonical definitions rather than keeping a second set.
 - The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
   its input.
 - **Space:** Savitch bounds for general space-constructible functions.
+- **Catalytic space and KMPS collapses** ([#2521]): define native `CSPACE(s,c)` and its
+  nondeterministic/randomized variants, with exact restoration for every initial catalyst and
+  every computation branch; existing `Catalytic/Comparison` routines are only algebraic tools.
+  Formalize Koucký–Mertz–Pyne–Sami, [*Collapsing Catalytic Classes*](https://arxiv.org/abs/2504.08444):
+  `CL = CNL = CPrL` (hence `CBPL = CL`), the general compress-or-compute oracle simulation,
+  catalytic Savitch/complementation and randomized space–catalyst tradeoffs, preserving the
+  paper's parameter ranges, oracle promises and restoration conventions. Include its catalytic
+  hierarchy collapses and lossy-space consequences with their stated resource bounds.
+  Track the newer Koucký–Mertz–Sami [robust catalytic extensions](https://arxiv.org/abs/2605.09648)
+  separately: their broader collapse is conditional on the explicit circuit-hardness assumption,
+  with resetting-error and time regimes distinguished from KMPS's unconditional results.
 - **Randomized logspace** ([#459], [#474]): RL and BPL, `USTCON ∈ RL`, Nisan's generator,
   `BPL ⊆ L²` and Saks–Zhou. The preprint route to native `RL = L` remains open in
   [#1444](https://github.com/cslib-community/complexitylib/issues/1444). Its estimator work in
@@ -862,3 +873,5 @@ not planned, not as proved.
 [#2084]: https://github.com/cslib-community/complexitylib/issues/2084
 [#2290]: https://github.com/cslib-community/complexitylib/issues/2290
 [#2423]: https://github.com/cslib-community/complexitylib/issues/2423
+
+[#2521]: https://github.com/cslib-community/complexitylib/issues/2521
