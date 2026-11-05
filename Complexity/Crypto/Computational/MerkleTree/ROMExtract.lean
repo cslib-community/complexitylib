@@ -337,15 +337,6 @@ theorem getD_extractTableFromTrace {tr : List (List Bool × List Bool)} {d : ℕ
 
 /-! ### Structure of `merkleInputs` and consistency of trace extraction -/
 
-private theorem snd_foldl_merkleInputsStep' (leaf : List Bool) (i : ℕ) (path : List (List Bool)) :
-    (path.foldl (merkleInputsStep H k) ([leaf], i)).2 = i / 2 ^ path.length := by
-  induction path using List.reverseRecOn with
-  | nil => simp
-  | append_singleton path sibling ih =>
-    rw [List.foldl_concat]
-    simp only [merkleInputsStep, ih, List.length_append, List.length_singleton,
-      Nat.div_div_eq_div_mul, ← pow_succ]
-
 /-- Appending one sibling at the top of `path` prepends the top internal-node hash input to
 `merkleInputs H k leaf i path`. -/
 theorem merkleInputs_concat (leaf : List Bool) (i : ℕ) (path : List (List Bool))
@@ -357,7 +348,7 @@ theorem merkleInputs_concat (leaf : List Bool) (i : ℕ) (path : List (List Bool
         encPair encBits encBits (sibling, merkleRootOfPath H k leaf i path)) ::
         merkleInputs H k leaf i path := by
   simp only [merkleInputs, merkleRootOfPath, List.foldl_concat, merkleInputsStep,
-    snd_foldl_merkleInputsStep']
+    snd_foldl_merkleInputsStep]
 
 /-- Recomputing the root along `path ++ [sibling]` hashes the pair of `merkleRootOfPath` on `path`
 and `sibling`, ordered by bit `path.length` of `i`. -/
