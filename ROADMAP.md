@@ -100,8 +100,8 @@ families and full-input native runtime.
 
 ### Public-key, lattice and symmetric constructions ([#640])
 
-- **Sigma protocols and Fiat–Shamir** ([#581]): computational Schnorr signatures under discrete
-  log against strict PPT forgers.
+- **Sigma protocols and Fiat–Shamir** ([#581]): multi-RO-query word-level `IsOraclePPT` forking
+  execution for computational Schnorr signatures under discrete log.
 - **Chosen-ciphertext security** ([#1885]): multi-challenge CCA from the single-challenge
   Cramer–Shoup theorem.
 - **Lattices**: Fiat–Shamir with aborts and signatures from SIS (Lyubashevsky 2009,
