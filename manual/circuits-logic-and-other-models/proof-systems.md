@@ -36,7 +36,7 @@ A tree-like derivation yields a decision tree that finds a clause falsified by t
 
 Interpolation modules extract circuits separating the two sides of a refuted conjunction. Monotone extraction supports clique/coloring lower-bound applications, and a separate polynomial-time file addresses encoded extraction. The distinction between semantic existence of an interpolant and a native efficient extraction algorithm follows the same design pattern as circuits and finite-model logic. See [interpolation](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/Interpolation.lean), [monotone extraction](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/Interpolation/MonotoneExtraction.lean) and [native extraction](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/Interpolation/PolyTime.lean).
 
-## Exploring PV statements
+## Exploring PV statements and certificates
 
 The checked [statement exploration](../../ComplexityTests/BoundedArithmetic/Statements.lean)
 compares named equation sides, an open Mathlib first-order equality, and its universal closure.
@@ -53,6 +53,22 @@ root; success checks the whole example, including its counterexample. The source
 needed definitions. These are syntax and interpretation experiments: the full PV signature,
 function admission, defining equations, induction and proof predicate remain open. In particular,
 a Lean proof that the example is true is not yet a certified PV proof.
+
+The checked [certificate exploration](../../ComplexityTests/BoundedArithmetic/Certificates.lean)
+adds three proof views for the same two-symbol fragment: a typed `Derivation`, a `RawProof`
+rule tree paired with an independent `IsProof` certificate, and Boolean `RawProof.check` with
+its proved correspondence `RawProof.check_iff`. Checking accepts exactly the valid artifacts
+with the requested conclusion. The rules are trim instances, symmetry,
+transitivity, unary congruence and single-variable substitution; induction and function admission
+remain open. This is a tree representation, not Cook's line sequence or a serialized format.
+
+From the same prepared checkout, run
+`scripts/build.sh ComplexityTests.BoundedArithmetic.Certificates --wfail --iofail`. The examples
+erase a typed tree, replay supplied raw data through substitution and congruence, derive
+reflexivity, and reject invalid transitivity and a wrong conclusion. A producer can supply raw
+data and prove that `check` returns `true`, then use `check_iff` to obtain its Lean validity
+certificate. This certifies the stated fragment only; neither efficient proof generation nor
+the full PV workflow is established.
 
 ## Known Limitations
 
