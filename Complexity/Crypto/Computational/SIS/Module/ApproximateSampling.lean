@@ -73,7 +73,7 @@ private theorem sampledWord_ppt
         unfold inputEncoding; fun_prop)
   exact hr.map_with (hexpand.comp (by unfold inputEncoding; fun_prop))
 
-private theorem eval_modNat_residue (width q : ℕ) [NeZero q] :
+private theorem eval_modNat_residue (width q : ℕ) :
     eval (sampleModNat width q) =
       (eval ((Nat.cast : ℕ → ZMod q) <$> sampleModNat width q)).map ZMod.val := by
   rw [eval_map, eval_sampleModNat, PMF.map_comp, PMF.map_comp]
