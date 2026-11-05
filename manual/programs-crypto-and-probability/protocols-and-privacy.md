@@ -160,6 +160,6 @@ low two bits before the proof derives the recurrence.
 operands. `averageCorrelation_source N m` uses the paper's $N,m\ge2$ parameters,
 with $k=N-1$ and $h=m-2$ (word width $m-2+2=m$), yielding $(N+1)/2^N$.
 The [client](../../ComplexityTests/PaperEndpointsBatchB.lean) checks full-width
-operations, a direct two-operand average and a longer-chain theorem application.
+operations and two-operand and longer-chain theorem applications.
 These are uniform-ensemble signed expectations; they do not establish an absolute
 correlation bound, a planted-instance statistic, NP-hardness or a search bound.

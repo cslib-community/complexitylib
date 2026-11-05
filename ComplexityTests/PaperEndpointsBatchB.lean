@@ -11,7 +11,6 @@ import Complexity.Crypto.Multiparty.Tetrahedral
 import Complexity.Cryptanalysis.AddXNOR
 import Complexity.GameTheory.FairDivision.MMSImpossibility
 import Mathlib.Tactic.NormNum
-import Mathlib.Algebra.BigOperators.Fin
 
 /-! # Regression clients for the three selected batch-B endpoints -/
 
