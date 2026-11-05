@@ -9,7 +9,7 @@ module
 
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Security
 public import Complexity.Crypto.Game.Statistical
-import Complexity.Computability.Probabilistic.CoinTape
+import Complexity.Computability.Probabilistic.CoinTape.Bounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
@@ -1687,13 +1687,10 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
         adversary).IsPPT := by
   obtain ⟨c_kg, d_kg, _, hkg_len⟩ := Encryption.exists_keyLength_bound hkeyGen
   obtain ⟨c_enc, d_enc, henc_len⟩ := hencrypt.length_le
-  obtain ⟨c_ch0, d_ch0, evalChoose, hevalChoose, _, hchoose_law⟩ :=
-    hadversary.choose.on.exists_total_seeded_evaluator
-  obtain ⟨c_ch1, d_ch1, hchoose_len⟩ := hadversary.choose.on.length_le
+  obtain ⟨c_ch, d_ch, evalChoose, hevalChoose, _, hchoose_law, hchoose_len⟩ :=
+    hadversary.choose.on.exists_total_seeded_evaluator_with_length
   obtain ⟨c_gu, d_gu, evalGuess, hevalGuess, _, hguess_law⟩ :=
     hadversary.guess.exists_total_seeded_evaluator
-  let c_ch := c_ch0 + c_ch1
-  let d_ch := max d_ch0 d_ch1
   let pkBound (n : ℕ) := c_kg * (n + 1) ^ d_kg
   let ctBound (n : ℕ) := c_enc * (2 * n + 2 * pkBound n + 5) ^ d_enc
   let pubLen (n : ℕ) :=
@@ -1732,32 +1729,15 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
     have hin : (encPair encUnary encBits (n, pk')).length + 1 ≤ 2 * n + pubLen n + 2 := by
       simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
       omega
-    have hch0_le :
-        c_ch0 * ((encPair encUnary encBits (n, pk')).length + 1) ^ d_ch0 ≤ advChooseBudget n := by
-      dsimp only [advChooseBudget, c_ch, d_ch]
-      have hpos : 0 < 2 * n + pubLen n + 2 := by omega
-      calc
-        c_ch0 * ((encPair encUnary encBits (n, pk')).length + 1) ^ d_ch0
-          ≤ (c_ch0 + c_ch1) * (2 * n + pubLen n + 2) ^ d_ch0 :=
-            Nat.mul_le_mul (Nat.le_add_right _ _) (Nat.pow_le_pow_left hin _)
-        _ ≤ (c_ch0 + c_ch1) * (2 * n + pubLen n + 2) ^ max d_ch0 d_ch1 :=
-            Nat.mul_le_mul_left _ (Nat.pow_le_pow_right hpos (Nat.le_max_left _ _))
-    have hch1_le :
-        c_ch1 * ((encPair encUnary encBits (n, pk')).length + 1) ^ d_ch1 ≤ advChooseBudget n := by
-      dsimp only [advChooseBudget, c_ch, d_ch]
-      have hpos : 0 < 2 * n + pubLen n + 2 := by omega
-      calc
-        c_ch1 * ((encPair encUnary encBits (n, pk')).length + 1) ^ d_ch1
-          ≤ (c_ch0 + c_ch1) * (2 * n + pubLen n + 2) ^ d_ch1 :=
-            Nat.mul_le_mul (Nat.le_add_left _ _) (Nat.pow_le_pow_left hin _)
-        _ ≤ (c_ch0 + c_ch1) * (2 * n + pubLen n + 2) ^ max d_ch0 d_ch1 :=
-            Nat.mul_le_mul_left _ (Nat.pow_le_pow_right hpos (Nat.le_max_right _ _))
-    refine ⟨hchoose_law (n, pk') (advChooseBudget n) hch0_le, fun choice hchoice => ?_⟩
+    have hch_le :
+        c_ch * ((encPair encUnary encBits (n, pk')).length + 1) ^ d_ch ≤ advChooseBudget n :=
+      Nat.mul_le_mul_left c_ch (Nat.pow_le_pow_left hin d_ch)
+    refine ⟨hchoose_law (n, pk') (advChooseBudget n) hch_le, fun choice hchoice => ?_⟩
     have hchoice2 : choice.2.length ≤
         (encPair (encPair encBool encBool) encBits choice).length := by
       simp only [length_encPair, encBool_apply, List.length_singleton, encBits_apply]
       omega
-    exact (hchoice2.trans (hchoose_len (n, pk') choice hchoice)).trans hch1_le
+    exact (hchoice2.trans (hchoose_len (n, pk') choice hchoice)).trans hch_le
   · intro n state ct' hstate hct'
     change state.length ≤ advChooseBudget n at hstate
     change ct'.length ≤ ctBound n + 1 at hct'

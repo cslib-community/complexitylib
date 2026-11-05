@@ -2600,6 +2600,7 @@ public import Complexity.Computability.Probabilistic.AffineHash
 public import Complexity.Computability.Probabilistic.BoundedUniform
 public import Complexity.Computability.Probabilistic.CenteredBinomial
 public import Complexity.Computability.Probabilistic.CoinTape
+public import Complexity.Computability.Probabilistic.CoinTape.Bounds
 public import Complexity.Computability.Probabilistic.Finite
 public import Complexity.Computability.Probabilistic.Fold
 public import Complexity.Computability.Probabilistic.LinearHash
