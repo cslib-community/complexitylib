@@ -139,10 +139,14 @@ fixes one generator, whereas this endpoint quantifies over a class of generator 
 
 This currently covers Theorem 1.1's two-party separation. The abstract also advertises
 Theorem 1.2's two-out-of-$n$ and $r$-out-of-$r$ constructions, expanded in Theorems 4.1
-and 5.1, with their matching extractor upper bounds. The arbitrary-party constructions and their complete security/cardinality guarantees
-remain unproved here. The common extraction bounds and tightness are now proved in
-`ImperfectRandomness.OddSources`; the threshold constructions must still instantiate
-those results with their actual branch and index types. Track the remaining scope in
+and 5.1, with their matching extractor upper bounds. The $r$-out-of-$r$ construction
+is now supplied by `ImperfectRandomness.AllOutOfR.binary_separation` for $r=n+1\ge2$
+and $b\ge r$. It constructs coefficients and literal bit encodings, proves reconstruction
+and joint privacy of every proper coalition, and bundles the exact cardinality, flatness,
+entropy and sharp extraction claims. See the
+[all-out-of-r instructions](../design-and-assurance/assurance.md#all-out-of-r-sharing-from-odd-sources)
+for the model and complete client. The two-out-of-$n$ construction and its complete
+security/cardinality guarantees remain unfinished. Track the remaining scope in
 [issue 2524](https://github.com/cslib-community/complexitylib/issues/2524).
 
 Import `Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.TwoPartyTightness`

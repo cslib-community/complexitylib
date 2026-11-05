@@ -61,7 +61,7 @@ class PrepareRunnerTests(unittest.TestCase):
         for name in ("lean_action_ci.yml", "guide.yml"):
             with self.subTest(workflow=name):
                 workflow = (ROOT / ".github/workflows" / name).read_text()
-                self.assertLess(workflow.index("scripts/ci/prepare-runner.sh"),
+                self.assertLess(workflow.index("run: scripts/ci/prepare-runner.sh"),
                                 workflow.index("- name: Restore .lake from the Actions cache"))
 
 
