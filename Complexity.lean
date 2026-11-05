@@ -1917,6 +1917,7 @@ public import Complexity.Computability.Interactive.Plain
 public import Complexity.Computability.Interactive.Security
 public import Complexity.Computability.Interactive.Sequential
 public import Complexity.Computability.Interactive.Sumcheck
+public import Complexity.Computability.Interactive.ToIP
 public import Complexity.Computability.Kolmogorov.AverageCase
 public import Complexity.Computability.Kolmogorov.Basic
 public import Complexity.Computability.Kolmogorov.ChainRule

@@ -115,7 +115,8 @@ families and full-input native runtime.
 ### Zero-knowledge proof systems toward libzk ([#643])
 
 In order:
-- the `PublicCoin → IP` bridge, with a uniform word verifier and adversarial decoding;
+- variable-round family compilation and `Sumcheck`/`GKR` instantiations for the
+  `PublicCoin → IP` bridge;
 - parallel and AND/OR composition, and round-by-round knowledge soundness;
 - oracle statements, so a later phase can query an earlier phase's oracle message (virtual
   output oracles, as in ArkLib), with knowledge soundness and zero knowledge in oracle worlds;
