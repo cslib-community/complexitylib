@@ -418,6 +418,31 @@ These are semantic `StateT Store PMF` drivers for arbitrary PMF strategies, not 
 with one later release decision; arbitrary scheduling, mid-commit abort, malformed bytes,
 composition and full malicious MPC remain open.
 
+For a realized receiver simulator, import
+`Complexity.Crypto.Protocols.MPC.OTCommitment.Program.PolyTime`.
+Supply closed `ProbComp` callbacks `choose`, `receive`, `plan` and `finish`;
+`receiverOfPrograms` interprets them in the existing `Receiver` interface.
+`receiverPrefixProgram` takes no committed bit. `receiverIdealProgram` alone owns the
+commitment-world interface and makes exactly four public calls: commit, receipt poll,
+open-or-abort, and terminal poll. `receiverClosedProgram` runs the actual finite handler
+from idle, retaining both observations and all receiver data while hiding the final store.
+`eval_receiverClosedProgram_eq_real` equates its list-output law with honest OT using the
+masks actually sampled during commitment. Abort supplies no reconstructed opening; even
+zero rounds pass the terminal observation separately to `finish`.
+
+Apply `receiverClosedProgram_isPPT` with uniform `IsPPTOn` certificates for the four
+callbacks on their complete joint inputs. In addition, bound encoded-state growth by a
+fixed additive constant for every supported `choose` result and every supported `receive`
+result. These are separate obligations: an intermediate state can grow even when a later
+callback shrinks it. The input encoding charges the bit, unary round count and initial
+state; receipt and opening lists retain all four OT indices and all pair bits. The
+[checked program clients](../../ComplexityTests/Crypto/OTCommitmentProgram.lean) provide an
+adaptive private-coin receiver with growing answer history, randomized withholding and a
+randomized final continuation. They also show why a separately efficient state-doubling
+callback fails the additive-growth contract. This certificate covers the fixed receiver
+schedule under those hypotheses; sender-simulator efficiency, arbitrary scheduling,
+composition and full malicious MPC remain open.
+
 ## Upstream perfect secrecy and sharing
 
 Pinned cslib supplies [PerfectlySecret](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Crypto/Protocols/PerfectSecrecy/Defs.lean#L76): observing any positive-probability ciphertext leaves every message prior unchanged. Its equivalent ciphertext-distribution formulation and one-time-pad instance are finite semantic security, with no PPT restriction. The upstream commitment interface separately defines perfect/statistical hiding and perfect binding [cslib][cslib].

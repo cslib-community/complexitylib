@@ -62,8 +62,12 @@ Priorities live in this list and in the tiers of [#897].
   `Crypto/Protocols/Commitment/World` supplies an original single-session phased abort
   functionality with receiver-poll secrecy and an immutable committed bit.
   `OTCommitment/World` connects both corruption-specific laws to its actual transitions,
-  including prefix-dependent withholding, in semantic `StateT PMF` drivers. Realized programs,
-  arbitrary scheduling, composition and efficient simulation remain open.
+  including prefix-dependent withholding, in semantic `StateT PMF` drivers.
+  `OTCommitment/Program` realizes the receiver driver with exactly four public calls and its
+  honest-OT joint law. `Program/PolyTime` gives uniform strict PPT for supplied efficient
+  callbacks with supported additive growth of both intermediate and final receiver states;
+  the unary count, initial state and all list outputs are charged. Sender-simulator efficiency,
+  unrestricted receiver growth, arbitrary scheduling and composition remain open.
 - **Regev's worst-case to average-case reduction.** For suitable `q` and Gaussian noise rate
   `α` with `αq > 2√n`, an efficient search-LWE algorithm yields a quantum polynomial-time
   algorithm for worst-case GapSVP and SIVP within `Õ(n/α)`. The noise distribution, modulus

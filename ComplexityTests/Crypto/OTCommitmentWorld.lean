@@ -108,7 +108,7 @@ example (j : Fin 4) :
         (PMF.uniformOfFintype Bool).map (fun r =>
           (Phased.Observation.opened true, table true r j, some (table true r j))) := by
   rw [receiverIdeal_eq_real]
-  simp only [receiverReal, receiverCommit, fixedReceiver, transfer_eq,
+  simp only [receiverReal, receiverCommit_zero, receiverCommit_succ, fixedReceiver, transfer_eq,
     PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.pure_bind,
     ↓reduceIte, PMF.map, PMF.bind_bind, Function.comp_def]
   apply congrArg ((PMF.uniformOfFintype Bool).bind)
@@ -121,7 +121,7 @@ example (b : Bool) :
       (fun _ _ _ observed _ => pure observed) .idle).map Prod.fst).map
         (fun (_, observed, _, _, _, out) => (observed, out)) = pure (.opened b, .opened b) := by
   rw [receiverIdeal_eq_real]
-  simp [receiverReal, receiverCommit]
+  simp [receiverReal, receiverCommit_zero]
 
 -- Withholding passes no opening and leaves an observable terminal abort.
 example (b : Bool) :
@@ -130,6 +130,6 @@ example (b : Bool) :
       Prod.fst).map (fun (_, observed, _, _, _, out) => (observed, out)) =
         pure (.aborted, true, .aborted, false) := by
   rw [receiverIdeal_eq_real]
-  simp [receiverReal, receiverCommit]
+  simp [receiverReal, receiverCommit_zero]
 
 end Cslib.Tests.OTCommitmentWorld

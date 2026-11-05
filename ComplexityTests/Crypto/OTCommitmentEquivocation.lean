@@ -43,7 +43,7 @@ example : (receiverCommit (fixedReceiver 3) true 1 ()).map
     (fun (masks, transcript, _) =>
       ((transcript 0).2, opening true masks 0 false, opening true masks 0 true)) =
     (PMF.uniformOfFintype Bool).map (fun r => (r ^^ true, r, r ^^ true)) := by
-  simp only [receiverCommit, fixedReceiver, transfer_eq,
+  simp only [receiverCommit_zero, receiverCommit_succ, fixedReceiver, transfer_eq,
     Cslib.Probability.PMF.monad_bind_eq_bind, Cslib.Probability.PMF.monad_pure_eq_pure,
     PMF.pure_bind, PMF.map_bind, PMF.pure_map, table]
   rfl
