@@ -76,6 +76,8 @@ representation conventions:
 
 ## Main definitions
 
+* `Cslib.Crypto.Encryption.kemRealGameWith`, `Cslib.Crypto.Encryption.kemIdealGameWith`:
+  shared challenger continuations for the CPA and adaptive decapsulation experiments.
 * `Cslib.Crypto.Encryption.kemRealGame`, `Cslib.Crypto.Encryption.kemIdealGame`,
   `Cslib.Crypto.Encryption.KEMINDCPA`: real and ideal KEM IND-CPA experiments and security.
 * `Cslib.Crypto.Encryption.demGameOn`, `Cslib.Crypto.Encryption.demGame`,
@@ -149,15 +151,37 @@ open scoped NNReal
 
 /-! ### Key Encapsulation Mechanisms -/
 
+/-- The shared real KEM experiment: generate keys and encapsulate, then run the challenger
+continuation with `(sk, pk, key, ciphertext)`. The secret key is internal challenger data, not an
+adversary input. CPA and CCA experiments specialize the same sampling computation. -/
+def kemRealGameWith (keyGen : ℕ → ProbComp (List Bool × List Bool))
+    (encaps : ℕ → List Bool → ProbComp (List Bool × List Bool))
+    (next : ℕ → List Bool → List Bool → List Bool → List Bool → ProbComp Bool)
+    (n : ℕ) : ProbComp Bool := do
+  let keys ← keyGen n
+  let encapsulated ← encaps n keys.1
+  next n keys.2 keys.1 encapsulated.1 encapsulated.2
+
+/-- The shared ideal KEM experiment replaces only the key shown to the continuation with an
+independent uniform `keyLen n`-bit word. Key generation, encapsulation, and their order are those
+of `kemRealGameWith`; the secret key and ciphertext remain unchanged. -/
+noncomputable def kemIdealGameWith (keyLen : ℕ → ℕ)
+    (keyGen : ℕ → ProbComp (List Bool × List Bool))
+    (encaps : ℕ → List Bool → ProbComp (List Bool × List Bool))
+    (next : ℕ → List Bool → List Bool → List Bool → List Bool → ProbComp Bool)
+    (n : ℕ) : ProbComp Bool :=
+  kemRealGameWith keyGen encaps (fun n sk pk _ ct => do
+    let kIdeal ← BitString.sampleList (keyLen n)
+    next n sk pk kIdeal ct) n
+
 /-- The real KEM IND-CPA experiment ([BonehShoup2023], Exercise 11.9, Experiment `0`):
 sample `(pk, sk) ← keyGen n` and `(k, ctKem) ← encaps n pk`, and pass the encoded triple
 `(pk, (k, ctKem))` to `distinguisher n`. -/
 def kemRealGame (keyGen : ℕ → ProbComp (List Bool × List Bool))
     (encaps : ℕ → List Bool → ProbComp (List Bool × List Bool))
-    (distinguisher : Distinguisher) (n : ℕ) : ProbComp Bool := do
-  let keys ← keyGen n
-  let encapsulated ← encaps n keys.1
-  distinguisher n (encPair encBits (encPair encBits encBits) (keys.1, encapsulated))
+    (distinguisher : Distinguisher) (n : ℕ) : ProbComp Bool :=
+  kemRealGameWith keyGen encaps (fun n _ pk k ct =>
+    distinguisher n (encPair encBits (encPair encBits encBits) (pk, (k, ct)))) n
 
 /-- The ideal KEM IND-CPA experiment ([BonehShoup2023], Exercise 11.9, Experiment `1`):
 sample `(pk, sk) ← keyGen n`, `(k, ctKem) ← encaps n pk`, and an independent uniform
@@ -165,12 +189,9 @@ sample `(pk, sk) ← keyGen n`, `(k, ctKem) ← encaps n pk`, and an independent
 and pass `(pk, (kIdeal, ctKem))` to `distinguisher n`. -/
 noncomputable def kemIdealGame (keyLen : ℕ → ℕ) (keyGen : ℕ → ProbComp (List Bool × List Bool))
     (encaps : ℕ → List Bool → ProbComp (List Bool × List Bool))
-    (distinguisher : Distinguisher) (n : ℕ) : ProbComp Bool := do
-  let keys ← keyGen n
-  let encapsulated ← encaps n keys.1
-  let kIdeal ← BitString.sampleList (keyLen n)
-  distinguisher n
-    (encPair encBits (encPair encBits encBits) (keys.1, (kIdeal, encapsulated.2)))
+    (distinguisher : Distinguisher) (n : ℕ) : ProbComp Bool :=
+  kemIdealGameWith keyLen keyGen encaps (fun n _ pk k ct =>
+    distinguisher n (encPair encBits (encPair encBits encBits) (pk, (k, ct)))) n
 
 /-- The real KEM IND-CPA experiment is uniform strict PPT when key generation, encapsulation, and
 the distinguisher have native certificates. -/
@@ -805,7 +826,8 @@ experiment `Encryption.game keyGen (hybridEncrypt encaps encryptSym)`. -/
     ProbComp.eval
       (kemRealGame keyGen encaps (hybridToKEMDistinguisher encryptSym adversary bit) n) =
       ProbComp.eval (game keyGen (hybridEncrypt encaps encryptSym) adversary bit n) := by
-  simp only [kemRealGame, hybridToKEMDistinguisher, game, gameOn, ↓reduceIte, hybridEncrypt,
+  simp only [kemRealGame, kemRealGameWith,
+    hybridToKEMDistinguisher, game, gameOn, ↓reduceIte, hybridEncrypt,
     encPair_apply, encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
     ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
   congr 1; funext keys
@@ -822,7 +844,8 @@ experiment `Encryption.game keyGen (hybridEncrypt encaps encryptSym)`. -/
       (kemIdealGame keyLen keyGen encaps
             (hybridToKEMDistinguisher encryptSym adversary bit) n) =
       ProbComp.eval (hybridIdealGame keyLen keyGen encaps encryptSym adversary bit n) := by
-  simp only [kemIdealGame, hybridToKEMDistinguisher, hybridIdealGame, encPair_apply,
+  simp only [kemIdealGame, kemIdealGameWith, kemRealGameWith,
+    hybridToKEMDistinguisher, hybridIdealGame, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind]
   congr 1; funext keys
   conv_lhs =>
@@ -863,7 +886,8 @@ theorem eval_kemRealGame_hybridToKEMHiddenBitDistinguisher {Msg : Type}
         let bit ← PMF.uniformOfFintype Bool
         (ProbComp.eval (game keyGen (hybridEncrypt encaps encryptSym) adversary bit n)).map
           (fun guess => guess ^^ bit)) := by
-  simp only [kemRealGame, hybridToKEMHiddenBitDistinguisher, game, gameOn, ↓reduceIte,
+  simp only [kemRealGame, kemRealGameWith,
+    hybridToKEMHiddenBitDistinguisher, game, gameOn, ↓reduceIte,
     hybridEncrypt, encPair_apply, encBits_apply, unframe_frame_append, dropFrame_frame_append,
     ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_pure, PMF.monad_bind_eq_bind,
     PMF.bind_bind, PMF.pure_bind, PMF.map_bind]
@@ -889,7 +913,8 @@ theorem eval_kemIdealGame_hybridToKEMHiddenBitDistinguisher {Msg : Type} (keyLen
         let bit ← PMF.uniformOfFintype Bool
         (ProbComp.eval (hybridIdealGame keyLen keyGen encaps encryptSym adversary bit n)).map
           (fun guess => guess ^^ bit)) := by
-  simp only [kemIdealGame, hybridToKEMHiddenBitDistinguisher, hybridIdealGame, encPair_apply,
+  simp only [kemIdealGame, kemIdealGameWith, kemRealGameWith,
+    hybridToKEMHiddenBitDistinguisher, hybridIdealGame, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
     ProbComp.eval_uniform, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind]
   conv_rhs => rw [PMF.bind_comm]

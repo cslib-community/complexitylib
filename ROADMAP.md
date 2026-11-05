@@ -51,9 +51,11 @@ Priorities live in this list and in the tiers of [#897].
   `Crypto/Protocols/MPC/OTCommitment` supplies the Crépeau commitment ingredient: perfect hiding
   against adaptive receiver queries and a `2⁻ᵏ` malicious double-opening bound in ideal OT.
   `OTCommitment/Extraction` adds a stand-alone corrupted-sender output/state simulation with
-  majority extraction error `2⁻⌈k/2⌉`; `OTCommitment/PolyTime` certifies only the deterministic
-  extractor on explicitly encoded bit-pair lists. Full ideal commitment realization, efficient
-  simulation, composition, the malicious compiler, and MPC simulation remain open in
+  majority extraction error `2⁻⌈k/2⌉`. `OTCommitment/Equivocation` proves the exact joint law of
+  the receiver's transcript, state and later opening from a bit-independent commit prefix.
+  `OTCommitment/PolyTime` certifies only the deterministic extraction and equivocation maps on
+  explicit lists. Full ideal commitment realization, efficient simulation, composition, the
+  malicious compiler, and MPC simulation remain open in
   [#1212](https://github.com/cslib-community/complexitylib/issues/1212).
   `Crypto/Protocols/Commitment/World` supplies an original single-session phased abort
   functionality with receiver-poll secrecy and an immutable committed bit. Its OT simulation
@@ -67,6 +69,9 @@ Priorities live in this list and in the tiers of [#897].
   laws on shifted discrete lattices ([#2573](https://github.com/cslib-community/complexitylib/issues/2573));
   finite exponential moments and normalizer-ratio tails are proved in
   [#2592](https://github.com/cslib-community/complexitylib/issues/2592).
+  Local normal convergence and continuous lattice periodization, including Schwartz and
+  Gaussian clients, are proved in
+  [#2608](https://github.com/cslib-community/complexitylib/issues/2608).
   `Foundations/Analysis/Lattice/Fourier` identifies the unnormalized Fourier coefficients of
   integrable lattice periodizations at dual frequencies, including arbitrary sheared bases.
   Fourier-series reconstruction, covolume normalization, uniform Gaussian mass estimates,
@@ -85,8 +90,9 @@ uniform compactness for the leveled wrapper decryption circuits and level-indexe
 evaluation. After the bounded unified reduction in [#1104], the remaining objective ([#2585])
 is Gentry's exact concrete-security loss together with the `poly(ℓ, d)` running-time clause
 of his Theorem 4. The actual modular link choice and guessing stages have exact saved-tape
-laws and native replay certificates; the unified reduction's remaining branches and the
-literal source loss/runtime comparison still need execution-level proofs. Develop these in reviewable
+laws and native replay certificates, with the link guessing budget derived from strict-PPT
+components on supported key, choice and challenge inputs. The unified reduction's remaining
+branches and the literal source loss/runtime comparison still need execution-level proofs. Develop these in reviewable
 milestones, reusing the finite sampling, gadget algebra, native certificates and game reductions
 where their hypotheses match. The [pre-rewrite FHE section][archive-fhe] maps the schemes to
 current libraries and workloads.
@@ -97,7 +103,9 @@ current libraries and workloads.
    operations over `(Z/qZ)[X]/(X^d + 1)`, RNS/CRT
    conversions, rounding and modulus-switching error bounds, and negacyclic NTTs implementing
    ring multiplication, with native certificates. Define the RLWE secret and error laws and
-   experiment separately; an ordinary-LWE reduction does not give them. Nearest-integer
+   experiment separately; an ordinary-LWE reduction does not give them. Module-LWE sampling now
+   permits explicit small-secret laws, with a native centered-binomial instance; randomized
+   correctness and small-secret security for those laws remain separate goals. Nearest-integer
    coefficient conversion and the Module-LWE phase-error bound are available in
    `SIS/ModulusSwitch`; `SIS/ModulusSwitch/Correctness` gives sufficient decryption-preserving
    margins including odd-modulus message scaling. Parity-preserving switching variants remain
@@ -133,16 +141,23 @@ families and full-input native runtime.
 ### Public-key, lattice and symmetric constructions ([#640])
 
 - **Sigma protocols and Fiat–Shamir** ([#581]): computational Schnorr signatures under discrete
-  log against strict PPT forgers. The arithmetic algorithms and exact typed ROM reduction are
+  log against strict PPT forgers. Word verification now enforces canonical commitments for canonical
+  public keys ([#2672](https://github.com/cslib-community/complexitylib/issues/2672)).
+  The arithmetic algorithms and exact typed ROM reduction are
   proved; strict-PPT identification and eavesdropping results do not discharge this signature
   endpoint. Remaining work includes shared encoded signing/hash access, final-message freshness,
   and an efficient realization of the full forking reduction ([#2568]). The private-coin replay
   prerequisite now includes a full-input oracle-PPT certificate, tape preparation, and joint
-  external-state preservation ([#2579]).
+  external-state preservation ([#2579]). Shared replacement laws derive a key-independent tape
+  from actual PPT key-generation support and transport joint-state mixtures through the existing
+  ROM game ([#2652]); the concrete word-forger adapter remains [#2636].
 - **Lattices**: Fiat–Shamir with aborts and signatures from SIS (Lyubashevsky 2009,
   2012); strict-PPT samplers for integer boxes; identification security under SIS; efficiency
   certificates for the simulator and extractor; full interactive-view simulation;
   Dilithium-style signature schemes over module SIS and module LWE, as theory.
+- **Hybrid encryption:** prove modular KEM–DEM CCA composition with compatible key spaces and
+  rejection-aware canonical ciphertext parsing (Boneh–Shoup Exercise 12.5(a)); adaptive
+  decapsulation security of a KEM alone does not supply this composition.
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
@@ -165,8 +180,10 @@ In order:
 - the BCS transform to non-interactive arguments in the random-oracle model;
 - VOLE constraint reductions and VOLE-in-the-head: `VOLE/Basic.lean` supplies ideal correlations,
   and `VOLE/MulCheck.lean` bounds arbitrary single-gate affine claims by `2 / |F|` with an
-  independent secret key. Batched constraints, zero knowledge, efficient protocol realizations,
-  and the full VOLE-in-the-head transform remain;
+  independent secret key. `VOLE/BatchMulCheck.lean` batches constraints using a public vector of
+  independent weights and an adaptive affine reply, with error at most
+  `1 / |F| + (1 - 1 / |F|) * (2 / |F|)`. Scalar-challenge batching, zero knowledge,
+  efficient protocol realizations and the full VOLE-in-the-head transform remain;
 - libzk's compositional structure as a composition of these components, without ciphersuites.
 
 ### Concurrent and quantum security
@@ -928,3 +945,5 @@ not planned, not as proved.
 
 [#2579]: https://github.com/cslib-community/complexitylib/issues/2579
 [#2585]: https://github.com/cslib-community/complexitylib/issues/2585
+[#2636]: https://github.com/cslib-community/complexitylib/issues/2636
+[#2652]: https://github.com/cslib-community/complexitylib/issues/2652

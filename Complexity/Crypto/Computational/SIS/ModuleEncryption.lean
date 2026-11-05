@@ -76,8 +76,10 @@ ring `R_q = ℤ_q[X] / (X^n + 1)` and modules `R_q^k` ([Regev2009], [Lyubashevsk
   `innerPoly e r - innerPoly e₁ s + e₂`.
 * `Cslib.Crypto.extendPublicKeyMatrix`, `Cslib.Crypto.extendCiphertext`: embedding of `(A, b)` and
   `(u, v)` into a `(k + 1) × k` Module-LWE instance.
-* `Cslib.Crypto.moduleLWEPublicKeyLaw`, `Cslib.Crypto.uniformKeyEncryptionLaw`,
-  `Cslib.Crypto.realEncryptionView`, `Cslib.Crypto.hybridEncryptionView`,
+* `Cslib.Crypto.moduleLWEPublicKeyLaw`, `Cslib.Crypto.encryptionViewOfKeyLaw`,
+  `Cslib.Crypto.realEncryptionView`: explicit secret/ephemeral laws, defaulting to uniform.
+* `Cslib.Crypto.uniformKeyEncryptionLaw`,
+  `Cslib.Crypto.hybridEncryptionView`,
   `Cslib.Crypto.uniformEncryptionView`: public-key and encryption view distributions.
 
 ## Main results
@@ -672,12 +674,14 @@ theorem moduleLWEDecrypt_moduleLWEEncrypt_eq {k n q B_s B_r B_e : ℕ}
 
 /-! ### Part 4: Pseudorandom Public-Key and Ciphertext Reductions to `DecisionModuleLWE` -/
 
-/-- Honest public-key distribution `moduleLWEPublicKeyLaw k n q noise`: draw uniform secret `s`,
-uniform matrix `A`, and independent polynomial errors `e ← PMF.pi (fun _ => noise)`, and output
-`moduleLWEKeyGen A s e`. -/
+/-- Draw a secret from `secretLaw`, a uniform matrix, and independent polynomial errors, then
+output the existing key generator's public key. The default secret law is uniform, exactly as
+required by the `ModuleLWE.sampleLaw` identity and security reductions below. -/
 noncomputable def moduleLWEPublicKeyLaw (k n q : ℕ) [NeZero q]
-    (noise : PMF (Fin n → ZMod q)) : PMF (ModuleLWEPublicKey k n q) := do
-  let secret ← PMF.uniformOfFintype (Fin k → Fin n → ZMod q)
+    (noise : PMF (Fin n → ZMod q))
+    (secretLaw : PMF (Fin k → Fin n → ZMod q) := PMF.uniformOfFintype _) :
+    PMF (ModuleLWEPublicKey k n q) := do
+  let secret ← secretLaw
   let A ← PMF.uniformOfFintype (Matrix (Fin k) (Fin k) (Fin n → ZMod q))
   let error ← PMF.pi (fun _ : Fin k => noise)
   return moduleLWEKeyGen A secret error
@@ -846,24 +850,29 @@ theorem uniformSample_mask_eq_uniform (k n q : ℕ) [NeZero q] (m : Fin n → Bo
           (Fin (k + 1) → Fin n → ZMod q)) :=
   PMF.uniformOfFintype_map_equiv (maskExtendedSampleEquiv m)
 
-/-- Complete encryption view `(pk, ct)` under an arbitrary public-key distribution `pkLaw`, drawing
-uniform `r`, `e₂ ← noise`, and `e₁ ← PMF.pi (fun _ => noise)`. -/
+/-- Complete encryption view `(pk, ct)` under an arbitrary public-key distribution `pkLaw`,
+drawing `r` from `ephemeralLaw`, `e₂ ← noise`, and `e₁ ← PMF.pi (fun _ => noise)`.
+The default ephemeral law is uniform, as used by the security reductions below. -/
 noncomputable def encryptionViewOfKeyLaw {k n q : ℕ} [NeZero q]
     (pkLaw : PMF (ModuleLWEPublicKey k n q))
-    (noise : PMF (Fin n → ZMod q)) (m : Fin n → Bool) :
+    (noise : PMF (Fin n → ZMod q)) (m : Fin n → Bool)
+    (ephemeralLaw : PMF (Fin k → Fin n → ZMod q) := PMF.uniformOfFintype _) :
     PMF (ModuleLWEPublicKey k n q × ModuleLWECiphertext k n q) := do
   let pk ← pkLaw
-  let r ← PMF.uniformOfFintype (Fin k → Fin n → ZMod q)
+  let r ← ephemeralLaw
   let e₂ ← noise
   let e₁ ← PMF.pi (fun _ : Fin k => noise)
   return (pk, moduleLWEEncrypt pk r e₁ e₂ m)
 
-/-- Real encryption view `(pk, ct)` under the honest public-key distribution
-`moduleLWEPublicKeyLaw k n q noise`. -/
+/-- Real encryption view `(pk, ct)` with explicit long-term and ephemeral secret laws.
+Both default to uniform. The existing `DecisionModuleLWE` reductions concern those defaults;
+this parameterization does not extend their security claims to other secret distributions. -/
 noncomputable def realEncryptionView (k n q : ℕ) [NeZero q]
-    (noise : PMF (Fin n → ZMod q)) (m : Fin n → Bool) :
+    (noise : PMF (Fin n → ZMod q)) (m : Fin n → Bool)
+    (secretLaw : PMF (Fin k → Fin n → ZMod q) := PMF.uniformOfFintype _)
+    (ephemeralLaw : PMF (Fin k → Fin n → ZMod q) := PMF.uniformOfFintype _) :
     PMF (ModuleLWEPublicKey k n q × ModuleLWECiphertext k n q) :=
-  encryptionViewOfKeyLaw (moduleLWEPublicKeyLaw k n q noise) noise m
+  encryptionViewOfKeyLaw (moduleLWEPublicKeyLaw k n q noise secretLaw) noise m ephemeralLaw
 
 /-- Hybrid encryption view `(pk, ct)` under a uniform public key `pk`. -/
 noncomputable def hybridEncryptionView (k n q : ℕ) [NeZero q]

@@ -46,6 +46,26 @@ is `R/(2)`. This algebraic bridge adds no hardness or runtime claim.
 
 These are implications from hardness assumptions. They do not prove that a concrete OWF, DDH group, LWE family or SIS parameter choice is hard. The LWE interface exposes only the serialized public matrix `[B*t+e | B]`, with independent errors and one shared uniform secret; in [`SIS/Module.lean`](../../Complexity/Crypto/Computational/SIS/Module.lean), `expandModuleMatrix` and `flattenPolyVec` embed negacyclic `ModuleSIS` and `ModuleLWE` instances over `ℤ_q[X]/(X^n+1)` into unstructured `(d * n) × (k * n)` matrices over `ℤ_q` (checked with concrete evaluations and nonvacuity proofs in [`ComplexityTests/Crypto/ModuleSIS.lean`](../../ComplexityTests/Crypto/ModuleSIS.lean)), and [`SIS/ModuleEncryption.lean`](../../Complexity/Crypto/Computational/SIS/ModuleEncryption.lean) builds dual-Regev public-key encryption (`moduleLWEKeyGen`, `moduleLWEEncrypt`, `moduleLWEDecrypt`), bounded-noise decryption correctness (`moduleLWEDecrypt_moduleLWEEncrypt_eq`), and two-hop public-key/ciphertext reductions to `ModuleLWE.sampleLaw` (`advantage_realEncryptionView_uniform_le`, `advantage_realEncryptionView_msg_le`, checked in [`ComplexityTests/Crypto/ModuleEncryption.lean`](../../ComplexityTests/Crypto/ModuleEncryption.lean)); no worst-case lattice reduction is asserted there.
 
+The Module-LWE sampling APIs now accept explicit distributions: `moduleLWEPublicKeyLaw` has an
+optional `secretLaw`, `encryptionViewOfKeyLaw` an optional `ephemeralLaw`, and `realEncryptionView`
+accepts both. Their defaults remain uniform, and the existing security reductions concern those
+uniform defaults. [`ModuleEncryption/Sampling.lean`](../../Complexity/Crypto/Computational/SIS/ModuleEncryption/Sampling.lean)
+proves that conditioning public-key generation on the actual sampled secret preserves the public
+view, including when the same run retains `(secret, view)`. Sampling a fresh secret independently
+of a public key would not preserve that correlation.
+The concrete small-secret instance reuses the existing centered-binomial fair-bit program and
+modular `GSW.noiseLaw`. Under `2*η < 2^w`, every sampled integer is its residue's centered lift,
+so the resulting module secret satisfies the coefficient bound `η`. Nested list sampling has a
+uniform strict-PPT certificate for unary row count, degree and binomial width, with binary signed
+integer output. The subsequent modular-cast identity is semantic; this is not a native certificate
+for the whole encryption scheme. [Tests](../../ComplexityTests/Crypto/ModuleEncryptionSampling.lean)
+include nonzero supported secrets, zero dimensions/width, and a variable-row native client.
+They also show that uniform rank-one, degree-one secrets and ephemeral values modulo sixteen,
+with all errors one, decrypt a true message correctly with probability only `7/16`.
+The existing deterministic correctness theorem requires bounded secrets as well as bounded noise;
+this example does not contradict it. Small-secret correctness and security require their own
+statements for the chosen laws.
+
 For numerical modulus conversion, import
 [`SIS/ModulusSwitch.lean`](../../Complexity/Crypto/Computational/SIS/ModulusSwitch.lean).
 `moduleLWEModulusSwitch p ct` converts the existing ciphertext components with the reusable
@@ -114,6 +134,10 @@ The canonical [`KEMINDCPA keyLen keyGen encaps`](../../Complexity/Crypto/Computa
 Starting with the imports and local context in [`ComplexityTests/Crypto/HybridEncryption.lean`](../../ComplexityTests/Crypto/HybridEncryption.lean), `indcpaOf_hybridEncrypt_doubleKey_otp` shows the doubled-key composition; adjacent examples check native sampling, supported key lengths, correct decryption and the zero-width boundary. The unconditional security fixture discards its key and is explicitly not decryptable; decryption correctness is checked separately on a leaking KEM. Security does not bundle correctness, and the zero-width pad recovers only the empty message. For an actual cryptographic client, [`DDH.wordINDCPA_hybrid_hashedElGamal`](../../Complexity/Crypto/Computational/ElGamal/ProbComp.lean) now accepts a `SecureKDF` and a standalone DEM at arbitrary `keyLen`; [`ComplexityTests/Crypto/DiffieHellman.lean`](../../ComplexityTests/Crypto/DiffieHellman.lean) instantiates the bridge with doubled key length. The security parameter controlling its modular-sampling error remains `n`, independently of the key length.
 
 [`encryptKeyEncaps keyLen encrypt`](../../Complexity/Crypto/Computational/Encryption/KEMFromPKE.lean) constructs a KEM from word public-key encryption by sampling a key and encrypting it (Boneh–Shoup v0.6, Exercise 11.9(e), p. 461 [bs23][bs23]). Apply `WordINDCPA.kemINDCPA_encryptKeyEncaps` with a native unary polynomial-time certificate for `keyLen`; the reduction chooses two equal-length keys, saves the public key and the first key, and preserves advantage exactly. The separate `isPPTOn_encryptKeyEncaps` certificate also needs native encryption, while `decrypt_encryptKeyEncaps` reuses the original total decryptor and its supported-ciphertext correctness. [`ComplexityTests/Crypto/KEMFromPKE.lean`](../../ComplexityTests/Crypto/KEMFromPKE.lean) provides complete checked clients, including composition of this constructor with the existing doubled-width one-time pad DEM, exact zero-width sampling, and a correctly decryptable but insecure key-revealing encryptor. No new failure/rejection behavior is added.
+
+For adaptive decapsulation security, import [`KEMFromPKE/CCA.lean`](../../Complexity/Crypto/Computational/Encryption/KEMFromPKE/CCA.lean) and apply `WordINDCCA2.indistinguishable_encryptKeyEncaps` (Boneh–Shoup v0.6, Exercise 12.5(f), p. 514 [bs23][bs23]). The result uses `Game.Indistinguishable` over `kemCCARealGame` and `kemCCAIdealGame`, with the existing `IsOraclePPT` adversaries. Both games share the CPA sampling continuations and use `cca2Phase2Oracle` to reject the exact challenge word. The reduction preserves advantage exactly, samples two equal-length keys, and forwards postchallenge queries unchanged. It requires a unary polynomial-time `keyLen`; honest algorithm certificates and supported-output correctness are separate. Here the original option-valued decryptor is retained, so `some []` denotes successful empty-key decapsulation and `none` denotes rejection.
+
+The [checked CCA KEM clients](../../ComplexityTests/Crypto/KEMFromPKECCA.lean) instantiate doubled key length, an unconditional correct zero-width KEM, and a reply-dependent tag-flipping attack with advantage `1 - 2^(-keyLen n)`. The attack fixture is correctly decryptable but insecure; it makes no CPA-security claim. Its native oracle certificate bounds reply reading, and the honest-game certificate charges decryption. This endpoint covers one encapsulation followed by adaptive queries; full KEM–DEM CCA composition, prechallenge KEM queries and multiple encapsulation challenges remain separate objectives.
 
 ## Authentication, signatures, and state
 

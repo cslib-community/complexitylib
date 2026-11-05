@@ -24,6 +24,8 @@ selected values. We use the existing `ot14World`, duplicating the two payloads a
 * `OTCommitment.Sender`: arbitrary randomized, stateful malicious sender.
 * `OTCommitment.Receiver`: arbitrary randomized, stateful malicious receiver.
 * `OTCommitment.bindingGame`: two openings after a single commit interaction.
+* `OTCommitment.receiverCommit`, `OTCommitment.receiverRun`: one honest commit execution with
+  private sender masks retained internally, and its receiver-only observation.
 
 ## Main results
 
@@ -223,19 +225,45 @@ structure Receiver (State : Type) where
   /-- Randomized state update after seeing the selected bit. -/
   receive : State → Bool → PMF State
 
-/-- Honest sender against an adaptive receiver. The result explicitly includes every receiver
-query and answer, as well as final private state. Each fresh sender mask is independent of the
-receiver's current query and history. -/
-noncomputable def receiverRun {State : Type} (A : Receiver State) (b : Bool) :
-    (k : ℕ) → State → PMF ((Fin k → Fin 4 × Bool) × State)
-  | 0, st => pure (Fin.elim0, st)
+/-- Honest commit execution, retaining the sender's private masks alongside the receiver's
+transcript and final state. The masks are never passed to the receiver strategy. This common
+runner supports both the receiver-only observation and the later honest opening. -/
+noncomputable def receiverCommit {State : Type} (A : Receiver State) (b : Bool) :
+    (k : ℕ) → State → PMF ((Fin k → Bool) × (Fin k → Fin 4 × Bool) × State)
+  | 0, st => pure (Fin.elim0, Fin.elim0, st)
   | k + 1, st => do
       let (j, next) ← A.choose k st
       let r ← PMF.uniformOfFintype Bool
       let ans ← transfer (table b r) j
       let next ← A.receive next (ans 1)
+      let (masks, rest, final) ← receiverCommit A b k next
+      pure (Fin.cons r masks, Fin.cons (j, ans 1) rest, final)
+
+/-- Honest sender against an adaptive receiver. The result explicitly includes every receiver
+query and answer, as well as final private state. Each fresh sender mask is independent of the
+receiver's current query and history. The sender's masks are projected away. -/
+noncomputable def receiverRun {State : Type} (A : Receiver State) (b : Bool) (k : ℕ) (st : State) :
+    PMF ((Fin k → Fin 4 × Bool) × State) :=
+  (receiverCommit A b k st).map Prod.snd
+
+/-- Observing zero commit calls returns an empty receiver transcript. -/
+theorem receiverRun_zero {State : Type} (A : Receiver State) (b : Bool) (st : State) :
+    receiverRun A b 0 st = pure (Fin.elim0, st) := by
+  simp [receiverRun, receiverCommit]
+
+/-- The receiver observation keeps the original step-by-step OT execution, without exposing
+any honest sender mask to the strategy. -/
+theorem receiverRun_succ {State : Type} (A : Receiver State) (b : Bool) (k : ℕ) (st : State) :
+    receiverRun A b (k + 1) st = (do
+      let (j, next) ← A.choose k st
+      let r ← PMF.uniformOfFintype Bool
+      let ans ← transfer (table b r) j
+      let next ← A.receive next (ans 1)
       let (rest, final) ← receiverRun A b k next
-      pure (Fin.cons (j, ans 1) rest, final)
+      pure (Fin.cons (j, ans 1) rest, final)) := by
+  simp only [receiverRun, receiverCommit, Probability.PMF.monad_bind_eq_bind,
+    Probability.PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map, PMF.bind_map,
+    Function.comp_def]
 
 private theorem uniform_table (b : Bool) (j : Fin 4) :
     (PMF.uniformOfFintype Bool).map (fun r => table b r j) = PMF.uniformOfFintype Bool := by
@@ -255,7 +283,7 @@ theorem perfectHiding {State : Type} (A : Receiver State) (b b' : Bool) (k : ℕ
   induction k generalizing st with
   | zero => rfl
   | succ k ih =>
-      simp only [receiverRun, transfer_eq, Probability.PMF.monad_bind_eq_bind,
+      simp only [receiverRun_succ, transfer_eq, Probability.PMF.monad_bind_eq_bind,
         Probability.PMF.monad_pure_eq_pure, PMF.pure_bind]
       congr 1
       funext ⟨j, next⟩

@@ -32,6 +32,28 @@ The ratio remains explicit; these results supply neither the dimension-uniform l
 bound nor the sampling algorithm used in Regev's bootstrapping lemma. Controlling the ratio
 and proving multidimensional lattice Poisson summation remain open.
 
+To vary the center continuously, import
+[Gaussian/Periodization.lean](../../Complexity/Foundations/Probability/Gaussian/Periodization.lean).
+`ZLattice.continuous_gaussianMass L s hs` proves continuity of the normalizer for `hs : 0 < s`.
+The proof establishes summable sup norms of the lattice translates on every compact set, so
+the continuous sum comes from local uniform convergence.
+
+For other decaying functions, import
+[Lattice/Periodization.lean](../../Complexity/Foundations/Analysis/Lattice/Periodization.lean).
+Supply a bundled continuous map `f : C(E, F)` into a complete normed additive group, a real exponent
+`b > Module.finrank ℤ L`, and `f =O[cocompact E] (fun x ↦ ‖x‖ ^ (-b))`.
+`ZLattice.continuous_tsum_translate` proves continuity of `x ↦ ∑' z : L, f (x + z)`;
+`continuous_automorphize` proves continuity of Mathlib's existing `QuotientAddGroup.automorphize`
+on the quotient of `E` by `L.toAddSubgroup`. For a Schwartz function, import
+[Lattice/Schwartz.lean](../../Complexity/Foundations/Analysis/Lattice/Schwartz.lean) and use
+`SchwartzMap.continuous_automorphize` directly. The
+[checked clients](../../ComplexityTests/LatticePeriodization.lean) include a nonzero Schwartz
+bump, an infinite integer lattice, a skew two-dimensional basis, and a rank-zero lattice on
+an off-center compact interval. For Fourier coefficient identification, see
+[the quotient-integral workflow below](#unfold-a-lattice-fourier-coefficient). Covolume normalization
+and full lattice Poisson summation remain separate work.
+
+
 ## Certify a closed randomized routine
 
 Use `IsPPTOn input output program` when the required conclusion is a uniform, strict polynomial-time implementation on encoded types. The encodings are embeddings into bit lists. One finite-control fair-coin machine and one polynomial clock must work for every input, with exact equality of encoded output laws. Output writing is charged. This is the contract to request before proving a probabilistic routine efficient.
@@ -112,6 +134,14 @@ Use `adaptive_isOraclePPTOn.query_bounds` to obtain polynomial bounds on externa
 <!-- /worked-example -->
 
 When replacing the external handler with an implementation, open [Oracle/Substitution.lean](../../Complexity/Computability/Probabilistic/Oracle/Substitution.lean). The plain-certificate variant `IsOraclePPTOn.run_interpret_preprocess_open'` requires efficient preparation, initialization and handling, plus an invariant and bounds on reply length and added encoded state. Its `hresources` premise also certifies a uniform unary computation of the resource allowance from the original caller and request; an abstract polynomial bound alone does not supply this certificate. Repeated state doubling explains why “each call is polynomial time” is insufficient.
+
+## Derive adaptive decapsulation security
+
+Import [`KEMFromPKE/CCA.lean`](../../Complexity/Crypto/Computational/Encryption/KEMFromPKE/CCA.lean) when the starting assumption is `WordINDCCA2 keyGen encrypt decrypt`. Apply `WordINDCCA2.indistinguishable_encryptKeyEncaps` with the unary polynomial-time certificate for `keyLen`. It proves security of the actual `encryptKeyEncaps` constructor against adaptive postchallenge queries, with exact loss one. The [complete checked client](../../ComplexityTests/Crypto/KEMFromPKECCA.lean) uses `keyLen n = 2 * n` and keeps `n` as the security parameter.
+
+For a runtime conclusion, use `isPPTOn_kemCCAGames_encryptKeyEncaps` with native key generation, encryption, decryption and adversary certificates. For correctness, apply `decrypt_encryptKeyEncaps_some` to a supported encapsulation and the original encryptor's supported-output correctness. These are separate contracts. The same test file checks a correct empty-key instance and distinguishes `none` from `some []`.
+
+Check freshness against raw ciphertext words. The test's native `adaptiveTagDistinguisher` first observes rejection of the exact challenge, then flips a redundant tag and queries again. Because the malformed scheme ignores that tag, the distinct word reveals the key. Its exact advantage is `1 - 2^(-keyLen n)`; the comparison uses a bounded reply prefix, so its strict oracle runtime certificate holds even for arbitrarily long external replies.
 
 ## Certify a list accumulator
 
