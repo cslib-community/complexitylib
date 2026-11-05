@@ -667,7 +667,8 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   simulated machine halts.
 - **Plain computability** ([#862]): complete the plain calculus ([#608]), delete the tidy
   calculus, keeping only a machine-level kernel inside the Machines layer, and switch the
-  abstract bridges to the shared predicate.
+  abstract bridges to the shared predicate. Plain `ComputableInPolyTime.encode` and `.encoded`
+  now expose typed outputs as words for native replay preparation; broader migration remains open.
 - **Certificate APIs and automation** ([#1155]): predictable search, with fixed heartbeat budgets
   on regression goals, failures that name the subterm lacking a certificate, and cheap
   syntax-directed composition for glue code. Infer encodings for ordinary functional expressions
