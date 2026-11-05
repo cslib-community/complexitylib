@@ -3171,6 +3171,8 @@ public import Complexity.Crypto.Protocols.MPC.Composition
 public import Complexity.Crypto.Protocols.MPC.OTCommitment
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.Equivocation
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.Extraction
+public import Complexity.Crypto.Protocols.MPC.OTCommitment.Opening
+public import Complexity.Crypto.Protocols.MPC.OTCommitment.Opening.PolyTime
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.PolyTime
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.World
 public import Complexity.Crypto.Protocols.MPC.PolyTime

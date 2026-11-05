@@ -319,6 +319,16 @@ Keep receiver choices and selected values private; giving either to the sender c
 [OT commitment tests](../../ComplexityTests/Crypto/OTCommitment.lean) demonstrate rejection of an
 inconsistent opening, a tight one-call attack with success `1/2`, and the zero-call bound `1`.
 
+For an explicit list opening, import
+[`OTCommitment.Opening.PolyTime`](../../Complexity/Crypto/Protocols/MPC/OTCommitment/Opening/PolyTime.lean).
+`openPairs choices received submission` returns the accepted bit or `none` for abort or rejection.
+It checks that all three lists have the same length before testing every pair's parity and selected
+value. `openPairs_ofFn` identifies this total checker with `openResult` on finite-vector encodings;
+`openPairs_polyTime` charges the complete choice and answer bit strings and the framed opening
+pair list, without a well-formedness hypothesis. The [checked list clients](../../ComplexityTests/Crypto/OTCommitmentOpening.lean)
+include short and long inputs in each position. An empty opening accepts either bit when both
+receiver lists are empty; this preserves the zero-call boundary and asserts no binding security.
+
 To extract a bit before opening, import
 [`OTCommitment.Extraction`](../../Complexity/Crypto/Protocols/MPC/OTCommitment/Extraction.lean).
 `extract` takes the strict majority of the actual OT input pair parities, choosing false on a tie.
