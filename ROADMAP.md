@@ -143,6 +143,10 @@ families and full-input native runtime.
   and an efficient realization of the full forking reduction ([#2568]). The private-coin replay
   prerequisite now includes a full-input oracle-PPT certificate, tape preparation, and joint
   external-state preservation ([#2579]).
+  The finite Fiat–Shamir theorem now permits injective hash-point representations in an arbitrary
+  query domain, retaining all out-of-image queries and the same bound
+  ([#2684](https://github.com/cslib-community/complexitylib/issues/2684)); concrete word Schnorr
+  specialization and explicit key-generation/signing approximation transport remain open.
 - **Lattices**: Fiat–Shamir with aborts and signatures from SIS (Lyubashevsky 2009,
   2012); strict-PPT samplers for integer boxes; identification security under SIS; efficiency
   certificates for the simulator and extractor; full interactive-view simulation;
