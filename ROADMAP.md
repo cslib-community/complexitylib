@@ -43,6 +43,12 @@ Priorities live in this list and in the tiers of [#897].
 
 ## Cryptography
 
+Shared statistical infrastructure now propagates all-state, joint reply/state replacement
+bounds through an adaptive oracle program using its existing query-cost budget
+([#2724](https://github.com/cslib-community/complexitylib/issues/2724)). Zero-cost cache operations
+retain their state effects. Applying this composition law to the actual Schnorr signing game,
+transporting key-generation error, and realizing the efficient forking reduction remain [#2568].
+
 ### Cryptographic landmarks
 
 - **Completeness of oblivious transfer.** In the ideal OT-hybrid model, every polynomial-time

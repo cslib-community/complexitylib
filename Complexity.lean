@@ -1917,6 +1917,7 @@ public import Complexity.Computability.Interactive.GKR.Summand
 public import Complexity.Computability.Interactive.Plain
 public import Complexity.Computability.Interactive.RbrKnowledge
 public import Complexity.Computability.Interactive.Security
+public import Complexity.Computability.Interactive.Security.Oracle
 public import Complexity.Computability.Interactive.Security.Repeat
 public import Complexity.Computability.Interactive.Sequential
 public import Complexity.Computability.Interactive.StrategyEffect
