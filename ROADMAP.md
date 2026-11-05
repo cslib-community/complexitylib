@@ -65,8 +65,9 @@ uniform compactness for the leveled wrapper decryption circuits and level-indexe
 evaluation. After the bounded unified reduction in [#1104], the remaining objective ([#2585])
 is Gentry's exact concrete-security loss together with the `poly(ℓ, d)` running-time clause
 of his Theorem 4. The actual modular link choice and guessing stages have exact saved-tape
-laws and native replay certificates; the unified reduction's remaining branches and the
-literal source loss/runtime comparison still need execution-level proofs. Develop these in reviewable
+laws and native replay certificates, with the link guessing budget derived from strict-PPT
+components on supported key, choice and challenge inputs. The unified reduction's remaining
+branches and the literal source loss/runtime comparison still need execution-level proofs. Develop these in reviewable
 milestones, reusing the finite sampling, gadget algebra, native certificates and game reductions
 where their hypotheses match. The [pre-rewrite FHE section][archive-fhe] maps the schemes to
 current libraries and workloads.
