@@ -10,6 +10,7 @@ module
 public import Complexity.Crypto.Protocols.VOLE.World
 public import Complexity.Crypto.Protocols.VOLE.BatchMulCheck
 public import Complexity.Computability.Interactive.Security
+public import Complexity.Crypto.Protocols.SigmaProtocol.Interactive
 import Complexity.Languages.Probabilistic.Oracle.Interaction
 import Complexity.Probability.PMF.Bind
 
@@ -57,10 +58,10 @@ open scoped BigOperators
 
 variable {F ι : Type} {n : ℕ}
 
-/-- Wire corrections, then public weights, then the two blinded affine coefficients. -/
-@[reducible] def maskedMulCheckSpec (F ι : Type) (n : ℕ) : Spec :=
-  [.prover (Fin n → F) (OracleInterface.full _), .verifier (ι → F),
-    .prover (F × F) (OracleInterface.full _)]
+/-- Wire corrections, public weights, then the blinded affine coefficients. This specializes
+the existing three-round message shape; it does not assert Sigma-protocol security properties. -/
+abbrev maskedMulCheckSpec (F ι : Type) (n : ℕ) : Spec :=
+  SigmaProtocol.sigmaSpec (Fin n → F) (ι → F) (F × F)
 
 variable [CommRing F] [Fintype ι]
 
@@ -230,7 +231,7 @@ theorem maskedMulCheck_complete (left right output : ι → Fin n) :
           (r, (maskedMulCheckReply left right output w c.u c.v r, ()))),
             some (), ((), ()))) := by
     simp only [World.eval, Reduction.run, Verifier.execute, maskedMulCheck_output]
-    simp only [maskedMulCheck, liftProver, runStrategy, maskedMulCheckSpec,
+    simp only [maskedMulCheck, liftProver, runStrategy, maskedMulCheckSpec, SigmaProtocol.sigmaSpec,
       ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query,
       OracleComp.interpret_bind, OracleComp.interpret_pure, voleWorld,
       ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query, ProbOracleComp.runWith_pure,
@@ -260,8 +261,8 @@ theorem maskedMulCheckView_eq (left right output : ι → Fin n) (w : Fin n → 
       let r ← PMF.uniformOfFintype (ι → F)
       return (c.receiverView, (voleCommitWitness w (Fin.init c.u),
         (r, (maskedMulCheckReply left right output w c.u c.v r, ()))))) := by
-  simp only [maskedMulCheckView, maskedMulCheck, maskedMulCheckSpec, World.eval,
-    Reduction.run, Verifier.execute, Verifier.output, liftProver, runStrategy,
+  simp only [maskedMulCheckView, maskedMulCheck, maskedMulCheckSpec, SigmaProtocol.sigmaSpec,
+    World.eval, Reduction.run, Verifier.execute, Verifier.output, liftProver, runStrategy,
     Transcript.challenges, OracleInterface.full, voleWorld,
     ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query, OracleComp.interpret_bind,
     OracleComp.interpret_pure, VOLECorrelation.senderView, PMF.map_bind,
