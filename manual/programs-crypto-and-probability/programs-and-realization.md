@@ -65,6 +65,20 @@ Request construction, tape-head movement and reply inspection are charged machin
 
 [Complexity/Computability/Probabilistic/Oracle/Substitution.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Probabilistic/Oracle/Substitution.lean) closes an efficient open program under efficient stateful oracle replacement. The principal endpoint `IsOraclePPTOn.run_interpret_preprocess_open` includes an invariant and controlled growth of replies and encoded handler state. Merely saying that each call is polynomial time would permit iterated state doubling and does not imply a polynomial total run. The underlying [Complexity/Computability/Probabilistic/Realization/OpenOracleSimulation.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Probabilistic/Realization/OpenOracleSimulation.lean) supplies a machine-configuration simulation; the public theorem is supported by that realization.
 
+Saved-coin execution reuses `MultiTapePTM.runConfigFromCoins` from
+[`CoinTape.lean`](../../Complexity/Computability/Machines/Turing/MultiTape/Probabilistic/CoinTape.lean).
+The native [`Replay/WithOracle.lean`](../../Complexity/Computability/Machines/Turing/MultiTape/Probabilistic/Replay/WithOracle.lean)
+controller reads a supplied bit before executing the source instruction, so a query retains that
+bit's branch and the original request/reply channels. `ReplayWithOracle.run_coins` equates the
+complete programs in `2 * coins.length + 1` transitions, including the final stop. The controller's
+own private samples may be discarded only under a stateless coin law. Its auxiliary-tape operations
+are shared with the native clock in
+[`Machine/AuxiliaryTape.lean`](../../Complexity/Computability/Machines/Turing/MultiTape/Machine/AuxiliaryTape.lean).
+This bound assumes the saved-coin and input tapes are already prepared. The full encoded-input
+`IsOraclePPTOn` certificate must additionally charge decoding and preparation; that obligation
+remains [#2579](https://github.com/cslib-community/complexitylib/issues/2579), before the Schnorr ROM
+replay/forking bridge can use it.
+
 ## Exact versus approximate randomness
 
 `ProbComp.uniform` permits exact finite uniform laws. A fair-coin machine with a fixed finite time bound has dyadic probabilities, so exact uniform sampling on three elements cannot follow simply from writing that program. This is a mathematical consequence of the definitions, not a reported failure. The sampling libraries distinguish power-of-two/dyadic laws, bounded samplers and approximate modular sampling. Group protocols can retain exact ideal PMFs and separately prove closeness and native efficiency of a word-level sampler.

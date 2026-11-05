@@ -2355,6 +2355,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.UnaryM
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.WordPredicates
 public import Complexity.Computability.Machines.Turing.MultiTape.Locality
 public import Complexity.Computability.Machines.Turing.MultiTape.Machine
+public import Complexity.Computability.Machines.Turing.MultiTape.Machine.AuxiliaryTape
 public import Complexity.Computability.Machines.Turing.MultiTape.Machine.ChoiceTable
 public import Complexity.Computability.Machines.Turing.MultiTape.Machine.Clock
 public import Complexity.Computability.Machines.Turing.MultiTape.Machine.Composition
@@ -2439,6 +2440,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.R
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.ListOracle
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.Oracle
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.Simulation
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.WithOracle
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayInput
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.RunsWords
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Sampling
