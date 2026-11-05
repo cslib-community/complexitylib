@@ -137,13 +137,17 @@ field-operation bounds, with no bit-level runtime claim for arithmetic or encodi
 The existing upstream `Scheme`
 fixes one generator, whereas this endpoint quantifies over a class of generator laws.
 
-The abstract of STOC submission 886 also advertises Theorem 1.2's two-out-of-$n$ and
-$r$-out-of-$r$ results, expanded in Theorems 4.1 and 5.1. The construction below covers
-all four items of Theorem 4.1, including its tight extraction bound. For the original padded
-source family's $1/6$ tightness, import
-`Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.TwoPartyTightness` and use
-`binary_padded_extraction_tight`. The separate Theorem 5.1 construction, combined main-results
-integration, independent review and final CI remain tracked in
+The abstract's supplementary main Theorem 1.2 is covered by the two-out-of-$n$ and
+$r$-out-of-$r$ constructions, Theorems 4.1 and 5.1. The next section documents the full
+`TwoOutOfN.binary_theorem4_1` bundle. For $r=n+1\ge2$ and $b\ge r$, use
+`AllOutOfR.binary_separation`: it constructs coefficients and literal encodings and proves
+all-key reconstruction, joint privacy of every proper coalition, exact size/entropy bounds
+and sharp extraction. See the
+[all-out-of-r instructions](../design-and-assurance/assurance.md#all-out-of-r-sharing-from-odd-sources)
+for its model and complete client. Import `ImperfectRandomness.ThresholdEntropy`
+for `TwoOutOfN.minEntropy_key_relative` and `AllOutOfR.minEntropy_key_relative`,
+which give Theorem 1.2's explicit common bound $H_\infty(P)\ge\log_2|K|-\log_2 3$
+on the actual unpadded threshold key alphabets. Review and final integration evidence remain in
 [issue 2524](https://github.com/cslib-community/complexitylib/issues/2524).
 
 Import `Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.TwoPartyTightness`

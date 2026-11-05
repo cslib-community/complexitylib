@@ -43,11 +43,12 @@ Priorities live in this list and in the tiers of [#897].
 
 ## Cryptography
 
-The original STOC experiment's remaining secret-sharing main results are tracked in
-[issue 2524](https://github.com/cslib-community/complexitylib/issues/2524): arbitrary-party
-two-out-of-$n$ and $r$-out-of-$r$ separations with exact source bounds and tight extraction
-constants (STOC submission 886, Theorems 1.2, 4.1 and 5.1). The current two-party
-Theorem 1.1 does not complete those advertised threshold extensions.
+The optional original STOC experiment is tracked in
+[issue 2524](https://github.com/cslib-community/complexitylib/issues/2524). STOC submission 886's
+primary two-party and supplementary threshold separation results, sharp extraction bounds
+and key-relative entropy guarantees are implemented; final independent review and integrated
+validation remain required. The broader optional programme stays open, and primary-headline
+coverage does not claim every ancillary result in a paper.
 
 ### Cryptographic landmarks
 

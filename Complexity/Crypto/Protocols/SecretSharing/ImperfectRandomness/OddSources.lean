@@ -401,4 +401,47 @@ theorem minEntropy_source [Nonempty I] (A : Finset B) (hA : A.Nonempty)
     PMF.minEntropy (source A hA hAc T) = Real.logb 2 (keys A T).card :=
   PMF.minEntropy_uniformOfFinset _ _
 
+/-- Theorem 1.2's key-relative entropy bound for the actual complementary sources.
+The two branch classes have consecutive positive sizes, so every support contains at
+least one third of the ambient keys. This concerns the unpadded threshold key alphabet. -/
+theorem log_key_sub_log_three_le_minEntropy [Nonempty I] (A : Finset B)
+    (hA : A.Nonempty) (hAc : (univ \ A).Nonempty) (a : ℕ)
+    (hclasses : (A.card = a ∧ (univ \ A).card = a + 1) ∨
+      (A.card = a + 1 ∧ (univ \ A).card = a)) (T : Finset I) :
+    Real.logb 2 (Fintype.card (B × I)) - Real.logb 2 3 ≤
+      PMF.minEntropy (source A hA hAc T) := by
+  have ha : 1 ≤ a := by
+    have h₁ := hA.card_pos
+    have h₂ := hAc.card_pos
+    rcases hclasses with h | h <;> omega
+  have hc : (univ \ A).card = Fintype.card B - A.card := by
+    rw [card_sdiff_of_subset (subset_univ A), card_univ]
+  have hB : Fintype.card B ≤ 3 * a := by
+    have hle := card_le_univ A
+    rcases hclasses with h | h <;> omega
+  have hl : a ≤ A.card ∧ A.card ≤ a + 1 := by
+    rcases hclasses with h | h <;> omega
+  have hr : a ≤ (univ \ A).card ∧ (univ \ A).card ≤ a + 1 := by
+    rcases hclasses with h | h <;> omega
+  have he : indexCount A T univ = (keys A T).card := by
+    simpa [indexCount] using indexCount_add_compl A T univ
+  have hs : a * Fintype.card I ≤ (keys A T).card := by
+    simpa only [he, card_univ] using (indexCount_bounds A T univ a hl hr).1
+  have htotal : Fintype.card (B × I) ≤ 3 * (keys A T).card := by
+    rw [Fintype.card_prod]
+    calc
+      Fintype.card B * Fintype.card I ≤ (3 * a) * Fintype.card I :=
+        Nat.mul_le_mul_right _ hB
+      _ = 3 * (a * Fintype.card I) := Nat.mul_assoc _ _ _
+      _ ≤ _ := Nat.mul_le_mul_left _ hs
+  have hpos := (keys_nonempty A hA hAc T).card_pos
+  have hk : (0 : ℝ) < Fintype.card (B × I) := by
+    exact_mod_cast lt_of_lt_of_le hpos (card_le_univ (keys A T))
+  have hlog := Real.logb_le_logb_of_le (by norm_num : (1 : ℝ) < 2) hk
+    (by exact_mod_cast htotal : (Fintype.card (B × I) : ℝ) ≤ 3 * (keys A T).card)
+  rw [Real.logb_mul (by norm_num : (3 : ℝ) ≠ 0)
+    (by exact_mod_cast ne_of_gt hpos)] at hlog
+  rw [minEntropy_source]
+  linarith
+
 end Cslib.Crypto.Protocols.SecretSharing.ImperfectRandomness.OddSources
