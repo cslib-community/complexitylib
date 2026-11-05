@@ -111,8 +111,11 @@ current libraries and workloads.
 
 1. **Ring arithmetic and RLWE.** The coefficient `negacyclicMul` and Module-SIS map now have
    a canonical `AdjoinRoot (X^d + 1)` interpretation in `SIS/Polynomial`, for positive dimension
-   over a nontrivial commutative coefficient ring. Remaining: certified polynomial-ring
-   operations over `(Z/qZ)[X]/(X^d + 1)`, RNS/CRT
+   over a nontrivial commutative coefficient ring. `SIS/Native` now bridges a certified list
+   product to the existing negacyclic multiplication, uniformly over unary dimension and binary
+   modulus/coefficients, with a rank-one key-generation client. Full native scheme execution
+   still needs matrix/vector traversal and canonical key/ciphertext packing and parsing.
+   Remaining: further certified polynomial-ring operations over `(Z/qZ)[X]/(X^d + 1)`, RNS/CRT
    conversions, rounding and modulus-switching error bounds, and negacyclic NTTs implementing
    ring multiplication, with native certificates. Define the RLWE secret and error laws and
    experiment separately; an ordinary-LWE reduction does not give them. Module-LWE sampling now

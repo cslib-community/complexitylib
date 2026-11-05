@@ -2595,6 +2595,7 @@ public import Complexity.Computability.PolyTime.GreedyLabelSchedule
 public import Complexity.Computability.PolyTime.GreedySlotScore
 public import Complexity.Computability.PolyTime.Int.ExactDiv
 public import Complexity.Computability.PolyTime.Int.Jet
+public import Complexity.Computability.PolyTime.Int.Negacyclic
 public import Complexity.Computability.PolyTime.Int.Table
 public import Complexity.Computability.PolyTime.JetArray
 public import Complexity.Computability.PolyTime.LinearAlgebra.BooleanMeasurements
@@ -3126,7 +3127,9 @@ public import Complexity.Crypto.Computational.SIS.ModulusSwitch
 public import Complexity.Crypto.Computational.SIS.ModulusSwitch.Correctness
 public import Complexity.Crypto.Computational.SIS.ModulusSwitch.Failure
 public import Complexity.Crypto.Computational.SIS.ModulusSwitch.Native
+public import Complexity.Crypto.Computational.SIS.Native
 public import Complexity.Crypto.Computational.SIS.Polynomial
+public import Complexity.Crypto.Computational.SIS.Polynomial.Coefficients
 public import Complexity.Crypto.Computational.SchnorrEavesdrop
 public import Complexity.Crypto.Computational.SchnorrIdentification
 public import Complexity.Crypto.Computational.SchnorrProtocol
