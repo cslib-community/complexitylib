@@ -556,72 +556,84 @@ private theorem length_le_of_mem_support_signEdgeRaw (S : IndexedSignatureScheme
 private abbrev CertLoopIn :=
   (List (List Bool × List Bool) × (ℕ × ℕ) × (ℕ × List Bool)) × (NodeSlotCache × EdgeSigCache)
 
+private abbrev CertLoopIn.keys (a : CertLoopIn) := a.1.1
+private abbrev CertLoopIn.target (a : CertLoopIn) := a.1.2.1.1
+private abbrev CertLoopIn.sigCap (a : CertLoopIn) := a.1.2.1.2
+private abbrev CertLoopIn.parameter (a : CertLoopIn) := a.1.2.2.1
+private abbrev CertLoopIn.leaf (a : CertLoopIn) := a.1.2.2.2
+private abbrev CertLoopIn.visited (a : CertLoopIn) := a.2.1
+private abbrev CertLoopIn.edges (a : CertLoopIn) := a.2.2
+
+/-- Fixed step parameters paired with the current certification state. -/
+private abbrev CertStepIn :=
+  (List (List Bool × List Bool) × (ℕ × ℕ) × List Bool) × PlantedCertState
+/-- A step input together with the newly visited child slot and cache. -/
+private abbrev CertVisitIn := CertStepIn × (ℕ × NodeSlotCache)
+/-- A visited step input together with the edge signature and cache. -/
+private abbrev CertSignIn := CertVisitIn × (List Bool × EdgeSigCache)
+
 private theorem isOraclePPTOn_certifyStepPlanted (S : IndexedSignatureScheme) :
     IsOraclePPTOn
       (encPair (encPair encKeys (encPair (encPair encUnary encUnary) encBits)) encPlantedCert)
       encPlantedCert
-      (fun q : (List (List Bool × List Bool) × (ℕ × ℕ) × List Bool) × PlantedCertState =>
+      (fun q : CertStepIn =>
         certifyStepPlanted S q.1.1 q.1.2.1.1 q.1.2.1.2 q.1.2.2 q.2) := by
   let encIn := encPair (encPair encKeys (encPair (encPair encUnary encUnary) encBits))
     encPlantedCert
   let encMid := encPair encIn (encPair encUnary encNodeCache)
   let encEnd := encPair encMid (encPair encBits encEdgeCache)
   have hvisit := isOraclePPTOn_visitNodeM (enc := encIn)
-    (cap := fun q : (List (List Bool × List Bool) × (ℕ × ℕ) × List Bool) × PlantedCertState =>
-      q.1.1.length)
-    (path := fun q => q.2.1.1 ++ [q.1.2.2.getD q.2.1.1.length false])
-    (visited := fun q => q.2.2.1) (by fun_prop) (by fun_prop) (by fun_prop)
+    (cap := fun (((keys, _, _), _) : CertStepIn) => keys.length)
+    (path := fun ((_, _, leaf), ((node, _, _), _)) => node ++ [leaf.getD node.length false])
+    (visited := fun (_, (_, (visited, _))) => visited) (by fun_prop) (by fun_prop) (by fun_prop)
   have hsign := isOraclePPTOn_signEdgeM S (enc := encMid)
-    (keys := fun r : ((List (List Bool × List Bool) × (ℕ × ℕ) × List Bool) × PlantedCertState) ×
-        (ℕ × NodeSlotCache) => r.1.1.1)
-    (target := fun r => r.1.1.2.1.1) (sigCap := fun r => r.1.1.2.1.2)
-    (path := fun r => r.1.2.1.1) (idx := fun r => r.1.2.1.2.1)
-    (u := fun r => (r.1.1.2.2.getD r.1.2.1.1.length false).toNat)
-    (msg := fun r => (r.1.1.1.getD r.2.1 ([], [])).1)
-    (edges := fun r => r.1.2.2.2)
+    (keys := fun ((((keys, _, _), _), _) : CertVisitIn) => keys)
+    (target := fun (((_, (target, _), _), _), _) => target)
+    (sigCap := fun (((_, (_, sigCap), _), _), _) => sigCap)
+    (path := fun ((_, ((node, _, _), _)), _) => node)
+    (idx := fun ((_, ((_, idx, _), _)), _) => idx)
+    (u := fun (((_, _, leaf), ((node, _, _), _)), _) => (leaf.getD node.length false).toNat)
+    (msg := fun (((keys, _, _), _), (childIdx, _)) => (keys.getD childIdx ([], [])).1)
+    (edges := fun ((_, (_, (_, edges))), _) => edges)
     (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
     (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
   have hpost : ComputableInPolyTime
-      (fun s : (((List (List Bool × List Bool) × (ℕ × ℕ) × List Bool) × PlantedCertState) ×
-          (ℕ × NodeSlotCache)) × (List Bool × EdgeSigCache) =>
-        ((s.1.1.2.1.1 ++ [s.1.1.1.2.2.getD s.1.1.2.1.1.length false],
-          s.1.2.1,
-          s.1.1.2.1.2.2 ++ [((s.1.1.1.1.getD s.1.2.1 ([], [])).1, s.2.1)]),
-         (s.1.2.2, s.2.2)))
+      (fun (((((keys, _, leaf), ((node, _, certs), _)), (childIdx, visited)), (σ, edges)) :
+          CertSignIn) =>
+        ((node ++ [leaf.getD node.length false], childIdx,
+          certs ++ [((keys.getD childIdx ([], [])).1, σ)]), (visited, edges)))
       encEnd encPlantedCert := by fun_prop
   exact hvisit.bind_with
-    (second := fun (q : (List (List Bool × List Bool) × (ℕ × ℕ) × List Bool) × PlantedCertState)
-        (v : ℕ × NodeSlotCache) =>
-      signEdgeM S q.1.1 q.1.2.1.1 q.1.2.1.2 q.2.1.1 q.2.1.2.1
-        (q.1.2.2.getD q.2.1.1.length false).toNat (q.1.1.getD v.1 ([], [])).1 q.2.2.2 >>=
-        fun e => pure ((q.2.1.1 ++ [q.1.2.2.getD q.2.1.1.length false], v.1,
-          q.2.1.2.2 ++ [((q.1.1.getD v.1 ([], [])).1, e.1)]), (v.2, e.2)))
+    (second := fun ((keys, (target, sigCap), leaf), ((node, idx, certs), (_, edges)))
+        (childIdx, visited) => do
+      let childPk := (keys.getD childIdx ([], [])).1
+      let bit := leaf.getD node.length false
+      let (σ, edges') ← signEdgeM S keys target sigCap node idx bit.toNat childPk edges
+      return ((node ++ [bit], childIdx, certs ++ [(childPk, σ)]), (visited, edges')))
     (hsign.bind_with
-      (second := fun (r : ((List (List Bool × List Bool) × (ℕ × ℕ) × List Bool) ×
-          PlantedCertState) × (ℕ × NodeSlotCache)) (e : List Bool × EdgeSigCache) =>
-        (pure ((r.1.2.1.1 ++ [r.1.1.2.2.getD r.1.2.1.1.length false], r.2.1,
-          r.1.2.1.2.2 ++ [((r.1.1.1.getD r.2.1 ([], [])).1, e.1)]), (r.2.2, e.2)) :
+      (second := fun (((keys, _, leaf), ((node, _, certs), _)), (childIdx, visited)) (σ, edges) =>
+        (pure ((node ++ [leaf.getD node.length false], childIdx,
+          certs ++ [((keys.getD childIdx ([], [])).1, σ)]), (visited, edges)) :
           WordOracleComp Unit PlantedCertState))
       hpost.isOraclePPTOn)
 
 private def plantedLoopInv (Mv Me : ℕ) (a : CertLoopIn) (i : ℕ)
     (state : PlantedCertState) : Prop :=
-  state.1.1.length = i ∧
-  state.1.2.1 ≤ Mv ∧
-  state.1.2.2.length = i ∧
-  (∀ c ∈ state.1.2.2, c.1.length ≤ (encKeys a.1.1).length ∧ c.2.length ≤ Me) ∧
-  (∀ e ∈ state.2.1, e.2 ≤ Mv) ∧
-  (∀ e ∈ state.2.2, e.2.length ≤ Me) ∧
-  (encNodeCache state.2.1).length ≤
-    (encNodeCache a.2.1).length + i * (4 * (i + 1) + 2 * Mv + 3) ∧
-  (encEdgeCache state.2.2).length ≤
-    (encEdgeCache a.2.2).length + i * (8 * i + 2 * Me + 11)
+  let ((keys, _, _), (visited₀, edges₀)) := a
+  let ((node, idx, certs), (visited, edges)) := state
+  node.length = i ∧ idx ≤ Mv ∧ certs.length = i ∧
+  (∀ c ∈ certs, c.1.length ≤ (encKeys keys).length ∧ c.2.length ≤ Me) ∧
+  (∀ e ∈ visited, e.2 ≤ Mv) ∧ (∀ e ∈ edges, e.2.length ≤ Me) ∧
+  (encNodeCache visited).length ≤
+    (encNodeCache visited₀).length + i * (4 * (i + 1) + 2 * Mv + 3) ∧
+  (encEdgeCache edges).length ≤
+    (encEdgeCache edges₀).length + i * (8 * i + 2 * Me + 11)
 
 private theorem plantedLoopInv_step (S : IndexedSignatureScheme) {Mv Me : ℕ} (a : CertLoopIn)
-    (hMv : a.1.1.length ≤ Mv) (hMe : a.1.2.1.2 ≤ Me) (i : ℕ) (state : PlantedCertState)
+    (hMv : a.keys.length ≤ Mv) (hMe : a.sigCap ≤ Me) (i : ℕ) (state : PlantedCertState)
     (hinv : plantedLoopInv Mv Me a i state) (next : PlantedCertState)
     (hnext : next ∈ OracleComp.support
-      (certifyStepPlanted S a.1.1 a.1.2.1.1 a.1.2.1.2 a.1.2.2.2 state)) :
+      (certifyStepPlanted S a.keys a.target a.sigCap a.leaf state)) :
     plantedLoopInv Mv Me a (i + 1) next := by
   rcases a with ⟨⟨keys, ⟨target, sigCap⟩, ⟨n, leaf⟩⟩, ⟨visited₀, edges₀⟩⟩
   rcases state with ⟨⟨node, idx, certs⟩, ⟨visited, edges⟩⟩
@@ -675,13 +687,13 @@ private theorem plantedLoopInv_step (S : IndexedSignatureScheme) {Mv Me : ℕ} (
 
 private theorem certifyPlanted_support_inv (S : IndexedSignatureScheme) (depth : ℕ → ℕ)
     {Mv Me : ℕ} (a : CertLoopIn)
-    (hMv : a.1.1.length ≤ Mv) (hMe : a.1.2.1.2 ≤ Me)
-    (hv₀ : ∀ e ∈ a.2.1, e.2 ≤ Mv) (he₀ : ∀ e ∈ a.2.2, e.2.length ≤ Me) :
+    (hMv : a.keys.length ≤ Mv) (hMe : a.sigCap ≤ Me)
+    (hv₀ : ∀ e ∈ a.visited, e.2 ≤ Mv) (he₀ : ∀ e ∈ a.edges, e.2.length ≤ Me) :
     ∀ state ∈ OracleComp.support
-      (certifyPlanted S depth a.1.1 a.1.2.1.1 a.1.2.1.2 a.1.2.2.1 a.1.2.2.2 a.2),
-      plantedLoopInv Mv Me a (depth a.1.2.2.1 - 1) state := by
+      (certifyPlanted S depth a.keys a.target a.sigCap a.parameter a.leaf a.2),
+      plantedLoopInv Mv Me a (depth a.parameter - 1) state := by
   have hiter : ∀ k, ∀ state ∈ OracleComp.support
-      (OracleComp.iterate k (certifyStepPlanted S a.1.1 a.1.2.1.1 a.1.2.1.2 a.1.2.2.2)
+      (OracleComp.iterate k (certifyStepPlanted S a.keys a.target a.sigCap a.leaf)
         (([], 0, []), a.2)),
       plantedLoopInv Mv Me a k state := by
     intro k
@@ -696,7 +708,7 @@ private theorem certifyPlanted_support_inv (S : IndexedSignatureScheme) (depth :
       rw [OracleComp.iterate_succ] at hstate
       obtain ⟨prev, hprev, hstep⟩ := OracleComp.mem_supportWith_bind_iff.mp hstate
       exact plantedLoopInv_step S a hMv hMe k prev (ih prev hprev) state hstep
-  exact hiter (depth a.1.2.2.1 - 1)
+  exact hiter (depth a.parameter - 1)
 
 private theorem isOraclePPTOn_certifyPlanted (S : IndexedSignatureScheme) {depth : ℕ → ℕ}
     (hdepth : ComputableInPolyTime depth encUnary encUnary) :
@@ -705,28 +717,31 @@ private theorem isOraclePPTOn_certifyPlanted (S : IndexedSignatureScheme) {depth
         (encPair encNodeCache encEdgeCache))
       encPlantedCert
       (fun a : CertLoopIn =>
-        certifyPlanted S depth a.1.1 a.1.2.1.1 a.1.2.1.2 a.1.2.2.1 a.1.2.2.2 a.2) := by
+        certifyPlanted S depth a.keys a.target a.sigCap a.parameter a.leaf a.2) := by
   let encLoopIn :=
     encPair (encPair encKeys (encPair (encPair encUnary encUnary) (encPair encUnary encBits)))
       (encPair encNodeCache encEdgeCache)
   obtain ⟨cd, dd, hdd⟩ := hdepth.polyBounded_length.exists_le
   simp only [encUnary_apply, List.length_replicate] at hdd
   have hleIn (a : CertLoopIn) :
-      a.1.1.length ≤ (encLoopIn a).length ∧
-      (encKeys a.1.1).length ≤ (encLoopIn a).length ∧
-      a.1.2.1.2 ≤ (encLoopIn a).length ∧
-      a.1.2.2.1 ≤ (encLoopIn a).length ∧
-      (encNodeCache a.2.1).length ≤ (encLoopIn a).length ∧
-      (encEdgeCache a.2.2).length ≤ (encLoopIn a).length := by
-    have hk := length_le_length_encList (encPair encBits encBits) a.1.1
-    simp only [encLoopIn, length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
+      a.keys.length ≤ (encLoopIn a).length ∧
+      (encKeys a.keys).length ≤ (encLoopIn a).length ∧
+      a.sigCap ≤ (encLoopIn a).length ∧
+      a.parameter ≤ (encLoopIn a).length ∧
+      (encNodeCache a.visited).length ≤ (encLoopIn a).length ∧
+      (encEdgeCache a.edges).length ≤ (encLoopIn a).length := by
+    rcases a with ⟨⟨keys, targetCap, ⟨n, leaf⟩⟩, ⟨visited, edges⟩⟩
+    have hk := length_le_length_encList (encPair encBits encBits) keys
+    simp only [CertLoopIn.keys, CertLoopIn.sigCap, CertLoopIn.parameter, CertLoopIn.visited,
+      CertLoopIn.edges, encLoopIn, length_encPair, encUnary_apply, List.length_replicate,
+      encBits_apply]
     omega
   have hd : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
-      (fun a => depth a.1.2.2.1) :=
-    PolyBounded.of_forall_le cd dd fun a => (hdd a.1.2.2.1).trans
+      (fun a => depth a.parameter) :=
+    PolyBounded.of_forall_le cd dd fun a => (hdd a.parameter).trans
       (Nat.mul_le_mul_left cd (Nat.pow_le_pow_left (Nat.add_le_add_right (hleIn a).2.2.2.1 1) dd))
-  let Mv (a : CertLoopIn) : ℕ := a.1.1.length + (encNodeCache a.2.1).length
-  let Me (a : CertLoopIn) : ℕ := a.1.2.1.2 + (encEdgeCache a.2.2).length
+  let Mv (a : CertLoopIn) : ℕ := a.keys.length + (encNodeCache a.visited).length
+  let Me (a : CertLoopIn) : ℕ := a.sigCap + (encEdgeCache a.edges).length
   have hMvPoly : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length) Mv :=
     (PolyBounded.self.mono fun a => (hleIn a).1).add
       (PolyBounded.self.mono fun a => (hleIn a).2.2.2.2.1)
@@ -734,28 +749,28 @@ private theorem isOraclePPTOn_certifyPlanted (S : IndexedSignatureScheme) {depth
     (PolyBounded.self.mono fun a => (hleIn a).2.2.1).add
       (PolyBounded.self.mono fun a => (hleIn a).2.2.2.2.2)
   have hKPoly : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
-      (fun a => (encKeys a.1.1).length) :=
+      (fun a => (encKeys a.keys).length) :=
     PolyBounded.self.mono fun a => (hleIn a).2.1
   have hN0Poly : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
-      (fun a => (encNodeCache a.2.1).length) :=
+      (fun a => (encNodeCache a.visited).length) :=
     PolyBounded.self.mono fun a => (hleIn a).2.2.2.2.1
   have hE0Poly : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
-      (fun a => (encEdgeCache a.2.2).length) :=
+      (fun a => (encEdgeCache a.edges).length) :=
     PolyBounded.self.mono fun a => (hleIn a).2.2.2.2.2
   have hloopId := ComputableInPolyTime.id' (encIn := encLoopIn)
   have hpair1 := ComputableInPolyTime.fst encLoopIn encPlantedCert
   have hpair2 := ComputableInPolyTime.snd encLoopIn encPlantedCert
   refine (IsOraclePPTOn.iterateWith_spec' (input := encLoopIn) (stateEncoding := encPlantedCert)
-    (count := fun a => depth a.1.2.2.1 - 1)
+    (count := fun a : CertLoopIn => depth a.parameter - 1)
     (initial := fun a => ((([], 0, []), a.2) : PlantedCertState))
-    (step := fun a state =>
-      certifyStepPlanted S a.1.1 a.1.2.1.1 a.1.2.1.2 a.1.2.2.2 state)
+    (step := fun (a : CertLoopIn) state =>
+      certifyStepPlanted S a.keys a.target a.sigCap a.leaf state)
     ((hdepth.comp hloopId.fst'.snd'.snd'.fst').unary_sub' (.const 1))
     (((ComputableInPolyTime.const []).prod ((ComputableInPolyTime.const 0).prod (.const []))).prod
       hloopId.snd')
     ((isOraclePPTOn_certifyStepPlanted S).preprocess'
       (prepare := fun pair : CertLoopIn × PlantedCertState =>
-        ((pair.1.1.1, pair.1.1.2.1, pair.1.1.2.2.2), pair.2))
+        ((pair.1.keys, (pair.1.target, pair.1.sigCap), pair.1.leaf), pair.2))
       (((hpair1.fst'.fst'.prod (hpair1.fst'.snd'.fst'.prod hpair1.fst'.snd'.snd'.snd')).prod
         hpair2)))
     (fun a i state => plantedLoopInv (Mv a) (Me a) a i state)
@@ -774,43 +789,44 @@ private theorem isOraclePPTOn_certifyPlanted (S : IndexedSignatureScheme) {depth
     (fun a i state _ hinv next hnext =>
       plantedLoopInv_step S a (Nat.le_add_right _ _) (Nat.le_add_right _ _) i state hinv next
         hnext)
-    (size := fun a =>
-      let d := depth a.1.2.2.1
-      let certB := d * (2 * (2 * (encKeys a.1.1).length + 1 + Me a) + 1)
-      let vB := (encNodeCache a.2.1).length + d * (4 * (d + 1) + 2 * Mv a + 3)
-      let eB := (encEdgeCache a.2.2).length + d * (8 * d + 2 * Me a + 11)
+    (size := fun a : CertLoopIn =>
+      let d := depth a.parameter
+      let certB := d * (2 * (2 * (encKeys a.keys).length + 1 + Me a) + 1)
+      let vB := (encNodeCache a.visited).length + d * (4 * (d + 1) + 2 * Mv a + 3)
+      let eB := (encEdgeCache a.edges).length + d * (8 * d + 2 * Me a + 11)
       2 * (2 * d + 1 + (2 * Mv a + 1 + certB)) + 1 + (2 * vB + 1 + eB))
     ?_ ?_).1
   · have hcertB : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
-        (fun a => depth a.1.2.2.1 * (2 * (2 * (encKeys a.1.1).length + 1 + Me a) + 1)) :=
+        (fun a => depth a.parameter * (2 * (2 * (encKeys a.keys).length + 1 + Me a) + 1)) :=
       hd.mul (((PolyBounded.const 2).mul
         ((((PolyBounded.const 2).mul hKPoly).add (.const 1)).add hMePoly)).add (.const 1))
     have hvB : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
-        (fun a => (encNodeCache a.2.1).length +
-          depth a.1.2.2.1 * (4 * (depth a.1.2.2.1 + 1) + 2 * Mv a + 3)) :=
+        (fun a => (encNodeCache a.visited).length +
+          depth a.parameter * (4 * (depth a.parameter + 1) + 2 * Mv a + 3)) :=
       hN0Poly.add (hd.mul (((((PolyBounded.const 4).mul (hd.add (.const 1))).add
         ((PolyBounded.const 2).mul hMvPoly))).add (.const 3)))
     have heB : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
-        (fun a => (encEdgeCache a.2.2).length +
-          depth a.1.2.2.1 * (8 * depth a.1.2.2.1 + 2 * Me a + 11)) :=
+        (fun a => (encEdgeCache a.edges).length +
+          depth a.parameter * (8 * depth a.parameter + 2 * Me a + 11)) :=
       hE0Poly.add (hd.mul (((((PolyBounded.const 8).mul hd).add
         ((PolyBounded.const 2).mul hMePoly))).add (.const 11)))
     have hleft : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
-        (fun a => 2 * depth a.1.2.2.1 + 1 + (2 * Mv a + 1 +
-          depth a.1.2.2.1 * (2 * (2 * (encKeys a.1.1).length + 1 + Me a) + 1))) :=
+        (fun a => 2 * depth a.parameter + 1 + (2 * Mv a + 1 +
+          depth a.parameter * (2 * (2 * (encKeys a.keys).length + 1 + Me a) + 1))) :=
       (((PolyBounded.const 2).mul hd).add (.const 1)).add
         ((((PolyBounded.const 2).mul hMvPoly).add (.const 1)).add hcertB)
     have hright : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
-        (fun a => 2 * ((encNodeCache a.2.1).length +
-            depth a.1.2.2.1 * (4 * (depth a.1.2.2.1 + 1) + 2 * Mv a + 3)) + 1 +
-          ((encEdgeCache a.2.2).length +
-            depth a.1.2.2.1 * (8 * depth a.1.2.2.1 + 2 * Me a + 11))) :=
+        (fun a => 2 * ((encNodeCache a.visited).length +
+            depth a.parameter * (4 * (depth a.parameter + 1) + 2 * Mv a + 3)) + 1 +
+          ((encEdgeCache a.edges).length +
+            depth a.parameter * (8 * depth a.parameter + 2 * Me a + 11))) :=
       (((PolyBounded.const 2).mul hvB).add (.const 1)).add heB
     exact (((PolyBounded.const 2).mul hleft).add (.const 1)).add hright
   · rintro ⟨⟨keys, ⟨target, sigCap⟩, ⟨n, leaf⟩⟩, ⟨visited₀, edges₀⟩⟩ i
       ⟨⟨node, idx, certs⟩, ⟨visited, edges⟩⟩ hi
       ⟨hnode, hidx, hcertsLen, hcerts, -, -, hvisLen, hedgLen⟩
-    dsimp only at hi hnode hidx hcertsLen hcerts hvisLen hedgLen ⊢
+    dsimp only [CertLoopIn.keys, CertLoopIn.sigCap, CertLoopIn.parameter,
+      CertLoopIn.visited, CertLoopIn.edges] at hi hnode hidx hcertsLen hcerts hvisLen hedgLen ⊢
     have hiLe : i ≤ depth n := hi.trans (Nat.sub_le _ _)
     have hcertsList : (encKeys certs).length ≤
         certs.length * (2 * (2 * (encKeys keys).length + 1 + Me
@@ -1016,7 +1032,8 @@ private theorem plantedTreeHandler_preserve (S : IndexedSignatureScheme) (depth 
       have hloop := certifyPlanted_support_inv S depth
         ((c.2, (c.1.2, sigCap c.1.1.1), (c.1.1.1, leaf)), (visited, edges))
         le_rfl le_rfl hvis hedg _ hcert
-      dsimp only [plantedLoopInv] at hloop
+      dsimp only [plantedLoopInv, CertLoopIn.keys, CertLoopIn.sigCap,
+        CertLoopIn.parameter] at hloop
       obtain ⟨hnode, hidx, hcertsLen, hcerts, hvis', hedg', hvisGrow, hedgGrow⟩ := hloop
       have heLast := ProbOracleComp.memoize_call_size_le (encPair encBits encUnary) encBits
         (fun _ => signEdgeRaw S c.2 c.1.2 (sigCap c.1.1.1) idx

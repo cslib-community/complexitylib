@@ -103,9 +103,9 @@ $$\Pr[\text{Forge}] \le \mathrm{Adv}_{\mathrm{PRF}}(B(\mathcal{A}), n) + 2^{-n}.
 
 ## Main results
 
-* `Cslib.Crypto.MACScheme.isPPTOn_sufCmaGame`, `isPPT_sufCmaGame`, `isPPTOn_sufOneTimeGame`,
-  `isPPT_sufOneTimeGame`, `isPPTOn_eufCmaGame`, `isPPT_eufCmaGame`: strict PPT certificates for the
-  MAC SUF-CMA, one-time SUF-CMA, and EUF-CMA experiments.
+* `Cslib.Crypto.MACScheme.isPPTOn_run_signingOracle`, `isPPTOn_sufCmaGame`, `isPPT_sufCmaGame`,
+  `isPPTOn_sufOneTimeGame`, `isPPT_sufOneTimeGame`, `isPPTOn_eufCmaGame`, `isPPT_eufCmaGame`: strict
+  PPT certificates for the MAC SUF-CMA, one-time SUF-CMA, and EUF-CMA experiments.
 * `Cslib.Crypto.MACScheme.eval_run_signingOracle_eq_map_fst_signingPairOracle`,
   `eval_eufCmaGame_eq_signingPairOracle`, `succProbability_eufCmaGame_le_sufCmaGame`,
   `eval_run_oneTimeSigningOracle_eq_map_fst_oneTimeSigningPairOracle`,
@@ -281,45 +281,29 @@ private theorem computableInPolyTime_eufPost (M : MACScheme) :
   simp only [List.contains_eq_mem]
   fun_prop
 
+/-- Running an oracle-PPT forger against `signingOracle` is uniformly strict PPT in the unary
+security parameter and secret key. -/
+@[program_certificate]
+theorem isPPTOn_run_signingOracle (M : MACScheme) {adversary : Forger}
+    (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
+    IsPPTOn (encPair encUnary encBits)
+      (encPair (encPair encBits encBits) (encList encBits))
+      (fun caller : ℕ × List Bool =>
+        (OracleComp.interpret
+          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
+            (M.signingOracle caller.2)) (adversary caller.1 [])).run []) :=
+  (SignatureScheme.isPPTOn_run_signingOracleOf M.sign_ppt hadversary).preprocess
+    ((ComputableInPolyTime.fst _ _).prod
+      ((ComputableInPolyTime.const []).prod (ComputableInPolyTime.snd _ _)))
+
 /-- Run the complete MAC EUF-CMA experiment on its unary security parameter for any oracle-PPT
 forger. -/
 @[program_certificate]
 theorem isPPTOn_eufCmaGame (M : MACScheme) {adversary : Forger}
     (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
-    IsPPTOn encUnary encBool (M.eufCmaGame adversary) := by
-  obtain ⟨c, d, hlen⟩ := M.sign_ppt.length_le
-  have hhandler : IsPPTOn
-      (encPair (encPair encUnary encBits)
-        (encPair (encPair (encFinEnum Unit) encBits) (encList encBits)))
-      (encPair encBits (encList encBits))
-      (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × List (List Bool)) =>
-        M.signingOracle pair.1.2 pair.2.1 pair.2.2) := by
-    unfold signingOracle
-    exact (M.isPPTOn_sign_comp (by fun_prop) (by fun_prop)).bind_with
-      (ComputableInPolyTime.isPPTOn (by fun_prop))
-  have hrun : IsPPTOn (encPair encUnary encBits)
-      (encPair (encPair encBits encBits) (encList encBits))
-      (fun caller : ℕ × List Bool =>
-        (OracleComp.interpret
-          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
-            (M.signingOracle caller.2)) (adversary caller.1 [])).run []) := by
-    apply hadversary.run_interpret_preprocess
-      (prepare := fun caller : ℕ × List Bool => (caller.1, ([] : List Bool)))
-      (initial := fun _ => ([] : List (List Bool)))
-      (resources := fun caller query =>
-        c * (2 * caller.2.length + query.length + 2) ^ d + 2 * query.length + 2)
-      (ComputableInPolyTime.tidy (by fun_prop)) hhandler (ComputableTidilyInPolyTime.const [])
-      (fun _ _ => True) (fun _ => trivial) (ComputableInPolyTime.tidy (by fun_prop))
-    intro caller request queried _ result hresult
-    simp only [signingOracle, ProbComp.eval_bind, ProbComp.eval_pure,
-      PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hresult
-    obtain ⟨tag, htag, rfl⟩ := hresult
-    have htagLen := hlen (caller.2, request.2) tag htag
-    simp only [encBits_apply, length_encPair] at htagLen
-    refine ⟨trivial, by lia, ?_⟩
-    simp only [encList_cons, List.length_append, length_frame, encBits_apply]
-    lia
-  exact M.keyGen_ppt.bind_with (hrun.bind_with M.computableInPolyTime_eufPost.isPPTOn)
+    IsPPTOn encUnary encBool (M.eufCmaGame adversary) :=
+  M.keyGen_ppt.bind_with
+    ((M.isPPTOn_run_signingOracle hadversary).bind_with M.computableInPolyTime_eufPost.isPPTOn)
 
 /-- The MAC EUF-CMA experiment is uniformly strict PPT, independently of unused auxiliary input. -/
 @[program_certificate]
@@ -343,16 +327,15 @@ def EUFCMA (M : MACScheme) : Prop :=
 /-- Full EUF-CMA security gives negligible forgery probability for every oracle-PPT forger. -/
 theorem EUFCMA.negligible {M : MACScheme} (h : M.EUFCMA)
     (adversary : Forger) (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
-    Negligible (fun n => Game.succProbability (ProbComp.eval (M.eufCmaGame adversary n))) := by
-  simpa only [Game.advantage_pure_false] using h adversary hadversary
+    Negligible (fun n => Game.succProbability (ProbComp.eval (M.eufCmaGame adversary n))) :=
+  Game.Indistinguishable.negligible_succProbability h adversary hadversary
 
 /-- Establish EUF-CMA security by bounding every oracle-PPT forger's success probability. -/
 theorem EUFCMA.of_negligible {M : MACScheme}
     (h : ∀ adversary, IsOraclePPT (encPair encBits encBits) adversary →
       Negligible (fun n => Game.succProbability (ProbComp.eval (M.eufCmaGame adversary n)))) :
-    M.EUFCMA := by
-  intro adversary hadversary
-  simpa only [Game.advantage_pure_false] using h adversary hadversary
+    M.EUFCMA :=
+  Game.Indistinguishable.of_negligible_succProbability h
 
 /-! ### One-time adaptive chosen-message security (`OneTimeEUFCMA`) -/
 
@@ -390,42 +373,10 @@ theorem isPPTOn_run_oneTimeSigningOracle (M : MACScheme) {adversary : Forger}
       (fun caller : ℕ × List Bool =>
         (OracleComp.interpret
           (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
-            (M.oneTimeSigningOracle caller.2)) (adversary caller.1 [])).run []) := by
-  obtain ⟨c, d, hlen⟩ := M.sign_ppt.length_le
-  have hhandler : IsPPTOn
-      (encPair (encPair encUnary encBits)
-        (encPair (encPair (encFinEnum Unit) encBits) (encList encBits)))
-      (encPair encBits (encList encBits))
-      (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × List (List Bool)) =>
-        M.oneTimeSigningOracle pair.1.2 pair.2.1 pair.2.2) := by
-    unfold oneTimeSigningOracle
-    exact IsPPTOn.ite' (by fun_prop)
-      ((M.isPPTOn_sign_comp (by fun_prop) (by fun_prop)).bind_with
-        (ComputableInPolyTime.isPPTOn (by fun_prop)))
-      (ComputableInPolyTime.isPPTOn (by fun_prop))
-  apply hadversary.run_interpret_preprocess
-    (prepare := fun caller : ℕ × List Bool => (caller.1, ([] : List Bool)))
-    (initial := fun _ => ([] : List (List Bool)))
-    (resources := fun caller query =>
-      c * (2 * caller.2.length + query.length + 2) ^ d + 2 * query.length + 2)
-    (ComputableInPolyTime.tidy (by fun_prop)) hhandler (ComputableTidilyInPolyTime.const [])
-    (fun _ _ => True) (fun _ => trivial) (ComputableInPolyTime.tidy (by fun_prop))
-  intro caller request queried _ result hresult
-  unfold oneTimeSigningOracle at hresult
-  split_ifs at hresult with hempty
-  · simp only [ProbComp.eval_bind, ProbComp.eval_pure,
-      PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hresult
-    obtain ⟨tag, htag, rfl⟩ := hresult
-    have htagLen := hlen (caller.2, request.2) tag htag
-    simp only [encBits_apply, length_encPair] at htagLen
-    refine ⟨trivial, by lia, ?_⟩
-    rw [List.isEmpty_iff.mp hempty]
-    simp only [encList_cons, encList_nil, List.length_append, List.length_nil, length_frame,
-      encBits_apply]
-    lia
-  · simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hresult
-    subst result
-    exact ⟨trivial, by simp, by lia⟩
+            (M.oneTimeSigningOracle caller.2)) (adversary caller.1 [])).run []) :=
+  (SignatureScheme.isPPTOn_run_oneTimeSigningOracleOf M.sign_ppt hadversary).preprocess
+    ((ComputableInPolyTime.fst _ _).prod
+      ((ComputableInPolyTime.const []).prod (ComputableInPolyTime.snd _ _)))
 
 /-- Run the complete one-time MAC EUF-CMA experiment on its unary security parameter for any
 oracle-PPT forger. -/
@@ -454,68 +405,16 @@ def OneTimeEUFCMA (M : MACScheme) : Prop :=
 /-- One-time EUF-CMA security gives negligible forgery probability for every oracle-PPT forger. -/
 theorem OneTimeEUFCMA.negligible {M : MACScheme} (h : M.OneTimeEUFCMA)
     (adversary : Forger) (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
-    Negligible (fun n => Game.succProbability (ProbComp.eval (M.eufOneTimeGame adversary n))) := by
-  simpa only [Game.advantage_pure_false] using h adversary hadversary
+    Negligible (fun n => Game.succProbability (ProbComp.eval (M.eufOneTimeGame adversary n))) :=
+  Game.Indistinguishable.negligible_succProbability h adversary hadversary
 
 /-- Establish one-time EUF-CMA security by bounding every oracle-PPT forger's success
 probability. -/
 theorem OneTimeEUFCMA.of_negligible {M : MACScheme}
     (h : ∀ adversary, IsOraclePPT (encPair encBits encBits) adversary →
       Negligible (fun n => Game.succProbability (ProbComp.eval (M.eufOneTimeGame adversary n)))) :
-    M.OneTimeEUFCMA := by
-  intro adversary hadversary
-  simpa only [Game.advantage_pure_false] using h adversary hadversary
-
-private theorem run_limitToOneQuery_eq_oneTimeSigningOracle (M : MACScheme)
-    (bound : ℕ → ℕ → ℕ) (n : ℕ) (sk : List Bool)
-    (hbound : ∀ msg tag, tag ∈ (ProbComp.eval (M.sign sk msg)).support →
-      tag.length ≤ bound n msg.length)
-    (prog : WordOracleComp Unit (List Bool × List Bool)) :
-    ProbComp.eval (Prod.map Prod.fst id <$> ((OracleComp.interpret
-      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
-        (M.signingOracle sk))
-      ((OracleComp.interpret
-        (OracleComp.sumHandler
-          (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
-          (SignatureScheme.oneTimeFilterHandler bound (n, [])))
-        prog).run false)).run [])) =
-    ProbComp.eval ((OracleComp.interpret
-      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
-        (M.oneTimeSigningOracle sk)) prog).run []) := by
-  rw [ProbComp.eval_map, ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret,
-    ProbOracleComp.run_interpret_run_interpret, PMF.map_comp]
-  -- Reconstruct the filter flag from the query log, so no state invariant is needed.
-  have hsim := ProbOracleComp.run_interpret_map_state
-    (oracle := fun q s => ProbComp.eval (M.oneTimeSigningOracle sk q s))
-    (oracle' := fun q (state : Bool × List (List Bool)) =>
-      ((OracleComp.interpret
-        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-          (fun q s => ProbComp.eval (M.signingOracle sk q s)))
-        ((SignatureScheme.oneTimeFilterHandler bound (n, []) q).run state.1)).run state.2).map
-          (fun result => (result.1.1, result.1.2, result.2)))
-    (represent := fun queried => (!queried.isEmpty, queried))
-    (step := by
-      intro ⟨⟨⟩, msg⟩ queried
-      change _ = ((OracleComp.interpret (m := StateT (List (List Bool)) PMF) _
-        (SignatureScheme.oneTimeFilterHandler bound (n, []) ((), msg)
-          (!queried.isEmpty))).run queried).map _
-      cases queried with
-      | nil =>
-        simp only [oneTimeSigningOracle, List.isEmpty_nil, ↓reduceIte, Bool.not_true,
-          SignatureScheme.oneTimeFilterHandler, Bool.false_eq_true, Functor.map_map,
-          OracleComp.interpret_map, StateT.run_map, ProbOracleComp.interpret_query,
-          PMF.monad_map_eq_map, PMF.map_comp, Function.comp_def, signingOracle,
-          ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind]
-        simp only [StateT.run, PMF.map_bind]
-        refine PMF.bind_congr_on_support _ _ _ fun tag htag => ?_
-        simp [List.take_of_length_le (hbound msg tag htag)]
-      | cons head tail =>
-        simp [oneTimeSigningOracle, SignatureScheme.oneTimeFilterHandler, OracleComp.interpret_pure,
-          StateT.run_pure, ProbComp.eval_pure])
-    prog []
-  have hproj := congrArg (PMF.map (fun result => (result.1, result.2.2))) hsim
-  rw [PMF.map_comp] at hproj
-  exact hproj.symm.trans (PMF.map_id _)
+    M.OneTimeEUFCMA :=
+  Game.Indistinguishable.of_negligible_succProbability h
 
 private theorem exists_oneTimeTagBound (M : MACScheme) :
     ∃ bound : ℕ → ℕ → ℕ,
@@ -535,20 +434,30 @@ private theorem exists_oneTimeTagBound (M : MACScheme) :
 /-- Full EUF-CMA security implies one-time EUF-CMA security for any `MACScheme`. -/
 theorem EUFCMA.oneTimeEUFCMA {M : MACScheme} (h : M.EUFCMA) : M.OneTimeEUFCMA := by
   obtain ⟨bound, hbound_poly, htagBound⟩ := M.exists_oneTimeTagBound
-  apply OneTimeEUFCMA.of_negligible
-  intro adversary hadversary
-  refine (h.negligible (SignatureScheme.limitToOneQuery bound adversary)
-    (SignatureScheme.isOraclePPT_limitToOneQuery hbound_poly hadversary)).congr fun n => ?_
-  congr 1
+  refine h.of_succProbability_reduction (SignatureScheme.limitToOneQuery bound)
+    (fun _ => SignatureScheme.isOraclePPT_limitToOneQuery hbound_poly) fun adversary _ n => ?_
+  refine le_of_eq (congrArg Game.succProbability ?_)
   simp only [eufOneTimeGame, eufCmaGame, ProbComp.eval_bind, ProbComp.eval_pure]
   refine PMF.bind_congr_on_support _ _ _ fun sk hsk => ?_
-  have hrun := run_limitToOneQuery_eq_oneTimeSigningOracle M bound n sk (htagBound n sk hsk)
-    (adversary n [])
+  have hrun :
+      ProbComp.eval (Prod.map Prod.fst id <$> ((OracleComp.interpret
+        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
+          (M.signingOracle sk))
+        ((OracleComp.interpret
+          (OracleComp.sumHandler
+            (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
+            (SignatureScheme.oneTimeFilterHandler bound (n, [])))
+          (adversary n [])).run false)).run [])) =
+      ProbComp.eval ((OracleComp.interpret
+        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
+          (M.oneTimeSigningOracle sk)) (adversary n [])).run []) :=
+    SignatureScheme.run_limitToOneQuery_eq_oneTimeSigningOracleOf M.sign bound n [] sk
+      (htagBound n sk hsk) (adversary n [])
   unfold SignatureScheme.limitToOneQuery
   rw [OracleComp.interpret_map, StateT.run_map]
-  exact congrArg (fun p : PMF ((List Bool × List Bool) × List (List Bool)) =>
+  exact (congrArg (fun p : PMF ((List Bool × List Bool) × List (List Bool)) =>
     p.bind fun x => PMF.pure
-      ((x.1.1.length == M.msgLen n) && !x.2.contains x.1.1 && M.verify sk x.1.1 x.1.2)) hrun
+      ((x.1.1.length == M.msgLen n) && !x.2.contains x.1.1 && M.verify sk x.1.1 x.1.2)) hrun).symm
 
 /-! ### Strong adaptive chosen-message security (`SUFCMA`, Boneh–Shoup Attack Game 6.1) -/
 
@@ -653,16 +562,15 @@ def SUFCMA (M : MACScheme) : Prop :=
 forger. -/
 theorem SUFCMA.negligible {M : MACScheme} (h : M.SUFCMA)
     (adversary : Forger) (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
-    Negligible (fun n => Game.succProbability (ProbComp.eval (M.sufCmaGame adversary n))) := by
-  simpa only [Game.advantage_pure_false] using h adversary hadversary
+    Negligible (fun n => Game.succProbability (ProbComp.eval (M.sufCmaGame adversary n))) :=
+  Game.Indistinguishable.negligible_succProbability h adversary hadversary
 
 /-- Establish SUF-CMA security by bounding every oracle-PPT forger's success probability. -/
 theorem SUFCMA.of_negligible {M : MACScheme}
     (h : ∀ adversary, IsOraclePPT (encPair encBits encBits) adversary →
       Negligible (fun n => Game.succProbability (ProbComp.eval (M.sufCmaGame adversary n)))) :
-    M.SUFCMA := by
-  intro adversary hadversary
-  simpa only [Game.advantage_pure_false] using h adversary hadversary
+    M.SUFCMA :=
+  Game.Indistinguishable.of_negligible_succProbability h
 
 /-- Running an adaptive program against `signingOracle` produces the exact same distribution as
 running it against `signingPairOracle` and projecting the pair transcript to its queried
@@ -743,11 +651,8 @@ theorem succProbability_eufCmaGame_le_sufCmaGame (M : MACScheme)
 
 /-- Strong unforgeability (`SUFCMA`) implies ordinary fresh-message unforgeability (`EUFCMA`) for
 every `MACScheme`. -/
-theorem SUFCMA.eufCma {M : MACScheme} (h : M.SUFCMA) : M.EUFCMA := by
-  apply EUFCMA.of_negligible
-  intro adversary hadversary
-  exact negligible_of_le (h.negligible adversary hadversary)
-    (M.succProbability_eufCmaGame_le_sufCmaGame adversary)
+theorem SUFCMA.eufCma {M : MACScheme} (h : M.SUFCMA) : M.EUFCMA :=
+  h.of_succProbability_le fun adversary _ => M.succProbability_eufCmaGame_le_sufCmaGame adversary
 
 /-- Strong unforgeability (`SUFCMA`) implies one-time unforgeability (`OneTimeEUFCMA`) for every
 `MACScheme`. -/
@@ -828,12 +733,9 @@ theorem sufCma_iff_eufCma_of_unique_tag (M : MACScheme)
       ∀ msg, msg.length = M.msgLen n → ∀ tag tag',
       M.verify sk msg tag = true →
       tag' ∈ (ProbComp.eval (M.sign sk msg)).support → tag' = tag) :
-    M.SUFCMA ↔ M.EUFCMA := by
-  refine ⟨SUFCMA.eufCma, fun h => ?_⟩
-  apply SUFCMA.of_negligible
-  intro adversary hadversary
-  refine (h.negligible adversary hadversary).congr fun n => ?_
-  exact (M.succProbability_sufCmaGame_eq_eufCmaGame_of_unique_tag huniq adversary n).symm
+    M.SUFCMA ↔ M.EUFCMA :=
+  ⟨SUFCMA.eufCma, fun h => h.of_succProbability_le fun adversary _ n =>
+    (M.succProbability_sufCmaGame_eq_eufCmaGame_of_unique_tag huniq adversary n).le⟩
 
 /-! ### Strong one-time adaptive chosen-message security (`OneTimeSUFCMA`, Boneh–Shoup Section 7.6)
 -/
@@ -943,16 +845,15 @@ def OneTimeSUFCMA (M : MACScheme) : Prop :=
 oracle-PPT forger. -/
 theorem OneTimeSUFCMA.negligible {M : MACScheme} (h : M.OneTimeSUFCMA)
     (adversary : Forger) (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
-    Negligible (fun n => Game.succProbability (ProbComp.eval (M.sufOneTimeGame adversary n))) := by
-  simpa only [Game.advantage_pure_false] using h adversary hadversary
+    Negligible (fun n => Game.succProbability (ProbComp.eval (M.sufOneTimeGame adversary n))) :=
+  Game.Indistinguishable.negligible_succProbability h adversary hadversary
 
 /-- Establish `OneTimeSUFCMA` security by bounding every oracle-PPT forger's success probability. -/
 theorem OneTimeSUFCMA.of_negligible {M : MACScheme}
     (h : ∀ adversary, IsOraclePPT (encPair encBits encBits) adversary →
       Negligible (fun n => Game.succProbability (ProbComp.eval (M.sufOneTimeGame adversary n)))) :
-    M.OneTimeSUFCMA := by
-  intro adversary hadversary
-  simpa only [Game.advantage_pure_false] using h adversary hadversary
+    M.OneTimeSUFCMA :=
+  Game.Indistinguishable.of_negligible_succProbability h
 
 private theorem run_limitToOneQuery_eq_oneTimeSigningPairOracle (M : MACScheme)
     (bound : ℕ → ℕ → ℕ) (n : ℕ) (sk : List Bool)
@@ -1008,20 +909,18 @@ private theorem run_limitToOneQuery_eq_oneTimeSigningPairOracle (M : MACScheme)
 for any `MACScheme`. -/
 theorem SUFCMA.oneTimeSUFCMA {M : MACScheme} (h : M.SUFCMA) : M.OneTimeSUFCMA := by
   obtain ⟨bound, hbound_poly, htagBound⟩ := M.exists_oneTimeTagBound
-  apply OneTimeSUFCMA.of_negligible
-  intro adversary hadversary
-  refine (h.negligible (SignatureScheme.limitToOneQuery bound adversary)
-    (SignatureScheme.isOraclePPT_limitToOneQuery hbound_poly hadversary)).congr fun n => ?_
-  congr 1
+  refine h.of_succProbability_reduction (SignatureScheme.limitToOneQuery bound)
+    (fun _ => SignatureScheme.isOraclePPT_limitToOneQuery hbound_poly) fun adversary _ n => ?_
+  refine le_of_eq (congrArg Game.succProbability ?_)
   simp only [sufOneTimeGame, sufCmaGame, ProbComp.eval_bind, ProbComp.eval_pure]
   refine PMF.bind_congr_on_support _ _ _ fun sk hsk => ?_
   have hrun := run_limitToOneQuery_eq_oneTimeSigningPairOracle M bound n sk (htagBound n sk hsk)
     (adversary n [])
   unfold SignatureScheme.limitToOneQuery
   rw [OracleComp.interpret_map, StateT.run_map]
-  exact congrArg (fun p : PMF ((List Bool × List Bool) × List (List Bool × List Bool)) =>
+  exact (congrArg (fun p : PMF ((List Bool × List Bool) × List (List Bool × List Bool)) =>
     p.bind fun x => PMF.pure
-      ((x.1.1.length == M.msgLen n) && !x.2.contains x.1 && M.verify sk x.1.1 x.1.2)) hrun
+      ((x.1.1.length == M.msgLen n) && !x.2.contains x.1 && M.verify sk x.1.1 x.1.2)) hrun).symm
 
 /-- Running an adaptive program against `oneTimeSigningOracle` produces the exact same distribution
 as running it against `oneTimeSigningPairOracle` and projecting the pair transcript to its queried
@@ -1092,11 +991,9 @@ theorem succProbability_eufOneTimeGame_le_sufOneTimeGame (M : MACScheme)
 
 /-- Strong one-time unforgeability (`OneTimeSUFCMA`) implies ordinary fresh-message one-time
 unforgeability (`OneTimeEUFCMA`) for every `MACScheme`. -/
-theorem OneTimeSUFCMA.oneTimeEUFCMA {M : MACScheme} (h : M.OneTimeSUFCMA) : M.OneTimeEUFCMA := by
-  apply OneTimeEUFCMA.of_negligible
-  intro adversary hadversary
-  exact negligible_of_le (h.negligible adversary hadversary)
-    (M.succProbability_eufOneTimeGame_le_sufOneTimeGame adversary)
+theorem OneTimeSUFCMA.oneTimeEUFCMA {M : MACScheme} (h : M.OneTimeSUFCMA) : M.OneTimeEUFCMA :=
+  h.of_succProbability_le fun adversary _ =>
+    M.succProbability_eufOneTimeGame_le_sufOneTimeGame adversary
 
 private theorem mem_support_oneTimeSigningPairOracle (M : MACScheme) (sk : List Bool)
     (prog : WordOracleComp Unit (List Bool × List Bool))
@@ -1178,12 +1075,9 @@ theorem oneTimeSUFCMA_iff_oneTimeEUFCMA_of_unique_tag (M : MACScheme)
       ∀ msg, msg.length = M.msgLen n → ∀ tag tag',
       M.verify sk msg tag = true →
       tag' ∈ (ProbComp.eval (M.sign sk msg)).support → tag' = tag) :
-    M.OneTimeSUFCMA ↔ M.OneTimeEUFCMA := by
-  refine ⟨OneTimeSUFCMA.oneTimeEUFCMA, fun h => ?_⟩
-  apply OneTimeSUFCMA.of_negligible
-  intro adversary hadversary
-  refine (h.negligible adversary hadversary).congr fun n => ?_
-  exact (M.succProbability_sufOneTimeGame_eq_eufOneTimeGame_of_unique_tag huniq adversary n).symm
+    M.OneTimeSUFCMA ↔ M.OneTimeEUFCMA :=
+  ⟨OneTimeSUFCMA.oneTimeEUFCMA, fun h => h.of_succProbability_le fun adversary _ n =>
+    (M.succProbability_sufOneTimeGame_eq_eufOneTimeGame_of_unique_tag huniq adversary n).le⟩
 
 /-! ### Schedule reindexing of a `MACScheme` (`reindex`, `reindexForger`) -/
 
@@ -2117,17 +2011,16 @@ oracle-PPT forger. -/
 theorem SUFCMA.negligible {M : NonceMACScheme} (h : M.SUFCMA)
     (adversary : NonceMACForger)
     (hadversary : IsOraclePPT (encPair (encPair encBits encBits) encBits) adversary) :
-    Negligible (fun n => Game.succProbability (ProbComp.eval (M.sufCmaGame adversary n))) := by
-  simpa only [Game.advantage_pure_false] using h adversary hadversary
+    Negligible (fun n => Game.succProbability (ProbComp.eval (M.sufCmaGame adversary n))) :=
+  Game.Indistinguishable.negligible_succProbability h adversary hadversary
 
 /-- Establish nonce-based SUF-CMA security by bounding every oracle-PPT forger's success
 probability. -/
 theorem SUFCMA.of_negligible {M : NonceMACScheme}
     (h : ∀ adversary, IsOraclePPT (encPair (encPair encBits encBits) encBits) adversary →
       Negligible (fun n => Game.succProbability (ProbComp.eval (M.sufCmaGame adversary n)))) :
-    M.SUFCMA := by
-  intro adversary hadversary
-  simpa only [Game.advantage_pure_false] using h adversary hadversary
+    M.SUFCMA :=
+  Game.Indistinguishable.of_negligible_succProbability h
 
 /-- Fresh-message existential unforgeability under nonce-respecting adaptive chosen-message attack
 (`EUFCMA`) for a `NonceMACScheme` against uniform strict oracle-PPT adversaries. -/
@@ -2142,17 +2035,16 @@ forger. -/
 theorem EUFCMA.negligible {M : NonceMACScheme} (h : M.EUFCMA)
     (adversary : NonceMACForger)
     (hadversary : IsOraclePPT (encPair (encPair encBits encBits) encBits) adversary) :
-    Negligible (fun n => Game.succProbability (ProbComp.eval (M.eufCmaGame adversary n))) := by
-  simpa only [Game.advantage_pure_false] using h adversary hadversary
+    Negligible (fun n => Game.succProbability (ProbComp.eval (M.eufCmaGame adversary n))) :=
+  Game.Indistinguishable.negligible_succProbability h adversary hadversary
 
 /-- Establish nonce-based EUF-CMA security by bounding every oracle-PPT forger's success
 probability. -/
 theorem EUFCMA.of_negligible {M : NonceMACScheme}
     (h : ∀ adversary, IsOraclePPT (encPair (encPair encBits encBits) encBits) adversary →
       Negligible (fun n => Game.succProbability (ProbComp.eval (M.eufCmaGame adversary n)))) :
-    M.EUFCMA := by
-  intro adversary hadversary
-  simpa only [Game.advantage_pure_false] using h adversary hadversary
+    M.EUFCMA :=
+  Game.Indistinguishable.of_negligible_succProbability h
 
 /-- **Quantitative EUF-CMA vs. SUF-CMA bound for `NonceMACScheme`**: for every `NonceMACScheme`,
 adaptive forger, and security parameter `n`, the fresh-message `eufCmaGame` forgery probability is
@@ -2181,11 +2073,8 @@ theorem succProbability_eufCmaGame_le_sufCmaGame (M : NonceMACScheme)
 
 /-- Strong unforgeability (`SUFCMA`) implies fresh-message unforgeability (`EUFCMA`) for every
 `NonceMACScheme`. -/
-theorem SUFCMA.eufCma {M : NonceMACScheme} (h : M.SUFCMA) : M.EUFCMA := by
-  apply EUFCMA.of_negligible
-  intro adversary hadversary
-  exact negligible_of_le (h.negligible adversary hadversary)
-    (M.succProbability_eufCmaGame_le_sufCmaGame adversary)
+theorem SUFCMA.eufCma {M : NonceMACScheme} (h : M.SUFCMA) : M.EUFCMA :=
+  h.of_succProbability_le fun adversary _ => M.succProbability_eufCmaGame_le_sufCmaGame adversary
 
 private theorem mem_support_signingPairOracle (M : NonceMACScheme) (sk : List Bool)
     (prog : WordOracleComp Unit ((List Bool × List Bool) × List Bool))
