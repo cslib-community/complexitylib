@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomnessBinary
+public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomnessBinary
 import Mathlib.Data.ZMod.Basic
 
 /-!
@@ -20,12 +20,13 @@ concrete algebraic rules to clients.
 
 open Cslib.Probability
 open Cslib.Crypto.Protocols.SecretSharing.ImperfectRandomness
-open scoped Cslib.Probability.PMF Classical
+open scoped Cslib.Probability.PMF
 
 namespace ComplexityTests.ImperfectRandomness
 
-private abbrev V4 := GaloisField 2 2
+public abbrev V4 := GaloisField 2 2
 noncomputable local instance : Fintype V4 := Fintype.ofFinite _
+noncomputable local instance : DecidableEq V4 := Classical.decEq _
 
 private theorem card_v4 : Fintype.card V4 = 4 := by
   rw [← Nat.card_eq_fintype_card, GaloisField.card 2 2 (by decide)]

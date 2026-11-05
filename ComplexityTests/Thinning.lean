@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-import Complexity.Probability.Thinning
+public import Complexity.Probability.Thinning
 
 /-!
 # Regression examples for independent thinning
@@ -80,7 +80,7 @@ example {U : Set (Finset Bool)} (hU : IsUpperSet U) :
     (by norm_num) (by norm_num) singletonLaw singletonLaw_nonneg singletonLaw_spread hU
 
 /-- The signed-kernel argument really includes negative entries. -/
-example : coordinateKernel (3 / 4) (1 / 4) false true < 0 := by
+public theorem signed_kernel_negative : coordinateKernel (3 / 4) (1 / 4) false true < 0 := by
   norm_num [coordinateKernel]
 
 /-- The row normalization remains valid in that signed regime. -/
