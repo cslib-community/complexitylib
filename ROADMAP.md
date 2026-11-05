@@ -96,6 +96,11 @@ Priorities live in this list and in the tiers of [#897].
   densities onto countable subgroup quotients, with no finite-mass assumption. Its Gaussian
   quotient normalization and distance consumer remains separate in
   [#2681](https://github.com/cslib-community/complexitylib/issues/2681).
+  `Foundations/MeasureTheory/Group/ConvolutionDensity` proves the convolution density formula
+  for an arbitrary s-finite first measure, including singular inputs. Its actual shifted
+  discrete-Gaussian convolution consumer is tracked separately in
+  [#2707](https://github.com/cslib-community/complexitylib/issues/2707); the shared measure
+  identity alone does not establish Claim 3.9 or a sampler.
 - **Kilian's succinct arguments** ([#999]). If collision-resistant hash families exist, every
   language in NP has an interactive argument with polylogarithmic communication, by committing
   to a PCP with Merkle trees; Micali's CS proofs and the BCS transform give the random-oracle
