@@ -28,8 +28,8 @@ telescopes before root bounds, leaving only one fine endpoint per bin and a prov
 start boundary. A bounded surviving slack has a uniform two-sided scale allocation.
 Finite weighted endpoint moments retain the compression coefficients; a live endpoint
 gives a necessary growth condition for allocating the unconditional rooted tail.
-Unrestricted large-slack tail absorption, ordinary sampling progress and saturated
-preparation remain separate obligations.
+The slope-one window envelope permits deterministic rarity allocation in the computed
+reserve; ordinary sampling progress and saturated preparation remain separate obligations.
 -/
 public section
 noncomputable section
@@ -1201,6 +1201,55 @@ theorem initialClippedEndpointWindow_uniform
     _ = 4 * ∑ bin ∈ B.bins, LogSpaceEstimation.scaleMajorant ((bin : ℤ) - ka) :=
       (mul_sum _ _ _).symm
     _ ≤ _ := mul_le_mul_of_nonneg_left hsum (by norm_num)
+
+omit [Fact P.Prime] in
+/-- Every endpoint window, including large surviving slack, has a slope-one envelope.
+Inside a literal tail the earlier slack dominates every later slack, so deterministic
+rarity can pay this growth. This statement does not discount centered sampling noise. -/
+theorem initialClippedEndpointWindow_growing
+    (M j ka : ℕ) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) :
+    B.initialClippedEndpointWindow M j ka r ≤
+      (4 * ∑' h, LogSpaceEstimation.scaleMajorant h) *
+        (2 : ℝ) ^ dyadicSlack (Nat.log2 M + 1) j := by
+  let d := dyadicSlack (Nat.log2 M + 1) j
+  have hs : (1 : ℝ) ≤ 16 * B.slack := by
+    have h := B.slack_pos
+    have hh : (1 : ℝ) ≤ B.slack := by exact_mod_cast h
+    linarith
+  have hd : (d : ℝ) / (16 * B.slack) ≤ d :=
+    div_le_self (Nat.cast_nonneg d) hs
+  have hinj : Set.InjOn (fun bin : ℕ => (bin : ℤ) - ka) B.bins := by
+    intro a _ b _ hab
+    have hh : (a : ℤ) = b := by linarith only [hab]
+    exact_mod_cast hh
+  have hsum : (∑ bin ∈ B.bins, LogSpaceEstimation.scaleMajorant ((bin : ℤ) - ka)) ≤
+      ∑' h, LogSpaceEstimation.scaleMajorant h := by
+    rw [← sum_image hinj]
+    exact LogSpaceEstimation.summable_scaleMajorant.sum_le_tsum _
+      (fun h _ => LogSpaceEstimation.scaleMajorant_nonneg h)
+  unfold initialClippedEndpointWindow
+  calc
+    _ ≤ ∑ bin ∈ B.bins, (4 * (2 : ℝ) ^ d) *
+        LogSpaceEstimation.scaleMajorant ((bin : ℤ) - ka) := by
+      apply sum_le_sum
+      intro bin _
+      split_ifs
+      · exact mul_nonneg (by positivity) (LogSpaceEstimation.scaleMajorant_nonneg _)
+      · have habs : (((bin : ℤ) - ka).natAbs : ℝ) = |(bin : ℝ) - ka| := by simp
+        unfold LogSpaceEstimation.scaleMajorant
+        rw [habs, show (4 : ℝ) = (2 : ℝ) ^ (2 : ℝ) by norm_num,
+          ← Real.rpow_natCast, ← Real.rpow_add (by norm_num : (0 : ℝ) < 2),
+          ← Real.rpow_add (by norm_num : (0 : ℝ) < 2)]
+        apply Real.rpow_le_rpow_of_exponent_le (by norm_num)
+        norm_num only [show (2 : ℝ) ^ 2 = 4 by norm_num]
+        dsimp only [d] at hd
+        linarith [abs_nonneg ((bin : ℝ) - ka)]
+    _ = (4 * (2 : ℝ) ^ d) * ∑ bin ∈ B.bins,
+        LogSpaceEstimation.scaleMajorant ((bin : ℤ) - ka) := (mul_sum _ _ _).symm
+    _ ≤ _ := by
+      have h := mul_le_mul_of_nonneg_left hsum (by positivity : 0 ≤ 4 * (2 : ℝ) ^ d)
+      dsimp only [d] at h
+      nlinarith only [h]
 
 /-- A single structural allocation pays every bounded-slack endpoint window, with no
 restriction on parent budget, source/terminal exponents, bin count or field width. Earlier

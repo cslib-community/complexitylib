@@ -1327,10 +1327,26 @@ capacity it is at most
 $((2+256/\delta)/(K+1))^{1/4}2^{-27d_j/2}$.
 Since $d_i\le d_j$ inside that tail, this decay can pay the endpoint factor
 $2^{d_i/(16\,\mathrm{slack})}$, with the polynomial factor $28^{m-i}$ still to sum.
-This route requires a deterministic conditional-mean/row-tail comparison and separate
-payments for semantic deficit and correlated noise. It is not the unconditional
-four-max envelope tested below, and that separation has not yet been integrated into
-the literal reserve client.
+`compatible_rarity_decay` proves this coefficient with its $K+1$ gain.
+`integrated_fourMax_tail_schedule` applies the deterministic row-tail comparison to the
+actual conditional means and uses unique first-overflow summation for the centered noise.
+The latter receives no rarity factor, even though all events and samples may be correlated.
+`initialClippedEndpointWindow_growing` bounds every surviving window by
+$4(\sum_h\mathrm{scaleMajorant}(h))2^{d_i}$, including unrestricted large slack.
+`compatible_growing_mean_tail_le` sums the literal $28^{m-i}$ propagation against rarity.
+`initialComputedPrecisionMoment_first_tail_le` therefore pays the computed first-mean
+rooted tail by a horizon-independent transport coefficient plus its separately weighted
+semantic deficit. `initialComputedFirstTailBudget` records this payment.
+
+The existing `initial_compressed_precision_reserve` now consumes it through
+`initialFourMaxReserve_le_tail` and `initialSeparatedReserve`. Its terminal exponent must
+be in the field horizon, its floor must be positive, and its structural charge nonnegative;
+the initial request has the stated pilot task. These are explicit hypotheses, not
+successful parent accuracy. Stationary preloss and final statistics retain their previous
+rooted sums, and raw false-event moments retain their coefficient at $j$ on prefix $j+1$.
+The second deterministic mean retains its literal rarity-weighted sum; both centered noises
+retain unconditional weighted sums. This pays the first deterministic tail transport,
+not the complete reserve or its remaining progress/preparation costs.
 
 `initialClippedEndpointWindow_growth` gives a necessary condition for a proposed
 allocation $wW_{\mathrm{end}}\le2^A$ when $w\ge1$: every live bin $i$ must satisfy
@@ -1343,9 +1359,8 @@ before multiplying by $28^{m-i}$.
 `initialClippedEndpointWindow_tail_growth` checks the same necessary condition for
 the exact rooted tail sum, and its regression rejects that allocation too. Thus these
 unconditional tail coefficients do not justify a uniform endpoint-window allocation by themselves. This is a counterexample
-to that numerical inference, not to the estimator's accuracy. A sharper joint event
-analysis or another payment is still required; ordinary progress and saturated
-preparation remain independent gaps.
+to that numerical inference, not to the estimator's accuracy. The deterministic payment above uses the actual rare event instead; ordinary progress
+and saturated preparation remain independent gaps.
 
 The [allocation regressions](../../ComplexityTests/InitialTwoPayment.lean) retain the older
 $M=4$ fixture, whose parent precision is negative. The positive-precision fixture fixes
@@ -1365,7 +1380,7 @@ omitted/inactive deficit explicitly. `initialComputedPrecisionMoment` takes the 
 of the previous mean cost, the groupwise bound and the telescoped endpoint bound. The
 existing precision four-statistic, `actualFourMax`, raw `clippedError` and sharp-reserve
 proofs consume this minimum. Ordinary first sampling noise and saturated second preparation
-retain their previous costs. Unrestricted large-slack tail absorption, the separate
+retain their previous costs. Complete reserve allocation, the separate
 ordinary-noise/preparation payments and the simultaneous changing-request invariant remain
 open; no uniformly paid full reserve or native endpoint follows here.
 The [two-atom regression](../../ComplexityTests/InitialTwoPayment.lean) shows why: scalar

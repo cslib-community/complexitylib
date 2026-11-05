@@ -2217,11 +2217,28 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
     ∃ Lh Lρ : ℝ, 0 ≤ Lh ∧ 0 ≤ Lρ ∧
       (data HP).initialFourMaxReserve 1 0 0 ζ ζ (request HP) threeRoles 0 0 [1] [2, 3]
         base (fun _ => 0) [0] 1 1 1 ≤
-      BudgetData.initialNumericalReserve HP 1 ζ 1 1 1
+      (BudgetData.initialNumericalReserve HP 1 ζ 1 1 1
         (fun j =>
           let a := fun noise ν => (data HP).initialComputedPrecisionMoment 1 1 (request HP)
             threeRoles 0 0 [1] [2, 3] 0 ζ Lh Lρ j noise ν ^ (4⁻¹ : ℝ)
-          (a false 0 + a false 1) + (a true 0 + a true 1)) := by
+          (a false 0 + a false 1) + (a true 0 + a true 1))) ∧
+      (data HP).initialFourMaxReserve 1 0 0 ζ ζ (request HP) threeRoles 0 0 [1] [2, 3]
+        base (fun _ => 0) [0] 1 1 1 ≤
+      let a := fun j noise ν => (data HP).initialComputedPrecisionMoment 1 1 (request HP)
+        threeRoles 0 0 [1] [2, 3] 0 ζ Lh Lρ j noise ν ^ (4⁻¹ : ℝ)
+      BudgetData.initialSeparatedReserve HP 1 ζ 1 1 1
+        (fun j =>
+          let a := fun noise ν => (data HP).initialComputedPrecisionMoment 1 1 (request HP)
+            threeRoles 0 0 [1] [2, 3] 0 ζ Lh Lρ j noise ν ^ (4⁻¹ : ℝ)
+          (a false 0 + a false 1) + (a true 0 + a true 1))
+        (((data HP).initialComputedFirstTailBudget 1 1 (request HP) threeRoles 0 0 [1] [2, 3]
+            0 ζ +
+          ∑ j ∈ range (Nat.log2 1 + 1),
+            (((2 + 256 / dyadicFloor ζ (Nat.log2 1 + 1) j) /
+              (compatibleCapacity HP.K (Nat.log2 1 + 1) j : ℝ)) ^ (4⁻¹ : ℝ)) *
+            ∑ i ∈ Ico j (Nat.log2 1 + 1), (28 : ℝ) ^ (Nat.log2 1 + 1 - i) * a i false 1) +
+          ∑ i ∈ range (Nat.log2 1 + 1), (28 : ℝ) ^ (Nat.log2 1 + 1 - i) *
+            (a i true 0 + a i true 1)) := by
   dsimp only
   let ζ := min HP.η (1 / 10000) / 4
   obtain ⟨Lh, Lρ, hLh, hLρ, hh, hρ⟩ := preparation_stability_constants HP
@@ -2233,9 +2250,9 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
     (by intro x y; by_cases h : x = y <;> simp [data, base, h])
     (by simp [data, base]) (fun _ => 0) ζ ζ (fun _ _ => 0) (fun _ => rfl) 0
     (fun _ _ m hm hmpos => by omega) 0 0 le_rfl rfl hLh hLρ hh hρ
-    (by
+    (by decide) (by
       dsimp only [ζ]
-      exact (div_pos (lt_min HP.η_pos (by norm_num)) (by norm_num)).le) 1 1 1
+      exact (div_pos (lt_min HP.η_pos (by norm_num)) (by norm_num))) (by norm_num [data]) rfl 1 1 1
   have hgroups : (List.range (Nat.log2 1 + 1)).mapM (fun j =>
       (data HP).completedGroup (fun m q => if m < 1 then
         (data HP).compressedHistory (fun _ => 0) ζ ζ m q else none) 1
@@ -2275,7 +2292,9 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
     rw [show (fun σ x y =>
       (([0] : List (Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ)).take (j + 1) |>.map
         (fun T => T σ x y)).sum) = 0 from congrFun hF (j + 1)])
-  convert hb using 1; congr 8
+  constructor
+  · convert hb.1 using 1; congr 8
+  · convert hb.2 using 1; congr 8
 
 -- A constant weight costs its own fourth power, rather than five copies of that cost.
 example : ‖fun _ : Fin 5 => (3 : ℝ)‖ ^ 4 = 81 ∧

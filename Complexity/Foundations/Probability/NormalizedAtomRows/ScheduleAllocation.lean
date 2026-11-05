@@ -50,6 +50,83 @@ theorem compatible_rarity_growth {η : ℝ} (hη : 0 < η) (K m j : ℕ) :
     Real.mul_rpow (by positivity) (by positivity), hroot _ (by positivity)] at hr
   exact hr
 
+/-- The exact compatible capacity retains its `K + 1` gain. The floor costs ten
+binary exponents while capacity supplies sixty-four, before taking the fourth root. -/
+theorem compatible_rarity_decay {η : ℝ} (hη : 0 < η) (K m j : ℕ) :
+    (((2 + 256 / dyadicFloor η m j) / (compatibleCapacity K m j : ℝ)) ^
+      (4⁻¹ : ℝ)) ≤ ((2 + 256 / η) / (K + 1)) ^ (4⁻¹ : ℝ) *
+        (2 : ℝ) ^ (-(27 : ℝ) * dyadicSlack m j / 2) := by
+  let d := dyadicSlack m j
+  have hpow : (1 : ℝ) ≤ 1024 ^ d := one_le_pow₀ (by norm_num)
+  have hnum : 2 + 256 / dyadicFloor η m j ≤ (2 + 256 / η) * 1024 ^ d := by
+    change 2 + 256 / (η * (1 / 1024) ^ d) ≤ _
+    rw [one_div_pow]
+    have hid : 256 / (η * (1 / (1024 : ℝ) ^ d)) = (256 / η) * 1024 ^ d := by
+      field_simp
+    rw [hid]
+    nlinarith
+  have hden : 0 < ((K : ℝ) + 1) * (2 : ℝ) ^ (64 * d) := by positivity
+  have he : (1024 : ℝ) ^ d / (2 : ℝ) ^ (64 * d) =
+      (2 : ℝ) ^ (-(54 : ℝ) * d) := by
+    rw [show (1024 : ℝ) = 2 ^ (10 : ℕ) by norm_num, ← pow_mul,
+      ← Real.rpow_natCast, ← Real.rpow_natCast,
+      ← Real.rpow_sub (by norm_num : (0 : ℝ) < 2)]
+    congr 1
+    push_cast
+    ring_nf
+  have hq : (2 + 256 / dyadicFloor η m j) / (compatibleCapacity K m j : ℝ) ≤
+      ((2 + 256 / η) / (K + 1)) * (2 : ℝ) ^ (-(54 : ℝ) * d) := by
+    rw [compatibleCapacity, Nat.cast_mul, Nat.cast_add, Nat.cast_one, Nat.cast_pow,
+      Nat.cast_ofNat]
+    change (2 + 256 / dyadicFloor η m j) / (((K : ℝ) + 1) * 2 ^ (64 * d)) ≤ _
+    apply (div_le_div_of_nonneg_right hnum hden.le).trans_eq
+    rw [← he]
+    field_simp
+  have hf := dyadicFloor_pos hη m j
+  have hr := Real.rpow_le_rpow (by positivity :
+    0 ≤ (2 + 256 / dyadicFloor η m j) / (compatibleCapacity K m j : ℝ)) hq
+    (by norm_num : (0 : ℝ) ≤ 4⁻¹)
+  rw [Real.mul_rpow (by positivity) (by positivity),
+    ← Real.rpow_mul (by norm_num : (0 : ℝ) ≤ 2)] at hr
+  convert hr using 1
+  congr 1
+  dsimp only [d]
+  ring_nf
+
+/-- Slope-one deterministic prefix costs have a summable literal tail, even when early
+slacks grow. The comparison uses `d_i ≤ d_j` inside each first-overflow tail. -/
+theorem compatible_growing_mean_tail_le {η E : ℝ} (hη : 0 < η) (hE : 0 ≤ E)
+    (K m : ℕ) (e : ℕ → ℝ)
+    (he : ∀ i < m, e i ≤ E * (2 : ℝ) ^ dyadicSlack m i) :
+    (∑ j ∈ range m,
+      (((2 + 256 / dyadicFloor η m j) / (compatibleCapacity K m j : ℝ)) ^
+        (4⁻¹ : ℝ)) * ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * e i) ≤
+      (2 + 256 / η) ^ (4⁻¹ : ℝ) * E / 63 := by
+  have hs := sum_propagation_mul_dyadic_decay_le (C := 1) (q := (1 / 64 : ℝ))
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) m
+  norm_num only [one_pow, one_mul] at hs
+  calc
+    _ ≤ ∑ j ∈ range m, E * ((2 + 256 / η) ^ (4⁻¹ : ℝ) *
+        (1 / 64 : ℝ) ^ dyadicSlack m j) := by
+      apply sum_le_sum
+      intro j hj
+      have hf := dyadicFloor_pos hη m j
+      have hg := mean_tail_growth hE m j (mem_range.mp hj) e (fun i _ hi => he i hi)
+      have hr := mul_le_mul_of_nonneg_left (compatible_rarity_growth hη K m j) hE
+      apply (mul_le_mul_of_nonneg_left hg (Real.rpow_nonneg (by positivity) _)).trans
+      nlinarith only [hr]
+    _ = ((2 + 256 / η) ^ (4⁻¹ : ℝ) * E) *
+        ∑ j ∈ range m, (1 / 64 : ℝ) ^ dyadicSlack m j := by
+      simp only [mul_sum]
+      apply sum_congr rfl
+      intros
+      ring_nf
+    _ ≤ _ := by
+      have hh := mul_le_mul_of_nonneg_left hs (by positivity :
+        0 ≤ (2 + 256 / η) ^ (4⁻¹ : ℝ) * E)
+      convert hh using 1
+      ring_nf
+
 /-- The exceptional first rarity weight decays in the actual first dyadic slack,
 even after all factor-28 propagation. -/
 theorem compatible_first_rarity_decay {η : ℝ} (hη : 0 < η) (K m : ℕ) (hm : 0 < m) :

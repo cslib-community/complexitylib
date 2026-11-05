@@ -542,3 +542,61 @@ example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ}
       hslack, hcharge, hs, ht]
   · simp [BudgetData.initialClippedEndpointWindow, Cslib.RowCompression.dyadicSlack,
       LogSpaceEstimation.lastBudget]
+
+-- The large-slack obstruction above coexists with a valid deterministic rarity payment.
+-- This is the same literal window and propagation, with its actual outer event weight.
+open Cslib.RowCompression in
+example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ}
+    (B : BudgetData HP P) (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) :
+    (∑ j ∈ range (Nat.log2 8192 + 1),
+      (((2 + 256 / dyadicFloor 1 (Nat.log2 8192 + 1) j) /
+        (compatibleCapacity HP.K (Nat.log2 8192 + 1) j : ℝ)) ^ (4⁻¹ : ℝ)) *
+      ∑ i ∈ Ico j (Nat.log2 8192 + 1), (28 : ℝ) ^ (Nat.log2 8192 + 1 - i) *
+        B.initialClippedEndpointWindow 8192 i 0 r) ≤
+      (2 + 256 / (1 : ℝ)) ^ (4⁻¹ : ℝ) *
+        (4 * ∑' h, LogSpaceEstimation.scaleMajorant h) / 63 :=
+  compatible_growing_mean_tail_le (by norm_num)
+    (mul_nonneg (by norm_num) (tsum_nonneg fun _ => LogSpaceEstimation.scaleMajorant_nonneg _))
+    HP.K _ _ (fun i _ => B.initialClippedEndpointWindow_growing 8192 i 0 r)
+
+-- Charge 64 is fixed first. Vary both exponents and every positive integer precision;
+-- the actual first-mean minimum now receives a whole-tail payment with no slack cutoff.
+open Cslib.RowCompression in
+example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ} [Fact P.Prime]
+    (B : BudgetData HP P) (hslack : B.slack = 1) (hrate : B.binRate = rate) (H : Horizon P)
+    (hi : ∀ bin ∈ B.bins, bin ≤ H.maxExponent) (ks ka : ℕ) (ha : ka ≤ H.maxExponent)
+    (p : ℕ) (hp : 0 < p) (ζ Lh Lρ : ℝ) :
+    let B' : BudgetData HP P := { B with rankCharge := 64 }
+    let r : HierarchyTask.Request HP.k (Fin 3) (ZMod P) :=
+      ⟨.row 0 (.pilotInput ⟨0, HP.k_pos⟩), gridChannel 0 ks [],
+        gridChannel 2 ka [], gridChannel 2 ka []⟩
+    let M := 16 * (64 * r.task.rank + p + 2 * (ks + ka))
+    0 < B'.requestPrecision M r ∧
+      (∑ j ∈ range (Nat.log2 M + 1),
+        (((2 + 256 / dyadicFloor 1 (Nat.log2 M + 1) j) /
+          (compatibleCapacity HP.K (Nat.log2 M + 1) j : ℝ)) ^ (4⁻¹ : ℝ)) *
+        ∑ i ∈ Ico j (Nat.log2 M + 1), (28 : ℝ) ^ (Nat.log2 M + 1 - i) *
+          B'.initialComputedPrecisionMoment M 2 r ⟨0, 1, 2, by decide, by decide, by decide⟩
+            ks ka [] [] 1 ζ Lh Lρ i false 0 ^ (4⁻¹ : ℝ)) ≤
+        B'.initialComputedFirstTailBudget M 2 r ⟨0, 1, 2, by decide, by decide, by decide⟩
+          ks ka [] [] 1 1 := by
+  dsimp only
+  let B' : BudgetData HP P := { B with rankCharge := 64 }
+  let r : HierarchyTask.Request HP.k (Fin 3) (ZMod P) :=
+    ⟨.row 0 (.pilotInput ⟨0, HP.k_pos⟩), gridChannel 0 ks [],
+      gridChannel 2 ka [], gridChannel 2 ka []⟩
+  let M := 16 * (64 * r.task.rank + p + 2 * (ks + ka))
+  have hprec := B'.requestPrecision_grid M ks ka r rfl rfl
+  have hpeq : B'.requestPrecision M r = p := by
+    rw [hprec]
+    dsimp only [B']
+    rw [hslack]
+    dsimp only [M]
+    push_cast
+    ring
+  constructor
+  · rw [hpeq]
+    exact_mod_cast hp
+  · exact B'.initialComputedPrecisionMoment_first_tail_le (by norm_num) hrate H M 2 ks ka
+      ha hi r (rate_pos ks).le rfl rfl rfl
+      ⟨0, 1, 2, by decide, by decide, by decide⟩ [] [] 1 ζ Lh Lρ 1 (by norm_num)
