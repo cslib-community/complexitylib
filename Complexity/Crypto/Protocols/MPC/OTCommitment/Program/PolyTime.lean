@@ -124,9 +124,6 @@ theorem receiverViewProgram_isPPT (stateEncoding : State ↪ List Bool)
         fun_prop)
   simpa [receiverLoop_eq, Function.comp_def] using hresult
 
--- This fixed five-valued observation carrier does not depend on the round count.
-deriving instance Fintype for Phased.Observation
-
 /-- Uniform strict PPT of the complete closed receiver simulator. All private states, every
 receipt and both observations are written to the honestly encoded output. The plan and final
 continuation run once and need ordinary joint-input certificates; only the repeated callbacks

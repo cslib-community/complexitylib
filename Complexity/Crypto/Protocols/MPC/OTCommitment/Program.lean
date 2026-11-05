@@ -170,18 +170,6 @@ noncomputable def receiverClosedProgram
     (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n)) Phased.handler)
       (receiverIdealProgram choose receive b k st plan finish)).run .idle)
 
-private theorem interpret_sample_closed {α : Type} (program : ProbComp α) :
-    OracleComp.interpret
-      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n)) Phased.handler)
-      (ProbOracleComp.sample program) = StateT.lift (σ := Phased.Store) program := by
-  funext st
-  rw [ProbOracleComp.interpret_sample]
-  change (OracleComp.interpret (m := StateT Phased.Store ProbComp) _ program).run st = _
-  rw [OracleComp.run_interpret_lift]
-  change (fun a => (a, st)) <$> OracleComp.interpret OracleComp.query program = _
-  rw [OracleComp.interpret_query_eq_self]
-  simp [StateT.lift, bind_pure_comp]
-
 /-- Unfolding the actual finite handler exposes the closed local computation. The opening branch
 uses the bit released by the terminal poll, and abort passes no pairs. -/
 theorem receiverClosedProgram_eq
@@ -199,7 +187,7 @@ theorem receiverClosedProgram_eq
       return (Phased.Observation.receipt, observed, transcript, final, later, out)) := by
   simp only [receiverClosedProgram, receiverIdealProgram, receiverPrefixProgram,
     OracleComp.interpret_bind, OracleComp.interpret_pure,
-    ProbOracleComp.interpret_query, interpret_sample_closed]
+    ProbOracleComp.interpret_query, Phased.interpret_sample]
   simp only [StateT.run_bind, StateT.run_pure]
   simp only [StateT.lift, StateT.run, Phased.handler, OracleComp.sumHandler,
     Phased.advance, Phased.observe, bind_assoc, pure_bind, map_bind, map_pure]

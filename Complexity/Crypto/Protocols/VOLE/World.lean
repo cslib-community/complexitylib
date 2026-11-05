@@ -29,6 +29,7 @@ starts a fresh session. Repeated reads do not supply fresh correlations.
 
 * `voleWorld_cached_sender`, `voleWorld_cached_receiver`: cached requests return the same share.
 * `voleWorld_cached_run`: arbitrary randomized clients preserve that cache and read fixed shares.
+* `voleWorld_eval`: lazy setup has the same output law as sampling one correlation up front.
 -/
 
 @[expose] public section
@@ -107,5 +108,41 @@ theorem voleWorld_cached_run {α : Type} (c : VOLECorrelation F n)
         PMF.monad_pure_eq_pure, PMF.pure_bind, PMF.pure_map,
         voleWorld_cached_receiver]
       rfl
+
+/-- Sampling the cached correlation before execution preserves every output law, including
+for programs that never query setup. Each role still reads only its own fixed share. -/
+theorem voleWorld_eval {α : Type}
+    (program : ProbOracleComp (voleSenderSpec F n ⊕ₒ voleReceiverSpec F n) α) :
+    (voleWorld F n).eval program = (do
+      let c ← voleIdealDist F n
+      OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
+        (OracleComp.sumHandler (fun _ => PMF.pure c.senderView)
+          (fun _ => PMF.pure c.receiverView))) program) := by
+  let relate : Option (VOLECorrelation F n) → PMF (VOLECorrelation F n)
+    | none => voleIdealDist F n
+    | some c => PMF.pure c
+  let replies : (q : Unit ⊕ Unit) → VOLECorrelation F n →
+      PMF ((voleSenderSpec F n ⊕ₒ voleReceiverSpec F n) q) := fun q c =>
+    OracleComp.sumHandler (fun _ => PMF.pure c.senderView)
+      (fun _ => PMF.pure c.receiverView) q
+  let oracle := fun q c => (replies q c).map (·, c)
+  have h := ProbOracleComp.run_interpret_simulation (voleWorld F n).impl oracle relate
+    (fun q state => ?_) program none
+  · have houtput := congrArg (fun law => law.map Prod.fst) h
+    simp only [PMF.map, Function.comp_def, PMF.bind_bind, PMF.pure_bind,
+      PMF.bind_const] at houtput
+    refine houtput.trans ?_
+    change (voleIdealDist F n).bind _ = _
+    congr 1
+    funext c
+    change ((OracleComp.interpret
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      program).run c).map Prod.fst = _
+    rw [ProbOracleComp.run_interpret_readOnly replies]
+    simp only [PMF.map_comp, Function.comp_def]
+    change PMF.map id _ = _
+    rw [PMF.map_id]
+  · rcases q with q | q <;> cases q <;> cases state <;>
+      simp [voleWorld, relate, oracle, replies, OracleComp.sumHandler, PMF.map]
 
 end Cslib.Crypto.Protocols.VOLE
