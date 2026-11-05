@@ -117,6 +117,10 @@ current libraries and workloads.
    ring multiplication, with native certificates. Define the RLWE secret and error laws and
    experiment separately; an ordinary-LWE reduction does not give them. Module-LWE sampling now
    permits explicit small-secret laws, with a native centered-binomial instance.
+   `SIS/ModuleEncryption/Native` realizes the existing deterministic key-generation/sample codec
+   uniformly with unary rank/degree and binary modulus/coefficients, given the expanded structured
+   matrix word. Native construction of that matrix from polynomial samples, encryption/decryption
+   and seed codecs remain open; independent uniform scalar entries do not give the module law.
    `SIS/ModulusSwitch/Failure` bounds randomized switched-decryption failure by the actual noise
    tail under explicit secret-support and decoding margins; small-secret security remains open.
    Nearest-integer coefficient conversion and the Module-LWE phase-error bound are available in
