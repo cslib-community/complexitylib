@@ -125,6 +125,11 @@ milestones, reusing the finite sampling, gadget algebra, native certificates and
 where their hypotheses match. The [pre-rewrite FHE section][archive-fhe] maps the schemes to
 current libraries and workloads.
 
+The actual buffered probabilistic compiler now has an all-prefix workspace bound with an
+explicit intermediate-word buffer charge, independent of component runtime. The complete
+modular-game time/space assembly and prepared-metadata accounting remain
+[#2722](https://github.com/cslib-community/complexitylib/issues/2722).
+
 1. **Ring arithmetic and RLWE.** The coefficient `negacyclicMul` and Module-SIS map now have
    a canonical `AdjoinRoot (X^d + 1)` interpretation in `SIS/Polynomial`, for positive dimension
    over a nontrivial commutative coefficient ring. `SIS/Native` now bridges a certified list
