@@ -10,6 +10,7 @@ public import Complexity.Foundations.Probability.RootMetric.FiniteEnvelope
 public import Complexity.Foundations.Probability.RootMetric.ClippedMean
 public import Complexity.Foundations.Probability.HierarchyInitialMean
 import Complexity.Foundations.Data.List.Blocks
+import Complexity.Foundations.Probability.GridRowMoment.JointDensity
 import Complexity.Foundations.Probability.GridRowMoment.Rate
 import Complexity.Foundations.Probability.HierarchyInitialFeasibility
 
@@ -430,28 +431,8 @@ private theorem positiveSample_initial_compressed_clipped_root_fine
   have hdens (k : ℕ) (x y : ZMod P) :
       (({σ | Xs σ x ∧ Y t (side P k) (CopyPadding.identifier B.padding st) σ y} :
         Finset (Environment P 3)).dens : ℝ) = gridMass P ks * gridMass P k := by
-    dsimp only [Xs, X, Y]
-    have hh := congrArg (fun z : ℚ≥0 => (z : ℝ))
-      (independent (P := P) s t hst.symm (side P ks) (side P k)
-        (CopyPadding.identifier B.padding ss x) (CopyPadding.identifier B.padding st y))
-    have hmarg (j : ℕ) (v : ZMod P) :
-        (dens {a : FrameChannel P 4 1 | frameRetains P 4 (side P j) a v} : ℝ) =
-          gridMass P j := by
-      have hh := congrArg (fun z : ℚ≥0 => (z : ℝ))
-        (dens_eval_mem_retentionBox (P := P) (H := 4) (r := 1)
-          (by decide) (side_le P j) v)
-      push_cast at hh
-      simp only [nnratCast_dens] at hh ⊢
-      convert hh using 1
-      congr 2
-    have hl := hmarg ks (CopyPadding.identifier B.padding ss x)
-    have hr := hmarg k (CopyPadding.identifier B.padding st y)
-    simp only [NNRat.cast_mul, nnratCast_dens] at hh hl hr ⊢
-    convert hh.trans (congrArg₂ (· * ·) hl hr) using 1
-    congr 2
-    apply congrArg Finset.card
-    ext σ
-    simp only [mem_filter, mem_univ, true_and]
+    simpa only [Xs, X, Y, NormalizedMoments.retainedMask] using
+      grid_joint_density B.padding s t hst ks k ss st x y
   have hmean (x y : ZMod P) : rowSliceMean Xs Ya (D - C) x y =
       q * rowSliceMean Xs U (D - C) x y := by
     let S : Finset (Environment P 3) := {σ | Xs σ x ∧ Ya σ y}

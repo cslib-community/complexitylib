@@ -1429,7 +1429,7 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
       (fun d hd => by change binCutoff d / 2 = 0; rw [bin_zero hd, zero_div]) HP.ρ_zero).2.2
 
 -- An empty initial schedule keeps its zero without touching history or validating
--- a graph, including at budget zero. Unsupported main/residual dispatch stays separate.
+-- a graph, including at budget zero. Inactive main/residual guards stay separate.
 example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
     ({ budgetData HP with bins := ∅ } : BudgetData HP 5).completedGroup
       (fun _ _ => none) 0 1 (.pilotInput ⟨0, HP.k_pos⟩)
@@ -1453,12 +1453,21 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
   rw [shared_scheduled HP]
   rfl
 
--- Later RAW boundaries are unproved and remain explicit, even when a short schedule
--- would otherwise contain only empty groups. They never become dummy zero outputs.
+-- Later RAW constructors use the existing schedule and their own positive-precision
+-- guards. This equation asserts dispatch, not recursive child availability or accuracy.
 example (HP : FourthRootHierarchyParams 16 1 16 32 8) (hk : 1 < HP.k) (M : ℕ) :
-    (budgetData HP).evaluate M
-      { request HP with task := .row 0 (.input ⟨1, hk⟩) } = none ∧
-    (budgetData HP).evaluate M { request HP with task := .residual 0 } = none := by
+    let history := fun m r => if m < M then (budgetData HP).evaluate m r else none
+    let input := { request HP with task := .row 0 (.input ⟨1, hk⟩) }
+    let residual := { request HP with task := .residual 0 }
+    (budgetData HP).evaluate M input =
+      (if 0 < (budgetData HP).requestPrecision M input then
+        ((budgetData HP).raw history M (.input ⟨1, hk⟩) input).map BudgetValue.row
+      else none) ∧
+    (budgetData HP).evaluate M residual =
+      (if 0 < (budgetData HP).requestPrecision M residual then
+        ((budgetData HP).raw history M .residual residual).map BudgetValue.row
+      else none) := by
+  dsimp only
   constructor <;> rw [BudgetData.evaluate_eq] <;> rfl
 
 -- Unsupported cross-stage calls are unavailable rather than placeholder zero outputs.

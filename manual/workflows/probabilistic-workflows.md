@@ -234,6 +234,46 @@ stay literal; positive-bin errors are summed and the negative error occurs once.
 The [checked error client](../../ComplexityTests/HierarchyChildError.lean) instantiates the
 actual two-bin cap and exact adjacent ratio on the shared spectator/suffix fixture.
 
+For literal executed residual calls, import
+[HierarchyProductTransport](../../Complexity/Foundations/Probability/HierarchyProductTransport.lean).
+`positiveSample_residual_compressed` extracts the compressed direct/reset-right calls
+and the evaluated normalized left correction. `finiteInput_residual_root_payment` keeps
+the actual per-bin `binBudget` and the separate negative `childBudget`, and consumes each
+child's scalar rooted allowance on its own source/usage masks. Successful calls and
+estimated-child range/usage bounds remain premises. The conservative field-width, bin,
+importance and density costs stay explicit; they are not paid from the precision schedule.
+The [execution clients](../../ComplexityTests/HierarchyProductTransport.lean) distinguish
+supplied nonzero histories from recursively available compressed calls.
+
+[HierarchyProductMean](../../Complexity/Foundations/Probability/HierarchyProductMean.lean)
+identifies that finite canonical reference with the actual residual $C+EC-E$.
+`residualCanonicalInput_mean` derives preparation support and rank thresholds from the
+polynomial/hierarchy laws; `residualCanonicalInput_stage_mean` transports the result to
+the request's true stage channels. The base is nonnegative and row-substochastic, its
+entries are bounded by the terminal rank rate, every positive entry in the queried column
+is covered by the finite bin family, and the source/horizon/stage bounds remain explicit.
+The source may be narrower than the terminal. `finiteInput_residual_mean_payment` composes this identity
+with the conditional executed root payment on one environment, subtracting the negative
+correction once. The [canonical client](../../ComplexityTests/HierarchyProductMean.lean)
+has two actual bins, unequal nonempty reset suffixes and positive genuine $E$ and $EC$.
+It executes a supplied canonical history; it does not establish simultaneous recursive
+compressed availability or allocate the conservative scalar allowances.
+
+[HierarchyProductAllocation](../../Complexity/Foundations/Probability/HierarchyProductAllocation.lean)
+provides a sharper coupled product-mean comparison. Successful normalized evaluation
+supplies the left incoming cap; the genuine dense-right gate supplies its row support.
+`residualProduct_compressed_mean_root_le` keeps both calls at the actual `binBudget`
+and compares their literal product means on the right child's own usage slice, with
+constant 33554432 and the right-source factor `terminalRate / sourceRate`.
+The common environment is unchanged. Parent-terminal conditioning, bin importance,
+midpoint density, signed finite-bin assembly and precision allocation remain separate.
+The [allocation clients](../../ComplexityTests/HierarchyProductAllocation.lean) also
+fix the structural charge before choosing arbitrarily large admitted fields: nominal
+child accuracy cannot supply the old conservative sufficient allowance, whose full-rate
+scale is at least $8P^2$. This is an obstruction to that allowance, not an actual-error
+lower bound. A supplied-history normalization client checks the structural incoming cap;
+it does not construct simultaneous recursive execution.
+
 [FirstMeanError](../../Complexity/Foundations/Probability/NormalizedAtomRows/FirstMeanError.lean)
 then proves `actualEstimatedResidual_first_mean_le`: the completed full-terminal raw walk
 preserves this input mean and the actual first prefix has bound
@@ -699,7 +739,21 @@ slices. The residual is one signed ray outside the positive-bin sum. The horizon
 pays its own slack factor; `completedGroup_initial_grid` proves centered fourth moment noise at
 most `(2^(-precision) * 64^(-slack))^4` for the assembled initial group, from actual recursive
 calls and the original H4 graph. An empty initial ray list keeps zero without calling history
-or validating a frame; this does not restore unsupported main/residual dispatch.
+or validating a frame.
+
+For structural execution, import
+[HierarchyRawExecution](../../Complexity/Foundations/Probability/HierarchyRawExecution.lean).
+Every raw task now samples literal zero at budget zero, without accessing children.
+Active stage-zero later pilot inputs, actual inputs and residuals dispatch through the
+same dyadic RAW program; iteration-zero inputs retain their established pilot equality.
+`completedGroup_available` and `raw_available` consume the two actual endpoint samples
+of each nonempty group and distinct source/usage grid channels for completion. Equal-budget
+groups need no samples. These are conditional execution laws, not recursive availability.
+The [raw execution client](../../ComplexityTests/HierarchyRawExecution.lean) executes
+fine budget one against coarse zero: two positive rays contribute six each and the
+single negative ray contributes minus one, giving eleven. Its perturbation check keeps
+the error against a nonzero coarse reference. Nonconstant constructors with nonpositive
+own precision still return `none`; their coarse canonical accuracy remains a separate gap.
 
 The [approximate-history transport](../../Complexity/Foundations/Probability/HierarchyApproximateHistory.lean)
 provides an alternative history whose dense inputs execute the actual `compressedBin` at
@@ -721,13 +775,12 @@ amplitudes are proved sufficient for all initial paired samples and their assemb
 constructors and the total noise/bin payment remain open. These conservative finite charges
 include vertex width and do not establish the intended uniform growth or native workspace bound.
 
-Dense leaves now require positive budget. The initial pilot sample has a zero-budget coarse
-approximation with proved finite bounds against its literal assembled sample and its canonical
-bin in matrix units; the global root-metric coarse-precision payment remains open. Later samples with unproved
-zero boundaries remain `none`; later pilot/main RAW and residual requests are explicitly unavailable
-in the public evaluator until their boundaries are proved. Other inactive recursive calls, invalid frames and unsupported
-constructors are unavailable too. The exact base matrix and literal zero-iteration constants
-retain their existing semantics.
+Dense leaves require positive budget. Every RAW sample has a literal zero-budget approximation;
+the initial pilot case also has finite bounds against its assembled sample and canonical bin in
+matrix units. The global root-metric coarse-precision payment remains open. Active later pilot/main
+RAW and stage-zero residual requests now use their scheduled dispatch. Inactive recursive calls,
+invalid frames and unsupported constructors remain unavailable. The exact base matrix and literal
+zero-iteration constants retain their existing semantics.
 
 The budget-64 public evaluator regression still computes a nonconstant source-dependent row
 from two nonzero half-bins. Separate regressions check its unequal 32/0 paired budgets and the
@@ -1419,6 +1472,29 @@ floor, capacity, bin cap and child-error coefficient are fixed first; the struct
 is chosen before field width, retained depth, budget and request exponents. It pays the
 complete conditional **first mean**, not the total reserve.
 
+For a nonnegative row-substochastic base, the stronger
+[uniform first-mean interface](../../Complexity/Foundations/Probability/HierarchyInitialMeanUniform.lean)
+uses true mass rather than a full-width pointwise estimate. It retains full bins through
+$n$, grid rates, the polynomial cutoff, admissible source/terminal exponents, positive
+actual parent precision, task rank at least one, structural charge at least one and
+$M\le32\,\mathrm{slack}\,n$. It needs neither a field-width upper bound nor every
+retained bin to be active. The least inactive bin bounds the ratio-16 fine tail;
+substochastic row mass cancels field width in the fourth moment.
+`initialPolynomialLoss_root_uniform_le` pays every semantic prefix by
+$4(1+2\,\mathrm{binCap})2^{-p}2^{-A}2^{d_j}$.
+`initialComputedFirstBudgets_uniform` combines that payment with the existing endpoint
+transport in the actual stationary, final, tail and raw first-mean budgets.
+`initialComputedFirstBudgets_uniform_exists_charge` chooses one charge before the
+field, retained depth, budget and endpoint exponents and pays their separated reserve.
+The depth-versus-budget condition is essential: fixed retained depth can leave a
+positive omission error as requested precision increases.
+
+The [uniform clients](../../ComplexityTests/HierarchyInitialMeanUniform.lean) check
+positive omitted mass with inactive retained bins, a terminal exponent beyond half
+the retained depth, and a growing admissible prime family chosen after the structural
+charge. Their actual precision is positive. The endpoint remains conditional on
+separately established child execution and accuracy.
+
 The [checked clients](../../ComplexityTests/PolynomialBudgetHistory.lean) include a family
 with that fixed charge, bounded primes, one horizon covering every retained bin, positive
 actual parent precision and nonzero diagonal omitted semantic mass. A separate full
@@ -1426,9 +1502,9 @@ reserve client at $P=5$, $M=16$, depth two uses horizon **two**, not the previou
 fixture's horizon one. It consumes the actual computed minimum and assembled reserve,
 with lower-child own-request accuracy and direct/reset-right success left as explicit IH
 hypotheses. This is not a proof that those hypotheses hold jointly. The existing actual
-inactive loss-one and zero/exhausted boundary checks remain. Ordinary noise/progress,
-second mean and preparation, general correction products, full changing-request IH and
-native RL=L remain open; production leaves are unchanged.
+inactive loss-one and zero/exhausted boundary checks remain. General-stage noise,
+progress and preparation, correction products, the full changing-request IH and native
+RL=L remain open; production leaves are unchanged.
 
 `initialClippedEndpointWindow_growth` gives a necessary condition for a proposed
 allocation $wW_{\mathrm{end}}\le2^A$ when $w\ge1$: every live bin $i$ must satisfy
@@ -1442,7 +1518,7 @@ before multiplying by $28^{m-i}$.
 the exact rooted tail sum, and its regression rejects that allocation too. Thus these
 unconditional tail coefficients do not justify a uniform endpoint-window allocation by themselves. This is a counterexample
 to that numerical inference, not to the estimator's accuracy. The deterministic payment above uses the actual rare event instead; ordinary progress
-and saturated preparation remain independent gaps.
+and successful recursive preparation remain independent gaps.
 
 The [allocation regressions](../../ComplexityTests/InitialTwoPayment.lean) retain the older
 $M=4$ fixture, whose parent precision is negative. The positive-precision fixture fixes
@@ -1468,10 +1544,9 @@ and `initial_compressed_precision_clipped_endpoint_first`. They add the semantic
 omitted/inactive deficit explicitly. `initialComputedPrecisionMoment` takes the minimum
 of the previous mean cost, the groupwise bound and the telescoped endpoint bound. The
 existing precision four-statistic, `actualFourMax`, raw `clippedError` and sharp-reserve
-proofs consume this minimum. Ordinary first sampling noise and saturated second preparation
-retain their previous costs. Complete reserve allocation, the separate
-ordinary-noise/preparation payments and the simultaneous changing-request invariant remain
-open; no uniformly paid full reserve or native endpoint follows here.
+proofs consume this minimum. Sharper first-noise and supported preparation payments are
+explained below. A covered initial four-statistic reserve allocation is given below;
+the simultaneous changing-request invariant and native endpoint remain open.
 The [two-atom regression](../../ComplexityTests/InitialTwoPayment.lean) shows why: scalar
 rooted fourth error $1/32$ can coexist with centered normalized fourth error $1$ after
 physical scaling. It also distinguishes clipping after averaging from averaging clipped
@@ -1489,6 +1564,92 @@ cutoff and full-terminal rank-gate sensitivity to those prefixes, with the expli
 payment $P(|\zeta|(L_h+L_\rho)/\mathrm{rate}(k_a))^4$. It also identifies the actual clipped
 second mean and pays centered preparation-walk noise on usage without a rarity discount.
 
+The stronger
+[supported preparation interface](../../Complexity/Foundations/Probability/NormalizedAtomRows/SupportedPreparation.lean)
+pays the actual second mean without that width factor. Saturating the actual polynomial
+entry cutoff and hierarchy rank gate converts clipped relative raw error into preparation
+error, including signed approximations and arbitrarily large nonnegative truth. The
+union of the two actual preparation supports contains at most $2K$ entries per row.
+With $C=2+(L_h+L_\rho)(4\theta+5)$, conditional Jensen bounds the second clipped-mean
+moment by $8(2K)(|\zeta|C)^4$ times the sum of the first clipped-mean and centered-noise
+moments. Both inputs use the full terminal rank mask; Jensen uses the narrower usage
+mask on the original environment.
+
+`initialSecondSignal_relative_mean_moment` maps this to the actual successful
+preparation walks. The second-mean coordinate of `initialComputedPrecisionMoment`
+takes the smaller of its previous bound and this supported payment; the same actual
+four-max and separated-reserve consumers use it.
+
+[HierarchyInitialSecondMeanAllocation](../../Complexity/Foundations/Probability/HierarchyInitialSecondMeanAllocation.lean)
+pays the actual second-mean coordinate numerically. `initialSecondMeanConstant` fixes
+$\zeta,L_h,L_\rho$ and the primitive hierarchy/bin constants before geometry. The actual
+root cost is at most $L_2\,2^{-p}2^{-A}2^{d_j}$; the existing growing-mean schedule
+then pays its stationary floor, final value, deterministic rarity tail and raw
+false-event sum with literal capacities, postincrement indices and $K+1$ gain.
+`initialComputedSecondMeanReserve_exists_charge` chooses one charge after those fixed
+constants, before field, depth, endpoints and budget, and pays the reserve containing
+these four actual `false/1` sums. It retains positive parent precision, initial/grid
+requests, polynomial cutoffs, a nonnegative row-substochastic base, covered depth
+$M\le32\,\mathrm{slack}\,n$ and one horizon admitting the full bin family and endpoints.
+Its [growing-family test](../../ComplexityTests/HierarchyInitialSecondMeanAllocation.lean)
+realizes admissible primes after the charge and checks positive precision and omitted
+mass. This does not pay the separate second centered-noise statistic or construct
+successful recursive children; neither centered-noise slot receives a rarity discount.
+
+[HierarchyInitialSecondNoiseAllocation](../../Complexity/Foundations/Probability/HierarchyInitialSecondNoiseAllocation.lean)
+pays the separate centered noise from the actual selected-preparation usage walks.
+The sparse input has fourth moment at most $16K$; squaring the existing logarithmic
+spectral payment retains spare decay without changing the computed walk length.
+`initialSecondNoiseMoment` intersects this payment with the previous range bound,
+retaining $\zeta$, the original source normalization and the full terminal rank mask.
+The literal successful preparation-list theorem and `compressedBin_secondNoise_allocated`
+identify the actual executed histories. They do not require first-history accuracy or
+second-mean stability, and execution remains a premise.
+The `true/1` coordinate of `initialComputedPrecisionMoment` consumes this sparse minimum
+under `initialSecondNoiseAdmissible`: polynomial auxiliary preparation, the actual grid
+source and terminal, an admissible source horizon, and a usage exponent at least the
+terminal exponent on the same suffix. The previous range cost remains available.
+
+`initialSecondNoiseMoment_schedule` pays the stationary, final, raw and unconditional
+factor-$28$ tail allocations. The charge is chosen after fixed scalar constants and
+before geometry, with the explicit field-family condition
+$(512K+1)2^{2A}\le P$. This condition pays the structural decay absent from the old
+range envelope; it is not an unrestricted-field theorem. The
+[checked clients](../../ComplexityTests/HierarchyInitialSecondNoiseAllocation.lean)
+include nonconstant selected input with strictly positive centered noise after every
+finite production walk length, literal preparation execution, and growing prime-field
+families with positive precision. The supplied first history is not asserted recursively
+available.
+
+[HierarchyInitialReserveAssembly](../../Complexity/Foundations/Probability/HierarchyInitialReserveAssembly.lean)
+collects the four actual costs in `initialComputedFourStatisticReserve`. It preserves
+the two deterministic heavy-event payments, the two unconditional centered-noise tails
+and the outer raw coefficient $64$. `initialComputedFourStatisticReserve_exists_charge`
+chooses one charge after the fixed preparation, decoder, floor and capacity constants,
+then pays this mixed-tail reserve by $2^{-4p}$ on the covered field/depth family above.
+The first-mean and second-mean inputs still require a nonnegative row-substochastic
+base, polynomial cutoffs, positive precision and a horizon admitting the full bin family
+and endpoints. `initial_compressed_precision_reserve_fourStatistics` connects the same
+actual completed groups and preparation list to this reserve, conditional on the
+lower-budget own-request accuracy and separate reset-right execution premises. It checks
+the final-payment comparison and the raw fourth-root identities explicitly.
+The [joint allocation regression](../../ComplexityTests/HierarchyInitialReserveAssembly.lean)
+fixes the common charge before growing budgets, constructs prime horizons realizing the
+field and full-bin coverage, and checks positive precision and nonzero omitted semantic
+mass together with the complete numerical payment. It does not construct successful
+recursive children.
+This does not pay the coarser unconditional `initialNumericalReserve`,
+which discards the deterministic rarity gain, or construct simultaneous recursive
+accuracy and availability.
+
+The [actual-history client](../../ComplexityTests/HierarchySupportedPreparation.lean)
+executes its literal walks and checks nonzero second-mean bias paid by first-mean
+budget $1/16$ and zero first noise. The
+[scalar and rank clients](../../ComplexityTests/SupportedPreparation.lean) realize
+hierarchy parameters and test nonzero error, signed input and both saturation cases.
+The old `secondMeanEnvelope` remains an absolute fallback and can genuinely grow with
+field width; the new theorem bounds the actual preparation discrepancy instead.
+
 `BudgetData.decodePrefixes` is the shared pure decoding step now used by `compressedBin`.
 `exists_initial_compressed_fourMax` accepts the literal computed-history group execution and
 successful preparation walks, then applies the same sharp parent comparison. Its
@@ -1501,7 +1662,7 @@ The reset-right call must also succeed on its own request. The computed first no
 centered at its own conditional mean: centering the perturbation costs at most sixteen
 in fourth moment, followed by the constant-eight comparison with semantic centered noise.
 The first deterministic payment contains the transported mean and omitted/inactive deficit,
-while the preparation mean also pays the absolute input error. First quantities retain the
+while the preparation mean also consumes their supported relative payment. First quantities retain the
 full terminal mask; preparation noise retains usage.
 
 `initial_compressed_precision_fourMax` pays both the four-max moment and raw postincrement
@@ -1659,9 +1820,16 @@ actual computed first-noise terms in `initialSeparatedReserve`, including the ou
 raw factor 64. `initialComputedFirstCoordinateReserve_exists_charge` pays it with one
 charge chosen after the primitive bin cap, child coefficient, floor, decoder and capacity
 constants, before field, horizon, requests, depth, budget and precision. It retains the
-first mean's full-bin fixed-depth/bounded-budget family, including width and budget
-bounds and the common horizon. This is a complete conditional first-coordinate numerical
-certificate; the second mean/noise and successful recursive execution are separate.
+first mean's original full-bin fixed-depth/bounded-budget family, including width and
+budget bounds and the common horizon. The stronger
+`initialComputedFirstCoordinateReserve_uniform_exists_charge` in the uniform first-mean
+module pays this same actual combined reserve with one charge before the field, depth,
+budget and endpoint exponents. It uses the true-mass hypotheses above and retains
+$M\le32\,\mathrm{slack}\,n$, strict positive precision, the initial task, and a common
+horizon admitting every bin and both endpoint exponents. It removes the extra width,
+half-depth and all-retained-bins-active restrictions. This remains a conditional
+first-coordinate numerical certificate. The second-mean and sparse second-noise
+allocations are described above; successful recursive execution remains separate.
 The original `initial_compressed_precision_reserve` still provides the actual `hb` and
 weighted raw consumers under explicit lower-child IH; the new certificate pays its
 first-coordinate allocations, not the full four-statistic reserve.
@@ -1712,8 +1880,9 @@ These numerical allocation clients do not construct successful recursive childre
 
 The complete first-coordinate allocation combines the previously assembled bounded
 first mean with complete first noise under the stated guards and conditional child
-execution/IH. Second mean/saturated preparation, second noise, terminal rank, general
-products, full changing-request accuracy/availability and native RL=L remain open.
+execution/IH. The supported second mean, sparse second noise and covered joint initial
+reserve are described above. General terminal-rank/product applications, full
+changing-request accuracy/availability and native RL=L remain open.
 Production leaves are unchanged.
 
 For the same executed prefixes, `initial_compressed_first_noise` now also returns a
@@ -1761,9 +1930,10 @@ semantic group payment (plus transported centered child error) and the previous 
 first-noise cost. The actual own-precision four-statistic, four-max and sharp-reserve
 consumers use this noise minimum. `initialComputedPrecisionMoment` additionally sharpens
 the first mean with the own-mask clipped-prefix payment and first noise with the
-centered spectral prefix payment described above. Second mean and
-second noise retain their existing costs. Transported centered child error still pays
-`initialPerturbationFactor`: the fourth power of the finite sup norm of
+centered spectral prefix payment described above. The second mean also uses the
+supported relative preparation payment; the second-noise coordinate uses the guarded
+sparse minimum above and retains its unconditional range fallback.
+The absolute transport fallback pays `initialPerturbationFactor`, the fourth power of the finite sup norm of
 $(\mathrm{rate}(k_a)+G(x,y))^{-1}$. The reusable `rowNormPow_mul_le_pi_norm` applies
 this fixed pair weight on the original source/terminal masks. Its input is the executed
 prefix error already derived from strict lower-budget own-request rooted precision,
@@ -1782,7 +1952,7 @@ $1/16$ even though that worst-pair factor is unchanged. Such zero entries are al
 admissible substochastic matrices. The remaining child obligation needs control of
 weighted error on its actual executed support; the existing scalar IH does not supply it.
 The new polynomial semantic payment does not pay this transported error, preparation
-sensitivity or the other reserve costs. Uniform allocation of all costs and the
+sensitivity or the other reserve costs. General-stage joint allocation and the
 simultaneous changing-request invariant remain open. The own-mask clipped first-mean
 comparison now has the corresponding computed compression/reserve consumer described
 above; it cannot replace the untruncated sampling payment by itself. No uniform
@@ -1807,12 +1977,13 @@ includes exponents beyond admissible horizons, so this is not a valid-call count
 same factor survives the final reserve summand built from the **old absolute costs**,
 multiplied by $128KC^4$. This lower bound does not apply to the new minimum payment.
 These are lower bounds on the old **numerical envelope**, not on actual noise or estimator error.
-The preparation sensitivity still contains $P(|\zeta|(L_h+L_\rho)/\mathrm{rate}(k_a))^4$,
-and the raw false-event coefficient contains inverse fourth powers of the floor.
-Bin/prefix costs and the inner $28^{m-i}$ tail weights also remain. A uniform argument
-needs sharper actual conditional-noise/sensitivity payments and a jointly chosen
-parameter schedule; a fixed-request depth threshold or a renamed small-reserve premise
-cannot discharge it. No parent-accuracy or supplied four-max budget supplies that gap.
+The old absolute preparation sensitivity contains
+$P(|\zeta|(L_h+L_\rho)/\mathrm{rate}(k_a))^4$; the supported payment above removes that
+width factor from the actual minimum. Raw coefficients retain inverse fourth powers
+of the floor and literal $28^{m-i}$ tails. The covered initial four-statistic allocation
+is given above. General-stage and changing-request estimates still need their joint
+parameter allocation and recursive argument; a fixed-request depth threshold or a
+supplied parent-accuracy/four-max budget cannot establish that endpoint.
 The [complete checked clients](../../ComplexityTests/PolynomialBudgetHistory.lean) include a
 budget-two parent pair whose actual budget-one compressed child has diagonal error one with
 valid scalar small-floor parameters, a separately executed reset-right child, and a literal
@@ -1832,7 +2003,7 @@ The simultaneous all-lower-budget row/vector availability, canonical error, supp
 invariant is unfinished. The finite compressed-bin consumer above is wired, but its general canonical mean/noise
 payments from the simultaneous lower-budget invariant remain unproved; the fixed-HP reserve
 output theorem does not discharge this routed-bin obligation. Incoming-column
-closure, later-iteration and residual zero boundaries, omitted-bin/mean/noise summation,
+closure, inactive-constructor availability and coarse accuracy, omitted-bin/mean/noise summation,
 residual preparation/normalization, weights/rewards and positive-stage copy routing remain open.
 The earlier single-bin canonical accuracy result retains its scope. No selected abstract or
 headline claim changes; there is no analytic or native RL=L endpoint here.
