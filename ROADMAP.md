@@ -218,14 +218,16 @@ families and full-input native runtime.
   and an arbitrary kernel receiving only `(A,T)`. This joint-law extraction uses the sampled
   secret; an `A`-only native reduction and the actual signing/fork distribution bridge remain
   open. Full-view witness invariance ([#2642]) retains aborted commitments for common
-  commitment-dependent challenges and finite independent attempt histories. Average-key cache-hit
-  bounds for actual box commitments and the simulator's published commitments follow from matrix
+  commitment-dependent challenges and finite independent attempt histories. The canonical ROM
+  bridge ([#2661]) extends this to sequential shared-cache signing and adaptive forger views,
+  retaining abort queries and later attempts after success. Average-key cache-hit bounds for
+  actual box commitments and the simulator's published commitments follow from matrix
   universality and the joint leftover-hash bound
   ([#2712](https://github.com/cslib-community/complexitylib/issues/2712)), for ideal uniform
   prime-modulus matrices and histories sampled before fresh masks. An efficient secret-free
-  simulator, adaptive oracle-cache simulation accounting for aborted hash queries, paired
-  same-coins fork equality, native approximation and a security parameter family remain open.
-  Other endpoints include identification security under SIS and Dilithium-style
+  simulator, corrected abort-query simulation, paired same-coins fork equality, native
+  shared-oracle reduction and a security parameter family remain open. Other endpoints include
+  identification security under SIS and Dilithium-style
   signature schemes over module SIS and module LWE, as theory.
 - **Hybrid encryption:** prove modular KEM–DEM CCA composition (Boneh–Shoup Exercise 12.5(a)).
   Canonical `hybridDecrypt` rejects malformed pair encodings and propagates Option-valued
@@ -1043,3 +1045,5 @@ not planned, not as proved.
 [#2636]: https://github.com/cslib-community/complexitylib/issues/2636
 [#2642]: https://github.com/cslib-community/complexitylib/issues/2642
 [#2652]: https://github.com/cslib-community/complexitylib/issues/2652
+
+[#2661]: https://github.com/cslib-community/complexitylib/issues/2661
