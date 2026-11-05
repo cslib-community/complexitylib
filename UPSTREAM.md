@@ -744,6 +744,7 @@ agreement during upstream review.
 | `Foundations/Data/BitString/{Agree,Block}` | Add to CSLib's `Foundations/Data/BitString`. |
 | `Foundations/Data/List/{Fold,Lookup,Counting,Append}` | Fold invariants, lookup and register-file bounds, predicate counts, and append identities including unary headers; `Basic` reexports these topics. Consider Mathlib's `Data/List/GetD` and `Data/List/Basic`. |
 | `Foundations/Relation/RelatesWithinSteps` | Bounded reachability helpers; consider Mathlib's `Logic/Relation`. |
+| `Foundations/MeasureTheory/Measure/TotalVariation/Map` | Mathlib candidate beside `Measure/TotalVariation/Defs`: measurable-map contraction for the existing full-L1 distance of finite measures, including unequal masses. Derived from vector-measure variation; no new distance definition. |
 | `Foundations/BooleanAnalysis/Fourier` | Consider Mathlib beside `Analysis/Fourier/FiniteAbelian`. |
 | `Foundations/MeasureTheory/Group/ConvolutionDensity` | Mathlib candidate beside `Measure/WithDensity`: a convolution density formula with arbitrary s-finite first measure, including singular inputs, derived measurability and multiplicative/additive versions. Reuses existing convolution, product and density constructions; no finite-mass or integrability premise. |
 | `Foundations/Analysis/Lattice/Fourier` | General mathematics intended for Mathlib beside `Analysis/Fourier/PoissonSummation`: dual-frequency character invariance and the unnormalized coefficient identity, reusing fundamental-domain unfolding. No new lattice or periodization definition. |

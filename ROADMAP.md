@@ -889,6 +889,11 @@ library. Use a growing, source-pinned sample of papers, including some chosen af
 designed, as demanding clients, and promote recurring obligations into shared APIs only after
 reuse is demonstrated.
 
+- **Measure postprocessing.** Canonical full-L1 total variation contracts under measurable
+  maps of arbitrary finite measures, including unequal masses
+  ([#2732](https://github.com/cslib-community/complexitylib/issues/2732)). The actual Gaussian
+  projection/mod-one consumer remains separate in
+  [#2734](https://github.com/cslib-community/complexitylib/issues/2734).
 - **One sensitivity API.** Define the sensitivity measures over any `Fintype` in CSLib and drop
   the separate measures of the sensitivity-separation development.
 - **CNF evaluation certificates:** `fun_prop` certificates for evaluating literals, clauses and
