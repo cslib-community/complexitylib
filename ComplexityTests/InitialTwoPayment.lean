@@ -811,3 +811,160 @@ example (n : ℕ) :
     ∃ P, P.Prime ∧ 2 ^ (n + 2) < P ∧ P ≤ 2 ^ (n + 3) ∧
       ∃ H : Horizon P, H.maxExponent = n + 2 ∧ H.maxIdentifier = 0 := by
   simpa only [Nat.add_assoc] using exists_bounded_depth_prime (n + 2) 0 (by positivity)
+
+-- A fixed charge is chosen before unbounded depth/precision and full bin horizons.
+-- The conditional client below consumes actual computed centered noise, rather than
+-- just testing the scalar exponent. Production leaves and recursive availability stay open.
+private def unboundedNoiseRequest {P : ℕ} (HP : FourthRootHierarchyParams 16 1 16 32 8) (n : ℕ) :
+    HierarchyTask.Request HP.k (Fin 3) (ZMod P) :=
+  ⟨.row 0 (.pilotInput ⟨0, HP.k_pos⟩), gridChannel 0 n [],
+    gridChannel 2 (n + 1) [], gridChannel 2 (n + 1) []⟩
+
+example {HP : FourthRootHierarchyParams 16 1 16 32 8} (binCap coefficient : ℝ) :
+    ∃ A : ℕ, ∀ {P : ℕ} [Fact P.Prime] (B : BudgetData HP P),
+      B.binCap = binCap → B.rankCharge = A → B.binRate = rate → B.slack = 1 →
+      ∀ n p, B.bins = range (n + 3) → ∀ H : Horizon P, n + 2 ≤ H.maxExponent →
+      let r := unboundedNoiseRequest HP n (P := P)
+      let M := 16 * (A * r.task.rank + p + 4 * n + 4)
+      0 < B.requestPrecision M r ∧
+      ∀ j (R : RoleProfile 3) (ζ Lh Lρ : ℝ),
+      B.initialComputedPrecisionMoment M (n + 2) r R n (n + 1) [] [] coefficient ζ Lh Lρ
+          j true 0 ≤
+        8 * (((2 : ℝ) ^ (-B.requestPrecision M r) *
+          (1 / 2 : ℝ) ^ Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) j) ^ 4 +
+          B.initialRelativeNoiseBudget M r R.source R.terminal R.source_terminal
+            n (n + 1) [] [] B.base (j + 1)) := by
+  obtain ⟨A, hA⟩ := BudgetData.initialComputedPrecisionMoment_firstNoise_uniform_charge
+    (HP := HP) binCap coefficient
+  refine ⟨A, ?_⟩
+  intro P _ B hcap hcharge hrate hslack n p hbins H hn
+  dsimp only
+  let r := unboundedNoiseRequest HP n (P := P)
+  let M := 16 * (A * r.task.rank + p + 4 * n + 4)
+  have hp : B.requestPrecision M r = p + 2 := by
+    rw [B.requestPrecision_grid M n (n + 1) r rfl rfl, hslack, hcharge]
+    dsimp only [M]
+    push_cast
+    ring
+  have hq : { r with usage := r.terminal } = r := rfl
+  refine ⟨by rw [hp]; positivity, ?_⟩
+  intro j R ζ Lh Lρ
+  have h := hA B hcap hcharge hrate H M j n (n + 1) (by omega)
+    (fun bin hb => by rw [hbins, mem_range] at hb; omega) r rfl
+    (by rw [hq, hp]; positivity) R [] [] (n + 2) ζ Lh Lρ
+  simpa only [hq] using h
+
+-- Concrete unbounded source n / terminal n+1, full bins and positive actual precision.
+-- Actual own-request/reset execution remains an explicit conditional IH, restricted
+-- to unequal positive endpoints. No execution is requested for equal/unused bins.
+example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ} [Fact P.Prime]
+    (B : BudgetData HP P) (A n p : ℕ) (hcharge : B.rankCharge = A)
+    (hrate : B.binRate = rate) (hslack : B.slack = 1)
+    (hbins : B.bins = range (n + 3)) (H : Horizon P) (hn : n + 2 ≤ H.maxExponent)
+    (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod P) → ℕ) (ζ floor coefficient : ℝ)
+    (D : ℕ → ℕ → Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ)
+    (hzero : ∀ bin, D bin 0 = 0)
+    (ih :
+      let r := unboundedNoiseRequest HP n (P := P)
+      let M := 16 * (A * r.task.rank + p + 4 * n + 4)
+      ∀ i bin, bin ∈ B.bins →
+      let d := Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) i
+      let q := { r with usage := r.terminal }
+      let fine := LogSpaceEstimation.lastBudget M d B.slack (B.sampleScale q (some bin))
+      let coarse := LogSpaceEstimation.lastBudget M (2 * d) B.slack (B.sampleScale q (some bin))
+      fine ≠ coarse → ∀ m ∈ ({fine, coarse} : Finset ℕ), m < M → 0 < m →
+      let q := { r with usage := r.terminal }
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        q.source (BudgetData.midpoint q) q.terminal (B.binRate bin)
+      B.compressedBin m bin (exponent Q.direct) ζ floor Q.direct = some (D bin m) ∧
+      rootDistPow 4 P Q.direct.source.rate
+        (fun σ x => Q.direct.source.retains (channels B.padding) σ x)
+        (fun σ y => Q.direct.usage.retains (channels B.padding) σ y) (D bin m)
+        (denseChild B.padding id Q.direct (B.cutoff bin) (B.auxiliary bin)
+          HP.ρ HP.K B.base) ≤
+        coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision m Q.direct)) ^ 4 ∧
+      ∃ R, B.compressedBin m bin (exponent Q.right) ζ floor Q.right = some R)
+    (hbase : ∀ x y, 0 ≤ B.base x y) :
+    let r := unboundedNoiseRequest HP n (P := P)
+    let M := 16 * (A * r.task.rank + p + 4 * n + 4)
+    ∃ groups,
+      (List.range (Nat.log2 M + 1)).mapM (fun i =>
+        B.completedGroup (fun m q => if m < M then B.compressedHistory exponent ζ floor m q
+          else none) M (Cslib.RowCompression.dyadicSlack (Nat.log2 M + 1) i)
+          (.pilotInput ⟨0, HP.k_pos⟩) r) = some groups ∧
+      ∀ (Lt : ℕ) (second : Environment P 3 → ZMod P → ℕ → ZMod P → ℝ)
+        (j : ℕ), j < Nat.log2 M + 1 →
+      rowNormPow 4 P r.source.rate (retainedMask (0 : Fin 3) (side P n) B.padding [])
+        (retainedMask 2 (side P (n + 1)) B.padding [])
+        (actualNoiseEntry threeRoles.source threeRoles.terminal (side P n) (side P (n + 1))
+          Lt B.padding [] [] (n + 1) B.base (firstSignalIncrement (fun m σ x y =>
+            ((groups.take m).map (fun T => T σ x y)).sum) (n + 1) second) 0 0 j) ≤
+        B.initialComputedNormalizedNoise M r threeRoles n (n + 1) [] [] coefficient j := by
+  dsimp only
+  let r := unboundedNoiseRequest HP n (P := P)
+  let M := 16 * (A * r.task.rank + p + 4 * n + 4)
+  have hp : B.requestPrecision M r = p + 2 := by
+    rw [B.requestPrecision_grid M n (n + 1) r rfl rfl, hslack, hcharge]
+    dsimp only [M]
+    push_cast
+    ring
+  exact B.initial_compressed_normalized_noise_consumer (by rw [hcharge]; positivity)
+    hrate H exponent ζ floor M (by dsimp only [M]; omega)
+    (by rw [hbins]; exact ⟨0, mem_range.mpr (by omega)⟩) r threeRoles n (n + 1) [] []
+    rfl rfl rfl (by omega) (fun bin hb => by rw [hbins, mem_range] at hb; omega)
+    (by change 0 ≤ B.requestPrecision M r; rw [hp]; positivity) D hzero coefficient ih hbase
+
+-- Actual direct-source inheritance, rank decrease and strictly positive own precision
+-- at both unequal endpoints, for coarse/equal-scale/fine bins under fixed charge seven.
+example {HP : FourthRootHierarchyParams 16 1 16 32 8} {P : ℕ} [Fact P.Prime]
+    (B : BudgetData HP P) (hrate : B.binRate = rate) (hslack : B.slack = 1)
+    (n p : ℕ) :
+    let B' : BudgetData HP P := { B with rankCharge := 7 }
+    let r := unboundedNoiseRequest HP n (P := P)
+    let M := 16 * (7 * r.task.rank + p + 4 * n + 4)
+    ∀ bin ∈ ({n, n + 1, n + 2} : Finset ℕ), ∀ e ∈ ({8, 16} : Finset ℕ),
+      let m := LogSpaceEstimation.lastBudget M e B'.slack (B'.sampleScale r (some bin))
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (BudgetData.midpoint r) r.terminal (B'.binRate bin)
+      0 < m ∧ m < M ∧ Q.direct.source = r.source ∧
+        Q.right.source = BudgetData.midpoint r ∧ Q.direct.task.rank < r.task.rank ∧
+        0 < B'.requestPrecision m Q.direct := by
+  dsimp only
+  let B' : BudgetData HP P := { B with rankCharge := 7 }
+  let r := unboundedNoiseRequest HP n (P := P)
+  let M := 16 * (7 * r.task.rank + p + 4 * n + 4)
+  have hrank : r.task.rank = 36 := by
+    norm_num [r, unboundedNoiseRequest, HierarchyTask.rank, BoundedRowTask.localTask,
+      CorrectionRowTask.rank, PilotRowTask.rank, PilotTask.rank]
+  intro bin hb e he
+  have hb' : bin = n ∨ bin = n + 1 ∨ bin = n + 2 := by simpa using hb
+  have he' : e = 8 ∨ e = 16 := by simpa using he
+  have hcut : LogSpaceEstimation.scaleCutoff B'.slack (B'.sampleScale r (some bin)) ≤ 5 := by
+    rw [B'.sampleScale_grid r (n + 1) bin hrate rfl]
+    change LogSpaceEstimation.scaleCutoff B.slack _ ≤ _
+    rw [hslack]
+    rcases hb' with h | h | h <;> rw [h] <;>
+      norm_num [LogSpaceEstimation.scaleCutoff, Int.natAbs_of_nonneg,
+        show (n : ℤ) + 1 - n = 1 by omega,
+        show (n : ℤ) + 1 - (n + 1) = 0 by omega,
+        show (n : ℤ) + 1 - (n + 2) = -1 by omega]
+  have hm : LogSpaceEstimation.lastBudget M e B'.slack (B'.sampleScale r (some bin)) = M - e := by
+    unfold LogSpaceEstimation.lastBudget
+    rw [max_eq_left (by omega)]
+  rw [hm]
+  refine ⟨by dsimp only [M]; rw [hrank]; omega,
+    by dsimp only [M]; rw [hrank]; omega, rfl, rfl, ?_, ?_⟩
+  · change 14 < r.task.rank
+    rw [hrank]
+    decide
+  · let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+      r.source (BudgetData.midpoint r) r.terminal (B'.binRate bin)
+    rw [B'.requestPrecision_grid (M - e) n bin Q.direct rfl (congrFun hrate bin)]
+    change 0 < (M - e : ℕ) / (16 * (B.slack : ℝ)) - 2 * ((bin : ℝ) + n) - 7 * 14
+    rw [hslack, Nat.cast_sub (by dsimp only [M]; rw [hrank]; omega)]
+    dsimp only [M]
+    rw [hrank]
+    push_cast
+    rcases he' with rfl | rfl <;> rcases hb' with rfl | rfl | rfl <;>
+      norm_num only [Nat.cast_add, Nat.cast_ofNat, Nat.cast_one] <;>
+      linarith [show (0 : ℝ) ≤ p from Nat.cast_nonneg p]

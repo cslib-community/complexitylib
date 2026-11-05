@@ -2950,38 +2950,21 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) (coefficient : ℝ) :
 
 -- Actual budget-one direct error is nonzero, and its reset-right call succeeds.
 -- Only the active top bin demands IH; the unused fine bin is not called at budget one.
-private theorem positive_centered_group (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+private theorem positive_direct_precision (HP : FourthRootHierarchyParams 16 1 16 32 8) :
     let ζ := min HP.η (1 / 10000) / 4
     let Q := HierarchyTask.rawRequests 0 0 (.pilotInput ⟨0, HP.k_pos⟩)
       (request HP).source (BudgetData.midpoint (request HP)) (request HP).terminal
       ((data HP).binRate 0)
     let c := (2 : ℝ) ^ ((data HP).requestPrecision 1 Q.direct)
     (data HP).compressedBin 1 0 0 ζ ζ Q.direct = some 0 ∧
-    (∀ σ, |(0 : ℝ) - denseChild (data HP).padding id Q.direct ((data HP).cutoff 0)
-      ((data HP).auxiliary 0) HP.ρ HP.K (data HP).base σ 0 0| = 1) ∧
-    ∃ F G,
-      (data HP).completedGroup (fun n q => if n < 2 then
-        (data HP).compressedHistory (fun _ => 0) ζ ζ n q else none)
-        2 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) = some F ∧
-      (data HP).completedGroup (fun n q => if n < 2 then (data HP).evaluate n q else none)
-        2 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) = some G ∧
-      rowNormPow 4 5 (request HP).source.rate
-        (fun σ x => (request HP).source.retains (channels (data HP).padding) σ x)
-        (fun σ y => (request HP).usage.retains (channels (data HP).padding) σ y)
-        (fun σ x y => (F - G) σ x y - rowSliceMean
-          (X 0 (side 5 0) (CopyPadding.identifier (data HP).padding [1]))
-          (Y 2 (side 5 0) (CopyPadding.identifier (data HP).padding [2, 3]))
-          (F - G) x y) ≤
-        (data HP).initialCenteredGroupCharge 2 1 (request HP) c ∧
-      rowNormPow 4 5 (request HP).source.rate
-        (fun σ x => (request HP).source.retains (channels (data HP).padding) σ x)
-        (fun σ y => (request HP).usage.retains (channels (data HP).padding) σ y)
-        (fun σ x y => (F - G) σ x y - rowSliceMean
-          (X 0 (side 5 0) (CopyPadding.identifier (data HP).padding [1]))
-          (Y 2 (side 5 0) (CopyPadding.identifier (data HP).padding [2, 3]))
-          (F - G) x y) ≤
-        ((2 : ℝ) ^ (-(data HP).requestPrecision 2 (request HP)) * (64 : ℝ)⁻¹ ^ 1) ^ 4 *
-          (data HP).initialActiveRootGroupCharge 2 1 (request HP) 0 c := by
+    rootDistPow 4 5 Q.direct.source.rate
+      (fun σ x => Q.direct.source.retains (channels (data HP).padding) σ x)
+      (fun σ y => Q.direct.usage.retains (channels (data HP).padding) σ y) 0
+      (denseChild (data HP).padding id Q.direct ((data HP).cutoff 0)
+        ((data HP).auxiliary 0) HP.ρ HP.K (data HP).base) ≤
+      c ^ 4 * ((2 : ℝ) ^ (-(data HP).requestPrecision 1 Q.direct)) ^ 4 ∧
+    denseChild (data HP).padding id Q.direct ((data HP).cutoff 0)
+      ((data HP).auxiliary 0) HP.ρ HP.K (data HP).base = (fun _ => base) := by
   dsimp only
   let ζ := min HP.η (1 / 10000) / 4
   let Q := HierarchyTask.rawRequests 0 0 (.pilotInput ⟨0, HP.k_pos⟩)
@@ -3021,6 +3004,47 @@ private theorem positive_centered_group (HP : FourthRootHierarchyParams 16 1 16 
       zero_sub, abs_neg, Real.zero_rpow (by norm_num : (4⁻¹ : ℝ) ≠ 0),
       apply_ite (fun t : ℝ => |t ^ (4⁻¹ : ℝ)| ^ 4)]
     norm_num [apply_ite abs, ite_pow]
+  exact ⟨hd, hroot, ht⟩
+
+private theorem positive_centered_group (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    let ζ := min HP.η (1 / 10000) / 4
+    let Q := HierarchyTask.rawRequests 0 0 (.pilotInput ⟨0, HP.k_pos⟩)
+      (request HP).source (BudgetData.midpoint (request HP)) (request HP).terminal
+      ((data HP).binRate 0)
+    let c := (2 : ℝ) ^ ((data HP).requestPrecision 1 Q.direct)
+    (data HP).compressedBin 1 0 0 ζ ζ Q.direct = some 0 ∧
+    (∀ σ, |(0 : ℝ) - denseChild (data HP).padding id Q.direct ((data HP).cutoff 0)
+      ((data HP).auxiliary 0) HP.ρ HP.K (data HP).base σ 0 0| = 1) ∧
+    ∃ F G,
+      (data HP).completedGroup (fun n q => if n < 2 then
+        (data HP).compressedHistory (fun _ => 0) ζ ζ n q else none)
+        2 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) = some F ∧
+      (data HP).completedGroup (fun n q => if n < 2 then (data HP).evaluate n q else none)
+        2 1 (.pilotInput ⟨0, HP.k_pos⟩) (request HP) = some G ∧
+      rowNormPow 4 5 (request HP).source.rate
+        (fun σ x => (request HP).source.retains (channels (data HP).padding) σ x)
+        (fun σ y => (request HP).usage.retains (channels (data HP).padding) σ y)
+        (fun σ x y => (F - G) σ x y - rowSliceMean
+          (X 0 (side 5 0) (CopyPadding.identifier (data HP).padding [1]))
+          (Y 2 (side 5 0) (CopyPadding.identifier (data HP).padding [2, 3]))
+          (F - G) x y) ≤
+        (data HP).initialCenteredGroupCharge 2 1 (request HP) c ∧
+      rowNormPow 4 5 (request HP).source.rate
+        (fun σ x => (request HP).source.retains (channels (data HP).padding) σ x)
+        (fun σ y => (request HP).usage.retains (channels (data HP).padding) σ y)
+        (fun σ x y => (F - G) σ x y - rowSliceMean
+          (X 0 (side 5 0) (CopyPadding.identifier (data HP).padding [1]))
+          (Y 2 (side 5 0) (CopyPadding.identifier (data HP).padding [2, 3]))
+          (F - G) x y) ≤
+        ((2 : ℝ) ^ (-(data HP).requestPrecision 2 (request HP)) * (64 : ℝ)⁻¹ ^ 1) ^ 4 *
+          (data HP).initialActiveRootGroupCharge 2 1 (request HP) 0 c := by
+  dsimp only
+  let ζ := min HP.η (1 / 10000) / 4
+  let Q := HierarchyTask.rawRequests 0 0 (.pilotInput ⟨0, HP.k_pos⟩)
+    (request HP).source (BudgetData.midpoint (request HP)) (request HP).terminal
+    ((data HP).binRate 0)
+  let c := (2 : ℝ) ^ ((data HP).requestPrecision 1 Q.direct)
+  obtain ⟨hd, hroot, ht⟩ := positive_direct_precision HP
   refine ⟨hd, ?_, ?_⟩
   · intro σ
     rw [ht]
@@ -3071,7 +3095,8 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
           (side 5 0) (data HP).padding [1] [2, 3] 0 base
           (firstSignalIncrement (fun p σ x y =>
             ((groups.take p).map (fun T => T σ x y)).sum) 0 (fun _ _ _ _ => 0)) 0 0 1) ≤
-        (data HP).initialComputedCenteredNoise 2 (request HP) threeRoles 0 0 [1] [2, 3] c 1 := by
+        (data HP).initialComputedBoundedCenteredNoise 2 (request HP) threeRoles
+          0 0 [1] [2, 3] c 1 := by
   dsimp only
   obtain ⟨_, _, A₁, C₁, hA₁, hC₁, hb₁, _⟩ := positive_centered_group HP
   let ζ := min HP.η (1 / 10000) / 4
@@ -3239,5 +3264,68 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) (coefficient : ℝ) :
     threeRoles [1] [2, 3] n 0 0 0
   simpa only [show { request HP with usage := (request HP).terminal } = request HP from rfl,
     hprecision] using h
+
+-- The actual nonzero direct-child error also enters the unbounded normalized lane.
+-- Its reset-right call is executed separately; bin one is unused and needs no child.
+open Cslib.RowCompression NormalizedMoments in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    let ζ := min HP.η (1 / 10000) / 4
+    let Q := HierarchyTask.rawRequests 0 0 (.pilotInput ⟨0, HP.k_pos⟩)
+      (request HP).source (BudgetData.midpoint (request HP)) (request HP).terminal
+      ((data HP).binRate 0)
+    let c := (2 : ℝ) ^ ((data HP).requestPrecision 1 Q.direct)
+    ∃ groups,
+      (List.range 2).mapM (fun i => (data HP).completedGroup (fun n q => if n < 2 then
+        (data HP).compressedHistory (fun _ => 0) ζ ζ n q else none)
+        2 (dyadicSlack 2 i) (.pilotInput ⟨0, HP.k_pos⟩) (request HP)) = some groups ∧
+      rowNormPow 4 5 (request HP).source.rate
+        (retainedMask threeRoles.source (side 5 0) (data HP).padding [1])
+        (retainedMask threeRoles.terminal (side 5 0) (data HP).padding [2, 3])
+        (actualNoiseEntry threeRoles.source threeRoles.terminal (side 5 0) (side 5 0)
+          (side 5 0) (data HP).padding [1] [2, 3] 0 base
+          (firstSignalIncrement (fun p σ x y =>
+            ((groups.take p).map (fun T => T σ x y)).sum) 0 (fun _ _ _ _ => 0)) 0 0 1) ≤
+        (data HP).initialComputedNormalizedNoise 2 (request HP) threeRoles 0 0 [1] [2, 3] c 1 := by
+  dsimp only
+  obtain ⟨hd, hroot, _⟩ := positive_direct_precision HP
+  let ζ := min HP.η (1 / 10000) / 4
+  let Q := HierarchyTask.rawRequests 0 0 (.pilotInput ⟨0, HP.k_pos⟩)
+    (request HP).source (BudgetData.midpoint (request HP)) (request HP).terminal
+    ((data HP).binRate 0)
+  let c := (2 : ℝ) ^ ((data HP).requestPrecision 1 Q.direct)
+  have hp : 0 ≤ (data HP).requestPrecision 2 (request HP) := by
+    rw [(data HP).requestPrecision_grid 2 0 0 (request HP) rfl rfl]
+    norm_num [data]
+  obtain ⟨groups, hg, hb⟩ := (data HP).initial_compressed_normalized_noise_consumer
+    (by norm_num [data]) rfl supportHorizon (fun _ => 0) ζ ζ 2 (by decide)
+    (by simp [data]) (request HP) threeRoles 0 0 [1] [2, 3] rfl rfl rfl (by decide)
+    (fun bin hb => by
+      have hh : bin = 0 ∨ bin = 1 := by simpa [data] using hb
+      rcases hh with rfl | rfl <;> decide)
+    hp (fun _ _ => 0) (fun _ => rfl) c (by
+      intro i bin hb
+      dsimp only
+      intro hne m hm hlt hpos
+      have hbin : bin = 0 := by
+        have hh : bin = 0 ∨ bin = 1 := by simpa [data] using hb
+        rcases hh with h | h
+        · exact h
+        · subst bin
+          exfalso
+          have hscale := (data HP).sampleScale_grid (request HP) 0 1 rfl rfl
+          norm_num at hscale
+          simp only [show { request HP with usage := (request HP).terminal } = request HP
+            from rfl] at hne
+          rw [hscale] at hne
+          have hz (e : ℕ) : LogSpaceEstimation.lastBudget 2 e (data HP).slack (-4) = 0 := by
+            norm_num [LogSpaceEstimation.lastBudget, LogSpaceEstimation.scaleCutoff, data]
+          simp only [hz] at hne
+          exact hne rfl
+      subst bin
+      have hm1 : m = 1 := by omega
+      subst m
+      exact ⟨hd, hroot, right_available HP ζ 1 (by decide)⟩)
+    (by intro x y; by_cases h : x = y <;> simp [data, base, h])
+  exact ⟨groups, hg, hb (side 5 0) (fun _ _ _ _ => 0) 1 (by decide)⟩
 
 end PolynomialBudgetHistory

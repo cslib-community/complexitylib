@@ -69,6 +69,34 @@ theorem rowNormPow_weighted_sub_le_rootDistPow {Ω V : Type*} [Fintype Ω] [Fint
     _ ≤ _ := by
       rw [mul_assoc]
       exact mul_le_mul_of_nonneg_left hroot (by positivity)
+/-- Joint endpoint transport keeps a positive accuracy scale attached to the weight
+before its sup norm. The original source normalization and the child's own usage mask
+are retained; only the parent terminal mask is enlarged, using proved zero extension.
+In particular this conversion introduces no inverse terminal density. -/
+theorem rowNormPow_weighted_sub_precision_le {Ω V : Type*} [Fintype Ω] [Fintype V]
+    {N u B ε C t : ℝ} (hNu : 0 ≤ N * u) (hε : 0 < ε) (ht : 0 ≤ t)
+    (X Y U : Ω → V → Prop) [∀ σ x, Decidable (X σ x)]
+    [∀ σ y, Decidable (Y σ y)] [∀ σ y, Decidable (U σ y)]
+    (A A' : Ω → V → V → ℝ) (w : V → ℝ)
+    (hA : ∀ σ x y, A σ x y ∈ Set.Icc 0 B)
+    (hA' : ∀ σ x y, A' σ x y ∈ Set.Icc 0 B)
+    (hoff : ∀ σ x y, ¬ U σ y → A σ x y = A' σ x y)
+    (hw : ∀ y, |w y| * ε ≤ t)
+    (herr : rootDistPow 4 N u X U A A' ≤ C ^ 4 * ε ^ 4) :
+    rowNormPow 4 N u X Y (fun σ x y => w y * (A σ x y - A' σ x y)) ≤
+      ((4 * B ^ ((3 : ℝ) / 4)) * |C| * t) ^ 4 := by
+  have hn : ‖w‖ ≤ t / ε := (pi_norm_le_iff_of_nonneg (div_nonneg ht hε.le)).mpr
+    (fun y => by simpa only [Real.norm_eq_abs] using (le_div_iff₀ hε).mpr (hw y))
+  have hnt : ‖w‖ * ε ≤ t := (le_div_iff₀ hε).mp hn
+  have hb := (rowNormPow_weighted_sub_le_rootDistPow hNu X Y U A A' w
+    hA hA' hoff).trans (mul_le_mul_of_nonneg_left herr (by positivity))
+  have hp := pow_le_pow_left₀ (mul_nonneg (norm_nonneg _) hε.le) hnt 4
+  have hc := mul_le_mul_of_nonneg_left hp
+    (show 0 ≤ (4 * B ^ ((3 : ℝ) / 4)) ^ 4 * C ^ 4 by positivity)
+  rw [mul_pow] at hc
+  rw [mul_pow, mul_pow, (by decide : Even (4 : ℕ)).pow_abs]
+  nlinarith only [hb, hc]
+
 /-- A fixed pair weight costs its finite sup norm. The weight is independent of the
 sampled environment; source and terminal conditioning are unchanged. -/
 theorem rowNormPow_mul_le_pi_norm {Ω V : Type*} [Fintype Ω] [Fintype V]

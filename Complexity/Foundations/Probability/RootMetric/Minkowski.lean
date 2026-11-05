@@ -132,6 +132,13 @@ theorem rowNormPow_eq_vertexNormPow (f : Ω → V → V → ℝ)
   intro x _
   by_cases hx : X σ x <;> simp [hx]
 
+/-- A constant scale factors out of a row moment on its unchanged joint masks. -/
+theorem rowNormPow_const_mul (w : ℝ) (f : Ω → V → V → ℝ)
+    (Y : Ω → V → Prop) [∀ σ y, Decidable (Y σ y)] :
+    rowNormPow p N u X Y (fun σ x y => w * f σ x y) =
+      |w| ^ p * rowNormPow p N u X Y f := by
+  rw [rowNormPow_eq_vertexNormPow, vertexNormPow_const_mul, rowNormPow_eq_vertexNormPow]
+
 /-- Finite weighted Minkowski for rows on their original joint source/terminal slice.
 No independence or count of bins or prefixes is used. -/
 theorem rowNormPow_sum_le_pow_sum (hp : p ≠ 0) (hNu : 0 ≤ N * u)

@@ -1592,17 +1592,50 @@ precision $p+2>0$, and checks both endpoints of coarse, equal-scale and fine une
 Admissible prime horizons exist for every tested depth. This is numerical allocation,
 not simultaneous successful recursive execution.
 
-The remaining bridge is a joint **row-moment** estimate on the original masks that
-retains this normalized importance through density/source conversion, sums bin fourth
-roots before taking the fourth power, and applies the actual spectral contraction.
-The current `initialRootGroupCharge` still uses the global bin-cardinality cube;
-`initialComputedCenteredNoise` still extracts `initialPerturbationFactor` separately.
-These existing consumers have not been migrated by the scalar lemmas, so they continue
-to require their explicit bounded-family hypotheses. Neither a schedule obstruction nor
-an unbounded computed first-noise/reserve payment follows from the new comparison.
+The normalized row-moment bridge now has an actual consumer.
+`rowNormPow_weighted_sub_precision_le` keeps positive own-request precision attached
+to the endpoint coefficient before taking a sup norm. It preserves the direct child's
+source normalization and its own usage mask, using successful compression's proved
+zero extension; enlarging the parent terminal mask costs no inverse terminal density.
+`positiveSample_initial_compressed_normalized_precision` and
+`pairedSample_initial_compressed_normalized_precision_at` apply this to literal child
+executions. Only unequal positive endpoints require direct accuracy and separate
+reset-right availability. Equal pairs execute no child; zero endpoints have zero charge.
 
-This is a conditional first-noise allocation on the stated bounded family, not a joint
-recursive availability theorem or a complete reserve allocation. Supported semantic noise
+`completedGroup_initial_compressed_normalized_precision` uses finite Minkowski on these
+normalized inputs before actual centered spectral contraction, removing the global bin
+cube from this lane. `initialRootGroupCharge` and `initialComputedBoundedCenteredNoise`
+remain the bounded fallback.
+`initial_normalized_bin_sum_le` sums geometric offsets on both sides of the terminal
+scale via the existing summable scale majorant. The fixed primitive constant is
+`initialNormalizedNoiseConstant`; no absolute source/terminal cap, field-width payment,
+weighted IH, canonical support for approximate children, independence or rarity is used.
+The unchanged $64^{-d}$ schedule dominates the at-most $4^d$ input growth, leaving
+$16^{-d}$ in `completedGroup_initial_compressed_normalized_paid`.
+
+`initial_compressed_normalized_noise_consumer` constructs literal completed-group lists
+from conditional own-request endpoint IH and pays the actual `actualNoiseEntry` first
+coordinate, with correlated-prefix Minkowski. The target denominator only contracts the
+already normalized discrepancy. `initialComputedPrecisionMoment` now takes the minimum
+of both existing fallbacks and `initialComputedNormalizedNoise` whenever
+`initialNormalizedNoiseAdmissible` holds. That guard requires nonnegative structural
+charge and parent precision, actual grid bin rates and initial task, and one admissible
+horizon for the terminal and all bins. `initial_compressed_precision_moments` proves the
+new branch on actual computed histories; the existing four-max and raw separated-reserve
+consumers use the same updated minimum.
+
+`initialComputedPrecisionMoment_firstNoise_uniform_charge` chooses one charge from the
+primitive bin cap and child coefficient before field, horizon, request, budget or precision.
+The checked full-bin family in [InitialTwoPayment](../../ComplexityTests/InitialTwoPayment.lean)
+has source $n$, terminal $n+1$, bins through $n+2$, and actual positive precision $p+2$,
+for unbounded $n,p$. Its actual-noise client retains explicit endpoint execution/IH;
+it does not construct a joint successful recursive family. The actual nonzero-child
+client in [PolynomialBudgetHistory](../../ComplexityTests/PolynomialBudgetHistory.lean)
+also consumes the normalized lane, with a separate reset call and no success demand
+for its unused bin. Existing fully correlated two-atom noise clients remain checked.
+
+This completes the unbounded conditional transported first-noise lane, not the full
+reserve allocation or recursive availability theorem. Supported semantic noise
 keeps its existing polynomial payment. The assembled first mean and production leaves
 are unchanged. Second mean/saturated preparation, terminal rank, general products, full
 changing-request accuracy/availability and native RL=L remain open.
