@@ -3121,7 +3121,9 @@ public import Complexity.Crypto.Protocols.MPC.Composition
 public import Complexity.Crypto.Protocols.MPC.PolyTime
 public import Complexity.Crypto.Protocols.MPC.SharedMul
 public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness
+public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.AllOutOfR
 public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.OddSources
+public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.ZeroSumPads
 public import Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomnessBinary
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort
 public import Complexity.Crypto.Protocols.SigmaProtocol.Basic

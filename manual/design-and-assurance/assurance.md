@@ -93,3 +93,42 @@ Appendix A's nondegenerate valuation variant or separately establish the eight-g
 $6/7$ strengthening. These ancillary claims are distinct from the main-results coverage.
 
 [lean-validation]: ../sources.md#lean-validation
+
+## All-out-of-r sharing from odd sources
+
+Import `Complexity.Crypto.Protocols.SecretSharing.ImperfectRandomness.AllOutOfR` and open
+`Cslib.Crypto.Protocols.SecretSharing.ImperfectRandomness.AllOutOfR`.
+For $r=n+1\ge2$ parties and $b\ge r$, `binary_construction n b` produces actual
+coefficients in $\mathrm{GF}(2^b)$ and fixed message/share bijections to $b$- and
+$(b+1)$-bit strings. It proves reconstruction for every ambient key, joint privacy
+for every proper coalition, the exact key cardinality $(2^r-1)2^{(r-1)b}$, and the
+min-entropy lower bound $(r-1)b+\log_2(2^{r-1}-1)$. The source is the actual
+`OddSources.source`: odd nonempty active sets at indices in $T$, nonempty even
+sets at the remaining indices. There is no additional dealer randomness.
+
+The index is a vector in $V^{r-1}$. `pad` returns its first $r-1$ coordinates and
+their negative sum, equal to their sum in characteristic two. `sum_pad` and
+`padProjection_bijective` prove properties (P1) and (P2). `reconstruct_shares`
+uses the visible activation tags and a nonzero sum of independent coefficients.
+`view_law` gives equation (9) of STOC submission 886 as an equality of PMFs:
+the entire view of $r-1$ parties is uniform on its message-independent support.
+`coalition_privacy` projects that joint law to every smaller coalition. In
+contrast, `full_view_not_private` proves that the full view distinguishes distinct
+messages, so the privacy statement has a substantive threshold boundary.
+
+`card_branch`, `card_oddBranches`, `card_evenBranches`, `card_keys`, and
+`card_keys_bounds` expose the exact counts used in Theorem 5.1. The generic
+extraction lower bound and matching balanced-index upper bound are separate
+results; `odd_card_branch`, `branch_class_proper`, and `even_card_index` supply
+the actual construction's parity, nonemptiness and balance prerequisites.
+This construction theorem covers the sharing portion of Theorem 5.1, not a
+standalone claim that all of its extraction assertions have been integrated.
+The fixed bijections are noncomputable choices; no bit-level runtime is claimed.
+
+From the repository root, run `scripts/build.sh ComplexityTests.Crypto.AllOutOfR`.
+The [checked client](../../ComplexityTests/Crypto/AllOutOfR.lean) constructs the
+$r=2,b=2$ and $r=3,b=3$ instances, checks both support endpoints, tests joint privacy
+for two of three parties as well as singletons and the empty coalition, and shows
+that a single party has no nonempty even branch. The source locator is
+[Aggarwal2026](../../references.bib), Section 5, equations (7)–(9), Theorem 5.1
+and Lemmas 5.2–5.3, submission PDF pp. 10–11.
