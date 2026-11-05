@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Probability.PMF
+import Complexity.Probability.Conditioning
 
 /-!
 # Joint laws with an optional second outcome
@@ -50,25 +51,19 @@ theorem ext_prod_option {α β : Type*} {p q : PMF (α × Option β)}
   classical
   have hsome (a : α) (b : β) : p (a, some b) = q (a, some b) := by
     simpa only [map_option_prod_apply_some] using congrArg (fun law => law (some (a, b))) herase
-  have hmargin (r : PMF (α × Option β)) (a : α) :
-      (r.map Prod.fst) a = ∑' b, r (a, b) := by
-    rw [PMF.map_apply, tsum_prod', tsum_eq_single a]
-    · simp
-    · intro a' hne
-      simp [Ne.symm hne]
   ext ⟨a, b⟩
   cases b with
   | some b => exact hsome a b
   | none =>
     have h := congrArg (fun law => law a) hfst
-    simp only [hmargin] at h
+    simp only [map_fst_apply] at h
     rw [tsum_eq_add_tsum_ite (f := fun b => p (a, b)) none,
       tsum_eq_add_tsum_ite (f := fun b => q (a, b)) none] at h
     have hfinite : (∑' b, if b = none then 0 else q (a, b)) ≠ (⊤ : ℝ≥0∞) := by
       apply ne_top_of_le_ne_top (by norm_num : (1 : ℝ≥0∞) ≠ ⊤)
       calc
         _ ≤ ∑' b, q (a, b) := tsum_le_tsum fun b => by split_ifs <;> simp
-        _ = (q.map Prod.fst) a := (hmargin q a).symm
+        _ = (q.map Prod.fst) a := (map_fst_apply q a).symm
         _ ≤ 1 := PMF.coe_le_one _ _
     apply (ENNReal.add_left_inj hfinite).mp
     convert h using 2 <;> apply tsum_congr <;> intro b <;> cases b <;> simp [hsome]
