@@ -61,6 +61,31 @@ The [checked client](../../ComplexityTests/GameTheory/EFX.lean) shows an actual 
 and its strict improvement, and applies the general counterexample theorem. From the
 repository root, run `scripts/build.sh ComplexityTests.GameTheory.EFX` to check it.
 The result rules out EFX and Pareto efficiency together; EFX alone exists for this instance.
-The paper's parameterized approximate-EFX Theorem 2 is outside this formalization.
+For the parameterized extension, import `Complexity.GameTheory.FairDivision.EFXApproximation`.
+`ApproximateEFX α v a` compares own utility with $α$ times the utility after removal,
+using a real factor and the same additive natural-valued utilities and complete allocations.
+At factor one it is equivalent to `EFX`; decreasing the factor preserves the condition.
+The predicate accepts any real factor. On the paper's usual range $0<α\le1$ it is its
+approximate-EFX condition; the exclusion proof also covers factors above one.
+
+`ApproximateCounterexample.values K` is Theorem 2's exact four-agent, nine-good table,
+with all item values positive for every integer $K\ge6$.
+`not_approximateEFX_and_paretoOptimal` excludes simultaneous approximate EFX and Pareto
+optimality for $α>2/3+1/K$. `exists_parameter` makes the Archimedean choice of $K$ for
+any real $α>2/3$; `exists_counterexample` supplies the resulting positive valuation table.
+These are the Theorem 2 family and the introduction's arbitrary-factor endpoint, not a
+finite-parameter approximation. There is no bit encoding or algorithmic runtime assertion.
+
+The proof checks every ownership function against symbolic certificates: in $z=K-6$, an
+EFX violation follows from nonnegative coefficients of a quadratic utility comparison;
+a Pareto improvement follows from nonnegative affine utility differences, with one strictly
+positive constant difference. The witnesses are the paper's trades and their symmetries or
+a swap of the two large goods. Kernel reduction verifies the finite certificates; algebra
+then establishes their validity for every $K\ge6$. No upper bound on $K$ is checked or assumed.
+The [approximation client](../../ComplexityTests/GameTheory/EFXApproximation.lean) checks an
+complete EFX allocation throughout the family, an actual strict improvement at $K=6$,
+failure of EFX when one agent receives everything, factors $3/4$ and $667/1000$ at $K=13$ and $K=3001$, and arbitrary real-factor use.
+From the repository root, run
+`scripts/build.sh ComplexityTests.GameTheory.EFXApproximation` to check it.
 
 [lean-validation]: ../sources.md#lean-validation
