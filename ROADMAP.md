@@ -173,14 +173,18 @@ families and full-input native runtime.
   actual homogeneous SIS success plus `k*q^n/(2η+1)^m`, for independent uniform box secrets
   and an arbitrary kernel receiving only `(A,T)`. This joint-law extraction uses the sampled
   secret; an `A`-only native reduction and the actual signing/fork distribution bridge remain
-  open. Average-key cache-hit bounds for actual box commitments and the simulator's published
-  commitments now follow from matrix universality and the joint leftover-hash bound
+  open. Full-view witness invariance ([#2642]) retains aborted commitments for common
+  commitment-dependent challenges and finite independent attempt histories. The canonical ROM
+  bridge ([#2661]) extends this to sequential shared-cache signing and adaptive forger views,
+  retaining abort queries and later attempts after success. Average-key cache-hit bounds for
+  actual box commitments and the simulator's published commitments follow from matrix
+  universality and the joint leftover-hash bound
   ([#2712](https://github.com/cslib-community/complexitylib/issues/2712)), for ideal uniform
-  prime-modulus matrices and histories sampled before fresh masks. Corrected full-view simulation
-  must still account for aborted hash queries; native approximation and a security parameter
-  family remain open. Other endpoints
-  include identification security under SIS, efficient full-view simulation, and Dilithium-style
-  signature schemes over module SIS and module LWE, as theory.
+  prime-modulus matrices and histories sampled before fresh masks. An efficient secret-free
+  simulator, corrected abort-query simulation, paired same-coins fork equality, native
+  shared-oracle reduction and a security parameter family remain open. Other endpoints include
+  identification security under SIS and Dilithium-style signature schemes over module SIS and
+  module LWE, as theory.
 - **Hybrid encryption:** prove modular KEM–DEM CCA composition with compatible key spaces and
   rejection-aware canonical ciphertext parsing (Boneh–Shoup Exercise 12.5(a)); adaptive
   decapsulation security of a KEM alone does not supply this composition.
@@ -977,4 +981,6 @@ not planned, not as proved.
 
 [#2620]: https://github.com/cslib-community/complexitylib/issues/2620
 [#2636]: https://github.com/cslib-community/complexitylib/issues/2636
+[#2642]: https://github.com/cslib-community/complexitylib/issues/2642
 [#2652]: https://github.com/cslib-community/complexitylib/issues/2652
+[#2661]: https://github.com/cslib-community/complexitylib/issues/2661
