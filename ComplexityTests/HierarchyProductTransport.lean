@@ -162,9 +162,9 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) (M bin k : ℕ) (ζ floor 
   unfold BudgetData.compressedBin
   rw [ite_eq_left (Or.inr (Or.inr hk))]
 
--- Equal-budget groups and the unavailable residual zero boundary execute no children.
+-- Equal-budget groups and the literal residual zero boundary execute no children.
 example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
-    (data HP).sample (fun _ _ => none) 0 .residual (request HP) (some 0) = none := by
+    (data HP).sample (fun _ _ => none) 0 .residual (request HP) (some 0) = some 0 := by
   simp only [BudgetData.sample, ↓reduceIte]
 example (HP : FourthRootHierarchyParams 16 1 16 32 8) (d : ℕ) :
     (data HP).pairedSample (fun _ _ => none) 0 d .residual (request HP) (some 0) = some 0 := by

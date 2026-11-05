@@ -221,6 +221,12 @@ index links to canonical definitions rather than keeping a second set.
   separate reset-right execution premises. Bounded finite residual products now have
   canonical-reference mean identities and conditional executed own-request root payments;
   their conservative scalar allowances are not allocated from the precision schedule.
+  A sharper coupled product-mean bound derives the actual left incoming and genuine right
+  row caps, avoiding width loss on the right child's own usage slice. Parent-terminal
+  conditioning, importance/density factors and finite signed schedule allocation remain open.
+  Active stage-zero later inputs and residuals now dispatch through the dyadic RAW program,
+  with literal zero samples for every raw task at budget zero and conditional grid execution.
+  Nonpositive-precision constructor availability and its coarse accuracy are still open.
   General terminal-rank applications and request-scheduled correction-product allocations,
   simultaneous recursive accuracy/availability and native logarithmic workspace/class
   equality remain open.

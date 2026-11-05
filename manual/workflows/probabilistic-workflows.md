@@ -259,6 +259,21 @@ has two actual bins, unequal nonempty reset suffixes and positive genuine $E$ an
 It executes a supplied canonical history; it does not establish simultaneous recursive
 compressed availability or allocate the conservative scalar allowances.
 
+[HierarchyProductAllocation](../../Complexity/Foundations/Probability/HierarchyProductAllocation.lean)
+provides a sharper coupled product-mean comparison. Successful normalized evaluation
+supplies the left incoming cap; the genuine dense-right gate supplies its row support.
+`residualProduct_compressed_mean_root_le` keeps both calls at the actual `binBudget`
+and compares their literal product means on the right child's own usage slice, with
+constant 33554432 and the right-source factor `terminalRate / sourceRate`.
+The common environment is unchanged. Parent-terminal conditioning, bin importance,
+midpoint density, signed finite-bin assembly and precision allocation remain separate.
+The [allocation clients](../../ComplexityTests/HierarchyProductAllocation.lean) also
+fix the structural charge before choosing arbitrarily large admitted fields: nominal
+child accuracy cannot supply the old conservative sufficient allowance, whose full-rate
+scale is at least $8P^2$. This is an obstruction to that allowance, not an actual-error
+lower bound. A supplied-history normalization client checks the structural incoming cap;
+it does not construct simultaneous recursive execution.
+
 [FirstMeanError](../../Complexity/Foundations/Probability/NormalizedAtomRows/FirstMeanError.lean)
 then proves `actualEstimatedResidual_first_mean_le`: the completed full-terminal raw walk
 preserves this input mean and the actual first prefix has bound
@@ -724,7 +739,21 @@ slices. The residual is one signed ray outside the positive-bin sum. The horizon
 pays its own slack factor; `completedGroup_initial_grid` proves centered fourth moment noise at
 most `(2^(-precision) * 64^(-slack))^4` for the assembled initial group, from actual recursive
 calls and the original H4 graph. An empty initial ray list keeps zero without calling history
-or validating a frame; this does not restore unsupported main/residual dispatch.
+or validating a frame.
+
+For structural execution, import
+[HierarchyRawExecution](../../Complexity/Foundations/Probability/HierarchyRawExecution.lean).
+Every raw task now samples literal zero at budget zero, without accessing children.
+Active stage-zero later pilot inputs, actual inputs and residuals dispatch through the
+same dyadic RAW program; iteration-zero inputs retain their established pilot equality.
+`completedGroup_available` and `raw_available` consume the two actual endpoint samples
+of each nonempty group and distinct source/usage grid channels for completion. Equal-budget
+groups need no samples. These are conditional execution laws, not recursive availability.
+The [raw execution client](../../ComplexityTests/HierarchyRawExecution.lean) executes
+fine budget one against coarse zero: two positive rays contribute six each and the
+single negative ray contributes minus one, giving eleven. Its perturbation check keeps
+the error against a nonzero coarse reference. Nonconstant constructors with nonpositive
+own precision still return `none`; their coarse canonical accuracy remains a separate gap.
 
 The [approximate-history transport](../../Complexity/Foundations/Probability/HierarchyApproximateHistory.lean)
 provides an alternative history whose dense inputs execute the actual `compressedBin` at
@@ -746,13 +775,12 @@ amplitudes are proved sufficient for all initial paired samples and their assemb
 constructors and the total noise/bin payment remain open. These conservative finite charges
 include vertex width and do not establish the intended uniform growth or native workspace bound.
 
-Dense leaves now require positive budget. The initial pilot sample has a zero-budget coarse
-approximation with proved finite bounds against its literal assembled sample and its canonical
-bin in matrix units; the global root-metric coarse-precision payment remains open. Later samples with unproved
-zero boundaries remain `none`; later pilot/main RAW and residual requests are explicitly unavailable
-in the public evaluator until their boundaries are proved. Other inactive recursive calls, invalid frames and unsupported
-constructors are unavailable too. The exact base matrix and literal zero-iteration constants
-retain their existing semantics.
+Dense leaves require positive budget. Every RAW sample has a literal zero-budget approximation;
+the initial pilot case also has finite bounds against its assembled sample and canonical bin in
+matrix units. The global root-metric coarse-precision payment remains open. Active later pilot/main
+RAW and stage-zero residual requests now use their scheduled dispatch. Inactive recursive calls,
+invalid frames and unsupported constructors remain unavailable. The exact base matrix and literal
+zero-iteration constants retain their existing semantics.
 
 The budget-64 public evaluator regression still computes a nonconstant source-dependent row
 from two nonzero half-bins. Separate regressions check its unequal 32/0 paired budgets and the
@@ -1975,7 +2003,7 @@ The simultaneous all-lower-budget row/vector availability, canonical error, supp
 invariant is unfinished. The finite compressed-bin consumer above is wired, but its general canonical mean/noise
 payments from the simultaneous lower-budget invariant remain unproved; the fixed-HP reserve
 output theorem does not discharge this routed-bin obligation. Incoming-column
-closure, later-iteration and residual zero boundaries, omitted-bin/mean/noise summation,
+closure, inactive-constructor availability and coarse accuracy, omitted-bin/mean/noise summation,
 residual preparation/normalization, weights/rewards and positive-stage copy routing remain open.
 The earlier single-bin canonical accuracy result retains its scope. No selected abstract or
 headline claim changes; there is no analytic or native RL=L endpoint here.

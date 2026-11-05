@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
+Copyright (c) 2026 Christian Reitwiessner, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Christian Reitwiessner
+Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
@@ -26,16 +26,16 @@ actual inputs share the same zero-correction assembly; their request precisions 
 retain their own constructor ranks.
 
 This is a partial mathematical evaluator, not the closed compressed estimator of
-[OpenAI2026LogSpace, Sections 7.4–7.5]. Dense leaves are unavailable at budget zero. Only the
-initial pilot sample has proved finite stochastic/canonical zero-budget coarse bounds;
-other boundary samples remain
-explicitly unavailable. Inactive recursive calls, invalid frames and unsupported constructors
-also return `none`. The exact base matrix and literal iteration-zero constants remain available.
+[OpenAI2026LogSpace, Sections 7.4–7.5]. Dense leaves are unavailable at budget zero.
+Every raw task has a literal zero sample at budget zero; canonical
+coarse-error bounds beyond the initial pilot remain explicit obligations. Inactive recursive calls,
+invalid frames and unsupported constructors also return `none`. The exact base matrix and
+literal iteration-zero constants remain available.
 
 Allocation magnitudes are derived from certified primitive cutoff caps and explicit finite
 bin/rate/density charges, not supplied per request. They are proved sufficient for every initial
 pilot paired sample and the assembled initial group, with actual completion noise. Their validity
-for later constructions, noise summation, later-iteration RAW dispatch, post-average compression,
+for later constructions, noise summation, post-average compression,
 incoming support, the simultaneous row/vector canonical-accuracy invariant and cross-stage/reward
 transport remain open. In particular, no
 row sparsity of a conditional average is inferred from pointwise input sparsity.
@@ -381,19 +381,15 @@ The latter is a separate ray; it is never repeated inside the positive-bin sum. 
   ⌊Real.logb 2 ((bin.map B.binRate |>.getD (midpoint r).rate) / r.terminal.rate)⌋
 
 /-- One unaveraged contribution at an exact statistical budget. Budget zero is the
-literal zero approximation, before any dense call. This boundary does not assert
-canonical accuracy; `initialSample_zero_error` records its explicit coarse error. -/
+literal zero approximation for every raw task, before any child call. This boundary does
+not assert canonical accuracy; `initialSample_zero_error` records the initial coarse error. -/
 @[expose] def sample
     (history : ℕ → HierarchyTask.Request HP.k (Fin 3) (ZMod P) →
       Option (BudgetValue P))
     (m : ℕ) (t : HierarchyTask.RawTask HP.k)
     (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P)) (bin : Option ℕ) :
     Option (Environment P 3 → Matrix (ZMod P) (ZMod P) ℝ) :=
-  if m = 0 then
-    match t with
-    | .pilotInput i => if i.val = 0 then some 0 else none
-    | _ => none
-  else
+  if m = 0 then some 0 else
     match bin with
     | some i => B.positiveSample history m i t r
     | none => match t with
@@ -569,8 +565,14 @@ unavailable pending their analytic zero-approximation theorem. -/
     -- duplicating a route through the equal literal-zero actual correction.
     if i.val = 0 then
       if 0 < B.requestPrecision M r then (B.raw history M (.pilotInput i) r).map .row else none
+    else if 0 < B.requestPrecision M r then
+      let t := match r.task with
+        | .row _ (.pilotInput _) => HierarchyTask.RawTask.pilotInput i
+        | _ => .input i
+      (B.raw history M t r).map .row
     else none
-  | .residual 0 => none
+  | .residual 0 =>
+    if 0 < B.requestPrecision M r then (B.raw history M .residual r).map .row else none
   | .row 0 (.score i) => if 0 < B.requestPrecision M r then do
       let A ← row history (B.childBudget M) { r with task := .row 0 (.pilotInput i) }
       pure (.row (fun σ => PilotRowRecipe.score HP.toHierarchyParams
