@@ -82,11 +82,11 @@ lemma wordBounded_zero {r : ℕ} : WordBounded 64 (fun (_ : Fin r) => 0) (fun _ 
 /-! ## Headline Theorem Space and Initialization Budget Non-Vacuity -/
 
 /-- Non-vacuity of `succinctDynamicDictionary` at `(U, V, w, n_max) = (16, 8, 64, 4)`: produces
-`r ≥ 256`, `C_op`, `sp`, `initBudget ≤ 31 * 4 + 1092`, `p_init`, and `p_op` with
+`r ≥ 292`, `C_op`, `sp`, `initBudget ≤ 31 * 4 + 1092`, `p_init`, and `p_op` with
 `sp ≤ succinctWords 81 213 16 8 64 4 = 219` and end-to-end execution on `sampleOps` at `base = 0`.
 -/
 theorem nonvacuous_succinctDynamicDictionary :
-    ∃ (r C_op sp initBudget : ℕ) (hr : 256 ≤ r) (p_init p_op : List (Instr r))
+    ∃ (r C_op sp initBudget : ℕ) (hr : 292 ≤ r) (p_init p_op : List (Instr r))
       (Seed : Type) (μ_init μ_final : PMF (CoupledState Seed r)) (T_ops : ℝ≥0∞),
       initBudget ≤ 31 * 4 + 1092 ∧
       sp ≤ succinctWords 81 213 16 8 64 4 ∧
@@ -102,8 +102,7 @@ theorem nonvacuous_succinctDynamicDictionary :
         ⟨247, by omega⟩ ⟨252, by omega⟩ ⟨253, by omega⟩
         0 sp (emptyDict 16) sampleOps
         μ_init μ_final T_ops ∧
-      (initBudget : ℝ≥0∞) + T_ops ≤
-        ((initBudget + sampleOps.length * C_op : ℕ) : ℝ≥0∞) := by
+      T_ops ≤ ((sampleOps.length * C_op : ℕ) : ℝ≥0∞) := by
   obtain ⟨r, C_op, hr, hdict⟩ := succinctDynamicDictionary
   obtain ⟨sp, initBudget, p_init, p_op, hinit_le, hsp_le, hrun⟩ :=
     hdict 16 8 64 4

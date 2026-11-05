@@ -22,16 +22,20 @@ Exercises:
      verification of `feistelReconstruct_feistelBucket`, and verification of the
      `quotient_val_bits_le_optBits` bound;
 3. `Cslib.DataStructure.Dictionary.WordRAM.BitPackedArray`:
-   - concrete evaluations of `packedWords` and verification of `readPacked_writePacked_self` and
+   - concrete evaluations of `packedWords`, evaluated cross-word read/write verification at index
+     `5` of `12`-bit entries in `64`-bit words (spanning bit `60` of word `0` through bit `7` of
+     word `1`), and symbolic verification of `readPacked_writePacked_self` and
      `readPacked_writePacked_of_ne`;
 4. `Cslib.DataStructure.Dictionary.SuccinctBucket` and
    `Cslib.DataStructure.Dictionary.WordRAM.Succinct`:
    - concrete evaluations of `slabSize`, `maxFullSlabs`, `maxTailItems`, `totalMicroBits`,
-     `microBits`, `qBits`, `hashB`, `hashSpace`, `space`, and `initSteps` for
-     `(U, V, w, n_max, base) = (2 ^ 32, 2 ^ 16, 64, 16, 100)`;
+     `microBits`, `qBits`, `hashB`, `hashSpace`, `space`, and `initSteps` in both the single-bucket
+     regime (`(U, V, w, n_max, base) = (2 ^ 32, 2 ^ 16, 64, 16, 100)`) and the multi-bucket regime
+     (`(U, V, w, n_max, base) = (2 ^ 32, 2 ^ 16, 64, 2 ^ 16, 100)`,
+      where `numBuckets (2 ^ 16) = 16`);
    - verification of `space_le_succinctWords`, `initSteps_le`, `initSteps_le_mul`,
      `initTime_impl_le`, `impl`, `implStandard`, and `seq_expected_amortized` on a multi-operation
-     sequence with insertions, overwrites, present/absent queries, and deletions.
+     sequence with insertions, overwrites, present/absent queries, and deletions in both regimes.
 -/
 
 @[expose] public section
@@ -72,16 +76,16 @@ def sampleDictOps : List (Dynamic.Op (2 ^ 32)) :=
   , .query key7 ]
 
 theorem validHistory_sampleDictOps :
-    (Dynamic.spec (2 ^ 32) (2 ^ 16) 16).ValidHistory (Dynamic.empty (2 ^ 32)) sampleDictOps := by
-  have hcard0 : (Dynamic.dom (Dynamic.empty (2 ^ 32))).card < 16 := by simp
+    (Dynamic.spec (2 ^ 32) (2 ^ 16) 16).ValidHistory (Dictionary.empty (2 ^ 32)) sampleDictOps := by
+  have hcard0 : (Dictionary.dom (Dictionary.empty (2 ^ 32))).card < 16 := by simp
   have hcard1 :
-      (Dynamic.dom (Function.update (Dynamic.empty (2 ^ 32)) key3 (some 100))).card < 16 := by
-    have hle := Dictionary.card_dom_insert_le (Dynamic.empty (2 ^ 32)) key3 100
-    simp only [Dynamic.empty, Dictionary.dom_empty, Finset.card_empty, zero_add] at hle
+      (Dictionary.dom (Function.update (Dictionary.empty (2 ^ 32)) key3 (some 100))).card < 16 := by
+    have hle := Dictionary.card_dom_insert_le (Dictionary.empty (2 ^ 32)) key3 100
+    simp only [Dictionary.dom_empty, Finset.card_empty, zero_add] at hle
     exact lt_of_le_of_lt hle (by decide)
   have hisSome2 :
       (Function.update
-        (Function.update (Dynamic.empty (2 ^ 32)) key3 (some 100))
+        (Function.update (Dictionary.empty (2 ^ 32)) key3 (some 100))
         key7 (some 200) key3).isSome := by
     have hne : key3 ≠ key7 := by decide
     rw [Function.update_of_ne hne, Function.update_self]
@@ -120,6 +124,14 @@ example :
 /-! ## 3. Bit-Packed Array Primitive (`BitPackedArray`) -/
 
 example : packedWords 16 12 64 = 5 := by decide
+
+-- Index 5 of 12-bit entries in 64-bit words starts at bit 60
+-- (4 bits in word 100, 8 bits in word 101):
+example : writePacked 100 12 64 (fun _ => 0) 5 0xABC 100 = 0xC * 2 ^ 60 ∧
+    writePacked 100 12 64 (fun _ => 0) 5 0xABC 101 = 0xAB ∧
+    readPacked 100 12 64 (writePacked 100 12 64 (fun _ => 0) 5 0xABC) 4 = 0 ∧
+    readPacked 100 12 64 (writePacked 100 12 64 (fun _ => 0) 5 0xABC) 5 = 0xABC ∧
+    readPacked 100 12 64 (writePacked 100 12 64 (fun _ => 0) 5 0xABC) 6 = 0 := by decide
 
 example (mem : ℕ → ℕ) :
     readPacked 100 12 64 (writePacked 100 12 64 mem 5 1234) 5 = 1234 :=
@@ -191,14 +203,14 @@ example : initSteps (2 ^ 32) 16 ≤ 1091 * (16 + 1) :=
 `(U, V, w, n_max, base) = (2 ^ 32, 2 ^ 16, 64, 16, 100)`. -/
 noncomputable abbrev sampleSuccinctImpl :
     Randomized.StateTransitionImpl (subroutineCode (2 ^ 32) (2 ^ 16) 64 16)
-      (Dynamic.spec (2 ^ 32) (2 ^ 16) 16) 64 100 Fin.elim0 (Dynamic.empty (2 ^ 32)) :=
+      (Dynamic.spec (2 ^ 32) (2 ^ 16) 16) 64 100 Fin.elim0 (Dictionary.empty (2 ^ 32)) :=
   impl (by decide) (by decide) (by decide) (by decide) hfit_succinct_example
 
 /-- Standard-basis `Randomized.StateTransitionImpl` certificate for
 `(U, V, w, n_max, base) = (2 ^ 32, 2 ^ 16, 64, 16, 100)`. -/
 noncomputable abbrev sampleSuccinctImplStandard :
     Randomized.StateTransitionImpl (subroutineCode (2 ^ 32) (2 ^ 16) 64 16).toStandard
-      (Dynamic.spec (2 ^ 32) (2 ^ 16) 16) 64 100 Fin.elim0 (Dynamic.empty (2 ^ 32)) :=
+      (Dynamic.spec (2 ^ 32) (2 ^ 16) 16) 64 100 Fin.elim0 (Dictionary.empty (2 ^ 32)) :=
   implStandard (by decide) (by decide) (by decide) (by decide) hfit_succinct_example
 
 example : sampleSuccinctImpl.space = 111 :=
@@ -218,10 +230,10 @@ theorem nonvacuous_seq_expected_amortized :
       (T_ops : ℝ≥0∞),
       ExecCodeDist 64 (subroutineCode (2 ^ 32) (2 ^ 16) 64 16).initFresh x₀ (ν₀.map Prod.snd)
         sampleSuccinctImpl.initTime ∧
-      sampleSuccinctImpl.ExecStepsOfFn (Dynamic.empty (2 ^ 32)) sampleDictOps ν₀ ν_final T_ops ∧
+      sampleSuccinctImpl.ExecStepsOfFn (Dictionary.empty (2 ^ 32)) sampleDictOps ν₀ ν_final T_ops ∧
       (∀ p ∈ ν_final.support,
         Rep (2 ^ 32) (2 ^ 16) 64 16 100 p.1
-          ((Dynamic.spec (2 ^ 32) (2 ^ 16) 16).run (Dynamic.empty (2 ^ 32)) sampleDictOps).1
+          ((Dynamic.spec (2 ^ 32) (2 ^ 16) 16).run (Dictionary.empty (2 ^ 32)) sampleDictOps).1
           p.2) ∧
       sampleSuccinctImpl.initTime + T_ops +
         (∑' q, ν_final q * (potential (2 ^ 32) (2 ^ 16) 64 16 100 q.1 q.2 : ℝ≥0∞)) ≤
@@ -243,6 +255,114 @@ theorem nonvacuous_seq_expected_amortized :
   have hmain := seq_expected_amortized
     (by decide) (by decide) (by decide) (by decide) hfit_succinct_example
     sampleDictOps hx₀ hfr₀ (fun _ _ => rfl) validHistory_sampleDictOps
+  rcases hmain with ⟨ν₀, ν_final, T_ops, hinit, hsteps, _, hrep, hamort⟩
+  exact ⟨ν₀, ν_final, T_ops, hinit, hsteps, hrep, hamort⟩
+
+/-! ## 5. Multi-Bucket Regime (`n_max = 2 ^ 16 = 65536`, `numBuckets (2 ^ 16) = 16`) -/
+
+theorem validHistory_sampleDictOps_multi :
+    (Dynamic.spec (2 ^ 32) (2 ^ 16) (2 ^ 16)).ValidHistory
+      (Dictionary.empty (2 ^ 32)) sampleDictOps := by
+  have hcard0 : (Dictionary.dom (Dictionary.empty (2 ^ 32))).card < 2 ^ 16 := by simp
+  have hcard1 :
+      (Dictionary.dom (Function.update (Dictionary.empty (2 ^ 32)) key3 (some 100))).card <
+        2 ^ 16 := by
+    have hle := Dictionary.card_dom_insert_le (Dictionary.empty (2 ^ 32)) key3 100
+    simp only [Dictionary.dom_empty, Finset.card_empty, zero_add] at hle
+    exact lt_of_le_of_lt hle (by decide)
+  have hisSome2 :
+      (Function.update
+        (Function.update (Dictionary.empty (2 ^ 32)) key3 (some 100))
+        key7 (some 200) key3).isSome := by
+    have hne : key3 ≠ key7 := by decide
+    rw [Function.update_of_ne hne, Function.update_self]
+    rfl
+  dsimp only [sampleDictOps, Dynamic.spec, StateTransitionSpec.ValidHistory,
+    StateTransitionSpec.ofFn, Dynamic.valid, Dynamic.step]
+  exact ⟨⟨Or.inl hcard0, by decide⟩,
+    ⟨Or.inl hcard1, by decide⟩,
+    ⟨Or.inr hisSome2, by decide⟩,
+    trivial,
+    trivial,
+    trivial,
+    trivial,
+    trivial⟩
+
+theorem trinomialStep_28_17_16 :
+    reducedTrinomialStep (qBits (2 ^ 32) (2 ^ 16)) (hashB (2 ^ 16)) (totalMicroBits (2 ^ 16)) =
+      3 := by
+  dsimp only [qBits, quotientBits, keyBits, bucketBits, hashB, totalMicroBits, microBits,
+    Dynamic.logLogFactor, reducedTrinomialStep, reducedTargetBits]
+  rw [trinomialStepAux, trinomialStepAux, trinomialStepAux, trinomialStepAux]
+  decide
+
+theorem hashSpace_32_64_65536 :
+    hashSpace (2 ^ 32) 64 (2 ^ 16) = 164 := by
+  dsimp only [hashSpace, ReducedKWise.space, ReducedKWise.seedWords, ReducedKWise.tableWords]
+  rw [trinomialStep_28_17_16]
+  decide
+
+theorem succinct_space_32_16_64_65536 :
+    space (2 ^ 32) (2 ^ 16) 64 (2 ^ 16) = 188394 := by
+  dsimp only [space, totalSpace, offGM, offLM, offVal, offQuot, lmSubWords,
+    globalMetaLen, globalPtrBits, effBucketPosBits, totalMicroBuckets]
+  rw [hashSpace_32_64_65536]
+  decide
+
+theorem hfit_succinct_multi :
+    Fits 64 (100 + space (2 ^ 32) (2 ^ 16) 64 (2 ^ 16)) := by
+  dsimp only [Fits]
+  rw [succinct_space_32_16_64_65536]
+  decide
+
+example :
+    space (2 ^ 32) (2 ^ 16) 64 (2 ^ 16) ≤
+      Dynamic.succinctWords 81 213 (2 ^ 32) (2 ^ 16) 64 (2 ^ 16) :=
+  space_le_succinctWords (by decide) (by decide) (by decide)
+
+/-- Exact-basis `Randomized.StateTransitionImpl` certificate in the multi-bucket regime
+`(U, V, w, n_max, base) = (2 ^ 32, 2 ^ 16, 64, 2 ^ 16, 100)`. -/
+noncomputable abbrev sampleSuccinctImplMulti :
+    Randomized.StateTransitionImpl (subroutineCode (2 ^ 32) (2 ^ 16) 64 (2 ^ 16))
+      (Dynamic.spec (2 ^ 32) (2 ^ 16) (2 ^ 16)) 64 100 Fin.elim0 (Dictionary.empty (2 ^ 32)) :=
+  impl (by decide) (by decide) (by decide) (by decide) hfit_succinct_multi
+
+/-- End-to-end execution of `seq_expected_amortized` in the multi-bucket regime
+(`n_max = 2 ^ 16`, `numBuckets (2 ^ 16) = 16`). -/
+theorem nonvacuous_seq_expected_amortized_multi :
+    let x₀ : Data rSuccinct :=
+      ⟨Function.update (fun _ => 0) WordRAM.Succinct.frontierReg 100, fun _ => 0⟩
+    ∃ (ν₀ ν_final : PMF (sampleSuccinctImplMulti.Seed × Data rSuccinct))
+      (T_ops : ℝ≥0∞),
+      ExecCodeDist 64 (subroutineCode (2 ^ 32) (2 ^ 16) 64 (2 ^ 16)).initFresh x₀ (ν₀.map Prod.snd)
+        sampleSuccinctImplMulti.initTime ∧
+      sampleSuccinctImplMulti.ExecStepsOfFn (Dictionary.empty (2 ^ 32)) sampleDictOps
+        ν₀ ν_final T_ops ∧
+      (∀ p ∈ ν_final.support,
+        Rep (2 ^ 32) (2 ^ 16) 64 (2 ^ 16) 100 p.1
+          ((Dynamic.spec (2 ^ 32) (2 ^ 16) (2 ^ 16)).run
+            (Dictionary.empty (2 ^ 32)) sampleDictOps).1
+          p.2) ∧
+      sampleSuccinctImplMulti.initTime + T_ops +
+        (∑' q, ν_final q * (potential (2 ^ 32) (2 ^ 16) 64 (2 ^ 16) 100 q.1 q.2 : ℝ≥0∞)) ≤
+        sampleSuccinctImplMulti.initTime +
+          (sampleDictOps.length * chargeVal : ℕ) := by
+  intro x₀
+  have hx₀ : x₀.Bounded 64 := by
+    refine ⟨fun i => ?_, fun _ => (by decide : 0 < 2 ^ 64)⟩
+    dsimp only [x₀]
+    by_cases h : i = WordRAM.Succinct.frontierReg
+    · subst h
+      rw [Function.update_self]
+      decide
+    · rw [Function.update_of_ne h]
+      decide
+  have hfr₀ : x₀.regs WordRAM.Succinct.frontierReg = 100 := by
+    dsimp only [x₀]
+    exact Function.update_self WordRAM.Succinct.frontierReg 100 (fun _ => 0)
+  have hmain := seq_expected_amortized
+    (by decide) (by decide) (by decide) (by decide) hfit_succinct_multi
+    sampleDictOps hx₀ hfr₀ (fun _ _ => rfl) validHistory_sampleDictOps_multi
   rcases hmain with ⟨ν₀, ν_final, T_ops, hinit, hsteps, _, hrep, hamort⟩
   exact ⟨ν₀, ν_final, T_ops, hinit, hsteps, hrep, hamort⟩
 

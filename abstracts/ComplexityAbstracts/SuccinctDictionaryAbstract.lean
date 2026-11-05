@@ -17,27 +17,36 @@ import Mathlib.Data.Nat.Log
 
 This self-contained file states the formal specification and the multi-operation correctness,
 succinct space, and initialization-time theorems for the fixed-capacity succinct dynamic dictionary
-with deletions on the randomized Word-RAM (`Succinct.impl`, `Succinct.space_le_succinctWords`,
-`Succinct.initTime_impl_le`, and `Succinct.seq_expected_amortized`), following
-`[BenderFarachColtonKuszmaulKuszmaul2024]` (SOSA 2024, Sections 3–4),
+with deletions on the randomized Word-RAM (`Succinct.impl` with `initFresh_exec` and
+`steps_expected_amortized_ofFn`, `Succinct.initSteps_le`, and `Succinct.space_le_succinctWords`),
+following `[BenderFarachColtonKuszmaulKuszmaul2024]` (SOSA 2024, Sections 3–4),
+`[ArbitmanNaorSegev2010]` (FOCS 2010, Claim 5.7),
 `[BenderConwayFarachColtonKuszmaulTagliavini2023]` (*J. ACM* 70(6):40, 2023;
-`arXiv:2109.04548`, Appendix A), and `[BenderFarachColtonKuszmaulKuszmaulLiu2022]` (STOC 2022;
-`arXiv:2111.00602`, Lemma 24), combined with two-stage universe-reduced `3`-wise independent
-polynomial hashing with a bit-packed Four-Russians multiplication table (`ReducedKWise.impl`;
-`[CarterWegman1979]`, `[WegmanCarter1981]`, `[PaghPaghRuzic2009]`, `[Vadhan2012]`,
-`[LidlNiederreiter1997]`, and `[DietzfelbingerHagerupKatajainenPenttonen1997]`).
+`arXiv:2109.04548`, Section 7, pp. 31–33), and `[BenderFarachColtonKuszmaulKuszmaulLiu2022]`
+(STOC 2022; `arXiv:2111.00602`, Sections 5.2 and 6.1, Lemma 24), combined with two-stage
+universe-reduced `3`-wise independent polynomial hashing with a bit-packed Four-Russians
+multiplication table (`ReducedKWise.impl`; `[CarterWegman1979]`, `[WegmanCarter1981]`,
+`[PaghPaghRuzic2009]`, `[Vadhan2012]`, `[LidlNiederreiter1997]`, and
+`[DietzfelbingerHagerupKatajainenPenttonen1997]`).
 
 ## Scope, operation semantics, and cost accounting
 
-- **Dynamic dictionary with deletions (`DynDictOp U`):** Supports `query u` (returning `s u`),
-  `insert u v` (inserting or overwriting `u : Fin U` with `v : ℕ` when `v < V` and either fewer
-  than `n_max` keys are currently present or `u` is already present), and `delete u` (removing `u`
-  or leaving `s` unchanged if `u` is absent) across oblivious operation sequences
-  `ops : List (DynDictOp U)` of any length (`ValidDynDictHistory V n_max`).
-- **Why `n_max ≤ U` is assumed:** Distinct active keys are drawn from `Fin U`, so at most `U`
-  keys can coexist (`(dictDom s).card ≤ U`), and the binomial coefficient `U.choose n_max` inside
-  the information-theoretic minimum `optBits U V n_max = ⌈log₂ C(U, n_max)⌉ + n_max * ⌈log₂ V⌉` is
-  zero whenever `n_max > U`.
+- **Dynamic dictionary with deletions (`DynDictOp U`) and material differences from SOSA 2024:**
+  Supports `query u` (returning `s u`), `insert u v` (inserting or overwriting `u : Fin U` with
+  `v : ℕ` when `v < V` and either fewer than `n_max` keys are currently present or `u` is already
+  present), and `delete u` (removing `u` or leaving `s` unchanged if `u` is absent) across
+  oblivious operation sequences `ops : List (DynDictOp U)` of any length
+  (`ValidDynDictHistory V n_max`). Material differences from
+  `[BenderFarachColtonKuszmaulKuszmaul2024]`: the capacity `n_max` is fixed (no table resizing),
+  and operations run in `O(1)` expected amortized time for oblivious operation sequences fixed
+  before initialization (whereas SOSA 2024 Sections 5–6 prove with-high-probability bounds and
+  support resizing).
+- **Why `n_max ≤ U` is assumed and `optBits` rounding:** Distinct active keys are drawn from
+  `Fin U`, so at most `U` keys can coexist (`(dictDom s).card ≤ U`), and the binomial coefficient
+  `U.choose n_max` inside `optBits U V n_max = ⌈log₂ C(U, n_max)⌉ + n_max * ⌈log₂ V⌉` is zero
+  whenever `n_max > U`. Note that `optBits U V n_max` equals the exact information-theoretic
+  minimum `⌈log₂(C(U, n_max) · V ^ n_max)⌉` when `V` is a power of two (and is within `< n_max`
+  bits otherwise, since `⌈log₂ V⌉` rounds the per-value bit-length to an integer).
 - **Single seed and per-bucket probe/hysteresis accounting:** A single quotient-hash seed is
   sampled once at initialization (`seedSlack = 1`, no rehash), and no persistent flag is kept to
   latch hash or overflow failures across operations. Each bucket's item count and expected extra
@@ -54,7 +63,7 @@ polynomial hashing with a bit-packed Four-Russians multiplication table (`Reduce
   `deletePrepWithHashGenProg`, `deleteFinishWithHashGenProg`) do not depend on `(U, V, w, n_max)`.
   The full program `subroutineCode U V w n_max` depends on `(U, V, w, n_max)` only through the
   `space` constant in `allocSpan`, the 36-instruction `loadParamsCode` prefix, and the hash code.
-  Consequently, both the register budget `r ≥ 256` (`Succinct.rSuccinct`) and the per-operation
+  Consequently, both the register budget `r ≥ 292` (`Succinct.rSuccinct`) and the per-operation
   charge `C_op` (`Succinct.chargeVal = 313 * Succinct.opFactor + 284725`) are universal `O(1)`
   constants existentially quantified **outside** `∀ (U V w n_max : ℕ)`, independent of
   `(U, V, w, n_max)`, `base`, and `ops.length`. For each `(U, V, w, n_max)`, the compiled
@@ -377,8 +386,10 @@ inductive ExecDynDictOps {Seed : Type} {r U : ℕ}
 
 /-! ## Succinct Space Accounting and Headline Expected-Amortized Theorem -/
 
-/-- Information-theoretic minimum bit-length `⌈log₂ C(U, n_max)⌉ + n_max * ⌈log₂ V⌉` required to
-represent `n_max` distinct keys from `Fin U` with associated values in `Fin V`. -/
+/-- Information-theoretic baseline bit-length `⌈log₂ C(U, n_max)⌉ + n_max * ⌈log₂ V⌉` required to
+represent `n_max` distinct keys from `Fin U` with associated `⌈log₂ V⌉`-bit values in `Fin V`
+(equal to the exact information-theoretic minimum `⌈log₂(C(U, n_max) · V ^ n_max)⌉` when `V` is a
+power of two, and within `< n_max` bits otherwise). -/
 def optBits (U V n_max : ℕ) : ℕ :=
   Nat.clog 2 (U.choose n_max) + n_max * Nat.clog 2 V
 
@@ -394,11 +405,11 @@ def succinctWords (C C₀ U V w n_max : ℕ) : ℕ :=
   (optBits U V n_max + C * n_max * logLogFactor n_max + w - 1) / w + C₀
 
 /-- **Fixed-Capacity Succinct Dynamic Dictionary with Deletions**
-(`Succinct.impl`, `Succinct.space_le_succinctWords`, `Succinct.initTime_impl_le`, and
-`Succinct.seq_expected_amortized`):
+(`Succinct.impl` with `initFresh_exec` and `steps_expected_amortized_ofFn`,
+`Succinct.initSteps_le`, and `Succinct.space_le_succinctWords`):
 Certifies multi-operation distributional correctness, succinct space, linear initialization cost,
 and universal `O(1)` expected amortized operation time on the Word-RAM. There exist universal
-constants `r ≥ 256` (`Succinct.rSuccinct`) and `C_op : ℕ` (`Succinct.chargeVal = 313 *
+constants `r ≥ 292` (`Succinct.rSuccinct`) and `C_op : ℕ` (`Succinct.chargeVal = 313 *
 Succinct.opFactor + 284725`, independent of `U`, `V`, `w`, `n_max`, `base`, and `ops.length`) such
 that for every key universe `U`, value bound `V`, word width `w`, and capacity `n_max`, there exist
 allocated block size `sp : ℕ`, initialization instruction budget `initBudget : ℕ`, and compiled
@@ -420,17 +431,17 @@ of `base`, with no static code-size bound) such that:
      executes `ops` sequentially (`ExecDynDictOps`), matching `stepDynDict` and `OpOutputCorrect`
      at every step;
   3. the expected executed body instruction count `T_ops` across `ops` satisfies the expected
-     amortized bound `initBudget + T_ops ≤ initBudget + ops.length * C_op` for the universal
-     constant `C_op`.
+     amortized bound `T_ops ≤ ops.length * C_op` for the universal constant `C_op`.
 
 References: `[BenderFarachColtonKuszmaulKuszmaul2024]` (SOSA 2024, Sections 3–4);
+`[ArbitmanNaorSegev2010]` (FOCS 2010, Claim 5.7);
 `[BenderConwayFarachColtonKuszmaulTagliavini2023]` (*J. ACM* 70(6):40, 2023;
-`arXiv:2109.04548`, Appendix A); `[BenderFarachColtonKuszmaulKuszmaulLiu2022]` (STOC 2022;
-`arXiv:2111.00602`, Lemma 24); `[PaghPaghRuzic2009]`;
+`arXiv:2109.04548`, Section 7, pp. 31–33); `[BenderFarachColtonKuszmaulKuszmaulLiu2022]`
+(STOC 2022; `arXiv:2111.00602`, Sections 5.2 and 6.1, Lemma 24); `[PaghPaghRuzic2009]`;
 `[DietzfelbingerHagerupKatajainenPenttonen1997]`; `[CarterWegman1979]`; `[WegmanCarter1981]`;
 `[Vadhan2012]`; `[LidlNiederreiter1997]`. -/
 theorem succinctDynamicDictionary :
-    ∃ (r C_op : ℕ) (hr : 256 ≤ r),
+    ∃ (r C_op : ℕ) (hr : 292 ≤ r),
       ∀ (U V w n_max : ℕ),
         ∃ (sp initBudget : ℕ) (p_init p_op : List (Instr r)),
           initBudget ≤ 31 * n_max + 1092 ∧
@@ -462,8 +473,7 @@ theorem succinctDynamicDictionary :
                       ⟨247, by omega⟩ ⟨252, by omega⟩ ⟨253, by omega⟩
                       base sp (emptyDict U) ops
                       μ_init μ_final T_ops ∧
-                    (initBudget : ℝ≥0∞) + T_ops ≤
-                      ((initBudget + ops.length * C_op : ℕ) : ℝ≥0∞) :=
+                    T_ops ≤ ((ops.length * C_op : ℕ) : ℝ≥0∞) :=
   ComplexityAbstracts.SuccinctDictionaryBridge.succinctDynamicDictionary
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,

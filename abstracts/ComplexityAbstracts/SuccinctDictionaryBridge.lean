@@ -8,6 +8,7 @@ Authors: Renfei Zhou
 
 import ComplexityAbstracts.HashFamiliesBridge
 import Complexity.DataStructure.Dictionary.WordRAM.Succinct
+import Complexity.Probability.PMF.Map
 
 /-!
 # Bridge for the Fixed-Capacity Succinct Dynamic Dictionary Formal Abstract
@@ -16,10 +17,12 @@ import Complexity.DataStructure.Dictionary.WordRAM.Succinct
 succinct dynamic dictionary with deletions on the randomized Word-RAM
 (`Complexity/DataStructure/Dictionary/WordRAM/Succinct.lean`), following
 `[BenderFarachColtonKuszmaulKuszmaul2024]` (SOSA 2024, Sections 3–4),
+`[ArbitmanNaorSegev2010]` (FOCS 2010, Claim 5.7),
 `[BenderConwayFarachColtonKuszmaulTagliavini2023]` (*J. ACM* 70(6):40, 2023;
-`arXiv:2109.04548`, Appendix A), and `[BenderFarachColtonKuszmaulKuszmaulLiu2022]` (STOC 2022;
-`arXiv:2111.00602`, Lemma 24) combined with two-stage multiply-shift reduction and `3`-wise
-independent polynomial hashing with bit-packed multiplication tables (`ReducedKWise.lean`).
+`arXiv:2109.04548`, Section 7, pp. 31–33), and `[BenderFarachColtonKuszmaulKuszmaulLiu2022]`
+(STOC 2022; `arXiv:2111.00602`, Sections 5.2 and 6.1, Lemma 24) combined with two-stage
+multiply-shift reduction and `3`-wise independent polynomial hashing with bit-packed multiplication
+tables (`ReducedKWise.lean`).
 
 This bridge connects the self-contained dynamic dictionary specification, multi-operation
 distributional execution relations (`ExecProgramDist`, `ExecDynDictOps`), resource functions, and
@@ -217,14 +220,6 @@ structure DynDictLaws (S : Presentation) (P : DynDictPresentation S) : Prop wher
 
 /-! ### Correspondence Lemmas for `DynDictPresentation` -/
 
-private theorem pmf_le_map_apply {α β : Type*} (ν : PMF α) (f : α → β) (a : α) :
-    ν a ≤ (ν.map f) (f a) := by
-  classical
-  rw [PMF.map_apply]
-  have h1 : ν a = (if f a = f a then ν a else 0) := by simp
-  rw [h1]
-  exact le_tsum (fun x => if f a = f x then ν x else 0) a
-
 private theorem dynDictOpOf_surjective {S : Presentation} (P : DynDictPresentation S) {U : ℕ}
     (o : P.DynDictOp U) : ∃ o_lib : Dynamic.Op U, P.dynDictOpOf o_lib = o :=
   P.dynDictOp_induction (motive := fun o => ∃ o_lib, P.dynDictOpOf o_lib = o)
@@ -359,7 +354,8 @@ theorem compile_execCodeDist {S : Presentation} (hS : Laws S)
     rw [hmap_q]
     refine (hhalt (P.dataOfRegMem q)).trans (iSup_mono fun T_hor => ?_)
     rw [S.evalRand_eq hS]
-    exact pmf_le_map_apply _ S.cfgOf (.halted (P.rmReg q outReg) (P.dataOfRegMem q))
+    exact Cslib.Probability.PMF.le_map_apply _ S.cfgOf
+      (.halted (P.rmReg q outReg) (P.dataOfRegMem q))
 
 /-- Generic transfer of `StateTransitionImpl.ExecStepsOfFn` to `P.ExecDynDictOps`. -/
 theorem compile_execStepsOfFn {S : Presentation} (hS : Laws S)
@@ -373,7 +369,7 @@ theorem compile_execStepsOfFn {S : Presentation} (hS : Laws S)
     (hprep : ∀ (o : Dynamic.Op U) (d : Data r_ds),
       (C.toDynamicProgram.prepare o d).regs =
         P.prepareDynDictRegs tagReg keyReg valReg (P.dynDictOpOf o) d.regs)
-    (hdec : ∀ (s : Dynamic.State U) (o : Dynamic.Op U) (regs : Fin r_ds → ℕ),
+    (hdec : ∀ (s : Dictionary.State U) (o : Dynamic.Op U) (regs : Fin r_ds → ℕ),
       C.decode o regs = some ((Dynamic.spec U V n_max).stepFn s o).2 →
         P.OpOutputCorrect resTagReg resValReg s (P.dynDictOpOf o) regs)
     {s : (Dynamic.spec U V n_max).State} {ops : List (Dynamic.spec U V n_max).Op}
@@ -477,10 +473,11 @@ theorem succinctInitBudget_le (U n_max : ℕ) :
   omega
 
 /-- Headline bridge theorem for the fixed-capacity succinct dynamic dictionary
-(`Succinct.seq_expected_amortized`). -/
+(`Succinct.impl` with `initFresh_exec` and `steps_expected_amortized_ofFn`,
+`Succinct.initSteps_le`, and `Succinct.space_le_succinctWords`). -/
 theorem succinctDynamicDictionary (S : Presentation) (hS : Laws S)
     (P : DynDictPresentation S) (hP : DynDictLaws S P) :
-    ∃ (r C_op : ℕ) (hr : 256 ≤ r),
+    ∃ (r C_op : ℕ) (hr : 292 ≤ r),
       ∀ (U V w n_max : ℕ),
         ∃ (sp initBudget : ℕ) (p_init p_op : List (S.Instr r)),
           initBudget ≤ 31 * n_max + 1092 ∧
@@ -512,9 +509,8 @@ theorem succinctDynamicDictionary (S : Presentation) (hS : Laws S)
                       ⟨247, by omega⟩ ⟨252, by omega⟩ ⟨253, by omega⟩
                       base sp (DynDictPresentation.emptyDict U) ops
                       μ_init μ_final T_ops ∧
-                    (initBudget : ℝ≥0∞) + T_ops ≤
-                      ((initBudget + ops.length * C_op : ℕ) : ℝ≥0∞) := by
-  refine ⟨Succinct.rSuccinct, Succinct.chargeVal, by have := Succinct.le_rSuccinct; omega, ?_⟩
+                    T_ops ≤ ((ops.length * C_op : ℕ) : ℝ≥0∞) := by
+  refine ⟨Succinct.rSuccinct, Succinct.chargeVal, Succinct.le_rSuccinct, ?_⟩
   intro U V w n_max
   refine ⟨Succinct.space U V w n_max, succinctInitBudget U n_max,
     S.programOf ((Succinct.subroutineCode U V w n_max).initFresh.program
@@ -544,7 +540,7 @@ theorem succinctDynamicDictionary (S : Presentation) (hS : Laws S)
       ⟨(hsupp₀ p hp).2.1.1, (hsupp₀ p hp).2.1.2.1, (hsupp₀ p hp).1, (hsupp₀ p hp).2.2.2⟩
   · intro ops hv_abs
     obtain ⟨ops_lib, rfl⟩ := ops_surjective P ops
-    have hv_lib : (Dynamic.spec U V n_max).ValidHistory (Dynamic.empty U) ops_lib :=
+    have hv_lib : (Dynamic.spec U V n_max).ValidHistory (Dictionary.empty U) ops_lib :=
       (validDynDictHistory_map_dynDictOpOf hP (DynDictPresentation.emptyDict U) ops_lib).mp hv_abs
     obtain ⟨ν_final, T_ops, hex_steps, -, -, hamort⟩ :=
       C.steps_expected_amortized_ofFn ops_lib ν₀ hv_lib hseed₀ fun p hp => (hsupp₀ p hp).2.1
@@ -632,24 +628,15 @@ theorem succinctDynamicDictionary (S : Presentation) (hS : Laws S)
         · rw [(PMF.apply_eq_zero_iff _ _).mpr hp, zero_mul]
       have htot :
           (Dynamic.spec U V n_max).totalCost Succinct.charge
-            (Dynamic.empty U) ops_lib =
+            (Dictionary.empty U) ops_lib =
             ops_lib.length * Succinct.chargeVal :=
-        Succinct.totalCost_charge_eq U V n_max (Dynamic.empty U) ops_lib
+        Succinct.totalCost_charge_eq U V n_max (Dictionary.empty U) ops_lib
       change T_ops + ∑' q, ν_final q * (C.potential q.1 q.2 : ℝ≥0∞) ≤
         ((Dynamic.spec U V n_max).totalCost Succinct.charge
-          (Dynamic.empty U) ops_lib : ℝ≥0∞) +
+          (Dictionary.empty U) ops_lib : ℝ≥0∞) +
         ∑' p, ν₀ p * (C.potential p.1 p.2 : ℝ≥0∞) at hamort
       rw [hpot₀, add_zero, htot] at hamort
-      have hle_ops : T_ops ≤ ((ops_lib.length * Succinct.chargeVal : ℕ) : ℝ≥0∞) :=
-        le_trans (le_self_add) hamort
       rw [List.length_map]
-      calc (succinctInitBudget U n_max : ℝ≥0∞) + T_ops
-        _ ≤ (succinctInitBudget U n_max : ℝ≥0∞) +
-              ((ops_lib.length * Succinct.chargeVal : ℕ) : ℝ≥0∞) :=
-            add_le_add le_rfl hle_ops
-        _ = ((succinctInitBudget U n_max +
-              ops_lib.length * Succinct.chargeVal : ℕ) : ℝ≥0∞) := by
-            push_cast
-            ring
+      exact le_trans le_self_add hamort
 
 end ComplexityAbstracts.SuccinctDictionaryBridge
