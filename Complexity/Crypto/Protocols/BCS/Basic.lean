@@ -15,10 +15,10 @@ import Mathlib.Data.List.OfFn
 /-!
 # The BCS transform: public-coin interactive oracle proofs to non-interactive arguments
 
-The Ben-Sasson–Chiesa–Spooner (BCS) transformation ([BenSassonChiesaSpooner2016]; see also
-[ChiesaYogev2024], Construction 18.5.3) compiles a multi-round public-coin Interactive Oracle
-Proof (`PublicCoinIOP`) into a non-interactive argument (`BCSProof`, `bcsProve`, `bcsVerify`) by
-combining two primitives:
+The Ben-Sasson–Chiesa–Spooner (BCS) transformation ([BenSassonChiesaSpooner2016]; compare
+[ChiesaYogev2024], Construction 25.1.1 and Remark 25.1.3, printed pp. 274–275) compiles a
+multi-round public-coin Interactive Oracle Proof (`PublicCoinIOP`) into a non-interactive argument
+(`BCSProof`, `bcsProve`, `bcsVerify`) by combining two primitives:
 
 1. **Merkle-tree oracle commitments** (`merkleRoot`, `merklePath`, `merkleVerify` from
    `Complexity.Crypto.Computational.MerkleTree` and
@@ -81,7 +81,8 @@ combining two primitives:
 
 * [E. Ben-Sasson, A. Chiesa, N. Spooner, *Interactive Oracle Proofs*][BenSassonChiesaSpooner2016]
 * [A. Chiesa, E. Yogev, *Building Cryptographic Proofs from Hash Functions*][ChiesaYogev2024],
-  Chapter 18, Construction 18.5.3.
+  Chapter 25 (Construction 25.1.1, Remark 25.1.3, and Theorem 25.2.1, printed pp. 274–278) and
+  Chapter 26 (Theorem 26.1.1, printed pp. 288–289).
 -/
 
 @[expose] public section
@@ -273,8 +274,8 @@ abbrev BCSOpening (Sym : Type) : Type :=
   Sym × List (List Bool)
 
 /-- A non-interactive BCS proof for an `r`-round `PublicCoinIOP`: one Merkle root per round and one
-`BCSOpening` per verifier query ([BenSassonChiesaSpooner2016]; [ChiesaYogev2024], Construction
-18.5.3). -/
+`BCSOpening` per verifier query ([BenSassonChiesaSpooner2016]; compare [ChiesaYogev2024],
+Construction 25.1.1). -/
 structure BCSProof (r : ℕ) (Sym : Type) where
   /-- The Merkle root committed in each round `j : Fin r`. -/
   roots : Fin r → List Bool
@@ -381,7 +382,8 @@ def bcsHonestOpenings (iop : PublicCoinIOP r d Stmt Wit Sym Chal)
 
 /-- **The BCS prover** (`bcsProve`): sequentially computes each round's IOP oracle table, commits to
 it with `merkleRoot`, derives the Fiat–Shamir challenges via `hFS`, and opens every queried entry
-with `merklePath` ([BenSassonChiesaSpooner2016]; [ChiesaYogev2024], Construction 18.5.3). -/
+with `merklePath` ([BenSassonChiesaSpooner2016]; compare [ChiesaYogev2024], Construction 25.1.1 and
+Remark 25.1.3). -/
 def bcsProve (iop : PublicCoinIOP r d Stmt Wit Sym Chal)
     (H : List Bool → List Bool → List Bool) (k : List Bool) (encSym : Sym → List Bool)
     (hFS : Stmt → List (List Bool) → Chal) (x : Stmt) (w : Wit) : BCSProof r Sym where
@@ -391,7 +393,7 @@ def bcsProve (iop : PublicCoinIOP r d Stmt Wit Sym Chal)
 /-- **The BCS verifier** (`bcsVerify`): recomputes the Fiat–Shamir challenges `c_j` from the Merkle
 roots in `prf`, checks that every queried entry `(j, idx)` has a valid depth-`d` Merkle opening
 against `prf.roots j`, and runs `iop.decide` on the opened symbols ([BenSassonChiesaSpooner2016];
-[ChiesaYogev2024], Construction 18.5.3). -/
+compare [ChiesaYogev2024], Construction 25.1.1 and Remark 25.1.3). -/
 def bcsVerify (iop : PublicCoinIOP r d Stmt Wit Sym Chal)
     (H : List Bool → List Bool → List Bool) (k : List Bool) (encSym : Sym → List Bool)
     (hFS : Stmt → List (List Bool) → Chal) (x : Stmt) (prf : BCSProof r Sym) : Bool :=
@@ -449,8 +451,8 @@ theorem bcsVerify_bcsProve_of_iopVerify (iop : PublicCoinIOP r d Stmt Wit Sym Ch
 
 /-- **Perfect completeness of the BCS transform**: if `iop` satisfies `IOPCompleteness iop rel` and
 `rel x w` holds, then for *every* Merkle hash `H`, key `k`, symbol encoding `encSym`, and
-Fiat–Shamir function `hFS`, `bcsVerify` accepts `bcsProve` ([BenSassonChiesaSpooner2016];
-[ChiesaYogev2024], Lemma 18.5.5). -/
+Fiat–Shamir function `hFS`, `bcsVerify` accepts `bcsProve` ([BenSassonChiesaSpooner2016]; compare
+[ChiesaYogev2024], Construction 25.1.1). -/
 theorem bcsVerify_bcsProve_eq_true {iop : PublicCoinIOP r d Stmt Wit Sym Chal}
     {rel : Stmt → Wit → Prop} (hcomp : IOPCompleteness iop rel)
     (H : List Bool → List Bool → List Bool) (k : List Bool) (encSym : Sym → List Bool)
@@ -515,7 +517,7 @@ theorem iopVerify_eq_true_of_bcsVerify_of_openings_eq
 `prf` against the Merkle roots of `oracles : Fin r → OracleTable d Sym` and `encSym` is injective,
 then either the IOP verifier accepts `oracles` on the Fiat–Shamir challenges
 `bcsChallenge hFS x prf.roots`, or `bcsExtractTableCollision` deterministically extracts a hash
-collision for `H k` ([BenSassonChiesaSpooner2016]; [ChiesaYogev2024], Lemma 18.5.7). -/
+collision for `H k` ([BenSassonChiesaSpooner2016]; compare [ChiesaYogev2024], Theorem 25.2.1). -/
 theorem bcs_sound_or_merkleCollision
     {iop : PublicCoinIOP r d Stmt Wit Sym Chal}
     {H : List Bool → List Bool → List Bool} {k : List Bool} {encSym : Sym → List Bool}
@@ -617,7 +619,7 @@ committed oracle tables `oracles` (with `encSym` injective) satisfies at least o
 2. `iopVerify iop x (bcsChallenge hFS x prf.roots) oracles = true ∧ ¬ rel x (iopExtract x oracles)`
    (`oracles` violates IOP knowledge soundness at the Fiat–Shamir challenge), or
 3. `bcsExtractTableCollision` extracts an explicit hash collision for `H k`
-   ([BenSassonChiesaSpooner2016]; [ChiesaYogev2024], Theorem 18.5.4). -/
+   ([BenSassonChiesaSpooner2016]; compare [ChiesaYogev2024], Theorem 26.1.1). -/
 theorem bcs_knowledge_or_soundness_violation_or_collision
     {iop : PublicCoinIOP r d Stmt Wit Sym Chal} (rel : Stmt → Wit → Prop)
     (iopExtract : Stmt → (Fin r → OracleTable d Sym) → Wit)

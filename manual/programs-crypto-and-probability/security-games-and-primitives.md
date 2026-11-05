@@ -4,6 +4,8 @@
 
 [Game](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Game.lean#L67) is a `PMF Bool`. Success is its true probability; advantage is the nonnegative distance between two success probabilities. [Indistinguishable](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Game.lean#L154) says that every admissible complete adversary has negligible advantage as the parameter grows. `Indistinguishable.of_reduction` transfers security through a reduction with a polynomially bounded loss and negligible additive error, while `indistinguishable_pure_false_iff`, `Indistinguishable.of_succProbability_le`, and `Indistinguishable.of_succProbability_reduction` specialize one-sided search and forgery games compared against `PMF.pure false`. This layer is mathematical probability; admissibility determines the computational interpretation [complexitylib][complexitylib].
 
+For finite-source statistical bounds, import [Game/CloseTo/Statistical.lean](../../Complexity/Crypto/Game/CloseTo/Statistical.lean). `Cslib.Interactive.closeTo_of_dist_le` turns a bound on the finite-PMF metric (half the L1 distance) into the existing all-event `CloseTo` relation with the same error. Its `CloseTo.bind_left` law then handles arbitrary randomized continuations, including infinite output types. This shared import exposes the existing bridge without importing lattice protocols or their native sampler certificates; the former `Lyubashevsky.Efficient` import still reexports it.
+
 [ComputationallyIndistinguishable](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/Basic.lean#L94) specializes admissibility to a uniform native strict-PPT test on `(1^n, sample)`. Its ensembles are arbitrary PMFs on bit strings: sampleability and polynomial output length are not bundled. `IsPPTTest` admits semantic tests whose laws have a native program witness. Efficient postprocessing and hybrid results use those certificates, not the mere presence of a Lean function.
 
 Pinned cslib also has the finite [Generator](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Crypto/Primitives/PRG/Defs.lean#L38) interface, whose `Secure` accepts any chosen predicate on randomized tests, while expansion is a separate cardinality property. Complexitylib adds circuit-bounded tests and uniform machine tests on top. These are intentionally different quantifiers; the circuit version can select a new bounded circuit at each input length [cslib][cslib].
@@ -44,7 +46,46 @@ Module-SIS zero equation. The source function type retains pointwise multiplicat
 `negacyclicMul` for polynomial multiplication. Dimension zero is excluded because its quotient
 is `R/(2)`. This algebraic bridge adds no hardness or runtime claim.
 
+The pure coefficient identity `negacyclicMul_eq_coeff_mul` is available separately in
+[SIS/Polynomial/Coefficients.lean](../../Complexity/Crypto/Computational/SIS/Polynomial/Coefficients.lean),
+so algebra clients need not import native computation certificates. For native multiplication, import
+[SIS/Native.lean](../../Complexity/Crypto/Computational/SIS/Native.lean).
+`negacyclicMulResidues n q a b` truncates two natural-coefficient lists to `n`, computes the
+existing integer `mulZJet (2*n)`, and reduces each lower coefficient minus its wrapped upper
+coefficient modulo `q`. Short lists are zero-padded and the output has exactly `n` entries.
+The plain certificate charges unary `n`, binary `q`, and both complete framed binary input
+lists. It imposes no coefficient-size bound. For `q > 0`, `negacyclicMulResidues_ofFn` identifies
+the output with the canonical coefficients of the existing `negacyclicMul`; neither primality
+nor positive dimension is needed. At `q = 0`, the total operation instead truncates each
+signed result at zero, with no canonical-residue interpretation claimed.
+The [checked clients](../../ComplexityTests/Crypto/NegacyclicNative.lean) include `X² = -1`
+modulo six, modulus one, empty and irregular inputs, a 128-bit modulus, and the actual
+rank-one `moduleLWEKeyGen` coefficient computation. Full key generation, encryption and
+decryption still need variable-rank traversal and canonical key/ciphertext packing and parsing.
+This arithmetic certificate does not remove the existing restrictions on exact native samplers
+or imply small-secret security.
+
 These are implications from hardness assumptions. They do not prove that a concrete OWF, DDH group, LWE family or SIS parameter choice is hard. The LWE interface exposes only the serialized public matrix `[B*t+e | B]`, with independent errors and one shared uniform secret; in [`SIS/Module.lean`](../../Complexity/Crypto/Computational/SIS/Module.lean), `expandModuleMatrix` and `flattenPolyVec` embed negacyclic `ModuleSIS` and `ModuleLWE` instances over `ℤ_q[X]/(X^n+1)` into unstructured `(d * n) × (k * n)` matrices over `ℤ_q` (checked with concrete evaluations and nonvacuity proofs in [`ComplexityTests/Crypto/ModuleSIS.lean`](../../ComplexityTests/Crypto/ModuleSIS.lean)), and [`SIS/ModuleEncryption.lean`](../../Complexity/Crypto/Computational/SIS/ModuleEncryption.lean) builds dual-Regev public-key encryption (`moduleLWEKeyGen`, `moduleLWEEncrypt`, `moduleLWEDecrypt`), bounded-noise decryption correctness (`moduleLWEDecrypt_moduleLWEEncrypt_eq`), and two-hop public-key/ciphertext reductions to `ModuleLWE.sampleLaw` (`advantage_realEncryptionView_uniform_le`, `advantage_realEncryptionView_msg_le`, checked in [`ComplexityTests/Crypto/ModuleEncryption.lean`](../../ComplexityTests/Crypto/ModuleEncryption.lean)); no worst-case lattice reduction is asserted there.
+
+The Module-LWE sampling APIs now accept explicit distributions: `moduleLWEPublicKeyLaw` has an
+optional `secretLaw`, `encryptionViewOfKeyLaw` an optional `ephemeralLaw`, and `realEncryptionView`
+accepts both. Their defaults remain uniform, and the existing security reductions concern those
+uniform defaults. [`ModuleEncryption/Sampling.lean`](../../Complexity/Crypto/Computational/SIS/ModuleEncryption/Sampling.lean)
+proves that conditioning public-key generation on the actual sampled secret preserves the public
+view, including when the same run retains `(secret, view)`. Sampling a fresh secret independently
+of a public key would not preserve that correlation.
+The concrete small-secret instance reuses the existing centered-binomial fair-bit program and
+modular `GSW.noiseLaw`. Under `2*η < 2^w`, every sampled integer is its residue's centered lift,
+so the resulting module secret satisfies the coefficient bound `η`. Nested list sampling has a
+uniform strict-PPT certificate for unary row count, degree and binomial width, with binary signed
+integer output. The subsequent modular-cast identity is semantic; this is not a native certificate
+for the whole encryption scheme. [Tests](../../ComplexityTests/Crypto/ModuleEncryptionSampling.lean)
+include nonzero supported secrets, zero dimensions/width, and a variable-row native client.
+They also show that uniform rank-one, degree-one secrets and ephemeral values modulo sixteen,
+with all errors one, decrypt a true message correctly with probability only `7/16`.
+The existing deterministic correctness theorem requires bounded secrets as well as bounded noise;
+this example does not contradict it. Small-secret security requires its own assumption and reduction;
+the randomized correctness result below uses explicit support and noise-tail hypotheses.
 
 For numerical modulus conversion, import
 [`SIS/ModulusSwitch.lean`](../../Complexity/Crypto/Computational/SIS/ModulusSwitch.lean).
@@ -100,6 +141,24 @@ The exact scale mismatch is zero for two even moduli, `1/2` for even source and 
 encryption theorem in all four cases with nonzero noise, and exercise negative half ties and a
 nonzero carry. They also show plaintext loss at target moduli one and two and failure at the
 strict decoder threshold. This is deterministic correctness, with no additional security claim.
+
+For randomized correctness, import
+[`SIS/ModulusSwitch/Failure.lean`](../../Complexity/Crypto/Computational/SIS/ModulusSwitch/Failure.lean).
+`toOuterMeasure_moduleLWEModulusSwitch_failure_le` uses the existing encryption view while
+retaining the actual secret that generated the public key. Suppose the secret and ephemeral laws
+are supported in centered coefficient bounds `Bs,Br`, and write `ν` for the polynomial-noise law.
+Set `Q = k*n*Be*Br + k*n*Be*Bs + Be`. For positive source modulus `q`, target margin `4*Bp+2 < p`,
+and `(p/q)*Q + (1+k*n*Bs)/2 + Δ ≤ Bp`, switched decryption fails with probability at most
+`(2*k+1) * ν{e | e exceeds centered coefficient bound Be}`. The count is `k` key-error
+polynomials, `k` encryption-error polynomials and one final polynomial, each sampled independently
+as in the existing view. The proof reuses the deterministic theorem and the product-event union
+bound; it assumes neither a decryption conclusion nor a source decoding margin.
+[Checked clients](../../ComplexityTests/Crypto/ModulusSwitchFailure.lean) use the native
+centered-binomial small-secret law for rank and degree one, switching from 32 to 16. Width-one
+errors give zero failure. Width-two errors exceed good radius one with exact probability `1/8`,
+giving an upper bound `3/8`; a supported error triple produces target phase 12 and proves positive
+actual failure. These are original sufficient correctness bounds for the supplied laws. They add
+no small-secret security reduction, Gaussian sampler or native certificate for the entire scheme.
 
 ## Encryption and chosen-message attacks
 

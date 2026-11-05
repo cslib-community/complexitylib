@@ -5,8 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Probability.PMF.Bind
-import Complexity.Crypto.Computational.Homomorphic.Leveled.GuessCoinTape
-import Complexity.Crypto.Computational.Homomorphic.Leveled.CoinTape
+import Complexity.Crypto.Computational.Homomorphic.Leveled.GameCoinTape
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 
@@ -16,6 +15,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 Randomized bit encryption, adaptive choice, and guessing use separate one-bit seeds. The
 fixture instantiates the actual supported-choice theorem without any security assumption.
 Explicit replays check both boundary cuts, padding, repeated keys, and the supplied challenge.
+Complete-game clients also inspect all selector branches, the message swap, modulo-three bias
+and the zero-range fallback, which still calls the adversary.
 -/
 
 namespace ComplexityTests.Crypto.LeveledGuessCoinTape
@@ -147,5 +148,108 @@ example : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool × List Bo
   · unfold evaluateGuess
     fun_prop
   all_goals fun_prop
+
+-- The common encryption envelope covers both its one sampled bit and its two-bit output.
+private def paddedEncrypt (input : ℕ × List Bool × Bool) (tape : List Bool) : List Bool :=
+  evaluateEncrypt input (tape.take 1)
+
+private def zeroReplay (input : ℕ × List Bool) (tape : List Bool) :
+    (Bool × Bool) × List Bool :=
+  Leveled.zeroLinkChooseCoins (fun _ _ => key) paddedEncrypt evaluateChoose input.1
+    2 2 0 2 input.2 tape
+
+-- All three branches retain their tags, and selectors zero and three share the first branch.
+example : ([[false, false], [false, true], [true, false], [true, true]].map fun selector =>
+    (Leveled.modLeveledChooseCoins (fun _ _ => key) zeroReplay 0 2 2 2 0 key.1
+      (selector ++ List.replicate 13 false)).2.take 2) =
+    [[false, false], [false, true], [true, false], [false, false]] := by decide
+
+-- The true-world link branch swaps the predecessor's true message with false.
+example : (Leveled.modLeveledChooseCoins (fun _ _ => key) zeroReplay 0 2 2 2 0 key.1
+    ([false, true] ++ List.replicate 13 false)).1 = (false, true) := by decide
+
+-- A zero-link hop with a nonzero thinning index rejects, rather than running the payload.
+example : Leveled.modLeveledChooseCoins (fun _ _ => key) zeroReplay 0 2 2 2 0 key.1
+    ([true, false, false, true] ++ List.replicate 11 false) = Leveled.rejectLeveledChoice := by
+  decide
+
+-- The link branch ignores the encryption/choice padding after its selector and key blocks.
+example : Leveled.modLeveledChooseCoins (fun _ _ => key) zeroReplay 0 2 2 2 0 key.1
+    (List.replicate 6 false ++ List.replicate 9 true) =
+    Leveled.modLeveledChooseCoins (fun _ _ => key) zeroReplay 0 2 2 2 0 key.1
+      (List.replicate 15 false) := by decide
+
+-- The complete game law has no supplied-context support premise. Both challenge worlds use
+-- the same 24-bit allocation: 12 choice bits, two challenge bits and ten guessing bits.
+example (bit : Bool) (n : ℕ) : ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
+    (Leveled.modLeveledAdversary fixture (fun _ => 1) (fun _ => 2) (fun _ => 2) adversary)
+      bit n) =
+    (BitString.uniformList 24).map (Leveled.modLeveledGameCoins (fun _ _ => key) paddedEncrypt
+      evaluateChoose evaluateGuess (fun _ => 1) (fun _ => 2) (fun _ => 2) (fun _ => 0)
+      (fun _ => 2) (fun _ => 1) (fun _ => 1) bit n) := by
+  apply Leveled.eval_game_modLeveledAdversary_eq_map_coins fixture adversary
+    (fun _ _ => key) paddedEncrypt evaluateChoose evaluateGuess
+    (fun _ => 1) (fun _ => 2) (fun _ => 2) (fun _ => 0) (fun _ => 2)
+    (fun _ => 1) (fun _ => 1) bit n 1
+  · simp [fixture, ProbComp.eval_pure, PMF.map]
+  · intro generated hgenerated
+    simp only [fixture, ProbComp.eval_pure, PMF.mem_support_pure_iff] at hgenerated
+    subst generated
+    decide
+  · intro pk _ message
+    refine ⟨?_, ?_⟩
+    · rw [encrypt_law, ← BitString.uniformList_take (n := 2) (k := 1) (by decide), PMF.map_comp]
+      rfl
+    · intro ciphertext hct
+      simp only [fixture, ProbComp.eval_map, BitString.eval_sampleList,
+        PMF.mem_support_map_iff] at hct
+      obtain ⟨seed, hseed, rfl⟩ := hct
+      simp [evaluateEncrypt, BitString.length_of_mem_support_uniformList hseed]
+  · intro artifact _
+    refine ⟨choose_law n artifact, ?_⟩
+    intro chosen hchosen
+    simp only [adversary, ProbComp.eval_map, BitString.eval_sampleList,
+      PMF.mem_support_map_iff] at hchosen
+    obtain ⟨seed, hseed, rfl⟩ := hchosen
+    exact (BitString.length_of_mem_support_uniformList hseed).le
+  · intro state ciphertext _ _
+    simp [adversary, ProbComp.eval_map, BitString.eval_sampleList]
+
+example (bit : Bool) : ComputableInPolyTime (fun p : ℕ × List Bool =>
+    Leveled.modLeveledGameCoins (fun _ _ => key) paddedEncrypt evaluateChoose evaluateGuess
+      (fun _ => 1) (fun _ => 2) (fun _ => 2) (fun _ => 0)
+      (fun _ => 2) (fun _ => 1) (fun _ => 1) bit p.1 p.2)
+      (encPair encUnary encBits) encBool := by
+  apply Leveled.computableInPolyTime_modLeveledGameCoins
+  · exact .const _
+  · unfold paddedEncrypt evaluateEncrypt
+    fun_prop
+  · unfold evaluateChoose
+    fun_prop
+  · unfold evaluateGuess
+    fun_prop
+  all_goals fun_prop
+
+-- A probe that reads the plaintext behind the false ciphertext tag detects accidental
+-- rejection of the unified zero-range fallback. It must return the challenge world itself.
+private def fallbackProbe : Encryption.Adversary where
+  choose _ _ := pure ((false, true), [])
+  guess _ _ ciphertext := pure (ciphertext.getD 1 false)
+
+example (bit : Bool) (n : ℕ) : ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
+    (Leveled.modLeveledAdversary fixture (fun _ => 7) (fun _ => 0) (fun _ => 2) fallbackProbe)
+      bit n) = PMF.pure bit := by
+  cases bit <;> simp [Encryption.game, Encryption.gameOn, fixture, key, fallbackProbe,
+    Leveled.modLeveledAdversary, Leveled.leveledAdversary, Leveled.zeroLinkAdversary,
+    Leveled.tagLeveledChoice, Scheme.encryptZeroKeyLinks, evaluateEncrypt,
+    ProbComp.eval_map, BitString.eval_sampleList, PMF.map, Function.comp_def]
+
+example (bit : Bool) (n : ℕ) : ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
+    (Leveled.modLeveledAdversary fixture (fun _ => 7) (fun _ => 2) (fun _ => 0) fallbackProbe)
+      bit n) = PMF.pure bit := by
+  cases bit <;> simp [Encryption.game, Encryption.gameOn, fixture, key, fallbackProbe,
+    Leveled.modLeveledAdversary, Leveled.leveledAdversary, Leveled.zeroLinkAdversary,
+    Leveled.tagLeveledChoice, evaluateEncrypt, ProbComp.eval_bind,
+    ProbComp.eval_map, BitString.eval_sampleList, PMF.map, Function.comp_def]
 
 end ComplexityTests.Crypto.LeveledGuessCoinTape
