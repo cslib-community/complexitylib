@@ -3137,6 +3137,7 @@ public import Complexity.Crypto.Computational.PseudorandomPermutation
 public import Complexity.Crypto.Computational.Rompel
 public import Complexity.Crypto.Computational.SIS.Basic
 public import Complexity.Crypto.Computational.SIS.Module
+public import Complexity.Crypto.Computational.SIS.Module.ApproximateSampling
 public import Complexity.Crypto.Computational.SIS.Module.MatrixSampling
 public import Complexity.Crypto.Computational.SIS.ModuleEncryption
 public import Complexity.Crypto.Computational.SIS.ModuleEncryption.Native
@@ -3179,6 +3180,7 @@ public import Complexity.Crypto.Game
 public import Complexity.Crypto.Game.CloseTo
 public import Complexity.Crypto.Game.CloseTo.Statistical
 public import Complexity.Crypto.Game.CloseTo.UntilBad
+public import Complexity.Crypto.Game.CloseTo.UniformNat
 public import Complexity.Crypto.Game.Hybrid
 public import Complexity.Crypto.Game.Statistical
 public import Complexity.Crypto.Game.UntilBad
