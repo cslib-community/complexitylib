@@ -193,7 +193,9 @@ families and full-input native runtime.
 - **Hybrid encryption:** prove modular KEM–DEM CCA composition (Boneh–Shoup Exercise 12.5(a)).
   Canonical `hybridDecrypt` rejects malformed pair encodings and propagates Option-valued
   component failures ([#2692](https://github.com/cslib-community/complexitylib/issues/2692)).
-  The exact DEM leg is tracked in [#2694](https://github.com/cslib-community/complexitylib/issues/2694).
+  The exact DEM leg ([#2694](https://github.com/cslib-community/complexitylib/issues/2694)) now
+  uses the symmetric cipher's actual key sampler and its existing one-time CCA game, with
+  a native loss-one reduction for `n`-bit messages and prechallenge decryption queries.
   Two KEM hops and compatible key distributions/key postprocessing remain open; encoded
   Encrypt-then-MAC keys are not uniform over all words of their encoded length. Adaptive
   decapsulation security of a KEM alone does not supply the composition.
