@@ -46,6 +46,23 @@ supplies their component bounds. Run `scripts/build.sh ComplexityTests.TotalVari
 The [Regev joint experiment](https://github.com/cslib-community/complexitylib/issues/2767) still
 has to discharge those bounds for its actual Gaussian laws and residue marginal.
 
+## Project a continuous Gaussian density
+
+Import [Gaussian/Standard.lean](../../Complexity/Foundations/Probability/Gaussian/Standard.lean)
+when a calculation starts from the density `exp (-π * ‖x‖² / s²) / s^dim` relative to
+ambient volume. For `s > 0`, `gaussianWeight_withDensity_eq_map_stdGaussian` identifies
+this actual measure with `stdGaussian E` scaled by `s / √(2π)`. It reuses the normalized
+`Measure.withDensity` construction; it does not introduce another Gaussian measure.
+
+Apply `gaussianWeight_withDensity_map_inner s hs z` to identify the law of `⟪z, x⟫`
+as `gaussianReal 0 (((s * ‖z‖)^2 / (2 * Real.pi)).toNNReal)`. The theorem includes
+`z = 0` and dimension zero, where the law is a point mass. The
+[checked clients](../../ComplexityTests/GaussianStandard.lean) recover the standard law
+at width `√(2π)` and compute variance `32/π` at width `4` with scalar projection `2`.
+These are analytic measure identities. Projection of a discrete-coset Gaussian convolution
+and its mod-one error bound remain [#2734](https://github.com/cslib-community/complexitylib/issues/2734);
+no sampler or runtime certificate follows from this identification.
+
 ## Describe a discrete Gaussian law
 
 Import [Gaussian/Discrete.lean](../../Complexity/Foundations/Probability/Gaussian/Discrete.lean)
