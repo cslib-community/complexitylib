@@ -382,6 +382,11 @@ heavy arrays, native stack and frontend descriptors. Arbitrary higher scratch ma
 and can be reused. The polynomial value envelope bounds signed values and arithmetic width;
 it does not supply a workspace address.
 
+The proof composition keeps the original construction-state emission and the actual call's
+register/prefix frames. It transports only the live child and pending-source views needed for
+the next iteration. Root initialization is shared with the standalone catalogue producer through
+[`Traversal.initializeRoot_exec`](../../Complexity/Algorithms/WordRAM/ThreeSum/ChanHe/TraversalInitialize.lean).
+
 The prefix frame is a return-state guarantee, not a ban on transient callee writes.
 After consuming the node, one actual copy sets the committed heap to its packed pointer.
 [`VisitorRelease`](../../Complexity/Algorithms/WordRAM/ThreeSum/Decision/VisitorRelease.lean)

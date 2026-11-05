@@ -171,9 +171,12 @@ executes one copy from the actual packed pointer to the heap register, making th
 residue and histogram tail reusable. The memory function is unchanged by that copy. Heavy-buffer
 capacities and count cells remain below the committed frontier, whose persistent allocation
 advances monotonically; the old reserved gap remains too. Keep the `Emission` witness anchored
-at the consumer's return state before release: its `heap_eq` describes the complete node
-endpoint. Use `release_frontier` and `release_children_ends` for the smaller released frontier
-and the retained actual child arrays. The visitor's body storage equality is in
+at the construction state before the consumer call: its `heap_eq` describes the complete node
+endpoint. `construct_consume` returns that state, both charged executions and the actual
+callee register/prefix frames. Transport the live stack and child arrays through those frames;
+the continuation needs no reconstructed packed-array readback after consumption.
+Use `release_frontier` and `release_children_ends` with the retained emission and register frame
+for the smaller released frontier and actual child arrays. The visitor's body storage equality is in
 [`live_transition`](../../Complexity/Algorithms/WordRAM/ThreeSum/Decision/VisitorTransition.lean);
 it does not bound total space or arbitrary callee high-water scratch.
 For a renamed execution without a surrounding preparation and continuation, use
@@ -185,6 +188,13 @@ The Chan–He traversal's record helpers are another `Exec.rename_post` client.
 move a fixed register bank through the traversal's own nine-register word stack in exactly
 `9*n+1` and `14*n+1` instructions. They are local to the hand-stepped traversal, not a library
 stack API; the library's bounded stack is `Stack.Memory`, run natively by `Stack.Native`.
+
+Both root controllers reuse
+[`Traversal.initializeRoot_exec`](../../Complexity/Algorithms/WordRAM/ThreeSum/ChanHe/TraversalInitialize.lean).
+It proves the actual four setup instructions and seven-word root push in 68 instructions,
+with exact stack readback and the stack write frame. `Exec.rename_post` lifts this same prefix
+into the visitor's register bank. The catalogue and visitor loops then establish their own
+output invariants; neither caller supplies a root-prefix execution as an assumption.
 
 ### Reuse routine postconditions and register frames
 

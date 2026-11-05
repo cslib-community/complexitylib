@@ -282,7 +282,12 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `Controls`, `Call`, `Body`, `Loop` and `Initialize` proof modules are removed. Shared quantitative
   definitions live in `Decision.Cost`; their values, the initialized endpoint's admission and
   the 1.9992 bound are unchanged. The internal arbitrary-state `exec_large` helper now requires
-  full initial boundedness, derived by the initialized-input caller. `VisitorCost` charges the
+  full initial boundedness, derived by the initialized-input caller. The catalogue and visitor
+  root proofs share the actual 68-instruction initialization certificate in
+  `ChanHe/TraversalInitialize`; register renaming retains its stack frame and readback.
+  `Visitor.construct_consume` exposes the original construction state and actual callee frames,
+  so only live child/stack views cross the call; no complete post-call packed view is rebuilt.
+  `VisitorCost` charges the
   consumer plus packed-tail release at `Host.callerTime+8` and proves the unchanged budget
   transfer with fixed slack 18 and four per emitted node; `exec_consume` alone retains its
   `Host.callerTime+7` contract. `GhostLoop.loop_potential_state` charges variable actual body costs
