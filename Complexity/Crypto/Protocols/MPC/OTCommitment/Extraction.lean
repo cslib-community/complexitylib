@@ -27,6 +27,7 @@ false. This is simulator access to ideal-OT inputs, not extraction from a public
 ## Main results
 
 * `OTCommitment.wrongOpening_bound`: opposite-bit acceptance is at most `2⁻⌈k/2⌉`.
+* `OTCommitment.openResult_disagreement_le`: filtering a wrong-bit opening has the same bound.
 * `OTCommitment.simulatedOpening_coupled`: a coupling of receiver output and adversary state.
 
 This is a fixed-length, stand-alone corrupted-sender output law, not full ideal commitment,
@@ -146,7 +147,9 @@ corruption case, not a full ideal commitment functionality or a composable simul
     (fun i => ts i (boolPairToFin4 (false, choices i))) submission
   pure (if result = some committed then some committed else none, final, out)
 
-private theorem fixed_disagreement {k : ℕ} (ts : Fin k → Fin 4 → Bool)
+/-- For fixed actual OT tables and one opening attempt, filtering an accepted wrong bit
+changes the receiver result with probability at most the majority extraction error. -/
+theorem openResult_disagreement_le {k : ℕ} (ts : Fin k → Fin 4 → Bool)
     (submission : Option (Bool × Opening k)) :
     (PMF.uniformOfFintype (Fin k → Bool)).toOuterMeasure {c |
       let result := openResult c (fun i => ts i (boolPairToFin4 (false, c i))) submission
@@ -214,6 +217,6 @@ theorem simulatedOpening_coupled {State Output : Type} (A : Sender State) (k : �
     change ((PMF.uniformOfFintype (Fin k → Bool)).map _).toOuterMeasure _ ≤ _
     rw [PMF.toOuterMeasure_map_apply]
     simpa only [Set.preimage_ofPred_eq, ne_eq, Prod.mk.injEq, and_true, eq_self] using
-      fixed_disagreement ts submission
+      openResult_disagreement_le ts submission
 
 end Cslib.Crypto.Protocols.MPC.OTCommitment
