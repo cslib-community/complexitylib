@@ -8,11 +8,12 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
+public import Complexity.Computability.PolyTime.Int.DotProduct
+public import Complexity.Foundations.Data.ZMod.DotProduct
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.NativeExtract
 public import Complexity.Crypto.Protocols.SigmaProtocol.Efficient
-public import Complexity.Crypto.Game.CloseTo
-public import Complexity.Crypto.Game.Statistical
+public import Complexity.Crypto.Game.CloseTo.Statistical
 public import Complexity.Computability.Probabilistic.UniformNat
 public import Complexity.Computability.Probabilistic.Repeat
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.BinaryDiv
@@ -108,21 +109,6 @@ machine-backed efficiency certificates for `SigmaProtocol.lyubashevsky`:
 -/
 
 @[expose] public section
-
-namespace Cslib.Interactive
-
-open Probability Probability.PMF Crypto
-open scoped ENNReal NNReal Cslib.Probability.PMF
-
-/-- Finite-support statistical distance bounds `CloseTo` on all events. -/
-theorem closeTo_of_dist_le {α : Type} [Fintype α] {μ ν : PMF α} {ε : ℝ≥0}
-    (h : dist μ ν ≤ ε) : CloseTo μ ν ε := by
-  classical
-  refine Game.closeTo_of_advantage_decide_le fun E => ?_
-  rw [Game.advantage_eq_nndist, ← NNReal.coe_le_coe, coe_nndist]
-  exact (PMF.dist_map_le μ ν _).trans h
-
-end Cslib.Interactive
 
 namespace Cslib.Probability
 
@@ -541,6 +527,8 @@ end Cslib.Probability
 
 namespace Cslib.Crypto.Protocols.SigmaProtocol
 
+open Mathlib.Tactic.Matrix
+
 open Probability Probability.PMF Interactive Turing.MultiTapeTM
 open scoped ENNReal _root_.Matrix
 
@@ -863,15 +851,12 @@ theorem zmodReduce_eq_cast (q : ℕ) (a : ℤ) :
     have hnonneg : 0 ≤ a % (q : ℤ) := Int.emod_nonneg a (by omega)
     omega
 
-/-- Dot product of the first `m` entries of `row` and `v` (defaulting missing entries to `0`). -/
-def listDot (m : ℕ) (row v : List ℤ) : ℤ :=
-  ((List.range m).map fun j => row.getD j 0 * v.getD j 0).sum
-
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_listDot :
-    ComputableTidilyInPolyTime (fun p : ℕ × List ℤ × List ℤ => listDot p.1 p.2.1 p.2.2)
+private theorem computableTidilyInPolyTime_listDotProduct :
+    ComputableTidilyInPolyTime
+      (fun p : ℕ × List ℤ × List ℤ => ListMatrix.dotProduct p.1 p.2.1 p.2.2)
       (encPair encUnary (encPair (encList encIntBin) (encList encIntBin))) encIntBin := by
-  unfold listDot
+  simp only [ListMatrix.dotProduct_eq_sum_map_range]
   fun_prop
 
 /-- Convert the first `k` bits of a raw challenge word `c` into a `0`-`1` integer list. -/
@@ -888,14 +873,6 @@ private theorem computableTidilyInPolyTime_challengeIntList :
 /-- Check whether the first `m` coordinates of `z` lie in `[-B, B]`. -/
 def inBoxList (m B : ℕ) (z : List ℤ) : Bool :=
   (List.range m).all fun j => decide ((z.getD j 0).natAbs ≤ B)
-
-/-- Polynomial-time evaluation on the displayed binary/unary encodings. -/
-@[fun_prop]
-theorem computableInPolyTime_listDot :
-    ComputableInPolyTime (fun p : ℕ × List ℤ × List ℤ => listDot p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair (encList encIntBin) (encList encIntBin))) encIntBin := by
-  unfold listDot
-  fun_prop
 
 /-- Polynomial-time evaluation on the displayed binary/unary encodings. -/
 @[fun_prop]
@@ -917,8 +894,8 @@ theorem computableInPolyTime_inBoxList :
 def lyubashevskyVerifyEqList (n m k q : ℕ) (A T : List (List ℤ)) (w z : List ℤ)
     (c : List Bool) : Bool :=
   (List.range n).all fun i =>
-    decide (zmodReduce q (listDot m (A.getD i []) z) =
-      zmodReduce q (w.getD i 0 + listDot k (T.getD i []) (challengeIntList k c)))
+    decide (zmodReduce q (ListMatrix.dotProduct m (A.getD i []) z) =
+      zmodReduce q (w.getD i 0 + ListMatrix.dotProduct k (T.getD i []) (challengeIntList k c)))
 
 /-- List-level verifier for Lyubashevsky's identification protocol. -/
 def lyubashevskyVerifyList (n m k q γ β : ℕ) (A T : List (List ℤ)) (w : List ℤ)
@@ -975,27 +952,6 @@ theorem inBoxList_ofFn {m B : ℕ} (z : Fin m → ℤ) :
     zify
     exact hi
 
-theorem listDot_ofFn {m : ℕ} (u v : Fin m → ℤ) :
-    listDot m (List.ofFn u) (List.ofFn v) = ∑ j : Fin m, u j * v j := by
-  have hmap : ((List.range m).map fun j => (List.ofFn u).getD j 0 * (List.ofFn v).getD j 0) =
-      List.ofFn (fun j => u j * v j) := by
-    rw [← List.map_coe_finRange_eq_range, List.map_map]
-    conv_rhs => rw [List.ofFn_eq_map]
-    refine List.map_congr_left fun j _ => ?_
-    simp [List.getD_eq_getElem?_getD]
-  rw [listDot, hmap, List.sum_ofFn]
-
-theorem intCast_listDot_matrix_ofFn {n m q : ℕ} (A : Matrix (Fin n) (Fin m) (ZMod q))
-    (z : Fin m → ℤ) (i : Fin n) :
-    ((listDot m
-      ((List.ofFn fun r : Fin n => List.ofFn fun c : Fin m => ZMod.cast (A r c)).getD i.val [])
-      (List.ofFn z) : ℤ) : ZMod q) =
-      (A *ᵥ (Int.cast ∘ z)) i := by
-  simp only [List.getD_eq_getElem?_getD, List.getElem?_ofFn, i.isLt, ↓reduceDIte, Option.getD_some]
-  rw [listDot_ofFn, Int.cast_sum]
-  simp only [Int.cast_mul, ZMod.intCast_zmod_cast]
-  rfl
-
 theorem lyubashevskyVerifyEqList_ofFn (n m k q : ℕ)
     (A : Matrix (Fin n) (Fin m) (ZMod q)) (T : Matrix (Fin n) (Fin k) (ZMod q))
     (w : Fin n → ZMod q) (z : Fin m → ℤ) (c : BitString k) :
@@ -1012,8 +968,9 @@ theorem lyubashevskyVerifyEqList_ofFn (n m k q : ℕ)
     have hi := h i.val (List.mem_range.mpr i.isLt)
     rw [decide_eq_true_eq, zmodReduce_eq_cast, zmodReduce_eq_cast] at hi
     have hcast := Function.LeftInverse.injective ZMod.intCast_zmod_cast hi
-    rw [intCast_listDot_matrix_ofFn A z i] at hcast
-    rw [Int.cast_add, intCast_listDot_matrix_ofFn T (lyubashevskyChallenge c) i] at hcast
+    rw [ListMatrix.intCast_dotProduct_matrix_ofFn A z i] at hcast
+    rw [Int.cast_add,
+      ListMatrix.intCast_dotProduct_matrix_ofFn T (lyubashevskyChallenge c) i] at hcast
     simp only [List.getD_eq_getElem?_getD, List.getElem?_ofFn, i.isLt, ↓reduceDIte,
       Option.getD_some, ZMod.intCast_zmod_cast] at hcast
     exact hcast
@@ -1022,8 +979,8 @@ theorem lyubashevskyVerifyEqList_ofFn (n m k q : ℕ)
     let i : Fin n := ⟨j, hj_lt⟩
     rw [decide_eq_true_eq, zmodReduce_eq_cast, zmodReduce_eq_cast]
     congr 1
-    rw [intCast_listDot_matrix_ofFn A z i, Int.cast_add,
-      intCast_listDot_matrix_ofFn T (lyubashevskyChallenge c) i]
+    rw [ListMatrix.intCast_dotProduct_matrix_ofFn A z i, Int.cast_add,
+      ListMatrix.intCast_dotProduct_matrix_ofFn T (lyubashevskyChallenge c) i]
     simp only [i, List.getD_eq_getElem?_getD, List.getElem?_ofFn, hj_lt, ↓reduceDIte,
       Option.getD_some, ZMod.intCast_zmod_cast]
     exact h i
@@ -1086,7 +1043,8 @@ def lyubashevskySimCommitList (n m k q : ℕ) (A T : List (List ℤ)) (z : List 
     List ℤ :=
   (List.range n).map fun i =>
     zmodReduce q
-      (listDot m (A.getD i []) z - listDot k (T.getD i []) (challengeIntList k c))
+      (ListMatrix.dotProduct m (A.getD i []) z -
+        ListMatrix.dotProduct k (T.getD i []) (challengeIntList k c))
 
 theorem lyubashevskySimCommitList_ofFn (n m k q : ℕ)
     (A : Matrix (Fin n) (Fin m) (ZMod q)) (T : Matrix (Fin n) (Fin k) (ZMod q))
@@ -1101,8 +1059,9 @@ theorem lyubashevskySimCommitList_ofFn (n m k q : ℕ)
     List.map_map]
   conv_rhs => rw [List.ofFn_eq_map]
   refine List.map_congr_left fun i _ => ?_
-  rw [Function.comp_apply, zmodReduce_eq_cast, Int.cast_sub, intCast_listDot_matrix_ofFn A z i,
-    intCast_listDot_matrix_ofFn T (lyubashevskyChallenge c) i]
+  rw [Function.comp_apply, zmodReduce_eq_cast, Int.cast_sub,
+    ListMatrix.intCast_dotProduct_matrix_ofFn A z i,
+    ListMatrix.intCast_dotProduct_matrix_ofFn T (lyubashevskyChallenge c) i]
   rfl
 
 /-- Deterministic postprocessing of a candidate response list `z : List ℤ` in Lyubashevsky's

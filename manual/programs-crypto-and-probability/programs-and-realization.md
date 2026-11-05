@@ -102,9 +102,48 @@ copy an unbounded reply into a configuration encoding. This completes the replay
 and freshness bridge for the full ROM forking reduction remains
 [#2568](https://github.com/cslib-community/complexitylib/issues/2568).
 
+[`Oracle/ReplayParameter.lean`](../../Complexity/Computability/Probabilistic/Oracle/ReplayParameter.lean)
+derives a public-key length bound `keyC * (n + 1)^keyD` from actual strict-PPT key generation.
+`IsOraclePPT.exists_savedCoins_of_keyGen` then uses one uniform tape of length
+`c * (2*n + 2 + keyC*(n + 1)^keyD)^d`, independent of the sampled key. Replay takes only the prefix
+specified by the original full-input machine clock. Equality holds for every key within the derived
+bound and retains the complete external state; the handler's own randomness stays external.
+[`CoinTape/QueryBounds.lean`](../../Complexity/Computability/Machines/Turing/MultiTape/Probabilistic/CoinTape/QueryBounds.lean)
+bounds calls on every fixed tape, including tapes outside the intended sampling support.
+
+[`RandomOracle/Simulation.lean`](../../Complexity/Crypto/Protocols/Signature/RandomOracle/Simulation.lean)
+transports such joint-state mixtures through the existing shared-world signature game. Its
+`eval_worldRealize_eq_bind` includes the cache and signing log before final verification, and works
+with any acceptance rule. In particular, final-message freshness permits repeated signing queries.
+These shared laws complete [#2652](https://github.com/cslib-community/complexitylib/issues/2652);
+the full efficient Schnorr reduction remains open.
+
+[`Signature/WordRandomOracle.lean`](../../Complexity/Crypto/Computational/Signature/WordRandomOracle.lean)
+routes Boolean channel `false` to signing and `true` to hashing. All word hash payloads remain
+distinct, and digest replies use an injective encoding. `exists_eufCmaGame_savedCoinForger`
+starts from actual strict-PPT key generation and an actual `IsOraclePPT` word forger, and proves
+equality of the existing shared-world game and explicit-coin EUF-CMA game. One native machine
+and clock work uniformly for all digest types and encodings, including parameter-dependent ones.
+Its native replay
+certificate charges the whole `(n, pk, coins)` input, the key-length guard, tape truncation, and
+the existing total pair decoder. Oversized keys return the empty pair without calls; every tape
+obeys the parameter-only call bounds, including tapes outside the sampling support. Plain
+`ComputableInPolyTime.encoding_comp` supplies the encoded machine input.
+
+This completes the generic word-forger adapter
+[#2636](https://github.com/cslib-community/complexitylib/issues/2636). The scheme's signer, hash
+handler and final verifier still run in the existing typed shared world. Native realizations of
+those components, Schnorr's concrete query encoding, and the full efficient forking reduction are
+separate obligations. Repeated signing/hash and fresh/replayed-message examples are checked in
+[`Crypto/WordRandomOracle.lean`](../../ComplexityTests/Crypto/WordRandomOracle.lean).
+
 ## Exact versus approximate randomness
 
 `ProbComp.uniform` permits exact finite uniform laws. A fair-coin machine with a fixed finite time bound has dyadic probabilities, so exact uniform sampling on three elements cannot follow simply from writing that program. This is a mathematical consequence of the definitions, not a reported failure. The sampling libraries distinguish power-of-two/dyadic laws, bounded samplers and approximate modular sampling. Group protocols can retain exact ideal PMFs and separately prove closeness and native efficiency of a word-level sampler.
+
+For a concrete field with exact fair-bit sampling, import [Sampling/F4](../../Complexity/Computability/Probabilistic/Sampling/F4.lean). `F4.sample` draws the two Boolean coordinates of Mathlib's `QuadraticAlgebra (ZMod 2) 1 1`, where the generator satisfies `θ² = θ + 1`. `F4.eval_sample` proves exact uniformity over its four elements, and `F4.isPPTOn_sample` supplies the strict-PPT certificate under `F4.encoding`, the standard pair encoding of those coordinates. Addition, subtraction and multiplication have `F4.computableInPolyTime_add`, `F4.computableInPolyTime_sub` and `F4.computableInPolyTime_mul` certificates for the same encoding. These are fixed-field lookup certificates; they do not supply uniform arithmetic for a growing extension degree. Probability-only clients can import [the sampler semantics](../../Complexity/Languages/Probabilistic/Sampling/F4.lean) without the machine calculus. [Checked clients](../../ComplexityTests/F4Sampling.lean) compose the sampler into runtime-varying lists with the full independent uniform vector law.
+
+When an optional sampler feeds a randomized continuation, [PMF/Option/Bind.lean](../../Complexity/Probability/PMF/Option/Bind.lean) provides `PMF.bind_option_apply_of_some`. A successful-part law `μ (some a) = mass * ν a` gives the scaled successful continuation plus `μ none * k none b`. This retains the actual failure branch without conditioning it away. The bounded-sampler Boolean-test proof uses the same law; [checked examples](../../ComplexityTests/PMFOptionBind.lean) distinguish accepting and rejecting failure branches while success flips a fresh fair bit.
 
 Randomized Word-RAM takes another convention: one instruction may sample uniformly from any fitted finite interval. Its query count and `unifBitCost` are explicit currencies; neither equals the strict fair-coin runtime without a further implementation theorem. See [the RAM discussion](../algorithms-and-memory/wordram-and-bridges.md).
 

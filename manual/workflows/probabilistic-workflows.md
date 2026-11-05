@@ -32,6 +32,101 @@ The ratio remains explicit; these results supply neither the dimension-uniform l
 bound nor the sampling algorithm used in Regev's bootstrapping lemma. Controlling the ratio
 and proving multidimensional lattice Poisson summation remain open.
 
+To vary the center continuously, import
+[Gaussian/Periodization.lean](../../Complexity/Foundations/Probability/Gaussian/Periodization.lean).
+`ZLattice.continuous_gaussianMass L s hs` proves continuity of the normalizer for `hs : 0 < s`.
+The proof establishes summable sup norms of the lattice translates on every compact set, so
+the continuous sum comes from local uniform convergence.
+
+For other decaying functions, import
+[Lattice/Periodization.lean](../../Complexity/Foundations/Analysis/Lattice/Periodization.lean).
+Supply a bundled continuous map `f : C(E, F)` into a complete normed additive group, a real exponent
+`b > Module.finrank ℤ L`, and `f =O[cocompact E] (fun x ↦ ‖x‖ ^ (-b))`.
+`ZLattice.continuous_tsum_translate` proves continuity of `x ↦ ∑' z : L, f (x + z)`;
+`continuous_automorphize` proves continuity of Mathlib's existing `QuotientAddGroup.automorphize`
+on the quotient of `E` by `L.toAddSubgroup`. For a Schwartz function, import
+[Lattice/Schwartz.lean](../../Complexity/Foundations/Analysis/Lattice/Schwartz.lean) and use
+`SchwartzMap.continuous_automorphize` directly. The
+[checked clients](../../ComplexityTests/LatticePeriodization.lean) include a nonzero Schwartz
+bump, an infinite integer lattice, a skew two-dimensional basis, and a rank-zero lattice on
+an off-center compact interval. For Fourier coefficient identification, see
+[the quotient-integral workflow below](#unfold-a-lattice-fourier-coefficient). For the full
+formula, use the Poisson API below.
+
+## Apply lattice Poisson summation
+
+Import [Lattice/Poisson.lean](../../Complexity/Foundations/Analysis/Lattice/Poisson.lean).
+Here `E` is a finite-dimensional real inner-product space with its canonical volume. Supply a
+discrete `L : Submodule ℤ E` and `[IsZLattice ℝ L]`, which requires the lattice to span `E`.
+For a Schwartz function `f`, `SchwartzMap.tsum_eq_tsum_fourier_lattice f L x` identifies the
+sum of `f (x + z)` with the dual-lattice Fourier sum, divided by `ZLattice.covolume L`.
+The dual is Mathlib's existing `LinearMap.BilinForm.dualSubmodule (innerₗ E) L`; the character
+at dual frequency `w` is `exp(2πi * inner x w)`. Convergence of both sums is proved from
+Schwartz decay. The generic `ZLattice.tsum_eq_tsum_fourier_of_rpow_decay` accepts explicit
+polynomial decay, integrability and summability of the actual Fourier samples when a function
+is not supplied as a Schwartz map.
+
+For Gaussian mass, import
+[Gaussian/Poisson.lean](../../Complexity/Foundations/Probability/Gaussian/Poisson.lean) and apply
+`ZLattice.gaussianMass_eq_tsum_dual L s hs c` with `hs : 0 < s` and any center `c`.
+This is an equality in `ℂ`: the real mass equals `s^dim / covolume L` times the dual sum of
+`gaussianWeight (1 / s) w` multiplied by `exp(-2πi * inner c w)`.
+The negative phase comes from evaluating the periodization at `-c`. The theorem includes
+dimension zero and arbitrary full-rank bases, including skew bases. It proves the required
+Gaussian integrability and Fourier summability; it does not assume a Poisson identity.
+
+The complete [LatticePoisson.lean examples](../../ComplexityTests/LatticePoisson.lean) apply
+both endpoints to a skew basis of covolume `2`, check opposite character signs at a nonzero
+frequency, and check the dimension-zero covolume and mass of `1`. From the repository root,
+run `scripts/build.sh ComplexityTests.LatticePoisson` to check these clients. If the
+full-rank instance is missing, start from the basis-spanned lattice in these examples;
+continuity alone also applies to lower-rank lattices, but this Poisson formula needs full rank.
+Dimension-uniform Gaussian estimates, smoothing bounds, efficient sampling and Regev's quantum
+reduction remain open.
+
+## Fold a density onto a quotient
+
+Import [QuotientDensity.lean](../../Complexity/Foundations/MeasureTheory/Group/QuotientDensity.lean)
+to push a nonnegative density through a countable additive-subgroup quotient. Given a measurable
+`f : G → ℝ≥0∞`, measurable subgroup translations, an invariant ambient measure `μ`, and
+`hF : IsAddFundamentalDomain Γ.op F μ`, apply
+`QuotientAddGroup.map_withDensity_eq_withDensity_automorphize hF hf`. It identifies the image of
+`μ.withDensity f` with the density `QuotientAddGroup.automorphize f` relative to the image of
+`μ.restrict F`. At the coset of `x`, that density sums `f (x + γ)` over subgroup elements.
+
+The theorem derives measurability on the canonical quotient measurable space and allows infinite
+values and infinite total mass. It does not require a measurable fundamental domain beyond the
+null-measurability already in `hF`. The [checked clients](../../ComplexityTests/QuotientDensity.lean)
+cover bottom and top subgroups, a two-element group, infinite densities on a null measure, and
+the Borel measurable space of a discrete lattice quotient. Gaussian quotient normalization and
+distance estimates are a separate consumer in
+[issue #2681](https://github.com/cslib-community/complexitylib/issues/2681).
+
+## Convolve a singular law with a density
+
+Import [ConvolutionDensity.lean](../../Complexity/Foundations/MeasureTheory/Group/ConvolutionDensity.lean).
+For a measurable group with measurable multiplication and inversion, let `σ` and `μ` be
+s-finite measures, let `μ` be left invariant, and supply `hf : Measurable f` for
+`f : G → ℝ≥0∞`. Apply
+`MeasureTheory.mconv_withDensity_eq_withDensity_lintegral hf` to identify
+`Measure.mconv σ (μ.withDensity f)` with a density relative to `μ`: at `x`, integrate
+`f (y⁻¹ * x)` against `σ`. The theorem derives measurability of that density.
+
+For additive groups, use `conv_withDensity_eq_withDensity_lintegral`; the translated density
+is `f (-y + x)`. The first measure can be singular, such as a discrete distribution.
+The existing two-density convolution theorem requires both input laws to have densities with
+respect to the same reference measure. This theorem needs only the second one to have a density.
+It allows infinite total mass and infinite density values, and assumes no integrability or
+probability normalization.
+
+The [checked clients](../../ComplexityTests/ConvolutionDensity.lean) translate an actual
+Gaussian by an atom and recover the variance-two Gaussian from two variance-one inputs.
+A noncommutative permutation-group example checks the order of translation; infinite-density
+and zero-input cases check the absence of hidden finiteness premises. Run
+`scripts/build.sh ComplexityTests.ConvolutionDensity` from the repository root.
+The later [lattice Gaussian convolution bound](https://github.com/cslib-community/complexitylib/issues/2707)
+still needs its actual discrete weights, completion of the square and quantitative error proof.
+
 ## Certify a closed randomized routine
 
 Use `IsPPTOn input output program` when the required conclusion is a uniform, strict polynomial-time implementation on encoded types. The encodings are embeddings into bit lists. One finite-control fair-coin machine and one polynomial clock must work for every input, with exact equality of encoded output laws. Output writing is charged. This is the contract to request before proving a probabilistic routine efficient.
@@ -73,6 +168,22 @@ example (test : List Bool × Bool × ℕ → Bool)
 <!-- /worked-example -->
 
 Also check the sampler itself. `ProbComp.uniform (Fin 3)` has exact uniform semantics, but a strictly bounded fair-coin machine cannot give each outcome probability one third. The client deliberately tests that `ppt` does not certify it for free. Use an applicable dyadic sampler or the library's approximate-sampling results, carrying the approximation error into the later probability proof.
+
+## Bound a centered-binomial sampler tail
+
+[CenteredBinomial/Concentration.lean](../../Complexity/Languages/Probabilistic/CenteredBinomial/Concentration.lean)
+bounds the law of the existing `sampleCenteredBinomial η` program. For `η > 0` and real
+`B ≥ 0`, `sampleCenteredBinomial_tail_le` gives
+`Pr[B ≤ |z|] ≤ 4 exp(-B²/(2η))`; `sampleCenteredBinomial_strict_tail_le` gives the same
+bound for `B < |z|`. This original two-count union bound is not optimal. Width zero remains
+`pure 0`, so its strict and non-strict zero cutoffs differ.
+
+The [checked clients](../../ComplexityTests/CenteredBinomialConcentration.lean) show positive
+mass at both width-eight endpoints, an empty strict tail above eight, and a non-strict tail
+bound below one. They also certify the actual growing program with `η = 8(l+1)` as
+`IsPPTOn encUnary encIntBin` and bound its strict tail above `4(l+1)` by `4 exp(-(l+1))`.
+The native certificate charges unary width and signed binary output; this scalar result
+supplies neither encryption correctness nor a security reduction.
 
 ## Certify an adaptive oracle client
 
@@ -120,6 +231,17 @@ Import [`KEMFromPKE/CCA.lean`](../../Complexity/Crypto/Computational/Encryption/
 For a runtime conclusion, use `isPPTOn_kemCCAGames_encryptKeyEncaps` with native key generation, encryption, decryption and adversary certificates. For correctness, apply `decrypt_encryptKeyEncaps_some` to a supported encapsulation and the original encryptor's supported-output correctness. These are separate contracts. The same test file checks a correct empty-key instance and distinguishes `none` from `some []`.
 
 Check freshness against raw ciphertext words. The test's native `adaptiveTagDistinguisher` first observes rejection of the exact challenge, then flips a redundant tag and queries again. Because the malformed scheme ignores that tag, the distinct word reveals the key. Its exact advantage is `1 - 2^(-keyLen n)`; the comparison uses a bounded reply prefix, so its strict oracle runtime certificate holds even for arbitrarily long external replies.
+
+For hybrid ciphertexts, use [`hybridDecrypt`](../../Complexity/Crypto/Computational/Encryption/Hybrid.lean)
+with Option-valued decapsulation and symmetric decryption. It first checks that re-encoding
+`(unframe ct, dropFrame ct)` gives exactly `ct`, then propagates either component's `none` result.
+Apply `hybridDecrypt_hybridEncrypt` with component correctness returning `some k` and `some msg`;
+`computableInPolyTime_hybridDecrypt` takes the corresponding certificates with `encOption` outputs.
+The [hybrid clients](../../ComplexityTests/Crypto/HybridEncryption.lean) show why the framing check
+matters: `[true, true]` and `[true, true, false]` have the same projections, but only the latter
+is a canonical pair. They also check accepted empty plaintext (`[true]` as an oracle reply),
+rejection (`[]`), and exact challenge-word rejection. This parsing repair is a prerequisite for
+the separate [DEM reduction](https://github.com/cslib-community/complexitylib/issues/2694).
 
 ## Certify a list accumulator
 
@@ -771,5 +893,5 @@ from the repository root to check these complete examples.
 
 Integrability supplies the almost-everywhere convergence needed for exchanging the sum and
 integral. No pointwise convergence or uniform convergence assumption is hidden in this theorem.
-Continuity of the periodization, reconstruction from Fourier coefficients, covolume normalization,
-Poisson summation and smoothing estimates are separate obligations.
+The [Poisson API](#apply-lattice-poisson-summation) supplies continuity, reconstruction and
+covolume normalization for the stated analytic hypotheses. Smoothing estimates remain separate.

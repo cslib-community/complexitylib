@@ -66,7 +66,7 @@ private theorem receiverCommit_received {State : Type} (A : Receiver State) (b :
   induction k generalizing st with
   | zero => intro i; exact Fin.elim0 i
   | succ k ih =>
-      simp only [receiverCommit, transfer_eq, Probability.PMF.monad_bind_eq_bind,
+      simp only [receiverCommit_succ, transfer_eq, Probability.PMF.monad_bind_eq_bind,
         Probability.PMF.monad_pure_eq_pure, PMF.pure_bind, PMF.mem_support_bind_iff,
         PMF.mem_support_pure_iff] at h
       obtain ⟨⟨j, next⟩, _, r, _, next', _, ⟨restMasks, rest, final'⟩, hrest, he⟩ := h

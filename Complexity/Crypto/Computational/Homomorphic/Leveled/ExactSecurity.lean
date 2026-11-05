@@ -8,7 +8,9 @@ module
 -- upstream: candidate
 
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Security
+public import Complexity.Crypto.Computational.Homomorphic.Leveled.Size
 public import Complexity.Crypto.Game.Statistical
+import Complexity.Crypto.Computational.Homomorphic.KeyChain.Size
 import Complexity.Computability.Probabilistic.CoinTape.Bounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -1412,98 +1414,6 @@ theorem advantage_scheme_le_modLeveledAdversary_two_mul {E : Scheme}
 
 /-! ### Explicit polynomial artifact-length, coin-tape, and runtime overhead bounds -/
 
-/-- Explicit upper bound on the bit length of a serialized leveled public key
-`encPublicKey (pks, links)` with `depth + 1` base public keys of length at most `pkBound` and
-`depth` encrypted links each consisting of at most `width` base ciphertexts of length at most
-`ctBound`. -/
-def publicKeyLengthBound (depth width pkBound ctBound : ℕ) : ℕ :=
-  2 * ((depth + 1) * (2 * pkBound + 1)) + 1 +
-    depth * (2 * (width * (2 * ctBound + 1)) + 1)
-
-/-- `publicKeyLengthBound` is monotone in all four parameters. -/
-theorem publicKeyLengthBound_mono {d₁ d₂ w₁ w₂ p₁ p₂ c₁ c₂ : ℕ}
-    (hd : d₁ ≤ d₂) (hw : w₁ ≤ w₂) (hp : p₁ ≤ p₂) (hc : c₁ ≤ c₂) :
-    publicKeyLengthBound d₁ w₁ p₁ c₁ ≤ publicKeyLengthBound d₂ w₂ p₂ c₂ := by
-  unfold publicKeyLengthBound
-  gcongr
-
-/-- Explicit bit-length bound for `encPublicKey (pks, links)` whenever the key list and link table
-satisfy the stated length caps. -/
-theorem length_encPublicKey_le (depth width pkBound ctBound : ℕ)
-    (pks : List (List Bool)) (links : List (List (List Bool)))
-    (hpks_len : pks.length ≤ depth + 1)
-    (hpks : ∀ pk ∈ pks, pk.length ≤ pkBound)
-    (hlinks_len : links.length ≤ depth)
-    (hlinks : ∀ link ∈ links, link.length ≤ width ∧ ∀ ct ∈ link, ct.length ≤ ctBound) :
-    (encPublicKey (pks, links)).length ≤ publicKeyLengthBound depth width pkBound ctBound := by
-  have hpks_enc : (encList encBits pks).length ≤ (depth + 1) * (2 * pkBound + 1) :=
-    (Turing.MultiTapeTM.length_encList_le encBits pks hpks).trans
-      (Nat.mul_le_mul_right _ hpks_len)
-  have hlink_enc (link : List (List Bool)) (hlink : link ∈ links) :
-      (encList encBits link).length ≤ width * (2 * ctBound + 1) :=
-    (Turing.MultiTapeTM.length_encList_le encBits link (hlinks link hlink).2).trans
-      (Nat.mul_le_mul_right _ (hlinks link hlink).1)
-  have hlinks_enc :
-      (encList (encList encBits) links).length ≤
-        depth * (2 * (width * (2 * ctBound + 1)) + 1) :=
-    (Turing.MultiTapeTM.length_encList_le (encList encBits) links hlink_enc).trans
-      (Nat.mul_le_mul_right _ hlinks_len)
-  simp only [encPublicKey, length_encPair, publicKeyLengthBound]
-  omega
-
-private theorem forall_mem_of_forall₂ {α β : Type} {R : α → β → Prop} {P : β → Prop}
-    {as : List α} {bs : List β} (h : List.Forall₂ R as bs)
-    (hstep : ∀ a ∈ as, ∀ b, R a b → P b) : ∀ b ∈ bs, P b := by
-  induction h with
-  | nil => intro _ hb; cases hb
-  | cons hr _ ih =>
-    intro b hb
-    rcases List.mem_cons.mp hb with rfl | htail
-    · exact hstep _ List.mem_cons_self _ hr
-    · exact ih (fun a ha => hstep a (List.mem_cons_of_mem _ ha)) b htail
-
-/-- Every link table in the support of `E.encryptKeyLinks n keys` has length `keys.length - 1`,
-and when every secret key in `keys` has length at most `width` and every ciphertext encrypted
-under a public key in `keys` has length at most `ctBound`, every link has length at most `width`
-with ciphertexts of length at most `ctBound`. -/
-private theorem length_and_mem_of_mem_support_encryptKeyLinks {E : Scheme} {n width ctBound : ℕ}
-    {keys : List (List Bool × List Bool)} {links : List (List (List Bool))}
-    (hkeys : ∀ k ∈ keys, k.2.length ≤ width ∧
-      ∀ b ct, ct ∈ (ProbComp.eval (E.encrypt n k.1 b)).support → ct.length ≤ ctBound)
-    (hlinks : links ∈ (ProbComp.eval (E.encryptKeyLinks n keys)).support) :
-    links.length = keys.length - 1 ∧
-      ∀ link ∈ links, link.length ≤ width ∧ ∀ ct ∈ link, ct.length ≤ ctBound := by
-  rw [E.mem_support_encryptKeyLinks_iff] at hlinks
-  refine ⟨hlinks.length_eq, forall_mem_of_forall₂ hlinks fun ⟨prev, next⟩ hadj link hfresh => ?_⟩
-  have hprev : prev ∈ keys := (List.of_mem_zip hadj).1
-  have hnext : next ∈ keys := List.mem_of_mem_tail (List.of_mem_zip hadj).2
-  have hlen : link.length = prev.2.length := hfresh.length_eq.symm
-  refine ⟨hlen.trans_le (hkeys prev hprev).1,
-    forall_mem_of_forall₂ hfresh fun b _ ct hct_supp => (hkeys next hnext).2 b ct hct_supp⟩
-
-/-- Every link table in the support of `E.encryptZeroKeyLinks n keys` has length `keys.length - 1`
-and obeys the same width and ciphertext-length bounds. -/
-private theorem length_and_mem_of_mem_support_encryptZeroKeyLinks {E : Scheme}
-    {n width ctBound : ℕ}
-    {keys : List (List Bool × List Bool)} {links : List (List (List Bool))}
-    (hkeys : ∀ k ∈ keys, k.2.length ≤ width ∧
-      ∀ b ct, ct ∈ (ProbComp.eval (E.encrypt n k.1 b)).support → ct.length ≤ ctBound)
-    (hlinks : links ∈ (ProbComp.eval (E.encryptZeroKeyLinks n keys)).support) :
-    links.length = keys.length - 1 ∧
-      ∀ link ∈ links, link.length ≤ width ∧ ∀ ct ∈ link, ct.length ≤ ctBound := by
-  simp only [Scheme.encryptZeroKeyLinks, ProbComp.mem_support_mapM_iff,
-    Scheme.mem_support_encryptBits_iff] at hlinks
-  have hlen : links.length = keys.length - 1 := by
-    have h := hlinks.length_eq
-    simpa only [List.length_zip, List.length_tail, Nat.min_eq_right (Nat.sub_le _ _)] using h.symm
-  refine ⟨hlen, forall_mem_of_forall₂ hlinks fun ⟨prev, next⟩ hadj link hfresh => ?_⟩
-  have hprev : prev ∈ keys := (List.of_mem_zip hadj).1
-  have hnext : next ∈ keys := List.mem_of_mem_tail (List.of_mem_zip hadj).2
-  have hlink_len : link.length = prev.2.length := by
-    simpa using hfresh.length_eq.symm
-  refine ⟨hlink_len.trans_le (hkeys prev hprev).1,
-    forall_mem_of_forall₂ hfresh fun b _ ct hct_supp => (hkeys next hnext).2 b ct hct_supp⟩
-
 /-- Every public artifact in the support of `E.publicKeyChainHybrid n depth cut` has serialized
 bit length at most `publicKeyLengthBound depth width pkBound ctBound` whenever supported base keys
 and ciphertexts obey `(pkBound, width, ctBound)`. -/
@@ -1524,9 +1434,9 @@ theorem length_encPublicKey_support_publicKeyChainHybrid_le {E : Scheme}
       k.2.length ≤ width ∧
         ∀ b ct, ct ∈ (ProbComp.eval (E.encrypt n k.1 b)).support → ct.length ≤ ctBound :=
     ⟨(hkey k (hkeys_mem k hk)).2, henc k (hkeys_mem k hk)⟩
-  have hfront_info := length_and_mem_of_mem_support_encryptKeyLinks
+  have hfront_info := Scheme.length_and_mem_of_mem_support_encryptKeyLinks
     (fun k hk => hkeys_bound k (List.mem_of_mem_take hk)) hfront
-  have hback_info := length_and_mem_of_mem_support_encryptZeroKeyLinks
+  have hback_info := Scheme.length_and_mem_of_mem_support_encryptZeroKeyLinks
     (fun k hk => hkeys_bound k (List.mem_of_mem_drop hk)) hback
   apply length_encPublicKey_le depth width pkBound ctBound
   · simp [hkeys_len]
@@ -1614,12 +1524,13 @@ theorem polynomiallyBounded_leveledGuessCoinBudget
   unfold leveledGuessCoinBudget
   fun_prop
 
-/-- **Quantitative Gentry Theorem 4 runtime, artifact-length, and coin-budget overhead witness**
-([Gentry2009], Section 2, Theorem 4, p. 171):
+/-- Polynomial artifact-length, component replay and native-efficiency witnesses for the
+leveled reduction motivated by [Gentry2009], Section 2, Theorem 4, p. 171. These witnesses do not
+assert the source's multiplicative runtime comparison.
 Given uniform strict-PPT certificates for `E.keyGen`, `E.encrypt`, and `adversary`, and
 polynomial-time unary certificates for `budget` and `capacity`, there exist explicit polynomial
 bounds:
-* `pkBound n = c_kg * (n + 1) ^ d_kg` on base key lengths and coin count,
+* `pkBound n = c_kg * (n + 1) ^ d_kg` on base key lengths and key-generation coin count,
 * `ctBound n = c_enc * (2 * n + 2 * pkBound n + 5) ^ d_enc` on base ciphertext lengths and coin
   count,
 * `pubLen n = publicKeyLengthBound (2 * budget n) (capacity n) (pkBound n) (ctBound n)` on every
@@ -1628,16 +1539,19 @@ bounds:
   `advGuessBudget n = c_gu * (2 * n + 2 * advChooseBudget n + ctBound n + 4) ^ d_gu` on
   `adversary`'s own coin and output-state lengths at the leveled public-key and ciphertext sizes,
 such that:
-1. Every supported public artifact
+1. Key generation has native replay using `pkBound n` coins, and supported base keys obey the
+   stated public-key and secret-capacity bounds. Every bounded base public key has native
+   encryption replay using `ctBound n` coins, and every supported ciphertext fits that bound.
+2. Every supported public artifact
    `artifact ∈ (ProbComp.eval (E.publicKeyChainHybrid n (2 * budget n) cut)).support`
    has `(encPublicKey artifact).length ≤ pubLen n`.
-2. On every public key `pk'` of length at most `pubLen n`, `adversary.choose n pk'` is realized by a
+3. On every public key `pk'` of length at most `pubLen n`, `adversary.choose n pk'` is realized by a
    total polynomial-time seeded evaluator using `advChooseBudget n` fair coins and produces saved
    states of length at most `advChooseBudget n`.
-3. On every saved state of length at most `advChooseBudget n` and tagged ciphertext of length at
+4. On every saved state of length at most `advChooseBudget n` and tagged ciphertext of length at
    most `ctBound n + 1`, `adversary.guess n state ct'` is realized by a total polynomial-time seeded
    evaluator using `advGuessBudget n` fair coins.
-4. Both `leveledAdversary` and `modLeveledAdversary` are uniform strict PPT, and the composite
+5. Both `leveledAdversary` and `modLeveledAdversary` are uniform strict PPT, and the composite
    coin-tape budgets `leveledChooseCoinBudget` and `leveledGuessCoinBudget` are polynomially
    bounded in `n`. -/
 theorem exists_leveledAdversary_overhead {E : Scheme}
@@ -1651,6 +1565,8 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
     (hbudget : ComputableInPolyTime budget encUnary encUnary)
     (hcapacity : ComputableInPolyTime capacity encUnary encUnary) :
     ∃ (c_kg d_kg c_enc d_enc c_ch d_ch c_gu d_gu : ℕ)
+      (evalKey : ℕ → List Bool → List Bool × List Bool)
+      (evalEncrypt : ℕ × List Bool × Bool → List Bool → List Bool)
       (evalChoose : ℕ × List Bool → List Bool → (Bool × Bool) × List Bool)
       (evalGuess : ℕ × List Bool × List Bool → List Bool → Bool),
       let pkBound (n : ℕ) := c_kg * (n + 1) ^ d_kg
@@ -1660,11 +1576,23 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
       let advChooseBudget (n : ℕ) := c_ch * (2 * n + pubLen n + 2) ^ d_ch
       let advGuessBudget (n : ℕ) :=
         c_gu * (2 * n + 2 * advChooseBudget n + ctBound n + 4) ^ d_gu
+      ComputableInPolyTime (fun (n, coins) => evalKey n coins)
+        (encPair encUnary encBits) (encPair encBits encBits) ∧
+      ComputableInPolyTime (fun (x, coins) => evalEncrypt x coins)
+        (encPair (encPair encUnary (encPair encBits encBool)) encBits) encBits ∧
       ComputableInPolyTime (fun (x, coins) => evalChoose x coins)
         (encPair (encPair encUnary encBits) encBits)
         (encPair (encPair encBool encBool) encBits) ∧
       ComputableInPolyTime (fun (x, coins) => evalGuess x coins)
         (encPair (encPair encUnary (encPair encBits encBits)) encBits) encBool ∧
+      (∀ n, ProbComp.eval (E.keyGen n) =
+        (BitString.uniformList (pkBound n)).map (evalKey n)) ∧
+      (∀ n keys, keys ∈ (ProbComp.eval (E.keyGen n)).support →
+        keys.1.length ≤ pkBound n ∧ keys.2.length ≤ capacity n) ∧
+      (∀ n pk bit, pk.length ≤ pkBound n →
+        ProbComp.eval (E.encrypt n pk bit) =
+          (BitString.uniformList (ctBound n)).map (evalEncrypt (n, pk, bit)) ∧
+        ∀ ct ∈ (ProbComp.eval (E.encrypt n pk bit)).support, ct.length ≤ ctBound n) ∧
       (∀ n cut artifact,
         artifact ∈ (ProbComp.eval (E.publicKeyChainHybrid n (2 * budget n) cut)).support →
           (encPublicKey artifact).length ≤ pubLen n) ∧
@@ -1685,8 +1613,15 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
       (leveledAdversary E (fun n => 2 * budget n) capacity adversary).IsPPT ∧
       (modLeveledAdversary E (fun n => 2 * n) (fun n => 2 * budget n) capacity
         adversary).IsPPT := by
-  obtain ⟨c_kg, d_kg, _, hkg_len⟩ := Encryption.exists_keyLength_bound hkeyGen
-  obtain ⟨c_enc, d_enc, henc_len⟩ := hencrypt.length_le
+  obtain ⟨c_kg, d_kg, evalKey, hevalKey, _, hkey_law, hkey_len⟩ :=
+    hkeyGen.exists_total_seeded_evaluator_with_length
+  have hkg_len (n keys) (hkeys : keys ∈ (ProbComp.eval (E.keyGen n)).support) :
+      keys.1.length + keys.2.length ≤ c_kg * (n + 1) ^ d_kg := by
+    have hlen := hkey_len n keys hkeys
+    simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate] at hlen
+    omega
+  obtain ⟨c_enc, d_enc, evalEncrypt, hevalEncrypt, _, henc_law, henc_len⟩ :=
+    hencrypt.exists_total_seeded_evaluator_with_length
   obtain ⟨c_ch, d_ch, evalChoose, hevalChoose, _, hchoose_law, hchoose_len⟩ :=
     hadversary.choose.on.exists_total_seeded_evaluator_with_length
   obtain ⟨c_gu, d_gu, evalGuess, hevalGuess, _, hguess_law⟩ :=
@@ -1699,10 +1634,29 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
   let advGuessBudget (n : ℕ) :=
     c_gu * (2 * n + 2 * advChooseBudget n + ctBound n + 4) ^ d_gu
   have hdepth : ComputableInPolyTime (fun n => 2 * budget n) encUnary encUnary := by fun_prop
-  refine ⟨c_kg, d_kg, c_enc, d_enc, c_ch, d_ch, c_gu, d_gu, evalChoose, evalGuess,
-    hevalChoose, hevalGuess, ?_, ?_, ?_, ?_, ?_,
+  refine ⟨c_kg, d_kg, c_enc, d_enc, c_ch, d_ch, c_gu, d_gu, evalKey, evalEncrypt, evalChoose,
+    evalGuess, hevalKey, hevalEncrypt, hevalChoose, hevalGuess, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
     isPPT_leveledAdversary hencrypt hadversary hkeyGen hdepth hcapacity,
     isPPT_modLeveledAdversary_two_mul hkeyGen hencrypt hadversary hdepth hcapacity⟩
+  · intro n
+    exact hkey_law n (pkBound n) (by simp [pkBound, encUnary_apply])
+  · intro n keys hkeys
+    have hlen := hkg_len n keys hkeys
+    have hw := hwidth n keys hkeys
+    have hc := hcapacity_le n
+    exact ⟨by dsimp only [pkBound]; omega, by omega⟩
+  · intro n pk bit hpk
+    change pk.length ≤ pkBound n at hpk
+    have hin : (encPair encUnary (encPair encBits encBool) (n, pk, bit)).length + 1 ≤
+        2 * n + 2 * pkBound n + 5 := by
+      simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply,
+        encBool_apply, List.length_singleton]
+      omega
+    have hbound : c_enc *
+        ((encPair encUnary (encPair encBits encBool) (n, pk, bit)).length + 1) ^ d_enc ≤
+        ctBound n := Nat.mul_le_mul_left c_enc (Nat.pow_le_pow_left hin d_enc)
+    exact ⟨henc_law (n, pk, bit) (ctBound n) hbound,
+      fun ct hct => (henc_len (n, pk, bit) ct hct).trans hbound⟩
   · intro n cut artifact hart
     apply length_encPublicKey_support_publicKeyChainHybrid_le n (2 * budget n) cut (capacity n)
       (pkBound n) (ctBound n)

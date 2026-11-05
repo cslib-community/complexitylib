@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Renfei Zhou. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Renfei Zhou
+Authors: Renfei Zhou, Samuel Schlesinger
 -/
 
 module
@@ -9,14 +9,16 @@ module
 
 public import Complexity.Probability.PMF
 import Complexity.Probability.PMF.Uniform
+import Mathlib.Data.List.Dedup
 import Mathlib.Topology.Instances.ENNReal.Lemmas
 
 /-!
 # Natural-Number Sum and Filter-Cardinality Bounds for `PMF.uniformOfFintype`
 
-This module converts natural-number sum bounds `(∑ a : α, f a) ≤ C * Fintype.card α` and
-filter-cardinality bounds `B * #{a : α | P a} ≤ A * Fintype.card α` over a nonempty finite type `α`
-into `ℝ≥0∞` expectation and outer-measure bounds under `PMF.uniformOfFintype α`.
+This module converts natural-number sum bounds `(∑ a : α, f a) ≤ C * Fintype.card α`,
+filter-cardinality bounds `B * #{a : α | P a} ≤ A * Fintype.card α`, and target-list membership
+events `{a : α | a ∈ targets}` over a nonempty finite type `α` into `ℝ≥0∞` expectation and
+outer-measure bounds under `PMF.uniformOfFintype α`.
 
 ## Main results
 
@@ -26,6 +28,9 @@ into `ℝ≥0∞` expectation and outer-measure bounds under `PMF.uniformOfFinty
 * `Cslib.Probability.PMF.toOuterMeasure_uniformOfFintype_le_div`: converts
   `B * (Finset.univ.filter P).card ≤ A * Fintype.card α` into
   `(PMF.uniformOfFintype α).toOuterMeasure {a : α | P a} ≤ (A : ℝ≥0∞) / (B : ℝ≥0∞)`.
+* `Cslib.Probability.PMF.toOuterMeasure_uniformOfFintype_mem_list_le`: bounds
+  `(PMF.uniformOfFintype α).toOuterMeasure {a : α | a ∈ targets}` by
+  `(targets.length : ℝ≥0∞) * ((1 : ℝ≥0∞) / Fintype.card α)`.
 -/
 
 public section
@@ -76,5 +81,20 @@ theorem toOuterMeasure_uniformOfFintype_le_div {α : Type*} [Fintype α] [Nonemp
     _ ≤ ((A : ℝ≥0∞) * (Fintype.card α : ℝ≥0∞)) * (Fintype.card α : ℝ≥0∞)⁻¹ := by gcongr
     _ = (A : ℝ≥0∞) * ((Fintype.card α : ℝ≥0∞) * (Fintype.card α : ℝ≥0∞)⁻¹) := by ring
     _ = (A : ℝ≥0∞) := by rw [ENNReal.mul_inv_cancel hcard_ne_zero hcard_ne_top, mul_one]
+
+/-- **Target-hitting union bound for `PMF.uniformOfFintype`**: a uniformly sampled `a : α` lands in
+`targets` with probability at most `targets.length * (1 / Fintype.card α)`. -/
+theorem toOuterMeasure_uniformOfFintype_mem_list_le {α : Type*} [Fintype α] [Nonempty α]
+    (targets : List α) :
+    (PMF.uniformOfFintype α).toOuterMeasure {a | a ∈ targets} ≤
+      (targets.length : ℝ≥0∞) * ((1 : ℝ≥0∞) / Fintype.card α) := by
+  classical
+  rw [PMF.toOuterMeasure_uniformOfFintype, one_div]
+  gcongr
+  have hsub : Finset.univ.filter (· ∈ {a : α | a ∈ targets}) ⊆ targets.toFinset := by
+    intro a ha
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at ha
+    exact List.mem_toFinset.mpr ha
+  exact_mod_cast (Finset.card_le_card hsub).trans (List.toFinset_card_le targets)
 
 end Cslib.Probability.PMF

@@ -20,7 +20,7 @@ When statistical simulation is too strong or callers interact through game indis
 - **Statistical-to-computational bridge and Schnorr instance:** [SimulatorRealizedBy.advantage_chvzkGame_le](../../Complexity/Crypto/Protocols/SigmaProtocol/Computational.lean#L326) bounds Attack Game 20.4 advantage against *arbitrary* (even unbounded) adversaries via `Game.advantage_bind_le_of_closeTo` ([Game/CloseTo.lean](../../Complexity/Crypto/Game/CloseTo.lean#L130)), yielding [EfficientSpecialHVZK.exists_computationalSpecialHVZK](../../Complexity/Crypto/Protocols/SigmaProtocol/Computational.lean#L375) whenever `δ` is bounded along `setup` by a `Negligible` function and [SimulatorRealizedBy.computationalSpecialHVZK_of_accepts](../../Complexity/Crypto/Protocols/SigmaProtocol/Computational.lean#L347) when exact acceptance holds separately. In [SchnorrProtocol.lean](../../Complexity/Crypto/Computational/SchnorrProtocol.lean#L300), `PrimeOrderGroupFamily.computationalSpecialHVZK_schnorr` establishes `ComputationalSpecialHVZK` with exact zero acceptance error (`δ = fun _ => 0`) for any `setup : ℕ → PMF F.Desc`.
 - **Two-sided separations ([ComplexityTests/ComputationalSpecialHVZK.lean](../../ComplexityTests/ComputationalSpecialHVZK.lean)):** `not_computationalSpecialHVZK_sendWitness` proves that the perfectly `SpecialHVZK` protocol `sendWitnessFamily F` fails `ComputationalSpecialHVZK` under `F.DiscreteLog setup` for *every* `sim` and *every* `δ` (without invoking `accepts`), while `computationalSpecialHVZK_prgWitnessSigma` and `exists_computationalSpecialHVZK_and_not_specialHVZK` construct from any stretching `PseudorandomGenerator` (or uniform `OneWay` function) a complete Sigma protocol family satisfying `ComputationalSpecialHVZK` with `δ = fun _ => 0` that fails `SpecialHVZK`, `EfficientSpecialHVZK` for every `δ`, and even unbounded statistical HVZK below error `1 / 4`.
 
-Abort is observable in [Complexity/Crypto/Protocols/SigmaProtocol/Abort.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Protocols/SigmaProtocol/Abort.lean): accepted transcripts and conversations return `Option`, with `none` representing abort. `NonAbortSpecialHVZK` matches the entire law including abort mass. Nonabort completeness alone does not give a lower bound on success, an expected retry cost, or a strict-PPT rejection-sampling implementation; [SigmaProtocol/Lyubashevsky/Efficient.lean](../../Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Efficient.lean) supplies strict-PPT integer-box sampling (`sampleIntBox`, `sampleIntBoxVec`, `sampleIntBoxList`) with statistical distance at most `m * ((2 * B + 1) / 2 ^ width)` from `intBox (Fin m) B`, realizing `lyubashevskySimulate` under `EfficientNonAbortSpecialHVZK`. [SigmaProtocol/Lyubashevsky/Signature.lean](../../Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Signature.lean) adds the Fiat–Shamir-with-aborts signing and verification layer (`FiatShamirWithAborts`, `fsAbortSignAttempt`, `fsAbortSignBounded`, `fsAbortVerify`, and their Lyubashevsky specializations), proving completeness of non-aborting single and bounded `K`-attempt runs (`fsAbortVerify_of_fsAbortSignAttempt_eq_some`, `fsAbortVerify_of_fsAbortSignBounded_eq_some`), the exact `K`-retry abort law `(p_abort) ^ K` (`fsAbortSignBounded_apply_none`), direct-attack identification security for `lyubashevsky` against the relaxed `[A | T]` SIS relation (`lyubashevsky_succProbability_directAttack_le`), and the witness-invariance collision reduction (`isSISSolution_sub_smul_secret`, `extractSISFromRelaxedWitness`, `extractSISFromTwoTranscripts`, `lyubashevskyForkToSIS`, `lyubashevskySignatureForkToSIS`) that folds an extracted `[A | T]` kernel vector into a homogeneous `SIS.IsSolution` for `A` whenever the extracted response difference differs from the honest secret key's shift (exercised in [ComplexityTests/Crypto/LyubashevskySignature.lean](../../ComplexityTests/Crypto/LyubashevskySignature.lean)). Full random-oracle EUF-CMA game-hop bounds for aborting signers and strict-PPT computational reductions to `SIS` remain separate open obligations.
+Abort is observable in [Complexity/Crypto/Protocols/SigmaProtocol/Abort.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Protocols/SigmaProtocol/Abort.lean): accepted transcripts and conversations return `Option`, with `none` representing abort. `NonAbortSpecialHVZK` matches the accepted-transcript law including abort mass. Its `none` erases the commitment, so this does not simulate the full view of aborted signing queries. Nonabort completeness alone does not give a lower bound on success, an expected retry cost, or a strict-PPT rejection-sampling implementation; [SigmaProtocol/Lyubashevsky/Efficient.lean](../../Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Efficient.lean) supplies strict-PPT integer-box sampling (`sampleIntBox`, `sampleIntBoxVec`, `sampleIntBoxList`) with statistical distance at most `m * ((2 * B + 1) / 2 ^ width)` from `intBox (Fin m) B`, realizing `lyubashevskySimulate` under `EfficientNonAbortSpecialHVZK`. [SigmaProtocol/Lyubashevsky/Signature.lean](../../Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Signature.lean) adds the Fiat–Shamir-with-aborts signing and verification layer (`FiatShamirWithAborts`, `fsAbortSignAttempt`, `fsAbortSignBounded`, `fsAbortVerify`, and their Lyubashevsky specializations), proving completeness of non-aborting single and bounded `K`-attempt runs (`fsAbortVerify_of_fsAbortSignAttempt_eq_some`, `fsAbortVerify_of_fsAbortSignBounded_eq_some`), the exact `K`-retry abort law `(p_abort) ^ K` (`fsAbortSignBounded_apply_none`), direct-attack identification security for `lyubashevsky` against the relaxed `[A | T]` SIS relation (`lyubashevsky_succProbability_directAttack_le`), and the witness-invariance collision reduction (`isSISSolution_sub_smul_secret`, `extractSISFromRelaxedWitness`, `extractSISFromTwoTranscripts`, `lyubashevskyForkToSIS`, `lyubashevskySignatureForkToSIS`) that folds an extracted `[A | T]` kernel vector into a homogeneous `SIS.IsSolution` for `A` whenever the extracted response difference differs from the honest secret key's shift (exercised in [ComplexityTests/Crypto/LyubashevskySignature.lean](../../ComplexityTests/Crypto/LyubashevskySignature.lean)). Full random-oracle EUF-CMA game-hop bounds for aborting signers and strict-PPT computational reductions to `SIS` remain separate open obligations.
 
 For the generic fixed-hash abort-signing API, import [SigmaProtocol/Abort/FiatShamir.lean](../../Complexity/Crypto/Protocols/SigmaProtocol/Abort/FiatShamir.lean). It provides `fsAbortSignStep`, `fsAbortSignAttempt`, `fsAbortSignBounded`, verification and their generic laws without importing the lattice application. The existing `Lyubashevsky.Signature` import publicly reexports these declarations with unchanged names.
 
@@ -33,6 +33,14 @@ For an explicit schedule with negligible signing failure, import [Lyubashevsky/S
 
 The new [hash-uniform abort bound](../../Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Signature/Failure.lean), `lyubashevskySignAttempt_none_le`, holds for every deterministic hash, including one that chooses its challenge from the commitment: if `2β ≤ γ`, `kη ≤ β` and the secret entries are bounded by `η`, exact single-attempt failure is at most `4mβ/(2γ+1)`. Under the schedule above this is at most one half. `lyubashevskySigningParams_failure_le` bounds actual native failure by `2^−(λ+1) + (λ+1)^2 * (8(λ+1)^2+1) / 2^λ`; `negligible_lyubashevskySigningParams_failure` proves it negligible for arbitrary bounded-secret, public-matrix and message sequences. The probability guarantee does not require short messages; the runtime theorem charges their actual lengths. [Checked examples](../../ComplexityTests/Crypto/LyubashevskySigningParameters.lean) include a commitment-dependent hash, nonzero bounded secrets, certainty of native failure at `λ=0`, and an upper bound below one percent at `λ=32`. This schedule demonstrates efficient availability, not SIS hardness or EUF-CMA security.
 
+To discharge the nonzero-vector condition for a public-key-only fork, import [Lyubashevsky/Signature/Extraction.lean](../../Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Signature/Extraction.lean). Fix any `A` over `ZMod q` with `q ≠ 0`, draw the `k` secret columns independently and uniformly from `[-η,η]^m`, and let an arbitrary randomized kernel receive only `T = A*S` (with `A` fixed). `lyubashevsky_predict_difference_le` bounds the probability of distinct binary challenges satisfying `z-z' = S*(ĉ-ĉ')` by `k*q^n/(2η+1)^m`. The proof counts secret columns after their public images are revealed; it assumes neither entropy nor a simulator conclusion. The shared finite-leakage lemmas live in [Probability/Guessing/Leakage.lean](../../Complexity/Probability/Guessing/Leakage.lean).
+
+`lyubashevsky_fork_success_le_sis_add` then bounds the probability of two accepting responses at the same commitment and distinct challenges by the probability that the actual integer vector `z-z'-S*(ĉ-ĉ')` solves homogeneous SIS for `A`, with norm bound `2*(γ-β)+k*η`, plus this loss. Both probabilities use the same sampled-secret experiment. Its extraction uses `S`; the theorem alone is not an `A`-only native SIS reduction. [Checked clients](../../ComplexityTests/Crypto/LyubashevskyExtraction.lean) include a nonzero `1×8` matrix modulo 17 and a kernel that accepts with probability one and yields positive SIS success, empty challenges, and zero-radius secrets whose response differences can be predicted with certainty. Applying this bound to a real signature fork still requires proving the public-key-only distribution property while accounting for all aborted hash queries, and then providing efficient replay. Full random-oracle EUF-CMA remains open.
+
+To compare two bounded secrets for the same public key, import [Lyubashevsky/Signature/View.lean](../../Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Signature/View.lean). Under `k*η ≤ β ≤ γ` and `lyubashevskyRelation η` for both secrets, `lyubashevsky_transcript_eq` proves equality of the actual `(commitment, optional response)` law, including each aborted commitment. The proof combines the existing accepted-transcript equality with the actual secret-independent commitment marginal; [PMF/Option.lean](../../Complexity/Probability/PMF/Option.lean) supplies the finite-mass cancellation. `lyubashevsky_attempt_view_eq` extends this to any common deterministic challenge function `c(w)` of the commitment. It does not allow that function to inspect the secret.
+
+`lyubashevsky_sign_attempts_view_eq` compares histories of `K` independent exact attempts, retaining every hash input, challenge and optional response. These histories evaluate all `K` attempts. `lyubashevskySignBounded_eq_attempts_view` projects their first success to the existing bounded signer, and `lyubashevskySignBounded_witness_eq` proves equality of its output laws. [Checked examples](../../ComplexityTests/Crypto/LyubashevskyView.lean) use distinct bounded secrets for one nonzero public matrix, a commitment-dependent challenge, a nonzero aborted commitment with positive probability, and a successful response with positive probability. These are single-execution distribution equalities. An efficient secret-free simulator, adaptive shared-oracle cache simulation, and equality of paired forks using the same private coins still require separate proofs.
+
 Identification and Fiat–Shamir add adversarial interaction to this same transcript model. Their security is not merely the existence of a mathematical witness extractor: the computational instances require an encoded efficient extractor, and finite quantitative transformations explicitly track replay and calls. For Schnorr identification over a `PrimeOrderGroupFamily`, [`SchnorrIdentification.lean`](../../Complexity/Crypto/Computational/SchnorrIdentification.lean) formalizes the direct impersonation game (`schnorrDirectGame`) and the rewinding discrete-logarithm extractor (`SchnorrImpersonator.rewind`, `succProbability_schnorrDirectGame_le`, `negligible_schnorrDirectGame`), while [`SchnorrEavesdrop.lean`](../../Complexity/Crypto/Computational/SchnorrEavesdrop.lean) adds eavesdropping security (`SchnorrEavesdropAdversary`, `schnorrEavesdropGame`, `schnorrIdealEavesdropGame`, `IsEavesdropSecure`, `IsIdealEavesdropSecure`; [bs23][bs23], Attack Game 18.2 and Theorems 19.3 and 19.5): because strict-PPT exponent sampling `sampleExp n d` (`ProbComp.sampleModNat`) has statistical distance at most `1 / 2 ^ n` from uniform on `ZMod q`, `Q n` simulated conversations (`schnorrSimulatedTranscript`) are within statistical distance `Q n / 2 ^ n` of ideal honest conversations (`schnorrHonestTranscript`) and within `2 * Q n / 2 ^ n` of strict-PPT honest conversations (`schnorrRealTranscript`), reducing any uniform strict-PPT eavesdropper via `SchnorrEavesdropAdversary.toDirect` to `schnorrDirectGame` and hence to `DiscreteLog` (`succProbability_schnorrEavesdropGame_le`, `negligible_schnorrEavesdropGame`, `schnorr_isEavesdropSecure_of_discreteLogHard`; checked on the order-`11` Schnorr group in `(ZMod 23)ˣ` in [`ComplexityTests/Crypto/SchnorrDiscreteLog.lean`](../../ComplexityTests/Crypto/SchnorrDiscreteLog.lean)).
 
 ## VOLE ideal functionality, IT-MACs, and VOLE-in-the-head
@@ -40,10 +48,12 @@ Identification and Fiat–Shamir add adversarial interaction to this same transc
 Import `Complexity.Crypto.Protocols.VOLE.Basic` ([VOLE/Basic.lean](../../Complexity/Crypto/Protocols/VOLE/Basic.lean)) for Vector Oblivious Linear Evaluation (VOLE) correlations, information-theoretic MACs (IT-MACs), and the linear VOLE-in-the-head Sigma protocol ([BoyleCGIKS2019]; [BaumBMRS2023]):
 
 - **Ideal VOLE correlation ([VOLECorrelation](../../Complexity/Crypto/Protocols/VOLE/Basic.lean#L110), [voleSample](../../Complexity/Crypto/Protocols/VOLE/Basic.lean#L147), [voleIdealDist](../../Complexity/Crypto/Protocols/VOLE/Basic.lean#L175)):** over a commutative ring `R` and vector length `n`, the sender holds `(u, v) : (Fin n → R) × (Fin n → R)` and the receiver holds a global scalar key `delta : R` and tag vector `w : Fin n → R` satisfying `VOLECorrelation.Valid : ∀ i, w i = u i * delta + v i`. `voleIdealDist R n` samples `u, v` and `delta` uniformly and independently, with support characterized by `mem_support_voleIdealDist_iff` (`valid_of_mem_support_voleIdealDist`).
-- **Linear homomorphism and witness commitment ([VOLECorrelation.Valid.add](../../Complexity/Crypto/Protocols/VOLE/Basic.lean#L241), [VOLECorrelation.Valid.linearComb](../../Complexity/Crypto/Protocols/VOLE/Basic.lean#L263), [voleCommitWitness](../../Complexity/Crypto/Protocols/VOLE/Basic.lean#L279), [voleAdjustReceiver](../../Complexity/Crypto/Protocols/VOLE/Basic.lean#L284)):** IT-MACs are closed under componentwise addition (`add`), public scalar multiplication (`smul`), public constant shifts (`addConst`), and public linear combinations (`Valid.linearComb`). Committing to a witness `x : Fin n → R` via the correction message `voleCommitWitness x u = x - u` and receiver tag update `voleAdjustReceiver w d delta` yields valid tags for `x` (`voleAdjustReceiver_voleCommitWitness`) while `voleCommitWitness_uniform` and `voleCommitWitness_indep` establish perfect hiding under a uniform VOLE mask `u`.
+- **Linear homomorphism and witness commitment ([VOLECorrelation.Valid.add](../../Complexity/Crypto/Protocols/VOLE/Basic.lean#L241), [VOLECorrelation.Valid.linearComb](../../Complexity/Crypto/Protocols/VOLE/Basic.lean#L263), [voleCommitWitness](../../Complexity/Crypto/Protocols/VOLE/Basic.lean#L279), [voleAdjustReceiver](../../Complexity/Crypto/Protocols/VOLE/Basic.lean#L284)):** IT-MACs are closed under componentwise addition (`add`), public scalar multiplication (`smul`), public constant shifts (`addConst`), and public linear combinations (`Valid.linearComb`). Committing to a witness `x : Fin n → R` via the correction message `voleCommitWitness x u = x - u` and receiver tag update `voleAdjustReceiver w d delta` yields valid tags for `x` (`voleAdjustReceiver_voleCommitWitness`) while `voleCommitWitness_uniform` and `voleCommitWitness_indep` establish uniformity and witness-independence of the correction-message marginal under a uniform VOLE mask `u`.
 - **IT-MAC unforgeability and degree-2 multiplication check ([voleOpen_unique_delta_of_ne](../../Complexity/Crypto/Protocols/VOLE/Basic.lean#L361), [toOuterMeasure_voleVerifyOpening_le](../../Complexity/Crypto/Protocols/VOLE/Basic.lean#L406), [voleMulCheck](../../Complexity/Crypto/Protocols/VOLE/Basic.lean#L457)):** over a field `F`, any forged opening `x' ≠ x` satisfies `voleVerifyOpening` for at most one global key `delta = (v' i - v i) / (x i - x' i)` (`card_filter_voleVerifyOpening_le_one`), bounding the cheating acceptance probability under uniform `delta` by `(Fintype.card F)⁻¹`. For authenticated wires `w_x, w_y, w_z`, `voleMulCheck_sub_eq` decomposes `w_x * w_y - w_z * delta` into `(x * y - z) * delta ^ 2` plus the affine-linear check `voleMulCrossTerm x v_x y v_y v_z * delta + voleMulConstTerm v_x v_y`, which holds iff `x * y = z` at any `delta ≠ 0` (`voleMulCheck_iff_of_ne_zero`).
 - **Dishonest multiplication claims:** import `Complexity.Crypto.Protocols.VOLE.MulCheck` ([MulCheck.lean](../../Complexity/Crypto/Protocols/VOLE/MulCheck.lean)) when the sender may claim arbitrary affine coefficients `a`, `b`. Apply `toOuterMeasure_voleMulCheck_le` to a false gate `x * y ≠ z`: the check `(x * delta + v_x) * (y * delta + v_y) - (z * delta + v_z) * delta = a * delta + b` holds with probability at most `2 / |F|` under a uniform secret key. For a randomized sender, use `toOuterMeasure_voleMulCheck_bind_le` with its `PMF S` state distribution and eight functions supplying values, masks, and coefficients. The experiment samples the state before an independent key; it does not allow the claim to depend on the receiver's key or tags. The bad event includes the false gate, so the sender distribution needs no support hypothesis. This is a single-constraint information-theoretic bound, not full VOLE-based ZK or VOLE-in-the-head security, and gives no runtime certificate. The bound is sharp over `ZMod 5`; over `ZMod 2` a false claim can pass for every key. See the complete honest, sharp, randomized-sender, and key-dependence examples in [VOLEMulCheck.lean](../../ComplexityTests/Crypto/VOLEMulCheck.lean). From the repository root, check them with `scripts/build.sh ComplexityTests.Crypto.VOLEMulCheck`; successful completion confirms the examples elaborate.
 - **Batched multiplication claims:** import `Complexity.Crypto.Protocols.VOLE.BatchMulCheck` ([BatchMulCheck.lean](../../Complexity/Crypto/Protocols/VOLE/BatchMulCheck.lean)). `voleMulCheck_sum` gives honest completeness for every weight vector and key. For a fixed false batch, `toOuterMeasure_voleMulCheck_batch_le` allows the sender's randomized affine reply to depend on a public uniformly sampled vector of weights. The key remains independent and hidden. The bound is `1 / |F| + (1 - 1 / |F|) * (2 / |F|)`: the first term is cancellation of the nonzero residual vector; otherwise at most two keys accept. `toOuterMeasure_voleMulCheck_batch_bind_le` also samples arbitrary sender state before the weights, with a false constraint included in the bad event. Its `..._three_div` corollary gives `3 / |F|`. The challenge contains one independent field element per constraint and the reply two; these statements are ideal algebraic bounds, not the scalar-challenge QuickSilver protocol, ZK, VOLE-in-the-head security or runtime certificates. An empty batch has no false-constraint event, while over `ZMod 2` the sharp bound is one. The [checked examples](../../ComplexityTests/Crypto/VOLEBatchMulCheck.lean) include deterministic cancellation, exact `13 / 25` acceptance for an adaptive two-gate claim over `ZMod 5`, and randomized state and replies. From the repository root, run `scripts/build.sh ComplexityTests.Crypto.VOLEBatchMulCheck`; a successful build checks those examples. The earlier key-dependent counterexample in [VOLEMulCheck.lean](../../ComplexityTests/Crypto/VOLEMulCheck.lean) still explains why revealing the receiver key before the reply is outside the model.
+- **Full honest receiver-view simulation:** import `Complexity.Crypto.Protocols.VOLE.MaskedMulCheck` ([MaskedMulCheck.lean](../../Complexity/Crypto/Protocols/VOLE/MaskedMulCheck.lean)). `maskedMulCheck left right output` is an actual three-round `Reduction` for public gate-index maps into a witness vector. The [cached `voleWorld`](../../Complexity/Crypto/Protocols/VOLE/World.lean) samples one ideal correlation of length `n + 1`; separate oracle interfaces give the sender only its two vectors and the receiver only its key and tags. The final coordinate is a fresh affine mask. The prover sends all `n` corrections, receives one independent public weight per gate, then sends the two blinded coefficients. `maskedMulCheck_complete` proves completeness in this world. For every satisfying wire assignment, `maskedMulCheckView_eq_simulate` equates the complete receiver view—private key and raw tags, corrections, weights and reply—with the witness-free `maskedMulCheckSimulate`. The simulator samples a uniform key, tags, corrections, weights and slope, then solves the verification equation for the constant coefficient. `maskedMulCheckView_closeTo_simulate` gives zero-error closeness. The honest-view law works over finite commutative rings, including zero keys; it does not strengthen the preceding field-dependent soundness bounds. This adapts the fresh-mask step of [FAEST v1.0, §2.3.2, pp.12–13](https://faest.info/faest-spec-v1.0.pdf) to full-field wires and vector weights. It covers one honest execution with a fresh mask, not mask reuse, malicious-verifier ZK, scalar-challenge QuickSilver, VOLE-in-the-head security or certified efficiency. Run `scripts/build.sh ComplexityTests.Crypto.VOLEMaskedMulCheck` to check [clients](../../ComplexityTests/Crypto/VOLEMaskedMulCheck.lean) covering shared wires, distinct true witnesses, false-witness failure, an unblinded distinguisher, cache stability, zero keys, F2 and empty batches.
+- **Adaptive receiver views in the ideal world:** import `Complexity.Crypto.Protocols.VOLE.AdaptiveMulCheck` ([source](../../Complexity/Crypto/Protocols/VOLE/AdaptiveMulCheck.lean)). `maskedMulCheckReceiverView_eq_simulate` permits any role-local `ProbOracleComp` program returning a `VerifierStrategy`, with arbitrary auxiliary input fixed before fresh setup. The receiver may read its private key/tags, sample coins, choose vector weights from those values and the corrections, and retain a continuation that processes the reply and queries the same cache again. The actual `World`/`runAgainst` view includes the receiver share, full transcript and arbitrary returned view. `maskedMulCheckReceiverSimulate` runs the same initialization and captured continuations; it samples uniform corrections before the receiver chooses weights, then a uniform slope and the corresponding constant coefficient. The proof first reparametrizes setup before the adaptive challenge, leaving the fresh mask independent of the visible prefix. `voleWorld_cached_run` preserves the full cache and client outputs through arbitrary randomized queries. The law holds for satisfying witnesses over finite commutative rings. It covers one fixed correction/challenge/reply schedule with trusted uniform setup and a fresh mask; it does not certify runtime, adversarial setup, resets, concurrent sessions, early-abort schedules, mask reuse or full VOLE-in-the-head security. The [checked clients](../../ComplexityTests/Crypto/VOLEAdaptiveMulCheck.lean) exercise private-key/tag/correction-dependent weights, a retained private coin with zero/adaptive branches and post-reply queries, F2, zero-divisor rings, empty gates, and an actual false-witness distribution inequality. From the repository root, run `scripts/build.sh ComplexityTests.Crypto.VOLEAdaptiveMulCheck`; success checks these clients and the earlier unmasked negative example. This is an original semantic extension of the preceding FAEST masking adaptation, with no new ZK predicate.
 - **Linear VOLE-in-the-head (`SigmaProtocol`):** [voleInTheHeadSigma](../../Complexity/Crypto/Protocols/VOLE/Basic.lean#L499) packages the three-move protocol in which the prover commits to the aggregate MAC mask `t = ψ y v`, receives the verifier challenge `c` (determining `Δ = ι c`), and responds with the in-the-head VOLE receiver tags `(voleSample x v (ι c)).w`, with `voleInTheHeadSigma_complete`, `voleInTheHeadSigma_specialSoundness` (for prime `q`), and `voleInTheHeadSigma_specialHVZK`. Active two-party VOLE generation and multi-gate circuit compilation remain outside this module; checked finite-field examples are in [ComplexityTests/Crypto/VOLE.lean](../../ComplexityTests/Crypto/VOLE.lean).
 
 ## Kilian: honest payload and verifier input accounting
@@ -156,11 +166,81 @@ into a non-interactive proof (`BCSProof r Sym`, `bcsProve`, `bcsVerify`):
   `iopExtract`, `bcs_knowledge_or_soundness_violation_or_collision` and
   `bcs_knowledge_or_merkleCollision` reduce an accepting BCS proof to a valid
   extracted witness `rel x (iopExtract x oracles)`, an IOP knowledge-soundness
-  violation at the Fiat–Shamir challenge, or an explicit `H k` collision. These
-  are deterministic algebraic reductions for fixed `H k` and `hFS`; composing
-  them with random-oracle query-trace extraction and `OracleComp` probability
-  bounds is separate. Checked examples are in
+  violation at the Fiat–Shamir challenge, or an explicit `H k` collision. Checked
+  examples for these deterministic algebraic reductions are in
   [`ComplexityTests/Crypto/BCSTransform.lean`](../../ComplexityTests/Crypto/BCSTransform.lean).
+
+For unconditional random-oracle soundness and straight-line knowledge extraction, import
+`Complexity.Crypto.Protocols.BCS.ROM` ([`BCS/ROM.lean`](../../Complexity/Crypto/Protocols/BCS/ROM.lean)),
+which lifts the multi-round BCS transform to an explicit two-channel random-oracle model
+([bcs16][bcs16]; compare Chiesa–Yogev Construction 25.1.1, Remark 25.1.3, and Theorem 25.2.1,
+March 25, 2026 version, pp. 274–278, Theorem 26.1.1 and Construction 26.1.3, pp. 288–289, Chapter
+31 Definitions 31.1.1–31.1.2, Definition 31.1.6, Theorem 31.2.1, and Theorem 31.3.1, and Merkle
+trace extraction from Construction 18.5.3 and Lemma 18.5.7, pp. 199 and 207):
+
+- **Two-channel BCS random-oracle execution and completeness:** over
+  `BCSROMSpec Stmt Chal := MerkleHashSpec ⊕ₒ BCSFSSpec Stmt Chal` (reusing `MerkleHashSpec`,
+  `merkleRootProg`, `merklePathProg`, and `merkleVerifyProg` from
+  [`Kilian/Micali.lean`](../../Complexity/Crypto/Computational/Kilian/Micali.lean)), the left
+  channel (`Sum.inl`) answers Merkle queries lazily with `BitString.uniformList σ` and the right
+  channel (`Sum.inr`) answers transcript-chained Fiat–Shamir queries
+  `BCSFSQuery Stmt Chal := Stmt × List (List Bool) × List Chal` lazily with
+  `PMF.uniformOfFintype Chal`, querying `(x, rootPrefix roots j, [c_0, ..., c_{j-1}]) ↦ c_j` in
+  round `j`. Under any deterministic pair `(hTree, f)`, `evalPure_bcsProveROM` and
+  `evalPure_bcsVerifyROM` identify `bcsProveROM` and `bcsVerifyROM` with `bcsProve` and `bcsVerify`
+  instantiated with `chainedFS f`, giving perfect completeness in the lazy two-channel ROM
+  (`bcsHonestROMGame_eq_pure_true`).
+- **Straight-line multi-round oracle reconstruction:** given `Function.LeftInverse decSym encSym`
+  and `defaultSym : Sym`, `bcsExtractTable`, `bcsExtractOracles`, and `bcsExtractWitness`
+  reconstruct all `r` committed round tables and a candidate witness directly from a Merkle trace
+  `tr_MT` via `extractLeafFromTrace` without rewinding. Under `TraceCollisionFree tr_MT` and
+  `BCSOpeningsQueriedInTrace`, `iopVerify_bcsExtractOracles_of_bcsVerify` proves that `iopVerify`
+  accepts `bcsExtractOracles`, `exists_collision_of_bcsVerify_of_iopVerify_eq_false` extracts a
+  trace collision whenever `iopVerify` rejects, and `bcsExtractTable_cons_of_ne` /
+  `bcsExtractOracles_cons_of_ne` prove invariance under fresh Merkle answers that avoid target roots
+  and child digests.
+- **Adaptive two-channel ROM soundness:** under `IOPRoundByRoundSoundness iop lang doomed goodStep`
+  with per-round challenge escape probability `≤ ε_rbr`, `BCSGoodState` combines
+  `TraceCollisionFree tr_MT` with `BCSChainDoomed` across recorded Fiat–Shamir chains of length
+  `≤ r`. Truncating each Fiat–Shamir entry via `List.take r` in `bcsForbiddenDigests` bounds the
+  forbidden Merkle digest list by `3 * |tr_MT| + r * |tr_FS|` regardless of adversarial Fiat–Shamir
+  root-list sizes, while `fsOutOfOrderTargets` bounds out-of-order Fiat–Shamir chain guessing by
+  `|tr_FS| * (1 / Fintype.card Chal)` per query. Generalizing two-channel until-bad accumulation to
+  growing budgets on both channels via
+  [`OracleComp.toOuterMeasure_bad_le_two_budgets`](../../Complexity/Languages/Probabilistic/UntilBad/TwoCost.lean),
+  `bcsROMSoundness_bound` and `bcsROMSoundness_bound_of_prover_verifier` bound `bcsSoundnessGame` by
+  `(t_FS + r) * (ε_rbr + (t_FS + r) * (1 / Fintype.card Chal)) + Q_MT * ((3 * Q_MT + r * (t_FS + r)) * (1 / 2 ^ σ))`.
+- **Adaptive straight-line ROM knowledge soundness:** `IOPRoundByRoundKnowledgeSoundness` captures
+  round-by-round straight-line IOP extraction (and implies `IOPRoundByRoundSoundness` for
+  `{x | ∃ w, rel x w}` via `IOPRoundByRoundKnowledgeSoundness.toRoundByRoundSoundness`). In
+  `bcsKnowledgeSoundnessGame`, the extractor reconstructs `bcsExtractWitness` from the prover's own
+  Merkle trace `tr_P` *before* running `bcsVerifyROM`, with zero rewinding; `bcsROMKnowledgeSoundness_bound`
+  and `bcsROMKnowledgeSoundness_bound_of_prover_verifier` (together with the combined-trace variant
+  `bcsROMKnowledgeSoundness_trace_bound`) establish the same explicit two-channel error bound. As in
+  `MicaliSoundness.lean`, the separate-budget corollaries require verifier Merkle bounds only for
+  `(x, prf) ∈ P.support` (discharged via `isCostBounded_bcsMTCost_bcsVerifyROM_of_queries_le`).
+  Concrete two-round examples, including an adaptive prover with out-of-order and oversized
+  Fiat–Shamir queries, are in [`ComplexityTests/Crypto/BCSROM.lean`](../../ComplexityTests/Crypto/BCSROM.lean).
+
+In Chiesa–Yogev Construction 25.1.1 (pp. 274–275; see also Remark 25.1.3 on root-prefix vs.
+hash-chain Fiat–Shamir queries), the BCS protocol already uses `2 * r` separate domain-separated
+per-round Merkle and Fiat–Shamir random oracles (with zero-knowledge salt parameters `s_MT`,
+`s_FS`), while [bcs16][bcs16] and Chiesa–Yogev Theorems 25.2.1 and 26.1.1 formulate ROM soundness
+and straight-line knowledge soundness via IOP state-restoration hypotheses (reduced to
+round-by-round soundness and knowledge soundness in Chapter 31, Definitions 31.1.1–31.1.2,
+Definition 31.1.6, and Theorems 31.2.1 and 31.3.1) with a state-restoration plus multi-extractor
+error expression. Here (`s_MT = s_FS = 0`), `BCSROMSpec` models oracle separation via two unindexed
+typed channels (one shared Merkle hash channel with `encPair` node framing, and one
+transcript-chained Fiat–Shamir channel) and derives the explicit additive loss above directly from
+round-by-round escape hypotheses (`IOPRoundByRoundSoundness`, `IOPRoundByRoundKnowledgeSoundness`,
+whose deterministic `extract_of_doomed` on complete `doomed` transcripts is stronger than
+Definition 31.1.6's two-phase per-round experiment) and two-channel query budgets (`bcsMTCost`,
+`bcsFSCost`), counting all oracle queries including malformed opening paths. Straight-line
+extraction (`bcsExtractWitness` on the prover's pre-verifier Merkle trace `tr_P`; compare
+Construction 26.1.3) and the soundness games establish exact `OracleComp` probability bounds without
+machine-level (`IsPPT` / native Turing-machine) verifier or multi-extractor runtime certificates
+(compare Chiesa–Yogev Remark 18.5.8), digest truncation accounting, NP-witness-to-IOP encoding
+runtime, or zero-knowledge simulation.
 
 ## Shared random oracles and ideal permutations
 
@@ -218,8 +298,13 @@ reduction. Applying the strict-PPT discrete-logarithm assumption still requires 
 realization of that reduction, with encoded adaptive signing/hash access and final-message
 freshness. The private-coin prerequisite is supplied by `IsOraclePPTOn.exists_savedCoins` in
 [`Oracle/Replay.lean`](../../Complexity/Computability/Probabilistic/Oracle/Replay.lean), which charges
-full-input replay and retains external state; connecting it to the signature ROM reduction remains
-open. See the checked algorithms and typed-ROM examples in
+full-input replay and retains external state.
+[`Signature/WordRandomOracle.lean`](../../Complexity/Crypto/Computational/Signature/WordRandomOracle.lean)
+also gives a key-independent saved-coin adapter for actual Boolean-channel word forgers, with
+full-input native replay and equality of the existing shared-world and EUF-CMA games. All word
+hash payloads stay distinct. Applying that adapter to Schnorr's concrete query encoding, realizing
+the signer/hash handlers, and certifying the complete forking reduction remain open. See the
+checked algorithms and typed-ROM examples in
 [`ComplexityTests/Crypto/SchnorrSignature.lean`](../../ComplexityTests/Crypto/SchnorrSignature.lean).
 
 [`SchnorrSignature/NativeROM.lean`](../../Complexity/Crypto/Computational/SchnorrSignature/NativeROM.lean)
@@ -271,6 +356,44 @@ Signature EUF-CMA instead gives adaptive signing and hash access, uses the same 
 answer at verification, and rejects a final message previously signed. Discarding a message field
 from an identification adversary does not supply this signature reduction.
 
+[`Complexity/Crypto/Protocols/SigmaProtocol/FiatShamirNIZK.lean`](../../Complexity/Crypto/Protocols/SigmaProtocol/FiatShamirNIZK.lean)
+compiles a public-coin `SigmaProtocol X Y T C Z` into a non-interactive proof system
+(`fiatShamirNIZKProve`, `fiatShamirNIZKVerify`) over the statement-bound random-oracle specification
+`NIZKHashSpec Y T C := fun _ : Y × T => C` ([bs23][bs23], Sections 20.3.3–20.3.5):
+
+- **Completeness and statement binding (`Section 20.3.3`):** `fiatShamirNIZK_complete` proves
+  acceptance with probability `1` (`= PMF.pure true`) from any initial lazy random-oracle cache when
+  `R x y` holds. Querying `H` on `(y, t)` rather than `t` alone is required when statements can be
+  chosen adaptively after querying `H`; a concrete `ZMod 5 × ZMod 5` Schnorr counterexample in
+  [`ComplexityTests/Crypto/FiatShamirNIZK.lean`](../../ComplexityTests/Crypto/FiatShamirNIZK.lean)
+  forges accepted proofs of false statements with probability `4 / 5` under `H(t)` (`Qro = 1`),
+  versus the `2 / 5` cap enforced by `H(y, t)`.
+- **Adaptive multi-theorem zero knowledge (`fiatShamirNIZKRealGame`, `fiatShamirNIZKSimGame`; Attack
+  Game 20.3 and Theorem 20.3 / Equation (20.9)):** over `NIZKDistinguisherSpec` (`.inl (x, y)` for
+  proving, `.inr (y, t)` for hashing) with an explicit checker `valid : X → Y → Bool`, invalid
+  queries (`valid x y = false`) return `none` identically without modifying the cache, while valid
+  queries are answered in `fiatShamirNIZKSimGame` by the witness-free programmable-ROM simulator
+  `nizkSimProve simulate`. Whereas Boneh–Shoup's Figure 20.2 simulator returns `fail` when `(y, t)`
+  is already programmed in the oracle table, `nizkSimProve` overwrites `(y, t)` at the head of the
+  association-list cache; the `IdenticalUntilBad` collision hop justifies this overwrite simulator,
+  yielding `abs_sub_fiatShamirNIZKRealGame_simGame_le` and
+  `advantage_fiatShamirNIZKRealGame_simGame_le` (`≤ Qp * (Qp + Qro) * δ`) under `SpecialHVZK` and
+  `UnpredictableCommitments R δ`.
+- **ROM proof of knowledge (`Section 20.3.4`) and derived simulation-extractability:** via
+  `Forking.fork` (Bellare–Neven, Lemma 1), `succProbability_fiatShamirNIZKPokGame_le` bounds an
+  explicit-coin `Qro`-hash cheating prover's acceptance probability by
+  `(Qro + 1) / |C| + √((Qro + 1) * ε')` for `fiatShamirNIZKExtract` (with `oneWayGame` and
+  false-statement soundness corollaries). Combining the Attack Game 20.3 zero-knowledge hop with
+  `SimCoinSource` presampling and Bellare–Neven Lemma 1 yields a derived fresh-pair
+  simulation-extractability reduction: when the adversary also makes up to `Qp` adaptive prove calls
+  and outputs `(y*, (t*, z*))` whose pair `(y*, t*)` was not returned by the prove oracle,
+  `fiatShamirNIZKSimExtractWith` (with `fiatShamirNIZKSimExtract` using `PMF.pi` over finite `Y` and
+  `linearSimCoinSource` avoiding statement/group finiteness on `SigmaProtocol.linear` and
+  `SigmaProtocol.schnorr`) achieves `ε ≤ Qp * (Qp + Qro) * δ + (Qro + 1) / |C| + √((Qro + 1) * ε')`
+  (`succProbability_fiatShamirNIZKRealExtGameOn_le`, `succProbability_fiatShamirNIZKRealExtGame_le`).
+  All bounds are exact finite probability laws in `OracleComp`; machine-level `IsPPT` efficiency
+  bridges for rewinding extractors are separate.
+
 The ideal-permutation model gives an adversary both forward and inverse access to one consistent random permutation. Separate cipher/primitive channels support [Complexity/Crypto/Protocols/Cipher/EvenMansour.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Protocols/Cipher/EvenMansour.lean); the two-key and single-key advantages are bounded by `2*Q_cipher*Q_primitive/|G|`. [Complexity/Crypto/Protocols/Cipher/LubyRackoff.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Protocols/Cipher/LubyRackoff.lean) proves three-round forward and four-round strong/bidirectional Feistel results and an explicit three-round chosen-ciphertext attack. These are bounded-query theorems over finite groups with exact ideal functions/permutations. Native local computation is not charged merely by `IsQueryBounded`. The uniform computational counterparts live in [Complexity/Crypto/Computational/PseudorandomPermutation.lean](../../Complexity/Crypto/Computational/PseudorandomPermutation.lean) (`BlockCipher`, `BlockCipher.PRP`, `BlockCipher.StrongPRP` against oracle-PPT word distinguishers, with explicit security parameter and the `[]` convention for malformed blocks), [Complexity/Crypto/Computational/EvenMansour.lean](../../Complexity/Crypto/Computational/EvenMansour.lean) (`evenMansourCipher` and `singleKeyEvenMansourCipher`, randomized `ProbOracleComp` and `WordOracleComp (Bool × Bool)` ideal-permutation security bounds `2 * Q_e * Q_π / 2 ^ n`, polynomial-query `Negligible` advantage, and `Game.Indistinguishable` against `IsOraclePPT encBool` distinguishers), and [Complexity/Crypto/Computational/LubyRackoff.lean](../../Complexity/Crypto/Computational/LubyRackoff.lean): `PseudorandomFunction.prp_lubyRackoffCipher` proves that the three-round cipher `lubyRackoffCipher` built from a `PseudorandomFunction` is a PRP. Its proof reduces to `PseudorandomFunction.multiKey` with an oracle-PPT adapter, and both modules transfer their finite-group bounds to randomized adversaries by fixing their private coins (`ProbOracleComp.coinLaw`, [CoinFixing.lean](../../Complexity/Languages/Probabilistic/Oracle/CoinFixing.lean)). `PseudorandomFunction.strongPRP_lubyRackoff4Cipher` proves that the four-round cipher `lubyRackoff4Cipher` is a strong PRP, in the same way, through a bidirectional adapter.
 
 ## General zero knowledge: quantifier orders, primary-input clocks, and instance indexing
@@ -315,6 +438,16 @@ Keep receiver choices and selected values private; giving either to the sender c
 [OT commitment tests](../../ComplexityTests/Crypto/OTCommitment.lean) demonstrate rejection of an
 inconsistent opening, a tight one-call attack with success `1/2`, and the zero-call bound `1`.
 
+For an explicit list opening, import
+[`OTCommitment.Opening.PolyTime`](../../Complexity/Crypto/Protocols/MPC/OTCommitment/Opening/PolyTime.lean).
+`openPairs choices received submission` returns the accepted bit or `none` for abort or rejection.
+It checks that all three lists have the same length before testing every pair's parity and selected
+value. `openPairs_ofFn` identifies this total checker with `openResult` on finite-vector encodings;
+`openPairs_polyTime` charges the complete choice and answer bit strings and the framed opening
+pair list, without a well-formedness hypothesis. The [checked list clients](../../ComplexityTests/Crypto/OTCommitmentOpening.lean)
+include short and long inputs in each position. An empty opening accepts either bit when both
+receiver lists are empty; this preserves the zero-call boundary and asserts no binding security.
+
 To extract a bit before opening, import
 [`OTCommitment.Extraction`](../../Complexity/Crypto/Protocols/MPC/OTCommitment/Extraction.lean).
 `extract` takes the strict majority of the actual OT input pair parities, choosing false on a tie.
@@ -351,7 +484,7 @@ map from a revealed bit and an explicit receipt list to opening pairs. Its input
 `encPair encBool (encList (encPair (encFinEnum (Fin 4)) encBool))`; the full four-valued indices
 are retained. `equivocatePairs_ofFn` connects this list operation to the transcript reconstruction.
 
-These fixed-schedule corruption-specific laws do not provide full ideal commitment scheduling,
+These semantic corruption-specific laws alone do not provide full ideal commitment scheduling,
 mid-commit abort, composition, or polynomial-time simulators. The malicious MPC compiler and its
 real/ideal simulation remain open in
 [#1212](https://github.com/cslib-community/complexitylib/issues/1212).
@@ -374,8 +507,89 @@ it does not assert secrecy when sender commands interleave and open the commitme
 executions. The [checked world clients](../../ComplexityTests/Crypto/CommitmentWorld.lean)
 show honest opening, early opening followed by commitment, attempted overwrite, both abort
 orders, and adaptive private polling. These are functionality laws, not an OT realization,
-UC security, or a simulator runtime certificate. Connecting OT extraction and equivocation to
-these phases is a separate milestone; full malicious MPC remains open.
+UC security, or a simulator runtime certificate.
+
+To connect the OT simulations to these commands, import
+[`OTCommitment.World`](../../Complexity/Crypto/Protocols/MPC/OTCommitment/World.lean).
+`senderIdeal` samples the actual sender tables and commits `extract ts` before invoking the
+sender's opening continuation. It then opens that stored bit or aborts and polls the world.
+`senderIdeal_run` identifies its public law with `simulatedOpening`, now including the receipt
+and terminal observation; `senderIdeal_coupled` retains the sender state and auxiliary output
+with error at most `2⁻⌈k/2⌉`. Start the driver at `.idle` and map `Prod.fst` over its result to hide
+the final functionality store.
+
+For a corrupted receiver, `receiverPrefix` has no bit input and `receiverPrefix_committed` proves
+its observation is bit-independent in every committed state. `receiverIdeal` runs this prefix,
+then a randomized `plan` receiving only the transcript and receiver state. The plan selects
+release or abort and returns a retained later private state. Only after the actual open/abort
+command and poll does `finish` receive the terminal observation and optional reconstructed
+opening. `receiverIdeal_eq_real` equates this complete joint law with the actual honest OT
+execution, including both observations, both private states, and any randomized continuation
+output. See the [checked simulation clients](../../ComplexityTests/Crypto/OTCommitmentWorld.lean)
+for all four OT slots, the mixed-parity attack, withholding and zero calls.
+
+These are semantic `StateT Store PMF` drivers for arbitrary PMF strategies, not realized
+`ProbOracleComp` programs or efficient simulators. They cover a fixed-length single session
+with one later release decision; arbitrary scheduling, mid-commit abort, malformed bytes,
+composition and full malicious MPC remain open.
+
+For a realized receiver simulator, import
+`Complexity.Crypto.Protocols.MPC.OTCommitment.Program.PolyTime`.
+Supply closed `ProbComp` callbacks `choose`, `receive`, `plan` and `finish`;
+`receiverOfPrograms` interprets them in the existing `Receiver` interface.
+`receiverPrefixProgram` takes no committed bit. `receiverIdealProgram` alone owns the
+commitment-world interface and makes exactly four public calls: commit, receipt poll,
+open-or-abort, and terminal poll. `receiverClosedProgram` runs the actual finite handler
+from idle, retaining both observations and all receiver data while hiding the final store.
+`eval_receiverClosedProgram_eq_real` equates its list-output law with honest OT using the
+masks actually sampled during commitment. Abort supplies no reconstructed opening; even
+zero rounds pass the terminal observation separately to `finish`.
+
+Apply `receiverClosedProgram_isPPT` with uniform `IsPPTOn` certificates for the four
+callbacks on their complete joint inputs. In addition, bound encoded-state growth by a
+fixed additive constant for every supported `choose` result and every supported `receive`
+result. These are separate obligations: an intermediate state can grow even when a later
+callback shrinks it. The input encoding charges the bit, unary round count and initial
+state; receipt and opening lists retain all four OT indices and all pair bits. The
+[checked program clients](../../ComplexityTests/Crypto/OTCommitmentProgram.lean) provide an
+adaptive private-coin receiver with growing answer history, randomized withholding and a
+randomized final continuation. They also show why a separately efficient state-doubling
+callback fails the additive-growth contract. This certificate covers the fixed receiver
+schedule under those hypotheses; arbitrary scheduling, composition and full malicious MPC remain open.
+
+For the corrupted sender, import
+[`OTCommitment.SenderProgram.PolyTime`](../../Complexity/Crypto/Protocols/MPC/OTCommitment/SenderProgram/PolyTime.lean).
+Supply closed `ProbComp` table-selection and finish callbacks and the deterministic `Sender.receive`
+update. `senderOfPrograms` keeps the existing semantic interface; `senderTablesWith` shares its
+recursion with the native table-list program. `senderIdealProgram` commits the extracted bit before
+sampling finish, privately samples the honest choices, and makes the same four phased-world calls.
+Finish receives only the round count and commit-final sender state. It can retain an updated state
+or other private information in its auxiliary output. `decodeOpening` maps incorrect list lengths
+to rejection; no malformed list is silently truncated into a valid finite opening.
+
+`eval_senderClosedProgram` identifies the actual handler's closed execution with `senderIdeal`.
+`senderClosedProgram_coupled` retains both public observations, commit-final sender state and
+arbitrary finish output with majority-extraction error `2⁻⌈k/2⌉`.
+`senderClosedProgram_coupled_two_mul` gives error `2⁻ⁿ` for `k = 2n`, and
+`senderClosedProgram_negligible_error` proves that schedule's error negligible. This is the
+extraction error, not the smaller double-opening bound.
+
+Apply `senderClosedProgram_isPPT` with uniform callback certificates on full joint inputs and an
+additive encoded-size bound on the **combined round's final state**, for every supported choose
+result. The intermediate state may grow polynomially and then shrink in the update; callback
+composition charges that work. Every table uses the fixed sixteen-element `Fin 4 → Bool` encoding,
+and the growing table list, unary round count, initial state and complete output are all charged.
+The [checked sender programs](../../ComplexityTests/Crypto/OTCommitmentSenderProgram.lean) include
+private-coin masks with retained history, randomized opening or abort and auxiliary output, the
+actual two-round attack with real success `1/2` versus ideal abort, and a separately efficient
+doubling update excluded by the growth premise. They instantiate one uniform machine at `k = 2n`
+with empty initial history; an arbitrary initial distribution needs its own efficient sampler.
+
+Together the two native results give efficient simulations under their callback and growth
+restrictions. A reusable realization theorem for all globally PPT adversaries still needs a common
+honest protocol execution, role-local corruption adapters, and one uniform observation, phase and
+input contract connecting both real experiments. The additive-growth restrictions, arbitrary
+scheduling, mid-commit abort, composition/UC and full malicious MPC remain separate obligations.
 
 ## Upstream perfect secrecy and sharing
 
