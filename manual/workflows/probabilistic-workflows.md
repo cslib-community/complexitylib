@@ -2,6 +2,27 @@
 
 Start with three separate questions: what program is being described, what distribution it denotes, and what machine implements it. `ProbComp α` describes finite-uniform sampling with ordinary `do` notation; `ProbComp.eval` interprets that syntax as a `PMF α`. `ProbOracleComp spec α` adds external requests whose reply types are given by `spec`. The underlying `OracleComp` is a free program over a typed request interface. A PMF supplies mathematical probability semantics; merely writing a PMF does not supply a sampler or a runtime certificate. The [programs and realization reference](../programs-crypto-and-probability/programs-and-realization.md) explains these layers and their sources. [complexitylib][complexitylib]
 
+## Transport a distribution bound through a map
+
+Import [TotalVariation/Map.lean](../../Complexity/Foundations/MeasureTheory/Measure/TotalVariation/Map.lean).
+For finite measures `μ` and `ν` and a measurable function `f`, apply
+`MeasureTheory.tvDist_map_le μ ν hf` to bound the distance of their pushforwards by
+`tvDist μ ν`. The measures may have different total masses. The extended-valued theorem
+`etvDist_map_le` has the same hypotheses and avoids conversion to real numbers.
+
+This is Mathlib's full-L1 convention: distinct probability atoms have distance `2`,
+and the distance of `2 • dirac x` from the zero measure is `2` as well. The finite-measure
+instances matter because real `tvDist` is defined as zero if its extended value is infinite.
+A previously proved bound transports with `(tvDist_map_le μ ν hf).trans h`;
+no density, injectivity or probability normalization is required.
+
+The [checked clients](../../ComplexityTests/TotalVariationMap.lean) include identity,
+strict coarsening from distance `2` to `0`, unequal masses, and the canonical measurable
+map from `ℝ` to `UnitAddCircle`. Run `scripts/build.sh ComplexityTests.TotalVariationMap`.
+The theorem transports an existing bound; it does not identify the output laws. In particular,
+the Gaussian projection and mod-one distribution identities remain the separate consumer
+[issue #2734](https://github.com/cslib-community/complexitylib/issues/2734).
+
 ## Describe a discrete Gaussian law
 
 Import [Gaussian/Discrete.lean](../../Complexity/Foundations/Probability/Gaussian/Discrete.lean)
