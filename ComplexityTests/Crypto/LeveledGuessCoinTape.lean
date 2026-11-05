@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 import Complexity.Crypto.Computational.Homomorphic.BitEncryption.Time
 import Complexity.Probability.PMF.Bind
 import Complexity.Crypto.Computational.Homomorphic.Leveled.GameCoinTape
+import Complexity.Crypto.Computational.Homomorphic.Leveled.FlatSecurity
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 
@@ -333,5 +334,23 @@ example : Scheme.encryptBitsCoins evaluateEncrypt 0 0 [] [true, false] [true] =
 example (width : ℕ) (tape : List Bool) :
     Scheme.encryptBitsCoins evaluateEncrypt 0 width [] [] tape = [] := by
   simp [Scheme.encryptBitsCoins]
+
+-- At DC=1, all three successful indices select real callbacks; there is no zero-hop thinning.
+example (n : ℕ) (pk : List Bool) :
+    ((ProbComp.eval (Leveled.flatLeveledChoice fixture (fun _ => 1) (fun _ => 1)
+      fallbackProbe n pk 0)).map (fun choice => choice.2.take 2)) = PMF.pure [false, false] ∧
+    ((ProbComp.eval (Leveled.flatLeveledChoice fixture (fun _ => 1) (fun _ => 1)
+      fallbackProbe n pk 1)).map (fun choice => choice.2.take 2)) = PMF.pure [false, true] ∧
+    ((ProbComp.eval (Leveled.flatLeveledChoice fixture (fun _ => 1) (fun _ => 1)
+      fallbackProbe n pk 2)).map (fun choice => choice.2.take 2)) = PMF.pure [true, false] := by
+  simp [Leveled.flatLeveledChoice, Leveled.tagLeveledChoice, Leveled.swapLeveledChoice,
+    ProbComp.eval_map, PMF.map, Function.comp_def]
+
+-- At DC=0, the successful singleton index executes the actual zero-link choice.
+example (n : ℕ) (pk : List Bool) :
+    Leveled.flatLeveledChoice fixture (fun _ => 0) (fun _ => 2) fallbackProbe n pk 0 =
+      Leveled.tagLeveledChoice true false <$>
+        (Leveled.zeroLinkAdversary fixture (fun _ => 0) fallbackProbe).choose n pk := by
+  simp [Leveled.flatLeveledChoice]
 
 end ComplexityTests.Crypto.LeveledGuessCoinTape

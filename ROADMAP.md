@@ -127,8 +127,11 @@ from strict-PPT components. Its original selector bias, message swap, tagged sta
 fallback are preserved; supports are derived inside the game. Bit-encryption replay also retains
 linear dependence on participating callback time, with independent workspace and supported
 ciphertext-size bounds and a callback-independent preparation polynomial. This component bound
-does not compare primitive costs with adversary runtime. The literal source loss mapping and
-multiplicative machine-runtime comparison remain open. Develop these in reviewable
+does not compare primitive costs with adversary runtime. A separate
+[flattened reduction](Complexity/Crypto/Computational/Homomorphic/Leveled/FlatSecurity.lean)
+uses a finite-attempt selector over `2 * depth * capacity + 1` signed hybrid steps, retaining
+failure mass and improving the original selector loss without additive error. The literal
+source loss mapping and multiplicative machine-runtime comparison remain open. Develop these in reviewable
 milestones, reusing the finite sampling, gadget algebra, native certificates and game reductions
 where their hypotheses match. The [pre-rewrite FHE section][archive-fhe] maps the schemes to
 current libraries and workloads.

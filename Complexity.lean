@@ -3009,6 +3009,7 @@ public import Complexity.Crypto.Computational.Homomorphic.Leveled.Compactness
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Correctness
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Encoding
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.ExactSecurity
+public import Complexity.Crypto.Computational.Homomorphic.Leveled.FlatSecurity
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.GameCoinTape
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.GameOverhead
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.GuessCoinTape
