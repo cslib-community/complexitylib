@@ -265,8 +265,13 @@ reduction. Applying the strict-PPT discrete-logarithm assumption still requires 
 realization of that reduction, with encoded adaptive signing/hash access and final-message
 freshness. The private-coin prerequisite is supplied by `IsOraclePPTOn.exists_savedCoins` in
 [`Oracle/Replay.lean`](../../Complexity/Computability/Probabilistic/Oracle/Replay.lean), which charges
-full-input replay and retains external state; connecting it to the signature ROM reduction remains
-open. See the checked algorithms and typed-ROM examples in
+full-input replay and retains external state.
+[`Signature/WordRandomOracle.lean`](../../Complexity/Crypto/Computational/Signature/WordRandomOracle.lean)
+also gives a key-independent saved-coin adapter for actual Boolean-channel word forgers, with
+full-input native replay and equality of the existing shared-world and EUF-CMA games. All word
+hash payloads stay distinct. Applying that adapter to Schnorr's concrete query encoding, realizing
+the signer/hash handlers, and certifying the complete forking reduction remain open. See the
+checked algorithms and typed-ROM examples in
 [`ComplexityTests/Crypto/SchnorrSignature.lean`](../../ComplexityTests/Crypto/SchnorrSignature.lean).
 
 For strict-PPT **identification** under discrete log, use `SchnorrImpersonator`,
