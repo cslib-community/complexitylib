@@ -79,7 +79,7 @@ theorem senderIdeal_run {State Output : Type} (A : Sender State) (k : ℕ)
   simp only [senderIdeal, StateT.run_bind]
   simp only [simulatedOpening, StateT.lift, StateT.run, Probability.PMF.monad_bind_eq_bind,
     Probability.PMF.monad_pure_eq_pure,
-    PMF.bind_bind, PMF.pure_bind, PMF.map_bind, PMF.pure_map, OracleComp.sumHandler,
+    PMF.bind_bind, PMF.pure_bind, PMF.map_bind, PMF.pure_map, Phased.handler, OracleComp.sumHandler,
     Phased.advance, Phased.observe]
   apply congrArg (initial.bind)
   funext st
@@ -127,8 +127,8 @@ theorem receiverPrefix_committed {State : Type} (A : Receiver State) (k : ℕ)
         (Phased.Observation.receipt, transcript, final)) := by
   change ((receiverPrefix A k st).run (.committed b)).map Prod.fst = _
   simp only [receiverPrefix, StateT.run_bind, StateT.run_pure]
-  simp [StateT.run, StateT.lift, OracleComp.sumHandler, Phased.observe, PMF.bind_bind,
-    PMF.map, Function.comp_def]
+  simp [StateT.run, StateT.lift, Phased.handler, OracleComp.sumHandler, Phased.observe,
+    PMF.bind_bind, PMF.map, Function.comp_def]
 
 /-- Delayed-opening corrupted-receiver driver. `plan` sees only the prefix transcript and
 receiver state and may randomly withhold opening, returning an updated private `Later` state.
@@ -190,7 +190,7 @@ theorem receiverIdeal_eq_real {State Later Output : Type} (A : Receiver State) (
   simp only [receiverIdeal, receiverPrefix, StateT.run_bind, StateT.run_pure]
   simp only [StateT.lift, StateT.run, Probability.PMF.monad_bind_eq_bind,
     Probability.PMF.monad_pure_eq_pure,
-    PMF.bind_bind, PMF.pure_bind, PMF.map_bind, OracleComp.sumHandler,
+    PMF.bind_bind, PMF.pure_bind, PMF.map_bind, Phased.handler, OracleComp.sumHandler,
     Phased.advance, Phased.observe]
   apply congrArg ((receiverRun A false k st).bind)
   apply funext
