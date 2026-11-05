@@ -699,9 +699,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 
 - **Exact fixed-field sampling:** `Languages/Probabilistic/Sampling/F4.lean` samples Mathlib's
   four-element quadratic field using two fair bits, with encoded arithmetic and sampler
-  certificates in `Computability/Probabilistic/Sampling/F4.lean`. Uniform growing extension-field
-  arithmetic remains open. Public circuit binding for VOLE (#2688) and fresh-session soundness
-  amplification remain separate from this scalar prerequisite.
+  certificates in `Computability/Probabilistic/Sampling/F4.lean`.
+  `Circuit/Arithmetic/EvaluationTime.lean` certifies the full existing code trace uniformly in the
+  runtime circuit and input over any fixed finite semiring, with binary indices and an F4 client.
+  Growing extension-field arithmetic, complete native circuit-bound VOLE execution (#643;
+  prerequisite #2738), raw-bit adversarial transport (#2744) and fresh-session amplification
+  remain separate endpoints.
 - **Markov-chain sampling:** finite kernels, stationarity, reversibility and total-variation
   mixing; coupling, path coupling, conductance and canonical-path arguments. Implement
   Metropolis sampling for encoded rational target weights, charging initialization, arithmetic
