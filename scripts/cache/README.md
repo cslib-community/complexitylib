@@ -18,8 +18,15 @@ scripts/build.sh --wfail --iofail   # restore caches, then build changed or miss
 
 A complete set of library and test outputs is about 200 MB compressed (November 2026). Outputs
 are platform independent (`platformIndependent = true`), so Linux CI builds serve macOS checkouts.
-`COMPLEXITYLIB_CACHE_URL` overrides the location; set it to an empty string to skip the
-Complexitylib download.
+The ordered read locations are maintained in [`endpoints.json`](endpoints.json), initially GCS
+alone. `COMPLEXITYLIB_CACHE_URL` overrides that list with one location; set it to an empty string
+to skip the Complexitylib download. Both local and CI restoration use `restore.py`: the nearest
+cached ancestor wins, then endpoint order breaks a tie. Artifact downloads retry the same mapping
+against the other mirrors, retaining Lake's successful, hash-checked downloads. A missing cache
+still leaves the build to compile from source. Discovery and download attempts have bounded
+deadlines; see `python3 scripts/cache/restore.py --help` for controls. HTTPS mapping and artifact
+requests may redirect only to HTTPS. Loopback HTTP is accepted for local tests but may not
+redirect; an endpoint cannot downgrade a trusted request to plaintext transport.
 
 CI reads the cache too. After restoring `.lake` from the GitHub Actions cache, Lean CI runs
 `scripts/cache/get-missing.sh`, which downloads the same outputs except those of modules whose
@@ -175,17 +182,27 @@ be combined with `--copy-cslib` or `--copy-packages`; the default seeded behavio
 Downloaded `.olean` files are trusted by Lean: imported modules are not re-checked by the
 kernel, and their compiled code (tactics, macros, initializers) runs during your build. Whoever
 can write to the cache could therefore make a false theorem appear proved or run code on your
-machine. The cache is set up so that this is no more trust than building `main` already
-requires:
+machine. An artifact's content hash protects transfer consistency, not provenance: a malicious
+writer can publish a mapping that names the hash of its own malicious artifact. Every configured
+writer and artifact host is therefore a code-execution trust root for cache readers.
 
-- Only push runs on `main` in this repository can write. They authenticate with GitHub's OIDC
+- The GCS writer is limited to push runs on `main` in this repository. It authenticates with
+  GitHub's OIDC
   token through Workload Identity Federation, restricted to this repository's numeric id, the
-  `main` ref and the `push` event; no credentials are stored in GitHub. Pull requests, forks,
+  `main` ref and the `push` event; no long-lived GCS credential is stored in GitHub. Pull requests,
+  forks,
   merge-queue groups and other branches cannot obtain write access. The condition does not name
   a workflow, so any workflow run by a push to `main` that requests an OIDC token could write;
   today only the Lean CI job requests one.
-- The writer can create objects but not delete them, so a published artifact can never be
-  replaced. Lake checks every downloaded artifact against the hash recorded in the mapping.
+- Enabling the optional server adds two long-lived SSH credentials stored as protected GitHub
+  environment secrets. The upload key has a forced append-only rsync command, but can still
+  preempt a legitimate revision by publishing a malicious mapping and its artifacts first. The
+  administrator key, the host administrator and the running HTTPS host are more powerful trust
+  roots: they can replace or redirect served data. Protect, review and rotate the upload and
+  administrator identities independently.
+- Both publishers normally create objects without overwriting or deleting them. Immutability
+  limits modification after publication, but does not make the first publication trustworthy or
+  repair a mapping that an attacker published first.
 
 Merge-gating CI also reuses these outputs. Lean CI on pull requests, merge-queue groups and
 `main` pushes restores modules that earlier `main` runs uploaded instead of compiling them, so a
@@ -204,9 +221,97 @@ before. Lake replays no build log for a restored module, so `--wfail` cannot see
 this loses nothing, because `main` uploads only outputs whose build and tests passed `--wfail`.
 When nothing is cached, CI compiles everything, as before.
 
-The cache contains only build outputs of commits on `main` (sources that are public in this
-repository); build logs and machine paths are not uploaded. Downloads are anonymous HTTPS
-requests to Google Cloud Storage; the bucket keeps no access logs.
+Automated publication contains only build outputs of commits on `main` (sources that are public in
+this repository); build logs and machine paths are not uploaded. Explicit staging refuses tracked
+changes, every Git-visible untracked file, any ignored entry in the compiled source trees, or a
+checkout whose `HEAD` or source state changes during the build. Ordinary ignored build outputs
+such as `.lake/` remain allowed. Downloads use anonymous HTTPS.
+GCS remains the only configured origin and its bucket keeps no access logs. An optional server
+has its own documented logging policy and becomes another trusted artifact host when enabled.
+
+### Suspected writer compromise or cache poisoning
+
+Revoking a credential stops new writes but does not repair an immutable malicious mapping or
+remove copies already restored into local and GitHub Actions caches. Treat any suspected writer,
+administrator or origin compromise as a cache-code-execution incident:
+
+1. **Quarantine readers and writers.** Disable server publication and deployment, take a suspect
+   server origin out of service, and remove its endpoint through an expedited reviewed change.
+   For investigation and recovery, set `COMPLEXITYLIB_CACHE_URL` to an empty string so builds do
+   not fall through to any unverified mirror. If GCS is suspect, remove its public-read binding as
+   described below. Do not merely reverse endpoint priority.
+2. **Revoke the compromised authority.** Remove and rotate the affected upload or administrator
+   key, or disable the affected OIDC writer binding. A host-admin compromise also requires fresh
+   administrative credentials and reprovisioning from a trusted machine. Preserve relevant
+   GitHub, cloud, SSH and web logs before routine retention removes them.
+3. **Determine the exposure.** Identify the earliest suspect write and enumerate its revision
+   mappings and referenced artifacts. Do not use matching hashes or successful Lake restoration
+   as evidence that those objects are safe; hashes only show that the mapping and download agree.
+4. **Replace the poisoned namespace.** Quarantine the old bucket or server data and publish into a
+   new empty bucket/root or cache namespace. Surgical deletion is acceptable only when every
+   affected mapping and referenced object is known and readers cannot race the cleanup. Append-only
+   publication cannot overwrite a poisoned mapping in place.
+5. **Evict retained copies.** On developer and persistent runner checkouts, run `lake clean` and
+   `lake cache clean`; clear other affected worktree outputs. Delete or version-bump affected
+   GitHub Actions `.lake` cache entries so a later workflow cannot reintroduce them. Keep remote
+   restoration disabled throughout this step.
+6. **Rebuild and validate from source.** On a clean runner at a verified commit, with
+   `COMPLEXITYLIB_CACHE_URL=""`, rebuild and run the full validation sequence. Stage those exact
+   outputs, publish them to the empty replacement namespace, and verify a representative clean
+   restore and strict build from outside the hosting network.
+7. **Restore service through review.** Re-enable publication first, then change reader endpoints
+   in a reviewed commit after the replacement contains a complete validated revision. Monitor
+   writes, storage, egress and authentication failures closely during the recovery window and
+   record the affected revisions and cache namespaces in the incident handoff.
+
+## Optional self-hosted cache
+
+The [server runbook](../../infra/cache-server/README.md) is the complete setup and maintenance
+procedure for Erik's hardware. It provisions a small static HTTPS server from repository-managed
+Ansible configuration. Server deployment, artifact publication, and switching readers are separate
+steps; this repository ships with both server workflows disabled and GCS as the read default.
+The existing GitHub Actions `.lake` and toolchain caches remain in place.
+
+There is one producer: after the existing validation gates, main CI stages Lake's artifacts once.
+GCS publication reads that staged directory. When `CACHE_SERVER_PUBLISH_ENABLED` is `true`, the
+same files are handed to a separate job for restricted SSH publication. It uploads artifacts
+first and the revision mapping last, skipping existing files. The server independently disallows
+overwrites, deletion and arbitrary shell access for that upload identity. A failed upload is
+retriable; no server-side Lean installation or compilation is needed.
+
+`CACHE_SERVER_DEPLOY_ENABLED` separately enables automatic server configuration updates after
+the **Cache server** workflow's checks succeed on `main`. Administrative deployment credentials
+and the artifact upload credential belong to different GitHub environments restricted to `main`;
+the administrator key has privileged host access. Configure these protections before adding keys.
+The [runbook](../../infra/cache-server/README.md) covers initial provisioning, verified SSH host
+keys, credential rotation, upgrades, rollback, monitoring and retention. No live server, GitHub
+variable, secret or reader configuration is changed by adding this infrastructure to the library.
+
+To cut over later, first provision the server, enable publishing, and verify a complete published
+revision through its public HTTPS address from outside MIT. Then change `endpoints.json` in a PR
+to put that address before GCS. The shared restore path serves users, Lean CI, API docs and the
+guide; an old or partially populated mirror can fall back to GCS. Retaining GCS publication during
+the transition gives rollback without another compilation. Restore the GCS-only configuration to
+roll back readers; disabling server publication/deployment does not remove any cached files.
+
+The publication commands can also be run explicitly by an authorized operator:
+
+```bash
+python3 scripts/cache/publish.py stage /tmp/new-publication-directory
+python3 scripts/cache/publish.py verify /tmp/new-publication-directory
+scripts/cache/upload.sh BUCKET /tmp/new-publication-directory
+python3 scripts/cache/publish.py ssh /tmp/new-publication-directory --config /path/to/private-ssh-config
+```
+
+The stage destination must not exist, and the checkout must contain no tracked changes or
+Git-visible untracked files. Ignore rules cannot hide any entry under the compiled `Complexity/`
+or `ComplexityTests/` source trees; ordinary ignored build outputs such as `.lake/` remain allowed.
+Staging checks that condition and the exact `HEAD` both before and after the build; use an isolated
+exact-revision checkout and keep the destination outside it. The package
+contains a SHA-256 inventory, checked before either upload, to detect incomplete or damaged job
+handoffs. The SSH configuration must define `Host cache-server` with the upload identity and
+strict host-key checking, as prepared by `scripts/cache/ssh.py`. It is never included in the package.
+`upload.sh` always consumes this explicitly staged directory; it never builds or stages implicitly.
 
 ## Maintainer runbook
 

@@ -74,6 +74,15 @@ failure. The [codebase troubleshooting chapter](workflows/troubleshooting.md) ex
 
 ## Ask for review that answers the real question
 
+For cache-host work, distinguish preparing infrastructure from deploying it and switching users
+to it. Authorize live host access, credential installation, publication and reader cutover
+explicitly; none follows from a proposal PR or repository-variable edit. Use the
+[server runbook](../infra/cache-server/README.md) for activation and host checks, and the cache
+guide's [poison-recovery procedure](../scripts/cache/README.md#suspected-writer-compromise-or-cache-poisoning)
+for incident response. Require a handoff naming the checks run, activated identities and endpoint,
+and host owner. CI success is not evidence that the server was provisioned or is externally
+reachable.
+
 Assign review to an agent that did not design or implement the change. For example:
 
 > Independently review PR `<number>` at its current revision. Read the actual definitions and

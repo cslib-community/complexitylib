@@ -39,6 +39,14 @@ scripts/cache/ensure.sh --refresh
 
 This retries restoration; it does not assert network or cache availability. On a warm local checkout, `COMPLEXITYLIB_CACHE_AUTO=0` opts out of automatic downloads for the wrappers while retaining Lake's input checks. The [cache guide](../../scripts/cache/README.md#automatic-restoration) specifies stamps, retries and seeding.
 
+Local and CI restoration share the ordered locations in `scripts/cache/endpoints.json`; GCS is
+the initial default. A single `COMPLEXITYLIB_CACHE_URL` override replaces that list, and an empty
+override disables this library's download. A changed endpoint configuration invalidates the
+bootstrap attempt stamp. Mirror failures have bounded deadlines and leave missing modules for
+normal compilation. A cache miss can therefore make CI substantially slower without changing its
+validation contract. For server installation, publication, monitoring, cutover and rollback, start
+at [cache operations](../../scripts/cache/README.md#optional-self-hosted-cache).
+
 If a small change causes a large rebuild, inspect its imports and exported interface. Public declarations and exposed definition bodies can invalidate dependents. The [build fan-out case study](../development-history/case-studies.md) explains why widely imported hubs can be costly. A slow rebuild alone does not demonstrate a cache defect.
 
 ## Distinguish the checks that passed
