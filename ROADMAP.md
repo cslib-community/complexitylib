@@ -170,8 +170,10 @@ In order:
 - the BCS transform to non-interactive arguments in the random-oracle model;
 - VOLE constraint reductions and VOLE-in-the-head: `VOLE/Basic.lean` supplies ideal correlations,
   and `VOLE/MulCheck.lean` bounds arbitrary single-gate affine claims by `2 / |F|` with an
-  independent secret key. Batched constraints, zero knowledge, efficient protocol realizations,
-  and the full VOLE-in-the-head transform remain;
+  independent secret key. `VOLE/BatchMulCheck.lean` batches constraints using a public vector of
+  independent weights and an adaptive affine reply, with error at most
+  `1 / |F| + (1 - 1 / |F|) * (2 / |F|)`. Scalar-challenge batching, zero knowledge,
+  efficient protocol realizations and the full VOLE-in-the-head transform remain;
 - libzk's compositional structure as a composition of these components, without ciphersuites.
 
 ### Concurrent and quantum security
