@@ -50,8 +50,12 @@ Priorities live in this list and in the tiers of [#897].
   real/ideal simulation and abort, under the standard communication assumptions.
   `Crypto/Protocols/MPC/OTCommitment` supplies the Crépeau commitment ingredient: perfect hiding
   against adaptive receiver queries and a `2⁻ᵏ` malicious double-opening bound in ideal OT.
-  This fixed-schedule, information-theoretic commitment game has no efficiency certificate or
-  ideal-functionality realization; the malicious compiler and MPC simulation remain open in
+  `OTCommitment/Extraction` adds a stand-alone corrupted-sender output/state simulation with
+  majority extraction error `2⁻⌈k/2⌉`. `OTCommitment/Equivocation` proves the exact joint law of
+  the receiver's transcript, state and later opening from a bit-independent commit prefix.
+  `OTCommitment/PolyTime` certifies only the deterministic extraction and equivocation maps on
+  explicit lists. Full ideal commitment realization, efficient simulation, composition, the
+  malicious compiler, and MPC simulation remain open in
   [#1212](https://github.com/cslib-community/complexitylib/issues/1212).
   `Crypto/Protocols/Commitment/World` supplies an original single-session phased abort
   functionality with receiver-poll secrecy and an immutable committed bit. Its OT simulation
