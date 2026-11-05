@@ -119,7 +119,7 @@ example (F : PrimeOrderGroupFamily) (d : F.Desc) (hm : 2 ^ 3 ≤ F.order d) :
           (Game.succProbability
             (oneWayGame (schnorrKeyGen (F.generator d))
               (fun α u => α • F.generator d = u)
-              (F.schnorrFamilyROMScheme_reduction (m := 3) d hm
+              (F.schnorrFamilyROMSchemeReduction (m := 3) d hm
                 (trivialROMForger F d) 0 0)) : ℝ)) := by
   have h := F.succProbability_eufCmaGame_schnorrFamilyROMScheme_le
     (m := 3) d hm (trivialROMForger F d) (trivialROMForger_callBounded F d)

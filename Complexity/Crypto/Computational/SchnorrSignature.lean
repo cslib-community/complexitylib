@@ -403,7 +403,7 @@ theorem schnorrSigVerifyBits_encode (d : F.Desc) (u T : F.Carrier d)
 /-- **Completeness of bit-encoded Schnorr signing and verification**: every signature produced by
 `schnorrSignCoins` on a key pair `(encode (α • g), encScalar α)` verifies under
 `schnorrSigVerifyBits` with the same random-oracle challenge `roOut`. -/
-@[simp] theorem schnorrSigVerifyBits_schnorrSignCoins (d : F.Desc) (α r : ZMod (F.order d))
+theorem schnorrSigVerifyBits_schnorrSignCoins (d : F.Desc) (α r : ZMod (F.order d))
     (msg roOut : List Bool) :
     F.schnorrSigVerifyBits
       (d, F.encode d (α • F.generator d), msg,
@@ -519,7 +519,7 @@ theorem schnorrScalarROMScheme_correct {M : Type} [DecidableEq M] (d : F.Desc) :
 
 /-- The Fiat–Shamir / Bellare–Neven forking discrete-logarithm reduction for
 `schnorrFamilyROMScheme`. -/
-noncomputable def schnorrFamilyROMScheme_reduction {M : Type} [DecidableEq M] (d : F.Desc) {m : ℕ}
+noncomputable def schnorrFamilyROMSchemeReduction {M : Type} [DecidableEq M] (d : F.Desc) {m : ℕ}
     (hm : 2 ^ m ≤ F.order d)
     (A : Forger (F.Carrier d) M (F.Carrier d × ZMod (F.order d)) (M × F.Carrier d) (BitString m))
     (Qs Qro : ℕ) : F.Carrier d → PMF (ZMod (F.order d)) :=
@@ -530,7 +530,7 @@ noncomputable def schnorrFamilyROMScheme_reduction {M : Type} [DecidableEq M] (d
 
 /-- The Fiat–Shamir / Bellare–Neven forking discrete-logarithm reduction for
 `schnorrScalarROMScheme`. -/
-noncomputable def schnorrScalarROMScheme_reduction {M : Type} [DecidableEq M] (d : F.Desc)
+noncomputable def schnorrScalarROMSchemeReduction {M : Type} [DecidableEq M] (d : F.Desc)
     (A : Forger (F.Carrier d) M (F.Carrier d × ZMod (F.order d)) (M × F.Carrier d)
       (ZMod (F.order d)))
     (Qs Qro : ℕ) : F.Carrier d → PMF (ZMod (F.order d)) :=
@@ -555,7 +555,7 @@ theorem oneWayGame_schnorrKeyGen_eq (d : F.Desc) (B : F.Carrier d → PMF (ZMod 
 at any group description `d` with `2 ^ m ≤ F.order d`, a forger making at most `Qs` signing queries
 and `Qro` random-oracle queries succeeds in `eufCmaGame` with probability at most
 `Qs · (Qs + Qro) / F.order d + (Qro + 1) / 2 ^ m + √((Qro + 1) · ε')`, where `ε'` is the
-discrete-logarithm success probability of `schnorrFamilyROMScheme_reduction`. -/
+discrete-logarithm success probability of `schnorrFamilyROMSchemeReduction`. -/
 theorem succProbability_eufCmaGame_schnorrFamilyROMScheme_le {M : Type} [DecidableEq M]
     (d : F.Desc) {m : ℕ} (hm : 2 ^ m ≤ F.order d)
     (A : Forger (F.Carrier d) M (F.Carrier d × ZMod (F.order d)) (M × F.Carrier d) (BitString m))
@@ -564,10 +564,10 @@ theorem succProbability_eufCmaGame_schnorrFamilyROMScheme_le {M : Type} [Decidab
       Qs * (Qs + Qro) / F.order d + (Qro + 1) / 2 ^ m +
         √((Qro + 1) * Game.succProbability (oneWayGame (schnorrKeyGen (F.generator d))
           (fun α u => α • F.generator d = u)
-          (F.schnorrFamilyROMScheme_reduction d hm A Qs Qro))) := by
+          (F.schnorrFamilyROMSchemeReduction d hm A Qs Qro))) := by
   have h := schnorr_succProbability_eufCmaGame_le (ι := F.challengeEmbedding d hm)
     (F.generator_ne_zero d) A hA
-  simpa only [schnorrFamilyROMScheme, schnorrBitSigma, schnorrFamilyROMScheme_reduction,
+  simpa only [schnorrFamilyROMScheme, schnorrBitSigma, schnorrFamilyROMSchemeReduction,
     Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat] using h
 
 /-- **Pointcheval–Stern / Bellare–Neven EUF-CMA security bound for `schnorrScalarROMScheme`**
@@ -583,10 +583,10 @@ theorem succProbability_eufCmaGame_schnorrScalarROMScheme_le {M : Type} [Decidab
       Qs * (Qs + Qro) / F.order d + (Qro + 1) / F.order d +
         √((Qro + 1) * Game.succProbability (oneWayGame (schnorrKeyGen (F.generator d))
           (fun α u => α • F.generator d = u)
-          (F.schnorrScalarROMScheme_reduction d A Qs Qro))) := by
+          (F.schnorrScalarROMSchemeReduction d A Qs Qro))) := by
   have h := schnorr_succProbability_eufCmaGame_le (ι := Function.Embedding.refl (ZMod (F.order d)))
     (F.generator_ne_zero d) A hA
-  simpa only [schnorrScalarROMScheme, schnorrScalarROMScheme_reduction, ZMod.card] using h
+  simpa only [schnorrScalarROMScheme, schnorrScalarROMSchemeReduction, ZMod.card] using h
 
 /-- **Asymptotic EUF-CMA negligibility for `schnorrFamilyROMScheme`** across a family of group
 descriptions `d : ℕ → F.Desc`: when `Qs` and `Qro` are polynomially bounded, `1 / F.order (d n)`
@@ -604,7 +604,7 @@ theorem negligible_eufCmaGame_schnorrFamilyROMScheme {M : Type} [DecidableEq M]
     (hDL : Negligible fun n => Game.succProbability
       (oneWayGame (schnorrKeyGen (F.generator (d n)))
         (fun α u => α • F.generator (d n) = u)
-        (F.schnorrFamilyROMScheme_reduction (d n) (hm n) (A n) (Qs n) (Qro n)))) :
+        (F.schnorrFamilyROMSchemeReduction (d n) (hm n) (A n) (Qs n) (Qro n)))) :
     Negligible fun n =>
       Game.succProbability (eufCmaGame (F.schnorrFamilyROMScheme (d n) (hm n)) (A n)) := by
   have hpoly₁ : PolynomiallyBounded (fun n => Qs n * (Qs n + Qro n)) := hQs.mul (hQs.add hQro)
@@ -617,7 +617,7 @@ theorem negligible_eufCmaGame_schnorrFamilyROMScheme {M : Type} [DecidableEq M]
       NNReal.sqrt ((Qro n + 1 : ℕ) * Game.succProbability
         (oneWayGame (schnorrKeyGen (F.generator (d n)))
           (fun α u => α • F.generator (d n) = u)
-          (F.schnorrFamilyROMScheme_reduction (d n) (hm n) (A n) (Qs n) (Qro n)))) :=
+          (F.schnorrFamilyROMSchemeReduction (d n) (hm n) (A n) (Qs n) (Qro n)))) :=
     Negligible.sqrt (hDL.polynomiallyBounded_mul hpoly₂)
   refine negligible_of_le ((hterm₁.add hterm₂).add hterm₃) fun n => ?_
   rw [← NNReal.coe_le_coe, Pi.add_apply, Pi.add_apply, NNReal.coe_add, NNReal.coe_add,
