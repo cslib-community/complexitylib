@@ -146,7 +146,8 @@ example (bit : Bool) :
 theorem eval_kemRealGame_leaking (n : ℕ) :
     ProbComp.eval (kemRealGame toyKeyGen leakingEncaps eqKemDistinguisher n) =
       PMF.pure true := by
-  simp only [kemRealGame, toyKeyGen, leakingEncaps, eqKemDistinguisher, encPair_apply,
+  simp only [kemRealGame, kemRealGameWith,
+    toyKeyGen, leakingEncaps, eqKemDistinguisher, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
     ProbComp.eval_pure, BitString.eval_sampleList, PMF.pure_bind,
     decide_true, PMF.bind_const]
@@ -156,7 +157,8 @@ ideal key `kIdeal` has length `n` while `ctKem = true :: pk` has length `n + 1`.
 theorem eval_kemIdealGame_leaking (n : ℕ) :
     ProbComp.eval (kemIdealGame (fun n => n) toyKeyGen leakingEncaps eqKemDistinguisher n) =
       PMF.pure false := by
-  simp only [kemIdealGame, toyKeyGen, leakingEncaps, eqKemDistinguisher, encPair_apply,
+  simp only [kemIdealGame, kemIdealGameWith, kemRealGameWith,
+    toyKeyGen, leakingEncaps, eqKemDistinguisher, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
     ProbComp.eval_pure, BitString.eval_sampleList, PMF.bind_bind, PMF.pure_bind]
   trans (BitString.uniformList n).bind (fun _ => PMF.pure false)
@@ -223,7 +225,8 @@ theorem eval_kemRealGame_sameLengthLeaking (n : ℕ) :
     ProbComp.eval (kemRealGame toyKeyGen sameLengthLeakingEncaps
           eqKemDistinguisher n) =
       PMF.pure true := by
-  simp only [kemRealGame, toyKeyGen, sameLengthLeakingEncaps, eqKemDistinguisher, encPair_apply,
+  simp only [kemRealGame, kemRealGameWith,
+    toyKeyGen, sameLengthLeakingEncaps, eqKemDistinguisher, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
     ProbComp.eval_pure, BitString.eval_sampleList, PMF.pure_bind,
     decide_true, PMF.bind_const]
@@ -234,7 +237,8 @@ theorem eval_kemIdealGame_sameLengthLeaking_true (n : ℕ) :
     ProbComp.eval (kemIdealGame (fun n => n) toyKeyGen sameLengthLeakingEncaps
           eqKemDistinguisher n) true =
       (2 ^ n)⁻¹ := by
-  simp only [kemIdealGame, toyKeyGen, sameLengthLeakingEncaps, eqKemDistinguisher, encPair_apply,
+  simp only [kemIdealGame, kemIdealGameWith, kemRealGameWith,
+    toyKeyGen, sameLengthLeakingEncaps, eqKemDistinguisher, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
     ProbComp.eval_pure, BitString.eval_sampleList, PMF.bind_bind, PMF.pure_bind]
   rw [PMF.bind_apply]
@@ -365,7 +369,8 @@ theorem idealEncaps_ppt {keyLen : ℕ → ℕ}
 theorem eval_kemRealGame_idealEncaps_eq_ideal (keyLen : ℕ → ℕ) (D : Distinguisher) (n : ℕ) :
     ProbComp.eval (kemRealGame toyKeyGen (idealEncaps keyLen) D n) =
       ProbComp.eval (kemIdealGame keyLen toyKeyGen (idealEncaps keyLen) D n) := by
-  simp only [kemRealGame, kemIdealGame, idealEncaps, ProbComp.eval_bind, ProbComp.eval_pure,
+  simp only [kemRealGame, kemRealGameWith,
+    kemIdealGame, kemIdealGameWith, idealEncaps, ProbComp.eval_bind, ProbComp.eval_pure,
     BitString.eval_sampleList, PMF.bind_bind, PMF.pure_bind, PMF.bind_const]
 
 theorem kemINDCPA_idealEncaps (keyLen : ℕ → ℕ) :

@@ -30,12 +30,14 @@ of the honest key generator.
 ## Main definitions
 
 * `Cslib.Crypto.Encryption.encryptKeyEncaps`: encapsulate by encrypting a uniform key.
+* `Cslib.Crypto.Encryption.kemToPKEChoose`: shared two-key chosen-message sampler.
 * `Cslib.Crypto.Encryption.kemToPKEAdversary`: the loss-one chosen-message reduction.
 
 ## Main results
 
 * `Cslib.Crypto.Encryption.isPPTOn_encryptKeyEncaps`: native encapsulation certificate.
 * `Cslib.Crypto.Encryption.decrypt_encryptKeyEncaps`: correctness using the original decryptor.
+* `Cslib.Crypto.Encryption.isPPTOn_kemToPKEChoose`: native shared sampler certificate.
 * `Cslib.Crypto.Encryption.isPPT_kemToPKEAdversary`: native reduction certificate.
 * `Cslib.Crypto.Encryption.advantage_encryptKeyEncaps_eq`: exact advantage preservation.
 * `Cslib.Crypto.Encryption.WordINDCPA.kemINDCPA_encryptKeyEncaps`: secure PKE gives a secure KEM.
@@ -96,24 +98,29 @@ theorem decrypt_encryptKeyEncaps {keyLen : ℕ → ℕ}
   cases heq
   exact hcorrect _ _ (BitString.length_of_mem_support_uniformList hk) hct
 
+/-- The common chosen-message stage of the CPA and CCA reductions: sample two independent
+keys of equal length and retain the public key together with the first key. -/
+@[expose] noncomputable def kemToPKEChoose (keyLen : ℕ → ℕ)
+    (n : ℕ) (pk : List Bool) : ProbComp ((List Bool × List Bool) × List Bool) := do
+  let k₀ ← BitString.sampleList (keyLen n)
+  let k₁ ← BitString.sampleList (keyLen n)
+  return ((k₀, k₁), encPair encBits encBits (pk, k₀))
+
 /-- Reduce KEM distinguishing to word chosen-message encryption: choose independent keys
 `k₀, k₁`, store `(pk, k₀)`, and give the distinguisher `(pk, (k₀, ct))` after encryption. -/
 @[expose] noncomputable def kemToPKEAdversary (keyLen : ℕ → ℕ)
     (distinguisher : Distinguisher) : WordAdversary where
-  choose n pk := do
-    let k₀ ← BitString.sampleList (keyLen n)
-    let k₁ ← BitString.sampleList (keyLen n)
-    return ((k₀, k₁), encPair encBits encBits (pk, k₀))
+  choose := kemToPKEChoose keyLen
   guess n state ct :=
     distinguisher n
       (encPair encBits (encPair encBits encBits) (unframe state, (dropFrame state, ct)))
 
-/-- The KEM-to-PKE reduction is native uniform strict PPT, including its saved public key and
-symmetric key, when the distinguisher and the unary key-length schedule are. -/
-theorem isPPT_kemToPKEAdversary {keyLen : ℕ → ℕ} {distinguisher : Distinguisher}
-    (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
-    (hdist : IsPPT encBool distinguisher) :
-    (kemToPKEAdversary keyLen distinguisher).IsPPT := by
+/-- The shared two-key sampler has a native strict-PPT certificate when its key-length
+schedule is computable in polynomial time in unary. -/
+@[fun_prop] theorem isPPTOn_kemToPKEChoose {keyLen : ℕ → ℕ}
+    (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary) :
+    IsPPTOn (encPair encUnary encBits) (encPair (encPair encBits encBits) encBits)
+      (fun p => kemToPKEChoose keyLen p.1 p.2) := by
   let E0 := encPair encUnary encBits
   let E1 := encPair E0 encBits
   let hp1 := ComputableInPolyTime.fst encUnary encBits
@@ -121,12 +128,20 @@ theorem isPPT_kemToPKEAdversary {keyLen : ℕ → ℕ} {distinguisher : Distingu
   let hq2 := ComputableInPolyTime.snd E0 encBits
   let hr1 := ComputableInPolyTime.fst E1 encBits
   let hr2 := ComputableInPolyTime.snd E1 encBits
-  let hg1 := ComputableInPolyTime.fst encUnary (encPair encBits encBits)
-  let hg2 := ComputableInPolyTime.snd encUnary (encPair encBits encBits)
-  refine ⟨((hkeyLen.comp' hp1).sampleList).bind_with
+  exact ((hkeyLen.comp' hp1).sampleList).bind_with
     (((hkeyLen.comp' hq1.fst').sampleList).bind_with
       (((hq2.comp' hr1).prod hr2).prod
-        (((hq1.snd'.comp' hr1).prod (hq2.comp' hr1)).encoding_comp)).isPPTOn), ?_⟩
+        (((hq1.snd'.comp' hr1).prod (hq2.comp' hr1)).encoding_comp)).isPPTOn)
+
+/-- The KEM-to-PKE reduction is native uniform strict PPT, including its saved public key and
+symmetric key, when the distinguisher and the unary key-length schedule are. -/
+theorem isPPT_kemToPKEAdversary {keyLen : ℕ → ℕ} {distinguisher : Distinguisher}
+    (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
+    (hdist : IsPPT encBool distinguisher) :
+    (kemToPKEAdversary keyLen distinguisher).IsPPT := by
+  refine ⟨isPPTOn_kemToPKEChoose hkeyLen, ?_⟩
+  let hg1 := ComputableInPolyTime.fst encUnary (encPair encBits encBits)
+  let hg2 := ComputableInPolyTime.snd encUnary (encPair encBits encBits)
   exact hdist.on.preprocess
     (hg1.prod (((ComputableInPolyTime.unframe.comp' hg2.fst').prod
       ((ComputableInPolyTime.dropFrame.comp' hg2.fst').prod hg2.snd')).encoding_comp))
@@ -144,7 +159,7 @@ private theorem eval_gameOn_kemToPKEAdversary (keyLen : ℕ → ℕ)
         let ct ← ProbComp.eval (encrypt n keys.1 (if bit then k₁ else k₀))
         ProbComp.eval (distinguisher n
           (encPair encBits (encPair encBits encBits) (keys.1, (k₀, ct))))) := by
-  simp only [gameOn, kemToPKEAdversary, ProbComp.eval_bind, ProbComp.eval_pure,
+  simp only [gameOn, kemToPKEAdversary, kemToPKEChoose, ProbComp.eval_bind, ProbComp.eval_pure,
     BitString.eval_sampleList, PMF.bind_bind, PMF.pure_bind, PMF.monad_bind_eq_bind,
     ChoiceOut.msg₀, ChoiceOut.msg₁, ChoiceOut.msgs, encPair_apply, encBits_apply,
     unframe_frame_append, dropFrame_frame_append, apply_ite ProbComp.eval]
@@ -163,7 +178,7 @@ theorem eval_gameOn_kemToPKEAdversary_false (keyLen : ℕ → ℕ)
       keyGen encrypt (kemToPKEAdversary keyLen distinguisher) false n) =
       ProbComp.eval (kemRealGame keyGen (encryptKeyEncaps keyLen encrypt) distinguisher n) := by
   rw [eval_gameOn_kemToPKEAdversary]
-  simp [kemRealGame, encryptKeyEncaps, ProbComp.eval_bind,
+  simp [kemRealGame, kemRealGameWith, encryptKeyEncaps, ProbComp.eval_bind,
     BitString.eval_sampleList, PMF.bind_const]
 
 /-- The second PKE experiment is exactly the ideal KEM experiment: the retained key is
@@ -177,7 +192,8 @@ theorem eval_gameOn_kemToPKEAdversary_true (keyLen : ℕ → ℕ)
       ProbComp.eval
         (kemIdealGame keyLen keyGen (encryptKeyEncaps keyLen encrypt) distinguisher n) := by
   rw [eval_gameOn_kemToPKEAdversary]
-  simp only [kemIdealGame, encryptKeyEncaps, ProbComp.eval_bind, ProbComp.eval_pure,
+  simp only [kemIdealGame, kemIdealGameWith, kemRealGameWith,
+    encryptKeyEncaps, ProbComp.eval_bind, ProbComp.eval_pure,
     BitString.eval_sampleList, PMF.bind_bind, PMF.pure_bind, PMF.monad_bind_eq_bind, ↓reduceIte]
   congr 1; funext keys
   rw [PMF.bind_comm]
