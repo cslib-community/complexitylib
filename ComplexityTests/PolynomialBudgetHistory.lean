@@ -2306,7 +2306,7 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
         (fun T => T σ x y)).sum) = 0 from congrFun hF (j + 1)])
   constructor
   · convert hb.1 using 1; congr 8
-  · convert hb.2 using 1; congr 8
+  · convert hb.2.1 using 1; congr 8
 
 -- A constant weight costs its own fourth power, rather than five copies of that cost.
 example : ‖fun _ : Fin 5 => (3 : ℝ)‖ ^ 4 = 81 ∧
@@ -2652,5 +2652,187 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
       threeRoles [1] [2, 3] 1 2 (by norm_num)
     simpa only [B, show (data HP).rankCharge = 0 from rfl, zero_mul, neg_zero,
       Real.rpow_zero, mul_one, one_mul, one_pow, threeRoles, Nat.cast_ofNat] using h.1
+
+-- The structural charge is chosen before the field, retained depth and parent budget.
+-- Every bin fits the SAME horizon used by the full reserve consumer. Child IH is not
+-- asserted. The positive diagonal omitted mass is a real loss in the first-mean model.
+open Cslib.RowCompression NormalizedMoments in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (coefficient floor cap C Cp : ℝ) (hf : 0 < floor) :
+    ∃ A : ℕ, ∀ n : ℕ, A * 36 + 1 < n →
+      ∃ P, ∃ _ : Fact P.Prime, ∃ H : Horizon P,
+      let B : BudgetData HP P := {uniformData HP P n with
+        rankCharge := A, base := (rate n / 4) • (1 : Matrix (ZMod P) (ZMod P) ℝ)}
+      let r := uniformRequest HP P
+      H.maxExponent = n ∧ (∀ bin ∈ B.bins, bin ≤ H.maxExponent) ∧
+      P ≤ 2 ^ (n + 1) ∧
+      B.slack * (1 + 4 * (n + 0)) < 16 * n ∧ 16 * n ≤ 32 * B.slack * n ∧
+      0 < B.requestPrecision (16 * n) r ∧
+      0 < B.base 0 0 * (1 - polynomialSwitch4 (1 / 2) 1 (B.base 0 0 / rate n)) ∧
+      B.base *ᵥ 1 ≤ 1 ∧
+      (∀ ζ Lh Lρ : ℝ,
+        B.initialComputedPrecisionMoment (16 * n) n r threeRoles 0 0 [1] [2, 3]
+          coefficient ζ Lh Lρ (Nat.log2 (16 * n)) false 0 ^ (4⁻¹ : ℝ) ≤
+          B.initialComputedFirstFinalBudget (16 * n) n r threeRoles 0 0 [1] [2, 3] coefficient) ∧
+      BudgetData.initialSeparatedReserve HP C Cp
+        (B.initialComputedFirstPreBudget (16 * n) n r threeRoles 0 0 [1] [2, 3] coefficient floor)
+        (B.initialComputedFirstFinalBudget (16 * n) n r threeRoles 0 0 [1] [2, 3] coefficient)
+        (B.initialComputedFirstTailBudget (16 * n) n r threeRoles 0 0 [1] [2, 3] coefficient floor)
+        (64 * B.initialComputedFirstRawBudget (16 * n) n r threeRoles 0 0 [1] [2, 3]
+          coefficient floor ((2 * max cap 16) ^ (4⁻¹ : ℝ))) ≤
+        ((2 : ℝ) ^ (-B.requestPrecision (16 * n) r)) ^ 4 := by
+  obtain ⟨A, hA⟩ := BudgetData.initialComputedFirstBudgets_exists_charge HP 16
+    coefficient floor cap C Cp hf
+  refine ⟨A, ?_⟩
+  intro n hn
+  obtain ⟨P, hprime, _, hP, H, he, _⟩ := exists_bounded_depth_prime n 0 (by positivity)
+  let : Fact P.Prime := ⟨hprime⟩
+  let B : BudgetData HP P := {uniformData HP P n with
+    rankCharge := A, base := (rate n / 4) • (1 : Matrix (ZMod P) (ZMod P) ℝ)}
+  let r := uniformRequest HP P
+  have hC (x y : ZMod P) : 0 ≤ B.base x y := by
+    change 0 ≤ (rate n / 4) * (1 : Matrix (ZMod P) (ZMod P) ℝ) x y
+    by_cases h : x = y
+    · subst y
+      simpa using div_nonneg (rate_pos n).le (by norm_num : (0 : ℝ) ≤ 4)
+    · simp [Matrix.one_apply_ne h]
+  have hrank : r.task.rank = 36 := by
+    norm_num [r, uniformRequest, HierarchyTask.rank, BoundedRowTask.localTask,
+      CorrectionRowTask.rank, PilotRowTask.rank, PilotTask.rank]
+  have hp : B.requestPrecision (16 * n) r = (n : ℝ) - A * 36 := by
+    rw [B.requestPrecision_grid (16 * n) 0 0 r rfl rfl, hrank]
+    dsimp only [B, uniformData]
+    push_cast
+    ring
+  have hv : B.base 0 0 = rate n / 4 := by simp [B]
+  have hs : (rate n / 4) / rate n = (1 / 4 : ℝ) := by field_simp [(rate_pos n).ne']
+  refine ⟨P, inferInstance, H, he, ?_, hP, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · intro bin hb
+    change bin ∈ range (n + 1) at hb
+    rw [he]
+    exact Nat.le_of_lt_succ (mem_range.mp hb)
+  · change 1 * (1 + 4 * (n + 0)) < 16 * n
+    omega
+  · change 16 * n ≤ 32 * 1 * n
+    omega
+  · rw [hp]
+    have hn' : (A : ℝ) * 36 + 1 < n := by exact_mod_cast hn
+    linarith
+  · rw [hv, hs, polynomialSwitch4_of_le (by norm_num) (by norm_num)]
+    simpa only [sub_zero, mul_one] using div_pos (rate_pos n) (by norm_num : (0 : ℝ) < 4)
+  · intro x
+    change (((rate n / 4) • (1 : Matrix (ZMod P) (ZMod P) ℝ)) *ᵥ 1) x ≤ 1
+    rw [Matrix.smul_mulVec, Matrix.one_mulVec]
+    have hr : rate n ≤ 1 := by
+      unfold rate
+      have h2 : (1 : ℝ) ≤ 2 ^ n := one_le_pow₀ (by norm_num)
+      exact pow_le_one₀ (by positivity) (inv_le_one_of_one_le₀ h2)
+    simpa only [Pi.smul_apply, Pi.one_apply, smul_eq_mul, mul_one] using
+      (by linarith : rate n / 4 ≤ (1 : ℝ))
+  · intro ζ Lh Lρ
+    exact B.initialComputedPrecisionMoment_first_final_le (by change (0 : ℝ) ≤ A; positivity)
+      rfl H (16 * n) n 0 0 (by omega)
+      (fun bin hb => by
+        change bin ∈ range (n + 1) at hb
+        rw [he]
+        exact Nat.le_of_lt_succ (mem_range.mp hb))
+      r (by change 0 ≤ rate 0; exact (rate_pos 0).le) rfl rfl rfl
+      threeRoles [1] [2, 3] coefficient ζ Lh Lρ
+  · exact hA B rfl rfl (16 * n) n 0 0 (by omega) rfl rfl
+      (by change 1 * (1 + 4 * (n + 0)) < 16 * n; omega)
+      (by change 16 * n ≤ 32 * 1 * n; omega) (by omega) hP H (by omega) r
+      (by rw [hrank]; decide) rfl rfl hC threeRoles [1] [2, 3]
+
+-- A full-horizon nonzero semantic client of the actual reserve. Successful own-request
+-- children remain an explicit hypothesis; this checks the assembled consumer without
+-- claiming simultaneous recursive availability or paying the other three statistics.
+open Cslib.RowCompression NormalizedMoments in
+example (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (exponent : HierarchyTask.Request HP.k (Fin 3) (ZMod 5) → ℕ)
+    (ζ floor coefficient Lh Lρ : ℝ) (hfloor : 0 < floor)
+    (hLh : 0 ≤ Lh) (hLρ : 0 ≤ Lρ)
+    (hh : ∀ a b, |polynomialPrepCutoff4 HP.θ a - polynomialPrepCutoff4 HP.θ b| ≤ Lh * |a - b|)
+    (hρ : ∀ a b, |HP.ρ a - HP.ρ b| ≤ Lρ * |a - b|)
+    (D : ℕ → ℕ → Environment 5 3 → Matrix (ZMod 5) (ZMod 5) ℝ)
+    (hzero : ∀ bin, D bin 0 = 0)
+    (ih : ∀ bin ∈ range 3, ∀ m < 16, 0 < m →
+      let B : BudgetData HP 5 := {data HP with bins := range 3}
+      let r := request HP
+      let Q := HierarchyTask.rawRequests 0 bin (.pilotInput ⟨0, HP.k_pos⟩)
+        r.source (BudgetData.midpoint r) r.terminal (B.binRate bin)
+      B.compressedBin m bin (exponent Q.direct) ζ floor Q.direct = some (D bin m) ∧
+      rootDistPow 4 5 Q.direct.source.rate
+        (fun σ x => Q.direct.source.retains (channels B.padding) σ x)
+        (fun σ y => Q.direct.usage.retains (channels B.padding) σ y) (D bin m)
+        (denseChild B.padding id Q.direct (B.cutoff bin) (B.auxiliary bin)
+          HP.ρ HP.K B.base) ≤
+        coefficient ^ 4 * ((2 : ℝ) ^ (-B.requestPrecision m Q.direct)) ^ 4 ∧
+      ∃ R, B.compressedBin m bin (exponent Q.right) ζ floor Q.right = some R)
+    (cap Cdecoder Cpre : ℝ) :
+    let B : BudgetData HP 5 := {data HP with bins := range 3}
+    let M := 16
+    let n := 2
+    let r := request HP
+    let R := threeRoles
+    let ks := 0
+    let ka := 0
+    let ku := 0
+    let bin := 0
+    let ss : List (ZMod 5) := [1]
+    let st : List (ZMod 5) := [2, 3]
+    ∃ groups,
+      (List.range (Nat.log2 M + 1)).mapM (fun j =>
+        B.completedGroup (fun m q => if m < M then B.compressedHistory exponent ζ floor m q
+          else none) M (dyadicSlack (Nat.log2 M + 1) j) (.pilotInput ⟨0, HP.k_pos⟩)
+          { r with usage := r.terminal }) = some groups ∧
+      let F := fun p σ x y => ((groups.take p).map (fun T => T σ x y)).sum
+      ∀ W,
+        (List.range (Nat.log2 M + 1)).mapM (fun i =>
+          B.complete M r (B.binPreparation bin r (F (i + 1)))
+            (dyadicSlack (Nat.log2 M + 1) i)) = some W →
+        let a := fun j noise ν =>
+          B.initialComputedPrecisionMoment M n r R ks ka ss st coefficient
+            ζ Lh Lρ j noise ν ^ (4⁻¹ : ℝ)
+        let K := (max (512 * (6 * B.binCap + 3) ^ 3) (32768 * B.binCap ^ 3)) ^
+          (4⁻¹ : ℝ) * |coefficient| * (2 : ℝ) ^ (-B.requestPrecision M r) *
+            (2 : ℝ) ^ (-B.rankCharge)
+        let S := (32 : ℝ) ^ (4⁻¹ : ℝ) * (2 : ℝ) ^ (-B.requestPrecision M r) *
+          (2 : ℝ) ^ (-(B.rankCharge * r.task.rank))
+        let x := 2 * (K * (4 * ∑' h, LogSpaceEstimation.scaleMajorant h) + S)
+        B.initialFourMaxReserve M bin ka ζ floor r R ks ku ss st B.base F W cap
+          Cdecoder Cpre ≤
+          BudgetData.initialSeparatedReserve HP Cdecoder Cpre
+            ((8 : ℝ) ^ (4⁻¹ : ℝ) * x * floor / 511 +
+              ∑ j ∈ range (Nat.log2 M + 1), dyadicFloor floor (Nat.log2 M + 1) j *
+                (a j false 1 + (a j true 0 + a j true 1)))
+            ((8 : ℝ) ^ (4⁻¹ : ℝ) * x +
+              (a (Nat.log2 M) false 1 + (a (Nat.log2 M) true 0 + a (Nat.log2 M) true 1)))
+            (((8 : ℝ) ^ (4⁻¹ : ℝ) * x * (2 + 256 / floor) ^ (4⁻¹ : ℝ) / 63 +
+              ∑ j ∈ range (Nat.log2 M + 1),
+              (((2 + 256 / dyadicFloor floor (Nat.log2 M + 1) j) /
+                (compatibleCapacity HP.K (Nat.log2 M + 1) j : ℝ)) ^ (4⁻¹ : ℝ)) *
+              ∑ i ∈ Ico j (Nat.log2 M + 1), (28 : ℝ) ^ (Nat.log2 M + 1 - i) *
+                a i false 1) +
+              ∑ i ∈ range (Nat.log2 M + 1), (28 : ℝ) ^ (Nat.log2 M + 1 - i) *
+                (a i true 0 + a i true 1))
+            (64 * (8 * x ^ 4 * (64 * (HP.K : ℝ) * ((2 * max cap 16) ^ (4⁻¹ : ℝ)) ^ 4 /
+                ((HP.K + 1) * floor ^ 4)) / 63 +
+              ∑ j ∈ range (Nat.log2 M + 1),
+                (64 * (HP.K : ℝ) * ((2 * max cap 16) ^ (4⁻¹ : ℝ)) ^ 4 /
+                  ((compatibleCapacity HP.K (Nat.log2 M + 1) j : ℝ) *
+                    dyadicFloor floor (Nat.log2 M + 1) j ^ 4)) *
+                ((a j false 1 ^ 4) + (a j true 0 ^ 4 + a j true 1 ^ 4)))) := by
+  dsimp only
+  let B : BudgetData HP 5 := {data HP with bins := range 3}
+  obtain ⟨groups, hrun, hp⟩ := B.initial_compressed_precision_reserve 16 (by decide) 2
+    rfl rfl rfl rfl (by norm_num [B, data]) (⟨2, 4, by decide, by decide⟩ : Horizon 5)
+    (by decide) (request HP) threeRoles 0 0 [1] [2, 3] rfl rfl (by decide)
+    (by intro x y; by_cases h : x = y <;> simp [B, data, base, h])
+    (by simp [B, data, base]) exponent ζ floor D hzero coefficient ih 0 0 le_rfl rfl
+    hLh hLρ hh hρ (by decide) hfloor (by norm_num [B, data]) rfl cap Cdecoder Cpre
+  refine ⟨groups, hrun, ?_⟩
+  intro W hW
+  exact (hp W hW).2.2 (by decide) (by norm_num [B, data])
+    (by norm_num [B, data]) (by decide) (by decide)
 
 end PolynomialBudgetHistory

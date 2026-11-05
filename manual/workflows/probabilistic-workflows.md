@@ -1378,7 +1378,8 @@ condition, retaining the source and rank penalties. It rules out taking $M$ arbi
 large at fixed $n$ for this exponent comparison.
 
 With $P\le2^{n+1}$, the actual positive-prefix semantic row moment is at most
-$32\,2^{-4p(M,r)}$ (`initialPolynomialLoss_row_bounded_family`). The rounded source
+$32(2^{-p(M,r)}2^{-A\,\mathrm{rank}(r)})^4$
+(`initialPolynomialLoss_row_bounded_family`). The rounded source
 mass is bounded through `grid_row_moment_le`; nominal rates are not identified with
 rounded masses. `initialComputedFirstFinalBudget_bounded_family` pays the semantic term
 of the existing final budget. `initialComputedFirstFinalPayment` takes the smaller of
@@ -1401,17 +1402,33 @@ $K+1$ and $2^{-24d}$, and deterministic rarity-tail weight after all factor-28 p
 Index zero is the raw postincrement prefix one; it must not use the next coefficient.
 Centered noises receive no rarity discount.
 
-These are component payments, not a complete first-mean reserve certificate. Their
-assembly with the positive-prefix payments and
-`initialFirstTransportPayment_exists_charge` in the actual separated-reserve consumer
-remains unproved. The consumer still uses its existing exact stationary/raw/tail semantic
-budgets and its paid final minimum. The checked
-[positive inactive fixture](../../ComplexityTests/PolynomialBudgetHistory.lean) has actual
-precision one, a full inactive semantic loss one at $M=16$, and the stationary component
-payment; it does not execute a nonzero full reserve. Existing tests vary depth with positive
-precision, retain nonzero omitted true mass and exhibit a fixed-depth semantic obstruction.
-`exists_bounded_depth_prime` supplies bounded field horizons separately for each depth.
-No joint recursive availability or native RL=L is claimed.
+`initialPolynomialLoss_root_bounded_family` now retains the same structural rank salary
+in the positive-prefix omission comparison and the exceptional initial group. Writing
+$S=32^{1/4}2^{-p(M,r)}2^{-A\,\mathrm{rank}(r)}$, every semantic fourth root is at most
+$S2^{d_i}$. For group zero this follows from its literal exponential weight; positive
+prefixes use the rounded-source row bound. The existing growing-mean stationary, raw
+and deterministic-tail sum lemmas then pay all prefixes without a group-count factor.
+The raw prefix $j+1$ still uses coefficient $j$, including its exact $K+1$ gain.
+
+`initialComputedFirstBudgets_bounded_family` assembles all four semantic contributions
+with endpoint transport. The existing `initial_compressed_precision_reserve` consumes
+these payments in its third, bounded-family separated-reserve bound and retains its two
+earlier guarantees. `initialComputedFirstBudgets_exists_charge` invokes
+`initialFirstTransportPayment_exists_charge` with one combined endpoint constant: decoder,
+floor, capacity, bin cap and child-error coefficient are fixed first; the structural charge
+is chosen before field width, retained depth, budget and request exponents. It pays the
+complete conditional **first mean**, not the total reserve.
+
+The [checked clients](../../ComplexityTests/PolynomialBudgetHistory.lean) include a family
+with that fixed charge, bounded primes, one horizon covering every retained bin, positive
+actual parent precision and nonzero diagonal omitted semantic mass. A separate full
+reserve client at $P=5$, $M=16$, depth two uses horizon **two**, not the previous component
+fixture's horizon one. It consumes the actual computed minimum and assembled reserve,
+with lower-child own-request accuracy and direct/reset-right success left as explicit IH
+hypotheses. This is not a proof that those hypotheses hold jointly. The existing actual
+inactive loss-one and zero/exhausted boundary checks remain. Ordinary noise/progress,
+second mean and preparation, general correction products, full changing-request IH and
+native RL=L remain open; production leaves are unchanged.
 
 `initialClippedEndpointWindow_growth` gives a necessary condition for a proposed
 allocation $wW_{\mathrm{end}}\le2^A$ when $w\ge1$: every live bin $i$ must satisfy

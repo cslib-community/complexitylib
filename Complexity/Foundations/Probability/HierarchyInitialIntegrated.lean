@@ -127,6 +127,22 @@ separate inside these payments; only deterministic tails may receive rarity. -/
   128 * (HP.K : ℝ) *
     (Cpre ^ 4 * preBudget ^ 4 + C ^ 4 * finalBudget ^ 4 + C ^ 4 * tailBudget ^ 4) + rawBudget
 
+/-- Monotonicity of the four literal nonnegative reserve payments. Decoder constants
+need no sign hypotheses because they enter only through fourth powers. -/
+theorem initialSeparatedReserve_mono (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (C Cpre : ℝ) {p f t r p' f' t' r' : ℝ}
+    (hp : 0 ≤ p) (hf : 0 ≤ f) (ht : 0 ≤ t)
+    (hpp : p ≤ p') (hff : f ≤ f') (htt : t ≤ t') (hrr : r ≤ r') :
+    initialSeparatedReserve HP C Cpre p f t r ≤
+      initialSeparatedReserve HP C Cpre p' f' t' r' := by
+  unfold initialSeparatedReserve
+  exact add_le_add (mul_le_mul_of_nonneg_left
+    (add_le_add (add_le_add
+      (mul_le_mul_of_nonneg_left (pow_le_pow_left₀ hp hpp 4) (by positivity))
+      (mul_le_mul_of_nonneg_left (pow_le_pow_left₀ hf hff 4) (by positivity)))
+      (mul_le_mul_of_nonneg_left (pow_le_pow_left₀ ht htt 4) (by positivity)))
+    (by positivity)) hrr
+
 /-- The four first-mean transport components after exact endpoint summation. This
 excludes semantic deficits, the second mean and centered noise. `x` is the scalar
 endpoint factor, including structural decay and parent precision. -/
@@ -139,6 +155,16 @@ endpoint factor, including structural decay and parent precision. -/
     (64 * 8 * x ^ 4 *
       (64 * (HP.K : ℝ) * ((2 * max cap 16) ^ (4⁻¹ : ℝ)) ^ 4 /
         ((HP.K + 1) * floor ^ 4)) / 63)
+
+/-- The common first-mean scalar is monotone for nonnegative inputs. -/
+theorem initialFirstTransportPayment_mono
+    (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (floor cap C Cpre : ℝ) (hf : 0 ≤ floor) {x y : ℝ} (hx : 0 ≤ x) (hxy : x ≤ y) :
+    initialFirstTransportPayment HP floor cap C Cpre x ≤
+      initialFirstTransportPayment HP floor cap C Cpre y := by
+  unfold initialFirstTransportPayment
+  apply initialSeparatedReserve_mono HP C Cpre
+  all_goals first | positivity | gcongr
 
 /-- One structural charge pays all four deterministic first-mean transport components.
 The charge is chosen after the fixed decoder/floor/cap constants and endpoint factor,

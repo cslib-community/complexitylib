@@ -348,10 +348,13 @@ theorem bounded_family_omission_row (B : BudgetData HP P)
     (r : HierarchyTask.Request HP.k (Fin 3) (ZMod P))
     (hs : r.source.rate = rate ks) (ht : r.terminal.rate = rate ka) :
     16 * (P : ℝ) * (rate n / rate ka) ^ 4 ≤
-      32 * ((2 : ℝ) ^ (-B.requestPrecision M r)) ^ 4 := by
+      32 * ((2 : ℝ) ^ (-B.requestPrecision M r) *
+        (2 : ℝ) ^ (-(B.rankCharge * r.task.rank))) ^ 4 := by
+  have _ := hcharge
   have hc : (0 : ℝ) < B.slack := by exact_mod_cast B.slack_pos
   have hm : (M : ℝ) ≤ 32 * (B.slack : ℝ) * n := by exact_mod_cast hM
-  have hp : B.requestPrecision M r ≤ 2 * (n : ℝ) - 2 * ((ka : ℝ) + ks) := by
+  have hp : B.requestPrecision M r + B.rankCharge * r.task.rank ≤
+      2 * (n : ℝ) - 2 * ((ka : ℝ) + ks) := by
     rw [B.requestPrecision_grid M ks ka r hs ht]
     have hd : (M : ℝ) / (16 * B.slack) ≤ 2 * (n : ℝ) :=
       (div_le_iff₀ (by positivity)).mpr (by nlinarith)
@@ -369,12 +372,12 @@ theorem bounded_family_omission_row (B : BudgetData HP P)
   rw [hr n, hr ka, ← Real.rpow_sub (by norm_num),
     ← Real.rpow_mul_natCast (by norm_num), mul_assoc,
     ← Real.rpow_add (by norm_num)]
-  rw [← Real.rpow_mul_natCast (by norm_num)]
+  rw [← Real.rpow_add (by norm_num), ← Real.rpow_mul_natCast (by norm_num)]
   have he : (n : ℝ) + 1 + (-4 * (n : ℝ) - -4 * (ka : ℝ)) * 4 ≤
-      1 + -B.requestPrecision M r * 4 := by
+      1 + (-B.requestPrecision M r + -(B.rankCharge * r.task.rank)) * 4 := by
     nlinarith [Nat.cast_nonneg (α := ℝ) n, Nat.cast_nonneg (α := ℝ) ks]
   calc
-    _ ≤ 16 * (2 : ℝ) ^ (1 + -B.requestPrecision M r * 4) :=
+    _ ≤ 16 * (2 : ℝ) ^ (1 + (-B.requestPrecision M r + -(B.rankCharge * r.task.rank)) * 4) :=
       mul_le_mul_of_nonneg_left
         (Real.rpow_le_rpow_of_exponent_le (by norm_num) he) (by norm_num)
     _ = _ := by rw [Real.rpow_add (by norm_num)]; norm_num; ring
