@@ -143,11 +143,63 @@ into a non-interactive proof (`BCSProof r Sym`, `bcsProve`, `bcsVerify`):
   `iopExtract`, `bcs_knowledge_or_soundness_violation_or_collision` and
   `bcs_knowledge_or_merkleCollision` reduce an accepting BCS proof to a valid
   extracted witness `rel x (iopExtract x oracles)`, an IOP knowledge-soundness
-  violation at the Fiat–Shamir challenge, or an explicit `H k` collision. These
-  are deterministic algebraic reductions for fixed `H k` and `hFS`; composing
-  them with random-oracle query-trace extraction and `OracleComp` probability
-  bounds is separate. Checked examples are in
+  violation at the Fiat–Shamir challenge, or an explicit `H k` collision. Checked
+  examples for these deterministic algebraic reductions are in
   [`ComplexityTests/Crypto/BCSTransform.lean`](../../ComplexityTests/Crypto/BCSTransform.lean).
+
+For unconditional random-oracle soundness and straight-line knowledge extraction, import
+`Complexity.Crypto.Protocols.BCS.ROM` ([`BCS/ROM.lean`](../../Complexity/Crypto/Protocols/BCS/ROM.lean)),
+which lifts the multi-round BCS transform to an explicit two-channel random-oracle model
+([bcs16][bcs16]; Chiesa–Yogev Chapter 18, Construction 18.5.3 and Theorem 18.5.8):
+
+- **Two-channel BCS random-oracle execution and completeness:** over
+  `BCSROMSpec Stmt Chal := MerkleHashSpec ⊕ₒ BCSFSSpec Stmt Chal` (reusing `MerkleHashSpec`,
+  `merkleRootProg`, `merklePathProg`, and `merkleVerifyProg` from
+  [`Kilian/Micali.lean`](../../Complexity/Crypto/Computational/Kilian/Micali.lean)), the left
+  channel (`Sum.inl`) answers Merkle queries lazily with `BitString.uniformList σ` and the right
+  channel (`Sum.inr`) answers transcript-chained Fiat–Shamir queries
+  `BCSFSQuery Stmt Chal := Stmt × List (List Bool) × List Chal` lazily with
+  `PMF.uniformOfFintype Chal`, querying `(x, rootPrefix roots j, [c_0, ..., c_{j-1}]) ↦ c_j` in
+  round `j`. Under any deterministic pair `(hTree, f)`, `evalPure_bcsProveROM` and
+  `evalPure_bcsVerifyROM` identify `bcsProveROM` and `bcsVerifyROM` with `bcsProve` and `bcsVerify`
+  instantiated with `chainedFS f`, giving perfect completeness in the lazy two-channel ROM
+  (`bcsHonestROMGame_eq_pure_true`).
+- **Straight-line multi-round oracle reconstruction:** given `Function.LeftInverse decSym encSym`
+  and `defaultSym : Sym`, `bcsExtractTable`, `bcsExtractOracles`, and `bcsExtractWitness`
+  reconstruct all `r` committed round tables and a candidate witness directly from a Merkle trace
+  `tr_MT` via `extractLeafFromTrace` without rewinding. Under `TraceCollisionFree tr_MT` and
+  `BCSOpeningsQueriedInTrace`, `iopVerify_bcsExtractOracles_of_bcsVerify` proves that `iopVerify`
+  accepts `bcsExtractOracles`, `exists_collision_of_bcsVerify_of_iopVerify_eq_false` extracts a
+  trace collision whenever `iopVerify` rejects, and `bcsExtractTable_cons_of_ne` /
+  `bcsExtractOracles_cons_of_ne` prove invariance under fresh Merkle answers that avoid target roots
+  and child digests.
+- **Adaptive two-channel ROM soundness:** under `IOPRoundByRoundSoundness iop lang doomed goodStep`
+  with per-round challenge escape probability `≤ ε_rbr`, `BCSGoodState` combines
+  `TraceCollisionFree tr_MT` with `BCSChainDoomed` across recorded Fiat–Shamir chains of length
+  `≤ r`. Truncating each Fiat–Shamir entry via `List.take r` in `bcsForbiddenDigests` bounds the
+  forbidden Merkle digest list by `3 * |tr_MT| + r * |tr_FS|` regardless of adversarial Fiat–Shamir
+  root-list sizes, while `fsOutOfOrderTargets` bounds out-of-order Fiat–Shamir chain guessing by
+  `|tr_FS| * (1 / Fintype.card Chal)` per query. Generalizing two-channel until-bad accumulation to
+  growing budgets on both channels via
+  [`OracleComp.toOuterMeasure_bad_le_two_budgets`](../../Complexity/Languages/Probabilistic/UntilBad/TwoCost.lean),
+  `bcsROMSoundness_bound` and `bcsROMSoundness_bound_of_prover_verifier` bound `bcsSoundnessGame` by
+  `(t_FS + r) * (ε_rbr + (t_FS + r) * (1 / Fintype.card Chal)) + Q_MT * ((3 * Q_MT + r * (t_FS + r)) * (1 / 2 ^ σ))`.
+- **Adaptive straight-line ROM knowledge soundness:** `IOPRoundByRoundKnowledgeSoundness` captures
+  round-by-round straight-line IOP extraction (and implies `IOPRoundByRoundSoundness` for
+  `{x | ∃ w, rel x w}` via `IOPRoundByRoundKnowledgeSoundness.toRoundByRoundSoundness`). In
+  `bcsKnowledgeSoundnessGame`, the extractor reconstructs `bcsExtractWitness` from the prover's own
+  Merkle trace `tr_P` *before* running `bcsVerifyROM`, with zero rewinding; `bcsROMKnowledgeSoundness_bound`
+  and `bcsROMKnowledgeSoundness_bound_of_prover_verifier` (together with the combined-trace variant
+  `bcsROMKnowledgeSoundness_trace_bound`) establish the same explicit two-channel error bound. As in
+  `MicaliSoundness.lean`, the separate-budget corollaries require verifier Merkle bounds only for
+  `(x, prf) ∈ P.support` (discharged via `isCostBounded_bcsMTCost_bcsVerifyROM_of_queries_le`).
+  Concrete two-round examples, including an adaptive prover with out-of-order and oversized
+  Fiat–Shamir queries, are in [`ComplexityTests/Crypto/BCSROM.lean`](../../ComplexityTests/Crypto/BCSROM.lean).
+
+This ROM formalization uses an unsalted (`s_MT = s_FS = 0`), two-channel oracle separating Merkle
+hashing from transcript-chained Fiat–Shamir queries rather than single-oracle domain separation and
+zero-knowledge salts, and bounds oracle query counts rather than native Turing-machine extractor
+runtime or zero-knowledge simulation.
 
 ## Shared random oracles and ideal permutations
 
