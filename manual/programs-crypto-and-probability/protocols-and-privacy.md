@@ -272,6 +272,25 @@ This representation generalization ([#2684](https://github.com/cslib-community/c
 preserves the quantitative bound. It does not certify a native implementation of `hashPoint` or
 complete the concrete word Schnorr reduction and its key-generation/signing approximation hops.
 
+[`SchnorrSignature/WordROM.lean`](../../Complexity/Crypto/Computational/SchnorrSignature/WordROM.lean)
+instantiates that theorem with the actual native word verifier. `schnorrWordSigma` keeps statements
+as group elements, so the public key is canonical, but permits arbitrary commitment and response
+words. Acceptance recovers a canonical commitment in the proof; only response scalars are decoded.
+Thus scalar aliases remain valid while commitment aliases are rejected. Its simulator and
+extractor reuse the typed Schnorr laws, proving perfect HVZK, special soundness and the
+`1 / F.order d` commitment bound.
+
+`schnorrWordROMScheme` hashes `encPair encBits encBits (message, commitment)` into `m`-bit
+challenges when `2 ^ m ≤ F.order d`, retaining all other hash words in the same cache. Its finite
+bound is `Qs*(Qs+Qro)/F.order d + (Qro+1)/2^m + sqrt((Qro+1)*ε')`, where `ε'` is the displayed
+forking reduction's discrete-log success. Key and signing scalars use ideal uniform laws. This
+completes the representation milestone [#2696](https://github.com/cslib-community/complexitylib/issues/2696);
+native saved-forger composition, the actual key-generation/signing `CloseTo` hops and efficient
+forking remain open. No guarantee is asserted for malformed public keys, and no group decoder is
+assumed. Concrete scalar-alias extraction, rejected commitments, and distinct/repeated junk hash
+queries are checked in
+[`Crypto/SchnorrWordROM.lean`](../../ComplexityTests/Crypto/SchnorrWordROM.lean).
+
 The same module instantiates `schnorrFamilyROMScheme` with `m`-bit challenges when
 `2 ^ m ≤ F.order d`, and `schnorrScalarROMScheme` with full scalar challenges. Their exact typed
 EUF-CMA bounds account for both signing queries and random-oracle queries. The asymptotic theorem
